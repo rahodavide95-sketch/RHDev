@@ -35,8 +35,13 @@ function buildContent() {
   if (typeof SITE === 'undefined') return;
   const { label, releases, artists, contact } = SITE;
 
-  // Labels / titles
-  setText('hero-title',   label.name);
+  // Hero title: split last word onto new line (SUBCONSCIOUS / Culture)
+  const heroTitle = document.getElementById('hero-title');
+  if (heroTitle && label.name) {
+    const words = label.name.trim().split(' ');
+    const last  = words.pop();
+    heroTitle.innerHTML = (words.length ? words.join(' ') + '<br>' : '') + last;
+  }
   setText('hero-tagline', label.tagline);
   setText('nav-name',     label.name);
   document.title = label.name;

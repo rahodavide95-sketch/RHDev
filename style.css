@@ -250,6 +250,7 @@ img.broken-hide                   { visibility: hidden; }
   color:          var(--fg-2);
   opacity:        0;
   animation:      heroReveal 1.3s var(--ease-out) 0.6s forwards;
+  margin-top:     2rem;
 }
 
 /* Scroll indicator */

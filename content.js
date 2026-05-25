@@ -8,20 +8,20 @@ const SITE = {
 
   // ---- INFO ETICHETTA ----------------------------------------
   label: {
-    name:        "Subconscious Culture",
+    name:        "SUBCONSCIOUS Culture",
     tagline:     "Independent Record Label",
-    foundedYear: "2020",
+    foundedYear: "2026",
 
     // Il testo della sezione About (puoi usare \n per andare a capo)
     description: "Subconscious Culture è un'etichetta discografica indipendente dedicata alla musica elettronica d'avanguardia. Nata dall'esigenza di dare voce a suoni che vivono ai margini del mainstream, l'etichetta raccoglie artisti provenienti da tutta Europa accomunati da una visione sonora profonda e senza compromessi.",
 
     // Email principale
-    email:     "info@subconsciousculture.com",
+    email:     "subconscious.infoart@gmail.com",
 
     // Social (inserisci l'URL completo, oppure lascia "" per nasconderlo)
-    instagram:  "https://instagram.com/subconsciousculture",
-    soundcloud: "",
-    bandcamp:   "",
+    instagram:  "https://instagram.com/subconscious.culture",
+    soundcloud: "https://soundcloud.com/subconscious_culture",
+    bandcamp:   "https://subconsciousculture26.bandcamp.com",
     ra:         "",   // Resident Advisor URL
   },
 
@@ -30,11 +30,11 @@ const SITE = {
   // incollalo dopo l'ultimo, separato da una virgola.
   releases: [
     {
-      artist:  "Artista Uno",
-      title:   "Titolo della Release",
-      year:    "2024",
-      catalog: "SC001",
-      format:  "Digital / 12\" Vinyl",
+      artist:  "Raho",
+      title:   "Solvane EP",
+      year:    "2026",
+      catalog: "SSSCLTR001",
+      format:  "Digital",
       cover:   "images/releases/sc001.jpg",   // percorso immagine copertina
       link:    "#",                            // link Spotify / Bandcamp / etc.
     },
@@ -89,11 +89,11 @@ const SITE = {
 
   // ---- CONTATTI -----------------------------------------------
   contact: {
-    email:          "info@subconsciousculture.com",
+    email:          "subconscious.infoart@gmail.com",
     bookings:       "bookings@subconsciousculture.com",
     demos:          "demos@subconsciousculture.com",
-    instagram:      "@subconsciousculture",
-    instagramUrl:   "https://instagram.com/subconsciousculture",
+    instagram:      "@subconscious.culture",
+    instagramUrl:   "https://instagram.com/subconscious.culture",
     address:        "Milano, Italia",
   },
 };

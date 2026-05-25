@@ -365,8 +365,8 @@ img.broken-hide                   { visibility: hidden; }
    ============================================================ */
 .releases-grid {
   display:               grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap:                   3.5rem 2.5rem;
+  grid-template-columns: repeat(5, 1fr);
+  gap:                   3rem 2rem;
 }
 
 .release-card {
@@ -442,7 +442,6 @@ img.broken-hide                   { visibility: hidden; }
   font-family:  var(--f-body);
   font-size:    clamp(0.92rem, 1.4vw, 1.05rem);
   font-weight:  300;
-  font-style:   italic;
   color:        var(--fg-2);
   margin-bottom: 0.75rem;
 }
@@ -689,6 +688,12 @@ img.broken-hide                   { visibility: hidden; }
 /* ============================================================
    RESPONSIVE
    ============================================================ */
+@media (max-width: 1100px) {
+  .releases-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
 @media (max-width: 960px) {
   .contact-grid {
     grid-template-columns: 1fr;
@@ -734,8 +739,8 @@ img.broken-hide                   { visibility: hidden; }
 
 @media (max-width: 640px) {
   .releases-grid {
-    grid-template-columns: 1fr;
-    gap: 2.5rem;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem 1.25rem;
   }
 
   /* Artists: 3 columns on mobile */

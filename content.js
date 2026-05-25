@@ -9,7 +9,7 @@ const SITE = {
   // ---- INFO ETICHETTA ----------------------------------------
   label: {
     name:        "SUBCONSCIOUS Culture",
-    tagline:     "Independent Record Label",
+    tagline:     "Independent Record Label founded by italian Dj/Producer Raho",
     foundedYear: "2026",
 
     // Il testo della sezione About (puoi usare \n per andare a capo)

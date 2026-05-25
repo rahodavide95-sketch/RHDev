@@ -26,8 +26,11 @@ const SITE = {
   },
 
   // ---- RELEASES -----------------------------------------------
-  // Per aggiungere una release copia uno dei blocchi qui sotto,
-  // incollalo dopo l'ultimo, separato da una virgola.
+  // Release singola/EP/album → catalog: "SSSCLTR001", "SSSCLTR002", ecc.
+  // Various Artists (VA)    → catalog: "SSSCLTRS01",  "SSSCLTRS02",  ecc.
+  //
+  // Per aggiungere una release: copia un blocco {…}, incollalo dopo
+  // l'ultimo (prima del ]), separalo con una virgola.
   releases: [
     {
       artist:  "Raho",
@@ -35,27 +38,29 @@ const SITE = {
       year:    "2026",
       catalog: "SSSCLTR001",
       format:  "Digital",
-      cover:   "images/releases/sc001.jpg",   // percorso immagine copertina
-      link:    "#",                            // link Spotify / Bandcamp / etc.
-    },
-    {
-      artist:  "Artista Due",
-      title:   "Secondo EP",
-      year:    "2024",
-      catalog: "SC002",
-      format:  "Digital",
-      cover:   "",          // lascia "" se non hai ancora la copertina
+      cover:   "images/releases/sc001.jpg",
       link:    "#",
     },
-    {
-      artist:  "Artista Tre",
-      title:   "Album Debut",
-      year:    "2023",
-      catalog: "SC003",
-      format:  "Digital / Cassette",
-      cover:   "",
-      link:    "#",
-    },
+    // --- Esempio release normale ---
+    // {
+    //   artist:  "Nome Artista",
+    //   title:   "Titolo EP",
+    //   year:    "2026",
+    //   catalog: "SSSCLTR002",
+    //   format:  "Digital",
+    //   cover:   "images/releases/sc002.jpg",
+    //   link:    "#",
+    // },
+    // --- Esempio VA ---
+    // {
+    //   artist:  "Various Artists",
+    //   title:   "Titolo Compilation",
+    //   year:    "2026",
+    //   catalog: "SSSCLTRS01",
+    //   format:  "Digital",
+    //   cover:   "images/releases/va01.jpg",
+    //   link:    "#",
+    // },
   ],
 
   // ---- ARTISTI ------------------------------------------------

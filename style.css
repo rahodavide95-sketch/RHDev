@@ -1,0 +1,715 @@
+/* ============================================================
+   SUBCONSCIOUS CULTURE — style.css
+   ============================================================ */
+
+/* ----- Reset ----- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+img, video { display: block; max-width: 100%; }
+a { color: inherit; text-decoration: none; }
+button { cursor: pointer; border: none; background: none; font: inherit; }
+textarea { resize: none; }
+
+/* ----- Design tokens ----- */
+:root {
+  --bg:          #080808;
+  --bg-alt:      #0e0e0e;
+  --fg:          #f0ece6;
+  --fg-2:        #9a9590;
+  --fg-3:        #555250;
+  --accent:      #f0ece6;
+  --border:      rgba(240, 236, 230, 0.07);
+
+  --f-display:   'Syne', sans-serif;
+  --f-body:      'DM Sans', sans-serif;
+
+  --pad-section: clamp(7rem, 14vw, 13rem);
+  --pad-x:       clamp(1.5rem, 6vw, 5rem);
+  --max-w:       1380px;
+
+  --ease:        cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-out:    cubic-bezier(0.0,  0.0,  0.2,  1.0);
+}
+
+/* ----- Base ----- */
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+}
+
+body {
+  background:  var(--bg);
+  color:       var(--fg);
+  font-family: var(--f-body);
+  font-weight: 300;
+  line-height: 1.65;
+  overflow-x:  hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Prevent flash: body invisible until fonts ready */
+  opacity: 0;
+  transition: opacity 0.5s var(--ease);
+}
+body.ready { opacity: 1; }
+
+::selection { background: var(--fg); color: var(--bg); }
+
+::-webkit-scrollbar       { width: 2px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--fg-3); }
+
+/* ----- Layout helpers ----- */
+.container {
+  width:       100%;
+  max-width:   var(--max-w);
+  margin:      0 auto;
+  padding-left:  var(--pad-x);
+  padding-right: var(--pad-x);
+}
+
+
+/* ============================================================
+   NAVBAR
+   ============================================================ */
+.navbar {
+  position:   fixed;
+  inset:      0 0 auto 0;
+  z-index:    900;
+  padding:    1.1rem 0;
+  /* very transparent — glass effect */
+  background: rgba(8, 8, 8, 0.35);
+  backdrop-filter:         blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  transition: background 0.5s var(--ease), padding 0.4s var(--ease);
+}
+.navbar.is-scrolled {
+  background: rgba(8, 8, 8, 0.65);
+  padding: 0.85rem 0;
+}
+
+.navbar-inner {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  max-width:       var(--max-w);
+  margin:          0 auto;
+  padding:         0 var(--pad-x);
+}
+
+/* Brand (logo + name) */
+.navbar-brand {
+  display:     flex;
+  align-items: center;
+  gap:         0.65rem;
+}
+.nav-logo {
+  width:        32px;
+  height:       32px;
+  object-fit:   contain;
+  flex-shrink:  0;
+}
+.nav-name {
+  font-family:    var(--f-display);
+  font-size:      0.88rem;
+  font-weight:    600;
+  letter-spacing: 0.04em;
+  white-space:    nowrap;
+}
+
+/* Nav links */
+.nav-links {
+  display:  flex;
+  list-style: none;
+  gap:      2.5rem;
+}
+.nav-link {
+  font-family:    var(--f-body);
+  font-size:      0.72rem;
+  font-weight:    400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color:          var(--fg-2);
+  position:       relative;
+  padding-bottom: 2px;
+  transition:     color 0.3s var(--ease);
+}
+.nav-link::after {
+  content:    '';
+  position:   absolute;
+  bottom:     0; left: 0;
+  width:      0; height: 1px;
+  background: var(--fg);
+  transition: width 0.35s var(--ease);
+}
+.nav-link:hover          { color: var(--fg); }
+.nav-link:hover::after   { width: 100%; }
+
+/* Mobile toggle */
+.nav-toggle {
+  display:        none;
+  flex-direction: column;
+  gap:            5px;
+  padding:        4px;
+  z-index:        910;
+}
+.nav-toggle span {
+  display:    block;
+  width:      22px;
+  height:     1px;
+  background: var(--fg);
+  transition: transform 0.35s var(--ease), opacity 0.35s;
+}
+.nav-toggle.is-open span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+.nav-toggle.is-open span:nth-child(2) { opacity: 0; }
+.nav-toggle.is-open span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+
+/* ============================================================
+   HERO
+   ============================================================ */
+.hero {
+  position:        relative;
+  height:          100svh;
+  min-height:      580px;
+  display:         flex;
+  flex-direction:  column;
+  align-items:     center;
+  justify-content: center;
+  text-align:      center;
+  overflow:        hidden;
+}
+
+/* Radial gradient mood light */
+.hero::before {
+  content:  '';
+  position: absolute;
+  inset:    0;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%,   rgba(200,184,154,0.05) 0%, transparent 60%),
+    radial-gradient(ellipse 100% 40% at 50% 110%, var(--bg) 0%, transparent 70%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.hero-content {
+  position:       relative;
+  z-index:        2;
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+}
+
+/* Logo in hero */
+.hero-logo-wrap {
+  width:  130px;
+  height: 130px;
+  margin-bottom: 2.25rem;
+  opacity:   0;
+  transform: translateY(-16px);
+  animation: heroReveal 1.3s var(--ease-out) 0.2s forwards;
+}
+.hero-logo {
+  width:      100%;
+  height:     100%;
+  object-fit: contain;
+}
+
+/* Title */
+.hero-title {
+  font-family:    var(--f-display);
+  font-size:      clamp(2.2rem, 6.5vw, 6rem);
+  font-weight:    800;
+  letter-spacing: -0.03em;
+  line-height:    1;
+  color:          var(--fg);
+  opacity:        0;
+  transform:      translateY(20px);
+  animation:      heroReveal 1.3s var(--ease-out) 0.42s forwards;
+  margin-bottom:  0.9rem;
+}
+
+/* Tagline */
+.hero-tagline {
+  font-family:    var(--f-body);
+  font-size:      clamp(0.7rem, 1.2vw, 0.88rem);
+  font-weight:    400;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color:          var(--fg-2);
+  opacity:        0;
+  animation:      heroReveal 1.3s var(--ease-out) 0.6s forwards;
+}
+
+/* Scroll indicator */
+.hero-scroll {
+  position:  absolute;
+  bottom:    2.5rem;
+  left:      50%;
+  transform: translateX(-50%);
+  z-index:   2;
+  opacity:   0;
+  animation: heroReveal 1s var(--ease-out) 1.2s forwards;
+}
+.hero-scroll-line {
+  display:    block;
+  width:      1px;
+  height:     52px;
+  background: linear-gradient(to bottom, transparent, var(--fg-3));
+  animation:  scrollPulse 2.2s ease-in-out infinite;
+}
+
+@keyframes heroReveal {
+  to { opacity: 1; transform: none; }
+}
+@keyframes scrollPulse {
+  0%, 100% { opacity: 0.25; transform: scaleY(0.7); transform-origin: top; }
+  50%       { opacity: 1;    transform: scaleY(1);   transform-origin: top; }
+}
+
+
+/* ============================================================
+   SECTIONS — common
+   ============================================================ */
+.section {
+  padding: var(--pad-section) 0;
+  background: var(--bg);
+}
+.section--alt {
+  background: var(--bg-alt);
+}
+
+/* Thin divider at top of each section (minimal, not a box) */
+.section + .section::before,
+.section + .section--alt::before {
+  content:    '';
+  display:    block;
+  width:      1px;
+  height:     0; /* invisible — spacing handled by padding */
+}
+
+.section-head {
+  margin-bottom: clamp(3rem, 6vw, 5rem);
+}
+.section-eyebrow {
+  display:        block;
+  font-family:    var(--f-body);
+  font-size:      0.62rem;
+  font-weight:    500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color:          var(--fg-3);
+  margin-bottom:  0.7rem;
+}
+.section-title {
+  font-family:    var(--f-display);
+  font-size:      clamp(1.9rem, 4.5vw, 3.8rem);
+  font-weight:    700;
+  letter-spacing: -0.025em;
+  line-height:    1.05;
+  color:          var(--fg);
+}
+
+
+/* ============================================================
+   SCROLL ANIMATIONS (data-aos)
+   ============================================================ */
+[data-aos] {
+  opacity:    0;
+  will-change: opacity, transform;
+}
+[data-aos="fade-up"] {
+  transform:  translateY(38px);
+  transition: opacity 0.9s var(--ease-out), transform 0.9s var(--ease-out);
+}
+[data-aos="fade-left"] {
+  transform:  translateX(38px);
+  transition: opacity 0.9s var(--ease-out), transform 0.9s var(--ease-out);
+}
+[data-aos="scale-up"] {
+  transform:  scale(0.93);
+  transition: opacity 0.9s var(--ease-out), transform 0.9s var(--ease-out);
+}
+[data-aos].aos-visible {
+  opacity:   1;
+  transform: none;
+}
+
+
+/* ============================================================
+   ABOUT
+   ============================================================ */
+.about-body {
+  font-size:   clamp(1.1rem, 2vw, 1.3rem);
+  font-weight: 300;
+  line-height: 1.85;
+  color:       var(--fg-2);
+  max-width:   68ch;
+}
+.about-body strong { color: var(--fg); font-weight: 500; }
+
+
+/* ============================================================
+   RELEASES
+   ============================================================ */
+.releases-grid {
+  display:               grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap:                   3.5rem 2.5rem;
+}
+
+.release-card {
+  opacity:    0;
+  transform:  translateY(32px);
+  transition: opacity 0.75s var(--ease-out), transform 0.75s var(--ease-out);
+}
+.release-card.aos-visible {
+  opacity:   1;
+  transform: none;
+}
+
+/* Cover */
+.release-cover {
+  position:      relative;
+  aspect-ratio:  1 / 1;
+  overflow:      hidden;
+  background:    var(--bg);
+  margin-bottom: 1.4rem;
+}
+.release-cover img {
+  width:      100%;
+  height:     100%;
+  object-fit: cover;
+  transition: transform 0.7s var(--ease);
+}
+.release-card:hover .release-cover img {
+  transform: scale(1.05);
+}
+.cover-placeholder {
+  width:      100%;
+  height:     100%;
+  background: linear-gradient(135deg, #161616 0%, #0a0a0a 100%);
+}
+
+/* Hover overlay on cover */
+.cover-overlay {
+  position:   absolute;
+  inset:      0;
+  background: rgba(0,0,0,0.42);
+  display:    flex;
+  align-items:    center;
+  justify-content: center;
+  opacity:    0;
+  transition: opacity 0.4s var(--ease);
+}
+.release-card:hover .cover-overlay { opacity: 1; }
+.cover-overlay a {
+  font-size:      0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color:          var(--fg);
+  border:         1px solid rgba(240,236,230,0.55);
+  padding:        0.55rem 1.25rem;
+  transition:     background 0.3s, border-color 0.3s;
+}
+.cover-overlay a:hover {
+  background:   rgba(240,236,230,0.12);
+  border-color: var(--fg);
+}
+
+/* Release text hierarchy */
+.release-artist {
+  font-family:    var(--f-display);
+  font-size:      clamp(1.25rem, 2.5vw, 1.65rem);
+  font-weight:    700;
+  letter-spacing: -0.01em;
+  line-height:    1.15;
+  color:          var(--fg);
+  margin-bottom:  0.3rem;
+}
+.release-title {
+  font-family:  var(--f-body);
+  font-size:    clamp(0.92rem, 1.4vw, 1.05rem);
+  font-weight:  300;
+  font-style:   italic;
+  color:        var(--fg-2);
+  margin-bottom: 0.75rem;
+}
+.release-meta {
+  display:     flex;
+  flex-wrap:   wrap;
+  gap:         0 0.6rem;
+  font-size:   0.7rem;
+  font-weight: 400;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color:       var(--fg-3);
+}
+.release-meta span { display: inline-flex; align-items: center; gap: 0.5rem; }
+.release-meta span + span::before {
+  content:    '·';
+  opacity:    0.4;
+}
+
+
+/* ============================================================
+   ARTISTS
+   ============================================================ */
+.artists-grid {
+  display:               grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap:                   2.5rem;
+}
+
+.artist-card {
+  opacity:    0;
+  transform:  translateY(32px);
+  transition: opacity 0.75s var(--ease-out), transform 0.75s var(--ease-out);
+}
+.artist-card.aos-visible {
+  opacity:   1;
+  transform: none;
+}
+
+.artist-photo {
+  aspect-ratio: 3 / 4;
+  overflow:     hidden;
+  background:   var(--bg);
+  margin-bottom: 1.25rem;
+}
+.artist-photo img {
+  width:      100%;
+  height:     100%;
+  object-fit: cover;
+  filter:     grayscale(25%);
+  transition: transform 0.7s var(--ease), filter 0.5s;
+}
+.artist-card:hover .artist-photo img {
+  transform: scale(1.04);
+  filter:    grayscale(0%);
+}
+.photo-placeholder {
+  width:      100%;
+  height:     100%;
+  background: linear-gradient(160deg, #181818, #090909);
+}
+
+.artist-name {
+  font-family:    var(--f-display);
+  font-size:      clamp(1.1rem, 2vw, 1.4rem);
+  font-weight:    600;
+  letter-spacing: -0.01em;
+  color:          var(--fg);
+  margin-bottom:  0.2rem;
+}
+.artist-origin {
+  font-size:      0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color:          var(--fg-3);
+  margin-bottom:  0.7rem;
+}
+.artist-bio {
+  font-size:   0.87rem;
+  line-height: 1.75;
+  color:       var(--fg-2);
+  margin-bottom: 0.85rem;
+}
+.artist-links {
+  display: flex;
+  gap:     1.25rem;
+}
+.artist-link {
+  font-size:      0.65rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color:          var(--fg-3);
+  transition:     color 0.3s;
+}
+.artist-link:hover { color: var(--fg); }
+
+
+/* ============================================================
+   CONTACT
+   ============================================================ */
+.contact-grid {
+  display:               grid;
+  grid-template-columns: 1fr 1.15fr;
+  gap:                   7rem;
+  align-items:           start;
+}
+
+/* Left: contact info */
+.contact-info {
+  display:        flex;
+  flex-direction: column;
+  gap:            2.25rem;
+}
+.contact-item {
+  display:        flex;
+  flex-direction: column;
+  gap:            0.35rem;
+}
+.contact-label {
+  font-family:    var(--f-body);
+  font-size:      0.6rem;
+  font-weight:    500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color:          var(--fg-3);
+}
+.contact-value {
+  font-family:    var(--f-display);
+  font-size:      clamp(0.95rem, 1.6vw, 1.2rem);
+  font-weight:    400;
+  color:          var(--fg);
+  transition:     color 0.3s;
+}
+.contact-value:hover { color: var(--fg-2); }
+
+/* Right: form */
+.contact-form {
+  display:        flex;
+  flex-direction: column;
+  gap:            1.6rem;
+}
+
+.field {
+  display:        flex;
+  flex-direction: column;
+  gap:            0.45rem;
+}
+.field label {
+  font-size:      0.6rem;
+  font-weight:    500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color:          var(--fg-3);
+}
+.field input,
+.field textarea {
+  background:   transparent;
+  border:       none;
+  border-bottom: 1px solid var(--border);
+  color:        var(--fg);
+  font-family:  var(--f-body);
+  font-size:    1rem;
+  font-weight:  300;
+  padding:      0.7rem 0;
+  outline:      none;
+  width:        100%;
+  transition:   border-color 0.3s var(--ease);
+  appearance:   none;
+  -webkit-appearance: none;
+}
+.field input::placeholder,
+.field textarea::placeholder {
+  color: var(--fg-3);
+  font-style: italic;
+}
+.field input:focus,
+.field textarea:focus {
+  border-color: rgba(240,236,230,0.35);
+}
+
+.btn-send {
+  align-self:     flex-start;
+  font-family:    var(--f-display);
+  font-size:      0.78rem;
+  font-weight:    600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color:          var(--bg);
+  background:     var(--fg);
+  padding:        0.9rem 2.2rem;
+  transition:     background 0.35s, color 0.35s, transform 0.2s;
+}
+.btn-send:hover {
+  background: var(--fg-2);
+  transform:  translateY(-1px);
+}
+.btn-send.sent {
+  background: #2e7d32;
+  color:      #fff;
+}
+
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+.footer {
+  padding:      2.5rem 0;
+  border-top:   1px solid var(--border);
+  background:   var(--bg);
+}
+.footer-inner {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  gap:             1.5rem;
+  flex-wrap:       wrap;
+}
+.footer-logo {
+  width:        26px;
+  height:       26px;
+  object-fit:   contain;
+  opacity:      0.5;
+  flex-shrink:  0;
+}
+.footer-copy {
+  font-size:   0.72rem;
+  color:       var(--fg-3);
+  letter-spacing: 0.04em;
+}
+.footer-social {
+  display: flex;
+  gap:     1.5rem;
+}
+.footer-social a {
+  font-size:      0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color:          var(--fg-3);
+  transition:     color 0.3s;
+}
+.footer-social a:hover { color: var(--fg); }
+
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 960px) {
+  .contact-grid {
+    grid-template-columns: 1fr;
+    gap: 4rem;
+  }
+
+  /* Full-screen mobile menu */
+  .nav-links {
+    display:         none;
+    position:        fixed;
+    inset:           0;
+    background:      rgba(8,8,8,0.97);
+    flex-direction:  column;
+    align-items:     center;
+    justify-content: center;
+    gap:             2.2rem;
+    z-index:         905;
+  }
+  .nav-links.is-open { display: flex; }
+  .nav-link { font-size: 1.2rem; letter-spacing: 0.08em; }
+
+  .nav-toggle { display: flex; }
+}
+
+@media (max-width: 640px) {
+  .releases-grid,
+  .artists-grid {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+  .footer-inner {
+    flex-direction: column;
+    text-align:     center;
+  }
+  .footer-social { justify-content: center; }
+}

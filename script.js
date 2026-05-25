@@ -1,0 +1,305 @@
+/* ============================================================
+   SUBCONSCIOUS CULTURE — script.js
+   ============================================================ */
+
+document.addEventListener('DOMContentLoaded', () => {
+  buildContent();
+  initNavbar();
+  initScrollAnimations();
+  initMobileMenu();
+  initHeroParallax();
+  initContactForm();
+  revealPage();
+});
+
+/* ----------------------------------------------------------
+   Reveal page after fonts load (prevents FOUT)
+   ---------------------------------------------------------- */
+function revealPage() {
+  document.fonts.ready.then(() => {
+    document.body.classList.add('ready');
+  });
+  // Failsafe: show after 1s regardless
+  setTimeout(() => document.body.classList.add('ready'), 1000);
+}
+
+/* ----------------------------------------------------------
+   Build all dynamic content from content.js
+   ---------------------------------------------------------- */
+function buildContent() {
+  if (typeof SITE === 'undefined') return;
+  const { label, releases, artists, contact } = SITE;
+
+  // Labels / titles
+  setText('hero-title',   label.name);
+  setText('hero-tagline', label.tagline);
+  setText('nav-name',     label.name);
+  document.title = label.name;
+
+  // About
+  setText('about-body', label.description);
+
+  // Footer
+  const year = new Date().getFullYear();
+  setText('footer-copy', `© ${year} ${label.name}. All rights reserved.`);
+
+  // Footer social links
+  const socials = [
+    label.instagram  && { text: 'Instagram',  url: label.instagram  },
+    label.soundcloud && { text: 'Soundcloud', url: label.soundcloud },
+    label.bandcamp   && { text: 'Bandcamp',   url: label.bandcamp   },
+    label.ra         && { text: 'RA',          url: label.ra         },
+  ].filter(Boolean);
+
+  const footerSocial = document.getElementById('footer-social');
+  if (footerSocial) {
+    footerSocial.innerHTML = socials
+      .map(s => `<a href="${s.url}" target="_blank" rel="noopener noreferrer">${s.text}</a>`)
+      .join('');
+  }
+
+  // Releases
+  buildReleases(releases);
+
+  // Artists
+  buildArtists(artists);
+
+  // Contact info
+  buildContactInfo(contact);
+}
+
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el && value) el.textContent = value;
+}
+
+/* ----------------------------------------------------------
+   Releases grid
+   ---------------------------------------------------------- */
+function buildReleases(releases) {
+  const grid = document.getElementById('releases-grid');
+  if (!grid || !releases?.length) return;
+
+  grid.innerHTML = releases.map((r, i) => {
+    const coverHtml = r.cover
+      ? `<img src="${r.cover}" alt="${esc(r.artist)} — ${esc(r.title)}" loading="lazy">`
+      : `<div class="cover-placeholder"></div>`;
+
+    const overlayHtml = r.link
+      ? `<div class="cover-overlay"><a href="${r.link}" target="_blank" rel="noopener">Ascolta</a></div>`
+      : '';
+
+    const metaParts = [r.year, r.catalog, r.format].filter(Boolean);
+
+    return `
+      <article class="release-card" style="transition-delay:${i * 0.07}s">
+        <div class="release-cover">
+          ${coverHtml}
+          ${overlayHtml}
+        </div>
+        <div class="release-artist">${esc(r.artist)}</div>
+        <div class="release-title">${esc(r.title)}</div>
+        <div class="release-meta">
+          ${metaParts.map(p => `<span>${esc(p)}</span>`).join('')}
+        </div>
+      </article>`;
+  }).join('');
+
+  observeCards('.release-card');
+}
+
+/* ----------------------------------------------------------
+   Artists grid
+   ---------------------------------------------------------- */
+function buildArtists(artists) {
+  const grid = document.getElementById('artists-grid');
+  if (!grid || !artists?.length) return;
+
+  grid.innerHTML = artists.map((a, i) => {
+    const photoHtml = a.photo
+      ? `<img src="${a.photo}" alt="${esc(a.name)}" loading="lazy">`
+      : `<div class="photo-placeholder"></div>`;
+
+    const links = [
+      a.instagram  && { text: 'Instagram',  url: a.instagram  },
+      a.soundcloud && { text: 'Soundcloud', url: a.soundcloud },
+    ].filter(Boolean);
+
+    return `
+      <article class="artist-card" style="transition-delay:${i * 0.09}s">
+        <div class="artist-photo">${photoHtml}</div>
+        <div class="artist-name">${esc(a.name)}</div>
+        ${a.origin ? `<div class="artist-origin">${esc(a.origin)}</div>` : ''}
+        ${a.bio    ? `<p class="artist-bio">${esc(a.bio)}</p>` : ''}
+        ${links.length ? `
+          <div class="artist-links">
+            ${links.map(l => `<a href="${l.url}" target="_blank" rel="noopener" class="artist-link">${l.text}</a>`).join('')}
+          </div>` : ''}
+      </article>`;
+  }).join('');
+
+  observeCards('.artist-card');
+}
+
+/* ----------------------------------------------------------
+   Contact info block
+   ---------------------------------------------------------- */
+function buildContactInfo(contact) {
+  const el = document.getElementById('contact-info');
+  if (!el || !contact) return;
+
+  const items = [
+    contact.email     && { label: 'Email',     value: contact.email,     href: `mailto:${contact.email}`     },
+    contact.bookings  && { label: 'Booking',   value: contact.bookings,  href: `mailto:${contact.bookings}`  },
+    contact.demos     && { label: 'Demo',      value: contact.demos,     href: `mailto:${contact.demos}`     },
+    contact.instagram && { label: 'Instagram', value: contact.instagram, href: contact.instagramUrl || '#'   },
+    contact.address   && { label: 'Location',  value: contact.address,   href: null                          },
+  ].filter(Boolean);
+
+  el.innerHTML = items.map(item => `
+    <div class="contact-item">
+      <span class="contact-label">${item.label}</span>
+      ${item.href
+        ? `<a href="${item.href}" class="contact-value"
+             ${item.href.startsWith('http') ? 'target="_blank" rel="noopener noreferrer"' : ''}
+           >${esc(item.value)}</a>`
+        : `<span class="contact-value">${esc(item.value)}</span>`
+      }
+    </div>`).join('');
+}
+
+/* ----------------------------------------------------------
+   Navbar: scroll-based opacity & active state
+   ---------------------------------------------------------- */
+function initNavbar() {
+  const navbar = document.getElementById('navbar');
+  if (!navbar) return;
+
+  const onScroll = () => {
+    navbar.classList.toggle('is-scrolled', window.scrollY > 50);
+  };
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+}
+
+/* ----------------------------------------------------------
+   Scroll animations (IntersectionObserver, Apple-style)
+   Supports data-aos-delay (ms)
+   ---------------------------------------------------------- */
+function initScrollAnimations() {
+  const targets = document.querySelectorAll('[data-aos]');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const delay = parseInt(entry.target.dataset.aosDelay ?? 0, 10);
+      const reveal = () => entry.target.classList.add('aos-visible');
+      delay ? setTimeout(reveal, delay) : reveal();
+      observer.unobserve(entry.target);
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -50px 0px' });
+
+  targets.forEach(t => observer.observe(t));
+}
+
+/* Observe staggered cards (releases / artists) */
+function observeCards(selector) {
+  const cards = document.querySelectorAll(selector);
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add('aos-visible');
+      observer.unobserve(entry.target);
+    });
+  }, { threshold: 0.08 });
+
+  cards.forEach(c => observer.observe(c));
+}
+
+/* ----------------------------------------------------------
+   Mobile menu
+   ---------------------------------------------------------- */
+function initMobileMenu() {
+  const toggle = document.getElementById('navToggle');
+  const menu   = document.getElementById('navLinks');
+  if (!toggle || !menu) return;
+
+  toggle.addEventListener('click', () => {
+    const isOpen = menu.classList.toggle('is-open');
+    toggle.classList.toggle('is-open', isOpen);
+    toggle.setAttribute('aria-expanded', isOpen);
+    document.body.style.overflow = isOpen ? 'hidden' : '';
+  });
+
+  menu.querySelectorAll('a').forEach(a => {
+    a.addEventListener('click', closeMenu);
+  });
+
+  function closeMenu() {
+    menu.classList.remove('is-open');
+    toggle.classList.remove('is-open');
+    toggle.setAttribute('aria-expanded', 'false');
+    document.body.style.overflow = '';
+  }
+}
+
+/* ----------------------------------------------------------
+   Hero parallax — content drifts up and fades on scroll
+   (subtle, Apple-style)
+   ---------------------------------------------------------- */
+function initHeroParallax() {
+  const content = document.querySelector('.hero-content');
+  if (!content) return;
+
+  const vh = window.innerHeight;
+
+  const onScroll = () => {
+    const y = window.scrollY;
+    if (y > vh) return;
+    const progress = y / vh;
+    // Drift up 70px over one full viewport height
+    content.style.transform = `translateY(${progress * 70}px)`;
+    // Fade out as user scrolls
+    content.style.opacity   = String(Math.max(0, 1 - progress * 1.6));
+  };
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+}
+
+/* ----------------------------------------------------------
+   Contact form (client-side only — connects to nothing)
+   For real email delivery: swap with Formspree, Netlify Forms, etc.
+   ---------------------------------------------------------- */
+function initContactForm() {
+  const form = document.getElementById('contactForm');
+  if (!form) return;
+
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const btn = form.querySelector('.btn-send');
+    btn.textContent = 'Inviato ✓';
+    btn.classList.add('sent');
+    btn.disabled = true;
+
+    setTimeout(() => {
+      btn.textContent = 'Invia Messaggio';
+      btn.classList.remove('sent');
+      btn.disabled = false;
+      form.reset();
+    }, 4000);
+  });
+}
+
+/* ----------------------------------------------------------
+   Utils
+   ---------------------------------------------------------- */
+function esc(str) {
+  if (!str) return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}

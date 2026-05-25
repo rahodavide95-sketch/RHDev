@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Subconscious Culture — Independent Record Label">
+  <title>Subconscious Culture</title>
+
+  <!-- Fonts: Syne (display) + DM Sans (body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ========== NAVBAR ========== -->
+  <nav class="navbar" id="navbar">
+    <div class="navbar-inner">
+      <a href="#home" class="navbar-brand">
+        <img src="images/logo.png" alt="Subconscious Culture" class="nav-logo">
+        <span class="nav-name" id="nav-name">Subconscious Culture</span>
+      </a>
+
+      <button class="nav-toggle" id="navToggle" aria-label="Apri menu">
+        <span></span><span></span><span></span>
+      </button>
+
+      <ul class="nav-links" id="navLinks">
+        <li><a href="#about"    class="nav-link">About</a></li>
+        <li><a href="#releases" class="nav-link">Releases</a></li>
+        <li><a href="#artists"  class="nav-link">Artists</a></li>
+        <li><a href="#contact"  class="nav-link">Contact</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- ========== HERO ========== -->
+  <section class="hero" id="home">
+    <div class="hero-content">
+      <div class="hero-logo-wrap">
+        <img src="images/logo.png" alt="Subconscious Culture" class="hero-logo">
+      </div>
+      <h1 class="hero-title" id="hero-title">Subconscious Culture</h1>
+      <p  class="hero-tagline" id="hero-tagline">Independent Record Label</p>
+    </div>
+    <div class="hero-scroll">
+      <span class="hero-scroll-line"></span>
+    </div>
+  </section>
+
+  <!-- ========== ABOUT ========== -->
+  <section class="section" id="about">
+    <div class="container">
+      <div class="section-head" data-aos="fade-up">
+        <span class="section-eyebrow">About</span>
+        <h2 class="section-title">Chi Siamo</h2>
+      </div>
+      <p class="about-body" id="about-body" data-aos="fade-up" data-aos-delay="120"></p>
+    </div>
+  </section>
+
+  <!-- ========== RELEASES ========== -->
+  <section class="section section--alt" id="releases">
+    <div class="container">
+      <div class="section-head" data-aos="fade-up">
+        <span class="section-eyebrow">Releases</span>
+        <h2 class="section-title">Discografia</h2>
+      </div>
+      <div class="releases-grid" id="releases-grid">
+        <!-- Populated by script.js -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== ARTISTS ========== -->
+  <section class="section" id="artists">
+    <div class="container">
+      <div class="section-head" data-aos="fade-up">
+        <span class="section-eyebrow">Artists</span>
+        <h2 class="section-title">Artisti</h2>
+      </div>
+      <div class="artists-grid" id="artists-grid">
+        <!-- Populated by script.js -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== CONTACT ========== -->
+  <section class="section section--alt" id="contact">
+    <div class="container">
+      <div class="section-head" data-aos="fade-up">
+        <span class="section-eyebrow">Contact</span>
+        <h2 class="section-title">Contatti</h2>
+      </div>
+      <div class="contact-grid">
+        <div class="contact-info" id="contact-info" data-aos="fade-up" data-aos-delay="80">
+          <!-- Populated by script.js -->
+        </div>
+        <div class="contact-form-wrap" data-aos="fade-up" data-aos-delay="180">
+          <form class="contact-form" id="contactForm" novalidate>
+            <div class="field">
+              <label for="f-name">Nome</label>
+              <input type="text" id="f-name" name="name" placeholder="Il tuo nome" required>
+            </div>
+            <div class="field">
+              <label for="f-email">Email</label>
+              <input type="email" id="f-email" name="email" placeholder="La tua email" required>
+            </div>
+            <div class="field">
+              <label for="f-subject">Oggetto</label>
+              <input type="text" id="f-subject" name="subject" placeholder="Motivo del contatto">
+            </div>
+            <div class="field">
+              <label for="f-message">Messaggio</label>
+              <textarea id="f-message" name="message" rows="5" placeholder="Scrivi qui il tuo messaggio…" required></textarea>
+            </div>
+            <button type="submit" class="btn-send">Invia Messaggio</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <img src="images/logo.png" alt="Subconscious Culture" class="footer-logo">
+      <p class="footer-copy" id="footer-copy"></p>
+      <div class="footer-social" id="footer-social"></div>
+    </div>
+  </footer>
+
+  <script src="content.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

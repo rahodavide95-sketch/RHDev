@@ -365,7 +365,7 @@ img.broken-hide                   { visibility: hidden; }
    ============================================================ */
 .releases-grid {
   display:               grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap:                   3rem 2rem;
 }
 
@@ -688,11 +688,6 @@ img.broken-hide                   { visibility: hidden; }
 /* ============================================================
    RESPONSIVE
    ============================================================ */
-@media (max-width: 1100px) {
-  .releases-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
 
 @media (max-width: 960px) {
   .contact-grid {
@@ -739,8 +734,8 @@ img.broken-hide                   { visibility: hidden; }
 
 @media (max-width: 640px) {
   .releases-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 2rem 1.25rem;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem 1rem;
   }
 
   /* Artists: 3 columns on mobile */

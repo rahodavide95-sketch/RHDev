@@ -23,6 +23,11 @@ function revealPage() {
   setTimeout(() => document.body.classList.add('ready'), 1000);
 }
 
+/* Hide all <img> that fail to load (e.g. missing logo) */
+document.querySelectorAll('img').forEach(img => {
+  img.addEventListener('error', () => { img.style.visibility = 'hidden'; });
+});
+
 /* ----------------------------------------------------------
    Build all dynamic content from content.js
    ---------------------------------------------------------- */
@@ -35,9 +40,6 @@ function buildContent() {
   setText('hero-tagline', label.tagline);
   setText('nav-name',     label.name);
   document.title = label.name;
-
-  // About
-  setText('about-body', label.description);
 
   // Footer
   const year = new Date().getFullYear();
@@ -86,7 +88,7 @@ function buildReleases(releases) {
       : `<div class="cover-placeholder"></div>`;
 
     const overlayHtml = r.link
-      ? `<div class="cover-overlay"><a href="${r.link}" target="_blank" rel="noopener">Ascolta</a></div>`
+      ? `<div class="cover-overlay"><a href="${r.link}" target="_blank" rel="noopener">Listen</a></div>`
       : '';
 
     const metaParts = [r.year, r.catalog, r.format].filter(Boolean);
@@ -279,12 +281,12 @@ function initContactForm() {
   form.addEventListener('submit', e => {
     e.preventDefault();
     const btn = form.querySelector('.btn-send');
-    btn.textContent = 'Inviato ✓';
+    btn.textContent = 'Sent ✓';
     btn.classList.add('sent');
     btn.disabled = true;
 
     setTimeout(() => {
-      btn.textContent = 'Invia Messaggio';
+      btn.textContent = 'Send Message';
       btn.classList.remove('sent');
       btn.disabled = false;
       form.reset();

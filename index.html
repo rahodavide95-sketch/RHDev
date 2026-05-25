@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -23,12 +23,11 @@
         <span class="nav-name" id="nav-name">Subconscious Culture</span>
       </a>
 
-      <button class="nav-toggle" id="navToggle" aria-label="Apri menu">
+      <button class="nav-toggle" id="navToggle" aria-label="Open menu">
         <span></span><span></span><span></span>
       </button>
 
       <ul class="nav-links" id="navLinks">
-        <li><a href="#about"    class="nav-link">About</a></li>
         <li><a href="#releases" class="nav-link">Releases</a></li>
         <li><a href="#artists"  class="nav-link">Artists</a></li>
         <li><a href="#contact"  class="nav-link">Contact</a></li>
@@ -50,23 +49,12 @@
     </div>
   </section>
 
-  <!-- ========== ABOUT ========== -->
-  <section class="section" id="about">
-    <div class="container">
-      <div class="section-head" data-aos="fade-up">
-        <span class="section-eyebrow">About</span>
-        <h2 class="section-title">Chi Siamo</h2>
-      </div>
-      <p class="about-body" id="about-body" data-aos="fade-up" data-aos-delay="120"></p>
-    </div>
-  </section>
-
   <!-- ========== RELEASES ========== -->
   <section class="section section--alt" id="releases">
     <div class="container">
       <div class="section-head" data-aos="fade-up">
         <span class="section-eyebrow">Releases</span>
-        <h2 class="section-title">Discografia</h2>
+        <h2 class="section-title">Discography</h2>
       </div>
       <div class="releases-grid" id="releases-grid">
         <!-- Populated by script.js -->
@@ -79,7 +67,7 @@
     <div class="container">
       <div class="section-head" data-aos="fade-up">
         <span class="section-eyebrow">Artists</span>
-        <h2 class="section-title">Artisti</h2>
+        <h2 class="section-title">Artists</h2>
       </div>
       <div class="artists-grid" id="artists-grid">
         <!-- Populated by script.js -->
@@ -92,7 +80,7 @@
     <div class="container">
       <div class="section-head" data-aos="fade-up">
         <span class="section-eyebrow">Contact</span>
-        <h2 class="section-title">Contatti</h2>
+        <h2 class="section-title">Contact</h2>
       </div>
       <div class="contact-grid">
         <div class="contact-info" id="contact-info" data-aos="fade-up" data-aos-delay="80">
@@ -101,22 +89,22 @@
         <div class="contact-form-wrap" data-aos="fade-up" data-aos-delay="180">
           <form class="contact-form" id="contactForm" novalidate>
             <div class="field">
-              <label for="f-name">Nome</label>
-              <input type="text" id="f-name" name="name" placeholder="Il tuo nome" required>
+              <label for="f-name">Name</label>
+              <input type="text" id="f-name" name="name" placeholder="Your name" required>
             </div>
             <div class="field">
               <label for="f-email">Email</label>
-              <input type="email" id="f-email" name="email" placeholder="La tua email" required>
+              <input type="email" id="f-email" name="email" placeholder="Your email" required>
             </div>
             <div class="field">
-              <label for="f-subject">Oggetto</label>
-              <input type="text" id="f-subject" name="subject" placeholder="Motivo del contatto">
+              <label for="f-subject">Subject</label>
+              <input type="text" id="f-subject" name="subject" placeholder="Reason for contact">
             </div>
             <div class="field">
-              <label for="f-message">Messaggio</label>
-              <textarea id="f-message" name="message" rows="5" placeholder="Scrivi qui il tuo messaggio…" required></textarea>
+              <label for="f-message">Message</label>
+              <textarea id="f-message" name="message" rows="5" placeholder="Write your message here…" required></textarea>
             </div>
-            <button type="submit" class="btn-send">Invia Messaggio</button>
+            <button type="submit" class="btn-send">Send Message</button>
           </form>
         </div>
       </div>

@@ -28,9 +28,6 @@ const SITE = {
   // ---- RELEASES -----------------------------------------------
   // Release singola/EP/album → catalog: "SSSCLTR001", "SSSCLTR002", ecc.
   // Various Artists (VA)    → catalog: "SSSCLTRS01",  "SSSCLTRS02",  ecc.
-  //
-  // Per aggiungere una release: copia un blocco {…}, incollalo dopo
-  // l'ultimo (prima del ]), separalo con una virgola.
   releases: [
     {
       artist:  "Raho",
@@ -60,24 +57,6 @@ const SITE = {
       link:    "#",
     },
     {
-      artist:  "Nome Artista",
-      title:   "Titolo Release",
-      year:    "2026",
-      catalog: "SSSCLTR004",
-      format:  "Digital",
-      cover:   "images/releases/sc004.jpg",
-      link:    "#",
-    },
-    {
-      artist:  "Nome Artista",
-      title:   "Titolo Release",
-      year:    "2026",
-      catalog: "SSSCLTR005",
-      format:  "Digital",
-      cover:   "images/releases/sc005.jpg",
-      link:    "#",
-    },
-    {
       artist:  "Various Artists",
       title:   "Titolo Compilation",
       year:    "2026",
@@ -86,32 +65,98 @@ const SITE = {
       cover:   "images/releases/va01.jpg",
       link:    "#",
     },
+    {
+      artist:  "Nome Artista",
+      title:   "Titolo Release",
+      year:    "2026",
+      catalog: "SSSCLTR004",
+      format:  "Digital",
+      cover:   "images/releases/sc004.jpg",
+      link:    "#",
+    },
   ],
 
   // ---- ARTISTI ------------------------------------------------
-  // Stesso sistema delle release: aggiungi blocchi per nuovi artisti.
+  // Per aggiungere un artista: copia un blocco {…}, incollalo dopo
+  // l'ultimo (prima del ]), separalo con una virgola.
   artists: [
     {
-      name:   "Artista Uno",
-      origin: "Milano, IT",
-      bio:    "Producer e DJ con radici nell'industrial e nella techno minimale. Esplora paesaggi sonori oscuri e ritualistici.",
-      photo:  "images/artists/artist01.jpg",  // percorso foto artista
+      name:       "Nome Artista",
+      origin:     "Città, Paese",
+      bio:        "Breve descrizione dell'artista.",
+      photo:      "images/artists/artist01.jpg",
       instagram:  "#",
       soundcloud: "#",
     },
     {
-      name:   "Artista Due",
-      origin: "Berlino, DE",
-      bio:    "Compositore e sperimentatore di trame ambient, noise e musica concreta. Live set ipnotici e immersivi.",
-      photo:  "",
+      name:       "Nome Artista",
+      origin:     "Città, Paese",
+      bio:        "Breve descrizione dell'artista.",
+      photo:      "images/artists/artist02.jpg",
       instagram:  "#",
-      soundcloud: "",
+      soundcloud: "#",
     },
     {
-      name:   "Artista Tre",
-      origin: "Roma, IT",
-      bio:    "Artista poliedrica che fonde musica elettronica, field recording e poesia sonora.",
-      photo:  "",
+      name:       "Nome Artista",
+      origin:     "Città, Paese",
+      bio:        "Breve descrizione dell'artista.",
+      photo:      "images/artists/artist03.jpg",
+      instagram:  "#",
+      soundcloud: "#",
+    },
+    {
+      name:       "Nome Artista",
+      origin:     "Città, Paese",
+      bio:        "Breve descrizione dell'artista.",
+      photo:      "images/artists/artist04.jpg",
+      instagram:  "#",
+      soundcloud: "#",
+    },
+    {
+      name:       "Nome Artista",
+      origin:     "Città, Paese",
+      bio:        "Breve descrizione dell'artista.",
+      photo:      "images/artists/artist05.jpg",
+      instagram:  "#",
+      soundcloud: "#",
+    },
+    {
+      name:       "Nome Artista",
+      origin:     "Città, Paese",
+      bio:        "Breve descrizione dell'artista.",
+      photo:      "images/artists/artist06.jpg",
+      instagram:  "#",
+      soundcloud: "#",
+    },
+    {
+      name:       "Nome Artista",
+      origin:     "Città, Paese",
+      bio:        "Breve descrizione dell'artista.",
+      photo:      "images/artists/artist07.jpg",
+      instagram:  "#",
+      soundcloud: "#",
+    },
+    {
+      name:       "Nome Artista",
+      origin:     "Città, Paese",
+      bio:        "Breve descrizione dell'artista.",
+      photo:      "images/artists/artist08.jpg",
+      instagram:  "#",
+      soundcloud: "#",
+    },
+    {
+      name:       "Nome Artista",
+      origin:     "Città, Paese",
+      bio:        "Breve descrizione dell'artista.",
+      photo:      "images/artists/artist09.jpg",
+      instagram:  "#",
+      soundcloud: "#",
+    },
+    {
+      name:       "Nome Artista",
+      origin:     "Città, Paese",
+      bio:        "Breve descrizione dell'artista.",
+      photo:      "images/artists/artist10.jpg",
       instagram:  "#",
       soundcloud: "#",
     },

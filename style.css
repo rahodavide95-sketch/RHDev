@@ -468,8 +468,8 @@ img.broken-hide                   { visibility: hidden; }
    ============================================================ */
 .artists-grid {
   display:               grid;
-  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
-  gap:                   2.5rem;
+  grid-template-columns: repeat(3, 1fr);
+  gap:                   2.5rem 2rem;
 }
 
 .artist-card {

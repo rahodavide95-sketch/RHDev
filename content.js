@@ -162,6 +162,76 @@ const SITE = {
     },
   ],
 
+  // ---- PODCAST ------------------------------------------------
+  // episode: titolo, data, durata (opzionale), link
+  podcast: [
+    {
+      title:    "Titolo Episodio",
+      date:     "Jan 2026",
+      duration: "60 min",
+      link:     "#",
+    },
+    {
+      title:    "Titolo Episodio",
+      date:     "Feb 2026",
+      duration: "45 min",
+      link:     "#",
+    },
+    {
+      title:    "Titolo Episodio",
+      date:     "Mar 2026",
+      duration: "90 min",
+      link:     "#",
+    },
+  ],
+
+  // ---- EVENTS -------------------------------------------------
+  // date: la data per esteso, name: nome evento, venue: luogo, city: città
+  // ticketLink: "" = sold out, "#" = available
+  events: [
+    {
+      date:       "15 Jun 2026",
+      name:       "Nome Evento",
+      venue:      "Venue, Città",
+      ticketLink: "#",
+    },
+    {
+      date:       "22 Jul 2026",
+      name:       "Nome Evento",
+      venue:      "Venue, Città",
+      ticketLink: "#",
+    },
+    {
+      date:       "10 Aug 2026",
+      name:       "Nome Evento",
+      venue:      "Venue, Città",
+      ticketLink: "",   // lascia "" per "Sold Out"
+    },
+  ],
+
+  // ---- MERCH --------------------------------------------------
+  // name, price (es. "€30"), image, buyLink
+  merch: [
+    {
+      name:    "Nome Prodotto",
+      price:   "€ 00",
+      image:   "images/merch/merch01.jpg",
+      buyLink: "#",
+    },
+    {
+      name:    "Nome Prodotto",
+      price:   "€ 00",
+      image:   "images/merch/merch02.jpg",
+      buyLink: "#",
+    },
+    {
+      name:    "Nome Prodotto",
+      price:   "€ 00",
+      image:   "images/merch/merch03.jpg",
+      buyLink: "#",
+    },
+  ],
+
   // ---- CONTATTI -----------------------------------------------
   contact: {
     email:          "subconscious.infoart@gmail.com",

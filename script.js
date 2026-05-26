@@ -71,6 +71,15 @@ function buildContent() {
   // Artists
   buildArtists(artists);
 
+  // Podcast
+  buildPodcast(SITE.podcast);
+
+  // Events
+  buildEvents(SITE.events);
+
+  // Merch
+  buildMerch(SITE.merch);
+
   // Contact info
   buildContactInfo(contact);
 }
@@ -146,6 +155,74 @@ function buildArtists(artists) {
   }).join('');
 
   observeCards('.artist-card');
+}
+
+/* ----------------------------------------------------------
+   Podcast list
+   ---------------------------------------------------------- */
+function buildPodcast(episodes) {
+  const list = document.getElementById('podcast-list');
+  if (!list || !episodes?.length) return;
+
+  list.innerHTML = episodes.map((ep, i) => `
+    <div class="podcast-item" style="transition-delay:${i * 0.06}s">
+      <div>
+        <div class="podcast-title">${esc(ep.title)}</div>
+        <div class="podcast-meta">${esc(ep.date)}${ep.duration ? ' · ' + esc(ep.duration) : ''}</div>
+      </div>
+      ${ep.link ? `<a href="${ep.link}" target="_blank" rel="noopener" class="podcast-link">Listen</a>` : ''}
+    </div>`).join('');
+
+  observeCards('.podcast-item');
+}
+
+/* ----------------------------------------------------------
+   Events list
+   ---------------------------------------------------------- */
+function buildEvents(events) {
+  const list = document.getElementById('events-list');
+  if (!list || !events?.length) return;
+
+  list.innerHTML = events.map((ev, i) => {
+    const soldOut  = !ev.ticketLink;
+    return `
+    <div class="event-item" style="transition-delay:${i * 0.06}s">
+      <div class="event-date">${esc(ev.date)}</div>
+      <div class="event-info">
+        <div class="event-name">${esc(ev.name)}</div>
+        <div class="event-venue">${esc(ev.venue)}</div>
+      </div>
+      <a href="${soldOut ? '#' : ev.ticketLink}"
+         class="event-link${soldOut ? ' sold-out' : ''}"
+         ${!soldOut ? 'target="_blank" rel="noopener"' : ''}>
+        ${soldOut ? 'Sold Out' : 'Tickets'}
+      </a>
+    </div>`;
+  }).join('');
+
+  observeCards('.event-item');
+}
+
+/* ----------------------------------------------------------
+   Merch grid
+   ---------------------------------------------------------- */
+function buildMerch(items) {
+  const grid = document.getElementById('merch-grid');
+  if (!grid || !items?.length) return;
+
+  grid.innerHTML = items.map((m, i) => `
+    <article class="merch-card" style="transition-delay:${i * 0.07}s">
+      <div class="merch-img">
+        ${m.image
+          ? `<img src="${m.image}" alt="${esc(m.name)}" loading="lazy">`
+          : `<div class="merch-img-placeholder"></div>`}
+      </div>
+      <div class="merch-name">${esc(m.name)}</div>
+      <div class="merch-price">${esc(m.price)}</div>
+      ${m.buyLink ? `<a href="${m.buyLink}" target="_blank" rel="noopener" class="merch-buy">Buy</a>` : ''}
+    </article>`).join('');
+
+  observeCards('.merch-card');
 }
 
 /* ----------------------------------------------------------

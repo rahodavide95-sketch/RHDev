@@ -6,7 +6,6 @@
   <meta name="description" content="Subconscious Culture — Independent Record Label">
   <title>Subconscious Culture</title>
 
-  <!-- Fonts: Syne (display) + DM Sans (body) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
@@ -30,6 +29,9 @@
       <ul class="nav-links" id="navLinks">
         <li><a href="#releases" class="nav-link">Releases</a></li>
         <li><a href="#artists"  class="nav-link">Artists</a></li>
+        <li><a href="#podcast"  class="nav-link">Podcast</a></li>
+        <li><a href="#events"   class="nav-link">Events</a></li>
+        <li><a href="#merch"    class="nav-link">Merch</a></li>
         <li><a href="#contact"  class="nav-link">Contact</a></li>
       </ul>
     </div>
@@ -55,9 +57,7 @@
       <div class="section-head" data-aos="fade-up">
         <h2 class="section-title">Discography</h2>
       </div>
-      <div class="releases-grid" id="releases-grid">
-        <!-- Populated by script.js -->
-      </div>
+      <div class="releases-grid" id="releases-grid"></div>
     </div>
   </section>
 
@@ -67,22 +67,48 @@
       <div class="section-head" data-aos="fade-up">
         <h2 class="section-title">Artists</h2>
       </div>
-      <div class="artists-grid" id="artists-grid">
-        <!-- Populated by script.js -->
+      <div class="artists-grid" id="artists-grid"></div>
+    </div>
+  </section>
+
+  <!-- ========== PODCAST ========== -->
+  <section class="section section--alt" id="podcast">
+    <div class="container">
+      <div class="section-head" data-aos="fade-up">
+        <h2 class="section-title">Podcast</h2>
       </div>
+      <div class="podcast-list" id="podcast-list"></div>
+    </div>
+  </section>
+
+  <!-- ========== EVENTS ========== -->
+  <section class="section" id="events">
+    <div class="container">
+      <div class="section-head" data-aos="fade-up">
+        <h2 class="section-title">Events</h2>
+      </div>
+      <div class="events-list" id="events-list"></div>
+    </div>
+  </section>
+
+  <!-- ========== MERCH ========== -->
+  <section class="section section--alt" id="merch">
+    <div class="container">
+      <div class="section-head" data-aos="fade-up">
+        <h2 class="section-title">Merch</h2>
+      </div>
+      <div class="merch-grid" id="merch-grid"></div>
     </div>
   </section>
 
   <!-- ========== CONTACT ========== -->
-  <section class="section section--alt" id="contact">
+  <section class="section" id="contact">
     <div class="container">
       <div class="section-head" data-aos="fade-up">
         <h2 class="section-title">Contact</h2>
       </div>
       <div class="contact-grid">
-        <div class="contact-info" id="contact-info" data-aos="fade-up" data-aos-delay="80">
-          <!-- Populated by script.js -->
-        </div>
+        <div class="contact-info" id="contact-info" data-aos="fade-up" data-aos-delay="80"></div>
         <div class="contact-form-wrap" data-aos="fade-up" data-aos-delay="180">
           <form class="contact-form" id="contactForm" novalidate>
             <div class="field">

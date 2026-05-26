@@ -23,7 +23,7 @@ textarea { resize: none; }
   --f-body:      'DM Sans', sans-serif;
 
   --pad-section: clamp(6rem, 12vw, 11rem);
-  --pad-x:       clamp(1.5rem, 8vw, 10rem);
+  --pad-x:       clamp(2rem, 11vw, 16rem);
   --max-w:       1200px;
 
   --ease:        cubic-bezier(0.25, 0.46, 0.45, 0.94);
@@ -541,6 +541,164 @@ img.broken-hide                   { visibility: hidden; }
 
 
 /* ============================================================
+   PODCAST
+   ============================================================ */
+.podcast-list {
+  display:        flex;
+  flex-direction: column;
+  gap:            0;
+}
+.podcast-item {
+  display:         grid;
+  grid-template-columns: 1fr auto;
+  align-items:     center;
+  gap:             1.5rem;
+  padding:         1.6rem 0;
+  border-bottom:   1px solid var(--border);
+  opacity:         0;
+  transform:       translateY(20px);
+  transition:      opacity 0.7s var(--ease-out), transform 0.7s var(--ease-out);
+}
+.podcast-item:first-child  { border-top: 1px solid var(--border); }
+.podcast-item.aos-visible  { opacity: 1; transform: none; }
+.podcast-item:hover .podcast-title { color: var(--fg-2); }
+
+.podcast-title {
+  font-family:    var(--f-display);
+  font-size:      clamp(1rem, 1.8vw, 1.3rem);
+  font-weight:    600;
+  color:          var(--fg);
+  transition:     color 0.3s;
+  margin-bottom:  0.25rem;
+}
+.podcast-meta {
+  font-size:      0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color:          var(--fg-3);
+}
+.podcast-link {
+  font-size:      0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color:          var(--fg-3);
+  border:         1px solid var(--border);
+  padding:        0.45rem 1rem;
+  white-space:    nowrap;
+  transition:     color 0.3s, border-color 0.3s;
+}
+.podcast-link:hover { color: var(--fg); border-color: rgba(255,255,255,0.25); }
+
+/* ============================================================
+   EVENTS
+   ============================================================ */
+.events-list {
+  display:        flex;
+  flex-direction: column;
+  gap:            0;
+}
+.event-item {
+  display:      grid;
+  grid-template-columns: 7rem 1fr auto;
+  align-items:  center;
+  gap:          2rem;
+  padding:      1.6rem 0;
+  border-bottom: 1px solid var(--border);
+  opacity:      0;
+  transform:    translateY(20px);
+  transition:   opacity 0.7s var(--ease-out), transform 0.7s var(--ease-out);
+}
+.event-item:first-child { border-top: 1px solid var(--border); }
+.event-item.aos-visible { opacity: 1; transform: none; }
+
+.event-date {
+  font-family:    var(--f-display);
+  font-size:      0.72rem;
+  font-weight:    600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color:          var(--fg-3);
+}
+.event-info { display: flex; flex-direction: column; gap: 0.2rem; }
+.event-name {
+  font-family:    var(--f-display);
+  font-size:      clamp(1rem, 1.8vw, 1.25rem);
+  font-weight:    600;
+  color:          var(--fg);
+}
+.event-venue {
+  font-size:      0.82rem;
+  color:          var(--fg-3);
+}
+.event-link {
+  font-size:      0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color:          var(--fg-3);
+  border:         1px solid var(--border);
+  padding:        0.45rem 1rem;
+  white-space:    nowrap;
+  transition:     color 0.3s, border-color 0.3s;
+}
+.event-link:hover      { color: var(--fg); border-color: rgba(255,255,255,0.25); }
+.event-link.sold-out   { opacity: 0.35; pointer-events: none; }
+
+/* ============================================================
+   MERCH
+   ============================================================ */
+.merch-grid {
+  display:               grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap:                   3rem 2rem;
+}
+.merch-card {
+  opacity:    0;
+  transform:  translateY(30px);
+  transition: opacity 0.7s var(--ease-out), transform 0.7s var(--ease-out);
+}
+.merch-card.aos-visible { opacity: 1; transform: none; }
+
+.merch-img {
+  aspect-ratio: 1 / 1;
+  background:   var(--bg);
+  overflow:     hidden;
+  margin-bottom: 1.1rem;
+}
+.merch-img img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s var(--ease);
+}
+.merch-card:hover .merch-img img { transform: scale(1.04); }
+.merch-img-placeholder {
+  width: 100%; height: 100%;
+  background: linear-gradient(135deg, #161616, #0a0a0a);
+}
+.merch-name {
+  font-family:    var(--f-display);
+  font-size:      1.05rem;
+  font-weight:    600;
+  color:          var(--fg);
+  margin-bottom:  0.25rem;
+}
+.merch-price {
+  font-size:   0.85rem;
+  color:       var(--fg-3);
+  margin-bottom: 0.75rem;
+}
+.merch-buy {
+  display:        inline-block;
+  font-size:      0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color:          var(--fg-3);
+  border:         1px solid var(--border);
+  padding:        0.45rem 1rem;
+  transition:     color 0.3s, border-color 0.3s;
+}
+.merch-buy:hover { color: var(--fg); border-color: rgba(255,255,255,0.25); }
+
+/* ============================================================
    CONTACT
    ============================================================ */
 .contact-grid {
@@ -748,6 +906,17 @@ img.broken-hide                   { visibility: hidden; }
   .artist-links { display: none; }
   .artist-name   { font-size: 0.72rem; letter-spacing: 0; }
   .artist-origin { font-size: 0.6rem; }
+
+  .merch-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem 1rem;
+  }
+
+  .event-item {
+    grid-template-columns: 5rem 1fr;
+    gap: 1rem;
+  }
+  .event-link { display: none; }
 
   .footer-inner {
     flex-direction: column;

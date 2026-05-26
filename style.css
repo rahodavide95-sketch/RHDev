@@ -23,7 +23,7 @@ textarea { resize: none; }
   --f-body:      'DM Sans', sans-serif;
 
   --pad-section: clamp(6rem, 12vw, 11rem);
-  --pad-x:       clamp(2rem, 15vw, 22rem);
+  --pad-x:       clamp(1.5rem, 4vw, 4rem);
   --max-w:       1200px;
 
   --ease:        cubic-bezier(0.25, 0.46, 0.45, 0.94);

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Subconscious Culture — Independent Record Label">
+  <title>Subconscious Culture</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ========== NAVBAR ========== -->
+  <nav class="navbar" id="navbar">
+    <div class="navbar-inner">
+      <a href="#home" class="navbar-brand">
+        <img src="images/logo.png" alt="Subconscious Culture" class="nav-logo" onerror="this.style.display='none'">
+        <span class="nav-name" id="nav-name">Subconscious Culture</span>
+      </a>
+
+      <button class="nav-toggle" id="navToggle" aria-label="Open menu">
+        <span></span><span></span><span></span>
+      </button>
+
+      <ul class="nav-links" id="navLinks">
+        <li><a href="#releases" class="nav-link">Releases</a></li>
+        <li><a href="#artists"  class="nav-link">Artists</a></li>
+        <li><a href="#podcast"  class="nav-link">Podcast</a></li>
+        <li><a href="#events"   class="nav-link">Events</a></li>
+        <li><a href="#merch"    class="nav-link">Merch</a></li>
+        <li><a href="#contact"  class="nav-link">Contact</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- ========== HERO ========== -->
+  <section class="hero" id="home">
+    <div class="hero-content">
+      <div class="hero-logo-wrap">
+        <img src="images/logo.png" alt="Subconscious Culture" class="hero-logo" onerror="this.style.display='none'">
+      </div>
+      <h1 class="hero-title" id="hero-title">Subconscious Culture</h1>
+      <p  class="hero-tagline" id="hero-tagline">Independent Record Label</p>
+    </div>
+    <div class="hero-scroll">
+      <span class="hero-scroll-line"></span>
+    </div>
+  </section>
+
+  <!-- ========== RELEASES ========== -->
+  <section class="section section--alt" id="releases">
+    <div class="container">
+      <div class="section-head" data-aos="fade-up">
+        <h2 class="section-title">Discography</h2>
+      </div>
+      <div class="releases-grid" id="releases-grid"></div>
+    </div>
+  </section>
+
+  <!-- ========== ARTISTS ========== -->
+  <section class="section" id="artists">
+    <div class="container">
+      <div class="section-head" data-aos="fade-up">
+        <h2 class="section-title">Artists</h2>
+      </div>
+      <div class="artists-grid" id="artists-grid"></div>
+    </div>
+  </section>
+
+  <!-- ========== PODCAST ========== -->
+  <section class="section section--alt" id="podcast">
+    <div class="container">
+      <div class="section-head" data-aos="fade-up">
+        <h2 class="section-title">Podcast</h2>
+      </div>
+      <div class="podcast-list" id="podcast-list"></div>
+    </div>
+  </section>
+
+  <!-- ========== EVENTS ========== -->
+  <section class="section" id="events">
+    <div class="container">
+      <div class="section-head" data-aos="fade-up">
+        <h2 class="section-title">Events</h2>
+      </div>
+      <div class="events-list" id="events-list"></div>
+    </div>
+  </section>
+
+  <!-- ========== MERCH ========== -->
+  <section class="section section--alt" id="merch">
+    <div class="container">
+      <div class="section-head" data-aos="fade-up">
+        <h2 class="section-title">Merch</h2>
+      </div>
+      <div class="merch-grid" id="merch-grid"></div>
+    </div>
+  </section>
+
+  <!-- ========== CONTACT ========== -->
+  <section class="section" id="contact">
+    <div class="container">
+      <div class="section-head" data-aos="fade-up">
+        <h2 class="section-title">Contact</h2>
+      </div>
+      <div class="contact-grid">
+        <div class="contact-info" id="contact-info" data-aos="fade-up" data-aos-delay="80"></div>
+        <div class="contact-form-wrap" data-aos="fade-up" data-aos-delay="180">
+          <form class="contact-form" id="contactForm" novalidate>
+            <div class="field">
+              <label for="f-name">Name</label>
+              <input type="text" id="f-name" name="name" placeholder="Your name" required>
+            </div>
+            <div class="field">
+              <label for="f-email">Email</label>
+              <input type="email" id="f-email" name="email" placeholder="Your email" required>
+            </div>
+            <div class="field">
+              <label for="f-subject">Subject</label>
+              <input type="text" id="f-subject" name="subject" placeholder="Reason for contact">
+            </div>
+            <div class="field">
+              <label for="f-message">Message</label>
+              <textarea id="f-message" name="message" rows="5" placeholder="Write your message here…" required></textarea>
+            </div>
+            <button type="submit" class="btn-send">Send Message</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <img src="images/logo.png" alt="Subconscious Culture" class="footer-logo" onerror="this.style.display='none'">
+      <p class="footer-copy" id="footer-copy"></p>
+      <div class="footer-social" id="footer-social"></div>
+    </div>
+  </footer>
+
+  <script src="content.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

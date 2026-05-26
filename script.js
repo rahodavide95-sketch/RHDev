@@ -253,18 +253,35 @@ function buildContactInfo(contact) {
 }
 
 /* ----------------------------------------------------------
-   Navbar: scroll-based opacity & active state
+   Navbar: scroll opacity + active section indicator
    ---------------------------------------------------------- */
 function initNavbar() {
   const navbar = document.getElementById('navbar');
   if (!navbar) return;
 
-  const onScroll = () => {
-    navbar.classList.toggle('is-scrolled', window.scrollY > 50);
-  };
-
+  // Scrolled state
+  const onScroll = () => navbar.classList.toggle('is-scrolled', window.scrollY > 50);
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll();
+
+  // Active section indicator via IntersectionObserver
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks  = document.querySelectorAll('.nav-link');
+
+  const setActive = (id) => {
+    navLinks.forEach(a => {
+      const matches = a.getAttribute('href') === '#' + id;
+      a.classList.toggle('is-active', matches);
+    });
+  };
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) setActive(entry.target.id);
+    });
+  }, { threshold: 0.3 });
+
+  sections.forEach(s => observer.observe(s));
 }
 
 /* ----------------------------------------------------------

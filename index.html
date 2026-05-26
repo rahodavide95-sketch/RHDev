@@ -1,0 +1,2325 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulazioni Finanziarie — Davide Raho</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0e0f11;
+      --surface: #16181c;
+      --surface2: #1e2026;
+      --border: rgba(255,255,255,0.07);
+      --border-hover: rgba(255,255,255,0.15);
+      --accent: #00e5a0;
+      --accent2: #0066ff;
+      --accent3: #ff6b35;
+      --accent4: #9b59b6;
+      --text: #f0f0f0;
+      --muted: #7a7f8a;
+      --danger: #ff4d4d;
+      --success: #00e5a0;
+      --font: 'DM Sans', sans-serif;
+      --mono: 'DM Mono', monospace;
+      --radius: 14px;
+      --radius-sm: 8px;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 15px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* NOISE OVERLAY */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    #app { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* ─── HEADER ─── */
+    header {
+      padding: 24px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      background: rgba(14,15,17,0.8);
+      backdrop-filter: blur(20px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .logo-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.85); }
+    }
+
+    .header-tag {
+      font-size: 12px;
+      color: var(--muted);
+      font-family: var(--mono);
+      letter-spacing: 0.5px;
+    }
+
+    /* ─── MAIN ─── */
+    main { flex: 1; padding: 0 40px 60px; max-width: 980px; margin: 0 auto; width: 100%; }
+
+    /* ─── SECTION MANAGEMENT ─── */
+    .section { display: none; }
+    .section.active { display: block; }
+
+    /* ─── HOME ─── */
+    #home {
+      display: none;
+      padding-top: 80px;
+      text-align: center;
+    }
+    #home.active { display: block; }
+
+    .home-eyebrow {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--accent);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+
+    .home-title {
+      font-size: clamp(32px, 5vw, 52px);
+      font-weight: 300;
+      line-height: 1.15;
+      color: var(--text);
+      margin-bottom: 16px;
+      letter-spacing: -1px;
+    }
+
+    .home-title strong {
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .home-sub {
+      color: var(--muted);
+      font-size: 16px;
+      margin-bottom: 64px;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .nav-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 24px;
+      cursor: pointer;
+      transition: border-color 0.2s, transform 0.2s, background 0.2s;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .nav-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--card-accent, var(--accent));
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.3s;
+    }
+
+    .nav-card:hover {
+      border-color: var(--border-hover);
+      background: var(--surface2);
+      transform: translateY(-3px);
+    }
+
+    .nav-card:hover::before { transform: scaleX(1); }
+
+    .nav-card-icon {
+      font-size: 28px;
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    .nav-card-title {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .nav-card-desc {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .nav-card-arrow {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      font-size: 20px;
+      color: var(--muted);
+      transition: color 0.2s, transform 0.2s;
+    }
+
+    .nav-card:hover .nav-card-arrow {
+      color: var(--card-accent, var(--accent));
+      transform: translate(3px, -3px);
+    }
+
+    /* ─── PAGE HEADER ─── */
+    .page-header {
+      padding: 48px 0 32px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 36px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+    }
+
+    .page-badge {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
+
+    .page-title {
+      font-size: 28px;
+      font-weight: 300;
+      letter-spacing: -0.5px;
+      color: var(--text);
+    }
+
+    .back-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 16px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--muted);
+      font-family: var(--font);
+      font-size: 13px;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+      white-space: nowrap;
+    }
+
+    .back-btn:hover { border-color: var(--border-hover); color: var(--text); }
+
+    /* ─── INPUT CARD ─── */
+    .input-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      margin-bottom: 24px;
+    }
+
+    .input-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0 24px;
+    }
+
+    .input-grid.single { grid-template-columns: 1fr; }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 20px;
+    }
+
+    .field label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 8px;
+      font-family: var(--mono);
+    }
+
+    .field input, .field select {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s;
+      width: 100%;
+      appearance: none;
+    }
+
+    .field input:focus, .field select:focus {
+      border-color: var(--accent);
+    }
+
+    .field input::placeholder { color: var(--muted); }
+    .field select option { background: var(--surface2); color: var(--text); }
+
+    .select-wrapper {
+      position: relative;
+    }
+
+    .select-wrapper::after {
+      content: '▾';
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      pointer-events: none;
+      font-size: 13px;
+    }
+
+    /* ─── BUTTONS ─── */
+    .btn-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 13px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+
+    .btn:hover { opacity: 0.85; }
+    .btn:active { transform: scale(0.98); }
+
+    .btn-primary { background: var(--accent); color: #000; }
+    .btn-danger { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+    .btn-danger:hover { color: var(--danger); border-color: var(--danger); opacity: 1; }
+
+    /* ─── RESULTS ─── */
+    .results-section { display: none; }
+    .results-section.visible { display: block; }
+
+    /* KPI STRIP */
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .kpi {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    .kpi-label {
+      font-size: 11px;
+      font-family: var(--mono);
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 8px;
+    }
+
+    .kpi-value {
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: -0.5px;
+    }
+
+    .kpi-value.accent { color: var(--accent); }
+    .kpi-value.accent2 { color: var(--accent2); }
+    .kpi-value.accent3 { color: var(--accent3); }
+
+    /* DETAIL TABLE */
+    .detail-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+
+    .detail-card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      font-family: var(--mono);
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .detail-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .detail-table td {
+      padding: 13px 20px;
+      font-size: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .detail-table tr:last-child td { border-bottom: none; }
+
+    .detail-table td:first-child { color: var(--muted); }
+    .detail-table td:last-child { text-align: right; font-family: var(--mono); font-size: 14px; color: var(--text); }
+
+    .detail-table tr.highlight td { background: rgba(0, 229, 160, 0.05); }
+    .detail-table tr.highlight td:last-child { color: var(--accent); font-weight: 600; }
+
+    /* CHART CARD */
+    .chart-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .chart-card-title {
+      font-size: 12px;
+      font-family: var(--mono);
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 20px;
+    }
+
+    /* YEAR TABLES */
+    .year-section-title {
+      font-size: 12px;
+      font-family: var(--mono);
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .year-grid { display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; }
+
+    .year-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .year-card-header {
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .year-card-header:hover { background: rgba(255,255,255,0.02); }
+
+    .year-label {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--accent);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .year-meta {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 13px;
+    }
+
+    .year-tag {
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .tag-ok { background: rgba(0,229,160,0.1); color: var(--success); }
+    .tag-warn { background: rgba(255,77,77,0.1); color: var(--danger); }
+
+    .year-toggle { color: var(--muted); font-size: 16px; transition: transform 0.2s; }
+    .year-card.open .year-toggle { transform: rotate(180deg); }
+
+    .year-body { display: none; }
+    .year-card.open .year-body { display: block; }
+
+    .year-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .year-table th {
+      padding: 10px 20px;
+      font-size: 11px;
+      font-family: var(--mono);
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      text-align: left;
+      background: rgba(255,255,255,0.02);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .year-table td {
+      padding: 11px 20px;
+      font-size: 13px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .year-table tr:last-child td { border-bottom: none; }
+    .year-table td:first-child { color: var(--muted); font-family: var(--mono); }
+    .year-table td:not(:first-child) { text-align: right; font-family: var(--mono); }
+
+    .year-footer {
+      padding: 12px 20px;
+      background: rgba(255,255,255,0.02);
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--muted);
+      font-family: var(--mono);
+    }
+
+    /* ─── FOOTER ─── */
+    footer {
+      text-align: center;
+      padding: 24px 40px;
+      border-top: 1px solid var(--border);
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    footer strong { color: var(--accent); font-weight: 500; }
+
+    /* ─── ANIMATIONS ─── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .fade-up { animation: fadeUp 0.35s ease forwards; }
+
+    /* ─── MODAL ─── */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      z-index: 999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-backdrop.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.95);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 40px;
+      max-width: 500px;
+      width: 90%;
+      z-index: 1000;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    .modal.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: transparent;
+      border: none;
+      font-size: 24px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: color 0.2s;
+      padding: 4px;
+    }
+
+    .modal-close:hover {
+      color: var(--text);
+    }
+
+    .modal-title {
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .modal-content {
+      font-size: 15px;
+      line-height: 1.6;
+      color: var(--text);
+      text-align: center;
+    }
+
+    /* ════════════════════════════════════
+       ─── MERCATI ───
+    ════════════════════════════════════ */
+
+    /* Search */
+    .mkt-search-wrap {
+      position: relative;
+      margin-bottom: 20px;
+    }
+
+    .mkt-search-input {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 18px 14px 44px;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .mkt-search-input:focus { border-color: var(--accent4); }
+    .mkt-search-input::placeholder { color: var(--muted); }
+
+    .mkt-search-icon {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      font-size: 16px;
+      pointer-events: none;
+    }
+
+    .mkt-search-dropdown {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0; right: 0;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      z-index: 200;
+      max-height: 320px;
+      overflow-y: auto;
+      display: none;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.4);
+    }
+
+    .mkt-search-dropdown.open { display: block; }
+
+    .mkt-search-item {
+      padding: 13px 18px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      transition: background 0.15s;
+    }
+
+    .mkt-search-item:hover { background: rgba(255,255,255,0.04); }
+    .mkt-search-item:last-child { border-bottom: none; }
+
+    .mkt-search-info { display: flex; flex-direction: column; gap: 2px; }
+    .mkt-search-name { font-size: 14px; color: var(--text); }
+    .mkt-search-exch { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+    .mkt-search-sym { font-family: var(--mono); font-size: 13px; color: var(--accent4); font-weight: 600; white-space: nowrap; }
+
+    /* Category tabs */
+    .mkt-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+      scrollbar-width: none;
+    }
+    .mkt-tabs::-webkit-scrollbar { display: none; }
+
+    .mkt-tab {
+      flex-shrink: 0;
+      padding: 8px 16px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      color: var(--muted);
+      font-family: var(--font);
+      font-size: 13px;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+      white-space: nowrap;
+    }
+
+    .mkt-tab.active {
+      background: rgba(155, 89, 182, 0.15);
+      border-color: var(--accent4);
+      color: var(--accent4);
+    }
+
+    .mkt-tab:hover:not(.active) {
+      border-color: var(--border-hover);
+      color: var(--text);
+    }
+
+    /* Range bar */
+    .mkt-range-bar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .mkt-range-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    .mkt-range-pill {
+      padding: 6px 12px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 12px;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+    }
+
+    .mkt-range-pill.active {
+      background: rgba(0, 229, 160, 0.1);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .mkt-range-pill:hover:not(.active) {
+      border-color: var(--border-hover);
+      color: var(--text);
+    }
+
+    .mkt-custom-range {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+      width: 100%;
+    }
+
+    .mkt-date-input {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 7px 12px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+      color-scheme: dark;
+    }
+
+    .mkt-date-input:focus { border-color: var(--accent); }
+
+    .mkt-apply-btn {
+      padding: 8px 16px;
+      background: var(--accent);
+      border: none;
+      border-radius: var(--radius-sm);
+      color: #000;
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .mkt-apply-btn:hover { opacity: 0.85; }
+
+    .mkt-status {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--muted);
+      font-family: var(--mono);
+      white-space: nowrap;
+    }
+
+    .mkt-refresh-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--muted);
+      font-size: 12px;
+      padding: 5px 10px;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+      font-family: var(--mono);
+    }
+
+    .mkt-refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .mkt-refresh-btn.spinning { animation: spin 1s linear infinite; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Market table */
+    .mkt-table-wrap { overflow-x: auto; }
+
+    .mkt-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 520px;
+    }
+
+    .mkt-table th {
+      padding: 12px 20px;
+      font-size: 11px;
+      font-family: var(--mono);
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      text-align: left;
+      background: rgba(255,255,255,0.02);
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      white-space: nowrap;
+      user-select: none;
+      transition: color 0.15s;
+    }
+
+    .mkt-table th:hover { color: var(--text); }
+    .mkt-table th.sort-asc::after { content: ' ↑'; color: var(--accent); }
+    .mkt-table th.sort-desc::after { content: ' ↓'; color: var(--accent); }
+
+    .mkt-table td {
+      padding: 14px 20px;
+      font-size: 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    .mkt-table tr:last-child td { border-bottom: none; }
+
+    .mkt-table tbody tr {
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .mkt-table tbody tr:hover { background: rgba(255,255,255,0.025); }
+    .mkt-table tbody tr.mkt-selected { background: rgba(155, 89, 182, 0.08); }
+
+    .mkt-name-col { display: flex; flex-direction: column; gap: 2px; }
+    .mkt-name { color: var(--text); font-weight: 500; font-size: 14px; }
+    .mkt-sym-small { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+    .mkt-sym-col { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+    .mkt-price-col { font-family: var(--mono); font-size: 14px; color: var(--text); }
+    .mkt-curr { font-size: 11px; color: var(--muted); margin-left: 4px; }
+
+    .mkt-change-col { font-family: var(--mono); font-size: 14px; font-weight: 600; white-space: nowrap; }
+    .mkt-pos { color: var(--success); }
+    .mkt-neg { color: var(--danger); }
+    .mkt-neu { color: var(--muted); }
+
+    /* Skeleton */
+    .mkt-skel {
+      display: inline-block;
+      background: linear-gradient(90deg, var(--surface2) 25%, rgba(255,255,255,0.05) 50%, var(--surface2) 75%);
+      background-size: 200% 100%;
+      animation: skel-shimmer 1.5s infinite;
+      border-radius: 4px;
+      height: 14px;
+    }
+
+    @keyframes skel-shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* Chart panel */
+    .mkt-chart-panel { animation: fadeUp 0.3s ease forwards; }
+
+    .mkt-chart-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      gap: 16px;
+    }
+
+    .mkt-chart-meta { display: flex; flex-direction: column; gap: 4px; }
+    .mkt-chart-label { font-size: 11px; font-family: var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; }
+    .mkt-chart-price { font-size: 26px; font-weight: 600; color: var(--text); letter-spacing: -0.5px; }
+    .mkt-chart-pct { font-size: 15px; font-weight: 600; }
+
+    .mkt-close-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--muted);
+      font-size: 13px;
+      padding: 7px 14px;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .mkt-close-btn:hover { border-color: var(--border-hover); color: var(--text); }
+
+    /* Error state */
+    .mkt-error-row td {
+      color: var(--muted) !important;
+      font-size: 12px !important;
+      font-family: var(--mono) !important;
+      cursor: default !important;
+    }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 700px) {
+      header { padding: 16px 20px; }
+      main { padding: 0 20px 60px; }
+      .card-grid { grid-template-columns: 1fr; }
+      .input-grid { grid-template-columns: 1fr; }
+      .kpi-strip { grid-template-columns: 1fr 1fr; }
+      .page-header { flex-direction: column; align-items: flex-start; gap: 16px; }
+      .modal { padding: 32px 24px; max-width: 90%; }
+      .mkt-range-bar { flex-direction: column; align-items: flex-start; }
+      .mkt-status { margin-left: 0; }
+      .mkt-table th:nth-child(2),
+      .mkt-table td:nth-child(2) { display: none; }
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <header>
+    <a class="logo" href="#" onclick="navigate('home'); return false;">
+      <span class="logo-dot"></span>
+      Simulazioni Finanziarie
+    </a>
+    <span class="header-tag">v2.1 · 2026</span>
+  </header>
+
+  <main>
+
+    <!-- ══════════ HOME ══════════ -->
+    <div id="home" class="active">
+      <p class="home-eyebrow">Strumento di analisi</p>
+      <h1 class="home-title">Calcola i tuoi<br><strong>interessi</strong></h1>
+      <p class="home-sub">Scegli lo strumento finanziario da simulare</p>
+
+      <div class="card-grid">
+        <div class="nav-card" style="--card-accent: #00e5a0;" onclick="navigate('cc')">
+          <span class="nav-card-icon">🏦</span>
+          <div class="nav-card-title">Conto Corrente</div>
+          <div class="nav-card-desc">Interessi semplici e composti con tassazione e bollo.</div>
+          <span class="nav-card-arrow">↗</span>
+        </div>
+        <div class="nav-card" style="--card-accent: #0066ff;" onclick="navigate('cd')">
+          <span class="nav-card-icon">💰</span>
+          <div class="nav-card-title">Conto Deposito</div>
+          <div class="nav-card-desc">Simulazione con periodicità e imposta di bollo annuale.</div>
+          <span class="nav-card-arrow">↗</span>
+        </div>
+        <div class="nav-card" style="--card-accent: #ff6b35;" onclick="navigate('etf')">
+          <span class="nav-card-icon">📈</span>
+          <div class="nav-card-title">ETF / Investimenti</div>
+          <div class="nav-card-desc">PAC con versamenti periodici e crescita composta.</div>
+          <span class="nav-card-arrow">↗</span>
+        </div>
+        <div class="nav-card" style="--card-accent: #9b59b6;" onclick="navigate('mercati')">
+          <span class="nav-card-icon">🌍</span>
+          <div class="nav-card-title">Mercati Globali</div>
+          <div class="nav-card-desc">Performance % in tempo reale su azioni, ETF, materie prime, valute e crypto.</div>
+          <span class="nav-card-arrow">↗</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ CONTO CORRENTE ══════════ -->
+    <div id="cc" class="section">
+      <div class="page-header">
+        <div>
+          <div class="page-badge">Conto Corrente</div>
+          <h2 class="page-title">Simulazione interessi</h2>
+        </div>
+        <button class="back-btn" onclick="navigate('home')">← Home</button>
+      </div>
+
+      <div class="input-card">
+        <div class="input-grid">
+          <div class="field">
+            <label>Capitale iniziale (€)</label>
+            <input id="cc-cap" type="number" placeholder="Es. 10000" min="0">
+          </div>
+          <div class="field">
+            <label>Tasso annuo (%)</label>
+            <input id="cc-tasso" type="number" placeholder="Es. 2.5" min="0" step="0.01">
+          </div>
+          <div class="field">
+            <label>Durata (anni)</label>
+            <input id="cc-anni" type="number" placeholder="Es. 5" min="1">
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="calcolaCC()">Calcola</button>
+          <button class="btn btn-danger" onclick="resettaCC()">Resetta</button>
+        </div>
+      </div>
+
+      <div id="cc-results" class="results-section">
+        <div id="cc-kpi" class="kpi-strip"></div>
+        <div class="detail-card">
+          <div class="detail-card-header">Riepilogo parametri</div>
+          <table class="detail-table" id="cc-table"></table>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-title">Crescita del capitale nel tempo</div>
+          <canvas id="cc-chart" height="120"></canvas>
+        </div>
+        <div class="year-section-title">Avanzamento mensile netto</div>
+        <div id="cc-year-grid" class="year-grid"></div>
+      </div>
+    </div>
+
+    <!-- ══════════ CONTO DEPOSITO ══════════ -->
+    <div id="cd" class="section">
+      <div class="page-header">
+        <div>
+          <div class="page-badge" style="color: var(--accent2);">Conto Deposito</div>
+          <h2 class="page-title">Simulazione interessi</h2>
+        </div>
+        <button class="back-btn" onclick="navigate('home')">← Home</button>
+      </div>
+
+      <div class="input-card">
+        <div class="input-grid">
+          <div class="field">
+            <label>Capitale iniziale (€)</label>
+            <input id="cd-cap" type="number" placeholder="Es. 10000" min="0">
+          </div>
+          <div class="field">
+            <label>Tasso annuo (%)</label>
+            <input id="cd-tasso" type="number" placeholder="Es. 3" min="0" step="0.01">
+          </div>
+          <div class="field">
+            <label>Durata (anni)</label>
+            <input id="cd-anni" type="number" placeholder="Es. 3" min="1">
+          </div>
+          <div class="field">
+            <label>Periodicità distribuzione</label>
+            <div class="select-wrapper">
+              <select id="cd-freq">
+                <option value="" disabled selected>Seleziona periodicità</option>
+                <option value="12">Mensile</option>
+                <option value="4">Trimestrale</option>
+                <option value="2">Semestrale</option>
+                <option value="1">Annuale</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="calcolaCD()">Calcola</button>
+          <button class="btn btn-danger" onclick="resettaCD()">Resetta</button>
+        </div>
+      </div>
+
+      <div id="cd-results" class="results-section">
+        <div id="cd-kpi" class="kpi-strip"></div>
+        <div class="detail-card">
+          <div class="detail-card-header">Riepilogo parametri</div>
+          <table class="detail-table" id="cd-table"></table>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-title">Crescita del capitale nel tempo</div>
+          <canvas id="cd-chart" height="120"></canvas>
+        </div>
+        <div class="year-section-title">Avanzamento per periodo</div>
+        <div id="cd-year-grid" class="year-grid"></div>
+      </div>
+    </div>
+
+    <!-- ══════════ ETF ══════════ -->
+    <div id="etf" class="section">
+      <div class="page-header">
+        <div>
+          <div class="page-badge" style="color: var(--accent3);">ETF / Investimenti</div>
+          <h2 class="page-title">Simulazione PAC</h2>
+        </div>
+        <button class="back-btn" onclick="navigate('home')">← Home</button>
+      </div>
+
+      <div class="input-card">
+        <div class="input-grid">
+          <div class="field">
+            <label>Capitale iniziale (€)</label>
+            <input id="etf-cap" type="number" placeholder="Es. 5000" min="0">
+          </div>
+          <div class="field">
+            <label>Versamento periodico (€)</label>
+            <input id="etf-pac" type="number" placeholder="Es. 300" min="0">
+          </div>
+          <div class="field">
+            <label>Periodicità versamento</label>
+            <div class="select-wrapper">
+              <select id="etf-freq">
+                <option value="" disabled selected>Seleziona periodicità</option>
+                <option value="52">Settimanale</option>
+                <option value="12">Mensile</option>
+                <option value="4">Trimestrale</option>
+                <option value="2">Semestrale</option>
+                <option value="1">Annuale</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label>Tasso medio annuo (%)</label>
+            <input id="etf-tasso" type="number" placeholder="Es. 7" min="0" step="0.01">
+          </div>
+          <div class="field">
+            <label>Durata (anni)</label>
+            <input id="etf-anni" type="number" placeholder="Es. 20" min="1">
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="calcolaETF()">Calcola</button>
+          <button class="btn btn-danger" onclick="resettaETF()">Resetta</button>
+        </div>
+      </div>
+
+      <div id="etf-results" class="results-section">
+        <div id="etf-kpi" class="kpi-strip"></div>
+        <div class="detail-card">
+          <div class="detail-card-header">Riepilogo parametri</div>
+          <table class="detail-table" id="etf-table"></table>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-title">Composizione del capitale anno per anno</div>
+          <canvas id="etf-chart" height="120"></canvas>
+        </div>
+        <div class="year-section-title">Avanzamento annuale</div>
+        <div id="etf-year-grid" class="year-grid"></div>
+      </div>
+    </div>
+
+    <!-- ══════════ MERCATI GLOBALI ══════════ -->
+    <div id="mercati" class="section">
+      <div class="page-header">
+        <div>
+          <div class="page-badge" style="color: var(--accent4);">Mercati Globali</div>
+          <h2 class="page-title">Performance & Analisi</h2>
+        </div>
+        <button class="back-btn" onclick="navigate('home')">← Home</button>
+      </div>
+
+      <!-- Search bar -->
+      <div class="mkt-search-wrap">
+        <span class="mkt-search-icon">🔍</span>
+        <input id="mkt-search" type="text" class="mkt-search-input"
+               placeholder="Cerca qualsiasi titolo: AAPL, Bitcoin, ENI, Tesla, Oro…">
+        <div id="mkt-search-dropdown" class="mkt-search-dropdown"></div>
+      </div>
+
+      <!-- Category tabs -->
+      <div class="mkt-tabs" id="mkt-tabs">
+        <button class="mkt-tab active" data-cat="Indici"       onclick="selectMktCategory('Indici')">Indici</button>
+        <button class="mkt-tab"        data-cat="ETF"          onclick="selectMktCategory('ETF')">ETF</button>
+        <button class="mkt-tab"        data-cat="Obbligazioni" onclick="selectMktCategory('Obbligazioni')">Obbligazioni</button>
+        <button class="mkt-tab"        data-cat="Materie Prime" onclick="selectMktCategory('Materie Prime')">Materie Prime</button>
+        <button class="mkt-tab"        data-cat="Valute"       onclick="selectMktCategory('Valute')">Valute</button>
+        <button class="mkt-tab"        data-cat="Azioni IT"    onclick="selectMktCategory('Azioni IT')">Azioni IT</button>
+        <button class="mkt-tab"        data-cat="Azioni US"    onclick="selectMktCategory('Azioni US')">Azioni US</button>
+        <button class="mkt-tab"        data-cat="Crypto"       onclick="selectMktCategory('Crypto')">Crypto</button>
+        <button class="mkt-tab" id="mkt-tab-search" data-cat="Ricerca" style="display:none;"
+                onclick="selectMktCategory('Ricerca')">🔍 Ricerca</button>
+      </div>
+
+      <!-- Range pills + custom + status -->
+      <div class="mkt-range-bar">
+        <div class="mkt-range-pills" id="mkt-range-pills">
+          <button class="mkt-range-pill"        onclick="selectMktRange('1G',  this)">1G</button>
+          <button class="mkt-range-pill"        onclick="selectMktRange('1S',  this)">1S</button>
+          <button class="mkt-range-pill active" onclick="selectMktRange('1M',  this)">1M</button>
+          <button class="mkt-range-pill"        onclick="selectMktRange('3M',  this)">3M</button>
+          <button class="mkt-range-pill"        onclick="selectMktRange('6M',  this)">6M</button>
+          <button class="mkt-range-pill"        onclick="selectMktRange('YTD', this)">YTD</button>
+          <button class="mkt-range-pill"        onclick="selectMktRange('1A',  this)">1A</button>
+          <button class="mkt-range-pill"        onclick="selectMktRange('5A',  this)">5A</button>
+          <button class="mkt-range-pill"        onclick="selectMktRange('Max', this)">Max</button>
+          <button class="mkt-range-pill"        onclick="selectMktRange('Custom', this)">Pers.</button>
+        </div>
+        <div class="mkt-status">
+          <span id="mkt-update-time"></span>
+          <button class="mkt-refresh-btn" id="mkt-refresh-btn" onclick="refreshMkt()">↻</button>
+        </div>
+      </div>
+
+      <!-- Custom date range -->
+      <div id="mkt-custom-range" class="mkt-custom-range" style="display:none; margin-bottom:16px;">
+        <input type="date" id="mkt-date-from" class="mkt-date-input">
+        <span style="color:var(--muted);font-family:var(--mono);">→</span>
+        <input type="date" id="mkt-date-to" class="mkt-date-input">
+        <button class="mkt-apply-btn" onclick="applyMktCustomRange()">Applica</button>
+      </div>
+
+      <!-- Market table -->
+      <div class="detail-card">
+        <div class="detail-card-header" id="mkt-table-title">Dati di mercato</div>
+        <div class="mkt-table-wrap">
+          <table class="mkt-table">
+            <thead>
+              <tr>
+                <th onclick="sortMktTable('name')">Nome</th>
+                <th onclick="sortMktTable('symbol')">Simbolo</th>
+                <th onclick="sortMktTable('price')">Ultimo prezzo</th>
+                <th onclick="sortMktTable('change')">Performance %</th>
+                <th>Trend</th>
+              </tr>
+            </thead>
+            <tbody id="mkt-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Chart panel (shown on row click) -->
+      <div id="mkt-chart-panel" class="mkt-chart-panel" style="display:none;">
+        <div class="chart-card">
+          <div class="mkt-chart-header">
+            <div class="mkt-chart-meta">
+              <div class="mkt-chart-label" id="mkt-chart-label"></div>
+              <div class="mkt-chart-price" id="mkt-chart-price"></div>
+              <div class="mkt-chart-pct"   id="mkt-chart-pct"></div>
+            </div>
+            <button class="mkt-close-btn" onclick="closeMktChart()">✕ Chiudi</button>
+          </div>
+          <canvas id="mkt-chart" height="120"></canvas>
+        </div>
+      </div>
+
+    </div><!-- /mercati -->
+
+  </main>
+
+  <footer>
+    Sviluppato con cura da <strong><a href="#" onclick="openAboutModal(); return false;" style="color: var(--accent); text-decoration: none; cursor: pointer; transition: opacity 0.2s;">Davide Raho</a></strong> &copy; 2026
+  </footer>
+
+  <div id="modalBackdrop" class="modal-backdrop" onclick="if(event.target === this) closeAboutModal();"></div>
+
+  <div id="aboutModal" class="modal">
+    <button class="modal-close" onclick="closeAboutModal()">✕</button>
+    <div class="modal-title">Chi sono</div>
+    <div class="modal-content">
+      Non sono uno sviluppatore ma l'AI mi ha permesso di farlo.<br><br>
+      La mia base era solo un solidissimo e strutturatissimo file excel con formule e grafici validi.
+    </div>
+  </div>
+</div>
+
+<script>
+/* ─── NAVIGATION ─── */
+let charts = { cc: null, cd: null, etf: null };
+
+function navigate(id) {
+  document.querySelectorAll('#home, .section').forEach(el => {
+    el.classList.remove('active');
+    el.style.display = '';
+  });
+  const target = document.getElementById(id);
+  if (!target) return;
+  target.classList.add('active');
+  target.style.display = 'block';
+
+  if (id === 'mercati') {
+    initMercati();
+  } else {
+    stopMktAutoRefresh();
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function fmt(n) {
+  return '€ ' + parseFloat(n).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function pct(n) {
+  return parseFloat(n).toFixed(2) + '%';
+}
+
+function showResults(id) {
+  const el = document.getElementById(id + '-results');
+  el.classList.add('visible', 'fade-up');
+}
+
+function hideResults(id) {
+  const el = document.getElementById(id + '-results');
+  el.classList.remove('visible', 'fade-up');
+}
+
+/* ─── YEAR CARD TOGGLE ─── */
+document.addEventListener('click', function(e) {
+  const hdr = e.target.closest('.year-card-header');
+  if (!hdr) return;
+  hdr.closest('.year-card').classList.toggle('open');
+});
+
+/* ─── CHART DEFAULTS ─── */
+Chart.defaults.color = '#7a7f8a';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+Chart.defaults.font.family = "'DM Mono', monospace";
+Chart.defaults.font.size = 11;
+
+/* ══════════════════════════════
+   CONTO CORRENTE
+══════════════════════════════ */
+function calcolaCC() {
+  const cap = parseFloat(document.getElementById('cc-cap').value) || 0;
+  const tas = (parseFloat(document.getElementById('cc-tasso').value) || 0) / 100;
+  const ann = parseInt(document.getElementById('cc-anni').value) || 0;
+  if (!cap || !tas || !ann) { alert('Compila tutti i campi.'); return; }
+
+  const tax = 0.26;
+  const tm = tas / 12;
+  const mesi = ann * 12;
+  const montante = cap * Math.pow(1 + tm, mesi);
+  const intSimpleLordo = cap * tas * ann;
+  const intSimpleNetto = intSimpleLordo * (1 - tax);
+  const intCompostoLordo = montante - cap;
+  const intCompostoNetto = intCompostoLordo * (1 - tax);
+
+  document.getElementById('cc-kpi').innerHTML = `
+    <div class="kpi"><div class="kpi-label">Capitale iniziale</div><div class="kpi-value">${fmt(cap)}</div></div>
+    <div class="kpi"><div class="kpi-label">Int. semplice netto</div><div class="kpi-value accent">${fmt(intSimpleNetto)}</div></div>
+    <div class="kpi"><div class="kpi-label">Int. composto netto</div><div class="kpi-value accent">${fmt(intCompostoNetto)}</div></div>
+    <div class="kpi"><div class="kpi-label">Tasso netto</div><div class="kpi-value">${pct(tas * (1 - tax) * 100)}</div></div>
+  `;
+
+  document.getElementById('cc-table').innerHTML = `
+    <tr><td>Tasso lordo</td><td>${pct(tas * 100)}</td></tr>
+    <tr><td>Tassazione interessi</td><td>26,00%</td></tr>
+    <tr><td>Tasso netto</td><td>${pct(tas * (1 - tax) * 100)}</td></tr>
+    <tr><td>Durata</td><td>${ann} anni</td></tr>
+    <tr><td>Interesse semplice lordo</td><td>${fmt(intSimpleLordo)}</td></tr>
+    <tr><td>Interesse semplice netto</td><td>${fmt(intSimpleNetto)}</td></tr>
+    <tr><td>Interesse composto lordo</td><td>${fmt(intCompostoLordo)}</td></tr>
+    <tr class="highlight"><td>Interesse composto netto</td><td>${fmt(intCompostoNetto)}</td></tr>
+  `;
+
+  const labels = [], simple = [], compound = [];
+  for (let i = 0; i <= ann; i++) {
+    labels.push('Anno ' + i);
+    simple.push((cap + cap * tas * i).toFixed(2));
+    compound.push((cap * Math.pow(1 + tas, i)).toFixed(2));
+  }
+  if (charts.cc) charts.cc.destroy();
+  charts.cc = new Chart(document.getElementById('cc-chart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Semplice', data: simple, borderColor: '#7a7f8a', backgroundColor: 'rgba(122,127,138,0.08)', fill: true, tension: 0.35, pointRadius: 0 },
+        { label: 'Composto', data: compound, borderColor: '#00e5a0', backgroundColor: 'rgba(0,229,160,0.08)', fill: true, tension: 0.35, pointRadius: 0 }
+      ]
+    },
+    options: { responsive: true, interaction: { mode: 'index' }, plugins: { legend: { position: 'top' } }, scales: { x: { grid: { color: 'rgba(255,255,255,0.04)' } }, y: { grid: { color: 'rgba(255,255,255,0.04)' } } } }
+  });
+
+  let cap2 = cap;
+  const grid = document.getElementById('cc-year-grid');
+  grid.innerHTML = '';
+
+  for (let a = 1; a <= ann; a++) {
+    let rows = '', sommaSaldi = 0;
+    for (let m = 1; m <= 12; m++) {
+      const intM = cap2 * tm * (1 - tax);
+      cap2 += intM;
+      sommaSaldi += cap2;
+      rows += `<tr><td>${m}</td><td>${fmt(intM)}</td><td>${fmt(cap2)}</td></tr>`;
+    }
+    const media = sommaSaldi / 12;
+    const bolloTag = media > 5000
+      ? `<div class="year-tag tag-warn">⚠ Bollo 34,20€ dovuto</div>`
+      : `<div class="year-tag tag-ok">✓ Nessun bollo</div>`;
+
+    grid.innerHTML += `
+      <div class="year-card">
+        <div class="year-card-header">
+          <span class="year-label">Anno ${a}</span>
+          <div class="year-meta">
+            <span style="font-size:12px;color:var(--muted);font-family:var(--mono);">Giacenza media ${fmt(media)}</span>
+            ${bolloTag}
+            <span class="year-toggle">▾</span>
+          </div>
+        </div>
+        <div class="year-body">
+          <table class="year-table">
+            <tr><th>Mese</th><th>Interessi maturati</th><th>Capitale finale</th></tr>
+            ${rows}
+          </table>
+        </div>
+      </div>`;
+  }
+
+  showResults('cc');
+}
+
+function resettaCC() {
+  ['cc-cap', 'cc-tasso', 'cc-anni'].forEach(id => document.getElementById(id).value = '');
+  if (charts.cc) { charts.cc.destroy(); charts.cc = null; }
+  document.getElementById('cc-year-grid').innerHTML = '';
+  hideResults('cc');
+}
+
+/* ══════════════════════════════
+   CONTO DEPOSITO
+══════════════════════════════ */
+function calcolaCD() {
+  const cap = parseFloat(document.getElementById('cd-cap').value) || 0;
+  const tasPerc = parseFloat(document.getElementById('cd-tasso').value) || 0;
+  const anni = parseInt(document.getElementById('cd-anni').value) || 0;
+  const freqEl = document.getElementById('cd-freq');
+  if (!freqEl.value) { alert('Seleziona la periodicità.'); return; }
+  const freq = parseInt(freqEl.value);
+  if (!cap || !tasPerc || !anni) { alert('Compila tutti i campi.'); return; }
+
+  const tax = 0.26;
+  const bollo = 0.002;
+  let saldoS = cap, saldoC = cap, totIntS = 0, totBollo = 0;
+  const labels = [], dataS = [], dataC = [];
+
+  const grid = document.getElementById('cd-year-grid');
+  grid.innerHTML = '';
+
+  for (let a = 1; a <= anni; a++) {
+    let annIntS = 0, annBollo = 0, rows = '';
+    for (let p = 1; p <= freq; p++) {
+      const frac = 1 / freq;
+      const intSN = cap * (tasPerc / 100) * frac * (1 - tax);
+      annIntS += intSN;
+      const preBolloS = saldoS + intSN;
+      const bS = preBolloS * bollo * frac;
+      annBollo += bS;
+      saldoS = preBolloS - bS;
+
+      const intC = saldoC * (tasPerc / 100) * frac * (1 - tax);
+      const preBolloC = saldoC + intC;
+      saldoC = preBolloC - preBolloC * bollo * frac;
+
+      rows += `<tr><td>${p}</td><td>${fmt(intSN)}</td><td>${fmt(saldoS)}</td></tr>`;
+    }
+    totIntS += annIntS;
+    totBollo += annBollo;
+    labels.push('Anno ' + a);
+    dataS.push(saldoS.toFixed(2));
+    dataC.push(saldoC.toFixed(2));
+
+    const warnTag = annBollo > 34.20
+      ? `<div class="year-tag tag-warn">⚠ Bollo >${fmt(annBollo)}: valuta CC</div>`
+      : `<div class="year-tag tag-ok">✓ Bollo ${fmt(annBollo)}</div>`;
+
+    grid.innerHTML += `
+      <div class="year-card">
+        <div class="year-card-header">
+          <span class="year-label">Anno ${a}</span>
+          <div class="year-meta">${warnTag}<span class="year-toggle">▾</span></div>
+        </div>
+        <div class="year-body">
+          <table class="year-table">
+            <tr><th>Periodo</th><th>Interessi netti</th><th>Capitale finale netto</th></tr>
+            ${rows}
+          </table>
+          <div class="year-footer">Imposta di bollo anno: ${fmt(annBollo)}</div>
+        </div>
+      </div>`;
+  }
+
+  document.getElementById('cd-kpi').innerHTML = `
+    <div class="kpi"><div class="kpi-label">Capitale iniziale</div><div class="kpi-value">${fmt(cap)}</div></div>
+    <div class="kpi"><div class="kpi-label">Int. semplice netto tot.</div><div class="kpi-value accent2">${fmt(totIntS)}</div></div>
+    <div class="kpi"><div class="kpi-label">Int. composto netto</div><div class="kpi-value accent2">${fmt(saldoC - cap)}</div></div>
+    <div class="kpi"><div class="kpi-label">Bollo totale</div><div class="kpi-value" style="color:var(--danger)">${fmt(totBollo)}</div></div>
+  `;
+
+  document.getElementById('cd-table').innerHTML = `
+    <tr><td>Tasso lordo</td><td>${pct(tasPerc)}</td></tr>
+    <tr><td>Tassazione interessi</td><td>26,00%</td></tr>
+    <tr><td>Tasso netto</td><td>${pct(tasPerc * (1 - tax))}</td></tr>
+    <tr><td>Imposta di bollo</td><td>0,20%</td></tr>
+    <tr><td>Durata</td><td>${anni} anni</td></tr>
+    <tr><td>Interesse semplice netto maturato</td><td>${fmt(totIntS)}</td></tr>
+    <tr><td>Imposta di bollo totale</td><td>${fmt(totBollo)}</td></tr>
+    <tr class="highlight"><td>Interesse composto netto maturato</td><td>${fmt(saldoC - cap)}</td></tr>
+  `;
+
+  if (charts.cd) charts.cd.destroy();
+  charts.cd = new Chart(document.getElementById('cd-chart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Semplice netto', data: dataS, borderColor: '#7a7f8a', backgroundColor: 'rgba(122,127,138,0.08)', fill: true, tension: 0.35, pointRadius: 0 },
+        { label: 'Composto netto', data: dataC, borderColor: '#0066ff', backgroundColor: 'rgba(0,102,255,0.08)', fill: true, tension: 0.35, pointRadius: 0 }
+      ]
+    },
+    options: { responsive: true, interaction: { mode: 'index' }, plugins: { legend: { position: 'top' } }, scales: { x: { grid: { color: 'rgba(255,255,255,0.04)' } }, y: { grid: { color: 'rgba(255,255,255,0.04)' } } } }
+  });
+
+  showResults('cd');
+}
+
+function resettaCD() {
+  ['cd-cap', 'cd-tasso', 'cd-anni'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('cd-freq').selectedIndex = 0;
+  if (charts.cd) { charts.cd.destroy(); charts.cd = null; }
+  document.getElementById('cd-year-grid').innerHTML = '';
+  hideResults('cd');
+}
+
+/* ══════════════════════════════
+   ETF
+══════════════════════════════ */
+function calcolaETF() {
+  const cap = parseFloat(document.getElementById('etf-cap').value) || 0;
+  const pac = parseFloat(document.getElementById('etf-pac').value) || 0;
+  const tasPerc = parseFloat(document.getElementById('etf-tasso').value) || 0;
+  const anni = parseInt(document.getElementById('etf-anni').value) || 0;
+  const freqEl = document.getElementById('etf-freq');
+  if (!freqEl.value) { alert('Seleziona la periodicità.'); return; }
+  const freq = parseInt(freqEl.value);
+  if (!cap || !tasPerc || !anni) { alert('Compila tutti i campi.'); return; }
+
+  const tax = 0.26;
+  const D3 = tasPerc / 100;
+  const periodiTot = anni * freq;
+  const tassoNettoPer = (D3 * (1 - tax)) / freq;
+  const parteCapI = cap * Math.pow(1 + tassoNettoPer, periodiTot);
+  const parteVers = pac === 0 ? 0 : pac * (Math.pow(1 + tassoNettoPer, periodiTot) - 1) / tassoNettoPer;
+  const capFinaleNetto = parteCapI + parteVers;
+
+  const tassoLordoPer = D3 / freq;
+  let capLordo = cap, versCum = 0;
+  const labels = [], dCapI = [], dVers = [], dInt = [];
+  const grid = document.getElementById('etf-year-grid');
+  grid.innerHTML = '';
+
+  for (let a = 1; a <= anni; a++) {
+    for (let f = 0; f < freq; f++) {
+      capLordo = capLordo * (1 + tassoLordoPer) + pac;
+      versCum += pac;
+    }
+    const intLordo = capLordo - cap - versCum;
+    labels.push('Anno ' + a);
+    dCapI.push(cap);
+    dVers.push(versCum);
+    dInt.push(intLordo.toFixed(2));
+
+    grid.innerHTML += `
+      <div class="year-card">
+        <div class="year-card-header">
+          <span class="year-label">Anno ${a}</span>
+          <div class="year-meta">
+            <span style="font-size:12px;color:var(--muted);font-family:var(--mono);">Capitale lordo ${fmt(capLordo)}</span>
+            <span class="year-toggle">▾</span>
+          </div>
+        </div>
+        <div class="year-body">
+          <table class="year-table">
+            <tr><th>Versamenti aggiuntivi</th><th>Interessi lordi</th><th>Capitale finale lordo</th></tr>
+            <tr><td>${fmt(versCum)}</td><td>${fmt(intLordo)}</td><td>${fmt(capLordo)}</td></tr>
+          </table>
+        </div>
+      </div>`;
+  }
+
+  const capInvestito = cap + versCum;
+  const intLordoTot = capLordo - capInvestito;
+  const intNettoTot = capFinaleNetto - capInvestito;
+  const intSimpleLordo = (cap * D3 * anni) + (versCum * D3 * (anni / 2));
+  const intSimpleNetto = intSimpleLordo * (1 - tax);
+  const freqLabel = freqEl.options[freqEl.selectedIndex].text;
+
+  document.getElementById('etf-kpi').innerHTML = `
+    <div class="kpi"><div class="kpi-label">Capitale investito</div><div class="kpi-value">${fmt(capInvestito)}</div></div>
+    <div class="kpi"><div class="kpi-label">Int. composto netto</div><div class="kpi-value accent3">${fmt(intNettoTot)}</div></div>
+    <div class="kpi"><div class="kpi-label">Capitale finale netto</div><div class="kpi-value accent3">${fmt(capFinaleNetto)}</div></div>
+    <div class="kpi"><div class="kpi-label">Tasso netto</div><div class="kpi-value">${pct(D3 * (1 - tax) * 100)}</div></div>
+  `;
+
+  document.getElementById('etf-table').innerHTML = `
+    <tr><td>Tasso medio annuo</td><td>${pct(tasPerc)}</td></tr>
+    <tr><td>Tassazione</td><td>26,00%</td></tr>
+    <tr><td>Tasso netto</td><td>${pct(D3 * (1 - tax) * 100)}</td></tr>
+    <tr><td>Periodicità versamento</td><td>${freqLabel}</td></tr>
+    <tr><td>Capitale iniziale</td><td>${fmt(cap)}</td></tr>
+    <tr><td>Versamento periodico</td><td>${fmt(pac)}</td></tr>
+    <tr><td>Totale versamenti aggiuntivi</td><td>${fmt(versCum)}</td></tr>
+    <tr><td>Capitale investito totale</td><td>${fmt(capInvestito)}</td></tr>
+    <tr><td>Int. semplice lordo</td><td>${fmt(intSimpleLordo)}</td></tr>
+    <tr><td>Int. semplice netto</td><td>${fmt(intSimpleNetto)}</td></tr>
+    <tr><td>Int. composto lordo</td><td>${fmt(intLordoTot)}</td></tr>
+    <tr><td>Int. composto netto</td><td>${fmt(intNettoTot)}</td></tr>
+    <tr><td>Capitale finale lordo</td><td>${fmt(capLordo)}</td></tr>
+    <tr class="highlight"><td>Capitale finale netto</td><td>${fmt(capFinaleNetto)}</td></tr>
+  `;
+
+  if (charts.etf) charts.etf.destroy();
+  charts.etf = new Chart(document.getElementById('etf-chart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Capitale iniziale', data: dCapI, backgroundColor: '#1a3a5c' },
+        { label: 'Versamenti', data: dVers, backgroundColor: '#cc5500' },
+        { label: 'Interessi', data: dInt, backgroundColor: '#ff6b35' }
+      ]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        x: { stacked: true, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { stacked: true, beginAtZero: true, grid: { color: 'rgba(255,255,255,0.04)' } }
+      },
+      plugins: { legend: { position: 'top' } }
+    }
+  });
+
+  showResults('etf');
+}
+
+function resettaETF() {
+  ['etf-cap', 'etf-pac', 'etf-tasso', 'etf-anni'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('etf-freq').selectedIndex = 0;
+  if (charts.etf) { charts.etf.destroy(); charts.etf = null; }
+  document.getElementById('etf-year-grid').innerHTML = '';
+  hideResults('etf');
+}
+
+/* ─── MODAL ─── */
+function openAboutModal() {
+  document.getElementById('modalBackdrop').classList.add('active');
+  document.getElementById('aboutModal').classList.add('active');
+}
+
+function closeAboutModal() {
+  document.getElementById('modalBackdrop').classList.remove('active');
+  document.getElementById('aboutModal').classList.remove('active');
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && document.getElementById('modalBackdrop').classList.contains('active')) {
+    closeAboutModal();
+  }
+});
+
+/* ══════════════════════════════════════════════════════════════
+   MERCATI GLOBALI
+══════════════════════════════════════════════════════════════ */
+
+const MKT_CATEGORIES = {
+  'Indici': [
+    { symbol: '^GSPC',      name: 'S&P 500' },
+    { symbol: '^IXIC',      name: 'Nasdaq Composite' },
+    { symbol: '^DJI',       name: 'Dow Jones' },
+    { symbol: '^RUT',       name: 'Russell 2000' },
+    { symbol: '^STOXX50E',  name: 'Euro Stoxx 50' },
+    { symbol: 'FTSEMIB.MI', name: 'FTSE MIB' },
+    { symbol: '^GDAXI',     name: 'DAX 40' },
+    { symbol: '^FTSE',      name: 'FTSE 100' },
+    { symbol: '^FCHI',      name: 'CAC 40' },
+    { symbol: '^IBEX',      name: 'IBEX 35' },
+    { symbol: '^N225',      name: 'Nikkei 225' },
+    { symbol: '^HSI',       name: 'Hang Seng' },
+    { symbol: '000001.SS',  name: 'Shanghai Comp.' },
+    { symbol: '^VIX',       name: 'VIX Volatilità' },
+  ],
+  'ETF': [
+    { symbol: 'IWDA.AS',  name: 'iShares MSCI World' },
+    { symbol: 'VWCE.DE',  name: 'Vanguard FTSE All-World' },
+    { symbol: 'SWRD.SW',  name: 'SPDR MSCI World' },
+    { symbol: 'CSPX.L',   name: 'iShares Core S&P 500' },
+    { symbol: 'XDWD.DE',  name: 'Xtrackers MSCI World' },
+    { symbol: 'EMIM.AS',  name: 'iShares MSCI EM' },
+    { symbol: 'IUSN.DE',  name: 'iShares MSCI World SC' },
+    { symbol: 'VOO',      name: 'Vanguard S&P 500' },
+    { symbol: 'SPY',      name: 'SPDR S&P 500' },
+    { symbol: 'QQQ',      name: 'Invesco Nasdaq 100' },
+    { symbol: 'AGGH.L',   name: 'iShares Global Agg Bond' },
+    { symbol: 'IEMA.AS',  name: 'iShares MSCI EM ESG' },
+  ],
+  'Obbligazioni': [
+    { symbol: '^TNX',    name: 'US Treasury 10Y' },
+    { symbol: '^TYX',    name: 'US Treasury 30Y' },
+    { symbol: '^FVX',    name: 'US Treasury 5Y' },
+    { symbol: '^IRX',    name: 'US Treasury 3M' },
+    { symbol: 'TLT',     name: 'iShares 20Y+ Treasury' },
+    { symbol: 'IEF',     name: 'iShares 7-10Y Treasury' },
+    { symbol: 'SHY',     name: 'iShares 1-3Y Treasury' },
+    { symbol: 'HYG',     name: 'iShares High Yield Corp' },
+    { symbol: 'LQD',     name: 'iShares IG Corporate' },
+    { symbol: 'EMB',     name: 'iShares EM Bond' },
+    { symbol: 'IEAG.AS', name: 'iShares Euro Agg Bond' },
+  ],
+  'Materie Prime': [
+    { symbol: 'GC=F', name: 'Oro' },
+    { symbol: 'SI=F', name: 'Argento' },
+    { symbol: 'PL=F', name: 'Platino' },
+    { symbol: 'PA=F', name: 'Palladio' },
+    { symbol: 'CL=F', name: 'Petrolio WTI' },
+    { symbol: 'BZ=F', name: 'Petrolio Brent' },
+    { symbol: 'NG=F', name: 'Gas Naturale' },
+    { symbol: 'HG=F', name: 'Rame' },
+    { symbol: 'ZW=F', name: 'Grano' },
+    { symbol: 'ZC=F', name: 'Mais' },
+    { symbol: 'ZS=F', name: 'Soia' },
+    { symbol: 'CC=F', name: 'Cacao' },
+    { symbol: 'KC=F', name: 'Caffè' },
+    { symbol: 'CT=F', name: 'Cotone' },
+    { symbol: 'SB=F', name: 'Zucchero' },
+  ],
+  'Valute': [
+    { symbol: 'EURUSD=X', name: 'EUR / USD' },
+    { symbol: 'EURGBP=X', name: 'EUR / GBP' },
+    { symbol: 'EURJPY=X', name: 'EUR / JPY' },
+    { symbol: 'EURCHF=X', name: 'EUR / CHF' },
+    { symbol: 'EURCAD=X', name: 'EUR / CAD' },
+    { symbol: 'EURAUD=X', name: 'EUR / AUD' },
+    { symbol: 'GBPUSD=X', name: 'GBP / USD' },
+    { symbol: 'USDJPY=X', name: 'USD / JPY' },
+    { symbol: 'USDCHF=X', name: 'USD / CHF' },
+    { symbol: 'AUDUSD=X', name: 'AUD / USD' },
+    { symbol: 'USDCAD=X', name: 'USD / CAD' },
+    { symbol: 'USDCNY=X', name: 'USD / CNY' },
+    { symbol: 'DX-Y.NYB', name: 'Dollar Index (DXY)' },
+  ],
+  'Azioni IT': [
+    { symbol: 'ENI.MI',   name: 'ENI' },
+    { symbol: 'ENEL.MI',  name: 'Enel' },
+    { symbol: 'ISP.MI',   name: 'Intesa Sanpaolo' },
+    { symbol: 'UCG.MI',   name: 'UniCredit' },
+    { symbol: 'STM.MI',   name: 'STMicroelectronics' },
+    { symbol: 'RACE.MI',  name: 'Ferrari' },
+    { symbol: 'G.MI',     name: 'Generali' },
+    { symbol: 'MED.MI',   name: 'Mediobanca' },
+    { symbol: 'LDO.MI',   name: 'Leonardo' },
+    { symbol: 'MONC.MI',  name: 'Moncler' },
+    { symbol: 'CPR.MI',   name: 'Campari' },
+    { symbol: 'PRY.MI',   name: 'Prysmian' },
+    { symbol: 'SRG.MI',   name: 'Snam' },
+    { symbol: 'TRN.MI',   name: 'Terna' },
+    { symbol: 'BMPS.MI',  name: 'Monte dei Paschi' },
+    { symbol: 'STLAM.MI', name: 'Stellantis' },
+    { symbol: 'TIT.MI',   name: 'TIM' },
+    { symbol: 'A2A.MI',   name: 'A2A' },
+    { symbol: 'ERG.MI',   name: 'ERG' },
+    { symbol: 'INW.MI',   name: 'Inwit' },
+  ],
+  'Azioni US': [
+    { symbol: 'AAPL',  name: 'Apple' },
+    { symbol: 'MSFT',  name: 'Microsoft' },
+    { symbol: 'NVDA',  name: 'NVIDIA' },
+    { symbol: 'AMZN',  name: 'Amazon' },
+    { symbol: 'GOOGL', name: 'Alphabet (Google)' },
+    { symbol: 'META',  name: 'Meta Platforms' },
+    { symbol: 'TSLA',  name: 'Tesla' },
+    { symbol: 'BRK-B', name: 'Berkshire Hathaway' },
+    { symbol: 'JPM',   name: 'JPMorgan Chase' },
+    { symbol: 'V',     name: 'Visa' },
+    { symbol: 'WMT',   name: 'Walmart' },
+    { symbol: 'LLY',   name: 'Eli Lilly' },
+    { symbol: 'AVGO',  name: 'Broadcom' },
+    { symbol: 'UNH',   name: 'UnitedHealth' },
+    { symbol: 'XOM',   name: 'ExxonMobil' },
+    { symbol: 'MA',    name: 'Mastercard' },
+    { symbol: 'NFLX',  name: 'Netflix' },
+    { symbol: 'AMD',   name: 'AMD' },
+    { symbol: 'COST',  name: 'Costco' },
+    { symbol: 'BAC',   name: 'Bank of America' },
+    { symbol: 'DIS',   name: 'Disney' },
+    { symbol: 'INTC',  name: 'Intel' },
+  ],
+  'Crypto': [
+    { symbol: 'BTC-USD',   name: 'Bitcoin' },
+    { symbol: 'ETH-USD',   name: 'Ethereum' },
+    { symbol: 'BNB-USD',   name: 'BNB' },
+    { symbol: 'SOL-USD',   name: 'Solana' },
+    { symbol: 'XRP-USD',   name: 'XRP (Ripple)' },
+    { symbol: 'ADA-USD',   name: 'Cardano' },
+    { symbol: 'AVAX-USD',  name: 'Avalanche' },
+    { symbol: 'DOGE-USD',  name: 'Dogecoin' },
+    { symbol: 'DOT-USD',   name: 'Polkadot' },
+    { symbol: 'LINK-USD',  name: 'Chainlink' },
+    { symbol: 'MATIC-USD', name: 'Polygon' },
+    { symbol: 'LTC-USD',   name: 'Litecoin' },
+    { symbol: 'UNI-USD',   name: 'Uniswap' },
+    { symbol: 'ATOM-USD',  name: 'Cosmos' },
+  ],
+};
+
+const MKT_RANGES = {
+  '1G':  { range: '1d',   interval: '5m'  },
+  '1S':  { range: '5d',   interval: '1h'  },
+  '1M':  { range: '1mo',  interval: '1d'  },
+  '3M':  { range: '3mo',  interval: '1d'  },
+  '6M':  { range: '6mo',  interval: '1d'  },
+  'YTD': { range: 'ytd',  interval: '1d'  },
+  '1A':  { range: '1y',   interval: '1d'  },
+  '5A':  { range: '5y',   interval: '1wk' },
+  'Max': { range: 'max',  interval: '1mo' },
+};
+
+let mkt = {
+  category: 'Indici',
+  range: '1M',
+  customFrom: null,
+  customTo: null,
+  cache: {},
+  cacheTimes: {},
+  selectedSymbol: null,
+  sortKey: null,
+  sortDir: 1,
+  searchItems: [],
+  refreshTimer: null,
+  chartObj: null,
+  loadGen: 0,
+  initialized: false,
+};
+
+const MKT_CACHE_TTL = 5 * 60 * 1000;
+
+/* ─── API ─── */
+async function mktFetch(url) {
+  /* Primary proxy: allorigins */
+  try {
+    const r = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent(url));
+    if (!r.ok) throw new Error('allorigins ' + r.status);
+    const d = await r.json();
+    return JSON.parse(d.contents);
+  } catch {
+    /* Fallback: corsproxy.io */
+    const r = await fetch('https://corsproxy.io/?' + encodeURIComponent(url));
+    if (!r.ok) throw new Error('corsproxy ' + r.status);
+    return r.json();
+  }
+}
+
+async function mktFetchChart(symbol, range, interval, fromTs, toTs) {
+  const cacheKey = `${symbol}|${range}|${interval}|${fromTs}|${toTs}`;
+  const now = Date.now();
+  if (mkt.cache[cacheKey] && (now - mkt.cacheTimes[cacheKey]) < MKT_CACHE_TTL) {
+    return mkt.cache[cacheKey];
+  }
+  let url;
+  if (fromTs && toTs) {
+    url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?period1=${fromTs}&period2=${toTs}&interval=${interval}`;
+  } else {
+    url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${range}&interval=${interval}`;
+  }
+  const data = await mktFetch(url);
+  mkt.cache[cacheKey] = data;
+  mkt.cacheTimes[cacheKey] = now;
+  return data;
+}
+
+async function mktSearch(query) {
+  const url = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=8&newsCount=0`;
+  return mktFetch(url);
+}
+
+/* ─── RANGE PARAMS ─── */
+function getMktRangeParams() {
+  if (mkt.range === 'Custom' && mkt.customFrom && mkt.customTo) {
+    return {
+      range: null,
+      interval: '1d',
+      fromTs: Math.floor(new Date(mkt.customFrom).getTime() / 1000),
+      toTs: Math.floor(new Date(mkt.customTo).getTime() / 1000),
+    };
+  }
+  const cfg = MKT_RANGES[mkt.range] || MKT_RANGES['1M'];
+  return { range: cfg.range, interval: cfg.interval, fromTs: null, toTs: null };
+}
+
+/* ─── HELPERS ─── */
+function mktSymId(symbol) {
+  return 'mkt-row-' + symbol.replace(/[^a-zA-Z0-9]/g, '_');
+}
+
+function mktGetChange(data) {
+  try {
+    const closes = data.chart.result[0].indicators.quote[0].close;
+    const valid = closes.filter(v => v != null);
+    if (valid.length < 2) return null;
+    return ((valid[valid.length - 1] - valid[0]) / valid[0]) * 100;
+  } catch { return null; }
+}
+
+function mktFmtPrice(p) {
+  if (p == null) return '—';
+  if (p >= 1000)  return p.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (p >= 1)     return p.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+  return p.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 6 });
+}
+
+function mktFmtPct(p) {
+  if (p == null) return '—';
+  return (p >= 0 ? '+' : '') + p.toFixed(2) + '%';
+}
+
+function mktPctClass(p) {
+  if (p == null) return 'mkt-neu';
+  return p > 0 ? 'mkt-pos' : p < 0 ? 'mkt-neg' : 'mkt-neu';
+}
+
+function mktSparkline(closes, pct) {
+  const valid = (closes || []).filter(v => v != null);
+  if (valid.length < 2) return '<span style="color:var(--muted);font-size:11px;">—</span>';
+  const pts = valid.slice(-40);
+  const min = Math.min(...pts), max = Math.max(...pts);
+  const span = max - min || 1;
+  const W = 64, H = 28;
+  const color = (pct ?? 0) >= 0 ? '#00e5a0' : '#ff4d4d';
+  const points = pts.map((v, i) => `${(i / (pts.length - 1) * W).toFixed(1)},${(H - (v - min) / span * H).toFixed(1)}`).join(' ');
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="display:block;"><polyline points="${points}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+}
+
+function mktDateLabel(ts, range) {
+  const d = new Date(ts * 1000);
+  if (range === '1G') return d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+  if (['1S', '1M', '3M'].includes(range)) return d.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' });
+  return d.toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: '2-digit' });
+}
+
+/* ─── SKELETON ─── */
+function mktRenderSkeleton(items) {
+  document.getElementById('mkt-tbody').innerHTML = items.map(item => `
+    <tr id="${mktSymId(item.symbol)}" data-name="${item.name}" data-symbol="${item.symbol}" data-change="" data-price="">
+      <td><div class="mkt-name-col"><span class="mkt-name">${item.name}</span><span class="mkt-sym-small">${item.symbol}</span></div></td>
+      <td><span class="mkt-sym-col">${item.symbol}</span></td>
+      <td><span class="mkt-skel" style="width:90px;"></span></td>
+      <td><span class="mkt-skel" style="width:65px;"></span></td>
+      <td><span class="mkt-skel" style="width:64px;height:20px;"></span></td>
+    </tr>
+  `).join('');
+}
+
+/* ─── LOAD ONE ROW ─── */
+async function mktLoadRow(item, gen) {
+  const { range, interval, fromTs, toTs } = getMktRangeParams();
+  const row = document.getElementById(mktSymId(item.symbol));
+  if (!row) return;
+
+  try {
+    const data = await mktFetchChart(item.symbol, range, interval, fromTs, toTs);
+    if (gen !== mkt.loadGen) return; // stale load
+
+    const result = data.chart?.result?.[0];
+    if (!result) throw new Error('no result');
+
+    const meta   = result.meta;
+    const closes = result.indicators?.quote?.[0]?.close || [];
+    const stamps = result.timestamp || [];
+    const change = mktGetChange(data);
+    const price  = meta.regularMarketPrice;
+    const curr   = meta.currency || '';
+    const dname  = meta.shortName || meta.longName || item.name;
+
+    row.dataset.change = change ?? '';
+    row.dataset.price  = price ?? '';
+    row.dataset.name   = dname;
+
+    row.innerHTML = `
+      <td><div class="mkt-name-col"><span class="mkt-name">${dname}</span><span class="mkt-sym-small">${item.symbol}</span></div></td>
+      <td><span class="mkt-sym-col">${item.symbol}</span></td>
+      <td><span class="mkt-price-col">${mktFmtPrice(price)}<span class="mkt-curr">${curr}</span></span></td>
+      <td><span class="mkt-change-col ${mktPctClass(change)}">${mktFmtPct(change)}</span></td>
+      <td>${mktSparkline(closes, change)}</td>
+    `;
+
+    row.onclick = () => mktShowChart(item.symbol, dname, closes, stamps, change, curr, price);
+
+    if (item.symbol === mkt.selectedSymbol) row.classList.add('mkt-selected');
+
+  } catch {
+    if (gen !== mkt.loadGen) return;
+    const row2 = document.getElementById(mktSymId(item.symbol));
+    if (row2) {
+      row2.innerHTML = `
+        <td><div class="mkt-name-col"><span class="mkt-name">${item.name}</span><span class="mkt-sym-small">${item.symbol}</span></div></td>
+        <td><span class="mkt-sym-col">${item.symbol}</span></td>
+        <td colspan="3" style="color:var(--muted);font-size:12px;font-family:var(--mono);">Dati non disponibili</td>
+      `;
+      row2.style.cursor = 'default';
+    }
+  }
+}
+
+/* ─── LOAD ALL ─── */
+async function mktLoad() {
+  const gen = ++mkt.loadGen;
+  const items = mkt.category === 'Ricerca'
+    ? mkt.searchItems
+    : (MKT_CATEGORIES[mkt.category] || []);
+
+  const rangeLabel = mkt.range === 'Custom'
+    ? `${mkt.customFrom} → ${mkt.customTo}`
+    : mkt.range;
+  document.getElementById('mkt-table-title').textContent =
+    `${mkt.category} — Performance ${rangeLabel}`;
+
+  mktRenderSkeleton(items);
+
+  /* Load in batches of 4 to avoid rate limiting */
+  for (let i = 0; i < items.length; i += 4) {
+    if (gen !== mkt.loadGen) return;
+    const batch = items.slice(i, i + 4);
+    await Promise.all(batch.map(item => mktLoadRow(item, gen)));
+    if (i + 4 < items.length) await new Promise(r => setTimeout(r, 350));
+  }
+
+  const now = new Date();
+  document.getElementById('mkt-update-time').textContent =
+    `↻ ${now.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}`;
+
+  const btn = document.getElementById('mkt-refresh-btn');
+  if (btn) btn.classList.remove('spinning');
+}
+
+/* ─── CATEGORY ─── */
+function selectMktCategory(cat) {
+  mkt.category = cat;
+  mkt.selectedSymbol = null;
+  closeMktChart();
+  document.querySelectorAll('.mkt-tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.cat === cat)
+  );
+  mktLoad();
+}
+
+/* ─── RANGE ─── */
+function selectMktRange(r, el) {
+  mkt.range = r;
+  document.querySelectorAll('.mkt-range-pill').forEach(p => p.classList.remove('active'));
+  if (el) el.classList.add('active');
+
+  const custom = document.getElementById('mkt-custom-range');
+  custom.style.display = r === 'Custom' ? 'flex' : 'none';
+
+  if (r !== 'Custom') {
+    mkt.cache = {};
+    mkt.cacheTimes = {};
+    mktLoad();
+  }
+}
+
+function applyMktCustomRange() {
+  mkt.customFrom = document.getElementById('mkt-date-from').value;
+  mkt.customTo   = document.getElementById('mkt-date-to').value;
+  if (!mkt.customFrom || !mkt.customTo) { alert('Seleziona entrambe le date.'); return; }
+  if (mkt.customFrom > mkt.customTo) { alert('La data iniziale deve essere precedente alla data finale.'); return; }
+  mkt.cache = {};
+  mkt.cacheTimes = {};
+  mktLoad();
+}
+
+/* ─── REFRESH ─── */
+function refreshMkt() {
+  const btn = document.getElementById('mkt-refresh-btn');
+  if (btn) btn.classList.add('spinning');
+  mkt.cache = {};
+  mkt.cacheTimes = {};
+  mktLoad();
+}
+
+function startMktAutoRefresh() {
+  stopMktAutoRefresh();
+  mkt.refreshTimer = setInterval(() => {
+    mkt.cache = {};
+    mkt.cacheTimes = {};
+    mktLoad();
+  }, MKT_CACHE_TTL);
+}
+
+function stopMktAutoRefresh() {
+  if (mkt.refreshTimer) { clearInterval(mkt.refreshTimer); mkt.refreshTimer = null; }
+}
+
+/* ─── CHART ─── */
+function mktShowChart(symbol, name, closes, stamps, change, currency, lastPrice) {
+  mkt.selectedSymbol = symbol;
+  document.querySelectorAll('#mkt-tbody tr').forEach(r => r.classList.remove('mkt-selected'));
+  const row = document.getElementById(mktSymId(symbol));
+  if (row) row.classList.add('mkt-selected');
+
+  const panel = document.getElementById('mkt-chart-panel');
+  panel.style.display = 'block';
+
+  document.getElementById('mkt-chart-label').textContent = `${name} (${symbol})`;
+  document.getElementById('mkt-chart-price').textContent = mktFmtPrice(lastPrice) + (currency ? ' ' + currency : '');
+  const pctEl = document.getElementById('mkt-chart-pct');
+  pctEl.textContent = mktFmtPct(change);
+  pctEl.className = 'mkt-chart-pct ' + mktPctClass(change);
+
+  const valid = [];
+  if (stamps && stamps.length) {
+    stamps.forEach((ts, i) => { if (closes[i] != null) valid.push({ ts, v: closes[i] }); });
+  } else {
+    closes.forEach((v, i) => { if (v != null) valid.push({ ts: i, v }); });
+  }
+
+  const labels = valid.map(p => mktDateLabel(p.ts, mkt.range));
+  const vals   = valid.map(p => p.v);
+  const lineColor = (change ?? 0) >= 0 ? '#00e5a0' : '#ff4d4d';
+  const bgColor   = (change ?? 0) >= 0 ? 'rgba(0,229,160,0.06)' : 'rgba(255,77,77,0.06)';
+
+  if (mkt.chartObj) mkt.chartObj.destroy();
+  mkt.chartObj = new Chart(document.getElementById('mkt-chart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: name,
+        data: vals,
+        borderColor: lineColor,
+        backgroundColor: bgColor,
+        fill: true,
+        tension: 0.3,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        borderWidth: 1.5,
+      }]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${mktFmtPrice(ctx.raw)}${currency ? ' ' + currency : ''}`,
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: { maxTicksLimit: 8, maxRotation: 0 }
+        },
+        y: {
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: { callback: v => mktFmtPrice(v) }
+        }
+      }
+    }
+  });
+
+  setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+}
+
+function closeMktChart() {
+  mkt.selectedSymbol = null;
+  document.querySelectorAll('#mkt-tbody tr').forEach(r => r.classList.remove('mkt-selected'));
+  document.getElementById('mkt-chart-panel').style.display = 'none';
+  if (mkt.chartObj) { mkt.chartObj.destroy(); mkt.chartObj = null; }
+}
+
+/* ─── SORT ─── */
+function sortMktTable(key) {
+  const ths = document.querySelectorAll('.mkt-table th');
+  const keyMap = { name: 0, symbol: 1, price: 2, change: 3 };
+  ths.forEach(th => th.className = '');
+
+  if (mkt.sortKey === key) {
+    mkt.sortDir *= -1;
+  } else {
+    mkt.sortKey = key;
+    mkt.sortDir = (key === 'change') ? -1 : 1;
+  }
+
+  const thEl = ths[keyMap[key]];
+  if (thEl) thEl.className = mkt.sortDir === 1 ? 'sort-asc' : 'sort-desc';
+
+  const tbody = document.getElementById('mkt-tbody');
+  const rows  = Array.from(tbody.querySelectorAll('tr'));
+
+  rows.sort((a, b) => {
+    if (key === 'change') {
+      const va = parseFloat(a.dataset.change);
+      const vb = parseFloat(b.dataset.change);
+      if (isNaN(va) && isNaN(vb)) return 0;
+      if (isNaN(va)) return 1;
+      if (isNaN(vb)) return -1;
+      return (va - vb) * mkt.sortDir;
+    }
+    if (key === 'price') {
+      const va = parseFloat(a.dataset.price) || 0;
+      const vb = parseFloat(b.dataset.price) || 0;
+      return (va - vb) * mkt.sortDir;
+    }
+    const va = (a.dataset[key] || '').toLowerCase();
+    const vb = (b.dataset[key] || '').toLowerCase();
+    return va.localeCompare(vb) * mkt.sortDir;
+  });
+
+  rows.forEach(r => tbody.appendChild(r));
+}
+
+/* ─── SEARCH ─── */
+let mktSearchTimeout;
+
+document.addEventListener('DOMContentLoaded', () => {
+  const inp = document.getElementById('mkt-search');
+  const dd  = document.getElementById('mkt-search-dropdown');
+  if (!inp) return;
+
+  inp.addEventListener('input', () => {
+    clearTimeout(mktSearchTimeout);
+    const q = inp.value.trim();
+    if (!q) { dd.classList.remove('open'); return; }
+
+    mktSearchTimeout = setTimeout(async () => {
+      try {
+        const data   = await mktSearch(q);
+        const quotes = (data.quotes || []).filter(q => q.symbol);
+
+        if (!quotes.length) {
+          dd.innerHTML = '<div class="mkt-search-item"><span class="mkt-search-name" style="color:var(--muted)">Nessun risultato trovato</span></div>';
+          dd.classList.add('open');
+          return;
+        }
+
+        dd.innerHTML = quotes.slice(0, 8).map(q => {
+          const sname = (q.shortname || q.longname || q.symbol).replace(/"/g, '&quot;');
+          const sym   = q.symbol.replace(/"/g, '&quot;');
+          return `<div class="mkt-search-item" onclick="mktAddFromSearch('${sym}','${sname.replace(/'/g, "\\'")}')">
+            <div class="mkt-search-info">
+              <span class="mkt-search-name">${q.shortname || q.longname || q.symbol}</span>
+              <span class="mkt-search-exch">${q.exchDisp || ''} · ${q.typeDisp || ''}</span>
+            </div>
+            <span class="mkt-search-sym">${q.symbol}</span>
+          </div>`;
+        }).join('');
+        dd.classList.add('open');
+      } catch { dd.classList.remove('open'); }
+    }, 420);
+  });
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.mkt-search-wrap')) dd.classList.remove('open');
+  });
+});
+
+function mktAddFromSearch(symbol, name) {
+  document.getElementById('mkt-search-dropdown').classList.remove('open');
+  document.getElementById('mkt-search').value = '';
+
+  if (!mkt.searchItems.find(r => r.symbol === symbol)) {
+    mkt.searchItems.push({ symbol, name });
+  }
+
+  const tab = document.getElementById('mkt-tab-search');
+  tab.style.display = 'inline-block';
+
+  selectMktCategory('Ricerca');
+}
+
+/* ─── INIT ─── */
+function initMercati() {
+  if (!mkt.initialized) {
+    mkt.initialized = true;
+    /* Set default dates for custom range to last 30 days */
+    const today = new Date();
+    const ago30 = new Date(today); ago30.setDate(ago30.getDate() - 30);
+    document.getElementById('mkt-date-to').value   = today.toISOString().split('T')[0];
+    document.getElementById('mkt-date-from').value = ago30.toISOString().split('T')[0];
+  }
+  mktLoad();
+  startMktAutoRefresh();
+}
+</script>
+</body>
+</html>

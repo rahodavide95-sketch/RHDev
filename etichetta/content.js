@@ -44,7 +44,7 @@ const SITE = {
       year:    "2026",
       catalog: "SSSCLTR002",
       format:  "Digital",
-      cover:   "sc002.jpg",
+      cover:   "images/releases/sc002.jpg",
       link:    "https://fanlink.tv/raho-somnara-ep-subconscious-culture",
     },
     {

@@ -505,8 +505,8 @@ img.broken-hide                   { visibility: hidden; }
   gap:                   3rem 2rem;
 }
 #releases .releases-grid {
-  -webkit-mask-image: linear-gradient(to bottom, black 62%, transparent 82%);
-  mask-image:         linear-gradient(to bottom, black 62%, transparent 82%);
+  -webkit-mask-image: linear-gradient(to bottom, black 68%, transparent 90%);
+  mask-image:         linear-gradient(to bottom, black 68%, transparent 90%);
 }
 
 .release-card {
@@ -619,8 +619,8 @@ img.broken-hide                   { visibility: hidden; }
   gap:                   2.5rem 2rem;
 }
 #artists .artists-grid {
-  -webkit-mask-image: linear-gradient(to bottom, black 62%, transparent 82%);
-  mask-image:         linear-gradient(to bottom, black 62%, transparent 82%);
+  -webkit-mask-image: linear-gradient(to bottom, black 68%, transparent 90%);
+  mask-image:         linear-gradient(to bottom, black 68%, transparent 90%);
 }
 
 .artist-card {

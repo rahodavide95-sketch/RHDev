@@ -2094,12 +2094,62 @@ async function mktLoadRow(item, gen) {
   }
 }
 
+/* ─── FINALIZE LOAD ─── */
+function mktFinalize(gen) {
+  if (gen !== mkt.loadGen) return;
+  const now = new Date();
+  document.getElementById('mkt-update-time').textContent =
+    `↻ ${now.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}`;
+  document.getElementById('mkt-refresh-btn')?.classList.remove('spinning');
+}
+
+/* ─── APPLY ONE RESULT (spark/chart data) ─── */
+function mktApplyResult(item, result, gen) {
+  if (gen !== mkt.loadGen) return;
+  const row = document.getElementById(mktSymId(item.symbol));
+  if (!row) return;
+
+  if (!result) {
+    row.innerHTML = `
+      <td><div class="mkt-name-col"><span class="mkt-name">${item.name}</span><span class="mkt-sym-small">${item.symbol}</span></div></td>
+      <td><span class="mkt-sym-col">${item.symbol}</span></td>
+      <td colspan="3" style="color:var(--muted);font-size:12px;font-family:var(--mono);">N/D</td>
+    `;
+    row.style.cursor = 'default';
+    return;
+  }
+
+  const meta   = result.meta;
+  const closes = result.indicators?.quote?.[0]?.close || [];
+  const stamps = result.timestamp || [];
+  const change = mktGetChange({ chart: { result: [result] } });
+  const price  = meta.regularMarketPrice;
+  const curr   = meta.currency || '';
+  const dname  = meta.shortName || meta.longName || item.name;
+
+  row.dataset.change = change ?? '';
+  row.dataset.price  = price  ?? '';
+  row.dataset.name   = dname;
+
+  row.innerHTML = `
+    <td><div class="mkt-name-col"><span class="mkt-name">${dname}</span><span class="mkt-sym-small">${item.symbol}</span></div></td>
+    <td><span class="mkt-sym-col">${item.symbol}</span></td>
+    <td><span class="mkt-price-col">${mktFmtPrice(price)}<span class="mkt-curr">${curr}</span></span></td>
+    <td><span class="mkt-change-col ${mktPctClass(change)}">${mktFmtPct(change)}</span></td>
+    <td>${mktSparkline(closes, change)}</td>
+  `;
+  row.onclick = () => mktShowChart(item.symbol, dname, closes, stamps, change, curr, price);
+  if (item.symbol === mkt.selectedSymbol) row.classList.add('mkt-selected');
+}
+
 /* ─── LOAD ALL ─── */
 async function mktLoad() {
   const gen = ++mkt.loadGen;
   const items = mkt.category === 'Ricerca'
     ? mkt.searchItems
     : (MKT_CATEGORIES[mkt.category] || []);
+
+  if (!items.length) return;
 
   const rangeLabel = mkt.range === 'Custom'
     ? `${mkt.customFrom} → ${mkt.customTo}`
@@ -2109,20 +2159,42 @@ async function mktLoad() {
 
   mktRenderSkeleton(items);
 
-  /* Load in batches of 4 to avoid rate limiting */
-  for (let i = 0; i < items.length; i += 4) {
-    if (gen !== mkt.loadGen) return;
-    const batch = items.slice(i, i + 4);
-    await Promise.all(batch.map(item => mktLoadRow(item, gen)));
-    if (i + 4 < items.length) await new Promise(r => setTimeout(r, 350));
+  const { range, interval, fromTs, toTs } = getMktRangeParams();
+
+  /* ── FAST PATH: single bulk request via /v8/finance/spark ── */
+  if (mkt.range !== 'Custom') {
+    try {
+      const syms = items.map(i => i.symbol).join(',');
+      const url  = `https://query1.finance.yahoo.com/v8/finance/spark?symbols=${encodeURIComponent(syms)}&range=${range}&interval=${interval}`;
+      const data = await mktFetch(url);
+      if (gen !== mkt.loadGen) return;
+
+      /* Build symbol → result map */
+      const map = {};
+      (data.spark?.result || []).forEach(r => {
+        if (r?.symbol && r.response?.[0]) map[r.symbol] = r.response[0];
+      });
+
+      if (Object.keys(map).length > 0) {
+        items.forEach(item => mktApplyResult(item, map[item.symbol] || null, gen));
+        mktFinalize(gen);
+        return;
+      }
+    } catch { /* fall through to individual requests */ }
   }
 
-  const now = new Date();
-  document.getElementById('mkt-update-time').textContent =
-    `↻ ${now.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}`;
-
-  const btn = document.getElementById('mkt-refresh-btn');
-  if (btn) btn.classList.remove('spinning');
+  /* ── FALLBACK: individual requests, all in parallel, no delay ── */
+  if (gen !== mkt.loadGen) return;
+  await Promise.all(items.map(async item => {
+    try {
+      const data   = await mktFetchChart(item.symbol, range, interval, fromTs, toTs);
+      const result = data.chart?.result?.[0];
+      mktApplyResult(item, result || null, gen);
+    } catch {
+      mktApplyResult(item, null, gen);
+    }
+  }));
+  mktFinalize(gen);
 }
 
 /* ─── CATEGORY ─── */

@@ -125,7 +125,7 @@ function buildReleases(releases) {
 
   const recent = [...releases]
     .sort((a, b) => parseReleaseDate(b.date || b.year) - parseReleaseDate(a.date || a.year))
-    .slice(0, 6);
+    .slice(0, 9);
 
   grid.innerHTML = recent.map((r, i) => renderReleaseCard(r, i)).join('');
 
@@ -235,7 +235,7 @@ function buildArtists(artists) {
 
   grid.innerHTML = [...artists]
     .sort((a, b) => a.name.localeCompare(b.name))
-    .slice(0, 6)
+    .slice(0, 9)
     .map((a, i) => renderArtistCard(a, i)).join('');
 
   document.getElementById('artistsViewAll')

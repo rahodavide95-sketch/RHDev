@@ -223,6 +223,16 @@ body {
 .nav-link.is-active       { color: var(--fg); }
 .nav-link.is-active::after { width: 100%; }
 
+.nav-wip {
+  font-size:      0.55rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color:          var(--fg-3);
+  vertical-align: middle;
+  margin-left:    0.3rem;
+  pointer-events: none;
+}
+
 /* Mobile toggle */
 .nav-toggle {
   display:        none;

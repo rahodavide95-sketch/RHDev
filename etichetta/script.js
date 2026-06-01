@@ -107,7 +107,7 @@ function hideSection(id) {
   const section = document.getElementById(id);
   if (section) section.style.display = 'none';
   const link = document.querySelector(`.nav-link[href="#${id}"]`);
-  if (link) link.closest('li').style.display = 'none';
+  if (link) link.insertAdjacentHTML('afterend', '<span class="nav-wip">work in progress</span>');
 }
 
 /* ----------------------------------------------------------

@@ -1028,13 +1028,14 @@ img.broken-hide                   { visibility: hidden; }
   gap:            1rem;
 }
 .footer-logo {
-  width:        32px;
-  height:       auto;
-  object-fit:   contain;
-  opacity:      1;
-  filter:       brightness(0) invert(1);
-  flex-shrink:  0;
-  display:      block;
+  width:          52px;
+  height:         auto;
+  object-fit:     contain;
+  opacity:        1;
+  filter:         brightness(0) invert(1);
+  flex-shrink:    0;
+  display:        block;
+  padding-bottom: 4px;
 }
 .footer-copy {
   font-size:   0.72rem;
@@ -1242,16 +1243,24 @@ img.broken-hide                   { visibility: hidden; }
     transform:  none;
   }
 
-  .nav-links li { width: 100%; }
+  .nav-links li {
+    width:           100%;
+    display:         flex;
+    align-items:     center;
+    border-bottom:   1px solid var(--border);
+  }
+  .nav-links li:last-child { border-bottom: none; }
   .nav-link {
-    display:     block;
-    padding:     1rem var(--pad-x);
-    font-size:   0.75rem;
-    color:       var(--fg);
-    border-bottom: 1px solid var(--border);
+    display:   block;
+    flex:      1;
+    padding:   1rem var(--pad-x);
+    font-size: 0.75rem;
+    color:     var(--fg);
+    border-bottom: none;
   }
   .nav-links li:last-child .nav-link { border-bottom: none; }
   .nav-link::after { display: none; }
+  .nav-wip { margin-left: auto; padding-right: var(--pad-x); }
 
   /* Hide label on small screens to avoid overflow */
   .nav-name { display: none; }

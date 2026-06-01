@@ -632,8 +632,8 @@ img.broken-hide                   { visibility: hidden; }
   gap:                   2.5rem 2rem;
 }
 #artists .artists-grid {
-  -webkit-mask-image: linear-gradient(to bottom, black 68%, transparent 90%);
-  mask-image:         linear-gradient(to bottom, black 68%, transparent 90%);
+  -webkit-mask-image: linear-gradient(to bottom, black 74%, transparent 92%);
+  mask-image:         linear-gradient(to bottom, black 74%, transparent 92%);
 }
 #artists {
   padding-bottom: 4rem;

@@ -35,7 +35,7 @@ const SITE = {
       year:    "2026",
       catalog: "SSSCLTR001",
       format:  "Digital",
-      cover:   "images/releases/sc001.jpg",
+      cover:   "sc001.jpg",
       link:    "#",
     },
     {

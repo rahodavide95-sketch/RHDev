@@ -1349,10 +1349,12 @@ document.addEventListener('click', function(e) {
 });
 
 /* ─── CHART DEFAULTS ─── */
-Chart.defaults.color = '#7a7f8a';
-Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
-Chart.defaults.font.family = "'DM Mono', monospace";
-Chart.defaults.font.size = 11;
+if (typeof Chart !== 'undefined') {
+  Chart.defaults.color = '#7a7f8a';
+  Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+  Chart.defaults.font.family = "'DM Mono', monospace";
+  Chart.defaults.font.size = 11;
+}
 
 /* ══════════════════════════════
    CONTO CORRENTE
@@ -2295,7 +2297,7 @@ function startMktAutoRefresh() {
 }
 
 function stopMktAutoRefresh() {
-  if (mkt.refreshTimer) { clearInterval(mkt.refreshTimer); mkt.refreshTimer = null; }
+  if (typeof mkt !== 'undefined' && mkt.refreshTimer) { clearInterval(mkt.refreshTimer); mkt.refreshTimer = null; }
 }
 
 /* ─── CHART (Chart.js, aggiornato con periodo selezionato) ─── */

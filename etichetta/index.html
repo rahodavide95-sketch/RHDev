@@ -104,13 +104,27 @@
   <!-- ========== CONTACT ========== -->
   <section class="section" id="contact">
     <div class="container">
+
       <div class="section-head" data-aos="fade-up">
         <h2 class="section-title">Contact</h2>
       </div>
-      <div class="contact-grid">
-        <div class="contact-info" id="contact-info" data-aos="fade-up" data-aos-delay="80"></div>
-        <div class="contact-form-wrap" data-aos="fade-up" data-aos-delay="180">
-          <form class="contact-form" id="contactForm" novalidate>
+
+      <!-- Primary email CTA -->
+      <div class="contact-primary" data-aos="fade-up" data-aos-delay="80">
+        <a href="#" class="contact-email-link" id="contact-email-link">—</a>
+      </div>
+
+      <div class="contact-divider" data-aos="fade-up" data-aos-delay="140"></div>
+
+      <!-- Secondary info row -->
+      <div class="contact-row" id="contact-row" data-aos="fade-up" data-aos-delay="180"></div>
+
+      <div class="contact-divider" data-aos="fade-up" data-aos-delay="220"></div>
+
+      <!-- Form -->
+      <div class="contact-form-wrap" data-aos="fade-up" data-aos-delay="260">
+        <form class="contact-form" id="contactForm" novalidate>
+          <div class="form-row">
             <div class="field">
               <label for="f-name">Name</label>
               <input type="text" id="f-name" name="name" placeholder="Your name" required>
@@ -119,18 +133,21 @@
               <label for="f-email">Email</label>
               <input type="email" id="f-email" name="email" placeholder="Your email" required>
             </div>
-            <div class="field">
-              <label for="f-subject">Subject</label>
-              <input type="text" id="f-subject" name="subject" placeholder="Reason for contact">
-            </div>
-            <div class="field">
-              <label for="f-message">Message</label>
-              <textarea id="f-message" name="message" rows="5" placeholder="Write your message here…" required></textarea>
-            </div>
+          </div>
+          <div class="field">
+            <label for="f-subject">Subject</label>
+            <input type="text" id="f-subject" name="subject" placeholder="Booking · Demo · Press · Other">
+          </div>
+          <div class="field">
+            <label for="f-message">Message</label>
+            <textarea id="f-message" name="message" rows="4" placeholder="Your message…" required></textarea>
+          </div>
+          <div class="form-footer">
             <button type="submit" class="btn-send">Send Message</button>
-          </form>
-        </div>
+          </div>
+        </form>
       </div>
+
     </div>
   </section>
 

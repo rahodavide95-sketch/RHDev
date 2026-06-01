@@ -229,27 +229,36 @@ function buildMerch(items) {
    Contact info block
    ---------------------------------------------------------- */
 function buildContactInfo(contact) {
-  const el = document.getElementById('contact-info');
-  if (!el || !contact) return;
+  if (!contact) return;
 
-  const items = [
-    contact.email     && { label: 'Email',     value: contact.email,     href: `mailto:${contact.email}`     },
-    contact.bookings  && { label: 'Booking',   value: contact.bookings,  href: `mailto:${contact.bookings}`  },
-    contact.demos     && { label: 'Demo',      value: contact.demos,     href: `mailto:${contact.demos}`     },
-    contact.instagram && { label: 'Instagram', value: contact.instagram, href: contact.instagramUrl || '#'   },
-    contact.address   && { label: 'Location',  value: contact.address,   href: null                          },
-  ].filter(Boolean);
+  // Primary email
+  const emailEl = document.getElementById('contact-email-link');
+  if (emailEl && contact.email) {
+    emailEl.textContent = contact.email;
+    emailEl.href = `mailto:${contact.email}`;
+  }
 
-  el.innerHTML = items.map(item => `
-    <div class="contact-item">
-      <span class="contact-label">${item.label}</span>
-      ${item.href
-        ? `<a href="${item.href}" class="contact-value"
-             ${item.href.startsWith('http') ? 'target="_blank" rel="noopener noreferrer"' : ''}
-           >${esc(item.value)}</a>`
-        : `<span class="contact-value">${esc(item.value)}</span>`
-      }
-    </div>`).join('');
+  // Secondary row: booking, demos, instagram, location
+  const row = document.getElementById('contact-row');
+  if (row) {
+    const items = [
+      contact.bookings  && { label: 'Booking',   value: contact.bookings,  href: `mailto:${contact.bookings}`                      },
+      contact.demos     && { label: 'Demos',      value: contact.demos,     href: `mailto:${contact.demos}`                         },
+      contact.instagram && { label: 'Instagram',  value: contact.instagram, href: contact.instagramUrl || '#', external: true       },
+      contact.address   && { label: 'Location',   value: contact.address,   href: null                                               },
+    ].filter(Boolean);
+
+    row.innerHTML = items.map(item => `
+      <div class="contact-row-item">
+        <span class="contact-row-label">${item.label}</span>
+        ${item.href
+          ? `<a href="${item.href}" class="contact-row-value"
+               ${item.external ? 'target="_blank" rel="noopener noreferrer"' : ''}
+             >${esc(item.value)}</a>`
+          : `<span class="contact-row-value">${esc(item.value)}</span>`
+        }
+      </div>`).join('');
+  }
 }
 
 /* ----------------------------------------------------------

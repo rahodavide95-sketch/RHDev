@@ -147,7 +147,8 @@ function openReleasesModal(releases) {
   const modal = document.getElementById('releasesModal');
   if (!modal) return;
   renderAllReleases(releases);
-  modal.classList.add('is-open');
+  modal.style.display = 'flex';
+  requestAnimationFrame(() => requestAnimationFrame(() => modal.classList.add('is-open')));
   document.body.style.overflow = 'hidden';
 }
 
@@ -155,6 +156,7 @@ function closeReleasesModal() {
   const modal = document.getElementById('releasesModal');
   if (!modal) return;
   modal.classList.remove('is-open');
+  modal.addEventListener('transitionend', () => { modal.style.display = 'none'; }, { once: true });
   document.body.style.overflow = '';
 }
 
@@ -214,8 +216,6 @@ function buildArtists(artists) {
       <article class="artist-card" style="transition-delay:${i * 0.09}s">
         <div class="artist-photo">${photoHtml}</div>
         <div class="artist-name">${esc(a.name)}</div>
-        ${a.origin ? `<div class="artist-origin">${esc(a.origin)}</div>` : ''}
-        ${a.bio    ? `<p class="artist-bio">${esc(a.bio)}</p>` : ''}
         ${links.length ? `
           <div class="artist-links">
             ${links.map(l => `<a href="${l.url}" target="_blank" rel="noopener" class="artist-link">${l.text}</a>`).join('')}

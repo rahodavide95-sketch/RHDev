@@ -16,11 +16,11 @@ document.addEventListener('DOMContentLoaded', () => {
    Reveal page after fonts load (prevents FOUT)
    ---------------------------------------------------------- */
 function revealPage() {
-  document.fonts.ready.then(() => {
-    document.body.classList.add('ready');
-  });
-  // Failsafe: show after 1s regardless
-  setTimeout(() => document.body.classList.add('ready'), 1000);
+  const cover = document.getElementById('pageCover');
+  if (!cover) return;
+  const reveal = () => cover.classList.add('is-hidden');
+  document.fonts.ready.then(reveal);
+  setTimeout(reveal, 1000); // failsafe
 }
 
 /* Hide all <img> that fail to load (e.g. missing logo) */

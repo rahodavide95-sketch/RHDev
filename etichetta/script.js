@@ -490,29 +490,35 @@ function initMobileMenu() {
     inner?.appendChild(menu);
   }
 
-  toggle.addEventListener('click', () => {
-    const isOpen = menu.classList.toggle('is-open');
-    toggle.classList.toggle('is-open', isOpen);
-    toggle.setAttribute('aria-expanded', isOpen);
-    document.body.style.overflow = isOpen ? 'hidden' : '';
-    if (isMobile()) isOpen ? portalOut() : portalIn();
-  });
-
-  menu.querySelectorAll('a').forEach(a => a.addEventListener('click', closeMenu));
-
-  window.addEventListener('resize', () => {
-    if (!isMobile() && menu.classList.contains('is-portaled')) {
-      closeMenu();
-    }
-  });
+  function openMenu() {
+    portalOut();
+    // Wait one frame so browser sees the initial (hidden) state before transitioning
+    requestAnimationFrame(() => {
+      menu.classList.add('is-open');
+      toggle.classList.add('is-open');
+      toggle.setAttribute('aria-expanded', 'true');
+      document.body.style.overflow = 'hidden';
+    });
+  }
 
   function closeMenu() {
     menu.classList.remove('is-open');
     toggle.classList.remove('is-open');
     toggle.setAttribute('aria-expanded', 'false');
     document.body.style.overflow = '';
-    portalIn();
+    // Wait for CSS transition to finish before moving back into navbar
+    menu.addEventListener('transitionend', portalIn, { once: true });
   }
+
+  toggle.addEventListener('click', () => {
+    menu.classList.contains('is-open') ? closeMenu() : openMenu();
+  });
+
+  menu.querySelectorAll('a').forEach(a => a.addEventListener('click', closeMenu));
+
+  window.addEventListener('resize', () => {
+    if (!isMobile() && menu.classList.contains('is-portaled')) closeMenu();
+  });
 }
 
 /* ----------------------------------------------------------

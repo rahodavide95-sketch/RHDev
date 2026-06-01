@@ -637,7 +637,7 @@ img.broken-hide                   { visibility: hidden; }
   aspect-ratio: 3 / 4;
   overflow:     hidden;
   background:   var(--bg);
-  margin-bottom: 1.25rem;
+  margin-bottom: 0.5rem;
 }
 .artist-photo img {
   width:      100%;

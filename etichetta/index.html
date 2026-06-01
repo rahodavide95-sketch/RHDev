@@ -35,17 +35,18 @@
       <button class="nav-toggle" id="navToggle" aria-label="Open menu">
         <span></span><span></span><span></span>
       </button>
-
-      <ul class="nav-links" id="navLinks">
-        <li><a href="#releases" class="nav-link">Releases</a></li>
-        <li><a href="#artists"  class="nav-link">Artists</a></li>
-        <li><a href="#podcast"  class="nav-link">Podcast</a></li>
-        <li><a href="#events"   class="nav-link">Events</a></li>
-        <li><a href="#merch"    class="nav-link">Merch</a></li>
-        <li><a href="#contact"  class="nav-link">Contact</a></li>
-      </ul>
     </div>
   </nav>
+
+  <!-- nav-links is a sibling of navbar (not inside) so backdrop-filter is independent -->
+  <ul class="nav-links" id="navLinks">
+    <li><a href="#releases" class="nav-link">Releases</a></li>
+    <li><a href="#artists"  class="nav-link">Artists</a></li>
+    <li><a href="#podcast"  class="nav-link">Podcast</a></li>
+    <li><a href="#events"   class="nav-link">Events</a></li>
+    <li><a href="#merch"    class="nav-link">Merch</a></li>
+    <li><a href="#contact"  class="nav-link">Contact</a></li>
+  </ul>
 
   <!-- ========== HERO ========== -->
   <section class="hero" id="home">

@@ -68,10 +68,9 @@ body {
 .bg-canvas {
   position:       fixed;
   inset:          0;
-  z-index:        500;   /* above all content, below navbar */
+  z-index:        0;
   pointer-events: none;
   overflow:       hidden;
-  mix-blend-mode: screen;
 }
 
 .bg-blob {
@@ -84,7 +83,7 @@ body {
 .bg-blob--1 {
   width:      80vmax;
   height:     80vmax;
-  background: radial-gradient(circle, rgba(82, 25, 148, 1) 0%, transparent 62%);
+  background: radial-gradient(circle, rgba(128, 42, 215, 1) 0%, transparent 62%);
   top:  -30vmax;
   left: -15vmax;
   animation: blobDrift1 16s ease-in-out infinite alternate;
@@ -93,7 +92,7 @@ body {
 .bg-blob--2 {
   width:      65vmax;
   height:     65vmax;
-  background: radial-gradient(circle, rgba(12, 105, 118, 1) 0%, transparent 62%);
+  background: radial-gradient(circle, rgba(16, 138, 158, 1) 0%, transparent 62%);
   top:   28%;
   right: -18vmax;
   animation: blobDrift2 20s ease-in-out infinite alternate;
@@ -102,27 +101,27 @@ body {
 .bg-blob--3 {
   width:      70vmax;
   height:     70vmax;
-  background: radial-gradient(circle, rgba(148, 72, 8, 1) 0%, transparent 62%);
+  background: radial-gradient(circle, rgba(182, 90, 10, 1) 0%, transparent 62%);
   bottom: -22vmax;
   left:    12%;
   animation: blobDrift3 13s ease-in-out infinite alternate;
 }
 
 @keyframes blobDrift1 {
-  0%   { transform: translate(0,      0)     scale(1);    opacity: 0.38; }
-  30%  { transform: translate(20vw,  28vh)   scale(1.18); opacity: 0.62; }
-  70%  { transform: translate(32vw,  12vh)   scale(0.85); opacity: 0.30; }
-  100% { transform: translate(12vw,  38vh)   scale(1.12); opacity: 0.55; }
+  0%   { transform: translate(0,      0)     scale(1);    opacity: 0.55; }
+  30%  { transform: translate(20vw,  28vh)   scale(1.18); opacity: 0.82; }
+  70%  { transform: translate(32vw,  12vh)   scale(0.85); opacity: 0.45; }
+  100% { transform: translate(12vw,  38vh)   scale(1.12); opacity: 0.72; }
 }
 @keyframes blobDrift2 {
-  0%   { transform: translate(0,      0)     scale(1);    opacity: 0.30; }
-  45%  { transform: translate(-28vw, -20vh)  scale(1.28); opacity: 0.58; }
-  100% { transform: translate(-14vw,  24vh)  scale(0.82); opacity: 0.35; }
+  0%   { transform: translate(0,      0)     scale(1);    opacity: 0.45; }
+  45%  { transform: translate(-28vw, -20vh)  scale(1.28); opacity: 0.75; }
+  100% { transform: translate(-14vw,  24vh)  scale(0.82); opacity: 0.50; }
 }
 @keyframes blobDrift3 {
-  0%   { transform: translate(0,      0)     scale(1);    opacity: 0.28; }
-  50%  { transform: translate(25vw,  -25vh)  scale(1.20); opacity: 0.55; }
-  100% { transform: translate(-12vw, -14vh)  scale(1.08); opacity: 0.32; }
+  0%   { transform: translate(0,      0)     scale(1);    opacity: 0.42; }
+  50%  { transform: translate(25vw,  -25vh)  scale(1.20); opacity: 0.72; }
+  100% { transform: translate(-12vw, -14vh)  scale(1.08); opacity: 0.48; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -193,11 +192,26 @@ body {
   white-space:    nowrap;
 }
 
-/* Nav links */
+/* Nav links — fixed sibling of navbar, floats centered over it on desktop */
 .nav-links {
-  display:  flex;
-  list-style: none;
-  gap:      2.5rem;
+  position:       fixed;
+  top:            0;
+  left:           0;
+  right:          0;
+  z-index:        1001;
+  list-style:     none;
+  display:        flex;
+  justify-content: center;
+  align-items:    center;
+  gap:            2.5rem;
+  padding:        1.1rem 0;
+  pointer-events: none;   /* clicks pass through empty areas */
+  transition:     padding 0.4s var(--ease);
+}
+.nav-links > li { pointer-events: auto; }
+/* Match navbar padding when scrolled */
+.navbar.is-scrolled ~ .nav-links {
+  padding: 0.85rem 0;
 }
 .nav-link {
   font-family:    var(--f-body);
@@ -378,7 +392,9 @@ img.broken-hide                   { visibility: hidden; }
   border-top:    1px solid var(--border);
   border-bottom: 1px solid var(--border);
   padding:       1rem 0;
-  background:    var(--bg-alt);
+  background:    rgba(14, 14, 14, 0.68);
+  position:      relative;
+  z-index:       1;
 }
 .marquee-track {
   display:   flex;
@@ -409,10 +425,12 @@ img.broken-hide                   { visibility: hidden; }
    ============================================================ */
 .section {
   padding:    var(--pad-section) 0;
-  background: var(--bg);
+  background: rgba(8, 8, 8, 0.65);
+  position:   relative;
+  z-index:    1;
 }
 .section--alt {
-  background: var(--bg-alt);
+  background: rgba(14, 14, 14, 0.68);
 }
 
 /* Thin divider at top of each section (minimal, not a box) */
@@ -971,7 +989,9 @@ img.broken-hide                   { visibility: hidden; }
 .footer {
   padding:    2.5rem 0;
   border-top: 1px solid var(--border);
-  background: var(--bg);
+  background: rgba(8, 8, 8, 0.65);
+  position:   relative;
+  z-index:    1;
 }
 .footer-inner {
   display:         flex;
@@ -1020,39 +1040,42 @@ img.broken-hide                   { visibility: hidden; }
   }
   .contact-row-item { padding: 0; }
 
-  /* Dropdown mobile menu — slides down from navbar */
+  /* Dropdown mobile menu */
   .nav-toggle { display: flex; }
 
+  /* Override desktop centred-fixed layout */
   .nav-links {
-    display:         flex;
-    position:        absolute;
-    top:             100%;
-    left:            0;
-    right:           0;
+    top:             4.2rem;   /* below default navbar */
+    justify-content: flex-start;
     flex-direction:  column;
     align-items:     flex-start;
     gap:             0;
+    padding:         0.5rem 0;
+    pointer-events:  none;
+    /* independent backdrop-filter — works because nav-links is
+       now a sibling of navbar, not nested inside it */
     background:              rgba(8, 8, 8, 0.08);
     backdrop-filter:         blur(20px) saturate(160%);
     -webkit-backdrop-filter: blur(20px) saturate(160%);
     border-bottom:           1px solid var(--border);
-    z-index:         800;
-    padding:         0.5rem 0;
-    /* hidden state — animated in */
-    opacity:         0;
-    visibility:      hidden;
-    transform:       translateY(-10px);
-    pointer-events:  none;
-    transition:      opacity 0.32s var(--ease),
-                     transform 0.32s var(--ease),
-                     visibility 0.32s;
+    /* slide-down animation */
+    opacity:    0;
+    visibility: hidden;
+    transform:  translateY(-10px);
+    transition: opacity 0.32s var(--ease),
+                transform 0.32s var(--ease),
+                visibility 0.32s,
+                top 0.4s var(--ease);
   }
+  .nav-links > li { pointer-events: none; }
   .nav-links.is-open {
     opacity:        1;
     visibility:     visible;
     transform:      none;
     pointer-events: auto;
   }
+  .nav-links.is-open > li { pointer-events: auto; }
+  .navbar.is-scrolled ~ .nav-links { top: 3.7rem; }
 
   .nav-links li { width: 100%; }
   .nav-link {

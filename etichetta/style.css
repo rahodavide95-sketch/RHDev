@@ -1012,12 +1012,13 @@ img.broken-hide                   { visibility: hidden; }
   gap:            1rem;
 }
 .footer-logo {
-  width:        26px;
-  height:       26px;
+  width:        32px;
+  height:       auto;
   object-fit:   contain;
   opacity:      1;
   filter:       brightness(0) invert(1);
   flex-shrink:  0;
+  display:      block;
 }
 .footer-copy {
   font-size:   0.72rem;

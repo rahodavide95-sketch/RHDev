@@ -122,7 +122,11 @@ function buildReleases(releases) {
   const grid = document.getElementById('releases-grid');
   if (!grid || !releases?.length) return;
 
-  grid.innerHTML = releases.slice(0, 6).map((r, i) => renderReleaseCard(r, i)).join('');
+  const recent = [...releases]
+    .sort((a, b) => parseReleaseDate(b.date || b.year) - parseReleaseDate(a.date || a.year))
+    .slice(0, 6);
+
+  grid.innerHTML = recent.map((r, i) => renderReleaseCard(r, i)).join('');
 
   document.getElementById('releasesViewAll')
     ?.addEventListener('click', () => openReleasesModal(releases));

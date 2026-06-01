@@ -394,7 +394,7 @@ img.broken-hide                   { visibility: hidden; }
   font-weight:    400;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color:          var(--fg-3);
+  color:          var(--fg);
   white-space:    nowrap;
   padding-right:  2rem;
 }
@@ -431,6 +431,12 @@ img.broken-hide                   { visibility: hidden; }
 
 .section-head {
   margin-bottom: clamp(3rem, 6vw, 5rem);
+}
+.section-head--row {
+  display:         flex;
+  align-items:     baseline;
+  justify-content: space-between;
+  gap:             1.5rem;
 }
 .section-eyebrow {
   display:        block;
@@ -1006,7 +1012,7 @@ img.broken-hide                   { visibility: hidden; }
 }
 .footer-copy {
   font-size:   0.72rem;
-  color:       var(--fg-3);
+  color:       var(--fg);
   letter-spacing: 0.04em;
 }
 .footer-social {
@@ -1017,7 +1023,7 @@ img.broken-hide                   { visibility: hidden; }
   font-size:      0.68rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color:          var(--fg-3);
+  color:          var(--fg);
   transition:     color 0.3s;
 }
 .footer-social a:hover { color: var(--fg); }
@@ -1026,10 +1032,6 @@ img.broken-hide                   { visibility: hidden; }
 /* ============================================================
    VIEW ALL RELEASES BUTTON
    ============================================================ */
-.releases-view-all-wrap {
-  text-align: center;
-  margin-top: 3rem;
-}
 .btn-view-all {
   font-family:    var(--f-display);
   font-size:      0.72rem;

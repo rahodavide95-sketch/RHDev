@@ -124,13 +124,8 @@ function buildReleases(releases) {
 
   grid.innerHTML = releases.slice(0, 6).map((r, i) => renderReleaseCard(r, i)).join('');
 
-  if (releases.length > 6) {
-    const wrap = document.createElement('div');
-    wrap.className = 'releases-view-all-wrap';
-    wrap.innerHTML = `<button class="btn-view-all" id="releasesViewAll">View All Releases</button>`;
-    grid.after(wrap);
-    wrap.querySelector('button').addEventListener('click', () => openReleasesModal(releases));
-  }
+  document.getElementById('releasesViewAll')
+    ?.addEventListener('click', () => openReleasesModal(releases));
 
   observeCards('.release-card');
 }

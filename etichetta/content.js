@@ -6,6 +6,15 @@
 
 const SITE = {
 
+  // ---- SEZIONI VISIBILI ---------------------------------------
+  // Metti true per mostrare la sezione, false per nasconderla.
+  sections: {
+    podcast: false,
+    events:  false,
+    merch:   false,
+  },
+
+
   // ---- INFO ETICHETTA ----------------------------------------
   label: {
     name:        "SUBCONSCIOUS Culture",

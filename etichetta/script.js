@@ -73,14 +73,26 @@ function buildContent() {
   // Artists
   buildArtists(artists);
 
-  // Podcast
-  buildPodcast(SITE.podcast);
+  // Podcast / Events / Merch — hidden when sections flag is false
+  const vis = SITE.sections || {};
 
-  // Events
-  buildEvents(SITE.events);
+  if (vis.podcast !== false) {
+    buildPodcast(SITE.podcast);
+  } else {
+    hideSection('podcast');
+  }
 
-  // Merch
-  buildMerch(SITE.merch);
+  if (vis.events !== false) {
+    buildEvents(SITE.events);
+  } else {
+    hideSection('events');
+  }
+
+  if (vis.merch !== false) {
+    buildMerch(SITE.merch);
+  } else {
+    hideSection('merch');
+  }
 
   // Contact info
   buildContactInfo(contact);
@@ -89,6 +101,13 @@ function buildContent() {
 function setText(id, value) {
   const el = document.getElementById(id);
   if (el && value) el.textContent = value;
+}
+
+function hideSection(id) {
+  const section = document.getElementById(id);
+  if (section) section.style.display = 'none';
+  const link = document.querySelector(`.nav-link[href="#${id}"]`);
+  if (link) link.closest('li').style.display = 'none';
 }
 
 /* ----------------------------------------------------------

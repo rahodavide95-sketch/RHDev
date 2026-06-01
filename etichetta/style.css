@@ -1152,7 +1152,6 @@ img.broken-hide                   { visibility: hidden; }
 .releases-filter-wrap {
   display:     flex;
   align-items: stretch;
-  gap:         0.5rem;
 }
 
 .releases-modal-close {

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Simulazioni Finanziarie — Davide Raho</title>
+  <title>Analisi Finanziarie — Davide Raho</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
@@ -27,6 +27,20 @@
       --mono: 'DM Mono', monospace;
       --radius: 14px;
       --radius-sm: 8px;
+      --header-h: 73px;
+      --header-bg: rgba(14,15,17,0.85);
+    }
+
+    /* ─── LIGHT THEME ─── */
+    :root[data-theme="light"] {
+      --bg: #f2f3f5;
+      --surface: #ffffff;
+      --surface2: #e8eaed;
+      --border: rgba(0,0,0,0.08);
+      --border-hover: rgba(0,0,0,0.18);
+      --text: #111318;
+      --muted: #6b7280;
+      --header-bg: rgba(242,243,245,0.88);
     }
 
     html, body {
@@ -58,7 +72,7 @@
       align-items: center;
       justify-content: space-between;
       border-bottom: 1px solid var(--border);
-      background: rgba(14,15,17,0.8);
+      background: var(--header-bg);
       backdrop-filter: blur(20px);
       position: sticky;
       top: 0;
@@ -69,11 +83,32 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      font-size: 15px;
-      font-weight: 500;
-      color: var(--text);
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--muted);
       text-decoration: none;
     }
+
+    /* ─── THEME TOGGLE ─── */
+    .header-right { display: flex; align-items: center; gap: 12px; }
+
+    .theme-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 6px 12px;
+      cursor: pointer;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.3px;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .theme-toggle:hover { border-color: var(--border-hover); color: var(--text); }
+    .theme-icon { font-size: 13px; }
 
     .logo-dot {
       width: 8px;
@@ -109,10 +144,14 @@
       justify-content: center;
       align-items: center;
       text-align: center;
-      min-height: calc(100dvh - 73px);
-      padding: 20px 0;
+      height: calc(100dvh - var(--header-h));
+      overflow: hidden;
     }
     #home.active { display: flex; }
+
+    /* Hide footer + remove main padding when on home so page = exactly 100dvh */
+    #app:has(#home.active) footer { display: none; }
+    #app:has(#home.active) main { padding-bottom: 0; }
 
     .home-eyebrow {
       font-family: var(--mono);
@@ -963,19 +1002,19 @@
 
     /* ─── RESPONSIVE ─── */
     @media (max-width: 700px) {
+      :root { --header-h: 57px; }
       header { padding: 16px 20px; }
       main { padding: 0 16px 60px; }
-      /* Home: keep 2 columns, shrink cards so everything fits without scroll */
-      #home { min-height: calc(100dvh - 57px); padding: 12px 0; }
-      .home-title { font-size: clamp(24px, 7vw, 36px); margin-bottom: 10px; }
-      .home-sub { font-size: 14px; margin-bottom: 20px; }
-      .home-eyebrow { margin-bottom: 12px; }
+      /* Home cards: keep 2 columns on mobile */
+      .home-title { font-size: clamp(22px, 6vw, 32px); margin-bottom: 10px; }
+      .home-sub { font-size: 14px; margin-bottom: 18px; }
       .card-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; max-width: 100%; }
       .nav-card { padding: 16px 12px; }
       .nav-card-icon { font-size: 22px; margin-bottom: 8px; }
       .nav-card-title { font-size: 13px; margin-bottom: 4px; }
       .nav-card-desc { font-size: 11px; line-height: 1.4; }
       .nav-card-arrow { font-size: 14px; top: 10px; right: 10px; }
+      .theme-toggle span:last-child { display: none; }
       /* Other sections */
       .input-grid { grid-template-columns: 1fr; }
       .kpi-strip { grid-template-columns: 1fr 1fr; }
@@ -994,18 +1033,23 @@
   <header>
     <a class="logo" href="#" onclick="navigate('home'); return false;">
       <span class="logo-dot"></span>
-      Simulazioni Finanziarie
+      Analisi Finanziarie
     </a>
-    <span class="header-tag">v2.1 · 2026</span>
+    <div class="header-right">
+      <button class="theme-toggle" onclick="cycleTheme()" id="theme-btn">
+        <span class="theme-icon" id="theme-icon">💻</span>
+        <span id="theme-label">Sistema</span>
+      </button>
+      <span class="header-tag">v2.2 · 2026</span>
+    </div>
   </header>
 
   <main>
 
     <!-- ══════════ HOME ══════════ -->
     <div id="home" class="active">
-      <p class="home-eyebrow">Strumento di analisi</p>
-      <h1 class="home-title">Calcola i tuoi<br><strong>interessi</strong></h1>
-      <p class="home-sub">Scegli lo strumento finanziario da simulare</p>
+      <h1 class="home-title">Analisi<br><strong>Finanziarie</strong></h1>
+      <p class="home-sub">Scegli lo strumento da simulare</p>
 
       <div class="card-grid">
         <div class="nav-card" style="--card-accent: #00e5a0;" onclick="navigate('cc')">
@@ -2326,7 +2370,6 @@ function mktAddFromSearch(symbol, name) {
 function initMercati() {
   if (!mkt.initialized) {
     mkt.initialized = true;
-    /* Set default dates for custom range to last 30 days */
     const today = new Date();
     const ago30 = new Date(today); ago30.setDate(ago30.getDate() - 30);
     document.getElementById('mkt-date-to').value   = today.toISOString().split('T')[0];
@@ -2335,6 +2378,48 @@ function initMercati() {
   mktLoad();
   startMktAutoRefresh();
 }
+
+/* ══════════════════════════════
+   TEMA CHIARO / SCURO / SISTEMA
+══════════════════════════════ */
+const THEME_CYCLE = ['system', 'dark', 'light'];
+const THEME_META  = {
+  system: { icon: '💻', label: 'Sistema' },
+  dark:   { icon: '🌙', label: 'Scuro'   },
+  light:  { icon: '☀️', label: 'Chiaro'  },
+};
+
+let activeTheme = localStorage.getItem('af-theme') || 'system';
+
+function applyTheme(theme) {
+  activeTheme = theme;
+  localStorage.setItem('af-theme', theme);
+
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const effective   = theme === 'system' ? (prefersDark ? 'dark' : 'light') : theme;
+
+  document.documentElement.setAttribute('data-theme', effective);
+
+  const meta = THEME_META[theme];
+  document.getElementById('theme-icon').textContent  = meta.icon;
+  document.getElementById('theme-label').textContent = meta.label;
+
+  /* Update Chart.js default text color */
+  Chart.defaults.color = effective === 'light' ? '#6b7280' : '#7a7f8a';
+}
+
+function cycleTheme() {
+  const next = THEME_CYCLE[(THEME_CYCLE.indexOf(activeTheme) + 1) % THEME_CYCLE.length];
+  applyTheme(next);
+}
+
+/* React to OS theme changes when set to "Sistema" */
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+  if (activeTheme === 'system') applyTheme('system');
+});
+
+/* Apply saved theme immediately */
+applyTheme(activeTheme);
 </script>
 </body>
 </html>

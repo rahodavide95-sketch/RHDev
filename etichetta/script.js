@@ -383,15 +383,20 @@ function initScrollAnimations() {
 function observeCards(selector) {
   const cards = document.querySelectorAll(selector);
 
+  const reveal = (card) => card.classList.add('aos-visible');
+
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (!entry.isIntersecting) return;
-      entry.target.classList.add('aos-visible');
+      reveal(entry.target);
       observer.unobserve(entry.target);
     });
-  }, { threshold: 0.08 });
+  }, { threshold: 0, rootMargin: '0px 0px 80px 0px' });
 
   cards.forEach(c => observer.observe(c));
+
+  // Fallback: force-reveal after 600ms in case the observer misfires
+  setTimeout(() => cards.forEach(reveal), 600);
 }
 
 /* ----------------------------------------------------------

@@ -192,26 +192,11 @@ body {
   white-space:    nowrap;
 }
 
-/* Nav links — fixed sibling of navbar, floats centered over it on desktop */
+/* Nav links */
 .nav-links {
-  position:       fixed;
-  top:            0;
-  left:           0;
-  right:          0;
-  z-index:        1001;
-  list-style:     none;
-  display:        flex;
-  justify-content: center;
-  align-items:    center;
-  gap:            2.5rem;
-  padding:        1.1rem 0;
-  pointer-events: none;   /* clicks pass through empty areas */
-  transition:     padding 0.4s var(--ease);
-}
-.nav-links > li { pointer-events: auto; }
-/* Match navbar padding when scrolled */
-.navbar.is-scrolled ~ .nav-links {
-  padding: 0.85rem 0;
+  display:    flex;
+  list-style: none;
+  gap:        2.5rem;
 }
 .nav-link {
   font-family:    var(--f-body);
@@ -1043,39 +1028,32 @@ img.broken-hide                   { visibility: hidden; }
   /* Dropdown mobile menu */
   .nav-toggle { display: flex; }
 
-  /* Override desktop centred-fixed layout */
   .nav-links {
-    top:             4.2rem;   /* below default navbar */
-    justify-content: flex-start;
-    flex-direction:  column;
-    align-items:     flex-start;
-    gap:             0;
-    padding:         0.5rem 0;
-    pointer-events:  none;
-    /* independent backdrop-filter — works because nav-links is
-       now a sibling of navbar, not nested inside it */
-    background:              rgba(8, 8, 8, 0.08);
-    backdrop-filter:         blur(20px) saturate(160%);
-    -webkit-backdrop-filter: blur(20px) saturate(160%);
-    border-bottom:           1px solid var(--border);
+    display:        flex;
+    position:       absolute;
+    top:            100%;
+    left:           0;
+    right:          0;
+    flex-direction: column;
+    align-items:    flex-start;
+    gap:            0;
+    padding:        0.5rem 0;
+    background:     rgba(8, 8, 8, 0.75);
+    border-bottom:  1px solid var(--border);
+    z-index:        800;
     /* slide-down animation */
     opacity:    0;
     visibility: hidden;
-    transform:  translateY(-10px);
-    transition: opacity 0.32s var(--ease),
-                transform 0.32s var(--ease),
-                visibility 0.32s,
-                top 0.4s var(--ease);
+    transform:  translateY(-8px);
+    transition: opacity 0.3s var(--ease),
+                transform 0.3s var(--ease),
+                visibility 0.3s;
   }
-  .nav-links > li { pointer-events: none; }
   .nav-links.is-open {
-    opacity:        1;
-    visibility:     visible;
-    transform:      none;
-    pointer-events: auto;
+    opacity:   1;
+    visibility: visible;
+    transform: none;
   }
-  .nav-links.is-open > li { pointer-events: auto; }
-  .navbar.is-scrolled ~ .nav-links { top: 3.7rem; }
 
   .nav-links li { width: 100%; }
   .nav-link {

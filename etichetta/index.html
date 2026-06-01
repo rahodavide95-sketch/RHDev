@@ -83,8 +83,9 @@
   <!-- ========== ARTISTS ========== -->
   <section class="section" id="artists">
     <div class="container">
-      <div class="section-head" data-aos="fade-up">
+      <div class="section-head section-head--row" data-aos="fade-up">
         <h2 class="section-title">Artists</h2>
+        <button class="btn-view-all" id="artistsViewAll">View All</button>
       </div>
       <div class="artists-grid" id="artists-grid"></div>
     </div>
@@ -173,6 +174,7 @@
       <div class="releases-modal-head">
         <h2 class="releases-modal-title">Discography</h2>
         <div class="releases-filter-wrap">
+          <input type="search" class="modal-search" id="releasesSearch" placeholder="Search…" autocomplete="off">
           <select class="releases-sort" id="releasesSort" aria-label="Sort releases">
             <option value="newest">Newest First</option>
             <option value="oldest">Oldest First</option>
@@ -183,6 +185,24 @@
         <button class="releases-modal-close" id="releasesClose" aria-label="Close">✕</button>
       </div>
       <div class="releases-grid" id="releases-all-grid"></div>
+    </div>
+  </div>
+
+  <!-- ========== ARTISTS MODAL ========== -->
+  <div class="releases-modal" id="artistsModal" role="dialog" aria-modal="true" aria-label="All Artists">
+    <div class="releases-modal-inner">
+      <div class="releases-modal-head">
+        <h2 class="releases-modal-title">Artists</h2>
+        <div class="releases-filter-wrap">
+          <input type="search" class="modal-search" id="artistsSearch" placeholder="Search…" autocomplete="off">
+          <select class="releases-sort" id="artistsSort" aria-label="Sort artists">
+            <option value="az">A–Z</option>
+            <option value="za">Z–A</option>
+          </select>
+        </div>
+        <button class="releases-modal-close" id="artistsClose" aria-label="Close">✕</button>
+      </div>
+      <div class="artists-grid" id="artists-all-grid"></div>
     </div>
   </div>
 

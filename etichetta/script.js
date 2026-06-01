@@ -5,6 +5,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   buildContent();
   initReleasesModal();
+  initArtistsModal();
   initNavbar();
   initScrollAnimations();
   initMobileMenu();
@@ -160,12 +161,21 @@ function closeReleasesModal() {
 }
 
 function renderAllReleases(releases) {
-  const grid   = document.getElementById('releases-all-grid');
-  const sortEl = document.getElementById('releasesSort');
+  const grid     = document.getElementById('releases-all-grid');
+  const sortEl   = document.getElementById('releasesSort');
+  const searchEl = document.getElementById('releasesSearch');
   if (!grid) return;
-  const sortVal = sortEl?.value || 'newest';
 
-  const sorted = [...releases].sort((a, b) => {
+  const sortVal   = sortEl?.value || 'newest';
+  const searchVal = (searchEl?.value || '').toLowerCase();
+
+  let filtered = releases.filter(r =>
+    !searchVal ||
+    r.artist.toLowerCase().includes(searchVal) ||
+    r.title.toLowerCase().includes(searchVal)
+  );
+
+  filtered.sort((a, b) => {
     if (sortVal === 'newest') return parseReleaseDate(b.date || b.year) - parseReleaseDate(a.date || a.year);
     if (sortVal === 'oldest') return parseReleaseDate(a.date || a.year) - parseReleaseDate(b.date || b.year);
     if (sortVal === 'artist') return a.artist.localeCompare(b.artist);
@@ -173,7 +183,7 @@ function renderAllReleases(releases) {
     return 0;
   });
 
-  grid.innerHTML = sorted.map((r, i) => renderReleaseCard(r, i)).join('');
+  grid.innerHTML = filtered.map((r, i) => renderReleaseCard(r, i)).join('');
   observeCards('#releases-all-grid .release-card');
 }
 
@@ -181,48 +191,103 @@ function initReleasesModal() {
   const modal = document.getElementById('releasesModal');
   if (!modal) return;
 
-  document.getElementById('releasesClose')
-    ?.addEventListener('click', closeReleasesModal);
+  const refresh = () => { if (typeof SITE !== 'undefined') renderAllReleases(SITE.releases); };
 
-  document.getElementById('releasesSort')
-    ?.addEventListener('change', () => {
-      if (typeof SITE !== 'undefined') renderAllReleases(SITE.releases);
-    });
+  document.getElementById('releasesClose')?.addEventListener('click', closeReleasesModal);
+  document.getElementById('releasesSort')?.addEventListener('change', refresh);
+  document.getElementById('releasesSearch')?.addEventListener('input', refresh);
 
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && modal.classList.contains('is-open')) closeReleasesModal();
+    if (e.key === 'Escape') {
+      if (document.getElementById('releasesModal').classList.contains('is-open')) closeReleasesModal();
+      if (document.getElementById('artistsModal')?.classList.contains('is-open')) closeArtistsModal();
+    }
   });
 }
 
 /* ----------------------------------------------------------
    Artists grid
    ---------------------------------------------------------- */
+function renderArtistCard(a, i) {
+  const photoHtml = a.photo
+    ? `<img src="${a.photo}" alt="${esc(a.name)}" loading="lazy">`
+    : `<div class="photo-placeholder"></div>`;
+
+  const links = [
+    a.instagram  && { text: 'Instagram',  url: a.instagram  },
+    a.soundcloud && { text: 'Soundcloud', url: a.soundcloud },
+  ].filter(Boolean);
+
+  return `
+    <article class="artist-card" style="transition-delay:${i * 0.09}s">
+      <div class="artist-photo">${photoHtml}</div>
+      <div class="artist-name">${esc(a.name)}</div>
+      ${links.length ? `
+        <div class="artist-links">
+          ${links.map(l => `<a href="${l.url}" target="_blank" rel="noopener" class="artist-link">${l.text}</a>`).join('')}
+        </div>` : ''}
+    </article>`;
+}
+
 function buildArtists(artists) {
   const grid = document.getElementById('artists-grid');
   if (!grid || !artists?.length) return;
 
-  grid.innerHTML = artists.map((a, i) => {
-    const photoHtml = a.photo
-      ? `<img src="${a.photo}" alt="${esc(a.name)}" loading="lazy">`
-      : `<div class="photo-placeholder"></div>`;
+  grid.innerHTML = artists.map((a, i) => renderArtistCard(a, i)).join('');
 
-    const links = [
-      a.instagram  && { text: 'Instagram',  url: a.instagram  },
-      a.soundcloud && { text: 'Soundcloud', url: a.soundcloud },
-    ].filter(Boolean);
-
-    return `
-      <article class="artist-card" style="transition-delay:${i * 0.09}s">
-        <div class="artist-photo">${photoHtml}</div>
-        <div class="artist-name">${esc(a.name)}</div>
-        ${links.length ? `
-          <div class="artist-links">
-            ${links.map(l => `<a href="${l.url}" target="_blank" rel="noopener" class="artist-link">${l.text}</a>`).join('')}
-          </div>` : ''}
-      </article>`;
-  }).join('');
+  document.getElementById('artistsViewAll')
+    ?.addEventListener('click', () => openArtistsModal(artists));
 
   observeCards('.artist-card');
+}
+
+function openArtistsModal(artists) {
+  const modal = document.getElementById('artistsModal');
+  if (!modal) return;
+  renderAllArtists(artists);
+  modal.style.display = 'flex';
+  requestAnimationFrame(() => requestAnimationFrame(() => modal.classList.add('is-open')));
+  document.body.style.overflow = 'hidden';
+}
+
+function closeArtistsModal() {
+  const modal = document.getElementById('artistsModal');
+  if (!modal) return;
+  modal.classList.remove('is-open');
+  modal.addEventListener('transitionend', () => { modal.style.display = 'none'; }, { once: true });
+  document.body.style.overflow = '';
+}
+
+function renderAllArtists(artists) {
+  const grid     = document.getElementById('artists-all-grid');
+  const sortEl   = document.getElementById('artistsSort');
+  const searchEl = document.getElementById('artistsSearch');
+  if (!grid) return;
+
+  const sortVal   = sortEl?.value || 'az';
+  const searchVal = (searchEl?.value || '').toLowerCase();
+
+  let filtered = artists.filter(a =>
+    !searchVal || a.name.toLowerCase().includes(searchVal)
+  );
+
+  filtered.sort((a, b) =>
+    sortVal === 'za' ? b.name.localeCompare(a.name) : a.name.localeCompare(b.name)
+  );
+
+  grid.innerHTML = filtered.map((a, i) => renderArtistCard(a, i)).join('');
+  observeCards('#artists-all-grid .artist-card');
+}
+
+function initArtistsModal() {
+  const modal = document.getElementById('artistsModal');
+  if (!modal) return;
+
+  const refresh = () => { if (typeof SITE !== 'undefined') renderAllArtists(SITE.artists); };
+
+  document.getElementById('artistsClose')?.addEventListener('click', closeArtistsModal);
+  document.getElementById('artistsSort')?.addEventListener('change', refresh);
+  document.getElementById('artistsSearch')?.addEventListener('input', refresh);
 }
 
 /* ----------------------------------------------------------

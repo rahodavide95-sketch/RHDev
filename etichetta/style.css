@@ -1124,25 +1124,35 @@ img.broken-hide                   { visibility: hidden; }
 .releases-sort option { background: #0e0e0e; color: var(--fg); }
 
 .modal-search {
-  background:  transparent;
-  border:      1px solid var(--border);
-  border-right: none;
-  color:       var(--fg);
-  font-family: var(--f-body);
-  font-size:   0.68rem;
-  font-weight: 300;
-  letter-spacing: 0.05em;
-  padding:     0.5rem 0.9rem;
-  width:       140px;
-  outline:     none;
-  transition:  border-color 0.3s;
+  background:     transparent;
+  border:         1px solid var(--border);
+  color:          var(--fg-2);
+  font-family:    var(--f-body);
+  font-size:      0.68rem;
+  font-weight:    400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding:        0.5rem 0.9rem;
+  width:          160px;
+  outline:        none;
+  appearance:     none;
+  -webkit-appearance: none;
+  transition:     border-color 0.3s, color 0.3s;
 }
-.modal-search::placeholder { color: var(--fg-3); font-style: italic; }
-.modal-search:focus { border-color: rgba(255,255,255,0.25); }
+.modal-search::placeholder {
+  color:          var(--fg-3);
+  text-transform: none;
+  letter-spacing: 0.05em;
+}
+.modal-search:focus {
+  border-color: rgba(255,255,255,0.25);
+  color:        var(--fg);
+}
 
 .releases-filter-wrap {
   display:     flex;
   align-items: stretch;
+  gap:         0.5rem;
 }
 
 .releases-modal-close {

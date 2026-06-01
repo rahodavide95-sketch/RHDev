@@ -53,7 +53,7 @@ const SITE = {
       year:    "2026",
       catalog: "SSSCLTR003",
       format:  "Digital",
-      cover:   "sc003.jpg",
+      cover:   "images/releases/sc003.jpg",
       link:    "https://fanlink.tv/raho-lunthera-ep-subconscious-culture",
     },
     {
@@ -62,7 +62,7 @@ const SITE = {
       year:    "2026",
       catalog: "SSSCLTR004",
       format:  "Digital",
-      cover:   "sc004.jpg",
+      cover:   "images/releases/sc004.jpg",
       link:    "https://fanlink.tv/raho-aevum-ep-subconscious-culture",
     },
     {
@@ -71,7 +71,7 @@ const SITE = {
       year:    "2026",
       catalog: "SSSCLTRS01",
       format:  "Digital",
-      cover:   "va01.jpg",
+      cover:   "images/releases/va01.jpg",
       link:    "https://fanlink.tv/subconscious-culture-various-artists-somnia-i",
     },
   ],

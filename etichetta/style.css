@@ -68,52 +68,52 @@ body.ready { opacity: 1; }
 .bg-blob {
   position:      absolute;
   border-radius: 50%;
-  filter:        blur(130px);
+  filter:        blur(100px);
   will-change:   transform, opacity;
 }
 
 .bg-blob--1 {
   width:      80vmax;
   height:     80vmax;
-  background: radial-gradient(circle, rgba(44, 18, 78, 0.70) 0%, transparent 65%);
+  background: radial-gradient(circle, rgba(58, 20, 100, 0.82) 0%, transparent 65%);
   top:  -30vmax;
   left: -15vmax;
-  animation: blobDrift1 32s ease-in-out infinite alternate;
+  animation: blobDrift1 16s ease-in-out infinite alternate;
 }
 
 .bg-blob--2 {
   width:      65vmax;
   height:     65vmax;
-  background: radial-gradient(circle, rgba(10, 50, 58, 0.60) 0%, transparent 65%);
+  background: radial-gradient(circle, rgba(12, 62, 72, 0.72) 0%, transparent 65%);
   top:   28%;
   right: -18vmax;
-  animation: blobDrift2 40s ease-in-out infinite alternate;
+  animation: blobDrift2 20s ease-in-out infinite alternate;
 }
 
 .bg-blob--3 {
   width:      70vmax;
   height:     70vmax;
-  background: radial-gradient(circle, rgba(60, 40, 10, 0.50) 0%, transparent 65%);
+  background: radial-gradient(circle, rgba(78, 50, 8, 0.65) 0%, transparent 65%);
   bottom: -22vmax;
   left:    12%;
-  animation: blobDrift3 26s ease-in-out infinite alternate;
+  animation: blobDrift3 13s ease-in-out infinite alternate;
 }
 
 @keyframes blobDrift1 {
-  0%   { transform: translate(0,      0)     scale(1);    opacity: 0.65; }
-  30%  { transform: translate(14vw,  22vh)   scale(1.12); opacity: 1;    }
-  70%  { transform: translate(24vw,   8vh)   scale(0.88); opacity: 0.55; }
-  100% { transform: translate(8vw,   30vh)   scale(1.08); opacity: 0.85; }
+  0%   { transform: translate(0,      0)     scale(1);    opacity: 0.75; }
+  30%  { transform: translate(20vw,  28vh)   scale(1.18); opacity: 1;    }
+  70%  { transform: translate(32vw,  12vh)   scale(0.85); opacity: 0.60; }
+  100% { transform: translate(12vw,  38vh)   scale(1.12); opacity: 0.90; }
 }
 @keyframes blobDrift2 {
-  0%   { transform: translate(0,      0)     scale(1);    opacity: 0.5;  }
-  45%  { transform: translate(-20vw, -14vh)  scale(1.22); opacity: 0.9;  }
-  100% { transform: translate(-10vw,  18vh)  scale(0.86); opacity: 0.60; }
+  0%   { transform: translate(0,      0)     scale(1);    opacity: 0.60; }
+  45%  { transform: translate(-28vw, -20vh)  scale(1.28); opacity: 1;    }
+  100% { transform: translate(-14vw,  24vh)  scale(0.82); opacity: 0.65; }
 }
 @keyframes blobDrift3 {
-  0%   { transform: translate(0,      0)     scale(1);    opacity: 0.45; }
-  50%  { transform: translate(18vw,  -18vh)  scale(1.16); opacity: 0.80; }
-  100% { transform: translate(-8vw,  -10vh)  scale(1.06); opacity: 0.50; }
+  0%   { transform: translate(0,      0)     scale(1);    opacity: 0.55; }
+  50%  { transform: translate(25vw,  -25vh)  scale(1.20); opacity: 0.90; }
+  100% { transform: translate(-12vw, -14vh)  scale(1.08); opacity: 0.60; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -369,7 +369,7 @@ img.broken-hide                   { visibility: hidden; }
   border-top:    1px solid var(--border);
   border-bottom: 1px solid var(--border);
   padding:       1rem 0;
-  background:    rgba(14, 14, 14, 0.80);
+  background:    rgba(14, 14, 14, 0.68);
   position:      relative;
   z-index:       1;
 }
@@ -402,12 +402,12 @@ img.broken-hide                   { visibility: hidden; }
    ============================================================ */
 .section {
   padding:    var(--pad-section) 0;
-  background: rgba(8, 8, 8, 0.84);
+  background: rgba(8, 8, 8, 0.68);
   position:   relative;
   z-index:    1;
 }
 .section--alt {
-  background: rgba(14, 14, 14, 0.84);
+  background: rgba(14, 14, 14, 0.68);
 }
 
 /* Thin divider at top of each section (minimal, not a box) */
@@ -966,7 +966,7 @@ img.broken-hide                   { visibility: hidden; }
 .footer {
   padding:    2.5rem 0;
   border-top: 1px solid var(--border);
-  background: rgba(8, 8, 8, 0.84);
+  background: rgba(8, 8, 8, 0.68);
   position:   relative;
   z-index:    1;
 }

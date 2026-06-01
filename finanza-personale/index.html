@@ -1927,43 +1927,90 @@ let mkt = {
 
 const MKT_CACHE_TTL = 5 * 60 * 1000;
 
-/* ─── API ─── */
+/* ─── PROXY FETCH ─── */
 async function mktFetch(url) {
-  /* Primary proxy: allorigins */
-  try {
-    const r = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent(url));
-    if (!r.ok) throw new Error('allorigins ' + r.status);
-    const d = await r.json();
-    return JSON.parse(d.contents);
-  } catch {
-    /* Fallback: corsproxy.io */
-    const r = await fetch('https://corsproxy.io/?' + encodeURIComponent(url));
-    if (!r.ok) throw new Error('corsproxy ' + r.status);
-    return r.json();
+  /* 4 proxy strategies in order — first success wins */
+  const attempts = [
+    /* 1. allorigins raw (returns body directly) */
+    async () => {
+      const r = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(url));
+      if (!r.ok) throw 0;
+      const t = await r.text();
+      if (!t || t[0] !== '{') throw 0;
+      return JSON.parse(t);
+    },
+    /* 2. allorigins get (wrapped in JSON envelope) */
+    async () => {
+      const r = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent(url));
+      if (!r.ok) throw 0;
+      const d = await r.json();
+      return JSON.parse(d.contents);
+    },
+    /* 3. corsproxy.io */
+    async () => {
+      const r = await fetch('https://corsproxy.io/?' + encodeURIComponent(url));
+      if (!r.ok) throw 0;
+      return r.json();
+    },
+    /* 4. thingproxy */
+    async () => {
+      const r = await fetch('https://thingproxy.freeboard.io/fetch/' + url);
+      if (!r.ok) throw 0;
+      return r.json();
+    },
+  ];
+  for (const fn of attempts) {
+    try { return await fn(); } catch {}
   }
+  throw new Error('proxy_fail');
 }
 
+/* ─── CHART FETCH (with cache + multi-endpoint fallback) ─── */
 async function mktFetchChart(symbol, range, interval, fromTs, toTs) {
   const cacheKey = `${symbol}|${range}|${interval}|${fromTs}|${toTs}`;
   const now = Date.now();
   if (mkt.cache[cacheKey] && (now - mkt.cacheTimes[cacheKey]) < MKT_CACHE_TTL) {
     return mkt.cache[cacheKey];
   }
-  let url;
-  if (fromTs && toTs) {
-    url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?period1=${fromTs}&period2=${toTs}&interval=${interval}`;
-  } else {
-    url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${range}&interval=${interval}`;
+
+  const buildUrl = (base, ver) => {
+    const sym = encodeURIComponent(symbol);
+    const path = `${base}/${ver}/finance/chart/${sym}`;
+    return fromTs && toTs
+      ? `${path}?period1=${fromTs}&period2=${toTs}&interval=${interval}`
+      : `${path}?range=${range}&interval=${interval}`;
+  };
+
+  /* Try query2-v8, query1-v8, query2-v6, query1-v6 */
+  const endpoints = [
+    buildUrl('https://query2.finance.yahoo.com', 'v8'),
+    buildUrl('https://query1.finance.yahoo.com', 'v8'),
+    buildUrl('https://query2.finance.yahoo.com', 'v6'),
+    buildUrl('https://query1.finance.yahoo.com', 'v6'),
+  ];
+
+  for (const url of endpoints) {
+    try {
+      const data = await mktFetch(url);
+      if (data?.chart?.result?.[0]) {
+        mkt.cache[cacheKey] = data;
+        mkt.cacheTimes[cacheKey] = now;
+        return data;
+      }
+    } catch {}
   }
-  const data = await mktFetch(url);
-  mkt.cache[cacheKey] = data;
-  mkt.cacheTimes[cacheKey] = now;
-  return data;
+  throw new Error('no_data:' + symbol);
 }
 
 async function mktSearch(query) {
-  const url = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=8&newsCount=0`;
-  return mktFetch(url);
+  const urls = [
+    `https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=8&newsCount=0`,
+    `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=8&newsCount=0`,
+  ];
+  for (const url of urls) {
+    try { return await mktFetch(url); } catch {}
+  }
+  throw new Error('search_fail');
 }
 
 /* ─── RANGE PARAMS ─── */
@@ -2113,7 +2160,10 @@ function mktApplyResult(item, result, gen) {
     row.innerHTML = `
       <td><div class="mkt-name-col"><span class="mkt-name">${item.name}</span><span class="mkt-sym-small">${item.symbol}</span></div></td>
       <td><span class="mkt-sym-col">${item.symbol}</span></td>
-      <td colspan="3" style="color:var(--muted);font-size:12px;font-family:var(--mono);">N/D</td>
+      <td colspan="3">
+        <span style="color:var(--muted);font-size:12px;font-family:var(--mono);">Dati non disponibili — </span>
+        <button onclick="mktRetryRow(this,'${item.symbol}','${item.name}')" style="background:none;border:none;color:var(--accent4);font-size:12px;font-family:var(--mono);cursor:pointer;padding:0;">riprova ↻</button>
+      </td>
     `;
     row.style.cursor = 'default';
     return;
@@ -2163,27 +2213,29 @@ async function mktLoad() {
 
   /* ── FAST PATH: single bulk request via /v8/finance/spark ── */
   if (mkt.range !== 'Custom') {
-    try {
-      const syms = items.map(i => i.symbol).join(',');
-      const url  = `https://query1.finance.yahoo.com/v8/finance/spark?symbols=${encodeURIComponent(syms)}&range=${range}&interval=${interval}`;
-      const data = await mktFetch(url);
-      if (gen !== mkt.loadGen) return;
-
-      /* Build symbol → result map */
-      const map = {};
-      (data.spark?.result || []).forEach(r => {
-        if (r?.symbol && r.response?.[0]) map[r.symbol] = r.response[0];
-      });
-
-      if (Object.keys(map).length > 0) {
-        items.forEach(item => mktApplyResult(item, map[item.symbol] || null, gen));
-        mktFinalize(gen);
-        return;
-      }
-    } catch { /* fall through to individual requests */ }
+    const syms = items.map(i => i.symbol).join(',');
+    const sparkUrls = [
+      `https://query2.finance.yahoo.com/v8/finance/spark?symbols=${encodeURIComponent(syms)}&range=${range}&interval=${interval}`,
+      `https://query1.finance.yahoo.com/v8/finance/spark?symbols=${encodeURIComponent(syms)}&range=${range}&interval=${interval}`,
+    ];
+    for (const url of sparkUrls) {
+      try {
+        const data = await mktFetch(url);
+        if (gen !== mkt.loadGen) return;
+        const map = {};
+        (data.spark?.result || []).forEach(r => {
+          if (r?.symbol && r.response?.[0]) map[r.symbol] = r.response[0];
+        });
+        if (Object.keys(map).length > 0) {
+          items.forEach(item => mktApplyResult(item, map[item.symbol] || null, gen));
+          mktFinalize(gen);
+          return;
+        }
+      } catch {}
+    }
   }
 
-  /* ── FALLBACK: individual requests, all in parallel, no delay ── */
+  /* ── FALLBACK: individual chart requests, all in parallel ── */
   if (gen !== mkt.loadGen) return;
   await Promise.all(items.map(async item => {
     try {
@@ -2195,6 +2247,20 @@ async function mktLoad() {
     }
   }));
   mktFinalize(gen);
+}
+
+/* ─── RETRY SINGLE ROW ─── */
+async function mktRetryRow(btn, symbol, name) {
+  btn.textContent = '...';
+  const { range, interval, fromTs, toTs } = getMktRangeParams();
+  const gen = mkt.loadGen;
+  try {
+    const data   = await mktFetchChart(symbol, range, interval, fromTs, toTs);
+    const result = data.chart?.result?.[0];
+    mktApplyResult({ symbol, name }, result || null, gen);
+  } catch {
+    btn.textContent = 'riprova ↻';
+  }
 }
 
 /* ─── CATEGORY ─── */

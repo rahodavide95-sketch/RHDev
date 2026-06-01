@@ -28,11 +28,12 @@ const SITE = {
   // ---- RELEASES -----------------------------------------------
   // Release singola/EP/album → catalog: "SSSCLTR001", "SSSCLTR002", ecc.
   // Various Artists (VA)    → catalog: "SSSCLTRS01",  "SSSCLTRS02",  ecc.
+  // date: formato GG/MM/AAAA  es. "15/06/2026"
   releases: [
     {
       artist:  "Raho",
       title:   "Solvane EP",
-      year:    "2026",
+      date:    "01/01/2026",
       catalog: "SSSCLTR001",
       format:  "Digital",
       cover:   "images/releases/sc001.jpg",
@@ -41,7 +42,7 @@ const SITE = {
     {
       artist:  "Raho",
       title:   "Somnara EP",
-      year:    "2026",
+      date:    "01/01/2026",
       catalog: "SSSCLTR002",
       format:  "Digital",
       cover:   "images/releases/sc002.jpg",
@@ -50,7 +51,7 @@ const SITE = {
     {
       artist:  "Raho",
       title:   "Lunthera EP",
-      year:    "2026",
+      date:    "01/01/2026",
       catalog: "SSSCLTR003",
       format:  "Digital",
       cover:   "images/releases/sc003.jpg",
@@ -59,7 +60,7 @@ const SITE = {
     {
       artist:  "Raho",
       title:   "Aevum EP",
-      year:    "2026",
+      date:    "01/01/2026",
       catalog: "SSSCLTR004",
       format:  "Digital",
       cover:   "images/releases/sc004.jpg",
@@ -68,7 +69,7 @@ const SITE = {
     {
       artist:  "Various Artists",
       title:   "Somnia I",
-      year:    "2026",
+      date:    "01/01/2026",
       catalog: "SSSCLTRS01",
       format:  "Digital",
       cover:   "images/releases/va01.jpg",

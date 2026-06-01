@@ -4,6 +4,7 @@
 
 document.addEventListener('DOMContentLoaded', () => {
   buildContent();
+  initReleasesModal();
   initNavbar();
   initScrollAnimations();
   initMobileMenu();
@@ -90,38 +91,106 @@ function setText(id, value) {
 }
 
 /* ----------------------------------------------------------
-   Releases grid
+   Releases
    ---------------------------------------------------------- */
+function renderReleaseCard(r, i) {
+  const coverHtml = r.cover
+    ? `<img src="${r.cover}" alt="${esc(r.artist)} — ${esc(r.title)}" loading="lazy">`
+    : `<div class="cover-placeholder"></div>`;
+
+  const overlayHtml = r.link
+    ? `<div class="cover-overlay"><a href="${r.link}" target="_blank" rel="noopener">Listen</a></div>`
+    : '';
+
+  const metaParts = [r.date || r.year, r.catalog, r.format].filter(Boolean);
+
+  return `
+    <article class="release-card" style="transition-delay:${i * 0.07}s">
+      <div class="release-cover">
+        ${coverHtml}
+        ${overlayHtml}
+      </div>
+      <div class="release-artist">${esc(r.artist)}</div>
+      <div class="release-title">${esc(r.title)}</div>
+      <div class="release-meta">
+        ${metaParts.map(p => `<span>${esc(p)}</span>`).join('')}
+      </div>
+    </article>`;
+}
+
 function buildReleases(releases) {
   const grid = document.getElementById('releases-grid');
   if (!grid || !releases?.length) return;
 
-  grid.innerHTML = releases.map((r, i) => {
-    const coverHtml = r.cover
-      ? `<img src="${r.cover}" alt="${esc(r.artist)} — ${esc(r.title)}" loading="lazy">`
-      : `<div class="cover-placeholder"></div>`;
+  grid.innerHTML = releases.slice(0, 6).map((r, i) => renderReleaseCard(r, i)).join('');
 
-    const overlayHtml = r.link
-      ? `<div class="cover-overlay"><a href="${r.link}" target="_blank" rel="noopener">Listen</a></div>`
-      : '';
-
-    const metaParts = [r.year, r.catalog, r.format].filter(Boolean);
-
-    return `
-      <article class="release-card" style="transition-delay:${i * 0.07}s">
-        <div class="release-cover">
-          ${coverHtml}
-          ${overlayHtml}
-        </div>
-        <div class="release-artist">${esc(r.artist)}</div>
-        <div class="release-title">${esc(r.title)}</div>
-        <div class="release-meta">
-          ${metaParts.map(p => `<span>${esc(p)}</span>`).join('')}
-        </div>
-      </article>`;
-  }).join('');
+  if (releases.length > 6) {
+    const wrap = document.createElement('div');
+    wrap.className = 'releases-view-all-wrap';
+    wrap.innerHTML = `<button class="btn-view-all" id="releasesViewAll">View All Releases</button>`;
+    grid.after(wrap);
+    wrap.querySelector('button').addEventListener('click', () => openReleasesModal(releases));
+  }
 
   observeCards('.release-card');
+}
+
+function parseReleaseDate(str) {
+  if (!str) return 0;
+  const p = str.split('/');
+  return p.length === 3
+    ? new Date(+p[2], +p[1] - 1, +p[0]).getTime()
+    : new Date(+str, 0, 1).getTime();
+}
+
+function openReleasesModal(releases) {
+  const modal = document.getElementById('releasesModal');
+  if (!modal) return;
+  renderAllReleases(releases);
+  modal.classList.add('is-open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeReleasesModal() {
+  const modal = document.getElementById('releasesModal');
+  if (!modal) return;
+  modal.classList.remove('is-open');
+  document.body.style.overflow = '';
+}
+
+function renderAllReleases(releases) {
+  const grid   = document.getElementById('releases-all-grid');
+  const sortEl = document.getElementById('releasesSort');
+  if (!grid) return;
+  const sortVal = sortEl?.value || 'newest';
+
+  const sorted = [...releases].sort((a, b) => {
+    if (sortVal === 'newest') return parseReleaseDate(b.date || b.year) - parseReleaseDate(a.date || a.year);
+    if (sortVal === 'oldest') return parseReleaseDate(a.date || a.year) - parseReleaseDate(b.date || b.year);
+    if (sortVal === 'artist') return a.artist.localeCompare(b.artist);
+    if (sortVal === 'name')   return a.title.localeCompare(b.title);
+    return 0;
+  });
+
+  grid.innerHTML = sorted.map((r, i) => renderReleaseCard(r, i)).join('');
+  observeCards('#releases-all-grid .release-card');
+}
+
+function initReleasesModal() {
+  const modal = document.getElementById('releasesModal');
+  if (!modal) return;
+
+  document.getElementById('releasesClose')
+    ?.addEventListener('click', closeReleasesModal);
+
+  document.getElementById('releasesSort')
+    ?.addEventListener('change', () => {
+      if (typeof SITE !== 'undefined') renderAllReleases(SITE.releases);
+    });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && modal.classList.contains('is-open')) closeReleasesModal();
+  });
 }
 
 /* ----------------------------------------------------------

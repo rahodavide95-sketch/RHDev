@@ -166,6 +166,25 @@
     </div>
   </footer>
 
+  <!-- ========== RELEASES MODAL ========== -->
+  <div class="releases-modal" id="releasesModal" role="dialog" aria-modal="true" aria-label="All Releases">
+    <div class="releases-modal-inner">
+      <div class="releases-modal-head">
+        <h2 class="releases-modal-title">Discography</h2>
+        <div class="releases-filter-wrap">
+          <select class="releases-sort" id="releasesSort" aria-label="Sort releases">
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+            <option value="artist">Artist A–Z</option>
+            <option value="name">Name A–Z</option>
+          </select>
+        </div>
+        <button class="releases-modal-close" id="releasesClose" aria-label="Close">✕</button>
+      </div>
+      <div class="releases-grid" id="releases-all-grid"></div>
+    </div>
+  </div>
+
   <script src="content.js"></script>
   <script src="script.js"></script>
 </body>

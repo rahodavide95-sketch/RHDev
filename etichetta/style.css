@@ -77,14 +77,14 @@ body {
 .bg-blob {
   position:      absolute;
   border-radius: 50%;
-  filter:        blur(160px);
+  filter:        blur(110px);
   will-change:   transform, opacity;
 }
 
 .bg-blob--1 {
   width:      80vmax;
   height:     80vmax;
-  background: radial-gradient(circle, rgba(50, 14, 88, 1) 0%, transparent 60%);
+  background: radial-gradient(circle, rgba(82, 25, 148, 1) 0%, transparent 62%);
   top:  -30vmax;
   left: -15vmax;
   animation: blobDrift1 16s ease-in-out infinite alternate;
@@ -93,7 +93,7 @@ body {
 .bg-blob--2 {
   width:      65vmax;
   height:     65vmax;
-  background: radial-gradient(circle, rgba(8, 68, 78, 1) 0%, transparent 60%);
+  background: radial-gradient(circle, rgba(12, 105, 118, 1) 0%, transparent 62%);
   top:   28%;
   right: -18vmax;
   animation: blobDrift2 20s ease-in-out infinite alternate;
@@ -102,27 +102,27 @@ body {
 .bg-blob--3 {
   width:      70vmax;
   height:     70vmax;
-  background: radial-gradient(circle, rgba(90, 48, 6, 1) 0%, transparent 60%);
+  background: radial-gradient(circle, rgba(148, 72, 8, 1) 0%, transparent 62%);
   bottom: -22vmax;
   left:    12%;
   animation: blobDrift3 13s ease-in-out infinite alternate;
 }
 
 @keyframes blobDrift1 {
-  0%   { transform: translate(0,      0)     scale(1);    opacity: 0.30; }
-  30%  { transform: translate(20vw,  28vh)   scale(1.18); opacity: 0.50; }
-  70%  { transform: translate(32vw,  12vh)   scale(0.85); opacity: 0.22; }
-  100% { transform: translate(12vw,  38vh)   scale(1.12); opacity: 0.42; }
+  0%   { transform: translate(0,      0)     scale(1);    opacity: 0.38; }
+  30%  { transform: translate(20vw,  28vh)   scale(1.18); opacity: 0.62; }
+  70%  { transform: translate(32vw,  12vh)   scale(0.85); opacity: 0.30; }
+  100% { transform: translate(12vw,  38vh)   scale(1.12); opacity: 0.55; }
 }
 @keyframes blobDrift2 {
-  0%   { transform: translate(0,      0)     scale(1);    opacity: 0.22; }
-  45%  { transform: translate(-28vw, -20vh)  scale(1.28); opacity: 0.45; }
-  100% { transform: translate(-14vw,  24vh)  scale(0.82); opacity: 0.28; }
+  0%   { transform: translate(0,      0)     scale(1);    opacity: 0.30; }
+  45%  { transform: translate(-28vw, -20vh)  scale(1.28); opacity: 0.58; }
+  100% { transform: translate(-14vw,  24vh)  scale(0.82); opacity: 0.35; }
 }
 @keyframes blobDrift3 {
-  0%   { transform: translate(0,      0)     scale(1);    opacity: 0.20; }
-  50%  { transform: translate(25vw,  -25vh)  scale(1.20); opacity: 0.40; }
-  100% { transform: translate(-12vw, -14vh)  scale(1.08); opacity: 0.24; }
+  0%   { transform: translate(0,      0)     scale(1);    opacity: 0.28; }
+  50%  { transform: translate(25vw,  -25vh)  scale(1.20); opacity: 0.55; }
+  100% { transform: translate(-12vw, -14vh)  scale(1.08); opacity: 0.32; }
 }
 
 @media (prefers-reduced-motion: reduce) {

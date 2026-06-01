@@ -680,53 +680,198 @@
     }
 
     /* ════════════════════════════════════
-       ─── MERCATI (TradingView) ───
+       ─── MERCATI ───
     ════════════════════════════════════ */
 
-    /* Range pills */
-    .mkt-range-bar {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 16px;
-      flex-wrap: wrap;
+    /* Search */
+    .mkt-search-wrap { position: relative; margin-bottom: 20px; }
+
+    .mkt-search-input {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 18px 14px 44px;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .mkt-search-input:focus { border-color: var(--accent4); }
+    .mkt-search-input::placeholder { color: var(--muted); }
+
+    .mkt-search-icon {
+      position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+      color: var(--muted); font-size: 16px; pointer-events: none;
     }
 
+    .mkt-search-dropdown {
+      position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius); z-index: 200; max-height: 320px;
+      overflow-y: auto; display: none;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.4);
+    }
+    .mkt-search-dropdown.open { display: block; }
+
+    .mkt-search-item {
+      padding: 13px 18px; cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; transition: background 0.15s;
+    }
+    .mkt-search-item:hover { background: rgba(255,255,255,0.04); }
+    .mkt-search-item:last-child { border-bottom: none; }
+    .mkt-search-info { display: flex; flex-direction: column; gap: 2px; }
+    .mkt-search-name { font-size: 14px; color: var(--text); }
+    .mkt-search-exch { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+    .mkt-search-sym { font-family: var(--mono); font-size: 13px; color: var(--accent4); font-weight: 600; white-space: nowrap; }
+
+    /* Category tabs */
+    .mkt-tabs {
+      display: flex; gap: 8px; margin-bottom: 16px;
+      overflow-x: auto; padding-bottom: 2px; scrollbar-width: none;
+    }
+    .mkt-tabs::-webkit-scrollbar { display: none; }
+
+    .mkt-tab {
+      flex-shrink: 0; padding: 8px 16px; background: transparent;
+      border: 1px solid var(--border); border-radius: 20px;
+      color: var(--muted); font-family: var(--font); font-size: 13px;
+      cursor: pointer; transition: border-color 0.2s, color 0.2s, background 0.2s;
+      white-space: nowrap;
+    }
+    .mkt-tab.active {
+      background: rgba(155,89,182,0.15); border-color: var(--accent4); color: var(--accent4);
+    }
+    .mkt-tab:hover:not(.active) { border-color: var(--border-hover); color: var(--text); }
+
+    /* Range bar */
+    .mkt-range-bar {
+      display: flex; align-items: center; gap: 16px;
+      margin-bottom: 20px; flex-wrap: wrap;
+    }
     .mkt-range-pills { display: flex; gap: 6px; flex-wrap: wrap; }
 
     .mkt-range-pill {
-      padding: 6px 14px;
-      background: transparent;
-      border: 1px solid var(--border);
-      border-radius: 100px;
-      color: var(--muted);
-      font-family: var(--mono);
-      font-size: 12px;
-      cursor: pointer;
-      transition: border-color 0.2s, color 0.2s, background 0.2s;
+      padding: 6px 12px; background: transparent;
+      border: 1px solid var(--border); border-radius: 6px;
+      color: var(--muted); font-family: var(--mono); font-size: 12px;
+      cursor: pointer; transition: border-color 0.2s, color 0.2s, background 0.2s;
     }
-
     .mkt-range-pill.active {
-      background: var(--accent4);
-      border-color: var(--accent4);
-      color: #fff;
-      font-weight: 500;
+      background: rgba(0,229,160,0.1); border-color: var(--accent); color: var(--accent);
+    }
+    .mkt-range-pill:hover:not(.active) { border-color: var(--border-hover); color: var(--text); }
+
+    .mkt-custom-range {
+      display: flex; align-items: center; gap: 10px;
+      flex-wrap: wrap; margin-top: 8px; width: 100%;
+    }
+    .mkt-date-input {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 7px 12px;
+      color: var(--text); font-family: var(--mono); font-size: 13px;
+      outline: none; transition: border-color 0.2s; color-scheme: dark;
+    }
+    .mkt-date-input:focus { border-color: var(--accent); }
+
+    .mkt-apply-btn {
+      padding: 8px 16px; background: var(--accent); border: none;
+      border-radius: var(--radius-sm); color: #000;
+      font-family: var(--font); font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: opacity 0.2s;
+    }
+    .mkt-apply-btn:hover { opacity: 0.85; }
+
+    .mkt-status {
+      margin-left: auto; display: flex; align-items: center; gap: 10px;
+      font-size: 12px; color: var(--muted); font-family: var(--mono); white-space: nowrap;
+    }
+    .mkt-refresh-btn {
+      background: transparent; border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--muted);
+      font-size: 12px; padding: 5px 10px; cursor: pointer;
+      transition: border-color 0.2s, color 0.2s; font-family: var(--mono);
+    }
+    .mkt-refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .mkt-refresh-btn.spinning { animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Market table */
+    .mkt-table-wrap { overflow-x: auto; }
+    .mkt-table { width: 100%; border-collapse: collapse; min-width: 480px; }
+
+    .mkt-table th {
+      padding: 12px 20px; font-size: 11px; font-family: var(--mono);
+      color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;
+      text-align: left; background: rgba(255,255,255,0.02);
+      border-bottom: 1px solid var(--border);
+      cursor: pointer; white-space: nowrap; user-select: none;
+      transition: color 0.15s;
+    }
+    .mkt-table th:hover { color: var(--text); }
+    .mkt-table th.sort-asc::after { content: ' ↑'; color: var(--accent); }
+    .mkt-table th.sort-desc::after { content: ' ↓'; color: var(--accent); }
+
+    .mkt-table td {
+      padding: 14px 20px; font-size: 14px;
+      border-bottom: 1px solid var(--border); vertical-align: middle;
+    }
+    .mkt-table tr:last-child td { border-bottom: none; }
+    .mkt-table tbody tr { cursor: pointer; transition: background 0.15s; }
+    .mkt-table tbody tr:hover { background: rgba(255,255,255,0.025); }
+    .mkt-table tbody tr.mkt-selected { background: rgba(155,89,182,0.08); }
+
+    .mkt-name-col { display: flex; flex-direction: column; gap: 2px; }
+    .mkt-name { color: var(--text); font-weight: 500; font-size: 14px; }
+    .mkt-sym-small { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+    .mkt-sym-col { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+    .mkt-price-col { font-family: var(--mono); font-size: 14px; color: var(--text); }
+    .mkt-curr { font-size: 11px; color: var(--muted); margin-left: 4px; }
+    .mkt-change-col { font-family: var(--mono); font-size: 14px; font-weight: 600; white-space: nowrap; }
+    .mkt-pos { color: var(--success); }
+    .mkt-neg { color: var(--danger); }
+    .mkt-neu { color: var(--muted); }
+
+    /* Sparkline */
+    .mkt-skel {
+      display: inline-block;
+      background: linear-gradient(90deg, var(--surface2) 25%, rgba(255,255,255,0.05) 50%, var(--surface2) 75%);
+      background-size: 200% 100%; animation: skel-shimmer 1.5s infinite;
+      border-radius: 4px; height: 14px;
+    }
+    @keyframes skel-shimmer {
+      0% { background-position: 200% 0; } 100% { background-position: -200% 0; }
     }
 
-    .mkt-range-pill:hover:not(.active) {
-      border-color: var(--border-hover);
-      color: var(--text);
+    /* Chart panel */
+    .mkt-chart-panel { animation: fadeUp 0.3s ease forwards; }
+    .mkt-chart-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      margin-bottom: 20px; gap: 16px;
     }
+    .mkt-chart-meta { display: flex; flex-direction: column; gap: 4px; }
+    .mkt-chart-label { font-size: 11px; font-family: var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; }
+    .mkt-chart-price { font-size: 26px; font-weight: 600; color: var(--text); letter-spacing: -0.5px; }
+    .mkt-chart-pct { font-size: 15px; font-weight: 600; }
+    .mkt-tv-chart { height: 440px; border-radius: var(--radius-sm); overflow: hidden; }
+    .tradingview-widget-container { width: 100%; height: 100%; }
 
-    /* TradingView widget container */
-    .tv-widget-wrap {
-      border-radius: var(--radius);
-      overflow: hidden;
-      border: 1px solid var(--border);
-      min-height: 500px;
+    .mkt-close-btn {
+      background: transparent; border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--muted);
+      font-size: 13px; padding: 7px 14px; cursor: pointer;
+      transition: border-color 0.2s, color 0.2s; white-space: nowrap; flex-shrink: 0;
     }
+    .mkt-close-btn:hover { border-color: var(--border-hover); color: var(--text); }
 
-    .tradingview-widget-container { width: 100%; }
+    /* Error / no-data row */
+    .mkt-error-row td {
+      color: var(--muted) !important; font-size: 12px !important;
+      font-family: var(--mono) !important; cursor: default !important;
+    }
 
     /* ─── RESPONSIVE ─── */
     @media (max-width: 700px) {
@@ -749,6 +894,9 @@
       .page-header { flex-direction: column; align-items: flex-start; gap: 16px; }
       .modal { padding: 32px 24px; max-width: 90%; }
       .mkt-range-bar { flex-direction: column; align-items: flex-start; }
+      .mkt-status { margin-left: 0; }
+      .mkt-table th:nth-child(2),
+      .mkt-table td:nth-child(2) { display: none; }
     }
   </style>
 </head>
@@ -980,23 +1128,89 @@
         <button class="back-btn" onclick="navigate('home')">← Home</button>
       </div>
 
-      <!-- Range pills -->
+      <!-- Search bar -->
+      <div class="mkt-search-wrap">
+        <span class="mkt-search-icon">🔍</span>
+        <input id="mkt-search" type="text" class="mkt-search-input"
+               placeholder="Cerca qualsiasi titolo: AAPL, Bitcoin, ENI, Tesla, Oro…">
+        <div id="mkt-search-dropdown" class="mkt-search-dropdown"></div>
+      </div>
+
+      <!-- Category tabs -->
+      <div class="mkt-tabs" id="mkt-tabs">
+        <button class="mkt-tab active" data-cat="Indici"        onclick="selectMktCategory('Indici')">Indici</button>
+        <button class="mkt-tab"        data-cat="ETF"           onclick="selectMktCategory('ETF')">ETF</button>
+        <button class="mkt-tab"        data-cat="Obbligazioni"  onclick="selectMktCategory('Obbligazioni')">Obbligazioni</button>
+        <button class="mkt-tab"        data-cat="Materie Prime" onclick="selectMktCategory('Materie Prime')">Materie Prime</button>
+        <button class="mkt-tab"        data-cat="Valute"        onclick="selectMktCategory('Valute')">Valute</button>
+        <button class="mkt-tab"        data-cat="Azioni IT"     onclick="selectMktCategory('Azioni IT')">Azioni IT</button>
+        <button class="mkt-tab"        data-cat="Azioni US"     onclick="selectMktCategory('Azioni US')">Azioni US</button>
+        <button class="mkt-tab"        data-cat="Crypto"        onclick="selectMktCategory('Crypto')">Crypto</button>
+        <button class="mkt-tab" id="mkt-tab-search" data-cat="Ricerca" style="display:none;"
+                onclick="selectMktCategory('Ricerca')">🔍 Ricerca</button>
+      </div>
+
+      <!-- Range pills + status -->
       <div class="mkt-range-bar">
         <div class="mkt-range-pills" id="mkt-range-pills">
-          <button class="mkt-range-pill"        onclick="selectMktRange('1D', this)">1G</button>
-          <button class="mkt-range-pill"        onclick="selectMktRange('1W', this)">1S</button>
+          <button class="mkt-range-pill"        onclick="selectMktRange('1G', this)">1G</button>
+          <button class="mkt-range-pill"        onclick="selectMktRange('1S', this)">1S</button>
           <button class="mkt-range-pill active" onclick="selectMktRange('1M', this)">1M</button>
           <button class="mkt-range-pill"        onclick="selectMktRange('3M', this)">3M</button>
           <button class="mkt-range-pill"        onclick="selectMktRange('6M', this)">6M</button>
           <button class="mkt-range-pill"        onclick="selectMktRange('YTD',this)">YTD</button>
-          <button class="mkt-range-pill"        onclick="selectMktRange('12M',this)">1A</button>
-          <button class="mkt-range-pill"        onclick="selectMktRange('60M',this)">5A</button>
-          <button class="mkt-range-pill"        onclick="selectMktRange('ALL',this)">Max</button>
+          <button class="mkt-range-pill"        onclick="selectMktRange('1A', this)">1A</button>
+          <button class="mkt-range-pill"        onclick="selectMktRange('5A', this)">5A</button>
+          <button class="mkt-range-pill"        onclick="selectMktRange('Max',this)">Max</button>
+          <button class="mkt-range-pill"        onclick="selectMktRange('Custom',this)">Pers.</button>
+        </div>
+        <div class="mkt-status">
+          <span id="mkt-update-time"></span>
+          <button class="mkt-refresh-btn" id="mkt-refresh-btn" onclick="refreshMkt()">↻</button>
         </div>
       </div>
 
-      <!-- TradingView widget -->
-      <div id="tv-widget-container" class="tv-widget-wrap"></div>
+      <!-- Custom date range -->
+      <div id="mkt-custom-range" class="mkt-custom-range" style="display:none; margin-bottom:16px;">
+        <input type="date" id="mkt-date-from" class="mkt-date-input">
+        <span style="color:var(--muted);font-family:var(--mono);">→</span>
+        <input type="date" id="mkt-date-to" class="mkt-date-input">
+        <button class="mkt-apply-btn" onclick="applyMktCustomRange()">Applica</button>
+      </div>
+
+      <!-- Market table -->
+      <div class="detail-card">
+        <div class="detail-card-header" id="mkt-table-title">Dati di mercato</div>
+        <div class="mkt-table-wrap">
+          <table class="mkt-table">
+            <thead>
+              <tr>
+                <th onclick="sortMktTable('name')">Nome</th>
+                <th onclick="sortMktTable('symbol')">Simbolo</th>
+                <th onclick="sortMktTable('price')">Ultimo prezzo</th>
+                <th onclick="sortMktTable('change')">Performance %</th>
+                <th>Trend</th>
+              </tr>
+            </thead>
+            <tbody id="mkt-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Chart panel: TradingView Advanced Chart -->
+      <div id="mkt-chart-panel" class="mkt-chart-panel" style="display:none;">
+        <div class="chart-card">
+          <div class="mkt-chart-header">
+            <div class="mkt-chart-meta">
+              <div class="mkt-chart-label" id="mkt-chart-label"></div>
+              <div class="mkt-chart-price" id="mkt-chart-price"></div>
+              <div class="mkt-chart-pct"   id="mkt-chart-pct"></div>
+            </div>
+            <button class="mkt-close-btn" onclick="closeMktChart()">✕ Chiudi</button>
+          </div>
+          <div id="mkt-tv-chart" class="mkt-tv-chart"></div>
+        </div>
+      </div>
 
     </div><!-- /mercati -->
 
@@ -1034,6 +1248,8 @@ function navigate(id) {
 
   if (id === 'mercati') {
     initMercati();
+  } else {
+    stopMktAutoRefresh();
   }
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -1412,133 +1628,664 @@ document.addEventListener('keydown', function(e) {
 });
 
 /* ══════════════════════════════════════════════════════════════
-   MERCATI GLOBALI — TradingView Widget
+   MERCATI GLOBALI
 ══════════════════════════════════════════════════════════════ */
 
-let mktRange = '1M';
+const MKT_CATEGORIES = {
+  'Indici': [
+    { symbol: '^GSPC',      name: 'S&P 500' },
+    { symbol: '^IXIC',      name: 'Nasdaq Composite' },
+    { symbol: '^DJI',       name: 'Dow Jones' },
+    { symbol: '^RUT',       name: 'Russell 2000' },
+    { symbol: '^STOXX50E',  name: 'Euro Stoxx 50' },
+    { symbol: 'FTSEMIB.MI', name: 'FTSE MIB' },
+    { symbol: '^GDAXI',     name: 'DAX 40' },
+    { symbol: '^FTSE',      name: 'FTSE 100' },
+    { symbol: '^FCHI',      name: 'CAC 40' },
+    { symbol: '^N225',      name: 'Nikkei 225' },
+    { symbol: '^HSI',       name: 'Hang Seng' },
+    { symbol: '^VIX',       name: 'VIX Volatilità' },
+  ],
+  'ETF': [
+    { symbol: 'IWDA.AS',  name: 'iShares MSCI World' },
+    { symbol: 'VWCE.DE',  name: 'Vanguard FTSE All-World' },
+    { symbol: 'SWRD.SW',  name: 'SPDR MSCI World' },
+    { symbol: 'CSPX.L',   name: 'iShares Core S&P 500' },
+    { symbol: 'XDWD.DE',  name: 'Xtrackers MSCI World' },
+    { symbol: 'EMIM.AS',  name: 'iShares MSCI EM' },
+    { symbol: 'VOO',      name: 'Vanguard S&P 500' },
+    { symbol: 'SPY',      name: 'SPDR S&P 500' },
+    { symbol: 'QQQ',      name: 'Invesco Nasdaq 100' },
+    { symbol: 'TLT',      name: 'iShares 20Y+ Treasury' },
+    { symbol: 'GLD',      name: 'SPDR Gold Shares' },
+  ],
+  'Obbligazioni': [
+    { symbol: 'TLT',     name: 'iShares 20Y+ Treasury' },
+    { symbol: 'IEF',     name: 'iShares 7-10Y Treasury' },
+    { symbol: 'SHY',     name: 'iShares 1-3Y Treasury' },
+    { symbol: 'HYG',     name: 'iShares High Yield Corp' },
+    { symbol: 'LQD',     name: 'iShares IG Corporate' },
+    { symbol: 'AGG',     name: 'iShares US Aggregate' },
+    { symbol: 'EMB',     name: 'iShares EM Bond' },
+    { symbol: 'IEAG.AS', name: 'iShares Euro Agg Bond' },
+  ],
+  'Materie Prime': [
+    { symbol: 'GC=F', name: 'Oro' },
+    { symbol: 'SI=F', name: 'Argento' },
+    { symbol: 'CL=F', name: 'Petrolio WTI' },
+    { symbol: 'BZ=F', name: 'Petrolio Brent' },
+    { symbol: 'NG=F', name: 'Gas Naturale' },
+    { symbol: 'HG=F', name: 'Rame' },
+    { symbol: 'ZW=F', name: 'Grano' },
+    { symbol: 'ZC=F', name: 'Mais' },
+    { symbol: 'KC=F', name: 'Caffè' },
+    { symbol: 'CC=F', name: 'Cacao' },
+  ],
+  'Valute': [
+    { symbol: 'EURUSD=X', name: 'EUR / USD' },
+    { symbol: 'EURGBP=X', name: 'EUR / GBP' },
+    { symbol: 'EURJPY=X', name: 'EUR / JPY' },
+    { symbol: 'EURCHF=X', name: 'EUR / CHF' },
+    { symbol: 'GBPUSD=X', name: 'GBP / USD' },
+    { symbol: 'USDJPY=X', name: 'USD / JPY' },
+    { symbol: 'AUDUSD=X', name: 'AUD / USD' },
+    { symbol: 'DX-Y.NYB', name: 'Dollar Index (DXY)' },
+  ],
+  'Azioni IT': [
+    { symbol: 'ENI.MI',   name: 'ENI' },
+    { symbol: 'ENEL.MI',  name: 'Enel' },
+    { symbol: 'ISP.MI',   name: 'Intesa Sanpaolo' },
+    { symbol: 'UCG.MI',   name: 'UniCredit' },
+    { symbol: 'STM.MI',   name: 'STMicroelectronics' },
+    { symbol: 'RACE.MI',  name: 'Ferrari' },
+    { symbol: 'G.MI',     name: 'Generali' },
+    { symbol: 'LDO.MI',   name: 'Leonardo' },
+    { symbol: 'MONC.MI',  name: 'Moncler' },
+    { symbol: 'STLAM.MI', name: 'Stellantis' },
+    { symbol: 'TIT.MI',   name: 'TIM' },
+    { symbol: 'BMPS.MI',  name: 'Monte dei Paschi' },
+  ],
+  'Azioni US': [
+    { symbol: 'AAPL',  name: 'Apple' },
+    { symbol: 'MSFT',  name: 'Microsoft' },
+    { symbol: 'NVDA',  name: 'NVIDIA' },
+    { symbol: 'AMZN',  name: 'Amazon' },
+    { symbol: 'GOOGL', name: 'Alphabet (Google)' },
+    { symbol: 'META',  name: 'Meta Platforms' },
+    { symbol: 'TSLA',  name: 'Tesla' },
+    { symbol: 'JPM',   name: 'JPMorgan Chase' },
+    { symbol: 'V',     name: 'Visa' },
+    { symbol: 'WMT',   name: 'Walmart' },
+    { symbol: 'LLY',   name: 'Eli Lilly' },
+    { symbol: 'NFLX',  name: 'Netflix' },
+    { symbol: 'AMD',   name: 'AMD' },
+  ],
+  'Crypto': [
+    { symbol: 'BTC-USD',  name: 'Bitcoin' },
+    { symbol: 'ETH-USD',  name: 'Ethereum' },
+    { symbol: 'SOL-USD',  name: 'Solana' },
+    { symbol: 'BNB-USD',  name: 'BNB' },
+    { symbol: 'XRP-USD',  name: 'XRP (Ripple)' },
+    { symbol: 'ADA-USD',  name: 'Cardano' },
+    { symbol: 'AVAX-USD', name: 'Avalanche' },
+    { symbol: 'DOGE-USD', name: 'Dogecoin' },
+    { symbol: 'DOT-USD',  name: 'Polkadot' },
+    { symbol: 'LINK-USD', name: 'Chainlink' },
+  ],
+};
 
-const TV_TABS = [
-  {
-    title: 'ETF',
-    symbols: [
-      { s: 'XETRA:IWDA',       d: 'iShares MSCI World (IWDA)' },
-      { s: 'XETRA:VWCE',       d: 'Vanguard All-World (VWCE)' },
-      { s: 'XETRA:EUNL',       d: 'iShares Core MSCI World' },
-      { s: 'XETRA:EXSA',       d: 'iShares Core Euro Stoxx 50' },
-      { s: 'AMEX:SPY',         d: 'SPDR S&P 500 (SPY)' },
-      { s: 'NASDAQ:QQQ',       d: 'Invesco Nasdaq-100 (QQQ)' },
-      { s: 'AMEX:VOO',         d: 'Vanguard S&P 500 (VOO)' },
-      { s: 'AMEX:IWM',         d: 'iShares Russell 2000 (IWM)' },
-      { s: 'XETRA:IEMA',       d: 'iShares MSCI EM (IEMA)' },
-      { s: 'AMEX:GLD',         d: 'SPDR Gold Shares (GLD)' },
-      { s: 'AMEX:TLT',         d: 'iShares 20Y+ Treasury (TLT)' },
-    ]
-  },
-  {
-    title: 'Indici',
-    symbols: [
-      { s: 'SP:SPX',           d: 'S&P 500' },
-      { s: 'NASDAQ:IXIC',      d: 'Nasdaq Composite' },
-      { s: 'DJ:DJI',           d: 'Dow Jones' },
-      { s: 'CBOE:VIX',         d: 'VIX Volatilità' },
-      { s: 'XETRA:DAX',        d: 'DAX 40' },
-      { s: 'EURONEXT:FCHI',    d: 'CAC 40' },
-      { s: 'MIL:FTSEMIB',      d: 'FTSE MIB' },
-      { s: 'LSE:UKX',          d: 'FTSE 100' },
-      { s: 'TVC:NI225',        d: 'Nikkei 225' },
-      { s: 'TVC:HSI',          d: 'Hang Seng' },
-    ]
-  },
-  {
-    title: 'Obbligazioni',
-    symbols: [
-      { s: 'AMEX:TLT',         d: 'US Treasury 20Y+' },
-      { s: 'AMEX:IEF',         d: 'US Treasury 7-10Y' },
-      { s: 'AMEX:SHY',         d: 'US Treasury 1-3Y' },
-      { s: 'AMEX:AGG',         d: 'US Aggregate Bond' },
-      { s: 'AMEX:HYG',         d: 'High Yield Corp Bond' },
-      { s: 'AMEX:LQD',         d: 'Investment Grade Corp' },
-      { s: 'AMEX:EMB',         d: 'Emerging Markets Bond' },
-      { s: 'XETRA:IS04',       d: 'iShares EUR Govt 7-10Y' },
-    ]
-  },
-  {
-    title: 'Materie Prime',
-    symbols: [
-      { s: 'TVC:GOLD',         d: 'Oro Spot' },
-      { s: 'TVC:SILVER',       d: 'Argento Spot' },
-      { s: 'TVC:USOIL',        d: 'Petrolio WTI' },
-      { s: 'TVC:UKOIL',        d: 'Petrolio Brent' },
-      { s: 'TVC:NATURALGAS',   d: 'Gas Naturale' },
-      { s: 'COMEX:HG1!',       d: 'Rame' },
-      { s: 'CBOT:ZW1!',        d: 'Grano' },
-      { s: 'NYMEX:PL1!',       d: 'Platino' },
-    ]
-  },
-  {
-    title: 'Valute',
-    symbols: [
-      { s: 'FX:EURUSD',        d: 'Euro / Dollaro' },
-      { s: 'FX:EURGBP',        d: 'Euro / Sterlina' },
-      { s: 'FX:EURJPY',        d: 'Euro / Yen' },
-      { s: 'FX:EURCHF',        d: 'Euro / Franco Svizzero' },
-      { s: 'FX:GBPUSD',        d: 'Sterlina / Dollaro' },
-      { s: 'FX:USDJPY',        d: 'Dollaro / Yen' },
-      { s: 'TVC:DXY',          d: 'Dollar Index (DXY)' },
-    ]
-  },
-  {
-    title: 'Azioni IT',
-    symbols: [
-      { s: 'MIL:ENI',          d: 'ENI' },
-      { s: 'MIL:ENEL',         d: 'Enel' },
-      { s: 'MIL:ISP',          d: 'Intesa Sanpaolo' },
-      { s: 'MIL:UCG',          d: 'UniCredit' },
-      { s: 'MIL:STLAM',        d: 'Stellantis' },
-      { s: 'MIL:RACE',         d: 'Ferrari' },
-      { s: 'MIL:STM',          d: 'STMicroelectronics' },
-      { s: 'MIL:G',            d: 'Generali' },
-      { s: 'MIL:LDO',          d: 'Leonardo' },
-      { s: 'MIL:MONC',         d: 'Moncler' },
-    ]
-  },
-  {
-    title: 'Azioni US',
-    symbols: [
-      { s: 'NASDAQ:AAPL',      d: 'Apple' },
-      { s: 'NASDAQ:MSFT',      d: 'Microsoft' },
-      { s: 'NASDAQ:NVDA',      d: 'NVIDIA' },
-      { s: 'NASDAQ:AMZN',      d: 'Amazon' },
-      { s: 'NASDAQ:GOOGL',     d: 'Alphabet' },
-      { s: 'NASDAQ:META',      d: 'Meta Platforms' },
-      { s: 'NASDAQ:TSLA',      d: 'Tesla' },
-      { s: 'NYSE:JPM',         d: 'JPMorgan Chase' },
-      { s: 'NYSE:V',           d: 'Visa' },
-      { s: 'NYSE:WMT',         d: 'Walmart' },
-    ]
-  },
-  {
-    title: 'Crypto',
-    symbols: [
-      { s: 'COINBASE:BTCUSD',  d: 'Bitcoin (BTC)' },
-      { s: 'COINBASE:ETHUSD',  d: 'Ethereum (ETH)' },
-      { s: 'COINBASE:SOLUSD',  d: 'Solana (SOL)' },
-      { s: 'BINANCE:BNBUSDT',  d: 'BNB' },
-      { s: 'COINBASE:AVAXUSD', d: 'Avalanche (AVAX)' },
-      { s: 'COINBASE:ADAUSD',  d: 'Cardano (ADA)' },
-      { s: 'COINBASE:XRPUSD',  d: 'XRP (Ripple)' },
-      { s: 'COINBASE:DOTUSD',  d: 'Polkadot (DOT)' },
-    ]
-  },
-];
+const MKT_RANGES = {
+  '1G':  { range: '1d',   interval: '5m'  },
+  '1S':  { range: '5d',   interval: '1h'  },
+  '1M':  { range: '1mo',  interval: '1d'  },
+  '3M':  { range: '3mo',  interval: '1d'  },
+  '6M':  { range: '6mo',  interval: '1d'  },
+  'YTD': { range: 'ytd',  interval: '1d'  },
+  '1A':  { range: '1y',   interval: '1d'  },
+  '5A':  { range: '5y',   interval: '1wk' },
+  'Max': { range: 'max',  interval: '1mo' },
+};
 
+/* CoinGecko IDs for crypto */
+const CG_IDS = {
+  'BTC-USD': 'bitcoin', 'ETH-USD': 'ethereum', 'SOL-USD': 'solana',
+  'BNB-USD': 'binancecoin', 'XRP-USD': 'ripple', 'ADA-USD': 'cardano',
+  'AVAX-USD': 'avalanche-2', 'DOGE-USD': 'dogecoin', 'DOT-USD': 'polkadot',
+  'LINK-USD': 'chainlink', 'MATIC-USD': 'matic-network', 'LTC-USD': 'litecoin',
+  'UNI-USD': 'uniswap', 'ATOM-USD': 'cosmos',
+};
+
+/* YF symbol → TradingView symbol for chart */
+const TV_SYMS = {
+  '^GSPC': 'SP:SPX', '^IXIC': 'NASDAQ:IXIC', '^DJI': 'DJ:DJI',
+  '^RUT': 'TVC:RUT', '^STOXX50E': 'EURONEXT:STXE', 'FTSEMIB.MI': 'MIL:FTSEMIB',
+  '^GDAXI': 'XETRA:DAX', '^FTSE': 'LSE:UKX', '^FCHI': 'EURONEXT:FCHI',
+  '^N225': 'TVC:NI225', '^HSI': 'TVC:HSI', '^VIX': 'CBOE:VIX',
+  '^TNX': 'TVC:TNX', '^TYX': 'TVC:TYX', '^FVX': 'TVC:FVX', '^IRX': 'TVC:IRX',
+  'IWDA.AS': 'XETRA:IWDA', 'VWCE.DE': 'XETRA:VWCE', 'SWRD.SW': 'SWX:SWRD',
+  'CSPX.L': 'LSE:CSPX', 'XDWD.DE': 'XETRA:XDWD', 'EMIM.AS': 'XETRA:EIMI',
+  'IEAG.AS': 'XETRA:IEAG', 'IEMA.AS': 'XETRA:IEMA', 'AGGH.L': 'LSE:AGGH',
+  'VOO': 'AMEX:VOO', 'SPY': 'AMEX:SPY', 'QQQ': 'NASDAQ:QQQ', 'IWM': 'AMEX:IWM',
+  'TLT': 'AMEX:TLT', 'IEF': 'AMEX:IEF', 'SHY': 'AMEX:SHY', 'HYG': 'AMEX:HYG',
+  'LQD': 'AMEX:LQD', 'AGG': 'AMEX:AGG', 'EMB': 'AMEX:EMB',
+  'GLD': 'AMEX:GLD', 'SLV': 'AMEX:SLV', 'USO': 'AMEX:USO',
+  'GC=F': 'TVC:GOLD', 'SI=F': 'TVC:SILVER', 'CL=F': 'TVC:USOIL',
+  'BZ=F': 'TVC:UKOIL', 'NG=F': 'TVC:NATURALGAS', 'HG=F': 'COMEX:HG1!',
+  'ZW=F': 'CBOT:ZW1!', 'ZC=F': 'CBOT:ZC1!', 'KC=F': 'ICEUS:KC1!', 'CC=F': 'ICEUS:CC1!',
+  'EURUSD=X': 'FX:EURUSD', 'EURGBP=X': 'FX:EURGBP', 'EURJPY=X': 'FX:EURJPY',
+  'EURCHF=X': 'FX:EURCHF', 'GBPUSD=X': 'FX:GBPUSD', 'USDJPY=X': 'FX:USDJPY',
+  'AUDUSD=X': 'FX:AUDUSD', 'USDCAD=X': 'FX:USDCAD', 'USDCHF=X': 'FX:USDCHF',
+  'DX-Y.NYB': 'TVC:DXY',
+  'BTC-USD': 'COINBASE:BTCUSD', 'ETH-USD': 'COINBASE:ETHUSD', 'SOL-USD': 'COINBASE:SOLUSD',
+  'BNB-USD': 'BINANCE:BNBUSDT', 'XRP-USD': 'COINBASE:XRPUSD', 'ADA-USD': 'COINBASE:ADAUSD',
+  'AVAX-USD': 'COINBASE:AVAXUSD', 'DOGE-USD': 'BINANCE:DOGEUSDT', 'DOT-USD': 'COINBASE:DOTUSD',
+  'LINK-USD': 'COINBASE:LINKUSD',
+  'ENI.MI': 'MIL:ENI', 'ENEL.MI': 'MIL:ENEL', 'ISP.MI': 'MIL:ISP', 'UCG.MI': 'MIL:UCG',
+  'STM.MI': 'MIL:STM', 'RACE.MI': 'MIL:RACE', 'G.MI': 'MIL:G', 'LDO.MI': 'MIL:LDO',
+  'MONC.MI': 'MIL:MONC', 'STLAM.MI': 'MIL:STLAM', 'TIT.MI': 'MIL:TIT', 'BMPS.MI': 'MIL:BMPS',
+};
+
+function yf2tv(sym) {
+  if (TV_SYMS[sym]) return TV_SYMS[sym];
+  if (sym.endsWith('-USD')) return `COINBASE:${sym.replace('-USD', '')}USD`;
+  if (sym.endsWith('=X')) return `FX:${sym.replace('=X', '')}`;
+  if (sym.endsWith('.MI')) return `MIL:${sym.replace('.MI', '')}`;
+  if (sym.endsWith('.AS') || sym.endsWith('.DE')) return `XETRA:${sym.split('.')[0]}`;
+  if (sym.endsWith('.L')) return `LSE:${sym.replace('.L', '')}`;
+  return sym;
+}
+
+let mkt = {
+  category: 'Indici',
+  range: '1M',
+  customFrom: null,
+  customTo: null,
+  cache: {},
+  cacheTimes: {},
+  selectedSymbol: null,
+  sortKey: null,
+  sortDir: 1,
+  searchItems: [],
+  refreshTimer: null,
+  loadGen: 0,
+  initialized: false,
+};
+
+const MKT_CACHE_TTL = 5 * 60 * 1000;
+
+/* ─── PROXY FETCH ─── */
+async function mktFetch(url) {
+  const sig = AbortSignal.timeout ? AbortSignal.timeout(10000) : undefined;
+  const attempts = [
+    async () => {
+      const r = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(url), { signal: sig });
+      if (!r.ok) throw 0;
+      const t = await r.text();
+      if (!t || t[0] !== '{') throw 0;
+      return JSON.parse(t);
+    },
+    async () => {
+      const r = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent(url), { signal: sig });
+      if (!r.ok) throw 0;
+      const d = await r.json();
+      return JSON.parse(d.contents);
+    },
+    async () => {
+      const r = await fetch('https://corsproxy.io/?' + encodeURIComponent(url), { signal: sig });
+      if (!r.ok) throw 0;
+      return r.json();
+    },
+    async () => {
+      const r = await fetch('https://thingproxy.freeboard.io/fetch/' + url, { signal: sig });
+      if (!r.ok) throw 0;
+      return r.json();
+    },
+  ];
+  for (const fn of attempts) {
+    try { return await fn(); } catch {}
+  }
+  throw new Error('proxy_fail');
+}
+
+/* ─── CHART FETCH (historical) ─── */
+async function mktFetchChart(symbol, range, interval, fromTs, toTs) {
+  const cacheKey = `${symbol}|${range}|${interval}|${fromTs}|${toTs}`;
+  const now = Date.now();
+  if (mkt.cache[cacheKey] && (now - mkt.cacheTimes[cacheKey]) < MKT_CACHE_TTL) {
+    return mkt.cache[cacheKey];
+  }
+
+  const buildUrl = (base, ver) => {
+    const sym = encodeURIComponent(symbol);
+    const path = `${base}/${ver}/finance/chart/${sym}`;
+    return fromTs && toTs
+      ? `${path}?period1=${fromTs}&period2=${toTs}&interval=${interval}`
+      : `${path}?range=${range}&interval=${interval}`;
+  };
+
+  const endpoints = [
+    buildUrl('https://query2.finance.yahoo.com', 'v8'),
+    buildUrl('https://query1.finance.yahoo.com', 'v8'),
+    buildUrl('https://query2.finance.yahoo.com', 'v6'),
+    buildUrl('https://query1.finance.yahoo.com', 'v6'),
+  ];
+
+  for (const url of endpoints) {
+    try {
+      const data = await mktFetch(url);
+      if (data?.chart?.result?.[0]) {
+        mkt.cache[cacheKey] = data;
+        mkt.cacheTimes[cacheKey] = now;
+        return data;
+      }
+    } catch {}
+  }
+  throw new Error('no_data:' + symbol);
+}
+
+/* ─── COINGECKO for crypto ─── */
+async function cgFetchCrypto(items) {
+  const cgDays = {
+    '1G': '1', '1S': '7', '1M': '30', '3M': '90', '6M': '180',
+    'YTD': String(Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 1)) / 86400000)),
+    '1A': '365', '5A': '1825', 'Max': 'max',
+  };
+  const days = cgDays[mkt.range] || '30';
+
+  const ids = items.map(i => CG_IDS[i.symbol]).filter(Boolean).join(',');
+  if (!ids) return {};
+
+  const results = {};
+
+  /* current price + 24h change */
+  try {
+    const r = await fetch(
+      `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`,
+      AbortSignal.timeout ? { signal: AbortSignal.timeout(8000) } : {}
+    );
+    if (r.ok) {
+      const data = await r.json();
+      items.forEach(item => {
+        const cgId = CG_IDS[item.symbol];
+        if (cgId && data[cgId]) {
+          results[item.symbol] = {
+            price: data[cgId].usd,
+            change: days === '1' ? data[cgId].usd_24h_change : null,
+            closes: null,
+          };
+        }
+      });
+    }
+  } catch {}
+
+  /* historical for multi-day ranges */
+  if (days !== '1') {
+    await Promise.all(items.map(async item => {
+      const cgId = CG_IDS[item.symbol];
+      if (!cgId) return;
+      try {
+        const r = await fetch(
+          `https://api.coingecko.com/api/v3/coins/${cgId}/market_chart?vs_currency=usd&days=${days}`,
+          AbortSignal.timeout ? { signal: AbortSignal.timeout(10000) } : {}
+        );
+        if (!r.ok) return;
+        const data = await r.json();
+        const closes = (data.prices || []).map(p => p[1]).filter(Boolean);
+        if (closes.length >= 2) {
+          if (!results[item.symbol]) results[item.symbol] = { price: closes[closes.length - 1], closes };
+          results[item.symbol].change = ((closes[closes.length - 1] - closes[0]) / closes[0]) * 100;
+          results[item.symbol].closes = closes;
+        }
+      } catch {}
+    }));
+  }
+
+  return results;
+}
+
+/* ─── RANGE PARAMS ─── */
+function getMktRangeParams() {
+  if (mkt.range === 'Custom' && mkt.customFrom && mkt.customTo) {
+    return {
+      range: null, interval: '1d',
+      fromTs: Math.floor(new Date(mkt.customFrom).getTime() / 1000),
+      toTs:   Math.floor(new Date(mkt.customTo).getTime()   / 1000),
+    };
+  }
+  const cfg = MKT_RANGES[mkt.range] || MKT_RANGES['1M'];
+  return { range: cfg.range, interval: cfg.interval, fromTs: null, toTs: null };
+}
+
+/* ─── HELPERS ─── */
+function mktSymId(symbol) {
+  return 'mkt-row-' + symbol.replace(/[^a-zA-Z0-9]/g, '_');
+}
+
+function mktGetChange(data) {
+  try {
+    const closes = data.chart.result[0].indicators.quote[0].close;
+    const valid = closes.filter(v => v != null);
+    if (valid.length < 2) return null;
+    return ((valid[valid.length - 1] - valid[0]) / valid[0]) * 100;
+  } catch { return null; }
+}
+
+function mktFmtPrice(p) {
+  if (p == null) return '—';
+  if (p >= 1000) return p.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (p >= 1)    return p.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+  return p.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 6 });
+}
+
+function mktFmtPct(p) {
+  if (p == null) return '—';
+  return (p >= 0 ? '+' : '') + p.toFixed(2) + '%';
+}
+
+function mktPctClass(p) {
+  if (p == null) return 'mkt-neu';
+  return p > 0 ? 'mkt-pos' : p < 0 ? 'mkt-neg' : 'mkt-neu';
+}
+
+function mktSparkline(closes, pct) {
+  const valid = (closes || []).filter(v => v != null);
+  if (valid.length < 2) return '<span style="color:var(--muted);font-size:11px;">—</span>';
+  const pts = valid.slice(-40);
+  const min = Math.min(...pts), max = Math.max(...pts);
+  const span = max - min || 1;
+  const W = 64, H = 28;
+  const color = (pct ?? 0) >= 0 ? '#00e5a0' : '#ff4d4d';
+  const points = pts.map((v, i) => `${(i / (pts.length - 1) * W).toFixed(1)},${(H - (v - min) / span * H).toFixed(1)}`).join(' ');
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="display:block;"><polyline points="${points}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+}
+
+/* ─── SKELETON ─── */
+function mktRenderSkeleton(items) {
+  document.getElementById('mkt-tbody').innerHTML = items.map(item => `
+    <tr id="${mktSymId(item.symbol)}">
+      <td><div class="mkt-name-col"><span class="mkt-name">${item.name}</span><span class="mkt-sym-small">${item.symbol}</span></div></td>
+      <td><span class="mkt-sym-col">${item.symbol}</span></td>
+      <td><span class="mkt-skel" style="width:90px;"></span></td>
+      <td><span class="mkt-skel" style="width:65px;"></span></td>
+      <td><span class="mkt-skel" style="width:64px;height:20px;"></span></td>
+    </tr>
+  `).join('');
+}
+
+/* ─── APPLY ONE RESULT ─── */
+function mktApplyResult(item, result, gen) {
+  if (gen !== mkt.loadGen) return;
+  const row = document.getElementById(mktSymId(item.symbol));
+  if (!row) return;
+
+  if (!result) {
+    row.innerHTML = `
+      <td><div class="mkt-name-col"><span class="mkt-name">${item.name}</span><span class="mkt-sym-small">${item.symbol}</span></div></td>
+      <td><span class="mkt-sym-col">${item.symbol}</span></td>
+      <td colspan="3">
+        <span style="color:var(--muted);font-size:12px;font-family:var(--mono);">— </span>
+        <button onclick="mktRetryRow(this,'${item.symbol}','${item.name.replace(/'/g,"\\'")}','${item.tvSym || ''}')" style="background:none;border:none;color:var(--accent4);font-size:12px;font-family:var(--mono);cursor:pointer;padding:0;">riprova ↻</button>
+      </td>`;
+    row.style.cursor = 'default';
+    row.dataset.change = '';
+    row.dataset.price  = '';
+    row.onclick = () => mktShowChart(item.symbol, item.name, null, null, null, '', null);
+    row.style.cursor = 'pointer';
+    return;
+  }
+
+  const { price, change, closes, curr } = result;
+  row.dataset.change = change ?? '';
+  row.dataset.price  = price  ?? '';
+  row.dataset.name   = item.name;
+
+  row.innerHTML = `
+    <td><div class="mkt-name-col"><span class="mkt-name">${item.name}</span><span class="mkt-sym-small">${item.symbol}</span></div></td>
+    <td><span class="mkt-sym-col">${item.symbol}</span></td>
+    <td><span class="mkt-price-col">${mktFmtPrice(price)}<span class="mkt-curr">${curr || ''}</span></span></td>
+    <td><span class="mkt-change-col ${mktPctClass(change)}">${mktFmtPct(change)}</span></td>
+    <td>${mktSparkline(closes, change)}</td>`;
+  row.onclick = () => mktShowChart(item.symbol, item.name, closes, null, change, curr || '', price);
+  row.style.cursor = 'pointer';
+  if (item.symbol === mkt.selectedSymbol) row.classList.add('mkt-selected');
+}
+
+/* ─── PARSE YF CHART RESPONSE ─── */
+function mktParseChart(data) {
+  try {
+    const result = data.chart.result[0];
+    const meta   = result.meta;
+    const closes = result.indicators?.quote?.[0]?.close || [];
+    const change = mktGetChange(data);
+    return {
+      price:  meta.regularMarketPrice,
+      change: change,
+      closes: closes,
+      curr:   meta.currency || '',
+      name:   meta.shortName || meta.longName || '',
+    };
+  } catch { return null; }
+}
+
+/* ─── LOAD ALL ─── */
+async function mktLoad() {
+  const gen = ++mkt.loadGen;
+  const items = mkt.category === 'Ricerca'
+    ? mkt.searchItems
+    : (MKT_CATEGORIES[mkt.category] || []);
+
+  if (!items.length) return;
+
+  const rangeLabel = mkt.range === 'Custom'
+    ? `${mkt.customFrom} → ${mkt.customTo}`
+    : mkt.range;
+  document.getElementById('mkt-table-title').textContent = `${mkt.category} — ${rangeLabel}`;
+
+  mktRenderSkeleton(items);
+
+  const { range, interval, fromTs, toTs } = getMktRangeParams();
+
+  /* ── CoinGecko fast path for crypto ── */
+  if (mkt.category === 'Crypto' || (mkt.category === 'Ricerca' && items.every(i => CG_IDS[i.symbol]))) {
+    const cgResults = await cgFetchCrypto(items);
+    if (gen !== mkt.loadGen) return;
+    items.forEach(item => {
+      const r = cgResults[item.symbol];
+      mktApplyResult(item, r ? { price: r.price, change: r.change, closes: r.closes, curr: 'USD' } : null, gen);
+    });
+    mktFinalize(gen);
+    return;
+  }
+
+  /* ── Yahoo Finance: try bulk quote first (faster, no crumb needed for quotes) ── */
+  const nonCrypto = items.filter(i => !CG_IDS[i.symbol]);
+  const cryptoItems = items.filter(i => CG_IDS[i.symbol]);
+
+  /* Fetch crypto in parallel via CoinGecko if mixed category */
+  const cgPromise = cryptoItems.length
+    ? cgFetchCrypto(cryptoItems)
+    : Promise.resolve({});
+
+  /* Try Yahoo Finance spark bulk first */
+  let yfHandled = false;
+  if (mkt.range !== 'Custom' && nonCrypto.length) {
+    const syms = nonCrypto.map(i => i.symbol).join(',');
+    const sparkUrls = [
+      `https://query2.finance.yahoo.com/v8/finance/spark?symbols=${encodeURIComponent(syms)}&range=${range}&interval=${interval}`,
+      `https://query1.finance.yahoo.com/v8/finance/spark?symbols=${encodeURIComponent(syms)}&range=${range}&interval=${interval}`,
+    ];
+    for (const url of sparkUrls) {
+      try {
+        const data = await mktFetch(url);
+        if (gen !== mkt.loadGen) return;
+        const map = {};
+        (data.spark?.result || []).forEach(r => {
+          if (r?.symbol && r.response?.[0]) {
+            const res = r.response[0];
+            map[r.symbol] = {
+              price:  res.meta?.regularMarketPrice,
+              change: mktGetChange({ chart: { result: [res] } }),
+              closes: res.indicators?.quote?.[0]?.close || [],
+              curr:   res.meta?.currency || '',
+            };
+          }
+        });
+        if (Object.keys(map).length > 0) {
+          nonCrypto.forEach(item => mktApplyResult(item, map[item.symbol] || null, gen));
+          yfHandled = true;
+          break;
+        }
+      } catch {}
+    }
+  }
+
+  /* Fallback: individual chart requests in parallel */
+  if (!yfHandled && nonCrypto.length) {
+    await Promise.all(nonCrypto.map(async item => {
+      try {
+        const data   = await mktFetchChart(item.symbol, range, interval, fromTs, toTs);
+        const parsed = mktParseChart(data);
+        mktApplyResult(item, parsed, gen);
+      } catch {
+        mktApplyResult(item, null, gen);
+      }
+    }));
+  }
+
+  /* Apply CoinGecko crypto results */
+  if (cryptoItems.length) {
+    const cgResults = await cgPromise;
+    if (gen !== mkt.loadGen) return;
+    cryptoItems.forEach(item => {
+      const r = cgResults[item.symbol];
+      mktApplyResult(item, r ? { price: r.price, change: r.change, closes: r.closes, curr: 'USD' } : null, gen);
+    });
+  }
+
+  mktFinalize(gen);
+}
+
+function mktFinalize(gen) {
+  if (gen !== mkt.loadGen) return;
+  const now = new Date();
+  document.getElementById('mkt-update-time').textContent =
+    `↻ ${now.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}`;
+  document.getElementById('mkt-refresh-btn')?.classList.remove('spinning');
+}
+
+/* ─── RETRY ROW ─── */
+async function mktRetryRow(btn, symbol, name) {
+  btn.textContent = '...';
+  const { range, interval, fromTs, toTs } = getMktRangeParams();
+  const gen = mkt.loadGen;
+
+  /* CoinGecko for crypto */
+  if (CG_IDS[symbol]) {
+    const results = await cgFetchCrypto([{ symbol, name }]);
+    const r = results[symbol];
+    mktApplyResult({ symbol, name }, r ? { price: r.price, change: r.change, closes: r.closes, curr: 'USD' } : null, gen);
+    return;
+  }
+
+  try {
+    const data   = await mktFetchChart(symbol, range, interval, fromTs, toTs);
+    const parsed = mktParseChart(data);
+    mktApplyResult({ symbol, name }, parsed, gen);
+  } catch {
+    btn.textContent = 'riprova ↻';
+  }
+}
+
+/* ─── CATEGORY ─── */
+function selectMktCategory(cat) {
+  mkt.category = cat;
+  mkt.selectedSymbol = null;
+  closeMktChart();
+  document.querySelectorAll('.mkt-tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.cat === cat)
+  );
+  mktLoad();
+}
+
+/* ─── RANGE ─── */
+function selectMktRange(r, el) {
+  mkt.range = r;
+  document.querySelectorAll('.mkt-range-pill').forEach(p => p.classList.remove('active'));
+  if (el) el.classList.add('active');
+
+  const custom = document.getElementById('mkt-custom-range');
+  if (custom) custom.style.display = r === 'Custom' ? 'flex' : 'none';
+
+  if (r !== 'Custom') {
+    mkt.cache = {};
+    mkt.cacheTimes = {};
+    mktLoad();
+  }
+}
+
+function applyMktCustomRange() {
+  mkt.customFrom = document.getElementById('mkt-date-from').value;
+  mkt.customTo   = document.getElementById('mkt-date-to').value;
+  if (!mkt.customFrom || !mkt.customTo) { alert('Seleziona entrambe le date.'); return; }
+  if (mkt.customFrom > mkt.customTo)   { alert('La data iniziale deve essere precedente alla finale.'); return; }
+  mkt.cache = {};
+  mkt.cacheTimes = {};
+  mktLoad();
+}
+
+/* ─── REFRESH ─── */
+function refreshMkt() {
+  const btn = document.getElementById('mkt-refresh-btn');
+  if (btn) btn.classList.add('spinning');
+  mkt.cache = {};
+  mkt.cacheTimes = {};
+  mktLoad();
+}
+
+function startMktAutoRefresh() {
+  stopMktAutoRefresh();
+  mkt.refreshTimer = setInterval(() => {
+    mkt.cache = {};
+    mkt.cacheTimes = {};
+    mktLoad();
+  }, MKT_CACHE_TTL);
+}
+
+function stopMktAutoRefresh() {
+  if (mkt.refreshTimer) { clearInterval(mkt.refreshTimer); mkt.refreshTimer = null; }
+}
+
+/* ─── TRADINGVIEW CHART PANEL (replaces Chart.js) ─── */
 function getTVTheme() {
   return (document.documentElement.getAttribute('data-theme') || 'dark') === 'light' ? 'light' : 'dark';
 }
 
-function buildTVWidget() {
-  const container = document.getElementById('tv-widget-container');
-  if (!container) return;
+function getTVRange() {
+  const map = {
+    '1G': '1D', '1S': '5D', '1M': '1M', '3M': '3M',
+    '6M': '6M', 'YTD': 'YTD', '1A': '12M', '5A': '60M', 'Max': 'ALL',
+  };
+  return map[mkt.range] || '1M';
+}
+
+function mktShowChart(symbol, name, closes, stamps, change, currency, lastPrice) {
+  mkt.selectedSymbol = symbol;
+  document.querySelectorAll('#mkt-tbody tr').forEach(r => r.classList.remove('mkt-selected'));
+  const row = document.getElementById(mktSymId(symbol));
+  if (row) row.classList.add('mkt-selected');
+
+  const panel = document.getElementById('mkt-chart-panel');
+  panel.style.display = 'block';
+
+  document.getElementById('mkt-chart-label').textContent = `${name} · ${symbol}`;
+  const priceEl = document.getElementById('mkt-chart-price');
+  priceEl.textContent = lastPrice != null ? mktFmtPrice(lastPrice) + (currency ? ' ' + currency : '') : '';
+  const pctEl = document.getElementById('mkt-chart-pct');
+  pctEl.textContent = mktFmtPct(change);
+  pctEl.className = 'mkt-chart-pct ' + mktPctClass(change);
+
+  /* Build TradingView Advanced Chart */
+  const container = document.getElementById('mkt-tv-chart');
   container.innerHTML = '';
 
   const wrap = document.createElement('div');
@@ -1549,35 +2296,144 @@ function buildTVWidget() {
 
   const script = document.createElement('script');
   script.type = 'text/javascript';
-  script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js';
+  script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
   script.async = true;
   script.innerHTML = JSON.stringify({
-    colorTheme: getTVTheme(),
-    dateRange: mktRange,
-    showChart: true,
+    autosize: true,
+    symbol: yf2tv(symbol),
+    interval: 'D',
+    timezone: 'Europe/Rome',
+    theme: getTVTheme(),
+    style: '1',
     locale: 'it',
-    width: '100%',
-    height: 560,
-    isTransparent: true,
-    showSymbolLogo: true,
-    showFloatingTooltip: false,
-    tabs: TV_TABS,
+    enable_publishing: false,
+    hide_top_toolbar: false,
+    hide_legend: false,
+    save_image: false,
+    range: getTVRange(),
   });
   wrap.appendChild(script);
   container.appendChild(wrap);
+
+  setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
 }
 
-function selectMktRange(r, el) {
-  mktRange = r;
-  document.querySelectorAll('.mkt-range-pill').forEach(p => p.classList.remove('active'));
-  if (el) el.classList.add('active');
-  buildTVWidget();
+function closeMktChart() {
+  mkt.selectedSymbol = null;
+  document.querySelectorAll('#mkt-tbody tr').forEach(r => r.classList.remove('mkt-selected'));
+  document.getElementById('mkt-chart-panel').style.display = 'none';
+  const c = document.getElementById('mkt-tv-chart');
+  if (c) c.innerHTML = '';
 }
 
+/* ─── SORT ─── */
+function sortMktTable(key) {
+  const ths = document.querySelectorAll('.mkt-table th');
+  const keyMap = { name: 0, symbol: 1, price: 2, change: 3 };
+  ths.forEach(th => th.className = '');
+
+  if (mkt.sortKey === key) { mkt.sortDir *= -1; }
+  else { mkt.sortKey = key; mkt.sortDir = (key === 'change') ? -1 : 1; }
+
+  const thEl = ths[keyMap[key]];
+  if (thEl) thEl.className = mkt.sortDir === 1 ? 'sort-asc' : 'sort-desc';
+
+  const tbody = document.getElementById('mkt-tbody');
+  const rows  = Array.from(tbody.querySelectorAll('tr'));
+  rows.sort((a, b) => {
+    if (key === 'change') {
+      const va = parseFloat(a.dataset.change), vb = parseFloat(b.dataset.change);
+      if (isNaN(va) && isNaN(vb)) return 0;
+      if (isNaN(va)) return 1; if (isNaN(vb)) return -1;
+      return (va - vb) * mkt.sortDir;
+    }
+    if (key === 'price') {
+      return ((parseFloat(a.dataset.price) || 0) - (parseFloat(b.dataset.price) || 0)) * mkt.sortDir;
+    }
+    return (a.dataset[key] || '').toLowerCase().localeCompare((b.dataset[key] || '').toLowerCase()) * mkt.sortDir;
+  });
+  rows.forEach(r => tbody.appendChild(r));
+}
+
+/* ─── SEARCH ─── */
+async function mktSearch(query) {
+  const urls = [
+    `https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=8&newsCount=0`,
+    `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=8&newsCount=0`,
+  ];
+  for (const url of urls) {
+    try { return await mktFetch(url); } catch {}
+  }
+  throw new Error('search_fail');
+}
+
+let mktSearchTimeout;
+
+document.addEventListener('DOMContentLoaded', () => {
+  const inp = document.getElementById('mkt-search');
+  const dd  = document.getElementById('mkt-search-dropdown');
+  if (!inp) return;
+
+  inp.addEventListener('input', () => {
+    clearTimeout(mktSearchTimeout);
+    const q = inp.value.trim();
+    if (!q) { dd.classList.remove('open'); return; }
+
+    mktSearchTimeout = setTimeout(async () => {
+      try {
+        const data   = await mktSearch(q);
+        const quotes = (data.quotes || []).filter(x => x.symbol);
+        if (!quotes.length) {
+          dd.innerHTML = '<div class="mkt-search-item"><span class="mkt-search-name" style="color:var(--muted)">Nessun risultato trovato</span></div>';
+          dd.classList.add('open');
+          return;
+        }
+        dd.innerHTML = quotes.slice(0, 8).map(x => {
+          const sname = (x.shortname || x.longname || x.symbol).replace(/"/g, '&quot;');
+          const sym   = x.symbol.replace(/"/g, '&quot;');
+          return `<div class="mkt-search-item" onclick="mktAddFromSearch('${sym}','${sname.replace(/'/g, "\\'")}')">
+            <div class="mkt-search-info">
+              <span class="mkt-search-name">${x.shortname || x.longname || x.symbol}</span>
+              <span class="mkt-search-exch">${x.exchDisp || ''} · ${x.typeDisp || ''}</span>
+            </div>
+            <span class="mkt-search-sym">${x.symbol}</span>
+          </div>`;
+        }).join('');
+        dd.classList.add('open');
+      } catch { dd.classList.remove('open'); }
+    }, 420);
+  });
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.mkt-search-wrap')) dd.classList.remove('open');
+  });
+});
+
+function mktAddFromSearch(symbol, name) {
+  document.getElementById('mkt-search-dropdown').classList.remove('open');
+  document.getElementById('mkt-search').value = '';
+  if (!mkt.searchItems.find(r => r.symbol === symbol)) {
+    mkt.searchItems.push({ symbol, name });
+  }
+  const tab = document.getElementById('mkt-tab-search');
+  tab.style.display = 'inline-block';
+  selectMktCategory('Ricerca');
+}
+
+/* ─── INIT ─── */
 function initMercati() {
-  buildTVWidget();
+  if (!mkt.initialized) {
+    mkt.initialized = true;
+    const today = new Date();
+    const ago30 = new Date(today); ago30.setDate(ago30.getDate() - 30);
+    const tf = document.getElementById('mkt-date-to');
+    const ff = document.getElementById('mkt-date-from');
+    if (tf) tf.value = today.toISOString().split('T')[0];
+    if (ff) ff.value = ago30.toISOString().split('T')[0];
+  }
+  mktLoad();
+  startMktAutoRefresh();
 }
-
 /* ══════════════════════════════
    TEMA CHIARO / SCURO / SISTEMA
 ══════════════════════════════ */

@@ -44,7 +44,7 @@ const SITE = {
       year:    "2026",
       catalog: "SSSCLTR002",
       format:  "Digital",
-      cover:   "images/releases/sc002.jpg",
+      cover:   "sc002.jpg",
       link:    "#",
     },
     {
@@ -53,7 +53,7 @@ const SITE = {
       year:    "2026",
       catalog: "SSSCLTR003",
       format:  "Digital",
-      cover:   "images/releases/sc003.jpg",
+      cover:   "sc003.jpg",
       link:    "#",
     },
     {
@@ -62,7 +62,7 @@ const SITE = {
       year:    "2026",
       catalog: "SSSCLTR004",
       format:  "Digital",
-      cover:   "images/releases/sc004.jpg",
+      cover:   "sc004.jpg",
       link:    "#",
     },
     {
@@ -71,7 +71,7 @@ const SITE = {
       year:    "2026",
       catalog: "SSSCLTRS01",
       format:  "Digital",
-      cover:   "images/releases/va01.jpg",
+      cover:   "va01.jpg",
       link:    "#",
     },
   ],

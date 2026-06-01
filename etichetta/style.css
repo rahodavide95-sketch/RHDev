@@ -53,6 +53,73 @@ body.ready { opacity: 1; }
 
 ::selection { background: var(--fg); color: var(--bg); }
 
+
+/* ============================================================
+   AMBIENT BACKGROUND CANVAS
+   ============================================================ */
+.bg-canvas {
+  position:       fixed;
+  inset:          0;
+  z-index:        0;
+  pointer-events: none;
+  overflow:       hidden;
+}
+
+.bg-blob {
+  position:      absolute;
+  border-radius: 50%;
+  filter:        blur(130px);
+  will-change:   transform, opacity;
+}
+
+.bg-blob--1 {
+  width:      80vmax;
+  height:     80vmax;
+  background: radial-gradient(circle, rgba(44, 18, 78, 0.70) 0%, transparent 65%);
+  top:  -30vmax;
+  left: -15vmax;
+  animation: blobDrift1 32s ease-in-out infinite alternate;
+}
+
+.bg-blob--2 {
+  width:      65vmax;
+  height:     65vmax;
+  background: radial-gradient(circle, rgba(10, 50, 58, 0.60) 0%, transparent 65%);
+  top:   28%;
+  right: -18vmax;
+  animation: blobDrift2 40s ease-in-out infinite alternate;
+}
+
+.bg-blob--3 {
+  width:      70vmax;
+  height:     70vmax;
+  background: radial-gradient(circle, rgba(60, 40, 10, 0.50) 0%, transparent 65%);
+  bottom: -22vmax;
+  left:    12%;
+  animation: blobDrift3 26s ease-in-out infinite alternate;
+}
+
+@keyframes blobDrift1 {
+  0%   { transform: translate(0,      0)     scale(1);    opacity: 0.65; }
+  30%  { transform: translate(14vw,  22vh)   scale(1.12); opacity: 1;    }
+  70%  { transform: translate(24vw,   8vh)   scale(0.88); opacity: 0.55; }
+  100% { transform: translate(8vw,   30vh)   scale(1.08); opacity: 0.85; }
+}
+@keyframes blobDrift2 {
+  0%   { transform: translate(0,      0)     scale(1);    opacity: 0.5;  }
+  45%  { transform: translate(-20vw, -14vh)  scale(1.22); opacity: 0.9;  }
+  100% { transform: translate(-10vw,  18vh)  scale(0.86); opacity: 0.60; }
+}
+@keyframes blobDrift3 {
+  0%   { transform: translate(0,      0)     scale(1);    opacity: 0.45; }
+  50%  { transform: translate(18vw,  -18vh)  scale(1.16); opacity: 0.80; }
+  100% { transform: translate(-8vw,  -10vh)  scale(1.06); opacity: 0.50; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bg-blob { animation: none !important; }
+}
+
 ::-webkit-scrollbar       { width: 2px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--fg-3); }
@@ -76,15 +143,15 @@ body.ready { opacity: 1; }
   z-index:    900;
   overflow:   visible;
   padding:    1.1rem 0;
-  /* very transparent — glass effect */
-  background: rgba(8, 8, 8, 0.15);
-  backdrop-filter:         blur(16px) saturate(140%);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  /* ultra-transparent glass */
+  background: rgba(8, 8, 8, 0.04);
+  backdrop-filter:         blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
   border-bottom: 1px solid rgba(255,255,255,0.03);
   transition: background 0.5s var(--ease), padding 0.4s var(--ease);
 }
 .navbar.is-scrolled {
-  background: rgba(8, 8, 8, 0.45);
+  background: rgba(8, 8, 8, 0.22);
   padding: 0.85rem 0;
 }
 
@@ -302,7 +369,9 @@ img.broken-hide                   { visibility: hidden; }
   border-top:    1px solid var(--border);
   border-bottom: 1px solid var(--border);
   padding:       1rem 0;
-  background:    var(--bg-alt);
+  background:    rgba(14, 14, 14, 0.80);
+  position:      relative;
+  z-index:       1;
 }
 .marquee-track {
   display:   flex;
@@ -332,11 +401,13 @@ img.broken-hide                   { visibility: hidden; }
    SECTIONS — common
    ============================================================ */
 .section {
-  padding: var(--pad-section) 0;
-  background: var(--bg);
+  padding:    var(--pad-section) 0;
+  background: rgba(8, 8, 8, 0.84);
+  position:   relative;
+  z-index:    1;
 }
 .section--alt {
-  background: var(--bg-alt);
+  background: rgba(14, 14, 14, 0.84);
 }
 
 /* Thin divider at top of each section (minimal, not a box) */
@@ -893,9 +964,11 @@ img.broken-hide                   { visibility: hidden; }
    FOOTER
    ============================================================ */
 .footer {
-  padding:      2.5rem 0;
-  border-top:   1px solid var(--border);
-  background:   var(--bg);
+  padding:    2.5rem 0;
+  border-top: 1px solid var(--border);
+  background: rgba(8, 8, 8, 0.84);
+  position:   relative;
+  z-index:    1;
 }
 .footer-inner {
   display:         flex;

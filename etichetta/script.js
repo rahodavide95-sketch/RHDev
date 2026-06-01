@@ -233,7 +233,10 @@ function buildArtists(artists) {
   const grid = document.getElementById('artists-grid');
   if (!grid || !artists?.length) return;
 
-  grid.innerHTML = artists.slice(0, 6).map((a, i) => renderArtistCard(a, i)).join('');
+  grid.innerHTML = [...artists]
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .slice(0, 6)
+    .map((a, i) => renderArtistCard(a, i)).join('');
 
   document.getElementById('artistsViewAll')
     ?.addEventListener('click', () => openArtistsModal(artists));

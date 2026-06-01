@@ -54,7 +54,7 @@ const SITE = {
       catalog: "SSSCLTR003",
       format:  "Digital",
       cover:   "images/releases/sc003.jpg",
-      link:    https://fanlink.tv/raho-lunthera-ep-subconscious-culture,
+      link:    "https://fanlink.tv/raho-lunthera-ep-subconscious-culture",
     },
     {
       artist:  "Raho",

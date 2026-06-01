@@ -105,10 +105,14 @@
     /* ─── HOME ─── */
     #home {
       display: none;
-      padding-top: 80px;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
       text-align: center;
+      min-height: calc(100dvh - 73px);
+      padding: 20px 0;
     }
-    #home.active { display: block; }
+    #home.active { display: flex; }
 
     .home-eyebrow {
       font-family: var(--mono);
@@ -136,7 +140,7 @@
     .home-sub {
       color: var(--muted);
       font-size: 16px;
-      margin-bottom: 64px;
+      margin-bottom: 28px;
     }
 
     .card-grid {
@@ -960,8 +964,19 @@
     /* ─── RESPONSIVE ─── */
     @media (max-width: 700px) {
       header { padding: 16px 20px; }
-      main { padding: 0 20px 60px; }
-      .card-grid { grid-template-columns: 1fr; }
+      main { padding: 0 16px 60px; }
+      /* Home: keep 2 columns, shrink cards so everything fits without scroll */
+      #home { min-height: calc(100dvh - 57px); padding: 12px 0; }
+      .home-title { font-size: clamp(24px, 7vw, 36px); margin-bottom: 10px; }
+      .home-sub { font-size: 14px; margin-bottom: 20px; }
+      .home-eyebrow { margin-bottom: 12px; }
+      .card-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; max-width: 100%; }
+      .nav-card { padding: 16px 12px; }
+      .nav-card-icon { font-size: 22px; margin-bottom: 8px; }
+      .nav-card-title { font-size: 13px; margin-bottom: 4px; }
+      .nav-card-desc { font-size: 11px; line-height: 1.4; }
+      .nav-card-arrow { font-size: 14px; top: 10px; right: 10px; }
+      /* Other sections */
       .input-grid { grid-template-columns: 1fr; }
       .kpi-strip { grid-template-columns: 1fr 1fr; }
       .page-header { flex-direction: column; align-items: flex-start; gap: 16px; }

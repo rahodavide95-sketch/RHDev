@@ -36,7 +36,7 @@ const SITE = {
       catalog: "SSSCLTR001",
       format:  "Digital",
       cover:   "sc001.jpg",
-      link:    "#",
+      link:    "https://fanlink.tv/raho-solvane-ep-subconscious-culture",
     },
     {
       artist:  "Raho",
@@ -45,7 +45,7 @@ const SITE = {
       catalog: "SSSCLTR002",
       format:  "Digital",
       cover:   "sc002.jpg",
-      link:    "#",
+      link:    "https://fanlink.tv/raho-somnara-ep-subconscious-culture",
     },
     {
       artist:  "Raho",
@@ -54,7 +54,7 @@ const SITE = {
       catalog: "SSSCLTR003",
       format:  "Digital",
       cover:   "sc003.jpg",
-      link:    "#",
+      link:    "https://fanlink.tv/raho-lunthera-ep-subconscious-culture",
     },
     {
       artist:  "Raho",
@@ -63,7 +63,7 @@ const SITE = {
       catalog: "SSSCLTR004",
       format:  "Digital",
       cover:   "sc004.jpg",
-      link:    "#",
+      link:    "https://fanlink.tv/raho-aevum-ep-subconscious-culture",
     },
     {
       artist:  "Various Artists",
@@ -72,7 +72,7 @@ const SITE = {
       catalog: "SSSCLTRS01",
       format:  "Digital",
       cover:   "va01.jpg",
-      link:    "#",
+      link:    "https://fanlink.tv/subconscious-culture-various-artists-somnia-i",
     },
   ],
 

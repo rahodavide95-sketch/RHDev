@@ -1711,10 +1711,8 @@ const MKT_CATEGORIES = {
     { symbol: '^GDAXI',     name: 'DAX 40' },
     { symbol: '^FTSE',      name: 'FTSE 100' },
     { symbol: '^FCHI',      name: 'CAC 40' },
-    { symbol: '^IBEX',      name: 'IBEX 35' },
     { symbol: '^N225',      name: 'Nikkei 225' },
     { symbol: '^HSI',       name: 'Hang Seng' },
-    { symbol: '000001.SS',  name: 'Shanghai Comp.' },
     { symbol: '^VIX',       name: 'VIX Volatilità' },
   ],
   'ETF': [
@@ -1724,56 +1722,39 @@ const MKT_CATEGORIES = {
     { symbol: 'CSPX.L',   name: 'iShares Core S&P 500' },
     { symbol: 'XDWD.DE',  name: 'Xtrackers MSCI World' },
     { symbol: 'EMIM.AS',  name: 'iShares MSCI EM' },
-    { symbol: 'IUSN.DE',  name: 'iShares MSCI World SC' },
     { symbol: 'VOO',      name: 'Vanguard S&P 500' },
     { symbol: 'SPY',      name: 'SPDR S&P 500' },
     { symbol: 'QQQ',      name: 'Invesco Nasdaq 100' },
-    { symbol: 'AGGH.L',   name: 'iShares Global Agg Bond' },
-    { symbol: 'IEMA.AS',  name: 'iShares MSCI EM ESG' },
+    { symbol: 'TLT',      name: 'iShares 20Y+ Treasury' },
+    { symbol: 'GLD',      name: 'SPDR Gold Shares' },
   ],
   'Obbligazioni': [
-    { symbol: '^TNX',    name: 'US Treasury 10Y' },
-    { symbol: '^TYX',    name: 'US Treasury 30Y' },
-    { symbol: '^FVX',    name: 'US Treasury 5Y' },
-    { symbol: '^IRX',    name: 'US Treasury 3M' },
-    { symbol: 'TLT',     name: 'iShares 20Y+ Treasury' },
-    { symbol: 'IEF',     name: 'iShares 7-10Y Treasury' },
-    { symbol: 'SHY',     name: 'iShares 1-3Y Treasury' },
-    { symbol: 'HYG',     name: 'iShares High Yield Corp' },
-    { symbol: 'LQD',     name: 'iShares IG Corporate' },
-    { symbol: 'EMB',     name: 'iShares EM Bond' },
-    { symbol: 'IEAG.AS', name: 'iShares Euro Agg Bond' },
+    { symbol: 'TLT',  name: 'iShares 20Y+ Treasury' },
+    { symbol: 'IEF',  name: 'iShares 7-10Y Treasury' },
+    { symbol: 'SHY',  name: 'iShares 1-3Y Treasury' },
+    { symbol: 'HYG',  name: 'iShares High Yield Corp' },
+    { symbol: 'LQD',  name: 'iShares IG Corporate' },
+    { symbol: 'AGG',  name: 'iShares US Aggregate' },
+    { symbol: 'EMB',  name: 'iShares EM Bond' },
   ],
   'Materie Prime': [
     { symbol: 'GC=F', name: 'Oro' },
     { symbol: 'SI=F', name: 'Argento' },
-    { symbol: 'PL=F', name: 'Platino' },
-    { symbol: 'PA=F', name: 'Palladio' },
     { symbol: 'CL=F', name: 'Petrolio WTI' },
     { symbol: 'BZ=F', name: 'Petrolio Brent' },
     { symbol: 'NG=F', name: 'Gas Naturale' },
     { symbol: 'HG=F', name: 'Rame' },
     { symbol: 'ZW=F', name: 'Grano' },
-    { symbol: 'ZC=F', name: 'Mais' },
-    { symbol: 'ZS=F', name: 'Soia' },
-    { symbol: 'CC=F', name: 'Cacao' },
     { symbol: 'KC=F', name: 'Caffè' },
-    { symbol: 'CT=F', name: 'Cotone' },
-    { symbol: 'SB=F', name: 'Zucchero' },
   ],
   'Valute': [
     { symbol: 'EURUSD=X', name: 'EUR / USD' },
     { symbol: 'EURGBP=X', name: 'EUR / GBP' },
     { symbol: 'EURJPY=X', name: 'EUR / JPY' },
     { symbol: 'EURCHF=X', name: 'EUR / CHF' },
-    { symbol: 'EURCAD=X', name: 'EUR / CAD' },
-    { symbol: 'EURAUD=X', name: 'EUR / AUD' },
     { symbol: 'GBPUSD=X', name: 'GBP / USD' },
     { symbol: 'USDJPY=X', name: 'USD / JPY' },
-    { symbol: 'USDCHF=X', name: 'USD / CHF' },
     { symbol: 'AUDUSD=X', name: 'AUD / USD' },
-    { symbol: 'USDCAD=X', name: 'USD / CAD' },
-    { symbol: 'USDCNY=X', name: 'USD / CNY' },
     { symbol: 'DX-Y.NYB', name: 'Dollar Index (DXY)' },
   ],
   'Azioni IT': [
@@ -1784,19 +1765,10 @@ const MKT_CATEGORIES = {
     { symbol: 'STM.MI',   name: 'STMicroelectronics' },
     { symbol: 'RACE.MI',  name: 'Ferrari' },
     { symbol: 'G.MI',     name: 'Generali' },
-    { symbol: 'MED.MI',   name: 'Mediobanca' },
     { symbol: 'LDO.MI',   name: 'Leonardo' },
     { symbol: 'MONC.MI',  name: 'Moncler' },
-    { symbol: 'CPR.MI',   name: 'Campari' },
-    { symbol: 'PRY.MI',   name: 'Prysmian' },
-    { symbol: 'SRG.MI',   name: 'Snam' },
-    { symbol: 'TRN.MI',   name: 'Terna' },
-    { symbol: 'BMPS.MI',  name: 'Monte dei Paschi' },
     { symbol: 'STLAM.MI', name: 'Stellantis' },
     { symbol: 'TIT.MI',   name: 'TIM' },
-    { symbol: 'A2A.MI',   name: 'A2A' },
-    { symbol: 'ERG.MI',   name: 'ERG' },
-    { symbol: 'INW.MI',   name: 'Inwit' },
   ],
   'Azioni US': [
     { symbol: 'AAPL',  name: 'Apple' },
@@ -1806,52 +1778,170 @@ const MKT_CATEGORIES = {
     { symbol: 'GOOGL', name: 'Alphabet (Google)' },
     { symbol: 'META',  name: 'Meta Platforms' },
     { symbol: 'TSLA',  name: 'Tesla' },
-    { symbol: 'BRK-B', name: 'Berkshire Hathaway' },
     { symbol: 'JPM',   name: 'JPMorgan Chase' },
     { symbol: 'V',     name: 'Visa' },
     { symbol: 'WMT',   name: 'Walmart' },
-    { symbol: 'LLY',   name: 'Eli Lilly' },
-    { symbol: 'AVGO',  name: 'Broadcom' },
-    { symbol: 'UNH',   name: 'UnitedHealth' },
-    { symbol: 'XOM',   name: 'ExxonMobil' },
-    { symbol: 'MA',    name: 'Mastercard' },
     { symbol: 'NFLX',  name: 'Netflix' },
     { symbol: 'AMD',   name: 'AMD' },
-    { symbol: 'COST',  name: 'Costco' },
-    { symbol: 'BAC',   name: 'Bank of America' },
-    { symbol: 'DIS',   name: 'Disney' },
-    { symbol: 'INTC',  name: 'Intel' },
   ],
   'Crypto': [
-    { symbol: 'BTC-USD',   name: 'Bitcoin' },
-    { symbol: 'ETH-USD',   name: 'Ethereum' },
-    { symbol: 'BNB-USD',   name: 'BNB' },
-    { symbol: 'SOL-USD',   name: 'Solana' },
-    { symbol: 'XRP-USD',   name: 'XRP (Ripple)' },
-    { symbol: 'ADA-USD',   name: 'Cardano' },
-    { symbol: 'AVAX-USD',  name: 'Avalanche' },
-    { symbol: 'DOGE-USD',  name: 'Dogecoin' },
-    { symbol: 'DOT-USD',   name: 'Polkadot' },
-    { symbol: 'LINK-USD',  name: 'Chainlink' },
-    { symbol: 'MATIC-USD', name: 'Polygon' },
-    { symbol: 'LTC-USD',   name: 'Litecoin' },
-    { symbol: 'UNI-USD',   name: 'Uniswap' },
-    { symbol: 'ATOM-USD',  name: 'Cosmos' },
+    { symbol: 'BTC-USD',  name: 'Bitcoin' },
+    { symbol: 'ETH-USD',  name: 'Ethereum' },
+    { symbol: 'SOL-USD',  name: 'Solana' },
+    { symbol: 'BNB-USD',  name: 'BNB' },
+    { symbol: 'XRP-USD',  name: 'XRP (Ripple)' },
+    { symbol: 'ADA-USD',  name: 'Cardano' },
+    { symbol: 'AVAX-USD', name: 'Avalanche' },
+    { symbol: 'DOGE-USD', name: 'Dogecoin' },
+    { symbol: 'LINK-USD', name: 'Chainlink' },
   ],
 };
 
 const MKT_RANGES = {
-  '1G':  { range: '1d',   interval: '5m'  },
-  '1S':  { range: '5d',   interval: '1h'  },
-  '1M':  { range: '1mo',  interval: '1d'  },
-  '3M':  { range: '3mo',  interval: '1d'  },
-  '6M':  { range: '6mo',  interval: '1d'  },
-  'YTD': { range: 'ytd',  interval: '1d'  },
-  '1A':  { range: '1y',   interval: '1d'  },
-  '5A':  { range: '5y',   interval: '1wk' },
-  'Max': { range: 'max',  interval: '1mo' },
+  '1G':  { range: '1d',   interval: '5m',  days: 2    },
+  '1S':  { range: '5d',   interval: '1h',  days: 8    },
+  '1M':  { range: '1mo',  interval: '1d',  days: 35   },
+  '3M':  { range: '3mo',  interval: '1d',  days: 95   },
+  '6M':  { range: '6mo',  interval: '1d',  days: 185  },
+  'YTD': { range: 'ytd',  interval: '1d',  days: null },
+  '1A':  { range: '1y',   interval: '1d',  days: 370  },
+  '5A':  { range: '5y',   interval: '1wk', days: 1830 },
+  'Max': { range: 'max',  interval: '1mo', days: 9000 },
 };
 
+/* ─── CoinGecko IDs ─── */
+const CG_IDS = {
+  'BTC-USD': 'bitcoin',    'ETH-USD': 'ethereum',   'SOL-USD': 'solana',
+  'BNB-USD': 'binancecoin','XRP-USD': 'ripple',      'ADA-USD': 'cardano',
+  'AVAX-USD':'avalanche-2','DOGE-USD':'dogecoin',    'DOT-USD': 'polkadot',
+  'LINK-USD':'chainlink',  'MATIC-USD':'matic-network','LTC-USD':'litecoin',
+};
+
+/* ─── Stooq symbol map ─── */
+function toStooqSym(sym) {
+  const map = {
+    '^GSPC': '^spx', '^IXIC': '^ndx', '^DJI': '^dji', '^RUT': '^rut',
+    '^STOXX50E': '^stoxx50e', 'FTSEMIB.MI': '^ftsemib',
+    '^GDAXI': '^dax', '^FTSE': '^ftse', '^FCHI': '^cac',
+    '^N225': '^nkx', '^HSI': '^hsi', '^VIX': '^vix',
+    'IWDA.AS': 'iwda.nl', 'VWCE.DE': 'vwce.de', 'SWRD.SW': 'swrd.ch',
+    'CSPX.L': 'cspx.uk', 'XDWD.DE': 'xdwd.de', 'EMIM.AS': 'emim.nl',
+    'GC=F': 'xauusd', 'SI=F': 'xagusd', 'CL=F': 'clusd',
+    'BZ=F': 'lco.uk', 'NG=F': 'ng.f',   'HG=F': 'hg.f',
+    'ZW=F': 'zw.f',   'ZC=F': 'zc.f',   'KC=F': 'kc.f', 'CC=F': 'cc.f',
+    'EURUSD=X': 'eurusd', 'EURGBP=X': 'eurgbp', 'EURJPY=X': 'eurjpy',
+    'EURCHF=X': 'eurchf', 'GBPUSD=X': 'gbpusd', 'USDJPY=X': 'usdjpy',
+    'AUDUSD=X': 'audusd', 'DX-Y.NYB': 'dxy.fo',
+    'VOO': 'voo.us', 'SPY': 'spy.us', 'QQQ': 'qqq.us',
+    'TLT': 'tlt.us', 'IEF': 'ief.us', 'SHY': 'shy.us',
+    'HYG': 'hyg.us', 'LQD': 'lqd.us', 'AGG': 'agg.us', 'EMB': 'emb.us',
+    'GLD': 'gld.us', 'SLV': 'slv.us',
+    'AAPL': 'aapl.us', 'MSFT': 'msft.us', 'NVDA': 'nvda.us',
+    'AMZN': 'amzn.us', 'GOOGL': 'googl.us', 'META': 'meta.us',
+    'TSLA': 'tsla.us', 'JPM': 'jpm.us', 'V': 'v.us',
+    'WMT': 'wmt.us', 'NFLX': 'nflx.us', 'AMD': 'amd.us',
+    'AVGO': 'avgo.us', 'UNH': 'unh.us', 'XOM': 'xom.us',
+    'MA': 'ma.us', 'COST': 'cost.us', 'BAC': 'bac.us',
+    'DIS': 'dis.us', 'INTC': 'intc.us', 'LLY': 'lly.us',
+  };
+  if (map[sym]) return map[sym];
+  if (sym.endsWith('.MI')) return sym.replace('.MI','').toLowerCase() + '.it';
+  if (/^[A-Z]{1,5}$/.test(sym)) return sym.toLowerCase() + '.us';
+  return null;
+}
+
+/* ─── LOCAL SEARCH DATABASE ─── */
+const SEARCH_DB = [
+  { s:'^GSPC',     n:'S&P 500',                x:'NYSE',    t:'Indice'      },
+  { s:'^IXIC',     n:'Nasdaq Composite',        x:'NASDAQ',  t:'Indice'      },
+  { s:'^DJI',      n:'Dow Jones',               x:'NYSE',    t:'Indice'      },
+  { s:'^RUT',      n:'Russell 2000',            x:'NYSE',    t:'Indice'      },
+  { s:'^STOXX50E', n:'Euro Stoxx 50',           x:'Euronext',t:'Indice'      },
+  { s:'FTSEMIB.MI',n:'FTSE MIB',               x:'Milano',  t:'Indice'      },
+  { s:'^GDAXI',    n:'DAX 40',                  x:'Xetra',   t:'Indice'      },
+  { s:'^FTSE',     n:'FTSE 100',                x:'Londra',  t:'Indice'      },
+  { s:'^FCHI',     n:'CAC 40',                  x:'Parigi',  t:'Indice'      },
+  { s:'^N225',     n:'Nikkei 225',              x:'Tokyo',   t:'Indice'      },
+  { s:'^VIX',      n:'VIX Volatilità',          x:'CBOE',    t:'Indice'      },
+  { s:'IWDA.AS',   n:'iShares MSCI World',      x:'Euronext',t:'ETF'         },
+  { s:'VWCE.DE',   n:'Vanguard FTSE All-World', x:'Xetra',   t:'ETF'         },
+  { s:'SWRD.SW',   n:'SPDR MSCI World',         x:'SIX',     t:'ETF'         },
+  { s:'CSPX.L',    n:'iShares Core S&P 500',    x:'Londra',  t:'ETF'         },
+  { s:'VOO',       n:'Vanguard S&P 500',        x:'AMEX',    t:'ETF'         },
+  { s:'SPY',       n:'SPDR S&P 500',            x:'AMEX',    t:'ETF'         },
+  { s:'QQQ',       n:'Invesco Nasdaq-100',      x:'NASDAQ',  t:'ETF'         },
+  { s:'TLT',       n:'iShares 20Y+ Treasury',   x:'AMEX',    t:'ETF'         },
+  { s:'GLD',       n:'SPDR Gold Shares',        x:'AMEX',    t:'ETF'         },
+  { s:'IEF',       n:'iShares 7-10Y Treasury',  x:'AMEX',    t:'ETF'         },
+  { s:'HYG',       n:'iShares High Yield Corp', x:'AMEX',    t:'ETF'         },
+  { s:'AGG',       n:'iShares US Aggregate',    x:'AMEX',    t:'ETF'         },
+  { s:'GC=F',      n:'Oro (Gold Futures)',       x:'COMEX',   t:'Commodity'   },
+  { s:'SI=F',      n:'Argento (Silver)',         x:'COMEX',   t:'Commodity'   },
+  { s:'CL=F',      n:'Petrolio WTI',            x:'NYMEX',   t:'Commodity'   },
+  { s:'BZ=F',      n:'Petrolio Brent',          x:'ICE',     t:'Commodity'   },
+  { s:'NG=F',      n:'Gas Naturale',            x:'NYMEX',   t:'Commodity'   },
+  { s:'HG=F',      n:'Rame (Copper)',           x:'COMEX',   t:'Commodity'   },
+  { s:'EURUSD=X',  n:'Euro / Dollaro USA',      x:'Forex',   t:'Valuta'      },
+  { s:'EURGBP=X',  n:'Euro / Sterlina',         x:'Forex',   t:'Valuta'      },
+  { s:'EURJPY=X',  n:'Euro / Yen',              x:'Forex',   t:'Valuta'      },
+  { s:'GBPUSD=X',  n:'Sterlina / Dollaro',      x:'Forex',   t:'Valuta'      },
+  { s:'USDJPY=X',  n:'Dollaro / Yen',           x:'Forex',   t:'Valuta'      },
+  { s:'DX-Y.NYB',  n:'Dollar Index (DXY)',      x:'NYSE',    t:'Valuta'      },
+  { s:'ENI.MI',    n:'ENI',                     x:'Milano',  t:'Azione'      },
+  { s:'ENEL.MI',   n:'Enel',                    x:'Milano',  t:'Azione'      },
+  { s:'ISP.MI',    n:'Intesa Sanpaolo',         x:'Milano',  t:'Azione'      },
+  { s:'UCG.MI',    n:'UniCredit',               x:'Milano',  t:'Azione'      },
+  { s:'STM.MI',    n:'STMicroelectronics',      x:'Milano',  t:'Azione'      },
+  { s:'RACE.MI',   n:'Ferrari',                 x:'Milano',  t:'Azione'      },
+  { s:'STLAM.MI',  n:'Stellantis',              x:'Milano',  t:'Azione'      },
+  { s:'G.MI',      n:'Generali',                x:'Milano',  t:'Azione'      },
+  { s:'LDO.MI',    n:'Leonardo',                x:'Milano',  t:'Azione'      },
+  { s:'MONC.MI',   n:'Moncler',                 x:'Milano',  t:'Azione'      },
+  { s:'TIT.MI',    n:'TIM (Telecom Italia)',     x:'Milano',  t:'Azione'      },
+  { s:'BMPS.MI',   n:'Monte dei Paschi',        x:'Milano',  t:'Azione'      },
+  { s:'AAPL',      n:'Apple Inc.',              x:'NASDAQ',  t:'Azione'      },
+  { s:'MSFT',      n:'Microsoft',               x:'NASDAQ',  t:'Azione'      },
+  { s:'NVDA',      n:'NVIDIA',                  x:'NASDAQ',  t:'Azione'      },
+  { s:'AMZN',      n:'Amazon',                  x:'NASDAQ',  t:'Azione'      },
+  { s:'GOOGL',     n:'Alphabet / Google',       x:'NASDAQ',  t:'Azione'      },
+  { s:'META',      n:'Meta Platforms',          x:'NASDAQ',  t:'Azione'      },
+  { s:'TSLA',      n:'Tesla',                   x:'NASDAQ',  t:'Azione'      },
+  { s:'NFLX',      n:'Netflix',                 x:'NASDAQ',  t:'Azione'      },
+  { s:'AMD',       n:'AMD',                     x:'NASDAQ',  t:'Azione'      },
+  { s:'INTC',      n:'Intel',                   x:'NASDAQ',  t:'Azione'      },
+  { s:'JPM',       n:'JPMorgan Chase',          x:'NYSE',    t:'Azione'      },
+  { s:'V',         n:'Visa',                    x:'NYSE',    t:'Azione'      },
+  { s:'WMT',       n:'Walmart',                 x:'NYSE',    t:'Azione'      },
+  { s:'MA',        n:'Mastercard',              x:'NYSE',    t:'Azione'      },
+  { s:'XOM',       n:'ExxonMobil',              x:'NYSE',    t:'Azione'      },
+  { s:'BAC',       n:'Bank of America',         x:'NYSE',    t:'Azione'      },
+  { s:'DIS',       n:'Walt Disney',             x:'NYSE',    t:'Azione'      },
+  { s:'BRK-B',     n:'Berkshire Hathaway B',    x:'NYSE',    t:'Azione'      },
+  { s:'BTC-USD',   n:'Bitcoin',                 x:'Crypto',  t:'Crypto'      },
+  { s:'ETH-USD',   n:'Ethereum',                x:'Crypto',  t:'Crypto'      },
+  { s:'SOL-USD',   n:'Solana',                  x:'Crypto',  t:'Crypto'      },
+  { s:'BNB-USD',   n:'BNB',                     x:'Crypto',  t:'Crypto'      },
+  { s:'XRP-USD',   n:'XRP / Ripple',            x:'Crypto',  t:'Crypto'      },
+  { s:'ADA-USD',   n:'Cardano',                 x:'Crypto',  t:'Crypto'      },
+  { s:'DOGE-USD',  n:'Dogecoin',                x:'Crypto',  t:'Crypto'      },
+  { s:'LINK-USD',  n:'Chainlink',               x:'Crypto',  t:'Crypto'      },
+];
+
+function localSearch(query) {
+  const q = query.toLowerCase().trim();
+  if (!q) return [];
+  return SEARCH_DB.filter(item =>
+    item.s.toLowerCase().startsWith(q) ||
+    item.n.toLowerCase().includes(q) ||
+    item.s.toLowerCase().includes(q)
+  ).sort((a,b) => {
+    const aEx = a.s.toLowerCase().startsWith(q) ? 0 : 1;
+    const bEx = b.s.toLowerCase().startsWith(q) ? 0 : 1;
+    return aEx - bEx;
+  }).slice(0, 8);
+}
+
+/* ─── mkt state ─── */
 let mkt = {
   category: 'Indici',
   range: '1M',
@@ -1871,53 +1961,146 @@ let mkt = {
 
 const MKT_CACHE_TTL = 5 * 60 * 1000;
 
-/* ─── API ─── */
-async function mktFetch(url) {
-  /* Primary proxy: allorigins */
-  try {
-    const r = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent(url));
-    if (!r.ok) throw new Error('allorigins ' + r.status);
-    const d = await r.json();
-    return JSON.parse(d.contents);
-  } catch {
-    /* Fallback: corsproxy.io */
-    const r = await fetch('https://corsproxy.io/?' + encodeURIComponent(url));
-    if (!r.ok) throw new Error('corsproxy ' + r.status);
-    return r.json();
+/* ─── RAW TEXT PROXY FETCH (for Stooq CSV) ─── */
+async function mktFetchRaw(url) {
+  const to = AbortSignal.timeout ? { signal: AbortSignal.timeout(12000) } : {};
+  const proxies = [
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+    `https://corsproxy.io/?${encodeURIComponent(url)}`,
+    `https://thingproxy.freeboard.io/fetch/${url}`,
+  ];
+  for (const proxy of proxies) {
+    try {
+      const r = await fetch(proxy, to);
+      if (!r.ok) continue;
+      const t = await r.text();
+      if (t && t.length > 20 && !t.trimStart().startsWith('<')) return t;
+    } catch {}
   }
+  throw new Error('raw_fail');
 }
 
-async function mktFetchChart(symbol, range, interval, fromTs, toTs) {
-  const cacheKey = `${symbol}|${range}|${interval}|${fromTs}|${toTs}`;
+/* ─── STOOQ FETCH (primary data source) ─── */
+async function stooqFetch(yfSym, range, fromTs, toTs) {
+  const sq = toStooqSym(yfSym);
+  if (!sq) return null;
+
+  let d1, d2;
+  if (fromTs && toTs) {
+    d1 = new Date(fromTs * 1000).toISOString().slice(0,10).replace(/-/g,'');
+    d2 = new Date(toTs  * 1000).toISOString().slice(0,10).replace(/-/g,'');
+  } else {
+    const cfg = MKT_RANGES[range] || MKT_RANGES['1M'];
+    let days = cfg.days;
+    if (!days) { // YTD
+      const now = new Date();
+      days = Math.floor((now - new Date(now.getFullYear(), 0, 1)) / 86400000) + 5;
+    }
+    d2 = new Date().toISOString().slice(0,10).replace(/-/g,'');
+    d1 = new Date(Date.now() - days * 86400000).toISOString().slice(0,10).replace(/-/g,'');
+  }
+
+  const url = `https://stooq.com/q/d/l/?s=${sq}&d1=${d1}&d2=${d2}&i=d`;
+  const cacheKey = `stooq|${sq}|${d1}|${d2}`;
   const now = Date.now();
   if (mkt.cache[cacheKey] && (now - mkt.cacheTimes[cacheKey]) < MKT_CACHE_TTL) {
     return mkt.cache[cacheKey];
   }
-  let url;
-  if (fromTs && toTs) {
-    url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?period1=${fromTs}&period2=${toTs}&interval=${interval}`;
-  } else {
-    url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${range}&interval=${interval}`;
-  }
-  const data = await mktFetch(url);
-  mkt.cache[cacheKey] = data;
-  mkt.cacheTimes[cacheKey] = now;
-  return data;
+
+  try {
+    const csv = await mktFetchRaw(url);
+    if (!csv || csv.includes('No data') || csv.includes('<') || csv.split('\n').length < 3) return null;
+
+    const lines = csv.trim().split('\n');
+    // header: Date,Open,High,Low,Close,Volume
+    const rows = [];
+    for (const line of lines.slice(1)) {
+      const p = line.split(',');
+      if (p.length < 5) continue;
+      const close = parseFloat(p[4]);
+      if (!isNaN(close) && p[0]) rows.push({ date: p[0].trim(), close });
+    }
+    if (rows.length < 2) return null;
+
+    const closes = rows.map(r => r.close);
+    const stamps = rows.map(r => Math.floor(new Date(r.date).getTime() / 1000));
+    const price  = closes[closes.length - 1];
+    const change = ((price - closes[0]) / closes[0]) * 100;
+
+    const result = { price, change, closes, stamps, curr: '' };
+    mkt.cache[cacheKey] = result;
+    mkt.cacheTimes[cacheKey] = now;
+    return result;
+  } catch { return null; }
 }
 
-async function mktSearch(query) {
-  const url = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=8&newsCount=0`;
-  return mktFetch(url);
+/* ─── COINGECKO for Crypto ─── */
+async function cgFetchCrypto(items) {
+  const cgDays = {
+    '1G': '1', '1S': '7', '1M': '30', '3M': '90', '6M': '180',
+    'YTD': String(Math.floor((Date.now() - new Date(new Date().getFullYear(),0,1)) / 86400000)),
+    '1A': '365', '5A': '1825', 'Max': 'max',
+  };
+  const days = cgDays[mkt.range] || '30';
+  const ids  = items.map(i => CG_IDS[i.symbol]).filter(Boolean).join(',');
+  if (!ids) return {};
+
+  const results = {};
+  const fetchOpts = AbortSignal.timeout ? { signal: AbortSignal.timeout(10000) } : {};
+
+  // Current price + 24h change
+  try {
+    const r = await fetch(
+      `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`,
+      fetchOpts
+    );
+    if (r.ok) {
+      const data = await r.json();
+      items.forEach(item => {
+        const cg = CG_IDS[item.symbol];
+        if (cg && data[cg]) {
+          results[item.symbol] = {
+            price:  data[cg].usd,
+            change: days === '1' ? data[cg].usd_24h_change : null,
+            closes: null, stamps: null, curr: 'USD',
+          };
+        }
+      });
+    }
+  } catch {}
+
+  // Historical for other ranges
+  if (days !== '1') {
+    await Promise.all(items.map(async item => {
+      const cgId = CG_IDS[item.symbol];
+      if (!cgId) return;
+      try {
+        const r = await fetch(
+          `https://api.coingecko.com/api/v3/coins/${cgId}/market_chart?vs_currency=usd&days=${days}`,
+          fetchOpts
+        );
+        if (!r.ok) return;
+        const data = await r.json();
+        const closes = (data.prices || []).map(p => p[1]).filter(Boolean);
+        const stamps = (data.prices || []).map(p => Math.floor(p[0] / 1000));
+        if (closes.length < 2) return;
+        const price  = closes[closes.length - 1];
+        const change = ((price - closes[0]) / closes[0]) * 100;
+        if (!results[item.symbol]) results[item.symbol] = { price, curr: 'USD' };
+        Object.assign(results[item.symbol], { change, closes, stamps });
+      } catch {}
+    }));
+  }
+  return results;
 }
 
 /* ─── RANGE PARAMS ─── */
 function getMktRangeParams() {
   if (mkt.range === 'Custom' && mkt.customFrom && mkt.customTo) {
     return {
-      range: null,
-      interval: '1d',
+      range: null, interval: '1d',
       fromTs: Math.floor(new Date(mkt.customFrom).getTime() / 1000),
-      toTs: Math.floor(new Date(mkt.customTo).getTime() / 1000),
+      toTs:   Math.floor(new Date(mkt.customTo).getTime()   / 1000),
     };
   }
   const cfg = MKT_RANGES[mkt.range] || MKT_RANGES['1M'];
@@ -1925,23 +2108,12 @@ function getMktRangeParams() {
 }
 
 /* ─── HELPERS ─── */
-function mktSymId(symbol) {
-  return 'mkt-row-' + symbol.replace(/[^a-zA-Z0-9]/g, '_');
-}
-
-function mktGetChange(data) {
-  try {
-    const closes = data.chart.result[0].indicators.quote[0].close;
-    const valid = closes.filter(v => v != null);
-    if (valid.length < 2) return null;
-    return ((valid[valid.length - 1] - valid[0]) / valid[0]) * 100;
-  } catch { return null; }
-}
+function mktSymId(sym) { return 'mkt-row-' + sym.replace(/[^a-zA-Z0-9]/g, '_'); }
 
 function mktFmtPrice(p) {
   if (p == null) return '—';
-  if (p >= 1000)  return p.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  if (p >= 1)     return p.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+  if (p >= 1000) return p.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (p >= 1)    return p.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
   return p.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 6 });
 }
 
@@ -1963,135 +2135,140 @@ function mktSparkline(closes, pct) {
   const span = max - min || 1;
   const W = 64, H = 28;
   const color = (pct ?? 0) >= 0 ? '#00e5a0' : '#ff4d4d';
-  const points = pts.map((v, i) => `${(i / (pts.length - 1) * W).toFixed(1)},${(H - (v - min) / span * H).toFixed(1)}`).join(' ');
+  const points = pts.map((v,i) =>
+    `${(i/(pts.length-1)*W).toFixed(1)},${(H-(v-min)/span*H).toFixed(1)}`
+  ).join(' ');
   return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="display:block;"><polyline points="${points}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
 }
 
 function mktDateLabel(ts, range) {
   const d = new Date(ts * 1000);
   if (range === '1G') return d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
-  if (['1S', '1M', '3M'].includes(range)) return d.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' });
+  if (['1S','1M','3M'].includes(range)) return d.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' });
   return d.toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: '2-digit' });
 }
 
 /* ─── SKELETON ─── */
 function mktRenderSkeleton(items) {
   document.getElementById('mkt-tbody').innerHTML = items.map(item => `
-    <tr id="${mktSymId(item.symbol)}" data-name="${item.name}" data-symbol="${item.symbol}" data-change="" data-price="">
+    <tr id="${mktSymId(item.symbol)}">
       <td><div class="mkt-name-col"><span class="mkt-name">${item.name}</span><span class="mkt-sym-small">${item.symbol}</span></div></td>
       <td><span class="mkt-sym-col">${item.symbol}</span></td>
       <td><span class="mkt-skel" style="width:90px;"></span></td>
       <td><span class="mkt-skel" style="width:65px;"></span></td>
       <td><span class="mkt-skel" style="width:64px;height:20px;"></span></td>
-    </tr>
-  `).join('');
+    </tr>`).join('');
 }
 
-/* ─── LOAD ONE ROW ─── */
-async function mktLoadRow(item, gen) {
-  const { range, interval, fromTs, toTs } = getMktRangeParams();
+/* ─── APPLY RESULT TO ROW ─── */
+function mktApplyResult(item, result, gen) {
+  if (gen !== mkt.loadGen) return;
   const row = document.getElementById(mktSymId(item.symbol));
   if (!row) return;
 
-  try {
-    const data = await mktFetchChart(item.symbol, range, interval, fromTs, toTs);
-    if (gen !== mkt.loadGen) return; // stale load
-
-    const result = data.chart?.result?.[0];
-    if (!result) throw new Error('no result');
-
-    const meta   = result.meta;
-    const closes = result.indicators?.quote?.[0]?.close || [];
-    const stamps = result.timestamp || [];
-    const change = mktGetChange(data);
-    const price  = meta.regularMarketPrice;
-    const curr   = meta.currency || '';
-    const dname  = meta.shortName || meta.longName || item.name;
-
-    row.dataset.change = change ?? '';
-    row.dataset.price  = price ?? '';
-    row.dataset.name   = dname;
-
+  if (!result) {
     row.innerHTML = `
-      <td><div class="mkt-name-col"><span class="mkt-name">${dname}</span><span class="mkt-sym-small">${item.symbol}</span></div></td>
+      <td><div class="mkt-name-col"><span class="mkt-name">${item.name}</span><span class="mkt-sym-small">${item.symbol}</span></div></td>
       <td><span class="mkt-sym-col">${item.symbol}</span></td>
-      <td><span class="mkt-price-col">${mktFmtPrice(price)}<span class="mkt-curr">${curr}</span></span></td>
-      <td><span class="mkt-change-col ${mktPctClass(change)}">${mktFmtPct(change)}</span></td>
-      <td>${mktSparkline(closes, change)}</td>
-    `;
-
-    row.onclick = () => mktShowChart(item.symbol, dname, closes, stamps, change, curr, price);
-
-    if (item.symbol === mkt.selectedSymbol) row.classList.add('mkt-selected');
-
-  } catch {
-    if (gen !== mkt.loadGen) return;
-    const row2 = document.getElementById(mktSymId(item.symbol));
-    if (row2) {
-      row2.innerHTML = `
-        <td><div class="mkt-name-col"><span class="mkt-name">${item.name}</span><span class="mkt-sym-small">${item.symbol}</span></div></td>
-        <td><span class="mkt-sym-col">${item.symbol}</span></td>
-        <td colspan="3" style="color:var(--muted);font-size:12px;font-family:var(--mono);">Dati non disponibili</td>
-      `;
-      row2.style.cursor = 'default';
-    }
+      <td colspan="3"><span style="color:var(--muted);font-size:12px;font-family:var(--mono);">— </span>
+        <button onclick="mktRetryRow(this,'${item.symbol}','${item.name.replace(/'/g,"\\'")}');"
+          style="background:none;border:none;color:var(--accent4);font-size:12px;font-family:var(--mono);cursor:pointer;padding:0;">riprova ↻</button></td>`;
+    row.style.cursor = 'default';
+    row.dataset.change = ''; row.dataset.price = '';
+    return;
   }
+
+  const { price, change, closes, stamps, curr } = result;
+  row.dataset.change = change ?? '';
+  row.dataset.price  = price  ?? '';
+  row.dataset.name   = item.name;
+
+  row.innerHTML = `
+    <td><div class="mkt-name-col"><span class="mkt-name">${item.name}</span><span class="mkt-sym-small">${item.symbol}</span></div></td>
+    <td><span class="mkt-sym-col">${item.symbol}</span></td>
+    <td><span class="mkt-price-col">${mktFmtPrice(price)}<span class="mkt-curr">${curr||''}</span></span></td>
+    <td><span class="mkt-change-col ${mktPctClass(change)}">${mktFmtPct(change)}</span></td>
+    <td>${mktSparkline(closes, change)}</td>`;
+  row.style.cursor = 'pointer';
+  row.onclick = () => mktShowChart(item.symbol, item.name, closes, stamps, change, curr||'', price);
+  if (item.symbol === mkt.selectedSymbol) row.classList.add('mkt-selected');
 }
 
-/* ─── LOAD ALL ─── */
+/* ─── MAIN LOAD ─── */
 async function mktLoad() {
   const gen = ++mkt.loadGen;
   const items = mkt.category === 'Ricerca'
     ? mkt.searchItems
     : (MKT_CATEGORIES[mkt.category] || []);
+  if (!items.length) return;
 
-  const rangeLabel = mkt.range === 'Custom'
-    ? `${mkt.customFrom} → ${mkt.customTo}`
-    : mkt.range;
-  document.getElementById('mkt-table-title').textContent =
-    `${mkt.category} — Performance ${rangeLabel}`;
-
+  const rangeLabel = mkt.range === 'Custom' ? `${mkt.customFrom} → ${mkt.customTo}` : mkt.range;
+  document.getElementById('mkt-table-title').textContent = `${mkt.category} — ${rangeLabel}`;
   mktRenderSkeleton(items);
 
-  /* Load in batches of 4 to avoid rate limiting */
-  for (let i = 0; i < items.length; i += 4) {
-    if (gen !== mkt.loadGen) return;
-    const batch = items.slice(i, i + 4);
-    await Promise.all(batch.map(item => mktLoadRow(item, gen)));
-    if (i + 4 < items.length) await new Promise(r => setTimeout(r, 350));
-  }
+  const { range, fromTs, toTs } = getMktRangeParams();
+  const cryptoItems = items.filter(i => CG_IDS[i.symbol]);
+  const otherItems  = items.filter(i => !CG_IDS[i.symbol]);
 
-  const now = new Date();
-  document.getElementById('mkt-update-time').textContent =
-    `↻ ${now.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}`;
+  /* Crypto via CoinGecko */
+  const cgPromise = cryptoItems.length ? cgFetchCrypto(cryptoItems) : Promise.resolve({});
 
-  const btn = document.getElementById('mkt-refresh-btn');
-  if (btn) btn.classList.remove('spinning');
+  /* Everything else via Stooq */
+  await Promise.all(otherItems.map(async item => {
+    const result = await stooqFetch(item.symbol, mkt.range, fromTs, toTs);
+    mktApplyResult(item, result, gen);
+  }));
+
+  if (gen !== mkt.loadGen) return;
+  const cgResults = await cgPromise;
+  if (gen !== mkt.loadGen) return;
+  cryptoItems.forEach(item => {
+    const r = cgResults[item.symbol];
+    mktApplyResult(item, r || null, gen);
+  });
+
+  mktFinalize(gen);
 }
 
-/* ─── CATEGORY ─── */
+function mktFinalize(gen) {
+  if (gen !== mkt.loadGen) return;
+  const now = new Date();
+  document.getElementById('mkt-update-time').textContent =
+    `↻ ${now.toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' })}`;
+  document.getElementById('mkt-refresh-btn')?.classList.remove('spinning');
+}
+
+/* ─── RETRY ROW ─── */
+async function mktRetryRow(btn, symbol, name) {
+  btn.textContent = '...';
+  const { fromTs, toTs } = getMktRangeParams();
+  const gen = mkt.loadGen;
+  if (CG_IDS[symbol]) {
+    const r = await cgFetchCrypto([{ symbol, name }]);
+    mktApplyResult({ symbol, name }, r[symbol] || null, gen);
+    return;
+  }
+  const result = await stooqFetch(symbol, mkt.range, fromTs, toTs);
+  mktApplyResult({ symbol, name }, result, gen);
+}
+
+/* ─── CATEGORY / RANGE ─── */
 function selectMktCategory(cat) {
   mkt.category = cat;
   mkt.selectedSymbol = null;
   closeMktChart();
-  document.querySelectorAll('.mkt-tab').forEach(t =>
-    t.classList.toggle('active', t.dataset.cat === cat)
-  );
+  document.querySelectorAll('.mkt-tab').forEach(t => t.classList.toggle('active', t.dataset.cat === cat));
   mktLoad();
 }
 
-/* ─── RANGE ─── */
 function selectMktRange(r, el) {
   mkt.range = r;
   document.querySelectorAll('.mkt-range-pill').forEach(p => p.classList.remove('active'));
   if (el) el.classList.add('active');
-
   const custom = document.getElementById('mkt-custom-range');
-  custom.style.display = r === 'Custom' ? 'flex' : 'none';
-
+  if (custom) custom.style.display = r === 'Custom' ? 'flex' : 'none';
   if (r !== 'Custom') {
-    mkt.cache = {};
-    mkt.cacheTimes = {};
+    mkt.cache = {}; mkt.cacheTimes = {};
     mktLoad();
   }
 }
@@ -2100,35 +2277,28 @@ function applyMktCustomRange() {
   mkt.customFrom = document.getElementById('mkt-date-from').value;
   mkt.customTo   = document.getElementById('mkt-date-to').value;
   if (!mkt.customFrom || !mkt.customTo) { alert('Seleziona entrambe le date.'); return; }
-  if (mkt.customFrom > mkt.customTo) { alert('La data iniziale deve essere precedente alla data finale.'); return; }
-  mkt.cache = {};
-  mkt.cacheTimes = {};
+  if (mkt.customFrom > mkt.customTo)   { alert('La data iniziale deve essere precedente alla finale.'); return; }
+  mkt.cache = {}; mkt.cacheTimes = {};
   mktLoad();
 }
 
-/* ─── REFRESH ─── */
 function refreshMkt() {
   const btn = document.getElementById('mkt-refresh-btn');
   if (btn) btn.classList.add('spinning');
-  mkt.cache = {};
-  mkt.cacheTimes = {};
+  mkt.cache = {}; mkt.cacheTimes = {};
   mktLoad();
 }
 
 function startMktAutoRefresh() {
   stopMktAutoRefresh();
-  mkt.refreshTimer = setInterval(() => {
-    mkt.cache = {};
-    mkt.cacheTimes = {};
-    mktLoad();
-  }, MKT_CACHE_TTL);
+  mkt.refreshTimer = setInterval(() => { mkt.cache = {}; mkt.cacheTimes = {}; mktLoad(); }, MKT_CACHE_TTL);
 }
 
 function stopMktAutoRefresh() {
   if (mkt.refreshTimer) { clearInterval(mkt.refreshTimer); mkt.refreshTimer = null; }
 }
 
-/* ─── CHART ─── */
+/* ─── CHART (Chart.js, aggiornato con periodo selezionato) ─── */
 function mktShowChart(symbol, name, closes, stamps, change, currency, lastPrice) {
   mkt.selectedSymbol = symbol;
   document.querySelectorAll('#mkt-tbody tr').forEach(r => r.classList.remove('mkt-selected'));
@@ -2139,38 +2309,38 @@ function mktShowChart(symbol, name, closes, stamps, change, currency, lastPrice)
   panel.style.display = 'block';
 
   document.getElementById('mkt-chart-label').textContent = `${name} (${symbol})`;
-  document.getElementById('mkt-chart-price').textContent = mktFmtPrice(lastPrice) + (currency ? ' ' + currency : '');
+  document.getElementById('mkt-chart-price').textContent =
+    lastPrice != null ? mktFmtPrice(lastPrice) + (currency ? ' ' + currency : '') : '';
   const pctEl = document.getElementById('mkt-chart-pct');
   pctEl.textContent = mktFmtPct(change);
   pctEl.className = 'mkt-chart-pct ' + mktPctClass(change);
 
   const valid = [];
   if (stamps && stamps.length) {
-    stamps.forEach((ts, i) => { if (closes[i] != null) valid.push({ ts, v: closes[i] }); });
-  } else {
+    stamps.forEach((ts, i) => { if ((closes||[])[i] != null) valid.push({ ts, v: closes[i] }); });
+  } else if (closes) {
     closes.forEach((v, i) => { if (v != null) valid.push({ ts: i, v }); });
   }
 
-  const labels = valid.map(p => mktDateLabel(p.ts, mkt.range));
-  const vals   = valid.map(p => p.v);
+  const labels    = valid.map(p => stamps?.length ? mktDateLabel(p.ts, mkt.range) : '');
+  const vals      = valid.map(p => p.v);
   const lineColor = (change ?? 0) >= 0 ? '#00e5a0' : '#ff4d4d';
   const bgColor   = (change ?? 0) >= 0 ? 'rgba(0,229,160,0.06)' : 'rgba(255,77,77,0.06)';
 
-  if (mkt.chartObj) mkt.chartObj.destroy();
-  mkt.chartObj = new Chart(document.getElementById('mkt-chart'), {
+  if (mkt.chartObj) { mkt.chartObj.destroy(); mkt.chartObj = null; }
+  const canvas = document.getElementById('mkt-chart');
+  if (!canvas) return;
+
+  if (!vals.length) { canvas.style.display = 'none'; return; }
+  canvas.style.display = '';
+
+  mkt.chartObj = new Chart(canvas, {
     type: 'line',
     data: {
       labels,
       datasets: [{
-        label: name,
-        data: vals,
-        borderColor: lineColor,
-        backgroundColor: bgColor,
-        fill: true,
-        tension: 0.3,
-        pointRadius: 0,
-        pointHoverRadius: 4,
-        borderWidth: 1.5,
+        data: vals, borderColor: lineColor, backgroundColor: bgColor,
+        fill: true, tension: 0.3, pointRadius: 0, pointHoverRadius: 4, borderWidth: 1.5,
       }]
     },
     options: {
@@ -2178,21 +2348,11 @@ function mktShowChart(symbol, name, closes, stamps, change, currency, lastPrice)
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: ctx => `${mktFmtPrice(ctx.raw)}${currency ? ' ' + currency : ''}`,
-          }
-        }
+        tooltip: { callbacks: { label: ctx => `${mktFmtPrice(ctx.raw)}${currency ? ' '+currency : ''}` } }
       },
       scales: {
-        x: {
-          grid: { color: 'rgba(255,255,255,0.04)' },
-          ticks: { maxTicksLimit: 8, maxRotation: 0 }
-        },
-        y: {
-          grid: { color: 'rgba(255,255,255,0.04)' },
-          ticks: { callback: v => mktFmtPrice(v) }
-        }
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { maxTicksLimit: 8, maxRotation: 0 } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { callback: v => mktFmtPrice(v) } }
       }
     }
   });
@@ -2210,45 +2370,26 @@ function closeMktChart() {
 /* ─── SORT ─── */
 function sortMktTable(key) {
   const ths = document.querySelectorAll('.mkt-table th');
-  const keyMap = { name: 0, symbol: 1, price: 2, change: 3 };
+  const keyMap = { name:0, symbol:1, price:2, change:3 };
   ths.forEach(th => th.className = '');
-
-  if (mkt.sortKey === key) {
-    mkt.sortDir *= -1;
-  } else {
-    mkt.sortKey = key;
-    mkt.sortDir = (key === 'change') ? -1 : 1;
-  }
-
+  if (mkt.sortKey === key) { mkt.sortDir *= -1; }
+  else { mkt.sortKey = key; mkt.sortDir = key === 'change' ? -1 : 1; }
   const thEl = ths[keyMap[key]];
   if (thEl) thEl.className = mkt.sortDir === 1 ? 'sort-asc' : 'sort-desc';
-
   const tbody = document.getElementById('mkt-tbody');
-  const rows  = Array.from(tbody.querySelectorAll('tr'));
-
-  rows.sort((a, b) => {
+  Array.from(tbody.querySelectorAll('tr')).sort((a,b) => {
     if (key === 'change') {
-      const va = parseFloat(a.dataset.change);
-      const vb = parseFloat(b.dataset.change);
+      const va = parseFloat(a.dataset.change), vb = parseFloat(b.dataset.change);
       if (isNaN(va) && isNaN(vb)) return 0;
-      if (isNaN(va)) return 1;
-      if (isNaN(vb)) return -1;
+      if (isNaN(va)) return 1; if (isNaN(vb)) return -1;
       return (va - vb) * mkt.sortDir;
     }
-    if (key === 'price') {
-      const va = parseFloat(a.dataset.price) || 0;
-      const vb = parseFloat(b.dataset.price) || 0;
-      return (va - vb) * mkt.sortDir;
-    }
-    const va = (a.dataset[key] || '').toLowerCase();
-    const vb = (b.dataset[key] || '').toLowerCase();
-    return va.localeCompare(vb) * mkt.sortDir;
-  });
-
-  rows.forEach(r => tbody.appendChild(r));
+    if (key === 'price') return ((parseFloat(a.dataset.price)||0) - (parseFloat(b.dataset.price)||0)) * mkt.sortDir;
+    return (a.dataset[key]||'').toLowerCase().localeCompare((b.dataset[key]||'').toLowerCase()) * mkt.sortDir;
+  }).forEach(r => tbody.appendChild(r));
 }
 
-/* ─── SEARCH ─── */
+/* ─── SEARCH (locale + fallback manuale) ─── */
 let mktSearchTimeout;
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -2261,31 +2402,38 @@ document.addEventListener('DOMContentLoaded', () => {
     const q = inp.value.trim();
     if (!q) { dd.classList.remove('open'); return; }
 
-    mktSearchTimeout = setTimeout(async () => {
-      try {
-        const data   = await mktSearch(q);
-        const quotes = (data.quotes || []).filter(q => q.symbol);
+    mktSearchTimeout = setTimeout(() => {
+      const results = localSearch(q);
+      const sym = q.toUpperCase();
 
-        if (!quotes.length) {
-          dd.innerHTML = '<div class="mkt-search-item"><span class="mkt-search-name" style="color:var(--muted)">Nessun risultato trovato</span></div>';
-          dd.classList.add('open');
-          return;
-        }
+      let html = results.map(r =>
+        `<div class="mkt-search-item" onclick="mktAddFromSearch('${r.s.replace(/'/g,"\\'")}','${r.n.replace(/'/g,"\\'")}')">
+          <div class="mkt-search-info">
+            <span class="mkt-search-name">${r.n}</span>
+            <span class="mkt-search-exch">${r.x} · ${r.t}</span>
+          </div>
+          <span class="mkt-search-sym">${r.s}</span>
+        </div>`
+      ).join('');
 
-        dd.innerHTML = quotes.slice(0, 8).map(q => {
-          const sname = (q.shortname || q.longname || q.symbol).replace(/"/g, '&quot;');
-          const sym   = q.symbol.replace(/"/g, '&quot;');
-          return `<div class="mkt-search-item" onclick="mktAddFromSearch('${sym}','${sname.replace(/'/g, "\\'")}')">
-            <div class="mkt-search-info">
-              <span class="mkt-search-name">${q.shortname || q.longname || q.symbol}</span>
-              <span class="mkt-search-exch">${q.exchDisp || ''} · ${q.typeDisp || ''}</span>
-            </div>
-            <span class="mkt-search-sym">${q.symbol}</span>
-          </div>`;
-        }).join('');
+      // If user typed a plausible ticker not in local DB, offer manual add
+      if (!results.find(r => r.s.toUpperCase() === sym) && /^[A-Z^][A-Z0-9.^=-]{0,12}$/.test(sym)) {
+        html += `<div class="mkt-search-item" onclick="mktAddFromSearch('${sym}','${sym}')">
+          <div class="mkt-search-info">
+            <span class="mkt-search-name">Aggiungi "${sym}"</span>
+            <span class="mkt-search-exch">Simbolo personalizzato</span>
+          </div>
+          <span class="mkt-search-sym">+</span>
+        </div>`;
+      }
+
+      if (html) {
+        dd.innerHTML = html;
         dd.classList.add('open');
-      } catch { dd.classList.remove('open'); }
-    }, 420);
+      } else {
+        dd.classList.remove('open');
+      }
+    }, 200);
   });
 
   document.addEventListener('click', e => {
@@ -2296,14 +2444,11 @@ document.addEventListener('DOMContentLoaded', () => {
 function mktAddFromSearch(symbol, name) {
   document.getElementById('mkt-search-dropdown').classList.remove('open');
   document.getElementById('mkt-search').value = '';
-
   if (!mkt.searchItems.find(r => r.symbol === symbol)) {
     mkt.searchItems.push({ symbol, name });
   }
-
   const tab = document.getElementById('mkt-tab-search');
-  tab.style.display = 'inline-block';
-
+  if (tab) tab.style.display = 'inline-block';
   selectMktCategory('Ricerca');
 }
 
@@ -2311,15 +2456,17 @@ function mktAddFromSearch(symbol, name) {
 function initMercati() {
   if (!mkt.initialized) {
     mkt.initialized = true;
-    /* Set default dates for custom range to last 30 days */
     const today = new Date();
     const ago30 = new Date(today); ago30.setDate(ago30.getDate() - 30);
-    document.getElementById('mkt-date-to').value   = today.toISOString().split('T')[0];
-    document.getElementById('mkt-date-from').value = ago30.toISOString().split('T')[0];
+    const tf = document.getElementById('mkt-date-to');
+    const ff = document.getElementById('mkt-date-from');
+    if (tf) tf.value = today.toISOString().split('T')[0];
+    if (ff) ff.value = ago30.toISOString().split('T')[0];
   }
   mktLoad();
   startMktAutoRefresh();
 }
+
 </script>
 </body>
 </html>

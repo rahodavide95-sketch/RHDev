@@ -35,7 +35,7 @@ const SITE = {
       year:    "2026",
       catalog: "SSSCLTR001",
       format:  "Digital",
-      cover:   "sc001.jpg",
+      cover:   "etichetta/images/releases/sc001.jpg",
       link:    "https://fanlink.tv/raho-solvane-ep-subconscious-culture",
     },
     {

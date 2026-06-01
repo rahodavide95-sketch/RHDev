@@ -28,6 +28,7 @@
       --radius: 14px;
       --radius-sm: 8px;
       --header-h: 73px;
+      --footer-h: 70px;
       --header-bg: rgba(14,15,17,0.85);
     }
 
@@ -144,13 +145,10 @@
       justify-content: center;
       align-items: center;
       text-align: center;
-      height: calc(100dvh - var(--header-h));
+      height: calc(100dvh - var(--header-h) - var(--footer-h));
       overflow: hidden;
     }
     #home.active { display: flex; }
-
-    /* Hide footer + remove main padding when on home so page = exactly 100dvh */
-    #app:has(#home.active) footer { display: none; }
     #app:has(#home.active) main { padding-bottom: 0; }
 
     .home-eyebrow {
@@ -167,7 +165,7 @@
       font-weight: 300;
       line-height: 1.15;
       color: var(--text);
-      margin-bottom: 16px;
+      margin-bottom: 32px;
       letter-spacing: -1px;
     }
 
@@ -1049,7 +1047,6 @@
     <!-- ══════════ HOME ══════════ -->
     <div id="home" class="active">
       <h1 class="home-title">Analisi<br><strong>Finanziarie</strong></h1>
-      <p class="home-sub">Scegli lo strumento da simulare</p>
 
       <div class="card-grid">
         <div class="nav-card" style="--card-accent: #00e5a0;" onclick="navigate('cc')">

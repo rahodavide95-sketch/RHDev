@@ -195,6 +195,18 @@ body.ready { opacity: 1; }
   pointer-events: none;
 }
 
+/* Film grain overlay */
+.hero::after {
+  content:  '';
+  position: absolute;
+  inset:    0;
+  z-index:  1;
+  pointer-events: none;
+  opacity:  0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23g)'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+}
+
 .hero-content {
   position:       relative;
   z-index:        2;
@@ -279,6 +291,40 @@ img.broken-hide                   { visibility: hidden; }
 @keyframes scrollPulse {
   0%, 100% { opacity: 0.25; transform: scaleY(0.7); transform-origin: top; }
   50%       { opacity: 1;    transform: scaleY(1);   transform-origin: top; }
+}
+
+
+/* ============================================================
+   MARQUEE TICKER
+   ============================================================ */
+.marquee-wrap {
+  overflow:      hidden;
+  border-top:    1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding:       1rem 0;
+  background:    var(--bg-alt);
+}
+.marquee-track {
+  display:   flex;
+  width:     max-content;
+  animation: marquee 32s linear infinite;
+}
+.marquee-text {
+  font-family:    var(--f-body);
+  font-size:      0.65rem;
+  font-weight:    400;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color:          var(--fg-3);
+  white-space:    nowrap;
+  padding-right:  2rem;
+}
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track { animation: none; }
 }
 
 
@@ -707,7 +753,7 @@ img.broken-hide                   { visibility: hidden; }
 /* Primary email — large centred CTA */
 .contact-primary {
   text-align:    center;
-  padding:       3rem 0 2.5rem;
+  padding:       3rem 0;
 }
 .contact-email-link {
   font-family:    var(--f-display);
@@ -738,7 +784,7 @@ img.broken-hide                   { visibility: hidden; }
   display:         flex;
   flex-wrap:       wrap;
   gap:             0;
-  padding:         2.5rem 0;
+  padding:         3rem 0;
 }
 .contact-row-item {
   flex:            1 1 0;
@@ -771,7 +817,8 @@ img.broken-hide                   { visibility: hidden; }
 
 /* Form */
 .contact-form-wrap {
-  padding-top: 3rem;
+  padding-top:    3rem;
+  padding-bottom: 1rem;
 }
 .contact-form {
   display:        flex;

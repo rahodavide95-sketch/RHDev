@@ -268,29 +268,27 @@ function initNavbar() {
   const navbar = document.getElementById('navbar');
   if (!navbar) return;
 
-  // Scrolled state
-  const onScroll = () => navbar.classList.toggle('is-scrolled', window.scrollY > 50);
-  window.addEventListener('scroll', onScroll, { passive: true });
-  onScroll();
-
-  // Active section indicator via IntersectionObserver
   const sections = document.querySelectorAll('section[id]');
   const navLinks  = document.querySelectorAll('.nav-link');
 
   const setActive = (id) => {
     navLinks.forEach(a => {
-      const matches = a.getAttribute('href') === '#' + id;
-      a.classList.toggle('is-active', matches);
+      a.classList.toggle('is-active', a.getAttribute('href') === '#' + id);
     });
   };
 
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) setActive(entry.target.id);
-    });
-  }, { threshold: 0.3 });
+  const onScroll = () => {
+    navbar.classList.toggle('is-scrolled', window.scrollY > 50);
 
-  sections.forEach(s => observer.observe(s));
+    // Mark whichever section's top edge is nearest above 40% of the viewport
+    const mid = window.scrollY + window.innerHeight * 0.4;
+    let current = '';
+    sections.forEach(s => { if (s.offsetTop <= mid) current = s.id; });
+    setActive(current);
+  };
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
 }
 
 /* ----------------------------------------------------------

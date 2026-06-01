@@ -1192,21 +1192,29 @@ img.broken-hide                   { visibility: hidden; }
     align-items:    flex-start;
     gap:            0;
     padding:        0.5rem 0;
-    background:   rgba(10, 10, 10, 0.96);
-    border-bottom: 1px solid rgba(255,255,255,0.06);
+    background:     rgba(10, 10, 10, 0.96);
+    border-bottom:  1px solid rgba(255,255,255,0.06);
     z-index:        800;
-    /* slide-down animation */
-    opacity:    0;
-    visibility: hidden;
-    transform:  translateY(-8px);
-    transition: opacity 0.3s var(--ease),
-                transform 0.3s var(--ease),
-                visibility 0.3s;
+    opacity:        0;
+    visibility:     hidden;
+    transform:      translateY(-8px);
+    transition:     opacity 0.3s var(--ease),
+                    transform 0.3s var(--ease),
+                    visibility 0.3s;
+  }
+  /* When portaled outside navbar, backdrop-filter works correctly */
+  .nav-links.is-portaled {
+    position:                fixed;
+    top:                     var(--navbar-h, 62px);
+    background:              rgba(8, 8, 8, 0.04);
+    backdrop-filter:         blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border-bottom:           1px solid rgba(255,255,255,0.05);
   }
   .nav-links.is-open {
-    opacity:   1;
+    opacity:    1;
     visibility: visible;
-    transform: none;
+    transform:  none;
   }
 
   .nav-links li { width: 100%; }

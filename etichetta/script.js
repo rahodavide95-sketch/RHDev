@@ -473,17 +473,37 @@ function observeCards(selector) {
 function initMobileMenu() {
   const toggle = document.getElementById('navToggle');
   const menu   = document.getElementById('navLinks');
+  const navbar = document.getElementById('navbar');
+  const inner  = navbar?.querySelector('.navbar-inner');
   if (!toggle || !menu) return;
+
+  const isMobile = () => window.innerWidth <= 960;
+
+  function portalOut() {
+    document.body.style.setProperty('--navbar-h', navbar.offsetHeight + 'px');
+    navbar.after(menu);
+    menu.classList.add('is-portaled');
+  }
+
+  function portalIn() {
+    menu.classList.remove('is-portaled');
+    inner?.appendChild(menu);
+  }
 
   toggle.addEventListener('click', () => {
     const isOpen = menu.classList.toggle('is-open');
     toggle.classList.toggle('is-open', isOpen);
     toggle.setAttribute('aria-expanded', isOpen);
     document.body.style.overflow = isOpen ? 'hidden' : '';
+    if (isMobile()) isOpen ? portalOut() : portalIn();
   });
 
-  menu.querySelectorAll('a').forEach(a => {
-    a.addEventListener('click', closeMenu);
+  menu.querySelectorAll('a').forEach(a => a.addEventListener('click', closeMenu));
+
+  window.addEventListener('resize', () => {
+    if (!isMobile() && menu.classList.contains('is-portaled')) {
+      closeMenu();
+    }
   });
 
   function closeMenu() {
@@ -491,6 +511,7 @@ function initMobileMenu() {
     toggle.classList.remove('is-open');
     toggle.setAttribute('aria-expanded', 'false');
     document.body.style.overflow = '';
+    portalIn();
   }
 }
 

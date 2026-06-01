@@ -1043,17 +1043,18 @@ img.broken-hide                   { visibility: hidden; }
   gap:     1.5rem;
 }
 .footer-social a {
-  font-size:      0.68rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color:          var(--fg-2);
-  padding-bottom: 2px;
-  border-bottom:  1px solid transparent;
-  transition:     color 0.3s, border-color 0.3s;
+  display:    flex;
+  align-items: center;
+  color:       var(--fg-3);
+  transition:  color 0.3s, transform 0.3s;
+}
+.footer-social a svg {
+  width:  22px;
+  height: 22px;
 }
 .footer-social a:hover {
-  color:        var(--fg);
-  border-color: var(--fg);
+  color:     var(--fg);
+  transform: translateY(-2px);
 }
 
 

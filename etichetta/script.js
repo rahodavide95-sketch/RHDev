@@ -60,17 +60,24 @@ function buildContent() {
   setText('footer-copy', `© ${year} ${label.name}. All rights reserved.`);
 
   // Footer social links
+  const ICONS = {
+    instagram:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>`,
+    soundcloud: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.56 8.87V17h8.76c.98-.04 1.68-.74 1.68-1.68 0-.93-.76-1.68-1.68-1.68-.17 0-.31.03-.46.07C19.69 12.82 18.1 11.3 16.12 11.3c-.75 0-1.45.21-2.05.58-.07-.05-.14-.1-.21-.15.03-.17.05-.34.05-.52 0-1.66-1.35-3.01-3.01-3.01s-3.01 1.35-3.01 3.01c0 .05 0 .1.01.15C6.88 11.59 6 12.59 6 13.81c0 1.37 1.1 2.5 2.5 2.5h3.06V8.87z"/><path d="M2 13.81c0 .92.37 1.75.96 2.36V11.5c-.6.6-.96 1.43-.96 2.31zm2.5-2.31v4.67a3.5 3.5 0 0 0 0-4.67zm2 .35v4c.35.12.73.19 1.13.19h.37v-4.38h-.37c-.4 0-.78.07-1.13.19z"/></svg>`,
+    bandcamp:   `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M0 18.75l7.437-13.5H24l-7.438 13.5z"/></svg>`,
+    ra:         `<svg viewBox="0 0 24 24" fill="currentColor"><text x="2" y="17" font-size="13" font-weight="700" font-family="sans-serif" letter-spacing="-0.5">RA</text></svg>`,
+  };
+
   const socials = [
-    label.instagram  && { text: 'Instagram',  url: label.instagram  },
-    label.soundcloud && { text: 'Soundcloud', url: label.soundcloud },
-    label.bandcamp   && { text: 'Bandcamp',   url: label.bandcamp   },
-    label.ra         && { text: 'RA',          url: label.ra         },
+    label.instagram  && { key: 'instagram',  label: 'Instagram',  url: label.instagram  },
+    label.soundcloud && { key: 'soundcloud', label: 'SoundCloud', url: label.soundcloud },
+    label.bandcamp   && { key: 'bandcamp',   label: 'Bandcamp',   url: label.bandcamp   },
+    label.ra         && { key: 'ra',          label: 'RA',          url: label.ra         },
   ].filter(Boolean);
 
   const footerSocial = document.getElementById('footer-social');
   if (footerSocial) {
     footerSocial.innerHTML = socials
-      .map(s => `<a href="${s.url}" target="_blank" rel="noopener noreferrer">${s.text}</a>`)
+      .map(s => `<a href="${s.url}" target="_blank" rel="noopener noreferrer" aria-label="${s.label}">${ICONS[s.key] || s.label}</a>`)
       .join('');
   }
 

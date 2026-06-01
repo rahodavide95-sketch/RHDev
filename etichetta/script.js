@@ -14,6 +14,13 @@ document.addEventListener('DOMContentLoaded', () => {
   revealPage();
 });
 
+window.addEventListener('resize', () => {
+  const rg = document.getElementById('releases-grid');
+  const ag = document.getElementById('artists-grid');
+  applyPeekMask(rg);
+  applyPeekMask(ag);
+});
+
 /* ----------------------------------------------------------
    Reveal page after fonts load (prevents FOUT)
    ---------------------------------------------------------- */
@@ -103,6 +110,26 @@ function setText(id, value) {
   if (el && value) el.textContent = value;
 }
 
+function applyPeekMask(gridEl) {
+  if (!gridEl) return;
+  const cards = Array.from(gridEl.children);
+  const cols = 3;
+  if (cards.length <= cols * 2) {
+    gridEl.style.removeProperty('-webkit-mask-image');
+    gridEl.style.removeProperty('mask-image');
+    return;
+  }
+  const thirdRowCard = cards[cols * 2];
+  const gridTop = gridEl.getBoundingClientRect().top;
+  const rowTop  = thirdRowCard.getBoundingClientRect().top;
+  const gridH   = gridEl.offsetHeight;
+  const start   = +((rowTop - gridTop) / gridH * 100).toFixed(1);
+  const end     = Math.min(start + 18, 96);
+  const g = `linear-gradient(to bottom, black ${start}%, transparent ${end}%)`;
+  gridEl.style.setProperty('-webkit-mask-image', g);
+  gridEl.style.setProperty('mask-image', g);
+}
+
 function hideSection(id) {
   const section = document.getElementById(id);
   if (section) section.style.display = 'none';
@@ -152,6 +179,7 @@ function buildReleases(releases) {
     ?.addEventListener('click', () => openReleasesModal(releases));
 
   observeCards('.release-card');
+  requestAnimationFrame(() => requestAnimationFrame(() => applyPeekMask(grid)));
 }
 
 function parseReleaseDate(str) {
@@ -261,6 +289,7 @@ function buildArtists(artists) {
     ?.addEventListener('click', () => openArtistsModal(artists));
 
   observeCards('.artist-card');
+  requestAnimationFrame(() => requestAnimationFrame(() => applyPeekMask(grid)));
 }
 
 function openArtistsModal(artists) {

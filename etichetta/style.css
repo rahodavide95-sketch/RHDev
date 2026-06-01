@@ -514,12 +514,9 @@ img.broken-hide                   { visibility: hidden; }
   grid-template-columns: repeat(3, 1fr);
   gap:                   3rem 2rem;
 }
-#releases .releases-grid {
-  -webkit-mask-image: linear-gradient(to bottom, black 68%, transparent 90%);
-  mask-image:         linear-gradient(to bottom, black 68%, transparent 90%);
-}
-#releases {
-  padding-bottom: 4rem;
+#releases .releases-grid,
+#artists .artists-grid {
+  /* gradient set dynamically by JS based on actual row heights */
 }
 
 .release-card {
@@ -631,11 +628,10 @@ img.broken-hide                   { visibility: hidden; }
   grid-template-columns: repeat(3, 1fr);
   gap:                   2.5rem 2rem;
 }
-#artists .artists-grid {
-  -webkit-mask-image: linear-gradient(to bottom, black 74%, transparent 92%);
-  mask-image:         linear-gradient(to bottom, black 74%, transparent 92%);
-}
 #artists {
+  padding-bottom: 4rem;
+}
+#releases {
   padding-bottom: 4rem;
 }
 

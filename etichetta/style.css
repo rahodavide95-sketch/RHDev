@@ -575,7 +575,7 @@ img.broken-hide                   { visibility: hidden; }
 /* Release text hierarchy */
 .release-artist {
   font-family:    var(--f-display);
-  font-size:      clamp(1.25rem, 2.5vw, 1.65rem);
+  font-size:      clamp(1rem, 1.8vw, 1.25rem);
   font-weight:    700;
   letter-spacing: -0.01em;
   line-height:    1.15;

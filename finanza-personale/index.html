@@ -799,6 +799,25 @@
     .mkt-refresh-btn.spinning { animation: spin 1s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    .mkt-currency-bar {
+      display: flex; align-items: center; gap: 6px;
+      margin-bottom: 18px; flex-wrap: wrap;
+    }
+    .mkt-currency-label {
+      color: var(--muted); font-family: var(--mono); font-size: 10px;
+      letter-spacing: 0.08em; margin-right: 4px; white-space: nowrap;
+    }
+    .mkt-curr-pill {
+      padding: 5px 10px; background: transparent;
+      border: 1px solid var(--border); border-radius: 6px;
+      color: var(--muted); font-family: var(--mono); font-size: 11px;
+      cursor: pointer; transition: border-color 0.2s, color 0.2s, background 0.2s;
+    }
+    .mkt-curr-pill.active {
+      background: rgba(99,179,237,0.1); border-color: #63b3ed; color: #63b3ed;
+    }
+    .mkt-curr-pill:hover:not(.active) { border-color: var(--border-hover); color: var(--text); }
+
     /* Market table */
     .mkt-table-wrap { overflow-x: auto; }
     .mkt-table { width: 100%; border-collapse: collapse; min-width: 480px; }
@@ -1174,6 +1193,17 @@
         <span style="color:var(--muted);font-family:var(--mono);">→</span>
         <input type="date" id="mkt-date-to" class="mkt-date-input">
         <button class="mkt-apply-btn" onclick="applyMktCustomRange()">Applica</button>
+      </div>
+
+      <!-- Currency selector -->
+      <div class="mkt-currency-bar">
+        <span class="mkt-currency-label">VALUTA</span>
+        <button class="mkt-curr-pill active" data-curr="native" onclick="selectMktCurrency('native')">Auto</button>
+        <button class="mkt-curr-pill" data-curr="EUR" onclick="selectMktCurrency('EUR')">€ EUR</button>
+        <button class="mkt-curr-pill" data-curr="USD" onclick="selectMktCurrency('USD')">$ USD</button>
+        <button class="mkt-curr-pill" data-curr="GBP" onclick="selectMktCurrency('GBP')">£ GBP</button>
+        <button class="mkt-curr-pill" data-curr="JPY" onclick="selectMktCurrency('JPY')">¥ JPY</button>
+        <button class="mkt-curr-pill" data-curr="CHF" onclick="selectMktCurrency('CHF')">CHF</button>
       </div>
 
       <!-- Market table -->
@@ -1888,6 +1918,8 @@ let mkt = {
   chartObj: null,
   loadGen: 0,
   initialized: false,
+  displayCurrency: 'native',
+  fxRates: null,
 };
 
 const MKT_CACHE_TTL = 5 * 60 * 1000;
@@ -1908,6 +1940,49 @@ const FRANKFURT_FX = {
   'AUDUSD=X':{from:'AUD',to:'USD'},'USDCAD=X':{from:'USD',to:'CAD'},
   'NZDUSD=X':{from:'NZD',to:'USD'},
 };
+
+/* ─── CURRENCY CONVERSION ─── */
+async function fetchFxRates() {
+  if (mkt.fxRates) return;
+  try {
+    const r = await fetch('https://api.frankfurter.app/latest?from=USD',
+      AbortSignal.timeout ? { signal: AbortSignal.timeout(8000) } : {});
+    if (!r.ok) return;
+    const d = await r.json();
+    mkt.fxRates = { ...d.rates, USD: 1 };
+  } catch {}
+}
+
+function mktConvert(price, fromCurr) {
+  if (price == null || mkt.displayCurrency === 'native' || !mkt.fxRates) return { price, curr: fromCurr };
+  const toCurr = mkt.displayCurrency;
+  if (!fromCurr || fromCurr === toCurr) return { price, curr: toCurr };
+  const fromRate = fromCurr === 'USD' ? 1 : mkt.fxRates[fromCurr];
+  const toRate   = toCurr  === 'USD' ? 1 : mkt.fxRates[toCurr];
+  if (!fromRate || !toRate) return { price, curr: fromCurr };
+  return { price: price * toRate / fromRate, curr: toCurr };
+}
+
+function mktConvertArr(arr, fromCurr) {
+  if (!arr || mkt.displayCurrency === 'native' || !mkt.fxRates) return arr;
+  const toCurr = mkt.displayCurrency;
+  if (!fromCurr || fromCurr === toCurr) return arr;
+  const fromRate = fromCurr === 'USD' ? 1 : mkt.fxRates[fromCurr];
+  const toRate   = toCurr  === 'USD' ? 1 : mkt.fxRates[toCurr];
+  if (!fromRate || !toRate) return arr;
+  const ratio = toRate / fromRate;
+  return arr.map(v => v != null ? v * ratio : null);
+}
+
+async function selectMktCurrency(curr) {
+  mkt.displayCurrency = curr;
+  document.querySelectorAll('.mkt-curr-pill').forEach(p =>
+    p.classList.toggle('active', p.dataset.curr === curr));
+  closeMktChart();
+  if (curr !== 'native') await fetchFxRates();
+  mkt.cache = {}; mkt.cacheTimes = {};
+  mktLoad();
+}
 
 /* ─── YAHOO FINANCE v8 CHART (direct CORS from browser, no proxy needed) ─── */
 async function yahooFetch(symbol, range, fromTs, toTs) {
@@ -2205,18 +2280,21 @@ function mktApplyResult(item, result, gen) {
   }
 
   const { price, change, closes, stamps, curr } = result;
+  const { price: dispPrice, curr: dispCurr } = mktConvert(price, curr);
+  const dispCloses = mktConvertArr(closes, curr);
+
   row.dataset.change = change ?? '';
-  row.dataset.price  = price  ?? '';
+  row.dataset.price  = dispPrice ?? '';
   row.dataset.name   = item.name;
 
   row.innerHTML = `
     <td><div class="mkt-name-col"><span class="mkt-name">${item.name}</span><span class="mkt-sym-small">${item.symbol}</span></div></td>
     <td><span class="mkt-sym-col">${item.symbol}</span></td>
-    <td><span class="mkt-price-col">${mktFmtPrice(price)}<span class="mkt-curr">${curr||''}</span></span></td>
+    <td><span class="mkt-price-col">${mktFmtPrice(dispPrice)}<span class="mkt-curr">${dispCurr||''}</span></span></td>
     <td><span class="mkt-change-col ${mktPctClass(change)}">${mktFmtPct(change)}</span></td>
-    <td>${mktSparkline(closes, change)}</td>`;
+    <td>${mktSparkline(dispCloses, change)}</td>`;
   row.style.cursor = 'pointer';
-  row.onclick = () => mktShowChart(item.symbol, item.name, closes, stamps, change, curr||'', price);
+  row.onclick = () => mktShowChart(item.symbol, item.name, dispCloses, stamps, change, dispCurr||'', dispPrice);
   if (item.symbol === mkt.selectedSymbol) row.classList.add('mkt-selected');
 }
 

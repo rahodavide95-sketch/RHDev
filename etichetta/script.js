@@ -51,7 +51,10 @@ function buildContent() {
     const last  = words.pop();
     heroTitle.innerHTML = (words.length ? words.join(' ') + '<br>' : '') + last;
   }
-  setText('hero-tagline', label.tagline);
+  const taglineEl = document.getElementById('hero-tagline');
+  if (taglineEl && label.tagline) {
+    taglineEl.innerHTML = label.tagline.replace(/\n/g, '<br>');
+  }
   setText('nav-name',     label.name);
   document.title = label.name;
 

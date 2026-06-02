@@ -429,9 +429,26 @@ img.broken-hide                   { visibility: hidden; }
 .section {
   padding:    var(--pad-section) 0;
   background: rgba(8, 8, 8, 0.65);
-  border-top: 1px solid rgba(255,255,255,0.05);
   position:   relative;
   z-index:    1;
+}
+.section::before {
+  content:  '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent        0%,
+    rgba(255,255,255,.03) 10%,
+    rgba(255,255,255,.18) 35%,
+    rgba(255,255,255,.32) 50%,
+    rgba(255,255,255,.18) 65%,
+    rgba(255,255,255,.03) 90%,
+    transparent       100%
+  );
+  box-shadow: 0 0 18px rgba(255,255,255,.06);
+  pointer-events: none;
 }
 .section--alt {
   background: rgba(14, 14, 14, 0.68);

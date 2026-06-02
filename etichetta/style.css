@@ -437,31 +437,24 @@ img.broken-hide                   { visibility: hidden; }
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 1px;
+  z-index:  2;
   background: linear-gradient(
     90deg,
-    transparent        0%,
-    rgba(255,255,255,.03) 10%,
-    rgba(255,255,255,.18) 35%,
-    rgba(255,255,255,.32) 50%,
-    rgba(255,255,255,.18) 65%,
-    rgba(255,255,255,.03) 90%,
-    transparent       100%
+    transparent           0%,
+    rgba(255,255,255,.06) 10%,
+    rgba(255,255,255,.35) 35%,
+    rgba(255,255,255,.55) 50%,
+    rgba(255,255,255,.35) 65%,
+    rgba(255,255,255,.06) 90%,
+    transparent          100%
   );
-  box-shadow: 0 0 18px rgba(255,255,255,.06);
+  box-shadow: 0 0 24px rgba(255,255,255,.10);
   pointer-events: none;
 }
 .section--alt {
   background: rgba(14, 14, 14, 0.68);
 }
 
-/* Thin divider at top of each section (minimal, not a box) */
-.section + .section::before,
-.section + .section--alt::before {
-  content:    '';
-  display:    block;
-  width:      1px;
-  height:     0; /* invisible — spacing handled by padding */
-}
 
 .section-head {
   margin-bottom: clamp(3rem, 6vw, 5rem);

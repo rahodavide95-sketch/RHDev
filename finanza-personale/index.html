@@ -1215,7 +1215,7 @@
               <tr>
                 <th onclick="sortMktTable('name')">Nome</th>
                 <th onclick="sortMktTable('symbol')">Simbolo</th>
-                <th onclick="sortMktTable('price')">Ultimo prezzo</th>
+                <th onclick="sortMktTable('price')" id="mkt-price-th">Ultimo prezzo</th>
                 <th onclick="sortMktTable('change')">Performance %</th>
                 <th>Trend</th>
               </tr>
@@ -1958,14 +1958,17 @@ function getEffectiveCurrency() {
   return mkt.displayCurrency === 'auto' ? getLocaleCurrency() : mkt.displayCurrency;
 }
 
+const FX_FALLBACK = { USD: 1, EUR: 0.92, GBP: 0.79, JPY: 150.0, CHF: 0.90, AUD: 1.55, CAD: 1.38 };
+
 async function fetchFxRates() {
   if (mkt.fxRates) return;
+  mkt.fxRates = { ...FX_FALLBACK };        // always work, even if fetch fails
   try {
     const r = await fetch('https://api.frankfurter.app/latest?from=USD',
       AbortSignal.timeout ? { signal: AbortSignal.timeout(10000) } : {});
     if (!r.ok) return;
     const d = await r.json();
-    if (d?.rates) mkt.fxRates = { ...d.rates, USD: 1 };
+    if (d?.rates) mkt.fxRates = { ...FX_FALLBACK, ...d.rates, USD: 1 };
   } catch {}
 }
 
@@ -1997,7 +2000,6 @@ async function selectMktCurrency(curr) {
   document.querySelectorAll('.mkt-curr-pill').forEach(p =>
     p.classList.toggle('active', p.dataset.curr === curr));
   closeMktChart();
-  mkt.fxRates = null;  // force re-fetch for fresh rates
   await fetchFxRates();
   mkt.cache = {}; mkt.cacheTimes = {};
   mktLoad();
@@ -2367,6 +2369,8 @@ function mktFinalize(gen) {
   document.getElementById('mkt-update-time').textContent =
     `↻ ${now.toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' })}`;
   document.getElementById('mkt-refresh-btn')?.classList.remove('spinning');
+  const th = document.getElementById('mkt-price-th');
+  if (th) th.textContent = `Prezzo (${getEffectiveCurrency()})`;
 }
 
 /* ─── RETRY ROW ─── */

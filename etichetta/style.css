@@ -1327,4 +1327,25 @@ img.broken-hide                   { visibility: hidden; }
   .event-link { display: none; }
 
   .footer-social { justify-content: center; }
+
+  /* Release meta: stack vertically, no dot separators */
+  .release-meta {
+    flex-direction: column;
+    gap:            0.2rem;
+  }
+  .release-meta span + span::before { display: none; }
+
+  /* Modal header: title+close on row 1, search+sort on row 2 */
+  .releases-modal-head {
+    display:               grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "title close"
+      "search sort";
+    gap: 0.75rem 1rem;
+  }
+  .releases-modal-title  { grid-area: title;  }
+  .releases-modal-close  { grid-area: close;  align-self: center; }
+  .modal-search          { grid-area: search; width: 100%; }
+  .releases-filter-wrap  { grid-area: sort;   }
 }

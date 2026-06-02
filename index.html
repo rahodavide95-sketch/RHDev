@@ -1963,26 +1963,44 @@ let mkt = {
 
 const MKT_CACHE_TTL = 5 * 60 * 1000;
 
+/* ─── Binance symbol map (crypto, direct CORS — no proxy needed) ─── */
+const BINANCE_SYMS = {
+  'BTC-USD':'BTCUSDT','ETH-USD':'ETHUSDT','SOL-USD':'SOLUSDT',
+  'BNB-USD':'BNBUSDT','XRP-USD':'XRPUSDT','ADA-USD':'ADAUSDT',
+  'DOGE-USD':'DOGEUSDT','LINK-USD':'LINKUSDT','AVAX-USD':'AVAXUSDT',
+  'DOT-USD':'DOTUSDT','MATIC-USD':'MATICUSDT','LTC-USD':'LTCUSDT',
+};
+
+/* ─── Frankfurter forex map (ECB rates, direct CORS — no proxy needed) ─── */
+const FRANKFURT_FX = {
+  'EURUSD=X':{from:'EUR',to:'USD'},'EURGBP=X':{from:'EUR',to:'GBP'},
+  'EURJPY=X':{from:'EUR',to:'JPY'},'EURCHF=X':{from:'EUR',to:'CHF'},
+  'GBPUSD=X':{from:'GBP',to:'USD'},'USDJPY=X':{from:'USD',to:'JPY'},
+  'AUDUSD=X':{from:'AUD',to:'USD'},'USDCAD=X':{from:'USD',to:'CAD'},
+  'NZDUSD=X':{from:'NZD',to:'USD'},
+};
+
 /* ─── RAW TEXT PROXY FETCH (for Stooq CSV) ─── */
 async function mktFetchRaw(url) {
-  const to = AbortSignal.timeout ? { signal: AbortSignal.timeout(12000) } : {};
+  const mk = s => AbortSignal.timeout ? { signal: AbortSignal.timeout(s) } : {};
   const proxies = [
     `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
     `https://corsproxy.io/?${encodeURIComponent(url)}`,
-    `https://thingproxy.freeboard.io/fetch/${url}`,
+    `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(url)}`,
+    `https://cors-anywhere.herokuapp.com/${url}`,
   ];
   for (const proxy of proxies) {
     try {
-      const r = await fetch(proxy, to);
+      const r = await fetch(proxy, mk(9000));
       if (!r.ok) continue;
       const t = await r.text();
-      if (t && t.length > 20 && !t.trimStart().startsWith('<')) return t;
+      if (t && t.length > 30 && !t.trimStart().startsWith('<') && !t.includes('allowlist')) return t;
     } catch {}
   }
   throw new Error('raw_fail');
 }
 
-/* ─── STOOQ FETCH (primary data source) ─── */
+/* ─── STOOQ FETCH (stocks / ETF / indices / commodities via proxy) ─── */
 async function stooqFetch(yfSym, range, fromTs, toTs) {
   const sq = toStooqSym(yfSym);
   if (!sq) return null;
@@ -1994,7 +2012,7 @@ async function stooqFetch(yfSym, range, fromTs, toTs) {
   } else {
     const cfg = MKT_RANGES[range] || MKT_RANGES['1M'];
     let days = cfg.days;
-    if (!days) { // YTD
+    if (!days) {
       const now = new Date();
       days = Math.floor((now - new Date(now.getFullYear(), 0, 1)) / 86400000) + 5;
     }
@@ -2014,13 +2032,12 @@ async function stooqFetch(yfSym, range, fromTs, toTs) {
     if (!csv || csv.includes('No data') || csv.includes('<') || csv.split('\n').length < 3) return null;
 
     const lines = csv.trim().split('\n');
-    // header: Date,Open,High,Low,Close,Volume
     const rows = [];
     for (const line of lines.slice(1)) {
       const p = line.split(',');
       if (p.length < 5) continue;
       const close = parseFloat(p[4]);
-      if (!isNaN(close) && p[0]) rows.push({ date: p[0].trim(), close });
+      if (!isNaN(close) && close > 0 && p[0]) rows.push({ date: p[0].trim(), close });
     }
     if (rows.length < 2) return null;
 
@@ -2036,63 +2053,128 @@ async function stooqFetch(yfSym, range, fromTs, toTs) {
   } catch { return null; }
 }
 
-/* ─── COINGECKO for Crypto ─── */
-async function cgFetchCrypto(items) {
-  const cgDays = {
-    '1G': '1', '1S': '7', '1M': '30', '3M': '90', '6M': '180',
-    'YTD': String(Math.floor((Date.now() - new Date(new Date().getFullYear(),0,1)) / 86400000)),
-    '1A': '365', '5A': '1825', 'Max': 'max',
-  };
-  const days = cgDays[mkt.range] || '30';
-  const ids  = items.map(i => CG_IDS[i.symbol]).filter(Boolean).join(',');
-  if (!ids) return {};
-
+/* ─── BINANCE for Crypto (direct CORS, no proxy, always works) ─── */
+async function binanceFetchCrypto(items) {
   const results = {};
-  const fetchOpts = AbortSignal.timeout ? { signal: AbortSignal.timeout(10000) } : {};
+  const to = AbortSignal.timeout ? { signal: AbortSignal.timeout(8000) } : {};
 
-  // Current price + 24h change
-  try {
-    const r = await fetch(
-      `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`,
-      fetchOpts
-    );
-    if (r.ok) {
-      const data = await r.json();
-      items.forEach(item => {
-        const cg = CG_IDS[item.symbol];
-        if (cg && data[cg]) {
-          results[item.symbol] = {
-            price:  data[cg].usd,
-            change: days === '1' ? data[cg].usd_24h_change : null,
-            closes: null, stamps: null, curr: 'USD',
-          };
-        }
-      });
-    }
-  } catch {}
-
-  // Historical for other ranges
-  if (days !== '1') {
-    await Promise.all(items.map(async item => {
-      const cgId = CG_IDS[item.symbol];
-      if (!cgId) return;
-      try {
-        const r = await fetch(
-          `https://api.coingecko.com/api/v3/coins/${cgId}/market_chart?vs_currency=usd&days=${days}`,
-          fetchOpts
-        );
-        if (!r.ok) return;
-        const data = await r.json();
-        const closes = (data.prices || []).map(p => p[1]).filter(Boolean);
-        const stamps = (data.prices || []).map(p => Math.floor(p[0] / 1000));
-        if (closes.length < 2) return;
-        const price  = closes[closes.length - 1];
-        const change = ((price - closes[0]) / closes[0]) * 100;
-        if (!results[item.symbol]) results[item.symbol] = { price, curr: 'USD' };
-        Object.assign(results[item.symbol], { change, closes, stamps });
-      } catch {}
-    }));
+  /* Range → Binance kline interval + limit */
+  const rangeMap = {
+    '1G': ['5m',288], '1S': ['1h',168], '1M': ['1d',31],
+    '3M': ['1d',92],  '6M': ['1d',183], '1A': ['1d',366],
+    '5A': ['1w',261], 'Max':['1M',600],
+  };
+  let [interval, limit] = rangeMap[mkt.range] || ['1d', 31];
+  if (mkt.range === 'YTD') {
+    const now = new Date();
+    limit = Math.floor((now - new Date(now.getFullYear(), 0, 1)) / 86400000) + 3;
+    interval = '1d';
   }
+
+  await Promise.all(items.map(async item => {
+    const bSym = BINANCE_SYMS[item.symbol];
+    if (!bSym) return;
+    const cacheKey = `bnc|${bSym}|${mkt.range}`;
+    const now = Date.now();
+    if (mkt.cache[cacheKey] && (now - mkt.cacheTimes[cacheKey]) < MKT_CACHE_TTL) {
+      results[item.symbol] = mkt.cache[cacheKey]; return;
+    }
+    try {
+      const r = await fetch(
+        `https://api.binance.com/api/v3/klines?symbol=${bSym}&interval=${interval}&limit=${limit}`,
+        to
+      );
+      if (!r.ok) return;
+      const data = await r.json();
+      if (!Array.isArray(data) || data.length < 2) return;
+      const closes = data.map(k => parseFloat(k[4]));
+      const stamps = data.map(k => Math.floor(k[0] / 1000));
+      const price  = closes[closes.length - 1];
+      const change = ((price - closes[0]) / closes[0]) * 100;
+      const res = { price, change, closes, stamps, curr: 'USD' };
+      mkt.cache[cacheKey] = res; mkt.cacheTimes[cacheKey] = now;
+      results[item.symbol] = res;
+    } catch {}
+  }));
+
+  /* Fallback: CoinGecko for any that Binance missed */
+  const missed = items.filter(i => !results[i.symbol] && CG_IDS[i.symbol]);
+  if (missed.length) {
+    const ids = missed.map(i => CG_IDS[i.symbol]).join(',');
+    try {
+      const r = await fetch(
+        `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`,
+        to
+      );
+      if (r.ok) {
+        const data = await r.json();
+        missed.forEach(item => {
+          const cg = CG_IDS[item.symbol];
+          if (cg && data[cg]) results[item.symbol] = { price: data[cg].usd, change: data[cg].usd_24h_change, closes: null, stamps: null, curr: 'USD' };
+        });
+      }
+    } catch {}
+  }
+  return results;
+}
+
+/* ─── FRANKFURTER for Forex (ECB rates, direct CORS, always works) ─── */
+async function frankfurterFetchForex(items) {
+  const results = {};
+  const to = AbortSignal.timeout ? { signal: AbortSignal.timeout(8000) } : {};
+
+  const rangeHistDays = {
+    '1G':2,'1S':8,'1M':32,'3M':95,'6M':186,'1A':370,'5A':1832,'Max':3650,
+  };
+  let histDays = rangeHistDays[mkt.range] || 32;
+  if (mkt.range === 'YTD') {
+    const now = new Date();
+    histDays = Math.floor((now - new Date(now.getFullYear(), 0, 1)) / 86400000) + 3;
+  }
+  const d2 = new Date().toISOString().slice(0,10);
+  const d1 = new Date(Date.now() - histDays * 86400000).toISOString().slice(0,10);
+
+  /* Group by base currency for efficient batching */
+  const byBase = {};
+  items.forEach(item => {
+    const fx = FRANKFURT_FX[item.symbol];
+    if (!fx) return;
+    if (!byBase[fx.from]) byBase[fx.from] = [];
+    byBase[fx.from].push({ ...item, to: fx.to });
+  });
+
+  await Promise.all(Object.entries(byBase).map(async ([base, group]) => {
+    const targets = [...new Set(group.map(g => g.to))].join(',');
+    const cacheKey = `fx|${base}|${targets}|${d1}|${d2}`;
+    const now = Date.now();
+
+    let hist;
+    if (mkt.cache[cacheKey] && (now - mkt.cacheTimes[cacheKey]) < MKT_CACHE_TTL) {
+      hist = mkt.cache[cacheKey];
+    } else {
+      try {
+        const url = `https://api.frankfurter.app/${d1}..${d2}?from=${base}&to=${targets}`;
+        const r = await fetch(url, to);
+        if (!r.ok) return;
+        hist = await r.json();
+        mkt.cache[cacheKey] = hist; mkt.cacheTimes[cacheKey] = now;
+      } catch { return; }
+    }
+
+    const dates = Object.keys(hist.rates || {}).sort();
+    if (dates.length < 2) return;
+
+    group.forEach(item => {
+      const first = hist.rates[dates[0]]?.[item.to];
+      const last  = hist.rates[dates[dates.length-1]]?.[item.to];
+      if (!first || !last) return;
+      const closes = dates.map(d => hist.rates[d]?.[item.to]).filter(Boolean);
+      const stamps  = dates.map(d => Math.floor(new Date(d).getTime() / 1000));
+      const change  = ((last - first) / first) * 100;
+      results[item.symbol] = { price: last, change, closes, stamps, curr: item.to };
+    });
+  }));
+
   return results;
 }
 
@@ -2208,26 +2290,32 @@ async function mktLoad() {
   document.getElementById('mkt-table-title').textContent = `${mkt.category} — ${rangeLabel}`;
   mktRenderSkeleton(items);
 
-  const { range, fromTs, toTs } = getMktRangeParams();
-  const cryptoItems = items.filter(i => CG_IDS[i.symbol]);
-  const otherItems  = items.filter(i => !CG_IDS[i.symbol]);
+  const { fromTs, toTs } = getMktRangeParams();
 
-  /* Crypto via CoinGecko */
-  const cgPromise = cryptoItems.length ? cgFetchCrypto(cryptoItems) : Promise.resolve({});
+  /* Split by data source */
+  const cryptoItems = items.filter(i => BINANCE_SYMS[i.symbol] || CG_IDS[i.symbol]);
+  const fxItems     = items.filter(i => FRANKFURT_FX[i.symbol]);
+  const stockItems  = items.filter(i => !BINANCE_SYMS[i.symbol] && !CG_IDS[i.symbol] && !FRANKFURT_FX[i.symbol]);
 
-  /* Everything else via Stooq */
-  await Promise.all(otherItems.map(async item => {
+  /* Crypto via Binance (direct CORS) */
+  const cryptoPromise = cryptoItems.length ? binanceFetchCrypto(cryptoItems) : Promise.resolve({});
+
+  /* Forex via Frankfurter (direct CORS) */
+  const fxPromise = fxItems.length ? frankfurterFetchForex(fxItems) : Promise.resolve({});
+
+  /* Stocks/ETFs/Indices/Commodities via Stooq + proxy */
+  await Promise.all(stockItems.map(async item => {
     const result = await stooqFetch(item.symbol, mkt.range, fromTs, toTs);
     mktApplyResult(item, result, gen);
   }));
 
   if (gen !== mkt.loadGen) return;
-  const cgResults = await cgPromise;
+
+  const [cryptoResults, fxResults] = await Promise.all([cryptoPromise, fxPromise]);
   if (gen !== mkt.loadGen) return;
-  cryptoItems.forEach(item => {
-    const r = cgResults[item.symbol];
-    mktApplyResult(item, r || null, gen);
-  });
+
+  cryptoItems.forEach(item => mktApplyResult(item, cryptoResults[item.symbol] || null, gen));
+  fxItems.forEach(item => mktApplyResult(item, fxResults[item.symbol] || null, gen));
 
   mktFinalize(gen);
 }
@@ -2245,8 +2333,13 @@ async function mktRetryRow(btn, symbol, name) {
   btn.textContent = '...';
   const { fromTs, toTs } = getMktRangeParams();
   const gen = mkt.loadGen;
-  if (CG_IDS[symbol]) {
-    const r = await cgFetchCrypto([{ symbol, name }]);
+  if (BINANCE_SYMS[symbol] || CG_IDS[symbol]) {
+    const r = await binanceFetchCrypto([{ symbol, name }]);
+    mktApplyResult({ symbol, name }, r[symbol] || null, gen);
+    return;
+  }
+  if (FRANKFURT_FX[symbol]) {
+    const r = await frankfurterFetchForex([{ symbol, name }]);
     mktApplyResult({ symbol, name }, r[symbol] || null, gen);
     return;
   }

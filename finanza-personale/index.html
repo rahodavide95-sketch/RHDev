@@ -1992,26 +1992,34 @@ async function binanceFetchCrypto(items) {
     '3M': ['1d',92],  '6M': ['1d',183], '1A': ['1d',366],
     '5A': ['1w',261], 'Max':['1M',600],
   };
-  let [interval, limit] = rangeMap[mkt.range] || ['1d', 31];
-  if (mkt.range === 'YTD') {
-    const now = new Date();
-    limit = Math.floor((now - new Date(now.getFullYear(), 0, 1)) / 86400000) + 3;
-    interval = '1d';
+  let interval, limit, customStartMs, customEndMs;
+  if (mkt.range === 'Custom' && mkt.customFrom && mkt.customTo) {
+    customStartMs = new Date(mkt.customFrom).getTime();
+    customEndMs   = new Date(mkt.customTo).getTime() + 86400000;
+    const days = (customEndMs - customStartMs) / 86400000;
+    interval = days <= 2 ? '5m' : days <= 7 ? '1h' : days <= 365 ? '1d' : '1w';
+    limit = 1000;
+  } else {
+    [interval, limit] = rangeMap[mkt.range] || ['1d', 31];
+    if (mkt.range === 'YTD') {
+      const now = new Date();
+      limit = Math.floor((now - new Date(now.getFullYear(), 0, 1)) / 86400000) + 3;
+      interval = '1d';
+    }
   }
 
   await Promise.all(items.map(async item => {
     const bSym = BINANCE_SYMS[item.symbol];
     if (!bSym) return;
-    const cacheKey = `bnc|${bSym}|${mkt.range}`;
+    const cacheKey = `bnc|${bSym}|${mkt.range}|${customStartMs ?? ''}`;
     const now = Date.now();
     if (mkt.cache[cacheKey] && (now - mkt.cacheTimes[cacheKey]) < MKT_CACHE_TTL) {
       results[item.symbol] = mkt.cache[cacheKey]; return;
     }
     try {
-      const r = await fetch(
-        `https://api.binance.com/api/v3/klines?symbol=${bSym}&interval=${interval}&limit=${limit}`,
-        to
-      );
+      let qs = `symbol=${bSym}&interval=${interval}&limit=${limit}`;
+      if (customStartMs) qs += `&startTime=${customStartMs}&endTime=${customEndMs}`;
+      const r = await fetch(`https://api.binance.com/api/v3/klines?${qs}`, to);
       if (!r.ok) return;
       const data = await r.json();
       if (!Array.isArray(data) || data.length < 2) return;
@@ -2051,16 +2059,22 @@ async function frankfurterFetchForex(items) {
   const results = {};
   const to = AbortSignal.timeout ? { signal: AbortSignal.timeout(8000) } : {};
 
-  const rangeHistDays = {
-    '1G':2,'1S':8,'1M':32,'3M':95,'6M':186,'1A':370,'5A':1832,'Max':3650,
-  };
-  let histDays = rangeHistDays[mkt.range] || 32;
-  if (mkt.range === 'YTD') {
-    const now = new Date();
-    histDays = Math.floor((now - new Date(now.getFullYear(), 0, 1)) / 86400000) + 3;
+  let d1, d2;
+  if (mkt.range === 'Custom' && mkt.customFrom && mkt.customTo) {
+    d1 = mkt.customFrom;
+    d2 = mkt.customTo;
+  } else {
+    const rangeHistDays = {
+      '1G':2,'1S':8,'1M':32,'3M':95,'6M':186,'1A':370,'5A':1832,'Max':3650,
+    };
+    let histDays = rangeHistDays[mkt.range] || 32;
+    if (mkt.range === 'YTD') {
+      const now = new Date();
+      histDays = Math.floor((now - new Date(now.getFullYear(), 0, 1)) / 86400000) + 3;
+    }
+    d2 = new Date().toISOString().slice(0,10);
+    d1 = new Date(Date.now() - histDays * 86400000).toISOString().slice(0,10);
   }
-  const d2 = new Date().toISOString().slice(0,10);
-  const d1 = new Date(Date.now() - histDays * 86400000).toISOString().slice(0,10);
 
   /* Group by base currency for efficient batching */
   const byBase = {};

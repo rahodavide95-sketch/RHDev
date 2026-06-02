@@ -404,6 +404,8 @@ img.broken-hide                   { visibility: hidden; }
   position:      relative;
   z-index:       1;
   will-change:   transform;
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 6%, black 94%, transparent 100%);
+  mask-image:         linear-gradient(to right, transparent 0%, black 6%, black 94%, transparent 100%);
 }
 .marquee-track {
   display:   flex;
@@ -417,8 +419,8 @@ img.broken-hide                   { visibility: hidden; }
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color:          var(--fg);
-  white-space:    nowrap;
-  padding-right:  2rem;
+  white-space:   nowrap;
+  padding:       0 3rem;
 }
 @keyframes marquee {
   from { transform: translateX(0); }

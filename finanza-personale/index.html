@@ -1198,7 +1198,7 @@
       <!-- Currency selector -->
       <div class="mkt-currency-bar">
         <span class="mkt-currency-label">VALUTA</span>
-        <button class="mkt-curr-pill active" data-curr="native" onclick="selectMktCurrency('native')">Auto</button>
+        <button class="mkt-curr-pill active" data-curr="auto" onclick="selectMktCurrency('auto')" id="mkt-auto-pill">Auto</button>
         <button class="mkt-curr-pill" data-curr="EUR" onclick="selectMktCurrency('EUR')">€ EUR</button>
         <button class="mkt-curr-pill" data-curr="USD" onclick="selectMktCurrency('USD')">$ USD</button>
         <button class="mkt-curr-pill" data-curr="GBP" onclick="selectMktCurrency('GBP')">£ GBP</button>
@@ -1918,7 +1918,7 @@ let mkt = {
   chartObj: null,
   loadGen: 0,
   initialized: false,
-  displayCurrency: 'native',
+  displayCurrency: 'auto',
   fxRates: null,
 };
 
@@ -1942,33 +1942,51 @@ const FRANKFURT_FX = {
 };
 
 /* ─── CURRENCY CONVERSION ─── */
+function getLocaleCurrency() {
+  const lang = navigator.language || navigator.languages?.[0] || 'en-US';
+  const region  = (lang.split('-')[1] || '').toUpperCase();
+  const primary = lang.split('-')[0].toLowerCase();
+  const eurozone = new Set(['IT','DE','FR','ES','PT','NL','AT','BE','IE','FI','GR','SK','SI','EE','LV','LT','LU','MT','CY']);
+  if (eurozone.has(region) || ['it','de','fr','es','pt','nl','fi','el','sk','sl','et','lv','lt','mt'].includes(primary)) return 'EUR';
+  if (['GB','JE','GG','IM'].includes(region)) return 'GBP';
+  if (primary === 'ja' || region === 'JP') return 'JPY';
+  if (region === 'CH') return 'CHF';
+  return 'USD';
+}
+
+function getEffectiveCurrency() {
+  return mkt.displayCurrency === 'auto' ? getLocaleCurrency() : mkt.displayCurrency;
+}
+
 async function fetchFxRates() {
   if (mkt.fxRates) return;
   try {
     const r = await fetch('https://api.frankfurter.app/latest?from=USD',
-      AbortSignal.timeout ? { signal: AbortSignal.timeout(8000) } : {});
+      AbortSignal.timeout ? { signal: AbortSignal.timeout(10000) } : {});
     if (!r.ok) return;
     const d = await r.json();
-    mkt.fxRates = { ...d.rates, USD: 1 };
+    if (d?.rates) mkt.fxRates = { ...d.rates, USD: 1 };
   } catch {}
 }
 
 function mktConvert(price, fromCurr) {
-  if (price == null || mkt.displayCurrency === 'native' || !mkt.fxRates) return { price, curr: fromCurr };
-  const toCurr = mkt.displayCurrency;
-  if (!fromCurr || fromCurr === toCurr) return { price, curr: toCurr };
-  const fromRate = fromCurr === 'USD' ? 1 : mkt.fxRates[fromCurr];
-  const toRate   = toCurr  === 'USD' ? 1 : mkt.fxRates[toCurr];
-  if (!fromRate || !toRate) return { price, curr: fromCurr };
+  if (price == null || !mkt.fxRates) return { price, curr: fromCurr || '' };
+  const toCurr = getEffectiveCurrency();
+  const fc = fromCurr || 'USD';
+  if (fc === toCurr) return { price, curr: toCurr };
+  const fromRate = fc === 'USD' ? 1 : mkt.fxRates[fc];
+  const toRate   = toCurr === 'USD' ? 1 : mkt.fxRates[toCurr];
+  if (!fromRate || !toRate) return { price, curr: fc };
   return { price: price * toRate / fromRate, curr: toCurr };
 }
 
 function mktConvertArr(arr, fromCurr) {
-  if (!arr || mkt.displayCurrency === 'native' || !mkt.fxRates) return arr;
-  const toCurr = mkt.displayCurrency;
-  if (!fromCurr || fromCurr === toCurr) return arr;
-  const fromRate = fromCurr === 'USD' ? 1 : mkt.fxRates[fromCurr];
-  const toRate   = toCurr  === 'USD' ? 1 : mkt.fxRates[toCurr];
+  if (!arr || !mkt.fxRates) return arr;
+  const toCurr = getEffectiveCurrency();
+  const fc = fromCurr || 'USD';
+  if (fc === toCurr) return arr;
+  const fromRate = fc === 'USD' ? 1 : mkt.fxRates[fc];
+  const toRate   = toCurr === 'USD' ? 1 : mkt.fxRates[toCurr];
   if (!fromRate || !toRate) return arr;
   const ratio = toRate / fromRate;
   return arr.map(v => v != null ? v * ratio : null);
@@ -1979,7 +1997,8 @@ async function selectMktCurrency(curr) {
   document.querySelectorAll('.mkt-curr-pill').forEach(p =>
     p.classList.toggle('active', p.dataset.curr === curr));
   closeMktChart();
-  if (curr !== 'native') await fetchFxRates();
+  mkt.fxRates = null;  // force re-fetch for fresh rates
+  await fetchFxRates();
   mkt.cache = {}; mkt.cacheTimes = {};
   mktLoad();
 }
@@ -2310,6 +2329,8 @@ async function mktLoad() {
   document.getElementById('mkt-table-title').textContent = `${mkt.category} — ${rangeLabel}`;
   mktRenderSkeleton(items);
 
+  await fetchFxRates();  // ensure rates ready before rendering
+
   const { fromTs, toTs } = getMktRangeParams();
 
   /* Split by data source */
@@ -2577,6 +2598,8 @@ function initMercati() {
     const ff = document.getElementById('mkt-date-from');
     if (tf) tf.value = today.toISOString().split('T')[0];
     if (ff) ff.value = ago30.toISOString().split('T')[0];
+    const autoBtn = document.getElementById('mkt-auto-pill');
+    if (autoBtn) autoBtn.textContent = `Auto · ${getLocaleCurrency()}`;
   }
   mktLoad();
   startMktAutoRefresh();

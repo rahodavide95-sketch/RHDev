@@ -1909,77 +1909,76 @@ const FRANKFURT_FX = {
   'NZDUSD=X':{from:'NZD',to:'USD'},
 };
 
-/* ─── RAW TEXT PROXY FETCH (for Stooq CSV) ─── */
-async function mktFetchRaw(url) {
+/* ─── YAHOO FINANCE v8 CHART (direct CORS from browser, no proxy needed) ─── */
+async function yahooFetch(symbol, range, fromTs, toTs) {
   const mk = s => AbortSignal.timeout ? { signal: AbortSignal.timeout(s) } : {};
-  const proxies = [
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-    `https://corsproxy.io/?${encodeURIComponent(url)}`,
-    `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(url)}`,
-    `https://cors-anywhere.herokuapp.com/${url}`,
-  ];
-  for (const proxy of proxies) {
+  const cfg = MKT_RANGES[range] || MKT_RANGES['1M'];
+
+  let url;
+  if (fromTs && toTs) {
+    url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?period1=${fromTs}&period2=${toTs}&interval=${cfg.interval}`;
+  } else {
+    url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${cfg.range}&interval=${cfg.interval}`;
+  }
+
+  const cacheKey = `yf|${symbol}|${range ?? (fromTs+'-'+toTs)}`;
+  const now = Date.now();
+  if (mkt.cache[cacheKey] && (now - mkt.cacheTimes[cacheKey]) < MKT_CACHE_TTL)
+    return mkt.cache[cacheKey];
+
+  let data = null;
+
+  /* 1. Direct fetch — Yahoo Finance chart API allows CORS from browsers */
+  try {
+    const r = await fetch(url, mk(10000));
+    if (r.ok) data = await r.json();
+  } catch {}
+
+  /* 2. Fallback: allorigins proxy */
+  if (!data) {
     try {
-      const r = await fetch(proxy, mk(9000));
-      if (!r.ok) continue;
-      const t = await r.text();
-      if (t && t.length > 30 && !t.trimStart().startsWith('<') && !t.includes('allowlist')) return t;
+      const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`, mk(10000));
+      if (r.ok) {
+        const txt = await r.text();
+        if (txt && !txt.includes('allowlist') && !txt.trimStart().startsWith('<'))
+          data = JSON.parse(txt);
+      }
     } catch {}
   }
-  throw new Error('raw_fail');
-}
 
-/* ─── STOOQ FETCH (stocks / ETF / indices / commodities via proxy) ─── */
-async function stooqFetch(yfSym, range, fromTs, toTs) {
-  const sq = toStooqSym(yfSym);
-  if (!sq) return null;
-
-  let d1, d2;
-  if (fromTs && toTs) {
-    d1 = new Date(fromTs * 1000).toISOString().slice(0,10).replace(/-/g,'');
-    d2 = new Date(toTs  * 1000).toISOString().slice(0,10).replace(/-/g,'');
-  } else {
-    const cfg = MKT_RANGES[range] || MKT_RANGES['1M'];
-    let days = cfg.days;
-    if (!days) {
-      const now = new Date();
-      days = Math.floor((now - new Date(now.getFullYear(), 0, 1)) / 86400000) + 5;
-    }
-    d2 = new Date().toISOString().slice(0,10).replace(/-/g,'');
-    d1 = new Date(Date.now() - days * 86400000).toISOString().slice(0,10).replace(/-/g,'');
+  /* 3. Fallback: corsproxy.io */
+  if (!data) {
+    try {
+      const r = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`, mk(10000));
+      if (r.ok) {
+        const txt = await r.text();
+        if (txt && !txt.includes('allowlist') && !txt.trimStart().startsWith('<'))
+          data = JSON.parse(txt);
+      }
+    } catch {}
   }
 
-  const url = `https://stooq.com/q/d/l/?s=${sq}&d1=${d1}&d2=${d2}&i=d`;
-  const cacheKey = `stooq|${sq}|${d1}|${d2}`;
-  const now = Date.now();
-  if (mkt.cache[cacheKey] && (now - mkt.cacheTimes[cacheKey]) < MKT_CACHE_TTL) {
-    return mkt.cache[cacheKey];
+  if (!data?.chart?.result?.[0]) return null;
+
+  const result = data.chart.result[0];
+  const meta = result.meta;
+  const timestamps = result.timestamp || [];
+  const rawCloses = result.indicators?.quote?.[0]?.close || [];
+
+  const points = [];
+  for (let i = 0; i < rawCloses.length; i++) {
+    if (rawCloses[i] != null && timestamps[i]) points.push({ ts: timestamps[i], close: rawCloses[i] });
   }
+  if (points.length < 2) return null;
 
-  try {
-    const csv = await mktFetchRaw(url);
-    if (!csv || csv.includes('No data') || csv.includes('<') || csv.split('\n').length < 3) return null;
+  const price  = meta.regularMarketPrice ?? points[points.length - 1].close;
+  const change = ((price - points[0].close) / points[0].close) * 100;
+  const curr   = meta.currency || '';
 
-    const lines = csv.trim().split('\n');
-    const rows = [];
-    for (const line of lines.slice(1)) {
-      const p = line.split(',');
-      if (p.length < 5) continue;
-      const close = parseFloat(p[4]);
-      if (!isNaN(close) && close > 0 && p[0]) rows.push({ date: p[0].trim(), close });
-    }
-    if (rows.length < 2) return null;
-
-    const closes = rows.map(r => r.close);
-    const stamps = rows.map(r => Math.floor(new Date(r.date).getTime() / 1000));
-    const price  = closes[closes.length - 1];
-    const change = ((price - closes[0]) / closes[0]) * 100;
-
-    const result = { price, change, closes, stamps, curr: '' };
-    mkt.cache[cacheKey] = result;
-    mkt.cacheTimes[cacheKey] = now;
-    return result;
-  } catch { return null; }
+  const res = { price, change, closes: points.map(p => p.close), stamps: points.map(p => p.ts), curr };
+  mkt.cache[cacheKey] = res;
+  mkt.cacheTimes[cacheKey] = now;
+  return res;
 }
 
 /* ─── BINANCE for Crypto (direct CORS, no proxy, always works) ─── */
@@ -2232,9 +2231,9 @@ async function mktLoad() {
   /* Forex via Frankfurter (direct CORS) */
   const fxPromise = fxItems.length ? frankfurterFetchForex(fxItems) : Promise.resolve({});
 
-  /* Stocks/ETFs/Indices/Commodities via Stooq + proxy */
+  /* Stocks/ETFs/Indices/Commodities via Yahoo Finance v8 (direct CORS) */
   await Promise.all(stockItems.map(async item => {
-    const result = await stooqFetch(item.symbol, mkt.range, fromTs, toTs);
+    const result = await yahooFetch(item.symbol, mkt.range, fromTs, toTs);
     mktApplyResult(item, result, gen);
   }));
 
@@ -2272,7 +2271,7 @@ async function mktRetryRow(btn, symbol, name) {
     mktApplyResult({ symbol, name }, r[symbol] || null, gen);
     return;
   }
-  const result = await stooqFetch(symbol, mkt.range, fromTs, toTs);
+  const result = await yahooFetch(symbol, mkt.range, fromTs, toTs);
   mktApplyResult({ symbol, name }, result, gen);
 }
 

@@ -159,7 +159,7 @@ function renderReleaseCard(r, i) {
     ? `<div class="cover-overlay"><a href="${r.link}" target="_blank" rel="noopener">Listen</a></div>`
     : '';
 
-  const metaParts = [r.date || r.year, r.format].filter(Boolean);
+  const metaParts = [r.date || r.year, r.catalog, r.format].filter(Boolean);
 
   return `
     <article class="release-card" style="transition-delay:${i * 0.07}s">
@@ -168,10 +168,7 @@ function renderReleaseCard(r, i) {
         ${overlayHtml}
       </div>
       <div class="release-artist">${esc(r.artist)}</div>
-      <div class="release-title-row">
-        <div class="release-title">${esc(r.title)}</div>
-        ${r.catalog ? `<span class="release-catalog">${esc(r.catalog)}</span>` : ''}
-      </div>
+      <div class="release-title">${esc(r.title)}</div>
       <div class="release-meta">
         ${metaParts.map(p => `<span>${esc(p)}</span>`).join('')}
       </div>

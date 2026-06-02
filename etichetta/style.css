@@ -432,7 +432,7 @@ img.broken-hide                   { visibility: hidden; }
   position:   relative;
   z-index:    1;
 }
-.section::before {
+#contact::before {
   content:  '';
   position: absolute;
   top: 0; left: 0; right: 0;

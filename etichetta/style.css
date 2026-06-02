@@ -1069,15 +1069,15 @@ img.broken-hide                   { visibility: hidden; }
 .footer-social a {
   display:    flex;
   align-items: center;
-  color:       var(--fg-3);
-  transition:  color 0.3s, transform 0.3s;
+  color:       var(--fg);
+  transition:  opacity 0.3s, transform 0.3s;
 }
 .footer-social a svg {
   width:  22px;
   height: 22px;
 }
 .footer-social a:hover {
-  color:     var(--fg);
+  opacity:   0.6;
   transform: translateY(-2px);
 }
 

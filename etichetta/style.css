@@ -429,6 +429,7 @@ img.broken-hide                   { visibility: hidden; }
 .section {
   padding:    var(--pad-section) 0;
   background: rgba(8, 8, 8, 0.65);
+  border-top: 1px solid rgba(255,255,255,0.05);
   position:   relative;
   z-index:    1;
 }

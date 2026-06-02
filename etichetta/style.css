@@ -621,12 +621,28 @@ img.broken-hide                   { visibility: hidden; }
   color:          var(--fg);
   margin-bottom:  0.3rem;
 }
+.release-title-row {
+  display:         flex;
+  align-items:     baseline;
+  justify-content: space-between;
+  gap:             0.5rem;
+  margin-bottom:   0.75rem;
+}
 .release-title {
-  font-family:  var(--f-body);
-  font-size:    clamp(0.92rem, 1.4vw, 1.05rem);
-  font-weight:  300;
-  color:        var(--fg-2);
-  margin-bottom: 0.75rem;
+  font-family: var(--f-body);
+  font-size:   clamp(0.92rem, 1.4vw, 1.05rem);
+  font-weight: 300;
+  color:       var(--fg-2);
+}
+.release-catalog {
+  font-size:      0.58rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color:          var(--fg-3);
+  white-space:    nowrap;
+  flex-shrink:    0;
+  align-self:     flex-end;
+  padding-bottom: 0.1em;
 }
 .release-meta {
   display:     flex;
@@ -1336,6 +1352,12 @@ img.broken-hide                   { visibility: hidden; }
     gap:            0.2rem;
   }
   .release-meta span + span::before { display: none; }
+
+  /* Catalog below title on mobile */
+  .release-title-row {
+    flex-direction: column;
+    gap:            0.15rem;
+  }
 
   /* Modal header: title+close on row 1, search+sort on row 2 */
   .releases-modal-head {

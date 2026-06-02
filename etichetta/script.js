@@ -474,7 +474,10 @@ function initNavbar() {
     // Mark whichever section's top edge is nearest above 40% of the viewport
     const mid = window.scrollY + window.innerHeight * 0.4;
     let current = '';
-    sections.forEach(s => { if (s.offsetTop <= mid) current = s.id; });
+    sections.forEach(s => {
+      if (s.style.display === 'none') return;
+      if (s.offsetTop <= mid) current = s.id;
+    });
     setActive(current);
   };
 

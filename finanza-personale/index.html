@@ -945,8 +945,8 @@
     .mkt-info-sub    { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-bottom: 8px; }
     .mkt-info-desc   { font-size: 12px; color: var(--text); line-height: 1.48; margin-bottom: 10px; opacity: 0.78; }
     .mkt-info-isin-row { display: flex; align-items: center; gap: 8px; }
-    .mkt-info-isin-label { font-size: 10px; color: var(--muted); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0; }
-    .mkt-info-isin-code  { font-family: var(--mono); font-size: 12px; color: var(--accent4); font-weight: 600; letter-spacing: 0.5px; flex: 1; }
+    .mkt-info-isin-label { font-size: 10px; color: var(--muted); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0; min-width: 30px; }
+    .mkt-info-isin-code  { font-family: var(--mono); font-size: 13px; color: var(--text); font-weight: 600; letter-spacing: 1px; flex: 1; }
     .mkt-info-copy-btn   { background: none; border: 1px solid var(--border); border-radius: 4px; color: var(--muted); font-size: 10px; font-family: var(--mono); padding: 2px 8px; cursor: pointer; transition: border-color 0.2s, color 0.2s; flex-shrink: 0; }
     .mkt-info-copy-btn:hover { border-color: var(--accent4); color: var(--accent4); }
     .mkt-name-cell { cursor: pointer; }
@@ -1187,8 +1187,8 @@
       .modal { padding: 32px 24px; max-width: 90%; }
       .mkt-range-bar { flex-direction: column; align-items: flex-start; }
       .mkt-status { margin-left: 0; }
-      .mkt-table th:nth-child(2),
-      .mkt-table td:nth-child(2) { display: none; }
+      .mkt-table th:nth-child(3),
+      .mkt-table td:nth-child(3) { display: none; }
     }
 
     /* ─── DESKTOP HOME ─── */
@@ -1511,7 +1511,6 @@
             <thead>
               <tr>
                 <th onclick="sortMktTable('name')">Nome</th>
-                <th onclick="sortMktTable('symbol')">Simbolo</th>
                 <th onclick="sortMktTable('price')" id="mkt-price-th">Ultimo prezzo</th>
                 <th onclick="sortMktTable('change')">Performance %</th>
                 <th>Trend</th>
@@ -1547,10 +1546,10 @@
         </div>
         <div class="mkt-info-sub"  id="mkt-info-sub"></div>
         <div class="mkt-info-desc" id="mkt-info-desc"></div>
-        <div class="mkt-info-isin-row" id="mkt-info-isin-row" style="display:none;">
+        <div class="mkt-info-isin-row" id="mkt-info-isin-row">
           <span class="mkt-info-isin-label">ISIN</span>
           <span class="mkt-info-isin-code" id="mkt-info-isin-code"></span>
-          <button class="mkt-info-copy-btn" id="mkt-info-copy-btn" onclick="mktCopyIsin()">copia</button>
+          <button class="mkt-info-copy-btn" id="mkt-info-copy-btn" onclick="mktCopyIsin()" style="display:none;">copia</button>
         </div>
       </div>
 
@@ -2518,7 +2517,6 @@ function mktRenderSkeleton(items) {
     return `
     <tr id="${mktSymId(item.symbol)}" data-idx="${i}">
       <td class="mkt-name-cell" onclick="event.stopPropagation(); mktShowInfo('${sym}','${nm}',event)"><div class="mkt-name-col"><span class="mkt-name">${item.name}</span><span class="mkt-sym-small">${item.symbol}</span></div></td>
-      <td><span class="mkt-sym-col">${item.symbol}</span></td>
       <td><span class="mkt-skel" style="width:90px;"></span></td>
       <td><span class="mkt-skel" style="width:65px;"></span></td>
       <td><span class="mkt-skel" style="width:64px;height:20px;"></span></td>
@@ -2538,7 +2536,6 @@ function mktApplyResult(item, result, gen) {
   if (!result) {
     row.innerHTML = `
       ${nameCell}
-      <td><span class="mkt-sym-col">${item.symbol}</span></td>
       <td colspan="3"><span style="color:var(--muted);font-size:12px;font-family:var(--mono);">— </span>
         <button onclick="mktRetryRow(this,'${sym}','${nm}');"
           style="background:none;border:none;color:var(--accent4);font-size:12px;font-family:var(--mono);cursor:pointer;padding:0;">riprova ↻</button></td>`;
@@ -2557,7 +2554,6 @@ function mktApplyResult(item, result, gen) {
 
   row.innerHTML = `
     ${nameCell}
-    <td><span class="mkt-sym-col">${item.symbol}</span></td>
     <td><span class="mkt-price-col">${mktFmtPrice(dispPrice)}<span class="mkt-curr">${dispCurr||''}</span></span></td>
     <td><span class="mkt-change-col ${mktPctClass(change)}">${mktFmtPct(change)}</span></td>
     <td>${mktSparkline(dispCloses, change)}</td>`;
@@ -2756,7 +2752,7 @@ function closeMktChart() {
 /* ─── SORT ─── */
 function sortMktTable(key) {
   const ths = document.querySelectorAll('.mkt-table th');
-  const keyMap = { name:0, symbol:1, price:2, change:3 };
+  const keyMap = { name:0, price:1, change:2 };
   ths.forEach(th => th.className = '');
   if (mkt.sortKey === key) { mkt.sortDir *= -1; }
   else { mkt.sortKey = key; mkt.sortDir = key === 'change' ? -1 : 1; }
@@ -2936,13 +2932,17 @@ function mktShowInfo(symbol, fallbackName, e) {
     : symbol;
   document.getElementById('mkt-info-desc').textContent  = info?.desc || '';
 
-  const isinRow  = document.getElementById('mkt-info-isin-row');
   const isinCode = document.getElementById('mkt-info-isin-code');
+  const copyBtn  = document.getElementById('mkt-info-copy-btn');
   if (info?.isin) {
-    isinCode.textContent  = info.isin;
-    isinRow.style.display = 'flex';
+    isinCode.textContent      = info.isin;
+    isinCode.style.opacity    = '1';
+    copyBtn.style.display     = 'inline-block';
+    copyBtn.textContent       = 'copia';
   } else {
-    isinRow.style.display = 'none';
+    isinCode.textContent      = '—';
+    isinCode.style.opacity    = '0.4';
+    copyBtn.style.display     = 'none';
   }
 
   // Position near click, keep within viewport

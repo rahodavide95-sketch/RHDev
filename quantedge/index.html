@@ -707,66 +707,62 @@ const DB = [
 function sc(n){return n>=65?'#10b981':n>=55?'#34d399':n>=45?'#f59e0b':n>=35?'#f97316':'#ef4444';}
 function scLbl(n){return n>=65?'Bull':n>=55?'Pos':n>=45?'Neu':n>=35?'Neg':'Bear';}
 
-// ── PROXY FETCH (allorigins primary, corsproxy fallback) ──
+// ── PROXY FETCH — allorigins (raw + wrapped) + corsproxy fallback ──
 async function fetchJSON(yahooUrl){
-  const TIMEOUT=12000;
+  const mkUrl=(p,u)=>p+encodeURIComponent(u);
   const proxies=[
-    u=>`https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,
-    u=>`https://corsproxy.io/?url=${encodeURIComponent(u)}`
+    u=>mkUrl('https://api.allorigins.win/raw?url=',u),       // raw JSON direct
+    u=>mkUrl('https://corsproxy.io/?url=',u),                 // corsproxy raw
+    u=>mkUrl('https://api.allorigins.win/get?url=',u),        // allorigins wrapped
   ];
   for(const mkProxy of proxies){
-    let ctrl,tid;
+    const ctrl=new AbortController();
+    const tid=setTimeout(()=>ctrl.abort(),9000);
     try{
-      ctrl=new AbortController();
-      tid=setTimeout(()=>ctrl.abort(),TIMEOUT);
       const r=await fetch(mkProxy(yahooUrl),{signal:ctrl.signal});
       clearTimeout(tid);
       if(!r.ok) continue;
-      const j=await r.json();
-      // allorigins wraps in .contents; corsproxy returns raw
-      const raw=j.contents!==undefined?j.contents:JSON.stringify(j);
-      return JSON.parse(raw);
+      const text=await r.text();
+      // If allorigins wrapped: {"contents":"...","status":{...}}
+      let parsed;
+      try{ parsed=JSON.parse(text); }catch{ continue; }
+      // Unwrap allorigins if needed
+      if(parsed.contents!==undefined){
+        try{ parsed=JSON.parse(parsed.contents); }catch{ continue; }
+      }
+      return parsed;
     }catch(e){
       clearTimeout(tid);
-      if(e.name==='AbortError') continue;
       continue;
     }
   }
-  throw new Error('Proxy non disponibile');
-}
-
-// ── SPARK BATCH FETCH — multiple symbols in one request ──
-async function fetchSpark(syms,range='1y',interval='1d'){
-  if(!syms||!syms.length) return {};
-  const url=`https://query1.finance.yahoo.com/v8/finance/spark?symbols=${syms.map(encodeURIComponent).join(',')}&range=${range}&interval=${interval}`;
-  try{
-    const data=await fetchJSON(url);
-    const out={};
-    for(const item of(data?.spark?.result||[])){
-      const r=item?.response?.[0]; if(!r) continue;
-      const ts=r.timestamp||[];
-      const raw=r.indicators?.quote?.[0]?.close||[];
-      const cl=ts.map((_,i)=>raw[i]).filter(c=>c!=null&&!isNaN(c)&&c>0);
-      if(cl.length>=20) out[item.symbol]={
-        closes:cl,
-        price:r.meta?.regularMarketPrice||cl[cl.length-1],
-        prevClose:r.meta?.chartPreviousClose||cl[cl.length-2],
-        currency:r.meta?.currency||'',
-        timestamps:ts.filter((_,i)=>raw[i]!=null&&!isNaN(raw[i])&&raw[i]>0),
-      };
-    }
-    return out;
-  }catch{return {};}
+  throw new Error('Dati non disponibili — riprova tra qualche secondo');
 }
 
 // ── CHART HISTORY FETCH ──
 async function fetchChart(ticker,range='2y',interval='1d'){
-  const url=`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?range=${range}&interval=${interval}`;
+  const url=`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?range=${range}&interval=${interval}&includePrePost=false`;
   const data=await fetchJSON(url);
   if(data?.chart?.error) throw new Error(data.chart.error.description||'Ticker non trovato');
   const res=data?.chart?.result?.[0];
   if(!res) throw new Error('Nessun dato disponibile');
   return res;
+}
+
+// ── FETCH & SCORE A SINGLE TICKER (for panoramica) ──
+async function fetchAndScore(ticker){
+  const cached=getCached(ticker);
+  if(cached!==null) return cached;
+  try{
+    const res=await fetchChart(ticker,'1y','1d');
+    const ts=res.timestamp||[];
+    const raw=res.indicators?.quote?.[0]?.close||[];
+    const cl=ts.map((_,i)=>raw[i]).filter(c=>c!=null&&!isNaN(c)&&c>0);
+    if(cl.length<30) return null;
+    const score=scoreFromHistory(cl);
+    if(score!=null) setCached(ticker,score);
+    return score;
+  }catch{ return null; }
 }
 
 // ── SCORE FROM HISTORICAL CLOSES ──
@@ -941,19 +937,20 @@ const PANO={
 const PULSE=['SPY','QQQ','VGK','EEM','TLT','GLD'];
 
 async function loadPulse(){
-  try{
-    const sparkData=await fetchSpark(PULSE,'6mo','1d');
-    const tsStr=new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
-    document.getElementById('pulse-ts').textContent=`Aggiornato alle ${tsStr}`;
-    for(const sym of PULSE){
-      const d=sparkData[sym]; if(!d)continue;
-      const score=scoreFromHistory(d.closes);
-      const chPct=d.prevClose?(d.price-d.prevClose)/d.prevClose*100:null;
+  // fetch all 6 pulse tickers concurrently
+  await Promise.all(PULSE.map(async sym=>{
+    try{
+      const res=await fetchChart(sym,'6mo','1d');
+      const ts=res.timestamp||[];
+      const raw=res.indicators?.quote?.[0]?.close||[];
+      const cl=ts.map((_,i)=>raw[i]).filter(c=>c!=null&&!isNaN(c)&&c>0);
+      if(cl.length<2) return;
+      const score=scoreFromHistory(cl);
+      const cur=cl[cl.length-1], prev=cl[cl.length-2];
+      const chPct=(cur-prev)/prev*100;
       const chEl=document.getElementById(`pc-ch-${sym}`);
-      if(chPct!=null){
-        chEl.textContent=(chPct>=0?'+':'')+chPct.toFixed(2)+'%';
-        chEl.className='pc-ch '+(chPct>=0?'up':'dn');
-      }
+      chEl.textContent=(chPct>=0?'+':'')+chPct.toFixed(2)+'%';
+      chEl.className='pc-ch '+(chPct>=0?'up':'dn');
       if(score!=null){
         const color=sc(score);
         document.getElementById(`pc-bar-${sym}`).style.cssText=`width:${score}%;background:${color}`;
@@ -961,8 +958,10 @@ async function loadPulse(){
         scEl.textContent=score; scEl.style.color=color;
       }
       document.getElementById(`pc-${sym}`).onclick=()=>quickAnalyze(sym);
-    }
-  }catch{}
+    }catch{}
+  }));
+  const tsStr=new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('pulse-ts').textContent=`Aggiornato alle ${tsStr}`;
 }
 
 async function loadPanoramica(){
@@ -990,42 +989,44 @@ async function loadPanoramica(){
     if(ticker in scoreMap)renderRow(id,ticker,name,scoreMap[ticker]);
   }
 
-  if(!toFetch.length) return;
+  if(!toFetch.length){
+    document.getElementById('pbar').classList.remove('on');
+    return;
+  }
 
   // progress bar
   const pbar=document.getElementById('pbar'),fill=document.getElementById('pbar-fill'),cnt=document.getElementById('pbar-count');
+  const lbl=document.getElementById('pbar-label');
   pbar.classList.add('on');
+  lbl.textContent='Carico dati di mercato…';
   const total=toFetch.length; let done=0;
-  const upd=()=>{fill.style.width=Math.round(done/total*100)+'%';cnt.textContent=`${done}/${total}`;};
+  const upd=()=>{
+    fill.style.width=Math.round(done/total*100)+'%';
+    cnt.textContent=`${done}/${total}`;
+  };
   upd();
 
-  // spark batch: 15 symbols per request, 2 concurrent → ~2 HTTP calls total
-  const CHUNK=15,CONC=2;
-  const chunks=[];
-  for(let i=0;i<toFetch.length;i+=CHUNK)chunks.push(toFetch.slice(i,i+CHUNK));
-
-  for(let i=0;i<chunks.length;i+=CONC){
-    const wave=chunks.slice(i,i+CONC);
-    const results=await Promise.all(wave.map(syms=>fetchSpark(syms,'1y','1d')));
-    for(let wi=0;wi<wave.length;wi++){
-      const batch=results[wi], chunk=wave[wi];
-      for(const sym of chunk){
-        const d=batch[sym];
-        const score=d?scoreFromHistory(d.closes):null;
-        scoreMap[sym]=score;
-        if(score!=null)setCached(sym,score);
-        done++;
+  // Individual chart fetches, 10 concurrent — same endpoint as analysis (known to work)
+  const CONC=10;
+  for(let i=0;i<toFetch.length;i+=CONC){
+    const batch=toFetch.slice(i,i+CONC);
+    const results=await Promise.all(batch.map(fetchAndScore));
+    results.forEach((score,j)=>{
+      const sym=batch[j];
+      scoreMap[sym]=score;
+      done++;
+      // render this row immediately as it arrives
+      const rows=allItems.filter(it=>it.ticker===sym);
+      for(const{id,name}of rows){
+        if(score!=null)renderRow(id,sym,name,score);
+        else renderND(id,sym,name);
       }
-    }
-    done=Math.min(done,total);upd();
-    for(const{id,ticker,name}of allItems){
-      if(!(ticker in scoreMap))continue;
-      if(scoreMap[ticker]!=null)renderRow(id,ticker,name,scoreMap[ticker]);
-      else renderND(id,ticker,name);
-    }
+    });
+    upd();
   }
 
-  setTimeout(()=>pbar.classList.remove('on'),1200);
+  lbl.textContent='Aggiornato ✓';
+  setTimeout(()=>pbar.classList.remove('on'),1500);
 }
 
 // ── CHARTS ──

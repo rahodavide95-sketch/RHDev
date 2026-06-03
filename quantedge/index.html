@@ -754,7 +754,7 @@ async function fetchAndScore(ticker){
   const cached=getCached(ticker);
   if(cached!==null) return cached;
   try{
-    const res=await fetchChart(ticker,'1y','1d');
+    const res=await fetchChart(ticker,'2y','1d'); // stessa finestra dell'analisi
     const ts=res.timestamp||[];
     const raw=res.indicators?.quote?.[0]?.close||[];
     const cl=ts.map((_,i)=>raw[i]).filter(c=>c!=null&&!isNaN(c)&&c>0);
@@ -765,13 +765,13 @@ async function fetchAndScore(ticker){
   }catch{ return null; }
 }
 
-// ── SCORE FROM HISTORICAL CLOSES ──
+// ── SCORE DA CHIUSURE STORICHE — formula identica all'analisi ──
 function scoreFromHistory(cl){
   if(!cl||cl.length<30) return null;
   const cur=cl[cl.length-1];
-  const R=rsi(cl), M50=ma(cl,50), M200=ma(cl,200), Mo=mom(cl);
-  const w7=wr(cl,7), w30=wr(cl,30), w90=wr(cl,Math.min(90,Math.floor(cl.length*.8)));
-  return edgeScore(R,M50,M200,null,Mo,w7,w30,w90,cur);
+  const R=rsi(cl), M50=ma(cl,50), M200=ma(cl,200), V=vol(cl), Mo=mom(cl);
+  const w7=wr(cl,7), w30=wr(cl,30), w90=wr(cl,90);
+  return edgeScore(R,M50,M200,V,Mo,w7,w30,w90,cur);
 }
 
 // ── MATH ──

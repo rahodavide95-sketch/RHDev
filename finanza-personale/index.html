@@ -411,8 +411,8 @@
 
     .page-badge {
       font-size: clamp(28px, 4vw, 40px);
-      font-weight: 700;
-      letter-spacing: -1px;
+      font-weight: 300;
+      letter-spacing: -1.5px;
       color: var(--accent);
       line-height: 1.05;
       margin-bottom: 6px;
@@ -422,7 +422,7 @@
       font-size: clamp(13px, 1.6vw, 16px);
       font-weight: 400;
       letter-spacing: 0;
-      color: var(--muted);
+      color: var(--text);
       line-height: 1.3;
     }
 
@@ -2431,11 +2431,17 @@ function getEffectiveCurrency() {
   return mkt.displayCurrency === 'auto' ? getLocaleCurrency() : mkt.displayCurrency;
 }
 
-const FX_FALLBACK = { USD: 1, EUR: 0.92, GBP: 0.79, JPY: 150.0, CHF: 0.90, AUD: 1.55, CAD: 1.38 };
+const FX_FALLBACK = {
+  USD:1, EUR:0.92, GBP:0.79, JPY:150.0, CHF:0.90,
+  AUD:1.55, CAD:1.38, HKD:7.82, CNY:7.25, KRW:1330,
+  INR:83.5, BRL:5.05, MXN:17.2, SGD:1.34, NOK:10.5,
+  SEK:10.4, DKK:6.85, NZD:1.62, ZAR:18.7, TRY:30.0,
+  PLN:3.95, HUF:355, CZK:22.8, IDR:15800, MYR:4.68,
+};
 
 async function fetchFxRates() {
   if (mkt.fxRates) return;
-  mkt.fxRates = { ...FX_FALLBACK };        // always work, even if fetch fails
+  mkt.fxRates = { ...FX_FALLBACK };
   try {
     const r = await fetch('https://api.frankfurter.app/latest?from=USD',
       AbortSignal.timeout ? { signal: AbortSignal.timeout(10000) } : {});
@@ -2445,26 +2451,48 @@ async function fetchFxRates() {
   } catch {}
 }
 
+/* Normalise Yahoo Finance currency codes before conversion.
+   GBp = pence (1/100 GBP); USD cents etc. handled similarly. */
+function normaliseCurr(price, curr) {
+  if (curr === 'GBp' || curr === 'GBX') return { price: price / 100, curr: 'GBP' };
+  if (curr === 'ILA')                    return { price: price / 100, curr: 'ILS' };
+  return { price, curr: curr || 'USD' };
+}
+
 function mktConvert(price, fromCurr) {
-  if (price == null || !mkt.fxRates) return { price, curr: fromCurr || '' };
+  if (price == null) return { price, curr: fromCurr || '' };
+
+  /* Forex pairs (=X) are already exchange rates — don't convert them */
+  if (typeof fromCurr === 'string' && fromCurr.endsWith('=X')) return { price, curr: fromCurr };
+
+  const { price: p2, curr: fc } = normaliseCurr(price, fromCurr);
+  if (!mkt.fxRates) return { price: p2, curr: fc };
+
   const toCurr = getEffectiveCurrency();
-  const fc = fromCurr || 'USD';
-  if (fc === toCurr) return { price, curr: toCurr };
+  if (fc === toCurr) return { price: p2, curr: toCurr };
+
   const fromRate = fc === 'USD' ? 1 : mkt.fxRates[fc];
   const toRate   = toCurr === 'USD' ? 1 : mkt.fxRates[toCurr];
-  if (!fromRate || !toRate) return { price, curr: fc };
-  return { price: price * toRate / fromRate, curr: toCurr };
+  if (!fromRate || !toRate) return { price: p2, curr: fc };
+  return { price: p2 * toRate / fromRate, curr: toCurr };
 }
 
 function mktConvertArr(arr, fromCurr) {
-  if (!arr || !mkt.fxRates) return arr;
+  if (!arr) return arr;
+  if (typeof fromCurr === 'string' && fromCurr.endsWith('=X')) return arr;
+
+  const { price: sample, curr: fc } = normaliseCurr(1, fromCurr);
+  const penceScale = sample !== 1 ? sample : 1; // 0.01 for GBp
+
+  if (!mkt.fxRates) return arr.map(v => v != null ? v * penceScale : null);
+
   const toCurr = getEffectiveCurrency();
-  const fc = fromCurr || 'USD';
-  if (fc === toCurr) return arr;
   const fromRate = fc === 'USD' ? 1 : mkt.fxRates[fc];
   const toRate   = toCurr === 'USD' ? 1 : mkt.fxRates[toCurr];
-  if (!fromRate || !toRate) return arr;
-  const ratio = toRate / fromRate;
+  if (!fromRate || !toRate) return arr.map(v => v != null ? v * penceScale : null);
+
+  const ratio = penceScale * toRate / fromRate;
+  if (ratio === 1) return arr;
   return arr.map(v => v != null ? v * ratio : null);
 }
 

@@ -893,6 +893,7 @@
       position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
       color: var(--muted); pointer-events: none;
       display: flex; align-items: center; line-height: 0;
+      z-index: 2; /* above input's backdrop-filter stacking context */
     }
 
     .mkt-search-dropdown {
@@ -924,6 +925,32 @@
     .mkt-search-name { font-size: 14px; color: var(--text); }
     .mkt-search-exch { font-size: 11px; color: var(--muted); font-family: var(--mono); }
     .mkt-search-sym { font-family: var(--mono); font-size: 13px; color: var(--accent4); font-weight: 600; white-space: nowrap; }
+
+    /* Info popup */
+    .mkt-info-popup {
+      display: none; position: fixed; z-index: 500; width: 286px;
+      background: var(--glass-card);
+      backdrop-filter: blur(28px) saturate(160%);
+      -webkit-backdrop-filter: blur(28px) saturate(160%);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      box-shadow: var(--glass-shadow), 0 0 0 1px rgba(255,255,255,0.03);
+      padding: 14px 16px 13px;
+    }
+    .mkt-info-popup.open { display: block; animation: sectionIn 0.18s cubic-bezier(0.16,1,0.3,1) backwards; }
+    .mkt-info-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 3px; }
+    .mkt-info-title  { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.3; }
+    .mkt-info-close  { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 18px; line-height: 1; padding: 0; flex-shrink: 0; margin-top: -2px; }
+    .mkt-info-close:hover { color: var(--text); }
+    .mkt-info-sub    { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-bottom: 8px; }
+    .mkt-info-desc   { font-size: 12px; color: var(--text); line-height: 1.48; margin-bottom: 10px; opacity: 0.78; }
+    .mkt-info-isin-row { display: flex; align-items: center; gap: 8px; }
+    .mkt-info-isin-label { font-size: 10px; color: var(--muted); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0; }
+    .mkt-info-isin-code  { font-family: var(--mono); font-size: 12px; color: var(--accent4); font-weight: 600; letter-spacing: 0.5px; flex: 1; }
+    .mkt-info-copy-btn   { background: none; border: 1px solid var(--border); border-radius: 4px; color: var(--muted); font-size: 10px; font-family: var(--mono); padding: 2px 8px; cursor: pointer; transition: border-color 0.2s, color 0.2s; flex-shrink: 0; }
+    .mkt-info-copy-btn:hover { border-color: var(--accent4); color: var(--accent4); }
+    .mkt-name-cell { cursor: pointer; }
+    [data-theme="light"] .mkt-info-popup { box-shadow: var(--glass-shadow); }
 
     /* Category tabs */
     .mkt-tabs {
@@ -1512,6 +1539,21 @@
         </div>
       </div>
 
+      <!-- Info popup -->
+      <div id="mkt-info-popup" class="mkt-info-popup">
+        <div class="mkt-info-header">
+          <span class="mkt-info-title" id="mkt-info-title"></span>
+          <button class="mkt-info-close" onclick="mktCloseInfo()">×</button>
+        </div>
+        <div class="mkt-info-sub"  id="mkt-info-sub"></div>
+        <div class="mkt-info-desc" id="mkt-info-desc"></div>
+        <div class="mkt-info-isin-row" id="mkt-info-isin-row" style="display:none;">
+          <span class="mkt-info-isin-label">ISIN</span>
+          <span class="mkt-info-isin-code" id="mkt-info-isin-code"></span>
+          <button class="mkt-info-copy-btn" id="mkt-info-copy-btn" onclick="mktCopyIsin()">copia</button>
+        </div>
+      </div>
+
       <!-- Chart panel: TradingView Advanced Chart -->
       <div id="mkt-chart-panel" class="mkt-chart-panel" style="display:none;">
         <div class="chart-card">
@@ -2065,79 +2107,86 @@ const CG_IDS = {
 
 /* ─── LOCAL SEARCH DATABASE ─── */
 const SEARCH_DB = [
-  { s:'^GSPC',     n:'S&P 500',                x:'NYSE',    t:'Indice'      },
-  { s:'^IXIC',     n:'Nasdaq Composite',        x:'NASDAQ',  t:'Indice'      },
-  { s:'^DJI',      n:'Dow Jones',               x:'NYSE',    t:'Indice'      },
-  { s:'^RUT',      n:'Russell 2000',            x:'NYSE',    t:'Indice'      },
-  { s:'^STOXX50E', n:'Euro Stoxx 50',           x:'Euronext',t:'Indice'      },
-  { s:'FTSEMIB.MI',n:'FTSE MIB',               x:'Milano',  t:'Indice'      },
-  { s:'^GDAXI',    n:'DAX 40',                  x:'Xetra',   t:'Indice'      },
-  { s:'^FTSE',     n:'FTSE 100',                x:'Londra',  t:'Indice'      },
-  { s:'^FCHI',     n:'CAC 40',                  x:'Parigi',  t:'Indice'      },
-  { s:'^N225',     n:'Nikkei 225',              x:'Tokyo',   t:'Indice'      },
-  { s:'^VIX',      n:'VIX Volatilità',          x:'CBOE',    t:'Indice'      },
-  { s:'IWDA.AS',   n:'iShares MSCI World',      x:'Euronext',t:'ETF'         },
-  { s:'VWCE.DE',   n:'Vanguard FTSE All-World', x:'Xetra',   t:'ETF'         },
-  { s:'SWRD.SW',   n:'SPDR MSCI World',         x:'SIX',     t:'ETF'         },
-  { s:'CSPX.L',    n:'iShares Core S&P 500',    x:'Londra',  t:'ETF'         },
-  { s:'VOO',       n:'Vanguard S&P 500',        x:'AMEX',    t:'ETF'         },
-  { s:'SPY',       n:'SPDR S&P 500',            x:'AMEX',    t:'ETF'         },
-  { s:'QQQ',       n:'Invesco Nasdaq-100',      x:'NASDAQ',  t:'ETF'         },
-  { s:'TLT',       n:'iShares 20Y+ Treasury',   x:'AMEX',    t:'ETF'         },
-  { s:'GLD',       n:'SPDR Gold Shares',        x:'AMEX',    t:'ETF'         },
-  { s:'IEF',       n:'iShares 7-10Y Treasury',  x:'AMEX',    t:'ETF'         },
-  { s:'HYG',       n:'iShares High Yield Corp', x:'AMEX',    t:'ETF'         },
-  { s:'AGG',       n:'iShares US Aggregate',    x:'AMEX',    t:'ETF'         },
-  { s:'GC=F',      n:'Oro (Gold Futures)',       x:'COMEX',   t:'Commodity'   },
-  { s:'SI=F',      n:'Argento (Silver)',         x:'COMEX',   t:'Commodity'   },
-  { s:'CL=F',      n:'Petrolio WTI',            x:'NYMEX',   t:'Commodity'   },
-  { s:'BZ=F',      n:'Petrolio Brent',          x:'ICE',     t:'Commodity'   },
-  { s:'NG=F',      n:'Gas Naturale',            x:'NYMEX',   t:'Commodity'   },
-  { s:'HG=F',      n:'Rame (Copper)',           x:'COMEX',   t:'Commodity'   },
-  { s:'EURUSD=X',  n:'Euro / Dollaro USA',      x:'Forex',   t:'Valuta'      },
-  { s:'EURGBP=X',  n:'Euro / Sterlina',         x:'Forex',   t:'Valuta'      },
-  { s:'EURJPY=X',  n:'Euro / Yen',              x:'Forex',   t:'Valuta'      },
-  { s:'GBPUSD=X',  n:'Sterlina / Dollaro',      x:'Forex',   t:'Valuta'      },
-  { s:'USDJPY=X',  n:'Dollaro / Yen',           x:'Forex',   t:'Valuta'      },
-  { s:'DX-Y.NYB',  n:'Dollar Index (DXY)',      x:'NYSE',    t:'Valuta'      },
-  { s:'ENI.MI',    n:'ENI',                     x:'Milano',  t:'Azione'      },
-  { s:'ENEL.MI',   n:'Enel',                    x:'Milano',  t:'Azione'      },
-  { s:'ISP.MI',    n:'Intesa Sanpaolo',         x:'Milano',  t:'Azione'      },
-  { s:'UCG.MI',    n:'UniCredit',               x:'Milano',  t:'Azione'      },
-  { s:'STM.MI',    n:'STMicroelectronics',      x:'Milano',  t:'Azione'      },
-  { s:'RACE.MI',   n:'Ferrari',                 x:'Milano',  t:'Azione'      },
-  { s:'STLAM.MI',  n:'Stellantis',              x:'Milano',  t:'Azione'      },
-  { s:'G.MI',      n:'Generali',                x:'Milano',  t:'Azione'      },
-  { s:'LDO.MI',    n:'Leonardo',                x:'Milano',  t:'Azione'      },
-  { s:'MONC.MI',   n:'Moncler',                 x:'Milano',  t:'Azione'      },
-  { s:'TIT.MI',    n:'TIM (Telecom Italia)',     x:'Milano',  t:'Azione'      },
-  { s:'BMPS.MI',   n:'Monte dei Paschi',        x:'Milano',  t:'Azione'      },
-  { s:'AAPL',      n:'Apple Inc.',              x:'NASDAQ',  t:'Azione'      },
-  { s:'MSFT',      n:'Microsoft',               x:'NASDAQ',  t:'Azione'      },
-  { s:'NVDA',      n:'NVIDIA',                  x:'NASDAQ',  t:'Azione'      },
-  { s:'AMZN',      n:'Amazon',                  x:'NASDAQ',  t:'Azione'      },
-  { s:'GOOGL',     n:'Alphabet / Google',       x:'NASDAQ',  t:'Azione'      },
-  { s:'META',      n:'Meta Platforms',          x:'NASDAQ',  t:'Azione'      },
-  { s:'TSLA',      n:'Tesla',                   x:'NASDAQ',  t:'Azione'      },
-  { s:'NFLX',      n:'Netflix',                 x:'NASDAQ',  t:'Azione'      },
-  { s:'AMD',       n:'AMD',                     x:'NASDAQ',  t:'Azione'      },
-  { s:'INTC',      n:'Intel',                   x:'NASDAQ',  t:'Azione'      },
-  { s:'JPM',       n:'JPMorgan Chase',          x:'NYSE',    t:'Azione'      },
-  { s:'V',         n:'Visa',                    x:'NYSE',    t:'Azione'      },
-  { s:'WMT',       n:'Walmart',                 x:'NYSE',    t:'Azione'      },
-  { s:'MA',        n:'Mastercard',              x:'NYSE',    t:'Azione'      },
-  { s:'XOM',       n:'ExxonMobil',              x:'NYSE',    t:'Azione'      },
-  { s:'BAC',       n:'Bank of America',         x:'NYSE',    t:'Azione'      },
-  { s:'DIS',       n:'Walt Disney',             x:'NYSE',    t:'Azione'      },
-  { s:'BRK-B',     n:'Berkshire Hathaway B',    x:'NYSE',    t:'Azione'      },
-  { s:'BTC-USD',   n:'Bitcoin',                 x:'Crypto',  t:'Crypto'      },
-  { s:'ETH-USD',   n:'Ethereum',                x:'Crypto',  t:'Crypto'      },
-  { s:'SOL-USD',   n:'Solana',                  x:'Crypto',  t:'Crypto'      },
-  { s:'BNB-USD',   n:'BNB',                     x:'Crypto',  t:'Crypto'      },
-  { s:'XRP-USD',   n:'XRP / Ripple',            x:'Crypto',  t:'Crypto'      },
-  { s:'ADA-USD',   n:'Cardano',                 x:'Crypto',  t:'Crypto'      },
-  { s:'DOGE-USD',  n:'Dogecoin',                x:'Crypto',  t:'Crypto'      },
-  { s:'LINK-USD',  n:'Chainlink',               x:'Crypto',  t:'Crypto'      },
+  // Indici — nessun ISIN (non sono strumenti acquistabili)
+  { s:'^GSPC',     n:'S&P 500',                x:'NYSE',    t:'Indice',    isin:null, desc:'Paniere delle 500 maggiori società per capitalizzazione quotate negli USA.' },
+  { s:'^IXIC',     n:'Nasdaq Composite',        x:'NASDAQ',  t:'Indice',    isin:null, desc:'Oltre 3.000 titoli quotati al NASDAQ, a forte componente tecnologica.' },
+  { s:'^DJI',      n:'Dow Jones',               x:'NYSE',    t:'Indice',    isin:null, desc:'Media ponderata dei prezzi di 30 blue chip industriali storiche USA.' },
+  { s:'^RUT',      n:'Russell 2000',            x:'NYSE',    t:'Indice',    isin:null, desc:'Benchmark delle 2.000 piccole imprese USA per capitalizzazione.' },
+  { s:'^STOXX50E', n:'Euro Stoxx 50',           x:'Euronext',t:'Indice',    isin:null, desc:'50 blue chip dell\'Eurozona, standard di riferimento per l\'area euro.' },
+  { s:'FTSEMIB.MI',n:'FTSE MIB',               x:'Milano',  t:'Indice',    isin:null, desc:'40 titoli a maggior capitalizzazione della Borsa Italiana.' },
+  { s:'^GDAXI',    n:'DAX 40',                  x:'Xetra',   t:'Indice',    isin:null, desc:'40 principali società tedesche, uno degli indici europei più seguiti.' },
+  { s:'^FTSE',     n:'FTSE 100',                x:'Londra',  t:'Indice',    isin:null, desc:'100 società britanniche a maggior capitalizzazione quotate a Londra.' },
+  { s:'^FCHI',     n:'CAC 40',                  x:'Parigi',  t:'Indice',    isin:null, desc:'40 principali aziende francesi quotate a Euronext Paris.' },
+  { s:'^N225',     n:'Nikkei 225',              x:'Tokyo',   t:'Indice',    isin:null, desc:'225 blue chip giapponesi a ponderazione sul prezzo, Borsa di Tokyo.' },
+  { s:'^VIX',      n:'VIX Volatilità',          x:'CBOE',    t:'Indice',    isin:null, desc:'Indice della volatilità implicita sulle opzioni dell\'S&P 500 (CBOE).' },
+  // ETF
+  { s:'IWDA.AS',   n:'iShares MSCI World',      x:'Euronext',t:'ETF',       isin:'IE00B4L5Y983', desc:'ETF UCITS che replica l\'MSCI World (circa 1.500 aziende mercati sviluppati).' },
+  { s:'VWCE.DE',   n:'Vanguard FTSE All-World', x:'Xetra',   t:'ETF',       isin:'IE00BK5BQT80', desc:'ETF Vanguard che replica il FTSE All-World: mercati sviluppati ed emergenti.' },
+  { s:'SWRD.SW',   n:'SPDR MSCI World',         x:'SIX',     t:'ETF',       isin:'IE00BFY0GT14', desc:'ETF SPDR che replica l\'MSCI World con replica fisica, quotato su SIX Svizzera.' },
+  { s:'CSPX.L',    n:'iShares Core S&P 500',    x:'Londra',  t:'ETF',       isin:'IE00B5BMR087', desc:'ETF UCITS di iShares che replica l\'S&P 500, quotato a Londra in USD.' },
+  { s:'VOO',       n:'Vanguard S&P 500',        x:'NYSE',    t:'ETF',       isin:'US9229083632', desc:'ETF Vanguard che replica l\'S&P 500; commissioni tra le più basse al mondo.' },
+  { s:'SPY',       n:'SPDR S&P 500',            x:'NYSE',    t:'ETF',       isin:'US78462F1030', desc:'Il primo e più liquido ETF sull\'S&P 500, lanciato nel 1993 da SPDR.' },
+  { s:'QQQ',       n:'Invesco Nasdaq-100',      x:'NASDAQ',  t:'ETF',       isin:'US46090E1038', desc:'ETF Invesco che replica il Nasdaq-100 (100 maggiori titoli non finanziari NASDAQ).' },
+  { s:'TLT',       n:'iShares 20Y+ Treasury',   x:'NYSE',    t:'ETF',       isin:'US4642874329', desc:'ETF iShares sui Treasury USA con scadenza superiore a 20 anni.' },
+  { s:'GLD',       n:'SPDR Gold Shares',        x:'NYSE',    t:'ETF',       isin:'US78463V1070', desc:'ETF fisicamente backed sull\'oro, uno dei maggiori fondi in metallo prezioso.' },
+  { s:'IEF',       n:'iShares 7-10Y Treasury',  x:'NYSE',    t:'ETF',       isin:'US4642874659', desc:'ETF iShares sui Treasury USA con scadenza 7-10 anni.' },
+  { s:'HYG',       n:'iShares High Yield Corp', x:'NYSE',    t:'ETF',       isin:'US4642885135', desc:'ETF iShares su obbligazioni high yield societarie USA.' },
+  { s:'AGG',       n:'iShares US Aggregate',    x:'NYSE',    t:'ETF',       isin:'US4642872265', desc:'ETF iShares sull\'intero mercato obbligazionario USA investment grade.' },
+  // Materie prime — futures, nessun ISIN
+  { s:'GC=F',      n:'Oro (Gold Futures)',       x:'COMEX',   t:'Commodity', isin:null, desc:'Futures sull\'oro, contratto da 100 once troy (COMEX, CME Group).' },
+  { s:'SI=F',      n:'Argento (Silver)',         x:'COMEX',   t:'Commodity', isin:null, desc:'Futures sull\'argento, contratto da 5.000 once troy (COMEX).' },
+  { s:'CL=F',      n:'Petrolio WTI',            x:'NYMEX',   t:'Commodity', isin:null, desc:'Futures sul petrolio West Texas Intermediate, benchmark USA del greggio.' },
+  { s:'BZ=F',      n:'Petrolio Brent',          x:'ICE',     t:'Commodity', isin:null, desc:'Futures sul Brent, benchmark globale del greggio estratto nel Mare del Nord.' },
+  { s:'NG=F',      n:'Gas Naturale',            x:'NYMEX',   t:'Commodity', isin:null, desc:'Futures sul gas naturale, contratto in milioni di BTU (NYMEX).' },
+  { s:'HG=F',      n:'Rame (Copper)',           x:'COMEX',   t:'Commodity', isin:null, desc:'Futures sul rame, metallo industriale sensibile al ciclo economico globale.' },
+  // Valute — nessun ISIN
+  { s:'EURUSD=X',  n:'Euro / Dollaro USA',      x:'Forex',   t:'Valuta',    isin:null, desc:'Tasso di cambio euro contro dollaro USA, la coppia più scambiata al mondo.' },
+  { s:'EURGBP=X',  n:'Euro / Sterlina',         x:'Forex',   t:'Valuta',    isin:null, desc:'Tasso di cambio euro contro sterlina britannica.' },
+  { s:'EURJPY=X',  n:'Euro / Yen',              x:'Forex',   t:'Valuta',    isin:null, desc:'Tasso di cambio euro contro yen giapponese.' },
+  { s:'GBPUSD=X',  n:'Sterlina / Dollaro',      x:'Forex',   t:'Valuta',    isin:null, desc:'Tasso di cambio sterlina britannica contro dollaro USA.' },
+  { s:'USDJPY=X',  n:'Dollaro / Yen',           x:'Forex',   t:'Valuta',    isin:null, desc:'Tasso di cambio dollaro USA contro yen giapponese.' },
+  { s:'DX-Y.NYB',  n:'Dollar Index (DXY)',      x:'NYSE',    t:'Valuta',    isin:null, desc:'Indice del dollaro ponderato rispetto a un paniere di 6 valute principali.' },
+  // Azioni italiane
+  { s:'ENI.MI',    n:'ENI',                     x:'Milano',  t:'Azione',    isin:'IT0003132476', desc:'Multinazionale energetica italiana, attiva nel petrolio, gas e rinnovabili.' },
+  { s:'ENEL.MI',   n:'Enel',                    x:'Milano',  t:'Azione',    isin:'IT0003128367', desc:'Primo operatore elettrico italiano, leader europeo nelle rinnovabili.' },
+  { s:'ISP.MI',    n:'Intesa Sanpaolo',         x:'Milano',  t:'Azione',    isin:'IT0000072618', desc:'Uno dei maggiori gruppi bancari europei, con sede a Torino.' },
+  { s:'UCG.MI',    n:'UniCredit',               x:'Milano',  t:'Azione',    isin:'IT0004781412', desc:'Gruppo bancario pan-europeo con presenza in oltre 13 paesi.' },
+  { s:'STM.MI',    n:'STMicroelectronics',      x:'Milano',  t:'Azione',    isin:'NL0000226223', desc:'Produttore di semiconduttori, leader mondiale nei chip per automotive e industria.' },
+  { s:'RACE.MI',   n:'Ferrari',                 x:'Milano',  t:'Azione',    isin:'NL0011585146', desc:'Casa automobilistica d\'élite, simbolo del lusso sportivo italiano nel mondo.' },
+  { s:'STLAM.MI',  n:'Stellantis',              x:'Milano',  t:'Azione',    isin:'NL00150001Q9', desc:'Quarto costruttore automobilistico al mondo, nato dalla fusione FCA-PSA.' },
+  { s:'G.MI',      n:'Generali',                x:'Milano',  t:'Azione',    isin:'IT0000062072', desc:'Uno dei maggiori gruppi assicurativi europei, con sede a Trieste.' },
+  { s:'LDO.MI',    n:'Leonardo',                x:'Milano',  t:'Azione',    isin:'IT0003856405', desc:'Gruppo della difesa e aerospazio italiano, tra i principali in Europa.' },
+  { s:'MONC.MI',   n:'Moncler',                 x:'Milano',  t:'Azione',    isin:'IT0004965148', desc:'Maison del lusso italiana, nota per il piumino iconico.' },
+  { s:'TIT.MI',    n:'TIM (Telecom Italia)',     x:'Milano',  t:'Azione',    isin:'IT0003497168', desc:'Principale operatore di telecomunicazioni italiano (rete fissa e mobile).' },
+  { s:'BMPS.MI',   n:'Monte dei Paschi',        x:'Milano',  t:'Azione',    isin:'IT0005508921', desc:'La banca più antica del mondo, fondata a Siena nel 1472.' },
+  // Azioni USA
+  { s:'AAPL',      n:'Apple Inc.',              x:'NASDAQ',  t:'Azione',    isin:'US0378331005', desc:'Produttrice di iPhone, Mac e servizi digitali; tra le più capitalizzate al mondo.' },
+  { s:'MSFT',      n:'Microsoft',               x:'NASDAQ',  t:'Azione',    isin:'US5949181045', desc:'Leader nel software aziendale, cloud (Azure) e intelligenza artificiale.' },
+  { s:'NVDA',      n:'NVIDIA',                  x:'NASDAQ',  t:'Azione',    isin:'US67066G1040', desc:'Produttrice di GPU leader nell\'AI e nel calcolo ad alte prestazioni.' },
+  { s:'AMZN',      n:'Amazon',                  x:'NASDAQ',  t:'Azione',    isin:'US0231351067', desc:'Gigante dell\'e-commerce e del cloud computing (AWS).' },
+  { s:'GOOGL',     n:'Alphabet / Google',       x:'NASDAQ',  t:'Azione',    isin:'US02079K3059', desc:'Casa madre di Google, YouTube, Android e Google Cloud.' },
+  { s:'META',      n:'Meta Platforms',          x:'NASDAQ',  t:'Azione',    isin:'US30303M1027', desc:'Proprietaria di Facebook, Instagram e WhatsApp.' },
+  { s:'TSLA',      n:'Tesla',                   x:'NASDAQ',  t:'Azione',    isin:'US88160R1014', desc:'Pioniere delle auto elettriche, energia solare e batterie su scala globale.' },
+  { s:'NFLX',      n:'Netflix',                 x:'NASDAQ',  t:'Azione',    isin:'US64110L1061', desc:'Leader mondiale dello streaming video con oltre 270 milioni di abbonati.' },
+  { s:'AMD',       n:'AMD',                     x:'NASDAQ',  t:'Azione',    isin:'US0079031078', desc:'Progettista di CPU e GPU per PC, server e gaming, in forte crescita.' },
+  { s:'INTC',      n:'Intel',                   x:'NASDAQ',  t:'Azione',    isin:'US4581401001', desc:'Storico produttore di microprocessori, in fase di ristrutturazione.' },
+  { s:'JPM',       n:'JPMorgan Chase',          x:'NYSE',    t:'Azione',    isin:'US46625H1005', desc:'La più grande banca USA per asset totali, leader nei servizi finanziari globali.' },
+  { s:'V',         n:'Visa',                    x:'NYSE',    t:'Azione',    isin:'US92826C8394', desc:'Rete di pagamento digitale globale, opera in oltre 200 paesi.' },
+  { s:'WMT',       n:'Walmart',                 x:'NYSE',    t:'Azione',    isin:'US9311421039', desc:'Catena di grande distribuzione più grande al mondo per fatturato.' },
+  { s:'MA',        n:'Mastercard',              x:'NYSE',    t:'Azione',    isin:'US57636Q1040', desc:'Secondo circuito di pagamento globale per volume di transazioni.' },
+  { s:'XOM',       n:'ExxonMobil',              x:'NYSE',    t:'Azione',    isin:'US30231G1022', desc:'Una delle maggiori compagnie petrolifere integrate al mondo.' },
+  { s:'BAC',       n:'Bank of America',         x:'NYSE',    t:'Azione',    isin:'US0605051046', desc:'Seconda banca USA per asset, con oltre 66 milioni di clienti retail.' },
+  { s:'DIS',       n:'Walt Disney',             x:'NYSE',    t:'Azione',    isin:'US2546871060', desc:'Colosso dell\'intrattenimento: parchi, film, TV (ESPN) e streaming Disney+.' },
+  { s:'BRK-B',     n:'Berkshire Hathaway B',    x:'NYSE',    t:'Azione',    isin:'US0846707026', desc:'Conglomerata di Warren Buffett, partecipazioni in assicurazioni, energia e azioni.' },
+  // Crypto — nessun ISIN
+  { s:'BTC-USD',   n:'Bitcoin',                 x:'Crypto',  t:'Crypto',    isin:null, desc:'La prima criptovaluta al mondo, creata da Satoshi Nakamoto nel 2009.' },
+  { s:'ETH-USD',   n:'Ethereum',                x:'Crypto',  t:'Crypto',    isin:null, desc:'Piattaforma blockchain per smart contract e applicazioni decentralizzate.' },
+  { s:'SOL-USD',   n:'Solana',                  x:'Crypto',  t:'Crypto',    isin:null, desc:'Blockchain ad alta velocità, nota per basse commissioni e DeFi.' },
+  { s:'BNB-USD',   n:'BNB',                     x:'Crypto',  t:'Crypto',    isin:null, desc:'Token nativo di Binance, usato per fee e nell\'ecosistema BNB Chain.' },
+  { s:'XRP-USD',   n:'XRP / Ripple',            x:'Crypto',  t:'Crypto',    isin:null, desc:'Token per pagamenti interbancari transfrontalieri veloci ed economici.' },
+  { s:'ADA-USD',   n:'Cardano',                 x:'Crypto',  t:'Crypto',    isin:null, desc:'Blockchain proof-of-stake progettata con approccio accademico-scientifico.' },
+  { s:'DOGE-USD',  n:'Dogecoin',                x:'Crypto',  t:'Crypto',    isin:null, desc:'Criptovaluta nata come meme nel 2013, usata per micropagamenti e donazioni.' },
+  { s:'LINK-USD',  n:'Chainlink',               x:'Crypto',  t:'Crypto',    isin:null, desc:'Oracle decentralizzato che collega dati del mondo reale agli smart contract.' },
 ];
 
 function localSearch(query) {
@@ -2146,11 +2195,16 @@ function localSearch(query) {
   return SEARCH_DB.filter(item =>
     item.s.toLowerCase().startsWith(q) ||
     item.n.toLowerCase().includes(q) ||
-    item.s.toLowerCase().includes(q)
+    item.s.toLowerCase().includes(q) ||
+    (item.isin && item.isin.toLowerCase().includes(q))
   ).sort((a,b) => {
-    const aEx = a.s.toLowerCase().startsWith(q) ? 0 : 1;
-    const bEx = b.s.toLowerCase().startsWith(q) ? 0 : 1;
-    return aEx - bEx;
+    const score = x => {
+      if (x.s.toLowerCase() === q) return 0;
+      if (x.isin && x.isin.toLowerCase() === q) return 0;
+      if (x.s.toLowerCase().startsWith(q)) return 1;
+      return 2;
+    };
+    return score(a) - score(b);
   }).slice(0, 8);
 }
 
@@ -2459,14 +2513,17 @@ function mktDateLabel(ts, range) {
 
 /* ─── SKELETON ─── */
 function mktRenderSkeleton(items) {
-  document.getElementById('mkt-tbody').innerHTML = items.map((item, i) => `
+  document.getElementById('mkt-tbody').innerHTML = items.map((item, i) => {
+    const sym = item.symbol.replace(/'/g,"\\'"), nm = item.name.replace(/'/g,"\\'");
+    return `
     <tr id="${mktSymId(item.symbol)}" data-idx="${i}">
-      <td><div class="mkt-name-col"><span class="mkt-name">${item.name}</span><span class="mkt-sym-small">${item.symbol}</span></div></td>
+      <td class="mkt-name-cell" onclick="event.stopPropagation(); mktShowInfo('${sym}','${nm}',event)"><div class="mkt-name-col"><span class="mkt-name">${item.name}</span><span class="mkt-sym-small">${item.symbol}</span></div></td>
       <td><span class="mkt-sym-col">${item.symbol}</span></td>
       <td><span class="mkt-skel" style="width:90px;"></span></td>
       <td><span class="mkt-skel" style="width:65px;"></span></td>
       <td><span class="mkt-skel" style="width:64px;height:20px;"></span></td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 
 /* ─── APPLY RESULT TO ROW ─── */
@@ -2475,12 +2532,15 @@ function mktApplyResult(item, result, gen) {
   const row = document.getElementById(mktSymId(item.symbol));
   if (!row) return;
 
+  const sym = item.symbol.replace(/'/g,"\\'"), nm = item.name.replace(/'/g,"\\'");
+  const nameCell = `<td class="mkt-name-cell" onclick="event.stopPropagation(); mktShowInfo('${sym}','${nm}',event)"><div class="mkt-name-col"><span class="mkt-name">${item.name}</span><span class="mkt-sym-small">${item.symbol}</span></div></td>`;
+
   if (!result) {
     row.innerHTML = `
-      <td><div class="mkt-name-col"><span class="mkt-name">${item.name}</span><span class="mkt-sym-small">${item.symbol}</span></div></td>
+      ${nameCell}
       <td><span class="mkt-sym-col">${item.symbol}</span></td>
       <td colspan="3"><span style="color:var(--muted);font-size:12px;font-family:var(--mono);">— </span>
-        <button onclick="mktRetryRow(this,'${item.symbol}','${item.name.replace(/'/g,"\\'")}');"
+        <button onclick="mktRetryRow(this,'${sym}','${nm}');"
           style="background:none;border:none;color:var(--accent4);font-size:12px;font-family:var(--mono);cursor:pointer;padding:0;">riprova ↻</button></td>`;
     row.style.cursor = 'default';
     row.dataset.change = ''; row.dataset.price = '';
@@ -2496,7 +2556,7 @@ function mktApplyResult(item, result, gen) {
   row.dataset.name   = item.name;
 
   row.innerHTML = `
-    <td><div class="mkt-name-col"><span class="mkt-name">${item.name}</span><span class="mkt-sym-small">${item.symbol}</span></div></td>
+    ${nameCell}
     <td><span class="mkt-sym-col">${item.symbol}</span></td>
     <td><span class="mkt-price-col">${mktFmtPrice(dispPrice)}<span class="mkt-curr">${dispCurr||''}</span></span></td>
     <td><span class="mkt-change-col ${mktPctClass(change)}">${mktFmtPct(change)}</span></td>
@@ -2843,6 +2903,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.addEventListener('click', e => {
     if (!e.target.closest('.mkt-search-wrap')) dd.classList.remove('open');
+    if (!e.target.closest('#mkt-info-popup') && !e.target.closest('.mkt-name-cell')) {
+      document.getElementById('mkt-info-popup')?.classList.remove('open');
+    }
   });
 });
 
@@ -2855,6 +2918,65 @@ function mktAddFromSearch(symbol, name) {
   const tab = document.getElementById('mkt-tab-search');
   if (tab) tab.style.display = 'inline-block';
   selectMktCategory('Ricerca');
+}
+
+/* ─── INFO POPUP ─── */
+function mktGetInfo(symbol) {
+  return SEARCH_DB.find(item => item.s === symbol) || null;
+}
+
+function mktShowInfo(symbol, fallbackName, e) {
+  e.stopPropagation();
+  const info = mktGetInfo(symbol);
+  const popup = document.getElementById('mkt-info-popup');
+
+  document.getElementById('mkt-info-title').textContent = info ? info.n : fallbackName;
+  document.getElementById('mkt-info-sub').textContent   = info
+    ? `${symbol} · ${info.x} · ${info.t}`
+    : symbol;
+  document.getElementById('mkt-info-desc').textContent  = info?.desc || '';
+
+  const isinRow  = document.getElementById('mkt-info-isin-row');
+  const isinCode = document.getElementById('mkt-info-isin-code');
+  if (info?.isin) {
+    isinCode.textContent  = info.isin;
+    isinRow.style.display = 'flex';
+  } else {
+    isinRow.style.display = 'none';
+  }
+
+  // Position near click, keep within viewport
+  const margin = 12, pw = 286, ph = 170;
+  let left = e.clientX + margin;
+  let top  = e.clientY;
+  if (left + pw + margin > window.innerWidth)  left = e.clientX - pw - margin;
+  if (left < margin) left = margin;
+  if (top  + ph + margin > window.innerHeight) top  = window.innerHeight - ph - margin;
+  if (top  < margin) top  = margin;
+
+  popup.style.left = left + 'px';
+  popup.style.top  = top  + 'px';
+  popup.classList.add('open');
+}
+
+function mktCloseInfo() {
+  document.getElementById('mkt-info-popup').classList.remove('open');
+}
+
+async function mktCopyIsin() {
+  const code = document.getElementById('mkt-info-isin-code').textContent;
+  if (!code) return;
+  const btn = document.getElementById('mkt-info-copy-btn');
+  try {
+    await navigator.clipboard.writeText(code);
+  } catch {
+    const ta = document.createElement('textarea');
+    ta.value = code; ta.style.cssText = 'position:fixed;opacity:0;';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+  }
+  btn.textContent = '✓ copiato';
+  setTimeout(() => { btn.textContent = 'copia'; }, 1500);
 }
 
 /* ─── INIT ─── */

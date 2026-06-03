@@ -419,8 +419,23 @@ img.broken-hide                   { visibility: hidden; }
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color:          var(--fg);
-  white-space:   nowrap;
-  padding:       0 3rem;
+  white-space:    nowrap;
+  padding:        0 3rem;
+}
+.live-dot {
+  display:       inline-block;
+  width:         6px;
+  height:        6px;
+  background:    #ff3b30;
+  border-radius: 50%;
+  vertical-align: middle;
+  margin:        0 0.4em 0.1em;
+  box-shadow:    0 0 6px rgba(255,59,48,0.7);
+  animation:     livePulse 1.4s ease-in-out infinite;
+}
+@keyframes livePulse {
+  0%, 100% { opacity: 1;   transform: scale(1);   }
+  50%      { opacity: 0.3; transform: scale(0.7); }
 }
 @keyframes marquee {
   from { transform: translateX(0); }

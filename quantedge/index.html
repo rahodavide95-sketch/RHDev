@@ -358,16 +358,15 @@ td{padding:7px 10px;vertical-align:middle;}
   <span id="pbar-count" style="white-space:nowrap;flex-shrink:0;"></span>
 </div>
 
-<!-- INDICI & ETF -->
+<!-- ETF -->
 <div class="section">
   <div class="sec-head">
-    <span class="sec-label">Indici & ETF</span>
+    <span class="sec-label">ETF</span>
   </div>
   <div class="grid">
-    <div class="block"><div class="block-head">📈 USA — Indici</div><table><thead><tr><th>Mercato</th><th class="bar-cell"></th><th class="r">Score</th></tr></thead><tbody id="t-us-idx"></tbody></table></div>
-    <div class="block"><div class="block-head">🌍 ETF Globali</div><table><thead><tr><th>Mercato</th><th class="bar-cell"></th><th class="r">Score</th></tr></thead><tbody id="t-etf-glob"></tbody></table></div>
-    <div class="block"><div class="block-head">🏭 Settoriali USA</div><table><thead><tr><th>Settore</th><th class="bar-cell"></th><th class="r">Score</th></tr></thead><tbody id="t-settori"></tbody></table></div>
-    <div class="block"><div class="block-head">🏦 Obbligazionari</div><table><thead><tr><th>Fondo</th><th class="bar-cell"></th><th class="r">Score</th></tr></thead><tbody id="t-bond"></tbody></table></div>
+    <div class="block"><div class="block-head">ETF Globali</div><table><thead><tr><th>Fondo</th><th class="bar-cell"></th><th class="r">Score</th></tr></thead><tbody id="t-etf-glob"></tbody></table></div>
+    <div class="block"><div class="block-head">Settoriali USA</div><table><thead><tr><th>Settore</th><th class="bar-cell"></th><th class="r">Score</th></tr></thead><tbody id="t-settori"></tbody></table></div>
+    <div class="block"><div class="block-head">Obbligazionari</div><table><thead><tr><th>Fondo</th><th class="bar-cell"></th><th class="r">Score</th></tr></thead><tbody id="t-bond"></tbody></table></div>
   </div>
 </div>
 
@@ -375,51 +374,10 @@ td{padding:7px 10px;vertical-align:middle;}
 <div class="section">
   <div class="sec-head"><span class="sec-label">Azioni Large Cap</span></div>
   <div class="grid">
-    <div class="block"><div class="block-head">💻 Big Tech USA</div><table><thead><tr><th>Azienda</th><th class="bar-cell"></th><th class="r">Score</th></tr></thead><tbody id="t-bigtech"></tbody></table></div>
-    <div class="block"><div class="block-head">🏦 Finanza & Banche</div><table><thead><tr><th>Azienda</th><th class="bar-cell"></th><th class="r">Score</th></tr></thead><tbody id="t-finance"></tbody></table></div>
-    <div class="block"><div class="block-head">🏥 Sanità & Pharma</div><table><thead><tr><th>Azienda</th><th class="bar-cell"></th><th class="r">Score</th></tr></thead><tbody id="t-health"></tbody></table></div>
-    <div class="block"><div class="block-head">⚡ Energia & Commodities</div><table><thead><tr><th>Azienda</th><th class="bar-cell"></th><th class="r">Score</th></tr></thead><tbody id="t-energia"></tbody></table></div>
-  </div>
-</div>
-
-<!-- CRYPTO -->
-<div class="section">
-  <div class="sec-head"><span class="sec-label">Crypto</span></div>
-  <div class="grid">
-    <div class="block"><div class="block-head">₿ Large Cap</div><table><thead><tr><th>Asset</th><th class="bar-cell"></th><th class="r">Score</th></tr></thead><tbody id="t-cry-lg"></tbody></table></div>
-    <div class="block"><div class="block-head">🔷 Mid Cap</div><table><thead><tr><th>Asset</th><th class="bar-cell"></th><th class="r">Score</th></tr></thead><tbody id="t-cry-mid"></tbody></table></div>
-    <div class="block"><div class="block-head">📊 ETF Crypto USA</div><table><thead><tr><th>Fondo</th><th class="bar-cell"></th><th class="r">Score</th></tr></thead><tbody id="t-cry-etf"></tbody></table></div>
-  </div>
-</div>
-
-<!-- FOREX & COMMODITIES -->
-<div class="section">
-  <div class="sec-head"><span class="sec-label">Forex & Materie Prime</span></div>
-  <div class="grid">
-    <div class="block"><div class="block-head">💱 Valute Maggiori</div><table><thead><tr><th>Coppia</th><th class="bar-cell"></th><th class="r">Score</th></tr></thead><tbody id="t-forex"></tbody></table></div>
-    <div class="block"><div class="block-head">🥇 Metalli & Energia</div><table><thead><tr><th>Commodity</th><th class="bar-cell"></th><th class="r">Score</th></tr></thead><tbody id="t-metalli"></tbody></table></div>
-    <div class="block"><div class="block-head">🌾 Soft Commodities</div><table><thead><tr><th>Commodity</th><th class="bar-cell"></th><th class="r">Score</th></tr></thead><tbody id="t-soft"></tbody></table></div>
-  </div>
-</div>
-
-<!-- PER NAZIONE -->
-<div class="section">
-  <div class="sec-head"><span class="sec-label">Per Paese</span></div>
-  <div class="grid-wide">
-    <div class="block"><div class="block-head">🇺🇸 Stati Uniti</div><table><thead><tr><th>Strumento</th><th class="bar-cell"></th><th class="r">Score</th></tr></thead><tbody id="t-n-usa"></tbody></table></div>
-    <div class="block"><div class="block-head">🇪🇺 Europa</div><table><thead><tr><th>Strumento</th><th class="bar-cell"></th><th class="r">Score</th></tr></thead><tbody id="t-n-eu"></tbody></table></div>
-    <div class="block"><div class="block-head">🇩🇪 Germania</div><table><thead><tr><th>Strumento</th><th class="bar-cell"></th><th class="r">Score</th></tr></thead><tbody id="t-n-de"></tbody></table></div>
-    <div class="block"><div class="block-head">🇮🇹 Italia</div><table><thead><tr><th>Strumento</th><th class="bar-cell"></th><th class="r">Score</th></tr></thead><tbody id="t-n-it"></tbody></table></div>
-    <div class="block"><div class="block-head">🇬🇧 Regno Unito</div><table><thead><tr><th>Strumento</th><th class="bar-cell"></th><th class="r">Score</th></tr></thead><tbody id="t-n-uk"></tbody></table></div>
-    <div class="block"><div class="block-head">🇯🇵 Giappone</div><table><thead><tr><th>Strumento</th><th class="bar-cell"></th><th class="r">Score</th></tr></thead><tbody id="t-n-jp"></tbody></table></div>
-    <div class="block"><div class="block-head">🇨🇳 Cina</div><table><thead><tr><th>Strumento</th><th class="bar-cell"></th><th class="r">Score</th></tr></thead><tbody id="t-n-cn"></tbody></table></div>
-    <div class="block"><div class="block-head">🇮🇳 India</div><table><thead><tr><th>Strumento</th><th class="bar-cell"></th><th class="r">Score</th></tr></thead><tbody id="t-n-in"></tbody></table></div>
-    <div class="block"><div class="block-head">🇧🇷 Brasile</div><table><thead><tr><th>Strumento</th><th class="bar-cell"></th><th class="r">Score</th></tr></thead><tbody id="t-n-br"></tbody></table></div>
-    <div class="block"><div class="block-head">🇰🇷 Corea del Sud</div><table><thead><tr><th>Strumento</th><th class="bar-cell"></th><th class="r">Score</th></tr></thead><tbody id="t-n-kr"></tbody></table></div>
-    <div class="block"><div class="block-head">🇨🇭 Svizzera</div><table><thead><tr><th>Strumento</th><th class="bar-cell"></th><th class="r">Score</th></tr></thead><tbody id="t-n-ch"></tbody></table></div>
-    <div class="block"><div class="block-head">🇸🇦 Arabia & Golfo</div><table><thead><tr><th>Strumento</th><th class="bar-cell"></th><th class="r">Score</th></tr></thead><tbody id="t-n-sa"></tbody></table></div>
-    <div class="block"><div class="block-head">🇦🇺 Australia</div><table><thead><tr><th>Strumento</th><th class="bar-cell"></th><th class="r">Score</th></tr></thead><tbody id="t-n-au"></tbody></table></div>
-    <div class="block"><div class="block-head">🌍 Africa & Frontiera</div><table><thead><tr><th>Strumento</th><th class="bar-cell"></th><th class="r">Score</th></tr></thead><tbody id="t-n-af"></tbody></table></div>
+    <div class="block"><div class="block-head">Big Tech USA</div><table><thead><tr><th>Azienda</th><th class="bar-cell"></th><th class="r">Score</th></tr></thead><tbody id="t-bigtech"></tbody></table></div>
+    <div class="block"><div class="block-head">Finanza & Banche</div><table><thead><tr><th>Azienda</th><th class="bar-cell"></th><th class="r">Score</th></tr></thead><tbody id="t-finance"></tbody></table></div>
+    <div class="block"><div class="block-head">Sanità & Pharma</div><table><thead><tr><th>Azienda</th><th class="bar-cell"></th><th class="r">Score</th></tr></thead><tbody id="t-health"></tbody></table></div>
+    <div class="block"><div class="block-head">Energia & Industria</div><table><thead><tr><th>Azienda</th><th class="bar-cell"></th><th class="r">Score</th></tr></thead><tbody id="t-energia"></tbody></table></div>
   </div>
 </div>
 
@@ -845,34 +803,13 @@ async function analyze(){
 
 // ── PANORAMICA ──
 const PANO = {
-  't-us-idx':  [['SPY','S&P 500'],['QQQ','Nasdaq 100'],['DIA','Dow Jones'],['IWM','Russell 2000'],['VTI','Mercato USA']],
   't-etf-glob':[['VT','Azionario Mondiale'],['VXUS','Ex-USA'],['EEM','Mercati Emergenti'],['IEMG','Emergenti Core'],['VEA','Paesi Sviluppati']],
   't-settori': [['XLK','Tecnologia'],['XLF','Finanza'],['XLE','Energia'],['XLV','Sanità'],['XLI','Industria'],['XLU','Utilities']],
   't-bond':    [['TLT','Treasury 20+ anni'],['IEF','Treasury 7-10 anni'],['SHY','Treasury 1-3 anni'],['HYG','High Yield'],['AGG','Aggregato']],
   't-bigtech': [['AAPL','Apple'],['MSFT','Microsoft'],['NVDA','Nvidia'],['GOOGL','Alphabet'],['AMZN','Amazon'],['META','Meta'],['TSLA','Tesla']],
   't-finance': [['JPM','JPMorgan'],['BAC','Bank of America'],['GS','Goldman Sachs'],['BRK-B','Berkshire'],['V','Visa']],
   't-health':  [['JNJ','Johnson & Johnson'],['LLY','Eli Lilly'],['NVO','Novo Nordisk'],['PFE','Pfizer'],['ABBV','AbbVie']],
-  't-energia': [['XOM','ExxonMobil'],['CVX','Chevron'],['RIO','Rio Tinto'],['NEE','NextEra'],['FCX','Freeport']],
-  't-cry-lg':  [['BTC-USD','Bitcoin'],['ETH-USD','Ethereum'],['BNB-USD','BNB'],['SOL-USD','Solana'],['XRP-USD','XRP']],
-  't-cry-mid': [['ADA-USD','Cardano'],['AVAX-USD','Avalanche'],['DOT-USD','Polkadot'],['LINK-USD','Chainlink'],['MATIC-USD','Polygon']],
-  't-cry-etf': [['IBIT','BlackRock BTC ETF'],['FBTC','Fidelity BTC ETF'],['ETHA','BlackRock ETH ETF'],['BITB','Bitwise BTC ETF']],
-  't-forex':   [['EURUSD=X','EUR/USD'],['GBPUSD=X','GBP/USD'],['USDJPY=X','USD/JPY'],['USDCHF=X','USD/CHF'],['AUDUSD=X','AUD/USD']],
-  't-metalli': [['GC=F','Oro'],['SI=F','Argento'],['CL=F','WTI Crude'],['BZ=F','Brent'],['NG=F','Gas Naturale'],['HG=F','Rame']],
-  't-soft':    [['ZW=F','Grano'],['ZC=F','Mais'],['ZS=F','Soia'],['CC=F','Cacao'],['KC=F','Caffè']],
-  't-n-usa':   [['SPY','S&P 500'],['QQQ','Nasdaq 100'],['VTI','Total Market'],['IWM','Small Cap']],
-  't-n-eu':    [['VGK','Europa ETF'],['EZU','Eurozona'],['FEZ','Euro Stoxx 50'],['HEZU','EUR hedgiato']],
-  't-n-de':    [['EWG','Germania ETF'],['SAP','SAP SE'],['SIEGY','Siemens'],['BAYRY','Bayer']],
-  't-n-it':    [['EWI','Italia ETF'],['ENI','ENI'],['STMEF','STMicro'],['LUX','Luxottica']],
-  't-n-uk':    [['EWU','UK ETF'],['HSBC','HSBC'],['BP','BP'],['GSK','GSK']],
-  't-n-jp':    [['EWJ','Giappone ETF'],['DXJ','Japan hedgiato'],['TM','Toyota'],['SONY','Sony']],
-  't-n-cn':    [['FXI','Cina Large Cap'],['MCHI','MSCI China'],['BABA','Alibaba'],['JD','JD.com']],
-  't-n-in':    [['INDA','India ETF'],['PIN','India Portfolio'],['INFY','Infosys'],['HDB','HDFC Bank']],
-  't-n-br':    [['EWZ','Brasile ETF'],['VALE','Vale'],['PBR','Petrobras']],
-  't-n-kr':    [['EWY','Corea ETF'],['SKM','SK Telecom']],
-  't-n-ch':    [['EWL','Svizzera ETF'],['NVS','Novartis'],['ROG','Roche']],
-  't-n-sa':    [['KSA','Arabia Saudita ETF'],['UAE','Emirati ETF'],['GULF','GCC ETF']],
-  't-n-au':    [['EWA','Australia ETF'],['BHP','BHP'],['RIO','Rio Tinto']],
-  't-n-af':    [['EZA','Sudafrica ETF'],['AFK','Africa ETF'],['FM','Frontiera']],
+  't-energia': [['XOM','ExxonMobil'],['CVX','Chevron'],['NEE','NextEra Energy'],['FCX','Freeport-McMoRan'],['CAT','Caterpillar']],
 };
 
 const CK='qe5_', TTL=3600000;

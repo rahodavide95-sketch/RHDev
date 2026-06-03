@@ -162,6 +162,222 @@
 
   .ticker-chip:hover { border-color: var(--accent); color: var(--accent); }
 
+  /* ── MARKET BROWSER ────────────────────────────────────────────── */
+  .browser-section {
+    margin-bottom: 40px;
+  }
+
+  .browser-section-title {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .browser-section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .category-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .cat-block {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+    transition: border-color 0.2s;
+  }
+
+  .cat-block:hover { border-color: var(--accent); }
+
+  .cat-label {
+    font-family: var(--mono);
+    font-size: 0.58rem;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .cat-label .cat-icon { font-size: 0.85rem; }
+
+  .cat-tickers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  /* PANORAMICA LIVE — tabelle score */
+  .score-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+  }
+
+  .score-table thead tr {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .score-table thead th {
+    font-size: 0.55rem;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0 8px 8px 8px;
+    text-align: left;
+    font-weight: 400;
+  }
+
+  .score-table thead th:last-child { text-align: right; }
+
+  .score-table tbody tr {
+    border-bottom: 1px solid rgba(30,42,54,0.5);
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+
+  .score-table tbody tr:last-child { border-bottom: none; }
+  .score-table tbody tr:hover { background: rgba(0,229,255,0.04); }
+
+  .score-table td {
+    padding: 7px 8px;
+    vertical-align: middle;
+  }
+
+  .st-ticker {
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: var(--text);
+    white-space: nowrap;
+  }
+
+  .st-name {
+    font-size: 0.58rem;
+    color: var(--muted);
+    margin-top: 1px;
+  }
+
+  .st-bar-wrap {
+    width: 100%;
+    min-width: 80px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .st-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.6s ease;
+  }
+
+  .st-score {
+    font-weight: 700;
+    font-size: 0.82rem;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .st-signal {
+    font-size: 0.6rem;
+    text-align: right;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  /* Skeleton loading shimmer */
+  @keyframes shimmer {
+    0% { background-position: -200px 0; }
+    100% { background-position: 200px 0; }
+  }
+
+  .st-skeleton {
+    display: inline-block;
+    height: 10px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--border) 25%, #1e3040 50%, var(--border) 75%);
+    background-size: 400px 100%;
+    animation: shimmer 1.4s infinite linear;
+  }
+
+  /* Panoramica progress bar in alto */
+  .panoramica-bar {
+    display: none;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    color: var(--muted);
+  }
+
+  .panoramica-bar.visible { display: flex; }
+
+  .pano-progress {
+    flex: 1;
+    height: 2px;
+    background: var(--border);
+    border-radius: 1px;
+    overflow: hidden;
+  }
+
+  .pano-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 1px;
+    transition: width 0.3s ease;
+    width: 0%;
+  }
+
+  /* NAZIONI */
+  .nations-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 12px;
+  }
+
+  .nation-block {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+    transition: border-color 0.2s;
+  }
+
+  .nation-block:hover { border-color: rgba(255,107,53,0.6); }
+
+  .nation-label {
+    font-family: var(--mono);
+    font-size: 0.58rem;
+    color: var(--accent2);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .nation-flag { font-size: 1rem; }
+
   /* LOADING */
   .loading-bar {
     display: none;
@@ -526,6 +742,236 @@
     <div class="error-msg" id="error-msg"></div>
   </div>
 
+  <!-- ══ PANORAMICA LIVE ══════════════════════════════════════════════ -->
+
+  <div class="panoramica-bar visible" id="pano-bar">
+    <span id="pano-status">Carico panoramica...</span>
+    <div class="pano-progress"><div class="pano-fill" id="pano-fill"></div></div>
+    <span id="pano-count">0 / 0</span>
+  </div>
+
+  <!-- INDICI & ETF -->
+  <div class="browser-section">
+    <div class="browser-section-title">// Indici & ETF di mercato</div>
+    <div class="category-grid">
+
+      <div class="cat-block">
+        <div class="cat-label"><span class="cat-icon">📈</span> USA — Indici</div>
+        <table class="score-table">
+          <thead><tr><th>Ticker</th><th style="width:35%">Edge</th><th>Score</th></tr></thead>
+          <tbody id="tbl-us-indici"></tbody>
+        </table>
+      </div>
+
+      <div class="cat-block">
+        <div class="cat-label"><span class="cat-icon">🌍</span> ETF Globali</div>
+        <table class="score-table">
+          <thead><tr><th>Ticker</th><th style="width:35%">Edge</th><th>Score</th></tr></thead>
+          <tbody id="tbl-etf-globali"></tbody>
+        </table>
+      </div>
+
+      <div class="cat-block">
+        <div class="cat-label"><span class="cat-icon">🏭</span> Settoriali USA</div>
+        <table class="score-table">
+          <thead><tr><th>Ticker</th><th style="width:35%">Edge</th><th>Score</th></tr></thead>
+          <tbody id="tbl-settoriali"></tbody>
+        </table>
+      </div>
+
+      <div class="cat-block">
+        <div class="cat-label"><span class="cat-icon">🏦</span> Obbligazionari</div>
+        <table class="score-table">
+          <thead><tr><th>Ticker</th><th style="width:35%">Edge</th><th>Score</th></tr></thead>
+          <tbody id="tbl-bond"></tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- AZIONI -->
+  <div class="browser-section">
+    <div class="browser-section-title">// Azioni — Large Cap</div>
+    <div class="category-grid">
+
+      <div class="cat-block">
+        <div class="cat-label"><span class="cat-icon">💻</span> Big Tech USA</div>
+        <table class="score-table">
+          <thead><tr><th>Ticker</th><th style="width:35%">Edge</th><th>Score</th></tr></thead>
+          <tbody id="tbl-bigtech"></tbody>
+        </table>
+      </div>
+
+      <div class="cat-block">
+        <div class="cat-label"><span class="cat-icon">🏦</span> Finance & Banking</div>
+        <table class="score-table">
+          <thead><tr><th>Ticker</th><th style="width:35%">Edge</th><th>Score</th></tr></thead>
+          <tbody id="tbl-finance"></tbody>
+        </table>
+      </div>
+
+      <div class="cat-block">
+        <div class="cat-label"><span class="cat-icon">🏥</span> Healthcare & Pharma</div>
+        <table class="score-table">
+          <thead><tr><th>Ticker</th><th style="width:35%">Edge</th><th>Score</th></tr></thead>
+          <tbody id="tbl-health"></tbody>
+        </table>
+      </div>
+
+      <div class="cat-block">
+        <div class="cat-label"><span class="cat-icon">⚡</span> Energia & Materie Prime</div>
+        <table class="score-table">
+          <thead><tr><th>Ticker</th><th style="width:35%">Edge</th><th>Score</th></tr></thead>
+          <tbody id="tbl-energia"></tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- CRYPTO -->
+  <div class="browser-section">
+    <div class="browser-section-title">// Crypto</div>
+    <div class="category-grid">
+
+      <div class="cat-block">
+        <div class="cat-label"><span class="cat-icon">₿</span> Large Cap</div>
+        <table class="score-table">
+          <thead><tr><th>Ticker</th><th style="width:35%">Edge</th><th>Score</th></tr></thead>
+          <tbody id="tbl-crypto-large"></tbody>
+        </table>
+      </div>
+
+      <div class="cat-block">
+        <div class="cat-label"><span class="cat-icon">🔷</span> Mid Cap</div>
+        <table class="score-table">
+          <thead><tr><th>Ticker</th><th style="width:35%">Edge</th><th>Score</th></tr></thead>
+          <tbody id="tbl-crypto-mid"></tbody>
+        </table>
+      </div>
+
+      <div class="cat-block">
+        <div class="cat-label"><span class="cat-icon">📊</span> ETF Crypto USA</div>
+        <table class="score-table">
+          <thead><tr><th>Ticker</th><th style="width:35%">Edge</th><th>Score</th></tr></thead>
+          <tbody id="tbl-crypto-etf"></tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- FOREX & MATERIE PRIME -->
+  <div class="browser-section">
+    <div class="browser-section-title">// Forex & Materie Prime</div>
+    <div class="category-grid">
+
+      <div class="cat-block">
+        <div class="cat-label"><span class="cat-icon">💱</span> Forex — Maggiori</div>
+        <table class="score-table">
+          <thead><tr><th>Ticker</th><th style="width:35%">Edge</th><th>Score</th></tr></thead>
+          <tbody id="tbl-forex"></tbody>
+        </table>
+      </div>
+
+      <div class="cat-block">
+        <div class="cat-label"><span class="cat-icon">🥇</span> Metalli & Energia</div>
+        <table class="score-table">
+          <thead><tr><th>Ticker</th><th style="width:35%">Edge</th><th>Score</th></tr></thead>
+          <tbody id="tbl-metalli"></tbody>
+        </table>
+      </div>
+
+      <div class="cat-block">
+        <div class="cat-label"><span class="cat-icon">🌾</span> Soft Commodities</div>
+        <table class="score-table">
+          <thead><tr><th>Ticker</th><th style="width:35%">Edge</th><th>Score</th></tr></thead>
+          <tbody id="tbl-soft"></tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- PER NAZIONE -->
+  <div class="browser-section">
+    <div class="browser-section-title">// Per Nazione — Vantaggio geografico</div>
+    <div class="nations-grid">
+
+      <div class="nation-block">
+        <div class="nation-label"><span class="nation-flag">🇺🇸</span> Stati Uniti</div>
+        <table class="score-table"><thead><tr><th>Ticker</th><th style="width:35%">Edge</th><th>Score</th></tr></thead><tbody id="tbl-n-usa"></tbody></table>
+      </div>
+
+      <div class="nation-block">
+        <div class="nation-label"><span class="nation-flag">🇪🇺</span> Europa</div>
+        <table class="score-table"><thead><tr><th>Ticker</th><th style="width:35%">Edge</th><th>Score</th></tr></thead><tbody id="tbl-n-eu"></tbody></table>
+      </div>
+
+      <div class="nation-block">
+        <div class="nation-label"><span class="nation-flag">🇩🇪</span> Germania</div>
+        <table class="score-table"><thead><tr><th>Ticker</th><th style="width:35%">Edge</th><th>Score</th></tr></thead><tbody id="tbl-n-de"></tbody></table>
+      </div>
+
+      <div class="nation-block">
+        <div class="nation-label"><span class="nation-flag">🇮🇹</span> Italia</div>
+        <table class="score-table"><thead><tr><th>Ticker</th><th style="width:35%">Edge</th><th>Score</th></tr></thead><tbody id="tbl-n-it"></tbody></table>
+      </div>
+
+      <div class="nation-block">
+        <div class="nation-label"><span class="nation-flag">🇬🇧</span> Regno Unito</div>
+        <table class="score-table"><thead><tr><th>Ticker</th><th style="width:35%">Edge</th><th>Score</th></tr></thead><tbody id="tbl-n-uk"></tbody></table>
+      </div>
+
+      <div class="nation-block">
+        <div class="nation-label"><span class="nation-flag">🇯🇵</span> Giappone</div>
+        <table class="score-table"><thead><tr><th>Ticker</th><th style="width:35%">Edge</th><th>Score</th></tr></thead><tbody id="tbl-n-jp"></tbody></table>
+      </div>
+
+      <div class="nation-block">
+        <div class="nation-label"><span class="nation-flag">🇨🇳</span> Cina</div>
+        <table class="score-table"><thead><tr><th>Ticker</th><th style="width:35%">Edge</th><th>Score</th></tr></thead><tbody id="tbl-n-cn"></tbody></table>
+      </div>
+
+      <div class="nation-block">
+        <div class="nation-label"><span class="nation-flag">🇮🇳</span> India</div>
+        <table class="score-table"><thead><tr><th>Ticker</th><th style="width:35%">Edge</th><th>Score</th></tr></thead><tbody id="tbl-n-in"></tbody></table>
+      </div>
+
+      <div class="nation-block">
+        <div class="nation-label"><span class="nation-flag">🇧🇷</span> Brasile</div>
+        <table class="score-table"><thead><tr><th>Ticker</th><th style="width:35%">Edge</th><th>Score</th></tr></thead><tbody id="tbl-n-br"></tbody></table>
+      </div>
+
+      <div class="nation-block">
+        <div class="nation-label"><span class="nation-flag">🇰🇷</span> Corea del Sud</div>
+        <table class="score-table"><thead><tr><th>Ticker</th><th style="width:35%">Edge</th><th>Score</th></tr></thead><tbody id="tbl-n-kr"></tbody></table>
+      </div>
+
+      <div class="nation-block">
+        <div class="nation-label"><span class="nation-flag">🇨🇭</span> Svizzera</div>
+        <table class="score-table"><thead><tr><th>Ticker</th><th style="width:35%">Edge</th><th>Score</th></tr></thead><tbody id="tbl-n-ch"></tbody></table>
+      </div>
+
+      <div class="nation-block">
+        <div class="nation-label"><span class="nation-flag">🇸🇦</span> Arabia & Golfo</div>
+        <table class="score-table"><thead><tr><th>Ticker</th><th style="width:35%">Edge</th><th>Score</th></tr></thead><tbody id="tbl-n-sa"></tbody></table>
+      </div>
+
+      <div class="nation-block">
+        <div class="nation-label"><span class="nation-flag">🇦🇺</span> Australia</div>
+        <table class="score-table"><thead><tr><th>Ticker</th><th style="width:35%">Edge</th><th>Score</th></tr></thead><tbody id="tbl-n-au"></tbody></table>
+      </div>
+
+      <div class="nation-block">
+        <div class="nation-label"><span class="nation-flag">🌍</span> Africa & Frontiera</div>
+        <table class="score-table"><thead><tr><th>Ticker</th><th style="width:35%">Edge</th><th>Score</th></tr></thead><tbody id="tbl-n-af"></tbody></table>
+      </div>
+
+    </div>
+  </div>
+
   <!-- RESULTS -->
   <div id="results">
 
@@ -688,6 +1134,12 @@ Chart.defaults.font.size = 10;
 function setTicker(t) {
   document.getElementById('ticker-input').value = t;
   document.getElementById('ticker-input').focus();
+}
+
+function setAndAnalyze(t) {
+  document.getElementById('ticker-input').value = t;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  setTimeout(() => analyze(), 300);
 }
 
 function setLoading(active) {
@@ -1136,6 +1588,188 @@ function drawCharts(seasonality, distribution, winRates, timestamps, closes) {
   });
 }
 
+// ─── PANORAMICA LIVE ──────────────────────────────────────────────────
+
+const PANORAMICA = {
+  'tbl-us-indici':    [['SPY','S&P 500'],['QQQ','Nasdaq 100'],['DIA','Dow Jones'],['IWM','Russell 2000'],['VTI','Total Market']],
+  'tbl-etf-globali':  [['VT','World All-Cap'],['VXUS','Ex-USA'],['EEM','Emergenti'],['IEMG','Emerg. Core'],['VEA','Developed Ex-US']],
+  'tbl-settoriali':   [['XLK','Tech'],['XLF','Finance'],['XLE','Energy'],['XLV','Healthcare'],['XLI','Industrials'],['XLU','Utilities']],
+  'tbl-bond':         [['TLT','T-Bond 20a+'],['IEF','T-Note 7-10a'],['SHY','T-Bill 1-3a'],['HYG','High Yield'],['AGG','Aggregate']],
+  'tbl-bigtech':      [['AAPL','Apple'],['MSFT','Microsoft'],['NVDA','Nvidia'],['GOOGL','Alphabet'],['AMZN','Amazon'],['META','Meta'],['TSLA','Tesla']],
+  'tbl-finance':      [['JPM','JPMorgan'],['BAC','Bank of America'],['GS','Goldman Sachs'],['BRK-B','Berkshire'],['V','Visa']],
+  'tbl-health':       [['JNJ','J&Johnson'],['LLY','Eli Lilly'],['NVO','Novo Nordisk'],['PFE','Pfizer'],['ABBV','AbbVie']],
+  'tbl-energia':      [['XOM','ExxonMobil'],['CVX','Chevron'],['RIO','Rio Tinto'],['NEE','NextEra'],['FCX','Freeport']],
+  'tbl-crypto-large': [['BTC-USD','Bitcoin'],['ETH-USD','Ethereum'],['BNB-USD','Binance'],['SOL-USD','Solana'],['XRP-USD','Ripple']],
+  'tbl-crypto-mid':   [['ADA-USD','Cardano'],['AVAX-USD','Avalanche'],['DOT-USD','Polkadot'],['LINK-USD','Chainlink'],['MATIC-USD','Polygon']],
+  'tbl-crypto-etf':   [['IBIT','BlackRock BTC'],['FBTC','Fidelity BTC'],['ETHA','BlackRock ETH'],['BITB','Bitwise BTC']],
+  'tbl-forex':        [['EURUSD=X','EUR/USD'],['GBPUSD=X','GBP/USD'],['USDJPY=X','USD/JPY'],['USDCHF=X','USD/CHF'],['AUDUSD=X','AUD/USD']],
+  'tbl-metalli':      [['GC=F','Oro'],['SI=F','Argento'],['CL=F','WTI Crude'],['BZ=F','Brent'],['NG=F','Natural Gas'],['HG=F','Rame']],
+  'tbl-soft':         [['ZW=F','Grano'],['ZC=F','Mais'],['ZS=F','Soia'],['CC=F','Cacao'],['KC=F','Caffè']],
+  // Nazioni
+  'tbl-n-usa': [['SPY','S&P 500'],['QQQ','Nasdaq'],['VTI','Total Market'],['IWM','Small Cap']],
+  'tbl-n-eu':  [['VGK','Europa ETF'],['EZU','Eurozona'],['FEZ','EURO STOXX 50'],['HEZU','EUR hdg']],
+  'tbl-n-de':  [['EWG','iShares Germany'],['SAP','SAP SE'],['SIEGY','Siemens ADR'],['BAYRY','Bayer ADR']],
+  'tbl-n-it':  [['EWI','iShares Italy'],['ENI','ENI ADR'],['STMEF','STMicro'],['LUX','Luxottica']],
+  'tbl-n-uk':  [['EWU','iShares UK'],['HSBC','HSBC'],['BP','BP ADR'],['GSK','GSK']],
+  'tbl-n-jp':  [['EWJ','iShares Japan'],['DXJ','Japan Hdg'],['TM','Toyota ADR'],['SONY','Sony ADR']],
+  'tbl-n-cn':  [['FXI','Large Cap China'],['MCHI','MSCI China'],['BABA','Alibaba'],['JD','JD.com']],
+  'tbl-n-in':  [['INDA','iShares India'],['PIN','India Portfolio'],['INFY','Infosys ADR'],['HDB','HDFC Bank']],
+  'tbl-n-br':  [['EWZ','iShares Brazil'],['VALE','Vale ADR'],['PBR','Petrobras ADR']],
+  'tbl-n-kr':  [['EWY','iShares Korea'],['SKM','SK Telecom']],
+  'tbl-n-ch':  [['EWL','iShares Swiss'],['NVS','Novartis ADR'],['ROG','Roche ADR']],
+  'tbl-n-sa':  [['KSA','iShares Saudi'],['UAE','iShares UAE'],['GULF','GCC ETF']],
+  'tbl-n-au':  [['EWA','iShares AUS'],['BHP','BHP ADR'],['RIO','Rio Tinto']],
+  'tbl-n-af':  [['EZA','South Africa'],['AFK','Africa ETF'],['FM','Frontier Mkts']],
+};
+
+function scoreColor(s) {
+  if (s >= 65) return '#00ff88';
+  if (s >= 55) return '#7fffb0';
+  if (s >= 45) return '#ffd700';
+  if (s >= 35) return '#ff9955';
+  return '#ff3d5a';
+}
+
+function scoreLabel(s) {
+  if (s >= 65) return '▲ FORTE';
+  if (s >= 55) return '▲ POS';
+  if (s >= 45) return '→ NEU';
+  if (s >= 35) return '▼ NEG';
+  return '▼ DEBOLE';
+}
+
+function renderSkeletonRows(tbodyId, count) {
+  const tbody = document.getElementById(tbodyId);
+  if (!tbody) return;
+  tbody.innerHTML = Array.from({length: count}, () => `
+    <tr>
+      <td><span class="st-skeleton" style="width:40px"></span></td>
+      <td><div class="st-bar-wrap"><div class="st-bar-fill" style="width:0%;background:var(--border)"></div></div></td>
+      <td style="text-align:right"><span class="st-skeleton" style="width:28px"></span></td>
+    </tr>`).join('');
+}
+
+function renderRow(tbodyId, ticker, name, score) {
+  const tbody = document.getElementById(tbodyId);
+  if (!tbody) return;
+  const color = scoreColor(score);
+  const label = scoreLabel(score);
+  const tr = document.createElement('tr');
+  tr.onclick = () => setAndAnalyze(ticker);
+  tr.innerHTML = `
+    <td>
+      <div class="st-ticker">${ticker}</div>
+      <div class="st-name">${name}</div>
+    </td>
+    <td>
+      <div class="st-bar-wrap">
+        <div class="st-bar-fill" style="width:${score}%;background:${color}"></div>
+      </div>
+    </td>
+    <td>
+      <div class="st-score" style="color:${color}">${score}</div>
+      <div class="st-signal" style="color:${color}">${label}</div>
+    </td>`;
+  // Replace the corresponding skeleton row if still there, otherwise append
+  const rows = tbody.querySelectorAll('tr');
+  const tickers = Object.values(PANORAMICA).flat().filter(([t]) => t === ticker);
+  // Find row index in this table
+  const tableEntries = Object.entries(PANORAMICA).find(([id]) => id === tbodyId);
+  if (tableEntries) {
+    const idx = tableEntries[1].findIndex(([t]) => t === ticker);
+    if (idx >= 0 && rows[idx]) {
+      tbody.replaceChild(tr, rows[idx]);
+      return;
+    }
+  }
+  tbody.appendChild(tr);
+}
+
+async function fetchScoreForTicker(ticker) {
+  try {
+    const result = await fetchYahoo(ticker, '2y', '1d');
+    const timestamps = result.timestamp;
+    const closes = result.indicators.quote[0].close;
+    const validPairs = timestamps.map((t, i) => ({ t, c: closes[i] }))
+      .filter(p => p.c !== null && p.c !== undefined && !isNaN(p.c));
+    if (validPairs.length < 50) return null;
+    const cl = validPairs.map(p => p.c);
+    const current = cl[cl.length - 1];
+    const rsi = calcRSI(cl);
+    const ma50 = calcMA(cl, 50);
+    const ma200 = calcMA(cl, 200);
+    const vol = calcVolatility(cl);
+    const mom = calcMomentum(cl);
+    const wr7 = calcWinRate(cl, 7);
+    const wr30 = calcWinRate(cl, 30);
+    const wr90 = calcWinRate(cl, 90);
+    return computeEdgeScore(rsi, ma50, ma200, vol, mom, wr7, wr30, wr90, current);
+  } catch {
+    return null;
+  }
+}
+
+async function loadPanoramica() {
+  // Build flat list of all (tbodyId, ticker, name)
+  const allItems = [];
+  for (const [tbodyId, entries] of Object.entries(PANORAMICA)) {
+    for (const [ticker, name] of entries) {
+      allItems.push({ tbodyId, ticker, name });
+    }
+    renderSkeletonRows(tbodyId, entries.length);
+  }
+
+  const total = allItems.length;
+  let done = 0;
+
+  const panoBar = document.getElementById('pano-bar');
+  const panoFill = document.getElementById('pano-fill');
+  const panoStatus = document.getElementById('pano-status');
+  const panoCount = document.getElementById('pano-count');
+  panoBar.classList.add('visible');
+  panoCount.textContent = `0 / ${total}`;
+
+  function updateProgress() {
+    done++;
+    const pct = Math.round((done / total) * 100);
+    panoFill.style.width = pct + '%';
+    panoCount.textContent = `${done} / ${total}`;
+    if (done >= total) {
+      panoStatus.textContent = 'Panoramica aggiornata ✓';
+      setTimeout(() => panoBar.classList.remove('visible'), 2500);
+    }
+  }
+
+  // Process in batches of 6 to avoid hammering the proxy
+  const BATCH = 6;
+  for (let i = 0; i < allItems.length; i += BATCH) {
+    const batch = allItems.slice(i, i + BATCH);
+    await Promise.all(batch.map(async ({ tbodyId, ticker, name }) => {
+      const score = await fetchScoreForTicker(ticker);
+      if (score !== null) {
+        renderRow(tbodyId, ticker, name, score);
+      } else {
+        // Mark as unavailable
+        const tbody = document.getElementById(tbodyId);
+        if (tbody) {
+          const tableEntries = PANORAMICA[tbodyId];
+          const idx = tableEntries ? tableEntries.findIndex(([t]) => t === ticker) : -1;
+          const rows = tbody.querySelectorAll('tr');
+          if (idx >= 0 && rows[idx]) {
+            rows[idx].innerHTML = `
+              <td><div class="st-ticker" style="color:var(--muted)">${ticker}</div><div class="st-name">${name}</div></td>
+              <td></td>
+              <td style="text-align:right;color:var(--muted);font-family:var(--mono);font-size:0.6rem">N/D</td>`;
+          }
+        }
+      }
+      updateProgress();
+    }));
+    // Small delay between batches to be gentle with the proxy
+    if (i + BATCH < allItems.length) await new Promise(r => setTimeout(r, 200));
+  }
+}
+
 // ─── MAIN ANALYZE ─────────────────────────────────────────────────────
 async function analyze() {
   const ticker = document.getElementById('ticker-input').value.trim().toUpperCase();
@@ -1260,6 +1894,10 @@ async function analyze() {
     setLoading(false);
   }
 }
+// ─── AVVIO ────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  loadPanoramica();
+});
 </script>
 </body>
 </html>

@@ -639,39 +639,63 @@ function buildMarquee() {
   const dot  = '<span class="live-dot"></span>';
   const sep  = ' &nbsp;—&nbsp; ';
   const items = [];
-
   const vis  = SITE.sections || {};
 
-  // Latest release (newest first — always shown)
   if (SITE.releases?.length) {
     const latest = [...SITE.releases]
       .sort((a, b) => parseReleaseDate(b.date || b.year) - parseReleaseDate(a.date || a.year))[0];
     if (latest) items.push(`New Release: ${esc(latest.artist)} &mdash; ${esc(latest.title)}`);
   }
-
-  // Latest event — only if section is enabled
   if (vis.events !== false && SITE.events?.length) {
-    const ev = SITE.events[0];
-    items.push(`Next Event: ${esc(ev.name)} &mdash; ${esc(ev.venue)}`);
+    items.push(`Next Event: ${esc(SITE.events[0].name)} &mdash; ${esc(SITE.events[0].venue)}`);
   }
-
-  // Latest podcast — only if section is enabled
   if (vis.podcast !== false && SITE.podcast?.length) {
-    const pod = SITE.podcast[0];
-    items.push(`New Podcast: ${esc(pod.title)}`);
+    items.push(`New Podcast: ${esc(SITE.podcast[0].title)}`);
   }
-
-  // Latest merch — only if section is enabled
   if (vis.merch !== false && SITE.merch?.length) {
-    const m = SITE.merch[0];
-    items.push(`New Merch: ${esc(m.name)}`);
+    items.push(`New Merch: ${esc(SITE.merch[0].name)}`);
   }
 
   if (!items.length) return;
 
-  const text = `${dot} SUBCONSCIOUS Culture NEWS! ${dot} ${items.join(sep)} &nbsp;&nbsp;`;
+  const text = `${dot} SUBCONSCIOUS Culture NEWS! ${dot} ${items.join(sep)}`;
 
-  document.querySelectorAll('.marquee-text').forEach(s => { s.innerHTML = text; });
+  const track = document.querySelector('.marquee-track');
+  if (!track) return;
+
+  // Reset to single template span, set content
+  const all  = [...track.querySelectorAll('.marquee-text')];
+  const tmpl = all[0];
+  if (!tmpl) return;
+  tmpl.innerHTML = text;
+  all.slice(1).forEach(s => s.remove());
+
+  // After layout: clone enough copies to fill 2.5× viewport, then animate
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const spanW  = tmpl.offsetWidth;
+      const needed = Math.max(2, Math.ceil((window.innerWidth * 2.5) / spanW));
+      for (let i = 1; i < needed; i++) {
+        track.appendChild(tmpl.cloneNode(true));
+      }
+
+      // Inject exact-pixel keyframe so loop is truly seamless with N copies
+      let ks = document.getElementById('mq-keyframes');
+      if (!ks) {
+        ks = document.createElement('style');
+        ks.id = 'mq-keyframes';
+        document.head.appendChild(ks);
+      }
+      ks.textContent = `@keyframes mq-scroll{from{transform:translateX(0)}to{transform:translateX(-${spanW}px)}}`;
+
+      // Speed: 70 px/s, minimum 20 s so text is readable
+      const dur = Math.max(spanW / 70, 20).toFixed(2);
+
+      track.style.animation = 'none';
+      void track.offsetHeight; // force reflow to restart
+      track.style.animation = `mq-scroll ${dur}s linear infinite, mq-fade ${dur}s linear infinite`;
+    });
+  });
 }
 
 /* ----------------------------------------------------------

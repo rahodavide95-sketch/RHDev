@@ -408,9 +408,9 @@ img.broken-hide                   { visibility: hidden; }
   mask-image:         linear-gradient(to right, transparent 0%, black 6%, black 94%, transparent 100%);
 }
 .marquee-track {
-  display:   flex;
-  width:     max-content;
-  animation: marquee 32s linear infinite;
+  display: flex;
+  width:   max-content;
+  /* animation injected by JS with exact px keyframe + mq-fade */
 }
 .marquee-text {
   font-family:    var(--f-body);
@@ -420,7 +420,7 @@ img.broken-hide                   { visibility: hidden; }
   text-transform: uppercase;
   color:          var(--fg);
   white-space:    nowrap;
-  padding:        0 3rem;
+  padding-right:  4rem;
 }
 .live-dot {
   display:       inline-block;
@@ -437,12 +437,15 @@ img.broken-hide                   { visibility: hidden; }
   0%, 100% { opacity: 1;   transform: scale(1);   }
   50%      { opacity: 0.3; transform: scale(0.7); }
 }
-@keyframes marquee {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
+/* mq-scroll keyframe injected by JS (exact px, varies with text length) */
+@keyframes mq-fade {
+  0%    { opacity: 0; }
+  6%    { opacity: 1; }
+  90%   { opacity: 1; }
+  100%  { opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .marquee-track { animation: none; }
+  .marquee-track { animation: none !important; }
 }
 
 

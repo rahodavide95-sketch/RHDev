@@ -673,15 +673,26 @@ async function fetchJSON(yahooUrl){
   throw new Error('Proxy non disponibile');
 }
 
-// ── BATCH QUOTE FETCH ──
-async function fetchQuotes(syms){
+// ── SPARK BATCH FETCH — multiple symbols in one request ──
+async function fetchSpark(syms,range='1y',interval='1d'){
   if(!syms||!syms.length) return {};
-  const fields='regularMarketPrice,fiftyDayAverage,twoHundredDayAverage,regularMarketChangePercent,fiftyTwoWeekHigh,fiftyTwoWeekLow,shortName,longName';
-  const url=`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${syms.map(encodeURIComponent).join(',')}&fields=${fields}&formatted=false`;
+  const url=`https://query1.finance.yahoo.com/v8/finance/spark?symbols=${syms.map(encodeURIComponent).join(',')}&range=${range}&interval=${interval}`;
   try{
     const data=await fetchJSON(url);
     const out={};
-    for(const q of(data?.quoteResponse?.result||[])) out[q.symbol]=q;
+    for(const item of(data?.spark?.result||[])){
+      const r=item?.response?.[0]; if(!r) continue;
+      const ts=r.timestamp||[];
+      const raw=r.indicators?.quote?.[0]?.close||[];
+      const cl=ts.map((_,i)=>raw[i]).filter(c=>c!=null&&!isNaN(c)&&c>0);
+      if(cl.length>=20) out[item.symbol]={
+        closes:cl,
+        price:r.meta?.regularMarketPrice||cl[cl.length-1],
+        prevClose:r.meta?.chartPreviousClose||cl[cl.length-2],
+        currency:r.meta?.currency||'',
+        timestamps:ts.filter((_,i)=>raw[i]!=null&&!isNaN(raw[i])&&raw[i]>0),
+      };
+    }
     return out;
   }catch{return {};}
 }
@@ -696,22 +707,13 @@ async function fetchChart(ticker,range='2y',interval='1d'){
   return res;
 }
 
-// ── SCORE FROM QUOTE ──
-function scoreFromQuote(q){
-  const price=q.regularMarketPrice;
-  if(!price) return null;
-  const ma50=q.fiftyDayAverage, ma200=q.twoHundredDayAverage;
-  const hi52=q.fiftyTwoWeekHigh, lo52=q.fiftyTwoWeekLow;
-  const ch=q.regularMarketChangePercent;
-  let s=50;
-  if(ma200){const p=(price-ma200)/ma200*100; s+=p>8?12:p>3?7:p>0?3:p>-3?-4:p>-8?-9:-13;}
-  if(ma50){const p=(price-ma50)/ma50*100; s+=p>4?7:p>1?4:p>-1?0:p>-4?-4:-8;}
-  if(hi52&&lo52&&hi52>lo52){
-    const pos=(price-lo52)/(hi52-lo52)*100;
-    s+=pos<15?10:pos<30?5:pos>92?-8:pos>78?-4:0;
-  }
-  if(ch!=null) s+=ch>3?4:ch>1?2:ch<-3?-4:ch<-1?-2:0;
-  return Math.max(0,Math.min(100,Math.round(s)));
+// ── SCORE FROM HISTORICAL CLOSES ──
+function scoreFromHistory(cl){
+  if(!cl||cl.length<30) return null;
+  const cur=cl[cl.length-1];
+  const R=rsi(cl), M50=ma(cl,50), M200=ma(cl,200), Mo=mom(cl);
+  const w7=wr(cl,7), w30=wr(cl,30), w90=wr(cl,Math.min(90,Math.floor(cl.length*.8)));
+  return edgeScore(R,M50,M200,null,Mo,w7,w30,w90,cur);
 }
 
 // ── MATH ──
@@ -878,17 +880,17 @@ const PULSE=['SPY','QQQ','VGK','EEM','TLT','GLD'];
 
 async function loadPulse(){
   try{
-    const quotes=await fetchQuotes(PULSE);
-    const ts=new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
-    document.getElementById('pulse-ts').textContent=`Aggiornato alle ${ts}`;
+    const sparkData=await fetchSpark(PULSE,'6mo','1d');
+    const tsStr=new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('pulse-ts').textContent=`Aggiornato alle ${tsStr}`;
     for(const sym of PULSE){
-      const q=quotes[sym]; if(!q)continue;
-      const score=scoreFromQuote(q);
-      const ch=q.regularMarketChangePercent;
+      const d=sparkData[sym]; if(!d)continue;
+      const score=scoreFromHistory(d.closes);
+      const chPct=d.prevClose?(d.price-d.prevClose)/d.prevClose*100:null;
       const chEl=document.getElementById(`pc-ch-${sym}`);
-      if(ch!=null){
-        chEl.textContent=(ch>=0?'+':'')+ch.toFixed(2)+'%';
-        chEl.className='pc-ch '+(ch>=0?'up':'dn');
+      if(chPct!=null){
+        chEl.textContent=(chPct>=0?'+':'')+chPct.toFixed(2)+'%';
+        chEl.className='pc-ch '+(chPct>=0?'up':'dn');
       }
       if(score!=null){
         const color=sc(score);
@@ -935,30 +937,25 @@ async function loadPanoramica(){
   const upd=()=>{fill.style.width=Math.round(done/total*100)+'%';cnt.textContent=`${done}/${total}`;};
   upd();
 
-  // batch 10 per request, 3 concurrent
-  const CHUNK=10,CONC=3;
+  // spark batch: 15 symbols per request, 2 concurrent → ~2 HTTP calls total
+  const CHUNK=15,CONC=2;
   const chunks=[];
   for(let i=0;i<toFetch.length;i+=CHUNK)chunks.push(toFetch.slice(i,i+CHUNK));
 
   for(let i=0;i<chunks.length;i+=CONC){
     const wave=chunks.slice(i,i+CONC);
-    const results=await Promise.all(wave.map(fetchQuotes));
-    for(const batch of results){
-      for(const[sym,q]of Object.entries(batch)){
-        const score=scoreFromQuote(q);
+    const results=await Promise.all(wave.map(syms=>fetchSpark(syms,'1y','1d')));
+    for(let wi=0;wi<wave.length;wi++){
+      const batch=results[wi], chunk=wave[wi];
+      for(const sym of chunk){
+        const d=batch[sym];
+        const score=d?scoreFromHistory(d.closes):null;
         scoreMap[sym]=score;
         if(score!=null)setCached(sym,score);
-      }
-      done+=Object.keys(batch).length;
-    }
-    // mark unfound
-    for(const chunk of wave){
-      for(const sym of chunk){
-        if(!(sym in scoreMap)){scoreMap[sym]=null;done++;}
+        done++;
       }
     }
     done=Math.min(done,total);upd();
-    // render
     for(const{id,ticker,name}of allItems){
       if(!(ticker in scoreMap))continue;
       if(scoreMap[ticker]!=null)renderRow(id,ticker,name,scoreMap[ticker]);

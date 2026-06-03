@@ -303,6 +303,38 @@ header{
 }
 .chart-wrap{position:relative;height:150px;}
 
+/* ── INFO BUTTON & TOOLTIP ── */
+.ind-label-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;}
+.wr-lbl-row{display:flex;align-items:center;justify-content:center;gap:5px;margin-bottom:6px;}
+.info-btn{
+  width:17px;height:17px;border-radius:50%;flex-shrink:0;
+  background:transparent;border:1px solid var(--t3);
+  color:var(--t3);font-size:.6rem;font-weight:700;font-family:inherit;
+  cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
+  transition:background .15s,color .15s,border-color .15s;line-height:1;
+}
+.info-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent);}
+
+/* Score badge info */
+.sig-score-row{display:flex;align-items:center;gap:8px;}
+
+/* Global tooltip */
+#g-tooltip{
+  position:fixed;z-index:1000;pointer-events:none;
+  background:var(--bg2);border:1px solid var(--b2);
+  border-radius:var(--radius);padding:16px 18px;
+  max-width:300px;min-width:220px;
+  box-shadow:0 12px 40px rgba(0,0,0,.6);
+  opacity:0;transform:translateY(4px);
+  transition:opacity .18s,transform .18s;
+}
+#g-tooltip.show{opacity:1;transform:translateY(0);}
+.tt-title{font-size:.8rem;font-weight:700;color:var(--text);margin-bottom:10px;line-height:1.3;}
+.tt-body{font-size:.78rem;color:var(--t2);line-height:1.7;}
+.tt-body b{color:var(--text);font-weight:600;}
+.tt-body .tt-row{display:flex;gap:8px;margin-top:6px;}
+.tt-body .tt-k{font-weight:600;color:var(--text);white-space:nowrap;}
+
 /* ── MISC ── */
 .footnote{
   text-align:center;font-size:.7rem;color:var(--t3);
@@ -475,7 +507,10 @@ header{
     <div class="sig-box wait" id="sig-box">
       <div class="sig-top">
         <span class="sig-badge" id="sig-badge">—</span>
-        <span class="sig-score-big" id="sig-score">—</span>
+        <div class="sig-score-row">
+          <span class="sig-score-big" id="sig-score">—</span>
+          <button class="info-btn" data-tip="score" title="Come funziona l'Edge Score?">i</button>
+        </div>
         <span class="sig-headline" id="sig-headline">—</span>
       </div>
       <div class="sig-body" id="sig-body">—</div>
@@ -485,32 +520,50 @@ header{
     <!-- Indicators -->
     <div class="ind-grid">
       <div class="ind-card">
-        <div class="ind-label">RSI 14</div>
+        <div class="ind-label-row">
+          <div class="ind-label">RSI 14</div>
+          <button class="info-btn" data-tip="rsi" title="Cos'è l'RSI?">i</button>
+        </div>
         <div class="ind-val" id="iv-rsi">—</div>
         <div class="ind-sig" id="is-rsi">—</div>
       </div>
       <div class="ind-card">
-        <div class="ind-label">MA 50 giorni</div>
+        <div class="ind-label-row">
+          <div class="ind-label">MA 50 giorni</div>
+          <button class="info-btn" data-tip="ma50" title="Cos'è la MA50?">i</button>
+        </div>
         <div class="ind-val" id="iv-ma50">—</div>
         <div class="ind-sig" id="is-ma50">—</div>
       </div>
       <div class="ind-card">
-        <div class="ind-label">MA 200 giorni</div>
+        <div class="ind-label-row">
+          <div class="ind-label">MA 200 giorni</div>
+          <button class="info-btn" data-tip="ma200" title="Cos'è la MA200?">i</button>
+        </div>
         <div class="ind-val" id="iv-ma200">—</div>
         <div class="ind-sig" id="is-ma200">—</div>
       </div>
       <div class="ind-card">
-        <div class="ind-label">Volatilità (ann.)</div>
+        <div class="ind-label-row">
+          <div class="ind-label">Volatilità (ann.)</div>
+          <button class="info-btn" data-tip="vol" title="Cos'è la volatilità?">i</button>
+        </div>
         <div class="ind-val" id="iv-vol">—</div>
         <div class="ind-sig" id="is-vol">—</div>
       </div>
       <div class="ind-card">
-        <div class="ind-label">Momentum 20gg</div>
+        <div class="ind-label-row">
+          <div class="ind-label">Momentum 20gg</div>
+          <button class="info-btn" data-tip="mom" title="Cos'è il momentum?">i</button>
+        </div>
         <div class="ind-val" id="iv-mom">—</div>
         <div class="ind-sig" id="is-mom">—</div>
       </div>
       <div class="ind-card">
-        <div class="ind-label">Max Drawdown (1a)</div>
+        <div class="ind-label-row">
+          <div class="ind-label">Max Drawdown (1a)</div>
+          <button class="info-btn" data-tip="dd" title="Cos'è il drawdown?">i</button>
+        </div>
         <div class="ind-val" id="iv-dd">—</div>
         <div class="ind-sig" id="is-dd">—</div>
       </div>
@@ -519,17 +572,26 @@ header{
     <!-- Win Rates -->
     <div class="wr-row">
       <div class="wr-card">
-        <div class="wr-lbl">Win Rate 7gg</div>
+        <div class="wr-lbl-row">
+          <span class="wr-lbl">Win Rate 7gg</span>
+          <button class="info-btn" data-tip="wr" title="Cos'è il win rate?">i</button>
+        </div>
         <div class="wr-val" id="wr-7">—</div>
         <div class="wr-sub">storico</div>
       </div>
       <div class="wr-card">
-        <div class="wr-lbl">Win Rate 30gg</div>
+        <div class="wr-lbl-row">
+          <span class="wr-lbl">Win Rate 30gg</span>
+          <button class="info-btn" data-tip="wr" title="Cos'è il win rate?">i</button>
+        </div>
         <div class="wr-val" id="wr-30">—</div>
         <div class="wr-sub">storico</div>
       </div>
       <div class="wr-card">
-        <div class="wr-lbl">Win Rate 90gg</div>
+        <div class="wr-lbl-row">
+          <span class="wr-lbl">Win Rate 90gg</span>
+          <button class="info-btn" data-tip="wr" title="Cos'è il win rate?">i</button>
+        </div>
         <div class="wr-val" id="wr-90">—</div>
         <div class="wr-sub">storico</div>
       </div>
@@ -1196,10 +1258,144 @@ function setupSearch(){
   input.addEventListener('blur',()=>setTimeout(()=>dd.classList.remove('open'),150));
 }
 
+// ── TOOLTIP CONTENT ──
+const TIPS={
+  score:{
+    title:'Edge Score — cos\'è e come usarlo',
+    body:`Punteggio composito (0–100) che sintetizza tutti gli indicatori tecnici in un'unica metrica operativa.
+<br><br>
+<b>≥ 65</b> → Forte vantaggio rialzista. Condizioni ottimali per entrare.<br>
+<b>55–64</b> → Vantaggio. Ingresso prudente ammesso.<br>
+<b>45–54</b> → Neutro. Nessun edge chiaro, meglio aspettare.<br>
+<b>35–44</b> → Svantaggio. Evitare nuovi ingressi.<br>
+<b>&lt; 35</b> → Forte svantaggio ribassista. Uscire o proteggersi.
+<br><br>
+Non è una garanzia, ma un riassunto delle probabilità statistiche storiche.`
+  },
+  rsi:{
+    title:'RSI — Relative Strength Index',
+    body:`Misura la velocità dei movimenti di prezzo su <b>14 giorni</b>. Scala da 0 a 100.
+<br><br>
+<b>&lt; 30</b> → Ipervenduto: il prezzo è sceso troppo in fretta. Rimbalzo statisticamente probabile.<br>
+<b>30–50</b> → Zona di valore: tendenza negativa ma non estrema.<br>
+<b>50–70</b> → Zona positiva: tendenza al rialzo.<br>
+<b>&gt; 70</b> → Ipercomprato: il prezzo è salito troppo in fretta. Possibile correzione.
+<br><br>
+Utile soprattutto per <b>identificare punti di ingresso</b> in prossimità dei minimi.`
+  },
+  ma50:{
+    title:'MA 50 — Media Mobile a 50 Giorni',
+    body:`Media dei prezzi di chiusura degli <b>ultimi 50 giorni</b>. Indica il trend a <b>medio termine</b>.
+<br><br>
+<b>Prezzo sopra MA50</b> → Momentum positivo, l'asset ha forza. Supporto dinamico.<br>
+<b>Prezzo sotto MA50</b> → Debolezza a medio termine. Resistenza dinamica.
+<br><br>
+Si usa per confermare che il trend a breve sia allineato con quello di lungo (MA200). Quando MA50 è sopra MA200, il trend complessivo è positivo.`
+  },
+  ma200:{
+    title:'MA 200 — Media Mobile a 200 Giorni',
+    body:`L'indicatore di trend strutturale <b>più seguito dagli investitori istituzionali</b>. Separa i bull market dai bear market.
+<br><br>
+<b>Prezzo sopra MA200</b> → Trend di lungo periodo positivo. Statisticamente favorevole.<br>
+<b>Golden Cross</b> (MA50 supera MA200) → Segnale fortemente rialzista.<br>
+<b>Death Cross</b> (MA50 scende sotto MA200) → Segnale ribassista.<br>
+<b>Prezzo sotto MA200</b> → Trend strutturale negativo.
+<br><br>
+Lo <b>stop-loss</b> si posiziona tipicamente appena sotto la MA200.`
+  },
+  vol:{
+    title:'Volatilità Annualizzata',
+    body:`Misura quanto oscilla il prezzo in un anno. Calcolata dalla <b>deviazione standard dei rendimenti giornalieri × √252</b>.
+<br><br>
+<b>&lt; 15%</b> → Bassa: asset stabile (tipico di bond o utility). Sizing normale o aumentato.<br>
+<b>15–30%</b> → Moderata: normale per la maggior parte delle azioni.<br>
+<b>30–50%</b> → Elevata: ridurre il sizing del 30–50%.<br>
+<b>&gt; 50%</b> → Molto alta: stop-loss rigidi obbligatori, sizing minimo.
+<br><br>
+Volatilità alta ≠ cattivo investimento. Richiede solo più <b>disciplina nel rischio</b>.`
+  },
+  mom:{
+    title:'Momentum 20 Giorni',
+    body:`Variazione percentuale del prezzo rispetto a <b>20 giorni fa</b>. Misura la forza della tendenza in corso.
+<br><br>
+<b>Momentum positivo</b> → Il trend al rialzo è in corso. Spesso si autoalimenta nel breve.<br>
+<b>Momentum negativo</b> → Il trend al ribasso è attivo.
+<br><br>
+Il momentum è uno dei fattori più robusti in finanza: gli asset che hanno performato bene negli ultimi mesi tendono a continuare (nel breve termine). Questa è la base del <b>trend following</b>.`
+  },
+  dd:{
+    title:'Maximum Drawdown — 1 Anno',
+    body:`La <b>perdita massima registrata dal picco al minimo</b> nell'ultimo anno. Indica il rischio storico reale che avresti vissuto come investitore.
+<br><br>
+<b>&lt; 10%</b> → Asset molto resiliente. Ottimo per chi ha bassa tolleranza al rischio.<br>
+<b>10–25%</b> → Normale per azioni e ETF azionari.<br>
+<b>25–45%</b> → Alta volatilità. Stop-loss disciplinato obbligatorio.<br>
+<b>&gt; 45%</b> → Asset ad alto rischio. Sizing minimo.
+<br><br>
+Chiediti sempre: <b>"Sarei riuscito a tenere la posizione con questo drawdown?"</b> Se la risposta è no, riduci la dimensione.`
+  },
+  wr:{
+    title:'Win Rate Storico',
+    body:`Percentuale storica di periodi in cui il prezzo è salito nell'orizzonte indicato. Calcolata su tutti i periodi disponibili.
+<br><br>
+Esempio: <b>WR30 = 65%</b> significa che storicamente, comprando questo asset in un giorno qualsiasi, dopo 30 giorni era in guadagno nel 65% dei casi.
+<br><br>
+<b>&gt; 58%</b> → Vantaggio statistico rialzista chiaro.<br>
+<b>45–58%</b> → Zona neutra, nessun edge significativo.<br>
+<b>&lt; 45%</b> → Svantaggio statistico storico.
+<br><br>
+Non garantisce rendimenti futuri, ma indica le <b>probabilità storiche</b> di ogni orizzonte temporale.`
+  },
+};
+
+// ── TOOLTIP ENGINE ──
+function setupTooltips(){
+  const tt=document.createElement('div');
+  tt.id='g-tooltip';
+  tt.innerHTML='<div class="tt-title" id="tt-title"></div><div class="tt-body" id="tt-body"></div>';
+  document.body.appendChild(tt);
+
+  let openBtn=null;
+
+  document.addEventListener('click',e=>{
+    const btn=e.target.closest('.info-btn');
+    if(!btn){
+      if(tt.classList.contains('show')){tt.classList.remove('show');openBtn=null;}
+      return;
+    }
+    // toggle
+    if(btn===openBtn){tt.classList.remove('show');openBtn=null;return;}
+    openBtn=btn;
+    const key=btn.dataset.tip;
+    const info=TIPS[key]; if(!info)return;
+    document.getElementById('tt-title').textContent=info.title;
+    document.getElementById('tt-body').innerHTML=info.body;
+
+    // show off-screen first to measure
+    tt.style.left='-9999px'; tt.style.top='-9999px';
+    tt.classList.add('show');
+
+    const tw=tt.offsetWidth, th=tt.offsetHeight;
+    const rect=btn.getBoundingClientRect();
+    const vw=window.innerWidth, vh=window.innerHeight;
+
+    // prefer right, fallback left, fallback below
+    let left=rect.right+10, top=rect.top+(rect.height/2)-(th/2);
+    if(left+tw>vw-8){ left=rect.left-tw-10; }
+    if(left<8){ left=rect.left; top=rect.bottom+8; }
+    top=Math.max(8,Math.min(top,vh-th-8));
+    tt.style.left=left+'px'; tt.style.top=top+'px';
+    e.stopPropagation();
+  });
+
+  // close on scroll
+  window.addEventListener('scroll',()=>{if(openBtn){tt.classList.remove('show');openBtn=null;}},{passive:true});
+}
+
 // ── BOOT ──
 document.addEventListener('DOMContentLoaded',()=>{
   setupSearch();
-  // load pulse + panoramica in parallel
+  setupTooltips();
   Promise.all([loadPulse(),loadPanoramica()]);
 });
 </script>

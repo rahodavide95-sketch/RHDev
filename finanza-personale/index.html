@@ -191,12 +191,12 @@
     #home {
       display: none;
       flex-direction: column;
-      justify-content: space-evenly;
+      justify-content: center;
       align-items: center;
       text-align: center;
       flex: 1;
       min-height: 0;
-      gap: 0;
+      gap: clamp(22px, 4.5vh, 44px);
     }
     #home.active { display: flex; }
 
@@ -220,6 +220,8 @@
     .home-title strong {
       font-weight: 700;
       letter-spacing: -3px;
+      display: inline-block;
+      padding: 0 6px 8px 2px; /* prevent gradient clip on descenders/tracking */
       background: linear-gradient(135deg, #00e5a0 0%, #00bcd4 48%, #0077ff 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -353,18 +355,43 @@
       line-height: 1.45;
     }
 
+    /* CSS circular arrow — consistent on all platforms */
     .nav-card-arrow {
       position: absolute;
-      top: 16px;
-      right: 16px;
-      font-size: 16px;
-      color: var(--muted);
-      transition: color 0.2s, transform 0.2s;
+      top: 14px; right: 14px;
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(255,255,255,0.14);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0; /* hide the ↗ character */
+      transition: border-color 0.25s, transform 0.25s, background 0.25s;
     }
-
+    .nav-card-arrow::before {
+      content: '';
+      width: 7px; height: 7px;
+      border-top: 1.5px solid rgba(255,255,255,0.38);
+      border-right: 1.5px solid rgba(255,255,255,0.38);
+      transform: rotate(45deg) translate(-1px, 1px);
+      transition: border-color 0.25s;
+    }
     .nav-card:hover .nav-card-arrow {
-      color: var(--card-accent, var(--accent));
-      transform: translate(3px, -3px);
+      border-color: var(--card-accent, var(--accent));
+      transform: translate(2px, -2px) scale(1.12);
+      background: rgba(255,255,255,0.06);
+    }
+    .nav-card:hover .nav-card-arrow::before {
+      border-top-color: var(--card-accent, var(--accent));
+      border-right-color: var(--card-accent, var(--accent));
+    }
+    [data-theme="light"] .nav-card-arrow {
+      border-color: rgba(0,0,0,0.13);
+    }
+    [data-theme="light"] .nav-card-arrow::before {
+      border-top-color: rgba(0,0,0,0.32);
+      border-right-color: rgba(0,0,0,0.32);
+    }
+    [data-theme="light"] .nav-card:hover .nav-card-arrow {
+      background: rgba(0,0,0,0.04);
     }
 
     /* ─── PAGE HEADER ─── */
@@ -1088,12 +1115,13 @@
       footer { padding: 14px 20px; }
       #app:has(#home.active) main { padding: 0 16px; }
       .home-title { font-size: clamp(28px, 7.5vw, 40px); letter-spacing: -1.5px; }
+      .home-title strong { letter-spacing: -1px; }
       .card-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; max-width: 100%; }
       .nav-card { padding: 14px 12px; }
       .nav-card-icon { font-size: 20px; margin-bottom: 7px; }
       .nav-card-title { font-size: 12px; margin-bottom: 3px; }
       .nav-card-desc { font-size: 10.5px; line-height: 1.4; }
-      .nav-card-arrow { font-size: 13px; top: 10px; right: 10px; }
+      .nav-card-arrow { top: 10px; right: 10px; width: 22px; height: 22px; }
       .theme-toggle span:last-child { display: none; }
       /* Other sections */
       .input-grid { grid-template-columns: 1fr; }

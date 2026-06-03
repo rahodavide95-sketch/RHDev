@@ -411,18 +411,20 @@
 
     .page-badge {
       font-family: var(--mono);
-      font-size: 11px;
-      letter-spacing: 1.5px;
+      font-size: 10px;
+      letter-spacing: 1.8px;
       text-transform: uppercase;
       color: var(--accent);
-      margin-bottom: 10px;
+      opacity: 0.75;
+      margin-bottom: 8px;
     }
 
     .page-title {
-      font-size: 28px;
+      font-size: clamp(30px, 4vw, 42px);
       font-weight: 300;
-      letter-spacing: -0.5px;
+      letter-spacing: -1.5px;
       color: var(--text);
+      line-height: 1.05;
     }
 
     .back-btn {

@@ -819,9 +819,127 @@ const DB = [
   ['SLV','iShares Silver','ETF'],['GDX','VanEck Gold Miners','ETF'],
   ['USO','United States Oil','ETF'],['UNG','United States Nat. Gas','ETF'],
   ['VNQ','Vanguard Real Estate','ETF'],['ARKK','ARK Innovation','ETF'],
-  // Leveraged
+  // Leveraged / Inverse
   ['TQQQ','ProShares UltraPro QQQ','ETF'],['SQQQ','ProShares Short QQQ','ETF'],
   ['UPRO','ProShares Ultra S&P 500','ETF'],['SPXU','ProShares Short S&P 500','ETF'],
+
+  // ── CRYPTO ──
+  ['BTC-USD','Bitcoin','Crypto'],['ETH-USD','Ethereum','Crypto'],
+  ['SOL-USD','Solana','Crypto'],['BNB-USD','BNB (Binance)','Crypto'],
+  ['XRP-USD','XRP (Ripple)','Crypto'],['ADA-USD','Cardano','Crypto'],
+  ['AVAX-USD','Avalanche','Crypto'],['DOGE-USD','Dogecoin','Crypto'],
+  ['DOT-USD','Polkadot','Crypto'],['LINK-USD','Chainlink','Crypto'],
+  ['MATIC-USD','Polygon (MATIC)','Crypto'],['LTC-USD','Litecoin','Crypto'],
+  ['ATOM-USD','Cosmos (ATOM)','Crypto'],['NEAR-USD','NEAR Protocol','Crypto'],
+  ['OP-USD','Optimism (OP)','Crypto'],['SUI20947-USD','Sui','Crypto'],
+  // Crypto ETF spot
+  ['IBIT','iShares Bitcoin ETF','ETF'],['FBTC','Fidelity Bitcoin ETF','ETF'],
+  ['ETHA','iShares Ethereum ETF','ETF'],['ARKB','ARK 21Shares Bitcoin ETF','ETF'],
+
+  // ── MATERIE PRIME — Futures ──
+  ['GC=F','Oro — Gold Futures','Materie Prime'],
+  ['SI=F','Argento — Silver Futures','Materie Prime'],
+  ['CL=F','Petrolio WTI — Crude Oil','Materie Prime'],
+  ['BZ=F','Petrolio Brent','Materie Prime'],
+  ['NG=F','Gas Naturale — Natural Gas','Materie Prime'],
+  ['HG=F','Rame — Copper Futures','Materie Prime'],
+  ['ZW=F','Grano — Wheat Futures','Materie Prime'],
+  ['ZC=F','Mais — Corn Futures','Materie Prime'],
+  ['ZS=F','Soia — Soybeans Futures','Materie Prime'],
+  ['PL=F','Platino — Platinum','Materie Prime'],
+  ['PA=F','Palladio — Palladium','Materie Prime'],
+  ['CC=F','Cacao — Cocoa Futures','Materie Prime'],
+  ['KC=F','Caffè — Coffee Futures','Materie Prime'],
+  ['CT=F','Cotone — Cotton Futures','Materie Prime'],
+  ['LE=F','Bestiame — Live Cattle','Materie Prime'],
+
+  // ── FOREX ──
+  ['EURUSD=X','Euro / Dollaro USA','Forex'],
+  ['GBPUSD=X','Sterlina / Dollaro USA','Forex'],
+  ['USDJPY=X','Dollaro USA / Yen','Forex'],
+  ['USDCHF=X','Dollaro USA / Franco CH','Forex'],
+  ['AUDUSD=X','Dollaro AUS / Dollaro USA','Forex'],
+  ['USDCAD=X','Dollaro USA / Dollaro CAN','Forex'],
+  ['NZDUSD=X','Dollaro NZ / Dollaro USA','Forex'],
+  ['EURGBP=X','Euro / Sterlina','Forex'],
+  ['EURJPY=X','Euro / Yen','Forex'],
+  ['EURCHF=X','Euro / Franco CH','Forex'],
+  ['GBPJPY=X','Sterlina / Yen','Forex'],
+  ['USDCNY=X','Dollaro USA / Yuan CNA','Forex'],
+  ['USDBRL=X','Dollaro USA / Real BRL','Forex'],
+  ['USDMXN=X','Dollaro USA / Peso MXN','Forex'],
+  ['USDINR=X','Dollaro USA / Rupia IND','Forex'],
+  ['USDTRY=X','Dollaro USA / Lira TRY','Forex'],
+
+  // ── AZIONI ITALIA (Borsa Milano) ──
+  ['ENI.MI','ENI S.p.A.','Azioni IT'],['ENEL.MI','Enel S.p.A.','Azioni IT'],
+  ['ISP.MI','Intesa Sanpaolo','Azioni IT'],['UCG.MI','UniCredit','Azioni IT'],
+  ['G.MI','Assicurazioni Generali','Azioni IT'],['MB.MI','Mediobanca','Azioni IT'],
+  ['RACE.MI','Ferrari N.V.','Azioni IT'],['STM.MI','STMicroelectronics','Azioni IT'],
+  ['LDO.MI','Leonardo S.p.A.','Azioni IT'],['TEN.MI','Tenaris','Azioni IT'],
+  ['BAMI.MI','Banco BPM','Azioni IT'],['MONC.MI','Moncler','Azioni IT'],
+  ['CPR.MI','Campari Group','Azioni IT'],['CNHI.MI','CNH Industrial','Azioni IT'],
+  ['PRY.MI','Prysmian','Azioni IT'],['SRG.MI','Snam','Azioni IT'],
+  ['TRN.MI','Terna','Azioni IT'],['HER.MI','Hera','Azioni IT'],
+  ['A2A.MI','A2A S.p.A.','Azioni IT'],['PST.MI','Poste Italiane','Azioni IT'],
+  ['BMED.MI','Banca Mediolanum','Azioni IT'],['STLAM.MI','Stellantis N.V.','Azioni IT'],
+  ['FBK.MI','FinecoBank','Azioni IT'],['AMP.MI','Amplifon','Azioni IT'],
+  ['PIRC.MI','Pirelli & C.','Azioni IT'],['BZU.MI','Buzzi Unicem','Azioni IT'],
+
+  // ── AZIONI EUROPA ──
+  // Francia
+  ['MC.PA','LVMH Moët Hennessy','Azioni EU'],['OR.PA','L\'Oréal S.A.','Azioni EU'],
+  ['TTE.PA','TotalEnergies','Azioni EU'],['AIR.PA','Airbus SE','Azioni EU'],
+  ['BNP.PA','BNP Paribas','Azioni EU'],['SAN.PA','Sanofi','Azioni EU'],
+  ['KER.PA','Kering','Azioni EU'],['SU.PA','Schneider Electric','Azioni EU'],
+  ['CAP.PA','Capgemini','Azioni EU'],['HO.PA','Thales','Azioni EU'],
+  // Germania
+  ['SAP.DE','SAP SE','Azioni EU'],['SIE.DE','Siemens AG','Azioni EU'],
+  ['BAYN.DE','Bayer AG','Azioni EU'],['BMW.DE','BMW AG','Azioni EU'],
+  ['MBG.DE','Mercedes-Benz Group','Azioni EU'],['VOW3.DE','Volkswagen AG','Azioni EU'],
+  ['ALV.DE','Allianz SE','Azioni EU'],['DTE.DE','Deutsche Telekom','Azioni EU'],
+  ['MRK.DE','Merck KGaA','Azioni EU'],['RHM.DE','Rheinmetall AG','Azioni EU'],
+  ['ADS.DE','Adidas AG','Azioni EU'],['DB1.DE','Deutsche Börse','Azioni EU'],
+  // UK
+  ['HSBA.L','HSBC Holdings','Azioni EU'],['BP.L','BP p.l.c.','Azioni EU'],
+  ['SHEL.L','Shell plc','Azioni EU'],['AZN.L','AstraZeneca','Azioni EU'],
+  ['ULVR.L','Unilever plc','Azioni EU'],['GSK.L','GSK plc','Azioni EU'],
+  ['RIO.L','Rio Tinto','Azioni EU'],['BARC.L','Barclays','Azioni EU'],
+  ['LLOY.L','Lloyds Banking Group','Azioni EU'],['VOD.L','Vodafone Group','Azioni EU'],
+  // Svizzera
+  ['NESN.SW','Nestlé SA','Azioni EU'],['ROG.SW','Roche Holding','Azioni EU'],
+  ['NOVN.SW','Novartis AG','Azioni EU'],['ABBN.SW','ABB Ltd','Azioni EU'],
+  ['LONN.SW','Lonza Group','Azioni EU'],['UBSG.SW','UBS Group AG','Azioni EU'],
+  // Paesi Bassi / Spagna / Svezia
+  ['ASML.AS','ASML Holding N.V.','Azioni EU'],['ING.AS','ING Group','Azioni EU'],
+  ['PHIA.AS','Philips','Azioni EU'],['ITX.MC','Inditex (Zara)','Azioni EU'],
+  ['SAN.MC','Banco Santander','Azioni EU'],['IBE.MC','Iberdrola','Azioni EU'],
+  ['ERIC-B.ST','Ericsson','Azioni EU'],['VOLV-B.ST','Volvo AB','Azioni EU'],
+
+  // ── BOND ETF — ampliati ──
+  ['TIPS','iShares TIPS (inflation-linked)','ETF'],
+  ['VTIP','Vanguard Short-Term TIPS','ETF'],
+  ['EMB','iShares JPM EM Bond USD','ETF'],
+  ['BNDX','Vanguard Total Intl Bond','ETF'],
+  ['MUB','iShares National Muni Bond','ETF'],
+  ['VCSH','Vanguard Short-Term Corp','ETF'],
+  ['VCIT','Vanguard Interm-Term Corp','ETF'],
+  ['VCLT','Vanguard Long-Term Corp','ETF'],
+  ['JNK','SPDR Bloomberg High Yield','ETF'],
+  ['IBTM.MI','iShares € Govt Bond 7-10Y','ETF'],
+  ['IBGL.MI','iShares € Govt Bond 15-30Y','ETF'],
+  ['IEAC.MI','iShares Core € Corp Bond','ETF'],
+  ['IEGA.MI','iShares Core € Govt Bond','ETF'],
+  ['BTPXL.MI','Lyxor BTP 10Y+','ETF'],
+
+  // ── INDICI ──
+  ['^GSPC','S&P 500 Index','Indice'],['^NDX','Nasdaq 100','Indice'],
+  ['^DJI','Dow Jones Industrial','Indice'],['^RUT','Russell 2000','Indice'],
+  ['^FTSE','FTSE 100 (UK)','Indice'],['^GDAXI','DAX 40 (Germania)','Indice'],
+  ['^FCHI','CAC 40 (Francia)','Indice'],['^STOXX50E','Euro Stoxx 50','Indice'],
+  ['^N225','Nikkei 225 (Giappone)','Indice'],['^HSI','Hang Seng (HK)','Indice'],
+  ['^FTMIB','FTSE MIB (Italia)','Indice'],['^IBEX','IBEX 35 (Spagna)','Indice'],
+  ['^VIX','VIX — Fear Index','Indice'],
 ];
 
 // ── SCORE COLORS ──

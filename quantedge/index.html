@@ -918,68 +918,114 @@ function renderND(id,ticker,name){
   }
 }
 
-function quickScore(cl){
-  const cur=cl[cl.length-1];
-  const R=rsi(cl), M50=ma(cl,50), M200=ma(cl,200), Mo=mom(cl,14);
-  const w30=wr(cl,30), w90=wr(cl,90);
+// ── QUOTE-BASED SCORE (no historical data needed) ──
+function quickScoreFromQuote(q){
+  const price=q.regularMarketPrice;
+  const ma50=q.fiftyDayAverage, ma200=q.twoHundredDayAverage;
+  const hi52=q.fiftyTwoWeekHigh, lo52=q.fiftyTwoWeekLow;
+  const chPct=q.regularMarketChangePercent;
+  if(!price) return null;
   let s=50;
-  if(R!=null) s+=R<30?14:R<42?7:R>70?-14:R>60?-7:0;
-  if(M50!=null) s+=cur>M50*1.01?7:cur<M50*.99?-7:0;
-  if(M200!=null) s+=cur>M200*1.03?9:cur>M200?4:cur<M200*.97?-9:-4;
-  if(Mo!=null) s+=Mo>4?5:Mo>0?2:Mo<-4?-5:-2;
-  s+=(w30-50)*.25+(w90-50)*.2;
+  if(ma50)  s+=price>ma50*1.01?8:price<ma50*.99?-8:0;
+  if(ma200) s+=price>ma200*1.03?10:price>ma200?5:price<ma200*.97?-10:-5;
+  if(hi52&&lo52&&hi52>lo52){
+    const pos=(price-lo52)/(hi52-lo52)*100;
+    s+=pos<20?9:pos<35?4:pos>88?-6:pos>75?-3:0;
+  }
+  if(chPct!=null) s+=chPct>2?3:chPct>0?1:chPct<-2?-3:-1;
   return Math.max(0,Math.min(100,Math.round(s)));
 }
 
-async function fetchScore(ticker){
-  try{
-    const cached=sessionStorage.getItem(CK+ticker);
-    if(cached){ const {score,ts}=JSON.parse(cached); if(Date.now()-ts<TTL)return score; }
-  }catch{}
-  try{
-    const res=await fetchYahoo(ticker,'1y','1d');
-    const ts=res.timestamp, raw=res.indicators.quote[0].close;
-    const cl=ts.map((_,i)=>raw[i]).filter(c=>c!=null&&!isNaN(c));
-    if(cl.length<40) return null;
-    const score=quickScore(cl);
-    try{ sessionStorage.setItem(CK+ticker,JSON.stringify({score,ts:Date.now()})); }catch{}
-    return score;
-  }catch{ return null; }
-}
-
-// ── BATCH LOADER — 4 richieste alla volta, 150ms tra batch ──
-async function loadBatch(items, onDone){
-  const BATCH=4, DELAY=150;
-  for(let i=0;i<items.length;i+=BATCH){
-    const slice=items.slice(i,i+BATCH);
-    await Promise.all(slice.map(async({id,ticker,name})=>{
-      const score=await fetchScore(ticker);
-      if(score!==null) renderRow(id,ticker,name,score);
-      else renderND(id,ticker,name);
-      onDone();
-    }));
-    if(i+BATCH<items.length) await new Promise(r=>setTimeout(r,DELAY));
+// fetch quotes for up to 20 symbols in one request
+async function fetchQuoteBatch(symbols){
+  const fields='regularMarketPrice,fiftyDayAverage,twoHundredDayAverage,regularMarketChangePercent,fiftyTwoWeekHigh,fiftyTwoWeekLow';
+  const url=`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbols.map(encodeURIComponent).join(',')}&fields=${fields}`;
+  const r=await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+  if(!r.ok) return {};
+  const j=await r.json();
+  let data; try{ data=JSON.parse(j.contents); }catch{ return {}; }
+  const out={};
+  for(const q of (data?.quoteResponse?.result||[])){
+    const score=quickScoreFromQuote(q);
+    if(score!==null) out[q.symbol]=score;
   }
+  return out;
 }
 
 async function loadPanoramica(){
-  const allItems=[];
+  // build master list and render skeletons
+  const allItems=[], nameMap={};
   for(const [id,entries] of Object.entries(PANO)){
     renderSkel(id,entries.length);
-    for(const [ticker,name] of entries) allItems.push({id,ticker,name});
+    for(const [ticker,name] of entries){
+      allItems.push({id,ticker,name});
+      nameMap[ticker]=name;
+    }
   }
-  const total=allItems.length; let done=0;
+
   const bar=document.getElementById('pbar'), fill=document.getElementById('pbar-fill');
   const status=document.getElementById('pbar-status'), count=document.getElementById('pbar-count');
   bar.classList.add('on');
-  count.textContent=`0/${total}`;
 
-  await loadBatch(allItems, ()=>{
-    done++;
-    fill.style.width=Math.round(done/total*100)+'%';
-    count.textContent=`${done}/${total}`;
-    if(done>=total){ status.textContent='Aggiornato ✓'; setTimeout(()=>bar.classList.remove('on'),2000); }
-  });
+  // check session cache first
+  const scoreMap={};
+  const toFetch=[];
+  for(const {ticker} of allItems){
+    if(scoreMap[ticker]!==undefined) continue;
+    try{
+      const cached=sessionStorage.getItem(CK+ticker);
+      if(cached){ const {score,ts}=JSON.parse(cached); if(Date.now()-ts<TTL){ scoreMap[ticker]=score; continue; } }
+    }catch{}
+    toFetch.push(ticker);
+  }
+
+  // render cached items immediately
+  let done=allItems.filter(({ticker})=>scoreMap[ticker]!==undefined).length;
+  fill.style.width=Math.round(done/allItems.length*100)+'%';
+  count.textContent=`${done}/${allItems.length}`;
+  for(const {id,ticker,name} of allItems){
+    if(scoreMap[ticker]!==undefined) renderRow(id,ticker,name,scoreMap[ticker]);
+  }
+
+  if(toFetch.length===0){
+    status.textContent='Cache ✓'; setTimeout(()=>bar.classList.remove('on'),1500); return;
+  }
+
+  // batch 20 symbols per request, run 3 concurrent batches
+  const CHUNK=20, CONC=3;
+  const chunks=[];
+  for(let i=0;i<toFetch.length;i+=CHUNK) chunks.push(toFetch.slice(i,i+CHUNK));
+
+  for(let i=0;i<chunks.length;i+=CONC){
+    const wave=chunks.slice(i,i+CONC);
+    const results=await Promise.all(wave.map(fetchQuoteBatch));
+    for(const batch of results){
+      for(const [ticker,score] of Object.entries(batch)){
+        scoreMap[ticker]=score;
+        try{ sessionStorage.setItem(CK+ticker,JSON.stringify({score,ts:Date.now()})); }catch{}
+      }
+    }
+    // render all items that now have a score
+    for(const {id,ticker,name} of allItems){
+      if(scoreMap[ticker]!==undefined) renderRow(id,ticker,name,scoreMap[ticker]);
+    }
+    // mark uncached from this wave as N/D if no score came back
+    for(const chunk of wave){
+      for(const ticker of chunk){
+        if(scoreMap[ticker]===undefined){
+          const items=allItems.filter(it=>it.ticker===ticker);
+          for(const {id,name} of items) renderND(id,ticker,name);
+          scoreMap[ticker]=null;
+        }
+      }
+    }
+    done=Object.keys(scoreMap).length;
+    fill.style.width=Math.round(done/allItems.length*100)+'%';
+    count.textContent=`${done}/${allItems.length}`;
+  }
+
+  status.textContent='Aggiornato ✓';
+  setTimeout(()=>bar.classList.remove('on'),2000);
 }
 
 window.addEventListener('DOMContentLoaded', loadPanoramica);

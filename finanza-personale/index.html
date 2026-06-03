@@ -62,7 +62,9 @@
       font-size: 15px;
       line-height: 1.6;
       -webkit-font-smoothing: antialiased;
+      overflow-x: hidden; /* prevent horizontal scroll + header width shift on theme change */
     }
+    html { scrollbar-gutter: stable; } /* reserve scrollbar space so layout never shifts */
 
     /* NOISE OVERLAY */
     body::before {
@@ -882,7 +884,8 @@
 
     .mkt-search-icon {
       position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
-      color: var(--muted); font-size: 16px; pointer-events: none;
+      color: var(--muted); pointer-events: none;
+      display: flex; align-items: center; line-height: 0;
     }
 
     .mkt-search-dropdown {
@@ -1007,17 +1010,37 @@
 
     .mkt-pagination {
       display: none; align-items: center; justify-content: center;
-      gap: 16px; padding: 16px 0 4px;
+      gap: 8px; padding: 16px 0 4px; flex-wrap: wrap;
     }
     .mkt-page-btn {
-      padding: 6px 14px; background: transparent;
+      padding: 6px 12px; background: transparent;
       border: 1px solid var(--border); border-radius: var(--radius-sm);
-      color: var(--muted); font-family: var(--mono); font-size: 12px;
-      cursor: pointer; transition: border-color 0.2s, color 0.2s;
+      color: var(--muted); font-family: var(--mono); font-size: 13px;
+      cursor: pointer; transition: border-color 0.2s, color 0.2s; line-height: 1;
     }
     .mkt-page-btn:hover:not(:disabled) { border-color: var(--border-hover); color: var(--text); }
     .mkt-page-btn:disabled { opacity: 0.35; cursor: default; }
-    .mkt-page-info { color: var(--muted); font-family: var(--mono); font-size: 12px; min-width: 160px; text-align: center; }
+    .mkt-page-info { color: var(--muted); font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+    .mkt-page-input {
+      width: 46px; background: transparent; border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text);
+      font-family: var(--mono); font-size: 12px; padding: 5px 6px;
+      text-align: center; outline: none; transition: border-color 0.2s;
+      -moz-appearance: textfield; appearance: textfield;
+    }
+    .mkt-page-input:focus { border-color: var(--accent4); }
+    .mkt-page-input::-webkit-inner-spin-button,
+    .mkt-page-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    .mkt-page-size-sel {
+      background: transparent; border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--muted);
+      font-family: var(--mono); font-size: 11px; padding: 5px 8px;
+      cursor: pointer; outline: none; -webkit-appearance: none; appearance: none;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .mkt-page-size-sel:hover { border-color: var(--border-hover); color: var(--text); }
+    .mkt-page-size-sel:focus { border-color: var(--accent4); color: var(--text); }
+    .mkt-page-size-sel option { background: var(--surface2); color: var(--text); }
 
     /* Filter pills (top/bottom gainers) */
     .mkt-card-top {
@@ -1375,7 +1398,12 @@
 
       <!-- Search bar -->
       <div class="mkt-search-wrap">
-        <span class="mkt-search-icon">🔍</span>
+        <span class="mkt-search-icon" aria-hidden="true">
+          <svg viewBox="0 0 16 16" width="15" height="15" fill="none">
+            <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+            <line x1="10.2" y1="10.2" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </span>
         <input id="mkt-search" type="text" class="mkt-search-input"
                placeholder="Cerca qualsiasi titolo: AAPL, Bitcoin, ENI, Tesla, Oro…">
         <div id="mkt-search-dropdown" class="mkt-search-dropdown"></div>
@@ -1459,9 +1487,21 @@
           </table>
         </div>
         <div class="mkt-pagination" id="mkt-pagination">
-          <button class="mkt-page-btn" id="mkt-page-prev" onclick="mktChangePage(-1)">← Prec</button>
+          <button class="mkt-page-btn" id="mkt-page-prev" onclick="mktChangePage(-1)">←</button>
           <span class="mkt-page-info" id="mkt-page-info"></span>
-          <button class="mkt-page-btn" id="mkt-page-next" onclick="mktChangePage(1)">Succ →</button>
+          <input  class="mkt-page-input"   id="mkt-page-input" type="number" min="1"
+                  title="Vai a pagina"
+                  onchange="mktGoToPage(this.value)"
+                  onkeydown="if(event.key==='Enter'){this.blur();mktGoToPage(this.value);}">
+          <button class="mkt-page-btn" id="mkt-page-next" onclick="mktChangePage(1)">→</button>
+          <select class="mkt-page-size-sel" id="mkt-page-size"
+                  onchange="mktSetPageSize(+this.value)" title="Titoli per pagina">
+            <option value="10">10 / pag</option>
+            <option value="20" selected>20 / pag</option>
+            <option value="25">25 / pag</option>
+            <option value="50">50 / pag</option>
+            <option value="100">100 / pag</option>
+          </select>
         </div>
       </div>
 
@@ -1485,20 +1525,10 @@
   </main>
 
   <footer>
-    Sviluppato con cura da <strong><a href="#" onclick="openAboutModal(); return false;" style="color: var(--accent); text-decoration: none; cursor: pointer; transition: opacity 0.2s;">Davide Raho</a></strong> &copy; 2026
+    Sviluppato con cura da <strong>Davide Raho</strong> &copy; 2026
   </footer>
 
-  <div id="modalBackdrop" class="modal-backdrop" onclick="if(event.target === this) closeAboutModal();"></div>
-
-  <div id="aboutModal" class="modal">
-    <button class="modal-close" onclick="closeAboutModal()">✕</button>
-    <div class="modal-title">Chi sono</div>
-    <div class="modal-content">
-      Non sono uno sviluppatore ma l'AI mi ha permesso di farlo.<br><br>
-      La mia base era solo un solidissimo e strutturatissimo file excel con formule e grafici validi.
-    </div>
-  </div>
-</div>
+  <div id="app-end"></div>
 
 <script>
 /* ─── NAVIGATION ─── */
@@ -1880,21 +1910,8 @@ function resettaETF() {
   hideResults('etf');
 }
 
-/* ─── MODAL ─── */
-function openAboutModal() {
-  document.getElementById('modalBackdrop').classList.add('active');
-  document.getElementById('aboutModal').classList.add('active');
-}
-
-function closeAboutModal() {
-  document.getElementById('modalBackdrop').classList.remove('active');
-  document.getElementById('aboutModal').classList.remove('active');
-}
-
 document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape' && document.getElementById('modalBackdrop').classList.contains('active')) {
-    closeAboutModal();
-  }
+  if (false) { /* placeholder for future modal keydown handlers */
 });
 
 /* ══════════════════════════════════════════════════════════════
@@ -2701,17 +2718,45 @@ function mktUpdatePagination() {
   if (totalPages <= 1) { pag.style.display = 'none'; return; }
   pag.style.display = 'flex';
   const start = mkt.page * mkt.pageSize + 1;
-  const end = Math.min((mkt.page + 1) * mkt.pageSize, all.length);
+  const end   = Math.min((mkt.page + 1) * mkt.pageSize, all.length);
   document.getElementById('mkt-page-info').textContent =
     `${mkt.page + 1} / ${totalPages}  ·  ${start}–${end} di ${all.length}`;
   document.getElementById('mkt-page-prev').disabled = mkt.page === 0;
   document.getElementById('mkt-page-next').disabled = mkt.page >= totalPages - 1;
+  const inp = document.getElementById('mkt-page-input');
+  if (inp) { inp.value = mkt.page + 1; inp.max = totalPages; }
+  const sel = document.getElementById('mkt-page-size');
+  if (sel) sel.value = mkt.pageSize;
 }
 
 function mktChangePage(delta) {
   const all = mkt.category === 'Ricerca' ? mkt.searchItems : (MKT_CATEGORIES[mkt.category] || []);
   const totalPages = Math.ceil(all.length / mkt.pageSize);
   mkt.page = Math.max(0, Math.min(totalPages - 1, mkt.page + delta));
+  mkt.cache = {}; mkt.cacheTimes = {};
+  mkt.filter = 'all';
+  document.querySelectorAll('.mkt-filter-pill').forEach(p =>
+    p.classList.toggle('active', p.dataset.filter === 'all'));
+  mktLoad();
+}
+
+function mktGoToPage(val) {
+  const all = mkt.category === 'Ricerca' ? mkt.searchItems : (MKT_CATEGORIES[mkt.category] || []);
+  const totalPages = Math.ceil(all.length / mkt.pageSize);
+  const pg = Math.max(0, Math.min(totalPages - 1, parseInt(val, 10) - 1));
+  if (isNaN(pg) || pg === mkt.page) return;
+  mkt.page = pg;
+  mkt.cache = {}; mkt.cacheTimes = {};
+  mkt.filter = 'all';
+  document.querySelectorAll('.mkt-filter-pill').forEach(p =>
+    p.classList.toggle('active', p.dataset.filter === 'all'));
+  mktLoad();
+}
+
+function mktSetPageSize(size) {
+  if (!size || size < 1) return;
+  mkt.pageSize = size;
+  mkt.page = 0;
   mkt.cache = {}; mkt.cacheTimes = {};
   mkt.filter = 'all';
   document.querySelectorAll('.mkt-filter-pill').forEach(p =>

@@ -303,6 +303,47 @@ header{
 }
 .chart-wrap{position:relative;height:150px;}
 
+/* ── MOBILE ── */
+@media(max-width:640px){
+  header{flex-wrap:wrap;height:auto;padding:10px 14px;gap:10px;}
+  .logo{font-size:.8rem;}
+  .live-ind{margin-left:auto;}
+  .search-wrap{order:3;max-width:100%;flex:1 0 100%;}
+  .wrap{padding:0 12px;}
+  .sec{padding:14px 0 4px;}
+  .sec-hd{margin-bottom:10px;}
+  .pulse-grid{gap:8px;}
+  .pulse-card{padding:11px 12px;}
+  .pc-name{font-size:.73rem;}
+  .pano-grid{gap:8px;}
+  .pano-head{padding:8px 12px;}
+  .ptable td{padding:8px 12px;}
+  .a-header{flex-direction:column;gap:10px;}
+  .a-right{text-align:left;}
+  .a-price{font-size:1.3rem;}
+  .sig-box{padding:14px 16px;}
+  .sig-top{flex-wrap:wrap;gap:8px;}
+  .sig-score-big{font-size:1.4rem;}
+  .sig-headline{font-size:.85rem;}
+  .ind-grid{grid-template-columns:repeat(2,1fr);gap:8px;}
+  .wr-row{gap:8px;}
+  .charts-grid{gap:8px;}
+  .chart-card{padding:12px;}
+  .period-btns{gap:3px;}
+  .pb{padding:3px 7px;font-size:.65rem;}
+  .custom-range{gap:6px;}
+  .cr-input{padding:4px 7px;font-size:.7rem;}
+  .divider{margin:16px 0;}
+  #analysis{padding-bottom:40px;}
+  .sig-tags{gap:5px;}
+  .stag{font-size:.65rem;padding:3px 8px;}
+}
+@media(max-width:400px){
+  .ind-grid{grid-template-columns:1fr;}
+  .wr-row{grid-template-columns:repeat(3,1fr);}
+  .pulse-grid{grid-template-columns:1fr;}
+}
+
 /* ── PERIOD SELECTOR ── */
 .chart-card-price{grid-column:span 2;}
 @media(max-width:700px){.chart-card-price{grid-column:span 1;}}
@@ -1342,13 +1383,46 @@ async function analyze(ticker){
   }
 }
 
-function runAnalyze(){
-  const val=document.getElementById('search-input').value.trim().toUpperCase();
-  if(val){document.getElementById('search-dropdown').classList.remove('open');analyze(val);}
+// ── YAHOO FINANCE SEARCH API ──
+const ISIN_RE=/^[A-Z]{2}[A-Z0-9]{9}[0-9]$/;
+
+async function searchYahoo(q){
+  const url=`https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(q)}&quotesCount=10&newsCount=0&enableFuzzyQuery=true&quotesQueryId=tss_match_phrase_query`;
+  try{
+    const data=await fetchJSON(url);
+    return(data?.quotes||[])
+      .filter(r=>r.symbol&&r.quoteType!=='OPTION'&&r.quoteType!=='MUTUALFUND')
+      .map(r=>({
+        sym:r.symbol,
+        name:r.longname||r.shortname||r.symbol,
+        cat:r.typeDisp||r.quoteType||'—',
+        exch:r.exchDisp||r.exchange||'',
+      }));
+  }catch{return[];}
+}
+
+async function runAnalyze(){
+  let val=document.getElementById('search-input').value.trim().toUpperCase();
+  if(!val) return;
+  document.getElementById('search-dropdown').classList.remove('open');
+  // ISIN → resolve to ticker symbol
+  if(ISIN_RE.test(val)){
+    document.getElementById('btn-analyze').disabled=true;
+    document.getElementById('btn-analyze').textContent='…';
+    try{
+      const res=await searchYahoo(val);
+      if(res.length){val=res[0].sym;document.getElementById('search-input').value=val;}
+    }finally{
+      document.getElementById('btn-analyze').disabled=false;
+      document.getElementById('btn-analyze').textContent='Analizza';
+    }
+  }
+  analyze(val);
 }
 
 function quickAnalyze(ticker){
   document.getElementById('search-input').value=ticker;
+  document.getElementById('search-dropdown').classList.remove('open');
   analyze(ticker);
 }
 
@@ -1359,18 +1433,23 @@ function resetView(){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-// ── AUTOCOMPLETE ──
+// ── SMART SEARCH ──
 function setupSearch(){
   const input=document.getElementById('search-input');
   const dd=document.getElementById('search-dropdown');
-  let activeIdx=-1;
+  let activeIdx=-1, lastQ='', searchTimer=null;
 
-  function showDrop(q){
-    if(!q){dd.classList.remove('open');return;}
-    const up=q.toUpperCase();
-    const matches=DB.filter(([s,n])=>s.startsWith(up)||n.toUpperCase().includes(up)).slice(0,8);
-    if(!matches.length){dd.classList.remove('open');return;}
-    dd.innerHTML=matches.map(([s,n,c],i)=>`<div class="s-item" data-sym="${s}" data-i="${i}"><span class="s-sym">${s}</span><span class="s-name">${n}</span><span class="s-cat">${c}</span></div>`).join('');
+  function renderDrop(items){
+    if(!items.length){dd.classList.remove('open');return;}
+    dd.innerHTML=items.slice(0,9).map(({sym,name,cat,exch},i)=>`
+      <div class="s-item" data-sym="${sym}">
+        <span class="s-sym">${sym}</span>
+        <span class="s-name">${name}</span>
+        <div style="display:flex;gap:4px;flex-shrink:0;align-items:center">
+          ${exch?`<span class="s-cat" style="color:var(--t3)">${exch}</span>`:''}
+          <span class="s-cat">${cat}</span>
+        </div>
+      </div>`).join('');
     dd.classList.add('open');
     activeIdx=-1;
     dd.querySelectorAll('.s-item').forEach(el=>{
@@ -1383,22 +1462,48 @@ function setupSearch(){
     });
   }
 
-  input.addEventListener('input',()=>showDrop(input.value.trim()));
+  async function doSearch(q){
+    lastQ=q;
+    // local instant results
+    const up=q.toUpperCase();
+    const local=DB.filter(([s,n])=>s.startsWith(up)||n.toUpperCase().includes(up))
+      .slice(0,5).map(([s,n,c])=>({sym:s,name:n,cat:c,exch:''}));
+    if(local.length) renderDrop(local);
+    // Yahoo live search
+    const yRes=await searchYahoo(q);
+    if(q!==lastQ) return;
+    // merge: Yahoo first, supplement with local if fewer than 4 results
+    const yahooSyms=new Set(yRes.map(r=>r.sym));
+    const extra=local.filter(r=>!yahooSyms.has(r.sym));
+    renderDrop([...yRes,...extra]);
+  }
+
+  input.addEventListener('input',()=>{
+    const q=input.value.trim();
+    clearTimeout(searchTimer);
+    if(!q){dd.classList.remove('open');lastQ='';return;}
+    // show local immediately
+    const up=q.toUpperCase();
+    const local=DB.filter(([s,n])=>s.startsWith(up)||n.toUpperCase().includes(up))
+      .slice(0,5).map(([s,n,c])=>({sym:s,name:n,cat:c,exch:''}));
+    if(local.length) renderDrop(local);
+    // debounce Yahoo
+    searchTimer=setTimeout(()=>doSearch(q),320);
+  });
+
   input.addEventListener('keydown',e=>{
     const items=dd.querySelectorAll('.s-item');
     if(e.key==='ArrowDown'){e.preventDefault();activeIdx=Math.min(activeIdx+1,items.length-1);items.forEach((el,i)=>el.classList.toggle('active',i===activeIdx));}
     else if(e.key==='ArrowUp'){e.preventDefault();activeIdx=Math.max(activeIdx-1,-1);items.forEach((el,i)=>el.classList.toggle('active',i===activeIdx));}
     else if(e.key==='Enter'){
       e.preventDefault();
-      if(activeIdx>=0&&items[activeIdx]){
-        input.value=items[activeIdx].dataset.sym;
-        dd.classList.remove('open');
-        analyze(input.value);
-      } else runAnalyze();
+      if(activeIdx>=0&&items[activeIdx]){input.value=items[activeIdx].dataset.sym;dd.classList.remove('open');analyze(input.value);}
+      else runAnalyze();
     }
     else if(e.key==='Escape'){dd.classList.remove('open');activeIdx=-1;}
   });
-  input.addEventListener('blur',()=>setTimeout(()=>dd.classList.remove('open'),150));
+  input.addEventListener('blur',()=>setTimeout(()=>dd.classList.remove('open'),200));
+  document.addEventListener('click',e=>{if(!e.target.closest('.search-wrap'))dd.classList.remove('open');});
 }
 
 // ── TOOLTIP CONTENT ──

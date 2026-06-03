@@ -303,6 +303,46 @@ header{
 }
 .chart-wrap{position:relative;height:150px;}
 
+/* ── PERIOD SELECTOR ── */
+.chart-card-price{grid-column:span 2;}
+@media(max-width:700px){.chart-card-price{grid-column:span 1;}}
+.chart-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;}
+.period-btns{display:flex;gap:3px;flex-wrap:wrap;}
+.pb{
+  padding:3px 9px;border-radius:5px;background:transparent;
+  border:1px solid var(--border);color:var(--t2);
+  font-family:inherit;font-size:.68rem;font-weight:500;
+  cursor:pointer;transition:background .15s,color .15s,border-color .15s;
+}
+.pb:hover{background:var(--bg3);color:var(--text);}
+.pb.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+.pb.loading-p{opacity:.5;pointer-events:none;}
+.custom-range{
+  display:none;align-items:center;gap:8px;
+  padding:8px 0 4px;flex-wrap:wrap;
+}
+.custom-range.open{display:flex;}
+.cr-input{
+  background:var(--bg3);border:1px solid var(--border);border-radius:6px;
+  color:var(--text);padding:5px 10px;font-family:inherit;font-size:.75rem;
+  outline:none;transition:border-color .2s;
+}
+.cr-input:focus{border-color:var(--accent);}
+.cr-sep{color:var(--t3);font-size:.75rem;}
+.cr-btn{
+  padding:5px 14px;background:var(--accent);color:#fff;border:none;
+  border-radius:6px;font-family:inherit;font-size:.75rem;font-weight:600;
+  cursor:pointer;transition:opacity .15s;
+}
+.cr-btn:hover{opacity:.85;}
+.price-wrap{position:relative;height:180px;}
+.price-loading{
+  position:absolute;inset:0;display:none;align-items:center;
+  justify-content:center;font-size:.75rem;color:var(--t3);
+  background:rgba(13,17,23,.6);border-radius:6px;z-index:2;
+}
+.price-loading.on{display:flex;}
+
 /* ── INFO BUTTON & TOOLTIP ── */
 .ind-label-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;}
 .wr-lbl-row{display:flex;align-items:center;justify-content:center;gap:5px;margin-bottom:6px;}
@@ -611,9 +651,30 @@ header{
         <div class="chart-lbl">Win rate per orizzonte temporale</div>
         <div class="chart-wrap"><canvas id="chart-wr"></canvas></div>
       </div>
-      <div class="chart-card">
-        <div class="chart-lbl">Prezzo — ultimi 12 mesi</div>
-        <div class="chart-wrap"><canvas id="chart-price"></canvas></div>
+      <div class="chart-card chart-card-price">
+        <div class="chart-top">
+          <div class="chart-lbl">Prezzo storico</div>
+          <div class="period-btns" id="period-btns">
+            <button class="pb" data-p="1M" onclick="selectPeriod('1M')">1M</button>
+            <button class="pb" data-p="3M" onclick="selectPeriod('3M')">3M</button>
+            <button class="pb" data-p="6M" onclick="selectPeriod('6M')">6M</button>
+            <button class="pb active" data-p="1Y" onclick="selectPeriod('1Y')">1A</button>
+            <button class="pb" data-p="2Y" onclick="selectPeriod('2Y')">2A</button>
+            <button class="pb" data-p="5Y" onclick="selectPeriod('5Y')">5A</button>
+            <button class="pb" data-p="MAX" onclick="selectPeriod('MAX')">MAX</button>
+            <button class="pb" data-p="custom" onclick="selectPeriod('custom')">⊞ Range</button>
+          </div>
+        </div>
+        <div class="custom-range" id="custom-range">
+          <input type="date" class="cr-input" id="cr-from">
+          <span class="cr-sep">→</span>
+          <input type="date" class="cr-input" id="cr-to">
+          <button class="cr-btn" onclick="applyCustomRange()">Applica</button>
+        </div>
+        <div class="price-wrap">
+          <div class="price-loading" id="price-loading">Carico dati…</div>
+          <canvas id="chart-price"></canvas>
+        </div>
       </div>
     </div>
 
@@ -1074,25 +1135,93 @@ function drawCharts(sea,di,wrs,ts,cl){
     }}
   });
 
-  const now=Date.now()/1000,yr=365*24*3600;
-  const pts=ts.map((t,i)=>({t,c:cl[i]})).filter(d=>d.t>now-yr);
-  if(pts.length<2)return;
-  const isUp=pts[pts.length-1].c>=pts[0].c;
+  // store full data, then draw at 1Y default
+  PDATA.ts=ts; PDATA.cl=cl;
+  selectPeriod('1Y',true);
+}
+
+// ── PRICE DATA STORE ──
+const PDATA={ts:[],cl:[],ticker:''};
+
+function redrawPriceChart(pTs,pCl){
+  if(CH.p){CH.p.destroy();CH.p=null;}
+  if(!pTs||pTs.length<2) return;
+  const isUp=pCl[pCl.length-1]>=pCl[0];
   const ctx=document.getElementById('chart-price').getContext('2d');
-  const gr=ctx.createLinearGradient(0,0,0,200);
-  gr.addColorStop(0,isUp?'rgba(16,185,129,.2)':'rgba(239,68,68,.2)');
+  const gr=ctx.createLinearGradient(0,0,0,240);
+  gr.addColorStop(0,isUp?'rgba(16,185,129,.22)':'rgba(239,68,68,.22)');
   gr.addColorStop(1,'transparent');
+  // label format depends on range span
+  const spanDays=(pTs[pTs.length-1]-pTs[0])/86400;
+  const fmtLabel=t=>new Date(t*1000).toLocaleDateString('it-IT',
+    spanDays>600?{year:'numeric',month:'short'}:spanDays>90?{month:'short',day:'numeric'}:{month:'short',day:'numeric'});
   CH.p=new Chart(ctx,{
     type:'line',
     data:{
-      labels:pts.map(d=>new Date(d.t*1000).toLocaleDateString('it-IT',{month:'short',day:'numeric'})),
-      datasets:[{data:pts.map(d=>d.c),borderColor:isUp?'#10b981':'#ef4444',backgroundColor:gr,borderWidth:1.5,pointRadius:0,fill:true,tension:.4}]
+      labels:pTs.map(fmtLabel),
+      datasets:[{data:pCl,borderColor:isUp?'#10b981':'#ef4444',backgroundColor:gr,borderWidth:1.5,pointRadius:0,fill:true,tension:.35}]
     },
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{
-      x:{grid:{display:false},ticks:{maxTicksLimit:6,maxRotation:0,color:'#8b949e',font:{size:10}},border:{display:false}},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{
+      callbacks:{label:c=>{const v=c.raw;return ' '+(v>=1000?v.toLocaleString('it-IT',{maximumFractionDigits:2}):v>=1?v.toFixed(2):v.toFixed(4));}},
+      mode:'index',intersect:false,
+    }},scales:{
+      x:{grid:{display:false},ticks:{maxTicksLimit:8,maxRotation:0,color:'#8b949e',font:{size:10}},border:{display:false}},
       y:{grid:{color:GC},ticks:{callback:v=>v>=1000?(v/1000).toFixed(1)+'k':v>=1?v.toFixed(2):v.toFixed(4),color:'#8b949e',font:{size:10}},border:{display:false}}
     }}
   });
+}
+
+function filterPeriod(ts,cl,days){
+  const cutoff=Date.now()/1000-(days*86400);
+  const pairs=ts.map((t,i)=>({t,c:cl[i]})).filter(d=>d.t>=cutoff);
+  return{ts:pairs.map(d=>d.t),cl:pairs.map(d=>d.c)};
+}
+
+const PERIOD_DAYS={'1M':30,'3M':90,'6M':180,'1Y':365,'2Y':730};
+const PERIOD_REFETCH={'5Y':'5y','MAX':'max'};
+
+async function selectPeriod(p,silent=false){
+  if(!silent){
+    document.querySelectorAll('.pb').forEach(b=>b.classList.toggle('active',b.dataset.p===p));
+    document.getElementById('custom-range').classList.toggle('open',p==='custom');
+  }
+  if(p==='custom') return;
+
+  if(PERIOD_REFETCH[p]){
+    // need more data than the 2y already fetched
+    const pl=document.getElementById('price-loading');
+    pl.classList.add('on');
+    document.querySelectorAll('.pb').forEach(b=>b.classList.add('loading-p'));
+    try{
+      const range=PERIOD_REFETCH[p];
+      const interval=p==='MAX'?'1wk':'1d';
+      const res=await fetchChart(PDATA.ticker,range,interval);
+      const rawTs=res.timestamp||[];
+      const rawCl=res.indicators?.quote?.[0]?.close||[];
+      const pairs=rawTs.map((t,i)=>({t,c:rawCl[i]})).filter(d=>d.c!=null&&!isNaN(d.c)&&d.c>0);
+      redrawPriceChart(pairs.map(d=>d.t),pairs.map(d=>d.c));
+    }catch{}finally{
+      pl.classList.remove('on');
+      document.querySelectorAll('.pb').forEach(b=>b.classList.remove('loading-p'));
+    }
+    return;
+  }
+
+  const days=PERIOD_DAYS[p];
+  const{ts,cl}=days?filterPeriod(PDATA.ts,PDATA.cl,days):{ts:PDATA.ts,cl:PDATA.cl};
+  redrawPriceChart(ts,cl);
+}
+
+function applyCustomRange(){
+  const fromVal=document.getElementById('cr-from').value;
+  const toVal=document.getElementById('cr-to').value;
+  if(!fromVal||!toVal) return;
+  const from=new Date(fromVal).getTime()/1000;
+  const to=new Date(toVal).getTime()/1000+86399;
+  if(from>=to) return;
+  const pairs=PDATA.ts.map((t,i)=>({t,c:PDATA.cl[i]})).filter(d=>d.t>=from&&d.t<=to);
+  if(pairs.length<2) return;
+  redrawPriceChart(pairs.map(d=>d.t),pairs.map(d=>d.c));
 }
 
 // ── SET INDICATOR ──
@@ -1186,6 +1315,19 @@ async function analyze(ticker){
     document.getElementById('wr-90').style.color=wrC(w90);
 
     // Charts
+    PDATA.ticker=ticker;
+    // reset period buttons to 1Y
+    document.querySelectorAll('.pb').forEach(b=>b.classList.toggle('active',b.dataset.p==='1Y'));
+    document.getElementById('custom-range').classList.remove('open');
+    // set date bounds for custom range picker
+    if(tss.length){
+      const minD=new Date(tss[0]*1000).toISOString().slice(0,10);
+      const maxD=new Date(tss[tss.length-1]*1000).toISOString().slice(0,10);
+      document.getElementById('cr-from').min=minD; document.getElementById('cr-from').max=maxD;
+      document.getElementById('cr-to').min=minD; document.getElementById('cr-to').max=maxD;
+      document.getElementById('cr-to').value=maxD;
+      document.getElementById('cr-from').value=new Date(Date.now()-365*86400000).toISOString().slice(0,10);
+    }
     drawCharts(seasonal(tss,cl),retDist(ret(cl)),[w7,w14,w30,w60,w90,w180,w365],tss,cl);
 
     document.getElementById('analysis').scrollIntoView({behavior:'smooth',block:'start'});

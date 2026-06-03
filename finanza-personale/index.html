@@ -64,7 +64,9 @@
       z-index: 0;
     }
 
-    #app { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; }
+    #app { position: relative; z-index: 1; min-height: 100dvh; display: flex; flex-direction: column; }
+    /* On home: lock to exact visible viewport so footer never scrolls off */
+    #app:has(#home.active) { height: 100dvh; overflow: hidden; }
 
     /* ─── HEADER ─── */
     header {
@@ -139,8 +141,7 @@
     .section.active { display: block; }
 
     /* ─── HOME ─── */
-    /* Let the #app column layout drive height — main is flex:1, home fills it */
-    #app:has(#home.active) { overflow: hidden; }
+    /* main becomes a flex column when home is active so #home can flex:1 */
     #app:has(#home.active) main {
       padding: 0 40px;
       display: flex;
@@ -172,7 +173,7 @@
       font-weight: 300;
       line-height: 1.15;
       color: var(--text);
-      margin-bottom: clamp(16px, 2.5vh, 28px);
+      margin-bottom: clamp(24px, 4vh, 36px);
       letter-spacing: -1px;
     }
 
@@ -826,6 +827,23 @@
     }
     .mkt-curr-pill:hover:not(.active) { border-color: var(--border-hover); color: var(--text); }
 
+    /* Filter pills (top/bottom gainers) */
+    .mkt-card-top {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 8px;
+    }
+    .mkt-filter-pills { display: flex; gap: 6px; }
+    .mkt-filter-pill {
+      padding: 4px 10px; background: transparent;
+      border: 1px solid var(--border); border-radius: 20px;
+      color: var(--muted); font-family: var(--mono); font-size: 11px;
+      cursor: pointer; transition: border-color 0.2s, color 0.2s, background 0.2s;
+    }
+    .mkt-filter-pill:hover:not(.active) { border-color: var(--border-hover); color: var(--text); }
+    .mkt-filter-pill.active[data-filter="all"]    { border-color: var(--border-hover); color: var(--text); background: var(--surface2); }
+    .mkt-filter-pill.active[data-filter="top"]    { background: rgba(0,229,160,0.1); border-color: #00e5a0; color: #00e5a0; }
+    .mkt-filter-pill.active[data-filter="bottom"] { background: rgba(255,77,77,0.1); border-color: #ff4d4d; color: #ff4d4d; }
+
     /* Market table */
     .mkt-table-wrap { overflow-x: auto; }
     .mkt-table { width: 100%; border-collapse: collapse; min-width: 480px; }
@@ -901,9 +919,10 @@
     /* ─── RESPONSIVE ─── */
     @media (max-width: 700px) {
       header { padding: 14px 20px; }
-      main { padding: 0 16px 60px; }
+      main { padding: 0 16px 40px; }
+      footer { padding: 14px 20px; }
       #app:has(#home.active) main { padding: 0 16px; }
-      .home-title { font-size: clamp(20px, 6vw, 30px); margin-bottom: 14px; }
+      .home-title { font-size: clamp(20px, 6vw, 30px); margin-bottom: clamp(20px, 3.5vh, 28px); }
       .card-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; max-width: 100%; }
       .nav-card { padding: 14px 12px; }
       .nav-card-icon { font-size: 20px; margin-bottom: 7px; }
@@ -1214,7 +1233,14 @@
 
       <!-- Market table -->
       <div class="detail-card">
-        <div class="detail-card-header" id="mkt-table-title">Dati di mercato</div>
+        <div class="detail-card-header mkt-card-top">
+          <span id="mkt-table-title">Dati di mercato</span>
+          <div class="mkt-filter-pills">
+            <button class="mkt-filter-pill active" data-filter="all"    onclick="selectMktFilter('all')">Tutti</button>
+            <button class="mkt-filter-pill"         data-filter="top"    onclick="selectMktFilter('top')">▲ Migliori</button>
+            <button class="mkt-filter-pill"         data-filter="bottom" onclick="selectMktFilter('bottom')">▼ Peggiori</button>
+          </div>
+        </div>
         <div class="mkt-table-wrap">
           <table class="mkt-table">
             <thead>
@@ -1926,6 +1952,7 @@ let mkt = {
   initialized: false,
   displayCurrency: 'auto',
   fxRates: null,
+  filter: 'all',
 };
 
 const MKT_CACHE_TTL = 5 * 60 * 1000;
@@ -2377,6 +2404,7 @@ function mktFinalize(gen) {
   document.getElementById('mkt-refresh-btn')?.classList.remove('spinning');
   const th = document.getElementById('mkt-price-th');
   if (th) th.textContent = `Prezzo (${getEffectiveCurrency()})`;
+  applyMktFilter();
 }
 
 /* ─── RETRY ROW ─── */
@@ -2402,6 +2430,9 @@ async function mktRetryRow(btn, symbol, name) {
 function selectMktCategory(cat) {
   mkt.category = cat;
   mkt.selectedSymbol = null;
+  mkt.filter = 'all';
+  document.querySelectorAll('.mkt-filter-pill').forEach(p =>
+    p.classList.toggle('active', p.dataset.filter === 'all'));
   closeMktChart();
   document.querySelectorAll('.mkt-tab').forEach(t => t.classList.toggle('active', t.dataset.cat === cat));
   mktLoad();
@@ -2533,6 +2564,38 @@ function sortMktTable(key) {
     if (key === 'price') return ((parseFloat(a.dataset.price)||0) - (parseFloat(b.dataset.price)||0)) * mkt.sortDir;
     return (a.dataset[key]||'').toLowerCase().localeCompare((b.dataset[key]||'').toLowerCase()) * mkt.sortDir;
   }).forEach(r => tbody.appendChild(r));
+}
+
+/* ─── FILTER (top/bottom gainers) ─── */
+function selectMktFilter(f) {
+  mkt.filter = f;
+  document.querySelectorAll('.mkt-filter-pill').forEach(p =>
+    p.classList.toggle('active', p.dataset.filter === f));
+  applyMktFilter();
+}
+
+function applyMktFilter() {
+  const tbody = document.getElementById('mkt-tbody');
+  if (!tbody) return;
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+
+  if (mkt.filter === 'all') {
+    rows.forEach(r => r.style.display = '');
+    return;
+  }
+
+  /* Only rank rows that have loaded data */
+  const loaded = rows.filter(r => r.dataset.change !== '' && !isNaN(parseFloat(r.dataset.change)));
+  const pending = rows.filter(r => !loaded.includes(r));
+
+  const sorted = [...loaded].sort((a, b) =>
+    parseFloat(b.dataset.change) - parseFloat(a.dataset.change));
+
+  const n = Math.min(5, Math.ceil(loaded.length / 2));
+  const visible = new Set(mkt.filter === 'top' ? sorted.slice(0, n) : sorted.slice(-n));
+
+  loaded.forEach(r => r.style.display = visible.has(r) ? '' : 'none');
+  pending.forEach(r => r.style.display = 'none');
 }
 
 /* ─── SEARCH (locale + fallback manuale) ─── */

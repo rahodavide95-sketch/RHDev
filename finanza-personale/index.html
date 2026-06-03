@@ -410,21 +410,20 @@
     }
 
     .page-badge {
-      font-family: var(--mono);
-      font-size: 10px;
-      letter-spacing: 1.8px;
-      text-transform: uppercase;
+      font-size: clamp(28px, 4vw, 40px);
+      font-weight: 700;
+      letter-spacing: -1px;
       color: var(--accent);
-      opacity: 0.75;
-      margin-bottom: 8px;
+      line-height: 1.05;
+      margin-bottom: 6px;
     }
 
     .page-title {
-      font-size: clamp(30px, 4vw, 42px);
-      font-weight: 300;
-      letter-spacing: -1.5px;
-      color: var(--text);
-      line-height: 1.05;
+      font-size: clamp(13px, 1.6vw, 16px);
+      font-weight: 400;
+      letter-spacing: 0;
+      color: var(--muted);
+      line-height: 1.3;
     }
 
     .back-btn {
@@ -1526,8 +1525,8 @@
           <span class="mkt-page-info" id="mkt-page-info"></span>
           <input  class="mkt-page-input"   id="mkt-page-input" type="number" min="1"
                   title="Vai a pagina"
-                  onchange="mktGoToPage(this.value)"
-                  onkeydown="if(event.key==='Enter'){this.blur();mktGoToPage(this.value);}">
+                  oninput="clearTimeout(this._t);this._t=setTimeout(()=>mktGoToPage(this.value),420)"
+                  onkeydown="if(event.key==='Enter'){clearTimeout(this._t);mktGoToPage(this.value);}">
           <button class="mkt-page-btn" id="mkt-page-next" onclick="mktChangePage(1)">→</button>
           <select class="mkt-page-size-sel" id="mkt-page-size"
                   onchange="mktSetPageSize(+this.value)" title="Titoli per pagina">
@@ -1548,10 +1547,10 @@
         </div>
         <div class="mkt-info-sub"  id="mkt-info-sub"></div>
         <div class="mkt-info-desc" id="mkt-info-desc"></div>
-        <div class="mkt-info-isin-row" id="mkt-info-isin-row">
+        <div class="mkt-info-isin-row" id="mkt-info-isin-row" style="display:none;">
           <span class="mkt-info-isin-label">ISIN</span>
           <span class="mkt-info-isin-code" id="mkt-info-isin-code"></span>
-          <button class="mkt-info-copy-btn" id="mkt-info-copy-btn" onclick="mktCopyIsin()" style="display:none;">copia</button>
+          <button class="mkt-info-copy-btn" id="mkt-info-copy-btn" onclick="mktCopyIsin()">copia</button>
         </div>
       </div>
 
@@ -3101,17 +3100,15 @@ function mktShowInfo(symbol, fallbackName, e) {
     : symbol;
   document.getElementById('mkt-info-desc').textContent  = info?.desc || '';
 
+  const isinRow  = document.getElementById('mkt-info-isin-row');
   const isinCode = document.getElementById('mkt-info-isin-code');
   const copyBtn  = document.getElementById('mkt-info-copy-btn');
   if (info?.isin) {
-    isinCode.textContent      = info.isin;
-    isinCode.style.opacity    = '1';
-    copyBtn.style.display     = 'inline-block';
-    copyBtn.textContent       = 'copia';
+    isinCode.textContent  = info.isin;
+    copyBtn.textContent   = 'copia';
+    isinRow.style.display = 'flex';
   } else {
-    isinCode.textContent      = '—';
-    isinCode.style.opacity    = '0.4';
-    copyBtn.style.display     = 'none';
+    isinRow.style.display = 'none';
   }
 
   // Position near click, keep within viewport

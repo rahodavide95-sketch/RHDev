@@ -640,27 +640,29 @@ function buildMarquee() {
   const sep  = ' &nbsp;—&nbsp; ';
   const items = [];
 
-  // Latest release (newest first)
+  const vis  = SITE.sections || {};
+
+  // Latest release (newest first — always shown)
   if (SITE.releases?.length) {
     const latest = [...SITE.releases]
       .sort((a, b) => parseReleaseDate(b.date || b.year) - parseReleaseDate(a.date || a.year))[0];
     if (latest) items.push(`New Release: ${esc(latest.artist)} &mdash; ${esc(latest.title)}`);
   }
 
-  // Latest event
-  if (SITE.events?.length) {
+  // Latest event — only if section is enabled
+  if (vis.events !== false && SITE.events?.length) {
     const ev = SITE.events[0];
     items.push(`Next Event: ${esc(ev.name)} &mdash; ${esc(ev.venue)}`);
   }
 
-  // Latest podcast
-  if (SITE.podcast?.length) {
+  // Latest podcast — only if section is enabled
+  if (vis.podcast !== false && SITE.podcast?.length) {
     const pod = SITE.podcast[0];
     items.push(`New Podcast: ${esc(pod.title)}`);
   }
 
-  // Latest merch
-  if (SITE.merch?.length) {
+  // Latest merch — only if section is enabled
+  if (vis.merch !== false && SITE.merch?.length) {
     const m = SITE.merch[0];
     items.push(`New Merch: ${esc(m.name)}`);
   }

@@ -416,6 +416,21 @@ header{
 .tt-body .tt-row{display:flex;gap:8px;margin-top:6px;}
 .tt-body .tt-k{font-weight:600;color:var(--text);white-space:nowrap;}
 
+/* ── SECTION SUBLABEL ── */
+.a-sec-lbl{
+  font-size:.65rem;font-weight:600;color:var(--t3);
+  text-transform:uppercase;letter-spacing:.1em;
+  margin:16px 0 10px;
+}
+.a-sec-lbl:first-child{margin-top:0;}
+
+/* ── PRICE RETURN BADGE ── */
+.price-ret{
+  font-size:.8rem;font-weight:700;
+  padding:2px 9px;border-radius:20px;
+  background:rgba(255,255,255,.05);
+}
+
 /* ── MISC ── */
 .footnote{
   text-align:center;font-size:.7rem;color:var(--t3);
@@ -598,12 +613,13 @@ header{
       <div class="sig-tags" id="sig-tags"></div>
     </div>
 
-    <!-- Indicators -->
+    <!-- Indicators + Win Rate unified grid -->
+    <div class="a-sec-lbl">Indicatori Tecnici</div>
     <div class="ind-grid">
       <div class="ind-card">
         <div class="ind-label-row">
           <div class="ind-label">RSI 14</div>
-          <button class="info-btn" data-tip="rsi" title="Cos'è l'RSI?">i</button>
+          <button class="info-btn" data-tip="rsi">i</button>
         </div>
         <div class="ind-val" id="iv-rsi">—</div>
         <div class="ind-sig" id="is-rsi">—</div>
@@ -611,7 +627,7 @@ header{
       <div class="ind-card">
         <div class="ind-label-row">
           <div class="ind-label">MA 50 giorni</div>
-          <button class="info-btn" data-tip="ma50" title="Cos'è la MA50?">i</button>
+          <button class="info-btn" data-tip="ma50">i</button>
         </div>
         <div class="ind-val" id="iv-ma50">—</div>
         <div class="ind-sig" id="is-ma50">—</div>
@@ -619,7 +635,7 @@ header{
       <div class="ind-card">
         <div class="ind-label-row">
           <div class="ind-label">MA 200 giorni</div>
-          <button class="info-btn" data-tip="ma200" title="Cos'è la MA200?">i</button>
+          <button class="info-btn" data-tip="ma200">i</button>
         </div>
         <div class="ind-val" id="iv-ma200">—</div>
         <div class="ind-sig" id="is-ma200">—</div>
@@ -627,7 +643,7 @@ header{
       <div class="ind-card">
         <div class="ind-label-row">
           <div class="ind-label">Volatilità (ann.)</div>
-          <button class="info-btn" data-tip="vol" title="Cos'è la volatilità?">i</button>
+          <button class="info-btn" data-tip="vol">i</button>
         </div>
         <div class="ind-val" id="iv-vol">—</div>
         <div class="ind-sig" id="is-vol">—</div>
@@ -635,7 +651,7 @@ header{
       <div class="ind-card">
         <div class="ind-label-row">
           <div class="ind-label">Momentum 20gg</div>
-          <button class="info-btn" data-tip="mom" title="Cos'è il momentum?">i</button>
+          <button class="info-btn" data-tip="mom">i</button>
         </div>
         <div class="ind-val" id="iv-mom">—</div>
         <div class="ind-sig" id="is-mom">—</div>
@@ -643,38 +659,38 @@ header{
       <div class="ind-card">
         <div class="ind-label-row">
           <div class="ind-label">Max Drawdown (1a)</div>
-          <button class="info-btn" data-tip="dd" title="Cos'è il drawdown?">i</button>
+          <button class="info-btn" data-tip="dd">i</button>
         </div>
         <div class="ind-val" id="iv-dd">—</div>
         <div class="ind-sig" id="is-dd">—</div>
       </div>
     </div>
 
-    <!-- Win Rates -->
-    <div class="wr-row">
-      <div class="wr-card">
-        <div class="wr-lbl-row">
-          <span class="wr-lbl">Win Rate 7gg</span>
-          <button class="info-btn" data-tip="wr" title="Cos'è il win rate?">i</button>
+    <div class="a-sec-lbl">Probabilità Storiche <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t3);font-size:.6rem;">— frequenza storica di rialzo nel periodo</span></div>
+    <div class="ind-grid">
+      <div class="ind-card">
+        <div class="ind-label-row">
+          <div class="ind-label">Win Rate 7gg</div>
+          <button class="info-btn" data-tip="wr">i</button>
         </div>
-        <div class="wr-val" id="wr-7">—</div>
-        <div class="wr-sub">storico</div>
+        <div class="ind-val" id="wr-7">—</div>
+        <div class="ind-sig" id="wr-7-sig">storico</div>
       </div>
-      <div class="wr-card">
-        <div class="wr-lbl-row">
-          <span class="wr-lbl">Win Rate 30gg</span>
-          <button class="info-btn" data-tip="wr" title="Cos'è il win rate?">i</button>
+      <div class="ind-card">
+        <div class="ind-label-row">
+          <div class="ind-label">Win Rate 30gg</div>
+          <button class="info-btn" data-tip="wr">i</button>
         </div>
-        <div class="wr-val" id="wr-30">—</div>
-        <div class="wr-sub">storico</div>
+        <div class="ind-val" id="wr-30">—</div>
+        <div class="ind-sig" id="wr-30-sig">storico</div>
       </div>
-      <div class="wr-card">
-        <div class="wr-lbl-row">
-          <span class="wr-lbl">Win Rate 90gg</span>
-          <button class="info-btn" data-tip="wr" title="Cos'è il win rate?">i</button>
+      <div class="ind-card">
+        <div class="ind-label-row">
+          <div class="ind-label">Win Rate 90gg</div>
+          <button class="info-btn" data-tip="wr">i</button>
         </div>
-        <div class="wr-val" id="wr-90">—</div>
-        <div class="wr-sub">storico</div>
+        <div class="ind-val" id="wr-90">—</div>
+        <div class="ind-sig" id="wr-90-sig">storico</div>
       </div>
     </div>
 
@@ -694,7 +710,10 @@ header{
       </div>
       <div class="chart-card chart-card-price">
         <div class="chart-top">
-          <div class="chart-lbl">Prezzo storico</div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <div class="chart-lbl">Prezzo storico</div>
+            <span class="price-ret" id="price-ret"></span>
+          </div>
           <div class="period-btns" id="period-btns">
             <button class="pb" data-p="1M" onclick="selectPeriod('1M')">1M</button>
             <button class="pb" data-p="3M" onclick="selectPeriod('3M')">3M</button>
@@ -1042,7 +1061,7 @@ async function loadPulse(){
   // fetch all 6 pulse tickers concurrently
   await Promise.all(PULSE.map(async sym=>{
     try{
-      const res=await fetchChart(sym,'6mo','1d');
+      const res=await fetchChart(sym,'2y','1d');
       const ts=res.timestamp||[];
       const raw=res.indicators?.quote?.[0]?.close||[];
       const cl=ts.map((_,i)=>raw[i]).filter(c=>c!=null&&!isNaN(c)&&c>0);
@@ -1188,6 +1207,10 @@ function redrawPriceChart(pTs,pCl){
   if(CH.p){CH.p.destroy();CH.p=null;}
   if(!pTs||pTs.length<2) return;
   const isUp=pCl[pCl.length-1]>=pCl[0];
+  // update return badge
+  const retPct=(pCl[pCl.length-1]-pCl[0])/pCl[0]*100;
+  const retEl=document.getElementById('price-ret');
+  if(retEl){retEl.textContent=(retPct>=0?'+':'')+retPct.toFixed(2)+'%';retEl.style.color=retPct>=0?'var(--g)':'var(--r)';}
   const ctx=document.getElementById('chart-price').getContext('2d');
   const gr=ctx.createLinearGradient(0,0,0,240);
   gr.addColorStop(0,isUp?'rgba(16,185,129,.22)':'rgba(239,68,68,.22)');
@@ -1348,12 +1371,13 @@ async function analyze(ticker){
 
     // Win rates
     const wrC=w=>w>=58?'var(--g)':w<=42?'var(--r)':'var(--y)';
-    document.getElementById('wr-7').textContent=w7.toFixed(1)+'%';
-    document.getElementById('wr-7').style.color=wrC(w7);
-    document.getElementById('wr-30').textContent=w30.toFixed(1)+'%';
-    document.getElementById('wr-30').style.color=wrC(w30);
-    document.getElementById('wr-90').textContent=w90.toFixed(1)+'%';
-    document.getElementById('wr-90').style.color=wrC(w90);
+    const wrLbl=w=>w>=58?'Vantaggio rialzista':w<=42?'Svantaggio storico':'Zona neutra';
+    [[w7,'7'],[w30,'30'],[w90,'90']].forEach(([w,id])=>{
+      const el=document.getElementById('wr-'+id);
+      const sl=document.getElementById('wr-'+id+'-sig');
+      el.textContent=w.toFixed(1)+'%'; el.style.color=wrC(w);
+      sl.textContent=wrLbl(w); sl.style.color=wrC(w);
+    });
 
     // Charts
     PDATA.ticker=ticker;

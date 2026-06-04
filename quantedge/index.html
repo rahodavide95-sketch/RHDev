@@ -484,30 +484,6 @@ header{
   padding:12px 0 4px;
 }
 
-/* ── ANALYST CONSENSUS ── */
-.analyst-wrap{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;margin-bottom:8px;}
-.analyst-bar-wrap{flex:1;min-width:220px;}
-.analyst-bar{
-  display:flex;height:10px;border-radius:6px;overflow:hidden;
-  gap:2px;margin-bottom:10px;
-}
-.ab-seg{height:100%;border-radius:3px;transition:width .7s ease;}
-.ab-sbuy{background:#10b981;}
-.ab-buy{background:#34d399;}
-.ab-hold{background:#f59e0b;}
-.ab-sell{background:#f97316;}
-.ab-ssell{background:#ef4444;}
-.analyst-legend{display:flex;flex-wrap:wrap;gap:8px 16px;}
-.al-item{display:flex;align-items:center;gap:5px;font-size:.72rem;color:var(--t2);}
-.al-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
-.al-item b{color:var(--text);}
-.analyst-verdict{
-  background:var(--bg3);border:1px solid var(--border);
-  border-radius:var(--radius);padding:12px 16px;
-  text-align:center;min-width:110px;flex-shrink:0;
-}
-.av-label{font-size:1rem;font-weight:700;margin-bottom:4px;}
-.av-sub{font-size:.7rem;color:var(--t3);}
 
 /* ── FEAR & GREED ── */
 .fg-wrap{margin-bottom:16px;}
@@ -837,33 +813,9 @@ header{
       </div>
     </div>
 
-    <!-- Analyst Consensus + Fundamentals -->
+    <!-- Fundamentals -->
     <div id="fund-section" style="display:none">
-      <div class="a-sec-lbl">Raccomandazioni Analisti <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t3);font-size:.6rem;">— consensus broker aggiornato</span></div>
-      <div class="analyst-wrap">
-        <div class="analyst-bar-wrap">
-          <div class="analyst-bar" id="analyst-bar">
-            <div class="ab-seg ab-sbuy" id="ab-sbuy" title="Strong Buy"></div>
-            <div class="ab-seg ab-buy" id="ab-buy" title="Buy"></div>
-            <div class="ab-seg ab-hold" id="ab-hold" title="Hold"></div>
-            <div class="ab-seg ab-sell" id="ab-sell" title="Sell"></div>
-            <div class="ab-seg ab-ssell" id="ab-ssell" title="Strong Sell"></div>
-          </div>
-          <div class="analyst-legend">
-            <span class="al-item"><span class="al-dot" style="background:#10b981"></span>Strong Buy <b id="al-sbuy">—</b></span>
-            <span class="al-item"><span class="al-dot" style="background:#34d399"></span>Buy <b id="al-buy">—</b></span>
-            <span class="al-item"><span class="al-dot" style="background:#f59e0b"></span>Hold <b id="al-hold">—</b></span>
-            <span class="al-item"><span class="al-dot" style="background:#f97316"></span>Sell <b id="al-sell">—</b></span>
-            <span class="al-item"><span class="al-dot" style="background:#ef4444"></span>Strong Sell <b id="al-ssell">—</b></span>
-          </div>
-        </div>
-        <div class="analyst-verdict" id="analyst-verdict">
-          <div class="av-label" id="av-label">—</div>
-          <div class="av-sub" id="av-sub">— analisti coperti</div>
-        </div>
-      </div>
-
-      <div class="a-sec-lbl" style="margin-top:14px">Fondamentali <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t3);font-size:.6rem;">— dati Yahoo Finance</span></div>
+      <div class="a-sec-lbl">Fondamentali <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t3);font-size:.6rem;">— dati Yahoo Finance</span></div>
       <div class="ind-grid">
         <div class="ind-card">
           <div class="ind-label-row"><div class="ind-label">ROE</div><button class="info-btn" data-tip="roe">i</button></div>
@@ -1195,7 +1147,7 @@ async function fetchChart(ticker,range='2y',interval='1d'){
 
 // ── FUNDAMENTALS FETCH ──
 async function fetchFundamentals(ticker){
-  const url=`https://query1.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(ticker)}?modules=financialData,defaultKeyStatistics,recommendationTrend`;
+  const url=`https://query1.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(ticker)}?modules=financialData,defaultKeyStatistics`;
   try{
     const data=await fetchJSON(url);
     const res=data?.quoteSummary?.result?.[0];
@@ -1306,12 +1258,6 @@ function edgeScore(R,M50,M200,V,Mo,w7,w30,w90,price,Mo3m=null,Mo6m=null,Mo12m=nu
     if(fund.roe!=null) s+=fund.roe>0.2?6:fund.roe>0.1?3:fund.roe>0?1:fund.roe>-0.05?-3:-6;
     if(fund.opMargin!=null) s+=fund.opMargin>0.2?4:fund.opMargin>0.1?2:fund.opMargin>=0?0:-4;
     if(fund.earningsGrowth!=null) s+=fund.earningsGrowth>0.2?5:fund.earningsGrowth>0.05?2:fund.earningsGrowth>=0?1:-4;
-    // Consensus analisti
-    const tot=fund.strongBuy+fund.buy+fund.hold+fund.sell+fund.strongSell;
-    if(tot>0){
-      const bullPct=(fund.strongBuy*2+fund.buy)/(tot*2)*100;
-      s+=bullPct>70?5:bullPct>50?2:bullPct<30?-5:-0;
-    }
   }
 
   return Math.max(0,Math.min(100,Math.round(s)));
@@ -1828,29 +1774,6 @@ function linReg(y){
 function renderFundamentals(fund){
   const sec=document.getElementById('fund-section');
   if(!fund){sec.style.display='none';return;}
-
-  // Analyst bar
-  const tot=fund.strongBuy+fund.buy+fund.hold+fund.sell+fund.strongSell;
-  if(tot>0){
-    const pct=x=>(x/tot*100).toFixed(1);
-    document.getElementById('ab-sbuy').style.width=pct(fund.strongBuy)+'%';
-    document.getElementById('ab-buy').style.width=pct(fund.buy)+'%';
-    document.getElementById('ab-hold').style.width=pct(fund.hold)+'%';
-    document.getElementById('ab-sell').style.width=pct(fund.sell)+'%';
-    document.getElementById('ab-ssell').style.width=pct(fund.strongSell)+'%';
-    document.getElementById('al-sbuy').textContent=fund.strongBuy;
-    document.getElementById('al-buy').textContent=fund.buy;
-    document.getElementById('al-hold').textContent=fund.hold;
-    document.getElementById('al-sell').textContent=fund.sell;
-    document.getElementById('al-ssell').textContent=fund.strongSell;
-    const bullPct=(fund.strongBuy+fund.buy)/tot*100;
-    const bearPct=(fund.sell+fund.strongSell)/tot*100;
-    const vLbl=bullPct>60?'Compra':bullPct>40&&bearPct<20?'Accumula':bearPct>40?'Vendi':fund.hold/tot>0.5?'Mantieni':'Neutrale';
-    const vColor=bullPct>60?'var(--g)':bearPct>40?'var(--r)':'var(--y)';
-    const verdict=document.getElementById('av-label');
-    verdict.textContent=vLbl; verdict.style.color=vColor;
-    document.getElementById('av-sub').textContent=`${tot} analisti`;
-  }
 
   // Fundamentals cards
   const pctFmt=v=>v!=null?(v*100).toFixed(1)+'%':'—';

@@ -1279,31 +1279,62 @@ const PANO={
 const PULSE=['SPY','QQQ','VGK','EEM','TLT','GLD'];
 
 async function loadPulse(){
-  // fetch all 6 pulse tickers concurrently
-  await Promise.all(PULSE.map(async sym=>{
-    try{
-      const res=await fetchChart(sym,'2y','1d');
-      const ts=res.timestamp||[];
-      const raw=res.indicators?.quote?.[0]?.close||[];
-      const cl=ts.map((_,i)=>raw[i]).filter(c=>c!=null&&!isNaN(c)&&c>0);
-      if(cl.length<2) return;
-      const score=scoreFromHistory(cl);
-      const cur=cl[cl.length-1], prev=cl[cl.length-2];
-      const chPct=(cur-prev)/prev*100;
-      const chEl=document.getElementById(`pc-ch-${sym}`);
-      chEl.textContent=(chPct>=0?'+':'')+chPct.toFixed(2)+'%';
-      chEl.className='pc-ch '+(chPct>=0?'up':'dn');
-      if(score!=null){
-        const color=sc(score);
-        document.getElementById(`pc-bar-${sym}`).style.cssText=`width:${score}%;background:${color}`;
-        const scEl=document.getElementById(`pc-sc-${sym}`);
-        scEl.textContent=score; scEl.style.color=color;
-      }
-      document.getElementById(`pc-${sym}`).onclick=()=>quickAnalyze(sym);
-    }catch{}
-  }));
+  let spyCl=null;
+  // fetch all 6 pulse tickers concurrently + VIX
+  const [,vixRes]=await Promise.all([
+    Promise.all(PULSE.map(async sym=>{
+      try{
+        const res=await fetchChart(sym,'2y','1d');
+        const ts=res.timestamp||[];
+        const raw=res.indicators?.quote?.[0]?.close||[];
+        const cl=ts.map((_,i)=>raw[i]).filter(c=>c!=null&&!isNaN(c)&&c>0);
+        if(cl.length<2) return;
+        if(sym==='SPY') spyCl=cl;
+        const score=scoreFromHistory(cl);
+        const cur=cl[cl.length-1], prev=cl[cl.length-2];
+        const chPct=(cur-prev)/prev*100;
+        const chEl=document.getElementById(`pc-ch-${sym}`);
+        chEl.textContent=(chPct>=0?'+':'')+chPct.toFixed(2)+'%';
+        chEl.className='pc-ch '+(chPct>=0?'up':'dn');
+        if(score!=null){
+          const color=sc(score);
+          document.getElementById(`pc-bar-${sym}`).style.cssText=`width:${score}%;background:${color}`;
+          const scEl=document.getElementById(`pc-sc-${sym}`);
+          scEl.textContent=score; scEl.style.color=color;
+        }
+        document.getElementById(`pc-${sym}`).onclick=()=>quickAnalyze(sym);
+      }catch{}
+    })),
+    fetchChart('^VIX','1mo','1d').catch(()=>null),
+  ]);
   const tsStr=new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
   document.getElementById('pulse-ts').textContent=`Aggiornato alle ${tsStr}`;
+
+  // ── Fear & Greed calculation ──
+  try{
+    if(spyCl&&spyCl.length>=21){
+      const R=rsi(spyCl); // RSI of SPY
+      const Mo=mom(spyCl); // Momentum 20gg
+      const rsiScore=R!=null?R:50;
+      const moScore=Mo!=null?50+Math.max(-50,Math.min(50,Mo*5)):50;
+      let fg;
+      if(vixRes){
+        const vixRaw=vixRes.indicators?.quote?.[0]?.close||[];
+        const vixCl=vixRaw.filter(c=>c!=null&&!isNaN(c)&&c>0);
+        if(vixCl.length){
+          const vix=vixCl[vixCl.length-1];
+          const vixScore=Math.max(0,Math.min(100,100-(vix-10)*3.5));
+          fg=Math.round(vixScore*0.5+rsiScore*0.3+moScore*0.2);
+        }
+      }
+      if(fg==null){
+        // fallback: only SPY RSI + momentum
+        fg=Math.round(rsiScore*0.6+moScore*0.4);
+      }
+      fg=Math.max(0,Math.min(100,fg));
+      renderFearGreed(fg);
+    }
+  }catch{}
 }
 
 async function loadPanoramica(){
@@ -1440,20 +1471,81 @@ function redrawPriceChart(pTs,pCl){
   const spanDays=(pTs[pTs.length-1]-pTs[0])/86400;
   const fmtLabel=t=>new Date(t*1000).toLocaleDateString('it-IT',
     spanDays>600?{year:'numeric',month:'short'}:spanDays>90?{month:'short',day:'numeric'}:{month:'short',day:'numeric'});
-  CH.p=new Chart(ctx,{
-    type:'line',
-    data:{
-      labels:pTs.map(fmtLabel),
-      datasets:[{data:pCl,borderColor:isUp?'#10b981':'#ef4444',backgroundColor:gr,borderWidth:1.5,pointRadius:0,fill:true,tension:.35}]
-    },
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{
-      callbacks:{label:c=>{const v=c.raw;return ' '+(v>=1000?v.toLocaleString('it-IT',{maximumFractionDigits:2}):v>=1?v.toFixed(2):v.toFixed(4));}},
-      mode:'index',intersect:false,
-    }},scales:{
-      x:{grid:{display:false},ticks:{maxTicksLimit:8,maxRotation:0,color:'#8b949e',font:{size:10}},border:{display:false}},
-      y:{grid:{color:GC},ticks:{callback:v=>v>=1000?(v/1000).toFixed(1)+'k':v>=1?v.toFixed(2):v.toFixed(4),color:'#8b949e',font:{size:10}},border:{display:false}}
-    }}
-  });
+
+  // ── Regression + forecast (only if enough data) ──
+  const extraDatasets=[];
+  const fmtEl=document.getElementById('forecast-txt');
+  if(fmtEl) fmtEl.innerHTML='';
+
+  if(pCl.length>=20){
+    const regLen=Math.min(90,pCl.length);
+    const regCl=pCl.slice(-regLen);
+    const {slope,intercept,sigma}=linReg(regCl);
+    const regStartIdx=pCl.length-regLen;
+    const PROJ=30;
+    const forecastData=new Array(pCl.length+PROJ).fill(null);
+    const upperData=new Array(pCl.length+PROJ).fill(null);
+    const lowerData=new Array(pCl.length+PROJ).fill(null);
+    for(let i=0;i<regLen+PROJ;i++){
+      const val=intercept+slope*i;
+      const ui=regStartIdx+i;
+      forecastData[ui]=val;
+      upperData[ui]=val+1.5*sigma;
+      lowerData[ui]=val-1.5*sigma;
+    }
+    extraDatasets.push(
+      {data:forecastData,borderColor:'rgba(139,148,158,.5)',borderDash:[5,4],borderWidth:1.5,pointRadius:0,fill:false,tension:0},
+      {data:upperData,borderColor:'transparent',backgroundColor:'rgba(59,130,246,.07)',borderWidth:0,pointRadius:0,fill:'+1',tension:0},
+      {data:lowerData,borderColor:'rgba(59,130,246,.18)',borderDash:[2,3],borderWidth:1,pointRadius:0,fill:false,tension:0}
+    );
+    // extend labels 30 days forward
+    const lastTs=pTs[pTs.length-1];
+    const projTs=[...pTs];
+    for(let i=1;i<=PROJ;i++) projTs.push(lastTs+i*86400);
+    const fmtLabelExt=t=>new Date(t*1000).toLocaleDateString('it-IT',spanDays>600?{year:'numeric',month:'short'}:spanDays>90?{month:'short',day:'numeric'}:{month:'short',day:'numeric'});
+    const extLabels=projTs.map(fmtLabelExt);
+
+    // forecast text
+    const targetPrice=intercept+slope*(regLen-1+PROJ);
+    const targetPct=(targetPrice-pCl[pCl.length-1])/pCl[pCl.length-1]*100;
+    if(fmtEl){
+      const arrow=targetPct>=0?'↑':'↓';
+      fmtEl.innerHTML=`<span style="color:var(--t3)">Trend regressione lineare (90gg) → stima 30gg:</span> <b style="color:${targetPct>=0?'var(--g)':'var(--r)'}">${arrow} ${Math.abs(targetPct).toFixed(1)}%</b> <span style="color:var(--t3)"> · Banda di confidenza ±1.5σ · Non è una previsione garantita</span>`;
+    }
+
+    CH.p=new Chart(ctx,{
+      type:'line',
+      data:{
+        labels:extLabels,
+        datasets:[
+          {data:[...pCl,...new Array(PROJ).fill(null)],borderColor:isUp?'#10b981':'#ef4444',backgroundColor:gr,borderWidth:1.5,pointRadius:0,fill:true,tension:.35},
+          ...extraDatasets
+        ]
+      },
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{
+        callbacks:{label:c=>{const v=c.raw;if(v==null)return null;return ' '+(v>=1000?v.toLocaleString('it-IT',{maximumFractionDigits:2}):v>=1?v.toFixed(2):v.toFixed(4));}},
+        mode:'index',intersect:false,filter:item=>item.raw!=null,
+      }},scales:{
+        x:{grid:{display:false},ticks:{maxTicksLimit:8,maxRotation:0,color:'#8b949e',font:{size:10}},border:{display:false}},
+        y:{grid:{color:GC},ticks:{callback:v=>v>=1000?(v/1000).toFixed(1)+'k':v>=1?v.toFixed(2):v.toFixed(4),color:'#8b949e',font:{size:10}},border:{display:false}}
+      }}
+    });
+  } else {
+    CH.p=new Chart(ctx,{
+      type:'line',
+      data:{
+        labels:pTs.map(fmtLabel),
+        datasets:[{data:pCl,borderColor:isUp?'#10b981':'#ef4444',backgroundColor:gr,borderWidth:1.5,pointRadius:0,fill:true,tension:.35}]
+      },
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{
+        callbacks:{label:c=>{const v=c.raw;return ' '+(v>=1000?v.toLocaleString('it-IT',{maximumFractionDigits:2}):v>=1?v.toFixed(2):v.toFixed(4));}},
+        mode:'index',intersect:false,
+      }},scales:{
+        x:{grid:{display:false},ticks:{maxTicksLimit:8,maxRotation:0,color:'#8b949e',font:{size:10}},border:{display:false}},
+        y:{grid:{color:GC},ticks:{callback:v=>v>=1000?(v/1000).toFixed(1)+'k':v>=1?v.toFixed(2):v.toFixed(4),color:'#8b949e',font:{size:10}},border:{display:false}}
+      }}
+    });
+  }
 }
 
 function filterPeriod(ts,cl,days){

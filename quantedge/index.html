@@ -508,6 +508,25 @@ header{
 
 /* ── FORECAST TEXT ── */
 .forecast-txt{font-size:.72rem;color:var(--t2);padding:6px 2px;min-height:18px;}
+
+/* ── ANALYST CONSENSUS ── */
+.analyst-wrap{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;margin-bottom:4px;}
+.analyst-bar-wrap{flex:1;min-width:220px;}
+.analyst-bar{display:flex;height:10px;border-radius:6px;overflow:hidden;gap:2px;margin-bottom:10px;}
+.ab-seg{height:100%;border-radius:3px;transition:width .8s ease;min-width:0;}
+.ab-sbuy{background:#10b981;}.ab-buy{background:#34d399;}
+.ab-hold{background:#f59e0b;}.ab-sell{background:#f97316;}.ab-ssell{background:#ef4444;}
+.analyst-legend{display:flex;flex-wrap:wrap;gap:6px 14px;}
+.al-item{display:flex;align-items:center;gap:5px;font-size:.72rem;color:var(--t2);}
+.al-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.al-item b{color:var(--text);}
+.analyst-verdict{
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:var(--radius);padding:14px 18px;
+  text-align:center;flex-shrink:0;min-width:120px;
+}
+.av-label{font-size:1.05rem;font-weight:700;margin-bottom:4px;}
+.av-sub{font-size:.68rem;color:var(--t3);}
 </style>
 </head>
 <body>
@@ -813,8 +832,33 @@ header{
       </div>
     </div>
 
-    <!-- Fundamentals -->
+    <!-- Analyst Consensus + Fundamentals -->
     <div id="fund-section" style="display:none">
+      <div class="a-sec-lbl">Consensus Analisti <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t3);font-size:.6rem;">— posizione media broker coperti</span></div>
+      <div class="analyst-wrap">
+        <div class="analyst-bar-wrap">
+          <div class="analyst-bar" id="analyst-bar">
+            <div class="ab-seg ab-sbuy" id="ab-sbuy" style="width:0%"></div>
+            <div class="ab-seg ab-buy"  id="ab-buy"  style="width:0%"></div>
+            <div class="ab-seg ab-hold" id="ab-hold" style="width:0%"></div>
+            <div class="ab-seg ab-sell" id="ab-sell" style="width:0%"></div>
+            <div class="ab-seg ab-ssell" id="ab-ssell" style="width:0%"></div>
+          </div>
+          <div class="analyst-legend">
+            <span class="al-item"><span class="al-dot" style="background:#10b981"></span>Strong Buy <b id="al-sbuy">—</b></span>
+            <span class="al-item"><span class="al-dot" style="background:#34d399"></span>Buy <b id="al-buy">—</b></span>
+            <span class="al-item"><span class="al-dot" style="background:#f59e0b"></span>Hold <b id="al-hold">—</b></span>
+            <span class="al-item"><span class="al-dot" style="background:#f97316"></span>Sell <b id="al-sell">—</b></span>
+            <span class="al-item"><span class="al-dot" style="background:#ef4444"></span>Strong Sell <b id="al-ssell">—</b></span>
+          </div>
+        </div>
+        <div class="analyst-verdict">
+          <div class="av-label" id="av-label">—</div>
+          <div class="av-sub" id="av-sub">—</div>
+        </div>
+      </div>
+
+      <div class="a-sec-lbl" style="margin-top:16px">Fondamentali
       <div class="a-sec-lbl">Fondamentali <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t3);font-size:.6rem;">— dati Yahoo Finance</span></div>
       <div class="ind-grid">
         <div class="ind-card">
@@ -1147,7 +1191,7 @@ async function fetchChart(ticker,range='2y',interval='1d'){
 
 // ── FUNDAMENTALS FETCH ──
 async function fetchFundamentals(ticker){
-  const url=`https://query1.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(ticker)}?modules=financialData,defaultKeyStatistics`;
+  const url=`https://query1.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(ticker)}?modules=financialData,defaultKeyStatistics,recommendationTrend`;
   try{
     const data=await fetchJSON(url);
     const res=data?.quoteSummary?.result?.[0];
@@ -1774,6 +1818,33 @@ function linReg(y){
 function renderFundamentals(fund){
   const sec=document.getElementById('fund-section');
   if(!fund){sec.style.display='none';return;}
+
+  // Analyst consensus
+  const tot=fund.strongBuy+fund.buy+fund.hold+fund.sell+fund.strongSell;
+  if(tot>0){
+    const pct=x=>Math.round(x/tot*100)+'%';
+    document.getElementById('ab-sbuy').style.width=pct(fund.strongBuy);
+    document.getElementById('ab-buy').style.width=pct(fund.buy);
+    document.getElementById('ab-hold').style.width=pct(fund.hold);
+    document.getElementById('ab-sell').style.width=pct(fund.sell);
+    document.getElementById('ab-ssell').style.width=pct(fund.strongSell);
+    document.getElementById('al-sbuy').textContent=fund.strongBuy;
+    document.getElementById('al-buy').textContent=fund.buy;
+    document.getElementById('al-hold').textContent=fund.hold;
+    document.getElementById('al-sell').textContent=fund.sell;
+    document.getElementById('al-ssell').textContent=fund.strongSell;
+    const bullPct=(fund.strongBuy+fund.buy)/tot*100;
+    const bearPct=(fund.sell+fund.strongSell)/tot*100;
+    const lbl=bullPct>=65?'Strong Buy':bullPct>=50?'Buy':bearPct>=50?'Strong Sell':bearPct>=35?'Sell':'Hold';
+    const color=bullPct>=50?'var(--g)':bearPct>=50?'var(--r)':'var(--y)';
+    document.getElementById('av-label').textContent=lbl;
+    document.getElementById('av-label').style.color=color;
+    document.getElementById('av-sub').textContent=`${tot} analisti`;
+  }else{
+    document.getElementById('av-label').textContent='N/D';
+    document.getElementById('av-label').style.color='var(--t3)';
+    document.getElementById('av-sub').textContent='nessuna copertura';
+  }
 
   // Fundamentals cards
   const pctFmt=v=>v!=null?(v*100).toFixed(1)+'%':'—';

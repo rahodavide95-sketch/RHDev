@@ -77,49 +77,56 @@ header{
 
 /* ── SEARCH LOADING SPINNER ── */
 .search-spinner{
-  position:absolute; right:10px; top:50%; transform:translateY(-50%);
+  position:absolute; right:10px; top:50%;
+  transform:translateY(-50%);
   width:14px; height:14px; border-radius:50%;
   border:2px solid var(--border);
   border-top-color:var(--accent);
-  animation:spin .7s linear infinite;
   display:none; pointer-events:none;
+  animation:spin-centered .7s linear infinite;
 }
 .search-spinner.on{display:block;}
-/* shift input padding when spinner visible */
 .search-input.loading{padding-right:30px;}
-@keyframes spin{to{transform:translateY(-50%) rotate(360deg);}}
+
+/* separate keyframes: spinner in absolute position keeps translateY, others just rotate */
+@keyframes spin-centered{
+  to{transform:translateY(-50%) rotate(360deg);}
+}
+@keyframes spin{
+  to{transform:rotate(360deg);}
+}
 
 /* ── BUTTON LOADING STATE ── */
 .btn-search.loading{
   pointer-events:none;
   background:var(--bg3); border:1px solid var(--accent);
   color:var(--accent); gap:8px;
-  display:inline-flex; align-items:center;
+  display:inline-flex !important; align-items:center; justify-content:center;
+  min-width:90px;
 }
 .btn-spinner{
-  width:13px; height:13px; border-radius:50%;
-  border:2px solid rgba(59,130,246,.3);
+  width:13px; height:13px; border-radius:50%; flex-shrink:0;
+  border:2px solid rgba(59,130,246,.25);
   border-top-color:var(--accent);
   animation:spin .7s linear infinite;
-  flex-shrink:0;
 }
 
 /* ── ANALYSIS OVERLAY ── */
 .a-overlay{
   display:none; position:absolute; inset:0;
-  background:rgba(13,17,23,.6); border-radius:var(--radius);
+  background:rgba(13,17,23,.75); border-radius:var(--radius);
   z-index:10; align-items:center; justify-content:center;
-  flex-direction:column; gap:12px;
-  backdrop-filter:blur(2px);
+  flex-direction:column; gap:14px;
+  backdrop-filter:blur(3px);
 }
 .a-overlay.on{display:flex;}
 .a-overlay-ring{
-  width:36px; height:36px; border-radius:50%;
+  width:40px; height:40px; border-radius:50%;
   border:3px solid var(--border);
   border-top-color:var(--accent);
   animation:spin .8s linear infinite;
 }
-.a-overlay-txt{font-size:.8rem; color:var(--t2);}
+.a-overlay-txt{font-size:.82rem; color:var(--t2); letter-spacing:.02em;}
 #analysis{position:relative;}
 
 /* Search dropdown */

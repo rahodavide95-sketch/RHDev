@@ -319,7 +319,7 @@ header{
 
 /* ── INDICATORS ── */
 .ind-grid{
-  display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:16px;
 }
 @media(max-width:700px){.ind-grid{grid-template-columns:repeat(2,1fr);}}
 .ind-card{
@@ -490,6 +490,31 @@ header{
   text-align:center;font-size:.7rem;color:var(--t3);
   padding:12px 0 4px;
 }
+
+/* ── ANALYST CONSENSUS ── */
+.analyst-wrap{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;margin-bottom:8px;}
+.analyst-bar-wrap{flex:1;min-width:220px;}
+.analyst-bar{
+  display:flex;height:10px;border-radius:6px;overflow:hidden;
+  gap:2px;margin-bottom:10px;
+}
+.ab-seg{height:100%;border-radius:3px;transition:width .7s ease;}
+.ab-sbuy{background:#10b981;}
+.ab-buy{background:#34d399;}
+.ab-hold{background:#f59e0b;}
+.ab-sell{background:#f97316;}
+.ab-ssell{background:#ef4444;}
+.analyst-legend{display:flex;flex-wrap:wrap;gap:8px 16px;}
+.al-item{display:flex;align-items:center;gap:5px;font-size:.72rem;color:var(--t2);}
+.al-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.al-item b{color:var(--text);}
+.analyst-verdict{
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:var(--radius);padding:12px 16px;
+  text-align:center;min-width:110px;flex-shrink:0;
+}
+.av-label{font-size:1rem;font-weight:700;margin-bottom:4px;}
+.av-sub{font-size:.7rem;color:var(--t3);}
 
 /* ── FEAR & GREED ── */
 .fg-wrap{margin-bottom:16px;}
@@ -759,11 +784,27 @@ header{
       </div>
       <div class="ind-card">
         <div class="ind-label-row">
-          <div class="ind-label">Momentum 20gg</div>
+          <div class="ind-label">Momentum 3M</div>
           <button class="info-btn" data-tip="mom">i</button>
         </div>
-        <div class="ind-val" id="iv-mom">—</div>
-        <div class="ind-sig" id="is-mom">—</div>
+        <div class="ind-val" id="iv-mo3m">—</div>
+        <div class="ind-sig" id="is-mo3m">—</div>
+      </div>
+      <div class="ind-card">
+        <div class="ind-label-row">
+          <div class="ind-label">Momentum 6M</div>
+          <button class="info-btn" data-tip="mom">i</button>
+        </div>
+        <div class="ind-val" id="iv-mo6m">—</div>
+        <div class="ind-sig" id="is-mo6m">—</div>
+      </div>
+      <div class="ind-card">
+        <div class="ind-label-row">
+          <div class="ind-label">Momentum 12M</div>
+          <button class="info-btn" data-tip="mom">i</button>
+        </div>
+        <div class="ind-val" id="iv-mo12m">—</div>
+        <div class="ind-sig" id="is-mo12m">—</div>
       </div>
       <div class="ind-card">
         <div class="ind-label-row">
@@ -800,6 +841,67 @@ header{
         </div>
         <div class="ind-val" id="wr-90">—</div>
         <div class="ind-sig" id="wr-90-sig">storico</div>
+      </div>
+    </div>
+
+    <!-- Analyst Consensus + Fundamentals -->
+    <div id="fund-section" style="display:none">
+      <div class="a-sec-lbl">Raccomandazioni Analisti <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t3);font-size:.6rem;">— consensus broker aggiornato</span></div>
+      <div class="analyst-wrap">
+        <div class="analyst-bar-wrap">
+          <div class="analyst-bar" id="analyst-bar">
+            <div class="ab-seg ab-sbuy" id="ab-sbuy" title="Strong Buy"></div>
+            <div class="ab-seg ab-buy" id="ab-buy" title="Buy"></div>
+            <div class="ab-seg ab-hold" id="ab-hold" title="Hold"></div>
+            <div class="ab-seg ab-sell" id="ab-sell" title="Sell"></div>
+            <div class="ab-seg ab-ssell" id="ab-ssell" title="Strong Sell"></div>
+          </div>
+          <div class="analyst-legend">
+            <span class="al-item"><span class="al-dot" style="background:#10b981"></span>Strong Buy <b id="al-sbuy">—</b></span>
+            <span class="al-item"><span class="al-dot" style="background:#34d399"></span>Buy <b id="al-buy">—</b></span>
+            <span class="al-item"><span class="al-dot" style="background:#f59e0b"></span>Hold <b id="al-hold">—</b></span>
+            <span class="al-item"><span class="al-dot" style="background:#f97316"></span>Sell <b id="al-sell">—</b></span>
+            <span class="al-item"><span class="al-dot" style="background:#ef4444"></span>Strong Sell <b id="al-ssell">—</b></span>
+          </div>
+        </div>
+        <div class="analyst-verdict" id="analyst-verdict">
+          <div class="av-label" id="av-label">—</div>
+          <div class="av-sub" id="av-sub">— analisti coperti</div>
+        </div>
+      </div>
+
+      <div class="a-sec-lbl" style="margin-top:14px">Fondamentali <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t3);font-size:.6rem;">— dati Yahoo Finance</span></div>
+      <div class="ind-grid">
+        <div class="ind-card">
+          <div class="ind-label-row"><div class="ind-label">ROE</div><button class="info-btn" data-tip="roe">i</button></div>
+          <div class="ind-val" id="iv-roe">—</div>
+          <div class="ind-sig" id="is-roe">—</div>
+        </div>
+        <div class="ind-card">
+          <div class="ind-label-row"><div class="ind-label">Margine Operativo</div><button class="info-btn" data-tip="opmargin">i</button></div>
+          <div class="ind-val" id="iv-opm">—</div>
+          <div class="ind-sig" id="is-opm">—</div>
+        </div>
+        <div class="ind-card">
+          <div class="ind-label-row"><div class="ind-label">Crescita Utili</div><button class="info-btn" data-tip="egrowth">i</button></div>
+          <div class="ind-val" id="iv-eg">—</div>
+          <div class="ind-sig" id="is-eg">—</div>
+        </div>
+        <div class="ind-card">
+          <div class="ind-label-row"><div class="ind-label">Crescita Ricavi</div><button class="info-btn" data-tip="egrowth">i</button></div>
+          <div class="ind-val" id="iv-rg">—</div>
+          <div class="ind-sig" id="is-rg">—</div>
+        </div>
+        <div class="ind-card">
+          <div class="ind-label-row"><div class="ind-label">Price/Book</div><button class="info-btn" data-tip="pb">i</button></div>
+          <div class="ind-val" id="iv-pb">—</div>
+          <div class="ind-sig" id="is-pb">—</div>
+        </div>
+        <div class="ind-card">
+          <div class="ind-label-row"><div class="ind-label">PEG Ratio</div><button class="info-btn" data-tip="peg">i</button></div>
+          <div class="ind-val" id="iv-peg">—</div>
+          <div class="ind-sig" id="is-peg">—</div>
+        </div>
       </div>
     </div>
 
@@ -1098,6 +1200,32 @@ async function fetchChart(ticker,range='2y',interval='1d'){
   return res;
 }
 
+// ── FUNDAMENTALS FETCH ──
+async function fetchFundamentals(ticker){
+  const url=`https://query1.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(ticker)}?modules=financialData,defaultKeyStatistics,recommendationTrend`;
+  try{
+    const data=await fetchJSON(url);
+    const res=data?.quoteSummary?.result?.[0];
+    if(!res) return null;
+    const fd=res.financialData||{};
+    const ks=res.defaultKeyStatistics||{};
+    const rt=(res.recommendationTrend?.trend||[])[0]||{};
+    return{
+      roe:fd.returnOnEquity?.raw??null,
+      opMargin:fd.operatingMargins?.raw??null,
+      earningsGrowth:fd.earningsGrowth?.raw??null,
+      revenueGrowth:fd.revenueGrowth?.raw??null,
+      pb:ks.priceToBook?.raw??null,
+      peg:ks.pegRatio?.raw??null,
+      strongBuy:rt.strongBuy||0,
+      buy:rt.buy||0,
+      hold:rt.hold||0,
+      sell:rt.sell||0,
+      strongSell:rt.strongSell||0,
+    };
+  }catch{return null;}
+}
+
 // ── FETCH & SCORE A SINGLE TICKER (for panoramica) ──
 async function fetchAndScore(ticker){
   const cached=getCached(ticker);
@@ -1154,14 +1282,45 @@ function retDist(returns){
   returns.forEach(r=>{const p=r*100;if(p<bk[0]){ct[0]++;return;}for(let i=0;i<bk.length-1;i++)if(p>=bk[i]&&p<bk[i+1]){ct[i+1]++;return;}ct[ct.length-1]++;});
   return{lb,ct};
 }
-function edgeScore(R,M50,M200,V,Mo,w7,w30,w90,price){
+function edgeScore(R,M50,M200,V,Mo,w7,w30,w90,price,Mo3m=null,Mo6m=null,Mo12m=null,fund=null,seasonPct=null){
   let s=50;
-  if(R!=null)s+=R<30?15:R<40?8:R>70?-15:R>60?-8:0;
-  if(M50!=null)s+=price>M50*1.02?8:price>M50?4:price<M50*.98?-8:-4;
-  if(M200!=null)s+=price>M200*1.05?10:price>M200?5:price<M200*.95?-10:-5;
-  if(Mo!=null)s+=Mo>5?6:Mo>0?3:Mo<-5?-6:-3;
-  s+=(((w7+w30+w90)/3)-50)*.3;
-  if(V!=null)s+=V>60?-8:V>40?-4:V<15?3:0;
+
+  // TREND (MA50 + MA200 + cross)
+  if(M50!=null) s+=price>M50*1.02?8:price>M50?4:price<M50*.98?-8:-4;
+  if(M200!=null) s+=price>M200*1.05?10:price>M200?5:price<M200*.95?-10:-5;
+  if(M50&&M200) s+=M50>M200?3:-3; // golden/death cross
+
+  // MOMENTUM multi-timeframe
+  if(Mo3m!=null) s+=Mo3m>10?9:Mo3m>5?5:Mo3m>0?2:Mo3m>-5?-3:Mo3m>-10?-7:-10;
+  else if(Mo!=null) s+=Mo>5?6:Mo>0?3:Mo<-5?-6:-3; // fallback 20gg
+  if(Mo6m!=null) s+=Mo6m>15?6:Mo6m>5?3:Mo6m>0?1:Mo6m>-10?-4:-7;
+  if(Mo12m!=null) s+=Mo12m>20?5:Mo12m>5?2:Mo12m>0?1:Mo12m>-15?-3:-5;
+
+  // RSI
+  if(R!=null) s+=R<30?8:R<40?4:R>70?-8:R>60?-4:0;
+
+  // VOLATILITY
+  if(V!=null) s+=V>60?-10:V>40?-5:V>25?-2:V<15?3:0;
+
+  // WIN RATE storico
+  s+=(((w7+w30+w90)/3)-50)*0.25;
+
+  // STAGIONALITÀ mese corrente
+  if(seasonPct!=null) s+=(seasonPct-50)*0.15;
+
+  // FONDAMENTALI (solo se disponibili — azioni)
+  if(fund){
+    if(fund.roe!=null) s+=fund.roe>0.2?6:fund.roe>0.1?3:fund.roe>0?1:fund.roe>-0.05?-3:-6;
+    if(fund.opMargin!=null) s+=fund.opMargin>0.2?4:fund.opMargin>0.1?2:fund.opMargin>=0?0:-4;
+    if(fund.earningsGrowth!=null) s+=fund.earningsGrowth>0.2?5:fund.earningsGrowth>0.05?2:fund.earningsGrowth>=0?1:-4;
+    // Consensus analisti
+    const tot=fund.strongBuy+fund.buy+fund.hold+fund.sell+fund.strongSell;
+    if(tot>0){
+      const bullPct=(fund.strongBuy*2+fund.buy)/(tot*2)*100;
+      s+=bullPct>70?5:bullPct>50?2:bullPct<30?-5:-0;
+    }
+  }
+
   return Math.max(0,Math.min(100,Math.round(s)));
 }
 
@@ -1672,6 +1831,58 @@ function linReg(y){
   return{slope,intercept,sigma};
 }
 
+// ── RENDER FUNDAMENTALS ──
+function renderFundamentals(fund){
+  const sec=document.getElementById('fund-section');
+  if(!fund){sec.style.display='none';return;}
+
+  // Analyst bar
+  const tot=fund.strongBuy+fund.buy+fund.hold+fund.sell+fund.strongSell;
+  if(tot>0){
+    const pct=x=>(x/tot*100).toFixed(1);
+    document.getElementById('ab-sbuy').style.width=pct(fund.strongBuy)+'%';
+    document.getElementById('ab-buy').style.width=pct(fund.buy)+'%';
+    document.getElementById('ab-hold').style.width=pct(fund.hold)+'%';
+    document.getElementById('ab-sell').style.width=pct(fund.sell)+'%';
+    document.getElementById('ab-ssell').style.width=pct(fund.strongSell)+'%';
+    document.getElementById('al-sbuy').textContent=fund.strongBuy;
+    document.getElementById('al-buy').textContent=fund.buy;
+    document.getElementById('al-hold').textContent=fund.hold;
+    document.getElementById('al-sell').textContent=fund.sell;
+    document.getElementById('al-ssell').textContent=fund.strongSell;
+    const bullPct=(fund.strongBuy+fund.buy)/tot*100;
+    const bearPct=(fund.sell+fund.strongSell)/tot*100;
+    const vLbl=bullPct>60?'Compra':bullPct>40&&bearPct<20?'Accumula':bearPct>40?'Vendi':fund.hold/tot>0.5?'Mantieni':'Neutrale';
+    const vColor=bullPct>60?'var(--g)':bearPct>40?'var(--r)':'var(--y)';
+    const verdict=document.getElementById('av-label');
+    verdict.textContent=vLbl; verdict.style.color=vColor;
+    document.getElementById('av-sub').textContent=`${tot} analisti`;
+  }
+
+  // Fundamentals cards
+  const pctFmt=v=>v!=null?(v*100).toFixed(1)+'%':'—';
+
+  const roeC=fund.roe==null?'var(--t3)':fund.roe>0.15?'var(--g)':fund.roe>0?'var(--y)':'var(--r)';
+  setInd('iv-roe','is-roe',pctFmt(fund.roe),fund.roe==null?'N/D — ETF/crypto/forex':fund.roe>0.2?'Eccellente':fund.roe>0.1?'Buono':fund.roe>0?'Accettabile':'Negativo',roeC);
+
+  const opmC=fund.opMargin==null?'var(--t3)':fund.opMargin>0.15?'var(--g)':fund.opMargin>0?'var(--y)':'var(--r)';
+  setInd('iv-opm','is-opm',pctFmt(fund.opMargin),fund.opMargin==null?'N/D':fund.opMargin>0.2?'Alta efficienza':fund.opMargin>0.1?'Buono':fund.opMargin>0?'Moderato':'Negativo',opmC);
+
+  const egC=fund.earningsGrowth==null?'var(--t3)':fund.earningsGrowth>0.1?'var(--g)':fund.earningsGrowth>=0?'var(--y)':'var(--r)';
+  setInd('iv-eg','is-eg',pctFmt(fund.earningsGrowth),fund.earningsGrowth==null?'N/D':fund.earningsGrowth>0.2?'Forte crescita':fund.earningsGrowth>0.05?'Crescita positiva':fund.earningsGrowth>=0?'Stabile':'In calo',egC);
+
+  const rgC=fund.revenueGrowth==null?'var(--t3)':fund.revenueGrowth>0.1?'var(--g)':fund.revenueGrowth>=0?'var(--y)':'var(--r)';
+  setInd('iv-rg','is-rg',pctFmt(fund.revenueGrowth),fund.revenueGrowth==null?'N/D':fund.revenueGrowth>0.15?'Forte espansione':fund.revenueGrowth>0.05?'In crescita':fund.revenueGrowth>=0?'Stabile':'In calo',rgC);
+
+  const pbC=fund.pb==null?'var(--t3)':fund.pb<1?'var(--g)':fund.pb<3?'var(--y)':'var(--r)';
+  setInd('iv-pb','is-pb',fund.pb!=null?fund.pb.toFixed(2)+'x':'—',fund.pb==null?'N/D':fund.pb<1?'Sotto book — potenziale valore':fund.pb<3?'Nella norma':fund.pb<6?'Premium':'Molto elevato',pbC);
+
+  const pegC=fund.peg==null?'var(--t3)':fund.peg<1?'var(--g)':fund.peg<2?'var(--y)':'var(--r)';
+  setInd('iv-peg','is-peg',fund.peg!=null?fund.peg.toFixed(2):'—',fund.peg==null?'N/D':fund.peg<1?'Sottovalutato':fund.peg<2?'Fair value':fund.peg<3?'Leggermente caro':'Sopravvalutato',pegC);
+
+  sec.style.display='block';
+}
+
 // ── ANALYZE ──
 async function analyze(ticker){
   ticker=(ticker||'').trim().toUpperCase();
@@ -1697,7 +1908,16 @@ async function analyze(ticker){
 
     const R=rsi(cl), M50=ma(cl,50), M200=ma(cl,200), V=vol(cl), Mo=mom(cl), DD=drawdown(cl.slice(-252));
     const w7=wr(cl,7),w14=wr(cl,14),w30=wr(cl,30),w60=wr(cl,60),w90=wr(cl,90),w180=wr(cl,180),w365=wr(cl,Math.min(365,Math.floor(cl.length*.8)));
-    const score=edgeScore(R,M50,M200,V,Mo,w7,w30,w90,cur);
+    // momentum multi-timeframe
+    const Mo3m=cl.length>=65?mom(cl,65):null;
+    const Mo6m=cl.length>=130?mom(cl,130):null;
+    const Mo12m=cl.length>=252?mom(cl,252):null;
+    // stagionalità mese corrente
+    const curMonthSea=seasonal(tss,cl)[new Date().getMonth()];
+    const seasonPct=curMonthSea?curMonthSea.p:null;
+    // fetch fondamentali in parallelo (non blocca se fallisce)
+    const fund=await fetchFundamentals(ticker).catch(()=>null);
+    const score=edgeScore(R,M50,M200,V,Mo,w7,w30,w90,cur,Mo3m,Mo6m,Mo12m,fund,seasonPct);
 
     // Header
     document.getElementById('a-name').textContent=meta.longName||meta.shortName||ticker;
@@ -1738,8 +1958,11 @@ async function analyze(ticker){
     const vc=V==null?'var(--t3)':V>50?'var(--r)':V>25?'var(--y)':'var(--g)';
     setInd('iv-vol','is-vol',V?V.toFixed(1)+'%':'—',V?V>50?'Alta — ridurre il sizing':V>25?'Moderata':'Bassa — condizioni favorevoli':'—',vc);
 
-    const mc=Mo==null?'var(--t3)':Mo>0?'var(--g)':'var(--r)';
-    setInd('iv-mom','is-mom',Mo?(Mo>0?'+':'')+Mo.toFixed(2)+'%':'—',Mo?Mo>5?'Forte positivo':Mo>0?'Positivo':Mo<-5?'Forte negativo':'Negativo':'—',mc);
+    [[Mo3m,'iv-mo3m','is-mo3m','3M'],[Mo6m,'iv-mo6m','is-mo6m','6M'],[Mo12m,'iv-mo12m','is-mo12m','12M']].forEach(([mo,vid,sid,lbl])=>{
+      const c=mo==null?'var(--t3)':mo>0?'var(--g)':'var(--r)';
+      const sig=mo==null?'—':mo>10?'Forte rialzo':mo>5?'Positivo':mo>0?'Lieve positivo':mo>-5?'Lieve negativo':mo<-10?'Forte ribasso':'Negativo';
+      setInd(vid,sid,mo!=null?(mo>0?'+':'')+mo.toFixed(2)+'%':'—',sig,c);
+    });
 
     const dc=DD>30?'var(--r)':DD>15?'var(--y)':'var(--g)';
     setInd('iv-dd','is-dd','-'+DD.toFixed(1)+'%',DD>30?'Drawdown severo — alta rischiosità':DD>15?'Moderato':'Contenuto — buona resilienza',dc);

@@ -73,7 +73,54 @@ header{
 }
 .btn-search:hover{opacity:.85;}
 .btn-search:active{transform:scale(.97);}
-.btn-search:disabled{opacity:.5;cursor:not-allowed;}
+.btn-search:disabled{opacity:.7;cursor:not-allowed;}
+
+/* ── SEARCH LOADING SPINNER ── */
+.search-spinner{
+  position:absolute; right:10px; top:50%; transform:translateY(-50%);
+  width:14px; height:14px; border-radius:50%;
+  border:2px solid var(--border);
+  border-top-color:var(--accent);
+  animation:spin .7s linear infinite;
+  display:none; pointer-events:none;
+}
+.search-spinner.on{display:block;}
+/* shift input padding when spinner visible */
+.search-input.loading{padding-right:30px;}
+@keyframes spin{to{transform:translateY(-50%) rotate(360deg);}}
+
+/* ── BUTTON LOADING STATE ── */
+.btn-search.loading{
+  pointer-events:none;
+  background:var(--bg3); border:1px solid var(--accent);
+  color:var(--accent); gap:8px;
+  display:inline-flex; align-items:center;
+}
+.btn-spinner{
+  width:13px; height:13px; border-radius:50%;
+  border:2px solid rgba(59,130,246,.3);
+  border-top-color:var(--accent);
+  animation:spin .7s linear infinite;
+  flex-shrink:0;
+}
+
+/* ── ANALYSIS OVERLAY ── */
+.a-overlay{
+  display:none; position:absolute; inset:0;
+  background:rgba(13,17,23,.6); border-radius:var(--radius);
+  z-index:10; align-items:center; justify-content:center;
+  flex-direction:column; gap:12px;
+  backdrop-filter:blur(2px);
+}
+.a-overlay.on{display:flex;}
+.a-overlay-ring{
+  width:36px; height:36px; border-radius:50%;
+  border:3px solid var(--border);
+  border-top-color:var(--accent);
+  animation:spin .8s linear infinite;
+}
+.a-overlay-txt{font-size:.8rem; color:var(--t2);}
+#analysis{position:relative;}
 
 /* Search dropdown */
 .search-dropdown{
@@ -436,6 +483,30 @@ header{
   text-align:center;font-size:.7rem;color:var(--t3);
   padding:12px 0 4px;
 }
+
+/* ── FEAR & GREED ── */
+.fg-wrap{margin-bottom:16px;}
+.fg-card{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--radius);padding:16px 20px;
+  display:flex;align-items:center;gap:24px;flex-wrap:wrap;
+}
+.fg-top{display:flex;flex-direction:column;gap:3px;min-width:140px;}
+.fg-title{font-size:.7rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;}
+.fg-sub{font-size:.75rem;color:var(--t2);margin-top:2px;}
+.fg-gauge-wrap{display:flex;align-items:center;gap:16px;}
+.fg-gauge{width:160px;height:88px;flex-shrink:0;}
+.fg-score-wrap{display:flex;flex-direction:column;gap:2px;}
+.fg-score{font-size:2rem;font-weight:700;font-variant-numeric:tabular-nums;}
+.fg-label{font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;}
+@media(max-width:640px){
+  .fg-card{gap:12px;}
+  .fg-gauge{width:130px;height:72px;}
+  .fg-score{font-size:1.5rem;}
+}
+
+/* ── FORECAST TEXT ── */
+.forecast-txt{font-size:.72rem;color:var(--t2);padding:6px 2px;min-height:18px;}
 </style>
 </head>
 <body>
@@ -448,11 +519,12 @@ header{
   </div>
 
   <div class="search-wrap">
-    <span class="search-ico">⌕</span>
+    <span class="search-ico" id="search-ico">⌕</span>
     <div class="search-row">
       <input id="search-input" class="search-input" type="text"
         placeholder="Cerca ticker o nome (es. AAPL, Tesla, S&amp;P 500...)"
         autocomplete="off" spellcheck="false">
+      <div class="search-spinner" id="search-spinner"></div>
       <button class="btn-search" id="btn-analyze" onclick="runAnalyze()">Analizza</button>
     </div>
     <div class="search-dropdown" id="search-dropdown"></div>
@@ -477,6 +549,32 @@ header{
     <div class="sec-hd">
       <span class="sec-title">Market Pulse — Panoramica Globale</span>
       <span class="sec-sub" id="pulse-ts"></span>
+    </div>
+    <div class="fg-wrap" id="fg-wrap">
+      <div class="fg-card">
+        <div class="fg-top">
+          <span class="fg-title">Fear &amp; Greed Index</span>
+          <span class="fg-sub" id="fg-sub">Caricamento…</span>
+        </div>
+        <div class="fg-gauge-wrap">
+          <svg class="fg-gauge" viewBox="0 0 200 110" fill="none">
+            <!-- background arc -->
+            <path d="M20,100 A80,80 0 0,1 180,100" stroke="#21262d" stroke-width="14" stroke-linecap="round"/>
+            <!-- colored arc — stroke-dasharray driven by JS -->
+            <path id="fg-arc" d="M20,100 A80,80 0 0,1 180,100" stroke="#f59e0b" stroke-width="14" stroke-linecap="round"
+              stroke-dasharray="251.2" stroke-dashoffset="251.2" style="transition:stroke-dashoffset 1s ease,stroke 1s ease"/>
+            <!-- needle -->
+            <line id="fg-needle" x1="100" y1="100" x2="100" y2="28"
+              stroke="#e6edf3" stroke-width="2.5" stroke-linecap="round"
+              style="transform-origin:100px 100px;transform:rotate(-90deg);transition:transform 1s ease"/>
+            <circle cx="100" cy="100" r="5" fill="#e6edf3"/>
+          </svg>
+          <div class="fg-score-wrap">
+            <span class="fg-score" id="fg-score">—</span>
+            <span class="fg-label" id="fg-label">—</span>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="pulse-grid">
       <div class="pulse-card" id="pc-SPY">
@@ -585,6 +683,10 @@ header{
 
   <!-- ── ANALYSIS ── -->
   <section id="analysis">
+    <div class="a-overlay" id="a-overlay">
+      <div class="a-overlay-ring"></div>
+      <div class="a-overlay-txt" id="a-overlay-txt">Recupero dati…</div>
+    </div>
     <div class="err-box" id="err-box"></div>
     <div class="a-loading" id="a-loading"><div class="a-loading-bar"></div></div>
 
@@ -735,6 +837,7 @@ header{
           <div class="price-loading" id="price-loading">Carico dati…</div>
           <canvas id="chart-price"></canvas>
         </div>
+        <div class="forecast-txt" id="forecast-txt"></div>
       </div>
     </div>
 
@@ -1414,6 +1517,62 @@ function setInd(valId,sigId,val,sig,color){
   document.getElementById(sigId).style.color=color||'var(--t2)';
 }
 
+// ── LOADING HELPERS ──
+function setSearchLoading(on){
+  document.getElementById('search-spinner').classList.toggle('on',on);
+  document.getElementById('search-input').classList.toggle('loading',on);
+}
+function setAnalyzeLoading(on,txt='Recupero dati…'){
+  const btn=document.getElementById('btn-analyze');
+  const ov=document.getElementById('a-overlay');
+  const otxt=document.getElementById('a-overlay-txt');
+  if(on){
+    btn.innerHTML=`<div class="btn-spinner"></div>Analisi…`;
+    btn.classList.add('loading'); btn.disabled=true;
+    if(ov){ ov.classList.add('on'); otxt.textContent=txt; }
+  } else {
+    btn.innerHTML='Analizza';
+    btn.classList.remove('loading'); btn.disabled=false;
+    if(ov) ov.classList.remove('on');
+  }
+}
+
+// ── FEAR & GREED RENDER ──
+function renderFearGreed(score){
+  const labels=['Paura Estrema','Paura','Neutrale','Avidità','Avidità Estrema'];
+  const colors=['#ef4444','#f97316','#f59e0b','#34d399','#10b981'];
+  const thresholds=[25,45,55,75,100];
+  let li=thresholds.findIndex(t=>score<=t);if(li<0)li=4;
+  const color=colors[li],lbl=labels[li];
+  document.getElementById('fg-score').textContent=score;
+  document.getElementById('fg-score').style.color=color;
+  document.getElementById('fg-label').textContent=lbl;
+  document.getElementById('fg-label').style.color=color;
+  document.getElementById('fg-sub').textContent='Sentiment di mercato in tempo reale';
+  // arc: total half-circle arc = 251.2px, fill proportionally
+  const fill=251.2*(1-score/100);
+  const arc=document.getElementById('fg-arc');
+  arc.style.stroke=color;
+  setTimeout(()=>arc.style.strokeDashoffset=fill,50);
+  // needle: -90deg = 0 (left/fear), +90deg = 100 (right/greed)
+  const deg=-90+(score/100)*180;
+  setTimeout(()=>document.getElementById('fg-needle').style.transform=`rotate(${deg}deg)`,50);
+}
+
+// ── LINEAR REGRESSION ──
+function linReg(y){
+  const n=y.length;
+  const xm=(n-1)/2;
+  const ym=y.reduce((a,b)=>a+b,0)/n;
+  let ssxx2=0,ssxy=0;
+  for(let i=0;i<n;i++){ssxx2+=(i-xm)**2;ssxy+=(i-xm)*(y[i]-ym);}
+  const slope=ssxy/ssxx2;
+  const intercept=ym-slope*xm;
+  const residuals=y.map((yi,i)=>yi-(intercept+slope*i));
+  const sigma=Math.sqrt(residuals.reduce((s,r)=>s+r*r,0)/n);
+  return{slope,intercept,sigma};
+}
+
 // ── ANALYZE ──
 async function analyze(ticker){
   ticker=(ticker||'').trim().toUpperCase();
@@ -1421,8 +1580,7 @@ async function analyze(ticker){
 
   document.getElementById('analysis').style.display='block';
   document.getElementById('err-box').style.display='none';
-  document.getElementById('a-loading').classList.add('on');
-  document.getElementById('btn-analyze').disabled=true;
+  setAnalyzeLoading(true,'Recupero dati…');
 
   try{
     const res=await fetchChart(ticker,'2y','1d');
@@ -1520,8 +1678,7 @@ async function analyze(ticker){
     document.getElementById('err-box').textContent='⚠ '+( e.message||'Impossibile recuperare i dati. Verifica il ticker e riprova.');
     killCharts();
   }finally{
-    document.getElementById('a-loading').classList.remove('on');
-    document.getElementById('btn-analyze').disabled=false;
+    setAnalyzeLoading(false);
   }
 }
 
@@ -1547,17 +1704,12 @@ async function runAnalyze(){
   let val=document.getElementById('search-input').value.trim().toUpperCase();
   if(!val) return;
   document.getElementById('search-dropdown').classList.remove('open');
-  // ISIN → resolve to ticker symbol
   if(ISIN_RE.test(val)){
-    document.getElementById('btn-analyze').disabled=true;
-    document.getElementById('btn-analyze').textContent='…';
+    setAnalyzeLoading(true,'Risolvo ISIN…');
     try{
       const res=await searchYahoo(val);
       if(res.length){val=res[0].sym;document.getElementById('search-input').value=val;}
-    }finally{
-      document.getElementById('btn-analyze').disabled=false;
-      document.getElementById('btn-analyze').textContent='Analizza';
-    }
+    }finally{ setAnalyzeLoading(false); }
   }
   analyze(val);
 }
@@ -1606,15 +1758,14 @@ function setupSearch(){
 
   async function doSearch(q){
     lastQ=q;
-    // local instant results
     const up=q.toUpperCase();
     const local=DB.filter(([s,n])=>s.startsWith(up)||n.toUpperCase().includes(up))
       .slice(0,5).map(([s,n,c])=>({sym:s,name:n,cat:c,exch:''}));
     if(local.length) renderDrop(local);
-    // Yahoo live search
+    setSearchLoading(true);
     const yRes=await searchYahoo(q);
+    setSearchLoading(false);
     if(q!==lastQ) return;
-    // merge: Yahoo first, supplement with local if fewer than 4 results
     const yahooSyms=new Set(yRes.map(r=>r.sym));
     const extra=local.filter(r=>!yahooSyms.has(r.sym));
     renderDrop([...yRes,...extra]);

@@ -527,6 +527,27 @@ header{
 }
 .av-label{font-size:1.05rem;font-weight:700;margin-bottom:4px;}
 .av-sub{font-size:.68rem;color:var(--t3);}
+
+/* ── BUY / HOLD / SELL WIDGET ── */
+.bhs-card{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--radius);padding:16px 20px;margin-bottom:16px;
+}
+.bhs-title{font-size:.7rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;}
+.bhs-src{font-weight:400;text-transform:none;letter-spacing:0;color:var(--t3);}
+.bhs-bar-wrap{}
+.bhs-bar{display:flex;height:12px;border-radius:8px;overflow:hidden;gap:2px;margin-bottom:10px;}
+.bhs-seg{height:100%;border-radius:4px;transition:width .8s ease;}
+.bhs-buy{background:#10b981;}.bhs-hold{background:#f59e0b;}.bhs-sell{background:#ef4444;}
+.bhs-legend{display:flex;gap:20px;}
+.bhs-item{font-size:.8rem;font-weight:500;display:flex;align-items:center;gap:4px;}
+.bhs-c-buy{color:#10b981;}.bhs-c-hold{color:#f59e0b;}.bhs-c-sell{color:#ef4444;}
+.bhs-item b{font-size:1rem;font-weight:700;}
+.bhs-analysts{margin-top:12px;padding-top:10px;border-top:1px solid var(--border);}
+.bhs-an-detail{display:flex;flex-wrap:wrap;gap:8px 16px;}
+.bhs-an-item{font-size:.72rem;color:var(--t2);}
+.bhs-an-item b{color:var(--text);}
+@media(max-width:640px){.bhs-legend{gap:12px;}.bhs-item{font-size:.72rem;}}
 </style>
 </head>
 <body>
@@ -733,6 +754,32 @@ header{
       </div>
       <div class="sig-body" id="sig-body">—</div>
       <div class="sig-tags" id="sig-tags"></div>
+    </div><!-- /sig-box -->
+
+    <!-- Buy / Hold / Sell widget — sempre visibile -->
+    <div class="bhs-card" id="bhs-card">
+      <div class="bhs-title">Segnale Operativo <span class="bhs-src" id="bhs-src">— analisi statistica</span></div>
+      <div class="bhs-bar-wrap">
+        <div class="bhs-bar">
+          <div class="bhs-seg bhs-buy"  id="bhs-buy-bar"  style="width:33%"></div>
+          <div class="bhs-seg bhs-hold" id="bhs-hold-bar" style="width:34%"></div>
+          <div class="bhs-seg bhs-sell" id="bhs-sell-bar" style="width:33%"></div>
+        </div>
+        <div class="bhs-legend">
+          <span class="bhs-item bhs-c-buy"><b id="bhs-buy-pct">—</b> Buy</span>
+          <span class="bhs-item bhs-c-hold"><b id="bhs-hold-pct">—</b> Hold</span>
+          <span class="bhs-item bhs-c-sell"><b id="bhs-sell-pct">—</b> Sell</span>
+        </div>
+      </div>
+      <div class="bhs-analysts" id="bhs-analysts" style="display:none">
+        <div class="bhs-an-detail">
+          <span class="bhs-an-item" style="color:#10b981">Strong Buy <b id="bhs-sbuy">0</b></span>
+          <span class="bhs-an-item" style="color:#34d399">Buy <b id="bhs-an-buy">0</b></span>
+          <span class="bhs-an-item" style="color:#f59e0b">Hold <b id="bhs-an-hold">0</b></span>
+          <span class="bhs-an-item" style="color:#f97316">Sell <b id="bhs-an-sell">0</b></span>
+          <span class="bhs-an-item" style="color:#ef4444">Strong Sell <b id="bhs-ssell">0</b></span>
+        </div>
+      </div>
     </div>
 
     <!-- Indicators + Win Rate unified grid -->
@@ -1608,93 +1655,119 @@ function redrawPriceChart(pTs,pCl){
   if(CH.p){CH.p.destroy();CH.p=null;}
   if(!pTs||pTs.length<2) return;
   const isUp=pCl[pCl.length-1]>=pCl[0];
-  // update return badge
+
+  // return badge
   const retPct=(pCl[pCl.length-1]-pCl[0])/pCl[0]*100;
   const retEl=document.getElementById('price-ret');
   if(retEl){retEl.textContent=(retPct>=0?'+':'')+retPct.toFixed(2)+'%';retEl.style.color=retPct>=0?'var(--g)':'var(--r)';}
+
   const ctx=document.getElementById('chart-price').getContext('2d');
   const gr=ctx.createLinearGradient(0,0,0,240);
   gr.addColorStop(0,isUp?'rgba(16,185,129,.22)':'rgba(239,68,68,.22)');
   gr.addColorStop(1,'transparent');
-  // label format depends on range span
+
   const spanDays=(pTs[pTs.length-1]-pTs[0])/86400;
   const fmtLabel=t=>new Date(t*1000).toLocaleDateString('it-IT',
     spanDays>600?{year:'numeric',month:'short'}:spanDays>90?{month:'short',day:'numeric'}:{month:'short',day:'numeric'});
 
-  // ── Regression + forecast (only if enough data) ──
-  const extraDatasets=[];
   const fmtEl=document.getElementById('forecast-txt');
   if(fmtEl) fmtEl.innerHTML='';
+
+  // build forecast only when enough data
+  const datasets=[
+    {data:pCl,borderColor:isUp?'#10b981':'#ef4444',backgroundColor:gr,
+     borderWidth:1.5,pointRadius:0,fill:true,tension:.35,order:1}
+  ];
+  let chartLabels=pTs.map(fmtLabel);
 
   if(pCl.length>=20){
     const regLen=Math.min(90,pCl.length);
     const regCl=pCl.slice(-regLen);
     const {slope,intercept,sigma}=linReg(regCl);
-    const regStartIdx=pCl.length-regLen;
     const PROJ=30;
-    const forecastData=new Array(pCl.length+PROJ).fill(null);
-    const upperData=new Array(pCl.length+PROJ).fill(null);
-    const lowerData=new Array(pCl.length+PROJ).fill(null);
-    for(let i=0;i<regLen+PROJ;i++){
-      const val=intercept+slope*i;
-      const ui=regStartIdx+i;
-      forecastData[ui]=val;
-      upperData[ui]=val+1.5*sigma;
-      lowerData[ui]=val-1.5*sigma;
-    }
-    extraDatasets.push(
-      {data:forecastData,borderColor:'rgba(139,148,158,.5)',borderDash:[5,4],borderWidth:1.5,pointRadius:0,fill:false,tension:0},
-      {data:upperData,borderColor:'transparent',backgroundColor:'rgba(59,130,246,.07)',borderWidth:0,pointRadius:0,fill:'+1',tension:0},
-      {data:lowerData,borderColor:'rgba(59,130,246,.18)',borderDash:[2,3],borderWidth:1,pointRadius:0,fill:false,tension:0}
-    );
-    // extend labels 30 days forward
+
+    // build forecast array aligned to actual data (no nulls in middle)
+    // forecast starts at first point of regression window
+    const regStartIdx=pCl.length-regLen;
+
+    // regression overlay on historical portion
+    const regLine=new Array(pCl.length).fill(null);
+    for(let i=0;i<regLen;i++) regLine[regStartIdx+i]=intercept+slope*i;
+
+    // projected portion (from last actual point forward)
+    const projPrices=[];
+    const projLabels=[];
     const lastTs=pTs[pTs.length-1];
-    const projTs=[...pTs];
-    for(let i=1;i<=PROJ;i++) projTs.push(lastTs+i*86400);
-    const fmtLabelExt=t=>new Date(t*1000).toLocaleDateString('it-IT',spanDays>600?{year:'numeric',month:'short'}:spanDays>90?{month:'short',day:'numeric'}:{month:'short',day:'numeric'});
-    const extLabels=projTs.map(fmtLabelExt);
+    for(let i=1;i<=PROJ;i++){
+      projPrices.push(intercept+slope*(regLen-1+i));
+      projLabels.push(fmtLabel(lastTs+i*86400));
+    }
+
+    // upper/lower band arrays (only on regression+projection portion, no nulls issue)
+    const bandUpper=new Array(pCl.length).fill(null);
+    const bandLower=new Array(pCl.length).fill(null);
+    for(let i=0;i<regLen;i++){
+      bandUpper[regStartIdx+i]=intercept+slope*i+1.5*sigma;
+      bandLower[regStartIdx+i]=intercept+slope*i-1.5*sigma;
+    }
+
+    // extend all arrays with projected portion
+    const actualExt=[...pCl,...new Array(PROJ).fill(null)];
+    const regLineExt=[...regLine,...projPrices];
+    const bandUpperExt=[...bandUpper];
+    const bandLowerExt=[...bandLower];
+    // extend bands into projection with projected values
+    for(let i=1;i<=PROJ;i++){
+      bandUpperExt.push(intercept+slope*(regLen-1+i)+1.5*sigma);
+      bandLowerExt.push(intercept+slope*(regLen-1+i)-1.5*sigma);
+    }
+
+    chartLabels=[...pTs.map(fmtLabel),...projLabels];
+
+    // use separate upper/lower as border lines only (NO fill:'+1' which causes errors)
+    // draw band as background via a filled area dataset using actual price fill trick:
+    // upper band with fill to lower using absolute value approach
+    datasets[0].data=actualExt; // update actual prices array
+
+    datasets.push(
+      // regression line (historical + projection) - dashed
+      {data:regLineExt,borderColor:'rgba(139,148,158,.55)',
+       borderDash:[5,4],borderWidth:1.5,pointRadius:0,fill:false,tension:0,order:2},
+      // upper band - thin dotted line, NO fill
+      {data:bandUpperExt,borderColor:'rgba(59,130,246,.25)',
+       borderDash:[2,4],borderWidth:1,pointRadius:0,fill:false,tension:0,order:3},
+      // lower band - thin dotted line, NO fill
+      {data:bandLowerExt,borderColor:'rgba(59,130,246,.25)',
+       borderDash:[2,4],borderWidth:1,pointRadius:0,fill:false,tension:0,order:4}
+    );
 
     // forecast text
     const targetPrice=intercept+slope*(regLen-1+PROJ);
     const targetPct=(targetPrice-pCl[pCl.length-1])/pCl[pCl.length-1]*100;
     if(fmtEl){
       const arrow=targetPct>=0?'↑':'↓';
-      fmtEl.innerHTML=`<span style="color:var(--t3)">Trend regressione lineare (90gg) → stima 30gg:</span> <b style="color:${targetPct>=0?'var(--g)':'var(--r)'}">${arrow} ${Math.abs(targetPct).toFixed(1)}%</b> <span style="color:var(--t3)"> · Banda di confidenza ±1.5σ · Non è una previsione garantita</span>`;
+      fmtEl.innerHTML=`<span style="color:var(--t3)">Regressione lineare 90gg → stima +30gg:</span> <b style="color:${targetPct>=0?'var(--g)':'var(--r)'}">${arrow} ${Math.abs(targetPct).toFixed(1)}%</b> <span style="color:var(--t3)"> · Banda ±1.5σ · Non è una previsione garantita</span>`;
     }
-
-    CH.p=new Chart(ctx,{
-      type:'line',
-      data:{
-        labels:extLabels,
-        datasets:[
-          {data:[...pCl,...new Array(PROJ).fill(null)],borderColor:isUp?'#10b981':'#ef4444',backgroundColor:gr,borderWidth:1.5,pointRadius:0,fill:true,tension:.35},
-          ...extraDatasets
-        ]
-      },
-      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{
-        callbacks:{label:c=>{const v=c.raw;if(v==null)return null;return ' '+(v>=1000?v.toLocaleString('it-IT',{maximumFractionDigits:2}):v>=1?v.toFixed(2):v.toFixed(4));}},
-        mode:'index',intersect:false,filter:item=>item.raw!=null,
-      }},scales:{
-        x:{grid:{display:false},ticks:{maxTicksLimit:8,maxRotation:0,color:'#8b949e',font:{size:10}},border:{display:false}},
-        y:{grid:{color:GC},ticks:{callback:v=>v>=1000?(v/1000).toFixed(1)+'k':v>=1?v.toFixed(2):v.toFixed(4),color:'#8b949e',font:{size:10}},border:{display:false}}
-      }}
-    });
-  } else {
-    CH.p=new Chart(ctx,{
-      type:'line',
-      data:{
-        labels:pTs.map(fmtLabel),
-        datasets:[{data:pCl,borderColor:isUp?'#10b981':'#ef4444',backgroundColor:gr,borderWidth:1.5,pointRadius:0,fill:true,tension:.35}]
-      },
-      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{
-        callbacks:{label:c=>{const v=c.raw;return ' '+(v>=1000?v.toLocaleString('it-IT',{maximumFractionDigits:2}):v>=1?v.toFixed(2):v.toFixed(4));}},
-        mode:'index',intersect:false,
-      }},scales:{
-        x:{grid:{display:false},ticks:{maxTicksLimit:8,maxRotation:0,color:'#8b949e',font:{size:10}},border:{display:false}},
-        y:{grid:{color:GC},ticks:{callback:v=>v>=1000?(v/1000).toFixed(1)+'k':v>=1?v.toFixed(2):v.toFixed(4),color:'#8b949e',font:{size:10}},border:{display:false}}
-      }}
-    });
   }
+
+  CH.p=new Chart(ctx,{
+    type:'line',
+    data:{labels:chartLabels,datasets},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          callbacks:{label:c=>{const v=c.raw;if(v==null)return null;return ' '+(v>=1000?v.toLocaleString('it-IT',{maximumFractionDigits:2}):v>=1?v.toFixed(2):v.toFixed(4));}},
+          mode:'index',intersect:false,filter:item=>item.raw!=null,
+        }
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{maxTicksLimit:8,maxRotation:0,color:'#8b949e',font:{size:10}},border:{display:false}},
+        y:{grid:{color:'rgba(33,38,45,.8)'},ticks:{callback:v=>v>=1000?(v/1000).toFixed(1)+'k':v>=1?v.toFixed(2):v.toFixed(4),color:'#8b949e',font:{size:10}},border:{display:false}}
+      }
+    }
+  });
 }
 
 function filterPeriod(ts,cl,days){
@@ -1812,6 +1885,45 @@ function linReg(y){
   const residuals=y.map((yi,i)=>yi-(intercept+slope*i));
   const sigma=Math.sqrt(residuals.reduce((s,r)=>s+r*r,0)/n);
   return{slope,intercept,sigma};
+}
+
+// ── BUY / HOLD / SELL WIDGET ──
+function renderBHS(score, fund){
+  // Determine buy/hold/sell percentages
+  let buyPct, holdPct, sellPct, src, showAnalysts=false;
+
+  const tot = fund ? fund.strongBuy+fund.buy+fund.hold+fund.sell+fund.strongSell : 0;
+
+  if(tot >= 3){
+    // use real analyst data
+    buyPct  = Math.round((fund.strongBuy+fund.buy)/tot*100);
+    sellPct = Math.round((fund.sell+fund.strongSell)/tot*100);
+    holdPct = 100-buyPct-sellPct;
+    src = `— ${tot} analisti`;
+    showAnalysts = true;
+    document.getElementById('bhs-sbuy').textContent     = fund.strongBuy;
+    document.getElementById('bhs-an-buy').textContent   = fund.buy;
+    document.getElementById('bhs-an-hold').textContent  = fund.hold;
+    document.getElementById('bhs-an-sell').textContent  = fund.sell;
+    document.getElementById('bhs-ssell').textContent    = fund.strongSell;
+  } else {
+    // derive from our score
+    if(score>=65){buyPct=75;holdPct=20;sellPct=5;}
+    else if(score>=55){buyPct=60;holdPct=30;sellPct=10;}
+    else if(score>=45){buyPct=25;holdPct=55;sellPct=20;}
+    else if(score>=35){buyPct=10;holdPct=35;sellPct=55;}
+    else{buyPct=5;holdPct=20;sellPct=75;}
+    src = '— analisi statistica';
+  }
+
+  document.getElementById('bhs-src').textContent      = src;
+  document.getElementById('bhs-buy-bar').style.width  = buyPct+'%';
+  document.getElementById('bhs-hold-bar').style.width = holdPct+'%';
+  document.getElementById('bhs-sell-bar').style.width = sellPct+'%';
+  document.getElementById('bhs-buy-pct').textContent  = buyPct+'%';
+  document.getElementById('bhs-hold-pct').textContent = holdPct+'%';
+  document.getElementById('bhs-sell-pct').textContent = sellPct+'%';
+  document.getElementById('bhs-analysts').style.display = showAnalysts?'block':'none';
 }
 
 // ── RENDER FUNDAMENTALS ──
@@ -1981,6 +2093,7 @@ async function analyze(ticker){
     drawCharts(seasonal(tss,cl),retDist(ret(cl)),[w7,w14,w30,w60,w90,w180,w365],tss,cl);
 
     renderFundamentals(fund);
+    renderBHS(score, fund);
 
     document.getElementById('analysis').scrollIntoView({behavior:'smooth',block:'start'});
 

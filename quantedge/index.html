@@ -75,9 +75,13 @@ header{
 .btn-search:active{transform:scale(.97);}
 .btn-search:disabled{opacity:.7;cursor:not-allowed;}
 
-/* ── SEARCH LOADING SPINNER ── */
+/* ── SPINNERS ── */
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
+
 .search-spinner{
-  position:absolute; right:10px; top:50%; transform:translateY(-50%);
+  position:absolute; right:10px; top:50%;
+  margin-top:-7px;
   width:14px; height:14px; border-radius:50%;
   border:2px solid var(--border);
   border-top-color:var(--accent);
@@ -85,9 +89,7 @@ header{
   display:none; pointer-events:none;
 }
 .search-spinner.on{display:block;}
-/* shift input padding when spinner visible */
 .search-input.loading{padding-right:30px;}
-@keyframes spin{to{transform:translateY(-50%) rotate(360deg);}}
 
 /* ── BUTTON LOADING STATE ── */
 .btn-search.loading{
@@ -104,23 +106,26 @@ header{
   flex-shrink:0;
 }
 
-/* ── ANALYSIS OVERLAY ── */
-.a-overlay{
-  display:none; position:absolute; inset:0;
-  background:rgba(13,17,23,.6); border-radius:var(--radius);
-  z-index:10; align-items:center; justify-content:center;
-  flex-direction:column; gap:12px;
-  backdrop-filter:blur(2px);
+/* ── FULL-VIEWPORT PAGE LOADER ── */
+.page-loader{
+  display:none; position:fixed; inset:0; z-index:500;
+  background:rgba(13,17,23,.75);
+  align-items:center; justify-content:center;
+  flex-direction:column; gap:14px;
+  backdrop-filter:blur(3px);
 }
-.a-overlay.on{display:flex;}
-.a-overlay-ring{
-  width:36px; height:36px; border-radius:50%;
+.page-loader.on{display:flex;}
+.page-loader-ring{
+  width:44px; height:44px; border-radius:50%;
   border:3px solid var(--border);
   border-top-color:var(--accent);
   animation:spin .8s linear infinite;
 }
-.a-overlay-txt{font-size:.8rem; color:var(--t2);}
-#analysis{position:relative;}
+.page-loader-txt{font-size:.85rem; color:var(--t2); letter-spacing:.03em;}
+
+/* ── ANALYSIS SECTION ── */
+#analysis{display:none;}
+#analysis.visible{display:block; animation:fadeUp .35s ease;}
 
 /* Search dropdown */
 .search-dropdown{
@@ -768,12 +773,14 @@ header{
 
   <hr class="divider">
 
+  <!-- ── PAGE LOADER ── -->
+  <div class="page-loader" id="page-loader">
+    <div class="page-loader-ring"></div>
+    <div class="page-loader-txt" id="page-loader-txt">Recupero dati…</div>
+  </div>
+
   <!-- ── ANALYSIS ── -->
   <section id="analysis">
-    <div class="a-overlay" id="a-overlay">
-      <div class="a-overlay-ring"></div>
-      <div class="a-overlay-txt" id="a-overlay-txt">Recupero dati…</div>
-    </div>
     <div class="err-box" id="err-box"></div>
     <div class="a-loading" id="a-loading"><div class="a-loading-bar"></div></div>
 
@@ -1992,16 +1999,16 @@ function setSearchLoading(on){
 }
 function setAnalyzeLoading(on,txt='Recupero dati…'){
   const btn=document.getElementById('btn-analyze');
-  const ov=document.getElementById('a-overlay');
-  const otxt=document.getElementById('a-overlay-txt');
+  const loader=document.getElementById('page-loader');
+  const ltxt=document.getElementById('page-loader-txt');
   if(on){
     btn.innerHTML=`<div class="btn-spinner"></div>Analisi…`;
     btn.classList.add('loading'); btn.disabled=true;
-    if(ov){ ov.classList.add('on'); otxt.textContent=txt; }
+    if(loader){ loader.classList.add('on'); if(ltxt) ltxt.textContent=txt; }
   } else {
     btn.innerHTML='Analizza';
     btn.classList.remove('loading'); btn.disabled=false;
-    if(ov) ov.classList.remove('on');
+    if(loader) loader.classList.remove('on');
   }
 }
 
@@ -2158,7 +2165,7 @@ async function analyze(ticker){
   ticker=(ticker||'').trim().toUpperCase();
   if(!ticker)return;
 
-  document.getElementById('analysis').style.display='block';
+  document.getElementById('analysis').classList.remove('visible');
   document.getElementById('err-box').style.display='none';
   setAnalyzeLoading(true,'Recupero dati…');
 
@@ -2267,7 +2274,11 @@ async function analyze(ticker){
     renderBHS(score, fund);
     buildDipSignal(R,M50,M200,Mo3m,Mo12m,DD,cur,w30,score);
 
-    document.getElementById('analysis').scrollIntoView({behavior:'smooth',block:'start'});
+    setAnalyzeLoading(false);
+    const sec=document.getElementById('analysis');
+    sec.classList.add('visible');
+    sec.scrollIntoView({behavior:'smooth',block:'start'});
+    return; // skip finally's setAnalyzeLoading
 
   }catch(e){
     document.getElementById('err-box').style.display='block';
@@ -2318,7 +2329,7 @@ function quickAnalyze(ticker){
 
 function resetView(){
   document.getElementById('search-input').value='';
-  document.getElementById('analysis').style.display='none';
+  document.getElementById('analysis').classList.remove('visible');
   document.getElementById('err-box').style.display='none';
   window.scrollTo({top:0,behavior:'smooth'});
 }

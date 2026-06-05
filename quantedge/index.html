@@ -246,8 +246,8 @@ header{
 #analysis{display:none;padding-bottom:60px;}
 .a-header{
   display:flex;align-items:flex-start;justify-content:space-between;
-  padding:24px 0 20px;border-bottom:1px solid var(--border);margin-bottom:20px;
-  gap:16px;flex-wrap:wrap;
+  padding:28px 0 24px;border-bottom:1px solid var(--border);margin-bottom:24px;
+  gap:20px;flex-wrap:wrap;
 }
 .a-left{flex:1;}
 .a-name{font-size:1.4rem;font-weight:700;line-height:1.2;}
@@ -299,7 +299,7 @@ header{
 .wait .sig-badge{background:rgba(245,158,11,.18);color:var(--y);}
 .sig-score-big{font-size:2rem;font-weight:700;line-height:1;}
 .sig-headline{font-size:.9375rem;font-weight:600;}
-.sig-body{font-size:.875rem;color:var(--t2);line-height:1.8;margin-top:10px;}
+.sig-body{font-size:.875rem;color:var(--t2);line-height:2;margin-top:14px;}
 .sig-body b{color:var(--text);}
 .sig-tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px;}
 .stag{
@@ -317,11 +317,11 @@ header{
 @media(max-width:700px){.ind-grid{grid-template-columns:repeat(2,1fr);}}
 .ind-card{
   background:var(--bg2);border:1px solid var(--border);
-  border-radius:var(--radius);padding:15px;
+  border-radius:var(--radius);padding:16px 18px;
 }
 .ind-label{font-size:.65rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.09em;margin-bottom:7px;}
-.ind-val{font-size:1.2rem;font-weight:700;font-variant-numeric:tabular-nums;}
-.ind-sig{font-size:.75rem;color:var(--t2);margin-top:4px;line-height:1.4;}
+.ind-val{font-size:1.25rem;font-weight:700;font-variant-numeric:tabular-nums;}
+.ind-sig{font-size:.75rem;color:var(--t2);margin-top:6px;line-height:1.5;}
 
 /* ── WIN RATE CARDS ── */
 .wr-row{
@@ -467,9 +467,11 @@ header{
 .a-sec-lbl{
   font-size:.65rem;font-weight:600;color:var(--t3);
   text-transform:uppercase;letter-spacing:.1em;
-  margin:16px 0 10px;
+  margin:28px 0 12px;
 }
 .a-sec-lbl:first-child{margin-top:0;}
+/* thin separator before each section */
+.sec-divider{border:none;border-top:1px solid var(--border);margin:24px 0 0;}
 
 /* ── PRICE RETURN BADGE ── */
 .price-ret{
@@ -548,6 +550,11 @@ header{
 .bhs-an-item{font-size:.72rem;color:var(--t2);}
 .bhs-an-item b{color:var(--text);}
 @media(max-width:640px){.bhs-legend{gap:12px;}.bhs-item{font-size:.72rem;}}
+.bhs-explain{
+  margin-top:14px;padding-top:14px;border-top:1px solid var(--border);
+  font-size:.83rem;color:var(--t2);line-height:1.8;
+}
+.bhs-explain b{color:var(--text);}
 </style>
 </head>
 <body>
@@ -780,9 +787,11 @@ header{
           <span class="bhs-an-item" style="color:#ef4444">Strong Sell <b id="bhs-ssell">0</b></span>
         </div>
       </div>
+      <div class="bhs-explain" id="bhs-explain"></div>
     </div>
 
     <!-- Indicators + Win Rate unified grid -->
+    <hr class="sec-divider">
     <div class="a-sec-lbl">Indicatori Tecnici</div>
     <div class="ind-grid">
       <div class="ind-card">
@@ -851,6 +860,7 @@ header{
       </div>
     </div>
 
+    <hr class="sec-divider">
     <div class="a-sec-lbl">Probabilità Storiche <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t3);font-size:.6rem;">— frequenza storica di rialzo nel periodo</span></div>
     <div class="ind-grid">
       <div class="ind-card">
@@ -905,8 +915,7 @@ header{
         </div>
       </div>
 
-      <div class="a-sec-lbl" style="margin-top:16px">Fondamentali
-      <div class="a-sec-lbl">Fondamentali <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t3);font-size:.6rem;">— dati Yahoo Finance</span></div>
+      <div class="a-sec-lbl" style="margin-top:16px">Fondamentali <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t3);font-size:.6rem;">— dati Yahoo Finance</span></div>
       <div class="ind-grid">
         <div class="ind-card">
           <div class="ind-label-row"><div class="ind-label">ROE</div><button class="info-btn" data-tip="roe">i</button></div>
@@ -942,6 +951,7 @@ header{
     </div>
 
     <!-- Charts -->
+    <hr class="sec-divider">
     <div class="charts-grid">
       <div class="chart-card">
         <div class="chart-lbl">Stagionalità mensile (win rate %)</div>
@@ -1282,9 +1292,12 @@ async function fetchAndScore(ticker){
 function scoreFromHistory(cl){
   if(!cl||cl.length<30) return null;
   const cur=cl[cl.length-1];
-  const R=rsi(cl), M50=ma(cl,50), M200=ma(cl,200), V=vol(cl), Mo=mom(cl);
-  const w7=wr(cl,7), w30=wr(cl,30), w90=wr(cl,90);
-  return edgeScore(R,M50,M200,V,Mo,w7,w30,w90,cur);
+  const R=rsi(cl),M50=ma(cl,50),M200=ma(cl,200),V=vol(cl),Mo=mom(cl);
+  const w7=wr(cl,7),w30=wr(cl,30),w90=wr(cl,90);
+  const Mo3m=cl.length>=65?mom(cl,65):null;
+  const Mo6m=cl.length>=130?mom(cl,130):null;
+  const Mo12m=cl.length>=252?mom(cl,252):null;
+  return edgeScore(R,M50,M200,V,Mo,w7,w30,w90,cur,Mo3m,Mo6m,Mo12m,null,null);
 }
 
 // ── MATH ──
@@ -1924,6 +1937,23 @@ function renderBHS(score, fund){
   document.getElementById('bhs-hold-pct').textContent = holdPct+'%';
   document.getElementById('bhs-sell-pct').textContent = sellPct+'%';
   document.getElementById('bhs-analysts').style.display = showAnalysts?'block':'none';
+
+  // Explanatory text
+  const explEl=document.getElementById('bhs-explain');
+  if(!explEl) return;
+  let explain='';
+  if(buyPct>=65){
+    explain=`<b>✅ Cosa fare: Ingresso.</b> Il segnale operativo è favorevole — la maggioranza degli indicatori punta al rialzo. Considera un ingresso con sizing normale. <b>Stop-loss consigliato:</b> sotto la MA200 o al livello di supporto più vicino. Se la volatilità è elevata, riduci la dimensione della posizione del 30–50%.`;
+  } else if(buyPct>=50){
+    explain=`<b>🟢 Cosa fare: Ingresso prudente.</b> Il segnale è positivo ma non ottimale. Entra con il 50% del sizing normale e aumenta la posizione solo se il prezzo conferma il trend nelle sessioni successive. Stop rigido obbligatorio.`;
+  } else if(holdPct>=50 || (buyPct<50 && sellPct<40)){
+    explain=`<b>⏸ Cosa fare: Attesa.</b> Nessun edge statistico chiaro in questo momento. Se sei già in posizione, mantienila con stop al supporto. Se sei fuori, aspetta un segnale più definito — entrare ora significa operare senza vantaggio statistico.`;
+  } else if(sellPct>=65){
+    explain=`<b>🔴 Cosa fare: Uscita.</b> Il segnale è chiaramente negativo. Esci dalla posizione o proteggiti con stop molto rigidi. Non aprire nuovi long. Rivaluta solo dopo un recupero strutturale sopra la MA200.`;
+  } else {
+    explain=`<b>🟡 Cosa fare: Riduzione.</b> Le condizioni sono sfavorevoli. Evita nuovi ingressi. Se sei in posizione, riduci l'esposizione e avvicina lo stop-loss al prezzo corrente.`;
+  }
+  explEl.innerHTML=explain;
 }
 
 // ── RENDER FUNDAMENTALS ──

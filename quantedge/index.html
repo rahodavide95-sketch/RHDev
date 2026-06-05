@@ -774,45 +774,42 @@ header{
 
   <!-- ── PANORAMICA ── -->
   <div class="sec">
-    <div class="sec-hd">
-      <span class="sec-title">ETF — Fondi Principali</span>
-    </div>
+    <div class="sec-hd"><span class="sec-title">ETF Azionari</span></div>
     <div class="pano-grid">
-      <div class="pano-block">
-        <div class="pano-head">ETF Globali</div>
-        <table class="ptable"><tbody id="t-etf-glob"></tbody></table>
-      </div>
-      <div class="pano-block">
-        <div class="pano-head">Settoriali USA</div>
-        <table class="ptable"><tbody id="t-settori"></tbody></table>
-      </div>
-      <div class="pano-block">
-        <div class="pano-head">Obbligazionari</div>
-        <table class="ptable"><tbody id="t-bond"></tbody></table>
+      <div class="pano-block" style="grid-column:1/-1">
+        <table class="ptable"><tbody id="t-etf-az"></tbody></table>
       </div>
     </div>
   </div>
-
   <div class="sec">
-    <div class="sec-hd">
-      <span class="sec-title">Azioni — Large Cap</span>
-    </div>
+    <div class="sec-hd"><span class="sec-title">ETF Obbligazionari</span></div>
     <div class="pano-grid">
-      <div class="pano-block">
-        <div class="pano-head">Big Tech USA</div>
-        <table class="ptable"><tbody id="t-bigtech"></tbody></table>
+      <div class="pano-block" style="grid-column:1/-1">
+        <table class="ptable"><tbody id="t-etf-bond"></tbody></table>
       </div>
-      <div class="pano-block">
-        <div class="pano-head">Finanza & Banche</div>
-        <table class="ptable"><tbody id="t-finance"></tbody></table>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="sec-hd"><span class="sec-title">Materie Prime</span></div>
+    <div class="pano-grid">
+      <div class="pano-block" style="grid-column:1/-1">
+        <table class="ptable"><tbody id="t-commodities"></tbody></table>
       </div>
-      <div class="pano-block">
-        <div class="pano-head">Sanità & Pharma</div>
-        <table class="ptable"><tbody id="t-health"></tbody></table>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="sec-hd"><span class="sec-title">Crypto</span></div>
+    <div class="pano-grid">
+      <div class="pano-block" style="grid-column:1/-1">
+        <table class="ptable"><tbody id="t-crypto"></tbody></table>
       </div>
-      <div class="pano-block">
-        <div class="pano-head">Energia & Industria</div>
-        <table class="ptable"><tbody id="t-energia"></tbody></table>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="sec-hd"><span class="sec-title">Azioni Large Cap</span></div>
+    <div class="pano-grid">
+      <div class="pano-block" style="grid-column:1/-1">
+        <table class="ptable"><tbody id="t-azioni"></tbody></table>
       </div>
     </div>
   </div>
@@ -881,7 +878,7 @@ header{
 
     <!-- Buy / Hold / Sell widget — sempre visibile -->
     <div class="bhs-card" id="bhs-card">
-      <div class="bhs-title">Segnale Operativo <span class="bhs-src" id="bhs-src">— analisi statistica</span></div>
+      <div class="bhs-title">Consenso Analisti / Modello Quantitativo <span class="bhs-src" id="bhs-src">— analisi statistica</span></div>
       <div class="bhs-bar-wrap">
         <div class="bhs-bar">
           <div class="bhs-seg bhs-buy"  id="bhs-buy-bar"  style="width:33%"></div>
@@ -1694,13 +1691,31 @@ function renderND(id,ticker,name){
 
 // ── PANORAMICA DATA ──
 const PANO={
-  't-etf-glob':[['VT','Azionario Mondiale'],['VXUS','Ex-USA'],['EEM','Mercati Emergenti'],['IEMG','Emergenti Core'],['VEA','Mercati Sviluppati']],
-  't-settori': [['XLK','Tecnologia'],['XLF','Finanza'],['XLE','Energia'],['XLV','Sanità'],['XLI','Industria'],['XLU','Utilities']],
-  't-bond':    [['TLT','Treasury 20+ anni'],['IEF','Treasury 7-10 anni'],['SHY','Treasury 1-3 anni'],['HYG','High Yield'],['AGG','Aggregato']],
-  't-bigtech': [['AAPL','Apple'],['MSFT','Microsoft'],['NVDA','Nvidia'],['GOOGL','Alphabet'],['AMZN','Amazon'],['META','Meta'],['TSLA','Tesla']],
-  't-finance': [['JPM','JPMorgan'],['BAC','Bank of America'],['GS','Goldman Sachs'],['BRK-B','Berkshire Hathaway'],['V','Visa']],
-  't-health':  [['JNJ','Johnson & Johnson'],['LLY','Eli Lilly'],['NVO','Novo Nordisk'],['PFE','Pfizer'],['ABBV','AbbVie']],
-  't-energia': [['XOM','ExxonMobil'],['CVX','Chevron'],['NEE','NextEra Energy'],['CAT','Caterpillar'],['FCX','Freeport-McMoRan']],
+  't-etf-az':[
+    ['SPY','S&P 500'],['QQQ','Nasdaq 100'],['VTI','Total Market USA'],
+    ['VGK','Europa'],['VPL','Asia-Pacifico'],['EEM','Mercati Emergenti'],
+    ['VT','Azionario Mondiale'],['IWM','Small Cap USA'],['VIG','Dividend Growth'],['ARKK','Innovation ARK']
+  ],
+  't-etf-bond':[
+    ['TLT','Treasury 20+ anni'],['IEF','Treasury 7-10 anni'],['SHY','Treasury 1-3 anni'],
+    ['HYG','High Yield USD'],['AGG','Aggregato USA'],['LQD','Corporate IG'],
+    ['EMB','Emergenti USD'],['BNDX','Globale ex-USA'],['VTIP','TIPS Inflazione'],['JNK','Junk Bonds']
+  ],
+  't-commodities':[
+    ['GLD','Oro'],['SLV','Argento'],['USO','Petrolio WTI'],['UNG','Gas Naturale'],
+    ['PDBC','Commodity Basket'],['CPER','Rame'],['WEAT','Grano'],
+    ['CORN','Mais'],['SOYB','Soia'],['DBA','Agricoltura']
+  ],
+  't-crypto':[
+    ['BTC-USD','Bitcoin'],['ETH-USD','Ethereum'],['BNB-USD','BNB'],
+    ['SOL-USD','Solana'],['XRP-USD','XRP'],['ADA-USD','Cardano'],
+    ['AVAX-USD','Avalanche'],['DOT-USD','Polkadot'],['LINK-USD','Chainlink'],['MATIC-USD','Polygon']
+  ],
+  't-azioni':[
+    ['AAPL','Apple'],['MSFT','Microsoft'],['NVDA','Nvidia'],['GOOGL','Alphabet'],
+    ['AMZN','Amazon'],['META','Meta'],['TSLA','Tesla'],['JPM','JPMorgan'],
+    ['LLY','Eli Lilly'],['BRK-B','Berkshire']
+  ],
 };
 
 // ── PULSE ITEMS ──
@@ -1708,8 +1723,8 @@ const PULSE=['SPY','QQQ','VGK','EEM','TLT','GLD'];
 
 // ── OPPORTUNITIES ──
 const PANO_TYPE={
-  't-etf-glob':'ETF','t-settori':'Settore','t-bond':'Bond',
-  't-bigtech':'Azione','t-finance':'Azione','t-health':'Azione','t-energia':'Azione',
+  't-etf-az':'ETF','t-etf-bond':'Bond','t-commodities':'Materia Prima',
+  't-crypto':'Crypto','t-azioni':'Azione',
 };
 function renderOpportunities(scoreMap){
   const grid=document.getElementById('opp-grid');

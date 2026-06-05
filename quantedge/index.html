@@ -281,7 +281,46 @@ header{
   border-radius:var(--radius);color:var(--r);font-size:.875rem;margin-bottom:20px;
 }
 
-/* ── SIGNAL BOX ── */
+/* ── DIP OPPORTUNITY BOX ── */
+.dip-box{
+  display:none;
+  border-radius:var(--radius);padding:18px 22px;margin-bottom:16px;
+  border-left:4px solid;
+}
+.dip-box.dip-opportunity{
+  background:rgba(16,185,129,.06);border-color:#10b981;
+  display:block;
+}
+.dip-box.dip-warning{
+  background:rgba(239,68,68,.06);border-color:#ef4444;
+  display:block;
+}
+.dip-box.dip-neutral{
+  background:rgba(59,130,246,.06);border-color:var(--accent);
+  display:block;
+}
+.dip-header{display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap;}
+.dip-icon{font-size:1.3rem;line-height:1;}
+.dip-title{font-size:.9rem;font-weight:700;}
+.dip-metrics{
+  display:flex;flex-wrap:wrap;gap:8px;margin:12px 0;
+}
+.dip-metric{
+  padding:4px 12px;border-radius:20px;font-size:.72rem;font-weight:600;
+  background:rgba(255,255,255,.05);border:1px solid var(--border);
+  color:var(--t2);
+}
+.dip-metric span{font-weight:700;}
+.dip-body{font-size:.83rem;color:var(--t2);line-height:1.85;}
+.dip-body b{color:var(--text);}
+.dip-action{
+  margin-top:12px;padding:10px 14px;border-radius:var(--radius-sm);
+  font-size:.82rem;font-weight:500;line-height:1.7;
+  background:rgba(255,255,255,.04);border:1px solid var(--border);
+}
+.dip-action b{color:var(--text);}
+
+
 .sig-box{
   border-radius:var(--radius);padding:20px 22px;margin-bottom:20px;
   border-left:4px solid;
@@ -762,6 +801,17 @@ header{
       <div class="sig-body" id="sig-body">—</div>
       <div class="sig-tags" id="sig-tags"></div>
     </div><!-- /sig-box -->
+
+    <!-- Dip Opportunity box -->
+    <div class="dip-box" id="dip-box">
+      <div class="dip-header">
+        <span class="dip-icon" id="dip-icon"></span>
+        <span class="dip-title" id="dip-title"></span>
+      </div>
+      <div class="dip-metrics" id="dip-metrics"></div>
+      <div class="dip-body" id="dip-body"></div>
+      <div class="dip-action" id="dip-action"></div>
+    </div>
 
     <!-- Buy / Hold / Sell widget — sempre visibile -->
     <div class="bhs-card" id="bhs-card">
@@ -1438,6 +1488,97 @@ function buildTags(R,M50,M200,price,V,Mo,w30){
   if(w30>60) tags.push({t:`WR30 ${w30.toFixed(0)}%`,c:'pos'});
   else if(w30<40) tags.push({t:`WR30 ${w30.toFixed(0)}%`,c:'neg'});
   return tags;
+}
+
+// ── DIP OPPORTUNITY SIGNAL ──
+function buildDipSignal(R,M50,M200,Mo3m,Mo12m,DD,cur,w30,score){
+  const box=document.getElementById('dip-box');
+  const fmt=n=>n>=10000?n.toLocaleString('it-IT',{maximumFractionDigits:0}):n>=1?n.toFixed(2):n.toFixed(4);
+
+  // Reset
+  box.className='dip-box';
+
+  // Classify the situation
+  const oversold     = R!=null && R<35;
+  const deepOversold = R!=null && R<25;
+  const aboveMA200   = M200!=null && cur>M200;
+  const belowMA200   = M200!=null && cur<M200;
+  const ma50BelowMA200 = M50!=null && M200!=null && M50<M200; // Death Cross
+  const bearMom      = Mo12m!=null && Mo12m<-25;
+  const dipMom       = Mo3m!=null  && Mo3m<-8;
+  const inCorrection = DD>8 && DD<35;
+  const inCrash      = DD>=35;
+
+  // Build metrics chips
+  const chips=[];
+  if(R!=null)    chips.push({l:'RSI',v:R.toFixed(1),color:R<30?'var(--g)':R<40?'var(--y)':'var(--t2)'});
+  if(DD)         chips.push({l:'Drawdown',v:'-'+DD.toFixed(1)+'%',color:DD>30?'var(--r)':DD>15?'var(--y)':'var(--t2)'});
+  if(M200!=null) chips.push({l:'vs MA200',v:(cur>M200?'+':'')+((cur-M200)/M200*100).toFixed(1)+'%',color:cur>M200?'var(--g)':'var(--r)'});
+  if(Mo3m!=null) chips.push({l:'Mom 3M',v:(Mo3m>0?'+':'')+Mo3m.toFixed(1)+'%',color:Mo3m>0?'var(--g)':'var(--r)'});
+  if(w30!=null)  chips.push({l:'WR 30gg',v:w30.toFixed(0)+'%',color:w30>55?'var(--g)':w30<45?'var(--r)':'var(--y)'});
+
+  document.getElementById('dip-metrics').innerHTML=chips.map(c=>
+    `<span class="dip-metric">${c.l}: <span style="color:${c.color}">${c.v}</span></span>`
+  ).join('');
+
+  // ── CASO 1: Crollo strutturale — NON comprare ──
+  if(inCrash && ma50BelowMA200 && bearMom){
+    box.classList.add('dip-warning');
+    document.getElementById('dip-icon').textContent='🔴';
+    document.getElementById('dip-title').textContent='Crollo Strutturale — Non comprare il ribasso';
+    document.getElementById('dip-body').innerHTML=
+      `Il calo attuale (<b>${DD.toFixed(1)}%</b> dal picco) non è una correzione temporanea ma un <b>bear market strutturale</b>. `+
+      `Il Death Cross (MA50 sotto MA200) e il momentum a 12 mesi di <b>${Mo12m!=null?Mo12m.toFixed(1)+'%':'N/D'}</b> indicano una tendenza ribassista di lungo periodo. `+
+      `Comprare ora significa comprare in caduta libera: statisticamente il prezzo continua a scendere prima di rimbalzare.`;
+    document.getElementById('dip-action').innerHTML=
+      `<b>Cosa fare:</b> Non entrare. Aspetta che la MA50 torni sopra la MA200 (Golden Cross) e che l'RSI esca da ipervenduto confermando un minimo. `+
+      `Se sei già in posizione, considera di uscire o di coprire il rischio.`;
+    return;
+  }
+
+  // ── CASO 2: Correzione in trend rialzista — opportunità ──
+  if(oversold && !ma50BelowMA200 && !bearMom){
+    const isStrong = deepOversold || (DD>15 && w30>52);
+    box.classList.add('dip-opportunity');
+    document.getElementById('dip-icon').textContent= isStrong?'🎯':'📉';
+    document.getElementById('dip-title').textContent= isStrong
+      ? 'Opportunità di Sconto — Segnale Contrarian Forte'
+      : 'Correzione in Trend Sano — Potenziale Ingresso';
+    const pctVsMA200= M200!=null ? ((cur-M200)/M200*100).toFixed(1) : null;
+    document.getElementById('dip-body').innerHTML=
+      `L'asset ha perso <b>${DD.toFixed(1)}%</b> dal recente picco con RSI a <b>${R.toFixed(1)}</b> — zona di `+
+      (deepOversold?'<b>ipervenduto estremo</b>':'<b>ipervenduto</b>')+`. `+
+      (aboveMA200
+        ? `Il trend strutturale è ancora <b>intatto</b>: il prezzo rimane sopra la MA200 (${pctVsMA200?pctVsMA200+'% sopra':''}). `
+        : M200!=null
+          ? `Il prezzo è <b>${Math.abs(parseFloat(pctVsMA200)+'').toFixed(1)}% sotto la MA200</b> — zona di possibile rimbalzo tecnico ma la MA200 è una resistenza da monitorare. `
+          : '')+
+      `Storicamente, acquistare quando l'RSI è sotto 35 ha prodotto rendimenti positivi a 30 giorni nel <b>${w30.toFixed(0)}%</b> dei casi su questo strumento.`;
+    const sizing= isStrong?'50–70%':'30–50%';
+    const stopRef= aboveMA200&&M200!=null ? `sotto la MA200 (${fmt(M200)})` : 'al minimo recente del movimento';
+    document.getElementById('dip-action').innerHTML=
+      `<b>Come entrare sullo sconto:</b> Ingresso <b>graduale</b> con ${sizing} del sizing normale — non comprare tutto in un'unica soluzione. `+
+      `Aggiungi posizione solo se il prezzo tiene e l'RSI inizia a risalire. `+
+      `<b>Stop-loss:</b> ${stopRef}. `+
+      `Se il prezzo rompe al ribasso con volumi, esci immediatamente: il rimbalzo non è garantito.`;
+    return;
+  }
+
+  // ── CASO 3: Leggero oversold senza segnale chiaro ──
+  if(oversold){
+    box.classList.add('dip-neutral');
+    document.getElementById('dip-icon').textContent='⚠️';
+    document.getElementById('dip-title').textContent='Ipervenduto con Segnali Contrastanti';
+    document.getElementById('dip-body').innerHTML=
+      `RSI a <b>${R.toFixed(1)}</b> segnala ipervenduto, ma la presenza del Death Cross o del momentum fortemente negativo `+
+      `crea incertezza. Il rimbalzo tecnico è possibile ma la tendenza di fondo rimane debole.`;
+    document.getElementById('dip-action').innerHTML=
+      `<b>Cosa fare:</b> Se vuoi speculare sul rimbalzo tecnico, usa una posizione <b>molto piccola</b> (10–20% del normale) con stop rigidissimo. Non è un ingresso strategico, è trading a breve termine ad alto rischio.`;
+    return;
+  }
+
+  // Nessuna condizione di dip: nascondi il box
+  box.className='dip-box'; // hidden
 }
 
 // ── SESSION CACHE ──
@@ -2124,6 +2265,7 @@ async function analyze(ticker){
 
     renderFundamentals(fund);
     renderBHS(score, fund);
+    buildDipSignal(R,M50,M200,Mo3m,Mo12m,DD,cur,w30,score);
 
     document.getElementById('analysis').scrollIntoView({behavior:'smooth',block:'start'});
 

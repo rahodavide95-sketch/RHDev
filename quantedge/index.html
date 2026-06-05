@@ -288,21 +288,24 @@ header{
 
 /* ── DIP OPPORTUNITY BOX ── */
 .dip-box{
-  display:none;
+  display:block;
   border-radius:var(--radius);padding:18px 22px;margin-bottom:16px;
   border-left:4px solid;
 }
 .dip-box.dip-opportunity{
-  background:rgba(16,185,129,.06);border-color:#10b981;
-  display:block;
+  background:rgba(52,211,153,.06);border-color:#34d399;
 }
 .dip-box.dip-warning{
   background:rgba(239,68,68,.06);border-color:#ef4444;
-  display:block;
 }
 .dip-box.dip-neutral{
-  background:rgba(59,130,246,.06);border-color:var(--accent);
-  display:block;
+  background:rgba(72,79,88,.06);border-color:var(--border);
+}
+.dip-box.dip-strong{
+  background:rgba(16,185,129,.06);border-color:#10b981;
+}
+.dip-box.dip-discount{
+  background:rgba(56,189,248,.06);border-color:#38bdf8;
 }
 .dip-header{display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap;}
 .dip-icon{font-size:1.3rem;line-height:1;}
@@ -1562,15 +1565,11 @@ function buildDipSignal(R,M50,M200,Mo3m,Mo12m,DD,cur,w30,score){
   box.className='dip-box';
 
   // Classify the situation
-  const oversold     = R!=null && R<35;
-  const deepOversold = R!=null && R<25;
-  const aboveMA200   = M200!=null && cur>M200;
-  const belowMA200   = M200!=null && cur<M200;
-  const ma50BelowMA200 = M50!=null && M200!=null && M50<M200; // Death Cross
-  const bearMom      = Mo12m!=null && Mo12m<-25;
-  const dipMom       = Mo3m!=null  && Mo3m<-8;
-  const inCorrection = DD>8 && DD<35;
-  const inCrash      = DD>=35;
+  const oversold       = R!=null && R<35;
+  const aboveMA200     = M200!=null && cur>M200;
+  const ma50BelowMA200 = M50!=null && M200!=null && M50<M200;
+  const bearMom        = Mo12m!=null && Mo12m<-25;
+  const inCrash        = DD>=35;
 
   // Build metrics chips
   const chips=[];
@@ -1584,78 +1583,86 @@ function buildDipSignal(R,M50,M200,Mo3m,Mo12m,DD,cur,w30,score){
     `<span class="dip-metric">${c.l}: <span style="color:${c.color}">${c.v}</span></span>`
   ).join('');
 
-  // ── CASO 1: Crollo strutturale — NON comprare ──
+  // ── STATE A (crash): crollo strutturale ──
   if(inCrash && ma50BelowMA200 && bearMom){
     box.classList.add('dip-warning');
-    document.getElementById('dip-icon').textContent='🔴';
-    document.getElementById('dip-title').textContent='Crollo Strutturale — Non comprare il ribasso';
+    document.getElementById('dip-icon').textContent='⛔';
+    document.getElementById('dip-title').textContent='Evita — Condizioni Sfavorevoli';
     document.getElementById('dip-body').innerHTML=
-      `Il calo attuale (<b>${DD.toFixed(1)}%</b> dal picco) non è una correzione temporanea ma un <b>bear market strutturale</b>. `+
-      `Il Death Cross (MA50 sotto MA200) e il momentum a 12 mesi di <b>${Mo12m!=null?Mo12m.toFixed(1)+'%':'N/D'}</b> indicano una tendenza ribassista di lungo periodo. `+
-      `Comprare ora significa comprare in caduta libera: statisticamente il prezzo continua a scendere prima di rimbalzare.`;
+      `Il calo attuale (<b>${DD.toFixed(1)}%</b> dal picco) configura un <b>bear market strutturale</b>. `+
+      `Il Death Cross (MA50 sotto MA200) e il momentum a 12 mesi di <b>${Mo12m!=null?Mo12m.toFixed(1)+'%':'N/D'}</b> confermano la tendenza ribassista di lungo periodo. `+
+      `Acquistare ora significa comprare in caduta libera.`;
     document.getElementById('dip-action').innerHTML=
-      `<b>Cosa fare:</b> Non entrare. Aspetta che la MA50 torni sopra la MA200 (Golden Cross) e che l'RSI esca da ipervenduto confermando un minimo. `+
-      `Se sei già in posizione, considera di uscire o di coprire il rischio.`;
+      `<b>Non entrare.</b> Se sei in posizione, valuta di ridurla.`;
     return;
   }
 
-  // ── CASO 2: Correzione in trend rialzista — opportunità ──
-  if(oversold && !ma50BelowMA200 && !bearMom){
-    const isStrong = deepOversold || (DD>15 && w30>52);
+  // ── STATE A (weak score): condizioni sfavorevoli ──
+  if(score < 40){
+    box.classList.add('dip-warning');
+    document.getElementById('dip-icon').textContent='⛔';
+    document.getElementById('dip-title').textContent='Evita — Condizioni Sfavorevoli';
+    document.getElementById('dip-body').innerHTML=
+      `L'Edge Score (<b>${score}/100</b>) indica debolezza tecnica. `+
+      (ma50BelowMA200?`Il Death Cross è attivo (MA50 sotto MA200). `:'')+
+      (bearMom?`Il momentum a 12 mesi è fortemente negativo (<b>${Mo12m.toFixed(1)}%</b>). `:'')+
+      `Le condizioni di mercato non supportano un ingresso.`;
+    document.getElementById('dip-action').innerHTML=
+      `<b>Non entrare.</b> Se sei in posizione, valuta di ridurla.`;
+    return;
+  }
+
+  // ── STATE C (discount): ipervenduto in trend sano ──
+  if(oversold && !ma50BelowMA200 && score >= 45){
+    box.classList.add('dip-discount');
+    document.getElementById('dip-icon').textContent='🎯';
+    document.getElementById('dip-title').textContent='Zona Sconto — Possibile Ingresso Graduale';
+    const stopRef = aboveMA200 && M200!=null ? `sotto la MA200 (${fmt(M200)})` : 'al minimo recente del movimento';
+    document.getElementById('dip-body').innerHTML=
+      `RSI a <b>${R.toFixed(1)}</b> segnala ipervenduto mentre il trend strutturale rimane sano `+
+      `(MA50 sopra MA200). Questo è il classico setup di acquisto sul ribasso: correzione tecnica in bull market. `+
+      `Il win rate storico a 30gg è del <b>${w30.toFixed(0)}%</b>.`;
+    document.getElementById('dip-action').innerHTML=
+      `<b>Ingresso graduale</b> (30–50% del sizing). Stop sotto ${stopRef} o minimo recente.`;
+    return;
+  }
+
+  // ── STATE D (strong): trend forte ──
+  if(score >= 70 && aboveMA200 && !oversold){
+    box.classList.add('dip-strong');
+    document.getElementById('dip-icon').textContent='✅';
+    document.getElementById('dip-title').textContent='Trend Forte — Mantieni o Aggiungi';
+    document.getElementById('dip-body').innerHTML=
+      `Trend rialzista solido: prezzo sopra la MA200, momentum positivo e nessun segnale di debolezza tecnica. `+
+      `L'Edge Score è <b>${score}/100</b> — condizioni ottimali per mantenere o incrementare la posizione.`;
+    document.getElementById('dip-action').innerHTML=
+      `<b>Mantieni la posizione.</b> Puoi aggiungere su piccole correzioni intraday.`;
+    return;
+  }
+
+  // ── STATE E (positive): scenario positivo ──
+  if(score >= 60){
     box.classList.add('dip-opportunity');
-    document.getElementById('dip-icon').textContent= isStrong?'🎯':'📉';
-    document.getElementById('dip-title').textContent= isStrong
-      ? 'Opportunità di Sconto — Segnale Contrarian Forte'
-      : 'Correzione in Trend Sano — Potenziale Ingresso';
-    const pctVsMA200= M200!=null ? ((cur-M200)/M200*100).toFixed(1) : null;
+    document.getElementById('dip-icon').textContent='🟢';
+    document.getElementById('dip-title').textContent='Scenario Positivo — Tieni Monitorato';
     document.getElementById('dip-body').innerHTML=
-      `L'asset ha perso <b>${DD.toFixed(1)}%</b> dal recente picco con RSI a <b>${R.toFixed(1)}</b> — zona di `+
-      (deepOversold?'<b>ipervenduto estremo</b>':'<b>ipervenduto</b>')+`. `+
-      (aboveMA200
-        ? `Il trend strutturale è ancora <b>intatto</b>: il prezzo rimane sopra la MA200 (${pctVsMA200?pctVsMA200+'% sopra':''}). `
-        : M200!=null
-          ? `Il prezzo è <b>${Math.abs(parseFloat(pctVsMA200)+'').toFixed(1)}% sotto la MA200</b> — zona di possibile rimbalzo tecnico ma la MA200 è una resistenza da monitorare. `
-          : '')+
-      `Storicamente, acquistare quando l'RSI è sotto 35 ha prodotto rendimenti positivi a 30 giorni nel <b>${w30.toFixed(0)}%</b> dei casi su questo strumento.`;
-    const sizing= isStrong?'50–70%':'30–50%';
-    const stopRef= aboveMA200&&M200!=null ? `sotto la MA200 (${fmt(M200)})` : 'al minimo recente del movimento';
+      `Le condizioni tecniche sono buone ma non eccezionali. Edge Score: <b>${score}/100</b>. `+
+      `Il trend è generalmente favorevole con qualche incertezza sul timing ottimale.`;
     document.getElementById('dip-action').innerHTML=
-      `<b>Come entrare sullo sconto:</b> Ingresso <b>graduale</b> con ${sizing} del sizing normale — non comprare tutto in un'unica soluzione. `+
-      `Aggiungi posizione solo se il prezzo tiene e l'RSI inizia a risalire. `+
-      `<b>Stop-loss:</b> ${stopRef}. `+
-      `Se il prezzo rompe al ribasso con volumi, esci immediatamente: il rimbalzo non è garantito.`;
+      `<b>Se non sei in posizione</b>, può essere un buon momento per entrare con sizing normale.`;
     return;
   }
 
-  // ── CASO 3: Leggero oversold senza segnale chiaro ──
-  if(oversold){
-    box.classList.add('dip-neutral');
-    document.getElementById('dip-icon').textContent='⚠️';
-    document.getElementById('dip-title').textContent='Ipervenduto con Segnali Contrastanti';
-    document.getElementById('dip-body').innerHTML=
-      `RSI a <b>${R.toFixed(1)}</b> segnala ipervenduto, ma la presenza del Death Cross o del momentum fortemente negativo `+
-      `crea incertezza. Il rimbalzo tecnico è possibile ma la tendenza di fondo rimane debole.`;
-    document.getElementById('dip-action').innerHTML=
-      `<b>Cosa fare:</b> Se vuoi speculare sul rimbalzo tecnico, usa una posizione <b>molto piccola</b> (10–20% del normale) con stop rigidissimo. Non è un ingresso strategico, è trading a breve termine ad alto rischio.`;
-    return;
-  }
-
-  // Nessuna condizione di dip: mostra stato neutro
+  // ── STATE B (neutral): attendi ──
   box.classList.add('dip-neutral');
-  document.getElementById('dip-icon').textContent='📊';
-  const trendDir = !ma50BelowMA200 ? 'rialzista' : 'ribassista';
-  document.getElementById('dip-title').textContent=`Nessuna Opportunità di Dip — Trend ${trendDir.charAt(0).toUpperCase()+trendDir.slice(1)}`;
+  document.getElementById('dip-icon').textContent='⏸';
+  document.getElementById('dip-title').textContent='Attendi — Nessun Segnale Operativo';
   document.getElementById('dip-body').innerHTML=
-    `Non ci sono segnali di ipervenduto o correzione significativa al momento. `+
-    (aboveMA200
-      ? `Il prezzo si trova <b>sopra la MA200</b> con un trend strutturale intatto — il mercato è in fase normale o in salita.`
-      : `Il prezzo si trova <b>sotto la MA200</b> ma senza ipervenduto tecnico — aspetta una conferma prima di entrare.`)+
-    ` Continua a monitorare: un calo fino a RSI &lt;35 potrebbe creare un punto di ingresso interessante.`;
+    `Il trend è laterale o inconcludente. Edge Score: <b>${score}/100</b>. `+
+    `Non ci sono condizioni chiare né per entrare né per uscire.`;
   document.getElementById('dip-action').innerHTML=
-    `<b>Cosa fare:</b> Se non sei in posizione, aspetta un segnale di ingresso più favorevole. `+
-    `Se sei già investito, mantieni la posizione: non c'è motivo tecnico per uscire.`;
+    `<b>Mantieni se sei in posizione.</b> Non aprire nuove posizioni adesso.`;
 }
-
 // ── SESSION CACHE ──
 const CK='qe7_',TTL=3600000;
 function getCached(k){try{const v=sessionStorage.getItem(CK+k);if(!v)return null;const p=JSON.parse(v);if(Date.now()-p.ts>TTL)return null;return p.d;}catch{return null;}}
@@ -2229,16 +2236,12 @@ function renderBHS(score, fund){
   const explEl=document.getElementById('bhs-explain');
   if(!explEl) return;
   let explain='';
-  if(buyPct>=65){
-    explain=`<b>✅ Cosa fare: Ingresso.</b> Il segnale operativo è favorevole — la maggioranza degli indicatori punta al rialzo. Considera un ingresso con sizing normale. <b>Stop-loss consigliato:</b> sotto la MA200 o al livello di supporto più vicino. Se la volatilità è elevata, riduci la dimensione della posizione del 30–50%.`;
-  } else if(buyPct>=50){
-    explain=`<b>🟢 Cosa fare: Ingresso prudente.</b> Il segnale è positivo ma non ottimale. Entra con il 50% del sizing normale e aumenta la posizione solo se il prezzo conferma il trend nelle sessioni successive. Stop rigido obbligatorio.`;
-  } else if(holdPct>=50 || (buyPct<50 && sellPct<40)){
-    explain=`<b>⏸ Cosa fare: Attesa.</b> Nessun edge statistico chiaro in questo momento. Se sei già in posizione, mantienila con stop al supporto. Se sei fuori, aspetta un segnale più definito — entrare ora significa operare senza vantaggio statistico.`;
-  } else if(sellPct>=65){
-    explain=`<b>🔴 Cosa fare: Uscita.</b> Il segnale è chiaramente negativo. Esci dalla posizione o proteggiti con stop molto rigidi. Non aprire nuovi long. Rivaluta solo dopo un recupero strutturale sopra la MA200.`;
+  if(buyPct>sellPct){
+    explain=`Il modello quantitativo suggerisce un bias positivo basato su momentum, RSI, media mobile e solidità dei fondamentali.`;
+  } else if(sellPct>buyPct){
+    explain=`Il modello quantitativo segnala debolezza tecnica. I parametri di momentum e posizione rispetto alle medie mobili sono sfavorevoli.`;
   } else {
-    explain=`<b>🟡 Cosa fare: Riduzione.</b> Le condizioni sono sfavorevoli. Evita nuovi ingressi. Se sei in posizione, riduci l'esposizione e avvicina lo stop-loss al prezzo corrente.`;
+    explain=`Segnale neutro: le condizioni tecniche non mostrano un chiaro vantaggio direzionale in questo momento.`;
   }
   explEl.innerHTML=explain;
 }

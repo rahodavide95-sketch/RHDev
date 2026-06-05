@@ -599,6 +599,47 @@ header{
   font-size:.83rem;color:var(--t2);line-height:1.8;
 }
 .bhs-explain b{color:var(--text);}
+
+/* ── OPPORTUNITIES CARD ── */
+.opp-card{
+  background:var(--bg2); border:1px solid var(--border);
+  border-radius:var(--radius); padding:20px 22px;
+  margin-top:20px;
+}
+.opp-hd{
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:16px;
+}
+.opp-title{
+  font-size:.75rem; font-weight:700; color:var(--t3);
+  text-transform:uppercase; letter-spacing:.1em;
+}
+.opp-badge{
+  font-size:.68rem; background:rgba(16,185,129,.12); color:#10b981;
+  border:1px solid rgba(16,185,129,.25); padding:2px 9px; border-radius:20px;
+}
+.opp-grid{
+  display:grid; grid-template-columns:repeat(3,1fr); gap:10px;
+}
+@media(max-width:640px){.opp-grid{grid-template-columns:repeat(2,1fr);}}
+.opp-item{
+  background:var(--bg3); border:1px solid var(--border);
+  border-radius:10px; padding:12px 14px;
+  cursor:pointer; transition:border-color .15s, transform .15s;
+  display:flex; flex-direction:column; gap:4px;
+}
+.opp-item:hover{border-color:var(--accent); transform:translateY(-2px);}
+.opp-sym{font-size:.95rem; font-weight:700; color:var(--accent);}
+.opp-name{font-size:.72rem; color:var(--t2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.opp-bottom{display:flex; align-items:center; justify-content:space-between; margin-top:6px;}
+.opp-score{font-size:1.05rem; font-weight:700;}
+.opp-bar-wrap{flex:1; height:4px; background:var(--bg2); border-radius:2px; margin:0 8px;}
+.opp-bar{height:4px; border-radius:2px; transition:width .8s ease;}
+.opp-signal{font-size:.65rem; font-weight:600; padding:2px 7px; border-radius:20px; white-space:nowrap;}
+.opp-signal.buy{background:rgba(16,185,129,.15); color:#10b981;}
+.opp-signal.hold{background:rgba(245,158,11,.15); color:#f59e0b;}
+.opp-signal.dip{background:rgba(59,130,246,.15); color:var(--accent);}
+.opp-empty{font-size:.82rem; color:var(--t3); padding:12px 0; text-align:center;}
 </style>
 </head>
 <body>
@@ -767,6 +808,19 @@ header{
       <div class="pano-block">
         <div class="pano-head">Energia & Industria</div>
         <table class="ptable"><tbody id="t-energia"></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── BEST OPPORTUNITIES ── -->
+  <div class="sec">
+    <div class="opp-card" id="opp-card">
+      <div class="opp-hd">
+        <span class="opp-title">Migliori Opportunità</span>
+        <span class="opp-badge" id="opp-badge">Caricamento…</span>
+      </div>
+      <div class="opp-grid" id="opp-grid">
+        <div class="opp-empty">Calcolo in corso…</div>
       </div>
     </div>
   </div>
@@ -1635,6 +1689,45 @@ const PANO={
 // ── PULSE ITEMS ──
 const PULSE=['SPY','QQQ','VGK','EEM','TLT','GLD'];
 
+// ── OPPORTUNITIES ──
+function renderOpportunities(scoreMap){
+  const grid=document.getElementById('opp-grid');
+  const badge=document.getElementById('opp-badge');
+  if(!grid||!scoreMap) return;
+
+  // build name map from PANO
+  const nameMap={};
+  for(const entries of Object.values(PANO))
+    for(const[sym,name]of entries) nameMap[sym]=name;
+
+  // score all available tickers, sort descending
+  const ranked=Object.entries(scoreMap)
+    .filter(([,s])=>s!=null)
+    .sort((a,b)=>b[1]-a[1]);
+
+  const top=ranked.slice(0,6);
+  if(!top.length){ grid.innerHTML='<div class="opp-empty">Dati non disponibili</div>'; return; }
+
+  badge.textContent=`Top ${top.length} su ${ranked.length} titoli`;
+
+  grid.innerHTML=top.map(([sym,score])=>{
+    const color=sc(score);
+    const name=nameMap[sym]||sym;
+    const signal=score>=70?{cls:'buy',lbl:'Opportunità'}:score>=60?{cls:'hold',lbl:'Attenzione'}:{cls:'dip',lbl:'Monitorare'};
+    return `<div class="opp-item" onclick="quickAnalyze('${sym}')">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <span class="opp-sym">${sym}</span>
+        <span class="opp-signal ${signal.cls}">${signal.lbl}</span>
+      </div>
+      <div class="opp-name">${name}</div>
+      <div class="opp-bottom">
+        <span class="opp-score" style="color:${color}">${score}</span>
+        <div class="opp-bar-wrap"><div class="opp-bar" style="width:${score}%;background:${color}"></div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 async function loadPulse(){
   let spyCl=null;
   // fetch all 6 pulse tickers concurrently + VIX
@@ -1721,6 +1814,7 @@ async function loadPanoramica(){
 
   if(!toFetch.length){
     document.getElementById('pbar').classList.remove('on');
+    renderOpportunities(scoreMap);
     return;
   }
 
@@ -1757,6 +1851,8 @@ async function loadPanoramica(){
 
   lbl.textContent='Aggiornato ✓';
   setTimeout(()=>pbar.classList.remove('on'),1500);
+
+  renderOpportunities(scoreMap);
 }
 
 // ── CHARTS ──

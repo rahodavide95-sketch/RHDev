@@ -636,9 +636,14 @@ header{
 .opp-bar-wrap{flex:1; height:4px; background:var(--bg2); border-radius:2px; margin:0 8px;}
 .opp-bar{height:4px; border-radius:2px; transition:width .8s ease;}
 .opp-signal{font-size:.65rem; font-weight:600; padding:2px 7px; border-radius:20px; white-space:nowrap;}
-.opp-signal.buy{background:rgba(16,185,129,.15); color:#10b981;}
+.opp-signal.opp{background:rgba(56,189,248,.15); color:#38bdf8; border:1px solid rgba(56,189,248,.3);}
 .opp-signal.hold{background:rgba(245,158,11,.15); color:#f59e0b;}
-.opp-signal.dip{background:rgba(59,130,246,.15); color:var(--accent);}
+.opp-signal.dip{background:rgba(100,116,139,.12); color:var(--t2);}
+.opp-type{
+  font-size:.62rem; color:var(--t3); background:var(--bg2);
+  border:1px solid var(--border); padding:1px 6px; border-radius:10px;
+  white-space:nowrap; flex-shrink:0;
+}
 .opp-empty{font-size:.82rem; color:var(--t3); padding:12px 0; text-align:center;}
 </style>
 </head>
@@ -1638,8 +1643,20 @@ function buildDipSignal(R,M50,M200,Mo3m,Mo12m,DD,cur,w30,score){
     return;
   }
 
-  // Nessuna condizione di dip: nascondi il box
-  box.className='dip-box'; // hidden
+  // Nessuna condizione di dip: mostra stato neutro
+  box.classList.add('dip-neutral');
+  document.getElementById('dip-icon').textContent='📊';
+  const trendDir = !ma50BelowMA200 ? 'rialzista' : 'ribassista';
+  document.getElementById('dip-title').textContent=`Nessuna Opportunità di Dip — Trend ${trendDir.charAt(0).toUpperCase()+trendDir.slice(1)}`;
+  document.getElementById('dip-body').innerHTML=
+    `Non ci sono segnali di ipervenduto o correzione significativa al momento. `+
+    (aboveMA200
+      ? `Il prezzo si trova <b>sopra la MA200</b> con un trend strutturale intatto — il mercato è in fase normale o in salita.`
+      : `Il prezzo si trova <b>sotto la MA200</b> ma senza ipervenduto tecnico — aspetta una conferma prima di entrare.`)+
+    ` Continua a monitorare: un calo fino a RSI &lt;35 potrebbe creare un punto di ingresso interessante.`;
+  document.getElementById('dip-action').innerHTML=
+    `<b>Cosa fare:</b> Se non sei in posizione, aspetta un segnale di ingresso più favorevole. `+
+    `Se sei già investito, mantieni la posizione: non c'è motivo tecnico per uscire.`;
 }
 
 // ── SESSION CACHE ──
@@ -1690,15 +1707,22 @@ const PANO={
 const PULSE=['SPY','QQQ','VGK','EEM','TLT','GLD'];
 
 // ── OPPORTUNITIES ──
+const PANO_TYPE={
+  't-etf-glob':'ETF','t-settori':'Settore','t-bond':'Bond',
+  't-bigtech':'Azione','t-finance':'Azione','t-health':'Azione','t-energia':'Azione',
+};
 function renderOpportunities(scoreMap){
   const grid=document.getElementById('opp-grid');
   const badge=document.getElementById('opp-badge');
   if(!grid||!scoreMap) return;
 
-  // build name map from PANO
-  const nameMap={};
-  for(const entries of Object.values(PANO))
-    for(const[sym,name]of entries) nameMap[sym]=name;
+  // build name + type map from PANO
+  const nameMap={}, typeMap={};
+  for(const[id,entries]of Object.entries(PANO))
+    for(const[sym,name]of entries){
+      nameMap[sym]=name;
+      typeMap[sym]=PANO_TYPE[id]||'';
+    }
 
   // score all available tickers, sort descending
   const ranked=Object.entries(scoreMap)
@@ -1713,13 +1737,17 @@ function renderOpportunities(scoreMap){
   grid.innerHTML=top.map(([sym,score])=>{
     const color=sc(score);
     const name=nameMap[sym]||sym;
-    const signal=score>=70?{cls:'buy',lbl:'Opportunità'}:score>=60?{cls:'hold',lbl:'Attenzione'}:{cls:'dip',lbl:'Monitorare'};
+    const type=typeMap[sym]||'';
+    const signal=score>=70?{cls:'opp',lbl:'Opportunità'}:score>=60?{cls:'hold',lbl:'Attenzione'}:{cls:'dip',lbl:'Monitorare'};
     return `<div class="opp-item" onclick="quickAnalyze('${sym}')">
       <div style="display:flex;align-items:center;justify-content:space-between">
         <span class="opp-sym">${sym}</span>
         <span class="opp-signal ${signal.cls}">${signal.lbl}</span>
       </div>
-      <div class="opp-name">${name}</div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:1px;">
+        <span class="opp-name">${name}</span>
+        ${type?`<span class="opp-type">${type}</span>`:''}
+      </div>
       <div class="opp-bottom">
         <span class="opp-score" style="color:${color}">${score}</span>
         <div class="opp-bar-wrap"><div class="opp-bar" style="width:${score}%;background:${color}"></div></div>

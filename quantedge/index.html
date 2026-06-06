@@ -176,7 +176,7 @@ header{
   margin-bottom:16px;
 }
 .sec-title{
-  font-size:.85rem;font-weight:700;color:var(--text);
+  font-size:.95rem;font-weight:700;color:var(--text);
   text-transform:uppercase;letter-spacing:.08em;
   border-left:3px solid var(--accent);padding-left:10px;
 }
@@ -211,10 +211,8 @@ header{
 
 /* ── PANORAMICA GRID ── */
 .pano-list{
-  display:grid;grid-template-columns:1fr 1fr;gap:0;
   background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;
 }
-@media(max-width:640px){.pano-list{grid-template-columns:1fr;}}
 .pano-block{
   background:var(--bg2);border:1px solid var(--border);
   border-radius:var(--radius);overflow:hidden;
@@ -225,16 +223,23 @@ header{
   text-transform:uppercase;letter-spacing:.08em;
 }
 .ptable{width:100%;border-collapse:collapse;}
-.ptable td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
-.ptable tr:last-child td{border-bottom:none;}
-.ptable tr{cursor:pointer;transition:background .12s;}
+/* 2-column layout: tbody acts as a 2-col CSS grid, each tr is one grid cell */
+.ptable tbody{display:grid;grid-template-columns:1fr 1fr;}
+@media(max-width:640px){.ptable tbody{grid-template-columns:1fr;}}
+.ptable tr{
+  display:flex;align-items:center;
+  padding:0;border-bottom:1px solid var(--border);
+  cursor:pointer;transition:background .12s;
+}
 .ptable tr:hover{background:rgba(255,255,255,.025);}
-.ptable tr.has-score-high td:first-child{border-left:3px solid var(--g);}
-.ptable tr.has-score-mid td:first-child{border-left:3px solid var(--y);}
-.ptable tr.has-score-low td:first-child{border-left:3px solid var(--r);}
+.ptable tr.has-score-high{border-left:3px solid var(--g);}
+.ptable tr.has-score-mid{border-left:3px solid var(--y);}
+.ptable tr.has-score-low{border-left:3px solid var(--r);}
+.ptable td{padding:8px 12px;vertical-align:middle;border:none;}
+.ptable td:first-child{flex:1;min-width:0;}
 .p-nm{font-size:.8rem;font-weight:500;line-height:1.3;}
 .p-sy{font-size:.65rem;color:var(--t3);margin-top:2px;}
-.p-bar-w{width:70px;}
+.p-bar-w{width:70px;flex-shrink:0;}
 .p-bar{height:3px;background:var(--bg3);border-radius:2px;overflow:hidden;}
 .p-bar-f{height:100%;border-radius:2px;transition:width .7s ease;}
 .p-sc{text-align:right;font-size:.8125rem;font-weight:700;}
@@ -795,55 +800,32 @@ header{
   <!-- ── PANORAMICA ── -->
   <div class="sec">
     <div class="sec-hd"><span class="sec-title">ETF Azionari</span></div>
-    <div class="pano-grid">
-      <div class="pano-block" style="grid-column:1/-1">
-        <table class="ptable"><tbody id="t-etf-az"></tbody></table>
-      </div>
+    <div class="pano-list">
+      <table class="ptable"><tbody id="t-etf-az"></tbody></table>
     </div>
   </div>
   <div class="sec">
     <div class="sec-hd"><span class="sec-title">ETF Obbligazionari</span></div>
-    <div class="pano-grid">
-      <div class="pano-block" style="grid-column:1/-1">
-        <table class="ptable"><tbody id="t-etf-bond"></tbody></table>
-      </div>
+    <div class="pano-list">
+      <table class="ptable"><tbody id="t-etf-bond"></tbody></table>
     </div>
   </div>
   <div class="sec">
     <div class="sec-hd"><span class="sec-title">Materie Prime</span></div>
-    <div class="pano-grid">
-      <div class="pano-block" style="grid-column:1/-1">
-        <table class="ptable"><tbody id="t-commodities"></tbody></table>
-      </div>
+    <div class="pano-list">
+      <table class="ptable"><tbody id="t-commodities"></tbody></table>
     </div>
   </div>
   <div class="sec">
     <div class="sec-hd"><span class="sec-title">Crypto</span></div>
-    <div class="pano-grid">
-      <div class="pano-block" style="grid-column:1/-1">
-        <table class="ptable"><tbody id="t-crypto"></tbody></table>
-      </div>
+    <div class="pano-list">
+      <table class="ptable"><tbody id="t-crypto"></tbody></table>
     </div>
   </div>
   <div class="sec">
     <div class="sec-hd"><span class="sec-title">Azioni Large Cap</span></div>
-    <div class="pano-grid">
-      <div class="pano-block" style="grid-column:1/-1">
-        <table class="ptable"><tbody id="t-azioni"></tbody></table>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── BEST OPPORTUNITIES ── -->
-  <div class="sec">
-    <div class="opp-card" id="opp-card">
-      <div class="opp-hd">
-        <span class="opp-title">Migliori Opportunità</span>
-        <span class="opp-badge" id="opp-badge">Caricamento…</span>
-      </div>
-      <div class="opp-grid" id="opp-grid">
-        <div class="opp-empty">Calcolo in corso…</div>
-      </div>
+    <div class="pano-list">
+      <table class="ptable"><tbody id="t-azioni"></tbody></table>
     </div>
   </div>
 
@@ -1405,6 +1387,27 @@ async function fetchFundamentals(ticker){
   }catch{return null;}
 }
 
+// ── SCORE REASON ──
+function scoreReason(cl){
+  if(!cl||cl.length<30) return '';
+  const cur=cl[cl.length-1];
+  const R=rsi(cl),M50=ma(cl,50),M200=ma(cl,200);
+  const Mo3m=cl.length>=65?mom(cl,65):null;
+  const reasons=[];
+  if(R!=null&&R<35) reasons.push('RSI ipervenduto');
+  else if(R!=null&&R>65) reasons.push('RSI forte');
+  if(M50&&M200&&M50>M200) reasons.push('trend rialzista');
+  else if(M50&&M200&&M50<M200) reasons.push('death cross');
+  if(M200&&cur>M200*1.02) reasons.push('sopra MA200');
+  else if(M200&&cur<M200*0.98) reasons.push('sotto MA200');
+  if(Mo3m!=null&&Mo3m>10) reasons.push(`+${Mo3m.toFixed(0)}% 3M`);
+  else if(Mo3m!=null&&Mo3m<-10) reasons.push(`${Mo3m.toFixed(0)}% 3M`);
+  return reasons.slice(0,2).join(' · ');
+}
+
+// ── REASON MAP (populated by fetchAndScore) ──
+const reasonMap={};
+
 // ── FETCH & SCORE A SINGLE TICKER (for panoramica) ──
 async function fetchAndScore(ticker){
   const cached=getCached(ticker);
@@ -1416,7 +1419,10 @@ async function fetchAndScore(ticker){
     const cl=ts.map((_,i)=>raw[i]).filter(c=>c!=null&&!isNaN(c)&&c>0);
     if(cl.length<30) return null;
     const score=scoreFromHistory(cl);
-    if(score!=null) setCached(ticker,score);
+    if(score!=null){
+      setCached(ticker,score);
+      reasonMap[ticker]=scoreReason(cl);
+    }
     return score;
   }catch{ return null; }
 }
@@ -1688,7 +1694,7 @@ function setCached(k,d){try{sessionStorage.setItem(CK+k,JSON.stringify({d,ts:Dat
 // ── RENDER HELPERS ──
 function renderSkel(id,n){
   const el=document.getElementById(id);if(!el)return;
-  el.innerHTML=Array.from({length:n},()=>`<tr><td><span class="sk" style="width:80px;height:8px"></span><span class="sk" style="width:36px;height:6px;margin-top:4px"></span></td><td class="p-bar-w"><div class="p-bar"><div class="p-bar-f" style="width:0%"></div></div></td><td><span class="sk" style="width:24px;height:10px;display:block;margin-left:auto"></span></td></tr>`).join('');
+  el.innerHTML=Array.from({length:n},()=>`<tr><td><div><span class="sk" style="width:80px;height:8px;display:block"></span><span class="sk" style="width:36px;height:6px;margin-top:4px;display:block"></span></div></td><td class="p-bar-w"><div class="p-bar"><div class="p-bar-f" style="width:0%"></div></div></td><td><span class="sk" style="width:24px;height:10px;display:block;margin-left:auto"></span></td></tr>`).join('');
 }
 function renderRow(id,ticker,name,score){
   const el=document.getElementById(id);if(!el)return;
@@ -1696,7 +1702,9 @@ function renderRow(id,ticker,name,score){
   const idx=entries.findIndex(([t])=>t===ticker);
   const rows=el.querySelectorAll('tr');
   const color=sc(score),lbl=scLbl(score);
+  const scoreCls=score>=65?'has-score-high':score>=45?'has-score-mid':'has-score-low';
   const tr=document.createElement('tr');
+  tr.className=scoreCls;
   tr.title=`Analizza ${name}`;
   tr.onclick=()=>quickAnalyze(ticker);
   tr.innerHTML=`<td><div class="p-nm">${name}</div><div class="p-sy">${ticker}</div></td><td class="p-bar-w"><div class="p-bar"><div class="p-bar-f" style="width:${score}%;background:${color}"></div></div></td><td><div class="p-sc" style="color:${color}">${score}</div><div class="p-sl" style="color:${color}">${lbl}</div></td>`;
@@ -1777,6 +1785,7 @@ function renderOpportunities(scoreMap){
     const color=sc(score);
     const name=nameMap[sym]||sym;
     const type=typeMap[sym]||'';
+    const reason=reasonMap[sym]||'';
     const signal=score>=70?{cls:'opp',lbl:'Opportunità'}:score>=60?{cls:'hold',lbl:'Attenzione'}:{cls:'dip',lbl:'Monitorare'};
     return `<div class="opp-item" onclick="quickAnalyze('${sym}')">
       <div style="display:flex;align-items:center;justify-content:space-between">
@@ -1787,6 +1796,7 @@ function renderOpportunities(scoreMap){
         <span class="opp-name">${name}</span>
         ${type?`<span class="opp-type">${type}</span>`:''}
       </div>
+      ${reason?`<div class="opp-why">${reason}</div>`:''}
       <div class="opp-bottom">
         <span class="opp-score" style="color:${color}">${score}</span>
         <div class="opp-bar-wrap"><div class="opp-bar" style="width:${score}%;background:${color}"></div></div>
@@ -1998,9 +2008,13 @@ function redrawPriceChart(pTs,pCl){
   if(fmtEl) fmtEl.innerHTML='';
 
   // build forecast only when enough data
+  const bb=bollinger(pCl);
   const datasets=[
     {data:pCl,borderColor:isUp?'#10b981':'#ef4444',backgroundColor:gr,
-     borderWidth:1.5,pointRadius:0,fill:true,tension:.35,order:1}
+     borderWidth:1.5,pointRadius:0,fill:true,tension:.35,order:1},
+    {label:'BB Upper',data:bb.upper,borderColor:'rgba(99,102,241,.4)',borderWidth:1,borderDash:[3,3],pointRadius:0,fill:false,tension:0.1,order:2},
+    {label:'BB Mid (SMA20)',data:bb.mid,borderColor:'rgba(99,102,241,.25)',borderWidth:1,borderDash:[2,4],pointRadius:0,fill:false,tension:0.1,order:2},
+    {label:'BB Lower',data:bb.lower,borderColor:'rgba(99,102,241,.4)',borderWidth:1,borderDash:[3,3],pointRadius:0,fill:false,tension:0.1,order:2},
   ];
   let chartLabels=pTs.map(fmtLabel);
 
@@ -2052,6 +2066,11 @@ function redrawPriceChart(pTs,pCl){
     // draw band as background via a filled area dataset using actual price fill trick:
     // upper band with fill to lower using absolute value approach
     datasets[0].data=actualExt; // update actual prices array
+    // extend BB arrays to match chart length
+    const bbNulls=new Array(PROJ).fill(null);
+    datasets[1].data=[...bb.upper,...bbNulls];
+    datasets[2].data=[...bb.mid,...bbNulls];
+    datasets[3].data=[...bb.lower,...bbNulls];
 
     datasets.push(
       // regression line (historical + projection) - dashed
@@ -2195,6 +2214,19 @@ function renderFearGreed(score){
   // needle: -90deg = 0 (left/fear), +90deg = 100 (right/greed)
   const deg=-90+(score/100)*180;
   setTimeout(()=>document.getElementById('fg-needle').style.transform=`rotate(${deg}deg)`,50);
+}
+
+// ── BOLLINGER BANDS ──
+function bollinger(cl,period=20,mult=2){
+  const upper=[],lower=[],mid=[];
+  for(let i=0;i<cl.length;i++){
+    if(i<period-1){upper.push(null);lower.push(null);mid.push(null);continue;}
+    const slice=cl.slice(i-period+1,i+1);
+    const m=slice.reduce((a,b)=>a+b,0)/period;
+    const sd=Math.sqrt(slice.reduce((s,v)=>s+(v-m)**2,0)/period);
+    mid.push(m);upper.push(m+mult*sd);lower.push(m-mult*sd);
+  }
+  return{upper,lower,mid};
 }
 
 // ── LINEAR REGRESSION ──

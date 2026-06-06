@@ -412,7 +412,8 @@ header{
 
 /* ── MOBILE ── */
 @media(max-width:640px){
-  header{flex-wrap:wrap;height:auto;padding:10px 14px;gap:10px;}
+  header{height:auto;padding:10px 12px;gap:8px;}
+  .header-inner{flex-wrap:wrap;gap:8px;}
   .logo{font-size:.8rem;}
   .live-ind{margin-left:auto;}
   .search-wrap{order:3;max-width:100%;flex:1 0 100%;}
@@ -444,10 +445,12 @@ header{
   #analysis{padding-bottom:40px;}
   .sig-tags{gap:5px;}
   .stag{font-size:.65rem;padding:3px 8px;}
+  .opp-card{padding:14px 16px;margin-top:12px;}
+  .price-wrap{height:220px;}
 }
 @media(max-width:400px){
   .ind-grid{grid-template-columns:1fr;}
-  .wr-row{grid-template-columns:repeat(3,1fr);}
+  .wr-row{grid-template-columns:1fr 1fr;}
   .pulse-grid{grid-template-columns:1fr;}
 }
 

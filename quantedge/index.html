@@ -1827,7 +1827,7 @@ function renderOpportunities(scoreMap){
   for(const[id,entries]of Object.entries(PANO)){
     const ranked=entries
       .map(([sym])=>({sym,score:scoreMap[sym]}))
-      .filter(x=>x.score!=null && x.score>=55)
+      .filter(x=>x.score!=null && x.score>=70)
       .sort((a,b)=>b.score-a.score);
     if(!ranked.length) continue;
     totalAll+=ranked.length;
@@ -1851,8 +1851,8 @@ function renderOpportunities(scoreMap){
       </div>`);
   }
 
-  if(!sections.length){ grid.innerHTML='<div class="opp-empty">Nessuna opportunità rilevante al momento (soglia ≥55)</div>'; return; }
-  badge.textContent=`${totalAll} titoli con score ≥55`;
+  if(!sections.length){ grid.innerHTML='<div class="opp-empty">Nessuna opportunità reale al momento — attendi segnali più forti</div>'; return; }
+  badge.textContent=`${totalAll} opportunità reali (score ≥70)`;
   grid.innerHTML=sections.join('');
 }
 

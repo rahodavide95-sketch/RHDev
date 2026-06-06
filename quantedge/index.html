@@ -701,6 +701,19 @@ header{
   font-family:inherit; display:block;
 }
 .opp-toggle:hover{border-color:var(--accent);color:var(--accent);}
+
+/* ── VEDI TUTTI BUTTON (panoramica lazy-load) ── */
+.vedi-tutti-btn{
+  background:none; border:1px solid var(--border); color:var(--t2);
+  font-size:.72rem; padding:5px 16px; border-radius:20px;
+  cursor:pointer; font-family:inherit; transition:border-color .15s,color .15s;
+  margin:4px 0;
+}
+.vedi-tutti-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+/* ── OPPORTUNITIES: single grid, extra items hidden ── */
+.opp-item.opp-item-extra{display:none;}
+.opp-cat.opp-expanded .opp-item.opp-item-extra{display:flex;}
 </style>
 </head>
 <body>
@@ -1458,6 +1471,12 @@ function scoreReason(cl){
 // ── REASON MAP (populated by fetchAndScore) ──
 const reasonMap={};
 
+// ── DIP MAP (populated by fetchAndScore) ──
+const dipMap={};
+
+// ── GLOBAL SCORE MAP (shared between loadPanoramica and loadSectionRest) ──
+const globalScoreMap={};
+
 // ── FETCH & SCORE A SINGLE TICKER (for panoramica) ──
 async function fetchAndScore(ticker){
   const cached=getCached(ticker);
@@ -1472,6 +1491,19 @@ async function fetchAndScore(ticker){
     if(score!=null){
       setCached(ticker,score);
       reasonMap[ticker]=scoreReason(cl);
+    }
+    // compute dip signal
+    if(score!=null && cl.length>=50){
+      const R=rsi(cl);
+      const M50=ma(cl,50);
+      const M200=ma(cl,200);
+      const cur=cl[cl.length-1];
+      const maxRecent=Math.max(...cl.slice(-252));
+      const dd=maxRecent>0?(maxRecent-cur)/maxRecent*100:0;
+      dipMap[ticker]={
+        isDip: R!=null&&R<40 && M50!=null&&M200!=null&&M50>M200,
+        rsi:R, dd:dd.toFixed(1)
+      };
     }
     return score;
   }catch{ return null; }
@@ -1814,14 +1846,15 @@ function _buildOppMaps(){
   for(const[id,entries]of Object.entries(PANO))
     for(const[s,name]of entries){ _oppNameMap[s]=name; _oppTypeMap[s]=PANO_TYPE[id]||''; }
 }
-function oppItemHTML(sym, score){
+function oppItemHTML(sym, score, extra=false){
   _buildOppMaps();
   const color=sc(score);
   const name=_oppNameMap[sym]||sym;
   const type=_oppTypeMap[sym]||'';
   const reason=reasonMap[sym]||'';
-  const signal=score>=70?{cls:'opp',lbl:'Opportunità'}:score>=60?{cls:'hold',lbl:'Attenzione'}:{cls:'dip',lbl:'Monitorare'};
-  return `<div class="opp-item" onclick="quickAnalyze('${sym}')">
+  const signal={cls:'opp',lbl:'Sconto'};
+  const extraCls=extra?' opp-item-extra':'';
+  return `<div class="opp-item${extraCls}" onclick="quickAnalyze('${sym}')">
     <div style="display:flex;align-items:center;justify-content:space-between">
       <span class="opp-sym">${sym}</span>
       <span class="opp-signal ${signal.cls}">${signal.lbl}</span>
@@ -1852,45 +1885,37 @@ function renderOpportunities(scoreMap){
   for(const[id,entries]of Object.entries(PANO)){
     const ranked=entries
       .map(([sym])=>({sym,score:scoreMap[sym]}))
-      .filter(x=>x.score!=null && x.score>=70)
+      .filter(x=>{
+        const d=dipMap[x.sym];
+        return d && d.isDip; // RSI<40 + MA50>MA200
+      })
+      .filter(x=>x.score!=null)
       .sort((a,b)=>b.score-a.score);
     if(!ranked.length) continue;
     totalAll+=ranked.length;
-    const top3=ranked.slice(0,3);
-    if(!top3.length) continue;
-    const rest=ranked.slice(3);
     const catId=`opp-cat-${id}`;
+    const hasMore=ranked.length>3;
     sections.push(`
-      <div class="opp-cat">
+      <div class="opp-cat" id="${catId}">
         <div class="opp-cat-title">${CAT_LABELS[id]||id}</div>
-        <div class="opp-grid" id="${catId}">
-          ${top3.map(({sym,score})=>oppItemHTML(sym,score)).join('')}
+        <div class="opp-grid">
+          ${ranked.map(({sym,score},i)=>oppItemHTML(sym,score,i>=3)).join('')}
         </div>
-        ${rest.length?`
-        <div class="opp-more" id="more-${catId}" style="display:none">
-          <div class="opp-grid">${rest.map(({sym,score})=>oppItemHTML(sym,score)).join('')}</div>
-        </div>
-        <button class="opp-toggle" onclick="toggleOppMore('${catId}')">
-          <span id="toggle-lbl-${catId}">Vedi altri ${rest.length} →</span>
-        </button>`:''}
+        ${hasMore?`<button class="opp-toggle" id="opp-toggle-${catId}" data-label="Vedi altri ${ranked.length-3} →" onclick="toggleOppCat('${catId}')">Vedi altri ${ranked.length-3} →</button>`:''}
       </div>`);
   }
 
-  if(!sections.length){ grid.innerHTML='<div class="opp-empty">Nessuna opportunità reale al momento — attendi segnali più forti</div>'; return; }
-  badge.textContent=`${totalAll} opportunità reali (score ≥70)`;
+  if(!sections.length){ grid.innerHTML='<div class="opp-empty">Nessun titolo in zona sconto al momento — il mercato è in fase normale o ribassista</div>'; return; }
+  badge.textContent=`${totalAll} titoli in zona sconto`;
   grid.innerHTML=sections.join('');
 }
 
-function toggleOppMore(catId){
-  const more=document.getElementById(`more-${catId}`);
-  const lbl=document.getElementById(`toggle-lbl-${catId}`);
-  if(!more) return;
-  const open=more.style.display==='none';
-  more.style.display=open?'block':'none';
-  const btn=lbl.closest('.opp-toggle');
-  // count items in the more section
-  const n=more.querySelectorAll('.opp-item').length;
-  lbl.textContent=open?`Nascondi ↑`:`Vedi altri ${n} →`;
+function toggleOppCat(catId){
+  const btn=document.getElementById(`opp-toggle-${catId}`);
+  if(!btn) return;
+  const cat=btn.closest('.opp-cat');
+  const open=cat.classList.toggle('opp-expanded');
+  btn.textContent=open?'Mostra meno ↑':btn.dataset.label;
 }
 
 async function loadPulse(){
@@ -1953,12 +1978,29 @@ async function loadPulse(){
 }
 
 async function loadPanoramica(){
-  const allItems=[],seen=new Set();
+  // Split each section into initial (first 6) and deferred (rest)
+  window._deferredPano={};
+  const initialItems=[],seen=new Set();
   for(const[id,entries]of Object.entries(PANO)){
-    renderSkel(id,entries.length);
-    for(const[ticker,name]of entries){
-      allItems.push({id,ticker,name});
-      if(!seen.has(ticker)){seen.add(ticker);}
+    const initial=entries.slice(0,6);
+    const deferred=entries.slice(6);
+    if(deferred.length) window._deferredPano[id]=deferred;
+    renderSkel(id,initial.length);
+    for(const[ticker,name]of initial){
+      initialItems.push({id,ticker,name});
+      if(!seen.has(ticker)) seen.add(ticker);
+    }
+    // Add "Vedi tutti" button row for sections with deferred tickers
+    if(deferred.length){
+      const tbody=document.getElementById(id);
+      if(tbody){
+        const tr=document.createElement('tr');
+        tr.id=`vedi-tr-${id}`;
+        tr.style.cssText='grid-column:1/-1;display:flex;justify-content:center;padding:8px;border-bottom:none;cursor:default;';
+        tr.innerHTML=`<td colspan="3" style="text-align:center;border:none;padding:4px 0;"><button class="vedi-tutti-btn" onclick="loadSectionRest('${id}')">Vedi tutti (${entries.length}) →</button></td>`;
+        tr.onmouseenter=tr.onmouseleave=null;
+        tbody.appendChild(tr);
+      }
     }
   }
   const uniqTickers=[...seen];
@@ -1968,22 +2010,22 @@ async function loadPanoramica(){
   // check cache
   for(const t of uniqTickers){
     const c=getCached(t);
-    if(c!==null)scoreMap[t]=c;
+    if(c!==null){scoreMap[t]=c;globalScoreMap[t]=c;}
     else toFetch.push(t);
   }
 
   // render cached immediately
-  for(const{id,ticker,name}of allItems){
+  for(const{id,ticker,name}of initialItems){
     if(ticker in scoreMap)renderRow(id,ticker,name,scoreMap[ticker]);
   }
 
   if(!toFetch.length){
     document.getElementById('pbar').classList.remove('on');
-    renderOpportunities(scoreMap);
+    renderOpportunities(globalScoreMap);
     return;
   }
 
-  // progress bar
+  // progress bar — total based on initial tickers only
   const pbar=document.getElementById('pbar'),fill=document.getElementById('pbar-fill'),cnt=document.getElementById('pbar-count');
   const lbl=document.getElementById('pbar-label');
   pbar.classList.add('on');
@@ -1995,7 +2037,7 @@ async function loadPanoramica(){
   };
   upd();
 
-  // Individual chart fetches, 10 concurrent — same endpoint as analysis (known to work)
+  // Individual chart fetches, 10 concurrent
   const CONC=10;
   for(let i=0;i<toFetch.length;i+=CONC){
     const batch=toFetch.slice(i,i+CONC);
@@ -2003,9 +2045,10 @@ async function loadPanoramica(){
     results.forEach((score,j)=>{
       const sym=batch[j];
       scoreMap[sym]=score;
+      globalScoreMap[sym]=score;
       done++;
-      // render this row immediately as it arrives
-      const rows=allItems.filter(it=>it.ticker===sym);
+      // render this row immediately
+      const rows=initialItems.filter(it=>it.ticker===sym);
       for(const{id,name}of rows){
         if(score!=null)renderRow(id,sym,name,score);
         else renderND(id,sym,name);
@@ -2017,7 +2060,44 @@ async function loadPanoramica(){
   lbl.textContent='Aggiornato ✓';
   setTimeout(()=>pbar.classList.remove('on'),1500);
 
-  renderOpportunities(scoreMap);
+  renderOpportunities(globalScoreMap);
+}
+
+async function loadSectionRest(id){
+  const deferred=window._deferredPano&&window._deferredPano[id];
+  if(!deferred||!deferred.length) return;
+
+  // Remove button row, show spinner
+  const vediTr=document.getElementById(`vedi-tr-${id}`);
+  if(vediTr) vediTr.remove();
+  delete window._deferredPano[id];
+
+  const tbody=document.getElementById(id);
+  const spinnerTr=document.createElement('tr');
+  spinnerTr.id=`spinner-tr-${id}`;
+  spinnerTr.style.cssText='grid-column:1/-1;display:flex;justify-content:center;padding:10px;border-bottom:none;';
+  spinnerTr.innerHTML=`<td colspan="3" style="text-align:center;border:none;"><div style="width:16px;height:16px;border-radius:50%;border:2px solid var(--border);border-top-color:var(--accent);animation:spin .7s linear infinite;display:inline-block;"></div></td>`;
+  if(tbody) tbody.appendChild(spinnerTr);
+
+  // Fetch deferred tickers in batches of 5
+  const CONC=5;
+  for(let i=0;i<deferred.length;i+=CONC){
+    const batch=deferred.slice(i,i+CONC);
+    const results=await Promise.all(batch.map(([ticker])=>fetchAndScore(ticker)));
+    results.forEach((score,j)=>{
+      const [ticker,name]=batch[j];
+      globalScoreMap[ticker]=score;
+      if(score!=null) renderRow(id,ticker,name,score);
+      else renderND(id,ticker,name);
+    });
+  }
+
+  // Remove spinner
+  const sp=document.getElementById(`spinner-tr-${id}`);
+  if(sp) sp.remove();
+
+  // Refresh opportunities with updated data
+  renderOpportunities(globalScoreMap);
 }
 
 // ── CHARTS ──

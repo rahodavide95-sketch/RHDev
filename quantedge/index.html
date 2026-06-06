@@ -29,8 +29,13 @@ header{
   position:sticky; top:0; z-index:200;
   background:rgba(13,17,23,.92); backdrop-filter:blur(12px);
   border-bottom:1px solid var(--border);
-  padding:0 20px; height:56px;
-  display:flex; align-items:center; gap:16px;
+  padding:0 32px; height:64px;
+  display:flex; align-items:center; gap:20px;
+  max-width:100%; justify-content:center;
+}
+.header-inner{
+  width:100%; max-width:1400px;
+  display:flex; align-items:center; gap:20px;
 }
 .logo{
   display:flex; align-items:center; gap:8px;
@@ -478,7 +483,7 @@ header{
   cursor:pointer;transition:opacity .15s;
 }
 .cr-btn:hover{opacity:.85;}
-.price-wrap{position:relative;height:180px;}
+.price-wrap{position:relative;height:300px;}
 .price-loading{
   position:absolute;inset:0;display:none;align-items:center;
   justify-content:center;font-size:.75rem;color:var(--t3);
@@ -658,32 +663,48 @@ header{
 }
 .opp-empty{font-size:.82rem; color:var(--t3); padding:12px 0; text-align:center;}
 .opp-why{font-size:.68rem;color:var(--t3);margin-top:3px;font-style:italic;}
+.opp-cat{margin-bottom:18px;}
+.opp-cat-title{
+  font-size:.68rem; font-weight:700; color:var(--t3);
+  text-transform:uppercase; letter-spacing:.1em;
+  margin-bottom:8px; padding-left:2px;
+}
+.opp-more{margin-top:8px;}
+.opp-toggle{
+  margin-top:8px; background:none; border:1px solid var(--border);
+  color:var(--t2); font-size:.75rem; padding:5px 14px;
+  border-radius:20px; cursor:pointer; transition:border-color .15s,color .15s;
+  font-family:inherit;
+}
+.opp-toggle:hover{border-color:var(--accent);color:var(--accent);}
 </style>
 </head>
 <body>
 
 <!-- ── HEADER ── -->
 <header>
-  <div class="logo" onclick="resetView()">
-    <div class="logo-dot"></div>
-    QuantEdge
-  </div>
-
-  <div class="search-wrap">
-    <span class="search-ico" id="search-ico">⌕</span>
-    <div class="search-row">
-      <input id="search-input" class="search-input" type="text"
-        placeholder="Cerca ticker o nome (es. AAPL, Tesla, S&amp;P 500...)"
-        autocomplete="off" spellcheck="false">
-      <div class="search-spinner" id="search-spinner"></div>
-      <button class="btn-search" id="btn-analyze" onclick="runAnalyze()">Analizza</button>
+  <div class="header-inner">
+    <div class="logo" onclick="resetView()">
+      <div class="logo-dot"></div>
+      QuantEdge
     </div>
-    <div class="search-dropdown" id="search-dropdown"></div>
-  </div>
 
-  <div class="live-ind">
-    <div class="live-dot"></div>
-    <span>Live</span>
+    <div class="search-wrap">
+      <span class="search-ico" id="search-ico">⌕</span>
+      <div class="search-row">
+        <input id="search-input" class="search-input" type="text"
+          placeholder="Cerca ticker o nome (es. AAPL, Tesla, S&amp;P 500...)"
+          autocomplete="off" spellcheck="false">
+        <div class="search-spinner" id="search-spinner"></div>
+        <button class="btn-search" id="btn-analyze" onclick="runAnalyze()">Analizza</button>
+      </div>
+      <div class="search-dropdown" id="search-dropdown"></div>
+    </div>
+
+    <div class="live-ind">
+      <div class="live-dot"></div>
+      <span>Live</span>
+    </div>
   </div>
 </header>
 
@@ -1758,51 +1779,88 @@ const PANO_TYPE={
   't-etf-az':'ETF','t-etf-bond':'Bond','t-commodities':'Materia Prima',
   't-crypto':'Crypto','t-azioni':'Azione',
 };
+const _oppNameMap={}, _oppTypeMap={};
+function _buildOppMaps(){
+  if(Object.keys(_oppNameMap).length) return;
+  for(const[id,entries]of Object.entries(PANO))
+    for(const[s,name]of entries){ _oppNameMap[s]=name; _oppTypeMap[s]=PANO_TYPE[id]||''; }
+}
+function oppItemHTML(sym, score){
+  _buildOppMaps();
+  const color=sc(score);
+  const name=_oppNameMap[sym]||sym;
+  const type=_oppTypeMap[sym]||'';
+  const reason=reasonMap[sym]||'';
+  const signal=score>=70?{cls:'opp',lbl:'Opportunità'}:score>=60?{cls:'hold',lbl:'Attenzione'}:{cls:'dip',lbl:'Monitorare'};
+  return `<div class="opp-item" onclick="quickAnalyze('${sym}')">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span class="opp-sym">${sym}</span>
+      <span class="opp-signal ${signal.cls}">${signal.lbl}</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;margin-top:1px;">
+      <span class="opp-name">${name}</span>
+      ${type?`<span class="opp-type">${type}</span>`:''}
+    </div>
+    ${reason?`<div class="opp-why">${reason}</div>`:''}
+    <div class="opp-bottom">
+      <span class="opp-score" style="color:${color}">${score}</span>
+      <div class="opp-bar-wrap"><div class="opp-bar" style="width:${score}%;background:${color}"></div></div>
+    </div>
+  </div>`;
+}
+
+const CAT_LABELS={'t-etf-az':'ETF Azionari','t-etf-bond':'ETF Obbligazionari','t-commodities':'Materie Prime','t-crypto':'Crypto','t-azioni':'Azioni'};
+
 function renderOpportunities(scoreMap){
   const grid=document.getElementById('opp-grid');
   const badge=document.getElementById('opp-badge');
   if(!grid||!scoreMap) return;
 
-  // build name + type map from PANO
-  const nameMap={}, typeMap={};
-  for(const[id,entries]of Object.entries(PANO))
-    for(const[sym,name]of entries){
-      nameMap[sym]=name;
-      typeMap[sym]=PANO_TYPE[id]||'';
-    }
+  _buildOppMaps();
+  let totalAll=0;
+  const sections=[];
 
-  // score all available tickers, sort descending
-  const ranked=Object.entries(scoreMap)
-    .filter(([,s])=>s!=null)
-    .sort((a,b)=>b[1]-a[1]);
+  for(const[id,entries]of Object.entries(PANO)){
+    const ranked=entries
+      .map(([sym])=>({sym,score:scoreMap[sym]}))
+      .filter(x=>x.score!=null)
+      .sort((a,b)=>b.score-a.score);
+    if(!ranked.length) continue;
+    totalAll+=ranked.length;
+    const top3=ranked.slice(0,3);
+    const rest=ranked.slice(3);
+    const catId=`opp-cat-${id}`;
+    sections.push(`
+      <div class="opp-cat">
+        <div class="opp-cat-title">${CAT_LABELS[id]||id}</div>
+        <div class="opp-grid" id="${catId}">
+          ${top3.map(({sym,score})=>oppItemHTML(sym,score)).join('')}
+        </div>
+        ${rest.length?`
+        <div class="opp-more" id="more-${catId}" style="display:none">
+          <div class="opp-grid">${rest.map(({sym,score})=>oppItemHTML(sym,score)).join('')}</div>
+        </div>
+        <button class="opp-toggle" onclick="toggleOppMore('${catId}')">
+          <span id="toggle-lbl-${catId}">Vedi altri ${rest.length} →</span>
+        </button>`:''}
+      </div>`);
+  }
 
-  const top=ranked.slice(0,6);
-  if(!top.length){ grid.innerHTML='<div class="opp-empty">Dati non disponibili</div>'; return; }
+  if(!sections.length){ grid.innerHTML='<div class="opp-empty">Dati non disponibili</div>'; return; }
+  badge.textContent=`${totalAll} titoli analizzati`;
+  grid.innerHTML=sections.join('');
+}
 
-  badge.textContent=`Top ${top.length} su ${ranked.length} titoli`;
-
-  grid.innerHTML=top.map(([sym,score])=>{
-    const color=sc(score);
-    const name=nameMap[sym]||sym;
-    const type=typeMap[sym]||'';
-    const reason=reasonMap[sym]||'';
-    const signal=score>=70?{cls:'opp',lbl:'Opportunità'}:score>=60?{cls:'hold',lbl:'Attenzione'}:{cls:'dip',lbl:'Monitorare'};
-    return `<div class="opp-item" onclick="quickAnalyze('${sym}')">
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <span class="opp-sym">${sym}</span>
-        <span class="opp-signal ${signal.cls}">${signal.lbl}</span>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px;margin-top:1px;">
-        <span class="opp-name">${name}</span>
-        ${type?`<span class="opp-type">${type}</span>`:''}
-      </div>
-      ${reason?`<div class="opp-why">${reason}</div>`:''}
-      <div class="opp-bottom">
-        <span class="opp-score" style="color:${color}">${score}</span>
-        <div class="opp-bar-wrap"><div class="opp-bar" style="width:${score}%;background:${color}"></div></div>
-      </div>
-    </div>`;
-  }).join('');
+function toggleOppMore(catId){
+  const more=document.getElementById(`more-${catId}`);
+  const lbl=document.getElementById(`toggle-lbl-${catId}`);
+  if(!more) return;
+  const open=more.style.display==='none';
+  more.style.display=open?'block':'none';
+  const btn=lbl.closest('.opp-toggle');
+  // count items in the more section
+  const n=more.querySelectorAll('.opp-item').length;
+  lbl.textContent=open?`Nascondi ↑`:`Vedi altri ${n} →`;
 }
 
 async function loadPulse(){
@@ -2012,9 +2070,9 @@ function redrawPriceChart(pTs,pCl){
   const datasets=[
     {data:pCl,borderColor:isUp?'#10b981':'#ef4444',backgroundColor:gr,
      borderWidth:1.5,pointRadius:0,fill:true,tension:.35,order:1},
-    {label:'BB Upper',data:bb.upper,borderColor:'rgba(99,102,241,.4)',borderWidth:1,borderDash:[3,3],pointRadius:0,fill:false,tension:0.1,order:2},
-    {label:'BB Mid (SMA20)',data:bb.mid,borderColor:'rgba(99,102,241,.25)',borderWidth:1,borderDash:[2,4],pointRadius:0,fill:false,tension:0.1,order:2},
-    {label:'BB Lower',data:bb.lower,borderColor:'rgba(99,102,241,.4)',borderWidth:1,borderDash:[3,3],pointRadius:0,fill:false,tension:0.1,order:2},
+    {label:'BB Upper',data:bb.upper,borderColor:'rgba(239,68,68,.55)',borderWidth:2,borderDash:[4,3],pointRadius:0,fill:false,tension:0.3,order:2},
+    {label:'SMA 20',data:bb.mid,borderColor:'rgba(139,148,158,.5)',borderWidth:1.5,borderDash:[],pointRadius:0,fill:false,tension:0.3,order:2},
+    {label:'BB Lower',data:bb.lower,borderColor:'rgba(16,185,129,.55)',borderWidth:2,borderDash:[4,3],pointRadius:0,fill:false,tension:0.3,order:2},
   ];
   let chartLabels=pTs.map(fmtLabel);
 

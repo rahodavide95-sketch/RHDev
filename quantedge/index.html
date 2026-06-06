@@ -683,6 +683,7 @@ header{
   border:1px solid var(--border); padding:1px 6px; border-radius:10px;
   white-space:nowrap; flex-shrink:0;
 }
+.opp-sections{display:flex; flex-direction:column; gap:0;}
 .opp-empty{font-size:.82rem; color:var(--t3); padding:12px 0; text-align:center;}
 .opp-why{font-size:.68rem;color:var(--t3);margin-top:3px;font-style:italic; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .opp-cat{margin-bottom:20px;}
@@ -835,7 +836,7 @@ header{
         <span class="opp-title" style="border-left:3px solid var(--accent);padding-left:10px;">Migliori Opportunità</span>
         <span class="opp-badge" id="opp-badge">Caricamento…</span>
       </div>
-      <div class="opp-grid" id="opp-grid">
+      <div class="opp-sections" id="opp-grid">
         <div class="opp-empty">Calcolo in corso…</div>
       </div>
     </div>

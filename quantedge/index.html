@@ -1827,11 +1827,12 @@ function renderOpportunities(scoreMap){
   for(const[id,entries]of Object.entries(PANO)){
     const ranked=entries
       .map(([sym])=>({sym,score:scoreMap[sym]}))
-      .filter(x=>x.score!=null)
+      .filter(x=>x.score!=null && x.score>=55)
       .sort((a,b)=>b.score-a.score);
     if(!ranked.length) continue;
     totalAll+=ranked.length;
     const top3=ranked.slice(0,3);
+    if(!top3.length) continue;
     const rest=ranked.slice(3);
     const catId=`opp-cat-${id}`;
     sections.push(`
@@ -1850,8 +1851,8 @@ function renderOpportunities(scoreMap){
       </div>`);
   }
 
-  if(!sections.length){ grid.innerHTML='<div class="opp-empty">Dati non disponibili</div>'; return; }
-  badge.textContent=`${totalAll} titoli analizzati`;
+  if(!sections.length){ grid.innerHTML='<div class="opp-empty">Nessuna opportunità rilevante al momento (soglia ≥55)</div>'; return; }
+  badge.textContent=`${totalAll} titoli con score ≥55`;
   grid.innerHTML=sections.join('');
 }
 

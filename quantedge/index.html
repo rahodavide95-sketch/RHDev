@@ -141,10 +141,10 @@ header{
 /* ── FULL-VIEWPORT PAGE LOADER ── */
 .page-loader{
   display:none; position:fixed; inset:0; z-index:500;
-  background:rgba(13,17,23,.75);
+  background:color-mix(in srgb,var(--bg) 80%,transparent);
   align-items:center; justify-content:center;
   flex-direction:column; gap:14px;
-  backdrop-filter:blur(3px);
+  backdrop-filter:blur(6px);
 }
 .page-loader.on{display:flex;}
 .page-loader-ring{

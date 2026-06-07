@@ -31,32 +31,38 @@
     --shadow:0 4px 20px rgba(0,0,0,.08);
   }
 }
+/* Light header overrides — only for explicit light or system+light-OS */
 [data-theme="light"] header,
-[data-theme="system"] header{
-  background:linear-gradient(135deg,rgba(30,64,175,.92) 0%,rgba(37,99,235,.92) 50%,rgba(29,78,216,.92) 100%);
+@media(prefers-color-scheme:light){[data-theme="system"] header}{
+  background:linear-gradient(135deg,rgba(30,64,175,.95) 0%,rgba(37,99,235,.95) 50%,rgba(29,78,216,.95) 100%);
   border-bottom:1px solid rgba(59,130,246,.3);
 }
-[data-theme="light"] .logo-apex,
-[data-theme="system"] .logo-apex{
+[data-theme="light"] .logo-apex{
   background:linear-gradient(135deg,#ffffff 0%,#bfdbfe 100%);
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
 }
-[data-theme="light"] .logo-finance,
-[data-theme="system"] .logo-finance{color:rgba(255,255,255,.7);}
-[data-theme="light"] .search-input,
-[data-theme="system"] .search-input{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.2);color:#fff;}
-[data-theme="light"] .search-input::placeholder,
-[data-theme="system"] .search-input::placeholder{color:rgba(255,255,255,.55);}
-[data-theme="light"] .search-ico,
-[data-theme="system"] .search-ico{color:rgba(255,255,255,.6);}
-[data-theme="light"] .btn-search,
-[data-theme="system"] .btn-search{background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.25);}
-[data-theme="light"] .btn-theme,
-[data-theme="system"] .btn-theme{color:rgba(255,255,255,.7);}
-[data-theme="light"] .live-ind,
-[data-theme="system"] .live-ind{color:rgba(255,255,255,.7);}
-[data-theme="light"] .btn-home,
-[data-theme="system"] .btn-home{color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.25);}
+@media(prefers-color-scheme:light){[data-theme="system"] .logo-apex{
+  background:linear-gradient(135deg,#ffffff 0%,#bfdbfe 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+}}
+[data-theme="light"] .logo-finance{color:rgba(255,255,255,.7);}
+@media(prefers-color-scheme:light){[data-theme="system"] .logo-finance{color:rgba(255,255,255,.7);}}
+[data-theme="light"] .search-input{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.2);color:#fff;}
+[data-theme="light"] .search-input::placeholder{color:rgba(255,255,255,.55);}
+[data-theme="light"] .search-ico{color:rgba(255,255,255,.6);}
+[data-theme="light"] .btn-search{background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.25);}
+[data-theme="light"] .btn-theme{color:rgba(255,255,255,.7);}
+[data-theme="light"] .live-ind{color:rgba(255,255,255,.7);}
+[data-theme="light"] .btn-home{color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.25);}
+@media(prefers-color-scheme:light){
+  [data-theme="system"] .search-input{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.2);color:#fff;}
+  [data-theme="system"] .search-input::placeholder{color:rgba(255,255,255,.55);}
+  [data-theme="system"] .search-ico{color:rgba(255,255,255,.6);}
+  [data-theme="system"] .btn-search{background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.25);}
+  [data-theme="system"] .btn-theme{color:rgba(255,255,255,.7);}
+  [data-theme="system"] .live-ind{color:rgba(255,255,255,.7);}
+  [data-theme="system"] .btn-home{color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.25);}
+}
 
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 html{scroll-behavior:smooth;}
@@ -73,7 +79,7 @@ header{
   background:linear-gradient(135deg,rgba(17,30,55,.97) 0%,rgba(22,35,65,.97) 50%,rgba(15,25,48,.97) 100%);
   backdrop-filter:blur(16px);
   border-bottom:1px solid rgba(59,130,246,.18);
-  padding:0 32px; height:64px;
+  padding:0 32px; height:76px;
   display:flex; align-items:center; gap:20px;
   max-width:100%; justify-content:center;
 }
@@ -627,6 +633,16 @@ header{
   text-align:center;font-size:.7rem;color:var(--t3);
   padding:12px 0 4px;
 }
+/* ── FOOTER ── */
+.site-footer{
+  margin-top:48px;
+  border-top:1px solid var(--border);
+  background:color-mix(in srgb,var(--bg2) 95%,transparent);
+  text-align:center;
+  padding:18px 20px;
+  font-size:.72rem; color:var(--t3); letter-spacing:.03em;
+}
+.site-footer strong{color:var(--t2); font-weight:600;}
 
 
 /* ── SECTIONS SPACING ── */
@@ -3455,5 +3471,10 @@ document.addEventListener('DOMContentLoaded',()=>{
   Promise.all([loadPulse(),loadPanoramica()]);
 });
 </script>
+
+<footer class="site-footer">
+  <span>Sviluppato con cura da <strong>Davide Raho</strong> &nbsp;·&nbsp; © APEX Finance 2026</span>
+</footer>
+
 </body>
 </html>

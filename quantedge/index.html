@@ -668,6 +668,25 @@ header{
   width:22px; height:2px; border-radius:1px;
 }
 
+/* ── CHART LEGEND (bar charts) ── */
+.chart-legend{
+  margin-top:10px; padding:10px 12px;
+  background:var(--bg3); border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  display:flex; flex-wrap:wrap; gap:6px 14px; align-items:flex-start;
+}
+.cl-item{
+  display:flex; align-items:center; gap:6px;
+  font-size:.68rem; color:var(--t2); white-space:nowrap;
+}
+.cl-dot{
+  width:9px; height:9px; border-radius:2px; flex-shrink:0;
+}
+.cl-note{
+  width:100%; font-size:.68rem; color:var(--t3);
+  line-height:1.5; margin-top:2px; font-style:italic;
+}
+
 /* ── ANALYST CONSENSUS ── */
 .analyst-wrap{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;margin-bottom:4px;}
 .analyst-bar-wrap{flex:1;min-width:220px;}
@@ -1335,14 +1354,31 @@ header{
       <div class="chart-card">
         <div class="chart-lbl">Stagionalità mensile (win rate %)</div>
         <div class="chart-wrap"><canvas id="chart-sea"></canvas></div>
+        <div class="chart-legend">
+          <span class="cl-item"><span class="cl-dot" style="background:rgba(59,130,246,.7)"></span>Mese corrente</span>
+          <span class="cl-item"><span class="cl-dot" style="background:rgba(16,185,129,.5)"></span>Mese storicamente positivo (&gt;55%)</span>
+          <span class="cl-item"><span class="cl-dot" style="background:rgba(239,68,68,.4)"></span>Mese storicamente negativo (&lt;45%)</span>
+          <p class="cl-note">Percentuale di mesi chiusi in positivo negli ultimi anni. Aiuta a capire se il periodo è storicamente favorevole o sfavorevole per questo titolo.</p>
+        </div>
       </div>
       <div class="chart-card">
         <div class="chart-lbl">Distribuzione rendimenti giornalieri</div>
         <div class="chart-wrap"><canvas id="chart-dist"></canvas></div>
+        <div class="chart-legend">
+          <span class="cl-item"><span class="cl-dot" style="background:rgba(16,185,129,.5)"></span>Giornate positive</span>
+          <span class="cl-item"><span class="cl-dot" style="background:rgba(239,68,68,.5)"></span>Giornate negative</span>
+          <p class="cl-note">Istogramma delle variazioni % giornaliere. Una distribuzione spostata a destra indica più giornate positive; una coda lunga a sinistra segnala rischio di ribassi bruschi.</p>
+        </div>
       </div>
       <div class="chart-card">
         <div class="chart-lbl">Win rate per orizzonte temporale</div>
         <div class="chart-wrap"><canvas id="chart-wr"></canvas></div>
+        <div class="chart-legend">
+          <span class="cl-item"><span class="cl-dot" style="background:rgba(16,185,129,.6)"></span>Trend positivo (&gt;58%)</span>
+          <span class="cl-item"><span class="cl-dot" style="background:rgba(59,130,246,.4)"></span>Neutro (42–58%)</span>
+          <span class="cl-item"><span class="cl-dot" style="background:rgba(239,68,68,.6)"></span>Trend negativo (&lt;42%)</span>
+          <p class="cl-note">Frequenza con cui il titolo chiude in positivo su vari orizzonti (7 giorni, 30 giorni…). Valori &gt;58% su più orizzonti indicano un momentum strutturalmente rialzista.</p>
+        </div>
       </div>
       <div class="chart-card chart-card-price">
         <div class="chart-top">
@@ -1424,10 +1460,14 @@ function cycleTheme(){
   const next = THEMES[(THEMES.indexOf(cur)+1)%THEMES.length];
   localStorage.setItem('apex-theme', next);
   applyTheme(next);
-  // redraw chart if visible so colors update
-  if(PDATA.ts.length && document.getElementById('analysis').classList.contains('visible')){
+  // redraw all charts if analysis is visible so colors update
+  if(document.getElementById('analysis').classList.contains('visible')){
     if(CH.p){CH.p.destroy();CH.p=null;}
-    redrawPriceChart(PDATA.ts,PDATA.cl);
+    if(PDATA.ts.length) redrawPriceChart(PDATA.ts,PDATA.cl);
+    if(CH.s){CH.s.destroy();CH.s=null;}
+    if(CH.d){CH.d.destroy();CH.d=null;}
+    if(CH.w){CH.w.destroy();CH.w=null;}
+    if(window._lastChartArgs) drawCharts(...window._lastChartArgs);
   }
 }
 (function initTheme(){
@@ -2487,21 +2527,22 @@ function renderRowEl(tbody,ticker,name,score){
 // ── CHARTS ──
 let CH={};
 function killCharts(){Object.values(CH).forEach(c=>c&&c.destroy());CH={};}
-const GC='rgba(33,38,45,.8)';
-
 function drawCharts(sea,di,wrs,ts,cl){
+  window._lastChartArgs=[sea,di,wrs,ts,cl];
   killCharts();
   const curM=new Date().getMonth();
+  const GC=()=>chartGridColor();
+  const TC=()=>chartTickColor();
 
   CH.s=new Chart(document.getElementById('chart-sea'),{
     type:'bar',
     data:{labels:sea.map(s=>s.l),datasets:[{
       data:sea.map(s=>+s.p.toFixed(1)),borderRadius:4,borderWidth:0,
-      backgroundColor:sea.map((s,i)=>i===curM?'rgba(59,130,246,.7)':s.p>=55?'rgba(16,185,129,.5)':s.p<=45?'rgba(239,68,68,.4)':'rgba(72,79,88,.4)'),
+      backgroundColor:sea.map((s,i)=>i===curM?'rgba(59,130,246,.7)':s.p>=55?'rgba(16,185,129,.5)':s.p<=45?'rgba(239,68,68,.4)':'rgba(100,116,139,.35)'),
     }]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{
-      y:{min:30,max:80,ticks:{callback:v=>v+'%',color:'#8b949e',font:{size:10}},grid:{color:GC},border:{display:false}},
-      x:{grid:{display:false},ticks:{color:'#8b949e',font:{size:10}},border:{display:false}}
+      y:{min:30,max:80,ticks:{callback:v=>v+'%',color:TC(),font:{size:10}},grid:{color:GC()},border:{display:false}},
+      x:{grid:{display:false},ticks:{color:TC(),font:{size:10}},border:{display:false}}
     }}
   });
 
@@ -2512,8 +2553,8 @@ function drawCharts(sea,di,wrs,ts,cl){
       backgroundColor:di.lb.map(l=>l.startsWith('−')||l.startsWith('<')?'rgba(239,68,68,.5)':'rgba(16,185,129,.5)'),
     }]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{
-      y:{grid:{color:GC},ticks:{color:'#8b949e',font:{size:10}},border:{display:false}},
-      x:{grid:{display:false},ticks:{maxRotation:45,color:'#8b949e',font:{size:9}},border:{display:false}}
+      y:{grid:{color:GC()},ticks:{color:TC(),font:{size:10}},border:{display:false}},
+      x:{grid:{display:false},ticks:{maxRotation:45,color:TC(),font:{size:9}},border:{display:false}}
     }}
   });
 
@@ -2524,8 +2565,8 @@ function drawCharts(sea,di,wrs,ts,cl){
       backgroundColor:wrs.map(w=>w>=58?'rgba(16,185,129,.6)':w<=42?'rgba(239,68,68,.6)':'rgba(59,130,246,.4)'),
     }]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{
-      y:{min:30,max:75,ticks:{callback:v=>v+'%',color:'#8b949e',font:{size:10}},grid:{color:GC},border:{display:false}},
-      x:{grid:{display:false},ticks:{color:'#8b949e',font:{size:10}},border:{display:false}}
+      y:{min:30,max:75,ticks:{callback:v=>v+'%',color:TC(),font:{size:10}},grid:{color:GC()},border:{display:false}},
+      x:{grid:{display:false},ticks:{color:TC(),font:{size:10}},border:{display:false}}
     }}
   });
 

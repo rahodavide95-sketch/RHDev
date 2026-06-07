@@ -550,6 +550,9 @@ header{
 }
 
 
+/* ── SECTIONS SPACING ── */
+.sec{padding:28px 0 10px;}
+
 /* ── FEAR & GREED ── */
 .fg-wrap{margin-bottom:16px;display:grid;grid-template-columns:280px 1fr;gap:12px;align-items:start;}
 @media(max-width:700px){.fg-wrap{grid-template-columns:1fr;}}
@@ -566,11 +569,28 @@ header{
 .fg-score-wrap{display:flex;flex-direction:column;align-items:center;gap:2px;}
 .fg-score{font-size:2.2rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1;}
 .fg-label{font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;}
+/* VIX widget inside fg-card */
+.fg-vix{
+  width:100%; margin-top:10px; padding-top:10px;
+  border-top:1px solid var(--border); text-align:center;
+}
+.fg-vix-title{font-size:.65rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px;}
+.fg-vix-val{font-size:1.8rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1;}
+.fg-vix-lbl{font-size:.7rem;color:var(--t2);margin-top:3px;}
 @media(max-width:640px){
   .fg-card{padding:12px 14px;}
   .fg-gauge{width:170px;height:94px;}
   .fg-score{font-size:1.8rem;}
+  .fg-vix-val{font-size:1.4rem;}
 }
+/* Home button in header */
+.btn-home{
+  background:none; border:1px solid var(--border); color:var(--t2);
+  padding:6px 14px; border-radius:var(--radius-sm); font-size:.8rem;
+  cursor:pointer; font-family:inherit; white-space:nowrap;
+  transition:border-color .15s,color .15s; flex-shrink:0;
+}
+.btn-home:hover{border-color:var(--accent);color:var(--accent);}
 
 /* ── FORECAST TEXT ── */
 .forecast-txt{font-size:.72rem;color:var(--t2);padding:6px 2px;min-height:18px;}
@@ -702,6 +722,52 @@ header{
 }
 .opp-toggle:hover{border-color:var(--accent);color:var(--accent);}
 
+/* ── CATEGORY MODAL ── */
+.cat-modal{
+  position:fixed;inset:0;z-index:600;
+  background:rgba(13,17,23,.85);backdrop-filter:blur(4px);
+  display:flex;align-items:flex-start;justify-content:center;
+  padding:20px 16px;overflow-y:auto;
+}
+.cat-modal-box{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--radius);width:100%;max-width:900px;
+  box-shadow:var(--shadow);
+}
+.cat-modal-hd{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px 22px;border-bottom:1px solid var(--border);gap:12px;flex-wrap:wrap;
+}
+.cat-modal-title{font-size:1rem;font-weight:700;}
+.cat-modal-controls{display:flex;align-items:center;gap:12px;}
+.cat-modal-lbl{font-size:.75rem;color:var(--t2);display:flex;align-items:center;gap:6px;}
+.cat-modal-sel{
+  background:var(--bg3);border:1px solid var(--border);color:var(--text);
+  padding:4px 8px;border-radius:var(--radius-sm);font-size:.75rem;
+  font-family:inherit;cursor:pointer;
+}
+.cat-modal-close{
+  background:none;border:1px solid var(--border);color:var(--t2);
+  width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:.9rem;
+  display:flex;align-items:center;justify-content:center;
+  transition:border-color .15s,color .15s;
+}
+.cat-modal-close:hover{border-color:var(--r);color:var(--r);}
+.cat-modal-body{padding:16px 22px;}
+.cat-modal-body table{width:100%;border-collapse:collapse;}
+.cat-modal-body .ptable tr{cursor:pointer;}
+.cat-modal-pg{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:14px 22px;border-top:1px solid var(--border);
+}
+.pg-btn{
+  background:none;border:1px solid var(--border);color:var(--t2);
+  padding:5px 12px;border-radius:var(--radius-sm);font-size:.75rem;
+  cursor:pointer;font-family:inherit;transition:border-color .15s,color .15s;
+}
+.pg-btn:hover,.pg-btn.active{border-color:var(--accent);color:var(--accent);}
+.pg-info{font-size:.75rem;color:var(--t3);}
+
 /* ── VEDI TUTTI BUTTON (panoramica lazy-load) ── */
 .vedi-tutti-btn{
   background:none; border:1px solid var(--border); color:var(--t2);
@@ -738,6 +804,7 @@ header{
       <div class="search-dropdown" id="search-dropdown"></div>
     </div>
 
+    <button class="btn-home" onclick="resetView()" title="Torna alla home">⌂ Home</button>
     <div class="live-ind">
       <div class="live-dot"></div>
       <span>Live</span>
@@ -779,9 +846,8 @@ header{
             </defs>
             <!-- background track -->
             <path d="M20,100 A80,80 0 0,1 180,100" stroke="#1c2330" stroke-width="16" stroke-linecap="round"/>
-            <!-- rainbow arc: dashoffset=251.2 → hidden, =0 → fully visible -->
-            <path id="fg-arc" d="M20,100 A80,80 0 0,1 180,100" stroke="url(#fg-grad)" stroke-width="14" stroke-linecap="round"
-              stroke-dasharray="251.2" stroke-dashoffset="251.2" style="transition:stroke-dashoffset 1s ease;"/>
+            <!-- rainbow arc: always fully shown, needle indicates position -->
+            <path d="M20,100 A80,80 0 0,1 180,100" stroke="url(#fg-grad)" stroke-width="14" stroke-linecap="round"/>
             <!-- needle -->
             <line id="fg-needle" x1="100" y1="100" x2="100" y2="26"
               stroke="#e6edf3" stroke-width="2.5" stroke-linecap="round"
@@ -792,6 +858,12 @@ header{
             <span class="fg-score" id="fg-score">—</span>
             <span class="fg-label" id="fg-label">—</span>
           </div>
+        </div>
+        <!-- VIX -->
+        <div class="fg-vix">
+          <div class="fg-vix-title">VIX — Volatilità</div>
+          <div class="fg-vix-val" id="fg-vix-val">—</div>
+          <div class="fg-vix-lbl" id="fg-vix-lbl">—</div>
         </div>
       </div>
       <div class="pulse-grid">
@@ -898,6 +970,27 @@ header{
   </div>
 
   <hr class="divider">
+
+  <!-- ── CATEGORY MODAL ── -->
+  <div class="cat-modal" id="cat-modal" style="display:none">
+    <div class="cat-modal-box">
+      <div class="cat-modal-hd">
+        <span class="cat-modal-title" id="cat-modal-title">—</span>
+        <div class="cat-modal-controls">
+          <label class="cat-modal-lbl">Per pagina:
+            <select class="cat-modal-sel" id="cat-modal-pp" onchange="renderCatPage(1)">
+              <option value="10">10</option>
+              <option value="20" selected>20</option>
+              <option value="50">50</option>
+            </select>
+          </label>
+          <button class="cat-modal-close" onclick="closeCatModal()">✕</button>
+        </div>
+      </div>
+      <div class="cat-modal-body" id="cat-modal-body"></div>
+      <div class="cat-modal-pg" id="cat-modal-pg"></div>
+    </div>
+  </div>
 
   <!-- ── PAGE LOADER ── -->
   <div class="page-loader" id="page-loader">
@@ -1975,25 +2068,25 @@ async function loadPulse(){
           const vix=vixCl[vixCl.length-1];
           const vixScore=Math.max(0,Math.min(100,100-(vix-10)*3.5));
           fg=Math.round(vixScore*0.5+rsiScore*0.3+moScore*0.2);
+          window._lastVix=vix;
         }
       }
       if(fg==null){
-        // fallback: only SPY RSI + momentum
         fg=Math.round(rsiScore*0.6+moScore*0.4);
       }
       fg=Math.max(0,Math.min(100,fg));
-      renderFearGreed(fg);
+      renderFearGreed(fg, window._lastVix??null);
     }
   }catch{}
 }
 
 async function loadPanoramica(){
-  // Split each section into initial (first 6) and deferred (rest)
+  // Split each section into initial (first 10) and deferred (rest)
   window._deferredPano={};
   const initialItems=[],seen=new Set();
   for(const[id,entries]of Object.entries(PANO)){
-    const initial=entries.slice(0,6);
-    const deferred=entries.slice(6);
+    const initial=entries.slice(0,10);
+    const deferred=entries.slice(10);
     if(deferred.length) window._deferredPano[id]=deferred;
     renderSkel(id,initial.length);
     for(const[ticker,name]of initial){
@@ -2007,7 +2100,8 @@ async function loadPanoramica(){
         const tr=document.createElement('tr');
         tr.id=`vedi-tr-${id}`;
         tr.style.cssText='grid-column:1/-1;display:flex;justify-content:center;padding:8px;border-bottom:none;cursor:default;';
-        tr.innerHTML=`<td colspan="3" style="text-align:center;border:none;padding:4px 0;"><button class="vedi-tutti-btn" onclick="loadSectionRest('${id}')">Vedi tutti (${entries.length}) →</button></td>`;
+        const fullCount=(PANO_FULL&&PANO_FULL[id]?PANO_FULL[id].length:entries.length);
+        tr.innerHTML=`<td colspan="3" style="text-align:center;border:none;padding:4px 0;"><button class="vedi-tutti-btn" onclick="loadSectionRest('${id}')">Vedi tutti i titoli (${fullCount}) →</button></td>`;
         tr.onmouseenter=tr.onmouseleave=null;
         tbody.appendChild(tr);
       }
@@ -2073,41 +2167,137 @@ async function loadPanoramica(){
   renderOpportunities(globalScoreMap);
 }
 
-async function loadSectionRest(id){
-  const deferred=window._deferredPano&&window._deferredPano[id];
-  if(!deferred||!deferred.length) return;
+// ── EXTENDED TICKER LISTS (for modal "Vedi tutti") ──
+const PANO_FULL={
+  't-etf-az':[
+    ['SPY','S&P 500'],['QQQ','Nasdaq 100'],['VTI','Total Market USA'],['VGK','Europa'],
+    ['VPL','Asia-Pacifico'],['EEM','Mercati Emergenti'],['VT','Azionario Mondiale'],
+    ['IWM','Small Cap USA'],['VIG','Dividend Growth'],['ARKK','Innovation ARK'],
+    ['DIA','Dow Jones'],['MDY','Mid Cap USA'],['RSP','S&P Equal Weight'],
+    ['SCHD','Dividend USD'],['VNQ','Real Estate USA'],['IEFA','Mercati Sviluppati'],
+    ['ACWI','All Country World'],['EWJ','Giappone'],['EWZ','Brasile'],['EWY','Corea del Sud'],
+    ['MCHI','Cina'],['INDA','India'],['VEA','Mercati Sviluppati'],['IEMG','Emergenti Core'],
+    ['FXI','Large Cap Cina'],['EWT','Taiwan'],['GXC','Cina Totale'],['EFA','MSCI EAFE'],
+    ['SPDW','Mondo ex-USA'],['SPEM','Emergenti SP'],
+  ],
+  't-etf-bond':[
+    ['TLT','Treasury 20+ anni'],['IEF','Treasury 7-10 anni'],['SHY','Treasury 1-3 anni'],
+    ['HYG','High Yield USD'],['AGG','Aggregato USA'],['LQD','Corporate IG'],
+    ['EMB','Emergenti USD'],['BNDX','Globale ex-USA'],['VTIP','TIPS Inflazione'],['JNK','Junk Bonds'],
+    ['BND','Total Bond USA'],['MUB','Municipal Bonds'],['TIP','TIPS 0-5 anni'],
+    ['VCSH','Corporate Short'],['VCIT','Corporate Medium'],['VCLT','Corporate Long'],
+    ['SRLN','Senior Loan'],['FALN','Fallen Angels'],['ANGL','Fallen Angels Vanguard'],['BKLN','Loan bancari'],
+    ['PCY','Emergenti USD Inv'],['EMLC','Emergenti valuta locale'],['IGOV','Sovrani IG'],['BWX','Treas. Internaz.'],
+    ['FLOT','Floating Rate'],['NEAR','Ultra Short'],['JPST','Ultra Short JPM'],['VGSH','Treas. Short'],
+    ['GOVT','Treasury All'],['SPAB','Aggregato SP'],
+  ],
+  't-commodities':[
+    ['GLD','Oro'],['SLV','Argento'],['USO','Petrolio WTI'],['UNG','Gas Naturale'],
+    ['PDBC','Commodity Basket'],['CPER','Rame'],['WEAT','Grano'],['CORN','Mais'],
+    ['SOYB','Soia'],['DBA','Agricoltura'],
+    ['IAU','Oro iShares'],['SGOL','Oro Aberdeen'],['PALL','Palladio'],['PPLT','Platino'],
+    ['COMT','Commodity iShares'],['GSG','Commodity Goldman'],['DJP','Commodity DJ'],
+    ['FTGC','Commodity First Trust'],['BCI','Bloomberg Commodity'],['CMDY','Bloomberg Commodity L&I'],
+    ['OILK','Oil K-Shape'],['BOIL','Natural Gas 2x'],['UCO','WTI 2x'],['WOOD','Timber'],
+    ['MOO','Agritech'],['SOIL','Fertilizzanti'],['CROP','Agricoltura Globale'],['TAGS','Granaglie'],
+    ['JO','Caffè'],['NIB','Cacao'],
+  ],
+  't-crypto':[
+    ['BTC-USD','Bitcoin'],['ETH-USD','Ethereum'],['BNB-USD','BNB'],['SOL-USD','Solana'],
+    ['XRP-USD','XRP'],['ADA-USD','Cardano'],['AVAX-USD','Avalanche'],['DOT-USD','Polkadot'],
+    ['LINK-USD','Chainlink'],['MATIC-USD','Polygon'],
+    ['DOGE-USD','Dogecoin'],['SHIB-USD','Shiba Inu'],['LTC-USD','Litecoin'],['UNI-USD','Uniswap'],
+    ['ATOM-USD','Cosmos'],['NEAR-USD','NEAR Protocol'],['APT-USD','Aptos'],['ARB-USD','Arbitrum'],
+    ['OP-USD','Optimism'],['SUI-USD','Sui'],['INJ-USD','Injective'],['FIL-USD','Filecoin'],
+    ['ALGO-USD','Algorand'],['VET-USD','VeChain'],['HBAR-USD','Hedera'],['ICP-USD','Internet Computer'],
+    ['AAVE-USD','Aave'],['MKR-USD','Maker'],['CRV-USD','Curve'],['GRT-USD','The Graph'],
+  ],
+  't-azioni':[
+    ['AAPL','Apple'],['MSFT','Microsoft'],['NVDA','Nvidia'],['GOOGL','Alphabet'],['AMZN','Amazon'],
+    ['META','Meta'],['TSLA','Tesla'],['JPM','JPMorgan'],['LLY','Eli Lilly'],['BRK-B','Berkshire'],
+    ['V','Visa'],['MA','Mastercard'],['UNH','UnitedHealth'],['XOM','ExxonMobil'],['JNJ','J&J'],
+    ['PG','Procter & Gamble'],['HD','Home Depot'],['COST','Costco'],['ABBV','AbbVie'],['MRK','Merck'],
+    ['BAC','Bank of America'],['GS','Goldman Sachs'],['WMT','Walmart'],['CVX','Chevron'],['PFE','Pfizer'],
+    ['AVGO','Broadcom'],['ORCL','Oracle'],['ADBE','Adobe'],['AMD','Advanced Micro'],['INTC','Intel'],
+    ['CRM','Salesforce'],['NFLX','Netflix'],['DIS','Disney'],['PYPL','PayPal'],['UBER','Uber'],
+    ['SPOT','Spotify'],['SNAP','Snap'],['NVO','Novo Nordisk'],['ASML','ASML Holding'],['SAP','SAP SE'],
+    ['CAT','Caterpillar'],['DE','Deere & Co'],['GE','GE Aerospace'],['BA','Boeing'],['RTX','Raytheon'],
+    ['NEE','NextEra Energy'],['FCX','Freeport-McMoRan'],['NEM','Newmont Mining'],['SQ','Block'],['COIN','Coinbase'],
+  ],
+};
 
-  // Remove button row, show spinner
-  const vediTr=document.getElementById(`vedi-tr-${id}`);
-  if(vediTr) vediTr.remove();
-  delete window._deferredPano[id];
+// ── MODAL STATE ──
+let _modalId='', _modalData=[], _modalPage=1;
 
-  const tbody=document.getElementById(id);
-  const spinnerTr=document.createElement('tr');
-  spinnerTr.id=`spinner-tr-${id}`;
-  spinnerTr.style.cssText='grid-column:1/-1;display:flex;justify-content:center;padding:10px;border-bottom:none;';
-  spinnerTr.innerHTML=`<td colspan="3" style="text-align:center;border:none;"><div style="width:16px;height:16px;border-radius:50%;border:2px solid var(--border);border-top-color:var(--accent);animation:spin .7s linear infinite;display:inline-block;"></div></td>`;
-  if(tbody) tbody.appendChild(spinnerTr);
+function loadSectionRest(id){
+  // open modal with all tickers for this category
+  const allTickers=PANO_FULL[id]||PANO[id]||[];
+  _modalId=id; _modalData=allTickers; _modalPage=1;
+  const catNames={'t-etf-az':'ETF Azionari','t-etf-bond':'ETF Obbligazionari',
+    't-commodities':'Materie Prime','t-crypto':'Crypto','t-azioni':'Azioni Large Cap'};
+  document.getElementById('cat-modal-title').textContent=
+    `${catNames[id]||id} — ${allTickers.length} titoli`;
+  const modal=document.getElementById('cat-modal');
+  modal.style.display='flex';
+  document.body.style.overflow='hidden';
+  renderCatPage(1);
+}
 
-  // Fetch deferred tickers in batches of 5
-  const CONC=5;
-  for(let i=0;i<deferred.length;i+=CONC){
-    const batch=deferred.slice(i,i+CONC);
-    const results=await Promise.all(batch.map(([ticker])=>fetchAndScore(ticker)));
-    results.forEach((score,j)=>{
-      const [ticker,name]=batch[j];
-      globalScoreMap[ticker]=score;
-      if(score!=null) renderRow(id,ticker,name,score);
-      else renderND(id,ticker,name);
-    });
-  }
+function closeCatModal(){
+  document.getElementById('cat-modal').style.display='none';
+  document.body.style.overflow='';
+}
 
-  // Remove spinner
-  const sp=document.getElementById(`spinner-tr-${id}`);
-  if(sp) sp.remove();
+function renderCatPage(page){
+  _modalPage=page;
+  const pp=parseInt(document.getElementById('cat-modal-pp').value)||20;
+  const total=_modalData.length;
+  const pages=Math.ceil(total/pp);
+  const start=(page-1)*pp, end=Math.min(start+pp,total);
+  const slice=_modalData.slice(start,end);
 
-  // Refresh opportunities with updated data
-  renderOpportunities(globalScoreMap);
+  const body=document.getElementById('cat-modal-body');
+  body.innerHTML=`<table class="ptable" style="width:100%"><tbody id="modal-tbody"></tbody></table>`;
+  const tbody=document.getElementById('modal-tbody');
+
+  // show cached scores immediately, fetch missing
+  slice.forEach(([ticker,name])=>{
+    const score=globalScoreMap[ticker]??null;
+    if(score!=null) renderRowEl(tbody,ticker,name,score);
+    else {
+      const tr=document.createElement('tr');
+      tr.id=`mtr-${ticker}`;
+      tr.innerHTML=`<td><span style="font-weight:600;font-size:.82rem">${ticker}</span><br><span style="font-size:.72rem;color:var(--t2)">${name}</span></td><td class="p-bar-w"><div class="p-bar"><div class="p-bar-f" id="mpb-${ticker}" style="width:0%"></div></div></td><td style="text-align:right"><span class="sk" style="width:24px;height:10px;display:inline-block"></span></td>`;
+      tr.onclick=()=>{ closeCatModal(); quickAnalyze(ticker); };
+      tbody.appendChild(tr);
+      // fetch async
+      fetchAndScore(ticker).then(s=>{
+        globalScoreMap[ticker]=s;
+        const row=document.getElementById(`mtr-${ticker}`);
+        if(row&&s!=null){
+          const c=sc(s);
+          row.innerHTML=`<td><span style="font-weight:600;font-size:.82rem;color:var(--accent)">${ticker}</span><br><span style="font-size:.72rem;color:var(--t2)">${name}</span></td><td class="p-bar-w"><div class="p-bar"><div class="p-bar-f" style="width:${s}%;background:${c}"></div></div></td><td style="text-align:right;font-weight:700;font-size:.85rem;color:${c}">${s}</td>`;
+          row.onclick=()=>{ closeCatModal(); quickAnalyze(ticker); };
+        }
+      });
+    }
+  });
+
+  // pagination
+  const pg=document.getElementById('cat-modal-pg');
+  if(pages<=1){ pg.innerHTML=''; return; }
+  const btns=[`<span class="pg-info">Pag. ${page}/${pages} (${start+1}–${end} di ${total})</span>`];
+  if(page>1) btns.unshift(`<button class="pg-btn" onclick="renderCatPage(${page-1})">← Prec.</button>`);
+  if(page<pages) btns.push(`<button class="pg-btn" onclick="renderCatPage(${page+1})">Succ. →</button>`);
+  pg.innerHTML=btns.join('');
+}
+
+function renderRowEl(tbody,ticker,name,score){
+  const c=sc(score);
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td><span style="font-weight:600;font-size:.82rem;color:var(--accent)">${ticker}</span><br><span style="font-size:.72rem;color:var(--t2)">${name}</span></td><td class="p-bar-w"><div class="p-bar"><div class="p-bar-f" style="width:${score}%;background:${c}"></div></div></td><td style="text-align:right;font-weight:700;font-size:.85rem;color:${c}">${score}</td>`;
+  tr.onclick=()=>{ closeCatModal(); quickAnalyze(ticker); };
+  tbody.appendChild(tr);
 }
 
 // ── CHARTS ──
@@ -2373,23 +2563,49 @@ function setAnalyzeLoading(on,txt='Recupero dati…'){
 }
 
 // ── FEAR & GREED RENDER ──
-function renderFearGreed(score){
+function renderFearGreed(score, vix){
+  // interpolate color smoothly along the gradient
+  function lerpColor(a,b,t){
+    const ah=parseInt(a.slice(1),16),bh=parseInt(b.slice(1),16);
+    const ar=(ah>>16)&255,ag=(ah>>8)&255,ab=ah&255;
+    const br=(bh>>16)&255,bg=(bh>>8)&255,bb=bh&255;
+    const r=Math.round(ar+(br-ar)*t),g=Math.round(ag+(bg-ag)*t),bl=Math.round(ab+(bb-ab)*t);
+    return `rgb(${r},${g},${bl})`;
+  }
+  const stops=[{p:0,c:'#ef4444'},{p:25,c:'#f97316'},{p:50,c:'#f59e0b'},{p:75,c:'#84cc16'},{p:100,c:'#10b981'}];
+  let color=stops[0].c;
+  for(let i=0;i<stops.length-1;i++){
+    if(score>=stops[i].p && score<=stops[i+1].p){
+      color=lerpColor(stops[i].c,stops[i+1].c,(score-stops[i].p)/(stops[i+1].p-stops[i].p));
+      break;
+    }
+  }
   const labels=['Paura Estrema','Paura','Neutrale','Avidità','Avidità Estrema'];
-  const colors=['#ef4444','#f97316','#f59e0b','#34d399','#10b981'];
   const thresholds=[25,45,55,75,100];
   let li=thresholds.findIndex(t=>score<=t);if(li<0)li=4;
-  const color=colors[li],lbl=labels[li];
+  const lbl=labels[li];
   document.getElementById('fg-score').textContent=score;
   document.getElementById('fg-score').style.color=color;
   document.getElementById('fg-label').textContent=lbl;
   document.getElementById('fg-label').style.color=color;
-  document.getElementById('fg-sub').textContent='Sentiment di mercato in tempo reale';
-  // rainbow arc: dashoffset=251.2 → nothing shown, =0 → fully shown
-  const arcOffset=251.2*(1-score/100);
-  setTimeout(()=>document.getElementById('fg-arc').style.strokeDashoffset=arcOffset,50);
-  // needle: -90deg = 0 (left/fear), +90deg = 100 (right/greed)
+  document.getElementById('fg-sub').textContent='Sentiment di mercato';
+  // arc always fully shown — needle indicates position on the gradient
+  // needle stroke color matches current score color
+  const needle=document.getElementById('fg-needle');
   const deg=-90+(score/100)*180;
-  setTimeout(()=>document.getElementById('fg-needle').style.transform=`rotate(${deg}deg)`,50);
+  setTimeout(()=>{
+    needle.style.transform=`rotate(${deg}deg)`;
+    needle.style.stroke=color;
+  },50);
+  // VIX display
+  const vixEl=document.getElementById('fg-vix-val');
+  const vixLbl=document.getElementById('fg-vix-lbl');
+  if(vixEl&&vix!=null){
+    vixEl.textContent=vix.toFixed(1);
+    const vc=vix<15?'#10b981':vix<20?'#84cc16':vix<25?'#f59e0b':vix<30?'#f97316':'#ef4444';
+    vixEl.style.color=vc;
+    if(vixLbl) vixLbl.textContent=vix<15?'Bassa volatilità':vix<20?'Moderata':vix<25?'Elevata':vix<30?'Alta tensione':'Panico';
+  }
 }
 
 // ── BOLLINGER BANDS ──
@@ -2948,6 +3164,8 @@ function setupTooltips(){
 document.addEventListener('DOMContentLoaded',()=>{
   setupSearch();
   setupTooltips();
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeCatModal(); });
+  document.getElementById('cat-modal').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeCatModal(); });
   Promise.all([loadPulse(),loadPanoramica()]);
 });
 </script>

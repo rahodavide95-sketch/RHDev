@@ -230,6 +230,7 @@ header{
 .ptable{width:100%;border-collapse:collapse;}
 /* 2-column layout: tbody acts as a 2-col CSS grid, each tr is one grid cell */
 .ptable tbody{display:grid;grid-template-columns:1fr 1fr;}
+@media(max-width:760px){.ptable tbody{grid-template-columns:1fr;}}
 @media(max-width:640px){.ptable tbody{grid-template-columns:1fr;}}
 .ptable tr{
   display:flex;align-items:center;
@@ -411,6 +412,12 @@ header{
 .chart-wrap{position:relative;height:150px;}
 
 /* ── MOBILE ── */
+/* Tablet header: padding ridotto, search più ampia */
+@media(max-width:960px) and (min-width:641px){
+  header{padding:0 16px;gap:12px;}
+  .search-wrap{max-width:340px;}
+  .wrap{padding:0 16px;}
+}
 @media(max-width:640px){
   header{height:auto;padding:10px 12px;gap:8px;}
   .header-inner{flex-wrap:wrap;gap:8px;}
@@ -555,7 +562,10 @@ header{
 
 /* ── FEAR & GREED + VIX ── */
 .fg-wrap{margin-bottom:16px;display:grid;grid-template-columns:220px 170px 1fr;gap:10px;align-items:stretch;}
-@media(max-width:900px){.fg-wrap{grid-template-columns:1fr 1fr 1fr;align-items:stretch;}}
+/* Tablet: F&G + VIX fianco a fianco, pulse-grid sotto su tutta la larghezza */
+@media(max-width:960px){.fg-wrap{grid-template-columns:1fr 1fr;align-items:stretch;}}
+@media(max-width:960px){.fg-wrap .pulse-grid{grid-column:1/-1;}}
+/* Mobile: stessa struttura tablet */
 @media(max-width:640px){.fg-wrap{grid-template-columns:1fr 1fr;align-items:stretch;}}
 @media(max-width:640px){.fg-wrap .pulse-grid{grid-column:1/-1;}}
 .fg-card{
@@ -679,7 +689,7 @@ header{
   display:grid; grid-template-columns:repeat(3,1fr); gap:10px;
   min-width:0;
 }
-@media(max-width:640px){.opp-grid{grid-template-columns:1fr 1fr;}}
+@media(max-width:860px){.opp-grid{grid-template-columns:1fr 1fr;}}
 @media(max-width:400px){.opp-grid{grid-template-columns:1fr;}}
 .opp-item{
   background:var(--bg3); border:1px solid var(--border);
@@ -757,6 +767,13 @@ header{
 .cat-modal-body{padding:16px 22px;}
 .cat-modal-body table{width:100%;border-collapse:collapse;}
 .cat-modal-body .ptable tr{cursor:pointer;}
+@media(max-width:760px){
+  .cat-modal{padding:12px 8px;}
+  .cat-modal-hd{padding:14px 16px;}
+  .cat-modal-body{padding:12px 14px;}
+  .cat-modal-body .ptable tbody{grid-template-columns:1fr;}
+  .cat-modal-pg{padding:12px 14px;flex-wrap:wrap;}
+}
 .cat-modal-pg{
   display:flex;align-items:center;justify-content:center;gap:8px;
   padding:14px 22px;border-top:1px solid var(--border);

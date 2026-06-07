@@ -31,12 +31,26 @@
     --shadow:0 4px 20px rgba(0,0,0,.08);
   }
 }
-/* Light header overrides — only for explicit light or system+light-OS */
+/* Light header + footer overrides — only for explicit light or system+light-OS */
 [data-theme="light"] header,
 @media(prefers-color-scheme:light){[data-theme="system"] header}{
-  background:linear-gradient(135deg,rgba(30,64,175,.95) 0%,rgba(37,99,235,.95) 50%,rgba(29,78,216,.95) 100%);
-  border-bottom:1px solid rgba(59,130,246,.3);
+  background:linear-gradient(135deg,rgba(30,64,175,.6) 0%,rgba(37,99,235,.65) 50%,rgba(29,78,216,.6) 100%);
+  backdrop-filter:blur(28px) saturate(200%);
+  -webkit-backdrop-filter:blur(28px) saturate(200%);
+  border-bottom:1px solid rgba(255,255,255,.2);
 }
+[data-theme="light"] .site-footer{
+  background:linear-gradient(135deg,rgba(30,64,175,.6) 0%,rgba(37,99,235,.65) 50%,rgba(29,78,216,.6) 100%);
+  backdrop-filter:blur(28px) saturate(200%);
+  -webkit-backdrop-filter:blur(28px) saturate(200%);
+  border-top:1px solid rgba(255,255,255,.2);
+}
+@media(prefers-color-scheme:light){[data-theme="system"] .site-footer{
+  background:linear-gradient(135deg,rgba(30,64,175,.6) 0%,rgba(37,99,235,.65) 50%,rgba(29,78,216,.6) 100%);
+  backdrop-filter:blur(28px) saturate(200%);
+  -webkit-backdrop-filter:blur(28px) saturate(200%);
+  border-top:1px solid rgba(255,255,255,.2);
+}}
 [data-theme="light"] .logo-apex{
   background:linear-gradient(135deg,#ffffff 0%,#bfdbfe 100%);
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
@@ -76,9 +90,10 @@ body{
 /* ── HEADER ── */
 header{
   position:sticky; top:0; z-index:200;
-  background:linear-gradient(135deg,rgba(17,30,55,.97) 0%,rgba(22,35,65,.97) 50%,rgba(15,25,48,.97) 100%);
-  backdrop-filter:blur(16px);
-  border-bottom:1px solid rgba(59,130,246,.18);
+  background:linear-gradient(135deg,rgba(17,30,55,.55) 0%,rgba(22,35,70,.6) 50%,rgba(15,25,48,.55) 100%);
+  backdrop-filter:blur(28px) saturate(180%);
+  -webkit-backdrop-filter:blur(28px) saturate(180%);
+  border-bottom:1px solid rgba(255,255,255,.07);
   padding:0 32px; height:76px;
   display:flex; align-items:center; gap:20px;
   max-width:100%; justify-content:center;
@@ -636,13 +651,15 @@ header{
 /* ── FOOTER ── */
 .site-footer{
   margin-top:48px;
-  border-top:1px solid var(--border);
-  background:color-mix(in srgb,var(--bg2) 95%,transparent);
+  border-top:1px solid rgba(255,255,255,.07);
+  background:linear-gradient(135deg,rgba(17,30,55,.55) 0%,rgba(22,35,70,.6) 50%,rgba(15,25,48,.55) 100%);
+  backdrop-filter:blur(28px) saturate(180%);
+  -webkit-backdrop-filter:blur(28px) saturate(180%);
   text-align:center;
   padding:18px 20px;
-  font-size:.72rem; color:var(--t3); letter-spacing:.03em;
+  font-size:.72rem; color:rgba(255,255,255,.45); letter-spacing:.03em;
 }
-.site-footer strong{color:var(--t2); font-weight:600;}
+.site-footer strong{color:rgba(255,255,255,.75); font-weight:600;}
 
 
 /* ── SECTIONS SPACING ── */

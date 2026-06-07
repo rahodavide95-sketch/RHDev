@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>QuantEdge — Analisi Statistica dei Mercati</title>
+<title>APEX Finance — Analisi Statistica dei Mercati</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -38,15 +38,25 @@ header{
   display:flex; align-items:center; gap:20px;
 }
 .logo{
-  display:flex; align-items:center; gap:8px;
-  font-size:.9rem; font-weight:700; letter-spacing:.04em;
-  color:var(--text); white-space:nowrap; flex-shrink:0;
-  cursor:pointer;
+  display:flex; align-items:center; gap:10px;
+  white-space:nowrap; flex-shrink:0; cursor:pointer;
+  text-decoration:none;
 }
-.logo-dot{
-  width:8px; height:8px; border-radius:50%;
-  background:var(--accent); flex-shrink:0;
-  box-shadow:0 0 10px var(--accent);
+.logo-icon{
+  width:32px; height:32px; flex-shrink:0;
+}
+.logo-text{
+  display:flex; flex-direction:column; line-height:1;
+}
+.logo-apex{
+  font-size:1.05rem; font-weight:800; letter-spacing:.08em;
+  background:linear-gradient(135deg,#ffffff 0%,#93c5fd 50%,#3b82f6 100%);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.logo-finance{
+  font-size:.55rem; font-weight:500; letter-spacing:.18em;
+  color:var(--t2); text-transform:uppercase; margin-top:1px;
 }
 
 /* ── SEARCH ── */
@@ -806,8 +816,30 @@ header{
 <header>
   <div class="header-inner">
     <div class="logo" onclick="resetView()">
-      <div class="logo-dot"></div>
-      QuantEdge
+      <svg class="logo-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="lg1" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#ffffff"/>
+            <stop offset="50%" stop-color="#93c5fd"/>
+            <stop offset="100%" stop-color="#3b82f6"/>
+          </linearGradient>
+          <linearGradient id="lg2" x1="0%" y1="100%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#1d4ed8"/>
+            <stop offset="100%" stop-color="#60a5fa"/>
+          </linearGradient>
+        </defs>
+        <!-- triangolo apex stilizzato -->
+        <polygon points="16,3 30,27 2,27" fill="url(#lg2)" opacity=".25" rx="2"/>
+        <polygon points="16,6 28,25 4,25" fill="none" stroke="url(#lg1)" stroke-width="1.5" stroke-linejoin="round"/>
+        <!-- linea di trend ascendente interna -->
+        <polyline points="7,21 12,15 17,18 24,10" stroke="url(#lg1)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <!-- punto apice -->
+        <circle cx="24" cy="10" r="2.2" fill="url(#lg1)"/>
+      </svg>
+      <div class="logo-text">
+        <span class="logo-apex">APEX</span>
+        <span class="logo-finance">Finance</span>
+      </div>
     </div>
 
     <div class="search-wrap">

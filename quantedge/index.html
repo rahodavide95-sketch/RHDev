@@ -15,6 +15,22 @@
   --radius:10px; --radius-sm:6px;
   --shadow:0 4px 20px rgba(0,0,0,.4);
 }
+[data-theme="light"]{
+  --bg:#f0f4f8; --bg2:#ffffff; --bg3:#e8eef5;
+  --border:#d0d9e6; --b2:#b0bfcc;
+  --accent:#2563eb; --g:#059669; --r:#dc2626; --y:#d97706;
+  --text:#0f172a; --t2:#475569; --t3:#94a3b8;
+  --shadow:0 4px 20px rgba(0,0,0,.08);
+}
+@media(prefers-color-scheme:light){
+  [data-theme="system"]{
+    --bg:#f0f4f8; --bg2:#ffffff; --bg3:#e8eef5;
+    --border:#d0d9e6; --b2:#b0bfcc;
+    --accent:#2563eb; --g:#059669; --r:#dc2626; --y:#d97706;
+    --text:#0f172a; --t2:#475569; --t3:#94a3b8;
+    --shadow:0 4px 20px rgba(0,0,0,.08);
+  }
+}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 html{scroll-behavior:smooth;}
 body{
@@ -27,7 +43,7 @@ body{
 /* ── HEADER ── */
 header{
   position:sticky; top:0; z-index:200;
-  background:rgba(13,17,23,.92); backdrop-filter:blur(12px);
+  background:color-mix(in srgb,var(--bg) 92%,transparent); backdrop-filter:blur(12px);
   border-bottom:1px solid var(--border);
   padding:0 32px; height:64px;
   display:flex; align-items:center; gap:20px;
@@ -160,6 +176,17 @@ header{
 .s-sym{font-weight:700;font-size:.875rem;color:var(--accent);min-width:52px;font-variant-numeric:tabular-nums;}
 .s-name{color:var(--t2);font-size:.8rem;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .s-cat{font-size:.7rem;color:var(--t3);background:var(--bg3);padding:2px 7px;border-radius:20px;white-space:nowrap;border:1px solid var(--border);}
+
+/* Theme toggle */
+.btn-theme{
+  background:none; border:1px solid var(--border); color:var(--t2);
+  width:32px; height:32px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:.95rem; cursor:pointer; flex-shrink:0;
+  transition:border-color .15s,color .15s,background .15s;
+  line-height:1;
+}
+.btn-theme:hover{border-color:var(--accent);color:var(--accent);}
 
 /* Live indicator */
 .live-ind{
@@ -679,7 +706,7 @@ header{
 
 /* ── OPPORTUNITIES CARD ── */
 .opp-card{
-  background:linear-gradient(160deg,#1a2233 0%,#1a2640 60%,#1a2233 100%);
+  background:linear-gradient(160deg,var(--bg2) 0%,color-mix(in srgb,var(--bg2) 80%,var(--accent)) 60%,var(--bg2) 100%);
   border:1px solid rgba(59,130,246,.2);
   border-top:2px solid var(--accent);
   border-radius:var(--radius); padding:22px 24px;
@@ -858,6 +885,7 @@ header{
     </div>
 
     <button class="btn-home" id="btn-home" onclick="resetView()" title="Torna alla home">⌂ Home</button>
+    <button class="btn-theme" id="btn-theme" onclick="cycleTheme()" title="Cambia tema"></button>
     <div class="live-ind">
       <div class="live-dot"></div>
       <span>Live</span>
@@ -1346,6 +1374,28 @@ header{
 
 <script>
 'use strict';
+
+// ── THEME ──
+const THEMES = ['dark','light','system'];
+const THEME_ICONS = {dark:'🌙', light:'☀️', system:'💻'};
+const THEME_LABELS = {dark:'Scuro', light:'Chiaro', system:'Sistema'};
+
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme', t);
+  const btn = document.getElementById('btn-theme');
+  if(btn) btn.textContent = THEME_ICONS[t];
+  btn && (btn.title = `Tema: ${THEME_LABELS[t]}`);
+}
+function cycleTheme(){
+  const cur = localStorage.getItem('apex-theme')||'dark';
+  const next = THEMES[(THEMES.indexOf(cur)+1)%THEMES.length];
+  localStorage.setItem('apex-theme', next);
+  applyTheme(next);
+}
+(function initTheme(){
+  const saved = localStorage.getItem('apex-theme')||'dark';
+  applyTheme(saved);
+})();
 
 // ── TICKER DATABASE ──
 const DB = [

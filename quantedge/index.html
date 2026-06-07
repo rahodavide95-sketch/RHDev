@@ -1409,6 +1409,11 @@ function cycleTheme(){
   const next = THEMES[(THEMES.indexOf(cur)+1)%THEMES.length];
   localStorage.setItem('apex-theme', next);
   applyTheme(next);
+  // redraw chart if visible so colors update
+  if(PDATA.ts.length && document.getElementById('analysis').classList.contains('visible')){
+    if(CH.p){CH.p.destroy();CH.p=null;}
+    redrawPriceChart(PDATA.ts,PDATA.cl);
+  }
 }
 (function initTheme(){
   const saved = localStorage.getItem('apex-theme')||'dark';
@@ -2517,6 +2522,16 @@ function drawCharts(sea,di,wrs,ts,cl){
 // ── PRICE DATA STORE ──
 const PDATA={ts:[],cl:[],ticker:''};
 
+function isLightTheme(){
+  const t=document.documentElement.getAttribute('data-theme')||'dark';
+  if(t==='light') return true;
+  if(t==='system') return window.matchMedia('(prefers-color-scheme:light)').matches;
+  return false;
+}
+function chartGridColor(){ return isLightTheme()?'rgba(148,163,184,.25)':'rgba(33,38,45,.8)'; }
+function chartTickColor(){ return isLightTheme()?'#64748b':'#8b949e'; }
+function chartLineColor(dark,light){ return isLightTheme()?light:dark; }
+
 function redrawPriceChart(pTs,pCl){
   if(CH.p){CH.p.destroy();CH.p=null;}
   if(!pTs||pTs.length<2) return;
@@ -2544,9 +2559,9 @@ function redrawPriceChart(pTs,pCl){
   const datasets=[
     {data:pCl,borderColor:isUp?'#10b981':'#ef4444',backgroundColor:gr,
      borderWidth:1.5,pointRadius:0,fill:true,tension:.35,order:1},
-    {label:'BB Upper',data:bb.upper,borderColor:'rgba(239,68,68,.55)',borderWidth:2,borderDash:[4,3],pointRadius:0,fill:false,tension:0.3,order:2},
-    {label:'SMA 20',data:bb.mid,borderColor:'rgba(139,148,158,.5)',borderWidth:1.5,borderDash:[],pointRadius:0,fill:false,tension:0.3,order:2},
-    {label:'BB Lower',data:bb.lower,borderColor:'rgba(16,185,129,.55)',borderWidth:2,borderDash:[4,3],pointRadius:0,fill:false,tension:0.3,order:2},
+    {label:'BB Upper',data:bb.upper,borderColor:chartLineColor('rgba(239,68,68,.45)','rgba(220,38,38,.5)'),borderWidth:1.5,borderDash:[4,3],pointRadius:0,fill:false,tension:0.3,order:2},
+    {label:'SMA 20',data:bb.mid,borderColor:chartLineColor('rgba(139,148,158,.45)','rgba(100,116,139,.5)'),borderWidth:1,borderDash:[],pointRadius:0,fill:false,tension:0.3,order:2},
+    {label:'BB Lower',data:bb.lower,borderColor:chartLineColor('rgba(16,185,129,.45)','rgba(5,150,105,.5)'),borderWidth:1.5,borderDash:[4,3],pointRadius:0,fill:false,tension:0.3,order:2},
   ];
   let chartLabels=pTs.map(fmtLabel);
 
@@ -2606,7 +2621,7 @@ function redrawPriceChart(pTs,pCl){
 
     datasets.push(
       // regression line (historical + projection) - dashed
-      {data:regLineExt,borderColor:'rgba(139,148,158,.55)',
+      {data:regLineExt,borderColor:chartLineColor('rgba(139,148,158,.5)','rgba(100,116,139,.55)'),
        borderDash:[5,4],borderWidth:1.5,pointRadius:0,fill:false,tension:0,order:2},
       // upper band - thin dotted line, NO fill
       {data:bandUpperExt,borderColor:'rgba(59,130,246,.25)',
@@ -2638,8 +2653,8 @@ function redrawPriceChart(pTs,pCl){
         }
       },
       scales:{
-        x:{grid:{display:false},ticks:{maxTicksLimit:8,maxRotation:0,color:'#8b949e',font:{size:10}},border:{display:false}},
-        y:{grid:{color:'rgba(33,38,45,.8)'},ticks:{callback:v=>v>=1000?(v/1000).toFixed(1)+'k':v>=1?v.toFixed(2):v.toFixed(4),color:'#8b949e',font:{size:10}},border:{display:false}}
+        x:{grid:{display:false},ticks:{maxTicksLimit:8,maxRotation:0,color:chartTickColor(),font:{size:10}},border:{display:false}},
+        y:{grid:{color:chartGridColor()},ticks:{callback:v=>v>=1000?(v/1000).toFixed(1)+'k':v>=1?v.toFixed(2):v.toFixed(4),color:chartTickColor(),font:{size:10}},border:{display:false}}
       }
     }
   });

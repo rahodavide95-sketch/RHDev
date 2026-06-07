@@ -554,10 +554,9 @@ header{
 .sec{padding:28px 0 10px;}
 
 /* ── FEAR & GREED + VIX ── */
-.fg-wrap{margin-bottom:16px;display:grid;grid-template-columns:220px 170px 1fr;gap:10px;align-items:start;}
-@media(max-width:900px){.fg-wrap{grid-template-columns:1fr 1fr 1fr;}}
-/* keep F&G and VIX side by side even on mobile — stack only the pulse grid below */
-@media(max-width:640px){.fg-wrap{grid-template-columns:1fr 1fr;}}
+.fg-wrap{margin-bottom:16px;display:grid;grid-template-columns:220px 170px 1fr;gap:10px;align-items:stretch;}
+@media(max-width:900px){.fg-wrap{grid-template-columns:1fr 1fr 1fr;align-items:stretch;}}
+@media(max-width:640px){.fg-wrap{grid-template-columns:1fr 1fr;align-items:stretch;}}
 @media(max-width:640px){.fg-wrap .pulse-grid{grid-column:1/-1;}}
 .fg-card{
   background:var(--bg2);border:1px solid var(--border);
@@ -806,7 +805,7 @@ header{
       <div class="search-dropdown" id="search-dropdown"></div>
     </div>
 
-    <button class="btn-home" onclick="resetView()" title="Torna alla home">⌂ Home</button>
+    <button class="btn-home" id="btn-home" onclick="resetView()" title="Torna alla home">⌂ Home</button>
     <div class="live-ind">
       <div class="live-dot"></div>
       <span>Live</span>
@@ -2183,44 +2182,68 @@ const PANO_FULL={
     ['SPY','S&P 500'],['QQQ','Nasdaq 100'],['VTI','Total Market USA'],['VGK','Europa'],
     ['VPL','Asia-Pacifico'],['EEM','Mercati Emergenti'],['VT','Azionario Mondiale'],
     ['IWM','Small Cap USA'],['VIG','Dividend Growth'],['ARKK','Innovation ARK'],
-    ['DIA','Dow Jones'],['MDY','Mid Cap USA'],['RSP','S&P Equal Weight'],
-    ['SCHD','Dividend USD'],['VNQ','Real Estate USA'],['IEFA','Mercati Sviluppati'],
-    ['ACWI','All Country World'],['EWJ','Giappone'],['EWZ','Brasile'],['EWY','Corea del Sud'],
-    ['MCHI','Cina'],['INDA','India'],['VEA','Mercati Sviluppati'],['IEMG','Emergenti Core'],
-    ['FXI','Large Cap Cina'],['EWT','Taiwan'],['GXC','Cina Totale'],['EFA','MSCI EAFE'],
-    ['SPDW','Mondo ex-USA'],['SPEM','Emergenti SP'],
+    ['DIA','Dow Jones'],['MDY','Mid Cap USA'],['RSP','S&P Equal Weight'],['SCHD','Dividend USD'],
+    ['VNQ','Real Estate USA'],['IEFA','Mercati Sviluppati'],['ACWI','All Country World'],
+    ['EWJ','Giappone'],['EWZ','Brasile'],['EWY','Corea del Sud'],['MCHI','Cina'],['INDA','India'],
+    ['IEMG','Emergenti Core'],['FXI','Large Cap Cina'],['EWT','Taiwan'],['EFA','MSCI EAFE'],
+    ['SPDW','Mondo ex-USA'],['SPEM','Emergenti SP'],['VOO','Vanguard S&P 500'],['SPLG','S&P 500 Low Cost'],
+    ['QQQM','Nasdaq 100 Mini'],['SPYG','S&P 500 Growth'],['SPYV','S&P 500 Value'],['IVV','iShares S&P 500'],
+    ['XLK','Tecnologia USA'],['XLF','Finanza USA'],['XLE','Energia USA'],['XLV','Sanità USA'],
+    ['XLI','Industria USA'],['XLU','Utilities USA'],['XLP','Beni di Consumo'],['XLY','Beni Discrezionali'],
+    ['SOXX','Semiconduttori'],['SMH','Semiconduttori VanEck'],['IBB','Biotech'],['XBI','Biotech SP'],
+    ['ICLN','Energie Rinnovabili'],['BOTZ','Robotica & AI'],['ROBO','Robotica ROBO'],
+    ['FINX','Fintech'],['HACK','Cybersecurity'],['CIBR','Cybersecurity First Trust'],
   ],
   't-etf-bond':[
     ['TLT','Treasury 20+ anni'],['IEF','Treasury 7-10 anni'],['SHY','Treasury 1-3 anni'],
     ['HYG','High Yield USD'],['AGG','Aggregato USA'],['LQD','Corporate IG'],
     ['EMB','Emergenti USD'],['BNDX','Globale ex-USA'],['VTIP','TIPS Inflazione'],['JNK','Junk Bonds'],
-    ['BND','Total Bond USA'],['MUB','Municipal Bonds'],['TIP','TIPS 0-5 anni'],
+    ['BND','Total Bond USA'],['MUB','Municipal Bonds'],['TIP','TIPS inflazione'],
     ['VCSH','Corporate Short'],['VCIT','Corporate Medium'],['VCLT','Corporate Long'],
-    ['SRLN','Senior Loan'],['FALN','Fallen Angels'],['ANGL','Fallen Angels Vanguard'],['BKLN','Loan bancari'],
-    ['PCY','Emergenti USD Inv'],['EMLC','Emergenti valuta locale'],['IGOV','Sovrani IG'],['BWX','Treas. Internaz.'],
-    ['FLOT','Floating Rate'],['NEAR','Ultra Short'],['JPST','Ultra Short JPM'],['VGSH','Treas. Short'],
-    ['GOVT','Treasury All'],['SPAB','Aggregato SP'],
+    ['SRLN','Senior Loan'],['BKLN','Loan bancari'],['FALN','Fallen Angels'],
+    ['PCY','Emergenti USD Inv'],['EMLC','Emergenti valuta locale'],['IGOV','Sovrani IG'],
+    ['BWX','Treasury Internaz.'],['FLOT','Floating Rate'],['NEAR','Ultra Short'],
+    ['JPST','Ultra Short JPM'],['VGSH','Treasury Short'],['GOVT','Treasury All'],
+    ['SPAB','Aggregato SP'],['VGIT','Treasury Int.'],['VGLT','Treasury Long'],
+    ['SPSB','Corporate Short SP'],['SPIB','Corporate Int. SP'],['SPLB','Corporate Long SP'],
+    ['HYMB','High Yield Muni'],['HYD','High Yield Muni VanEck'],['SUB','Short Muni'],
+    ['IBND','Internazionale'],['IAGG','Aggregato Globale'],['TIP','TIPS iShares'],
+    ['LTPZ','TIPS Long'],['STIP','TIPS Short'],['SCHP','TIPS Schwab'],
+    ['SCHI','Corporate Int. Schwab'],['SCHZ','Aggregato Schwab'],['SCHR','Treasury Schwab'],
+    ['VWOB','Emergenti Vanguard'],['PICB','Corporate Internaz.'],['GHYB','High Yield Globale'],
   ],
   't-commodities':[
     ['GLD','Oro'],['SLV','Argento'],['USO','Petrolio WTI'],['UNG','Gas Naturale'],
     ['PDBC','Commodity Basket'],['CPER','Rame'],['WEAT','Grano'],['CORN','Mais'],
-    ['SOYB','Soia'],['DBA','Agricoltura'],
-    ['IAU','Oro iShares'],['SGOL','Oro Aberdeen'],['PALL','Palladio'],['PPLT','Platino'],
-    ['COMT','Commodity iShares'],['GSG','Commodity Goldman'],['DJP','Commodity DJ'],
-    ['FTGC','Commodity First Trust'],['BCI','Bloomberg Commodity'],['CMDY','Bloomberg Commodity L&I'],
-    ['OILK','Oil K-Shape'],['BOIL','Natural Gas 2x'],['UCO','WTI 2x'],['WOOD','Timber'],
-    ['MOO','Agritech'],['SOIL','Fertilizzanti'],['CROP','Agricoltura Globale'],['TAGS','Granaglie'],
-    ['JO','Caffè'],['NIB','Cacao'],
+    ['SOYB','Soia'],['DBA','Agricoltura'],['IAU','Oro iShares'],['SGOL','Oro Aberdeen'],
+    ['PALL','Palladio'],['PPLT','Platino'],['COMT','Commodity iShares'],['GSG','Commodity Goldman'],
+    ['DJP','Commodity DJ'],['FTGC','Commodity First Trust'],['BCI','Bloomberg Commodity'],
+    ['WOOD','Timber'],['MOO','Agritech'],['JO','Caffè'],['NIB','Cacao'],['BAL','Cotone'],
+    ['PGAL','Vino'],['DIRT','Agricoltura Suolo'],['SOIL','Fertilizzanti'],
+    ['UGA','Benzina'],['OILK','Oil K-Shape'],['UCO','WTI 2x Bull'],['SCO','WTI 2x Bear'],
+    ['BOIL','Nat. Gas 2x Bull'],['KOLD','Nat. Gas 2x Bear'],['UGLD','Oro 3x'],['DGLD','Oro -3x'],
+    ['USLV','Argento 3x'],['DSLV','Argento -3x'],['JJCTF','Rame iPath'],['JJNTF','Nichel iPath'],
+    ['JJSNF','Stagno iPath'],['PLTM','Platino GraniteShares'],['GLTR','Metalli Preziosi Mix'],
+    ['DBB','Metalli Base'],['DBP','Metalli Preziosi DB'],['DBO','Petrolio DB'],['DBE','Energia DB'],
+    ['GUNR','Risorse Naturali Globali'],['NANR','Risorse Naturali SP'],
+    ['XME','Miniere & Metalli USA'],['GDX','Miniere Oro Major'],['GDXJ','Miniere Oro Junior'],
+    ['SIL','Miniere Argento'],['COPX','Miniere Rame'],
   ],
   't-crypto':[
     ['BTC-USD','Bitcoin'],['ETH-USD','Ethereum'],['BNB-USD','BNB'],['SOL-USD','Solana'],
     ['XRP-USD','XRP'],['ADA-USD','Cardano'],['AVAX-USD','Avalanche'],['DOT-USD','Polkadot'],
-    ['LINK-USD','Chainlink'],['MATIC-USD','Polygon'],
-    ['DOGE-USD','Dogecoin'],['SHIB-USD','Shiba Inu'],['LTC-USD','Litecoin'],['UNI-USD','Uniswap'],
-    ['ATOM-USD','Cosmos'],['NEAR-USD','NEAR Protocol'],['APT-USD','Aptos'],['ARB-USD','Arbitrum'],
-    ['OP-USD','Optimism'],['SUI-USD','Sui'],['INJ-USD','Injective'],['FIL-USD','Filecoin'],
-    ['ALGO-USD','Algorand'],['VET-USD','VeChain'],['HBAR-USD','Hedera'],['ICP-USD','Internet Computer'],
-    ['AAVE-USD','Aave'],['MKR-USD','Maker'],['CRV-USD','Curve'],['GRT-USD','The Graph'],
+    ['LINK-USD','Chainlink'],['MATIC-USD','Polygon'],['DOGE-USD','Dogecoin'],['SHIB-USD','Shiba Inu'],
+    ['LTC-USD','Litecoin'],['UNI-USD','Uniswap'],['ATOM-USD','Cosmos'],['NEAR-USD','NEAR Protocol'],
+    ['APT-USD','Aptos'],['ARB-USD','Arbitrum'],['OP-USD','Optimism'],['SUI-USD','Sui'],
+    ['INJ-USD','Injective'],['FIL-USD','Filecoin'],['ALGO-USD','Algorand'],['VET-USD','VeChain'],
+    ['HBAR-USD','Hedera'],['ICP-USD','Internet Computer'],['AAVE-USD','Aave'],['MKR-USD','Maker'],
+    ['CRV-USD','Curve'],['GRT-USD','The Graph'],['LDO-USD','Lido DAO'],['RUNE-USD','THORChain'],
+    ['SAND-USD','The Sandbox'],['MANA-USD','Decentraland'],['AXS-USD','Axie Infinity'],
+    ['GALA-USD','Gala Games'],['ENJ-USD','Enjin Coin'],['CHZ-USD','Chiliz'],
+    ['XLM-USD','Stellar'],['XTZ-USD','Tezos'],['EOS-USD','EOS'],['IOTA-USD','IOTA'],
+    ['ZIL-USD','Zilliqa'],['ONE-USD','Harmony'],['FTM-USD','Fantom'],['EGLD-USD','MultiversX'],
+    ['ROSE-USD','Oasis Network'],['KSM-USD','Kusama'],['OCEAN-USD','Ocean Protocol'],
+    ['BAT-USD','Basic Attention Token'],['ZEC-USD','Zcash'],['DASH-USD','Dash'],
   ],
   't-azioni':[
     ['AAPL','Apple'],['MSFT','Microsoft'],['NVDA','Nvidia'],['GOOGL','Alphabet'],['AMZN','Amazon'],
@@ -2233,6 +2256,13 @@ const PANO_FULL={
     ['SPOT','Spotify'],['SNAP','Snap'],['NVO','Novo Nordisk'],['ASML','ASML Holding'],['SAP','SAP SE'],
     ['CAT','Caterpillar'],['DE','Deere & Co'],['GE','GE Aerospace'],['BA','Boeing'],['RTX','Raytheon'],
     ['NEE','NextEra Energy'],['FCX','Freeport-McMoRan'],['NEM','Newmont Mining'],['SQ','Block'],['COIN','Coinbase'],
+    ['ARM','ARM Holdings'],['PLTR','Palantir'],['SMCI','Super Micro Computer'],['MSTR','MicroStrategy'],
+    ['RBLX','Roblox'],['HOOD','Robinhood'],['RIVN','Rivian'],['LCID','Lucid Motors'],['NIO','NIO'],['BABA','Alibaba'],
+    ['JD','JD.com'],['PDD','Pinduoduo'],['TSM','TSMC'],['SONY','Sony'],['TM','Toyota'],['LVMH','LVMH'],
+    ['NESN.SW','Nestlé'],['NOVO-B.CO','Novo Nordisk DKK'],['SAN','Santander'],['BNP.PA','BNP Paribas'],
+    ['MC.PA','LVMH FR'],['AIR.PA','Airbus'],['SAP','SAP'],['SIE.DE','Siemens'],['ALV.DE','Allianz'],
+    ['MUV2.DE','Munich Re'],['VOW3.DE','Volkswagen'],['BMW.DE','BMW'],['DBK.DE','Deutsche Bank'],
+    ['ENI.MI','ENI'],['ENEL.MI','ENEL'],['UCG.MI','UniCredit'],['ISP.MI','Intesa Sanpaolo'],
   ],
 };
 
@@ -2250,7 +2280,7 @@ function loadSectionRest(id){
   const modal=document.getElementById('cat-modal');
   modal.style.display='flex';
   document.body.style.overflow='hidden';
-  document.querySelector('.btn-home').classList.add('visible');
+  document.getElementById('btn-home').classList.add('visible');
   renderCatPage(1);
 }
 
@@ -2259,7 +2289,7 @@ function closeCatModal(){
   document.body.style.overflow='';
   // hide home btn only if analysis also not visible
   if(!document.getElementById('analysis').classList.contains('visible'))
-    document.querySelector('.btn-home').classList.remove('visible');
+    document.getElementById('btn-home').classList.remove('visible');
 }
 
 function renderCatPage(page){
@@ -2875,7 +2905,7 @@ async function analyze(ticker){
     setAnalyzeLoading(false);
     const sec=document.getElementById('analysis');
     sec.classList.add('visible');
-    document.querySelector('.btn-home').classList.add('visible');
+    document.getElementById('btn-home').classList.add('visible');
     sec.scrollIntoView({behavior:'smooth',block:'start'});
     return; // skip finally's setAnalyzeLoading
 
@@ -2930,7 +2960,7 @@ function resetView(){
   document.getElementById('search-input').value='';
   document.getElementById('analysis').classList.remove('visible');
   document.getElementById('err-box').style.display='none';
-  document.querySelector('.btn-home').classList.remove('visible');
+  document.getElementById('btn-home').classList.remove('visible');
   closeCatModal();
   window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -3143,13 +3173,13 @@ Da usare insieme al PEG: crescita alta giustifica un P/E elevato.`
   },
   vix:{
     title:'VIX — Indice di Volatilità (CBOE)',
-    body:`Il VIX misura la volatilità implicita attesa sull'S&P 500 nei prossimi 30 giorni, calcolata dai prezzi delle opzioni. È detto anche "indice della paura".<br><br>
-<b>&lt; 15</b> → Bassa volatilità — mercato tranquillo, trend stabile.<br>
-<b>15–20</b> → Volatilità normale — condizioni di mercato sane.<br>
-<b>20–25</b> → Volatilità elevata — incertezza in aumento.<br>
-<b>25–35</b> → Alta tensione — movimenti bruschi probabili.<br>
-<b>&gt; 35</b> → Panico — picchi storici corrispondono a crolli (COVID: 85, 2008: 80).<br><br>
-<i>VIX alto = mercato nervoso. Può indicare una opportunità di acquisto se il panico è eccessivo.</i>`
+    body:`Il VIX è calcolato sulle <b>opzioni dell'S&P 500</b>, ma riflette la paura dell'intero mercato finanziario globale: quando gli investitori istituzionali si coprono dal rischio, acquistano opzioni sull'S&P 500 — il benchmark più liquido al mondo — facendo salire il VIX indipendentemente da dove origina la crisi.<br><br>
+<b>&lt; 15</b> — Calma. Mercato stabile, trend affidabili.<br>
+<b>15–20</b> — Normale. Condizioni standard di mercato.<br>
+<b>20–25</b> — Tensione in aumento. Possibili correzioni.<br>
+<b>25–35</b> — Alta volatilità. Movimenti bruschi probabili.<br>
+<b>&gt; 35</b> — Panico. Storicamente: COVID-19 = 85, Lehman 2008 = 80.<br><br>
+<i>Regola: VIX &gt; 30 con mercato in forte calo = possibile zona di ingresso per chi ha orizzonte lungo.</i>`
   },
 };
 

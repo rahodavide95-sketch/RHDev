@@ -554,9 +554,11 @@ header{
 .sec{padding:28px 0 10px;}
 
 /* ── FEAR & GREED + VIX ── */
-.fg-wrap{margin-bottom:16px;display:grid;grid-template-columns:240px 190px 1fr;gap:12px;align-items:start;}
-@media(max-width:900px){.fg-wrap{grid-template-columns:1fr 1fr;}}
-@media(max-width:600px){.fg-wrap{grid-template-columns:1fr;}}
+.fg-wrap{margin-bottom:16px;display:grid;grid-template-columns:220px 170px 1fr;gap:10px;align-items:start;}
+@media(max-width:900px){.fg-wrap{grid-template-columns:1fr 1fr 1fr;}}
+/* keep F&G and VIX side by side even on mobile — stack only the pulse grid below */
+@media(max-width:640px){.fg-wrap{grid-template-columns:1fr 1fr;}}
+@media(max-width:640px){.fg-wrap .pulse-grid{grid-column:1/-1;}}
 .fg-card{
   background:var(--bg2);border:1px solid var(--border);
   border-radius:var(--radius);padding:16px 18px;
@@ -573,12 +575,8 @@ header{
 /* VIX card */
 .fg-vix-card{justify-content:center;}
 .fg-vix-big{margin:8px 0 4px;}
-.fg-vix-val{font-size:2.4rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1;}
-.fg-vix-lbl{font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;}
-.fg-vix-scale{
-  margin-top:10px;padding-top:10px;border-top:1px solid var(--border);
-  display:flex;flex-direction:column;gap:3px;width:100%;font-size:.65rem;font-weight:500;
-}
+.fg-vix-val{font-size:2.2rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1;}
+.fg-vix-lbl{font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-top:4px;}
 @media(max-width:640px){
   .fg-card{padding:12px 14px;}
   .fg-gauge{width:160px;height:88px;}
@@ -867,22 +865,16 @@ header{
       <!-- VIX card -->
       <div class="fg-card fg-vix-card">
         <div class="fg-top">
-          <div style="display:flex;align-items:center;gap:6px;">
-            <span class="fg-title">VIX — Volatilità</span>
+          <div style="display:flex;align-items:center;justify-content:center;gap:6px;">
+            <span class="fg-title">VIX</span>
             <button class="info-btn" data-tip="vix" title="Cos'è il VIX?">i</button>
           </div>
-          <span class="fg-sub">Indice di volatilità implicita S&amp;P 500</span>
+          <span class="fg-sub">Volatilità implicita</span>
         </div>
         <div class="fg-vix-big">
           <span class="fg-vix-val" id="fg-vix-val">—</span>
         </div>
         <div class="fg-vix-lbl" id="fg-vix-lbl">—</div>
-        <div class="fg-vix-scale">
-          <span style="color:#10b981">&lt;15 Calma</span>
-          <span style="color:#f59e0b">15–25 Normale</span>
-          <span style="color:#f97316">25–35 Alta</span>
-          <span style="color:#ef4444">&gt;35 Panico</span>
-        </div>
       </div>
       <div class="pulse-grid">
       <div class="pulse-card" id="pc-SPY">

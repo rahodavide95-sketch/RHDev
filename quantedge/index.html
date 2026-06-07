@@ -551,25 +551,25 @@ header{
 
 
 /* ── FEAR & GREED ── */
-.fg-wrap{margin-bottom:16px;display:grid;grid-template-columns:1fr 2fr;gap:12px;}
+.fg-wrap{margin-bottom:16px;display:grid;grid-template-columns:280px 1fr;gap:12px;align-items:start;}
 @media(max-width:700px){.fg-wrap{grid-template-columns:1fr;}}
 .fg-card{
   background:var(--bg2);border:1px solid var(--border);
   border-radius:var(--radius);padding:16px 20px;
-  display:flex;align-items:center;gap:24px;flex-wrap:wrap;
+  display:flex;flex-direction:column;align-items:center;gap:8px;
 }
-.fg-top{display:flex;flex-direction:column;gap:3px;min-width:140px;}
+.fg-top{display:flex;flex-direction:column;gap:3px;align-items:center;text-align:center;width:100%;}
 .fg-title{font-size:.7rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;}
-.fg-sub{font-size:.75rem;color:var(--t2);margin-top:2px;}
-.fg-gauge-wrap{display:flex;align-items:center;gap:16px;}
-.fg-gauge{width:160px;height:88px;flex-shrink:0;}
-.fg-score-wrap{display:flex;flex-direction:column;gap:2px;}
-.fg-score{font-size:2rem;font-weight:700;font-variant-numeric:tabular-nums;}
+.fg-sub{font-size:.72rem;color:var(--t2);margin-top:2px;}
+.fg-gauge-wrap{display:flex;flex-direction:column;align-items:center;gap:6px;width:100%;}
+.fg-gauge{width:200px;height:110px;flex-shrink:0;}
+.fg-score-wrap{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.fg-score{font-size:2.2rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1;}
 .fg-label{font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;}
 @media(max-width:640px){
-  .fg-card{gap:12px;}
-  .fg-gauge{width:130px;height:72px;}
-  .fg-score{font-size:1.5rem;}
+  .fg-card{padding:12px 14px;}
+  .fg-gauge{width:170px;height:94px;}
+  .fg-score{font-size:1.8rem;}
 }
 
 /* ── FORECAST TEXT ── */
@@ -767,13 +767,23 @@ header{
         </div>
         <div class="fg-gauge-wrap">
           <svg class="fg-gauge" viewBox="0 0 200 110" fill="none">
-            <!-- background arc -->
-            <path d="M20,100 A80,80 0 0,1 180,100" stroke="#21262d" stroke-width="14" stroke-linecap="round"/>
-            <!-- colored arc — stroke-dasharray driven by JS -->
-            <path id="fg-arc" d="M20,100 A80,80 0 0,1 180,100" stroke="#f59e0b" stroke-width="14" stroke-linecap="round"
-              stroke-dasharray="251.2" stroke-dashoffset="251.2" style="transition:stroke-dashoffset 1s ease,stroke 1s ease"/>
+            <defs>
+              <!-- rainbow gradient along the arc: red(fear) → green(greed) -->
+              <linearGradient id="fg-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%"   stop-color="#ef4444"/>
+                <stop offset="25%"  stop-color="#f97316"/>
+                <stop offset="50%"  stop-color="#f59e0b"/>
+                <stop offset="75%"  stop-color="#84cc16"/>
+                <stop offset="100%" stop-color="#10b981"/>
+              </linearGradient>
+            </defs>
+            <!-- background track -->
+            <path d="M20,100 A80,80 0 0,1 180,100" stroke="#1c2330" stroke-width="16" stroke-linecap="round"/>
+            <!-- rainbow arc: dashoffset=251.2 → hidden, =0 → fully visible -->
+            <path id="fg-arc" d="M20,100 A80,80 0 0,1 180,100" stroke="url(#fg-grad)" stroke-width="14" stroke-linecap="round"
+              stroke-dasharray="251.2" stroke-dashoffset="251.2" style="transition:stroke-dashoffset 1s ease;"/>
             <!-- needle -->
-            <line id="fg-needle" x1="100" y1="100" x2="100" y2="28"
+            <line id="fg-needle" x1="100" y1="100" x2="100" y2="26"
               stroke="#e6edf3" stroke-width="2.5" stroke-linecap="round"
               style="transform-origin:100px 100px;transform:rotate(-90deg);transition:transform 1s ease"/>
             <circle cx="100" cy="100" r="5" fill="#e6edf3"/>
@@ -2374,11 +2384,9 @@ function renderFearGreed(score){
   document.getElementById('fg-label').textContent=lbl;
   document.getElementById('fg-label').style.color=color;
   document.getElementById('fg-sub').textContent='Sentiment di mercato in tempo reale';
-  // arc: total half-circle arc = 251.2px, fill proportionally
-  const fill=251.2*(1-score/100);
-  const arc=document.getElementById('fg-arc');
-  arc.style.stroke=color;
-  setTimeout(()=>arc.style.strokeDashoffset=fill,50);
+  // rainbow arc: dashoffset=251.2 → nothing shown, =0 → fully shown
+  const arcOffset=251.2*(1-score/100);
+  setTimeout(()=>document.getElementById('fg-arc').style.strokeDashoffset=arcOffset,50);
   // needle: -90deg = 0 (left/fear), +90deg = 100 (right/greed)
   const deg=-90+(score/100)*180;
   setTimeout(()=>document.getElementById('fg-needle').style.transform=`rotate(${deg}deg)`,50);

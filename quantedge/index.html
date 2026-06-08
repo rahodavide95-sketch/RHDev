@@ -58,6 +58,11 @@ header,.site-footer,.cat-modal-hd,.cat-modal-pg{
 [data-theme="light"] header .btn-search{background:#60a5fa!important;color:#fff!important;border:1px solid rgba(147,197,253,.6)!important;}
 [data-theme="light"] .site-footer{color:rgba(255,255,255,.6);}
 [data-theme="light"] .site-footer strong{color:rgba(255,255,255,.9);}
+[data-theme="light"] .cat-modal-title,[data-theme="light"] .cat-modal-lbl,
+[data-theme="light"] .pg-info{color:rgba(255,255,255,.9)!important;}
+[data-theme="light"] .cat-modal-sel{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.3);color:#fff;}
+[data-theme="light"] .cat-modal-close{background:rgba(255,255,255,.15)!important;border-color:rgba(255,255,255,.3)!important;color:#fff!important;}
+[data-theme="light"] .pg-btn{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.3);color:#fff;}
 @media(prefers-color-scheme:light){
   [data-theme="system"] .logo-apex{background:linear-gradient(135deg,#fff 0%,#bfdbfe 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
   [data-theme="system"] .logo-finance,
@@ -70,6 +75,11 @@ header,.site-footer,.cat-modal-hd,.cat-modal-pg{
   [data-theme="system"] header .btn-search{background:#60a5fa!important;color:#fff!important;border:1px solid rgba(147,197,253,.6)!important;}
   [data-theme="system"] .site-footer{color:rgba(255,255,255,.6);}
   [data-theme="system"] .site-footer strong{color:rgba(255,255,255,.9);}
+  [data-theme="system"] .cat-modal-title,[data-theme="system"] .cat-modal-lbl,
+  [data-theme="system"] .pg-info{color:rgba(255,255,255,.9)!important;}
+  [data-theme="system"] .cat-modal-sel{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.3);color:#fff;}
+  [data-theme="system"] .cat-modal-close{background:rgba(255,255,255,.15)!important;border-color:rgba(255,255,255,.3)!important;color:#fff!important;}
+  [data-theme="system"] .pg-btn{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.3);color:#fff;}
 }
 
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
@@ -197,15 +207,11 @@ header{
 .page-loader-txt{font-size:.85rem; color:var(--t2); letter-spacing:.03em;}
 .page-loader-cancel{
   margin-top:8px; padding:8px 24px; border-radius:20px;
-  background:rgba(239,68,68,.15);
-  border:1px solid rgba(239,68,68,.4);
-  color:#fff;
+  background:none; border:1px solid var(--r); color:var(--r);
   font-size:.8rem; font-family:inherit; cursor:pointer;
-  backdrop-filter:blur(10px);
-  -webkit-backdrop-filter:blur(10px);
   transition:background .15s;
 }
-.page-loader-cancel:hover{background:rgba(239,68,68,.28);}
+.page-loader-cancel:hover{background:rgba(239,68,68,.1);}
 
 /* ── ANALYSIS OVERLAY ── */
 #ao{position:fixed;inset:0;z-index:300;background:var(--bg);display:none;flex-direction:column;}
@@ -219,9 +225,9 @@ header{
   cursor:pointer;font-size:.9rem;transition:background .15s;}
 .ao-x:hover{background:rgba(239,68,68,.35);}
 .ao-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
-
 /* ── ANALYSIS SECTION ── */
-#analysis{display:block;padding-bottom:60px;}
+#analysis{display:none;}
+#analysis.visible{display:block; animation:fadeUp .35s ease;}
 
 /* Search dropdown */
 .search-dropdown{
@@ -1563,7 +1569,6 @@ header{
   </section>
 </div><!-- /wrap -->
 
-<!-- ── ANALYSIS OVERLAY ── -->
 <div id="ao">
   <div class="ao-bar">
     <span class="ao-title" id="ao-title">Analisi</span>
@@ -3307,6 +3312,7 @@ function resetView(){
   document.getElementById('ao').classList.remove('open');
   document.getElementById('err-box').style.display='none';
   closeCatModal();
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
 // ── SMART SEARCH ──

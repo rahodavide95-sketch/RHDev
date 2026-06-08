@@ -246,7 +246,7 @@ header{
 /* Live indicator */
 .live-ind{
   display:flex; align-items:center; gap:6px;
-  font-size:.7rem; color:var(--t2); white-space:nowrap; margin-left:auto;
+  font-size:.7rem; color:var(--t2); white-space:nowrap; margin-left:auto; margin-right:0;
 }
 .live-dot{
   width:6px;height:6px;border-radius:50%;background:var(--g);
@@ -981,15 +981,16 @@ header{
 
     <button class="btn-home" id="btn-home" onclick="resetView()" title="Torna alla home">⌂ Home</button>
 
+    <div class="live-ind">
+      <div class="live-dot"></div>
+      <span>Live</span>
+    </div>
+
     <div class="header-divider"></div>
 
     <button class="btn-theme" id="btn-theme" onclick="cycleTheme()" title="Cambia tema">
       <!-- icon injected by JS -->
     </button>
-    <div class="live-ind">
-      <div class="live-dot"></div>
-      <span>Live</span>
-    </div>
   </div>
 </header>
 

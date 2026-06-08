@@ -58,12 +58,6 @@ header,.site-footer,.cat-modal-hd,.cat-modal-pg{
 [data-theme="light"] header .btn-search{background:#60a5fa!important;color:#fff!important;border:1px solid rgba(147,197,253,.6)!important;}
 [data-theme="light"] .site-footer{color:rgba(255,255,255,.6);}
 [data-theme="light"] .site-footer strong{color:rgba(255,255,255,.9);}
-/* Modal bars white text in light theme */
-[data-theme="light"] .cat-modal-title,[data-theme="light"] .cat-modal-lbl,
-[data-theme="light"] .pg-info{color:rgba(255,255,255,.9)!important;}
-[data-theme="light"] .cat-modal-sel{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.3);color:#fff;}
-[data-theme="light"] .cat-modal-close{background:rgba(255,255,255,.15)!important;border-color:rgba(255,255,255,.3)!important;color:#fff!important;}
-[data-theme="light"] .pg-btn{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.3);color:#fff;}
 @media(prefers-color-scheme:light){
   [data-theme="system"] .logo-apex{background:linear-gradient(135deg,#fff 0%,#bfdbfe 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
   [data-theme="system"] .logo-finance,
@@ -76,11 +70,6 @@ header,.site-footer,.cat-modal-hd,.cat-modal-pg{
   [data-theme="system"] header .btn-search{background:#60a5fa!important;color:#fff!important;border:1px solid rgba(147,197,253,.6)!important;}
   [data-theme="system"] .site-footer{color:rgba(255,255,255,.6);}
   [data-theme="system"] .site-footer strong{color:rgba(255,255,255,.9);}
-  [data-theme="system"] .cat-modal-title,[data-theme="system"] .cat-modal-lbl,
-  [data-theme="system"] .pg-info{color:rgba(255,255,255,.9)!important;}
-  [data-theme="system"] .cat-modal-sel{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.3);color:#fff;}
-  [data-theme="system"] .cat-modal-close{background:rgba(255,255,255,.15)!important;border-color:rgba(255,255,255,.3)!important;color:#fff!important;}
-  [data-theme="system"] .pg-btn{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.3);color:#fff;}
 }
 
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
@@ -210,7 +199,7 @@ header{
   margin-top:8px; padding:8px 24px; border-radius:20px;
   background:rgba(239,68,68,.15);
   border:1px solid rgba(239,68,68,.4);
-  color:var(--r);
+  color:#fff;
   font-size:.8rem; font-family:inherit; cursor:pointer;
   backdrop-filter:blur(10px);
   -webkit-backdrop-filter:blur(10px);
@@ -219,39 +208,20 @@ header{
 .page-loader-cancel:hover{background:rgba(239,68,68,.28);}
 
 /* ── ANALYSIS OVERLAY ── */
-#analysis-overlay{
-  position:fixed;inset:0;z-index:300;
-  background:var(--bg);
-  display:none;flex-direction:column;
-  overflow:hidden;
-}
-#analysis-overlay.visible{display:flex;animation:fadeUp .25s ease;}
-.analysis-overlay-bar{
-  flex-shrink:0;
-  display:flex;align-items:center;gap:14px;
-  padding:0 24px;height:64px;
-  background:var(--bar-bg);
-  backdrop-filter:var(--bar-blur);
-  -webkit-backdrop-filter:var(--bar-blur);
-  border-bottom:1px solid var(--bar-border);
-}
-.analysis-overlay-title{
-  flex:1;font-size:.95rem;font-weight:700;color:#fff;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
-.analysis-overlay-close{
-  width:32px;height:32px;border-radius:50%;flex-shrink:0;
-  background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);
-  color:#fff;cursor:pointer;font-size:.9rem;
-  display:flex;align-items:center;justify-content:center;
-  transition:background .15s;
-}
-.analysis-overlay-close:hover{background:rgba(239,68,68,.3);border-color:rgba(239,68,68,.5);}
-.analysis-overlay-body{
-  flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
-  padding:24px 0;
-}
-#analysis{display:block;}
+#ao{position:fixed;inset:0;z-index:300;background:var(--bg);display:none;flex-direction:column;}
+#ao.open{display:flex;}
+.ao-bar{flex-shrink:0;height:64px;display:flex;align-items:center;gap:14px;padding:0 24px;
+  background:var(--bar-bg);backdrop-filter:var(--bar-blur);-webkit-backdrop-filter:var(--bar-blur);
+  border-bottom:1px solid var(--bar-border);}
+.ao-title{flex:1;font-size:.95rem;font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ao-x{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;
+  cursor:pointer;font-size:.9rem;transition:background .15s;}
+.ao-x:hover{background:rgba(239,68,68,.35);}
+.ao-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+
+/* ── ANALYSIS SECTION ── */
+#analysis{display:block;padding-bottom:60px;}
 
 /* Search dropdown */
 .search-dropdown{
@@ -1278,13 +1248,6 @@ header{
     <button class="page-loader-cancel" id="page-loader-cancel" onclick="cancelAnalyze()">Annulla</button>
   </div>
 
-  <!-- placeholder, overlay moved to body level below -->
-  <div id="analysis-overlay-placeholder" style="display:none">
-    <div class="analysis-overlay-bar">
-      <span class="analysis-overlay-title" id="analysis-overlay-title">Analisi</span>
-      <button class="analysis-overlay-close" onclick="resetView()" title="Torna alla home">✕</button>
-    </div>
-    <div class="analysis-overlay-body">
   <!-- ── ANALYSIS ── -->
   <section id="analysis">
     <div class="err-box" id="err-box"></div>
@@ -1598,18 +1561,15 @@ header{
       I dati sono forniti da Yahoo Finance tramite API pubblica. Questo strumento è a scopo informativo e statistico. Non costituisce consulenza finanziaria.
     </div>
   </section>
-    </div><!-- /analysis-overlay-body -->
-  </div><!-- (moved below) -->
 </div><!-- /wrap -->
 
-<!-- ── ANALYSIS OVERLAY — body level so position:fixed works cleanly ── -->
-<div id="analysis-overlay">
-  <div class="analysis-overlay-bar">
-    <span class="analysis-overlay-title" id="analysis-overlay-title">Analisi</span>
-    <button class="analysis-overlay-close" onclick="resetView()" title="Torna alla home">✕</button>
+<!-- ── ANALYSIS OVERLAY ── -->
+<div id="ao">
+  <div class="ao-bar">
+    <span class="ao-title" id="ao-title">Analisi</span>
+    <button class="ao-x" onclick="resetView()">✕</button>
   </div>
-  <div class="analysis-overlay-body" id="analysis-overlay-body">
-  </div>
+  <div class="ao-body" id="ao-body"></div>
 </div>
 
 <script>
@@ -1638,7 +1598,7 @@ function cycleTheme(){
   localStorage.setItem('apex-theme', next);
   applyTheme(next);
   // redraw all charts if analysis is visible so colors update
-  if(document.getElementById('analysis-overlay').classList.contains('visible')){
+  if(document.getElementById('ao').classList.contains('open')){
     if(CH.p){CH.p.destroy();CH.p=null;}
     if(PDATA.ts.length) redrawPriceChart(PDATA.ts,PDATA.cl);
     if(CH.s){CH.s.destroy();CH.s=null;}
@@ -3176,7 +3136,7 @@ async function analyze(ticker){
   if(_analyzeAbort) _analyzeAbort.abort();
   _analyzeAbort=new AbortController();
 
-  document.getElementById('analysis').classList.remove('visible');
+  document.getElementById('ao').classList.remove('open');
   document.getElementById('err-box').style.display='none';
   setAnalyzeLoading(true,'Recupero dati…');
 
@@ -3280,21 +3240,18 @@ async function analyze(ticker){
       document.getElementById('cr-to').value=maxD;
       document.getElementById('cr-from').value=new Date(Date.now()-365*86400000).toISOString().slice(0,10);
     }
+    drawCharts(seasonal(tss,cl),retDist(ret(cl)),[w7,w14,w30,w60,w90,w180,w365],tss,cl);
+
+    renderFundamentals(fund);
+    renderBHS(score, fund);
+    buildDipSignal(R,M50,M200,Mo3m,Mo12m,DD,cur,w30,score);
+
     _analyzeAbort=null;
     setAnalyzeLoading(false);
-    const overlay=document.getElementById('analysis-overlay');
-    document.getElementById('analysis-overlay-title').textContent=
+    document.getElementById('ao-title').textContent=
       document.getElementById('a-name').textContent||ticker;
-    overlay.classList.add('visible');
-    overlay.querySelector('.analysis-overlay-body').scrollTop=0;
-
-    // Wait for browser layout so canvas elements have real pixel dimensions
-    requestAnimationFrame(()=>{
-      drawCharts(seasonal(tss,cl),retDist(ret(cl)),[w7,w14,w30,w60,w90,w180,w365],tss,cl);
-      renderFundamentals(fund);
-      renderBHS(score, fund);
-      buildDipSignal(R,M50,M200,Mo3m,Mo12m,DD,cur,w30,score);
-    });
+    document.getElementById('ao-body').scrollTop=0;
+    document.getElementById('ao').classList.add('open');
     return; // skip finally's setAnalyzeLoading
 
   }catch(e){
@@ -3347,7 +3304,7 @@ function quickAnalyze(ticker){
 
 function resetView(){
   document.getElementById('search-input').value='';
-  document.getElementById('analysis-overlay').classList.remove('visible');
+  document.getElementById('ao').classList.remove('open');
   document.getElementById('err-box').style.display='none';
   closeCatModal();
 }
@@ -3616,11 +3573,7 @@ function setupTooltips(){
 
 // ── BOOT ──
 document.addEventListener('DOMContentLoaded',()=>{
-  // Move #analysis section into the overlay body
-  const analysisEl=document.getElementById('analysis');
-  const overlayBody=document.getElementById('analysis-overlay-body');
-  if(analysisEl&&overlayBody) overlayBody.appendChild(analysisEl);
-
+  document.getElementById('ao-body').appendChild(document.getElementById('analysis'));
   setupSearch();
   setupTooltips();
   document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeCatModal(); });

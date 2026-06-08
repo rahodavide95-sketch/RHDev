@@ -973,11 +973,13 @@ header{
 
 /* ── VEDI TUTTI BUTTON (panoramica lazy-load) ── */
 .vedi-tutti-row{background:transparent !important;}
-.vedi-tutti-row td{
-  height:2px; padding:0 !important;
-  border:none !important;
-  border-top:2px solid rgba(59,130,246,.45) !important;
-  line-height:0; font-size:0; overflow:hidden;
+.vedi-tutti-row td{padding:0 !important;border:none !important;line-height:0;font-size:0;}
+.vedi-tutti-bar{
+  height:14px;
+  background:var(--bar-bg);
+  backdrop-filter:var(--bar-blur);
+  -webkit-backdrop-filter:var(--bar-blur);
+  border-top:1px solid var(--bar-border);
 }
 .vedi-tutti-btn-row td{
   padding:10px 0 14px !important;
@@ -986,14 +988,16 @@ header{
   background:transparent !important;
 }
 .vedi-tutti-btn{
-  background:transparent;
-  border:1px solid rgba(255,255,255,.2);
-  color:var(--t2);
+  background:var(--bar-bg);
+  backdrop-filter:var(--bar-blur);
+  -webkit-backdrop-filter:var(--bar-blur);
+  border:1px solid var(--bar-border);
+  color:#fff;
   font-size:.72rem; padding:6px 20px; border-radius:20px;
   cursor:pointer; font-family:inherit;
-  transition:background .15s, color .15s;
+  transition:opacity .15s;
 }
-.vedi-tutti-btn:hover{background:rgba(255,255,255,.08);color:var(--text);}
+.vedi-tutti-btn:hover{opacity:.8;}
 
 /* ── OPPORTUNITIES: single grid, extra items hidden ── */
 .opp-item.opp-item-extra{display:none;}
@@ -2434,7 +2438,7 @@ async function loadPanoramica(){
         const tr=document.createElement('tr');
         tr.id=`vedi-tr-${id}`;
         tr.className='vedi-tutti-row';
-        tr.innerHTML=`<td colspan="3"></td>`;
+        tr.innerHTML=`<td colspan="3"><div class="vedi-tutti-bar"></div></td>`;
         tr.onmouseenter=tr.onmouseleave=null;
         tbody.appendChild(tr);
         const trBtn=document.createElement('tr');

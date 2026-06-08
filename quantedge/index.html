@@ -972,27 +972,28 @@ header{
 }
 
 /* ── VEDI TUTTI BUTTON (panoramica lazy-load) ── */
-.vedi-tutti-row{background:transparent !important;}
-.vedi-tutti-row td{padding:0 !important;border:none !important;line-height:0;font-size:0;}
-.vedi-tutti-bar{
-  height:14px;
-  background:var(--bar-bg);
-  backdrop-filter:var(--bar-blur);
-  -webkit-backdrop-filter:var(--bar-blur);
-  border-top:1px solid var(--bar-border);
+.vedi-tutti-row{
+  background:var(--bar-bg) !important;
+  backdrop-filter:var(--bar-blur) !important;
+  -webkit-backdrop-filter:var(--bar-blur) !important;
+  border-top:1px solid var(--bar-border) !important;
 }
-.vedi-tutti-btn-wrap{text-align:center;padding:10px 0 14px;}
+.vedi-tutti-row td{
+  padding:10px 0 !important;
+  text-align:center;
+  border:none !important;
+}
 .vedi-tutti-btn{
-  background:var(--bar-bg);
-  backdrop-filter:var(--bar-blur);
-  -webkit-backdrop-filter:var(--bar-blur);
-  border:1px solid var(--bar-border);
+  background:rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.25);
   color:#fff;
   font-size:.72rem; padding:6px 20px; border-radius:20px;
   cursor:pointer; font-family:inherit;
-  transition:opacity .15s;
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  transition:background .15s;
 }
-.vedi-tutti-btn:hover{opacity:.8;}
+.vedi-tutti-btn:hover{background:rgba(255,255,255,.22);}
 
 /* ── OPPORTUNITIES: single grid, extra items hidden ── */
 .opp-item.opp-item-extra{display:none;}
@@ -2433,14 +2434,9 @@ async function loadPanoramica(){
         const tr=document.createElement('tr');
         tr.id=`vedi-tr-${id}`;
         tr.className='vedi-tutti-row';
-        tr.innerHTML=`<td colspan="3"><div class="vedi-tutti-bar"></div></td>`;
+        tr.innerHTML=`<td colspan="3"><button class="vedi-tutti-btn" onclick="loadSectionRest('${id}')">Vedi tutti i titoli (${fullCount}) →</button></td>`;
         tr.onmouseenter=tr.onmouseleave=null;
         tbody.appendChild(tr);
-        const btnDiv=document.createElement('div');
-        btnDiv.id=`vedi-btn-${id}`;
-        btnDiv.className='vedi-tutti-btn-wrap';
-        btnDiv.innerHTML=`<button class="vedi-tutti-btn" onclick="loadSectionRest('${id}')">Vedi tutti i titoli (${fullCount}) →</button>`;
-        tbody.parentElement.insertAdjacentElement('afterend',btnDiv);
       }
     }
   }

@@ -901,11 +901,11 @@ header{
 .cat-modal-hd{
   display:flex;align-items:center;gap:14px;
   padding:20px 24px;flex-shrink:0;
-  background:var(--accent);
-  border-bottom:none;
+  background:rgba(255,255,255,.07);
+  backdrop-filter:blur(20px) saturate(160%);
+  -webkit-backdrop-filter:blur(20px) saturate(160%);
+  border-bottom:1px solid rgba(255,255,255,.08);
 }
-.cat-modal-title{color:#fff!important;}
-.cat-modal-close{background:rgba(255,255,255,.15)!important;border-color:rgba(255,255,255,.3)!important;color:#fff!important;}
 .cat-modal-title{font-size:1rem;font-weight:700;flex:1;color:var(--text);}
 .cat-modal-close{
   width:32px;height:32px;border-radius:50%;flex-shrink:0;
@@ -934,21 +934,25 @@ header{
 /* ── footer ── */
 .cat-modal-pg{
   display:flex;align-items:center;gap:10px;
-  padding:14px 24px;border-top:none;flex-shrink:0;
-  background:var(--accent);flex-wrap:wrap;
+  padding:14px 24px;flex-shrink:0;
+  background:rgba(255,255,255,.07);
+  backdrop-filter:blur(20px) saturate(160%);
+  -webkit-backdrop-filter:blur(20px) saturate(160%);
+  border-top:1px solid rgba(255,255,255,.08);
+  flex-wrap:wrap;
 }
-.cat-modal-lbl{font-size:.75rem;color:rgba(255,255,255,.8);display:flex;align-items:center;gap:6px;margin-right:auto;}
+.cat-modal-lbl{font-size:.75rem;color:var(--t2);display:flex;align-items:center;gap:6px;margin-right:auto;}
 .cat-modal-sel{
-  background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;
+  background:rgba(255,255,255,.1);border:1px solid var(--border);color:var(--text);
   padding:4px 8px;border-radius:8px;font-size:.75rem;font-family:inherit;cursor:pointer;
 }
 .pg-btn{
-  background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:var(--text);
   padding:6px 16px;border-radius:20px;font-size:.75rem;
   cursor:pointer;font-family:inherit;transition:all .15s;
 }
-.pg-btn:hover{background:rgba(255,255,255,.25);}
-.pg-info{font-size:.75rem;color:rgba(255,255,255,.7);}
+.pg-btn:hover{background:rgba(255,255,255,.15);}
+.pg-info{font-size:.75rem;color:var(--t2);}
 /* ── Mobile: full screen slide-up ── */
 @media(max-width:700px){
   .cat-modal{padding:0;align-items:flex-end;background:rgba(0,0,0,.6);}

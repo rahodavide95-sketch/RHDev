@@ -802,7 +802,8 @@ header{
   border-radius:var(--radius);padding:16px 18px;
   display:flex;flex-direction:column;align-items:center;gap:10px;
 }
-.fg-top{display:flex;flex-direction:column;gap:3px;align-items:center;text-align:center;width:100%;}
+.fg-top{display:flex;flex-direction:column;gap:3px;align-items:flex-start;text-align:left;width:100%;}
+.fg-title-row{display:flex;align-items:center;justify-content:space-between;width:100%;gap:6px;}
 .fg-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;gap:8px;}
 .fg-title{font-size:.7rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;}
 .fg-sub{font-size:.7rem;color:var(--t2);margin-top:2px;}
@@ -1188,7 +1189,7 @@ header{
       <!-- Fear & Greed card -->
       <div class="fg-card">
         <div class="fg-top">
-          <div style="display:flex;align-items:center;gap:6px;">
+          <div class="fg-title-row">
             <span class="fg-title">Fear &amp; Greed Index</span>
             <button class="info-btn" data-tip="feargreed" title="Cos'è il Fear &amp; Greed Index?">i</button>
           </div>
@@ -1224,7 +1225,7 @@ header{
       <!-- VIX card -->
       <div class="fg-card">
         <div class="fg-top">
-          <div style="display:flex;align-items:center;justify-content:center;gap:6px;">
+          <div class="fg-title-row">
             <span class="fg-title">VIX</span>
             <button class="info-btn" data-tip="vix" title="Cos'è il VIX?">i</button>
           </div>
@@ -1244,7 +1245,7 @@ header{
       <!-- Dollar / FX card -->
       <div class="fg-card">
         <div class="fg-top">
-          <div style="display:flex;align-items:center;justify-content:center;gap:6px;">
+          <div class="fg-title-row">
             <span class="fg-title">Dollaro USA</span>
             <button class="info-btn" data-tip="dollar">i</button>
           </div>
@@ -1269,7 +1270,7 @@ header{
       <!-- Yield Curve card -->
       <div class="fg-card">
         <div class="fg-top">
-          <div style="display:flex;align-items:center;gap:6px;">
+          <div class="fg-title-row">
             <span class="fg-title">Curva dei Rendimenti</span>
             <button class="info-btn" data-tip="yieldcurve">i</button>
           </div>
@@ -1288,7 +1289,7 @@ header{
       <!-- Sector Rotation card -->
       <div class="fg-card fg-card-left home-sector-card">
         <div class="fg-top">
-          <div style="display:flex;align-items:center;gap:6px;">
+          <div class="fg-title-row">
             <span class="fg-title">Rotazione Settoriale</span>
             <button class="info-btn" data-tip="sectors">i</button>
           </div>

@@ -889,6 +889,7 @@ header{
   box-shadow:0 32px 80px rgba(0,0,0,.6);
   display:flex;flex-direction:column;
   max-height:calc(100vh - 64px);
+  max-height:calc(100dvh - 64px);
   overflow:hidden;
 }
 /* ── Modal header bar ── */
@@ -928,10 +929,11 @@ header{
 .cat-modal-body .ptable tr{cursor:pointer;}
 /* ── Modal footer bar ── */
 .cat-modal-pg{
-  display:flex;align-items:center;justify-content:center;gap:8px;
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
   padding:14px 22px;border-top:1px solid var(--border);flex-shrink:0;
   background:var(--bg3);
   border-radius:0 0 18px 18px;
+  flex-wrap:wrap;
 }
 .pg-btn{
   background:none;border:1px solid var(--border);color:var(--t2);
@@ -1215,19 +1217,18 @@ header{
     <div class="cat-modal-box">
       <div class="cat-modal-hd">
         <span class="cat-modal-title" id="cat-modal-title">—</span>
-        <div class="cat-modal-controls">
-          <label class="cat-modal-lbl">Per pagina:
-            <select class="cat-modal-sel" id="cat-modal-pp" onchange="renderCatPage(1)">
-              <option value="10" selected>10</option>
-              <option value="20">20</option>
-              <option value="50">50</option>
-            </select>
-          </label>
-          <button class="cat-modal-close" onclick="closeCatModal()" title="Chiudi">✕</button>
-        </div>
+        <button class="cat-modal-close" onclick="closeCatModal()" title="Chiudi">✕</button>
       </div>
       <div class="cat-modal-body" id="cat-modal-body"></div>
-      <div class="cat-modal-pg" id="cat-modal-pg"></div>
+      <div class="cat-modal-pg" id="cat-modal-pg">
+        <label class="cat-modal-lbl">Per pagina:
+          <select class="cat-modal-sel" id="cat-modal-pp" onchange="renderCatPage(1)">
+            <option value="10" selected>10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+          </select>
+        </label>
+      </div>
     </div>
   </div>
 
@@ -2635,13 +2636,18 @@ function renderCatPage(page){
     }
   });
 
-  // pagination
+  // pagination (selector always stays, only add nav buttons when needed)
   const pg=document.getElementById('cat-modal-pg');
-  if(pages<=1){ pg.innerHTML=''; return; }
-  const btns=[`<span class="pg-info">Pag. ${page}/${pages} (${start+1}–${end} di ${total})</span>`];
-  if(page>1) btns.unshift(`<button class="pg-btn" onclick="renderCatPage(${page-1})">← Prec.</button>`);
-  if(page<pages) btns.push(`<button class="pg-btn" onclick="renderCatPage(${page+1})">Succ. →</button>`);
-  pg.innerHTML=btns.join('');
+  const sel=pg.querySelector('.cat-modal-lbl');
+  const nav=[];
+  if(pages>1){
+    if(page>1) nav.push(`<button class="pg-btn" onclick="renderCatPage(${page-1})">← Prec.</button>`);
+    nav.push(`<span class="pg-info">Pag. ${page}/${pages} (${start+1}–${end} di ${total})</span>`);
+    if(page<pages) nav.push(`<button class="pg-btn" onclick="renderCatPage(${page+1})">Succ. →</button>`);
+  }
+  // Remove old nav nodes, keep the selector label
+  [...pg.children].forEach(el=>{ if(!el.classList.contains('cat-modal-lbl')) el.remove(); });
+  nav.forEach(h=>{ const d=document.createElement('div'); d.innerHTML=h; pg.appendChild(d.firstChild); });
 }
 
 function renderRowEl(tbody,ticker,name,score){

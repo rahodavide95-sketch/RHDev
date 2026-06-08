@@ -2570,13 +2570,22 @@ function loadSectionRest(id){
     `${catNames[id]||id} — ${allTickers.length} titoli`;
   const modal=document.getElementById('cat-modal');
   modal.style.display='flex';
-  document.body.style.overflow='hidden';
+  // iOS Safari scroll lock: freeze body at current scroll position
+  const sy=window.scrollY;
+  document.body.style.position='fixed';
+  document.body.style.top=`-${sy}px`;
+  document.body.style.width='100%';
+  document.body._lockedScrollY=sy;
   renderCatPage(1);
 }
 
 function closeCatModal(){
   document.getElementById('cat-modal').style.display='none';
-  document.body.style.overflow='';
+  const sy=document.body._lockedScrollY||0;
+  document.body.style.position='';
+  document.body.style.top='';
+  document.body.style.width='';
+  window.scrollTo(0,sy);
 }
 
 function renderCatPage(page){

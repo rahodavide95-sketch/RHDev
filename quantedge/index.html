@@ -232,7 +232,7 @@ header{
 .yc-pt{display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 4px;background:var(--bg3);border-radius:6px;}
 .yc-pt-val{font-size:.72rem;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;}
 .yc-pt-lbl{font-size:.58rem;color:var(--t3);}
-.yc-interp{font-size:.65rem;color:var(--t2);line-height:1.45;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}
+.yc-interp{font-size:.65rem;color:var(--t2);line-height:1.45;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);width:100%;}
 /* ── SECTOR ROTATION (horizontal chips) ── */
 .sec-list{width:100%;display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:6px;}
 .sec-chip{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
@@ -782,6 +782,7 @@ header{
   gap:10px;
   align-items:stretch;
 }
+.home-cards>*{min-width:0;}
 .home-cards .home-sector-card{grid-column:1/-1;}
 /* Tablet/mobile (≤1100px): 2 colonne, settori full width */
 @media(max-width:1100px){
@@ -1261,7 +1262,7 @@ header{
         <div class="dxy-note" id="dxy-note">Caricamento…</div>
       </div>
       <!-- Yield Curve card -->
-      <div class="fg-card fg-card-left">
+      <div class="fg-card">
         <div class="fg-top">
           <div style="display:flex;align-items:center;gap:6px;">
             <span class="fg-title">Curva dei Rendimenti</span>
@@ -1273,7 +1274,7 @@ header{
           <div id="yc-spread" class="yc-spread" style="color:var(--t3)">—</div>
           <div id="yc-state" class="yc-state" style="color:var(--t3)">—</div>
         </div>
-        <svg class="yc-svg" id="yc-svg" viewBox="-6 -6 172 92"></svg>
+        <svg class="yc-svg" id="yc-svg" viewBox="0 -4 160 88"></svg>
         <div class="yc-pts" id="yc-pts"></div>
         <div class="yc-interp" id="yc-interp"></div>
       </div>

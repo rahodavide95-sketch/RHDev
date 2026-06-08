@@ -897,12 +897,18 @@ header{
   font-family:inherit;cursor:pointer;
 }
 .cat-modal-close{
-  background:none;border:1px solid var(--border);color:var(--t2);
-  width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:.85rem;
-  display:flex;align-items:center;justify-content:center;
-  transition:background .15s,border-color .15s,color .15s;flex-shrink:0;
+  position:absolute; top:16px; right:16px;
+  background:rgba(255,255,255,.1);
+  border:1px solid rgba(255,255,255,.15);
+  color:#fff;
+  width:34px; height:34px; border-radius:50%; cursor:pointer; font-size:.85rem;
+  display:flex; align-items:center; justify-content:center;
+  transition:background .15s,transform .15s;
+  backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+  z-index:10;
 }
-.cat-modal-close:hover{background:rgba(239,68,68,.1);border-color:var(--r);color:var(--r);}
+.cat-modal-close:hover{background:rgba(239,68,68,.75);transform:scale(1.08);}
+.cat-modal{position:fixed;inset:0;z-index:600;}
 .cat-modal-body{padding:20px 26px;overflow-y:auto;flex:1;}
 .cat-modal-body table{width:100%;border-collapse:collapse;}
 .cat-modal-body .ptable tr{cursor:pointer;}
@@ -1167,6 +1173,7 @@ header{
 
   <!-- ── CATEGORY MODAL ── -->
   <div class="cat-modal" id="cat-modal" style="display:none">
+    <button class="cat-modal-close" onclick="closeCatModal()" title="Chiudi">✕</button>
     <div class="cat-modal-box">
       <div class="cat-modal-hd">
         <span class="cat-modal-title" id="cat-modal-title">—</span>
@@ -1178,7 +1185,6 @@ header{
               <option value="50">50</option>
             </select>
           </label>
-          <button class="cat-modal-close" onclick="closeCatModal()">✕</button>
         </div>
       </div>
       <div class="cat-modal-body" id="cat-modal-body"></div>

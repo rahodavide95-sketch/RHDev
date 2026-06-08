@@ -2399,14 +2399,70 @@ function renderSkel(id,n){
   const el=document.getElementById(id);if(!el)return;
   el.innerHTML=Array.from({length:n},()=>`<tr><td><div><span class="sk" style="width:80px;height:8px;display:block"></span><span class="sk" style="width:36px;height:6px;margin-top:4px;display:block"></span></div></td><td class="p-bar-w"><div class="p-bar"><div class="p-bar-f" style="width:0%"></div></div></td><td><span class="sk" style="width:24px;height:10px;display:block;margin-left:auto"></span></td></tr>`).join('');
 }
+const CRYPTO_LOGOS={
+  'BTC':'https://assets.coingecko.com/coins/images/1/small/bitcoin.png',
+  'ETH':'https://assets.coingecko.com/coins/images/279/small/ethereum.png',
+  'BNB':'https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png',
+  'SOL':'https://assets.coingecko.com/coins/images/4128/small/solana.png',
+  'XRP':'https://assets.coingecko.com/coins/images/44/small/xrp-symbol-white-128.png',
+  'ADA':'https://assets.coingecko.com/coins/images/975/small/cardano.png',
+  'AVAX':'https://assets.coingecko.com/coins/images/12559/small/Avalanche_Circle_RedWhite_Trans.png',
+  'DOT':'https://assets.coingecko.com/coins/images/12171/small/polkadot.png',
+  'LINK':'https://assets.coingecko.com/coins/images/877/small/chainlink-new-logo.png',
+  'MATIC':'https://assets.coingecko.com/coins/images/4713/small/matic-token-icon.png',
+  'DOGE':'https://assets.coingecko.com/coins/images/5/small/dogecoin.png',
+  'SHIB':'https://assets.coingecko.com/coins/images/11939/small/shiba.png',
+  'LTC':'https://assets.coingecko.com/coins/images/2/small/litecoin.png',
+  'UNI':'https://assets.coingecko.com/coins/images/12504/small/uniswap-uni.png',
+  'ATOM':'https://assets.coingecko.com/coins/images/1481/small/cosmos_hub.png',
+  'NEAR':'https://assets.coingecko.com/coins/images/10365/small/near.jpg',
+  'APT':'https://assets.coingecko.com/coins/images/26455/small/aptos_round.png',
+  'ARB':'https://assets.coingecko.com/coins/images/16547/small/photo_2023-03-29_21.47.00.jpeg',
+  'OP':'https://assets.coingecko.com/coins/images/25244/small/Optimism.png',
+  'SUI':'https://assets.coingecko.com/coins/images/26375/small/sui_asset.jpeg',
+  'INJ':'https://assets.coingecko.com/coins/images/12882/small/Secondary_Symbol.png',
+  'FIL':'https://assets.coingecko.com/coins/images/12817/small/filecoin.png',
+  'ALGO':'https://assets.coingecko.com/coins/images/4030/small/32x32_Alliance_logo.png',
+  'VET':'https://assets.coingecko.com/coins/images/1167/small/VeChain-Logo-768x725.png',
+  'HBAR':'https://assets.coingecko.com/coins/images/3688/small/hbar.png',
+  'ICP':'https://assets.coingecko.com/coins/images/14495/small/Internet_Computer_logo.png',
+  'AAVE':'https://assets.coingecko.com/coins/images/12645/small/AAVE.png',
+  'MKR':'https://assets.coingecko.com/coins/images/1364/small/Mark_Maker.png',
+  'CRV':'https://assets.coingecko.com/coins/images/12124/small/Curve.png',
+  'GRT':'https://assets.coingecko.com/coins/images/13397/small/Graph_Token.png',
+  'LDO':'https://assets.coingecko.com/coins/images/13573/small/Lido_DAO.png',
+  'RUNE':'https://assets.coingecko.com/coins/images/6595/small/Rune200x200.png',
+  'SAND':'https://assets.coingecko.com/coins/images/12129/small/sandbox_logo.jpg',
+  'MANA':'https://assets.coingecko.com/coins/images/878/small/decentraland-mana.png',
+  'AXS':'https://assets.coingecko.com/coins/images/13029/small/axie_infinity_logo.png',
+  'GALA':'https://assets.coingecko.com/coins/images/12493/small/GALA-COINGECKO.png',
+  'ENJ':'https://assets.coingecko.com/coins/images/1102/small/enjin-coin-logo.png',
+  'CHZ':'https://assets.coingecko.com/coins/images/8834/small/Chiliz.png',
+  'XLM':'https://assets.coingecko.com/coins/images/100/small/Stellar_symbol_black_RGB.png',
+  'XTZ':'https://assets.coingecko.com/coins/images/976/small/Tezos-logo.png',
+  'EOS':'https://assets.coingecko.com/coins/images/738/small/eos-eos-logo.png',
+  'IOTA':'https://assets.coingecko.com/coins/images/692/small/IOTA_Swirl.png',
+  'ZIL':'https://assets.coingecko.com/coins/images/2687/small/Zilliqa-logo.png',
+  'ONE':'https://assets.coingecko.com/coins/images/4344/small/Y88JAze.png',
+  'FTM':'https://assets.coingecko.com/coins/images/4001/small/Fantom_round.png',
+  'EGLD':'https://assets.coingecko.com/coins/images/12335/small/egld-token-logo.png',
+  'ROSE':'https://assets.coingecko.com/coins/images/13162/small/rose.png',
+  'KSM':'https://assets.coingecko.com/coins/images/9568/small/m4zRhP5e_400x400.jpg',
+  'OCEAN':'https://assets.coingecko.com/coins/images/3687/small/ocean-protocol-logo.jpg',
+  'BAT':'https://assets.coingecko.com/coins/images/677/small/basic-attention-token.png',
+  'ZEC':'https://assets.coingecko.com/coins/images/486/small/circle-zcash-color.png',
+  'DASH':'https://assets.coingecko.com/coins/images/19/small/dash-logo.png',
+};
 function logoHTML(ticker,size=28){
-  // For crypto tickers like BTC-USD → use BTC for logo lookup
-  const base=ticker.replace(/-(USD|EUR|GBP|BTC|ETH|USDT)$/i,'');
-  const init=(base.replace(/[^A-Z0-9]/gi,'')[0]||'?').toUpperCase();
+  const base=ticker.replace(/-(USD|EUR|GBP|BTC|ETH|USDT)$/i,'').toUpperCase();
+  const cryptoSrc=CRYPTO_LOGOS[base];
+  const init=(base.replace(/[^A-Z0-9]/gi,'')[0]||'?');
   const pallete=['#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981','#06b6d4','#f97316'];
   const col=pallete[init.charCodeAt(0)%pallete.length];
-  const fb=`data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${size}' height='${size}'%3E%3Crect width='${size}' height='${size}' rx='${size/2}' fill='${encodeURIComponent(col)}'/%3E%3Ctext x='${size/2}' y='${size*0.68}' font-size='${Math.round(size*0.42)}' font-family='Inter,sans-serif' font-weight='700' fill='white' text-anchor='middle'%3E${init}%3C/text%3E%3C/svg%3E`;
-  return `<img class="p-logo" style="width:${size}px;height:${size}px;border-radius:${size/2}px" src="https://assets.parqet.com/logos/symbol/${encodeURIComponent(base)}?format=jpg" onerror="this.src='${fb}'" alt="${base}" loading="lazy">`;
+  const r=Math.round(size/2);
+  const fb=`data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${size}' height='${size}'%3E%3Crect width='${size}' height='${size}' rx='${r}' fill='${encodeURIComponent(col)}'/%3E%3Ctext x='${size/2}' y='${size*0.68}' font-size='${Math.round(size*0.42)}' font-family='Inter,sans-serif' font-weight='700' fill='white' text-anchor='middle'%3E${init}%3C/text%3E%3C/svg%3E`;
+  const src=cryptoSrc||`https://assets.parqet.com/logos/symbol/${encodeURIComponent(base)}?format=jpg`;
+  return `<img class="p-logo" style="width:${size}px;height:${size}px;border-radius:${r}px" src="${src}" onerror="this.src='${fb}'" alt="${base}" loading="lazy">`;
 }
 
 function renderRow(id,ticker,name,score){

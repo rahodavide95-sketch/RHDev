@@ -2475,7 +2475,7 @@ async function loadPulse(){
 
 const _radarStart=Date.now();
 function _showOpportunities(scoreMap){
-  const wait=Math.max(0,2200-(Date.now()-_radarStart));
+  const wait=Math.max(0,5000-(Date.now()-_radarStart));
   setTimeout(()=>renderOpportunities(scoreMap),wait);
 }
 async function loadPanoramica(){

@@ -1688,6 +1688,16 @@ header{
           <div class="ind-sig" id="is-rg">—</div>
         </div>
         <div class="ind-card">
+          <div class="ind-label-row"><div class="ind-label">P/E Trailing</div><button class="info-btn" data-tip="pe">i</button></div>
+          <div class="ind-val" id="iv-tpe">—</div>
+          <div class="ind-sig" id="is-tpe">—</div>
+        </div>
+        <div class="ind-card">
+          <div class="ind-label-row"><div class="ind-label">P/E Forward</div><button class="info-btn" data-tip="pe">i</button></div>
+          <div class="ind-val" id="iv-fpe">—</div>
+          <div class="ind-sig" id="is-fpe">—</div>
+        </div>
+        <div class="ind-card">
           <div class="ind-label-row"><div class="ind-label">Price/Book</div><button class="info-btn" data-tip="pb">i</button></div>
           <div class="ind-val" id="iv-pb">—</div>
           <div class="ind-sig" id="is-pb">—</div>
@@ -2100,13 +2110,14 @@ async function fetchChart(ticker,range='2y',interval='1d'){
 
 // ── FUNDAMENTALS FETCH ──
 async function fetchFundamentals(ticker){
-  const url=`https://query1.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(ticker)}?modules=financialData,defaultKeyStatistics,recommendationTrend`;
+  const url=`https://query1.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(ticker)}?modules=financialData,defaultKeyStatistics,summaryDetail,recommendationTrend`;
   try{
     const data=await fetchJSON(url);
     const res=data?.quoteSummary?.result?.[0];
     if(!res) return null;
     const fd=res.financialData||{};
     const ks=res.defaultKeyStatistics||{};
+    const sd=res.summaryDetail||{};
     const rt=(res.recommendationTrend?.trend||[])[0]||{};
     return{
       roe:fd.returnOnEquity?.raw??null,
@@ -2115,6 +2126,8 @@ async function fetchFundamentals(ticker){
       revenueGrowth:fd.revenueGrowth?.raw??null,
       pb:ks.priceToBook?.raw??null,
       peg:ks.pegRatio?.raw??null,
+      trailingPE:sd.trailingPE?.raw??null,
+      forwardPE:sd.forwardPE?.raw??ks.forwardPE?.raw??null,
       strongBuy:rt.strongBuy||0,
       buy:rt.buy||0,
       hold:rt.hold||0,
@@ -3589,6 +3602,12 @@ function renderFundamentals(fund){
   const rgC=fund.revenueGrowth==null?'var(--t3)':fund.revenueGrowth>0.1?'var(--g)':fund.revenueGrowth>=0?'var(--y)':'var(--r)';
   setInd('iv-rg','is-rg',pctFmt(fund.revenueGrowth),fund.revenueGrowth==null?'N/D':fund.revenueGrowth>0.15?'Forte espansione':fund.revenueGrowth>0.05?'In crescita':fund.revenueGrowth>=0?'Stabile':'In calo',rgC);
 
+  const peFmt=v=>v!=null?v.toFixed(1)+'x':'—';
+  const peLabel=v=>v==null?'N/D — ETF/crypto/non profittevole':v<0?'Negativo — utili in perdita':v<15?'Basso — potenziale valore':v<25?'Nella norma':v<40?'Elevato — growth premium':v<60?'Molto elevato':'Estremo — attenzione';
+  const peC=v=>v==null||v<0?'var(--t3)':v<15?'var(--g)':v<25?'var(--y)':'var(--r)';
+  setInd('iv-tpe','is-tpe',peFmt(fund.trailingPE),peLabel(fund.trailingPE),peC(fund.trailingPE));
+  setInd('iv-fpe','is-fpe',peFmt(fund.forwardPE),fund.forwardPE==null?'N/D':fund.forwardPE<fund.trailingPE&&fund.trailingPE>0?'Attesa crescita utili':fund.forwardPE>fund.trailingPE&&fund.trailingPE>0?'Attesa calo utili':peLabel(fund.forwardPE),peC(fund.forwardPE));
+
   const pbC=fund.pb==null?'var(--t3)':fund.pb<1?'var(--g)':fund.pb<3?'var(--y)':'var(--r)';
   setInd('iv-pb','is-pb',fund.pb!=null?fund.pb.toFixed(2)+'x':'—',fund.pb==null?'N/D':fund.pb<1?'Sotto book — potenziale valore':fund.pb<3?'Nella norma':fund.pb<6?'Premium':'Molto elevato',pbC);
 
@@ -3978,6 +3997,17 @@ Non garantisce rendimenti futuri, ma indica le <b>probabilità storiche</b> di o
 <b>Crescita utili &gt; 20%</b> → Forte espansione — tipico di growth stocks.<br>
 <b>Crescita negativa</b> → L'azienda è in difficoltà o in ristrutturazione.<br><br>
 Da usare insieme al PEG: crescita alta giustifica un P/E elevato.`
+  },
+  pe:{
+    title:'P/E Ratio — Prezzo/Utili',
+    body:`Rapporto tra il prezzo dell'azione e gli utili per azione (EPS). Indica quanto il mercato paga per ogni euro di utile.<br><br>
+<b>Trailing P/E</b> — basato sugli utili degli <b>ultimi 12 mesi</b> (dati reali).<br>
+<b>Forward P/E</b> — basato sulle <b>stime degli utili futuri</b>. Se inferiore al Trailing, il mercato si aspetta crescita.<br><br>
+<b>&lt; 15</b> → Basso: potenziale sottovalutazione o settore maturo.<br>
+<b>15–25</b> → Nella norma per la maggior parte dei mercati.<br>
+<b>25–40</b> → Elevato: il mercato paga un premium sulla crescita attesa.<br>
+<b>&gt; 40</b> → Molto elevato: valutazione aggressiva — vulnerabile a delusioni sugli utili.<br><br>
+Da usare con il <b>PEG</b>: un P/E alto è giustificato se la crescita è alta.`
   },
   pb:{
     title:'Price/Book — Prezzo/Valore Contabile',

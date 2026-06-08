@@ -425,7 +425,9 @@ header{
   padding:28px 0 24px;border-bottom:1px solid var(--border);margin-bottom:24px;
   gap:20px;flex-wrap:wrap;
 }
-.a-left{flex:1;}
+.a-hd-left{display:flex;align-items:center;gap:14px;flex:1;min-width:0;}
+.a-logo{width:48px;height:48px;border-radius:12px;object-fit:cover;flex-shrink:0;background:var(--bg3);}
+.a-left{flex:1;min-width:0;}
 .a-name{font-size:1.4rem;font-weight:700;line-height:1.2;}
 .a-meta{font-size:.8rem;color:var(--t2);margin-top:5px;}
 .a-right{text-align:right;flex-shrink:0;}
@@ -1421,9 +1423,12 @@ header{
     <div class="a-loading" id="a-loading"><div class="a-loading-bar"></div></div>
 
     <div class="a-header">
-      <div class="a-left">
-        <div class="a-name" id="a-name">—</div>
-        <div class="a-meta" id="a-meta">—</div>
+      <div class="a-hd-left">
+        <img id="a-logo" class="a-logo" src="" alt="" loading="lazy">
+        <div class="a-left">
+          <div class="a-name" id="a-name">—</div>
+          <div class="a-meta" id="a-meta">—</div>
+        </div>
       </div>
       <div class="a-right">
         <div class="a-price" id="a-price">—</div>
@@ -2775,6 +2780,7 @@ const PANO_FULL={
     ['BAT-USD','Basic Attention Token'],['ZEC-USD','Zcash'],['DASH-USD','Dash'],
   ],
   't-azioni':[
+    // US Mega Cap
     ['AAPL','Apple'],['MSFT','Microsoft'],['NVDA','Nvidia'],['GOOGL','Alphabet'],['AMZN','Amazon'],
     ['META','Meta'],['TSLA','Tesla'],['JPM','JPMorgan'],['LLY','Eli Lilly'],['BRK-B','Berkshire'],
     ['V','Visa'],['MA','Mastercard'],['UNH','UnitedHealth'],['XOM','ExxonMobil'],['JNJ','J&J'],
@@ -2782,16 +2788,48 @@ const PANO_FULL={
     ['BAC','Bank of America'],['GS','Goldman Sachs'],['WMT','Walmart'],['CVX','Chevron'],['PFE','Pfizer'],
     ['AVGO','Broadcom'],['ORCL','Oracle'],['ADBE','Adobe'],['AMD','Advanced Micro'],['INTC','Intel'],
     ['CRM','Salesforce'],['NFLX','Netflix'],['DIS','Disney'],['PYPL','PayPal'],['UBER','Uber'],
-    ['SPOT','Spotify'],['SNAP','Snap'],['NVO','Novo Nordisk'],['ASML','ASML Holding'],['SAP','SAP SE'],
+    // US Finance
+    ['MS','Morgan Stanley'],['C','Citigroup'],['WFC','Wells Fargo'],['AXP','American Express'],
+    ['SCHW','Charles Schwab'],['BLK','BlackRock'],['ICE','Intercontinental Exchange'],['CME','CME Group'],
+    ['USB','U.S. Bancorp'],['TFC','Truist Financial'],['BK','Bank of New York Mellon'],
+    // US Tech
+    ['QCOM','Qualcomm'],['TXN','Texas Instruments'],['NOW','ServiceNow'],['SNOW','Snowflake'],
+    ['AMAT','Applied Materials'],['LRCX','Lam Research'],['KLAC','KLA Corp'],['MU','Micron'],
+    ['CSCO','Cisco'],['IBM','IBM'],['HPQ','HP'],['SHOP','Shopify'],['MSTR','MicroStrategy'],
+    ['ARM','ARM Holdings'],['PLTR','Palantir'],['SMCI','Super Micro Computer'],
+    // US Health
+    ['AMGN','Amgen'],['GILD','Gilead Sciences'],['BMY','Bristol-Myers Squibb'],['MRNA','Moderna'],
+    ['REGN','Regeneron'],['ISRG','Intuitive Surgical'],['TMO','Thermo Fisher'],['DHR','Danaher'],
+    ['ZTS','Zoetis'],['ELV','Elevance Health'],['HUM','Humana'],['CI','Cigna'],['CVS','CVS Health'],
+    // US Consumer
+    ['MCD','McDonald\'s'],['SBUX','Starbucks'],['NKE','Nike'],['CMG','Chipotle'],['YUM','Yum! Brands'],
+    ['TJX','TJX Companies'],['LULU','Lululemon'],['DPZ','Domino\'s'],['ABNB','Airbnb'],
+    // US Energy & Materials
+    ['SLB','SLB'],['EOG','EOG Resources'],['COP','ConocoPhillips'],['OXY','Occidental'],
+    ['PSX','Phillips 66'],['MPC','Marathon Petroleum'],['NEM','Newmont Mining'],['FCX','Freeport-McMoRan'],
+    // US Industrial
     ['CAT','Caterpillar'],['DE','Deere & Co'],['GE','GE Aerospace'],['BA','Boeing'],['RTX','Raytheon'],
-    ['NEE','NextEra Energy'],['FCX','Freeport-McMoRan'],['NEM','Newmont Mining'],['SQ','Block'],['COIN','Coinbase'],
-    ['ARM','ARM Holdings'],['PLTR','Palantir'],['SMCI','Super Micro Computer'],['MSTR','MicroStrategy'],
-    ['RBLX','Roblox'],['HOOD','Robinhood'],['RIVN','Rivian'],['LCID','Lucid Motors'],['NIO','NIO'],['BABA','Alibaba'],
-    ['JD','JD.com'],['PDD','Pinduoduo'],['TSM','TSMC'],['SONY','Sony'],['TM','Toyota'],['LVMH','LVMH'],
-    ['NESN.SW','Nestlé'],['NOVO-B.CO','Novo Nordisk DKK'],['SAN','Santander'],['BNP.PA','BNP Paribas'],
-    ['MC.PA','LVMH FR'],['AIR.PA','Airbus'],['SAP','SAP'],['SIE.DE','Siemens'],['ALV.DE','Allianz'],
-    ['MUV2.DE','Munich Re'],['VOW3.DE','Volkswagen'],['BMW.DE','BMW'],['DBK.DE','Deutsche Bank'],
+    ['HON','Honeywell'],['MMM','3M'],['ETN','Eaton'],['EMR','Emerson'],['ITW','Illinois Tool Works'],
+    ['NEE','NextEra Energy'],['DUK','Duke Energy'],['SO','Southern Company'],
+    // US Fintech & Disruptive
+    ['SPOT','Spotify'],['SNAP','Snap'],['SQ','Block'],['COIN','Coinbase'],
+    ['RBLX','Roblox'],['HOOD','Robinhood'],['RIVN','Rivian'],['LCID','Lucid Motors'],
+    // Asia
+    ['NIO','NIO'],['BABA','Alibaba'],['JD','JD.com'],['PDD','Pinduoduo'],['BIDU','Baidu'],
+    ['TSM','TSMC'],['SONY','Sony'],['TM','Toyota'],['HMC','Honda'],['7203.T','Toyota JP'],
+    ['9984.T','SoftBank'],['NVO','Novo Nordisk'],['ASML','ASML Holding'],
+    // Europa
+    ['SAP','SAP SE'],['SIE.DE','Siemens'],['ALV.DE','Allianz'],['MUV2.DE','Munich Re'],
+    ['VOW3.DE','Volkswagen'],['BMW.DE','BMW'],['DBK.DE','Deutsche Bank'],['BAYN.DE','Bayer'],
+    ['ADS.DE','Adidas'],['BAS.DE','BASF'],['DHER.DE','Delivery Hero'],
+    ['MC.PA','LVMH'],['AIR.PA','Airbus'],['TTE.PA','TotalEnergies'],['OR.PA','L\'Oréal'],
+    ['SU.PA','Schneider Electric'],['BNP.PA','BNP Paribas'],['SAN.PA','Sanofi'],
+    ['SAN','Santander'],['ITX.MC','Inditex / Zara'],['BBVA','BBVA'],
+    ['NESN.SW','Nestlé'],['ROG.SW','Roche'],['NOVN.SW','Novartis'],['ZURN.SW','Zurich Insurance'],
+    ['AZN','AstraZeneca'],['GSK','GSK'],['SHEL','Shell'],['BP','BP'],['ULVR.L','Unilever'],
+    ['RIO','Rio Tinto'],['HSBC','HSBC'],['BCS','Barclays'],
     ['ENI.MI','ENI'],['ENEL.MI','ENEL'],['UCG.MI','UniCredit'],['ISP.MI','Intesa Sanpaolo'],
+    ['STM','STMicroelectronics'],['STLA','Stellantis'],
   ],
 };
 
@@ -3381,6 +3419,7 @@ async function analyze(ticker){
     // Header
     document.getElementById('a-name').textContent=meta.longName||meta.shortName||ticker;
     document.getElementById('a-meta').textContent=`${ticker} · ${meta.exchangeName||'—'} · ${meta.currency||''}`;
+    (()=>{const lg=document.getElementById('a-logo');const fb=logoHTML(ticker,48).match(/onerror="this\.src='([^']+)'/)?.[1]||'';lg.src=`https://assets.parqet.com/logos/symbol/${encodeURIComponent(ticker)}?format=jpg`;lg.onerror=()=>{if(fb)lg.src=fb;};})();
     document.getElementById('a-price').textContent=(meta.currency||'')+' '+fmt(cur);
     const chEl=document.getElementById('a-ch');
     chEl.textContent=`${chA>=0?'+':''}${fmt(chA)} (${chP>=0?'+':''}${chP.toFixed(2)}%)`;
@@ -3540,6 +3579,7 @@ function setupSearch(){
     if(!items.length){dd.classList.remove('open');return;}
     dd.innerHTML=items.slice(0,9).map(({sym,name,cat,exch},i)=>`
       <div class="s-item" data-sym="${sym}">
+        ${logoHTML(sym,28)}
         <span class="s-sym">${sym}</span>
         <span class="s-name">${name}</span>
         <div style="display:flex;gap:4px;flex-shrink:0;align-items:center">

@@ -3270,12 +3270,7 @@ async function analyze(ticker){
       document.getElementById('cr-to').value=maxD;
       document.getElementById('cr-from').value=new Date(Date.now()-365*86400000).toISOString().slice(0,10);
     }
-    drawCharts(seasonal(tss,cl),retDist(ret(cl)),[w7,w14,w30,w60,w90,w180,w365],tss,cl);
-
-    renderFundamentals(fund);
-    renderBHS(score, fund);
-    buildDipSignal(R,M50,M200,Mo3m,Mo12m,DD,cur,w30,score);
-
+    // Show overlay BEFORE drawing charts so canvas has real dimensions
     _analyzeAbort=null;
     setAnalyzeLoading(false);
     const overlay=document.getElementById('analysis-overlay');
@@ -3283,6 +3278,12 @@ async function analyze(ticker){
       document.getElementById('a-name').textContent||ticker;
     overlay.classList.add('visible');
     overlay.querySelector('.analysis-overlay-body').scrollTop=0;
+
+    drawCharts(seasonal(tss,cl),retDist(ret(cl)),[w7,w14,w30,w60,w90,w180,w365],tss,cl);
+
+    renderFundamentals(fund);
+    renderBHS(score, fund);
+    buildDipSignal(R,M50,M200,Mo3m,Mo12m,DD,cur,w30,score);
     return; // skip finally's setAnalyzeLoading
 
   }catch(e){

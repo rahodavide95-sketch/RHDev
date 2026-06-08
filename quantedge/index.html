@@ -34,18 +34,17 @@
     --shadow:0 4px 20px rgba(0,0,0,.08);
   }
 }
-/* ── LIGHT BAR OVERRIDES (header + footer) ── */
-[data-theme="light"] header,
-[data-theme="light"] .site-footer{
-  background:linear-gradient(135deg,rgba(17,30,55,.28) 0%,rgba(22,35,70,.32) 50%,rgba(15,25,48,.28) 100%);
-  border-color:rgba(255,255,255,.12);
+/* ── BLUE GLASS — applied to all bars on all themes ── */
+:root{
+  --bar-bg:linear-gradient(135deg,rgba(15,30,70,.72) 0%,rgba(20,45,110,.78) 50%,rgba(15,30,70,.72) 100%);
+  --bar-blur:blur(28px) saturate(180%);
+  --bar-border:rgba(255,255,255,.12);
 }
-@media(prefers-color-scheme:light){
-  [data-theme="system"] header,
-  [data-theme="system"] .site-footer{
-    background:linear-gradient(135deg,rgba(17,30,55,.28) 0%,rgba(22,35,70,.32) 50%,rgba(15,25,48,.28) 100%);
-    border-color:rgba(255,255,255,.12);
-  }
+header,.site-footer,.cat-modal-hd,.cat-modal-pg{
+  background:var(--bar-bg)!important;
+  backdrop-filter:var(--bar-blur)!important;
+  -webkit-backdrop-filter:var(--bar-blur)!important;
+  border-color:var(--bar-border)!important;
 }
 /* White text elements inside bars when light theme active */
 [data-theme="light"] .logo-apex{background:linear-gradient(135deg,#fff 0%,#bfdbfe 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
@@ -86,10 +85,7 @@ body{
 /* ── HEADER ── */
 header{
   position:sticky; top:0; z-index:200;
-  background:linear-gradient(135deg,rgba(17,30,55,.28) 0%,rgba(22,35,70,.32) 50%,rgba(15,25,48,.28) 100%);
-  backdrop-filter:blur(28px) saturate(180%);
-  -webkit-backdrop-filter:blur(28px) saturate(180%);
-  border-bottom:1px solid rgba(255,255,255,.1);
+  border-bottom:1px solid rgba(255,255,255,.12);
   padding:0 32px; height:88px;
   display:flex; align-items:center; gap:20px;
   max-width:100%; justify-content:center;
@@ -670,10 +666,7 @@ header{
   margin:0; padding:0 32px;
   border-radius:0;
   height:88px;
-  border-top:1px solid rgba(255,255,255,.1);
-  background:linear-gradient(135deg,rgba(17,30,55,.28) 0%,rgba(22,35,70,.32) 50%,rgba(15,25,48,.28) 100%);
-  backdrop-filter:blur(28px) saturate(180%);
-  -webkit-backdrop-filter:blur(28px) saturate(180%);
+  border-top:1px solid rgba(255,255,255,.12);
   display:flex; align-items:center; justify-content:center;
   font-size:.75rem; color:rgba(255,255,255,.5); letter-spacing:.04em;
 }
@@ -901,10 +894,6 @@ header{
 .cat-modal-hd{
   display:flex;align-items:center;gap:14px;
   padding:20px 24px;flex-shrink:0;
-  background:rgba(255,255,255,.07);
-  backdrop-filter:blur(20px) saturate(160%);
-  -webkit-backdrop-filter:blur(20px) saturate(160%);
-  border-bottom:1px solid rgba(255,255,255,.08);
 }
 .cat-modal-title{font-size:1rem;font-weight:700;flex:1;color:var(--text);}
 .cat-modal-close{
@@ -934,12 +923,7 @@ header{
 /* ── footer ── */
 .cat-modal-pg{
   display:flex;align-items:center;gap:10px;
-  padding:14px 24px;flex-shrink:0;
-  background:rgba(255,255,255,.07);
-  backdrop-filter:blur(20px) saturate(160%);
-  -webkit-backdrop-filter:blur(20px) saturate(160%);
-  border-top:1px solid rgba(255,255,255,.08);
-  flex-wrap:wrap;
+  padding:14px 24px;flex-shrink:0;flex-wrap:wrap;
 }
 .cat-modal-lbl{font-size:.75rem;color:var(--t2);display:flex;align-items:center;gap:6px;margin-right:auto;}
 .cat-modal-sel{

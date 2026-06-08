@@ -951,13 +951,21 @@ header{
 }
 
 /* ── VEDI TUTTI BUTTON (panoramica lazy-load) ── */
+.vedi-tutti-row{
+  background:var(--bg3) !important;
+  border-top:1px solid var(--border) !important;
+}
+.vedi-tutti-row td{
+  padding:10px 0 !important;
+  text-align:center;
+  border:none !important;
+}
 .vedi-tutti-btn{
   background:none; border:1px solid var(--border); color:var(--t2);
-  font-size:.72rem; padding:5px 16px; border-radius:20px;
-  cursor:pointer; font-family:inherit; transition:border-color .15s,color .15s;
-  margin:4px 0;
+  font-size:.72rem; padding:5px 18px; border-radius:20px;
+  cursor:pointer; font-family:inherit; transition:border-color .15s,color .15s,background .15s;
 }
-.vedi-tutti-btn:hover{border-color:var(--accent);color:var(--accent);}
+.vedi-tutti-btn:hover{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,transparent);}
 
 /* ── OPPORTUNITIES: single grid, extra items hidden ── */
 .opp-item.opp-item-extra{display:none;}
@@ -2390,7 +2398,8 @@ async function loadPanoramica(){
         tr.id=`vedi-tr-${id}`;
         tr.style.cssText='grid-column:1/-1;display:flex;justify-content:center;padding:8px;border-bottom:none;cursor:default;';
         const fullCount=PANO_FULL?.[id]?.length||entries.length;
-        tr.innerHTML=`<td colspan="3" style="text-align:center;border:none;padding:4px 0;"><button class="vedi-tutti-btn" onclick="loadSectionRest('${id}')">Vedi tutti i titoli (${fullCount}) →</button></td>`;
+        tr.className='vedi-tutti-row';
+        tr.innerHTML=`<td colspan="3"><button class="vedi-tutti-btn" onclick="loadSectionRest('${id}')">Vedi tutti i titoli (${fullCount}) →</button></td>`;
         tr.onmouseenter=tr.onmouseleave=null;
         tbody.appendChild(tr);
       }

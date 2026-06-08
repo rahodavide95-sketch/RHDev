@@ -966,13 +966,15 @@ header{
   }
   .cat-modal-hd{border-radius:20px 20px 0 0;padding:16px 18px;flex-shrink:0;}
   .cat-modal-body{
-    padding:14px 18px 24px;
+    padding:0;
     flex:1;
     overflow-y:auto;
     -webkit-overflow-scrolling:touch;
     min-height:0;
   }
   .cat-modal-body .ptable tbody{grid-template-columns:1fr;}
+  .cat-modal-body .ptable tr{height:var(--modal-row-h,44px);box-sizing:border-box;overflow:hidden;}
+  .cat-modal-body .ptable td{padding:0 10px;}
   .cat-modal-pg{padding:12px 16px;border-radius:0;flex-wrap:wrap;flex-shrink:0;}
 }
 
@@ -2595,7 +2597,17 @@ function loadSectionRest(id){
   const modal=document.getElementById('cat-modal');
   modal.style.display='flex';
   if(window.innerWidth<=700){
-    modal.querySelector('.cat-modal-box').style.height=(window.innerHeight-8)+'px';
+    const box=modal.querySelector('.cat-modal-box');
+    box.style.height=(window.innerHeight-8)+'px';
+    // After layout is computed, calc exact row height so 10 rows always fit
+    requestAnimationFrame(()=>{
+      const bodyEl=document.getElementById('cat-modal-body');
+      const hd=modal.querySelector('.cat-modal-hd');
+      const pg=modal.querySelector('.cat-modal-pg');
+      const available=box.offsetHeight - hd.offsetHeight - pg.offsetHeight;
+      const rowH=Math.floor(available/10);
+      document.documentElement.style.setProperty('--modal-row-h', rowH+'px');
+    });
   }
   // iOS Safari scroll lock: freeze body at current scroll position
   const sy=window.scrollY;

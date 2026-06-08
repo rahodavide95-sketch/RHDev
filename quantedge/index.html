@@ -800,9 +800,10 @@ header{
 .fg-card{
   background:var(--bg2);border:1px solid var(--border);
   border-radius:var(--radius);padding:16px 18px;
-  display:flex;flex-direction:column;align-items:center;gap:8px;
+  display:flex;flex-direction:column;align-items:center;gap:10px;
 }
 .fg-top{display:flex;flex-direction:column;gap:3px;align-items:center;text-align:center;width:100%;}
+.fg-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;gap:8px;}
 .fg-title{font-size:.7rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;}
 .fg-sub{font-size:.7rem;color:var(--t2);margin-top:2px;}
 .fg-gauge-wrap{display:flex;flex-direction:column;align-items:center;gap:6px;width:100%;}
@@ -810,8 +811,6 @@ header{
 .fg-score-wrap{display:flex;flex-direction:column;align-items:center;gap:2px;}
 .fg-score{font-size:2rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1;}
 .fg-label{font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;}
-/* VIX card */
-.fg-vix-card{justify-content:center;}
 .fg-vix-big{margin:8px 0 4px;}
 .fg-vix-val{font-size:2.2rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1;}
 .fg-vix-lbl{font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-top:4px;}
@@ -1195,33 +1194,35 @@ header{
           </div>
           <span class="fg-sub" id="fg-sub">Caricamento…</span>
         </div>
-        <div class="fg-gauge-wrap">
-          <svg class="fg-gauge" viewBox="0 0 200 110" fill="none">
-            <defs>
-              <linearGradient id="fg-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%"   stop-color="#ef4444"/>
-                <stop offset="25%"  stop-color="#f97316"/>
-                <stop offset="50%"  stop-color="#f59e0b"/>
-                <stop offset="75%"  stop-color="#84cc16"/>
-                <stop offset="100%" stop-color="#10b981"/>
-              </linearGradient>
-            </defs>
-            <path d="M20,100 A80,80 0 0,1 180,100" stroke="#1c2330" stroke-width="16" stroke-linecap="round"/>
-            <path d="M20,100 A80,80 0 0,1 180,100" stroke="url(#fg-grad)" stroke-width="14" stroke-linecap="round"/>
-            <line id="fg-needle" x1="100" y1="100" x2="100" y2="26"
-              stroke="#e6edf3" stroke-width="2.5" stroke-linecap="round"
-              class="revving"
-              style="transform-origin:100px 100px;transform:rotate(-90deg);transition:transform 1.4s cubic-bezier(.25,.46,.45,.94)"/>
-            <circle cx="100" cy="100" r="5" fill="#e6edf3"/>
-          </svg>
-          <div class="fg-score-wrap">
-            <span class="fg-score" id="fg-score">—</span>
-            <span class="fg-label" id="fg-label">—</span>
+        <div class="fg-body">
+          <div class="fg-gauge-wrap">
+            <svg class="fg-gauge" viewBox="0 0 200 110" fill="none">
+              <defs>
+                <linearGradient id="fg-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%"   stop-color="#ef4444"/>
+                  <stop offset="25%"  stop-color="#f97316"/>
+                  <stop offset="50%"  stop-color="#f59e0b"/>
+                  <stop offset="75%"  stop-color="#84cc16"/>
+                  <stop offset="100%" stop-color="#10b981"/>
+                </linearGradient>
+              </defs>
+              <path d="M20,100 A80,80 0 0,1 180,100" stroke="#1c2330" stroke-width="16" stroke-linecap="round"/>
+              <path d="M20,100 A80,80 0 0,1 180,100" stroke="url(#fg-grad)" stroke-width="14" stroke-linecap="round"/>
+              <line id="fg-needle" x1="100" y1="100" x2="100" y2="26"
+                stroke="#e6edf3" stroke-width="2.5" stroke-linecap="round"
+                class="revving"
+                style="transform-origin:100px 100px;transform:rotate(-90deg);transition:transform 1.4s cubic-bezier(.25,.46,.45,.94)"/>
+              <circle cx="100" cy="100" r="5" fill="#e6edf3"/>
+            </svg>
+            <div class="fg-score-wrap">
+              <span class="fg-score" id="fg-score">—</span>
+              <span class="fg-label" id="fg-label">—</span>
+            </div>
           </div>
         </div>
       </div>
       <!-- VIX card -->
-      <div class="fg-card fg-vix-card">
+      <div class="fg-card">
         <div class="fg-top">
           <div style="display:flex;align-items:center;justify-content:center;gap:6px;">
             <span class="fg-title">VIX</span>
@@ -1229,17 +1230,19 @@ header{
           </div>
           <span class="fg-sub">Volatilità implicita</span>
         </div>
-        <div class="fg-vix-big">
-          <span class="fg-vix-val" id="fg-vix-val">—</span>
+        <div class="fg-body">
+          <div class="fg-vix-big">
+            <span class="fg-vix-val" id="fg-vix-val">—</span>
+          </div>
+          <svg class="vix-ecg on" id="vix-ecg" width="70" height="22" viewBox="0 0 70 22">
+            <polyline class="ecg-track" points="0,11 8,11 12,3 16,19 20,11 28,11 32,3 36,19 40,11 48,11 52,3 56,19 60,11 70,11"/>
+            <polyline class="ecg-line"  points="0,11 8,11 12,3 16,19 20,11 28,11 32,3 36,19 40,11 48,11 52,3 56,19 60,11 70,11"/>
+          </svg>
+          <div class="fg-vix-lbl" id="fg-vix-lbl">—</div>
         </div>
-        <svg class="vix-ecg on" id="vix-ecg" width="70" height="22" viewBox="0 0 70 22">
-          <polyline class="ecg-track" points="0,11 8,11 12,3 16,19 20,11 28,11 32,3 36,19 40,11 48,11 52,3 56,19 60,11 70,11"/>
-          <polyline class="ecg-line"  points="0,11 8,11 12,3 16,19 20,11 28,11 32,3 36,19 40,11 48,11 52,3 56,19 60,11 70,11"/>
-        </svg>
-        <div class="fg-vix-lbl" id="fg-vix-lbl">—</div>
       </div>
       <!-- Dollar / FX card -->
-      <div class="fg-card fg-vix-card">
+      <div class="fg-card">
         <div class="fg-top">
           <div style="display:flex;align-items:center;justify-content:center;gap:6px;">
             <span class="fg-title">Dollaro USA</span>
@@ -1247,19 +1250,21 @@ header{
           </div>
           <span class="fg-sub">Forza &amp; cambio EUR</span>
         </div>
-        <div class="dxy-metric">
-          <div class="dxy-col">
-            <span class="dxy-lbl">DXY</span>
-            <span class="dxy-val" id="dxy-val">—</span>
-            <span class="dxy-ch" id="dxy-ch"></span>
+        <div class="fg-body">
+          <div class="dxy-metric">
+            <div class="dxy-col">
+              <span class="dxy-lbl">DXY</span>
+              <span class="dxy-val" id="dxy-val">—</span>
+              <span class="dxy-ch" id="dxy-ch"></span>
+            </div>
+            <div class="dxy-col">
+              <span class="dxy-lbl">EUR/USD</span>
+              <span class="dxy-val" id="eurusd-val">—</span>
+              <span class="dxy-ch" id="eurusd-ch"></span>
+            </div>
           </div>
-          <div class="dxy-col">
-            <span class="dxy-lbl">EUR/USD</span>
-            <span class="dxy-val" id="eurusd-val">—</span>
-            <span class="dxy-ch" id="eurusd-ch"></span>
-          </div>
+          <div class="dxy-note" id="dxy-note">Caricamento…</div>
         </div>
-        <div class="dxy-note" id="dxy-note">Caricamento…</div>
       </div>
       <!-- Yield Curve card -->
       <div class="fg-card">
@@ -1270,13 +1275,15 @@ header{
           </div>
           <span class="fg-sub" id="yc-sub">Caricamento…</span>
         </div>
-        <div class="yc-hd-row">
-          <div id="yc-spread" class="yc-spread" style="color:var(--t3)">—</div>
-          <div id="yc-state" class="yc-state" style="color:var(--t3)">—</div>
+        <div class="fg-body" style="justify-content:flex-start;">
+          <div class="yc-hd-row">
+            <div id="yc-spread" class="yc-spread" style="color:var(--t3)">—</div>
+            <div id="yc-state" class="yc-state" style="color:var(--t3)">—</div>
+          </div>
+          <svg class="yc-svg" id="yc-svg" viewBox="0 0 160 84"></svg>
+          <div class="yc-pts" id="yc-pts"></div>
+          <div class="yc-interp" id="yc-interp"></div>
         </div>
-        <svg class="yc-svg" id="yc-svg" viewBox="0 0 160 84"></svg>
-        <div class="yc-pts" id="yc-pts"></div>
-        <div class="yc-interp" id="yc-interp"></div>
       </div>
       <!-- Sector Rotation card -->
       <div class="fg-card fg-card-left home-sector-card">
@@ -1287,13 +1294,15 @@ header{
           </div>
           <span class="fg-sub">Performance odierna — S&amp;P 500</span>
         </div>
-        <div class="sec-list" id="sec-list">
-          <div class="sec-skel"></div>
-          <div class="sec-skel"></div>
-          <div class="sec-skel"></div>
-          <div class="sec-skel"></div>
-          <div class="sec-skel"></div>
-          <div class="sec-skel"></div>
+        <div class="fg-body" style="justify-content:flex-start;align-items:flex-start;">
+          <div class="sec-list" id="sec-list">
+            <div class="sec-skel"></div>
+            <div class="sec-skel"></div>
+            <div class="sec-skel"></div>
+            <div class="sec-skel"></div>
+            <div class="sec-skel"></div>
+            <div class="sec-skel"></div>
+          </div>
         </div>
       </div>
     </div><!-- /home-cards -->

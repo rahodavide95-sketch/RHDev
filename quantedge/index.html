@@ -3095,6 +3095,7 @@ function renderCatPage(page){
   const body=document.getElementById('cat-modal-body');
   body.innerHTML='';
 
+  const pending=[];
   slice.forEach(([ticker,name])=>{
     const score=globalScoreMap[ticker]??null;
     const row=document.createElement('div');
@@ -3104,13 +3105,17 @@ function renderCatPage(page){
     renderCmRow(row,ticker,name,score);
     body.appendChild(row);
     if(score==null){
-      fetchAndScore(ticker).then(s=>{
-        globalScoreMap[ticker]=s;
-        const el=document.getElementById(`mrow-${ticker}`);
-        if(el) renderCmRow(el,ticker,name,s??null);
-      });
+      pending.push(fetchAndScore(ticker).then(s=>{
+        if(s!=null) globalScoreMap[ticker]=s;
+      }));
     }
   });
+  // once all scores for this page are loaded, re-render with correct sort
+  if(pending.length && _modalSort!=='default'){
+    Promise.all(pending).then(()=>{
+      if(_modalPage===page) renderCatPage(page);
+    });
+  }
 
   // pagination
   const pg=document.getElementById('cat-modal-pg');

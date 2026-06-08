@@ -200,6 +200,13 @@ header{
   animation:spin .8s linear infinite;
 }
 .page-loader-txt{font-size:.85rem; color:var(--t2); letter-spacing:.03em;}
+.page-loader-cancel{
+  margin-top:8px; padding:8px 24px; border-radius:20px;
+  background:none; border:1px solid var(--border); color:var(--t2);
+  font-size:.8rem; font-family:inherit; cursor:pointer;
+  transition:border-color .15s,color .15s,background .15s;
+}
+.page-loader-cancel:hover{border-color:var(--r);color:var(--r);background:rgba(239,68,68,.08);}
 
 /* ── ANALYSIS SECTION ── */
 #analysis{display:none;}
@@ -1241,6 +1248,7 @@ header{
   <div class="page-loader" id="page-loader">
     <div class="page-loader-ring"></div>
     <div class="page-loader-txt" id="page-loader-txt">Recupero dati…</div>
+    <button class="page-loader-cancel" id="page-loader-cancel" onclick="cancelAnalyze()">Annulla</button>
   </div>
 
   <!-- ── ANALYSIS ── -->
@@ -3118,9 +3126,16 @@ function renderFundamentals(fund){
 }
 
 // ── ANALYZE ──
+let _analyzeAbort=null;
+function cancelAnalyze(){
+  if(_analyzeAbort){ _analyzeAbort.abort(); _analyzeAbort=null; }
+  setAnalyzeLoading(false);
+}
 async function analyze(ticker){
   ticker=(ticker||'').trim().toUpperCase();
   if(!ticker)return;
+  if(_analyzeAbort) _analyzeAbort.abort();
+  _analyzeAbort=new AbortController();
 
   document.getElementById('analysis').classList.remove('visible');
   document.getElementById('err-box').style.display='none';
@@ -3232,6 +3247,7 @@ async function analyze(ticker){
     renderBHS(score, fund);
     buildDipSignal(R,M50,M200,Mo3m,Mo12m,DD,cur,w30,score);
 
+    _analyzeAbort=null;
     setAnalyzeLoading(false);
     const sec=document.getElementById('analysis');
     sec.classList.add('visible');
@@ -3243,6 +3259,7 @@ async function analyze(ticker){
     document.getElementById('err-box').textContent='⚠ '+( e.message||'Impossibile recuperare i dati. Verifica il ticker e riprova.');
     killCharts();
   }finally{
+    _analyzeAbort=null;
     setAnalyzeLoading(false);
   }
 }

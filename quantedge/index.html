@@ -672,7 +672,7 @@ header{
 
 /* Global tooltip */
 #g-tooltip{
-  position:fixed;z-index:1000;pointer-events:none;
+  position:fixed;z-index:1000;
   background:var(--bg2);
   border:1px solid var(--border);
   border-radius:14px;
@@ -680,9 +680,10 @@ header{
   max-width:300px;min-width:220px;
   box-shadow:0 20px 50px rgba(0,0,0,.55);
   opacity:0;transform:translateY(6px);
-  transition:opacity .18s,transform .18s;
+  transition:opacity .22s,transform .22s;
+  pointer-events:none;
 }
-#g-tooltip.show{opacity:1;transform:translateY(0);}
+#g-tooltip.show{opacity:1;transform:translateY(0);pointer-events:auto;}
 .tt-title{
   font-size:.78rem;font-weight:700;color:var(--text);
   line-height:1.3;
@@ -691,6 +692,25 @@ header{
   border-bottom:1px solid var(--border);
 }
 .tt-body{font-size:.76rem;color:var(--t2);line-height:1.7;padding:12px 16px;}
+/* ── MOBILE: bottom sheet ── */
+#g-tt-backdrop{
+  display:none;position:fixed;inset:0;z-index:999;
+  background:rgba(0,0,0,.5);opacity:0;
+  transition:opacity .22s;
+}
+#g-tt-backdrop.show{opacity:1;}
+@media(max-width:640px){
+  #g-tooltip{
+    left:0!important;right:0!important;bottom:0!important;top:auto!important;
+    max-width:100%!important;min-width:0!important;width:100%;
+    border-radius:20px 20px 0 0;
+    transform:translateY(100%);
+    box-shadow:0 -8px 40px rgba(0,0,0,.5);
+  }
+  #g-tooltip.show{transform:translateY(0);opacity:1;}
+  .tt-body{max-height:52vh;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  #g-tt-backdrop{display:block;}
+}
 .tt-body b{color:var(--text);font-weight:600;}
 .tt-body .tt-row{display:flex;gap:8px;margin-top:6px;}
 .tt-body .tt-k{font-weight:600;color:var(--text);white-space:nowrap;}
@@ -3743,41 +3763,50 @@ function setupTooltips(){
   tt.innerHTML='<div class="tt-title" id="tt-title"></div><div class="tt-body" id="tt-body"></div>';
   document.body.appendChild(tt);
 
+  const bd=document.createElement('div');
+  bd.id='g-tt-backdrop';
+  document.body.appendChild(bd);
+
   let openBtn=null;
+  const close=()=>{tt.classList.remove('show');bd.classList.remove('show');openBtn=null;};
+
+  bd.addEventListener('click',close);
 
   document.addEventListener('click',e=>{
     const btn=e.target.closest('.info-btn');
     if(!btn){
-      if(tt.classList.contains('show')){tt.classList.remove('show');openBtn=null;}
+      if(tt.classList.contains('show')) close();
       return;
     }
-    // toggle
-    if(btn===openBtn){tt.classList.remove('show');openBtn=null;return;}
+    if(btn===openBtn){close();return;}
     openBtn=btn;
     const key=btn.dataset.tip;
     const info=TIPS[key]; if(!info)return;
     document.getElementById('tt-title').textContent=info.title;
     document.getElementById('tt-body').innerHTML=info.body;
 
-    // show off-screen first to measure
-    tt.style.left='-9999px'; tt.style.top='-9999px';
-    tt.classList.add('show');
-
-    const tw=tt.offsetWidth, th=tt.offsetHeight;
-    const rect=btn.getBoundingClientRect();
-    const vw=window.innerWidth, vh=window.innerHeight;
-
-    // prefer right, fallback left, fallback below
-    let left=rect.right+10, top=rect.top+(rect.height/2)-(th/2);
-    if(left+tw>vw-8){ left=rect.left-tw-10; }
-    if(left<8){ left=rect.left; top=rect.bottom+8; }
-    top=Math.max(8,Math.min(top,vh-th-8));
-    tt.style.left=left+'px'; tt.style.top=top+'px';
+    if(window.innerWidth<=640){
+      // mobile: bottom sheet — no position calc needed
+      tt.style.left=''; tt.style.top='';
+      tt.classList.add('show');
+      bd.classList.add('show');
+    } else {
+      // desktop: floating tooltip
+      tt.style.left='-9999px'; tt.style.top='-9999px';
+      tt.classList.add('show');
+      const tw=tt.offsetWidth, th=tt.offsetHeight;
+      const rect=btn.getBoundingClientRect();
+      const vw=window.innerWidth, vh=window.innerHeight;
+      let left=rect.right+10, top=rect.top+(rect.height/2)-(th/2);
+      if(left+tw>vw-8){ left=rect.left-tw-10; }
+      if(left<8){ left=rect.left; top=rect.bottom+8; }
+      top=Math.max(8,Math.min(top,vh-th-8));
+      tt.style.left=left+'px'; tt.style.top=top+'px';
+    }
     e.stopPropagation();
   });
 
-  // close on scroll
-  window.addEventListener('scroll',()=>{if(openBtn){tt.classList.remove('show');openBtn=null;}},{passive:true});
+  window.addEventListener('scroll',()=>{if(openBtn&&window.innerWidth>640) close();},{passive:true});
 }
 
 // ── BOOT ──

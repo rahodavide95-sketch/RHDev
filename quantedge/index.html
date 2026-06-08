@@ -2420,12 +2420,13 @@ async function loadPulse(){
     Promise.all(PULSE.map(async sym=>{
       try{
         const res=await fetchChart(sym,'2y','1d');
-        const ts=res.timestamp||[];
+        const tsRaw=res.timestamp||[];
         const raw=res.indicators?.quote?.[0]?.close||[];
-        const cl=ts.map((_,i)=>raw[i]).filter(c=>c!=null&&!isNaN(c)&&c>0);
-        if(cl.length<2) return;
+        const valid=tsRaw.map((t,i)=>({t,c:raw[i]})).filter(p=>p.c!=null&&!isNaN(p.c)&&p.c>0);
+        if(valid.length<2) return;
+        const tss=valid.map(p=>p.t), cl=valid.map(p=>p.c);
         if(sym==='SPY') spyCl=cl;
-        const score=scoreFromHistory(cl);
+        const score=scoreFromHistory(cl,tss);
         const cur=cl[cl.length-1], prev=cl[cl.length-2];
         const chPct=(cur-prev)/prev*100;
         const chEl=document.getElementById(`pc-ch-${sym}`);

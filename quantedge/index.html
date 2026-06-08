@@ -1119,7 +1119,7 @@ header{
     <div class="opp-card" id="opp-card">
       <div class="opp-hd">
         <span class="opp-title">⚡ Migliori Opportunità</span>
-        <span class="opp-badge" id="opp-badge">Caricamento…</span>
+        <span class="opp-badge" id="opp-badge" style="display:none"></span>
       </div>
       <div class="opp-sections" id="opp-grid">
         <div class="opp-empty">Calcolo in corso…</div>
@@ -2265,7 +2265,12 @@ function renderOpportunities(scoreMap){
       </div>`);
   }
 
-  if(!sections.length){ grid.innerHTML='<div class="opp-empty">Nessun titolo in zona sconto al momento — il mercato è in fase normale o ribassista</div>'; return; }
+  if(!sections.length){
+    grid.innerHTML='<div class="opp-empty">Nessun titolo in zona sconto al momento — il mercato è in fase normale o ribassista</div>';
+    badge.style.display='none';
+    return;
+  }
+  badge.style.display='';
   badge.textContent=`${totalAll} titoli in zona sconto`;
   grid.innerHTML=sections.join('');
 }

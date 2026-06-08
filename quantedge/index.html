@@ -1934,35 +1934,29 @@ async function fetchAndScore(ticker){
   const cached=getCached(ticker);
   if(cached!==null) return cached;
   try{
-    const res=await fetchChart(ticker,'2y','1d'); // stessa finestra dell'analisi
-    const ts=res.timestamp||[];
+    const res=await fetchChart(ticker,'2y','1d');
+    const tsRaw=res.timestamp||[];
     const raw=res.indicators?.quote?.[0]?.close||[];
-    const cl=ts.map((_,i)=>raw[i]).filter(c=>c!=null&&!isNaN(c)&&c>0);
-    if(cl.length<30) return null;
-    const score=scoreFromHistory(cl);
+    const valid=tsRaw.map((t,i)=>({t,c:raw[i]})).filter(p=>p.c!=null&&!isNaN(p.c)&&p.c>0);
+    if(valid.length<30) return null;
+    const tss=valid.map(p=>p.t), cl=valid.map(p=>p.c);
+    const score=scoreFromHistory(cl,tss);
     if(score!=null){
       setCached(ticker,score);
       reasonMap[ticker]=scoreReason(cl);
     }
-    // compute dip signal
     if(score!=null && cl.length>=50){
-      const R=rsi(cl);
-      const M50=ma(cl,50);
-      const M200=ma(cl,200);
-      const cur=cl[cl.length-1];
+      const R=rsi(cl),M50=ma(cl,50),M200=ma(cl,200),cur=cl[cl.length-1];
       const maxRecent=Math.max(...cl.slice(-252));
       const dd=maxRecent>0?(maxRecent-cur)/maxRecent*100:0;
-      dipMap[ticker]={
-        isDip: R!=null&&R<40 && M50!=null&&M200!=null&&M50>M200,
-        rsi:R, dd:dd.toFixed(1)
-      };
+      dipMap[ticker]={isDip:R!=null&&R<40&&M50!=null&&M200!=null&&M50>M200,rsi:R,dd:dd.toFixed(1)};
     }
     return score;
   }catch{ return null; }
 }
 
 // ── SCORE DA CHIUSURE STORICHE — formula identica all'analisi ──
-function scoreFromHistory(cl){
+function scoreFromHistory(cl,tss=null){
   if(!cl||cl.length<30) return null;
   const cur=cl[cl.length-1];
   const R=rsi(cl),M50=ma(cl,50),M200=ma(cl,200),V=vol(cl),Mo=mom(cl);
@@ -1970,7 +1964,12 @@ function scoreFromHistory(cl){
   const Mo3m=cl.length>=65?mom(cl,65):null;
   const Mo6m=cl.length>=130?mom(cl,130):null;
   const Mo12m=cl.length>=252?mom(cl,252):null;
-  return edgeScore(R,M50,M200,V,Mo,w7,w30,w90,cur,Mo3m,Mo6m,Mo12m,null,null);
+  let seasonPct=null;
+  if(tss&&tss.length===cl.length){
+    const curMonthSea=seasonal(tss,cl)[new Date().getMonth()];
+    seasonPct=curMonthSea?curMonthSea.p:null;
+  }
+  return edgeScore(R,M50,M200,V,Mo,w7,w30,w90,cur,Mo3m,Mo6m,Mo12m,null,seasonPct);
 }
 
 // ── MATH ──

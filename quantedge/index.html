@@ -208,8 +208,6 @@ header{
 }
 .page-loader-cancel:hover{background:rgba(239,68,68,.1);}
 
-/* ── MACRO ROW (Yield Curve only, full-width) ── */
-.macro-wrap{margin-bottom:10px;}
 .fg-card-left{align-items:flex-start!important;}
 .fg-card-left .fg-top{align-items:flex-start!important;text-align:left!important;}
 .yc-spread{font-size:1.6rem;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;}
@@ -221,8 +219,7 @@ header{
 .yc-pt{display:flex;flex-direction:column;align-items:center;gap:1px;}
 .yc-pt-val{font-size:.68rem;font-weight:600;color:var(--t2);}
 .yc-pt-lbl{font-size:.58rem;color:var(--t3);}
-/* ── SECTOR ROTATION (full-width horizontal chips) ── */
-.sector-wrap{margin-bottom:16px;}
+/* ── SECTOR ROTATION (horizontal chips) ── */
 .sec-list{width:100%;display:flex;flex-wrap:wrap;gap:6px;}
 .sec-chip{display:flex;flex-direction:column;align-items:center;gap:3px;
   border:1px solid var(--border);border-radius:8px;padding:8px 10px;
@@ -740,12 +737,19 @@ header{
 .vix-ecg.on{display:block;}
 .ecg-track{fill:none;stroke:rgba(255,255,255,.18);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;}
 .ecg-line{fill:none;stroke:var(--accent);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:15 81;animation:ecg-run .9s linear infinite;}
-/* ── FEAR & GREED + VIX + DOLLAR ── */
-.fg-wrap{margin-bottom:16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;align-items:stretch;}
-@media(max-width:900px){.fg-wrap{grid-template-columns:1fr 1fr;}}
-@media(max-width:900px){.fg-dxy-card{grid-column:1/-1;}}
-@media(max-width:480px){.fg-wrap{grid-template-columns:1fr;}}
-@media(max-width:480px){.fg-dxy-card{grid-column:auto;}}
+/* ── HOME CARDS GRID (F&G | VIX | Dollar | Yield | Sectors) ── */
+.home-cards{
+  margin-bottom:16px;
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:10px;
+  align-items:stretch;
+}
+/* Tablet: 2×2 + sector full width */
+@media(max-width:900px){
+  .home-cards{grid-template-columns:1fr 1fr;}
+  .home-cards .home-sector-card{grid-column:1/-1;}
+}
 /* Dollar / FX card */
 .fg-dxy-card{align-items:flex-start!important;}
 .dxy-metric{width:100%;display:flex;flex-direction:column;gap:8px;margin-top:4px;}
@@ -1141,7 +1145,7 @@ header{
       <span class="sec-title">Market Pulse — Panoramica Globale</span>
       <span class="sec-sub" id="pulse-ts"></span>
     </div>
-    <div class="fg-wrap" id="fg-wrap">
+    <div class="home-cards">
       <!-- Fear & Greed card -->
       <div class="fg-card">
         <div class="fg-top">
@@ -1218,10 +1222,7 @@ header{
         </div>
         <div class="dxy-note" id="dxy-note">Caricamento…</div>
       </div>
-    </div><!-- /fg-wrap -->
-
-    <!-- ── MACRO ROW (Yield Curve) ── -->
-    <div class="macro-wrap">
+      <!-- Yield Curve card -->
       <div class="fg-card fg-card-left">
         <div class="fg-top">
           <div style="display:flex;align-items:center;gap:6px;">
@@ -1235,10 +1236,8 @@ header{
         <svg class="yc-svg" id="yc-svg" viewBox="0 0 160 52"></svg>
         <div class="yc-pts" id="yc-pts"></div>
       </div>
-    </div>
-    <!-- ── SECTOR ROTATION (full width, horizontal) ── -->
-    <div class="sector-wrap">
-      <div class="fg-card fg-card-left">
+      <!-- Sector Rotation card -->
+      <div class="fg-card fg-card-left home-sector-card">
         <div class="fg-top">
           <div style="display:flex;align-items:center;gap:6px;">
             <span class="fg-title">Rotazione Settoriale</span>
@@ -1255,7 +1254,7 @@ header{
           <div class="sec-skel"></div>
         </div>
       </div>
-    </div>
+    </div><!-- /home-cards -->
   </div>
 
   <!-- ── BEST OPPORTUNITIES (above panoramica) ── -->

@@ -53,7 +53,7 @@
 [data-theme="light"] .logo-finance,
 [data-theme="light"] .search-ico,
 [data-theme="light"] .btn-theme,
-[data-theme="light"] .live-ind,
+[data-theme="light"] .live-ind{background:transparent;border-color:transparent;color:#fff;}
 [data-theme="light"] .search-input{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.25);color:#fff;}
 [data-theme="light"] .search-input::placeholder{color:rgba(255,255,255,.5);}
 [data-theme="light"] .btn-search{background:rgba(255,255,255,.22);color:#fff;border:1px solid rgba(255,255,255,.3);}
@@ -64,7 +64,7 @@
   [data-theme="system"] .logo-finance,
   [data-theme="system"] .search-ico,
   [data-theme="system"] .btn-theme,
-  [data-theme="system"] .live-ind,
+  [data-theme="system"] .live-ind{background:transparent;border-color:transparent;color:#fff;}
   [data-theme="system"] .search-input{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.25);color:#fff;}
   [data-theme="system"] .search-input::placeholder{color:rgba(255,255,255,.5);}
   [data-theme="system"] .btn-search{background:rgba(255,255,255,.22);color:#fff;border:1px solid rgba(255,255,255,.3);}
@@ -1204,8 +1204,8 @@ header{
         <div class="cat-modal-controls">
           <label class="cat-modal-lbl">Per pagina:
             <select class="cat-modal-sel" id="cat-modal-pp" onchange="renderCatPage(1)">
-              <option value="10">10</option>
-              <option value="20" selected>20</option>
+              <option value="10" selected>10</option>
+              <option value="20">20</option>
               <option value="50">50</option>
             </select>
           </label>

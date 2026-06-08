@@ -976,24 +976,27 @@ header{
   background:var(--bar-bg) !important;
   backdrop-filter:var(--bar-blur) !important;
   -webkit-backdrop-filter:var(--bar-blur) !important;
-  border-top:1px solid var(--bar-border) !important;
 }
 .vedi-tutti-row td{
-  padding:10px 0 !important;
+  height:3px; padding:0 !important;
+  border:none !important;
+  line-height:0; font-size:0;
+}
+.vedi-tutti-btn-row td{
+  padding:10px 0 12px !important;
   text-align:center;
   border:none !important;
+  background:transparent !important;
 }
 .vedi-tutti-btn{
-  background:rgba(255,255,255,.12);
-  border:1px solid rgba(255,255,255,.25);
-  color:#fff;
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.2);
+  color:var(--t2);
   font-size:.72rem; padding:6px 20px; border-radius:20px;
   cursor:pointer; font-family:inherit;
-  backdrop-filter:blur(10px);
-  -webkit-backdrop-filter:blur(10px);
-  transition:background .15s;
+  transition:background .15s, color .15s;
 }
-.vedi-tutti-btn:hover{background:rgba(255,255,255,.22);}
+.vedi-tutti-btn:hover{background:rgba(255,255,255,.15);color:var(--text);}
 
 /* ── OPPORTUNITIES: single grid, extra items hidden ── */
 .opp-item.opp-item-extra{display:none;}
@@ -2430,14 +2433,19 @@ async function loadPanoramica(){
     {
       const tbody=document.getElementById(id);
       if(tbody){
+        const fullCount=PANO_FULL?.[id]?.length||entries.length;
         const tr=document.createElement('tr');
         tr.id=`vedi-tr-${id}`;
-        tr.style.cssText='grid-column:1/-1;display:flex;justify-content:center;padding:8px;border-bottom:none;cursor:default;';
-        const fullCount=PANO_FULL?.[id]?.length||entries.length;
         tr.className='vedi-tutti-row';
-        tr.innerHTML=`<td colspan="3"><button class="vedi-tutti-btn" onclick="loadSectionRest('${id}')">Vedi tutti i titoli (${fullCount}) →</button></td>`;
+        tr.innerHTML=`<td colspan="3"></td>`;
         tr.onmouseenter=tr.onmouseleave=null;
         tbody.appendChild(tr);
+        const trBtn=document.createElement('tr');
+        trBtn.id=`vedi-btn-${id}`;
+        trBtn.className='vedi-tutti-btn-row';
+        trBtn.innerHTML=`<td colspan="3"><button class="vedi-tutti-btn" onclick="loadSectionRest('${id}')">Vedi tutti i titoli (${fullCount}) →</button></td>`;
+        trBtn.onmouseenter=trBtn.onmouseleave=null;
+        tbody.appendChild(trBtn);
       }
     }
   }

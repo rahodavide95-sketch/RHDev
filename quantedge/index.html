@@ -204,6 +204,30 @@ header{
 }
 .page-loader-cancel:hover{background:rgba(239,68,68,.1);}
 
+/* ── MACRO ROW (Yield Curve + Sectors) ── */
+.macro-wrap{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+@media(max-width:900px){.macro-wrap{grid-template-columns:1fr;}}
+.fg-card-left{align-items:flex-start!important;}
+.fg-card-left .fg-top{align-items:flex-start!important;text-align:left!important;}
+.yc-spread{font-size:1.6rem;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;}
+.yc-state{font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;margin-top:2px;}
+.yc-svg{width:100%;height:52px;margin:6px 0 2px;overflow:visible;}
+.yc-track{fill:none;stroke:rgba(255,255,255,.1);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;}
+.yc-curve{fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
+.yc-pts{display:flex;justify-content:space-between;width:100%;padding:0 2px;}
+.yc-pt{display:flex;flex-direction:column;align-items:center;gap:1px;}
+.yc-pt-val{font-size:.68rem;font-weight:600;color:var(--t2);}
+.yc-pt-lbl{font-size:.58rem;color:var(--t3);}
+.sec-list{width:100%;display:flex;flex-direction:column;}
+.sec-row{display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.7rem;}
+.sec-row:last-child{border-bottom:none;}
+.sec-name{flex:1;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}
+.sec-bar-wrap{width:48px;height:3px;background:var(--bg3);border-radius:2px;flex-shrink:0;overflow:hidden;}
+.sec-bar{height:100%;border-radius:2px;transition:width .6s ease;}
+.sec-pct{width:44px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums;flex-shrink:0;}
+.sec-skel{width:100%;height:8px;border-radius:4px;
+  background:linear-gradient(90deg,var(--bg3) 25%,var(--border) 50%,var(--bg3) 75%);
+  background-size:200% 100%;animation:sk 1.6s infinite;}
 /* ── ANALYSIS OVERLAY ── */
 #ao{position:fixed;inset:0;z-index:300;background:var(--bg);display:none;flex-direction:column;}
 #ao.open{display:flex;}
@@ -1215,6 +1239,42 @@ header{
         </div>
       </div>
     </div><!-- /fg-wrap -->
+
+    <!-- ── MACRO ROW ── -->
+    <div class="macro-wrap">
+      <!-- Yield Curve -->
+      <div class="fg-card fg-card-left">
+        <div class="fg-top">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span class="fg-title">Curva dei Rendimenti</span>
+            <button class="info-btn" data-tip="yieldcurve">i</button>
+          </div>
+          <span class="fg-sub" id="yc-sub">Caricamento…</span>
+        </div>
+        <div id="yc-spread" class="yc-spread" style="color:var(--t3)">—</div>
+        <div id="yc-state" class="yc-state" style="color:var(--t3)">—</div>
+        <svg class="yc-svg" id="yc-svg" viewBox="0 0 160 52"></svg>
+        <div class="yc-pts" id="yc-pts"></div>
+      </div>
+      <!-- Sector Rotation -->
+      <div class="fg-card fg-card-left">
+        <div class="fg-top">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span class="fg-title">Rotazione Settoriale</span>
+            <button class="info-btn" data-tip="sectors">i</button>
+          </div>
+          <span class="fg-sub">Performance odierna — S&amp;P 500</span>
+        </div>
+        <div class="sec-list" id="sec-list">
+          <div class="sec-row"><div class="sec-skel"></div></div>
+          <div class="sec-row"><div class="sec-skel"></div></div>
+          <div class="sec-row"><div class="sec-skel"></div></div>
+          <div class="sec-row"><div class="sec-skel"></div></div>
+          <div class="sec-row"><div class="sec-skel"></div></div>
+          <div class="sec-row"><div class="sec-skel"></div></div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- ── BEST OPPORTUNITIES (above panoramica) ── -->
@@ -3626,6 +3686,31 @@ Da usare insieme al PEG: crescita alta giustifica un P/E elevato.`
 <b>76–100 Avidità Estrema</b> → Euforia. Rischio correzione elevato.<br><br>
 <i>Regola empirica: compra quando c'è paura, vendi quando c'è avidità.</i>`
   },
+  yieldcurve:{
+    title:'Curva dei Rendimenti — Yield Curve',
+    body:`Mostra la relazione tra i tassi d'interesse dei titoli di Stato USA a diverse scadenze (3 mesi, 5 anni, 10 anni, 30 anni). La forma della curva anticipa il ciclo economico.<br><br>
+<b>Normale (crescente)</b> → I tassi a lungo termine sono più alti di quelli a breve. Economia in espansione, condizioni standard.<br>
+<b>Piatta</b> → Differenziale ridotto tra breve e lungo. Fase di transizione, attenzione.<br>
+<b>Invertita ⚠</b> → I tassi a breve superano quelli a lungo. Ha anticipato le ultime 8 recessioni USA.<br><br>
+<b>Spread mostrato:</b> rendimento 10 anni – 3 mesi.<br>
+<i>Regola empirica: curva invertita per più di 3 mesi consecutivi = segnale di recessione nei 12–18 mesi successivi.</i>`
+  },
+  sectors:{
+    title:'Rotazione Settoriale — S&P 500',
+    body:`Mostra la performance giornaliera degli 11 settori del S&P 500 tramite gli ETF SPDR (XLK, XLF, XLE…). Identifica dove si stanno spostando i flussi di capitale.<br><br>
+<b>Tech (XLK)</b> — Tecnologia<br>
+<b>Finanza (XLF)</b> — Banche e assicurazioni<br>
+<b>Energia (XLE)</b> — Petrolio e gas<br>
+<b>Salute (XLV)</b> — Farmaceutico e healthcare<br>
+<b>Industria (XLI)</b> — Manifatturiero e trasporti<br>
+<b>Consumi discr. (XLY)</b> — Beni non essenziali<br>
+<b>Beni essenz. (XLP)</b> — Alimentari, farmaci OTC<br>
+<b>Utilities (XLU)</b> — Gas, elettricità, acqua<br>
+<b>Materiali (XLB)</b> — Metalli, chimici<br>
+<b>Immobiliare (XLRE)</b> — REITs<br>
+<b>Comunicazioni (XLC)</b> — Telecom, media, social<br><br>
+<i>Tattica: in fasi ribassiste, i settori difensivi (XLP, XLU, XLV) tendono a sovraperformare.</i>`
+  },
   vix:{
     title:'VIX — Indice di Volatilità (CBOE)',
     body:`Il VIX è calcolato sulle <b>opzioni dell'S&P 500</b>, ma riflette la paura dell'intero mercato finanziario globale: quando gli investitori istituzionali si coprono dal rischio, acquistano opzioni sull'S&P 500 — il benchmark più liquido al mondo — facendo salire il VIX indipendentemente da dove origina la crisi.<br><br>
@@ -3683,6 +3768,77 @@ function setupTooltips(){
 }
 
 // ── BOOT ──
+// ── MACRO: YIELD CURVE + SECTOR ROTATION ──
+async function loadMacro(){
+  const YC=['^IRX','^FVX','^TNX','^TYX'];
+  const SECS=['XLK','XLF','XLE','XLV','XLI','XLRE','XLY','XLP','XLU','XLB','XLC'];
+  const SLBL={XLK:'Tech',XLF:'Finanza',XLE:'Energia',XLV:'Salute',XLI:'Industria',
+    XLRE:'Immobiliare',XLY:'Consumi discr.',XLP:'Beni essenz.',XLU:'Utilities',XLB:'Materiali',XLC:'Comunicazioni'};
+  const all=await Promise.all([
+    ...YC.map(s=>fetchChart(s,'5d','1d').catch(()=>null)),
+    ...SECS.map(s=>fetchChart(s,'5d','1d').catch(()=>null))
+  ]);
+  renderYieldCurve(all.slice(0,YC.length));
+  renderSectors(all.slice(YC.length),SECS,SLBL);
+}
+
+function renderYieldCurve(data){
+  const getClose=res=>{
+    if(!res) return null;
+    const cl=res.indicators?.quote?.[0]?.close||[];
+    const v=cl.filter(x=>x!=null&&!isNaN(x)&&x>0);
+    return v.length?v[v.length-1]:null;
+  };
+  const [irx,fvx,tnx,tyx]=data.map(getClose);
+  if(!tnx||!irx){document.getElementById('yc-sub').textContent='Dati non disponibili';return;}
+  const spread=tnx-irx;
+  const spStr=(spread>=0?'+':'')+spread.toFixed(2)+'%';
+  let state,color;
+  if(spread<-0.25){state='Invertita ⚠';color='#ef4444';}
+  else if(spread<0.25){state='Piatta';color='#f59e0b';}
+  else{state='Normale';color='#10b981';}
+  document.getElementById('yc-spread').textContent=spStr;
+  document.getElementById('yc-spread').style.color=color;
+  document.getElementById('yc-state').textContent=state;
+  document.getElementById('yc-state').style.color=color;
+  document.getElementById('yc-sub').textContent='Spread 10A – 3M';
+  // Build SVG curve
+  const pts=[{x:10,v:irx,l:'3M'},...(fvx?[{x:70,v:fvx,l:'5A'}]:[]),{x:120,v:tnx,l:'10A'},...(tyx?[{x:152,v:tyx,l:'30A'}]:[])];
+  const vals=pts.map(p=>p.v);
+  const lo=Math.min(...vals),hi=Math.max(...vals),rng=hi-lo||0.1;
+  const sy=v=>6+(1-(v-lo)/rng)*40;
+  const ptStr=pts.map(p=>`${p.x},${sy(p.v)}`).join(' ');
+  document.getElementById('yc-svg').innerHTML=
+    `<polyline points="${ptStr}" class="yc-track"/>
+     <polyline points="${ptStr}" class="yc-curve" stroke="${color}"/>
+     ${pts.map(p=>`<circle cx="${p.x}" cy="${sy(p.v)}" r="3" fill="${color}"/>`).join('')}`;
+  document.getElementById('yc-pts').innerHTML=
+    pts.map(p=>`<div class="yc-pt"><span class="yc-pt-val">${p.v.toFixed(2)}%</span><span class="yc-pt-lbl">${p.l}</span></div>`).join('');
+}
+
+function renderSectors(data,syms,labels){
+  const items=data.map((res,i)=>{
+    if(!res) return null;
+    const cl=res.indicators?.quote?.[0]?.close||[];
+    const v=cl.filter(x=>x!=null&&!isNaN(x)&&x>0);
+    if(v.length<2) return null;
+    const pct=(v[v.length-1]-v[v.length-2])/v[v.length-2]*100;
+    return{sym:syms[i],name:labels[syms[i]],pct};
+  }).filter(Boolean).sort((a,b)=>b.pct-a.pct);
+  const el=document.getElementById('sec-list');
+  if(!items.length){el.innerHTML='<div style="color:var(--t3);font-size:.75rem;padding:8px 0">Dati non disponibili</div>';return;}
+  const mx=Math.max(...items.map(i=>Math.abs(i.pct)),0.5);
+  el.innerHTML=items.map(({name,pct})=>{
+    const c=pct>=0?'#10b981':'#ef4444';
+    const w=Math.round(Math.abs(pct)/mx*48);
+    return `<div class="sec-row">
+      <span class="sec-name">${name}</span>
+      <div class="sec-bar-wrap"><div class="sec-bar" style="width:${w}px;background:${c}"></div></div>
+      <span class="sec-pct" style="color:${c}">${pct>=0?'+':''}${pct.toFixed(2)}%</span>
+    </div>`;
+  }).join('');
+}
+
 document.addEventListener('DOMContentLoaded',()=>{
   // Move #analysis section into the overlay body
   document.getElementById('ao-body').appendChild(document.getElementById('analysis'));
@@ -3695,7 +3851,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     }
   });
   document.getElementById('cat-modal').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeCatModal(); });
-  Promise.all([loadPulse(),loadPanoramica()]);
+  Promise.all([loadPulse(),loadPanoramica(),loadMacro()]);
 });
 </script>
 

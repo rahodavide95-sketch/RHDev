@@ -2732,7 +2732,7 @@ function isLightTheme(){
   if(t==='system') return window.matchMedia('(prefers-color-scheme:light)').matches;
   return false;
 }
-function chartGridColor(){ return isLightTheme()?'rgba(148,163,184,.25)':'rgba(33,38,45,.8)'; }
+function chartGridColor(){ return isLightTheme()?'rgba(148,163,184,.25)':'rgba(255,255,255,.12)'; }
 function chartTickColor(){ return isLightTheme()?'#64748b':'#8b949e'; }
 function chartLineColor(dark,light){ return isLightTheme()?light:dark; }
 

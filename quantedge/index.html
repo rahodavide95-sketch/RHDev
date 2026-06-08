@@ -972,32 +972,28 @@ header{
 }
 
 /* ── VEDI TUTTI BUTTON (panoramica lazy-load) ── */
-.vedi-tutti-row{
-  background:var(--bar-bg) !important;
-  backdrop-filter:var(--bar-blur) !important;
-  -webkit-backdrop-filter:var(--bar-blur) !important;
-}
+.vedi-tutti-row{background:transparent !important;}
 .vedi-tutti-row td{
-  height:6px; padding:0 !important;
+  height:2px; padding:0 !important;
   border:none !important;
-  line-height:0; font-size:0;
+  border-top:2px solid rgba(59,130,246,.45) !important;
+  line-height:0; font-size:0; overflow:hidden;
 }
 .vedi-tutti-btn-row td{
   padding:10px 0 14px !important;
   text-align:center;
   border:none !important;
+  background:transparent !important;
 }
 .vedi-tutti-btn{
-  background:rgba(255,255,255,.12);
-  border:1px solid rgba(255,255,255,.25);
-  color:#fff;
+  background:transparent;
+  border:1px solid rgba(255,255,255,.2);
+  color:var(--t2);
   font-size:.72rem; padding:6px 20px; border-radius:20px;
   cursor:pointer; font-family:inherit;
-  backdrop-filter:blur(10px);
-  -webkit-backdrop-filter:blur(10px);
-  transition:background .15s;
+  transition:background .15s, color .15s;
 }
-.vedi-tutti-btn:hover{background:rgba(255,255,255,.22);}
+.vedi-tutti-btn:hover{background:rgba(255,255,255,.08);color:var(--text);}
 
 /* ── OPPORTUNITIES: single grid, extra items hidden ── */
 .opp-item.opp-item-extra{display:none;}

@@ -2473,6 +2473,11 @@ async function loadPulse(){
   }catch{}
 }
 
+const _radarStart=Date.now();
+function _showOpportunities(scoreMap){
+  const wait=Math.max(0,2200-(Date.now()-_radarStart));
+  setTimeout(()=>renderOpportunities(scoreMap),wait);
+}
 async function loadPanoramica(){
   // Split each section into initial (first 10) and deferred (rest)
   window._deferredPano={};
@@ -2518,7 +2523,7 @@ async function loadPanoramica(){
 
   if(!toFetch.length){
     document.getElementById('pbar').classList.remove('on');
-    renderOpportunities(globalScoreMap);
+    _showOpportunities(globalScoreMap);
     return;
   }
 

@@ -232,13 +232,15 @@ header{
 .yc-pt-val{font-size:.68rem;font-weight:600;color:var(--t2);}
 .yc-pt-lbl{font-size:.58rem;color:var(--t3);}
 /* ── SECTOR ROTATION (horizontal chips) ── */
-.sec-list{width:100%;display:flex;flex-wrap:wrap;gap:6px;}
-.sec-chip{display:flex;flex-direction:column;align-items:center;gap:3px;
-  border:1px solid var(--border);border-radius:8px;padding:8px 10px;
-  flex:1;min-width:72px;max-width:110px;cursor:default;transition:transform .15s;}
+.sec-list{width:100%;display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:6px;}
+.sec-chip{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  border:1px solid var(--border);border-radius:8px;padding:8px 6px;
+  min-width:0;cursor:default;transition:transform .15s;}
 .sec-chip:hover{transform:translateY(-1px);}
-.sec-chip-name{font-size:.58rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--t2);text-align:center;line-height:1.2;}
-.sec-chip-pct{font-size:.82rem;font-weight:700;font-variant-numeric:tabular-nums;margin-top:1px;}
+.sec-chip-name{font-size:.58rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em;
+  color:var(--t2);text-align:center;line-height:1.2;
+  width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.sec-chip-pct{font-size:.82rem;font-weight:700;font-variant-numeric:tabular-nums;}
 .sec-skel{display:inline-block;width:70px;height:52px;border-radius:8px;
   background:linear-gradient(90deg,var(--bg3) 25%,var(--border) 50%,var(--bg3) 75%);
   background-size:200% 100%;animation:sk 1.6s infinite;}
@@ -764,14 +766,14 @@ header{
   .home-cards{grid-template-columns:1fr 1fr;}
 }
 /* Dollar / FX card */
-.fg-dxy-card{align-items:flex-start!important;}
-.dxy-metric{width:100%;display:flex;flex-direction:column;gap:8px;margin-top:4px;}
-.dxy-row{display:flex;align-items:center;gap:6px;width:100%;}
-.dxy-lbl{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);min-width:52px;}
-.dxy-val{font-size:1.1rem;font-weight:700;font-variant-numeric:tabular-nums;flex:1;}
-.dxy-ch{font-size:.72rem;font-weight:600;font-variant-numeric:tabular-nums;}
-.dxy-divider{width:100%;height:1px;background:var(--border);margin:2px 0;}
-.dxy-note{font-size:.65rem;color:var(--t2);line-height:1.4;margin-top:6px;width:100%;}
+.dxy-metric{width:100%;display:grid;grid-template-columns:1fr 1fr;margin-top:8px;}
+.dxy-col{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 4px;}
+.dxy-col:first-child{border-right:1px solid var(--border);}
+.dxy-lbl{font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);}
+.dxy-val{font-size:1.25rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1;}
+.dxy-ch{font-size:.7rem;font-weight:600;font-variant-numeric:tabular-nums;}
+.dxy-note{font-size:.63rem;color:var(--t2);line-height:1.4;margin-top:6px;width:100%;
+  text-align:center;border-top:1px solid var(--border);padding-top:6px;}
 .fg-card{
   background:var(--bg2);border:1px solid var(--border);
   border-radius:var(--radius);padding:16px 18px;
@@ -1214,22 +1216,21 @@ header{
         <div class="fg-vix-lbl" id="fg-vix-lbl">—</div>
       </div>
       <!-- Dollar / FX card -->
-      <div class="fg-card fg-card-left fg-dxy-card">
+      <div class="fg-card fg-vix-card">
         <div class="fg-top">
-          <div style="display:flex;align-items:center;gap:6px;">
+          <div style="display:flex;align-items:center;justify-content:center;gap:6px;">
             <span class="fg-title">Dollaro USA</span>
             <button class="info-btn" data-tip="dollar">i</button>
           </div>
-          <span class="fg-sub">Forza del dollaro &amp; cambio</span>
+          <span class="fg-sub">Forza &amp; cambio EUR</span>
         </div>
         <div class="dxy-metric">
-          <div class="dxy-row">
+          <div class="dxy-col">
             <span class="dxy-lbl">DXY</span>
             <span class="dxy-val" id="dxy-val">—</span>
             <span class="dxy-ch" id="dxy-ch"></span>
           </div>
-          <div class="dxy-divider"></div>
-          <div class="dxy-row">
+          <div class="dxy-col">
             <span class="dxy-lbl">EUR/USD</span>
             <span class="dxy-val" id="eurusd-val">—</span>
             <span class="dxy-ch" id="eurusd-ch"></span>
@@ -3780,7 +3781,7 @@ async function loadMacro(){
   const YC=['^IRX','^FVX','^TNX','^TYX'];
   const SECS=['XLK','XLF','XLE','XLV','XLI','XLRE','XLY','XLP','XLU','XLB','XLC'];
   const SLBL={XLK:'Tech',XLF:'Finanza',XLE:'Energia',XLV:'Salute',XLI:'Industria',
-    XLRE:'Immobiliare',XLY:'Consumi discr.',XLP:'Beni essenz.',XLU:'Utilities',XLB:'Materiali',XLC:'Comunicazioni'};
+    XLRE:'Immob.',XLY:'Cons. discr.',XLP:'Beni ess.',XLU:'Utilities',XLB:'Materiali',XLC:'Media'};
   const all=await Promise.all([
     ...YC.map(s=>fetchChart(s,'5d','1d').catch(()=>null)),
     ...SECS.map(s=>fetchChart(s,'5d','1d').catch(()=>null)),

@@ -222,15 +222,17 @@ header{
 
 .fg-card-left{align-items:flex-start!important;}
 .fg-card-left .fg-top{align-items:flex-start!important;text-align:left!important;}
-.yc-spread{font-size:1.6rem;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;}
-.yc-state{font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;margin-top:2px;}
-.yc-svg{width:100%;height:52px;margin:6px 0 2px;overflow:visible;}
-.yc-track{fill:none;stroke:rgba(255,255,255,.1);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;}
-.yc-curve{fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
-.yc-pts{display:flex;justify-content:space-between;width:100%;padding:0 2px;}
-.yc-pt{display:flex;flex-direction:column;align-items:center;gap:1px;}
-.yc-pt-val{font-size:.68rem;font-weight:600;color:var(--t2);}
+.yc-hd-row{display:flex;align-items:flex-end;justify-content:space-between;width:100%;gap:8px;}
+.yc-spread{font-size:1.8rem;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;}
+.yc-state{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:2px 7px;border-radius:20px;background:rgba(255,255,255,.06);}
+.yc-svg{width:100%;height:80px;margin:10px 0 4px;overflow:visible;}
+.yc-track{fill:none;stroke:rgba(255,255,255,.08);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;}
+.yc-curve{fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;}
+.yc-pts{display:grid;grid-template-columns:repeat(4,1fr);width:100%;gap:4px;}
+.yc-pt{display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 4px;background:var(--bg3);border-radius:6px;}
+.yc-pt-val{font-size:.72rem;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;}
 .yc-pt-lbl{font-size:.58rem;color:var(--t3);}
+.yc-interp{font-size:.65rem;color:var(--t2);line-height:1.45;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}
 /* ── SECTOR ROTATION (horizontal chips) ── */
 .sec-list{width:100%;display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:6px;}
 .sec-chip{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
@@ -1247,10 +1249,13 @@ header{
           </div>
           <span class="fg-sub" id="yc-sub">Caricamento…</span>
         </div>
-        <div id="yc-spread" class="yc-spread" style="color:var(--t3)">—</div>
-        <div id="yc-state" class="yc-state" style="color:var(--t3)">—</div>
-        <svg class="yc-svg" id="yc-svg" viewBox="0 0 160 52"></svg>
+        <div class="yc-hd-row">
+          <div id="yc-spread" class="yc-spread" style="color:var(--t3)">—</div>
+          <div id="yc-state" class="yc-state" style="color:var(--t3)">—</div>
+        </div>
+        <svg class="yc-svg" id="yc-svg" viewBox="0 0 160 80"></svg>
         <div class="yc-pts" id="yc-pts"></div>
+        <div class="yc-interp" id="yc-interp"></div>
       </div>
       <!-- Sector Rotation card -->
       <div class="fg-card fg-card-left home-sector-card">
@@ -3804,27 +3809,50 @@ function renderYieldCurve(data){
   if(!tnx||!irx){document.getElementById('yc-sub').textContent='Dati non disponibili';return;}
   const spread=tnx-irx;
   const spStr=(spread>=0?'+':'')+spread.toFixed(2)+'%';
-  let state,color;
-  if(spread<-0.25){state='Invertita ⚠';color='#ef4444';}
-  else if(spread<0.25){state='Piatta';color='#f59e0b';}
-  else{state='Normale';color='#10b981';}
+  let state,color,interp;
+  if(spread<-0.25){
+    state='Invertita ⚠'; color='#ef4444';
+    interp='Curva invertita: i tassi a breve superano quelli a lungo termine. Storicamente associata a recessioni nei 12–18 mesi successivi.';
+  } else if(spread<0.25){
+    state='Piatta'; color='#f59e0b';
+    interp='Curva piatta: spread minimo tra breve e lungo termine. Il mercato è incerto sulla direzione dell\'economia.';
+  } else {
+    state='Normale'; color='#10b981';
+    interp='Curva normale: i tassi a lungo termine superano quelli a breve. Segnale di contesto economico in espansione.';
+  }
   document.getElementById('yc-spread').textContent=spStr;
   document.getElementById('yc-spread').style.color=color;
   document.getElementById('yc-state').textContent=state;
   document.getElementById('yc-state').style.color=color;
   document.getElementById('yc-sub').textContent='Spread 10A – 3M';
-  // Build SVG curve
+  // Build SVG with gradient fill
   const pts=[{x:10,v:irx,l:'3M'},...(fvx?[{x:70,v:fvx,l:'5A'}]:[]),{x:120,v:tnx,l:'10A'},...(tyx?[{x:152,v:tyx,l:'30A'}]:[])];
+  const W=160,H=80,PAD=8;
   const vals=pts.map(p=>p.v);
   const lo=Math.min(...vals),hi=Math.max(...vals),rng=hi-lo||0.1;
-  const sy=v=>6+(1-(v-lo)/rng)*40;
+  const sy=v=>PAD+(1-(v-lo)/rng)*(H-PAD*2);
   const ptStr=pts.map(p=>`${p.x},${sy(p.v)}`).join(' ');
+  const first=pts[0],last=pts[pts.length-1];
+  const fillD=`M${first.x},${sy(first.v)} `+pts.slice(1).map(p=>`L${p.x},${sy(p.v)}`).join(' ')+` L${last.x},${H} L${first.x},${H} Z`;
   document.getElementById('yc-svg').innerHTML=
-    `<polyline points="${ptStr}" class="yc-track"/>
+    `<defs>
+       <linearGradient id="yc-fg" x1="0" y1="0" x2="0" y2="1">
+         <stop offset="0%" stop-color="${color}" stop-opacity=".22"/>
+         <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+       </linearGradient>
+     </defs>
+     <path d="${fillD}" fill="url(#yc-fg)"/>
+     <polyline points="${ptStr}" class="yc-track"/>
      <polyline points="${ptStr}" class="yc-curve" stroke="${color}"/>
-     ${pts.map(p=>`<circle cx="${p.x}" cy="${sy(p.v)}" r="3" fill="${color}"/>`).join('')}`;
+     ${pts.map(p=>`<circle cx="${p.x}" cy="${sy(p.v)}" r="4" fill="${color}" opacity=".9" filter="drop-shadow(0 0 3px ${color})"/>`).join('')}`;
+  // 4-column points grid (always 4 slots, missing ones are blank)
+  const SLOTS=[{l:'3M',v:irx},{l:'5A',v:fvx},{l:'10A',v:tnx},{l:'30A',v:tyx}];
   document.getElementById('yc-pts').innerHTML=
-    pts.map(p=>`<div class="yc-pt"><span class="yc-pt-val">${p.v.toFixed(2)}%</span><span class="yc-pt-lbl">${p.l}</span></div>`).join('');
+    SLOTS.map(s=>s.v!=null
+      ?`<div class="yc-pt"><span class="yc-pt-val">${s.v.toFixed(2)}%</span><span class="yc-pt-lbl">${s.l}</span></div>`
+      :`<div class="yc-pt" style="opacity:.25"><span class="yc-pt-val">—</span><span class="yc-pt-lbl">${s.l}</span></div>`
+    ).join('');
+  document.getElementById('yc-interp').textContent=interp;
 }
 
 function renderSectors(data,syms,labels){

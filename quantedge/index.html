@@ -1278,8 +1278,8 @@ header{
     <button class="page-loader-cancel" id="page-loader-cancel" onclick="cancelAnalyze()">Annulla</button>
   </div>
 
-  <!-- ── ANALYSIS OVERLAY ── -->
-  <div id="analysis-overlay">
+  <!-- placeholder, overlay moved to body level below -->
+  <div id="analysis-overlay-placeholder" style="display:none">
     <div class="analysis-overlay-bar">
       <span class="analysis-overlay-title" id="analysis-overlay-title">Analisi</span>
       <button class="analysis-overlay-close" onclick="resetView()" title="Torna alla home">✕</button>
@@ -1599,8 +1599,18 @@ header{
     </div>
   </section>
     </div><!-- /analysis-overlay-body -->
-  </div><!-- /analysis-overlay -->
+  </div><!-- (moved below) -->
 </div><!-- /wrap -->
+
+<!-- ── ANALYSIS OVERLAY — body level so position:fixed works cleanly ── -->
+<div id="analysis-overlay">
+  <div class="analysis-overlay-bar">
+    <span class="analysis-overlay-title" id="analysis-overlay-title">Analisi</span>
+    <button class="analysis-overlay-close" onclick="resetView()" title="Torna alla home">✕</button>
+  </div>
+  <div class="analysis-overlay-body" id="analysis-overlay-body">
+  </div>
+</div>
 
 <script>
 'use strict';
@@ -3270,7 +3280,6 @@ async function analyze(ticker){
       document.getElementById('cr-to').value=maxD;
       document.getElementById('cr-from').value=new Date(Date.now()-365*86400000).toISOString().slice(0,10);
     }
-    // Show overlay BEFORE drawing charts so canvas has real dimensions
     _analyzeAbort=null;
     setAnalyzeLoading(false);
     const overlay=document.getElementById('analysis-overlay');
@@ -3279,11 +3288,13 @@ async function analyze(ticker){
     overlay.classList.add('visible');
     overlay.querySelector('.analysis-overlay-body').scrollTop=0;
 
-    drawCharts(seasonal(tss,cl),retDist(ret(cl)),[w7,w14,w30,w60,w90,w180,w365],tss,cl);
-
-    renderFundamentals(fund);
-    renderBHS(score, fund);
-    buildDipSignal(R,M50,M200,Mo3m,Mo12m,DD,cur,w30,score);
+    // Wait for browser layout so canvas elements have real pixel dimensions
+    requestAnimationFrame(()=>{
+      drawCharts(seasonal(tss,cl),retDist(ret(cl)),[w7,w14,w30,w60,w90,w180,w365],tss,cl);
+      renderFundamentals(fund);
+      renderBHS(score, fund);
+      buildDipSignal(R,M50,M200,Mo3m,Mo12m,DD,cur,w30,score);
+    });
     return; // skip finally's setAnalyzeLoading
 
   }catch(e){
@@ -3605,6 +3616,11 @@ function setupTooltips(){
 
 // ── BOOT ──
 document.addEventListener('DOMContentLoaded',()=>{
+  // Move #analysis section into the overlay body
+  const analysisEl=document.getElementById('analysis');
+  const overlayBody=document.getElementById('analysis-overlay-body');
+  if(analysisEl&&overlayBody) overlayBody.appendChild(analysisEl);
+
   setupSearch();
   setupTooltips();
   document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeCatModal(); });

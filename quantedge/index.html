@@ -699,9 +699,10 @@ header{
   100%{transform:rotate(-90deg)}
 }
 @keyframes ecg-run{to{stroke-dashoffset:-96}}
-#fg-needle.revving{animation:needle-rev 1.6s cubic-bezier(.45,0,.55,1) infinite;stroke:rgba(230,237,243,.35)!important;}
+#fg-needle.revving{animation:needle-rev 2.8s ease-in-out infinite;stroke:rgba(230,237,243,.35)!important;}
 .vix-ecg{display:none;margin:6px auto 0;}
 .vix-ecg.on{display:block;}
+.ecg-track{fill:none;stroke:rgba(255,255,255,.18);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;}
 .ecg-line{fill:none;stroke:var(--accent);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:15 81;animation:ecg-run .9s linear infinite;}
 /* ── FEAR & GREED + VIX ── */
 .fg-wrap{margin-bottom:16px;display:grid;grid-template-columns:220px 170px 1fr;gap:10px;align-items:stretch;}
@@ -1109,7 +1110,7 @@ header{
             <line id="fg-needle" x1="100" y1="100" x2="100" y2="26"
               stroke="#e6edf3" stroke-width="2.5" stroke-linecap="round"
               class="revving"
-              style="transform-origin:100px 100px;transform:rotate(-90deg);transition:transform 1.2s cubic-bezier(.34,1.56,.64,1)"/>
+              style="transform-origin:100px 100px;transform:rotate(-90deg);transition:transform 1.4s cubic-bezier(.25,.46,.45,.94)"/>
             <circle cx="100" cy="100" r="5" fill="#e6edf3"/>
           </svg>
           <div class="fg-score-wrap">
@@ -1131,7 +1132,8 @@ header{
           <span class="fg-vix-val" id="fg-vix-val">—</span>
         </div>
         <svg class="vix-ecg on" id="vix-ecg" width="70" height="22" viewBox="0 0 70 22">
-          <polyline class="ecg-line" points="0,11 8,11 12,3 16,19 20,11 28,11 32,3 36,19 40,11 48,11 52,3 56,19 60,11 70,11"/>
+          <polyline class="ecg-track" points="0,11 8,11 12,3 16,19 20,11 28,11 32,3 36,19 40,11 48,11 52,3 56,19 60,11 70,11"/>
+          <polyline class="ecg-line"  points="0,11 8,11 12,3 16,19 20,11 28,11 32,3 36,19 40,11 48,11 52,3 56,19 60,11 70,11"/>
         </svg>
         <div class="fg-vix-lbl" id="fg-vix-lbl">—</div>
       </div>

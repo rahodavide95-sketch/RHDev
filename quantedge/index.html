@@ -688,6 +688,21 @@ header{
 /* ── SECTIONS SPACING ── */
 .sec{padding:28px 0 10px;}
 
+/* ── NEEDLE REV + VIX SCAN ── */
+@keyframes needle-rev{
+  0%  {transform:rotate(-90deg)}
+  18% {transform:rotate(88deg)}
+  36% {transform:rotate(-72deg)}
+  52% {transform:rotate(78deg)}
+  68% {transform:rotate(-82deg)}
+  84% {transform:rotate(72deg)}
+  100%{transform:rotate(-90deg)}
+}
+@keyframes ecg-run{to{stroke-dashoffset:-96}}
+#fg-needle.revving{animation:needle-rev 1.6s cubic-bezier(.45,0,.55,1) infinite;stroke:rgba(230,237,243,.35)!important;}
+.vix-ecg{display:none;margin:6px auto 0;}
+.vix-ecg.on{display:block;}
+.ecg-line{fill:none;stroke:var(--accent);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:15 81;animation:ecg-run .9s linear infinite;}
 /* ── FEAR & GREED + VIX ── */
 .fg-wrap{margin-bottom:16px;display:grid;grid-template-columns:220px 170px 1fr;gap:10px;align-items:stretch;}
 /* Tablet/iPad (fino a 1100px): F&G + VIX fianco a fianco, pulse-grid sotto */
@@ -1093,7 +1108,8 @@ header{
             <path d="M20,100 A80,80 0 0,1 180,100" stroke="url(#fg-grad)" stroke-width="14" stroke-linecap="round"/>
             <line id="fg-needle" x1="100" y1="100" x2="100" y2="26"
               stroke="#e6edf3" stroke-width="2.5" stroke-linecap="round"
-              style="transform-origin:100px 100px;transform:rotate(-90deg);transition:transform 1s ease"/>
+              class="revving"
+              style="transform-origin:100px 100px;transform:rotate(-90deg);transition:transform 1.2s cubic-bezier(.34,1.56,.64,1)"/>
             <circle cx="100" cy="100" r="5" fill="#e6edf3"/>
           </svg>
           <div class="fg-score-wrap">
@@ -1114,6 +1130,9 @@ header{
         <div class="fg-vix-big">
           <span class="fg-vix-val" id="fg-vix-val">—</span>
         </div>
+        <svg class="vix-ecg on" id="vix-ecg" width="70" height="22" viewBox="0 0 70 22">
+          <polyline class="ecg-line" points="0,11 8,11 12,3 16,19 20,11 28,11 32,3 36,19 40,11 48,11 52,3 56,19 60,11 70,11"/>
+        </svg>
         <div class="fg-vix-lbl" id="fg-vix-lbl">—</div>
       </div>
       <div class="pulse-grid">
@@ -2975,18 +2994,21 @@ function renderFearGreed(score, vix){
   // needle stroke color matches current score color
   const needle=document.getElementById('fg-needle');
   const deg=-90+(score/100)*180;
-  setTimeout(()=>{
+  needle.classList.remove('revving');
+  requestAnimationFrame(()=>{
     needle.style.transform=`rotate(${deg}deg)`;
     needle.style.stroke=color;
-  },50);
+  });
   // VIX display
   const vixEl=document.getElementById('fg-vix-val');
   const vixLbl=document.getElementById('fg-vix-lbl');
+  const vixEcg=document.getElementById('vix-ecg');
   if(vixEl&&vix!=null){
     vixEl.textContent=vix.toFixed(1);
     const vc=vix<15?'#10b981':vix<20?'#84cc16':vix<25?'#f59e0b':vix<30?'#f97316':'#ef4444';
     vixEl.style.color=vc;
     if(vixLbl) vixLbl.textContent=vix<15?'Bassa volatilità':vix<20?'Moderata':vix<25?'Elevata':vix<30?'Alta tensione':'Panico';
+    if(vixEcg) vixEcg.classList.remove('on');
   }
 }
 

@@ -961,8 +961,6 @@ header{
   .cat-modal{padding:0;align-items:flex-end;}
   .cat-modal-box{
     border-radius:20px 20px 0 0;
-    height:calc(100vh - env(safe-area-inset-top, 44px) - 8px);
-    height:calc(100dvh - env(safe-area-inset-top, 44px) - 8px);
     max-width:100%;
     display:flex;flex-direction:column;
   }
@@ -2596,6 +2594,9 @@ function loadSectionRest(id){
     `${catNames[id]||id} — ${allTickers.length} titoli`;
   const modal=document.getElementById('cat-modal');
   modal.style.display='flex';
+  if(window.innerWidth<=700){
+    modal.querySelector('.cat-modal-box').style.height=(window.innerHeight-8)+'px';
+  }
   // iOS Safari scroll lock: freeze body at current scroll position
   const sy=window.scrollY;
   document.body.style.position='fixed';

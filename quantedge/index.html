@@ -1494,7 +1494,7 @@ header{
         <span class="sig-badge" id="sig-badge">—</span>
         <div class="sig-score-row">
           <span class="sig-score-big" id="sig-score">—</span>
-          <button class="info-btn" data-tip="score" title="Come funziona l'Edge Score?">i</button>
+          <button class="info-btn" data-tip="score" title="Come funziona l'APEX Score?">i</button>
         </div>
         <span class="sig-headline" id="sig-headline">—</span>
       </div>
@@ -2394,7 +2394,7 @@ function buildDipSignal(R,M50,M200,Mo3m,Mo12m,DD,cur,w30,score){
     document.getElementById('dip-icon').textContent='⛔';
     document.getElementById('dip-title').textContent='Evita — Condizioni Sfavorevoli';
     document.getElementById('dip-body').innerHTML=
-      `L'Edge Score (<b>${score}/100</b>) indica debolezza tecnica. `+
+      `L'APEX Score (<b>${score}/100</b>) indica debolezza tecnica. `+
       (ma50BelowMA200?`Il Death Cross è attivo (MA50 sotto MA200). `:'')+
       (bearMom?`Il momentum a 12 mesi è fortemente negativo (<b>${Mo12m.toFixed(1)}%</b>). `:'')+
       `Le condizioni di mercato non supportano un ingresso.`;
@@ -2425,7 +2425,7 @@ function buildDipSignal(R,M50,M200,Mo3m,Mo12m,DD,cur,w30,score){
     document.getElementById('dip-title').textContent='Trend Forte — Mantieni o Aggiungi';
     document.getElementById('dip-body').innerHTML=
       `Trend rialzista solido: prezzo sopra la MA200, momentum positivo e nessun segnale di debolezza tecnica. `+
-      `L'Edge Score è <b>${score}/100</b> — condizioni ottimali per mantenere o incrementare la posizione.`;
+      `L'APEX Score è <b>${score}/100</b> — condizioni ottimali per mantenere o incrementare la posizione.`;
     document.getElementById('dip-action').innerHTML=
       `<b>Mantieni la posizione.</b> Puoi aggiungere su piccole correzioni intraday.`;
     return;
@@ -2437,7 +2437,7 @@ function buildDipSignal(R,M50,M200,Mo3m,Mo12m,DD,cur,w30,score){
     document.getElementById('dip-icon').textContent='🟢';
     document.getElementById('dip-title').textContent='Scenario Positivo — Tieni Monitorato';
     document.getElementById('dip-body').innerHTML=
-      `Le condizioni tecniche sono buone ma non eccezionali. Edge Score: <b>${score}/100</b>. `+
+      `Le condizioni tecniche sono buone ma non eccezionali. APEX Score: <b>${score}/100</b>. `+
       `Il trend è generalmente favorevole con qualche incertezza sul timing ottimale.`;
     document.getElementById('dip-action').innerHTML=
       `<b>Se non sei in posizione</b>, può essere un buon momento per entrare con sizing normale.`;
@@ -2449,7 +2449,7 @@ function buildDipSignal(R,M50,M200,Mo3m,Mo12m,DD,cur,w30,score){
   document.getElementById('dip-icon').textContent='⏸';
   document.getElementById('dip-title').textContent='Attendi — Nessun Segnale Operativo';
   document.getElementById('dip-body').innerHTML=
-    `Il trend è laterale o inconcludente. Edge Score: <b>${score}/100</b>. `+
+    `Il trend è laterale o inconcludente. APEX Score: <b>${score}/100</b>. `+
     `Non ci sono condizioni chiare né per entrare né per uscire.`;
   document.getElementById('dip-action').innerHTML=
     `<b>Mantieni se sei in posizione.</b> Non aprire nuove posizioni adesso.`;
@@ -3891,7 +3891,7 @@ function setupSearch(){
 // ── TOOLTIP CONTENT ──
 const TIPS={
   score:{
-    title:'Edge Score — cos\'è e come usarlo',
+    title:'APEX Score — cos\'è e come usarlo',
     body:`Punteggio composito (0–100) che sintetizza tutti gli indicatori tecnici in un'unica metrica operativa.
 <br><br>
 <b>≥ 65</b> → Forte vantaggio rialzista. Condizioni ottimali per entrare.<br>

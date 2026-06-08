@@ -1005,6 +1005,19 @@ header{
 }
 .vedi-tutti-btn:hover{background:rgba(255,255,255,.22);}
 
+/* ── RADAR LOADER ── */
+@keyframes radar-rotate{to{transform:rotate(360deg)}}
+@keyframes radar-blip{0%,100%{opacity:0;r:2}40%,60%{opacity:1;r:3}}
+.opp-radar{display:flex;flex-direction:column;align-items:center;gap:14px;padding:18px 0 10px;}
+.radar-svg{width:130px;height:130px;overflow:visible;}
+.radar-ring{fill:none;stroke:rgba(59,130,246,.18);stroke-width:1;}
+.radar-ring-outer{stroke:rgba(59,130,246,.28);}
+.radar-cross{stroke:rgba(59,130,246,.1);stroke-width:.8;}
+.radar-sweep-g{transform-origin:60px 60px;animation:radar-rotate 2.8s linear infinite;}
+.radar-trail{fill:rgba(59,130,246,.07);}
+.radar-line{stroke:rgba(59,130,246,.85);stroke-width:1.8;stroke-linecap:round;filter:drop-shadow(0 0 4px rgba(59,130,246,.9)) drop-shadow(0 0 8px rgba(59,130,246,.4));}
+.radar-blip{fill:#60a5fa;animation:radar-blip 2.8s ease-in-out infinite;opacity:0;}
+.radar-lbl{font-size:.68rem;color:var(--t3);letter-spacing:.1em;text-transform:uppercase;}
 /* ── OPPORTUNITIES: single grid, extra items hidden ── */
 .opp-item.opp-item-extra{display:none;}
 .opp-cat.opp-expanded .opp-item.opp-item-extra{display:flex;}
@@ -1203,7 +1216,33 @@ header{
         <span class="opp-badge" id="opp-badge" style="display:none"></span>
       </div>
       <div class="opp-sections" id="opp-grid">
-        <div class="opp-empty">Calcolo in corso…</div>
+        <div class="opp-radar">
+          <svg class="radar-svg" viewBox="0 0 120 120">
+            <defs>
+              <radialGradient id="rdg" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="rgba(59,130,246,0)"/>
+                <stop offset="100%" stop-color="rgba(59,130,246,.12)"/>
+              </radialGradient>
+            </defs>
+            <circle cx="60" cy="60" r="18" class="radar-ring"/>
+            <circle cx="60" cy="60" r="34" class="radar-ring"/>
+            <circle cx="60" cy="60" r="50" class="radar-ring"/>
+            <circle cx="60" cy="60" r="58" class="radar-ring radar-ring-outer"/>
+            <line x1="60" y1="2" x2="60" y2="118" class="radar-cross"/>
+            <line x1="2" y1="60" x2="118" y2="60" class="radar-cross"/>
+            <g class="radar-sweep-g">
+              <path d="M60,60 L60,2 A58,58 0 0,1 118,60 Z" class="radar-trail"/>
+              <line x1="60" y1="60" x2="60" y2="2" class="radar-line"/>
+            </g>
+            <circle cx="40" cy="32" r="2.5" class="radar-blip" style="animation-delay:.3s;animation-duration:3.1s"/>
+            <circle cx="82" cy="48" r="2"   class="radar-blip" style="animation-delay:1.2s;animation-duration:2.6s"/>
+            <circle cx="50" cy="78" r="2.5" class="radar-blip" style="animation-delay:2.1s;animation-duration:3.4s"/>
+            <circle cx="88" cy="28" r="2"   class="radar-blip" style="animation-delay:.7s;animation-duration:2.9s"/>
+            <circle cx="30" cy="62" r="2"   class="radar-blip" style="animation-delay:1.8s;animation-duration:3.2s"/>
+            <circle cx="70" cy="85" r="2.5" class="radar-blip" style="animation-delay:2.6s;animation-duration:2.7s"/>
+          </svg>
+          <div class="radar-lbl">Scansione in corso…</div>
+        </div>
       </div>
     </div>
   </div>

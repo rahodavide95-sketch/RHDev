@@ -262,6 +262,14 @@ header{
   width:6px;height:6px;border-radius:50%;background:var(--g);
   animation:blink 2s infinite;
 }
+.live-dot.closed{background:#f97316;animation:none;}
+.mkt-closed{
+  display:none;align-items:center;gap:4px;
+  font-size:.65rem;font-weight:600;color:#f97316;
+  background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.3);
+  padding:2px 7px;border-radius:20px;white-space:nowrap;
+}
+.mkt-closed.on{display:flex;}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
 
 /* ── PROGRESS BAR ── */
@@ -1071,8 +1079,9 @@ header{
     </div>
 
     <div class="live-ind">
-      <div class="live-dot"></div>
+      <div class="live-dot" id="live-dot"></div>
       <span>Live</span>
+      <div class="mkt-closed" id="mkt-closed">⚠ Mercato chiuso</div>
     </div>
 
     <div class="header-divider"></div>
@@ -1673,6 +1682,28 @@ function cycleTheme(){
   const saved = localStorage.getItem('apex-theme')||'dark';
   applyTheme(saved);
 })();
+
+// ── MARKET STATUS ──
+function isNYSEOpen(){
+  const now=new Date();
+  const et=new Date(now.toLocaleString('en-US',{timeZone:'America/New_York'}));
+  const day=et.getDay(); // 0=Dom 6=Sab
+  if(day===0||day===6) return false;
+  const h=et.getHours(),m=et.getMinutes(),mins=h*60+m;
+  if(mins<570||mins>=960) return false; // prima delle 9:30 o dopo le 16:00
+  // festività NYSE principali (mese 0-based)
+  const mo=et.getMonth(),d=et.getDate();
+  const holidays=[[0,1],[6,4],[11,25]]; // 1 gen, 4 lug, 25 dic
+  if(holidays.some(([hm,hd])=>mo===hm&&d===hd)) return false;
+  return true;
+}
+function updateMarketStatus(){
+  const open=isNYSEOpen();
+  document.getElementById('live-dot')?.classList.toggle('closed',!open);
+  document.getElementById('mkt-closed')?.classList.toggle('on',!open);
+}
+updateMarketStatus();
+setInterval(updateMarketStatus,60000);
 
 // ── TICKER DATABASE ──
 const DB = [

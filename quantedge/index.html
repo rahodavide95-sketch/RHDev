@@ -2,7 +2,10 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a1628">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -96,7 +99,8 @@ body{
 header{
   position:sticky; top:0; z-index:200;
   border-bottom:1px solid rgba(255,255,255,.12);
-  padding:0 32px; height:88px;
+  padding:env(safe-area-inset-top,0px) 32px 0;
+  height:calc(88px + env(safe-area-inset-top,0px));
   display:flex; align-items:center; gap:20px;
   max-width:100%; justify-content:center;
 }
@@ -204,9 +208,8 @@ header{
 }
 .page-loader-cancel:hover{background:rgba(239,68,68,.1);}
 
-/* ── MACRO ROW (Yield Curve + Sectors) ── */
-.macro-wrap{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
-@media(max-width:900px){.macro-wrap{grid-template-columns:1fr;}}
+/* ── MACRO ROW (Yield Curve only, full-width) ── */
+.macro-wrap{margin-bottom:10px;}
 .fg-card-left{align-items:flex-start!important;}
 .fg-card-left .fg-top{align-items:flex-start!important;text-align:left!important;}
 .yc-spread{font-size:1.6rem;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;}
@@ -218,14 +221,16 @@ header{
 .yc-pt{display:flex;flex-direction:column;align-items:center;gap:1px;}
 .yc-pt-val{font-size:.68rem;font-weight:600;color:var(--t2);}
 .yc-pt-lbl{font-size:.58rem;color:var(--t3);}
-.sec-list{width:100%;display:flex;flex-direction:column;}
-.sec-row{display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.7rem;}
-.sec-row:last-child{border-bottom:none;}
-.sec-name{flex:1;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}
-.sec-bar-wrap{width:48px;height:3px;background:var(--bg3);border-radius:2px;flex-shrink:0;overflow:hidden;}
-.sec-bar{height:100%;border-radius:2px;transition:width .6s ease;}
-.sec-pct{width:44px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums;flex-shrink:0;}
-.sec-skel{width:100%;height:8px;border-radius:4px;
+/* ── SECTOR ROTATION (full-width horizontal chips) ── */
+.sector-wrap{margin-bottom:16px;}
+.sec-list{width:100%;display:flex;flex-wrap:wrap;gap:6px;}
+.sec-chip{display:flex;flex-direction:column;align-items:center;gap:3px;
+  border:1px solid var(--border);border-radius:8px;padding:8px 10px;
+  flex:1;min-width:72px;max-width:110px;cursor:default;transition:transform .15s;}
+.sec-chip:hover{transform:translateY(-1px);}
+.sec-chip-name{font-size:.58rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--t2);text-align:center;line-height:1.2;}
+.sec-chip-pct{font-size:.82rem;font-weight:700;font-variant-numeric:tabular-nums;margin-top:1px;}
+.sec-skel{display:inline-block;width:70px;height:52px;border-radius:8px;
   background:linear-gradient(90deg,var(--bg3) 25%,var(--border) 50%,var(--bg3) 75%);
   background-size:200% 100%;animation:sk 1.6s infinite;}
 /* ── ANALYSIS OVERLAY ── */
@@ -550,12 +555,12 @@ header{
 /* ── MOBILE ── */
 /* Tablet header: padding ridotto, search più ampia */
 @media(max-width:1100px) and (min-width:641px){
-  header{padding:0 16px;gap:12px;}
+  header{padding:env(safe-area-inset-top,0px) 16px 0;gap:12px;}
   .search-wrap{max-width:360px;}
   .wrap{padding:0 16px;}
 }
 @media(max-width:640px){
-  header{height:auto;padding:10px 12px;gap:8px;}
+  header{height:auto;padding:env(safe-area-inset-top,10px) 12px 10px;gap:8px;}
   .header-inner{flex-wrap:wrap;gap:8px;}
   .logo{font-size:.8rem;}
   .live-ind{margin-left:auto;}
@@ -701,15 +706,14 @@ header{
 }
 /* ── FOOTER ── */
 .site-footer{
-  display:flex;
   position:relative;
   left:50%;
   transform:translateX(-50%);
   width:100vw;
   box-sizing:border-box;
-  margin:0; padding:0 32px;
+  margin:0;
+  padding:24px 32px max(20px, env(safe-area-inset-bottom,20px));
   border-radius:0;
-  height:88px;
   border-top:1px solid rgba(255,255,255,.12);
   display:flex; align-items:center; justify-content:center;
   font-size:.75rem; color:rgba(255,255,255,.5); letter-spacing:.04em;
@@ -736,14 +740,21 @@ header{
 .vix-ecg.on{display:block;}
 .ecg-track{fill:none;stroke:rgba(255,255,255,.18);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;}
 .ecg-line{fill:none;stroke:var(--accent);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:15 81;animation:ecg-run .9s linear infinite;}
-/* ── FEAR & GREED + VIX ── */
-.fg-wrap{margin-bottom:16px;display:grid;grid-template-columns:220px 170px 1fr;gap:10px;align-items:stretch;}
-/* Tablet/iPad (fino a 1100px): F&G + VIX fianco a fianco, pulse-grid sotto */
-@media(max-width:1100px){.fg-wrap{grid-template-columns:1fr 1fr;align-items:stretch;}}
-@media(max-width:1100px){.fg-wrap .pulse-grid{grid-column:1/-1;}}
-/* Mobile: uguale */
-@media(max-width:640px){.fg-wrap{grid-template-columns:1fr 1fr;align-items:stretch;}}
-@media(max-width:640px){.fg-wrap .pulse-grid{grid-column:1/-1;}}
+/* ── FEAR & GREED + VIX + DOLLAR ── */
+.fg-wrap{margin-bottom:16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;align-items:stretch;}
+@media(max-width:900px){.fg-wrap{grid-template-columns:1fr 1fr;}}
+@media(max-width:900px){.fg-dxy-card{grid-column:1/-1;}}
+@media(max-width:480px){.fg-wrap{grid-template-columns:1fr;}}
+@media(max-width:480px){.fg-dxy-card{grid-column:auto;}}
+/* Dollar / FX card */
+.fg-dxy-card{align-items:flex-start!important;}
+.dxy-metric{width:100%;display:flex;flex-direction:column;gap:8px;margin-top:4px;}
+.dxy-row{display:flex;align-items:center;gap:6px;width:100%;}
+.dxy-lbl{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);min-width:52px;}
+.dxy-val{font-size:1.1rem;font-weight:700;font-variant-numeric:tabular-nums;flex:1;}
+.dxy-ch{font-size:.72rem;font-weight:600;font-variant-numeric:tabular-nums;}
+.dxy-divider{width:100%;height:1px;background:var(--border);margin:2px 0;}
+.dxy-note{font-size:.65rem;color:var(--t2);line-height:1.4;margin-top:6px;width:100%;}
 .fg-card{
   background:var(--bg2);border:1px solid var(--border);
   border-radius:var(--radius);padding:16px 18px;
@@ -1183,66 +1194,34 @@ header{
         </svg>
         <div class="fg-vix-lbl" id="fg-vix-lbl">—</div>
       </div>
-      <div class="pulse-grid">
-      <div class="pulse-card" id="pc-SPY">
-        <div class="pc-lbl">Azionario USA</div>
-        <div class="pc-name">S&P 500 (SPY)</div>
-        <div class="pc-ch neu" id="pc-ch-SPY">—</div>
-        <div class="pc-bottom">
-          <div class="pc-bar"><div class="pc-bar-f" id="pc-bar-SPY" style="width:0%"></div></div>
-          <span class="pc-sc" id="pc-sc-SPY" style="color:var(--t3)">—</span>
+      <!-- Dollar / FX card -->
+      <div class="fg-card fg-card-left fg-dxy-card">
+        <div class="fg-top">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span class="fg-title">Dollaro USA</span>
+            <button class="info-btn" data-tip="dollar">i</button>
+          </div>
+          <span class="fg-sub">Forza del dollaro &amp; cambio</span>
         </div>
-      </div>
-      <div class="pulse-card" id="pc-QQQ">
-        <div class="pc-lbl">Tecnologia</div>
-        <div class="pc-name">Nasdaq 100 (QQQ)</div>
-        <div class="pc-ch neu" id="pc-ch-QQQ">—</div>
-        <div class="pc-bottom">
-          <div class="pc-bar"><div class="pc-bar-f" id="pc-bar-QQQ" style="width:0%"></div></div>
-          <span class="pc-sc" id="pc-sc-QQQ" style="color:var(--t3)">—</span>
+        <div class="dxy-metric">
+          <div class="dxy-row">
+            <span class="dxy-lbl">DXY</span>
+            <span class="dxy-val" id="dxy-val">—</span>
+            <span class="dxy-ch" id="dxy-ch"></span>
+          </div>
+          <div class="dxy-divider"></div>
+          <div class="dxy-row">
+            <span class="dxy-lbl">EUR/USD</span>
+            <span class="dxy-val" id="eurusd-val">—</span>
+            <span class="dxy-ch" id="eurusd-ch"></span>
+          </div>
         </div>
-      </div>
-      <div class="pulse-card" id="pc-VGK">
-        <div class="pc-lbl">Europa</div>
-        <div class="pc-name">FTSE Europe (VGK)</div>
-        <div class="pc-ch neu" id="pc-ch-VGK">—</div>
-        <div class="pc-bottom">
-          <div class="pc-bar"><div class="pc-bar-f" id="pc-bar-VGK" style="width:0%"></div></div>
-          <span class="pc-sc" id="pc-sc-VGK" style="color:var(--t3)">—</span>
-        </div>
-      </div>
-      <div class="pulse-card" id="pc-EEM">
-        <div class="pc-lbl">Emergenti</div>
-        <div class="pc-name">Emerging Mkts (EEM)</div>
-        <div class="pc-ch neu" id="pc-ch-EEM">—</div>
-        <div class="pc-bottom">
-          <div class="pc-bar"><div class="pc-bar-f" id="pc-bar-EEM" style="width:0%"></div></div>
-          <span class="pc-sc" id="pc-sc-EEM" style="color:var(--t3)">—</span>
-        </div>
-      </div>
-      <div class="pulse-card" id="pc-TLT">
-        <div class="pc-lbl">Obbligazioni</div>
-        <div class="pc-name">Treasury 20+ (TLT)</div>
-        <div class="pc-ch neu" id="pc-ch-TLT">—</div>
-        <div class="pc-bottom">
-          <div class="pc-bar"><div class="pc-bar-f" id="pc-bar-TLT" style="width:0%"></div></div>
-          <span class="pc-sc" id="pc-sc-TLT" style="color:var(--t3)">—</span>
-        </div>
-      </div>
-      <div class="pulse-card" id="pc-GLD">
-        <div class="pc-lbl">Oro</div>
-        <div class="pc-name">Gold ETF (GLD)</div>
-        <div class="pc-ch neu" id="pc-ch-GLD">—</div>
-        <div class="pc-bottom">
-          <div class="pc-bar"><div class="pc-bar-f" id="pc-bar-GLD" style="width:0%"></div></div>
-          <span class="pc-sc" id="pc-sc-GLD" style="color:var(--t3)">—</span>
-        </div>
+        <div class="dxy-note" id="dxy-note">Caricamento…</div>
       </div>
     </div><!-- /fg-wrap -->
 
-    <!-- ── MACRO ROW ── -->
+    <!-- ── MACRO ROW (Yield Curve) ── -->
     <div class="macro-wrap">
-      <!-- Yield Curve -->
       <div class="fg-card fg-card-left">
         <div class="fg-top">
           <div style="display:flex;align-items:center;gap:6px;">
@@ -1256,7 +1235,9 @@ header{
         <svg class="yc-svg" id="yc-svg" viewBox="0 0 160 52"></svg>
         <div class="yc-pts" id="yc-pts"></div>
       </div>
-      <!-- Sector Rotation -->
+    </div>
+    <!-- ── SECTOR ROTATION (full width, horizontal) ── -->
+    <div class="sector-wrap">
       <div class="fg-card fg-card-left">
         <div class="fg-top">
           <div style="display:flex;align-items:center;gap:6px;">
@@ -1266,12 +1247,12 @@ header{
           <span class="fg-sub">Performance odierna — S&amp;P 500</span>
         </div>
         <div class="sec-list" id="sec-list">
-          <div class="sec-row"><div class="sec-skel"></div></div>
-          <div class="sec-row"><div class="sec-skel"></div></div>
-          <div class="sec-row"><div class="sec-skel"></div></div>
-          <div class="sec-row"><div class="sec-skel"></div></div>
-          <div class="sec-row"><div class="sec-skel"></div></div>
-          <div class="sec-row"><div class="sec-skel"></div></div>
+          <div class="sec-skel"></div>
+          <div class="sec-skel"></div>
+          <div class="sec-skel"></div>
+          <div class="sec-skel"></div>
+          <div class="sec-skel"></div>
+          <div class="sec-skel"></div>
         </div>
       </div>
     </div>
@@ -2518,6 +2499,7 @@ async function loadPulse(){
         const tss=valid.map(p=>p.t), cl=valid.map(p=>p.c);
         if(sym==='SPY') spyCl=cl;
         const score=scoreFromHistory(cl,tss);
+        if(score!=null){ globalScoreMap[sym]=score; setCached(sym,score); }
         const cur=cl[cl.length-1], prev=cl[cl.length-2];
         const chPct=(cur-prev)/prev*100;
         const chEl=document.getElementById(`pc-ch-${sym}`);
@@ -3327,6 +3309,7 @@ async function analyze(ticker){
     const fund=await fetchFundamentals(ticker).catch(()=>null);
     // fund excluded from score to keep home/analysis scores consistent
     const score=edgeScore(R,M50,M200,V,Mo,w7,w30,w90,cur,Mo3m,Mo6m,Mo12m,null,seasonPct);
+    globalScoreMap[ticker]=score; setCached(ticker,score);
 
     // Header
     document.getElementById('a-name').textContent=meta.longName||meta.shortName||ticker;
@@ -3711,6 +3694,16 @@ Da usare insieme al PEG: crescita alta giustifica un P/E elevato.`
 <b>Comunicazioni (XLC)</b> — Telecom, media, social<br><br>
 <i>Tattica: in fasi ribassiste, i settori difensivi (XLP, XLU, XLV) tendono a sovraperformare.</i>`
   },
+  dollar:{
+    title:'Dollaro USA — DXY &amp; EUR/USD',
+    body:`Il <b>DXY</b> (Dollar Index) misura la forza del dollaro USA rispetto a un paniere di 6 valute principali (euro, yen, sterlina, franco svizzero, corona svedese, dollaro canadese).<br><br>
+<b>DXY in salita</b> → Dollaro più forte. Chi investe in euro e detiene asset in USD guadagna dal cambio.<br>
+<b>DXY in calo</b> → Dollaro più debole. Chi investe in euro perde potere d'acquisto sugli asset USA.<br><br>
+<b>EUR/USD</b> mostra quanti dollari vale 1 euro.<br>
+<b>EUR/USD sale</b> → L'euro si rafforza sul dollaro → investitore europeo guadagna dal cambio.<br>
+<b>EUR/USD scende</b> → L'euro si indebolisce → investitore europeo perde sul cambio.<br><br>
+<i>Esempio: se EUR/USD cala del 5% in un anno e il tuo ETF USA guadagna il 10%, il tuo rendimento reale in euro è circa +5%.</i>`
+  },
   vix:{
     title:'VIX — Indice di Volatilità (CBOE)',
     body:`Il VIX è calcolato sulle <b>opzioni dell'S&P 500</b>, ma riflette la paura dell'intero mercato finanziario globale: quando gli investitori istituzionali si coprono dal rischio, acquistano opzioni sull'S&P 500 — il benchmark più liquido al mondo — facendo salire il VIX indipendentemente da dove origina la crisi.<br><br>
@@ -3768,7 +3761,7 @@ function setupTooltips(){
 }
 
 // ── BOOT ──
-// ── MACRO: YIELD CURVE + SECTOR ROTATION ──
+// ── MACRO: YIELD CURVE + SECTOR ROTATION + DOLLAR ──
 async function loadMacro(){
   const YC=['^IRX','^FVX','^TNX','^TYX'];
   const SECS=['XLK','XLF','XLE','XLV','XLI','XLRE','XLY','XLP','XLU','XLB','XLC'];
@@ -3776,10 +3769,13 @@ async function loadMacro(){
     XLRE:'Immobiliare',XLY:'Consumi discr.',XLP:'Beni essenz.',XLU:'Utilities',XLB:'Materiali',XLC:'Comunicazioni'};
   const all=await Promise.all([
     ...YC.map(s=>fetchChart(s,'5d','1d').catch(()=>null)),
-    ...SECS.map(s=>fetchChart(s,'5d','1d').catch(()=>null))
+    ...SECS.map(s=>fetchChart(s,'5d','1d').catch(()=>null)),
+    fetchChart('DX-Y.NYB','5d','1d').catch(()=>null),
+    fetchChart('EURUSD=X','5d','1d').catch(()=>null),
   ]);
   renderYieldCurve(all.slice(0,YC.length));
-  renderSectors(all.slice(YC.length),SECS,SLBL);
+  renderSectors(all.slice(YC.length,YC.length+SECS.length),SECS,SLBL);
+  renderDollar(all[all.length-2],all[all.length-1]);
 }
 
 function renderYieldCurve(data){
@@ -3827,16 +3823,53 @@ function renderSectors(data,syms,labels){
   }).filter(Boolean).sort((a,b)=>b.pct-a.pct);
   const el=document.getElementById('sec-list');
   if(!items.length){el.innerHTML='<div style="color:var(--t3);font-size:.75rem;padding:8px 0">Dati non disponibili</div>';return;}
-  const mx=Math.max(...items.map(i=>Math.abs(i.pct)),0.5);
   el.innerHTML=items.map(({name,pct})=>{
-    const c=pct>=0?'#10b981':'#ef4444';
-    const w=Math.round(Math.abs(pct)/mx*48);
-    return `<div class="sec-row">
-      <span class="sec-name">${name}</span>
-      <div class="sec-bar-wrap"><div class="sec-bar" style="width:${w}px;background:${c}"></div></div>
-      <span class="sec-pct" style="color:${c}">${pct>=0?'+':''}${pct.toFixed(2)}%</span>
+    const pos=pct>=0;
+    const c=pos?'var(--g)':'var(--r)';
+    const bg=pos?'rgba(16,185,129,.08)':'rgba(239,68,68,.08)';
+    const border=pos?'rgba(16,185,129,.22)':'rgba(239,68,68,.22)';
+    return `<div class="sec-chip" style="border-color:${border};background:${bg}">
+      <span class="sec-chip-name">${name}</span>
+      <span class="sec-chip-pct" style="color:${c}">${pos?'+':''}${pct.toFixed(2)}%</span>
     </div>`;
   }).join('');
+}
+
+function renderDollar(dxyData,eurData){
+  const getLast2=res=>{
+    if(!res) return [null,null];
+    const cl=res.indicators?.quote?.[0]?.close||[];
+    const v=cl.filter(x=>x!=null&&!isNaN(x)&&x>0);
+    return v.length>=2?[v[v.length-1],v[v.length-2]]:[v[0]??null,null];
+  };
+  const [dxy,dxyPrev]=getLast2(dxyData);
+  const [eur,eurPrev]=getLast2(eurData);
+  const noteEl=document.getElementById('dxy-note');
+  if(dxy){
+    const ch=dxyPrev?((dxy-dxyPrev)/dxyPrev*100):null;
+    document.getElementById('dxy-val').textContent=dxy.toFixed(2);
+    if(ch!==null){
+      const el=document.getElementById('dxy-ch');
+      el.textContent=(ch>=0?'+':'')+ch.toFixed(2)+'%';
+      el.style.color=ch>=0?'var(--r)':'var(--g)';
+    }
+  }
+  if(eur){
+    const ch=eurPrev?((eur-eurPrev)/eurPrev*100):null;
+    document.getElementById('eurusd-val').textContent=eur.toFixed(4);
+    if(ch!==null){
+      const el=document.getElementById('eurusd-ch');
+      el.textContent=(ch>=0?'+':'')+ch.toFixed(2)+'%';
+      el.style.color=ch>=0?'var(--g)':'var(--r)';
+      if(Math.abs(ch)<0.05){
+        noteEl.textContent='Cambio stabile oggi — nessun impatto valutario significativo';
+      } else if(ch>0){
+        noteEl.innerHTML=`<span style="color:var(--g)">EUR si rafforza</span> oggi — investitore europeo guadagna +${ch.toFixed(2)}% dal cambio`;
+      } else {
+        noteEl.innerHTML=`<span style="color:var(--r)">EUR si indebolisce</span> oggi — investitore europeo perde ${ch.toFixed(2)}% dal cambio`;
+      }
+    } else { noteEl.textContent=''; }
+  } else { noteEl.textContent='Dati non disponibili'; }
 }
 
 document.addEventListener('DOMContentLoaded',()=>{
@@ -3851,7 +3884,8 @@ document.addEventListener('DOMContentLoaded',()=>{
     }
   });
   document.getElementById('cat-modal').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeCatModal(); });
-  Promise.all([loadPulse(),loadPanoramica(),loadMacro()]);
+  loadPulse().then(()=>loadPanoramica());
+  loadMacro();
 });
 </script>
 

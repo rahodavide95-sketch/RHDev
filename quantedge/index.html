@@ -213,6 +213,9 @@ header{
 }
 .page-loader-cancel:hover{background:rgba(239,68,68,.1);}
 
+/* ── ANALYSIS SECTION ── */
+#analysis{display:block;}
+
 /* ── ANALYSIS OVERLAY ── */
 #ao{position:fixed;inset:0;z-index:300;background:var(--bg);display:none;flex-direction:column;}
 #ao.open{display:flex;}
@@ -225,9 +228,6 @@ header{
   cursor:pointer;font-size:.9rem;transition:background .15s;}
 .ao-x:hover{background:rgba(239,68,68,.35);}
 .ao-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
-/* ── ANALYSIS SECTION ── */
-#analysis{display:none;}
-#analysis.visible{display:block; animation:fadeUp .35s ease;}
 
 /* Search dropdown */
 .search-dropdown{
@@ -1572,7 +1572,7 @@ header{
 <div id="ao">
   <div class="ao-bar">
     <span class="ao-title" id="ao-title">Analisi</span>
-    <button class="ao-x" onclick="resetView()">✕</button>
+    <button class="ao-x" onclick="closeAnalysisOverlay()">✕</button>
   </div>
   <div class="ao-body" id="ao-body"></div>
 </div>
@@ -1602,7 +1602,7 @@ function cycleTheme(){
   const next = THEMES[(THEMES.indexOf(cur)+1)%THEMES.length];
   localStorage.setItem('apex-theme', next);
   applyTheme(next);
-  // redraw all charts if analysis is visible so colors update
+  // redraw all charts if analysis overlay is open so colors update
   if(document.getElementById('ao').classList.contains('open')){
     if(CH.p){CH.p.destroy();CH.p=null;}
     if(PDATA.ts.length) redrawPriceChart(PDATA.ts,PDATA.cl);
@@ -3245,18 +3245,24 @@ async function analyze(ticker){
       document.getElementById('cr-to').value=maxD;
       document.getElementById('cr-from').value=new Date(Date.now()-365*86400000).toISOString().slice(0,10);
     }
-    drawCharts(seasonal(tss,cl),retDist(ret(cl)),[w7,w14,w30,w60,w90,w180,w365],tss,cl);
-
-    renderFundamentals(fund);
-    renderBHS(score, fund);
-    buildDipSignal(R,M50,M200,Mo3m,Mo12m,DD,cur,w30,score);
-
     _analyzeAbort=null;
     setAnalyzeLoading(false);
+
+    // Show overlay (must happen before drawing charts so canvases have real dimensions)
+    const ao=document.getElementById('ao');
     document.getElementById('ao-title').textContent=
-      document.getElementById('a-name').textContent||ticker;
+      (meta.longName||meta.shortName||ticker)+' ('+ticker+')';
+    ao.classList.add('open');
     document.getElementById('ao-body').scrollTop=0;
-    document.getElementById('ao').classList.add('open');
+
+    // Double rAF ensures browser has performed layout and canvases have pixel dimensions
+    const _sea=seasonal(tss,cl), _dist=retDist(ret(cl)), _wrs=[w7,w14,w30,w60,w90,w180,w365];
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      drawCharts(_sea,_dist,_wrs,tss,cl);
+      renderFundamentals(fund);
+      renderBHS(score, fund);
+      buildDipSignal(R,M50,M200,Mo3m,Mo12m,DD,cur,w30,score);
+    }));
     return; // skip finally's setAnalyzeLoading
 
   }catch(e){
@@ -3307,6 +3313,10 @@ function quickAnalyze(ticker){
   analyze(ticker);
 }
 
+function closeAnalysisOverlay(){
+  document.getElementById('ao').classList.remove('open');
+  killCharts();
+}
 function resetView(){
   document.getElementById('search-input').value='';
   document.getElementById('ao').classList.remove('open');
@@ -3579,10 +3589,16 @@ function setupTooltips(){
 
 // ── BOOT ──
 document.addEventListener('DOMContentLoaded',()=>{
+  // Move #analysis section into the overlay body
   document.getElementById('ao-body').appendChild(document.getElementById('analysis'));
   setupSearch();
   setupTooltips();
-  document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeCatModal(); });
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){
+      if(document.getElementById('ao').classList.contains('open')) closeAnalysisOverlay();
+      else closeCatModal();
+    }
+  });
   document.getElementById('cat-modal').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeCatModal(); });
   Promise.all([loadPulse(),loadPanoramica()]);
 });

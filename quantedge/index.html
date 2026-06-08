@@ -796,18 +796,13 @@ header{
 /* Dollar / FX card */
 .dxy-metric{width:100%;display:flex;flex-direction:column;gap:8px;}
 .dxy-col{
-  display:flex;align-items:center;gap:12px;
+  display:flex;flex-direction:column;gap:6px;
   padding:12px 14px;background:var(--bg3);border-radius:10px;width:100%;
 }
-.dxy-icon{
-  width:36px;height:36px;border-radius:50%;flex-shrink:0;
-  display:flex;align-items:center;justify-content:center;
-  font-size:1.1rem;background:var(--bg2);border:1px solid var(--border);
-}
-.dxy-info{flex:1;min-width:0;}
-.dxy-lbl{font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);display:block;}
-.dxy-val{font-size:1.2rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.2;display:block;}
-.dxy-ch{font-size:.68rem;font-weight:600;font-variant-numeric:tabular-nums;padding:2px 7px;border-radius:20px;background:rgba(255,255,255,.06);flex-shrink:0;}
+.dxy-top-row{display:flex;align-items:center;justify-content:space-between;}
+.dxy-lbl{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);}
+.dxy-ch{font-size:.68rem;font-weight:700;font-variant-numeric:tabular-nums;padding:2px 8px;border-radius:20px;background:rgba(255,255,255,.07);}
+.dxy-val{font-size:1.6rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1;}
 .dxy-note{font-size:.63rem;color:var(--t2);line-height:1.4;margin-top:2px;width:100%;
   text-align:center;border-top:1px solid var(--border);padding-top:8px;}
 .fg-card{
@@ -1267,20 +1262,18 @@ header{
         <div class="fg-body">
           <div class="dxy-metric">
             <div class="dxy-col">
-              <div class="dxy-icon">🇺🇸</div>
-              <div class="dxy-info">
+              <div class="dxy-top-row">
                 <span class="dxy-lbl">DXY — Indice del Dollaro</span>
-                <span class="dxy-val" id="dxy-val">—</span>
+                <span class="dxy-ch" id="dxy-ch"></span>
               </div>
-              <span class="dxy-ch" id="dxy-ch"></span>
+              <span class="dxy-val" id="dxy-val">—</span>
             </div>
             <div class="dxy-col">
-              <div class="dxy-icon">🇪🇺</div>
-              <div class="dxy-info">
+              <div class="dxy-top-row">
                 <span class="dxy-lbl">EUR / USD</span>
-                <span class="dxy-val" id="eurusd-val">—</span>
+                <span class="dxy-ch" id="eurusd-ch"></span>
               </div>
-              <span class="dxy-ch" id="eurusd-ch"></span>
+              <span class="dxy-val" id="eurusd-val">—</span>
             </div>
           </div>
           <div class="dxy-note" id="dxy-note">Caricamento…</div>

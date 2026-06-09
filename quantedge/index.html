@@ -2778,7 +2778,7 @@ function initSecControls(){
     const ref=document.createElement('button');
     ref.className='refresh-btn'; ref.title='Aggiorna sezione'; ref.textContent='↻';
     ref.addEventListener('click',()=>refreshCard(ref,async()=>{
-      const entries=PANO[id]||[];
+      const entries=(PANO[id]||[]).slice(0,10);
       await Promise.all(entries.map(([ticker])=>fetchAndScore(ticker).then(score=>{if(score!=null)globalScoreMap[ticker]=score;}).catch(()=>{})));
       renderSecRows(id);
     }));
@@ -4337,7 +4337,8 @@ function setupTooltips(){
 // ── CARD REFRESH ──
 async function refreshCard(btn,fn){
   btn.classList.add('spinning');
-  try{await fn();}catch{}
+  await new Promise(r=>requestAnimationFrame(r));
+  try{await fn();}catch(e){console.error('refreshCard error:',e);}
   btn.classList.remove('spinning');
 }
 

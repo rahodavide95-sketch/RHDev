@@ -203,8 +203,11 @@
     <div class="actions">
       <button class="btn btn-accent" id="btn-preview">Descrizione sensoriale</button>
       <button class="btn" id="btn-ableton">Guida Ableton</button>
+      <button class="btn" id="btn-similar" disabled>≈ Simile</button>
       <button class="btn" id="btn-replay">↺ Replay</button>
       <button class="btn" id="btn-reverse" disabled>⟺ Reverse</button>
+      <button class="btn" id="btn-slower" disabled>÷2</button>
+      <button class="btn" id="btn-faster" disabled>×2</button>
       <button class="btn" id="btn-export">↓ Export</button>
     </div>
     <div class="tech-sheet" id="tech-sheet">
@@ -691,8 +694,11 @@ const techTitle  =document.getElementById('tech-title');
 const techContent=document.getElementById('tech-content');
 const btnPreview =document.getElementById('btn-preview');
 const btnAbleton =document.getElementById('btn-ableton');
+const btnSimilar =document.getElementById('btn-similar');
 const btnReplay  =document.getElementById('btn-replay');
 const btnReverse =document.getElementById('btn-reverse');
+const btnSlower  =document.getElementById('btn-slower');
+const btnFaster  =document.getElementById('btn-faster');
 const divider    =document.getElementById('divider');
 const rings      =document.querySelectorAll('.sphere-ring');
 const btnKey     =document.getElementById('btn-key');
@@ -955,6 +961,14 @@ function buildPrompt(){
   return GEN_PROMPT+`\n\nSTILE PER QUESTA GENERAZIONE: ${g}.`;
 }
 
+function buildSimilarPrompt(){
+  if(!current)return buildPrompt();
+  const s=current.synthesis||{};
+  const rev=Math.round((s.reverbAmount||0)*100);
+  const dist=Math.round((s.distortionAmount||0)*100);
+  return GEN_PROMPT+`\n\nVARIAZIONE: Crea una variazione del suono "${current.name}" (${current.category}). Parametri attuali: oscillatore ${s.oscillator||'sine'} @ ${s.frequency||220}Hz, filtro ${s.filterType||'lowpass'} @ ${s.filterFreq||800}Hz Q=${s.filterQ||1}, ADSR ${s.attackTime||0.1}/${s.decayTime||0.3}/${s.sustainLevel||0.5}/${s.releaseTime||1.2}, reverb ${rev}%, distorsione ${dist}%, LFO ${s.lfoRate||0}Hz depth ${s.lfoDepth||0}, layers ${s.layers||1}. Varia i parametri numerici del ±20-30%, mantieni lo stesso carattere e stile. Nuovo nome poetico.`;
+}
+
 const GEN_PROMPT=`Sei un sound designer che crea suoni sintetici unici per ogni stile musicale.
 
 Rispondi SOLO con un oggetto JSON valido. Nessun testo prima o dopo. Nessun markdown. Nessun backtick. Solo JSON grezzo.
@@ -981,6 +995,7 @@ let isLoading=false;  // sphere spinning
 let isActing=false;   // action buttons
 let lastBuffer=null;  // rendered AudioBuffer for export/reverse
 let isReversed=false;
+let playbackSpeed=1.0;
 
 // ── JSON SANITIZER ────────────────────────────────────────────
 function sanitizeJSON(s){
@@ -992,7 +1007,7 @@ function sanitizeJSON(s){
 }
 
 // ── SPIN ──────────────────────────────────────────────────────
-async function spin(evt){
+async function spin(evt,promptFn=buildPrompt){
   if(isLoading)return;
   isLoading=true;
   spinCount++;
@@ -1033,7 +1048,7 @@ async function spin(evt){
     const res=await fetch('/api/proxy',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:3000,messages:[{role:'user',content:buildPrompt()}]})
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:3000,messages:[{role:'user',content:promptFn()}]})
     });
     if(!res.ok)throw new Error('API '+res.status);
     const resp=await res.json();
@@ -1098,10 +1113,15 @@ function applyGeneratedSound(data,px,py){
   if(data.synthesis){
     try{ synthesize(data.synthesis); }
     catch(e){ console.warn('synthesis error',e); }
-    lastBuffer=null;isReversed=false;
-    btnReverse.textContent='⟺ Reverse';btnReverse.disabled=true;
+    lastBuffer=null;isReversed=false;playbackSpeed=1.0;
+    btnSimilar.disabled=false;
+    btnReverse.textContent='⟺ Reverse';
+    btnReverse.disabled=true;btnSlower.disabled=true;btnFaster.disabled=true;
     renderOffline(data.synthesis).then(buf=>{
-      if(current===data){lastBuffer=buf;btnReverse.disabled=false;}
+      if(current===data){
+        lastBuffer=buf;
+        btnReverse.disabled=false;btnSlower.disabled=false;btnFaster.disabled=false;
+      }
     }).catch(()=>{});
   }
 }
@@ -1151,6 +1171,20 @@ btnReverse.addEventListener('click',()=>{
   try{ playBuffer(lastBuffer); }catch(e){ console.warn(e); }
 });
 
+btnSlower.addEventListener('click',()=>{
+  if(!lastBuffer)return;
+  playbackSpeed=Math.max(0.25,playbackSpeed/2);
+  try{ playBuffer(lastBuffer); }catch(e){ console.warn(e); }
+});
+
+btnFaster.addEventListener('click',()=>{
+  if(!lastBuffer)return;
+  playbackSpeed=Math.min(4,playbackSpeed*2);
+  try{ playBuffer(lastBuffer); }catch(e){ console.warn(e); }
+});
+
+btnSimilar.addEventListener('click',()=>spin(null,buildSimilarPrompt));
+
 // ── REVERSE / PLAY BUFFER ─────────────────────────────────────
 function reverseBufferInPlace(buf){
   for(let c=0;c<buf.numberOfChannels;c++){
@@ -1160,12 +1194,23 @@ function reverseBufferInPlace(buf){
   }
 }
 
+async function renderAtSpeed(buf,speed){
+  if(speed===1.0)return buf;
+  const newLen=Math.max(1,Math.round(buf.length/speed));
+  const octx=new OfflineAudioContext(buf.numberOfChannels,newLen,buf.sampleRate);
+  const src=octx.createBufferSource();
+  src.buffer=buf;src.playbackRate.value=speed;
+  src.connect(octx.destination);src.start(0);
+  return octx.startRendering();
+}
+
 function playBuffer(buf){
   stopActiveSources();
   const ctx=getAudioCtx();const now=ctx.currentTime;
   globalAnalyser=ctx.createAnalyser();
   globalAnalyser.fftSize=2048;globalAnalyser.smoothingTimeConstant=0.82;
   const src=ctx.createBufferSource();src.buffer=buf;
+  src.playbackRate.value=playbackSpeed;
   const gain=ctx.createGain();gain.gain.setValueAtTime(0.85,now);
   src.connect(gain);gain.connect(globalAnalyser);globalAnalyser.connect(ctx.destination);
   src.start(now);activeSources.push(src);
@@ -1288,15 +1333,17 @@ btnExport.addEventListener('click',async()=>{
     let buf=lastBuffer;
     if(!buf){
       buf=await renderOffline(current.synthesis);
-      lastBuffer=buf;btnReverse.disabled=false;
+      lastBuffer=buf;
+      btnReverse.disabled=false;btnSlower.disabled=false;btnFaster.disabled=false;
     }
-    const wav=encodeWAVFloat32(buf);
+    const finalBuf=await renderAtSpeed(buf,playbackSpeed);
+    const wav=encodeWAVFloat32(finalBuf);
     const blob=new Blob([wav],{type:'audio/wav'});
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');
     const name=(current.name||'sonorium').replace(/\s+/g,'_').toLowerCase();
-    const sfx=isReversed?'_rev':'';
-    a.href=url;a.download=`${name}${sfx}_48k_32bit.wav`;
+    const sfx=[isReversed&&'rev',playbackSpeed!==1.0&&`${playbackSpeed}x`].filter(Boolean).join('_');
+    a.href=url;a.download=`${name}${sfx?'_'+sfx:''}_48k_32bit.wav`;
     a.click();
     setTimeout(()=>URL.revokeObjectURL(url),5000);
   }catch(e){console.error(e);}

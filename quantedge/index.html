@@ -2904,8 +2904,8 @@ async function loadPulse(){
     Promise.all(PULSE.map(async sym=>{
       try{
         const cached=getCached(sym);
-        // SPY needs ≥21 bars for F&G (RSI+momentum) — use 1mo minimum
-        const range=cached!==null?(sym==='SPY'?'1mo':'5d'):'2y';
+        // SPY needs enough bars for RSI(14)+mom(20) — use 6mo; others 5d when cached
+        const range=cached!==null?(sym==='SPY'?'6mo':'5d'):'2y';
         const res=await fetchChart(sym,range,'1d');
         const tsRaw=res.timestamp||[];
         const raw=res.indicators?.quote?.[0]?.close||[];
@@ -2929,14 +2929,14 @@ async function loadPulse(){
         document.getElementById(`pc-${sym}`).onclick=()=>quickAnalyze(sym);
       }catch{}
     })),
-    fetchChart('^VIX','1mo','1d').catch(()=>null),
+    fetchChart('^VIX','3mo','1d').catch(()=>null),
   ]);
   const tsStr=new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
   document.getElementById('pulse-ts').textContent=`Aggiornato alle ${tsStr}`;
 
   // ── Fear & Greed calculation ──
   try{
-    if(spyCl&&spyCl.length>=21){
+    if(spyCl&&spyCl.length>=15){
       const R=rsi(spyCl); // RSI of SPY
       const Mo=mom(spyCl); // Momentum 20gg
       const rsiScore=R!=null?R:50;

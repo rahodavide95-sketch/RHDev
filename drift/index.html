@@ -197,7 +197,7 @@
 
   <div class="result-card" id="result-card" aria-live="polite">
     <div class="card-header">
-      <div style="display:flex;align-items:baseline;gap:0">
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%">
         <p class="sound-name" id="sound-name">—</p>
         <span class="sound-playing" id="sound-playing">
           <span class="sound-bar"></span>
@@ -701,34 +701,42 @@ function getMaterial(data){
 
 // ── EFFECTS ───────────────────────────────────────────────────
 function spawnEchoBurst(x,y,s){
-  // Expanding rings
-  for(let i=0;i<7;i++){
+  function ring(delay,dur,scale,op,lw){
     const el=document.createElement('div');
-    const dur=(0.85+i*0.13).toFixed(2);
-    const delay=i*48;
-    const scaleEnd=9+i*2.8;
-    const op=(0.62-i*0.07).toFixed(2);
-    el.style.cssText=`position:fixed;left:${x}px;top:${y}px;width:4px;height:4px;border-radius:50%;border:${i<2?1.5:0.5}px solid rgba(${s.ar},${s.ag},${s.ab},${op});pointer-events:none;z-index:99;`;
-    el.style.animation=`echo-ring ${dur}s cubic-bezier(0.08,0.6,0.15,1) ${delay}ms forwards`;
-    el.style.setProperty('--es',scaleEnd);el.style.setProperty('--eop',op);
+    el.style.cssText=`position:fixed;left:${x}px;top:${y}px;width:4px;height:4px;border-radius:50%;border:${lw}px solid rgba(${s.ar},${s.ag},${s.ab},${op});pointer-events:none;z-index:99;`;
+    el.style.animation=`echo-ring ${dur}s cubic-bezier(0.05,0.7,0.1,1) ${delay}ms forwards`;
+    el.style.setProperty('--es',scale);el.style.setProperty('--eop',op);
     document.body.appendChild(el);
-    setTimeout(()=>el.remove(),parseFloat(dur)*1000+delay+120);
+    setTimeout(()=>el.remove(),dur*1000+delay+200);
   }
-  // Radial sparks
-  for(let i=0;i<22;i++){
+  // Wave 1 — impact (tight, fast)
+  ring(0,   1.1, 14, 0.65, 1.5);
+  ring(55,  1.3, 18, 0.50, 1.0);
+  ring(110, 1.5, 22, 0.38, 0.7);
+  ring(170, 1.7, 26, 0.26, 0.5);
+  // Wave 2 — first echo (600ms later, bigger, dimmer)
+  ring(600, 1.8, 28, 0.22, 0.5);
+  ring(680, 2.1, 34, 0.16, 0.4);
+  ring(760, 2.4, 40, 0.11, 0.3);
+  // Wave 3 — second echo (1300ms later, very faint)
+  ring(1300,2.2, 35, 0.10, 0.3);
+  ring(1420,2.6, 44, 0.07, 0.25);
+  ring(1540,3.0, 52, 0.04, 0.2);
+
+  // Sparks on first wave only
+  for(let i=0;i<24;i++){
     const el=document.createElement('div');
-    const angle=(i/22)*Math.PI*2+(Math.random()-.5)*.5;
-    const dist=45+Math.random()*95;
+    const angle=(i/24)*Math.PI*2+(Math.random()-.5)*.4;
+    const dist=50+Math.random()*100;
     const tx=Math.cos(angle)*dist,ty=Math.sin(angle)*dist;
-    const dur=(0.3+Math.random()*.35).toFixed(2);
-    const delay=Math.floor(Math.random()*55);
-    const h=3+Math.random()*9;
+    const dur=(0.4+Math.random()*.4).toFixed(2);
+    const h=4+Math.random()*10;
     const rot=Math.atan2(ty,tx)*180/Math.PI+90;
-    el.style.cssText=`position:fixed;left:${x}px;top:${y}px;width:${.7+Math.random()*1.2}px;height:${h}px;background:linear-gradient(to bottom,${s.acc},transparent);border-radius:1px;pointer-events:none;z-index:100;`;
-    el.style.animation=`echo-spark ${dur}s ease-out ${delay}ms forwards`;
+    el.style.cssText=`position:fixed;left:${x}px;top:${y}px;width:${.6+Math.random()*1.3}px;height:${h}px;background:linear-gradient(to bottom,${s.acc},transparent);border-radius:1px;pointer-events:none;z-index:100;`;
+    el.style.animation=`echo-spark ${dur}s ease-out ${Math.floor(Math.random()*50)}ms forwards`;
     el.style.setProperty('--sx',tx+'px');el.style.setProperty('--sy',ty+'px');el.style.setProperty('--rot',rot+'deg');
     document.body.appendChild(el);
-    setTimeout(()=>el.remove(),parseFloat(dur)*1000+delay+120);
+    setTimeout(()=>el.remove(),parseFloat(dur)*1000+100);
   }
   // Central flash
   const fl=document.createElement('div');
@@ -793,7 +801,8 @@ Ogni generazione deve essere RADICALMENTE diversa. Esplora: sub-bass tellurici, 
 // ── STATE ─────────────────────────────────────────────────────
 let spinCount=0;
 let current=null;
-let isLoading=false;
+let isLoading=false;  // sphere spinning
+let isActing=false;   // action buttons
 
 // ── JSON SANITIZER ────────────────────────────────────────────
 function sanitizeJSON(s){
@@ -940,30 +949,36 @@ function applyGeneratedSound(data,px,py){
 
 // ── ACTION BUTTONS ────────────────────────────────────────────
 btnPreview.addEventListener('click',async()=>{
-  if(!current||isLoading)return;isLoading=true;
+  if(!current||isActing)return;isActing=true;
   techSheet.classList.add('visible');techTitle.textContent='descrizione sensoriale';
-  const synth=current.synthesis||{};
   try{
     await streamFromClaude(
-      `Sei un sound designer poetico. Il suono "${current.name}" (${current.category}) è generato con un oscillatore ${synth.oscillator||'?'} a ${synth.frequency||'?'}Hz, filtro ${synth.filterType||'?'}, reverb ${Math.round((synth.reverbAmount||0)*100)}%, distorsione ${Math.round((synth.distortionAmount||0)*100)}%.
-Descrivi questo suono in modo profondamente sensoriale: come si sente nel corpo, che emozione porta, che spazio fisico occupa, che ora del giorno è. 5-6 frasi evocative in italiano. Nessun titolo.`,
+      `Sei un sound designer poetico. Espandi la descrizione sensoriale di "${current.name}" (${current.category}). Scrivi 5-6 frasi in italiano corretto e poetico — texture, movimento, spazio, temperatura, sensazione fisica. Prosa densa. Niente titoli né elenchi.`,
       techContent);
   }catch{techContent.textContent='Errore API.';}
-  isLoading=false;
+  isActing=false;
 });
 
 btnAbleton.addEventListener('click',async()=>{
-  if(!current||isLoading)return;isLoading=true;
+  if(!current||isActing)return;isActing=true;
   techSheet.classList.add('visible');techTitle.textContent='guida ableton';
   const synth=current.synthesis||{};
   try{
     await streamFromClaude(
-      `Sei un produttore esperto di Ableton Live. Ricrea "${current.name}" (${current.category}) in Ableton.
-Parametri originali: oscillatore ${synth.oscillator||'?'} a ${synth.frequency||'?'}Hz, filtro ${synth.filterType||'?'} a ${synth.filterFreq||'?'}Hz Q=${synth.filterQ||'?'}, attacco ${synth.attackTime||'?'}s, decadimento ${synth.decayTime||'?'}s, sustain ${synth.sustainLevel||'?'}, rilascio ${synth.releaseTime||'?'}s, reverb ${Math.round((synth.reverbAmount||0)*100)}%, distorsione ${Math.round((synth.distortionAmount||0)*100)}%, LFO ${synth.lfoRate||'?'}Hz depth ${synth.lfoDepth||'?'}.
-Traduci questi parametri in Ableton: quale synth usare (Operator/Wavetable/Analog), come mappare i parametri, quale effetti chain. In italiano, conciso e pratico.`,
+      `Sei un sound designer esperto di Ableton Live. Ricrea "${current.name}" — ${current.category}.
+
+Parametri sorgente: oscillatore ${synth.oscillator||'?'} @ ${synth.frequency||'?'}Hz · filtro ${synth.filterType||'?'} @ ${synth.filterFreq||'?'}Hz Q=${synth.filterQ||'?'} · ADSR ${synth.attackTime||'?'}/${synth.decayTime||'?'}/${synth.sustainLevel||'?'}/${synth.releaseTime||'?'}s · reverb ${Math.round((synth.reverbAmount||0)*100)}% · distorsione ${Math.round((synth.distortionAmount||0)*100)}% · LFO ${synth.lfoRate||0}Hz depth ${synth.lfoDepth||0} · ${synth.layers||1} layer · durata ${synth.duration||'?'}s.
+
+Rispondi in italiano con queste sezioni (niente intro):
+**Synth** — quale usare (Operator/Wavetable/Analog) e perché
+**Oscillatore** — tipo onda, frequenza, detuning per i layer
+**Filtro** — tipo, freq, Q, automazioni suggerite
+**Envelope** — valori ADSR precisi
+**FX chain** — in ordine: saturazione → EQ → reverb/delay → compressore (solo quelli necessari, con parametri chiave)
+**LFO** — target, rate, depth (solo se presente)`,
       techContent);
   }catch{techContent.textContent='Errore API.';}
-  isLoading=false;
+  isActing=false;
 });
 
 btnReplay.addEventListener('click',()=>{

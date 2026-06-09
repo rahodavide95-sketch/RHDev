@@ -2195,35 +2195,47 @@ async function fetchFundamentals(ticker){
 // ── MACRO DATA (inflazione + BCE) ──
 async function fetchMacroData(){
   const out={usCPI:null,euHICP:null,itHICP:null,bceRate:null};
-  // US CPI YoY — BLS public API (no key)
+
+  // ECB helper: extract value from SDMX-JSON regardless of series key length
+  const ecbVal=data=>{
+    try{
+      const series=data?.dataSets?.[0]?.series;
+      if(!series) return null;
+      // find first series key
+      const sk=Object.keys(series)[0];
+      if(!sk) return null;
+      const obs=series[sk]?.observations;
+      if(!obs) return null;
+      // get latest observation (highest numeric key)
+      const idx=Object.keys(obs).map(Number).sort((a,b)=>b-a)[0];
+      const v=obs[String(idx)]?.[0];
+      return v!=null&&!isNaN(Number(v))?Number(v):null;
+    }catch{return null;}
+  };
+
+  // US CPI YoY — BLS public API v1 (no key required)
   try{
-    const bls=await fetchJSON('https://api.bls.gov/publicAPI/v1/timeseries/data/CUSR0000SA0');
-    const series=bls?.Results?.series?.[0]?.data||bls?.Results?.series?.[0]?.data||[];
-    if(series.length>=13){
-      const cur=parseFloat(series[0].value), prev=parseFloat(series[12].value);
-      if(cur&&prev) out.usCPI=((cur-prev)/prev*100);
+    const yr=new Date().getFullYear();
+    const bls=await fetchJSON(`https://api.bls.gov/publicAPI/v1/timeseries/data/CUUR0000SA0?startyear=${yr-2}&endyear=${yr}`);
+    const rows=bls?.Results?.series?.[0]?.data||[];
+    // rows sorted newest-first; find pairs 12 months apart
+    if(rows.length>=13){
+      const cur=parseFloat(rows[0].value);
+      const prev=parseFloat(rows[12].value);
+      if(cur&&prev) out.usCPI=(cur-prev)/prev*100;
     }
   }catch{}
-  // ECB: Eurozone HICP YoY + Italy HICP YoY + BCE deposit rate
-  try{
-    const [euR,itR,bceR]=await Promise.allSettled([
-      fetchJSON('https://data-api.ecb.europa.eu/service/data/ICP/M.U2.N.000000.4.ANR?lastNObservations=1&format=jsondata'),
-      fetchJSON('https://data-api.ecb.europa.eu/service/data/ICP/M.IT.N.000000.4.ANR?lastNObservations=1&format=jsondata'),
-      fetchJSON('https://data-api.ecb.europa.eu/service/data/FM/M.U2.EUR.4F.KR.DFR.LEV?lastNObservations=1&format=jsondata'),
-    ]);
-    const ecbVal=r=>{
-      const obs=r?.value?.dataSets?.[0]?.series?.['0:0:0:0:0:0']?.observations||
-                r?.value?.dataSets?.[0]?.series?.['0:0:0:0:0']?.observations||null;
-      if(!obs) return null;
-      const keys=Object.keys(obs);
-      if(!keys.length) return null;
-      const v=obs[keys[keys.length-1]]?.[0];
-      return v!=null&&!isNaN(v)?parseFloat(v):null;
-    };
-    if(euR.status==='fulfilled') out.euHICP=ecbVal(euR);
-    if(itR.status==='fulfilled') out.itHICP=ecbVal(itR);
-    if(bceR.status==='fulfilled') out.bceRate=ecbVal(bceR);
-  }catch{}
+
+  // ECB: Eurozone HICP + Italy HICP + BCE deposit rate
+  const [euR,itR,bceR]=await Promise.allSettled([
+    fetchJSON('https://data-api.ecb.europa.eu/service/data/ICP/M.U2.N.000000.4.ANR?lastNObservations=1&format=jsondata'),
+    fetchJSON('https://data-api.ecb.europa.eu/service/data/ICP/M.IT.N.000000.4.ANR?lastNObservations=1&format=jsondata'),
+    fetchJSON('https://data-api.ecb.europa.eu/service/data/FM/M.U2.EUR.4F.KR.DFR.LEV?lastNObservations=1&format=jsondata'),
+  ]);
+  if(euR.status==='fulfilled')  out.euHICP=ecbVal(euR.value);
+  if(itR.status==='fulfilled')  out.itHICP=ecbVal(itR.value);
+  if(bceR.status==='fulfilled') out.bceRate=ecbVal(bceR.value);
+
   return out;
 }
 function renderMacro(m){

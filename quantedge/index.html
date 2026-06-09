@@ -689,6 +689,16 @@ header{
   transition:background .15s,color .15s,border-color .15s;line-height:1;
 }
 .info-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent);}
+.refresh-btn{
+  width:17px;height:17px;border-radius:50%;flex-shrink:0;
+  background:transparent;border:1px solid var(--t3);
+  color:var(--t3);font-size:.72rem;font-weight:400;font-family:inherit;
+  cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
+  transition:background .15s,color .15s,border-color .15s,transform .15s;line-height:1;
+}
+.refresh-btn:hover{background:var(--bg3);color:var(--text);border-color:var(--text);}
+.refresh-btn.spinning{animation:spin .7s linear infinite;pointer-events:none;}
+@keyframes spin{to{transform:rotate(360deg);}}
 
 /* Score badge info */
 .sig-score-row{display:flex;align-items:center;gap:8px;}
@@ -1243,7 +1253,7 @@ header{
         <div class="fg-top">
           <div class="fg-title-row">
             <span class="fg-title">Fear &amp; Greed Index</span>
-            <button class="info-btn" data-tip="feargreed" title="Cos'è il Fear &amp; Greed Index?">i</button>
+            <div style="display:flex;gap:4px"><button class="refresh-btn" onclick="refreshCard(this,loadPulse)" title="Aggiorna">↻</button><button class="info-btn" data-tip="feargreed" title="Cos'è il Fear &amp; Greed Index?">i</button></div>
           </div>
           <span class="fg-sub" id="fg-sub">Caricamento…</span>
         </div>
@@ -1279,7 +1289,7 @@ header{
         <div class="fg-top">
           <div class="fg-title-row">
             <span class="fg-title">VIX</span>
-            <button class="info-btn" data-tip="vix" title="Cos'è il VIX?">i</button>
+            <div style="display:flex;gap:4px"><button class="refresh-btn" onclick="refreshCard(this,loadPulse)" title="Aggiorna">↻</button><button class="info-btn" data-tip="vix" title="Cos'è il VIX?">i</button></div>
           </div>
           <span class="fg-sub">Volatilità implicita</span>
         </div>
@@ -1299,7 +1309,7 @@ header{
         <div class="fg-top">
           <div class="fg-title-row">
             <span class="fg-title">Dollaro USA</span>
-            <button class="info-btn" data-tip="dollar">i</button>
+            <div style="display:flex;gap:4px"><button class="refresh-btn" onclick="refreshCard(this,loadMacro)" title="Aggiorna">↻</button><button class="info-btn" data-tip="dollar">i</button></div>
           </div>
           <span class="fg-sub">Forza &amp; cambio EUR</span>
         </div>
@@ -1328,7 +1338,7 @@ header{
         <div class="fg-top">
           <div class="fg-title-row">
             <span class="fg-title">Curva dei Rendimenti</span>
-            <button class="info-btn" data-tip="yieldcurve">i</button>
+            <div style="display:flex;gap:4px"><button class="refresh-btn" onclick="refreshCard(this,loadMacro)" title="Aggiorna">↻</button><button class="info-btn" data-tip="yieldcurve">i</button></div>
           </div>
           <span class="fg-sub">Tassi obbligaz. USA · spread 10A–3M</span>
         </div>
@@ -1347,7 +1357,7 @@ header{
         <div class="fg-top">
           <div class="fg-title-row">
             <span class="fg-title">Macro</span>
-            <button class="info-btn" data-tip="macro">i</button>
+            <div style="display:flex;gap:4px"><button class="refresh-btn" onclick="refreshCard(this,()=>fetchMacroData().then(renderMacro))" title="Aggiorna">↻</button><button class="info-btn" data-tip="macro">i</button></div>
           </div>
         </div>
         <div class="fg-body">
@@ -1380,7 +1390,7 @@ header{
         <div class="fg-top">
           <div class="fg-title-row">
             <span class="fg-title">Rotazione Settoriale</span>
-            <button class="info-btn" data-tip="sectors">i</button>
+            <div style="display:flex;gap:4px"><button class="refresh-btn" onclick="refreshCard(this,loadMacro)" title="Aggiorna">↻</button><button class="info-btn" data-tip="sectors">i</button></div>
           </div>
           <span class="fg-sub">Performance odierna — S&amp;P 500</span>
         </div>
@@ -2894,17 +2904,20 @@ function toggleOppCat(catId){
 async function loadPulse(){
   let spyCl=null;
   // fetch all 6 pulse tickers concurrently + VIX
+  // If score is cached, fetch only 5d for fast price update; else full 2y for score
   const [,vixRes]=await Promise.all([
     Promise.all(PULSE.map(async sym=>{
       try{
-        const res=await fetchChart(sym,'2y','1d');
+        const cached=getCached(sym);
+        const range=cached!==null?'5d':'2y';
+        const res=await fetchChart(sym,range,'1d');
         const tsRaw=res.timestamp||[];
         const raw=res.indicators?.quote?.[0]?.close||[];
         const valid=tsRaw.map((t,i)=>({t,c:raw[i]})).filter(p=>p.c!=null&&!isNaN(p.c)&&p.c>0);
         if(valid.length<2) return;
         const tss=valid.map(p=>p.t), cl=valid.map(p=>p.c);
         if(sym==='SPY') spyCl=cl;
-        const score=scoreFromHistory(cl,tss);
+        const score=cached!==null?cached:scoreFromHistory(cl,tss);
         if(score!=null){ globalScoreMap[sym]=score; setCached(sym,score); }
         const cur=cl[cl.length-1], prev=cl[cl.length-2];
         const chPct=(cur-prev)/prev*100;
@@ -4275,6 +4288,13 @@ function setupTooltips(){
   window.addEventListener('scroll',()=>{if(openBtn&&window.innerWidth>640) close();},{passive:true});
 }
 
+// ── CARD REFRESH ──
+async function refreshCard(btn,fn){
+  btn.classList.add('spinning');
+  try{await fn();}catch{}
+  btn.classList.remove('spinning');
+}
+
 // ── BOOT ──
 // ── MACRO: YIELD CURVE + SECTOR ROTATION + DOLLAR ──
 async function loadMacro(){
@@ -4301,7 +4321,7 @@ function renderYieldCurve(data){
     return v.length?v[v.length-1]:null;
   };
   const [irx,fvx,tnx,tyx]=data.map(getClose);
-  if(!tnx||!irx){document.getElementById('yc-sub').textContent='Dati non disponibili';return;}
+  if(!tnx||!irx){const st=document.getElementById('yc-state');if(st)st.textContent='Dati non disponibili';return;}
   const spread=tnx-irx;
   const spStr=(spread>=0?'+':'')+spread.toFixed(2)+'%';
   let state,color,interp;
@@ -4319,7 +4339,6 @@ function renderYieldCurve(data){
   const spEl=document.getElementById('yc-spread');
   if(stEl){stEl.textContent=state;stEl.style.color=color;}
   if(spEl){spEl.textContent='Spread '+spStr;spEl.style.color=color;}
-  document.getElementById('yc-sub').textContent='Spread 10A – 3M';
   // Build SVG with gradient fill
   const pts=[{x:10,v:irx,l:'3M'},...(fvx?[{x:70,v:fvx,l:'5A'}]:[]),{x:120,v:tnx,l:'10A'},...(tyx?[{x:152,v:tyx,l:'30A'}]:[])];
   const W=160,H=80,PAD=8;

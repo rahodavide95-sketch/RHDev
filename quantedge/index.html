@@ -801,22 +801,19 @@ header{
 .home-cards{
   margin-bottom:16px;
   display:grid;
-  grid-template-columns:repeat(3,1fr);
+  grid-template-columns:repeat(4,1fr);
   gap:10px;
   align-items:stretch;
 }
 .home-cards>*{min-width:0;}
-.home-cards .home-sector-card{grid-column:1/-1;}
+/* Desktop: riga 2 — Curva e Rotazione occupano 2 col ciascuna */
 .home-cards .home-yc-card{grid-column:span 2;}
-/* Tablet (≤1100px): 2 colonne */
+.home-cards .home-sector-card{grid-column:span 2;}
+/* Tablet/mobile (≤1100px): 2 colonne, Curva e Rotazione full width */
 @media(max-width:1100px){
   .home-cards{grid-template-columns:1fr 1fr;}
   .home-cards .home-yc-card{grid-column:1/-1;}
-}
-/* Mobile (≤600px): 1 colonna */
-@media(max-width:600px){
-  .home-cards{grid-template-columns:1fr;}
-  .home-cards .home-yc-card{grid-column:1;}
+  .home-cards .home-sector-card{grid-column:1/-1;}
 }
 /* Dollar / FX card */
 .dxy-metric{width:100%;display:flex;flex-direction:column;gap:8px;}

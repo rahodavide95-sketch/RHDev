@@ -42,25 +42,36 @@
 
   .spin-badge { font-size:11px; color:var(--c-text-muted); letter-spacing:0.1em; transition:color 1s ease; font-variant-numeric:tabular-nums; }
 
-  .sphere-wrap { position:relative; width:220px; height:220px; cursor:pointer; margin-bottom:3.5rem; flex-shrink:0; }
-  .sphere-wrap:hover .sphere { transform:scale(1.04); }
+  .sphere-wrap { position:relative; width:300px; height:300px; cursor:pointer; margin-bottom:3.5rem; flex-shrink:0; }
+  .sphere-wrap:hover .sphere { transform:scale(1.035); }
   .sphere-wrap:active .sphere { transform:scale(0.96); }
 
   .sphere-ring { position:absolute; border-radius:50%; border:0.5px solid rgba(120,100,255,0.12); transition:border-color 2s ease; pointer-events:none; }
-  .ring-1 { inset:-16px; animation:ring-pulse 4s ease-in-out infinite; }
-  .ring-2 { inset:-36px; animation:ring-pulse 4s ease-in-out infinite 1.4s; opacity:0.6; }
-  .ring-3 { inset:-60px; animation:ring-pulse 6s ease-in-out infinite 0.7s; opacity:0.3; }
-  .ring-4 { inset:-90px; animation:ring-pulse 8s ease-in-out infinite 2s; opacity:0.15; }
+  .ring-1 { inset:-18px; animation:ring-pulse 4s ease-in-out infinite; }
+  .ring-2 { inset:-42px; animation:ring-pulse 4s ease-in-out infinite 1.4s; opacity:0.6; }
+  .ring-3 { inset:-72px; animation:ring-pulse 6s ease-in-out infinite 0.7s; opacity:0.3; }
+  .ring-4 { inset:-110px; animation:ring-pulse 8s ease-in-out infinite 2s; opacity:0.15; }
   @keyframes ring-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.015);opacity:1} }
 
   .sphere {
-    width:220px; height:220px; border-radius:50%;
-    background:radial-gradient(circle at 36% 32%,#2a2a4a,#0a0a18 70%);
-    box-shadow:0 0 80px rgba(100,80,255,0.15),0 0 160px rgba(0,0,0,0.5),inset 0 0 60px rgba(0,0,0,0.6);
-    transition:background 1.5s ease,box-shadow 1.5s ease,transform 0.2s ease;
+    width:300px; height:300px; border-radius:50%;
+    background:
+      radial-gradient(ellipse 44% 30% at 31% 24%, rgba(255,255,255,0.18) 0%, transparent 100%),
+      radial-gradient(ellipse 60% 22% at 50% 94%, rgba(255,255,255,0.035) 0%, transparent 100%),
+      radial-gradient(circle at 36% 32%, #2a2a4a, #080812 72%);
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.06),
+      0 0 130px rgba(100,80,255,0.18),
+      0 0 340px rgba(0,0,0,0.65),
+      0 55px 110px rgba(0,0,10,0.55),
+      inset 0 0 110px rgba(0,0,0,0.78),
+      inset 0 -30px 60px rgba(0,0,0,0.4),
+      inset 0 2px 2px rgba(255,255,255,0.06);
+    transition:background 1.5s ease,box-shadow 1.5s ease,transform 0.3s cubic-bezier(0.23,1,0.32,1);
     position:relative; z-index:2;
   }
-  .sphere::after { content:''; position:absolute; top:18%;left:22%;width:28%;height:20%;border-radius:50%;background:rgba(255,255,255,0.04);filter:blur(6px);pointer-events:none; }
+  .sphere::before { content:''; position:absolute; top:10%;left:14%;width:38%;height:26%;border-radius:50%;background:radial-gradient(ellipse,rgba(255,255,255,0.22) 0%,rgba(255,255,255,0.07) 45%,transparent 75%);filter:blur(4px);pointer-events:none; }
+  .sphere::after { content:''; position:absolute; bottom:10%;right:12%;width:22%;height:16%;border-radius:50%;background:radial-gradient(ellipse,rgba(255,255,255,0.07) 0%,transparent 70%);filter:blur(5px);pointer-events:none; }
 
   .sphere-hint { position:absolute; bottom:-32px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--c-text-muted);letter-spacing:0.14em;white-space:nowrap;text-transform:uppercase;transition:color 0.4s; }
   .sphere-wrap:hover .sphere-hint { color:var(--c-text-secondary); }
@@ -126,7 +137,7 @@
   footer { margin-top:4rem;font-size:11px;color:var(--c-text-muted);letter-spacing:0.1em;text-align:center;text-transform:uppercase; }
 
   @media (max-width:520px) {
-    .sphere-wrap{width:180px;height:180px} .sphere{width:180px;height:180px}
+    .sphere-wrap{width:240px;height:240px} .sphere{width:240px;height:240px}
     .result-card{padding:1.5rem 1.5rem 1.25rem} .sound-name{font-size:22px}
   }
   @media (prefers-reduced-motion:reduce) {
@@ -626,8 +637,20 @@ const btnKeyCancel=document.getElementById('btn-key-cancel');
 function applyColor(s){
   const glow=`rgba(${s.ar},${s.ag},${s.ab},0.18)`;
   const ring=`rgba(${s.ar},${s.ag},${s.ab},0.15)`;
-  sphereEl.style.background=`radial-gradient(circle at 36% 32%,${s.ca},${s.cb} 70%)`;
-  sphereEl.style.boxShadow=`0 0 90px ${glow},0 0 180px rgba(${s.ar},${s.ag},${s.ab},0.06),inset 0 0 60px rgba(0,0,0,0.55)`;
+  sphereEl.style.background=[
+    `radial-gradient(ellipse 44% 30% at 31% 24%,rgba(255,255,255,0.18) 0%,transparent 100%)`,
+    `radial-gradient(ellipse 60% 22% at 50% 94%,rgba(255,255,255,0.035) 0%,transparent 100%)`,
+    `radial-gradient(circle at 36% 32%,${s.ca},${s.cb} 72%)`
+  ].join(',');
+  sphereEl.style.boxShadow=[
+    `0 0 0 1px rgba(255,255,255,0.07)`,
+    `0 0 130px rgba(${s.ar},${s.ag},${s.ab},0.28)`,
+    `0 0 340px rgba(0,0,0,0.6)`,
+    `0 55px 110px rgba(0,0,10,0.5)`,
+    `inset 0 0 110px rgba(0,0,0,0.72)`,
+    `inset 0 -30px 60px rgba(0,0,0,0.35)`,
+    `inset 0 2px 2px rgba(255,255,255,0.06)`
+  ].join(',');
   bgGlow.style.background=`radial-gradient(ellipse 70% 55% at 50% 38%,${glow},transparent)`;
   rings.forEach(r=>r.style.borderColor=ring);
   card.style.borderColor=`rgba(${s.ar},${s.ag},${s.ab},0.18)`;
@@ -642,6 +665,14 @@ function applyColor(s){
     t.style.background=`rgba(${s.ar},${s.ag},${s.ab},0.06)`;
   });
   window.setCanvasColor(s);
+}
+
+// ── MUSICAL NOTE FROM FREQUENCY ──────────────────────────────
+function freqToNote(hz){
+  if(!hz||hz<=0)return'—';
+  const names=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+  const n=Math.round(12*Math.log2(hz/440))+69;
+  return names[((n%12)+12)%12]+(Math.floor(n/12)-1);
 }
 
 // ── EFFECTS ───────────────────────────────────────────────────
@@ -742,6 +773,16 @@ async function spin(evt){
   if(evt&&evt.clientX!=null){px=evt.clientX;py=evt.clientY;}
   else{const r=sphereEl.getBoundingClientRect();px=r.left+r.width*0.5;py=r.top+r.height*0.5;}
 
+  // Immediate click burst
+  window.addAmbientFlash(px,py);
+  for(let i=0;i<3;i++){
+    const el=document.createElement('div');el.className='ripple';
+    el.style.cssText=`left:${px}px;top:${py}px;width:6px;height:6px;border:0.5px solid rgba(180,160,255,${0.55-i*0.15});`;
+    el.style.setProperty('--rdur',(0.8+i*0.2)+'s');el.style.setProperty('--rdelay',(i*80)+'ms');
+    el.style.setProperty('--rop',(0.55-i*0.15).toFixed(2));document.body.appendChild(el);
+    setTimeout(()=>el.remove(),1600);
+  }
+
   card.classList.remove('visible');
   techSheet.classList.remove('visible');
   techSheet.classList.remove('visible');
@@ -833,7 +874,9 @@ function applyGeneratedSound(data,px,py){
   const s={ca:c.ca||'#2a2a4a',cb:c.cb||'#08080f',ar,ag,ab,acc:c.acc||'#7a6aff'};
 
   nameEl.textContent=data.name||'Unknown';
-  metaEl.textContent=data.category||'—';
+  const note=freqToNote(data.synthesis?.frequency);
+  const durSec=data.synthesis?.duration?`${data.synthesis.duration}s`:'';
+  metaEl.textContent=[data.category,note,durSec].filter(Boolean).join(' · ');
   tagsEl.innerHTML=(data.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('');
   badgeEl.textContent=`${spinCount} drift`;
   applyColor(s);

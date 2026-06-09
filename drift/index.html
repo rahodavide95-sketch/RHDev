@@ -326,7 +326,44 @@ let globalAnalyser = null;
       hueOff:(Math.random()-.5)*55,
     };
   }
-  const floaters=Array.from({length:55},()=>mkFloater(false));
+  const floaters=Array.from({length:85},()=>mkFloater(false));
+
+  // Ambient expanding rings
+  const ambRings=[];
+  function mkAmbRing(){
+    return{px:.05+Math.random()*.9,py:.05+Math.random()*.9,
+      r:0,maxR:110+Math.random()*360,
+      spd:.3+Math.random()*.7,op:.09+Math.random()*.1,
+      hueOff:(Math.random()-.5)*120,w:.3+Math.random()*.55};
+  }
+
+  // Lightning arcs
+  const lightnings=[];
+  function mkLightning(){
+    const W=cW||innerWidth,H=cH||innerHeight;
+    const sx=W*(.05+Math.random()*.9),sy=H*(.05+Math.random()*.9);
+    const len=60+Math.random()*280,ang=Math.random()*Math.PI*2;
+    const steps=3+Math.floor(Math.random()*5),pts=[{x:sx,y:sy}];
+    let cx=sx,cy=sy;
+    for(let i=0;i<steps;i++){
+      cx+=Math.cos(ang)*len/steps+(Math.random()-.5)*85;
+      cy+=Math.sin(ang)*len/steps+(Math.random()-.5)*85;
+      pts.push({x:cx,y:cy});
+    }
+    return{pts,life:0,maxLife:5+Math.floor(Math.random()*9),
+      op:.5+Math.random()*.45,hueOff:(Math.random()-.5)*80,w:.3+Math.random()*.65};
+  }
+
+  // Orbital debris
+  const debris=Array.from({length:50},()=>({
+    angle:Math.random()*Math.PI*2,
+    radius:(cW||innerWidth)*(.1+Math.random()*.52),
+    spd:.00018+Math.random()*.0010,
+    r:.35+Math.random()*1.6,op:.06+Math.random()*.16,
+    hueOff:(Math.random()-.5)*115,
+    cx:.18+Math.random()*.64,cy:.18+Math.random()*.64,
+    ex:.12+Math.random()*.48,tilt:Math.random()*Math.PI*2
+  }));
 
   const flashes=[];
   window.addAmbientFlash=function(x,y){flashes.push({x,y,r:10,op:.38,speed:6+Math.random()*5});};
@@ -474,6 +511,43 @@ let globalAnalyser = null;
       grad.addColorStop(.4,`rgba(${bR},${bG},${bB},${f.op})`);
       grad.addColorStop(1,'rgba(0,0,0,0)');
       ctx.fillStyle=grad;ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,Math.PI*2);ctx.fill();
+    }
+
+    // Ambient expanding rings
+    if(Math.random()<.007+bass*.05)ambRings.push(mkAmbRing());
+    for(let i=ambRings.length-1;i>=0;i--){
+      const a=ambRings[i];a.r+=a.spd*(1+bass*1.6);
+      const fade=Math.min(1,(a.maxR-a.r)/(a.maxR*.4));
+      const aop=Math.min(.21,a.op*Math.max(0,fade)*(1+rms*2.8));
+      if(a.r>a.maxR||aop<=0){ambRings.splice(i,1);continue;}
+      const[rr,rg,rb]=hsl2rgb(baseH+a.hueOff,Math.max(22,baseS*.8),Math.max(7,baseL));
+      ctx.save();ctx.strokeStyle=`rgba(${rr},${rg},${rb},${aop})`;
+      ctx.lineWidth=a.w;ctx.beginPath();ctx.arc(a.px*cW,a.py*cH,a.r,0,Math.PI*2);ctx.stroke();ctx.restore();
+    }
+
+    // Lightning arcs
+    if(isBeat||Math.random()<.0028+rms*.022)lightnings.push(mkLightning());
+    for(let i=lightnings.length-1;i>=0;i--){
+      const l=lightnings[i];l.life++;
+      if(l.life>=l.maxLife){lightnings.splice(i,1);continue;}
+      const lop=l.op*(1-l.life/l.maxLife);if(lop<.012)continue;
+      const[lr,lg,lb]=hsl2rgb(baseH+l.hueOff+55,Math.min(100,baseS*1.7+20),Math.min(90,baseL+35));
+      ctx.save();ctx.strokeStyle=`rgba(${lr},${lg},${lb},${lop})`;
+      ctx.lineWidth=l.w;ctx.shadowBlur=14;ctx.shadowColor=`rgba(${lr},${lg},${lb},${lop*.6})`;
+      ctx.beginPath();ctx.moveTo(l.pts[0].x,l.pts[0].y);
+      for(let j=1;j<l.pts.length;j++)ctx.lineTo(l.pts[j].x,l.pts[j].y);
+      ctx.stroke();ctx.restore();
+    }
+
+    // Orbital debris
+    for(const d of debris){
+      d.angle+=d.spd*(1+mid*.8+rms*2.8);
+      const rx=d.radius*(1+d.ex*.5),ry=d.radius*(1-d.ex*.3)*.62;
+      const dx=d.cx*cW+Math.cos(d.angle)*rx,dy=d.cy*cH+Math.sin(d.angle)*ry;
+      if(dx<-4||dx>cW+4||dy<-4||dy>cH+4)continue;
+      const[dr,dg,db]=hsl2rgb(baseH+d.hueOff,Math.max(14,baseS*.72),Math.max(10,baseL+9));
+      ctx.fillStyle=`rgba(${dr},${dg},${db},${Math.min(.3,d.op*(1+rms*4))})`;
+      ctx.beginPath();ctx.arc(dx,dy,d.r*(1+bass*.55),0,Math.PI*2);ctx.fill();
     }
 
     drawWaveRing(bR,bG,bB);
@@ -711,34 +785,59 @@ function spawnEchoBurst(x,y,s){
     document.body.appendChild(el);
     setTimeout(()=>el.remove(),dur*1000+delay+200);
   }
-  // Wave 1 — impact (tight, fast)
-  ring(0,   1.1, 14, 0.65, 1.5);
-  ring(55,  1.3, 18, 0.50, 1.0);
-  ring(110, 1.5, 22, 0.38, 0.7);
-  ring(170, 1.7, 26, 0.26, 0.5);
-  // Wave 2 — first echo (600ms later, bigger, dimmer)
-  ring(600, 1.8, 28, 0.22, 0.5);
-  ring(680, 2.1, 34, 0.16, 0.4);
-  ring(760, 2.4, 40, 0.11, 0.3);
-  // Wave 3 — second echo (1300ms later, very faint)
-  ring(1300,2.2, 35, 0.10, 0.3);
-  ring(1420,2.6, 44, 0.07, 0.25);
-  ring(1540,3.0, 52, 0.04, 0.2);
+  // Shockwave — instant, very fast
+  ring(0,   0.35,32, 0.45, 0.4);
+  // Wave 1 — impact
+  ring(0,   1.0, 11, 0.70, 2.0);
+  ring(40,  1.2, 15, 0.56, 1.5);
+  ring(85,  1.4, 19, 0.44, 1.1);
+  ring(135, 1.6, 23, 0.32, 0.8);
+  ring(190, 1.8, 28, 0.20, 0.5);
+  // Wave 2 — echo 650ms
+  ring(650, 1.7, 24, 0.22, 0.6);
+  ring(730, 2.0, 30, 0.17, 0.45);
+  ring(810, 2.3, 37, 0.12, 0.35);
+  ring(900, 2.6, 44, 0.08, 0.25);
+  // Wave 3 — echo 1350ms
+  ring(1350,2.0, 29, 0.11, 0.35);
+  ring(1470,2.4, 37, 0.08, 0.28);
+  ring(1600,2.8, 45, 0.055,0.2);
+  ring(1740,3.2, 54, 0.03, 0.15);
+  // Wave 4 — echo 2300ms
+  ring(2300,2.5, 38, 0.065,0.22);
+  ring(2460,3.0, 48, 0.042,0.17);
+  ring(2630,3.5, 58, 0.026,0.12);
+  ring(2810,4.0, 68, 0.014,0.09);
+  // Wave 5 — distant echo 3500ms
+  ring(3500,3.2, 46, 0.032,0.15);
+  ring(3700,3.8, 57, 0.02, 0.1);
+  ring(3920,4.4, 68, 0.011,0.07);
 
-  // Sparks on first wave only
-  for(let i=0;i<24;i++){
+  // Sparks — 40 normal + 8 long filaments
+  for(let i=0;i<40;i++){
     const el=document.createElement('div');
-    const angle=(i/24)*Math.PI*2+(Math.random()-.5)*.4;
-    const dist=50+Math.random()*100;
+    const angle=(i/40)*Math.PI*2+(Math.random()-.5)*.5;
+    const dist=50+Math.random()*120;
     const tx=Math.cos(angle)*dist,ty=Math.sin(angle)*dist;
-    const dur=(0.4+Math.random()*.4).toFixed(2);
-    const h=4+Math.random()*10;
+    const dur=(0.4+Math.random()*.5).toFixed(2);
+    const h=4+Math.random()*11;
     const rot=Math.atan2(ty,tx)*180/Math.PI+90;
-    el.style.cssText=`position:fixed;left:${x}px;top:${y}px;width:${.6+Math.random()*1.3}px;height:${h}px;background:linear-gradient(to bottom,${s.acc},transparent);border-radius:1px;pointer-events:none;z-index:100;`;
-    el.style.animation=`echo-spark ${dur}s ease-out ${Math.floor(Math.random()*50)}ms forwards`;
+    el.style.cssText=`position:fixed;left:${x}px;top:${y}px;width:${.5+Math.random()*1.4}px;height:${h}px;background:linear-gradient(to bottom,${s.acc},transparent);border-radius:1px;pointer-events:none;z-index:100;`;
+    el.style.animation=`echo-spark ${dur}s ease-out ${Math.floor(Math.random()*60)}ms forwards`;
     el.style.setProperty('--sx',tx+'px');el.style.setProperty('--sy',ty+'px');el.style.setProperty('--rot',rot+'deg');
-    document.body.appendChild(el);
-    setTimeout(()=>el.remove(),parseFloat(dur)*1000+100);
+    document.body.appendChild(el);setTimeout(()=>el.remove(),parseFloat(dur)*1000+100);
+  }
+  for(let i=0;i<8;i++){
+    const el=document.createElement('div');
+    const angle=(i/8)*Math.PI*2+(Math.random()-.5)*.3;
+    const dist=100+Math.random()*180;
+    const tx=Math.cos(angle)*dist,ty=Math.sin(angle)*dist;
+    const dur=(0.6+Math.random()*.5).toFixed(2);
+    const rot=Math.atan2(ty,tx)*180/Math.PI+90;
+    el.style.cssText=`position:fixed;left:${x}px;top:${y}px;width:${.4+Math.random()*.6}px;height:${20+Math.random()*18}px;background:linear-gradient(to bottom,${s.acc},rgba(${s.ar},${s.ag},${s.ab},0.3),transparent);border-radius:1px;pointer-events:none;z-index:100;`;
+    el.style.animation=`echo-spark ${dur}s ease-out ${Math.floor(Math.random()*80)}ms forwards`;
+    el.style.setProperty('--sx',tx+'px');el.style.setProperty('--sy',ty+'px');el.style.setProperty('--rot',rot+'deg');
+    document.body.appendChild(el);setTimeout(()=>el.remove(),parseFloat(dur)*1000+100);
   }
   // Central flash
   const fl=document.createElement('div');

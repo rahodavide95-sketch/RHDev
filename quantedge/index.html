@@ -4451,7 +4451,6 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
   document.getElementById('cat-modal').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeCatModal(); });
   loadPulse().then(()=>loadPanoramica());
-  loadMacro();
   fetchMacroData().then(renderMacro).catch(()=>{});
 });
 </script>

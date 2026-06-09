@@ -1848,14 +1848,17 @@ function cycleTheme(){
 // ── MARKET STATUS ──
 function isNYSEOpen(){
   const now=new Date();
-  const et=new Date(now.toLocaleString('en-US',{timeZone:'America/New_York'}));
-  const day=et.getDay(); // 0=Dom 6=Sab
-  if(day===0||day===6) return false;
-  const h=et.getHours(),m=et.getMinutes(),mins=h*60+m;
+  const fmt=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'numeric',weekday:'short',hour12:false});
+  const parts=Object.fromEntries(fmt.formatToParts(now).map(p=>[p.type,p.value]));
+  const day=parts.weekday; // 'Mon','Tue','Wed','Thu','Fri','Sat','Sun'
+  if(day==='Sat'||day==='Sun') return false;
+  const h=parseInt(parts.hour,10),m=parseInt(parts.minute,10),mins=h*60+m;
   if(mins<570||mins>=960) return false; // prima delle 9:30 o dopo le 16:00
-  // festività NYSE principali (mese 0-based)
-  const mo=et.getMonth(),d=et.getDate();
-  const holidays=[[0,1],[6,4],[11,25]]; // 1 gen, 4 lug, 25 dic
+  // festività NYSE principali
+  const dFmt=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',month:'numeric',day:'numeric'});
+  const dp=Object.fromEntries(dFmt.formatToParts(now).map(p=>[p.type,p.value]));
+  const mo=parseInt(dp.month,10)-1, d=parseInt(dp.day,10);
+  const holidays=[[0,1],[6,4],[11,25],[11,26]]; // 1 gen, 4 lug, 25-26 dic
   if(holidays.some(([hm,hd])=>mo===hm&&d===hd)) return false;
   return true;
 }

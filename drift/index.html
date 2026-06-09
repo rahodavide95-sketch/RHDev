@@ -919,7 +919,35 @@ async function streamFromClaude(prompt,targetEl){
 }
 
 // ── GENERATION PROMPT ─────────────────────────────────────────
-const GEN_PROMPT=`Sei un sintetizzatore generativo e sound designer avant-garde. Genera un suono sintetizzato completamente unico, sperimentale, mai sentito prima.
+const GENRES=[
+  'pad cinematico — attack 0.8-2s, reverb massivo, sine o triangle, 60-180Hz, LFO lentissimo, atmosferico e ampio',
+  'tensione da score — sawtooth filtrato, Q alto, distorsione leggera, 150-350Hz, molto reverb, senso di attesa',
+  'drone orchestrale — layers 2-3, frequenze armoniche, sine o triangle, sustain infinito, reverb cosmico',
+  'techno industriale — sawtooth o noise, 30-80Hz, distorsione alta, filtro highpass aggressivo, attack rapido',
+  'acid techno — square, 80-160Hz, bandpass Q 8-18, LFO veloce 4-14Hz, distorsione media, incalzante',
+  'warehouse sub — noise o sawtooth, 20-55Hz, sub-bass fisico, layers, reverb spaziale, pesante',
+  'Detroit techno — square o sawtooth, 80-150Hz, filtro LP, LFO 1-4Hz, groove meccanico',
+  'Berlin drone — triangle, frequenze basse-medie, LFO lentissimo, reverb lunghissimo, meditativo',
+  'IDM glitch — noise o square, 400-700Hz, LFO velocissimo, distorsione, filtro irregolare, rotto',
+  'electro lead — sawtooth, 200-500Hz, filtro LP sweepato, distorsione media, tagliente',
+  'ambient kosmische — sine, 40-120Hz, reverb enorme, LFO quasi fermo, layers, galleggiante',
+  'lo-fi tape — triangle, 150-350Hz, distorsione leggera, reverb alto, caldo e imperfetto',
+  'bedroom synth — sine o triangle, 200-400Hz, filtro LP dolce, attack morbido, intimo',
+  'cassette degradata — noise leggero, 120-280Hz, distorsione bassa-media, grana vintage',
+  'musique concrète — noise o square, highpass o notch, frequenza alta 400-700Hz, texture astratta',
+  'sub-bass tellurico — sine, 18-45Hz, attack lentissimo, reverb enorme, fisico e profondo',
+  'vapore meccanico — noise, lowpass 200-500Hz, Q basso, attack medio, organico e caldo',
+  'interferenza radio — square o noise, bandpass Q 10-20, LFO rapido, digitale e distorto',
+  'ambient notturno — sine, 80-200Hz, reverb altissimo, sustain lungo, silenzioso e misterioso',
+  'punk sintetico — sawtooth, 300-600Hz, distorsione alta, attack quasi zero, aggressivo e secco',
+];
+
+function buildPrompt(){
+  const g=GENRES[Math.floor(Math.random()*GENRES.length)];
+  return GEN_PROMPT+`\n\nSTILE PER QUESTA GENERAZIONE: ${g}.`;
+}
+
+const GEN_PROMPT=`Sei un sound designer che crea suoni sintetici unici per ogni stile musicale.
 
 Rispondi SOLO con un oggetto JSON valido. Nessun testo prima o dopo. Nessun markdown. Nessun backtick. Solo JSON grezzo.
 
@@ -927,20 +955,16 @@ Rispondi SOLO con un oggetto JSON valido. Nessun testo prima o dopo. Nessun mark
 
 REGOLE:
 - Tutti i campi numerici devono essere numeri JSON validi
-- material: scegli liberamente tra chrome|crystal|magma|neon|glass — varia ogni volta, NON usare sempre lo stesso
 - ar/ag/ab = componenti RGB di ca come numeri 0-255
-- ca = colore hex scuro e saturo; cb = quasi nero; acc = versione luminosa vivida di ca
-- description: 3 frasi italiane. Solo parole italiane reali. Metafore fisiche concrete — un materiale, uno spazio, una sensazione corporea. Niente titoli.
-- name: inventivo e poetico. NON usare sempre "Ossido" o parole simili. Varia: nomi astratti, geografici, scientifici, onomatopeici, latini, inventati.
+- ca = colore hex scuro e saturo coerente con lo stile; cb = quasi nero; acc = versione luminosa vivida di ca
+- description: 3 frasi italiane brevi. Solo parole italiane reali. Metafore sensoriali concrete. Niente titoli.
+- name: inventivo, coerente con lo stile. Varia: astratto, geografico, scientifico, onomatopeico, latino, inventato.
 - oscillator: sine|sawtooth|square|triangle|noise
 - filterType: lowpass|highpass|bandpass|notch
 - frequency: 20-700, filterFreq: 80-14000, filterQ: 0.1-20
 - attackTime: 0.001-3, decayTime: 0.05-3, sustainLevel: 0-1, releaseTime: 0.3-7
-- reverbAmount: 0-0.95, distortionAmount: 0-0.9
-- lfoRate: 0.05-18, lfoDepth: 0-0.85
-- duration: 2-7, layers: 1-3
-
-Ogni generazione deve essere RADICALMENTE diversa dalla precedente. Esplora tutto lo spettro: sub-bass tellurici, texture industriali, glitch digitali, droni spaziali, granulari, cristalli risonanti, vapore, interferenze radio, battiti organici, vento, membrane. Varia oscillatore, frequenza, materiale, colore, nome. Non ripeterti mai.`;
+- reverbAmount: 0-0.95, distortionAmount: 0-0.9, lfoRate: 0.05-18, lfoDepth: 0-0.85
+- duration: 2-7, layers: 1-3`;
 
 // ── STATE ─────────────────────────────────────────────────────
 let spinCount=0;
@@ -999,7 +1023,7 @@ async function spin(evt){
     const res=await fetch('/api/proxy',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:3000,messages:[{role:'user',content:GEN_PROMPT}]})
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:3000,messages:[{role:'user',content:buildPrompt()}]})
     });
     if(!res.ok)throw new Error('API '+res.status);
     const resp=await res.json();

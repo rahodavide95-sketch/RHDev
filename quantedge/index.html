@@ -830,12 +830,10 @@ header{
 /* ── MACRO CARD ── */
 .macro-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;}
 @media(max-width:600px){.macro-grid{grid-template-columns:1fr;}}
-.macro-row{display:flex;flex-direction:column;gap:3px;padding:10px 12px;background:var(--bg3);border-radius:10px;width:100%;box-sizing:border-box;}
-.macro-top{display:flex;align-items:center;justify-content:space-between;gap:6px;}
+.macro-row{display:flex;flex-direction:column;gap:4px;padding:10px 12px;background:var(--bg3);border-radius:10px;width:100%;box-sizing:border-box;}
 .macro-lbl{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);}
-.macro-val{font-size:1.3rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1;margin-top:4px;}
-.macro-badge{font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(255,255,255,.07);}
-.macro-note{font-size:.6rem;color:var(--t2);margin-top:2px;}
+.macro-val{font-size:1.3rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1;}
+.macro-note{font-size:.6rem;color:var(--t2);}
 .fg-card{
   background:var(--bg2);border:1px solid var(--border);
   border-radius:var(--radius);padding:16px 18px;
@@ -1355,34 +1353,22 @@ header{
         <div class="fg-body">
           <div class="macro-grid">
             <div class="macro-row">
-              <div class="macro-top">
-                <span class="macro-lbl">Inflazione USA (CPI YoY)</span>
-                <span class="macro-badge" id="macro-us-badge">—</span>
-              </div>
+              <span class="macro-lbl">Inflazione USA (CPI YoY)</span>
               <span class="macro-val" id="macro-us-val">—</span>
               <span class="macro-note" id="macro-us-note"></span>
             </div>
             <div class="macro-row">
-              <div class="macro-top">
-                <span class="macro-lbl">Inflazione Area Euro (HICP)</span>
-                <span class="macro-badge" id="macro-eu-badge">—</span>
-              </div>
+              <span class="macro-lbl">Inflazione Area Euro (HICP)</span>
               <span class="macro-val" id="macro-eu-val">—</span>
               <span class="macro-note" id="macro-eu-note"></span>
             </div>
             <div class="macro-row">
-              <div class="macro-top">
-                <span class="macro-lbl">Inflazione Italia (HICP)</span>
-                <span class="macro-badge" id="macro-it-badge">—</span>
-              </div>
+              <span class="macro-lbl">Inflazione Italia (HICP)</span>
               <span class="macro-val" id="macro-it-val">—</span>
               <span class="macro-note" id="macro-it-note"></span>
             </div>
             <div class="macro-row">
-              <div class="macro-top">
-                <span class="macro-lbl">Tasso BCE (depositi)</span>
-                <span class="macro-badge" id="macro-bce-badge">—</span>
-              </div>
+              <span class="macro-lbl">Tasso BCE (depositi)</span>
               <span class="macro-val" id="macro-bce-val">—</span>
               <span class="macro-note" id="macro-bce-note"></span>
             </div>
@@ -2269,32 +2255,19 @@ async function fetchMacroData(){
   return out;
 }
 function renderMacro(m){
-  const pct=v=>v!=null?v.toFixed(1)+'%':'—';
-  const badge=(v,inv=false)=>{
-    if(v==null) return;
-    const hot=inv?(v<2.5):(v>3);
-    const col=hot?'var(--r)':v<2?'var(--g)':'var(--y)';
-    return col;
+  const infCol=v=>v==null?'var(--t3)':v<2?'var(--g)':v<=3?'var(--y)':'var(--r)';
+  const infLbl=v=>v==null?'Dati non disponibili':v<2?'Sotto target (2%)':v<=3?'Vicino al target':v<=5?'Sopra target — pressione':'Alta inflazione';
+  const set=(vid,nid,v,col,lbl)=>{
+    const ve=document.getElementById(vid),ne=document.getElementById(nid);
+    if(ve){ve.textContent=v!=null?v.toFixed(1)+'%':'—';ve.style.color=col;}
+    if(ne) ne.textContent=lbl;
   };
-  const setBadge=(id,v,inv=false)=>{
-    const el=document.getElementById(id);
-    if(!el) return;
-    const c=badge(v,inv);
-    el.style.color=c||'var(--t2)';
-    el.textContent=v!=null?(v>0?'▲ ':v<0?'▼ ':'')+(Math.abs(v).toFixed(1))+'%':'—';
-  };
-  const setVal=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=pct(v);};
-  const setNote=(id,txt)=>{const el=document.getElementById(id);if(el)el.textContent=txt;};
-  const inf=(v)=>v==null?'':v<2?'Sotto target BCE (2%)':v<=3?'Vicino al target':v<=5?'Sopra target — pressione':'Alta inflazione';
-  setVal('macro-us-val',m.usCPI); setBadge('macro-us-badge',m.usCPI); setNote('macro-us-note',m.usCPI!=null?inf(m.usCPI):'Dati non disponibili');
-  setVal('macro-eu-val',m.euHICP); setBadge('macro-eu-badge',m.euHICP); setNote('macro-eu-note',m.euHICP!=null?inf(m.euHICP):'');
-  setVal('macro-it-val',m.itHICP); setBadge('macro-it-badge',m.itHICP); setNote('macro-it-note',m.itHICP!=null?inf(m.itHICP):'');
-  const bEl=document.getElementById('macro-bce-val');
-  const bnEl=document.getElementById('macro-bce-badge');
-  const bNoteEl=document.getElementById('macro-bce-note');
-  if(bEl) bEl.textContent=m.bceRate!=null?m.bceRate.toFixed(2)+'%':'—';
-  if(bnEl){ bnEl.textContent=m.bceRate!=null?m.bceRate.toFixed(2)+'%':'—'; bnEl.style.color=m.bceRate!=null?(m.bceRate<=2?'var(--g)':m.bceRate<=3.5?'var(--y)':'var(--r)'):'var(--t2)'; }
-  if(bNoteEl) bNoteEl.textContent=m.bceRate!=null?(m.bceRate<=1?'Politica accomodante':m.bceRate<=3?'Politica neutrale':m.bceRate<=4?'Politica restrittiva':'Tassi molto alti'):'';
+  set('macro-us-val','macro-us-note',m.usCPI,infCol(m.usCPI),infLbl(m.usCPI));
+  set('macro-eu-val','macro-eu-note',m.euHICP,infCol(m.euHICP),infLbl(m.euHICP));
+  set('macro-it-val','macro-it-note',m.itHICP,infCol(m.itHICP),infLbl(m.itHICP));
+  const bceCol=m.bceRate==null?'var(--t3)':m.bceRate<=2?'var(--g)':m.bceRate<=3.5?'var(--y)':'var(--r)';
+  const bceLbl=m.bceRate==null?'':m.bceRate<=1?'Politica accomodante':m.bceRate<=3?'Politica neutrale':m.bceRate<=4?'Politica restrittiva':'Tassi molto alti';
+  set('macro-bce-val','macro-bce-note',m.bceRate,bceCol,bceLbl);
 }
 
 // ── SCORE REASON ──

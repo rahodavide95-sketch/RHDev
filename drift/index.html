@@ -254,6 +254,14 @@ let globalAnalyser = null;
   function resize(){cW=canvas.width=window.innerWidth;cH=canvas.height=window.innerHeight;}
   window.addEventListener('resize',resize);resize();
 
+  // Mouse tracking for interactivity
+  let mouseX=window.innerWidth/2,mouseY=window.innerHeight/2,mouseVX=0,mouseVY=0,lastMX=mouseX,lastMY=mouseY;
+  window.addEventListener('mousemove',e=>{
+    mouseVX=e.clientX-lastMX;mouseVY=e.clientY-lastMY;
+    lastMX=mouseX;lastMY=mouseY;
+    mouseX=e.clientX;mouseY=e.clientY;
+  });
+
   // Sphere rect cache
   let sRect={left:0,top:0,width:220,height:220};
   function updateSR(){const r=sphereDOM.getBoundingClientRect();sRect={left:r.left,top:r.top,width:r.width,height:r.height};}
@@ -351,7 +359,7 @@ let globalAnalyser = null;
       op:.5+Math.random()*.45,hueOff:(Math.random()-.5)*80,w:.3+Math.random()*.65};
   }
 
-  // Orbital debris
+  // Orbital debris — with breathing radius, tilt, and trail
   const debris=Array.from({length:50},()=>({
     angle:Math.random()*Math.PI*2,
     radius:(cW||innerWidth)*(.1+Math.random()*.52),
@@ -359,8 +367,45 @@ let globalAnalyser = null;
     r:.35+Math.random()*1.6,op:.06+Math.random()*.16,
     hueOff:(Math.random()-.5)*115,
     cx:.18+Math.random()*.64,cy:.18+Math.random()*.64,
-    ex:.12+Math.random()*.48,tilt:Math.random()*Math.PI*2
+    ex:.12+Math.random()*.48,tilt:Math.random()*Math.PI*2,
+    breathAmp:Math.random()*.13,breathPhase:Math.random()*Math.PI*2,breathSpeed:.3+Math.random()*1.4
   }));
+
+  // Galaxy / Milky Way system
+  const gals=[];
+  let nextGalAt=18+Math.random()*35;
+
+  function mkGal(){
+    const W=cW||innerWidth,H=cH||innerHeight;
+    const isBand=Math.random()<.6;
+    const cx=(.08+Math.random()*.84)*W,cy=(.08+Math.random()*.84)*H;
+    const maxLife=420+Math.random()*360,maxOp=.055+Math.random()*.07;
+    if(isBand){
+      const ang=-Math.PI*.25+Math.random()*Math.PI*.5;
+      const bLen=W*(.5+Math.random()*.45);
+      const stars=Array.from({length:520},()=>{
+        const t=(Math.random()-.5)*2;
+        return{x:t*bLen*.5,y:(Math.random()-.5)*2*52*Math.pow(Math.random(),.35+Math.abs(t)*2.2),
+               r:.2+Math.random()*1.0,o:.1+Math.random()*.9};
+      });
+      return{isBand:true,cx,cy,ang,stars,life:0,maxLife,op:0,maxOp};
+    }else{
+      const arms=2+Math.floor(Math.random()*2);
+      const stars=[];
+      for(let a=0;a<arms;a++){
+        for(let i=0;i<140;i++){
+          const t=i/140;
+          const rad=12+t*(65+Math.random()*65);
+          const theta=a*(Math.PI*2/arms)+t*Math.PI*2.8+(Math.random()-.5)*.65;
+          stars.push({x:Math.cos(theta)*rad+(Math.random()-.5)*11,
+                      y:Math.sin(theta)*rad+(Math.random()-.5)*11,
+                      r:.3+Math.random()*(1-t*.5)*1.3,o:.3+Math.random()*.7});
+        }
+      }
+      return{isBand:false,cx,cy,rot:Math.random()*Math.PI*2,rotSpd:(Math.random()-.5)*.00022,
+             stars,life:0,maxLife,op:0,maxOp};
+    }
+  }
 
   const flashes=[];
   window.addAmbientFlash=function(x,y){flashes.push({x,y,r:10,op:.38,speed:6+Math.random()*5});};
@@ -524,15 +569,82 @@ let globalAnalyser = null;
       ctx.stroke();ctx.restore();
     }
 
-    // Orbital debris
+    // Orbital debris — breathing radius, tilt, comet trail
     for(const d of debris){
-      d.angle+=d.spd*(1+mid*.8+rms*2.8);
-      const rx=d.radius*(1+d.ex*.5),ry=d.radius*(1-d.ex*.3)*.62;
-      const dx=d.cx*cW+Math.cos(d.angle)*rx,dy=d.cy*cH+Math.sin(d.angle)*ry;
-      if(dx<-4||dx>cW+4||dy<-4||dy>cH+4)continue;
+      const spd=d.spd*(1+mid*.8+rms*2.8);
+      d.angle+=spd;
+      const br=d.radius*(1+d.breathAmp*Math.sin(autoTime*d.breathSpeed+d.breathPhase));
+      const rx=br*(1+d.ex*.5),ry=br*(1-d.ex*.3)*.62;
+      const cosT=Math.cos(d.tilt),sinT=Math.sin(d.tilt);
+      const ex0=Math.cos(d.angle)*rx,ey0=Math.sin(d.angle)*ry;
+      const dx=d.cx*cW+ex0*cosT-ey0*sinT*.2,dy=d.cy*cH+ex0*sinT*.2+ey0*cosT;
+      if(dx<-8||dx>cW+8||dy<-8||dy>cH+8)continue;
       const[dr,dg,db]=hsl2rgb(baseH+d.hueOff,Math.max(14,baseS*.72),Math.max(10,baseL+9));
-      ctx.fillStyle=`rgba(${dr},${dg},${db},${Math.min(.3,d.op*(1+rms*4))})`;
+      const mainOp=Math.min(.3,d.op*(1+rms*4));
+      // Comet trail
+      for(let t=1;t<=6;t++){
+        const ta=d.angle-spd*t*9;
+        const tex=Math.cos(ta)*rx,tey=Math.sin(ta)*ry;
+        const tdx=d.cx*cW+tex*cosT-tey*sinT*.2,tdy=d.cy*cH+tex*sinT*.2+tey*cosT;
+        const top=mainOp*(t/6)*.38;if(top<.002)continue;
+        ctx.fillStyle=`rgba(${dr},${dg},${db},${top})`;
+        ctx.beginPath();ctx.arc(tdx,tdy,d.r*(t/6)*.75,0,Math.PI*2);ctx.fill();
+      }
+      ctx.fillStyle=`rgba(${dr},${dg},${db},${mainOp})`;
       ctx.beginPath();ctx.arc(dx,dy,d.r*(1+bass*.55),0,Math.PI*2);ctx.fill();
+    }
+
+    // Mouse interaction — cursor lines + mouse-trail floaters
+    const mSpeed=Math.abs(mouseVX)+Math.abs(mouseVY);
+    if(mSpeed>6&&Math.random()<.35){
+      floaters.push(mkFloater(false,{x:mouseX+(Math.random()-.5)*6,y:mouseY+(Math.random()-.5)*6,
+        vx:mouseVX*.04+(Math.random()-.5)*.25,vy:mouseVY*.04-(Math.random()*.4)}));
+      if(floaters.length>95)floaters.shift();
+    }
+    mouseVX*=.65;mouseVY*=.65;
+    for(const fl of floaters){
+      const ddx=mouseX-fl.x,ddy=mouseY-fl.y;
+      const dist=Math.sqrt(ddx*ddx+ddy*ddy);
+      if(dist<80&&dist>2&&fl.op>.025){
+        const lineOp=fl.op*(1-dist/80)*.28;
+        ctx.strokeStyle=`rgba(${bR},${bG},${bB},${lineOp})`;
+        ctx.lineWidth=.35;ctx.beginPath();ctx.moveTo(fl.x,fl.y);ctx.lineTo(mouseX,mouseY);ctx.stroke();
+        fl.vx+=ddx/dist*.015;fl.vy+=ddy/dist*.015;
+      }
+    }
+
+    // Galaxies & Milky Way
+    if(autoTime>=nextGalAt&&gals.length<2){gals.push(mkGal());nextGalAt=autoTime+30+Math.random()*45;}
+    for(let gi=gals.length-1;gi>=0;gi--){
+      const g=gals[gi];g.life++;
+      const p=g.life/g.maxLife;
+      if(p<.14)g.op=Math.min(g.maxOp,g.op+g.maxOp/(g.maxLife*.14));
+      else if(p>.72)g.op=Math.max(0,g.op-g.maxOp/(g.maxLife*.28));
+      if(g.life>=g.maxLife){gals.splice(gi,1);continue;}
+      if(g.op<.004)continue;
+      const[gr,gg_,gb]=hsl2rgb(baseH+15+Math.random()*25,Math.max(15,baseS*.55),Math.max(45,baseL+22));
+      ctx.save();
+      ctx.translate(g.cx,g.cy);
+      if(g.isBand){
+        ctx.rotate(g.ang);
+        for(const s of g.stars){
+          ctx.fillStyle=`rgba(${gr},${gg_},${gb},${Math.min(.95,s.o*g.op*5.5)})`;
+          ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill();
+        }
+      }else{
+        g.rot+=g.rotSpd;
+        ctx.rotate(g.rot);
+        // Core glow
+        const cg=ctx.createRadialGradient(0,0,0,0,0,22);
+        cg.addColorStop(0,`rgba(255,255,255,${g.op*.85})`);
+        cg.addColorStop(1,`rgba(${gr},${gg_},${gb},0)`);
+        ctx.fillStyle=cg;ctx.beginPath();ctx.arc(0,0,22,0,Math.PI*2);ctx.fill();
+        for(const s of g.stars){
+          ctx.fillStyle=`rgba(${gr},${gg_},${gb},${Math.min(.95,s.o*g.op*5.5)})`;
+          ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill();
+        }
+      }
+      ctx.restore();
     }
 
     drawWaveRing(bR,bG,bB);

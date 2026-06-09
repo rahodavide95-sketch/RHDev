@@ -45,6 +45,12 @@
     background-size: 200px 200px;
   }
 
+  /* ── AMBIENT CANVAS ── */
+  #ambient-canvas {
+    position: fixed; inset: 0; z-index: 0;
+    pointer-events: none;
+  }
+
   /* ── BG GLOW ── */
   #bg-glow {
     position: fixed; inset: 0; z-index: 0;
@@ -114,7 +120,7 @@
   .ring-4 { inset: -90px; animation: ring-pulse 8s ease-in-out infinite 2s; opacity: 0.15; }
 
   @keyframes ring-pulse {
-    0%, 100% { transform: scale(1); opacity: var(--op, 0.5); }
+    0%, 100% { transform: scale(1); }
     50% { transform: scale(1.015); opacity: 1; }
   }
 
@@ -127,7 +133,6 @@
     position: relative; z-index: 2;
   }
 
-  /* inner shimmer */
   .sphere::after {
     content: '';
     position: absolute;
@@ -169,9 +174,7 @@
 
   .result-card.visible { opacity: 1; transform: translateY(0); }
 
-  .card-header {
-    margin-bottom: 1.25rem;
-  }
+  .card-header { margin-bottom: 1.25rem; }
 
   .sound-name {
     font-family: var(--font-display);
@@ -214,7 +217,6 @@
     font-style: italic;
   }
 
-  /* streaming cursor */
   .cursor {
     display: inline-block;
     width: 2px; height: 14px;
@@ -245,9 +247,7 @@
   }
 
   /* ── ACTIONS ── */
-  .actions {
-    display: flex; gap: 8px; flex-wrap: wrap;
-  }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
   .btn {
     font-family: var(--font-body);
@@ -300,16 +300,28 @@
   /* ── PARTICLES ── */
   .particle {
     position: fixed;
-    width: 3px; height: 3px;
-    border-radius: 50%;
     pointer-events: none;
     z-index: 100;
-    animation: particle-out 1.8s ease-out forwards;
+    animation: particle-out var(--dur, 1.8s) var(--ease, ease-out) forwards;
   }
 
   @keyframes particle-out {
-    0% { opacity: 1; transform: translate(0,0) scale(1); }
-    100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(0.2); }
+    0%   { opacity: 1; transform: translate(0,0) scale(1) rotate(var(--rot,0deg)); }
+    100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(0.1) rotate(var(--rot,0deg)); }
+  }
+
+  /* ── RIPPLE ── */
+  .ripple {
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 99;
+    animation: ripple-expand var(--rdur, 1s) cubic-bezier(0.1, 0.8, 0.3, 1) var(--rdelay, 0ms) forwards;
+  }
+
+  @keyframes ripple-expand {
+    from { transform: translate(-50%, -50%) scale(1); opacity: var(--rop, 0.7); }
+    to   { transform: translate(-50%, -50%) scale(60); opacity: 0; }
   }
 
   /* ── API KEY MODAL ── */
@@ -364,7 +376,6 @@
 
   .key-actions { display: flex; gap: 8px; justify-content: flex-end; }
 
-  /* key icon button in header */
   .btn-key {
     background: none;
     border: none;
@@ -397,7 +408,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .sphere-ring { animation: none !important; }
+    .sphere-ring, #ambient-canvas { animation: none !important; }
     .cursor { animation: none !important; opacity: 1; }
     * { transition-duration: 0.01ms !important; }
   }
@@ -405,6 +416,7 @@
 </head>
 <body>
 
+<canvas id="ambient-canvas"></canvas>
 <div id="bg-glow"></div>
 
 <div class="app">
@@ -463,7 +475,7 @@
 </div>
 
 <script>
-// ── PALETTE ──────────────────────────────────────────────
+// ── PALETTE ──────────────────────────────────────────────────
 const sounds = [
   { name:"Rusted Fog",      category:"texture · sub-bass",  tags:["sub-bass","corroded","80–120 bpm","dark"],          ca:"#5c2818", cb:"#180806", glow:"rgba(200,90,40,0.18)",  ring:"rgba(200,90,40,0.2)",  acc:"#c85a28", ar:200,ag:90, ab:40  },
   { name:"3AM Concrete",    category:"reverb · urban",       tags:["reverb","cold","any bpm","urban"],                  ca:"#142040", cb:"#060c18", glow:"rgba(80,150,220,0.16)", ring:"rgba(80,150,220,0.18)",acc:"#5096dc", ar:80, ag:150,ab:220 },
@@ -479,77 +491,293 @@ const sounds = [
   { name:"Seismic Breath",  category:"low-end · movement",   tags:["infra-bass","slow","breathing","massive"],         ca:"#1a1430", cb:"#080510", glow:"rgba(130,100,200,0.18)",ring:"rgba(130,100,200,0.2)", acc:"#8264c8", ar:130,ag:100,ab:200 },
 ];
 
-// ── STATE ─────────────────────────────────────────────────
+// ── STATE ─────────────────────────────────────────────────────
 let spinCount = 0;
 let current = null;
 let isLoading = false;
-let techVisible = false;
 
-// ── API KEY ────────────────────────────────────────────────
+// ── API KEY ────────────────────────────────────────────────────
 const KEY_STORAGE = 'drift_api_key';
 function getKey() { return localStorage.getItem(KEY_STORAGE) || ''; }
 function setKey(k) { localStorage.setItem(KEY_STORAGE, k); }
 
-// ── DOM ────────────────────────────────────────────────────
-const sphereEl  = document.getElementById('sphere');
-const sphereWrap= document.getElementById('sphere-wrap');
-const card      = document.getElementById('result-card');
-const nameEl    = document.getElementById('sound-name');
-const metaEl    = document.getElementById('sound-meta');
-const descEl    = document.getElementById('sound-desc');
-const tagsEl    = document.getElementById('tags');
-const badgeEl   = document.getElementById('spin-badge');
-const bgGlow    = document.getElementById('bg-glow');
-const techSheet = document.getElementById('tech-sheet');
-const techTitle = document.getElementById('tech-title');
-const techContent=document.getElementById('tech-content');
-const btnPreview= document.getElementById('btn-preview');
-const btnAbleton= document.getElementById('btn-ableton');
-const btnExport = document.getElementById('btn-export');
-const divider   = document.getElementById('divider');
-const rings     = document.querySelectorAll('.sphere-ring');
-const btnKey    = document.getElementById('btn-key');
-const keyOverlay= document.getElementById('key-overlay');
-const keyInput  = document.getElementById('key-input');
-const btnKeySave= document.getElementById('btn-key-save');
+// ── DOM ────────────────────────────────────────────────────────
+const sphereEl   = document.getElementById('sphere');
+const sphereWrap = document.getElementById('sphere-wrap');
+const card       = document.getElementById('result-card');
+const nameEl     = document.getElementById('sound-name');
+const metaEl     = document.getElementById('sound-meta');
+const descEl     = document.getElementById('sound-desc');
+const tagsEl     = document.getElementById('tags');
+const badgeEl    = document.getElementById('spin-badge');
+const bgGlow     = document.getElementById('bg-glow');
+const techSheet  = document.getElementById('tech-sheet');
+const techTitle  = document.getElementById('tech-title');
+const techContent= document.getElementById('tech-content');
+const btnPreview = document.getElementById('btn-preview');
+const btnAbleton = document.getElementById('btn-ableton');
+const btnExport  = document.getElementById('btn-export');
+const divider    = document.getElementById('divider');
+const rings      = document.querySelectorAll('.sphere-ring');
+const btnKey     = document.getElementById('btn-key');
+const keyOverlay = document.getElementById('key-overlay');
+const keyInput   = document.getElementById('key-input');
+const btnKeySave = document.getElementById('btn-key-save');
 const btnKeyCancel=document.getElementById('btn-key-cancel');
 
-// ── COLOR APPLY ────────────────────────────────────────────
+// ── AMBIENT CANVAS ─────────────────────────────────────────────
+(function initAmbient() {
+  const canvas = document.getElementById('ambient-canvas');
+  const ctx = canvas.getContext('2d');
+  let cW, cH;
+
+  function resize() {
+    cW = canvas.width = window.innerWidth;
+    cH = canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // Lerped color state (starts purple-ish)
+  let cR = 100, cG = 80, cB = 220;
+  let tR = 100, tG = 80, tB = 220;
+
+  window.setCanvasColor = function(s) {
+    tR = s.ar; tG = s.ag; tB = s.ab;
+  };
+
+  // Orbs — slow drifting gaussian blobs
+  const orbs = Array.from({ length: 8 }, (_, i) => ({
+    cx: Math.random(),   // normalized 0-1
+    cy: Math.random(),
+    baseR: 160 + Math.random() * 260,
+    phase:  Math.random() * Math.PI * 2,
+    phaseY: Math.random() * Math.PI * 2,
+    speed:  0.0006 + Math.random() * 0.0012,
+    amp:    60 + Math.random() * 130,
+    ampY:   40 + Math.random() * 90,
+    alpha:  i < 2 ? 0.055 : i < 5 ? 0.035 : 0.018,
+  }));
+
+  // Lines — thin traces that appear, drift, fade
+  function mkLine() {
+    const a = (Math.random() - 0.5) * 1.2 + (Math.random() > 0.5 ? 0 : Math.PI * 0.5);
+    const len = 70 + Math.random() * 200;
+    const cx = Math.random() * (cW || 1000);
+    const cy = Math.random() * (cH || 800);
+    return {
+      x1: cx - Math.cos(a) * len * 0.5, y1: cy - Math.sin(a) * len * 0.5,
+      x2: cx + Math.cos(a) * len * 0.5, y2: cy + Math.sin(a) * len * 0.5,
+      vx: (Math.random() - 0.5) * 0.18,
+      vy: (Math.random() - 0.5) * 0.10,
+      op: 0, maxOp: 0.025 + Math.random() * 0.06,
+      life: 0, maxLife: 280 + Math.random() * 500,
+      w: 0.3 + Math.random() * 0.45,
+    };
+  }
+  const NUM_LINES = 20;
+  const lines = Array.from({ length: NUM_LINES }, mkLine);
+
+  // Floaters — micro dots rising upward
+  function mkFloater(fromBottom) {
+    return {
+      x: Math.random() * (cW || 1000),
+      y: fromBottom ? (cH || 800) + 5 + Math.random() * 30 : Math.random() * (cH || 800),
+      r: 0.4 + Math.random() * 1.4,
+      vx: (Math.random() - 0.5) * 0.14,
+      vy: -(0.07 + Math.random() * 0.22),
+      op: 0, maxOp: 0.06 + Math.random() * 0.20,
+      fadeIn: 0.0012 + Math.random() * 0.002,
+      fadeOut: 0.0006 + Math.random() * 0.001,
+      peakAt: 0.25 + Math.random() * 0.35,
+      progress: 0,
+    };
+  }
+  const NUM_FLOATERS = 40;
+  const floaters = Array.from({ length: NUM_FLOATERS }, () => mkFloater(false));
+
+  // Click bloom flashes
+  const flashes = [];
+  window.addAmbientFlash = function(x, y) {
+    flashes.push({ x, y, r: 10, op: 0.28, speed: 4 + Math.random() * 3 });
+  };
+
+  function draw() {
+    requestAnimationFrame(draw);
+    ctx.clearRect(0, 0, cW, cH);
+
+    // Lerp color
+    cR += (tR - cR) * 0.014;
+    cG += (tG - cG) * 0.014;
+    cB += (tB - cB) * 0.014;
+    const r = Math.round(cR), g = Math.round(cG), b = Math.round(cB);
+
+    // Orbs
+    for (const orb of orbs) {
+      orb.phase  += orb.speed;
+      orb.phaseY += orb.speed * 0.71;
+      const x = orb.cx * cW + Math.sin(orb.phase)  * orb.amp;
+      const y = orb.cy * cH + Math.cos(orb.phaseY) * orb.ampY;
+      const grad = ctx.createRadialGradient(x, y, 0, x, y, orb.baseR);
+      grad.addColorStop(0,   `rgba(${r},${g},${b},${orb.alpha})`);
+      grad.addColorStop(0.45,`rgba(${r},${g},${b},${orb.alpha * 0.35})`);
+      grad.addColorStop(1,   'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(x, y, orb.baseR, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Lines
+    for (let i = 0; i < lines.length; i++) {
+      const ln = lines[i];
+      ln.life++;
+      ln.x1 += ln.vx; ln.x2 += ln.vx;
+      ln.y1 += ln.vy; ln.y2 += ln.vy;
+      const p = ln.life / ln.maxLife;
+      if (p < 0.2)       ln.op = Math.min(ln.maxOp, ln.op + ln.maxOp / (ln.maxLife * 0.2));
+      else if (p > 0.65) ln.op = Math.max(0, ln.op - ln.maxOp / (ln.maxLife * 0.35));
+      if (ln.life >= ln.maxLife) { lines[i] = mkLine(); continue; }
+      if (ln.op < 0.003) continue;
+      const grad = ctx.createLinearGradient(ln.x1, ln.y1, ln.x2, ln.y2);
+      grad.addColorStop(0,   `rgba(${r},${g},${b},0)`);
+      grad.addColorStop(0.25,`rgba(${r},${g},${b},${ln.op})`);
+      grad.addColorStop(0.75,`rgba(${r},${g},${b},${ln.op})`);
+      grad.addColorStop(1,   `rgba(${r},${g},${b},0)`);
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = ln.w;
+      ctx.beginPath();
+      ctx.moveTo(ln.x1, ln.y1);
+      ctx.lineTo(ln.x2, ln.y2);
+      ctx.stroke();
+    }
+
+    // Floaters
+    for (let i = 0; i < floaters.length; i++) {
+      const fl = floaters[i];
+      fl.x += fl.vx;
+      fl.y += fl.vy;
+      fl.progress = Math.max(0, Math.min(1, 1 - (fl.y / cH)));
+      if (fl.progress < fl.peakAt) fl.op = Math.min(fl.maxOp, fl.op + fl.fadeIn);
+      else                          fl.op = Math.max(0, fl.op - fl.fadeOut);
+      if (fl.y < -6 || fl.op <= 0) { floaters[i] = mkFloater(true); continue; }
+      if (fl.op < 0.005) continue;
+      ctx.fillStyle = `rgba(${r},${g},${b},${fl.op})`;
+      ctx.beginPath();
+      ctx.arc(fl.x, fl.y, fl.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Click bloom flashes
+    for (let i = flashes.length - 1; i >= 0; i--) {
+      const f = flashes[i];
+      f.r    += f.speed;
+      f.speed = Math.max(0.5, f.speed * 0.96);
+      f.op   -= 0.007;
+      if (f.op <= 0) { flashes.splice(i, 1); continue; }
+      const grad = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.r);
+      grad.addColorStop(0,   `rgba(${r},${g},${b},${f.op * 0.6})`);
+      grad.addColorStop(0.4, `rgba(${r},${g},${b},${f.op})`);
+      grad.addColorStop(1,   'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  draw();
+})();
+
+// ── COLOR APPLY ────────────────────────────────────────────────
 function applyColor(s) {
-  const root = document.documentElement;
   sphereEl.style.background = `radial-gradient(circle at 36% 32%, ${s.ca}, ${s.cb} 70%)`;
-  sphereEl.style.boxShadow = `0 0 90px ${s.glow}, 0 0 180px ${s.glow.replace('0.1','0.06')}, inset 0 0 60px rgba(0,0,0,0.55)`;
-  bgGlow.style.background = `radial-gradient(ellipse 70% 55% at 50% 38%, ${s.glow}, transparent)`;
+  sphereEl.style.boxShadow  = `0 0 90px ${s.glow}, 0 0 180px ${s.glow.replace(/[\d.]+\)$/, '0.06)')}, inset 0 0 60px rgba(0,0,0,0.55)`;
+  bgGlow.style.background   = `radial-gradient(ellipse 70% 55% at 50% 38%, ${s.glow}, transparent)`;
   rings.forEach(r => r.style.borderColor = s.ring);
-  card.style.borderColor = `rgba(${s.ar},${s.ag},${s.ab},0.18)`;
-  divider.style.background = `rgba(${s.ar},${s.ag},${s.ab},0.12)`;
-  btnPreview.style.color = s.acc;
+  card.style.borderColor    = `rgba(${s.ar},${s.ag},${s.ab},0.18)`;
+  divider.style.background  = `rgba(${s.ar},${s.ag},${s.ab},0.12)`;
+  btnPreview.style.color    = s.acc;
   btnPreview.style.borderColor = `rgba(${s.ar},${s.ag},${s.ab},0.3)`;
-  btnPreview.style.background = `rgba(${s.ar},${s.ag},${s.ab},0.07)`;
-  badgeEl.style.color = `rgba(${s.ar},${s.ag},${s.ab},0.4)`;
+  btnPreview.style.background  = `rgba(${s.ar},${s.ag},${s.ab},0.07)`;
+  badgeEl.style.color       = `rgba(${s.ar},${s.ag},${s.ab},0.4)`;
   tagsEl.querySelectorAll('.tag').forEach(t => {
-    t.style.color = `rgba(${s.ar},${s.ag},${s.ab},0.75)`;
-    t.style.borderColor = `rgba(${s.ar},${s.ag},${s.ab},0.2)`;
-    t.style.background = `rgba(${s.ar},${s.ag},${s.ab},0.06)`;
+    t.style.color        = `rgba(${s.ar},${s.ag},${s.ab},0.75)`;
+    t.style.borderColor  = `rgba(${s.ar},${s.ag},${s.ab},0.2)`;
+    t.style.background   = `rgba(${s.ar},${s.ag},${s.ab},0.06)`;
   });
+  window.setCanvasColor(s);
 }
 
-// ── PARTICLES ──────────────────────────────────────────────
-function spawnParticles(x, y, s) {
-  for (let i = 0; i < 14; i++) {
-    const p = document.createElement('div');
-    p.className = 'particle';
-    const a = Math.random() * Math.PI * 2;
-    const d = 50 + Math.random() * 80;
-    p.style.cssText = `left:${x}px;top:${y}px;background:${s.acc};box-shadow:0 0 8px ${s.acc}`;
-    p.style.setProperty('--tx', Math.cos(a)*d+'px');
-    p.style.setProperty('--ty', Math.sin(a)*d+'px');
-    document.body.appendChild(p);
-    setTimeout(() => p.remove(), 2000);
+// ── RIPPLE ─────────────────────────────────────────────────────
+function spawnRipple(x, y, s) {
+  for (let i = 0; i < 3; i++) {
+    const el = document.createElement('div');
+    el.className = 'ripple';
+    const size = 8;
+    el.style.cssText = `
+      left:${x}px; top:${y}px;
+      width:${size}px; height:${size}px;
+      border: 0.5px solid rgba(${s.ar},${s.ag},${s.ab},${0.6 - i * 0.15});
+    `;
+    el.style.setProperty('--rdur', (0.9 + i * 0.25) + 's');
+    el.style.setProperty('--rdelay', (i * 110) + 'ms');
+    el.style.setProperty('--rop', (0.6 - i * 0.15).toFixed(2));
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1800);
   }
 }
 
-// ── CLAUDE API STREAM ──────────────────────────────────────
+// ── PARTICLES ──────────────────────────────────────────────────
+function spawnParticles(x, y, s) {
+  const count = 22;
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+
+    const angle = Math.random() * Math.PI * 2;
+    const dist  = 35 + Math.random() * 110;
+    const tx    = Math.cos(angle) * dist;
+    const ty    = Math.sin(angle) * dist;
+
+    // Vary type: bright core dots, mid dots, streaks
+    let w, h, bg, glow = '', br = '50%';
+    if (i < 5) {
+      // bright glowing core
+      const sz = 3 + Math.random() * 3;
+      w = sz; h = sz;
+      bg = s.acc;
+      glow = `box-shadow:0 0 ${sz*2}px ${s.acc},0 0 ${sz*5}px rgba(${s.ar},${s.ag},${s.ab},0.5)`;
+    } else if (i < 14) {
+      // regular dots
+      const sz = 1.2 + Math.random() * 2.2;
+      w = sz; h = sz;
+      bg = `rgba(${s.ar},${s.ag},${s.ab},${0.5 + Math.random() * 0.4})`;
+    } else {
+      // elongated streaks rotated toward travel direction
+      const rot = Math.atan2(ty, tx) * 180 / Math.PI;
+      w = 8 + Math.random() * 10; h = 1 + Math.random() * 1;
+      bg = `rgba(${s.ar},${s.ag},${s.ab},0.45)`;
+      br = '1px';
+      p.style.setProperty('--rot', rot + 'deg');
+    }
+
+    const dur = (1.2 + Math.random() * 1) + 's';
+    p.style.cssText = `
+      left:${x}px; top:${y}px;
+      width:${w}px; height:${h}px;
+      background:${bg}; border-radius:${br};
+      ${glow};
+    `;
+    p.style.setProperty('--tx', tx + 'px');
+    p.style.setProperty('--ty', ty + 'px');
+    p.style.setProperty('--dur', dur);
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 2500);
+  }
+}
+
+// ── CLAUDE API STREAM ──────────────────────────────────────────
 async function streamFromClaude(prompt, targetEl, onDone) {
   const apiKey = getKey();
   if (!apiKey) { openKeyModal(); throw new Error('no key'); }
@@ -574,15 +802,14 @@ async function streamFromClaude(prompt, targetEl, onDone) {
 
   if (!response.ok) throw new Error('API error ' + response.status);
 
-  const reader = response.body.getReader();
+  const reader  = response.body.getReader();
   const decoder = new TextDecoder();
   let text = '';
 
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
-    const chunk = decoder.decode(value, { stream: true });
-    const lines = chunk.split('\n');
+    const lines = decoder.decode(value, { stream: true }).split('\n');
     for (const line of lines) {
       if (!line.startsWith('data: ')) continue;
       const data = line.slice(6).trim();
@@ -601,7 +828,7 @@ async function streamFromClaude(prompt, targetEl, onDone) {
   if (onDone) onDone(text);
 }
 
-// ── SPIN ───────────────────────────────────────────────────
+// ── SPIN ────────────────────────────────────────────────────────
 async function spin(evt) {
   if (isLoading) return;
   isLoading = true;
@@ -610,35 +837,43 @@ async function spin(evt) {
   const pick = sounds[Math.floor(Math.random() * sounds.length)];
   current = pick;
 
-  // particles at click position
-  const rect = sphereEl.getBoundingClientRect();
-  spawnParticles(rect.left + rect.width/2, rect.top + rect.height/2, pick);
+  // Exact click/tap position (fall back to sphere center for keyboard)
+  let px, py;
+  if (evt && evt.clientX != null) {
+    px = evt.clientX;
+    py = evt.clientY;
+  } else {
+    const rect = sphereEl.getBoundingClientRect();
+    px = rect.left + rect.width  * 0.5;
+    py = rect.top  + rect.height * 0.5;
+  }
 
-  // hide card, update content
+  spawnRipple(px, py, pick);
+  spawnParticles(px, py, pick);
+  window.addAmbientFlash(px, py);
+
   card.classList.remove('visible');
   techSheet.classList.remove('visible');
-  techVisible = false;
 
   await new Promise(r => setTimeout(r, 200));
 
-  nameEl.textContent = pick.name;
-  metaEl.textContent = pick.category;
-  tagsEl.innerHTML = pick.tags.map(t => `<span class="tag">${t}</span>`).join('');
-  badgeEl.textContent = `${spinCount} drift`;
-  descEl.className = 'sound-desc loading';
-  descEl.textContent = 'generating...';
+  nameEl.textContent   = pick.name;
+  metaEl.textContent   = pick.category;
+  tagsEl.innerHTML     = pick.tags.map(t => `<span class="tag">${t}</span>`).join('');
+  badgeEl.textContent  = `${spinCount} drift`;
+  descEl.className     = 'sound-desc loading';
+  descEl.textContent   = 'generating...';
 
   applyColor(pick);
   card.classList.add('visible');
 
-  // stream sensory description
   try {
     await streamFromClaude(
       `Sei un sound designer con una voce poetica e tecnica insieme. Descrivi "${pick.name}" (${pick.category}) in modo sensoriale e fisico: come suona, come si muove nel tempo, cosa si sente nel corpo. Scrivi 3-4 frasi dense, in italiano. Nessun titolo, nessuna introduzione. Solo la descrizione.`,
       descEl
     );
     descEl.classList.remove('loading');
-  } catch (e) {
+  } catch {
     descEl.textContent = 'Connetti l\'API Anthropic per le descrizioni generate.';
     descEl.classList.remove('loading');
   }
@@ -646,20 +881,19 @@ async function spin(evt) {
   isLoading = false;
 }
 
-// ── BUTTON ACTIONS ─────────────────────────────────────────
+// ── BUTTON ACTIONS ─────────────────────────────────────────────
 btnPreview.addEventListener('click', async () => {
   if (!current || isLoading) return;
   isLoading = true;
   techSheet.classList.add('visible');
   techTitle.textContent = 'descrizione sensoriale';
   techContent.innerHTML = '<span class="cursor"></span>';
-
   try {
     await streamFromClaude(
       `Descrivi il suono "${current.name}" (${current.category}) in modo profondamente sensoriale. Come si sente nel petto, nelle orecchie, nello stomaco. Che immagini evoca. Che ora del giorno è. Che spazio fisico occupa. Scrivi in italiano, 5-6 frasi evocative. Nessun titolo.`,
       techContent
     );
-  } catch (e) {
+  } catch {
     techContent.textContent = 'Connetti l\'API Anthropic per i contenuti generati.';
   }
   isLoading = false;
@@ -671,13 +905,12 @@ btnAbleton.addEventListener('click', async () => {
   techSheet.classList.add('visible');
   techTitle.textContent = 'guida ableton';
   techContent.innerHTML = '<span class="cursor"></span>';
-
   try {
     await streamFromClaude(
       `Sei un produttore musicale esperto di Ableton Live. Spiega come costruire "${current.name}" (${current.category}) in Ableton, passo per passo. Indica strumenti specifici (Operator, Wavetable, Sampler, ecc), chain di effetti, impostazioni chiave. Scrivi in italiano, conciso ma preciso. Nessuna introduzione generica.`,
       techContent
     );
-  } catch (e) {
+  } catch {
     techContent.textContent = 'Connetti l\'API Anthropic per i contenuti generati.';
   }
   isLoading = false;
@@ -689,32 +922,21 @@ btnExport.addEventListener('click', async () => {
   techSheet.classList.add('visible');
   techTitle.textContent = 'formato export';
   techContent.innerHTML = '<span class="cursor"></span>';
-
   try {
     await streamFromClaude(
       `Consiglia il formato di export ottimale per il suono "${current.name}" (${current.category}): formato file, sample rate, bit depth, mono vs stereo, note su loop points se necessari. Poi suggerisci come usarlo in Ableton (drag in clip, rack, ecc). Scrivi in italiano, pratico e diretto.`,
       techContent
     );
-  } catch (e) {
+  } catch {
     techContent.textContent = 'Connetti l\'API Anthropic per i contenuti generati.';
   }
   isLoading = false;
 });
 
-// ── API KEY MODAL ──────────────────────────────────────────
-function openKeyModal() {
-  keyInput.value = getKey();
-  keyOverlay.classList.remove('hidden');
-  keyInput.focus();
-}
-
-function closeKeyModal() {
-  keyOverlay.classList.add('hidden');
-}
-
-function syncKeyIcon() {
-  btnKey.classList.toggle('has-key', !!getKey());
-}
+// ── API KEY MODAL ──────────────────────────────────────────────
+function openKeyModal()  { keyInput.value = getKey(); keyOverlay.classList.remove('hidden'); keyInput.focus(); }
+function closeKeyModal() { keyOverlay.classList.add('hidden'); }
+function syncKeyIcon()   { btnKey.classList.toggle('has-key', !!getKey()); }
 
 btnKey.addEventListener('click', openKeyModal);
 btnKeyCancel.addEventListener('click', closeKeyModal);
@@ -723,16 +945,15 @@ btnKeySave.addEventListener('click', () => {
   if (v) { setKey(v); syncKeyIcon(); closeKeyModal(); }
 });
 keyInput.addEventListener('keydown', e => {
-  if (e.key === 'Enter') btnKeySave.click();
+  if (e.key === 'Enter')  btnKeySave.click();
   if (e.key === 'Escape') closeKeyModal();
 });
 keyOverlay.addEventListener('click', e => { if (e.target === keyOverlay) closeKeyModal(); });
 
-// auto-open on first visit
 syncKeyIcon();
 if (!getKey()) openKeyModal();
 
-// ── EVENTS ─────────────────────────────────────────────────
+// ── EVENTS ─────────────────────────────────────────────────────
 sphereWrap.addEventListener('click', spin);
 sphereWrap.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') spin(e); });
 </script>

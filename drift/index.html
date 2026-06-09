@@ -798,8 +798,9 @@ async function spin(evt){
       if(finalDesc){descEl.innerHTML=finalDesc;descEl.className='sound-desc';}
     }
     if(!paramsApplied){
-      descEl.textContent='Formato risposta non riconosciuto. Riprova.';
+      descEl.textContent='DEBUG: '+(buf.slice(0,200)||'(vuoto)');
       descEl.className='sound-desc';
+      console.log('FULL BUF:',buf);
     }
   }catch(e){
     const msg=e.message||'';

@@ -70,8 +70,8 @@
     transition:background 1.5s ease,box-shadow 1.5s ease,transform 0.3s cubic-bezier(0.23,1,0.32,1);
     position:relative; z-index:2;
   }
-  .sphere::before { content:''; position:absolute; top:10%;left:14%;width:38%;height:26%;border-radius:50%;background:radial-gradient(ellipse,rgba(255,255,255,0.22) 0%,rgba(255,255,255,0.07) 45%,transparent 75%);filter:blur(4px);pointer-events:none; }
-  .sphere::after { content:''; position:absolute; bottom:10%;right:12%;width:22%;height:16%;border-radius:50%;background:radial-gradient(ellipse,rgba(255,255,255,0.07) 0%,transparent 70%);filter:blur(5px);pointer-events:none; }
+  .sphere::before { content:''; position:absolute; inset:0; border-radius:50%; background:var(--sphere-hl,transparent); pointer-events:none; z-index:1; }
+  .sphere::after  { content:''; position:absolute; bottom:10%;right:12%;width:22%;height:16%;border-radius:50%;background:radial-gradient(ellipse,rgba(255,255,255,0.07) 0%,transparent 70%);filter:blur(5px);pointer-events:none; }
 
   .sphere-hint { position:absolute; bottom:-32px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--c-text-muted);letter-spacing:0.14em;white-space:nowrap;text-transform:uppercase;transition:color 0.4s; }
   .sphere-wrap:hover .sphere-hint { color:var(--c-text-secondary); }
@@ -120,19 +120,7 @@
   @keyframes echo-spark { 0%{opacity:1;transform:translate(-50%,-50%) rotate(var(--rot,0deg)) scaleY(1)} 100%{opacity:0;transform:translate(calc(-50% + var(--sx,0px)),calc(-50% + var(--sy,0px))) rotate(var(--rot,0deg)) scaleY(0.1)} }
   @keyframes echo-flash { 0%{transform:translate(-50%,-50%)scale(0);opacity:1} 40%{opacity:0.9} 100%{transform:translate(-50%,-50%)scale(35);opacity:0} }
 
-  /* ── Sphere materials ── */
-  /* chrome: horizontal streak */
-  .sphere[data-material="chrome"]::before { top:16%;left:8%;width:84%;height:13%;border-radius:40%;background:linear-gradient(to right,transparent 0%,rgba(255,255,255,0.14) 25%,rgba(255,255,255,0.2) 50%,rgba(255,255,255,0.14) 75%,transparent 100%);filter:blur(2px); }
-  .sphere[data-material="chrome"]::after  { bottom:12%;right:8%;width:40%;height:28%;background:radial-gradient(ellipse,rgba(255,255,255,0.13) 0%,transparent 70%);filter:blur(3px); }
-  /* crystal: sharp small highlights */
-  .sphere[data-material="crystal"]::before { top:9%;left:20%;width:22%;height:16%;border-radius:50%;background:radial-gradient(ellipse,rgba(255,255,255,0.45) 0%,rgba(255,255,255,0.1) 50%,transparent 80%);filter:blur(1px); }
-  .sphere[data-material="crystal"]::after  { top:22%;right:14%;bottom:auto;left:auto;width:10%;height:8%;background:radial-gradient(ellipse,rgba(255,255,255,0.3) 0%,transparent 70%);filter:blur(0.5px); }
-  /* magma: inner warm glow */
-  .sphere[data-material="magma"]::before { top:25%;left:15%;width:70%;height:60%;border-radius:50%;background:radial-gradient(ellipse,rgba(255,180,60,0.07) 0%,transparent 70%);filter:blur(18px); }
-  .sphere[data-material="magma"]::after  { bottom:8%;right:10%;width:50%;height:35%;background:radial-gradient(ellipse,rgba(255,120,20,0.1) 0%,transparent 70%);filter:blur(10px); }
-  /* neon: edge rim only, dark center */
-  .sphere[data-material="neon"]::before { top:5%;left:5%;width:90%;height:90%;border-radius:50%;background:radial-gradient(ellipse,transparent 42%,rgba(255,255,255,0.08) 68%,rgba(255,255,255,0.18) 84%,transparent 100%);filter:blur(3px); }
-  .sphere[data-material="neon"]::after  { bottom:6%;right:6%;width:88%;height:88%;background:radial-gradient(ellipse,transparent 50%,rgba(255,255,255,0.06) 80%,transparent 100%);filter:blur(4px); }
+  /* ── Sphere materials: set via --sphere-hl CSS var from JS ── */
 
   .key-overlay { position:fixed;inset:0;z-index:200;background:rgba(5,5,10,0.85);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;padding:1.5rem; }
   .key-overlay.hidden { display:none; }
@@ -709,7 +697,7 @@ const keyInput   =document.getElementById('key-input');
 const btnKeySave =document.getElementById('btn-key-save');
 const btnKeyCancel=document.getElementById('btn-key-cancel');
 
-function applyColor(s){
+function applyColor(s,matIdx){
   const glow=`rgba(${s.ar},${s.ag},${s.ab},0.18)`;
   const ring=`rgba(${s.ar},${s.ag},${s.ab},0.15)`;
   sphereEl.style.background=[
@@ -739,6 +727,8 @@ function applyColor(s){
     t.style.borderColor=`rgba(${s.ar},${s.ag},${s.ab},0.2)`;
     t.style.background=`rgba(${s.ar},${s.ag},${s.ab},0.06)`;
   });
+  if(matIdx!=null&&SPHERE_MATS[matIdx])
+    sphereEl.style.setProperty('--sphere-hl',SPHERE_MATS[matIdx](s.ar,s.ag,s.ab));
   window.setCanvasColor(s);
 }
 
@@ -751,16 +741,72 @@ function freqToNote(hz){
 }
 
 // ── MATERIAL SYSTEM ──────────────────────────────────────────
-function getMaterial(data){
-  const valid=['chrome','crystal','magma','neon','glass'];
+// 50 sphere material overlays — each returns a CSS gradient for ::before
+const SPHERE_MATS=(($,w)=>[
+(r,g,b)=>`radial-gradient(ellipse at 28% 22%,${w(255,255,255,.55)} 0%,${w(255,255,255,.12)} 28%,transparent 45%)`,
+(r,g,b)=>`linear-gradient(to right,transparent,${w(255,255,255,.2)} 25%,${w(255,255,255,.3)} 50%,${w(255,255,255,.2)} 75%,transparent)`,
+(r,g,b)=>`linear-gradient(180deg,transparent 15%,${w(255,255,255,.18)} 19%,${w(255,255,255,.24)} 22%,${w(255,255,255,.18)} 26%,transparent 30%)`,
+(r,g,b)=>`linear-gradient(135deg,${w(255,255,255,.28)} 0%,${w(255,255,255,.08)} 35%,transparent 55%)`,
+(r,g,b)=>`linear-gradient(225deg,${w(255,255,255,.28)} 0%,${w(255,255,255,.08)} 35%,transparent 55%)`,
+(r,g,b)=>`radial-gradient(ellipse at 50% 14%,${w(255,255,255,.48)} 0%,${w(255,255,255,.1)} 28%,transparent 42%)`,
+(r,g,b)=>`radial-gradient(ellipse at 28% 22%,${w(255,255,255,.4)} 0%,transparent 20%),radial-gradient(ellipse at 68% 62%,${w(255,255,255,.16)} 0%,transparent 18%)`,
+(r,g,b)=>`radial-gradient(ellipse at 25% 20%,${w(255,255,255,.38)} 0%,transparent 16%),radial-gradient(ellipse at 72% 30%,${w(255,255,255,.18)} 0%,transparent 12%),radial-gradient(ellipse at 55% 72%,${w(255,255,255,.12)} 0%,transparent 10%)`,
+(r,g,b)=>`radial-gradient(ellipse at 72% 76%,${w(r,g,b,.4)} 0%,${w(r,g,b,.1)} 38%,transparent 55%)`,
+(r,g,b)=>`radial-gradient(ellipse at 50% 50%,transparent 55%,${w(255,255,255,.1)} 70%,${w(255,255,255,.26)} 82%,${w(255,255,255,.18)} 90%,transparent)`,
+(r,g,b)=>`radial-gradient(ellipse at 50% 50%,transparent 40%,${w(r,g,b,.15)} 60%,${w(r,g,b,.28)} 74%,${w(r,g,b,.15)} 82%,transparent)`,
+(r,g,b)=>`radial-gradient(ellipse at 50% 50%,${w(255,255,255,.58)} 0%,${w(255,255,255,.15)} 18%,transparent 38%)`,
+(r,g,b)=>`radial-gradient(ellipse at 50% 50%,transparent 22%,${w(255,255,255,.2)} 36%,${w(255,255,255,.32)} 48%,${w(255,255,255,.2)} 60%,transparent 70%)`,
+(r,g,b)=>`conic-gradient(from 0deg at 50% 50%,${w(255,80,120,.08)},${w(255,210,50,.1)},${w(80,255,150,.08)},${w(50,150,255,.1)},${w(190,50,255,.08)},${w(255,80,120,.08)})`,
+(r,g,b)=>`conic-gradient(from 45deg at 50% 50%,${w($(r+50),$(g-30),$(b+50),.2)},${w($(r-30),$(g+50),$(b-30),.16)},${w($(r+20),$(g+20),$(b-50),.18)},${w($(r-20),$(g-30),$(b+60),.17)},${w($(r+50),$(g-30),$(b+50),.2)})`,
+(r,g,b)=>`radial-gradient(ellipse at 50% 8%,${w(255,255,255,.32)} 0%,${w(255,255,255,.08)} 42%,transparent 58%)`,
+(r,g,b)=>`radial-gradient(ellipse at 50% 86%,${w(r,g,b,.55)} 0%,${w(r,g,b,.15)} 38%,transparent 58%)`,
+(r,g,b)=>`radial-gradient(ellipse at 7% 50%,${w(255,255,255,.24)} 0%,${w(255,255,255,.06)} 32%,transparent 50%)`,
+(r,g,b)=>`radial-gradient(ellipse at 28% 22%,${w(255,255,255,.45)} 0%,transparent 22%),radial-gradient(ellipse at 50% 50%,transparent 62%,${w(255,255,255,.1)} 76%,${w(255,255,255,.22)} 87%,transparent)`,
+(r,g,b)=>`radial-gradient(ellipse at 15% 15%,${w(255,255,255,.22)} 0%,transparent 18%),radial-gradient(ellipse at 85% 15%,${w(255,255,255,.16)} 0%,transparent 15%),radial-gradient(ellipse at 15% 85%,${w(r,g,b,.2)} 0%,transparent 15%),radial-gradient(ellipse at 85% 85%,${w(r,g,b,.16)} 0%,transparent 12%)`,
+(r,g,b)=>`radial-gradient(ellipse at 20% 18%,${w(255,255,255,.38)} 0%,transparent 4%),radial-gradient(ellipse at 72% 28%,${w(255,255,255,.28)} 0%,transparent 3%),radial-gradient(ellipse at 45% 65%,${w(255,255,255,.2)} 0%,transparent 3%),radial-gradient(ellipse at 80% 70%,${w(255,255,255,.22)} 0%,transparent 3%),radial-gradient(ellipse at 35% 40%,${w(255,255,255,.14)} 0%,transparent 2%)`,
+(r,g,b)=>`radial-gradient(ellipse at 30% 24%,${w(255,255,255,.72)} 0%,${w(255,255,255,.28)} 6%,transparent 14%)`,
+(r,g,b)=>`radial-gradient(ellipse at 50% 30%,${w(255,255,255,.06)} 0%,transparent 55%)`,
+(r,g,b)=>`radial-gradient(ellipse at 30% 20%,${w(255,255,255,.65)} 0%,${w(255,255,255,.2)} 25%,transparent 45%),radial-gradient(ellipse at 50% 50%,transparent 50%,${w(255,255,255,.16)} 76%,${w(255,255,255,.26)} 86%,transparent)`,
+(r,g,b)=>`linear-gradient(135deg,transparent 30%,${w(255,255,255,.22)} 44%,${w(255,255,255,.3)} 50%,${w(255,255,255,.22)} 56%,transparent 70%)`,
+(r,g,b)=>`linear-gradient(to right,${w(r,g,b,.38)} 0%,transparent 32%,transparent 68%,${w($(r+30),$(g+30),$(b+30),.22)} 100%)`,
+(r,g,b)=>`linear-gradient(to bottom,${w(255,255,255,.22)} 0%,transparent 35%,transparent 65%,${w(r,g,b,.32)} 100%)`,
+(r,g,b)=>`radial-gradient(ellipse at 50% 50%,transparent 24%,${w(255,255,255,.07)} 25%,transparent 26%,transparent 44%,${w(255,255,255,.05)} 45%,transparent 46%,transparent 63%,${w(255,255,255,.04)} 64%,transparent 65%)`,
+(r,g,b)=>`radial-gradient(ellipse at 50% 44%,${w(255,255,255,.19)} 0%,${w(255,255,255,.06)} 32%,transparent 55%)`,
+(r,g,b)=>`radial-gradient(ellipse at 20% 14%,${w(255,255,255,.62)} 0%,${w(255,255,255,.24)} 12%,${w(255,255,255,.05)} 22%,transparent 34%)`,
+(r,g,b)=>`radial-gradient(ellipse at 50% 50%,transparent 42%,${w(r,g,b,.1)} 58%,${w(r,g,b,.32)} 72%,${w(r,g,b,.4)} 84%,${w(r,g,b,.2)} 92%,transparent)`,
+(r,g,b)=>`radial-gradient(ellipse at 50% 50%,transparent 64%,${w(255,255,255,.08)} 74%,${w(255,255,255,.26)} 82%,${w(255,255,255,.34)} 88%,${w(255,255,255,.15)} 93%,transparent)`,
+(r,g,b)=>`radial-gradient(ellipse at 50% 50%,rgba(0,0,0,.42) 0%,rgba(0,0,0,.15) 45%,transparent 65%)`,
+(r,g,b)=>`radial-gradient(ellipse at 50% 48%,${w($(r+80),$(g+80),$(b+80),.62)} 0%,${w($(r+40),$(g+40),$(b+40),.2)} 18%,transparent 35%)`,
+(r,g,b)=>`radial-gradient(ellipse at 50% 92%,${w(r,g,b,.48)} 0%,${w(r,g,b,.12)} 28%,transparent 42%)`,
+(r,g,b)=>`radial-gradient(ellipse at 22% 18%,${w(255,255,255,.44)} 0%,transparent 22%),radial-gradient(ellipse at 78% 78%,${w(r,g,b,.4)} 0%,transparent 25%)`,
+(r,g,b)=>`radial-gradient(ellipse at 35% 28%,${w(255,255,255,.3)} 0%,transparent 12%),radial-gradient(ellipse at 60% 18%,${w(255,255,255,.2)} 0%,transparent 8%),radial-gradient(ellipse at 45% 50%,${w(255,255,255,.13)} 0%,transparent 6%),radial-gradient(ellipse at 70% 55%,${w(255,255,255,.18)} 0%,transparent 9%)`,
+(r,g,b)=>`conic-gradient(from 20deg at 45% 40%,${w($(r+40),$(g-20),$(b+40),.22)},${w($(r-20),$(g+40),$(b+20),.18)},${w($(r+30),$(g+30),$(b-30),.2)},${w($(r-30),$(g-10),$(b+60),.2)},${w($(r+40),$(g-20),$(b+40),.22)})`,
+(r,g,b)=>`repeating-linear-gradient(135deg,${w(255,255,255,.06)} 0px,${w(255,255,255,.06)} 1px,transparent 1px,transparent 5px),repeating-linear-gradient(45deg,${w(255,255,255,.04)} 0px,${w(255,255,255,.04)} 1px,transparent 1px,transparent 5px)`,
+(r,g,b)=>`radial-gradient(ellipse at 50% 50%,${w(255,255,255,.14)} 0%,${w(255,255,255,.07)} 42%,transparent 65%)`,
+(r,g,b)=>`conic-gradient(from 0deg at 50% 50%,${w(255,50,100,.13)},${w(255,200,0,.11)},${w(0,255,150,.12)},${w(0,150,255,.11)},${w(200,0,255,.12)},${w(255,50,100,.13)})`,
+(r,g,b)=>`radial-gradient(ellipse at 40% 30%,${w(180,220,255,.26)} 0%,${w(100,160,255,.08)} 36%,transparent 55%),radial-gradient(ellipse at 65% 65%,${w(r,$(g),$(b+30),.16)} 0%,transparent 30%)`,
+(r,g,b)=>`radial-gradient(ellipse at 38% 30%,${w(255,225,100,.46)} 0%,${w(255,165,30,.15)} 35%,transparent 55%)`,
+(r,g,b)=>`radial-gradient(ellipse at 32% 24%,${w(180,255,180,.4)} 0%,${w(80,225,100,.1)} 32%,transparent 50%)`,
+(r,g,b)=>`radial-gradient(ellipse at 50% 70%,${w(255,120,20,.48)} 0%,${w(200,50,0,.15)} 40%,transparent 58%)`,
+(r,g,b)=>`linear-gradient(160deg,${w(100,255,180,.16)} 0%,transparent 25%,${w(50,180,255,.13)} 40%,transparent 55%,${w(180,80,255,.11)} 70%,transparent 85%)`,
+(r,g,b)=>`linear-gradient(to right,${w(255,50,100,.13)} 0%,${w(255,200,0,.11)} 20%,${w(0,255,150,.11)} 40%,${w(0,150,255,.11)} 60%,${w(180,0,255,.11)} 80%,${w(255,50,100,.11)} 100%)`,
+(r,g,b)=>`radial-gradient(ellipse at 18% 25%,${w(255,255,255,.32)} 0%,transparent 8%),radial-gradient(ellipse at 82% 18%,${w($(r+50),$(g+30),$(b+50),.26)} 0%,transparent 6%),radial-gradient(ellipse at 50% 82%,${w($(r+30),$(g+50),$(b+30),.2)} 0%,transparent 7%),radial-gradient(ellipse at 75% 58%,${w(255,255,255,.18)} 0%,transparent 5%),radial-gradient(ellipse at 28% 68%,${w(r,$(g+30),$(b+50),.15)} 0%,transparent 5%)`,
+(r,g,b)=>`radial-gradient(ellipse at 35% 30%,${w($(r+40),$(g+10),$(b+70),.3)} 0%,${w($(r+10),$(g+30),$(b+50),.1)} 38%,transparent 55%),radial-gradient(ellipse at 65% 65%,${w($(r+10),$(g+40),$(b+20),.2)} 0%,transparent 35%)`,
+(r,g,b)=>`radial-gradient(ellipse at 50% 50%,transparent 45%,${w(r,g,b,.08)} 60%,${w($(r+20),$(g+20),$(b+20),.28)} 72%,${w($(r+32),$(g+32),$(b+32),.42)} 80%,${w($(r+20),$(g+20),$(b+20),.26)} 88%,transparent)`,
+])(
+  v=>Math.max(0,Math.min(255,v|0)),
+  (r,g,b,a)=>`rgba(${Math.max(0,Math.min(255,r|0))},${Math.max(0,Math.min(255,g|0))},${Math.max(0,Math.min(255,b|0))},${a})`
+);
+
+function getMaterialIndex(data){
   const osc=data.synthesis?.oscillator||'sine';
-  const oscW={sine:0,triangle:1,sawtooth:2,square:3,noise:4};
+  const oscW={sine:3,triangle:11,sawtooth:19,square:27,noise:37};
   const freq=Math.round(data.synthesis?.frequency||220);
-  const dist=Math.round((data.synthesis?.distortionAmount||0)*10);
-  const rev=Math.round((data.synthesis?.reverbAmount||0)*10);
+  const dist=Math.round((data.synthesis?.distortionAmount||0)*100);
+  const rev=Math.round((data.synthesis?.reverbAmount||0)*100);
+  const lfo=Math.round((data.synthesis?.lfoRate||0)*10);
   const nameSum=(data.name||'').split('').reduce((a,c)=>a+c.charCodeAt(0),0);
-  const idx=((oscW[osc]??0)*7+Math.floor(freq/80)+dist*3+rev*2+nameSum)%5;
-  return valid[idx];
+  return((oscW[osc]??3)+Math.floor(freq/45)+dist+rev+lfo+nameSum)%50;
 }
 
 // ── EFFECTS ───────────────────────────────────────────────────
@@ -1012,9 +1058,7 @@ function applyGeneratedSound(data,px,py){
   metaEl.textContent=[data.category,note,durSec].filter(Boolean).join(' · ');
   tagsEl.innerHTML=(data.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('');
   badgeEl.textContent=`${spinCount} sonorium`;
-  applyColor(s);
-
-  sphereEl.dataset.material=getMaterial(data);
+  applyColor(s,getMaterialIndex(data));
   spawnEchoBurst(px,py,s);
 
   if(data.synthesis){

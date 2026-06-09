@@ -803,9 +803,10 @@ async function spin(evt){
     }
   }catch(e){
     const msg=e.message||'';
+    const isKeyError=msg.includes('401')||msg.includes('403')||msg.includes('Unauthorized');
     const isFetchError=msg.includes('fetch')||msg.includes('network')||msg.includes('Failed');
-    descEl.innerHTML=isFetchError
-      ? `<span style="cursor:pointer;text-decoration:underline;opacity:0.7" onclick="document.getElementById('btn-key').click()">Rete bloccata o chiave non valida. Tocca qui per aggiornare la chiave ⚷</span>`
+    descEl.innerHTML=(isKeyError||isFetchError)
+      ? `<span style="cursor:pointer;text-decoration:underline;opacity:0.7" onclick="document.getElementById('btn-key').click()">${isKeyError?'Chiave non valida o senza crediti':'Rete bloccata'}. Tocca qui ⚷</span>`
       : 'Errore: '+msg;
     descEl.className='sound-desc';
     console.error(e);

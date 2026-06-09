@@ -763,6 +763,15 @@ let spinCount=0;
 let current=null;
 let isLoading=false;
 
+// ── JSON SANITIZER ────────────────────────────────────────────
+function sanitizeJSON(s){
+  return s
+    .replace(/(\d)\.([,\}\]])/g,'$1.0$2')   // trailing dot: 14. → 14.0
+    .replace(/([:\[,])\s*\.(\d)/g,'$10.$2')  // leading dot: .5 → 0.5
+    .replace(/,(\s*[\}\]])/g,'$1')           // trailing comma in obj/array
+    .replace(/'/g,'"');                       // single quotes → double
+}
+
 // ── SPIN ──────────────────────────────────────────────────────
 async function spin(evt){
   if(isLoading)return;
@@ -825,12 +834,11 @@ async function spin(evt){
               if(si!==-1&&ei!==-1){
                 try{
                   let js=buf.slice(si+MSTART.length,ei).trim();
-                  // fix trailing decimal points: 14. → 14.0
-                  js=js.replace(/(\d)\.([,\}\]])/g,'$1.0$2');
+                  js=sanitizeJSON(js);
                   const data=JSON.parse(js);
                   applyGeneratedSound(data,px,py);
                   paramsApplied=true;
-                }catch(e){console.warn('parse error',e);}
+                }catch(e){console.warn('parse error',e,buf);}
               }
             }else{
               const ei=buf.indexOf(MEND);
@@ -848,11 +856,16 @@ async function spin(evt){
       if(finalDesc){descEl.innerHTML=finalDesc;descEl.className='sound-desc';}
     }
     if(!paramsApplied){
-      const si2=buf.indexOf(MSTART),ei2=buf.indexOf(MEND);
-      const jsonStr=si2!==-1&&ei2!==-1?buf.slice(si2+MSTART.length,ei2).trim():'';
-      descEl.textContent=`DBG hasEnd=${buf.includes(MEND)} len=${buf.length} jsonOk=${!!jsonStr} | ${jsonStr.slice(0,250)}`;
+      // Fallback: try to extract any JSON object from the buffer
+      try{
+        const m=buf.match(/\{[\s\S]*\}/);
+        if(m){const data=JSON.parse(sanitizeJSON(m[0]));applyGeneratedSound(data,px,py);paramsApplied=true;}
+      }catch{}
+    }
+    if(!paramsApplied){
+      descEl.textContent='Risposta inattesa. Riprova.';
       descEl.className='sound-desc';
-      console.log('FULL BUF:',buf);
+      console.warn('unparsed buf:',buf);
     }
   }catch(e){
     const msg=e.message||'';

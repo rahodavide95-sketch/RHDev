@@ -81,7 +81,7 @@
   .result-card.visible { padding:2rem 2.25rem 1.75rem;height:auto;overflow:visible;margin-top:2.5rem;border-color:var(--c-border);opacity:1;transform:translateY(0);transition:opacity 0.7s ease,transform 0.7s ease,border-color 1.5s ease; }
 
   .card-header { margin-bottom:1.25rem; }
-  .sound-name { font-family:var(--font-display);font-size:26px;font-weight:500;color:var(--c-text-primary);letter-spacing:-0.01em;margin-bottom:1.1rem;transition:color 1s ease;line-height:1.2;text-align:center; }
+  .sound-name { font-family:var(--font-display);font-size:26px;font-weight:500;color:var(--c-text-primary);letter-spacing:-0.01em;margin:0 0 1.1rem;transition:color 1s ease;line-height:1.2;text-align:center; }
   .sound-meta { font-size:11px;color:var(--c-text-muted);letter-spacing:0.12em;text-transform:uppercase;transition:color 1s ease;text-align:center; }
 
   .divider { height:0.5px;background:var(--c-border);margin:1.25rem 0;transition:background 1.5s ease; }
@@ -191,7 +191,7 @@
   <div class="result-card" id="result-card" aria-live="polite">
     <div class="card-header">
       <div style="position:relative;width:100%;text-align:center">
-        <p class="sound-name" id="sound-name" style="margin:0">—</p>
+        <p class="sound-name" id="sound-name">—</p>
         <span class="sound-playing" id="sound-playing" style="position:absolute;right:0;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:2px">
           <span class="sound-bar"></span>
           <span class="sound-bar"></span>

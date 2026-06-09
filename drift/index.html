@@ -1046,10 +1046,12 @@ async function streamFromClaude(prompt,targetEl){
       try{const j=JSON.parse(d);if(j.type==='content_block_delta'&&j.delta?.text){text+=j.delta.text;targetEl.textContent=text;}}catch{}
     }
   }
-  // strip markdown, then add blank line before each numbered step
+  // strip markdown, then add blank line before each list item (numbered or bullet)
   targetEl.textContent=text
     .replace(/\*\*(.+?)\*\*/g,'$1').replace(/\*(.+?)\*/g,'$1')
-    .replace(/\n(\d+\.)/g,'\n\n$1');
+    .replace(/\n([\d]+\.|[-•–])\s*/g,'\n\n$1 ')
+    .replace(/^([\d]+\.|[-•–])\s*/,'$1 ')
+    .trim();
   targetEl.classList.remove('streaming');
 }
 

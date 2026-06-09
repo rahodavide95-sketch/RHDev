@@ -513,18 +513,6 @@ let globalAnalyser = null;
       ctx.fillStyle=grad;ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,Math.PI*2);ctx.fill();
     }
 
-    // Ambient expanding rings
-    if(Math.random()<.007+bass*.05)ambRings.push(mkAmbRing());
-    for(let i=ambRings.length-1;i>=0;i--){
-      const a=ambRings[i];a.r+=a.spd*(1+bass*1.6);
-      const fade=Math.min(1,(a.maxR-a.r)/(a.maxR*.4));
-      const aop=Math.min(.21,a.op*Math.max(0,fade)*(1+rms*2.8));
-      if(a.r>a.maxR||aop<=0){ambRings.splice(i,1);continue;}
-      const[rr,rg,rb]=hsl2rgb(baseH+a.hueOff,Math.max(22,baseS*.8),Math.max(7,baseL));
-      ctx.save();ctx.strokeStyle=`rgba(${rr},${rg},${rb},${aop})`;
-      ctx.lineWidth=a.w;ctx.beginPath();ctx.arc(a.px*cW,a.py*cH,a.r,0,Math.PI*2);ctx.stroke();ctx.restore();
-    }
-
     // Lightning arcs
     if(isBeat||Math.random()<.0028+rms*.022)lightnings.push(mkLightning());
     for(let i=lightnings.length-1;i>=0;i--){

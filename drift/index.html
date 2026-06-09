@@ -876,25 +876,28 @@ async function spin(evt){
       }
     }
 
-    // Extract JSON — try full parse first, then strip markdown fences, then largest {...} block
+    // Extract JSON: strip any text outside outermost { }
     let data=null;
-    const attempts=[
-      ()=>JSON.parse(sanitizeJSON(buf.trim())),
-      ()=>JSON.parse(sanitizeJSON(buf.replace(/^```[a-z]*\n?/,'').replace(/\n?```$/,'').trim())),
-      ()=>{const m=buf.match(/\{[\s\S]*\}/);if(m)return JSON.parse(sanitizeJSON(m[0]));throw new Error('no match');}
-    ];
-    for(const fn of attempts){
-      try{data=fn();break;}catch{}
+    const s=buf.indexOf('{'), e=buf.lastIndexOf('}');
+    if(s!==-1&&e>s){
+      const raw=buf.slice(s,e+1);
+      try{data=JSON.parse(raw);}catch{
+        try{data=JSON.parse(sanitizeJSON(raw));}catch{}
+      }
     }
 
-    if(data){
+    if(data&&(data.name||data.synthesis)){
       applyGeneratedSound(data,px,py);
       if(data.description){
         descEl.className='sound-desc';
         descEl.innerHTML=data.description;
+      }else{
+        descEl.className='sound-desc';
+        descEl.textContent='';
       }
     }else{
-      descEl.textContent='Risposta inattesa. Riprova.';
+      const preview=buf.slice(0,120).replace(/</g,'&lt;');
+      descEl.innerHTML=`<span style="opacity:0.5;font-size:0.8em">Risposta inattesa — riprova.<br><small>${preview}</small></span>`;
       descEl.className='sound-desc';
       console.warn('unparsed buf:',buf);
     }

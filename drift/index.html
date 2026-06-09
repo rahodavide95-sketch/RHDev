@@ -814,10 +814,10 @@ let isActing=false;   // action buttons
 // ── JSON SANITIZER ────────────────────────────────────────────
 function sanitizeJSON(s){
   return s
-    .replace(/(\d)\.([,\}\]])/g,'$1.0$2')   // trailing dot: 14. → 14.0
-    .replace(/([:\[,])\s*\.(\d)/g,'$10.$2')  // leading dot: .5 → 0.5
-    .replace(/,(\s*[\}\]])/g,'$1')           // trailing comma in obj/array
-    .replace(/'/g,'"');                       // single quotes → double
+    .replace(/(\d)\.([,\}\]])/g,'$1.0$2')                         // 14. → 14.0
+    .replace(/([:\[,])\s*\.(\d)/g,(_, p1, p2)=>p1+'0.'+p2)        // .5 → 0.5
+    .replace(/,(\s*[\}\]])/g,'$1');                                 // trailing commas
+  // NOTE: no apostrophe→quote replace — corrupts Italian text (L'altra → L"altra)
 }
 
 // ── SPIN ──────────────────────────────────────────────────────

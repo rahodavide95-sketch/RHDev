@@ -223,9 +223,7 @@ header{
 
 .fg-card-left{align-items:flex-start!important;}
 .fg-card-left .fg-top{align-items:flex-start!important;text-align:left!important;}
-.yc-status-row{display:flex;align-items:center;gap:10px;width:100%;flex-wrap:wrap;}
-.yc-state-big{font-size:1.15rem;font-weight:700;letter-spacing:.02em;line-height:1;}
-.yc-spread-lbl{font-size:.75rem;font-weight:600;font-variant-numeric:tabular-nums;color:var(--t2);}
+.yc-verdict{font-size:1.25rem;font-weight:700;line-height:1.2;width:100%;}
 .yc-svg{width:100%;height:80px;margin:8px 0 4px;overflow:hidden;display:block;flex-shrink:0;}
 .yc-track{fill:none;stroke:rgba(255,255,255,.08);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;}
 .yc-curve{fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;}
@@ -1337,19 +1335,16 @@ header{
       <div class="fg-card">
         <div class="fg-top">
           <div class="fg-title-row">
-            <span class="fg-title">Curva dei Rendimenti</span>
+            <span class="fg-title">Segnale Economia USA</span>
             <div style="display:flex;gap:4px"><button class="refresh-btn" onclick="refreshCard(this,loadMacro)" title="Aggiorna">↻</button><button class="info-btn" data-tip="yieldcurve">i</button></div>
           </div>
-          <span class="fg-sub">Tassi obbligaz. USA · spread 10A–3M</span>
+          <span class="fg-sub">Spread Treasury 10A–3M · indicatore recessione</span>
         </div>
         <div class="fg-body" style="justify-content:flex-start;">
-          <div class="yc-status-row">
-            <div class="yc-state-big" id="yc-state">—</div>
-            <div class="yc-spread-lbl" id="yc-spread">—</div>
-          </div>
-          <svg class="yc-svg" id="yc-svg" viewBox="0 0 160 84"></svg>
-          <div class="yc-pts" id="yc-pts"></div>
-          <div class="yc-interp" id="yc-interp"></div>
+          <div class="yc-verdict" id="yc-state">—</div>
+          <div class="yc-interp" id="yc-interp" style="margin-top:6px;padding-top:0;border-top:none;"></div>
+          <div class="yc-pts" id="yc-pts" style="margin-top:10px;"></div>
+          <svg class="yc-svg" id="yc-svg" viewBox="0 0 160 84" style="margin-top:6px;opacity:.7"></svg>
         </div>
       </div>
       <!-- MACRO CARD -->
@@ -4190,12 +4185,13 @@ Da usare con il <b>PEG</b>: un P/E alto è giustificato se la crescita è alta.`
 <i>Regola empirica: compra quando c'è paura, vendi quando c'è avidità.</i>`
   },
   yieldcurve:{
-    title:'Curva dei Rendimenti — Yield Curve',
-    body:`Mostra la relazione tra i tassi d'interesse dei titoli di Stato USA a diverse scadenze (3 mesi, 5 anni, 10 anni, 30 anni). La forma della curva anticipa il ciclo economico.<br><br>
-<b>Normale (crescente)</b> → I tassi a lungo termine sono più alti di quelli a breve. Economia in espansione, condizioni standard.<br>
-<b>Piatta</b> → Differenziale ridotto tra breve e lungo. Fase di transizione, attenzione.<br>
-<b>Invertita ⚠</b> → I tassi a breve superano quelli a lungo. Ha anticipato le ultime 8 recessioni USA.<br><br>
-<b>Spread mostrato:</b> rendimento 10 anni – 3 mesi.<br>
+    title:'Segnale Economia USA — come leggerlo',
+    body:`Confronta il tasso d'interesse che il governo USA paga su prestiti a <b>3 mesi</b> vs <b>10 anni</b>.<br><br>
+In condizioni normali, chi presta a lungo riceve di più: rischio maggiore = rendimento maggiore.<br><br>
+<b>✓ Espansione</b> → 10 anni &gt; 3 mesi. Tutto normale, economia in salute.<br>
+<b>⚡ Incertezza</b> → Quasi uguali. Il mercato non sa dove va l'economia.<br>
+<b>⚠ Allerta recessione</b> → 3 mesi &gt; 10 anni (curva invertita). Ha anticipato <b>ogni recessione USA</b> degli ultimi 50 anni, con 12–18 mesi di anticipo.<br><br>
+<i>Non garantisce una recessione, ma è il segnale macroeconomico più affidabile che esiste.</i><br>
 <i>Regola empirica: curva invertita per più di 3 mesi consecutivi = segnale di recessione nei 12–18 mesi successivi.</i>`
   },
   sectors:{
@@ -4327,19 +4323,17 @@ function renderYieldCurve(data){
   const spStr=(spread>=0?'+':'')+spread.toFixed(2)+'%';
   let state,color,interp;
   if(spread<-0.25){
-    state='⚠ Invertita'; color='#ef4444';
-    interp='I tassi a breve termine superano quelli a lungo: chi presta per poco vuole più rendimento di chi presta per anni. Storicamente precede recessioni nei 12–18 mesi successivi.';
+    state='⚠ Allerta recessione'; color='#ef4444';
+    interp=`Spread ${spStr} — I tassi a 3 mesi (${irx.toFixed(2)}%) superano quelli a 10 anni (${tnx.toFixed(2)}%). Storicamente questo segnale ha preceduto ogni recessione USA degli ultimi 50 anni.`;
   } else if(spread<0.25){
-    state='Piatta'; color='#f59e0b';
-    interp='I tassi a breve e a lungo termine sono quasi uguali. Il mercato non ha una direzione chiara sull\'economia — fase di transizione o incertezza.';
+    state='⚡ Economia incerta'; color='#f59e0b';
+    interp=`Spread ${spStr} — I tassi a breve e a lungo termine sono quasi uguali. Il mercato non ha una direzione chiara: fase di transizione o possibile rallentamento.`;
   } else {
-    state='Normale'; color='#10b981';
-    interp='Chi presta a lungo termine riceve più rendimento: situazione fisiologica. Segnale che l\'economia è in espansione e il mercato è fiducioso.';
+    state='✓ Economia in espansione'; color='#10b981';
+    interp=`Spread ${spStr} — I tassi a 10 anni (${tnx.toFixed(2)}%) superano quelli a 3 mesi (${irx.toFixed(2)}%): situazione normale e positiva per l'economia.`;
   }
   const stEl=document.getElementById('yc-state');
-  const spEl=document.getElementById('yc-spread');
   if(stEl){stEl.textContent=state;stEl.style.color=color;}
-  if(spEl){spEl.textContent='Spread '+spStr;spEl.style.color=color;}
   // Build SVG with gradient fill
   const pts=[{x:10,v:irx,l:'3M'},...(fvx?[{x:70,v:fvx,l:'5A'}]:[]),{x:120,v:tnx,l:'10A'},...(tyx?[{x:152,v:tyx,l:'30A'}]:[])];
   const W=160,H=80,PAD=8;

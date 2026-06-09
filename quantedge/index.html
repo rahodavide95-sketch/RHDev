@@ -2192,6 +2192,69 @@ async function fetchFundamentals(ticker){
   }catch{return null;}
 }
 
+// ── MACRO DATA (inflazione + BCE) ──
+async function fetchMacroData(){
+  const out={usCPI:null,euHICP:null,itHICP:null,bceRate:null};
+  // US CPI YoY — BLS public API (no key)
+  try{
+    const bls=await fetchJSON('https://api.bls.gov/publicAPI/v1/timeseries/data/CUSR0000SA0');
+    const series=bls?.Results?.series?.[0]?.data||bls?.Results?.series?.[0]?.data||[];
+    if(series.length>=13){
+      const cur=parseFloat(series[0].value), prev=parseFloat(series[12].value);
+      if(cur&&prev) out.usCPI=((cur-prev)/prev*100);
+    }
+  }catch{}
+  // ECB: Eurozone HICP YoY + Italy HICP YoY + BCE deposit rate
+  try{
+    const [euR,itR,bceR]=await Promise.allSettled([
+      fetchJSON('https://data-api.ecb.europa.eu/service/data/ICP/M.U2.N.000000.4.ANR?lastNObservations=1&format=jsondata'),
+      fetchJSON('https://data-api.ecb.europa.eu/service/data/ICP/M.IT.N.000000.4.ANR?lastNObservations=1&format=jsondata'),
+      fetchJSON('https://data-api.ecb.europa.eu/service/data/FM/M.U2.EUR.4F.KR.DFR.LEV?lastNObservations=1&format=jsondata'),
+    ]);
+    const ecbVal=r=>{
+      const obs=r?.value?.dataSets?.[0]?.series?.['0:0:0:0:0:0']?.observations||
+                r?.value?.dataSets?.[0]?.series?.['0:0:0:0:0']?.observations||null;
+      if(!obs) return null;
+      const keys=Object.keys(obs);
+      if(!keys.length) return null;
+      const v=obs[keys[keys.length-1]]?.[0];
+      return v!=null&&!isNaN(v)?parseFloat(v):null;
+    };
+    if(euR.status==='fulfilled') out.euHICP=ecbVal(euR);
+    if(itR.status==='fulfilled') out.itHICP=ecbVal(itR);
+    if(bceR.status==='fulfilled') out.bceRate=ecbVal(bceR);
+  }catch{}
+  return out;
+}
+function renderMacro(m){
+  const pct=v=>v!=null?v.toFixed(1)+'%':'—';
+  const badge=(v,inv=false)=>{
+    if(v==null) return;
+    const hot=inv?(v<2.5):(v>3);
+    const col=hot?'var(--r)':v<2?'var(--g)':'var(--y)';
+    return col;
+  };
+  const setBadge=(id,v,inv=false)=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    const c=badge(v,inv);
+    el.style.color=c||'var(--t2)';
+    el.textContent=v!=null?(v>0?'▲ ':v<0?'▼ ':'')+(Math.abs(v).toFixed(1))+'%':'—';
+  };
+  const setVal=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=pct(v);};
+  const setNote=(id,txt)=>{const el=document.getElementById(id);if(el)el.textContent=txt;};
+  const inf=(v)=>v==null?'':v<2?'Sotto target BCE (2%)':v<=3?'Vicino al target':v<=5?'Sopra target — pressione':'Alta inflazione';
+  setVal('macro-us-val',m.usCPI); setBadge('macro-us-badge',m.usCPI); setNote('macro-us-note',m.usCPI!=null?inf(m.usCPI):'Dati non disponibili');
+  setVal('macro-eu-val',m.euHICP); setBadge('macro-eu-badge',m.euHICP); setNote('macro-eu-note',m.euHICP!=null?inf(m.euHICP):'');
+  setVal('macro-it-val',m.itHICP); setBadge('macro-it-badge',m.itHICP); setNote('macro-it-note',m.itHICP!=null?inf(m.itHICP):'');
+  const bEl=document.getElementById('macro-bce-val');
+  const bnEl=document.getElementById('macro-bce-badge');
+  const bNoteEl=document.getElementById('macro-bce-note');
+  if(bEl) bEl.textContent=m.bceRate!=null?m.bceRate.toFixed(2)+'%':'—';
+  if(bnEl){ bnEl.textContent=m.bceRate!=null?m.bceRate.toFixed(2)+'%':'—'; bnEl.style.color=m.bceRate!=null?(m.bceRate<=2?'var(--g)':m.bceRate<=3.5?'var(--y)':'var(--r)'):'var(--t2)'; }
+  if(bNoteEl) bNoteEl.textContent=m.bceRate!=null?(m.bceRate<=1?'Politica accomodante':m.bceRate<=3?'Politica neutrale':m.bceRate<=4?'Politica restrittiva':'Tassi molto alti'):'';
+}
+
 // ── SCORE REASON ──
 function scoreReason(cl){
   if(!cl||cl.length<30) return '';
@@ -4078,6 +4141,15 @@ Da usare con il <b>PEG</b>: un P/E alto è giustificato se la crescita è alta.`
 <b>1–2</b> → Fair value.<br>
 <b>&gt; 2</b> → Il mercato paga un premium sulla crescita attesa — rischio se la crescita delude.`
   },
+  macro:{
+    title:'Dati Macro — Inflazione & Tassi',
+    body:`Indicatori macroeconomici aggiornati automaticamente.<br><br>
+<b>CPI / HICP YoY</b> — variazione % dei prezzi al consumo rispetto a 12 mesi fa. Target BCE: <b>2%</b>.<br><br>
+<b>&lt; 2%</b> → Sotto target: banca centrale può tagliare i tassi → positivo per azioni.<br>
+<b>2–3%</b> → Nella norma: contesto favorevole ai mercati.<br>
+<b>&gt; 3%</b> → Sopra target: pressione sui tassi → negativo per bond e growth stocks.<br><br>
+<b>Tasso BCE (depositi)</b> — tasso di interesse che la BCE applica sui depositi bancari overnight. Indica la direzione della politica monetaria europea.`
+  },
   feargreed:{
     title:'Fear & Greed Index — Paura e Avidità',
     body:`Misura il sentiment complessivo del mercato su una scala da 0 (paura estrema) a 100 (avidità estrema). È calcolato combinando RSI di SPY, momentum a 20 giorni e VIX.<br><br>
@@ -4338,6 +4410,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('cat-modal').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeCatModal(); });
   loadPulse().then(()=>loadPanoramica());
   loadMacro();
+  fetchMacroData().then(renderMacro).catch(()=>{});
 });
 </script>
 

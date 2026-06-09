@@ -2777,7 +2777,11 @@ function initSecControls(){
     // Refresh button
     const ref=document.createElement('button');
     ref.className='refresh-btn'; ref.title='Aggiorna sezione'; ref.textContent='↻';
-    ref.addEventListener('click',()=>refreshCard(ref,()=>loadSectionRest(id)));
+    ref.addEventListener('click',()=>refreshCard(ref,async()=>{
+      const entries=PANO[id]||[];
+      await Promise.all(entries.map(([ticker])=>fetchAndScore(ticker).then(score=>{if(score!=null)globalScoreMap[ticker]=score;}).catch(()=>{})));
+      renderSecRows(id);
+    }));
     ctrl.appendChild(inp);
     ctrl.appendChild(sel);
     ctrl.appendChild(ref);

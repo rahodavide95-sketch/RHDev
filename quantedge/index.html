@@ -1325,8 +1325,27 @@ header{
           <div class="dxy-note" id="dxy-note">Caricamento…</div>
         </div>
       </div>
-      <!-- MACRO CARD -->
+      <!-- Yield Curve card -->
       <div class="fg-card">
+        <div class="fg-top">
+          <div class="fg-title-row">
+            <span class="fg-title">Curva dei Rendimenti</span>
+            <button class="info-btn" data-tip="yieldcurve">i</button>
+          </div>
+          <span class="fg-sub" id="yc-sub">Caricamento…</span>
+        </div>
+        <div class="fg-body" style="justify-content:flex-start;">
+          <div class="yc-hd-row">
+            <div id="yc-spread" class="yc-spread" style="color:var(--t3)">—</div>
+            <div id="yc-state" class="yc-state" style="color:var(--t3)">—</div>
+          </div>
+          <svg class="yc-svg" id="yc-svg" viewBox="0 0 160 84"></svg>
+          <div class="yc-pts" id="yc-pts"></div>
+          <div class="yc-interp" id="yc-interp"></div>
+        </div>
+      </div>
+      <!-- MACRO CARD -->
+      <div class="fg-card home-yc-card">
         <div class="fg-top">
           <div class="fg-title-row">
             <span class="fg-title">Macro</span>
@@ -1368,25 +1387,6 @@ header{
               <span class="macro-note" id="macro-bce-note"></span>
             </div>
           </div>
-        </div>
-      </div>
-      <!-- Yield Curve card -->
-      <div class="fg-card home-yc-card">
-        <div class="fg-top">
-          <div class="fg-title-row">
-            <span class="fg-title">Curva dei Rendimenti</span>
-            <button class="info-btn" data-tip="yieldcurve">i</button>
-          </div>
-          <span class="fg-sub" id="yc-sub">Caricamento…</span>
-        </div>
-        <div class="fg-body" style="justify-content:flex-start;">
-          <div class="yc-hd-row">
-            <div id="yc-spread" class="yc-spread" style="color:var(--t3)">—</div>
-            <div id="yc-state" class="yc-state" style="color:var(--t3)">—</div>
-          </div>
-          <svg class="yc-svg" id="yc-svg" viewBox="0 0 160 84"></svg>
-          <div class="yc-pts" id="yc-pts"></div>
-          <div class="yc-interp" id="yc-interp"></div>
         </div>
       </div>
       <!-- Sector Rotation card -->

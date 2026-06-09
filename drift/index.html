@@ -190,6 +190,7 @@
       <button class="btn btn-accent" id="btn-preview">Descrizione sensoriale</button>
       <button class="btn" id="btn-ableton">Guida Ableton</button>
       <button class="btn" id="btn-replay">↺ Replay</button>
+      <button class="btn" id="btn-export">⬇ WAV</button>
     </div>
     <div class="tech-sheet" id="tech-sheet">
       <p class="tech-title" id="tech-title">—</p>
@@ -879,6 +880,130 @@ btnReplay.addEventListener('click',()=>{
   if(!current?.synthesis)return;
   try{ synthesize(current.synthesis); }
   catch(e){ console.warn(e); }
+});
+
+// ── WAV EXPORT ────────────────────────────────────────────────
+const btnExport=document.getElementById('btn-export');
+
+function encodeWAVFloat32(buffer){
+  const numCh=buffer.numberOfChannels;
+  const numFr=buffer.length;
+  const sr=buffer.sampleRate;
+  const bps=4; // 32-bit float = 4 bytes
+  const dataLen=numFr*numCh*bps;
+  const ab=new ArrayBuffer(44+dataLen);
+  const v=new DataView(ab);
+  const w=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i));};
+  w(0,'RIFF');v.setUint32(4,36+dataLen,true);
+  w(8,'WAVE');w(12,'fmt ');
+  v.setUint32(16,16,true);       // chunk size
+  v.setUint16(20,3,true);        // IEEE float = 3
+  v.setUint16(22,numCh,true);
+  v.setUint32(24,sr,true);
+  v.setUint32(28,sr*numCh*bps,true); // byte rate
+  v.setUint16(32,numCh*bps,true);    // block align
+  v.setUint16(34,32,true);       // bits per sample
+  w(36,'data');v.setUint32(40,dataLen,true);
+  // interleave channels
+  let off=44;
+  for(let f=0;f<numFr;f++){
+    for(let c=0;c<numCh;c++){
+      v.setFloat32(off,buffer.getChannelData(c)[f],true);
+      off+=4;
+    }
+  }
+  return ab;
+}
+
+async function renderOffline(p){
+  const SR=48000;
+  const dur=Math.min(8,Math.max(1,p.duration||3));
+  const totalLen=Math.ceil(SR*(dur+1.5));
+  const octx=new OfflineAudioContext(2,totalLen,SR);
+  const now=0;
+
+  const rev=Math.min(0.95,Math.max(0,p.reverbAmount||0));
+  const dist=Math.min(0.95,Math.max(0,p.distortionAmount||0));
+  const layers=Math.min(3,Math.max(1,Math.round(p.layers||1)));
+
+  const master=octx.createGain();
+  master.gain.setValueAtTime(0.75,now);
+  const reverbNode=createReverb(octx,rev);
+  const dryGain=octx.createGain(),wetGain=octx.createGain();
+  dryGain.gain.setValueAtTime(1,now);
+  wetGain.gain.setValueAtTime(rev*0.7,now);
+  master.connect(dryGain);master.connect(reverbNode);
+  reverbNode.connect(wetGain);
+  dryGain.connect(octx.destination);wetGain.connect(octx.destination);
+
+  const validOsc=['sine','sawtooth','square','triangle'];
+  const validFlt=['lowpass','highpass','bandpass','notch'];
+  const oscType=(validOsc.includes(p.oscillator)?p.oscillator:'sawtooth');
+  const fltType=(validFlt.includes(p.filterType)?p.filterType:'lowpass');
+  const baseFreq=Math.min(2000,Math.max(20,p.frequency||220));
+  const fltFreq=Math.min(18000,Math.max(60,p.filterFreq||1200));
+  const fltQ=Math.min(25,Math.max(0.1,p.filterQ||1));
+  const atk=Math.max(0.001,p.attackTime||0.01);
+  const dec=Math.max(0.01,p.decayTime||0.15);
+  const sus=Math.min(1,Math.max(0,p.sustainLevel||0.5));
+  const rel=Math.max(0.05,p.releaseTime||1.2);
+  const lfoR=Math.min(25,Math.max(0,p.lfoRate||0));
+  const lfoD=Math.min(1,Math.max(0,p.lfoDepth||0));
+  const detuneOffsets=[0,7,-5];
+
+  for(let l=0;l<layers;l++){
+    let src;
+    if(p.oscillator==='noise'){
+      src=octx.createBufferSource();
+      src.buffer=createNoiseBuffer(octx,dur);
+    }else{
+      src=octx.createOscillator();
+      src.type=oscType;
+      src.frequency.setValueAtTime(baseFreq,now);
+      src.detune.setValueAtTime(detuneOffsets[l]||0,now);
+    }
+    const ws=octx.createWaveShaper();
+    ws.curve=makeDistortionCurve(dist);ws.oversample='4x';
+    const flt=octx.createBiquadFilter();
+    flt.type=fltType;flt.frequency.setValueAtTime(fltFreq,now);flt.Q.setValueAtTime(fltQ,now);
+    if(lfoR>0&&lfoD>0){
+      const lfo=octx.createOscillator(),lfoG=octx.createGain();
+      lfo.frequency.setValueAtTime(lfoR,now);
+      lfoG.gain.setValueAtTime(fltFreq*lfoD*0.45,now);
+      lfo.connect(lfoG);lfoG.connect(flt.frequency);
+      lfo.start(now);lfo.stop(now+dur+0.5);
+    }
+    const env=octx.createGain();
+    const vol=(l===0?1:0.45)/Math.sqrt(layers);
+    const relStart=Math.max(atk+dec*0.5,dur-rel);
+    env.gain.setValueAtTime(0.0001,now);
+    env.gain.linearRampToValueAtTime(vol,now+atk);
+    env.gain.setTargetAtTime(vol*sus,now+atk,dec/3);
+    env.gain.setValueAtTime(vol*sus,now+relStart);
+    env.gain.linearRampToValueAtTime(0.0001,now+dur);
+    src.connect(ws);ws.connect(flt);flt.connect(env);env.connect(master);
+    src.start(now);src.stop(now+dur+0.15);
+  }
+
+  return octx.startRendering();
+}
+
+btnExport.addEventListener('click',async()=>{
+  if(!current?.synthesis)return;
+  const orig=btnExport.textContent;
+  btnExport.textContent='rendering…';btnExport.disabled=true;
+  try{
+    const buf=await renderOffline(current.synthesis);
+    const wav=encodeWAVFloat32(buf);
+    const blob=new Blob([wav],{type:'audio/wav'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    const name=(current.name||'drift').replace(/\s+/g,'_').toLowerCase();
+    a.href=url;a.download=`${name}_48k_32bit.wav`;
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),5000);
+  }catch(e){console.error(e);}
+  btnExport.textContent=orig;btnExport.disabled=false;
 });
 
 // ── EVENTS ────────────────────────────────────────────────────

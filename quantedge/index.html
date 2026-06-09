@@ -4458,6 +4458,10 @@ document.addEventListener('DOMContentLoaded',()=>{
   loadPulse().then(()=>loadPanoramica());
   loadMacro();
   fetchMacroData().then(renderMacro).catch(()=>{});
+  // Auto-refresh Dollar/YieldCurve/Sectors every 5 min when market is open
+  setInterval(()=>{ if(isNYSEOpen()) loadMacro(); },5*60*1000);
+  // Auto-refresh Fear&Greed/VIX every 5 min when market is open
+  setInterval(()=>{ if(isNYSEOpen()) loadPulse(); },5*60*1000);
 });
 </script>
 

@@ -759,7 +759,7 @@ async function spin(evt){
     const res=await fetch('/api/proxy',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:700,stream:true,messages:[{role:'user',content:GEN_PROMPT}]})
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1500,stream:true,messages:[{role:'user',content:GEN_PROMPT}]})
     });
     if(!res.ok)throw new Error('API '+res.status);
 
@@ -798,7 +798,8 @@ async function spin(evt){
       if(finalDesc){descEl.innerHTML=finalDesc;descEl.className='sound-desc';}
     }
     if(!paramsApplied){
-      descEl.textContent='DEBUG: '+(buf.slice(0,200)||'(vuoto)');
+      const hasEnd=buf.includes(MEND);
+      descEl.textContent=`DEBUG: hasEnd=${hasEnd} len=${buf.length} | ${buf.slice(0,300)}`;
       descEl.className='sound-desc';
       console.log('FULL BUF:',buf);
     }

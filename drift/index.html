@@ -753,14 +753,14 @@ function freqToNote(hz){
 // ── MATERIAL SYSTEM ──────────────────────────────────────────
 function getMaterial(data){
   const valid=['chrome','crystal','magma','neon','glass'];
-  if(data.material&&valid.includes(data.material))return data.material;
-  // fallback if model omits field
-  const osc=data.synthesis?.oscillator||'';
-  if(osc==='sawtooth')return'chrome';
-  if(osc==='noise')return'magma';
-  if(osc==='square')return'neon';
-  if(osc==='triangle')return'crystal';
-  return'glass';
+  const osc=data.synthesis?.oscillator||'sine';
+  const oscW={sine:0,triangle:1,sawtooth:2,square:3,noise:4};
+  const freq=Math.round(data.synthesis?.frequency||220);
+  const dist=Math.round((data.synthesis?.distortionAmount||0)*10);
+  const rev=Math.round((data.synthesis?.reverbAmount||0)*10);
+  const nameSum=(data.name||'').split('').reduce((a,c)=>a+c.charCodeAt(0),0);
+  const idx=((oscW[osc]??0)*7+Math.floor(freq/80)+dist*3+rev*2+nameSum)%5;
+  return valid[idx];
 }
 
 // ── EFFECTS ───────────────────────────────────────────────────

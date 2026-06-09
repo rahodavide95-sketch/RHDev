@@ -801,15 +801,22 @@ header{
 .home-cards{
   margin-bottom:16px;
   display:grid;
-  grid-template-columns:repeat(4,1fr);
+  grid-template-columns:repeat(3,1fr);
   gap:10px;
   align-items:stretch;
 }
 .home-cards>*{min-width:0;}
 .home-cards .home-sector-card{grid-column:1/-1;}
-/* Tablet/mobile (≤1100px): 2 colonne, settori full width */
+.home-cards .home-yc-card{grid-column:span 2;}
+/* Tablet (≤1100px): 2 colonne */
 @media(max-width:1100px){
   .home-cards{grid-template-columns:1fr 1fr;}
+  .home-cards .home-yc-card{grid-column:1/-1;}
+}
+/* Mobile (≤600px): 1 colonna */
+@media(max-width:600px){
+  .home-cards{grid-template-columns:1fr;}
+  .home-cards .home-yc-card{grid-column:1;}
 }
 /* Dollar / FX card */
 .dxy-metric{width:100%;display:flex;flex-direction:column;gap:8px;}
@@ -824,7 +831,8 @@ header{
 .dxy-note{font-size:.63rem;color:var(--t2);line-height:1.4;margin-top:2px;width:100%;
   text-align:center;border-top:1px solid var(--border);padding-top:8px;}
 /* ── MACRO CARD ── */
-.macro-grid{display:flex;flex-direction:column;gap:8px;width:100%;}
+.macro-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;}
+@media(max-width:600px){.macro-grid{grid-template-columns:1fr;}}
 .macro-row{display:flex;flex-direction:column;gap:3px;padding:10px 12px;background:var(--bg3);border-radius:10px;width:100%;box-sizing:border-box;}
 .macro-top{display:flex;align-items:center;justify-content:space-between;gap:6px;}
 .macro-lbl{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);}
@@ -1366,7 +1374,7 @@ header{
         </div>
       </div>
       <!-- Yield Curve card -->
-      <div class="fg-card">
+      <div class="fg-card home-yc-card">
         <div class="fg-top">
           <div class="fg-title-row">
             <span class="fg-title">Curva dei Rendimenti</span>
@@ -2232,19 +2240,23 @@ async function fetchMacroData(){
   const BLS_URL='https://api.bls.gov/publicAPI/v1/timeseries/data/CUUR0000SA0';
   const ECB_EU='https://data-api.ecb.europa.eu/service/data/ICP/M.U2.N.000000.4.ANR?lastNObservations=1&format=jsondata';
   const ECB_IT='https://data-api.ecb.europa.eu/service/data/ICP/M.IT.N.000000.4.ANR?lastNObservations=1&format=jsondata';
-  const ECB_BCE='https://data-api.ecb.europa.eu/service/data/FM/M.U2.EUR.4F.KR.DFR.LEV?lastNObservations=1&format=jsondata';
+  const ECB_BCE='https://data-api.ecb.europa.eu/service/data/FM/D.U2.EUR.4F.KR.DFR.LEV?lastNObservations=1&format=jsondata';
+  const ECB_BCE2='https://data-api.ecb.europa.eu/service/data/FM/M.U2.EUR.4F.KR.DFR.LEV?lastNObservations=1&format=jsondata';
+  const ECB_BCE3='https://sdw-wsrest.ecb.europa.eu/service/data/FM/M.U2.EUR.4F.KR.DFR.LEV?lastNObservations=1&format=jsondata';
 
-  const [usR,euR,itR,bceR]=await Promise.allSettled([
+  const [usR,euR,itR,bceR,bceR2]=await Promise.allSettled([
     dfetch(BLS_URL),
     dfetch(ECB_EU),
     dfetch(ECB_IT),
     dfetch(ECB_BCE),
+    dfetch(ECB_BCE2),
   ]);
 
-  if(usR.status==='fulfilled'&&usR.value)   out.usCPI=blsVal(usR.value);
-  if(euR.status==='fulfilled'&&euR.value)   out.euHICP=ecbVal(euR.value);
-  if(itR.status==='fulfilled'&&itR.value)   out.itHICP=ecbVal(itR.value);
-  if(bceR.status==='fulfilled'&&bceR.value) out.bceRate=ecbVal(bceR.value);
+  if(usR.status==='fulfilled'&&usR.value)    out.usCPI=blsVal(usR.value);
+  if(euR.status==='fulfilled'&&euR.value)    out.euHICP=ecbVal(euR.value);
+  if(itR.status==='fulfilled'&&itR.value)    out.itHICP=ecbVal(itR.value);
+  if(bceR.status==='fulfilled'&&bceR.value)  out.bceRate=ecbVal(bceR.value);
+  if(out.bceRate===null&&bceR2.status==='fulfilled'&&bceR2.value) out.bceRate=ecbVal(bceR2.value);
 
   // Fallback via CORS proxy for any that failed
   const tryProxy=async(url,parser)=>{
@@ -2254,6 +2266,8 @@ async function fetchMacroData(){
   if(out.euHICP===null)  out.euHICP=await tryProxy(ECB_EU,ecbVal);
   if(out.itHICP===null)  out.itHICP=await tryProxy(ECB_IT,ecbVal);
   if(out.bceRate===null) out.bceRate=await tryProxy(ECB_BCE,ecbVal);
+  if(out.bceRate===null) out.bceRate=await tryProxy(ECB_BCE2,ecbVal);
+  if(out.bceRate===null) out.bceRate=await tryProxy(ECB_BCE3,ecbVal);
 
   return out;
 }

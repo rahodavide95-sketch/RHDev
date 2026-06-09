@@ -704,6 +704,26 @@ header{
 .refresh-btn.spinning{animation:spin .6s linear infinite;pointer-events:none;color:var(--accent);border-color:var(--accent);background:rgba(96,165,250,.1);}
 @keyframes spin{to{transform:rotate(360deg);}}
 
+/* ── RADAR OVERLAY ── */
+.radar-overlay{
+  position:absolute;inset:0;border-radius:inherit;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(10,18,40,.55);backdrop-filter:blur(2px);
+  z-index:50;pointer-events:none;
+  animation:radar-in .15s ease;
+}
+@keyframes radar-in{from{opacity:0;}to{opacity:1;}}
+.radar-svg{width:64px;height:64px;}
+.radar-ring{fill:none;stroke:rgba(96,165,250,.25);stroke-width:1.2;}
+.radar-ring2{fill:none;stroke:rgba(96,165,250,.12);stroke-width:1;}
+.radar-sweep{
+  transform-origin:32px 32px;
+  animation:radar-sweep 1.2s linear infinite;
+}
+@keyframes radar-sweep{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+.radar-dot{fill:#60a5fa;animation:radar-ping 1.2s ease-out infinite;}
+@keyframes radar-ping{0%{opacity:1;r:2;}60%{opacity:.4;r:4;}100%{opacity:0;r:6;}}
+
 /* Score badge info */
 .sig-score-row{display:flex;align-items:center;gap:8px;}
 
@@ -4304,9 +4324,40 @@ function setupTooltips(){
 }
 
 // ── CARD REFRESH ──
+function makeRadar(){
+  const ov=document.createElement('div');
+  ov.className='radar-overlay';
+  ov.innerHTML=`<svg class="radar-svg" viewBox="0 0 64 64">
+    <circle class="radar-ring2" cx="32" cy="32" r="28"/>
+    <circle class="radar-ring" cx="32" cy="32" r="20"/>
+    <circle class="radar-ring" cx="32" cy="32" r="12"/>
+    <circle fill="none" stroke="rgba(96,165,250,.15)" stroke-width="1" cx="32" cy="32" r="4"/>
+    <line x1="32" y1="32" x2="32" y2="4" stroke="rgba(96,165,250,.18)" stroke-width="1"/>
+    <line x1="32" y1="32" x2="60" y2="32" stroke="rgba(96,165,250,.18)" stroke-width="1"/>
+    <g class="radar-sweep">
+      <defs>
+        <radialGradient id="rg" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#60a5fa" stop-opacity="0"/>
+          <stop offset="100%" stop-color="#60a5fa" stop-opacity="0.45"/>
+        </radialGradient>
+      </defs>
+      <path d="M32,32 L32,4 A28,28 0 0,1 55.5,18 Z" fill="url(#rg)"/>
+      <line x1="32" y1="32" x2="32" y2="4" stroke="#60a5fa" stroke-width="1.5" stroke-linecap="round"/>
+    </g>
+    <circle class="radar-dot" cx="47" cy="19" r="2"/>
+  </svg>`;
+  return ov;
+}
 async function refreshCard(btn,fn){
   btn.classList.add('spinning');
+  // Find nearest positioned ancestor (card)
+  let card=btn.parentElement;
+  while(card&&getComputedStyle(card).position==='static') card=card.parentElement;
+  if(card){card.style.position='relative';card.style.overflow='hidden';}
+  const ov=card?makeRadar():null;
+  if(ov&&card) card.appendChild(ov);
   try{await fn();}catch{}
+  if(ov) ov.remove();
   btn.classList.remove('spinning');
 }
 

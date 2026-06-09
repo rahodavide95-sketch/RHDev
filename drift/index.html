@@ -687,7 +687,7 @@ async function streamFromClaude(prompt,targetEl){
   const apiKey=getKey();
   if(!apiKey){ openKeyModal();throw new Error('no key'); }
   targetEl.innerHTML='<span class="cursor"></span>';
-  const res=await fetch('https://api.anthropic.com/v1/messages',{
+  const res=await fetch('/api/proxy',{
     method:'POST',
     headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'},
     body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:900,stream:true,messages:[{role:'user',content:prompt}]})
@@ -756,7 +756,7 @@ async function spin(evt){
   const MSTART='<<<PARAMS>>>',MEND='<<<END>>>';
 
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
+    const res=await fetch('/api/proxy',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'},
       body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:700,stream:true,messages:[{role:'user',content:GEN_PROMPT}]})

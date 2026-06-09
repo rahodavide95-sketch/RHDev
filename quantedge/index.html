@@ -1416,7 +1416,7 @@ header{
         <span class="opp-title">⚡ Migliori Opportunità</span>
         <div style="display:flex;align-items:center;gap:6px">
           <span class="opp-badge" id="opp-badge" style="display:none"></span>
-          <button class="refresh-btn" onclick="refreshCard(this,loadPanoramica)" title="Aggiorna">↻</button>
+          <button class="refresh-btn" onclick="refreshCard(this,()=>Promise.all([loadPanoramica(),new Promise(r=>setTimeout(r,3000))]))" title="Aggiorna">↻</button>
         </div>
       </div>
       <div class="opp-sections" id="opp-grid">

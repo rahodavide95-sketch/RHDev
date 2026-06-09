@@ -34,15 +34,16 @@
 
   #bg-glow { position:fixed; inset:0; z-index:0; pointer-events:none; background:radial-gradient(ellipse 60% 50% at 50% 40%,rgba(100,80,255,0.15),transparent); transition:background 2s ease; }
 
-  .app { position:relative; z-index:1; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:3rem 1.5rem 4rem; }
+  .app { position:relative; z-index:1; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:1.5rem 1.5rem 2rem; }
 
-  header { width:100%; max-width:480px; display:flex; align-items:center; justify-content:space-between; margin-bottom:4rem; }
+  header { width:100%; max-width:480px; display:flex; align-items:center; justify-content:space-between; margin-bottom:2rem; }
 
   .logo { font-family:var(--font-display); font-size:13px; font-weight:400; letter-spacing:0.3em; color:var(--c-text-secondary); text-transform:uppercase; }
 
   .spin-badge { font-size:11px; color:var(--c-text-muted); letter-spacing:0.1em; transition:color 1s ease; font-variant-numeric:tabular-nums; }
 
-  .sphere-wrap { position:relative; width:300px; height:300px; cursor:pointer; margin-bottom:3.5rem; flex-shrink:0; }
+  .sphere-stage { flex:1; display:flex; align-items:center; justify-content:center; width:100%; flex-shrink:0; }
+  .sphere-wrap { position:relative; width:300px; height:300px; cursor:pointer; flex-shrink:0; }
   .sphere-wrap:hover .sphere { transform:scale(1.035); }
   .sphere-wrap:active .sphere { transform:scale(0.96); }
 
@@ -76,11 +77,11 @@
   .sphere-hint { position:absolute; bottom:-32px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--c-text-muted);letter-spacing:0.14em;white-space:nowrap;text-transform:uppercase;transition:color 0.4s; }
   .sphere-wrap:hover .sphere-hint { color:var(--c-text-secondary); }
 
-  .result-card { width:100%;max-width:480px;background:rgba(8,8,16,0.8);border:0.5px solid var(--c-border);border-radius:20px;padding:2rem 2.25rem 1.75rem;opacity:0;transform:translateY(16px);transition:opacity 0.7s ease,transform 0.7s ease,border-color 1.5s ease;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px); }
-  .result-card.visible { opacity:1;transform:translateY(0); }
+  .result-card { width:100%;max-width:480px;background:rgba(8,8,16,0.8);border:0.5px solid transparent;border-radius:20px;padding:0;height:0;overflow:hidden;margin-top:0;opacity:0;transform:translateY(16px);transition:opacity 0.7s ease,transform 0.7s ease,border-color 1.5s ease,height 0s 0.7s,padding 0s 0.7s,margin-top 0s 0.7s;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px); }
+  .result-card.visible { padding:2rem 2.25rem 1.75rem;height:auto;overflow:visible;margin-top:2.5rem;border-color:var(--c-border);opacity:1;transform:translateY(0);transition:opacity 0.7s ease,transform 0.7s ease,border-color 1.5s ease; }
 
   .card-header { margin-bottom:1.25rem; }
-  .sound-name { font-family:var(--font-display);font-size:26px;font-weight:500;color:var(--c-text-primary);letter-spacing:-0.01em;margin-bottom:0.7rem;transition:color 1s ease;line-height:1.2;text-align:center; }
+  .sound-name { font-family:var(--font-display);font-size:26px;font-weight:500;color:var(--c-text-primary);letter-spacing:-0.01em;margin-bottom:1.1rem;transition:color 1s ease;line-height:1.2;text-align:center; }
   .sound-meta { font-size:11px;color:var(--c-text-muted);letter-spacing:0.12em;text-transform:uppercase;transition:color 1s ease;text-align:center; }
 
   .divider { height:0.5px;background:var(--c-border);margin:1.25rem 0;transition:background 1.5s ease; }
@@ -137,11 +138,11 @@
   .btn-key:hover { color:var(--c-text-secondary); }
   .btn-key.has-key { color:var(--c-accent);opacity:0.5; }
 
-  footer { margin-top:4rem;font-size:11px;color:var(--c-text-muted);letter-spacing:0.1em;text-align:center;text-transform:uppercase; }
+  footer { margin-top:2rem;font-size:11px;color:var(--c-text-muted);letter-spacing:0.1em;text-align:center;text-transform:uppercase; }
 
   @media (max-width:520px) {
     .sphere-wrap{width:240px;height:240px} .sphere{width:240px;height:240px}
-    .result-card{padding:1.5rem 1.5rem 1.25rem} .sound-name{font-size:22px}
+    .result-card.visible{padding:1.5rem 1.5rem 1.25rem} .sound-name{font-size:22px}
   }
   @media (prefers-reduced-motion:reduce) {
     .sphere-ring,#ambient-canvas{animation:none!important}
@@ -176,13 +177,15 @@
     </div>
   </div>
 
-  <div class="sphere-wrap" id="sphere-wrap" role="button" tabindex="0" aria-label="Generate sound">
-    <div class="sphere-ring ring-4"></div>
-    <div class="sphere-ring ring-3"></div>
-    <div class="sphere-ring ring-2"></div>
-    <div class="sphere-ring ring-1"></div>
-    <div class="sphere" id="sphere"></div>
-    <span class="sphere-hint" id="sphere-hint">touch to explore</span>
+  <div class="sphere-stage">
+    <div class="sphere-wrap" id="sphere-wrap" role="button" tabindex="0" aria-label="Generate sound">
+      <div class="sphere-ring ring-4"></div>
+      <div class="sphere-ring ring-3"></div>
+      <div class="sphere-ring ring-2"></div>
+      <div class="sphere-ring ring-1"></div>
+      <div class="sphere" id="sphere"></div>
+      <span class="sphere-hint" id="sphere-hint">touch to explore</span>
+    </div>
   </div>
 
   <div class="result-card" id="result-card" aria-live="polite">
@@ -927,8 +930,10 @@ async function streamFromClaude(prompt,targetEl){
       try{const j=JSON.parse(d);if(j.type==='content_block_delta'&&j.delta?.text){text+=j.delta.text;targetEl.textContent=text;}}catch{}
     }
   }
-  // strip stray markdown asterisks the model sometimes adds
-  targetEl.textContent=text.replace(/\*\*(.+?)\*\*/g,'$1').replace(/\*(.+?)\*/g,'$1');
+  // strip markdown, then add blank line before each numbered step
+  targetEl.textContent=text
+    .replace(/\*\*(.+?)\*\*/g,'$1').replace(/\*(.+?)\*/g,'$1')
+    .replace(/\n(\d+\.)/g,'\n\n$1');
   targetEl.classList.remove('streaming');
 }
 

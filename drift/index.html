@@ -80,21 +80,21 @@
   .result-card.visible { opacity:1;transform:translateY(0); }
 
   .card-header { margin-bottom:1.25rem; }
-  .sound-name { font-family:var(--font-display);font-size:26px;font-weight:500;color:var(--c-text-primary);letter-spacing:-0.01em;margin-bottom:0.35rem;transition:color 1s ease;line-height:1.2; }
-  .sound-meta { font-size:11px;color:var(--c-text-muted);letter-spacing:0.12em;text-transform:uppercase;transition:color 1s ease; }
+  .sound-name { font-family:var(--font-display);font-size:26px;font-weight:500;color:var(--c-text-primary);letter-spacing:-0.01em;margin-bottom:0.35rem;transition:color 1s ease;line-height:1.2;text-align:center; }
+  .sound-meta { font-size:11px;color:var(--c-text-muted);letter-spacing:0.12em;text-transform:uppercase;transition:color 1s ease;text-align:center; }
 
   .divider { height:0.5px;background:var(--c-border);margin:1.25rem 0;transition:background 1.5s ease; }
 
-  .sound-desc { font-size:14px;line-height:1.8;color:var(--c-text-secondary);margin-bottom:1.5rem;transition:color 1s ease;min-height:3rem; }
-  .sound-desc.loading { color:var(--c-text-muted);font-style:italic; }
+  .sound-desc { font-size:14px;line-height:1.8;color:var(--c-text-secondary);margin-bottom:1.5rem;transition:color 1s ease;min-height:3rem;text-align:justify; }
+  .sound-desc.loading { color:var(--c-text-muted);font-style:italic;text-align:center; }
 
   .cursor { display:inline-block;width:2px;height:14px;background:var(--c-accent);margin-left:2px;vertical-align:middle;animation:blink 0.8s step-end infinite;border-radius:1px; }
   @keyframes blink { 0%,100%{opacity:1}50%{opacity:0} }
 
-  .tags { display:flex;flex-wrap:wrap;gap:6px;margin-bottom:1.75rem; }
+  .tags { display:flex;flex-wrap:wrap;gap:6px;margin-bottom:1.75rem;justify-content:center; }
   .tag { font-size:11px;padding:4px 12px;border-radius:20px;letter-spacing:0.07em;transition:color 1s ease,border-color 1s ease,background 1s ease;color:var(--c-text-secondary);border:0.5px solid var(--c-border);background:transparent; }
 
-  .actions { display:flex;gap:8px;flex-wrap:wrap; }
+  .actions { display:flex;gap:8px;flex-wrap:wrap;justify-content:center; }
   .btn { font-family:var(--font-body);font-size:12px;letter-spacing:0.06em;padding:8px 18px;border-radius:10px;cursor:pointer;transition:color 0.25s,background 0.25s,border-color 0.25s,transform 0.15s;border:0.5px solid var(--c-border);background:transparent;color:var(--c-text-secondary); }
   .btn:hover { color:var(--c-text-primary);border-color:var(--c-border-hover);background:rgba(255,255,255,0.04); }
   .btn:active { transform:scale(0.97); }
@@ -115,11 +115,24 @@
   .tech-title { font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--c-text-muted);margin-bottom:1rem; }
   .tech-content { font-size:13px;line-height:1.75;color:var(--c-text-secondary);min-height:2rem; }
 
-  .particle { position:fixed;pointer-events:none;z-index:100;animation:particle-out var(--dur,1.8s) var(--ease,ease-out) forwards; }
-  @keyframes particle-out { 0%{opacity:1;transform:translate(0,0)scale(1)rotate(var(--rot,0deg))}100%{opacity:0;transform:translate(var(--tx),var(--ty))scale(0.1)rotate(var(--rot,0deg))} }
+  /* ── Echo burst effect ── */
+  @keyframes echo-ring { from{transform:translate(-50%,-50%)scale(0);opacity:var(--eop,.65)} to{transform:translate(-50%,-50%)scale(var(--es,10));opacity:0} }
+  @keyframes echo-spark { 0%{opacity:1;transform:translate(-50%,-50%) rotate(var(--rot,0deg)) scaleY(1)} 100%{opacity:0;transform:translate(calc(-50% + var(--sx,0px)),calc(-50% + var(--sy,0px))) rotate(var(--rot,0deg)) scaleY(0.1)} }
+  @keyframes echo-flash { 0%{transform:translate(-50%,-50%)scale(0);opacity:1} 40%{opacity:0.9} 100%{transform:translate(-50%,-50%)scale(35);opacity:0} }
 
-  .ripple { position:fixed;border-radius:50%;pointer-events:none;z-index:99;animation:ripple-expand var(--rdur,1s) cubic-bezier(0.1,0.8,0.3,1) var(--rdelay,0ms) forwards; }
-  @keyframes ripple-expand { from{transform:translate(-50%,-50%)scale(1);opacity:var(--rop,0.7)}to{transform:translate(-50%,-50%)scale(60);opacity:0} }
+  /* ── Sphere materials ── */
+  /* chrome: horizontal streak */
+  .sphere[data-material="chrome"]::before { top:16%;left:8%;width:84%;height:13%;border-radius:40%;background:linear-gradient(to right,transparent 0%,rgba(255,255,255,0.14) 25%,rgba(255,255,255,0.2) 50%,rgba(255,255,255,0.14) 75%,transparent 100%);filter:blur(2px); }
+  .sphere[data-material="chrome"]::after  { bottom:12%;right:8%;width:40%;height:28%;background:radial-gradient(ellipse,rgba(255,255,255,0.13) 0%,transparent 70%);filter:blur(3px); }
+  /* crystal: sharp small highlights */
+  .sphere[data-material="crystal"]::before { top:9%;left:20%;width:22%;height:16%;border-radius:50%;background:radial-gradient(ellipse,rgba(255,255,255,0.45) 0%,rgba(255,255,255,0.1) 50%,transparent 80%);filter:blur(1px); }
+  .sphere[data-material="crystal"]::after  { top:22%;right:14%;bottom:auto;left:auto;width:10%;height:8%;background:radial-gradient(ellipse,rgba(255,255,255,0.3) 0%,transparent 70%);filter:blur(0.5px); }
+  /* magma: inner warm glow */
+  .sphere[data-material="magma"]::before { top:25%;left:15%;width:70%;height:60%;border-radius:50%;background:radial-gradient(ellipse,rgba(255,180,60,0.07) 0%,transparent 70%);filter:blur(18px); }
+  .sphere[data-material="magma"]::after  { bottom:8%;right:10%;width:50%;height:35%;background:radial-gradient(ellipse,rgba(255,120,20,0.1) 0%,transparent 70%);filter:blur(10px); }
+  /* neon: edge rim only, dark center */
+  .sphere[data-material="neon"]::before { top:5%;left:5%;width:90%;height:90%;border-radius:50%;background:radial-gradient(ellipse,transparent 42%,rgba(255,255,255,0.08) 68%,rgba(255,255,255,0.18) 84%,transparent 100%);filter:blur(3px); }
+  .sphere[data-material="neon"]::after  { bottom:6%;right:6%;width:88%;height:88%;background:radial-gradient(ellipse,transparent 50%,rgba(255,255,255,0.06) 80%,transparent 100%);filter:blur(4px); }
 
   .key-overlay { position:fixed;inset:0;z-index:200;background:rgba(5,5,10,0.85);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;padding:1.5rem; }
   .key-overlay.hidden { display:none; }
@@ -201,7 +214,7 @@
       <button class="btn btn-accent" id="btn-preview">Descrizione sensoriale</button>
       <button class="btn" id="btn-ableton">Guida Ableton</button>
       <button class="btn" id="btn-replay">↺ Replay</button>
-      <button class="btn" id="btn-export">⬇ WAV</button>
+      <button class="btn" id="btn-export">↓ Export</button>
     </div>
     <div class="tech-sheet" id="tech-sheet">
       <p class="tech-title" id="tech-title">—</p>
@@ -675,35 +688,54 @@ function freqToNote(hz){
   return names[((n%12)+12)%12]+(Math.floor(n/12)-1);
 }
 
-// ── EFFECTS ───────────────────────────────────────────────────
-function spawnRipple(x,y,s){
-  for(let i=0;i<3;i++){
-    const el=document.createElement('div');
-    el.className='ripple';
-    el.style.cssText=`left:${x}px;top:${y}px;width:8px;height:8px;border:0.5px solid rgba(${s.ar},${s.ag},${s.ab},${0.6-i*0.15});`;
-    el.style.setProperty('--rdur',(0.9+i*0.25)+'s');
-    el.style.setProperty('--rdelay',(i*110)+'ms');
-    el.style.setProperty('--rop',(0.6-i*0.15).toFixed(2));
-    document.body.appendChild(el);
-    setTimeout(()=>el.remove(),1800);
-  }
+// ── MATERIAL SYSTEM ──────────────────────────────────────────
+function getMaterial(data){
+  const cat=(data.category||'').toLowerCase();
+  const osc=(data.synthesis?.oscillator||'');
+  if(/industri|metal|meccan|acciai|ferro|chrome|corros/.test(cat)||osc==='sawtooth') return 'chrome';
+  if(/cristal|glass|ice|ghiacci|frost|shimmer|mineral|risonan/.test(cat)) return 'crystal';
+  if(/magma|lava|fuoco|fire|caldo|organi|carbone|telluric|sub/.test(cat)||osc==='noise') return 'magma';
+  if(/neon|plasma|electr|digit|glitch|synth|radio|frequen/.test(cat)||osc==='square') return 'neon';
+  return 'glass';
 }
 
-function spawnParticles(x,y,s){
-  for(let i=0;i<22;i++){
-    const p=document.createElement('div');
-    p.className='particle';
-    const angle=Math.random()*Math.PI*2,dist=35+Math.random()*110;
-    const tx=Math.cos(angle)*dist,ty=Math.sin(angle)*dist;
-    let w,h,bg,glow='',br='50%';
-    if(i<5){const sz=3+Math.random()*3;w=sz;h=sz;bg=s.acc;glow=`box-shadow:0 0 ${sz*2}px ${s.acc},0 0 ${sz*5}px rgba(${s.ar},${s.ag},${s.ab},0.5)`;}
-    else if(i<14){const sz=1.2+Math.random()*2.2;w=sz;h=sz;bg=`rgba(${s.ar},${s.ag},${s.ab},${0.5+Math.random()*0.4})`;}
-    else{const rot=Math.atan2(ty,tx)*180/Math.PI;w=8+Math.random()*10;h=1+Math.random();bg=`rgba(${s.ar},${s.ag},${s.ab},0.45)`;br='1px';p.style.setProperty('--rot',rot+'deg');}
-    p.style.cssText=`left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:${bg};border-radius:${br};${glow};`;
-    p.style.setProperty('--tx',tx+'px');p.style.setProperty('--ty',ty+'px');
-    p.style.setProperty('--dur',(1.2+Math.random())+'s');
-    document.body.appendChild(p);setTimeout(()=>p.remove(),2500);
+// ── EFFECTS ───────────────────────────────────────────────────
+function spawnEchoBurst(x,y,s){
+  // Expanding rings
+  for(let i=0;i<7;i++){
+    const el=document.createElement('div');
+    const dur=(0.85+i*0.13).toFixed(2);
+    const delay=i*48;
+    const scaleEnd=9+i*2.8;
+    const op=(0.62-i*0.07).toFixed(2);
+    el.style.cssText=`position:fixed;left:${x}px;top:${y}px;width:4px;height:4px;border-radius:50%;border:${i<2?1.5:0.5}px solid rgba(${s.ar},${s.ag},${s.ab},${op});pointer-events:none;z-index:99;`;
+    el.style.animation=`echo-ring ${dur}s cubic-bezier(0.08,0.6,0.15,1) ${delay}ms forwards`;
+    el.style.setProperty('--es',scaleEnd);el.style.setProperty('--eop',op);
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(),parseFloat(dur)*1000+delay+120);
   }
+  // Radial sparks
+  for(let i=0;i<22;i++){
+    const el=document.createElement('div');
+    const angle=(i/22)*Math.PI*2+(Math.random()-.5)*.5;
+    const dist=45+Math.random()*95;
+    const tx=Math.cos(angle)*dist,ty=Math.sin(angle)*dist;
+    const dur=(0.3+Math.random()*.35).toFixed(2);
+    const delay=Math.floor(Math.random()*55);
+    const h=3+Math.random()*9;
+    const rot=Math.atan2(ty,tx)*180/Math.PI+90;
+    el.style.cssText=`position:fixed;left:${x}px;top:${y}px;width:${.7+Math.random()*1.2}px;height:${h}px;background:linear-gradient(to bottom,${s.acc},transparent);border-radius:1px;pointer-events:none;z-index:100;`;
+    el.style.animation=`echo-spark ${dur}s ease-out ${delay}ms forwards`;
+    el.style.setProperty('--sx',tx+'px');el.style.setProperty('--sy',ty+'px');el.style.setProperty('--rot',rot+'deg');
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(),parseFloat(dur)*1000+delay+120);
+  }
+  // Central flash
+  const fl=document.createElement('div');
+  fl.style.cssText=`position:fixed;left:${x}px;top:${y}px;width:2px;height:2px;border-radius:50%;background:#fff;box-shadow:0 0 8px 3px ${s.acc},0 0 22px 10px rgba(${s.ar},${s.ag},${s.ab},0.35);pointer-events:none;z-index:101;`;
+  fl.style.animation='echo-flash .5s ease-out forwards';
+  document.body.appendChild(fl);setTimeout(()=>fl.remove(),600);
+  window.addAmbientFlash(x,y);
 }
 
 // ── API KEY ───────────────────────────────────────────────────
@@ -751,7 +783,7 @@ Rispondi ESATTAMENTE nel formato seguente — JSON su una sola riga tra i marcat
 <<<PARAMS>>>
 {"name":"NOME","category":"tipo · tipo","tags":["tag1","tag2","tag3","tag4"],"color":{"ca":"#HEXSCURO","cb":"#080810","ar":R,"ag":G,"ab":B,"acc":"#HEXVIVIDO"},"synthesis":{"oscillator":"TYPE","frequency":HZ,"filterType":"TYPE","filterFreq":HZ,"filterQ":Q,"attackTime":S,"decayTime":S,"sustainLevel":N,"releaseTime":S,"reverbAmount":N,"distortionAmount":N,"lfoRate":HZ,"lfoDepth":N,"duration":S,"layers":N}}
 <<<END>>>
-[3-4 frasi sensoriali in italiano. Nessun titolo. Solo testo.]
+[Scrivi 3-4 frasi in italiano corretto e poetico. Descrivi la texture, il movimento e la sensazione fisica del suono usando metafore concrete: materiali, superfici, spazi, temperature, pressioni. Prosa fluida e densa. Niente titoli, niente elenchi, niente ripetizioni del nome.]
 
 REGOLE COLORE: ca = hex scuro e saturo; cb = quasi nero (#060810 o simile); ar/ag/ab = valori decimali RGB di ca; acc = versione luminosa e vivace del colore.
 RANGES: oscillator=sine|sawtooth|square|triangle|noise, filterType=lowpass|highpass|bandpass|notch, frequency=20-700, filterFreq=80-14000, filterQ=0.1-20, attack=0.001-3, decay=0.05-3, sustain=0-1, release=0.3-7, reverb=0-0.95, distortion=0-0.9, lfoRate=0.05-18, lfoDepth=0-0.85, duration=2-7, layers=1-3.
@@ -782,14 +814,14 @@ async function spin(evt){
   if(evt&&evt.clientX!=null){px=evt.clientX;py=evt.clientY;}
   else{const r=sphereEl.getBoundingClientRect();px=r.left+r.width*0.5;py=r.top+r.height*0.5;}
 
-  // Immediate click burst
+  // Immediate click feedback — 2 fast rings
   window.addAmbientFlash(px,py);
-  for(let i=0;i<3;i++){
-    const el=document.createElement('div');el.className='ripple';
-    el.style.cssText=`left:${px}px;top:${py}px;width:6px;height:6px;border:0.5px solid rgba(180,160,255,${0.55-i*0.15});`;
-    el.style.setProperty('--rdur',(0.8+i*0.2)+'s');el.style.setProperty('--rdelay',(i*80)+'ms');
-    el.style.setProperty('--rop',(0.55-i*0.15).toFixed(2));document.body.appendChild(el);
-    setTimeout(()=>el.remove(),1600);
+  for(let i=0;i<2;i++){
+    const el=document.createElement('div');
+    el.style.cssText=`position:fixed;left:${px}px;top:${py}px;width:4px;height:4px;border-radius:50%;border:1px solid rgba(200,180,255,${0.5-i*.15});pointer-events:none;z-index:99;`;
+    el.style.animation=`echo-ring ${.7+i*.15}s cubic-bezier(0.08,0.6,0.15,1) ${i*60}ms forwards`;
+    el.style.setProperty('--es',7+i*3);el.style.setProperty('--eop',(0.5-i*.15).toFixed(2));
+    document.body.appendChild(el);setTimeout(()=>el.remove(),1100);
   }
 
   card.classList.remove('visible');
@@ -897,9 +929,8 @@ function applyGeneratedSound(data,px,py){
   badgeEl.textContent=`${spinCount} drift`;
   applyColor(s);
 
-  spawnRipple(px,py,s);
-  spawnParticles(px,py,s);
-  window.addAmbientFlash(px,py);
+  sphereEl.dataset.material=getMaterial(data);
+  spawnEchoBurst(px,py,s);
 
   if(data.synthesis){
     try{ synthesize(data.synthesis); }

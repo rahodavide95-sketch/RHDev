@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DRIFT — serendipity engine</title>
+<title>SONORIUM — serendipity engine</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
@@ -192,14 +192,14 @@
     <div class="sphere-ring ring-2"></div>
     <div class="sphere-ring ring-1"></div>
     <div class="sphere" id="sphere"></div>
-    <span class="sphere-hint" id="sphere-hint">touch to drift</span>
+    <span class="sphere-hint" id="sphere-hint">touch to explore</span>
   </div>
 
   <div class="result-card" id="result-card" aria-live="polite">
     <div class="card-header">
-      <div style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%">
-        <p class="sound-name" id="sound-name">—</p>
-        <span class="sound-playing" id="sound-playing">
+      <div style="position:relative;width:100%;text-align:center">
+        <p class="sound-name" id="sound-name" style="margin:0">—</p>
+        <span class="sound-playing" id="sound-playing" style="position:absolute;right:0;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:2px">
           <span class="sound-bar"></span>
           <span class="sound-bar"></span>
           <span class="sound-bar"></span>
@@ -1023,7 +1023,7 @@ function applyGeneratedSound(data,px,py){
   const durSec=data.synthesis?.duration?`${data.synthesis.duration}s`:'';
   metaEl.textContent=[data.category,note,durSec].filter(Boolean).join(' · ');
   tagsEl.innerHTML=(data.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('');
-  badgeEl.textContent=`${spinCount} drift`;
+  badgeEl.textContent=`${spinCount} sonorium`;
   applyColor(s);
 
   sphereEl.dataset.material=getMaterial(data);

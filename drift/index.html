@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DRIFT — serendipity engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --c-bg: #05050a;
+    --c-surface: rgba(255,255,255,0.03);
+    --c-border: rgba(255,255,255,0.07);
+    --c-border-hover: rgba(255,255,255,0.14);
+    --c-text-primary: #e8e8f0;
+    --c-text-secondary: #555566;
+    --c-text-muted: #2a2a38;
+    --c-accent: #7a6aff;
+    --font-display: 'Space Grotesk', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --sphere-color-a: #2a2a4a;
+    --sphere-color-b: #0a0a18;
+    --sphere-glow: rgba(100, 80, 255, 0.15);
+    --ring-color: rgba(120, 100, 255, 0.12);
+  }
+
+  html, body {
+    width: 100%; min-height: 100vh;
+    background: var(--c-bg);
+    color: var(--c-text-primary);
+    font-family: var(--font-body);
+    overflow-x: hidden;
+  }
+
+  /* ── NOISE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    opacity: 0.025;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    background-size: 200px 200px;
+  }
+
+  /* ── BG GLOW ── */
+  #bg-glow {
+    position: fixed; inset: 0; z-index: 0;
+    pointer-events: none;
+    background: radial-gradient(ellipse 60% 50% at 50% 40%, var(--sphere-glow), transparent);
+    transition: background 2s ease;
+  }
+
+  /* ── LAYOUT ── */
+  .app {
+    position: relative; z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 3rem 1.5rem 4rem;
+  }
+
+  /* ── HEADER ── */
+  header {
+    width: 100%; max-width: 480px;
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 4rem;
+  }
+
+  .logo {
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 400;
+    letter-spacing: 0.3em;
+    color: var(--c-text-secondary);
+    text-transform: uppercase;
+  }
+
+  .spin-badge {
+    font-size: 11px;
+    color: var(--c-text-muted);
+    letter-spacing: 0.1em;
+    font-family: var(--font-body);
+    transition: color 1s ease;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── SPHERE ── */
+  .sphere-wrap {
+    position: relative;
+    width: 220px; height: 220px;
+    cursor: pointer;
+    margin-bottom: 3.5rem;
+    flex-shrink: 0;
+  }
+
+  .sphere-wrap:hover .sphere { transform: scale(1.04); }
+  .sphere-wrap:active .sphere { transform: scale(0.96); }
+
+  .sphere-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 0.5px solid var(--ring-color);
+    transition: border-color 2s ease;
+    pointer-events: none;
+  }
+
+  .ring-1 { inset: -16px; animation: ring-pulse 4s ease-in-out infinite; }
+  .ring-2 { inset: -36px; animation: ring-pulse 4s ease-in-out infinite 1.4s; opacity: 0.6; }
+  .ring-3 { inset: -60px; animation: ring-pulse 6s ease-in-out infinite 0.7s; opacity: 0.3; }
+  .ring-4 { inset: -90px; animation: ring-pulse 8s ease-in-out infinite 2s; opacity: 0.15; }
+
+  @keyframes ring-pulse {
+    0%, 100% { transform: scale(1); opacity: var(--op, 0.5); }
+    50% { transform: scale(1.015); opacity: 1; }
+  }
+
+  .sphere {
+    width: 220px; height: 220px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 36% 32%, var(--sphere-color-a), var(--sphere-color-b) 70%);
+    box-shadow: 0 0 80px var(--sphere-glow), 0 0 160px rgba(0,0,0,0.5), inset 0 0 60px rgba(0,0,0,0.6);
+    transition: background 1.5s ease, box-shadow 1.5s ease, transform 0.2s ease;
+    position: relative; z-index: 2;
+  }
+
+  /* inner shimmer */
+  .sphere::after {
+    content: '';
+    position: absolute;
+    top: 18%; left: 22%;
+    width: 28%; height: 20%;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.04);
+    filter: blur(6px);
+    pointer-events: none;
+  }
+
+  .sphere-hint {
+    position: absolute;
+    bottom: -32px; left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    color: var(--c-text-muted);
+    letter-spacing: 0.14em;
+    white-space: nowrap;
+    font-family: var(--font-body);
+    text-transform: uppercase;
+    transition: color 0.4s, opacity 0.4s;
+  }
+  .sphere-wrap:hover .sphere-hint { color: var(--c-text-secondary); }
+
+  /* ── RESULT CARD ── */
+  .result-card {
+    width: 100%; max-width: 480px;
+    background: rgba(8,8,16,0.8);
+    border: 0.5px solid var(--c-border);
+    border-radius: 20px;
+    padding: 2rem 2.25rem 1.75rem;
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.7s ease, transform 0.7s ease, border-color 1.5s ease;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  .result-card.visible { opacity: 1; transform: translateY(0); }
+
+  .card-header {
+    margin-bottom: 1.25rem;
+  }
+
+  .sound-name {
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: 500;
+    color: var(--c-text-primary);
+    letter-spacing: -0.01em;
+    margin-bottom: 0.35rem;
+    transition: color 1s ease;
+    line-height: 1.2;
+  }
+
+  .sound-meta {
+    font-size: 11px;
+    color: var(--c-text-muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    transition: color 1s ease;
+    font-family: var(--font-body);
+  }
+
+  .divider {
+    height: 0.5px;
+    background: var(--c-border);
+    margin: 1.25rem 0;
+    transition: background 1.5s ease;
+  }
+
+  .sound-desc {
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--c-text-secondary);
+    margin-bottom: 1.5rem;
+    transition: color 1s ease;
+    min-height: 3rem;
+  }
+
+  .sound-desc.loading {
+    color: var(--c-text-muted);
+    font-style: italic;
+  }
+
+  /* streaming cursor */
+  .cursor {
+    display: inline-block;
+    width: 2px; height: 14px;
+    background: var(--c-accent);
+    margin-left: 2px;
+    vertical-align: middle;
+    animation: blink 0.8s step-end infinite;
+    border-radius: 1px;
+  }
+
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+  .tags {
+    display: flex; flex-wrap: wrap;
+    gap: 6px; margin-bottom: 1.75rem;
+  }
+
+  .tag {
+    font-size: 11px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    letter-spacing: 0.07em;
+    font-family: var(--font-body);
+    transition: color 1s ease, border-color 1s ease, background 1s ease;
+    color: var(--c-text-secondary);
+    border: 0.5px solid var(--c-border);
+    background: transparent;
+  }
+
+  /* ── ACTIONS ── */
+  .actions {
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+
+  .btn {
+    font-family: var(--font-body);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    padding: 8px 18px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: color 0.25s, background 0.25s, border-color 0.25s, transform 0.15s;
+    border: 0.5px solid var(--c-border);
+    background: transparent;
+    color: var(--c-text-secondary);
+  }
+
+  .btn:hover { color: var(--c-text-primary); border-color: var(--c-border-hover); background: rgba(255,255,255,0.04); }
+  .btn:active { transform: scale(0.97); }
+
+  .btn-accent {
+    transition: color 1s ease, border-color 1s ease, background 1s ease, transform 0.15s;
+  }
+
+  .btn-accent:hover { filter: brightness(1.15); }
+
+  /* ── TECH SHEET ── */
+  .tech-sheet {
+    display: none;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 0.5px solid var(--c-border);
+  }
+
+  .tech-sheet.visible { display: block; }
+
+  .tech-title {
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--c-text-muted);
+    margin-bottom: 1rem;
+    font-family: var(--font-body);
+  }
+
+  .tech-content {
+    font-size: 13px;
+    line-height: 1.75;
+    color: var(--c-text-secondary);
+    min-height: 2rem;
+  }
+
+  /* ── PARTICLES ── */
+  .particle {
+    position: fixed;
+    width: 3px; height: 3px;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 100;
+    animation: particle-out 1.8s ease-out forwards;
+  }
+
+  @keyframes particle-out {
+    0% { opacity: 1; transform: translate(0,0) scale(1); }
+    100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(0.2); }
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    margin-top: 4rem;
+    font-size: 11px;
+    color: var(--c-text-muted);
+    letter-spacing: 0.1em;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 520px) {
+    .sphere-wrap { width: 180px; height: 180px; }
+    .sphere { width: 180px; height: 180px; }
+    .result-card { padding: 1.5rem 1.5rem 1.25rem; }
+    .sound-name { font-size: 22px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sphere-ring { animation: none !important; }
+    .cursor { animation: none !important; opacity: 1; }
+    * { transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<div id="bg-glow"></div>
+
+<div class="app">
+
+  <header>
+    <span class="logo">Drift</span>
+    <span class="spin-badge" id="spin-badge">— / —</span>
+  </header>
+
+  <div class="sphere-wrap" id="sphere-wrap" role="button" tabindex="0" aria-label="Generate sound">
+    <div class="sphere-ring ring-4"></div>
+    <div class="sphere-ring ring-3"></div>
+    <div class="sphere-ring ring-2"></div>
+    <div class="sphere-ring ring-1"></div>
+    <div class="sphere" id="sphere"></div>
+    <span class="sphere-hint" id="sphere-hint">touch to drift</span>
+  </div>
+
+  <div class="result-card" id="result-card" aria-live="polite">
+    <div class="card-header">
+      <p class="sound-name" id="sound-name">—</p>
+      <p class="sound-meta" id="sound-meta">—</p>
+    </div>
+    <div class="divider" id="divider"></div>
+    <p class="sound-desc" id="sound-desc">touch the sphere to begin</p>
+    <div class="tags" id="tags"></div>
+    <div class="actions">
+      <button class="btn btn-accent" id="btn-preview">Descrizione sensoriale</button>
+      <button class="btn" id="btn-ableton">Guida Ableton</button>
+      <button class="btn" id="btn-export">Esporta</button>
+    </div>
+    <div class="tech-sheet" id="tech-sheet">
+      <p class="tech-title" id="tech-title">—</p>
+      <p class="tech-content" id="tech-content"></p>
+    </div>
+  </div>
+
+  <footer>serendipity engine for sound designers</footer>
+
+</div>
+
+<script>
+// ── PALETTE ──────────────────────────────────────────────
+const sounds = [
+  { name:"Rusted Fog",      category:"texture · sub-bass",  tags:["sub-bass","corroded","80–120 bpm","dark"],          ca:"#5c2818", cb:"#180806", glow:"rgba(200,90,40,0.18)",  ring:"rgba(200,90,40,0.2)",  acc:"#c85a28", ar:200,ag:90, ab:40  },
+  { name:"3AM Concrete",    category:"reverb · urban",       tags:["reverb","cold","any bpm","urban"],                  ca:"#142040", cb:"#060c18", glow:"rgba(80,150,220,0.16)", ring:"rgba(80,150,220,0.18)",acc:"#5096dc", ar:80, ag:150,ab:220 },
+  { name:"Collapsed Sun",   category:"transient · cinematic",tags:["pitch-fall","cinematic","free","cosmic"],           ca:"#503008", cb:"#180e02", glow:"rgba(240,170,40,0.18)", ring:"rgba(240,170,40,0.2)", acc:"#f0aa28", ar:240,ag:170,ab:40  },
+  { name:"Wet Circuit",     category:"glitch · organic",     tags:["glitch","organic","techno","lo-fi"],               ca:"#0a3828", cb:"#030f0a", glow:"rgba(50,200,130,0.16)", ring:"rgba(50,200,130,0.18)",acc:"#32c882", ar:50, ag:200,ab:130 },
+  { name:"Pressure Front",  category:"drone · ambient",      tags:["drone","tension","slow","atmospheric"],            ca:"#201660", cb:"#080518", glow:"rgba(100,80,220,0.2)",  ring:"rgba(100,80,220,0.22)",acc:"#6450dc", ar:100,ag:80, ab:220 },
+  { name:"Fractured Glass", category:"granular · percussive",tags:["granular","pitched","percussive","crystalline"],   ca:"#1a3050", cb:"#060c18", glow:"rgba(160,210,255,0.14)",ring:"rgba(160,210,255,0.16)",acc:"#a0d2ff", ar:160,ag:210,ab:255 },
+  { name:"Buried Signal",   category:"mid-bass · industrial",tags:["mid-bass","saturated","industrial","dark"],        ca:"#30103c", cb:"#0c0412", glow:"rgba(170,60,200,0.18)", ring:"rgba(170,60,200,0.2)", acc:"#aa3cc8", ar:170,ag:60, ab:200 },
+  { name:"Cold Automation", category:"mechanical · techno",  tags:["mechanical","grid","techno","precise"],            ca:"#102030", cb:"#04080c", glow:"rgba(120,190,220,0.15)",ring:"rgba(120,190,220,0.16)",acc:"#78bedd", ar:120,ag:190,ab:220 },
+  { name:"Dissolving Shore",category:"pad · liminal",        tags:["pad","ambient","liminal","infinite"],              ca:"#0a2e38", cb:"#030c10", glow:"rgba(70,180,200,0.18)", ring:"rgba(70,180,200,0.2)", acc:"#46b4c8", ar:70, ag:180,ab:200 },
+  { name:"Membrane Memory", category:"resonance · organic",  tags:["resonance","decay","mid","vocal"],                 ca:"#401810", cb:"#100604", glow:"rgba(220,110,80,0.18)", ring:"rgba(220,110,80,0.2)", acc:"#dc6e50", ar:220,ag:110,ab:80  },
+  { name:"Signal Decay",    category:"noise · texture",      tags:["noise","lo-fi","degraded","tape"],                 ca:"#2a2a20", cb:"#0a0a08", glow:"rgba(200,200,140,0.14)",ring:"rgba(200,200,140,0.16)",acc:"#c8c88c", ar:200,ag:200,ab:140 },
+  { name:"Seismic Breath",  category:"low-end · movement",   tags:["infra-bass","slow","breathing","massive"],         ca:"#1a1430", cb:"#080510", glow:"rgba(130,100,200,0.18)",ring:"rgba(130,100,200,0.2)", acc:"#8264c8", ar:130,ag:100,ab:200 },
+];
+
+// ── STATE ─────────────────────────────────────────────────
+let spinCount = 0;
+let current = null;
+let isLoading = false;
+let techVisible = false;
+
+// ── DOM ────────────────────────────────────────────────────
+const sphereEl  = document.getElementById('sphere');
+const sphereWrap= document.getElementById('sphere-wrap');
+const card      = document.getElementById('result-card');
+const nameEl    = document.getElementById('sound-name');
+const metaEl    = document.getElementById('sound-meta');
+const descEl    = document.getElementById('sound-desc');
+const tagsEl    = document.getElementById('tags');
+const badgeEl   = document.getElementById('spin-badge');
+const bgGlow    = document.getElementById('bg-glow');
+const techSheet = document.getElementById('tech-sheet');
+const techTitle = document.getElementById('tech-title');
+const techContent=document.getElementById('tech-content');
+const btnPreview= document.getElementById('btn-preview');
+const btnAbleton= document.getElementById('btn-ableton');
+const btnExport = document.getElementById('btn-export');
+const divider   = document.getElementById('divider');
+const rings     = document.querySelectorAll('.sphere-ring');
+
+// ── COLOR APPLY ────────────────────────────────────────────
+function applyColor(s) {
+  const root = document.documentElement;
+  sphereEl.style.background = `radial-gradient(circle at 36% 32%, ${s.ca}, ${s.cb} 70%)`;
+  sphereEl.style.boxShadow = `0 0 90px ${s.glow}, 0 0 180px ${s.glow.replace('0.1','0.06')}, inset 0 0 60px rgba(0,0,0,0.55)`;
+  bgGlow.style.background = `radial-gradient(ellipse 70% 55% at 50% 38%, ${s.glow}, transparent)`;
+  rings.forEach(r => r.style.borderColor = s.ring);
+  card.style.borderColor = `rgba(${s.ar},${s.ag},${s.ab},0.18)`;
+  divider.style.background = `rgba(${s.ar},${s.ag},${s.ab},0.12)`;
+  btnPreview.style.color = s.acc;
+  btnPreview.style.borderColor = `rgba(${s.ar},${s.ag},${s.ab},0.3)`;
+  btnPreview.style.background = `rgba(${s.ar},${s.ag},${s.ab},0.07)`;
+  badgeEl.style.color = `rgba(${s.ar},${s.ag},${s.ab},0.4)`;
+  tagsEl.querySelectorAll('.tag').forEach(t => {
+    t.style.color = `rgba(${s.ar},${s.ag},${s.ab},0.75)`;
+    t.style.borderColor = `rgba(${s.ar},${s.ag},${s.ab},0.2)`;
+    t.style.background = `rgba(${s.ar},${s.ag},${s.ab},0.06)`;
+  });
+}
+
+// ── PARTICLES ──────────────────────────────────────────────
+function spawnParticles(x, y, s) {
+  for (let i = 0; i < 14; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const a = Math.random() * Math.PI * 2;
+    const d = 50 + Math.random() * 80;
+    p.style.cssText = `left:${x}px;top:${y}px;background:${s.acc};box-shadow:0 0 8px ${s.acc}`;
+    p.style.setProperty('--tx', Math.cos(a)*d+'px');
+    p.style.setProperty('--ty', Math.sin(a)*d+'px');
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 2000);
+  }
+}
+
+// ── CLAUDE API STREAM ──────────────────────────────────────
+async function streamFromClaude(prompt, targetEl, onDone) {
+  targetEl.innerHTML = '<span class="cursor"></span>';
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      stream: true,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+
+  if (!response.ok) throw new Error('API error ' + response.status);
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let text = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    const chunk = decoder.decode(value, { stream: true });
+    const lines = chunk.split('\n');
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      const data = line.slice(6).trim();
+      if (data === '[DONE]') continue;
+      try {
+        const json = JSON.parse(data);
+        if (json.type === 'content_block_delta' && json.delta?.text) {
+          text += json.delta.text;
+          targetEl.innerHTML = text + '<span class="cursor"></span>';
+        }
+      } catch {}
+    }
+  }
+
+  targetEl.innerHTML = text;
+  if (onDone) onDone(text);
+}
+
+// ── SPIN ───────────────────────────────────────────────────
+async function spin(evt) {
+  if (isLoading) return;
+  isLoading = true;
+
+  spinCount++;
+  const pick = sounds[Math.floor(Math.random() * sounds.length)];
+  current = pick;
+
+  // particles at click position
+  const rect = sphereEl.getBoundingClientRect();
+  spawnParticles(rect.left + rect.width/2, rect.top + rect.height/2, pick);
+
+  // hide card, update content
+  card.classList.remove('visible');
+  techSheet.classList.remove('visible');
+  techVisible = false;
+
+  await new Promise(r => setTimeout(r, 200));
+
+  nameEl.textContent = pick.name;
+  metaEl.textContent = pick.category;
+  tagsEl.innerHTML = pick.tags.map(t => `<span class="tag">${t}</span>`).join('');
+  badgeEl.textContent = `${spinCount} drift`;
+  descEl.className = 'sound-desc loading';
+  descEl.textContent = 'generating...';
+
+  applyColor(pick);
+  card.classList.add('visible');
+
+  // stream sensory description
+  try {
+    await streamFromClaude(
+      `Sei un sound designer con una voce poetica e tecnica insieme. Descrivi "${pick.name}" (${pick.category}) in modo sensoriale e fisico: come suona, come si muove nel tempo, cosa si sente nel corpo. Scrivi 3-4 frasi dense, in italiano. Nessun titolo, nessuna introduzione. Solo la descrizione.`,
+      descEl
+    );
+    descEl.classList.remove('loading');
+  } catch (e) {
+    descEl.textContent = 'Connetti l\'API Anthropic per le descrizioni generate.';
+    descEl.classList.remove('loading');
+  }
+
+  isLoading = false;
+}
+
+// ── BUTTON ACTIONS ─────────────────────────────────────────
+btnPreview.addEventListener('click', async () => {
+  if (!current || isLoading) return;
+  isLoading = true;
+  techSheet.classList.add('visible');
+  techTitle.textContent = 'descrizione sensoriale';
+  techContent.innerHTML = '<span class="cursor"></span>';
+
+  try {
+    await streamFromClaude(
+      `Descrivi il suono "${current.name}" (${current.category}) in modo profondamente sensoriale. Come si sente nel petto, nelle orecchie, nello stomaco. Che immagini evoca. Che ora del giorno è. Che spazio fisico occupa. Scrivi in italiano, 5-6 frasi evocative. Nessun titolo.`,
+      techContent
+    );
+  } catch (e) {
+    techContent.textContent = 'Connetti l\'API Anthropic per i contenuti generati.';
+  }
+  isLoading = false;
+});
+
+btnAbleton.addEventListener('click', async () => {
+  if (!current || isLoading) return;
+  isLoading = true;
+  techSheet.classList.add('visible');
+  techTitle.textContent = 'guida ableton';
+  techContent.innerHTML = '<span class="cursor"></span>';
+
+  try {
+    await streamFromClaude(
+      `Sei un produttore musicale esperto di Ableton Live. Spiega come costruire "${current.name}" (${current.category}) in Ableton, passo per passo. Indica strumenti specifici (Operator, Wavetable, Sampler, ecc), chain di effetti, impostazioni chiave. Scrivi in italiano, conciso ma preciso. Nessuna introduzione generica.`,
+      techContent
+    );
+  } catch (e) {
+    techContent.textContent = 'Connetti l\'API Anthropic per i contenuti generati.';
+  }
+  isLoading = false;
+});
+
+btnExport.addEventListener('click', async () => {
+  if (!current || isLoading) return;
+  isLoading = true;
+  techSheet.classList.add('visible');
+  techTitle.textContent = 'formato export';
+  techContent.innerHTML = '<span class="cursor"></span>';
+
+  try {
+    await streamFromClaude(
+      `Consiglia il formato di export ottimale per il suono "${current.name}" (${current.category}): formato file, sample rate, bit depth, mono vs stereo, note su loop points se necessari. Poi suggerisci come usarlo in Ableton (drag in clip, rack, ecc). Scrivi in italiano, pratico e diretto.`,
+      techContent
+    );
+  } catch (e) {
+    techContent.textContent = 'Connetti l\'API Anthropic per i contenuti generati.';
+  }
+  isLoading = false;
+});
+
+// ── EVENTS ─────────────────────────────────────────────────
+sphereWrap.addEventListener('click', spin);
+sphereWrap.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') spin(e); });
+</script>
+</body>
+</html>

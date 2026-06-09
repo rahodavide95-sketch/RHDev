@@ -1408,7 +1408,10 @@ header{
     <div class="opp-card" id="opp-card">
       <div class="opp-hd">
         <span class="opp-title">⚡ Migliori Opportunità</span>
-        <span class="opp-badge" id="opp-badge" style="display:none"></span>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span class="opp-badge" id="opp-badge" style="display:none"></span>
+          <button class="refresh-btn" onclick="refreshCard(this,loadPanoramica)" title="Aggiorna">↻</button>
+        </div>
       </div>
       <div class="opp-sections" id="opp-grid">
         <div class="opp-radar">
@@ -2765,8 +2768,13 @@ function initSecControls(){
       _secSort[id]=sel.value;
       if(Object.keys(globalScoreMap).length) renderSecRows(id);
     });
+    // Refresh button
+    const ref=document.createElement('button');
+    ref.className='refresh-btn'; ref.title='Aggiorna sezione'; ref.textContent='↻';
+    ref.addEventListener('click',()=>refreshCard(ref,()=>loadSectionRest(id)));
     ctrl.appendChild(inp);
     ctrl.appendChild(sel);
+    ctrl.appendChild(ref);
     hd.appendChild(ctrl);
   });
 }

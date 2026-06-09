@@ -2909,7 +2909,8 @@ async function loadPulse(){
     Promise.all(PULSE.map(async sym=>{
       try{
         const cached=getCached(sym);
-        const range=cached!==null?'5d':'2y';
+        // SPY needs ≥21 bars for F&G (RSI+momentum) — use 1mo minimum
+        const range=cached!==null?(sym==='SPY'?'1mo':'5d'):'2y';
         const res=await fetchChart(sym,range,'1d');
         const tsRaw=res.timestamp||[];
         const raw=res.indicators?.quote?.[0]?.close||[];

@@ -862,19 +862,11 @@ async function spin(evt){
     const res=await fetch('/api/proxy',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:3000,stream:true,messages:[{role:'user',content:GEN_PROMPT}]})
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:3000,messages:[{role:'user',content:GEN_PROMPT}]})
     });
     if(!res.ok)throw new Error('API '+res.status);
-
-    const reader=res.body.getReader(),decoder=new TextDecoder();
-    while(true){
-      const{done,value}=await reader.read();if(done)break;
-      for(const line of decoder.decode(value,{stream:true}).split('\n')){
-        if(!line.startsWith('data: '))continue;
-        const d=line.slice(6).trim();if(d==='[DONE]')continue;
-        try{const j=JSON.parse(d);if(j.type==='content_block_delta'&&j.delta?.text)buf+=j.delta.text;}catch{}
-      }
-    }
+    const resp=await res.json();
+    buf=(resp.content&&resp.content[0]&&resp.content[0].text)||'';
 
     // Extract JSON: strip any text outside outermost { }
     let data=null;

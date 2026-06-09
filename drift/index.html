@@ -1041,17 +1041,11 @@ btnAbleton.addEventListener('click',async()=>{
   const synth=current.synthesis||{};
   try{
     await streamFromClaude(
-      `Sei un sound designer esperto di Ableton Live. Ricrea "${current.name}" — ${current.category}.
+      `Sei un sound designer esperto di Ableton Live. Scrivi una guida pratica per ricreare "${current.name}" (${current.category}) in Ableton Live.
 
-Parametri sorgente: oscillatore ${synth.oscillator||'?'} @ ${synth.frequency||'?'}Hz · filtro ${synth.filterType||'?'} @ ${synth.filterFreq||'?'}Hz Q=${synth.filterQ||'?'} · ADSR ${synth.attackTime||'?'}/${synth.decayTime||'?'}/${synth.sustainLevel||'?'}/${synth.releaseTime||'?'}s · reverb ${Math.round((synth.reverbAmount||0)*100)}% · distorsione ${Math.round((synth.distortionAmount||0)*100)}% · LFO ${synth.lfoRate||0}Hz depth ${synth.lfoDepth||0} · ${synth.layers||1} layer · durata ${synth.duration||'?'}s.
+Parametri: oscillatore ${synth.oscillator||'?'} @ ${synth.frequency||'?'}Hz · filtro ${synth.filterType||'?'} @ ${synth.filterFreq||'?'}Hz Q=${synth.filterQ||'?'} · ADSR ${synth.attackTime||'?'}/${synth.decayTime||'?'}/${synth.sustainLevel||'?'}/${synth.releaseTime||'?'}s · reverb ${Math.round((synth.reverbAmount||0)*100)}% · distorsione ${Math.round((synth.distortionAmount||0)*100)}% · LFO ${synth.lfoRate||0}Hz depth ${synth.lfoDepth||0} · ${synth.layers||1} layer.
 
-Rispondi in italiano con queste sezioni (niente intro):
-**Synth** — quale usare (Operator/Wavetable/Analog) e perché
-**Oscillatore** — tipo onda, frequenza, detuning per i layer
-**Filtro** — tipo, freq, Q, automazioni suggerite
-**Envelope** — valori ADSR precisi
-**FX chain** — in ordine: saturazione → EQ → reverb/delay → compressore (solo quelli necessari, con parametri chiave)
-**LFO** — target, rate, depth (solo se presente)`,
+Scrivi SOLO i passi numerati, in italiano, senza intro né conclusioni. Ogni passo è una singola azione concreta ("Apri Operator → imposta Osc A su Sine @ 220 Hz"). Massimo 8 passi. Inizia direttamente dal passo 1.`,
       techContent);
   }catch{techContent.textContent='Errore API.';}
   isActing=false;

@@ -862,7 +862,7 @@ async function spin(evt){
     const res=await fetch('/api/proxy',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1500,stream:true,messages:[{role:'user',content:GEN_PROMPT}]})
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:3000,stream:true,messages:[{role:'user',content:GEN_PROMPT}]})
     });
     if(!res.ok)throw new Error('API '+res.status);
 

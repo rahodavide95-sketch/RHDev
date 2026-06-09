@@ -204,6 +204,7 @@
       <button class="btn btn-accent" id="btn-preview">Descrizione sensoriale</button>
       <button class="btn" id="btn-ableton">Guida Ableton</button>
       <button class="btn" id="btn-replay">↺ Replay</button>
+      <button class="btn" id="btn-reverse" disabled>⟺ Reverse</button>
       <button class="btn" id="btn-export">↓ Export</button>
     </div>
     <div class="tech-sheet" id="tech-sheet">
@@ -691,6 +692,7 @@ const techContent=document.getElementById('tech-content');
 const btnPreview =document.getElementById('btn-preview');
 const btnAbleton =document.getElementById('btn-ableton');
 const btnReplay  =document.getElementById('btn-replay');
+const btnReverse =document.getElementById('btn-reverse');
 const divider    =document.getElementById('divider');
 const rings      =document.querySelectorAll('.sphere-ring');
 const btnKey     =document.getElementById('btn-key');
@@ -977,6 +979,8 @@ let spinCount=0;
 let current=null;
 let isLoading=false;  // sphere spinning
 let isActing=false;   // action buttons
+let lastBuffer=null;  // rendered AudioBuffer for export/reverse
+let isReversed=false;
 
 // ── JSON SANITIZER ────────────────────────────────────────────
 function sanitizeJSON(s){
@@ -1094,6 +1098,11 @@ function applyGeneratedSound(data,px,py){
   if(data.synthesis){
     try{ synthesize(data.synthesis); }
     catch(e){ console.warn('synthesis error',e); }
+    lastBuffer=null;isReversed=false;
+    btnReverse.textContent='⟺ Reverse';btnReverse.disabled=true;
+    renderOffline(data.synthesis).then(buf=>{
+      if(current===data){lastBuffer=buf;btnReverse.disabled=false;}
+    }).catch(()=>{});
   }
 }
 
@@ -1127,9 +1136,43 @@ Scrivi SOLO i passi numerati, in italiano. Nessun markdown, nessun asterisco, ne
 
 btnReplay.addEventListener('click',()=>{
   if(!current?.synthesis)return;
-  try{ synthesize(current.synthesis); }
-  catch(e){ console.warn(e); }
+  if(lastBuffer){
+    try{ playBuffer(lastBuffer); }catch(e){ console.warn(e); }
+  }else{
+    try{ synthesize(current.synthesis); }catch(e){ console.warn(e); }
+  }
 });
+
+btnReverse.addEventListener('click',()=>{
+  if(!lastBuffer)return;
+  reverseBufferInPlace(lastBuffer);
+  isReversed=!isReversed;
+  btnReverse.textContent=isReversed?'⟺ Original':'⟺ Reverse';
+  try{ playBuffer(lastBuffer); }catch(e){ console.warn(e); }
+});
+
+// ── REVERSE / PLAY BUFFER ─────────────────────────────────────
+function reverseBufferInPlace(buf){
+  for(let c=0;c<buf.numberOfChannels;c++){
+    const d=buf.getChannelData(c);
+    let lo=0,hi=d.length-1;
+    while(lo<hi){const t=d[lo];d[lo++]=d[hi];d[hi--]=t;}
+  }
+}
+
+function playBuffer(buf){
+  stopActiveSources();
+  const ctx=getAudioCtx();const now=ctx.currentTime;
+  globalAnalyser=ctx.createAnalyser();
+  globalAnalyser.fftSize=2048;globalAnalyser.smoothingTimeConstant=0.82;
+  const src=ctx.createBufferSource();src.buffer=buf;
+  const gain=ctx.createGain();gain.gain.setValueAtTime(0.85,now);
+  src.connect(gain);gain.connect(globalAnalyser);globalAnalyser.connect(ctx.destination);
+  src.start(now);activeSources.push(src);
+  const ind=document.getElementById('sound-playing');
+  ind.classList.add('active');
+  src.onended=()=>ind.classList.remove('active');
+}
 
 // ── WAV EXPORT ────────────────────────────────────────────────
 const btnExport=document.getElementById('btn-export');
@@ -1242,13 +1285,18 @@ btnExport.addEventListener('click',async()=>{
   const orig=btnExport.textContent;
   btnExport.textContent='rendering…';btnExport.disabled=true;
   try{
-    const buf=await renderOffline(current.synthesis);
+    let buf=lastBuffer;
+    if(!buf){
+      buf=await renderOffline(current.synthesis);
+      lastBuffer=buf;btnReverse.disabled=false;
+    }
     const wav=encodeWAVFloat32(buf);
     const blob=new Blob([wav],{type:'audio/wav'});
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');
-    const name=(current.name||'drift').replace(/\s+/g,'_').toLowerCase();
-    a.href=url;a.download=`${name}_48k_32bit.wav`;
+    const name=(current.name||'sonorium').replace(/\s+/g,'_').toLowerCase();
+    const sfx=isReversed?'_rev':'';
+    a.href=url;a.download=`${name}${sfx}_48k_32bit.wav`;
     a.click();
     setTimeout(()=>URL.revokeObjectURL(url),5000);
   }catch(e){console.error(e);}

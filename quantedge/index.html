@@ -2196,45 +2196,53 @@ async function fetchFundamentals(ticker){
 async function fetchMacroData(){
   const out={usCPI:null,euHICP:null,itHICP:null,bceRate:null};
 
-  // ECB helper: extract value from SDMX-JSON regardless of series key length
+  // Direct fetch with timeout (ECB + World Bank support CORS natively)
+  const dfetch=async(url,ms=9000)=>{
+    const ctrl=new AbortController();
+    const t=setTimeout(()=>ctrl.abort(),ms);
+    try{const r=await fetch(url,{signal:ctrl.signal});clearTimeout(t);return await r.json();}
+    catch{clearTimeout(t);return null;}
+  };
+
+  // ECB SDMX-JSON: extract value from any series key length
   const ecbVal=data=>{
     try{
       const series=data?.dataSets?.[0]?.series;
       if(!series) return null;
-      // find first series key
       const sk=Object.keys(series)[0];
-      if(!sk) return null;
       const obs=series[sk]?.observations;
       if(!obs) return null;
-      // get latest observation (highest numeric key)
       const idx=Object.keys(obs).map(Number).sort((a,b)=>b-a)[0];
       const v=obs[String(idx)]?.[0];
       return v!=null&&!isNaN(Number(v))?Number(v):null;
     }catch{return null;}
   };
 
-  // US CPI YoY — BLS public API v1 (no key required)
-  try{
-    const yr=new Date().getFullYear();
-    const bls=await fetchJSON(`https://api.bls.gov/publicAPI/v1/timeseries/data/CUUR0000SA0?startyear=${yr-2}&endyear=${yr}`);
-    const rows=bls?.Results?.series?.[0]?.data||[];
-    // rows sorted newest-first; find pairs 12 months apart
-    if(rows.length>=13){
-      const cur=parseFloat(rows[0].value);
-      const prev=parseFloat(rows[12].value);
-      if(cur&&prev) out.usCPI=(cur-prev)/prev*100;
-    }
-  }catch{}
+  // World Bank: annual YoY inflation (no proxy needed, CORS ok)
+  const wbVal=data=>{
+    try{return data?.[1]?.find(r=>r.value!=null)?.value??null;}catch{return null;}
+  };
 
-  // ECB: Eurozone HICP + Italy HICP + BCE deposit rate
-  const [euR,itR,bceR]=await Promise.allSettled([
-    fetchJSON('https://data-api.ecb.europa.eu/service/data/ICP/M.U2.N.000000.4.ANR?lastNObservations=1&format=jsondata'),
-    fetchJSON('https://data-api.ecb.europa.eu/service/data/ICP/M.IT.N.000000.4.ANR?lastNObservations=1&format=jsondata'),
-    fetchJSON('https://data-api.ecb.europa.eu/service/data/FM/M.U2.EUR.4F.KR.DFR.LEV?lastNObservations=1&format=jsondata'),
+  const [usR,euR,itR,bceR]=await Promise.allSettled([
+    dfetch('https://api.worldbank.org/v2/country/US/indicator/FP.CPI.TOTL.ZG?format=json&mrv=2'),
+    dfetch('https://data-api.ecb.europa.eu/service/data/ICP/M.U2.N.000000.4.ANR?lastNObservations=1&format=jsondata'),
+    dfetch('https://data-api.ecb.europa.eu/service/data/ICP/M.IT.N.000000.4.ANR?lastNObservations=1&format=jsondata'),
+    dfetch('https://data-api.ecb.europa.eu/service/data/FM/M.U2.EUR.4F.KR.DFR.LEV?lastNObservations=1&format=jsondata'),
   ]);
-  if(euR.status==='fulfilled')  out.euHICP=ecbVal(euR.value);
-  if(itR.status==='fulfilled')  out.itHICP=ecbVal(itR.value);
-  if(bceR.status==='fulfilled') out.bceRate=ecbVal(bceR.value);
+
+  if(usR.status==='fulfilled'&&usR.value)  out.usCPI=wbVal(usR.value);
+  if(euR.status==='fulfilled'&&euR.value)  out.euHICP=ecbVal(euR.value);
+  if(itR.status==='fulfilled'&&itR.value)  out.itHICP=ecbVal(itR.value);
+  if(bceR.status==='fulfilled'&&bceR.value) out.bceRate=ecbVal(bceR.value);
+
+  // Fallback via CORS proxy for any that failed
+  const tryProxy=async(url,parser)=>{
+    try{const d=await fetchJSON(url);return parser(d);}catch{return null;}
+  };
+  if(out.euHICP===null)  out.euHICP=await tryProxy('https://data-api.ecb.europa.eu/service/data/ICP/M.U2.N.000000.4.ANR?lastNObservations=1&format=jsondata',ecbVal);
+  if(out.itHICP===null)  out.itHICP=await tryProxy('https://data-api.ecb.europa.eu/service/data/ICP/M.IT.N.000000.4.ANR?lastNObservations=1&format=jsondata',ecbVal);
+  if(out.bceRate===null) out.bceRate=await tryProxy('https://data-api.ecb.europa.eu/service/data/FM/M.U2.EUR.4F.KR.DFR.LEV?lastNObservations=1&format=jsondata',ecbVal);
+  if(out.usCPI===null)   out.usCPI=await tryProxy('https://api.worldbank.org/v2/country/US/indicator/FP.CPI.TOTL.ZG?format=json&mrv=2',wbVal);
 
   return out;
 }

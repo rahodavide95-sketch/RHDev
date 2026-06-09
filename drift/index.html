@@ -114,6 +114,8 @@
   .tech-sheet.visible { display:block; }
   .tech-title { font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--c-text-muted);margin-bottom:1rem; }
   .tech-content { font-size:13px;line-height:1.75;color:var(--c-text-secondary);min-height:2rem;white-space:pre-wrap;word-break:break-word; }
+  .tech-content.streaming::after { content:'▋';animation:blink-cur .9s step-end infinite;opacity:.6;font-size:.9em; }
+  @keyframes blink-cur { 0%,100%{opacity:.6} 50%{opacity:0} }
 
   /* ── Echo burst effect ── */
   @keyframes echo-ring { from{transform:translate(-50%,-50%)scale(0);opacity:var(--eop,.65)} to{transform:translate(-50%,-50%)scale(var(--es,10));opacity:0} }
@@ -898,7 +900,7 @@ keyOverlay.addEventListener('click',e=>{ if(e.target===keyOverlay)closeKeyModal(
 async function streamFromClaude(prompt,targetEl){
   const apiKey=getKey();
   if(!apiKey){ openKeyModal();throw new Error('no key'); }
-  targetEl.innerHTML='<span class="cursor"></span>';
+  targetEl.textContent='';targetEl.classList.add('streaming');
   const res=await fetch('/api/proxy',{
     method:'POST',
     headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'},
@@ -906,16 +908,20 @@ async function streamFromClaude(prompt,targetEl){
   });
   if(!res.ok)throw new Error('API '+res.status);
   const reader=res.body.getReader(),decoder=new TextDecoder();
-  let text='';
+  let text='',lineBuf='';
   while(true){
     const{done,value}=await reader.read();if(done)break;
-    for(const line of decoder.decode(value,{stream:true}).split('\n')){
+    lineBuf+=decoder.decode(value,{stream:true});
+    const lines=lineBuf.split('\n');lineBuf=lines.pop();
+    for(const line of lines){
       if(!line.startsWith('data: '))continue;
       const d=line.slice(6).trim();if(d==='[DONE]')continue;
-      try{const j=JSON.parse(d);if(j.type==='content_block_delta'&&j.delta?.text){text+=j.delta.text;targetEl.innerHTML=text+'<span class="cursor"></span>';}}catch{}
+      try{const j=JSON.parse(d);if(j.type==='content_block_delta'&&j.delta?.text){text+=j.delta.text;targetEl.textContent=text;}}catch{}
     }
   }
-  targetEl.innerHTML=text;
+  // strip stray markdown asterisks the model sometimes adds
+  targetEl.textContent=text.replace(/\*\*(.+?)\*\*/g,'$1').replace(/\*(.+?)\*/g,'$1');
+  targetEl.classList.remove('streaming');
 }
 
 // ── GENERATION PROMPT ─────────────────────────────────────────
@@ -1113,7 +1119,7 @@ btnAbleton.addEventListener('click',async()=>{
 
 Parametri: oscillatore ${synth.oscillator||'?'} @ ${synth.frequency||'?'}Hz · filtro ${synth.filterType||'?'} @ ${synth.filterFreq||'?'}Hz Q=${synth.filterQ||'?'} · ADSR ${synth.attackTime||'?'}/${synth.decayTime||'?'}/${synth.sustainLevel||'?'}/${synth.releaseTime||'?'}s · reverb ${Math.round((synth.reverbAmount||0)*100)}% · distorsione ${Math.round((synth.distortionAmount||0)*100)}% · LFO ${synth.lfoRate||0}Hz depth ${synth.lfoDepth||0} · ${synth.layers||1} layer.
 
-Scrivi SOLO i passi numerati, in italiano, senza intro né conclusioni. Ogni passo è una singola azione concreta ("Apri Operator → imposta Osc A su Sine @ 220 Hz"). Massimo 8 passi. Inizia direttamente dal passo 1.`,
+Scrivi SOLO i passi numerati, in italiano. Nessun markdown, nessun asterisco, nessun grassetto. Ogni passo è una riga: numero, punto, azione concreta. Massimo 8 passi. Inizia direttamente con "1.".`,
       techContent);
   }catch{techContent.textContent='Errore API.';}
   isActing=false;

@@ -223,9 +223,9 @@ header{
 
 .fg-card-left{align-items:flex-start!important;}
 .fg-card-left .fg-top{align-items:flex-start!important;text-align:left!important;}
-.yc-hd-row{display:flex;align-items:center;justify-content:space-between;width:100%;gap:6px;flex-wrap:wrap;}
-.yc-spread{font-size:clamp(1.3rem,3.5vw,1.8rem);font-weight:700;line-height:1;font-variant-numeric:tabular-nums;flex-shrink:0;}
-.yc-state{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:20px;background:rgba(255,255,255,.06);white-space:nowrap;flex-shrink:0;}
+.yc-status-row{display:flex;align-items:center;gap:10px;width:100%;flex-wrap:wrap;}
+.yc-state-big{font-size:1.15rem;font-weight:700;letter-spacing:.02em;line-height:1;}
+.yc-spread-lbl{font-size:.75rem;font-weight:600;font-variant-numeric:tabular-nums;color:var(--t2);}
 .yc-svg{width:100%;height:80px;margin:8px 0 4px;overflow:hidden;display:block;flex-shrink:0;}
 .yc-track{fill:none;stroke:rgba(255,255,255,.08);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;}
 .yc-curve{fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;}
@@ -1330,12 +1330,12 @@ header{
             <span class="fg-title">Curva dei Rendimenti</span>
             <button class="info-btn" data-tip="yieldcurve">i</button>
           </div>
-          <span class="fg-sub" id="yc-sub">Caricamento…</span>
+          <span class="fg-sub">Tassi obbligaz. USA · spread 10A–3M</span>
         </div>
         <div class="fg-body" style="justify-content:flex-start;">
-          <div class="yc-hd-row">
-            <div id="yc-spread" class="yc-spread" style="color:var(--t3)">—</div>
-            <div id="yc-state" class="yc-state" style="color:var(--t3)">—</div>
+          <div class="yc-status-row">
+            <div class="yc-state-big" id="yc-state">—</div>
+            <div class="yc-spread-lbl" id="yc-spread">—</div>
           </div>
           <svg class="yc-svg" id="yc-svg" viewBox="0 0 160 84"></svg>
           <div class="yc-pts" id="yc-pts"></div>
@@ -4306,19 +4306,19 @@ function renderYieldCurve(data){
   const spStr=(spread>=0?'+':'')+spread.toFixed(2)+'%';
   let state,color,interp;
   if(spread<-0.25){
-    state='Invertita ⚠'; color='#ef4444';
-    interp='Curva invertita: i tassi a breve superano quelli a lungo termine. Storicamente associata a recessioni nei 12–18 mesi successivi.';
+    state='⚠ Invertita'; color='#ef4444';
+    interp='I tassi a breve termine superano quelli a lungo: chi presta per poco vuole più rendimento di chi presta per anni. Storicamente precede recessioni nei 12–18 mesi successivi.';
   } else if(spread<0.25){
     state='Piatta'; color='#f59e0b';
-    interp='Curva piatta: spread minimo tra breve e lungo termine. Il mercato è incerto sulla direzione dell\'economia.';
+    interp='I tassi a breve e a lungo termine sono quasi uguali. Il mercato non ha una direzione chiara sull\'economia — fase di transizione o incertezza.';
   } else {
     state='Normale'; color='#10b981';
-    interp='Curva normale: i tassi a lungo termine superano quelli a breve. Segnale di contesto economico in espansione.';
+    interp='Chi presta a lungo termine riceve più rendimento: situazione fisiologica. Segnale che l\'economia è in espansione e il mercato è fiducioso.';
   }
-  document.getElementById('yc-spread').textContent=spStr;
-  document.getElementById('yc-spread').style.color=color;
-  document.getElementById('yc-state').textContent=state;
-  document.getElementById('yc-state').style.color=color;
+  const stEl=document.getElementById('yc-state');
+  const spEl=document.getElementById('yc-spread');
+  if(stEl){stEl.textContent=state;stEl.style.color=color;}
+  if(spEl){spEl.textContent='Spread '+spStr;spEl.style.color=color;}
   document.getElementById('yc-sub').textContent='Spread 10A – 3M';
   // Build SVG with gradient fill
   const pts=[{x:10,v:irx,l:'3M'},...(fvx?[{x:70,v:fvx,l:'5A'}]:[]),{x:120,v:tnx,l:'10A'},...(tyx?[{x:152,v:tyx,l:'30A'}]:[])];

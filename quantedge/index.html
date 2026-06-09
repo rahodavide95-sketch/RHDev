@@ -823,6 +823,14 @@ header{
 .dxy-val{font-size:1.6rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1;}
 .dxy-note{font-size:.63rem;color:var(--t2);line-height:1.4;margin-top:2px;width:100%;
   text-align:center;border-top:1px solid var(--border);padding-top:8px;}
+/* ── MACRO CARD ── */
+.macro-grid{display:flex;flex-direction:column;gap:8px;width:100%;}
+.macro-row{display:flex;flex-direction:column;gap:3px;padding:10px 12px;background:var(--bg3);border-radius:10px;width:100%;box-sizing:border-box;}
+.macro-top{display:flex;align-items:center;justify-content:space-between;gap:6px;}
+.macro-lbl{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);}
+.macro-val{font-size:1.3rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1;margin-top:4px;}
+.macro-badge{font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(255,255,255,.07);}
+.macro-note{font-size:.6rem;color:var(--t2);margin-top:2px;}
 .fg-card{
   background:var(--bg2);border:1px solid var(--border);
   border-radius:var(--radius);padding:16px 18px;
@@ -1310,6 +1318,51 @@ header{
             </div>
           </div>
           <div class="dxy-note" id="dxy-note">Caricamento…</div>
+        </div>
+      </div>
+      <!-- MACRO CARD -->
+      <div class="fg-card">
+        <div class="fg-top">
+          <div class="fg-title-row">
+            <span class="fg-title">Macro</span>
+            <button class="info-btn" data-tip="macro">i</button>
+          </div>
+        </div>
+        <div class="fg-body">
+          <div class="macro-grid">
+            <div class="macro-row">
+              <div class="macro-top">
+                <span class="macro-lbl">Inflazione USA (CPI YoY)</span>
+                <span class="macro-badge" id="macro-us-badge">—</span>
+              </div>
+              <span class="macro-val" id="macro-us-val">—</span>
+              <span class="macro-note" id="macro-us-note"></span>
+            </div>
+            <div class="macro-row">
+              <div class="macro-top">
+                <span class="macro-lbl">Inflazione Area Euro (HICP)</span>
+                <span class="macro-badge" id="macro-eu-badge">—</span>
+              </div>
+              <span class="macro-val" id="macro-eu-val">—</span>
+              <span class="macro-note" id="macro-eu-note"></span>
+            </div>
+            <div class="macro-row">
+              <div class="macro-top">
+                <span class="macro-lbl">Inflazione Italia (HICP)</span>
+                <span class="macro-badge" id="macro-it-badge">—</span>
+              </div>
+              <span class="macro-val" id="macro-it-val">—</span>
+              <span class="macro-note" id="macro-it-note"></span>
+            </div>
+            <div class="macro-row">
+              <div class="macro-top">
+                <span class="macro-lbl">Tasso BCE (depositi)</span>
+                <span class="macro-badge" id="macro-bce-badge">—</span>
+              </div>
+              <span class="macro-val" id="macro-bce-val">—</span>
+              <span class="macro-note" id="macro-bce-note"></span>
+            </div>
+          </div>
         </div>
       </div>
       <!-- Yield Curve card -->
@@ -1850,15 +1903,14 @@ function isNYSEOpen(){
   const now=new Date();
   const fmt=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'numeric',weekday:'short',hour12:false});
   const parts=Object.fromEntries(fmt.formatToParts(now).map(p=>[p.type,p.value]));
-  const day=parts.weekday; // 'Mon','Tue','Wed','Thu','Fri','Sat','Sun'
+  const day=parts.weekday;
   if(day==='Sat'||day==='Sun') return false;
   const h=parseInt(parts.hour,10),m=parseInt(parts.minute,10),mins=h*60+m;
-  if(mins<570||mins>=960) return false; // prima delle 9:30 o dopo le 16:00
-  // festività NYSE principali
+  if(mins<570||mins>=960) return false;
   const dFmt=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',month:'numeric',day:'numeric'});
   const dp=Object.fromEntries(dFmt.formatToParts(now).map(p=>[p.type,p.value]));
   const mo=parseInt(dp.month,10)-1, d=parseInt(dp.day,10);
-  const holidays=[[0,1],[6,4],[11,25],[11,26]]; // 1 gen, 4 lug, 25-26 dic
+  const holidays=[[0,1],[6,4],[11,25],[11,26]];
   if(holidays.some(([hm,hd])=>mo===hm&&d===hd)) return false;
   return true;
 }
@@ -3609,7 +3661,7 @@ function renderFundamentals(fund){
   const peLabel=v=>v==null?'N/D — ETF/crypto/non profittevole':v<0?'Negativo — utili in perdita':v<15?'Basso — potenziale valore':v<25?'Nella norma':v<40?'Elevato — growth premium':v<60?'Molto elevato':'Estremo — attenzione';
   const peC=v=>v==null||v<0?'var(--t3)':v<15?'var(--g)':v<25?'var(--y)':'var(--r)';
   setInd('iv-tpe','is-tpe',peFmt(fund.trailingPE),peLabel(fund.trailingPE),peC(fund.trailingPE));
-  setInd('iv-fpe','is-fpe',peFmt(fund.forwardPE),fund.forwardPE==null?'N/D':fund.forwardPE<fund.trailingPE&&fund.trailingPE>0?'Attesa crescita utili':fund.forwardPE>fund.trailingPE&&fund.trailingPE>0?'Attesa calo utili':peLabel(fund.forwardPE),peC(fund.forwardPE));
+  setInd('iv-fpe','is-fpe',peFmt(fund.forwardPE),fund.forwardPE==null?'N/D':fund.forwardPE!=null&&fund.trailingPE!=null&&fund.forwardPE<fund.trailingPE&&fund.trailingPE>0?'Attesa crescita utili':fund.forwardPE!=null&&fund.trailingPE!=null&&fund.forwardPE>fund.trailingPE&&fund.trailingPE>0?'Attesa calo utili':peLabel(fund.forwardPE),peC(fund.forwardPE));
 
   const pbC=fund.pb==null?'var(--t3)':fund.pb<1?'var(--g)':fund.pb<3?'var(--y)':'var(--r)';
   setInd('iv-pb','is-pb',fund.pb!=null?fund.pb.toFixed(2)+'x':'—',fund.pb==null?'N/D':fund.pb<1?'Sotto book — potenziale valore':fund.pb<3?'Nella norma':fund.pb<6?'Premium':'Molto elevato',pbC);

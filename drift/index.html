@@ -125,6 +125,14 @@
   .tech-sheet.visible { display:block; }
   .tech-title { font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--c-text-muted);margin-bottom:1rem; }
   .tech-content { font-size:13px;line-height:1.75;color:var(--c-text-secondary);min-height:2rem;white-space:pre-wrap;word-break:break-word; }
+  .lang-wrap { position:relative; }
+  .btn-lang { background:none;border:0.5px solid rgba(255,255,255,0.08);border-radius:7px;cursor:pointer;padding:3px 8px;color:rgba(255,255,255,0.3);font-family:var(--font-body);font-size:10px;letter-spacing:0.12em;line-height:1;transition:color 0.2s,border-color 0.2s; }
+  .btn-lang:hover { color:rgba(255,255,255,0.65);border-color:rgba(255,255,255,0.2); }
+  .lang-menu { position:absolute;top:calc(100% + 6px);right:0;background:rgba(10,10,20,0.95);border:0.5px solid rgba(255,255,255,0.1);border-radius:10px;padding:4px;display:flex;flex-direction:column;gap:2px;z-index:100;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);opacity:0;pointer-events:none;transition:opacity 0.15s; }
+  .lang-menu.open { opacity:1;pointer-events:auto; }
+  .lang-opt { background:none;border:none;cursor:pointer;padding:5px 16px;color:rgba(255,255,255,0.4);font-family:var(--font-body);font-size:11px;letter-spacing:0.08em;border-radius:7px;text-align:left;white-space:nowrap;transition:color 0.15s,background 0.15s; }
+  .lang-opt:hover { color:rgba(255,255,255,0.8);background:rgba(255,255,255,0.06); }
+  .lang-opt.active { color:rgba(255,255,255,0.8);background:rgba(255,255,255,0.05); }
   .tech-content.streaming::after { content:'▋';animation:blink-cur .9s step-end infinite;opacity:.6;font-size:.9em; }
   @keyframes blink-cur { 0%,100%{opacity:.6} 50%{opacity:0} }
 
@@ -161,6 +169,8 @@
   @media (min-width:521px) {
     .primary-actions { flex-wrap:nowrap; }
     .btn { padding:8px 14px; }
+    .sound-identity { margin-top:0.6rem; }
+    .divider { margin:0.2rem 0; }
   }
   @media (max-width:520px) {
     html { height:100%; min-height:unset; overflow:hidden; overscroll-behavior:none; }
@@ -215,6 +225,16 @@
     <span class="logo" style="cursor:pointer" id="btn-credits">Sonorium</span>
     <div style="display:flex;align-items:center;gap:10px">
       <span class="spin-badge" id="spin-badge">— / —</span>
+      <div class="lang-wrap">
+        <button class="btn-lang" id="btn-lang">IT</button>
+        <div class="lang-menu" id="lang-menu">
+          <button class="lang-opt active" data-lang="it">Italiano</button>
+          <button class="lang-opt" data-lang="en">English</button>
+          <button class="lang-opt" data-lang="es">Español</button>
+          <button class="lang-opt" data-lang="fr">Français</button>
+          <button class="lang-opt" data-lang="de">Deutsch</button>
+        </div>
+      </div>
       <button class="btn-key" id="btn-key" title="API Key">⚷</button>
     </div>
   </header>
@@ -956,10 +976,14 @@ function synthesize(p){
     activeSources.push(src);
   }
 
-  // Show/hide playing indicator
+  // Show/hide playing indicator + hide sphere hint while audio plays
   const indicator=document.getElementById('sound-playing');
   indicator.classList.add('active');
-  setTimeout(()=>indicator.classList.remove('active'),(dur+0.3)*1000);
+  const _hint=document.getElementById('sphere-hint');
+  if(_hint)_hint.style.opacity='0';
+  const _playEnd=(dur+0.3)*1000;
+  setTimeout(()=>indicator.classList.remove('active'),_playEnd);
+  setTimeout(()=>{ if(_hint)_hint.style.opacity=''; },_playEnd);
 }
 
 // ── COLOR / UI APPLY ──────────────────────────────────────────
@@ -1194,19 +1218,21 @@ keyInput.addEventListener('keydown',e=>{ if(e.key==='Enter')btnKeySave.click();i
 keyOverlay.addEventListener('click',e=>{ if(e.target===keyOverlay)closeKeyModal(); });
 
 // ── STREAMING HELPER ──────────────────────────────────────────
-async function streamFromClaude(prompt,targetEl){
+async function streamFromClaude(prompt,targetEl,signal){
   const apiKey=getKey();
   if(!apiKey){ openKeyModal();throw new Error('no key'); }
   targetEl.textContent='';targetEl.classList.add('streaming');
   const res=await fetch('/api/proxy',{
     method:'POST',
     headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'},
-    body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:900,stream:true,messages:[{role:'user',content:prompt}]})
+    body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:900,stream:true,messages:[{role:'user',content:prompt}]}),
+    signal
   });
   if(!res.ok)throw new Error('API '+res.status);
   const reader=res.body.getReader(),decoder=new TextDecoder();
   let text='',lineBuf='';
   while(true){
+    if(signal?.aborted)break;
     const{done,value}=await reader.read();if(done)break;
     lineBuf+=decoder.decode(value,{stream:true});
     const lines=lineBuf.split('\n');lineBuf=lines.pop();
@@ -1216,6 +1242,7 @@ async function streamFromClaude(prompt,targetEl){
       try{const j=JSON.parse(d);if(j.type==='content_block_delta'&&j.delta?.text){text+=j.delta.text;targetEl.textContent=text;}}catch{}
     }
   }
+  if(signal?.aborted){targetEl.classList.remove('streaming');return;}
   // strip markdown, then add blank line before each list item (numbered or bullet)
   targetEl.textContent=text
     .replace(/\*\*(.+?)\*\*/g,'$1').replace(/\*(.+?)\*/g,'$1')
@@ -1437,32 +1464,53 @@ function applyGeneratedSound(data,px,py){
   }
 }
 
-// ── ACTION BUTTONS ────────────────────────────────────────────
-btnPreview.addEventListener('click',async()=>{
-  if(!current||isActing)return;isActing=true;
-  techSheet.classList.add('visible');techTitle.textContent='descrizione sensoriale';
-  try{
-    await streamFromClaude(
-      `Sei un sound designer poetico. Espandi la descrizione sensoriale di "${current.name}" (${current.category}). Scrivi 5-6 frasi in italiano corretto e poetico — texture, movimento, spazio, temperatura, sensazione fisica. Prosa densa. Niente titoli né elenchi.`,
-      techContent);
-  }catch{techContent.textContent='Errore API.';}
-  isActing=false;
-});
+// ── LANGUAGE STATE & TECH SHEET ──────────────────────────────
+let techLang='it';
+let techMode=null;
+let _techAbort=null;
 
-btnAbleton.addEventListener('click',async()=>{
-  if(!current||isActing)return;isActing=true;
-  techSheet.classList.add('visible');techTitle.textContent='guida daw';
+const LANG_DESC={it:'italiano poetico',en:'evocative English',es:'español poético',fr:'français poétique',de:'poetischem Deutsch'};
+const LANG_DAW ={it:'italiano',en:'English',es:'español',fr:'français',de:'Deutsch'};
+
+function buildPreviewPrompt(){
+  const l=LANG_DESC[techLang]||'italiano poetico';
+  return `Sei un sound designer poetico. Espandi la descrizione sensoriale di "${current.name}" (${current.category}). Scrivi 5-6 frasi in ${l} — texture, movimento, spazio, temperatura, sensazione fisica. Prosa densa. Niente titoli né elenchi.`;
+}
+function buildDawPrompt(){
   const synth=current.synthesis||{};
-  try{
-    await streamFromClaude(
-      `Sei un sound designer esperto di DAW come Ableton Live, Logic Pro e FL Studio. Scrivi una guida pratica per ricreare "${current.name}" (${current.category}) in una DAW.
+  const l=LANG_DAW[techLang]||'italiano';
+  return `Sei un sound designer esperto di DAW come Ableton Live, Logic Pro e FL Studio. Scrivi una guida pratica per ricreare "${current.name}" (${current.category}) in una DAW.\n\nParametri: oscillatore ${synth.oscillator||'?'} @ ${synth.frequency||'?'}Hz · filtro ${synth.filterType||'?'} @ ${synth.filterFreq||'?'}Hz Q=${synth.filterQ||'?'} · ADSR ${synth.attackTime||'?'}/${synth.decayTime||'?'}/${synth.sustainLevel||'?'}/${synth.releaseTime||'?'}s · reverb ${Math.round((synth.reverbAmount||0)*100)}% · distorsione ${Math.round((synth.distortionAmount||0)*100)}% · LFO ${synth.lfoRate||0}Hz depth ${synth.lfoDepth||0} · ${synth.layers||1} layer.\n\nScrivi SOLO i passi numerati, in ${l}. Nessun markdown, nessun asterisco, nessun grassetto. Ogni passo è una riga: numero, punto, azione concreta. Massimo 8 passi. Inizia direttamente con "1.".`;
+}
 
-Parametri: oscillatore ${synth.oscillator||'?'} @ ${synth.frequency||'?'}Hz · filtro ${synth.filterType||'?'} @ ${synth.filterFreq||'?'}Hz Q=${synth.filterQ||'?'} · ADSR ${synth.attackTime||'?'}/${synth.decayTime||'?'}/${synth.sustainLevel||'?'}/${synth.releaseTime||'?'}s · reverb ${Math.round((synth.reverbAmount||0)*100)}% · distorsione ${Math.round((synth.distortionAmount||0)*100)}% · LFO ${synth.lfoRate||0}Hz depth ${synth.lfoDepth||0} · ${synth.layers||1} layer.
+async function runTechSheet(mode){
+  if(!current)return;
+  if(_techAbort){_techAbort.abort();_techAbort=null;}
+  _techAbort=new AbortController();
+  const sig=_techAbort.signal;
+  isActing=true;techMode=mode;
+  techSheet.classList.add('visible');
+  techTitle.textContent=mode==='preview'?'descrizione sensoriale':'guida daw';
+  try{ await streamFromClaude(mode==='preview'?buildPreviewPrompt():buildDawPrompt(),techContent,sig); }
+  catch(e){ if(!sig.aborted)techContent.textContent='Errore API.'; }
+  if(!sig.aborted){isActing=false;_techAbort=null;}
+}
 
-Scrivi SOLO i passi numerati, in italiano. Nessun markdown, nessun asterisco, nessun grassetto. Ogni passo è una riga: numero, punto, azione concreta. Massimo 8 passi. Inizia direttamente con "1.".`,
-      techContent);
-  }catch{techContent.textContent='Errore API.';}
-  isActing=false;
+// ── ACTION BUTTONS ────────────────────────────────────────────
+btnPreview.addEventListener('click',()=>runTechSheet('preview'));
+btnAbleton.addEventListener('click',()=>runTechSheet('daw'));
+
+// ── GLOBAL LANGUAGE PICKER ────────────────────────────────────
+const btnLang=document.getElementById('btn-lang');
+const langMenu=document.getElementById('lang-menu');
+btnLang.addEventListener('click',e=>{ e.stopPropagation();langMenu.classList.toggle('open'); });
+document.addEventListener('click',()=>langMenu.classList.remove('open'));
+langMenu.addEventListener('click',e=>{
+  const opt=e.target.closest('.lang-opt');if(!opt)return;
+  techLang=opt.dataset.lang;
+  langMenu.querySelectorAll('.lang-opt').forEach(o=>o.classList.toggle('active',o===opt));
+  btnLang.textContent=opt.dataset.lang.toUpperCase();
+  langMenu.classList.remove('open');
+  if(techMode&&current)runTechSheet(techMode);
 });
 
 btnReplay.addEventListener('click',()=>{

@@ -1740,7 +1740,7 @@ const sphereHint=document.getElementById('sphere-hint');
 const _origSetGen=window.setGenerating;
 window.setGenerating=function(on){
   _origSetGen(on);
-  if(sphereHint)sphereHint.style.opacity=on?'0':'';
+  if(sphereHint)sphereHint.style.opacity=(on||current)?'0':'';
 };
 
 // ── LONG-PRESS RESET (2s on empty space → suction) ────────────
@@ -1794,6 +1794,7 @@ function _doReset(){
     sphereEl.style.setProperty('--sphere-hl','none');
     bgGlow.style.background='radial-gradient(ellipse 60% 50% at 50% 40%,rgba(100,80,255,0.15),transparent)';
     rings.forEach(r=>r.style.borderColor='');
+    if(sphereHint)sphereHint.style.opacity='';
   },440);
 }
 

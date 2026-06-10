@@ -148,7 +148,8 @@
   .credits-overlay { position:fixed;inset:0;z-index:200;background:transparent;display:flex;align-items:center;justify-content:center;padding:1.5rem;pointer-events:none;opacity:0;transition:opacity 0.28s ease; }
   .credits-overlay.visible { pointer-events:auto;opacity:1; }
   .credits-box { width:auto;max-width:min(90vw,520px);text-align:center;padding:2.5rem 2.5rem;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);border-radius:24px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);will-change:transform;transform:translateZ(0); }
-  .credits-logo { font-family:var(--font-display);font-size:22px;font-weight:400;letter-spacing:0.35em;color:var(--c-text-primary);text-transform:uppercase;margin-bottom:2rem; }
+  .credits-logo { font-family:var(--font-display);font-size:22px;font-weight:400;letter-spacing:0.35em;color:var(--c-text-primary);text-transform:uppercase;margin-bottom:0.5rem; }
+  .credits-tagline { font-size:9px;color:var(--c-text-muted);letter-spacing:0.18em;text-transform:uppercase;margin-bottom:2rem; }
   .credits-line { font-size:12px;color:var(--c-text-secondary);letter-spacing:0.06em;line-height:2;margin:0;white-space:nowrap; }
   .credits-copy { font-size:10px;color:var(--c-text-muted);letter-spacing:0.14em;text-transform:uppercase;margin-top:2rem; }
 
@@ -199,10 +200,7 @@
 
 <div class="app">
   <header>
-    <div class="logo-wrap" style="cursor:pointer" id="btn-credits">
-      <span class="logo">Sonorium</span>
-      <span class="tagline-mobile">serendipity engine for sound designers</span>
-    </div>
+    <span class="logo" style="cursor:pointer" id="btn-credits">Sonorium</span>
     <div style="display:flex;align-items:center;gap:10px">
       <span class="spin-badge" id="spin-badge">— / —</span>
       <button class="btn-key" id="btn-key" title="API Key">⚷</button>
@@ -212,6 +210,7 @@
   <div class="credits-overlay" id="credits-overlay">
     <div class="credits-box">
       <p class="credits-logo">Sonorium</p>
+      <p class="credits-tagline">serendipity engine for sound designers</p>
       <p class="credits-line">For your subconscious creativity, wherever you are.</p>
       <p class="credits-line">With love, by Raho.</p>
       <p class="credits-copy">© Sonorium 2026 &nbsp;|&nbsp; v2.0</p>

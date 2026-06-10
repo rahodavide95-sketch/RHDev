@@ -145,10 +145,9 @@
   .btn-key:hover { color:var(--c-text-secondary); }
   .btn-key.has-key { color:var(--c-accent);opacity:0.5; }
 
-  .credits-overlay { position:fixed;inset:0;z-index:200;background:transparent;display:flex;align-items:center;justify-content:center;padding:1.5rem;pointer-events:none;visibility:hidden; }
-  .credits-overlay.visible { pointer-events:auto;visibility:visible; }
-  .credits-box { width:auto;max-width:min(90vw,520px);text-align:center;padding:2.5rem 2.5rem;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);border-radius:24px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);transform:translateZ(0);opacity:0;transition:opacity 0.25s ease; }
-  .credits-overlay.visible .credits-box { opacity:1; }
+  .credits-overlay { position:fixed;inset:0;z-index:200;background:transparent;display:flex;align-items:center;justify-content:center;padding:1.5rem;pointer-events:none;opacity:0;visibility:hidden;transition:opacity 0.28s ease,visibility 0s linear 0.28s; }
+  .credits-overlay.visible { pointer-events:auto;opacity:1;visibility:visible;transition:opacity 0.28s ease,visibility 0s linear 0s; }
+  .credits-box { width:auto;max-width:min(90vw,520px);text-align:center;padding:2.5rem 2.5rem;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);border-radius:24px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);transform:translateZ(0); }
   .credits-logo { font-family:var(--font-display);font-size:22px;font-weight:400;letter-spacing:0.35em;color:var(--c-text-primary);text-transform:uppercase;margin-bottom:2rem; }
   .credits-line { font-size:12px;color:var(--c-text-secondary);letter-spacing:0.06em;line-height:2;margin:0;white-space:nowrap; }
   .credits-copy { font-size:10px;color:var(--c-text-muted);letter-spacing:0.14em;text-transform:uppercase;margin-top:2rem; }

@@ -80,7 +80,7 @@
   .sphere-hint { position:absolute; bottom:-32px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--c-text-muted);letter-spacing:0.14em;white-space:nowrap;text-transform:uppercase;transition:color 0.4s,opacity 0.4s; }
   .sphere-wrap:hover .sphere-hint { color:var(--c-text-secondary); }
 
-  .sound-identity { width:100%;max-width:480px;text-align:center;padding:0.25rem 0 0.65rem;opacity:0;pointer-events:none;transition:opacity 0.6s ease; }
+  .sound-identity { width:100%;max-width:480px;text-align:center;padding:0.25rem 0 0.15rem;opacity:0;pointer-events:none;transition:opacity 0.6s ease; }
   .sound-identity.revealed { opacity:1;pointer-events:auto; }
   .sound-name { font-family:var(--font-display);font-size:26px;font-weight:500;color:var(--c-text-primary);letter-spacing:-0.01em;margin:0 0 0.7rem;transition:color 1s ease;line-height:1.2;text-align:center; }
   .sound-name-row { position:relative;display:flex;align-items:center;justify-content:center;width:100%;margin-bottom:0.7rem; }
@@ -286,7 +286,7 @@
     <!-- Secondary actions -->
     <div class="secondary-actions">
       <button class="btn btn-accent" id="btn-preview">Descrizione sensoriale</button>
-      <button class="btn" id="btn-ableton">Guida Ableton</button>
+      <button class="btn" id="btn-ableton">Guida DAW</button>
     </div>
   </div>
 
@@ -1305,7 +1305,9 @@ async function spin(evt,promptFn=buildPrompt){
   isLoading=true;
   // Unlock AudioContext immediately in the gesture handler (iOS requires this before any await)
   try{if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
-    if(audioCtx.state==='suspended')audioCtx.resume();}catch(_){}
+    if(audioCtx.state==='suspended') await audioCtx.resume();}catch(_){}
+  // If a sound is already showing, suck it away and wait for the animation before generating
+  if(current){ _doReset(); await new Promise(r=>setTimeout(r,450)); }
   spinCount++;
 
   let px,py;
@@ -1449,11 +1451,11 @@ btnPreview.addEventListener('click',async()=>{
 
 btnAbleton.addEventListener('click',async()=>{
   if(!current||isActing)return;isActing=true;
-  techSheet.classList.add('visible');techTitle.textContent='guida ableton';
+  techSheet.classList.add('visible');techTitle.textContent='guida daw';
   const synth=current.synthesis||{};
   try{
     await streamFromClaude(
-      `Sei un sound designer esperto di Ableton Live. Scrivi una guida pratica per ricreare "${current.name}" (${current.category}) in Ableton Live.
+      `Sei un sound designer esperto di DAW come Ableton Live, Logic Pro e FL Studio. Scrivi una guida pratica per ricreare "${current.name}" (${current.category}) in una DAW.
 
 Parametri: oscillatore ${synth.oscillator||'?'} @ ${synth.frequency||'?'}Hz · filtro ${synth.filterType||'?'} @ ${synth.filterFreq||'?'}Hz Q=${synth.filterQ||'?'} · ADSR ${synth.attackTime||'?'}/${synth.decayTime||'?'}/${synth.sustainLevel||'?'}/${synth.releaseTime||'?'}s · reverb ${Math.round((synth.reverbAmount||0)*100)}% · distorsione ${Math.round((synth.distortionAmount||0)*100)}% · LFO ${synth.lfoRate||0}Hz depth ${synth.lfoDepth||0} · ${synth.layers||1} layer.
 

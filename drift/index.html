@@ -993,7 +993,7 @@ function synthesize(p){
   if(_hint)_hint.style.opacity='0';
   const _playEnd=(dur+0.3)*1000;
   setTimeout(()=>indicator.classList.remove('active'),_playEnd);
-  setTimeout(()=>{ if(_hint)_hint.style.opacity=''; },_playEnd);
+  setTimeout(()=>{ if(_hint&&!current)_hint.style.opacity=''; },_playEnd);
 }
 
 // ── COLOR / UI APPLY ──────────────────────────────────────────

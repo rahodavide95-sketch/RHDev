@@ -729,17 +729,20 @@ let globalAnalyser = null;
       const scx=sRect.left+sRect.width*.5,scy=sRect.top+sRect.height*.5;
       const hR=sRect.width*.5;
       const pulse=0.12+Math.sin(autoTime*.7)*0.04+rms*.18+bass*.09;
-      // Inner corona — tight, bright
-      const hg1=ctx.createRadialGradient(scx,scy,hR*.7,scx,scy,hR*1.55);
-      hg1.addColorStop(0,`rgba(${bR},${bG},${bB},${Math.min(.55,pulse*2.2)})`);
-      hg1.addColorStop(1,'rgba(0,0,0,0)');
-      ctx.fillStyle=hg1;ctx.beginPath();ctx.arc(scx,scy,hR*1.55,0,Math.PI*2);ctx.fill();
-      // Outer halo — wide, soft
-      const hg2=ctx.createRadialGradient(scx,scy,hR*.5,scx,scy,hR*2.8);
-      hg2.addColorStop(0,`rgba(${bR},${bG},${bB},${Math.min(.22,pulse*.9)})`);
-      hg2.addColorStop(.5,`rgba(${bR},${bG},${bB},${Math.min(.08,pulse*.35)})`);
-      hg2.addColorStop(1,'rgba(0,0,0,0)');
-      ctx.fillStyle=hg2;ctx.beginPath();ctx.arc(scx,scy,hR*2.8,0,Math.PI*2);ctx.fill();
+      // Inner corona — smooth falloff
+      const hg1=ctx.createRadialGradient(scx,scy,hR*.75,scx,scy,hR*1.7);
+      hg1.addColorStop(0,  `rgba(${bR},${bG},${bB},${Math.min(.45,pulse*1.8)})`);
+      hg1.addColorStop(.35,`rgba(${bR},${bG},${bB},${Math.min(.22,pulse*.9)})`);
+      hg1.addColorStop(.7, `rgba(${bR},${bG},${bB},${Math.min(.07,pulse*.3)})`);
+      hg1.addColorStop(1,  'rgba(0,0,0,0)');
+      ctx.fillStyle=hg1;ctx.beginPath();ctx.arc(scx,scy,hR*1.7,0,Math.PI*2);ctx.fill();
+      // Outer halo — very wide, very soft
+      const hg2=ctx.createRadialGradient(scx,scy,hR*.6,scx,scy,hR*3.2);
+      hg2.addColorStop(0,  `rgba(${bR},${bG},${bB},${Math.min(.14,pulse*.6)})`);
+      hg2.addColorStop(.3, `rgba(${bR},${bG},${bB},${Math.min(.07,pulse*.3)})`);
+      hg2.addColorStop(.65,`rgba(${bR},${bG},${bB},${Math.min(.03,pulse*.12)})`);
+      hg2.addColorStop(1,  'rgba(0,0,0,0)');
+      ctx.fillStyle=hg2;ctx.beginPath();ctx.arc(scx,scy,hR*3.2,0,Math.PI*2);ctx.fill();
     }
 
     // ── CHAOS MODE during generation ──────────────────────────────────────────────

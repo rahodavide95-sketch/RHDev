@@ -125,7 +125,10 @@
 
   .tech-sheet { display:none;width:100%;max-width:480px;margin-top:1rem;padding:1.25rem 1.5rem;background:rgba(8,8,16,0.85);border:0.5px solid var(--c-border);border-radius:16px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px); }
   .tech-sheet.visible { display:block; }
-  .tech-title { font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--c-text-muted);margin-bottom:1rem; }
+  .tech-head { display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem; }
+  .tech-title { font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--c-text-muted);margin:0; }
+  .tech-close { background:none;border:none;cursor:pointer;color:rgba(255,255,255,0.2);font-size:15px;line-height:1;padding:0 0 0 0.5rem;transition:color 0.2s; }
+  .tech-close:hover { color:rgba(255,255,255,0.55); }
   .tech-content { font-size:13px;line-height:1.75;color:var(--c-text-secondary);min-height:2rem;white-space:pre-wrap;word-break:break-word; }
   .lang-wrap { position:relative; }
   .btn-lang { background:none;border:0.5px solid rgba(255,255,255,0.08);border-radius:7px;cursor:pointer;padding:3px 8px;color:rgba(255,255,255,0.3);font-family:var(--font-body);font-size:10px;letter-spacing:0.12em;line-height:1;transition:color 0.2s,border-color 0.2s; }
@@ -314,7 +317,10 @@
 
   <!-- Tech sheet panel -->
   <div class="tech-sheet" id="tech-sheet">
-    <p class="tech-title" id="tech-title">—</p>
+    <div class="tech-head">
+      <p class="tech-title" id="tech-title">—</p>
+      <button class="tech-close" id="tech-close">✕</button>
+    </div>
     <p class="tech-content" id="tech-content"></p>
   </div>
 
@@ -1535,6 +1541,12 @@ langMenu.addEventListener('click',e=>{
   langMenu.classList.remove('open');
   applyLang();
   if(techMode&&current)runTechSheet(techMode);
+});
+
+document.getElementById('tech-close').addEventListener('click',()=>{
+  if(_techAbort){_techAbort.abort();_techAbort=null;}
+  techSheet.classList.remove('visible');
+  techMode=null;isActing=false;
 });
 
 btnReplay.addEventListener('click',()=>{

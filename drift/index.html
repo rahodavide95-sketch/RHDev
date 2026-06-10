@@ -87,7 +87,7 @@
   .divider { height:0.5px;background:var(--c-border);margin:0.65rem 0;transition:background 1.5s ease; }
 
   .sound-desc { font-size:12px;line-height:1.6;color:var(--c-text-secondary);margin:0.15rem 0 0;text-align:center; }
-  .sound-desc.loading { color:var(--c-text-muted);font-style:italic; }
+  .sound-desc:empty { display:none; margin:0; }
 
   .cursor { display:inline-block;width:2px;height:14px;background:var(--c-accent);margin-left:2px;vertical-align:middle;animation:blink 0.8s step-end infinite;border-radius:1px; }
   @keyframes blink { 0%,100%{opacity:1}50%{opacity:0} }
@@ -1256,13 +1256,7 @@ async function spin(evt,promptFn=buildPrompt){
 
     if(data&&(data.name||data.synthesis)){
       applyGeneratedSound(data,px,py);
-      if(data.description){
-        descEl.className='sound-desc';
-        descEl.innerHTML=data.description;
-      }else{
-        descEl.className='sound-desc';
-        descEl.textContent='';
-      }
+      descEl.textContent='';
     }else{
       const preview=buf.slice(0,120).replace(/</g,'&lt;');
       descEl.innerHTML=`<span style="opacity:0.5;font-size:0.8em">Risposta inattesa — riprova.<br><small>${preview}</small></span>`;

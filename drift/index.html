@@ -34,7 +34,8 @@
 
   #bg-glow { position:fixed; inset:0; z-index:0; pointer-events:none; background:radial-gradient(ellipse 60% 50% at 50% 40%,rgba(100,80,255,0.15),transparent); transition:background 2s ease; }
 
-  .app { position:relative; z-index:1; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:1.5rem 1.5rem 2rem; }
+  .app { position:relative; z-index:1; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:1.5rem 1.5rem 2rem; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+  .tech-content { user-select:text; -webkit-user-select:text; }
 
   header { width:100%; max-width:480px; display:flex; align-items:center; justify-content:space-between; margin-bottom:2rem; }
 
@@ -1652,6 +1653,7 @@ document.addEventListener('pointermove',e=>{
 });
 document.addEventListener('pointerup',_cancelReset);
 document.addEventListener('pointercancel',_cancelReset);
+document.addEventListener('contextmenu',e=>{ if(_resetStart)e.preventDefault(); });
 
 function _doReset(){
   if(!current)return;

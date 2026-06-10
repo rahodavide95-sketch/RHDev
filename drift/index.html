@@ -77,7 +77,8 @@
   .sphere-hint { position:absolute; bottom:-32px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--c-text-muted);letter-spacing:0.14em;white-space:nowrap;text-transform:uppercase;transition:color 0.4s; }
   .sphere-wrap:hover .sphere-hint { color:var(--c-text-secondary); }
 
-  .sound-identity { width:100%;max-width:480px;text-align:center;padding:0.25rem 0 0.5rem; }
+  .sound-identity { width:100%;max-width:480px;text-align:center;padding:0.25rem 0 0.5rem;opacity:0;pointer-events:none;transition:opacity 0.6s ease; }
+  .sound-identity.revealed { opacity:1;pointer-events:auto; }
   .sound-name { font-family:var(--font-display);font-size:26px;font-weight:500;color:var(--c-text-primary);letter-spacing:-0.01em;margin:0 0 0.7rem;transition:color 1s ease;line-height:1.2;text-align:center; }
   .sound-name-row { display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:0.7rem; }
   .sound-name-row .sound-name { margin:0; }
@@ -94,7 +95,9 @@
   .tags { display:flex;flex-wrap:wrap;gap:6px;margin:0.4rem 0 0.5rem;justify-content:center; }
   .tag { font-size:11px;padding:4px 12px;border-radius:20px;letter-spacing:0.07em;transition:color 1s ease,border-color 1s ease,background 1s ease;color:var(--c-text-secondary);border:0.5px solid var(--c-border);background:transparent; }
 
-  .primary-actions { display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;width:100%;max-width:480px;margin-bottom:0.6rem; }
+  .actions-wrap { opacity:0;pointer-events:none;transition:opacity 0.6s ease;display:flex;flex-direction:column;align-items:center;gap:0.5rem;width:100%; }
+  .actions-wrap.revealed { opacity:1;pointer-events:auto; }
+  .primary-actions { display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;width:100%;max-width:540px;margin-bottom:0; }
   .secondary-actions { display:flex;gap:8px;justify-content:center;width:100%;max-width:480px;margin-bottom:0; }
   .btn-sep { width:1px;height:16px;background:rgba(255,255,255,0.1);margin:0 3px;flex-shrink:0;align-self:center; }
   .btn { font-family:var(--font-body);font-size:12px;letter-spacing:0.06em;padding:8px 18px;border-radius:10px;cursor:pointer;transition:color 0.25s,background 0.25s,border-color 0.25s,transform 0.15s;border:0.5px solid var(--c-border);background:transparent;color:var(--c-text-secondary); }
@@ -141,9 +144,17 @@
 
   footer { margin-top:2rem;font-size:11px;color:var(--c-text-muted);letter-spacing:0.1em;text-align:center;text-transform:uppercase; }
 
+  @media (min-width:521px) {
+    .primary-actions { flex-wrap:nowrap; }
+    .btn { padding:8px 14px; }
+  }
   @media (max-width:520px) {
     .sphere-wrap{width:240px;height:240px} .sphere{width:240px;height:240px}
-    .sound-identity{padding:0.15rem 0 0.35rem} .sound-name{font-size:22px}
+    .sphere-stage{flex-shrink:1;min-height:200px;}
+    .sound-identity{padding:0.15rem 0 0.3rem} .sound-name{font-size:22px}
+    .app{padding:1rem 1rem 1.5rem;}
+    header{margin-bottom:1rem;}
+    footer{margin-top:1rem;}
   }
   @media (prefers-reduced-motion:reduce) {
     .sphere-ring,#ambient-canvas{animation:none!important}
@@ -206,23 +217,24 @@
   <!-- hidden divider kept for JS color sync -->
   <div class="divider" id="divider" style="display:none"></div>
 
-  <!-- Primary actions: Replay | Reverse ×2 ÷2 | Simile | Export -->
-  <div class="primary-actions">
-    <button class="btn" id="btn-replay">↺ Replay</button>
-    <span class="btn-sep"></span>
-    <button class="btn" id="btn-reverse" disabled>⟺ Reverse</button>
-    <button class="btn" id="btn-faster" disabled>×2</button>
-    <button class="btn" id="btn-slower" disabled>÷2</button>
-    <span class="btn-sep"></span>
-    <button class="btn" id="btn-similar" disabled>≈ Simile</button>
-    <span class="btn-sep"></span>
-    <button class="btn" id="btn-export">↓ Export</button>
-  </div>
-
-  <!-- Secondary actions -->
-  <div class="secondary-actions">
-    <button class="btn btn-accent" id="btn-preview">Descrizione sensoriale</button>
-    <button class="btn" id="btn-ableton">Guida Ableton</button>
+  <div class="actions-wrap" id="actions-wrap">
+    <!-- Primary actions: Replay | Reverse ×2 ÷2 | Simile | Export -->
+    <div class="primary-actions">
+      <button class="btn" id="btn-replay">↺ Replay</button>
+      <span class="btn-sep"></span>
+      <button class="btn" id="btn-reverse" disabled>⟺ Reverse</button>
+      <button class="btn" id="btn-faster" disabled>×2</button>
+      <button class="btn" id="btn-slower" disabled>÷2</button>
+      <span class="btn-sep"></span>
+      <button class="btn" id="btn-similar" disabled>≈ Simile</button>
+      <span class="btn-sep"></span>
+      <button class="btn" id="btn-export">↓ Export</button>
+    </div>
+    <!-- Secondary actions -->
+    <div class="secondary-actions">
+      <button class="btn btn-accent" id="btn-preview">Descrizione sensoriale</button>
+      <button class="btn" id="btn-ableton">Guida Ableton</button>
+    </div>
   </div>
 
   <!-- Tech sheet panel -->
@@ -1260,6 +1272,8 @@ async function spin(evt,promptFn=buildPrompt){
 
 function applyGeneratedSound(data,px,py){
   current=data;
+  document.getElementById('sound-identity').classList.add('revealed');
+  document.getElementById('actions-wrap').classList.add('revealed');
   const c=data.color||{};
   const ar=Math.min(255,Math.max(0,c.ar||120));
   const ag=Math.min(255,Math.max(0,c.ag||80));

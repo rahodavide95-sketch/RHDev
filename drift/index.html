@@ -1276,9 +1276,10 @@ const GENRES=[
   'punk sintetico — sawtooth, 300-600Hz, distorsione alta, attack quasi zero, aggressivo e secco',
 ];
 
+function _langNote(){ return techLang!=='it'?`\n\nIMPORTANT: Write "name", "category", "description", and all "tags" in ${LANG_DAW[techLang]}.`:''; }
 function buildPrompt(){
   const g=GENRES[Math.floor(Math.random()*GENRES.length)];
-  return GEN_PROMPT+`\n\nSTILE PER QUESTA GENERAZIONE: ${g}.`;
+  return GEN_PROMPT+`\n\nSTILE PER QUESTA GENERAZIONE: ${g}.`+_langNote();
 }
 
 function buildSimilarPrompt(){
@@ -1286,7 +1287,7 @@ function buildSimilarPrompt(){
   const s=current.synthesis||{};
   const rev=Math.round((s.reverbAmount||0)*100);
   const dist=Math.round((s.distortionAmount||0)*100);
-  return GEN_PROMPT+`\n\nVARIAZIONE: Crea una variazione del suono "${current.name}" (${current.category}). Parametri attuali: oscillatore ${s.oscillator||'sine'} @ ${s.frequency||220}Hz, filtro ${s.filterType||'lowpass'} @ ${s.filterFreq||800}Hz Q=${s.filterQ||1}, ADSR ${s.attackTime||0.1}/${s.decayTime||0.3}/${s.sustainLevel||0.5}/${s.releaseTime||1.2}, reverb ${rev}%, distorsione ${dist}%, LFO ${s.lfoRate||0}Hz depth ${s.lfoDepth||0}, layers ${s.layers||1}. Varia i parametri numerici del ±20-30%, mantieni lo stesso carattere e stile. Nuovo nome poetico.`;
+  return GEN_PROMPT+`\n\nVARIAZIONE: Crea una variazione del suono "${current.name}" (${current.category}). Parametri attuali: oscillatore ${s.oscillator||'sine'} @ ${s.frequency||220}Hz, filtro ${s.filterType||'lowpass'} @ ${s.filterFreq||800}Hz Q=${s.filterQ||1}, ADSR ${s.attackTime||0.1}/${s.decayTime||0.3}/${s.sustainLevel||0.5}/${s.releaseTime||1.2}, reverb ${rev}%, distorsione ${dist}%, LFO ${s.lfoRate||0}Hz depth ${s.lfoDepth||0}, layers ${s.layers||1}. Varia i parametri numerici del ±20-30%, mantieni lo stesso carattere e stile. Nuovo nome poetico.`+_langNote();
 }
 
 const GEN_PROMPT=`Sei un sound designer che crea suoni sintetici unici per ogni stile musicale.
@@ -1374,7 +1375,7 @@ async function spin(evt,promptFn=buildPrompt){
   await new Promise(r=>setTimeout(r,180));
 
   nameEl.textContent='—';
-  metaEl.textContent='generating...';
+  metaEl.textContent=t('generating');
   descEl.className='sound-desc loading';
   descEl.textContent='';
   tagsEl.innerHTML='';
@@ -1409,7 +1410,7 @@ async function spin(evt,promptFn=buildPrompt){
       descEl.textContent='';
     }else{
       const preview=buf.slice(0,120).replace(/</g,'&lt;');
-      descEl.innerHTML=`<span style="opacity:0.5;font-size:0.8em">Risposta inattesa — riprova.<br><small>${preview}</small></span>`;
+      descEl.innerHTML=`<span style="opacity:0.5;font-size:0.8em">${t('errUnexpected')}<br><small>${preview}</small></span>`;
       descEl.className='sound-desc';
       console.warn('unparsed buf:',buf);
     }
@@ -1418,8 +1419,8 @@ async function spin(evt,promptFn=buildPrompt){
     const isKeyError=msg.includes('401')||msg.includes('403')||msg.includes('Unauthorized');
     const isFetchError=msg.includes('fetch')||msg.includes('network')||msg.includes('Failed');
     descEl.innerHTML=(isKeyError||isFetchError)
-      ? `<span style="cursor:pointer;text-decoration:underline;opacity:0.7" onclick="document.getElementById('btn-key').click()">${isKeyError?'Chiave non valida o senza crediti':'Rete bloccata'}. Tocca qui ⚷</span>`
-      : 'Errore: '+msg;
+      ? `<span style="cursor:pointer;text-decoration:underline;opacity:0.7" onclick="document.getElementById('btn-key').click()">${isKeyError?t('errKey'):t('errNet')}. ${t('errTap')}</span>`
+      : t('errPrefix')+msg;
     descEl.className='sound-desc';
     console.error(e);
   }
@@ -1443,7 +1444,7 @@ function applyGeneratedSound(data,px,py){
   const note=freqToNote(data.synthesis?.frequency);
   const durSec=data.synthesis?.duration?`${data.synthesis.duration}s`:'';
   metaEl.textContent=[data.category,note,durSec].filter(Boolean).join(' · ');
-  tagsEl.innerHTML=(data.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('');
+  tagsEl.innerHTML=(data.tags||[]).map(tag=>`<span class="tag">${tag}</span>`).join('');
   badgeEl.textContent=`${spinCount} sonorium`;
   applyColor(s,getMaterialIndex(data));
   spawnEchoBurst(px,py,s);
@@ -1453,7 +1454,7 @@ function applyGeneratedSound(data,px,py){
     catch(e){ console.warn('synthesis error',e); }
     lastBuffer=null;isReversed=false;playbackSpeed=1.0;
     btnSimilar.disabled=false;
-    btnReverse.textContent='⟺ Reverse';
+    btnReverse.textContent=t('reverse');
     btnReverse.disabled=true;btnSlower.disabled=true;btnFaster.disabled=true;
     renderOffline(data.synthesis).then(buf=>{
       if(current===data){
@@ -1472,6 +1473,26 @@ let _techAbort=null;
 const LANG_DESC={it:'italiano poetico',en:'evocative English',es:'español poético',fr:'français poétique',de:'poetischem Deutsch'};
 const LANG_DAW ={it:'italiano',en:'English',es:'español',fr:'français',de:'Deutsch'};
 
+const UI={
+  it:{replay:'↺ Replay',reverse:'⟺ Reverse',original:'⟺ Original',similar:'≈ Simile',export:'↓ Export',preview:'Descrizione sensoriale',daw:'Guida DAW',hint:'touch to explore',generating:'generating...',rendering:'rendering…',techPreview:'descrizione sensoriale',techDaw:'guida daw',errUnexpected:'Risposta inattesa — riprova.',errKey:'Chiave non valida o senza crediti',errNet:'Rete bloccata',errTap:'Tocca qui ⚷',errApi:'Errore API.',errPrefix:'Errore: '},
+  en:{replay:'↺ Replay',reverse:'⟺ Reverse',original:'⟺ Original',similar:'≈ Similar',export:'↓ Export',preview:'Sensory description',daw:'DAW guide',hint:'touch to explore',generating:'generating...',rendering:'rendering…',techPreview:'sensory description',techDaw:'daw guide',errUnexpected:'Unexpected response — try again.',errKey:'Invalid key or no credits',errNet:'Network blocked',errTap:'Tap here ⚷',errApi:'API error.',errPrefix:'Error: '},
+  es:{replay:'↺ Replay',reverse:'⟺ Invertir',original:'⟺ Original',similar:'≈ Similar',export:'↓ Exportar',preview:'Descripción sensorial',daw:'Guía DAW',hint:'toca para explorar',generating:'generando...',rendering:'procesando…',techPreview:'descripción sensorial',techDaw:'guía daw',errUnexpected:'Respuesta inesperada — reintenta.',errKey:'Clave inválida o sin créditos',errNet:'Red bloqueada',errTap:'Toca aquí ⚷',errApi:'Error de API.',errPrefix:'Error: '},
+  fr:{replay:'↺ Replay',reverse:'⟺ Inverser',original:'⟺ Original',similar:'≈ Similaire',export:'↓ Exporter',preview:'Description sensorielle',daw:'Guide DAW',hint:'toucher pour explorer',generating:'génération...',rendering:'traitement…',techPreview:'description sensorielle',techDaw:'guide daw',errUnexpected:'Réponse inattendue — réessayez.',errKey:'Clé invalide ou sans crédits',errNet:'Réseau bloqué',errTap:'Touchez ici ⚷',errApi:'Erreur API.',errPrefix:'Erreur : '},
+  de:{replay:'↺ Replay',reverse:'⟺ Umkehren',original:'⟺ Original',similar:'≈ Ähnlich',export:'↓ Exportieren',preview:'Sensorische Beschreibung',daw:'DAW-Anleitung',hint:'berühren zum Erkunden',generating:'Generierung...',rendering:'Verarbeitung…',techPreview:'sensorische beschreibung',techDaw:'daw-anleitung',errUnexpected:'Unerwartete Antwort — erneut versuchen.',errKey:'Ungültiger Schlüssel oder kein Guthaben',errNet:'Netzwerk blockiert',errTap:'Hier tippen ⚷',errApi:'API-Fehler.',errPrefix:'Fehler: '},
+};
+function t(k){ return (UI[techLang]||UI.it)[k]||k; }
+function applyLang(){
+  btnReplay.textContent=t('replay');
+  btnReverse.textContent=t(isReversed?'original':'reverse');
+  btnSimilar.textContent=t('similar');
+  btnPreview.textContent=t('preview');
+  btnAbleton.textContent=t('daw');
+  const _ex=document.getElementById('btn-export');
+  if(_ex&&_ex.textContent!==t('rendering'))_ex.textContent=t('export');
+  if(sphereHint)sphereHint.textContent=t('hint');
+  if(techMode)techTitle.textContent=t(techMode==='preview'?'techPreview':'techDaw');
+}
+
 function buildPreviewPrompt(){
   const l=LANG_DESC[techLang]||'italiano poetico';
   return `Sei un sound designer poetico. Espandi la descrizione sensoriale di "${current.name}" (${current.category}). Scrivi 5-6 frasi in ${l} — texture, movimento, spazio, temperatura, sensazione fisica. Prosa densa. Niente titoli né elenchi.`;
@@ -1489,9 +1510,9 @@ async function runTechSheet(mode){
   const sig=_techAbort.signal;
   isActing=true;techMode=mode;
   techSheet.classList.add('visible');
-  techTitle.textContent=mode==='preview'?'descrizione sensoriale':'guida daw';
+  techTitle.textContent=t(mode==='preview'?'techPreview':'techDaw');
   try{ await streamFromClaude(mode==='preview'?buildPreviewPrompt():buildDawPrompt(),techContent,sig); }
-  catch(e){ if(!sig.aborted)techContent.textContent='Errore API.'; }
+  catch(e){ if(!sig.aborted)techContent.textContent=t('errApi'); }
   if(!sig.aborted){isActing=false;_techAbort=null;}
 }
 
@@ -1510,6 +1531,7 @@ langMenu.addEventListener('click',e=>{
   langMenu.querySelectorAll('.lang-opt').forEach(o=>o.classList.toggle('active',o===opt));
   btnLang.textContent=opt.dataset.lang.toUpperCase();
   langMenu.classList.remove('open');
+  applyLang();
   if(techMode&&current)runTechSheet(techMode);
 });
 
@@ -1526,7 +1548,7 @@ btnReverse.addEventListener('click',()=>{
   if(!lastBuffer)return;
   reverseBufferInPlace(lastBuffer);
   isReversed=!isReversed;
-  btnReverse.textContent=isReversed?'⟺ Original':'⟺ Reverse';
+  btnReverse.textContent=t(isReversed?'original':'reverse');
   try{ playBuffer(lastBuffer); }catch(e){ console.warn(e); }
 });
 
@@ -1687,7 +1709,7 @@ async function renderOffline(p){
 btnExport.addEventListener('click',async()=>{
   if(!current?.synthesis)return;
   const orig=btnExport.textContent;
-  btnExport.textContent='rendering…';btnExport.disabled=true;
+  btnExport.textContent=t('rendering');btnExport.disabled=true;
   try{
     let buf=lastBuffer;
     if(!buf){
@@ -1767,7 +1789,7 @@ function _doReset(){
     tagsEl.innerHTML='';descEl.textContent='';
     btnSimilar.disabled=true;
     btnReverse.disabled=true;btnSlower.disabled=true;btnFaster.disabled=true;
-    btnReverse.textContent='⟺ Reverse';
+    btnReverse.textContent=t('reverse');
     sphereEl.style.background='';sphereEl.style.boxShadow='';
     sphereEl.style.setProperty('--sphere-hl','none');
     bgGlow.style.background='radial-gradient(ellipse 60% 50% at 50% 40%,rgba(100,80,255,0.15),transparent)';
@@ -1777,6 +1799,7 @@ function _doReset(){
 
 syncKeyIcon();
 if(!getKey())openKeyModal();
+applyLang();
 </script>
 </body>
 </html>

@@ -77,25 +77,26 @@
   .sphere-hint { position:absolute; bottom:-32px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--c-text-muted);letter-spacing:0.14em;white-space:nowrap;text-transform:uppercase;transition:color 0.4s; }
   .sphere-wrap:hover .sphere-hint { color:var(--c-text-secondary); }
 
-  .result-card { width:100%;max-width:480px;background:rgba(8,8,16,0.8);border:0.5px solid transparent;border-radius:20px;padding:0;height:0;overflow:hidden;margin-top:0;opacity:0;transform:translateY(16px);transition:opacity 0.7s ease,transform 0.7s ease,border-color 1.5s ease,height 0s 0.7s,padding 0s 0.7s,margin-top 0s 0.7s;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px); }
-  .result-card.visible { padding:2rem 2.25rem 1.75rem;height:auto;overflow:visible;margin-top:2.5rem;border-color:var(--c-border);opacity:1;transform:translateY(0);transition:opacity 0.7s ease,transform 0.7s ease,border-color 1.5s ease; }
-
-  .card-header { margin-bottom:0.65rem; }
-  .sound-name { font-family:var(--font-display);font-size:26px;font-weight:500;color:var(--c-text-primary);letter-spacing:-0.01em;margin:0 0 1.1rem;transition:color 1s ease;line-height:1.2;text-align:center; }
+  .sound-identity { width:100%;max-width:480px;text-align:center;padding:0.25rem 0 0.5rem; }
+  .sound-name { font-family:var(--font-display);font-size:26px;font-weight:500;color:var(--c-text-primary);letter-spacing:-0.01em;margin:0 0 0.7rem;transition:color 1s ease;line-height:1.2;text-align:center; }
+  .sound-name-row { display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:0.7rem; }
+  .sound-name-row .sound-name { margin:0; }
   .sound-meta { font-size:11px;color:var(--c-text-muted);letter-spacing:0.12em;text-transform:uppercase;transition:color 1s ease;text-align:center; }
 
   .divider { height:0.5px;background:var(--c-border);margin:0.65rem 0;transition:background 1.5s ease; }
 
-  .sound-desc { font-size:14px;line-height:1.8;color:var(--c-text-secondary);margin-bottom:1.5rem;transition:color 1s ease;min-height:3rem;text-align:justify; }
-  .sound-desc.loading { color:var(--c-text-muted);font-style:italic;text-align:center; }
+  .sound-desc { font-size:12px;line-height:1.6;color:var(--c-text-secondary);margin:0.15rem 0 0;text-align:center; }
+  .sound-desc.loading { color:var(--c-text-muted);font-style:italic; }
 
   .cursor { display:inline-block;width:2px;height:14px;background:var(--c-accent);margin-left:2px;vertical-align:middle;animation:blink 0.8s step-end infinite;border-radius:1px; }
   @keyframes blink { 0%,100%{opacity:1}50%{opacity:0} }
 
-  .tags { display:flex;flex-wrap:wrap;gap:6px;margin-bottom:1.75rem;justify-content:center; }
+  .tags { display:flex;flex-wrap:wrap;gap:6px;margin:0.4rem 0 0.5rem;justify-content:center; }
   .tag { font-size:11px;padding:4px 12px;border-radius:20px;letter-spacing:0.07em;transition:color 1s ease,border-color 1s ease,background 1s ease;color:var(--c-text-secondary);border:0.5px solid var(--c-border);background:transparent; }
 
-  .actions { display:flex;gap:8px;flex-wrap:wrap;justify-content:center; }
+  .primary-actions { display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;width:100%;max-width:480px;margin-bottom:0.6rem; }
+  .secondary-actions { display:flex;gap:8px;justify-content:center;width:100%;max-width:480px;margin-bottom:0; }
+  .btn-sep { width:1px;height:16px;background:rgba(255,255,255,0.1);margin:0 3px;flex-shrink:0;align-self:center; }
   .btn { font-family:var(--font-body);font-size:12px;letter-spacing:0.06em;padding:8px 18px;border-radius:10px;cursor:pointer;transition:color 0.25s,background 0.25s,border-color 0.25s,transform 0.15s;border:0.5px solid var(--c-border);background:transparent;color:var(--c-text-secondary); }
   .btn:hover { color:var(--c-text-primary);border-color:var(--c-border-hover);background:rgba(255,255,255,0.04); }
   .btn:active { transform:scale(0.97); }
@@ -103,7 +104,7 @@
   .btn-accent:hover { filter:brightness(1.15); }
 
   /* sound indicator */
-  .sound-playing { display:inline-flex;align-items:center;gap:4px;margin-left:10px;opacity:0;transition:opacity 0.3s; }
+  .sound-playing { display:inline-flex;align-items:center;gap:4px;opacity:0;transition:opacity 0.3s; }
   .sound-playing.active { opacity:1; }
   .sound-bar { width:2px;border-radius:1px;background:var(--c-accent);animation:sound-bar var(--spd,0.6s) ease-in-out infinite alternate; }
   .sound-bar:nth-child(1){height:6px;--spd:0.45s}
@@ -111,7 +112,7 @@
   .sound-bar:nth-child(3){height:7px;--spd:0.5s;animation-delay:0.05s}
   @keyframes sound-bar { from{transform:scaleY(0.3)}to{transform:scaleY(1)} }
 
-  .tech-sheet { display:none;margin-top:1.5rem;padding-top:1.5rem;border-top:0.5px solid var(--c-border); }
+  .tech-sheet { display:none;width:100%;max-width:480px;margin-top:1rem;padding:1.25rem 1.5rem;background:rgba(8,8,16,0.85);border:0.5px solid var(--c-border);border-radius:16px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px); }
   .tech-sheet.visible { display:block; }
   .tech-title { font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--c-text-muted);margin-bottom:1rem; }
   .tech-content { font-size:13px;line-height:1.75;color:var(--c-text-secondary);min-height:2rem;white-space:pre-wrap;word-break:break-word; }
@@ -142,7 +143,7 @@
 
   @media (max-width:520px) {
     .sphere-wrap{width:240px;height:240px} .sphere{width:240px;height:240px}
-    .result-card.visible{padding:1.5rem 1.5rem 1.25rem} .sound-name{font-size:22px}
+    .sound-identity{padding:0.15rem 0 0.35rem} .sound-name{font-size:22px}
   }
   @media (prefers-reduced-motion:reduce) {
     .sphere-ring,#ambient-canvas{animation:none!important}
@@ -188,35 +189,46 @@
     </div>
   </div>
 
-  <div class="result-card" id="result-card" aria-live="polite">
-    <div class="card-header">
-      <div style="position:relative;width:100%;text-align:center">
-        <p class="sound-name" id="sound-name">—</p>
-        <span class="sound-playing" id="sound-playing" style="position:absolute;right:0;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:2px">
-          <span class="sound-bar"></span>
-          <span class="sound-bar"></span>
-          <span class="sound-bar"></span>
-        </span>
-      </div>
-      <p class="sound-meta" id="sound-meta">—</p>
+  <!-- Sound identity — flat, no card background -->
+  <div class="sound-identity" id="sound-identity">
+    <div class="sound-name-row">
+      <p class="sound-name" id="sound-name">—</p>
+      <span class="sound-playing" id="sound-playing">
+        <span class="sound-bar"></span>
+        <span class="sound-bar"></span>
+        <span class="sound-bar"></span>
+      </span>
     </div>
-    <div class="divider" id="divider"></div>
-    <p class="sound-desc" id="sound-desc">touch the sphere to begin</p>
+    <p class="sound-meta" id="sound-meta">—</p>
     <div class="tags" id="tags"></div>
-    <div class="actions">
-      <button class="btn btn-accent" id="btn-preview">Descrizione sensoriale</button>
-      <button class="btn" id="btn-ableton">Guida Ableton</button>
-      <button class="btn" id="btn-replay">↺ Replay</button>
-      <button class="btn" id="btn-reverse" disabled>⟺ Reverse</button>
-      <button class="btn" id="btn-slower" disabled>÷2</button>
-      <button class="btn" id="btn-faster" disabled>×2</button>
-      <button class="btn" id="btn-similar" disabled>≈ Simile</button>
-      <button class="btn" id="btn-export">↓ Export</button>
-    </div>
-    <div class="tech-sheet" id="tech-sheet">
-      <p class="tech-title" id="tech-title">—</p>
-      <p class="tech-content" id="tech-content"></p>
-    </div>
+    <p class="sound-desc" id="sound-desc"></p>
+  </div>
+  <!-- hidden divider kept for JS color sync -->
+  <div class="divider" id="divider" style="display:none"></div>
+
+  <!-- Primary actions: Replay | Reverse ×2 ÷2 | Simile | Export -->
+  <div class="primary-actions">
+    <button class="btn" id="btn-replay">↺ Replay</button>
+    <span class="btn-sep"></span>
+    <button class="btn" id="btn-reverse" disabled>⟺ Reverse</button>
+    <button class="btn" id="btn-faster" disabled>×2</button>
+    <button class="btn" id="btn-slower" disabled>÷2</button>
+    <span class="btn-sep"></span>
+    <button class="btn" id="btn-similar" disabled>≈ Simile</button>
+    <span class="btn-sep"></span>
+    <button class="btn" id="btn-export">↓ Export</button>
+  </div>
+
+  <!-- Secondary actions -->
+  <div class="secondary-actions">
+    <button class="btn btn-accent" id="btn-preview">Descrizione sensoriale</button>
+    <button class="btn" id="btn-ableton">Guida Ableton</button>
+  </div>
+
+  <!-- Tech sheet panel -->
+  <div class="tech-sheet" id="tech-sheet">
+    <p class="tech-title" id="tech-title">—</p>
+    <p class="tech-content" id="tech-content"></p>
   </div>
 
   <footer>serendipity engine for sound designers</footer>
@@ -409,6 +421,7 @@ let globalAnalyser = null;
 
   const flashes=[];
   window.addAmbientFlash=function(x,y){flashes.push({x,y,r:10,op:.38,speed:6+Math.random()*5});};
+  window.setGenerating=function(on){window._sonGen=on;};
 
   // Circular waveform ring
   function drawWaveRing(bR,bG,bB){
@@ -647,6 +660,38 @@ let globalAnalyser = null;
       ctx.restore();
     }
 
+    // ── CHAOS MODE during generation ──────────────────────────────────────────────
+    if(window._sonGen){
+      const scx=sRect.left+sRect.width*.5,scy=sRect.top+sRect.height*.5;
+      // Aggressive lightning
+      if(Math.random()<.22)lightnings.push(mkLightning());
+      // Sphere-originated particle bursts every 2 frames
+      if(fn%2===0){
+        for(let i=0;i<4;i++){
+          const ang=Math.random()*Math.PI*2,spd=3+Math.random()*9;
+          floaters.push(mkFloater(false,{x:scx+(Math.random()-.5)*20,y:scy+(Math.random()-.5)*20,
+            vx:Math.cos(ang)*spd*.55,vy:Math.sin(ang)*spd*.55-1}));
+          if(floaters.length>130)floaters.shift();
+        }
+      }
+      // Plasma rings from sphere
+      if(Math.random()<.18)
+        flashes.push({x:scx,y:scy,r:sRect.width*.35,op:.5+Math.random()*.3,speed:10+Math.random()*12});
+      // Wild color cycling
+      const ct=autoTime*5;
+      tR=Math.min(255,Math.max(0,anchorR+Math.sin(ct)*70+Math.sin(ct*1.7)*40));
+      tG=Math.min(255,Math.max(0,anchorG+Math.sin(ct*1.3+1)*50+Math.cos(ct*2.1)*30));
+      tB=Math.min(255,Math.max(0,anchorB+Math.cos(ct*.9+2)*80+Math.sin(ct*2.4)*35));
+      // Random screen flares
+      if(Math.random()<.06)
+        flashes.push({x:Math.random()*cW,y:Math.random()*cH,r:5+Math.random()*20,op:.15+Math.random()*.2,speed:5+Math.random()*8});
+      // Sphere glow pulse drawn on canvas
+      const glowR=sRect.width*.5+20+Math.sin(autoTime*12)*15;
+      const sgGrad=ctx.createRadialGradient(scx,scy,sRect.width*.3,scx,scy,glowR*2.5);
+      sgGrad.addColorStop(0,`rgba(${bR},${bG},${bB},${.12+Math.sin(autoTime*8)*.06})`);
+      sgGrad.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=sgGrad;ctx.beginPath();ctx.arc(scx,scy,glowR*2.5,0,Math.PI*2);ctx.fill();
+    }
     drawWaveRing(bR,bG,bB);
   }
   draw();
@@ -797,7 +842,6 @@ function synthesize(p){
 // ── COLOR / UI APPLY ──────────────────────────────────────────
 const sphereEl   =document.getElementById('sphere');
 const sphereWrap =document.getElementById('sphere-wrap');
-const card       =document.getElementById('result-card');
 const nameEl     =document.getElementById('sound-name');
 const metaEl     =document.getElementById('sound-meta');
 const descEl     =document.getElementById('sound-desc');
@@ -841,7 +885,6 @@ function applyColor(s,matIdx){
   ].join(',');
   bgGlow.style.background=`radial-gradient(ellipse 70% 55% at 50% 38%,${glow},transparent)`;
   rings.forEach(r=>r.style.borderColor=ring);
-  card.style.borderColor=`rgba(${s.ar},${s.ag},${s.ab},0.18)`;
   divider.style.background=`rgba(${s.ar},${s.ag},${s.ab},0.12)`;
   btnPreview.style.color=s.acc;
   btnPreview.style.borderColor=`rgba(${s.ar},${s.ag},${s.ab},0.3)`;
@@ -1149,9 +1192,8 @@ async function spin(evt,promptFn=buildPrompt){
     document.body.appendChild(el);setTimeout(()=>el.remove(),1100);
   }
 
-  card.classList.remove('visible');
   techSheet.classList.remove('visible');
-  techSheet.classList.remove('visible');
+  if(window.setGenerating) window.setGenerating(true);
 
   await new Promise(r=>setTimeout(r,180));
 
@@ -1160,7 +1202,6 @@ async function spin(evt,promptFn=buildPrompt){
   descEl.className='sound-desc loading';
   descEl.textContent='';
   tagsEl.innerHTML='';
-  card.classList.add('visible');
 
   const apiKey=getKey();
   if(!apiKey){openKeyModal();isLoading=false;return;}
@@ -1214,6 +1255,7 @@ async function spin(evt,promptFn=buildPrompt){
   }
 
   isLoading=false;
+  if(window.setGenerating) window.setGenerating(false);
 }
 
 function applyGeneratedSound(data,px,py){

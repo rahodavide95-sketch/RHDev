@@ -38,7 +38,9 @@
 
   header { width:100%; max-width:480px; display:flex; align-items:center; justify-content:space-between; margin-bottom:2rem; }
 
+  .logo-wrap { display:flex; flex-direction:column; gap:1px; }
   .logo { font-family:var(--font-display); font-size:13px; font-weight:400; letter-spacing:0.3em; color:var(--c-text-secondary); text-transform:uppercase; }
+  .tagline-mobile { display:none; font-size:8px; color:var(--c-text-muted); letter-spacing:0.12em; text-transform:uppercase; }
 
   .spin-badge { font-size:11px; color:var(--c-text-muted); letter-spacing:0.1em; transition:color 1s ease; font-variant-numeric:tabular-nums; }
 
@@ -74,7 +76,7 @@
   .sphere::before { content:''; position:absolute; inset:0; border-radius:50%; background:var(--sphere-hl,transparent); pointer-events:none; z-index:1; }
   .sphere::after  { content:''; position:absolute; bottom:10%;right:12%;width:22%;height:16%;border-radius:50%;background:radial-gradient(ellipse,rgba(255,255,255,0.07) 0%,transparent 70%);filter:blur(5px);pointer-events:none; }
 
-  .sphere-hint { position:absolute; bottom:-32px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--c-text-muted);letter-spacing:0.14em;white-space:nowrap;text-transform:uppercase;transition:color 0.4s; }
+  .sphere-hint { position:absolute; bottom:-32px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--c-text-muted);letter-spacing:0.14em;white-space:nowrap;text-transform:uppercase;transition:color 0.4s,opacity 0.4s; }
   .sphere-wrap:hover .sphere-hint { color:var(--c-text-secondary); }
 
   .sound-identity { width:100%;max-width:480px;text-align:center;padding:0.25rem 0 0.5rem;opacity:0;pointer-events:none;transition:opacity 0.6s ease; }
@@ -152,6 +154,7 @@
     html { height:100%; min-height:unset; overflow:hidden; overscroll-behavior:none; }
     body { height:100%; min-height:unset; overflow:hidden; overscroll-behavior:none; position:fixed; width:100%; }
     .app { min-height:0; height:100%; overflow:hidden; padding:0.5rem 1rem 0.3rem; }
+    .tagline-mobile { display:block; }
     header { margin-bottom:0.4rem; }
     .sphere-stage { flex-shrink:1; min-height:0; flex:1; }
     .sphere-wrap { width:clamp(130px,38vw,200px); height:clamp(130px,38vw,200px); }
@@ -167,6 +170,13 @@
     .tech-sheet { max-height:30vh; overflow-y:auto; -webkit-overflow-scrolling:touch; }
     footer { display:none; }
   }
+  @keyframes suck-in {
+    0%   { opacity:1; transform:scale(1) translateY(0); filter:blur(0); }
+    50%  { opacity:0.7; transform:scale(0.45) translateY(-45px); filter:blur(2px); }
+    100% { opacity:0; transform:scale(0) translateY(-85px); filter:blur(7px); }
+  }
+  .suck-in { animation:suck-in 0.42s cubic-bezier(0.55,0,1,0.45) forwards !important; pointer-events:none !important; transform-origin:50% 0%; }
+
   @media (prefers-reduced-motion:reduce) {
     .sphere-ring,#ambient-canvas{animation:none!important}
     .cursor{animation:none!important;opacity:1}
@@ -181,7 +191,10 @@
 
 <div class="app">
   <header>
-    <span class="logo">Sonorium</span>
+    <div class="logo-wrap">
+      <span class="logo">Sonorium</span>
+      <span class="tagline-mobile">serendipity engine for sound designers</span>
+    </div>
     <div style="display:flex;align-items:center;gap:10px">
       <span class="spin-badge" id="spin-badge">— / —</span>
       <button class="btn-key" id="btn-key" title="API Key">⚷</button>
@@ -683,37 +696,71 @@ let globalAnalyser = null;
       ctx.restore();
     }
 
+    // ── PERSISTENT SPHERE GLOW ──────────────────────────────────────────────────
+    {
+      const scx=sRect.left+sRect.width*.5,scy=sRect.top+sRect.height*.5;
+      const hR=sRect.width*.5;
+      const hOp=0.04+Math.sin(autoTime*.7)*0.015+rms*.1+bass*.05;
+      const hg=ctx.createRadialGradient(scx,scy,hR*.45,scx,scy,hR*2.1);
+      hg.addColorStop(0,`rgba(${bR},${bG},${bB},${Math.min(.22,hOp*2)})`);
+      hg.addColorStop(.5,`rgba(${bR},${bG},${bB},${Math.min(.1,hOp)})`);
+      hg.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=hg;ctx.beginPath();ctx.arc(scx,scy,hR*2.1,0,Math.PI*2);ctx.fill();
+    }
+
     // ── CHAOS MODE during generation ──────────────────────────────────────────────
     if(window._sonGen){
+      const cp=window.chaosParams||{};
+      const lR=cp.lightRate??0.18,bC=cp.burstCount??4,fR=cp.flashRate??0.18;
+      const sfR=cp.screenFlare??0.06,cSpd=cp.colorSpd??5,cRng=cp.colorRng??70,gSpd=cp.glowSpd??12;
       const scx=sRect.left+sRect.width*.5,scy=sRect.top+sRect.height*.5;
-      // Aggressive lightning
-      if(Math.random()<.22)lightnings.push(mkLightning());
-      // Sphere-originated particle bursts every 2 frames
+      if(Math.random()<lR)lightnings.push(mkLightning());
       if(fn%2===0){
-        for(let i=0;i<4;i++){
+        for(let i=0;i<bC;i++){
           const ang=Math.random()*Math.PI*2,spd=3+Math.random()*9;
           floaters.push(mkFloater(false,{x:scx+(Math.random()-.5)*20,y:scy+(Math.random()-.5)*20,
             vx:Math.cos(ang)*spd*.55,vy:Math.sin(ang)*spd*.55-1}));
           if(floaters.length>130)floaters.shift();
         }
       }
-      // Plasma rings from sphere
-      if(Math.random()<.18)
+      if(Math.random()<fR)
         flashes.push({x:scx,y:scy,r:sRect.width*.35,op:.5+Math.random()*.3,speed:10+Math.random()*12});
-      // Wild color cycling
-      const ct=autoTime*5;
-      tR=Math.min(255,Math.max(0,anchorR+Math.sin(ct)*70+Math.sin(ct*1.7)*40));
-      tG=Math.min(255,Math.max(0,anchorG+Math.sin(ct*1.3+1)*50+Math.cos(ct*2.1)*30));
-      tB=Math.min(255,Math.max(0,anchorB+Math.cos(ct*.9+2)*80+Math.sin(ct*2.4)*35));
-      // Random screen flares
-      if(Math.random()<.06)
+      const ct=autoTime*cSpd;
+      tR=Math.min(255,Math.max(0,anchorR+Math.sin(ct)*cRng+Math.sin(ct*1.7)*cRng*.57));
+      tG=Math.min(255,Math.max(0,anchorG+Math.sin(ct*1.3+1)*cRng*.71+Math.cos(ct*2.1)*cRng*.43));
+      tB=Math.min(255,Math.max(0,anchorB+Math.cos(ct*.9+2)*cRng*1.14+Math.sin(ct*2.4)*cRng*.5));
+      if(Math.random()<sfR)
         flashes.push({x:Math.random()*cW,y:Math.random()*cH,r:5+Math.random()*20,op:.15+Math.random()*.2,speed:5+Math.random()*8});
-      // Sphere glow pulse drawn on canvas
-      const glowR=sRect.width*.5+20+Math.sin(autoTime*12)*15;
+      const glowR=sRect.width*.5+20+Math.sin(autoTime*gSpd)*15;
       const sgGrad=ctx.createRadialGradient(scx,scy,sRect.width*.3,scx,scy,glowR*2.5);
-      sgGrad.addColorStop(0,`rgba(${bR},${bG},${bB},${.12+Math.sin(autoTime*8)*.06})`);
+      sgGrad.addColorStop(0,`rgba(${bR},${bG},${bB},${.18+Math.sin(autoTime*8)*.08})`);
       sgGrad.addColorStop(1,'rgba(0,0,0,0)');
       ctx.fillStyle=sgGrad;ctx.beginPath();ctx.arc(scx,scy,glowR*2.5,0,Math.PI*2);ctx.fill();
+    }
+
+    // ── RESET HOLD RING + IMPLOSION ──────────────────────────────────────────────
+    if(window._resetHold>0){
+      const scx=sRect.left+sRect.width*.5,scy=sRect.top+sRect.height*.5;
+      ctx.save();ctx.beginPath();
+      ctx.arc(scx,scy,sRect.width*.5+14,-Math.PI*.5,-Math.PI*.5+window._resetHold*Math.PI*2);
+      ctx.strokeStyle=`rgba(${bR},${bG},${bB},${0.5+window._resetHold*.4})`;
+      ctx.lineWidth=2;ctx.shadowBlur=14;ctx.shadowColor=`rgba(${bR},${bG},${bB},.55)`;
+      ctx.stroke();ctx.restore();
+    }
+    if(window._sonReset){
+      const scx=sRect.left+sRect.width*.5,scy=sRect.top+sRect.height*.5;
+      for(const fl of floaters){
+        const dx=scx-fl.x,dy=scy-fl.y,dist=Math.sqrt(dx*dx+dy*dy);
+        if(dist>8){fl.vx+=dx/dist*1.8;fl.vy+=dy/dist*1.8;}
+      }
+      if(fn%3===0){
+        for(let i=0;i<8;i++){
+          const ang=Math.random()*Math.PI*2,rad=40+Math.random()*180;
+          floaters.push(mkFloater(false,{x:scx+Math.cos(ang)*rad,y:scy+Math.sin(ang)*rad,
+            vx:-Math.cos(ang)*(2+Math.random()*5),vy:-Math.sin(ang)*(2+Math.random()*5)}));
+          if(floaters.length>130)floaters.shift();
+        }
+      }
     }
     drawWaveRing(bR,bG,bB);
   }
@@ -1199,6 +1246,9 @@ function sanitizeJSON(s){
 async function spin(evt,promptFn=buildPrompt){
   if(isLoading)return;
   isLoading=true;
+  // Unlock AudioContext immediately in the gesture handler (iOS requires this before any await)
+  try{if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx.state==='suspended')audioCtx.resume();}catch(_){}
   spinCount++;
 
   let px,py;
@@ -1216,6 +1266,15 @@ async function spin(evt,promptFn=buildPrompt){
   }
 
   techSheet.classList.remove('visible');
+  window.chaosParams={
+    lightRate:.06+Math.random()*.28,
+    burstCount:2+Math.floor(Math.random()*5),
+    flashRate:.06+Math.random()*.22,
+    screenFlare:Math.random()*.09,
+    colorSpd:2+Math.random()*9,
+    colorRng:30+Math.random()*90,
+    glowSpd:5+Math.random()*16,
+  };
   if(window.setGenerating) window.setGenerating(true);
 
   await new Promise(r=>setTimeout(r,180));
@@ -1537,6 +1596,66 @@ btnExport.addEventListener('click',async()=>{
 // ── EVENTS ────────────────────────────────────────────────────
 sphereWrap.addEventListener('click',spin);
 sphereWrap.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' ')spin(e); });
+
+// ── HIDE "touch to explore" DURING GENERATION ─────────────────
+const sphereHint=document.getElementById('sphere-hint');
+const _origSetGen=window.setGenerating;
+window.setGenerating=function(on){
+  _origSetGen(on);
+  if(sphereHint)sphereHint.style.opacity=on?'0':'';
+};
+
+// ── LONG-PRESS RESET (2s on empty space → suction) ────────────
+let _resetRaf=null,_resetStart=0,_resetOX=0,_resetOY=0;
+function _cancelReset(){
+  if(_resetRaf){cancelAnimationFrame(_resetRaf);_resetRaf=null;}
+  _resetStart=0;window._resetHold=0;
+}
+function _tickReset(){
+  if(!_resetStart)return;
+  const p=Math.min(1,(performance.now()-_resetStart)/2000);
+  window._resetHold=p;
+  if(p>=1){_resetStart=0;window._resetHold=0;_doReset();return;}
+  _resetRaf=requestAnimationFrame(_tickReset);
+}
+document.querySelector('.app').addEventListener('pointerdown',e=>{
+  if(!current)return;
+  if(e.target.closest('button,input,a,.sphere-wrap,.tech-sheet,.key-overlay,.sound-name,.sound-meta,.tags,.tag,.btn,.sound-playing,.tech-content,.tech-title'))return;
+  _resetOX=e.clientX;_resetOY=e.clientY;
+  _resetStart=performance.now();
+  _resetRaf=requestAnimationFrame(_tickReset);
+});
+document.addEventListener('pointermove',e=>{
+  if(!_resetStart)return;
+  const dx=e.clientX-_resetOX,dy=e.clientY-_resetOY;
+  if(dx*dx+dy*dy>144)_cancelReset();
+});
+document.addEventListener('pointerup',_cancelReset);
+document.addEventListener('pointercancel',_cancelReset);
+
+function _doReset(){
+  if(!current)return;
+  stopActiveSources();
+  window._sonReset=true;setTimeout(()=>{window._sonReset=false;},500);
+  const idEl=document.getElementById('sound-identity');
+  const acEl=document.getElementById('actions-wrap');
+  idEl.classList.add('suck-in');acEl.classList.add('suck-in');
+  setTimeout(()=>{
+    current=null;lastBuffer=null;isReversed=false;playbackSpeed=1.0;
+    idEl.classList.remove('revealed','suck-in');
+    acEl.classList.remove('revealed','suck-in');
+    techSheet.classList.remove('visible');
+    nameEl.textContent='—';metaEl.textContent='—';
+    tagsEl.innerHTML='';descEl.textContent='';
+    btnSimilar.disabled=true;
+    btnReverse.disabled=true;btnSlower.disabled=true;btnFaster.disabled=true;
+    btnReverse.textContent='⟺ Reverse';
+    sphereEl.style.background='';sphereEl.style.boxShadow='';
+    sphereEl.style.setProperty('--sphere-hl','none');
+    bgGlow.style.background='radial-gradient(ellipse 60% 50% at 50% 40%,rgba(100,80,255,0.15),transparent)';
+    rings.forEach(r=>r.style.borderColor='');
+  },440);
+}
 
 syncKeyIcon();
 if(!getKey())openKeyModal();

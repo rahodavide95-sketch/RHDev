@@ -1775,7 +1775,7 @@ function _tickReset(){
 }
 document.querySelector('.app').addEventListener('pointerdown',e=>{
   if(!current)return;
-  if(e.target.closest('button,input,a,.sphere-wrap,.tech-sheet,.key-overlay,.sound-name,.sound-meta,.tags,.tag,.btn,.sound-playing,.tech-content,.tech-title'))return;
+  if(e.target.closest('button,input,a,.sphere-wrap,.tech-sheet,.key-overlay,.sound-name,.sound-meta,.tags,.tag,.btn,.sound-playing,.tech-content,.tech-title,.logo,.spin-badge,.lang-wrap'))return;
   _resetOX=e.clientX;_resetOY=e.clientY;
   _resetStart=performance.now();
   _resetRaf=requestAnimationFrame(_tickReset);
@@ -1783,7 +1783,8 @@ document.querySelector('.app').addEventListener('pointerdown',e=>{
 document.addEventListener('pointermove',e=>{
   if(!_resetStart)return;
   const dx=e.clientX-_resetOX,dy=e.clientY-_resetOY;
-  if(dx*dx+dy*dy>144)_cancelReset();
+  const thresh=e.pointerType==='mouse'?625:144;
+  if(dx*dx+dy*dy>thresh)_cancelReset();
 });
 document.addEventListener('pointerup',_cancelReset);
 document.addEventListener('pointercancel',_cancelReset);

@@ -1549,6 +1549,7 @@ document.getElementById('tech-close').addEventListener('click',()=>{
   if(_techAbort){_techAbort.abort();_techAbort=null;}
   techSheet.classList.remove('visible');
   techMode=null;isActing=false;
+  if(sphereHint)sphereHint.style.opacity='';
 });
 
 btnReplay.addEventListener('click',()=>{

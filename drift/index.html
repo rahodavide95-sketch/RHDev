@@ -144,6 +144,13 @@
   .btn-key:hover { color:var(--c-text-secondary); }
   .btn-key.has-key { color:var(--c-accent);opacity:0.5; }
 
+  .credits-overlay { position:fixed;inset:0;z-index:200;background:rgba(5,5,10,0.88);backdrop-filter:blur(14px);display:flex;align-items:center;justify-content:center;padding:1.5rem;opacity:0;pointer-events:none;transition:opacity 0.3s ease; }
+  .credits-overlay.visible { opacity:1;pointer-events:auto; }
+  .credits-box { width:100%;max-width:340px;text-align:center;padding:2.5rem 2rem; }
+  .credits-logo { font-family:var(--font-display);font-size:22px;font-weight:400;letter-spacing:0.35em;color:var(--c-text-primary);text-transform:uppercase;margin-bottom:2rem; }
+  .credits-line { font-size:12px;color:var(--c-text-secondary);letter-spacing:0.06em;line-height:2;margin:0; }
+  .credits-copy { font-size:10px;color:var(--c-text-muted);letter-spacing:0.14em;text-transform:uppercase;margin-top:2rem; }
+
   footer { margin-top:2rem;font-size:11px;color:var(--c-text-muted);letter-spacing:0.1em;text-align:center;text-transform:uppercase; }
 
   @media (min-width:521px) {
@@ -191,7 +198,7 @@
 
 <div class="app">
   <header>
-    <div class="logo-wrap">
+    <div class="logo-wrap" style="cursor:pointer" id="btn-credits">
       <span class="logo">Sonorium</span>
       <span class="tagline-mobile">serendipity engine for sound designers</span>
     </div>
@@ -200,6 +207,15 @@
       <button class="btn-key" id="btn-key" title="API Key">⚷</button>
     </div>
   </header>
+
+  <div class="credits-overlay" id="credits-overlay">
+    <div class="credits-box">
+      <p class="credits-logo">Sonorium</p>
+      <p class="credits-line">For your subconscious creativity, wherever you are.</p>
+      <p class="credits-line">With love, by Raho.</p>
+      <p class="credits-copy">© Sonorium 2026 &nbsp;|&nbsp; v2.0</p>
+    </div>
+  </div>
 
   <div class="key-overlay hidden" id="key-overlay">
     <div class="key-box">
@@ -1130,6 +1146,10 @@ function setKey(k){ localStorage.setItem(KEY_STORAGE,k); }
 function openKeyModal(){ keyInput.value=localStorage.getItem(KEY_STORAGE)||'';keyOverlay.classList.remove('hidden');keyInput.focus(); }
 function closeKeyModal(){ keyOverlay.classList.add('hidden'); }
 function syncKeyIcon(){ btnKey.classList.toggle('has-key',!!getKey()); }
+const creditsOverlay=document.getElementById('credits-overlay');
+document.getElementById('btn-credits').addEventListener('click',()=>creditsOverlay.classList.add('visible'));
+creditsOverlay.addEventListener('click',()=>creditsOverlay.classList.remove('visible'));
+
 btnKey.addEventListener('click',openKeyModal);
 btnKeyCancel.addEventListener('click',closeKeyModal);
 btnKeySave.addEventListener('click',()=>{ const v=keyInput.value.trim();if(v){setKey(v);syncKeyIcon();closeKeyModal();} });

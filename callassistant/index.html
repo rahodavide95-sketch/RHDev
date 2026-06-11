@@ -316,6 +316,42 @@
   .interim { color: var(--text3); font-style: italic; }
 
   .panel.translation { background: var(--bg3); }
+
+  .lang-swap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: -2px 0;
+    position: relative;
+    z-index: 1;
+  }
+  .lang-swap-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text3);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .btn-swap {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 20px;
+    padding: 5px 12px;
+    color: var(--text2);
+    font-size: 12px;
+    font-weight: 500;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .btn-swap:hover { background: var(--border); color: var(--text); border-color: var(--border2); }
+  .btn-swap svg { transition: transform 0.3s; }
+  .btn-swap:hover svg { transform: rotate(180deg); }
   .panel.response {
     border: 2px solid rgba(80,160,255,0.45);
     box-shadow: 0 0 10px rgba(80,160,255,0.08);
@@ -390,17 +426,24 @@
     <div class="panel-header">
       <div class="panel-label">
         <svg viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
-        Trascrizione (EN)
+        <span id="labelTranscript">Trascrizione (EN)</span>
       </div>
     </div>
     <div class="panel-text placeholder" id="transcriptBox">Premi Ascolta e parla in inglese...</div>
+  </div>
+
+  <div class="lang-swap">
+    <button class="btn-swap" id="btnSwap">
+      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 16V4m0 0L3 8m4-4 4 4"/><path d="M17 8v12m0 0 4-4m-4 4-4-4"/></svg>
+      <span id="swapLabel">EN → IT</span>
+    </button>
   </div>
 
   <div class="panel translation">
     <div class="panel-header">
       <div class="panel-label">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-        Traduzione (IT)
+        <span id="labelTranslation">Traduzione (IT)</span>
       </div>
     </div>
     <div class="panel-text placeholder" id="translationBox">La traduzione apparirà qui...</div>
@@ -410,7 +453,7 @@
     <div class="panel-header">
       <div class="panel-label">
         <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-        Risposta suggerita (EN)
+        <span id="labelResponse">Risposta suggerita (EN)</span>
       </div>
       <button class="btn-copy" id="btnCopy">
         <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -443,8 +486,13 @@ const btnListen   = document.getElementById('btnListen');
 const btnReset    = document.getElementById('btnReset');
 const btnListenTxt= document.getElementById('btnListenTxt');
 const btnCopy     = document.getElementById('btnCopy');
-const btnKey      = document.getElementById('btnKey');
-const btnTheme    = document.getElementById('btnTheme');
+const btnKey         = document.getElementById('btnKey');
+const btnTheme       = document.getElementById('btnTheme');
+const btnSwap        = document.getElementById('btnSwap');
+const swapLabel      = document.getElementById('swapLabel');
+const labelTranscript= document.getElementById('labelTranscript');
+const labelTranslation=document.getElementById('labelTranslation');
+const labelResponse  = document.getElementById('labelResponse');
 const keyOverlay  = document.getElementById('keyOverlay');
 const keyInput    = document.getElementById('keyInput');
 const btnKeySave  = document.getElementById('btnKeySave');
@@ -461,6 +509,54 @@ let recognition = null;
 let isListening = false;
 let finalTranscript = '';
 let translateTimeout = null;
+let langDir = 'en-it'; // 'en-it' or 'it-en'
+
+const LANGS = {
+  'en-it': {
+    recog: 'en-US',
+    transcript: 'Trascrizione (EN)',
+    translation: 'Traduzione (IT)',
+    response: 'Risposta suggerita (EN)',
+    swap: 'EN → IT',
+    listenHint: 'Premi Ascolta e parla in inglese...',
+    translatePrompt: 'Sei un traduttore preciso. Traduci il testo inglese in italiano in modo naturale e fluente. Rispondi SOLO con la traduzione, nessuna spiegazione o premessa.',
+    replyPrompt: 'You are a helpful assistant supporting someone on a professional business call. Given what was just said by the other person, suggest a concise, natural, professional reply in English. Write ONLY the reply itself — no preamble, no labels, no quotes.',
+    replySaid: 'The other person just said: ',
+  },
+  'it-en': {
+    recog: 'it-IT',
+    transcript: 'Trascrizione (IT)',
+    translation: 'Traduzione (EN)',
+    response: 'Risposta suggerita (IT)',
+    swap: 'IT → EN',
+    listenHint: 'Premi Ascolta e parla in italiano...',
+    translatePrompt: 'You are a precise translator. Translate the Italian text into natural, fluent English. Reply ONLY with the translation, no explanation or preamble.',
+    replyPrompt: 'Sei un assistente che supporta qualcuno in una chiamata professionale. In base a quello che ha appena detto l\'altra persona, suggerisci una risposta concisa, naturale e professionale in italiano. Scrivi SOLO la risposta, senza preamboli, etichette o virgolette.',
+    replySaid: 'L\'altra persona ha appena detto: ',
+  }
+};
+
+function applyLang() {
+  const l = LANGS[langDir];
+  labelTranscript.textContent  = l.transcript;
+  labelTranslation.textContent = l.translation;
+  labelResponse.textContent    = l.response;
+  swapLabel.textContent        = l.swap;
+}
+
+btnSwap.addEventListener('click', () => {
+  if (isListening) stopListening();
+  langDir = langDir === 'en-it' ? 'it-en' : 'en-it';
+  applyLang();
+  finalTranscript = '';
+  clearTimeout(translateTimeout);
+  const l = LANGS[langDir];
+  setPanel(transcriptBox,  l.listenHint, true);
+  setPanel(translationBox, 'La traduzione apparirà qui...', true);
+  setPanel(responseBox,    'La risposta apparirà qui automaticamente...', true);
+  errorMsg.textContent = '';
+  setStatus('', 'Pronto');
+});
 
 // ── THEME ────────────────────────────────────────────────────
 const THEME_STORAGE = 'callassistant_theme';
@@ -560,10 +656,7 @@ async function translateText(text) {
   setStatus('thinking', 'Traduco...');
   setPanel(translationBox, '<span class="spinner"></span>', false);
   try {
-    const result = await callClaude(
-      'Sei un traduttore preciso. Traduci il testo inglese in italiano in modo naturale e fluente. Rispondi SOLO con la traduzione, nessuna spiegazione o premessa.',
-      text, 600
-    );
+    const result = await callClaude(LANGS[langDir].translatePrompt, text, 600);
     setPanel(translationBox, result.trim(), false);
     setStatus('', 'Tradotto');
     await suggestReply();
@@ -581,10 +674,8 @@ async function suggestReply() {
   setPanel(responseBox, '<span class="spinner"></span>', false);
   responsePanel.classList.add('working');
   try {
-    const result = await callClaude(
-      'You are a helpful assistant supporting someone on a professional business call. Given what was just said by the other person, suggest a concise, natural, professional reply in English. Write ONLY the reply itself — no preamble, no labels, no quotes.',
-      'The other person just said: ' + topic, 500
-    );
+    const l = LANGS[langDir];
+    const result = await callClaude(l.replyPrompt, l.replySaid + topic, 500);
     setPanel(responseBox, result.trim(), false);
     setStatus('', 'Pronto');
   } catch(e) {
@@ -603,7 +694,7 @@ function initRecognition() {
     return null;
   }
   const r = new SR();
-  r.lang = 'en-US';
+  r.lang = LANGS[langDir].recog;
   r.interimResults = true;
   r.continuous = true;
   r.onresult = (e) => {
@@ -631,7 +722,7 @@ function startListening() {
   recognition = initRecognition();
   if (!recognition) return;
   finalTranscript = '';
-  setPanel(transcriptBox, '<span class="interim">In ascolto...</span>', false);
+  setPanel(transcriptBox, `<span class="interim">${langDir === 'en-it' ? 'In ascolto (EN)...' : 'In ascolto (IT)...'}</span>`, false);
   setPanel(translationBox, 'La traduzione apparirà qui...', true);
   setPanel(responseBox, 'La risposta apparirà qui automaticamente...', true);
   isListening = true;

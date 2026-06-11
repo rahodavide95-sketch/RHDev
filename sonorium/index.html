@@ -508,8 +508,8 @@ let globalAnalyser = null;
   function mkMeteor(){
     const W=cW||innerWidth,H=cH||innerHeight;
     const ang=Math.PI*(.18+Math.random()*.18)*(Math.random()<.5?1:-1)+Math.PI*.5;
-    const spd=7+Math.random()*9;
-    const len=90+Math.random()*180;
+    const spd=1.5+Math.random()*2.5;
+    const len=110+Math.random()*200;
     return{
       x:Math.random()*W*1.2-W*.1,
       y:Math.random()*H*.45,
@@ -521,6 +521,23 @@ let globalAnalyser = null;
       hueOff:(Math.random()-.5)*30,
     };
   }
+
+  // ── EXPLOSIONS ────────────────────────────────────────────────
+  const explosions=[];
+  window.triggerExplosion=function(cx,cy,er,eg,eb){
+    const W=cW||innerWidth,H=cH||innerHeight;
+    const maxR=Math.sqrt(W*W+H*H);
+    explosions.push({
+      cx,cy,er:er||160,eg:eg||120,eb:eb||255,
+      maxR,life:0,maxLife:280,
+      debris:Array.from({length:70},()=>{
+        const ang=Math.random()*Math.PI*2,spd=1.2+Math.random()*14;
+        return{x:cx,y:cy,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd-1.5,
+               r:.5+Math.random()*3,life:0,maxLife:70+Math.random()*120,
+               grav:.025+Math.random()*.075};
+      }),
+    });
+  };
 
   // Galaxy / Milky Way system
   const gals=[];
@@ -940,6 +957,74 @@ let globalAnalyser = null;
         }
       }
     }
+    // Explosions
+    for(let ei=explosions.length-1;ei>=0;ei--){
+      const e=explosions[ei];e.life++;
+      const p=e.life/e.maxLife;
+      if(p>=1){explosions.splice(ei,1);continue;}
+      const{cx,cy,er,eg,eb,maxR}=e;
+
+      // White flash (peaks at frame 4, gone by frame 22)
+      if(p<0.22){
+        const fp=p<0.055?p/.055:Math.max(0,1-(p-.055)/.165);
+        const gr=ctx.createRadialGradient(cx,cy,0,cx,cy,maxR*.78);
+        gr.addColorStop(0,`rgba(255,255,255,${(fp*.97).toFixed(3)})`);
+        gr.addColorStop(.12,`rgba(${er},${eg},${eb},${(fp*.88).toFixed(3)})`);
+        gr.addColorStop(.5,`rgba(${er},${eg},${eb},${(fp*.22).toFixed(3)})`);
+        gr.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.fillStyle=gr;ctx.beginPath();ctx.arc(cx,cy,maxR*.78,0,Math.PI*2);ctx.fill();
+      }
+
+      // Expanding bloom
+      if(p<0.78){
+        const bp=p/.78;
+        const r=maxR*(1-Math.exp(-bp*2.6))*.68;
+        const op=Math.max(0,.58*(1-bp*.92));
+        const gr2=ctx.createRadialGradient(cx,cy,r*.07,cx,cy,r);
+        gr2.addColorStop(0,`rgba(255,255,255,${(op*.3).toFixed(3)})`);
+        gr2.addColorStop(.18,`rgba(${er},${eg},${eb},${op.toFixed(3)})`);
+        gr2.addColorStop(.65,`rgba(${Math.round(er*.5)},${Math.round(eg*.5)},${Math.round(eb*.5)},${(op*.38).toFixed(3)})`);
+        gr2.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.fillStyle=gr2;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();
+      }
+
+      // 3 staggered shockwave rings
+      for(let ri=0;ri<3;ri++){
+        const rDelay=ri*.07,rp=Math.max(0,Math.min(1,(p-rDelay)/(.65-rDelay)));
+        if(rp<=0)continue;
+        const r=maxR*(1-Math.exp(-rp*(2.9-ri*.45)))*(0.56-ri*.09);
+        const op=Math.max(0,(.82-ri*.14)*(1-Math.pow(rp,.6)));
+        const w=Math.max(.3,(3.8-ri*.9)*(1-rp*.65));
+        ctx.save();ctx.lineWidth=w;
+        ctx.strokeStyle=`rgba(${er},${eg},${eb},${op.toFixed(3)})`;
+        ctx.shadowColor=`rgba(${er},${eg},${eb},${(op*.65).toFixed(3)})`;
+        ctx.shadowBlur=w*5;
+        ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.stroke();
+        ctx.restore();
+      }
+
+      // Debris particles
+      for(const d of e.debris){
+        d.x+=d.vx;d.y+=d.vy;d.vy+=d.grav;d.vx*=.989;d.vy*=.989;d.life++;
+        const dp=d.life/d.maxLife;
+        const dop=Math.max(0,1-Math.pow(dp,1.5));
+        if(dop<.02)continue;
+        ctx.fillStyle=`rgba(${er},${eg},${eb},${dop.toFixed(3)})`;
+        ctx.beginPath();ctx.arc(d.x,d.y,Math.max(.2,d.r*(1-dp*.55)),0,Math.PI*2);ctx.fill();
+      }
+
+      // Afterglow — long slow fade
+      if(p>.1){
+        const agp=Math.max(0,(1-p)/.9);
+        const agR=maxR*.22*Math.pow(agp,.65);
+        const gr3=ctx.createRadialGradient(cx,cy,0,cx,cy,agR);
+        gr3.addColorStop(0,`rgba(${er},${eg},${eb},${(agp*.32).toFixed(3)})`);
+        gr3.addColorStop(.5,`rgba(${er},${eg},${eb},${(agp*.07).toFixed(3)})`);
+        gr3.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.fillStyle=gr3;ctx.beginPath();ctx.arc(cx,cy,agR,0,Math.PI*2);ctx.fill();
+      }
+    }
+
     drawWaveRing(bR,bG,bB);
   }
   draw();
@@ -1949,6 +2034,12 @@ document.addEventListener('contextmenu',e=>{ if(_resetStart)e.preventDefault(); 
 
 function _doReset(){
   if(!current)return;
+  const _sr=sphereEl.getBoundingClientRect();
+  const _c=current.color||{};
+  if(window.triggerExplosion)window.triggerExplosion(
+    _sr.left+_sr.width*.5, _sr.top+_sr.height*.5,
+    _c.ar||160, _c.ag||120, _c.ab||255
+  );
   stopActiveSources();
   window._sonReset=true;setTimeout(()=>{window._sonReset=false;},500);
   const idEl=document.getElementById('sound-identity');

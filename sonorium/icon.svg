@@ -1,24 +1,28 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
   <defs>
-    <radialGradient id="sphere" cx="38%" cy="32%" r="72%">
-      <stop offset="0%"   stop-color="#b0b1ff"/>
-      <stop offset="28%"  stop-color="#6e6ef5"/>
-      <stop offset="62%"  stop-color="#312e8a"/>
-      <stop offset="100%" stop-color="#0c0a1c"/>
+    <radialGradient id="sphere" cx="36%" cy="30%" r="74%">
+      <stop offset="0%"   stop-color="#d0d1ff"/>
+      <stop offset="20%"  stop-color="#8e8ff9"/>
+      <stop offset="52%"  stop-color="#3632a8"/>
+      <stop offset="100%" stop-color="#07051a"/>
     </radialGradient>
-    <radialGradient id="ambient" cx="50%" cy="50%" r="50%">
-      <stop offset="0%"   stop-color="#4c3bbf" stop-opacity="0.55"/>
-      <stop offset="60%"  stop-color="#2a1e80" stop-opacity="0.2"/>
-      <stop offset="100%" stop-color="#100840" stop-opacity="0"/>
+    <radialGradient id="ambient" cx="50%" cy="54%" r="50%">
+      <stop offset="0%"   stop-color="#5545d8" stop-opacity="0.75"/>
+      <stop offset="52%"  stop-color="#2e1e90" stop-opacity="0.32"/>
+      <stop offset="100%" stop-color="#0d0630" stop-opacity="0"/>
     </radialGradient>
-    <radialGradient id="hl" cx="35%" cy="28%" r="55%">
-      <stop offset="0%"   stop-color="#ffffff" stop-opacity="0.38"/>
+    <radialGradient id="hl" cx="34%" cy="27%" r="54%">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="0.50"/>
       <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
     </radialGradient>
-    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
-      <feGaussianBlur stdDeviation="8"/>
+    <radialGradient id="rim" cx="74%" cy="76%" r="44%">
+      <stop offset="0%"   stop-color="#7b7cf7" stop-opacity="0.40"/>
+      <stop offset="100%" stop-color="#7b7cf7" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow" x="-55%" y="-55%" width="210%" height="210%">
+      <feGaussianBlur stdDeviation="11"/>
     </filter>
-    <filter id="soft" x="-80%" y="-80%" width="260%" height="260%">
+    <filter id="soft" x="-120%" y="-120%" width="340%" height="340%">
       <feGaussianBlur stdDeviation="3.5"/>
     </filter>
     <clipPath id="round">
@@ -31,25 +35,28 @@
 
   <g clip-path="url(#round)">
     <!-- Ambient glow -->
-    <circle cx="100" cy="105" r="80" fill="url(#ambient)" filter="url(#glow)"/>
+    <circle cx="100" cy="104" r="92" fill="url(#ambient)" filter="url(#glow)"/>
 
-    <!-- Sphere shadow/depth ring -->
-    <circle cx="100" cy="100" r="60" fill="none"
-            stroke="#1a1050" stroke-width="6" opacity="0.5"/>
+    <!-- Sound-wave rings (emanating outward) -->
+    <circle cx="100" cy="100" r="84" fill="none" stroke="#6c6ce8" stroke-width="0.9" opacity="0.22"/>
+    <circle cx="100" cy="100" r="95" fill="none" stroke="#5555cc" stroke-width="0.7" opacity="0.12"/>
+    <circle cx="100" cy="100" r="106" fill="none" stroke="#4444b0" stroke-width="0.5" opacity="0.06"/>
 
-    <!-- Main sphere -->
-    <circle cx="100" cy="100" r="58" fill="url(#sphere)"/>
+    <!-- Sphere -->
+    <circle cx="100" cy="100" r="73" fill="url(#sphere)"/>
 
-    <!-- Soft inner highlight -->
-    <circle cx="100" cy="100" r="58" fill="url(#hl)"/>
+    <!-- Rim light (bottom-right counter-light) -->
+    <circle cx="100" cy="100" r="73" fill="url(#rim)"/>
 
-    <!-- Specular blob -->
-    <ellipse cx="84" cy="80" rx="18" ry="13"
-             fill="white" opacity="0.10" filter="url(#soft)"/>
+    <!-- Inner fresnel highlight -->
+    <circle cx="100" cy="100" r="73" fill="url(#hl)"/>
 
-    <!-- Specular bright dot -->
-    <circle cx="80" cy="76" r="5.5"
-            fill="white" opacity="0.22" filter="url(#soft)"/>
-    <circle cx="78" cy="74" r="2.8" fill="white" opacity="0.60"/>
+    <!-- Specular soft blob -->
+    <ellipse cx="82" cy="77" rx="22" ry="15"
+             fill="white" opacity="0.13" filter="url(#soft)"/>
+
+    <!-- Specular hot spot -->
+    <circle cx="77" cy="72" r="6.5" fill="white" opacity="0.28" filter="url(#soft)"/>
+    <circle cx="75" cy="70" r="3.2" fill="white" opacity="0.70"/>
   </g>
 </svg>

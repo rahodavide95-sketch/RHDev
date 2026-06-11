@@ -93,63 +93,64 @@
   .dot.active { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
   .dot.thinking { background: var(--amber); }
 
-  .api-section {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 1rem 1.25rem;
-    margin-bottom: 1.25rem;
-  }
-
-  .api-label {
-    font-size: 11px;
-    font-weight: 500;
+  .btn-key {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 6px;
     color: var(--text3);
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-    margin-bottom: 0.6rem;
+    font-size: 17px;
+    line-height: 1;
+    border-radius: 6px;
+    transition: color 0.2s;
   }
+  .btn-key:hover { color: var(--text2); }
+  .btn-key.has-key { color: var(--accent); }
 
-  .api-row { display: flex; gap: 8px; }
+  .key-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(5,5,10,0.82);
+    backdrop-filter: blur(10px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 1.5rem;
+  }
+  .key-overlay.hidden { display: none; }
 
-  .api-input {
-    flex: 1;
+  .key-box {
+    width: 100%; max-width: 380px;
+    background: rgba(18,18,20,0.97);
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    padding: 1.75rem 2rem;
+  }
+  .key-title { font-size: 15px; font-weight: 500; color: var(--text); margin-bottom: 0.35rem; }
+  .key-sub { font-size: 12px; color: var(--text2); line-height: 1.6; margin-bottom: 1.1rem; }
+  .key-input {
+    width: 100%;
     background: var(--bg3);
     border: 1px solid var(--border);
     border-radius: 8px;
-    padding: 9px 12px;
+    padding: 10px 13px;
     font-family: 'JetBrains Mono', monospace;
     font-size: 13px;
     color: var(--text);
+    letter-spacing: 0.04em;
     outline: none;
+    margin-bottom: 1rem;
     transition: border-color 0.2s;
   }
-  .api-input:focus { border-color: var(--border2); }
-  .api-input::placeholder { color: var(--text3); }
-
-  .btn-save {
-    padding: 9px 16px;
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--text2);
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-    white-space: nowrap;
-    font-family: 'Inter', sans-serif;
+  .key-input:focus { border-color: var(--border2); }
+  .key-input::placeholder { color: var(--text3); }
+  .key-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  .btn-modal {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 16px;
+    color: var(--text2); font-size: 13px; font-weight: 500;
+    cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.2s;
   }
-  .btn-save:hover { background: var(--bg); border-color: var(--border2); color: var(--text); }
-
-  .api-ok {
-    font-size: 12px;
-    color: var(--accent);
-    margin-top: 8px;
-    display: none;
-    align-items: center;
-    gap: 5px;
-  }
+  .btn-modal:hover { border-color: var(--border2); color: var(--text); }
+  .btn-modal.primary { background: var(--accent-dim); border-color: rgba(93,202,165,0.3); color: var(--accent); }
+  .btn-modal.primary:hover { background: rgba(93,202,165,0.2); }
 
   .controls { display: flex; gap: 10px; margin-bottom: 1.25rem; }
 
@@ -289,23 +290,14 @@
         <div class="tagline">Call Assistant</div>
       </div>
     </div>
-    <div class="status-pill">
-      <div class="dot" id="statusDot"></div>
-      <span id="statusText">Pronto</span>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="status-pill">
+        <div class="dot" id="statusDot"></div>
+        <span id="statusText">Pronto</span>
+      </div>
+      <button class="btn-key" id="btnKey" title="API Key">⚷</button>
     </div>
   </header>
-
-  <div class="api-section">
-    <div class="api-label">Anthropic API Key</div>
-    <div class="api-row">
-      <input class="api-input" type="password" id="apiKeyInput" placeholder="sk-ant-api03-..." autocomplete="off" />
-      <button class="btn-save" id="btnSaveKey">Salva</button>
-    </div>
-    <div class="api-ok" id="apiOk">
-      <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:var(--accent);fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;"><polyline points="20 6 9 17 4 12"/></svg>
-      Key salvata — sei pronto
-    </div>
-  </div>
 
   <div class="controls">
     <button class="btn-listen" id="btnListen">
@@ -360,26 +352,59 @@
   </footer>
 
 </div>
+
+<div class="key-overlay hidden" id="keyOverlay">
+  <div class="key-box">
+    <p class="key-title">Anthropic API Key</p>
+    <p class="key-sub">Salvata nel browser (localStorage). Non viene mai inviata a terzi.</p>
+    <input class="key-input" id="keyInput" type="password" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
+    <div class="key-actions">
+      <button class="btn-modal" id="btnKeyCancel">Annulla</button>
+      <button class="btn-modal primary" id="btnKeySave">Salva</button>
+    </div>
+  </div>
+</div>
+
 <script>
-const btnListen = document.getElementById('btnListen');
-const btnSuggest = document.getElementById('btnSuggest');
-const btnListenTxt = document.getElementById('btnListenTxt');
-const btnSaveKey = document.getElementById('btnSaveKey');
-const btnCopy = document.getElementById('btnCopy');
-const apiKeyInput = document.getElementById('apiKeyInput');
-const apiOk = document.getElementById('apiOk');
+const btnListen   = document.getElementById('btnListen');
+const btnSuggest  = document.getElementById('btnSuggest');
+const btnListenTxt= document.getElementById('btnListenTxt');
+const btnCopy     = document.getElementById('btnCopy');
+const btnKey      = document.getElementById('btnKey');
+const keyOverlay  = document.getElementById('keyOverlay');
+const keyInput    = document.getElementById('keyInput');
+const btnKeySave  = document.getElementById('btnKeySave');
+const btnKeyCancel= document.getElementById('btnKeyCancel');
 const transcriptBox = document.getElementById('transcriptBox');
-const translationBox = document.getElementById('translationBox');
+const translationBox= document.getElementById('translationBox');
 const responseBox = document.getElementById('responseBox');
-const statusDot = document.getElementById('statusDot');
-const statusText = document.getElementById('statusText');
-const errorMsg = document.getElementById('errorMsg');
+const statusDot   = document.getElementById('statusDot');
+const statusText  = document.getElementById('statusText');
+const errorMsg    = document.getElementById('errorMsg');
 
 let recognition = null;
 let isListening = false;
 let finalTranscript = '';
 let translateTimeout = null;
-let savedKey = '';
+
+const KEY_STORAGE = 'callassistant_api_key';
+function getKey()  { return localStorage.getItem(KEY_STORAGE) || ''; }
+function setKey(k) { localStorage.setItem(KEY_STORAGE, k); }
+function openKeyModal()  { keyInput.value = getKey(); keyOverlay.classList.remove('hidden'); keyInput.focus(); }
+function closeKeyModal() { keyOverlay.classList.add('hidden'); }
+function syncKeyIcon()   { btnKey.classList.toggle('has-key', !!getKey()); }
+
+btnKey.addEventListener('click', openKeyModal);
+btnKeySave.addEventListener('click', () => {
+  const k = keyInput.value.trim();
+  if (!k.startsWith('sk-ant-')) { showError('La key deve iniziare con sk-ant-'); return; }
+  setKey(k); syncKeyIcon(); closeKeyModal();
+});
+btnKeyCancel.addEventListener('click', closeKeyModal);
+keyInput.addEventListener('keydown', e => { if (e.key === 'Enter') btnKeySave.click(); if (e.key === 'Escape') closeKeyModal(); });
+keyOverlay.addEventListener('click', e => { if (e.target === keyOverlay) closeKeyModal(); });
+
+syncKeyIcon();
 
 function setStatus(state, text) {
   statusDot.className = 'dot' + (state ? ' ' + state : '');
@@ -396,22 +421,6 @@ function setPanel(el, html, isPlaceholder) {
   el.className = 'panel-text' + (isPlaceholder ? ' placeholder' : '');
 }
 
-function getKey() {
-  return savedKey || apiKeyInput.value.trim();
-}
-
-btnSaveKey.addEventListener('click', () => {
-  const k = apiKeyInput.value.trim();
-  if (!k.startsWith('sk-ant-')) {
-    showError('La key deve iniziare con sk-ant-');
-    return;
-  }
-  savedKey = k;
-  apiKeyInput.value = '••••••••••••••••••••••••';
-  apiOk.style.display = 'flex';
-  setTimeout(() => apiOk.style.display = 'none', 3000);
-});
-
 btnCopy.addEventListener('click', () => {
   const txt = responseBox.textContent.trim();
   if (!txt || responseBox.classList.contains('placeholder')) return;
@@ -425,9 +434,7 @@ btnCopy.addEventListener('click', () => {
 
 async function callClaude(system, userMsg, maxTokens) {
   const key = getKey();
-  if (!key || !key.startsWith('sk-ant-')) {
-    throw new Error('Inserisci una API key valida (sk-ant-...)');
-  }
+  if (!key) { openKeyModal(); throw new Error('API key mancante'); }
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -521,7 +528,7 @@ function initRecognition() {
 }
 
 function startListening() {
-  if (!getKey()) { showError('Inserisci prima la tua API key Anthropic.'); return; }
+  if (!getKey()) { openKeyModal(); return; }
   recognition = initRecognition();
   if (!recognition) return;
   finalTranscript = '';

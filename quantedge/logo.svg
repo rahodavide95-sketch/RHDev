@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f1e46"/>
+      <stop offset="100%" stop-color="#1a2f6b"/>
+    </linearGradient>
+    <linearGradient id="lg1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="50%" stop-color="#93c5fd"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
+    </linearGradient>
+    <linearGradient id="lg2" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1d4ed8"/>
+      <stop offset="100%" stop-color="#60a5fa"/>
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <!-- Triangle apex -->
+  <polygon points="256,64 460,432 52,432" fill="url(#lg2)" opacity=".22"/>
+  <polygon points="256,96 432,400 80,400" fill="none" stroke="url(#lg1)" stroke-width="18" stroke-linejoin="round"/>
+  <!-- Trend line inside -->
+  <polyline points="128,352 208,240 288,290 400,160" stroke="url(#lg1)" stroke-width="26" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Apex dot -->
+  <circle cx="400" cy="160" r="32" fill="url(#lg1)"/>
+</svg>

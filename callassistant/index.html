@@ -27,8 +27,40 @@
     --radius-lg: 14px;
   }
 
+  html.dark {
+    --bg: #0e0e0f;
+    --bg2: #161617;
+    --bg3: #1e1e20;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #f0f0f0;
+    --text2: #9a9a9f;
+    --text3: #5a5a62;
+    --accent: #5DCAA5;
+    --accent-dim: rgba(93,202,165,0.12);
+    --red: #E24B4A;
+    --red-dim: rgba(226,75,74,0.1);
+    --amber: #EF9F27;
+  }
+
+  html.light {
+    --bg: #f5f5f7;
+    --bg2: #ffffff;
+    --bg3: #ebebed;
+    --border: rgba(0,0,0,0.09);
+    --border2: rgba(0,0,0,0.18);
+    --text: #1a1a1c;
+    --text2: #56565c;
+    --text3: #a0a0a8;
+    --accent: #1a9e78;
+    --accent-dim: rgba(26,158,120,0.1);
+    --red: #d63b3a;
+    --red-dim: rgba(214,59,58,0.08);
+    --amber: #c97d00;
+  }
+
   @media (prefers-color-scheme: light) {
-    :root {
+    html:not(.dark):not(.light) {
       --bg: #f5f5f7;
       --bg2: #ffffff;
       --bg3: #ebebed;
@@ -111,18 +143,20 @@
   .dot.active { background: var(--red); box-shadow: 0 0 6px var(--red); }
   .dot.thinking { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
 
-  .btn-key {
+  .btn-key, .btn-theme {
     background: none;
     border: none;
     cursor: pointer;
     padding: 4px 6px;
     color: var(--text3);
-    font-size: 17px;
     line-height: 1;
     border-radius: 6px;
     transition: color 0.2s;
+    display: flex;
+    align-items: center;
   }
-  .btn-key:hover { color: var(--text2); }
+  .btn-key { font-size: 17px; }
+  .btn-key:hover, .btn-theme:hover { color: var(--text2); }
   .btn-key.has-key { color: var(--accent); }
 
   .key-overlay {
@@ -326,6 +360,7 @@
         <div class="dot" id="statusDot"></div>
         <span id="statusText">Pronto</span>
       </div>
+      <button class="btn-theme" id="btnTheme" title="Tema"></button>
       <button class="btn-key" id="btnKey" title="API Key">⚷</button>
     </div>
   </header>
@@ -402,6 +437,7 @@ const btnReset    = document.getElementById('btnReset');
 const btnListenTxt= document.getElementById('btnListenTxt');
 const btnCopy     = document.getElementById('btnCopy');
 const btnKey      = document.getElementById('btnKey');
+const btnTheme    = document.getElementById('btnTheme');
 const keyOverlay  = document.getElementById('keyOverlay');
 const keyInput    = document.getElementById('keyInput');
 const btnKeySave  = document.getElementById('btnKeySave');
@@ -418,6 +454,30 @@ let isListening = false;
 let finalTranscript = '';
 let translateTimeout = null;
 
+// ── THEME ────────────────────────────────────────────────────
+const THEME_STORAGE = 'callassistant_theme';
+const THEME_ICONS = {
+  system: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/><line x1="2" y1="2" x2="22" y2="22" stroke-width="1.5"/></svg>',
+  light:  '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>',
+  dark:   '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>',
+};
+const THEME_CYCLE = ['system', 'light', 'dark'];
+function applyTheme(t) {
+  document.documentElement.classList.remove('light', 'dark');
+  if (t === 'light' || t === 'dark') document.documentElement.classList.add(t);
+  btnTheme.innerHTML = THEME_ICONS[t];
+  btnTheme.title = { system: 'Sistema', light: 'Chiaro', dark: 'Scuro' }[t];
+}
+function nextTheme() {
+  const cur = localStorage.getItem(THEME_STORAGE) || 'system';
+  const next = THEME_CYCLE[(THEME_CYCLE.indexOf(cur) + 1) % THEME_CYCLE.length];
+  localStorage.setItem(THEME_STORAGE, next);
+  applyTheme(next);
+}
+applyTheme(localStorage.getItem(THEME_STORAGE) || 'system');
+btnTheme.addEventListener('click', nextTheme);
+
+// ── API KEY ───────────────────────────────────────────────────
 const KEY_STORAGE = 'callassistant_api_key';
 function getKey()  { return localStorage.getItem(KEY_STORAGE) || ''; }
 function setKey(k) { localStorage.setItem(KEY_STORAGE, k); }

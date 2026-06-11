@@ -4,25 +4,20 @@
       <stop offset="0%" stop-color="#0a1628"/>
       <stop offset="100%" stop-color="#0f2050"/>
     </linearGradient>
-    <linearGradient id="stroke" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="40%" stop-color="#93c5fd"/>
-      <stop offset="100%" stop-color="#2563eb"/>
-    </linearGradient>
-    <linearGradient id="trend" x1="0%" y1="100%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#60a5fa"/>
+    <linearGradient id="g1" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2563eb"/>
       <stop offset="100%" stop-color="#ffffff"/>
     </linearGradient>
-    <linearGradient id="fill" x1="50%" y1="0%" x2="50%" y2="100%">
-      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.18"/>
-      <stop offset="100%" stop-color="#1d4ed8" stop-opacity="0.04"/>
+    <linearGradient id="g2" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1d4ed8"/>
+      <stop offset="100%" stop-color="#93c5fd"/>
+    </linearGradient>
+    <linearGradient id="g3" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1e40af"/>
+      <stop offset="100%" stop-color="#60a5fa"/>
     </linearGradient>
     <filter id="glow">
-      <feGaussianBlur stdDeviation="6" result="blur"/>
-      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-    <filter id="dotglow">
-      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feGaussianBlur stdDeviation="10" result="blur"/>
       <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
   </defs>
@@ -30,27 +25,23 @@
   <!-- Background -->
   <rect width="512" height="512" rx="108" fill="url(#bg)"/>
 
-  <!-- Subtle inner glow ring -->
-  <rect width="512" height="512" rx="108" fill="none" stroke="rgba(96,165,250,0.08)" stroke-width="2"/>
+  <!-- Glow behind bars -->
+  <rect x="96" y="240" width="80" height="190" rx="16" fill="#3b82f6" opacity="0.15" filter="url(#glow)"/>
+  <rect x="216" y="160" width="80" height="270" rx="16" fill="#60a5fa" opacity="0.15" filter="url(#glow)"/>
+  <rect x="336" y="88"  width="80" height="342" rx="16" fill="#93c5fd" opacity="0.15" filter="url(#glow)"/>
 
-  <!-- Triangle fill (subtle) -->
-  <polygon points="256,90 430,370 82,370" fill="url(#fill)"/>
+  <!-- Bar 1 -->
+  <rect x="96"  y="248" width="80" height="182" rx="14" fill="url(#g3)"/>
+  <!-- Bar 2 -->
+  <rect x="216" y="168" width="80" height="262" rx="14" fill="url(#g2)"/>
+  <!-- Bar 3 (tallest) -->
+  <rect x="336" y="96"  width="80" height="334" rx="14" fill="url(#g1)"/>
 
-  <!-- Triangle outer glow -->
-  <polygon points="256,90 430,370 82,370" fill="none" stroke="rgba(59,130,246,0.2)" stroke-width="28" stroke-linejoin="round" filter="url(#glow)"/>
+  <!-- Trend line connecting tops -->
+  <polyline points="136,248 256,168 376,96" stroke="white" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
 
-  <!-- Triangle main stroke -->
-  <polygon points="256,90 430,370 82,370" fill="none" stroke="url(#stroke)" stroke-width="14" stroke-linejoin="round"/>
-
-  <!-- Trend line glow -->
-  <polyline points="114,348 178,258 242,296 358,168" stroke="rgba(147,197,253,0.35)" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
-
-  <!-- Trend line main -->
-  <polyline points="114,348 178,258 242,296 358,168" stroke="url(#trend)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
-
-  <!-- Apex dot glow -->
-  <circle cx="358" cy="168" r="28" fill="rgba(147,197,253,0.4)" filter="url(#dotglow)"/>
-  <!-- Apex dot -->
-  <circle cx="358" cy="168" r="18" fill="url(#trend)"/>
-  <circle cx="358" cy="168" r="8" fill="white" opacity="0.9"/>
+  <!-- Dots on tops -->
+  <circle cx="136" cy="248" r="10" fill="white" opacity="0.7"/>
+  <circle cx="256" cy="168" r="10" fill="white" opacity="0.85"/>
+  <circle cx="376" cy="96"  r="12" fill="white"/>
 </svg>

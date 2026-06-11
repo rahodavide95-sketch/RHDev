@@ -589,23 +589,23 @@ let globalAnalyser = null;
   let _uniSunX=0,_uniSunY=0,_uniSunZ=2000;
   const _uniStars3D=(()=>{const a=[];for(let i=0;i<2200;i++){const th=Math.random()*Math.PI*2,ph=Math.acos(2*Math.random()-1),sp=Math.sin(ph);a.push({wx:sp*Math.cos(th),wy:Math.cos(ph),wz:sp*Math.sin(th),sz:.6+Math.random()*1.6,bright:Math.random()>.96});}return a;})();
 
-  function _uSave(){try{localStorage.setItem(_U_KEY,JSON.stringify({ver:3,planets:_uniPlanets.slice(-60)}));}catch(e){}}
+  function _uSave(){try{localStorage.setItem(_U_KEY,JSON.stringify({ver:4,planets:_uniPlanets.slice(-60)}));}catch(e){}}
   function _uSolarPos(idx){
-    const rings=[380,640,910,1200,1520,1880];
+    const rings=[360,600,860,1140,1460,1820];
     const perRing=[5,7,9,11,13,16];
     let ring=0,rem=idx;
     while(ring<rings.length-1&&rem>=perRing[ring]){rem-=perRing[ring];ring++;}
-    const r=rings[ring]+(Math.random()-.5)*55;
+    const r=rings[ring]+(Math.random()-.5)*50;
     const baseAngle=(rem/Math.max(1,perRing[ring]))*Math.PI*2;
     const angle=baseAngle+(Math.random()-.5)*.12;
-    return{x:Math.cos(angle)*r,y:(Math.random()-.5)*r*.06,z:2000+Math.sin(angle)*r*.09+(Math.random()-.5)*50};
+    return{x:Math.cos(angle)*r,y:Math.sin(angle)*r,z:2000+(Math.random()-.5)*80};
   }
   function _uPos(){return _uSolarPos(_uniPlanets.filter(p=>p.x||p.y||p.z).length);}
   (function(){
     try{const raw=localStorage.getItem(_U_KEY);if(!raw)return;const data=JSON.parse(raw);
     _uniPlanets=Array.isArray(data)?data:(data.planets||[]);
     const ver=Array.isArray(data)?0:(data.ver||0);
-    if(ver<3){for(let i=0;i<_uniPlanets.length;i++){const q=_uSolarPos(i);_uniPlanets[i].x=q.x;_uniPlanets[i].y=q.y;_uniPlanets[i].z=q.z;}if(_uniPlanets.length)_uSave();}
+    if(ver<4){for(let i=0;i<_uniPlanets.length;i++){const q=_uSolarPos(i);_uniPlanets[i].x=q.x;_uniPlanets[i].y=q.y;_uniPlanets[i].z=q.z;}if(_uniPlanets.length)_uSave();}
     }catch(e){}
   })();
 
@@ -625,11 +625,13 @@ let globalAnalyser = null;
     _uSave();
   };
   window.uniDepth=function(){const dx=_uniCamX,dy=_uniCamY,dz=_uniCamZ+500;return Math.max(0,Math.min(1,Math.sqrt(dx*dx+dy*dy+dz*dz)/250));};
-  window.addUniRotate=function(dx,dy){_uniDYaw+=dx*.003;_uniDPitch+=dy*.003;};
+  window.addUniRotate=function(dx,dy){_uniDYaw-=dx*.003;_uniDPitch-=dy*.003;};
   window.addUniSpeed=function(ds){_uniSpeed=Math.max(-15,Math.min(15,_uniSpeed+ds));};
   window.uniReturnToSurface=function(){_uniCamX=0;_uniCamY=0;_uniCamZ=-500;_uniYaw=0;_uniPitch=0;_uniDYaw=0;_uniDPitch=0;_uniSpeed=0;};
   window.uniFlashPlanet=function(planet){if(planet)_uniFlash={planet,life:0,maxLife:24};};
   window.uniHitTest=function(cx,cy){
+    const sun=window._uniSunScreen;
+    if(sun){const dx=cx-sun.sx,dy=cy-sun.sy;if(Math.sqrt(dx*dx+dy*dy)<Math.max(sun.sr*3,36))return{isSun:true};}
     const v=window._uniVis;if(!v)return null;
     let best=null,bd=Infinity;
     for(const e of v){const dx=cx-e.sx,dy=cy-e.sy,d=Math.sqrt(dx*dx+dy*dy);if(d<Math.max(e.sr*2.4,30)&&d<bd){bd=d;best=e.p;}}
@@ -658,22 +660,44 @@ let globalAnalyser = null;
       ctx.fillStyle=`rgba(255,255,255,${usop.toFixed(2)})`;
       ctx.fillRect(usx-.5,usy-.5,us.sz,us.sz);
     }
-    // ── Sun (solar system anchor) ─────────────────────────────────────────────
+    // ── Orbit rings ───────────────────────────────────────────────────────────
+    {const ringR=[360,600,860,1140,1460,1820];
+    ctx.save();
+    for(let ri=0;ri<ringR.length;ri++){
+      const rr=ringR[ri];
+      ctx.beginPath();let rfirst=true;
+      for(let si=0;si<=72;si++){
+        const ang=(si/72)*Math.PI*2;
+        const wpx=_uniSunX+Math.cos(ang)*rr,wpy=_uniSunY+Math.sin(ang)*rr,wpz=_uniSunZ;
+        const rpx2=wpx-_uniCamX,rpy2=wpy-_uniCamY,rpz2=wpz-_uniCamZ;
+        const rcx2=rpx2*cosY-rpz2*sinY,rcz02=rpx2*sinY+rpz2*cosY;
+        const rcy2=rpy2*cosP+rcz02*sinP,rcz2=-rpy2*sinP+rcz02*cosP;
+        if(rcz2<10){rfirst=true;continue;}
+        const rsx=rcx2*_U_F/rcz2+W*.5,rsy=rcy2*_U_F/rcz2+H*.5;
+        if(rfirst){ctx.moveTo(rsx,rsy);rfirst=false;}else ctx.lineTo(rsx,rsy);
+      }
+      ctx.strokeStyle=`rgba(255,255,255,${(alpha*.07).toFixed(2)})`;
+      ctx.lineWidth=0.5;ctx.stroke();
+    }
+    ctx.restore();}
+    // ── Sun / home sphere ─────────────────────────────────────────────────────
     {const srx=_uniSunX-_uniCamX,sry=_uniSunY-_uniCamY,srz=_uniSunZ-_uniCamZ;
     const scx2=srx*cosY-srz*sinY,scz02=srx*sinY+srz*cosY;
     const scy2=sry*cosP+scz02*sinP,scz2=-sry*sinP+scz02*cosP;
     if(scz2>60){
       const ssx=scx2*_U_F/scz2+W*.5,ssy=scy2*_U_F/scz2+H*.5;
-      const ssr=Math.max(3,Math.min(50,28*_U_F/scz2));
-      const sunG=ctx.createRadialGradient(ssx,ssy,0,ssx,ssy,ssr*5);
-      sunG.addColorStop(0,`rgba(255,230,130,${(alpha*.9).toFixed(2)})`);
-      sunG.addColorStop(.18,`rgba(255,200,80,${(alpha*.5).toFixed(2)})`);
-      sunG.addColorStop(.5,`rgba(255,160,40,${(alpha*.12).toFixed(2)})`);
+      const ssr=Math.max(4,Math.min(55,32*_U_F/scz2));
+      window._uniSunScreen={sx:ssx,sy:ssy,sr:ssr};
+      const sunG=ctx.createRadialGradient(ssx,ssy,0,ssx,ssy,ssr*5.5);
+      sunG.addColorStop(0,`rgba(255,235,150,${(alpha*.95).toFixed(2)})`);
+      sunG.addColorStop(.15,`rgba(255,200,80,${(alpha*.55).toFixed(2)})`);
+      sunG.addColorStop(.45,`rgba(255,160,40,${(alpha*.14).toFixed(2)})`);
       sunG.addColorStop(1,'rgba(0,0,0,0)');
-      ctx.fillStyle=sunG;ctx.beginPath();ctx.arc(ssx,ssy,ssr*5,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle=`rgba(255,245,200,${(alpha*.95).toFixed(2)})`;
+      ctx.fillStyle=sunG;ctx.beginPath();ctx.arc(ssx,ssy,ssr*5.5,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle=`rgba(255,248,210,${(alpha*.98).toFixed(2)})`;
       ctx.beginPath();ctx.arc(ssx,ssy,ssr,0,Math.PI*2);ctx.fill();
-    }}
+      if(alpha>.5){ctx.save();ctx.font=`10px 'Space Grotesk',sans-serif`;ctx.textAlign='center';ctx.fillStyle=`rgba(255,220,120,${((alpha-.5)/.5*.6).toFixed(2)})`;ctx.fillText('home',ssx,ssy+ssr+13);ctx.restore();}
+    }else{window._uniSunScreen=null;}}
     const vis=[];
     for(const p of _uniPlanets){
       const rpx=p.x-_uniCamX,rpy=p.y-_uniCamY,rpz=p.z-_uniCamZ;
@@ -723,7 +747,7 @@ let globalAnalyser = null;
     if(alpha>.75){
       ctx.save();ctx.font='11px Inter,sans-serif';ctx.textAlign='center';
       ctx.fillStyle=`rgba(255,255,255,${((alpha-.75)/.25*.28).toFixed(3)})`;
-      ctx.fillText('drag to rotate · scroll/pinch to fly · tap planet',W*.5,H-20);ctx.restore();
+      ctx.fillText('drag · scroll/pinch to fly · tap planet · tap ☀ home',W*.5,H-20);ctx.restore();
     }
   }
 
@@ -1273,13 +1297,15 @@ document.addEventListener('wheel',e=>{
   if(depth>0.01||delta<0)e.preventDefault();
 },{passive:false});
 
-// Click in universe → tap planet to load, tap space does nothing
+// Click in universe → tap sun = home, tap planet = load, tap space = nothing
 document.addEventListener('click',e=>{
   const depth=window.uniDepth?window.uniDepth():0;
   if(depth<0.28)return;
   e.stopPropagation();
-  const planet=window.uniHitTest?window.uniHitTest(e.clientX,e.clientY):null;
-  if(planet)_loadPlanetSound(planet);
+  const hit=window.uniHitTest?window.uniHitTest(e.clientX,e.clientY):null;
+  if(!hit)return;
+  if(hit.isSun){if(window.uniReturnToSurface)window.uniReturnToSurface();}
+  else _loadPlanetSound(hit);
 },true);
 
 function _loadPlanetSound(planet){

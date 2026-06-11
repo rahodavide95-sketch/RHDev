@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Call Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0e0f;
+    --bg2: #161617;
+    --bg3: #1e1e20;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #f0f0f0;
+    --text2: #9a9a9f;
+    --text3: #5a5a62;
+    --accent: #5DCAA5;
+    --accent-dim: rgba(93,202,165,0.12);
+    --red: #E24B4A;
+    --red-dim: rgba(226,75,74,0.1);
+    --amber: #EF9F27;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 620px;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-icon {
+    width: 32px;
+    height: 32px;
+    background: var(--accent-dim);
+    border: 1px solid rgba(93,202,165,0.25);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .logo-icon svg { width: 16px; height: 16px; stroke: var(--accent); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  h1 { font-size: 15px; font-weight: 500; letter-spacing: -0.01em; }
+  .tagline { font-size: 12px; color: var(--text3); margin-top: 1px; }
+
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 12px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    font-size: 12px;
+    color: var(--text2);
+  }
+
+  .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--text3);
+    transition: background 0.3s;
+    flex-shrink: 0;
+  }
+  .dot.active { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+  .dot.thinking { background: var(--amber); }
+
+  .api-section {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .api-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 0.6rem;
+  }
+
+  .api-row { display: flex; gap: 8px; }
+
+  .api-input {
+    flex: 1;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .api-input:focus { border-color: var(--border2); }
+  .api-input::placeholder { color: var(--text3); }
+
+  .btn-save {
+    padding: 9px 16px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text2);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    font-family: 'Inter', sans-serif;
+  }
+  .btn-save:hover { background: var(--bg); border-color: var(--border2); color: var(--text); }
+
+  .api-ok {
+    font-size: 12px;
+    color: var(--accent);
+    margin-top: 8px;
+    display: none;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .controls { display: flex; gap: 10px; margin-bottom: 1.25rem; }
+
+  .btn-listen {
+    flex: 1;
+    padding: 11px 18px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s;
+    font-family: 'Inter', sans-serif;
+  }
+  .btn-listen:hover { background: var(--bg3); border-color: var(--border2); }
+  .btn-listen.recording { background: var(--red-dim); border-color: rgba(226,75,74,0.3); color: #f08080; }
+  .btn-listen.recording:hover { background: rgba(226,75,74,0.16); }
+
+  .btn-suggest {
+    padding: 11px 18px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+    font-family: 'Inter', sans-serif;
+    white-space: nowrap;
+  }
+  .btn-suggest:hover { background: var(--bg3); border-color: var(--border2); }
+  .btn-suggest:disabled { opacity: 0.35; cursor: default; pointer-events: none; }
+
+  .panel {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.25rem;
+    margin-bottom: 0.75rem;
+    min-height: 90px;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.6rem;
+  }
+
+  .panel-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .panel-label svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; opacity: 0.7; }
+
+  .btn-copy {
+    background: none;
+    border: none;
+    color: var(--text3);
+    cursor: pointer;
+    padding: 3px 6px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.2s;
+  }
+  .btn-copy:hover { color: var(--text2); background: var(--bg3); }
+  .btn-copy svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  .panel-text {
+    font-size: 15px;
+    line-height: 1.65;
+    color: var(--text);
+    min-height: 44px;
+  }
+
+  .panel-text.placeholder { color: var(--text3); font-size: 13px; font-style: italic; }
+  .interim { color: var(--text3); font-style: italic; }
+
+  .panel.translation { background: var(--bg3); }
+  .panel.response { border-color: rgba(93,202,165,0.15); }
+
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error { font-size: 13px; color: #f08080; min-height: 18px; margin-top: 4px; }
+
+  footer {
+    margin-top: 2rem;
+    font-size: 11px;
+    color: var(--text3);
+    text-align: center;
+    line-height: 1.8;
+  }
+
+  footer a { color: var(--text3); text-decoration: underline; text-underline-offset: 2px; }
+  footer a:hover { color: var(--text2); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+      </div>
+      <div>
+        <div class="tagline">Call Assistant</div>
+      </div>
+    </div>
+    <div class="status-pill">
+      <div class="dot" id="statusDot"></div>
+      <span id="statusText">Pronto</span>
+    </div>
+  </header>
+
+  <div class="api-section">
+    <div class="api-label">Anthropic API Key</div>
+    <div class="api-row">
+      <input class="api-input" type="password" id="apiKeyInput" placeholder="sk-ant-api03-..." autocomplete="off" />
+      <button class="btn-save" id="btnSaveKey">Salva</button>
+    </div>
+    <div class="api-ok" id="apiOk">
+      <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:var(--accent);fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;"><polyline points="20 6 9 17 4 12"/></svg>
+      Key salvata — sei pronto
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn-listen" id="btnListen">
+      <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      <span id="btnListenTxt">Ascolta</span>
+    </button>
+    <button class="btn-suggest" id="btnSuggest" disabled>
+      <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Suggerisci risposta
+    </button>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-label">
+        <svg viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+        Trascrizione (EN)
+      </div>
+    </div>
+    <div class="panel-text placeholder" id="transcriptBox">Premi Ascolta e parla in inglese...</div>
+  </div>
+
+  <div class="panel translation">
+    <div class="panel-header">
+      <div class="panel-label">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        Traduzione (IT)
+      </div>
+    </div>
+    <div class="panel-text placeholder" id="translationBox">La traduzione apparirà qui...</div>
+  </div>
+
+  <div class="panel response">
+    <div class="panel-header">
+      <div class="panel-label">
+        <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        Risposta suggerita (EN)
+      </div>
+      <button class="btn-copy" id="btnCopy">
+        <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copia
+      </button>
+    </div>
+    <div class="panel-text placeholder" id="responseBox">Premi "Suggerisci risposta" per una risposta in inglese...</div>
+  </div>
+
+  <div class="error" id="errorMsg"></div>
+
+  <footer>
+    Usa Chrome o Edge &nbsp;·&nbsp; La API key non viene mai inviata a terzi<br>
+    Costi: ~$0.003 per traduzione + risposta &nbsp;·&nbsp; <a href="https://console.anthropic.com" target="_blank">Ottieni API key</a>
+  </footer>
+
+</div>
+<script>
+const btnListen = document.getElementById('btnListen');
+const btnSuggest = document.getElementById('btnSuggest');
+const btnListenTxt = document.getElementById('btnListenTxt');
+const btnSaveKey = document.getElementById('btnSaveKey');
+const btnCopy = document.getElementById('btnCopy');
+const apiKeyInput = document.getElementById('apiKeyInput');
+const apiOk = document.getElementById('apiOk');
+const transcriptBox = document.getElementById('transcriptBox');
+const translationBox = document.getElementById('translationBox');
+const responseBox = document.getElementById('responseBox');
+const statusDot = document.getElementById('statusDot');
+const statusText = document.getElementById('statusText');
+const errorMsg = document.getElementById('errorMsg');
+
+let recognition = null;
+let isListening = false;
+let finalTranscript = '';
+let translateTimeout = null;
+let savedKey = '';
+
+function setStatus(state, text) {
+  statusDot.className = 'dot' + (state ? ' ' + state : '');
+  statusText.textContent = text;
+}
+
+function showError(msg) {
+  errorMsg.textContent = msg;
+  setTimeout(() => errorMsg.textContent = '', 5000);
+}
+
+function setPanel(el, html, isPlaceholder) {
+  el.innerHTML = html;
+  el.className = 'panel-text' + (isPlaceholder ? ' placeholder' : '');
+}
+
+function getKey() {
+  return savedKey || apiKeyInput.value.trim();
+}
+
+btnSaveKey.addEventListener('click', () => {
+  const k = apiKeyInput.value.trim();
+  if (!k.startsWith('sk-ant-')) {
+    showError('La key deve iniziare con sk-ant-');
+    return;
+  }
+  savedKey = k;
+  apiKeyInput.value = '••••••••••••••••••••••••';
+  apiOk.style.display = 'flex';
+  setTimeout(() => apiOk.style.display = 'none', 3000);
+});
+
+btnCopy.addEventListener('click', () => {
+  const txt = responseBox.textContent.trim();
+  if (!txt || responseBox.classList.contains('placeholder')) return;
+  navigator.clipboard.writeText(txt).then(() => {
+    btnCopy.innerHTML = '<svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:var(--accent);fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;"><polyline points="20 6 9 17 4 12"/></svg> Copiato';
+    setTimeout(() => {
+      btnCopy.innerHTML = '<svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copia';
+    }, 2000);
+  });
+});
+
+async function callClaude(system, userMsg, maxTokens) {
+  const key = getKey();
+  if (!key || !key.startsWith('sk-ant-')) {
+    throw new Error('Inserisci una API key valida (sk-ant-...)');
+  }
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: maxTokens || 500,
+      system: system,
+      messages: [{ role: 'user', content: userMsg }]
+    })
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  if (!data.content) throw new Error('Risposta API non valida');
+  return data.content.map(b => b.text || '').join('');
+}
+
+async function translateText(text) {
+  if (!text.trim()) return;
+  setStatus('thinking', 'Traduco...');
+  setPanel(translationBox, '<span class="spinner"></span>', false);
+  try {
+    const result = await callClaude(
+      'Sei un traduttore preciso. Traduci il testo inglese in italiano in modo naturale e fluente. Rispondi SOLO con la traduzione, nessuna spiegazione o premessa.',
+      text, 600
+    );
+    setPanel(translationBox, result.trim(), false);
+    btnSuggest.disabled = false;
+    setStatus('', 'Tradotto');
+  } catch(e) {
+    setPanel(translationBox, 'Errore di traduzione.', true);
+    showError(e.message);
+    setStatus('', 'Errore');
+  }
+}
+
+async function suggestReply() {
+  const topic = finalTranscript.trim();
+  if (!topic) return;
+  setStatus('thinking', 'Genero risposta...');
+  setPanel(responseBox, '<span class="spinner"></span>', false);
+  btnSuggest.disabled = true;
+  try {
+    const result = await callClaude(
+      'You are a helpful assistant supporting someone on a professional business call. Given what was just said by the other person, suggest a concise, natural, professional reply in English. Write ONLY the reply itself — no preamble, no labels, no quotes.',
+      'The other person just said: ' + topic, 500
+    );
+    setPanel(responseBox, result.trim(), false);
+    setStatus('', 'Pronto');
+  } catch(e) {
+    setPanel(responseBox, 'Errore nel generare la risposta.', true);
+    showError(e.message);
+    setStatus('', 'Errore');
+  } finally {
+    btnSuggest.disabled = false;
+  }
+}
+
+function initRecognition() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    showError('Browser non supportato. Usa Chrome o Edge.');
+    return null;
+  }
+  const r = new SR();
+  r.lang = 'en-US';
+  r.interimResults = true;
+  r.continuous = true;
+  r.onresult = (e) => {
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) finalTranscript += e.results[i][0].transcript + ' ';
+      else interim += e.results[i][0].transcript;
+    }
+    const display = finalTranscript + (interim ? '<span class="interim">' + interim + '</span>' : '');
+    setPanel(transcriptBox, display || '<span class="interim">In ascolto...</span>', false);
+    if (finalTranscript.trim()) {
+      clearTimeout(translateTimeout);
+      translateTimeout = setTimeout(() => translateText(finalTranscript.trim()), 1200);
+    }
+  };
+  r.onerror = (e) => {
+    if (e.error !== 'no-speech') { showError('Errore microfono: ' + e.error); stopListening(); }
+  };
+  r.onend = () => { if (isListening) r.start(); };
+  return r;
+}
+
+function startListening() {
+  if (!getKey()) { showError('Inserisci prima la tua API key Anthropic.'); return; }
+  recognition = initRecognition();
+  if (!recognition) return;
+  finalTranscript = '';
+  setPanel(transcriptBox, '<span class="interim">In ascolto...</span>', false);
+  setPanel(translationBox, 'La traduzione apparirà qui...', true);
+  setPanel(responseBox, 'Premi "Suggerisci risposta" per una risposta in inglese...', true);
+  btnSuggest.disabled = true;
+  isListening = true;
+  recognition.start();
+  btnListen.classList.add('recording');
+  btnListenTxt.textContent = 'Stop';
+  setStatus('active', 'In ascolto...');
+}
+
+function stopListening() {
+  isListening = false;
+  if (recognition) { try { recognition.stop(); } catch(e){} recognition = null; }
+  btnListen.classList.remove('recording');
+  btnListenTxt.textContent = 'Ascolta';
+  setStatus('', finalTranscript.trim() ? 'Completato' : 'Pronto');
+  if (finalTranscript.trim()) { clearTimeout(translateTimeout); translateText(finalTranscript.trim()); }
+}
+
+btnListen.addEventListener('click', () => { isListening ? stopListening() : startListening(); });
+btnSuggest.addEventListener('click', suggestReply);
+</script>
+</body>
+</html>

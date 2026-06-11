@@ -290,6 +290,30 @@
 
   .panel-label svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; opacity: 0.7; }
 
+  .btn-autoreply {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 3px 9px 3px 7px;
+    color: var(--text3);
+    font-size: 11px;
+    font-weight: 500;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s;
+  }
+  .btn-autoreply.on { border-color: rgba(93,202,165,0.35); color: var(--accent); background: var(--accent-dim); }
+  .autoreply-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--text3);
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  .btn-autoreply.on .autoreply-dot { background: var(--accent); }
+
   .btn-copy {
     background: none;
     border: none;
@@ -464,10 +488,16 @@
         <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
         <span id="labelResponse">Risposta suggerita (EN)</span>
       </div>
-      <button class="btn-copy" id="btnCopy">
-        <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-        Copia
-      </button>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button class="btn-autoreply" id="btnAutoReply" title="Risposta automatica">
+          <span class="autoreply-dot"></span>
+          <span id="autoReplyTxt">Auto</span>
+        </button>
+        <button class="btn-copy" id="btnCopy">
+          <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copia
+        </button>
+      </div>
     </div>
     <div class="panel-text placeholder" id="responseBox">La risposta apparirà qui automaticamente...</div>
   </div>
@@ -495,6 +525,8 @@ const btnListen   = document.getElementById('btnListen');
 const btnReset    = document.getElementById('btnReset');
 const btnListenTxt= document.getElementById('btnListenTxt');
 const btnCopy     = document.getElementById('btnCopy');
+const btnAutoReply    = document.getElementById('btnAutoReply');
+const autoReplyTxt    = document.getElementById('autoReplyTxt');
 const btnKey          = document.getElementById('btnKey');
 const btnTheme        = document.getElementById('btnTheme');
 const btnSwap         = document.getElementById('btnSwap');
@@ -514,6 +546,15 @@ const responsePanel = document.getElementById('responsePanel');
 const statusDot   = document.getElementById('statusDot');
 const statusText  = document.getElementById('statusText');
 const errorMsg    = document.getElementById('errorMsg');
+
+let autoReply = true;
+
+function syncAutoReply() {
+  btnAutoReply.classList.toggle('on', autoReply);
+  autoReplyTxt.textContent = autoReply ? 'Auto on' : 'Auto off';
+}
+syncAutoReply();
+btnAutoReply.addEventListener('click', () => { autoReply = !autoReply; syncAutoReply(); });
 
 let recognition = null;
 let isListening = false;
@@ -694,7 +735,7 @@ async function translateText(text) {
     const result = await callClaude(prompt, text, 600);
     setPanel(translationBox, result.trim(), false);
     setStatus('', 'Tradotto');
-    await suggestReply();
+    if (autoReply) await suggestReply();
   } catch(e) {
     setPanel(translationBox, 'Errore di traduzione.', true);
     showError(e.message);

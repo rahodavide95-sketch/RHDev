@@ -42,25 +42,12 @@
     </clipPath>
   </defs>
 
-  <!-- Outer glow — wide, soft -->
-  <rect x="1" y="1" width="198" height="198" rx="45"
-        fill="#4433cc" opacity="0.55" filter="url(#outerGlowWide)"/>
-
-  <!-- Outer glow — tight, vivid -->
-  <rect x="3" y="3" width="194" height="194" rx="44"
-        fill="#7060f0" opacity="0.40" filter="url(#outerGlowTight)"/>
-
   <!-- Background -->
   <rect width="200" height="200" fill="#05050a" rx="46"/>
 
   <g clip-path="url(#round)">
     <!-- Ambient glow -->
     <circle cx="100" cy="104" r="92" fill="url(#ambient)" filter="url(#glow)"/>
-
-    <!-- Sound-wave rings -->
-    <circle cx="100" cy="100" r="84" fill="none" stroke="#6c6ce8" stroke-width="0.9" opacity="0.22"/>
-    <circle cx="100" cy="100" r="95" fill="none" stroke="#5555cc" stroke-width="0.7" opacity="0.12"/>
-    <circle cx="100" cy="100" r="106" fill="none" stroke="#4444b0" stroke-width="0.5" opacity="0.06"/>
 
     <!-- Sphere corona — wide bloom -->
     <circle cx="100" cy="100" r="80" fill="#5040d8" opacity="0.55" filter="url(#corona)"/>

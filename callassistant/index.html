@@ -362,15 +362,13 @@
     font-size: 9px; font-weight: 700;
     font-family: 'JetBrains Mono', monospace;
     letter-spacing: 0.05em;
-    color: var(--accent);
-    background: var(--accent-dim);
-    border: 1px solid rgba(93,202,165,0.25);
     border-radius: 4px;
     padding: 2px 5px;
     flex-shrink: 0;
     margin-top: 3px;
     min-width: 24px;
     text-align: center;
+    border: 1px solid transparent;
   }
   .turn-badge.pending { color: var(--text3); background: var(--bg3); border-color: var(--border); }
   .turn-text { font-size: 15px; line-height: 1.65; color: var(--text); }
@@ -653,6 +651,21 @@ let lastFinalTime = 0;
 const TURN_PAUSE_MS = 2200;
 let translateTimeout = null;
 
+const SPEAKER_PALETTE = [
+  { color: '#5DCAA5', bg: 'rgba(93,202,165,0.14)',  border: 'rgba(93,202,165,0.3)'  },
+  { color: '#50A0FF', bg: 'rgba(80,160,255,0.14)',  border: 'rgba(80,160,255,0.3)'  },
+  { color: '#EF9F27', bg: 'rgba(239,159,39,0.14)',  border: 'rgba(239,159,39,0.3)'  },
+  { color: '#C084FC', bg: 'rgba(192,132,252,0.14)', border: 'rgba(192,132,252,0.3)' },
+  { color: '#F87171', bg: 'rgba(248,113,113,0.14)', border: 'rgba(248,113,113,0.3)' },
+  { color: '#34D399', bg: 'rgba(52,211,153,0.14)',  border: 'rgba(52,211,153,0.3)'  },
+];
+
+function speakerStyle(speaker) {
+  if (speaker === 'S?') return '';
+  const c = SPEAKER_PALETTE[(parseInt(speaker.slice(1)) - 1) % SPEAKER_PALETTE.length];
+  return `style="color:${c.color};background:${c.bg};border-color:${c.border}"`;
+}
+
 function escapeHtml(t) {
   return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
@@ -662,7 +675,7 @@ function renderTranscript(interim = '') {
   transcriptBox.className = 'panel-text';
   const html = turns.map(t =>
     `<div class="turn">
-       <span class="turn-badge${t.speaker === 'S?' ? ' pending' : ''}">${t.speaker}</span>
+       <span class="turn-badge${t.speaker === 'S?' ? ' pending' : ''}" ${speakerStyle(t.speaker)}>${t.speaker}</span>
        <span class="turn-text">${escapeHtml(t.text)}</span>
      </div>`
   ).join('');

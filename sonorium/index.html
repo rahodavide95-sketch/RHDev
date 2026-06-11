@@ -486,6 +486,21 @@ let globalAnalyser = null;
     breathAmp:Math.random()*.13,breathPhase:Math.random()*Math.PI*2,breathSpeed:.3+Math.random()*1.4
   }));
 
+  // ── STARFIELD ──────────────────────────────────────────────
+  const stars=Array.from({length:380},()=>{
+    const t=Math.random()*Math.random(); // biased toward small/dim
+    return{
+      px:Math.random(),py:Math.random(),
+      r:0.35+t*1.85,
+      baseOp:0.05+t*0.75,
+      phase:Math.random()*Math.PI*2,
+      speed:0.0005+Math.random()*0.0018,
+      amp:0.05+Math.random()*0.28,
+      warm:Math.random()<0.13,   // warm yellow-white
+      blue:Math.random()<0.11,   // blue-white hot star
+    };
+  });
+
   // Galaxy / Milky Way system
   const gals=[];
   let nextGalAt=18+Math.random()*35;
@@ -606,6 +621,29 @@ let globalAnalyser = null;
 
     const sizeB=1+bass*2.4+rms*2,alphaB=1+rms*7+bass*4.5;
     const speedB=1+mid*11+rms*5.5,lineB=1+rms*4,floatB=1+high*5.5+rms*3;
+
+    // Stars
+    const sBright=1+bass*0.5+rms*0.35;
+    for(const s of stars){
+      s.phase+=s.speed;
+      const op=Math.max(0,Math.min(1,(s.baseOp+Math.sin(s.phase)*s.amp)*sBright));
+      if(op<0.02)continue;
+      const x=s.px*cW,y=s.py*cH;
+      const sr=s.warm?255:s.blue?185:225+Math.round(s.baseOp*30);
+      const sg=s.warm?230:s.blue?200:230+Math.round(s.baseOp*25);
+      const sb=s.warm?170:s.blue?255:255;
+      if(s.r>1.15){
+        // Bright star: soft radial glow
+        const gr=ctx.createRadialGradient(x,y,0,x,y,s.r*4.5);
+        gr.addColorStop(0,`rgba(${sr},${sg},${sb},${(op*0.85).toFixed(3)})`);
+        gr.addColorStop(0.35,`rgba(${sr},${sg},${sb},${(op*0.18).toFixed(3)})`);
+        gr.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.fillStyle=gr;
+        ctx.beginPath();ctx.arc(x,y,s.r*4.5,0,Math.PI*2);ctx.fill();
+      }
+      ctx.fillStyle=`rgba(${sr},${sg},${sb},${op.toFixed(3)})`;
+      ctx.beginPath();ctx.arc(x,y,s.r,0,Math.PI*2);ctx.fill();
+    }
 
     // Orbs
     for(const orb of orbs){

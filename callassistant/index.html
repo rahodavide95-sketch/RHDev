@@ -316,7 +316,15 @@
   .interim { color: var(--text3); font-style: italic; }
 
   .panel.translation { background: var(--bg3); }
-  .panel.response { border-color: rgba(93,202,165,0.15); }
+  .panel.response {
+    border-color: rgba(80,160,255,0.35);
+    box-shadow: 0 0 0 0 rgba(80,160,255,0);
+    animation: pulse-blue 3s ease-in-out infinite;
+  }
+  @keyframes pulse-blue {
+    0%, 100% { border-color: rgba(80,160,255,0.25); box-shadow: 0 0 8px rgba(80,160,255,0.05); }
+    50%       { border-color: rgba(80,160,255,0.55); box-shadow: 0 0 18px rgba(80,160,255,0.18); }
+  }
 
   .spinner {
     display: inline-block;

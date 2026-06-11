@@ -579,6 +579,96 @@ let globalAnalyser = null;
   window.addAmbientFlash=function(x,y){flashes.push({x,y,r:10,op:.38,speed:6+Math.random()*5});};
   window.setGenerating=function(on){window._sonGen=on;};
 
+  // ── UNIVERSE SYSTEM ───────────────────────────────────────────────────────
+  const _U_KEY='sn_planets';
+  const _U_F=700;
+  let _uniPlanets=[];
+  let _uniZoom=0,_uniTZ=0;
+  let _uniFlash=null;
+
+  (function(){ try{const s=localStorage.getItem(_U_KEY);if(s)_uniPlanets=JSON.parse(s);}catch(e){} })();
+  function _uSave(){ try{localStorage.setItem(_U_KEY,JSON.stringify(_uniPlanets.slice(-60)));}catch(e){} }
+  function _uPos(){
+    const a=Math.random()*Math.PI*2,e=(Math.random()-.5)*Math.PI*.55,r=1900+Math.random()*2100;
+    return{x:Math.cos(e)*Math.cos(a)*r,y:Math.sin(e)*r*.42,z:700+Math.cos(e)*Math.sin(a)*r*.88+(Math.random()-.5)*500};
+  }
+
+  window.uniAddPlanet=function(data){
+    if(!data?.name)return;
+    for(const p of _uniPlanets){if(!p.x&&!p.y&&!p.z){const q=_uPos();p.x=q.x;p.y=q.y;p.z=q.z;}}
+    _uniPlanets.push({id:Date.now(),data,x:0,y:0,z:0});
+    if(_uniPlanets.length>60)_uniPlanets.shift();
+    _uSave();
+  };
+  window.uniSetActive=function(id){
+    const p=_uniPlanets.find(p=>p.id===id);
+    if(p){for(const q of _uniPlanets){if(!q.x&&!q.y&&!q.z&&q!==p){const r=_uPos();q.x=r.x;q.y=r.y;q.z=r.z;}}p.x=0;p.y=0;p.z=0;_uSave();}
+  };
+  window.setUniZoom=function(z){_uniTZ=Math.max(0,Math.min(1,z));};
+  window.getUniZoom=function(){return _uniZoom;};
+  window.uniFlashPlanet=function(planet){if(planet)_uniFlash={planet,life:0,maxLife:24};};
+  window.uniHitTest=function(cx,cy){
+    const v=window._uniVis;if(!v)return null;
+    let best=null,bd=Infinity;
+    for(const e of v){const dx=cx-e.sx,dy=cy-e.sy,d=Math.sqrt(dx*dx+dy*dy);if(d<Math.max(e.sr*2.4,30)&&d<bd){bd=d;best=e.p;}}
+    return best;
+  };
+
+  function _drawUni(){
+    if(_uniZoom<0.02)return;
+    const W=cW,H=cH;
+    const alpha=Math.min(1,_uniZoom/.26);
+    const camZ=-500-_uniZoom*3500;
+    const vis=[];
+    for(const p of _uniPlanets){
+      const dz=p.z-camZ;if(dz<60)continue;
+      const sx=p.x*_U_F/dz+W*.5,sy=p.y*_U_F/dz+H*.5;
+      const c=p.data.color||{};
+      const pr=Math.min(255,Math.max(0,c.ar||120)),pg=Math.min(255,Math.max(0,c.ag||80)),pb=Math.min(255,Math.max(0,c.ab||220));
+      const sr=Math.max(2.5,Math.min(70,40*_U_F/dz));
+      vis.push({p,sx,sy,dz,sr,pr,pg,pb});
+    }
+    vis.sort((a,b)=>b.dz-a.dz);
+    window._uniVis=vis;
+    for(const v of vis){
+      const{sx,sy,sr,pr,pg,pb,dz,p}=v;
+      if(sx<-sr*4||sx>W+sr*4||sy<-sr*4||sy>H+sr*4)continue;
+      const df=Math.min(1,Math.max(0,1-(dz-500)/9500));
+      const op=alpha*Math.max(.07,df);if(op<.015)continue;
+      let fb=0;
+      if(_uniFlash&&_uniFlash.planet===p)fb=Math.max(0,1-_uniFlash.life/_uniFlash.maxLife);
+      // Glow
+      const gr=ctx.createRadialGradient(sx,sy,sr*.4,sx,sy,sr*3.6);
+      const gop=op*(.36+fb*.5);
+      gr.addColorStop(0,`rgba(${pr},${pg},${pb},${gop.toFixed(3)})`);
+      gr.addColorStop(.38,`rgba(${pr},${pg},${pb},${(gop*.18).toFixed(3)})`);
+      gr.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=gr;ctx.beginPath();ctx.arc(sx,sy,sr*3.6,0,Math.PI*2);ctx.fill();
+      // Body
+      const sg=ctx.createRadialGradient(sx-sr*.3,sy-sr*.28,sr*.06,sx,sy,sr);
+      sg.addColorStop(0,`rgba(255,255,255,${(op*(.42+fb*.3)).toFixed(3)})`);
+      sg.addColorStop(.33,`rgba(${pr},${pg},${pb},${(op*(1+fb*.4)).toFixed(3)})`);
+      sg.addColorStop(1,`rgba(0,0,0,${(op*.9).toFixed(3)})`);
+      ctx.fillStyle=sg;ctx.beginPath();ctx.arc(sx,sy,sr,0,Math.PI*2);ctx.fill();
+      // Label
+      if(sr>5&&alpha>.17){
+        const la=Math.min(1,(alpha-.17)/.28)*df;
+        if(la>.04){
+          const fs=Math.max(9,Math.min(13,sr*.62));
+          ctx.save();ctx.font=`${fs}px 'Space Grotesk',sans-serif`;ctx.textAlign='center';
+          ctx.fillStyle=`rgba(255,255,255,${(la*.76).toFixed(3)})`;
+          ctx.fillText(p.data.name||'',sx,sy+sr+fs+2);ctx.restore();
+        }
+      }
+    }
+    if(_uniFlash){_uniFlash.life++;if(_uniFlash.life>=_uniFlash.maxLife)_uniFlash=null;}
+    if(alpha>.72){
+      ctx.save();ctx.font='11px Inter,sans-serif';ctx.textAlign='center';
+      ctx.fillStyle=`rgba(255,255,255,${((alpha-.72)/.28*.3).toFixed(3)})`;
+      ctx.fillText('tap a planet · tap empty space to return',W*.5,H-20);ctx.restore();
+    }
+  }
+
   // Circular waveform ring
   function drawWaveRing(bR,bG,bB){
     if(!globalAnalyser||!timeData||!au.active)return;
@@ -1026,9 +1116,87 @@ let globalAnalyser = null;
     }
 
     drawWaveRing(bR,bG,bB);
+
+    // Universe zoom lerp + app fade
+    _uniZoom+=(_uniTZ-_uniZoom)*.072;
+    if(_uniZoom<0.003)_uniZoom=0;
+    const _appEl=window._uniApp||(window._uniApp=document.querySelector('.app'));
+    if(_appEl){
+      const fade=_uniZoom*1.75;
+      if(fade>0.005){_appEl.style.opacity=Math.max(0,1-fade).toFixed(3);_appEl.style.pointerEvents=fade>.35?'none':'';}
+      else if(_appEl.style.opacity){_appEl.style.opacity='';_appEl.style.pointerEvents='';}
+    }
+    _drawUni();
   }
   draw();
 })();
+
+// ── UNIVERSE GESTURES ────────────────────────────────────────────────────────
+let _pDist0=null,_pZoom0=0;
+
+document.addEventListener('touchstart',e=>{
+  if(e.touches.length===2){
+    const dx=e.touches[0].clientX-e.touches[1].clientX,dy=e.touches[0].clientY-e.touches[1].clientY;
+    _pDist0=Math.sqrt(dx*dx+dy*dy);
+    _pZoom0=window.getUniZoom?window.getUniZoom():0;
+  }
+},{passive:true});
+
+document.addEventListener('touchmove',e=>{
+  if(e.touches.length!==2||_pDist0===null)return;
+  const dx=e.touches[0].clientX-e.touches[1].clientX,dy=e.touches[0].clientY-e.touches[1].clientY;
+  const d=Math.sqrt(dx*dx+dy*dy);
+  // pinch in (d decreases) = zoom out = enter universe
+  const z=Math.max(0,Math.min(1,_pZoom0+(_pDist0-d)/_pDist0*3.2));
+  if(window.setUniZoom)window.setUniZoom(z);
+},{passive:true});
+
+document.addEventListener('touchend',e=>{if(e.touches.length<2)_pDist0=null;});
+
+document.addEventListener('wheel',e=>{
+  if(!window.setUniZoom||!window.getUniZoom)return;
+  const z=window.getUniZoom();
+  // scroll down (deltaY > 0) = zoom out = enter universe
+  const nz=Math.max(0,Math.min(1,z+e.deltaY*.0012));
+  window.setUniZoom(nz);
+  if(nz>0.01||z>0.01)e.preventDefault();
+},{passive:false});
+
+// Universe click — capture phase fires before sphere click
+document.addEventListener('click',e=>{
+  const z=window.getUniZoom?window.getUniZoom():0;
+  if(z<0.3)return;
+  e.stopPropagation();
+  const planet=window.uniHitTest?window.uniHitTest(e.clientX,e.clientY):null;
+  if(planet){
+    _loadPlanetSound(planet);
+  }else{
+    if(window.setUniZoom)window.setUniZoom(0);
+  }
+},true);
+
+function _loadPlanetSound(planet){
+  if(window.uniFlashPlanet)window.uniFlashPlanet(planet);
+  if(window.uniSetActive)window.uniSetActive(planet.id);
+  if(window.setUniZoom)window.setUniZoom(0);
+  stopActiveSources();
+  isPlaying=false;
+  setTimeout(()=>{
+    const idEl=document.getElementById('sound-identity');
+    const acEl=document.getElementById('actions-wrap');
+    idEl.classList.remove('revealed','suck-in');
+    acEl.classList.remove('revealed','suck-in');
+    divider.style.display='none';
+    current=null;lastBuffer=null;isReversed=false;playbackSpeed=1.0;
+    nameEl.textContent='—';metaEl.textContent='—';
+    tagsEl.innerHTML='';descEl.textContent='';
+    techSheet.classList.remove('visible');
+    const cx=window.innerWidth*.5,cy=window.innerHeight*.5;
+    applyGeneratedSound(planet.data,cx,cy,true);
+    isLoading=false;
+    if(window.setGenerating)window.setGenerating(false);
+  },420);
+}
 
 // ── WEB AUDIO SYNTHESIS ───────────────────────────────────────
 let audioCtx = null;
@@ -1679,7 +1847,7 @@ async function spin(evt,promptFn=buildPrompt){
   if(window.setGenerating) window.setGenerating(false);
 }
 
-function applyGeneratedSound(data,px,py){
+function applyGeneratedSound(data,px,py,fromHistory){
   current=data;
   document.getElementById('sound-identity').classList.add('revealed');
   document.getElementById('actions-wrap').classList.add('revealed');
@@ -1713,6 +1881,7 @@ function applyGeneratedSound(data,px,py){
       }
     }).catch(()=>{});
   }
+  if(!fromHistory&&window.uniAddPlanet)window.uniAddPlanet(data);
 }
 
 // ── LANGUAGE STATE & TECH SHEET ──────────────────────────────

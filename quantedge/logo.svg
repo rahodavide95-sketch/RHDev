@@ -1,62 +1,55 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#060d1f"/>
-      <stop offset="100%" stop-color="#0c1a3a"/>
+      <stop offset="0%" stop-color="#0a1628"/>
+      <stop offset="100%" stop-color="#0f2050"/>
     </linearGradient>
-    <linearGradient id="legs" x1="0%" y1="0%" x2="0%" y2="100%">
+    <linearGradient id="lg1" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="100%" stop-color="#2563eb"/>
+      <stop offset="50%" stop-color="#93c5fd"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
     </linearGradient>
     <linearGradient id="trend" x1="0%" y1="100%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#2563eb"/>
-      <stop offset="50%" stop-color="#60a5fa"/>
       <stop offset="100%" stop-color="#ffffff"/>
     </linearGradient>
-    <radialGradient id="apexglow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%"   stop-color="#ffffff"/>
-      <stop offset="40%"  stop-color="#93c5fd" stop-opacity="0.6"/>
-      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
-    </radialGradient>
-    <radialGradient id="dotglow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%"   stop-color="#ffffff"/>
-      <stop offset="50%"  stop-color="#93c5fd" stop-opacity="0.5"/>
-      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
-    </radialGradient>
-    <filter id="glow-lg">
-      <feGaussianBlur stdDeviation="16"/>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
-    <filter id="glow-sm">
-      <feGaussianBlur stdDeviation="7"/>
+    <filter id="bigglow">
+      <feGaussianBlur stdDeviation="18" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
   </defs>
 
   <!-- Background -->
   <rect width="512" height="512" rx="108" fill="url(#bg)"/>
 
-  <!-- A — left leg -->
-  <path d="M256,68 L82,444 L138,444 L256,172 Z" fill="url(#legs)"/>
-  <!-- A — right leg -->
-  <path d="M256,68 L430,444 L374,444 L256,172 Z" fill="url(#legs)"/>
-
-  <!-- Apex glow at top of A -->
-  <circle cx="256" cy="68" r="70" fill="url(#apexglow)" filter="url(#glow-lg)" opacity="0.9"/>
-
-  <!-- Trend line (replaces flat crossbar) — rises left to right -->
+  <!-- Isosceles triangle — two sides only, no base (= A shape) -->
   <!-- Glow layer -->
-  <polyline points="118,320 178,295 232,305 290,268 358,232"
-    stroke="#60a5fa" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"
-    filter="url(#glow-sm)" opacity="0.5"/>
-  <!-- Main line -->
-  <polyline points="118,320 178,295 232,305 290,268 358,232"
-    stroke="url(#trend)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+  <polyline points="80,432 256,80 432,432"
+    stroke="rgba(59,130,246,0.3)" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"
+    filter="url(#bigglow)"/>
+  <!-- Main stroke -->
+  <polyline points="80,432 256,80 432,432"
+    stroke="url(#lg1)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
 
-  <!-- Dots on trend line -->
-  <circle cx="118" cy="320" r="8"  fill="#3b82f6"/>
-  <circle cx="178" cy="295" r="8"  fill="#60a5fa"/>
-  <circle cx="232" cy="305" r="8"  fill="#60a5fa"/>
-  <circle cx="290" cy="268" r="9"  fill="#93c5fd"/>
-  <!-- Final dot glow -->
-  <circle cx="358" cy="232" r="26" fill="url(#dotglow)" filter="url(#glow-sm)" opacity="0.8"/>
-  <circle cx="358" cy="232" r="12" fill="white"/>
+  <!-- Trend line as crossbar — rising left to right -->
+  <!-- Glow -->
+  <polyline points="130,318 210,284 272,298 358,244"
+    stroke="#60a5fa" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"
+    opacity="0.4" filter="url(#bigglow)"/>
+  <!-- Main -->
+  <polyline points="130,318 210,284 272,298 358,244"
+    stroke="url(#trend)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Apex dot -->
+  <circle cx="256" cy="80" r="50" fill="url(#lg1)" opacity="0.15" filter="url(#bigglow)"/>
+  <circle cx="256" cy="80" r="18" fill="white" filter="url(#glow)" opacity="0.6"/>
+  <circle cx="256" cy="80" r="10" fill="white"/>
+
+  <!-- Trend end dot -->
+  <circle cx="358" cy="244" r="32" fill="#93c5fd" opacity="0.2" filter="url(#bigglow)"/>
+  <circle cx="358" cy="244" r="11" fill="white"/>
 </svg>

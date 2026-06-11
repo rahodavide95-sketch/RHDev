@@ -3,32 +3,22 @@
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#060d1f"/><stop offset="100%" stop-color="#0c1a3a"/>
     </linearGradient>
-    <linearGradient id="legs" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#dbeafe"/><stop offset="100%" stop-color="#1e40af"/>
+    <linearGradient id="a" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#60a5fa"/><stop offset="100%" stop-color="#1e3a8a"/>
     </linearGradient>
     <linearGradient id="tr" x1="0%" y1="100%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#1d4ed8"/><stop offset="100%" stop-color="#ffffff"/>
     </linearGradient>
-    <filter id="g"><feGaussianBlur stdDeviation="14"/></filter>
-    <filter id="gs"><feGaussianBlur stdDeviation="5"/></filter>
-    <clipPath id="clip">
-      <path d="M256,58 L76,448 L436,448 Z"/>
-    </clipPath>
   </defs>
   <rect width="512" height="512" rx="108" fill="url(#bg)"/>
-  <!-- Rounded-corner A via stroke -->
-  <path d="M256,68 L90,444 L166,444 L256,206 L346,444 L422,444 L256,68Z" fill="none" stroke="url(#legs)" stroke-width="52" stroke-linejoin="round" stroke-linecap="round"/>
-  <!-- Mask internal area white fill gap -->
-  <path d="M256,68 L90,444 L166,444 L256,206 L346,444 L422,444 L256,68Z" fill="url(#bg)" stroke="url(#bg)" stroke-width="20" stroke-linejoin="round"/>
-  <!-- Trend line clipped inside A shape area -->
-  <g clip-path="url(#clip)">
-    <polyline points="104,318 174,282 248,298 316,256 404,208" stroke="#60a5fa" stroke-width="22" stroke-linecap="round" stroke-linejoin="round" opacity="0.35" filter="url(#g)"/>
-    <polyline points="104,318 174,282 248,298 316,256 404,208" stroke="url(#tr)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
-  </g>
-  <!-- Apex -->
-  <circle cx="256" cy="68" r="44" fill="#60a5fa" opacity="0.2" filter="url(#g)"/>
-  <circle cx="256" cy="68" r="15" fill="white"/>
-  <!-- End dot -->
-  <circle cx="404" cy="208" r="30" fill="white" opacity="0.15" filter="url(#gs)"/>
-  <circle cx="404" cy="208" r="10" fill="white"/>
+  <!-- Very wide, squat, modern A — different proportions -->
+  <path d="M256,96 L48,448 L132,448 L256,226 L380,448 L464,448 Z"
+    fill="none" stroke="url(#a)" stroke-width="36" stroke-linejoin="round"/>
+  <!-- Cover inner to make hollow -->
+  <path d="M256,96 L48,448 L132,448 L256,226 L380,448 L464,448 Z"
+    fill="url(#bg)" stroke="url(#bg)" stroke-width="10" stroke-linejoin="round"/>
+  <!-- Trend: stepped upward — like a staircase breakout -->
+  <polyline points="100,330 100,296 186,296 186,256 282,256 282,214 406,214"
+    stroke="url(#tr)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="406" cy="214" r="14" fill="white"/>
 </svg>

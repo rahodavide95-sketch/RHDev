@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#060d1f"/><stop offset="100%" stop-color="#0c1a3a"/>
+    </linearGradient>
+    <linearGradient id="left" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#eff6ff"/><stop offset="100%" stop-color="#2563eb"/>
+    </linearGradient>
+    <linearGradient id="right" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#bfdbfe"/><stop offset="100%" stop-color="#1e3a8a"/>
+    </linearGradient>
+    <linearGradient id="tr" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1d4ed8"/><stop offset="50%" stop-color="#38bdf8"/><stop offset="100%" stop-color="#ffffff"/>
+    </linearGradient>
+    <filter id="g"><feGaussianBlur stdDeviation="16"/></filter>
+    <filter id="gs"><feGaussianBlur stdDeviation="7"/></filter>
+  </defs>
+  <rect width="512" height="512" rx="108" fill="url(#bg)"/>
+  <!-- A with cut at top — chamfered apex -->
+  <path d="M256,72 L80,444 L150,444 L256,192 L362,444 L432,444 L256,72Z" fill="none" stroke="url(#left)" stroke-width="22" stroke-linejoin="miter"/>
+  <!-- Inner highlight on left leg only -->
+  <path d="M256,72 L80,444 L150,444 L256,192Z" fill="url(#left)" opacity="0.12"/>
+  <!-- Trend line — extends beyond right leg, dramatic exit -->
+  <polyline points="114,310 190,272 256,288 328,248 430,186" stroke="#60a5fa" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" opacity="0.3" filter="url(#g)"/>
+  <polyline points="114,310 190,272 256,288 328,248 430,186" stroke="url(#tr)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Tick marks on trend (like a real chart) -->
+  <line x1="190" y1="262" x2="190" y2="282" stroke="rgba(147,197,253,0.5)" stroke-width="4" stroke-linecap="round"/>
+  <line x1="256" y1="278" x2="256" y2="298" stroke="rgba(147,197,253,0.5)" stroke-width="4" stroke-linecap="round"/>
+  <line x1="328" y1="238" x2="328" y2="258" stroke="rgba(147,197,253,0.5)" stroke-width="4" stroke-linecap="round"/>
+  <!-- Apex — sharp point glow -->
+  <circle cx="256" cy="72" r="64" fill="white" opacity="0.04" filter="url(#g)"/>
+  <circle cx="256" cy="72" r="22" fill="white" opacity="0.3" filter="url(#gs)"/>
+  <circle cx="256" cy="72" r="13" fill="white"/>
+  <!-- End — big burst -->
+  <circle cx="430" cy="186" r="56" fill="#38bdf8" opacity="0.12" filter="url(#g)"/>
+  <circle cx="430" cy="186" r="22" fill="white" opacity="0.25" filter="url(#gs)"/>
+  <circle cx="430" cy="186" r="13" fill="white"/>
+  <!-- Arrow up from end dot -->
+  <path d="M430,160 L416,178 M430,160 L444,178" stroke="white" stroke-width="8" stroke-linecap="round" opacity="0.85"/>
+</svg>

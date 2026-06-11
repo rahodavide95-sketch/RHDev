@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#060d1f"/><stop offset="100%" stop-color="#0c1a3a"/>
+    </linearGradient>
+    <linearGradient id="legs" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#e0eeff"/><stop offset="100%" stop-color="#1e40af"/>
+    </linearGradient>
+    <linearGradient id="tr" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1d4ed8"/><stop offset="100%" stop-color="#ffffff"/>
+    </linearGradient>
+    <filter id="g"><feGaussianBlur stdDeviation="10"/></filter>
+  </defs>
+  <rect width="512" height="512" rx="108" fill="url(#bg)"/>
+  <!-- Thin outline A -->
+  <path d="M256,72 L88,448 L144,448 L256,190 L368,448 L424,448 L256,72Z" fill="none" stroke="url(#legs)" stroke-width="18" stroke-linejoin="round"/>
+  <!-- Trend line as crossbar -->
+  <polyline points="126,318 186,288 246,300 306,262 380,220" stroke="#60a5fa" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" filter="url(#g)" opacity="0.5"/>
+  <polyline points="126,318 186,288 246,300 306,262 380,220" stroke="url(#tr)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Apex -->
+  <circle cx="256" cy="72" r="48" fill="#3b82f6" filter="url(#g)" opacity="0.4"/>
+  <circle cx="256" cy="72" r="14" fill="white"/>
+  <!-- End dot -->
+  <circle cx="380" cy="220" r="28" fill="#60a5fa" filter="url(#g)" opacity="0.5"/>
+  <circle cx="380" cy="220" r="10" fill="white"/>
+</svg>

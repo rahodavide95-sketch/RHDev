@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#060d1f"/><stop offset="100%" stop-color="#0c1a3a"/>
+    </linearGradient>
+    <linearGradient id="fill" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#1e3a8a" stop-opacity="0.1"/>
+    </linearGradient>
+    <linearGradient id="stroke" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#93c5fd"/><stop offset="100%" stop-color="#1d4ed8"/>
+    </linearGradient>
+    <linearGradient id="tr" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2563eb"/><stop offset="100%" stop-color="#fff"/>
+    </linearGradient>
+    <filter id="g"><feGaussianBlur stdDeviation="12"/></filter>
+  </defs>
+  <rect width="512" height="512" rx="120" fill="url(#bg)"/>
+  <!-- Filled A with stroke -->
+  <path d="M256,64 L80,448 L148,448 L256,186 L364,448 L432,448 Z" fill="url(#fill)" stroke="url(#stroke)" stroke-width="6" stroke-linejoin="round"/>
+  <!-- Trend replaces crossbar, exits right leg -->
+  <polyline points="122,310 192,278 254,292 318,252 410,202" stroke="#93c5fd" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" opacity="0.3" filter="url(#g)"/>
+  <polyline points="122,310 192,278 254,292 318,252 410,202" stroke="url(#tr)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Apex glow -->
+  <circle cx="256" cy="64" r="60" fill="white" opacity="0.06" filter="url(#g)"/>
+  <circle cx="256" cy="64" r="16" fill="white" opacity="0.9"/>
+  <!-- Trend end dot -->
+  <circle cx="410" cy="202" r="32" fill="white" opacity="0.08" filter="url(#g)"/>
+  <circle cx="410" cy="202" r="11" fill="white"/>
+</svg>

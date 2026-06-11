@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#060d1f"/><stop offset="100%" stop-color="#0c1a3a"/>
+    </linearGradient>
+    <linearGradient id="left" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#3b82f6"/>
+    </linearGradient>
+    <linearGradient id="right" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#93c5fd"/><stop offset="100%" stop-color="#1e40af"/>
+    </linearGradient>
+    <linearGradient id="tr" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1d4ed8"/><stop offset="60%" stop-color="#60a5fa"/><stop offset="100%" stop-color="#fff"/>
+    </linearGradient>
+    <filter id="g"><feGaussianBlur stdDeviation="14"/></filter>
+    <filter id="gs"><feGaussianBlur stdDeviation="6"/></filter>
+  </defs>
+  <rect width="512" height="512" rx="108" fill="url(#bg)"/>
+  <!-- Bold solid A — two separate legs with different gradients -->
+  <path d="M256,58 L76,448 L140,448 L256,170 Z" fill="url(#left)"/>
+  <path d="M256,58 L436,448 L372,448 L256,170 Z" fill="url(#right)"/>
+  <!-- Trend line — exits both legs, rises sharply -->
+  <polyline points="110,308 182,270 256,284 330,242 402,192" stroke="white" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" opacity="0.2" filter="url(#g)"/>
+  <polyline points="110,308 182,270 256,284 330,242 402,192" stroke="url(#tr)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Apex dot -->
+  <circle cx="256" cy="58" r="50" fill="white" opacity="0.08" filter="url(#g)"/>
+  <circle cx="256" cy="58" r="18" fill="white" filter="url(#gs)" opacity="0.6"/>
+  <circle cx="256" cy="58" r="11" fill="white"/>
+  <!-- End dot with arrow -->
+  <circle cx="402" cy="192" r="36" fill="#93c5fd" opacity="0.15" filter="url(#g)"/>
+  <circle cx="402" cy="192" r="12" fill="white"/>
+  <path d="M402,168 L390,184 M402,168 L414,184" stroke="white" stroke-width="7" stroke-linecap="round" opacity="0.8"/>
+</svg>

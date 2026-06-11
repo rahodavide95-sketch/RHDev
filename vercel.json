@@ -1,5 +1,5 @@
 {
   "redirects": [
-    { "source": "/", "destination": "/drift/", "permanent": false }
+    { "source": "/", "destination": "/sonorium/", "permanent": false }
   ]
 }

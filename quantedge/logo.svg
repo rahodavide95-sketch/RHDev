@@ -4,25 +4,20 @@
       <stop offset="0%" stop-color="#0a1628"/>
       <stop offset="100%" stop-color="#0f2050"/>
     </linearGradient>
-    <linearGradient id="line" x1="0%" y1="100%" x2="100%" y2="0%">
+    <linearGradient id="c1" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#1d4ed8"/>
+      <stop offset="100%" stop-color="#60a5fa"/>
+    </linearGradient>
+    <linearGradient id="c2" x1="0%" y1="100%" x2="0%" y2="0%">
       <stop offset="0%" stop-color="#2563eb"/>
-      <stop offset="60%" stop-color="#93c5fd"/>
-      <stop offset="100%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#93c5fd"/>
     </linearGradient>
-    <linearGradient id="fill" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.25"/>
-      <stop offset="100%" stop-color="#1d4ed8" stop-opacity="0"/>
-    </linearGradient>
-    <linearGradient id="arrow" x1="0%" y1="100%" x2="0%" y2="0%">
-      <stop offset="0%" stop-color="#60a5fa"/>
+    <linearGradient id="c3" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#3b82f6"/>
       <stop offset="100%" stop-color="#ffffff"/>
     </linearGradient>
     <filter id="glow">
-      <feGaussianBlur stdDeviation="8" result="blur"/>
-      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-    <filter id="bigglow">
-      <feGaussianBlur stdDeviation="18" result="blur"/>
+      <feGaussianBlur stdDeviation="10" result="blur"/>
       <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
   </defs>
@@ -30,23 +25,27 @@
   <!-- Background -->
   <rect width="512" height="512" rx="108" fill="url(#bg)"/>
 
-  <!-- Area fill under chart line -->
-  <path d="M64 390 L130 320 L190 345 L255 260 L310 290 L370 190 L420 100 L420 420 L64 420 Z" fill="url(#fill)"/>
+  <!-- Candlestick 1 (left, short) -->
+  <line x1="112" y1="330" x2="112" y2="360" stroke="#60a5fa" stroke-width="6" stroke-linecap="round"/>
+  <line x1="112" y1="290" x2="112" y2="268" stroke="#60a5fa" stroke-width="6" stroke-linecap="round"/>
+  <rect x="88" y="290" width="48" height="40" rx="8" fill="url(#c1)"/>
 
-  <!-- Chart line glow -->
-  <polyline points="64,390 130,320 190,345 255,260 310,290 370,190 420,100"
-    stroke="#60a5fa" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" opacity="0.25" filter="url(#bigglow)"/>
+  <!-- Candlestick 2 (mid, medium) -->
+  <line x1="256" y1="280" x2="256" y2="310" stroke="#93c5fd" stroke-width="6" stroke-linecap="round"/>
+  <line x1="256" y1="200" x2="256" y2="178" stroke="#93c5fd" stroke-width="6" stroke-linecap="round"/>
+  <rect x="232" y="200" width="48" height="80" rx="8" fill="url(#c2)"/>
 
-  <!-- Chart line -->
-  <polyline points="64,390 130,320 190,345 255,260 310,290 370,190 420,100"
-    stroke="url(#line)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Candlestick 3 (right, tall) — glowing -->
+  <rect x="376" y="120" width="48" height="130" rx="8" fill="url(#c3)" filter="url(#glow)" opacity="0.4"/>
+  <line x1="400" y1="260" x2="400" y2="290" stroke="white" stroke-width="6" stroke-linecap="round"/>
+  <line x1="400" y1="120" x2="400" y2="90" stroke="white" stroke-width="6" stroke-linecap="round"/>
+  <rect x="376" y="120" width="48" height="130" rx="8" fill="url(#c3)"/>
 
-  <!-- Apex arrow pointing up -->
-  <path d="M420,100 L395,148 M420,100 L445,148" stroke="white" stroke-width="14" stroke-linecap="round" opacity="0.6"/>
+  <!-- Apex arrow on top of tallest candle -->
+  <path d="M400 72 L378 102 M400 72 L422 102" stroke="white" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="400" cy="72" r="10" fill="white" filter="url(#glow)"/>
+  <circle cx="400" cy="72" r="6" fill="white"/>
 
-  <!-- Apex dot glow -->
-  <circle cx="420" cy="100" r="30" fill="#93c5fd" opacity="0.3" filter="url(#bigglow)"/>
-  <!-- Apex dot -->
-  <circle cx="420" cy="100" r="20" fill="url(#arrow)" filter="url(#glow)"/>
-  <circle cx="420" cy="100" r="9" fill="white"/>
+  <!-- Baseline -->
+  <line x1="64" y1="420" x2="448" y2="420" stroke="rgba(96,165,250,0.2)" stroke-width="3" stroke-linecap="round"/>
 </svg>

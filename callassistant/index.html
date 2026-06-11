@@ -449,29 +449,29 @@
           </defs>
           <rect width="40" height="40" rx="11" fill="url(#lg)"/>
 
-          <!-- Speech bubble 1 — person A, upper-left, tail bottom-left -->
-          <path d="M7 4H22Q26 4 26 8V15Q26 19 22 19H10L5 24L8 19H7Q3 19 3 15V8Q3 4 7 4Z" fill="white" opacity="0.95"/>
+          <!-- Person A (left) — head + shoulders -->
+          <circle cx="14" cy="12" r="5" fill="white" opacity="0.95"/>
+          <path d="M4 28 Q14 20 24 28" fill="white" opacity="0.9"/>
 
-          <!-- Speech bubble 2 — person B, lower-right, tail bottom-right -->
-          <path d="M18 21H33Q37 21 37 25V32Q37 36 33 36L35 39L29 36H18Q14 36 14 32V25Q14 21 18 21Z" fill="white" opacity="0.88"/>
+          <!-- Person B (right, semi-overlapping) — head + shoulders -->
+          <circle cx="25" cy="15" r="5" fill="white" opacity="0.82"/>
+          <path d="M15 30 Q25 22 35 30" fill="white" opacity="0.75"/>
 
-          <!-- Central AI sparkle — 4-pointed star at meeting point -->
-          <path d="M20 15.5L20.8 18.5L20 22.5L19.2 18.5Z M16 19.5L19 20.3L24 19.5L19 18.7Z" fill="white"/>
+          <!-- Speech bubble coming from the pair -->
+          <path d="M18 6 H33 Q37 6 37 10 V18 Q37 22 33 22 H26 L23 26 L23 22 H18 Q14 22 14 18 V10 Q14 6 18 6 Z" fill="white" opacity="0.97"/>
 
-          <!-- Star cluster upper-right (AI / stelle) -->
-          <path d="M32 6L32.5 7.5L32 10L31.5 7.5Z M30 8L31.5 8.5L34 8L31.5 7.5Z" fill="white" opacity="0.72"/>
-          <circle cx="35.5" cy="11.5" r="0.7" fill="white" opacity="0.5"/>
-          <circle cx="28"   cy="4.5"  r="0.55" fill="white" opacity="0.42"/>
+          <!-- AI sparkle — 4-pointed star inside bubble -->
+          <path d="M25.5 10 L26.5 13.5 L25.5 17 L24.5 13.5 Z M21.5 13.5 L24.5 12.6 L29.5 13.5 L24.5 14.4 Z" fill="url(#lg)"/>
 
-          <!-- Star cluster lower-left (AI / stelle) -->
-          <path d="M8 30.5L8.4 32L8 34.5L7.6 32Z M6 32L7.5 32.4L10 32L7.5 31.6Z" fill="white" opacity="0.62"/>
-          <circle cx="4.5"  cy="36.5" r="0.7" fill="white" opacity="0.44"/>
-          <circle cx="11.5" cy="37.5" r="0.55" fill="white" opacity="0.36"/>
+          <!-- Small accent sparkle dots inside bubble -->
+          <circle cx="22" cy="10.5" r="1" fill="url(#lg)" opacity="0.7"/>
+          <circle cx="29" cy="10.5" r="1" fill="url(#lg)" opacity="0.7"/>
+          <circle cx="32" cy="14"   r="0.7" fill="url(#lg)" opacity="0.55"/>
         </svg>
       </div>
       <div>
         <div class="logo-name">Call Assistant</div>
-        <div class="logo-sub">Speak · Translate · Reply</div>
+        <div class="logo-sub" id="logoSub">Speak · Translate · Reply</div>
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:10px;">
@@ -537,7 +537,7 @@
         </button>
         <button class="btn-copy" id="btnCopy">
           <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-          Copia
+          <span id="copyTxt">Copia</span>
         </button>
       </div>
     </div>
@@ -554,7 +554,7 @@
 <div class="key-overlay hidden" id="keyOverlay">
   <div class="key-box">
     <p class="key-title">Anthropic API Key</p>
-    <p class="key-sub">Salvata nel browser (localStorage). Non viene mai inviata a terzi.</p>
+    <p class="key-sub" id="keySubText">Salvata nel browser (localStorage). Non viene mai inviata a terzi.</p>
     <input class="key-input" id="keyInput" type="password" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
     <div class="key-actions">
       <button class="btn-modal" id="btnKeyCancel">Annulla</button>
@@ -564,6 +564,26 @@
 </div>
 
 <script>
+// ── UI STRINGS (device language) ─────────────────────────────
+const UI_STRINGS = {
+  en: { listen:'Listen', stop:'Stop', ready:'Ready', listening:'Listening...', translating:'Translating...', translated:'Translated', generating:'Generating reply...', completed:'Completed', error:'Error', autoOn:'Auto on', autoOff:'Auto off', copy:'Copy', copied:'Copied', transcript:'Transcript', translation:'Translation', suggestedReply:'Suggested reply', keySub:'Saved in browser (localStorage). Never sent to third parties.', cancel:'Cancel', save:'Save', logoSub:'Speak · Translate · Reply' },
+  it: { listen:'Ascolta', stop:'Stop', ready:'Pronto', listening:'In ascolto...', translating:'Traduco...', translated:'Tradotto', generating:'Genero risposta...', completed:'Completato', error:'Errore', autoOn:'Auto on', autoOff:'Auto off', copy:'Copia', copied:'Copiato', transcript:'Trascrizione', translation:'Traduzione', suggestedReply:'Risposta suggerita', keySub:'Salvata nel browser (localStorage). Non viene mai inviata a terzi.', cancel:'Annulla', save:'Salva', logoSub:'Parla · Traduci · Rispondi' },
+  es: { listen:'Escuchar', stop:'Parar', ready:'Listo', listening:'Escuchando...', translating:'Traduciendo...', translated:'Traducido', generating:'Generando respuesta...', completed:'Completado', error:'Error', autoOn:'Auto on', autoOff:'Auto off', copy:'Copiar', copied:'Copiado', transcript:'Transcripción', translation:'Traducción', suggestedReply:'Respuesta sugerida', keySub:'Guardada en el navegador. Nunca enviada a terceros.', cancel:'Cancelar', save:'Guardar', logoSub:'Habla · Traduce · Responde' },
+  fr: { listen:'Écouter', stop:'Arrêter', ready:'Prêt', listening:'En écoute...', translating:'Traduction...', translated:'Traduit', generating:'Génération...', completed:'Terminé', error:'Erreur', autoOn:'Auto on', autoOff:'Auto off', copy:'Copier', copied:'Copié', transcript:'Transcription', translation:'Traduction', suggestedReply:'Réponse suggérée', keySub:'Enregistrée dans le navigateur. Jamais envoyée à des tiers.', cancel:'Annuler', save:'Enregistrer', logoSub:'Parle · Traduis · Réponds' },
+  de: { listen:'Zuhören', stop:'Stop', ready:'Bereit', listening:'Höre zu...', translating:'Übersetze...', translated:'Übersetzt', generating:'Antwort generieren...', completed:'Fertig', error:'Fehler', autoOn:'Auto an', autoOff:'Auto aus', copy:'Kopieren', copied:'Kopiert', transcript:'Transkript', translation:'Übersetzung', suggestedReply:'Vorgeschlagene Antwort', keySub:'Im Browser gespeichert. Nie an Dritte gesendet.', cancel:'Abbrechen', save:'Speichern', logoSub:'Sprich · Übersetze · Antworte' },
+  pt: { listen:'Ouvir', stop:'Parar', ready:'Pronto', listening:'Ouvindo...', translating:'Traduzindo...', translated:'Traduzido', generating:'Gerando resposta...', completed:'Concluído', error:'Erro', autoOn:'Auto on', autoOff:'Auto off', copy:'Copiar', copied:'Copiado', transcript:'Transcrição', translation:'Tradução', suggestedReply:'Resposta sugerida', keySub:'Salva no navegador. Nunca enviada a terceiros.', cancel:'Cancelar', save:'Salvar', logoSub:'Fale · Traduza · Responda' },
+  nl: { listen:'Luisteren', stop:'Stop', ready:'Klaar', listening:'Luistert...', translating:'Vertalen...', translated:'Vertaald', generating:'Antwoord genereren...', completed:'Voltooid', error:'Fout', autoOn:'Auto aan', autoOff:'Auto uit', copy:'Kopiëren', copied:'Gekopieerd', transcript:'Transcriptie', translation:'Vertaling', suggestedReply:'Voorgesteld antwoord', keySub:'Opgeslagen in browser. Nooit naar derden gestuurd.', cancel:'Annuleren', save:'Opslaan', logoSub:'Spreek · Vertaal · Antwoord' },
+  ru: { listen:'Слушать', stop:'Стоп', ready:'Готово', listening:'Слушаю...', translating:'Перевожу...', translated:'Переведено', generating:'Генерирую ответ...', completed:'Завершено', error:'Ошибка', autoOn:'Авто вкл', autoOff:'Авто выкл', copy:'Копировать', copied:'Скопировано', transcript:'Транскрипция', translation:'Перевод', suggestedReply:'Предлагаемый ответ', keySub:'Сохранено в браузере. Никогда не передаётся третьим лицам.', cancel:'Отмена', save:'Сохранить', logoSub:'Говори · Переводи · Отвечай' },
+  zh: { listen:'聆听', stop:'停止', ready:'就绪', listening:'聆听中...', translating:'翻译中...', translated:'已翻译', generating:'生成回复...', completed:'完成', error:'错误', autoOn:'自动开', autoOff:'自动关', copy:'复制', copied:'已复制', transcript:'转录', translation:'翻译', suggestedReply:'建议回复', keySub:'保存在浏览器中。不会发送给第三方。', cancel:'取消', save:'保存', logoSub:'说 · 翻译 · 回复' },
+  ja: { listen:'聴く', stop:'停止', ready:'準備完了', listening:'聴いています...', translating:'翻訳中...', translated:'翻訳済み', generating:'返信を生成中...', completed:'完了', error:'エラー', autoOn:'自動オン', autoOff:'自動オフ', copy:'コピー', copied:'コピーしました', transcript:'文字起こし', translation:'翻訳', suggestedReply:'提案された返信', keySub:'ブラウザに保存。第三者に送信されません。', cancel:'キャンセル', save:'保存', logoSub:'話す · 翻訳 · 返信' },
+  ko: { listen:'듣기', stop:'정지', ready:'준비됨', listening:'듣는 중...', translating:'번역 중...', translated:'번역됨', generating:'답변 생성 중...', completed:'완료', error:'오류', autoOn:'자동 켜기', autoOff:'자동 끄기', copy:'복사', copied:'복사됨', transcript:'전사', translation:'번역', suggestedReply:'제안된 답변', keySub:'브라우저에 저장됨. 제3자에게 전송되지 않습니다.', cancel:'취소', save:'저장', logoSub:'말하기 · 번역 · 답장' },
+  ar: { listen:'استمع', stop:'إيقاف', ready:'جاهز', listening:'يستمع...', translating:'يترجم...', translated:'تمت الترجمة', generating:'يولد رداً...', completed:'اكتمل', error:'خطأ', autoOn:'تلقائي تشغيل', autoOff:'تلقائي إيقاف', copy:'نسخ', copied:'تم النسخ', transcript:'النص', translation:'الترجمة', suggestedReply:'الرد المقترح', keySub:'محفوظة في المتصفح. لا تُرسل أبداً لأطراف ثالثة.', cancel:'إلغاء', save:'حفظ', logoSub:'تحدث · ترجم · أجب' },
+  pl: { listen:'Słuchaj', stop:'Stop', ready:'Gotowy', listening:'Słucham...', translating:'Tłumaczę...', translated:'Przetłumaczono', generating:'Generuję odpowiedź...', completed:'Ukończono', error:'Błąd', autoOn:'Auto wł', autoOff:'Auto wył', copy:'Kopiuj', copied:'Skopiowano', transcript:'Transkrypcja', translation:'Tłumaczenie', suggestedReply:'Sugerowana odpowiedź', keySub:'Zapisana w przeglądarce. Nigdy nie wysyłana do osób trzecich.', cancel:'Anuluj', save:'Zapisz', logoSub:'Mów · Tłumacz · Odpowiedz' },
+  tr: { listen:'Dinle', stop:'Dur', ready:'Hazır', listening:'Dinliyor...', translating:'Çeviriliyor...', translated:'Çevrildi', generating:'Yanıt oluşturuluyor...', completed:'Tamamlandı', error:'Hata', autoOn:'Oto açık', autoOff:'Oto kapalı', copy:'Kopyala', copied:'Kopyalandı', transcript:'Transkript', translation:'Çeviri', suggestedReply:'Önerilen yanıt', keySub:'Tarayıcıda kayıtlı. Üçüncü taraflara gönderilmez.', cancel:'İptal', save:'Kaydet', logoSub:'Konuş · Çevir · Yanıtla' },
+  hi: { listen:'सुनें', stop:'रोकें', ready:'तैयार', listening:'सुन रहा है...', translating:'अनुवाद हो रहा है...', translated:'अनुवादित', generating:'उत्तर बना रहा है...', completed:'पूर्ण', error:'त्रुटि', autoOn:'ऑटो चालू', autoOff:'ऑटो बंद', copy:'कॉपी करें', copied:'कॉपी हो गया', transcript:'प्रतिलिपि', translation:'अनुवाद', suggestedReply:'सुझाया गया उत्तर', keySub:'ब्राउज़र में सहेजा गया। तृतीय पक्षों को नहीं भेजा जाता।', cancel:'रद्द करें', save:'सहेजें', logoSub:'बोलें · अनुवाद · जवाब' },
+};
+const UI = UI_STRINGS[(navigator.language||'en').split('-')[0].toLowerCase()] || UI_STRINGS['en'];
+
 const btnListen   = document.getElementById('btnListen');
 const btnReset    = document.getElementById('btnReset');
 const btnListenTxt= document.getElementById('btnListenTxt');
@@ -589,12 +609,24 @@ const responsePanel = document.getElementById('responsePanel');
 const statusDot   = document.getElementById('statusDot');
 const statusText  = document.getElementById('statusText');
 const errorMsg    = document.getElementById('errorMsg');
+const copyTxt     = document.getElementById('copyTxt');
+const logoSub     = document.getElementById('logoSub');
+const keySubText  = document.getElementById('keySubText');
+
+// Apply UI language
+logoSub.textContent     = UI.logoSub;
+keySubText.textContent  = UI.keySub;
+btnKeyCancel.textContent= UI.cancel;
+btnKeySave.textContent  = UI.save;
+btnListenTxt.textContent= UI.listen;
+statusText.textContent  = UI.ready;
+copyTxt.textContent     = UI.copy;
 
 let autoReply = true;
 
 function syncAutoReply() {
   btnAutoReply.classList.toggle('on', autoReply);
-  autoReplyTxt.textContent = autoReply ? 'Auto on' : 'Auto off';
+  autoReplyTxt.textContent = autoReply ? UI.autoOn : UI.autoOff;
 }
 syncAutoReply();
 btnAutoReply.addEventListener('click', () => { autoReply = !autoReply; syncAutoReply(); });
@@ -639,9 +671,9 @@ function populateSelects() {
 
 function updateLabels() {
   const f = fromLang(), t = toLang();
-  labelTranscript.textContent  = `Trascrizione (${f.short})`;
-  labelTranslation.textContent = `Traduzione (${t.short})`;
-  labelResponse.textContent    = `Risposta suggerita (${f.short})`;
+  labelTranscript.textContent  = `${UI.transcript} (${f.short})`;
+  labelTranslation.textContent = `${UI.translation} (${t.short})`;
+  labelResponse.textContent    = `${UI.suggestedReply} (${f.short})`;
 }
 
 function resetPanels() {
@@ -650,7 +682,7 @@ function resetPanels() {
   setPanel(translationBox, t.ph.translation, true);
   setPanel(responseBox,    f.ph.reply,       true);
   errorMsg.textContent = '';
-  setStatus('', 'Pronto');
+  setStatus('', UI.ready);
 }
 
 populateSelects();
@@ -737,9 +769,9 @@ btnCopy.addEventListener('click', () => {
   const txt = responseBox.textContent.trim();
   if (!txt || responseBox.classList.contains('placeholder')) return;
   navigator.clipboard.writeText(txt).then(() => {
-    btnCopy.innerHTML = '<svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:var(--accent);fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;"><polyline points="20 6 9 17 4 12"/></svg> Copiato';
+    btnCopy.innerHTML = `<svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:var(--accent);fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;"><polyline points="20 6 9 17 4 12"/></svg> ${UI.copied}`;
     setTimeout(() => {
-      btnCopy.innerHTML = '<svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copia';
+      btnCopy.innerHTML = `<svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> ${UI.copy}`;
     }, 2000);
   });
 });
@@ -770,26 +802,26 @@ async function callClaude(system, userMsg, maxTokens) {
 
 async function translateText(text) {
   if (!text.trim()) return;
-  setStatus('thinking', 'Traduco...');
+  setStatus('thinking', UI.translating);
   setPanel(translationBox, '<span class="spinner"></span>', false);
   try {
     const f = fromLang(), t = toLang();
     const prompt = `You are a precise translator. Translate the following text from ${f.label} to ${t.label}. Reply ONLY with the translation, no explanation or preamble.`;
     const result = await callClaude(prompt, text, 600);
     setPanel(translationBox, result.trim(), false);
-    setStatus('', 'Tradotto');
+    setStatus('', UI.translated);
     if (autoReply) await suggestReply();
   } catch(e) {
-    setPanel(translationBox, 'Errore di traduzione.', true);
+    setPanel(translationBox, '⚠ ' + e.message, true);
     showError(e.message);
-    setStatus('', 'Errore');
+    setStatus('', UI.error);
   }
 }
 
 async function suggestReply() {
   const topic = finalTranscript.trim();
   if (!topic) return;
-  setStatus('thinking', 'Genero risposta...');
+  setStatus('thinking', UI.generating);
   setPanel(responseBox, '<span class="spinner"></span>', false);
   responsePanel.classList.add('working');
   try {
@@ -797,11 +829,11 @@ async function suggestReply() {
     const replyPrompt = `You are a helpful assistant supporting someone on a professional business call. Given what was just said by the other person, suggest a concise, natural, professional reply in ${f.label}. Write ONLY the reply itself — no preamble, no labels, no quotes.`;
     const result = await callClaude(replyPrompt, 'The other person just said: ' + topic, 500);
     setPanel(responseBox, result.trim(), false);
-    setStatus('', 'Pronto');
+    setStatus('', UI.ready);
   } catch(e) {
-    setPanel(responseBox, 'Errore nel generare la risposta.', true);
+    setPanel(responseBox, '⚠ ' + e.message, true);
     showError(e.message);
-    setStatus('', 'Errore');
+    setStatus('', UI.error);
   } finally {
     responsePanel.classList.remove('working');
   }
@@ -824,14 +856,14 @@ function initRecognition() {
       else interim += e.results[i][0].transcript;
     }
     const display = finalTranscript + (interim ? '<span class="interim">' + interim + '</span>' : '');
-    setPanel(transcriptBox, display || '<span class="interim">In ascolto...</span>', false);
+    setPanel(transcriptBox, display || `<span class="interim">${UI.listening}</span>`, false);
     if (finalTranscript.trim()) {
       clearTimeout(translateTimeout);
       translateTimeout = setTimeout(() => translateText(finalTranscript.trim()), 1200);
     }
   };
   r.onerror = (e) => {
-    if (e.error !== 'no-speech') { showError('Errore microfono: ' + e.error); stopListening(); }
+    if (e.error !== 'no-speech') { showError(e.error); stopListening(); }
   };
   r.onend = () => { if (isListening) r.start(); };
   return r;
@@ -848,17 +880,21 @@ function startListening() {
   isListening = true;
   recognition.start();
   btnListen.classList.add('recording');
-  btnListenTxt.textContent = 'Stop';
-  setStatus('active', 'In ascolto...');
+  btnListenTxt.textContent = UI.stop;
+  setStatus('active', UI.listening);
 }
 
 function stopListening() {
   isListening = false;
   if (recognition) { try { recognition.stop(); } catch(e){} recognition = null; }
   btnListen.classList.remove('recording');
-  btnListenTxt.textContent = 'Ascolta';
-  setStatus('', finalTranscript.trim() ? 'Completato' : 'Pronto');
-  if (finalTranscript.trim()) { clearTimeout(translateTimeout); translateText(finalTranscript.trim()); }
+  btnListenTxt.textContent = UI.listen;
+  setStatus('', finalTranscript.trim() ? UI.completed : UI.ready);
+  // only trigger translation if it hasn't already started
+  if (finalTranscript.trim() && translationBox.classList.contains('placeholder')) {
+    clearTimeout(translateTimeout);
+    translateText(finalTranscript.trim());
+  }
 }
 
 btnListen.addEventListener('click', () => { isListening ? stopListening() : startListening(); });

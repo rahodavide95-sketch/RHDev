@@ -4,20 +4,21 @@
       <stop offset="0%" stop-color="#0a1628"/>
       <stop offset="100%" stop-color="#0f2050"/>
     </linearGradient>
-    <linearGradient id="g1" x1="0%" y1="100%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#2563eb"/>
-      <stop offset="100%" stop-color="#ffffff"/>
+    <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="50%" stop-color="#93c5fd"/>
+      <stop offset="100%" stop-color="#2563eb"/>
     </linearGradient>
-    <linearGradient id="g2" x1="0%" y1="100%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#1d4ed8"/>
-      <stop offset="100%" stop-color="#93c5fd"/>
-    </linearGradient>
-    <linearGradient id="g3" x1="0%" y1="100%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#1e40af"/>
-      <stop offset="100%" stop-color="#60a5fa"/>
+    <linearGradient id="g2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.6"/>
     </linearGradient>
     <filter id="glow">
-      <feGaussianBlur stdDeviation="10" result="blur"/>
+      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="softglow">
+      <feGaussianBlur stdDeviation="20" result="blur"/>
       <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
   </defs>
@@ -25,23 +26,20 @@
   <!-- Background -->
   <rect width="512" height="512" rx="108" fill="url(#bg)"/>
 
-  <!-- Glow behind bars -->
-  <rect x="96" y="240" width="80" height="190" rx="16" fill="#3b82f6" opacity="0.15" filter="url(#glow)"/>
-  <rect x="216" y="160" width="80" height="270" rx="16" fill="#60a5fa" opacity="0.15" filter="url(#glow)"/>
-  <rect x="336" y="88"  width="80" height="342" rx="16" fill="#93c5fd" opacity="0.15" filter="url(#glow)"/>
+  <!-- Glow behind the A -->
+  <path d="M256 80 L430 400 L380 400 L256 160 L132 400 L82 400 Z" fill="#3b82f6" opacity="0.12" filter="url(#softglow)"/>
 
-  <!-- Bar 1 -->
-  <rect x="96"  y="248" width="80" height="182" rx="14" fill="url(#g3)"/>
-  <!-- Bar 2 -->
-  <rect x="216" y="168" width="80" height="262" rx="14" fill="url(#g2)"/>
-  <!-- Bar 3 (tallest) -->
-  <rect x="336" y="96"  width="80" height="334" rx="14" fill="url(#g1)"/>
+  <!-- A crossbar glow -->
+  <rect x="158" y="284" width="196" height="30" rx="15" fill="#60a5fa" opacity="0.2" filter="url(#glow)"/>
 
-  <!-- Trend line connecting tops -->
-  <polyline points="136,248 256,168 376,96" stroke="white" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+  <!-- A left leg -->
+  <path d="M256 72 L74 430 L122 430 L256 158 Z" fill="url(#g1)"/>
+  <!-- A right leg -->
+  <path d="M256 72 L438 430 L390 430 L256 158 Z" fill="url(#g2)"/>
+  <!-- A crossbar -->
+  <rect x="158" y="284" width="196" height="28" rx="14" fill="url(#g1)"/>
 
-  <!-- Dots on tops -->
-  <circle cx="136" cy="248" r="10" fill="white" opacity="0.7"/>
-  <circle cx="256" cy="168" r="10" fill="white" opacity="0.85"/>
-  <circle cx="376" cy="96"  r="12" fill="white"/>
+  <!-- Apex dot (top of the A) -->
+  <circle cx="256" cy="80" r="14" fill="white" filter="url(#glow)"/>
+  <circle cx="256" cy="80" r="9" fill="white"/>
 </svg>

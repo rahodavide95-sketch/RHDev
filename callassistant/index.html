@@ -649,11 +649,13 @@ btnAutoReply.addEventListener('click', () => { autoReply = !autoReply; syncAutoR
 
 let recognition = null;
 let isListening = false;
-let turns = [];          // [{speaker:'S1', text:'...'}]
+let turns = [];
 let speakerCount = 1;
 let lastFinalTime = 0;
-const TURN_PAUSE_MS = 2200;
+const TURN_PAUSE_MS = 1500;
 let translateTimeout = null;
+let interimTimeout  = null;
+let replyTimeout    = null;
 
 const SPEAKER_PALETTE = [
   { color: '#5DCAA5', bg: 'rgba(93,202,165,0.14)',  border: 'rgba(93,202,165,0.3)'  },
@@ -697,24 +699,22 @@ function renderTranscript(interim = '') {
 }
 
 async function detectSpeaker(turnIdx) {
-  if (turnIdx === 0) { turns[0].speaker = 'S1'; renderTranscript(); return; }
+  // Badge already assigned immediately; Claude verifies and may reassign
+  if (turnIdx === 0) return;
   const prior = turns.slice(0, turnIdx).slice(-6);
-  const ctx = prior.map(t => `${t.speaker}: ${t.text}`).join('\n');
-  const known = [...new Set(prior.map(t => t.speaker).filter(s => s !== 'S?'))];
-  const nextNum = speakerCount + 1;
-  const sys = 'You identify speakers in business call transcripts. Reply only with a speaker label like S1 or S2.';
-  const msg = `Conversation:\n${ctx}\n\nNew utterance: "${turns[turnIdx].text}"\nKnown speakers: ${known.join(', ')}. Same speaker as before, or new? Reply only with label (e.g. S1 or S${nextNum}).`;
+  const ctx   = prior.map(t => `${t.speaker}: ${t.text}`).join('\n');
+  const known = [...new Set(prior.map(t => t.speaker))];
+  const sys   = 'You identify speakers in business call transcripts. Reply only with a label like S1 or S2.';
+  const msg   = `Conversation:\n${ctx}\n\nNew utterance: "${turns[turnIdx].text}"\nKnown speakers: ${known.join(', ')}. Which speaker? Reply only with the label.`;
   try {
     const label = (await callClaude(sys, msg, 8)).trim().toUpperCase().match(/S\d+/)?.[0];
-    if (label) {
+    if (label && label !== turns[turnIdx].speaker) {
       const n = parseInt(label.slice(1));
       if (n > speakerCount) speakerCount = n;
       turns[turnIdx].speaker = label;
-    } else {
-      turns[turnIdx].speaker = `S${speakerCount}`;
+      renderTranscript();
     }
-  } catch { turns[turnIdx].speaker = `S${speakerCount}`; }
-  renderTranscript();
+  } catch {}
 }
 
 // ── LANGUAGES ────────────────────────────────────────────────
@@ -939,24 +939,43 @@ function initRecognition() {
         const now = Date.now();
         const newTurn = turns.length === 0 || (now - lastFinalTime) > TURN_PAUSE_MS;
         lastFinalTime = now;
-        if (newTurn) {
-          turns.push({ speaker: 'S?', text });
-          const idx = turns.length - 1;
-          detectSpeaker(idx); // async — updates badge when done
+
+        if (turns.length === 0) {
+          turns.push({ speaker: 'S1', text });
+        } else if (newTurn) {
+          // Assign next speaker immediately; Claude verifies async
+          speakerCount++;
+          turns.push({ speaker: `S${speakerCount}`, text });
+          detectSpeaker(turns.length - 1);
         } else {
           turns[turns.length - 1].text += ' ' + text;
-          renderTranscript();
         }
+        renderTranscript();
+
+        // Translate confirmed text immediately
+        clearTimeout(interimTimeout);
         clearTimeout(translateTimeout);
-        translateTimeout = setTimeout(() => {
-          const latest = turns[turns.length - 1]?.text || '';
-          translateText(latest);           // translation
-          if (autoReply) suggestReply();   // reply in parallel
-        }, 1200);
+        translateTimeout = setTimeout(() => translateText(turns[turns.length - 1].text), 150);
+
+        // Reply: debounced, let translation settle first
+        if (autoReply) {
+          clearTimeout(replyTimeout);
+          replyTimeout = setTimeout(suggestReply, 1400);
+        }
       } else {
         interim += e.results[i][0].transcript;
       }
     }
+
+    // Live translation of interim text (while speaker is still talking)
+    if (interim.length > 20) {
+      clearTimeout(interimTimeout);
+      interimTimeout = setTimeout(() => {
+        const base = turns[turns.length - 1]?.text || '';
+        translateText((base + ' ' + interim).trim());
+      }, 650);
+    }
+
     renderTranscript(interim);
   };
   r.onerror = (e) => {
@@ -971,6 +990,7 @@ function startListening() {
   recognition = initRecognition();
   if (!recognition) return;
   turns = []; speakerCount = 1; lastFinalTime = 0;
+  clearTimeout(translateTimeout); clearTimeout(interimTimeout); clearTimeout(replyTimeout);
   setPanel(transcriptBox, `<span class="interim">${UI.phListen}</span>`, false);
   setPanel(translationBox, UI.phTranslation, true);
   setPanel(responseBox, UI.phReply, true);
@@ -989,9 +1009,8 @@ function stopListening() {
   const hasContent = turns.length > 0;
   setStatus('', hasContent ? UI.completed : UI.ready);
   if (hasContent && translationBox.classList.contains('placeholder')) {
-    clearTimeout(translateTimeout);
-    const latest = turns[turns.length - 1]?.text || '';
-    translateText(latest);
+    clearTimeout(translateTimeout); clearTimeout(interimTimeout); clearTimeout(replyTimeout);
+    translateText(turns[turns.length - 1]?.text || '');
     if (autoReply) suggestReply();
   }
 }
@@ -1000,7 +1019,7 @@ btnListen.addEventListener('click', () => { isListening ? stopListening() : star
 btnReset.addEventListener('click', () => {
   if (isListening) stopListening();
   turns = []; speakerCount = 1; lastFinalTime = 0;
-  clearTimeout(translateTimeout);
+  clearTimeout(translateTimeout); clearTimeout(interimTimeout); clearTimeout(replyTimeout);
   resetPanels();
 });
 </script>

@@ -83,9 +83,9 @@
   .sound-identity { width:100%;max-width:480px;text-align:center;padding:0.25rem 0 0.15rem;opacity:0;pointer-events:none;transition:opacity 0.6s ease; }
   .sound-identity.revealed { opacity:1;pointer-events:auto; }
   .sound-name { font-family:var(--font-display);font-size:26px;font-weight:500;color:var(--c-text-primary);letter-spacing:-0.01em;margin:0 0 0.7rem;transition:color 1s ease;line-height:1.2;text-align:center; }
-  .sound-name-row { position:relative;display:flex;align-items:center;justify-content:center;width:100%;margin-bottom:0.7rem; }
-  .sound-name-row .sound-name { margin:0; }
-  .sound-playing { position:absolute;right:0;top:50%;transform:translateY(-50%); }
+  .sound-name-row { display:grid;grid-template-columns:1fr auto 1fr;align-items:center;width:100%;margin-bottom:0.7rem; }
+  .sound-name-row .sound-name { grid-column:2;margin:0; }
+  .sound-name-row .sound-playing { grid-column:3;justify-self:start;margin-left:6px; }
   .sound-meta { font-size:11px;color:var(--c-text-muted);letter-spacing:0.12em;text-transform:uppercase;transition:color 1s ease;text-align:center; }
 
   .divider { height:0.5px;background:var(--c-border);margin:0.65rem 0;transition:background 1.5s ease; }

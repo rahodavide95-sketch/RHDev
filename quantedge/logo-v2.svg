@@ -1,24 +1,27 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#060d1f"/><stop offset="100%" stop-color="#0c1a3a"/>
+      <stop offset="0%" stop-color="#060d1f"/>
+      <stop offset="100%" stop-color="#0c1a3a"/>
+    </linearGradient>
+    <linearGradient id="legs" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#2563eb"/>
     </linearGradient>
     <linearGradient id="tr" x1="0%" y1="100%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#1d4ed8"/><stop offset="100%" stop-color="#ffffff"/>
+      <stop offset="0%" stop-color="#1d4ed8"/>
+      <stop offset="100%" stop-color="#38bdf8"/>
     </linearGradient>
-    <filter id="g"><feGaussianBlur stdDeviation="14"/></filter>
   </defs>
-  <rect width="512" height="512" rx="108" fill="url(#bg)"/>
-  <!-- Single continuous line that draws the A AND the trend in one stroke -->
-  <!-- Left leg up, right leg down, then trend cuts across -->
-  <polyline points="256,64 96,448 168,448 256,208 344,448 416,448 256,64"
-    stroke="white" stroke-width="28" stroke-linejoin="round" stroke-linecap="round" opacity="0.08" filter="url(#g)"/>
-  <polyline points="256,64 96,448 168,448 256,208 344,448 416,448 256,64"
-    stroke="white" stroke-width="16" stroke-linejoin="round" stroke-linecap="round"/>
-  <!-- Trend as crossbar — bold, colored -->
-  <polyline points="130,312 202,274 262,290 328,250 406,200"
-    stroke="#1d4ed8" stroke-width="30" stroke-linecap="round" stroke-linejoin="round" opacity="0.4" filter="url(#g)"/>
-  <polyline points="130,312 202,274 262,290 328,250 406,200"
-    stroke="url(#tr)" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="406" cy="200" r="16" fill="white"/>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <!-- Just the top peak of an A — mountain/apex shape, open bottom -->
+  <!-- Left leg -->
+  <line x1="256" y1="68" x2="80" y2="444" stroke="url(#legs)" stroke-width="44" stroke-linecap="square"/>
+  <!-- Right leg -->
+  <line x1="256" y1="68" x2="432" y2="444" stroke="url(#legs)" stroke-width="44" stroke-linecap="square"/>
+  <!-- Trend line as crossbar — 3 clean points, rises left to right -->
+  <polyline points="138,308  256,268  390,210"
+    stroke="url(#tr)" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="390" cy="210" r="16" fill="#38bdf8"/>
+  <circle cx="390" cy="210" r="8"  fill="white"/>
 </svg>

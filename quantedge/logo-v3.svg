@@ -1,31 +1,29 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#060d1f"/><stop offset="100%" stop-color="#0c1a3a"/>
+      <stop offset="0%" stop-color="#060d1f"/>
+      <stop offset="100%" stop-color="#0c1a3a"/>
     </linearGradient>
     <linearGradient id="left" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="1"/>
-      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.4"/>
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
     </linearGradient>
     <linearGradient id="right" x1="100%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#93c5fd" stop-opacity="0.6"/>
-      <stop offset="100%" stop-color="#1e40af" stop-opacity="0.3"/>
+      <stop offset="0%" stop-color="#93c5fd"/>
+      <stop offset="100%" stop-color="#1e3a8a"/>
     </linearGradient>
-    <linearGradient id="tr" x1="0%" y1="100%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#2563eb"/><stop offset="100%" stop-color="#7dd3fc"/>
+    <linearGradient id="bar" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#ffffff"/>
     </linearGradient>
-    <filter id="g"><feGaussianBlur stdDeviation="10"/></filter>
   </defs>
-  <rect width="512" height="512" rx="108" fill="url(#bg)"/>
-  <!-- Split A: left leg brighter, right leg dimmer — depth effect -->
-  <path d="M256,60 L78,452 L148,452 L256,188 Z" fill="url(#left)"/>
-  <path d="M256,60 L434,452 L364,452 L256,188 Z" fill="url(#right)"/>
-  <!-- Trend line rising across — clean, just 4 points -->
-  <line x1="118" y1="318" x2="404" y2="204"
-    stroke="#1e3a8a" stroke-width="32" stroke-linecap="round" opacity="0.5" filter="url(#g)"/>
-  <line x1="118" y1="318" x2="404" y2="204"
-    stroke="url(#tr)" stroke-width="14" stroke-linecap="round"/>
-  <!-- Start + end dots only -->
-  <circle cx="118" cy="318" r="10" fill="#3b82f6"/>
-  <circle cx="404" cy="204" r="14" fill="white"/>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <!-- Two-tone solid A — left brighter, right dimmer — creates 3D depth -->
+  <path d="M256,64 L78,448 L154,448 L256,194 Z" fill="url(#left)"/>
+  <path d="M256,64 L434,448 L358,448 L256,194 Z" fill="url(#right)"/>
+  <!-- Trend: one clean diagonal line from left leg to right leg, pure white -->
+  <line x1="136" y1="310" x2="392" y2="214"
+    stroke="url(#bar)" stroke-width="18" stroke-linecap="round"/>
+  <!-- End: tiny bright dot only -->
+  <circle cx="392" cy="214" r="14" fill="white"/>
 </svg>

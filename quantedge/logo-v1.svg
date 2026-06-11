@@ -1,19 +1,29 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#060d1f"/><stop offset="100%" stop-color="#0c1a3a"/>
+      <stop offset="0%" stop-color="#060d1f"/>
+      <stop offset="100%" stop-color="#0c1a3a"/>
     </linearGradient>
-    <linearGradient id="a" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#2563eb"/>
+    <linearGradient id="body" x1="20%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#1e40af"/>
+    </linearGradient>
+    <linearGradient id="tr" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1d4ed8"/>
+      <stop offset="100%" stop-color="#7dd3fc"/>
     </linearGradient>
   </defs>
-  <rect width="512" height="512" rx="108" fill="url(#bg)"/>
-  <!-- Bold A — trend line carved out as negative space -->
-  <path fill-rule="evenodd" d="
-    M256,56 L60,456 L152,456 L256,222 L360,456 L452,456 Z
-    M148,316 L174,294 L222,308 L278,272 L364,234 L388,316 Z
-  " fill="url(#a)"/>
-  <!-- Tiny dot at trend peak -->
-  <circle cx="364" cy="234" r="12" fill="#060d1f"/>
-  <circle cx="364" cy="234" r="6"  fill="white"/>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <!--
+    Solid A with trend carved as negative space.
+    A outer polygon + inner counter removed via evenodd.
+    Crossbar replaced by rising parallelogram cutout.
+  -->
+  <path fill-rule="evenodd"
+    d="
+      M256,60  L64,452  L148,452  L256,196  L364,452  L448,452  Z
+      M152,318  L186,296  L248,310  L316,272  L376,248  L376,282  L316,306  L248,344  L186,330  L152,352  Z
+    "
+    fill="url(#body)"
+  />
 </svg>

@@ -991,7 +991,7 @@ header{
   min-width:0;
 }
 @media(max-width:1100px){.opp-grid{grid-template-columns:1fr 1fr;}}
-@media(max-width:400px){.opp-grid{grid-template-columns:1fr;}}
+@media(max-width:640px){.opp-grid{grid-template-columns:1fr;}}
 .opp-item{
   background:var(--bg3); border:1px solid var(--border);
   border-radius:10px; padding:12px 14px;
@@ -999,9 +999,19 @@ header{
   display:flex; flex-direction:column; gap:4px;
   min-width:0; overflow:hidden;
 }
+@media(max-width:640px){
+  .opp-item{
+    flex-direction:row; align-items:center; gap:10px; padding:10px 12px;
+  }
+  .opp-item-left{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;}
+  .opp-item-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;}
+  .opp-bottom{margin-top:0;}
+}
 .opp-item:hover{border-color:var(--accent); transform:translateY(-2px);}
 .opp-sym{font-size:.95rem; font-weight:700; color:var(--accent);}
 .opp-name{font-size:.72rem; color:var(--t2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0;}
+.opp-item-left{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0;}
+.opp-item-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;}
 .opp-bottom{display:flex; align-items:center; justify-content:space-between; margin-top:6px; min-width:0;}
 .opp-score{font-size:1.05rem; font-weight:700; flex-shrink:0;}
 .opp-bar-wrap{flex:1; height:4px; background:var(--bg2); border-radius:2px; margin:0 8px; min-width:0;}
@@ -2841,21 +2851,21 @@ function oppItemHTML(sym, score, extra=false){
   const signal={cls:'opp',lbl:'Sconto'};
   const extraCls=extra?' opp-item-extra':'';
   return `<div class="opp-item${extraCls}" onclick="quickAnalyze('${sym}')">
-    <div style="display:flex;align-items:center;gap:10px;">
-      ${logoHTML(sym,36)}
-      <div style="flex:1;min-width:0;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;">
-          <span class="opp-sym">${sym}</span>
-          <span class="opp-signal ${signal.cls}">${signal.lbl}</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;margin-top:2px;">
+    <div class="opp-item-left">
+      <div style="display:flex;align-items:center;gap:8px;">
+        ${logoHTML(sym,32)}
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+            <span class="opp-sym">${sym}</span>
+            <span class="opp-signal ${signal.cls}">${signal.lbl}</span>
+            ${type?`<span class="opp-type">${type}</span>`:''}
+          </div>
           <span class="opp-name">${name}</span>
-          ${type?`<span class="opp-type">${type}</span>`:''}
         </div>
       </div>
+      ${reason?`<div class="opp-why" style="margin-top:4px;">${reason}</div>`:''}
     </div>
-    ${reason?`<div class="opp-why" style="margin-top:6px;">${reason}</div>`:''}
-    <div class="opp-bottom">
+    <div class="opp-item-right">
       <span class="opp-score" style="color:${color}">${score}</span>
       <div class="opp-bar-wrap"><div class="opp-bar" style="width:${score}%;background:${color}"></div></div>
     </div>

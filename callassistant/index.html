@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it">
+<html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -356,6 +356,26 @@
   .panel-text.placeholder { color: var(--text3); font-size: 13px; font-style: italic; }
   .interim { color: var(--text3); font-style: italic; }
 
+  .turn { display: flex; gap: 8px; margin-bottom: 0.65em; align-items: flex-start; }
+  .turn:last-child { margin-bottom: 0; }
+  .turn-badge {
+    font-size: 9px; font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.05em;
+    color: var(--accent);
+    background: var(--accent-dim);
+    border: 1px solid rgba(93,202,165,0.25);
+    border-radius: 4px;
+    padding: 2px 5px;
+    flex-shrink: 0;
+    margin-top: 3px;
+    min-width: 24px;
+    text-align: center;
+  }
+  .turn-badge.pending { color: var(--text3); background: var(--bg3); border-color: var(--border); }
+  .turn-text { font-size: 15px; line-height: 1.65; color: var(--text); }
+  .turn.interim-turn { opacity: 0.5; }
+
   .panel.translation { background: var(--bg3); }
 
   .lang-swap {
@@ -471,7 +491,7 @@
     <div style="display:flex;align-items:center;gap:10px;">
       <div class="status-pill">
         <div class="dot" id="statusDot"></div>
-        <span id="statusText">Pronto</span>
+        <span id="statusText"></span>
       </div>
       <button class="btn-theme" id="btnTheme" title="Tema"></button>
       <button class="btn-key" id="btnKey" title="API Key">⚷</button>
@@ -627,8 +647,54 @@ btnAutoReply.addEventListener('click', () => { autoReply = !autoReply; syncAutoR
 
 let recognition = null;
 let isListening = false;
-let finalTranscript = '';
+let turns = [];          // [{speaker:'S1', text:'...'}]
+let speakerCount = 1;
+let lastFinalTime = 0;
+const TURN_PAUSE_MS = 2200;
 let translateTimeout = null;
+
+function escapeHtml(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function renderTranscript(interim = '') {
+  if (turns.length === 0 && !interim) { setPanel(transcriptBox, UI.phListen, true); return; }
+  transcriptBox.className = 'panel-text';
+  const html = turns.map(t =>
+    `<div class="turn">
+       <span class="turn-badge${t.speaker === 'S?' ? ' pending' : ''}">${t.speaker}</span>
+       <span class="turn-text">${escapeHtml(t.text)}</span>
+     </div>`
+  ).join('');
+  const interimHtml = interim
+    ? `<div class="turn interim-turn">
+         <span class="turn-badge pending">S${speakerCount}</span>
+         <span class="turn-text">${escapeHtml(interim)}</span>
+       </div>`
+    : '';
+  transcriptBox.innerHTML = html + interimHtml;
+}
+
+async function detectSpeaker(turnIdx) {
+  if (turnIdx === 0) { turns[0].speaker = 'S1'; renderTranscript(); return; }
+  const prior = turns.slice(0, turnIdx).slice(-6);
+  const ctx = prior.map(t => `${t.speaker}: ${t.text}`).join('\n');
+  const known = [...new Set(prior.map(t => t.speaker).filter(s => s !== 'S?'))];
+  const nextNum = speakerCount + 1;
+  const sys = 'You identify speakers in business call transcripts. Reply only with a speaker label like S1 or S2.';
+  const msg = `Conversation:\n${ctx}\n\nNew utterance: "${turns[turnIdx].text}"\nKnown speakers: ${known.join(', ')}. Same speaker as before, or new? Reply only with label (e.g. S1 or S${nextNum}).`;
+  try {
+    const label = (await callClaude(sys, msg, 8)).trim().toUpperCase().match(/S\d+/)?.[0];
+    if (label) {
+      const n = parseInt(label.slice(1));
+      if (n > speakerCount) speakerCount = n;
+      turns[turnIdx].speaker = label;
+    } else {
+      turns[turnIdx].speaker = `S${speakerCount}`;
+    }
+  } catch { turns[turnIdx].speaker = `S${speakerCount}`; }
+  renderTranscript();
+}
 
 // ── LANGUAGES ────────────────────────────────────────────────
 const ALL_LANGS = [
@@ -671,7 +737,6 @@ function updateLabels() {
 }
 
 function resetPanels() {
-  const f = fromLang(), t = toLang();
   setPanel(transcriptBox,  UI.phListen,      true);
   setPanel(translationBox, UI.phTranslation, true);
   setPanel(responseBox,    UI.phReply,       true);
@@ -681,10 +746,11 @@ function resetPanels() {
 
 populateSelects();
 updateLabels();
+resetPanels();   // set panel placeholders in device locale on load
 
 [selectFrom, selectTo].forEach(sel => sel.addEventListener('change', () => {
   if (isListening) stopListening();
-  finalTranscript = '';
+  turns = []; speakerCount = 1; lastFinalTime = 0;
   clearTimeout(translateTimeout);
   updateLabels();
   resetPanels();
@@ -695,7 +761,7 @@ btnSwap.addEventListener('click', () => {
   const tmp = selectFrom.value;
   selectFrom.value = selectTo.value;
   selectTo.value   = tmp;
-  finalTranscript  = '';
+  turns = []; speakerCount = 1; lastFinalTime = 0;
   clearTimeout(translateTimeout);
   updateLabels();
   resetPanels();
@@ -800,11 +866,12 @@ async function translateText(text) {
   setPanel(translationBox, '<span class="spinner"></span>', false);
   try {
     const f = fromLang(), t = toLang();
-    const prompt = `You are a precise translator. Translate the following text from ${f.label} to ${t.label}. Reply ONLY with the translation, no explanation or preamble.`;
-    const result = await callClaude(prompt, text, 600);
+    const result = await callClaude(
+      `You are a precise translator. Translate from ${f.label} to ${t.label}. Reply ONLY with the translation.`,
+      text, 600
+    );
     setPanel(translationBox, result.trim(), false);
     setStatus('', UI.translated);
-    if (autoReply) await suggestReply();
   } catch(e) {
     setPanel(translationBox, '⚠ ' + e.message, true);
     showError(e.message);
@@ -813,21 +880,20 @@ async function translateText(text) {
 }
 
 async function suggestReply() {
-  const topic = finalTranscript.trim();
-  if (!topic) return;
-  setStatus('thinking', UI.generating);
+  if (turns.length === 0) return;
+  const ctx = turns.slice(-8).map(t => `${t.speaker}: ${t.text}`).join('\n');
   setPanel(responseBox, '<span class="spinner"></span>', false);
   responsePanel.classList.add('working');
   try {
     const f = fromLang();
-    const replyPrompt = `You are a helpful assistant supporting someone on a professional business call. Given what was just said by the other person, suggest a concise, natural, professional reply in ${f.label}. Write ONLY the reply itself — no preamble, no labels, no quotes.`;
-    const result = await callClaude(replyPrompt, 'The other person just said: ' + topic, 500);
+    const result = await callClaude(
+      `You are assisting someone on a professional business call. Suggest a concise, natural, professional reply in ${f.label}. Write ONLY the reply — no preamble, no labels, no quotes.`,
+      `Conversation:\n${ctx}\n\nSuggest a reply to the last message.`, 500
+    );
     setPanel(responseBox, result.trim(), false);
-    setStatus('', UI.ready);
   } catch(e) {
     setPanel(responseBox, '⚠ ' + e.message, true);
     showError(e.message);
-    setStatus('', UI.error);
   } finally {
     responsePanel.classList.remove('working');
   }
@@ -846,15 +912,31 @@ function initRecognition() {
   r.onresult = (e) => {
     let interim = '';
     for (let i = e.resultIndex; i < e.results.length; i++) {
-      if (e.results[i].isFinal) finalTranscript += e.results[i][0].transcript + ' ';
-      else interim += e.results[i][0].transcript;
+      if (e.results[i].isFinal) {
+        const text = e.results[i][0].transcript.trim();
+        if (!text) continue;
+        const now = Date.now();
+        const newTurn = turns.length === 0 || (now - lastFinalTime) > TURN_PAUSE_MS;
+        lastFinalTime = now;
+        if (newTurn) {
+          turns.push({ speaker: 'S?', text });
+          const idx = turns.length - 1;
+          detectSpeaker(idx); // async — updates badge when done
+        } else {
+          turns[turns.length - 1].text += ' ' + text;
+          renderTranscript();
+        }
+        clearTimeout(translateTimeout);
+        translateTimeout = setTimeout(() => {
+          const latest = turns[turns.length - 1]?.text || '';
+          translateText(latest);           // translation
+          if (autoReply) suggestReply();   // reply in parallel
+        }, 1200);
+      } else {
+        interim += e.results[i][0].transcript;
+      }
     }
-    const display = finalTranscript + (interim ? '<span class="interim">' + interim + '</span>' : '');
-    setPanel(transcriptBox, display || `<span class="interim">${UI.listening}</span>`, false);
-    if (finalTranscript.trim()) {
-      clearTimeout(translateTimeout);
-      translateTimeout = setTimeout(() => translateText(finalTranscript.trim()), 1200);
-    }
+    renderTranscript(interim);
   };
   r.onerror = (e) => {
     if (e.error !== 'no-speech') { showError(e.error); stopListening(); }
@@ -867,7 +949,7 @@ function startListening() {
   if (!getKey()) { openKeyModal(); return; }
   recognition = initRecognition();
   if (!recognition) return;
-  finalTranscript = '';
+  turns = []; speakerCount = 1; lastFinalTime = 0;
   setPanel(transcriptBox, `<span class="interim">${UI.phListen}</span>`, false);
   setPanel(translationBox, UI.phTranslation, true);
   setPanel(responseBox, UI.phReply, true);
@@ -883,24 +965,22 @@ function stopListening() {
   if (recognition) { try { recognition.stop(); } catch(e){} recognition = null; }
   btnListen.classList.remove('recording');
   btnListenTxt.textContent = UI.listen;
-  setStatus('', finalTranscript.trim() ? UI.completed : UI.ready);
-  // only trigger translation if it hasn't already started
-  if (finalTranscript.trim() && translationBox.classList.contains('placeholder')) {
+  const hasContent = turns.length > 0;
+  setStatus('', hasContent ? UI.completed : UI.ready);
+  if (hasContent && translationBox.classList.contains('placeholder')) {
     clearTimeout(translateTimeout);
-    translateText(finalTranscript.trim());
+    const latest = turns[turns.length - 1]?.text || '';
+    translateText(latest);
+    if (autoReply) suggestReply();
   }
 }
 
 btnListen.addEventListener('click', () => { isListening ? stopListening() : startListening(); });
 btnReset.addEventListener('click', () => {
   if (isListening) stopListening();
-  finalTranscript = '';
+  turns = []; speakerCount = 1; lastFinalTime = 0;
   clearTimeout(translateTimeout);
-  setPanel(transcriptBox, 'Premi Ascolta e parla in inglese...', true);
-  setPanel(translationBox, 'La traduzione apparirà qui...', true);
-  setPanel(responseBox, 'La risposta apparirà qui automaticamente...', true);
-  errorMsg.textContent = '';
-  setStatus('', 'Pronto');
+  resetPanels();
 });
 </script>
 </body>

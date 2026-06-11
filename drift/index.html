@@ -1264,26 +1264,80 @@ async function streamFromClaude(prompt,targetEl,signal){
 
 // ── GENERATION PROMPT ─────────────────────────────────────────
 const GENRES=[
-  'pad cinematico — attack 0.8-2s, reverb massivo, sine o triangle, 60-180Hz, LFO lentissimo, atmosferico e ampio',
-  'tensione da score — sawtooth filtrato, Q alto, distorsione leggera, 150-350Hz, molto reverb, senso di attesa',
-  'drone orchestrale — layers 2-3, frequenze armoniche, sine o triangle, sustain infinito, reverb cosmico',
-  'techno industriale — sawtooth o noise, 30-80Hz, distorsione alta, filtro highpass aggressivo, attack rapido',
-  'acid techno — square, 80-160Hz, bandpass Q 8-18, LFO veloce 4-14Hz, distorsione media, incalzante',
-  'warehouse sub — noise o sawtooth, 20-55Hz, sub-bass fisico, layers, reverb spaziale, pesante',
-  'Detroit techno — square o sawtooth, 80-150Hz, filtro LP, LFO 1-4Hz, groove meccanico',
-  'Berlin drone — triangle, frequenze basse-medie, LFO lentissimo, reverb lunghissimo, meditativo',
-  'IDM glitch — noise o square, 400-700Hz, LFO velocissimo, distorsione, filtro irregolare, rotto',
-  'electro lead — sawtooth, 200-500Hz, filtro LP sweepato, distorsione media, tagliente',
-  'ambient kosmische — sine, 40-120Hz, reverb enorme, LFO quasi fermo, layers, galleggiante',
-  'lo-fi tape — triangle, 150-350Hz, distorsione leggera, reverb alto, caldo e imperfetto',
-  'bedroom synth — sine o triangle, 200-400Hz, filtro LP dolce, attack morbido, intimo',
-  'cassette degradata — noise leggero, 120-280Hz, distorsione bassa-media, grana vintage',
-  'musique concrète — noise o square, highpass o notch, frequenza alta 400-700Hz, texture astratta',
-  'sub-bass tellurico — sine, 18-45Hz, attack lentissimo, reverb enorme, fisico e profondo',
-  'vapore meccanico — noise, lowpass 200-500Hz, Q basso, attack medio, organico e caldo',
-  'interferenza radio — square o noise, bandpass Q 10-20, LFO rapido, digitale e distorto',
-  'ambient notturno — sine, 80-200Hz, reverb altissimo, sustain lungo, silenzioso e misterioso',
-  'punk sintetico — sawtooth, 300-600Hz, distorsione alta, attack quasi zero, aggressivo e secco',
+  // Bleeps & chip
+  'bleep sintetico puro — tono breve e preciso, quasi segnale digitale',
+  'chip-tune 8-bit — texture videogame vintage, quadra o triangolare',
+  'Game Boy / handheld — melodia pixellata, vibrato sottile',
+  'toni DTMF / telefonici — segnale freddo e preciso, dual-tone',
+  'computer boot — sequenza di toni robot, freddo e istituzionale',
+  'modem dial-up — burst di frequenza analogico-digitale caotico',
+  'sonar ping — singolo tono puro che svanisce nel buio',
+  'beep medico / flatline — segnale continuo o pulsante, clinico',
+  // Glitch & digitale rotto
+  'glitch art sonoro — spezzato, digitale corrotto, irregolare',
+  'circuit bent — elettronica difettosa, instabile e viva',
+  'buffer underrun — artefatto digitale, loop corrotto',
+  'bitcrushed — risoluzione bassissima, grana digitale grezza',
+  'feedback loop — risonanza che si autoalimenta e cresce',
+  'skip CD / skip digitale — loop rotto che salta',
+  'data sonification — dati grezzi convertiti in suono',
+  // Noise
+  'harsh noise wall — texture rumorista abrasiva, senza melodia',
+  'white noise puro — rumore bianco totale, materia sonora',
+  'pink noise modellato — calore del rumore, quasi organico',
+  'granular noise — microframmenti di rumore, nebbia',
+  // Industrial & EBM
+  'EBM / body music — meccanico, duro, corpo che reagisce',
+  'power electronics — distorsione violenta, aggressivo',
+  'industrial factory — ritmo metallico, campionatore di fabbrica',
+  'dark electro — basso tagliente, oscuro, danzabile',
+  'martial industrial — solenne, pesante, grandioso',
+  // Techno & elettronica dura
+  'techno minimale — loop ipnotico, essenziale, preciso',
+  'Detroit techno — anima meccanica con groove umano',
+  'Berlin warehouse — oscuro, lungo, ipnotico',
+  'acid techno — 303 forsennato, Q altissimo, incalzante',
+  'gabber / speedcore — kick distorto, caotico, velocissimo',
+  'breakcore — ritmo frantumato, suono rotto e riassemblato',
+  'trance psy — arpeggio rapido, risonanza alta, trip',
+  // Ambient & drone
+  'ambient cosmica — immensa, senza tempo, senza inizio',
+  'drone meditativo — singola frequenza che si trasforma lentamente',
+  'dark ambient — tensione sotterranea, minacciosa',
+  'Berlin school kosmische — onde lente, viaggio interstellare',
+  'isolazionismo — quasi silenzio, texture al limite del percepibile',
+  'field recording sintetico — paesaggio sonoro costruito, non registrato',
+  // House & club
+  'deep house pad — calore soul sintetico, velluto',
+  'acid house 303 — filtro in movimento, iconico',
+  'UK garage — synth stridulo, veloce e urbano',
+  'grime arpeggio — freddo metallico, grigio londinese',
+  // Bass music
+  'sub-bass fisico — frequenza sotto i 40Hz, senti nel petto',
+  'dubstep wobble — LFO lento su basso enorme',
+  'neuro bass — distorsione biologica, organica e distorta',
+  // Sperimentale & avanguardia
+  'musique concrète — oggetti sonori astratti, teatro del suono',
+  'spettrale / microtonale — armonie insolite, frequenze prime',
+  'ring modulation — somme e differenze, suono alieno',
+  'FM synthesis — metallico brillante, operatori in cascata',
+  'sintesi formante — voce sintetica, vocale disumana',
+  // Texture fisiche sintetiche
+  'vetro che risuona — frequenza acuta fragile e prolungata',
+  'metallo vibrante — risonanza lunga, overtone complessi',
+  'corda percossa — attacco e risonanza, fisico',
+  'campana sintetica — FM breve, decay lungo',
+  // Estetica & genere
+  'vaporwave degradato — nostalgia corrotta, cassetta anni 80',
+  'lo-fi bedroom — imperfetto, caldo, intimo',
+  'hyperpop distorto — tutto al massimo, saturo e luminoso',
+  'deconstructed club — ritmo smontato, caos organizzato',
+  'shoegaze sintetico — muro di suono, riverb totale',
+  // Rarità & strumenti insoliti
+  'theremin — vibrato continuo, glissando umano',
+  'onde Martenot — sinusoide espressiva, romantica',
+  'suono fisico modellato — oggetto virtuale che vibra',
+  'vapore meccanico — noise filtrato lowpass, caldo come vapore',
 ];
 
 function _langNote(){ return techLang!=='it'?`\n\nIMPORTANT: Write "name", "category", "description", and all "tags" in ${LANG_DAW[techLang]}.`:''; }
@@ -1300,7 +1354,7 @@ function buildSimilarPrompt(){
   return GEN_PROMPT+`\n\nVARIAZIONE: Crea una variazione del suono "${current.name}" (${current.category}). Parametri attuali: oscillatore ${s.oscillator||'sine'} @ ${s.frequency||220}Hz, filtro ${s.filterType||'lowpass'} @ ${s.filterFreq||800}Hz Q=${s.filterQ||1}, ADSR ${s.attackTime||0.1}/${s.decayTime||0.3}/${s.sustainLevel||0.5}/${s.releaseTime||1.2}, reverb ${rev}%, distorsione ${dist}%, LFO ${s.lfoRate||0}Hz depth ${s.lfoDepth||0}, layers ${s.layers||1}. Varia i parametri numerici del ±20-30%, mantieni lo stesso carattere e stile. Nuovo nome poetico.`+_langNote();
 }
 
-const GEN_PROMPT=`Sei un sound designer che crea suoni sintetici unici per ogni stile musicale.
+const GEN_PROMPT=`Sei un sound designer estremo e sperimentale. Crei suoni sintetici radicalmente diversi l'uno dall'altro — da bleeps puri a noise abrasivo, da droni cosmici a glitch digitali spezzati.
 
 Rispondi SOLO con un oggetto JSON valido. Nessun testo prima o dopo. Nessun markdown. Nessun backtick. Solo JSON grezzo.
 
@@ -1311,13 +1365,19 @@ REGOLE:
 - ar/ag/ab = componenti RGB di ca come numeri 0-255
 - ca = colore hex scuro e saturo coerente con lo stile; cb = quasi nero; acc = versione luminosa vivida di ca
 - description: 3 frasi italiane brevi. Solo parole italiane reali. Metafore sensoriali concrete. Niente titoli.
-- name: inventivo, coerente con lo stile. Varia: astratto, geografico, scientifico, onomatopeico, latino, inventato.
-- oscillator: sine|sawtooth|square|triangle|noise
-- filterType: lowpass|highpass|bandpass|notch
-- frequency: 20-700, filterFreq: 80-14000, filterQ: 0.1-20
-- attackTime: 0.001-3, decayTime: 0.05-3, sustainLevel: 0-1, releaseTime: 0.3-7
-- reverbAmount: 0-0.95, distortionAmount: 0-0.9, lfoRate: 0.05-18, lfoDepth: 0-0.85
-- duration: 2-7, layers: 1-3`;
+- name: inventivo, coerente con lo stile. Astratto, geografico, scientifico, onomatopeico, latino, inventato.
+- oscillator: sine|sawtooth|square|triangle|noise — square/triangle per bleeps e chip, noise per texture, sawtooth per acidità
+- filterType: lowpass|highpass|bandpass|notch — highpass per glitch e noise sculpting, bandpass per acidità e risonanza
+- frequency: 20-3000 (20-80 sub-bass fisico, 200-800 medio, 800-3000 bleeps e chip-tune)
+- filterFreq: 60-18000, filterQ: 0.1-25 (Q alto 10-25 per acid e risonanze estreme)
+- attackTime: 0.001-4 (0.001-0.01 per bleeps percussivi, 1-4 per pad cinematici)
+- decayTime: 0.01-4, sustainLevel: 0-1, releaseTime: 0.05-8
+- reverbAmount: 0-0.95 (0 per bleeps asciutti, 0.85-0.95 per droni cosmici)
+- distortionAmount: 0-0.95 (0 per purezza, 0.7-0.95 per industrial e harsh)
+- lfoRate: 0-22, lfoDepth: 0-0.95
+- duration: 1-8 (1-2 per bleeps brevi, 5-8 per droni)
+- layers: 1-3
+- SII AUDACE: usa parametri estremi coerenti con lo stile. Un bleep deve essere brevissimo e asciutto. Un noise wall deve essere saturato e senza reverb. Un drone deve durare al massimo. Non fare sempre la via di mezzo.`;
 
 // ── STATE ─────────────────────────────────────────────────────
 let spinCount=0;

@@ -317,13 +317,15 @@
 
   .panel.translation { background: var(--bg3); }
   .panel.response {
-    border-color: rgba(80,160,255,0.35);
-    box-shadow: 0 0 0 0 rgba(80,160,255,0);
-    animation: pulse-blue 3s ease-in-out infinite;
+    border: 2px solid rgba(80,160,255,0.45);
+    box-shadow: 0 0 10px rgba(80,160,255,0.08);
+  }
+  .panel.response.working {
+    animation: pulse-blue 2s ease-in-out infinite;
   }
   @keyframes pulse-blue {
-    0%, 100% { border-color: rgba(80,160,255,0.25); box-shadow: 0 0 8px rgba(80,160,255,0.05); }
-    50%       { border-color: rgba(80,160,255,0.55); box-shadow: 0 0 18px rgba(80,160,255,0.18); }
+    0%, 100% { border-color: rgba(80,160,255,0.3); box-shadow: 0 0 8px rgba(80,160,255,0.06); }
+    50%       { border-color: rgba(80,160,255,0.75); box-shadow: 0 0 22px rgba(80,160,255,0.25); }
   }
 
   .spinner {
@@ -404,7 +406,7 @@
     <div class="panel-text placeholder" id="translationBox">La traduzione apparirà qui...</div>
   </div>
 
-  <div class="panel response">
+  <div class="panel response" id="responsePanel">
     <div class="panel-header">
       <div class="panel-label">
         <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
@@ -449,7 +451,8 @@ const btnKeySave  = document.getElementById('btnKeySave');
 const btnKeyCancel= document.getElementById('btnKeyCancel');
 const transcriptBox = document.getElementById('transcriptBox');
 const translationBox= document.getElementById('translationBox');
-const responseBox = document.getElementById('responseBox');
+const responseBox   = document.getElementById('responseBox');
+const responsePanel = document.getElementById('responsePanel');
 const statusDot   = document.getElementById('statusDot');
 const statusText  = document.getElementById('statusText');
 const errorMsg    = document.getElementById('errorMsg');
@@ -576,6 +579,7 @@ async function suggestReply() {
   if (!topic) return;
   setStatus('thinking', 'Genero risposta...');
   setPanel(responseBox, '<span class="spinner"></span>', false);
+  responsePanel.classList.add('working');
   try {
     const result = await callClaude(
       'You are a helpful assistant supporting someone on a professional business call. Given what was just said by the other person, suggest a concise, natural, professional reply in English. Write ONLY the reply itself — no preamble, no labels, no quotes.',
@@ -587,6 +591,8 @@ async function suggestReply() {
     setPanel(responseBox, 'Errore nel generare la risposta.', true);
     showError(e.message);
     setStatus('', 'Errore');
+  } finally {
+    responsePanel.classList.remove('working');
   }
 }
 

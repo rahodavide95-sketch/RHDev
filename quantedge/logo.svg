@@ -1,51 +1,91 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0a1628"/>
-      <stop offset="100%" stop-color="#0f2050"/>
+      <stop offset="0%" stop-color="#060d1f"/>
+      <stop offset="100%" stop-color="#0c1a3a"/>
     </linearGradient>
-    <linearGradient id="c1" x1="0%" y1="100%" x2="0%" y2="0%">
-      <stop offset="0%" stop-color="#1d4ed8"/>
-      <stop offset="100%" stop-color="#60a5fa"/>
-    </linearGradient>
-    <linearGradient id="c2" x1="0%" y1="100%" x2="0%" y2="0%">
-      <stop offset="0%" stop-color="#2563eb"/>
-      <stop offset="100%" stop-color="#93c5fd"/>
-    </linearGradient>
-    <linearGradient id="c3" x1="0%" y1="100%" x2="0%" y2="0%">
-      <stop offset="0%" stop-color="#3b82f6"/>
+
+    <!-- Price line gradient: muted → electric at breakout → pure white at apex -->
+    <linearGradient id="priceline" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#1d4ed8" stop-opacity="0.6"/>
+      <stop offset="48%"  stop-color="#3b82f6"/>
+      <stop offset="62%"  stop-color="#ffffff"/>
       <stop offset="100%" stop-color="#ffffff"/>
     </linearGradient>
-    <filter id="glow">
-      <feGaussianBlur stdDeviation="10" result="blur"/>
-      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+
+    <!-- Area under line -->
+    <linearGradient id="area" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="#3b82f6" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#1d4ed8" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Burst radial at breakout -->
+    <radialGradient id="burst" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="1"/>
+      <stop offset="30%"  stop-color="#93c5fd" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Apex glow -->
+    <radialGradient id="apexglow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"   stop-color="#ffffff"/>
+      <stop offset="50%"  stop-color="#93c5fd" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+    </radialGradient>
+
+    <filter id="blur-lg">
+      <feGaussianBlur stdDeviation="22"/>
+    </filter>
+    <filter id="blur-sm">
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+    <filter id="blur-line">
+      <feGaussianBlur stdDeviation="5"/>
     </filter>
   </defs>
 
   <!-- Background -->
   <rect width="512" height="512" rx="108" fill="url(#bg)"/>
 
-  <!-- Candlestick 1 (left, short) -->
-  <line x1="112" y1="330" x2="112" y2="360" stroke="#60a5fa" stroke-width="6" stroke-linecap="round"/>
-  <line x1="112" y1="290" x2="112" y2="268" stroke="#60a5fa" stroke-width="6" stroke-linecap="round"/>
-  <rect x="88" y="290" width="48" height="40" rx="8" fill="url(#c1)"/>
+  <!-- Subtle grid lines (financial chart feel) -->
+  <line x1="64" y1="160" x2="448" y2="160" stroke="rgba(96,165,250,0.05)" stroke-width="1"/>
+  <line x1="64" y1="240" x2="448" y2="240" stroke="rgba(96,165,250,0.05)" stroke-width="1"/>
+  <line x1="64" y1="320" x2="448" y2="320" stroke="rgba(96,165,250,0.05)" stroke-width="1"/>
 
-  <!-- Candlestick 2 (mid, medium) -->
-  <line x1="256" y1="280" x2="256" y2="310" stroke="#93c5fd" stroke-width="6" stroke-linecap="round"/>
-  <line x1="256" y1="200" x2="256" y2="178" stroke="#93c5fd" stroke-width="6" stroke-linecap="round"/>
-  <rect x="232" y="200" width="48" height="80" rx="8" fill="url(#c2)"/>
+  <!-- Resistance level — the line that gets broken -->
+  <line x1="64" y1="300" x2="448" y2="300" stroke="rgba(96,165,250,0.22)" stroke-width="2" stroke-dasharray="12 8"/>
 
-  <!-- Candlestick 3 (right, tall) — glowing -->
-  <rect x="376" y="120" width="48" height="130" rx="8" fill="url(#c3)" filter="url(#glow)" opacity="0.4"/>
-  <line x1="400" y1="260" x2="400" y2="290" stroke="white" stroke-width="6" stroke-linecap="round"/>
-  <line x1="400" y1="120" x2="400" y2="90" stroke="white" stroke-width="6" stroke-linecap="round"/>
-  <rect x="376" y="120" width="48" height="130" rx="8" fill="url(#c3)"/>
+  <!-- Area fill under price path -->
+  <path d="M64,400 L130,390 L185,370 L230,355 L268,302 L295,130 L330,80 L330,512 L64,512 Z"
+    fill="url(#area)"/>
 
-  <!-- Apex arrow on top of tallest candle -->
-  <path d="M400 72 L378 102 M400 72 L422 102" stroke="white" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="400" cy="72" r="10" fill="white" filter="url(#glow)"/>
-  <circle cx="400" cy="72" r="6" fill="white"/>
+  <!-- Price line glow (blurred duplicate) -->
+  <polyline points="64,400 130,390 185,370 230,355 268,302 295,130 330,80"
+    stroke="#60a5fa" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"
+    opacity="0.25" filter="url(#blur-line)"/>
 
-  <!-- Baseline -->
-  <line x1="64" y1="420" x2="448" y2="420" stroke="rgba(96,165,250,0.2)" stroke-width="3" stroke-linecap="round"/>
+  <!-- Price line main -->
+  <polyline points="64,400 130,390 185,370 230,355 268,302 295,130 330,80"
+    stroke="url(#priceline)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Breakout burst at resistance (where line crosses 300) -->
+  <circle cx="268" cy="302" r="72" fill="url(#burst)" filter="url(#blur-lg)" opacity="0.7"/>
+  <circle cx="268" cy="302" r="32" fill="url(#burst)" filter="url(#blur-sm)" opacity="0.9"/>
+  <circle cx="268" cy="302" r="10" fill="white" opacity="0.95"/>
+
+  <!-- Breakout rays -->
+  <line x1="268" y1="302" x2="220" y2="254" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.25"/>
+  <line x1="268" y1="302" x2="216" y2="302" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.2"/>
+  <line x1="268" y1="302" x2="224" y2="346" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.15"/>
+  <line x1="268" y1="302" x2="316" y2="254" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.3"/>
+  <line x1="268" y1="302" x2="320" y2="302" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.2"/>
+
+  <!-- Apex point (top of the move) -->
+  <circle cx="330" cy="80" r="56" fill="url(#apexglow)" filter="url(#blur-lg)" opacity="0.8"/>
+  <circle cx="330" cy="80" r="22" fill="white" filter="url(#blur-sm)" opacity="0.5"/>
+  <circle cx="330" cy="80" r="11" fill="white"/>
+
+  <!-- Small arrow above apex -->
+  <path d="M330,52 L316,70 M330,52 L344,70"
+    stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/>
 </svg>

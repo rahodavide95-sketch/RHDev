@@ -1,0 +1,25 @@
+{
+  "name": "Sonorium",
+  "short_name": "Sonorium",
+  "description": "Generative serendipity engine for sound designers",
+  "start_url": "/sonorium/",
+  "scope": "/sonorium/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#05050a",
+  "theme_color": "#05050a",
+  "icons": [
+    {
+      "src": "/sonorium/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/sonorium/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

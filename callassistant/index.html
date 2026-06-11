@@ -651,11 +651,64 @@ let recognition = null;
 let isListening = false;
 let turns = [];
 let speakerCount = 1;
-let lastFinalTime = 0;
-const TURN_PAUSE_MS = 1500;
 let translateTimeout = null;
 let interimTimeout  = null;
 let replyTimeout    = null;
+
+// ── AUDIO VOICE ANALYSIS ──────────────────────────────────────
+let audioCtx = null, analyserNode = null, audioStream = null;
+let sampleTimer = null;
+let phraseSamples = [];      // spectral centroids collected during current phrase
+let lastCentroid  = null;    // centroid of the previous phrase
+const CENTROID_THRESHOLD = 450; // Hz — tuned for same-gender: ~300-500, cross-gender: ~600+
+
+async function initAudio() {
+  try {
+    audioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const src = audioCtx.createMediaStreamSource(audioStream);
+    analyserNode = audioCtx.createAnalyser();
+    analyserNode.fftSize = 2048;
+    analyserNode.smoothingTimeConstant = 0.4;
+    src.connect(analyserNode);
+    sampleTimer = setInterval(collectSample, 80);
+  } catch { /* microphone unavailable — fall back to pause-only detection */ }
+}
+
+function collectSample() {
+  if (!analyserNode) return;
+  const data = new Uint8Array(analyserNode.frequencyBinCount);
+  analyserNode.getByteFrequencyData(data);
+  const binHz = audioCtx.sampleRate / analyserNode.fftSize;
+  const lo = Math.floor(80  / binHz);
+  const hi = Math.min(Math.floor(3400 / binHz), data.length);
+  let num = 0, den = 0;
+  for (let i = lo; i < hi; i++) { num += i * binHz * data[i]; den += data[i]; }
+  if (den > 60) phraseSamples.push(num / den); // only when voice-level energy present
+}
+
+function flushCentroid() {
+  if (phraseSamples.length === 0) return null;
+  const avg = phraseSamples.reduce((a, b) => a + b, 0) / phraseSamples.length;
+  phraseSamples = [];
+  return avg;
+}
+
+function voiceChanged() {
+  const cur = flushCentroid();
+  if (cur === null || lastCentroid === null) { lastCentroid = cur; return false; }
+  const changed = Math.abs(cur - lastCentroid) > CENTROID_THRESHOLD;
+  lastCentroid = cur;
+  return changed;
+}
+
+function stopAudio() {
+  clearInterval(sampleTimer); sampleTimer = null;
+  phraseSamples = []; lastCentroid = null;
+  if (audioCtx)    { audioCtx.close();                        audioCtx = null; }
+  if (audioStream) { audioStream.getTracks().forEach(t=>t.stop()); audioStream = null; }
+  analyserNode = null;
+}
 
 const SPEAKER_PALETTE = [
   { color: '#5DCAA5', bg: 'rgba(93,202,165,0.14)',  border: 'rgba(93,202,165,0.3)'  },
@@ -698,24 +751,6 @@ function renderTranscript(interim = '') {
   transcriptBox.innerHTML = html + interimHtml;
 }
 
-async function detectSpeaker(turnIdx) {
-  // Badge already assigned immediately; Claude verifies and may reassign
-  if (turnIdx === 0) return;
-  const prior = turns.slice(0, turnIdx).slice(-6);
-  const ctx   = prior.map(t => `${t.speaker}: ${t.text}`).join('\n');
-  const known = [...new Set(prior.map(t => t.speaker))];
-  const sys   = 'You identify speakers in business call transcripts. Reply only with a label like S1 or S2.';
-  const msg   = `Conversation:\n${ctx}\n\nNew utterance: "${turns[turnIdx].text}"\nKnown speakers: ${known.join(', ')}. Which speaker? Reply only with the label.`;
-  try {
-    const label = (await callClaude(sys, msg, 8)).trim().toUpperCase().match(/S\d+/)?.[0];
-    if (label && label !== turns[turnIdx].speaker) {
-      const n = parseInt(label.slice(1));
-      if (n > speakerCount) speakerCount = n;
-      turns[turnIdx].speaker = label;
-      renderTranscript();
-    }
-  } catch {}
-}
 
 // ── LANGUAGES ────────────────────────────────────────────────
 const ALL_LANGS = [
@@ -771,7 +806,7 @@ resetPanels();   // set panel placeholders in device locale on load
 
 [selectFrom, selectTo].forEach(sel => sel.addEventListener('change', () => {
   if (isListening) stopListening();
-  turns = []; speakerCount = 1; lastFinalTime = 0;
+  turns = []; speakerCount = 1;
   clearTimeout(translateTimeout);
   updateLabels();
   resetPanels();
@@ -782,7 +817,7 @@ btnSwap.addEventListener('click', () => {
   const tmp = selectFrom.value;
   selectFrom.value = selectTo.value;
   selectTo.value   = tmp;
-  turns = []; speakerCount = 1; lastFinalTime = 0;
+  turns = []; speakerCount = 1;
   clearTimeout(translateTimeout);
   updateLabels();
   resetPanels();
@@ -936,17 +971,15 @@ function initRecognition() {
       if (e.results[i].isFinal) {
         const text = e.results[i][0].transcript.trim();
         if (!text) continue;
-        const now = Date.now();
-        const newTurn = turns.length === 0 || (now - lastFinalTime) > TURN_PAUSE_MS;
-        lastFinalTime = now;
 
+        // voiceChanged() consumes the audio samples for this phrase
+        const diffVoice = voiceChanged();
         if (turns.length === 0) {
           turns.push({ speaker: 'S1', text });
-        } else if (newTurn) {
-          // Assign next speaker immediately; Claude verifies async
+        } else if (diffVoice) {
+          // Different voice detected → new speaker
           speakerCount++;
           turns.push({ speaker: `S${speakerCount}`, text });
-          detectSpeaker(turns.length - 1);
         } else {
           turns[turns.length - 1].text += ' ' + text;
         }
@@ -989,8 +1022,9 @@ function startListening() {
   if (!getKey()) { openKeyModal(); return; }
   recognition = initRecognition();
   if (!recognition) return;
-  turns = []; speakerCount = 1; lastFinalTime = 0;
+  turns = []; speakerCount = 1;
   clearTimeout(translateTimeout); clearTimeout(interimTimeout); clearTimeout(replyTimeout);
+  initAudio(); // start audio fingerprinting for speaker detection
   setPanel(transcriptBox, `<span class="interim">${UI.phListen}</span>`, false);
   setPanel(translationBox, UI.phTranslation, true);
   setPanel(responseBox, UI.phReply, true);
@@ -1003,6 +1037,7 @@ function startListening() {
 
 function stopListening() {
   isListening = false;
+  stopAudio();
   if (recognition) { try { recognition.stop(); } catch(e){} recognition = null; }
   btnListen.classList.remove('recording');
   btnListenTxt.textContent = UI.listen;
@@ -1018,7 +1053,7 @@ function stopListening() {
 btnListen.addEventListener('click', () => { isListening ? stopListening() : startListening(); });
 btnReset.addEventListener('click', () => {
   if (isListening) stopListening();
-  turns = []; speakerCount = 1; lastFinalTime = 0;
+  turns = []; speakerCount = 1;
   clearTimeout(translateTimeout); clearTimeout(interimTimeout); clearTimeout(replyTimeout);
   resetPanels();
 });

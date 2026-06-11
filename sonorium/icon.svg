@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-18 -18 236 236">
   <defs>
     <radialGradient id="sphere" cx="36%" cy="30%" r="74%">
       <stop offset="0%"   stop-color="#d0d1ff"/>
@@ -19,6 +19,12 @@
       <stop offset="0%"   stop-color="#7b7cf7" stop-opacity="0.40"/>
       <stop offset="100%" stop-color="#7b7cf7" stop-opacity="0"/>
     </radialGradient>
+    <filter id="outerGlowWide" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="11"/>
+    </filter>
+    <filter id="outerGlowTight" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="5.5"/>
+    </filter>
     <filter id="glow" x="-55%" y="-55%" width="210%" height="210%">
       <feGaussianBlur stdDeviation="11"/>
     </filter>
@@ -30,6 +36,14 @@
     </clipPath>
   </defs>
 
+  <!-- Outer glow — wide, soft -->
+  <rect x="1" y="1" width="198" height="198" rx="45"
+        fill="#4433cc" opacity="0.55" filter="url(#outerGlowWide)"/>
+
+  <!-- Outer glow — tight, vivid -->
+  <rect x="3" y="3" width="194" height="194" rx="44"
+        fill="#7060f0" opacity="0.40" filter="url(#outerGlowTight)"/>
+
   <!-- Background -->
   <rect width="200" height="200" fill="#05050a" rx="46"/>
 
@@ -37,7 +51,7 @@
     <!-- Ambient glow -->
     <circle cx="100" cy="104" r="92" fill="url(#ambient)" filter="url(#glow)"/>
 
-    <!-- Sound-wave rings (emanating outward) -->
+    <!-- Sound-wave rings -->
     <circle cx="100" cy="100" r="84" fill="none" stroke="#6c6ce8" stroke-width="0.9" opacity="0.22"/>
     <circle cx="100" cy="100" r="95" fill="none" stroke="#5555cc" stroke-width="0.7" opacity="0.12"/>
     <circle cx="100" cy="100" r="106" fill="none" stroke="#4444b0" stroke-width="0.5" opacity="0.06"/>
@@ -45,7 +59,7 @@
     <!-- Sphere -->
     <circle cx="100" cy="100" r="73" fill="url(#sphere)"/>
 
-    <!-- Rim light (bottom-right counter-light) -->
+    <!-- Rim light -->
     <circle cx="100" cy="100" r="73" fill="url(#rim)"/>
 
     <!-- Inner fresnel highlight -->

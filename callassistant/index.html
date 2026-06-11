@@ -86,12 +86,12 @@
 
   .dot {
     width: 7px; height: 7px; border-radius: 50%;
-    background: var(--text3);
-    transition: background 0.3s;
+    background: var(--accent); box-shadow: 0 0 6px var(--accent);
+    transition: background 0.3s, box-shadow 0.3s;
     flex-shrink: 0;
   }
-  .dot.active { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
-  .dot.thinking { background: var(--amber); }
+  .dot.active { background: var(--red); box-shadow: 0 0 6px var(--red); }
+  .dot.thinking { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
 
   .btn-key {
     background: none;

@@ -67,9 +67,5 @@
     <!-- Specular soft blob -->
     <ellipse cx="82" cy="77" rx="22" ry="15"
              fill="white" opacity="0.13" filter="url(#soft)"/>
-
-    <!-- Specular hot spot -->
-    <circle cx="77" cy="72" r="6.5" fill="white" opacity="0.28" filter="url(#soft)"/>
-    <circle cx="75" cy="70" r="3.2" fill="white" opacity="0.70"/>
   </g>
 </svg>

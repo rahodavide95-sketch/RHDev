@@ -990,10 +990,10 @@ function synthesize(p){
   const indicator=document.getElementById('sound-playing');
   indicator.classList.add('active');
   const _hint=document.getElementById('sphere-hint');
-  if(_hint)_hint.style.opacity='0';
+  isPlaying=true;if(_hint)_hint.style.opacity='0';
   const _playEnd=(dur+0.3)*1000;
   setTimeout(()=>indicator.classList.remove('active'),_playEnd);
-  setTimeout(()=>{ if(_hint&&!current)_hint.style.opacity=''; },_playEnd);
+  setTimeout(()=>{ isPlaying=false;if(_hint&&!isLoading)_hint.style.opacity=''; },_playEnd);
 }
 
 // ── COLOR / UI APPLY ──────────────────────────────────────────
@@ -1549,7 +1549,7 @@ document.getElementById('tech-close').addEventListener('click',()=>{
   if(_techAbort){_techAbort.abort();_techAbort=null;}
   techSheet.classList.remove('visible');
   techMode=null;isActing=false;
-  if(sphereHint)sphereHint.style.opacity='';
+  if(sphereHint&&!isPlaying)sphereHint.style.opacity='';
 });
 
 btnReplay.addEventListener('click',()=>{
@@ -1612,9 +1612,10 @@ function playBuffer(buf){
   const gain=ctx.createGain();gain.gain.setValueAtTime(0.85,now);
   src.connect(gain);gain.connect(globalAnalyser);globalAnalyser.connect(ctx.destination);
   src.start(now);activeSources.push(src);
+  isPlaying=true;if(sphereHint)sphereHint.style.opacity='0';
   const ind=document.getElementById('sound-playing');
   ind.classList.add('active');
-  src.onended=()=>ind.classList.remove('active');
+  src.onended=()=>{ isPlaying=false;ind.classList.remove('active');if(!isLoading&&sphereHint)sphereHint.style.opacity=''; };
 }
 
 // ── WAV EXPORT ────────────────────────────────────────────────
@@ -1752,12 +1753,13 @@ btnExport.addEventListener('click',async()=>{
 sphereWrap.addEventListener('click',spin);
 sphereWrap.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' ')spin(e); });
 
-// ── HIDE "touch to explore" DURING GENERATION ─────────────────
+// ── HIDE "touch to explore" DURING GENERATION / PLAYBACK ──────
 const sphereHint=document.getElementById('sphere-hint');
+let isPlaying=false;
 const _origSetGen=window.setGenerating;
 window.setGenerating=function(on){
   _origSetGen(on);
-  if(sphereHint)sphereHint.style.opacity=(on||current)?'0':'';
+  if(sphereHint)sphereHint.style.opacity=(on||isPlaying)?'0':'';
 };
 
 // ── LONG-PRESS RESET (2s on empty space → suction) ────────────
@@ -1798,7 +1800,7 @@ function _doReset(){
   const acEl=document.getElementById('actions-wrap');
   idEl.classList.add('suck-in');acEl.classList.add('suck-in');
   setTimeout(()=>{
-    current=null;lastBuffer=null;isReversed=false;playbackSpeed=1.0;
+    isPlaying=false;current=null;lastBuffer=null;isReversed=false;playbackSpeed=1.0;
     idEl.classList.remove('revealed','suck-in');
     acEl.classList.remove('revealed','suck-in');
     divider.style.display='none';

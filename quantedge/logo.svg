@@ -4,21 +4,25 @@
       <stop offset="0%" stop-color="#0a1628"/>
       <stop offset="100%" stop-color="#0f2050"/>
     </linearGradient>
-    <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="50%" stop-color="#93c5fd"/>
-      <stop offset="100%" stop-color="#2563eb"/>
+    <linearGradient id="line" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2563eb"/>
+      <stop offset="60%" stop-color="#93c5fd"/>
+      <stop offset="100%" stop-color="#ffffff"/>
     </linearGradient>
-    <linearGradient id="g2" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="1"/>
-      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.6"/>
+    <linearGradient id="fill" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#1d4ed8" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="arrow" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#60a5fa"/>
+      <stop offset="100%" stop-color="#ffffff"/>
     </linearGradient>
     <filter id="glow">
-      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feGaussianBlur stdDeviation="8" result="blur"/>
       <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
-    <filter id="softglow">
-      <feGaussianBlur stdDeviation="20" result="blur"/>
+    <filter id="bigglow">
+      <feGaussianBlur stdDeviation="18" result="blur"/>
       <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
   </defs>
@@ -26,20 +30,23 @@
   <!-- Background -->
   <rect width="512" height="512" rx="108" fill="url(#bg)"/>
 
-  <!-- Glow behind the A -->
-  <path d="M256 80 L430 400 L380 400 L256 160 L132 400 L82 400 Z" fill="#3b82f6" opacity="0.12" filter="url(#softglow)"/>
+  <!-- Area fill under chart line -->
+  <path d="M64 390 L130 320 L190 345 L255 260 L310 290 L370 190 L420 100 L420 420 L64 420 Z" fill="url(#fill)"/>
 
-  <!-- A crossbar glow -->
-  <rect x="158" y="284" width="196" height="30" rx="15" fill="#60a5fa" opacity="0.2" filter="url(#glow)"/>
+  <!-- Chart line glow -->
+  <polyline points="64,390 130,320 190,345 255,260 310,290 370,190 420,100"
+    stroke="#60a5fa" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" opacity="0.25" filter="url(#bigglow)"/>
 
-  <!-- A left leg -->
-  <path d="M256 72 L74 430 L122 430 L256 158 Z" fill="url(#g1)"/>
-  <!-- A right leg -->
-  <path d="M256 72 L438 430 L390 430 L256 158 Z" fill="url(#g2)"/>
-  <!-- A crossbar -->
-  <rect x="158" y="284" width="196" height="28" rx="14" fill="url(#g1)"/>
+  <!-- Chart line -->
+  <polyline points="64,390 130,320 190,345 255,260 310,290 370,190 420,100"
+    stroke="url(#line)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
 
-  <!-- Apex dot (top of the A) -->
-  <circle cx="256" cy="80" r="14" fill="white" filter="url(#glow)"/>
-  <circle cx="256" cy="80" r="9" fill="white"/>
+  <!-- Apex arrow pointing up -->
+  <path d="M420,100 L395,148 M420,100 L445,148" stroke="white" stroke-width="14" stroke-linecap="round" opacity="0.6"/>
+
+  <!-- Apex dot glow -->
+  <circle cx="420" cy="100" r="30" fill="#93c5fd" opacity="0.3" filter="url(#bigglow)"/>
+  <!-- Apex dot -->
+  <circle cx="420" cy="100" r="20" fill="url(#arrow)" filter="url(#glow)"/>
+  <circle cx="420" cy="100" r="9" fill="white"/>
 </svg>

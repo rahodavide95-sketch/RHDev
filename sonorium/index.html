@@ -583,14 +583,15 @@ let globalAnalyser = null;
   const _U_KEY='sn_planets';
   const _U_F=700;
   let _uniPlanets=[];
-  let _uniZoom=0,_uniTZ=0;
+  let _uniCamX=0,_uniCamY=0,_uniCamZ=-500;
+  let _uniVX=0,_uniVY=0,_uniTZ=-500;
   let _uniFlash=null;
 
   (function(){ try{const s=localStorage.getItem(_U_KEY);if(s)_uniPlanets=JSON.parse(s);}catch(e){} })();
   function _uSave(){ try{localStorage.setItem(_U_KEY,JSON.stringify(_uniPlanets.slice(-60)));}catch(e){} }
   function _uPos(){
-    const a=Math.random()*Math.PI*2,e=(Math.random()-.5)*Math.PI*.55,r=1900+Math.random()*2100;
-    return{x:Math.cos(e)*Math.cos(a)*r,y:Math.sin(e)*r*.42,z:700+Math.cos(e)*Math.sin(a)*r*.88+(Math.random()-.5)*500};
+    const a=Math.random()*Math.PI*2,e=(Math.random()-.5)*Math.PI*.5,r=2200+Math.random()*2500;
+    return{x:Math.cos(e)*Math.cos(a)*r,y:Math.sin(e)*r*.45,z:900+Math.cos(e)*Math.sin(a)*r*.9+(Math.random()-.5)*600};
   }
 
   window.uniAddPlanet=function(data){
@@ -602,10 +603,17 @@ let globalAnalyser = null;
   };
   window.uniSetActive=function(id){
     const p=_uniPlanets.find(p=>p.id===id);
-    if(p){for(const q of _uniPlanets){if(!q.x&&!q.y&&!q.z&&q!==p){const r=_uPos();q.x=r.x;q.y=r.y;q.z=r.z;}}p.x=0;p.y=0;p.z=0;_uSave();}
+    if(!p)return;
+    const ox=p.x,oy=p.y,oz=p.z;
+    for(const q of _uniPlanets){q.x-=ox;q.y-=oy;q.z-=oz;}
+    _uniCamX-=ox;_uniCamY-=oy;_uniVX=0;_uniVY=0;_uSave();
   };
-  window.setUniZoom=function(z){_uniTZ=Math.max(0,Math.min(1,z));};
-  window.getUniZoom=function(){return _uniZoom;};
+  window.getUniCamZ=function(){return _uniCamZ;};
+  window.uniDepth=function(){return Math.max(0,Math.min(1,(-_uniCamZ-500)/250));};
+  window.addUniTZ=function(dz){_uniTZ=Math.min(-500,_uniTZ+dz);};
+  window.setUniTZ=function(z){_uniTZ=Math.min(-500,z);};
+  // drag pan: dx/dy = screen delta pixels, negative because drag-right = world moves right = camX decreases
+  window.addUniPan=function(dx,dy){const spd=Math.abs(_uniCamZ)/1400;_uniVX-=dx*spd;_uniVY-=dy*spd;};
   window.uniFlashPlanet=function(planet){if(planet)_uniFlash={planet,life:0,maxLife:24};};
   window.uniHitTest=function(cx,cy){
     const v=window._uniVis;if(!v)return null;
@@ -615,14 +623,15 @@ let globalAnalyser = null;
   };
 
   function _drawUni(){
-    if(_uniZoom<0.02)return;
+    const depth=Math.max(0,Math.min(1,(-_uniCamZ-500)/250));
+    if(depth<0.02)return;
     const W=cW,H=cH;
-    const alpha=Math.min(1,_uniZoom/.26);
-    const camZ=-500-_uniZoom*3500;
+    const alpha=Math.min(1,depth/.28);
     const vis=[];
     for(const p of _uniPlanets){
-      const dz=p.z-camZ;if(dz<60)continue;
-      const sx=p.x*_U_F/dz+W*.5,sy=p.y*_U_F/dz+H*.5;
+      const dz=p.z-_uniCamZ;if(dz<60)continue;
+      const sx=(p.x-_uniCamX)*_U_F/dz+W*.5;
+      const sy=(p.y-_uniCamY)*_U_F/dz+H*.5;
       const c=p.data.color||{};
       const pr=Math.min(255,Math.max(0,c.ar||120)),pg=Math.min(255,Math.max(0,c.ag||80)),pb=Math.min(255,Math.max(0,c.ab||220));
       const sr=Math.max(2.5,Math.min(70,40*_U_F/dz));
@@ -633,24 +642,21 @@ let globalAnalyser = null;
     for(const v of vis){
       const{sx,sy,sr,pr,pg,pb,dz,p}=v;
       if(sx<-sr*4||sx>W+sr*4||sy<-sr*4||sy>H+sr*4)continue;
-      const df=Math.min(1,Math.max(0,1-(dz-500)/9500));
+      const df=Math.min(1,Math.max(0,1-(dz-500)/12000));
       const op=alpha*Math.max(.07,df);if(op<.015)continue;
       let fb=0;
       if(_uniFlash&&_uniFlash.planet===p)fb=Math.max(0,1-_uniFlash.life/_uniFlash.maxLife);
-      // Glow
       const gr=ctx.createRadialGradient(sx,sy,sr*.4,sx,sy,sr*3.6);
       const gop=op*(.36+fb*.5);
       gr.addColorStop(0,`rgba(${pr},${pg},${pb},${gop.toFixed(3)})`);
       gr.addColorStop(.38,`rgba(${pr},${pg},${pb},${(gop*.18).toFixed(3)})`);
       gr.addColorStop(1,'rgba(0,0,0,0)');
       ctx.fillStyle=gr;ctx.beginPath();ctx.arc(sx,sy,sr*3.6,0,Math.PI*2);ctx.fill();
-      // Body
       const sg=ctx.createRadialGradient(sx-sr*.3,sy-sr*.28,sr*.06,sx,sy,sr);
       sg.addColorStop(0,`rgba(255,255,255,${(op*(.42+fb*.3)).toFixed(3)})`);
       sg.addColorStop(.33,`rgba(${pr},${pg},${pb},${(op*(1+fb*.4)).toFixed(3)})`);
       sg.addColorStop(1,`rgba(0,0,0,${(op*.9).toFixed(3)})`);
       ctx.fillStyle=sg;ctx.beginPath();ctx.arc(sx,sy,sr,0,Math.PI*2);ctx.fill();
-      // Label
       if(sr>5&&alpha>.17){
         const la=Math.min(1,(alpha-.17)/.28)*df;
         if(la>.04){
@@ -662,10 +668,10 @@ let globalAnalyser = null;
       }
     }
     if(_uniFlash){_uniFlash.life++;if(_uniFlash.life>=_uniFlash.maxLife)_uniFlash=null;}
-    if(alpha>.72){
+    if(alpha>.75){
       ctx.save();ctx.font='11px Inter,sans-serif';ctx.textAlign='center';
-      ctx.fillStyle=`rgba(255,255,255,${((alpha-.72)/.28*.3).toFixed(3)})`;
-      ctx.fillText('tap a planet · tap empty space to return',W*.5,H-20);ctx.restore();
+      ctx.fillStyle=`rgba(255,255,255,${((alpha-.75)/.25*.28).toFixed(3)})`;
+      ctx.fillText('drag to navigate · tap a planet to explore',W*.5,H-20);ctx.restore();
     }
   }
 
@@ -1117,13 +1123,17 @@ let globalAnalyser = null;
 
     drawWaveRing(bR,bG,bB);
 
-    // Universe zoom lerp + app fade
-    _uniZoom+=(_uniTZ-_uniZoom)*.072;
-    if(_uniZoom<0.003)_uniZoom=0;
+    // Universe camera — velocity pan + Z lerp
+    _uniVX*=.91;_uniVY*=.91;
+    if(Math.abs(_uniVX)<.01)_uniVX=0;if(Math.abs(_uniVY)<.01)_uniVY=0;
+    _uniCamX+=_uniVX;_uniCamY+=_uniVY;
+    _uniCamZ+=(_uniTZ-_uniCamZ)*.14;
+    if(_uniCamZ>-500){_uniCamZ=-500;if(_uniTZ>-500)_uniTZ=-500;}
+    // App fade: 0=surface(camZ=-500), 1=space(camZ<=-750)
+    const _depth=Math.max(0,Math.min(1,(-_uniCamZ-500)/250));
     const _appEl=window._uniApp||(window._uniApp=document.querySelector('.app'));
     if(_appEl){
-      const fade=_uniZoom*1.75;
-      if(fade>0.005){_appEl.style.opacity=Math.max(0,1-fade).toFixed(3);_appEl.style.pointerEvents=fade>.35?'none':'';}
+      if(_depth>0.005){_appEl.style.opacity=Math.max(0,1-_depth*1.5).toFixed(3);_appEl.style.pointerEvents=_depth>.4?'none':'';}
       else if(_appEl.style.opacity){_appEl.style.opacity='';_appEl.style.pointerEvents='';}
     }
     _drawUni();
@@ -1131,54 +1141,79 @@ let globalAnalyser = null;
   draw();
 })();
 
-// ── UNIVERSE GESTURES ────────────────────────────────────────────────────────
-let _pDist0=null,_pZoom0=0;
+// ── UNIVERSE GESTURES ─────────────────────────────────────────────────────────
+let _uDrag=false,_uDX=0,_uDY=0;
+let _uPinch0=null,_uPZ0=0;
 
+// Touch: 1-finger drag = pan, 2-finger pinch = fly in/out
 document.addEventListener('touchstart',e=>{
+  if(e.touches.length===1){
+    _uDX=e.touches[0].clientX;_uDY=e.touches[0].clientY;
+    _uDrag=window.uniDepth&&window.uniDepth()>0.12;
+  }
   if(e.touches.length===2){
+    _uDrag=false;
     const dx=e.touches[0].clientX-e.touches[1].clientX,dy=e.touches[0].clientY-e.touches[1].clientY;
-    _pDist0=Math.sqrt(dx*dx+dy*dy);
-    _pZoom0=window.getUniZoom?window.getUniZoom():0;
+    _uPinch0=Math.sqrt(dx*dx+dy*dy);
+    _uPZ0=window.getUniCamZ?window.getUniCamZ():-500;
   }
 },{passive:true});
 
 document.addEventListener('touchmove',e=>{
-  if(e.touches.length!==2||_pDist0===null)return;
-  const dx=e.touches[0].clientX-e.touches[1].clientX,dy=e.touches[0].clientY-e.touches[1].clientY;
-  const d=Math.sqrt(dx*dx+dy*dy);
-  // pinch in (d decreases) = zoom out = enter universe
-  const z=Math.max(0,Math.min(1,_pZoom0+(_pDist0-d)/_pDist0*3.2));
-  if(window.setUniZoom)window.setUniZoom(z);
+  if(_uDrag&&e.touches.length===1){
+    const dx=e.touches[0].clientX-_uDX,dy=e.touches[0].clientY-_uDY;
+    _uDX=e.touches[0].clientX;_uDY=e.touches[0].clientY;
+    if(window.addUniPan)window.addUniPan(dx,dy);
+  }
+  if(e.touches.length===2&&_uPinch0!==null){
+    const dx=e.touches[0].clientX-e.touches[1].clientX,dy=e.touches[0].clientY-e.touches[1].clientY;
+    const d=Math.sqrt(dx*dx+dy*dy);
+    // pinch in (d < _uPinch0) → fly deeper; pinch out → back to surface
+    const newZ=Math.min(-500,_uPZ0+(_uPinch0-d)/window.innerWidth*-9000);
+    if(window.setUniTZ)window.setUniTZ(newZ);
+  }
 },{passive:true});
 
-document.addEventListener('touchend',e=>{if(e.touches.length<2)_pDist0=null;});
+document.addEventListener('touchend',e=>{
+  if(e.touches.length<2)_uPinch0=null;
+  if(e.touches.length<1)_uDrag=false;
+});
 
+// Mouse drag to pan
+document.addEventListener('mousedown',e=>{
+  if(window.uniDepth&&window.uniDepth()>0.12&&!e.target.closest('button,input,a,.sphere-wrap')){
+    _uDrag=true;_uDX=e.clientX;_uDY=e.clientY;
+  }
+});
+document.addEventListener('mousemove',e=>{
+  if(!_uDrag)return;
+  if(window.addUniPan)window.addUniPan(e.clientX-_uDX,e.clientY-_uDY);
+  _uDX=e.clientX;_uDY=e.clientY;
+});
+document.addEventListener('mouseup',()=>_uDrag=false);
+
+// Scroll wheel — fly forward/backward
 document.addEventListener('wheel',e=>{
-  if(!window.setUniZoom||!window.getUniZoom)return;
-  const z=window.getUniZoom();
-  // scroll down (deltaY > 0) = zoom out = enter universe
-  const nz=Math.max(0,Math.min(1,z+e.deltaY*.0012));
-  window.setUniZoom(nz);
-  if(nz>0.01||z>0.01)e.preventDefault();
+  if(!window.addUniTZ)return;
+  const delta=e.deltaMode===1?e.deltaY*20:e.deltaMode===2?e.deltaY*400:e.deltaY;
+  window.addUniTZ(-delta*3.5);
+  const depth=window.uniDepth?window.uniDepth():0;
+  if(depth>0.01||delta>0)e.preventDefault();
 },{passive:false});
 
-// Universe click — capture phase fires before sphere click
+// Click in universe → tap planet to load, tap space does nothing
 document.addEventListener('click',e=>{
-  const z=window.getUniZoom?window.getUniZoom():0;
-  if(z<0.3)return;
+  const depth=window.uniDepth?window.uniDepth():0;
+  if(depth<0.28)return;
   e.stopPropagation();
   const planet=window.uniHitTest?window.uniHitTest(e.clientX,e.clientY):null;
-  if(planet){
-    _loadPlanetSound(planet);
-  }else{
-    if(window.setUniZoom)window.setUniZoom(0);
-  }
+  if(planet)_loadPlanetSound(planet);
 },true);
 
 function _loadPlanetSound(planet){
   if(window.uniFlashPlanet)window.uniFlashPlanet(planet);
   if(window.uniSetActive)window.uniSetActive(planet.id);
-  if(window.setUniZoom)window.setUniZoom(0);
+  if(window.setUniTZ)window.setUniTZ(-500); // fly back to surface
   stopActiveSources();
   isPlaying=false;
   setTimeout(()=>{

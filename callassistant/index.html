@@ -494,7 +494,7 @@
         <span id="labelTranscript">Trascrizione (EN)</span>
       </div>
     </div>
-    <div class="panel-text placeholder" id="transcriptBox">Premi Ascolta e parla in inglese...</div>
+    <div class="panel-text placeholder" id="transcriptBox">Press Listen and speak in English...</div>
   </div>
 
   <div class="lang-swap">
@@ -532,7 +532,7 @@
         </button>
       </div>
     </div>
-    <div class="panel-text placeholder" id="responseBox">La risposta apparirà qui automaticamente...</div>
+    <div class="panel-text placeholder" id="responseBox">Suggested reply will appear here automatically...</div>
   </div>
 
   <div class="error" id="errorMsg"></div>
@@ -597,21 +597,21 @@ let translateTimeout = null;
 
 // ── LANGUAGES ────────────────────────────────────────────────
 const ALL_LANGS = [
-  { code: 'en-US', label: 'Inglese',    short: 'EN' },
-  { code: 'it-IT', label: 'Italiano',   short: 'IT' },
-  { code: 'es-ES', label: 'Spagnolo',   short: 'ES' },
-  { code: 'fr-FR', label: 'Francese',   short: 'FR' },
-  { code: 'de-DE', label: 'Tedesco',    short: 'DE' },
-  { code: 'pt-BR', label: 'Portoghese', short: 'PT' },
-  { code: 'nl-NL', label: 'Olandese',   short: 'NL' },
-  { code: 'ru-RU', label: 'Russo',      short: 'RU' },
-  { code: 'zh-CN', label: 'Cinese',     short: 'ZH' },
-  { code: 'ja-JP', label: 'Giapponese', short: 'JA' },
-  { code: 'ko-KR', label: 'Coreano',    short: 'KO' },
-  { code: 'ar-SA', label: 'Arabo',      short: 'AR' },
-  { code: 'pl-PL', label: 'Polacco',    short: 'PL' },
-  { code: 'tr-TR', label: 'Turco',      short: 'TR' },
-  { code: 'hi-IN', label: 'Hindi',      short: 'HI' },
+  { code: 'en-US', label: 'Inglese',    short: 'EN', ph: { listen: 'Press Listen and speak in English...', translation: 'Translation will appear here...', reply: 'Suggested reply will appear here automatically...' } },
+  { code: 'it-IT', label: 'Italiano',   short: 'IT', ph: { listen: 'Premi Ascolta e parla in italiano...', translation: 'La traduzione apparirà qui...', reply: 'La risposta apparirà qui automaticamente...' } },
+  { code: 'es-ES', label: 'Spagnolo',   short: 'ES', ph: { listen: 'Pulsa Escuchar y habla en español...', translation: 'La traducción aparecerá aquí...', reply: 'La respuesta sugerida aparecerá aquí automáticamente...' } },
+  { code: 'fr-FR', label: 'Francese',   short: 'FR', ph: { listen: 'Appuie sur Écouter et parle en français...', translation: 'La traduction apparaîtra ici...', reply: 'La réponse suggérée apparaîtra ici automatiquement...' } },
+  { code: 'de-DE', label: 'Tedesco',    short: 'DE', ph: { listen: 'Drücke Zuhören und sprich auf Deutsch...', translation: 'Die Übersetzung erscheint hier...', reply: 'Die vorgeschlagene Antwort erscheint hier automatisch...' } },
+  { code: 'pt-BR', label: 'Portoghese', short: 'PT', ph: { listen: 'Pressione Ouvir e fale em português...', translation: 'A tradução aparecerá aqui...', reply: 'A resposta sugerida aparecerá aqui automaticamente...' } },
+  { code: 'nl-NL', label: 'Olandese',   short: 'NL', ph: { listen: 'Druk op Luisteren en spreek Nederlands...', translation: 'De vertaling verschijnt hier...', reply: 'Het voorgestelde antwoord verschijnt hier automatisch...' } },
+  { code: 'ru-RU', label: 'Russo',      short: 'RU', ph: { listen: 'Нажми «Слушать» и говори по-русски...', translation: 'Перевод появится здесь...', reply: 'Предлагаемый ответ появится здесь автоматически...' } },
+  { code: 'zh-CN', label: 'Cinese',     short: 'ZH', ph: { listen: '按"聆听"并用中文说话...', translation: '翻译将在此处显示...', reply: '建议回复将在此处自动显示...' } },
+  { code: 'ja-JP', label: 'Giapponese', short: 'JA', ph: { listen: '「聴く」を押して日本語で話してください...', translation: '翻訳はここに表示されます...', reply: '提案された返信がここに自動的に表示されます...' } },
+  { code: 'ko-KR', label: 'Coreano',    short: 'KO', ph: { listen: '"듣기"를 누르고 한국어로 말하세요...', translation: '번역이 여기에 표시됩니다...', reply: '제안된 답변이 여기에 자동으로 표시됩니다...' } },
+  { code: 'ar-SA', label: 'Arabo',      short: 'AR', ph: { listen: 'اضغط استمع وتحدث بالعربية...', translation: 'ستظهر الترجمة هنا...', reply: 'ستظهر الإجابة المقترحة هنا تلقائياً...' } },
+  { code: 'pl-PL', label: 'Polacco',    short: 'PL', ph: { listen: 'Naciśnij Słuchaj i mów po polsku...', translation: 'Tłumaczenie pojawi się tutaj...', reply: 'Sugerowana odpowiedź pojawi się tutaj automatycznie...' } },
+  { code: 'tr-TR', label: 'Turco',      short: 'TR', ph: { listen: '"Dinle"ye bas ve Türkçe konuş...', translation: 'Çeviri burada görünecek...', reply: 'Önerilen yanıt burada otomatik olarak görünecek...' } },
+  { code: 'hi-IN', label: 'Hindi',      short: 'HI', ph: { listen: '"सुनें" दबाएं और हिंदी में बोलें...', translation: 'अनुवाद यहां दिखाई देगा...', reply: 'सुझाई गई प्रतिक्रिया यहां स्वचालित रूप से दिखाई देगी...' } },
 ];
 
 function getLangByCode(code) { return ALL_LANGS.find(l => l.code === code) || ALL_LANGS[0]; }
@@ -636,10 +636,10 @@ function updateLabels() {
 }
 
 function resetPanels() {
-  const f = fromLang();
-  setPanel(transcriptBox,  `Premi Ascolta e parla in ${f.label.toLowerCase()}...`, true);
-  setPanel(translationBox, 'La traduzione apparirà qui...', true);
-  setPanel(responseBox,    'La risposta apparirà qui automaticamente...', true);
+  const f = fromLang(), t = toLang();
+  setPanel(transcriptBox,  f.ph.listen,      true);
+  setPanel(translationBox, t.ph.translation, true);
+  setPanel(responseBox,    f.ph.reply,       true);
   errorMsg.textContent = '';
   setStatus('', 'Pronto');
 }
@@ -833,7 +833,7 @@ function startListening() {
   recognition = initRecognition();
   if (!recognition) return;
   finalTranscript = '';
-  setPanel(transcriptBox, `<span class="interim">In ascolto (${fromLang().short})...</span>`, false);
+  setPanel(transcriptBox, `<span class="interim">${fromLang().ph.listen}</span>`, false);
   setPanel(translationBox, 'La traduzione apparirà qui...', true);
   setPanel(responseBox, 'La risposta apparirà qui automaticamente...', true);
   isListening = true;

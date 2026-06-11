@@ -30,7 +30,7 @@
     --font-body: 'Inter', sans-serif;
   }
 
-  html, body { width:100%; min-height:100vh; background:var(--c-bg); color:var(--c-text-primary); font-family:var(--font-body); overflow-x:hidden; }
+  html, body { width:100%; min-height:100vh; background:var(--c-bg); color:var(--c-text-primary); font-family:var(--font-body); overflow:hidden; overscroll-behavior:none; }
 
   body::before {
     content:''; position:fixed; inset:0; z-index:0; opacity:0.025; pointer-events:none;
@@ -587,6 +587,7 @@ let globalAnalyser = null;
   let _uniYaw=0,_uniPitch=0,_uniDYaw=0,_uniDPitch=0,_uniSpeed=0;
   let _uniFlash=null;
   let _uniSunX=0,_uniSunY=0,_uniSunZ=2000;
+  let _uniSphR=90,_uniSphG=100,_uniSphB=200;
   const _uniStars3D=(()=>{const a=[];for(let i=0;i<2200;i++){const th=Math.random()*Math.PI*2,ph=Math.acos(2*Math.random()-1),sp=Math.sin(ph);a.push({wx:sp*Math.cos(th),wy:Math.cos(ph),wz:sp*Math.sin(th),sz:.6+Math.random()*1.6,bright:Math.random()>.96});}return a;})();
 
   function _uSave(){try{localStorage.setItem(_U_KEY,JSON.stringify({ver:4,planets:_uniPlanets.slice(-60)}));}catch(e){}}
@@ -625,7 +626,7 @@ let globalAnalyser = null;
     _uSave();
   };
   window.uniDepth=function(){const dx=_uniCamX,dy=_uniCamY,dz=_uniCamZ+500;return Math.max(0,Math.min(1,Math.sqrt(dx*dx+dy*dy+dz*dz)/250));};
-  window.addUniRotate=function(dx,dy){_uniDYaw-=dx*.003;_uniDPitch-=dy*.003;};
+  window.addUniRotate=function(dx,dy){_uniDYaw+=dx*.003;_uniDPitch-=dy*.003;};
   window.addUniSpeed=function(ds){_uniSpeed=Math.max(-15,Math.min(15,_uniSpeed+ds));};
   window.uniReturnToSurface=function(){_uniCamX=0;_uniCamY=0;_uniCamZ=-500;_uniYaw=0;_uniPitch=0;_uniDYaw=0;_uniDPitch=0;_uniSpeed=0;};
   window.uniFlashPlanet=function(planet){if(planet)_uniFlash={planet,life:0,maxLife:24};};
@@ -660,11 +661,10 @@ let globalAnalyser = null;
       ctx.fillStyle=`rgba(255,255,255,${usop.toFixed(2)})`;
       ctx.fillRect(usx-.5,usy-.5,us.sz,us.sz);
     }
-    // ── Orbit rings ───────────────────────────────────────────────────────────
+    // ── Orbit guides (very faint dashes) ─────────────────────────────────────
     {const ringR=[360,600,860,1140,1460,1820];
-    ctx.save();
-    for(let ri=0;ri<ringR.length;ri++){
-      const rr=ringR[ri];
+    ctx.save();ctx.setLineDash([2,14]);ctx.lineWidth=0.4;
+    for(const rr of ringR){
       ctx.beginPath();let rfirst=true;
       for(let si=0;si<=72;si++){
         const ang=(si/72)*Math.PI*2;
@@ -676,11 +676,11 @@ let globalAnalyser = null;
         const rsx=rcx2*_U_F/rcz2+W*.5,rsy=rcy2*_U_F/rcz2+H*.5;
         if(rfirst){ctx.moveTo(rsx,rsy);rfirst=false;}else ctx.lineTo(rsx,rsy);
       }
-      ctx.strokeStyle=`rgba(255,255,255,${(alpha*.07).toFixed(2)})`;
-      ctx.lineWidth=0.5;ctx.stroke();
+      ctx.strokeStyle=`rgba(255,255,255,${(alpha*.028).toFixed(3)})`;
+      ctx.stroke();
     }
     ctx.restore();}
-    // ── Sun / home sphere ─────────────────────────────────────────────────────
+    // ── Sonorium sphere (home) ────────────────────────────────────────────────
     {const srx=_uniSunX-_uniCamX,sry=_uniSunY-_uniCamY,srz=_uniSunZ-_uniCamZ;
     const scx2=srx*cosY-srz*sinY,scz02=srx*sinY+srz*cosY;
     const scy2=sry*cosP+scz02*sinP,scz2=-sry*sinP+scz02*cosP;
@@ -688,15 +688,32 @@ let globalAnalyser = null;
       const ssx=scx2*_U_F/scz2+W*.5,ssy=scy2*_U_F/scz2+H*.5;
       const ssr=Math.max(4,Math.min(55,32*_U_F/scz2));
       window._uniSunScreen={sx:ssx,sy:ssy,sr:ssr};
-      const sunG=ctx.createRadialGradient(ssx,ssy,0,ssx,ssy,ssr*5.5);
-      sunG.addColorStop(0,`rgba(255,235,150,${(alpha*.95).toFixed(2)})`);
-      sunG.addColorStop(.15,`rgba(255,200,80,${(alpha*.55).toFixed(2)})`);
-      sunG.addColorStop(.45,`rgba(255,160,40,${(alpha*.14).toFixed(2)})`);
-      sunG.addColorStop(1,'rgba(0,0,0,0)');
-      ctx.fillStyle=sunG;ctx.beginPath();ctx.arc(ssx,ssy,ssr*5.5,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle=`rgba(255,248,210,${(alpha*.98).toFixed(2)})`;
-      ctx.beginPath();ctx.arc(ssx,ssy,ssr,0,Math.PI*2);ctx.fill();
-      if(alpha>.5){ctx.save();ctx.font=`10px 'Space Grotesk',sans-serif`;ctx.textAlign='center';ctx.fillStyle=`rgba(255,220,120,${((alpha-.5)/.5*.6).toFixed(2)})`;ctx.fillText('home',ssx,ssy+ssr+13);ctx.restore();}
+      const cr=_uniSphR,cg=_uniSphG,cb=_uniSphB;
+      // Outer corona
+      const halo=ctx.createRadialGradient(ssx,ssy,ssr*.55,ssx,ssy,ssr*4.8);
+      halo.addColorStop(0,`rgba(${cr},${cg},${cb},${(alpha*.42).toFixed(3)})`);
+      halo.addColorStop(.28,`rgba(${cr},${cg},${cb},${(alpha*.15).toFixed(3)})`);
+      halo.addColorStop(.62,`rgba(${cr},${cg},${cb},${(alpha*.04).toFixed(3)})`);
+      halo.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=halo;ctx.beginPath();ctx.arc(ssx,ssy,ssr*4.8,0,Math.PI*2);ctx.fill();
+      // Rings (like the CSS sphere rings)
+      ctx.save();
+      for(let ri=0;ri<3;ri++){
+        ctx.beginPath();
+        ctx.ellipse(ssx,ssy,ssr*(1.45+ri*.36),ssr*(1.45+ri*.36)*.22,Math.PI*.18+ri*.14,0,Math.PI*2);
+        ctx.strokeStyle=`rgba(${cr},${cg},${cb},${(alpha*.14).toFixed(3)})`;
+        ctx.lineWidth=0.7;ctx.stroke();
+      }
+      ctx.restore();
+      // Sphere body
+      const sphG=ctx.createRadialGradient(ssx-ssr*.32,ssy-ssr*.3,ssr*.07,ssx,ssy,ssr);
+      sphG.addColorStop(0,`rgba(255,255,255,${(alpha*.58).toFixed(3)})`);
+      sphG.addColorStop(.2,`rgba(${Math.min(255,cr+70)},${Math.min(255,cg+70)},${Math.min(255,cb+90)},${(alpha*.78).toFixed(3)})`);
+      sphG.addColorStop(.65,`rgba(${cr},${cg},${cb},${(alpha*.92).toFixed(3)})`);
+      sphG.addColorStop(1,`rgba(${Math.round(cr*.18)},${Math.round(cg*.18)},${Math.round(cb*.22)},${(alpha*.97).toFixed(3)})`);
+      ctx.fillStyle=sphG;ctx.beginPath();ctx.arc(ssx,ssy,ssr,0,Math.PI*2);ctx.fill();
+      // Label
+      if(alpha>.4){const lfs=Math.max(9,Math.min(14,ssr*.6));ctx.save();ctx.font=`${lfs}px 'Space Grotesk',sans-serif`;ctx.textAlign='center';ctx.fillStyle=`rgba(255,255,255,${((alpha-.4)/.6*.68).toFixed(3)})`;ctx.fillText('Sonorium',ssx,ssy+ssr+lfs+3);ctx.restore();}
     }else{window._uniSunScreen=null;}}
     const vis=[];
     for(const p of _uniPlanets){
@@ -1230,6 +1247,7 @@ let globalAnalyser = null;
       if(_depth>0.005){_appEl.style.opacity=Math.max(0,1-_depth*1.5).toFixed(3);_appEl.style.pointerEvents=_depth>.4?'none':'';}
       else if(_appEl.style.opacity){_appEl.style.opacity='';_appEl.style.pointerEvents='';}
     }}
+    _uniSphR=bR;_uniSphG=bG;_uniSphB=bB;
     _drawUni();
   }
   draw();
@@ -1288,13 +1306,12 @@ document.addEventListener('mousemove',e=>{
 });
 document.addEventListener('mouseup',()=>_uDrag=false);
 
-// Scroll wheel — fly forward/backward
+// Scroll wheel — fly forward/backward (always prevent page scroll)
 document.addEventListener('wheel',e=>{
+  e.preventDefault();
   if(!window.addUniSpeed)return;
   const delta=e.deltaMode===1?e.deltaY*20:e.deltaMode===2?e.deltaY*400:e.deltaY;
   window.addUniSpeed(-delta*0.05);
-  const depth=window.uniDepth?window.uniDepth():0;
-  if(depth>0.01||delta<0)e.preventDefault();
 },{passive:false});
 
 // Click in universe → tap sun = home, tap planet = load, tap space = nothing

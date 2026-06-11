@@ -175,25 +175,6 @@
   .btn-listen.recording { background: var(--red-dim); border-color: rgba(226,75,74,0.3); color: #f08080; }
   .btn-listen.recording:hover { background: rgba(226,75,74,0.16); }
 
-  .btn-suggest {
-    padding: 11px 18px;
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    color: var(--text);
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.2s;
-    font-family: 'Inter', sans-serif;
-    white-space: nowrap;
-  }
-  .btn-suggest:hover { background: var(--bg3); border-color: var(--border2); }
-  .btn-suggest:disabled { opacity: 0.35; cursor: default; pointer-events: none; }
-
   .btn-reset {
     padding: 11px 13px;
     background: var(--bg2);
@@ -317,10 +298,6 @@
       <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
       <span id="btnListenTxt">Ascolta</span>
     </button>
-    <button class="btn-suggest" id="btnSuggest" disabled>
-      <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-      Suggerisci risposta
-    </button>
     <button class="btn-reset" id="btnReset" title="Cancella tutto">
       <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg>
     </button>
@@ -357,7 +334,7 @@
         Copia
       </button>
     </div>
-    <div class="panel-text placeholder" id="responseBox">Premi "Suggerisci risposta" per una risposta in inglese...</div>
+    <div class="panel-text placeholder" id="responseBox">La risposta apparirà qui automaticamente...</div>
   </div>
 
   <div class="error" id="errorMsg"></div>
@@ -383,7 +360,6 @@
 
 <script>
 const btnListen   = document.getElementById('btnListen');
-const btnSuggest  = document.getElementById('btnSuggest');
 const btnReset    = document.getElementById('btnReset');
 const btnListenTxt= document.getElementById('btnListenTxt');
 const btnCopy     = document.getElementById('btnCopy');
@@ -483,8 +459,8 @@ async function translateText(text) {
       text, 600
     );
     setPanel(translationBox, result.trim(), false);
-    btnSuggest.disabled = false;
     setStatus('', 'Tradotto');
+    await suggestReply();
   } catch(e) {
     setPanel(translationBox, 'Errore di traduzione.', true);
     showError(e.message);
@@ -497,7 +473,6 @@ async function suggestReply() {
   if (!topic) return;
   setStatus('thinking', 'Genero risposta...');
   setPanel(responseBox, '<span class="spinner"></span>', false);
-  btnSuggest.disabled = true;
   try {
     const result = await callClaude(
       'You are a helpful assistant supporting someone on a professional business call. Given what was just said by the other person, suggest a concise, natural, professional reply in English. Write ONLY the reply itself — no preamble, no labels, no quotes.',
@@ -509,8 +484,6 @@ async function suggestReply() {
     setPanel(responseBox, 'Errore nel generare la risposta.', true);
     showError(e.message);
     setStatus('', 'Errore');
-  } finally {
-    btnSuggest.disabled = false;
   }
 }
 
@@ -551,8 +524,7 @@ function startListening() {
   finalTranscript = '';
   setPanel(transcriptBox, '<span class="interim">In ascolto...</span>', false);
   setPanel(translationBox, 'La traduzione apparirà qui...', true);
-  setPanel(responseBox, 'Premi "Suggerisci risposta" per una risposta in inglese...', true);
-  btnSuggest.disabled = true;
+  setPanel(responseBox, 'La risposta apparirà qui automaticamente...', true);
   isListening = true;
   recognition.start();
   btnListen.classList.add('recording');
@@ -570,15 +542,13 @@ function stopListening() {
 }
 
 btnListen.addEventListener('click', () => { isListening ? stopListening() : startListening(); });
-btnSuggest.addEventListener('click', suggestReply);
 btnReset.addEventListener('click', () => {
   if (isListening) stopListening();
   finalTranscript = '';
   clearTimeout(translateTimeout);
   setPanel(transcriptBox, 'Premi Ascolta e parla in inglese...', true);
   setPanel(translationBox, 'La traduzione apparirà qui...', true);
-  setPanel(responseBox, 'Premi "Suggerisci risposta" per una risposta in inglese...', true);
-  btnSuggest.disabled = true;
+  setPanel(responseBox, 'La risposta apparirà qui automaticamente...', true);
   errorMsg.textContent = '';
   setStatus('', 'Pronto');
 });

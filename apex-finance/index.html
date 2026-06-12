@@ -490,9 +490,9 @@ header{
 
 /* ── DIP OPPORTUNITY BOX ── */
 .dip-box{
-  display:block;
+  display:none;
   border-radius:var(--radius);padding:18px 22px;margin-bottom:16px;
-  border-left:4px solid;
+  border-left:4px solid transparent;
 }
 .dip-box.dip-opportunity{
   background:rgba(52,211,153,.06);border-color:#34d399;
@@ -2576,6 +2576,7 @@ function buildTags(R,M50,M200,price,V,Mo,w30){
 // ── DIP OPPORTUNITY SIGNAL ──
 function buildDipSignal(R,M50,M200,Mo3m,Mo12m,DD,cur,w30,score){
   const box=document.getElementById('dip-box');
+  box.style.display='block';
   const fmt=n=>n>=10000?n.toLocaleString('it-IT',{maximumFractionDigits:0}):n>=1?n.toFixed(2):n.toFixed(4);
 
   // Reset
@@ -3833,33 +3834,6 @@ function renderFundamentals(fund){
     // Show section but all values will show — (no data)
     console.warn('[APEX] fetchFundamentals returned null — Yahoo Finance unreachable');
     return;
-  }
-
-  // Analyst consensus
-  const tot=fund.strongBuy+fund.buy+fund.hold+fund.sell+fund.strongSell;
-  if(tot>0){
-    const pct=x=>Math.round(x/tot*100)+'%';
-    document.getElementById('ab-sbuy').style.width=pct(fund.strongBuy);
-    document.getElementById('ab-buy').style.width=pct(fund.buy);
-    document.getElementById('ab-hold').style.width=pct(fund.hold);
-    document.getElementById('ab-sell').style.width=pct(fund.sell);
-    document.getElementById('ab-ssell').style.width=pct(fund.strongSell);
-    document.getElementById('al-sbuy').textContent=fund.strongBuy;
-    document.getElementById('al-buy').textContent=fund.buy;
-    document.getElementById('al-hold').textContent=fund.hold;
-    document.getElementById('al-sell').textContent=fund.sell;
-    document.getElementById('al-ssell').textContent=fund.strongSell;
-    const bullPct=(fund.strongBuy+fund.buy)/tot*100;
-    const bearPct=(fund.sell+fund.strongSell)/tot*100;
-    const lbl=bullPct>=65?'Strong Buy':bullPct>=50?'Buy':bearPct>=50?'Strong Sell':bearPct>=35?'Sell':'Hold';
-    const color=bullPct>=50?'var(--g)':bearPct>=50?'var(--r)':'var(--y)';
-    document.getElementById('av-label').textContent=lbl;
-    document.getElementById('av-label').style.color=color;
-    document.getElementById('av-sub').textContent=`${tot} analisti`;
-  }else{
-    document.getElementById('av-label').textContent='N/D';
-    document.getElementById('av-label').style.color='var(--t3)';
-    document.getElementById('av-sub').textContent='nessuna copertura';
   }
 
   // Fundamentals cards

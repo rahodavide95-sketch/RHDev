@@ -2200,6 +2200,7 @@ async function fetchFundamentals(ticker){
   const modules='financialData,defaultKeyStatistics,summaryDetail,recommendationTrend';
   const t=encodeURIComponent(ticker);
 
+  // Parse quoteSummary (v10/v11)
   const parseSummary=data=>{
     const res=data?.quoteSummary?.result?.[0]; if(!res) return null;
     const fd=res.financialData||{}, ks=res.defaultKeyStatistics||{};
@@ -2214,6 +2215,7 @@ async function fetchFundamentals(ticker){
       sell:rt.sell||0, strongSell:rt.strongSell||0,
     };
   };
+  // Parse v7/quote
   const parseQuote=data=>{
     const q=data?.quoteResponse?.result?.[0]; if(!q) return null;
     return{
@@ -2223,19 +2225,41 @@ async function fetchFundamentals(ticker){
       strongBuy:0, buy:0, hold:0, sell:0, strongSell:0,
     };
   };
+  // Parse v8/chart with modules (works on Vercel — same endpoint as charts)
+  const parseChart=data=>{
+    const meta=data?.chart?.result?.[0]?.meta; if(!meta) return null;
+    // modules data sits at result level when requested
+    const res=data?.chart?.result?.[0];
+    const fd=res?.financialData||meta?.financialData||{};
+    const ks=res?.defaultKeyStatistics||meta?.defaultKeyStatistics||{};
+    const sd=res?.summaryDetail||meta?.summaryDetail||{};
+    const rt=(res?.recommendationTrend?.trend||[])[0]||{};
+    const r={
+      roe:fd.returnOnEquity?.raw??null, opMargin:fd.operatingMargins?.raw??null,
+      earningsGrowth:fd.earningsGrowth?.raw??null, revenueGrowth:fd.revenueGrowth?.raw??null,
+      pb:ks.priceToBook?.raw??null, peg:ks.pegRatio?.raw??null,
+      trailingPE:sd.trailingPE?.raw??ks.trailingPE?.raw??meta.trailingPE??null,
+      forwardPE:sd.forwardPE?.raw??ks.forwardPE?.raw??null,
+      strongBuy:rt.strongBuy||0, buy:rt.buy||0, hold:rt.hold||0,
+      sell:rt.sell||0, strongSell:rt.strongSell||0,
+    };
+    return Object.values(r).some(v=>v!==null&&v!==0)?r:null;
+  };
 
   // Race all endpoints in parallel — take first valid response
-  const apiFetch=async(type)=>{
+  const apiFetch=async()=>{
     try{
-      const r=await fetch(`/api/quote?ticker=${encodeURIComponent(ticker)}&type=${type}`,{signal:AbortSignal.timeout(12000)});
+      const r=await fetch(`/api/quote?ticker=${encodeURIComponent(ticker)}`,{signal:AbortSignal.timeout(12000)});
       if(!r.ok) return null;
       return await r.json();
     }catch{return null;}
   };
   const attempts=[
-    // Vercel API route — server-side, no CORS (primary)
-    apiFetch('quote').then(r=>r?parseQuote(r):null),
-    apiFetch('summary').then(r=>r?parseSummary(r):null),
+    // Vercel API route — server-side, tries chart+summary+quote in order
+    apiFetch().then(r=>{
+      if(!r) return null;
+      return parseChart(r)||parseSummary(r)||parseQuote(r)||null;
+    }),
     // Fallback: proxy chain (GitHub Pages / dev)
     fetchJSON(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${t}`).then(parseQuote).catch(()=>null),
     fetchJSON(`https://query2.finance.yahoo.com/v7/finance/quote?symbols=${t}`).then(parseQuote).catch(()=>null),

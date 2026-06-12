@@ -2297,6 +2297,12 @@ async function fetchMacroData(){
     }catch{return null;}
   };
   const BLS_URL='https://api.bls.gov/publicAPI/v1/timeseries/data/CUUR0000SA0';
+  // Try Vercel server-side first (BLS blocks browser CORS)
+  try{
+    const r=await dfetch('/api/inflation',5000);
+    if(r) out.usCPI=blsVal(r);
+  }catch{}
+
   const ECB_EU='https://data-api.ecb.europa.eu/service/data/ICP/M.U2.N.000000.4.ANR?lastNObservations=1&format=jsondata';
   const ECB_IT='https://data-api.ecb.europa.eu/service/data/ICP/M.IT.N.000000.4.ANR?lastNObservations=1&format=jsondata';
   const ECB_BCE='https://data-api.ecb.europa.eu/service/data/FM/D.U2.EUR.4F.KR.DFR.LEV?lastNObservations=1&format=jsondata';
@@ -2322,7 +2328,7 @@ async function fetchMacroData(){
   if(fredBce){out.bceRate=fredBce.val;out.bceDate=fredBce.date;}
 
   const [usR,euR,itR,bceR,bceR2]=await Promise.allSettled([
-    dfetch(BLS_URL),
+    out.usCPI!==null?Promise.resolve(null):dfetch(BLS_URL),
     dfetch(ECB_EU),
     dfetch(ECB_IT),
     ...(out.bceRate===null?[dfetch(ECB_BCE),dfetch(ECB_BCE2)]:[Promise.resolve(null),Promise.resolve(null)]),

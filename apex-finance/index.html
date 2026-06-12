@@ -3912,8 +3912,8 @@ async function analyze(ticker){
     // stagionalità mese corrente
     const curMonthSea=seasonal(tss,cl)[new Date().getMonth()];
     const seasonPct=curMonthSea?curMonthSea.p:null;
-    // fetch fondamentali in parallelo (non blocca se fallisce)
-    const fund=await fetchFundamentals(ticker).catch(()=>null);
+    // fetch fondamentali in parallelo — NON blocca il rendering principale
+    const fundPromise=fetchFundamentals(ticker).catch(()=>null);
     // fund excluded from score to keep home/analysis scores consistent
     const score=edgeScore(R,M50,M200,V,Mo,w7,w30,w90,cur,Mo3m,Mo6m,Mo12m,null,seasonPct);
     globalScoreMap[ticker]=score; setCached(ticker,score);
@@ -4007,9 +4007,14 @@ async function analyze(ticker){
     const _sea=seasonal(tss,cl), _dist=retDist(ret(cl)), _wrs=[w7,w14,w30,w60,w90,w180,w365];
     requestAnimationFrame(()=>requestAnimationFrame(()=>{
       drawCharts(_sea,_dist,_wrs,tss,cl);
-      renderFundamentals(fund);
-      renderBHS(score, fund);
+      // Mostra dip e BHS subito con fund=null, poi aggiorna quando arrivano i fondamentali
       buildDipSignal(R,M50,M200,Mo3m,Mo12m,DD,cur,w30,score);
+      renderBHS(score,null);
+      renderFundamentals(null);
+      fundPromise.then(fund=>{
+        renderFundamentals(fund);
+        renderBHS(score,fund);
+      });
     }));
     return; // skip finally's setAnalyzeLoading
 

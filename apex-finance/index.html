@@ -258,6 +258,7 @@ header{
   background:var(--bar-bg);backdrop-filter:var(--bar-blur);-webkit-backdrop-filter:var(--bar-blur);
   border-bottom:1px solid var(--bar-border);}
 .ao-title{flex:1;font-size:.95rem;font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ao-bar .refresh-btn{margin-left:auto;}
 .ao-x{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;
   background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;
   cursor:pointer;font-size:.9rem;transition:background .15s;}
@@ -1873,6 +1874,7 @@ header{
 <div id="ao">
   <div class="ao-bar">
     <span class="ao-title" id="ao-title">Analisi</span>
+    <button class="refresh-btn" id="ao-refresh" onclick="refreshCard(this,()=>analyze(document.getElementById('ao-title').textContent.match(/\(([^)]+)\)/)?.[1]||''))" title="Aggiorna">↻</button>
     <button class="ao-x" onclick="closeAnalysisOverlay()">✕</button>
   </div>
   <div class="ao-body" id="ao-body"></div>

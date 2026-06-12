@@ -548,8 +548,13 @@ header{
 .wait .sig-badge{background:rgba(245,158,11,.18);color:var(--y);}
 .sig-score-big{font-size:2rem;font-weight:700;line-height:1;}
 .sig-headline{font-size:.9375rem;font-weight:600;}
-.sig-body{font-size:.875rem;color:var(--t2);line-height:2;margin-top:14px;}
+.sig-body{font-size:.82rem;color:var(--t2);line-height:1.6;margin-top:14px;}
 .sig-body b{color:var(--text);}
+.sig-points{display:flex;flex-direction:column;gap:8px;margin-top:12px;}
+.sig-point{display:flex;gap:10px;align-items:flex-start;font-size:.82rem;color:var(--t2);line-height:1.5;}
+.sig-point::before{content:'·';color:var(--accent);font-size:1.1rem;flex-shrink:0;margin-top:-1px;}
+.sig-decision{margin-top:14px;padding:12px 16px;border-radius:var(--radius-sm);background:rgba(255,255,255,.05);border:1px solid var(--border);font-size:.83rem;font-weight:500;line-height:1.6;}
+.sig-decision b{color:var(--text);}
 .sig-tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px;}
 .stag{
   padding:4px 11px;border-radius:20px;font-size:.7rem;font-weight:500;
@@ -1572,7 +1577,8 @@ header{
         </div>
         <span class="sig-headline" id="sig-headline">—</span>
       </div>
-      <div class="sig-body" id="sig-body">—</div>
+      <div class="sig-points" id="sig-points"></div>
+      <div class="sig-decision" id="sig-decision"></div>
       <div class="sig-tags" id="sig-tags"></div>
     </div><!-- /sig-box -->
 
@@ -2569,8 +2575,7 @@ function buildSignalText(ticker,price,R,M50,M200,V,Mo,DD,w7,w30,w90,score){
   else if(score>=35) action=`🟡 <b>DECISIONE: ATTENZIONE.</b> Edge negativo (${score}/100). Le condizioni sono sfavorevoli. Evitare nuovi ingressi. Se già in posizione, valutare riduzione o stop-loss più stretto.`;
   else action=`🔴 <b>DECISIONE: USCITA.</b> Edge statistico negativo (${score}/100). Pressione ribassista dominante. Uscire o proteggere il capitale con stop rigidi. Attendere il ritorno sopra MA200 per rivalutare.`;
 
-  p.push(action);
-  return p.join(' ');
+  return {points: p, decision: action};
 }
 
 function buildTags(R,M50,M200,price,V,Mo,w30){
@@ -3985,7 +3990,9 @@ async function analyze(ticker){
       score>=45?'Zona di equilibrio — attendere un segnale più chiaro':
       score>=35?'Condizioni sfavorevoli — evitare nuovi ingressi':
       'Pressione ribassista dominante — proteggere il capitale';
-    document.getElementById('sig-body').innerHTML=buildSignalText(ticker,cur,R,M50,M200,V,Mo,DD,w7,w30,w90,score);
+    const sig=buildSignalText(ticker,cur,R,M50,M200,V,Mo,DD,w7,w30,w90,score);
+    document.getElementById('sig-points').innerHTML=sig.points.map(p=>'<div class="sig-point">'+p+'</div>').join('');
+    document.getElementById('sig-decision').innerHTML=sig.decision;
 
     // Tags
     const tags=buildTags(R,M50,M200,cur,V,Mo,w30);

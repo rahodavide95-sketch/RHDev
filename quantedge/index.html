@@ -2213,25 +2213,22 @@ async function fetchFundamentals(ticker){
   };
 
   // Race all endpoints in parallel — take first valid response
-  const directFetch=async(url)=>{
+  const apiFetch=async(type)=>{
     try{
-      const r=await fetch(url,{signal:AbortSignal.timeout(8000),headers:{'Accept':'application/json'}});
+      const r=await fetch(`/api/quote?ticker=${encodeURIComponent(ticker)}&type=${type}`,{signal:AbortSignal.timeout(12000)});
       if(!r.ok) return null;
       return await r.json();
     }catch{return null;}
   };
   const attempts=[
-    // v7/quote most proxy-friendly — P/E + P/B
+    // Vercel API route — server-side, no CORS (primary)
+    apiFetch('quote').then(r=>r?parseQuote(r):null),
+    apiFetch('summary').then(r=>r?parseSummary(r):null),
+    // Fallback: proxy chain (GitHub Pages / dev)
     fetchJSON(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${t}`).then(parseQuote).catch(()=>null),
     fetchJSON(`https://query2.finance.yahoo.com/v7/finance/quote?symbols=${t}`).then(parseQuote).catch(()=>null),
-    // direct (no proxy) — sometimes allowed
-    directFetch(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${t}`).then(r=>r?parseQuote(r):null),
-    directFetch(`https://query2.finance.yahoo.com/v7/finance/quote?symbols=${t}`).then(r=>r?parseQuote(r):null),
-    // quoteSummary via proxy for full data
     fetchJSON(`https://query1.finance.yahoo.com/v10/finance/quoteSummary/${t}?modules=${modules}`).then(parseSummary).catch(()=>null),
     fetchJSON(`https://query2.finance.yahoo.com/v10/finance/quoteSummary/${t}?modules=${modules}`).then(parseSummary).catch(()=>null),
-    fetchJSON(`https://query1.finance.yahoo.com/v11/finance/quoteSummary/${t}?modules=${modules}`).then(parseSummary).catch(()=>null),
-    fetchJSON(`https://query2.finance.yahoo.com/v11/finance/quoteSummary/${t}?modules=${modules}`).then(parseSummary).catch(()=>null),
   ];
 
   // Return first non-null result

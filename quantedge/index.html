@@ -4509,6 +4509,16 @@ document.addEventListener('DOMContentLoaded',()=>{
   setInterval(()=>{ if(isNYSEOpen()) loadMacro(); },5*60*1000);
   // Auto-refresh Fear&Greed/VIX every 5 min when market is open
   setInterval(()=>{ if(isNYSEOpen()) loadPulse(); },5*60*1000);
+  // Auto-refresh Panoramica scores every 10 min when market is open
+  setInterval(()=>{ if(isNYSEOpen()) loadPanoramica(); },10*60*1000);
+  // Crypto refreshes 24/7 every 10 min (markets never close)
+  setInterval(()=>{
+    if(!isNYSEOpen()){
+      const cryptoEntries=(PANO['t-crypto']||[]);
+      Promise.all(cryptoEntries.map(([ticker])=>fetchAndScore(ticker).then(s=>{if(s!=null)globalScoreMap[ticker]=s;}).catch(()=>{})))
+        .then(()=>renderSecRows('t-crypto'));
+    }
+  },10*60*1000);
 });
 </script>
 

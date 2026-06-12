@@ -13,43 +13,54 @@
       <stop offset="0%" stop-color="#2563eb"/>
       <stop offset="100%" stop-color="#ffffff"/>
     </linearGradient>
+    <radialGradient id="apexlight" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="1"/>
+      <stop offset="35%"  stop-color="#bfdbfe" stop-opacity="0.7"/>
+      <stop offset="70%"  stop-color="#3b82f6" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#1d4ed8" stop-opacity="0"/>
+    </radialGradient>
     <filter id="glow">
-      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feGaussianBlur stdDeviation="10" result="blur"/>
       <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
     <filter id="bigglow">
-      <feGaussianBlur stdDeviation="18" result="blur"/>
+      <feGaussianBlur stdDeviation="22" result="blur"/>
       <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="apexblur">
+      <feGaussianBlur stdDeviation="30"/>
     </filter>
   </defs>
 
   <!-- Background -->
   <rect width="512" height="512" rx="108" fill="url(#bg)"/>
 
-  <!-- Isosceles triangle — two sides only, no base (= A shape) -->
-  <!-- Glow layer -->
-  <polyline points="80,432 256,80 432,432"
-    stroke="rgba(59,130,246,0.3)" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"
-    filter="url(#bigglow)"/>
-  <!-- Main stroke -->
-  <polyline points="80,432 256,80 432,432"
-    stroke="url(#lg1)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Apex light halo — large soft circle at top -->
+  <circle cx="256" cy="80" r="110" fill="url(#apexlight)" filter="url(#apexblur)" opacity="0.9"/>
 
-  <!-- Trend line as crossbar — rising left to right -->
-  <!-- Glow -->
-  <polyline points="130,318 210,284 272,298 358,244"
-    stroke="#60a5fa" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"
-    opacity="0.4" filter="url(#bigglow)"/>
-  <!-- Main -->
-  <polyline points="130,318 210,284 272,298 358,244"
-    stroke="url(#trend)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- A legs — glow layer -->
+  <polyline points="80,444 256,72 432,444"
+    stroke="rgba(147,197,253,0.25)" stroke-width="52"
+    stroke-linecap="round" stroke-linejoin="round" filter="url(#bigglow)"/>
+  <!-- A legs — main, bold -->
+  <polyline points="80,444 256,72 432,444"
+    stroke="url(#lg1)" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
 
-  <!-- Apex dot -->
-  <circle cx="256" cy="80" r="50" fill="url(#lg1)" opacity="0.15" filter="url(#bigglow)"/>
-  <circle cx="256" cy="80" r="18" fill="white" filter="url(#glow)" opacity="0.6"/>
-  <circle cx="256" cy="80" r="10" fill="white"/>
+  <!-- Trend line — glow -->
+  <polyline points="130,318 210,284 272,298 358,244"
+    stroke="#60a5fa" stroke-width="22"
+    stroke-linecap="round" stroke-linejoin="round"
+    opacity="0.35" filter="url(#bigglow)"/>
+  <!-- Trend line — main -->
+  <polyline points="130,318 210,284 272,298 358,244"
+    stroke="url(#trend)" stroke-width="14"
+    stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Apex — bright point of light -->
+  <circle cx="256" cy="72" r="22" fill="white" filter="url(#glow)" opacity="0.5"/>
+  <circle cx="256" cy="72" r="12" fill="white"/>
 
   <!-- Trend end dot -->
-  <circle cx="358" cy="244" r="32" fill="#93c5fd" opacity="0.2" filter="url(#bigglow)"/>
+  <circle cx="358" cy="244" r="30" fill="#93c5fd" opacity="0.18" filter="url(#glow)"/>
   <circle cx="358" cy="244" r="11" fill="white"/>
 </svg>

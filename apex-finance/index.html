@@ -2232,16 +2232,14 @@ async function fetchFundamentals(ticker){
     }catch{return null;}
   };
   const attempts=[
-    // Vercel API route — server-side, tries chart+summary+quote in order
-    apiFetch().then(r=>{
-      if(!r) return null;
-      return parseChart(r)||parseSummary(r)||parseQuote(r)||null;
-    }),
-    // Fallback: proxy chain (GitHub Pages / dev)
+    // Vercel API route — server-side
+    apiFetch().then(r=>r?(parseChart(r)||parseSummary(r)||parseQuote(r)):null),
+    // v8/chart con modules — stesso endpoint che funziona per i grafici (proxy-friendly)
+    fetchJSON(`https://query1.finance.yahoo.com/v8/finance/chart/${t}?range=1d&interval=1d&modules=${modules}`).then(parseChart).catch(()=>null),
+    fetchJSON(`https://query2.finance.yahoo.com/v8/finance/chart/${t}?range=1d&interval=1d&modules=${modules}`).then(parseChart).catch(()=>null),
+    // fallback v7/quote e quoteSummary
     fetchJSON(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${t}`).then(parseQuote).catch(()=>null),
-    fetchJSON(`https://query2.finance.yahoo.com/v7/finance/quote?symbols=${t}`).then(parseQuote).catch(()=>null),
     fetchJSON(`https://query1.finance.yahoo.com/v10/finance/quoteSummary/${t}?modules=${modules}`).then(parseSummary).catch(()=>null),
-    fetchJSON(`https://query2.finance.yahoo.com/v10/finance/quoteSummary/${t}?modules=${modules}`).then(parseSummary).catch(()=>null),
   ];
 
   // Return first non-null result

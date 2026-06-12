@@ -2214,7 +2214,7 @@ async function fetchFundamentals(ticker){
 
 // ── MACRO DATA (inflazione + BCE) ──
 async function fetchMacroData(){
-  const out={usCPI:null,euHICP:null,itHICP:null,bceRate:null};
+  const out={usCPI:null,euHICP:null,itHICP:null,bceRate:null,bceDate:null};
 
   // Direct fetch with timeout (ECB + World Bank support CORS natively)
   const dfetch=async(url,ms=9000)=>{
@@ -2225,17 +2225,21 @@ async function fetchMacroData(){
   };
 
   // ECB SDMX-JSON: extract value from any series key length
-  const ecbVal=data=>{
+  const ecbVal=(data,withDate=false)=>{
     try{
       const series=data?.dataSets?.[0]?.series;
-      if(!series) return null;
+      if(!series) return withDate?null:null;
       const sk=Object.keys(series)[0];
       const obs=series[sk]?.observations;
-      if(!obs) return null;
+      if(!obs) return withDate?null:null;
+      const periods=data?.structure?.dimensions?.observation?.[0]?.values||[];
       const idx=Object.keys(obs).map(Number).sort((a,b)=>b-a)[0];
       const v=obs[String(idx)]?.[0];
-      return v!=null&&!isNaN(Number(v))?Number(v):null;
-    }catch{return null;}
+      const val=v!=null&&!isNaN(Number(v))?Number(v):null;
+      if(!withDate) return val;
+      const dateStr=periods[idx]?.id||null;
+      return {val,date:dateStr};
+    }catch{return withDate?null:null;}
   };
 
 
@@ -2267,19 +2271,19 @@ async function fetchMacroData(){
   if(usR.status==='fulfilled'&&usR.value)    out.usCPI=blsVal(usR.value);
   if(euR.status==='fulfilled'&&euR.value)    out.euHICP=ecbVal(euR.value);
   if(itR.status==='fulfilled'&&itR.value)    out.itHICP=ecbVal(itR.value);
-  if(bceR.status==='fulfilled'&&bceR.value)  out.bceRate=ecbVal(bceR.value);
-  if(out.bceRate===null&&bceR2.status==='fulfilled'&&bceR2.value) out.bceRate=ecbVal(bceR2.value);
+  if(bceR.status==='fulfilled'&&bceR.value){const r=ecbVal(bceR.value,true);if(r){out.bceRate=r.val;out.bceDate=r.date;}}
+  if(out.bceRate===null&&bceR2.status==='fulfilled'&&bceR2.value){const r=ecbVal(bceR2.value,true);if(r){out.bceRate=r.val;out.bceDate=r.date;}}
 
   // Fallback via CORS proxy for any that failed
-  const tryProxy=async(url,parser)=>{
-    try{const d=await fetchJSON(url);return parser(d);}catch{return null;}
+  const tryProxy=async(url,parser,withDate=false)=>{
+    try{const d=await fetchJSON(url);return parser(d,withDate);}catch{return null;}
   };
   if(out.usCPI===null)   out.usCPI=await tryProxy(BLS_URL,blsVal);
   if(out.euHICP===null)  out.euHICP=await tryProxy(ECB_EU,ecbVal);
   if(out.itHICP===null)  out.itHICP=await tryProxy(ECB_IT,ecbVal);
-  if(out.bceRate===null) out.bceRate=await tryProxy(ECB_BCE,ecbVal);
-  if(out.bceRate===null) out.bceRate=await tryProxy(ECB_BCE2,ecbVal);
-  if(out.bceRate===null) out.bceRate=await tryProxy(ECB_BCE3,ecbVal);
+  if(out.bceRate===null){const r=await tryProxy(ECB_BCE,ecbVal,true);if(r){out.bceRate=r.val;out.bceDate=r.date;}}
+  if(out.bceRate===null){const r=await tryProxy(ECB_BCE2,ecbVal,true);if(r){out.bceRate=r.val;out.bceDate=r.date;}}
+  if(out.bceRate===null){const r=await tryProxy(ECB_BCE3,ecbVal,true);if(r){out.bceRate=r.val;out.bceDate=r.date;}}
 
   return out;
 }
@@ -2295,7 +2299,8 @@ function renderMacro(m){
   set('macro-eu-val','macro-eu-note',m.euHICP,infCol(m.euHICP),infLbl(m.euHICP));
   set('macro-it-val','macro-it-note',m.itHICP,infCol(m.itHICP),infLbl(m.itHICP));
   const bceCol=m.bceRate==null?'var(--t3)':m.bceRate<=2?'var(--g)':m.bceRate<=3.5?'var(--y)':'var(--r)';
-  const bceLbl=m.bceRate==null?'':m.bceRate<=1?'Politica accomodante':m.bceRate<=3?'Politica neutrale':m.bceRate<=4?'Politica restrittiva':'Tassi molto alti';
+  const bceTrend=m.bceRate==null?'':m.bceRate<=1?'Politica accomodante':m.bceRate<=3?'Politica neutrale':m.bceRate<=4?'Politica restrittiva':'Tassi molto alti';
+  const bceLbl=m.bceDate?`${bceTrend} · aggiornato al ${m.bceDate}`:bceTrend;
   set('macro-bce-val','macro-bce-note',m.bceRate,bceCol,bceLbl);
 }
 

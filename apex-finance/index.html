@@ -555,7 +555,8 @@ header{
 .sig-point::before{content:'·';color:var(--accent);font-size:1.1rem;flex-shrink:0;margin-top:-1px;}
 .sig-decision{margin-top:14px;padding:12px 16px;border-radius:var(--radius-sm);background:rgba(255,255,255,.05);border:1px solid var(--border);font-size:.83rem;font-weight:500;line-height:1.6;}
 .sig-decision b{color:var(--text);}
-.sig-tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px;}
+.sig-tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px;margin-bottom:4px;}
+.sig-tag{padding:4px 12px;border-radius:20px;font-size:.72rem;font-weight:600;background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--t2);}
 .stag{
   padding:4px 11px;border-radius:20px;font-size:.7rem;font-weight:500;
   border:1px solid;
@@ -1577,23 +1578,10 @@ header{
         </div>
         <span class="sig-headline" id="sig-headline">—</span>
       </div>
+      <div class="sig-tags" id="sig-tags"></div>
       <div class="sig-points" id="sig-points"></div>
       <div class="sig-decision" id="sig-decision"></div>
-      <div class="sig-tags" id="sig-tags"></div>
     </div><!-- /sig-box -->
-
-    <hr class="sec-divider">
-
-    <!-- Dip Opportunity box -->
-    <div class="dip-box" id="dip-box">
-      <div class="dip-header">
-        <span class="dip-icon" id="dip-icon"></span>
-        <span class="dip-title" id="dip-title"></span>
-      </div>
-      <div class="dip-metrics" id="dip-metrics"></div>
-      <div class="dip-body" id="dip-body"></div>
-      <div class="dip-action" id="dip-action"></div>
-    </div>
 
     <hr class="sec-divider">
 
@@ -2583,113 +2571,49 @@ function buildTags(R,M50,M200,price,V,Mo,w30){
   return tags;
 }
 
-// ── DIP OPPORTUNITY SIGNAL ──
+// ── RACCOMANDAZIONE OPERATIVA (fonde dip signal in sig-box) ──
 function buildDipSignal(R,M50,M200,Mo3m,Mo12m,DD,cur,w30,score){
-  const box=document.getElementById('dip-box');
-  box.style.display='block';
   const fmt=n=>n>=10000?n.toLocaleString('it-IT',{maximumFractionDigits:0}):n>=1?n.toFixed(2):n.toFixed(4);
-
-  // Reset
-  box.className='dip-box';
-
-  // Classify the situation
   const oversold       = R!=null && R<35;
   const aboveMA200     = M200!=null && cur>M200;
   const ma50BelowMA200 = M50!=null && M200!=null && M50<M200;
   const bearMom        = Mo12m!=null && Mo12m<-25;
   const inCrash        = DD>=35;
 
-  // Build metrics chips
+  // Chip metriche in sig-tags (sostituisce i tag generici)
   const chips=[];
-  if(R!=null)    chips.push({l:'RSI',v:R.toFixed(1),color:R<30?'var(--g)':R<40?'var(--y)':'var(--t2)'});
-  if(DD)         chips.push({l:'Drawdown',v:'-'+DD.toFixed(1)+'%',color:DD>30?'var(--r)':DD>15?'var(--y)':'var(--t2)'});
-  if(M200!=null) chips.push({l:'vs MA200',v:(cur>M200?'+':'')+((cur-M200)/M200*100).toFixed(1)+'%',color:cur>M200?'var(--g)':'var(--r)'});
-  if(Mo3m!=null) chips.push({l:'Mom 3M',v:(Mo3m>0?'+':'')+Mo3m.toFixed(1)+'%',color:Mo3m>0?'var(--g)':'var(--r)'});
-  if(w30!=null)  chips.push({l:'WR 30gg',v:w30.toFixed(0)+'%',color:w30>55?'var(--g)':w30<45?'var(--r)':'var(--y)'});
-
-  document.getElementById('dip-metrics').innerHTML=chips.map(c=>
-    `<span class="dip-metric">${c.l}: <span style="color:${c.color}">${c.v}</span></span>`
+  if(R!=null)    chips.push({l:'RSI',v:R.toFixed(1),c:R<30?'var(--g)':R<40?'var(--y)':'var(--t2)'});
+  if(DD)         chips.push({l:'Drawdown',v:'-'+DD.toFixed(1)+'%',c:DD>30?'var(--r)':DD>15?'var(--y)':'var(--t2)'});
+  if(M200!=null) chips.push({l:'vs MA200',v:(cur>M200?'+':'')+((cur-M200)/M200*100).toFixed(1)+'%',c:cur>M200?'var(--g)':'var(--r)'});
+  if(Mo3m!=null) chips.push({l:'Mom 3M',v:(Mo3m>0?'+':'')+Mo3m.toFixed(1)+'%',c:Mo3m>0?'var(--g)':'var(--r)'});
+  if(w30!=null)  chips.push({l:'WR 30gg',v:w30.toFixed(0)+'%',c:w30>55?'var(--g)':w30<45?'var(--r)':'var(--y)'});
+  document.getElementById('sig-tags').innerHTML=chips.map(c=>
+    `<span class="sig-tag">${c.l}: <span style="color:${c.c};font-weight:700">${c.v}</span></span>`
   ).join('');
 
-  // ── STATE A (crash): crollo strutturale ──
+  // Raccomandazione in sig-decision
+  let body,action;
   if(inCrash && ma50BelowMA200 && bearMom){
-    box.classList.add('dip-warning');
-    document.getElementById('dip-icon').textContent='⛔';
-    document.getElementById('dip-title').textContent='Evita — Condizioni Sfavorevoli';
-    document.getElementById('dip-body').innerHTML=
-      `Il calo attuale (<b>${DD.toFixed(1)}%</b> dal picco) configura un <b>bear market strutturale</b>. `+
-      `Il Death Cross (MA50 sotto MA200) e il momentum a 12 mesi di <b>${Mo12m!=null?Mo12m.toFixed(1)+'%':'N/D'}</b> confermano la tendenza ribassista di lungo periodo. `+
-      `Acquistare ora significa comprare in caduta libera.`;
-    document.getElementById('dip-action').innerHTML=
-      `<b>Non entrare.</b> Se sei in posizione, valuta di ridurla.`;
-    return;
+    body=`Il calo attuale (<b>${DD.toFixed(1)}%</b> dal picco) configura un bear market strutturale. Death Cross attivo, momentum 12M negativo.`;
+    action=`<b>Non entrare.</b> Se sei in posizione, valuta di ridurla.`;
+  } else if(score < 40){
+    body=`Debolezza tecnica generalizzata.`+(ma50BelowMA200?' Death Cross attivo.':'')+(bearMom?` Momentum 12M fortemente negativo (${Mo12m.toFixed(1)}%).`:'');
+    action=`<b>Non entrare.</b> Se sei in posizione, valuta di ridurla.`;
+  } else if(oversold && !ma50BelowMA200 && score >= 45){
+    const stopRef=aboveMA200&&M200!=null?`sotto la MA200 (${fmt(M200)})`:'al minimo recente';
+    body=`RSI a <b>${R.toFixed(1)}</b> — ipervenduto in trend strutturalmente sano (MA50 sopra MA200). Setup classico di acquisto sul ribasso.`;
+    action=`<b>Ingresso graduale</b> (30–50% del sizing). Stop ${stopRef}.`;
+  } else if(score >= 70 && aboveMA200 && !oversold){
+    body=`Trend rialzista solido: prezzo sopra MA200, momentum positivo, nessun segnale di debolezza.`;
+    action=`<b>Mantieni la posizione.</b> Puoi aggiungere su correzioni intraday.`;
+  } else if(score >= 60){
+    body=`Condizioni tecniche buone. Trend generalmente favorevole con qualche incertezza sul timing.`;
+    action=`<b>Ingresso con sizing normale</b> se non sei già in posizione.`;
+  } else {
+    body=`Trend laterale o inconcludente. Nessun vantaggio statistico chiaro.`;
+    action=`<b>Attendi.</b> Non aprire nuove posizioni adesso.`;
   }
-
-  // ── STATE A (weak score): condizioni sfavorevoli ──
-  if(score < 40){
-    box.classList.add('dip-warning');
-    document.getElementById('dip-icon').textContent='⛔';
-    document.getElementById('dip-title').textContent='Evita — Condizioni Sfavorevoli';
-    document.getElementById('dip-body').innerHTML=
-      `L'APEX Score (<b>${score}/100</b>) indica debolezza tecnica. `+
-      (ma50BelowMA200?`Il Death Cross è attivo (MA50 sotto MA200). `:'')+
-      (bearMom?`Il momentum a 12 mesi è fortemente negativo (<b>${Mo12m.toFixed(1)}%</b>). `:'')+
-      `Le condizioni di mercato non supportano un ingresso.`;
-    document.getElementById('dip-action').innerHTML=
-      `<b>Non entrare.</b> Se sei in posizione, valuta di ridurla.`;
-    return;
-  }
-
-  // ── STATE C (discount): ipervenduto in trend sano ──
-  if(oversold && !ma50BelowMA200 && score >= 45){
-    box.classList.add('dip-discount');
-    document.getElementById('dip-icon').textContent='🎯';
-    document.getElementById('dip-title').textContent='Zona Sconto — Possibile Ingresso Graduale';
-    const stopRef = aboveMA200 && M200!=null ? `sotto la MA200 (${fmt(M200)})` : 'al minimo recente del movimento';
-    document.getElementById('dip-body').innerHTML=
-      `RSI a <b>${R.toFixed(1)}</b> segnala ipervenduto mentre il trend strutturale rimane sano `+
-      `(MA50 sopra MA200). Questo è il classico setup di acquisto sul ribasso: correzione tecnica in bull market. `+
-      `Il win rate storico a 30gg è del <b>${w30.toFixed(0)}%</b>.`;
-    document.getElementById('dip-action').innerHTML=
-      `<b>Ingresso graduale</b> (30–50% del sizing). Stop sotto ${stopRef} o minimo recente.`;
-    return;
-  }
-
-  // ── STATE D (strong): trend forte ──
-  if(score >= 70 && aboveMA200 && !oversold){
-    box.classList.add('dip-strong');
-    document.getElementById('dip-icon').textContent='✅';
-    document.getElementById('dip-title').textContent='Trend Forte — Mantieni o Aggiungi';
-    document.getElementById('dip-body').innerHTML=
-      `Trend rialzista solido: prezzo sopra la MA200, momentum positivo e nessun segnale di debolezza tecnica. `+
-      `L'APEX Score è <b>${score}/100</b> — condizioni ottimali per mantenere o incrementare la posizione.`;
-    document.getElementById('dip-action').innerHTML=
-      `<b>Mantieni la posizione.</b> Puoi aggiungere su piccole correzioni intraday.`;
-    return;
-  }
-
-  // ── STATE E (positive): scenario positivo ──
-  if(score >= 60){
-    box.classList.add('dip-opportunity');
-    document.getElementById('dip-icon').textContent='🟢';
-    document.getElementById('dip-title').textContent='Scenario Positivo — Tieni Monitorato';
-    document.getElementById('dip-body').innerHTML=
-      `Le condizioni tecniche sono buone ma non eccezionali. APEX Score: <b>${score}/100</b>. `+
-      `Il trend è generalmente favorevole con qualche incertezza sul timing ottimale.`;
-    document.getElementById('dip-action').innerHTML=
-      `<b>Se non sei in posizione</b>, può essere un buon momento per entrare con sizing normale.`;
-    return;
-  }
-
-  // ── STATE B (neutral): attendi ──
-  box.classList.add('dip-neutral');
-  document.getElementById('dip-icon').textContent='⏸';
-  document.getElementById('dip-title').textContent='Attendi — Nessun Segnale Operativo';
-  document.getElementById('dip-body').innerHTML=
-    `Il trend è laterale o inconcludente. APEX Score: <b>${score}/100</b>. `+
-    `Non ci sono condizioni chiare né per entrare né per uscire.`;
-  document.getElementById('dip-action').innerHTML=
-    `<b>Mantieni se sei in posizione.</b> Non aprire nuove posizioni adesso.`;
+  document.getElementById('sig-decision').innerHTML=body+'<br><br>'+action;
 }
 // ── SESSION CACHE ──
 const CK='qe7_',TTL=3600000;

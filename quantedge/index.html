@@ -2185,31 +2185,39 @@ async function fetchChart(ticker,range='2y',interval='1d'){
 
 // ── FUNDAMENTALS FETCH ──
 async function fetchFundamentals(ticker){
-  const url=`https://query1.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(ticker)}?modules=financialData,defaultKeyStatistics,summaryDetail,recommendationTrend`;
-  try{
-    const data=await fetchJSON(url);
-    const res=data?.quoteSummary?.result?.[0];
-    if(!res) return null;
-    const fd=res.financialData||{};
-    const ks=res.defaultKeyStatistics||{};
-    const sd=res.summaryDetail||{};
-    const rt=(res.recommendationTrend?.trend||[])[0]||{};
-    return{
-      roe:fd.returnOnEquity?.raw??null,
-      opMargin:fd.operatingMargins?.raw??null,
-      earningsGrowth:fd.earningsGrowth?.raw??null,
-      revenueGrowth:fd.revenueGrowth?.raw??null,
-      pb:ks.priceToBook?.raw??null,
-      peg:ks.pegRatio?.raw??null,
-      trailingPE:sd.trailingPE?.raw??null,
-      forwardPE:sd.forwardPE?.raw??ks.forwardPE?.raw??null,
-      strongBuy:rt.strongBuy||0,
-      buy:rt.buy||0,
-      hold:rt.hold||0,
-      sell:rt.sell||0,
-      strongSell:rt.strongSell||0,
-    };
-  }catch{return null;}
+  const modules='financialData,defaultKeyStatistics,summaryDetail,recommendationTrend';
+  const urls=[
+    `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(ticker)}?modules=${modules}`,
+    `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(ticker)}?modules=${modules}`,
+    `https://query1.finance.yahoo.com/v11/finance/quoteSummary/${encodeURIComponent(ticker)}?modules=${modules}`,
+  ];
+  for(const url of urls){
+    try{
+      const data=await fetchJSON(url);
+      const res=data?.quoteSummary?.result?.[0];
+      if(!res) continue;
+      const fd=res.financialData||{};
+      const ks=res.defaultKeyStatistics||{};
+      const sd=res.summaryDetail||{};
+      const rt=(res.recommendationTrend?.trend||[])[0]||{};
+      return{
+        roe:fd.returnOnEquity?.raw??null,
+        opMargin:fd.operatingMargins?.raw??null,
+        earningsGrowth:fd.earningsGrowth?.raw??null,
+        revenueGrowth:fd.revenueGrowth?.raw??null,
+        pb:ks.priceToBook?.raw??null,
+        peg:ks.pegRatio?.raw??null,
+        trailingPE:sd.trailingPE?.raw??ks.trailingPE?.raw??null,
+        forwardPE:sd.forwardPE?.raw??ks.forwardPE?.raw??null,
+        strongBuy:rt.strongBuy||0,
+        buy:rt.buy||0,
+        hold:rt.hold||0,
+        sell:rt.sell||0,
+        strongSell:rt.strongSell||0,
+      };
+    }catch{continue;}
+  }
+  return null;
 }
 
 // ── MACRO DATA (inflazione + BCE) ──

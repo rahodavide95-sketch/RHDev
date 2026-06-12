@@ -2160,19 +2160,11 @@ async function fetchJSON(yahooUrl){
 // ── CHART HISTORY FETCH ──
 async function fetchChart(ticker,range='2y',interval='1d'){
   const t=encodeURIComponent(ticker);
-  // Try Vercel API route first (server-side, no CORS delay)
-  const tryApi=async()=>{
-    const r=await fetch(`/api/chart?ticker=${t}&range=${range}&interval=${interval}`,{signal:AbortSignal.timeout(12000)});
-    if(!r.ok) throw new Error('api error');
-    return await r.json();
-  };
-  // Fallback to proxy (GitHub Pages / dev)
-  const tryProxy=async()=>{
-    const url=`https://query1.finance.yahoo.com/v8/finance/chart/${t}?range=${range}&interval=${interval}&includePrePost=false`;
-    return await fetchJSON(url);
-  };
-  let data;
-  try{ data=await tryApi(); }catch{ data=await tryProxy(); }
+  // Race: Vercel API route vs proxy — take whichever responds first
+  const tryApi=()=>fetch(`/api/chart?ticker=${t}&range=${range}&interval=${interval}`,{signal:AbortSignal.timeout(10000)})
+    .then(r=>{if(!r.ok)throw new Error();return r.json();});
+  const tryProxy=()=>fetchJSON(`https://query1.finance.yahoo.com/v8/finance/chart/${t}?range=${range}&interval=${interval}&includePrePost=false`);
+  const data=await Promise.any([tryApi(),tryProxy()]).catch(()=>{throw new Error('Dati non disponibili');});
   if(data?.chart?.error) throw new Error(data.chart.error.description||'Ticker non trovato');
   const res=data?.chart?.result?.[0];
   if(!res) throw new Error('Nessun dato disponibile');

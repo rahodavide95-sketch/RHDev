@@ -2254,24 +2254,41 @@ async function fetchMacroData(){
     }catch{return null;}
   };
   const BLS_URL='https://api.bls.gov/publicAPI/v1/timeseries/data/CUUR0000SA0';
-  const ECB_EU='https://data-api.ecb.europa.eu/service/data/ICP/M.U2.N.000000.4.ANR?startPeriod=2026-01&lastNObservations=3&format=jsondata';
-  const ECB_IT='https://data-api.ecb.europa.eu/service/data/ICP/M.IT.N.000000.4.ANR?startPeriod=2026-01&lastNObservations=3&format=jsondata';
-  const ECB_BCE='https://data-api.ecb.europa.eu/service/data/FM/D.U2.EUR.4F.KR.DFR.LEV?startPeriod=2026-01-01&lastNObservations=5&format=jsondata';
-  const ECB_BCE2='https://data-api.ecb.europa.eu/service/data/FM/M.U2.EUR.4F.KR.DFR.LEV?startPeriod=2026-01&lastNObservations=5&format=jsondata';
-  const ECB_BCE3='https://sdw-wsrest.ecb.europa.eu/service/data/FM/M.U2.EUR.4F.KR.DFR.LEV?startPeriod=2026-01&lastNObservations=5&format=jsondata';
+  const ECB_EU='https://data-api.ecb.europa.eu/service/data/ICP/M.U2.N.000000.4.ANR?lastNObservations=1&format=jsondata';
+  const ECB_IT='https://data-api.ecb.europa.eu/service/data/ICP/M.IT.N.000000.4.ANR?lastNObservations=1&format=jsondata';
+  const ECB_BCE='https://data-api.ecb.europa.eu/service/data/FM/D.U2.EUR.4F.KR.DFR.LEV?lastNObservations=1&format=jsondata';
+  const ECB_BCE2='https://data-api.ecb.europa.eu/service/data/FM/M.U2.EUR.4F.KR.DFR.LEV?lastNObservations=1&format=jsondata';
+  const ECB_BCE3='https://sdw-wsrest.ecb.europa.eu/service/data/FM/M.U2.EUR.4F.KR.DFR.LEV?lastNObservations=1&format=jsondata';
+  // FRED (Federal Reserve) — ECBDFR series, no API key needed for CSV
+  const FRED_BCE='https://fred.stlouisfed.org/graph/fredgraph.csv?id=ECBDFR';
+  const fredBceVal=async()=>{
+    try{
+      const r=await fetch(FRED_BCE,{signal:AbortSignal.timeout(8000)});
+      const txt=await r.text();
+      const rows=txt.trim().split('\n').filter(l=>!l.startsWith('DATE'));
+      const last=rows[rows.length-1];
+      if(!last) return null;
+      const [date,val]=last.split(',');
+      const v=parseFloat(val);
+      return isNaN(v)?null:{val:v,date:date?.trim()};
+    }catch{return null;}
+  };
+
+  // Try FRED first for BCE rate (most up-to-date)
+  const fredBce=await fredBceVal();
+  if(fredBce){out.bceRate=fredBce.val;out.bceDate=fredBce.date;}
 
   const [usR,euR,itR,bceR,bceR2]=await Promise.allSettled([
     dfetch(BLS_URL),
     dfetch(ECB_EU),
     dfetch(ECB_IT),
-    dfetch(ECB_BCE),
-    dfetch(ECB_BCE2),
+    ...(out.bceRate===null?[dfetch(ECB_BCE),dfetch(ECB_BCE2)]:[Promise.resolve(null),Promise.resolve(null)]),
   ]);
 
   if(usR.status==='fulfilled'&&usR.value)    out.usCPI=blsVal(usR.value);
   if(euR.status==='fulfilled'&&euR.value)    out.euHICP=ecbVal(euR.value);
   if(itR.status==='fulfilled'&&itR.value)    out.itHICP=ecbVal(itR.value);
-  if(bceR.status==='fulfilled'&&bceR.value){const r=ecbVal(bceR.value,true);if(r){out.bceRate=r.val;out.bceDate=r.date;}}
+  if(out.bceRate===null&&bceR.status==='fulfilled'&&bceR.value){const r=ecbVal(bceR.value,true);if(r){out.bceRate=r.val;out.bceDate=r.date;}}
   if(out.bceRate===null&&bceR2.status==='fulfilled'&&bceR2.value){const r=ecbVal(bceR2.value,true);if(r){out.bceRate=r.val;out.bceDate=r.date;}}
 
   // Fallback via CORS proxy for any that failed

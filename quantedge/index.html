@@ -2185,13 +2185,35 @@ async function fetchChart(ticker,range='2y',interval='1d'){
 
 // ── FUNDAMENTALS FETCH ──
 async function fetchFundamentals(ticker){
+  const out={roe:null,opMargin:null,earningsGrowth:null,revenueGrowth:null,
+    pb:null,peg:null,trailingPE:null,forwardPE:null,
+    strongBuy:0,buy:0,hold:0,sell:0,strongSell:0};
+
+  // 1) v7/quote — lightweight, works through proxy, has P/E + P/B
+  const quoteUrls=[
+    `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(ticker)}&fields=trailingPE,forwardPE,priceToBook,epsTrailingTwelveMonths,epsForward`,
+    `https://query2.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(ticker)}&fields=trailingPE,forwardPE,priceToBook,epsTrailingTwelveMonths,epsForward`,
+  ];
+  for(const url of quoteUrls){
+    try{
+      const data=await fetchJSON(url);
+      const q=data?.quoteResponse?.result?.[0];
+      if(!q) continue;
+      out.trailingPE=q.trailingPE??null;
+      out.forwardPE=q.forwardPE??null;
+      out.pb=q.priceToBook??null;
+      break;
+    }catch{continue;}
+  }
+
+  // 2) quoteSummary — for ROE, margins, growth, analyst recs
   const modules='financialData,defaultKeyStatistics,summaryDetail,recommendationTrend';
-  const urls=[
+  const summaryUrls=[
     `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(ticker)}?modules=${modules}`,
     `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(ticker)}?modules=${modules}`,
     `https://query1.finance.yahoo.com/v11/finance/quoteSummary/${encodeURIComponent(ticker)}?modules=${modules}`,
   ];
-  for(const url of urls){
+  for(const url of summaryUrls){
     try{
       const data=await fetchJSON(url);
       const res=data?.quoteSummary?.result?.[0];
@@ -2200,24 +2222,23 @@ async function fetchFundamentals(ticker){
       const ks=res.defaultKeyStatistics||{};
       const sd=res.summaryDetail||{};
       const rt=(res.recommendationTrend?.trend||[])[0]||{};
-      return{
-        roe:fd.returnOnEquity?.raw??null,
-        opMargin:fd.operatingMargins?.raw??null,
-        earningsGrowth:fd.earningsGrowth?.raw??null,
-        revenueGrowth:fd.revenueGrowth?.raw??null,
-        pb:ks.priceToBook?.raw??null,
-        peg:ks.pegRatio?.raw??null,
-        trailingPE:sd.trailingPE?.raw??ks.trailingPE?.raw??null,
-        forwardPE:sd.forwardPE?.raw??ks.forwardPE?.raw??null,
-        strongBuy:rt.strongBuy||0,
-        buy:rt.buy||0,
-        hold:rt.hold||0,
-        sell:rt.sell||0,
-        strongSell:rt.strongSell||0,
-      };
+      out.roe=fd.returnOnEquity?.raw??null;
+      out.opMargin=fd.operatingMargins?.raw??null;
+      out.earningsGrowth=fd.earningsGrowth?.raw??null;
+      out.revenueGrowth=fd.revenueGrowth?.raw??null;
+      out.peg=ks.pegRatio?.raw??null;
+      if(out.trailingPE===null) out.trailingPE=sd.trailingPE?.raw??ks.trailingPE?.raw??null;
+      if(out.forwardPE===null)  out.forwardPE=sd.forwardPE?.raw??ks.forwardPE?.raw??null;
+      if(out.pb===null)         out.pb=ks.priceToBook?.raw??null;
+      out.strongBuy=rt.strongBuy||0; out.buy=rt.buy||0; out.hold=rt.hold||0;
+      out.sell=rt.sell||0; out.strongSell=rt.strongSell||0;
+      break;
     }catch{continue;}
   }
-  return null;
+
+  // Return object if we got at least something useful
+  const hasData=Object.values(out).some(v=>v!==null&&v!==0);
+  return hasData?out:null;
 }
 
 // ── MACRO DATA (inflazione + BCE) ──

@@ -4431,10 +4431,26 @@ async function refreshCard(btn,fn){
 // ── BOOT ──
 // ── MACRO: YIELD CURVE + SECTOR ROTATION + DOLLAR ──
 async function loadMacro(){
-  const YC=['^IRX','^FVX','^TNX','^TYX'];
   const SECS=['XLK','XLF','XLE','XLV','XLI','XLRE','XLY','XLP','XLU','XLB','XLC'];
   const SLBL={XLK:'Tech',XLF:'Finanza',XLE:'Energia',XLV:'Salute',XLI:'Industria',
     XLRE:'Immob.',XLY:'Cons. discr.',XLP:'Beni ess.',XLU:'Utilities',XLB:'Materiali',XLC:'Media'};
+
+  // Try single server-side call first (fast), fallback to individual chart calls
+  try{
+    const r=await fetch('/api/macro',{signal:AbortSignal.timeout(12000)});
+    if(r.ok){
+      const d=await r.json();
+      // renderYieldCurve expects raw close values
+      renderYieldCurve(d.yc.map(v=>v==null?null:{indicators:{quote:[{close:[v]}]}}));
+      // renderSectors expects result objects with pct already computed — pass directly
+      renderSectorsFromPct(d.sectors,SECS,SLBL);
+      renderDollarFromValues(d.dxy,d.dxyPct,d.eur,d.eurPct);
+      return;
+    }
+  }catch{}
+
+  // Fallback: individual fetchChart calls
+  const YC=['^IRX','^FVX','^TNX','^TYX'];
   const all=await Promise.all([
     ...YC.map(s=>fetchChart(s,'5d','1d').catch(()=>null)),
     ...SECS.map(s=>fetchChart(s,'5d','1d').catch(()=>null)),
@@ -4557,6 +4573,45 @@ function renderDollar(dxyData,eurData){
         noteEl.innerHTML=`<span style="color:var(--r)">EUR si indebolisce</span> oggi — investitore europeo perde ${ch.toFixed(2)}% dal cambio`;
       }
     } else { noteEl.textContent=''; }
+  } else { noteEl.textContent='Dati non disponibili'; }
+}
+
+function renderSectorsFromPct(pcts,syms,labels){
+  const items=pcts.map((pct,i)=>pct==null?null:{sym:syms[i],name:labels[syms[i]],pct})
+    .filter(Boolean).sort((a,b)=>b.pct-a.pct);
+  const el=document.getElementById('sec-list');
+  if(!items.length){el.innerHTML='<div style="color:var(--t3);font-size:.75rem;padding:8px 0">Dati non disponibili</div>';return;}
+  el.innerHTML=items.map(({name,pct})=>{
+    const pos=pct>=0,c=pos?'var(--g)':'var(--r)';
+    const bg=pos?'rgba(16,185,129,.08)':'rgba(239,68,68,.08)';
+    const border=pos?'rgba(16,185,129,.22)':'rgba(239,68,68,.22)';
+    return `<div class="sec-chip" style="border-color:${border};background:${bg}">
+      <span class="sec-chip-name">${name}</span>
+      <span class="sec-chip-pct" style="color:${c}">${pos?'+':''}${pct.toFixed(2)}%</span>
+    </div>`;
+  }).join('');
+}
+
+function renderDollarFromValues(dxy,dxyPct,eur,eurPct){
+  const noteEl=document.getElementById('dxy-note');
+  if(dxy!=null){
+    document.getElementById('dxy-val').textContent=dxy.toFixed(2);
+    if(dxyPct!=null){
+      const el=document.getElementById('dxy-ch');
+      el.textContent=(dxyPct>=0?'+':'')+dxyPct.toFixed(2)+'%';
+      el.style.color=dxyPct>=0?'var(--r)':'var(--g)';
+    }
+  }
+  if(eur!=null){
+    document.getElementById('eurusd-val').textContent=eur.toFixed(4);
+    if(eurPct!=null){
+      const el=document.getElementById('eurusd-ch');
+      el.textContent=(eurPct>=0?'+':'')+eurPct.toFixed(2)+'%';
+      el.style.color=eurPct>=0?'var(--g)':'var(--r)';
+      if(Math.abs(eurPct)<0.05) noteEl.textContent='Cambio stabile oggi';
+      else if(eurPct>0) noteEl.innerHTML=`<span style="color:var(--g)">EUR si rafforza</span> oggi — +${eurPct.toFixed(2)}% dal cambio`;
+      else noteEl.innerHTML=`<span style="color:var(--r)">EUR si indebolisce</span> oggi — ${eurPct.toFixed(2)}% dal cambio`;
+    }
   } else { noteEl.textContent='Dati non disponibili'; }
 }
 

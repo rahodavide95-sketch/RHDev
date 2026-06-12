@@ -768,11 +768,10 @@ header{
 .a-sec-lbl{
   font-size:.65rem;font-weight:600;color:var(--t3);
   text-transform:uppercase;letter-spacing:.1em;
-  margin:28px 0 12px;
+  margin:0 0 14px;
 }
-.a-sec-lbl:first-child{margin-top:0;}
-/* thin separator before each section */
-.sec-divider{border:none;border-top:1px solid var(--border);margin:24px 0 0;}
+.sec-divider{border:none;border-top:1px solid var(--border);margin:32px 0 32px;}
+.sec-block{margin-bottom:0;}
 
 /* ── PRICE RETURN BADGE ── */
 .price-ret{
@@ -1583,6 +1582,8 @@ header{
       <div class="sig-tags" id="sig-tags"></div>
     </div><!-- /sig-box -->
 
+    <hr class="sec-divider">
+
     <!-- Dip Opportunity box -->
     <div class="dip-box" id="dip-box">
       <div class="dip-header">
@@ -1593,6 +1594,8 @@ header{
       <div class="dip-body" id="dip-body"></div>
       <div class="dip-action" id="dip-action"></div>
     </div>
+
+    <hr class="sec-divider">
 
     <!-- Buy / Hold / Sell widget — sempre visibile -->
     <div class="bhs-card" id="bhs-card">
@@ -1722,6 +1725,7 @@ header{
 
     <!-- Fundamentals -->
     <div id="fund-section" style="display:none">
+      <hr class="sec-divider">
       <div class="a-sec-lbl">Fondamentali <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t3);font-size:.6rem;">— dati Yahoo Finance</span></div>
       <div class="ind-grid">
         <div class="ind-card">
@@ -1769,6 +1773,7 @@ header{
 
     <!-- Charts -->
     <hr class="sec-divider">
+    <div class="a-sec-lbl">Grafici Storici</div>
     <div class="charts-grid">
       <div class="chart-card">
         <div class="chart-lbl">Stagionalità mensile (win rate %)</div>

@@ -3794,7 +3794,12 @@ function renderBHS(score, fund){
 // ── RENDER FUNDAMENTALS ──
 function renderFundamentals(fund){
   const sec=document.getElementById('fund-section');
-  if(!fund){sec.style.display='none';return;}
+  if(!fund){
+    sec.style.display='block';
+    // Show section but all values will show — (no data)
+    console.warn('[APEX] fetchFundamentals returned null — Yahoo Finance unreachable');
+    return;
+  }
 
   // Analyst consensus
   const tot=fund.strongBuy+fund.buy+fund.hold+fund.sell+fund.strongSell;

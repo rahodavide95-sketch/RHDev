@@ -2892,9 +2892,9 @@ function renderOpportunities(scoreMap){
       .map(([sym])=>({sym,score:scoreMap[sym]}))
       .filter(x=>{
         const d=dipMap[x.sym];
-        return d && d.isDip; // RSI<40 + MA50>MA200
+        // zona sconto (RSI<40 + trend sano) E score che conferma — coerente con l'analisi
+        return d && d.isDip && x.score!=null && x.score>=45;
       })
-      .filter(x=>x.score!=null)
       .sort((a,b)=>b.score-a.score);
     if(!ranked.length) continue;
     totalAll+=ranked.length;

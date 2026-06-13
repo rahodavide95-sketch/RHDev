@@ -16,8 +16,14 @@ export default async function handler(req) {
   const results = {};
 
   try {
+    // Try bypassing GDPR consent with cookie + US locale params
     const r = await fetch('https://finance.yahoo.com/quote/AAPL/', {
-      headers: { 'User-Agent': UA, 'Accept': 'text/html', 'Accept-Language': 'en-US,en;q=0.9' },
+      headers: {
+        'User-Agent': UA,
+        'Accept': 'text/html,application/xhtml+xml',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Cookie': 'GUC=AQABCAFn; GUCS=AQABCAFn; A1=d=AQABBCFnX2UCEPi5; tbla_id=us',
+      },
       signal: AbortSignal.timeout(15000),
     });
     results.pageStatus = r.status;

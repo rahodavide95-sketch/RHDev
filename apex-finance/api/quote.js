@@ -1,4 +1,4 @@
-export const config = { runtime: 'edge' };
+export const config = { runtime: 'edge', regions: ['iad1'] };
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',

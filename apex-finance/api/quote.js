@@ -9,21 +9,24 @@ const CORS = {
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
 async function getCrumb() {
-  // Step 1: get cookie from Yahoo consent
-  const res1 = await fetch('https://fc.yahoo.com', {
-    headers: { 'User-Agent': UA },
+  // Fetch Yahoo Finance homepage to get consent cookie
+  const res1 = await fetch('https://finance.yahoo.com', {
+    headers: { 'User-Agent': UA, 'Accept': 'text/html' },
     signal: AbortSignal.timeout(8000),
     redirect: 'follow',
   });
-  const cookie = res1.headers.get('set-cookie') || '';
+  const rawCookie = res1.headers.get('set-cookie') || '';
+  // Extract just the cookie values (name=value pairs before semicolons)
+  const cookieParts = rawCookie.split(',').map(c => c.trim().split(';')[0]).join('; ');
 
-  // Step 2: get crumb using that cookie
   const res2 = await fetch('https://query1.finance.yahoo.com/v1/test/getcrumb', {
-    headers: { 'User-Agent': UA, 'Cookie': cookie },
+    headers: { 'User-Agent': UA, 'Cookie': cookieParts, 'Accept': '*/*' },
     signal: AbortSignal.timeout(8000),
   });
-  const crumb = await res2.text();
-  return { crumb: crumb.trim(), cookie };
+  if (!res2.ok) throw new Error('crumb failed');
+  const crumb = (await res2.text()).trim();
+  if (!crumb || crumb.includes('<')) throw new Error('invalid crumb');
+  return { crumb, cookie: cookieParts };
 }
 
 export default async function handler(req) {
@@ -36,31 +39,70 @@ export default async function handler(req) {
   const t = encodeURIComponent(ticker.toUpperCase());
   const modules = 'financialData,defaultKeyStatistics,summaryDetail,recommendationTrend';
 
+  // Strategy 1: crumb-authenticated quoteSummary
   try {
     const { crumb, cookie } = await getCrumb();
-    const headers = { 'User-Agent': UA, 'Cookie': cookie, 'Accept': 'application/json' };
+    const hdrs = { 'User-Agent': UA, 'Cookie': cookie, 'Accept': 'application/json' };
+    const crumbEnc = encodeURIComponent(crumb);
 
     const urls = [
-      `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${t}?modules=${modules}&crumb=${encodeURIComponent(crumb)}`,
-      `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${t}?modules=${modules}&crumb=${encodeURIComponent(crumb)}`,
-      `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${t}&crumb=${encodeURIComponent(crumb)}`,
+      `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${t}?modules=${modules}&crumb=${crumbEnc}`,
+      `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${t}?modules=${modules}&crumb=${crumbEnc}`,
     ];
 
     for (const url of urls) {
       try {
-        const r = await fetch(url, { headers, signal: AbortSignal.timeout(10000) });
+        const r = await fetch(url, { headers: hdrs, signal: AbortSignal.timeout(10000) });
         if (!r.ok) continue;
         const data = await r.json();
-        // Verify it has real data
-        const hasData = data?.quoteSummary?.result?.[0] || data?.quoteResponse?.result?.[0];
-        if (!hasData) continue;
+        if (data?.quoteSummary?.result?.[0]) {
+          return new Response(JSON.stringify(data), {
+            status: 200,
+            headers: { ...CORS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' },
+          });
+        }
+      } catch { continue; }
+    }
+  } catch { /* crumb approach failed */ }
+
+  // Strategy 2: v11 quoteSummary (sometimes crumb-free)
+  try {
+    const hdrs = { 'User-Agent': UA, 'Accept': 'application/json' };
+    const urls = [
+      `https://query1.finance.yahoo.com/v11/finance/quoteSummary/${t}?modules=${modules}`,
+      `https://query2.finance.yahoo.com/v11/finance/quoteSummary/${t}?modules=${modules}`,
+    ];
+    for (const url of urls) {
+      try {
+        const r = await fetch(url, { headers: hdrs, signal: AbortSignal.timeout(10000) });
+        if (!r.ok) continue;
+        const data = await r.json();
+        if (data?.quoteSummary?.result?.[0]) {
+          return new Response(JSON.stringify(data), {
+            status: 200,
+            headers: { ...CORS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' },
+          });
+        }
+      } catch { continue; }
+    }
+  } catch { /* v11 failed */ }
+
+  // Strategy 3: v7/quote (basic data, no crumb needed sometimes)
+  try {
+    const r = await fetch(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${t}`, {
+      headers: { 'User-Agent': UA, 'Accept': 'application/json' },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (r.ok) {
+      const data = await r.json();
+      if (data?.quoteResponse?.result?.[0]) {
         return new Response(JSON.stringify(data), {
           status: 200,
           headers: { ...CORS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' },
         });
-      } catch { continue; }
+      }
     }
-  } catch { /* crumb fetch failed, fall through */ }
+  } catch { /* v7 failed */ }
 
   return new Response(JSON.stringify({ error: 'unavailable' }), {
     status: 502,

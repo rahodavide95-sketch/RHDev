@@ -27,6 +27,13 @@ export default async function handler(req) {
 
     const match = html.match(/<script[^>]+id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
     results.nextDataFound = !!match;
+    results.htmlPreview = html.slice(0, 500);
+    // Check for other data patterns
+    results.hasReactData = html.includes('root.App.main');
+    results.hasYfData = html.includes('QuoteSummaryStore');
+    results.hasConsentPage = html.includes('consent') || html.includes('guce');
+    const scriptMatches = [...html.matchAll(/<script[^>]+type="application\/json"[^>]*>/g)].map(m => m[0]);
+    results.jsonScriptTags = scriptMatches.slice(0, 5);
 
     if (match) {
       const nextData = JSON.parse(match[1]);

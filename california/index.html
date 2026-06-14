@@ -2754,42 +2754,45 @@
     const allPills = document.querySelectorAll('.day-pill[href^="#"]');
     if (!allPills.length) return;
 
-    // Usa touchstart/wheel/keydown invece di 'scroll' così non scatta
-    // per il ripristino automatico della posizione del browser (es. iOS Safari)
-    let userScrolled = false;
+    let userInteracted = false;
     function onUserInput() {
-      userScrolled = true;
+      userInteracted = true;
       window.removeEventListener('touchstart', onUserInput);
       window.removeEventListener('wheel', onUserInput);
       window.removeEventListener('keydown', onUserInput);
     }
-    window.addEventListener('touchstart', onUserInput, { once: true, passive: true });
-    window.addEventListener('wheel',      onUserInput, { once: true, passive: true });
-    window.addEventListener('keydown',    onUserInput, { once: true });
+    window.addEventListener('touchstart', onUserInput, { passive: true });
+    window.addEventListener('wheel',      onUserInput, { passive: true });
+    window.addEventListener('keydown',    onUserInput);
 
     function setActive(id) {
       allPills.forEach(p => p.classList.remove('active'));
-      const active = document.querySelector(`.day-pill[href="#${id}"]`);
-      if (active) {
-        active.classList.add('active');
-        active.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      const pill = document.querySelector(`.day-pill[href="#${id}"]`);
+      if (pill) {
+        pill.classList.add('active');
+        pill.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
       }
     }
 
-    const ids = Array.from(allPills).map(p => p.getAttribute('href').slice(1));
-    const targets = ids.map(id => document.getElementById(id)).filter(Boolean);
+    // Targets in document order (top → bottom)
+    const targets = Array.from(allPills)
+      .map(p => document.getElementById(p.getAttribute('href').slice(1)))
+      .filter(Boolean)
+      .sort((a, b) => (a.compareDocumentPosition(b) & 4) ? -1 : 1);
 
-    const observer = new IntersectionObserver((entries) => {
-      if (!userScrolled) return;
-      entries.forEach(entry => {
-        if (entry.isIntersecting) setActive(entry.target.id);
-      });
-    }, {
-      rootMargin: '-10% 0px -80% 0px',
-      threshold: 0
-    });
+    const navEl = document.querySelector('.day-nav');
 
-    targets.forEach(t => observer.observe(t));
+    function updateActive() {
+      if (!userInteracted) return;
+      const threshold = (navEl ? navEl.offsetHeight : 56) + 24;
+      let current = null;
+      for (const t of targets) {
+        if (t.getBoundingClientRect().top <= threshold) current = t.id;
+      }
+      if (current) setActive(current);
+    }
+
+    window.addEventListener('scroll', updateActive, { passive: true });
   })();
 
   function toggleTheme() {

@@ -202,6 +202,12 @@
     border-color: var(--amber);
     color: var(--amber);
   }
+  .day-pill.active {
+    border-color: var(--amber);
+    color: var(--amber);
+    background: rgba(245,166,35,0.12);
+    font-weight: 600;
+  }
 
   /* MAIN LAYOUT */
   .container {
@@ -225,8 +231,10 @@
     top: 0;
     left: 0;
     right: 0;
-    height: 1px;
-    background: var(--divider);
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--amber-dim) 20%, var(--amber-dim) 80%, transparent);
+    opacity: 0.5;
+    border-radius: 2px;
   }
   .day-section + .day-section::after {
     content: '✦';
@@ -2726,6 +2734,35 @@
 </div>
 
 <script>
+  // Active day pill on scroll
+  (function() {
+    const pills = document.querySelectorAll('.day-pill[href^="#g"]');
+    const sections = document.querySelectorAll('.day-section');
+    if (!pills.length || !sections.length) return;
+
+    const nav = document.querySelector('.day-nav');
+
+    function setActive(id) {
+      pills.forEach(p => p.classList.remove('active'));
+      const active = document.querySelector(`.day-pill[href="#${id}"]`);
+      if (active) {
+        active.classList.add('active');
+        active.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) setActive(entry.target.id);
+      });
+    }, {
+      rootMargin: '-10% 0px -80% 0px',
+      threshold: 0
+    });
+
+    sections.forEach(s => observer.observe(s));
+  })();
+
   function toggleTheme() {
     const root = document.documentElement;
     const btn = document.getElementById('theme-btn');

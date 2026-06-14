@@ -319,6 +319,40 @@ header{
   padding:2px 7px;border-radius:20px;white-space:nowrap;
 }
 .mkt-closed.on{display:flex;}
+
+/* ── NEWS TICKER ── */
+.news-ticker-wrap{
+  display:flex;align-items:center;gap:0;
+  background:rgba(59,130,246,.07);border-top:1px solid rgba(59,130,246,.15);border-bottom:1px solid rgba(59,130,246,.15);
+  height:34px;overflow:hidden;position:relative;
+}
+.news-ticker-label{
+  flex-shrink:0;padding:0 12px;font-size:.6rem;font-weight:700;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--accent);background:rgba(59,130,246,.12);
+  height:100%;display:flex;align-items:center;border-right:1px solid rgba(59,130,246,.2);
+  white-space:nowrap;
+}
+.news-ticker-track-wrap{flex:1;overflow:hidden;height:100%;position:relative;}
+.news-ticker-track{
+  display:flex;align-items:center;gap:0;
+  white-space:nowrap;height:100%;
+  animation:ticker-scroll 60s linear infinite;
+}
+.news-ticker-track:hover{animation-play-state:paused;}
+@keyframes ticker-scroll{
+  0%{transform:translateX(0);}
+  100%{transform:translateX(-50%);}
+}
+.news-item{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:0 20px;cursor:pointer;height:100%;
+  font-size:.72rem;color:var(--t2);
+  transition:color .15s;text-decoration:none;
+}
+.news-item:hover{color:var(--text);}
+.news-item-src{font-size:.65rem;color:var(--accent);font-weight:600;flex-shrink:0;}
+.news-item-sep{color:var(--border);margin:0 4px;flex-shrink:0;}
+.news-ticker-loading{padding:0 16px;font-size:.72rem;color:var(--t3);}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
 
 /* ── PROGRESS BAR ── */
@@ -1265,6 +1299,16 @@ header{
   <span id="pbar-label">Carico dati di mercato…</span>
   <div class="pbar-track"><div class="pbar-fill" id="pbar-fill"></div></div>
   <span id="pbar-count" style="font-size:.7rem;white-space:nowrap;"></span>
+</div>
+
+<!-- ── NEWS TICKER ── -->
+<div class="news-ticker-wrap" id="news-ticker-wrap">
+  <div class="news-ticker-label">NEWS</div>
+  <div class="news-ticker-track-wrap">
+    <div class="news-ticker-track" id="news-ticker-track">
+      <span class="news-ticker-loading">Carico notizie…</span>
+    </div>
+  </div>
 </div>
 
 <!-- ── MARKET PULSE ── -->
@@ -4443,6 +4487,37 @@ async function refreshCard(btn,fn){
 
 // ── BOOT ──
 // ── MACRO: YIELD CURVE + SECTOR ROTATION + DOLLAR ──
+async function loadNews(){
+  try{
+    const r=await fetch('/api/news',{signal:AbortSignal.timeout(10000)});
+    if(!r.ok) throw new Error();
+    const items=await r.json();
+    if(!Array.isArray(items)||!items.length) throw new Error();
+    const track=document.getElementById('news-ticker-track');
+    if(!track) return;
+    // Build items × 2 for seamless loop
+    const buildItems=()=>items.map(n=>{
+      const t=new Date(n.datetime*1000);
+      const ago=Math.round((Date.now()-t)/60000);
+      const timeStr=ago<60?`${ago}m fa`:`${Math.round(ago/60)}h fa`;
+      return `<a class="news-item" href="${n.url||'#'}" target="_blank" rel="noopener">
+        <span class="news-item-src">${n.source||'News'}</span>
+        <span>${n.headline||''}</span>
+        <span class="news-item-sep" style="color:var(--t3);font-size:.6rem">${timeStr}</span>
+      </a><span class="news-item-sep">·</span>`;
+    }).join('');
+    track.innerHTML=buildItems()+buildItems();
+    // Adjust animation duration based on content width
+    const totalW=track.scrollWidth/2;
+    const speed=80; // px/s
+    const dur=Math.round(totalW/speed);
+    track.style.animationDuration=dur+'s';
+  }catch{
+    const track=document.getElementById('news-ticker-track');
+    if(track) track.innerHTML='<span class="news-ticker-loading">Notizie non disponibili</span>';
+  }
+}
+
 async function loadMacro(){
   const SECS=['XLK','XLF','XLE','XLV','XLI','XLRE','XLY','XLP','XLU','XLB','XLC'];
   const SLBL={XLK:'Tech',XLF:'Finanza',XLE:'Energia',XLV:'Salute',XLI:'Industria',
@@ -4641,6 +4716,8 @@ document.addEventListener('DOMContentLoaded',()=>{
     }
   });
   document.getElementById('cat-modal').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeCatModal(); });
+  loadNews();
+  setInterval(loadNews,5*60*1000);
   loadPulse().then(()=>loadPanoramica());
   loadMacro();
   fetchMacroData().then(renderMacro).catch(()=>{});

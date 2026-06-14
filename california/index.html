@@ -2734,22 +2734,23 @@
 </div>
 
 <script>
-  // Active day pill on scroll
+  // Active pill on scroll — tutte le sezioni
   (function() {
-    const pills = document.querySelectorAll('.day-pill[href^="#g"]');
-    const sections = document.querySelectorAll('.day-section');
-    if (!pills.length || !sections.length) return;
-
-    const nav = document.querySelector('.day-nav');
+    const allPills = document.querySelectorAll('.day-pill[href^="#"]');
+    if (!allPills.length) return;
 
     function setActive(id) {
-      pills.forEach(p => p.classList.remove('active'));
+      allPills.forEach(p => p.classList.remove('active'));
       const active = document.querySelector(`.day-pill[href="#${id}"]`);
       if (active) {
         active.classList.add('active');
         active.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
       }
     }
+
+    // Raccoglie tutti gli elementi con id linkati dalla nav
+    const ids = Array.from(allPills).map(p => p.getAttribute('href').slice(1));
+    const targets = ids.map(id => document.getElementById(id)).filter(Boolean);
 
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
@@ -2760,7 +2761,7 @@
       threshold: 0
     });
 
-    sections.forEach(s => observer.observe(s));
+    targets.forEach(t => observer.observe(t));
   })();
 
   function toggleTheme() {

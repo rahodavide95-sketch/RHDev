@@ -329,10 +329,18 @@ header{
   height:34px;overflow:hidden;position:relative;
 }
 .news-ticker-label{
-  flex-shrink:0;padding:0 12px;font-size:.6rem;font-weight:700;letter-spacing:.12em;
-  text-transform:uppercase;color:var(--accent);background:rgba(59,130,246,.12);
-  height:100%;display:flex;align-items:center;border-right:1px solid rgba(59,130,246,.2);
+  flex-shrink:0;padding:0 14px;font-size:.6rem;font-weight:700;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--r);background:rgba(239,68,68,.08);
+  height:100%;display:flex;align-items:center;gap:6px;border-right:1px solid rgba(239,68,68,.2);
   white-space:nowrap;
+}
+.news-live-dot{
+  width:7px;height:7px;border-radius:50%;background:var(--r);
+  flex-shrink:0;animation:live-blink 1.2s ease-in-out infinite;
+}
+@keyframes live-blink{
+  0%,100%{opacity:1;box-shadow:0 0 4px var(--r);}
+  50%{opacity:.3;box-shadow:none;}
 }
 .news-ticker-track-wrap{flex:1;overflow:hidden;height:100%;position:relative;}
 .news-ticker-track{
@@ -1305,7 +1313,7 @@ header{
 
 <!-- ── NEWS TICKER ── -->
 <div class="news-ticker-wrap" id="news-ticker-wrap">
-  <div class="news-ticker-label">NEWS</div>
+  <div class="news-ticker-label"><span class="news-live-dot"></span>LIVE</div>
   <div class="news-ticker-track-wrap">
     <div class="news-ticker-track" id="news-ticker-track">
       <span class="news-ticker-loading">Carico notizie…</span>

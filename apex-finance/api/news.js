@@ -6,29 +6,63 @@ const CORS = {
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
+const RSS_FEEDS = [
+  { url: 'https://www.ilsole24ore.com/rss/finanza-e-mercati.xml', source: 'Il Sole 24 Ore' },
+  { url: 'https://www.ilsole24ore.com/rss/economia.xml', source: 'Il Sole 24 Ore' },
+  { url: 'https://www.borsaitaliana.it/notizie/rss.xml', source: 'Borsa Italiana' },
+];
+
+function parseRSS(xml, source) {
+  const items = [];
+  const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+  let match;
+  while ((match = itemRegex.exec(xml)) !== null) {
+    const item = match[1];
+    const title = (/<title><!\[CDATA\[([\s\S]*?)\]\]><\/title>/.exec(item) || /<title>([\s\S]*?)<\/title>/.exec(item) || [])[1]?.trim();
+    const link = (/<link>([\s\S]*?)<\/link>/.exec(item) || [])[1]?.trim();
+    const pubDate = (/<pubDate>([\s\S]*?)<\/pubDate>/.exec(item) || [])[1]?.trim();
+    if (title) {
+      items.push({
+        headline: title.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&#039;/g,"'").replace(/&quot;/g,'"'),
+        url: link || '#',
+        source,
+        datetime: pubDate ? Math.floor(new Date(pubDate).getTime() / 1000) : Math.floor(Date.now() / 1000),
+      });
+    }
+  }
+  return items;
+}
+
 export default async function handler(req) {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
 
-  const key = process.env.FINNHUB_API_KEY;
-  if (!key) return new Response(JSON.stringify({ error: 'no key' }), { status: 503, headers: { ...CORS, 'Content-Type': 'application/json' } });
+  const results = await Promise.allSettled(
+    RSS_FEEDS.map(async ({ url, source }) => {
+      const r = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/rss+xml, application/xml, text/xml' },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!r.ok) throw new Error(`${source} HTTP ${r.status}`);
+      const xml = await r.text();
+      return parseRSS(xml, source);
+    })
+  );
 
-  try {
-    const r = await fetch(`https://finnhub.io/api/v1/news?category=general&minId=0&token=${key}`, {
-      signal: AbortSignal.timeout(10000),
+  const allNews = results
+    .filter(r => r.status === 'fulfilled')
+    .flatMap(r => r.value)
+    .sort((a, b) => b.datetime - a.datetime)
+    .slice(0, 20);
+
+  if (!allNews.length) {
+    return new Response(JSON.stringify({ error: 'nessuna notizia disponibile' }), {
+      status: 502,
+      headers: { ...CORS, 'Content-Type': 'application/json' },
     });
-    if (!r.ok) throw new Error(`Finnhub ${r.status}`);
-    const items = await r.json();
-
-    // Return top 15, only headline + url + source + datetime
-    const news = (Array.isArray(items) ? items : [])
-      .slice(0, 15)
-      .map(n => ({ headline: n.headline, url: n.url, source: n.source, datetime: n.datetime }));
-
-    return new Response(JSON.stringify(news), {
-      status: 200,
-      headers: { ...CORS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=120' },
-    });
-  } catch (e) {
-    return new Response(JSON.stringify({ error: e.message }), { status: 502, headers: { ...CORS, 'Content-Type': 'application/json' } });
   }
+
+  return new Response(JSON.stringify(allNews), {
+    status: 200,
+    headers: { ...CORS, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=120' },
+  });
 }

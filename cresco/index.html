@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <meta name="theme-color" content="#0e7a50">
 <title>Cresco — l'amico bravo di finanza</title>
 <meta name="description" content="L'app che ti porta da «voglio investire ma non so nulla» al tuo primo investimento. Senza giudizio, senza gergo.">
@@ -177,8 +177,11 @@
   .lock-ic{color:var(--muted);flex-shrink:0}
 
   /* ---------- COACH ---------- */
-  .coach-view{display:flex;flex-direction:column;height:100vh}
-  .chat-scroll{flex:1;overflow-y:auto;padding:16px 16px 8px;display:flex;flex-direction:column;gap:12px}
+  .coach-view{display:flex;flex-direction:column;height:100vh;
+    height:calc(100dvh - var(--nav-h) - env(safe-area-inset-bottom))}
+  body.typing .nav{transform:translateX(-50%) translateY(110%)}
+  body.typing .coach-view{height:100dvh}
+  .chat-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px 8px;display:flex;flex-direction:column;gap:12px}
   .msg{max-width:84%;padding:12px 15px;border-radius:18px;font-size:14.5px;line-height:1.5;animation:pop .25s ease}
   @keyframes pop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
   .msg.bot{background:var(--surface);border:1px solid var(--line);align-self:flex-start;border-bottom-left-radius:6px;
@@ -198,8 +201,9 @@
   .suggest button{white-space:nowrap;background:var(--surface);border:1px solid var(--line);border-radius:99px;
     padding:9px 14px;font-size:13px;font-weight:500;color:var(--ink);box-shadow:var(--shadow);flex-shrink:0}
   .suggest button:active{background:var(--green-soft)}
-  .composer{display:flex;gap:9px;padding:10px 14px calc(12px + env(safe-area-inset-bottom));
+  .composer{display:flex;gap:9px;padding:10px 14px 12px;
     border-top:1px solid var(--line);background:var(--surface);align-items:flex-end}
+  body.typing .composer{padding-bottom:calc(12px + env(safe-area-inset-bottom))}
   .composer textarea{flex:1;resize:none;border:1.5px solid var(--line);border-radius:18px;padding:11px 15px;
     font-family:inherit;font-size:15px;max-height:110px;background:var(--surface-2);line-height:1.4}
   .composer textarea:focus{outline:none;border-color:var(--green)}
@@ -234,7 +238,7 @@
   .nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;
     height:calc(var(--nav-h) + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);
     background:rgba(255,255,255,.9);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
-    border-top:1px solid var(--line);display:flex;z-index:30}
+    border-top:1px solid var(--line);display:flex;z-index:30;transition:transform .25s ease}
   .nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
     color:var(--muted);font-size:10.5px;font-weight:600;position:relative}
   .nav button.on{color:var(--green)}
@@ -388,12 +392,41 @@ const KB = [
   { k:['crypto','bitcoin','criptovalute','ethereum','btc'], a:"Parliamoci chiaro sulle <b>crypto</b>. ₿<br><br>Bitcoin & co. sono molto <strong>volatili</strong>: possono fare +50% o -50% in poco tempo. Non sono una base su cui costruire.<br><br>Il mio consiglio da \"amico onesto\":<br>• Prima costruisci le <strong>fondamenta</strong> (conto, fondo emergenza, ETF)<br>• Solo dopo, <strong>se</strong> ti interessano, metti una <strong>piccola</strong> parte (max 5%) che sei disposto a perdere<br>• Mai metterci soldi che ti servono<br><br>Le crypto non sono il punto di partenza per chi vuole costruire serenità finanziaria." },
   { k:['inflazione','potere d’acquisto','prezzi salgono','soldi fermi'], a:"L’<b>inflazione</b> è il motivo per cui NON conviene lasciare tutto fermo sul conto. 📉<br><br>Se i prezzi salgono del 3% all’anno, i tuoi 1.000€ fermi tra un anno comprano come 970€ oggi. Stando fermi, <strong>perdi potere d’acquisto</strong> in silenzio.<br><br>Ecco perché investire non è \"da ricchi\" o \"rischioso\": è il modo per <strong>difendere</strong> i tuoi risparmi dall’inflazione, oltre che farli crescere.<br><br>Il fondo di emergenza resta liquido (serve subito); il resto, che non usi per anni, è giusto che lavori." },
   { k:['budget','50 30 20','dove vanno','spese','gestire i soldi','quanto spendere'], a:"Per capire <b>dove vanno i soldi</b>, parti dalla regola semplice <strong>50/30/20</strong>: 📊<br><br>Del tuo stipendio netto:<br>• <strong>50%</strong> ai bisogni (affitto, bollette, spesa)<br>• <strong>30%</strong> agli sfizi (uscite, hobby, viaggi)<br>• <strong>20%</strong> al futuro (risparmio + investimenti)<br><br>Non è una legge, è una bussola. Se ora il tuo 20% è 5%, va bene: l’importante è <strong>conoscere</strong> i numeri e provare ad alzarli un po’ alla volta.<br><br>Trucco: il 20% mettilo da parte <strong>appena arriva lo stipendio</strong>, non \"quello che avanza\" (non avanza mai)." },
+  { k:['mutuo','affitto','comprare casa','affittare','casa di proprietà','prima casa'], a:"<b>Comprare o affittare casa?</b> La domanda da un milione di euro. 🏡<br><br>Non c’è una risposta giusta per tutti, ma ecco la bussola onesta:<br>• <strong>Affitti</strong> hanno senso se: ti muovi spesso, non hai un buon anticipo, o vivi in una città carissima.<br>• <strong>Comprare</strong> ha senso se: resti lì 7-10+ anni, hai il 20% di anticipo + spese, e la rata è sostenibile.<br><br>Errore classico: pensare che \"l’affitto sono soldi buttati\". Anche gli interessi del mutuo lo sono. Conta il quadro intero: anticipo, tasse, manutenzione, e quanto avresti reso investendo la differenza.<br><br>Regola della rata: meglio non superare <strong>1/3 del reddito netto</strong>." },
+  { k:['pensione','fondo pensione','previdenza','vecchiaia','tfr'], a:"La <b>pensione</b> sembra lontanissima a 20-30 anni, ed è proprio per questo che è il momento d’oro per pensarci. ⛵<br><br>Verità scomoda: la pensione pubblica delle nuove generazioni sarà più bassa rispetto allo stipendio. Conviene costruirsi un secondo pilastro.<br><br>Due strade (non alternative):<br>• <strong>Fondo pensione</strong>: hai <strong>vantaggi fiscali</strong> (deduci fino a 5.164€/anno) e ci puoi versare il TFR. In cambio i soldi sono vincolati fino alla pensione.<br>• <strong>ETF con PAC</strong>: più libertà e flessibilità, niente vincoli, ma niente sgravio fiscale.<br><br>Molti fanno entrambe le cose. Il segreto comune: <strong>iniziare presto</strong> e lasciare lavorare il tempo." },
+  { k:['assicurazione','assicurazioni','polizza','rc','proteggere'], a:"Le <b>assicurazioni</b> non fanno crescere i soldi: proteggono quelli che hai (e la tua serenità). 🛡️<br><br>Quelle che hanno davvero senso per la maggior parte delle persone:<br>• <strong>RC auto</strong> (obbligatoria)<br>• <strong>Responsabilità civile</strong> (se fai un danno a qualcuno)<br>• Eventuali coperture <strong>salute/infortuni</strong> se non sei coperto<br><br>Da guardare con sospetto: le polizze \"vita\" vendute come investimento. Spesso hanno costi alti e rendimenti bassi. <strong>Investire e assicurarsi sono due cose separate</strong>: mischiarle di solito conviene a chi vende, non a te." },
+  { k:['carta di credito','carta di debito','revolving','bancomat','carta'], a:"<b>Carta di debito vs credito</b>, in parole povere: 💳<br><br>• <strong>Debito</strong> (bancomat): spendi soldi che <strong>hai già</strong>. Si scalano subito dal conto. Perfetta per il quotidiano e per non spendere più del dovuto.<br>• <strong>Credito</strong>: la banca anticipa, tu paghi tutto il mese dopo. Comoda online e per cauzioni, ma serve disciplina.<br><br>⚠️ Da evitare come la peste: le carte <strong>\"revolving\"</strong> (rateizzano in automatico con interessi altissimi, anche oltre il 15%). Sono trappole. Se hai una carta di credito, paga sempre il <strong>saldo intero</strong> ogni mese." },
+  { k:['debiti','debito','prestito','finanziamento','rate','estinguere'], a:"Sui <b>debiti</b> una regola d’oro: prima di investire, <strong>estingui i debiti costosi</strong>. 🔗<br><br>Perché? Se un prestito ti costa il 10% di interessi e investendo speri di fare il 6%, stai perdendo. Ripagare quel debito è un \"rendimento\" garantito del 10%.<br><br>Ordine sensato:<br>1. Estingui debiti cari (revolving, prestiti personali ad alto tasso)<br>2. Costruisci il fondo di emergenza<br>3. Poi inizi a investire<br><br>Eccezione: un mutuo a tasso basso non è \"cattivo debito\" — lì investire in parallelo può avere senso." },
+  { k:['conto deposito','dove tenere','liquidità','soldi fermi sul conto','parcheggiare'], a:"Un <b>conto deposito</b> è il posto giusto dove tenere i soldi che NON vuoi investire (tipo il fondo di emergenza). 🏦<br><br>Funziona così: \"vincoli\" o lasci liberi dei soldi e la banca ti paga un piccolo interesse. Più sicuro e prevedibile di un investimento, ma rende poco.<br><br>Quando usarlo:<br>• Per il <strong>fondo di emergenza</strong> (liquido, sicuro)<br>• Per obiettivi a <strong>breve termine</strong> (1-2 anni: macchina, viaggio)<br><br>Quando NON basta: per obiettivi lontani (10+ anni), lì gli ETF battono il conto deposito perché rendono di più e l’inflazione non li erode." },
+  { k:['mille euro','1000 euro','ho dei risparmi','cosa faccio con','5000','primi risparmi'], a:"Hai qualche risparmio e non sai cosa farne? Ottimo problema da avere. 💰<br><br>L’ordine giusto, qualsiasi sia la cifra:<br>1. <strong>Hai debiti costosi?</strong> Estinguili prima.<br>2. <strong>Hai il fondo di emergenza?</strong> Se no, quello viene prima di tutto (su conto deposito).<br>3. <strong>Solo dopo</strong>, i soldi che non ti servono per 5+ anni: ETF mondiale, meglio se con un PAC.<br><br>Errore comune: buttarsi sull’investimento \"di moda\" saltando i primi due punti. La base prima del tetto. 🧱<br><br>Dimmi quanti soldi e la tua situazione, e ti aiuto a ragionarci insieme." },
+  { k:['dividendi','accumulo','distribuzione','cedola','acc o dist'], a:"<b>ETF ad accumulo o a distribuzione?</b> Dubbio da \"secondo livello\", bravo. 📈<br><br>• <strong>Distribuzione</strong>: ti versa i <strong>dividendi</strong> sul conto (ti arrivano soldi ogni tot). Soddisfa l’occhio, ma ogni stacco viene tassato.<br>• <strong>Accumulo</strong>: i dividendi vengono <strong>reinvestiti automaticamente</strong> dentro l’ETF. Niente tasse intermedie, massima spinta all’interesse composto.<br><br>Per chi sta <strong>costruendo</strong> ricchezza nel lungo periodo (probabilmente tu), l’<strong>accumulo</strong> è di solito la scelta migliore: cresce più in fretta e ti scordi della burocrazia. I dividendi te li godi tra qualche decennio." },
+  { k:['quanto risparmiare','quanto mettere da parte','percentuale','quanto al mese'], a:"<b>Quanto dovrei risparmiare al mese?</b> 🪙<br><br>La risposta da manuale è il <strong>20%</strong> del netto. Ma la risposta vera è: <strong>il massimo che riesci senza vivere male</strong>.<br><br>Come trovarlo senza stress:<br>• Parti da una cifra <strong>facile</strong> (anche il 5-10%) e automatizzala<br>• Ogni volta che lo stipendio sale, alza la quota di un pochino<br>• Non puntare alla perfezione, punta alla <strong>costanza</strong><br><br>Meglio risparmiare il 10% per 10 anni che il 40% per due mesi e poi mollare. La regolarità batte l’intensità, sempre." },
+  { k:['paura','ansia','ho paura','timore','nervoso','stress','non mi fido'], a:"Ehi, la <b>paura</b> di sbagliare con i soldi è normalissima — anzi, è sana. Vuol dire che ci tieni. 🫶<br><br>Tre cose che aiutano davvero:<br>• <strong>Parti piccolo</strong>. 50€ che puoi perdere senza ansia. La sicurezza arriva facendo, non leggendo.<br>• <strong>Capisci prima di agire</strong>. Per questo esisto io: chiedimi tutto finché non ti senti tranquillo.<br>• <strong>Pensa lungo</strong>. Sul lungo periodo i saliscendi contano molto meno di quanto sembri.<br><br>Non devi diventare un esperto domani. Devi solo fare il <strong>prossimo</strong> piccolo passo. Ci sono io con te. 🌱" },
+  { k:['primo stipendio','primo lavoro','ho iniziato a lavorare','appena assunto','neoassunto'], a:"Primo stipendio in arrivo? Che bel momento — e che momento giusto per partire col piede giusto. 🚀<br><br>Cosa fare nei primi mesi, con calma:<br>1. <strong>Conto corrente</strong> tuo con IBAN, dove farti accreditare lo stipendio<br>2. Appena entra, <strong>metti da parte subito</strong> una quota (anche piccola) prima di spenderla<br>3. Costruisci il <strong>fondo di emergenza</strong> un po’ alla volta<br>4. Quando il cuscinetto c’è, inizi a investire con un piccolo PAC<br><br>Il vantaggio che hai adesso è il più grande di tutti: il <strong>tempo</strong>. Iniziare presto, anche con poco, vale più che iniziare \"ricchi\" tra 10 anni." },
 ];
 
-const GREETINGS = [
-  "Ciao! Sono il tuo coach di Cresco 🌱 Sono qui per spiegarti qualsiasi cosa sui soldi, senza giudizio e senza paroloni.",
-  "Puoi chiedermi davvero <strong>tutto</strong> — anche \"cos’è un IBAN\" o \"da dove inizio\". Nessuna domanda è stupida.",
-];
+function personalGreeting(){
+  const n = S.name ? (' '+S.name) : '';
+  const p = S.profile;
+  const out = [ `Ciao${n}! Sono il tuo coach di Cresco 🌱 Sono qui per spiegarti qualsiasi cosa sui soldi, senza giudizio e senza paroloni.` ];
+  // a second line tailored to their situation
+  if(p.experience==='zero')
+    out.push("So che parti da zero — ed è il punto di partenza perfetto. Puoi chiedermi davvero <strong>tutto</strong>, anche \"cos’è un IBAN\". Nessuna domanda è stupida, promesso. 🤝");
+  else if(p.emergency==='no'||p.emergency==='little')
+    out.push("Dalla tua diagnosi, il primo tassello da sistemare è il <strong>fondo di emergenza</strong>: la base prima di investire. Chiedimi pure come si costruisce, o qualsiasi altra cosa. 🛡️");
+  else if(p.experience==='pro'||p.experience==='done')
+    out.push("Vedo che già te la cavi — possiamo andare anche sul pratico: PAC, accumulo vs distribuzione, tasse, diversificazione. Spara la domanda. 📈");
+  else
+    out.push("Puoi chiedermi davvero <strong>tutto</strong> — da \"da dove inizio\" a \"cos’è un ETF\". Sono qui apposta per farti sentire tranquillo. 🌱");
+  return out;
+}
+// per-topic follow-up nudges to make the coach feel alive
+const FOLLOWUPS = {
+  etf:"Vuoi che ti spieghi come si fa il <strong>primo acquisto</strong> di un ETF, passo passo?",
+  emergency:"Quando ce l’hai, il passo dopo è il primo investimento — te lo spiego quando vuoi. 😊",
+  conto:"Appena hai il conto, possiamo passare a costruire il <strong>fondo di emergenza</strong>.",
+  pac:"Se vuoi, ti dico anche <strong>quanto</strong> ha senso mettere ogni mese nella tua situazione.",
+};
 
 function coachReply(text){
   const q = text.toLowerCase();
@@ -404,7 +437,17 @@ function coachReply(text){
     for(const kw of e.k){ if(q.includes(kw)) sc += kw.length>6?2:1; }
     if(sc>bestScore){ bestScore=sc; best=e; }
   }
-  if(best && bestScore>0) return best.a;
+  if(best && bestScore>0){
+    let ans = best.a;
+    // alive touch: occasionally a topical follow-up nudge
+    let fk=null;
+    if(best.k.includes('etf')) fk='etf';
+    else if(best.k.includes('fondo di emergenza')) fk='emergency';
+    else if(best.k.includes('conto corrente')) fk='conto';
+    else if(best.k.includes('pac')) fk='pac';
+    if(fk && FOLLOWUPS[fk]) ans += `<br><br>${FOLLOWUPS[fk]}`;
+    return ans;
+  }
   // greetings / smalltalk
   if(/^(ciao|ehi|hey|salve|buongiorno|buonasera)/.test(q))
     return "Ciao! 👋 Dimmi pure cosa ti frulla in testa sui soldi. Posso partire dalle basi (conto, fondo di emergenza) o spiegarti cos’è un ETF e come si inizia a investire.";
@@ -426,6 +469,7 @@ function render(){
     ${S.tab==='roadmap'?viewRoadmap():''}
     ${S.tab==='coach'?viewCoach():''}
     ${S.tab==='profile'?viewProfile():''}
+    ${S.tab==='story'?viewStory():''}
     ${nav()}
     <div class="sheet-overlay" id="sheetOv" onclick="closeSheet()"></div>
     <div class="sheet" id="sheet"><div class="sheet-grab"></div><div id="sheetContent"></div></div>
@@ -510,6 +554,13 @@ function viewHome(){
         ${I.arrow}
       </div>
 
+      <div style="height:14px"></div>
+      <div class="card" onclick="go('story')" style="display:flex;align-items:center;gap:14px;cursor:pointer;background:var(--green-soft);border-color:rgba(14,122,80,.18)">
+        <div class="ns-icon" style="background:#fff">🌱</div>
+        <div style="flex:1"><b style="font-size:15px">Perché esiste Cresco</b><br><small style="color:var(--green)">La nostra storia — e perché sei a casa qui</small></div>
+        <span style="color:var(--green)">${I.arrow}</span>
+      </div>
+
       <div style="height:24px"></div>
       <p class="disc">Cresco è uno strumento educativo. Non è consulenza finanziaria personalizzata né sollecitazione all’investimento. Le decisioni restano tue.</p>
     </div>
@@ -574,7 +625,7 @@ function viewCoach(){
     <div class="chat-scroll" id="chatScroll"></div>
     <div class="suggest" id="suggest">${sugg.map(s=>`<button onclick="quickAsk('${s.replace(/'/g,"\\'")}')">${s}</button>`).join('')}</div>
     <div class="composer">
-      <textarea id="ta" rows="1" placeholder="Scrivi la tua domanda..." oninput="growTa(this)" onkeydown="taKey(event)"></textarea>
+      <textarea id="ta" rows="1" placeholder="Scrivi la tua domanda..." oninput="growTa(this)" onkeydown="taKey(event)" onfocus="onTaFocus()" onblur="onTaBlur()">
       <button class="send-btn" id="sendBtn" onclick="sendMsg()">${I.send}</button>
     </div>
   </div></div>`;
@@ -582,7 +633,7 @@ function viewCoach(){
 function initCoach(){
   const sc=document.getElementById('chatScroll'); if(!sc) return;
   if(!S.chatSeeded){
-    S.chat = GREETINGS.map(g=>({r:'bot',t:g}));
+    S.chat = personalGreeting().map(g=>({r:'bot',t:g}));
     S.chatSeeded=true; save();
   }
   sc.innerHTML = S.chat.map(m=>bubble(m.r,m.t)).join('');
@@ -593,6 +644,9 @@ function bubble(r,t){
   return `<div class="msg me">${t}</div>`;
 }
 function growTa(el){ el.style.height='auto'; el.style.height=Math.min(110,el.scrollHeight)+'px'; }
+function onTaFocus(){ document.body.classList.add('typing');
+  setTimeout(()=>{ const sc=document.getElementById('chatScroll'); if(sc) sc.scrollTop=sc.scrollHeight; },300); }
+function onTaBlur(){ document.body.classList.remove('typing'); }
 function taKey(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendMsg(); } }
 function quickAsk(q){ const ta=document.getElementById('ta'); ta.value=q; sendMsg(); }
 function sendMsg(){
@@ -644,6 +698,12 @@ function viewProfile(){
         <button class="btn secondary" style="margin-top:16px" onclick="redoQuiz()">Rifai la diagnosi</button>
       </div>
 
+      <div class="card" onclick="go('story')" style="display:flex;align-items:center;gap:14px;cursor:pointer">
+        <div class="ns-icon">🌱</div>
+        <div style="flex:1"><b style="font-size:15px">La nostra storia</b><br><small style="color:var(--muted)">Chi siamo e perché è nata Cresco</small></div>
+        ${I.arrow}
+      </div>
+
       <div class="card">
         <span class="label">Cresco</span>
         <p style="font-size:13.5px;color:var(--muted);margin:8px 0 14px">L’amico bravo di finanza, per chi parte da zero. Versione prototipo — in continua evoluzione.</p>
@@ -657,6 +717,70 @@ function viewProfile(){
 function redoQuiz(){ quizIdx=0; S.onboarded=false; save(); renderOnboarding(true); }
 function resetAll(){
   if(confirm('Sicuro? Cancella profilo, progressi e chat.')){ localStorage.removeItem(LS); S=load(); quizIdx=0; render(); }
+}
+
+/* ---------- STORY / CHI SIAMO ---------- */
+function viewStory(){
+  return `<div class="view active"><div class="scroll">
+    <div class="topbar">
+      <button onclick="go('home')" style="display:flex;align-items:center;gap:7px;color:var(--ink);font-weight:600;font-size:14.5px">
+        <span style="display:inline-flex;transform:rotate(180deg)">${I.arrow}</span> Home
+      </button>
+      <span class="chip gray">La nostra storia</span>
+    </div>
+
+    <div class="pad">
+      <div class="level-card">
+        <span class="logo" style="width:42px;height:42px;border-radius:13px;position:relative">${I.leaf}</span>
+        <h3 style="font-size:24px;margin-top:14px">Nessuno dovrebbe<br>sentirsi stupido<br>davanti ai soldi.</h3>
+        <p style="margin-top:8px">Cresco nasce da una piccola umiliazione. E da una promessa.</p>
+      </div>
+
+      <div class="card" style="margin-top:16px">
+        <span class="label">Com’è iniziata</span>
+        <div style="margin-top:12px;font-size:15px;line-height:1.65">
+          <p>A 22 anni, primo giorno in una grande azienda, mi chiesero l’IBAN. Avevo solo una PostePay. Volevo un conto corrente — ma <strong>non sapevo nemmeno cosa fosse</strong>.</p>
+          <p style="margin-top:12px">Per avere una risposta, mia madre dovette chiamare una sua amica che lavorava in banca. Mi sentii piccolo così. Un ragazzo di 22 anni che non capiva niente di una cosa di cui, semplicemente, <strong>nessuno gli aveva mai parlato</strong>.</p>
+          <p style="margin-top:12px">Quella sera ho deciso che non sarebbe più successo. Ho iniziato a leggere, a studiare, notti intere. Dalla finanza personale agli investimenti — un mondo di cui in famiglia non si era mai parlato, perché sconosciuto.</p>
+          <p style="margin-top:12px">E piano piano è successa una cosa: gli amici hanno cominciato a chiedere <em>a me</em>. \"Come apro un conto?\", \"Come inizio a investire?\". Sono diventato, senza accorgermene, <strong>l’amico bravo di finanza</strong>.</p>
+        </div>
+      </div>
+
+      <div class="card" style="background:var(--green-soft);border-color:rgba(14,122,80,.18)">
+        <p class="serif" style="font-size:19px;line-height:1.45;color:var(--green)">«Sono stato quell’amico per decine di persone. Cresco nasce per esserlo per <em>tutte</em>.»</p>
+      </div>
+
+      <div class="card">
+        <span class="label">Perché esiste Cresco</span>
+        <p style="margin-top:10px;font-size:15px;line-height:1.65">In Italia di soldi non si parla: non a scuola, spesso nemmeno in famiglia. Così milioni di persone restano ferme — non per pigrizia, ma per <strong>paura di sbagliare</strong> e per la vergogna di chiedere.</p>
+        <p style="margin-top:12px;font-size:15px;line-height:1.65">Cresco è qui per quel momento. Per accompagnarti dal \"non so nulla\" al tuo primo investimento, <strong>una cosa alla volta</strong>, con la calma di chi ci è passato. Non ti sommergiamo di numeri: ti diamo il prossimo passo, e basta.</p>
+      </div>
+
+      <div style="margin-top:20px;margin-bottom:14px"><span class="label">Le nostre promesse</span></div>
+      ${promise('🫶','Mai farti sentire stupido','Nessuna domanda è banale. Si parte da zero, e va benissimo così.')}
+      ${promise('🙅','Non ti vendiamo nulla','Niente prodotti spinti, niente provvigioni nascoste. Ti spieghiamo come scegliere, la scelta resta tua.')}
+      ${promise('🗣️','Italiano semplice, sempre','Zero paroloni. Se serve un termine difficile, te lo traduciamo subito.')}
+      ${promise('🔒','I tuoi dati restano tuoi','Tutto resta su questo dispositivo. Non vendiamo e non spiamo la tua vita finanziaria.')}
+      ${promise('🌱','Un passo alla volta','Niente fretta, niente ansia. La costanza batte la fretta, ogni volta.')}
+
+      <div class="card" style="margin-top:18px;text-align:center">
+        <div style="font-size:30px">🏡</div>
+        <b class="serif" style="font-size:18px;display:block;margin:6px 0">Benvenuto a casa</b>
+        <p style="color:var(--muted);font-size:14px">Qui puoi rilassarti. I soldi non fanno più paura quando qualcuno te li spiega con calma. Quel qualcuno, adesso, siamo noi.</p>
+        <button class="btn" style="margin-top:16px" onclick="go('coach')">Fai una domanda al coach ${I.arrow}</button>
+        <button class="btn ghost" style="margin-top:6px" onclick="go('roadmap')">Riprendi il mio percorso</button>
+      </div>
+
+      <div style="height:18px"></div>
+      <p class="disc">Cresco è uno strumento educativo, non consulenza finanziaria personalizzata.</p>
+    </div>
+  </div></div>`;
+}
+function promise(emoji,title,text){
+  return `<div class="card" style="display:flex;gap:14px;align-items:flex-start;padding:15px 16px">
+    <div style="font-size:24px;flex-shrink:0">${emoji}</div>
+    <div><b style="font-size:15px">${title}</b><p style="font-size:13.5px;color:var(--muted);margin-top:2px;line-height:1.5">${text}</p></div>
+  </div>`;
 }
 
 /* ============================================================

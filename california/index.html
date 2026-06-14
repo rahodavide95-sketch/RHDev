@@ -213,6 +213,31 @@
   /* DAY SECTION */
   .day-section {
     margin-top: 56px;
+    position: relative;
+  }
+  .day-section + .day-section {
+    margin-top: 88px;
+    padding-top: 48px;
+  }
+  .day-section + .day-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--divider);
+  }
+  .day-section + .day-section::after {
+    content: '✦';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--bg);
+    padding: 0 16px;
+    color: var(--muted);
+    font-size: 12px;
   }
   .day-header {
     display: flex;
@@ -505,6 +530,10 @@
     }
     .day-section {
       margin-top: 40px;
+    }
+    .day-section + .day-section {
+      margin-top: 60px;
+      padding-top: 32px;
     }
     .day-header {
       gap: 10px;

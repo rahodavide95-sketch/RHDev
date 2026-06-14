@@ -2734,17 +2734,23 @@
 </div>
 
 <script>
-  // Forza sempre inizio pagina al caricamento (evita ripristino posizione browser)
-  if (history.scrollRestoration) history.scrollRestoration = 'manual';
-  window.scrollTo(0, 0);
-
   // Active pill on scroll — tutte le sezioni
   (function() {
     const allPills = document.querySelectorAll('.day-pill[href^="#"]');
     if (!allPills.length) return;
 
+    // Usa touchstart/wheel/keydown invece di 'scroll' così non scatta
+    // per il ripristino automatico della posizione del browser (es. iOS Safari)
     let userScrolled = false;
-    window.addEventListener('scroll', () => { userScrolled = true; }, { once: true, passive: true });
+    function onUserInput() {
+      userScrolled = true;
+      window.removeEventListener('touchstart', onUserInput);
+      window.removeEventListener('wheel', onUserInput);
+      window.removeEventListener('keydown', onUserInput);
+    }
+    window.addEventListener('touchstart', onUserInput, { once: true, passive: true });
+    window.addEventListener('wheel',      onUserInput, { once: true, passive: true });
+    window.addEventListener('keydown',    onUserInput, { once: true });
 
     function setActive(id) {
       allPills.forEach(p => p.classList.remove('active'));

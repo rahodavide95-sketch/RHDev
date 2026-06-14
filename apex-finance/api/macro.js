@@ -31,12 +31,40 @@ export default async function handler(req) {
   const YC = ['^IRX', '^FVX', '^TNX', '^TYX'];
   const SECS = ['XLK','XLF','XLE','XLV','XLI','XLRE','XLY','XLP','XLU','XLB','XLC'];
 
+  // Fetch BCE deposit rate from ECB API
+  async function fetchBCE() {
+    const urls = [
+      'https://data-api.ecb.europa.eu/service/data/FM/D.U2.EUR.4F.KR.DFR.LEV?lastNObservations=1&format=jsondata',
+      'https://data-api.ecb.europa.eu/service/data/FM/M.U2.EUR.4F.KR.DFR.LEV?lastNObservations=1&format=jsondata',
+    ];
+    for (const url of urls) {
+      try {
+        const r = await fetch(url, { signal: AbortSignal.timeout(8000) });
+        if (!r.ok) continue;
+        const d = await r.json();
+        const series = d?.dataSets?.[0]?.series;
+        if (!series) continue;
+        const seriesKey = Object.keys(series)[0];
+        const obs = series[seriesKey]?.observations;
+        if (!obs) continue;
+        const keys = Object.keys(obs).map(Number).sort((a, b) => b - a);
+        if (!keys.length) continue;
+        const val = obs[keys[0]]?.[0];
+        const timePeriods = d?.structure?.dimensions?.observation?.[0]?.values;
+        const date = timePeriods?.[keys[0]]?.id || null;
+        if (val != null) return { val, date };
+      } catch { continue; }
+    }
+    return null;
+  }
+
   // Fetch all in parallel server-side
-  const [ycData, secData, dxyData, eurData] = await Promise.all([
+  const [ycData, secData, dxyData, eurData, bceData] = await Promise.all([
     Promise.all(YC.map(s => yfChart(s))),
     Promise.all(SECS.map(s => yfChart(s))),
     yfChart('DX-Y.NYB'),
     yfChart('EURUSD=X'),
+    fetchBCE(),
   ]);
 
   const getClose = res => {
@@ -61,6 +89,8 @@ export default async function handler(req) {
     dxyPct: getPctChange(dxyData),
     eur: getClose(eurData),
     eurPct: getPctChange(eurData),
+    bceRate: bceData?.val ?? null,
+    bceDate: bceData?.date ?? null,
   };
 
   return new Response(JSON.stringify(result), {

@@ -2315,9 +2315,14 @@ async function fetchMacroData(){
     }catch{return null;}
   };
 
-  // Try FRED first for BCE rate (most up-to-date)
-  const fredBce=await fredBceVal();
-  if(fredBce){out.bceRate=fredBce.val;out.bceDate=fredBce.date;}
+  // Try server-side /api/macro first for BCE rate (most reliable — no CORS/GDPR issues)
+  try{
+    const macroR=await dfetch('/api/macro',6000);
+    if(macroR?.bceRate!=null){out.bceRate=macroR.bceRate;out.bceDate=macroR.bceDate||null;}
+  }catch{}
+
+  // If server failed, try FRED directly
+  if(out.bceRate===null){const fredBce=await fredBceVal();if(fredBce){out.bceRate=fredBce.val;out.bceDate=fredBce.date;}}
 
   const [usR,euR,itR,bceR,bceR2]=await Promise.allSettled([
     out.usCPI!==null?Promise.resolve(null):dfetch(BLS_URL),

@@ -2734,6 +2734,12 @@
 </div>
 
 <script>
+  // Sempre dall'inizio al caricamento/refresh (anche iOS Safari)
+  if (history.scrollRestoration) history.scrollRestoration = 'manual';
+  window.addEventListener('pageshow', function() {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  });
+
   // Active pill on scroll — tutte le sezioni
   (function() {
     const allPills = document.querySelectorAll('.day-pill[href^="#"]');

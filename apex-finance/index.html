@@ -1248,7 +1248,7 @@ header{
     <div class="live-ind">
       <div class="live-dot" id="live-dot"></div>
       <span>Live</span>
-      <div class="mkt-closed" id="mkt-closed">⚠ Borsa NYSE chiusa</div>
+      <div class="mkt-closed" id="mkt-closed" onclick="showNYSEClosedInfo(this)" style="cursor:pointer">⚠ Borsa NYSE chiusa</div>
     </div>
 
     <div class="header-divider"></div>
@@ -1919,6 +1919,64 @@ function updateMarketStatus(){
 }
 updateMarketStatus();
 setInterval(updateMarketStatus,60000);
+
+function showNYSEClosedInfo(el){
+  const now=new Date();
+  const fmt=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'numeric',weekday:'long',hour12:false});
+  const parts=Object.fromEntries(fmt.formatToParts(now).map(p=>[p.type,p.value]));
+  const day=parts.weekday;
+  const h=parseInt(parts.hour,10),m=parseInt(parts.minute,10),mins=h*60+m;
+  const dFmt=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',month:'long',day:'numeric',year:'numeric'});
+  const tFmt=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit',hour12:true});
+  const dateStr=dFmt.format(now);
+  const timeStr=tFmt.format(now);
+  const dayNames={Monday:'Lunedì',Tuesday:'Martedì',Wednesday:'Mercoledì',Thursday:'Giovedì',Friday:'Venerdì',Saturday:'Sabato',Sunday:'Domenica'};
+  const dayIT=dayNames[day]||day;
+
+  const dFmt2=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',month:'numeric',day:'numeric'});
+  const dp=Object.fromEntries(dFmt2.formatToParts(now).map(p=>[p.type,p.value]));
+  const mo=parseInt(dp.month,10)-1,d=parseInt(dp.day,10);
+  const holidayMap=[[0,1,'Capodanno (New Year\'s Day)'],[6,4,'Festa dell\'Indipendenza USA (Independence Day)'],[11,25,'Natale (Christmas Day)'],[11,26,'Santo Stefano (Boxing Day)']];
+  const holiday=holidayMap.find(([hm,hd])=>mo===hm&&d===hd);
+
+  let reason,detail;
+  if(day==='Saturday'||day==='Sunday'){
+    reason=`È ${dayIT} — fine settimana`;
+    detail=`La NYSE è chiusa il sabato e la domenica.<br><br>Riapertura: <b>lunedì alle 09:30 ET</b>.`;
+  } else if(holiday){
+    reason=`Festività: ${holiday[2]}`;
+    detail=`La NYSE è chiusa per <b>${holiday[2]}</b>.<br><br>Riapertura: <b>domani alle 09:30 ET</b>.`;
+  } else if(mins<570){
+    const openH=Math.floor(570/60), openM=570%60;
+    const waitMin=570-mins;
+    reason=`Pre-market — apertura tra ${waitMin} minuti`;
+    detail=`Ora a New York: <b>${timeStr}</b><br>La NYSE apre alle <b>09:30 ET</b>.<br><br>Mancano <b>${waitMin} minuti</b> all'apertura ufficiale.<br><br><i>Il pre-market (04:00–09:30 ET) ha volumi ridotti e spread più ampi — meno affidabile per le analisi.</i>`;
+  } else {
+    const closeMin=960-mins;
+    reason=`After-market — chiusura avvenuta`;
+    detail=`Ora a New York: <b>${timeStr}</b><br>La NYSE chiude alle <b>16:00 ET</b>.<br><br>La sessione di oggi è terminata.<br><br>Riapertura: <b>domani alle 09:30 ET</b> (se giorno lavorativo).<br><br><i>L'after-market (16:00–20:00 ET) ha volumi ridotti — i prezzi possono essere meno stabili.</i>`;
+  }
+
+  const tt=document.getElementById('g-tooltip');
+  if(!tt)return;
+  document.getElementById('tt-title').textContent='NYSE — '+reason;
+  document.getElementById('tt-body').innerHTML=`<div style="margin-bottom:8px;color:var(--t3);font-size:.75rem">${dateStr} · ${timeStr} ET</div>${detail}`;
+  if(window.innerWidth<=640){
+    tt.style.left='';tt.style.top='';
+    tt.classList.add('show');
+    document.getElementById('g-tt-backdrop')?.classList.add('show');
+  } else {
+    tt.style.left='-9999px';tt.style.top='-9999px';
+    tt.classList.add('show');
+    const tw=tt.offsetWidth,th=tt.offsetHeight;
+    const rect=el.getBoundingClientRect();
+    const vw=window.innerWidth,vh=window.innerHeight;
+    let left=rect.right+10,top=rect.top+(rect.height/2)-(th/2);
+    if(left+tw>vw-8){left=rect.left-tw-10;}
+    top=Math.max(8,Math.min(top,vh-th-8));
+    tt.style.left=left+'px';tt.style.top=top+'px';
+  }
+}
 
 // ── TICKER DATABASE ──
 const DB = [

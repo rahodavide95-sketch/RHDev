@@ -2734,10 +2734,19 @@
 </div>
 
 <script>
-  // Sempre dall'inizio al caricamento/refresh (anche iOS Safari)
+  // Sempre dall'inizio — iOS Safari ripristina la posizione tardi,
+  // quindi forziamo lo scroll a 0 in più momenti per batterlo sul tempo
   if (history.scrollRestoration) history.scrollRestoration = 'manual';
+  function _forceTop() {
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }
+  _forceTop();
   window.addEventListener('pageshow', function() {
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    _forceTop();
+    setTimeout(_forceTop, 0);
+    setTimeout(_forceTop, 150);
   });
 
   // Active pill on scroll — tutte le sezioni

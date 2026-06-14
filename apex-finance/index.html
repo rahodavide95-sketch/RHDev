@@ -3878,7 +3878,7 @@ async function analyze(ticker){
       score>=35?'Condizioni sfavorevoli — evitare nuovi ingressi':
       'Pressione ribassista dominante — proteggere il capitale';
     const sig=buildSignalText(ticker,cur,R,M50,M200,V,Mo,DD,w7,w30,w90,score);
-    document.getElementById('sig-points').innerHTML=sig.points.map(p=>'<div class="sig-point">'+p+'</div>').join('');
+    document.getElementById('sig-points').innerHTML=sig.points.map(p=>'<div class="sig-point"><span>'+p+'</span></div>').join('');
     document.getElementById('sig-decision').innerHTML=sig.decision;
 
     // Tags

@@ -1,0 +1,2727 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Route 66 — Itinerario Estate 2026</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600&family=Roboto+Mono:wght@400;500&display=swap');
+
+  :root {
+    --amber: #F5A623;
+    --amber-dim: #c47d0e;
+    --rust: #C0392B;
+    --sky: #4A90D9;
+    --green: #27AE60;
+    --purple: #8E44AD;
+
+    /* DARK MODE (default) */
+    --bg: #111111;
+    --surface: #1a1a1a;
+    --card: #1e1e1e;
+    --card2: #222222;
+    --divider: #2a2a2a;
+    --text: #F0EDE6;
+    --text-sec: #aaa8a0;
+    --muted: #888880;
+    --table-head-bg: #191919;
+    --table-row-border: #222;
+    --cost-row-border: #252525;
+    --drive-card-bg: #1e1a10;
+    --drive-card-border: #3a3020;
+    --toggle-bg: #2a2a2a;
+    --toggle-icon: '☀️';
+  }
+
+  [data-theme="light"] {
+    --bg: #f5f2eb;
+    --surface: #ece8df;
+    --card: #ffffff;
+    --card2: #f0ede6;
+    --divider: #d8d4cc;
+    --text: #1a1612;
+    --text-sec: #4a4640;
+    --muted: #7a7670;
+    --table-head-bg: #e8e4db;
+    --table-row-border: #e0dcd4;
+    --cost-row-border: #e8e4dc;
+    --drive-card-bg: #fdf8ef;
+    --drive-card-border: #e0cc98;
+    --toggle-bg: #e0dcd4;
+    --toggle-icon: '🌙';
+    --amber: #d4880a;
+    --sky: #2a6ab0;
+    --green: #1e8a48;
+    --purple: #6e34a0;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  /* HEADER */
+  .hero {
+    background: #0a0705;
+    border-bottom: 3px solid var(--amber);
+    padding: 56px 32px 44px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    min-height: 340px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.55;
+  }
+  .hero-content {
+    position: relative;
+    z-index: 2;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(10,7,5,0.25) 0%, rgba(10,7,5,0.10) 40%, rgba(10,7,5,0.55) 100%);
+    z-index: 1;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 4px;
+    background: repeating-linear-gradient(90deg, var(--amber) 0px, var(--amber) 40px, transparent 40px, transparent 60px);
+    z-index: 3;
+  }
+  .shield {
+    display: inline-block;
+    background: var(--amber);
+    color: var(--bg);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px;
+    letter-spacing: 2px;
+    padding: 4px 14px;
+    border-radius: 2px;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(48px, 8vw, 88px);
+    letter-spacing: 4px;
+    line-height: 1;
+    color: #F0EDE6;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.7);
+  }
+  .hero h1 span { color: var(--amber); }
+  .hero-sub {
+    margin-top: 12px;
+    color: rgba(240,237,230,0.85);
+    font-size: 13px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    font-weight: 500;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.8);
+  }
+  .shield {
+    display: inline-block;
+    background: var(--amber);
+    color: #111;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px;
+    letter-spacing: 2px;
+    padding: 4px 14px;
+    border-radius: 2px;
+    margin-bottom: 16px;
+  }
+  .meta-item .val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    color: var(--amber);
+    display: block;
+    line-height: 1;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.8);
+  }
+  .meta-item .lbl {
+    font-size: 11px;
+    color: rgba(240,237,230,0.75);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 2px;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+  }
+  .hero-meta {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    margin-top: 28px;
+    flex-wrap: wrap;
+  }
+  .meta-item { text-align: center; }
+
+  /* NAV GIORNI */
+  .day-nav {
+    background: var(--surface);
+    padding: 14px 32px;
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--divider);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .day-nav::-webkit-scrollbar { height: 0; }
+  .day-pill {
+    background: var(--card);
+    color: var(--muted);
+    border: 1px solid var(--divider);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s;
+    font-family: 'Roboto Mono', monospace;
+  }
+  .day-pill:hover {
+    border-color: var(--amber);
+    color: var(--amber);
+  }
+
+  /* MAIN LAYOUT */
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+  }
+
+  /* DAY SECTION */
+  .day-section {
+    margin-top: 56px;
+  }
+  .day-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--divider);
+  }
+  .day-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 64px;
+    line-height: 1;
+    color: var(--amber);
+    opacity: 0.25;
+    min-width: 56px;
+  }
+  .day-info h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px;
+    letter-spacing: 2px;
+    color: var(--text);
+    line-height: 1;
+  }
+  .day-info .date-badge {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 11px;
+    color: var(--amber);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    display: block;
+  }
+  .day-info .day-desc {
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 6px;
+  }
+  .day-stats {
+    display: flex;
+    gap: 16px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+  .day-stat {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--card);
+    padding: 3px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--divider);
+  }
+  .day-stat span { color: var(--text); }
+
+  /* TIMELINE */
+  .timeline {
+    position: relative;
+    padding-left: 28px;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: 8px;
+    bottom: 0;
+    width: 1px;
+    background: var(--divider);
+  }
+
+  .tl-item {
+    position: relative;
+    margin-bottom: 20px;
+  }
+  .tl-item::before {
+    content: '';
+    position: absolute;
+    left: -25px;
+    top: 8px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--divider);
+    border: 1.5px solid var(--muted);
+  }
+  .tl-item.drive::before { background: var(--amber); border-color: var(--amber); }
+  .tl-item.sight::before { background: var(--sky); border-color: var(--sky); }
+  .tl-item.food::before { background: var(--green); border-color: var(--green); }
+  .tl-item.hotel::before { background: var(--purple); border-color: var(--purple); }
+  .tl-item.warn::before { background: var(--rust); border-color: var(--rust); }
+  .tl-item.tip::before { background: var(--muted); border-color: var(--muted); }
+
+  .tl-time {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 3px;
+    letter-spacing: 1px;
+  }
+  .tl-title {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .tl-body {
+    color: var(--text-sec);
+    font-size: 13.5px;
+    margin-top: 4px;
+    line-height: 1.65;
+  }
+  .tl-body strong { color: var(--text); font-weight: 500; }
+
+  /* BADGE TYPES */
+  .badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 3px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .badge-drive { background: rgba(245,166,35,0.15); color: var(--amber); }
+  .badge-sight { background: rgba(74,144,217,0.15); color: var(--sky); }
+  .badge-food  { background: rgba(39,174,96,0.15);  color: var(--green); }
+  .badge-hotel { background: rgba(142,68,173,0.15); color: var(--purple); }
+  .badge-warn  { background: rgba(192,57,43,0.15);  color: var(--rust); }
+  .badge-tip   { background: rgba(136,136,128,0.15); color: var(--muted); }
+  .badge-must  { background: rgba(245,166,35,0.9); color: var(--bg); }
+
+  /* PARKING BOX */
+  .parking-box {
+    background: var(--card2);
+    border: 1px solid var(--divider);
+    border-left: 3px solid var(--amber);
+    border-radius: 4px;
+    padding: 10px 14px;
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--text-sec);
+  }
+  .parking-box strong { color: var(--amber); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; display: block; margin-bottom: 3px; font-family: 'Roboto Mono', monospace; }
+
+  /* DRIVE CARD */
+  .drive-card {
+    background: var(--drive-card-bg);
+    border: 1px solid var(--drive-card-border);
+    border-left: 3px solid var(--amber);
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin-top: 8px;
+  }
+  .drive-card .route-line {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 12px;
+    color: var(--amber);
+    margin-bottom: 6px;
+  }
+  .drive-card .drive-details {
+    font-size: 13px;
+    color: var(--text-sec);
+    line-height: 1.6;
+  }
+  .drive-card .drive-details strong { color: var(--text); }
+
+  /* STOP EN ROUTE */
+  .stops-en-route {
+    margin-top: 10px;
+  }
+  .stop-item {
+    display: flex;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--divider);
+    font-size: 13px;
+  }
+  .stop-item:last-child { border-bottom: none; }
+  .stop-km {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 11px;
+    color: var(--amber);
+    min-width: 60px;
+    padding-top: 1px;
+  }
+  .stop-name { color: var(--text); font-weight: 500; }
+  .stop-desc { color: var(--muted); font-size: 12px; }
+
+  /* WARN BOX */
+  .warn-box {
+    background: rgba(192,57,43,0.08);
+    border: 1px solid rgba(192,57,43,0.25);
+    border-radius: 4px;
+    padding: 10px 14px;
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--rust);
+  }
+  .warn-box strong { display: block; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 3px; font-family: 'Roboto Mono', monospace; }
+
+  /* TIP BOX */
+  .tip-box {
+    background: rgba(74,144,217,0.06);
+    border: 1px solid rgba(74,144,217,0.2);
+    border-radius: 4px;
+    padding: 10px 14px;
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--sky);
+  }
+  .tip-box strong { display: block; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 3px; font-family: 'Roboto Mono', monospace; color: var(--sky); }
+
+  /* SEPARATOR */
+  .day-divider {
+    height: 1px;
+    background: var(--divider);
+    margin: 48px 0 0;
+    position: relative;
+  }
+  .day-divider::after {
+    content: '✦';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--bg);
+    padding: 0 12px;
+    color: var(--divider);
+    font-size: 12px;
+  }
+
+  /* LEGEND */
+  .legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding: 20px 32px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--divider);
+    font-size: 12px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* ── TABLE SCROLL WRAPPER ── */
+  .table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .table-scroll .fuel-table,
+  .table-scroll .market-table {
+    min-width: 560px;
+  }
+
+  /* ── MOBILE ── */
+  @media (max-width: 640px) {
+    .hero {
+      padding: 32px 16px 28px;
+      min-height: 240px;
+    }
+    .hero-sub {
+      font-size: 11px;
+      letter-spacing: 1.5px;
+    }
+    .hero-meta {
+      gap: 18px;
+      margin-top: 20px;
+    }
+    .meta-item .val {
+      font-size: 22px;
+    }
+    .legend {
+      padding: 12px 16px;
+      gap: 10px;
+      font-size: 11px;
+    }
+    .day-nav {
+      padding: 10px 16px;
+      gap: 6px;
+    }
+    .day-pill {
+      padding: 7px 12px;
+      font-size: 11px;
+    }
+    .container {
+      padding: 0 14px 56px;
+    }
+    .day-section {
+      margin-top: 40px;
+    }
+    .day-header {
+      gap: 10px;
+      align-items: center;
+    }
+    .day-num {
+      font-size: 42px;
+      min-width: 38px;
+      opacity: 0.2;
+    }
+    .day-info h2 {
+      font-size: 22px;
+      letter-spacing: 1px;
+    }
+    .day-info .day-desc {
+      font-size: 12px;
+    }
+    .day-stats {
+      gap: 6px;
+    }
+    .day-stat {
+      font-size: 10px;
+    }
+    .timeline {
+      padding-left: 22px;
+    }
+    .tl-item::before {
+      left: -19px;
+      width: 8px;
+      height: 8px;
+    }
+    .tl-title {
+      font-size: 13px;
+      gap: 5px;
+    }
+    .tl-body {
+      font-size: 13px;
+    }
+    .stats-section {
+      padding: 28px 16px 36px;
+    }
+    .stats-title {
+      font-size: 28px;
+    }
+    .budget-total {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+      padding: 16px 16px;
+    }
+    .bt-range {
+      font-size: 34px;
+    }
+    .bar-row {
+      gap: 8px;
+    }
+    .bar-label {
+      min-width: 72px;
+      font-size: 10px;
+    }
+    .bar-val {
+      min-width: 60px;
+      font-size: 11px;
+    }
+    .cost-grid {
+      grid-template-columns: 1fr;
+    }
+    .tips-grid {
+      grid-template-columns: 1fr;
+    }
+    .section-head {
+      font-size: 18px;
+    }
+    .stops-en-route .stop-km {
+      min-width: 44px;
+    }
+    .drive-card {
+      padding: 12px 12px;
+    }
+    .drive-card .route-line {
+      font-size: 11px;
+    }
+  }
+
+  /* ── SMALL MOBILE (≤380px) ── */
+  @media (max-width: 380px) {
+    .hero h1 {
+      font-size: 52px;
+    }
+    .day-num {
+      font-size: 36px;
+      min-width: 32px;
+    }
+    .day-info h2 {
+      font-size: 19px;
+    }
+    .hero-meta {
+      gap: 14px;
+    }
+    .meta-item .val {
+      font-size: 20px;
+    }
+  }
+
+  @media print {
+    .day-nav, .legend { display: none; }
+    body { background: white; color: #111; }
+    .hero { background: #eee; }
+  }
+
+  /* ── STATS SECTION ── */
+  .stats-section {
+    background: var(--surface);
+    border-top: 1px solid var(--divider);
+    border-bottom: 3px solid var(--amber);
+    padding: 48px 32px 56px;
+  }
+  .stats-section .stats-inner {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  .stats-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px;
+    letter-spacing: 3px;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .stats-title span { color: var(--amber); }
+  .stats-subtitle {
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 36px;
+    font-family: 'Roboto Mono', monospace;
+  }
+
+  /* totale grande */
+  .budget-total {
+    background: var(--card);
+    border: 1px solid var(--divider);
+    border-left: 4px solid var(--amber);
+    border-radius: 8px;
+    padding: 24px 28px;
+    margin-bottom: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .budget-total .bt-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    letter-spacing: 2px;
+    color: var(--muted);
+  }
+  .budget-total .bt-range {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 42px;
+    color: var(--amber);
+    line-height: 1;
+  }
+  .budget-total .bt-pp {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'Roboto Mono', monospace;
+    margin-top: 4px;
+  }
+
+  /* griglia categorie */
+  .cost-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+  .cost-card {
+    background: var(--card);
+    border: 1px solid var(--divider);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .cost-card-header {
+    padding: 14px 18px 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid var(--divider);
+  }
+  .cost-card-icon {
+    font-size: 18px;
+    width: 32px;
+    text-align: center;
+  }
+  .cost-card-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    letter-spacing: 2px;
+    color: var(--text);
+    flex: 1;
+  }
+  .cost-card-total {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--amber);
+  }
+  .cost-card-body {
+    padding: 12px 18px;
+  }
+  .cost-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 5px 0;
+    border-bottom: 1px solid var(--cost-row-border);
+    font-size: 13px;
+    gap: 8px;
+  }
+  .cost-row:last-child { border-bottom: none; }
+  .cost-row-label { color: var(--muted); flex: 1; }
+  .cost-row-val {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 12px;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .cost-row-note {
+    font-size: 11px;
+    color: var(--muted);
+    width: 100%;
+    padding-bottom: 2px;
+  }
+
+  /* barre orizzontali */
+  .budget-bars {
+    margin-bottom: 40px;
+  }
+  .bar-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .bar-label {
+    font-size: 12px;
+    color: var(--muted);
+    min-width: 120px;
+    font-family: 'Roboto Mono', monospace;
+  }
+  .bar-track {
+    flex: 1;
+    background: var(--card);
+    border-radius: 3px;
+    height: 6px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: var(--amber);
+    transition: width 0.3s;
+  }
+  .bar-val {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 12px;
+    color: var(--text);
+    min-width: 80px;
+    text-align: right;
+  }
+
+  /* tabella benzine */
+  .fuel-section { margin-bottom: 40px; }
+  .section-head {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 2px;
+    color: var(--text);
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--divider);
+  }
+  .section-head span { color: var(--amber); }
+
+  .fuel-table, .market-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .fuel-table th, .market-table th {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--divider);
+    background: var(--table-head-bg);
+  }
+  .fuel-table td, .market-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--table-row-border);
+    vertical-align: top;
+    color: var(--text-sec);
+    line-height: 1.5;
+  }
+  .fuel-table tr:last-child td, .market-table tr:last-child td { border-bottom: none; }
+  .fuel-table td:first-child, .market-table td:first-child {
+    color: var(--text);
+    font-weight: 500;
+  }
+  .fuel-table .price-col {
+    font-family: 'Roboto Mono', monospace;
+    color: var(--amber);
+    white-space: nowrap;
+  }
+  .fuel-table .chain-col {
+    color: var(--sky);
+  }
+  .warn-inline {
+    display: inline-block;
+    background: rgba(192,57,43,0.15);
+    color: var(--rust);
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-family: 'Roboto Mono', monospace;
+    margin-left: 4px;
+    vertical-align: middle;
+  }
+  .ok-inline {
+    display: inline-block;
+    background: rgba(39,174,96,0.15);
+    color: var(--green);
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-family: 'Roboto Mono', monospace;
+    margin-left: 4px;
+    vertical-align: middle;
+  }
+
+  /* note finali */
+  .tips-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+    margin-top: 16px;
+  }
+  .tip-card {
+    background: var(--card);
+    border: 1px solid var(--divider);
+    border-radius: 6px;
+    padding: 14px 16px;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .tip-card strong {
+    display: block;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 6px;
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <!-- Monument Valley SVG background -->
+  <svg class="hero-bg" viewBox="0 0 1400 340" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+    <!-- Sky gradient: deep indigo at top → warm amber/orange at horizon -->
+    <defs>
+      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#0d0a1a"/>
+        <stop offset="45%" stop-color="#1a0f2e"/>
+        <stop offset="75%" stop-color="#5c2a0a"/>
+        <stop offset="90%" stop-color="#c45a0a"/>
+        <stop offset="100%" stop-color="#e8780a"/>
+      </linearGradient>
+      <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#8b3a0a"/>
+        <stop offset="100%" stop-color="#1a0a02"/>
+      </linearGradient>
+      <linearGradient id="mesa1" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#7a2e08"/>
+        <stop offset="100%" stop-color="#3d1504"/>
+      </linearGradient>
+      <linearGradient id="mesa2" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#8c3a0c"/>
+        <stop offset="100%" stop-color="#4a1a06"/>
+      </linearGradient>
+      <linearGradient id="mitten-l" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#9b420e"/>
+        <stop offset="100%" stop-color="#3a1203"/>
+      </linearGradient>
+      <linearGradient id="mitten-r" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#8a3b0c"/>
+        <stop offset="100%" stop-color="#351103"/>
+      </linearGradient>
+      <linearGradient id="merrick" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#6e2a07"/>
+        <stop offset="100%" stop-color="#2e0e02"/>
+      </linearGradient>
+      <radialGradient id="glow" cx="50%" cy="95%" r="50%">
+        <stop offset="0%" stop-color="#e8780a" stop-opacity="0.6"/>
+        <stop offset="100%" stop-color="#e8780a" stop-opacity="0"/>
+      </radialGradient>
+      <!-- Stars -->
+      <filter id="star-blur"><feGaussianBlur stdDeviation="0.3"/></filter>
+    </defs>
+
+    <!-- Sky -->
+    <rect width="1400" height="340" fill="url(#sky)"/>
+
+    <!-- Horizon glow -->
+    <rect x="0" y="220" width="1400" height="120" fill="url(#glow)" opacity="0.7"/>
+
+    <!-- Stars (top portion) -->
+    <g fill="white" opacity="0.7" filter="url(#star-blur)">
+      <circle cx="45" cy="18" r="0.8"/><circle cx="120" cy="8" r="1.1"/>
+      <circle cx="200" cy="22" r="0.7"/><circle cx="310" cy="12" r="0.9"/>
+      <circle cx="380" cy="30" r="0.6"/><circle cx="460" cy="9" r="1.0"/>
+      <circle cx="530" cy="25" r="0.8"/><circle cx="620" cy="14" r="0.7"/>
+      <circle cx="700" cy="6" r="1.2"/><circle cx="780" cy="20" r="0.9"/>
+      <circle cx="850" cy="10" r="0.7"/><circle cx="940" cy="28" r="0.8"/>
+      <circle cx="1010" cy="7" r="1.0"/><circle cx="1100" cy="18" r="0.9"/>
+      <circle cx="1180" cy="11" r="0.8"/><circle cx="1260" cy="24" r="0.7"/>
+      <circle cx="1340" cy="9" r="1.1"/><circle cx="80" cy="45" r="0.6"/>
+      <circle cx="170" cy="52" r="0.8"/><circle cx="270" cy="40" r="0.7"/>
+      <circle cx="420" cy="58" r="0.9"/><circle cx="560" cy="44" r="0.6"/>
+      <circle cx="650" cy="55" r="0.8"/><circle cx="740" cy="38" r="0.7"/>
+      <circle cx="900" cy="50" r="0.9"/><circle cx="1050" cy="42" r="0.8"/>
+      <circle cx="1150" cy="56" r="0.7"/><circle cx="1300" cy="46" r="0.8"/>
+    </g>
+
+    <!-- ── BACKGROUND BUTTES (lontane, più basse, meno sature) ── -->
+    <!-- Distant left mesa -->
+    <path d="M0 260 L0 230 L40 220 L90 215 L140 218 L180 228 L200 260 Z" fill="#3d1a06" opacity="0.7"/>
+    <!-- Distant right mesa -->
+    <path d="M1200 260 L1220 235 L1260 222 L1310 218 L1360 224 L1400 232 L1400 260 Z" fill="#3d1a06" opacity="0.7"/>
+    <!-- Far center butte -->
+    <path d="M580 260 L590 245 L610 238 L640 235 L670 238 L690 244 L700 260 Z" fill="#4a2008" opacity="0.6"/>
+
+    <!-- ── LEFT MITTEN (West Mitten Butte) ── -->
+    <!-- Main body -->
+    <path d="M220 340 L225 280 L230 255 L242 235 L258 222 L275 218 L292 220 L305 228 L312 242 L315 260 L318 280 L320 340 Z" fill="url(#mitten-l)"/>
+    <!-- Thumb -->
+    <path d="M315 280 L318 265 L324 255 L332 250 L340 252 L344 260 L342 272 L336 282 L325 288 Z" fill="#7a2e08"/>
+    <!-- Shadow/depth on main body left -->
+    <path d="M220 340 L225 280 L230 260 L234 245 L240 235 L248 230 L248 340 Z" fill="#2a0e03" opacity="0.5"/>
+    <!-- Top cap highlight -->
+    <path d="M242 235 L258 222 L275 218 L292 220 L305 228 L298 225 L280 220 L265 220 L252 228 Z" fill="#c05a18" opacity="0.4"/>
+
+    <!-- ── RIGHT MITTEN (East Mitten Butte) ── -->
+    <!-- Main body -->
+    <path d="M430 340 L432 285 L434 265 L440 248 L450 236 L464 226 L480 222 L496 224 L510 232 L518 246 L522 265 L524 295 L526 340 Z" fill="url(#mitten-r)"/>
+    <!-- Thumb (left side) -->
+    <path d="M430 285 L428 270 L422 258 L414 253 L406 255 L402 264 L404 275 L410 285 L422 290 Z" fill="#7a2e08"/>
+    <!-- Shadow right side -->
+    <path d="M510 232 L518 246 L522 265 L524 295 L526 340 L510 340 L508 265 L504 245 L498 234 Z" fill="#2a0e03" opacity="0.5"/>
+    <!-- Top cap -->
+    <path d="M450 236 L464 226 L480 222 L496 224 L510 232 L500 228 L484 224 L468 226 L456 234 Z" fill="#c05a18" opacity="0.4"/>
+
+    <!-- ── MERRICK BUTTE (right side, taller/slimmer) ── -->
+    <path d="M840 340 L844 295 L848 270 L856 248 L868 232 L882 222 L898 218 L914 220 L926 230 L932 248 L934 275 L936 340 Z" fill="url(#merrick)"/>
+    <!-- Shadow -->
+    <path d="M926 230 L932 248 L934 275 L936 340 L918 340 L916 270 L912 248 L906 234 Z" fill="#1a0702" opacity="0.6"/>
+    <!-- Top -->
+    <path d="M856 248 L868 232 L882 222 L898 218 L914 220 L908 218 L896 220 L880 226 L868 236 Z" fill="#b04e14" opacity="0.35"/>
+
+    <!-- ── MIDDLE DISTANCE MESA (left of center) ── -->
+    <path d="M100 340 L108 300 L115 278 L125 262 L140 252 L160 248 L178 250 L190 260 L195 278 L196 340 Z" fill="url(#mesa1)" opacity="0.9"/>
+    <path d="M125 262 L140 252 L160 248 L178 250 L172 250 L158 250 L144 256 L132 266 Z" fill="#b04e14" opacity="0.3"/>
+
+    <!-- ── THREE SISTERS (far right cluster) ── -->
+    <path d="M1060 340 L1064 308 L1068 292 L1075 280 L1084 274 L1094 272 L1102 276 L1106 288 L1108 340 Z" fill="#5a2208" opacity="0.95"/>
+    <path d="M1108 328 L1110 305 L1115 290 L1122 282 L1130 279 L1137 281 L1141 292 L1142 340 Z" fill="#4e1e07" opacity="0.9"/>
+    <path d="M1142 335 L1144 312 L1149 298 L1156 291 L1163 289 L1170 292 L1173 305 L1174 340 Z" fill="#44190600" fill-opacity="0" stroke="none"/>
+    <path d="M1142 340 L1144 312 L1149 298 L1156 291 L1163 289 L1170 292 L1173 305 L1174 340 Z" fill="#441906" opacity="0.85"/>
+
+    <!-- ── FLAT DESERT FLOOR ── -->
+    <path d="M0 310 Q200 295 400 305 Q600 315 700 308 Q900 298 1100 310 Q1250 318 1400 308 L1400 340 L0 340 Z" fill="url(#ground)"/>
+    <!-- Subtle desert texture lines -->
+    <path d="M0 325 Q350 318 700 322 Q1050 326 1400 320" stroke="#5a2208" stroke-width="0.5" fill="none" opacity="0.4"/>
+    <path d="M0 332 Q300 327 700 330 Q1100 333 1400 328" stroke="#3a1504" stroke-width="0.5" fill="none" opacity="0.3"/>
+
+    <!-- Road: the US-163 straight line toward the mittens -->
+    <path d="M620 340 L660 305 L690 285 L710 275" stroke="#c8a060" stroke-width="1.5" fill="none" opacity="0.5" stroke-dasharray="4 3"/>
+    <path d="M780 340 L740 305 L710 285 L710 275" stroke="#c8a060" stroke-width="1.5" fill="none" opacity="0.5" stroke-dasharray="4 3"/>
+  </svg>
+
+  <div class="hero-content">
+  <div class="shield">USA ROAD TRIP 2026</div>
+  <h1>ROUTE <span>66</span></h1>
+  <div class="hero-sub">Los Angeles → San Francisco · 10–23 Agosto · 2 persone · SUV</div>
+  <div class="hero-meta">
+    <div class="meta-item"><span class="val">14</span><span class="lbl">Giorni</span></div>
+    <div class="meta-item"><span class="val">~3.800</span><span class="lbl">km totali</span></div>
+    <div class="meta-item"><span class="val">8</span><span class="lbl">Destinazioni</span></div>
+    <div class="meta-item"><span class="val">5</span><span class="lbl">Stati</span></div>
+  </div>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#F5A623"></div> Guida / Trasferimento</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#4A90D9"></div> Attrazione / Visita</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#27AE60"></div> Cibo / Bevande</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#8E44AD"></div> Hotel / Check-in</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#C0392B"></div> Avviso importante</div>
+</div>
+
+<nav class="day-nav">
+  <a class="day-pill" href="#stats" style="border-color:#F5A623;color:#F5A623;">💰 Budget & Stats</a>
+  <a class="day-pill" href="#apps" style="border-color:#4A90D9;color:#4A90D9;">📱 App</a>
+  <button class="day-pill theme-toggle" onclick="toggleTheme()" id="theme-btn" style="border-color:var(--muted);cursor:pointer;background:var(--toggle-bg);">🌙 Tema</button>
+  <a class="day-pill" href="#g1">10/8 · LA #1</a>
+  <a class="day-pill" href="#g2">11/8 · LA #2</a>
+  <a class="day-pill" href="#g3">12/8 · LA #3</a>
+  <a class="day-pill" href="#g4">13/8 · Route 66+GC+Williams</a>
+  <a class="day-pill" href="#g5">14/8 · Williams→Page+MV+Bluff</a>
+  <a class="day-pill" href="#g6">15/8 · Las Vegas #1</a>
+  <a class="day-pill" href="#g7">16/8 · Las Vegas #2</a>
+  <a class="day-pill" href="#g8">17/8 · Death Valley</a>
+  <a class="day-pill" href="#g9">18/8 · Fresno</a>
+  <a class="day-pill" href="#g10">19/8 · San Francisco</a>
+  <a class="day-pill" href="#g11">20/8 · SF #2</a>
+  <a class="day-pill" href="#g12">21/8 · SF #3</a>
+  <a class="day-pill" href="#g13">22/8 · Fresno rientro</a>
+</nav>
+
+<div class="container">
+
+<!-- ══════════════════════════════════════════════════
+     GIORNO 1 — 10 AGOSTO · LOS ANGELES ARRIVO
+     ══════════════════════════════════════════════════ -->
+<div class="day-section" id="g1">
+  <div class="day-header">
+    <div class="day-num">01</div>
+    <div class="day-info">
+      <span class="date-badge">Lunedì 10 Agosto</span>
+      <h2>LOS ANGELES — ARRIVO</h2>
+      <div class="day-desc">Atterraggio, check-in, prime ore sulla leggendaria Hollywood Blvd</div>
+      <div class="day-stats">
+        <div class="day-stat">Base: <span>Banana Bungalow Hollywood</span></div>
+        <div class="day-stat">Guida: <span>minima (in città)</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="timeline">
+
+    <div class="tl-item drive">
+      <div class="tl-time">MATTINA</div>
+      <div class="tl-title">Arrivo a LAX / ritiro auto a noleggio <span class="badge badge-drive">GUIDA</span></div>
+      <div class="tl-body">
+        All'uscita del terminal, segui le indicazioni <strong>"Rental Car Shuttle"</strong> — bus gratuito che porta ai Consolidated Rent-A-Car (ConRAC). <br>
+        Da LAX al Banana Bungalow: prendi la <strong>I-405 N → US-101 N → uscita Hollywood Blvd</strong>. Circa 40 min senza traffico, 60–90 min con traffico (alto la domenica mattina).
+      </div>
+    </div>
+
+    <div class="tl-item hotel">
+      <div class="tl-time">ARRIVO IN HOTEL</div>
+      <div class="tl-title">Check-in — Banana Bungalow Hollywood <span class="badge badge-hotel">CHECK-IN</span></div>
+      <div class="tl-body">
+        <strong>5920 Hollywood Blvd, Hollywood CA 90028.</strong> Check-in dalle 15:00. Se arrivi prima, lascia i bagagli e parti a esplorare.
+      </div>
+      <div class="parking-box">
+        <strong>🅿 Parcheggio</strong>
+        L'hotel ha un parcheggio privato a pagamento (~$15/notte). Alternativa economica: <strong>parcheggio pubblico su Cahuenga Blvd</strong> (1 blocco a sud), ~$8–12/giorno. Su Hollywood Blvd stesso il parcheggio su strada è soggetto a permesso residenti — non rischiare.
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">14:00–16:30</div>
+      <div class="tl-title">Hollywood Walk of Fame <span class="badge badge-sight">VISITA</span> <span class="badge badge-must">IMPERDIBILE</span></div>
+      <div class="tl-body">
+        Passeggia su <strong>Hollywood Blvd tra La Brea Ave e Vine St</strong> (~1,6 km). Cerca le stelle di artisti che conosci — ce ne sono oltre 2.700. Il <strong>TCL Chinese Theatre</strong> (ex Grauman's) con le impronte delle mani delle star è sul lato nord. <strong>Ingresso gratuito.</strong>
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">16:30–17:30</div>
+      <div class="tl-title">Dolby Theatre + Hollywood & Highland Center <span class="badge badge-sight">VISITA</span></div>
+      <div class="tl-body">
+        Il complesso ospita gli Oscar. L'arco centrale inquadra perfettamente il <strong>Cartello Hollywood</strong> sulle colline — foto garantita. Ingresso al centro commerciale gratuito; tour interno del Dolby a pagamento (facoltativo).
+      </div>
+    </div>
+
+    <div class="tl-item food">
+      <div class="tl-time">18:00–19:30</div>
+      <div class="tl-title">Cena — In-N-Out Burger Hollywood <span class="badge badge-food">CIBO</span></div>
+      <div class="tl-body">
+        <strong>7009 Sunset Blvd</strong> — il rito d'ingresso in California. Ordina <strong>Double-Double Animal Style</strong> (menù segreto). Fila sempre presente ma veloce. Budget: ~$12–15 pp.
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">20:00–22:00</div>
+      <div class="tl-title">Passeggiata serale su Sunset Strip <span class="badge badge-sight">VISITA</span></div>
+      <div class="tl-body">
+        Da Hollywood verso <strong>West Hollywood su Sunset Blvd</strong>. Neon, locali storici (Whisky a Go Go, The Roxy), energia notturna. A piedi o sposta l'auto nel parcheggio del <strong>Sunset Plaza</strong> (~$5 sera).
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     GIORNO 2 — 11 AGOSTO · LOS ANGELES
+     ══════════════════════════════════════════════════ -->
+<div class="day-section" id="g2">
+  <div class="day-header">
+    <div class="day-num">02</div>
+    <div class="day-info">
+      <span class="date-badge">Martedì 11 Agosto</span>
+      <h2>LOS ANGELES — VENICE, SANTA MONICA & GRIFFITH</h2>
+      <div class="day-desc">Mattina al mare, Venice Skate Park al tramonto sul Pacifico, poi Griffith Observatory illuminato di notte</div>
+      <div class="day-stats">
+        <div class="day-stat">Guida in città: <span>~35 km</span></div>
+        <div class="day-stat">Tramonto LA agosto: <span>~20:05</span></div>
+        <div class="day-stat">Griffith apre: <span>12:00 (mar–ven)</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="timeline">
+
+    <div class="tl-item food">
+      <div class="tl-time">08:00–09:00</div>
+      <div class="tl-title">Colazione — Gjusta, Venice <span class="badge badge-food">CIBO</span></div>
+      <div class="tl-body">
+        <strong>320 Sunset Ave, Venice</strong> — panificio e deli leggendario, uno dei migliori di LA. Croissant, toast all'avocado, caffè eccellente. Arriva presto — si riempie velocemente. ~$15–18 pp.
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">09:30–11:30</div>
+      <div class="tl-title">Santa Monica Pier + End of Route 66 <span class="badge badge-sight">VISITA</span> <span class="badge badge-must">IMPERDIBILE</span></div>
+      <div class="tl-body">
+        Il cartello <strong>"End of the Trail — Route 66"</strong> è sul Pier, vicino al luna park. Foto obbligatoria. La ruota panoramica è la prima degli USA a energia solare (~$12). Passeggia sulla spiaggia verso sud fino a Muscle Beach.
+      </div>
+      <div class="parking-box">
+        <strong>🅿 Santa Monica</strong>
+        <strong>Pier Deck Structure</strong> (1550 PCH) o <strong>Structure 2</strong> (1244 2nd St) — entrambi vicini al Pier, ~$3/ora. Parcheggia qui e tienila tutta la mattina.
+      </div>
+    </div>
+
+    <div class="tl-item food">
+      <div class="tl-time">12:00–13:00</div>
+      <div class="tl-title">Pranzo — Urth Caffé, Santa Monica <span class="badge badge-food">CIBO</span></div>
+      <div class="tl-body">
+        <strong>2327 Main St, Santa Monica</strong> — biologico, fresco, ottimo. Insalate, panini, caffè. Vicino alla spiaggia, a piedi dal Pier. ~$20–26 pp.
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">13:30–15:00</div>
+      <div class="tl-title">Venice Boardwalk + Abbot Kinney <span class="badge badge-sight">VISITA</span></div>
+      <div class="tl-body">
+        Passeggia sul lungomare di Venice: artisti di strada, murales, l'energia caotica del boardwalk. <strong>Abbot Kinney Blvd</strong> (5 min a piedi dall'oceano) è la strada più cool di LA — caffè indipendenti, vinili, vintage shop, gallerie.
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">17:30–20:15</div>
+      <div class="tl-title">Venice Beach Skate Park al tramonto <span class="badge badge-sight">VISITA</span> <span class="badge badge-must">IMPERDIBILE</span></div>
+      <div class="tl-body">
+        <strong>1800 Ocean Front Walk, Venice</strong> — uno dei pochi skatepark al mondo sul bordo dell'oceano. 16.000 mq di cemento: bowl, snake run, street section. Spettacolo gratuito: i locals locali shredano mentre il sole scende sul Pacifico. Il tramonto di agosto <strong>colora di arancio e rosa i trick sui bowl</strong> — uno degli scenari più iconici di LA. Il parco chiude al tramonto (~20:05), quindi arriva entro le 19:30 per goderti la luce calante.
+      </div>
+      <div class="parking-box">
+        <strong>🅿 Venice Skate Park</strong>
+        Parcheggio pubblico: <strong>2100 Ocean Front Walk</strong> (lot ufficiale del parco), ~$5–8 ore serali. Alternativa: parcheggia su <strong>Dell Ave</strong> o nei lotti su Windward Ave (gratuiti o $3/ora). Non portare l'auto sul boardwalk.
+      </div>
+    </div>
+
+    <div class="tl-item drive">
+      <div class="tl-time">20:30–21:15</div>
+      <div class="tl-title">Venice → Griffith Observatory <span class="badge badge-drive">GUIDA</span></div>
+      <div class="tl-body">
+        <strong>I-10 E → US-101 N → Los Feliz Blvd → Vermont Canyon Rd</strong>. ~22 km, ~35–45 min. Di sera il traffico si allenta. Arriverai all'osservatorio dopo il tramonto — la città inizia ad illuminarsi, il momento perfetto.
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">21:15–23:00</div>
+      <div class="tl-title">Griffith Observatory di notte <span class="badge badge-sight">VISITA</span> <span class="badge badge-must">IMPERDIBILE</span></div>
+      <div class="tl-body">
+        <strong>2800 E Observatory Rd</strong> — aperto fino alle 22:00 (mar–ven). Di notte la vista è completamente diversa: tutta LA illuminata ai tuoi piedi, dal Downtown all'Oceano Pacifico. Il Cartello Hollywood lampeggia sulle colline. L'interno è gratuito — il telescopio Zeiss è aperto al pubblico per l'osservazione delle stelle (gratuito, first-come). Porta una felpa: in cima fa fresco anche ad agosto.
+      </div>
+      <div class="parking-box">
+        <strong>🅿 Griffith Observatory sera</strong>
+        Di sera il parcheggio in cima è molto più disponibile rispetto al mattino. Gratuito. Se fosse pieno: <strong>parcheggia su Vermont Ave</strong> nel Los Feliz Village e prendi lo shuttle LADOT ($1) — ma di sera solitamente non serve.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     GIORNO 3 — 12 AGOSTO · LOS ANGELES
+     ══════════════════════════════════════════════════ -->
+<div class="day-section" id="g3">
+  <div class="day-header">
+    <div class="day-num">03</div>
+    <div class="day-info">
+      <span class="date-badge">Mercoledì 12 Agosto</span>
+      <h2>LOS ANGELES — GETTY, BEVERLY HILLS, DOWNTOWN</h2>
+      <div class="day-desc">Arte, lusso e cultura urbana prima della grande partenza</div>
+      <div class="day-stats">
+        <div class="day-stat">Guida in città: <span>~35 km</span></div>
+        <div class="day-stat">Nota: <span>preparare bagagli per domani</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="timeline">
+
+    <div class="tl-item sight">
+      <div class="tl-time">09:00–12:00</div>
+      <div class="tl-title">Getty Center <span class="badge badge-sight">VISITA</span> <span class="badge badge-must">IMPERDIBILE</span></div>
+      <div class="tl-body">
+        <strong>1200 Getty Center Dr, Los Angeles</strong>. Museo d'arte mondiale, architettura straordinaria di Richard Meier, giardini con vista. <strong>Ingresso gratuito</strong> (solo parcheggio a pagamento, $25 — prenotalo online obbligatoriamente). Arriva entro le 9 per evitare fila. Non perdere: Van Gogh's "Irises", la terrazza nord con vista su Bel-Air.
+      </div>
+      <div class="parking-box">
+        <strong>🅿 Parcheggio Getty Center</strong>
+        Solo il parcheggio interno è praticabile ($25 — prenota su getty.edu). Non esiste alternativa a piedi: il museo è raggiungibile solo con la funicolare dal parcheggio. Pianifica di conseguenza.
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">12:30–13:30</div>
+      <div class="tl-title">Rodeo Drive — Beverly Hills <span class="badge badge-sight">VISITA</span></div>
+      <div class="tl-body">
+        Da Getty: <strong>I-405 S → Wilshire Blvd E → N Rodeo Dr</strong>. La strada più famosa dello shopping di lusso del mondo. Anche solo passeggiare è un'esperienza. <strong>Parcheggio: Rodeo Drive è pedonale</strong>, parcheggia nel garage <strong>Brighton Way Parking</strong> (305 N Beverly Dr, ~$2–3 prime ore).
+      </div>
+    </div>
+
+    <div class="tl-item food">
+      <div class="tl-time">13:30–14:30</div>
+      <div class="tl-title">Pranzo — Urth Caffé Beverly Hills <span class="badge badge-food">CIBO</span></div>
+      <div class="tl-body">
+        <strong>267 S Beverly Dr</strong> — caffè biologico iconico di LA, frequentato da celebrity. Insalate, sandwich, caffè ottimo. Spesso c'è fila fuori ma va veloce. ~$20–28 pp.
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">15:00–17:00</div>
+      <div class="tl-title">The Broad + Grand Park — Downtown LA <span class="badge badge-sight">VISITA</span></div>
+      <div class="tl-body">
+        <strong>The Broad: 221 S Grand Ave</strong> — museo d'arte contemporanea con la collezione Koons, Basquiat, Hirst. Prenota online (gratuito ma richiede prenotazione). <strong>Grand Park</strong> di fronte è il parco del Municipio, ideale per una sosta. Parcheggio: <strong>Broad Street Garage</strong> (240 S Grand Ave, validazione con biglietto).
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">17:30–18:30</div>
+      <div class="tl-title">Angels Flight + Grand Central Market <span class="badge badge-sight">VISITA</span></div>
+      <div class="tl-body">
+        <strong>Angels Flight Railway</strong> (351 S Hill St) — la funicolare più corta del mondo, $1 a tratta, sali e scendi sulla collina di Bunker Hill. Poi entra al <strong>Grand Central Market</strong> (317 S Broadway) — mercato storico del 1917 con decine di bancarelle. Prova i tacos da <strong>Villa Moreliana</strong> o il ramen da <strong>Ramen Hood</strong>.
+      </div>
+    </div>
+
+    <div class="tl-item tip">
+      <div class="tl-time">SERA</div>
+      <div class="tl-title">Prepara i bagagli per la partenza di domani <span class="badge badge-tip">CONSIGLIO</span></div>
+      <div class="tl-body">
+        Domani si parte presto verso Williams (~5h di guida). Prepara tutto stanotte. Controlla che l'auto sia piena di benzina (rifornisci vicino all'hotel stasera — è più economico in città che sull'autostrada).
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     GIORNO 4 — 13 AGOSTO · LA → ROUTE 66 → GRAND CANYON → WILLIAMS
+     ══════════════════════════════════════════════════ -->
+<div class="day-section" id="g4">
+  <div class="day-header">
+    <div class="day-num">04</div>
+    <div class="day-info">
+      <span class="date-badge">Giovedì 13 Agosto</span>
+      <h2>ROUTE 66 → GRAND CANYON → WILLIAMS</h2>
+      <div class="day-desc">Giornata intensa: Route 66 autentica, Oatman, Grand Canyon, e a letto presto — sveglia alle 04:15 per essere a Page alle 07:00</div>
+      <div class="day-stats">
+        <div class="day-stat">Distanza totale: <span>~730 km</span></div>
+        <div class="day-stat">Guida: <span>~8h (+ soste)</span></div>
+        <div class="day-stat">Partenza: <span>05:30</span></div>
+        <div class="day-stat">Arrivo Williams: <span>~19:30</span></div>
+        <div class="day-stat">⚠ Domani sveglia: <span>04:15</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="timeline">
+
+    <div class="tl-item warn">
+      <div class="tl-time">NOTA CRUCIALE</div>
+      <div class="tl-title">Domani sveglia alle 04:15 — a letto entro le 22:00 stasera <span class="badge badge-warn">IMPORTANTE</span></div>
+      <div class="tl-body">
+        Il 14 agosto l'escursione al <strong>Lower Antelope Canyon è alle 07:00 a Page</strong>. Williams → Page = ~230 km, ~2h15. Partenza obbligatoria da Williams alle <strong>04:30</strong>. Stasera cena veloce e a letto entro le 22:00 — non c'è margine.
+      </div>
+    </div>
+
+    <div class="tl-item tip">
+      <div class="tl-time">LA SERA PRIMA — 12 AGOSTO</div>
+      <div class="tl-title">Prepara tutto stanotte <span class="badge badge-tip">CONSIGLIO</span></div>
+      <div class="tl-body">
+        Bagagli pronti, auto carica, benzina piena (rifornisci stasera vicino all'hotel a LA — è più economico in città). Scarica offline <strong>Google Maps Arizona + Utah</strong>. Sveglia puntata alle <strong>05:00</strong>.
+      </div>
+    </div>
+
+    <div class="tl-item drive">
+      <div class="tl-time">05:30</div>
+      <div class="tl-title">Partenza da Hollywood <span class="badge badge-drive">GUIDA</span></div>
+      <div class="tl-body">
+        Percorso: <strong>Hollywood → I-10 E → I-15 N → Barstow → I-40 E → Ludlow → Amboy → Kingman → Oatman → Kingman → I-40 E → Williams → AZ-64 N → Grand Canyon → AZ-64 S → Williams</strong>. Giornata lunga ma ogni km vale.
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">08:00–08:20</div>
+      <div class="tl-title">Barstow — benzina + acqua <span class="badge badge-sight">SOSTA</span></div>
+      <div class="tl-body">
+        <strong>Chevron / Stater Bros su Main St, Barstow</strong>. Rifornimento benzina obbligatorio e scorta acqua abbondante (almeno 3L pp). Sosta veloce — 20 minuti max. Non perdere tempo: la giornata è densa.
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">09:15–09:45</div>
+      <div class="tl-title">Roy's Motel di Amboy — Route 66 pura <span class="badge badge-sight">SOSTA</span> <span class="badge badge-must">ICONICA</span></div>
+      <div class="tl-body">
+        Esci dall'I-40 a <strong>Ludlow</strong>, prendi la vecchia Route 66. <strong>Roy's Motel & Café</strong> — insegna anni '50 nel mezzo del nulla. 30 minuti: foto, guarda il deserto, respira l'atmosfera. Poi si riparte. Niente benzina qui.
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">10:30–11:15</div>
+      <div class="tl-title">Oatman — asini selvatici <span class="badge badge-sight">SOSTA</span> <span class="badge badge-must">IMPERDIBILE</span></div>
+      <div class="tl-body">
+        <strong>Oatman, AZ</strong> — città dell'oro con asini liberi per strada. 45 minuti: porta carote, passeggia, fai foto. Strade di montagna strette prima e dopo — guida con attenzione con il SUV.
+      </div>
+    </div>
+
+    <div class="tl-item food">
+      <div class="tl-time">11:30–12:00</div>
+      <div class="tl-title">Kingman — benzina + pranzo velocissimo <span class="badge badge-food">CIBO</span></div>
+      <div class="tl-body">
+        <strong>Circle K / Loves su Andy Devine Ave, Kingman</strong> — benzina piena (~$4,50–4,70/gal, la più economica della giornata). Pranzo: <strong>drive-through McDonald's o Subway</strong> sulla stessa strada — oggi non c'è tempo per sedersi. 30 minuti totali, poi si parte per il Grand Canyon.
+      </div>
+    </div>
+
+    <div class="tl-item drive">
+      <div class="tl-time">12:00–13:45</div>
+      <div class="tl-title">Kingman → Grand Canyon South Rim <span class="badge badge-drive">GUIDA</span></div>
+      <div class="tl-body">
+        <strong>I-40 E → Williams → AZ-64 N → South Entrance</strong>. ~185 km, ~1h45. Sali sull'altopiano di Kaibab — boschi di pino ponderosa, aria fresca, poi all'improvviso il bordo del canyon. Ingresso $35/veicolo (NPS Pass valido, o $100 pp supplemento non residenti senza pass).
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">13:45–16:45</div>
+      <div class="tl-title">Grand Canyon South Rim — 3 ore intense <span class="badge badge-sight">VISITA</span> <span class="badge badge-must">IMPERDIBILE</span></div>
+      <div class="tl-body">
+        Piano ottimizzato per 3 ore: <br>
+        • <strong>13:45</strong> — <strong>Mather Point</strong>: primo sguardo sul canyon. Il momento in cui si capisce che nessuna foto rende l'idea. 20 minuti. <br>
+        • <strong>14:10</strong> — <strong>Shuttle orange line</strong> verso Yavapai Point: il belvedere più panoramico, con i pannelli geologici sul canyon. 30 minuti. <br>
+        • <strong>14:50</strong> — <strong>Bright Angel Trailhead</strong>: scendi i primi 500m dentro il canyon — solo per sentire la scala. Non andare oltre (fa caldo, hai poco tempo). Risali. 40 minuti. <br>
+        • <strong>15:40</strong> — <strong>El Tovar Hotel terrace</strong>: l'hotel storico del 1905 sul bordo del canyon. Birra fredda o limonata sulla terrazza. Meritata. 45 minuti. <br>
+        • <strong>16:30</strong> — rientro al parcheggio e partenza.
+      </div>
+      <div class="parking-box">
+        <strong>🅿 Grand Canyon South Rim</strong>
+        Parcheggio <strong>Market Plaza Lot</strong> (vicino al Visitor Center) — il più comodo. In agosto si riempie ma nel pomeriggio c'è più rotazione. Usa lo <strong>shuttle gratuito</strong> (orange/blue line) per spostarti tra i viewpoints — non guidare tra un punto e l'altro.
+      </div>
+    </div>
+
+    <div class="tl-item drive">
+      <div class="tl-time">16:45–19:30</div>
+      <div class="tl-title">Grand Canyon → Williams via AZ-64 S <span class="badge badge-drive">GUIDA</span></div>
+      <div class="tl-body">
+        Esci dal canyon dalla stessa South Entrance (AZ-64 S) — la strada più diretta verso Williams. ~90 km, ~1h. Arrivi a Williams verso le 18:00. <strong>Nota: non prendere la Desert View Drive (East Entrance) stasera</strong> — aggiunge 1h e non hai tempo. Salvala per un altro viaggio.
+      </div>
+    </div>
+
+    <div class="tl-item hotel">
+      <div class="tl-time">18:00</div>
+      <div class="tl-title">Check-in El Rancho Motel, Williams <span class="badge badge-hotel">CHECK-IN</span></div>
+      <div class="tl-body">
+        <strong>617 E Route 66, Williams, AZ 86046</strong>. Fai subito una doccia veloce.
+      </div>
+      <div class="parking-box">
+        <strong>🅿 El Rancho Motel</strong>
+        Parcheggio privato gratuito direttamente davanti alle camere.
+      </div>
+    </div>
+
+    <div class="tl-item food">
+      <div class="tl-time">18:30–19:30</div>
+      <div class="tl-title">Cena veloce — Dara Thai o Rod's Steak House <span class="badge badge-food">CIBO</span></div>
+      <div class="tl-body">
+        <strong>Dara Thai</strong> (145 W Route 66, 2 min a piedi) — veloce, buono, economico. Oppure <strong>Rod's Steak House</strong> (301 E Route 66) se vuoi qualcosa di più sostanzioso prima della sveglia notturna. Entrambi chiudono entro le 21:00 — non aspettare.
+      </div>
+    </div>
+
+    <div class="tl-item warn">
+      <div class="tl-time">22:00</div>
+      <div class="tl-title">A letto — sveglia alle 04:15 <span class="badge badge-warn">TASSATIVO</span></div>
+      <div class="tl-body">
+        Imposta <strong>due sveglie: 04:15 e 04:20</strong>. Partenza da Williams alle <strong>04:30</strong> puntuale. Williams → Page: ~230 km, ~2h15 di guida. Arrivo a Page alle <strong>06:45</strong> — 15 minuti per trovare il punto di ritrovo dell'escursione.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     GIORNO 5 — 14 AGOSTO · WILLIAMS → PAGE → MONUMENT VALLEY → BLUFF
+     ══════════════════════════════════════════════════ -->
+<div class="day-section" id="g5">
+  <div class="day-header">
+    <div class="day-num">05</div>
+    <div class="day-info">
+      <span class="date-badge">Venerdì 14 Agosto</span>
+      <h2>WILLIAMS → PAGE → MONUMENT VALLEY → BLUFF</h2>
+      <div class="day-desc">Partenza notturna, Lower Antelope Canyon alle 07:00, Horseshoe Bend, poi le Mittens al tramonto</div>
+      <div class="day-stats">
+        <div class="day-stat">Partenza Williams: <span>04:30</span></div>
+        <div class="day-stat">Arrivo Page: <span>06:45</span></div>
+        <div class="day-stat">Escursione Lower Canyon: <span>07:00</span></div>
+        <div class="day-stat">Monument Valley: <span>18:00</span></div>
+        <div class="day-stat">Arrivo Bluff: <span>~22:00</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="timeline">
+
+    <div class="tl-item drive">
+      <div class="tl-time">04:30</div>
+      <div class="tl-title">Partenza da Williams nel buio <span class="badge badge-drive">GUIDA</span></div>
+      <div class="tl-body">
+        Percorso: <strong>Williams → US-89 N → Page, AZ</strong>. ~230 km, ~2h15. Strada dritta e deserta a quest'ora — zero traffico. Il cielo ancora pieno di stelle per la prima ora. Porta acqua e qualcosa da mangiare in auto — non ci sono bar aperti a quest'ora lungo la strada.
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">06:45</div>
+      <div class="tl-title">Arrivo a Page — punto di ritrovo Lower Antelope Canyon <span class="badge badge-sight">ARRIVO</span></div>
+      <div class="tl-body">
+        Raggiungi il punto di ritrovo del tour operatore (<strong>Ken's Tours</strong> o l'operatore prenotato, su Indian Route 222, Page). Hai 15 minuti di margine. Parcheggio direttamente sul sito dell'operatore.
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">07:00–08:30</div>
+      <div class="tl-title">Lower Antelope Canyon — escursione prenotata <span class="badge badge-sight">VISITA</span> <span class="badge badge-must">IMPERDIBILE</span></div>
+      <div class="tl-body">
+        <strong>Lower Antelope Canyon (Hasdeztwazi), Page, AZ</strong>. Canyon a fessura con scale e scale strette — più fisico e avventuroso dell'Upper, meno sovraffollato. La luce filtra dall'alto creando fasce dorate sull'arenaria. <strong>Tour guidato Navajo obbligatorio, prenotato dall'Italia prima di partire.</strong> <br>
+        Prezzi 2026: ~<strong>$61 + $15 permit Navajo = $76/pp</strong> (Lower Canyon, Ken's Tours). Durata ~1h30. <strong>Niente zaini — solo macchina fotografica e acqua.</strong> Porta una maglia leggera: dentro fa più fresco.
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">09:00–10:00</div>
+      <div class="tl-title">Horseshoe Bend — luce mattutina <span class="badge badge-sight">VISITA</span> <span class="badge badge-must">IMPERDIBILE</span></div>
+      <div class="tl-body">
+        <strong>Horseshoe Bend Rd, Page</strong> — a 10 minuti dal canyon. Il Colorado River in un'ansa a ferro di cavallo visto dall'alto. Alle 9:00 la luce è già bella e il parcheggio non ancora pieno. Sentiero 2 km a/r, pianeggiante, asfalto (~30 min). <strong>Attenzione al bordo: non ci sono ringhiere.</strong> Parcheggio $10/veicolo.
+      </div>
+      <div class="parking-box">
+        <strong>🅿 Horseshoe Bend</strong>
+        Parcheggio ufficiale su Horseshoe Bend Rd, apre alle 6:00, $10/veicolo. Alle 9:00 trovi posto senza problemi.
+      </div>
+    </div>
+
+    <div class="tl-item food">
+      <div class="tl-time">10:15–11:00</div>
+      <div class="tl-title">Colazione/pranzo — Slacker's Burger Bar + Safeway <span class="badge badge-food">CIBO</span></div>
+      <div class="tl-body">
+        Non hai ancora mangiato bene oggi — rimediamo. <strong>Slacker's Burger Bar</strong> (86 S Lake Powell Blvd) per qualcosa di sostanzioso, oppure spesa al <strong>Safeway</strong> (650 Elm St) per pranzo al sacco da mangiare in auto verso Monument Valley. Fai anche scorta d'acqua ghiacciata — la strada è calda.
+      </div>
+    </div>
+
+    <div class="tl-item drive">
+      <div class="tl-time">11:00–13:00</div>
+      <div class="tl-title">Page → Monument Valley via US-89 S → US-160 E → US-163 S <span class="badge badge-drive">GUIDA</span></div>
+      <div class="tl-body">
+        ~175 km, ~2h. Attraversi il cuore della Navajo Nation: mesa rosse, cielo immenso, silenzio. Rispetta i limiti di velocità — polizia tribale attiva. <strong>Sosta obbligatoria: Mexican Hat Rock</strong> (sulla US-163, prima di Monument Valley) — 2 minuti, foto imperdibile della formazione a sombrero.
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">13:00–13:30</div>
+      <div class="tl-title">Rettilineo US-163 — la foto di Forrest Gump <span class="badge badge-sight">SOSTA</span> <span class="badge badge-must">ICONICA</span></div>
+      <div class="tl-body">
+        Prima di entrare nel parco: <strong>fermati sul rettilineo della US-163</strong> con le Mittens sullo sfondo. È esattamente il punto dove Forrest Gump si ferma a correre. Accosta sul ciglio sterrato, fai la foto, poi prosegui verso il Visitor Center (~5 km).
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">13:30–16:00</div>
+      <div class="tl-title">Monument Valley — pomeriggio e relax <span class="badge badge-sight">VISITA</span></div>
+      <div class="tl-body">
+        Visitor Center, panorama, negozio Navajo. Hai tempo — il tramonto è alle 18:00. Rilassati nell'ombra del Visitor Center, mangia qualcosa, riposa un po' — sei in piedi dalle 4:30.
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">16:00–17:30</div>
+      <div class="tl-title">Jeep tour guidato Navajo <span class="badge badge-sight">VISITA</span> <span class="badge badge-must">CONSIGLIATO</span></div>
+      <div class="tl-body">
+        Tour pomeridiano (~$70–90 pp, ~1h30): <strong>John Ford's Point, Mittens da vicino, Totem Pole, Mystery Valley</strong>. Zone non accessibili con l'auto propria. Le guide Navajo raccontano storia e cultura del loro popolo. Prenota in anticipo su monumentvalleyjeeptours.com.
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">18:00–20:30</div>
+      <div class="tl-title">Monument Valley al tramonto <span class="badge badge-sight">VISITA</span> <span class="badge badge-must">IMPERDIBILE</span></div>
+      <div class="tl-body">
+        <strong>L'appuntamento della giornata.</strong> Le Mittens al tramonto di agosto diventano rosse, arancioni, viola — i colori cambiano ogni 5 minuti. Posizionati sul belvedere del Visitor Center. Ingresso parco $10/pp (territorio Navajo, NPS Pass non valido). Cancello chiude ~20:30 in estate.
+      </div>
+      <div class="parking-box">
+        <strong>🅿 Monument Valley Visitor Center</strong>
+        Parcheggio asfaltato gratuito al Visitor Center, $5/veicolo ingresso parco. Controlla orario chiusura cancello prima di entrare.
+      </div>
+    </div>
+
+    <div class="tl-item drive">
+      <div class="tl-time">20:30–22:00</div>
+      <div class="tl-title">Monument Valley → Bluff Dwellings Resort <span class="badge badge-drive">GUIDA</span></div>
+      <div class="tl-body">
+        <strong>US-163 N → US-191 N → Bluff, UT</strong>. ~85 km, ~1h15. Guida notturna nel deserto Navajo — stelle straordinarie, zero traffico. Il resort è aperto 24h.
+      </div>
+    </div>
+
+    <div class="tl-item hotel">
+      <div class="tl-time">~22:00</div>
+      <div class="tl-title">Check-in Bluff Dwellings Resort & Spa <span class="badge badge-hotel">CHECK-IN</span></div>
+      <div class="tl-body">
+        <strong>2625 US-191, Bluff, UT 84512</strong>. Resort 4.8⭐ incassato nelle rocce di arenaria rossa. Finalmente una doccia e un letto vero — sei sveglio dalle 04:15.
+      </div>
+      <div class="parking-box">
+        <strong>🅿 Bluff Dwellings</strong>
+        Parcheggio privato gratuito del resort, direttamente all'ingresso.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     GIORNO 6 — 15 AGOSTO · BLUFF → LAS VEGAS
+     ══════════════════════════════════════════════════ -->
+<div class="day-section" id="g6">
+  <div class="day-header">
+    <div class="day-num">06</div>
+    <div class="day-info">
+      <span class="date-badge">Sabato 15 Agosto</span>
+      <h2>BLUFF → LAS VEGAS</h2>
+      <div class="day-desc">Dal silenzio dei canyon Navajo all'esplosione di neon — con soste spettacolari lungo il tragitto</div>
+      <div class="day-stats">
+        <div class="day-stat">Distanza: <span>~650 km</span></div>
+        <div class="day-stat">Guida: <span>~7h (+ soste)</span></div>
+        <div class="day-stat">Partenza: <span>07:00</span></div>
+        <div class="day-stat">Check-in LV: <span>~17:00</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="timeline">
+
+    <div class="tl-item drive">
+      <div class="tl-time">07:00</div>
+      <div class="tl-title">Partenza da Bluff verso Zion (deviazione consigliata) <span class="badge badge-drive">GUIDA</span></div>
+      <div class="tl-body">
+        Percorso: <strong>Bluff → US-191 N → US-163 W → US-89 W → UT-9 W → Springdale → I-15 S → Las Vegas</strong>. Questa variante attraversa lo <strong>Zion National Park</strong>, che vale enormemente la deviazione (aggiunge ~1h al percorso).
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">10:00–12:30</div>
+      <div class="tl-title">Zion National Park — Canyon Overlook Trail <span class="badge badge-sight">VISITA</span> <span class="badge badge-must">IMPERDIBILE</span></div>
+      <div class="tl-body">
+        <strong>Springdale, UT</strong>. Ingresso $35/veicolo (NPS Annual Pass valido qui — se ce l'hai usala). Trail <strong>Canyon Overlook</strong>: 2,4 km a/r, 160m di dislivello, vista spettacolare sulle red cliffs. Circa 1h. Non perderti la guida attraverso il <strong>Zion-Mt. Carmel Tunnel</strong> (1,1 km nel cuore della roccia).
+      </div>
+      <div class="parking-box">
+        <strong>🅿 Zion National Park</strong>
+        Il parcheggio al Visitor Center si riempie alle 8:00 in estate. Strategia: parcheggia a <strong>Springdale</strong> (parcheggi gratuiti/a pagamento sul lato della strada) e prendi lo <strong>shuttle gratuito del parco</strong> all'ingresso. Lo shuttle è obbligatorio per molte zone del parco in estate.
+      </div>
+    </div>
+
+    <div class="tl-item food">
+      <div class="tl-time">12:30–13:30</div>
+      <div class="tl-title">Pranzo — Whiptail Grill, Springdale <span class="badge badge-food">CIBO</span></div>
+      <div class="tl-body">
+        <strong>445 Zion Park Blvd, Springdale</strong> — cucina messicana/americana a due passi dall'ingresso del parco. Burrito e tacos ottimi. ~$18–25 pp.
+      </div>
+    </div>
+
+    <div class="tl-item drive">
+      <div class="tl-time">13:30–17:00</div>
+      <div class="tl-title">Springdale → Las Vegas via I-15 <span class="badge badge-drive">GUIDA</span></div>
+      <div class="tl-body">
+        <strong>UT-9 W → I-15 S → Las Vegas</strong>. ~260 km, ~2h30. Fermati alla <strong>Virgin River Gorge</strong> (Arizona, km 346 dell'I-15) — gola spettacolare dove l'autostrada corre incassata tra pareti di roccia verticali.
+      </div>
+    </div>
+
+    <div class="tl-item hotel">
+      <div class="tl-time">17:00</div>
+      <div class="tl-title">Check-in — Four Queens Hotel & Casino, Fremont St <span class="badge badge-hotel">CHECK-IN</span></div>
+      <div class="tl-body">
+        <strong>202 Fremont St, Las Vegas, NV 89101</strong>. Siete nel cuore della Fremont Street Experience, il Las Vegas originale degli anni '50 (non lo Strip).
+      </div>
+      <div class="parking-box">
+        <strong>🅿 Four Queens / Downtown Las Vegas</strong>
+        Il Four Queens ha un parcheggio strutturato collegato all'hotel (<strong>gratuito per gli ospiti</strong> — conferma alla reception). Il Downtown ha anche il <strong>Fremont Street Experience Parking Garage</strong> (accesso da 3rd St) con le prime ore gratuite. In alternativa usa il parcheggio della <strong>Binion's</strong> di fronte (gratuito per i clienti). Non guidare sul Strip la sera — traffico infernale, usa taxi/Uber.
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">19:00–20:00</div>
+      <div class="tl-title">Fremont Street Experience <span class="badge badge-sight">VISITA</span> <span class="badge badge-must">IMPERDIBILE</span></div>
+      <div class="tl-body">
+        La volta LED di 460 metri che copre tutta la Fremont Street si illumina ogni sera con show di luce e musica (ogni ora da quando fa buio). Attrazione gratuita. Musica live su più palchi contemporaneamente. Atmosfera completamente diversa dallo Strip — più autentica, più caotica, più divertente.
+      </div>
+    </div>
+
+    <div class="tl-item food">
+      <div class="tl-time">20:00–21:30</div>
+      <div class="tl-title">Cena — Hugo's Cellar (Four Queens) <span class="badge badge-food">CIBO</span></div>
+      <div class="tl-body">
+        <strong>202 Fremont St</strong> (dentro il tuo hotel) — steakhouse storica di Las Vegas, considerata una delle migliori della città. Ogni donna riceve una rosa all'ingresso. Prenota la sera prima. Budget: ~$70–90 pp (vino incluso). Se preferisci qualcosa di più casual: <strong>Eat, Las Vegas</strong> su Carson Ave (~$25 pp).
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">22:00–</div>
+      <div class="tl-title">Casinò e vita notturna <span class="badge badge-sight">LIBERO</span></div>
+      <div class="tl-body">
+        Fremont Street ha casinò storici come <strong>Golden Nugget</strong> (con la piscina dentro l'acquario di squali), <strong>Binion's</strong> (il poker originale di Vegas), <strong>El Cortez</strong> (il più antico casinò di Las Vegas ancora operativo). Se vuoi lo Strip, prendi un Uber (~$15 a/r) per vedere il Bellagio fountain e il Caesars.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     GIORNO 7 — 16 AGOSTO · LAS VEGAS (GIORNO 2)
+     ══════════════════════════════════════════════════ -->
+<div class="day-section" id="g7">
+  <div class="day-header">
+    <div class="day-num">07</div>
+    <div class="day-info">
+      <span class="date-badge">Domenica 16 Agosto</span>
+      <h2>LAS VEGAS — THE STRIP & RED ROCKS</h2>
+      <div class="day-desc">Il Canyon di Sandstone a pochi km dalla città, poi il meglio dello Strip di giorno e di notte</div>
+      <div class="day-stats">
+        <div class="day-stat">Base: <span>Four Queens</span></div>
+        <div class="day-stat">Escursione mattina: <span>Red Rock Canyon</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="timeline">
+
+    <div class="tl-item sight">
+      <div class="tl-time">07:30–11:00</div>
+      <div class="tl-title">Red Rock Canyon National Conservation Area <span class="badge badge-sight">VISITA</span> <span class="badge badge-must">IMPERDIBILE</span></div>
+      <div class="tl-body">
+        <strong>1000 Scenic Loop Dr, Las Vegas</strong> — a soli 30 min dal centro. Scarpate di arenaria rossa fino a 900m, colori straordinari. Scenic Drive da 20 km percorribile in auto con soste. Trail breve: <strong>Calico Hills Trail</strong> (3,2 km, facile, vista sulle pareti). Ingresso $15/veicolo.
+      </div>
+      <div class="parking-box">
+        <strong>🅿 Red Rock Canyon</strong>
+        Parcheggio al Visitor Center incluso nel biglietto ($15 veicolo). Arriva entro le 8:00 — il parcheggio principale si riempie nel weekend. Il Visitor Center apre alle 8:00.
+      </div>
+    </div>
+
+    <div class="tl-item food">
+      <div class="tl-time">11:30–13:00</div>
+      <div class="tl-title">Brunch + rientro in hotel <span class="badge badge-food">CIBO</span></div>
+      <div class="tl-body">
+        <strong>Le Thai</strong> (5022 Spring Mountain Rd) — il migliore ristorante tailandese di Las Vegas, fuori dallo Strip, frequentato dai locals. Pad Thai e curry eccellenti. ~$18–22 pp. Poi rientra in hotel per una doccia.
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">14:00–17:00</div>
+      <div class="tl-title">The Strip di giorno — a piedi <span class="badge badge-sight">VISITA</span></div>
+      <div class="tl-body">
+        Uber o taxi fino al <strong>Bellagio</strong> (non guidare). Percorri lo Strip a piedi verso nord: <strong>Bellagio → Caesars Palace → The Venetian → Palazzo → Encore → Wynn</strong>. I casinò di giorno hanno aria condizionata (fondamentale ad agosto), casinò, shopping, ristoranti. L'interno del <strong>Forum Shops al Caesars</strong> e del <strong>Grand Canal Shoppes al Venetian</strong> sono spettacoli architettonici gratuiti.
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">20:00</div>
+      <div class="tl-title">Bellagio Fountains di notte <span class="badge badge-sight">VISITA</span> <span class="badge badge-must">IMPERDIBILE</span></div>
+      <div class="tl-body">
+        Show ogni 30 min da sera, gratuito. Posizionati sul marciapiede di fronte (lato Strip), almeno 10 min prima per un buon posto. La fontana con musica classica o Frank Sinatra è la versione più emozionante.
+      </div>
+    </div>
+
+    <div class="tl-item food">
+      <div class="tl-time">21:00</div>
+      <div class="tl-title">Cena — Mon Ami Gabi al Paris Las Vegas <span class="badge badge-food">CIBO</span></div>
+      <div class="tl-body">
+        <strong>3655 Las Vegas Blvd S</strong> — bistrot francese con terrazza esterna <em>direttamente di fronte alle fontane del Bellagio</em>. Vista impareggiabile. Steak frites, crème brûlée. Prenota obbligatoriamente. ~$55–70 pp.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     GIORNO 8 — 17 AGOSTO · LAS VEGAS → DEATH VALLEY
+     ══════════════════════════════════════════════════ -->
+<div class="day-section" id="g8">
+  <div class="day-header">
+    <div class="day-num">08</div>
+    <div class="day-info">
+      <span class="date-badge">Lunedì 17 Agosto</span>
+      <h2>LAS VEGAS → DEATH VALLEY</h2>
+      <div class="day-desc">Il posto più caldo della Terra: Badwater Basin, dune di sabbia, canyon colorati. Strategia oraria fondamentale</div>
+      <div class="day-stats">
+        <div class="day-stat">Distanza: <span>~240 km</span></div>
+        <div class="day-stat">Guida: <span>~2h30</span></div>
+        <div class="day-stat">⚠️ Temp. agosto: <span>fino a 52°C</span></div>
+        <div class="day-stat">Acqua: <span>min. 4L pp</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="timeline">
+
+    <div class="tl-item warn">
+      <div class="tl-time">PRIMA DI PARTIRE</div>
+      <div class="tl-title">Avviso Death Valley: agosto è estremo <span class="badge badge-warn">ATTENZIONE</span></div>
+      <div class="tl-body">
+        Death Valley in agosto può toccare <strong>52°C</strong>. Regole di sopravvivenza: <br>
+        • <strong>Nessuna escursione a piedi tra le 10:00 e le 17:00</strong> <br>
+        • Porta <strong>almeno 4 litri d'acqua pp</strong> in auto (rifornisciti al supermercato di Vegas) <br>
+        • Non uscire mai dall'auto senza acqua <br>
+        • Se l'auto surriscalda: spegni l'aria condizionata e accendi il riscaldamento al massimo (dissipa il calore del motore). Fermati subito in un'area ombreggiata.
+      </div>
+    </div>
+
+    <div class="tl-item drive">
+      <div class="tl-time">06:30</div>
+      <div class="tl-title">Partenza da Las Vegas — arrivo prima che faccia caldo <span class="badge badge-drive">GUIDA</span></div>
+      <div class="tl-body">
+        Percorso: <strong>Fremont St → I-15 S → NV-160 W → CA-127 S → CA-190 W (Furnace Creek)</strong>. ~240 km, ~2h30. Fai benzina piena prima di lasciare Las Vegas — le stazioni nel parco applicano prezzi altissimi.
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">09:00–10:00</div>
+      <div class="tl-title">Zabriskie Point — vista al mattino <span class="badge badge-sight">VISITA</span> <span class="badge badge-must">IMPERDIBILE</span></div>
+      <div class="tl-body">
+        <strong>CA-190, Death Valley</strong>. Formazioni di argilla erosa nei colori dell'ocra, giallo, marrone. La luce del mattino presto è la migliore. Parcheggio gratuito direttamente sul sito. Il sentiero fino al belvedere è solo 100 metri, facile.
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">10:00–10:45</div>
+      <div class="tl-title">Mesquite Flat Sand Dunes <span class="badge badge-sight">VISITA</span></div>
+      <div class="tl-body">
+        <strong>Stovepipe Wells, Death Valley</strong>. Le uniche dune di sabbia "classiche" del parco. Altissime al tramonto, molto calde già dalle 10. Puoi camminare sulle dune ma non avventurarti lontano — il suolo irraggia calore intenso. Parcheggio gratuito sul lato della CA-190.
+      </div>
+    </div>
+
+    <div class="tl-item hotel">
+      <div class="tl-time">11:00–16:00</div>
+      <div class="tl-title">Check-in The Ranch at Death Valley — PAUSA OBBLIGATORIA <span class="badge badge-hotel">CHECK-IN</span></div>
+      <div class="tl-body">
+        <strong>CA-190, Furnace Creek, Death Valley</strong>. Nelle ore centrali (11:00–17:00) è pericoloso stare all'esterno. Il Ranch ha una <strong>piscina a 32°C</strong> — usala. Pranzo al Forty Niner Café o buffet del Ranch. Riposati — nel pomeriggio ripartite per le attrazioni al tramonto.
+      </div>
+      <div class="parking-box">
+        <strong>🅿 The Ranch at Death Valley</strong>
+        Parcheggio gratuito per gli ospiti, ampio, asfaltato. Tieni l'auto all'ombra se possibile — le superfici metalliche in agosto raggiungono temperature che bruciano.
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">17:00–18:30</div>
+      <div class="tl-title">Badwater Basin — il punto più basso dell'emisfero occidentale <span class="badge badge-sight">VISITA</span> <span class="badge badge-must">IMPERDIBILE</span></div>
+      <div class="tl-body">
+        <strong>Badwater Rd, Death Valley</strong> (-86m sotto il livello del mare). Distese bianche di sale che si estendono all'orizzonte. Il cartello del "livello del mare" è sulla parete rocciosa sopra di te. Cammina sulla superficie salina — è solida. <strong>Porta acqua</strong>. Dopo le 17:00 è sopportabile ma ancora molto caldo. Parcheggio gratuito sul bordo della strada.
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">19:00–20:00</div>
+      <div class="tl-title">Artist's Palette Drive — tramonto <span class="badge badge-sight">VISITA</span> <span class="badge badge-must">IMPERDIBILE</span></div>
+      <div class="tl-body">
+        <strong>Artist's Drive, a 3 km da Badwater</strong>. Loop a senso unico di 14 km attraverso montagne dai colori straordinari: rosso, verde, viola, giallo — ossidi minerali di milioni di anni. Il tramonto amplifica i colori in modo irreale. Percorribile con SUV standard, strada asfaltata.
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">21:00–22:30</div>
+      <div class="tl-title">Stargazing — Death Valley Dark Sky <span class="badge badge-sight">VISITA</span> <span class="badge badge-must">IMPERDIBILE</span></div>
+      <div class="tl-body">
+        Death Valley è uno dei migliori siti di <strong>osservazione astronomica del Nord America</strong> — zero inquinamento luminoso. Area designata: <strong>Harmony Borax Works</strong> (a 3 km dal Ranch) o semplicemente fermati sul lato della CA-190 fuori dal villaggio. La Via Lattea è visibile a occhio nudo.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     GIORNO 9 — 18 AGOSTO · DEATH VALLEY → FRESNO
+     ══════════════════════════════════════════════════ -->
+<div class="day-section" id="g9">
+  <div class="day-header">
+    <div class="day-num">09</div>
+    <div class="day-info">
+      <span class="date-badge">Martedì 18 Agosto</span>
+      <h2>DEATH VALLEY → FRESNO</h2>
+      <div class="day-desc">Traversata della Sierra Nevada con sosta a Lone Pine e deviazione opzionale a Yosemite</div>
+      <div class="day-stats">
+        <div class="day-stat">Distanza: <span>~420 km</span></div>
+        <div class="day-stat">Guida: <span>~4h30 (+ soste)</span></div>
+        <div class="day-stat">Partenza: <span>06:30</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="timeline">
+
+    <div class="tl-item drive">
+      <div class="tl-time">06:30</div>
+      <div class="tl-title">Partenza da Furnace Creek verso ovest <span class="badge badge-drive">GUIDA</span></div>
+      <div class="tl-body">
+        Percorso: <strong>CA-190 W → US-395 N → CA-99 N → Fresno</strong>. Esci da Death Valley attraverso il Towne Pass (1.512 m) — il paesaggio passa in 1 ora dal deserto più caldo al pino silvestre.
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">08:30–09:30</div>
+      <div class="tl-title">Lone Pine — Alabama Hills e vista su Mt. Whitney <span class="badge badge-sight">SOSTA</span> <span class="badge badge-must">IMPERDIBILE</span></div>
+      <div class="tl-body">
+        <strong>Whitney Portal Rd, Lone Pine, CA</strong>. Le <strong>Alabama Hills</strong> sono le rocce arrotondate di granito usate come set cinematografico per centinaia di Western (e recentemente per Iron Man). <strong>Arch Rock</strong> (Movie Road, 3 km fuori Lone Pine) — l'arco di pietra con il Monte Whitney innevato sullo sfondo è una delle foto più belle della California. Strada sterrata accessibile con SUV. Parcheggio gratuito.
+      </div>
+    </div>
+
+    <div class="tl-item food">
+      <div class="tl-time">09:30–10:00</div>
+      <div class="tl-title">Colazione/Caffè — Pizza Factory o Jake's Saloon, Lone Pine <span class="badge badge-food">CIBO</span></div>
+      <div class="tl-body">
+        Lone Pine ha poche opzioni. <strong>Jake's Saloon</strong> (119 N Main St) è il bar storico del paese, buono per colazione americana. Oppure rifornisci a snack al supermercato per il viaggio.
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">10:30–12:00</div>
+      <div class="tl-title">[OPZIONALE] Sequoia / Kings Canyon — deviazione verso Fresno <span class="badge badge-sight">DEVIAZIONE</span></div>
+      <div class="tl-body">
+        Se prendi la <strong>CA-180 E</strong> verso est da Fresno (anziché arrivarci direttamente), puoi vedere i <strong>General Sherman Tree</strong> — il più grande albero vivente del mondo (1.385 m³ di volume). Aggiunge ~2h al percorso. Ingresso $35/veicolo.
+      </div>
+    </div>
+
+    <div class="tl-item hotel">
+      <div class="tl-time">14:00–15:00</div>
+      <div class="tl-title">Check-in Hotel Piccadilly, Fresno <span class="badge badge-hotel">CHECK-IN</span></div>
+      <div class="tl-body">
+        <strong>2305 W Shaw Ave, Fresno, CA 93711</strong>. Tappa di transito con buone recensioni. Parcheggio privato gratuito.
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">15:30–18:00</div>
+      <div class="tl-title">Fresno — Forestiere Underground Gardens <span class="badge badge-sight">VISITA</span></div>
+      <div class="tl-body">
+        <strong>5021 W Shaw Ave, Fresno</strong> — a 5 min dall'hotel. Giardini sotterranei scavati a mano da un siciliano (Baldassare Forestiere) tra il 1906 e il 1946: tunnel, stanze, cortili con alberi da frutto sotto il deserto californiano. Tour guidato obbligatorio, ~$22 pp. Aperto pomeriggio. Sorprendente e unico.
+      </div>
+    </div>
+
+    <div class="tl-item food">
+      <div class="tl-time">19:30</div>
+      <div class="tl-title">Cena — Landmark Steakhouse, Fresno <span class="badge badge-food">CIBO</span></div>
+      <div class="tl-body">
+        <strong>1415 W Barstow Ave, Fresno</strong> — steakhouse storica di Fresno dal 1954. Carne eccellente dalla Central Valley. ~$45–55 pp.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     GIORNO 10 — 19 AGOSTO · FRESNO → SAN FRANCISCO
+     ══════════════════════════════════════════════════ -->
+<div class="day-section" id="g10">
+  <div class="day-header">
+    <div class="day-num">10</div>
+    <div class="day-info">
+      <span class="date-badge">Mercoledì 19 Agosto</span>
+      <h2>FRESNO → SAN FRANCISCO</h2>
+      <div class="day-desc">Via Yosemite Valley — il parco nazionale più spettacolare della California prima dell'arrivo in città</div>
+      <div class="day-stats">
+        <div class="day-stat">Distanza: <span>~380 km (via Yosemite)</span></div>
+        <div class="day-stat">Guida: <span>~5h + soste</span></div>
+        <div class="day-stat">Partenza: <span>07:00</span></div>
+        <div class="day-stat">⚠️ Yosemite: <span>prenotazione obbligatoria</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="timeline">
+
+    <div class="tl-item warn">
+      <div class="tl-time">IMPORTANTE</div>
+      <div class="tl-title">Yosemite richiede Day Use Reservation <span class="badge badge-warn">PRENOTA PRIMA</span></div>
+      <div class="tl-body">
+        Da maggio a ottobre, Yosemite Valley richiede una <strong>Day Use Reservation</strong> ($2, su recreation.gov). Si prenota fino a 7 giorni prima. <strong>Prenotala appena puoi</strong> — sono limitate e si esauriscono rapidamente.
+      </div>
+    </div>
+
+    <div class="tl-item drive">
+      <div class="tl-time">07:00</div>
+      <div class="tl-title">Fresno → Yosemite Valley via CA-41 N <span class="badge badge-drive">GUIDA</span></div>
+      <div class="tl-body">
+        <strong>CA-41 N (Wawona Road)</strong> — ingresso sud del parco attraverso il <strong>Tunnel View</strong>. ~100 km, ~1h30. L'ingresso è $35/veicolo (NPS Pass valido).
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">09:00–09:15</div>
+      <div class="tl-title">Tunnel View — la prima vista di Yosemite Valley <span class="badge badge-sight">SOSTA</span> <span class="badge badge-must">IMPERDIBILE</span></div>
+      <div class="tl-body">
+        All'uscita del tunnel sulla CA-41: <strong>El Capitan a sinistra, Half Dome al centro, Bridalveil Fall a destra</strong>. La vista più fotografata dell'America. Parcheggio disponibile direttamente al belvedere (affollato ma si trova).
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">09:30–11:30</div>
+      <div class="tl-title">Yosemite Valley — Valley Loop Trail <span class="badge badge-sight">VISITA</span> <span class="badge badge-must">IMPERDIBILE</span></div>
+      <div class="tl-body">
+        <strong>Yosemite Village</strong>. Parcheggia al <strong>Day Hiking Parking (Day Use)</strong> vicino al Visitor Center. Il <strong>Valley Loop Trail</strong> è un anello di 11 km che passa davanti a El Capitan, Mirror Lake, Yosemite Falls. In alternativa, solo la sezione tra <strong>Valley View</strong> e <strong>Valley Floor</strong> (~3 km) per chi ha meno tempo. Gli sciatori di El Capitan sono visibili a occhio nudo da sotto.
+      </div>
+      <div class="parking-box">
+        <strong>🅿 Yosemite Valley</strong>
+        Il parcheggio principale (Yosemite Village) si riempie prima delle 9:00 in estate. Strategia: parcheggia a <strong>Curry Village</strong> (Area 13-17) e usa lo <strong>shuttle gratuito</strong> del parco che gira continuamente. Oppure lascia l'auto a <strong>El Portal</strong> (fuori dal parco, gratuito) e prendi il bus YARTS ($12 a/r) fino al centro.
+      </div>
+    </div>
+
+    <div class="tl-item food">
+      <div class="tl-time">12:00–13:00</div>
+      <div class="tl-title">Pranzo — Village Grill Deck, Yosemite Village <span class="badge badge-food">CIBO</span></div>
+      <div class="tl-body">
+        <strong>Yosemite Village, vicino al Visitor Center</strong>. Grill all'aperto con hamburger, hot dog, wrap. Qualità da parco nazionale, prezzi ragionevoli (~$15–20 pp). Seduti su terrazze di legno sotto i cedri.
+      </div>
+    </div>
+
+    <div class="tl-item drive">
+      <div class="tl-time">13:30–17:30</div>
+      <div class="tl-title">Yosemite → San Francisco via CA-120 W → I-580 W <span class="badge badge-drive">GUIDA</span></div>
+      <div class="tl-body">
+        Percorso: <strong>CA-120 W (Big Oak Flat Road) → I-580 W → Bay Bridge → SF</strong>. ~240 km, ~3h30. Attraversi la <strong>Central Valley</strong> e l'East Bay. Primo impatto con il <strong>Bay Bridge</strong> — arrivare da est al tramonto è spettacolare.
+      </div>
+    </div>
+
+    <div class="tl-item hotel">
+      <div class="tl-time">17:30</div>
+      <div class="tl-title">Check-in Hotel Fusion, Union Square <span class="badge badge-hotel">CHECK-IN</span></div>
+      <div class="tl-body">
+        <strong>140 Ellis St, San Francisco, CA 94102</strong>. Centralissimo, a 2 isolati da Union Square.
+      </div>
+      <div class="parking-box">
+        <strong>🅿 San Francisco — IMPORTANTE</strong>
+        <strong>Non guidare a San Francisco</strong>. Il traffico è infernale, i parcheggi costosissimi ($40–60/notte). Opzioni: <br>
+        • <strong>Ellis-O'Farrell Garage</strong> (123 O'Farrell St, a 50m dall'hotel) — ~$30–40/giorno, più conveniente della zona. <br>
+        • <strong>Mason-O'Farrell Garage</strong> (320 Mason St) — simile prezzo. <br>
+        • <strong>Consiglio forte</strong>: usa <strong>BART</strong> (metro), <strong>Muni</strong> (tram/bus) e <strong>tram storici di Powell</strong> per tutto il soggiorno SF. L'auto non ti serve per 3 giorni — lasciala parcheggiata e non muoverla.
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">19:00–20:30</div>
+      <div class="tl-title">Prima sera — Union Square e Powell Street Cable Car <span class="badge badge-sight">VISITA</span></div>
+      <div class="tl-body">
+        Passeggia su <strong>Union Square</strong> e imboca il <strong>Cable Car di Powell-Hyde</strong> (capolinea a Powell & Market): il tram storico a cavi che sale le colline di San Francisco. $8 a tratta. Scendi a <strong>Fisherman's Wharf</strong> e cammina sul lungomare. Poi Uber di ritorno.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     GIORNO 11 — 20 AGOSTO · SAN FRANCISCO
+     ══════════════════════════════════════════════════ -->
+<div class="day-section" id="g11">
+  <div class="day-header">
+    <div class="day-num">11</div>
+    <div class="day-info">
+      <span class="date-badge">Giovedì 20 Agosto</span>
+      <h2>SAN FRANCISCO — GOLDEN GATE & ALCATRAZ</h2>
+      <div class="day-desc">Il ponte più famoso del mondo, l'isola prigione e il quartiere più autentico della città</div>
+      <div class="day-stats">
+        <div class="day-stat">Trasporti: <span>BART + Muni + Uber</span></div>
+        <div class="day-stat">⚠️ Alcatraz: <span>prenota online con settimane di anticipo</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="timeline">
+
+    <div class="tl-item sight">
+      <div class="tl-time">09:00–11:30</div>
+      <div class="tl-title">Golden Gate Bridge — traversata a piedi <span class="badge badge-sight">VISITA</span> <span class="badge badge-must">IMPERDIBILE</span></div>
+      <div class="tl-body">
+        Prendi l'<strong>Uber/Lyft fino al Golden Gate Welcome Center</strong> (sul lato est del ponte). Traversata a piedi: ~3 km a/r, con la baia di SF da un lato e l'Oceano Pacifico dall'altro. Vista su Alcatraz, sulla skyline, sulle colline. Gratuito. Attenzione: d'estate la nebbia mattutina può coprire il ponte fino alle 10–11 — se vuoi foto chiare aspetta la mattina inoltrata o vai nel pomeriggio.
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">11:30–12:30</div>
+      <div class="tl-title">Baker Beach e vista sottomarina sul Golden Gate <span class="badge badge-sight">VISITA</span></div>
+      <div class="tl-body">
+        A 10 min a piedi dal ponte (lato ovest): spiaggia pubblica con la vista più drammatica sul Golden Gate dall'alto. Gratuito. Parcheggio disponibile (raro trovarlo il weekend, ma in settimana è più facile). Da qui puoi prendere Uber verso Fisherman's Wharf.
+      </div>
+    </div>
+
+    <div class="tl-item food">
+      <div class="tl-time">12:30–13:30</div>
+      <div class="tl-title">Pranzo — Boudin Bakery, Fisherman's Wharf <span class="badge badge-food">CIBO</span></div>
+      <div class="tl-body">
+        <strong>160 Jefferson St, San Francisco</strong> — la bakery originale del sourdough bread di SF dal 1849. Clam chowder nel pane hollowed out ($16–20) è il piatto simbolo di San Francisco. Fila lunga ma vale l'attesa.
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">14:30–17:30</div>
+      <div class="tl-title">Alcatraz Island <span class="badge badge-sight">VISITA</span> <span class="badge badge-must">IMPERDIBILE</span></div>
+      <div class="tl-body">
+        Ferry da <strong>Pier 33, Alcatraz Landing</strong>. Tour dell'isola con audioguida (inclusa nel prezzo, ~$45 pp) — la voce di ex prigionieri racconta la vita sull'isola. Circa 2h30 totali incluso ferry. <strong>Prenota online su alcatrazcruises.com settimane prima</strong> — i posti sono limitatissimi in agosto.
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">18:00–20:00</div>
+      <div class="tl-title">Mission District — Murales di Balmy Alley e Valencia St <span class="badge badge-sight">VISITA</span></div>
+      <div class="tl-body">
+        Prendi la <strong>BART fino a 24th St Mission Station</strong>. Il Mission è il quartiere latino di SF, pieno di vita. <strong>Balmy Alley</strong> (tra 24th e 25th St) è un vicolo completamente coperto di murales politici. <strong>Valencia St</strong> è la strada più cool del quartiere: caffè, vinili, librerie.
+      </div>
+    </div>
+
+    <div class="tl-item food">
+      <div class="tl-time">20:00</div>
+      <div class="tl-title">Cena — La Taqueria, Mission <span class="badge badge-food">CIBO</span></div>
+      <div class="tl-body">
+        <strong>2889 Mission St</strong> — il miglior burrito di San Francisco (e probabilmente degli USA). Super carnoso, senza riso, avvolto perfettamente. ~$12–15 pp. Fila sempre, locale sempre pieno. Cash preferred.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     GIORNO 12 — 21 AGOSTO · SAN FRANCISCO
+     ══════════════════════════════════════════════════ -->
+<div class="day-section" id="g12">
+  <div class="day-header">
+    <div class="day-num">12</div>
+    <div class="day-info">
+      <span class="date-badge">Venerdì 21 Agosto</span>
+      <h2>SAN FRANCISCO — HAIGHT, CASTRO, PANORAMI</h2>
+      <div class="day-desc">I quartieri storici, i panorami più belli della città e la cultura autentica di SF</div>
+    </div>
+  </div>
+
+  <div class="timeline">
+
+    <div class="tl-item sight">
+      <div class="tl-time">09:00–10:30</div>
+      <div class="tl-title">Twin Peaks — panorama 360° su San Francisco <span class="badge badge-sight">VISITA</span> <span class="badge badge-must">IMPERDIBILE</span></div>
+      <div class="tl-body">
+        <strong>Twin Peaks Blvd, San Francisco</strong>. Le due colline gemelle al centro della città con la vista più completa su SF, la Baia, il Golden Gate, le colline di Berkeley. Prendi un Uber (non c'è trasporto pubblico diretto). Parcheggio a pagamento in cima. Portati una giacca: in cima fa freddo e tira vento anche d'estate.
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">10:30–12:00</div>
+      <div class="tl-title">Haight-Ashbury — il cuore della Summer of Love <span class="badge badge-sight">VISITA</span></div>
+      <div class="tl-body">
+        L'incrocio tra <strong>Haight St e Ashbury St</strong> è il simbolo del movimento hippie del 1967. Il quartiere è ancora pieno di negozi vintage, record shop, murali psichedelici. <strong>Amoeba Music</strong> (1855 Haight St) è il più grande negozio di dischi indipendenti del mondo — per te che sei nel mondo della musica, è una tappa obbligata.
+      </div>
+    </div>
+
+    <div class="tl-item food">
+      <div class="tl-time">12:00–13:00</div>
+      <div class="tl-title">Pranzo — Magnolia Brewing, Haight <span class="badge badge-food">CIBO</span></div>
+      <div class="tl-body">
+        <strong>1398 Haight St</strong> — brew pub storico del quartiere. Hamburger di qualità, birre artigianali eccellenti, locale autentico. ~$22–30 pp.
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">13:30–15:00</div>
+      <div class="tl-title">Castro District + Painted Ladies <span class="badge badge-sight">VISITA</span></div>
+      <div class="tl-body">
+        <strong>Castro St</strong> è il quartiere LGBTQ+ storico di SF — bandiere arcobaleno, negozi, storia civile americana. A 10 min a piedi: <strong>Alamo Square Park</strong> con le "Painted Ladies" (le case vittoriane colorate con lo skyline di SF sullo sfondo) — la foto più Instagram di San Francisco.
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">15:30–17:00</div>
+      <div class="tl-title">Chinatown + North Beach <span class="badge badge-sight">VISITA</span></div>
+      <div class="tl-body">
+        La <strong>Chinatown di San Francisco</strong> (Grant Ave) è la più antica degli USA — gate decorato, mercati di strada, erboristerie. Poi a piedi verso <strong>North Beach</strong> (il quartiere italiano, ancora con caffè storici) e <strong>City Lights Bookstore</strong> (261 Columbus Ave) — libreria indipendente dove nacque la Beat Generation (Kerouac, Ginsberg).
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">17:30–19:00</div>
+      <div class="tl-title">Coit Tower + Telegraph Hill <span class="badge badge-sight">VISITA</span></div>
+      <div class="tl-body">
+        <strong>1 Telegraph Hill Blvd</strong> — torre di 64m sulla cima del Telegraph Hill. Panorama su North Beach, la Baia, il Bay Bridge. Parcheggio molto limitato in cima — prendi un Uber o scala a piedi il <strong>Filbert Steps</strong> (scalinata attraverso giardini selvaggi con pappagalli verdi selvatici). Ingresso torre: ~$12.
+      </div>
+    </div>
+
+    <div class="tl-item food">
+      <div class="tl-time">20:00</div>
+      <div class="tl-title">Cena — Tosca Café, North Beach <span class="badge badge-food">CIBO</span></div>
+      <div class="tl-body">
+        <strong>242 Columbus Ave</strong> — uno dei locali più storici di SF (1919), ora con cucina italiana stellata. Ambiente vecchio stile con jukebox, cucina moderna. Prenota. ~$55–70 pp. Alternativa più casual: <strong>Tony's Pizza Napoletana</strong> sulla stessa strada (~$22 pp).
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     GIORNO 13 — 22 AGOSTO · SF → FRESNO
+     ══════════════════════════════════════════════════ -->
+<div class="day-section" id="g13">
+  <div class="day-header">
+    <div class="day-num">13</div>
+    <div class="day-info">
+      <span class="date-badge">Sabato 22 Agosto</span>
+      <h2>SAN FRANCISCO → FRESNO (RIENTRO)</h2>
+      <div class="day-desc">Ultima mattina a SF, poi trasferimento verso Fresno con eventuale sosta a Yosemite</div>
+      <div class="day-stats">
+        <div class="day-stat">Distanza: <span>~300 km (diretta)</span></div>
+        <div class="day-stat">Guida: <span>~3h</span></div>
+        <div class="day-stat">Check-out: <span>11:00</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="timeline">
+
+    <div class="tl-item food">
+      <div class="tl-time">08:00–09:30</div>
+      <div class="tl-title">Ultima colazione — Tartine Bakery, Mission <span class="badge badge-food">CIBO</span></div>
+      <div class="tl-body">
+        <strong>600 Guerrero St</strong> — la bakery più famosa di San Francisco, con code quotidiane. I croissant e il country bread escono dal forno alle 8:00. Vai presto o aspetti in fila. ~$12–18 pp.
+      </div>
+    </div>
+
+    <div class="tl-item hotel">
+      <div class="tl-time">11:00</div>
+      <div class="tl-title">Check-out Hotel Fusion — ritiro auto <span class="badge badge-hotel">CHECK-OUT</span></div>
+      <div class="tl-body">
+        Checkout, recupera l'auto dal garage. Esci da SF verso sud su <strong>US-101 S → I-580 E → I-5 S → CA-99 S → Fresno</strong>. Oppure via <strong>CA-140 E</strong> passando per <strong>Yosemite</strong> (aggiunge 1h30 ma è l'opzione paesaggistica).
+      </div>
+    </div>
+
+    <div class="tl-item sight">
+      <div class="tl-time">14:00–17:00</div>
+      <div class="tl-title">[OPZIONALE] Mariposa Grove — Sequoie giganti <span class="badge badge-sight">DEVIAZIONE</span></div>
+      <div class="tl-body">
+        Se passi per Yosemite (CA-41 S): il <strong>Mariposa Grove</strong> (ingresso sud del parco) ha il secondo bosco di sequoie giganti più accessibile della California. Shuttle obbligatorio dal parcheggio. ~1h30 di visita.
+      </div>
+    </div>
+
+    <div class="tl-item hotel">
+      <div class="tl-time">17:00</div>
+      <div class="tl-title">Check-in Hotel Piccadilly, Fresno (seconda volta) <span class="badge badge-hotel">CHECK-IN</span></div>
+      <div class="tl-body">
+        Ultima notte del viaggio. Cena tranquilla, prepara i bagagli per il ritorno.
+      </div>
+    </div>
+
+    <div class="tl-item food">
+      <div class="tl-time">19:30</div>
+      <div class="tl-title">Cena finale — Trelio Restaurant, Fresno <span class="badge badge-food">CIBO</span></div>
+      <div class="tl-body">
+        <strong>2179 Kern St, Fresno</strong> — il miglior ristorante di Fresno con cucina californiana contemporanea e ingredienti locali della Central Valley. Cena di chiusura del viaggio. ~$45–55 pp. Prenota.
+      </div>
+    </div>
+
+    <div class="tl-item tip">
+      <div class="tl-time">ULTIMA SERA</div>
+      <div class="tl-title">Da Fresno: opzioni per il volo di rientro <span class="badge badge-tip">LOGISTICA</span></div>
+      <div class="tl-body">
+        <strong>Aeroporto di Fresno (FAT):</strong> 10 min dall'hotel — comodo per voli domestici verso LA o SF per poi rientrare. <br>
+        <strong>Aeroporto di Los Angeles (LAX):</strong> ~4h da Fresno via CA-99 S → I-5 S. <br>
+        <strong>Aeroporto di San Francisco (SFO):</strong> ~3h da Fresno via CA-99 N → I-580 W.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</div><!-- /container -->
+
+<!-- ══════════════════════════════════════════════════
+     SEZIONE APP CONSIGLIATE
+     ══════════════════════════════════════════════════ -->
+<div class="stats-section" id="apps" style="background:var(--bg);border-top:1px solid var(--divider);border-bottom:none;">
+<div class="stats-inner">
+
+  <div class="stats-title">APP <span>CONSIGLIATE</span></div>
+  <div class="stats-subtitle">Scarica tutto prima di partire — la copertura dati sparisce nel deserto</div>
+
+  <div class="cost-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); margin-bottom: 0;">
+
+    <div class="cost-card">
+      <div class="cost-card-header">
+        <div class="cost-card-icon">🗺️</div>
+        <div class="cost-card-name">NAVIGAZIONE</div>
+      </div>
+      <div class="cost-card-body">
+        <div class="cost-row">
+          <div>
+            <span style="color:var(--text);font-weight:500;">Google Maps</span>
+            <span class="ok-inline">GRATIS</span>
+            <div style="color:var(--muted);font-size:12px;margin-top:2px;">La migliore per navigazione offline. <strong>Scarica le mappe di CA, AZ, NV, UT prima di partire.</strong> Funziona senza dati.</div>
+          </div>
+        </div>
+        <div class="cost-row">
+          <div>
+            <span style="color:var(--text);font-weight:500;">Waze</span>
+            <span class="ok-inline">GRATIS</span>
+            <div style="color:var(--muted);font-size:12px;margin-top:2px;">Migliore per traffico in tempo reale, autovelox, avvisi polizia. Usala sulle highway — Google Maps per le destinazioni.</div>
+          </div>
+        </div>
+        <div class="cost-row">
+          <div>
+            <span style="color:var(--text);font-weight:500;">Maps.me</span>
+            <span class="ok-inline">GRATIS</span>
+            <div style="color:var(--muted);font-size:12px;margin-top:2px;">Mappe offline ultra-dettagliate: strade sterrate, sentieri, zone senza segnale. Essenziale per Monument Valley e zone remote.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cost-card">
+      <div class="cost-card-header">
+        <div class="cost-card-icon">⛽</div>
+        <div class="cost-card-name">BENZINA & SPESE</div>
+      </div>
+      <div class="cost-card-body">
+        <div class="cost-row">
+          <div>
+            <span style="color:var(--text);font-weight:500;">GasBuddy</span>
+            <span class="ok-inline">GRATIS</span>
+            <div style="color:var(--muted);font-size:12px;margin-top:2px;">Prezzi benzina in tempo reale per 150.000+ stazioni USA. Mostra la stazione più economica nel raggio. <strong>Obbligatoria.</strong></div>
+          </div>
+        </div>
+        <div class="cost-row">
+          <div>
+            <span style="color:var(--text);font-weight:500;">Splitwise</span>
+            <span class="ok-inline">GRATIS</span>
+            <div style="color:var(--muted);font-size:12px;margin-top:2px;">Divisione spese tra 2 persone. Traccia benzina, cibo, ingressi — a fine viaggio sai esattamente chi deve quanto a chi.</div>
+          </div>
+        </div>
+        <div class="cost-row">
+          <div>
+            <span style="color:var(--text);font-weight:500;">Revolut / Wise</span>
+            <span class="ok-inline">GRATIS</span>
+            <div style="color:var(--muted);font-size:12px;margin-top:2px;">Carta e pagamenti in USD senza commissioni. Meglio di qualsiasi carta bancaria italiana. Attiva prima di partire.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cost-card">
+      <div class="cost-card-header">
+        <div class="cost-card-icon">🏕️</div>
+        <div class="cost-card-name">PARCHI & PRENOTAZIONI</div>
+      </div>
+      <div class="cost-card-body">
+        <div class="cost-row">
+          <div>
+            <span style="color:var(--text);font-weight:500;">Recreation.gov</span>
+            <span class="ok-inline">GRATIS</span>
+            <div style="color:var(--muted);font-size:12px;margin-top:2px;">Prenotazione Day Use Reservation per Yosemite (obbligatoria maggio-ottobre). Anche NPS Annual Pass digitale. Registrati prima di partire.</div>
+          </div>
+        </div>
+        <div class="cost-row">
+          <div>
+            <span style="color:var(--text);font-weight:500;">NPS App</span>
+            <span class="ok-inline">GRATIS</span>
+            <div style="color:var(--muted);font-size:12px;margin-top:2px;">App ufficiale National Park Service. Mappe offline dei parchi, trail info, orari shuttle, avvisi chiusure. Fondamentale per Zion e Yosemite.</div>
+          </div>
+        </div>
+        <div class="cost-row">
+          <div>
+            <span style="color:var(--text);font-weight:500;">AllTrails</span>
+            <span class="ok-inline">GRATIS/PRO</span>
+            <div style="color:var(--muted);font-size:12px;margin-top:2px;">Mappe trail con GPS, difficoltà, recensioni. Versione gratuita sufficiente. Utile per Zion, Red Rock Canyon, Yosemite.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cost-card">
+      <div class="cost-card-header">
+        <div class="cost-card-icon">🌤️</div>
+        <div class="cost-card-name">METEO & SICUREZZA</div>
+      </div>
+      <div class="cost-card-body">
+        <div class="cost-row">
+          <div>
+            <span style="color:var(--text);font-weight:500;">Weather Underground</span>
+            <span class="ok-inline">GRATIS</span>
+            <div style="color:var(--muted);font-size:12px;margin-top:2px;">Meteo iperlocale (stazioni private). Indispensabile per Death Valley — controlla temperatura oraria prima di uscire dall'auto.</div>
+          </div>
+        </div>
+        <div class="cost-row">
+          <div>
+            <span style="color:var(--text);font-weight:500;">what3words</span>
+            <span class="ok-inline">GRATIS</span>
+            <div style="color:var(--muted);font-size:12px;margin-top:2px;">Posizione GPS con 3 parole in zone senza indirizzo. Se hai un problema nel deserto, dai queste 3 parole ai soccorsi. Funziona offline.</div>
+          </div>
+        </div>
+        <div class="cost-row">
+          <div>
+            <span style="color:var(--text);font-weight:500;">iOverlander</span>
+            <span class="ok-inline">GRATIS</span>
+            <div style="color:var(--muted);font-size:12px;margin-top:2px;">Database punti acqua, meccanici, campi emergenza nelle zone remote. Utile per zone isolate come Death Valley e Monument Valley.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cost-card">
+      <div class="cost-card-header">
+        <div class="cost-card-icon">🌙</div>
+        <div class="cost-card-name">ASTRONOMIA</div>
+      </div>
+      <div class="cost-card-body">
+        <div class="cost-row">
+          <div>
+            <span style="color:var(--text);font-weight:500;">Star Walk 2</span>
+            <span class="ok-inline">GRATIS</span>
+            <div style="color:var(--muted);font-size:12px;margin-top:2px;">Punta il telefono al cielo e identifica stelle, pianeti, costellazioni in AR. Perfetto per le notti a Death Valley e Monument Valley (zero inquinamento luminoso).</div>
+          </div>
+        </div>
+        <div class="cost-row">
+          <div>
+            <span style="color:var(--text);font-weight:500;">Light Pollution Map</span>
+            <span class="ok-inline">GRATIS</span>
+            <div style="color:var(--muted);font-size:12px;margin-top:2px;">Mappa interattiva dell'inquinamento luminoso. Mostra i migliori punti di osservazione nelle vicinanze. Cerca "Dark Sky" prima di ogni sosta notturna.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cost-card">
+      <div class="cost-card-header">
+        <div class="cost-card-icon">🚕</div>
+        <div class="cost-card-name">TRASPORTI LOCALI</div>
+      </div>
+      <div class="cost-card-body">
+        <div class="cost-row">
+          <div>
+            <span style="color:var(--text);font-weight:500;">Uber / Lyft</span>
+            <span class="ok-inline">GRATIS</span>
+            <div style="color:var(--muted);font-size:12px;margin-top:2px;">Essenziali a Los Angeles (Griffith, Venice, Hollywood) e San Francisco (non guidare mai in città). Registra entrambe le app — prezzi variano.</div>
+          </div>
+        </div>
+        <div class="cost-row">
+          <div>
+            <span style="color:var(--text);font-weight:500;">Transit App</span>
+            <span class="ok-inline">GRATIS</span>
+            <div style="color:var(--muted);font-size:12px;margin-top:2px;">Metro, tram, bus a SF (BART, Muni) e LA in tempo reale. Più chiara di Google Maps per i trasporti locali. Obbligatoria per SF.</div>
+          </div>
+        </div>
+        <div class="cost-row">
+          <div>
+            <span style="color:var(--text);font-weight:500;">Alcatraz City Experiences</span>
+            <span class="ok-inline">GRATIS</span>
+            <div style="color:var(--muted);font-size:12px;margin-top:2px;">App ufficiale Alcatraz. Biglietti, orari ferry, audioguida offline. <strong>Prenota subito</strong> — agosto è sold out settimane prima.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="tip-card" style="margin-top:20px;border-left:3px solid var(--amber);">
+    <strong>📱 Prima di partire — checklist download</strong>
+    Scarica offline: mappe Google (CA + AZ + NV + UT), Maps.me (stessi stati), NPS App (Zion + Death Valley + Yosemite), AllTrails (parchi visitati). Attiva: Revolut/Wise con fondi USD, Recreation.gov con Day Use Yosemite prenotata, Alcatraz tickets. Verifica: copertura del piano telefonico in USA o acquista eSIM (Airalo / Holafly, ~$25 per 15gg dati illimitati).
+  </div>
+
+</div><!-- /stats-inner -->
+</div><!-- /apps-section -->
+
+<!-- ══════════════════════════════════════════════════
+     SEZIONE STATS & BUDGET
+     ══════════════════════════════════════════════════ -->
+<div class="stats-section" id="stats">
+<div class="stats-inner">
+
+  <div class="stats-title">BUDGET & <span>STATS</span></div>
+  <div class="stats-subtitle">Stime per 2 persone · 14 notti · Agosto 2026 · Tutti i prezzi in USD</div>
+
+  <!-- GRIGLIA CATEGORIE DETTAGLIO -->
+  <div class="cost-grid">
+
+    <!-- BENZINA -->
+    <div class="cost-card">
+      <div class="cost-card-header">
+        <div class="cost-card-icon">⛽</div>
+        <div class="cost-card-name">BENZINA</div>
+        <div class="cost-card-total">~$1.100</div>
+      </div>
+      <div class="cost-card-body">
+        <div class="cost-row"><span class="cost-row-label">km totali stimati</span><span class="cost-row-val">~3.800 km</span></div>
+        <div class="cost-row"><span class="cost-row-label">Consumo SUV medio</span><span class="cost-row-val">~10 L/100km</span></div>
+        <div class="cost-row"><span class="cost-row-label">Galloni totali necessari (~100)</span><span class="cost-row-val">~100 gal</span></div>
+        <div class="cost-row"><span class="cost-row-label">California (giugno 2026, AAA)</span><span class="cost-row-val">$5,99/gal</span></div>
+        <div class="cost-row"><span class="cost-row-label">Nevada (giugno 2026, AAA)</span><span class="cost-row-val">$4,96/gal</span></div>
+        <div class="cost-row"><span class="cost-row-label">Arizona (giugno 2026, AAA)</span><span class="cost-row-val">$4,61/gal</span></div>
+        <div class="cost-row"><span class="cost-row-label">Media ponderata sul percorso</span><span class="cost-row-val">~$5,40/gal</span></div>
+        <div class="cost-row"><span class="cost-row-label">Costo base stimato (100 gal)</span><span class="cost-row-val">~$540</span></div>
+        <div class="cost-row"><span class="cost-row-label">Sovrapprezzo parchi/zone remote</span><span class="cost-row-val">~$350–400</span></div>
+        <div class="cost-row"><span class="cost-row-label">Death Valley (Furnace Creek)</span><span class="cost-row-val">~$8,00–9,00/gal</span></div>
+        <div class="cost-row cost-row-note"><span style="color:var(--muted)">⚠ Prezzi AAA di giugno 2026 — ad agosto stimato +5–8% per domanda estiva. Fai sempre pieno a Pahrump prima di Death Valley.</span></div>
+      </div>
+    </div>
+
+    <!-- CIBO -->
+    <div class="cost-card">
+      <div class="cost-card-header">
+        <div class="cost-card-icon">🍔</div>
+        <div class="cost-card-name">CIBO & RISTORANTI</div>
+        <div class="cost-card-total">~$1.850</div>
+      </div>
+      <div class="cost-card-body">
+        <div class="cost-row"><span class="cost-row-label">Colazioni (14 gg × $15 × 2 pp)</span><span class="cost-row-val">~$420</span></div>
+        <div class="cost-row"><span class="cost-row-label">Pranzi casual (14 gg × $25 × 2 pp)</span><span class="cost-row-val">~$700</span></div>
+        <div class="cost-row"><span class="cost-row-label">Cene ristoranti (14 gg × $50 × 2 pp)</span><span class="cost-row-val">~$1.400</span></div>
+        <div class="cost-row"><span class="cost-row-label">Snack/acqua/supermercato</span><span class="cost-row-val">~$150</span></div>
+        <div class="cost-row"><span class="cost-row-label">Risparmio colazioni incluse (Piccadilly)</span><span class="cost-row-val">−$60</span></div>
+        <div class="cost-row"><span class="cost-row-label">Risparmio picnic nei parchi (stima)</span><span class="cost-row-val">−$160</span></div>
+        <div class="cost-row cost-row-note"><span style="color:var(--muted)">💡 L'inflazione USA 2026 ha alzato i prezzi al ristorante del ~15% rispetto al 2024. Stima conservativa con mix casual/medio.</span></div>
+      </div>
+    </div>
+
+    <!-- PARCHEGGI -->
+    <div class="cost-card">
+      <div class="cost-card-header">
+        <div class="cost-card-icon">🅿</div>
+        <div class="cost-card-name">PARCHEGGI</div>
+        <div class="cost-card-total">~$340</div>
+      </div>
+      <div class="cost-card-body">
+        <div class="cost-row"><span class="cost-row-label">Los Angeles (3 gg hotel + uscite)</span><span class="cost-row-val">~$70–90</span></div>
+        <div class="cost-row"><span class="cost-row-label">Williams — El Rancho (incluso)</span><span class="cost-row-val">$0</span></div>
+        <div class="cost-row"><span class="cost-row-label">Horseshoe Bend (veicolo)</span><span class="cost-row-val">$10</span></div>
+        <div class="cost-row"><span class="cost-row-label">Monument Valley (veicolo)</span><span class="cost-row-val">$5</span></div>
+        <div class="cost-row"><span class="cost-row-label">Las Vegas — Four Queens (incluso)</span><span class="cost-row-val">$0</span></div>
+        <div class="cost-row"><span class="cost-row-label">Zion National Park (nel biglietto)</span><span class="cost-row-val">$0</span></div>
+        <div class="cost-row"><span class="cost-row-label">Death Valley — Ranch (incluso)</span><span class="cost-row-val">$0</span></div>
+        <div class="cost-row"><span class="cost-row-label">Fresno — Piccadilly (incluso)</span><span class="cost-row-val">$0</span></div>
+        <div class="cost-row"><span class="cost-row-label">Yosemite (nel biglietto veicolo)</span><span class="cost-row-val">$0</span></div>
+        <div class="cost-row"><span class="cost-row-label">San Francisco garage (3 notti × ~$50)</span><span class="cost-row-val">~$150</span></div>
+        <div class="cost-row"><span class="cost-row-label">Getty Center (obbligatorio)</span><span class="cost-row-val">$25</span></div>
+        <div class="cost-row cost-row-note"><span style="color:var(--muted)">⚠ SF: i garage di Union Square costano $45–55/notte ad agosto 2026. Lascia l'auto per tutta la durata e non muoverla.</span></div>
+      </div>
+    </div>
+
+  </div><!-- /cost-grid -->
+
+  <!-- BENZINE LUNGO IL PERCORSO -->
+  <div class="fuel-section">
+    <div class="section-head">⛽ DOVE FARE <span>BENZINA</span></div>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:16px;">Stazioni consigliate lungo il percorso, con prezzi stimati e note critiche. Usa GasBuddy per il prezzo in tempo reale.</p>
+    <div class="table-scroll"><table class="fuel-table">
+      <thead>
+        <tr>
+          <th>Tappa / Città</th>
+          <th>Catena consigliata</th>
+          <th>Prezzo stimato</th>
+          <th>Note</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Los Angeles (partenza)<br><span style="font-size:11px;color:var(--muted)">Prima di lasciare la città il 13/8</span></td>
+          <td class="chain-col">Costco (Burbank)<br>Arco / Shell su Sunset</td>
+          <td class="price-col">$5,60–5,99/gal</td>
+          <td>CA media giugno 2026: $5,99/gal (AAA). Fai pieno completo. Costco è sempre $0,20–0,30 sotto la media ma richiede membership.</td>
+        </tr>
+        <tr>
+          <td>Barstow, CA<br><span style="font-size:11px;color:var(--muted)">Tappa 13/8 verso Williams</span></td>
+          <td class="chain-col">Chevron / Arco<br>(uscita I-15 / Main St)</td>
+          <td class="price-col">$5,50–5,80/gal</td>
+          <td>Ancora California, prezzi alti ma più bassi di LA. Rifornimento strategico prima del Mojave.</td>
+        </tr>
+        <tr>
+          <td>Kingman, AZ<br><span style="font-size:11px;color:var(--muted)">Dopo Oatman, tappa 13/8</span></td>
+          <td class="chain-col">Circle K / Loves<br>(I-40 / Andy Devine Ave)</td>
+          <td class="price-col">$4,50–4,70/gal</td>
+          <td><span class="ok-inline">SOLLIEVO</span> AZ media giugno 2026: $4,61/gal (AAA). Sensibile risparmio rispetto alla California. Fai pieno qui.</td>
+        </tr>
+        <tr>
+          <td>Williams, AZ<br><span style="font-size:11px;color:var(--muted)">La sera del 13/8</span></td>
+          <td class="chain-col">Shell / Chevron<br>(Route 66 / Grand Canyon Blvd)</td>
+          <td class="price-col">$4,70–5,00/gal</td>
+          <td>Zona turistica, sovrapprezzo rispetto alla media AZ. Rifornisci la mattina del 14/8 prima di partire verso Page.</td>
+        </tr>
+        <tr>
+          <td>Page, AZ<br><span style="font-size:11px;color:var(--muted)">Mattina 14/8</span></td>
+          <td class="chain-col">Maverick / Chevron<br>(Lake Powell Blvd)</td>
+          <td class="price-col">$4,80–5,20/gal</td>
+          <td>Zona turistica remota, prezzi sopra media AZ. Fai pieno completo qui — dopo Bluff le opzioni spariscono.</td>
+        </tr>
+        <tr>
+          <td>Bluff / Mexican Hat, UT<br><span style="font-size:11px;color:var(--muted)">Tappa 14/8</span></td>
+          <td class="chain-col">Recapture Lodge Gas<br>(US-191, Bluff)</td>
+          <td class="price-col">$5,20–5,60/gal</td>
+          <td><span class="warn-inline">CARO</span> Zona remota, nessuna alternativa. Rifornisci comunque se sotto metà serbatoio.</td>
+        </tr>
+        <tr>
+          <td>Las Vegas (arrivo)<br><span style="font-size:11px;color:var(--muted)">Tappa 15/8</span></td>
+          <td class="chain-col">Costco Gasoline (LV)<br>Arco / Sam's Club</td>
+          <td class="price-col">$4,80–5,00/gal</td>
+          <td><span class="ok-inline">MEGLIO DI CA</span> NV media giugno 2026: $4,96/gal (AAA). Fai pieno pieno prima di partire per Death Valley il 17/8.</td>
+        </tr>
+        <tr>
+          <td>Pahrump, NV<br><span style="font-size:11px;color:var(--muted)">Lungo la NV-160 verso DV</span></td>
+          <td class="chain-col">Terrible Herbst / Rebel<br>(NV-160 / Basin Ave)</td>
+          <td class="price-col">$4,90–5,20/gal</td>
+          <td><strong>Tappa obbligatoria.</strong> Ultima stazione con prezzi "normali" prima di Death Valley. Fai assolutamente pieno qui.</td>
+        </tr>
+        <tr>
+          <td>Stovepipe Wells / Furnace Creek<br><span style="font-size:11px;color:var(--muted)">Death Valley 17–18/8</span></td>
+          <td class="chain-col">Furnace Creek Gas Station<br>(unica opzione nel parco)</td>
+          <td class="price-col">$8,00–9,50/gal</td>
+          <td><span class="warn-inline">ESTREMO</span> Prezzi quasi doppi rispetto alla California. Solo emergenza assoluta. Entra con serbatoio pieno da Pahrump.</td>
+        </tr>
+        <tr>
+          <td>Lone Pine, CA<br><span style="font-size:11px;color:var(--muted)">Tappa 18/8 verso Fresno</span></td>
+          <td class="chain-col">Shell / Chevron<br>(US-395 / Main St)</td>
+          <td class="price-col">$5,60–5,90/gal</td>
+          <td>Primo rifornimento "decente" dopo Death Valley. Prezzi CA standard, ma un sollievo enorme rispetto al parco.</td>
+        </tr>
+        <tr>
+          <td>Fresno, CA<br><span style="font-size:11px;color:var(--muted)">Tappe 18–19 e 22–23/8</span></td>
+          <td class="chain-col">Costco Fresno / Arco<br>(Shaw Ave)</td>
+          <td class="price-col">$5,50–5,80/gal</td>
+          <td>Central Valley, leggermente sotto la media CA. Rifornisci qui prima di salire a Yosemite il 19/8.</td>
+        </tr>
+        <tr>
+          <td>El Portal / Mariposa<br><span style="font-size:11px;color:var(--muted)">Prima di Yosemite 19/8</span></td>
+          <td class="chain-col">Chevron El Portal<br>(CA-140, El Portal)</td>
+          <td class="price-col">$6,20–6,80/gal</td>
+          <td><span class="warn-inline">CARO</span> Zona montana vicino al parco — sovrapprezzo tipico. Entra in Yosemite con pieno da Fresno.</td>
+        </tr>
+        <tr>
+          <td>San Francisco<br><span style="font-size:11px;color:var(--muted)">19–22/8 (lascia l'auto ferma)</span></td>
+          <td class="chain-col">Usa Uber/BART<br>Non guidare in città</td>
+          <td class="price-col">$6,00–6,50/gal</td>
+          <td>SF tra i prezzi più alti della CA. Lascia l'auto in garage per tutti e 3 i giorni — non ne hai bisogno.</td>
+        </tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <!-- SUPERMERCATI -->
+  <div class="fuel-section">
+    <div class="section-head">🛒 SUPERMERCATI E <span>ACQUA</span></div>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:16px;">Dove fare scorta di acqua, snack e cibo per picnic. Cruciale specialmente prima di Death Valley e nelle zone remote.</p>
+    <div class="table-scroll"><table class="market-table">
+      <thead>
+        <tr>
+          <th>Città / Tappa</th>
+          <th>Supermercato</th>
+          <th>Cosa comprare</th>
+          <th>Priorità</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Los Angeles<br><span style="font-size:11px;color:var(--muted)">10–13/8</span></td>
+          <td><strong>Trader Joe's</strong> (Hollywood)<br>7304 Santa Monica Blvd<br><br><strong>Whole Foods</strong><br>239 N Crescent Dr, Beverly Hills</td>
+          <td>Snack da viaggio, frutta, barrette energetiche, acqua in bottiglia grande (5L). Ottimo per fare scorta economica prima di partire.</td>
+          <td><span class="ok-inline">CONSIGLIATO</span></td>
+        </tr>
+        <tr>
+          <td>Barstow, CA<br><span style="font-size:11px;color:var(--muted)">Tappa 13/8 verso Williams</span></td>
+          <td><strong>Stater Bros. Markets</strong><br>1351 E Main St, Barstow</td>
+          <td>Acqua abbondante (minimo 8L × 2), snack per il Mojave, frutta. Ultima grande spesa prima del deserto Arizona.</td>
+          <td><span class="warn-inline">IMPORTANTE</span></td>
+        </tr>
+        <tr>
+          <td>Williams, AZ<br><span style="font-size:11px;color:var(--muted)">Sera 13/8</span></td>
+          <td><strong>Williams Grocery</strong><br>637 W Route 66<br><br><strong>Safeway</strong> (Flagstaff, ~50 min)<br>Alternative: Family Dollar locale</td>
+          <td>Rifornimento base: acqua, snack, colazione da portare. Williams è piccola — non aspettarti grandi supermercati.</td>
+          <td><span class="ok-inline">UTILE</span></td>
+        </tr>
+        <tr>
+          <td>Page, AZ<br><span style="font-size:11px;color:var(--muted)">Mattina 14/8</span></td>
+          <td><strong>Safeway Page</strong><br>650 Elm St, Page, AZ</td>
+          <td>Acqua fredda (fondamentale), sandwich e cibo per pranzo al sacco verso Monument Valley, elettroliti/Gatorade. <strong>Ultima spesa grande prima di Bluff.</strong></td>
+          <td><span class="warn-inline">PRIORITÀ ALTA</span></td>
+        </tr>
+        <tr>
+          <td>Las Vegas<br><span style="font-size:11px;color:var(--muti)">15–17/8</span></td>
+          <td><strong>Smith's Food (Kroger)</strong><br>1616 Las Vegas Blvd S<br><br><strong>Walgreens 24h</strong><br>3765 Las Vegas Blvd S (Strip)</td>
+          <td>Scorta acqua e Gatorade per Death Valley (<strong>minimo 8–10L per persona</strong>), snack per il parco, qualsiasi farmaco necessario. Prezzi molto più bassi che dentro il parco.</td>
+          <td><span class="warn-inline">CRITICO — DV</span></td>
+        </tr>
+        <tr>
+          <td>Pahrump, NV<br><span style="font-size:11px;color:var(--muted)">17/8 mattina verso DV</span></td>
+          <td><strong>Smith's Pahrump</strong><br>1201 S Highway 160<br><br><strong>Walmart Supercenter</strong><br>4275 E Kellogg Rd, Pahrump</td>
+          <td>Ultima scorta critica prima di Death Valley. Acqua ghiacciata, Gatorade, cibo per 2 giorni. <strong>Non contare sul minimarket di Furnace Creek.</strong></td>
+          <td><span class="warn-inline">CRITICO — DV</span></td>
+        </tr>
+        <tr>
+          <td>Lone Pine, CA<br><span style="font-size:11px;color:var(--muted)">18/8 uscita DV</span></td>
+          <td><strong>Joseph's Bi-Rite Market</strong><br>119 S Main St, Lone Pine</td>
+          <td>Piccolo ma fornito. Ottimo per rifornirsi dopo Death Valley: frutta fresca, panini, acqua, caffè. Dopo 2 giorni nel deserto, la frutta fresca sarà il lusso più desiderato.</td>
+          <td><span class="ok-inline">BENVENUTO</span></td>
+        </tr>
+        <tr>
+          <td>Fresno, CA<br><span style="font-size:11px;color:var(--muted)">18–19 e 22–23/8</span></td>
+          <td><strong>Trader Joe's Fresno</strong><br>5376 N Blackstone Ave<br><br><strong>Whole Foods Fresno</strong><br>7845 N Blackstone Ave (vicino hotel)</td>
+          <td>Spesa per picnic a Yosemite (19/8): panini, frutta, snack, acqua. Molto più economico che comprare dentro il parco. Anche colazione fai-da-te per risparmiare.</td>
+          <td><span class="ok-inline">CONSIGLIATO</span></td>
+        </tr>
+        <tr>
+          <td>San Francisco<br><span style="font-size:11px;color:var(--muted)">19–22/8</span></td>
+          <td><strong>Trader Joe's Union Square</strong><br>555 9th St (Castro)<br><br><strong>Whole Foods Market</strong><br>1765 California St<br><br><strong>Rainbow Grocery</strong><br>1745 Folsom St (Mission)</td>
+          <td>SF è cara per il cibo fuori — avere snack e colazione in camera taglia i costi. Rainbow Grocery è la coop biologica più economica. Ideale per fare scorta di snack giornalieri.</td>
+          <td><span class="ok-inline">RISPARMIO</span></td>
+        </tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <!-- CONSIGLI FINALI -->
+  <div class="section-head" style="margin-top:40px;">💡 CONSIGLI <span>PRATICI</span></div>
+  <div class="tips-grid">
+    <div class="tip-card">
+      <strong>NPS Pass non residenti — $250</strong>
+      Dal 1 gennaio 2026 i non residenti USA pagano $250 (non $80). Il pass copre il veicolo intero fino a 4 adulti ed elimina il supplemento $100/persona nei parchi con sovrattassa (Zion, Yosemite, Grand Canyon…). Per 2 persone conviene già da 2 parchi: senza pass pagheresti $35 veicolo + $100 × 2 = $235 solo a Zion. Compralo online su store.usgs.gov prima di partire.
+    </div>
+    <div class="tip-card">
+      <strong>Alcatraz — prenota subito</strong>
+      Day tour 2026: $47,95/adulto. I biglietti si aprono 90 giorni prima e si esauriscono in settimane. Per agosto, prenota ora su cityexperiences.com — non esiste alternativa ufficiale.
+    </div>
+    <div class="tip-card">
+      <strong>GasBuddy App</strong>
+      App gratuita che mostra i prezzi della benzina in tempo reale per ogni stazione vicina. Fondamentale per scegliere dove rifornirsi, specialmente in California. Scaricala prima di partire.
+    </div>
+    <div class="tip-card">
+      <strong>Acqua nel deserto</strong>
+      Porta sempre in auto almeno 4L pp in più di quello che pensi di usare. Aggiungi elektroliti (Liquid IV o Nuun) — l'acqua da sola non è sufficiente a 45°C. Non lasciare mai bottiglie di plastica al sole in auto.
+    </div>
+    <div class="tip-card">
+      <strong>Cash & Card</strong>
+      Alcuni parchi, mercati Navajo e locali rurali accettano solo contanti. Porta sempre $100–150 in cash. Carte di credito con zero commissioni estero (es. Revolut, N26) per tutto il resto.
+    </div>
+    <div class="tip-card">
+      <strong>SIM USA</strong>
+      T-Mobile o AT&T prepagata (~$35/mese, dati illimitati). Alternativa: eSIM di Airalo o Holafly (~$25 per 15 giorni). La copertura si perde in Death Valley e nelle zone remote — scarica le mappe offline su Google Maps o Maps.me prima di ogni tappa.
+    </div>
+    <div class="tip-card">
+      <strong>Budget emergenza</strong>
+      Tieni sempre $200–300 di riserva liquida. Guasti meccanici nel deserto, tow truck, notte extra imprevista — in America succede, e lontano dalle città costa caro. L'assicurazione del noleggio deve coprire il soccorso stradale.
+    </div>
+  </div>
+
+</div><!-- /stats-inner -->
+</div><!-- /stats-section -->
+
+<div style="text-align:center; padding: 40px 24px; color: var(--muted); font-size: 12px; border-top: 1px solid var(--divider); margin-top: 0;">
+  <span style="font-family:'Bebas Neue',sans-serif; font-size:16px; color:var(--amber); letter-spacing:3px;">ROUTE 66 — ESTATE 2026</span><br>
+  <span style="letter-spacing:2px; text-transform:uppercase; font-size:11px;">10–23 Agosto · 2 persone · Los Angeles → San Francisco</span>
+</div>
+
+<script>
+  function toggleTheme() {
+    const root = document.documentElement;
+    const btn = document.getElementById('theme-btn');
+    if (root.getAttribute('data-theme') === 'light') {
+      root.removeAttribute('data-theme');
+      btn.textContent = '🌙 Tema';
+      localStorage.setItem('r66-theme', 'dark');
+    } else {
+      root.setAttribute('data-theme', 'light');
+      btn.textContent = '☀️ Tema';
+      localStorage.setItem('r66-theme', 'light');
+    }
+  }
+  // Restore saved preference
+  (function() {
+    const saved = localStorage.getItem('r66-theme');
+    const preferLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+    if (saved === 'light' || (!saved && preferLight)) {
+      document.documentElement.setAttribute('data-theme', 'light');
+      document.addEventListener('DOMContentLoaded', function() {
+        const btn = document.getElementById('theme-btn');
+        if (btn) btn.textContent = '☀️ Tema';
+      });
+    }
+  })();
+</script>
+</body>
+</html>

@@ -310,10 +310,10 @@ header{
   width:6px;height:6px;border-radius:50%;background:var(--g);
   animation:blink 2s infinite;
 }
-.live-dot.closed{background:#f97316;animation:none;}
+.live-dot.closed{background:var(--r);animation:none;}
 .mkt-closed{
   display:none;align-items:center;gap:4px;
-  font-size:.65rem;font-weight:600;color:#f97316;
+  font-size:.65rem;font-weight:600;color:var(--r);
   background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.3);
   padding:2px 7px;border-radius:20px;white-space:nowrap;
 }
@@ -939,7 +939,7 @@ header{
 .analyst-bar{display:flex;height:10px;border-radius:6px;overflow:hidden;gap:2px;margin-bottom:10px;}
 .ab-seg{height:100%;border-radius:3px;transition:width .8s ease;min-width:0;}
 .ab-sbuy{background:#10b981;}.ab-buy{background:#34d399;}
-.ab-hold{background:#f59e0b;}.ab-sell{background:#f97316;}.ab-ssell{background:#ef4444;}
+.ab-hold{background:#f59e0b;}.ab-sell{background:var(--r);}.ab-ssell{background:#ef4444;}
 .analyst-legend{display:flex;flex-wrap:wrap;gap:6px 14px;}
 .al-item{display:flex;align-items:center;gap:5px;font-size:.72rem;color:var(--t2);}
 .al-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
@@ -1289,7 +1289,7 @@ header{
               <defs>
                 <linearGradient id="fg-grad" x1="0%" y1="0%" x2="100%" y2="0%">
                   <stop offset="0%"   stop-color="#ef4444"/>
-                  <stop offset="25%"  stop-color="#f97316"/>
+                  <stop offset="25%"  stop-color="var(--r)"/>
                   <stop offset="50%"  stop-color="#f59e0b"/>
                   <stop offset="75%"  stop-color="#84cc16"/>
                   <stop offset="100%" stop-color="#10b981"/>
@@ -1605,7 +1605,7 @@ header{
           <span class="bhs-an-item" style="color:#10b981">Strong Buy <b id="bhs-sbuy">0</b></span>
           <span class="bhs-an-item" style="color:#34d399">Buy <b id="bhs-an-buy">0</b></span>
           <span class="bhs-an-item" style="color:#f59e0b">Hold <b id="bhs-an-hold">0</b></span>
-          <span class="bhs-an-item" style="color:#f97316">Sell <b id="bhs-an-sell">0</b></span>
+          <span class="bhs-an-item" style="color:var(--r)">Sell <b id="bhs-an-sell">0</b></span>
           <span class="bhs-an-item" style="color:#ef4444">Strong Sell <b id="bhs-ssell">0</b></span>
         </div>
       </div>
@@ -2204,7 +2204,7 @@ const DB = [
 ];
 
 // ── SCORE COLORS ──
-function sc(n){return n>=65?'#10b981':n>=55?'#34d399':n>=45?'#f59e0b':n>=35?'#f97316':'#ef4444';}
+function sc(n){return n>=65?'#10b981':n>=55?'#34d399':n>=45?'#f59e0b':n>=35?'var(--r)':'#ef4444';}
 function scLbl(n){return n>=65?'Bull':n>=55?'Pos':n>=45?'Neu':n>=35?'Neg':'Bear';}
 
 // ── PROXY FETCH — allorigins (raw + wrapped) + corsproxy fallback ──
@@ -2776,7 +2776,7 @@ function logoHTML(ticker,size=28){
   const base=ticker.replace(/-(USD|EUR|GBP|BTC|ETH|USDT)$/i,'').toUpperCase();
   const cryptoSrc=CRYPTO_LOGOS[base];
   const init=(base.replace(/[^A-Z0-9]/gi,'')[0]||'?');
-  const pallete=['#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981','#06b6d4','#f97316'];
+  const pallete=['#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981','#06b6d4','var(--r)'];
   const col=pallete[init.charCodeAt(0)%pallete.length];
   const r=Math.round(size/2);
   const fb=`data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${size}' height='${size}'%3E%3Crect width='${size}' height='${size}' rx='${r}' fill='${encodeURIComponent(col)}'/%3E%3Ctext x='${size/2}' y='${size*0.68}' font-size='${Math.round(size*0.42)}' font-family='Inter,sans-serif' font-weight='700' fill='white' text-anchor='middle'%3E${init}%3C/text%3E%3C/svg%3E`;
@@ -3735,7 +3735,7 @@ function renderFearGreed(score, vix){
     const r=Math.round(ar+(br-ar)*t),g=Math.round(ag+(bg-ag)*t),bl=Math.round(ab+(bb-ab)*t);
     return `rgb(${r},${g},${bl})`;
   }
-  const stops=[{p:0,c:'#ef4444'},{p:25,c:'#f97316'},{p:50,c:'#f59e0b'},{p:75,c:'#84cc16'},{p:100,c:'#10b981'}];
+  const stops=[{p:0,c:'#ef4444'},{p:25,c:'var(--r)'},{p:50,c:'#f59e0b'},{p:75,c:'#84cc16'},{p:100,c:'#10b981'}];
   let color=stops[0].c;
   for(let i=0;i<stops.length-1;i++){
     if(score>=stops[i].p && score<=stops[i+1].p){
@@ -3767,7 +3767,7 @@ function renderFearGreed(score, vix){
   const vixEcg=document.getElementById('vix-ecg');
   if(vixEl&&vix!=null){
     vixEl.textContent=vix.toFixed(1);
-    const vc=vix<15?'#10b981':vix<20?'#84cc16':vix<25?'#f59e0b':vix<30?'#f97316':'#ef4444';
+    const vc=vix<15?'#10b981':vix<20?'#84cc16':vix<25?'#f59e0b':vix<30?'var(--r)':'#ef4444';
     vixEl.style.color=vc;
     if(vixLbl) vixLbl.textContent=vix<15?'Bassa volatilità':vix<20?'Moderata':vix<25?'Elevata':vix<30?'Alta tensione':'Panico';
     if(vixEcg) vixEcg.classList.remove('on');

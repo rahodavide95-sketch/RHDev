@@ -282,6 +282,7 @@ const defaultState = {
   profile:{ age:'', income:'', save:'', emergency:'', goal:'', experience:'' },
   steps:{}, // id -> true
   chat:[], chatSeeded:false,
+  coachFlow:{flow:null,step:'',slots:{}},
   diagnosisScore:0
 };
 let S = load();
@@ -428,35 +429,157 @@ const FOLLOWUPS = {
   pac:"Se vuoi, ti dico anche <strong>quanto</strong> ha senso mettere ogni mese nella tua situazione.",
 };
 
-function coachReply(text){
-  const q = text.toLowerCase();
-  // score each KB entry by keyword hits
+/* ---- AI bridge: today offline, tomorrow flip AI.enabled=true ---- */
+const AI = { enabled:false, endpoint:'/api/coach' };
+async function getCoachResponse(text){
+  if(AI.enabled){
+    try{
+      const r = await fetch(AI.endpoint, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ message:text, name:S.name, profile:S.profile, history:S.chat.slice(-8) })
+      });
+      if(r.ok){ const d = await r.json(); if(d && d.reply) return d.reply; }
+    }catch(e){ /* fall back to offline engine */ }
+  }
+  return coachEngine(text);
+}
+
+/* ---- small parsers so it can "understand" free text ---- */
+function parseYesNo(t){
+  if(/\b(no|non ancora|niente|nessun|zero|nope)\b/.test(t)) return 'no';
+  if(/(un po|qualcosa|parz|quasi|più o meno|piu o meno|in parte|abbastanza)/.test(t)) return 'partial';
+  if(/\b(s[iì]|certo|esatto|gi[aà]|confermo|ok|va bene|ce l|ho gi|si)\b/.test(t)) return 'yes';
+  return null;
+}
+function parseAmount(t){
+  let s = t.toLowerCase().replace(/\.(?=\d{3})/g,'').replace(',', '.');
+  let m = s.match(/(\d+(?:\.\d+)?)\s*(k|mila|mln|milion)/);
+  if(m){ let n=parseFloat(m[1]); if(/k|mila/.test(m[2])) n*=1000; if(/mln|milion/.test(m[2])) n*=1e6; return Math.round(n); }
+  m = s.match(/\b(\d{1,7})\b/);
+  return m ? parseInt(m[1]) : null;
+}
+function parseHorizon(t){
+  let m = t.match(/(\d+)\s*ann/); if(m) return {years:parseInt(m[1])};
+  let mm = t.match(/(\d+)\s*mes/); if(mm) return {years:parseInt(mm[1])/12};
+  if(/(breve|presto|subito|poco tempo|tra poco|un anno|a breve|qualche mese)/.test(t)) return {years:1};
+  if(/(lung|tanti anni|pensione|decenni|futuro|vecchiaia|non.*serv)/.test(t)) return {years:15};
+  if(/(non lo so|non saprei|boh|non so|nessuna idea|mah)/.test(t)) return {unknown:true};
+  return null;
+}
+function fmtEur(n){ return n.toLocaleString('it-IT'); }
+
+/* ---- conversation state helpers ---- */
+function setFlow(step){ S.coachFlow = { flow:'consult', step, slots:(S.coachFlow&&S.coachFlow.slots)||{} }; save(); }
+function clearFlow(){ S.coachFlow = { flow:null, step:'', slots:{} }; save(); }
+
+/* ---- intent detection ---- */
+function adviceIntent(q){
+  return /(cosa (faccio|mi consigli|dovrei|consigli)|che (faccio|mi consigli)|da dove (inizio|comincio|parto)|aiutami|consigli|consiglio|dovrei investire|voglio investire|sono pronto|quanto (investo|devo investire|metto|conviene)|dove (investo|metto)|i miei (soldi|risparmi)|cosa investo)/.test(q)
+    || /\b(ho|avrei)\b.*(euro|€|risparmi|da parte|mila)/.test(q);
+}
+
+/* ============================================================
+   COACH ENGINE — behaves like a consultant, not a FAQ bot
+   ============================================================ */
+function coachEngine(text){
+  const q = text.toLowerCase().trim();
+  const cf = S.coachFlow || {flow:null};
+  if(cf.flow==='consult') return consultStep(q);
+  if(adviceIntent(q)) return startConsult(q);
+  const kb = kbMatch(q);
+  if(kb) return wrapKB(kb);
+  return smalltalk(q);
+}
+
+function kbMatch(q){
   let best=null, bestScore=0;
   for(const e of KB){
     let sc=0;
     for(const kw of e.k){ if(q.includes(kw)) sc += kw.length>6?2:1; }
     if(sc>bestScore){ bestScore=sc; best=e; }
   }
-  if(best && bestScore>0){
-    let ans = best.a;
-    // alive touch: occasionally a topical follow-up nudge
-    let fk=null;
-    if(best.k.includes('etf')) fk='etf';
-    else if(best.k.includes('fondo di emergenza')) fk='emergency';
-    else if(best.k.includes('conto corrente')) fk='conto';
-    else if(best.k.includes('pac')) fk='pac';
-    if(fk && FOLLOWUPS[fk]) ans += `<br><br>${FOLLOWUPS[fk]}`;
-    return ans;
+  return bestScore>0 ? best : null;
+}
+function wrapKB(entry){
+  let ans = entry.a, fk=null;
+  if(entry.k.includes('etf')) fk='etf';
+  else if(entry.k.includes('fondo di emergenza')) fk='emergency';
+  else if(entry.k.includes('conto corrente')) fk='conto';
+  else if(entry.k.includes('pac')) fk='pac';
+  if(fk && FOLLOWUPS[fk]) return ans + `<br><br>${FOLLOWUPS[fk]}`;
+  return ans + `<br><br>Vuoi che lo colleghi alla <strong>tua</strong> situazione? Dimmi pure di te (quanto vorresti mettere, per quanto tempo) e ti do un consiglio cucito su misura. 😊`;
+}
+
+function startConsult(q){
+  const p = S.profile, n = S.name ? (' '+S.name) : '';
+  const a = /€|euro|mila|\bk\b/i.test(q) ? parseAmount(q) : null;
+  S.coachFlow = { flow:'consult', step:'', slots:{} };
+  if(a && a>=10) S.coachFlow.slots.amount = a;
+  // fundamentals gate — use the diagnosis we already have
+  if(p.emergency==='no' || p.emergency==='little'){
+    setFlow('efork');
+    return `Ottima domanda, e ti rispondo da consulente — non da libretto. 🤝<br><br>Dalla tua diagnosi vedo una cosa importante: ti manca ancora un <strong>fondo di emergenza</strong> solido. E qui un consulente onesto ti ferma un attimo: <strong>prima di investire</strong>, quel cuscinetto viene prima di tutto. È ciò che ti evita di dover vendere nel momento peggiore.<br><br>Dimmi: preferisci che ti aiuti a <strong>costruire prima il fondo</strong>, o che ti spieghi comunque come funzionano gli <strong>investimenti</strong>? (scrivi pure \"fondo\" o \"investimenti\")`;
   }
-  // greetings / smalltalk
+  setFlow('horizon');
+  return `Volentieri${n}. Per darti un consiglio cucito su di te — non la solita risposta generica — mi servono due informazioni. 🧭<br><br>La prima: <strong>tra quanto tempo</strong> pensi che ti potrebbero servire questi soldi? Anche a spanne va bene — \"tra 10 anni\", \"non lo so\", \"a breve\"...`;
+}
+
+function consultStep(q){
+  const cf = S.coachFlow, p = S.profile, n = S.name ? (' '+S.name) : '';
+  if(cf.step==='efork'){
+    if(/fond|emerg|cuscin|prima|base/.test(q) || parseYesNo(q)==='yes'){
+      clearFlow();
+      return `Scelta saggia. 👏 Si fa così, con calma:<br><br>• Obiettivo: <strong>3-6 mesi delle tue spese</strong> da parte.<br>• Dove: un <strong>conto deposito</strong> o un conto separato — liquido e sicuro, NON investito.<br>• Come: una quota <strong>ogni mese</strong>, appena arriva lo stipendio. Anche 50-100€.<br><br>Quando il cuscinetto c'è, torna da me e passiamo agli investimenti veri. Trovi questo passo anche nella sezione <strong>Percorso</strong>, te l'ho già preparato. 🌱`;
+    }
+    if(/invest|comunque|spieg|capire|s[iì]/.test(q)){
+      setFlow('horizon');
+      return `Va bene, te lo spiego — ma tieni a mente quel cuscinetto, è importante. 🙂<br><br>Allora, da consulente: <strong>tra quanto</strong> pensi ti servirebbero i soldi che vuoi investire? \"tra molti anni\", \"non lo so\", \"a breve\"...`;
+    }
+    return `Dimmi pure: partiamo dal <strong>fondo di emergenza</strong> o ti spiego comunque gli <strong>investimenti</strong>? ✍️`;
+  }
+  if(cf.step==='horizon'){
+    const h = parseHorizon(q);
+    if(!h) return `Tranquillo, non serve precisione. Più o meno: questi soldi pensi di usarli <strong>a breve</strong> (1-2 anni), <strong>tra diversi anni</strong>, oppure <strong>non lo sai</strong>? 😊`;
+    cf.slots.horizon = h.unknown ? 12 : h.years; save();
+    if(!h.unknown && h.years<3){
+      clearFlow();
+      return `Grazie, informazione preziosa. E qui ti do il consiglio che un venditore non ti darebbe: se ti servono entro <strong>1-2 anni</strong>, gli ETF <strong>non</strong> fanno per quei soldi. 🛑<br><br>Sul breve i mercati ballano troppo: rischieresti di doverli vendere proprio quando sono giù. Per quell'orizzonte meglio un <strong>conto deposito</strong> — rende poco ma è stabile.<br><br>Hai invece dei soldi che <strong>non</strong> toccheresti per molti anni? Quelli sì che possiamo far lavorare. 🌱`;
+    }
+    if(cf.slots.amount){ const amt=cf.slots.amount, yrs=cf.slots.horizon; clearFlow(); return consultAdvice(amt, yrs); }
+    setFlow('amount');
+    return `Perfetto, un orizzonte ${h.unknown?'aperto':'lungo'} è <strong>l'ideale</strong> per investire: il tempo è il tuo migliore alleato. ⏳<br><br>Ultima cosa e poi ti do il mio consiglio: quanto pensi di poter dedicare, <strong>una tantum</strong> o meglio ancora <strong>ogni mese</strong>? Anche una cifra piccola va benissimo — l'importante è iniziare.`;
+  }
+  if(cf.step==='amount'){
+    const a = parseAmount(q);
+    const yrs = cf.slots.horizon || 12;
+    clearFlow();
+    return consultAdvice(a, yrs);
+  }
+  clearFlow();
+  return smalltalk(q);
+}
+
+function consultAdvice(amount, years){
+  const p = S.profile, n = S.name ? (' '+S.name) : '';
+  const amt = amount ? `${fmtEur(amount)}€` : 'la cifra che scegli';
+  const goalLine = { house:'comprare casa un giorno', freedom:'la tua libertà e il tuo futuro', safety:'la tua serenità', grow:'far fruttare i risparmi che oggi dormono' }[p.goal] || 'i tuoi obiettivi';
+  let proj = '';
+  if(amount && amount>=20 && amount<=3000){
+    const yrs = Math.max(5, Math.round(years)), r = 0.06/12, nMo = yrs*12;
+    const fv = Math.round(amount * ((Math.pow(1+r,nMo)-1)/r)), tot = amount*nMo;
+    proj = `<br><br>Un esempio per renderti l'idea (non una promessa): <strong>${fmtEur(amount)}€ al mese per ${yrs} anni</strong>, a un rendimento medio ipotetico del 6%, potrebbero diventare circa <strong>${fmtEur(fv)}€</strong> — avendone versati ${fmtEur(tot)}€. La differenza la fa il tempo. ✨`;
+  }
+  return `Ok${n}, ora ti do il <strong>mio consiglio da consulente</strong>, cucito su quello che mi hai detto. 🧵<br><br>Visto che pensi a ${goalLine} con un orizzonte lungo, nella tua situazione la strada più sensata è semplice (e qui la semplicità è una forza):<br><br>1. Un <strong>ETF azionario mondiale ad accumulo</strong> — un solo prodotto, dentro ~1.400 aziende di tutto il mondo.<br>2. Comprato con un <strong>PAC automatico</strong> di ${amt}, sempre lo stesso giorno del mese.<br>3. Su una piattaforma con <strong>regime amministrato</strong>, così le tasse le fa lei e tu non pensi alla burocrazia.<br><br>E la cosa più importante: <strong>non guardarlo di continuo</strong> e non fermarti quando i mercati scendono — è lì che il PAC lavora meglio.${proj}<br><br>Vuoi che ti accompagni passo-passo a farlo davvero? L'ho preparato nella sezione <strong>Percorso</strong> → \"Fare il primo investimento\". Sono qui per ogni dubbio. 🌱`;
+}
+
+function smalltalk(q){
   if(/^(ciao|ehi|hey|salve|buongiorno|buonasera)/.test(q))
-    return "Ciao! 👋 Dimmi pure cosa ti frulla in testa sui soldi. Posso partire dalle basi (conto, fondo di emergenza) o spiegarti cos’è un ETF e come si inizia a investire.";
-  if(/grazie|sei bravo|top|perfetto|ottimo/.test(q))
-    return "Figurati, è il mio lavoro 😊 Se vuoi, posso aiutarti col <strong>prossimo passo</strong> del tuo percorso. Vai nella sezione Percorso e ti accompagno passo passo.";
-  if(/da dove|inizio|comincio|primo passo|non so/.test(q))
-    return "Partiamo dall’inizio, tranquillo. 🧭 Il percorso giusto è:<br><br>1. <strong>Conto corrente</strong> in ordine<br>2. <strong>Fondo di emergenza</strong> (3-6 mesi di spese)<br>3. Capire cos’è un <strong>ETF</strong><br>4. Aprire una <strong>piattaforma</strong> e fare il primo investimento<br>5. Impostare un <strong>PAC</strong> automatico<br><br>Su quale vuoi che ti spieghi di più? Oppure apri la sezione <strong>Percorso</strong>, l’ho già organizzato tutto per te.";
-  // fallback
-  return "Bella domanda! 🤔 Su questo specifico punto preferisco non spararti una risposta a caso — sui soldi l’onestà conta.<br><br>Posso però aiutarti benissimo su: <strong>conto corrente, fondo di emergenza, ETF, come iniziare a investire, PAC, rischio, tasse, diversificazione</strong>.<br><br>Prova a chiedermi una di queste, oppure riformula — sono qui apposta. 🌱";
+    return `Ciao${S.name?' '+S.name:''}! 👋 Raccontami pure: c'è qualcosa sui soldi che ti gira in testa? Posso partire dalle basi, spiegarti un concetto, o darti un consiglio su misura per la tua situazione.`;
+  if(/grazie|sei bravo|top|perfetto|ottimo|grande|gentile/.test(q))
+    return `Figurati, è proprio per questo che ci sono. 😊 Se vuoi continuiamo: dimmi la tua situazione e ti aiuto col <strong>prossimo passo concreto</strong>, oppure chiedimi qualunque altra cosa.`;
+  if(/come stai|chi sei|cosa sei/.test(q))
+    return `Sono il tuo coach di Cresco — un po' come quell'amico bravo di finanza, ma sempre disponibile e senza giudizio. 🌱 Conosco già la tua diagnosi, quindi posso darti consigli pensati per te. Da dove vuoi partire?`;
+  return `Bella domanda! 🤔 Su questo punto specifico preferisco non spararti una risposta a caso — sui soldi l'onestà conta.<br><br>Ma posso aiutarti davvero bene così: dimmi <strong>la tua situazione</strong> (cosa vorresti fare, quanto, per quanto tempo) e ti do un consiglio su misura. Oppure chiedimi di <strong>conto, fondo di emergenza, ETF, PAC, rischio, tasse, mutuo, pensione</strong>. Sono qui apposta. 🌱`;
 }
 
 /* ============================================================
@@ -615,7 +738,7 @@ function toggleStep(id){
 
 /* ---------- COACH ---------- */
 function viewCoach(){
-  const sugg=['Cos’è un ETF?','Da dove inizio?','Quanto devo investire?','È rischioso?','Cos’è un PAC?','Come funzionano le tasse?'];
+  const sugg=['Da dove inizio?','Cosa faccio coi miei soldi?','Ho paura di sbagliare','Cos’è un ETF?','Sono pronto a investire?','Conviene comprare casa?'];
   return `<div class="view active"><div class="coach-view">
     <div class="topbar" style="position:static">
       <div class="brand"><span class="logo">${I.leaf}</span>
@@ -660,13 +783,14 @@ function sendMsg(){
   sc.insertAdjacentHTML('beforeend', `<div class="msg bot" id="typing"><div class="typing"><i></i><i></i><i></i></div></div>`);
   sc.scrollTop=sc.scrollHeight;
   save();
-  setTimeout(()=>{
-    const reply=coachReply(text);
+  const minDelay = new Promise(r=>setTimeout(r, 600+Math.random()*450));
+  Promise.all([getCoachResponse(text), minDelay]).then(([reply])=>{
     document.getElementById('typing')?.remove();
     S.chat.push({r:'bot',t:reply}); save();
-    sc.insertAdjacentHTML('beforeend', bubble('bot',reply));
-    sc.scrollTop=sc.scrollHeight;
-  }, 650+Math.random()*450);
+    const sc2=document.getElementById('chatScroll'); if(!sc2) return;
+    sc2.insertAdjacentHTML('beforeend', bubble('bot',reply));
+    sc2.scrollTop=sc2.scrollHeight;
+  });
 }
 function escapeHtml(s){ return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 

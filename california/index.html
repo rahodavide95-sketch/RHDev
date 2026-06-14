@@ -2739,6 +2739,9 @@
     const allPills = document.querySelectorAll('.day-pill[href^="#"]');
     if (!allPills.length) return;
 
+    let userScrolled = false;
+    window.addEventListener('scroll', () => { userScrolled = true; }, { once: true, passive: true });
+
     function setActive(id) {
       allPills.forEach(p => p.classList.remove('active'));
       const active = document.querySelector(`.day-pill[href="#${id}"]`);
@@ -2748,11 +2751,11 @@
       }
     }
 
-    // Raccoglie tutti gli elementi con id linkati dalla nav
     const ids = Array.from(allPills).map(p => p.getAttribute('href').slice(1));
     const targets = ids.map(id => document.getElementById(id)).filter(Boolean);
 
     const observer = new IntersectionObserver((entries) => {
+      if (!userScrolled) return;
       entries.forEach(entry => {
         if (entry.isIntersecting) setActive(entry.target.id);
       });

@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0e7a50">
+<title>Cresco — l'amico bravo di finanza</title>
+<meta name="description" content="L'app che ti porta da «voglio investire ma non so nulla» al tuo primo investimento. Senza giudizio, senza gergo.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  :root{
+    --bg:#f5f4ef;
+    --surface:#ffffff;
+    --surface-2:#faf9f5;
+    --ink:#16241c;
+    --muted:#6c7a70;
+    --line:rgba(22,36,28,.09);
+    --green:#0e7a50;
+    --green-soft:#e4f2ea;
+    --green-2:#16a06a;
+    --orange:#f08a3c;
+    --orange-soft:#fdeede;
+    --gold:#e0a93c;
+    --danger:#d8543f;
+    --radius:20px;
+    --radius-sm:13px;
+    --sans:'Inter',system-ui,-apple-system,sans-serif;
+    --serif:'Fraunces',Georgia,serif;
+    --shadow:0 6px 24px rgba(22,36,28,.07);
+    --shadow-lg:0 14px 44px rgba(22,36,28,.14);
+    --nav-h:66px;
+  }
+  html,body{height:100%}
+  body{
+    font-family:var(--sans);background:var(--bg);color:var(--ink);
+    font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;
+    overscroll-behavior-y:none;
+  }
+  #app{max-width:480px;margin:0 auto;min-height:100%;position:relative;background:var(--bg);
+    box-shadow:0 0 60px rgba(0,0,0,.05)}
+  .serif{font-family:var(--serif)}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    background:var(--green);color:#fff;font-weight:600;font-size:15.5px;
+    padding:15px 22px;border-radius:14px;width:100%;transition:transform .12s ease,box-shadow .2s;
+    box-shadow:0 6px 18px rgba(14,122,80,.28);
+  }
+  .btn:active{transform:scale(.975)}
+  .btn.secondary{background:var(--green-soft);color:var(--green);box-shadow:none}
+  .btn.ghost{background:transparent;color:var(--muted);box-shadow:none;font-weight:500}
+  .btn.orange{background:var(--orange);box-shadow:0 6px 18px rgba(240,138,60,.3)}
+  .btn:disabled{opacity:.4;pointer-events:none}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;
+    font-size:12.5px;font-weight:600;background:var(--green-soft);color:var(--green)}
+  .chip.orange{background:var(--orange-soft);color:#c4661f}
+  .chip.gray{background:rgba(22,36,28,.06);color:var(--muted)}
+
+  /* ---------- VIEW SYSTEM ---------- */
+  .view{display:none;animation:fade .35s ease}
+  .view.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .pad{padding:20px 18px}
+  .scroll{padding-bottom:calc(var(--nav-h) + 26px);min-height:100vh}
+
+  /* ---------- HEADER ---------- */
+  .topbar{position:sticky;top:0;z-index:20;background:rgba(245,244,239,.82);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    padding:14px 18px 12px;display:flex;align-items:center;justify-content:space-between;
+    border-bottom:1px solid var(--line)}
+  .brand{display:flex;align-items:center;gap:9px;font-family:var(--serif);font-weight:700;font-size:20px}
+  .logo{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,#16a06a,#0e7a50);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 3px 10px rgba(14,122,80,.35)}
+  .logo svg{width:18px;height:18px}
+
+  /* ---------- CARDS ---------- */
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    padding:18px;box-shadow:var(--shadow)}
+  .card+.card{margin-top:14px}
+  .label{font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+
+  /* ---------- ONBOARDING ---------- */
+  .hero{min-height:100vh;display:flex;flex-direction:column;padding:30px 24px calc(28px + env(safe-area-inset-bottom));
+    background:
+      radial-gradient(120% 60% at 80% -5%,rgba(22,160,106,.16),transparent 60%),
+      radial-gradient(100% 50% at 0% 5%,rgba(240,138,60,.12),transparent 55%),
+      var(--bg);
+  }
+  .hero-top{flex:1;display:flex;flex-direction:column;justify-content:center}
+  .hero h1{font-family:var(--serif);font-size:38px;line-height:1.08;font-weight:600;letter-spacing:-.01em;margin:22px 0 14px}
+  .hero h1 em{font-style:italic;color:var(--green)}
+  .hero p.lead{font-size:16.5px;color:var(--muted);max-width:330px}
+  .badge-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:22px}
+  .step-dots{display:flex;gap:6px;justify-content:center;margin-bottom:18px}
+  .step-dots i{width:7px;height:7px;border-radius:50%;background:var(--line)}
+  .step-dots i.on{background:var(--green);width:22px;border-radius:4px}
+
+  /* ---------- QUIZ ---------- */
+  .q-wrap{min-height:100vh;display:flex;flex-direction:column;padding:18px 22px calc(24px + env(safe-area-inset-bottom))}
+  .q-head{padding-top:8px}
+  .q-progress{height:6px;background:var(--line);border-radius:99px;overflow:hidden;margin:14px 0 26px}
+  .q-progress span{display:block;height:100%;background:linear-gradient(90deg,#16a06a,#0e7a50);
+    border-radius:99px;transition:width .4s cubic-bezier(.4,0,.2,1)}
+  .q-body{flex:1}
+  .q-title{font-family:var(--serif);font-size:25px;font-weight:600;line-height:1.18;margin-bottom:6px}
+  .q-sub{color:var(--muted);font-size:14px;margin-bottom:22px}
+  .opt{display:flex;align-items:center;gap:13px;width:100%;text-align:left;background:var(--surface);
+    border:1.5px solid var(--line);border-radius:var(--radius-sm);padding:15px 16px;margin-bottom:11px;
+    transition:border-color .15s,transform .1s,background .15s}
+  .opt:active{transform:scale(.99)}
+  .opt.sel{border-color:var(--green);background:var(--green-soft)}
+  .opt .emoji{font-size:22px;width:30px;text-align:center;flex-shrink:0}
+  .opt .ot{font-weight:600;font-size:15px}
+  .opt .od{font-size:12.5px;color:var(--muted);margin-top:1px}
+  .opt.sel .check{opacity:1;transform:scale(1)}
+  .opt .check{margin-left:auto;opacity:0;transform:scale(.6);transition:.15s;color:var(--green);flex-shrink:0}
+
+  /* ---------- HOME ---------- */
+  .greet{font-family:var(--serif);font-size:26px;font-weight:600;line-height:1.15}
+  .greet .sub{font-family:var(--sans);font-size:14px;color:var(--muted);font-weight:400;margin-top:3px}
+  .level-card{background:linear-gradient(140deg,#0e7a50,#0b6543);color:#fff;border-radius:var(--radius);
+    padding:20px;position:relative;overflow:hidden;box-shadow:var(--shadow-lg)}
+  .level-card::after{content:"";position:absolute;right:-30px;top:-30px;width:140px;height:140px;
+    border-radius:50%;background:rgba(255,255,255,.07)}
+  .level-card .label{color:rgba(255,255,255,.7)}
+  .level-card h3{font-family:var(--serif);font-size:21px;font-weight:600;margin:8px 0 4px;position:relative}
+  .level-card p{font-size:13.5px;color:rgba(255,255,255,.82);position:relative}
+  .progress-ring{display:flex;align-items:center;gap:14px;margin-top:16px;position:relative}
+  .bar{flex:1;height:8px;background:rgba(255,255,255,.22);border-radius:99px;overflow:hidden}
+  .bar span{display:block;height:100%;background:#fff;border-radius:99px;transition:width .6s}
+  .pct{font-weight:700;font-size:14px}
+  .next-step{display:flex;align-items:center;gap:14px;cursor:pointer}
+  .ns-icon{width:46px;height:46px;border-radius:13px;background:var(--green-soft);color:var(--green);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .ns-icon.orange{background:var(--orange-soft);color:#c4661f}
+  .row-stats{display:flex;gap:12px;margin-top:14px}
+  .stat{flex:1;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);
+    padding:14px;text-align:center;box-shadow:var(--shadow)}
+  .stat b{display:block;font-family:var(--serif);font-size:24px;font-weight:600;color:var(--green)}
+  .stat small{font-size:11.5px;color:var(--muted);font-weight:500}
+  .tip{display:flex;gap:12px;align-items:flex-start;background:var(--orange-soft);
+    border-radius:var(--radius-sm);padding:14px 15px;border:1px solid rgba(240,138,60,.22)}
+  .tip .ic{flex-shrink:0;margin-top:1px}
+
+  /* ---------- ROADMAP ---------- */
+  .phase{margin-bottom:8px}
+  .phase-head{display:flex;align-items:center;gap:12px;padding:6px 2px 12px}
+  .phase-num{width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:14px;flex-shrink:0;border:1.5px solid var(--line);background:var(--surface)}
+  .phase.done .phase-num{background:var(--green);color:#fff;border-color:var(--green)}
+  .phase.active .phase-num{background:var(--green-soft);color:var(--green);border-color:var(--green)}
+  .phase-title{font-family:var(--serif);font-size:18px;font-weight:600}
+  .phase-title small{display:block;font-family:var(--sans);font-size:12.5px;color:var(--muted);font-weight:400}
+  .steps{position:relative;margin-left:16px;padding-left:24px;border-left:2px solid var(--line)}
+  .phase.done .steps,.phase.active .steps{border-color:var(--green-soft)}
+  .step-item{position:relative;padding:13px 15px;margin-bottom:11px;background:var(--surface);
+    border:1px solid var(--line);border-radius:var(--radius-sm);display:flex;align-items:center;gap:12px;
+    box-shadow:var(--shadow);transition:.15s}
+  .step-item:active{transform:scale(.99)}
+  .step-item::before{content:"";position:absolute;left:-31px;top:50%;width:13px;height:13px;border-radius:50%;
+    background:var(--surface);border:2px solid var(--line);transform:translateY(-50%)}
+  .step-item.done::before{background:var(--green);border-color:var(--green)}
+  .step-item.locked{opacity:.55}
+  .step-cb{width:24px;height:24px;border-radius:8px;border:2px solid var(--line);flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;transition:.15s}
+  .step-item.done .step-cb{background:var(--green);border-color:var(--green)}
+  .step-item.done .step-cb svg{opacity:1}
+  .step-cb svg{opacity:0;transition:.15s}
+  .step-tx{flex:1}
+  .step-tx b{font-weight:600;font-size:14.5px;display:block}
+  .step-item.done .step-tx b{text-decoration:line-through;color:var(--muted);text-decoration-color:rgba(108,122,112,.5)}
+  .step-tx small{font-size:12px;color:var(--muted)}
+  .step-go{color:var(--green);flex-shrink:0}
+  .lock-ic{color:var(--muted);flex-shrink:0}
+
+  /* ---------- COACH ---------- */
+  .coach-view{display:flex;flex-direction:column;height:100vh}
+  .chat-scroll{flex:1;overflow-y:auto;padding:16px 16px 8px;display:flex;flex-direction:column;gap:12px}
+  .msg{max-width:84%;padding:12px 15px;border-radius:18px;font-size:14.5px;line-height:1.5;animation:pop .25s ease}
+  @keyframes pop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+  .msg.bot{background:var(--surface);border:1px solid var(--line);align-self:flex-start;border-bottom-left-radius:6px;
+    box-shadow:var(--shadow)}
+  .msg.me{background:var(--green);color:#fff;align-self:flex-end;border-bottom-right-radius:6px}
+  .msg.bot b{color:var(--green);font-weight:700}
+  .msg.bot strong{font-weight:700}
+  .msg-coach-head{display:flex;align-items:center;gap:8px;margin-bottom:7px;font-size:12px;color:var(--muted);font-weight:600}
+  .msg-av{width:22px;height:22px;border-radius:7px;background:linear-gradient(135deg,#16a06a,#0e7a50);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .typing{display:flex;gap:4px;padding:14px 16px}
+  .typing i{width:7px;height:7px;border-radius:50%;background:var(--muted);opacity:.5;animation:blink 1.2s infinite}
+  .typing i:nth-child(2){animation-delay:.2s}.typing i:nth-child(3){animation-delay:.4s}
+  @keyframes blink{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+  .suggest{display:flex;gap:8px;overflow-x:auto;padding:8px 16px 10px;scrollbar-width:none}
+  .suggest::-webkit-scrollbar{display:none}
+  .suggest button{white-space:nowrap;background:var(--surface);border:1px solid var(--line);border-radius:99px;
+    padding:9px 14px;font-size:13px;font-weight:500;color:var(--ink);box-shadow:var(--shadow);flex-shrink:0}
+  .suggest button:active{background:var(--green-soft)}
+  .composer{display:flex;gap:9px;padding:10px 14px calc(12px + env(safe-area-inset-bottom));
+    border-top:1px solid var(--line);background:var(--surface);align-items:flex-end}
+  .composer textarea{flex:1;resize:none;border:1.5px solid var(--line);border-radius:18px;padding:11px 15px;
+    font-family:inherit;font-size:15px;max-height:110px;background:var(--surface-2);line-height:1.4}
+  .composer textarea:focus{outline:none;border-color:var(--green)}
+  .send-btn{width:44px;height:44px;border-radius:50%;background:var(--green);color:#fff;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(14,122,80,.3)}
+  .send-btn:disabled{opacity:.4}
+
+  /* ---------- ACTION FLOW ---------- */
+  .sheet-overlay{position:fixed;inset:0;background:rgba(22,36,28,.45);z-index:60;opacity:0;pointer-events:none;
+    transition:opacity .3s;backdrop-filter:blur(2px)}
+  .sheet-overlay.open{opacity:1;pointer-events:auto}
+  .sheet{position:fixed;left:50%;transform:translateX(-50%) translateY(100%);bottom:0;width:100%;max-width:480px;
+    background:var(--bg);z-index:61;border-radius:24px 24px 0 0;transition:transform .34s cubic-bezier(.32,.72,0,1);
+    max-height:92vh;display:flex;flex-direction:column}
+  .sheet.open{transform:translateX(-50%) translateY(0)}
+  .sheet-grab{width:38px;height:5px;border-radius:99px;background:var(--line);margin:10px auto 4px}
+  .sheet-head{padding:6px 20px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
+  .sheet-head h3{font-family:var(--serif);font-size:18px;font-weight:600}
+  .sheet-x{width:32px;height:32px;border-radius:50%;background:rgba(22,36,28,.06);display:flex;align-items:center;justify-content:center}
+  .sheet-body{overflow-y:auto;padding:20px;flex:1}
+  .aflow-step{display:flex;gap:14px;margin-bottom:4px}
+  .aflow-num{flex-shrink:0;width:30px;height:30px;border-radius:50%;background:var(--green-soft);color:var(--green);
+    font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;z-index:1}
+  .aflow-line{position:relative}
+  .aflow-line::before{content:"";position:absolute;left:15px;top:30px;bottom:-14px;width:2px;background:var(--line)}
+  .aflow-step:last-child .aflow-line::before{display:none}
+  .aflow-tx{padding-bottom:22px}
+  .aflow-tx b{font-weight:600;font-size:15px}
+  .aflow-tx p{font-size:13.5px;color:var(--muted);margin-top:3px}
+
+  /* ---------- BOTTOM NAV ---------- */
+  .nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;
+    height:calc(var(--nav-h) + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);
+    background:rgba(255,255,255,.9);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+    border-top:1px solid var(--line);display:flex;z-index:30}
+  .nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    color:var(--muted);font-size:10.5px;font-weight:600;position:relative}
+  .nav button.on{color:var(--green)}
+  .nav button svg{width:23px;height:23px}
+  .nav .dot{position:absolute;top:8px;right:calc(50% - 16px);width:7px;height:7px;background:var(--orange);
+    border-radius:50%;display:none}
+  .nav button.has-dot .dot{display:block}
+
+  .disc{font-size:11px;color:var(--muted);text-align:center;line-height:1.5;padding:0 8px}
+  .divider{height:1px;background:var(--line);margin:18px 0}
+  .toast{position:fixed;bottom:calc(var(--nav-h) + 18px);left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--ink);color:#fff;padding:12px 18px;border-radius:13px;font-size:13.5px;font-weight:500;z-index:80;
+    opacity:0;transition:.3s;max-width:88%;text-align:center;box-shadow:var(--shadow-lg)}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:13px;font-weight:600;margin-bottom:7px}
+  .field input,.field select{width:100%;padding:13px 15px;border:1.5px solid var(--line);border-radius:13px;
+    font-family:inherit;font-size:15px;background:var(--surface)}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--green)}
+  .seg{display:flex;background:rgba(22,36,28,.05);border-radius:13px;padding:4px;gap:4px}
+  .seg button{flex:1;padding:10px;border-radius:10px;font-weight:600;font-size:13px;color:var(--muted)}
+  .seg button.on{background:var(--surface);color:var(--green);box-shadow:var(--shadow)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   CRESCO — l'amico bravo di finanza
+   Single-file prototype · vanilla JS · localStorage
+   ============================================================ */
+
+const App = document.getElementById('app');
+const LS = 'cresco_v1';
+
+/* ---------- STATE ---------- */
+const defaultState = {
+  onboarded:false, name:'', tab:'home',
+  profile:{ age:'', income:'', save:'', emergency:'', goal:'', experience:'' },
+  steps:{}, // id -> true
+  chat:[], chatSeeded:false,
+  diagnosisScore:0
+};
+let S = load();
+function load(){ try{ return Object.assign(JSON.parse(JSON.stringify(defaultState)), JSON.parse(localStorage.getItem(LS))||{}) }catch(e){ return JSON.parse(JSON.stringify(defaultState)) } }
+function save(){ localStorage.setItem(LS, JSON.stringify(S)) }
+
+/* ---------- ICONS ---------- */
+const I = {
+  leaf:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/></svg>',
+  check:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+  checkS:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+  arrow:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
+  lock:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
+  home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1Z"/></svg>',
+  map:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7Z"/><circle cx="12" cy="9" r="2.5"/></svg>',
+  chat:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.5 8.5 0 0 1-.9-3.8A8.38 8.38 0 0 1 12.5 3 8.38 8.38 0 0 1 21 11.5Z"/></svg>',
+  user:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0 1 14 0v1"/></svg>',
+  send:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z"/></svg>',
+  spark:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c4661f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg>',
+  x:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>'
+};
+
+/* ============================================================
+   CONTENT MODEL — phases & steps
+   ============================================================ */
+const PHASES = [
+  { id:'p1', title:'Le fondamenta', sub:'Mettere in ordine la base',
+    steps:[
+      {id:'s_conto', t:'Aprire un conto corrente', d:'Il tuo quartier generale dei soldi', action:'conto'},
+      {id:'s_budget', t:'Capire dove vanno i soldi', d:'La regola semplice 50/30/20', action:'budget'},
+      {id:'s_emergency', t:'Creare il fondo di emergenza', d:'3-6 mesi di spese da parte', action:'emergency'},
+    ]},
+  { id:'p2', title:'Il primo investimento', sub:'Da risparmiatore a investitore',
+    steps:[
+      {id:'s_etf', t:'Capire cos’è un ETF', d:'Il mattone di chi parte da zero', action:'etf'},
+      {id:'s_platform', t:'Scegliere e aprire una piattaforma', d:'Dove comprerai i tuoi ETF', action:'platform'},
+      {id:'s_first', t:'Fare il primo investimento', d:'Anche solo con 50€', action:'first'},
+      {id:'s_pac', t:'Impostare un PAC automatico', d:'L’abitudine che fa il 90% del lavoro', action:'pac'},
+    ]},
+  { id:'p3', title:'Crescere nel tempo', sub:'Trasformarlo in abitudine',
+    steps:[
+      {id:'s_diversify', t:'Diversificare con criterio', d:'Non mettere tutto in un posto', action:'diversify'},
+      {id:'s_taxes', t:'Capire tasse e dichiarazione', d:'Quanto e quando paghi', action:'taxes'},
+      {id:'s_review', t:'Rivedere il piano ogni 6 mesi', d:'Aggiustare, non stravolgere', action:'review'},
+    ]},
+];
+
+const ALL_STEPS = PHASES.flatMap(p=>p.steps);
+function stepDone(id){ return !!S.steps[id] }
+function totalDone(){ return ALL_STEPS.filter(s=>stepDone(s.id)).length }
+function phaseState(p){
+  const done = p.steps.every(s=>stepDone(s.id));
+  if(done) return 'done';
+  // active if previous phases done or it's the first not-fully-done
+  const idx = PHASES.indexOf(p);
+  const prevDone = idx===0 || PHASES.slice(0,idx).every(pp=>pp.steps.every(s=>stepDone(s.id)));
+  return prevDone ? 'active' : 'locked';
+}
+function nextStep(){ return ALL_STEPS.find(s=>!stepDone(s.id)) || null }
+function currentPhase(){ return PHASES.find(p=>phaseState(p)==='active') || PHASES[PHASES.length-1] }
+
+/* ============================================================
+   ONBOARDING / QUIZ
+   ============================================================ */
+const QUIZ = [
+  { key:'age', q:'Quanti anni hai?', s:'Serve per tarare i consigli sul tuo orizzonte di tempo.',
+    opts:[ ['🌱','Meno di 25','Hai il tempo dalla tua parte','u25'],['🚀','25 – 34','L’età d’oro per iniziare','2534'],['🌳','35 – 49','Mai troppo tardi','3549'],['⛵','50 o più','Strategia un po’ diversa','o50'] ] },
+  { key:'income', q:'Quanto guadagni circa al mese?', s:'Resta tutto sul tuo telefono. Nessuno lo vede.',
+    opts:[ ['','Meno di 1.200€','','low'],['','1.200 – 1.800€','','mid'],['','1.800 – 2.800€','','high'],['','Oltre 2.800€ o variabile','','top'] ] },
+  { key:'save', q:'Riesci a mettere da parte qualcosa?', s:'Onesto, non come vorresti che fosse.',
+    opts:[ ['😅','Quasi mai, arrivo a fine mese','','none'],['🪙','Qualcosa, ma a caso','','some'],['💪','Sì, ogni mese un po’','','reg'],['🔥','Sì, una bella fetta','','lots'] ] },
+  { key:'emergency', q:'Hai un fondo di emergenza?', s:'Soldi da parte per gli imprevisti, prima di investire.',
+    opts:[ ['❌','No, zero cuscinetto','','no'],['🤏','Un po’, meno di 1 mese di spese','','little'],['✅','Sì, 1-3 mesi','','some'],['🛡️','Sì, 3-6 mesi o più','','full'] ] },
+  { key:'goal', q:'Qual è il tuo obiettivo principale?', s:'Quello che ti spinge davvero.',
+    opts:[ ['🏡','Comprare casa','un giorno','house'],['🏖️','Libertà e pensione','far crescere il futuro','freedom'],['🛟','Sicurezza','non avere ansia da soldi','safety'],['📈','Far fruttare i risparmi','che ora dormono sul conto','grow'] ] },
+  { key:'experience', q:'Quanto ne sai di investimenti?', s:'Nessuna risposta sbagliata. Davvero.',
+    opts:[ ['🐣','Parto da zero assoluto','Non so cosa sia un ETF','zero'],['📖','Ho letto qualcosa','Ma non ho mai iniziato','some'],['🧩','Ho già investito un po’','Voglio fare meglio','done'],['🎓','Me la cavo','Cerco rifinitura','pro'] ] },
+];
+let quizIdx = 0;
+
+function computeScore(){
+  // a soft "readiness" 0-100 used for messaging
+  let s = 30;
+  const p = S.profile;
+  if(p.emergency==='full') s+=25; else if(p.emergency==='some') s+=15; else if(p.emergency==='little') s+=5;
+  if(p.save==='lots') s+=20; else if(p.save==='reg') s+=14; else if(p.save==='some') s+=6;
+  if(p.experience==='pro') s+=12; else if(p.experience==='done') s+=10; else if(p.experience==='some') s+=4;
+  if(p.income==='top') s+=8; else if(p.income==='high') s+=6; else if(p.income==='mid') s+=3;
+  return Math.min(100, s);
+}
+
+/* ============================================================
+   COACH — knowledge base (rule-based, works offline)
+   ============================================================ */
+const KB = [
+  { k:['etf','e.t.f','exchange traded','msci','world','indice','indici'], a:"Un <b>ETF</b> è come un cestino che contiene tante aziende tutte insieme. 🧺<br><br>Invece di comprare l’azione di <strong>una</strong> sola azienda (rischioso — se va male, perdi), con un ETF compri un pezzettino di <strong>centinaia o migliaia</strong> di aziende in un colpo solo.<br><br>Il più famoso per chi inizia è un ETF sul <strong>MSCI World</strong>: dentro ci sono ~1.400 grandi aziende di tutto il mondo (Apple, Nestlé, Toyota...). Compri \"un pezzo dell’economia mondiale\".<br><br>È il mattone perfetto per partire: semplice, diversificato, economico." },
+  { k:['conto corrente','conto deposito','iban','postepay','banca dove'], a:"Il <b>conto corrente</b> è il tuo quartier generale dei soldi: ci arriva lo stipendio, da lì parti per tutto il resto.<br><br>Per uno che inizia, i conti online sono i più comodi e quasi gratis. Quello che conta:<br>• <strong>Canone basso o zero</strong><br>• <strong>IBAN italiano</strong> (per stipendio e bollette)<br>• Una bella <strong>app</strong> per vedere tutto al volo<br><br>La PostePay Evolution ha un IBAN ma non è un vero conto: per il lavoro e per costruire la tua vita finanziaria, meglio un conto corrente vero." },
+  { k:['fondo di emergenza','emergenza','cuscinetto','imprevisti','risparmio di sicurezza'], a:"Il <b>fondo di emergenza</b> è la prima cosa, <strong>prima ancora di investire</strong>. 🛡️<br><br>Sono soldi da parte per gli imprevisti: l’auto che si rompe, un dente, un mese senza lavoro. Servono a non dover vendere i tuoi investimenti nel momento peggiore.<br><br><strong>Quanto?</strong> Da 3 a 6 mesi delle tue spese. Se spendi 1.200€ al mese, punta a 3.600€–7.200€.<br><br><strong>Dove?</strong> Su un conto deposito o un conto separato — liquidi, sicuri, NON investiti. Non devono crescere, devono <em>esserci</em>." },
+  { k:['pac','piano di accumulo','versamento automatico','ogni mese','automatico'], a:"Un <b>PAC</b> (Piano di Accumulo del Capitale) è il segreto più sottovalutato. 🔁<br><br>In pratica: imposti un <strong>versamento automatico</strong> ogni mese (es. 100€) che compra sempre lo stesso ETF, da solo, senza che tu ci pensi.<br><br>Perché è geniale:<br>• <strong>Togli l’emotività</strong>: compri sia quando sale che quando scende<br>• <strong>Costruisci l’abitudine</strong> senza forza di volontà<br>• Sfrutti l’<strong>interesse composto</strong> nel tempo<br><br>Meglio 100€ al mese per 10 anni che 12.000€ \"quando sarò pronto\" (che non arriva mai)." },
+  { k:['trade republic','traderepublic','quale piattaforma','quale app','directa','fineco','scalable','broker'], a:"La <b>piattaforma</b> è dove comprerai materialmente i tuoi ETF. È come scegliere il supermercato.<br><br>Per chi inizia in Italia, le più usate sono semplici e a basso costo. Quello che conta davvero:<br>• <strong>Costi bassi</strong> (commissioni e canone)<br>• <strong>PAC gratuito o quasi</strong><br>• App semplice e in italiano<br>• Regolamentata e seria<br><br>Un consiglio: scegline una e <strong>inizia</strong>. Il 90% del risultato viene dal cominciare, non dal trovare la \"perfetta\". Puoi sempre spostarti dopo.<br><br><em>Cresco non vende prodotti: ti spiega come scegliere e basta.</em>" },
+  { k:['quanto investire','quanto metto','quanti soldi','minimo','iniziare con','50 euro','100 euro'], a:"La risposta che spiazza tutti: <b>puoi iniziare anche con 50€</b>. 🪙<br><br>Non serve essere ricchi. Serve <strong>iniziare</strong> e essere costante.<br><br>Una regola sana, dopo aver messo via il fondo di emergenza:<br>• Investi solo soldi che <strong>non ti servono per 5+ anni</strong><br>• Parti con una cifra che non ti toglie il sonno<br>• Meglio <strong>poco e ogni mese</strong> (PAC) che tanto una volta sola<br><br>L’importante all’inizio non è quanto guadagni, è prendere l’<strong>abitudine</strong>. I numeri crescono dopo, col tempo." },
+  { k:['rischio','rischioso','perdere','perdo','crollo','crolla','scende'], a:"Domanda giusta. Investire <strong>ha</strong> dei rischi — chi dice il contrario sta mentendo. ⚠️<br><br>La verità onesta:<br>• Nel <strong>breve</strong> periodo i mercati salgono e scendono, anche parecchio<br>• Nel <strong>lungo</strong> periodo (10+ anni), un ETF mondiale diversificato storicamente ha sempre recuperato e cresciuto<br><br>Il rischio vero non è la volatilità, è: <strong>vendere nel panico</strong> quando scende, o investire soldi che ti servono a breve.<br><br>Il modo per ridurlo: <strong>diversifica</strong> (ETF globale), <strong>investi nel tempo</strong> (PAC) e <strong>non guardare il conto ogni giorno</strong>." },
+  { k:['tasse','tassazione','capital gain','dichiarazione','730','plusvalenza','imposte'], a:"Le <b>tasse</b> sugli investimenti in Italia, in parole semplici:<br><br>• Sui guadagni paghi il <strong>26%</strong> (capital gain). Sui titoli di Stato (BTP) solo il <strong>12,5%</strong>.<br>• Paghi <strong>solo quando vendi</strong> e solo sul guadagno, non su tutto.<br>• C’è una piccola imposta di bollo dello <strong>0,2%</strong> all’anno sul valore.<br><br><strong>Regime amministrato</strong> (lo offrono molti broker italiani): fa tutto la banca per te, niente dichiarazione. Comodissimo per chi inizia.<br><strong>Regime dichiarativo</strong>: te ne occupi tu nel 730/Redditi.<br><br>Se odi la burocrazia, scegli un broker col <strong>regime amministrato</strong>." },
+  { k:['azioni','azione','singola azienda','apple','tesla','comprare azioni'], a:"Le <b>azioni singole</b> sono pezzettini di <strong>una</strong> azienda specifica (es. solo Apple).<br><br>Il punto: se quella azienda va bene guadagni tanto, se va male perdi tanto. È come scommettere su un solo cavallo. 🏇<br><br>Per chi inizia, gli <strong>ETF</strong> sono molto più sensati: comprano centinaia di aziende insieme, quindi se una crolla le altre reggono.<br><br>Le azioni singole hanno senso dopo, quando hai già una base solida e vuoi divertirti con una piccola parte (max 5-10%) sapendo che potresti perderla." },
+  { k:['obbligazioni','btp','titoli di stato','bond','buoni'], a:"Le <b>obbligazioni</b> (e i <strong>BTP</strong>, i titoli di Stato italiani) sono in pratica un prestito: tu presti soldi allo Stato o a un’azienda, e loro ti pagano un interesse. 🤝<br><br>Sono in genere <strong>più stabili delle azioni</strong> ma rendono di meno. Servono a dare equilibrio.<br><br>Una strategia classica per età: più sei giovane, più azioni (ETF azionari); col tempo si aumenta la quota di obbligazioni per ridurre gli sbalzi.<br><br>All’inizio non sono obbligatorie: un buon ETF mondiale + fondo di emergenza è già un’ottima base." },
+  { k:['interesse composto','composto','tempo','lungo termine','rendimento'], a:"L’<b>interesse composto</b> è la magia che rende tutto questo sensato. Einstein lo chiamava l’ottava meraviglia. ✨<br><br>In breve: i guadagni generano altri guadagni. Reinvesti ciò che cresce, e l’effetto <strong>accelera nel tempo</strong>.<br><br>Esempio: 150€ al mese, per 30 anni, a un rendimento medio del 6% annuo → hai versato 54.000€ ma ti ritrovi circa <strong>150.000€</strong>. La differenza l’ha fatta il <strong>tempo</strong>, non la fortuna.<br><br>Morale: la cosa più preziosa che hai è iniziare <strong>presto</strong>, anche con poco." },
+  { k:['diversificare','diversificazione','distribuire','un solo posto'], a:"<b>Diversificare</b> = non mettere tutte le uova nello stesso paniere. 🥚<br><br>Se metti tutto su una azienda e fallisce, perdi tutto. Se sei spalmato su mille aziende di settori e Paesi diversi, il crollo di una non ti affonda.<br><br>La buona notizia: con <strong>un solo ETF mondiale</strong> sei già diversificato su ~1.400 aziende in decine di Paesi. Non serve complicarsi.<br><br>Per chi inizia, spesso il portafoglio più intelligente è anche il più semplice: 1 ETF globale + fondo di emergenza. Punto." },
+  { k:['crypto','bitcoin','criptovalute','ethereum','btc'], a:"Parliamoci chiaro sulle <b>crypto</b>. ₿<br><br>Bitcoin & co. sono molto <strong>volatili</strong>: possono fare +50% o -50% in poco tempo. Non sono una base su cui costruire.<br><br>Il mio consiglio da \"amico onesto\":<br>• Prima costruisci le <strong>fondamenta</strong> (conto, fondo emergenza, ETF)<br>• Solo dopo, <strong>se</strong> ti interessano, metti una <strong>piccola</strong> parte (max 5%) che sei disposto a perdere<br>• Mai metterci soldi che ti servono<br><br>Le crypto non sono il punto di partenza per chi vuole costruire serenità finanziaria." },
+  { k:['inflazione','potere d’acquisto','prezzi salgono','soldi fermi'], a:"L’<b>inflazione</b> è il motivo per cui NON conviene lasciare tutto fermo sul conto. 📉<br><br>Se i prezzi salgono del 3% all’anno, i tuoi 1.000€ fermi tra un anno comprano come 970€ oggi. Stando fermi, <strong>perdi potere d’acquisto</strong> in silenzio.<br><br>Ecco perché investire non è \"da ricchi\" o \"rischioso\": è il modo per <strong>difendere</strong> i tuoi risparmi dall’inflazione, oltre che farli crescere.<br><br>Il fondo di emergenza resta liquido (serve subito); il resto, che non usi per anni, è giusto che lavori." },
+  { k:['budget','50 30 20','dove vanno','spese','gestire i soldi','quanto spendere'], a:"Per capire <b>dove vanno i soldi</b>, parti dalla regola semplice <strong>50/30/20</strong>: 📊<br><br>Del tuo stipendio netto:<br>• <strong>50%</strong> ai bisogni (affitto, bollette, spesa)<br>• <strong>30%</strong> agli sfizi (uscite, hobby, viaggi)<br>• <strong>20%</strong> al futuro (risparmio + investimenti)<br><br>Non è una legge, è una bussola. Se ora il tuo 20% è 5%, va bene: l’importante è <strong>conoscere</strong> i numeri e provare ad alzarli un po’ alla volta.<br><br>Trucco: il 20% mettilo da parte <strong>appena arriva lo stipendio</strong>, non \"quello che avanza\" (non avanza mai)." },
+];
+
+const GREETINGS = [
+  "Ciao! Sono il tuo coach di Cresco 🌱 Sono qui per spiegarti qualsiasi cosa sui soldi, senza giudizio e senza paroloni.",
+  "Puoi chiedermi davvero <strong>tutto</strong> — anche \"cos’è un IBAN\" o \"da dove inizio\". Nessuna domanda è stupida.",
+];
+
+function coachReply(text){
+  const q = text.toLowerCase();
+  // score each KB entry by keyword hits
+  let best=null, bestScore=0;
+  for(const e of KB){
+    let sc=0;
+    for(const kw of e.k){ if(q.includes(kw)) sc += kw.length>6?2:1; }
+    if(sc>bestScore){ bestScore=sc; best=e; }
+  }
+  if(best && bestScore>0) return best.a;
+  // greetings / smalltalk
+  if(/^(ciao|ehi|hey|salve|buongiorno|buonasera)/.test(q))
+    return "Ciao! 👋 Dimmi pure cosa ti frulla in testa sui soldi. Posso partire dalle basi (conto, fondo di emergenza) o spiegarti cos’è un ETF e come si inizia a investire.";
+  if(/grazie|sei bravo|top|perfetto|ottimo/.test(q))
+    return "Figurati, è il mio lavoro 😊 Se vuoi, posso aiutarti col <strong>prossimo passo</strong> del tuo percorso. Vai nella sezione Percorso e ti accompagno passo passo.";
+  if(/da dove|inizio|comincio|primo passo|non so/.test(q))
+    return "Partiamo dall’inizio, tranquillo. 🧭 Il percorso giusto è:<br><br>1. <strong>Conto corrente</strong> in ordine<br>2. <strong>Fondo di emergenza</strong> (3-6 mesi di spese)<br>3. Capire cos’è un <strong>ETF</strong><br>4. Aprire una <strong>piattaforma</strong> e fare il primo investimento<br>5. Impostare un <strong>PAC</strong> automatico<br><br>Su quale vuoi che ti spieghi di più? Oppure apri la sezione <strong>Percorso</strong>, l’ho già organizzato tutto per te.";
+  // fallback
+  return "Bella domanda! 🤔 Su questo specifico punto preferisco non spararti una risposta a caso — sui soldi l’onestà conta.<br><br>Posso però aiutarti benissimo su: <strong>conto corrente, fondo di emergenza, ETF, come iniziare a investire, PAC, rischio, tasse, diversificazione</strong>.<br><br>Prova a chiedermi una di queste, oppure riformula — sono qui apposta. 🌱";
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function render(){
+  if(!S.onboarded){ renderOnboarding(); return; }
+  App.innerHTML = `
+    ${S.tab==='home'?viewHome():''}
+    ${S.tab==='roadmap'?viewRoadmap():''}
+    ${S.tab==='coach'?viewCoach():''}
+    ${S.tab==='profile'?viewProfile():''}
+    ${nav()}
+    <div class="sheet-overlay" id="sheetOv" onclick="closeSheet()"></div>
+    <div class="sheet" id="sheet"><div class="sheet-grab"></div><div id="sheetContent"></div></div>
+  `;
+  if(S.tab==='coach') initCoach();
+  bindSwipeSheet();
+}
+
+/* ---------- NAV ---------- */
+function nav(){
+  const hasNext = !!nextStep();
+  const t=(id,ic,lab,dot)=>`<button class="${S.tab===id?'on':''} ${dot?'has-dot':''}" onclick="go('${id}')">${I[ic]}<span>${lab}</span><span class="dot"></span></button>`;
+  return `<nav class="nav">
+    ${t('home','home','Home',false)}
+    ${t('roadmap','map','Percorso',hasNext)}
+    ${t('coach','chat','Coach',false)}
+    ${t('profile','user','Profilo',false)}
+  </nav>`;
+}
+function go(tab){ S.tab=tab; save(); render(); window.scrollTo(0,0); }
+
+/* ---------- HOME ---------- */
+function viewHome(){
+  const done=totalDone(), total=ALL_STEPS.length, pct=Math.round(done/total*100);
+  const ph=currentPhase(); const ns=nextStep();
+  const score=S.diagnosisScore||computeScore();
+  const hour=new Date().getHours();
+  const hi = hour<12?'Buongiorno':hour<18?'Ciao':'Buonasera';
+  return `<div class="view active"><div class="scroll">
+    <div class="topbar">
+      <div class="brand"><span class="logo">${I.leaf}</span>Cresco</div>
+      <span class="chip gray">🔥 ${done}/${total} passi</span>
+    </div>
+    <div class="pad">
+      <div class="greet">${hi}${S.name?', '+S.name:''} 👋<div class="sub">Un passo alla volta, stai costruendo qualcosa.</div></div>
+
+      <div style="height:18px"></div>
+      <div class="level-card">
+        <span class="label">Sei nella fase</span>
+        <h3>${ph.title}</h3>
+        <p>${ph.sub}</p>
+        <div class="progress-ring">
+          <div class="bar"><span style="width:${pct}%"></span></div>
+          <span class="pct">${pct}%</span>
+        </div>
+      </div>
+
+      ${ns?`
+      <div class="card" style="margin-top:14px" onclick="openAction('${ns.action}','${ns.id}')">
+        <span class="label">Il tuo prossimo passo</span>
+        <div class="next-step" style="margin-top:12px">
+          <div class="ns-icon ${ph.id==='p2'?'orange':''}">${I.arrow}</div>
+          <div style="flex:1">
+            <b style="font-size:16px;display:block">${ns.t}</b>
+            <small style="color:var(--muted)">${ns.d}</small>
+          </div>
+          ${I.arrow}
+        </div>
+      </div>`:`
+      <div class="card" style="margin-top:14px;text-align:center">
+        <div style="font-size:34px">🎉</div>
+        <b class="serif" style="font-size:19px;display:block;margin:6px 0">Hai completato tutto il percorso!</b>
+        <p style="color:var(--muted);font-size:14px">Sei ufficialmente passato da \"non so nulla\" a investitore. Continua col tuo PAC e rivedi il piano ogni 6 mesi.</p>
+      </div>`}
+
+      <div class="row-stats">
+        <div class="stat"><b>${score}<small style="font-size:13px">/100</small></b><small>Pronto a investire</small></div>
+        <div class="stat"><b>${done}</b><small>Passi fatti</small></div>
+        <div class="stat"><b>${total-done}</b><small>Ti mancano</small></div>
+      </div>
+
+      <div style="height:18px"></div>
+      <div class="tip">
+        <span class="ic">${I.spark}</span>
+        <div><b style="font-size:13.5px">Consiglio del giorno</b><br><span style="font-size:13.5px;color:#7a5a36">${tipOfDay(score)}</span></div>
+      </div>
+
+      <div style="height:18px"></div>
+      <div class="card" onclick="go('coach')" style="display:flex;align-items:center;gap:14px;cursor:pointer">
+        <div class="ns-icon">${I.chat}</div>
+        <div style="flex:1"><b style="font-size:15px">Hai una domanda sui soldi?</b><br><small style="color:var(--muted)">Chiedi al tuo coach — risponde senza giudizio</small></div>
+        ${I.arrow}
+      </div>
+
+      <div style="height:24px"></div>
+      <p class="disc">Cresco è uno strumento educativo. Non è consulenza finanziaria personalizzata né sollecitazione all’investimento. Le decisioni restano tue.</p>
+    </div>
+  </div></div>`;
+}
+
+function tipOfDay(score){
+  const p=S.profile;
+  if(p.emergency==='no'||p.emergency==='little') return "Prima di investire un solo euro, costruisci il fondo di emergenza. È il paracadute che ti permette di investire sereno.";
+  if(p.save==='none') return "Trucco anti-procrastinazione: metti da parte appena arriva lo stipendio, non \"quello che avanza\". Anche 30€.";
+  if(score>=70) return "Sei messo bene! Il prossimo salto è automatizzare: un PAC mensile fa il lavoro al posto tuo.";
+  return "Il momento migliore per iniziare era ieri. Il secondo migliore è oggi: anche 50€ contano, perché costruiscono l’abitudine.";
+}
+
+/* ---------- ROADMAP ---------- */
+function viewRoadmap(){
+  return `<div class="view active"><div class="scroll">
+    <div class="topbar"><div class="brand"><span class="logo">${I.leaf}</span>Il tuo percorso</div>
+      <span class="chip">${totalDone()}/${ALL_STEPS.length}</span></div>
+    <div class="pad">
+      <p style="color:var(--muted);font-size:14px;margin-bottom:20px">Dal partire da zero al tuo primo investimento. Tocca un passo per farti spiegare tutto — poi spuntalo quando l’hai fatto.</p>
+      ${PHASES.map((p,pi)=>{
+        const st=phaseState(p);
+        return `<div class="phase ${st}">
+          <div class="phase-head">
+            <div class="phase-num">${st==='done'?I.check:pi+1}</div>
+            <div class="phase-title">${p.title}<small>${p.sub}</small></div>
+            ${st==='locked'?`<span style="margin-left:auto;color:var(--muted)">${I.lock}</span>`:''}
+          </div>
+          <div class="steps">
+            ${p.steps.map(s=>{
+              const dn=stepDone(s.id); const locked=st==='locked';
+              return `<div class="step-item ${dn?'done':''} ${locked?'locked':''}" onclick="${locked?'':`openAction('${s.action}','${s.id}')`}">
+                <div class="step-cb" onclick="event.stopPropagation();${locked?'':`toggleStep('${s.id}')`}">${I.checkS}</div>
+                <div class="step-tx"><b>${s.t}</b><small>${s.d}</small></div>
+                ${locked?`<span class="lock-ic">${I.lock}</span>`:`<span class="step-go">${I.arrow}</span>`}
+              </div>`;
+            }).join('')}
+          </div>
+        </div>`;
+      }).join('')}
+      <div style="height:20px"></div>
+      <p class="disc">Strumento educativo, non consulenza finanziaria. Spunta un passo solo quando l’hai capito o fatto davvero.</p>
+    </div>
+  </div></div>`;
+}
+function toggleStep(id){
+  S.steps[id]=!S.steps[id]; save();
+  if(S.steps[id]) toast('Fatto! Un passo più vicino 🌱');
+  render();
+}
+
+/* ---------- COACH ---------- */
+function viewCoach(){
+  const sugg=['Cos’è un ETF?','Da dove inizio?','Quanto devo investire?','È rischioso?','Cos’è un PAC?','Come funzionano le tasse?'];
+  return `<div class="view active"><div class="coach-view">
+    <div class="topbar" style="position:static">
+      <div class="brand"><span class="logo">${I.leaf}</span>
+        <div style="line-height:1.1"><div style="font-size:16px">Coach</div><div style="font-family:var(--sans);font-size:11px;color:var(--green);font-weight:600">● sempre disponibile</div></div>
+      </div>
+    </div>
+    <div class="chat-scroll" id="chatScroll"></div>
+    <div class="suggest" id="suggest">${sugg.map(s=>`<button onclick="quickAsk('${s.replace(/'/g,"\\'")}')">${s}</button>`).join('')}</div>
+    <div class="composer">
+      <textarea id="ta" rows="1" placeholder="Scrivi la tua domanda..." oninput="growTa(this)" onkeydown="taKey(event)"></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendMsg()">${I.send}</button>
+    </div>
+  </div></div>`;
+}
+function initCoach(){
+  const sc=document.getElementById('chatScroll'); if(!sc) return;
+  if(!S.chatSeeded){
+    S.chat = GREETINGS.map(g=>({r:'bot',t:g}));
+    S.chatSeeded=true; save();
+  }
+  sc.innerHTML = S.chat.map(m=>bubble(m.r,m.t)).join('');
+  sc.scrollTop=sc.scrollHeight;
+}
+function bubble(r,t){
+  if(r==='bot') return `<div class="msg bot"><div class="msg-coach-head"><span class="msg-av">${I.leaf}</span>Coach</div>${t}</div>`;
+  return `<div class="msg me">${t}</div>`;
+}
+function growTa(el){ el.style.height='auto'; el.style.height=Math.min(110,el.scrollHeight)+'px'; }
+function taKey(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendMsg(); } }
+function quickAsk(q){ const ta=document.getElementById('ta'); ta.value=q; sendMsg(); }
+function sendMsg(){
+  const ta=document.getElementById('ta'); const text=(ta.value||'').trim(); if(!text) return;
+  ta.value=''; growTa(ta);
+  const sc=document.getElementById('chatScroll');
+  S.chat.push({r:'me',t:escapeHtml(text)});
+  sc.insertAdjacentHTML('beforeend', bubble('me',escapeHtml(text)));
+  sc.scrollTop=sc.scrollHeight;
+  // typing indicator
+  sc.insertAdjacentHTML('beforeend', `<div class="msg bot" id="typing"><div class="typing"><i></i><i></i><i></i></div></div>`);
+  sc.scrollTop=sc.scrollHeight;
+  save();
+  setTimeout(()=>{
+    const reply=coachReply(text);
+    document.getElementById('typing')?.remove();
+    S.chat.push({r:'bot',t:reply}); save();
+    sc.insertAdjacentHTML('beforeend', bubble('bot',reply));
+    sc.scrollTop=sc.scrollHeight;
+  }, 650+Math.random()*450);
+}
+function escapeHtml(s){ return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+/* ---------- PROFILE ---------- */
+function viewProfile(){
+  const p=S.profile; const score=S.diagnosisScore||computeScore();
+  const lbl={ age:{u25:'Meno di 25',2534:'25-34',3549:'35-49',o50:'50+'},
+    income:{low:'< 1.200€',mid:'1.200-1.800€',high:'1.800-2.800€',top:'> 2.800€'},
+    save:{none:'Quasi mai',some:'Qualcosa',reg:'Ogni mese',lots:'Una bella fetta'},
+    emergency:{no:'Nessuno',little:'< 1 mese',some:'1-3 mesi',full:'3-6 mesi+'},
+    goal:{house:'Comprare casa',freedom:'Libertà/pensione',safety:'Sicurezza',grow:'Far fruttare i risparmi'},
+    experience:{zero:'Parto da zero',some:'Ho letto qualcosa',done:'Ho già investito',pro:'Me la cavo'} };
+  const row=(k,t)=>`<div style="display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--line)"><span style="color:var(--muted)">${t}</span><b>${(lbl[k]&&lbl[k][p[k]])||'—'}</b></div>`;
+  return `<div class="view active"><div class="scroll">
+    <div class="topbar"><div class="brand"><span class="logo">${I.leaf}</span>Profilo</div></div>
+    <div class="pad">
+      <div class="card" style="text-align:center">
+        <div style="width:64px;height:64px;border-radius:50%;background:var(--green-soft);color:var(--green);display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-family:var(--serif);font-size:26px;font-weight:700">${(S.name||'?').slice(0,1).toUpperCase()}</div>
+        <b class="serif" style="font-size:20px">${S.name||'Investitore'}</b>
+        <div style="margin-top:10px"><span class="chip">Pronto a investire: ${score}/100</span></div>
+      </div>
+
+      <div class="card">
+        <span class="label">La tua situazione</span>
+        <div style="margin-top:8px">
+          ${row('age','Età')}${row('income','Reddito mensile')}${row('save','Capacità di risparmio')}
+          ${row('emergency','Fondo emergenza')}${row('goal','Obiettivo')}${row('experience','Esperienza')}
+        </div>
+        <button class="btn secondary" style="margin-top:16px" onclick="redoQuiz()">Rifai la diagnosi</button>
+      </div>
+
+      <div class="card">
+        <span class="label">Cresco</span>
+        <p style="font-size:13.5px;color:var(--muted);margin:8px 0 14px">L’amico bravo di finanza, per chi parte da zero. Versione prototipo — in continua evoluzione.</p>
+        <button class="btn ghost" onclick="resetAll()" style="color:var(--danger)">Ricomincia da capo (cancella tutto)</button>
+      </div>
+      <div style="height:14px"></div>
+      <p class="disc">I tuoi dati restano solo su questo dispositivo (localStorage). Cresco non li invia da nessuna parte.</p>
+    </div>
+  </div></div>`;
+}
+function redoQuiz(){ quizIdx=0; S.onboarded=false; save(); renderOnboarding(true); }
+function resetAll(){
+  if(confirm('Sicuro? Cancella profilo, progressi e chat.')){ localStorage.removeItem(LS); S=load(); quizIdx=0; render(); }
+}
+
+/* ============================================================
+   ACTION SHEETS — guided how-to per step
+   ============================================================ */
+const ACTIONS = {
+  conto:{ title:'Aprire un conto corrente', intro:'Il tuo quartier generale dei soldi. Ti accompagno a sceglierlo bene.',
+    steps:[ ['Capisci cosa ti serve','Stipendio in arrivo, bollette, una carta. Ti serve un conto con IBAN italiano e una buona app.'],
+      ['Confronta i conti online','Guarda 2-3 conti: punta a canone basso/zero, prelievi gratis, carta inclusa.'],
+      ['Prepara i documenti','Carta d’identità, codice fiscale, e un selfie/video per il riconoscimento. Bastano 10 minuti.'],
+      ['Apri tutto dallo smartphone','Si fa online in pochi minuti. Niente fila in filiale.'],
+      ['Sposta lo stipendio sul nuovo IBAN','Dai il nuovo IBAN al datore di lavoro. Fatto: sei operativo.'] ],
+    cta:'Ho aperto (o ho già) un conto' },
+  budget:{ title:'Capire dove vanno i soldi', intro:'Senza foglio Excel infinito. La regola 50/30/20 è una bussola, non una prigione.',
+    steps:[ ['Trova il tuo netto mensile','Quanto entra davvero ogni mese, in media.'],
+      ['Dividi in 3 secchielli','50% bisogni · 30% sfizi · 20% futuro. Adatta le percentuali alla tua realtà.'],
+      ['Paga prima il tuo futuro','Appena arriva lo stipendio, sposta subito la quota \"futuro\" da parte. Prima di spenderla.'],
+      ['Controlla una volta al mese','5 minuti per vedere se i secchielli reggono. Niente ossessione.'] ],
+    cta:'Ho capito i miei numeri' },
+  emergency:{ title:'Creare il fondo di emergenza', intro:'Il paracadute che ti permette di investire sereno. Prima di tutto il resto.',
+    steps:[ ['Calcola 3-6 mesi di spese','Quanto spendi al mese × 3 (minimo) o × 6 (ideale).'],
+      ['Tienilo separato','Un conto deposito o un conto a parte: liquido e NON investito.'],
+      ['Riempilo un po’ alla volta','Anche 50-100€ al mese. Non deve essere immediato, deve esistere.'],
+      ['Non toccarlo','È solo per veri imprevisti, non per le vacanze. Quello è un altro secchiello.'] ],
+    cta:'Sto costruendo il mio fondo' },
+  etf:{ title:'Capire cos’è un ETF', intro:'Il mattone di chi parte da zero. In 4 idee semplici.',
+    steps:[ ['Un cestino di tante aziende','Compri centinaia di aziende in un colpo solo, non una sola.'],
+      ['MSCI World = il mondo','Un ETF su questo indice contiene ~1.400 grandi aziende globali.'],
+      ['Costa poco e è automatico','Commissioni bassissime, segue l’indice da solo, niente gestore costoso.'],
+      ['Perfetto col PAC','Compri sempre lo stesso ETF ogni mese, e lasci fare al tempo.'] ],
+    cta:'Ho capito cos’è un ETF' },
+  platform:{ title:'Scegliere e aprire una piattaforma', intro:'Dove comprerai materialmente i tuoi ETF. Il \"supermercato\".',
+    steps:[ ['Cosa guardare','Costi bassi, PAC gratuito o quasi, app in italiano, regolamentata.'],
+      ['Regime amministrato = zero burocrazia','Se vuoi che le tasse le faccia la banca per te, scegli questo.'],
+      ['Apri il conto titoli','Stessa logica del conto corrente: documenti + riconoscimento online.'],
+      ['Versa una piccola somma','Inizia con poco per prendere confidenza con l’app.'] ],
+    cta:'Ho aperto una piattaforma' },
+  first:{ title:'Fare il primo investimento', intro:'Il grande passo. Più facile di quanto pensi — anche con 50€.',
+    steps:[ ['Scegli un ETF globale','Un ETF azionario mondiale ad accumulo è un classico punto di partenza.'],
+      ['Cerca il suo codice','Nell’app cerchi l’ETF (per nome o codice ISIN) e lo selezioni.'],
+      ['Decidi quanto','Anche 50€. L’obiettivo è iniziare, non indovinare il momento.'],
+      ['Conferma l’acquisto','Premi compra. Congratulazioni: sei ufficialmente un investitore. 🌱'] ],
+    cta:'Ho fatto il mio primo investimento' },
+  pac:{ title:'Impostare un PAC automatico', intro:'L’abitudine che fa il 90% del lavoro al posto tuo.',
+    steps:[ ['Trova \"PAC\" o \"piano\" nell’app','Quasi tutte le piattaforme lo offrono in pochi tap.'],
+      ['Scegli ETF, importo e data','Es. 100€ sul tuo ETF globale, il giorno dopo lo stipendio.'],
+      ['Attiva l’automatismo','Da ora compra da solo ogni mese. Tu non devi fare nulla.'],
+      ['Dimenticatene (sul serio)','Il bello del PAC è proprio non guardarlo di continuo.'] ],
+    cta:'Ho attivato il mio PAC' },
+  diversify:{ title:'Diversificare con criterio', intro:'Non mettere tutte le uova nello stesso paniere — ma senza complicarti.',
+    steps:[ ['Spesso 1 ETF mondiale basta','Sei già su ~1.400 aziende. La semplicità è una forza.'],
+      ['Eventuale tocco di obbligazioni','Per ridurre gli sbalzi, col tempo si può aggiungere una quota di bond.'],
+      ['Evita di strafare','Troppi prodotti = confusione e costi. Meno è meglio.'],
+      ['Crypto/azioni singole: max una fettina','Solo dopo le fondamenta, e solo soldi che puoi perdere.'] ],
+    cta:'Ho capito come diversificare' },
+  taxes:{ title:'Capire tasse e dichiarazione', intro:'In Italia, senza panico e in parole semplici.',
+    steps:[ ['26% sui guadagni','Paghi solo quando vendi, e solo sul guadagno (12,5% sui titoli di Stato).'],
+      ['Bollo 0,2% l’anno','Piccola imposta sul valore del deposito titoli.'],
+      ['Regime amministrato = comodo','La banca calcola e versa le tasse per te. Niente 730 per gli investimenti.'],
+      ['Conserva i riepiloghi','La piattaforma ti dà i report. Tienili da parte e sei a posto.'] ],
+    cta:'Ho capito le tasse' },
+  review:{ title:'Rivedere il piano ogni 6 mesi', intro:'Aggiustare, non stravolgere. La costanza batte la fretta.',
+    steps:[ ['Segna 2 date l’anno','Es. giugno e dicembre: il tuo check-up finanziario.'],
+      ['Controlla 3 cose','Fondo emergenza ok? PAC attivo? Obiettivi cambiati?'],
+      ['Aumenta se puoi','Stipendio cresciuto? Alza il PAC di un po’. È così che si scala.'],
+      ['Non toccare per emotività','Mercato giù non è un motivo per vendere. È spesso il contrario.'] ],
+    cta:'Ho impostato i miei check' },
+};
+
+let currentActionStep=null;
+function openAction(key,stepId){
+  const a=ACTIONS[key]; if(!a) return;
+  currentActionStep=stepId;
+  const done=stepDone(stepId);
+  document.getElementById('sheetContent').innerHTML=`
+    <div class="sheet-head"><h3>${a.title}</h3><button class="sheet-x" onclick="closeSheet()">${I.x}</button></div>
+    <div class="sheet-body">
+      <p style="color:var(--muted);font-size:14.5px;margin-bottom:20px">${a.intro}</p>
+      ${a.steps.map((s,i)=>`
+        <div class="aflow-step">
+          <div class="aflow-line"><div class="aflow-num">${i+1}</div></div>
+          <div class="aflow-tx"><b>${s[0]}</b><p>${s[1]}</p></div>
+        </div>`).join('')}
+      <button class="btn ${done?'secondary':''}" onclick="completeAction('${stepId}')" style="margin-top:6px">
+        ${done?'✓ Già completato — tocca per annullare':a.cta}
+      </button>
+      <button class="btn ghost" onclick="closeSheet();go('coach')" style="margin-top:8px">Ho ancora dubbi, chiedo al coach</button>
+      <div style="height:12px"></div>
+    </div>`;
+  document.getElementById('sheet').classList.add('open');
+  document.getElementById('sheetOv').classList.add('open');
+}
+function completeAction(stepId){
+  const was=stepDone(stepId);
+  S.steps[stepId]=!was; save();
+  closeSheet();
+  if(!was){ toast('Passo completato! 🌱'); celebrate(); }
+  render();
+}
+function closeSheet(){
+  const sh=document.getElementById('sheet'),ov=document.getElementById('sheetOv');
+  if(sh) sh.classList.remove('open'); if(ov) ov.classList.remove('open');
+}
+function bindSwipeSheet(){
+  const sh=document.getElementById('sheet'); if(!sh) return;
+  let sy=0,dy=0,drag=false;
+  const grab=sh.querySelector('.sheet-grab'), head=sh.querySelector('.sheet-head');
+  [grab,head].forEach(el=>{ if(!el) return;
+    el.addEventListener('touchstart',e=>{drag=true;sy=e.touches[0].clientY;sh.style.transition='none';},{passive:true});
+  });
+  sh.addEventListener('touchmove',e=>{ if(!drag)return; dy=e.touches[0].clientY-sy; if(dy>0) sh.style.transform=`translateX(-50%) translateY(${dy}px)`; },{passive:true});
+  sh.addEventListener('touchend',()=>{ if(!drag)return; drag=false; sh.style.transition=''; if(dy>110) closeSheet(); else sh.style.transform=''; dy=0; },{passive:true});
+}
+
+/* ---------- celebrate ---------- */
+function celebrate(){
+  const c=document.createElement('div'); c.style.cssText='position:fixed;inset:0;pointer-events:none;z-index:90;overflow:hidden';
+  const colors=['#16a06a','#0e7a50','#f08a3c','#e0a93c'];
+  for(let i=0;i<26;i++){ const p=document.createElement('div');
+    const x=Math.random()*100, sz=6+Math.random()*7, dur=1.1+Math.random()*1;
+    p.style.cssText=`position:absolute;top:-12px;left:${x}%;width:${sz}px;height:${sz*1.4}px;background:${colors[i%4]};
+      border-radius:2px;opacity:.95;transform:rotate(${Math.random()*360}deg);animation:cfall ${dur}s ease-in forwards;animation-delay:${Math.random()*.25}s`;
+    c.appendChild(p);
+  }
+  document.body.appendChild(c); setTimeout(()=>c.remove(),2200);
+}
+const styleConf=document.createElement('style');
+styleConf.textContent='@keyframes cfall{to{transform:translateY(105vh) rotate(540deg);opacity:0}}';
+document.head.appendChild(styleConf);
+
+/* ---------- toast ---------- */
+let toastT;
+function toast(msg){ const t=document.getElementById('toast'); t.innerHTML=msg; t.classList.add('show');
+  clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2200); }
+
+/* ============================================================
+   ONBOARDING RENDER
+   ============================================================ */
+function renderOnboarding(skipWelcome){
+  if(skipWelcome){ renderQuiz(); return; }
+  App.innerHTML=`<div class="view active"><div class="hero">
+    <div class="hero-top">
+      <span class="logo" style="width:46px;height:46px;border-radius:14px">${I.leaf}</span>
+      <h1>L’amico <em>bravo</em><br>di finanza.<br>Per chi parte<br>da <em>zero</em>.</h1>
+      <p class="lead">Ti porto da “voglio investire ma non so nulla” al tuo primo investimento. Senza giudizio, senza paroloni.</p>
+      <div class="badge-row">
+        <span class="chip">🧭 Un percorso passo-passo</span>
+        <span class="chip orange">💬 Un coach sempre con te</span>
+        <span class="chip gray">🔒 I dati restano sul telefono</span>
+      </div>
+    </div>
+    <div>
+      <button class="btn" onclick="startQuiz()">Inizia — è gratis e dura 1 minuto ${I.arrow}</button>
+      <p class="disc" style="margin-top:14px">Strumento educativo, non consulenza finanziaria.<br>Nessuna registrazione, nessuna email.</p>
+    </div>
+  </div></div>`;
+}
+function startQuiz(){ quizIdx=0; renderQuiz(); }
+function renderQuiz(){
+  if(quizIdx>=QUIZ.length){ renderResult(); return; }
+  const Q=QUIZ[quizIdx]; const cur=S.profile[Q.key];
+  App.innerHTML=`<div class="view active"><div class="q-wrap">
+    <div class="q-head">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <button class="btn ghost" style="width:auto;padding:6px 4px" onclick="quizBack()">${quizIdx===0?'':'← Indietro'}</button>
+        <span style="font-size:13px;color:var(--muted);font-weight:600">${quizIdx+1} di ${QUIZ.length}</span>
+      </div>
+      <div class="q-progress"><span style="width:${(quizIdx)/QUIZ.length*100}%"></span></div>
+    </div>
+    <div class="q-body">
+      <div class="q-title serif">${Q.q}</div>
+      <div class="q-sub">${Q.s}</div>
+      ${Q.opts.map(o=>`
+        <button class="opt ${cur===o[3]?'sel':''}" onclick="pickOpt('${Q.key}','${o[3]}')">
+          ${o[0]?`<span class="emoji">${o[0]}</span>`:''}
+          <div><div class="ot">${o[1]}</div>${o[2]?`<div class="od">${o[2]}</div>`:''}</div>
+          <span class="check">${I.checkS}</span>
+        </button>`).join('')}
+    </div>
+  </div></div>`;
+}
+function pickOpt(key,val){
+  S.profile[key]=val; save();
+  // re-render selection then advance
+  renderQuiz();
+  setTimeout(()=>{ quizIdx++; renderQuiz(); window.scrollTo(0,0); }, 260);
+}
+function quizBack(){ if(quizIdx>0){ quizIdx--; renderQuiz(); } else renderOnboarding(); }
+
+function renderResult(){
+  S.diagnosisScore=computeScore(); save();
+  const score=S.diagnosisScore; const p=S.profile;
+  let verdict, vsub, emoji;
+  if(p.emergency==='no'||p.emergency==='little'){
+    emoji='🧱'; verdict='Prima costruiamo le fondamenta';
+    vsub='Ti manca un fondo di emergenza solido: è il primo passo, prima di investire. Niente paura, ti accompagno io.';
+  } else if(score>=70){
+    emoji='🚀'; verdict='Sei più pronto di quanto credi';
+    vsub='Hai già una buona base. Il prossimo salto è fare il primo investimento e automatizzarlo con un PAC.';
+  } else {
+    emoji='🌱'; verdict='Punto di partenza perfetto';
+    vsub='Hai le idee giuste, ora costruiamo passo dopo passo fino al tuo primo investimento. Una cosa alla volta.';
+  }
+  App.innerHTML=`<div class="view active"><div class="q-wrap">
+    <div class="q-progress" style="margin-top:20px"><span style="width:100%"></span></div>
+    <div class="q-body" style="display:flex;flex-direction:column;justify-content:center;text-align:center">
+      <div style="font-size:54px;margin-bottom:8px">${emoji}</div>
+      <div class="q-title serif" style="font-size:27px">${verdict}</div>
+      <p style="color:var(--muted);font-size:15px;margin:12px auto 26px;max-width:330px">${vsub}</p>
+      <div class="card" style="text-align:left">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <span class="label">Quanto sei pronto a investire</span><b class="serif" style="font-size:22px;color:var(--green)">${score}/100</b>
+        </div>
+        <div class="bar" style="background:var(--line);height:10px"><span style="width:${score}%;display:block;height:100%;background:linear-gradient(90deg,#16a06a,#0e7a50);border-radius:99px"></span></div>
+        <p style="font-size:13px;color:var(--muted);margin-top:12px">Non è un voto: è il tuo punto di partenza. Ogni passo che fai lo fa salire. 🌱</p>
+      </div>
+    </div>
+    <div>
+      <div class="field" style="margin-top:8px">
+        <label>Come ti chiami? <span style="color:var(--muted);font-weight:400">(facoltativo)</span></label>
+        <input id="nameInput" placeholder="Il tuo nome" value="${S.name||''}" maxlength="20">
+      </div>
+      <button class="btn" onclick="finishOnboarding()">Costruiamo il mio percorso ${I.arrow}</button>
+    </div>
+  </div></div>`;
+}
+function finishOnboarding(){
+  const n=document.getElementById('nameInput'); S.name=(n&&n.value.trim())||'';
+  S.onboarded=true; S.tab='home'; save();
+  render(); celebrate();
+}
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+render();
+</script>
+</body>
+</html>

@@ -1942,20 +1942,49 @@ function showNYSEClosedInfo(el,event){
 
   let reason,detail;
   if(day==='Saturday'||day==='Sunday'){
-    reason=`È ${dayIT} — fine settimana`;
-    detail=`La NYSE è chiusa il sabato e la domenica.<br><br>Riapertura: <b>lunedì alle 09:30 ET</b>.`;
+    const nextOpen=day==='Saturday'?'lunedì':'domani lunedì';
+    reason=`È ${dayIT} — mercati chiusi`;
+    detail=`Le borse americane (NYSE, NASDAQ) sono chiuse ogni sabato e domenica.<br><br>
+<b>Prossima apertura:</b> ${nextOpen} <b>9 giugno alle 09:30 ET</b> (15:30 ora italiana).<br><br>
+<b>Orari di mercato regolari:</b><br>
+· Lunedì–Venerdì<br>
+· 09:30 → 16:00 ET (15:30 → 22:00 ora italiana)<br><br>
+<b>Pre-market:</b> 04:00–09:30 ET — volumi ridotti, spread ampi<br>
+<b>After-market:</b> 16:00–20:00 ET — stessa avvertenza<br><br>
+<i>I dati visualizzati si riferiscono all'ultima sessione di venerdì.</i>`;
   } else if(holiday){
-    reason=`Festività: ${holiday[2]}`;
-    detail=`La NYSE è chiusa per <b>${holiday[2]}</b>.<br><br>Riapertura: <b>domani alle 09:30 ET</b>.`;
+    reason=`Festività USA: ${holiday[2]}`;
+    detail=`La NYSE è chiusa oggi per <b>${holiday[2]}</b>, festività federale americana.<br><br>
+<b>Prossima apertura:</b> domani alle <b>09:30 ET</b> (15:30 ora italiana).<br><br>
+<b>Orari di mercato regolari:</b><br>
+· Lunedì–Venerdì, 09:30 → 16:00 ET<br><br>
+<i>I dati visualizzati si riferiscono all'ultima sessione disponibile.</i>`;
   } else if(mins<570){
-    const openH=Math.floor(570/60), openM=570%60;
     const waitMin=570-mins;
-    reason=`Pre-market — apertura tra ${waitMin} minuti`;
-    detail=`Ora a New York: <b>${timeStr}</b><br>La NYSE apre alle <b>09:30 ET</b>.<br><br>Mancano <b>${waitMin} minuti</b> all'apertura ufficiale.<br><br><i>Il pre-market (04:00–09:30 ET) ha volumi ridotti e spread più ampi — meno affidabile per le analisi.</i>`;
+    const waitH=Math.floor(waitMin/60), waitM=waitMin%60;
+    const waitStr=waitH>0?`${waitH}h ${waitM}min`:`${waitMin} min`;
+    reason=`Pre-market — apertura tra ${waitStr}`;
+    detail=`Ora a New York: <b>${timeStr}</b><br><br>
+La NYSE <b>non è ancora aperta</b>. L'apertura ufficiale è alle <b>09:30 ET</b> (15:30 ora italiana).<br><br>
+<b>Mancano: ${waitStr}</b> all'apertura.<br><br>
+<b>Pre-market (04:00–09:30 ET):</b><br>
+· Volumi molto ridotti rispetto alla sessione regolare<br>
+· Spread bid-ask più ampi — prezzi meno precisi<br>
+· Movimenti bruschi su notizie overnight (earnings, macro)<br>
+· Non tutti i titoli sono scambiabili in pre-market<br><br>
+<i>Le analisi di APEX si basano sui prezzi di chiusura della sessione regolare.</i>`;
   } else {
-    const closeMin=960-mins;
-    reason=`After-market — chiusura avvenuta`;
-    detail=`Ora a New York: <b>${timeStr}</b><br>La NYSE chiude alle <b>16:00 ET</b>.<br><br>La sessione di oggi è terminata.<br><br>Riapertura: <b>domani alle 09:30 ET</b> (se giorno lavorativo).<br><br><i>L'after-market (16:00–20:00 ET) ha volumi ridotti — i prezzi possono essere meno stabili.</i>`;
+    const waitNextOpen=24*60-(mins-570);
+    reason=`After-market — sessione chiusa alle 16:00 ET`;
+    detail=`Ora a New York: <b>${timeStr}</b><br><br>
+La sessione regolare di oggi si è <b>conclusa alle 16:00 ET</b> (22:00 ora italiana).<br><br>
+<b>Prossima apertura:</b> domani alle <b>09:30 ET</b> (15:30 ora italiana), se giorno lavorativo.<br><br>
+<b>After-market (16:00–20:00 ET):</b><br>
+· Volumi drasticamente ridotti rispetto alla sessione regolare<br>
+· Spread più ampi — esecuzioni meno efficienti<br>
+· Spesso guidato da earnings o notizie post-chiusura<br>
+· I prezzi after-market non sempre reggono all'apertura del giorno dopo<br><br>
+<i>Le analisi di APEX si basano sui prezzi di chiusura ufficiali (16:00 ET).</i>`;
   }
 
   const tt=document.getElementById('g-tooltip');

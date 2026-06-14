@@ -3766,12 +3766,18 @@ function renderBHS(score, fund){
 }
 
 // ── RENDER FUNDAMENTALS ──
-function renderFundamentals(fund){
+function renderFundamentals(fund,ticker){
   const sec=document.getElementById('fund-section');
+  const isCrypto=ticker&&(/-(USD|EUR|BTC|ETH|USDT)$/i.test(ticker)||/^(BTC|ETH|SOL|BNB|XRP|ADA|DOGE|AVAX|DOT|MATIC)$/i.test(ticker));
+  if(isCrypto){
+    sec.style.display='block';
+    const grid=sec.querySelector('.ind-grid');
+    if(grid) grid.innerHTML=`<div style="grid-column:1/-1;color:var(--t3);font-size:.82rem;padding:8px 0">Le criptovalute non hanno fondamentali aziendali (P/E, ROE, margini). L'analisi si basa esclusivamente su dati tecnici e storici.</div>`;
+    return;
+  }
   if(!fund){
     sec.style.display='block';
-    // Show section but all values will show — (no data)
-    console.warn('[APEX] fetchFundamentals returned null — Yahoo Finance unreachable');
+    console.warn('[APEX] fetchFundamentals returned null');
     return;
   }
 
@@ -3942,9 +3948,9 @@ async function analyze(ticker){
       // Mostra dip e BHS subito con fund=null, poi aggiorna quando arrivano i fondamentali
       buildDipSignal(R,M50,M200,Mo3m,Mo12m,DD,cur,w30,score);
       renderBHS(score,null);
-      renderFundamentals(null);
+      renderFundamentals(null,ticker);
       fundPromise.then(fund=>{
-        renderFundamentals(fund);
+        renderFundamentals(fund,ticker);
         renderBHS(score,fund);
       });
     }));

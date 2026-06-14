@@ -10,7 +10,7 @@ async function translate(text) {
   try {
     const r = await fetch(
       `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|it`,
-      { signal: AbortSignal.timeout(5000) }
+      { signal: AbortSignal.timeout(3000) }
     );
     if (!r.ok) return text;
     const d = await r.json();
@@ -32,10 +32,10 @@ export default async function handler(req) {
     if (!r.ok) throw new Error(`Finnhub ${r.status}`);
     const items = await r.json();
 
-    const top = (Array.isArray(items) ? items : []).slice(0, 15);
+    const top = (Array.isArray(items) ? items : []).slice(0, 10);
 
-    // Translate all headlines in parallel
-    const translated = await Promise.all(
+    // Translate all headlines in parallel with global timeout
+    const translateAll = Promise.all(
       top.map(async n => ({
         headline: await translate(n.headline || ''),
         url: n.url,
@@ -43,6 +43,10 @@ export default async function handler(req) {
         datetime: n.datetime,
       }))
     );
+    const timeout = new Promise(res => setTimeout(() => res(
+      top.map(n => ({ headline: n.headline, url: n.url, source: n.source, datetime: n.datetime }))
+    ), 12000));
+    const translated = await Promise.race([translateAll, timeout]);
 
     return new Response(JSON.stringify(translated), {
       status: 200,

@@ -625,7 +625,7 @@ function viewCoach(){
     <div class="chat-scroll" id="chatScroll"></div>
     <div class="suggest" id="suggest">${sugg.map(s=>`<button onclick="quickAsk('${s.replace(/'/g,"\\'")}')">${s}</button>`).join('')}</div>
     <div class="composer">
-      <textarea id="ta" rows="1" placeholder="Scrivi la tua domanda..." oninput="growTa(this)" onkeydown="taKey(event)" onfocus="onTaFocus()" onblur="onTaBlur()">
+      <textarea id="ta" rows="1" placeholder="Scrivi la tua domanda..." oninput="growTa(this)" onkeydown="taKey(event)" onfocus="onTaFocus()" onblur="onTaBlur()"></textarea>
       <button class="send-btn" id="sendBtn" onclick="sendMsg()">${I.send}</button>
     </div>
   </div></div>`;

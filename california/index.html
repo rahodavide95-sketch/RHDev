@@ -2734,6 +2734,10 @@
 </div>
 
 <script>
+  // Forza sempre inizio pagina al caricamento (evita ripristino posizione browser)
+  if (history.scrollRestoration) history.scrollRestoration = 'manual';
+  window.scrollTo(0, 0);
+
   // Active pill on scroll — tutte le sezioni
   (function() {
     const allPills = document.querySelectorAll('.day-pill[href^="#"]');

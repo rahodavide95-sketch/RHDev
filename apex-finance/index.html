@@ -1248,7 +1248,7 @@ header{
     <div class="live-ind">
       <div class="live-dot" id="live-dot"></div>
       <span>Live</span>
-      <div class="mkt-closed" id="mkt-closed" onclick="showNYSEClosedInfo(this)" style="cursor:pointer">⚠ Borsa NYSE chiusa</div>
+      <div class="mkt-closed" id="mkt-closed" onclick="showNYSEClosedInfo(this,event)" style="cursor:pointer">⚠ Borsa NYSE chiusa</div>
     </div>
 
     <div class="header-divider"></div>
@@ -1920,7 +1920,8 @@ function updateMarketStatus(){
 updateMarketStatus();
 setInterval(updateMarketStatus,60000);
 
-function showNYSEClosedInfo(el){
+function showNYSEClosedInfo(el,event){
+  if(event) event.stopPropagation();
   const now=new Date();
   const fmt=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'numeric',weekday:'long',hour12:false});
   const parts=Object.fromEntries(fmt.formatToParts(now).map(p=>[p.type,p.value]));

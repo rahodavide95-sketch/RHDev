@@ -996,6 +996,7 @@ function viewProfile(){
 
       <div class="card">
         <span class="label">La tua situazione</span>
+        <p style="font-size:12.5px;color:var(--muted);margin:6px 0 2px">Puoi aggiornare queste risposte quando vuoi: rifai la diagnosi e ricalcoliamo il tuo percorso.</p>
         <div style="margin-top:8px">
           ${row('age','Età')}${row('income','Reddito mensile')}${row('save','Capacità di risparmio')}
           ${row('emergency','Fondo emergenza')}${row('goal','Obiettivo')}${row('experience','Esperienza')}
@@ -1256,10 +1257,11 @@ function startQuiz(){ quizIdx=0; renderQuiz(); }
 function renderQuiz(){
   if(quizIdx>=QUIZ.length){ renderResult(); return; }
   const Q=QUIZ[quizIdx]; const cur=S.profile[Q.key];
+  const answered = cur!==undefined && cur!==null && cur!=='';
+  const isLast = quizIdx===QUIZ.length-1;
   App.innerHTML=`<div class="view active"><div class="q-wrap">
     <div class="q-head">
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <button class="btn ghost" style="width:auto;padding:6px 4px" onclick="quizBack()">${quizIdx===0?'':'← Indietro'}</button>
+      <div style="display:flex;align-items:center;justify-content:flex-end">
         <span style="font-size:13px;color:var(--muted);font-weight:600">${quizIdx+1} di ${QUIZ.length}</span>
       </div>
       <div class="q-progress"><span style="width:${(quizIdx)/QUIZ.length*100}%"></span></div>
@@ -1274,15 +1276,22 @@ function renderQuiz(){
           <span class="check">${I.checkS}</span>
         </button>`).join('')}
     </div>
+    <div class="q-foot" style="display:flex;gap:10px;padding-top:16px">
+      <button class="btn secondary" style="width:auto;flex:0 0 auto;padding:15px 18px" onclick="quizBack()">←</button>
+      <button class="btn" style="flex:1" onclick="quizNext()" ${answered?'':'disabled'}>${isLast?'Vedi il risultato':'Avanti'} →</button>
+    </div>
   </div></div>`;
 }
 function pickOpt(key,val){
   S.profile[key]=val; save();
-  // re-render selection then advance
-  renderQuiz();
-  setTimeout(()=>{ quizIdx++; renderQuiz(); window.scrollTo(0,0); }, 260);
+  renderQuiz(); // highlight selection, wait for the user to tap Avanti
 }
-function quizBack(){ if(quizIdx>0){ quizIdx--; renderQuiz(); } else renderOnboarding(); }
+function quizNext(){
+  const Q=QUIZ[quizIdx];
+  if(!S.profile[Q.key]) return;
+  quizIdx++; renderQuiz(); window.scrollTo(0,0);
+}
+function quizBack(){ if(quizIdx>0){ quizIdx--; renderQuiz(); window.scrollTo(0,0); } else renderOnboarding(); }
 
 function renderResult(){
   S.diagnosisScore=computeScore(); save();
@@ -1318,6 +1327,7 @@ function renderResult(){
         <input id="nameInput" placeholder="Il tuo nome" value="${S.name||''}" maxlength="20">
       </div>
       <button class="btn" onclick="finishOnboarding()">Costruiamo il mio percorso ${I.arrow}</button>
+      <p style="font-size:12px;color:var(--muted);text-align:center;line-height:1.5;margin-top:12px">Le tue risposte non sono scolpite nella pietra: puoi modificarle quando vuoi da <b>Profilo</b>.</p>
     </div>
   </div></div>`;
 }

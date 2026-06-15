@@ -6,6 +6,10 @@
 <meta name="theme-color" content="#0e7a50">
 <title>Cresco — l'amico bravo di finanza</title>
 <meta name="description" content="L'app che ti porta da «voglio investire ma non so nulla» al tuo primo investimento. Senza giudizio, senza gergo.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%230e7a50'/><path d='M16 27V16' stroke='white' stroke-width='2.5' stroke-linecap='round'/><path d='M16 23 Q7 21 9 11 Q17 13 16 23Z' fill='white'/><path d='M16 19 Q25 15 23 5 Q15 9 16 19Z' fill='white'/></svg>">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Cresco">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -1260,8 +1264,32 @@ function finishOnboarding(){
 }
 
 /* ============================================================
+   APP ICON (canvas-generated for iOS home screen)
+   ============================================================ */
+function buildAppIcon(){
+  const s=180, r=s*0.22;
+  const cv=document.createElement('canvas'); cv.width=cv.height=s;
+  const g=cv.getContext('2d');
+  // rounded green background
+  g.beginPath();
+  g.moveTo(r,0); g.arcTo(s,0,s,s,r); g.arcTo(s,s,0,s,r); g.arcTo(0,s,0,0,r); g.arcTo(0,0,s,0,r); g.closePath();
+  g.fillStyle='#0e7a50'; g.fill();
+  // stem
+  g.strokeStyle='white'; g.lineWidth=s*0.075; g.lineCap='round';
+  g.beginPath(); g.moveTo(s*.5,s*.85); g.lineTo(s*.5,s*.46); g.stroke();
+  // left leaf
+  g.fillStyle='white';
+  g.beginPath(); g.moveTo(s*.5,s*.76); g.bezierCurveTo(s*.18,s*.7,s*.22,s*.34,s*.36,s*.3); g.bezierCurveTo(s*.52,s*.28,s*.56,s*.56,s*.5,s*.76); g.closePath(); g.fill();
+  // right leaf
+  g.beginPath(); g.moveTo(s*.5,s*.62); g.bezierCurveTo(s*.82,s*.54,s*.78,s*.18,s*.63,s*.14); g.bezierCurveTo(s*.47,s*.1,s*.43,s*.43,s*.5,s*.62); g.closePath(); g.fill();
+  const url=cv.toDataURL('image/png');
+  const a=document.createElement('link'); a.rel='apple-touch-icon'; a.href=url; document.head.appendChild(a);
+}
+
+/* ============================================================
    BOOT
    ============================================================ */
+buildAppIcon();
 render();
 </script>
 </body>

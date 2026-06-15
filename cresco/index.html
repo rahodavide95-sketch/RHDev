@@ -552,7 +552,13 @@ REGOLE:
   }
   return coachEngine(text);
 }
-function saveAiKey(v){ if(v.trim()){ localStorage.setItem('cresco_ai_key',v.trim()); } else { localStorage.removeItem('cresco_ai_key'); } renderAiStatus(); }
+function saveAiKey(v){
+  const val=v.trim();
+  if(val && val.includes('•')){ toast('Chiave già salvata ✓'); return; }
+  if(val){ localStorage.setItem('cresco_ai_key',val); toast('Chiave salvata ✓'); }
+  else { localStorage.removeItem('cresco_ai_key'); toast('Chiave rimossa'); }
+  renderAiStatus();
+}
 function renderAiStatus(){
   const el=document.getElementById('aiStatus'); if(!el) return;
   const k=aiKey();
@@ -1002,7 +1008,7 @@ function viewProfile(){
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span id="aiStatus"></span></div>
         <input id="aiKeyInp" type="password" placeholder="sk-ant-api03-..." autocomplete="off"
           style="width:100%;padding:11px 13px;border:1.5px solid var(--line);border-radius:10px;font-size:14px;background:var(--surface-2);outline:none;margin-bottom:10px"/>
-        <button class="btn" onclick="saveAiKey(document.getElementById(‘aiKeyInp’).value)">Salva chiave</button>
+        <button class="btn" type="button" onclick="saveAiKey(document.getElementById(‘aiKeyInp’).value)">Salva chiave</button>
       </div>
 
       <div class="card">

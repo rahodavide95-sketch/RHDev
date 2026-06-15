@@ -556,8 +556,8 @@ REGOLE:
   return coachEngine(text);
 }
 function saveAiKey(v){
-  const val=v.trim();
-  if(val && val.includes('•')){ toast('Chiave già salvata ✓'); return; }
+  const val=(v||'').trim();
+  if(val && !val.startsWith('sk-')){ toast('Chiave non valida — deve iniziare con sk-'); return; }
   if(val){ localStorage.setItem('cresco_ai_key',val); toast('Chiave salvata ✓'); }
   else { localStorage.removeItem('cresco_ai_key'); toast('Chiave rimossa'); }
   renderAiStatus();
@@ -566,7 +566,10 @@ function renderAiStatus(){
   const el=document.getElementById('aiStatus'); if(!el) return;
   const k=aiKey();
   el.innerHTML=k?'<span style="color:var(--green);font-weight:600">✓ AI attiva</span>':'<span style="color:var(--muted)">Non configurata</span>';
-  const inp=document.getElementById('aiKeyInp'); if(inp&&k) inp.value='••••••••••••••••••'+k.slice(-4);
+  const inp=document.getElementById('aiKeyInp');
+  if(inp){ inp.value=k?'sk-ant-...'+k.slice(-4):''; }
+  const btn=document.getElementById('aiSaveBtn');
+  if(btn){ btn.onclick=()=>{ const v=document.getElementById('aiKeyInp').value; saveAiKey(v); }; }
 }
 
 /* ---- small parsers so it can "understand" free text ---- */
@@ -1009,9 +1012,9 @@ function viewProfile(){
         <span class="label">Coach AI</span>
         <p style="font-size:13.5px;color:var(--muted);margin:8px 0 4px">Connetti la tua chiave Anthropic per attivare il coach intelligente.</p>
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span id="aiStatus"></span></div>
-        <input id="aiKeyInp" type="password" placeholder="sk-ant-api03-..." autocomplete="off"
-          style="width:100%;padding:11px 13px;border:1.5px solid var(--line);border-radius:10px;font-size:14px;background:var(--surface-2);outline:none;margin-bottom:10px"/>
-        <button class="btn" type="button" onclick="saveAiKey(document.getElementById(‘aiKeyInp’).value)">Salva chiave</button>
+        <input id="aiKeyInp" type="text" inputmode="url" placeholder="sk-ant-api03-..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"
+          style="width:100%;padding:11px 13px;border:1.5px solid var(--line);border-radius:10px;font-size:13px;font-family:monospace;background:var(--surface-2);outline:none;margin-bottom:10px"/>
+        <button id="aiSaveBtn" class="btn" type="button">Salva chiave</button>
       </div>
 
       <div class="card">

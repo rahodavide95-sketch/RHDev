@@ -11,6 +11,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Cresco">
 <link rel="apple-touch-icon" sizes="512x512" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -1330,6 +1331,29 @@ function finishOnboarding(){
    BOOT
    ============================================================ */
 render();
+
+/* ---- PWA: service worker for auto-update + offline ---- */
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('sw.js').then(reg=>{
+      // When a new version is found, activate it as soon as it's ready
+      reg.addEventListener('updatefound',()=>{
+        const sw=reg.installing;
+        if(!sw) return;
+        sw.addEventListener('statechange',()=>{
+          if(sw.state==='installed' && navigator.serviceWorker.controller){
+            sw.postMessage('skipWaiting');
+          }
+        });
+      });
+    }).catch(()=>{});
+    // Reload once the new worker takes control, so the user sees the update
+    let refreshing=false;
+    navigator.serviceWorker.addEventListener('controllerchange',()=>{
+      if(refreshing) return; refreshing=true; window.location.reload();
+    });
+  });
+}
 </script>
 </body>
 </html>

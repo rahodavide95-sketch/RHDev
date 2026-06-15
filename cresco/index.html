@@ -1363,6 +1363,11 @@ if('serviceWorker' in navigator){
           }
         });
       });
+      // Check for a new version right away and whenever the app comes back to the foreground
+      const checkUpdate=()=>{ reg.update().catch(()=>{}); };
+      checkUpdate();
+      document.addEventListener('visibilitychange',()=>{ if(!document.hidden) checkUpdate(); });
+      window.addEventListener('focus',checkUpdate);
     }).catch(()=>{});
     // Reload once the new worker takes control, so the user sees the update
     let refreshing=false;

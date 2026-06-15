@@ -1,5 +1,5 @@
 /* Cresco service worker — auto-update + offline */
-const VERSION = 'cresco-v1';
+const VERSION = 'cresco-v2';
 const CORE = [
   './',
   './index.html',
@@ -39,7 +39,8 @@ self.addEventListener('fetch', e => {
 
   if (isHTML) {
     e.respondWith(
-      fetch(req)
+      // cache:'no-store' bypasses the browser/CDN HTTP cache so we truly hit the server
+      fetch(req, { cache: 'no-store' })
         .then(res => {
           const copy = res.clone();
           caches.open(VERSION).then(c => c.put(req, copy));

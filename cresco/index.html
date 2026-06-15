@@ -1324,45 +1324,8 @@ function finishOnboarding(){
 }
 
 /* ============================================================
-   APP ICON (canvas-generated for iOS home screen)
-   ============================================================ */
-function buildAppIcon(){
-  const s=180, r=s*0.22;
-  const cv=document.createElement('canvas'); cv.width=cv.height=s;
-  const g=cv.getContext('2d');
-  // rounded clip
-  g.beginPath();
-  g.moveTo(r,0); g.arcTo(s,0,s,s,r); g.arcTo(s,s,0,s,r); g.arcTo(0,s,0,0,r); g.arcTo(0,0,s,0,r); g.closePath();
-  g.clip();
-  // sage-green gradient background
-  const grad=g.createLinearGradient(s*.15,0,s*.85,s);
-  grad.addColorStop(0,'#cce4d6'); grad.addColorStop(1,'#0e7a50');
-  g.fillStyle=grad; g.fillRect(0,0,s,s);
-  // glass gloss
-  const gl=g.createRadialGradient(s*.30,s*.18,0,s*.30,s*.18,s*.72);
-  gl.addColorStop(0,'rgba(255,255,255,0.55)'); gl.addColorStop(1,'rgba(255,255,255,0)');
-  g.fillStyle=gl; g.fillRect(0,0,s,s);
-  // leaf outline (Lucide leaf, scaled to fit)
-  const sc=s/100, tx=15*sc, ty=16.5*sc, scale=3.05*sc;
-  g.save(); g.translate(tx,ty); g.scale(scale,scale);
-  g.strokeStyle='white'; g.lineWidth=2.1/scale*(1/sc); g.lineCap='round'; g.lineJoin='round';
-  g.beginPath();
-  g.moveTo(11,20);
-  g.arcTo(5,13,9.8,6.1,7); g.bezierCurveTo(12,5,14,4.5,19,2);
-  g.bezierCurveTo(20,4,21,6.2,21,10);
-  g.bezierCurveTo(21,15.5,16.2,20,11,20); g.closePath(); g.stroke();
-  g.beginPath(); g.moveTo(2,21); g.bezierCurveTo(2,18,3.85,15.64,7.08,15); g.stroke();
-  g.restore();
-  const url=cv.toDataURL('image/png');
-  let a=document.querySelector('link[rel="apple-touch-icon"]');
-  if(!a){a=document.createElement('link');a.rel='apple-touch-icon';document.head.appendChild(a);}
-  a.href=url;
-}
-
-/* ============================================================
    BOOT
    ============================================================ */
-buildAppIcon();
 render();
 </script>
 </body>

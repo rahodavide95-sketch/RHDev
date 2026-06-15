@@ -186,8 +186,7 @@
   .coach-view{display:flex;flex-direction:column;height:100dvh;overflow:hidden}
   body.typing .nav{transform:translateX(-50%) translateY(calc(130% + env(safe-area-inset-bottom)))}
   body.typing .coach-view{height:100dvh}
-  .chat-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px calc(var(--nav-h) + 8px);display:flex;flex-direction:column;gap:12px}
-  body.typing .chat-scroll{padding-bottom:8px}
+  .chat-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px 8px;display:flex;flex-direction:column;gap:12px}
   .msg{max-width:84%;padding:12px 15px;border-radius:18px;font-size:14.5px;line-height:1.5;animation:pop .25s ease}
   @keyframes pop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
   .msg.bot{background:var(--surface);border:1px solid var(--line);align-self:flex-start;border-bottom-left-radius:6px;
@@ -210,7 +209,7 @@
     border-top:1px solid var(--line);background:var(--surface);align-items:flex-end}
   body.typing .composer{padding-bottom:calc(12px + env(safe-area-inset-bottom))}
   .composer textarea{flex:1;resize:none;border:1.5px solid var(--line);border-radius:18px;padding:11px 15px;
-    font-family:inherit;font-size:15px;max-height:110px;background:var(--surface-2);line-height:1.4}
+    font-family:inherit;font-size:16px;max-height:110px;background:var(--surface-2);line-height:1.4}
   .composer textarea:focus{outline:none;border-color:var(--green)}
   .send-btn{width:44px;height:44px;border-radius:50%;background:var(--green);color:#fff;flex-shrink:0;
     display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(14,122,80,.3)}
@@ -808,6 +807,7 @@ function render(){
 
 /* ---------- NAV ---------- */
 function nav(){
+  if(S.tab==='coach') return '';
   const hasNext = !!nextStep();
   const t=(id,ic,lab,dot)=>`<button class="${S.tab===id?'on':''} ${dot?'has-dot':''}" onclick="go('${id}')">${I[ic]}<span>${lab}</span><span class="dot"></span></button>`;
   return `<nav class="nav">
@@ -951,6 +951,7 @@ function viewCoach(){
       <div class="brand"><span style="width:30px;height:30px;border-radius:9px;overflow:hidden;flex-shrink:0;display:block;box-shadow:0 3px 10px rgba(14,122,80,.28)">${I.face}</span>
         <div style="line-height:1.1"><div style="font-size:16px">Coach</div><div style="font-family:var(--sans);font-size:11px;color:var(--green);font-weight:600">● sempre disponibile</div></div>
       </div>
+      <button onclick="go('home')" style="width:34px;height:34px;border-radius:50%;background:rgba(22,36,28,.06);display:flex;align-items:center;justify-content:center;flex-shrink:0">${I.x}</button>
     </div>
     <div class="chat-scroll" id="chatScroll"></div>
     <div class="suggest" id="suggest">${sugg.map(s=>`<button onclick="quickAsk('${s.replace(/'/g,"\\'")}')">${s}</button>`).join('')}</div>

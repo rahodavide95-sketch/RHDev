@@ -505,18 +505,52 @@ const FOLLOWUPS = {
 };
 
 /* ---- AI bridge: today offline, tomorrow flip AI.enabled=true ---- */
-const AI = { enabled:false, endpoint:'/api/coach' };
+function aiKey(){ return localStorage.getItem('cresco_ai_key')||''; }
+function mdToHtml(t){
+  return t
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/\n{2,}/g,'<br><br>').replace(/\n/g,'<br>')
+    .replace(/•\s/g,'• ');
+}
 async function getCoachResponse(text){
-  if(AI.enabled){
+  const key=aiKey();
+  if(key){
+    const p=S.profile, n=S.name||'';
+    const goalMap={house:'comprare casa',freedom:'libertà finanziaria',safety:'serenità economica',grow:'far crescere i risparmi'};
+    const system=`Sei il Coach di Cresco, l'app italiana di educazione finanziaria per chi parte da zero. Sei come "l'amico bravo di finanza" — caldo, diretto, onesto, senza gergo e senza giudizio.${n?` L'utente si chiama ${n}.`:''}
+
+Profilo utente: età ${p.age||'?'}, reddito ${p.income||'?'}, risparmio mensile ${p.save||'?'}, fondo emergenza ${p.emergency||'?'}, obiettivo ${goalMap[p.goal]||p.goal||'?'}, esperienza ${p.experience||'nessuna'}.
+
+REGOLE:
+- Sei un educatore finanziario, NON un consulente iscritto all'albo OCF. Non nominare mai prodotti specifici (no ISIN, no nomi di fondi). Parla di categorie (ETF azionario mondiale, BTP, PAC) e criteri, non di prodotti.
+- Rispondi sempre in italiano. Usa **grassetto** per i concetti chiave.
+- Sii conciso ma completo. Se ti chiedono cosa fare con i soldi, fai prima le domande chiave (orizzonte temporale, importo).
+- Usa il profilo per personalizzare. Non inventare dati non presenti.
+- Mantieni un tono caldo, come l'amico esperto che spiega senza far sentire stupidi.`;
+    const history=S.chat.slice(-16).map(m=>({
+      role:m.r==='me'?'user':'assistant',
+      content:m.t.replace(/<[^>]+>/g,'').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&')
+    }));
     try{
-      const r = await fetch(AI.endpoint, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ message:text, name:S.name, profile:S.profile, history:S.chat.slice(-8) })
+      const r=await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',
+        headers:{'x-api-key':key,'anthropic-version':'2023-06-01','content-type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
+        body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:1024,system,messages:[...history,{role:'user',content:text}]})
       });
-      if(r.ok){ const d = await r.json(); if(d && d.reply) return d.reply; }
-    }catch(e){ /* fall back to offline engine */ }
+      const d=await r.json();
+      if(d.content&&d.content[0]&&d.content[0].text) return mdToHtml(d.content[0].text);
+    }catch(e){ console.warn('AI fallback:',e); }
   }
   return coachEngine(text);
+}
+function saveAiKey(v){ if(v.trim()){ localStorage.setItem('cresco_ai_key',v.trim()); } else { localStorage.removeItem('cresco_ai_key'); } renderAiStatus(); }
+function renderAiStatus(){
+  const el=document.getElementById('aiStatus'); if(!el) return;
+  const k=aiKey();
+  el.innerHTML=k?'<span style="color:var(--green);font-weight:600">✓ AI attiva</span>':'<span style="color:var(--muted)">Non configurata</span>';
+  const inp=document.getElementById('aiKeyInp'); if(inp&&k) inp.value='••••••••••••••••••'+k.slice(-4);
 }
 
 /* ---- small parsers so it can "understand" free text ---- */
@@ -722,6 +756,7 @@ function render(){
     <div class="sheet" id="sheet"><div class="sheet-grab"></div><div id="sheetContent"></div></div>
   `;
   if(S.tab==='coach') initCoach();
+  if(S.tab==='profile') setTimeout(renderAiStatus,0);
   bindSwipeSheet();
 }
 
@@ -797,7 +832,7 @@ function viewHome(){
 
       <div style="height:18px"></div>
       <div class="card" onclick="go('coach')" style="display:flex;align-items:center;gap:14px;cursor:pointer">
-        <div class="ns-icon">${I.chat}</div>
+        <span style="width:46px;height:46px;border-radius:13px;overflow:hidden;flex-shrink:0;display:block">${I.face}</span>
         <div style="flex:1"><b style="font-size:15px">Hai una domanda sui soldi?</b><br><small style="color:var(--muted)">Chiedi al tuo coach — risponde senza giudizio</small></div>
         ${I.arrow}
       </div>
@@ -952,6 +987,15 @@ function viewProfile(){
         <div class="ns-icon">🌱</div>
         <div style="flex:1"><b style="font-size:15px">La nostra storia</b><br><small style="color:var(--muted)">Chi siamo e perché è nata Cresco</small></div>
         ${I.arrow}
+      </div>
+
+      <div class="card">
+        <span class="label">Coach AI</span>
+        <p style="font-size:13.5px;color:var(--muted);margin:8px 0 4px">Connetti la tua chiave Anthropic per attivare il coach intelligente.</p>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span id="aiStatus"></span></div>
+        <input id="aiKeyInp" type="password" placeholder="sk-ant-api03-..." autocomplete="off"
+          style="width:100%;padding:11px 13px;border:1.5px solid var(--line);border-radius:10px;font-size:14px;background:var(--surface-2);outline:none;margin-bottom:10px"/>
+        <button class="btn" onclick="saveAiKey(document.getElementById(‘aiKeyInp’).value)">Salva chiave</button>
       </div>
 
       <div class="card">

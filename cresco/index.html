@@ -485,10 +485,19 @@ function coachEngine(text){
   const q = text.toLowerCase().trim();
   const cf = S.coachFlow || {flow:null};
   if(cf.flow==='consult') return consultStep(q);
+  if(etfExamplesIntent(q)) return etfExamplesReply();
   if(adviceIntent(q)) return startConsult(q);
   const kb = kbMatch(q);
   if(kb) return wrapKB(kb);
   return smalltalk(q);
+}
+
+// "dammi 5 ETF" / "quali ETF" → educational: names INDICES, not specific products
+function etfExamplesIntent(q){
+  return /etf/.test(q) && /(quali|quale|esempi|esempio|lista|elenc|\bdammi\b|\bdimmi\b|miglior|consigli|nomi|nome|qualche|alcuni|\d+\s*etf|che etf|quali sono|suggeris)/.test(q);
+}
+function etfExamplesReply(){
+  return `Bella richiesta — e qui faccio il coach onesto. 🌱 Non ti do nomi di prodotti specifici (quella sarebbe <em>consulenza</em>, e Cresco è educazione): ti spiego invece i \"mattoni\" più usati al mondo, così sai esattamente cosa cercare nella tua piattaforma.<br><br>I <strong>5 indici</strong> su cui sono costruiti gli ETF più popolari per chi inizia:<br><br>1. <strong>MSCI World</strong> — ~1.400 grandi aziende dei paesi sviluppati. Il classico punto di partenza.<br>2. <strong>FTSE All-World / MSCI ACWI</strong> — come sopra, ma include anche i paesi emergenti: ancora più completo.<br>3. <strong>S&P 500</strong> — le 500 maggiori aziende USA. Concentrato sugli Stati Uniti.<br>4. <strong>MSCI Emerging Markets</strong> — i paesi emergenti (Cina, India, Brasile...). Più rischio, più potenziale.<br>5. <strong>STOXX Europe 600</strong> — le grandi aziende europee.<br><br>Come scegliere <strong>l'ETF giusto</strong> su uno di questi indici — i 4 criteri che contano:<br>• <strong>Ad accumulo</strong> (reinveste i dividendi da solo)<br>• <strong>TER basso</strong> (il costo annuo: meglio sotto lo 0,25%)<br>• <strong>Grande e con anni di storia</strong> (più solido)<br>• <strong>Domiciliato in Irlanda</strong> (più efficiente fiscalmente per noi)<br><br>Nella tua piattaforma cerchi l'indice, filtri con questi criteri e trovi i prodotti. Vuoi che ti spieghi come si fa, passo passo? 😊`;
 }
 
 function kbMatch(q){

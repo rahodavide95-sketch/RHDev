@@ -1128,68 +1128,278 @@ function promise(emoji,title,text){
    ACTION SHEETS — guided how-to per step
    ============================================================ */
 const ACTIONS = {
-  conto:{ title:'Aprire un conto corrente', intro:'Il tuo quartier generale dei soldi. Ti accompagno a sceglierlo bene.',
-    steps:[ ['Capisci cosa ti serve','Stipendio in arrivo, bollette, una carta. Ti serve un conto con IBAN italiano e una buona app.'],
-      ['Confronta i conti online','Guarda 2-3 conti: punta a canone basso/zero, prelievi gratis, carta inclusa.'],
-      ['Prepara i documenti','Carta d’identità, codice fiscale, e un selfie/video per il riconoscimento. Bastano 10 minuti.'],
-      ['Apri tutto dallo smartphone','Si fa online in pochi minuti. Niente fila in filiale.'],
-      ['Sposta lo stipendio sul nuovo IBAN','Dai il nuovo IBAN al datore di lavoro. Fatto: sei operativo.'] ],
-    cta:'Ho aperto (o ho già) un conto' },
-  budget:{ title:'Capire dove vanno i soldi', intro:'Senza foglio Excel infinito. La regola 50/30/20 è una bussola, non una prigione.',
-    steps:[ ['Trova il tuo netto mensile','Quanto entra davvero ogni mese, in media.'],
-      ['Dividi in 3 secchielli','50% bisogni · 30% sfizi · 20% futuro. Adatta le percentuali alla tua realtà.'],
-      ['Paga prima il tuo futuro','Appena arriva lo stipendio, sposta subito la quota \"futuro\" da parte. Prima di spenderla.'],
-      ['Controlla una volta al mese','5 minuti per vedere se i secchielli reggono. Niente ossessione.'] ],
-    cta:'Ho capito i miei numeri' },
-  emergency:{ title:'Creare il fondo di emergenza', intro:'Il paracadute che ti permette di investire sereno. Prima di tutto il resto.',
-    steps:[ ['Calcola 3-6 mesi di spese','Quanto spendi al mese × 3 (minimo) o × 6 (ideale).'],
-      ['Tienilo separato','Un conto deposito o un conto a parte: liquido e NON investito.'],
-      ['Riempilo un po’ alla volta','Anche 50-100€ al mese. Non deve essere immediato, deve esistere.'],
-      ['Non toccarlo','È solo per veri imprevisti, non per le vacanze. Quello è un altro secchiello.'] ],
-    cta:'Sto costruendo il mio fondo' },
-  etf:{ title:'Capire cos’è un ETF', intro:'Il mattone di chi parte da zero. In 4 idee semplici.',
-    steps:[ ['Un cestino di tante aziende','Compri centinaia di aziende in un colpo solo, non una sola.'],
-      ['MSCI World = il mondo','Un ETF su questo indice contiene ~1.400 grandi aziende globali.'],
-      ['Costa poco e è automatico','Commissioni bassissime, segue l’indice da solo, niente gestore costoso.'],
-      ['Perfetto col PAC','Compri sempre lo stesso ETF ogni mese, e lasci fare al tempo.'] ],
-    cta:'Ho capito cos’è un ETF' },
-  platform:{ title:'Scegliere e aprire una piattaforma', intro:'Dove comprerai materialmente i tuoi ETF. Il \"supermercato\".',
-    steps:[ ['Cosa guardare','Costi bassi, PAC gratuito o quasi, app in italiano, regolamentata.'],
-      ['Regime amministrato = zero burocrazia','Se vuoi che le tasse le faccia la banca per te, scegli questo.'],
-      ['Apri il conto titoli','Stessa logica del conto corrente: documenti + riconoscimento online.'],
-      ['Versa una piccola somma','Inizia con poco per prendere confidenza con l’app.'] ],
-    cta:'Ho aperto una piattaforma' },
-  first:{ title:'Fare il primo investimento', intro:'Il grande passo. Più facile di quanto pensi — anche con 50€.',
-    steps:[ ['Scegli un ETF globale','Un ETF azionario mondiale ad accumulo è un classico punto di partenza.'],
-      ['Cerca il suo codice','Nell’app cerchi l’ETF (per nome o codice ISIN) e lo selezioni.'],
-      ['Decidi quanto','Anche 50€. L’obiettivo è iniziare, non indovinare il momento.'],
-      ['Conferma l’acquisto','Premi compra. Congratulazioni: sei ufficialmente un investitore. 🌱'] ],
-    cta:'Ho fatto il mio primo investimento' },
-  pac:{ title:'Impostare un PAC automatico', intro:'L’abitudine che fa il 90% del lavoro al posto tuo.',
-    steps:[ ['Trova \"PAC\" o \"piano\" nell’app','Quasi tutte le piattaforme lo offrono in pochi tap.'],
-      ['Scegli ETF, importo e data','Es. 100€ sul tuo ETF globale, il giorno dopo lo stipendio.'],
-      ['Attiva l’automatismo','Da ora compra da solo ogni mese. Tu non devi fare nulla.'],
-      ['Dimenticatene (sul serio)','Il bello del PAC è proprio non guardarlo di continuo.'] ],
-    cta:'Ho attivato il mio PAC' },
-  diversify:{ title:'Diversificare con criterio', intro:'Non mettere tutte le uova nello stesso paniere — ma senza complicarti.',
-    steps:[ ['Spesso 1 ETF mondiale basta','Sei già su ~1.400 aziende. La semplicità è una forza.'],
-      ['Eventuale tocco di obbligazioni','Per ridurre gli sbalzi, col tempo si può aggiungere una quota di bond.'],
-      ['Evita di strafare','Troppi prodotti = confusione e costi. Meno è meglio.'],
-      ['Crypto/azioni singole: max una fettina','Solo dopo le fondamenta, e solo soldi che puoi perdere.'] ],
-    cta:'Ho capito come diversificare' },
-  taxes:{ title:'Capire tasse e dichiarazione', intro:'In Italia, senza panico e in parole semplici.',
-    steps:[ ['26% sui guadagni','Paghi solo quando vendi, e solo sul guadagno (12,5% sui titoli di Stato).'],
-      ['Bollo 0,2% l’anno','Piccola imposta sul valore del deposito titoli.'],
-      ['Regime amministrato = comodo','La banca calcola e versa le tasse per te. Niente 730 per gli investimenti.'],
-      ['Conserva i riepiloghi','La piattaforma ti dà i report. Tienili da parte e sei a posto.'] ],
-    cta:'Ho capito le tasse' },
-  review:{ title:'Rivedere il piano ogni 6 mesi', intro:'Aggiustare, non stravolgere. La costanza batte la fretta.',
-    steps:[ ['Segna 2 date l’anno','Es. giugno e dicembre: il tuo check-up finanziario.'],
-      ['Controlla 3 cose','Fondo emergenza ok? PAC attivo? Obiettivi cambiati?'],
-      ['Aumenta se puoi','Stipendio cresciuto? Alza il PAC di un po’. È così che si scala.'],
-      ['Non toccare per emotività','Mercato giù non è un motivo per vendere. È spesso il contrario.'] ],
-    cta:'Ho impostato i miei check' },
+  conto:{
+    title:'Il conto corrente',
+    emoji:'🏦',
+    duration:'6 min',
+    intro:'Il conto corrente è il tuo quartier generale dei soldi. Prima di investire, prima di risparmiare — c\'è il conto. Ecco tutto quello che devi sapere per sceglierlo bene.',
+    body:`<strong>Cos\'è il conto corrente?</strong><br><br>
+È un contratto con una banca o una fintech che ti permette di ricevere denaro, pagare e spostare fondi. Ogni conto ha un <strong>IBAN</strong> (es. IT60 X054 2811 1010 0000 0123 456) — è il tuo "indirizzo" bancario: chiunque voglia mandarti soldi usa quello.<br><br>
+<strong>I costi che devi conoscere</strong><br><br>
+Le banche guadagnano su di te in modi spesso nascosti. Guarda sempre:<br><br>
+<ul><li><strong>Canone mensile/annuo</strong> — il costo fisso per tenere il conto aperto. Molti conti online lo azzerano.</li>
+<li><strong>Commissioni su bonifici</strong> — i bonifici SEPA in zona euro sono gratuiti per legge se fatti online.</li>
+<li><strong>Costi carta di debito/credito</strong> — spesso inclusa, ma controlla le commissioni su prelievi ATM.</li>
+<li><strong>Imposta di bollo</strong> — 34,20€/anno se il saldo medio supera i 5.000€ (pagata dalla banca al tuo posto).</li></ul>
+<strong>Conto corrente vs conto deposito</strong><br><br>
+Sono due cose diverse. Il conto <strong>corrente</strong> serve per i movimenti quotidiani. Il conto <strong>deposito</strong> è separato — ci metti i risparmi (incluso il fondo di emergenza), ha tassi di interesse, ma i soldi sono vincolati per un periodo.<br><br>
+<strong>Come scegliere nel 2025</strong><br><br>
+Punta a: canone zero o basso, app funzionante, carta Visa/Mastercard inclusa, supporto in italiano. Le fintech come Revolut, N26, Hype o Illimity offrono spesso condizioni migliori rispetto alle banche tradizionali — ma verifica che siano regolamentate (Banca d\'Italia o equivalente europeo).<br><br>
+Documenti che ti servono: carta d\'identità valida, codice fiscale. L\'apertura online richiede circa 10 minuti e un selfie o video.`,
+    example:`Giulia, 27 anni, cambia banca. La sua banca attuale le costa 8€/mese di canone + 2€ a prelievo. In un anno: 96€ + ~24€ di prelievi = <strong>120€ buttati</strong>. Apre un conto online a canone zero con prelievi gratuiti. Risparmio annuo: 120€ — cioè un mese di spesa in cibo.`,
+    quiz:[
+      {q:'Cos\'è l\'IBAN?',opts:['Il codice identificativo del tuo conto bancario','Il PIN della carta di debito','Il numero del contratto con la banca'],correct:0,explain:'L\'IBAN è il codice internazionale (fino a 34 caratteri) che identifica univocamente il tuo conto. Serve per ricevere bonifici e domiciliare lo stipendio.'},
+      {q:'L\'imposta di bollo sul conto corrente si paga…',opts:['Sempre, su qualsiasi saldo','Solo se il saldo medio supera 5.000€','Solo sui bonifici in entrata'],correct:1,explain:'L\'imposta di bollo (34,20€/anno) scatta solo se il saldo medio annuo supera i 5.000€. È la banca a versarla per te all\'Agenzia delle Entrate.'}
+    ],
+    cta:'Ho aperto (o ho già) un conto'
+  },
+  budget:{
+    title:'Capire dove vanno i soldi',
+    emoji:'💰',
+    duration:'7 min',
+    intro:'La maggior parte delle persone non sa dove finiscono i propri soldi. Non è colpa tua — nessuno ce lo ha insegnato. La regola 50/30/20 è il punto di partenza più semplice che esiste.',
+    body:`<strong>Il problema reale</strong><br><br>
+Guadagni, spendi, e a fine mese ti chiedi dove sia andato tutto. Senza un sistema, anche chi guadagna bene fa fatica. Un budget non è una gabbia: è uno specchio — ti mostra la realtà per poterti muovere meglio.<br><br>
+<strong>La regola 50/30/20</strong><br><br>
+Dividi il tuo netto mensile in tre secchielli:<br><br>
+<ul><li><strong>50% — Bisogni</strong>: affitto/mutuo, bollette, spesa alimentare, trasporti, telefono, assicurazioni. Tutto ciò che non puoi tagliare senza impatto serio.</li>
+<li><strong>30% — Sfizi</strong>: ristoranti, abbonamenti, viaggi, shopping, uscite. Tutto ciò che vuoi ma non ti serve per sopravvivere.</li>
+<li><strong>20% — Futuro</strong>: fondo emergenza, investimenti, PAC. Questa è la quota che costruisce la tua libertà.</li></ul>
+<strong>Il trucco che cambia tutto: paga prima te stesso</strong><br><br>
+Non aspettare la fine del mese per mettere da parte quello che avanza. Non avanza mai niente. Appena arriva lo stipendio, <strong>sposta subito il 20% in un conto separato</strong> — prima ancora di pagare le altre spese. Il cervello si adatta a vivere col rimanente.<br><br>
+<strong>Come tracciare le spese (senza impazzire)</strong><br><br>
+Non devi registrare ogni caffè. Basta categorizzare i movimenti bancari una volta al mese — la maggior parte delle app bancarie lo fa già in automatico. Ci vogliono 10 minuti. Controlla solo se i "secchielli" reggono, non ogni singola voce.<br><br>
+<strong>E se il 50% non basta?</strong><br><br>
+Se i bisogni superano il 50% del tuo netto (comune in città costose come Milano), adatta: l\'importante è avere qualcosa nel secchiello futuro, anche solo il 5-10%. La costanza batte la percentuale perfetta.`,
+    example:`Marco, netto 1.400€/mese a Milano. Affitto 600€ + bollette 80€ + trasporti 50€ + spesa 200€ = 930€ (66% del netto). Il 20% ideale sarebbe 280€, ma Marco può mettere da parte solo 100€. Non è perfetto — ma 100€/mese in 10 anni con un rendimento del 6% diventano <strong>~16.000€</strong>. L\'importante è iniziare.`,
+    quiz:[
+      {q:'Nel metodo 50/30/20, in quale secchiello va l\'abbonamento Netflix?',opts:['Bisogni (50%)','Sfizi (30%)','Futuro (20%)'],correct:1,explain:'Netflix è uno sfizio — ci vivi benissimo senza. Va nel 30%. I bisogni sono solo le spese essenziali che non puoi tagliare senza un impatto serio sulla vita quotidiana.'},
+      {q:'Qual è il trucco più efficace per risparmiare davvero?',opts:['Controllare le spese ogni giorno','Spostare la quota risparmio appena arriva lo stipendio','Aspettare fine mese e mettere da parte quello che avanza'],correct:1,explain:'Pagare prima te stesso (pay yourself first) funziona perché il cervello si adatta a spendere solo quello che rimane. Aspettare fine mese quasi mai funziona — non avanza mai niente.'}
+    ],
+    cta:'Ho capito i miei numeri'
+  },
+  emergency:{
+    title:'Il fondo di emergenza',
+    emoji:'🛡️',
+    duration:'6 min',
+    intro:'Prima di investire anche un solo euro, hai bisogno di un paracadute. Si chiama fondo di emergenza, ed è la cosa più importante che puoi fare per i tuoi soldi.',
+    body:`<strong>Perché è la priorità assoluta</strong><br><br>
+Immagina di iniziare a investire 200€/mese. Dopo sei mesi hai 1.200€ in ETF. Poi la tua auto si rompe e servono 1.500€. Cosa fai? Se non hai un fondo di emergenza, <strong>vendi gli investimenti in perdita</strong> e paghi le commissioni. Il fondo di emergenza spezza questo ciclo.<br><br>
+<strong>Quanto deve essere?</strong><br><br>
+La regola è <strong>3-6 mesi di spese totali</strong> — non di stipendio, di spese. Se spendi 1.200€/mese, il tuo fondo dovrebbe essere tra 3.600€ e 7.200€.<br><br>
+<ul><li><strong>3 mesi</strong>: se hai un lavoro stabile, un partner che lavora, nessuna grossa spesa imprevista all\'orizzonte.</li>
+<li><strong>6 mesi</strong>: se sei freelance, hai un lavoro instabile, una casa con impianti vecchi, o dipendenti a carico.</li></ul>
+<strong>Dove tenerlo</strong><br><br>
+Il fondo di emergenza deve essere <strong>liquido</strong> (disponibile in 24-48h) e <strong>separato</strong> dal conto principale (altrimenti lo spendi). Le opzioni migliori:<br><br>
+<ul><li><strong>Conto deposito libero</strong>: rende qualcosa (2-3% nel 2024-2025), prelievo senza penali. Scelta ideale.</li>
+<li><strong>Conto corrente secondario</strong>: niente interessi, ma funziona. L\'importante è che sia separato.</li></ul>
+<strong>Non metterlo in ETF o azioni</strong> — il mercato può scendere del 30-40% proprio quando hai l\'emergenza. Ti servirebbe esattamente quando vale meno.<br><br>
+<strong>Come costruirlo</strong><br><br>
+Non devi averlo tutto subito. Metti da parte una cifra fissa ogni mese. Anche 100€/mese per 36 mesi ti portano a 3.600€. Una volta raggiunto il target, lascialo lì e inizia a investire il resto.`,
+    example:`Sara, spese mensili 1.100€. Fondo target: 1.100 × 4 mesi = <strong>4.400€</strong>. Mette da parte 150€/mese sul conto deposito. Ci vogliono circa 29 mesi — ma già a 3.000€ ha una protezione sufficiente e può iniziare a investire una piccola parte in parallelo.`,
+    quiz:[
+      {q:'Dove va tenuto il fondo di emergenza?',opts:['In ETF azionari per farlo crescere','In un conto deposito libero o conto separato, sempre liquidabile','Sotto il materasso per averlo subito'],correct:1,explain:'Il fondo di emergenza deve essere liquido (accessibile in 24-48h) e separato dal conto principale. Gli ETF non vanno bene: potrebbero valere il 30% in meno proprio quando ne hai bisogno.'},
+      {q:'Puoi iniziare a investire prima di aver completato il fondo di emergenza?',opts:['No, mai — prima completa il fondo','Sì, una piccola parte in parallelo quando hai già una protezione minima di 2-3 mesi','Sì, sempre — il tempo nel mercato vale di più'],correct:1,explain:'L\'ideale è completare il fondo prima, ma se ci vogliono anni puoi iniziare a investire piccole somme in parallelo quando hai già una copertura minima di 2-3 mesi di spese.'}
+    ],
+    cta:'Sto costruendo il mio fondo'
+  },
+  etf:{
+    title:'Cos\'è un ETF (e perché è perfetto per iniziare)',
+    emoji:'📦',
+    duration:'10 min',
+    intro:'ETF sta per Exchange Traded Fund. È lo strumento più usato dagli investitori consapevoli nel mondo, dai principianti ai professionisti. Ecco tutto quello che devi sapere.',
+    body:`<strong>Partiamo dall\'inizio: cosa sono le azioni?</strong><br><br>
+Quando una grande azienda (Apple, Ferrari, Enel) ha bisogno di capitali, vende pezzi di sé stessa in borsa. Questi pezzi si chiamano <strong>azioni</strong>. Se compri un\'azione di Apple, sei proprietario di una minuscola parte di Apple. Se Apple va bene, il valore sale. Se va male, scende.<br><br>
+<strong>Il problema delle azioni singole</strong><br><br>
+Se compri solo azioni Apple e Apple crolla, perdi tutto su quella posizione. Per ridurre questo rischio bisogna diversificare — cioè comprare tante aziende diverse. Ma comprare 1.000 azioni diverse una per una è costoso e complicato. Ed è qui che entrano gli ETF.<br><br>
+<strong>Cos\'è un ETF, davvero</strong><br><br>
+Un ETF è un <strong>cestino di titoli</strong> (azioni, obbligazioni o entrambi) che replica un indice di mercato. Lo compri come se fosse un\'unica azione, ma dentro ci sono centinaia o migliaia di aziende diverse.<br><br>
+L\'indice più famoso per chi inizia è <strong>MSCI World</strong>: include circa 1.400 grandi aziende di 23 paesi sviluppati. Comprando un ETF su MSCI World, stai investendo contemporaneamente in Apple, Microsoft, Nestlé, Toyota, Samsung e altre 1.395 aziende — in un solo acquisto.<br><br>
+<strong>Perché costano così poco?</strong><br><br>
+I fondi tradizionali hanno un gestore umano che decide cosa comprare e vendere — e si paga caro. Un ETF segue l\'indice in automatico, senza gestore. I costi (il <strong>TER</strong>, Total Expense Ratio) partono da 0,07% l\'anno. Su 10.000€ sono 7€ l\'anno. Un fondo attivo medio può costare 1,5-2% = 150-200€ l\'anno sulla stessa cifra.<br><br>
+<strong>Accumulo vs Distribuzione</strong><br><br>
+Gli ETF ad <strong>accumulo</strong> reinvestono automaticamente i dividendi — più efficiente fiscalmente in Italia, perché non paghi il 26% ogni anno sui dividendi. Quelli a <strong>distribuzione</strong> ti pagano i dividendi periodicamente ma generano tassazione immediata. Per chi inizia: meglio l\'<strong>accumulo</strong>.<br><br>
+<strong>ISIN e domicilio</strong><br><br>
+Ogni ETF ha un codice <strong>ISIN</strong> univoco di 12 caratteri. Se inizia con <strong>IE</strong> (Irlanda) è il più efficiente per noi: grazie ai trattati fiscali, l\'Irlanda non tassa i dividendi americani alla fonte — risparmi dal 15% al 30% sulla tassazione dei dividendi reinvestiti.`,
+    example:`Due ETF sull\'MSCI World. ETF A: TER 0,20%, domicilio Irlanda, accumulo. ETF B: TER 0,50%, distribuzione. Su 10.000€ dopo 30 anni al 7% annuo: ETF A → circa <strong>74.000€</strong>. ETF B → circa <strong>67.000€</strong>. La differenza? Solo costi e struttura — stesso identico indice. 7.000€ di differenza per aver scelto bene all\'inizio.`,
+    quiz:[
+      {q:'Un ETF sull\'MSCI World ti espone a…',opts:['Una singola azienda americana molto grande','Circa 1.400 aziende di 23 paesi sviluppati','Solo aziende italiane ed europee'],correct:1,explain:'MSCI World include circa 1.400 grandi aziende di 23 paesi sviluppati: USA, Europa, Giappone, Canada, Australia e altri. In un solo ETF hai diversificazione geografica e settoriale automatica.'},
+      {q:'Perché per chi inizia in Italia conviene un ETF ad accumulo?',opts:['Perché guadagna di più in assoluto','Perché reinveste i dividendi senza farti pagare subito il 26% di tasse ogni anno','Perché si può vendere più facilmente'],correct:1,explain:'Con l\'accumulo i dividendi vengono reinvestiti automaticamente dentro l\'ETF — non li ricevi in contanti e non paghi il 26% ogni anno. Paghi le tasse solo quando vendi. Questo permette all\'interesse composto di lavorare al massimo.'}
+    ],
+    cta:'Ho capito cos\'è un ETF'
+  },
+  platform:{
+    title:'Scegliere la piattaforma giusta',
+    emoji:'🖥️',
+    duration:'8 min',
+    intro:'La piattaforma è il "supermercato" dove compri i tuoi ETF. La scelta giusta ti fa risparmiare centinaia di euro l\'anno — e ti evita mal di testa fiscali.',
+    body:`<strong>Tipi di intermediario</strong><br><br>
+<ul><li><strong>Banche tradizionali</strong> (Intesa, UniCredit, BNL): hanno tutto, ma costano molto. Un acquisto ETF può costare 10-20€ di commissione. Sconsigliato per chi investe piccole cifre mensili.</li>
+<li><strong>Broker online</strong> (Fineco, Directa): costi bassi, ottimi strumenti, sede italiana. Fineco è il più usato — commissioni da 2,95€ a operazione, PAC gratuito.</li>
+<li><strong>Neobanca/fintech</strong> (Trade Republic, Scalable Capital): commissioni quasi zero (1€/operazione o flat fee mensile), app eccellenti. Ottime per iniziare.</li></ul>
+<strong>Il regime fiscale: la scelta più importante</strong><br><br>
+<ul><li><strong>Regime Amministrato</strong>: la piattaforma calcola e versa le tasse per te automaticamente. Non devi toccare il 730 per gli investimenti. Ideale per chi inizia. Disponibile su broker italiani (Fineco, Directa, ING).</li>
+<li><strong>Regime Dichiarativo</strong>: le tasse le calcoli e dichiari tu nel 730/Unico. Offre più flessibilità ma richiede più burocrazia. Usato da DEGIRO, Trade Republic (al momento), Interactive Brokers.</li></ul>
+<strong>Cosa guardare per scegliere</strong><br><br>
+<ul><li><strong>Commissioni per operazione</strong>: ideale sotto 2€, meglio ancora flat mensile</li>
+<li><strong>PAC gratuito o quasi</strong>: fondamentale se vuoi automatizzare</li>
+<li><strong>Regolamentazione</strong>: deve essere autorizzata da Banca d\'Italia, CONSOB, o da un\'autorità europea (BaFin, AFM…)</li>
+<li><strong>Protezione titoli</strong>: i titoli depositati non sono di proprietà del broker — sei protetto anche in caso di fallimento</li>
+<li><strong>App in italiano</strong>: fa differenza quando hai dubbi</li></ul>
+<strong>Come aprire il conto titoli</strong><br><br>
+Serve carta d\'identità + codice fiscale + metodo di pagamento. L\'apertura è online: compila il modulo, fai il riconoscimento (selfie o video), aspetti 1-3 giorni lavorativi. Poi depositi la prima somma e sei operativo.`,
+    example:`Luca investe 150€/mese in ETF. Su Fineco: PAC gratuito, regime amministrato, zero sorprese fiscali. Su una banca tradizionale con commissione da 12€/acquisto: <strong>144€ l\'anno in commissioni</strong> — quasi un mese di investimento buttato solo in costi. La piattaforma giusta non è un dettaglio.`,
+    quiz:[
+      {q:'Con il regime amministrato, chi si occupa di calcolare e versare le tasse sui tuoi investimenti?',opts:['Tu, nel modello 730 ogni anno','La piattaforma/broker in automatico','Il commercialista che devi assumere'],correct:1,explain:'Con il regime amministrato (disponibile sui broker italiani come Fineco, Directa, ING) è la piattaforma a calcolare e versare le tasse automaticamente. Non devi dichiarare nulla nel 730 per quegli investimenti.'},
+      {q:'Cosa succede ai tuoi ETF se il broker fallisce?',opts:['Li perdi tutti — sono a rischio','Sono tutelati perché i titoli sono di tua proprietà e segregati dal patrimonio del broker','Dipende da quanti soldi hai depositato'],correct:1,explain:'I titoli (ETF, azioni, obbligazioni) che compri tramite un broker sono di tua proprietà e tenuti separati dal patrimonio della società. Anche se il broker fallisce, i tuoi titoli ti vengono restituiti.'}
+    ],
+    cta:'Ho aperto una piattaforma'
+  },
+  first:{
+    title:'Il primo investimento',
+    emoji:'🌱',
+    duration:'7 min',
+    intro:'Stai per fare il passo più importante: diventare un investitore. Sembra difficile, ma è più semplice di comprare un biglietto aereo. Ecco esattamente come funziona.',
+    body:`<strong>La paura del "momento sbagliato"</strong><br><br>
+Il motivo numero uno per cui le persone rimandano per anni: "aspetto che il mercato scenda un po\'". Il problema? Il momento perfetto non esiste — nemmeno i professionisti riescono a indovinarlo sistematicamente. Ogni giorno che aspetti è un giorno in cui i tuoi soldi non crescono.<br><br>
+<strong>Come funziona un acquisto in borsa</strong><br><br>
+<ul><li><strong>Cerca l\'ETF</strong>: nell\'app della piattaforma cerchi per nome (es. "MSCI World") o per codice ISIN (es. IE00B4L5Y983 per il Vanguard FTSE All-World).</li>
+<li><strong>Ordine a mercato vs ordine limite</strong>: l\'<strong>ordine a mercato</strong> compra subito al prezzo corrente — perfetto per ETF liquidi. L\'<strong>ordine limite</strong> compra solo se il prezzo scende a un valore che hai stabilito tu.</li>
+<li><strong>Quantità</strong>: alcuni ETF costano 80-100€ per quota. Su Trade Republic e Scalable Capital puoi comprare anche frazioni di quota.</li>
+<li><strong>Conferma</strong>: premi "Acquista" → il sistema esegue l\'ordine → entro pochi secondi hai l\'ETF nel portafoglio.</li></ul>
+<strong>Cosa succede dopo?</strong><br><br>
+Il giorno stesso vedi l\'ETF nel tuo portafoglio con il suo valore attuale. Il valore cambierà ogni giorno — <strong>è normalissimo, non preoccuparti</strong>. Il prezzo oscilla, ma la tendenza di lungo periodo di un ETF diversificato è storica: verso l\'alto.<br><br>
+<strong>Quanto investire la prima volta?</strong><br><br>
+Non c\'è risposta giusta. Anche 50-100€ vanno benissimo. L\'obiettivo della prima volta è <strong>imparare il processo</strong>, non costruire fortuna. Senti come funziona, impara a leggere il portafoglio — poi aumenti gradualmente.<br><br>
+Non cercare l\'ETF "perfetto" per ore. Un ETF azionario mondiale ad accumulo domiciliato in Irlanda con TER sotto 0,25% è una scelta eccellente per il 95% delle persone. Inizia.`,
+    example:`Chiara, 29 anni, primo investimento: 200€ su un ETF MSCI World. Apre l\'app, cerca "MSCI World", seleziona il Vanguard FTSE All-World (ISIN IE00B3RBWM25), clicca "acquista", inserisce 200€, conferma. In totale: 3 minuti. Il giorno dopo il valore è sceso di 1,20€. Non vende — sa che è normale. Tre anni dopo, quei 200€ ne valgono 278€ senza aver fatto nient\'altro.`,
+    quiz:[
+      {q:'Qual è il motivo principale per cui conviene investire subito invece di aspettare il "momento giusto"?',opts:['Perché il mercato sale sempre nel breve periodo','Perché è quasi impossibile prevedere i movimenti del mercato e ogni giorno di attesa è tempo perso','Perché le commissioni aumentano se aspetti'],correct:1,explain:'Nessuno — nemmeno i professionisti — riesce a fare market timing in modo sistematico. Chi investe subito batte chi aspetta nella maggior parte dei casi su orizzonti di 10+ anni. Il tempo nel mercato batte il timing del mercato.'},
+      {q:'Cos\'è un ordine a mercato?',opts:['Un ordine che compra solo se il prezzo scende a una soglia fissata','Un ordine eseguito subito al prezzo corrente di mercato','Un ordine che si divide in più acquisti nel tempo'],correct:1,explain:'L\'ordine a mercato compra immediatamente al prezzo corrente. È la scelta ideale per ETF liquidi come quelli su MSCI World, dove il prezzo è sempre aggiornato e lo spread (differenza tra acquisto e vendita) è minimo.'}
+    ],
+    cta:'Ho fatto il mio primo investimento'
+  },
+  pac:{
+    title:'Il PAC: investi in automatico ogni mese',
+    emoji:'🔁',
+    duration:'7 min',
+    intro:'PAC sta per Piano di Accumulo del Capitale. È l\'abitudine finanziaria più potente che esiste — e una volta impostata, lavora al posto tuo senza che tu debba fare nulla.',
+    body:`<strong>Cos\'è il PAC e come funziona</strong><br><br>
+Un PAC è un ordine ricorrente che compra automaticamente un importo fisso di ETF a cadenza regolare (solitamente mensile). Tu imposti una volta: "ogni 5 del mese, compra 150€ di ETF MSCI World" — e la piattaforma lo fa da sola, mese dopo mese, per anni.<br><br>
+<strong>Il principio del Dollar Cost Averaging</strong><br><br>
+Investendo una cifra fissa ogni mese, in automatico compri <strong>più quote quando il mercato è giù</strong> e meno quando è su. Non devi fare niente di speciale: è la matematica che lavora per te.<br><br>
+<ul><li>Mese 1: ETF a 100€/quota → compri 1,5 quote con 150€</li>
+<li>Mese 2: ETF scende a 75€ → compri 2 quote con 150€ (più quote a prezzo basso!)</li>
+<li>Mese 3: ETF torna a 100€ → le 3,5 quote accumulate valgono 350€</li></ul>
+Hai investito 450€ in 3 mesi e ora hai 350€? No — questo è solo uno scenario parziale. Il punto è che nei mesi difficili hai comprato più quote, abbassando il tuo prezzo medio d\'acquisto nel tempo.<br><br>
+<strong>Perché il PAC batte quasi sempre aspettare</strong><br><br>
+Non ci sono decisioni da prendere ogni mese. Non devi scegliere se il momento è "buono". Non devi resistere alla paura quando il mercato scende. Il PAC elimina le emozioni — il nemico numero uno dell\'investitore.<br><br>
+<strong>Come impostarlo</strong><br><br>
+Quasi tutte le piattaforme moderne hanno il PAC integrato. I passi:<br><br>
+<ul><li>Vai nella sezione "PAC" o "Piano di risparmio"</li>
+<li>Seleziona l\'ETF</li>
+<li>Imposta importo (es. 100€) e giorno del mese (consiglio: il giorno dopo lo stipendio)</li>
+<li>Attiva — e poi dimenticatelo</li></ul>
+<strong>Poi dimenticatene. Davvero.</strong> La tentazione di guardare il PAC ogni giorno e cambiare in base all\'umore del mercato è il nemico numero uno del risultato.`,
+    example:`Alessandro investe 200€/mese in PAC su MSCI World a partire dai 30 anni. A 60 anni, con un rendimento storico medio del 7% annuo, ha accumulato circa <strong>240.000€</strong> versando in totale 72.000€. Il mercato nel frattempo è salito e sceso decine di volte — lui non ha mai toccato niente. Questo è il potere dell\'interesse composto + PAC.`,
+    quiz:[
+      {q:'Cosa significa "Dollar Cost Averaging"?',opts:['Investire sempre in dollari americani','Investire una cifra fissa a intervalli regolari, comprando più quote quando i prezzi sono bassi','Cambiare l\'importo investito ogni mese in base all\'andamento del mercato'],correct:1,explain:'Il Dollar Cost Averaging (piano di accumulo) consiste nell\'investire una cifra fissa a intervalli regolari. Matematicamente, compri più quote quando il prezzo è basso e meno quando è alto — abbassando il prezzo medio d\'acquisto nel tempo.'},
+      {q:'Quando un PAC funziona meglio?',opts:['Quando il mercato sale sempre','Quando il mercato è volatile o in calo, perché compri più quote a prezzi bassi','Solo quando si investe in obbligazioni'],correct:1,explain:'Il PAC funziona meglio proprio nei mercati volatili o in calo, perché con la stessa cifra mensile compri più quote a prezzi ridotti. Quando il mercato poi risale, quelle quote extra aumentano di valore. Per questo si dice che il PAC "trasforma la volatilità in opportunità".'}
+    ],
+    cta:'Ho attivato il mio PAC'
+  },
+  diversify:{
+    title:'Diversificare: non mettere tutte le uova nello stesso paniere',
+    emoji:'🥚',
+    duration:'8 min',
+    intro:'Diversificare significa ridurre il rischio distribuendo gli investimenti su più strumenti, settori e geografie. La buona notizia: con un ETF mondiale lo fai già in automatico.',
+    body:`<strong>Perché diversificare</strong><br><br>
+Nel 2000 le azioni tecnologiche americane persero fino al -78% (bolla dot-com). Nel 2008 le banche mondiali crollarono. Nel 2020 il turismo e i viaggi sparirono quasi del tutto. Chi aveva tutto in un solo settore o paese fu devastato. Chi aveva un portafoglio diversificato soffrì, ma recuperò molto prima.<br><br>
+Il principio: se due asset raramente scendono insieme, metterli entrambi nel portafoglio riduce le oscillazioni totali senza sacrificare troppo rendimento.<br><br>
+<strong>Tipi di diversificazione</strong><br><br>
+<ul><li><strong>Geografica</strong>: USA, Europa, Giappone, mercati emergenti. Un ETF MSCI World copre già 23 paesi sviluppati. Un MSCI ACWI aggiunge anche i mercati emergenti (Cina, India, Brasile…).</li>
+<li><strong>Settoriale</strong>: tech, salute, energia, finanza, beni di consumo. Un ETF mondiale è già diversificato per settore automaticamente.</li>
+<li><strong>Per classe di asset</strong>: azioni (crescita alta, oscillazioni alte) + obbligazioni (crescita bassa, stabilità alta) + eventualmente oro (protezione dall\'inflazione).</li></ul>
+<strong>Per chi inizia: 1 ETF mondiale spesso basta</strong><br><br>
+Con un ETF su MSCI World o MSCI ACWI sei già diversificato su 1.400-2.800 aziende in decine di paesi e settori. Aggiungere 20 ETF diversi non aumenta la diversificazione — aumenta la complessità e i costi.<br><br>
+<strong>Quando aggiungere le obbligazioni</strong><br><br>
+Se l\'idea che il tuo portafoglio scenda del 40% ti fa dormire male, aggiungere una quota di obbligazioni riduce le oscillazioni. Un portafoglio 80% azioni / 20% obbligazioni ha storicamente avuto rendimenti solo leggermente inferiori al 100% azioni, ma con sbalzi molto meno violenti.<br><br>
+<strong>Cosa evitare</strong><br><br>
+<ul><li>Troppi ETF simili (3 ETF su MSCI World sono come averne 1, ma paghi 3 volte le commissioni)</li>
+<li>Azioni singole come base del portafoglio — tienile sotto il 5-10% se proprio vuoi</li>
+<li>Crypto come investimento principale — possono perdere il 70-80% e non recuperare per anni</li></ul>`,
+    example:`Portafoglio A: 100% azioni tecnologiche USA. Nel 2022 perde -33%. Portafoglio B: 60% ETF azionario mondiale + 30% ETF obbligazionario + 10% oro. Nel 2022 perde -14%. Stesso anno, ma B ha perso meno della metà — e ha recuperato molto prima. La diversificazione non elimina le perdite, le rende sopportabili.`,
+    quiz:[
+      {q:'Un ETF sull\'MSCI World è già diversificato?',opts:['No, è concentrato su un\'unica azienda','Sì, include circa 1.400 aziende di 23 paesi e tutti i principali settori','Solo geograficamente, non per settore'],correct:1,explain:'Un ETF su MSCI World include circa 1.400 grandi aziende di 23 paesi sviluppati, distribuite su tutti i principali settori (tech, finanza, salute, energia, beni di consumo…). È già un\'ottima diversificazione per chi inizia.'},
+      {q:'Qual è il rischio di mettere tutto in azioni di un solo settore?',opts:['Nessun rischio extra rispetto a un ETF mondiale','Se quel settore crolla, perdi molto più di chi è diversificato','Le commissioni sono più alte'],correct:1,explain:'Concentrarsi su un solo settore ti espone al rischio specifico di quell\'industria. Se crolla (come la tech nel 2000 o le banche nel 2008), perdi molto di più rispetto a chi ha un portafoglio diversificato su tutti i settori e geografie.'}
+    ],
+    cta:'Ho capito come diversificare'
+  },
+  taxes:{
+    title:'Le tasse sugli investimenti in Italia — guida completa',
+    emoji:'🧾',
+    duration:'12 min',
+    intro:'Le tasse spaventano — ma una volta capite, sono gestibili. In Italia il sistema è abbastanza semplice, soprattutto se scegli il regime giusto. Ecco tutto, senza omettere niente.',
+    body:`<strong>1. Imposta sui guadagni (plusvalenze): 26%</strong><br><br>
+Quando vendi un ETF o un\'azione a un prezzo più alto di quello a cui l\'hai comprata, hai realizzato una <strong>plusvalenza</strong>. L\'Italia applica una ritenuta del <strong>26%</strong> sul guadagno netto.<br><br>
+<ul><li>Importante: <strong>paghi solo quando vendi</strong>. Finché tieni l\'ETF in portafoglio, non paghi nulla — anche se è salito del 200%.</li>
+<li><strong>Eccezione: Titoli di Stato italiani ed europei (BTP, BOT, CCT)</strong>: tassati al <strong>12,5%</strong> invece del 26%. Agevolazione storica per incentivare l\'investimento nel debito pubblico.</li></ul>
+<strong>2. Ritenuta sui dividendi: 26%</strong><br><br>
+Se ricevi dividendi (da ETF a distribuzione, azioni singole, fondi) paghi il <strong>26%</strong> alla fonte, in automatico, ogni volta che vengono distribuiti. Ecco perché per chi investe a lungo termine l\'accumulo è più efficiente: i dividendi vengono reinvestiti senza passare per le tasse ogni anno.<br><br>
+<strong>3. Imposta di bollo sul deposito titoli: 0,2% annuo</strong><br><br>
+È un\'imposta patrimoniale sul valore del tuo portafoglio investito. Si calcola come <strong>0,2% del valore di mercato</strong> del deposito titoli, tipicamente addebitata trimestralmente o annualmente. È la piattaforma a versarla per te.<br><br>
+Esempio: portafoglio da 10.000€ → bollo = 20€/anno. Da 50.000€ → 100€/anno.<br><br>
+<strong>4. IVAFE (per investimenti all\'estero)</strong><br><br>
+Se investi tramite un broker straniero non italiano (DEGIRO, Interactive Brokers) in regime dichiarativo, potresti dover dichiarare il tuo patrimonio estero nel modello RW e pagare l\'IVAFE: anch\'essa <strong>0,2%</strong> sul valore. Stessa aliquota del bollo, ma con adempimento a carico tuo.<br><br>
+<strong>5. Tobin Tax (solo su azioni italiane)</strong><br><br>
+Una piccola imposta (<strong>0,1%</strong> su mercati regolamentati) si applica ai trasferimenti di <strong>azioni di società italiane con capitalizzazione superiore a 500 milioni</strong> (Eni, Enel, Intesa, ecc.). Gli ETF ne sono <strong>esenti</strong>. Se compri solo ETF, non la paghi mai.<br><br>
+<strong>6. Plusvalenze e Minusvalenze: lo "zainetto fiscale"</strong><br><br>
+Quando vendi in perdita, generi una <strong>minusvalenza</strong>. Le minus si possono compensare con le plus future entro <strong>4 anni</strong>: se quest\'anno guadagni 1.000€ ma l\'anno scorso avevi perso 600€, paghi le tasse solo su 400€.<br><br>
+<strong>Attenzione — asimmetria fiscale italiana sugli ETF</strong>: le minus generate da ETF non compensano le plus di altri ETF (sono in cassetti fiscali diversi). Le minus degli ETF compensano invece le plus di azioni singole, obbligazioni e certificati. Questa è una delle poche penalizzazioni degli ETF in Italia — ma per la maggior parte degli investitori non cambia molto.<br><br>
+<strong>7. Regime Amministrato vs Dichiarativo</strong><br><br>
+<ul><li><strong>Regime Amministrato</strong>: la piattaforma fa tutto — calcola, trattiene e versa le tasse per te. Non tocchi il 730 per gli investimenti. È il regime di default sui broker italiani (Fineco, Directa, ING, Banca Mediolanum…). Semplicissimo da gestire.</li>
+<li><strong>Regime Dichiarativo</strong>: devi dichiarare tutto nel modello 730 o Redditi PF ogni anno. Più flessibile (puoi compensare minus/plus tra broker diversi, o tra minus di ETF e plus di azioni) ma richiede attenzione o un commercialista. Usato da DEGIRO, Trade Republic, Interactive Brokers.</li></ul>
+<strong>Quando e come si pagano</strong><br><br>
+Con il regime amministrato: la piattaforma ti trattiene le tasse automaticamente al momento della vendita o del dividendo. Con il regime dichiarativo: le dichiari e paghi entro giugno dell\'anno successivo nel modello 730 o Redditi.`,
+    example:`Federica vende ETF con +2.000€ di guadagno. Tasse: 2.000 × 26% = <strong>520€</strong>. Ma l\'anno prima aveva venduto un ETF in perdita di 800€ (minusvalenza in zainetto). Può compensare ETF vs ETF? In Italia <strong>no</strong> — cassetti fiscali diversi. Ma se avesse -800€ da azioni singole, sì: pagherebbe solo su 1.200€ = 312€ invece di 520€. Lezione: tieni traccia delle minus e scegli il regime giusto.`,
+    quiz:[
+      {q:'In Italia, quale aliquota si applica ai guadagni sugli ETF azionari?',opts:['12,5% — come sui titoli di Stato italiani','26% sul guadagno realizzato al momento della vendita','33% come un reddito da lavoro autonomo'],correct:1,explain:'I guadagni (plusvalenze) su ETF azionari sono tassati al 26%. Si paga solo al momento della vendita e solo sul guadagno netto (prezzo di vendita meno prezzo di acquisto). I titoli di Stato italiani ed europei hanno invece un\'aliquota agevolata del 12,5%.'},
+      {q:'Con il regime amministrato, cosa devi fare per pagare le tasse sui tuoi investimenti?',opts:['Dichiarare tutto nel 730 entro giugno ogni anno','Niente — la piattaforma calcola, trattiene e versa le tasse automaticamente per te','Mandare una comunicazione all\'Agenzia delle Entrate ogni trimestre'],correct:1,explain:'Il regime amministrato è il vantaggio principale dei broker italiani: la piattaforma fa da sostituto d\'imposta. Calcola le tasse, le trattiene dai tuoi proventi e le versa al fisco. Non devi inserire nulla nel 730 per quegli investimenti.'}
+    ],
+    cta:'Ho capito le tasse'
+  },
+  review:{
+    title:'Rivedere il piano ogni 6 mesi',
+    emoji:'🔍',
+    duration:'6 min',
+    intro:'Investire non è "imposta e dimentica" per sempre. Un check semestrale di 30 minuti mantiene il portafoglio allineato ai tuoi obiettivi — senza stravolgere nulla.',
+    body:`<strong>Perché rivedere periodicamente</strong><br><br>
+Il mercato si muove. La tua vita cambia. Quello che aveva senso 12 mesi fa potrebbe non averlo oggi — nuova famiglia, nuovo lavoro, obiettivo raggiunto, orizzonte temporale accorciato. Due revisioni l\'anno bastano per restare in rotta senza diventare ossessivi.<br><br>
+<strong>Le 5 cose da controllare</strong><br><br>
+<ul><li><strong>1. Il fondo di emergenza è ancora intatto?</strong> Se hai attinto per un\'emergenza, pianifica come ricostituirlo prima di aumentare gli investimenti.</li>
+<li><strong>2. Il PAC è attivo e all\'importo giusto?</strong> Stipendio cresciuto? È il momento di alzare il PAC di qualche decina di euro.</li>
+<li><strong>3. L\'asset allocation è ancora quella giusta?</strong> Se le azioni sono salite molto, potresti essere passato dal 70% all\'80% di azionario — forse è ora di ribilanciare.</li>
+<li><strong>4. Gli obiettivi sono cambiati?</strong> Stai per comprare casa nei prossimi 2-3 anni? I soldi destinati a quello non devono stare in borsa — troppo rischio su orizzonti brevi.</li>
+<li><strong>5. Hai minusvalenze in scadenza?</strong> Le minus si compensano entro 4 anni. Controlla se stai per perderne qualcuna senza averla usata.</li></ul>
+<strong>Cos\'è il ribilanciamento</strong><br><br>
+Se hai un target 80% azioni / 20% obbligazioni e le azioni sono salite molto, potresti ritrovarti a 88% / 12%. Ribilanciare significa riportare le percentuali al target originale.<br><br>
+<strong>Il trucco per non pagare tasse nel ribilanciamento</strong><br><br>
+Invece di vendere la parte cresciuta (e pagare il 26%), usa i <strong>nuovi versamenti mensili</strong> per comprare di più la parte in ritardo. Arrivi al target senza vendere — e senza tasse. Si chiama "ribilanciamento tramite apporti".<br><br>
+<strong>Cosa NON fare durante la revisione</strong><br><br>
+<ul><li>Cambiare strategia perché il mercato è sceso</li>
+<li>Aggiungere ETF "di moda" senza un motivo concreto</li>
+<li>Confrontare il tuo rendimento con quello di qualcuno su Instagram</li></ul>
+<strong>Segna le date ora</strong><br><br>
+Metti in calendario due appuntamenti fissi: es. <strong>15 gennaio e 15 luglio</strong>. Trattali come un check-up medico: non puoi saltarli.`,
+    example:`Giugno 2025: Davide fa il suo check semestrale. Il portafoglio è cresciuto: le azioni sono passate dal 70% al 76%. Decide di destinare i prossimi 3 mesi di PAC interamente a obbligazioni, senza vendere nulla. A settembre torna al 70/30. Nessuna vendita, nessuna tassa. Tempo totale impiegato: <strong>25 minuti</strong>.`,
+    quiz:[
+      {q:'Qual è il modo più fiscalmente efficiente per ribilanciare il portafoglio?',opts:['Vendere gli asset cresciuti e comprare quelli in ritardo','Usare i nuovi versamenti mensili per comprare la parte in ritardo, senza vendere','Attendere che il mercato si ribilanci da solo'],correct:1,explain:'Vendere significa realizzare plusvalenze e pagare il 26%. Usando i nuovi versamenti per acquistare la parte sottopesata arrivi allo stesso risultato (target di allocazione) senza vendere nulla e senza pagare tasse. Si chiama ribilanciamento tramite apporti.'},
+      {q:'Ogni quanto conviene fare una revisione del portafoglio?',opts:['Ogni giorno per essere sempre aggiornato','Ogni 6 mesi circa — basta per restare in rotta senza ossessionarsi','Solo quando il mercato crolla del 20% o più'],correct:1,explain:'Due revisioni l\'anno sono sufficienti per la stragrande maggioranza degli investitori. Guardare il portafoglio ogni giorno aumenta le probabilità di prendere decisioni emotive (vendere nel panico o comprare per euforia) senza portare nessun vantaggio reale.'}
+    ],
+    cta:'Ho impostato i miei check'
+  }
 };
+
 
 let currentActionStep=null;
 let quizAnswered={};

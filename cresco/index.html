@@ -194,8 +194,7 @@
   .msg.bot b{color:var(--green);font-weight:700}
   .msg.bot strong{font-weight:700}
   .msg-coach-head{display:flex;align-items:center;gap:8px;margin-bottom:7px;font-size:12px;color:var(--muted);font-weight:600}
-  .msg-av{width:22px;height:22px;border-radius:7px;background:linear-gradient(135deg,#cce4d6,#0e7a50);
-    display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .msg-av{width:22px;height:22px;border-radius:7px;overflow:hidden;flex-shrink:0}
   .typing{display:flex;gap:4px;padding:14px 16px}
   .typing i{width:7px;height:7px;border-radius:50%;background:var(--muted);opacity:.5;animation:blink 1.2s infinite}
   .typing i:nth-child(2){animation-delay:.2s}.typing i:nth-child(3){animation-delay:.4s}
@@ -296,6 +295,7 @@ function save(){ localStorage.setItem(LS, JSON.stringify(S)) }
 /* ---------- ICONS ---------- */
 const I = {
   leaf:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/></svg>',
+  face:'<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><defs><linearGradient id="faceg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#16a06a"/><stop offset="1" stop-color="#0e7a50"/></linearGradient></defs><rect width="24" height="24" fill="url(#faceg)"/><path d="M12 8L12 3" stroke="#5de0a4" stroke-width="1.3" stroke-linecap="round"/><path d="M12 7Q8.5 5.5 9 2.5Q12.5 3.5 12 7Z" fill="#7dedc0"/><path d="M12 5.5Q15.5 3.5 15 0.5Q11.5 1.8 12 5.5Z" fill="#5de0a4"/><circle cx="12" cy="16" r="8" fill="#fdf9f0"/><circle cx="8.5" cy="18" r="1.8" fill="#f08a3c" opacity=".22"/><circle cx="15.5" cy="18" r="1.8" fill="#f08a3c" opacity=".22"/><circle cx="9.8" cy="14.5" r="1.4" fill="#16241c"/><circle cx="14.2" cy="14.5" r="1.4" fill="#16241c"/><circle cx="10.3" cy="14" r=".5" fill="white"/><circle cx="14.7" cy="14" r=".5" fill="white"/><path d="M9.5 18Q12 20.5 14.5 18" fill="none" stroke="#16241c" stroke-width=".95" stroke-linecap="round"/></svg>',
   check:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
   checkS:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
   arrow:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
@@ -889,7 +889,7 @@ function initCoach(){
   sc.scrollTop=sc.scrollHeight;
 }
 function bubble(r,t){
-  if(r==='bot') return `<div class="msg bot"><div class="msg-coach-head"><span class="msg-av">${I.leaf}</span>Coach</div>${t}</div>`;
+  if(r==='bot') return `<div class="msg bot"><div class="msg-coach-head"><span class="msg-av">${I.face}</span>Coach</div>${t}</div>`;
   return `<div class="msg me">${t}</div>`;
 }
 function growTa(el){ el.style.height='auto'; el.style.height=Math.min(110,el.scrollHeight)+'px'; }

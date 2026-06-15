@@ -555,13 +555,39 @@ function adviceIntent(q){
 function coachEngine(text){
   const q = text.toLowerCase().trim();
   const cf = S.coachFlow || {flow:null};
-  if(cf.flow==='consult') return consultStep(q);
+  if(cf.flow==='consult'){
+    const r = routeConsult(q, cf);
+    if(r!==null) return r;   // r===null means: flow abandoned, fall through to fresh routing
+  }
   const ex = examplesIntent(q);
   if(ex) return ex==='etf' ? etfExamplesReply() : ASSET_EXAMPLES[ex];
   if(adviceIntent(q)) return startConsult(q);
   const kb = kbMatch(q);
   if(kb) return wrapKB(kb);
   return smalltalk(q);
+}
+
+// Does this message plausibly ANSWER the question we just asked?
+function answersCurrentStep(q, step){
+  if(step==='efork')   return /fond|emerg|cuscin|prima|base|invest|comunque|spieg|capire/.test(q) || parseYesNo(q)!==null;
+  if(step==='horizon') return parseHorizon(q)!==null;
+  if(step==='amount')  return parseAmount(q)!==null;
+  return false;
+}
+
+// While in the consult flow, decide: continue, or step aside for a new question.
+// Returns a reply string to send, or null to abandon the flow and route fresh.
+function routeConsult(q, cf){
+  // 1. Unambiguous topic change: asking for examples of a specific asset ("dammi 5 etf")
+  if(examplesIntent(q)!==null){ clearFlow(); return null; }
+  // 2. A greeting starts a clean slate
+  if(/^(ciao|ehi|hey|salve|buongiorno|buonasera)\b/.test(q)){ clearFlow(); return null; }
+  // 3. A genuine answer to the current question → keep going
+  if(answersCurrentStep(q, cf.step)) return consultStep(q);
+  // 4. Not an answer, but a recognizable new question → drop the flow and answer it
+  if(kbMatch(q)!==null || adviceIntent(q)){ clearFlow(); return null; }
+  // 5. Unclear: let the step ask again, gently
+  return consultStep(q);
 }
 
 // "dammi 5 ETF/azioni/crypto/obbligazioni/materie prime" → educational examples (categories, never specific products)

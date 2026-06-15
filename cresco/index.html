@@ -239,6 +239,32 @@
   .aflow-tx b{font-weight:600;font-size:15px}
   .aflow-tx p{font-size:13.5px;color:var(--muted);margin-top:3px}
 
+  /* ---------- LESSON SHEET ---------- */
+  .lesson-meta{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+  .lesson-emoji{font-size:32px}
+  .lesson-dur{font-size:12px;color:var(--muted);font-weight:600;background:var(--surface-2);padding:4px 10px;border-radius:99px}
+  .lesson-body{font-size:15px;line-height:1.72;color:var(--ink)}
+  .lesson-body strong{font-weight:700}
+  .lesson-body ul{padding-left:4px;list-style:none}
+  .lesson-body ul li::before{content:"• ";color:var(--green);font-weight:700}
+  .lesson-body ul li{margin-bottom:6px}
+  .ex-box{background:var(--green-soft);border:1.5px solid rgba(14,122,80,.2);border-radius:13px;
+    padding:14px 16px;margin:18px 0;font-size:13.5px;line-height:1.6}
+  .ex-box .ex-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--green);margin-bottom:6px}
+  .quiz-section{margin-top:24px;border-top:1px solid var(--line);padding-top:20px}
+  .quiz-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+  .quiz-q{font-size:15px;font-weight:600;line-height:1.4;margin-bottom:12px}
+  .quiz-opt{display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+    background:var(--surface);border:1.5px solid var(--line);border-radius:11px;
+    padding:12px 14px;margin-bottom:8px;font-size:14px;transition:border-color .2s,background .2s}
+  .quiz-opt.correct{border-color:var(--green);background:var(--green-soft)}
+  .quiz-opt.wrong{border-color:#e05252;background:#fdf0f0}
+  .quiz-opt:disabled{cursor:default}
+  .quiz-explain{font-size:13px;color:var(--muted);line-height:1.55;margin:4px 0 14px;
+    padding:10px 12px;background:var(--surface-2);border-radius:9px;display:none}
+  .quiz-explain.show{display:block}
+
   /* ---------- BOTTOM NAV ---------- */
   .nav{position:fixed;bottom:calc(env(safe-area-inset-bottom) + 18px);left:50%;
     transform:translateX(-50%);
@@ -1166,27 +1192,58 @@ const ACTIONS = {
 };
 
 let currentActionStep=null;
+let quizAnswered={};
 function openAction(key,stepId){
   const a=ACTIONS[key]; if(!a) return;
   currentActionStep=stepId;
+  quizAnswered={};
   const done=stepDone(stepId);
+  const quizHtml=(a.quiz||[]).map((qq,qi)=>`
+    <div class="quiz-item" id="qqi_${qi}">
+      <div class="quiz-q">${qi+1}. ${qq.q}</div>
+      ${qq.opts.map((opt,oi)=>`
+        <button class="quiz-opt" onclick="answerQuiz(${qi},${oi},${qq.correct},'${escapeHtml(qq.explain)}')">${opt}</button>
+      `).join('')}
+      <div class="quiz-explain" id="qex_${qi}">${qq.explain}</div>
+    </div>`).join('');
   document.getElementById('sheetContent').innerHTML=`
-    <div class="sheet-head"><h3>${a.title}</h3><button class="sheet-x" onclick="closeSheet()">${I.x}</button></div>
+    <div class="sheet-head">
+      <h3>${a.title}</h3>
+      <button class="sheet-x" onclick="closeSheet()">${I.x}</button>
+    </div>
     <div class="sheet-body">
-      <p style="color:var(--muted);font-size:14.5px;margin-bottom:20px">${a.intro}</p>
-      ${a.steps.map((s,i)=>`
-        <div class="aflow-step">
-          <div class="aflow-line"><div class="aflow-num">${i+1}</div></div>
-          <div class="aflow-tx"><b>${s[0]}</b><p>${s[1]}</p></div>
-        </div>`).join('')}
-      <button class="btn ${done?'secondary':''}" onclick="completeAction('${stepId}')" style="margin-top:6px">
-        ${done?'✓ Già completato — tocca per annullare':a.cta}
-      </button>
-      <button class="btn ghost" onclick="closeSheet();go('coach')" style="margin-top:8px">Ho ancora dubbi, chiedo al coach</button>
-      <div style="height:12px"></div>
+      <div class="lesson-meta">
+        <span class="lesson-emoji">${a.emoji||'📖'}</span>
+        <span class="lesson-dur">⏱ ${a.duration||'5 min'}</span>
+        ${done?'<span class="chip" style="font-size:11px">✓ Completato</span>':''}
+      </div>
+      <p style="color:var(--muted);font-size:14.5px;margin-bottom:16px;line-height:1.6">${a.intro}</p>
+      <div class="lesson-body">${a.body}</div>
+      ${a.example?`<div class="ex-box"><div class="ex-label">Esempio pratico</div>${a.example}</div>`:''}
+      ${quizHtml?`<div class="quiz-section"><div class="quiz-label">Verifica la comprensione</div>${quizHtml}</div>`:''}
+      <div id="completeArea" style="margin-top:20px">
+        <button class="btn ${done?'secondary':''}" onclick="completeAction('${stepId}')">
+          ${done?'✓ Già completato — tocca per annullare':a.cta}
+        </button>
+        <button class="btn ghost" onclick="closeSheet();go('coach')" style="margin-top:8px">Ho ancora dubbi, chiedo al coach</button>
+      </div>
+      <div style="height:20px"></div>
     </div>`;
   document.getElementById('sheet').classList.add('open');
   document.getElementById('sheetOv').classList.add('open');
+}
+function answerQuiz(qi,oi,correct,explain){
+  if(quizAnswered[qi]!==undefined) return;
+  quizAnswered[qi]=oi;
+  const item=document.getElementById('qqi_'+qi);
+  if(!item) return;
+  item.querySelectorAll('.quiz-opt').forEach((b,i)=>{
+    b.disabled=true;
+    if(i===correct) b.classList.add('correct');
+    else if(i===oi && oi!==correct) b.classList.add('wrong');
+  });
+  const ex=document.getElementById('qex_'+qi);
+  if(ex){ ex.textContent=explain; ex.classList.add('show'); }
 }
 function completeAction(stepId){
   const was=stepDone(stepId);

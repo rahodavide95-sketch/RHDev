@@ -345,6 +345,77 @@ function nextStep(){ return ALL_STEPS.find(s=>!stepDone(s.id)) || null }
 function currentPhase(){ return PHASES.find(p=>phaseState(p)==='active') || PHASES[PHASES.length-1] }
 
 /* ============================================================
+   INVESTITORE PRO — unlocks after the base course is complete
+   ============================================================ */
+function exBox(t){ return `<div style="background:var(--orange-soft);border:1px solid rgba(240,138,60,.2);border-radius:11px;padding:12px 14px;margin-top:12px;font-size:13.5px;line-height:1.55;color:#7a5a36"><b style="color:#c4661f">Esempio pratico</b><br>${t}</div>`; }
+const PRO = [
+  { id:'pro_risk', t:'Capire il rischio davvero', d:'Volatilità, drawdown e perché contano',
+    body:`Il rischio non è "perdere tutto": è la <strong>volatilità</strong>, cioè quanto oscilla il valore nel tempo. 📉<br><br>Il <strong>drawdown</strong> è quanto scende dal punto più alto. Spaventa, ma è temporaneo se non vendi.<br><br>Rischio e rendimento vanno a braccetto: non esiste rendimento senza un po' di rischio. L'obiettivo non è azzerarlo, è prendere quello <strong>giusto per te</strong>.<br><br>Il rischio diventa <strong>perdita vera</strong> solo in due casi: se vendi quando è giù, o se ti servono i soldi proprio in quel momento.`+exBox(`Nel marzo 2020 (Covid) i mercati mondiali persero circa <strong>-34% in un mese</strong>… e recuperarono tutto entro l'anno. Chi vendette nel panico perse davvero. Chi restò fermo, no.`) },
+  { id:'pro_alloc', t:'Asset allocation: dividere la torta', d:'La decisione che conta più di tutte',
+    body:`È <strong>LA</strong> decisione più importante — più della scelta del singolo ETF: come dividi tra <strong>azioni</strong> (crescita) e <strong>obbligazioni</strong> (stabilità). ⚖️<br><br>Regola classica dell'età: la % in obbligazioni ≈ la tua età. A 30 anni → circa 70% azioni / 30% obbligazioni. Più sei giovane, più azioni.<br><br>Tre profili di esempio:<br>• <strong>Prudente</strong>: 40% azioni / 50% obblig. / 10% oro<br>• <strong>Bilanciato</strong>: 60 / 35 / 5<br>• <strong>Aggressivo</strong>: 90 / 10 / 0`+exBox(`Con 200€/mese, un 30enne "bilanciato" mette ~120€ in ETF azionario mondiale, ~70€ in ETF obbligazionario, ~10€ in oro — e mantiene queste proporzioni nel tempo.`) },
+  { id:'pro_classi', t:'Le classi di investimento', d:'La mappa di tutto il mondo finanziario',
+    body:`Una mappa veloce — cosa sono e quando hanno senso: 🗺️<br><br>• <strong>Azioni</strong>: pezzi di un'azienda. Crescita alta, oscillazioni alte.<br>• <strong>Obbligazioni</strong>: prestiti che pagano interessi. Più stabili.<br>• <strong>ETF</strong>: cesti di tanti titoli insieme. Il modo più semplice per diversificare.<br>• <strong>Materie prime</strong> (oro, petrolio): proteggono dall'inflazione, non danno reddito.<br>• <strong>Crypto</strong>: altissimo rischio — piccola fetta o niente.<br>• <strong>Immobili</strong>: casa, oppure REIT (società immobiliari quotate) senza comprare mattoni.`+exBox(`Il portafoglio più intelligente per chi inizia è anche il più semplice: 1 ETF azionario mondiale + un po' di obbligazioni + il fondo di emergenza liquido. Tutto qui.`) },
+  { id:'pro_etfpro', t:'Leggere un ETF come un pro', d:'TER, ISIN, replica, accumulo',
+    body:`Saper leggere un ETF ti fa scegliere come un professionista. I numeri che contano: 🔎<br><br>• <strong>ISIN</strong>: il codice univoco. Se inizia per <strong>IE</strong> è domiciliato in Irlanda → più efficiente per noi.<br>• <strong>TER</strong>: il costo annuo. Sotto lo <strong>0,25%</strong> è ottimo.<br>• <strong>Replica fisica</strong> (compra davvero i titoli, preferibile) vs sintetica (usa derivati).<br>• <strong>Accumulo</strong> (reinveste i dividendi) vs distribuzione (te li paga).<br>• <strong>Dimensione (AUM)</strong>: più grande e vecchio = più solido.`+exBox(`Due ETF sullo stesso indice MSCI World: uno con TER 0,20% e uno con 0,50%. Su 10.000€ sono 20€ contro 50€ all'anno. A parità di indice, scegli il più economico, fisico e ad accumulo.`) },
+  { id:'pro_psico', t:'Psicologia: gli errori che costano', d:'Il tuo peggior nemico sei tu',
+    body:`Il tuo peggior nemico in finanza non è il mercato: sei tu. 🧠 I tre errori che costano di più:<br><br>• <strong>Panic selling</strong>: vendere quando crolla. Trasforma una perdita finta in vera. L'errore #1.<br>• <strong>FOMO</strong>: comprare l'asset "di moda" sul picco perché ne parlano tutti.<br>• <strong>Market timing</strong>: provare a indovinare il momento giusto. Quasi nessuno ci riesce, nemmeno i pro.`+exBox(`Chi è rimasto investito nell'S&P 500 ha reso in media circa il 10% l'anno. Chi ha provato a entrare e uscire, perdendo solo i <strong>10 giorni migliori</strong> in 20 anni, ha quasi dimezzato il risultato. Stare fermi paga.`)+`<br>La difesa migliore: <strong>PAC automatico</strong> + non guardare il conto ogni giorno.` },
+  { id:'pro_tasse', t:'Tasse e ottimizzazione fiscale', d:'Minus, plus e zainetto fiscale',
+    body:`Le tasse da investitore evoluto, senza mal di testa: 🧾<br><br>• <strong>26%</strong> sui guadagni (12,5% sui titoli di Stato), paghi solo quando vendi.<br>• <strong>Minus/plusvalenze</strong>: le perdite ("minus") si compensano con i guadagni entro 4 anni — è il tuo "zainetto fiscale".<br>• Dettaglio da pro: in Italia le minus degli <strong>ETF non compensano</strong> le plus di altri ETF (asimmetria fiscale). Compensano azioni, obbligazioni, certificati.<br>• <strong>Regime amministrato</strong> (la banca fa tutto) vs <strong>dichiarativo</strong> (tu nel 730).`+exBox(`Vendi con +1.000€ di guadagno → 260€ di tasse. Ma se avevi 1.000€ di minus in "zainetto" da una vendita passata in perdita, compensi e paghi <strong>0€</strong>.`) },
+  { id:'pro_ribil', t:'Costruire e ribilanciare', d:'Vendere alto e comprare basso, in automatico',
+    body:`Costruire il portafoglio è metà del lavoro. L'altra metà è <strong>ribilanciare</strong>. 🔧<br><br>Ribilanciare = riportare le percentuali al tuo obiettivo quando si sono spostate.<br><br>Quando: 1-2 volte l'anno, o quando ti scosti del 5-10% dal target.<br><br>Il bello: ti costringe a "vendere alto e comprare basso" in automatico, senza emozioni.`+exBox(`Target 60% azioni / 40% obbligazioni. Dopo un anno buono le azioni sono salite e ora sei 70/30. Ribilanci comprando più obbligazioni coi nuovi versamenti (eviti le tasse della vendita) finché torni a 60/40.`) },
+  { id:'pro_oltre', t:'Oltre le basi', d:'Dividendi, immobili, regola del 72',
+    body:`Sei arrivato in fondo. Uno sguardo a ciò che c'è oltre — quando sarai pronto: 🎓<br><br>• <strong>Dividend investing</strong>: vivere delle cedole. Richiede capitali importanti.<br>• <strong>Immobili senza comprare casa</strong>: i REIT e gli ETF immobiliari.<br>• <strong>Obbligazioni in dettaglio</strong>: la "duration" e perché i bond scendono quando i tassi salgono.<br>• <strong>Regola del 72</strong>: 72 ÷ rendimento% = anni per raddoppiare. Al 6% → circa 12 anni.`+exBox(`Per incassare 1.000€/mese di dividendi a un rendimento del 4% servono circa <strong>300.000€</strong> investiti. Ecco perché prima si accumula (con gli ETF), e solo molto dopo si "vive di rendita".`)+`<br>Verità finale: la base semplice — <strong>ETF mondiale + PAC + costanza</strong> — batte oltre il 90% degli investitori "attivi". Non complicarti. 🌱` },
+];
+function cbHtml(on){ return `<div style="width:24px;height:24px;border-radius:8px;border:2px solid ${on?'var(--green)':'var(--line)'};background:${on?'var(--green)':'transparent'};flex-shrink:0;display:flex;align-items:center;justify-content:center">${on?I.check:''}</div>`; }
+function proSectionHtml(){
+  const baseDone = totalDone()===ALL_STEPS.length;
+  const proDone = PRO.filter(l=>stepDone(l.id)).length;
+  const head = `<div style="margin:28px 0 14px;display:flex;align-items:center;gap:11px">
+      <div style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#f0a93c,#e0832b);display:flex;align-items:center;justify-content:center;font-size:19px;box-shadow:0 4px 12px rgba(224,131,43,.3)">⭐</div>
+      <div><div class="phase-title" style="font-size:19px">Investitore Pro</div><small style="display:block;color:var(--muted);font-size:12.5px">Tutto il mondo finanziario, con esempi concreti</small></div>
+      ${baseDone?`<span class="chip orange" style="margin-left:auto">${proDone}/${PRO.length}</span>`:''}
+    </div>`;
+  if(!baseDone){
+    const pct=Math.round(totalDone()/ALL_STEPS.length*100);
+    return head + `<div class="card" style="text-align:center">
+      <div style="font-size:30px">🔒</div>
+      <b class="serif" style="font-size:17px;display:block;margin:6px 0">Si sblocca dopo il corso base</b>
+      <p style="color:var(--muted);font-size:13.5px">Completa i ${ALL_STEPS.length} passi del percorso base e si apre il livello Pro: rischio, asset allocation, psicologia, tasse, ribilanciamento e altro — tutto con esempi pratici.</p>
+      <div class="bar" style="background:var(--line);height:8px;margin-top:14px"><span style="width:${pct}%;display:block;height:100%;background:linear-gradient(90deg,#f0a93c,#e0832b);border-radius:99px"></span></div>
+      <small style="color:var(--muted);display:block;margin-top:8px">${totalDone()}/${ALL_STEPS.length} passi per sbloccare</small>
+    </div>`;
+  }
+  return head + PRO.map(l=>{
+    const dn=stepDone(l.id);
+    return `<div class="card" style="display:flex;align-items:center;gap:13px;padding:14px 15px;margin-bottom:10px${dn?';opacity:.72':''}" onclick="openLesson('${l.id}')">
+      <span onclick="event.stopPropagation();toggleStep('${l.id}')">${cbHtml(dn)}</span>
+      <div style="flex:1"><b style="font-size:14.5px;${dn?'text-decoration:line-through;color:var(--muted)':''}">${l.t}</b><br><small style="color:var(--muted);font-size:12px">${l.d}</small></div>
+      <span style="color:var(--orange);flex-shrink:0">${I.arrow}</span>
+    </div>`;
+  }).join('');
+}
+function openLesson(id){
+  const l = PRO.find(x=>x.id===id); if(!l) return;
+  const done = stepDone(id);
+  document.getElementById('sheetContent').innerHTML = `
+    <div class="sheet-head"><h3>${l.t}</h3><button class="sheet-x" onclick="closeSheet()">${I.x}</button></div>
+    <div class="sheet-body">
+      <span class="chip orange">⭐ Investitore Pro</span>
+      <div style="margin-top:14px;font-size:14.5px;line-height:1.65">${l.body}</div>
+      <button class="btn ${done?'secondary':'orange'}" style="margin-top:18px" onclick="completeLesson('${id}')">${done?'✓ Lezione completata — tocca per annullare':'Ho completato questa lezione'}</button>
+      <button class="btn ghost" style="margin-top:8px" onclick="closeSheet();go('coach')">Ho una domanda, chiedo al coach</button>
+      <div style="height:12px"></div>
+    </div>`;
+  document.getElementById('sheet').classList.add('open');
+  document.getElementById('sheetOv').classList.add('open');
+}
+function completeLesson(id){
+  const was=stepDone(id); S.steps[id]=!was; save(); closeSheet();
+  if(!was){ toast('Lezione completata! ⭐'); celebrate(); }
+  render();
+}
+
+/* ============================================================
    ONBOARDING / QUIZ
    ============================================================ */
 const QUIZ = [
@@ -485,17 +556,31 @@ function coachEngine(text){
   const q = text.toLowerCase().trim();
   const cf = S.coachFlow || {flow:null};
   if(cf.flow==='consult') return consultStep(q);
-  if(etfExamplesIntent(q)) return etfExamplesReply();
+  const ex = examplesIntent(q);
+  if(ex) return ex==='etf' ? etfExamplesReply() : ASSET_EXAMPLES[ex];
   if(adviceIntent(q)) return startConsult(q);
   const kb = kbMatch(q);
   if(kb) return wrapKB(kb);
   return smalltalk(q);
 }
 
-// "dammi 5 ETF" / "quali ETF" → educational: names INDICES, not specific products
-function etfExamplesIntent(q){
-  return /etf/.test(q) && /(quali|quale|esempi|esempio|lista|elenc|\bdammi\b|\bdimmi\b|miglior|consigli|nomi|nome|qualche|alcuni|\d+\s*etf|che etf|quali sono|suggeris)/.test(q);
+// "dammi 5 ETF/azioni/crypto/obbligazioni/materie prime" → educational examples (categories, never specific products)
+function examplesIntent(q){
+  const cue = /(quali|quale|esempi|esempio|lista|elenc|\bdammi\b|\bdimmi\b|miglior|consigli|suggeris|\bnomi\b|qualche|alcuni|quali sono|\d+\s)/.test(q);
+  if(!cue) return null;
+  if(/etf/.test(q)) return 'etf';
+  if(/crypto|cripto|bitcoin|\bbtc\b|ethereum|\beth\b/.test(q)) return 'crypto';
+  if(/obbligazion|\bbtp\b|\bbond\b|titoli di stato/.test(q)) return 'obbligazioni';
+  if(/materie prime|commodit|\boro\b|petrolio/.test(q)) return 'commodities';
+  if(/azion/.test(q)) return 'azioni';
+  return null;
 }
+const ASSET_EXAMPLES = {
+  azioni:`Volentieri — ma da coach onesto: non ti dico <em>quali</em> azioni comprare (sarebbe consulenza). 🌱 Ti spiego come ragionarci come un pro.<br><br>Le <strong>azioni singole</strong> sono pezzi di <strong>una</strong> sola azienda. I grandi <strong>settori</strong> in cui si dividono:<br>1. <strong>Tecnologia</strong> — le big tech (la parte più cresciuta, anche la più volatile)<br>2. <strong>Beni di consumo</strong> — i grandi marchi che compriamo ogni giorno<br>3. <strong>Finanza</strong> — banche e assicurazioni<br>4. <strong>Sanità</strong> — farmaceutici e biotech<br>5. <strong>Energia & industria</strong><br><br>Come si valuta un'azienda (i criteri): fatturato e utili in <strong>crescita</strong>, debito sotto controllo, un <strong>vantaggio competitivo</strong> ("il fossato"), e una valutazione non gonfiata.<br><br>⚠️ Regola d'oro per chi inizia: le azioni singole sono per la parte "divertimento" (max 5-10%), <strong>dopo</strong> aver costruito la base con gli ETF. Una sola azienda può anche crollare; un ETF no.`,
+  crypto:`Te ne parlo, ma con onestà totale. 🌱 Non ti consiglio quali comprare, e ti dico la cosa più importante: le crypto sono <strong>volatilissime</strong> e <strong>non</strong> sono il punto di partenza.<br><br>Le due "storiche" di riferimento:<br>1. <strong>Bitcoin (BTC)</strong> — la più grande, vista come "oro digitale".<br>2. <strong>Ethereum (ETH)</strong> — la piattaforma per le app decentralizzate.<br><br>Tutto il resto (le "altcoin") è molto più rischioso e speculativo.<br><br>I criteri di <strong>prudenza</strong> se proprio vuoi entrarci:<br>• Solo <strong>soldi che puoi perdere</strong> senza problemi<br>• Massimo il <strong>5%</strong> del portafoglio<br>• Exchange serio e wallet sicuro<br>• Mai farti prendere dalla <strong>FOMO</strong> (comprare sul picco perché ne parlano tutti)<br><br>Prima le fondamenta (conto, fondo di emergenza, ETF). Le crypto, semmai, vengono molto dopo. ⚠️`,
+  obbligazioni:`Ottimo, argomento da investitore serio. 🌱 (Niente prodotti specifici, ma le categorie e i criteri sì.)<br><br>Le <strong>obbligazioni</strong> sono prestiti: tu presti, ti pagano interessi. I tipi principali:<br>1. <strong>Titoli di Stato</strong> — in Italia i <strong>BTP</strong>, in Germania i Bund, negli USA i Treasury.<br>2. <strong>Obbligazioni societarie</strong> (corporate) — emesse dalle aziende, rendono di più ma con più rischio.<br>3. <strong>ETF obbligazionari</strong> — un cesto di tante obbligazioni insieme, il modo più semplice.<br><br>I criteri che contano:<br>• <strong>Durata/scadenza</strong> (più lunga = più sensibile ai tassi)<br>• <strong>Rating</strong> (l'affidabilità di chi emette)<br>• <strong>Rendimento</strong><br><br>A cosa servono: <strong>stabilità ed equilibrio</strong> nel portafoglio. Per chi inizia spesso bastano i BTP o un ETF obbligazionario — non serve complicarsi.`,
+  commodities:`Le <strong>materie prime</strong> (commodities) — te le spiego per categorie, senza indicarti prodotti. 🌱<br><br>Non si comprano fisicamente: si usano <strong>ETC/ETF</strong> che le replicano. Le più note:<br>1. <strong>Oro</strong> — il "bene rifugio" nei momenti di paura. Il più usato.<br>2. <strong>Petrolio & energia</strong><br>3. <strong>Metalli industriali</strong> (rame, ecc.)<br>4. <strong>Materie prime agricole</strong> (grano, caffè...)<br><br>A cosa servono: <strong>diversificare</strong> e proteggersi dall'<strong>inflazione</strong>.<br><br>⚠️ Attenzione: non producono reddito (niente dividendi né interessi). Per questo, al massimo una <strong>piccola fetta</strong> del portafoglio (5-10%), e di solito l'oro è quella che si usa di più.`,
+};
 function etfExamplesReply(){
   return `Bella richiesta — e qui faccio il coach onesto. 🌱 Non ti do nomi di prodotti specifici (quella sarebbe <em>consulenza</em>, e Cresco è educazione): ti spiego invece i \"mattoni\" più usati al mondo, così sai esattamente cosa cercare nella tua piattaforma.<br><br>I <strong>5 indici</strong> su cui sono costruiti gli ETF più popolari per chi inizia:<br><br>1. <strong>MSCI World</strong> — ~1.400 grandi aziende dei paesi sviluppati. Il classico punto di partenza.<br>2. <strong>FTSE All-World / MSCI ACWI</strong> — come sopra, ma include anche i paesi emergenti: ancora più completo.<br>3. <strong>S&P 500</strong> — le 500 maggiori aziende USA. Concentrato sugli Stati Uniti.<br>4. <strong>MSCI Emerging Markets</strong> — i paesi emergenti (Cina, India, Brasile...). Più rischio, più potenziale.<br>5. <strong>STOXX Europe 600</strong> — le grandi aziende europee.<br><br>Come scegliere <strong>l'ETF giusto</strong> su uno di questi indici — i 4 criteri che contano:<br>• <strong>Ad accumulo</strong> (reinveste i dividendi da solo)<br>• <strong>TER basso</strong> (il costo annuo: meglio sotto lo 0,25%)<br>• <strong>Grande e con anni di storia</strong> (più solido)<br>• <strong>Domiciliato in Irlanda</strong> (più efficiente fiscalmente per noi)<br><br>Nella tua piattaforma cerchi l'indice, filtri con questi criteri e trovi i prodotti. Vuoi che ti spieghi come si fa, passo passo? 😊`;
 }
@@ -664,7 +749,8 @@ function viewHome(){
       <div class="card" style="margin-top:14px;text-align:center">
         <div style="font-size:34px">🎉</div>
         <b class="serif" style="font-size:19px;display:block;margin:6px 0">Hai completato tutto il percorso!</b>
-        <p style="color:var(--muted);font-size:14px">Sei ufficialmente passato da \"non so nulla\" a investitore. Continua col tuo PAC e rivedi il piano ogni 6 mesi.</p>
+        <p style="color:var(--muted);font-size:14px">Sei ufficialmente passato da \"non so nulla\" a investitore. Ora puoi salire di livello.</p>
+        <button class="btn orange" style="margin-top:14px" onclick="go('roadmap')">Vai a Investitore Pro ⭐</button>
       </div>`}
 
       <div class="row-stats">
@@ -734,6 +820,7 @@ function viewRoadmap(){
           </div>
         </div>`;
       }).join('')}
+      ${proSectionHtml()}
       <div style="height:20px"></div>
       <p class="disc">Strumento educativo, non consulenza finanziaria. Spunta un passo solo quando l’hai capito o fatto davvero.</p>
     </div>

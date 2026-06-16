@@ -1160,6 +1160,23 @@ header{
   animation:modalIn .22s cubic-bezier(.34,1.3,.7,1);
 }
 @keyframes modalIn{from{opacity:0;transform:scale(.95) translateY(10px);}to{opacity:1;transform:none;}}
+/* ── CATEGORIA A PAGINA INTERA (header sempre visibile sopra) ── */
+.cat-modal.cat-fullpage{
+  position:fixed;left:0;right:0;bottom:0; /* top impostato via JS = altezza header */
+  inset:auto;z-index:150;background:var(--bg);backdrop-filter:none;-webkit-backdrop-filter:none;
+  display:block;padding:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  animation:catPageIn .2s ease;
+}
+@keyframes catPageIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+.cat-modal.cat-fullpage .cat-modal-box{
+  background:transparent;border:none;border-radius:0;box-shadow:none;
+  max-width:1080px;max-height:none;width:100%;margin:0 auto;animation:none;min-height:100%;
+}
+.cat-modal.cat-fullpage .cat-modal-hd{
+  position:sticky;top:0;z-index:5;padding:18px 24px 14px;
+}
+.cat-modal.cat-fullpage .cat-modal-body{padding:6px 0 30px;}
+.cat-modal.cat-fullpage .cat-modal-pg{position:sticky;bottom:0;}
 .cat-modal-hd{
   display:flex;flex-direction:column;gap:12px;
   padding:20px 24px 14px;flex-shrink:0;
@@ -3734,33 +3751,67 @@ function _initModalControls(){
   sel.onchange=()=>{ _modalSort=sel.value; _modalPage=1; renderCatPage(1); };
 }
 
+const CAT_TYPE={'t-azioni':'stocks','t-etf-az':'etf-equity','t-etf-bond':'etf-bond','t-crypto':'crypto'};
+const CAT_NAMES={'t-etf-az':'ETF Azionari','t-etf-bond':'ETF Obbligazionari',
+  't-commodities':'Materie Prime','t-crypto':'Crypto','t-azioni':'Azioni'};
+let _catLoadToken=0;
+
 function loadSectionRest(id){
-  // open modal with all tickers for this category
-  const allTickers=PANO_FULL[id]||PANO[id]||[];
-  _modalId=id; _modalData=allTickers; _modalPage=1;
+  // lista curata immediata (fallback istantaneo)
+  const curated=PANO_FULL[id]||PANO[id]||[];
+  _modalId=id; _modalData=curated; _modalPage=1;
   _modalSort='default'; _modalFilter='';
   const inp=document.getElementById('cat-modal-search');
   const sel=document.getElementById('cat-modal-sort');
   if(inp) inp.value='';
   if(sel) sel.value='default';
-  const catNames={'t-etf-az':'ETF Azionari','t-etf-bond':'ETF Obbligazionari',
-    't-commodities':'Materie Prime','t-crypto':'Crypto','t-azioni':'Azioni Large Cap'};
-  document.getElementById('cat-modal-title').textContent=
-    `${catNames[id]||id} — ${allTickers.length} titoli`;
-  const modal=document.getElementById('cat-modal');
-  modal.style.display='flex';
+  const setTitle=(n,loading)=>{ document.getElementById('cat-modal-title').textContent=
+    `${CAT_NAMES[id]||id} — ${n} titoli${loading?' · carico l\'elenco mondiale…':''}`; };
+  setTitle(curated.length, !!CAT_TYPE[id]);
+  _openCatPage();
   _initModalControls();
-  // iOS Safari scroll lock: freeze body at current scroll position
+  renderCatPage(1);
+  // carica l'elenco mondiale completo dal server, poi sostituisce
+  const type=CAT_TYPE[id];
+  if(type){
+    const token=++_catLoadToken;
+    fetch(`/api/category?type=${type}`,{signal:AbortSignal.timeout(20000)})
+      .then(r=>r.ok?r.json():null)
+      .then(list=>{
+        if(token!==_catLoadToken||!Array.isArray(list)||!list.length) return;
+        // merge: prima i curati (ordine/qualità), poi tutti gli altri
+        const seen=new Set(curated.map(c=>c[0]));
+        const extra=list.filter(x=>!seen.has(x.sym)).map(x=>[x.sym,x.name]);
+        _modalData=[...curated,...extra];
+        setTitle(_modalData.length,false);
+        if(_modalSort==='default') renderCatPage(_modalPage);
+        else renderCatPage(1);
+      })
+      .catch(()=>{ setTitle(curated.length,false); });
+  }
+}
+
+// apre la categoria come PAGINA INTERA sotto la barra (header sempre visibile)
+function _openCatPage(){
+  const modal=document.getElementById('cat-modal');
+  const hdr=document.querySelector('header');
+  const h=hdr?Math.round(hdr.getBoundingClientRect().height):56;
+  modal.style.top=h+'px';
+  modal.classList.add('cat-fullpage');
+  modal.style.display='block';
   const sy=window.scrollY;
   document.body.style.position='fixed';
   document.body.style.top=`-${sy}px`;
   document.body.style.width='100%';
   document.body._lockedScrollY=sy;
-  renderCatPage(1);
 }
 
 function closeCatModal(){
-  document.getElementById('cat-modal').style.display='none';
+  _catLoadToken++;
+  const modal=document.getElementById('cat-modal');
+  modal.style.display='none';
+  modal.classList.remove('cat-fullpage');
+  modal.style.top='';
   const sy=document.body._lockedScrollY||0;
   document.body.style.position='';
   document.body.style.top='';
@@ -5282,22 +5333,23 @@ document.addEventListener('click',e=>{
 async function openAllMarket(exch){
   closeMainMenu();
   const names={US:'Azioni USA',MI:'Borsa di Milano',DE:'Borsa di Francoforte',L:'Borsa di Londra',PA:'Borsa di Parigi'};
-  _modalId='__exch_'+exch; _modalPage=1; _modalSort='default'; _modalFilter='';
+  _modalId='__exch_'+exch; _modalData=[]; _modalPage=1; _modalSort='default'; _modalFilter='';
   const inp=document.getElementById('cat-modal-search'), sel=document.getElementById('cat-modal-sort');
   if(inp) inp.value=''; if(sel) sel.value='default';
   document.getElementById('cat-modal-title').textContent=`${names[exch]||exch} — carico tutti i titoli…`;
-  document.getElementById('cat-modal-body').innerHTML='<div style="padding:40px;text-align:center;color:var(--t3)">Carico l\'elenco completo…</div>';
-  const modal=document.getElementById('cat-modal'); modal.style.display='flex';
-  const sy=window.scrollY; document.body.style.position='fixed'; document.body.style.top=`-${sy}px`;
+  document.getElementById('cat-modal-body').innerHTML='<div style="padding:50px;text-align:center;color:var(--t3)">Carico l\'elenco completo…</div>';
+  _openCatPage();
+  const token=++_catLoadToken;
   try{
-    const r=await fetch(`/api/symbols?exchange=${encodeURIComponent(exch)}`,{signal:AbortSignal.timeout(15000)});
+    const r=await fetch(`/api/symbols?exchange=${encodeURIComponent(exch)}`,{signal:AbortSignal.timeout(18000)});
     if(!r.ok) throw new Error();
     const list=await r.json();
+    if(token!==_catLoadToken) return;
     _modalData=list.map(x=>[x.sym,x.name]);
     document.getElementById('cat-modal-title').textContent=`${names[exch]||exch} — ${_modalData.length} titoli`;
     _initModalControls(); renderCatPage(1);
   }catch{
-    document.getElementById('cat-modal-body').innerHTML='<div style="padding:40px;text-align:center;color:var(--t3)">Elenco non disponibile (richiede deploy su Vercel con chiave Finnhub).</div>';
+    document.getElementById('cat-modal-body').innerHTML='<div style="padding:50px;text-align:center;color:var(--t3)">Elenco non disponibile (richiede deploy su Vercel con chiave Finnhub).</div>';
   }
 }
 
@@ -5806,7 +5858,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     }
   });
   document.getElementById('pf-modal').addEventListener('click',e=>{ if(e.target===e.currentTarget) closePortfolio(); });
-  document.getElementById('cat-modal').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeCatModal(); });
+  document.getElementById('cat-modal').addEventListener('click',e=>{ if(e.target===e.currentTarget && !e.currentTarget.classList.contains('cat-fullpage')) closeCatModal(); });
   loadNews();
   setInterval(loadNews,5*60*1000);
   loadPulse().then(()=>loadPanoramica());

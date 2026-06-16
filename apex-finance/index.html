@@ -1279,7 +1279,7 @@ header{
       <span class="search-ico" id="search-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;vertical-align:middle"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
       <div class="search-row">
         <input id="search-input" class="search-input" type="text"
-          placeholder="Cerca ticker o nome (es. AAPL, Tesla, S&amp;P 500...)"
+          placeholder="Ticker, nome o ISIN (es. AAPL, Tesla, US0378331005...)"
           autocomplete="off" spellcheck="false">
         <svg class="search-spinner" id="search-spinner" width="14" height="14" viewBox="0 0 50 50" overflow="visible">
           <polygon class="tl-bg" points="25,5 47,43 3,43"/>
@@ -4112,6 +4112,16 @@ async function analyze(ticker){
 // ── YAHOO FINANCE SEARCH API ──
 const ISIN_RE=/^[A-Z]{2}[A-Z0-9]{9}[0-9]$/;
 
+async function searchAPI(q){
+  // Server-side search: Finnhub + Yahoo + OpenFIGI per ISIN
+  try{
+    const r=await fetch(`/api/search?q=${encodeURIComponent(q)}`,{signal:AbortSignal.timeout(10000)});
+    if(!r.ok) throw new Error();
+    return await r.json();
+  }catch{return[];}
+}
+
+// Fallback client-side Yahoo search via proxy (se /api/search non disponibile)
 async function searchYahoo(q){
   const url=`https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(q)}&quotesCount=10&newsCount=0&enableFuzzyQuery=true&quotesQueryId=tss_match_phrase_query`;
   try{
@@ -4134,8 +4144,12 @@ async function runAnalyze(){
   if(ISIN_RE.test(val)){
     setAnalyzeLoading(true,'Risolvo ISIN…');
     try{
-      const res=await searchYahoo(val);
+      const res=await searchAPI(val);
       if(res.length){val=res[0].sym;document.getElementById('search-input').value=val;}
+      else{
+        const yRes=await searchYahoo(val);
+        if(yRes.length){val=yRes[0].sym;document.getElementById('search-input').value=val;}
+      }
     }finally{ setAnalyzeLoading(false); }
   }
   analyze(val);
@@ -4196,12 +4210,14 @@ function setupSearch(){
       .slice(0,5).map(([s,n,c])=>({sym:s,name:n,cat:c,exch:''}));
     if(local.length) renderDrop(local);
     setSearchLoading(true);
-    const yRes=await searchYahoo(q);
+    // Try server-side first (Finnhub + Yahoo + OpenFIGI), fallback to client-side
+    let res=await searchAPI(q);
+    if(!res.length) res=await searchYahoo(q);
     setSearchLoading(false);
     if(q!==lastQ) return;
-    const yahooSyms=new Set(yRes.map(r=>r.sym));
-    const extra=local.filter(r=>!yahooSyms.has(r.sym));
-    renderDrop([...yRes,...extra]);
+    const apiSyms=new Set(res.map(r=>r.sym));
+    const extra=local.filter(r=>!apiSyms.has(r.sym));
+    renderDrop([...res,...extra]);
   }
 
   input.addEventListener('input',()=>{

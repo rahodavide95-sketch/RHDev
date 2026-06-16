@@ -63,6 +63,32 @@ export default async function handler(req) {
         }],
         error: null,
       },
+      // Scheda strumento (stile justETF) — profilo + metriche estese
+      _profile: {
+        name: profile?.name ?? null,
+        country: profile?.country ?? null,
+        currency: profile?.currency ?? null,
+        exchange: profile?.exchange ?? null,
+        industry: profile?.finnhubIndustry ?? null,
+        ipo: profile?.ipo ?? null,
+        marketCap: profile?.marketCapitalization ?? null, // in milioni
+        sharesOut: profile?.shareOutstanding ?? null,
+        weburl: profile?.weburl ?? null,
+        logo: profile?.logo ?? null,
+        phone: profile?.phone ?? null,
+      },
+      _ext: {
+        week52High: m['52WeekHigh'] ?? null,
+        week52Low: m['52WeekLow'] ?? null,
+        divYield: m.dividendYieldIndicatedAnnual ?? m.currentDividendYieldTTM ?? null,
+        beta: m.beta ?? null,
+        psTTM: m.psTTM ?? null,
+        currentRatio: m.currentRatioQuarterly ?? null,
+        debtToEquity: m['totalDebt/totalEquityQuarterly'] ?? null,
+        grossMargin: m.grossMarginTTM ?? null,
+        netMargin: m.netProfitMarginTTM ?? null,
+        roa: m.roaTTM ?? null,
+      },
     };
 
     return new Response(JSON.stringify(result), {

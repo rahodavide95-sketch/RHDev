@@ -1257,6 +1257,23 @@ header{
 }
 .vedi-tutti-btn:hover{background:rgba(255,255,255,.22);}
 
+/* ── SCHEDA STRUMENTO & DOCUMENTI ── */
+.prof-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;}
+.prof-item{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px 13px;}
+.prof-item-lbl{font-size:.62rem;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;font-weight:600;}
+.prof-item-val{font-size:.92rem;font-weight:600;margin-top:5px;color:var(--text);word-break:break-word;}
+.prof-docs{display:flex;flex-direction:column;gap:8px;}
+.prof-doc{display:flex;align-items:center;gap:11px;padding:12px 14px;background:var(--bg2);
+  border:1px solid var(--border);border-radius:var(--radius-sm);text-decoration:none;color:var(--text);transition:border-color .15s,background .15s;}
+.prof-doc:hover{border-color:var(--accent);background:var(--bg3);}
+.prof-doc-ico{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  background:rgba(59,130,246,.12);color:var(--accent);}
+.prof-doc-ico svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+.prof-doc-txt{flex:1;min-width:0;}
+.prof-doc-title{font-size:.84rem;font-weight:600;}
+.prof-doc-sub{font-size:.68rem;color:var(--t3);margin-top:2px;}
+.prof-doc-arrow{color:var(--t3);flex-shrink:0;}
+
 /* ── PORTFOLIO SIMULATOR ── */
 .pf-modal{position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);
   display:flex;align-items:center;justify-content:center;padding:24px;}
@@ -2063,6 +2080,15 @@ header{
       </div>
     </div>
 
+    <!-- Scheda strumento & documenti (stile justETF) -->
+    <div id="profile-section" style="display:none">
+      <hr class="sec-divider">
+      <div class="a-sec-lbl">Scheda strumento</div>
+      <div class="prof-grid" id="prof-grid"></div>
+      <div class="a-sec-lbl" style="margin-top:22px">Documenti &amp; approfondimenti</div>
+      <div class="prof-docs" id="prof-docs"></div>
+    </div>
+
     <!-- Charts -->
     <hr class="sec-divider">
     <div class="a-sec-lbl">Grafici Storici</div>
@@ -2566,6 +2592,7 @@ async function fetchChart(ticker,range='2y',interval='1d'){
 }
 
 // ── FUNDAMENTALS FETCH ──
+const _instrProfile={}; // cache scheda strumento per ticker
 async function fetchFundamentals(ticker){
   const modules='financialData,defaultKeyStatistics,summaryDetail,recommendationTrend';
   const t=encodeURIComponent(ticker);
@@ -2621,7 +2648,10 @@ async function fetchFundamentals(ticker){
     try{
       const r=await fetch(`/api/quote?ticker=${encodeURIComponent(ticker)}`,{signal:AbortSignal.timeout(12000)});
       if(!r.ok) return null;
-      return await r.json();
+      const j=await r.json();
+      // cattura scheda strumento (profilo + metriche estese) stile justETF
+      if(j?._profile||j?._ext) _instrProfile[ticker]={profile:j._profile||{},ext:j._ext||{}};
+      return j;
     }catch{return null;}
   };
   const attempts=[
@@ -4173,6 +4203,78 @@ function renderBHS(score, fund){
 }
 
 // ── RENDER FUNDAMENTALS ──
+// ── SCHEDA STRUMENTO & DOCUMENTI (stile justETF) ──
+function renderProfile(ticker,meta){
+  const sec=document.getElementById('profile-section');
+  const grid=document.getElementById('prof-grid');
+  const docs=document.getElementById('prof-docs');
+  if(!sec||!grid||!docs) return;
+  const p=(_instrProfile[ticker]||{}).profile||{};
+  const e=(_instrProfile[ticker]||{}).ext||{};
+  const itype=(meta?.instrumentType||'').toUpperCase();
+  const isCrypto=itype==='CRYPTOCURRENCY'||/-(USD|EUR|USDT)$/i.test(ticker);
+  const isETF=itype==='ETF'||(DB.find(d=>d[0]===ticker)?.[2]==='ETF');
+  const isIndex=itype==='INDEX'||ticker.startsWith('^');
+  const isFX=itype==='CURRENCY'||/=X$/.test(ticker);
+
+  // ── griglia info ──
+  const fmtCap=m=>{ if(m==null) return null; const v=m*1e6; if(v>=1e12) return '€ '+(v/1e12).toFixed(2)+' T'; if(v>=1e9) return '€ '+(v/1e9).toFixed(2)+' Mld'; if(v>=1e6) return '€ '+(v/1e6).toFixed(1)+' Mln'; return '€ '+Math.round(v).toLocaleString('it-IT'); };
+  const fmtNum=m=>m==null?null:(m>=1000?(m/1000).toFixed(2)+' Mld':m.toFixed(1)+' Mln');
+  const cur=meta?.currency||p.currency||'';
+  const rows=[
+    ['Nome', p.name||meta?.longName||meta?.shortName||ticker],
+    ['Borsa', meta?.exchangeName||p.exchange||null],
+    ['Valuta', cur||null],
+    ['Paese', p.country||null],
+    ['Settore', p.industry||null],
+    ['Capitalizzazione', fmtCap(p.marketCap)],
+    ['Azioni in circolaz.', fmtNum(p.sharesOut)],
+    ['Quotata dal', p.ipo||null],
+    ['Beta', e.beta!=null?e.beta.toFixed(2):null],
+    ['Dividend yield', e.divYield!=null?e.divYield.toFixed(2)+'%':null],
+    ['Range 52 sett.', (e.week52Low!=null&&e.week52High!=null)?`${e.week52Low.toFixed(2)} – ${e.week52High.toFixed(2)}`:null],
+    ['Margine netto', e.netMargin!=null?e.netMargin.toFixed(1)+'%':null],
+    ['ROA', e.roa!=null?e.roa.toFixed(1)+'%':null],
+    ['Debito/Equity', e.debtToEquity!=null?e.debtToEquity.toFixed(2):null],
+  ].filter(([,v])=>v!=null&&v!=='');
+  if(!rows.length && isCrypto){ sec.style.display='none'; return; }
+  grid.innerHTML=rows.map(([l,v])=>`<div class="prof-item"><div class="prof-item-lbl">${l}</div><div class="prof-item-val">${v}</div></div>`).join('')
+    || `<div class="prof-item" style="grid-column:1/-1"><div class="prof-item-val" style="color:var(--t3)">Scheda dettagliata disponibile su Vercel (richiede chiave Finnhub).</div></div>`;
+
+  // ── documenti & link ──
+  const ico={doc:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>',
+    chart:'<path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-6"/>', web:'<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20a15 15 0 0 1 0-20"/>',
+    book:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>'};
+  const L=[];
+  const name=encodeURIComponent(p.name||meta?.longName||ticker);
+  const tk=encodeURIComponent(ticker);
+  L.push(['chart','Pagina Yahoo Finance','Quotazioni, news, bilanci e analisi',`https://finance.yahoo.com/quote/${tk}`]);
+  if(isETF){
+    L.push(['doc','justETF — scheda ETF','TER, replica, distribuzione, KID e documenti ufficiali',`https://www.justetf.com/it/search.html?query=${tk}`]);
+    L.push(['book','Morningstar','Rating, portafoglio e analisi indipendente',`https://www.morningstar.it/it/search/?q=${name}`]);
+    L.push(['doc','Documento KID/KIID','Documento informativo chiave (rischio, costi, obiettivi)',`https://www.google.com/search?q=${name}+KID+KIID+filetype:pdf`]);
+  } else if(isCrypto){
+    L.push(['web','CoinGecko','Dati on-chain, market cap, supply e community',`https://www.coingecko.com/it/ricerca?query=${tk.replace(/-USD|-EUR|-USDT/i,'')}`]);
+    L.push(['book','Whitepaper & progetto','Documentazione tecnica del progetto',`https://www.google.com/search?q=${tk.replace(/-USD|-EUR|-USDT/i,'')}+crypto+whitepaper`]);
+  } else if(isIndex||isFX){
+    L.push(['chart','TradingView','Grafico avanzato e analisi tecnica',`https://www.tradingview.com/symbols/${tk.replace('^','')}`]);
+  } else {
+    // azione
+    if(p.weburl) L.push(['web','Sito ufficiale aziendale','Relazioni con gli investitori e comunicati',p.weburl]);
+    L.push(['doc','SEC EDGAR — bilanci ufficiali','10-K, 10-Q, 8-K e tutti i documenti depositati',`https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&company=${name}&type=10-K&dateb=&owner=include&count=40`]);
+    L.push(['chart','Finviz','Schermata sintetica con metriche e news',`https://finviz.com/quote.ashx?t=${tk}`]);
+    L.push(['book','Morningstar','Fair value, moat e analisi fondamentale',`https://www.morningstar.it/it/search/?q=${name}`]);
+  }
+  docs.innerHTML=L.map(([type,title,sub,href])=>`
+    <a class="prof-doc" href="${href}" target="_blank" rel="noopener">
+      <span class="prof-doc-ico"><svg viewBox="0 0 24 24">${ico[type]}</svg></span>
+      <span class="prof-doc-txt"><span class="prof-doc-title">${title}</span><span class="prof-doc-sub">${sub}</span></span>
+      <span class="prof-doc-arrow"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+    </a>`).join('');
+
+  sec.style.display='block';
+}
+
 function renderFundamentals(fund,ticker){
   const sec=document.getElementById('fund-section');
   const isCrypto=ticker&&(/-(USD|EUR|BTC|ETH|USDT)$/i.test(ticker)||/^(BTC|ETH|SOL|BNB|XRP|ADA|DOGE|AVAX|DOT|MATIC)$/i.test(ticker));
@@ -4360,8 +4462,10 @@ async function analyze(ticker){
       buildDipSignal(R,M50,M200,Mo3m,Mo12m,DD,cur,w30,score);
       renderBHS(score,null);
       renderFundamentals(null,ticker);
+      document.getElementById('profile-section').style.display='none';
       fundPromise.then(fund=>{
         renderFundamentals(fund,ticker);
+        renderProfile(ticker,meta);
         // Affina lo score includendo i fondamentali (solo azioni: ETF/crypto hanno fund=null)
         if(fund){
           score=edgeScore(R,M50,M200,V,Mo,w7,w30,w90,cur,Mo3m,Mo6m,Mo12m,fund,seasonPct);

@@ -18,8 +18,8 @@ export default async function handler(req) {
 
   const t = encodeURIComponent(ticker.toUpperCase());
   const urls = [
-    `https://query1.finance.yahoo.com/v8/finance/chart/${t}?range=${range}&interval=${interval}&includePrePost=false`,
-    `https://query2.finance.yahoo.com/v8/finance/chart/${t}?range=${range}&interval=${interval}&includePrePost=false`,
+    `https://query1.finance.yahoo.com/v8/finance/chart/${t}?range=${range}&interval=${interval}&includePrePost=false&events=div%2Csplits`,
+    `https://query2.finance.yahoo.com/v8/finance/chart/${t}?range=${range}&interval=${interval}&includePrePost=false&events=div%2Csplits`,
   ];
 
   for (const url of urls) {

@@ -2300,11 +2300,19 @@ async function fetchChart(ticker,range='2y',interval='1d'){
   // Race: Vercel API route vs proxy — take whichever responds first
   const tryApi=()=>fetch(`/api/chart?ticker=${t}&range=${range}&interval=${interval}`,{signal:AbortSignal.timeout(10000)})
     .then(r=>{if(!r.ok)throw new Error();return r.json();});
-  const tryProxy=()=>fetchJSON(`https://query1.finance.yahoo.com/v8/finance/chart/${t}?range=${range}&interval=${interval}&includePrePost=false`);
+  const tryProxy=()=>fetchJSON(`https://query1.finance.yahoo.com/v8/finance/chart/${t}?range=${range}&interval=${interval}&includePrePost=false&events=div%2Csplits`);
   const data=await Promise.any([tryApi(),tryProxy()]).catch(()=>{throw new Error('Dati non disponibili');});
   if(data?.chart?.error) throw new Error(data.chart.error.description||'Ticker non trovato');
   const res=data?.chart?.result?.[0];
   if(!res) throw new Error('Nessun dato disponibile');
+  // Usa prezzi AGGIUSTATI per split/dividendi: evita salti artificiali su MA, momentum, RSI, ecc.
+  // L'ultimo adjclose coincide col prezzo reale di mercato, quindi anche il prezzo corrente resta corretto.
+  const adj=res.indicators?.adjclose?.[0]?.adjclose;
+  const rawC=res.indicators?.quote?.[0]?.close;
+  if(Array.isArray(adj)&&Array.isArray(rawC)&&adj.length===rawC.length){
+    // sostituisce close con adjclose dove disponibile (mantiene null dove manca)
+    res.indicators.quote[0].close=rawC.map((v,i)=>adj[i]!=null?adj[i]:v);
+  }
   return res;
 }
 
@@ -2598,11 +2606,13 @@ function vol(cl){
 }
 function mom(cl,p=20){return cl.length<p+1?null:(cl[cl.length-1]-cl[cl.length-1-p])/cl[cl.length-1-p]*100;}
 function drawdown(cl){let pk=cl[0],dd=0;for(const c of cl){if(c>pk)pk=c;const d=(pk-c)/pk;if(d>dd)dd=d;}return dd*100;}
-function wr(cl,h){let w=0,t=0;for(let i=0;i<cl.length-h;i++){t++;if(cl[i+h]>cl[i])w++;}return t?(w/t)*100:50;}
+// Win rate: null se campioni insufficienti (evita percentuali inventate su storia corta)
+function wr(cl,h){let w=0,t=0;for(let i=0;i<cl.length-h;i++){t++;if(cl[i+h]>cl[i])w++;}return t>=20?(w/t)*100:null;}
 function seasonal(ts,cl){
   const m={};
   for(let i=1;i<cl.length;i++){const mo=new Date(ts[i]*1000).getMonth();if(!m[mo])m[mo]={w:0,t:0};if(cl[i]>cl[i-1])m[mo].w++;m[mo].t++;}
-  return['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'].map((l,i)=>({l,p:m[i]?(m[i].w/m[i].t)*100:50}));
+  // p:null se meno di 12 osservazioni nel mese (campione troppo piccolo)
+  return['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'].map((l,i)=>({l,p:(m[i]&&m[i].t>=12)?(m[i].w/m[i].t)*100:null}));
 }
 function retDist(returns){
   const bk=[-5,-3,-2,-1,-.5,0,.5,1,2,3,5];
@@ -2631,8 +2641,9 @@ function edgeScore(R,M50,M200,V,Mo,w7,w30,w90,price,Mo3m=null,Mo6m=null,Mo12m=nu
   // VOLATILITY
   if(V!=null) s+=V>60?-10:V>40?-5:V>25?-2:V<15?3:0;
 
-  // WIN RATE storico
-  s+=(((w7+w30+w90)/3)-50)*0.25;
+  // WIN RATE storico (solo i valori disponibili)
+  const wrs=[w7,w30,w90].filter(w=>w!=null);
+  if(wrs.length) s+=((wrs.reduce((a,b)=>a+b,0)/wrs.length)-50)*0.25;
 
   // STAGIONALITÀ mese corrente
   if(seasonPct!=null) s+=(seasonPct-50)*0.15;
@@ -2671,9 +2682,13 @@ function buildSignalText(ticker,price,R,M50,M200,V,Mo,DD,w7,w30,w90,score){
     else p.push(`RSI a ${R.toFixed(1)}: zona ${R<50?'neutro-negativa':'neutro-positiva'}.`);
   }
 
-  // Win rate
-  const avgWr=((w7+w30+w90)/3);
-  p.push(`<b>Win rate storico:</b> 7gg ${w7.toFixed(0)}% · 30gg ${w30.toFixed(0)}% · 90gg ${w90.toFixed(0)}% (media ${avgWr.toFixed(0)}%).`);
+  // Win rate (solo i valori disponibili — N/D se storia insufficiente)
+  const wrAvail=[w7,w30,w90].filter(w=>w!=null);
+  if(wrAvail.length){
+    const avgWr=wrAvail.reduce((a,b)=>a+b,0)/wrAvail.length;
+    const fw=w=>w!=null?w.toFixed(0)+'%':'N/D';
+    p.push(`<b>Win rate storico:</b> 7gg ${fw(w7)} · 30gg ${fw(w30)} · 90gg ${fw(w90)} (media ${avgWr.toFixed(0)}%).`);
+  }
 
   // Volatility
   if(V!=null){
@@ -2764,7 +2779,7 @@ function buildDipSignal(R,M50,M200,Mo3m,Mo12m,DD,cur,w30,score){
   document.getElementById('sig-decision').innerHTML=body+'<br><br>'+action;
 }
 // ── SESSION CACHE ──
-const CK='qe7_',TTL=3600000;
+const CK='qe7_',TTL=300000; // 5 min — allineato alla cache dei dati grafici per evitare punteggi obsoleti
 function getCached(k){try{const v=sessionStorage.getItem(CK+k);if(!v)return null;const p=JSON.parse(v);if(Date.now()-p.ts>TTL)return null;return p.d;}catch{return null;}}
 function setCached(k,d){try{sessionStorage.setItem(CK+k,JSON.stringify({d,ts:Date.now()}));}catch{}}
 
@@ -3520,8 +3535,8 @@ function drawCharts(sea,di,wrs,ts,cl){
   CH.s=new Chart(document.getElementById('chart-sea'),{
     type:'bar',
     data:{labels:sea.map(s=>s.l),datasets:[{
-      data:sea.map(s=>+s.p.toFixed(1)),borderRadius:4,borderWidth:0,
-      backgroundColor:sea.map((s,i)=>i===curM?'rgba(59,130,246,.7)':s.p>=55?'rgba(16,185,129,.5)':s.p<=45?'rgba(239,68,68,.4)':'rgba(100,116,139,.35)'),
+      data:sea.map(s=>s.p!=null?+s.p.toFixed(1):null),borderRadius:4,borderWidth:0,
+      backgroundColor:sea.map((s,i)=>s.p==null?'rgba(100,116,139,.2)':i===curM?'rgba(59,130,246,.7)':s.p>=55?'rgba(16,185,129,.5)':s.p<=45?'rgba(239,68,68,.4)':'rgba(100,116,139,.35)'),
     }]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{
       y:{min:30,max:80,ticks:{callback:v=>v+'%',color:TC(),font:{size:10}},grid:{color:GC()},border:{display:false}},
@@ -3544,8 +3559,8 @@ function drawCharts(sea,di,wrs,ts,cl){
   CH.w=new Chart(document.getElementById('chart-wr'),{
     type:'bar',
     data:{labels:['7gg','14gg','30gg','60gg','90gg','180gg','365gg'],datasets:[{
-      data:wrs.map(w=>+w.toFixed(1)),borderRadius:4,borderWidth:0,
-      backgroundColor:wrs.map(w=>w>=58?'rgba(16,185,129,.6)':w<=42?'rgba(239,68,68,.6)':'rgba(59,130,246,.4)'),
+      data:wrs.map(w=>w!=null?+w.toFixed(1):null),borderRadius:4,borderWidth:0,
+      backgroundColor:wrs.map(w=>w==null?'rgba(100,116,139,.2)':w>=58?'rgba(16,185,129,.6)':w<=42?'rgba(239,68,68,.6)':'rgba(59,130,246,.4)'),
     }]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{
       y:{min:30,max:75,ticks:{callback:v=>v+'%',color:TC(),font:{size:10}},grid:{color:GC()},border:{display:false}},
@@ -3995,8 +4010,8 @@ async function analyze(ticker){
     const seasonPct=curMonthSea?curMonthSea.p:null;
     // fetch fondamentali in parallelo — NON blocca il rendering principale
     const fundPromise=fetchFundamentals(ticker).catch(()=>null);
-    // fund excluded from score to keep home/analysis scores consistent
-    const score=edgeScore(R,M50,M200,V,Mo,w7,w30,w90,cur,Mo3m,Mo6m,Mo12m,null,seasonPct);
+    // Score tecnico immediato (coerente con home); i fondamentali lo affinano quando arrivano
+    let score=edgeScore(R,M50,M200,V,Mo,w7,w30,w90,cur,Mo3m,Mo6m,Mo12m,null,seasonPct);
     globalScoreMap[ticker]=score; setCached(ticker,score);
 
     // Header
@@ -4008,21 +4023,24 @@ async function analyze(ticker){
     chEl.textContent=`${chA>=0?'+':''}${fmt(chA)} (${chP>=0?'+':''}${chP.toFixed(2)}%)`;
     chEl.className='a-ch '+(chP>=0?'up':'dn');
 
-    // Signal box
+    // Signal box — funzione riutilizzabile (ricalcolata quando arrivano i fondamentali)
     const box=document.getElementById('sig-box');
-    box.className='sig-box '+(score>=55?'buy':score<=40?'sell':'wait');
-    document.getElementById('sig-badge').textContent=score>=65?'Ingresso':score>=55?'Positivo':score>=45?'Neutro':score>=35?'Attenzione':'Uscita';
-    document.getElementById('sig-score').textContent=score+'/100';
-    document.getElementById('sig-score').style.color=sc(score);
-    document.getElementById('sig-headline').textContent=
-      score>=65?'Edge statistico favorevole — condizioni ottimali per entrare':
-      score>=55?'Condizioni positive — ingresso prudente ammesso':
-      score>=45?'Zona di equilibrio — attendere un segnale più chiaro':
-      score>=35?'Condizioni sfavorevoli — evitare nuovi ingressi':
-      'Pressione ribassista dominante — proteggere il capitale';
-    const sig=buildSignalText(ticker,cur,R,M50,M200,V,Mo,DD,w7,w30,w90,score);
-    document.getElementById('sig-points').innerHTML=sig.points.map(p=>'<div class="sig-point"><span>'+p+'</span></div>').join('');
-    document.getElementById('sig-decision').innerHTML=sig.decision;
+    const renderScoreUI=(sco)=>{
+      box.className='sig-box '+(sco>=55?'buy':sco<=40?'sell':'wait');
+      document.getElementById('sig-badge').textContent=sco>=65?'Ingresso':sco>=55?'Positivo':sco>=45?'Neutro':sco>=35?'Attenzione':'Uscita';
+      document.getElementById('sig-score').textContent=sco+'/100';
+      document.getElementById('sig-score').style.color=sc(sco);
+      document.getElementById('sig-headline').textContent=
+        sco>=65?'Edge statistico favorevole — condizioni ottimali per entrare':
+        sco>=55?'Condizioni positive — ingresso prudente ammesso':
+        sco>=45?'Zona di equilibrio — attendere un segnale più chiaro':
+        sco>=35?'Condizioni sfavorevoli — evitare nuovi ingressi':
+        'Pressione ribassista dominante — proteggere il capitale';
+      const sig=buildSignalText(ticker,cur,R,M50,M200,V,Mo,DD,w7,w30,w90,sco);
+      document.getElementById('sig-points').innerHTML=sig.points.map(p=>'<div class="sig-point"><span>'+p+'</span></div>').join('');
+      document.getElementById('sig-decision').innerHTML=sig.decision;
+    };
+    renderScoreUI(score);
 
     // Tags
     const tags=buildTags(R,M50,M200,cur,V,Mo,w30);
@@ -4050,12 +4068,13 @@ async function analyze(ticker){
     const dc=DD>30?'var(--r)':DD>15?'var(--y)':'var(--g)';
     setInd('iv-dd','is-dd','-'+DD.toFixed(1)+'%',DD>30?'Drawdown severo — alta rischiosità':DD>15?'Moderato':'Contenuto — buona resilienza',dc);
 
-    // Win rates
+    // Win rates (N/D se storia insufficiente)
     const wrC=w=>w>=58?'var(--g)':w<=42?'var(--r)':'var(--y)';
     const wrLbl=w=>w>=58?'Vantaggio rialzista':w<=42?'Svantaggio storico':'Zona neutra';
     [[w7,'7'],[w30,'30'],[w90,'90']].forEach(([w,id])=>{
       const el=document.getElementById('wr-'+id);
       const sl=document.getElementById('wr-'+id+'-sig');
+      if(w==null){el.textContent='N/D';el.style.color='var(--t3)';sl.textContent='Storia insufficiente';sl.style.color='var(--t3)';return;}
       el.textContent=w.toFixed(1)+'%'; el.style.color=wrC(w);
       sl.textContent=wrLbl(w); sl.style.color=wrC(w);
     });
@@ -4094,6 +4113,13 @@ async function analyze(ticker){
       renderFundamentals(null,ticker);
       fundPromise.then(fund=>{
         renderFundamentals(fund,ticker);
+        // Affina lo score includendo i fondamentali (solo azioni: ETF/crypto hanno fund=null)
+        if(fund){
+          score=edgeScore(R,M50,M200,V,Mo,w7,w30,w90,cur,Mo3m,Mo6m,Mo12m,fund,seasonPct);
+          globalScoreMap[ticker]=score; setCached(ticker,score);
+          renderScoreUI(score);
+          buildDipSignal(R,M50,M200,Mo3m,Mo12m,DD,cur,w30,score);
+        }
         renderBHS(score,fund);
       });
     }));

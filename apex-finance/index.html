@@ -331,6 +331,10 @@ header{
 .nav-menu-item:hover{background:var(--bg3);}
 .nav-menu-item .nm-count{font-size:.68rem;color:var(--t3);font-weight:600;}
 .nav-menu-sep{height:1px;background:var(--border);margin:4px 6px;}
+.nav-menu-head{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);padding:8px 12px 4px;}
+.nav-menu-item .nm-ico{display:flex;align-items:center;color:var(--accent);flex-shrink:0;}
+.nav-menu-feat{gap:9px;font-weight:600;background:rgba(59,130,246,.07);justify-content:flex-start;}
+.nav-menu-feat:hover{background:rgba(59,130,246,.16);}
 @media(max-width:720px){
   .nav-btn span{display:none;}
   .nav-btn{padding:7px 9px;}
@@ -1327,6 +1331,13 @@ header{
 .pf-set input,.pf-set select{padding:7px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;
   color:var(--text);font-family:inherit;font-size:.8rem;outline:none;box-sizing:border-box;}
 .pf-set input:focus,.pf-set select:focus{border-color:var(--accent);}
+.pf-adv-toggle{display:flex;align-items:center;gap:8px;width:100%;margin-top:14px;padding:9px 12px;
+  background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--t2);
+  font-family:inherit;font-size:.74rem;font-weight:600;cursor:pointer;transition:border-color .15s;}
+.pf-adv-toggle:hover{border-color:var(--accent);color:var(--text);}
+.pf-adv-toggle .pf-adv-caret{margin-left:auto;transition:transform .2s;}
+.pf-adv-toggle.open .pf-adv-caret{transform:rotate(180deg);}
+.pf-advanced{margin-top:12px;}
 .pf-calc-btn{width:100%;margin-top:14px;padding:11px;background:linear-gradient(135deg,#2563eb,#3b82f6);
   border:none;border-radius:var(--radius-sm);color:#fff;font-family:inherit;font-size:.85rem;font-weight:700;cursor:pointer;transition:opacity .15s;}
 .pf-calc-btn:hover{opacity:.9;}
@@ -1443,18 +1454,14 @@ header{
     </div>
 
     <div class="nav-btns">
-      <div class="nav-dd" id="nav-mercati">
-        <button class="nav-btn" onclick="toggleMercati(event)">
-          <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-6"/></svg>
-          <span>Mercati</span>
+      <div class="nav-dd" id="nav-main">
+        <button class="nav-btn" onclick="toggleMainMenu(event)" aria-label="Menu">
+          <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          <span>Menu</span>
           <svg class="nav-caret" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
-        <div class="nav-menu" id="mercati-menu"></div>
+        <div class="nav-menu" id="main-menu"></div>
       </div>
-      <button class="nav-btn" onclick="openPortfolio()">
-        <svg viewBox="0 0 24 24"><path d="M3 7h18v13H3z"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-        <span>Portafoglio</span>
-      </button>
     </div>
 
     <div class="live-ind">
@@ -1784,17 +1791,34 @@ header{
           </div>
 
           <div class="pf-panel">
-            <div class="pf-panel-hd">Parametri <span class="pf-pro-tag">PRO</span></div>
+            <div class="pf-panel-hd">Parametri essenziali</div>
             <div class="pf-settings">
               <label class="pf-set">Capitale iniziale (€)
                 <input type="number" id="pf-capital" value="10000" min="0" step="1000">
               </label>
-              <div class="pf-set"><span class="pf-set-top">Versamento annuo (€)<button class="info-btn pf-info" data-tip="pf_contrib">i</button></span>
-                <input type="number" id="pf-contrib" value="0" min="0" step="500">
-              </div>
               <div class="pf-set"><span class="pf-set-top">Orizzonte (anni)<button class="info-btn pf-info" data-tip="pf_horizon">i</button></span>
                 <input type="number" id="pf-horizon" value="10" min="1" max="40" step="1">
               </div>
+              <div class="pf-set"><span class="pf-set-top">Versamento ricorrente (€)<button class="info-btn pf-info" data-tip="pf_contrib">i</button></span>
+                <input type="number" id="pf-contrib" value="0" min="0" step="50">
+              </div>
+              <div class="pf-set"><span class="pf-set-top">Frequenza versamento</span>
+                <select id="pf-contrib-freq">
+                  <option value="weekly">Settimanale</option>
+                  <option value="biweekly">Ogni 2 settimane</option>
+                  <option value="monthly" selected>Mensile</option>
+                  <option value="quarterly">Trimestrale</option>
+                  <option value="semiannual">Semestrale</option>
+                  <option value="annual">Annuale</option>
+                </select>
+              </div>
+            </div>
+
+            <button class="pf-adv-toggle" id="pf-adv-toggle" onclick="pfToggleAdvanced()">
+              <span>Impostazioni avanzate</span><span class="pf-pro-tag">PRO</span>
+              <svg class="pf-adv-caret" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="pf-settings pf-advanced" id="pf-advanced" style="display:none">
               <div class="pf-set"><span class="pf-set-top">Tasso risk-free (%)<button class="info-btn pf-info" data-tip="pf_rf">i</button></span>
                 <input type="number" id="pf-rf" value="3" min="0" max="20" step="0.1">
               </div>
@@ -5216,43 +5240,47 @@ function renderDollarFromValues(dxy,dxyPct,eur,eurPct){
 // ═══════════════════════════════════════════════════════════
 //  MERCATI DROPDOWN
 // ═══════════════════════════════════════════════════════════
-function buildMercatiMenu(){
-  const menu=document.getElementById('mercati-menu');
+function buildMainMenu(){
+  const menu=document.getElementById('main-menu');
   if(!menu) return;
   const cats=[
     ['t-azioni','Azioni'],['t-etf-az','ETF Azionari'],['t-etf-bond','ETF Obbligazionari'],
     ['t-commodities','Materie Prime'],['t-crypto','Crypto'],
   ];
-  let html=cats.map(([id,label])=>{
+  const exch=[
+    ['US','🇺🇸 Azioni USA','~8000'],['MI','🇮🇹 Borsa di Milano','tutti'],
+    ['DE','🇩🇪 Borsa di Francoforte','tutti'],['L','🇬🇧 Borsa di Londra','tutti'],
+    ['PA','🇫🇷 Borsa di Parigi','tutti'],
+  ];
+  let html=`<div class="nav-menu-head">Strumenti</div>`;
+  html+=`<div class="nav-menu-item nav-menu-feat" onclick="closeMainMenu();openPortfolio()">
+    <span class="nm-ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span>
+    <span>Simulatore di Portafoglio</span></div>`;
+  html+=`<div class="nav-menu-sep"></div><div class="nav-menu-head">Mercati & categorie</div>`;
+  html+=cats.map(([id,label])=>{
     const n=(PANO_FULL[id]||PANO[id]||[]).length;
     return `<div class="nav-menu-item" onclick="openCatFromMenu('${id}')"><span>${label}</span><span class="nm-count">${n}+</span></div>`;
   }).join('');
-  html+=`<div class="nav-menu-sep"></div>`;
-  html+=`<div class="nav-menu-item" onclick="openAllMarket('US')"><span>🇺🇸 Tutte le azioni USA</span><span class="nm-count">~8000</span></div>`;
-  html+=`<div class="nav-menu-item" onclick="openAllMarket('MI')"><span>🇮🇹 Borsa di Milano</span><span class="nm-count">tutti</span></div>`;
-  html+=`<div class="nav-menu-item" onclick="openAllMarket('DE')"><span>🇩🇪 Borsa di Francoforte</span><span class="nm-count">tutti</span></div>`;
-  html+=`<div class="nav-menu-item" onclick="openAllMarket('L')"><span>🇬🇧 Borsa di Londra</span><span class="nm-count">tutti</span></div>`;
-  html+=`<div class="nav-menu-item" onclick="openAllMarket('PA')"><span>🇫🇷 Borsa di Parigi</span><span class="nm-count">tutti</span></div>`;
+  html+=`<div class="nav-menu-sep"></div><div class="nav-menu-head">Borse mondiali</div>`;
+  html+=exch.map(([c,label,n])=>`<div class="nav-menu-item" onclick="openAllMarket('${c}')"><span>${label}</span><span class="nm-count">${n}</span></div>`).join('');
   menu.innerHTML=html;
 }
-function toggleMercati(e){
+function toggleMainMenu(e){
   e.stopPropagation();
-  const menu=document.getElementById('mercati-menu');
-  if(!menu.innerHTML) buildMercatiMenu();
+  const menu=document.getElementById('main-menu');
+  if(!menu.innerHTML) buildMainMenu();
   menu.classList.toggle('open');
 }
-function openCatFromMenu(id){
-  document.getElementById('mercati-menu').classList.remove('open');
-  loadSectionRest(id);
-}
+function closeMainMenu(){ document.getElementById('main-menu')?.classList.remove('open'); }
+function openCatFromMenu(id){ closeMainMenu(); loadSectionRest(id); }
 document.addEventListener('click',e=>{
-  const dd=document.getElementById('nav-mercati');
-  if(dd&&!dd.contains(e.target)) document.getElementById('mercati-menu')?.classList.remove('open');
+  const dd=document.getElementById('nav-main');
+  if(dd&&!dd.contains(e.target)) closeMainMenu();
 });
 
 // Carica TUTTI i simboli di una borsa da /api/symbols (Finnhub exchange listing)
 async function openAllMarket(exch){
-  document.getElementById('mercati-menu').classList.remove('open');
+  closeMainMenu();
   const names={US:'Azioni USA',MI:'Borsa di Milano',DE:'Borsa di Francoforte',L:'Borsa di Londra',PA:'Borsa di Parigi'};
   _modalId='__exch_'+exch; _modalPage=1; _modalSort='default'; _modalFilter='';
   const inp=document.getElementById('cat-modal-search'), sel=document.getElementById('cat-modal-sort');
@@ -5282,7 +5310,7 @@ let _pfData=null;           // cached aligned data after calculate
 function pfDestroyCharts(){ Object.values(PFCH).forEach(c=>c&&c.destroy()); PFCH={}; }
 
 function openPortfolio(){
-  document.getElementById('mercati-menu')?.classList.remove('open');
+  closeMainMenu();
   const m=document.getElementById('pf-modal'); m.style.display='flex';
   const sy=window.scrollY; document.body.dataset.pfScroll=sy;
   document.body.style.position='fixed'; document.body.style.top=`-${sy}px`; document.body.style.width='100%';
@@ -5291,6 +5319,13 @@ function openPortfolio(){
     ['SPY','QQQ','GLD','TLT'].forEach((t,i)=>PF.holdings.push({ticker:t,name:({SPY:'S&P 500 ETF',QQQ:'Nasdaq 100 ETF',GLD:'Oro',TLT:'Treasury 20+ anni'})[t],weight:25}));
   }
   pfRenderHoldings(); pfSetupSearch();
+}
+function pfToggleAdvanced(){
+  const adv=document.getElementById('pf-advanced');
+  const btn=document.getElementById('pf-adv-toggle');
+  const open=adv.style.display==='none';
+  adv.style.display=open?'grid':'none';
+  btn.classList.toggle('open',open);
 }
 function closePortfolio(){
   document.getElementById('pf-modal').style.display='none';
@@ -5470,7 +5505,11 @@ async function pfCalculate(){
 
     // Monte Carlo
     const capital=+document.getElementById('pf-capital').value||10000;
-    const contrib=+document.getElementById('pf-contrib').value||0;
+    const contribAmt=+document.getElementById('pf-contrib').value||0;
+    const freq=document.getElementById('pf-contrib-freq').value;
+    // numero di versamenti all'anno per ciascuna frequenza
+    const perYear={weekly:52,biweekly:26,monthly:12,quarterly:4,semiannual:2,annual:1}[freq]??12;
+    const contrib=contribAmt*perYear; // versamento annualizzato
     const horizon=Math.max(1,+document.getElementById('pf-horizon').value||10);
     const runs=+document.getElementById('pf-mcruns').value||1000;
     const target=+document.getElementById('pf-target').value||0;
@@ -5487,7 +5526,8 @@ async function pfCalculate(){
     pfRenderResults({okTickers,weights,annRet,vol,sharpe,sortino,beta,maxdd,corr,effN,
       eq,benchEq,benchT,hasBench,ts:aligned.ts,varDaily,cvarDaily,conf,capital,contrib,horizon,
       mc,probTarget,target,probLoss,totInvested,rf,period,failed,
-      calmar,posMonths,bestDay,worstDay,infl,realRet,finalMedReal,realFactor});
+      calmar,posMonths,bestDay,worstDay,infl,realRet,finalMedReal,realFactor,
+      contribAmt,freqLabel:{weekly:'a settimana',biweekly:'ogni 2 sett.',monthly:'al mese',quarterly:'a trimestre',semiannual:'a semestre',annual:'all\'anno'}[freq]||''});
   } finally {
     btn.disabled=false; btn.textContent='Calcola portafoglio';
   }
@@ -5594,7 +5634,7 @@ function pfRenderResults(R){
       <div class="pf-section-hd">Proiezione Monte Carlo — ${R.horizon} anni (${R.mc.finals.length.toLocaleString('it-IT')} simulazioni) <button class="info-btn pf-info" data-tip="pf_mc">i</button></div>
       <div class="pf-chart-wrap"><canvas id="pf-mc-chart"></canvas></div>
       <div class="pf-metrics" style="margin-top:16px">
-        <div class="pf-metric"><div class="pf-metric-lbl">Capitale investito</div><div class="pf-metric-val">${pfFmtEur(R.totInvested)}</div><div class="pf-metric-sub">${pfFmtEur(R.capital)} + ${pfFmtEur(R.contrib)}/anno</div></div>
+        <div class="pf-metric"><div class="pf-metric-lbl">Capitale investito</div><div class="pf-metric-val">${pfFmtEur(R.totInvested)}</div><div class="pf-metric-sub">${pfFmtEur(R.capital)}${R.contrib>0?` + ${pfFmtEur(R.contribAmt)} ${R.freqLabel}`:''}</div></div>
         <div class="pf-metric"><div class="pf-metric-lbl">Scenario mediano</div><div class="pf-metric-val" style="color:var(--g)">${pfFmtEur(finalMed)}</div><div class="pf-metric-sub">≈ ${pfFmtEur(R.finalMedReal)} in moneta di oggi</div></div>
         <div class="pf-metric"><div class="pf-metric-lbl">Pessimistico (5%)</div><div class="pf-metric-val" style="color:var(--r)">${pfFmtEur(R.mc.bands[R.mc.bands.length-1].p5)}</div><div class="pf-metric-sub">5° percentile</div></div>
         <div class="pf-metric"><div class="pf-metric-lbl">Ottimistico (95%)</div><div class="pf-metric-val">${pfFmtEur(R.mc.bands[R.mc.bands.length-1].p95)}</div><div class="pf-metric-sub">95° percentile</div></div>
@@ -5755,7 +5795,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   // Move #analysis section into the overlay body
   document.getElementById('ao-body').appendChild(document.getElementById('analysis'));
   setupSearch();
-  buildMercatiMenu();
+  buildMainMenu();
   setupTooltips();
   initSecControls();
   document.addEventListener('keydown',e=>{

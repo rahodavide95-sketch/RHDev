@@ -1304,6 +1304,9 @@ header{
 .pf-mini-btn:hover{border-color:var(--accent);color:var(--accent);}
 .pf-settings{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .pf-set{display:flex;flex-direction:column;gap:4px;font-size:.68rem;color:var(--t2);font-weight:600;}
+.pf-set-top{display:flex;align-items:center;gap:5px;min-height:16px;}
+.pf-info{width:15px!important;height:15px!important;min-width:15px;font-size:.62rem!important;line-height:1;padding:0!important;flex-shrink:0;}
+.pf-metric-lbl .pf-info,.pf-section-hd .pf-info{vertical-align:middle;}
 .pf-set input,.pf-set select{padding:7px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;
   color:var(--text);font-family:inherit;font-size:.8rem;outline:none;box-sizing:border-box;}
 .pf-set input:focus,.pf-set select:focus{border-color:var(--accent);}
@@ -1342,11 +1345,18 @@ header{
 .pf-cmp-table td{white-space:nowrap;}
 @media(max-width:860px){
   .pf-modal{padding:0;}
-  .pf-box{height:100vh;width:100vw;border-radius:0;}
+  .pf-box{height:100vh;height:100dvh;width:100vw;border-radius:0;}
   .pf-body{grid-template-columns:1fr;overflow-y:auto;}
   .pf-left{border-right:none;border-bottom:1px solid var(--border);overflow:visible;}
   .pf-right{overflow:visible;}
   .pf-grid2{grid-template-columns:1fr;}
+}
+@media(max-width:430px){
+  .pf-settings{grid-template-columns:1fr;}
+  .pf-hd{padding:14px 16px;}
+  .pf-left,.pf-right{padding:13px;}
+  .pf-metric-val{font-size:1.15rem;}
+  .pf-toolbar .pf-tr-note{margin-left:0;width:100%;}
 }
 
 /* ── RADAR LOADER ── */
@@ -1762,59 +1772,60 @@ header{
               <label class="pf-set">Capitale iniziale (€)
                 <input type="number" id="pf-capital" value="10000" min="0" step="1000">
               </label>
-              <label class="pf-set">Versamento annuo (€)
+              <div class="pf-set"><span class="pf-set-top">Versamento annuo (€)<button class="info-btn pf-info" data-tip="pf_contrib">i</button></span>
                 <input type="number" id="pf-contrib" value="0" min="0" step="500">
-              </label>
-              <label class="pf-set">Orizzonte (anni)
+              </div>
+              <div class="pf-set"><span class="pf-set-top">Orizzonte (anni)<button class="info-btn pf-info" data-tip="pf_horizon">i</button></span>
                 <input type="number" id="pf-horizon" value="10" min="1" max="40" step="1">
-              </label>
-              <label class="pf-set">Tasso risk-free (%)
+              </div>
+              <div class="pf-set"><span class="pf-set-top">Tasso risk-free (%)<button class="info-btn pf-info" data-tip="pf_rf">i</button></span>
                 <input type="number" id="pf-rf" value="3" min="0" max="20" step="0.1">
-              </label>
-              <label class="pf-set">Benchmark
+              </div>
+              <div class="pf-set"><span class="pf-set-top">Benchmark<button class="info-btn pf-info" data-tip="pf_benchmark">i</button></span>
                 <input type="text" id="pf-benchmark" value="SPY" spellcheck="false">
-              </label>
-              <label class="pf-set">Ribilanciamento
+              </div>
+              <div class="pf-set"><span class="pf-set-top">Ribilanciamento<button class="info-btn pf-info" data-tip="pf_rebal">i</button></span>
                 <select id="pf-rebal">
                   <option value="none">Nessuno (buy &amp; hold)</option>
                   <option value="monthly">Mensile</option>
                   <option value="quarterly">Trimestrale</option>
                   <option value="yearly" selected>Annuale</option>
                 </select>
-              </label>
-              <label class="pf-set">Storico backtest
+              </div>
+              <div class="pf-set"><span class="pf-set-top">Storico backtest</span>
                 <select id="pf-period">
                   <option value="1y">1 anno</option>
                   <option value="2y" selected>2 anni</option>
                   <option value="5y">5 anni</option>
                   <option value="10y">10 anni</option>
                 </select>
-              </label>
-              <label class="pf-set">Simulazioni Monte Carlo
+              </div>
+              <div class="pf-set"><span class="pf-set-top">Simulazioni Monte Carlo<button class="info-btn pf-info" data-tip="pf_mc">i</button></span>
                 <select id="pf-mcruns">
                   <option value="500">500</option>
                   <option value="1000" selected>1.000</option>
                   <option value="5000">5.000</option>
                   <option value="10000">10.000</option>
                 </select>
-              </label>
-              <label class="pf-set">Confidenza VaR (%)
+              </div>
+              <div class="pf-set"><span class="pf-set-top">Confidenza VaR (%)<button class="info-btn pf-info" data-tip="pf_var">i</button></span>
                 <select id="pf-conf">
                   <option value="95" selected>95%</option>
                   <option value="99">99%</option>
                 </select>
-              </label>
-              <label class="pf-set">Obiettivo finale (€, opz.)
+              </div>
+              <div class="pf-set"><span class="pf-set-top">Obiettivo finale (€, opz.)</span>
                 <input type="number" id="pf-target" value="" min="0" step="1000" placeholder="es. 50000">
-              </label>
-              <label class="pf-set">Inflazione attesa (%)
+              </div>
+              <div class="pf-set"><span class="pf-set-top">Inflazione attesa (%)<button class="info-btn pf-info" data-tip="pf_infl">i</button></span>
                 <input type="number" id="pf-infl" value="2" min="0" max="20" step="0.1">
-              </label>
+              </div>
             </div>
             <button class="pf-calc-btn" id="pf-calc-btn" onclick="pfCalculate()">Calcola portafoglio</button>
             <div class="pf-optimize">
-              <button class="pf-mini-btn" onclick="pfOptimize('sharpe')">⚡ Ottimizza max Sharpe</button>
-              <button class="pf-mini-btn" onclick="pfOptimize('minvar')">🛡 Minima volatilità</button>
+              <button class="pf-mini-btn" onclick="pfOptimize('sharpe')">⚡ Max Sharpe</button>
+              <button class="pf-mini-btn" onclick="pfOptimize('minvar')">🛡 Min volatilità</button>
+              <button class="info-btn pf-info" data-tip="pf_optimize" style="align-self:center">i</button>
             </div>
           </div>
         </div>
@@ -4712,6 +4723,111 @@ In condizioni normali, chi presta a lungo riceve di più: rischio maggiore = ren
 <b>&gt; 35</b> — Panico. Storicamente: COVID-19 = 85, Lehman 2008 = 80.<br><br>
 <i>Regola: VIX &gt; 30 con mercato in forte calo = possibile zona di ingresso per chi ha orizzonte lungo.</i>`
   },
+
+  // ── SIMULATORE DI PORTAFOGLIO ──
+  pf_rf:{
+    title:'Tasso risk-free',
+    body:`È il rendimento di un investimento <b>privo di rischio</b>, tipicamente i titoli di Stato a breve termine (BOT italiani, T-Bill USA) o il tasso della banca centrale.<br><br>
+Serve come <b>punto di riferimento</b>: qualsiasi investimento rischioso deve rendere <i>più</i> del risk-free per valere la pena.<br><br>
+Viene usato per calcolare <b>Sharpe</b> e <b>Sortino</b>: misurano quanto rendimento <i>extra</i> ottieni per ogni unità di rischio che ti assumi <u>oltre</u> il risk-free.<br><br>
+<i>Valore tipico oggi: 3–4%. Se non sai cosa mettere, lascia il default.</i>`
+  },
+  pf_benchmark:{
+    title:'Benchmark di confronto',
+    body:`Il <b>parametro di riferimento</b> contro cui misurare il tuo portafoglio. Di default <b>SPY</b> (l'ETF sull'S&P 500, il mercato azionario USA).<br><br>
+Serve per due cose:<br>
+• Calcolare il <b>Beta</b> (quanto il tuo portafoglio si muove rispetto al mercato).<br>
+• Confrontare visivamente la crescita del tuo portafoglio con quella del mercato nel backtest.<br><br>
+Puoi cambiarlo con qualsiasi ticker: <b>QQQ</b> (Nasdaq), <b>VWCE</b> (azionario mondiale), <b>AGG</b> (obbligazionario), ecc.`
+  },
+  pf_rebal:{
+    title:'Ribilanciamento',
+    body:`Nel tempo gli asset crescono a velocità diverse, quindi i pesi del portafoglio si <b>sbilanciano</b> (es. l'azione che corre diventa il 40% invece del 25% iniziale).<br><br>
+Il ribilanciamento <b>riporta periodicamente i pesi a quelli target</b>, vendendo ciò che è salito troppo e comprando ciò che è sceso.<br><br>
+<b>Nessuno (buy &amp; hold)</b> → lasci correre, nessuna vendita. Massima crescita potenziale ma rischio concentrazione.<br>
+<b>Mensile/Trimestrale/Annuale</b> → disciplina il rischio e "compra basso, vendi alto" in automatico.<br><br>
+<i>Per la maggior parte degli investitori, il ribilanciamento annuale è l'ideale: basso costo, buona disciplina.</i>`
+  },
+  pf_mc:{
+    title:'Simulazione Monte Carlo',
+    body:`Una tecnica che <b>proietta il futuro</b> del tuo portafoglio simulando <b>migliaia di scenari casuali</b> diversi, basati sul rendimento e sulla volatilità storici.<br><br>
+Invece di darti un singolo numero (che sarebbe falsamente preciso), ti mostra un <b>ventaglio di esiti possibili</b>:<br>
+• <b>Mediana (50%)</b> → lo scenario "centrale" più probabile.<br>
+• <b>5° percentile</b> → scenario pessimistico (solo il 5% dei casi va peggio).<br>
+• <b>95° percentile</b> → scenario ottimistico.<br><br>
+Più simulazioni = stima più stabile (ma più lenta). <b>1.000</b> è un buon equilibrio; <b>10.000</b> per massima precisione.<br><br>
+<i>È lo stesso metodo usato dai consulenti finanziari professionali per la pianificazione pensionistica.</i>`
+  },
+  pf_var:{
+    title:'VaR & CVaR — Value at Risk',
+    body:`Misurano <b>quanto puoi perdere</b> in un brutto giorno.<br><br>
+<b>VaR 95% (1 giorno)</b> → "Nel 95% dei giorni la perdita non supera questo valore". Esempio: VaR -2,5% significa che solo 1 giorno su 20 perdi più del 2,5%.<br><br>
+<b>CVaR</b> (o Expected Shortfall) → la perdita <b>media nei giorni peggiori</b>, quelli oltre il VaR. Risponde a: "quando va davvero male, <i>quanto</i> male va?".<br><br>
+Il CVaR è sempre più severo del VaR ed è considerato la misura di rischio più affidabile dai professionisti.<br><br>
+<i>Confidenza 99% = soglia più estrema (1 giorno su 100) → numeri più grandi.</i>`
+  },
+  pf_sharpe:{
+    title:'Sharpe & Sortino Ratio',
+    body:`Misurano la <b>qualità</b> del rendimento, non solo la quantità: quanto guadagni <i>per ogni unità di rischio</i>.<br><br>
+<b>Sharpe</b> = (rendimento − risk-free) / volatilità totale.<br>
+<b>&gt; 1</b> → Ottimo. <b>0,5–1</b> → Buono. <b>&lt; 0,5</b> → Mediocre.<br><br>
+<b>Sortino</b> → come lo Sharpe ma considera <b>solo la volatilità al ribasso</b> (le perdite). Più equo, perché la volatilità verso l'alto non è un "rischio" che ti preoccupa.<br><br>
+<i>Tra due portafogli con lo stesso rendimento, scegli quello con Sharpe/Sortino più alto: ottieni lo stesso premio rischiando meno.</i>`
+  },
+  pf_dd:{
+    title:'Max Drawdown & Calmar',
+    body:`Il <b>Max Drawdown</b> è la <b>peggiore perdita dal picco al minimo</b> mai subita nel periodo. È la domanda chiave: "quanto avrei dovuto sopportare di rosso prima di recuperare?".<br><br>
+Esempio: -35% significa che a un certo punto il portafoglio era sceso del 35% dal suo massimo.<br><br>
+<b>Calmar ratio</b> = rendimento annuo / max drawdown. Misura il rendimento <i>per unità di sofferenza</i>. Più è alto, meglio è.<br><br>
+<i>Sii onesto con te stesso: se il max drawdown è -40% ma sai che venderesti nel panico a -20%, quel portafoglio non fa per te.</i>`
+  },
+  pf_corr:{
+    title:'Correlazione & Diversificazione',
+    body:`La <b>correlazione</b> misura quanto due asset si muovono <b>insieme</b>, da -1 a +1.<br><br>
+<b>+1</b> → si muovono identici (se uno scende, scende anche l'altro). Nessuna protezione.<br>
+<b>0</b> → indipendenti.<br>
+<b>-1</b> → opposti (uno sale quando l'altro scende). Massima protezione.<br><br>
+Il segreto della diversificazione: combinare asset <b>poco o negativamente correlati</b> riduce il rischio totale <i>senza</i> sacrificare il rendimento. È "l'unico pasto gratis in finanza" (Markowitz).<br><br>
+<b>Asset effettivi</b> → quanti asset realmente indipendenti hai. Se hai 5 titoli ma tutti tech correlati, gli "asset effettivi" potrebbero essere solo ~2.`
+  },
+  pf_frontier:{
+    title:'Frontiera efficiente',
+    body:`È il concetto centrale della <b>Teoria Moderna del Portafoglio</b> (Markowitz, premio Nobel).<br><br>
+Ogni puntino del grafico è un possibile portafoglio, posizionato per <b>rischio</b> (asse X) e <b>rendimento atteso</b> (asse Y).<br><br>
+La <b>frontiera efficiente</b> è il bordo superiore-sinistro: i portafogli che offrono <b>il massimo rendimento per ogni livello di rischio</b>. Tutto ciò che sta sotto è "inefficiente" (potresti avere più rendimento con lo stesso rischio).<br><br>
+La <b>⭐ stella</b> è il tuo portafoglio attuale. Se è lontano dal bordo, gli ottimizzatori ti mostrano come avvicinarti.`
+  },
+  pf_optimize:{
+    title:'Ottimizzatore di portafoglio',
+    body:`Calcola automaticamente i <b>pesi ottimali</b> testando migliaia di combinazioni sui dati storici.<br><br>
+<b>⚡ Max Sharpe</b> → trova la combinazione con il <b>miglior rapporto rischio/rendimento</b>. È il portafoglio "più efficiente".<br><br>
+<b>🛡 Minima volatilità</b> → trova la combinazione <b>più stabile possibile</b>, quella che oscilla di meno. Ideale per chi privilegia la tranquillità.<br><br>
+<i>Attenzione: ottimizza sul <u>passato</u>. Il futuro può essere diverso — usalo come guida, non come verità assoluta. Mantieni sempre il buon senso sulla diversificazione.</i>`
+  },
+  pf_infl:{
+    title:'Inflazione & rendimento reale',
+    body:`L'inflazione <b>erode il potere d'acquisto</b>: 100€ tra 10 anni comprano meno di 100€ oggi.<br><br>
+Il <b>rendimento reale</b> è quello che conta davvero: <b>rendimento nominale − inflazione</b>.<br><br>
+Esempio: se il portafoglio rende il 7% ma l'inflazione è il 2%, il tuo guadagno reale in potere d'acquisto è circa il <b>5%</b>.<br><br>
+Il simulatore mostra anche il valore mediano finale <b>"in moneta di oggi"</b>: cioè quanto varrebbe davvero quella cifra futura ai prezzi attuali.<br><br>
+<i>Target inflazione BCE/Fed: 2%. È un valore di default ragionevole.</i>`
+  },
+  pf_horizon:{
+    title:'Orizzonte temporale',
+    body:`Per <b>quanti anni</b> prevedi di mantenere l'investimento prima di aver bisogno dei soldi.<br><br>
+È uno dei parametri più importanti in assoluto:<br>
+• <b>Orizzonte lungo (10+ anni)</b> → puoi sopportare più rischio/volatilità, perché hai tempo per recuperare i ribassi. La probabilità di perdita cala drasticamente.<br>
+• <b>Orizzonte breve (1–3 anni)</b> → meglio asset stabili. Un crollo poco prima del bisogno di liquidità sarebbe difficile da recuperare.<br><br>
+<i>Regola d'oro: non investire in azioni/ETF azionari denaro che ti serve entro 5 anni.</i>`
+  },
+  pf_contrib:{
+    title:'Versamento annuo (PAC)',
+    body:`Quanto aggiungi al portafoglio <b>ogni anno</b>, oltre al capitale iniziale. Simula un <b>Piano di Accumulo (PAC)</b>.<br><br>
+Investire gradualmente nel tempo ha due grandi vantaggi:<br>
+• <b>Mediazione del prezzo</b> (dollar-cost averaging): comprando a intervalli regolari, compri sia quando il mercato è alto sia quando è basso, riducendo il rischio di entrare nel momento sbagliato.<br>
+• <b>Forza dell'interesse composto</b>: ogni versamento ha tempo per crescere.<br><br>
+<i>Anche piccoli versamenti costanti, su orizzonti lunghi, fanno una differenza enorme grazie alla capitalizzazione.</i>`
+  },
 };
 
 // ── TOOLTIP ENGINE ──
@@ -5335,12 +5451,12 @@ function pfRenderResults(R){
     <div class="pf-metrics">
       <div class="pf-metric"><div class="pf-metric-lbl">Rendimento annuo</div><div class="pf-metric-val" style="color:${col(R.annRet)}">${pfFmtPct(R.annRet)}</div><div class="pf-metric-sub">CAGR storico (${R.period})</div></div>
       <div class="pf-metric"><div class="pf-metric-lbl">Volatilità annua</div><div class="pf-metric-val" style="color:var(--y)">${(R.vol*100).toFixed(1)}%</div><div class="pf-metric-sub">deviazione standard</div></div>
-      <div class="pf-metric"><div class="pf-metric-lbl">Sharpe ratio</div><div class="pf-metric-val" style="color:${sharpeCol}">${R.sharpe.toFixed(2)}</div><div class="pf-metric-sub">rendimento/rischio</div></div>
+      <div class="pf-metric"><div class="pf-metric-lbl">Sharpe ratio <button class="info-btn pf-info" data-tip="pf_sharpe">i</button></div><div class="pf-metric-val" style="color:${sharpeCol}">${R.sharpe.toFixed(2)}</div><div class="pf-metric-sub">rendimento/rischio</div></div>
       <div class="pf-metric"><div class="pf-metric-lbl">Sortino ratio</div><div class="pf-metric-val">${R.sortino.toFixed(2)}</div><div class="pf-metric-sub">rischio ribasso</div></div>
-      <div class="pf-metric"><div class="pf-metric-lbl">Max Drawdown</div><div class="pf-metric-val" style="color:var(--r)">-${(R.maxdd*100).toFixed(1)}%</div><div class="pf-metric-sub">perdita max storica</div></div>
+      <div class="pf-metric"><div class="pf-metric-lbl">Max Drawdown <button class="info-btn pf-info" data-tip="pf_dd">i</button></div><div class="pf-metric-val" style="color:var(--r)">-${(R.maxdd*100).toFixed(1)}%</div><div class="pf-metric-sub">perdita max storica</div></div>
       ${R.beta!=null?`<div class="pf-metric"><div class="pf-metric-lbl">Beta (${R.benchT})</div><div class="pf-metric-val">${R.beta.toFixed(2)}</div><div class="pf-metric-sub">sensibilità mercato</div></div>`:''}
       <div class="pf-metric"><div class="pf-metric-lbl">Diversificazione</div><div class="pf-metric-val">${R.effN.toFixed(1)}</div><div class="pf-metric-sub">asset effettivi</div></div>
-      <div class="pf-metric"><div class="pf-metric-lbl">VaR ${(R.conf*100).toFixed(0)}% (1g)</div><div class="pf-metric-val" style="color:var(--r)">-${(R.varDaily*100).toFixed(2)}%</div><div class="pf-metric-sub">CVaR -${(R.cvarDaily*100).toFixed(2)}%</div></div>
+      <div class="pf-metric"><div class="pf-metric-lbl">VaR ${(R.conf*100).toFixed(0)}% (1g) <button class="info-btn pf-info" data-tip="pf_var">i</button></div><div class="pf-metric-val" style="color:var(--r)">-${(R.varDaily*100).toFixed(2)}%</div><div class="pf-metric-sub">CVaR -${(R.cvarDaily*100).toFixed(2)}%</div></div>
       <div class="pf-metric"><div class="pf-metric-lbl">Calmar ratio</div><div class="pf-metric-val">${R.calmar.toFixed(2)}</div><div class="pf-metric-sub">rendimento/drawdown</div></div>
       <div class="pf-metric"><div class="pf-metric-lbl">Rendim. reale</div><div class="pf-metric-val" style="color:${col(R.realRet)}">${pfFmtPct(R.realRet)}</div><div class="pf-metric-sub">al netto inflazione ${(R.infl*100).toFixed(1)}%</div></div>
       ${R.posMonths!=null?`<div class="pf-metric"><div class="pf-metric-lbl">Mesi positivi</div><div class="pf-metric-val">${(R.posMonths*100).toFixed(0)}%</div><div class="pf-metric-sub">frequenza storica</div></div>`:''}
@@ -5363,14 +5479,15 @@ function pfRenderResults(R){
     </div>
 
     <div class="pf-section">
-      <div class="pf-section-hd">Matrice di correlazione</div>
+      <div class="pf-section-hd">Matrice di correlazione <button class="info-btn pf-info" data-tip="pf_corr">i</button></div>
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
       <table class="pf-corr"><thead><tr><th></th>${R.okTickers.map(t=>`<th>${t}</th>`).join('')}</tr></thead>
-      <tbody>${R.okTickers.map((t,i)=>`<tr><td class="lbl">${t}</td>${R.corr[i].map(c=>`<td style="background:${corrCell(c)}">${c.toFixed(2)}</td>`).join('')}</tr>`).join('')}</tbody></table>
+      <tbody>${R.okTickers.map((t,i)=>`<tr><td class="lbl">${t}</td>${R.corr[i].map(c=>`<td style="background:${corrCell(c)}">${c.toFixed(2)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
       <div class="pf-info-line">Verde = bassa/negativa correlazione (buona diversificazione). Rosso = alta correlazione (gli asset si muovono insieme, meno protezione).</div>
     </div>
 
     <div class="pf-section">
-      <div class="pf-section-hd">Proiezione Monte Carlo — ${R.horizon} anni (${R.mc.finals.length.toLocaleString('it-IT')} simulazioni)</div>
+      <div class="pf-section-hd">Proiezione Monte Carlo — ${R.horizon} anni (${R.mc.finals.length.toLocaleString('it-IT')} simulazioni) <button class="info-btn pf-info" data-tip="pf_mc">i</button></div>
       <div class="pf-chart-wrap"><canvas id="pf-mc-chart"></canvas></div>
       <div class="pf-metrics" style="margin-top:16px">
         <div class="pf-metric"><div class="pf-metric-lbl">Capitale investito</div><div class="pf-metric-val">${pfFmtEur(R.totInvested)}</div><div class="pf-metric-sub">${pfFmtEur(R.capital)} + ${pfFmtEur(R.contrib)}/anno</div></div>
@@ -5383,7 +5500,7 @@ function pfRenderResults(R){
     </div>
 
     <div class="pf-section">
-      <div class="pf-section-hd">Frontiera efficiente</div>
+      <div class="pf-section-hd">Frontiera efficiente <button class="info-btn pf-info" data-tip="pf_frontier">i</button></div>
       <div class="pf-chart-wrap"><canvas id="pf-frontier-chart"></canvas></div>
       <div class="pf-info-line">Ogni punto è un portafoglio possibile (rischio vs rendimento). La stella ⭐ è il tuo portafoglio attuale. Punti in alto a sinistra = miglior rapporto rischio/rendimento.</div>
     </div>

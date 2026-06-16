@@ -1332,6 +1332,14 @@ header{
 .pf-corr td.lbl{color:var(--t2);font-weight:700;text-align:left;}
 .pf-info-line{font-size:.76rem;color:var(--t2);line-height:1.6;margin-top:10px;}
 .pf-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.66rem;font-weight:700;}
+.pf-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+.pf-tr-note{font-size:.66rem;color:var(--t3);margin-left:auto;}
+.pf-cmp-backdrop{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.65);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:20px;}
+.pf-cmp-box{background:var(--bg);border:1px solid var(--b2);border-radius:var(--radius);box-shadow:var(--shadow);max-width:840px;width:100%;max-height:80vh;overflow:hidden;display:flex;flex-direction:column;}
+.pf-cmp-hd{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;font-weight:700;font-size:.95rem;border-bottom:1px solid var(--border);}
+.pf-cmp-box>div{padding:16px 20px;}
+.pf-cmp-table th{position:sticky;top:0;background:var(--bg2);}
+.pf-cmp-table td{white-space:nowrap;}
 @media(max-width:860px){
   .pf-modal{padding:0;}
   .pf-box{height:100vh;width:100vw;border-radius:0;}
@@ -1660,35 +1668,27 @@ header{
     </div>
   </div>
 
-  <!-- ── PANORAMICA ── -->
-  <div class="sec">
-    <div class="sec-hd" id="hd-t-etf-az"><span class="sec-title">ETF Azionari</span></div>
-    <div class="pano-list">
-      <table class="ptable"><tbody id="t-etf-az"></tbody></table>
+  <!-- ── PANORAMICA (spostata nel menu "Mercati" — tabelle nascoste ma alimentano opportunità e contatori) ── -->
+  <div id="home-categories" style="display:none">
+    <div class="sec">
+      <div class="sec-hd" id="hd-t-etf-az"><span class="sec-title">ETF Azionari</span></div>
+      <div class="pano-list"><table class="ptable"><tbody id="t-etf-az"></tbody></table></div>
     </div>
-  </div>
-  <div class="sec">
-    <div class="sec-hd" id="hd-t-etf-bond"><span class="sec-title">ETF Obbligazionari</span></div>
-    <div class="pano-list">
-      <table class="ptable"><tbody id="t-etf-bond"></tbody></table>
+    <div class="sec">
+      <div class="sec-hd" id="hd-t-etf-bond"><span class="sec-title">ETF Obbligazionari</span></div>
+      <div class="pano-list"><table class="ptable"><tbody id="t-etf-bond"></tbody></table></div>
     </div>
-  </div>
-  <div class="sec">
-    <div class="sec-hd" id="hd-t-commodities"><span class="sec-title">Materie Prime</span></div>
-    <div class="pano-list">
-      <table class="ptable"><tbody id="t-commodities"></tbody></table>
+    <div class="sec">
+      <div class="sec-hd" id="hd-t-commodities"><span class="sec-title">Materie Prime</span></div>
+      <div class="pano-list"><table class="ptable"><tbody id="t-commodities"></tbody></table></div>
     </div>
-  </div>
-  <div class="sec">
-    <div class="sec-hd" id="hd-t-azioni"><span class="sec-title">Azioni Large Cap</span></div>
-    <div class="pano-list">
-      <table class="ptable"><tbody id="t-azioni"></tbody></table>
+    <div class="sec">
+      <div class="sec-hd" id="hd-t-azioni"><span class="sec-title">Azioni Large Cap</span></div>
+      <div class="pano-list"><table class="ptable"><tbody id="t-azioni"></tbody></table></div>
     </div>
-  </div>
-  <div class="sec">
-    <div class="sec-hd" id="hd-t-crypto"><span class="sec-title">Crypto</span></div>
-    <div class="pano-list">
-      <table class="ptable"><tbody id="t-crypto"></tbody></table>
+    <div class="sec">
+      <div class="sec-hd" id="hd-t-crypto"><span class="sec-title">Crypto</span></div>
+      <div class="pano-list"><table class="ptable"><tbody id="t-crypto"></tbody></table></div>
     </div>
   </div>
 
@@ -1806,6 +1806,9 @@ header{
               </label>
               <label class="pf-set">Obiettivo finale (€, opz.)
                 <input type="number" id="pf-target" value="" min="0" step="1000" placeholder="es. 50000">
+              </label>
+              <label class="pf-set">Inflazione attesa (%)
+                <input type="number" id="pf-infl" value="2" min="0" max="20" step="0.1">
               </label>
             </div>
             <button class="pf-calc-btn" id="pf-calc-btn" onclick="pfCalculate()">Calcola portafoglio</button>
@@ -5238,20 +5241,33 @@ async function pfCalculate(){
     // cache for optimizer / frontier
     _pfData={okTickers,rets,weights,T,aligned,benchT,hasBench};
 
+    // extra metrics
+    const calmar=maxdd>0?annRet/maxdd:0;
+    const posMonths=(()=>{ // % mesi positivi (≈21gg)
+      let pos=0,tot=0; for(let i=0;i+21<=pr.length;i+=21){ let g=1; for(let d=i;d<i+21;d++)g*=(1+pr[d]); if(g>1)pos++; tot++; } return tot?pos/tot:null;
+    })();
+    const bestDay=Math.max(...pr), worstDay=Math.min(...pr);
+
     // Monte Carlo
     const capital=+document.getElementById('pf-capital').value||10000;
     const contrib=+document.getElementById('pf-contrib').value||0;
     const horizon=Math.max(1,+document.getElementById('pf-horizon').value||10);
     const runs=+document.getElementById('pf-mcruns').value||1000;
     const target=+document.getElementById('pf-target').value||0;
+    const infl=(+document.getElementById('pf-infl').value||0)/100;
     const mc=pfMonteCarlo(annRet,vol,capital,contrib,horizon,runs);
     const probTarget=target>0?(mc.finals.filter(v=>v>=target).length/runs):null;
     const totInvested=capital+contrib*horizon;
     const probLoss=mc.finals.filter(v=>v<totInvested).length/runs;
+    // valori reali (potere d'acquisto di oggi)
+    const realFactor=Math.pow(1+infl,horizon);
+    const realRet=(1+annRet)/(1+infl)-1;
+    const finalMedReal=mc.bands[mc.bands.length-1].p50/realFactor;
 
     pfRenderResults({okTickers,weights,annRet,vol,sharpe,sortino,beta,maxdd,corr,effN,
       eq,benchEq,benchT,hasBench,ts:aligned.ts,varDaily,cvarDaily,conf,capital,contrib,horizon,
-      mc,probTarget,target,probLoss,totInvested,rf,period,failed});
+      mc,probTarget,target,probLoss,totInvested,rf,period,failed,
+      calmar,posMonths,bestDay,worstDay,infl,realRet,finalMedReal,realFactor});
   } finally {
     btn.disabled=false; btn.textContent='Calcola portafoglio';
   }
@@ -5301,6 +5317,7 @@ function pfFmtEur(v){ return '€ '+Math.round(v).toLocaleString('it-IT'); }
 function pfFmtPct(v,d=1){ return (v>=0?'+':'')+(v*100).toFixed(d)+'%'; }
 
 function pfRenderResults(R){
+  _pfLastR=R;
   document.getElementById('pf-empty').style.display='none';
   const box=document.getElementById('pf-results'); box.style.display='block';
   const col=v=>v>=0?'var(--g)':'var(--r)';
@@ -5309,6 +5326,12 @@ function pfRenderResults(R){
   const finalMed=R.mc.bands[R.mc.bands.length-1].p50;
 
   box.innerHTML=`
+    <div class="pf-toolbar">
+      <button class="pf-mini-btn" onclick="pfSaveScenario()">💾 Salva scenario</button>
+      <button class="pf-mini-btn" onclick="pfShowCompare()">📊 Confronta scenari</button>
+      <button class="pf-mini-btn" onclick="pfExportCSV()">⬇ Esporta CSV</button>
+      <span class="pf-tr-note">Rendimenti total-return: i dividendi sono già reinvestiti (prezzi aggiustati).</span>
+    </div>
     <div class="pf-metrics">
       <div class="pf-metric"><div class="pf-metric-lbl">Rendimento annuo</div><div class="pf-metric-val" style="color:${col(R.annRet)}">${pfFmtPct(R.annRet)}</div><div class="pf-metric-sub">CAGR storico (${R.period})</div></div>
       <div class="pf-metric"><div class="pf-metric-lbl">Volatilità annua</div><div class="pf-metric-val" style="color:var(--y)">${(R.vol*100).toFixed(1)}%</div><div class="pf-metric-sub">deviazione standard</div></div>
@@ -5318,6 +5341,9 @@ function pfRenderResults(R){
       ${R.beta!=null?`<div class="pf-metric"><div class="pf-metric-lbl">Beta (${R.benchT})</div><div class="pf-metric-val">${R.beta.toFixed(2)}</div><div class="pf-metric-sub">sensibilità mercato</div></div>`:''}
       <div class="pf-metric"><div class="pf-metric-lbl">Diversificazione</div><div class="pf-metric-val">${R.effN.toFixed(1)}</div><div class="pf-metric-sub">asset effettivi</div></div>
       <div class="pf-metric"><div class="pf-metric-lbl">VaR ${(R.conf*100).toFixed(0)}% (1g)</div><div class="pf-metric-val" style="color:var(--r)">-${(R.varDaily*100).toFixed(2)}%</div><div class="pf-metric-sub">CVaR -${(R.cvarDaily*100).toFixed(2)}%</div></div>
+      <div class="pf-metric"><div class="pf-metric-lbl">Calmar ratio</div><div class="pf-metric-val">${R.calmar.toFixed(2)}</div><div class="pf-metric-sub">rendimento/drawdown</div></div>
+      <div class="pf-metric"><div class="pf-metric-lbl">Rendim. reale</div><div class="pf-metric-val" style="color:${col(R.realRet)}">${pfFmtPct(R.realRet)}</div><div class="pf-metric-sub">al netto inflazione ${(R.infl*100).toFixed(1)}%</div></div>
+      ${R.posMonths!=null?`<div class="pf-metric"><div class="pf-metric-lbl">Mesi positivi</div><div class="pf-metric-val">${(R.posMonths*100).toFixed(0)}%</div><div class="pf-metric-sub">frequenza storica</div></div>`:''}
     </div>
 
     <div class="pf-section">
@@ -5348,7 +5374,7 @@ function pfRenderResults(R){
       <div class="pf-chart-wrap"><canvas id="pf-mc-chart"></canvas></div>
       <div class="pf-metrics" style="margin-top:16px">
         <div class="pf-metric"><div class="pf-metric-lbl">Capitale investito</div><div class="pf-metric-val">${pfFmtEur(R.totInvested)}</div><div class="pf-metric-sub">${pfFmtEur(R.capital)} + ${pfFmtEur(R.contrib)}/anno</div></div>
-        <div class="pf-metric"><div class="pf-metric-lbl">Scenario mediano</div><div class="pf-metric-val" style="color:var(--g)">${pfFmtEur(finalMed)}</div><div class="pf-metric-sub">50° percentile</div></div>
+        <div class="pf-metric"><div class="pf-metric-lbl">Scenario mediano</div><div class="pf-metric-val" style="color:var(--g)">${pfFmtEur(finalMed)}</div><div class="pf-metric-sub">≈ ${pfFmtEur(R.finalMedReal)} in moneta di oggi</div></div>
         <div class="pf-metric"><div class="pf-metric-lbl">Pessimistico (5%)</div><div class="pf-metric-val" style="color:var(--r)">${pfFmtEur(R.mc.bands[R.mc.bands.length-1].p5)}</div><div class="pf-metric-sub">5° percentile</div></div>
         <div class="pf-metric"><div class="pf-metric-lbl">Ottimistico (95%)</div><div class="pf-metric-val">${pfFmtEur(R.mc.bands[R.mc.bands.length-1].p95)}</div><div class="pf-metric-sub">95° percentile</div></div>
         <div class="pf-metric"><div class="pf-metric-lbl">Prob. perdita</div><div class="pf-metric-val" style="color:${R.probLoss>0.3?'var(--r)':'var(--y)'}">${(R.probLoss*100).toFixed(0)}%</div><div class="pf-metric-sub">finale < investito</div></div>
@@ -5367,6 +5393,81 @@ function pfRenderResults(R){
 
   pfDestroyCharts();
   requestAnimationFrame(()=>{ pfDrawCharts(R); });
+}
+
+// ── Salva / Confronta / Export ──
+let _pfLastR=null;
+const PF_STORE='apex_pf_scenarios';
+function pfGetScenarios(){ try{ return JSON.parse(localStorage.getItem(PF_STORE)||'[]'); }catch{ return []; } }
+function pfSaveScenario(){
+  if(!_pfLastR){ return; }
+  const name=prompt('Nome dello scenario:', 'Portafoglio '+(pfGetScenarios().length+1));
+  if(!name) return;
+  const R=_pfLastR;
+  const sc={ name, date:Date.now(),
+    holdings:PF.holdings.map(h=>({ticker:h.ticker,name:h.name,weight:h.weight})),
+    metrics:{ annRet:R.annRet, vol:R.vol, sharpe:R.sharpe, sortino:R.sortino, maxdd:R.maxdd,
+      calmar:R.calmar, effN:R.effN, realRet:R.realRet, finalMed:R.mc.bands[R.mc.bands.length-1].p50,
+      probLoss:R.probLoss, horizon:R.horizon } };
+  const all=pfGetScenarios(); all.push(sc); localStorage.setItem(PF_STORE,JSON.stringify(all));
+  alert('Scenario "'+name+'" salvato.');
+}
+function pfShowCompare(){
+  const all=pfGetScenarios();
+  if(!all.length){ alert('Nessuno scenario salvato. Premi prima "Salva scenario".'); return; }
+  const rows=all.map((s,i)=>`<tr>
+    <td class="lbl">${s.name}</td>
+    <td>${(s.metrics.annRet*100).toFixed(1)}%</td>
+    <td>${(s.metrics.vol*100).toFixed(1)}%</td>
+    <td>${s.metrics.sharpe.toFixed(2)}</td>
+    <td>-${(s.metrics.maxdd*100).toFixed(0)}%</td>
+    <td>${s.metrics.calmar.toFixed(2)}</td>
+    <td>${pfFmtEur(s.metrics.finalMed)}</td>
+    <td>${(s.metrics.probLoss*100).toFixed(0)}%</td>
+    <td><button class="pf-mini-btn" onclick="pfLoadScenario(${i})">Carica</button> <button class="pf-mini-btn" onclick="pfDeleteScenario(${i})">✕</button></td>
+  </tr>`).join('');
+  const html=`<div class="pf-cmp-backdrop" onclick="if(event.target===this)this.remove()">
+    <div class="pf-cmp-box">
+      <div class="pf-cmp-hd">Confronto scenari <button class="pf-close" onclick="this.closest('.pf-cmp-backdrop').remove()">✕</button></div>
+      <div style="overflow:auto"><table class="pf-corr pf-cmp-table">
+      <thead><tr><th>Scenario</th><th>Rend.</th><th>Vol.</th><th>Sharpe</th><th>Max DD</th><th>Calmar</th><th>Mediano</th><th>P.perdita</th><th></th></tr></thead>
+      <tbody>${rows}</tbody></table></div>
+    </div></div>`;
+  const div=document.createElement('div'); div.innerHTML=html; document.body.appendChild(div.firstElementChild);
+}
+function pfLoadScenario(i){
+  const s=pfGetScenarios()[i]; if(!s) return;
+  PF.holdings=s.holdings.map(h=>({...h}));
+  document.querySelector('.pf-cmp-backdrop')?.remove();
+  pfRenderHoldings(); pfCalculate();
+}
+function pfDeleteScenario(i){
+  const all=pfGetScenarios(); all.splice(i,1); localStorage.setItem(PF_STORE,JSON.stringify(all));
+  document.querySelector('.pf-cmp-backdrop')?.remove(); pfShowCompare();
+}
+function pfExportCSV(){
+  if(!_pfLastR) return;
+  const R=_pfLastR;
+  let csv='APEX Finance — Report Portafoglio\n\n';
+  csv+='Asset,Peso %\n';
+  R.okTickers.forEach((t,i)=>{ csv+=`${t},${(R.weights[i]*100).toFixed(2)}\n`; });
+  csv+='\nMetrica,Valore\n';
+  csv+=`Rendimento annuo (CAGR),${(R.annRet*100).toFixed(2)}%\n`;
+  csv+=`Rendimento reale,${(R.realRet*100).toFixed(2)}%\n`;
+  csv+=`Volatilità annua,${(R.vol*100).toFixed(2)}%\n`;
+  csv+=`Sharpe,${R.sharpe.toFixed(3)}\n`;
+  csv+=`Sortino,${R.sortino.toFixed(3)}\n`;
+  csv+=`Calmar,${R.calmar.toFixed(3)}\n`;
+  csv+=`Max Drawdown,${(R.maxdd*100).toFixed(2)}%\n`;
+  if(R.beta!=null) csv+=`Beta (${R.benchT}),${R.beta.toFixed(3)}\n`;
+  csv+=`Asset effettivi,${R.effN.toFixed(2)}\n`;
+  csv+=`VaR ${(R.conf*100).toFixed(0)}% (1g),${(R.varDaily*100).toFixed(2)}%\n`;
+  csv+=`CVaR,${(R.cvarDaily*100).toFixed(2)}%\n`;
+  csv+='\nProiezione Monte Carlo (anno,p5,p25,p50,p75,p95)\n';
+  R.mc.bands.forEach((b,y)=>{ csv+=`${y},${b.p5.toFixed(0)},${b.p25.toFixed(0)},${b.p50.toFixed(0)},${b.p75.toFixed(0)},${b.p95.toFixed(0)}\n`; });
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='apex-portafoglio.csv'; a.click(); URL.revokeObjectURL(a.href);
 }
 
 function pfDrawCharts(R){

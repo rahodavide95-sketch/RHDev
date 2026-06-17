@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Label Finance — Gestionale Etichetta</title>
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
   <script>
     /* applica il tema prima del render per evitare lo sfarfallio */
     (function(){try{var p=localStorage.getItem('labelfinance.theme')||'system';
@@ -19,17 +21,26 @@
 
   <!-- ======= SIDEBAR ======= -->
   <aside class="sidebar">
-    <div class="brand">
-      <span class="brand-dot"></span>
-      <span class="brand-name">Label<strong>Finance</strong></span>
+    <div class="sidebar-top">
+      <a class="brand" href="#" onclick="return false">
+        <img src="icon.svg" alt="Label Finance" class="brand-logo">
+        <span class="brand-name">Label<strong>Finance</strong></span>
+      </a>
+      <button class="nav-collapse" id="nav-collapse" title="Riduci / espandi menu" aria-label="Riduci menu">«</button>
     </div>
     <nav class="nav">
-      <button class="nav-item is-active" data-view="dashboard">Dashboard</button>
-      <button class="nav-item" data-view="transactions">Movimenti</button>
-      <button class="nav-item" data-view="releases">Release</button>
-      <button class="nav-item" data-view="royalties">Royalty</button>
-      <button class="nav-item" data-view="import">Importa CSV</button>
-      <button class="nav-item" data-view="settings">Impostazioni</button>
+      <button class="nav-item is-active" data-view="dashboard" title="Dashboard">
+        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span><span class="nav-label">Dashboard</span></button>
+      <button class="nav-item" data-view="transactions" title="Movimenti">
+        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v15"/><path d="M4 7l3-3 3 3"/><path d="M17 20V5"/><path d="M14 17l3 3 3-3"/></svg></span><span class="nav-label">Movimenti</span></button>
+      <button class="nav-item" data-view="releases" title="Release">
+        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/></svg></span><span class="nav-label">Release</span></button>
+      <button class="nav-item" data-view="royalties" title="Royalty">
+        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 5 5 19"/><circle cx="7.5" cy="7.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/></svg></span><span class="nav-label">Royalty</span></button>
+      <button class="nav-item" data-view="import" title="Importa CSV">
+        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M4 21h16"/></svg></span><span class="nav-label">Importa CSV</span></button>
+      <button class="nav-item" data-view="settings" title="Impostazioni">
+        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5v5M5 14v5M12 3v6M12 13v8M19 7v3M19 14v3"/><circle cx="5" cy="12" r="2"/><circle cx="12" cy="11" r="2"/><circle cx="19" cy="12" r="2"/></svg></span><span class="nav-label">Impostazioni</span></button>
     </nav>
     <div class="sidebar-foot">
       <div class="theme-switch" role="group" aria-label="Tema">

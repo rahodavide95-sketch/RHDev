@@ -182,6 +182,21 @@ function goto(view){
 $$('.nav-item').forEach(b=>b.onclick=()=>goto(b.dataset.view));
 document.addEventListener('click',e=>{ const g=e.target.closest('[data-goto]'); if(g) goto(g.dataset.goto); });
 
+/* ---- Barra laterale apri/chiudi ---- */
+const NAV_KEY='labelfinance.navCollapsed';
+function applyNavCollapsed(){
+  const c=localStorage.getItem(NAV_KEY)==='1';
+  document.body.classList.toggle('nav-collapsed',c);
+  const btn=$('#nav-collapse'); if(btn) btn.textContent=c?'»':'«';
+}
+function toggleNav(force){
+  const c = force!=null ? force : localStorage.getItem(NAV_KEY)!=='1';
+  localStorage.setItem(NAV_KEY, c?'1':'0'); applyNavCollapsed();
+}
+$('#nav-collapse').onclick=()=>toggleNav();
+document.querySelector('.brand').addEventListener('click',()=>{ if(document.body.classList.contains('nav-collapsed')) toggleNav(false); });
+applyNavCollapsed();
+
 function toast(msg){
   const t=$('#toast'); t.textContent=msg; t.hidden=false;
   clearTimeout(t._t); t._t=setTimeout(()=>t.hidden=true,2200);
@@ -612,7 +627,7 @@ function rowToRec(cols,map){
   if(kind==='expense') net=Math.abs(net);
   return {
     id:uid(), kind, date:parseDate(get('date'),fmt), dateTo:parseDate(get('dateTo'),fmt),
-    platform:(get('platform')||$('#map-platform').value).trim(),
+    platform:($('#map-platform').value.trim()||get('platform')).trim(),
     type:get('type').trim()||(kind==='expense'?'expense':'digital'),
     catalog:get('catalog').trim(), product:get('product').trim(), artist:get('artist').trim(),
     isrc:get('isrc').trim(), upc:get('upc').trim(),

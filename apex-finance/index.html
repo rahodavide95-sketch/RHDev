@@ -4583,7 +4583,7 @@ async function analyze(ticker){
     (()=>{const lg=document.getElementById('a-logo');const tmp=document.createElement('div');tmp.innerHTML=logoHTML(ticker,48);const src=tmp.querySelector('img')?.src||'';const fb=tmp.querySelector('img')?.getAttribute('onerror')?.match(/this\.src='([^']+)'/)?.[1]||'';lg.src=src;lg.onerror=()=>{if(fb)lg.src=fb;};})();
     document.getElementById('a-price').textContent=(meta.currency||'')+' '+fmt(cur);
     const chEl=document.getElementById('a-ch');
-    chEl.innerHTML=`${chA>=0?'+':''}${fmt(chA)} (${chP>=0?'+':''}${chP.toFixed(2)}%) <span class="a-ch-per">· ultima seduta vs. precedente</span>`;
+    chEl.innerHTML=`${chA>=0?'+':''}${fmt(chA)} (${chP>=0?'+':''}${chP.toFixed(2)}%) <span class="a-ch-per">· variazione da ieri</span>`;
     chEl.className='a-ch '+(chP>=0?'up':'dn');
 
     // Signal box — funzione riutilizzabile (ricalcolata quando arrivano i fondamentali)

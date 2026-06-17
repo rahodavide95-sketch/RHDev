@@ -131,6 +131,8 @@
           <option value="expense">Solo uscite</option>
         </select>
         <select id="tx-filter-platform" class="select"><option value="">Tutte le piattaforme</option></select>
+        <input type="date" id="tx-from" class="input input--date" title="Dalla data">
+        <input type="date" id="tx-to" class="input input--date" title="Alla data">
         <button class="btn" id="btn-cols" title="Personalizza colonne">⚙ Colonne</button>
       </div>
 
@@ -249,6 +251,10 @@
             <span class="muted small" id="preview-count"></span></div>
           <div class="table-wrap"><table class="data-table" id="preview-table"></table></div>
           <div class="panel-foot">
+            <label class="check-inline" title="Non importa righe già presenti (stessa data, prodotto, importo…)">
+              <input type="checkbox" id="import-dedup" checked> Salta doppioni
+            </label>
+            <span class="spacer"></span>
             <button class="btn" id="import-cancel">Annulla</button>
             <button class="btn btn-primary" id="import-confirm">Importa movimenti</button>
           </div>

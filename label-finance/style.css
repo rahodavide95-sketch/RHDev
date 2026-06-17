@@ -149,6 +149,11 @@ h2{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:600}
 .toolbar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
 .toolbar .input{max-width:340px}
 .toolbar .select{max-width:220px}
+.input--date{max-width:160px}
+.th-sort{cursor:pointer;user-select:none;white-space:nowrap}
+.th-sort:hover{color:var(--text)}
+.check-inline{display:flex;align-items:center;gap:8px;font-size:.88rem;color:var(--muted);cursor:pointer}
+.check-inline input{width:16px;height:16px;accent-color:var(--accent)}
 .empty-hint{text-align:center;padding:50px 20px;color:var(--muted)}
 .empty-hint .btn{margin-top:14px}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--panel-2);border:1px solid var(--line);padding:12px 20px;border-radius:10px;box-shadow:var(--shadow);z-index:60;animation:fade .2s}

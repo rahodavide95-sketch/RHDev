@@ -277,6 +277,17 @@ const TX_COLS = {
 };
 function visibleCols(){ ensureCols(); return DB.txOrder.filter(c=>!DB.txHidden.includes(c) && TX_COLS[c]); }
 
+const NUM_COLS=['qty','gross','shipping','taxes','payProcFees','fees','csShare','net'];
+let txSort={ col:'date', dir:-1 };   // -1 = decrescente
+function txSortKey(c,t){
+  if(c==='eur') return (t.kind==='income'?1:-1)*toEur(t.net,t.currency);
+  if(c==='kind') return t.kind||'';
+  if(NUM_COLS.includes(c)) return +t[c]||0;
+  if(c==='date'||c==='dateTo') return t[c]||'';
+  if(c==='upc') return (t.upc||t.code||'').toLowerCase();
+  return (t[c]||'').toString().toLowerCase();
+}
+
 function renderTx(){
   const platSel=$('#tx-filter-platform');
   const plats=[...new Set(DB.transactions.map(t=>t.platform).filter(Boolean))].sort();
@@ -286,20 +297,32 @@ function renderTx(){
 function applyTxFilters(){
   const q=$('#tx-search').value.toLowerCase().trim();
   const kind=$('#tx-filter-kind').value, plat=$('#tx-filter-platform').value;
-  let rows=DB.transactions.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const from=$('#tx-from').value, to=$('#tx-to').value;
+  let rows=DB.transactions.slice();
   if(kind) rows=rows.filter(t=>t.kind===kind);
   if(plat) rows=rows.filter(t=>t.platform===plat);
+  if(from) rows=rows.filter(t=>(t.date||'')>=from);
+  if(to)   rows=rows.filter(t=>(t.date||'')<=to);
   if(q) rows=rows.filter(t=>[t.product,t.artist,t.catalog,t.platform,t.isrc,t.upc,t.code,t.note].join(' ').toLowerCase().includes(q));
+  const k=txSort.col;
+  rows.sort((a,b)=>{ const va=txSortKey(k,a), vb=txSortKey(k,b);
+    const r=(typeof va==='number')?(va-vb):String(va).localeCompare(String(vb)); return r*txSort.dir; });
   $('#tx-count-label').textContent=`${rows.length} movimenti`;
   const cols=visibleCols();
-  const head=cols.map(c=>`<th class="${TX_COLS[c].num?'num':''}">${esc(TX_COLS[c].label)}</th>`).join('');
+  const head=cols.map(c=>{ const act=txSort.col===c?(txSort.dir>0?' ▲':' ▼'):'';
+    return `<th class="th-sort ${TX_COLS[c].num?'num':''}" data-col="${c}">${esc(TX_COLS[c].label)}${act}</th>`; }).join('');
   const body=rows.length
     ? rows.map(t=>`<tr data-id="${t.id}">${cols.map(c=>`<td class="${TX_COLS[c].num?'num':''}">${TX_COLS[c].cell(t)}</td>`).join('')}</tr>`).join('')
     : `<tr><td colspan="${cols.length||1}" class="muted">Nessun movimento.</td></tr>`;
   $('#table-tx').innerHTML=`<thead><tr>${head}</tr></thead><tbody>${body}</tbody>`;
+  $$('#table-tx thead th[data-col]').forEach(th=>th.onclick=()=>{
+    const c=th.dataset.col;
+    if(txSort.col===c) txSort.dir*=-1; else txSort={col:c, dir:TX_COLS[c].num?-1:1};
+    applyTxFilters();
+  });
   $$('#table-tx tbody tr[data-id]').forEach(tr=>tr.onclick=()=>openTx(tr.dataset.id));
 }
-['#tx-search','#tx-filter-kind','#tx-filter-platform'].forEach(s=>{
+['#tx-search','#tx-filter-kind','#tx-filter-platform','#tx-from','#tx-to'].forEach(s=>{
   $(s).addEventListener('input',applyTxFilters); $(s).addEventListener('change',applyTxFilters);
 });
 
@@ -611,13 +634,20 @@ function renderPreview(){
      <td class="num">${fmtMoney(t.net,t.currency)}</td><td>${esc(t.currency)}</td></tr>`).join('')}</tbody>`;
 }
 $('#import-cancel').onclick=()=>{ $('#import-config').hidden=true; $('#file-input').value=''; };
+const txSig=t=>[t.kind,t.date,t.platform,(t.catalog||'').toLowerCase(),(t.product||'').toLowerCase(),
+  t.isrc,t.upc,Math.round((+t.net||0)*100),t.qty].join('|');
 $('#import-confirm').onclick=()=>{
   const map=currentMap();
   if(map.net==null && map.gross==null){ toast('Mappa almeno Netto o Lordo'); return; }
-  const recs=importRows.map(r=>rowToRec(r,map));
+  let recs=importRows.map(r=>rowToRec(r,map));
+  let skipped=0;
+  if($('#import-dedup').checked){
+    const seen=new Set(DB.transactions.map(txSig));
+    recs=recs.filter(r=>{ const s=txSig(r); if(seen.has(s)){ skipped++; return false; } seen.add(s); return true; });
+  }
   DB.transactions.push(...recs); save();
   $('#import-config').hidden=true; $('#file-input').value='';
-  toast(`${recs.length} movimenti importati`); goto('transactions');
+  toast(`${recs.length} importati${skipped?` · ${skipped} doppioni saltati`:''}`); goto('transactions');
 };
 
 /* ---------- Preset di mappatura ---------- */

@@ -8,29 +8,38 @@ un'etichetta discografica, con import automatico da CSV e API (Bandcamp, ecc.).
 
 ## Stato
 
-Fase 1 — **MVP personale pronto** (`app/frontend/`): app browser single-user con
-import CSV, dashboard entrate/uscite e backup locale. Dati solo sul dispositivo.
+Fase 1 — **MVP personale pronto**: app browser single-user con import CSV,
+dashboard entrate/uscite e backup locale. Dati solo sul dispositivo.
 
 ## Come sono organizzate le cartelle
 
+L'app vive **direttamente in questa cartella** (come gli altri progetti del repo),
+così si pubblica su Vercel impostando la Root Directory su `label-finance`.
+
 ```
 label-finance/
-├── README.md            ← questo file (mappa del progetto)
-├── docs/                ← documentazione
+├── index.html          ← APP MVP (sito da deployare)
+├── app.js              ← logica: store locale, import CSV, dashboard
+├── style.css           ← interfaccia
+├── vercel.json         ← config deploy
+├── README.md           ← questo file (mappa del progetto)
+├── docs/               ← documentazione
 │   ├── PROGETTO.md      ← documento di progetto completo (LEGGI QUESTO)
 │   └── SICUREZZA-PRIVACY.md  ← sicurezza dati e GDPR
-├── app/
-│   ├── frontend/        ← APP MVP (index.html, app.js, style.css) — pronta
-│   └── backend/         ← futuro (SaaS multi-utente), ancora vuoto
 └── data/
     └── samples/         ← esempi di CSV (Bandcamp, distributore) per i test
 ```
 
-## Da dove iniziare
+## Deploy su Vercel
 
-1. Leggi **`docs/PROGETTO.md`** — spiega cosa si può fare, come, e la roadmap.
-2. Per partire con lo sviluppo servono **CSV di esempio** (Bandcamp + tuo
-   distributore), da mettere in `data/samples/`.
+New Project → importa il repo → **Root Directory = `label-finance`** →
+Framework Preset = **Other** → Deploy. Identico a `etichetta`, `apex-finance`, ecc.
+
+## Come provarla
+
+Apri `index.html` nel browser → **Importa CSV** → carica
+`data/samples/bandcamp_esempio.csv` (formato data: Mese/Giorno/Anno) → guarda la
+dashboard popolarsi.
 
 ## Prossimo passo
 

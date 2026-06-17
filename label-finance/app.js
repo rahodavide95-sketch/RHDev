@@ -19,17 +19,29 @@ const CANON = [
 ];
 
 /* ---------- Store ---------- */
+const DEFAULT_TX_ORDER = ['date','kind','platform','catalog','product','artist','qty','net','eur',
+  'dateTo','type','isrc','upc','gross','shipping','taxes','payProcFees','fees','csShare','currency','note'];
+const DEFAULT_TX_VISIBLE = ['date','kind','platform','catalog','product','artist','qty','net','eur'];
 const defaultData = () => ({
   transactions: [],
   rates: { EUR:1, USD:0.92, GBP:1.17, CHF:1.04 },
   mappings: {},
+  txOrder: DEFAULT_TX_ORDER.slice(),
+  txHidden: DEFAULT_TX_ORDER.filter(c=>!DEFAULT_TX_VISIBLE.includes(c)),
 });
 let DB = load();
 function load(){
-  try { const r = JSON.parse(localStorage.getItem(STORE_KEY)); return r && r.transactions ? r : defaultData(); }
+  try { const r = JSON.parse(localStorage.getItem(STORE_KEY));
+    return r && r.transactions ? Object.assign(defaultData(), r) : defaultData(); }
   catch { return defaultData(); }
 }
 function save(){ localStorage.setItem(STORE_KEY, JSON.stringify(DB)); }
+// integra eventuali colonne nuove non ancora presenti nell'ordine salvato
+function ensureCols(){
+  DB.txOrder = DB.txOrder || DEFAULT_TX_ORDER.slice();
+  DB.txHidden = DB.txHidden || [];
+  DEFAULT_TX_ORDER.forEach(c=>{ if(!DB.txOrder.includes(c)){ DB.txOrder.push(c); DB.txHidden.push(c); } });
+}
 
 /* ---------- Utils ---------- */
 const $ = (s,r=document)=>r.querySelector(s);
@@ -228,6 +240,32 @@ $('#dash-period').onchange=renderDashboard;
 /* ============================================================================
    MOVIMENTI
    ============================================================================ */
+const moneyCell=(v,t)=> v?fmtMoney(v,t.currency||'EUR'):'';
+const TX_COLS = {
+  date:    {label:'Data',        cell:t=>esc(t.date)},
+  dateTo:  {label:'Data (a)',    cell:t=>esc(t.dateTo)},
+  kind:    {label:'',            cell:t=>`<span class="pill ${t.kind==='income'?'pill--in':'pill--out'}">${t.kind==='income'?'IN':'OUT'}</span>`},
+  platform:{label:'Piattaforma', cell:t=>esc(t.platform)},
+  type:    {label:'Tipologia',   cell:t=>esc(t.type)},
+  catalog: {label:'Catalogo',    cell:t=>esc(t.catalog)},
+  product: {label:'Prodotto',    cell:t=>esc(t.product)},
+  artist:  {label:'Artista',     cell:t=>esc(t.artist)},
+  isrc:    {label:'ISRC',        cell:t=>esc(t.isrc)},
+  upc:     {label:'UPC',         cell:t=>esc(t.upc||t.code)},
+  qty:     {label:'Q.tà', num:1, cell:t=>t.qty||''},
+  gross:   {label:'Lordo', num:1,cell:t=>moneyCell(t.gross,t)},
+  shipping:{label:'Spedizione', num:1, cell:t=>moneyCell(t.shipping,t)},
+  taxes:   {label:'Tasse', num:1,cell:t=>moneyCell(t.taxes,t)},
+  payProcFees:{label:'Comm. processore', num:1, cell:t=>moneyCell(t.payProcFees,t)},
+  fees:    {label:'Commissioni', num:1, cell:t=>moneyCell(t.fees,t)},
+  csShare: {label:'Coll. society', num:1, cell:t=>moneyCell(t.csShare,t)},
+  net:     {label:'Netto', num:1,cell:t=>fmtMoney(t.net,t.currency||'EUR')},
+  currency:{label:'Valuta',      cell:t=>esc(t.currency)},
+  eur:     {label:'€', num:1,    cell:t=>`<span class="${t.kind==='income'?'pos':'neg'}">${fmtMoney((t.kind==='income'?1:-1)*toEur(t.net,t.currency))}</span>`},
+  note:    {label:'Nota',        cell:t=>esc(t.note)},
+};
+function visibleCols(){ ensureCols(); return DB.txOrder.filter(c=>!DB.txHidden.includes(c) && TX_COLS[c]); }
+
 function renderTx(){
   const platSel=$('#tx-filter-platform');
   const plats=[...new Set(DB.transactions.map(t=>t.platform).filter(Boolean))].sort();
@@ -242,22 +280,53 @@ function applyTxFilters(){
   if(plat) rows=rows.filter(t=>t.platform===plat);
   if(q) rows=rows.filter(t=>[t.product,t.artist,t.catalog,t.platform,t.isrc,t.upc,t.code,t.note].join(' ').toLowerCase().includes(q));
   $('#tx-count-label').textContent=`${rows.length} movimenti`;
-  $('#table-tx').innerHTML=`<thead><tr>
-     <th>Data</th><th></th><th>Piattaforma</th><th>Catalogo</th><th>Prodotto</th><th>Artista</th>
-     <th class="num">Q.tà</th><th class="num">Netto</th><th class="num">€</th></tr></thead>
-   <tbody>${rows.map(t=>`<tr data-id="${t.id}">
-     <td>${esc(t.date)}</td>
-     <td><span class="pill ${t.kind==='income'?'pill--in':'pill--out'}">${t.kind==='income'?'IN':'OUT'}</span></td>
-     <td>${esc(t.platform)}</td><td>${esc(t.catalog)}</td><td>${esc(t.product)}</td><td>${esc(t.artist)}</td>
-     <td class="num">${t.qty||''}</td>
-     <td class="num">${fmtMoney(t.net,t.currency||'EUR')}</td>
-     <td class="num ${t.kind==='income'?'pos':'neg'}">${fmtMoney((t.kind==='income'?1:-1)*toEur(t.net,t.currency))}</td>
-   </tr>`).join('')||'<tr><td colspan="9" class="muted">Nessun movimento.</td></tr>'}</tbody>`;
+  const cols=visibleCols();
+  const head=cols.map(c=>`<th class="${TX_COLS[c].num?'num':''}">${esc(TX_COLS[c].label)}</th>`).join('');
+  const body=rows.length
+    ? rows.map(t=>`<tr data-id="${t.id}">${cols.map(c=>`<td class="${TX_COLS[c].num?'num':''}">${TX_COLS[c].cell(t)}</td>`).join('')}</tr>`).join('')
+    : `<tr><td colspan="${cols.length||1}" class="muted">Nessun movimento.</td></tr>`;
+  $('#table-tx').innerHTML=`<thead><tr>${head}</tr></thead><tbody>${body}</tbody>`;
   $$('#table-tx tbody tr[data-id]').forEach(tr=>tr.onclick=()=>openTx(tr.dataset.id));
 }
 ['#tx-search','#tx-filter-kind','#tx-filter-platform'].forEach(s=>{
   $(s).addEventListener('input',applyTxFilters); $(s).addEventListener('change',applyTxFilters);
 });
+
+/* ---------- Gestione colonne (mostra/nascondi + ordine) ---------- */
+function renderColsManager(){
+  ensureCols();
+  $('#cols-list').innerHTML = DB.txOrder.filter(c=>TX_COLS[c]).map(c=>`
+    <li class="col-item" data-col="${c}">
+      <label class="col-check"><input type="checkbox" ${DB.txHidden.includes(c)?'':'checked'} data-col-toggle="${c}">
+        <span>${esc(TX_COLS[c].label)||'(tipo IN/OUT)'}</span></label>
+      <span class="col-moves">
+        <button type="button" data-col-up="${c}" title="Sposta su">↑</button>
+        <button type="button" data-col-down="${c}" title="Sposta giù">↓</button>
+      </span>
+    </li>`).join('');
+  $$('[data-col-toggle]').forEach(b=>b.onchange=()=>{
+    const c=b.dataset.colToggle;
+    if(b.checked) DB.txHidden=DB.txHidden.filter(x=>x!==c);
+    else if(!DB.txHidden.includes(c)) DB.txHidden.push(c);
+    save(); applyTxFilters();
+  });
+  $$('[data-col-up]').forEach(b=>b.onclick=()=>moveCol(b.dataset.colUp,-1));
+  $$('[data-col-down]').forEach(b=>b.onclick=()=>moveCol(b.dataset.colDown,1));
+}
+function moveCol(c,dir){
+  ensureCols();
+  const arr=DB.txOrder, i=arr.indexOf(c), j=i+dir;
+  if(i<0||j<0||j>=arr.length) return;
+  [arr[i],arr[j]]=[arr[j],arr[i]]; save(); renderColsManager(); applyTxFilters();
+}
+$('#btn-cols').onclick=()=>{ renderColsManager(); $('#cols-modal').hidden=false; };
+$('#cols-close').onclick=$('#cols-done').onclick=()=>$('#cols-modal').hidden=true;
+$('#cols-modal').onclick=e=>{ if(e.target.id==='cols-modal') $('#cols-modal').hidden=true; };
+$('#cols-reset').onclick=()=>{
+  DB.txOrder=DEFAULT_TX_ORDER.slice();
+  DB.txHidden=DEFAULT_TX_ORDER.filter(c=>!DEFAULT_TX_VISIBLE.includes(c));
+  save(); renderColsManager(); applyTxFilters();
+};
 
 /* ---------- Modal movimento ---------- */
 function openTx(id){

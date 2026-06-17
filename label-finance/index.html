@@ -120,6 +120,7 @@
           <option value="expense">Solo uscite</option>
         </select>
         <select id="tx-filter-platform" class="select"><option value="">Tutte le piattaforme</option></select>
+        <button class="btn" id="btn-cols" title="Personalizza colonne">⚙ Colonne</button>
       </div>
 
       <div class="table-wrap">
@@ -288,6 +289,23 @@
           <button type="submit" class="btn btn-primary">Salva</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- ======= MODAL: colonne ======= -->
+  <div class="modal" id="cols-modal" hidden>
+    <div class="modal-card modal-card--sm">
+      <div class="modal-head"><h2>Colonne movimenti</h2>
+        <button class="modal-x" id="cols-close">✕</button></div>
+      <div class="cols-body">
+        <p class="muted small">Spunta le colonne da mostrare e riordinale con le frecce.</p>
+        <ul class="cols-list" id="cols-list"></ul>
+        <div class="modal-foot">
+          <button type="button" class="btn" id="cols-reset">Ripristina default</button>
+          <span class="spacer"></span>
+          <button type="button" class="btn btn-primary" id="cols-done">Fatto</button>
+        </div>
+      </div>
     </div>
   </div>
 

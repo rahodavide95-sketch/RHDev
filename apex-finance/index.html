@@ -391,12 +391,6 @@ header{
   0%{transform:translateX(0);}
   100%{transform:translateX(-50%);}
 }
-@media(max-width:720px){
-  .news-ticker-track{animation-duration:25s;}
-}
-@media(max-width:480px){
-  .news-ticker-track{animation-duration:18s;}
-}
 .news-item{
   display:inline-flex;align-items:center;gap:6px;
   padding:0 20px;cursor:pointer;height:100%;
@@ -5141,8 +5135,10 @@ async function loadNews(){
     track.innerHTML=buildItems()+buildItems();
     // Adjust animation duration based on content width
     const totalW=track.scrollWidth/2;
-    const speed=80; // px/s
-    const dur=Math.round(totalW/speed);
+    // più veloce su mobile (lo schermo è stretto: a 80px/s sembrava fermo)
+    const w=window.innerWidth;
+    const speed=w<=480?170:w<=720?140:80; // px/s
+    const dur=Math.max(8,Math.round(totalW/speed));
     track.style.animationDuration=dur+'s';
   }catch{
     const track=document.getElementById('news-ticker-track');

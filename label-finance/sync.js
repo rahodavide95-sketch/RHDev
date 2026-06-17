@@ -13,18 +13,27 @@
   const EYE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
   const EYE_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.9 4.24A9.1 9.1 0 0 1 12 4c6.5 0 10 7 10 7a18 18 0 0 1-2.16 3.19M6.6 6.6A18 18 0 0 0 2 12s3.5 7 10 7a9.1 9.1 0 0 0 4.3-1.06"/><path d="m3 3 18 18"/></svg>';
 
-  const getCfg = ()=>{ try{ return JSON.parse(localStorage.getItem(CFG_KEY)); }catch{ return null; } };
+  // config incorporata nel prodotto (config.js): se presente, l'utente NON
+  // deve inserire URL/chiave, accede solo con email e password.
+  const bakedCfg = ()=>{ const c=window.LF_CONFIG;
+    return (c&&c.supabaseUrl&&c.supabaseAnonKey)?{url:c.supabaseUrl,key:c.supabaseAnonKey,baked:true}:null; };
+  const getCfg = ()=>{ const b=bakedCfg(); if(b) return b;
+    try{ return JSON.parse(localStorage.getItem(CFG_KEY)); }catch{ return null; } };
   const setStatus = (msg)=>{ const e=$('sync-status'); if(e) e.textContent=msg; };
   const now = ()=> new Date().toLocaleTimeString('it-IT');
 
   /* ---------- UI ---------- */
   function renderUI(){
     const cfg=getCfg();
+    const baked=!!bakedCfg();
     const configured = !!(cfg && cfg.url && cfg.key);
-    if($('sync-url')) $('sync-url').value = cfg?.url||'';
-    if($('sync-key')) $('sync-key').value = cfg?.key||'';
-    // box config aperto solo se non configurato
-    const box=$('sync-config-box'); if(box) box.open = !configured;
+    const box=$('sync-config-box');
+    if(baked){ if(box) box.hidden=true; }            // config già incorporata: nascondi il passaggio
+    else if(box){
+      box.hidden=false; box.open=!configured;
+      if($('sync-url')) $('sync-url').value = cfg?.url||'';
+      if($('sync-key')) $('sync-key').value = cfg?.key||'';
+    }
     $('sync-auth').hidden = !configured || !!user;
     $('sync-account').hidden = !user;
     if(user){ $('sync-account-label').textContent = '☁ Connesso come '+user.email; }

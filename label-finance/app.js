@@ -516,8 +516,10 @@ function renderRoyalties(){
       ${rows.length?'':'<tr><td colspan="2" class="muted">Nessuna entrata con catalogo collegato a una release.</td></tr>'}</tbody>`;
   $$('#table-roy-artist tbody tr[data-artist]').forEach(tr=>tr.onclick=()=>showRoyaltyDetail(tr.dataset.artist,byArtist[tr.dataset.artist]));
 }
+let royDetail=null;   // {name, data} dell'artista mostrato
 function showRoyaltyDetail(name,data){
   if(!data) return;
+  royDetail={name,data};
   $('#roy-detail-title').textContent='Dettaglio — '+name;
   const rows=Object.entries(data.byRelease).map(([cat,amt])=>({cat,amt})).sort((a,b)=>b.amt-a.amt);
   $('#table-roy-detail').innerHTML=`<thead><tr><th>Release</th><th class="num">Royalty (€)</th></tr></thead>
@@ -529,6 +531,32 @@ function showRoyaltyDetail(name,data){
 }
 $('#roy-detail-close').onclick=()=>$('#roy-detail-panel').hidden=true;
 $('#roy-period').onchange=renderRoyalties;
+$('#roy-detail-pdf').onclick=()=>{
+  if(!royDetail) return;
+  const { name, data } = royDetail;
+  const period=$('#roy-period').selectedOptions[0].textContent;
+  const rows=Object.entries(data.byRelease).map(([cat,amt])=>({cat,amt})).sort((a,b)=>b.amt-a.amt);
+  $('#print-area').innerHTML=`<div class="stmt">
+    <div class="stmt-head">
+      <img src="icon.svg" alt="" class="stmt-logo">
+      <div><div class="stmt-brand">Label<strong>Finance</strong></div>
+        <div class="stmt-doc">Rendiconto Royalty</div></div>
+    </div>
+    <p class="stmt-meta">Artista: <strong>${esc(name)}</strong><br>
+      Periodo: ${esc(period)}<br>
+      Generato il ${new Date().toLocaleDateString('it-IT')}</p>
+    <table class="stmt-table">
+      <thead><tr><th>Release</th><th style="text-align:right">Royalty (€)</th></tr></thead>
+      <tbody>${rows.map(r=>{ const rel=releaseByCatalog(r.cat); const t=rel&&rel.title?` — ${esc(rel.title)}`:'';
+        return `<tr><td>${esc(r.cat)}${t}</td><td style="text-align:right">${fmtMoney(r.amt)}</td></tr>`; }).join('')}</tbody>
+      <tfoot><tr><td><strong>Totale dovuto</strong></td><td style="text-align:right"><strong>${fmtMoney(data.total)}</strong></td></tr></tfoot>
+    </table>
+    <p class="stmt-foot">Documento generato automaticamente con Label Finance · ${new Date().toLocaleDateString('it-IT')}</p>
+  </div>`;
+  document.body.classList.add('print-statement');
+  window.print();
+  setTimeout(()=>document.body.classList.remove('print-statement'),600);
+};
 
 /* ---------- Modal movimento ---------- */
 function openTx(id){

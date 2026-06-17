@@ -260,18 +260,40 @@ body.nav-collapsed{grid-template-columns:68px 1fr}
 /* su monitor molto grandi limita solo leggermente, restando ampio */
 @media(min-width:1800px){ .main{max-width:1680px} }
 
-/* ===== Stampa / PDF: solo la Dashboard, colori chiari ===== */
+/* ===== Statement royalty (area di stampa) ===== */
+#print-area{display:none}
+.stmt{max-width:720px;margin:0 auto;color:#111;font-family:'DM Sans',sans-serif}
+.stmt-head{display:flex;align-items:center;gap:14px;border-bottom:2px solid #7c3aed;padding-bottom:14px;margin-bottom:18px}
+.stmt-logo{width:44px;height:44px;border-radius:10px}
+.stmt-brand{font-family:'Syne';font-size:1.2rem}
+.stmt-doc{color:#666;font-size:.95rem}
+.stmt-meta{line-height:1.7;margin-bottom:18px}
+.stmt-table{width:100%;border-collapse:collapse;font-size:.95rem}
+.stmt-table th{text-align:left;border-bottom:2px solid #ccc;padding:8px 6px}
+.stmt-table td{padding:8px 6px;border-bottom:1px solid #eee}
+.stmt-table tfoot td{border-top:2px solid #ccc;border-bottom:none;font-size:1.05rem;padding-top:12px}
+.stmt-foot{margin-top:26px;color:#888;font-size:.8rem;border-top:1px solid #eee;padding-top:12px}
+
+/* ===== Stampa / PDF ===== */
 @media print{
   :root{ --bg:#fff; --panel:#fff; --panel-2:#f4f4f7; --line:#d8dae2; --text:#111;
          --muted:#555; --shadow:none; color-scheme:light; }
   body{display:block;height:auto;overflow:visible;background:#fff;color:#000}
-  .sidebar,.head-actions,.empty-hint,.toast,.modal{display:none!important}
-  .main{max-width:none;height:auto;overflow:visible;padding:0}
-  .view{display:none!important}
-  #view-dashboard{display:block!important}
-  .panel{break-inside:avoid;box-shadow:none;border:1px solid #ddd}
-  .grid-2{grid-template-columns:1fr 1fr}
-  .view-head{border-color:#ccc}
-  .view-head h1::before{display:none}
+  .sidebar,.toast,.modal{display:none!important}
   .bar{print-color-adjust:exact;-webkit-print-color-adjust:exact}
+
+  /* Report Dashboard (default) */
+  body:not(.print-statement) .head-actions,
+  body:not(.print-statement) .empty-hint{display:none!important}
+  body:not(.print-statement) .main{max-width:none;height:auto;overflow:visible;padding:0}
+  body:not(.print-statement) .view{display:none!important}
+  body:not(.print-statement) #view-dashboard{display:block!important}
+  body:not(.print-statement) .panel{break-inside:avoid;box-shadow:none;border:1px solid #ddd}
+  body:not(.print-statement) .grid-2{grid-template-columns:1fr 1fr}
+  body:not(.print-statement) .view-head{border-color:#ccc;position:static}
+  body:not(.print-statement) .view-head h1::before{display:none}
+
+  /* Statement artista */
+  body.print-statement .main{display:none!important}
+  body.print-statement #print-area{display:block!important}
 }

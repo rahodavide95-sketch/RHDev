@@ -186,7 +186,9 @@
       </div>
       <div class="panel" id="roy-detail-panel" hidden>
         <div class="panel-head"><h2 id="roy-detail-title">Dettaglio</h2>
-          <button class="btn" id="roy-detail-close" style="margin-left:auto">Chiudi</button></div>
+          <span class="spacer" style="flex:1"></span>
+          <button class="btn" id="roy-detail-pdf" title="Rendiconto PDF da inviare all'artista">⤓ Statement PDF</button>
+          <button class="btn" id="roy-detail-close">Chiudi</button></div>
         <div class="table-wrap"><table class="data-table" id="table-roy-detail"></table></div>
       </div>
       <div class="empty-hint" id="roy-empty" hidden>
@@ -452,7 +454,11 @@
 
   <div class="toast" id="toast" hidden></div>
 
+  <!-- Area di stampa per lo statement royalty (visibile solo in stampa) -->
+  <div id="print-area" aria-hidden="true"></div>
+
   <script src="app.js"></script>
+  <script src="config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="sync.js"></script>
 </body>

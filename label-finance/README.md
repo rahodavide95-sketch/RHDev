@@ -20,12 +20,14 @@ così si pubblica su Vercel impostando la Root Directory su `label-finance`.
 label-finance/
 ├── index.html          ← APP MVP (sito da deployare)
 ├── app.js              ← logica: store locale, import CSV, dashboard
+├── sync.js             ← sincronizzazione cloud opzionale (Supabase)
 ├── style.css           ← interfaccia
 ├── vercel.json         ← config deploy
 ├── README.md           ← questo file (mappa del progetto)
 ├── docs/               ← documentazione
 │   ├── PROGETTO.md      ← documento di progetto completo (LEGGI QUESTO)
-│   └── SICUREZZA-PRIVACY.md  ← sicurezza dati e GDPR
+│   ├── SICUREZZA-PRIVACY.md  ← sicurezza dati e GDPR
+│   └── SYNC-SETUP.md   ← guida sincronizzazione cloud (PC + telefono)
 └── data/
     └── samples/         ← esempi di CSV (Bandcamp, distributore) per i test
 ```

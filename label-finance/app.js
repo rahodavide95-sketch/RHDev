@@ -35,7 +35,14 @@ function load(){
     return r && r.transactions ? Object.assign(defaultData(), r) : defaultData(); }
   catch { return defaultData(); }
 }
-function save(){ localStorage.setItem(STORE_KEY, JSON.stringify(DB)); }
+function saveLocal(){ localStorage.setItem(STORE_KEY, JSON.stringify(DB)); }
+function save(){ saveLocal(); if(window.LF_push) window.LF_push(); }
+/* API minimale per il modulo di sincronizzazione cloud (sync.js) */
+window.LF = {
+  data(){ return DB; },
+  applyCloud(d){ DB = Object.assign(defaultData(), d||{}); saveLocal(); reloadViews(); },
+};
+function reloadViews(){ renderDashboard(); renderTx(); renderSettings(); }
 // integra eventuali colonne nuove non ancora presenti nell'ordine salvato
 function ensureCols(){
   DB.txOrder = DB.txOrder || DEFAULT_TX_ORDER.slice();

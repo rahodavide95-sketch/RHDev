@@ -205,7 +205,43 @@
     <!-- ====== SETTINGS ====== -->
     <section class="view" id="view-settings">
       <header class="view-head"><div><h1>Impostazioni</h1>
-        <p class="muted">Aspetto, tassi di cambio, backup e gestione dati.</p></div></header>
+        <p class="muted">Sincronizzazione, aspetto, tassi di cambio, backup e gestione dati.</p></div></header>
+
+      <div class="panel">
+        <div class="panel-head"><h2>☁ Sincronizzazione cloud</h2>
+          <span class="muted small" id="sync-status">Non configurata</span></div>
+        <div class="panel-body">
+          <p class="muted small">Collega un progetto Supabase (gratuito) per vedere gli stessi dati su PC e telefono. La guida è in <code>docs/SYNC-SETUP.md</code>.</p>
+
+          <details id="sync-config-box">
+            <summary>1 · Configura connessione (una volta sola)</summary>
+            <div class="form-grid" style="margin-top:12px">
+              <label class="span-2">Project URL
+                <input id="sync-url" class="input" placeholder="https://xxxx.supabase.co"></label>
+              <label class="span-2">Anon public key
+                <input id="sync-key" class="input" placeholder="eyJhbGciOi…"></label>
+              <div class="span-2"><button class="btn" id="sync-save-config">Salva connessione</button></div>
+            </div>
+          </details>
+
+          <div id="sync-auth" hidden>
+            <div class="form-grid" style="margin-top:6px">
+              <label>Email <input id="sync-email" class="input" type="email" autocomplete="username"></label>
+              <label>Password <input id="sync-pw" class="input" type="password" autocomplete="current-password"></label>
+              <div class="span-2 row-inline wrap">
+                <button class="btn btn-primary" id="sync-signin">Accedi</button>
+                <button class="btn" id="sync-signup">Registrati</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="sync-account" hidden class="row-inline wrap">
+            <span class="badge-local" id="sync-account-label" style="color:var(--net)"></span>
+            <button class="btn" id="sync-pull">Aggiorna ora</button>
+            <button class="btn btn-danger" id="sync-signout">Esci</button>
+          </div>
+        </div>
+      </div>
 
       <div class="panel">
         <div class="panel-head"><h2>Aspetto</h2>
@@ -312,5 +348,7 @@
   <div class="toast" id="toast" hidden></div>
 
   <script src="app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="sync.js"></script>
 </body>
 </html>

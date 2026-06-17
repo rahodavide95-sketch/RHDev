@@ -1362,10 +1362,14 @@ header{
   font-size:.68rem;padding:5px 10px;border-radius:6px;cursor:pointer;transition:all .15s;white-space:nowrap;}
 .pf-mini-btn:hover{border-color:var(--accent);color:var(--accent);}
 .pf-settings{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.pf-set{display:flex;flex-direction:column;gap:4px;font-size:.68rem;color:var(--t2);font-weight:600;}
-.pf-set-top{display:flex;align-items:center;gap:5px;min-height:16px;}
-.pf-info{width:15px!important;height:15px!important;min-width:15px;font-size:.62rem!important;line-height:1;padding:0!important;flex-shrink:0;}
-.pf-metric-lbl .pf-info,.pf-section-hd .pf-info{vertical-align:middle;}
+.pf-set{position:relative;display:flex;flex-direction:column;gap:4px;font-size:.68rem;color:var(--t2);font-weight:600;}
+.pf-set-top{display:flex;align-items:center;gap:5px;min-height:16px;padding-right:20px;}
+.pf-info{width:16px!important;height:16px!important;min-width:16px;font-size:.62rem!important;line-height:1;padding:0!important;flex-shrink:0;}
+/* tasto info SEMPRE in alto a destra della card/campo, non allineato al titolo */
+.pf-metric .pf-info,.pf-set .pf-info,.pf-section-hd .pf-info{position:absolute;top:10px;right:10px;margin:0;}
+.pf-set .pf-info{top:0;right:0;}
+.pf-section-hd{position:relative;}
+.pf-section-hd .pf-info{top:-2px;right:0;}
 .pf-set input,.pf-set select{padding:7px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;
   color:var(--text);font-family:inherit;font-size:.8rem;outline:none;box-sizing:border-box;}
 .pf-set input:focus,.pf-set select:focus{border-color:var(--accent);}
@@ -1386,8 +1390,8 @@ header{
   color:var(--t3);text-align:center;padding:40px;}
 .pf-empty p{font-size:.85rem;line-height:1.6;max-width:420px;}
 .pf-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:10px;margin-bottom:18px;}
-.pf-metric{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:13px;}
-.pf-metric-lbl{font-size:.64rem;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;font-weight:600;display:flex;align-items:center;gap:4px;}
+.pf-metric{position:relative;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:13px;}
+.pf-metric-lbl{font-size:.64rem;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;font-weight:600;display:flex;align-items:center;gap:4px;padding-right:20px;}
 .pf-metric-val{font-size:1.32rem;font-weight:700;margin-top:6px;}
 .pf-metric-sub{font-size:.66rem;color:var(--t3);margin-top:3px;}
 .pf-section{margin-bottom:22px;}

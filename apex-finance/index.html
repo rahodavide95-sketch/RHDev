@@ -319,7 +319,7 @@ header{
 .nav-caret{width:12px!important;height:12px!important;opacity:.7;}
 .nav-dd{position:relative;}
 .nav-menu{
-  position:absolute;top:calc(100% + 8px);left:0;min-width:230px;z-index:300;
+  position:absolute;top:calc(100% + 8px);right:0;min-width:230px;max-width:min(300px,calc(100vw - 16px));z-index:300;
   background:var(--bg2);border:1px solid var(--b2);border-radius:var(--radius);
   box-shadow:var(--shadow);padding:6px;display:none;flex-direction:column;gap:2px;
 }

@@ -176,8 +176,9 @@
             <label>Valuta predefinita
               <input id="map-currency" class="input" placeholder="EUR" value="EUR">
             </label>
-            <label>Piattaforma predefinita
+            <label>Piattaforma (scrivila a mano)
               <input id="map-platform" class="input" placeholder="es. Bandcamp">
+              <span class="muted small">Usata per tutte le righe se nel CSV non c'è una colonna "Piattaforma".</span>
             </label>
           </div>
         </div>
@@ -253,6 +254,7 @@
         <input type="hidden" id="f-id">
         <input type="hidden" id="f-kind">
         <label>Data <input type="date" id="f-date" class="input" required></label>
+        <label>Data transazione (a) <input type="date" id="f-dateto" class="input"></label>
         <label>Piattaforma <input type="text" id="f-platform" class="input" placeholder="Bandcamp, DistroKid…"></label>
         <label>Tipologia
           <select id="f-type" class="select">
@@ -271,6 +273,9 @@
         <label>UPC <input type="text" id="f-upc" class="input" placeholder="8001234567890"></label>
         <label>Quantità <input type="number" id="f-qty" class="input" value="1" step="1"></label>
         <label>Lordo <input type="number" id="f-gross" class="input" step="0.01"></label>
+        <label>Spedizione <input type="number" id="f-shipping" class="input" step="0.01"></label>
+        <label>Tasse <input type="number" id="f-taxes" class="input" step="0.01"></label>
+        <label>Commissioni processore pagamento <input type="number" id="f-payprocfees" class="input" step="0.01"></label>
         <label>Commissioni <input type="number" id="f-fees" class="input" step="0.01"></label>
         <label>Netto <input type="number" id="f-net" class="input" step="0.01" required></label>
         <label>Collection society share <input type="number" id="f-csshare" class="input" step="0.01"></label>

@@ -9,10 +9,13 @@
 
 const STORE_KEY = 'labelfinance.v1';
 const CANON = [
-  ['date','Data'], ['platform','Piattaforma'], ['type','Tipologia'],
+  ['date','Data'], ['dateTo','Data transazione (a)'],
+  ['platform','Piattaforma'], ['type','Tipologia'],
   ['catalog','Catalogo'], ['product','Prodotto/Titolo'], ['artist','Artista'],
   ['isrc','ISRC'], ['upc','UPC'], ['qty','Quantità'], ['gross','Lordo'],
-  ['fees','Commissioni'], ['net','Netto'], ['csShare','Collection society share'], ['currency','Valuta'],
+  ['shipping','Spedizione'], ['taxes','Tasse'],
+  ['payProcFees','Commissioni processore pagamento'], ['fees','Commissioni'],
+  ['csShare','Collection society share'], ['net','Netto'], ['currency','Valuta'],
 ];
 
 /* ---------- Store ---------- */
@@ -120,9 +123,13 @@ const HINTS = {
   upc:['upc','ean','barcode'],
   qty:['qty','quantity','quantità','units','copies','count'],
   gross:['gross','lordo','amount','sale','price','revenue','subtotal'],
+  shipping:['shipping','spedizione'],
+  taxes:['tax','vat','iva','imposta'],
+  payProcFees:['payment processor','processor fee','processor','paypal fee','stripe fee'],
   fees:['fee','fees','commission','commissioni','charge'],
   net:['net','netto','payout','net amount','net revenue','earnings','royalt'],
   csShare:['collection society','society share','collecting society','cmo','pro share','mechanical'],
+  dateTo:['date to','transaction date to','to date'],
   currency:['currency','valuta','cur'],
 };
 function autoMap(headers){
@@ -259,11 +266,14 @@ function openTx(id){
   const k = t ? t.kind : curKind;
   $('#f-id').value=t?.id||''; $('#f-kind').value=k;
   $('#f-date').value=t?.date||new Date().toISOString().slice(0,10);
+  $('#f-dateto').value=t?.dateTo||'';
   $('#f-platform').value=t?.platform||''; $('#f-type').value=t?.type||(k==='expense'?'expense':'digital');
   $('#f-catalog').value=t?.catalog||''; $('#f-product').value=t?.product||'';
   $('#f-artist').value=t?.artist||'';
   $('#f-isrc').value=t?.isrc||''; $('#f-upc').value=t?.upc||t?.code||'';
-  $('#f-qty').value=t?.qty??1; $('#f-gross').value=t?.gross??''; $('#f-fees').value=t?.fees??'';
+  $('#f-qty').value=t?.qty??1; $('#f-gross').value=t?.gross??'';
+  $('#f-shipping').value=t?.shipping??''; $('#f-taxes').value=t?.taxes??'';
+  $('#f-payprocfees').value=t?.payProcFees??''; $('#f-fees').value=t?.fees??'';
   $('#f-net').value=t?.net??''; $('#f-csshare').value=t?.csShare??'';
   $('#f-currency').value=t?.currency||'EUR'; $('#f-note').value=t?.note||'';
   $('#f-delete').hidden=!t;
@@ -283,14 +293,15 @@ $('#tx-form').onsubmit=e=>{
   e.preventDefault();
   const id=$('#f-id').value;
   const rec={
-    id:id||uid(), kind:$('#f-kind').value, date:$('#f-date').value,
+    id:id||uid(), kind:$('#f-kind').value, date:$('#f-date').value, dateTo:$('#f-dateto').value,
     platform:$('#f-platform').value.trim(), type:$('#f-type').value,
     catalog:$('#f-catalog').value.trim(), product:$('#f-product').value.trim(),
     artist:$('#f-artist').value.trim(),
     isrc:$('#f-isrc').value.trim(), upc:$('#f-upc').value.trim(),
     qty:Number($('#f-qty').value)||0, gross:parseAmount($('#f-gross').value),
-    fees:parseAmount($('#f-fees').value), net:parseAmount($('#f-net').value),
-    csShare:parseAmount($('#f-csshare').value),
+    shipping:parseAmount($('#f-shipping').value), taxes:parseAmount($('#f-taxes').value),
+    payProcFees:parseAmount($('#f-payprocfees').value), fees:parseAmount($('#f-fees').value),
+    net:parseAmount($('#f-net').value), csShare:parseAmount($('#f-csshare').value),
     currency:($('#f-currency').value||'EUR').toUpperCase().slice(0,3), note:$('#f-note').value.trim(),
   };
   if(id){ const i=DB.transactions.findIndex(t=>t.id===id); DB.transactions[i]=rec; }
@@ -344,13 +355,14 @@ function rowToRec(cols,map){
   let net = map.net!=null ? parseAmount(get('net')) : (gross-fees);
   if(kind==='expense') net=Math.abs(net);
   return {
-    id:uid(), kind, date:parseDate(get('date'),fmt),
+    id:uid(), kind, date:parseDate(get('date'),fmt), dateTo:parseDate(get('dateTo'),fmt),
     platform:(get('platform')||$('#map-platform').value).trim(),
     type:get('type').trim()||(kind==='expense'?'expense':'digital'),
     catalog:get('catalog').trim(), product:get('product').trim(), artist:get('artist').trim(),
     isrc:get('isrc').trim(), upc:get('upc').trim(),
     qty:Number(parseAmount(get('qty')))||(map.qty!=null?0:1),
-    gross, fees, net, csShare:parseAmount(get('csShare')),
+    gross, shipping:parseAmount(get('shipping')), taxes:parseAmount(get('taxes')),
+    payProcFees:parseAmount(get('payProcFees')), fees, net, csShare:parseAmount(get('csShare')),
     currency:(get('currency')||defCur).toUpperCase().slice(0,3), note:'',
   };
 }

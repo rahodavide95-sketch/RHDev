@@ -5519,13 +5519,22 @@ function pfSetupSearch(){
 // ── Quant helpers ──
 function pfAlign(seriesList){
   // seriesList: [{ticker, ts:[], cl:[]}] → {ts:[], cols:{ticker:[]}}
-  const maps=seriesList.map(s=>{ const m=new Map(); s.ts.forEach((t,i)=>{ if(s.cl[i]!=null) m.set(t,s.cl[i]); }); return m; });
+  // Allinea per GIORNO di calendario (UTC), non per timestamp esatto: borse diverse
+  // chiudono a orari diversi, quindi i timestamp non coincidono mai. Usiamo la data.
+  const dayKey=t=>Math.floor(t/86400); // indice del giorno (timestamp Yahoo in secondi)
+  const maps=seriesList.map(s=>{
+    const m=new Map();
+    s.ts.forEach((t,i)=>{ if(s.cl[i]!=null) m.set(dayKey(t),{t,v:s.cl[i]}); });
+    return m;
+  });
   let common=[...maps[0].keys()];
-  for(let i=1;i<maps.length;i++){ const mi=maps[i]; common=common.filter(t=>mi.has(t)); }
+  for(let i=1;i<maps.length;i++){ const mi=maps[i]; common=common.filter(d=>mi.has(d)); }
   common.sort((a,b)=>a-b);
   const cols={};
-  seriesList.forEach((s,i)=>{ cols[s.ticker]=common.map(t=>maps[i].get(t)); });
-  return {ts:common,cols};
+  seriesList.forEach((s,i)=>{ cols[s.ticker]=common.map(d=>maps[i].get(d).v); });
+  // timestamp rappresentativo = quello del primo asset
+  const ts=common.map(d=>maps[0].get(d).t);
+  return {ts,cols};
 }
 const pfDailyRets=cl=>cl.slice(1).map((c,i)=>cl[i]&&cl[i]!==0?(c-cl[i])/cl[i]:0);
 const pfMean=a=>a.reduce((s,x)=>s+x,0)/a.length;

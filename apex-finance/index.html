@@ -386,7 +386,10 @@ header{
   white-space:nowrap;height:100%;
   animation:ticker-scroll 60s linear infinite;
 }
-.news-ticker-track:hover{animation-play-state:paused;}
+/* pausa su hover SOLO con mouse vero: su touch lo stato :hover resta bloccato e l'animazione si ferma */
+@media (hover:hover) and (pointer:fine){
+  .news-ticker-track:hover{animation-play-state:paused;}
+}
 @keyframes ticker-scroll{
   0%{transform:translateX(0);}
   100%{transform:translateX(-50%);}

@@ -19,6 +19,33 @@
 </head>
 <body>
 
+  <!-- ======= LOGIN GATE ======= -->
+  <div class="gate" id="login-gate" hidden>
+    <div class="gate-card">
+      <img src="icon.svg" alt="Label Finance" class="gate-logo">
+      <h1 class="gate-title">Label<strong>Finance</strong></h1>
+      <p class="gate-sub" id="gate-sub">Accedi al tuo gestionale</p>
+
+      <div class="gate-field gate-signup-only"><label for="gate-name">Nome</label>
+        <input id="gate-name" class="input" type="text" placeholder="Il tuo nome"></div>
+      <div class="gate-field gate-signup-only"><label for="gate-label">Nome label</label>
+        <input id="gate-label" class="input" type="text" placeholder="Nome dell'etichetta"></div>
+      <div class="gate-field"><label for="gate-email">Email</label>
+        <input id="gate-email" class="input" type="email" autocomplete="username" placeholder="email@esempio.com"></div>
+      <div class="gate-field"><label for="gate-pw">Password</label>
+        <span class="input-eye"><input id="gate-pw" class="input" type="password" autocomplete="current-password" placeholder="••••••••">
+          <button type="button" class="eye-btn" aria-label="Mostra password"></button></span></div>
+
+      <div class="gate-actions">
+        <button class="btn btn-primary" id="gate-signin">Accedi</button>
+        <button class="btn btn-accent2" id="gate-signup">Registrati</button>
+      </div>
+      <p class="gate-status" id="gate-status"></p>
+      <a href="#" class="gate-offline" id="gate-offline"
+         onclick="document.getElementById('login-gate').hidden=true;document.body.classList.remove('gated');return false">Continua senza account (solo su questo dispositivo)</a>
+    </div>
+  </div>
+
   <!-- ======= SIDEBAR ======= -->
   <aside class="sidebar">
     <div class="sidebar-top">
@@ -313,10 +340,17 @@
             </div>
           </div>
 
-          <div id="sync-account" hidden class="row-inline wrap">
+          <div id="sync-account" hidden>
             <span class="badge-local" id="sync-account-label" style="color:var(--net)"></span>
-            <button class="btn" id="sync-pull">Aggiorna ora</button>
-            <button class="btn btn-danger" id="sync-signout">Esci</button>
+            <div class="form-grid" style="margin-top:12px">
+              <label>Nome <input id="account-name" class="input" type="text"></label>
+              <label>Nome label <input id="account-label" class="input" type="text"></label>
+            </div>
+            <div class="row-inline wrap" style="margin-top:12px">
+              <button class="btn btn-primary" id="account-save">Salva profilo</button>
+              <button class="btn" id="sync-pull">Aggiorna ora</button>
+              <button class="btn btn-danger" id="sync-signout">Esci</button>
+            </div>
           </div>
         </div>
       </div>

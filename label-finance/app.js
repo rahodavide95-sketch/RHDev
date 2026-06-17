@@ -25,6 +25,7 @@ const DEFAULT_TX_VISIBLE = ['date','kind','platform','catalog','product','artist
 const defaultData = () => ({
   transactions: [],
   releases: [],
+  profile: { name:'', label:'' },
   rates: { EUR:1, USD:0.92, GBP:1.17, CHF:1.04 },
   mappings: {},
   txOrder: DEFAULT_TX_ORDER.slice(),
@@ -42,6 +43,8 @@ function save(){ saveLocal(); if(window.LF_push) window.LF_push(); }
 window.LF = {
   data(){ return DB; },
   applyCloud(d){ DB = Object.assign(defaultData(), d||{}); saveLocal(); reloadViews(); },
+  profile(){ return DB.profile || (DB.profile={name:'',label:''}); },
+  setProfile(p){ DB.profile = Object.assign(this.profile(), p||{}); save(); },
 };
 function reloadViews(){ renderDashboard(); renderTx(); renderReleases(); renderRoyalties(); renderSettings(); }
 // integra eventuali colonne nuove non ancora presenti nell'ordine salvato

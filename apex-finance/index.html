@@ -27,6 +27,7 @@
   --text:#e6edf3; --t2:#8b949e; --t3:#484f58;
   --radius:10px; --radius-sm:6px;
   --shadow:0 4px 20px rgba(0,0,0,.4);
+  --header-h: 56px;
 }
 [data-theme="light"]{
   --bg:#f0f4f8; --bg2:#ffffff; --bg3:#e8eef5;
@@ -1161,22 +1162,35 @@ header{
 }
 @keyframes modalIn{from{opacity:0;transform:scale(.95) translateY(10px);}to{opacity:1;transform:none;}}
 /* ── CATEGORIA A PAGINA INTERA (header sempre visibile sopra) ── */
-.cat-modal.cat-fullpage{
-  position:fixed;left:0;right:0;bottom:0; /* top impostato via JS = altezza header */
-  inset:auto;z-index:150;background:var(--bg);backdrop-filter:none;-webkit-backdrop-filter:none;
-  display:block;padding:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
-  animation:catPageIn .2s ease;
+#cat-modal.cat-fullpage {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  z-index: 150 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  background: var(--bg) !important;
+  padding-top: var(--header-h, 56px) !important;
 }
-@keyframes catPageIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
-.cat-modal.cat-fullpage .cat-modal-box{
-  background:transparent;border:none;border-radius:0;box-shadow:none;
-  max-width:1080px;max-height:none;width:100%;margin:0 auto;animation:none;min-height:100%;
+#cat-modal.cat-fullpage .cat-modal-box {
+  max-width: none !important;
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  margin: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
 }
-.cat-modal.cat-fullpage .cat-modal-hd{
-  position:sticky;top:0;z-index:5;padding:18px 24px 14px;
+#cat-modal.cat-fullpage .cat-modal-body {
+  flex: 1 !important;
+  overflow-y: auto !important;
 }
-.cat-modal.cat-fullpage .cat-modal-body{padding:6px 0 30px;}
-.cat-modal.cat-fullpage .cat-modal-pg{position:sticky;bottom:0;}
 .cat-modal-hd{
   display:flex;flex-direction:column;gap:12px;
   padding:20px 24px 14px;flex-shrink:0;
@@ -1306,7 +1320,7 @@ header{
 .pf-close{background:rgba(255,255,255,.1);border:none;color:#fff;width:30px;height:30px;border-radius:var(--radius-sm);
   cursor:pointer;font-size:.9rem;transition:background .15s;}
 .pf-close:hover{background:rgba(255,255,255,.22);}
-.pf-body{flex:1;display:grid;grid-template-columns:380px 1fr;gap:0;overflow:hidden;}
+.pf-body{flex:1;display:flex;flex-direction:column;overflow:hidden;}
 .pf-left{border-right:1px solid var(--border);overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px;}
 .pf-right{overflow-y:auto;padding:18px 20px;}
 .pf-panel{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;}
@@ -1391,7 +1405,7 @@ header{
 @media(max-width:860px){
   .pf-modal{padding:0;}
   .pf-box{height:100vh;height:100dvh;width:100vw;border-radius:0;}
-  .pf-body{grid-template-columns:1fr;overflow-y:auto;}
+  .pf-body{overflow-y:auto;}
   .pf-left{border-right:none;border-bottom:1px solid var(--border);overflow:visible;}
   .pf-right{overflow:visible;}
   .pf-grid2{grid-template-columns:1fr;}
@@ -1404,6 +1418,23 @@ header{
   .pf-toolbar .pf-tr-note{margin-left:0;width:100%;}
 }
 
+/* ── PORTFOLIO STEP TABS ── */
+.pf-steps{display:flex;gap:0;border-bottom:1px solid var(--border);background:var(--bg);flex-shrink:0;overflow-x:auto;}
+.pf-step-tab{display:flex;align-items:center;gap:8px;padding:12px 20px;font-size:.78rem;font-weight:600;color:var(--t2);
+  border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .18s;font-family:inherit;}
+.pf-step-tab:hover{color:var(--text);}
+.pf-step-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.pf-step-num{width:20px;height:20px;border-radius:50%;background:var(--bg3);font-size:.65rem;font-weight:700;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .18s;}
+.pf-step-tab.active .pf-step-num{background:var(--accent);color:#fff;}
+.pf-step-tab.done .pf-step-num{background:var(--g);color:#fff;}
+.pf-step-panel{display:none;flex:1;overflow-y:auto;padding:20px;}
+.pf-step-panel.active{display:flex;flex-direction:column;gap:16px;}
+.pf-step-panel.pf-results-panel.active{display:block;padding:18px 20px;}
+.pf-step-section{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;}
+.pf-step-section-hd{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t2);margin-bottom:14px;}
+.pf-step-actions{display:flex;align-items:center;gap:10px;margin-top:6px;}
+.pf-step-actions .pf-calc-btn{margin-top:0;flex:1;}
 /* ── RADAR LOADER ── */
 @keyframes radar-rotate{to{transform:rotate(360deg)}}
 @keyframes radar-blip{0%,100%{opacity:0;r:2}40%,60%{opacity:1;r:3}}
@@ -1470,17 +1501,6 @@ header{
       <div class="search-dropdown" id="search-dropdown"></div>
     </div>
 
-    <div class="nav-btns">
-      <div class="nav-dd" id="nav-main">
-        <button class="nav-btn" onclick="toggleMainMenu(event)" aria-label="Menu">
-          <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-          <span>Menu</span>
-          <svg class="nav-caret" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-        </button>
-        <div class="nav-menu" id="main-menu"></div>
-      </div>
-    </div>
-
     <div class="live-ind">
       <div class="live-dot" id="live-dot"></div>
       <span>Live</span>
@@ -1492,6 +1512,13 @@ header{
     <button class="btn-theme" id="btn-theme" onclick="cycleTheme()" title="Cambia tema">
       <!-- icon injected by JS -->
     </button>
+
+    <div class="nav-dd" id="nav-main">
+      <button class="nav-btn" onclick="toggleMainMenu(event)" aria-label="Menu" title="Menu">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div class="nav-menu" id="main-menu"></div>
+    </div>
   </div>
 </header>
 
@@ -1787,17 +1814,28 @@ header{
         </div>
         <button class="pf-close" onclick="closePortfolio()" title="Chiudi">✕</button>
       </div>
+      <!-- Step tabs -->
+      <div class="pf-steps" id="pf-steps">
+        <button class="pf-step-tab active" id="pf-tab-1" onclick="pfSwitchTab(1)">
+          <span class="pf-step-num">1</span> Asset
+        </button>
+        <button class="pf-step-tab" id="pf-tab-2" onclick="pfSwitchTab(2)">
+          <span class="pf-step-num">2</span> Parametri
+        </button>
+        <button class="pf-step-tab" id="pf-tab-3" onclick="pfSwitchTab(3)">
+          <span class="pf-step-num">3</span> Risultati
+        </button>
+      </div>
+
       <div class="pf-body" id="pf-body">
 
-        <!-- LEFT: holdings + settings -->
-        <div class="pf-left">
-          <div class="pf-panel">
-            <div class="pf-panel-hd">Asset del portafoglio</div>
-            <div class="pf-add">
-              <div class="pf-add-search">
-                <input id="pf-search" class="pf-search-input" type="text" placeholder="Aggiungi asset (ticker, nome, ISIN…)" autocomplete="off" spellcheck="false">
-                <div class="pf-search-dd" id="pf-search-dd"></div>
-              </div>
+        <!-- STEP 1: Assets -->
+        <div class="pf-step-panel active" id="pf-panel-1">
+          <div class="pf-step-section">
+            <div class="pf-step-section-hd">Cerca e aggiungi asset al portafoglio</div>
+            <div class="pf-add-search">
+              <input id="pf-search" class="pf-search-input" type="text" placeholder="Aggiungi asset (ticker, nome, ISIN…)" autocomplete="off" spellcheck="false">
+              <div class="pf-search-dd" id="pf-search-dd"></div>
             </div>
             <div class="pf-holdings" id="pf-holdings"></div>
             <div class="pf-weight-bar">
@@ -1806,9 +1844,18 @@ header{
               <button class="pf-mini-btn" onclick="pfEqualize()">Pesi uguali</button>
             </div>
           </div>
+          <div class="pf-step-actions">
+            <button class="pf-mini-btn" onclick="pfOptimize('sharpe')">⚡ Max Sharpe</button>
+            <button class="pf-mini-btn" onclick="pfOptimize('minvar')">🛡 Min volatilità</button>
+            <button class="info-btn pf-info" data-tip="pf_optimize">i</button>
+            <button class="pf-calc-btn" style="margin-top:0;max-width:200px" onclick="pfSwitchTab(2)">Avanti: Parametri →</button>
+          </div>
+        </div>
 
-          <div class="pf-panel">
-            <div class="pf-panel-hd">Parametri essenziali</div>
+        <!-- STEP 2: Parameters -->
+        <div class="pf-step-panel" id="pf-panel-2">
+          <div class="pf-step-section">
+            <div class="pf-step-section-hd">Parametri essenziali</div>
             <div class="pf-settings">
               <label class="pf-set">Capitale iniziale (€)
                 <input type="number" id="pf-capital" value="10000" min="0" step="1000">
@@ -1830,12 +1877,14 @@ header{
                 </select>
               </div>
             </div>
+          </div>
 
-            <button class="pf-adv-toggle" id="pf-adv-toggle" onclick="pfToggleAdvanced()">
+          <div class="pf-step-section">
+            <button class="pf-adv-toggle" id="pf-adv-toggle" onclick="pfToggleAdvanced()" style="margin-bottom:0">
               <span>Impostazioni avanzate</span><span class="pf-pro-tag">PRO</span>
               <svg class="pf-adv-caret" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
-            <div class="pf-settings pf-advanced" id="pf-advanced" style="display:none">
+            <div class="pf-settings pf-advanced" id="pf-advanced" style="display:none;margin-top:14px">
               <div class="pf-set"><span class="pf-set-top">Tasso risk-free (%)<button class="info-btn pf-info" data-tip="pf_rf">i</button></span>
                 <input type="number" id="pf-rf" value="3" min="0" max="20" step="0.1">
               </div>
@@ -1879,17 +1928,16 @@ header{
                 <input type="number" id="pf-infl" value="2" min="0" max="20" step="0.1">
               </div>
             </div>
-            <button class="pf-calc-btn" id="pf-calc-btn" onclick="pfCalculate()">Calcola portafoglio</button>
-            <div class="pf-optimize">
-              <button class="pf-mini-btn" onclick="pfOptimize('sharpe')">⚡ Max Sharpe</button>
-              <button class="pf-mini-btn" onclick="pfOptimize('minvar')">🛡 Min volatilità</button>
-              <button class="info-btn pf-info" data-tip="pf_optimize" style="align-self:center">i</button>
-            </div>
+          </div>
+
+          <div class="pf-step-actions">
+            <button class="pf-mini-btn" onclick="pfSwitchTab(1)">← Indietro</button>
+            <button class="pf-calc-btn" id="pf-calc-btn" onclick="pfCalculate()" style="margin-top:0">Calcola portafoglio</button>
           </div>
         </div>
 
-        <!-- RIGHT: results -->
-        <div class="pf-right" id="pf-right">
+        <!-- STEP 3: Results -->
+        <div class="pf-step-panel pf-results-panel" id="pf-panel-3">
           <div class="pf-empty" id="pf-empty">
             <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M19 9l-5 5-4-4-3 3"/></svg>
             <p>Aggiungi almeno 2 asset, imposta i pesi e premi <b>Calcola portafoglio</b>.<br>Otterrai rendimento atteso, rischio, Sharpe, correlazioni, backtest storico, VaR e proiezione Monte Carlo.</p>
@@ -3792,31 +3840,24 @@ function loadSectionRest(id){
 }
 
 // apre la categoria come PAGINA INTERA sotto la barra (header sempre visibile)
-function _openCatPage(){
-  const modal=document.getElementById('cat-modal');
-  const hdr=document.querySelector('header');
-  const h=hdr?Math.round(hdr.getBoundingClientRect().height):56;
-  modal.style.top=h+'px';
+function _openCatPage() {
+  const modal = document.getElementById('cat-modal');
+  if (!modal) return;
+  const hdr = document.querySelector('header') || document.querySelector('.header');
+  const h = hdr ? hdr.getBoundingClientRect().height : 56;
+  modal.style.setProperty('--header-h', h + 'px');
   modal.classList.add('cat-fullpage');
-  modal.style.display='block';
-  const sy=window.scrollY;
-  document.body.style.position='fixed';
-  document.body.style.top=`-${sy}px`;
-  document.body.style.width='100%';
-  document.body._lockedScrollY=sy;
+  document.body.style.overflow = 'hidden';
 }
 
-function closeCatModal(){
+function closeCatModal() {
   _catLoadToken++;
-  const modal=document.getElementById('cat-modal');
-  modal.style.display='none';
-  modal.classList.remove('cat-fullpage');
-  modal.style.top='';
-  const sy=document.body._lockedScrollY||0;
-  document.body.style.position='';
-  document.body.style.top='';
-  document.body.style.width='';
-  window.scrollTo(0,sy);
+  const modal = document.getElementById('cat-modal');
+  if (modal) {
+    modal.classList.remove('cat-fullpage');
+    modal.style.display = 'none';
+  }
+  document.body.style.overflow = '';
 }
 
 function renderCatPage(page){
@@ -5372,6 +5413,16 @@ function openPortfolio(){
   }
   pfRenderHoldings(); pfSetupSearch();
 }
+function pfSwitchTab(n){
+  [1,2,3].forEach(i=>{
+    document.getElementById('pf-panel-'+i).classList.toggle('active',i===n);
+    document.getElementById('pf-tab-'+i).classList.toggle('active',i===n);
+  });
+  // mark completed tabs
+  if(n>1) document.getElementById('pf-tab-1').classList.add('done');
+  if(n>2) document.getElementById('pf-tab-2').classList.add('done');
+}
+
 function pfToggleAdvanced(){
   const adv=document.getElementById('pf-advanced');
   const btn=document.getElementById('pf-adv-toggle');
@@ -5462,7 +5513,7 @@ function pfAlign(seriesList){
   seriesList.forEach((s,i)=>{ cols[s.ticker]=common.map(t=>maps[i].get(t)); });
   return {ts:common,cols};
 }
-const pfDailyRets=cl=>cl.slice(1).map((c,i)=>(c-cl[i])/cl[i]);
+const pfDailyRets=cl=>cl.slice(1).map((c,i)=>cl[i]&&cl[i]!==0?(c-cl[i])/cl[i]:0);
 const pfMean=a=>a.reduce((s,x)=>s+x,0)/a.length;
 const pfStd=a=>{const m=pfMean(a);return Math.sqrt(a.reduce((s,x)=>s+(x-m)**2,0)/a.length);};
 function pfCov(a,b){const ma=pfMean(a),mb=pfMean(b);let s=0;for(let i=0;i<a.length;i++)s+=(a[i]-ma)*(b[i]-mb);return s/a.length;}
@@ -5472,17 +5523,18 @@ function pfBacktest(cols,tickers,weights,ts,rebal){
   // returns equity curve (normalized to 1) using given rebalance policy
   const n=ts.length;
   const periodDays={none:1e9,monthly:21,quarterly:63,yearly:252}[rebal]??1e9;
-  let units=tickers.map((t,i)=>weights[i]/cols[t][0]); // initial units for $1
+  // guard: skip if any first price is 0
+  let units=tickers.map((t,i)=>cols[t][0]?weights[i]/cols[t][0]:0);
   const eq=new Array(n); eq[0]=1; let lastRebal=0;
   for(let d=0;d<n;d++){
-    let v=0; tickers.forEach((t,i)=>v+=units[i]*cols[t][d]); eq[d]=v;
+    let v=0; tickers.forEach((t,i)=>v+=units[i]*(cols[t][d]||0)); eq[d]=v||eq[d-1]||1;
     if(d>0 && d-lastRebal>=periodDays && rebal!=='none'){
-      units=tickers.map((t,i)=>weights[i]*v/cols[t][d]); lastRebal=d;
+      units=tickers.map((t,i)=>cols[t][d]?weights[i]*v/cols[t][d]:units[i]); lastRebal=d;
     }
   }
   return eq;
 }
-function pfMaxDD(eq){ let pk=eq[0],dd=0; for(const v of eq){ if(v>pk)pk=v; const d=(pk-v)/pk; if(d>dd)dd=d; } return dd; }
+function pfMaxDD(eq){ let pk=eq[0]||1,dd=0; for(const v of eq){ if(v>pk)pk=v; const d=pk>0?(pk-v)/pk:0; if(d>dd)dd=d; } return dd; }
 
 async function pfCalculate(){
   const btn=document.getElementById('pf-calc-btn');
@@ -5580,6 +5632,7 @@ async function pfCalculate(){
       mc,probTarget,target,probLoss,totInvested,rf,period,failed,
       calmar,posMonths,bestDay,worstDay,infl,realRet,finalMedReal,realFactor,
       contribAmt,freqLabel:{weekly:'a settimana',biweekly:'ogni 2 sett.',monthly:'al mese',quarterly:'a trimestre',semiannual:'a semestre',annual:'all\'anno'}[freq]||''});
+    pfSwitchTab(3);
   } finally {
     btn.disabled=false; btn.textContent='Calcola portafoglio';
   }

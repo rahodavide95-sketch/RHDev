@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Label Finance — Gestionale Etichetta</title>
+  <script>
+    /* applica il tema prima del render per evitare lo sfarfallio */
+    (function(){try{var p=localStorage.getItem('labelfinance.theme')||'system';
+      var d=p==='dark'||(p==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.setAttribute('data-theme',d?'dark':'light');}catch(e){}})();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
@@ -24,6 +30,11 @@
       <button class="nav-item" data-view="settings">Impostazioni</button>
     </nav>
     <div class="sidebar-foot">
+      <div class="theme-switch" role="group" aria-label="Tema">
+        <button data-theme-opt="system" title="Sistema" aria-label="Tema di sistema">◐</button>
+        <button data-theme-opt="light" title="Chiaro" aria-label="Tema chiaro">☀</button>
+        <button data-theme-opt="dark" title="Scuro" aria-label="Tema scuro">☾</button>
+      </div>
       <span class="badge-local">● Dati salvati sul tuo dispositivo</span>
     </div>
   </aside>
@@ -69,7 +80,8 @@
       </div>
 
       <div class="panel">
-        <div class="panel-head"><h2>Entrate vs Uscite per mese</h2></div>
+        <div class="panel-head"><h2>Entrate vs Uscite per mese</h2>
+          <span class="legend"><span class="legend-dot legend-dot--in"></span>Entrate<span class="legend-dot legend-dot--out"></span>Uscite</span></div>
         <div class="chart" id="chart-monthly"></div>
       </div>
 
@@ -191,7 +203,17 @@
     <!-- ====== SETTINGS ====== -->
     <section class="view" id="view-settings">
       <header class="view-head"><div><h1>Impostazioni</h1>
-        <p class="muted">Tassi di cambio, backup e gestione dati.</p></div></header>
+        <p class="muted">Aspetto, tassi di cambio, backup e gestione dati.</p></div></header>
+
+      <div class="panel">
+        <div class="panel-head"><h2>Aspetto</h2>
+          <span class="muted small">"Sistema" segue le impostazioni del tuo dispositivo.</span></div>
+        <div class="theme-switch theme-switch--lg" role="group" aria-label="Tema">
+          <button data-theme-opt="system">◐ Sistema</button>
+          <button data-theme-opt="light">☀ Chiaro</button>
+          <button data-theme-opt="dark">☾ Scuro</button>
+        </div>
+      </div>
 
       <div class="panel">
         <div class="panel-head"><h2>Tassi di cambio → EUR</h2>

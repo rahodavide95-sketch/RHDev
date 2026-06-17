@@ -427,5 +427,22 @@ function download(name,content,type){
   setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 }
 
+/* ============================================================================
+   TEMA — chiaro / scuro / sistema
+   ============================================================================ */
+const THEME_KEY='labelfinance.theme';
+const themeMq=matchMedia('(prefers-color-scheme: dark)');
+const themePref=()=>localStorage.getItem(THEME_KEY)||'system';
+function applyTheme(){
+  const p=themePref();
+  const dark = p==='dark' || (p==='system' && themeMq.matches);
+  document.documentElement.setAttribute('data-theme', dark?'dark':'light');
+  $$('[data-theme-opt]').forEach(b=>b.classList.toggle('is-active', b.dataset.themeOpt===p));
+}
+function setTheme(p){ localStorage.setItem(THEME_KEY,p); applyTheme(); }
+$$('[data-theme-opt]').forEach(b=>b.onclick=()=>setTheme(b.dataset.themeOpt));
+themeMq.addEventListener('change',()=>{ if(themePref()==='system') applyTheme(); });
+applyTheme();
+
 /* ---------- Avvio ---------- */
 renderDashboard();

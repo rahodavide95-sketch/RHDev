@@ -1310,10 +1310,9 @@ header{
 .prof-doc-arrow{color:var(--t3);flex-shrink:0;}
 
 /* ── PORTFOLIO SIMULATOR ── */
-.pf-modal{position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);
-  display:flex;align-items:center;justify-content:center;padding:24px;}
-.pf-box{width:min(1240px,100%);height:min(88vh,920px);background:var(--bg);border:1px solid var(--b2);
-  border-radius:var(--radius);box-shadow:var(--shadow);display:flex;flex-direction:column;overflow:hidden;}
+.pf-modal{position:fixed;left:0;right:0;bottom:0;z-index:150;
+  background:var(--bg);display:flex;flex-direction:column;overflow:hidden;}
+.pf-box{flex:1;display:flex;flex-direction:column;overflow:hidden;width:100%;max-width:100%;}
 .pf-hd{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;flex-shrink:0;}
 .pf-hd-title{display:flex;align-items:center;gap:10px;font-size:1rem;font-weight:700;color:#fff;}
 .pf-hd-title svg{color:#93c5fd;}
@@ -1403,8 +1402,6 @@ header{
 .pf-cmp-table th{position:sticky;top:0;background:var(--bg2);}
 .pf-cmp-table td{white-space:nowrap;}
 @media(max-width:860px){
-  .pf-modal{padding:0;}
-  .pf-box{height:100vh;height:100dvh;width:100vw;border-radius:0;}
   .pf-body{overflow-y:auto;}
   .pf-left{border-right:none;border-bottom:1px solid var(--border);overflow:visible;}
   .pf-right{overflow:visible;}
@@ -5048,6 +5045,95 @@ Investire gradualmente nel tempo ha due grandi vantaggi:<br>
 • <b>Forza dell'interesse composto</b>: ogni versamento ha tempo per crescere.<br><br>
 <i>Anche piccoli versamenti costanti, su orizzonti lunghi, fanno una differenza enorme grazie alla capitalizzazione.</i>`
   },
+  pf_cagr:{
+    title:'CAGR — Rendimento Annuo Composto',
+    body:`Il <b>CAGR</b> (Compound Annual Growth Rate) è il rendimento <b>medio annuo geometrico</b> del portafoglio nel periodo storico analizzato.<br><br>
+È il tasso di crescita costante che avrebbe prodotto lo stesso risultato finale: se hai investito 10.000€ e dopo 5 anni hai 14.000€, il CAGR è circa il 6,96% annuo.<br><br>
+<b>Come interpretarlo:</b><br>
+• <b>&gt; 10%</b> → Eccellente (storicamente raro e difficile da mantenere nel lungo periodo)<br>
+• <b>6–10%</b> → Buono, in linea con i mercati azionari storici<br>
+• <b>3–6%</b> → Nella norma per portafogli bilanciati<br>
+• <b>&lt; 3%</b> → Sotto l'inflazione — potresti perdere potere d'acquisto<br><br>
+<i>⚠ Attenzione: è calcolato sui dati <u>storici</u> del periodo selezionato. Non è una garanzia di rendimento futuro.</i>`
+  },
+  pf_vol:{
+    title:'Volatilità Annua',
+    body:`La <b>volatilità</b> misura quanto oscilla il valore del portafoglio, espressa come deviazione standard dei rendimenti giornalieri <b>annualizzata</b> (×√252 giorni di borsa).<br><br>
+<b>Come interpretarla:</b><br>
+• <b>&lt; 8%</b> → Bassa (tipica di obbligazioni/money market)<br>
+• <b>8–15%</b> → Moderata (portafogli bilanciati)<br>
+• <b>15–25%</b> → Alta (azionario puro)<br>
+• <b>&gt; 25%</b> → Molto alta (singoli titoli, crypto, settori concentrati)<br><br>
+Volatilità alta = maggiori alti e bassi giornalieri. <b>Non è necessariamente cattiva</b> se l'orizzonte è lungo — ma richiede disciplina per non vendere nel panico durante i ribassi.<br><br>
+<i>La volatilità è la "tariffa" che paghi per i rendimenti superiori. Zero volatilità = zero rendimento reale.</i>`
+  },
+  pf_sortino:{
+    title:'Sortino Ratio',
+    body:`Misura la qualità del rendimento considerando <b>solo la volatilità negativa</b> (le perdite), a differenza dello Sharpe che penalizza anche la volatilità positiva.<br><br>
+Formula: <b>(Rendimento − Risk-free) / Deviazione standard al ribasso</b><br><br>
+<b>Come interpretarlo:</b><br>
+• <b>&gt; 2</b> → Eccellente<br>
+• <b>1–2</b> → Buono<br>
+• <b>0,5–1</b> → Accettabile<br>
+• <b>&lt; 0,5</b> → Scarso<br><br>
+Se il Sortino è molto più alto dello Sharpe, significa che la volatilità del portafoglio è prevalentemente "buona" (rialzista) — un segnale positivo.<br><br>
+<i>Preferito dagli investitori che si preoccupano delle perdite ma non delle "sorprese positive".</i>`
+  },
+  pf_beta:{
+    title:'Beta rispetto al Benchmark',
+    body:`Il <b>Beta</b> misura la <b>sensibilità del portafoglio ai movimenti del mercato di riferimento</b> (benchmark, default: SPY = S&P 500).<br><br>
+<b>Come leggerlo:</b><br>
+• <b>β = 1,0</b> → Si muove come il mercato. Se il mercato sale del 10%, anche il portafoglio sale del ~10%.<br>
+• <b>β &gt; 1</b> → Più volatile del mercato (amplifica i movimenti). β = 1,4 → +14% quando il mercato fa +10%.<br>
+• <b>β &lt; 1</b> → Meno volatile del mercato (protezione nei ribassi). β = 0,6 → -6% quando il mercato fa -10%.<br>
+• <b>β &lt; 0</b> → Si muove inversamente (es. oro in certi periodi, asset decorrelati).<br><br>
+<i>Un beta basso non significa rendimento basso: dipende dall'alpha (rendimento in eccesso) che genera il portafoglio.</i>`
+  },
+  pf_effn:{
+    title:'Asset Effettivi (N effettivo)',
+    body:`Misura la <b>diversificazione reale</b> del portafoglio, tenendo conto sia del numero di asset sia della loro correlazione.<br><br>
+Formula: <b>1 / Σ(w²)</b> dove w sono i pesi. Un portafoglio equamente distribuito su N asset ha N effettivo = N. Più correlati e concentrati sono gli asset, più N effettivo si abbassa.<br><br>
+<b>Esempi:</b><br>
+• 5 titoli tutti tech correlati → N effettivo ≈ 2–3<br>
+• 4 asset decorrelati (azioni, oro, obbligazioni, crypto) → N effettivo ≈ 4<br><br>
+<b>Come interpretarlo:</b><br>
+• <b>&gt; 4</b> → Buona diversificazione<br>
+• <b>2–4</b> → Moderata<br>
+• <b>&lt; 2</b> → Concentrato — rischio elevato su pochi asset<br><br>
+<i>Non conta il numero di ticker, conta la decorrelazione reale tra loro.</i>`
+  },
+  pf_calmar:{
+    title:'Calmar Ratio',
+    body:`Il <b>Calmar ratio</b> misura il rendimento ottenuto <b>per ogni punto percentuale di drawdown massimo sopportato</b>.<br><br>
+Formula: <b>CAGR / Max Drawdown</b><br><br>
+<b>Come interpretarlo:</b><br>
+• <b>&gt; 1</b> → Buono: guadagni più di quanto hai rischiato di perdere al peggio<br>
+• <b>0,5–1</b> → Nella norma<br>
+• <b>&lt; 0,5</b> → Il rischio non viene sufficientemente ripagato<br><br>
+Esempio: CAGR 8% con max drawdown -20% → Calmar = 0,4. CAGR 8% con drawdown -10% → Calmar = 0,8 (migliore).<br><br>
+<i>Particolarmente utile per confrontare portafogli con diversi profili di rischio.</i>`
+  },
+  pf_real:{
+    title:'Rendimento Reale (al netto inflazione)',
+    body:`Il rendimento che conta davvero: quello che <b>aumenta il tuo potere d'acquisto</b> dopo aver "pagato" l'inflazione.<br><br>
+Formula approssimata: <b>Rendimento reale ≈ Rendimento nominale − Inflazione</b><br>
+Formula precisa: <b>(1 + nominale) / (1 + inflazione) − 1</b><br><br>
+<b>Esempi:</b><br>
+• Rendimento 7%, inflazione 2% → Reale ≈ +4,9% ✅<br>
+• Rendimento 3%, inflazione 4% → Reale ≈ −1% ❌ (stai perdendo potere d'acquisto!)<br>
+• Rendimento 0% (liquidità), inflazione 3% → Reale −3%<br><br>
+<i>L'"illusione monetaria" è il pericolo più sottovalutato: un conto in banca a 0% che perde il 3% reale ogni anno è una perdita silenziosa ma certa.</i>`
+  },
+  pf_months:{
+    title:'% Mesi Positivi',
+    body:`La <b>frequenza storica dei mesi positivi</b>: su 100 mesi (circa 21 giorni di borsa ciascuno), quante volte il portafoglio ha chiuso in guadagno.<br><br>
+<b>Come interpretarla:</b><br>
+• <b>&gt; 65%</b> → Molto consistente, pochi mesi negativi<br>
+• <b>55–65%</b> → Nella norma per azionario diversificato<br>
+• <b>&lt; 50%</b> → Più mesi negativi che positivi (ma non necessariamente cattivo — conta il guadagno totale)<br><br>
+Ricorda: i mercati azionari crescono nel lungo periodo anche se scendono più spesso di quanto salgono nei giorni singoli — ma i rialzi sono mediamente più grandi dei ribassi.<br><br>
+<i>Un portafoglio può avere 55% mesi positivi ma comunque un ottimo CAGR, se i mesi positivi guadagnano molto di più di quanto perdono quelli negativi.</i>`
+  },
 };
 
 // ── TOOLTIP ENGINE ──
@@ -5406,11 +5492,14 @@ function pfDestroyCharts(){ Object.values(PFCH).forEach(c=>c&&c.destroy()); PFCH
 
 function openPortfolio(){
   closeMainMenu();
-  const m=document.getElementById('pf-modal'); m.style.display='flex';
+  const m=document.getElementById('pf-modal');
+  const hdr=document.querySelector('header');
+  const h=hdr?Math.round(hdr.getBoundingClientRect().height):56;
+  m.style.top=h+'px';
+  m.style.display='flex';
   const sy=window.scrollY; document.body.dataset.pfScroll=sy;
   document.body.style.position='fixed'; document.body.style.top=`-${sy}px`; document.body.style.width='100%';
   if(!PF.holdings.length){
-    // seed con un esempio classico 60/40-style diversificato
     ['SPY','QQQ','GLD','TLT'].forEach((t,i)=>PF.holdings.push({ticker:t,name:({SPY:'S&P 500 ETF',QQQ:'Nasdaq 100 ETF',GLD:'Oro',TLT:'Treasury 20+ anni'})[t],weight:25}));
   }
   pfRenderHoldings(); pfSetupSearch();
@@ -5433,8 +5522,8 @@ function pfToggleAdvanced(){
   btn.classList.toggle('open',open);
 }
 function closePortfolio(){
-  document.getElementById('pf-modal').style.display='none';
-  const sy=parseInt(document.body.dataset.pfScroll||'0',10);
+  const m=document.getElementById('pf-modal'); m.style.display='none';
+  const sy=+document.body.dataset.pfScroll||0;
   document.body.style.position=''; document.body.style.top=''; document.body.style.width='';
   window.scrollTo(0,sy);
   pfDestroyCharts();
@@ -5717,17 +5806,17 @@ function pfRenderResults(R){
       <span class="pf-tr-note">Rendimenti total-return: i dividendi sono già reinvestiti (prezzi aggiustati).</span>
     </div>
     <div class="pf-metrics">
-      <div class="pf-metric"><div class="pf-metric-lbl">Rendimento annuo</div><div class="pf-metric-val" style="color:${col(R.annRet)}">${pfFmtPct(R.annRet)}</div><div class="pf-metric-sub">CAGR storico (${R.period})</div></div>
-      <div class="pf-metric"><div class="pf-metric-lbl">Volatilità annua</div><div class="pf-metric-val" style="color:var(--y)">${(R.vol*100).toFixed(1)}%</div><div class="pf-metric-sub">deviazione standard</div></div>
-      <div class="pf-metric"><div class="pf-metric-lbl">Sharpe ratio <button class="info-btn pf-info" data-tip="pf_sharpe">i</button></div><div class="pf-metric-val" style="color:${sharpeCol}">${R.sharpe.toFixed(2)}</div><div class="pf-metric-sub">rendimento/rischio</div></div>
-      <div class="pf-metric"><div class="pf-metric-lbl">Sortino ratio</div><div class="pf-metric-val">${R.sortino.toFixed(2)}</div><div class="pf-metric-sub">rischio ribasso</div></div>
+      <div class="pf-metric"><div class="pf-metric-lbl">Rendimento annuo (CAGR) <button class="info-btn pf-info" data-tip="pf_cagr">i</button></div><div class="pf-metric-val" style="color:${col(R.annRet)}">${pfFmtPct(R.annRet)}</div><div class="pf-metric-sub">CAGR storico (${R.period})</div></div>
+      <div class="pf-metric"><div class="pf-metric-lbl">Volatilità annua <button class="info-btn pf-info" data-tip="pf_vol">i</button></div><div class="pf-metric-val" style="color:var(--y)">${(R.vol*100).toFixed(1)}%</div><div class="pf-metric-sub">deviazione standard</div></div>
+      <div class="pf-metric"><div class="pf-metric-lbl">Sharpe ratio <button class="info-btn pf-info" data-tip="pf_sharpe">i</button></div><div class="pf-metric-val" style="color:${sharpeCol}">${R.sharpe.toFixed(2)}</div><div class="pf-metric-sub">${R.sharpe>=1?'🟢 Ottimo':R.sharpe>=0.5?'🟡 Buono':'🔴 Mediocre'}</div></div>
+      <div class="pf-metric"><div class="pf-metric-lbl">Sortino ratio <button class="info-btn pf-info" data-tip="pf_sortino">i</button></div><div class="pf-metric-val" style="color:${R.sortino>=1?'var(--g)':R.sortino>=0.5?'var(--y)':'var(--r)'}">${R.sortino.toFixed(2)}</div><div class="pf-metric-sub">rischio solo ribasso</div></div>
       <div class="pf-metric"><div class="pf-metric-lbl">Max Drawdown <button class="info-btn pf-info" data-tip="pf_dd">i</button></div><div class="pf-metric-val" style="color:var(--r)">-${(R.maxdd*100).toFixed(1)}%</div><div class="pf-metric-sub">perdita max storica</div></div>
-      ${R.beta!=null?`<div class="pf-metric"><div class="pf-metric-lbl">Beta (${R.benchT})</div><div class="pf-metric-val">${R.beta.toFixed(2)}</div><div class="pf-metric-sub">sensibilità mercato</div></div>`:''}
-      <div class="pf-metric"><div class="pf-metric-lbl">Diversificazione</div><div class="pf-metric-val">${R.effN.toFixed(1)}</div><div class="pf-metric-sub">asset effettivi</div></div>
-      <div class="pf-metric"><div class="pf-metric-lbl">VaR ${(R.conf*100).toFixed(0)}% (1g) <button class="info-btn pf-info" data-tip="pf_var">i</button></div><div class="pf-metric-val" style="color:var(--r)">-${(R.varDaily*100).toFixed(2)}%</div><div class="pf-metric-sub">CVaR -${(R.cvarDaily*100).toFixed(2)}%</div></div>
-      <div class="pf-metric"><div class="pf-metric-lbl">Calmar ratio</div><div class="pf-metric-val">${R.calmar.toFixed(2)}</div><div class="pf-metric-sub">rendimento/drawdown</div></div>
-      <div class="pf-metric"><div class="pf-metric-lbl">Rendim. reale</div><div class="pf-metric-val" style="color:${col(R.realRet)}">${pfFmtPct(R.realRet)}</div><div class="pf-metric-sub">al netto inflazione ${(R.infl*100).toFixed(1)}%</div></div>
-      ${R.posMonths!=null?`<div class="pf-metric"><div class="pf-metric-lbl">Mesi positivi</div><div class="pf-metric-val">${(R.posMonths*100).toFixed(0)}%</div><div class="pf-metric-sub">frequenza storica</div></div>`:''}
+      ${R.beta!=null?`<div class="pf-metric"><div class="pf-metric-lbl">Beta (${R.benchT}) <button class="info-btn pf-info" data-tip="pf_beta">i</button></div><div class="pf-metric-val">${R.beta.toFixed(2)}</div><div class="pf-metric-sub">${R.beta>1.2?'⚠ Molto aggressivo':R.beta<0.7?'🛡 Difensivo':'Nella norma'}</div></div>`:''}
+      <div class="pf-metric"><div class="pf-metric-lbl">Asset effettivi <button class="info-btn pf-info" data-tip="pf_effn">i</button></div><div class="pf-metric-val" style="color:${R.effN>=4?'var(--g)':R.effN>=2?'var(--y)':'var(--r)'}">${R.effN.toFixed(1)}</div><div class="pf-metric-sub">diversificazione reale</div></div>
+      <div class="pf-metric"><div class="pf-metric-lbl">VaR ${(R.conf*100).toFixed(0)}% (1 giorno) <button class="info-btn pf-info" data-tip="pf_var">i</button></div><div class="pf-metric-val" style="color:var(--r)">-${(R.varDaily*100).toFixed(2)}%</div><div class="pf-metric-sub">CVaR: -${(R.cvarDaily*100).toFixed(2)}%</div></div>
+      <div class="pf-metric"><div class="pf-metric-lbl">Calmar ratio <button class="info-btn pf-info" data-tip="pf_calmar">i</button></div><div class="pf-metric-val" style="color:${R.calmar>=1?'var(--g)':R.calmar>=0.5?'var(--y)':'var(--r)'}">${R.calmar.toFixed(2)}</div><div class="pf-metric-sub">rend./drawdown</div></div>
+      <div class="pf-metric"><div class="pf-metric-lbl">Rendimento reale <button class="info-btn pf-info" data-tip="pf_real">i</button></div><div class="pf-metric-val" style="color:${col(R.realRet)}">${pfFmtPct(R.realRet)}</div><div class="pf-metric-sub">al netto inflaz. ${(R.infl*100).toFixed(1)}%</div></div>
+      ${R.posMonths!=null?`<div class="pf-metric"><div class="pf-metric-lbl">Mesi positivi <button class="info-btn pf-info" data-tip="pf_months">i</button></div><div class="pf-metric-val" style="color:${R.posMonths>=0.6?'var(--g)':R.posMonths>=0.5?'var(--y)':'var(--r)'}">${(R.posMonths*100).toFixed(0)}%</div><div class="pf-metric-sub">frequenza storica</div></div>`:''}
     </div>
 
     <div class="pf-section">

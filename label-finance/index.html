@@ -26,6 +26,8 @@
     <nav class="nav">
       <button class="nav-item is-active" data-view="dashboard">Dashboard</button>
       <button class="nav-item" data-view="transactions">Movimenti</button>
+      <button class="nav-item" data-view="releases">Release</button>
+      <button class="nav-item" data-view="royalties">Royalty</button>
       <button class="nav-item" data-view="import">Importa CSV</button>
       <button class="nav-item" data-view="settings">Impostazioni</button>
     </nav>
@@ -125,6 +127,49 @@
 
       <div class="table-wrap">
         <table class="data-table data-table--full" id="table-tx"></table>
+      </div>
+    </section>
+
+    <!-- ====== RELEASES ====== -->
+    <section class="view" id="view-releases">
+      <header class="view-head">
+        <div><h1>Release</h1><p class="muted" id="rel-count-label">0 release</p></div>
+        <div class="head-actions">
+          <button class="btn btn-primary" id="btn-add-release">+ Nuova release</button>
+        </div>
+      </header>
+      <p class="muted small" style="margin-bottom:16px">Definisci catalogo, titolo e le quote di ripartizione (%) per artista. Le vendite con lo stesso <strong>catalogo</strong> useranno automaticamente queste quote nella sezione Royalty.</p>
+      <div class="releases-cards" id="releases-cards"></div>
+    </section>
+
+    <!-- ====== ROYALTIES ====== -->
+    <section class="view" id="view-royalties">
+      <header class="view-head">
+        <div><h1>Royalty</h1><p class="muted">Quanto spetta a ogni artista, calcolato sul netto delle entrate.</p></div>
+        <div class="head-actions">
+          <select id="roy-period" class="select">
+            <option value="all">Tutti i periodi</option>
+            <option value="ytd">Anno corrente</option>
+            <option value="12m">Ultimi 12 mesi</option>
+            <option value="6m">Ultimi 6 mesi</option>
+            <option value="3m">Ultimi 3 mesi</option>
+          </select>
+        </div>
+      </header>
+
+      <div class="panel">
+        <div class="panel-head"><h2>Per artista</h2>
+          <span class="muted small">Clicca un artista per il dettaglio per release.</span></div>
+        <div class="table-wrap"><table class="data-table" id="table-roy-artist"></table></div>
+      </div>
+      <div class="panel" id="roy-detail-panel" hidden>
+        <div class="panel-head"><h2 id="roy-detail-title">Dettaglio</h2>
+          <button class="btn" id="roy-detail-close" style="margin-left:auto">Chiudi</button></div>
+        <div class="table-wrap"><table class="data-table" id="table-roy-detail"></table></div>
+      </div>
+      <div class="empty-hint" id="roy-empty" hidden>
+        <p>Per calcolare le royalty servono delle release con le quote. Crea la prima release.</p>
+        <button class="btn btn-primary" data-goto="releases">Vai a Release</button>
       </div>
     </section>
 
@@ -347,6 +392,35 @@
           <button type="button" class="btn btn-primary" id="cols-done">Fatto</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- ======= MODAL: release ======= -->
+  <div class="modal" id="rel-modal" hidden>
+    <div class="modal-card">
+      <div class="modal-head"><h2 id="rel-modal-title">Nuova release</h2>
+        <button class="modal-x" id="rel-modal-close">✕</button></div>
+      <form id="rel-form" style="padding:22px">
+        <input type="hidden" id="r-id">
+        <div class="form-grid">
+          <label>Catalogo <input type="text" id="r-catalog" class="input" placeholder="SC003" required></label>
+          <label>Titolo <input type="text" id="r-title" class="input" placeholder="Nightform EP"></label>
+          <label>Anno <input type="number" id="r-year" class="input" placeholder="2026" step="1"></label>
+        </div>
+        <h3 class="splits-h">Ripartizione royalty</h3>
+        <p class="muted small">Percentuale che spetta a ogni artista. Il resto fino al 100% resta alla label.</p>
+        <div id="r-splits"></div>
+        <div class="row-inline" style="margin-top:8px">
+          <button type="button" class="btn" id="r-add-split">+ Aggiungi artista</button>
+          <span class="muted small" id="r-split-total"></span>
+        </div>
+        <div class="modal-foot" style="margin-top:18px">
+          <button type="button" class="btn btn-danger" id="r-delete" hidden>Elimina</button>
+          <span class="spacer"></span>
+          <button type="button" class="btn" id="r-cancel">Annulla</button>
+          <button type="submit" class="btn btn-primary">Salva release</button>
+        </div>
+      </form>
     </div>
   </div>
 

@@ -24,6 +24,7 @@ const DEFAULT_TX_ORDER = ['date','kind','platform','catalog','product','artist',
 const DEFAULT_TX_VISIBLE = ['date','kind','platform','catalog','product','artist','qty','net','eur'];
 const defaultData = () => ({
   transactions: [],
+  releases: [],
   rates: { EUR:1, USD:0.92, GBP:1.17, CHF:1.04 },
   mappings: {},
   txOrder: DEFAULT_TX_ORDER.slice(),
@@ -42,7 +43,7 @@ window.LF = {
   data(){ return DB; },
   applyCloud(d){ DB = Object.assign(defaultData(), d||{}); saveLocal(); reloadViews(); },
 };
-function reloadViews(){ renderDashboard(); renderTx(); renderSettings(); }
+function reloadViews(){ renderDashboard(); renderTx(); renderReleases(); renderRoyalties(); renderSettings(); }
 // integra eventuali colonne nuove non ancora presenti nell'ordine salvato
 function ensureCols(){
   DB.txOrder = DB.txOrder || DEFAULT_TX_ORDER.slice();
@@ -174,6 +175,8 @@ function goto(view){
   $$('.view').forEach(v=>v.classList.toggle('is-active',v.id==='view-'+view));
   if(view==='dashboard') renderDashboard();
   if(view==='transactions') renderTx();
+  if(view==='releases') renderReleases();
+  if(view==='royalties') renderRoyalties();
   if(view==='settings') renderSettings();
 }
 $$('.nav-item').forEach(b=>b.onclick=()=>goto(b.dataset.view));
@@ -334,6 +337,159 @@ $('#cols-reset').onclick=()=>{
   DB.txHidden=DEFAULT_TX_ORDER.filter(c=>!DEFAULT_TX_VISIBLE.includes(c));
   save(); renderColsManager(); applyTxFilters();
 };
+
+/* ============================================================================
+   RELEASE (anagrafica + quote royalty)
+   release = { id, catalog, title, year, splits:[{name, pct}] }
+   ============================================================================ */
+function releases(){ return DB.releases || (DB.releases=[]); }
+function releaseByCatalog(cat){
+  if(!cat) return null;
+  const c=cat.trim().toLowerCase();
+  return releases().find(r=>(r.catalog||'').trim().toLowerCase()===c) || null;
+}
+function renderReleases(){
+  const list=releases().slice().sort((a,b)=>(a.catalog||'').localeCompare(b.catalog||''));
+  $('#rel-count-label').textContent=`${list.length} release`;
+  $('#releases-cards').innerHTML = list.length ? list.map(r=>{
+    const tot=(r.splits||[]).reduce((s,x)=>s+(+x.pct||0),0);
+    const label=Math.max(0,100-tot);
+    const chips=(r.splits||[]).map(s=>`<span class="split-chip">${esc(s.name)} <b>${(+s.pct||0)}%</b></span>`).join('')
+      + `<span class="split-chip split-chip--label">Label <b>${label}%</b></span>`;
+    return `<div class="release-card" data-id="${r.id}">
+      <div class="release-card-head">
+        <div><span class="release-cat">${esc(r.catalog)}</span>
+          <span class="release-title">${esc(r.title)||''}</span></div>
+        <span class="muted small">${r.year||''}</span>
+      </div>
+      <div class="split-chips">${chips}</div>
+    </div>`;
+  }).join('') : '<p class="muted">Nessuna release. Creane una per iniziare a calcolare le royalty.</p>';
+  $$('#releases-cards .release-card').forEach(c=>c.onclick=()=>openRelease(c.dataset.id));
+}
+
+/* ---------- Modal release ---------- */
+function splitRowHTML(name='',pct=''){
+  return `<div class="split-row">
+    <input class="input split-name" list="artist-list" placeholder="Nome artista" value="${esc(name)}">
+    <input class="input split-pct" type="number" min="0" max="100" step="0.01" placeholder="%" value="${pct===''?'':esc(pct)}">
+    <button type="button" class="btn split-del" title="Rimuovi">✕</button>
+  </div>`;
+}
+function artistDatalist(){
+  const names=new Set();
+  releases().forEach(r=>(r.splits||[]).forEach(s=>s.name&&names.add(s.name)));
+  DB.transactions.forEach(t=>t.artist&&names.add(t.artist));
+  let dl=document.getElementById('artist-list');
+  if(!dl){ dl=document.createElement('datalist'); dl.id='artist-list'; document.body.appendChild(dl); }
+  dl.innerHTML=[...names].sort().map(n=>`<option value="${esc(n)}">`).join('');
+}
+function refreshSplitTotal(){
+  let tot=0; $$('#r-splits .split-pct').forEach(i=>tot+=(+i.value||0));
+  const el=$('#r-split-total');
+  el.textContent = `Totale artisti ${tot}% · Label ${Math.max(0,100-tot)}%` + (tot>100?' ⚠ supera 100%':'');
+  el.style.color = tot>100 ? 'var(--out)' : 'var(--muted)';
+}
+function bindSplitRows(){
+  $$('#r-splits .split-del').forEach(b=>b.onclick=()=>{ b.closest('.split-row').remove(); refreshSplitTotal(); });
+  $$('#r-splits .split-pct').forEach(i=>i.oninput=refreshSplitTotal);
+}
+function openRelease(id){
+  const r = id ? releases().find(x=>x.id===id) : null;
+  artistDatalist();
+  $('#rel-modal-title').textContent = r ? 'Modifica release' : 'Nuova release';
+  $('#r-id').value=r?.id||'';
+  $('#r-catalog').value=r?.catalog||''; $('#r-title').value=r?.title||''; $('#r-year').value=r?.year||'';
+  const splits = (r?.splits&&r.splits.length) ? r.splits : [{name:'',pct:''}];
+  $('#r-splits').innerHTML = splits.map(s=>splitRowHTML(s.name,s.pct)).join('');
+  bindSplitRows(); refreshSplitTotal();
+  $('#r-delete').hidden=!r;
+  $('#rel-modal').hidden=false;
+}
+$('#btn-add-release').onclick=()=>openRelease(null);
+$('#rel-modal-close').onclick=$('#r-cancel').onclick=()=>$('#rel-modal').hidden=true;
+$('#rel-modal').onclick=e=>{ if(e.target.id==='rel-modal') $('#rel-modal').hidden=true; };
+$('#r-add-split').onclick=()=>{ $('#r-splits').insertAdjacentHTML('beforeend',splitRowHTML()); bindSplitRows(); refreshSplitTotal(); };
+$('#r-delete').onclick=()=>{
+  const id=$('#r-id').value;
+  DB.releases=releases().filter(r=>r.id!==id); save();
+  $('#rel-modal').hidden=true; renderReleases(); renderRoyalties(); toast('Release eliminata');
+};
+$('#rel-form').onsubmit=e=>{
+  e.preventDefault();
+  const id=$('#r-id').value;
+  const splits=[];
+  $$('#r-splits .split-row').forEach(row=>{
+    const name=row.querySelector('.split-name').value.trim();
+    const pct=+row.querySelector('.split-pct').value||0;
+    if(name) splits.push({name,pct});
+  });
+  const rec={ id:id||uid(), catalog:$('#r-catalog').value.trim(), title:$('#r-title').value.trim(),
+    year:Number($('#r-year').value)||'', splits };
+  if(!rec.catalog){ toast('Inserisci il catalogo'); return; }
+  if(id){ const i=releases().findIndex(r=>r.id===id); DB.releases[i]=rec; }
+  else releases().push(rec);
+  save(); $('#rel-modal').hidden=true; renderReleases(); renderRoyalties(); toast('Release salvata');
+};
+
+/* ============================================================================
+   ROYALTY — ripartizione per artista basata sulle quote delle release
+   ============================================================================ */
+function royaltyPeriod(txs){
+  const p=$('#roy-period').value; if(p==='all') return txs;
+  const now=new Date(); let from=new Date(0);
+  if(p==='ytd') from=new Date(now.getFullYear(),0,1);
+  if(p==='12m') from=new Date(now.getFullYear(),now.getMonth()-11,1);
+  if(p==='6m') from=new Date(now.getFullYear(),now.getMonth()-5,1);
+  if(p==='3m') from=new Date(now.getFullYear(),now.getMonth()-2,1);
+  const f=from.toISOString().slice(0,10);
+  return txs.filter(t=>t.date>=f);
+}
+// calcola { artist -> {total, byRelease:{catalog->amount}} } e label total
+function computeRoyalties(){
+  const txs=royaltyPeriod(DB.transactions.filter(t=>t.kind==='income'));
+  const byArtist={}; let labelTotal=0;
+  txs.forEach(t=>{
+    const eur=toEur(t.net,t.currency);
+    const rel=releaseByCatalog(t.catalog);
+    if(!rel||!rel.splits||!rel.splits.length){ labelTotal+=eur; return; }
+    let assigned=0;
+    rel.splits.forEach(s=>{
+      const share=eur*(+s.pct||0)/100; assigned+=share;
+      const a=(byArtist[s.name] ??= {total:0, byRelease:{}});
+      a.total+=share; a.byRelease[rel.catalog]=(a.byRelease[rel.catalog]||0)+share;
+    });
+    labelTotal += eur-assigned;
+  });
+  return { byArtist, labelTotal };
+}
+function renderRoyalties(){
+  const hasRel=releases().length>0;
+  $('#roy-empty').hidden = hasRel;
+  const { byArtist, labelTotal } = computeRoyalties();
+  const rows=Object.entries(byArtist).map(([name,v])=>({name,...v})).sort((a,b)=>b.total-a.total);
+  const tbl=$('#table-roy-artist');
+  if(!hasRel){ tbl.innerHTML=''; $('#roy-detail-panel').hidden=true; return; }
+  tbl.innerHTML=`<thead><tr><th>Artista</th><th class="num">Royalty (€)</th></tr></thead>
+    <tbody>${rows.map(r=>`<tr data-artist="${esc(r.name)}" style="cursor:pointer">
+      <td>${esc(r.name)}</td><td class="num pos">${fmtMoney(r.total)}</td></tr>`).join('')}
+      <tr><td><strong>Label (quota residua)</strong></td><td class="num"><strong>${fmtMoney(labelTotal)}</strong></td></tr>
+      ${rows.length?'':'<tr><td colspan="2" class="muted">Nessuna entrata con catalogo collegato a una release.</td></tr>'}</tbody>`;
+  $$('#table-roy-artist tbody tr[data-artist]').forEach(tr=>tr.onclick=()=>showRoyaltyDetail(tr.dataset.artist,byArtist[tr.dataset.artist]));
+}
+function showRoyaltyDetail(name,data){
+  if(!data) return;
+  $('#roy-detail-title').textContent='Dettaglio — '+name;
+  const rows=Object.entries(data.byRelease).map(([cat,amt])=>({cat,amt})).sort((a,b)=>b.amt-a.amt);
+  $('#table-roy-detail').innerHTML=`<thead><tr><th>Release</th><th class="num">Royalty (€)</th></tr></thead>
+    <tbody>${rows.map(r=>{ const rel=releaseByCatalog(r.cat); const t=rel&&rel.title?` — ${esc(rel.title)}`:'';
+      return `<tr><td>${esc(r.cat)}${t}</td><td class="num pos">${fmtMoney(r.amt)}</td></tr>`; }).join('')}
+      <tr><td><strong>Totale</strong></td><td class="num pos"><strong>${fmtMoney(data.total)}</strong></td></tr></tbody>`;
+  $('#roy-detail-panel').hidden=false;
+  $('#roy-detail-panel').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+$('#roy-detail-close').onclick=()=>$('#roy-detail-panel').hidden=true;
+$('#roy-period').onchange=renderRoyalties;
 
 /* ---------- Modal movimento ---------- */
 function openTx(id){

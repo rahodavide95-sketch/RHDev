@@ -232,3 +232,19 @@ h2{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:600}
 
 /* su monitor molto grandi limita solo leggermente, restando ampio */
 @media(min-width:1800px){ .main{max-width:1680px} }
+
+/* ===== Stampa / PDF: solo la Dashboard, colori chiari ===== */
+@media print{
+  :root{ --bg:#fff; --panel:#fff; --panel-2:#f4f4f7; --line:#d8dae2; --text:#111;
+         --muted:#555; --shadow:none; color-scheme:light; }
+  body{display:block;height:auto;overflow:visible;background:#fff;color:#000}
+  .sidebar,.head-actions,.empty-hint,.toast,.modal{display:none!important}
+  .main{max-width:none;height:auto;overflow:visible;padding:0}
+  .view{display:none!important}
+  #view-dashboard{display:block!important}
+  .panel{break-inside:avoid;box-shadow:none;border:1px solid #ddd}
+  .grid-2{grid-template-columns:1fr 1fr}
+  .view-head{border-color:#ccc}
+  .view-head h1::before{display:none}
+  .bar{print-color-adjust:exact;-webkit-print-color-adjust:exact}
+}

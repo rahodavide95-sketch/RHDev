@@ -228,10 +228,10 @@ function renderDashboard(){
       <span class="bar-label">${k}</span>
     </div>`).join('') : '<p class="muted">Nessun dato nel periodo.</p>';
 
-  // by release
   groupTable('#table-release','catalog','Catalogo',txs);
-  // by platform
+  groupTable('#table-artist','artist','Artista',txs);
   groupTable('#table-platform','platform','Piattaforma',txs);
+  groupTable('#table-type','type','Tipologia',txs);
 }
 function groupTable(sel,key,label,txs){
   const g={};
@@ -246,6 +246,7 @@ function groupTable(sel,key,label,txs){
      :'<tr><td colspan="4" class="muted">—</td></tr>'}</tbody>`;
 }
 $('#dash-period').onchange=renderDashboard;
+$('#btn-print').onclick=()=>{ document.body.classList.add('printing'); window.print(); setTimeout(()=>document.body.classList.remove('printing'),500); };
 
 /* ============================================================================
    MOVIMENTI

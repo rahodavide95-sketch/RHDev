@@ -5454,7 +5454,15 @@ function pfRenderHoldings(){
     </div>`).join('');
   pfUpdateTotal();
 }
-function pfSetWeight(i,v){ PF.holdings[i].weight=Math.max(0,+v||0); pfRenderHoldings(); }
+function pfSetWeight(i,v){
+  // aggiorna SOLO il modello + etichette: NON ridisegna gli input (manterrebbe il focus → si possono digitare più cifre)
+  PF.holdings[i].weight=Math.max(0,+v||0);
+  const tot=PF.holdings.reduce((s,h)=>s+(+h.weight||0),0)||1;
+  document.querySelectorAll('#pf-holdings .pf-hold-pct').forEach((el,j)=>{
+    if(PF.holdings[j]) el.textContent=`${((+PF.holdings[j].weight||0)/tot*100).toFixed(0)}%`;
+  });
+  pfUpdateTotal();
+}
 function pfRemove(i){ PF.holdings.splice(i,1); pfRenderHoldings(); }
 function pfUpdateTotal(){
   const tot=PF.holdings.reduce((s,h)=>s+(+h.weight||0),0);

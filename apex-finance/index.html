@@ -28,6 +28,9 @@
   --radius:10px; --radius-sm:6px;
   --shadow:0 4px 20px rgba(0,0,0,.4);
   --header-h: 56px;
+  /* gutter laterale identico alla dashboard (.wrap max-width:1400 + padding 20):
+     centra il contenuto a 1400px mantenendo lo sfondo a tutta larghezza */
+  --page-gutter: max(20px, calc((100vw - 1400px) / 2 + 20px));
 }
 [data-theme="light"]{
   --bg:#f0f4f8; --bg2:#ffffff; --bg3:#e8eef5;
@@ -258,7 +261,7 @@ header{
 /* ── ANALYSIS OVERLAY ── */
 #ao{position:fixed;inset:0;z-index:300;background:var(--bg);display:none;flex-direction:column;}
 #ao.open{display:flex;}
-.ao-bar{flex-shrink:0;height:64px;display:flex;align-items:center;gap:14px;padding:0 24px;
+.ao-bar{flex-shrink:0;height:64px;display:flex;align-items:center;gap:14px;padding:0 var(--page-gutter);
   background:var(--bar-bg);backdrop-filter:var(--bar-blur);-webkit-backdrop-filter:var(--bar-blur);
   border-bottom:1px solid var(--bar-border);}
 .ao-title{flex:1;font-size:.95rem;font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -267,7 +270,7 @@ header{
   background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;
   cursor:pointer;font-size:.9rem;transition:background .15s;}
 .ao-x:hover{background:rgba(239,68,68,.35);}
-.ao-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 20px;}
+.ao-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 var(--page-gutter);}
 
 /* Search dropdown */
 .search-dropdown{
@@ -384,6 +387,7 @@ header{
 .news-ticker-track{
   display:flex;align-items:center;gap:0;
   white-space:nowrap;height:100%;
+  width:max-content; /* larghezza = contenuto reale, così translateX(-50%) sposta mezza striscia completa */
   animation:ticker-scroll 60s linear infinite;
 }
 /* pausa su hover SOLO con mouse vero: su touch lo stato :hover resta bloccato e l'animazione si ferma */
@@ -699,6 +703,7 @@ header{
   .wrap{padding:0 16px;}
 }
 @media(max-width:640px){
+  :root{--page-gutter:16px;}
   header{height:auto;padding:10px 16px;gap:8px;}
   .header-inner{flex-wrap:wrap;gap:8px;}
   .logo{font-size:.8rem;}
@@ -1202,6 +1207,10 @@ header{
   flex: 1 !important;
   overflow-y: auto !important;
 }
+/* contenuto pagina categoria allineato come la dashboard (1400 + gutter 20) */
+#cat-modal.cat-fullpage .cat-modal-hd,
+#cat-modal.cat-fullpage .cat-modal-pg{padding-left:var(--page-gutter)!important;padding-right:var(--page-gutter)!important;}
+#cat-modal.cat-fullpage .cm-row{padding-left:var(--page-gutter)!important;padding-right:var(--page-gutter)!important;}
 .cat-modal-hd{
   display:flex;flex-direction:column;gap:12px;
   padding:20px 24px 14px;flex-shrink:0;
@@ -1324,7 +1333,7 @@ header{
 .pf-modal{position:fixed;left:0;right:0;bottom:0;z-index:150;
   background:var(--bg);display:flex;flex-direction:column;overflow:hidden;}
 .pf-box{flex:1;display:flex;flex-direction:column;overflow:hidden;width:100%;max-width:100%;}
-.pf-hd{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;flex-shrink:0;}
+.pf-hd{display:flex;align-items:center;justify-content:space-between;padding:16px var(--page-gutter);flex-shrink:0;}
 .pf-hd-title{display:flex;align-items:center;gap:10px;font-size:1rem;font-weight:700;color:#fff;}
 .pf-hd-title svg{color:#93c5fd;}
 .pf-close{background:rgba(255,255,255,.1);border:none;color:#fff;width:30px;height:30px;border-radius:var(--radius-sm);
@@ -1369,8 +1378,8 @@ header{
 .pf-set-top{display:flex;align-items:center;gap:5px;min-height:16px;padding-right:20px;}
 .pf-info{width:16px!important;height:16px!important;min-width:16px;font-size:.62rem!important;line-height:1;padding:0!important;flex-shrink:0;}
 /* tasto info SEMPRE in alto a destra della card/campo, non allineato al titolo */
-.pf-metric .pf-info,.pf-set .pf-info,.pf-section-hd .pf-info{position:absolute;top:10px;right:10px;margin:0;}
-.pf-set .pf-info{top:0;right:0;}
+.pf-metric .pf-info,.pf-set .pf-info,.pf-section-hd .pf-info{position:absolute!important;top:10px!important;right:10px!important;margin:0!important;}
+.pf-set .pf-info{top:0!important;right:0!important;}
 .pf-section-hd{position:relative;}
 .pf-section-hd .pf-info{top:-2px;right:0;}
 .pf-set input,.pf-set select{padding:7px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;
@@ -1431,7 +1440,7 @@ header{
 }
 
 /* ── PORTFOLIO STEP TABS ── */
-.pf-steps{display:flex;gap:0;border-bottom:1px solid var(--border);background:var(--bg);flex-shrink:0;overflow-x:auto;}
+.pf-steps{display:flex;gap:0;border-bottom:1px solid var(--border);background:var(--bg);flex-shrink:0;overflow-x:auto;padding:0 var(--page-gutter);}
 .pf-step-tab{display:flex;align-items:center;gap:8px;padding:12px 20px;font-size:.78rem;font-weight:600;color:var(--t2);
   border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .18s;font-family:inherit;}
 .pf-step-tab:hover{color:var(--text);}
@@ -1440,9 +1449,9 @@ header{
   display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .18s;}
 .pf-step-tab.active .pf-step-num{background:var(--accent);color:#fff;}
 .pf-step-tab.done .pf-step-num{background:var(--g);color:#fff;}
-.pf-step-panel{display:none;flex:1;overflow-y:auto;padding:20px;}
+.pf-step-panel{display:none;flex:1;overflow-y:auto;padding:20px var(--page-gutter);}
 .pf-step-panel.active{display:flex;flex-direction:column;gap:16px;}
-.pf-step-panel.pf-results-panel.active{display:block;padding:18px 20px;}
+.pf-step-panel.pf-results-panel.active{display:block;padding:18px var(--page-gutter);}
 .pf-step-section{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;}
 .pf-step-section-hd{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t2);margin-bottom:14px;}
 .pf-step-actions{display:flex;align-items:center;gap:10px;margin-top:6px;}
@@ -5234,14 +5243,20 @@ async function loadNews(){
       </a><span class="news-item-sep">·</span>`;
     }).join('');
     track.innerHTML=buildItems()+buildItems();
-    // Misura DOPO il paint: su mobile scrollWidth è 0 se letto subito dopo innerHTML
-    requestAnimationFrame(()=>{
-      const totalW=track.scrollWidth/2||track.offsetWidth*5;
-      const w=window.innerWidth;
-      const speed=w<=480?220:w<=720?160:85; // px/s — più alto = più veloce
-      const dur=Math.max(6,Math.round(totalW/speed));
+    // velocità costante in px/s, ricalcolata anche al resize/rotazione schermo
+    const applySpeed=()=>{
+      const oneCopy=track.scrollWidth/2;
+      if(!oneCopy) return;
+      const coarse=window.matchMedia('(pointer:coarse)').matches; // mobile/tablet touch
+      const speed=coarse?150:90; // px/s
+      const dur=Math.max(8,Math.round(oneCopy/speed));
       track.style.animationDuration=dur+'s';
-    });
+    };
+    requestAnimationFrame(applySpeed);
+    clearTimeout(window._tickerResizeT0);
+    window._tickerResizeT0=setTimeout(applySpeed,400); // secondo tentativo se il primo misura 0
+    if(!window._tickerResizeBound){ window._tickerResizeBound=true;
+      window.addEventListener('resize',()=>{ clearTimeout(window._tickerResizeT); window._tickerResizeT=setTimeout(applySpeed,200); }); }
   }catch{
     const track=document.getElementById('news-ticker-track');
     if(track) track.innerHTML='<span class="news-ticker-loading">Notizie non disponibili</span>';
@@ -5486,15 +5501,31 @@ async function openAllMarket(exch){
   _openCatPage();
   const token=++_catLoadToken;
   try{
-    const r=await fetch(`/api/symbols?exchange=${encodeURIComponent(exch)}`,{signal:AbortSignal.timeout(18000)});
-    if(!r.ok) throw new Error();
-    const list=await r.json();
+    const r=await fetch(`/api/symbols?exchange=${encodeURIComponent(exch)}`,{signal:AbortSignal.timeout(20000)});
     if(token!==_catLoadToken) return;
-    _modalData=list.map(x=>[x.sym,x.name]);
-    document.getElementById('cat-modal-title').textContent=`${names[exch]||exch} — ${_modalData.length} titoli`;
-    _initModalControls(); renderCatPage(1);
-  }catch{
-    document.getElementById('cat-modal-body').innerHTML='<div style="padding:50px;text-align:center;color:var(--t3)">Elenco non disponibile (richiede deploy su Vercel con chiave Finnhub).</div>';
+    let list=null, errMsg='';
+    if(r.ok){
+      list=await r.json();
+      if(!Array.isArray(list)){ errMsg=(list&&list.error)||'risposta non valida'; list=null; }
+    } else {
+      try{ const j=await r.json(); errMsg=j.error||('HTTP '+r.status); }catch{ errMsg='HTTP '+r.status; }
+    }
+    if(token!==_catLoadToken) return;
+    if(list && list.length){
+      _modalData=list.map(x=>[x.sym,x.name]);
+      document.getElementById('cat-modal-title').textContent=`${names[exch]||exch} — ${_modalData.length} titoli`;
+      _initModalControls(); renderCatPage(1);
+    } else {
+      document.getElementById('cat-modal-title').textContent=`${names[exch]||exch}`;
+      document.getElementById('cat-modal-body').innerHTML=
+        `<div style="padding:40px 20px;text-align:center;color:var(--t3);line-height:1.6">`+
+        `Elenco completo non disponibile per questa borsa.<br>`+
+        `<span style="font-size:.72rem;color:var(--t3)">${errMsg?('Dettaglio: '+errMsg):'Il listino internazionale Finnhub potrebbe richiedere un piano a pagamento.'}</span></div>`;
+    }
+  }catch(e){
+    if(token!==_catLoadToken) return;
+    document.getElementById('cat-modal-body').innerHTML=
+      `<div style="padding:40px 20px;text-align:center;color:var(--t3);line-height:1.6">Errore di rete nel caricamento del listino.<br><span style="font-size:.72rem">${(e&&e.message)||''}</span></div>`;
   }
 }
 

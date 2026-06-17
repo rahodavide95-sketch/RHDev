@@ -207,5 +207,12 @@ h2{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:600}
 /* Input/select uniformi */
 .input,.select{min-height:40px}
 
+/* Campo password con occhio mostra/nascondi */
+.input-eye{position:relative;display:block}
+.input-eye .input{padding-right:42px;width:100%}
+.eye-btn{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;padding:6px;border-radius:7px;display:flex;align-items:center;justify-content:center}
+.eye-btn:hover{color:var(--text)}
+.eye-btn svg{width:18px;height:18px;display:block}
+
 /* su monitor molto grandi limita solo leggermente, restando ampio */
 @media(min-width:1800px){ .main{max-width:1680px} }

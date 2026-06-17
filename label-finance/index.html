@@ -227,7 +227,12 @@
           <div id="sync-auth" hidden>
             <div class="form-grid" style="margin-top:6px">
               <label>Email <input id="sync-email" class="input" type="email" autocomplete="username"></label>
-              <label>Password <input id="sync-pw" class="input" type="password" autocomplete="current-password"></label>
+              <label>Password
+                <span class="input-eye">
+                  <input id="sync-pw" class="input" type="password" autocomplete="current-password">
+                  <button type="button" class="eye-btn" id="sync-pw-eye" aria-label="Mostra password" title="Mostra/nascondi password"></button>
+                </span>
+              </label>
               <div class="span-2 row-inline wrap">
                 <button class="btn btn-primary" id="sync-signin">Accedi</button>
                 <button class="btn" id="sync-signup">Registrati</button>

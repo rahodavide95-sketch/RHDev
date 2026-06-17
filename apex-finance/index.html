@@ -554,6 +554,7 @@ header{
 .a-ch{font-size:.875rem;font-weight:600;margin-top:3px;}
 .a-ch.up{color:var(--g);}
 .a-ch.dn{color:var(--r);}
+.a-ch-per{color:var(--t3);font-weight:500;font-size:.72rem;white-space:nowrap;}
 
 /* Loading bar (analysis) */
 .a-loading{
@@ -694,6 +695,14 @@ header{
   text-transform:uppercase;letter-spacing:.09em;margin-bottom:12px;
 }
 .chart-wrap{position:relative;height:150px;}
+
+/* ── NO ZOOM ON INPUT FOCUS (iOS auto-zooms quando font-size < 16px) ── */
+input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size:16px;}
+@media(max-width:640px){
+  input,select,textarea,
+  .search-input,.cat-modal-search,.cat-modal-sel,.pf-search-input,
+  .pf-set input,.pf-set select,.pano-search input{font-size:16px!important;}
+}
 
 /* ── MOBILE ── */
 /* Tablet header: padding ridotto, search più ampia */
@@ -1334,7 +1343,8 @@ header{
 .pf-modal{position:fixed;left:0;right:0;bottom:0;z-index:150;
   background:var(--bg);display:flex;flex-direction:column;overflow:hidden;}
 .pf-box{flex:1;display:flex;flex-direction:column;overflow:hidden;width:100%;max-width:100%;}
-.pf-hd{display:flex;align-items:center;justify-content:space-between;padding:16px var(--page-gutter);flex-shrink:0;}
+.pf-hd{display:flex;align-items:center;justify-content:space-between;padding:16px var(--page-gutter);flex-shrink:0;
+  background:var(--bar-bg);backdrop-filter:var(--bar-blur);-webkit-backdrop-filter:var(--bar-blur);border-bottom:1px solid var(--bar-border);}
 .pf-hd-title{display:flex;align-items:center;gap:10px;font-size:1rem;font-weight:700;color:#fff;}
 .pf-hd-title svg{color:#93c5fd;}
 .pf-close{background:rgba(255,255,255,.1);border:none;color:#fff;width:30px;height:30px;border-radius:var(--radius-sm);
@@ -3940,15 +3950,53 @@ const ETF_ISIN={
   EWJ:'US4642864082',EWZ:'US4642864405',EWT:'US4642864231',FXI:'US4642864510',
   MCHI:'US4642876555',INDA:'US46431W3042',EWY:'US4642875581',
 };
+// Nome completo ufficiale degli ETF (stile justETF)
+const ETF_FULLNAME={
+  SPY:'SPDR S&P 500 ETF Trust',QQQ:'Invesco QQQ Trust (Nasdaq-100)',VTI:'Vanguard Total Stock Market ETF',
+  VOO:'Vanguard S&P 500 ETF',IVV:'iShares Core S&P 500 ETF',IWM:'iShares Russell 2000 ETF',
+  VGK:'Vanguard FTSE Europe ETF',EEM:'iShares MSCI Emerging Markets ETF',EFA:'iShares MSCI EAFE ETF',
+  ACWI:'iShares MSCI ACWI ETF',VT:'Vanguard Total World Stock ETF',VIG:'Vanguard Dividend Appreciation ETF',
+  SCHD:'Schwab U.S. Dividend Equity ETF',DIA:'SPDR Dow Jones Industrial Average ETF',MDY:'SPDR S&P MidCap 400 ETF',
+  RSP:'Invesco S&P 500 Equal Weight ETF',VNQ:'Vanguard Real Estate ETF',IEFA:'iShares Core MSCI EAFE ETF',
+  EWJ:'iShares MSCI Japan ETF',EWZ:'iShares MSCI Brazil ETF',EWY:'iShares MSCI South Korea ETF',
+  MCHI:'iShares MSCI China ETF',INDA:'iShares MSCI India ETF',IEMG:'iShares Core MSCI Emerging Markets ETF',
+  FXI:'iShares China Large-Cap ETF',EWT:'iShares MSCI Taiwan ETF',SPDW:'SPDR Portfolio Developed World ex-US ETF',
+  SPEM:'SPDR Portfolio Emerging Markets ETF',SPLG:'SPDR Portfolio S&P 500 ETF',QQQM:'Invesco Nasdaq-100 ETF',
+  SPYG:'SPDR Portfolio S&P 500 Growth ETF',SPYV:'SPDR Portfolio S&P 500 Value ETF',
+  XLK:'Technology Select Sector SPDR Fund',XLF:'Financial Select Sector SPDR Fund',XLE:'Energy Select Sector SPDR Fund',
+  XLV:'Health Care Select Sector SPDR Fund',XLI:'Industrial Select Sector SPDR Fund',XLU:'Utilities Select Sector SPDR Fund',
+  XLP:'Consumer Staples Select Sector SPDR Fund',XLY:'Consumer Discretionary Select Sector SPDR Fund',
+  XLB:'Materials Select Sector SPDR Fund',XLRE:'Real Estate Select Sector SPDR Fund',
+  SOXX:'iShares Semiconductor ETF',SMH:'VanEck Semiconductor ETF',IBB:'iShares Biotechnology ETF',
+  XBI:'SPDR S&P Biotech ETF',ICLN:'iShares Global Clean Energy ETF',BOTZ:'Global X Robotics & AI ETF',
+  ROBO:'ROBO Global Robotics & Automation ETF',FINX:'Global X FinTech ETF',HACK:'ETFMG Prime Cyber Security ETF',
+  CIBR:'First Trust NASDAQ Cybersecurity ETF',ARKK:'ARK Innovation ETF',VB:'Vanguard Small-Cap ETF',
+  VEA:'Vanguard FTSE Developed Markets ETF',VPL:'Vanguard FTSE Pacific ETF',
+  // Bond
+  TLT:'iShares 20+ Year Treasury Bond ETF',IEF:'iShares 7-10 Year Treasury Bond ETF',SHY:'iShares 1-3 Year Treasury Bond ETF',
+  HYG:'iShares iBoxx $ High Yield Corporate Bond ETF',AGG:'iShares Core U.S. Aggregate Bond ETF',
+  LQD:'iShares iBoxx $ Investment Grade Corporate Bond ETF',BND:'Vanguard Total Bond Market ETF',
+  EMB:'iShares J.P. Morgan USD Emerging Markets Bond ETF',BNDX:'Vanguard Total International Bond ETF',
+  VTIP:'Vanguard Short-Term Inflation-Protected Securities ETF',JNK:'SPDR Bloomberg High Yield Bond ETF',
+  MUB:'iShares National Muni Bond ETF',TIP:'iShares TIPS Bond ETF',VCSH:'Vanguard Short-Term Corporate Bond ETF',
+  VCIT:'Vanguard Intermediate-Term Corporate Bond ETF',VCLT:'Vanguard Long-Term Corporate Bond ETF',
+  BKLN:'Invesco Senior Loan ETF',GOVT:'iShares U.S. Treasury Bond ETF',VGSH:'Vanguard Short-Term Treasury ETF',
+  VGIT:'Vanguard Intermediate-Term Treasury ETF',VGLT:'Vanguard Long-Term Treasury ETF',
+  SCHP:'Schwab U.S. TIPS ETF',STIP:'iShares 0-5 Year TIPS Bond ETF',FLOT:'iShares Floating Rate Bond ETF',
+  JPST:'JPMorgan Ultra-Short Income ETF',
+};
 
 function renderCmRow(el,ticker,name,score){
   const c=score!=null?sc(score):null;
   const isETFcat=_modalId==='t-etf-az'||_modalId==='t-etf-bond';
   const isin=isETFcat?ETF_ISIN[ticker]:null;
+  const full=isETFcat?ETF_FULLNAME[ticker]:null;
+  const displayName=full||name;
+  const sub=isETFcat?[`Ticker: <b style="color:var(--t2)">${ticker}</b>`,isin?`ISIN: ${isin}`:null].filter(Boolean).join(' · '):'';
   el.innerHTML=`
     ${logoHTML(ticker,32)}
     <span class="cm-ticker">${ticker}</span>
-    <span class="cm-name">${name}${isin?`<br><span style="font-size:.62rem;color:var(--t3);font-weight:400">ISIN: ${isin}</span>`:''}</span>
+    <span class="cm-name">${displayName}${sub?`<br><span style="font-size:.64rem;color:var(--t3);font-weight:400">${sub}</span>`:''}</span>
     <span class="cm-bar"><span class="cm-bar-f" style="width:${score??0}%;background:${c||'transparent'}"></span></span>
     ${score!=null?`<span class="cm-score" style="color:${c}">${score}</span>`:'<span class="cm-noscore">—</span>'}
   `;
@@ -4535,7 +4583,7 @@ async function analyze(ticker){
     (()=>{const lg=document.getElementById('a-logo');const tmp=document.createElement('div');tmp.innerHTML=logoHTML(ticker,48);const src=tmp.querySelector('img')?.src||'';const fb=tmp.querySelector('img')?.getAttribute('onerror')?.match(/this\.src='([^']+)'/)?.[1]||'';lg.src=src;lg.onerror=()=>{if(fb)lg.src=fb;};})();
     document.getElementById('a-price').textContent=(meta.currency||'')+' '+fmt(cur);
     const chEl=document.getElementById('a-ch');
-    chEl.textContent=`${chA>=0?'+':''}${fmt(chA)} (${chP>=0?'+':''}${chP.toFixed(2)}%)`;
+    chEl.innerHTML=`${chA>=0?'+':''}${fmt(chA)} (${chP>=0?'+':''}${chP.toFixed(2)}%) <span class="a-ch-per">· ultima seduta vs. precedente</span>`;
     chEl.className='a-ch '+(chP>=0?'up':'dn');
 
     // Signal box — funzione riutilizzabile (ricalcolata quando arrivano i fondamentali)
@@ -5097,15 +5145,22 @@ Investire gradualmente nel tempo ha due grandi vantaggi:<br>
 <i>Anche piccoli versamenti costanti, su orizzonti lunghi, fanno una differenza enorme grazie alla capitalizzazione.</i>`
   },
   pf_cagr:{
-    title:'CAGR — Rendimento Annuo Composto',
-    body:`Il <b>CAGR</b> (Compound Annual Growth Rate) è il rendimento <b>medio annuo geometrico</b> del portafoglio nel periodo storico analizzato.<br><br>
-È il tasso di crescita costante che avrebbe prodotto lo stesso risultato finale: se hai investito 10.000€ e dopo 5 anni hai 14.000€, il CAGR è circa il 6,96% annuo.<br><br>
+    title:'CAGR — Interesse Annuo Medio (Composto)',
+    body:`Il <b>CAGR</b> (Compound Annual Growth Rate) è l'<b>interesse annuo medio</b> che il tuo portafoglio ha realmente prodotto nel periodo storico analizzato. È "composto" perché tiene conto del fatto che ogni anno i guadagni si reinvestono e generano altri guadagni (effetto interesse-su-interesse).<br><br>
+<b>Come viene calcolato — passo per passo:</b><br>
+1️⃣ Scarichiamo i <b>prezzi storici giornalieri reali</b> di ogni asset (fonte: Yahoo Finance).<br>
+2️⃣ Allineiamo tutti gli asset sulle <b>giornate in comune</b> e calcoliamo il rendimento giornaliero del portafoglio usando i <b>pesi che hai impostato</b> (ribilanciati ogni giorno).<br>
+3️⃣ Moltiplichiamo tutti i rendimenti giornalieri tra loro per ottenere la <b>crescita totale</b> del periodo (es. ×1,62 = +62% complessivo).<br>
+4️⃣ Trasformiamo quella crescita totale in un <b>tasso annuo equivalente</b> con la formula:<br>
+<span style="font-family:monospace;background:var(--bg3);padding:2px 6px;border-radius:4px;display:inline-block;margin:4px 0">CAGR = (Crescita totale)<sup>(252 ÷ giorni)</sup> − 1</span><br>
+(252 = giorni di borsa in un anno).<br><br>
+<b>Esempio concreto:</b> se 10.000€ diventano 16.200€ in 5 anni, il valore totale è cresciuto del +62%, ma l'<b>interesse annuo medio è circa +10,1%</b> — perché ogni anno cresce sul montante dell'anno prima.<br><br>
 <b>Come interpretarlo:</b><br>
-• <b>&gt; 10%</b> → Eccellente (storicamente raro e difficile da mantenere nel lungo periodo)<br>
+• <b>&gt; 10%</b> → Eccellente (raro e difficile da mantenere nel lungo periodo)<br>
 • <b>6–10%</b> → Buono, in linea con i mercati azionari storici<br>
 • <b>3–6%</b> → Nella norma per portafogli bilanciati<br>
-• <b>&lt; 3%</b> → Sotto l'inflazione — potresti perdere potere d'acquisto<br><br>
-<i>⚠ Attenzione: è calcolato sui dati <u>storici</u> del periodo selezionato. Non è una garanzia di rendimento futuro.</i>`
+• <b>&lt; 3%</b> → Sotto l'inflazione — rischi di perdere potere d'acquisto<br><br>
+<i>⚠ È calcolato sui dati <u>storici</u> reali del periodo disponibile (indicato sotto il valore). Il passato non garantisce il futuro: serve a capire come il portafoglio si è comportato, non come si comporterà.</i>`
   },
   pf_vol:{
     title:'Volatilità Annua',
@@ -6064,8 +6119,7 @@ function pfDeleteScenario(i){
   const all=pfGetScenarios(); all.splice(i,1); localStorage.setItem(PF_STORE,JSON.stringify(all));
   document.querySelector('.pf-cmp-backdrop')?.remove(); pfShowCompare();
 }
-function pfExportCSV(){
-  if(!_pfLastR) return;
+function pfBuildCSV(){
   const R=_pfLastR;
   let csv='APEX Finance — Report Portafoglio\n\n';
   csv+='Asset,Peso %\n';
@@ -6084,9 +6138,31 @@ function pfExportCSV(){
   csv+=`CVaR,${(R.cvarDaily*100).toFixed(2)}%\n`;
   csv+='\nProiezione Monte Carlo (anno,p5,p25,p50,p75,p95)\n';
   R.mc.bands.forEach((b,y)=>{ csv+=`${y},${b.p5.toFixed(0)},${b.p25.toFixed(0)},${b.p50.toFixed(0)},${b.p75.toFixed(0)},${b.p95.toFixed(0)}\n`; });
-  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  return csv;
+}
+// Mostra il report in un overlay IN-APP (con X per chiudere): così tornando indietro non si perde nulla
+function pfExportCSV(){
+  if(!_pfLastR) return;
+  const csv=pfBuildCSV();
+  const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const html=`<div class="pf-cmp-backdrop" onclick="if(event.target===this)this.remove()">
+    <div class="pf-cmp-box">
+      <div class="pf-cmp-hd">Report portafoglio (CSV) <button class="pf-close" onclick="this.closest('.pf-cmp-backdrop').remove()">✕</button></div>
+      <p style="font-size:.74rem;color:var(--t2);margin:0 0 10px;line-height:1.5">Anteprima del report. Premi <b>Scarica file CSV</b> per salvarlo, oppure la <b>✕</b> per chiudere senza perdere la simulazione.</p>
+      <pre style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:.7rem;line-height:1.45;max-height:50vh;overflow:auto;white-space:pre;color:var(--text)">${esc(csv)}</pre>
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+        <button class="pf-calc-btn" style="margin:0;max-width:220px" onclick="pfDownloadCSV()">⬇ Scarica file CSV</button>
+        <button class="pf-mini-btn" onclick="this.closest('.pf-cmp-backdrop').remove()">Chiudi</button>
+      </div>
+    </div></div>`;
+  const div=document.createElement('div'); div.innerHTML=html; document.body.appendChild(div.firstElementChild);
+}
+function pfDownloadCSV(){
+  if(!_pfLastR) return;
+  const blob=new Blob([pfBuildCSV()],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-  a.download='apex-portafoglio.csv'; a.click(); URL.revokeObjectURL(a.href);
+  a.download='apex-portafoglio.csv'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 }
 
 function pfDrawCharts(R){

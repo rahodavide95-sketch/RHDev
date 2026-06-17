@@ -17,7 +17,8 @@ Nessun codice ancora scritto.
 label-finance/
 ├── README.md            ← questo file (mappa del progetto)
 ├── docs/                ← documentazione
-│   └── PROGETTO.md      ← documento di progetto completo (LEGGI QUESTO)
+│   ├── PROGETTO.md      ← documento di progetto completo (LEGGI QUESTO)
+│   └── SICUREZZA-PRIVACY.md  ← sicurezza dati e GDPR
 ├── app/                 ← l'applicazione (ancora vuota)
 │   ├── frontend/        ← interfaccia: ciò che si vede e si usa nel browser
 │   └── backend/         ← "cervello": legge i CSV, calcola, parla con le API

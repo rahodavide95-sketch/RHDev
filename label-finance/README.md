@@ -8,8 +8,8 @@ un'etichetta discografica, con import automatico da CSV e API (Bandcamp, ecc.).
 
 ## Stato
 
-Fase 0 — **progettazione**. Per ora c'è solo il documento di progetto.
-Nessun codice ancora scritto.
+Fase 1 — **MVP personale pronto** (`app/frontend/`): app browser single-user con
+import CSV, dashboard entrate/uscite e backup locale. Dati solo sul dispositivo.
 
 ## Come sono organizzate le cartelle
 
@@ -19,9 +19,9 @@ label-finance/
 ├── docs/                ← documentazione
 │   ├── PROGETTO.md      ← documento di progetto completo (LEGGI QUESTO)
 │   └── SICUREZZA-PRIVACY.md  ← sicurezza dati e GDPR
-├── app/                 ← l'applicazione (ancora vuota)
-│   ├── frontend/        ← interfaccia: ciò che si vede e si usa nel browser
-│   └── backend/         ← "cervello": legge i CSV, calcola, parla con le API
+├── app/
+│   ├── frontend/        ← APP MVP (index.html, app.js, style.css) — pronta
+│   └── backend/         ← futuro (SaaS multi-utente), ancora vuoto
 └── data/
     └── samples/         ← esempi di CSV (Bandcamp, distributore) per i test
 ```

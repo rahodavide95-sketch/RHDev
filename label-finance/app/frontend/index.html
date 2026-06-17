@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Label Finance — Gestionale Etichetta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ======= SIDEBAR ======= -->
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-dot"></span>
+      <span class="brand-name">Label<strong>Finance</strong></span>
+    </div>
+    <nav class="nav">
+      <button class="nav-item is-active" data-view="dashboard">Dashboard</button>
+      <button class="nav-item" data-view="transactions">Movimenti</button>
+      <button class="nav-item" data-view="import">Importa CSV</button>
+      <button class="nav-item" data-view="settings">Impostazioni</button>
+    </nav>
+    <div class="sidebar-foot">
+      <span class="badge-local">● Dati salvati sul tuo dispositivo</span>
+    </div>
+  </aside>
+
+  <!-- ======= MAIN ======= -->
+  <main class="main">
+
+    <!-- ====== DASHBOARD ====== -->
+    <section class="view is-active" id="view-dashboard">
+      <header class="view-head">
+        <div>
+          <h1>Dashboard</h1>
+          <p class="muted" id="dash-range-label">Tutti i periodi</p>
+        </div>
+        <div class="head-actions">
+          <select id="dash-period" class="select">
+            <option value="all">Tutti i periodi</option>
+            <option value="ytd">Anno corrente</option>
+            <option value="12m">Ultimi 12 mesi</option>
+            <option value="6m">Ultimi 6 mesi</option>
+            <option value="3m">Ultimi 3 mesi</option>
+          </select>
+        </div>
+      </header>
+
+      <div class="kpi-grid">
+        <div class="kpi kpi--in">
+          <span class="kpi-label">Entrate</span>
+          <span class="kpi-value" id="kpi-income">€0,00</span>
+        </div>
+        <div class="kpi kpi--out">
+          <span class="kpi-label">Uscite</span>
+          <span class="kpi-value" id="kpi-expense">€0,00</span>
+        </div>
+        <div class="kpi kpi--net">
+          <span class="kpi-label">Margine netto</span>
+          <span class="kpi-value" id="kpi-net">€0,00</span>
+        </div>
+        <div class="kpi">
+          <span class="kpi-label">Movimenti</span>
+          <span class="kpi-value" id="kpi-count">0</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>Entrate vs Uscite per mese</h2></div>
+        <div class="chart" id="chart-monthly"></div>
+      </div>
+
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-head"><h2>Per release / catalogo</h2></div>
+          <div class="table-wrap"><table class="data-table" id="table-release"></table></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h2>Per piattaforma</h2></div>
+          <div class="table-wrap"><table class="data-table" id="table-platform"></table></div>
+        </div>
+      </div>
+
+      <div class="empty-hint" id="dash-empty" hidden>
+        <p>Nessun dato ancora. Importa un CSV o aggiungi un movimento per iniziare.</p>
+        <button class="btn btn-primary" data-goto="import">Importa CSV</button>
+      </div>
+    </section>
+
+    <!-- ====== TRANSACTIONS ====== -->
+    <section class="view" id="view-transactions">
+      <header class="view-head">
+        <div><h1>Movimenti</h1><p class="muted" id="tx-count-label">0 movimenti</p></div>
+        <div class="head-actions">
+          <button class="btn" id="btn-add-expense">+ Uscita</button>
+          <button class="btn btn-primary" id="btn-add-income">+ Entrata</button>
+        </div>
+      </header>
+
+      <div class="toolbar">
+        <input type="search" id="tx-search" class="input" placeholder="Cerca prodotto, artista, catalogo…">
+        <select id="tx-filter-kind" class="select">
+          <option value="">Tutti i tipi</option>
+          <option value="income">Solo entrate</option>
+          <option value="expense">Solo uscite</option>
+        </select>
+        <select id="tx-filter-platform" class="select"><option value="">Tutte le piattaforme</option></select>
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table data-table--full" id="table-tx"></table>
+      </div>
+    </section>
+
+    <!-- ====== IMPORT ====== -->
+    <section class="view" id="view-import">
+      <header class="view-head"><div><h1>Importa CSV</h1>
+        <p class="muted">Carica un file da Bandcamp, dal distributore o da qualsiasi piattaforma. Mappi le colonne una volta.</p></div></header>
+
+      <div class="panel">
+        <div class="import-drop" id="import-drop">
+          <input type="file" id="file-input" accept=".csv,.txt,text/csv" hidden>
+          <p><strong>Trascina qui il CSV</strong> oppure <button class="link" id="browse-btn">scegli un file</button></p>
+          <p class="muted small">Vengono lette le prime righe per riconoscere le colonne. Nulla viene caricato online.</p>
+        </div>
+      </div>
+
+      <div id="import-config" hidden>
+        <div class="panel">
+          <div class="panel-head"><h2>1 · Impostazioni file</h2></div>
+          <div class="form-grid">
+            <label>Origine (preset)
+              <div class="row-inline">
+                <select id="map-preset" class="select"><option value="">— nuovo —</option></select>
+                <input id="map-preset-name" class="input" placeholder="es. Bandcamp">
+                <button class="btn" id="save-preset">Salva preset</button>
+              </div>
+            </label>
+            <label>Tipo movimento
+              <select id="map-kind" class="select">
+                <option value="income">Entrata (vendite)</option>
+                <option value="expense">Uscita (spese)</option>
+              </select>
+            </label>
+            <label>Separatore
+              <select id="map-delim" class="select">
+                <option value="auto">Automatico</option>
+                <option value=",">Virgola ,</option>
+                <option value=";">Punto e virgola ;</option>
+                <option value="\t">Tab</option>
+              </select>
+            </label>
+            <label>Formato data
+              <select id="map-datefmt" class="select">
+                <option value="auto">Automatico</option>
+                <option value="dmy">Giorno/Mese/Anno</option>
+                <option value="mdy">Mese/Giorno/Anno (es. Bandcamp)</option>
+                <option value="ymd">Anno-Mese-Giorno</option>
+              </select>
+            </label>
+            <label>Valuta predefinita
+              <input id="map-currency" class="input" placeholder="EUR" value="EUR">
+            </label>
+            <label>Piattaforma predefinita
+              <input id="map-platform" class="input" placeholder="es. Bandcamp">
+            </label>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h2>2 · Associa le colonne</h2>
+            <span class="muted small">Indica quale colonna del file corrisponde a ciascun campo.</span></div>
+          <div class="map-grid" id="map-fields"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h2>3 · Anteprima</h2>
+            <span class="muted small" id="preview-count"></span></div>
+          <div class="table-wrap"><table class="data-table" id="preview-table"></table></div>
+          <div class="panel-foot">
+            <button class="btn" id="import-cancel">Annulla</button>
+            <button class="btn btn-primary" id="import-confirm">Importa movimenti</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== SETTINGS ====== -->
+    <section class="view" id="view-settings">
+      <header class="view-head"><div><h1>Impostazioni</h1>
+        <p class="muted">Tassi di cambio, backup e gestione dati.</p></div></header>
+
+      <div class="panel">
+        <div class="panel-head"><h2>Tassi di cambio → EUR</h2>
+          <span class="muted small">Usati per convertire le valute in euro nei totali.</span></div>
+        <div class="rates-grid" id="rates-grid"></div>
+        <div class="panel-foot">
+          <div class="row-inline">
+            <input id="rate-cur" class="input" placeholder="USD" maxlength="3">
+            <input id="rate-val" class="input" placeholder="0.92" type="number" step="0.0001">
+            <button class="btn" id="add-rate">Aggiungi valuta</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>Backup & dati</h2></div>
+        <div class="panel-body">
+          <p class="muted small">I dati sono salvati solo su questo dispositivo/browser. Esporta un backup regolarmente.</p>
+          <div class="row-inline wrap">
+            <button class="btn" id="export-json">⤓ Esporta backup (.json)</button>
+            <button class="btn" id="export-csv">⤓ Esporta movimenti (.csv)</button>
+            <button class="btn" id="import-json">⤴ Ripristina backup</button>
+            <input type="file" id="json-input" accept=".json" hidden>
+            <button class="btn btn-danger" id="wipe">Cancella tutti i dati</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ======= MODAL: movimento ======= -->
+  <div class="modal" id="tx-modal" hidden>
+    <div class="modal-card">
+      <div class="modal-head"><h2 id="tx-modal-title">Nuovo movimento</h2>
+        <button class="modal-x" id="tx-modal-close">✕</button></div>
+      <form id="tx-form" class="form-grid">
+        <input type="hidden" id="f-id">
+        <input type="hidden" id="f-kind">
+        <label>Data <input type="date" id="f-date" class="input" required></label>
+        <label>Piattaforma <input type="text" id="f-platform" class="input" placeholder="Bandcamp, DistroKid…"></label>
+        <label>Tipologia
+          <select id="f-type" class="select">
+            <option value="digital">Digitale</option>
+            <option value="physical">Fisico</option>
+            <option value="streaming">Streaming</option>
+            <option value="merch">Merch</option>
+            <option value="expense">Spesa</option>
+            <option value="other">Altro</option>
+          </select>
+        </label>
+        <label>Catalogo <input type="text" id="f-catalog" class="input" placeholder="SC003"></label>
+        <label>Prodotto / Titolo <input type="text" id="f-product" class="input"></label>
+        <label>Artista <input type="text" id="f-artist" class="input"></label>
+        <label>ISRC / UPC <input type="text" id="f-code" class="input"></label>
+        <label>Quantità <input type="number" id="f-qty" class="input" value="1" step="1"></label>
+        <label>Lordo <input type="number" id="f-gross" class="input" step="0.01"></label>
+        <label>Commissioni <input type="number" id="f-fees" class="input" step="0.01"></label>
+        <label>Netto <input type="number" id="f-net" class="input" step="0.01" required></label>
+        <label>Valuta <input type="text" id="f-currency" class="input" value="EUR" maxlength="3"></label>
+        <label class="span-2">Nota <input type="text" id="f-note" class="input"></label>
+        <div class="modal-foot span-2">
+          <button type="button" class="btn btn-danger" id="f-delete" hidden>Elimina</button>
+          <span class="spacer"></span>
+          <button type="button" class="btn" id="f-cancel">Annulla</button>
+          <button type="submit" class="btn btn-primary">Salva</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

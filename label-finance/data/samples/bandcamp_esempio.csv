@@ -1,0 +1,4 @@
+date,artist,item name,catalog number,upc,item type,quantity,item price,sub total,transaction fee,net amount,currency
+5/12/26 7:39am,Raho,Nightform EP,SC003,8001234567890,album,1,7.00,7.00,0.30,6.70,EUR
+5/13/26 9:02am,Jacom,Deep Static,SC002,8001234567891,track,2,1.50,3.00,0.20,2.80,EUR
+5/15/26 11:20am,Raho,Nightform EP,SC003,8001234567890,album,1,7.00,7.00,0.30,6.70,USD

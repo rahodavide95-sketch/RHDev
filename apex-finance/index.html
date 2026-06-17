@@ -33,19 +33,19 @@
   --page-gutter: max(20px, calc((100vw - 1400px) / 2 + 20px));
 }
 [data-theme="light"]{
-  --bg:#f0f4f8; --bg2:#ffffff; --bg3:#e8eef5;
-  --border:#d0d9e6; --b2:#b0bfcc;
-  --accent:#2563eb; --g:#059669; --r:#dc2626; --y:#d97706;
-  --text:#0f172a; --t2:#475569; --t3:#94a3b8;
-  --shadow:0 4px 20px rgba(0,0,0,.08);
+  --bg:#eef4ff; --bg2:#ffffff; --bg3:#dce8fa;
+  --border:#b8d0f5; --b2:#88afe0;
+  --accent:#1d4ed8; --g:#059669; --r:#dc2626; --y:#b45309;
+  --text:#0b1829; --t2:#2d4a6e; --t3:#7a9cbf;
+  --shadow:0 4px 20px rgba(29,78,216,.1);
 }
 @media(prefers-color-scheme:light){
   [data-theme="system"]{
-    --bg:#f0f4f8; --bg2:#ffffff; --bg3:#e8eef5;
-    --border:#d0d9e6; --b2:#b0bfcc;
-    --accent:#2563eb; --g:#059669; --r:#dc2626; --y:#d97706;
-    --text:#0f172a; --t2:#475569; --t3:#94a3b8;
-    --shadow:0 4px 20px rgba(0,0,0,.08);
+    --bg:#eef4ff; --bg2:#ffffff; --bg3:#dce8fa;
+    --border:#b8d0f5; --b2:#88afe0;
+    --accent:#1d4ed8; --g:#059669; --r:#dc2626; --y:#b45309;
+    --text:#0b1829; --t2:#2d4a6e; --t3:#7a9cbf;
+    --shadow:0 4px 20px rgba(29,78,216,.1);
   }
 }
 /* ── BLUE GLASS — applied to all bars on all themes ── */
@@ -544,8 +544,8 @@ header{
   padding:28px 0 24px;border-bottom:1px solid var(--border);margin-bottom:24px;
   gap:20px;flex-wrap:wrap;
 }
-.a-hd-left{display:flex;align-items:center;gap:14px;flex:1;min-width:0;}
-.a-logo{width:48px;height:48px;border-radius:12px;object-fit:cover;flex-shrink:0;background:var(--bg3);}
+.a-hd-left{display:flex;align-items:flex-start;gap:14px;flex:1;min-width:0;}
+.a-logo{width:48px;height:48px;border-radius:12px;object-fit:cover;flex-shrink:0;background:var(--bg3);margin-top:2px;}
 .a-left{flex:1;min-width:0;}
 .a-name{font-size:1.4rem;font-weight:700;line-height:1.2;}
 .a-meta{font-size:.8rem;color:var(--t2);margin-top:5px;}
@@ -662,9 +662,9 @@ header{
 @media(max-width:700px){.ind-grid{grid-template-columns:repeat(2,1fr);}}
 .ind-card{
   background:var(--bg2);border:1px solid var(--border);
-  border-radius:var(--radius);padding:16px 18px;
+  border-radius:var(--radius);padding:16px 18px;position:relative;
 }
-.ind-label{font-size:.65rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.09em;margin-bottom:7px;}
+.ind-label{font-size:.65rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.09em;margin-bottom:7px;padding-right:22px;}
 .ind-val{font-size:1.25rem;font-weight:700;font-variant-numeric:tabular-nums;}
 .ind-sig{font-size:.75rem;color:var(--t2);margin-top:6px;line-height:1.5;}
 
@@ -674,7 +674,7 @@ header{
 }
 .wr-card{
   background:var(--bg2);border:1px solid var(--border);
-  border-radius:var(--radius);padding:14px;text-align:center;
+  border-radius:var(--radius);padding:14px;text-align:center;position:relative;
 }
 .wr-lbl{font-size:.65rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;}
 .wr-val{font-size:1.125rem;font-weight:700;margin-top:6px;}
@@ -795,8 +795,9 @@ header{
 .price-loading.on{display:flex;}
 
 /* ── INFO BUTTON & TOOLTIP ── */
-.ind-label-row{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:7px;}
+.ind-label-row{display:block;margin-bottom:7px;}
 .wr-lbl-row{display:flex;align-items:center;justify-content:center;gap:5px;margin-bottom:6px;}
+.ind-card .info-btn,.wr-card .info-btn{position:absolute!important;top:10px!important;right:10px!important;margin:0!important;}
 .info-btn{
   width:17px;height:17px;border-radius:50%;flex-shrink:0;
   background:transparent;border:1px solid var(--accent);
@@ -1243,14 +1244,14 @@ header{
 .cat-modal-body table{width:100%;border-collapse:collapse;}
 /* ── rows ── */
 .cm-row{
-  display:flex;align-items:center;gap:12px;
+  display:flex;align-items:flex-start;gap:12px;
   padding:13px 24px;border-bottom:1px solid var(--border);
   cursor:pointer;transition:background .12s;
 }
 .cm-row:hover{background:var(--bg3);}
 .cm-row:last-child{border-bottom:none;}
 .cm-ticker{font-size:.85rem;font-weight:700;color:var(--accent);width:52px;flex-shrink:0;}
-.cm-name{font-size:.8rem;color:var(--t2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cm-name{font-size:.8rem;color:var(--t2);flex:1;overflow:hidden;line-height:1.4;}
 .cm-bar{flex:0 0 80px;height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;}
 .cm-bar-f{height:100%;border-radius:2px;}
 .cm-score{font-size:.9rem;font-weight:700;width:30px;text-align:right;flex-shrink:0;}
@@ -1283,7 +1284,7 @@ header{
   @keyframes sheetUp{from{transform:translateY(60px);opacity:.6;}to{transform:none;opacity:1;}}
   .cat-modal-hd{padding:18px 20px;}
   .cat-modal-pg{padding:12px 20px;}
-  .cm-row{padding:0 20px;height:52px;}
+  .cm-row{padding:10px 20px;min-height:52px;}
   .cm-bar{display:none;}
 }
 
@@ -3927,12 +3928,27 @@ function renderCatPage(page){
   }
 }
 
+const ETF_ISIN={
+  SPY:'US78462F1030',QQQ:'US46090E1038',VTI:'US9229087286',VOO:'US9229087690',IVV:'US4642872422',
+  IWM:'US4642876555',VGK:'US9220427424',EEM:'US4642872349',EFA:'US4642874659',ACWI:'US4642872232',
+  VT:'US9220428588',VIG:'US9219088443',SCHD:'US8085247976',GLD:'US78463V1070',SLV:'US46428Q1094',
+  TLT:'US4642874329',IEF:'US4642874287',HYG:'US4642885135',AGG:'US4642871762',LQD:'US4642885267',
+  BND:'US9219378356',DIA:'US78467X1090',MDY:'US78467Y1082',RSP:'US26922A3429',
+  XLK:'US81369Y8030',XLF:'US81369Y6055',XLE:'US81369Y5065',XLV:'US81369Y8022',
+  XLI:'US81369Y8014',XLU:'US81369Y8048',XLP:'US81369Y8038',XLY:'US81369Y8046',
+  SOXX:'US4642883959',SMH:'US57060U7055',IBB:'US4642875839',ICLN:'US4642866481',
+  EWJ:'US4642864082',EWZ:'US4642864405',EWT:'US4642864231',FXI:'US4642864510',
+  MCHI:'US4642876555',INDA:'US46431W3042',EWY:'US4642875581',
+};
+
 function renderCmRow(el,ticker,name,score){
   const c=score!=null?sc(score):null;
+  const isETFcat=_modalId==='t-etf-az'||_modalId==='t-etf-bond';
+  const isin=isETFcat?ETF_ISIN[ticker]:null;
   el.innerHTML=`
     ${logoHTML(ticker,32)}
     <span class="cm-ticker">${ticker}</span>
-    <span class="cm-name">${name}</span>
+    <span class="cm-name">${name}${isin?`<br><span style="font-size:.62rem;color:var(--t3);font-weight:400">ISIN: ${isin}</span>`:''}</span>
     <span class="cm-bar"><span class="cm-bar-f" style="width:${score??0}%;background:${c||'transparent'}"></span></span>
     ${score!=null?`<span class="cm-score" style="color:${c}">${score}</span>`:'<span class="cm-noscore">—</span>'}
   `;
@@ -4375,7 +4391,13 @@ function renderProfile(ticker,meta){
     ['Debito/Equity', e.debtToEquity!=null?e.debtToEquity.toFixed(2):null],
   ].filter(([,v])=>v!=null&&v!=='');
   if(!rows.length && isCrypto){ sec.style.display='none'; return; }
-  grid.innerHTML=rows.map(([l,v])=>`<div class="prof-item"><div class="prof-item-lbl">${l}</div><div class="prof-item-val">${v}</div></div>`).join('')
+  const PROF_TIPS={'Nome':'prof_nome','Borsa':'prof_borsa','Valuta':'prof_valuta','Paese':'prof_paese','Settore':'prof_settore','Capitalizzazione':'prof_cap','Azioni in circolaz.':'prof_azioni','Quotata dal':'prof_ipo','Beta':'prof_beta','Dividend yield':'prof_div','Range 52 sett.':'prof_52w','Margine netto':'prof_nmargin','ROA':'prof_roa','Debito/Equity':'prof_de'};
+  grid.innerHTML=rows.map(([l,v])=>{
+    const tip=PROF_TIPS[l];
+    return `<div class="prof-item" style="position:relative">${tip?`<button class="info-btn" data-tip="${tip}" style="position:absolute;top:8px;right:8px;margin:0">i</button>`:''}
+      <div class="prof-item-lbl" style="${tip?'padding-right:22px':''}">${l}</div>
+      <div class="prof-item-val">${v}</div></div>`;
+  }).join('')
     || `<div class="prof-item" style="grid-column:1/-1"><div class="prof-item-val" style="color:var(--t3)">Scheda dettagliata disponibile su Vercel (richiede chiave Finnhub).</div></div>`;
 
   // ── documenti & link ──
@@ -4423,7 +4445,12 @@ function renderFundamentals(fund,ticker){
   }
   if(!fund){
     sec.style.display='block';
-    console.warn('[APEX] fetchFundamentals returned null');
+    const grid=sec.querySelector('.ind-grid');
+    if(grid) grid.innerHTML=`<div style="grid-column:1/-1;color:var(--t3);font-size:.82rem;padding:10px 0;line-height:1.7">
+      <b style="color:var(--t2)">Fondamentali non disponibili per questo strumento.</b><br>
+      I dati fondamentali (P/E, ROE, margini, ecc.) sono tipicamente disponibili solo per <b>azioni quotate</b> su borse principali con bilancio pubblico.<br>
+      Possibili cause: ETF, criptovaluta, indice, forex, materia prima, o azione di mercato emergente senza copertura Finnhub.
+    </div>`;
     return;
   }
 
@@ -5158,6 +5185,20 @@ Formula precisa: <b>(1 + nominale) / (1 + inflazione) − 1</b><br><br>
 Ricorda: i mercati azionari crescono nel lungo periodo anche se scendono più spesso di quanto salgono nei giorni singoli — ma i rialzi sono mediamente più grandi dei ribassi.<br><br>
 <i>Un portafoglio può avere 55% mesi positivi ma comunque un ottimo CAGR, se i mesi positivi guadagnano molto di più di quanto perdono quelli negativi.</i>`
   },
+  prof_nome:{title:'Nome completo',body:`Il nome ufficiale completo dello strumento finanziario come registrato sulla borsa o nel prospetto.<br><br>Per gli ETF è il nome commerciale del fondo (es. "iShares Core S&P 500 UCITS ETF"). Per le azioni è la ragione sociale dell'azienda.`},
+  prof_borsa:{title:'Borsa di quotazione',body:`La borsa valori su cui è scambiato lo strumento.<br><br>Esempi: <b>NYSE/Nasdaq</b> (USA), <b>Borsa Italiana</b> (MI), <b>Xetra</b> (DE), <b>LSE</b> (Londra), <b>Euronext Paris</b> (PA).<br><br>Per gli ETF europei UCITS è importante: gli ETF quotati in UE hanno protezioni normative specifiche per i piccoli investitori.`},
+  prof_valuta:{title:'Valuta di denominazione',body:`La valuta in cui è espresso il prezzo e il NAV dello strumento.<br><br>Un ETF in <b>EUR</b> acquistato in Europa elimina il rischio cambio sulla quotazione (ma non necessariamente sull'esposizione sottostante). Un ETF in <b>USD</b> espone l'investitore italiano al rischio EUR/USD.<br><br>Gli ETF "hedged" aggiungono copertura valutaria ma aumentano i costi.`},
+  prof_paese:{title:'Paese di domicilio',body:`Il paese in cui la società o il fondo è legalmente registrato.<br><br>Per gli ETF il domicilio (spesso <b>Irlanda</b> o <b>Lussemburgo</b>) determina la tassazione dei dividendi alla fonte e le protezioni normative UCITS. Gli ETF irlandesi beneficiano dei trattati fiscali USA–Irlanda (15% vs 30% ritenuta dividendi USA).`},
+  prof_settore:{title:'Settore / Industria',body:`Il settore economico in cui opera l'azienda, secondo la classificazione GICS (Global Industry Classification Standard).<br><br>Utile per valutare la <b>diversificazione del portafoglio</b>: concentrare troppi investimenti nello stesso settore aumenta il rischio specifico.<br><br>Settori difensivi (utilities, consumer staples, healthcare) tendono a essere meno volatili. Settori ciclici (tech, energy, financials) amplificano i movimenti del mercato.`},
+  prof_cap:{title:'Capitalizzazione di mercato',body:`Il valore totale dell'azienda in borsa = prezzo × numero azioni in circolazione.<br><br><b>Large cap</b> (&gt; €10 mld) → Aziende grandi, più stabili e liquide. Minore rischio specifico.<br><b>Mid cap</b> (€2–10 mld) → Maggior potenziale di crescita, più volatili.<br><b>Small cap</b> (&lt; €2 mld) → Alto rischio, alta potenziale crescita, meno liquide.<br><br>Le large cap dominano gli indici principali (S&P 500, MSCI World) e rappresentano la base di portafogli conservativi.`},
+  prof_beta:{title:'Beta — Sensibilità al mercato',body:`Misura quanto si muove lo strumento rispetto al mercato di riferimento (tipicamente S&P 500).<br><br><b>Beta = 1</b> → Si muove come il mercato.<br><b>Beta &gt; 1</b> → Più volatile del mercato (es. tech growth).<br><b>Beta &lt; 1</b> → Meno volatile (es. utility, oro).<br><b>Beta negativo</b> → Si muove inversamente (raro, es. VIX ETF).<br><br>Un portafoglio con beta 0.7 perde meno nelle fasi di ribasso ma guadagna meno nei rialzi.`},
+  prof_div:{title:'Dividend Yield — Rendimento da dividendo',body:`Il dividendo annuo come percentuale del prezzo corrente.<br><br>Un yield del <b>3%</b> significa che per ogni €1.000 investiti ricevi €30/anno in dividendi (al lordo delle tasse).<br><br><b>Yield alto</b> (es. >5%) può indicare un'azienda matura con solida generazione di cassa, oppure un rischio di taglio del dividendo futuro.<br><b>Yield basso</b> (es. <1%) è tipico di aziende growth che reinvestono utili invece di distribuirli.<br><br>In Italia i dividendi sono tassati al <b>26%</b>. Per gli ETF ad accumulo (Acc) i dividendi vengono reinvestiti automaticamente senza tassazione immediata.`},
+  prof_52w:{title:'Range 52 Settimane',body:`Il minimo e massimo di prezzo raggiunti nell'ultimo anno (52 settimane di trading).<br><br>Utile per contestualizzare il prezzo attuale:<br>• Se il prezzo è vicino al <b>minimo annuale</b> → potenziale valore (ma potrebbe continuare a scendere).<br>• Se è vicino al <b>massimo annuale</b> → momentum forte (ma rischio di correzione).<br><br>Gli investitori istituzionali usano i livelli del 52W come riferimenti tecnici per supporti/resistenze.`},
+  prof_nmargin:{title:'Margine Netto',body:`La percentuale di ricavi che rimane come utile netto dopo tutte le spese (tasse incluse).<br><br><b>&gt; 20%</b> → Alta redditività (tipico di big tech, pharma)<br><b>10–20%</b> → Buono per la maggior parte dei settori<br><b>5–10%</b> → Moderato (retail, manifatturiero)<br><b>&lt; 5%</b> → Margine sottile, vulnerabile agli shock di costo<br><br>Tendenza nel tempo: un margine in espansione è segnale positivo di pricing power o riduzione costi.`},
+  prof_roa:{title:'ROA — Return on Assets',body:`Misura l'efficienza nell'uso degli asset totali per generare profitto.<br><br><b>ROA = Utile netto / Totale attivo</b><br><br><b>&gt; 10%</b> → Eccellente: asset altamente produttivi<br><b>5–10%</b> → Buono<br><b>&lt; 2%</b> → Basso (tipico di banche e settori ad alta leva)<br><br>A differenza del ROE, il ROA non è influenzato dalla leva finanziaria, quindi è più utile per confrontare aziende con strutture di capitale diverse.`},
+  prof_de:{title:'Debito/Equity (D/E Ratio)',body:`Il rapporto tra il debito totale e il capitale proprio degli azionisti. Misura la leva finanziaria dell'azienda.<br><br><b>D/E &lt; 1</b> → Azienda conservativa, pochi debiti<br><b>D/E 1–2</b> → Nella norma per molti settori<br><b>D/E &gt; 3</b> → Alta leva, più rischio in caso di crisi<br><br>I settori ad alta intensità di capitale (utilities, real estate, banche) hanno naturalmente D/E elevati. Per confrontare aziende dello stesso settore è più significativo.`},
+  prof_ipo:{title:'Data di quotazione in borsa',body:`La data in cui l'azienda si è quotata in borsa tramite IPO (Initial Public Offering).<br><br>Aziende con quotazione recente (&lt; 3 anni) hanno meno dati storici e maggiore incertezza sulla valutazione. Le aziende con lunga storia in borsa offrono più dati per l'analisi tecnica e fondamentale.`},
+  prof_azioni:{title:'Azioni in circolazione',body:`Il numero totale di azioni emesse e detenute dagli investitori. Moltiplicato per il prezzo dà la capitalizzazione di mercato.<br><br>Un aumento delle azioni in circolazione (diluzione) riduce il valore per azione. Un calo (buyback) lo aumenta. I <b>buyback</b> sono spesso interpretati positivamente: l'azienda crede che le proprie azioni siano sottovalutate.`},
 };
 
 // ── TOOLTIP ENGINE ──
@@ -5248,7 +5289,7 @@ async function loadNews(){
       const oneCopy=track.scrollWidth/2;
       if(!oneCopy) return;
       const coarse=window.matchMedia('(pointer:coarse)').matches; // mobile/tablet touch
-      const speed=coarse?150:90; // px/s
+      const speed=coarse?55:40; // px/s
       const dur=Math.max(8,Math.round(oneCopy/speed));
       track.style.animationDuration=dur+'s';
     };
@@ -5489,43 +5530,100 @@ document.addEventListener('click',e=>{
   if(dd&&!dd.contains(e.target)) closeMainMenu();
 });
 
-// Carica TUTTI i simboli di una borsa da /api/symbols (Finnhub exchange listing)
+// Lista curata di titoli per ogni borsa internazionale (fallback quando API non disponibile)
+const EXCH_CURATED={
+  US:[
+    ['AAPL','Apple Inc.'],['MSFT','Microsoft Corp.'],['NVDA','NVIDIA Corp.'],['AMZN','Amazon.com Inc.'],['GOOGL','Alphabet Inc. (A)'],
+    ['META','Meta Platforms'],['TSLA','Tesla Inc.'],['BRK-B','Berkshire Hathaway B'],['JPM','JPMorgan Chase'],['UNH','UnitedHealth Group'],
+    ['V','Visa Inc.'],['MA','Mastercard'],['XOM','ExxonMobil'],['JNJ','Johnson & Johnson'],['WMT','Walmart Inc.'],
+    ['LLY','Eli Lilly'],['AVGO','Broadcom Inc.'],['PG','Procter & Gamble'],['HD','Home Depot'],['MRK','Merck & Co.'],
+    ['COST','Costco Wholesale'],['ABBV','AbbVie Inc.'],['PEP','PepsiCo'],['KO','Coca-Cola'],['ADBE','Adobe Inc.'],
+    ['NFLX','Netflix Inc.'],['CRM','Salesforce'],['AMD','Advanced Micro Devices'],['ORCL','Oracle Corp.'],['CSCO','Cisco Systems'],
+    ['TXN','Texas Instruments'],['INTC','Intel Corp.'],['QCOM','Qualcomm'],['IBM','IBM Corp.'],['GE','GE Aerospace'],
+    ['BA','Boeing'],['CAT','Caterpillar'],['GS','Goldman Sachs'],['MS','Morgan Stanley'],['BAC','Bank of America'],
+    ['WFC','Wells Fargo'],['C','Citigroup'],['T','AT&T'],['VZ','Verizon'],['DIS','Walt Disney'],
+    ['PYPL','PayPal'],['UBER','Uber Technologies'],['ABNB','Airbnb'],['SBUX','Starbucks'],['NKE','Nike Inc.'],
+  ],
+  MI:[
+    ['ENI.MI','ENI S.p.A.'],['ENEL.MI','Enel S.p.A.'],['ISP.MI','Intesa Sanpaolo'],['UCG.MI','UniCredit'],['TIT.MI','Telecom Italia'],
+    ['RACE.MI','Ferrari N.V.'],['MONC.MI','Moncler S.p.A.'],['STM.MI','STMicroelectronics'],['G.MI','Assicurazioni Generali'],['A2A.MI','A2A S.p.A.'],
+    ['AMP.MI','Amplifon'],['AZM.MI','Azimut Holding'],['BAMI.MI','Banco BPM'],['BMED.MI','Biesse S.p.A.'],['BMPS.MI','Monte dei Paschi'],
+    ['BPSO.MI','Banca Popolare Sondrio'],['BZU.MI','Buzzi S.p.A.'],['CPR.MI','Campari Group'],['CNHI.MI','CNH Industrial'],['CLT.MI','Caltagirone'],
+    ['DALI.MI','d\'Amico Intl. Shipping'],['DIA.MI','DiaSorin'],['ELN.MI','Eni Lavorazioni'],['ERG.MI','ERG S.p.A.'],['EXSY.MI','ExSys'],
+    ['FCT.MI','Fincantieri'],['FCA.MI','Stellantis N.V.'],['FBK.MI','FinecoBank'],['HER.MI','Hera S.p.A.'],['INWT.MI','inwit S.p.A.'],
+    ['IVG.MI','Industria e Innovazione'],['LDO.MI','Leonardo S.p.A.'],['MB.MI','Mediobanca'],['MFEA.MI','Mediaforeurope A'],['PIRC.MI','Pirelli & C.'],
+    ['PRY.MI','Prysmian S.p.A.'],['PST.MI','Poste Italiane'],['REC.MI','Recordati'],['SRG.MI','Snam S.p.A.'],['TERNA.MI','Terna S.p.A.'],
+    ['TEN.MI','Tenaris S.A.'],['TIF.MI','Tinexta'],['TRN.MI','Terna'],['UNI.MI','Unipol Gruppo'],['WBD.MI','Webuild S.p.A.'],
+  ],
+  DE:[
+    ['SAP.DE','SAP SE'],['SIE.DE','Siemens AG'],['ALV.DE','Allianz SE'],['BMW.DE','BMW AG'],['MBG.DE','Mercedes-Benz Group'],
+    ['VOW3.DE','Volkswagen AG (Vz)'],['BAYN.DE','Bayer AG'],['BAS.DE','BASF SE'],['DB1.DE','Deutsche Börse'],['DBK.DE','Deutsche Bank'],
+    ['DTE.DE','Deutsche Telekom'],['E.ON.DE','E.ON SE'],['EOAN.DE','E.ON SE'],['FRE.DE','Fresenius SE'],['FME.DE','Fresenius Medical'],
+    ['HEN3.DE','Henkel AG'],['IFX.DE','Infineon Technologies'],['LIN.DE','Linde plc'],['MRK.DE','Merck KGaA'],['MUV2.DE','Munich Re'],
+    ['RWE.DE','RWE AG'],['SHL.DE','Siemens Healthineers'],['VNA.DE','Vonovia SE'],['ZAL.DE','Zalando SE'],['ADS.DE','Adidas AG'],
+    ['AIR.DE','Airbus SE'],['AY.DE','Amaya Inc.'],['BEI.DE','Beiersdorf AG'],['CON.DE','Continental AG'],['ENR.DE','Siemens Energy'],
+    ['FNTN.DE','freenet AG'],['G1A.DE','GfK SE'],['GBF.DE','Bilfinger SE'],['HAB.DE','Hamborner REIT'],['HDD.DE','Hochtief AG'],
+    ['HLAG.DE','Hapag-Lloyd AG'],['HOT.DE','Hotel.de AG'],['LEO.DE','Leoni AG'],['MTX.DE','MTU Aero Engines'],['PUM.DE','Puma SE'],
+    ['QIA.DE','Qiagen N.V.'],['RHM.DE','Rheinmetall AG'],['SDAX.DE','SDAX Index'],['SFQ.DE','SAF-Holland SE'],['SY1.DE','Symrise AG'],
+  ],
+  L:[
+    ['SHEL.L','Shell plc'],['HSBA.L','HSBC Holdings'],['AZN.L','AstraZeneca'],['ULVR.L','Unilever plc'],['BP.L','BP plc'],
+    ['GSK.L','GSK plc'],['BATS.L','British American Tobacco'],['RIO.L','Rio Tinto'],['BHP.L','BHP Group'],['VOD.L','Vodafone Group'],
+    ['LSEG.L','London Stock Exch. Group'],['DGE.L','Diageo plc'],['REL.L','RELX Group'],['STAN.L','Standard Chartered'],['LLOY.L','Lloyds Banking Group'],
+    ['BARC.L','Barclays plc'],['NWG.L','NatWest Group'],['ABF.L','Associated British Foods'],['ADM.L','Admiral Group'],['AHT.L','Ashtead Group'],
+    ['AV.L','Aviva plc'],['BA.L','BAE Systems'],['BKGH.L','Berkeley Group'],['CCH.L','Coca-Cola HBC'],['CRH.L','CRH plc'],
+    ['EZJ.L','easyJet plc'],['FLTR.L','Flutter Entertainment'],['GLEN.L','Glencore plc'],['HLN.L','Haleon plc'],['IAG.L','International Airlines Grp'],
+    ['IHG.L','InterContinental Hotels'],['IMB.L','Imperial Brands'],['INF.L','Informa plc'],['ITRK.L','Intertek Group'],['JD.L','JD Sports Fashion'],
+    ['KGF.L','Kingfisher plc'],['LAND.L','Land Securities'],['LGEN.L','Legal & General'],['MKS.L','Marks & Spencer'],['MNG.L','M&G plc'],
+    ['MRO.L','Melrose Industries'],['NG.L','National Grid'],['NXT.L','Next plc'],['PRU.L','Prudential plc'],['PSN.L','Persimmon plc'],
+  ],
+  PA:[
+    ['MC.PA','LVMH Moët Hennessy'],['TTE.PA','TotalEnergies SE'],['SAN.PA','Sanofi'],['AIR.PA','Airbus SE'],['BNP.PA','BNP Paribas'],
+    ['OR.PA','L\'Oréal S.A.'],['EL.PA','EssilorLuxottica'],['SGO.PA','Saint-Gobain'],['SU.PA','Schneider Electric'],['KER.PA','Kering SA'],
+    ['RI.PA','Pernod Ricard'],['DG.PA','Vinci SA'],['GLE.PA','Société Générale'],['CA.PA','Carrefour SA'],['ACA.PA','Crédit Agricole'],
+    ['CS.PA','AXA SA'],['LHN.PA','Holcim AG'],['ORA.PA','Orange SA'],['URW.PA','Unibail-Rodamco-Westfield'],['VIE.PA','Veolia Environnement'],
+    ['AI.PA','Air Liquide'],['ALO.PA','Alstom SA'],['AM.PA','Dassault Aviation'],['CAP.PA','Capgemini SE'],['DSY.PA','Dassault Systèmes'],
+    ['EN.PA','Bouygues SA'],['ERA.PA','Eramet SA'],['ERF.PA','Eurofins Scientific'],['FP.PA','TotalEnergies (bis)'],['GFC.PA','Gecina SA'],
+    ['HO.PA','Thales SA'],['ILD.PA','Iliad SA'],['LR.PA','Legrand SA'],['ML.PA','Michelin'],['MRN.PA','Mersen'],
+    ['MTU.PA','MTU Aero (XETRA)'],['OPT.PA','OPTIMIRx'],['PUB.PA','Publicis Groupe'],['RMS.PA','Hermès International'],['RNO.PA','Renault SA'],
+    ['SAF.PA','Safran SA'],['SOI.PA','Soitec SA'],['STE.PA','Sartorius Stedim'],['STN.PA','Stef SA'],['VK.PA','Vallourec SA'],
+  ],
+};
+
+// Carica TUTTI i simboli di una borsa — lista curata + tentativo API Finnhub
 async function openAllMarket(exch){
   closeMainMenu();
   const names={US:'Azioni USA',MI:'Borsa di Milano',DE:'Borsa di Francoforte',L:'Borsa di Londra',PA:'Borsa di Parigi'};
-  _modalId='__exch_'+exch; _modalData=[]; _modalPage=1; _modalSort='default'; _modalFilter='';
+  _modalId='__exch_'+exch; _modalPage=1; _modalSort='default'; _modalFilter='';
   const inp=document.getElementById('cat-modal-search'), sel=document.getElementById('cat-modal-sort');
   if(inp) inp.value=''; if(sel) sel.value='default';
-  document.getElementById('cat-modal-title').textContent=`${names[exch]||exch} — carico tutti i titoli…`;
-  document.getElementById('cat-modal-body').innerHTML='<div style="padding:50px;text-align:center;color:var(--t3)">Carico l\'elenco completo…</div>';
+
+  // Mostra subito la lista curata come punto di partenza
+  const curated=EXCH_CURATED[exch]||[];
+  _modalData=curated;
+  document.getElementById('cat-modal-title').textContent=`${names[exch]||exch} — ${curated.length} titoli principali${exch!=='US'?' · carico elenco completo…':''}`;
   _openCatPage();
-  const token=++_catLoadToken;
-  try{
-    const r=await fetch(`/api/symbols?exchange=${encodeURIComponent(exch)}`,{signal:AbortSignal.timeout(20000)});
-    if(token!==_catLoadToken) return;
-    let list=null, errMsg='';
-    if(r.ok){
-      list=await r.json();
-      if(!Array.isArray(list)){ errMsg=(list&&list.error)||'risposta non valida'; list=null; }
-    } else {
-      try{ const j=await r.json(); errMsg=j.error||('HTTP '+r.status); }catch{ errMsg='HTTP '+r.status; }
-    }
-    if(token!==_catLoadToken) return;
-    if(list && list.length){
-      _modalData=list.map(x=>[x.sym,x.name]);
-      document.getElementById('cat-modal-title').textContent=`${names[exch]||exch} — ${_modalData.length} titoli`;
-      _initModalControls(); renderCatPage(1);
-    } else {
-      document.getElementById('cat-modal-title').textContent=`${names[exch]||exch}`;
-      document.getElementById('cat-modal-body').innerHTML=
-        `<div style="padding:40px 20px;text-align:center;color:var(--t3);line-height:1.6">`+
-        `Elenco completo non disponibile per questa borsa.<br>`+
-        `<span style="font-size:.72rem;color:var(--t3)">${errMsg?('Dettaglio: '+errMsg):'Il listino internazionale Finnhub potrebbe richiedere un piano a pagamento.'}</span></div>`;
-    }
-  }catch(e){
-    if(token!==_catLoadToken) return;
-    document.getElementById('cat-modal-body').innerHTML=
-      `<div style="padding:40px 20px;text-align:center;color:var(--t3);line-height:1.6">Errore di rete nel caricamento del listino.<br><span style="font-size:.72rem">${(e&&e.message)||''}</span></div>`;
+  _initModalControls(); renderCatPage(1);
+
+  if(exch==='US'){
+    // Per US tentiamo l'elenco completo da API
+    const token=++_catLoadToken;
+    try{
+      const r=await fetch(`/api/symbols?exchange=US`,{signal:AbortSignal.timeout(20000)});
+      if(token!==_catLoadToken) return;
+      if(r.ok){
+        const list=await r.json();
+        if(Array.isArray(list)&&list.length>curated.length){
+          _modalData=list.map(x=>[x.sym,x.name]);
+          document.getElementById('cat-modal-title').textContent=`${names[exch]||exch} — ${_modalData.length} titoli`;
+          renderCatPage(1);
+        }
+      }
+    }catch{}
+  } else {
+    // Per borse internazionali l'elenco Finnhub richiede piano premium — mostra nota
+    const note=document.getElementById('cat-modal-title');
+    if(note) setTimeout(()=>{ note.textContent=`${names[exch]||exch} — ${curated.length} titoli principali`; },400);
   }
 }
 

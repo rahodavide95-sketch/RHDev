@@ -775,15 +775,22 @@ $('#rel-form').onsubmit=e=>{
 /* ============================================================================
    ROYALTY — ripartizione per artista basata sulle quote delle release
    ============================================================================ */
-function royaltyPeriod(txs){
-  const p=$('#roy-period').value; if(p==='all') return txs;
-  const now=new Date(); let from=new Date(0);
+// range {from,to} generico da un selettore periodo + due date personalizzate
+function computeRange(sel, fromEl, toEl){
+  const p=sel.value, now=new Date(), today=isoD(now);
+  if(p==='all') return {from:null,to:null};
+  if(p==='custom') return {from:(fromEl&&fromEl.value)||null, to:(toEl&&toEl.value)||today};
+  let from;
   if(p==='ytd') from=new Date(now.getFullYear(),0,1);
-  if(p==='12m') from=new Date(now.getFullYear(),now.getMonth()-11,1);
-  if(p==='6m') from=new Date(now.getFullYear(),now.getMonth()-5,1);
-  if(p==='3m') from=new Date(now.getFullYear(),now.getMonth()-2,1);
-  const f=from.toISOString().slice(0,10);
-  return txs.filter(t=>t.date>=f);
+  else if(p==='12m') from=new Date(now.getFullYear(),now.getMonth()-11,1);
+  else if(p==='6m') from=new Date(now.getFullYear(),now.getMonth()-5,1);
+  else from=new Date(now.getFullYear(),now.getMonth()-2,1);
+  return {from:isoD(from), to:today};
+}
+function royaltyPeriod(txs){
+  const r=computeRange($('#roy-period'), $('#roy-from'), $('#roy-to'));
+  if(!r.from && !r.to) return txs;
+  return txs.filter(t=>inRange(t,r.from,r.to));
 }
 // trova release + quote applicabili a una transazione (traccia per ISRC, poi release)
 function splitsForTx(t){
@@ -844,11 +851,16 @@ function showRoyaltyDetail(name,data){
   $('#roy-detail-panel').scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 $('#roy-detail-close').onclick=()=>$('#roy-detail-panel').hidden=true;
-$('#roy-period').onchange=renderRoyalties;
+function syncRoyDates(){ const cu=$('#roy-period').value==='custom'; $('#roy-from').hidden=!cu; $('#roy-to').hidden=!cu; }
+$('#roy-period').onchange=()=>{ syncRoyDates(); renderRoyalties(); };
+$('#roy-from').onchange=$('#roy-to').onchange=renderRoyalties;
+syncRoyDates();
 $('#roy-detail-pdf').onclick=()=>{
   if(!royDetail) return;
   const { name, data } = royDetail;
-  const period=$('#roy-period').selectedOptions[0].textContent;
+  const period=$('#roy-period').value==='custom'
+    ? (($('#roy-from').value||'inizio')+' → '+($('#roy-to').value||'oggi'))
+    : $('#roy-period').selectedOptions[0].textContent;
   const rows=Object.entries(data.byRelease).map(([cat,amt])=>({cat,amt})).sort((a,b)=>b.amt-a.amt);
   $('#print-area').innerHTML=`<div class="stmt">
     <div class="stmt-head">

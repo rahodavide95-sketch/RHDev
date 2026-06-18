@@ -198,6 +198,18 @@ function updateIdentity(){
   const tl=$('#topbar-label'); if(tl) tl.textContent = p.label || '';
 }
 
+/* equalizer animato dello sfondo login */
+(function buildGateEq(){
+  const eq=$('#gate-eq'); if(!eq) return;
+  let html='';
+  for(let i=0;i<28;i++){
+    const dur=(0.9+Math.random()*1.1).toFixed(2);
+    const delay=(-Math.random()*1.4).toFixed(2);
+    html+=`<i style="animation-duration:${dur}s;animation-delay:${delay}s"></i>`;
+  }
+  eq.innerHTML=html;
+})();
+
 /* ---- Barra laterale apri/chiudi ---- */
 const NAV_KEY='labelfinance.navCollapsed';
 function applyNavCollapsed(){

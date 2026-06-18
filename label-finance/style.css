@@ -149,6 +149,14 @@ body.show-topsec .topbar-section{opacity:1;transform:none}
 .about-logo{width:74px;height:74px;display:block}
 .about-title{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:700;letter-spacing:-.04em}
 .about-panel p{line-height:1.6;color:var(--text)}
+.credits-panel{max-width:640px;margin:18px auto 0;padding:24px 28px}
+.credits-title{font-family:'Syne',sans-serif;font-weight:700;font-size:1.05rem;margin-bottom:14px}
+.credits-list{list-style:none;margin:0 0 16px;padding:0}
+.credits-list li{display:flex;justify-content:space-between;align-items:baseline;gap:14px;padding:9px 0;border-bottom:1px solid var(--line)}
+.credits-list li:last-child{border-bottom:none}
+.credits-list span{color:var(--muted);font-size:.9rem}
+.credits-list b{font-weight:600;text-align:right}
+.credits-copy{font-size:.9rem;color:var(--text);margin:4px 0 10px;font-weight:600}
 
 /* ===== Menu Account ===== */
 .acct-menu{position:fixed;top:54px;right:16px;z-index:45;width:272px;

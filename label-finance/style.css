@@ -252,11 +252,15 @@ body.show-topsec .topbar-section{opacity:1;transform:none}
 
 /* ===== Panels (vetro) ===== */
 .panel{background:var(--glass-bg);-webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%);
-  border:1px solid var(--glass-brd);border-radius:var(--radius);padding:20px;margin-bottom:18px;box-shadow:inset 0 1px 0 var(--glass-hi)}
+  border:1px solid var(--glass-brd);border-radius:var(--radius);padding:20px;margin-bottom:18px;box-shadow:inset 0 1px 0 var(--glass-hi);min-width:0;max-width:100%}
 .panel-head{display:flex;align-items:baseline;gap:12px;margin-bottom:14px;flex-wrap:wrap}
 .panel-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
 .panel-body{display:flex;flex-direction:column;gap:14px}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+/* i figli di griglia/flex devono poter rimpicciolirsi: le tabelle larghe
+   scorrono nel loro contenitore invece di sforare lo schermo */
+.grid-2>*,.kpi-grid>*,.releases-cards>*{min-width:0}
+.table-wrap{width:100%}
 
 /* ===== Chart ===== */
 .chart{display:flex;align-items:flex-end;gap:10px;height:200px;padding-top:10px;overflow-x:auto}
@@ -459,13 +463,21 @@ body.gate-signup #gate-signin{opacity:.5}
   /* ---- Rifiniture generali mobile ---- */
   .topbar{padding:env(safe-area-inset-top) 14px 0;height:calc(54px + env(safe-area-inset-top))}
   .topbar-section,.topbar-sep{display:none}
-  .content{padding:14px 14px 78px}
+  .content{padding:14px 14px 78px;max-width:100%}
+  /* niente sforamenti orizzontali: ogni sezione resta dentro lo schermo */
+  .view,.panel,.kpi-grid,.grid-2,.releases-cards{max-width:100%;min-width:0}
   .kpi-grid{grid-template-columns:1fr 1fr}
   .grid-2,.form-grid,.map-grid,.plans{grid-template-columns:1fr}
+  .releases-cards{grid-template-columns:1fr}
   .view-head{flex-direction:column;align-items:stretch;gap:12px}
   .head-actions{flex-wrap:wrap}
+  .head-actions .select,.head-actions .input{flex:1 1 auto;min-width:0}
   .toolbar{flex-direction:column;align-items:stretch}
   .toolbar .input,.toolbar .select,.input--date{max-width:none;width:100%}
+  /* tabelle: più compatte e con scorrimento orizzontale dentro la card */
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .data-table{font-size:.82rem}
+  .data-table th,.data-table td{padding:8px 9px}
   .acct-menu{right:10px;left:10px;width:auto}
   h1{font-size:1.4rem}
 }

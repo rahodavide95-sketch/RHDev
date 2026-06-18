@@ -399,23 +399,46 @@ function renderDashboard(){
       <span class="bar-label">${k}</span>
     </div>`).join('') : '<p class="muted">Nessun dato nel periodo.</p>';
 
-  groupTable('#table-release','catalog','Catalogo',txs);
-  groupTable('#table-artist','artist','Artista',txs);
-  groupTable('#table-platform','platform','Piattaforma',txs);
-  groupTable('#table-type','type','Tipologia',txs);
+  dashTxs=txs;
+  renderGroupTables();
 }
-function groupTable(sel,key,label,txs){
+/* card dashboard con filtro + ordinamento */
+const GROUP_TABLES=[
+  {sel:'#table-release',key:'catalog',label:'Catalogo'},
+  {sel:'#table-artist',key:'artist',label:'Artista'},
+  {sel:'#table-platform',key:'platform',label:'Piattaforma'},
+  {sel:'#table-type',key:'type',label:'Tipologia'},
+];
+let dashTxs=[]; const dashSort={}, dashFilter={};
+function renderGroupTable(cfg){
+  const {sel,key,label}=cfg;
+  const sort=dashSort[sel]||(dashSort[sel]={col:'net',dir:-1});
+  const flt=(dashFilter[sel]||'').toLowerCase();
   const g={};
-  txs.forEach(t=>{ const k=(t[key]||'—'); (g[k]??={in:0,out:0}); const v=toEur(t.net,t.currency);
+  dashTxs.forEach(t=>{ const k=(t[key]||'—'); (g[k]??={in:0,out:0}); const v=toEur(t.net,t.currency);
     if(t.kind==='income') g[k].in+=v; else g[k].out+=Math.abs(v); });
-  const rows=Object.entries(g).map(([k,v])=>({k,...v,net:v.in-v.out})).sort((a,b)=>b.net-a.net);
-  $(sel).innerHTML = `<thead><tr><th>${label}</th><th class="num">Entrate</th><th class="num">Uscite</th><th class="num">Margine</th></tr></thead>
-   <tbody>${rows.length?rows.map(r=>`<tr><td>${esc(r.k)}</td>
-     <td class="num pos">${fmtMoney(r.in)}</td>
-     <td class="num neg">${fmtMoney(r.out)}</td>
+  let rows=Object.entries(g).map(([k,v])=>({k,...v,net:v.in-v.out}));
+  if(flt) rows=rows.filter(r=>r.k.toLowerCase().includes(flt));
+  rows.sort((a,b)=>{ if(sort.col==='k') return a.k.toLowerCase().localeCompare(b.k.toLowerCase())*sort.dir;
+    return (a[sort.col]-b[sort.col])*sort.dir; });
+  const cols=[['k',label,0],['in','Entrate',1],['out','Uscite',1],['net','Margine',1]];
+  const head=cols.map(([id,lab,num])=>{ const act=sort.col===id?(sort.dir>0?' ▲':' ▼'):'';
+    return `<th class="th-sort ${num?'num':''}" data-col="${id}">${esc(lab)}${act}</th>`; }).join('');
+  const body=rows.length?rows.map(r=>`<tr><td>${esc(r.k)}</td>
+     <td class="num pos">${fmtMoney(r.in)}</td><td class="num neg">${fmtMoney(r.out)}</td>
      <td class="num ${r.net>=0?'pos':'neg'}">${fmtMoney(r.net)}</td></tr>`).join('')
-     :'<tr><td colspan="4" class="muted">—</td></tr>'}</tbody>`;
+     :'<tr><td colspan="4" class="muted">—</td></tr>';
+  $(sel).innerHTML=`<thead><tr>${head}</tr></thead><tbody>${body}</tbody>`;
+  $$(`${sel} thead th[data-col]`).forEach(th=>th.onclick=()=>{
+    const c=th.dataset.col; if(sort.col===c) sort.dir*=-1; else { sort.col=c; sort.dir=c==='k'?1:-1; }
+    renderGroupTable(cfg);
+  });
 }
+function renderGroupTables(){ GROUP_TABLES.forEach(renderGroupTable); }
+$$('.card-filter').forEach(inp=>inp.oninput=()=>{
+  dashFilter[inp.dataset.table]=inp.value;
+  const cfg=GROUP_TABLES.find(c=>c.sel===inp.dataset.table); if(cfg) renderGroupTable(cfg);
+});
 function syncCustomDates(){ const cu=$('#dash-period').value==='custom'; $('#dash-from').hidden=!cu; $('#dash-to').hidden=!cu; }
 $('#dash-period').onchange=()=>{ syncCustomDates(); renderDashboard(); };
 $('#dash-from').onchange=$('#dash-to').onchange=renderDashboard;
@@ -697,7 +720,7 @@ $('#roy-detail-pdf').onclick=()=>{
   const rows=Object.entries(data.byRelease).map(([cat,amt])=>({cat,amt})).sort((a,b)=>b.amt-a.amt);
   $('#print-area').innerHTML=`<div class="stmt">
     <div class="stmt-head">
-      <img src="logo-full-light.png?v=3" alt="Label Finance" class="stmt-logo-full">
+      <img src="lockup-v3-light.png" alt="Label Finance" class="stmt-logo-full">
       <div class="stmt-doc">Rendiconto Royalty</div>
     </div>
     <p class="stmt-meta">Artista: <strong>${esc(name)}</strong><br>

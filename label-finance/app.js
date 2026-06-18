@@ -217,14 +217,27 @@ $$('.nav-item').forEach(b=>b.onclick=()=>goto(b.dataset.view));
 document.addEventListener('click',e=>{ const g=e.target.closest('[data-goto]'); if(g) goto(g.dataset.goto); });
 
 /* ===== Account: menu, etichette, piani ===== */
-const PLAN_INFO={ free:{name:'Indie'}, studio:{name:'Studio'}, agency:{name:'Agency'} };
+const PLAN_INFO={ free:{name:'Starter'}, studio:{name:'Studio'}, agency:{name:'Agency'} };
 function rebuildAccountMenu(){
   const m=$('#account-menu-labels'); if(!m) return;
-  m.innerHTML=ACCOUNT.labels.map(l=>`<button class="acct-label ${l.id===ACCOUNT.activeLabel?'is-active':''}" data-label="${l.id}">
-    <span class="acct-dot"></span><span class="acct-label-name">${esc(l.name||'Etichetta')}</span>${l.id===ACCOUNT.activeLabel?'<span class="acct-check">✓</span>':''}</button>`).join('');
+  const multi=ACCOUNT.labels.length>1;
+  m.innerHTML=ACCOUNT.labels.map(l=>`<div class="acct-label-row ${l.id===ACCOUNT.activeLabel?'is-active':''}">
+    <button class="acct-label" data-label="${l.id}">
+      <span class="acct-dot"></span><span class="acct-label-name">${esc(l.name||'Etichetta')}</span>${l.id===ACCOUNT.activeLabel?'<span class="acct-check">✓</span>':''}</button>
+    ${multi?`<button class="acct-del" data-del="${l.id}" title="Elimina etichetta" aria-label="Elimina">✕</button>`:''}
+  </div>`).join('');
   $$('#account-menu-labels .acct-label').forEach(b=>b.onclick=()=>switchLabel(b.dataset.label));
+  $$('#account-menu-labels .acct-del').forEach(b=>b.onclick=ev=>{ ev.stopPropagation(); deleteLabel(b.dataset.del); });
   const g=$('#account-greet'); if(g) g.textContent=(DB.profile&&DB.profile.name)?DB.profile.name:'Le tue etichette';
-  const pn=$('#account-plan'); if(pn) pn.textContent='Piano '+((PLAN_INFO[ACCOUNT.plan]||{}).name||'Indie');
+  const pn=$('#account-plan'); if(pn) pn.textContent='Piano '+((PLAN_INFO[ACCOUNT.plan]||{}).name||'Starter');
+}
+function deleteLabel(id){
+  if(ACCOUNT.labels.length<=1){ toast('Deve restare almeno un\'etichetta'); return; }
+  const lab=ACCOUNT.labels.find(l=>l.id===id); if(!lab) return;
+  if(!confirm(`Eliminare l'etichetta "${lab.name||''}" e tutti i suoi dati? Operazione irreversibile.`)) return;
+  ACCOUNT.labels=ACCOUNT.labels.filter(l=>l.id!==id);
+  if(ACCOUNT.activeLabel===id) ACCOUNT.activeLabel=ACCOUNT.labels[0].id;
+  DB=activeLabel(); save(); reloadViews(); rebuildAccountMenu(); toast('Etichetta eliminata'); goto('dashboard');
 }
 function closeAccountMenu(){ const e=$('#account-menu'); if(e) e.hidden=true; }
 function toggleAccountMenu(){ const e=$('#account-menu'); if(!e) return; if(e.hidden){ rebuildAccountMenu(); e.hidden=false; } else e.hidden=true; }
@@ -246,12 +259,26 @@ function setPlan(plan){
   ACCOUNT.plan=plan; save(); renderOffers(); rebuildAccountMenu();
   toast('Piano attivato: '+((PLAN_INFO[plan]||{}).name||plan));
 }
+let billing='monthly';
+const fmtEur=n=> '€'+(Number.isInteger(n)? n : n.toFixed(2).replace('.',','));
 function renderOffers(){
   $$('#view-offers .plan-card').forEach(c=>{
     const active=ACCOUNT.plan===c.dataset.plan;
     c.classList.toggle('is-current',active);
     const btn=c.querySelector('.plan-btn'); if(btn){ btn.textContent=active?'Piano attuale':'Attiva'; btn.disabled=active; }
+    const m=+c.dataset.monthly||0;
+    const priceEl=c.querySelector('.plan-price'), noteEl=c.querySelector('.plan-note');
+    if(priceEl){
+      if(billing==='annual'){
+        priceEl.innerHTML=`${fmtEur(m*0.7)}<span>/mese</span> <s class="plan-old">${fmtEur(m)}</s>`;
+        if(noteEl) noteEl.textContent=`fatturato annualmente · ${fmtEur(m*12*0.7)}/anno invece di ${fmtEur(m*12)}`;
+      } else {
+        priceEl.innerHTML=`${fmtEur(m)}<span>/mese</span>`;
+        if(noteEl) noteEl.textContent='';
+      }
+    }
   });
+  $$('#billing-toggle button').forEach(b=>b.classList.toggle('is-active',b.dataset.billing===billing));
 }
 $('#btn-account').onclick=e=>{ e.stopPropagation(); toggleAccountMenu(); };
 document.addEventListener('click',e=>{ const m=$('#account-menu');
@@ -261,6 +288,7 @@ $('#acct-offers').onclick=()=>{ closeAccountMenu(); goto('offers'); };
 $('#acct-settings').onclick=()=>{ closeAccountMenu(); goto('settings'); };
 $('#acct-signout').onclick=()=>{ closeAccountMenu(); if(window.LF_signOut) window.LF_signOut(); };
 $$('#view-offers .plan-btn').forEach(b=>b.onclick=()=>setPlan(b.dataset.plan));
+$$('#billing-toggle button').forEach(b=>b.onclick=()=>{ billing=b.dataset.billing; renderOffers(); });
 
 /* identità: saluto in dashboard + nome label nella topbar */
 function updateIdentity(){
@@ -637,9 +665,8 @@ $('#roy-detail-pdf').onclick=()=>{
   const rows=Object.entries(data.byRelease).map(([cat,amt])=>({cat,amt})).sort((a,b)=>b.amt-a.amt);
   $('#print-area').innerHTML=`<div class="stmt">
     <div class="stmt-head">
-      <img src="icon.png" alt="" class="stmt-logo">
-      <div><div class="stmt-brand">Label<strong>Finance</strong></div>
-        <div class="stmt-doc">Rendiconto Royalty</div></div>
+      <img src="logo-full-light.png" alt="Label Finance" class="stmt-logo-full">
+      <div class="stmt-doc">Rendiconto Royalty</div>
     </div>
     <p class="stmt-meta">Artista: <strong>${esc(name)}</strong><br>
       Periodo: ${esc(period)}<br>
@@ -873,3 +900,5 @@ applyTheme();
 
 /* ---------- Avvio ---------- */
 renderDashboard();
+renderOffers();
+rebuildAccountMenu();

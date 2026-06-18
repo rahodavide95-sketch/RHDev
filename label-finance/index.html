@@ -42,8 +42,6 @@
         <button class="btn btn-accent2" id="gate-signup">Registrati</button>
       </div>
       <p class="gate-status" id="gate-status"></p>
-      <a href="#" class="gate-offline" id="gate-offline"
-         onclick="document.getElementById('login-gate').hidden=true;document.body.classList.remove('gated');return false">Continua senza account (solo su questo dispositivo)</a>
     </div>
   </div>
 
@@ -51,8 +49,9 @@
   <aside class="sidebar">
     <div class="sidebar-top">
       <a class="brand" href="#" onclick="return false">
-        <img src="icon.png" alt="Label Finance" class="brand-logo">
-        <span class="brand-name">Label<strong>Finance</strong></span>
+        <img src="logo-full.png" alt="Label Finance" class="brand-full brand-full--dark">
+        <img src="logo-full-light.png" alt="Label Finance" class="brand-full brand-full--light">
+        <img src="icon.png" alt="LF" class="brand-icon">
       </a>
       <button class="nav-collapse" id="nav-collapse" title="Riduci / espandi menu" aria-label="Riduci o espandi menu">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><line x1="9.5" y1="4" x2="9.5" y2="20"/></svg>
@@ -114,7 +113,7 @@
             <option value="6m">Ultimi 6 mesi</option>
             <option value="3m">Ultimi 3 mesi</option>
           </select>
-          <button class="btn" id="btn-print" title="Stampa o salva in PDF">⤓ Report PDF</button>
+          <button class="btn btn-pdf" id="btn-print" title="Stampa o salva in PDF">⤓ Report PDF</button>
         </div>
       </header>
 
@@ -231,7 +230,7 @@
       <div class="panel" id="roy-detail-panel" hidden>
         <div class="panel-head"><h2 id="roy-detail-title">Dettaglio</h2>
           <span class="spacer" style="flex:1"></span>
-          <button class="btn" id="roy-detail-pdf" title="Rendiconto PDF da inviare all'artista">⤓ Statement PDF</button>
+          <button class="btn btn-pdf" id="roy-detail-pdf" title="Rendiconto PDF da inviare all'artista">⤓ Statement PDF</button>
           <button class="btn" id="roy-detail-close">Chiudi</button></div>
         <div class="table-wrap"><table class="data-table" id="table-roy-detail"></table></div>
       </div>
@@ -415,8 +414,8 @@
       <header class="view-head"><div><h1>Chi siamo</h1>
         <p class="muted">Label Finance — il gestionale per etichette indipendenti.</p></div></header>
       <div class="panel about-panel">
-        <img src="icon.png" alt="Label Finance" class="about-logo">
-        <h2 class="about-title">Label<strong>Finance</strong></h2>
+        <img src="logo-full.png" alt="Label Finance" class="about-full brand-full--dark">
+        <img src="logo-full-light.png" alt="Label Finance" class="about-full brand-full--light">
         <p>Label Finance nasce per dare alle <strong>etichette discografiche indipendenti</strong>
            uno strumento semplice e moderno per gestire <strong>entrate, uscite e royalty</strong>:
            import dei report di vendita (Bandcamp, distributori…), calcolo automatico delle
@@ -429,10 +428,15 @@
     <section class="view" id="view-offers">
       <header class="view-head"><div><h1>Offerte &amp; Piani</h1>
         <p class="muted">Gestisci più etichette da un unico account. Scegli il piano adatto al tuo roster.</p></div></header>
+      <div class="billing-toggle" id="billing-toggle">
+        <button data-billing="monthly" class="is-active">Mensile</button>
+        <button data-billing="annual">Annuale <span class="save">−30%</span></button>
+      </div>
       <div class="plans">
-        <div class="plan-card" data-plan="free">
-          <div class="plan-name">Indie</div>
-          <div class="plan-price">Gratis</div>
+        <div class="plan-card" data-plan="free" data-monthly="9">
+          <div class="plan-name">Starter</div>
+          <div class="plan-price"></div>
+          <div class="plan-note"></div>
           <p class="plan-desc">Per chi avvia la propria etichetta indipendente.</p>
           <ul class="plan-feat">
             <li>1 etichetta</li>
@@ -443,23 +447,24 @@
           </ul>
           <button class="btn plan-btn" data-plan="free">Attiva</button>
         </div>
-        <div class="plan-card plan-card--featured" data-plan="studio">
-          <div class="plan-badge">Consigliato</div>
+        <div class="plan-card" data-plan="studio" data-monthly="19">
           <div class="plan-name">Studio</div>
-          <div class="plan-price">€19<span>/mese</span></div>
+          <div class="plan-price"></div>
+          <div class="plan-note"></div>
           <p class="plan-desc">Per chi gestisce più progetti ed etichette.</p>
           <ul class="plan-feat">
             <li>Fino a 3 etichette</li>
             <li>Passaggio rapido tra etichette</li>
-            <li>Tutto del piano Indie</li>
+            <li>Tutto del piano Starter</li>
             <li>Statement royalty per artista</li>
             <li>Supporto prioritario</li>
           </ul>
           <button class="btn btn-primary plan-btn" data-plan="studio">Attiva</button>
         </div>
-        <div class="plan-card" data-plan="agency">
+        <div class="plan-card" data-plan="agency" data-monthly="49">
           <div class="plan-name">Agency</div>
-          <div class="plan-price">€49<span>/mese</span></div>
+          <div class="plan-price"></div>
+          <div class="plan-note"></div>
           <p class="plan-desc">Per manager e agenzie con più roster.</p>
           <ul class="plan-feat">
             <li>Etichette illimitate</li>
@@ -480,7 +485,7 @@
   <div class="acct-menu" id="account-menu" hidden>
     <div class="acct-head">
       <span class="acct-greet" id="account-greet">Le tue etichette</span>
-      <span class="acct-plan" id="account-plan">Piano Indie</span>
+      <span class="acct-plan" id="account-plan">Piano Starter</span>
     </div>
     <div class="acct-labels" id="account-menu-labels"></div>
     <button class="acct-item acct-add" id="acct-add"><span>＋ Aggiungi etichetta</span><span class="pro-badge">PRO</span></button>

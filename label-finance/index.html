@@ -151,22 +151,26 @@
       <div class="grid-2">
         <div class="panel">
           <div class="panel-head"><h2>Per release / catalogo</h2>
-            <input class="input card-filter" data-table="#table-release" placeholder="Filtra…"></div>
+            <input class="input card-filter" data-table="#table-release" placeholder="Filtra…">
+            <button class="btn-export" data-export="group:#table-release" title="Esporta">⤓</button></div>
           <div class="table-wrap"><table class="data-table" id="table-release"></table></div>
         </div>
         <div class="panel">
           <div class="panel-head"><h2>Per artista</h2>
-            <input class="input card-filter" data-table="#table-artist" placeholder="Filtra…"></div>
+            <input class="input card-filter" data-table="#table-artist" placeholder="Filtra…">
+            <button class="btn-export" data-export="group:#table-artist" title="Esporta">⤓</button></div>
           <div class="table-wrap"><table class="data-table" id="table-artist"></table></div>
         </div>
         <div class="panel">
           <div class="panel-head"><h2>Per piattaforma</h2>
-            <input class="input card-filter" data-table="#table-platform" placeholder="Filtra…"></div>
+            <input class="input card-filter" data-table="#table-platform" placeholder="Filtra…">
+            <button class="btn-export" data-export="group:#table-platform" title="Esporta">⤓</button></div>
           <div class="table-wrap"><table class="data-table" id="table-platform"></table></div>
         </div>
         <div class="panel">
           <div class="panel-head"><h2>Per tipologia</h2>
-            <input class="input card-filter" data-table="#table-type" placeholder="Filtra…"></div>
+            <input class="input card-filter" data-table="#table-type" placeholder="Filtra…">
+            <button class="btn-export" data-export="group:#table-type" title="Esporta">⤓</button></div>
           <div class="table-wrap"><table class="data-table" id="table-type"></table></div>
         </div>
       </div>
@@ -198,6 +202,7 @@
         <input type="date" id="tx-from" class="input input--date" title="Dalla data">
         <input type="date" id="tx-to" class="input input--date" title="Alla data">
         <button class="btn" id="btn-cols" title="Personalizza colonne">⚙ Colonne</button>
+        <button class="btn btn-export" data-export="movimenti" title="Esporta CSV/Excel/PDF">⤓ Esporta</button>
       </div>
 
       <div class="table-wrap">
@@ -210,6 +215,7 @@
       <header class="view-head">
         <div><h1>Release</h1><p class="muted" id="rel-count-label">0 release</p></div>
         <div class="head-actions">
+          <button class="btn btn-export" data-export="releases" title="Esporta CSV/Excel/PDF">⤓ Esporta</button>
           <button class="btn btn-primary" id="btn-add-release">+ Nuova release</button>
         </div>
       </header>
@@ -229,6 +235,7 @@
             <option value="6m">Ultimi 6 mesi</option>
             <option value="3m">Ultimi 3 mesi</option>
           </select>
+          <button class="btn btn-export" data-export="royalty" title="Esporta CSV/Excel/PDF">⤓ Esporta</button>
         </div>
       </header>
 
@@ -503,6 +510,13 @@
     <button class="acct-item" id="acct-offers">Offerte e piani</button>
     <button class="acct-item" id="acct-settings">Impostazioni account</button>
     <button class="acct-item acct-danger" id="acct-signout">Esci</button>
+  </div>
+
+  <!-- ======= MENU EXPORT (condiviso) ======= -->
+  <div class="export-menu" id="export-menu" hidden>
+    <button data-fmt="csv">⤓ CSV</button>
+    <button data-fmt="excel">⤓ Excel</button>
+    <button data-fmt="pdf">⤓ PDF</button>
   </div>
 
   <!-- ======= MODAL: movimento ======= -->

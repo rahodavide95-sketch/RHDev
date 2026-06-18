@@ -410,8 +410,8 @@ const GROUP_TABLES=[
   {sel:'#table-type',key:'type',label:'Tipologia'},
 ];
 let dashTxs=[]; const dashSort={}, dashFilter={};
-function renderGroupTable(cfg){
-  const {sel,key,label}=cfg;
+function computeGroup(cfg){
+  const {sel,key}=cfg;
   const sort=dashSort[sel]||(dashSort[sel]={col:'net',dir:-1});
   const flt=(dashFilter[sel]||'').toLowerCase();
   const g={};
@@ -421,6 +421,12 @@ function renderGroupTable(cfg){
   if(flt) rows=rows.filter(r=>r.k.toLowerCase().includes(flt));
   rows.sort((a,b)=>{ if(sort.col==='k') return a.k.toLowerCase().localeCompare(b.k.toLowerCase())*sort.dir;
     return (a[sort.col]-b[sort.col])*sort.dir; });
+  return rows;
+}
+function renderGroupTable(cfg){
+  const {sel,label}=cfg;
+  const sort=dashSort[sel]||(dashSort[sel]={col:'net',dir:-1});
+  const rows=computeGroup(cfg);
   const cols=[['k',label,0],['in','Entrate',1],['out','Uscite',1],['net','Margine',1]];
   const head=cols.map(([id,lab,num])=>{ const act=sort.col===id?(sort.dir>0?' ▲':' ▼'):'';
     return `<th class="th-sort ${num?'num':''}" data-col="${id}">${esc(lab)}${act}</th>`; }).join('');
@@ -438,6 +444,72 @@ function renderGroupTables(){ GROUP_TABLES.forEach(renderGroupTable); }
 $$('.card-filter').forEach(inp=>inp.oninput=()=>{
   dashFilter[inp.dataset.table]=inp.value;
   const cfg=GROUP_TABLES.find(c=>c.sel===inp.dataset.table); if(cfg) renderGroupTable(cfg);
+});
+
+/* ============================================================================
+   EXPORT — CSV / Excel / PDF per ogni sezione/card
+   ============================================================================ */
+const EXPORTERS={};
+const registerExport=(name,fn)=>{ EXPORTERS[name]=fn; };
+let curExport=null;
+const xmlEsc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function csvOf(headers,rows){ return [headers,...rows].map(r=>r.map(csvCell).join(',')).join('\n'); }
+function xlsOf(headers,rows){
+  return `<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"></head><body>`+
+    `<table border="1"><thead><tr>${headers.map(h=>`<th>${xmlEsc(h)}</th>`).join('')}</tr></thead>`+
+    `<tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${xmlEsc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></body></html>`;
+}
+function printTableDoc(title,headers,rows){
+  $('#print-area').innerHTML=`<div class="stmt">
+    <div class="stmt-head"><img src="lockup-v3-light.png" alt="" class="stmt-logo-full"><div class="stmt-doc">${esc(title)}</div></div>
+    <table class="stmt-table"><thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead>
+    <tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>
+    <p class="stmt-foot">Label Finance · ${esc(DB.name||'')} · ${new Date().toLocaleDateString('it-IT')}</p></div>`;
+  document.body.classList.add('print-statement'); window.print();
+  setTimeout(()=>document.body.classList.remove('print-statement'),600);
+}
+function doExport(name,fmt){
+  const fn=EXPORTERS[name]; if(!fn) return;
+  const {title,headers,rows}=fn();
+  const fname=(title||'export').replace(/[^\w\-]+/g,'_');
+  if(fmt==='csv') download(fname+'.csv', csvOf(headers,rows), 'text/csv');
+  else if(fmt==='excel') download(fname+'.xls', xlsOf(headers,rows), 'application/vnd.ms-excel');
+  else printTableDoc(title,headers,rows);
+}
+document.addEventListener('click',e=>{
+  const trg=e.target.closest('.btn-export');
+  const menu=$('#export-menu');
+  if(trg){ e.stopPropagation(); curExport=trg.dataset.export;
+    const r=trg.getBoundingClientRect();
+    menu.style.top=(r.bottom+6)+'px'; menu.style.left=Math.max(8,Math.min(r.left,innerWidth-140))+'px';
+    menu.hidden=false; return; }
+  if(menu && !menu.hidden && !menu.contains(e.target)) menu.hidden=true;
+});
+$$('#export-menu button').forEach(b=>b.onclick=()=>{ $('#export-menu').hidden=true; if(curExport) doExport(curExport,b.dataset.fmt); });
+
+/* dati esportabili per sezione */
+registerExport('movimenti', ()=>{
+  const cols=CANON;
+  const headers=['Tipo',...cols.map(c=>c[1]),'Nota'];
+  const rows=DB.transactions.map(t=>[t.kind==='income'?'Entrata':'Uscita',...cols.map(c=>{
+    const v=t[c[0]]; return (typeof v==='number')?v:(v??''); }), t.note||'']);
+  return {title:'Movimenti — '+(DB.name||''), headers, rows};
+});
+GROUP_TABLES.forEach(cfg=>registerExport('group:'+cfg.sel, ()=>{
+  const rows=computeGroup(cfg).map(r=>[r.k, +r.in.toFixed(2), +r.out.toFixed(2), +r.net.toFixed(2)]);
+  return {title:cfg.label, headers:[cfg.label,'Entrate (€)','Uscite (€)','Margine (€)'], rows};
+}));
+registerExport('releases', ()=>{
+  const rows=releases().map(r=>{ const tot=(r.splits||[]).reduce((s,x)=>s+(+x.pct||0),0);
+    const splits=(r.splits||[]).map(s=>`${s.name} ${(+s.pct||0)}%`).join(' · ');
+    return [r.catalog, r.title||'', r.year||'', splits, Math.max(0,100-tot)+'%']; });
+  return {title:'Release', headers:['Catalogo','Titolo','Anno','Quote artisti','Quota label'], rows};
+});
+registerExport('royalty', ()=>{
+  const {byArtist,labelTotal}=computeRoyalties();
+  const rows=Object.entries(byArtist).map(([n,v])=>[n, +v.total.toFixed(2)]).sort((a,b)=>b[1]-a[1]);
+  rows.push(['Label (quota residua)', +labelTotal.toFixed(2)]);
+  return {title:'Royalty — '+(DB.name||''), headers:['Artista','Royalty (€)'], rows};
 });
 function syncCustomDates(){ const cu=$('#dash-period').value==='custom'; $('#dash-from').hidden=!cu; $('#dash-to').hidden=!cu; }
 $('#dash-period').onchange=()=>{ syncCustomDates(); renderDashboard(); };

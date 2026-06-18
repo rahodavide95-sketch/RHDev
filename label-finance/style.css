@@ -272,8 +272,14 @@ body.nav-collapsed{grid-template-columns:78px 1fr}
 .input--date{max-width:160px}
 .th-sort{cursor:pointer;user-select:none;white-space:nowrap}
 .th-sort:hover{color:var(--text)}
-.card-filter{max-width:160px;margin-left:auto;padding:6px 10px;font-size:.85rem}
+.card-filter{max-width:150px;margin-left:auto;padding:6px 10px;font-size:.85rem}
 #btn-cols{margin-left:auto}
+.btn-export:not(.btn){background:none;border:1px solid var(--line);color:var(--muted);cursor:pointer;border-radius:8px;padding:5px 9px;font-size:.9rem;line-height:1;flex:none}
+.btn-export:not(.btn):hover{color:var(--accent);border-color:var(--accent)}
+.export-menu{position:fixed;z-index:55;background:var(--glass-bg);-webkit-backdrop-filter:blur(24px) saturate(180%);backdrop-filter:blur(24px) saturate(180%);border:1px solid var(--glass-brd);border-radius:11px;padding:5px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:2px;min-width:130px}
+.export-menu[hidden]{display:none}
+.export-menu button{background:none;border:none;color:var(--text);font:inherit;font-size:.88rem;text-align:left;padding:9px 12px;border-radius:7px;cursor:pointer}
+.export-menu button:hover{background:var(--panel)}
 .check-inline{display:flex;align-items:center;gap:8px;font-size:.88rem;color:var(--muted);cursor:pointer}
 .check-inline input{width:16px;height:16px;accent-color:var(--accent)}
 .empty-hint{text-align:center;padding:50px 20px;color:var(--muted)}

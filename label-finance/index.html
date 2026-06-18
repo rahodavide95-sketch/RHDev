@@ -53,7 +53,7 @@
         <img src="icon.png" alt="Label Finance" class="brand-logo">
         <span class="brand-name">Label<strong>Finance</strong></span>
       </a>
-      <button class="nav-collapse" id="nav-collapse" title="Riduci / espandi menu" aria-label="Riduci menu">«</button>
+      <button class="nav-collapse" id="nav-collapse" title="Riduci menu" aria-label="Riduci menu">«</button>
     </div>
     <nav class="nav">
       <button class="nav-item is-active" data-view="dashboard" title="Dashboard">
@@ -68,6 +68,10 @@
         <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M4 21h16"/></svg></span><span class="nav-label">Importa CSV</span></button>
       <button class="nav-item" data-view="settings" title="Impostazioni">
         <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5v5M5 14v5M12 3v6M12 13v8M19 7v3M19 14v3"/><circle cx="5" cy="12" r="2"/><circle cx="12" cy="11" r="2"/><circle cx="19" cy="12" r="2"/></svg></span><span class="nav-label">Impostazioni</span></button>
+
+      <div class="nav-sep"></div>
+      <button class="nav-item nav-item--about" data-view="about" title="Chi siamo">
+        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6v.1"/></svg></span><span class="nav-label">Chi siamo</span></button>
     </nav>
     <div class="sidebar-foot">
       <div class="theme-switch" role="group" aria-label="Tema">
@@ -77,16 +81,27 @@
       </div>
       <span class="badge-local">● Dati salvati sul tuo dispositivo</span>
     </div>
+    <button class="nav-reopen" id="nav-reopen" title="Apri menu" aria-label="Apri menu">»</button>
   </aside>
 
   <!-- ======= MAIN ======= -->
   <main class="main">
+    <header class="topbar">
+      <div class="topbar-left"><span class="topbar-section" id="topbar-section">Dashboard</span></div>
+      <div class="topbar-right">
+        <button class="btn btn-ghost" id="btn-about">Chi siamo</button>
+        <span class="topbar-sep"></span>
+        <span class="topbar-label" id="topbar-label"></span>
+        <button class="btn" id="btn-account">Account</button>
+      </div>
+    </header>
+    <div class="content">
 
     <!-- ====== DASHBOARD ====== -->
     <section class="view is-active" id="view-dashboard">
       <header class="view-head">
         <div>
-          <h1>Dashboard</h1>
+          <h1 id="greeting">Dashboard</h1>
           <p class="muted" id="dash-range-label">Tutti i periodi</p>
         </div>
         <div class="head-actions">
@@ -392,6 +407,22 @@
         </div>
       </div>
     </section>
+
+    <!-- ====== CHI SIAMO ====== -->
+    <section class="view" id="view-about">
+      <header class="view-head"><div><h1>Chi siamo</h1>
+        <p class="muted">Label Finance — il gestionale per etichette indipendenti.</p></div></header>
+      <div class="panel about-panel">
+        <img src="icon.png" alt="Label Finance" class="about-logo">
+        <h2 class="about-title">Label<strong>Finance</strong></h2>
+        <p>Label Finance nasce per dare alle <strong>etichette discografiche indipendenti</strong>
+           uno strumento semplice e moderno per gestire <strong>entrate, uscite e royalty</strong>:
+           import dei report di vendita (Bandcamp, distributori…), calcolo automatico delle
+           quote per artista, dashboard chiare e rendiconti pronti da inviare.</p>
+        <p class="muted small">Costruito con cura per chi fa musica. Stesso indirizzo, stessi dati su ogni dispositivo.</p>
+      </div>
+    </section>
+    </div><!-- /.content -->
   </main>
 
   <!-- ======= MODAL: movimento ======= -->

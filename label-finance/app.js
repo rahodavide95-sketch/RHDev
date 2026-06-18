@@ -44,7 +44,7 @@ window.LF = {
   data(){ return DB; },
   applyCloud(d){ DB = Object.assign(defaultData(), d||{}); saveLocal(); reloadViews(); },
   profile(){ return DB.profile || (DB.profile={name:'',label:''}); },
-  setProfile(p){ DB.profile = Object.assign(this.profile(), p||{}); save(); },
+  setProfile(p){ DB.profile = Object.assign(this.profile(), p||{}); save(); if(typeof updateIdentity==='function') updateIdentity(); },
 };
 function reloadViews(){ renderDashboard(); renderTx(); renderReleases(); renderRoyalties(); renderSettings(); }
 // integra eventuali colonne nuove non ancora presenti nell'ordine salvato
@@ -173,17 +173,30 @@ function autoMap(headers){
 /* ============================================================================
    NAVIGAZIONE
    ============================================================================ */
+const VIEW_TITLES={dashboard:'Dashboard',transactions:'Movimenti',releases:'Release',royalties:'Royalty',import:'Importa CSV',settings:'Impostazioni',about:'Chi siamo'};
 function goto(view){
   $$('.nav-item').forEach(b=>b.classList.toggle('is-active',b.dataset.view===view));
   $$('.view').forEach(v=>v.classList.toggle('is-active',v.id==='view-'+view));
+  const sec=$('#topbar-section'); if(sec) sec.textContent=VIEW_TITLES[view]||'';
   if(view==='dashboard') renderDashboard();
   if(view==='transactions') renderTx();
   if(view==='releases') renderReleases();
   if(view==='royalties') renderRoyalties();
   if(view==='settings') renderSettings();
+  $('.main').scrollTop=0;
 }
 $$('.nav-item').forEach(b=>b.onclick=()=>goto(b.dataset.view));
 document.addEventListener('click',e=>{ const g=e.target.closest('[data-goto]'); if(g) goto(g.dataset.goto); });
+$('#btn-account').onclick=()=>goto('settings');
+$('#btn-about').onclick=()=>goto('about');
+$('#nav-reopen').onclick=()=>toggleNav(false);
+
+/* identità: saluto in dashboard + nome label nella topbar */
+function updateIdentity(){
+  const p=(DB.profile)||{};
+  const g=$('#greeting'); if(g) g.textContent = p.name ? `Ciao, ${p.name}` : 'Dashboard';
+  const tl=$('#topbar-label'); if(tl) tl.textContent = p.label || '';
+}
 
 /* ---- Barra laterale apri/chiudi ---- */
 const NAV_KEY='labelfinance.navCollapsed';
@@ -219,6 +232,7 @@ function periodFilter(txs){
   return txs.filter(t=>t.date>=f);
 }
 function renderDashboard(){
+  updateIdentity();
   const all=DB.transactions;
   $('#dash-empty').hidden = all.length>0;
   const txs=periodFilter(all);

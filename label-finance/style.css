@@ -85,6 +85,8 @@ body.nav-collapsed{grid-template-columns:78px 1fr}
 /* Bottone "Altro" e sheet: solo mobile (nascosti su desktop) */
 .nav-more-btn{display:none;background:none;border:none;color:var(--muted);font:inherit;cursor:pointer}
 .msheet{display:none}
+/* Controllo "Ordina per" visibile solo su mobile (su desktop si ordina dalle intestazioni) */
+.sort-mobile{display:none}
 
 /* ===== Main ===== */
 .main{height:100vh;height:100dvh;overflow-y:auto;overflow-x:hidden;position:relative}
@@ -491,6 +493,10 @@ body.gate-signup #gate-signin{opacity:.5}
   .data-table--cards td[colspan]{justify-content:center}
   .data-table--cards td[colspan]::before{content:none}
   .data-table--cards td[data-label=""]::before{content:none}
+
+  /* "Ordina per" su mobile */
+  .sort-mobile{display:block}
+  .card-sort.sort-mobile{width:100%;margin-top:8px;flex:1 1 100%}
   .acct-menu{right:10px;left:10px;width:auto}
   h1{font-size:1.4rem}
 }

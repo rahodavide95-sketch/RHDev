@@ -496,6 +496,8 @@ function renderGroupTable(cfg){
      <td class="num ${r.net>=0?'pos':'neg'}" data-label="Margine">${fmtMoney(r.net)}</td></tr>`).join('')
      :'<tr><td colspan="4" class="muted">—</td></tr>';
   $(sel).innerHTML=`<thead><tr>${head}</tr></thead><tbody>${body}</tbody>`;
+  const cs=document.querySelector(`.card-sort[data-table="${sel}"]`);
+  if(cs){ const v=sort.col+':'+sort.dir; if([...cs.options].some(o=>o.value===v)) cs.value=v; }
   $$(`${sel} thead th[data-col]`).forEach(th=>th.onclick=()=>{
     const c=th.dataset.col; if(sort.col===c) sort.dir*=-1; else { sort.col=c; sort.dir=c==='k'?1:-1; }
     renderGroupTable(cfg);
@@ -505,6 +507,11 @@ function renderGroupTables(){ GROUP_TABLES.forEach(renderGroupTable); }
 $$('.card-filter').forEach(inp=>inp.oninput=()=>{
   dashFilter[inp.dataset.table]=inp.value;
   const cfg=GROUP_TABLES.find(c=>c.sel===inp.dataset.table); if(cfg) renderGroupTable(cfg);
+});
+/* Ordinamento da mobile per le tabelle dashboard (le intestazioni sono nascoste) */
+$$('.card-sort').forEach(sel=>sel.onchange=()=>{
+  const [col,dir]=sel.value.split(':'); dashSort[sel.dataset.table]={col, dir:+dir};
+  const cfg=GROUP_TABLES.find(c=>c.sel===sel.dataset.table); if(cfg) renderGroupTable(cfg);
 });
 
 /* ============================================================================
@@ -657,6 +664,7 @@ function applyTxFilters(){
   rows.sort((a,b)=>{ const va=txSortKey(k,a), vb=txSortKey(k,b);
     const r=(typeof va==='number')?(va-vb):String(va).localeCompare(String(vb)); return r*txSort.dir; });
   $('#tx-count-label').textContent=`${rows.length} movimenti`;
+  const ss=$('#tx-sort'); if(ss){ const v=txSort.col+':'+txSort.dir; if([...ss.options].some(o=>o.value===v)) ss.value=v; }
   const cols=visibleCols();
   const head=cols.map(c=>{ const act=txSort.col===c?(txSort.dir>0?' ▲':' ▼'):'';
     return `<th class="th-sort ${TX_COLS[c].num?'num':''}" data-col="${c}">${esc(TX_COLS[c].label)}${act}</th>`; }).join('');
@@ -673,6 +681,11 @@ function applyTxFilters(){
 }
 ['#tx-search','#tx-filter-kind','#tx-filter-platform','#tx-from','#tx-to'].forEach(s=>{
   $(s).addEventListener('input',applyTxFilters); $(s).addEventListener('change',applyTxFilters);
+});
+/* Ordinamento da mobile per i Movimenti (intestazioni nascoste a schede) */
+const txSortSel=$('#tx-sort');
+if(txSortSel) txSortSel.addEventListener('change',()=>{
+  const [col,dir]=txSortSel.value.split(':'); txSort={col, dir:+dir}; applyTxFilters();
 });
 
 /* ---------- Gestione colonne (mostra/nascondi + ordine) ---------- */

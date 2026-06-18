@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=4">
+  <link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
 
@@ -81,6 +81,8 @@
         <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.2 9.3a2.8 2.8 0 0 1 5.4 1c0 1.9-2.6 2.2-2.6 4"/><path d="M12 17.4v.1"/></svg></span><span class="nav-label">Aiuto & FAQ</span></button>
       <button class="nav-item nav-item--about" data-view="about" title="Chi siamo">
         <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6v.1"/></svg></span><span class="nav-label">Chi siamo</span></button>
+      <button class="nav-more-btn" id="nav-more" type="button" aria-label="Altro" title="Altro">
+        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></span><span class="nav-label">Altro</span></button>
     </nav>
     <div class="sidebar-foot">
       <div class="theme-switch" role="group" aria-label="Tema">
@@ -91,6 +93,34 @@
       <span class="badge-local">● Dati salvati sul tuo dispositivo</span>
     </div>
   </aside>
+
+  <!-- ======= SHEET MOBILE "ALTRO" ======= -->
+  <div class="msheet" id="mobile-more" hidden>
+    <div class="msheet-backdrop" data-msheet-close></div>
+    <div class="msheet-card" role="dialog" aria-label="Altro">
+      <div class="msheet-handle"></div>
+      <div class="msheet-grid">
+        <button class="nav-item" data-view="import" title="Importa CSV">
+          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M4 21h16"/></svg></span><span class="nav-label">Importa CSV</span></button>
+        <button class="nav-item" data-view="settings" title="Impostazioni">
+          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5v5M5 14v5M12 3v6M12 13v8M19 7v3M19 14v3"/><circle cx="5" cy="12" r="2"/><circle cx="12" cy="11" r="2"/><circle cx="19" cy="12" r="2"/></svg></span><span class="nav-label">Impostazioni</span></button>
+        <button class="nav-item" data-view="faq" title="Aiuto & FAQ">
+          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.2 9.3a2.8 2.8 0 0 1 5.4 1c0 1.9-2.6 2.2-2.6 4"/><path d="M12 17.4v.1"/></svg></span><span class="nav-label">Aiuto & FAQ</span></button>
+        <button class="nav-item" data-view="offers" title="Offerte & Piani">
+          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0l-7.2-7.2A2 2 0 0 1 3 12V5a2 2 0 0 1 2-2h7a2 2 0 0 1 1.4.6l7.2 7.2a2 2 0 0 1 0 2.6Z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg></span><span class="nav-label">Offerte</span></button>
+        <button class="nav-item" data-view="about" title="Chi siamo">
+          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6v.1"/></svg></span><span class="nav-label">Chi siamo</span></button>
+      </div>
+      <div class="msheet-theme">
+        <span class="msheet-theme-lbl">Tema</span>
+        <div class="theme-switch theme-switch--lg" role="group" aria-label="Tema">
+          <button data-theme-opt="system">◐ Sistema</button>
+          <button data-theme-opt="light">☀ Chiaro</button>
+          <button data-theme-opt="dark">☾ Scuro</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- ======= MAIN ======= -->
   <main class="main">
@@ -910,9 +940,9 @@
   <!-- Area di stampa per lo statement royalty (visibile solo in stampa) -->
   <div id="print-area" aria-hidden="true"></div>
 
-  <script src="app.js?v=4"></script>
-  <script src="config.js?v=4"></script>
+  <script src="app.js?v=5"></script>
+  <script src="config.js?v=5"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="sync.js?v=4"></script>
+  <script src="sync.js?v=5"></script>
 </body>
 </html>

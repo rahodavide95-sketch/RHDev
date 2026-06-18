@@ -82,6 +82,10 @@ body.nav-collapsed{grid-template-columns:78px 1fr}
 .theme-switch button.is-active{background:var(--panel-2);color:var(--text);box-shadow:inset 0 0 0 1px var(--line)}
 .theme-switch--lg button{padding:9px 16px;font-size:.9rem}
 
+/* Bottone "Altro" e sheet: solo mobile (nascosti su desktop) */
+.nav-more-btn{display:none;background:none;border:none;color:var(--muted);font:inherit;cursor:pointer}
+.msheet{display:none}
+
 /* ===== Main ===== */
 .main{height:100vh;overflow-y:auto;overflow-x:hidden;position:relative}
 .content{padding:24px 40px 48px;max-width:1680px;margin-inline:auto}
@@ -187,8 +191,8 @@ body.show-topsec .topbar-section{opacity:1;transform:none}
 .billing-toggle button.is-active .save{background:rgba(255,255,255,.28);color:inherit}
 .plan-name{font-family:'Syne',sans-serif;font-weight:700;font-size:1.15rem}
 .plan-price{font-family:'Syne',sans-serif;font-weight:700;font-size:1.9rem;line-height:1;letter-spacing:-.055em}
-.plan-price span{font-size:.85rem;font-weight:500;color:var(--muted)}
-.plan-old{color:var(--muted);font-size:.95rem;font-weight:600;margin-left:8px}
+.plan-price span{font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:500;color:var(--muted);letter-spacing:normal;margin-left:2px}
+.plan-old{font-family:'DM Sans',sans-serif;color:var(--muted);font-size:.95rem;font-weight:600;margin-left:8px;letter-spacing:normal}
 .plan-note{font-size:.76rem;color:var(--in);min-height:15px;font-weight:600}
 .plan-desc{color:var(--muted);font-size:.9rem;min-height:40px}
 .plan-feat{list-style:none;display:flex;flex-direction:column;gap:8px;margin:6px 0 16px;font-size:.9rem}
@@ -384,18 +388,68 @@ body.gate-signup #gate-signin{opacity:.5}
 
 @media(max-width:880px){
   body,body.nav-collapsed{grid-template-columns:1fr}
-  .sidebar{position:fixed;bottom:0;top:auto;height:auto;width:100%;flex-direction:row;align-items:center;z-index:40;padding:6px 8px;gap:6px;border-right:none;border-top:1px solid var(--glass-brd)}
+
+  /* ---- Barra inferiore a schede (no scroll orizzontale) ---- */
+  .sidebar{
+    position:fixed;bottom:0;top:auto;left:0;right:0;height:auto;width:100%;
+    flex-direction:row;align-items:stretch;z-index:40;padding:6px 6px calc(6px + env(safe-area-inset-bottom));gap:0;
+    border-right:none;border-top:1px solid var(--glass-brd);box-shadow:0 -6px 24px rgba(0,0,0,.18)
+  }
   .sidebar-top,.sidebar-foot{display:none}
   .nav-sep,.nav-reopen{display:none!important}
-  .nav{flex-direction:row;flex:1;justify-content:space-around;gap:2px;overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .nav-item{flex-direction:column;gap:3px;padding:6px 9px;font-size:.64rem;text-align:center;white-space:nowrap;flex:0 0 auto}
+  .nav{flex-direction:row;flex:1;justify-content:space-between;gap:0;overflow:visible}
+  /* in barra restano solo le 4 sezioni principali + Altro */
+  .sidebar .nav-item[data-view="import"],
+  .sidebar .nav-item[data-view="settings"],
+  .sidebar .nav-item[data-view="faq"],
+  .sidebar .nav-item[data-view="about"]{display:none}
+  .nav>.nav-item,.nav-more-btn{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    flex:1 1 0;min-width:0;padding:7px 2px;font-size:.66rem;text-align:center;white-space:nowrap;border-radius:12px;background:none
+  }
+  .nav>.nav-item.is-active{background:none;box-shadow:none;color:var(--accent)}
+  .nav>.nav-item.is-active .nav-ico{color:var(--accent)}
   .nav-item.is-active::before{display:none}
-  .nav-ico svg{width:21px;height:21px}
-  .topbar{padding:0 14px;height:52px}
-  .topbar-section,.topbar-right .btn-ghost,.topbar-sep{display:none}
-  .content{padding:14px 14px 92px}
+  .nav-more-btn.is-open{color:var(--accent)}
+  .nav-ico svg{width:22px;height:22px}
+  .nav-label{font-size:.66rem;line-height:1}
+
+  /* ---- Sheet "Altro" ---- */
+  .msheet{display:block;position:fixed;inset:0;z-index:60}
+  .msheet[hidden]{display:none}
+  .msheet-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.45);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);animation:fade .2s ease}
+  .msheet-card{
+    position:absolute;left:0;right:0;bottom:0;
+    background:var(--glass-bg);-webkit-backdrop-filter:blur(32px) saturate(180%);backdrop-filter:blur(32px) saturate(180%);
+    border-top:1px solid var(--glass-brd);border-radius:22px 22px 0 0;
+    padding:10px 16px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -10px 40px rgba(0,0,0,.4);
+    animation:sheetUp .26s cubic-bezier(.2,.8,.2,1)
+  }
+  @keyframes sheetUp{from{transform:translateY(100%)}to{transform:none}}
+  .msheet-handle{width:42px;height:5px;border-radius:3px;background:var(--muted-2);opacity:.6;margin:4px auto 14px}
+  .msheet-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:8px}
+  .msheet .nav-item{
+    flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 8px;color:var(--text);
+    font-size:.78rem;white-space:normal;line-height:1.2;min-height:84px
+  }
+  .msheet .nav-item:hover,.msheet .nav-item.is-active{border-color:var(--accent);color:var(--accent)}
+  .msheet .nav-ico svg{width:24px;height:24px}
+  .msheet-theme{display:flex;flex-direction:column;gap:8px;margin-top:6px;padding-top:14px;border-top:1px solid var(--line)}
+  .msheet-theme-lbl{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+  .msheet-theme .theme-switch{width:100%;margin:0;display:flex}
+  .msheet-theme .theme-switch button{flex:1}
+
+  /* ---- Rifiniture generali mobile ---- */
+  .topbar{padding:0 14px;height:54px}
+  .topbar-section,.topbar-sep{display:none}
+  .content{padding:14px 14px 96px}
   .kpi-grid{grid-template-columns:1fr 1fr}
   .grid-2,.form-grid,.map-grid,.plans{grid-template-columns:1fr}
+  .view-head{flex-direction:column;align-items:stretch;gap:12px}
+  .head-actions{flex-wrap:wrap}
+  .toolbar{flex-direction:column;align-items:stretch}
+  .toolbar .input,.toolbar .select,.input--date{max-width:none;width:100%}
   .acct-menu{right:10px;left:10px;width:auto}
   h1{font-size:1.4rem}
 }

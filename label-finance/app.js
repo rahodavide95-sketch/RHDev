@@ -234,6 +234,23 @@ document.addEventListener('click',e=>{
   if(!p.hidden) p.scrollIntoView({behavior:'smooth',block:'nearest'});
 });
 
+/* sheet "Altro" su mobile */
+const msheet=$('#mobile-more'), moreBtn=$('#nav-more');
+function setMoreSheet(open){
+  if(!msheet) return;
+  msheet.hidden=!open;
+  if(moreBtn) moreBtn.classList.toggle('is-open',open);
+  document.body.classList.toggle('msheet-open',open);
+}
+if(moreBtn) moreBtn.onclick=()=>setMoreSheet(msheet.hidden);
+if(msheet){
+  msheet.addEventListener('click',e=>{
+    if(e.target.closest('[data-msheet-close]')) return setMoreSheet(false);
+    if(e.target.closest('.nav-item')) setMoreSheet(false); // naviga e chiudi
+  });
+}
+document.addEventListener('keydown',e=>{ if(e.key==='Escape' && msheet && !msheet.hidden) setMoreSheet(false); });
+
 /* ===== FAQ: ricerca + accordion ===== */
 function initFAQ(){
   document.addEventListener('click',e=>{

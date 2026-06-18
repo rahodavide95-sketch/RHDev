@@ -140,6 +140,7 @@
     setStatus(error ? authMsg(error.message) : 'Registrato. Se serve, conferma l\'email e poi accedi.');
   }
   async function signOut(){ if(client) await client.auth.signOut(); }
+  window.LF_signOut = signOut;
   async function saveAccount(){
     const name=$('account-name').value.trim(), label=$('account-label').value.trim();
     window.LF.setProfile({ name, label });

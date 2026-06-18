@@ -24,8 +24,7 @@
     <div class="gate-bg" aria-hidden="true"></div>
     <div class="gate-eq" id="gate-eq" aria-hidden="true"></div>
     <div class="gate-card">
-      <img src="icon.png" alt="Label Finance" class="gate-logo">
-      <h1 class="gate-title">Label<strong>Finance</strong></h1>
+      <img src="logo-full.png" alt="Label Finance" class="gate-logo-full">
       <p class="gate-sub" id="gate-sub">Accedi al tuo gestionale</p>
 
       <div class="gate-field gate-signup-only"><label for="gate-name">Nome</label>
@@ -425,8 +424,71 @@
         <p class="muted small">Costruito con cura per chi fa musica. Stesso indirizzo, stessi dati su ogni dispositivo.</p>
       </div>
     </section>
+
+    <!-- ====== OFFERTE & PIANI ====== -->
+    <section class="view" id="view-offers">
+      <header class="view-head"><div><h1>Offerte &amp; Piani</h1>
+        <p class="muted">Gestisci più etichette da un unico account. Scegli il piano adatto al tuo roster.</p></div></header>
+      <div class="plans">
+        <div class="plan-card" data-plan="free">
+          <div class="plan-name">Indie</div>
+          <div class="plan-price">Gratis</div>
+          <p class="plan-desc">Per chi avvia la propria etichetta indipendente.</p>
+          <ul class="plan-feat">
+            <li>1 etichetta</li>
+            <li>Entrate, uscite e royalty</li>
+            <li>Import CSV (Bandcamp, distributori)</li>
+            <li>Dashboard e report PDF</li>
+            <li>Sincronizzazione su tutti i dispositivi</li>
+          </ul>
+          <button class="btn plan-btn" data-plan="free">Attiva</button>
+        </div>
+        <div class="plan-card plan-card--featured" data-plan="studio">
+          <div class="plan-badge">Consigliato</div>
+          <div class="plan-name">Studio</div>
+          <div class="plan-price">€19<span>/mese</span></div>
+          <p class="plan-desc">Per chi gestisce più progetti ed etichette.</p>
+          <ul class="plan-feat">
+            <li>Fino a 3 etichette</li>
+            <li>Passaggio rapido tra etichette</li>
+            <li>Tutto del piano Indie</li>
+            <li>Statement royalty per artista</li>
+            <li>Supporto prioritario</li>
+          </ul>
+          <button class="btn btn-primary plan-btn" data-plan="studio">Attiva</button>
+        </div>
+        <div class="plan-card" data-plan="agency">
+          <div class="plan-name">Agency</div>
+          <div class="plan-price">€49<span>/mese</span></div>
+          <p class="plan-desc">Per manager e agenzie con più roster.</p>
+          <ul class="plan-feat">
+            <li>Etichette illimitate</li>
+            <li>Tutto del piano Studio</li>
+            <li>Esportazioni avanzate</li>
+            <li>Accesso team <em>(prossimamente)</em></li>
+            <li>Onboarding dedicato</li>
+          </ul>
+          <button class="btn plan-btn" data-plan="agency">Attiva</button>
+        </div>
+      </div>
+      <p class="muted small" style="margin-top:16px">I pagamenti reali (carta) saranno gestiti da un provider sicuro (es. Stripe). Per ora l'attivazione è dimostrativa, così puoi già usare più etichette.</p>
+    </section>
     </div><!-- /.content -->
   </main>
+
+  <!-- ======= MENU ACCOUNT ======= -->
+  <div class="acct-menu" id="account-menu" hidden>
+    <div class="acct-head">
+      <span class="acct-greet" id="account-greet">Le tue etichette</span>
+      <span class="acct-plan" id="account-plan">Piano Indie</span>
+    </div>
+    <div class="acct-labels" id="account-menu-labels"></div>
+    <button class="acct-item acct-add" id="acct-add"><span>＋ Aggiungi etichetta</span><span class="pro-badge">PRO</span></button>
+    <div class="acct-divider"></div>
+    <button class="acct-item" id="acct-offers">Offerte e piani</button>
+    <button class="acct-item" id="acct-settings">Impostazioni account</button>
+    <button class="acct-item acct-danger" id="acct-signout">Esci</button>
+  </div>
 
   <!-- ======= MODAL: movimento ======= -->
   <div class="modal" id="tx-modal" hidden>

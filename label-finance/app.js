@@ -22,31 +22,58 @@ const CANON = [
 const DEFAULT_TX_ORDER = ['date','kind','platform','catalog','product','artist','qty','net','eur',
   'dateTo','type','isrc','upc','gross','shipping','taxes','payProcFees','fees','csShare','currency','note'];
 const DEFAULT_TX_VISIBLE = ['date','kind','platform','catalog','product','artist','qty','net','eur'];
-const defaultData = () => ({
-  transactions: [],
-  releases: [],
-  profile: { name:'', label:'' },
-  rates: { EUR:1, USD:0.92, GBP:1.17, CHF:1.04 },
-  mappings: {},
-  txOrder: DEFAULT_TX_ORDER.slice(),
-  txHidden: DEFAULT_TX_ORDER.filter(c=>!DEFAULT_TX_VISIBLE.includes(c)),
-});
-let DB = load();
-function load(){
-  try { const r = JSON.parse(localStorage.getItem(STORE_KEY));
-    return r && r.transactions ? Object.assign(defaultData(), r) : defaultData(); }
-  catch { return defaultData(); }
+/* Account = piu' etichette; DB punta all'etichetta attiva. */
+const PLAN_LIMITS = { free:1, studio:3, agency:Infinity };
+const newId = ()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const defaultRates = ()=>({ EUR:1, USD:0.92, GBP:1.17, CHF:1.04 });
+function defaultLabel(name='La mia etichetta'){
+  return { id:newId(), name, transactions:[], releases:[], profile:{name:'',label:name},
+    rates:defaultRates(), mappings:{},
+    txOrder:DEFAULT_TX_ORDER.slice(), txHidden:DEFAULT_TX_ORDER.filter(c=>!DEFAULT_TX_VISIBLE.includes(c)) };
 }
-function saveLocal(){ localStorage.setItem(STORE_KEY, JSON.stringify(DB)); }
+function ensureLabelShape(l){
+  l.id=l.id||newId();
+  l.transactions=l.transactions||[]; l.releases=l.releases||[];
+  l.profile=l.profile||{name:'',label:l.name||''};
+  l.rates=l.rates||defaultRates(); l.mappings=l.mappings||{};
+  l.txOrder=l.txOrder||DEFAULT_TX_ORDER.slice();
+  l.txHidden=l.txHidden||DEFAULT_TX_ORDER.filter(c=>!DEFAULT_TX_VISIBLE.includes(c));
+  l.name=l.name||(l.profile&&l.profile.label)||'Etichetta';
+  return l;
+}
+function defaultAccount(){ const l=defaultLabel(); return { labels:[l], activeLabel:l.id, plan:'free' }; }
+function migrateAccount(raw){
+  if(!raw || typeof raw!=='object') return defaultAccount();
+  if(Array.isArray(raw.labels)){
+    raw.plan=raw.plan||'free';
+    if(!raw.labels.length) raw.labels=[defaultLabel()];
+    raw.labels.forEach(ensureLabelShape);
+    if(!raw.labels.find(l=>l.id===raw.activeLabel)) raw.activeLabel=raw.labels[0].id;
+    return raw;
+  }
+  if(raw.transactions){ // vecchio formato a singola etichetta -> migra
+    const name=(raw.profile&&raw.profile.label)||'La mia etichetta';
+    const lab=ensureLabelShape(Object.assign(defaultLabel(name), raw, {name}));
+    return { labels:[lab], activeLabel:lab.id, plan:'free' };
+  }
+  return defaultAccount();
+}
+function loadAccount(){ try{ return migrateAccount(JSON.parse(localStorage.getItem(STORE_KEY))); }catch{ return defaultAccount(); } }
+let ACCOUNT = loadAccount();
+function activeLabel(){ return ACCOUNT.labels.find(l=>l.id===ACCOUNT.activeLabel) || ACCOUNT.labels[0]; }
+let DB = activeLabel();
+function planLimit(){ return PLAN_LIMITS[ACCOUNT.plan] ?? 1; }
+function saveLocal(){ localStorage.setItem(STORE_KEY, JSON.stringify(ACCOUNT)); }
 function save(){ saveLocal(); if(window.LF_push) window.LF_push(); }
-/* API minimale per il modulo di sincronizzazione cloud (sync.js) */
+/* API per il modulo di sincronizzazione cloud (sync.js) — sincronizza tutto l'account */
 window.LF = {
-  data(){ return DB; },
-  applyCloud(d){ DB = Object.assign(defaultData(), d||{}); saveLocal(); reloadViews(); },
+  data(){ return ACCOUNT; },
+  applyCloud(d){ ACCOUNT = migrateAccount(d); DB = activeLabel(); saveLocal(); reloadViews(); if(typeof rebuildAccountMenu==='function') rebuildAccountMenu(); },
   profile(){ return DB.profile || (DB.profile={name:'',label:''}); },
-  setProfile(p){ DB.profile = Object.assign(this.profile(), p||{}); save(); if(typeof updateIdentity==='function') updateIdentity(); },
+  setProfile(p){ DB.profile = Object.assign(this.profile(), p||{}); if(p&&p.label) DB.name=p.label; save();
+    if(typeof updateIdentity==='function') updateIdentity(); if(typeof rebuildAccountMenu==='function') rebuildAccountMenu(); },
 };
-function reloadViews(){ renderDashboard(); renderTx(); renderReleases(); renderRoyalties(); renderSettings(); }
+function reloadViews(){ renderDashboard(); renderTx(); renderReleases(); renderRoyalties(); renderOffers(); renderSettings(); }
 // integra eventuali colonne nuove non ancora presenti nell'ordine salvato
 function ensureCols(){
   DB.txOrder = DB.txOrder || DEFAULT_TX_ORDER.slice();
@@ -173,7 +200,7 @@ function autoMap(headers){
 /* ============================================================================
    NAVIGAZIONE
    ============================================================================ */
-const VIEW_TITLES={dashboard:'Dashboard',transactions:'Movimenti',releases:'Release',royalties:'Royalty',import:'Importa CSV',settings:'Impostazioni',about:'Chi siamo'};
+const VIEW_TITLES={dashboard:'Dashboard',transactions:'Movimenti',releases:'Release',royalties:'Royalty',import:'Importa CSV',settings:'Impostazioni',about:'Chi siamo',offers:'Offerte & Piani'};
 function goto(view){
   $$('.nav-item').forEach(b=>b.classList.toggle('is-active',b.dataset.view===view));
   $$('.view').forEach(v=>v.classList.toggle('is-active',v.id==='view-'+view));
@@ -182,12 +209,58 @@ function goto(view){
   if(view==='transactions') renderTx();
   if(view==='releases') renderReleases();
   if(view==='royalties') renderRoyalties();
+  if(view==='offers') renderOffers();
   if(view==='settings') renderSettings();
   $('.main').scrollTop=0;
 }
 $$('.nav-item').forEach(b=>b.onclick=()=>goto(b.dataset.view));
 document.addEventListener('click',e=>{ const g=e.target.closest('[data-goto]'); if(g) goto(g.dataset.goto); });
-$('#btn-account').onclick=()=>goto('settings');
+
+/* ===== Account: menu, etichette, piani ===== */
+const PLAN_INFO={ free:{name:'Indie'}, studio:{name:'Studio'}, agency:{name:'Agency'} };
+function rebuildAccountMenu(){
+  const m=$('#account-menu-labels'); if(!m) return;
+  m.innerHTML=ACCOUNT.labels.map(l=>`<button class="acct-label ${l.id===ACCOUNT.activeLabel?'is-active':''}" data-label="${l.id}">
+    <span class="acct-dot"></span><span class="acct-label-name">${esc(l.name||'Etichetta')}</span>${l.id===ACCOUNT.activeLabel?'<span class="acct-check">✓</span>':''}</button>`).join('');
+  $$('#account-menu-labels .acct-label').forEach(b=>b.onclick=()=>switchLabel(b.dataset.label));
+  const g=$('#account-greet'); if(g) g.textContent=(DB.profile&&DB.profile.name)?DB.profile.name:'Le tue etichette';
+  const pn=$('#account-plan'); if(pn) pn.textContent='Piano '+((PLAN_INFO[ACCOUNT.plan]||{}).name||'Indie');
+}
+function closeAccountMenu(){ const e=$('#account-menu'); if(e) e.hidden=true; }
+function toggleAccountMenu(){ const e=$('#account-menu'); if(!e) return; if(e.hidden){ rebuildAccountMenu(); e.hidden=false; } else e.hidden=true; }
+function switchLabel(id){
+  if(!ACCOUNT.labels.find(l=>l.id===id)) return;
+  ACCOUNT.activeLabel=id; DB=activeLabel(); save(); reloadViews(); rebuildAccountMenu(); closeAccountMenu();
+  toast('Etichetta attiva: '+(DB.name||'')); goto('dashboard');
+}
+function addLabelFlow(){
+  closeAccountMenu();
+  if(ACCOUNT.labels.length>=planLimit()){ goto('offers'); toast('Passa a un piano superiore per aggiungere etichette'); return; }
+  const name=(prompt('Nome della nuova etichetta:')||'').trim(); if(!name) return;
+  const l=defaultLabel(name); l.profile={name:(DB.profile&&DB.profile.name)||'', label:name};
+  ACCOUNT.labels.push(l); ACCOUNT.activeLabel=l.id; DB=activeLabel(); save(); reloadViews(); rebuildAccountMenu();
+  toast('Etichetta aggiunta'); goto('dashboard');
+}
+function setPlan(plan){
+  if(!PLAN_LIMITS[plan]) return;
+  ACCOUNT.plan=plan; save(); renderOffers(); rebuildAccountMenu();
+  toast('Piano attivato: '+((PLAN_INFO[plan]||{}).name||plan));
+}
+function renderOffers(){
+  $$('#view-offers .plan-card').forEach(c=>{
+    const active=ACCOUNT.plan===c.dataset.plan;
+    c.classList.toggle('is-current',active);
+    const btn=c.querySelector('.plan-btn'); if(btn){ btn.textContent=active?'Piano attuale':'Attiva'; btn.disabled=active; }
+  });
+}
+$('#btn-account').onclick=e=>{ e.stopPropagation(); toggleAccountMenu(); };
+document.addEventListener('click',e=>{ const m=$('#account-menu');
+  if(m && !m.hidden && !m.contains(e.target) && !e.target.closest('#btn-account')) closeAccountMenu(); });
+$('#acct-add').onclick=addLabelFlow;
+$('#acct-offers').onclick=()=>{ closeAccountMenu(); goto('offers'); };
+$('#acct-settings').onclick=()=>{ closeAccountMenu(); goto('settings'); };
+$('#acct-signout').onclick=()=>{ closeAccountMenu(); if(window.LF_signOut) window.LF_signOut(); };
+$$('#view-offers .plan-btn').forEach(b=>b.onclick=()=>setPlan(b.dataset.plan));
 
 /* identità: saluto in dashboard + nome label nella topbar */
 function updateIdentity(){
@@ -755,7 +828,7 @@ $('#add-rate').onclick=()=>{
   if(!c||!v){ toast('Inserisci valuta e tasso'); return; }
   DB.rates[c]=v; save(); $('#rate-cur').value=$('#rate-val').value=''; renderSettings();
 };
-$('#export-json').onclick=()=>download('label-finance-backup.json',JSON.stringify(DB,null,2),'application/json');
+$('#export-json').onclick=()=>download('label-finance-backup.json',JSON.stringify(ACCOUNT,null,2),'application/json');
 $('#export-csv').onclick=()=>{
   const head=['kind',...CANON.map(c=>c[0]),'note'];
   const lines=[head.join(',')].concat(DB.transactions.map(t=>head.map(h=>csvCell(t[h])).join(',')));
@@ -764,13 +837,15 @@ $('#export-csv').onclick=()=>{
 $('#import-json').onclick=()=>$('#json-input').click();
 $('#json-input').onchange=e=>{
   const f=e.target.files[0]; if(!f) return; const r=new FileReader();
-  r.onload=()=>{ try{ const d=JSON.parse(r.result); if(!d.transactions) throw 0;
-    DB=Object.assign(defaultData(),d); save(); renderSettings(); toast('Backup ripristinato'); goto('dashboard'); }
+  r.onload=()=>{ try{ const d=JSON.parse(r.result); if(!d.transactions && !d.labels) throw 0;
+    ACCOUNT=migrateAccount(d); DB=activeLabel(); save(); reloadViews(); rebuildAccountMenu();
+    toast('Backup ripristinato'); goto('dashboard'); }
     catch{ toast('File non valido'); } };
   r.readAsText(f);
 };
-$('#wipe').onclick=()=>{ if(confirm('Cancellare TUTTI i dati da questo dispositivo? Operazione irreversibile.')){
-  DB=defaultData(); save(); renderSettings(); toast('Dati cancellati'); goto('dashboard'); } };
+$('#wipe').onclick=()=>{ if(confirm('Cancellare TUTTI i dati (tutte le etichette) da questo dispositivo? Operazione irreversibile.')){
+  ACCOUNT=defaultAccount(); DB=activeLabel(); save(); reloadViews(); rebuildAccountMenu();
+  toast('Dati cancellati'); goto('dashboard'); } };
 
 function csvCell(v){ const s=String(v??''); return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s; }
 function download(name,content,type){

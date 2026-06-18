@@ -541,7 +541,7 @@ $('#roy-detail-pdf').onclick=()=>{
   const rows=Object.entries(data.byRelease).map(([cat,amt])=>({cat,amt})).sort((a,b)=>b.amt-a.amt);
   $('#print-area').innerHTML=`<div class="stmt">
     <div class="stmt-head">
-      <img src="icon.svg" alt="" class="stmt-logo">
+      <img src="icon.png" alt="" class="stmt-logo">
       <div><div class="stmt-brand">Label<strong>Finance</strong></div>
         <div class="stmt-doc">Rendiconto Royalty</div></div>
     </div>

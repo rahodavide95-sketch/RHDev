@@ -41,11 +41,10 @@ h2{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:600}
   transition:padding .18s ease;
 }
 .sidebar-top{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:34px;padding-left:2px}
-.brand{display:flex;align-items:center;min-width:0;flex:1;text-decoration:none}
-.brand-full{height:34px;width:auto;max-width:100%;display:block}
-.brand-icon{width:32px;height:32px;display:none;flex:none}
-[data-theme="light"] .brand-full--dark{display:none}
-[data-theme="dark"] .brand-full--light{display:none}
+.brand{display:flex;align-items:center;gap:10px;min-width:0;flex:1;text-decoration:none;font-family:'Syne';font-size:1.08rem;letter-spacing:-.04em;color:var(--text)}
+.brand strong{font-weight:800}
+.brand-logo{width:34px;height:34px;flex:none;display:block}
+.brand-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .nav-collapse{background:none;border:none;color:var(--muted-2);cursor:pointer;line-height:0;padding:6px;border-radius:8px;flex:none;display:flex}
 .nav-collapse svg{width:19px;height:19px}
 .nav-collapse:hover{color:var(--text);background:var(--panel)}
@@ -65,8 +64,7 @@ h2{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:600}
 /* ----- Sidebar compressa (solo icone) ----- */
 body.nav-collapsed{grid-template-columns:78px 1fr}
 .nav-collapsed .sidebar{padding:16px 12px}
-.nav-collapsed .brand-full{display:none}
-.nav-collapsed .brand-icon{display:block}
+.nav-collapsed .brand-name{display:none}
 .nav-collapsed .brand{justify-content:center}
 .nav-collapsed .sidebar-top{flex-direction:column;align-items:center;gap:12px;padding-left:0}
 .nav-collapsed .nav-item{justify-content:center;gap:0;padding:11px 0}
@@ -110,7 +108,8 @@ body.nav-collapsed{grid-template-columns:78px 1fr}
 
 /* ===== Chi siamo ===== */
 .about-panel{max-width:640px;text-align:center;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:14px;padding:36px 30px}
-.about-full{height:56px;width:auto;max-width:80%;display:block;margin-bottom:4px}
+.about-logo{width:74px;height:74px;display:block}
+.about-title{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:700;letter-spacing:-.04em}
 .about-panel p{line-height:1.6;color:var(--text)}
 
 /* ===== Menu Account ===== */
@@ -432,8 +431,9 @@ body.gate-signup #gate-signin{opacity:.5}
 /* ===== Statement royalty (area di stampa) ===== */
 #print-area{display:none}
 .stmt{max-width:720px;margin:0 auto;color:#111;font-family:'DM Sans',sans-serif}
-.stmt-head{display:flex;align-items:center;justify-content:space-between;gap:14px;border-bottom:2px solid #7c3aed;padding-bottom:14px;margin-bottom:18px}
-.stmt-logo-full{height:46px;width:auto}
+.stmt-head{display:flex;align-items:center;gap:14px;border-bottom:2px solid #7c3aed;padding-bottom:14px;margin-bottom:18px}
+.stmt-logo{width:46px;height:46px}
+.stmt-brand{font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:700}
 .stmt-doc{color:#666;font-size:.95rem}
 .stmt-meta{line-height:1.7;margin-bottom:18px}
 .stmt-table{width:100%;border-collapse:collapse;font-size:.95rem}

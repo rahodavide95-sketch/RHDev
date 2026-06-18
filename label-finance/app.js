@@ -461,7 +461,7 @@ function xlsOf(headers,rows){
 }
 function printTableDoc(title,headers,rows){
   $('#print-area').innerHTML=`<div class="stmt">
-    <div class="stmt-head"><img src="lockup-v3-light.png" alt="" class="stmt-logo-full"><div class="stmt-doc">${esc(title)}</div></div>
+    <div class="stmt-head"><img src="icon.png?v=3" alt="" class="stmt-logo"><div><div class="stmt-brand">Label<strong>Finance</strong></div><div class="stmt-doc">${esc(title)}</div></div></div>
     <table class="stmt-table"><thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead>
     <tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>
     <p class="stmt-foot">Label Finance · ${esc(DB.name||'')} · ${new Date().toLocaleDateString('it-IT')}</p></div>`;
@@ -792,8 +792,9 @@ $('#roy-detail-pdf').onclick=()=>{
   const rows=Object.entries(data.byRelease).map(([cat,amt])=>({cat,amt})).sort((a,b)=>b.amt-a.amt);
   $('#print-area').innerHTML=`<div class="stmt">
     <div class="stmt-head">
-      <img src="lockup-v3-light.png" alt="Label Finance" class="stmt-logo-full">
-      <div class="stmt-doc">Rendiconto Royalty</div>
+      <img src="icon.png?v=3" alt="" class="stmt-logo">
+      <div><div class="stmt-brand">Label<strong>Finance</strong></div>
+        <div class="stmt-doc">Rendiconto Royalty</div></div>
     </div>
     <p class="stmt-meta">Artista: <strong>${esc(name)}</strong><br>
       Periodo: ${esc(period)}<br>

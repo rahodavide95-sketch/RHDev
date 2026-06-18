@@ -188,8 +188,6 @@ function goto(view){
 $$('.nav-item').forEach(b=>b.onclick=()=>goto(b.dataset.view));
 document.addEventListener('click',e=>{ const g=e.target.closest('[data-goto]'); if(g) goto(g.dataset.goto); });
 $('#btn-account').onclick=()=>goto('settings');
-$('#btn-about').onclick=()=>goto('about');
-$('#nav-reopen').onclick=()=>toggleNav(false);
 
 /* identità: saluto in dashboard + nome label nella topbar */
 function updateIdentity(){
@@ -215,7 +213,6 @@ const NAV_KEY='labelfinance.navCollapsed';
 function applyNavCollapsed(){
   const c=localStorage.getItem(NAV_KEY)==='1';
   document.body.classList.toggle('nav-collapsed',c);
-  const btn=$('#nav-collapse'); if(btn) btn.textContent=c?'»':'«';
 }
 function toggleNav(force){
   const c = force!=null ? force : localStorage.getItem(NAV_KEY)!=='1';

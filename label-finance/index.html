@@ -55,7 +55,9 @@
         <img src="icon.png" alt="Label Finance" class="brand-logo">
         <span class="brand-name">Label<strong>Finance</strong></span>
       </a>
-      <button class="nav-collapse" id="nav-collapse" title="Riduci menu" aria-label="Riduci menu">«</button>
+      <button class="nav-collapse" id="nav-collapse" title="Riduci / espandi menu" aria-label="Riduci o espandi menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><line x1="9.5" y1="4" x2="9.5" y2="20"/></svg>
+      </button>
     </div>
     <nav class="nav">
       <button class="nav-item is-active" data-view="dashboard" title="Dashboard">
@@ -83,7 +85,6 @@
       </div>
       <span class="badge-local">● Dati salvati sul tuo dispositivo</span>
     </div>
-    <button class="nav-reopen" id="nav-reopen" title="Apri menu" aria-label="Apri menu">»</button>
   </aside>
 
   <!-- ======= MAIN ======= -->
@@ -91,10 +92,10 @@
     <header class="topbar">
       <div class="topbar-left"><span class="topbar-section" id="topbar-section">Dashboard</span></div>
       <div class="topbar-right">
-        <button class="btn btn-ghost" id="btn-about">Chi siamo</button>
-        <span class="topbar-sep"></span>
         <span class="topbar-label" id="topbar-label"></span>
-        <button class="btn" id="btn-account">Account</button>
+        <button class="icon-btn" id="btn-account" title="Account" aria-label="Account">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.5 3.6-6 8-6s8 2.5 8 6"/></svg>
+        </button>
       </div>
     </header>
     <div class="content">

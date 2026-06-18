@@ -26,7 +26,7 @@
 html,body{height:100%}
 body{
   font-family:'DM Sans',system-ui,sans-serif;background:var(--app-bg);background-attachment:fixed;color:var(--text);
-  display:grid;grid-template-columns:274px 1fr;height:100vh;overflow:hidden;-webkit-font-smoothing:antialiased;
+  display:grid;grid-template-columns:274px 1fr;height:100vh;height:100dvh;overflow:hidden;-webkit-font-smoothing:antialiased;
 }
 h1{font-family:'Syne',sans-serif;font-size:1.7rem;font-weight:700;letter-spacing:-.01em}
 h2{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:600}
@@ -87,7 +87,7 @@ body.nav-collapsed{grid-template-columns:78px 1fr}
 .msheet{display:none}
 
 /* ===== Main ===== */
-.main{height:100vh;overflow-y:auto;overflow-x:hidden;position:relative}
+.main{height:100vh;height:100dvh;overflow-y:auto;overflow-x:hidden;position:relative}
 .content{padding:24px 40px 48px;max-width:1680px;margin-inline:auto}
 .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
 .view{display:none;animation:fade .25s ease}

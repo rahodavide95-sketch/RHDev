@@ -349,6 +349,10 @@ body.show-topsec .topbar-section{opacity:1;transform:none}
 
 /* ===== Login gate (sfondo artistico + vetro) ===== */
 .gate{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;padding:20px;background:#0c0916;overflow:hidden;color:#fff;animation:fade .4s ease}
+/* niente "flash" della dashboard prima del login: finché siamo in stato gated
+   l'app resta nascosta e si vede solo il gate */
+body:not(.gated) .gate{display:none}
+body.gated .sidebar,body.gated .main,body.gated .msheet,body.gated .acct-menu{display:none!important}
 .gate-bg{position:absolute;inset:-25%;z-index:0;background-repeat:no-repeat;
   background:
    radial-gradient(38% 48% at 22% 28%, rgba(167,139,250,.9), transparent 60%),

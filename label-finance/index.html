@@ -21,7 +21,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20">
+  <link rel="stylesheet" href="style.css?v=21">
 </head>
 <body class="gated">
 
@@ -121,8 +121,6 @@
           <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5v5M5 14v5M12 3v6M12 13v8M19 7v3M19 14v3"/><circle cx="5" cy="12" r="2"/><circle cx="12" cy="11" r="2"/><circle cx="19" cy="12" r="2"/></svg></span><span class="nav-label" data-i18n="nav.settings">Impostazioni</span></button>
         <button class="nav-item" data-view="faq" title="Aiuto & FAQ">
           <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.2 9.3a2.8 2.8 0 0 1 5.4 1c0 1.9-2.6 2.2-2.6 4"/><path d="M12 17.4v.1"/></svg></span><span class="nav-label" data-i18n="nav.faq">Aiuto & FAQ</span></button>
-        <button class="nav-item" data-view="offers" title="Offerte & Piani">
-          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0l-7.2-7.2A2 2 0 0 1 3 12V5a2 2 0 0 1 2-2h7a2 2 0 0 1 1.4.6l7.2 7.2a2 2 0 0 1 0 2.6Z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg></span><span class="nav-label" data-i18n="nav.offers">Offerte</span></button>
         <button class="nav-item" data-view="about" title="Chi siamo">
           <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6v.1"/></svg></span><span class="nav-label" data-i18n="nav.about">Chi siamo</span></button>
       </div>
@@ -166,12 +164,12 @@
         </div>
         <div class="head-actions">
           <select id="dash-period" class="select">
-            <option value="all">Tutti i periodi</option>
-            <option value="ytd">Anno corrente</option>
-            <option value="12m">Ultimi 12 mesi</option>
-            <option value="6m">Ultimi 6 mesi</option>
-            <option value="3m">Ultimi 3 mesi</option>
-            <option value="custom">Personalizzato…</option>
+            <option value="all" data-i18n="common.all_periods">Tutti i periodi</option>
+            <option value="ytd" data-i18n="common.period.ytd">Anno corrente</option>
+            <option value="12m" data-i18n="common.period.12m">Ultimi 12 mesi</option>
+            <option value="6m" data-i18n="common.period.6m">Ultimi 6 mesi</option>
+            <option value="3m" data-i18n="common.period.3m">Ultimi 3 mesi</option>
+            <option value="custom" data-i18n="common.period.custom">Personalizzato…</option>
           </select>
           <input type="date" id="dash-from" class="input input--date" title="Dalla data" hidden>
           <input type="date" id="dash-to" class="input input--date" title="Alla data" hidden>
@@ -307,18 +305,18 @@
       <div class="toolbar">
         <input type="search" id="tx-search" class="input" data-i18n-ph="tx.search" placeholder="Cerca prodotto, artista, catalogo…">
         <select id="tx-filter-kind" class="select">
-          <option value="">Tutti i tipi</option>
-          <option value="income">Solo entrate</option>
-          <option value="expense">Solo uscite</option>
+          <option value="" data-i18n="tx.all_kinds">Tutti i tipi</option>
+          <option value="income" data-i18n="tx.only_income">Solo entrate</option>
+          <option value="expense" data-i18n="tx.only_expense">Solo uscite</option>
         </select>
         <select id="tx-filter-platform" class="select"><option value="">Tutte le piattaforme</option></select>
         <select id="tx-period" class="select">
-          <option value="all">Tutti i periodi</option>
-          <option value="ytd">Anno corrente</option>
-          <option value="12m">Ultimi 12 mesi</option>
-          <option value="6m">Ultimi 6 mesi</option>
-          <option value="3m">Ultimi 3 mesi</option>
-          <option value="custom">Personalizzato…</option>
+          <option value="all" data-i18n="common.all_periods">Tutti i periodi</option>
+          <option value="ytd" data-i18n="common.period.ytd">Anno corrente</option>
+          <option value="12m" data-i18n="common.period.12m">Ultimi 12 mesi</option>
+          <option value="6m" data-i18n="common.period.6m">Ultimi 6 mesi</option>
+          <option value="3m" data-i18n="common.period.3m">Ultimi 3 mesi</option>
+          <option value="custom" data-i18n="common.period.custom">Personalizzato…</option>
         </select>
         <input type="date" id="tx-from" class="input input--date" title="Dalla data" hidden>
         <input type="date" id="tx-to" class="input input--date" title="Alla data" hidden>
@@ -370,12 +368,12 @@
         <div><div class="title-row"><h1 data-i18n="roy.title">Royalty</h1><button class="info-btn" data-info="royalties" title="Cos'è questa sezione?">i</button></div><p class="muted" data-i18n="roy.subtitle">Quanto spetta a ogni artista, calcolato sul netto delle entrate.</p></div>
         <div class="head-actions">
           <select id="roy-period" class="select">
-            <option value="all">Tutti i periodi</option>
-            <option value="ytd">Anno corrente</option>
-            <option value="12m">Ultimi 12 mesi</option>
-            <option value="6m">Ultimi 6 mesi</option>
-            <option value="3m">Ultimi 3 mesi</option>
-            <option value="custom">Personalizzato…</option>
+            <option value="all" data-i18n="common.all_periods">Tutti i periodi</option>
+            <option value="ytd" data-i18n="common.period.ytd">Anno corrente</option>
+            <option value="12m" data-i18n="common.period.12m">Ultimi 12 mesi</option>
+            <option value="6m" data-i18n="common.period.6m">Ultimi 6 mesi</option>
+            <option value="3m" data-i18n="common.period.3m">Ultimi 3 mesi</option>
+            <option value="custom" data-i18n="common.period.custom">Personalizzato…</option>
           </select>
           <input type="date" id="roy-from" class="input input--date" title="Dalla data" hidden>
           <input type="date" id="roy-to" class="input input--date" title="Alla data" hidden>
@@ -645,11 +643,11 @@
       </div>
 
       <div class="panel credits-panel">
-        <h3 class="credits-title">Crediti</h3>
+        <h3 class="credits-title" data-i18n="about.credits">Crediti</h3>
         <ul class="credits-list">
-          <li><span>Prodotto</span><b>Label<span class="lf-fin">Finance</span></b></li>
-          <li><span>Versione</span><b>1.0</b></li>
-          <li><span>Sviluppo &amp; design</span><b>Label Finance</b></li>
+          <li><span data-i18n="credits.product">Prodotto</span><b>Label Finance</b></li>
+          <li><span data-i18n="credits.version">Versione</span><b>1.0</b></li>
+          <li><span data-i18n="credits.dev">Sviluppo &amp; design</span><b>RHDev</b></li>
         </ul>
         <p class="credits-copy">© <span id="copyright-year">2026</span> Label Finance — Tutti i diritti riservati.</p>
         <p class="muted small">Tutti i marchi citati (Bandcamp, DistroKid, Believe, Symphonic…) appartengono ai rispettivi proprietari.</p>
@@ -673,8 +671,8 @@
       </div>
 
       <div class="billing-toggle" id="billing-toggle">
-        <button data-billing="monthly" class="is-active">Mensile</button>
-        <button data-billing="annual">Annuale <span class="save">−30%</span></button>
+        <button data-billing="monthly" class="is-active" data-i18n="off.monthly">Mensile</button>
+        <button data-billing="annual"><span data-i18n="off.annual">Annuale</span> <span class="save">−30%</span></button>
       </div>
       <div class="plans">
         <div class="plan-card" data-plan="free" data-monthly="9">
@@ -689,7 +687,7 @@
             <li>Dashboard e report PDF</li>
             <li>Sincronizzazione su tutti i dispositivi</li>
           </ul>
-          <button class="btn plan-btn" data-plan="free">Attiva</button>
+          <button class="btn plan-btn" data-plan="free" data-i18n="off.activate">Attiva</button>
         </div>
         <div class="plan-card" data-plan="studio" data-monthly="19">
           <div class="plan-name">Studio</div>
@@ -703,7 +701,7 @@
             <li>Statement royalty per artista</li>
             <li>Supporto prioritario</li>
           </ul>
-          <button class="btn btn-primary plan-btn" data-plan="studio">Attiva</button>
+          <button class="btn btn-primary plan-btn" data-plan="studio" data-i18n="off.activate">Attiva</button>
         </div>
         <div class="plan-card" data-plan="agency" data-monthly="49">
           <div class="plan-name">Agency</div>
@@ -717,7 +715,7 @@
             <li>Accesso team <em>(prossimamente)</em></li>
             <li>Onboarding dedicato</li>
           </ul>
-          <button class="btn plan-btn" data-plan="agency">Attiva</button>
+          <button class="btn plan-btn" data-plan="agency" data-i18n="off.activate">Attiva</button>
         </div>
       </div>
       <p class="muted small" style="margin-top:16px">I pagamenti reali (carta) saranno gestiti da un provider sicuro (es. Stripe). Per ora l'attivazione è dimostrativa, così puoi già usare più etichette.</p>
@@ -1046,10 +1044,10 @@
   <!-- Area di stampa per lo statement royalty (visibile solo in stampa) -->
   <div id="print-area" aria-hidden="true"></div>
 
-  <script src="app.js?v=20"></script>
-  <script src="config.js?v=20"></script>
-  <script src="i18n.js?v=20"></script>
+  <script src="app.js?v=21"></script>
+  <script src="config.js?v=21"></script>
+  <script src="i18n.js?v=21"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="sync.js?v=20"></script>
+  <script src="sync.js?v=21"></script>
 </body>
 </html>

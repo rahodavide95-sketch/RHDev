@@ -85,6 +85,12 @@ function ensureCols(){
 /* ---------- Utils ---------- */
 const $ = (s,r=document)=>r.querySelector(s);
 const $$ = (s,r=document)=>[...r.querySelectorAll(s)];
+/* traduzione: tt(chiave) → stringa nella lingua attiva (fallback alla chiave/italiano) */
+const tt = (k)=> (window.t ? window.t(k) : k);
+const COL_I18N={date:'col.date',dateTo:'col.dateTo',platform:'col.platform',type:'col.type',catalog:'col.catalog',
+  product:'col.product',artist:'col.artist',qty:'col.qty',gross:'col.gross',shipping:'col.shipping',taxes:'col.taxes',
+  payProcFees:'col.payProcFees',fees:'col.fees',csShare:'col.csShare',net:'col.net',currency:'col.currency',note:'col.note'};
+function colLabel(c){ return (COL_I18N[c]&&window.t) ? window.t(COL_I18N[c]) : (TX_COLS[c]?TX_COLS[c].label:c); }
 const uid = ()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const esc = s => String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
@@ -293,32 +299,32 @@ function rebuildAccountMenu(){
   const pn=$('#account-plan'); if(pn) pn.textContent='Piano '+((PLAN_INFO[ACCOUNT.plan]||{}).name||'Starter');
 }
 function deleteLabel(id){
-  if(ACCOUNT.labels.length<=1){ toast('Deve restare almeno un\'etichetta'); return; }
+  if(ACCOUNT.labels.length<=1){ toast(tt('t.label_min')); return; }
   const lab=ACCOUNT.labels.find(l=>l.id===id); if(!lab) return;
   if(!confirm(`Eliminare l'etichetta "${lab.name||''}" e tutti i suoi dati? Operazione irreversibile.`)) return;
   ACCOUNT.labels=ACCOUNT.labels.filter(l=>l.id!==id);
   if(ACCOUNT.activeLabel===id) ACCOUNT.activeLabel=ACCOUNT.labels[0].id;
-  DB=activeLabel(); save(); reloadViews(); rebuildAccountMenu(); toast('Etichetta eliminata'); goto('dashboard');
+  DB=activeLabel(); save(); reloadViews(); rebuildAccountMenu(); toast(tt('t.label_deleted')); goto('dashboard');
 }
 function closeAccountMenu(){ const e=$('#account-menu'); if(e) e.hidden=true; }
 function toggleAccountMenu(){ const e=$('#account-menu'); if(!e) return; if(e.hidden){ rebuildAccountMenu(); e.hidden=false; } else e.hidden=true; }
 function switchLabel(id){
   if(!ACCOUNT.labels.find(l=>l.id===id)) return;
   ACCOUNT.activeLabel=id; DB=activeLabel(); save(); reloadViews(); rebuildAccountMenu(); closeAccountMenu();
-  toast('Etichetta attiva: '+(DB.name||'')); goto('dashboard');
+  toast(tt('t.label_active')+(DB.name||'')); goto('dashboard');
 }
 function addLabelFlow(){
   closeAccountMenu();
-  if(ACCOUNT.labels.length>=planLimit()){ goto('offers'); toast('Passa a un piano superiore per aggiungere etichette'); return; }
+  if(ACCOUNT.labels.length>=planLimit()){ goto('offers'); toast(tt('t.upgrade')); return; }
   const name=(prompt('Nome della nuova etichetta:')||'').trim(); if(!name) return;
   const l=defaultLabel(name); l.profile={name:(DB.profile&&DB.profile.name)||'', label:name};
   ACCOUNT.labels.push(l); ACCOUNT.activeLabel=l.id; DB=activeLabel(); save(); reloadViews(); rebuildAccountMenu();
-  toast('Etichetta aggiunta'); goto('dashboard');
+  toast(tt('t.label_added')); goto('dashboard');
 }
 function setPlan(plan){
   if(!PLAN_LIMITS[plan]) return;
   ACCOUNT.plan=plan; save(); renderOffers(); rebuildAccountMenu();
-  toast('Piano attivato: '+((PLAN_INFO[plan]||{}).name||plan));
+  toast(tt('t.plan_activated')+((PLAN_INFO[plan]||{}).name||plan));
 }
 let billing='monthly';
 const fmtEur=n=> '€'+(Number.isInteger(n)? n : n.toFixed(2).replace('.',','));
@@ -354,7 +360,7 @@ $$('#billing-toggle button').forEach(b=>b.onclick=()=>{ billing=b.dataset.billin
 /* identità: saluto in dashboard + nome label nella topbar */
 function updateIdentity(){
   const p=(DB.profile)||{};
-  const g=$('#greeting'); if(g) g.textContent = p.name ? `Ciao, ${p.name}` : 'Dashboard';
+  const g=$('#greeting'); if(g) g.textContent = p.name ? `${tt('greet.hi')} ${p.name}` : tt('nav.dashboard');
   const tl=$('#topbar-label'); if(tl) tl.textContent = p.label || '';
 }
 
@@ -458,17 +464,17 @@ function renderDashboard(){
         <div class="bar bar--out" style="height:${months[k].out/max*160}px" title="Uscite ${fmtMoney(months[k].out)}"></div>
       </div>
       <span class="bar-label">${k}</span>
-    </div>`).join('') : '<p class="muted">Nessun dato nel periodo.</p>';
+    </div>`).join('') : `<p class="muted">${tt('empty.noperiod')}</p>`;
 
   dashTxs=txs;
   renderGroupTables();
 }
 /* card dashboard con filtro + ordinamento */
 const GROUP_TABLES=[
-  {sel:'#table-release',key:'catalog',label:'Catalogo'},
-  {sel:'#table-artist',key:'artist',label:'Artista'},
-  {sel:'#table-platform',key:'platform',label:'Piattaforma'},
-  {sel:'#table-type',key:'type',label:'Tipologia'},
+  {sel:'#table-release',key:'catalog',label:'Catalogo',i18n:'col.catalog'},
+  {sel:'#table-artist',key:'artist',label:'Artista',i18n:'col.artist'},
+  {sel:'#table-platform',key:'platform',label:'Piattaforma',i18n:'col.platform'},
+  {sel:'#table-type',key:'type',label:'Tipologia',i18n:'col.type'},
 ];
 let dashTxs=[]; const dashSort={}, dashFilter={};
 function computeGroup(cfg){
@@ -485,15 +491,17 @@ function computeGroup(cfg){
   return rows;
 }
 function renderGroupTable(cfg){
-  const {sel,label}=cfg;
+  const {sel}=cfg;
+  const label=(cfg.i18n&&window.t)?window.t(cfg.i18n):cfg.label;
+  const gin=tt('g.income'), gout=tt('g.expense'), gmar=tt('g.margin');
   const sort=dashSort[sel]||(dashSort[sel]={col:'net',dir:-1});
   const rows=computeGroup(cfg);
-  const cols=[['k',label,0],['in','Entrate',1],['out','Uscite',1],['net','Margine',1]];
+  const cols=[['k',label,0],['in',gin,1],['out',gout,1],['net',gmar,1]];
   const head=cols.map(([id,lab,num])=>{ const act=sort.col===id?(sort.dir>0?' ▲':' ▼'):'';
     return `<th class="th-sort ${num?'num':''}" data-col="${id}">${esc(lab)}${act}</th>`; }).join('');
   const body=rows.length?rows.map(r=>`<tr><td data-label="${esc(label)}">${esc(r.k)}</td>
-     <td class="num pos" data-label="Entrate">${fmtMoney(r.in)}</td><td class="num neg" data-label="Uscite">${fmtMoney(r.out)}</td>
-     <td class="num ${r.net>=0?'pos':'neg'}" data-label="Margine">${fmtMoney(r.net)}</td></tr>`).join('')
+     <td class="num pos" data-label="${esc(gin)}">${fmtMoney(r.in)}</td><td class="num neg" data-label="${esc(gout)}">${fmtMoney(r.out)}</td>
+     <td class="num ${r.net>=0?'pos':'neg'}" data-label="${esc(gmar)}">${fmtMoney(r.net)}</td></tr>`).join('')
      :'<tr><td colspan="4" class="muted">—</td></tr>';
   $(sel).innerHTML=`<thead><tr>${head}</tr></thead><tbody>${body}</tbody>`;
   const cs=document.querySelector(`.card-sort[data-table="${sel}"]`);
@@ -599,7 +607,7 @@ function loadDemo(){
   }
   tx.push({ id:uid(), kind:'expense', date:new Date(now.getFullYear(),now.getMonth()-4,10).toISOString().slice(0,10), platform:'', type:'expense', catalog:'SC-DEMO', product:'Mastering', artist:'', qty:1, gross:0, fees:0, net:80, csShare:0, currency:'EUR', note:'demo' });
   tx.push({ id:uid(), kind:'expense', date:new Date(now.getFullYear(),now.getMonth()-2,15).toISOString().slice(0,10), platform:'', type:'expense', catalog:'SC-DEMO', product:'Artwork', artist:'', qty:1, gross:0, fees:0, net:120, csShare:0, currency:'EUR', note:'demo' });
-  DB.transactions.push(...tx); save(); reloadViews(); toast('Dati demo caricati'); goto('dashboard');
+  DB.transactions.push(...tx); save(); reloadViews(); toast(tt('t.demo_loaded')); goto('dashboard');
 }
 $('#btn-demo')?.addEventListener('click', loadDemo);
 $('#btn-onb-income')?.addEventListener('click', ()=>{ curKind='income'; openTx(null); });
@@ -647,7 +655,7 @@ function txSortKey(c,t){
 function renderTx(){
   const platSel=$('#tx-filter-platform');
   const plats=[...new Set(DB.transactions.map(t=>t.platform).filter(Boolean))].sort();
-  platSel.innerHTML='<option value="">Tutte le piattaforme</option>'+plats.map(p=>`<option>${esc(p)}</option>`).join('');
+  platSel.innerHTML=`<option value="">${tt('tx.all_platforms')}</option>`+plats.map(p=>`<option>${esc(p)}</option>`).join('');
   applyTxFilters();
 }
 function applyTxFilters(){
@@ -664,14 +672,14 @@ function applyTxFilters(){
   const k=txSort.col;
   rows.sort((a,b)=>{ const va=txSortKey(k,a), vb=txSortKey(k,b);
     const r=(typeof va==='number')?(va-vb):String(va).localeCompare(String(vb)); return r*txSort.dir; });
-  $('#tx-count-label').textContent=`${rows.length} movimenti`;
+  $('#tx-count-label').textContent=`${rows.length} ${tt('tx.movements')}`;
   const ss=$('#tx-sort'); if(ss){ const v=txSort.col+':'+txSort.dir; if([...ss.options].some(o=>o.value===v)) ss.value=v; }
   const cols=visibleCols();
   const head=cols.map(c=>{ const act=txSort.col===c?(txSort.dir>0?' ▲':' ▼'):'';
-    return `<th class="th-sort ${TX_COLS[c].num?'num':''}" data-col="${c}">${esc(TX_COLS[c].label)}${act}</th>`; }).join('');
+    return `<th class="th-sort ${TX_COLS[c].num?'num':''}" data-col="${c}">${esc(colLabel(c))}${act}</th>`; }).join('');
   const body=rows.length
-    ? rows.map(t=>`<tr data-id="${t.id}">${cols.map(c=>`<td class="${TX_COLS[c].num?'num':''}" data-label="${esc(TX_COLS[c].label)}">${TX_COLS[c].cell(t)}</td>`).join('')}</tr>`).join('')
-    : `<tr><td colspan="${cols.length||1}" class="muted">Nessun movimento.</td></tr>`;
+    ? rows.map(t=>`<tr data-id="${t.id}">${cols.map(c=>`<td class="${TX_COLS[c].num?'num':''}" data-label="${esc(colLabel(c))}">${TX_COLS[c].cell(t)}</td>`).join('')}</tr>`).join('')
+    : `<tr><td colspan="${cols.length||1}" class="muted">${tt('empty.notx')}</td></tr>`;
   $('#table-tx').innerHTML=`<thead><tr>${head}</tr></thead><tbody>${body}</tbody>`;
   $$('#table-tx thead th[data-col]').forEach(th=>th.onclick=()=>{
     const c=th.dataset.col;
@@ -698,7 +706,7 @@ function renderColsManager(){
   $('#cols-list').innerHTML = DB.txOrder.filter(c=>TX_COLS[c]).map(c=>`
     <li class="col-item" data-col="${c}">
       <label class="col-check"><input type="checkbox" ${DB.txHidden.includes(c)?'':'checked'} data-col-toggle="${c}">
-        <span>${esc(TX_COLS[c].label)||'(tipo IN/OUT)'}</span></label>
+        <span>${esc(colLabel(c))||'(IN/OUT)'}</span></label>
       <span class="col-moves">
         <button type="button" data-col-up="${c}" title="Sposta su">↑</button>
         <button type="button" data-col-down="${c}" title="Sposta giù">↓</button>
@@ -755,7 +763,7 @@ function renderReleases(){
       <div class="split-chips">${chips}</div>
       ${(r.tracks&&r.tracks.length)?`<div class="release-tracks muted small">${r.tracks.length} tracc${r.tracks.length===1?'ia':'e'} con override</div>`:''}
     </div>`;
-  }).join('') : '<p class="muted">Nessuna release. Creane una per iniziare a calcolare le royalty.</p>';
+  }).join('') : `<p class="muted">${tt('empty.norel')}</p>`;
   $$('#releases-cards .release-card').forEach(c=>c.onclick=()=>openRelease(c.dataset.id));
 }
 
@@ -829,7 +837,7 @@ $('#rel-form').addEventListener('input', e=>{ if(e.target.classList.contains('sp
 $('#r-delete').onclick=()=>{
   const id=$('#r-id').value;
   DB.releases=releases().filter(r=>r.id!==id); save();
-  $('#rel-modal').hidden=true; renderReleases(); renderRoyalties(); toast('Release eliminata');
+  $('#rel-modal').hidden=true; renderReleases(); renderRoyalties(); toast(tt('t.rel_deleted'));
 };
 $('#rel-form').onsubmit=e=>{
   e.preventDefault();
@@ -844,10 +852,10 @@ $('#rel-form').onsubmit=e=>{
   });
   const rec={ id:id||uid(), catalog:$('#r-catalog').value.trim(), title:$('#r-title').value.trim(),
     year:Number($('#r-year').value)||'', splits, tracks };
-  if(!rec.catalog){ toast('Inserisci il catalogo'); return; }
+  if(!rec.catalog){ toast(tt('t.cat_required')); return; }
   if(id){ const i=releases().findIndex(r=>r.id===id); DB.releases[i]=rec; }
   else releases().push(rec);
-  save(); $('#rel-modal').hidden=true; renderReleases(); renderRoyalties(); toast('Release salvata');
+  save(); $('#rel-modal').hidden=true; renderReleases(); renderRoyalties(); toast(tt('t.rel_saved'));
 };
 
 /* ============================================================================
@@ -908,23 +916,23 @@ function renderRoyalties(){
   const rows=Object.entries(byArtist).map(([name,v])=>({name,...v})).sort((a,b)=>b.total-a.total);
   const tbl=$('#table-roy-artist');
   if(!hasRel){ tbl.innerHTML=''; $('#roy-detail-panel').hidden=true; return; }
-  tbl.innerHTML=`<thead><tr><th>Artista</th><th class="num">Royalty (€)</th></tr></thead>
+  tbl.innerHTML=`<thead><tr><th>${tt('roy.h.artist')}</th><th class="num">${tt('roy.h.amount')}</th></tr></thead>
     <tbody>${rows.map(r=>`<tr data-artist="${esc(r.name)}" style="cursor:pointer">
       <td data-label="Artista">${esc(r.name)}</td><td class="num pos" data-label="Royalty (€)">${fmtMoney(r.total)}</td></tr>`).join('')}
-      <tr><td data-label=""><strong>Label (quota residua)</strong></td><td class="num" data-label="Royalty (€)"><strong>${fmtMoney(labelTotal)}</strong></td></tr>
-      ${rows.length?'':'<tr><td colspan="2" class="muted">Nessuna entrata con catalogo collegato a una release.</td></tr>'}</tbody>`;
+      <tr><td data-label=""><strong>${tt('roy.label_residual')}</strong></td><td class="num" data-label="${tt('roy.h.amount')}"><strong>${fmtMoney(labelTotal)}</strong></td></tr>
+      ${rows.length?'':`<tr><td colspan="2" class="muted">${tt('empty.noroy')}</td></tr>`}</tbody>`;
   $$('#table-roy-artist tbody tr[data-artist]').forEach(tr=>tr.onclick=()=>showRoyaltyDetail(tr.dataset.artist,byArtist[tr.dataset.artist]));
 }
 let royDetail=null;   // {name, data} dell'artista mostrato
 function showRoyaltyDetail(name,data){
   if(!data) return;
   royDetail={name,data};
-  $('#roy-detail-title').textContent='Dettaglio — '+name;
+  $('#roy-detail-title').textContent=tt('roy.detail')+' — '+name;
   const rows=Object.entries(data.byRelease).map(([cat,amt])=>({cat,amt})).sort((a,b)=>b.amt-a.amt);
-  $('#table-roy-detail').innerHTML=`<thead><tr><th>Release</th><th class="num">Royalty (€)</th></tr></thead>
+  $('#table-roy-detail').innerHTML=`<thead><tr><th>${tt('roy.h.release')}</th><th class="num">${tt('roy.h.amount')}</th></tr></thead>
     <tbody>${rows.map(r=>{ const rel=releaseByCatalog(r.cat); const t=rel&&rel.title?` — ${esc(rel.title)}`:'';
       return `<tr><td data-label="Release">${esc(r.cat)}${t}</td><td class="num pos" data-label="Royalty (€)">${fmtMoney(r.amt)}</td></tr>`; }).join('')}
-      <tr><td data-label=""><strong>Totale</strong></td><td class="num pos" data-label="Royalty (€)"><strong>${fmtMoney(data.total)}</strong></td></tr></tbody>`;
+      <tr><td data-label=""><strong>${tt('roy.total')}</strong></td><td class="num pos" data-label="${tt('roy.h.amount')}"><strong>${fmtMoney(data.total)}</strong></td></tr></tbody>`;
   $('#roy-detail-panel').hidden=false;
   $('#roy-detail-panel').scrollIntoView({behavior:'smooth',block:'nearest'});
 }
@@ -990,7 +998,7 @@ $('#tx-modal').onclick=e=>{ if(e.target.id==='tx-modal') $('#tx-modal').hidden=t
 $('#f-delete').onclick=()=>{
   const id=$('#f-id').value;
   DB.transactions=DB.transactions.filter(t=>t.id!==id); save();
-  $('#tx-modal').hidden=true; renderTx(); toast('Movimento eliminato');
+  $('#tx-modal').hidden=true; renderTx(); toast(tt('t.tx_deleted'));
 };
 $('#tx-form').onsubmit=e=>{
   e.preventDefault();
@@ -1009,7 +1017,7 @@ $('#tx-form').onsubmit=e=>{
   };
   if(id){ const i=DB.transactions.findIndex(t=>t.id===id); DB.transactions[i]=rec; }
   else DB.transactions.push(rec);
-  save(); $('#tx-modal').hidden=true; renderTx(); toast('Salvato');
+  save(); $('#tx-modal').hidden=true; renderTx(); toast(tt('t.saved'));
 };
 
 /* ============================================================================
@@ -1131,7 +1139,7 @@ const txSig=t=>[t.kind,t.date,t.platform,(t.catalog||'').toLowerCase(),(t.produc
   t.isrc,t.upc,Math.round((+t.net||0)*100),t.qty].join('|');
 $('#import-confirm').onclick=()=>{
   const map=currentMap();
-  if(map.net==null && map.gross==null){ toast('Mappa almeno Netto o Lordo'); return; }
+  if(map.net==null && map.gross==null){ toast(tt('t.map_min')); return; }
   let recs=importRows.map(r=>rowToRec(r,map));
   let skipped=0;
   if($('#import-dedup').checked){
@@ -1140,7 +1148,7 @@ $('#import-confirm').onclick=()=>{
   }
   DB.transactions.push(...recs); save();
   $('#import-config').hidden=true; $('#file-input').value='';
-  toast(`${recs.length} importati${skipped?` · ${skipped} doppioni saltati`:''}`); goto('transactions');
+  toast(`${recs.length} ${tt('t.imported')}${skipped?` · ${skipped} ${tt('t.dupes_skipped')}`:''}`); goto('transactions');
 };
 
 /* ---------- Preset di mappatura ---------- */
@@ -1153,8 +1161,8 @@ function populatePresets(){
   sel.innerHTML='<option value="">— nuovo —</option>'+Object.keys(DB.mappings).map(n=>`<option>${esc(n)}</option>`).join('');
 }
 $('#save-preset').onclick=()=>{
-  const name=$('#map-preset-name').value.trim(); if(!name){ toast('Dai un nome al preset'); return; }
-  DB.mappings[name]=snapshotPreset(); save(); populatePresets(); $('#map-preset').value=name; toast('Preset salvato');
+  const name=$('#map-preset-name').value.trim(); if(!name){ toast(tt('t.preset_name')); return; }
+  DB.mappings[name]=snapshotPreset(); save(); populatePresets(); $('#map-preset').value=name; toast(tt('t.preset_saved'));
 };
 $('#map-preset').onchange=()=>{
   const p=DB.mappings[$('#map-preset').value]; if(!p) return;
@@ -1176,7 +1184,7 @@ function renderSettings(){
 }
 $('#add-rate').onclick=()=>{
   const c=$('#rate-cur').value.trim().toUpperCase().slice(0,3), v=parseFloat($('#rate-val').value);
-  if(!c||!v){ toast('Inserisci valuta e tasso'); return; }
+  if(!c||!v){ toast(tt('t.rate_required')); return; }
   DB.rates[c]=v; save(); $('#rate-cur').value=$('#rate-val').value=''; renderSettings();
 };
 $('#export-json').onclick=()=>download('label-finance-backup.json',JSON.stringify(ACCOUNT,null,2),'application/json');
@@ -1190,13 +1198,13 @@ $('#json-input').onchange=e=>{
   const f=e.target.files[0]; if(!f) return; const r=new FileReader();
   r.onload=()=>{ try{ const d=JSON.parse(r.result); if(!d.transactions && !d.labels) throw 0;
     ACCOUNT=migrateAccount(d); DB=activeLabel(); save(); reloadViews(); rebuildAccountMenu();
-    toast('Backup ripristinato'); goto('dashboard'); }
-    catch{ toast('File non valido'); } };
+    toast(tt('t.backup_restored')); goto('dashboard'); }
+    catch{ toast(tt('t.file_invalid')); } };
   r.readAsText(f);
 };
 $('#wipe').onclick=()=>{ if(confirm('Cancellare TUTTI i dati (tutte le etichette) da questo dispositivo? Operazione irreversibile.')){
   ACCOUNT=defaultAccount(); DB=activeLabel(); save(); reloadViews(); rebuildAccountMenu();
-  toast('Dati cancellati'); goto('dashboard'); } };
+  toast(tt('t.data_wiped')); goto('dashboard'); } };
 
 function csvCell(v){ const s=String(v??''); return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s; }
 function download(name,content,type){
@@ -1227,6 +1235,11 @@ if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator
 
 /* ---------- Anno copyright automatico ---------- */
 { const y=$('#copyright-year'); if(y) y.textContent=new Date().getFullYear(); }
+
+/* ---------- Cambio lingua: rigenera i contenuti dinamici ---------- */
+window.addEventListener('langchange', ()=>{
+  try{ reloadViews(); rebuildAccountMenu(); }catch(e){}
+});
 
 /* ---------- Avvio ---------- */
 renderDashboard();

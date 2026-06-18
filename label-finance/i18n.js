@@ -51,7 +51,7 @@
       'set.refresh':'Aggiorna ora','set.change_pw':'Cambia password',
       // Chi siamo
       'about.title':'Chi siamo','about.subtitle':'Label Finance — il gestionale per etichette indipendenti.',
-      'about.credits':'Crediti',
+      'about.credits':'Crediti','credits.product':'Prodotto','credits.version':'Versione','credits.dev':'Sviluppo & design',
       // Offerte
       'off.title':'Offerte & Piani','off.subtitle':'Gestisci più etichette da un unico account. Scegli il piano adatto al tuo roster.',
       'off.monthly':'Mensile','off.annual':'Annuale','off.activate':'Attiva',
@@ -62,6 +62,31 @@
       'gate.sub_login':'Accedi al tuo gestionale','gate.sub_signup':'Crea il tuo account',
       'gate.name':'Nome','gate.surname':'Cognome','gate.label':'Nome label','gate.email':'Email','gate.password':'Password',
       'gate.forgot':'Password dimenticata?','gate.signin':'Accedi','gate.signup':'Registrati',
+      // Colonne movimenti
+      'col.date':'Data','col.dateTo':'Data (a)','col.platform':'Piattaforma','col.type':'Tipologia',
+      'col.catalog':'Catalogo','col.product':'Prodotto','col.artist':'Artista','col.qty':'Q.tà',
+      'col.gross':'Lordo','col.shipping':'Spedizione','col.taxes':'Tasse','col.payProcFees':'Comm. processore',
+      'col.fees':'Commissioni','col.csShare':'Coll. society','col.net':'Netto','col.currency':'Valuta','col.note':'Nota',
+      // Etichette dinamiche
+      'greet.hi':'Ciao,','tx.movements':'movimenti','rel.count':'release',
+      'g.income':'Entrate','g.expense':'Uscite','g.margin':'Margine',
+      'roy.h.artist':'Artista','roy.h.amount':'Royalty (€)','roy.h.release':'Release',
+      'roy.label_residual':'Label (quota residua)','roy.total':'Totale','roy.detail':'Dettaglio',
+      'roy.click_artist':'Clicca un artista per il dettaglio per release.',
+      'empty.noperiod':'Nessun dato nel periodo.','empty.notx':'Nessun movimento.',
+      'empty.norel':'Nessuna release. Creane una per iniziare a calcolare le royalty.',
+      'empty.noroy':'Nessuna entrata con catalogo collegato a una release.',
+      // Toast
+      't.label_min':'Deve restare almeno un\'etichetta','t.label_deleted':'Etichetta eliminata',
+      't.label_active':'Etichetta attiva: ','t.upgrade':'Passa a un piano superiore per aggiungere etichette',
+      't.label_added':'Etichetta aggiunta','t.plan_activated':'Piano attivato: ',
+      't.demo_loaded':'Dati demo caricati','t.rel_deleted':'Release eliminata',
+      't.cat_required':'Inserisci il catalogo','t.rel_saved':'Release salvata',
+      't.tx_deleted':'Movimento eliminato','t.saved':'Salvato',
+      't.map_min':'Mappa almeno Netto o Lordo','t.imported':'importati','t.dupes_skipped':'doppioni saltati',
+      't.preset_name':'Dai un nome al preset','t.preset_saved':'Preset salvato',
+      't.rate_required':'Inserisci valuta e tasso','t.backup_restored':'Backup ripristinato',
+      't.file_invalid':'File non valido','t.data_wiped':'Dati cancellati',
     },
     en:{
       'nav.dashboard':'Dashboard','nav.transactions':'Transactions','nav.releases':'Releases',
@@ -94,7 +119,7 @@
       'set.name':'First name','set.surname':'Last name','set.label':'Label name','set.save_profile':'Save profile',
       'set.refresh':'Refresh now','set.change_pw':'Change password',
       'about.title':'About','about.subtitle':'Label Finance — the back office for independent labels.',
-      'about.credits':'Credits',
+      'about.credits':'Credits','credits.product':'Product','credits.version':'Version','credits.dev':'Development & design',
       'off.title':'Plans & Pricing','off.subtitle':'Manage multiple labels from one account. Pick the plan that fits your roster.',
       'off.monthly':'Monthly','off.annual':'Yearly','off.activate':'Activate',
       'faq.title':'Help & FAQ','faq.subtitle':'Answers to the most common questions. Search a word or browse by topic.',
@@ -102,6 +127,28 @@
       'gate.sub_login':'Sign in to your back office','gate.sub_signup':'Create your account',
       'gate.name':'First name','gate.surname':'Last name','gate.label':'Label name','gate.email':'Email','gate.password':'Password',
       'gate.forgot':'Forgot password?','gate.signin':'Sign in','gate.signup':'Sign up',
+      'col.date':'Date','col.dateTo':'Date (to)','col.platform':'Platform','col.type':'Type',
+      'col.catalog':'Catalog','col.product':'Product','col.artist':'Artist','col.qty':'Qty',
+      'col.gross':'Gross','col.shipping':'Shipping','col.taxes':'Taxes','col.payProcFees':'Processor fees',
+      'col.fees':'Fees','col.csShare':'Coll. society','col.net':'Net','col.currency':'Currency','col.note':'Note',
+      'greet.hi':'Hi,','tx.movements':'transactions','rel.count':'releases',
+      'g.income':'Income','g.expense':'Expenses','g.margin':'Margin',
+      'roy.h.artist':'Artist','roy.h.amount':'Royalties (€)','roy.h.release':'Release',
+      'roy.label_residual':'Label (remaining share)','roy.total':'Total','roy.detail':'Detail',
+      'roy.click_artist':'Click an artist for the per-release breakdown.',
+      'empty.noperiod':'No data in this period.','empty.notx':'No transactions.',
+      'empty.norel':'No releases yet. Create one to start calculating royalties.',
+      'empty.noroy':'No income linked to a release catalog.',
+      't.label_min':'At least one label must remain','t.label_deleted':'Label deleted',
+      't.label_active':'Active label: ','t.upgrade':'Upgrade your plan to add more labels',
+      't.label_added':'Label added','t.plan_activated':'Plan activated: ',
+      't.demo_loaded':'Demo data loaded','t.rel_deleted':'Release deleted',
+      't.cat_required':'Enter the catalog','t.rel_saved':'Release saved',
+      't.tx_deleted':'Transaction deleted','t.saved':'Saved',
+      't.map_min':'Map at least Net or Gross','t.imported':'imported','t.dupes_skipped':'duplicates skipped',
+      't.preset_name':'Name the preset','t.preset_saved':'Preset saved',
+      't.rate_required':'Enter currency and rate','t.backup_restored':'Backup restored',
+      't.file_invalid':'Invalid file','t.data_wiped':'Data cleared',
     }
   };
 
@@ -113,6 +160,7 @@
   function apply(root){
     root=root||document;
     root.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent=t(el.getAttribute('data-i18n')); });
+    root.querySelectorAll('[data-i18n-html]').forEach(el=>{ const v=DICT[lang][el.getAttribute('data-i18n-html')]||DICT.it[el.getAttribute('data-i18n-html')]; if(v!=null) el.innerHTML=v; });
     root.querySelectorAll('[data-i18n-ph]').forEach(el=>{ el.setAttribute('placeholder', t(el.getAttribute('data-i18n-ph'))); });
     root.querySelectorAll('[data-i18n-title]').forEach(el=>{ el.setAttribute('title', t(el.getAttribute('data-i18n-title'))); });
     document.documentElement.lang=lang;
@@ -124,6 +172,7 @@
   window.LFI18N={ t, setLang, apply, get lang(){ return lang; } };
   window.t=t;
 
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>{ apply(); wire(); });
-  else { apply(); wire(); }
+  function init(){ apply(); wire(); window.dispatchEvent(new CustomEvent('langchange',{detail:lang})); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
 })();

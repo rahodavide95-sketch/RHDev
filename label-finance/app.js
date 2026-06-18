@@ -882,11 +882,57 @@ function readFile(file){
 function refreshParse(){
   const rows=parseCSV(window._rawCSV||'', $('#map-delim').value);
   importHeaders=rows[0]||[]; importRows=rows.slice(1);
-  buildMapFields(autoMap(importHeaders));
+  const distro=detectDistro();
+  if(distro){ $('#map-distro').value=distro; applyDistro(distro); }
+  else { $('#map-distro').value='auto'; buildMapFields(autoMap(importHeaders)); }
   renderPreview();
 }
 $('#map-delim').onchange=refreshParse;
 ['#map-kind','#map-datefmt','#map-currency','#map-platform'].forEach(s=>$(s).addEventListener('input',renderPreview));
+
+/* ---------- Preset distributori (riconoscimento automatico colonne) ---------- */
+const DISTRO_PRESETS={
+  bandcamp:{ name:'Bandcamp', platform:'Bandcamp', datefmt:'mdy', fields:{
+    date:['date'], type:['item type'], artist:['artist'], product:['item name'],
+    catalog:['catalog number','catalog'], upc:['upc'], qty:['quantity'],
+    gross:['item total','sub total','item price'], fees:['transaction fee'],
+    net:['net amount'], currency:['currency'] } },
+  distrokid:{ name:'DistroKid', platform:'DistroKid', datefmt:'ymd', fields:{
+    date:['reporting date','sale month','sale date'], platform:['store'], type:['type'],
+    product:['title','song'], artist:['artist'], isrc:['isrc'], upc:['upc'],
+    qty:['quantity'], net:['earnings'], currency:['currency'] } },
+  believe:{ name:'Believe', platform:'Believe', datefmt:'dmy', fields:{
+    date:['sales period','period','date'], platform:['platform','dsp','store'],
+    product:['track title','release title','title'], artist:['artist name','artist'],
+    isrc:['isrc'], upc:['upc','ean'], qty:['quantity','units','net qty'],
+    net:['net revenue','net income','royalty','net'], currency:['currency'] } },
+  symphonic:{ name:'Symphonic', platform:'Symphonic', datefmt:'ymd', fields:{
+    date:['sale date','date','period'], platform:['store','dsp','retailer'],
+    product:['title','track'], artist:['artist'], isrc:['isrc'], upc:['upc'],
+    qty:['quantity','units'], net:['net','earnings','revenue'], currency:['currency'] } },
+};
+function detectDistro(){
+  let best=null, bestScore=2;
+  for(const key in DISTRO_PRESETS){ const p=DISTRO_PRESETS[key]; let s=0;
+    for(const f in p.fields){ if(importHeaders.some(h=>p.fields[f].some(x=>h.toLowerCase().includes(x)))) s++; }
+    if(s>bestScore){ bestScore=s; best=key; } }
+  return best;
+}
+function applyDistro(key){
+  const p=DISTRO_PRESETS[key]; if(!p){ buildMapFields(autoMap(importHeaders)); return; }
+  if($('#map-platform')) $('#map-platform').value=p.platform||'';
+  if(p.datefmt) $('#map-datefmt').value=p.datefmt;
+  const map={}, used=new Set();
+  CANON.forEach(([f])=>{ const subs=p.fields[f]; if(!subs) return;
+    importHeaders.forEach((h,i)=>{ if(used.has(i)) return;
+      if(map[f]==null && subs.some(s=>h.toLowerCase().includes(s))){ map[f]=i; used.add(i); } }); });
+  buildMapFields(map);
+}
+$('#map-distro')?.addEventListener('change',()=>{
+  const v=$('#map-distro').value;
+  if(v==='auto') buildMapFields(autoMap(importHeaders)); else applyDistro(v);
+  renderPreview();
+});
 
 function buildMapFields(initial={}){
   $('#map-fields').innerHTML = CANON.map(([f,label])=>`

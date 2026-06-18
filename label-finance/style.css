@@ -359,21 +359,22 @@ body.gated .sidebar,body.gated .main,body.gated .msheet,body.gated .acct-menu{di
    radial-gradient(42% 52% at 80% 26%, rgba(123,58,237,.85), transparent 62%),
    radial-gradient(40% 50% at 26% 78%, rgba(235,222,196,.5), transparent 62%);
   filter:blur(72px) saturate(155%);
-  animation:gate-flow-a 26s ease-in-out infinite alternate}
+  animation:gate-flow-a 14s ease-in-out infinite alternate, gate-hue 22s linear infinite}
 .gate-bg::before,.gate-bg::after{content:"";position:absolute;inset:-12%;background-repeat:no-repeat;filter:blur(72px) saturate(155%)}
 .gate-bg::before{
   background:
    radial-gradient(40% 50% at 72% 72%, rgba(180,107,255,.78), transparent 62%),
    radial-gradient(34% 44% at 42% 48%, rgba(244,236,214,.42), transparent 65%);
-  animation:gate-flow-b 33s ease-in-out infinite alternate}
+  animation:gate-flow-b 17s ease-in-out infinite alternate}
 .gate-bg::after{
   background:
    radial-gradient(36% 46% at 86% 84%, rgba(124,58,237,.7), transparent 60%),
    radial-gradient(32% 42% at 14% 42%, rgba(167,139,250,.62), transparent 62%);
-  animation:gate-flow-c 40s ease-in-out infinite alternate}
-@keyframes gate-flow-a{0%{transform:translate(-3%,-2%) scale(1.05)}100%{transform:translate(4%,3%) scale(1.13)}}
-@keyframes gate-flow-b{0%{transform:translate(3%,2%) scale(1.12)}100%{transform:translate(-4%,-3%) scale(1.05)}}
-@keyframes gate-flow-c{0%{transform:translate(0,3%) scale(1.08) rotate(0deg)}100%{transform:translate(3%,-3%) scale(1.16) rotate(4deg)}}
+  animation:gate-flow-c 20s ease-in-out infinite alternate}
+@keyframes gate-flow-a{0%{transform:translate(-9%,-6%) scale(1.05)}100%{transform:translate(10%,7%) scale(1.2)}}
+@keyframes gate-flow-b{0%{transform:translate(8%,6%) scale(1.16)}100%{transform:translate(-11%,-8%) scale(1.04)}}
+@keyframes gate-flow-c{0%{transform:translate(-4%,8%) scale(1.08) rotate(-5deg)}100%{transform:translate(9%,-8%) scale(1.22) rotate(7deg)}}
+@keyframes gate-hue{0%{filter:blur(72px) saturate(155%) hue-rotate(0deg)}100%{filter:blur(72px) saturate(155%) hue-rotate(360deg)}}
 .gate::after{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
   background:radial-gradient(135% 95% at 50% 30%, transparent 40%, rgba(9,6,18,.70) 100%)}
 .gate-eq{position:absolute;left:0;right:0;bottom:0;height:42%;z-index:1;display:flex;align-items:flex-end;gap:5px;padding:0 3%;opacity:.45;pointer-events:none}

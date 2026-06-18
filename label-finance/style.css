@@ -478,6 +478,18 @@ body.gate-signup #gate-signin{opacity:.5}
   .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
   .data-table{font-size:.82rem}
   .data-table th,.data-table td{padding:8px 9px}
+
+  /* Movimenti: una scheda per movimento, tutti i campi visibili (no scroll) */
+  #table-tx,#table-tx tbody{display:block;width:100%}
+  #table-tx thead{display:none}
+  #table-tx tr{display:block;background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:8px 14px;margin-bottom:10px}
+  #table-tx tr:hover td{background:none}
+  #table-tx td{display:flex;justify-content:space-between;align-items:baseline;gap:14px;border:none;padding:6px 0;white-space:normal;text-align:right;font-size:.9rem}
+  #table-tx td+td{border-top:1px solid var(--panel-2)}
+  #table-tx td::before{content:attr(data-label);color:var(--muted);font-weight:600;text-align:left;flex:0 0 42%;white-space:nowrap}
+  #table-tx td.num{text-align:right;font-variant-numeric:tabular-nums}
+  #table-tx td[colspan]{justify-content:center}
+  #table-tx td[colspan]::before{content:none}
   .acct-menu{right:10px;left:10px;width:auto}
   h1{font-size:1.4rem}
 }

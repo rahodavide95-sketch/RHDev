@@ -661,7 +661,7 @@ function applyTxFilters(){
   const head=cols.map(c=>{ const act=txSort.col===c?(txSort.dir>0?' ▲':' ▼'):'';
     return `<th class="th-sort ${TX_COLS[c].num?'num':''}" data-col="${c}">${esc(TX_COLS[c].label)}${act}</th>`; }).join('');
   const body=rows.length
-    ? rows.map(t=>`<tr data-id="${t.id}">${cols.map(c=>`<td class="${TX_COLS[c].num?'num':''}">${TX_COLS[c].cell(t)}</td>`).join('')}</tr>`).join('')
+    ? rows.map(t=>`<tr data-id="${t.id}">${cols.map(c=>`<td class="${TX_COLS[c].num?'num':''}" data-label="${esc(TX_COLS[c].label)}">${TX_COLS[c].cell(t)}</td>`).join('')}</tr>`).join('')
     : `<tr><td colspan="${cols.length||1}" class="muted">Nessun movimento.</td></tr>`;
   $('#table-tx').innerHTML=`<thead><tr>${head}</tr></thead><tbody>${body}</tbody>`;
   $$('#table-tx thead th[data-col]').forEach(th=>th.onclick=()=>{

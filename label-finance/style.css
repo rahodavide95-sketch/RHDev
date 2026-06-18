@@ -388,6 +388,12 @@ body.gated .sidebar,body.gated .main,body.gated .msheet,body.gated .acct-menu{di
 @keyframes gate-eq{0%,100%{transform:scaleY(.22)}50%{transform:scaleY(1)}}
 @media(prefers-reduced-motion:reduce){.gate-eq i{animation:none}}
 
+.gate-lang{position:absolute;top:calc(16px + env(safe-area-inset-top));right:16px;z-index:5;display:flex;gap:2px;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);border-radius:11px;padding:3px;
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.gate-lang button{background:none;border:none;color:rgba(255,255,255,.7);font:inherit;font-weight:700;font-size:.78rem;letter-spacing:.02em;padding:6px 11px;border-radius:8px;cursor:pointer;transition:.15s}
+.gate-lang button:hover{color:#fff}
+.gate-lang button.is-active{background:rgba(255,255,255,.2);color:#fff}
 .gate-card{position:relative;z-index:2;width:min(420px,100%);max-height:calc(100vh - 40px);overflow-y:auto;
   background:rgba(22,18,34,.55);-webkit-backdrop-filter:blur(26px) saturate(160%);backdrop-filter:blur(26px) saturate(160%);
   border:1px solid rgba(255,255,255,.16);border-radius:22px;padding:32px 28px;

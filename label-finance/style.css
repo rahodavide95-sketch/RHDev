@@ -99,7 +99,7 @@ body.nav-collapsed{grid-template-columns:78px 1fr}
 /* ===== Topbar globale (vetro) ===== */
 .topbar{
   position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;gap:14px;
-  height:58px;padding:0 22px;
+  height:calc(58px + env(safe-area-inset-top));padding:env(safe-area-inset-top) 22px 0;
   background:var(--glass-bg);-webkit-backdrop-filter:blur(32px) saturate(180%);backdrop-filter:blur(32px) saturate(180%);
   border-bottom:1px solid var(--glass-brd);box-shadow:inset 0 1px 0 var(--glass-hi);
 }
@@ -441,7 +441,7 @@ body.gate-signup #gate-signin{opacity:.5}
   .msheet-theme .theme-switch button{flex:1}
 
   /* ---- Rifiniture generali mobile ---- */
-  .topbar{padding:0 14px;height:54px}
+  .topbar{padding:env(safe-area-inset-top) 14px 0;height:calc(54px + env(safe-area-inset-top))}
   .topbar-section,.topbar-sep{display:none}
   .content{padding:14px 14px 96px}
   .kpi-grid{grid-template-columns:1fr 1fr}

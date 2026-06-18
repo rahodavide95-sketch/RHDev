@@ -21,7 +21,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=18">
+  <link rel="stylesheet" href="style.css?v=19">
 </head>
 <body class="gated">
 
@@ -46,16 +46,16 @@
           <input id="gate-surname" name="family-name" class="input" type="text" autocomplete="family-name" placeholder="Il tuo cognome"></div>
         <div class="gate-field gate-signup-only"><label for="gate-label">Nome label</label>
           <input id="gate-label" name="organization" class="input" type="text" autocomplete="organization" placeholder="Nome dell'etichetta"></div>
-        <div class="gate-field"><label for="gate-email">Email</label>
+        <div class="gate-field"><label for="gate-email" data-i18n="gate.email">Email</label>
           <input id="gate-email" name="username" class="input" type="email" autocomplete="username" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="email@esempio.com"></div>
-        <div class="gate-field"><label for="gate-pw">Password</label>
+        <div class="gate-field"><label for="gate-pw" data-i18n="gate.password">Password</label>
           <span class="input-eye"><input id="gate-pw" name="password" class="input" type="password" autocomplete="current-password" placeholder="••••••••">
             <button type="button" class="eye-btn" aria-label="Mostra password"></button></span></div>
-        <button type="button" class="gate-forgot gate-login-only" id="gate-forgot">Password dimenticata?</button>
+        <button type="button" class="gate-forgot gate-login-only" id="gate-forgot" data-i18n="gate.forgot">Password dimenticata?</button>
 
         <div class="gate-actions">
-          <button class="btn btn-primary" id="gate-signin" type="submit">Accedi</button>
-          <button class="btn btn-accent2" id="gate-signup" type="button">Registrati</button>
+          <button class="btn btn-primary" id="gate-signin" type="submit" data-i18n="gate.signin">Accedi</button>
+          <button class="btn btn-accent2" id="gate-signup" type="button" data-i18n="gate.signup">Registrati</button>
         </div>
       </form>
       <p class="gate-status" id="gate-status"></p>
@@ -75,25 +75,25 @@
     </div>
     <nav class="nav">
       <button class="nav-item is-active" data-view="dashboard" title="Dashboard">
-        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span><span class="nav-label">Dashboard</span></button>
+        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span><span class="nav-label" data-i18n="nav.dashboard">Dashboard</span></button>
       <button class="nav-item" data-view="transactions" title="Movimenti">
-        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v15"/><path d="M4 7l3-3 3 3"/><path d="M17 20V5"/><path d="M14 17l3 3 3-3"/></svg></span><span class="nav-label">Movimenti</span></button>
+        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v15"/><path d="M4 7l3-3 3 3"/><path d="M17 20V5"/><path d="M14 17l3 3 3-3"/></svg></span><span class="nav-label" data-i18n="nav.transactions">Movimenti</span></button>
       <button class="nav-item" data-view="releases" title="Release">
-        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/></svg></span><span class="nav-label">Release</span></button>
+        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/></svg></span><span class="nav-label" data-i18n="nav.releases">Release</span></button>
       <button class="nav-item" data-view="royalties" title="Royalty">
-        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 5 5 19"/><circle cx="7.5" cy="7.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/></svg></span><span class="nav-label">Royalty</span></button>
+        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 5 5 19"/><circle cx="7.5" cy="7.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/></svg></span><span class="nav-label" data-i18n="nav.royalties">Royalty</span></button>
       <button class="nav-item" data-view="import" title="Importa CSV">
-        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M4 21h16"/></svg></span><span class="nav-label">Importa CSV</span></button>
+        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M4 21h16"/></svg></span><span class="nav-label" data-i18n="nav.import">Importa CSV</span></button>
       <button class="nav-item" data-view="settings" title="Impostazioni">
-        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5v5M5 14v5M12 3v6M12 13v8M19 7v3M19 14v3"/><circle cx="5" cy="12" r="2"/><circle cx="12" cy="11" r="2"/><circle cx="19" cy="12" r="2"/></svg></span><span class="nav-label">Impostazioni</span></button>
+        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5v5M5 14v5M12 3v6M12 13v8M19 7v3M19 14v3"/><circle cx="5" cy="12" r="2"/><circle cx="12" cy="11" r="2"/><circle cx="19" cy="12" r="2"/></svg></span><span class="nav-label" data-i18n="nav.settings">Impostazioni</span></button>
 
       <div class="nav-sep"></div>
       <button class="nav-item" data-view="faq" title="Aiuto & FAQ">
-        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.2 9.3a2.8 2.8 0 0 1 5.4 1c0 1.9-2.6 2.2-2.6 4"/><path d="M12 17.4v.1"/></svg></span><span class="nav-label">Aiuto & FAQ</span></button>
+        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.2 9.3a2.8 2.8 0 0 1 5.4 1c0 1.9-2.6 2.2-2.6 4"/><path d="M12 17.4v.1"/></svg></span><span class="nav-label" data-i18n="nav.faq">Aiuto & FAQ</span></button>
       <button class="nav-item nav-item--about" data-view="about" title="Chi siamo">
-        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6v.1"/></svg></span><span class="nav-label">Chi siamo</span></button>
+        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6v.1"/></svg></span><span class="nav-label" data-i18n="nav.about">Chi siamo</span></button>
       <button class="nav-more-btn" id="nav-more" type="button" aria-label="Altro" title="Altro">
-        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></span><span class="nav-label">Altro</span></button>
+        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></span><span class="nav-label" data-i18n="nav.more">Altro</span></button>
     </nav>
     <div class="sidebar-foot">
       <div class="theme-switch" role="group" aria-label="Tema">
@@ -112,22 +112,29 @@
       <div class="msheet-handle"></div>
       <div class="msheet-grid">
         <button class="nav-item" data-view="import" title="Importa CSV">
-          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M4 21h16"/></svg></span><span class="nav-label">Importa CSV</span></button>
+          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M4 21h16"/></svg></span><span class="nav-label" data-i18n="nav.import">Importa CSV</span></button>
         <button class="nav-item" data-view="settings" title="Impostazioni">
-          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5v5M5 14v5M12 3v6M12 13v8M19 7v3M19 14v3"/><circle cx="5" cy="12" r="2"/><circle cx="12" cy="11" r="2"/><circle cx="19" cy="12" r="2"/></svg></span><span class="nav-label">Impostazioni</span></button>
+          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5v5M5 14v5M12 3v6M12 13v8M19 7v3M19 14v3"/><circle cx="5" cy="12" r="2"/><circle cx="12" cy="11" r="2"/><circle cx="19" cy="12" r="2"/></svg></span><span class="nav-label" data-i18n="nav.settings">Impostazioni</span></button>
         <button class="nav-item" data-view="faq" title="Aiuto & FAQ">
-          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.2 9.3a2.8 2.8 0 0 1 5.4 1c0 1.9-2.6 2.2-2.6 4"/><path d="M12 17.4v.1"/></svg></span><span class="nav-label">Aiuto & FAQ</span></button>
+          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.2 9.3a2.8 2.8 0 0 1 5.4 1c0 1.9-2.6 2.2-2.6 4"/><path d="M12 17.4v.1"/></svg></span><span class="nav-label" data-i18n="nav.faq">Aiuto & FAQ</span></button>
         <button class="nav-item" data-view="offers" title="Offerte & Piani">
-          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0l-7.2-7.2A2 2 0 0 1 3 12V5a2 2 0 0 1 2-2h7a2 2 0 0 1 1.4.6l7.2 7.2a2 2 0 0 1 0 2.6Z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg></span><span class="nav-label">Offerte</span></button>
+          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0l-7.2-7.2A2 2 0 0 1 3 12V5a2 2 0 0 1 2-2h7a2 2 0 0 1 1.4.6l7.2 7.2a2 2 0 0 1 0 2.6Z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg></span><span class="nav-label" data-i18n="nav.offers">Offerte</span></button>
         <button class="nav-item" data-view="about" title="Chi siamo">
-          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6v.1"/></svg></span><span class="nav-label">Chi siamo</span></button>
+          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6v.1"/></svg></span><span class="nav-label" data-i18n="nav.about">Chi siamo</span></button>
       </div>
       <div class="msheet-theme">
-        <span class="msheet-theme-lbl">Tema</span>
+        <span class="msheet-theme-lbl" data-i18n="common.theme">Tema</span>
         <div class="theme-switch theme-switch--lg" role="group" aria-label="Tema">
-          <button data-theme-opt="system">◐ Sistema</button>
-          <button data-theme-opt="light">☀ Chiaro</button>
-          <button data-theme-opt="dark">☾ Scuro</button>
+          <button data-theme-opt="system" data-i18n="theme.system">◐ Sistema</button>
+          <button data-theme-opt="light" data-i18n="theme.light">☀ Chiaro</button>
+          <button data-theme-opt="dark" data-i18n="theme.dark">☾ Scuro</button>
+        </div>
+      </div>
+      <div class="msheet-theme">
+        <span class="msheet-theme-lbl" data-i18n="common.language">Lingua</span>
+        <div class="theme-switch theme-switch--lg" role="group" aria-label="Lingua">
+          <button data-lang-opt="it">Italiano</button>
+          <button data-lang-opt="en">English</button>
         </div>
       </div>
     </div>
@@ -178,35 +185,35 @@
 
       <div class="kpi-grid">
         <div class="kpi kpi--in">
-          <span class="kpi-label">Entrate</span>
+          <span class="kpi-label" data-i18n="dash.kpi.income">Entrate</span>
           <span class="kpi-value" id="kpi-income">€0,00</span>
           <span class="kpi-delta" id="delta-income"></span>
         </div>
         <div class="kpi kpi--out">
-          <span class="kpi-label">Uscite</span>
+          <span class="kpi-label" data-i18n="dash.kpi.expense">Uscite</span>
           <span class="kpi-value" id="kpi-expense">€0,00</span>
           <span class="kpi-delta" id="delta-expense"></span>
         </div>
         <div class="kpi kpi--net">
-          <span class="kpi-label">Margine netto</span>
+          <span class="kpi-label" data-i18n="dash.kpi.net">Margine netto</span>
           <span class="kpi-value" id="kpi-net">€0,00</span>
           <span class="kpi-delta" id="delta-net"></span>
         </div>
         <div class="kpi">
-          <span class="kpi-label">Movimenti</span>
+          <span class="kpi-label" data-i18n="dash.kpi.count">Movimenti</span>
           <span class="kpi-value" id="kpi-count">0</span>
         </div>
       </div>
 
       <div class="panel">
-        <div class="panel-head"><h2>Entrate vs Uscite per mese</h2>
+        <div class="panel-head"><h2 data-i18n="dash.chart.title">Entrate vs Uscite per mese</h2>
           <span class="legend"><span class="legend-dot legend-dot--in"></span>Entrate<span class="legend-dot legend-dot--out"></span>Uscite</span></div>
         <div class="chart" id="chart-monthly"></div>
       </div>
 
       <div class="grid-2">
         <div class="panel">
-          <div class="panel-head"><h2>Per release / catalogo</h2>
+          <div class="panel-head"><h2 data-i18n="dash.byrelease">Per release / catalogo</h2>
             <input class="input card-filter" data-table="#table-release" placeholder="Filtra…">
             <select class="select card-sort sort-mobile" data-table="#table-release" title="Ordina">
               <option value="net:-1">Ordina: Margine ↓</option>
@@ -219,7 +226,7 @@
           <div class="table-wrap"><table class="data-table data-table--cards" id="table-release"></table></div>
         </div>
         <div class="panel">
-          <div class="panel-head"><h2>Per artista</h2>
+          <div class="panel-head"><h2 data-i18n="dash.byartist">Per artista</h2>
             <input class="input card-filter" data-table="#table-artist" placeholder="Filtra…">
             <select class="select card-sort sort-mobile" data-table="#table-artist" title="Ordina">
               <option value="net:-1">Ordina: Margine ↓</option>
@@ -232,7 +239,7 @@
           <div class="table-wrap"><table class="data-table data-table--cards" id="table-artist"></table></div>
         </div>
         <div class="panel">
-          <div class="panel-head"><h2>Per piattaforma</h2>
+          <div class="panel-head"><h2 data-i18n="dash.byplatform">Per piattaforma</h2>
             <input class="input card-filter" data-table="#table-platform" placeholder="Filtra…">
             <select class="select card-sort sort-mobile" data-table="#table-platform" title="Ordina">
               <option value="net:-1">Ordina: Margine ↓</option>
@@ -245,7 +252,7 @@
           <div class="table-wrap"><table class="data-table data-table--cards" id="table-platform"></table></div>
         </div>
         <div class="panel">
-          <div class="panel-head"><h2>Per tipologia</h2>
+          <div class="panel-head"><h2 data-i18n="dash.bytype">Per tipologia</h2>
             <input class="input card-filter" data-table="#table-type" placeholder="Filtra…">
             <select class="select card-sort sort-mobile" data-table="#table-type" title="Ordina">
               <option value="net:-1">Ordina: Margine ↓</option>
@@ -279,10 +286,10 @@
     <!-- ====== TRANSACTIONS ====== -->
     <section class="view" id="view-transactions">
       <header class="view-head">
-        <div><div class="title-row"><h1>Movimenti</h1><button class="info-btn" data-info="transactions" title="Cos'è questa sezione?">i</button></div><p class="muted" id="tx-count-label">0 movimenti</p></div>
+        <div><div class="title-row"><h1 data-i18n="tx.title">Movimenti</h1><button class="info-btn" data-info="transactions" title="Cos'è questa sezione?">i</button></div><p class="muted" id="tx-count-label">0 movimenti</p></div>
         <div class="head-actions">
-          <button class="btn" id="btn-add-expense">+ Uscita</button>
-          <button class="btn btn-primary" id="btn-add-income">+ Entrata</button>
+          <button class="btn" id="btn-add-expense" data-i18n="tx.add_expense">+ Uscita</button>
+          <button class="btn btn-primary" id="btn-add-income" data-i18n="tx.add_income">+ Entrata</button>
         </div>
       </header>
 
@@ -294,7 +301,7 @@
       </div>
 
       <div class="toolbar">
-        <input type="search" id="tx-search" class="input" placeholder="Cerca prodotto, artista, catalogo…">
+        <input type="search" id="tx-search" class="input" data-i18n-ph="tx.search" placeholder="Cerca prodotto, artista, catalogo…">
         <select id="tx-filter-kind" class="select">
           <option value="">Tutti i tipi</option>
           <option value="income">Solo entrate</option>
@@ -321,7 +328,7 @@
           <option value="product:1">Ordina: Prodotto A–Z</option>
         </select>
         <div class="toolbar-actions">
-          <button class="btn" id="btn-cols" title="Personalizza colonne">⚙ Colonne</button>
+          <button class="btn" id="btn-cols" title="Personalizza colonne" data-i18n="tx.cols">⚙ Colonne</button>
           <button class="btn btn-export" data-export="movimenti" title="Esporta CSV/Excel/PDF">⤓ Esporta</button>
         </div>
       </div>
@@ -334,10 +341,10 @@
     <!-- ====== RELEASES ====== -->
     <section class="view" id="view-releases">
       <header class="view-head">
-        <div><div class="title-row"><h1>Release</h1><button class="info-btn" data-info="releases" title="Cos'è questa sezione?">i</button></div><p class="muted" id="rel-count-label">0 release</p></div>
+        <div><div class="title-row"><h1 data-i18n="rel.title">Release</h1><button class="info-btn" data-info="releases" title="Cos'è questa sezione?">i</button></div><p class="muted" id="rel-count-label">0 release</p></div>
         <div class="head-actions">
           <button class="btn btn-export" data-export="releases" title="Esporta CSV/Excel/PDF">⤓ Esporta</button>
-          <button class="btn btn-primary" id="btn-add-release">+ Nuova release</button>
+          <button class="btn btn-primary" id="btn-add-release" data-i18n="rel.new">+ Nuova release</button>
         </div>
       </header>
 
@@ -356,7 +363,7 @@
     <!-- ====== ROYALTIES ====== -->
     <section class="view" id="view-royalties">
       <header class="view-head">
-        <div><div class="title-row"><h1>Royalty</h1><button class="info-btn" data-info="royalties" title="Cos'è questa sezione?">i</button></div><p class="muted">Quanto spetta a ogni artista, calcolato sul netto delle entrate.</p></div>
+        <div><div class="title-row"><h1 data-i18n="roy.title">Royalty</h1><button class="info-btn" data-info="royalties" title="Cos'è questa sezione?">i</button></div><p class="muted" data-i18n="roy.subtitle">Quanto spetta a ogni artista, calcolato sul netto delle entrate.</p></div>
         <div class="head-actions">
           <select id="roy-period" class="select">
             <option value="all">Tutti i periodi</option>
@@ -381,7 +388,7 @@
       </div>
 
       <div class="panel">
-        <div class="panel-head"><h2>Per artista</h2>
+        <div class="panel-head"><h2 data-i18n="dash.byartist">Per artista</h2>
           <span class="muted small">Clicca un artista per il dettaglio per release.</span></div>
         <div class="table-wrap"><table class="data-table data-table--cards" id="table-roy-artist"></table></div>
       </div>
@@ -400,8 +407,8 @@
 
     <!-- ====== IMPORT ====== -->
     <section class="view" id="view-import">
-      <header class="view-head"><div><div class="title-row"><h1>Importa CSV</h1><button class="info-btn" data-info="import" title="Cos'è questa sezione?">i</button></div>
-        <p class="muted">Carica un file da Bandcamp, dal distributore o da qualsiasi piattaforma. Mappi le colonne una volta.</p></div></header>
+      <header class="view-head"><div><div class="title-row"><h1 data-i18n="imp.title">Importa CSV</h1><button class="info-btn" data-info="import" title="Cos'è questa sezione?">i</button></div>
+        <p class="muted" data-i18n="imp.subtitle">Carica un file da Bandcamp, dal distributore o da qualsiasi piattaforma. Mappi le colonne una volta.</p></div></header>
 
       <div class="info-panel" id="info-import" hidden>
         <h4>A cosa serve l'Importazione CSV</h4>
@@ -494,8 +501,8 @@
 
     <!-- ====== SETTINGS ====== -->
     <section class="view" id="view-settings">
-      <header class="view-head"><div><div class="title-row"><h1>Impostazioni</h1><button class="info-btn" data-info="settings" title="Cos'è questa sezione?">i</button></div>
-        <p class="muted">Sincronizzazione, aspetto, tassi di cambio, backup e gestione dati.</p></div></header>
+      <header class="view-head"><div><div class="title-row"><h1 data-i18n="set.title">Impostazioni</h1><button class="info-btn" data-info="settings" title="Cos'è questa sezione?">i</button></div>
+        <p class="muted" data-i18n="set.subtitle">Sincronizzazione, aspetto, tassi di cambio, backup e gestione dati.</p></div></header>
 
       <div class="info-panel" id="info-settings" hidden>
         <h4>A cosa servono le Impostazioni</h4>
@@ -505,7 +512,7 @@
       </div>
 
       <div class="panel">
-        <div class="panel-head"><h2>☁ Sincronizzazione cloud</h2>
+        <div class="panel-head"><h2 data-i18n="set.sync">☁ Sincronizzazione cloud</h2>
           <span class="muted small" id="sync-status">Non configurata</span></div>
         <div class="panel-body">
           <p class="muted small">Collega un progetto Supabase (gratuito) per vedere gli stessi dati su PC e telefono. La guida è in <code>docs/SYNC-SETUP.md</code>.</p>
@@ -574,17 +581,25 @@
       </div>
 
       <div class="panel">
-        <div class="panel-head"><h2>Aspetto</h2>
+        <div class="panel-head"><h2 data-i18n="set.appearance">Aspetto</h2>
           <span class="muted small">"Sistema" segue le impostazioni del tuo dispositivo.</span></div>
         <div class="theme-switch theme-switch--lg" role="group" aria-label="Tema">
-          <button data-theme-opt="system">◐ Sistema</button>
-          <button data-theme-opt="light">☀ Chiaro</button>
-          <button data-theme-opt="dark">☾ Scuro</button>
+          <button data-theme-opt="system" data-i18n="theme.system">◐ Sistema</button>
+          <button data-theme-opt="light" data-i18n="theme.light">☀ Chiaro</button>
+          <button data-theme-opt="dark" data-i18n="theme.dark">☾ Scuro</button>
         </div>
       </div>
 
       <div class="panel">
-        <div class="panel-head"><h2>Tassi di cambio → EUR</h2>
+        <div class="panel-head"><h2 data-i18n="set.language">Lingua</h2></div>
+        <div class="theme-switch theme-switch--lg" role="group" aria-label="Lingua">
+          <button data-lang-opt="it">Italiano</button>
+          <button data-lang-opt="en">English</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2 data-i18n="set.rates">Tassi di cambio → EUR</h2>
           <span class="muted small">Usati per convertire le valute in euro nei totali.</span></div>
         <div class="rates-grid" id="rates-grid"></div>
         <div class="panel-foot">
@@ -597,7 +612,7 @@
       </div>
 
       <div class="panel">
-        <div class="panel-head"><h2>Backup & dati</h2></div>
+        <div class="panel-head"><h2 data-i18n="set.backup">Backup & dati</h2></div>
         <div class="panel-body">
           <p class="muted small">I dati sono salvati solo su questo dispositivo/browser. Esporta un backup regolarmente.</p>
           <div class="row-inline wrap">
@@ -613,8 +628,8 @@
 
     <!-- ====== CHI SIAMO ====== -->
     <section class="view" id="view-about">
-      <header class="view-head"><div><h1>Chi siamo</h1>
-        <p class="muted">Label Finance — il gestionale per etichette indipendenti.</p></div></header>
+      <header class="view-head"><div><h1 data-i18n="about.title">Chi siamo</h1>
+        <p class="muted" data-i18n="about.subtitle">Label Finance — il gestionale per etichette indipendenti.</p></div></header>
       <div class="panel about-panel">
         <img src="icon.png?v=3" alt="Label Finance" class="about-logo">
         <h2 class="about-title">Label<span class="lf-fin">Finance</span></h2>
@@ -639,8 +654,8 @@
 
     <!-- ====== OFFERTE & PIANI ====== -->
     <section class="view" id="view-offers">
-      <header class="view-head"><div><div class="title-row"><h1>Offerte &amp; Piani</h1><button class="info-btn" data-info="offers" title="Cos'è questa sezione?">i</button></div>
-        <p class="muted">Gestisci più etichette da un unico account. Scegli il piano adatto al tuo roster.</p></div></header>
+      <header class="view-head"><div><div class="title-row"><h1 data-i18n="off.title">Offerte &amp; Piani</h1><button class="info-btn" data-info="offers" title="Cos'è questa sezione?">i</button></div>
+        <p class="muted" data-i18n="off.subtitle">Gestisci più etichette da un unico account. Scegli il piano adatto al tuo roster.</p></div></header>
 
       <div class="info-panel" id="info-offers" hidden>
         <h4>Come funzionano i piani</h4>
@@ -706,11 +721,11 @@
 
     <!-- ====== AIUTO & FAQ ====== -->
     <section class="view" id="view-faq">
-      <header class="view-head"><div><h1>Aiuto &amp; FAQ</h1>
-        <p class="muted">Le risposte alle domande più comuni. Cerca una parola o sfoglia per argomento.</p></div></header>
+      <header class="view-head"><div><h1 data-i18n="faq.title">Aiuto &amp; FAQ</h1>
+        <p class="muted" data-i18n="faq.subtitle">Le risposte alle domande più comuni. Cerca una parola o sfoglia per argomento.</p></div></header>
 
       <div class="faq-search-wrap">
-        <input type="search" id="faq-search" class="input" placeholder="Cerca nella guida… (es. ISRC, CSV, royalty, password)">
+        <input type="search" id="faq-search" class="input" data-i18n-ph="faq.search" placeholder="Cerca nella guida… (es. ISRC, CSV, royalty, password)">
       </div>
 
       <div class="empty-hint" id="faq-empty" hidden>
@@ -1027,9 +1042,10 @@
   <!-- Area di stampa per lo statement royalty (visibile solo in stampa) -->
   <div id="print-area" aria-hidden="true"></div>
 
-  <script src="app.js?v=18"></script>
-  <script src="config.js?v=18"></script>
+  <script src="app.js?v=19"></script>
+  <script src="config.js?v=19"></script>
+  <script src="i18n.js?v=19"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="sync.js?v=18"></script>
+  <script src="sync.js?v=19"></script>
 </body>
 </html>

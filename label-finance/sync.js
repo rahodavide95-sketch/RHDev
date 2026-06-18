@@ -36,7 +36,9 @@
   function setGateMode(mode){
     const signup = mode==='signup';
     document.body.classList.toggle('gate-signup', signup);
-    const sub=$('gate-sub'); if(sub) sub.textContent = signup ? 'Crea il tuo account' : 'Accedi al tuo gestionale';
+    const sub=$('gate-sub'); if(sub) sub.textContent = window.t
+      ? window.t(signup?'gate.sub_signup':'gate.sub_login')
+      : (signup ? 'Crea il tuo account' : 'Accedi al tuo gestionale');
     // il pulsante "submit" del form cambia in base alla modalità (per il portachiavi iOS)
     if($('gate-signin')) $('gate-signin').type = signup ? 'button' : 'submit';
     if($('gate-signup')) $('gate-signup').type = signup ? 'submit' : 'button';
@@ -207,6 +209,8 @@
     $('gate-signin')?.addEventListener('click', ()=>{ if(document.body.classList.contains('gate-signup')) setGateMode('login'); });
     $('gate-signup')?.addEventListener('click', ()=>{ if(!document.body.classList.contains('gate-signup')) setGateMode('signup'); });
     $('gate-forgot')?.addEventListener('click', gateForgot);
+    // aggiorna il sottotitolo del gate al cambio lingua
+    window.addEventListener('langchange', ()=> setGateMode(document.body.classList.contains('gate-signup')?'signup':'login'));
     // impostazioni
     $('sync-save-config')?.addEventListener('click', ()=>{
       const url=$('sync-url').value.trim().replace(/\/$/,''), key=$('sync-key').value.trim();

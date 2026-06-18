@@ -21,7 +21,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=11">
+  <link rel="stylesheet" href="style.css?v=12">
 </head>
 <body>
 
@@ -202,25 +202,25 @@
           <div class="panel-head"><h2>Per release / catalogo</h2>
             <input class="input card-filter" data-table="#table-release" placeholder="Filtra…">
             <button class="btn-export" data-export="group:#table-release" title="Esporta">⤓</button></div>
-          <div class="table-wrap"><table class="data-table" id="table-release"></table></div>
+          <div class="table-wrap"><table class="data-table data-table--cards" id="table-release"></table></div>
         </div>
         <div class="panel">
           <div class="panel-head"><h2>Per artista</h2>
             <input class="input card-filter" data-table="#table-artist" placeholder="Filtra…">
             <button class="btn-export" data-export="group:#table-artist" title="Esporta">⤓</button></div>
-          <div class="table-wrap"><table class="data-table" id="table-artist"></table></div>
+          <div class="table-wrap"><table class="data-table data-table--cards" id="table-artist"></table></div>
         </div>
         <div class="panel">
           <div class="panel-head"><h2>Per piattaforma</h2>
             <input class="input card-filter" data-table="#table-platform" placeholder="Filtra…">
             <button class="btn-export" data-export="group:#table-platform" title="Esporta">⤓</button></div>
-          <div class="table-wrap"><table class="data-table" id="table-platform"></table></div>
+          <div class="table-wrap"><table class="data-table data-table--cards" id="table-platform"></table></div>
         </div>
         <div class="panel">
           <div class="panel-head"><h2>Per tipologia</h2>
             <input class="input card-filter" data-table="#table-type" placeholder="Filtra…">
             <button class="btn-export" data-export="group:#table-type" title="Esporta">⤓</button></div>
-          <div class="table-wrap"><table class="data-table" id="table-type"></table></div>
+          <div class="table-wrap"><table class="data-table data-table--cards" id="table-type"></table></div>
         </div>
       </div>
 
@@ -273,7 +273,7 @@
       </div>
 
       <div class="table-wrap">
-        <table class="data-table data-table--full" id="table-tx"></table>
+        <table class="data-table data-table--full data-table--cards" id="table-tx"></table>
       </div>
     </section>
 
@@ -329,14 +329,14 @@
       <div class="panel">
         <div class="panel-head"><h2>Per artista</h2>
           <span class="muted small">Clicca un artista per il dettaglio per release.</span></div>
-        <div class="table-wrap"><table class="data-table" id="table-roy-artist"></table></div>
+        <div class="table-wrap"><table class="data-table data-table--cards" id="table-roy-artist"></table></div>
       </div>
       <div class="panel" id="roy-detail-panel" hidden>
         <div class="panel-head"><h2 id="roy-detail-title">Dettaglio</h2>
           <span class="spacer" style="flex:1"></span>
           <button class="btn btn-pdf" id="roy-detail-pdf" title="Rendiconto PDF da inviare all'artista">⤓ Statement PDF</button>
           <button class="btn" id="roy-detail-close">Chiudi</button></div>
-        <div class="table-wrap"><table class="data-table" id="table-roy-detail"></table></div>
+        <div class="table-wrap"><table class="data-table data-table--cards" id="table-roy-detail"></table></div>
       </div>
       <div class="empty-hint" id="roy-empty" hidden>
         <p>Per calcolare le royalty servono delle release con le quote. Crea la prima release.</p>
@@ -973,9 +973,9 @@
   <!-- Area di stampa per lo statement royalty (visibile solo in stampa) -->
   <div id="print-area" aria-hidden="true"></div>
 
-  <script src="app.js?v=11"></script>
-  <script src="config.js?v=11"></script>
+  <script src="app.js?v=12"></script>
+  <script src="config.js?v=12"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="sync.js?v=11"></script>
+  <script src="sync.js?v=12"></script>
 </body>
 </html>

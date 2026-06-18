@@ -491,9 +491,9 @@ function renderGroupTable(cfg){
   const cols=[['k',label,0],['in','Entrate',1],['out','Uscite',1],['net','Margine',1]];
   const head=cols.map(([id,lab,num])=>{ const act=sort.col===id?(sort.dir>0?' ▲':' ▼'):'';
     return `<th class="th-sort ${num?'num':''}" data-col="${id}">${esc(lab)}${act}</th>`; }).join('');
-  const body=rows.length?rows.map(r=>`<tr><td>${esc(r.k)}</td>
-     <td class="num pos">${fmtMoney(r.in)}</td><td class="num neg">${fmtMoney(r.out)}</td>
-     <td class="num ${r.net>=0?'pos':'neg'}">${fmtMoney(r.net)}</td></tr>`).join('')
+  const body=rows.length?rows.map(r=>`<tr><td data-label="${esc(label)}">${esc(r.k)}</td>
+     <td class="num pos" data-label="Entrate">${fmtMoney(r.in)}</td><td class="num neg" data-label="Uscite">${fmtMoney(r.out)}</td>
+     <td class="num ${r.net>=0?'pos':'neg'}" data-label="Margine">${fmtMoney(r.net)}</td></tr>`).join('')
      :'<tr><td colspan="4" class="muted">—</td></tr>';
   $(sel).innerHTML=`<thead><tr>${head}</tr></thead><tbody>${body}</tbody>`;
   $$(`${sel} thead th[data-col]`).forEach(th=>th.onclick=()=>{
@@ -893,8 +893,8 @@ function renderRoyalties(){
   if(!hasRel){ tbl.innerHTML=''; $('#roy-detail-panel').hidden=true; return; }
   tbl.innerHTML=`<thead><tr><th>Artista</th><th class="num">Royalty (€)</th></tr></thead>
     <tbody>${rows.map(r=>`<tr data-artist="${esc(r.name)}" style="cursor:pointer">
-      <td>${esc(r.name)}</td><td class="num pos">${fmtMoney(r.total)}</td></tr>`).join('')}
-      <tr><td><strong>Label (quota residua)</strong></td><td class="num"><strong>${fmtMoney(labelTotal)}</strong></td></tr>
+      <td data-label="Artista">${esc(r.name)}</td><td class="num pos" data-label="Royalty (€)">${fmtMoney(r.total)}</td></tr>`).join('')}
+      <tr><td data-label=""><strong>Label (quota residua)</strong></td><td class="num" data-label="Royalty (€)"><strong>${fmtMoney(labelTotal)}</strong></td></tr>
       ${rows.length?'':'<tr><td colspan="2" class="muted">Nessuna entrata con catalogo collegato a una release.</td></tr>'}</tbody>`;
   $$('#table-roy-artist tbody tr[data-artist]').forEach(tr=>tr.onclick=()=>showRoyaltyDetail(tr.dataset.artist,byArtist[tr.dataset.artist]));
 }
@@ -906,8 +906,8 @@ function showRoyaltyDetail(name,data){
   const rows=Object.entries(data.byRelease).map(([cat,amt])=>({cat,amt})).sort((a,b)=>b.amt-a.amt);
   $('#table-roy-detail').innerHTML=`<thead><tr><th>Release</th><th class="num">Royalty (€)</th></tr></thead>
     <tbody>${rows.map(r=>{ const rel=releaseByCatalog(r.cat); const t=rel&&rel.title?` — ${esc(rel.title)}`:'';
-      return `<tr><td>${esc(r.cat)}${t}</td><td class="num pos">${fmtMoney(r.amt)}</td></tr>`; }).join('')}
-      <tr><td><strong>Totale</strong></td><td class="num pos"><strong>${fmtMoney(data.total)}</strong></td></tr></tbody>`;
+      return `<tr><td data-label="Release">${esc(r.cat)}${t}</td><td class="num pos" data-label="Royalty (€)">${fmtMoney(r.amt)}</td></tr>`; }).join('')}
+      <tr><td data-label=""><strong>Totale</strong></td><td class="num pos" data-label="Royalty (€)"><strong>${fmtMoney(data.total)}</strong></td></tr></tbody>`;
   $('#roy-detail-panel').hidden=false;
   $('#roy-detail-panel').scrollIntoView({behavior:'smooth',block:'nearest'});
 }

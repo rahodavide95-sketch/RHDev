@@ -37,6 +37,11 @@
     const signup = mode==='signup';
     document.body.classList.toggle('gate-signup', signup);
     const sub=$('gate-sub'); if(sub) sub.textContent = signup ? 'Crea il tuo account' : 'Accedi al tuo gestionale';
+    // il pulsante "submit" del form cambia in base alla modalità (per il portachiavi iOS)
+    if($('gate-signin')) $('gate-signin').type = signup ? 'button' : 'submit';
+    if($('gate-signup')) $('gate-signup').type = signup ? 'submit' : 'button';
+    // login = password esistente, registrazione = nuova password (suggerimenti iOS)
+    if($('gate-pw')) $('gate-pw').setAttribute('autocomplete', signup ? 'new-password' : 'current-password');
     gateStatus('');
   }
   async function gateSignIn(){
@@ -193,10 +198,14 @@
 
   /* ---------- Wiring ---------- */
   function wire(){
-    // gate
-    $('gate-signin')?.addEventListener('click', ()=>{ document.body.classList.contains('gate-signup') ? setGateMode('login') : gateSignIn(); });
-    $('gate-signup')?.addEventListener('click', ()=>{ document.body.classList.contains('gate-signup') ? gateSignUp() : setGateMode('signup'); });
-    $('gate-pw')?.addEventListener('keydown', e=>{ if(e.key==='Enter') (document.body.classList.contains('gate-signup')?gateSignUp():gateSignIn()); });
+    // gate: il form gestisce il submit (così iOS/Keychain riconosce il login)
+    $('gate-form')?.addEventListener('submit', e=>{
+      e.preventDefault();
+      document.body.classList.contains('gate-signup') ? gateSignUp() : gateSignIn();
+    });
+    // i due pulsanti, quando NON sono il submit corrente, servono a cambiare modalità
+    $('gate-signin')?.addEventListener('click', ()=>{ if(document.body.classList.contains('gate-signup')) setGateMode('login'); });
+    $('gate-signup')?.addEventListener('click', ()=>{ if(!document.body.classList.contains('gate-signup')) setGateMode('signup'); });
     $('gate-forgot')?.addEventListener('click', gateForgot);
     // impostazioni
     $('sync-save-config')?.addEventListener('click', ()=>{

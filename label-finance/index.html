@@ -21,7 +21,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=14">
+  <link rel="stylesheet" href="style.css?v=15">
 </head>
 <body>
 
@@ -34,23 +34,25 @@
       <h1 class="gate-title">Label<span class="lf-fin">Finance</span></h1>
       <p class="gate-sub" id="gate-sub">Accedi al tuo gestionale</p>
 
-      <div class="gate-field gate-signup-only"><label for="gate-name">Nome</label>
-        <input id="gate-name" class="input" type="text" placeholder="Il tuo nome"></div>
-      <div class="gate-field gate-signup-only"><label for="gate-surname">Cognome</label>
-        <input id="gate-surname" class="input" type="text" placeholder="Il tuo cognome"></div>
-      <div class="gate-field gate-signup-only"><label for="gate-label">Nome label</label>
-        <input id="gate-label" class="input" type="text" placeholder="Nome dell'etichetta"></div>
-      <div class="gate-field"><label for="gate-email">Email</label>
-        <input id="gate-email" class="input" type="email" autocomplete="username" placeholder="email@esempio.com"></div>
-      <div class="gate-field"><label for="gate-pw">Password</label>
-        <span class="input-eye"><input id="gate-pw" class="input" type="password" autocomplete="current-password" placeholder="••••••••">
-          <button type="button" class="eye-btn" aria-label="Mostra password"></button></span></div>
-      <button type="button" class="gate-forgot gate-login-only" id="gate-forgot">Password dimenticata?</button>
+      <form id="gate-form" autocomplete="on">
+        <div class="gate-field gate-signup-only"><label for="gate-name">Nome</label>
+          <input id="gate-name" name="given-name" class="input" type="text" autocomplete="given-name" placeholder="Il tuo nome"></div>
+        <div class="gate-field gate-signup-only"><label for="gate-surname">Cognome</label>
+          <input id="gate-surname" name="family-name" class="input" type="text" autocomplete="family-name" placeholder="Il tuo cognome"></div>
+        <div class="gate-field gate-signup-only"><label for="gate-label">Nome label</label>
+          <input id="gate-label" name="organization" class="input" type="text" autocomplete="organization" placeholder="Nome dell'etichetta"></div>
+        <div class="gate-field"><label for="gate-email">Email</label>
+          <input id="gate-email" name="username" class="input" type="email" autocomplete="username" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="email@esempio.com"></div>
+        <div class="gate-field"><label for="gate-pw">Password</label>
+          <span class="input-eye"><input id="gate-pw" name="password" class="input" type="password" autocomplete="current-password" placeholder="••••••••">
+            <button type="button" class="eye-btn" aria-label="Mostra password"></button></span></div>
+        <button type="button" class="gate-forgot gate-login-only" id="gate-forgot">Password dimenticata?</button>
 
-      <div class="gate-actions">
-        <button class="btn btn-primary" id="gate-signin">Accedi</button>
-        <button class="btn btn-accent2" id="gate-signup">Registrati</button>
-      </div>
+        <div class="gate-actions">
+          <button class="btn btn-primary" id="gate-signin" type="submit">Accedi</button>
+          <button class="btn btn-accent2" id="gate-signup" type="button">Registrati</button>
+        </div>
+      </form>
       <p class="gate-status" id="gate-status"></p>
     </div>
   </div>
@@ -1020,9 +1022,9 @@
   <!-- Area di stampa per lo statement royalty (visibile solo in stampa) -->
   <div id="print-area" aria-hidden="true"></div>
 
-  <script src="app.js?v=14"></script>
-  <script src="config.js?v=14"></script>
+  <script src="app.js?v=15"></script>
+  <script src="config.js?v=15"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="sync.js?v=14"></script>
+  <script src="sync.js?v=15"></script>
 </body>
 </html>

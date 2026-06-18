@@ -157,6 +157,11 @@ body.show-topsec .topbar-section{opacity:1;transform:none}
 .credits-list span{color:var(--muted);font-size:.9rem}
 .credits-list b{font-weight:600;text-align:right}
 .credits-copy{font-size:.9rem;color:var(--text);margin:4px 0 10px;font-weight:600}
+.pw-change{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--panel-2)}
+.pw-change>summary{cursor:pointer;font-weight:600;font-size:.92rem;list-style:none}
+.pw-change>summary::-webkit-details-marker{display:none}
+.pw-change>summary::before{content:'🔑 ';}
+.pw-change[open]>summary{margin-bottom:4px}
 
 /* ===== Menu Account ===== */
 .acct-menu{position:fixed;top:54px;right:16px;z-index:45;width:272px;
@@ -383,6 +388,9 @@ body.show-topsec .topbar-section{opacity:1;transform:none}
 .gate .eye-btn:hover{color:#fff}
 .gate-signup-only{display:none}
 body.gate-signup .gate-signup-only{display:flex}
+body.gate-signup .gate-login-only{display:none}
+.gate-forgot{display:block;margin:2px 0 0 auto;background:none;border:none;color:rgba(255,255,255,.7);font:inherit;font-size:.82rem;cursor:pointer;padding:4px 2px;text-decoration:underline}
+.gate-forgot:hover{color:#fff}
 .gate-actions{display:flex;gap:10px;margin-top:18px}
 .gate-actions .btn{flex:1;justify-content:center;display:flex;transition:.15s}
 .btn-accent2{background:var(--in);border-color:var(--in);color:var(--on-in);font-weight:600}
@@ -451,7 +459,7 @@ body.gate-signup #gate-signin{opacity:.5}
   /* ---- Rifiniture generali mobile ---- */
   .topbar{padding:env(safe-area-inset-top) 14px 0;height:calc(54px + env(safe-area-inset-top))}
   .topbar-section,.topbar-sep{display:none}
-  .content{padding:14px 14px 96px}
+  .content{padding:14px 14px 78px}
   .kpi-grid{grid-template-columns:1fr 1fr}
   .grid-2,.form-grid,.map-grid,.plans{grid-template-columns:1fr}
   .view-head{flex-direction:column;align-items:stretch;gap:12px}

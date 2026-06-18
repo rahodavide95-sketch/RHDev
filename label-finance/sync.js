@@ -47,17 +47,26 @@
   }
   async function gateSignUp(){
     if(!client){ gateStatus('Servizio non disponibile, usa "Continua senza account".',true); return; }
-    const name=$('gate-name').value.trim(), label=$('gate-label').value.trim();
+    const name=$('gate-name').value.trim(), surname=$('gate-surname')?$('gate-surname').value.trim():'', label=$('gate-label').value.trim();
     if(!name||!label){ gateStatus('Inserisci nome e nome label.',true); return; }
     gateStatus('Registrazione in corso…');
     const { data, error } = await client.auth.signUp({
       email:$('gate-email').value.trim(), password:$('gate-pw').value,
-      options:{ data:{ full_name:name, label_name:label } }
+      options:{ data:{ full_name:name, last_name:surname, label_name:label } }
     });
     if(error){ gateStatus(authMsg(error.message),true); return; }
-    window.LF.setProfile({ name, label });
+    window.LF.setProfile({ name, surname, label });
     if(data.session) gateStatus('Account creato ✓');                       // login immediato → onAuth nasconde il gate
     else gateStatus('Account creato. Controlla l\'email per confermare, poi premi Accedi.');
+  }
+  async function gateForgot(){
+    if(!client){ gateStatus('Servizio non disponibile.',true); return; }
+    const email=$('gate-email').value.trim();
+    if(!email){ gateStatus('Inserisci la tua email, poi premi "Password dimenticata?".',true); return; }
+    gateStatus('Invio email di reset…');
+    const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo: location.href.split('#')[0] });
+    if(error) gateStatus(authMsg(error.message),true);
+    else gateStatus('Ti abbiamo inviato un\'email per reimpostare la password. Apri il link, poi imposta la nuova password.');
   }
 
   /* ---------- UI impostazioni ---------- */
@@ -80,6 +89,7 @@
     const md = (user && user.user_metadata) || {};
     const p = window.LF.profile();
     if($('account-name')) $('account-name').value = md.full_name || p.name || '';
+    if($('account-surname')) $('account-surname').value = md.last_name || p.surname || '';
     if($('account-label')) $('account-label').value = md.label_name || p.label || '';
   }
 
@@ -91,7 +101,8 @@
     try{ client = window.supabase.createClient(cfg.url, cfg.key); }
     catch(e){ setStatus('Configurazione non valida'); return; }
     setStatus('In attesa di accesso…');
-    client.auth.onAuthStateChange((_evt, session)=>{ user = session?.user || null; onAuth(); });
+    client.auth.onAuthStateChange((evt, session)=>{ user = session?.user || null; onAuth();
+      if(evt==='PASSWORD_RECOVERY') onRecovery(); });
     client.auth.getSession().then(({data})=>{ user = data.session?.user || null; onAuth(); });
   }
 
@@ -142,12 +153,32 @@
   async function signOut(){ if(client) await client.auth.signOut(); }
   window.LF_signOut = signOut;
   async function saveAccount(){
-    const name=$('account-name').value.trim(), label=$('account-label').value.trim();
-    window.LF.setProfile({ name, label });
+    const name=$('account-name').value.trim(), surname=$('account-surname')?$('account-surname').value.trim():'', label=$('account-label').value.trim();
+    window.LF.setProfile({ name, surname, label });
     if(client && user){
-      const { error } = await client.auth.updateUser({ data:{ full_name:name, label_name:label } });
+      const { error } = await client.auth.updateUser({ data:{ full_name:name, last_name:surname, label_name:label } });
       setStatus(error ? ('Errore profilo: '+error.message) : 'Profilo salvato ✓');
     } else setStatus('Profilo salvato (locale)');
+  }
+  async function changePassword(){
+    const st=$('pw-status'); const set=(m,ok)=>{ if(st){ st.textContent=m; st.style.color = ok?'var(--in)':'var(--out)'; } };
+    if(!client || !user){ set('Devi essere connesso per cambiare password.',false); return; }
+    const p1=$('pw-new').value, p2=$('pw-new2').value;
+    if(p1.length<6){ set('La password deve avere almeno 6 caratteri.',false); return; }
+    if(p1!==p2){ set('Le due password non coincidono.',false); return; }
+    set('Aggiornamento…',true);
+    const { error } = await client.auth.updateUser({ password:p1 });
+    if(error){ set(authMsg(error.message),false); return; }
+    $('pw-new').value=''; $('pw-new2').value='';
+    set('Password aggiornata ✓',true);
+  }
+
+  /* ---------- Recupero password: porta l'utente al cambio password ---------- */
+  function onRecovery(){
+    showGate(false);
+    try{ window.LF.goto('settings'); }catch{}
+    const box=$('pw-change-box'); if(box){ box.open=true; box.scrollIntoView({behavior:'smooth',block:'center'}); }
+    const st=$('pw-status'); if(st){ st.textContent='Imposta qui la tua nuova password.'; st.style.color='var(--accent)'; }
   }
 
   /* ---------- Occhio mostra/nascondi (tutti i campi password) ---------- */
@@ -166,6 +197,7 @@
     $('gate-signin')?.addEventListener('click', ()=>{ document.body.classList.contains('gate-signup') ? setGateMode('login') : gateSignIn(); });
     $('gate-signup')?.addEventListener('click', ()=>{ document.body.classList.contains('gate-signup') ? gateSignUp() : setGateMode('signup'); });
     $('gate-pw')?.addEventListener('keydown', e=>{ if(e.key==='Enter') (document.body.classList.contains('gate-signup')?gateSignUp():gateSignIn()); });
+    $('gate-forgot')?.addEventListener('click', gateForgot);
     // impostazioni
     $('sync-save-config')?.addEventListener('click', ()=>{
       const url=$('sync-url').value.trim().replace(/\/$/,''), key=$('sync-key').value.trim();
@@ -178,6 +210,7 @@
     $('sync-signout')?.addEventListener('click', signOut);
     $('sync-pull')?.addEventListener('click', ()=>{ setStatus('Aggiorno…'); pull(); });
     $('account-save')?.addEventListener('click', saveAccount);
+    $('pw-save')?.addEventListener('click', changePassword);
   }
 
   wire(); wireEyes();

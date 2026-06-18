@@ -72,6 +72,7 @@ window.LF = {
   profile(){ return DB.profile || (DB.profile={name:'',label:''}); },
   setProfile(p){ DB.profile = Object.assign(this.profile(), p||{}); if(p&&p.label) DB.name=p.label; save();
     if(typeof updateIdentity==='function') updateIdentity(); if(typeof rebuildAccountMenu==='function') rebuildAccountMenu(); },
+  goto(v){ if(typeof goto==='function') goto(v); },
 };
 function reloadViews(){ renderDashboard(); renderTx(); renderReleases(); renderRoyalties(); renderOffers(); renderSettings(); }
 // integra eventuali colonne nuove non ancora presenti nell'ordine salvato

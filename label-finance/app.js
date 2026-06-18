@@ -200,7 +200,7 @@ function autoMap(headers){
 /* ============================================================================
    NAVIGAZIONE
    ============================================================================ */
-const VIEW_TITLES={dashboard:'Dashboard',transactions:'Movimenti',releases:'Release',royalties:'Royalty',import:'Importa CSV',settings:'Impostazioni',about:'Chi siamo',offers:'Offerte & Piani'};
+const VIEW_TITLES={dashboard:'Dashboard',transactions:'Movimenti',releases:'Release',royalties:'Royalty',import:'Importa CSV',settings:'Impostazioni',about:'Chi siamo',offers:'Offerte & Piani',faq:'Aiuto & FAQ'};
 function goto(view){
   $$('.nav-item').forEach(b=>b.classList.toggle('is-active',b.dataset.view===view));
   $$('.view').forEach(v=>v.classList.toggle('is-active',v.id==='view-'+view));
@@ -212,9 +212,52 @@ function goto(view){
   if(view==='offers') renderOffers();
   if(view==='settings') renderSettings();
   $('.main').scrollTop=0;
+  updateTopbarSection();
 }
 $$('.nav-item').forEach(b=>b.onclick=()=>goto(b.dataset.view));
 document.addEventListener('click',e=>{ const g=e.target.closest('[data-goto]'); if(g) goto(g.dataset.goto); });
+
+/* nome sezione nella topbar: visibile solo quando il titolo sotto è scrollato via */
+function updateTopbarSection(){
+  const vh=document.querySelector('.view.is-active .view-head');
+  const show = vh ? (vh.getBoundingClientRect().bottom < 52) : false;
+  document.body.classList.toggle('show-topsec', show);
+}
+$('.main').addEventListener('scroll', updateTopbarSection, {passive:true});
+
+/* pannelli Informazioni: toggle ⓘ per ogni sezione */
+document.addEventListener('click',e=>{
+  const b=e.target.closest('.info-btn'); if(!b) return;
+  const p=document.getElementById('info-'+b.dataset.info); if(!p) return;
+  p.hidden=!p.hidden;
+  b.classList.toggle('is-open',!p.hidden);
+  if(!p.hidden) p.scrollIntoView({behavior:'smooth',block:'nearest'});
+});
+
+/* ===== FAQ: ricerca + accordion ===== */
+function initFAQ(){
+  document.addEventListener('click',e=>{
+    const q=e.target.closest('.faq-q'); if(!q) return;
+    const item=q.closest('.faq-item');
+    const open=item.classList.toggle('is-open');
+    q.setAttribute('aria-expanded', open?'true':'false');
+  });
+  const search=document.getElementById('faq-search');
+  if(search) search.addEventListener('input',()=>{
+    const term=search.value.trim().toLowerCase();
+    let any=false;
+    $$('.faq-item').forEach(it=>{
+      const hit=!term || it.textContent.toLowerCase().includes(term);
+      it.hidden=!hit; if(hit) any=true;
+    });
+    $$('.faq-group').forEach(g=>{
+      const vis=g.querySelectorAll('.faq-item:not([hidden])').length>0;
+      g.hidden=!vis;
+    });
+    const empty=document.getElementById('faq-empty');
+    if(empty) empty.hidden=any;
+  });
+}
 
 /* ===== Account: menu, etichette, piani ===== */
 const PLAN_INFO={ free:{name:'Starter'}, studio:{name:'Studio'}, agency:{name:'Agency'} };
@@ -1151,3 +1194,4 @@ if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator
 renderDashboard();
 renderOffers();
 rebuildAccountMenu();
+initFAQ();

@@ -77,6 +77,8 @@
         <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5v5M5 14v5M12 3v6M12 13v8M19 7v3M19 14v3"/><circle cx="5" cy="12" r="2"/><circle cx="12" cy="11" r="2"/><circle cx="19" cy="12" r="2"/></svg></span><span class="nav-label">Impostazioni</span></button>
 
       <div class="nav-sep"></div>
+      <button class="nav-item" data-view="faq" title="Aiuto & FAQ">
+        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.2 9.3a2.8 2.8 0 0 1 5.4 1c0 1.9-2.6 2.2-2.6 4"/><path d="M12 17.4v.1"/></svg></span><span class="nav-label">Aiuto & FAQ</span></button>
       <button class="nav-item nav-item--about" data-view="about" title="Chi siamo">
         <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6v.1"/></svg></span><span class="nav-label">Chi siamo</span></button>
     </nav>
@@ -96,6 +98,9 @@
       <div class="topbar-left"><span class="topbar-section" id="topbar-section">Dashboard</span></div>
       <div class="topbar-right">
         <span class="topbar-label" id="topbar-label"></span>
+        <button class="icon-btn" data-goto="faq" title="Aiuto & FAQ" aria-label="Aiuto e FAQ">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.2 9.3a2.8 2.8 0 0 1 5.4 1c0 1.9-2.6 2.2-2.6 4"/><path d="M12 17.4v.1"/></svg>
+        </button>
         <button class="icon-btn" id="btn-account" title="Account" aria-label="Account">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.5 3.6-6 8-6s8 2.5 8 6"/></svg>
         </button>
@@ -107,7 +112,7 @@
     <section class="view is-active" id="view-dashboard">
       <header class="view-head">
         <div>
-          <h1 id="greeting">Dashboard</h1>
+          <div class="title-row"><h1 id="greeting">Dashboard</h1><button class="info-btn" data-info="dashboard" title="Cos'è questa sezione?">i</button></div>
           <p class="muted" id="dash-range-label">Tutti i periodi</p>
         </div>
         <div class="head-actions">
@@ -124,6 +129,14 @@
           <button class="btn btn-pdf" id="btn-print" title="Stampa o salva in PDF">⤓ Report PDF</button>
         </div>
       </header>
+
+      <div class="info-panel" id="info-dashboard" hidden>
+        <h4>A cosa serve la Dashboard</h4>
+        <p>È la fotografia istantanea della tua etichetta. In alto trovi i quattro indicatori chiave: <b>Entrate</b>, <b>Uscite</b>, <b>Margine netto</b> (entrate − uscite) e numero di <b>Movimenti</b>. La percentuale colorata sotto ogni valore confronta il periodo scelto con quello precedente, così vedi se stai crescendo o calando.</p>
+        <p>Il grafico mostra entrate e uscite mese per mese. Le tabelle in basso aggregano i dati <b>per release/catalogo</b> e <b>per artista</b>, così capisci al volo cosa rende di più.</p>
+        <p>Con il menu <b>periodo</b> in alto a destra filtri tutto su un intervallo (anno, ultimi 12 mesi… o <b>Personalizzato</b> con date a scelta). Il pulsante <b>Report PDF</b> stampa o salva una sintesi da archiviare o inviare.</p>
+        <p class="muted" style="font-size:.86rem">Suggerimento: i dati arrivano dai Movimenti. Se la dashboard è vuota, importa un CSV o aggiungi un movimento a mano.</p>
+      </div>
 
       <div class="kpi-grid">
         <div class="kpi kpi--in">
@@ -200,12 +213,19 @@
     <!-- ====== TRANSACTIONS ====== -->
     <section class="view" id="view-transactions">
       <header class="view-head">
-        <div><h1>Movimenti</h1><p class="muted" id="tx-count-label">0 movimenti</p></div>
+        <div><div class="title-row"><h1>Movimenti</h1><button class="info-btn" data-info="transactions" title="Cos'è questa sezione?">i</button></div><p class="muted" id="tx-count-label">0 movimenti</p></div>
         <div class="head-actions">
           <button class="btn" id="btn-add-expense">+ Uscita</button>
           <button class="btn btn-primary" id="btn-add-income">+ Entrata</button>
         </div>
       </header>
+
+      <div class="info-panel" id="info-transactions" hidden>
+        <h4>A cosa serve la sezione Movimenti</h4>
+        <p>È il registro completo di ogni <b>entrata</b> e <b>uscita</b> dell'etichetta: la base da cui nascono dashboard e royalty. Ogni riga è una transazione con data, tipo, prodotto/descrizione, artista, catalogo, piattaforma e importo.</p>
+        <p>Puoi aggiungerle in due modi: a mano con <b>+ Entrata</b> / <b>+ Uscita</b>, oppure in blocco importando un CSV dalla sezione <b>Importa</b>. Il campo <b>Catalogo</b> è importante: è il codice che collega una vendita alla sua release e quindi alle quote di ripartizione delle royalty.</p>
+        <p>La barra strumenti permette di <b>cercare</b>, filtrare per tipo, piattaforma e intervallo di date. Con <b>⚙ Colonne</b> scegli quali colonne vedere; con <b>Esporta</b> scarichi tutto in CSV, Excel o PDF.</p>
+      </div>
 
       <div class="toolbar">
         <input type="search" id="tx-search" class="input" placeholder="Cerca prodotto, artista, catalogo…">
@@ -229,12 +249,21 @@
     <!-- ====== RELEASES ====== -->
     <section class="view" id="view-releases">
       <header class="view-head">
-        <div><h1>Release</h1><p class="muted" id="rel-count-label">0 release</p></div>
+        <div><div class="title-row"><h1>Release</h1><button class="info-btn" data-info="releases" title="Cos'è questa sezione?">i</button></div><p class="muted" id="rel-count-label">0 release</p></div>
         <div class="head-actions">
           <button class="btn btn-export" data-export="releases" title="Esporta CSV/Excel/PDF">⤓ Esporta</button>
           <button class="btn btn-primary" id="btn-add-release">+ Nuova release</button>
         </div>
       </header>
+
+      <div class="info-panel" id="info-releases" hidden>
+        <h4>A cosa servono le Release</h4>
+        <p>Una release è un'uscita del catalogo (singolo, EP, album). Qui definisci, una volta sola, <b>chi prende cosa</b>: per ogni release imposti un <b>catalogo</b> (es. <i>RHD001</i>) e le <b>quote di ripartizione</b> in percentuale tra gli artisti/aventi diritto.</p>
+        <p>Il collegamento avviene tramite il <b>catalogo</b>: ogni vendita nei Movimenti con quel codice eredita automaticamente queste quote nel calcolo delle Royalty. Imposti le percentuali una volta e valgono per tutte le vendite future di quella release.</p>
+        <p><b>Override per traccia (ISRC).</b> A volte le quote non sono uguali per tutte le tracce di un EP: magari il brano 2 ha un featuring che cambia la spartizione. Aprendo una release puoi aggiungere le singole tracce con il loro <b>codice ISRC</b> e dare a ciascuna quote diverse. Quando una vendita riporta quell'ISRC, il programma usa le quote di <b>quella traccia</b> invece di quelle generali della release.</p>
+        <span class="ex">Esempio — EP <b>RHD007</b>, quote generali: Raho 50%, Jacom 50%.<br>Aggiungi la traccia 2 (ISRC <i>ITRH72500002</i>) con un feat e imposti: Raho 40%, Jacom 35%, Pol 25%.<br>→ Le vendite di tutto l'EP si dividono 50/50, ma quelle della <b>sola traccia 2</b> (riconosciute dall'ISRC) si dividono 40/35/25. Se una vendita non ha ISRC, o ha un ISRC non mappato, si usano le quote generali della release.</span>
+        <p class="muted" style="font-size:.86rem">L'ISRC è il codice univoco internazionale del brano (12 caratteri, es. <i>ITRH72500002</i>): lo trovi nel report del distributore. Se non lavori per singola traccia, ignora pure le tracce: basta impostare le quote generali della release.</p>
+      </div>
       <p class="muted small" style="margin-bottom:16px">Definisci catalogo, titolo e le quote di ripartizione (%) per artista. Le vendite con lo stesso <strong>catalogo</strong> useranno automaticamente queste quote nella sezione Royalty.</p>
       <div class="releases-cards" id="releases-cards"></div>
     </section>
@@ -242,7 +271,7 @@
     <!-- ====== ROYALTIES ====== -->
     <section class="view" id="view-royalties">
       <header class="view-head">
-        <div><h1>Royalty</h1><p class="muted">Quanto spetta a ogni artista, calcolato sul netto delle entrate.</p></div>
+        <div><div class="title-row"><h1>Royalty</h1><button class="info-btn" data-info="royalties" title="Cos'è questa sezione?">i</button></div><p class="muted">Quanto spetta a ogni artista, calcolato sul netto delle entrate.</p></div>
         <div class="head-actions">
           <select id="roy-period" class="select">
             <option value="all">Tutti i periodi</option>
@@ -257,6 +286,14 @@
           <button class="btn btn-export" data-export="royalty" title="Esporta CSV/Excel/PDF">⤓ Esporta</button>
         </div>
       </header>
+
+      <div class="info-panel" id="info-royalties" hidden>
+        <h4>A cosa serve la sezione Royalty</h4>
+        <p>Calcola in automatico <b>quanto spetta a ogni artista</b>. Prende ogni vendita (entrata) nei Movimenti, trova la release con lo stesso <b>catalogo</b> e applica le <b>quote di ripartizione</b> definite in quella release. La somma per artista è quello che vedi nella tabella.</p>
+        <p>Se hai impostato un <b>override per traccia (ISRC)</b> nella release, le vendite con quell'ISRC usano le quote della singola traccia; tutte le altre usano le quote generali della release. Le vendite con un catalogo non associato a nessuna release restano fuori dal calcolo (le riconosci perché non compaiono).</p>
+        <p>Clicca un artista per il <b>dettaglio per release</b> e usa <b>Statement PDF</b> per generare un rendiconto pronto da inviare. Il menu <b>periodo</b> limita il calcolo a un intervallo (utile per i pagamenti trimestrali/annuali).</p>
+        <p class="muted" style="font-size:.86rem">Le royalty si calcolano sul <b>netto delle entrate</b>: sono una ripartizione dei ricavi, non delle uscite. Se un artista manca, controlla che le vendite abbiano il catalogo giusto e che la release esista.</p>
+      </div>
 
       <div class="panel">
         <div class="panel-head"><h2>Per artista</h2>
@@ -278,8 +315,15 @@
 
     <!-- ====== IMPORT ====== -->
     <section class="view" id="view-import">
-      <header class="view-head"><div><h1>Importa CSV</h1>
+      <header class="view-head"><div><div class="title-row"><h1>Importa CSV</h1><button class="info-btn" data-info="import" title="Cos'è questa sezione?">i</button></div>
         <p class="muted">Carica un file da Bandcamp, dal distributore o da qualsiasi piattaforma. Mappi le colonne una volta.</p></div></header>
+
+      <div class="info-panel" id="info-import" hidden>
+        <h4>A cosa serve l'Importazione CSV</h4>
+        <p>Distributori e piattaforme (Bandcamp, DistroKid, Believe, Symphonic…) ti danno i report di vendita come file <b>CSV</b>. Qui li carichi e li trasformi in Movimenti, senza inserire le righe a mano.</p>
+        <p>Ogni piattaforma usa nomi di colonna diversi. La <b>mappatura</b> serve a dire una volta sola «la colonna <i>Net Amount</i> è l'importo», «<i>Item</i> è il prodotto» e così via. Puoi salvare la mappatura come <b>preset</b>: la prossima volta scegli il preset e l'import è immediato. Il <b>Rilevamento automatico</b> riconosce i distributori più comuni e precompila tutto.</p>
+        <p>Tutta l'elaborazione avviene nel tuo browser: <b>nessun file viene caricato su server</b>. Dopo l'anteprima confermi e le righe entrano nei Movimenti.</p>
+      </div>
 
       <div class="panel">
         <div class="import-drop" id="import-drop">
@@ -365,8 +409,15 @@
 
     <!-- ====== SETTINGS ====== -->
     <section class="view" id="view-settings">
-      <header class="view-head"><div><h1>Impostazioni</h1>
+      <header class="view-head"><div><div class="title-row"><h1>Impostazioni</h1><button class="info-btn" data-info="settings" title="Cos'è questa sezione?">i</button></div>
         <p class="muted">Sincronizzazione, aspetto, tassi di cambio, backup e gestione dati.</p></div></header>
+
+      <div class="info-panel" id="info-settings" hidden>
+        <h4>A cosa servono le Impostazioni</h4>
+        <p><b>Sincronizzazione cloud:</b> attivandola vedi gli stessi dati su PC e telefono e li tieni al sicuro online. Senza sync i dati restano solo su questo dispositivo/browser.</p>
+        <p><b>Profilo &amp; etichette:</b> gestisci il tuo nome, le etichette (puoi averne più di una e passare dall'una all'altra) e il tuo piano. Ogni etichetta ha movimenti, release e impostazioni separati.</p>
+        <p><b>Aspetto:</b> tema chiaro/scuro/di sistema. <b>Tassi di cambio:</b> se vendi in valute diverse, qui imposti la conversione verso la tua valuta principale. <b>Backup:</b> esporti o reimporti tutti i dati come file, utile prima di un cambio dispositivo o come copia di sicurezza.</p>
+      </div>
 
       <div class="panel">
         <div class="panel-head"><h2>☁ Sincronizzazione cloud</h2>
@@ -471,8 +522,20 @@
 
     <!-- ====== OFFERTE & PIANI ====== -->
     <section class="view" id="view-offers">
-      <header class="view-head"><div><h1>Offerte &amp; Piani</h1>
+      <header class="view-head"><div><div class="title-row"><h1>Offerte &amp; Piani</h1><button class="info-btn" data-info="offers" title="Cos'è questa sezione?">i</button></div>
         <p class="muted">Gestisci più etichette da un unico account. Scegli il piano adatto al tuo roster.</p></div></header>
+
+      <div class="info-panel" id="info-offers" hidden>
+        <h4>Come funzionano i piani</h4>
+        <p>Il piano determina quante <b>etichette</b> puoi gestire dallo stesso account e quali funzioni avanzate hai a disposizione. Puoi cambiarlo quando vuoi: i tuoi dati restano sempre tuoi.</p>
+        <ul>
+          <li><b>Starter</b> — per chi avvia la propria etichetta: una etichetta, contabilità, royalty, import CSV e report.</li>
+          <li><b>Studio</b> — più etichette e strumenti per chi gestisce un roster.</li>
+          <li><b>Agency</b> — per chi amministra molte etichette/clienti, con i limiti più alti.</li>
+        </ul>
+        <p>Con il selettore <b>Mensile / Annuale</b> confronti i prezzi: il piano annuale costa meno (la rata mensile equivalente è più bassa, fino al 30% di risparmio).</p>
+      </div>
+
       <div class="billing-toggle" id="billing-toggle">
         <button data-billing="monthly" class="is-active">Mensile</button>
         <button data-billing="annual">Annuale <span class="save">−30%</span></button>
@@ -522,6 +585,204 @@
         </div>
       </div>
       <p class="muted small" style="margin-top:16px">I pagamenti reali (carta) saranno gestiti da un provider sicuro (es. Stripe). Per ora l'attivazione è dimostrativa, così puoi già usare più etichette.</p>
+    </section>
+
+    <!-- ====== AIUTO & FAQ ====== -->
+    <section class="view" id="view-faq">
+      <header class="view-head"><div><h1>Aiuto &amp; FAQ</h1>
+        <p class="muted">Le risposte alle domande più comuni. Cerca una parola o sfoglia per argomento.</p></div></header>
+
+      <div class="faq-search-wrap">
+        <input type="search" id="faq-search" class="input" placeholder="Cerca nella guida… (es. ISRC, CSV, royalty, password)">
+      </div>
+
+      <div class="empty-hint" id="faq-empty" hidden>
+        <p>Nessuna risposta trovata. Prova con un'altra parola.</p>
+      </div>
+
+      <div class="faq-group">
+        <h3 class="faq-group-title">Per iniziare</h3>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">Cos'è Label Finance e a chi serve?</button>
+          <div class="faq-a"><p>È un gestionale per <b>etichette discografiche indipendenti</b>: tieni traccia di entrate e uscite, importi i report di vendita di Bandcamp/distributori e calcoli in automatico le royalty da pagare a ogni artista. Tutto in un'unica schermata, senza fogli di calcolo.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">Da dove comincio se è tutto vuoto?</button>
+          <div class="faq-a"><p>Tre strade dalla Dashboard: <b>Carica dati demo</b> per esplorare l'app con dati finti, <b>Importa un CSV</b> dal tuo distributore, oppure <b>Aggiungi a mano</b> il primo movimento. Poi crea le tue <b>Release</b> con le quote per artista e le Royalty si calcolano da sole.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">Devo installare qualcosa?</button>
+          <div class="faq-a"><p>No, funziona nel browser. Su telefono puoi però <b>installarla come app</b> (PWA): apri il sito, menu del browser → «Aggiungi a schermata Home». Avrai un'icona dedicata e l'uso offline.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">A cosa serve il pulsante «ⓘ» in ogni sezione?</button>
+          <div class="faq-a"><p>Apre un pannello <b>Informazioni</b> che spiega a cosa serve quella sezione e come usarla. Cliccalo di nuovo per chiuderlo.</p></div>
+        </div>
+      </div>
+
+      <div class="faq-group">
+        <h3 class="faq-group-title">Movimenti e Import CSV</h3>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">Come importo i dati di vendita da Bandcamp o dal distributore?</button>
+          <div class="faq-a"><p>Vai in <b>Importa CSV</b>, trascina il file o sceglilo. L'app legge le colonne; se non riconosce subito il formato, in «Associa le colonne» indichi quale colonna è l'importo, quale la data, ecc. Controlli l'anteprima e confermi. Puoi salvare la configurazione come <b>preset</b> per le volte successive.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">Devo rifare la mappatura delle colonne ogni volta?</button>
+          <div class="faq-a"><p>No. La prima volta mappi le colonne e <b>salvi un preset</b> (es. «Bandcamp»). Le volte dopo scegli quel preset e l'import è immediato. Per i distributori più comuni c'è anche il <b>Rilevamento automatico</b>.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">Posso evitare di caricare il CSV e collegare le piattaforme via API?</button>
+          <div class="faq-a"><p>Oggi l'app lavora via <b>import CSV</b>, che è il formato che tutte le piattaforme esportano. Una connessione diretta via API è possibile solo per alcune piattaforme e richiede un componente lato server: è sul nostro piano di sviluppo. Nel frattempo i <b>preset</b> rendono l'import di pochi secondi.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">L'import crea righe doppie. Come evito i duplicati?</button>
+          <div class="faq-a"><p>Tieni spuntato <b>«Salta doppioni»</b> nell'anteprima: le righe già presenti (stessa data, prodotto, importo…) non vengono reimportate. Utile se ricarichi un report che si sovrappone in parte al precedente.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">Gli importi sono in dollari/sterline: come li converto in euro?</button>
+          <div class="faq-a"><p>In <b>Impostazioni → Tassi di cambio</b> aggiungi la valuta e il tasso verso l'euro (es. USD 0,92). I totali vengono convertiti usando quei tassi.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">Posso personalizzare le colonne della tabella Movimenti?</button>
+          <div class="faq-a"><p>Sì: pulsante <b>⚙ Colonne</b>. Spunti quelle da mostrare e le riordini con le frecce.</p></div>
+        </div>
+      </div>
+
+      <div class="faq-group">
+        <h3 class="faq-group-title">Release e Royalty</h3>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">Come fa l'app a sapere a chi spettano le royalty?</button>
+          <div class="faq-a"><p>Tramite il <b>catalogo</b>. In ogni release imposti il codice catalogo e le quote per artista. Ogni vendita nei Movimenti con lo stesso catalogo eredita quelle quote, e la sezione Royalty somma quanto spetta a ciascuno.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">Cos'è l'«override della traccia con ISRC» e quando serve?</button>
+          <div class="faq-a">
+            <p>Serve quando, dentro la stessa release, <b>le tracce non si dividono tutte allo stesso modo</b> — tipicamente perché un brano ha un featuring in più.</p>
+            <p>Di base le quote valgono per tutta la release. Ma puoi aggiungere una traccia con il suo <b>ISRC</b> (il codice univoco del brano) e darle quote diverse. Le vendite che riportano quell'ISRC useranno le quote della traccia; tutte le altre useranno quelle generali della release.</p>
+            <span class="ex">EP <b>RHD007</b>, quote generali Raho 50% / Jacom 50%. La traccia 2 (ISRC <i>ITRH72500002</i>) ha un feat: imposti Raho 40% / Jacom 35% / Pol 25%. → Le vendite della traccia 2 si dividono 40/35/25, tutte le altre 50/50.</span>
+            <p class="muted small">Se tutte le tracce si dividono uguale, non ti serve: lascia stare le tracce e usa solo le quote generali.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">Dove trovo l'ISRC di un brano?</button>
+          <div class="faq-a"><p>È nei report del distributore (spesso colonna «ISRC») e nei metadati del brano. Sono 12 caratteri, es. <i>ITRH72500002</i>. Se non hai bisogno delle quote per singola traccia, puoi ignorarlo.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">Un artista non compare nelle royalty. Perché?</button>
+          <div class="faq-a"><p>Quasi sempre è il <b>catalogo</b> che non combacia: le vendite devono avere lo stesso codice catalogo della release. Controlla che la release esista, che il catalogo sia identico (anche maiuscole/spazi) e che le quote siano impostate.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">Le percentuali non arrivano al 100%. È un errore?</button>
+          <div class="faq-a"><p>No: la parte che manca al 100% resta alla <b>label</b>. Se Raho 50% e Jacom 30%, il restante 20% è dell'etichetta.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">Come genero il rendiconto da inviare a un artista?</button>
+          <div class="faq-a"><p>In <b>Royalty</b> clicca l'artista per aprire il dettaglio, poi <b>Statement PDF</b>: ottieni un documento pronto da inviare. Puoi limitarlo a un periodo (es. trimestre) col selettore in alto.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">Le royalty si calcolano anche sulle uscite?</button>
+          <div class="faq-a"><p>No. Sono una ripartizione delle <b>entrate</b> (i ricavi). Le uscite incidono sul margine della label in Dashboard, non sulle quote degli artisti.</p></div>
+        </div>
+      </div>
+
+      <div class="faq-group">
+        <h3 class="faq-group-title">Account, sincronizzazione e più etichette</h3>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">Come vedo gli stessi dati su PC e telefono?</button>
+          <div class="faq-a"><p>Attiva la <b>Sincronizzazione cloud</b> in Impostazioni e accedi con lo stesso account su entrambi i dispositivi. Senza sync, i dati restano solo sul dispositivo dove li hai inseriti.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">Se vendo l'accesso a un altro utente, vede i miei dati?</button>
+          <div class="faq-a"><p>No. Ogni account vede <b>solo i propri dati</b>: sono isolati per utente. Account diversi non condividono nulla.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">Posso gestire più etichette da un solo account?</button>
+          <div class="faq-a"><p>Sì, con i piani Studio/Agency. Ogni etichetta ha movimenti, release e impostazioni separati e passi dall'una all'altra dal menu Account. Aggiungi e rimuovi etichette dalle Impostazioni.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">Come cambio nome, email o piano?</button>
+          <div class="faq-a"><p>Nome e nome label in <b>Impostazioni → Account</b>. Il piano si sceglie in <b>Offerte &amp; Piani</b>. I dati restano tuoi quando cambi piano.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">Ho dimenticato la password.</button>
+          <div class="faq-a"><p>Usa il recupero password dalla schermata di accesso. Se la sync non è ancora attiva, i dati locali non hanno password: la password serve solo per il cloud.</p></div>
+        </div>
+      </div>
+
+      <div class="faq-group">
+        <h3 class="faq-group-title">Dati, privacy e backup</h3>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">Dove sono salvati i miei dati?</button>
+          <div class="faq-a"><p>Sul tuo <b>dispositivo/browser</b> (localStorage). Se attivi la sincronizzazione, vengono salvati anche nel tuo spazio cloud privato, accessibile solo dal tuo account.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">Il CSV che importo finisce online?</button>
+          <div class="faq-a"><p>No. La lettura e l'elaborazione del CSV avvengono <b>nel tuo browser</b>: il file non viene caricato su nessun server.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">Come faccio un backup o sposto i dati su un altro dispositivo?</button>
+          <div class="faq-a"><p>In <b>Impostazioni → Backup &amp; dati</b>, <b>Esporta backup (.json)</b>. Sull'altro dispositivo usa <b>Ripristina backup</b>. In alternativa attiva la sincronizzazione e i dati si allineano da soli.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">Posso esportare i dati in Excel o PDF?</button>
+          <div class="faq-a"><p>Sì. Quasi ogni sezione e card ha un pulsante <b>Esporta</b> (⤓) con CSV, Excel e PDF. Per la Dashboard c'è anche il <b>Report PDF</b>.</p></div>
+        </div>
+      </div>
+
+      <div class="faq-group">
+        <h3 class="faq-group-title">Problemi comuni</h3>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">Ho aggiornato ma vedo ancora la versione vecchia.</button>
+          <div class="faq-a"><p>È la cache del browser. Fai un <b>ricarica forzato</b> (Ctrl/Cmd + Shift + R) o chiudi e riapri l'app installata. I dati non si perdono.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">La Dashboard è vuota anche se ho importato.</button>
+          <div class="faq-a"><p>Controlla il <b>periodo</b> selezionato in alto a destra: se è ristretto potrebbe escludere i tuoi movimenti. Imposta «Tutti i periodi». Verifica anche di essere sull'etichetta giusta nel menu Account.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">Gli importi vengono importati sbagliati (es. 1.234 diventa 1).</button>
+          <div class="faq-a"><p>Spesso è il <b>separatore</b> o il formato numerico/data del file. In «Impostazioni file» scegli il separatore corretto e il formato data della piattaforma, poi ricontrolla l'anteprima.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">Su mobile l'app si vede male.</button>
+          <div class="faq-a"><p>Installala come app (Aggiungi a schermata Home) per la resa migliore e ruota in verticale. Se qualcosa esce dai bordi dopo un aggiornamento, fai un ricarica forzato.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">Non ho trovato la risposta.</button>
+          <div class="faq-a"><p>Scrivici da <b>Chi siamo</b>. Indica cosa stavi facendo e, se puoi, allega un backup .json: ti aiutiamo a risolvere.</p></div>
+        </div>
+      </div>
     </section>
     </div><!-- /.content -->
   </main>

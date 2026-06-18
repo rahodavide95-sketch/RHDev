@@ -416,6 +416,11 @@ body.gate-signup #gate-signin{opacity:.5}
 .split-chip--label{border-color:color-mix(in srgb,var(--net) 40%,var(--line));color:var(--net)}
 .splits-h{font-family:'Syne';font-size:1rem;margin:18px 0 4px}
 .split-row{display:grid;grid-template-columns:1fr 110px 40px;gap:8px;margin-bottom:8px}
+.track-block{border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;background:var(--panel-2)}
+.track-head{display:grid;grid-template-columns:1fr 150px 40px;gap:8px;margin-bottom:10px}
+.track-splits{display:flex;flex-direction:column;gap:8px;margin-bottom:8px}
+.track-del{padding:0;color:var(--out);border-color:color-mix(in srgb,var(--out) 30%,var(--line))}
+.btn-mini{padding:5px 11px;font-size:.82rem}
 .split-del{padding:0;color:var(--out);border-color:color-mix(in srgb,var(--out) 30%,var(--line))}
 .split-del:hover{background:color-mix(in srgb,var(--out) 12%,transparent)}
 

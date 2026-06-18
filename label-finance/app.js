@@ -656,6 +656,7 @@ function renderReleases(){
         <span class="muted small">${r.year||''}</span>
       </div>
       <div class="split-chips">${chips}</div>
+      ${(r.tracks&&r.tracks.length)?`<div class="release-tracks muted small">${r.tracks.length} tracc${r.tracks.length===1?'ia':'e'} con override</div>`:''}
     </div>`;
   }).join('') : '<p class="muted">Nessuna release. Creane una per iniziare a calcolare le royalty.</p>';
   $$('#releases-cards .release-card').forEach(c=>c.onclick=()=>openRelease(c.dataset.id));
@@ -683,9 +684,26 @@ function refreshSplitTotal(){
   el.textContent = `Totale artisti ${tot}% · Label ${Math.max(0,100-tot)}%` + (tot>100?' ⚠ supera 100%':'');
   el.style.color = tot>100 ? 'var(--out)' : 'var(--muted)';
 }
-function bindSplitRows(){
-  $$('#r-splits .split-del').forEach(b=>b.onclick=()=>{ b.closest('.split-row').remove(); refreshSplitTotal(); });
-  $$('#r-splits .split-pct').forEach(i=>i.oninput=refreshSplitTotal);
+function trackBlockHTML(t={}){
+  const splits=(t.splits&&t.splits.length)?t.splits:[{name:'',pct:''}];
+  return `<div class="track-block">
+    <div class="track-head">
+      <input class="input track-title" placeholder="Titolo traccia" value="${esc(t.title||'')}">
+      <input class="input track-isrc" placeholder="ISRC" value="${esc(t.isrc||'')}">
+      <button type="button" class="btn track-del" title="Rimuovi traccia">✕</button>
+    </div>
+    <div class="track-splits">${splits.map(s=>splitRowHTML(s.name,s.pct)).join('')}</div>
+    <button type="button" class="btn btn-mini track-add-split">+ artista</button>
+  </div>`;
+}
+function collectSplits(container){
+  const out=[];
+  container.querySelectorAll('.split-row').forEach(row=>{
+    const name=row.querySelector('.split-name').value.trim();
+    const pct=+row.querySelector('.split-pct').value||0;
+    if(name) out.push({name,pct});
+  });
+  return out;
 }
 function openRelease(id){
   const r = id ? releases().find(x=>x.id===id) : null;
@@ -695,14 +713,22 @@ function openRelease(id){
   $('#r-catalog').value=r?.catalog||''; $('#r-title').value=r?.title||''; $('#r-year').value=r?.year||'';
   const splits = (r?.splits&&r.splits.length) ? r.splits : [{name:'',pct:''}];
   $('#r-splits').innerHTML = splits.map(s=>splitRowHTML(s.name,s.pct)).join('');
-  bindSplitRows(); refreshSplitTotal();
+  $('#r-tracks').innerHTML = (r?.tracks||[]).map(t=>trackBlockHTML(t)).join('');
+  refreshSplitTotal();
   $('#r-delete').hidden=!r;
   $('#rel-modal').hidden=false;
 }
 $('#btn-add-release').onclick=()=>openRelease(null);
 $('#rel-modal-close').onclick=$('#r-cancel').onclick=()=>$('#rel-modal').hidden=true;
 $('#rel-modal').onclick=e=>{ if(e.target.id==='rel-modal') $('#rel-modal').hidden=true; };
-$('#r-add-split').onclick=()=>{ $('#r-splits').insertAdjacentHTML('beforeend',splitRowHTML()); bindSplitRows(); refreshSplitTotal(); };
+$('#r-add-split').onclick=()=>{ $('#r-splits').insertAdjacentHTML('beforeend',splitRowHTML()); refreshSplitTotal(); };
+$('#r-add-track').onclick=()=>{ $('#r-tracks').insertAdjacentHTML('beforeend',trackBlockHTML()); };
+$('#rel-form').addEventListener('click', e=>{ const t=e.target;
+  if(t.classList.contains('split-del')){ t.closest('.split-row').remove(); refreshSplitTotal(); }
+  else if(t.classList.contains('track-del')){ t.closest('.track-block').remove(); }
+  else if(t.classList.contains('track-add-split')){ t.closest('.track-block').querySelector('.track-splits').insertAdjacentHTML('beforeend', splitRowHTML()); }
+});
+$('#rel-form').addEventListener('input', e=>{ if(e.target.classList.contains('split-pct') && e.target.closest('#r-splits')) refreshSplitTotal(); });
 $('#r-delete').onclick=()=>{
   const id=$('#r-id').value;
   DB.releases=releases().filter(r=>r.id!==id); save();
@@ -711,14 +737,16 @@ $('#r-delete').onclick=()=>{
 $('#rel-form').onsubmit=e=>{
   e.preventDefault();
   const id=$('#r-id').value;
-  const splits=[];
-  $$('#r-splits .split-row').forEach(row=>{
-    const name=row.querySelector('.split-name').value.trim();
-    const pct=+row.querySelector('.split-pct').value||0;
-    if(name) splits.push({name,pct});
+  const splits=collectSplits($('#r-splits'));
+  const tracks=[];
+  $$('#r-tracks .track-block').forEach(tb=>{
+    const title=tb.querySelector('.track-title').value.trim();
+    const isrc=tb.querySelector('.track-isrc').value.trim();
+    const tsplits=collectSplits(tb.querySelector('.track-splits'));
+    if(title||isrc||tsplits.length) tracks.push({id:uid(), title, isrc, splits:tsplits});
   });
   const rec={ id:id||uid(), catalog:$('#r-catalog').value.trim(), title:$('#r-title').value.trim(),
-    year:Number($('#r-year').value)||'', splits };
+    year:Number($('#r-year').value)||'', splits, tracks };
   if(!rec.catalog){ toast('Inserisci il catalogo'); return; }
   if(id){ const i=releases().findIndex(r=>r.id===id); DB.releases[i]=rec; }
   else releases().push(rec);
@@ -738,19 +766,32 @@ function royaltyPeriod(txs){
   const f=from.toISOString().slice(0,10);
   return txs.filter(t=>t.date>=f);
 }
+// trova release + quote applicabili a una transazione (traccia per ISRC, poi release)
+function splitsForTx(t){
+  const iso=(t.isrc||'').trim().toLowerCase();
+  const rel=releaseByCatalog(t.catalog);
+  if(rel){
+    if(iso && rel.tracks){ const tr=rel.tracks.find(x=>(x.isrc||'').trim().toLowerCase()===iso && x.splits&&x.splits.length);
+      if(tr) return {rel, splits:tr.splits}; }
+    return {rel, splits:rel.splits||[]};
+  }
+  if(iso){ for(const r of releases()){ const tr=(r.tracks||[]).find(x=>(x.isrc||'').trim().toLowerCase()===iso && x.splits&&x.splits.length);
+    if(tr) return {rel:r, splits:tr.splits}; } }
+  return null;
+}
 // calcola { artist -> {total, byRelease:{catalog->amount}} } e label total
 function computeRoyalties(){
   const txs=royaltyPeriod(DB.transactions.filter(t=>t.kind==='income'));
   const byArtist={}; let labelTotal=0;
   txs.forEach(t=>{
     const eur=toEur(t.net,t.currency);
-    const rel=releaseByCatalog(t.catalog);
-    if(!rel||!rel.splits||!rel.splits.length){ labelTotal+=eur; return; }
+    const m=splitsForTx(t);
+    if(!m||!m.splits||!m.splits.length){ labelTotal+=eur; return; }
     let assigned=0;
-    rel.splits.forEach(s=>{
+    m.splits.forEach(s=>{
       const share=eur*(+s.pct||0)/100; assigned+=share;
       const a=(byArtist[s.name] ??= {total:0, byRelease:{}});
-      a.total+=share; a.byRelease[rel.catalog]=(a.byRelease[rel.catalog]||0)+share;
+      a.total+=share; a.byRelease[m.rel.catalog]=(a.byRelease[m.rel.catalog]||0)+share;
     });
     labelTotal += eur-assigned;
   });

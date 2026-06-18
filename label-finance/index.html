@@ -603,13 +603,18 @@
           <label>Titolo <input type="text" id="r-title" class="input" placeholder="Nightform EP"></label>
           <label>Anno <input type="number" id="r-year" class="input" placeholder="2026" step="1"></label>
         </div>
-        <h3 class="splits-h">Ripartizione royalty</h3>
-        <p class="muted small">Percentuale che spetta a ogni artista. Il resto fino al 100% resta alla label.</p>
+        <h3 class="splits-h">Ripartizione predefinita</h3>
+        <p class="muted small">Quote applicate a tutte le tracce della release (salvo override). Il resto fino al 100% resta alla label.</p>
         <div id="r-splits"></div>
         <div class="row-inline" style="margin-top:8px">
           <button type="button" class="btn" id="r-add-split">+ Aggiungi artista</button>
           <span class="muted small" id="r-split-total"></span>
         </div>
+
+        <h3 class="splits-h">Tracce — override per ISRC</h3>
+        <p class="muted small">Opzionale: quote diverse per singola traccia. Le vendite con quell'ISRC useranno queste quote; le altre usano la predefinita.</p>
+        <div id="r-tracks"></div>
+        <button type="button" class="btn" id="r-add-track" style="margin-top:8px">+ Aggiungi traccia</button>
         <div class="modal-foot" style="margin-top:18px">
           <button type="button" class="btn btn-danger" id="r-delete" hidden>Elimina</button>
           <span class="spacer"></span>

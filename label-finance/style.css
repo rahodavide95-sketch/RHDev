@@ -41,8 +41,9 @@ h2{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:600}
   transition:padding .18s ease;
 }
 .sidebar-top{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:34px;padding-left:2px}
-.brand{display:flex;align-items:center;gap:10px;min-width:0;flex:1;text-decoration:none;font-family:'Syne';font-size:1.08rem;letter-spacing:-.04em;color:var(--text)}
-.brand strong{font-weight:800}
+.brand{display:flex;align-items:center;gap:10px;min-width:0;flex:1;text-decoration:none;font-family:'Syne';font-weight:600;font-size:1.08rem;letter-spacing:-.04em;color:var(--text)}
+.lf-fin{color:#c4b5fd;font-weight:inherit}
+[data-theme="light"] .lf-fin{color:#7c3aed}
 .brand-logo{width:34px;height:34px;flex:none;display:block}
 .brand-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .nav-collapse{background:none;border:none;color:var(--muted-2);cursor:pointer;line-height:0;padding:6px;border-radius:8px;flex:none;display:flex}
@@ -152,7 +153,7 @@ body.nav-collapsed{grid-template-columns:78px 1fr}
 .billing-toggle .save{font-size:.68rem;font-weight:700;background:var(--in);color:var(--on-in);padding:1px 6px;border-radius:6px}
 .billing-toggle button.is-active .save{background:rgba(255,255,255,.28);color:inherit}
 .plan-name{font-family:'Syne',sans-serif;font-weight:700;font-size:1.15rem}
-.plan-price{font-family:'Syne',sans-serif;font-weight:800;font-size:2rem;line-height:1;letter-spacing:-.04em}
+.plan-price{font-family:'Syne',sans-serif;font-weight:700;font-size:1.9rem;line-height:1;letter-spacing:-.055em}
 .plan-price span{font-size:.85rem;font-weight:500;color:var(--muted)}
 .plan-old{color:var(--muted);font-size:.95rem;font-weight:600;margin-left:8px}
 .plan-note{font-size:.76rem;color:var(--in);min-height:15px;font-weight:600}
@@ -281,8 +282,12 @@ body.nav-collapsed{grid-template-columns:78px 1fr}
 .export-menu button:hover{background:var(--panel)}
 .check-inline{display:flex;align-items:center;gap:8px;font-size:.88rem;color:var(--muted);cursor:pointer}
 .check-inline input{width:16px;height:16px;accent-color:var(--accent)}
-.empty-hint{text-align:center;padding:50px 20px;color:var(--muted)}
-.empty-hint .btn{margin-top:14px}
+.empty-hint{text-align:center;padding:40px 20px;color:var(--muted)}
+.onb-logo{width:64px;height:64px;margin:0 auto 10px;display:block}
+.onb-title{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:700;letter-spacing:-.03em;color:var(--text);margin-bottom:6px}
+.onb-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:18px 0 6px}
+.onb-steps{text-align:left;max-width:480px;margin:14px auto 0;color:var(--muted);line-height:1.7;padding-left:22px}
+.onb-steps b{color:var(--text)}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--panel-2);border:1px solid var(--line);padding:12px 20px;border-radius:10px;box-shadow:var(--shadow);z-index:60;animation:fade .2s}
 
 /* ===== Login gate (sfondo artistico + vetro) ===== */
@@ -322,7 +327,7 @@ body.nav-collapsed{grid-template-columns:78px 1fr}
 .gate-logo{width:56px;height:56px;border-radius:15px;display:block;margin:0 auto 12px;box-shadow:0 6px 20px rgba(0,0,0,.4)}
 .gate-logo-full{display:block;width:230px;max-width:78%;height:auto;margin:0 auto 18px;filter:drop-shadow(0 6px 18px rgba(0,0,0,.4))}
 .gate-title{font-family:'Syne',sans-serif;text-align:center;font-size:1.5rem;font-weight:700;letter-spacing:-.045em;margin-bottom:4px;color:#fff}
-.gate-title strong{font-weight:800}
+.gate-title .lf-fin{color:#c4b5fd}
 .gate-sub{text-align:center;color:rgba(255,255,255,.7);font-size:.9rem;margin-bottom:22px}
 .gate-field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
 .gate-field label{font-size:.82rem;color:rgba(255,255,255,.7)}
@@ -451,6 +456,7 @@ body.gate-signup #gate-signin{opacity:.5}
 @media print{
   :root{ --bg:#fff; --panel:#fff; --panel-2:#f4f4f7; --line:#d8dae2; --text:#111;
          --muted:#555; --shadow:none; color-scheme:light; }
+  .lf-fin{color:#7c3aed!important}
   body{display:block;height:auto;overflow:visible;background:#fff;color:#000}
   .sidebar,.toast,.modal,.gate,.topbar{display:none!important}
   .bar{print-color-adjust:exact;-webkit-print-color-adjust:exact}

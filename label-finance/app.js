@@ -461,7 +461,7 @@ function xlsOf(headers,rows){
 }
 function printTableDoc(title,headers,rows){
   $('#print-area').innerHTML=`<div class="stmt">
-    <div class="stmt-head"><img src="icon.png?v=3" alt="" class="stmt-logo"><div><div class="stmt-brand">Label<strong>Finance</strong></div><div class="stmt-doc">${esc(title)}</div></div></div>
+    <div class="stmt-head"><img src="icon.png?v=3" alt="" class="stmt-logo"><div><div class="stmt-brand">Label<span class="lf-fin">Finance</span></div><div class="stmt-doc">${esc(title)}</div></div></div>
     <table class="stmt-table"><thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead>
     <tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>
     <p class="stmt-foot">Label Finance · ${esc(DB.name||'')} · ${new Date().toLocaleDateString('it-IT')}</p></div>`;
@@ -516,6 +516,25 @@ $('#dash-period').onchange=()=>{ syncCustomDates(); renderDashboard(); };
 $('#dash-from').onchange=$('#dash-to').onchange=renderDashboard;
 syncCustomDates();
 $('#btn-print').onclick=()=>{ document.body.classList.add('printing'); window.print(); setTimeout(()=>document.body.classList.remove('printing'),500); };
+
+/* onboarding: dati dimostrativi */
+function loadDemo(){
+  if(DB.transactions.length && !confirm('Caricare i dati dimostrativi in questa etichetta?')) return;
+  releases().push({ id:uid(), catalog:'SC-DEMO', title:'Demo EP', year:new Date().getFullYear(),
+    splits:[{name:'Raho',pct:50},{name:'Jacom',pct:30}], tracks:[] });
+  const plats=['Bandcamp','Beatport','Spotify'], arts=['Raho','Jacom'], now=new Date(), tx=[];
+  for(let m=5;m>=0;m--) for(let i=0;i<3;i++){
+    const d=new Date(now.getFullYear(),now.getMonth()-m,3+i*7);
+    tx.push({ id:uid(), kind:'income', date:d.toISOString().slice(0,10), platform:plats[(m+i)%3],
+      type:'digital', catalog:'SC-DEMO', product:'Demo EP', artist:arts[i%2], isrc:'', upc:'',
+      qty:1+(i%3), gross:0, fees:0, net:+(5+Math.random()*20).toFixed(2), csShare:0, currency:'EUR', note:'demo' });
+  }
+  tx.push({ id:uid(), kind:'expense', date:new Date(now.getFullYear(),now.getMonth()-4,10).toISOString().slice(0,10), platform:'', type:'expense', catalog:'SC-DEMO', product:'Mastering', artist:'', qty:1, gross:0, fees:0, net:80, csShare:0, currency:'EUR', note:'demo' });
+  tx.push({ id:uid(), kind:'expense', date:new Date(now.getFullYear(),now.getMonth()-2,15).toISOString().slice(0,10), platform:'', type:'expense', catalog:'SC-DEMO', product:'Artwork', artist:'', qty:1, gross:0, fees:0, net:120, csShare:0, currency:'EUR', note:'demo' });
+  DB.transactions.push(...tx); save(); reloadViews(); toast('Dati demo caricati'); goto('dashboard');
+}
+$('#btn-demo')?.addEventListener('click', loadDemo);
+$('#btn-onb-income')?.addEventListener('click', ()=>{ curKind='income'; openTx(null); });
 
 /* ============================================================================
    MOVIMENTI
@@ -834,7 +853,7 @@ $('#roy-detail-pdf').onclick=()=>{
   $('#print-area').innerHTML=`<div class="stmt">
     <div class="stmt-head">
       <img src="icon.png?v=3" alt="" class="stmt-logo">
-      <div><div class="stmt-brand">Label<strong>Finance</strong></div>
+      <div><div class="stmt-brand">Label<span class="lf-fin">Finance</span></div>
         <div class="stmt-doc">Rendiconto Royalty</div></div>
     </div>
     <p class="stmt-meta">Artista: <strong>${esc(name)}</strong><br>
@@ -1112,6 +1131,9 @@ function setTheme(p){ localStorage.setItem(THEME_KEY,p); applyTheme(); }
 $$('[data-theme-opt]').forEach(b=>b.onclick=()=>setTheme(b.dataset.themeOpt));
 themeMq.addEventListener('change',()=>{ if(themePref()==='system') applyTheme(); });
 applyTheme();
+
+/* ---------- PWA: service worker ---------- */
+if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); }); }
 
 /* ---------- Avvio ---------- */
 renderDashboard();

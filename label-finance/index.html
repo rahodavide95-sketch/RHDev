@@ -112,7 +112,10 @@
             <option value="12m">Ultimi 12 mesi</option>
             <option value="6m">Ultimi 6 mesi</option>
             <option value="3m">Ultimi 3 mesi</option>
+            <option value="custom">Personalizzato…</option>
           </select>
+          <input type="date" id="dash-from" class="input input--date" title="Dalla data" hidden>
+          <input type="date" id="dash-to" class="input input--date" title="Alla data" hidden>
           <button class="btn btn-pdf" id="btn-print" title="Stampa o salva in PDF">⤓ Report PDF</button>
         </div>
       </header>
@@ -121,14 +124,17 @@
         <div class="kpi kpi--in">
           <span class="kpi-label">Entrate</span>
           <span class="kpi-value" id="kpi-income">€0,00</span>
+          <span class="kpi-delta" id="delta-income"></span>
         </div>
         <div class="kpi kpi--out">
           <span class="kpi-label">Uscite</span>
           <span class="kpi-value" id="kpi-expense">€0,00</span>
+          <span class="kpi-delta" id="delta-expense"></span>
         </div>
         <div class="kpi kpi--net">
           <span class="kpi-label">Margine netto</span>
           <span class="kpi-value" id="kpi-net">€0,00</span>
+          <span class="kpi-delta" id="delta-net"></span>
         </div>
         <div class="kpi">
           <span class="kpi-label">Movimenti</span>

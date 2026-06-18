@@ -331,29 +331,58 @@ function toast(msg){
 /* ============================================================================
    DASHBOARD
    ============================================================================ */
-function periodFilter(txs){
-  const p=$('#dash-period').value; if(p==='all') return txs;
-  const now=new Date(); let from=new Date(0);
+const isoD=d=>d.toISOString().slice(0,10);
+function periodRange(){
+  const p=$('#dash-period').value;
+  const now=new Date(), today=isoD(now);
+  if(p==='all') return {from:null,to:null,prevFrom:null,prevTo:null};
+  if(p==='custom'){
+    const f=$('#dash-from').value||null, t=$('#dash-to').value||today;
+    let pf=null,pt=null;
+    if(f){ const d1=new Date(f+'T00:00:00'), d2=new Date(t+'T00:00:00');
+      const len=Math.max(0,d2-d1), ptD=new Date(d1.getTime()-86400000);
+      pt=isoD(ptD); pf=isoD(new Date(ptD.getTime()-len)); }
+    return {from:f,to:t,prevFrom:pf,prevTo:pt};
+  }
+  let from;
   if(p==='ytd') from=new Date(now.getFullYear(),0,1);
-  if(p==='12m') from=new Date(now.getFullYear(),now.getMonth()-11,1);
-  if(p==='6m') from=new Date(now.getFullYear(),now.getMonth()-5,1);
-  if(p==='3m') from=new Date(now.getFullYear(),now.getMonth()-2,1);
-  const f=from.toISOString().slice(0,10);
-  return txs.filter(t=>t.date>=f);
+  else if(p==='12m') from=new Date(now.getFullYear(),now.getMonth()-11,1);
+  else if(p==='6m') from=new Date(now.getFullYear(),now.getMonth()-5,1);
+  else from=new Date(now.getFullYear(),now.getMonth()-2,1);
+  const len=now-from, ptD=new Date(from.getTime()-86400000);
+  return {from:isoD(from),to:today,prevFrom:isoD(new Date(ptD.getTime()-len)),prevTo:isoD(ptD)};
+}
+const inRange=(t,from,to)=>{ const d=t.date||''; if(from&&d<from) return false; if(to&&d>to) return false; return true; };
+function sumKPI(txs){ let inc=0,exp=0; txs.forEach(t=>{ const v=toEur(t.net,t.currency); if(t.kind==='income') inc+=v; else exp+=Math.abs(v); }); return {inc,exp,net:inc-exp}; }
+function deltaTag(cur,prev,goodUp){
+  if(prev==null) return '';
+  if(Math.abs(prev)<0.005) return '';
+  const pct=Math.round((cur-prev)/Math.abs(prev)*100);
+  if(pct===0) return '<span class="kpi-delta flat">≈ 0%</span>';
+  const up=pct>0, good=(up===goodUp);
+  return `<span class="kpi-delta ${good?'up':'down'}" title="rispetto al periodo precedente">${up?'▲':'▼'} ${Math.abs(pct)}%</span>`;
 }
 function renderDashboard(){
   updateIdentity();
   const all=DB.transactions;
   $('#dash-empty').hidden = all.length>0;
-  const txs=periodFilter(all);
-  let inc=0,exp=0;
-  txs.forEach(t=>{ const v=toEur(t.net,t.currency); if(t.kind==='income') inc+=v; else exp+=Math.abs(v); });
-  $('#kpi-income').textContent=fmtMoney(inc);
-  $('#kpi-expense').textContent=fmtMoney(exp);
-  $('#kpi-net').textContent=fmtMoney(inc-exp);
-  $('#kpi-net').style.color = (inc-exp)>=0?'var(--in)':'var(--out)';
+  const range=periodRange();
+  const txs=all.filter(t=>inRange(t,range.from,range.to));
+  const cur=sumKPI(txs);
+  $('#kpi-income').textContent=fmtMoney(cur.inc);
+  $('#kpi-expense').textContent=fmtMoney(cur.exp);
+  $('#kpi-net').textContent=fmtMoney(cur.net);
+  $('#kpi-net').style.color = cur.net>=0?'var(--in)':'var(--out)';
   $('#kpi-count').textContent=txs.length;
-  $('#dash-range-label').textContent = $('#dash-period selected, #dash-period option:checked')?.textContent || $('#dash-period').selectedOptions[0].textContent;
+  // variazione % vs periodo precedente
+  const prev = range.prevFrom ? sumKPI(all.filter(t=>inRange(t,range.prevFrom,range.prevTo))) : null;
+  $('#delta-income').innerHTML = prev?deltaTag(cur.inc,prev.inc,true):'';
+  $('#delta-expense').innerHTML = prev?deltaTag(cur.exp,prev.exp,false):'';
+  $('#delta-net').innerHTML = prev?deltaTag(cur.net,prev.net,true):'';
+  const psel=$('#dash-period');
+  $('#dash-range-label').textContent = psel.value==='custom'
+    ? ((range.from||'inizio')+' → '+(range.to||'oggi'))
+    : psel.selectedOptions[0].textContent;
 
   // monthly chart
   const months={};
@@ -387,7 +416,10 @@ function groupTable(sel,key,label,txs){
      <td class="num ${r.net>=0?'pos':'neg'}">${fmtMoney(r.net)}</td></tr>`).join('')
      :'<tr><td colspan="4" class="muted">—</td></tr>'}</tbody>`;
 }
-$('#dash-period').onchange=renderDashboard;
+function syncCustomDates(){ const cu=$('#dash-period').value==='custom'; $('#dash-from').hidden=!cu; $('#dash-to').hidden=!cu; }
+$('#dash-period').onchange=()=>{ syncCustomDates(); renderDashboard(); };
+$('#dash-from').onchange=$('#dash-to').onchange=renderDashboard;
+syncCustomDates();
 $('#btn-print').onclick=()=>{ document.body.classList.add('printing'); window.print(); setTimeout(()=>document.body.classList.remove('printing'),500); };
 
 /* ============================================================================

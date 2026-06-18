@@ -353,34 +353,40 @@ body.show-topsec .topbar-section{opacity:1;transform:none}
    l'app resta nascosta e si vede solo il gate */
 body:not(.gated) .gate{display:none}
 body.gated .sidebar,body.gated .main,body.gated .msheet,body.gated .acct-menu{display:none!important}
-.gate-bg{position:absolute;inset:-25%;z-index:0;background-repeat:no-repeat;
-  background:
-   radial-gradient(38% 48% at 22% 28%, rgba(167,139,250,.9), transparent 60%),
-   radial-gradient(42% 52% at 80% 26%, rgba(123,58,237,.85), transparent 62%),
-   radial-gradient(40% 50% at 26% 78%, rgba(235,222,196,.5), transparent 62%);
-  filter:blur(72px) saturate(155%);
-  animation:gate-flow-a 14s ease-in-out infinite alternate, gate-hue 22s linear infinite}
-.gate-bg::before,.gate-bg::after{content:"";position:absolute;inset:-12%;background-repeat:no-repeat;filter:blur(72px) saturate(155%)}
-.gate-bg::before{
-  background:
-   radial-gradient(40% 50% at 72% 72%, rgba(180,107,255,.78), transparent 62%),
-   radial-gradient(34% 44% at 42% 48%, rgba(244,236,214,.42), transparent 65%);
-  animation:gate-flow-b 17s ease-in-out infinite alternate}
-.gate-bg::after{
-  background:
-   radial-gradient(36% 46% at 86% 84%, rgba(124,58,237,.7), transparent 60%),
-   radial-gradient(32% 42% at 14% 42%, rgba(167,139,250,.62), transparent 62%);
-  animation:gate-flow-c 20s ease-in-out infinite alternate}
-@keyframes gate-flow-a{0%{transform:translate(-9%,-6%) scale(1.05)}100%{transform:translate(10%,7%) scale(1.2)}}
-@keyframes gate-flow-b{0%{transform:translate(8%,6%) scale(1.16)}100%{transform:translate(-11%,-8%) scale(1.04)}}
-@keyframes gate-flow-c{0%{transform:translate(-4%,8%) scale(1.08) rotate(-5deg)}100%{transform:translate(9%,-8%) scale(1.22) rotate(7deg)}}
-@keyframes gate-hue{0%{filter:blur(72px) saturate(155%) hue-rotate(0deg)}100%{filter:blur(72px) saturate(155%) hue-rotate(360deg)}}
+/* palette del logo: viola #7c3aed, lilla #a78bfa, lilla chiaro #c4b5fd, indaco #6d28d9 */
+.gate-bg{position:absolute;inset:0;z-index:0;overflow:hidden;filter:saturate(155%)}
+/* tre orbite di luce che si spostano davvero sullo schermo */
+.gate-orb{position:absolute;border-radius:50%;filter:blur(60px);opacity:.9;will-change:transform}
+.gate-orb--1{width:48vmax;height:48vmax;left:-6vmax;top:-10vmax;
+  background:radial-gradient(circle at 50% 50%, rgba(167,139,250,.95), rgba(167,139,250,0) 66%);
+  animation:gate-orbit-1 19s ease-in-out infinite}
+.gate-orb--2{width:42vmax;height:42vmax;right:-8vmax;top:-6vmax;
+  background:radial-gradient(circle at 50% 50%, rgba(124,58,237,.92), rgba(124,58,237,0) 66%);
+  animation:gate-orbit-2 23s ease-in-out infinite}
+.gate-orb--3{width:46vmax;height:46vmax;left:10vmax;bottom:-14vmax;
+  background:radial-gradient(circle at 50% 50%, rgba(196,181,253,.7), rgba(196,181,253,0) 66%);
+  animation:gate-orbit-3 27s ease-in-out infinite}
+.gate-orb--4{width:34vmax;height:34vmax;right:6vmax;bottom:-10vmax;
+  background:radial-gradient(circle at 50% 50%, rgba(109,40,217,.85), rgba(109,40,217,0) 66%);
+  animation:gate-orbit-1 21s ease-in-out infinite reverse}
+@keyframes gate-orbit-1{
+  0%{transform:translate(0,0) scale(1)}25%{transform:translate(40vw,12vh) scale(1.15)}
+  50%{transform:translate(30vw,55vh) scale(.95)}75%{transform:translate(-10vw,38vh) scale(1.1)}
+  100%{transform:translate(0,0) scale(1)}}
+@keyframes gate-orbit-2{
+  0%{transform:translate(0,0) scale(1.05)}25%{transform:translate(-46vw,20vh) scale(.95)}
+  50%{transform:translate(-30vw,58vh) scale(1.18)}75%{transform:translate(8vw,30vh) scale(1)}
+  100%{transform:translate(0,0) scale(1.05)}}
+@keyframes gate-orbit-3{
+  0%{transform:translate(0,0) scale(1)}25%{transform:translate(34vw,-30vh) scale(1.12)}
+  50%{transform:translate(8vw,-54vh) scale(.92)}75%{transform:translate(-28vw,-26vh) scale(1.08)}
+  100%{transform:translate(0,0) scale(1)}}
 .gate::after{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
   background:radial-gradient(135% 95% at 50% 30%, transparent 40%, rgba(9,6,18,.70) 100%)}
 .gate-eq{position:absolute;left:0;right:0;bottom:0;height:42%;z-index:1;display:flex;align-items:flex-end;gap:5px;padding:0 3%;opacity:.45;pointer-events:none}
 .gate-eq i{flex:1;background:linear-gradient(to top,rgba(255,255,255,.55),rgba(255,255,255,.04));border-radius:5px 5px 0 0;transform-origin:bottom;animation:gate-eq 1.4s ease-in-out infinite}
 @keyframes gate-eq{0%,100%{transform:scaleY(.22)}50%{transform:scaleY(1)}}
-@media(prefers-reduced-motion:reduce){.gate-bg,.gate-eq i{animation:none}}
+@media(prefers-reduced-motion:reduce){.gate-eq i{animation:none}}
 
 .gate-card{position:relative;z-index:2;width:min(420px,100%);max-height:calc(100vh - 40px);overflow-y:auto;
   background:rgba(22,18,34,.55);-webkit-backdrop-filter:blur(26px) saturate(160%);backdrop-filter:blur(26px) saturate(160%);

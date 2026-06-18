@@ -653,7 +653,8 @@ function renderTx(){
 function applyTxFilters(){
   const q=$('#tx-search').value.toLowerCase().trim();
   const kind=$('#tx-filter-kind').value, plat=$('#tx-filter-platform').value;
-  const from=$('#tx-from').value, to=$('#tx-to').value;
+  const r=computeRange($('#tx-period'), $('#tx-from'), $('#tx-to'));
+  const from=r.from, to=r.to;
   let rows=DB.transactions.slice();
   if(kind) rows=rows.filter(t=>t.kind===kind);
   if(plat) rows=rows.filter(t=>t.platform===plat);
@@ -682,6 +683,9 @@ function applyTxFilters(){
 ['#tx-search','#tx-filter-kind','#tx-filter-platform','#tx-from','#tx-to'].forEach(s=>{
   $(s).addEventListener('input',applyTxFilters); $(s).addEventListener('change',applyTxFilters);
 });
+function syncTxDates(){ const cu=$('#tx-period').value==='custom'; $('#tx-from').hidden=!cu; $('#tx-to').hidden=!cu; }
+$('#tx-period').addEventListener('change',()=>{ syncTxDates(); applyTxFilters(); });
+syncTxDates();
 /* Ordinamento da mobile per i Movimenti (intestazioni nascoste a schede) */
 const txSortSel=$('#tx-sort');
 if(txSortSel) txSortSel.addEventListener('change',()=>{

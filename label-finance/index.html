@@ -21,7 +21,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=13">
+  <link rel="stylesheet" href="style.css?v=14">
 </head>
 <body>
 
@@ -294,8 +294,16 @@
           <option value="expense">Solo uscite</option>
         </select>
         <select id="tx-filter-platform" class="select"><option value="">Tutte le piattaforme</option></select>
-        <input type="date" id="tx-from" class="input input--date" title="Dalla data">
-        <input type="date" id="tx-to" class="input input--date" title="Alla data">
+        <select id="tx-period" class="select">
+          <option value="all">Tutti i periodi</option>
+          <option value="ytd">Anno corrente</option>
+          <option value="12m">Ultimi 12 mesi</option>
+          <option value="6m">Ultimi 6 mesi</option>
+          <option value="3m">Ultimi 3 mesi</option>
+          <option value="custom">Personalizzato…</option>
+        </select>
+        <input type="date" id="tx-from" class="input input--date" title="Dalla data" hidden>
+        <input type="date" id="tx-to" class="input input--date" title="Alla data" hidden>
         <select id="tx-sort" class="select sort-mobile" title="Ordina">
           <option value="date:-1">Ordina: Data ↓ (recenti)</option>
           <option value="date:1">Ordina: Data ↑ (vecchi)</option>
@@ -305,8 +313,10 @@
           <option value="platform:1">Ordina: Piattaforma A–Z</option>
           <option value="product:1">Ordina: Prodotto A–Z</option>
         </select>
-        <button class="btn" id="btn-cols" title="Personalizza colonne">⚙ Colonne</button>
-        <button class="btn btn-export" data-export="movimenti" title="Esporta CSV/Excel/PDF">⤓ Esporta</button>
+        <div class="toolbar-actions">
+          <button class="btn" id="btn-cols" title="Personalizza colonne">⚙ Colonne</button>
+          <button class="btn btn-export" data-export="movimenti" title="Esporta CSV/Excel/PDF">⤓ Esporta</button>
+        </div>
       </div>
 
       <div class="table-wrap">
@@ -1010,9 +1020,9 @@
   <!-- Area di stampa per lo statement royalty (visibile solo in stampa) -->
   <div id="print-area" aria-hidden="true"></div>
 
-  <script src="app.js?v=13"></script>
-  <script src="config.js?v=13"></script>
+  <script src="app.js?v=14"></script>
+  <script src="config.js?v=14"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="sync.js?v=13"></script>
+  <script src="sync.js?v=14"></script>
 </body>
 </html>

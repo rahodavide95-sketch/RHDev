@@ -23,8 +23,10 @@ const DEFAULT_TX_ORDER = ['date','kind','platform','catalog','product','artist',
   'dateTo','type','isrc','upc','gross','shipping','taxes','payProcFees','fees','csShare','currency','note'];
 const DEFAULT_TX_VISIBLE = ['date','kind','platform','catalog','product','artist','qty','net','eur'];
 /* Account = piu' etichette; DB punta all'etichetta attiva. */
-const DASH_DEFAULT_ORDER = ['ai','kpi','chart','g_release','g_artist','g_platform','g_type'];
-const DASH_FULL = new Set(['ai','kpi','chart']);
+const DASH_BASE = ['ai','kpi','chart','g_release','g_artist','g_platform','g_type'];
+const DASH_EXTRAS = ['forecast','w_top','recent']; // libreria widget opzionali (nascosti di default)
+const DASH_DEFAULT_ORDER = [...DASH_BASE, ...DASH_EXTRAS];
+const DASH_FULL = new Set(['ai','kpi','chart','forecast']);
 const PLAN_LIMITS = { free:1, studio:3, agency:Infinity };
 // capacità per piano (gating funzioni). Recoupment è incluso ovunque.
 const PLAN_CAPS = {
@@ -53,7 +55,7 @@ function ensureLabelShape(l){
   l.transactions=l.transactions||[]; l.releases=l.releases||[];
   l.profile=l.profile||{name:'',label:l.name||''};
   l.rates=l.rates||defaultRates(); l.mappings=l.mappings||{}; l.recoup=l.recoup||[];
-  l.dashLayout=l.dashLayout||{order:DASH_DEFAULT_ORDER.slice(), hidden:[], cols:2};
+  l.dashLayout=l.dashLayout||{order:DASH_DEFAULT_ORDER.slice(), hidden:DASH_EXTRAS.slice(), cols:2};
   l.txOrder=l.txOrder||DEFAULT_TX_ORDER.slice();
   l.txHidden=l.txHidden||DEFAULT_TX_ORDER.filter(c=>!DEFAULT_TX_VISIBLE.includes(c));
   l.name=l.name||(l.profile&&l.profile.label)||'Etichetta';
@@ -515,6 +517,7 @@ function renderDashboard(){
 
   dashTxs=txs;
   renderGroupTables();
+  renderExtraWidgets(txs);
   if(typeof setupDashWidgets==='function') setupDashWidgets();
   const edBtn=$('#btn-dash-edit'); if(edBtn) edBtn.hidden = !can('layout');
 }
@@ -1422,10 +1425,10 @@ function aiFormat(t){
 /* ============================================================================
    DASHBOARD PERSONALIZZABILE (Studio/Agency) — widget riordinabili / nascondibili
    ============================================================================ */
-function dashLayout(){ const l=DB.dashLayout||(DB.dashLayout={order:DASH_DEFAULT_ORDER.slice(),hidden:[],cols:2});
+function dashLayout(){ const l=DB.dashLayout||(DB.dashLayout={order:DASH_DEFAULT_ORDER.slice(),hidden:DASH_EXTRAS.slice(),cols:2});
   l.order=l.order&&l.order.length?l.order:DASH_DEFAULT_ORDER.slice(); l.hidden=l.hidden||[]; l.cols=l.cols||2;
-  // integra widget nuovi non presenti nell'ordine salvato
-  DASH_DEFAULT_ORDER.forEach(id=>{ if(!l.order.includes(id)) l.order.push(id); });
+  // integra widget nuovi non presenti nell'ordine salvato; gli extra entrano nascosti (libreria)
+  DASH_DEFAULT_ORDER.forEach(id=>{ if(!l.order.includes(id)){ l.order.push(id); if(DASH_EXTRAS.includes(id)&&!l.hidden.includes(id)) l.hidden.push(id); } });
   return l; }
 let dashWired=false;
 function setupDashWidgets(){
@@ -1438,7 +1441,8 @@ function setupDashWidgets(){
       g_release:$('#table-release')&&$('#table-release').closest('.panel'),
       g_artist:$('#table-artist')&&$('#table-artist').closest('.panel'),
       g_platform:$('#table-platform')&&$('#table-platform').closest('.panel'),
-      g_type:$('#table-type')&&$('#table-type').closest('.panel') };
+      g_type:$('#table-type')&&$('#table-type').closest('.panel'),
+      forecast:$('#w-forecast'), w_top:$('#w-top'), recent:$('#w-recent') };
     const grid2=view.querySelector('.grid-2');
     // posiziona il contenitore dove c'era l'ai-panel (prima delle card dati)
     (map.ai||map.kpi).parentNode.insertBefore(cont, map.ai||map.kpi);
@@ -1469,7 +1473,8 @@ function applyDashLayout(){
 function renderHiddenTray(){
   const tray=$('#dash-tray'); if(!tray) return; const l=dashLayout();
   const names={ ai:tt('ai.title'), kpi:'KPI', chart:tt('dash.chart.title'),
-    g_release:tt('dash.byrelease'), g_artist:tt('dash.byartist'), g_platform:tt('dash.byplatform'), g_type:tt('dash.bytype') };
+    g_release:tt('dash.byrelease'), g_artist:tt('dash.byartist'), g_platform:tt('dash.byplatform'), g_type:tt('dash.bytype'),
+    forecast:tt('dash.forecast'), w_top:tt('dash.top_artists'), recent:tt('dash.recent') };
   if(!l.hidden.length){ tray.innerHTML=`<span class="muted small">${tt('dash.none_hidden')}</span>`; return; }
   tray.innerHTML=l.hidden.map(id=>`<button class="dw-restore" data-id="${id}">+ ${esc(names[id]||id)}</button>`).join('');
   tray.querySelectorAll('.dw-restore').forEach(b=>b.onclick=()=>{ const l=dashLayout(); l.hidden=l.hidden.filter(x=>x!==b.dataset.id); save(); applyDashLayout(); });
@@ -1510,6 +1515,53 @@ function saveDashOrder(){
   l.order=[...cont.querySelectorAll('.dash-widget')].map(w=>w.dataset.widget); save();
 }
 function setDashCols(n){ const l=dashLayout(); l.cols=n; save(); applyDashLayout(); }
+/* ---- Widget extra: Top artisti, Ultimi movimenti, Cashflow previsionale ---- */
+function renderExtraWidgets(txs){
+  // Top artisti per netto (royalty)
+  const tb=$('#top-body');
+  if(tb){
+    const g={};
+    txs.forEach(t=>{ const k=t.artist||'—'; const v=toEur(t.net,t.currency); g[k]=(g[k]||0)+(t.kind==='income'?v:-Math.abs(v)); });
+    const rows=Object.entries(g).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).slice(0,6);
+    const max=Math.max(1,...rows.map(r=>r[1]));
+    tb.innerHTML = rows.length ? rows.map(([k,v])=>`
+      <div class="top-row"><span class="top-name">${esc(k)}</span>
+        <span class="top-bar"><i style="width:${Math.round(v/max*100)}%"></i></span>
+        <span class="top-val">${fmtMoney(v)}</span></div>`).join('')
+      : `<p class="muted">${tt('empty.noperiod')}</p>`;
+  }
+  // Ultimi movimenti
+  const rb=$('#recent-body');
+  if(rb){
+    const recent=[...txs].sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).slice(0,7);
+    rb.innerHTML = recent.length ? recent.map(t=>{
+      const v=toEur(t.net,t.currency); const inc=t.kind==='income';
+      const label=t.artist||t.product||t.platform||t.catalog||'—';
+      return `<div class="recent-row"><span class="recent-date">${esc(t.date||'')}</span>
+        <span class="recent-label">${esc(label)}</span>
+        <span class="recent-amt ${inc?'pos':'neg'}">${inc?'+':'−'}${fmtMoney(Math.abs(v))}</span></div>`;
+    }).join('') : `<p class="muted">${tt('empty.noperiod')}</p>`;
+  }
+  // Cashflow previsionale: proiezione a 3 mesi sul netto medio dei mesi recenti
+  const fb=$('#forecast-body');
+  if(fb){
+    const months={};
+    txs.forEach(t=>{ const k=monthKey(t.date); if(!k) return; const v=toEur(t.net,t.currency);
+      months[k]=(months[k]||0)+(t.kind==='income'?v:-Math.abs(v)); });
+    const keys=Object.keys(months).sort().slice(-6);
+    if(!keys.length){ fb.innerHTML=`<p class="muted">${tt('dash.forecast_empty')}</p>`; }
+    else{
+      const avg=keys.reduce((s,k)=>s+months[k],0)/keys.length;
+      const last=keys[keys.length-1]; let [yy,mm]=last.split('-').map(Number); let cum=0; const proj=[];
+      for(let i=0;i<3;i++){ mm++; if(mm>12){mm=1;yy++;} cum+=avg; proj.push({k:`${yy}-${String(mm).padStart(2,'0')}`, v:avg, cum}); }
+      fb.innerHTML = `<div class="fc-avg">${tt('dash.forecast_avg')}: <b class="${avg>=0?'pos':'neg'}">${fmtMoney(avg)}</b></div>
+        <div class="fc-rows">${proj.map(p=>`<div class="fc-row"><span class="fc-m">${p.k}</span>
+          <span class="fc-v ${p.v>=0?'pos':'neg'}">${p.v>=0?'+':'−'}${fmtMoney(Math.abs(p.v))}</span>
+          <span class="fc-cum">Σ ${fmtMoney(p.cum)}</span></div>`).join('')}</div>
+        <p class="muted small">${tt('dash.forecast_note')}</p>`;
+    }
+  }
+}
 function syncColsSeg(){ const seg=$('#dash-cols-seg'); if(!seg) return; const c=dashLayout().cols;
   seg.querySelectorAll('.seg-btn').forEach(b=>b.classList.toggle('is-active', +b.dataset.cols===c)); }
 

@@ -152,6 +152,28 @@ body.dash-edit .dw-hide{display:flex;align-items:center;justify-content:center;p
   width:28px;height:28px;border-radius:8px;border:none;background:var(--out);color:#fff;font-size:.85rem;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.25)}
 body.dash-edit .dw-hide:hover{filter:brightness(1.1)}
 #btn-dash-edit.is-active{background:var(--accent);color:#fff;border-color:var(--accent)}
+/* widget extra */
+.top-list{display:flex;flex-direction:column;gap:10px}
+.top-row{display:grid;grid-template-columns:1fr 2fr auto;align-items:center;gap:10px}
+.top-name{font-weight:600;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top-bar{height:8px;border-radius:5px;background:var(--panel-2);overflow:hidden}
+.top-bar i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 60%,var(--in)),var(--accent))}
+.top-val{font-variant-numeric:tabular-nums;font-weight:700;font-size:.88rem;white-space:nowrap}
+.recent-list{display:flex;flex-direction:column}
+.recent-row{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:baseline;padding:9px 0;border-bottom:1px solid var(--line)}
+.recent-row:last-child{border-bottom:none}
+.recent-date{color:var(--muted);font-size:.82rem;font-variant-numeric:tabular-nums;white-space:nowrap}
+.recent-label{font-weight:600;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.recent-amt{font-variant-numeric:tabular-nums;font-weight:700;font-size:.9rem;white-space:nowrap}
+.recent-amt.pos,.fc-v.pos,.fc-avg b.pos{color:var(--in)}
+.recent-amt.neg,.fc-v.neg,.fc-avg b.neg{color:var(--out)}
+.fc-avg{font-size:.92rem;color:var(--muted);margin-bottom:12px}
+.fc-rows{display:flex;flex-direction:column;gap:2px}
+.fc-row{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--line)}
+.fc-m{color:var(--muted);font-size:.85rem;font-variant-numeric:tabular-nums}
+.fc-v{font-variant-numeric:tabular-nums;font-weight:700;text-align:right}
+.fc-cum{color:var(--muted);font-size:.84rem;font-variant-numeric:tabular-nums;white-space:nowrap}
+.fc-rows+.muted{margin-top:10px}
 /* Foto profilo */
 .avatar-img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block}
 #btn-account{overflow:hidden;padding:0}

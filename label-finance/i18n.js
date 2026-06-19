@@ -29,6 +29,8 @@
       'dash.byrelease':'Per release / catalogo','dash.byartist':'Per artista',
       'dash.byplatform':'Per piattaforma','dash.bytype':'Per tipologia',
       'dash.customize':'⚙ Personalizza','dash.columns':'Colonne','dash.reset':'↺ Ripristina','dash.done':'✓ Fatto','dash.hidden':'Nascosti','dash.none_hidden':'Nessun elemento nascosto',
+      'dash.forecast':'Cashflow previsionale','dash.forecast_sub':'Proiezione a 3 mesi sul trend recente','dash.forecast_avg':'Media mensile netta','dash.forecast_note':'Stima indicativa basata sulla media degli ultimi mesi. Non è una previsione garantita.','dash.forecast_empty':'Servono almeno alcuni mesi di dati per la proiezione.',
+      'dash.top_artists':'Top artisti','dash.recent':'Ultimi movimenti',
       'dash.report_pdf':'⤓ Report PDF','dash.filter':'Filtra…',
       // Movimenti
       'tx.title':'Movimenti','tx.add_expense':'+ Uscita','tx.add_income':'+ Entrata',
@@ -122,6 +124,8 @@
       'dash.byrelease':'By release / catalog','dash.byartist':'By artist',
       'dash.byplatform':'By platform','dash.bytype':'By type',
       'dash.customize':'⚙ Customize','dash.columns':'Columns','dash.reset':'↺ Reset','dash.done':'✓ Done','dash.hidden':'Hidden','dash.none_hidden':'Nothing hidden',
+      'dash.forecast':'Projected cashflow','dash.forecast_sub':'3-month projection on the recent trend','dash.forecast_avg':'Average monthly net','dash.forecast_note':'Indicative estimate based on the average of recent months. Not a guaranteed forecast.','dash.forecast_empty':'A few months of data are needed for the projection.',
+      'dash.top_artists':'Top artists','dash.recent':'Recent movements',
       'dash.report_pdf':'⤓ PDF report','dash.filter':'Filter…',
       'tx.title':'Transactions','tx.add_expense':'+ Expense','tx.add_income':'+ Income',
       'tx.search':'Search product, artist, catalog…','tx.all_kinds':'All types',

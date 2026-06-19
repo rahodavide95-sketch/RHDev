@@ -23,14 +23,16 @@ const DEFAULT_TX_ORDER = ['date','kind','platform','catalog','product','artist',
   'dateTo','type','isrc','upc','gross','shipping','taxes','payProcFees','fees','csShare','currency','note'];
 const DEFAULT_TX_VISIBLE = ['date','kind','platform','catalog','product','artist','qty','net','eur'];
 /* Account = piu' etichette; DB punta all'etichetta attiva. */
+const DASH_DEFAULT_ORDER = ['ai','kpi','chart','g_release','g_artist','g_platform','g_type'];
+const DASH_FULL = new Set(['ai','kpi','chart']);
 const PLAN_LIMITS = { free:1, studio:3, agency:Infinity };
 // capacità per piano (gating funzioni). Recoupment è incluso ovunque.
 const PLAN_CAPS = {
-  free:   { excel:false, batch:false, branding:false, audit:false, automations:false, team:false, ai:false },
-  studio: { excel:true,  batch:true,  branding:true,  audit:false, automations:false, team:false, ai:true },
-  agency: { excel:true,  batch:true,  branding:true,  audit:true,  automations:true,  team:true,  ai:true },
+  free:   { excel:false, batch:false, branding:false, audit:false, automations:false, team:false, ai:false, layout:false },
+  studio: { excel:true,  batch:true,  branding:true,  audit:false, automations:false, team:false, ai:true,  layout:true },
+  agency: { excel:true,  batch:true,  branding:true,  audit:true,  automations:true,  team:true,  ai:true,  layout:true },
 };
-const FEATURE_MIN = { excel:'studio', batch:'studio', branding:'studio', ai:'studio', audit:'agency', automations:'agency', team:'agency' };
+const FEATURE_MIN = { excel:'studio', batch:'studio', branding:'studio', ai:'studio', layout:'studio', audit:'agency', automations:'agency', team:'agency' };
 function planCaps(){ return PLAN_CAPS[ACCOUNT.plan] || PLAN_CAPS.free; }
 function can(feat){ return !!planCaps()[feat]; }
 function requireFeature(feat){
@@ -51,6 +53,7 @@ function ensureLabelShape(l){
   l.transactions=l.transactions||[]; l.releases=l.releases||[];
   l.profile=l.profile||{name:'',label:l.name||''};
   l.rates=l.rates||defaultRates(); l.mappings=l.mappings||{}; l.recoup=l.recoup||[];
+  l.dashLayout=l.dashLayout||{order:DASH_DEFAULT_ORDER.slice(), hidden:[], cols:2};
   l.txOrder=l.txOrder||DEFAULT_TX_ORDER.slice();
   l.txHidden=l.txHidden||DEFAULT_TX_ORDER.filter(c=>!DEFAULT_TX_VISIBLE.includes(c));
   l.name=l.name||(l.profile&&l.profile.label)||'Etichetta';
@@ -512,6 +515,8 @@ function renderDashboard(){
 
   dashTxs=txs;
   renderGroupTables();
+  if(typeof setupDashWidgets==='function') setupDashWidgets();
+  const edBtn=$('#btn-dash-edit'); if(edBtn) edBtn.hidden = !can('layout');
 }
 /* card dashboard con filtro + ordinamento */
 const GROUP_TABLES=[
@@ -1413,6 +1418,100 @@ function aiFormat(t){
   if(inList) html+='</ul>';
   return html;
 }
+
+/* ============================================================================
+   DASHBOARD PERSONALIZZABILE (Studio/Agency) — widget riordinabili / nascondibili
+   ============================================================================ */
+function dashLayout(){ const l=DB.dashLayout||(DB.dashLayout={order:DASH_DEFAULT_ORDER.slice(),hidden:[],cols:2});
+  l.order=l.order&&l.order.length?l.order:DASH_DEFAULT_ORDER.slice(); l.hidden=l.hidden||[]; l.cols=l.cols||2;
+  // integra widget nuovi non presenti nell'ordine salvato
+  DASH_DEFAULT_ORDER.forEach(id=>{ if(!l.order.includes(id)) l.order.push(id); });
+  return l; }
+let dashWired=false;
+function setupDashWidgets(){
+  const view=$('#view-dashboard'); if(!view) return;
+  let cont=$('#dash-widgets');
+  if(!cont){
+    cont=document.createElement('div'); cont.id='dash-widgets'; cont.className='dash-widgets';
+    const map={ ai:$('#ai-panel'), kpi:view.querySelector('.kpi-grid'),
+      chart:$('#chart-monthly')&&$('#chart-monthly').closest('.panel'),
+      g_release:$('#table-release')&&$('#table-release').closest('.panel'),
+      g_artist:$('#table-artist')&&$('#table-artist').closest('.panel'),
+      g_platform:$('#table-platform')&&$('#table-platform').closest('.panel'),
+      g_type:$('#table-type')&&$('#table-type').closest('.panel') };
+    const grid2=view.querySelector('.grid-2');
+    // posiziona il contenitore dove c'era l'ai-panel (prima delle card dati)
+    (map.ai||map.kpi).parentNode.insertBefore(cont, map.ai||map.kpi);
+    Object.entries(map).forEach(([id,el])=>{ if(!el) return;
+      const w=document.createElement('div'); w.className='dash-widget'+(DASH_FULL.has(id)?' w-full':''); w.dataset.widget=id;
+      w.innerHTML='<span class="dw-handle" title="Trascina">⠿</span><button class="dw-hide" title="Nascondi">✕</button>';
+      el.parentNode.removeChild(el); w.appendChild(el); cont.appendChild(w); });
+    if(grid2&&grid2.parentNode) grid2.parentNode.removeChild(grid2);
+    wireDashEdit(cont);
+  }
+  applyDashLayout();
+}
+function applyDashLayout(){
+  const cont=$('#dash-widgets'); if(!cont) return;
+  const l=dashLayout();
+  cont.style.setProperty('--dash-cols', l.cols);
+  // riordina i nodi secondo l'ordine salvato
+  l.order.forEach(id=>{ const w=cont.querySelector(`.dash-widget[data-widget="${id}"]`); if(w) cont.appendChild(w); });
+  cont.querySelectorAll('.dash-widget').forEach(w=>{
+    const id=w.dataset.widget;
+    // un widget è nascosto se l'utente l'ha tolto, o se il suo contenuto è vuoto (es. AI panel senza dati)
+    const inner=w.firstElementChild&&w.querySelector('#ai-panel');
+    const emptied = inner && inner.hidden && !document.body.classList.contains('dash-edit');
+    w.classList.toggle('is-hidden', l.hidden.includes(id) || emptied);
+  });
+  renderHiddenTray();
+}
+function renderHiddenTray(){
+  const tray=$('#dash-tray'); if(!tray) return; const l=dashLayout();
+  const names={ ai:tt('ai.title'), kpi:'KPI', chart:tt('dash.chart.title'),
+    g_release:tt('dash.byrelease'), g_artist:tt('dash.byartist'), g_platform:tt('dash.byplatform'), g_type:tt('dash.bytype') };
+  if(!l.hidden.length){ tray.innerHTML=`<span class="muted small">${tt('dash.none_hidden')}</span>`; return; }
+  tray.innerHTML=l.hidden.map(id=>`<button class="dw-restore" data-id="${id}">+ ${esc(names[id]||id)}</button>`).join('');
+  tray.querySelectorAll('.dw-restore').forEach(b=>b.onclick=()=>{ const l=dashLayout(); l.hidden=l.hidden.filter(x=>x!==b.dataset.id); save(); applyDashLayout(); });
+}
+let dashEdit=false;
+function toggleDashEdit(force){
+  dashEdit = force!==undefined?force:!dashEdit;
+  document.body.classList.toggle('dash-edit', dashEdit);
+  const b=$('#btn-dash-edit'); if(b) b.classList.toggle('is-active', dashEdit);
+  const cont=$('#dash-widgets');
+  if(cont) cont.querySelectorAll('.dash-widget').forEach(w=>{ w.draggable=dashEdit; });
+  applyDashLayout();
+}
+function wireDashEdit(cont){
+  const btn=$('#btn-dash-edit');
+  if(btn) btn.addEventListener('click', ()=>{ if(!requireFeature('layout')) return; toggleDashEdit(); });
+  const done=$('#btn-dash-done'); if(done) done.addEventListener('click', ()=>toggleDashEdit(false));
+  const reset=$('#btn-dash-reset'); if(reset) reset.addEventListener('click', ()=>{
+    DB.dashLayout={order:DASH_DEFAULT_ORDER.slice(),hidden:[],cols:2}; save(); applyDashLayout(); syncColsSeg(); });
+  const seg=$('#dash-cols-seg');
+  if(seg) seg.addEventListener('click', e=>{ const b=e.target.closest('.seg-btn'); if(!b) return; setDashCols(+b.dataset.cols); syncColsSeg(); });
+  syncColsSeg();
+  // pulsanti nascondi
+  cont.addEventListener('click', e=>{ const h=e.target.closest('.dw-hide'); if(!h||!dashEdit) return;
+    const w=h.closest('.dash-widget'); const id=w.dataset.widget; const l=dashLayout();
+    if(!l.hidden.includes(id)) l.hidden.push(id); save(); applyDashLayout(); });
+  // drag & drop riordino
+  let dragEl=null;
+  cont.addEventListener('dragstart', e=>{ const w=e.target.closest('.dash-widget'); if(!w||!dashEdit){ e.preventDefault(); return; } dragEl=w; w.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; });
+  cont.addEventListener('dragend', ()=>{ if(dragEl){ dragEl.classList.remove('dragging'); dragEl=null; saveDashOrder(); } });
+  cont.addEventListener('dragover', e=>{ if(!dragEl) return; e.preventDefault();
+    const after=[...cont.querySelectorAll('.dash-widget:not(.dragging):not(.is-hidden)')].find(w=>{
+      const r=w.getBoundingClientRect(); return e.clientY < r.top + r.height/2 && e.clientX < r.right; });
+    if(after) cont.insertBefore(dragEl, after); else cont.appendChild(dragEl); });
+}
+function saveDashOrder(){
+  const cont=$('#dash-widgets'); if(!cont) return; const l=dashLayout();
+  l.order=[...cont.querySelectorAll('.dash-widget')].map(w=>w.dataset.widget); save();
+}
+function setDashCols(n){ const l=dashLayout(); l.cols=n; save(); applyDashLayout(); }
+function syncColsSeg(){ const seg=$('#dash-cols-seg'); if(!seg) return; const c=dashLayout().cols;
+  seg.querySelectorAll('.seg-btn').forEach(b=>b.classList.toggle('is-active', +b.dataset.cols===c)); }
 
 /* ---------- Cambio lingua: rigenera i contenuti dinamici ---------- */
 window.addEventListener('langchange', ()=>{

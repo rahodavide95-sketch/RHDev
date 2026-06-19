@@ -365,6 +365,8 @@ body.show-topsec .topbar-section{opacity:1;transform:none}
 .export-menu[hidden]{display:none}
 .export-menu button{background:none;border:none;color:var(--text);font:inherit;font-size:.88rem;text-align:left;padding:9px 12px;border-radius:7px;cursor:pointer}
 .export-menu button:hover{background:var(--panel)}
+.export-menu button.is-locked{opacity:.65}
+.export-menu button.is-locked::after{content:" 🔒";font-size:.8em}
 .check-inline{display:flex;align-items:center;gap:8px;font-size:.88rem;color:var(--muted);cursor:pointer}
 .check-inline input{width:16px;height:16px;accent-color:var(--accent)}
 .empty-hint{text-align:center;padding:40px 20px;color:var(--muted)}

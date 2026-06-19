@@ -24,6 +24,21 @@ const DEFAULT_TX_ORDER = ['date','kind','platform','catalog','product','artist',
 const DEFAULT_TX_VISIBLE = ['date','kind','platform','catalog','product','artist','qty','net','eur'];
 /* Account = piu' etichette; DB punta all'etichetta attiva. */
 const PLAN_LIMITS = { free:1, studio:3, agency:Infinity };
+// capacità per piano (gating funzioni). Recoupment è incluso ovunque.
+const PLAN_CAPS = {
+  free:   { excel:false, batch:false, branding:false, audit:false, automations:false, team:false, ai:false },
+  studio: { excel:true,  batch:true,  branding:true,  audit:false, automations:false, team:false, ai:true },
+  agency: { excel:true,  batch:true,  branding:true,  audit:true,  automations:true,  team:true,  ai:true },
+};
+const FEATURE_MIN = { excel:'studio', batch:'studio', branding:'studio', ai:'studio', audit:'agency', automations:'agency', team:'agency' };
+function planCaps(){ return PLAN_CAPS[ACCOUNT.plan] || PLAN_CAPS.free; }
+function can(feat){ return !!planCaps()[feat]; }
+function requireFeature(feat){
+  if(can(feat)) return true;
+  const planName=(PLAN_INFO[FEATURE_MIN[feat]]||{}).name||'Studio';
+  toast((window.t?window.t('gate.upgrade'):'Disponibile con il piano {plan}').replace('{plan}',planName));
+  goto('offers'); return false;
+}
 const newId = ()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const defaultRates = ()=>({ EUR:1, USD:0.92, GBP:1.17, CHF:1.04 });
 function defaultLabel(name='La mia etichetta'){
@@ -333,13 +348,13 @@ function renderOffers(){
   $$('#view-offers .plan-card').forEach(c=>{
     const active=ACCOUNT.plan===c.dataset.plan;
     c.classList.toggle('is-current',active);
-    const btn=c.querySelector('.plan-btn'); if(btn){ btn.textContent=active?'Piano attuale':'Attiva'; btn.disabled=active; }
+    const btn=c.querySelector('.plan-btn'); if(btn){ btn.textContent=active?tt('off.current'):tt('off.activate'); btn.disabled=active; }
     const m=+c.dataset.monthly||0;
     const priceEl=c.querySelector('.plan-price'), noteEl=c.querySelector('.plan-note');
     if(priceEl){
       if(billing==='annual'){
         priceEl.innerHTML=`${fmtEur(m*0.7)}<span>/mese</span> <s class="plan-old">${fmtEur(m)}</s>`;
-        if(noteEl) noteEl.textContent=`fatturato annualmente · ${fmtEur(m*12*0.7)}/anno invece di ${fmtEur(m*12)}`;
+        if(noteEl) noteEl.textContent=`${tt('off.billed')} · ${fmtEur(m*12*0.7)}/${tt('off.year')} ${tt('off.instead')} ${fmtEur(m*12)}`;
       } else {
         priceEl.innerHTML=`${fmtEur(m)}<span>/mese</span>`;
         if(noteEl) noteEl.textContent='';
@@ -573,6 +588,7 @@ function printTableDoc(title,headers,rows){
   setTimeout(()=>document.body.classList.remove('print-statement'),600);
 }
 function doExport(name,fmt){
+  if(fmt==='excel' && !requireFeature('excel')) return;
   const fn=EXPORTERS[name]; if(!fn) return;
   const {title,headers,rows}=fn();
   const fname=(title||'export').replace(/[^\w\-]+/g,'_');
@@ -584,6 +600,7 @@ document.addEventListener('click',e=>{
   const trg=e.target.closest('.btn-export');
   const menu=$('#export-menu');
   if(trg){ e.stopPropagation(); curExport=trg.dataset.export;
+    const ex=menu.querySelector('[data-fmt="excel"]'); if(ex) ex.classList.toggle('is-locked', !can('excel'));
     const r=trg.getBoundingClientRect();
     menu.style.top=(r.bottom+6)+'px'; menu.style.left=Math.max(8,Math.min(r.left,innerWidth-140))+'px';
     menu.hidden=false; return; }

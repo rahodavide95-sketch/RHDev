@@ -54,7 +54,9 @@
       'about.credits':'Crediti','credits.product':'Prodotto','credits.version':'Versione','credits.dev':'Sviluppo & design',
       // Offerte
       'off.title':'Offerte & Piani','off.subtitle':'Gestisci più etichette da un unico account. Scegli il piano adatto al tuo roster.',
-      'off.monthly':'Mensile','off.annual':'Annuale','off.activate':'Attiva',
+      'off.monthly':'Mensile','off.annual':'Annuale','off.activate':'Attiva','off.current':'Piano attuale',
+      'off.billed':'fatturato annualmente','off.year':'anno','off.instead':'invece di',
+      'gate.upgrade':'Disponibile con il piano {plan}',
       // FAQ
       'faq.title':'Aiuto & FAQ','faq.subtitle':'Le risposte alle domande più comuni. Cerca una parola o sfoglia per argomento.',
       'faq.search':'Cerca nella guida… (es. ISRC, CSV, royalty, password)',
@@ -129,7 +131,9 @@
       'about.title':'About','about.subtitle':'Label Finance — the back office for independent labels.',
       'about.credits':'Credits','credits.product':'Product','credits.version':'Version','credits.dev':'Development & design',
       'off.title':'Plans & Pricing','off.subtitle':'Manage multiple labels from one account. Pick the plan that fits your roster.',
-      'off.monthly':'Monthly','off.annual':'Yearly','off.activate':'Activate',
+      'off.monthly':'Monthly','off.annual':'Yearly','off.activate':'Activate','off.current':'Current plan',
+      'off.billed':'billed annually','off.year':'year','off.instead':'instead of',
+      'gate.upgrade':'Available on the {plan} plan',
       'faq.title':'Help & FAQ','faq.subtitle':'Answers to the most common questions. Search a word or browse by topic.',
       'faq.search':'Search the guide… (e.g. ISRC, CSV, royalties, password)',
       'gate.sub_login':'Sign in to your back office','gate.sub_signup':'Create your account',

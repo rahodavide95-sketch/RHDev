@@ -533,6 +533,72 @@ const GROUP_TABLES=[
   {sel:'#table-type',key:'type',label:'Tipologia',i18n:'col.type'},
 ];
 let dashTxs=[]; const dashSort={}, dashFilter={};
+
+/* ============================================================================
+   PAGINAZIONE RIUSABILE — max righe per pagina + selettore pagina, ovunque
+   ============================================================================ */
+const PAGE_DEFAULT=15;
+const PAGE_OPTIONS=[10,15,25,50,'all'];
+const pageState={};
+function pageGet(key){ return pageState[key]||(pageState[key]={page:1, per:PAGE_DEFAULT}); }
+function paginate(arr, key){
+  const st=pageGet(key); const total=arr.length;
+  const per = st.per==='all' ? (total||1) : st.per;
+  const pages=Math.max(1, Math.ceil(total/per));
+  if(st.page>pages) st.page=pages; if(st.page<1) st.page=1;
+  const start=(st.page-1)*per;
+  const slice = st.per==='all' ? arr.slice() : arr.slice(start, start+per);
+  return { slice, total, pages, page:st.page, per:st.per };
+}
+function pagerHTML(key, info){
+  const {total, pages, page, per}=info;
+  if(total<=0) return '';
+  const opts=PAGE_OPTIONS.map(o=>`<option value="${o}" ${String(per)===String(o)?'selected':''}>${o==='all'?tt('pg.all'):o}</option>`).join('');
+  const realPer = per==='all'?total:per;
+  const from=total?((page-1)*realPer+1):0, to=Math.min(total, page*realPer);
+  return `<div class="pager" data-pager="${key}" data-pages="${pages}">
+    <label class="pager-per">${tt('pg.per')} <select class="select pager-per-sel">${opts}</select></label>
+    <span class="pager-info">${from}–${to} ${tt('pg.of')} ${total}</span>
+    <span class="pager-nav">
+      <button class="pager-btn" data-pg="first" ${page<=1?'disabled':''} aria-label="Prima">«</button>
+      <button class="pager-btn" data-pg="prev" ${page<=1?'disabled':''} aria-label="Precedente">‹</button>
+      <span class="pager-page">${page}/${pages}</span>
+      <button class="pager-btn" data-pg="next" ${page>=pages?'disabled':''} aria-label="Successiva">›</button>
+      <button class="pager-btn" data-pg="last" ${page>=pages?'disabled':''} aria-label="Ultima">»</button>
+    </span></div>`;
+}
+function mountPager(anchor, key, info){
+  if(!anchor) return;
+  const after = anchor.closest('.table-wrap') || anchor;
+  let m=after.nextElementSibling;
+  if(!m || !m.classList || !m.classList.contains('pager-mount')){
+    m=document.createElement('div'); m.className='pager-mount';
+    after.parentNode.insertBefore(m, after.nextSibling);
+  }
+  m.innerHTML=pagerHTML(key, info);
+}
+const PAGER_RENDER={
+  tx:()=>applyTxFilters(), rel:()=>renderReleases(), roy:()=>renderRoyalties(),
+  recoup:()=>renderRecoup(), artists:()=>renderArtists(), contracts:()=>renderContracts(), tasks:()=>renderTasks(),
+};
+function pagerRerender(key){
+  if(PAGER_RENDER[key]) return PAGER_RENDER[key]();
+  if(key.indexOf('g:')===0){ const sel=key.slice(2); const cfg=GROUP_TABLES.find(c=>c.sel===sel); if(cfg) renderGroupTable(cfg); }
+}
+document.addEventListener('change', e=>{
+  const sel=e.target.closest('.pager-per-sel'); if(!sel) return;
+  const p=sel.closest('.pager'); const key=p.dataset.pager; const st=pageGet(key);
+  st.per = sel.value==='all'?'all':+sel.value; st.page=1; pagerRerender(key);
+});
+document.addEventListener('click', e=>{
+  const b=e.target.closest('.pager-btn'); if(!b) return;
+  const p=b.closest('.pager'); const key=p.dataset.pager; const st=pageGet(key); const pages=+p.dataset.pages||1;
+  const act=b.dataset.pg;
+  if(act==='first') st.page=1; else if(act==='prev') st.page=Math.max(1,st.page-1);
+  else if(act==='next') st.page=Math.min(pages,st.page+1); else if(act==='last') st.page=pages;
+  pagerRerender(key);
+});
+
 function computeGroup(cfg){
   const {sel,key}=cfg;
   const sort=dashSort[sel]||(dashSort[sel]={col:'net',dir:-1});
@@ -551,7 +617,8 @@ function renderGroupTable(cfg){
   const label=(cfg.i18n&&window.t)?window.t(cfg.i18n):cfg.label;
   const gin=tt('g.income'), gout=tt('g.expense'), gmar=tt('g.margin');
   const sort=dashSort[sel]||(dashSort[sel]={col:'net',dir:-1});
-  const rows=computeGroup(cfg);
+  const allRows=computeGroup(cfg);
+  const info=paginate(allRows, 'g:'+sel); const rows=info.slice;
   const cols=[['k',label,0],['in',gin,1],['out',gout,1],['net',gmar,1]];
   const head=cols.map(([id,lab,num])=>{ const act=sort.col===id?(sort.dir>0?' ▲':' ▼'):'';
     return `<th class="th-sort ${num?'num':''}" data-col="${id}">${esc(lab)}${act}</th>`; }).join('');
@@ -560,6 +627,7 @@ function renderGroupTable(cfg){
      <td class="num ${r.net>=0?'pos':'neg'}" data-label="${esc(gmar)}">${fmtMoney(r.net)}</td></tr>`).join('')
      :'<tr><td colspan="4" class="muted">—</td></tr>';
   $(sel).innerHTML=`<thead><tr>${head}</tr></thead><tbody>${body}</tbody>`;
+  mountPager($(sel), 'g:'+sel, info);
   const cs=document.querySelector(`.card-sort[data-table="${sel}"]`);
   if(cs){ const v=sort.col+':'+sort.dir; if([...cs.options].some(o=>o.value===v)) cs.value=v; }
   $$(`${sel} thead th[data-col]`).forEach(th=>th.onclick=()=>{
@@ -732,13 +800,15 @@ function applyTxFilters(){
     const r=(typeof va==='number')?(va-vb):String(va).localeCompare(String(vb)); return r*txSort.dir; });
   $('#tx-count-label').textContent=`${rows.length} ${tt('tx.movements')}`;
   const ss=$('#tx-sort'); if(ss){ const v=txSort.col+':'+txSort.dir; if([...ss.options].some(o=>o.value===v)) ss.value=v; }
+  const info=paginate(rows,'tx'); const pageRows=info.slice;
   const cols=visibleCols();
   const head=cols.map(c=>{ const act=txSort.col===c?(txSort.dir>0?' ▲':' ▼'):'';
     return `<th class="th-sort ${TX_COLS[c].num?'num':''}" data-col="${c}">${esc(colLabel(c))}${act}</th>`; }).join('');
-  const body=rows.length
-    ? rows.map(t=>`<tr data-id="${t.id}">${cols.map(c=>`<td class="${TX_COLS[c].num?'num':''}" data-label="${esc(colLabel(c))}">${TX_COLS[c].cell(t)}</td>`).join('')}</tr>`).join('')
+  const body=pageRows.length
+    ? pageRows.map(t=>`<tr data-id="${t.id}">${cols.map(c=>`<td class="${TX_COLS[c].num?'num':''}" data-label="${esc(colLabel(c))}">${TX_COLS[c].cell(t)}</td>`).join('')}</tr>`).join('')
     : `<tr><td colspan="${cols.length||1}" class="muted">${tt('empty.notx')}</td></tr>`;
   $('#table-tx').innerHTML=`<thead><tr>${head}</tr></thead><tbody>${body}</tbody>`;
+  mountPager($('#table-tx'), 'tx', info);
   $$('#table-tx thead th[data-col]').forEach(th=>th.onclick=()=>{
     const c=th.dataset.col;
     if(txSort.col===c) txSort.dir*=-1; else txSort={col:c, dir:TX_COLS[c].num?-1:1};
@@ -805,8 +875,9 @@ function releaseByCatalog(cat){
   return releases().find(r=>(r.catalog||'').trim().toLowerCase()===c) || null;
 }
 function renderReleases(){
-  const list=releases().slice().sort((a,b)=>(a.catalog||'').localeCompare(b.catalog||''));
-  $('#rel-count-label').textContent=`${list.length} release`;
+  const all=releases().slice().sort((a,b)=>(a.catalog||'').localeCompare(b.catalog||''));
+  $('#rel-count-label').textContent=`${all.length} release`;
+  const info=paginate(all,'rel'); const list=info.slice;
   $('#releases-cards').innerHTML = list.length ? list.map(r=>{
     const tot=(r.splits||[]).reduce((s,x)=>s+(+x.pct||0),0);
     const label=Math.max(0,100-tot);
@@ -823,6 +894,7 @@ function renderReleases(){
     </div>`;
   }).join('') : `<p class="muted">${tt('empty.norel')}</p>`;
   $$('#releases-cards .release-card').forEach(c=>c.onclick=()=>openRelease(c.dataset.id));
+  mountPager($('#releases-cards'),'rel',info);
 }
 
 /* ---------- Modal release ---------- */
@@ -997,23 +1069,28 @@ function renderRoyalties(){
   const { byArtist, labelTotal } = computeRoyalties();
   const rows=Object.entries(byArtist).map(([name,v])=>({name,...v})).sort((a,b)=>b.total-a.total);
   const tbl=$('#table-roy-artist');
-  if(!hasRel){ tbl.innerHTML=''; $('#roy-detail-panel').hidden=true; return; }
+  if(!hasRel){ tbl.innerHTML=''; $('#roy-detail-panel').hidden=true; mountPager(tbl,'roy',{total:0}); return; }
+  const info=paginate(rows,'roy'); const pr=info.slice;
+  const isLast = info.page>=info.pages;
   tbl.innerHTML=`<thead><tr><th>${tt('roy.h.artist')}</th><th class="num">${tt('roy.h.amount')}</th></tr></thead>
-    <tbody>${rows.map(r=>`<tr data-artist="${esc(r.name)}" style="cursor:pointer">
+    <tbody>${pr.map(r=>`<tr data-artist="${esc(r.name)}" style="cursor:pointer">
       <td data-label="Artista">${esc(r.name)}</td><td class="num pos" data-label="Royalty (€)">${fmtMoney(r.total)}</td></tr>`).join('')}
-      <tr><td data-label=""><strong>${tt('roy.label_residual')}</strong></td><td class="num" data-label="${tt('roy.h.amount')}"><strong>${fmtMoney(labelTotal)}</strong></td></tr>
+      ${isLast?`<tr><td data-label=""><strong>${tt('roy.label_residual')}</strong></td><td class="num" data-label="${tt('roy.h.amount')}"><strong>${fmtMoney(labelTotal)}</strong></td></tr>`:''}
       ${rows.length?'':`<tr><td colspan="2" class="muted">${tt('empty.noroy')}</td></tr>`}</tbody>`;
   $$('#table-roy-artist tbody tr[data-artist]').forEach(tr=>tr.onclick=()=>showRoyaltyDetail(tr.dataset.artist,byArtist[tr.dataset.artist]));
+  mountPager(tbl,'roy',info);
 }
 function renderRecoup(){
-  const rows=computeRecoup();
+  const allRows=computeRecoup();
   const t=$('#table-recoup');
   if(t){
-    t.innerHTML = rows.length
+    const info=paginate(allRows,'recoup'); const rows=info.slice;
+    t.innerHTML = allRows.length
       ? `<thead><tr><th>${tt('roy.h.artist')}</th><th class="num">${tt('recoup.recoupable')}</th><th class="num">${tt('recoup.royalties')}</th><th class="num">${tt('recoup.recouped')}</th><th class="num">${tt('recoup.unrecouped')}</th><th class="num">${tt('recoup.payable')}</th></tr></thead><tbody>`
         + rows.map(r=>`<tr><td>${esc(r.name)}</td><td class="num">${fmtMoney(r.recoupable)}</td><td class="num">${fmtMoney(r.royalties)}</td><td class="num">${fmtMoney(r.recouped)}</td><td class="num ${r.unrecouped>0?'neg':''}">${fmtMoney(r.unrecouped)}</td><td class="num ${r.payable>0?'pos':''}">${fmtMoney(r.payable)}</td></tr>`).join('')
         + `</tbody>`
       : `<tbody><tr><td class="muted">${tt('recoup.empty')}</td></tr></tbody>`;
+    mountPager(t,'recoup',info);
   }
   const dl=$('#recoup-artists');
   if(dl){ const names=[...new Set([...releases().flatMap(r=>(r.splits||[]).map(s=>s.name)), ...(DB.recoup||[]).map(r=>r.artist)])].filter(Boolean).sort();
@@ -1605,8 +1682,9 @@ let editingArtistId=null, artistPhotoData='';
 function renderArtists(){
   const grid=$('#artists-grid'); if(!grid) return;
   const q=($('#art-search')&&$('#art-search').value||'').toLowerCase().trim();
-  const list=(DB.artists||[]).filter(a=> !q || (a.name+' '+(a.legal||'')+' '+(a.email||'')).toLowerCase().includes(q));
+  const all=(DB.artists||[]).filter(a=> !q || (a.name+' '+(a.legal||'')+' '+(a.email||'')).toLowerCase().includes(q));
   $('#artists-empty').hidden = (DB.artists||[]).length>0;
+  const info=paginate(all,'artists'); const list=info.slice;
   grid.innerHTML = list.map(a=>`
     <div class="art-card" data-id="${a.id}">
       <div class="art-av">${a.photo?`<img src="${a.photo}" alt="">`:`<span>${esc(initials(a.name))}</span>`}</div>
@@ -1622,6 +1700,7 @@ function renderArtists(){
         <button class="icon-btn-sm" data-art-del="${a.id}" title="${tt('common.delete')}">🗑</button>
       </div>
     </div>`).join('');
+  mountPager(grid,'artists',info);
 }
 function setArtistPhoto(d){ artistPhotoData=d||''; const ph=$('#art-photo');
   if(ph) ph.innerHTML = artistPhotoData?`<img src="${artistPhotoData}" alt="">`:`<span>${tt('art.photo')}</span>`; }
@@ -1768,10 +1847,12 @@ function deleteContract(id){ const c=DB.contracts.find(x=>x.id===id); if(!c) ret
   DB.contracts=DB.contracts.filter(x=>x.id!==id); save(); renderContracts(); }
 function renderContracts(){
   const tb=$('#contracts-table'); if(!tb) return;
-  const list=DB.contracts||[]; $('#contracts-empty').hidden=list.length>0;
-  if(!list.length){ tb.innerHTML=''; return; }
+  const all=(DB.contracts||[]).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  $('#contracts-empty').hidden=all.length>0;
+  if(!all.length){ tb.innerHTML=''; mountPager(tb,'contracts',{total:0}); return; }
+  const info=paginate(all,'contracts'); const list=info.slice;
   const head=`<thead><tr><th>${tt('con.work')}</th><th>${tt('con.parties_short')}</th><th>${tt('con.date')}</th><th>${tt('con.status')}</th><th></th></tr></thead>`;
-  const rows=list.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))).map(c=>{
+  const rows=list.map(c=>{
     const parties=c.splits.map(s=>esc(s.name)+' '+s.pct+'%').join(', ');
     const st = c.status==='sent'?`<span class="pill pill-ok">${tt('con.st_sent')}</span>`:`<span class="pill">${tt('con.st_draft')}</span>`;
     return `<tr><td><b>${esc(c.work)}</b></td><td class="muted small">${parties}</td><td>${esc(c.date)}</td><td>${st}</td>
@@ -1779,6 +1860,7 @@ function renderContracts(){
         <button class="icon-btn-sm" data-con-del="${c.id}" title="${tt('common.delete')}">🗑</button></td></tr>`;
   }).join('');
   tb.innerHTML=head+'<tbody>'+rows+'</tbody>';
+  mountPager(tb,'contracts',info);
 }
 
 /* ---------- Task ---------- */
@@ -1801,10 +1883,17 @@ function renderTasks(){
       <button class="icon-btn-sm" data-tsk-del="${t.id}" title="${tt('common.delete')}">🗑</button>
     </div>`;
   };
-  let html='';
-  if(open.length) html+=`<div class="tsk-group">${open.map(row).join('')}</div>`;
-  if(done.length) html+=`<div class="tsk-group tsk-done-group"><div class="tsk-group-lbl">${tt('tsk.completed')}</div>${done.map(row).join('')}</div>`;
+  const all=[...open,...done];
+  const info=paginate(all,'tasks'); const slice=info.slice;
+  let html='', doneOpen=false;
+  slice.forEach(t=>{
+    if(t.done && !doneOpen){ if(html) html+='</div>'; html+=`<div class="tsk-group tsk-done-group"><div class="tsk-group-lbl">${tt('tsk.completed')}</div>`; doneOpen=true; }
+    else if(!doneOpen && !html){ html+='<div class="tsk-group">'; }
+    html+=row(t);
+  });
+  if(html) html+='</div>';
   cont.innerHTML=html;
+  mountPager(cont,'tasks',info);
 }
 function addTask(){
   const title=$('#tsk-title').value.trim(); if(!title){ toast(tt('tsk.need_title')); return; }

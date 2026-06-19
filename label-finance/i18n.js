@@ -19,6 +19,7 @@
       'nav.artists':'Artisti','nav.contracts':'Contratti','nav.tasks':'Task',
       // Comuni
       'common.export':'Esporta','common.save':'Salva','common.cancel':'Annulla','common.close':'Chiudi','common.edit':'Modifica',
+      'pg.per':'Righe per pagina','pg.of':'di','pg.all':'Tutte',
       'common.delete':'Elimina','common.signout':'Esci','common.all_periods':'Tutti i periodi',
       'common.period.ytd':'Anno corrente','common.period.12m':'Ultimi 12 mesi','common.period.6m':'Ultimi 6 mesi',
       'common.period.3m':'Ultimi 3 mesi','common.period.custom':'Personalizzato…',
@@ -148,6 +149,7 @@
       'nav.faq':'Help & FAQ','nav.about':'About','nav.more':'More','nav.offers':'Plans',
       'nav.artists':'Artists','nav.contracts':'Contracts','nav.tasks':'Tasks',
       'common.export':'Export','common.save':'Save','common.cancel':'Cancel','common.close':'Close','common.edit':'Edit',
+      'pg.per':'Rows per page','pg.of':'of','pg.all':'All',
       'common.delete':'Delete','common.signout':'Sign out','common.all_periods':'All periods',
       'common.period.ytd':'Year to date','common.period.12m':'Last 12 months','common.period.6m':'Last 6 months',
       'common.period.3m':'Last 3 months','common.period.custom':'Custom…',

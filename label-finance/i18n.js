@@ -91,6 +91,10 @@
       'tx.modal.new':'Nuovo movimento','tx.modal.edit':'Modifica movimento',
       'tx.modal.new_exp':'Nuova uscita','tx.modal.new_inc':'Nuova entrata',
       'rel.modal.new':'Nuova release','rel.modal.edit':'Modifica release',
+      'recoup.recoupable':'Recuperabile','recoup.royalties':'Royalty (a vita)','recoup.recouped':'Recuperato',
+      'recoup.unrecouped':'Non recuperato','recoup.payable':'Da pagare','recoup.advance':'Anticipo',
+      'recoup.cost':'Costo recuperabile','recoup.empty':'Nessun anticipo o costo registrato.',
+      'recoup.need':'Inserisci artista e importo',
     },
     en:{
       'nav.dashboard':'Dashboard','nav.transactions':'Transactions','nav.releases':'Releases',
@@ -295,6 +299,16 @@
       'acct.your_labels':'Your labels','acct.plan':'Plan',
       'tx.modal.edit':'Edit transaction','tx.modal.new_exp':'New expense','tx.modal.new_inc':'New income',
       'rel.modal.edit':'Edit release',
+      'recoup.title':'Recoupment & advances','recoup.sub':'Advances and recoupable costs offset against earned royalties (lifetime balance).',
+      'recoup.artist':'Artist','recoup.note':'Note','recoup.add':'+ Add',
+      'recoup.advance':'Advance','recoup.cost':'Recoupable cost',
+      'recoup.recoupable':'Recoupable','recoup.royalties':'Royalties (lifetime)','recoup.recouped':'Recouped',
+      'recoup.unrecouped':'Unrecouped','recoup.payable':'Payable',
+      'recoup.empty':'No advances or costs recorded.','recoup.need':'Enter artist and amount',
+      'info.recoup':`<h4>What Recoupment is for</h4>
+          <p>When you advance money to an artist (an <b>advance</b>) or cover <b>recoupable costs</b> on their behalf (studio, video, promo), those amounts must be <b>recovered from their royalties</b> before you pay them the rest.</p>
+          <p>Here you record advances and costs per artist. The app compares the <b>total recoupable</b> with the <b>earned royalties</b> (lifetime) and shows how much has already been <b>recouped</b>, how much is left (<b>unrecouped</b>) and how much, if any, is <b>payable</b> to the artist beyond recoupment.</p>
+          <span class="ex">Example — €1,000 advance to Raho. Royalties earned so far: €700. → Recouped €700, <b>unrecouped</b> €300, payable €0. Once royalties pass €1,000, the difference becomes "payable".</span>`,
     }
   };
 

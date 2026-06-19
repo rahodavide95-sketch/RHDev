@@ -580,6 +580,21 @@ body.gate-signup #gate-signin{opacity:.5}
 .split-del{padding:0;color:var(--out);border-color:color-mix(in srgb,var(--out) 30%,var(--line))}
 .split-del:hover{background:color-mix(in srgb,var(--out) 12%,transparent)}
 
+/* ===== Recoupment ===== */
+.recoup-form{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.recoup-form .input,.recoup-form .select{max-width:200px}
+.recoup-form #recoup-amount{max-width:120px}
+.recoup-list{list-style:none;margin-top:14px;display:flex;flex-direction:column;gap:8px}
+.recoup-list li{display:flex;align-items:center;gap:12px;padding:9px 14px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;flex-wrap:wrap}
+.rc-kind{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:3px 9px;border-radius:6px;flex:none}
+.rc-advance{background:color-mix(in srgb,var(--net) 18%,transparent);color:var(--net)}
+.rc-cost{background:color-mix(in srgb,var(--out) 18%,transparent);color:var(--out)}
+.rc-amt{margin-left:auto;font-weight:700;font-variant-numeric:tabular-nums}
+.rc-note{flex-basis:100%;margin-left:2px}
+.rc-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:2px 7px;border-radius:6px;flex:none}
+.rc-del:hover{color:var(--out)}
+@media(max-width:880px){ .recoup-form{flex-direction:column;align-items:stretch} .recoup-form .input,.recoup-form .select,.recoup-form #recoup-amount{max-width:none;width:100%} }
+
 /* Campo password con occhio mostra/nascondi */
 .input-eye{position:relative;display:block}
 .input-eye .input{padding-right:42px;width:100%}

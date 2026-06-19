@@ -28,14 +28,14 @@ const newId = ()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const defaultRates = ()=>({ EUR:1, USD:0.92, GBP:1.17, CHF:1.04 });
 function defaultLabel(name='La mia etichetta'){
   return { id:newId(), name, transactions:[], releases:[], profile:{name:'',label:name},
-    rates:defaultRates(), mappings:{},
+    rates:defaultRates(), mappings:{}, recoup:[],
     txOrder:DEFAULT_TX_ORDER.slice(), txHidden:DEFAULT_TX_ORDER.filter(c=>!DEFAULT_TX_VISIBLE.includes(c)) };
 }
 function ensureLabelShape(l){
   l.id=l.id||newId();
   l.transactions=l.transactions||[]; l.releases=l.releases||[];
   l.profile=l.profile||{name:'',label:l.name||''};
-  l.rates=l.rates||defaultRates(); l.mappings=l.mappings||{};
+  l.rates=l.rates||defaultRates(); l.mappings=l.mappings||{}; l.recoup=l.recoup||[];
   l.txOrder=l.txOrder||DEFAULT_TX_ORDER.slice();
   l.txHidden=l.txHidden||DEFAULT_TX_ORDER.filter(c=>!DEFAULT_TX_VISIBLE.includes(c));
   l.name=l.name||(l.profile&&l.profile.label)||'Etichetta';
@@ -909,9 +909,33 @@ function computeRoyalties(){
   });
   return { byArtist, labelTotal };
 }
+// royalty per artista su una lista di transazioni (senza filtro periodo) — per il recoupment
+function royaltyTotalsByArtist(txs){
+  const byArtist={};
+  txs.forEach(t=>{ const eur=toEur(t.net,t.currency); const m=splitsForTx(t);
+    if(!m||!m.splits||!m.splits.length) return;
+    m.splits.forEach(s=>{ const share=eur*(+s.pct||0)/100; (byArtist[s.name]??={total:0}).total+=share; });
+  });
+  return byArtist;
+}
+// recoupment: saldo recuperabile vs royalty maturate (lifetime) per artista
+function computeRecoup(){
+  const life=royaltyTotalsByArtist(DB.transactions.filter(t=>t.kind==='income'));
+  const acc={};
+  (DB.recoup||[]).forEach(r=>{ const a=(acc[r.artist]??={advance:0,cost:0});
+    if(r.kind==='advance') a.advance+=(+r.amount||0); else a.cost+=(+r.amount||0); });
+  return Object.keys(acc).map(name=>{
+    const recoupable=(acc[name].advance||0)+(acc[name].cost||0);
+    const roy=(life[name]&&life[name].total)||0;
+    return { name, advance:acc[name].advance||0, cost:acc[name].cost||0, recoupable,
+      royalties:roy, recouped:Math.min(roy,recoupable),
+      unrecouped:Math.max(0,recoupable-roy), payable:Math.max(0,roy-recoupable) };
+  }).sort((a,b)=>b.unrecouped-a.unrecouped || b.royalties-a.royalties);
+}
 function renderRoyalties(){
   const hasRel=releases().length>0;
   $('#roy-empty').hidden = hasRel;
+  renderRecoup();
   const { byArtist, labelTotal } = computeRoyalties();
   const rows=Object.entries(byArtist).map(([name,v])=>({name,...v})).sort((a,b)=>b.total-a.total);
   const tbl=$('#table-roy-artist');
@@ -923,6 +947,39 @@ function renderRoyalties(){
       ${rows.length?'':`<tr><td colspan="2" class="muted">${tt('empty.noroy')}</td></tr>`}</tbody>`;
   $$('#table-roy-artist tbody tr[data-artist]').forEach(tr=>tr.onclick=()=>showRoyaltyDetail(tr.dataset.artist,byArtist[tr.dataset.artist]));
 }
+function renderRecoup(){
+  const rows=computeRecoup();
+  const t=$('#table-recoup');
+  if(t){
+    t.innerHTML = rows.length
+      ? `<thead><tr><th>${tt('roy.h.artist')}</th><th class="num">${tt('recoup.recoupable')}</th><th class="num">${tt('recoup.royalties')}</th><th class="num">${tt('recoup.recouped')}</th><th class="num">${tt('recoup.unrecouped')}</th><th class="num">${tt('recoup.payable')}</th></tr></thead><tbody>`
+        + rows.map(r=>`<tr><td>${esc(r.name)}</td><td class="num">${fmtMoney(r.recoupable)}</td><td class="num">${fmtMoney(r.royalties)}</td><td class="num">${fmtMoney(r.recouped)}</td><td class="num ${r.unrecouped>0?'neg':''}">${fmtMoney(r.unrecouped)}</td><td class="num ${r.payable>0?'pos':''}">${fmtMoney(r.payable)}</td></tr>`).join('')
+        + `</tbody>`
+      : `<tbody><tr><td class="muted">${tt('recoup.empty')}</td></tr></tbody>`;
+  }
+  const dl=$('#recoup-artists');
+  if(dl){ const names=[...new Set([...releases().flatMap(r=>(r.splits||[]).map(s=>s.name)), ...(DB.recoup||[]).map(r=>r.artist)])].filter(Boolean).sort();
+    dl.innerHTML=names.map(n=>`<option value="${esc(n)}">`).join(''); }
+  const el=$('#recoup-entries');
+  if(el){ const list=(DB.recoup||[]).slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+    el.innerHTML = list.length
+      ? `<ul class="recoup-list">`+list.map(r=>`<li><span class="rc-kind rc-${r.kind}">${r.kind==='advance'?tt('recoup.advance'):tt('recoup.cost')}</span><b class="rc-art">${esc(r.artist)}</b><span class="muted small">${esc(r.date||'')}</span><span class="rc-amt">${fmtMoney(r.amount)}</span><span class="muted small rc-note">${esc(r.note||'')}</span><button class="rc-del" data-id="${esc(r.id)}" title="Elimina" aria-label="Elimina">✕</button></li>`).join('')+`</ul>`
+      : '';
+  }
+}
+function addRecoup(){
+  const artist=$('#recoup-artist').value.trim();
+  const amount=+$('#recoup-amount').value;
+  if(!artist || !amount){ toast(tt('recoup.need')); return; }
+  DB.recoup.push({ id:uid(), artist, kind:$('#recoup-kind').value, amount, date:$('#recoup-date').value||isoD(new Date()), note:$('#recoup-note').value.trim() });
+  save();
+  $('#recoup-artist').value=''; $('#recoup-amount').value=''; $('#recoup-note').value='';
+  renderRecoup();
+}
+$('#recoup-add')?.addEventListener('click', addRecoup);
+document.addEventListener('click',e=>{ const b=e.target.closest('.rc-del'); if(!b) return;
+  DB.recoup=(DB.recoup||[]).filter(r=>r.id!==b.dataset.id); save(); renderRecoup(); });
+
 let royDetail=null;   // {name, data} dell'artista mostrato
 function showRoyaltyDetail(name,data){
   if(!data) return;

@@ -261,6 +261,45 @@ body.dash-edit .dw-width{display:inline-flex;gap:2px;position:absolute;top:8px;l
 .pager-btn:disabled{opacity:.4;cursor:default}
 @media(max-width:560px){ .pager{justify-content:center} .pager-info{order:3;width:100%;text-align:center} }
 
+/* ===== Toggle vista elenco/cards ===== */
+.vm-toggle{display:inline-flex;background:var(--panel-2);border:1px solid var(--line);border-radius:9px;padding:2px;gap:2px;flex:none}
+.vm-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;line-height:1;padding:6px 10px;border-radius:7px}
+.vm-btn:hover{color:var(--text)}
+.vm-btn.is-active{background:var(--accent);color:#fff}
+/* Artisti — elenco */
+.art-list{display:flex;flex-direction:column;gap:8px}
+.art-lrow{display:grid;grid-template-columns:auto 1.4fr 1.4fr 1fr auto auto;gap:12px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+.art-lrow .art-av{width:40px;height:40px}
+.art-lname{display:flex;flex-direction:column;min-width:0}
+.art-lname b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.art-lcol{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.art-lrow .art-actions{flex-direction:row}
+/* Release — elenco */
+.release-list{display:flex;flex-direction:column;gap:8px}
+.release-lrow{display:grid;grid-template-columns:auto 1.4fr auto 2fr auto;gap:14px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 14px;cursor:pointer}
+.release-lrow:hover{border-color:var(--accent)}
+.release-lname{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.release-lsplit{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.release-ltag{font-size:.72rem;font-weight:700;color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--panel));border-radius:7px;padding:2px 7px;white-space:nowrap;justify-self:end}
+/* Royalty — cards */
+.roy-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.roy-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;cursor:pointer}
+.roy-card[data-artist]:hover{border-color:var(--accent)}
+.roy-card--label{cursor:default;background:var(--panel-2)}
+.royc-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.royc-name{font-weight:700}
+.royc-tot{font-weight:700;font-variant-numeric:tabular-nums}
+.royc-tot.pos{color:var(--in)}
+.royc-body{margin-top:10px;display:flex;flex-direction:column;gap:5px;border-top:1px solid var(--line);padding-top:10px}
+.royc-line{display:flex;justify-content:space-between;gap:10px;font-size:.85rem;color:var(--muted)}
+.royc-line b{color:var(--text);font-variant-numeric:tabular-nums}
+@media(max-width:880px){
+  .art-lrow{grid-template-columns:auto 1fr auto}
+  .art-lrow .art-lcol{display:none}
+  .release-lrow{grid-template-columns:auto 1fr auto}
+  .release-lrow .release-lsplit{display:none}
+}
+
 /* stampa del solo contratto */
 @media print{
   body.printing-contract *{visibility:hidden!important}

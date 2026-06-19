@@ -577,6 +577,8 @@ function mountPager(anchor, key, info){
   }
   m.innerHTML=pagerHTML(key, info);
 }
+function clearPagerAfter(anchor){ if(!anchor) return; const after=anchor.closest('.table-wrap')||anchor;
+  const m=after.nextElementSibling; if(m&&m.classList&&m.classList.contains('pager-mount')) m.innerHTML=''; }
 const PAGER_RENDER={
   tx:()=>applyTxFilters(), rel:()=>renderReleases(), roy:()=>renderRoyalties(),
   recoup:()=>renderRecoup(), artists:()=>renderArtists(), contracts:()=>renderContracts(), tasks:()=>renderTasks(),
@@ -598,6 +600,21 @@ document.addEventListener('click', e=>{
   else if(act==='next') st.page=Math.min(pages,st.page+1); else if(act==='last') st.page=pages;
   pagerRerender(key);
 });
+
+/* ============================================================================
+   VISTA elenco/cards (Release · Royalty · Artisti)
+   ============================================================================ */
+const VIEWMODE_KEY='labelfinance.viewmode';
+let viewMode={};
+try{ viewMode=JSON.parse(localStorage.getItem(VIEWMODE_KEY))||{}; }catch(e){}
+function getVM(sec, def){ return viewMode[sec]||def; }
+function setVM(sec, m){ viewMode[sec]=m; try{ localStorage.setItem(VIEWMODE_KEY, JSON.stringify(viewMode)); }catch(e){}
+  if(sec==='artists') renderArtists(); else if(sec==='releases') renderReleases(); else if(sec==='royalties') renderRoyalties();
+  syncVMButtons(); }
+function syncVMButtons(){ $$('.vm-toggle').forEach(t=>{ const m=getVM(t.dataset.vmSec, t.dataset.vmDef||'cards');
+  t.querySelectorAll('.vm-btn').forEach(b=>b.classList.toggle('is-active', b.dataset.vm===m)); }); }
+document.addEventListener('click', e=>{ const b=e.target.closest('.vm-btn'); if(!b) return;
+  const t=b.closest('.vm-toggle'); if(t) setVM(t.dataset.vmSec, b.dataset.vm); });
 
 function computeGroup(cfg){
   const {sel,key}=cfg;
@@ -878,23 +895,41 @@ function renderReleases(){
   const all=releases().slice().sort((a,b)=>(a.catalog||'').localeCompare(b.catalog||''));
   $('#rel-count-label').textContent=`${all.length} release`;
   const info=paginate(all,'rel'); const list=info.slice;
-  $('#releases-cards').innerHTML = list.length ? list.map(r=>{
-    const tot=(r.splits||[]).reduce((s,x)=>s+(+x.pct||0),0);
-    const label=Math.max(0,100-tot);
-    const chips=(r.splits||[]).map(s=>`<span class="split-chip">${esc(s.name)} <b>${(+s.pct||0)}%</b></span>`).join('')
-      + `<span class="split-chip split-chip--label">Label <b>${label}%</b></span>`;
-    return `<div class="release-card" data-id="${r.id}">
-      <div class="release-card-head">
-        <div><span class="release-cat">${esc(r.catalog)}</span>
-          <span class="release-title">${esc(r.title)||''}</span></div>
+  const cont=$('#releases-cards'); const mode=getVM('releases','cards');
+  if(!list.length){ cont.className='releases-cards'; cont.innerHTML=`<p class="muted">${tt('empty.norel')}</p>`; mountPager(cont,'rel',info); syncVMButtons(); return; }
+  if(mode==='list'){
+    cont.className='release-list';
+    cont.innerHTML = list.map(r=>{
+      const tot=(r.splits||[]).reduce((s,x)=>s+(+x.pct||0),0); const label=Math.max(0,100-tot);
+      const who=(r.splits||[]).map(s=>esc(s.name)+' '+(+s.pct||0)+'%').join(' · ')+(label?` · Label ${label}%`:'');
+      return `<div class="release-lrow" data-id="${r.id}">
+        <span class="release-cat">${esc(r.catalog)}</span>
+        <span class="release-lname">${esc(r.title)||'—'}</span>
         <span class="muted small">${r.year||''}</span>
-      </div>
-      <div class="split-chips">${chips}</div>
-      ${(r.tracks&&r.tracks.length)?`<div class="release-tracks muted small">${r.tracks.length} tracc${r.tracks.length===1?'ia':'e'} con override</div>`:''}
-    </div>`;
-  }).join('') : `<p class="muted">${tt('empty.norel')}</p>`;
-  $$('#releases-cards .release-card').forEach(c=>c.onclick=()=>openRelease(c.dataset.id));
-  mountPager($('#releases-cards'),'rel',info);
+        <span class="release-lsplit muted small">${who}</span>
+        ${(r.tracks&&r.tracks.length)?`<span class="release-ltag">${r.tracks.length} ISRC</span>`:'<span></span>'}
+      </div>`;
+    }).join('');
+  } else {
+    cont.className='releases-cards';
+    cont.innerHTML = list.map(r=>{
+      const tot=(r.splits||[]).reduce((s,x)=>s+(+x.pct||0),0); const label=Math.max(0,100-tot);
+      const chips=(r.splits||[]).map(s=>`<span class="split-chip">${esc(s.name)} <b>${(+s.pct||0)}%</b></span>`).join('')
+        + `<span class="split-chip split-chip--label">Label <b>${label}%</b></span>`;
+      return `<div class="release-card" data-id="${r.id}">
+        <div class="release-card-head">
+          <div><span class="release-cat">${esc(r.catalog)}</span>
+            <span class="release-title">${esc(r.title)||''}</span></div>
+          <span class="muted small">${r.year||''}</span>
+        </div>
+        <div class="split-chips">${chips}</div>
+        ${(r.tracks&&r.tracks.length)?`<div class="release-tracks muted small">${r.tracks.length} tracc${r.tracks.length===1?'ia':'e'} con override</div>`:''}
+      </div>`;
+    }).join('');
+  }
+  cont.querySelectorAll('[data-id]').forEach(c=>c.onclick=()=>openRelease(c.dataset.id));
+  mountPager(cont,'rel',info);
+  syncVMButtons();
 }
 
 /* ---------- Modal release ---------- */
@@ -1068,17 +1103,34 @@ function renderRoyalties(){
   renderRecoup();
   const { byArtist, labelTotal } = computeRoyalties();
   const rows=Object.entries(byArtist).map(([name,v])=>({name,...v})).sort((a,b)=>b.total-a.total);
-  const tbl=$('#table-roy-artist');
-  if(!hasRel){ tbl.innerHTML=''; $('#roy-detail-panel').hidden=true; mountPager(tbl,'roy',{total:0}); return; }
+  const tbl=$('#table-roy-artist'), cardsBox=$('#roy-cards'), wrap=$('#roy-table-wrap');
+  if(!hasRel){ tbl.innerHTML=''; if(cardsBox) cardsBox.innerHTML=''; $('#roy-detail-panel').hidden=true; mountPager(tbl,'roy',{total:0}); return; }
   const info=paginate(rows,'roy'); const pr=info.slice;
   const isLast = info.page>=info.pages;
-  tbl.innerHTML=`<thead><tr><th>${tt('roy.h.artist')}</th><th class="num">${tt('roy.h.amount')}</th></tr></thead>
-    <tbody>${pr.map(r=>`<tr data-artist="${esc(r.name)}" style="cursor:pointer">
-      <td data-label="Artista">${esc(r.name)}</td><td class="num pos" data-label="Royalty (€)">${fmtMoney(r.total)}</td></tr>`).join('')}
-      ${isLast?`<tr><td data-label=""><strong>${tt('roy.label_residual')}</strong></td><td class="num" data-label="${tt('roy.h.amount')}"><strong>${fmtMoney(labelTotal)}</strong></td></tr>`:''}
-      ${rows.length?'':`<tr><td colspan="2" class="muted">${tt('empty.noroy')}</td></tr>`}</tbody>`;
-  $$('#table-roy-artist tbody tr[data-artist]').forEach(tr=>tr.onclick=()=>showRoyaltyDetail(tr.dataset.artist,byArtist[tr.dataset.artist]));
-  mountPager(tbl,'roy',info);
+  const mode=getVM('royalties','list');
+  if(mode==='cards'){
+    if(wrap) wrap.hidden=true; if(cardsBox) cardsBox.hidden=false;
+    cardsBox.innerHTML = pr.map(r=>{
+      const top=Object.entries(r.byRelease||{}).sort((a,b)=>b[1]-a[1]).slice(0,3)
+        .map(([c,a])=>`<div class="royc-line"><span>${esc(c)}</span><b>${fmtMoney(a)}</b></div>`).join('');
+      return `<div class="roy-card" data-artist="${esc(r.name)}">
+        <div class="royc-head"><span class="royc-name">${esc(r.name)}</span><span class="royc-tot pos">${fmtMoney(r.total)}</span></div>
+        ${top?`<div class="royc-body">${top}</div>`:''}</div>`;
+    }).join('') + (isLast?`<div class="roy-card roy-card--label"><div class="royc-head"><span class="royc-name">${tt('roy.label_residual')}</span><span class="royc-tot">${fmtMoney(labelTotal)}</span></div></div>`:'');
+    cardsBox.querySelectorAll('.roy-card[data-artist]').forEach(c=>c.onclick=()=>showRoyaltyDetail(c.dataset.artist,byArtist[c.dataset.artist]));
+    clearPagerAfter(tbl); mountPager(cardsBox,'roy',info);
+  } else {
+    if(wrap) wrap.hidden=false; if(cardsBox){ cardsBox.hidden=true; cardsBox.innerHTML=''; }
+    clearPagerAfter(cardsBox);
+    tbl.innerHTML=`<thead><tr><th>${tt('roy.h.artist')}</th><th class="num">${tt('roy.h.amount')}</th></tr></thead>
+      <tbody>${pr.map(r=>`<tr data-artist="${esc(r.name)}" style="cursor:pointer">
+        <td data-label="Artista">${esc(r.name)}</td><td class="num pos" data-label="Royalty (€)">${fmtMoney(r.total)}</td></tr>`).join('')}
+        ${isLast?`<tr><td data-label=""><strong>${tt('roy.label_residual')}</strong></td><td class="num" data-label="${tt('roy.h.amount')}"><strong>${fmtMoney(labelTotal)}</strong></td></tr>`:''}
+        ${rows.length?'':`<tr><td colspan="2" class="muted">${tt('empty.noroy')}</td></tr>`}</tbody>`;
+    $$('#table-roy-artist tbody tr[data-artist]').forEach(tr=>tr.onclick=()=>showRoyaltyDetail(tr.dataset.artist,byArtist[tr.dataset.artist]));
+    mountPager(tbl,'roy',info);
+  }
+  syncVMButtons();
 }
 function renderRecoup(){
   const allRows=computeRecoup();
@@ -1695,22 +1747,39 @@ function renderArtists(){
   const all=(DB.artists||[]).filter(a=> !q || (a.name+' '+(a.legal||'')+' '+(a.email||'')).toLowerCase().includes(q));
   $('#artists-empty').hidden = (DB.artists||[]).length>0;
   const info=paginate(all,'artists'); const list=info.slice;
-  grid.innerHTML = list.map(a=>`
-    <div class="art-card" data-id="${a.id}">
-      <div class="art-av">${a.photo?`<img src="${a.photo}" alt="">`:`<span>${esc(initials(a.name))}</span>`}</div>
-      <div class="art-info">
-        <div class="art-cname">${esc(a.name)}</div>
-        ${a.legal?`<div class="art-meta">${esc(a.legal)}</div>`:''}
-        ${a.email?`<div class="art-meta">✉ ${esc(a.email)}</div>`:''}
-        ${a.phone?`<div class="art-meta">☎ ${esc(a.phone)}</div>`:''}
-        ${a.split?`<span class="art-split">${esc(a.split)}%</span>`:''}
-      </div>
-      <div class="art-actions">
+  const mode=getVM('artists','cards');
+  const av=a=>`<div class="art-av">${a.photo?`<img src="${a.photo}" alt="">`:`<span>${esc(initials(a.name))}</span>`}</div>`;
+  const acts=a=>`<div class="art-actions">
         <button class="icon-btn-sm" data-art-edit="${a.id}" title="${tt('common.edit')}">✎</button>
-        <button class="icon-btn-sm" data-art-del="${a.id}" title="${tt('common.delete')}">🗑</button>
-      </div>
-    </div>`).join('');
+        <button class="icon-btn-sm" data-art-del="${a.id}" title="${tt('common.delete')}">🗑</button></div>`;
+  if(mode==='list'){
+    grid.className='art-list';
+    grid.innerHTML = list.map(a=>`
+      <div class="art-lrow" data-id="${a.id}">
+        ${av(a)}
+        <div class="art-lname"><b>${esc(a.name)}</b>${a.legal?`<span class="art-meta">${esc(a.legal)}</span>`:''}</div>
+        <div class="art-lcol art-meta">${a.email?('✉ '+esc(a.email)):''}</div>
+        <div class="art-lcol art-meta">${a.phone?('☎ '+esc(a.phone)):''}</div>
+        <div class="art-lcol">${a.split?`<span class="art-split">${esc(a.split)}%</span>`:''}</div>
+        ${acts(a)}
+      </div>`).join('');
+  } else {
+    grid.className='art-grid';
+    grid.innerHTML = list.map(a=>`
+      <div class="art-card" data-id="${a.id}">
+        ${av(a)}
+        <div class="art-info">
+          <div class="art-cname">${esc(a.name)}</div>
+          ${a.legal?`<div class="art-meta">${esc(a.legal)}</div>`:''}
+          ${a.email?`<div class="art-meta">✉ ${esc(a.email)}</div>`:''}
+          ${a.phone?`<div class="art-meta">☎ ${esc(a.phone)}</div>`:''}
+          ${a.split?`<span class="art-split">${esc(a.split)}%</span>`:''}
+        </div>
+        ${acts(a)}
+      </div>`).join('');
+  }
   mountPager(grid,'artists',info);
+  syncVMButtons();
 }
 function setArtistPhoto(d){ artistPhotoData=d||''; const ph=$('#art-photo');
   if(ph) ph.innerHTML = artistPhotoData?`<img src="${artistPhotoData}" alt="">`:`<span>${tt('art.photo')}</span>`; }

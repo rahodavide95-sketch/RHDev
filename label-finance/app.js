@@ -1538,7 +1538,10 @@ async function runAi(){
   } else {
     const map={ upgrade_required:tt('ai.err_plan'), unauthorized:tt('ai.err_auth'), offline:tt('ai.err_offline'),
       ai_not_configured:tt('ai.err_config'), refused:tt('ai.err_refused') };
-    out.innerHTML=`<p class="ai-err">${(res&&map[res.error])||tt('ai.err_generic')}</p>`;
+    const code=res&&res.error;
+    const known=code&&map[code];
+    // per errori non previsti mostra anche il codice grezzo, così è diagnosticabile
+    out.innerHTML=`<p class="ai-err">${known||tt('ai.err_generic')}${(code&&!known)?` <span class="muted small">(${esc(String(code))})</span>`:''}</p>`;
   }
 }
 function aiFormat(t){

@@ -1540,8 +1540,10 @@ async function runAi(){
       ai_not_configured:tt('ai.err_config'), refused:tt('ai.err_refused') };
     const code=res&&res.error;
     const known=code&&map[code];
-    // per errori non previsti mostra anche il codice grezzo, così è diagnosticabile
-    out.innerHTML=`<p class="ai-err">${known||tt('ai.err_generic')}${(code&&!known)?` <span class="muted small">(${esc(String(code))})</span>`:''}</p>`;
+    // per errori non previsti mostra anche il codice grezzo e il dettaglio, così è diagnosticabile
+    let html=`<p class="ai-err">${known||tt('ai.err_generic')}${(code&&!known)?` <span class="muted small">(${esc(String(code))})</span>`:''}</p>`;
+    if(res&&res.detail) html+=`<p class="muted small" style="white-space:pre-wrap;margin-top:6px">${esc(String(res.detail).slice(0,300))}</p>`;
+    out.innerHTML=html;
   }
 }
 function aiFormat(t){

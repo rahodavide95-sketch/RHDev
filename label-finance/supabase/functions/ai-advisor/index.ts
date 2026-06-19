@@ -92,14 +92,15 @@ Deno.serve(async (req) => {
       model: ANTHROPIC_MODEL,
       max_tokens: 1500,
       system,
-      output_config: { effort: "medium" },
       messages: [{ role: "user", content: userContent }],
     }),
   });
 
   if (!resp.ok) {
-    const detail = await resp.text();
-    return json({ error: "ai_error", status: resp.status, detail }, 502);
+    let detail = "";
+    try { detail = await resp.text(); } catch { /* ignore */ }
+    // restituisce 200 con il dettaglio così il client può mostrarlo (diagnostica)
+    return json({ error: `ai_http_${resp.status}`, status: resp.status, detail: detail.slice(0, 400) }, 200);
   }
 
   const data = await resp.json();

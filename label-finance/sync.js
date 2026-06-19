@@ -165,7 +165,7 @@
     if(!user) return { error:'unauthorized' };
     try{
       const { data, error } = await client.functions.invoke('ai-advisor', { body:payload });
-      if(error){ let d=null; try{ d=await error.context?.json?.(); }catch{} return { error:(d&&d.error)||error.message||'ai_error' }; }
+      if(error){ let d=null; try{ d=await error.context?.json?.(); }catch{} return d || { error:error.message||'ai_error' }; }
       return data;
     }catch(e){ return { error:e.message||'ai_error' }; }
   };

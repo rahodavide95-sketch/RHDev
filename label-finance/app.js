@@ -295,8 +295,8 @@ function rebuildAccountMenu(){
   </div>`).join('');
   $$('#account-menu-labels .acct-label').forEach(b=>b.onclick=()=>switchLabel(b.dataset.label));
   $$('#account-menu-labels .acct-del').forEach(b=>b.onclick=ev=>{ ev.stopPropagation(); deleteLabel(b.dataset.del); });
-  const g=$('#account-greet'); if(g) g.textContent=(DB.profile&&DB.profile.name)?DB.profile.name:'Le tue etichette';
-  const pn=$('#account-plan'); if(pn) pn.textContent='Piano '+((PLAN_INFO[ACCOUNT.plan]||{}).name||'Starter');
+  const g=$('#account-greet'); if(g) g.textContent=(DB.profile&&DB.profile.name)?DB.profile.name:tt('acct.your_labels');
+  const pn=$('#account-plan'); if(pn) pn.textContent=tt('acct.plan')+' '+((PLAN_INFO[ACCOUNT.plan]||{}).name||'Starter');
 }
 function deleteLabel(id){
   if(ACCOUNT.labels.length<=1){ toast(tt('t.label_min')); return; }
@@ -813,7 +813,7 @@ function collectSplits(container){
 function openRelease(id){
   const r = id ? releases().find(x=>x.id===id) : null;
   artistDatalist();
-  $('#rel-modal-title').textContent = r ? 'Modifica release' : 'Nuova release';
+  $('#rel-modal-title').textContent = r ? tt('rel.modal.edit') : tt('rel.modal.new');
   $('#r-id').value=r?.id||'';
   $('#r-catalog').value=r?.catalog||''; $('#r-title').value=r?.title||''; $('#r-year').value=r?.year||'';
   const splits = (r?.splits&&r.splits.length) ? r.splits : [{name:'',pct:''}];
@@ -973,7 +973,7 @@ $('#roy-detail-pdf').onclick=()=>{
 /* ---------- Modal movimento ---------- */
 function openTx(id){
   const t = id ? DB.transactions.find(x=>x.id===id) : null;
-  $('#tx-modal-title').textContent = t ? 'Modifica movimento' : (curKind==='expense'?'Nuova uscita':'Nuova entrata');
+  $('#tx-modal-title').textContent = t ? tt('tx.modal.edit') : (curKind==='expense'?tt('tx.modal.new_exp'):tt('tx.modal.new_inc'));
   const k = t ? t.kind : curKind;
   $('#f-id').value=t?.id||''; $('#f-kind').value=k;
   $('#f-date').value=t?.date||new Date().toISOString().slice(0,10);

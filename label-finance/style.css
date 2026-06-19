@@ -107,11 +107,21 @@ body.nav-collapsed{grid-template-columns:78px 1fr}
 }
 .topbar-section{font-family:'Syne',sans-serif;font-weight:600;font-size:1rem;color:var(--text);opacity:0;transform:translateY(4px);transition:opacity .2s,transform .2s;pointer-events:none}
 body.show-topsec .topbar-section{opacity:1;transform:none}
-/* Tasti Entrata/Uscita (verde/rosso tenui) */
+/* Tasti Entrata/Uscita (verde/rosso tenui) — già colorati per riconoscerli a colpo d'occhio */
 .btn-income{background:color-mix(in srgb,var(--in) 20%,var(--panel));border-color:color-mix(in srgb,var(--in) 48%,var(--line));color:var(--in);font-weight:600}
 .btn-income:hover{background:color-mix(in srgb,var(--in) 30%,var(--panel));border-color:var(--in)}
 .btn-expense{background:color-mix(in srgb,var(--out) 18%,var(--panel));border-color:color-mix(in srgb,var(--out) 46%,var(--line));color:var(--out);font-weight:600}
 .btn-expense:hover{background:color-mix(in srgb,var(--out) 28%,var(--panel));border-color:var(--out)}
+/* Assistente AI */
+.ai-panel .panel-head h2{display:flex;align-items:center;gap:8px}
+.ai-spark{color:var(--accent)}
+.ai-out{margin-top:14px}
+.ai-answer{line-height:1.65;font-size:.94rem}
+.ai-answer p{margin:0 0 10px}.ai-answer ul{margin:6px 0 12px;padding-left:20px}.ai-answer li{margin-bottom:5px}
+.ai-answer b{color:var(--accent)}
+.ai-err{color:var(--out);font-size:.92rem}
+.ai-upsell{display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+.ai-upsell p{color:var(--muted);margin:0}
 /* Foto profilo */
 .avatar-img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block}
 #btn-account{overflow:hidden;padding:0}

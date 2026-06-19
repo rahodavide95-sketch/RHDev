@@ -159,6 +159,16 @@
   }
   async function signOut(){ if(client) await client.auth.signOut(); }
   window.LF_signOut = signOut;
+  /* Assistente AI: invoca la Edge Function 'ai-advisor' (chiave server-side) */
+  window.LF_aiAdvise = async function(payload){
+    if(!client) return { error:'offline' };
+    if(!user) return { error:'unauthorized' };
+    try{
+      const { data, error } = await client.functions.invoke('ai-advisor', { body:payload });
+      if(error){ let d=null; try{ d=await error.context?.json?.(); }catch{} return { error:(d&&d.error)||error.message||'ai_error' }; }
+      return data;
+    }catch(e){ return { error:e.message||'ai_error' }; }
+  };
   async function saveAccount(){
     const name=$('account-name').value.trim(), surname=$('account-surname')?$('account-surname').value.trim():'', label=$('account-label').value.trim();
     window.LF.setProfile({ name, surname, label });

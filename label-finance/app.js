@@ -474,6 +474,7 @@ function deltaTag(cur,prev,goodUp){
 }
 function renderDashboard(){
   updateIdentity();
+  if(typeof renderAiPanel==='function') renderAiPanel();
   const all=DB.transactions;
   $('#dash-empty').hidden = all.length>0;
   const range=periodRange();
@@ -1337,6 +1338,81 @@ if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator
 
 /* ---------- Anno copyright automatico ---------- */
 { const y=$('#copyright-year'); if(y) y.textContent=new Date().getFullYear(); }
+
+/* ============================================================================
+   ASSISTENTE AI (Studio/Agency) — riassunto dati + consigli via Edge Function
+   ============================================================================ */
+function buildAiSummary(){
+  const txs=DB.transactions||[];
+  const inc=txs.filter(t=>t.kind==='income'), exp=txs.filter(t=>t.kind==='expense');
+  const sum=a=>a.reduce((s,t)=>s+toEur(t.net,t.currency),0);
+  const income=sum(inc), expense=Math.abs(sum(exp)), net=income-expense;
+  // trend ultimi 6 mesi (netto)
+  const byMonth={};
+  txs.forEach(t=>{ const m=(t.date||'').slice(0,7); if(!m) return; const v=toEur(t.net,t.currency)*(t.kind==='income'?1:-1); byMonth[m]=(byMonth[m]||0)+v; });
+  const months=Object.keys(byMonth).sort().slice(-6).map(m=>({mese:m, netto:+byMonth[m].toFixed(2)}));
+  // top piattaforme per netto
+  const plat={}; txs.forEach(t=>{ const k=t.platform||'—'; plat[k]=(plat[k]||0)+toEur(t.net,t.currency)*(t.kind==='income'?1:-1); });
+  const piattaforme=Object.entries(plat).map(([k,v])=>({nome:k, netto:+v.toFixed(2)})).sort((a,b)=>b.netto-a.netto).slice(0,5);
+  // artisti per royalty (a vita) + recoupment
+  const life=royaltyTotalsByArtist(inc);
+  const artisti=Object.entries(life).map(([k,v])=>({nome:k, royalty:+v.total.toFixed(2)})).sort((a,b)=>b.royalty-a.royalty).slice(0,5);
+  const recoup=computeRecoup().filter(r=>r.unrecouped>0).map(r=>({artista:r.name, nonRecuperato:+r.unrecouped.toFixed(2)}));
+  return {
+    valuta:'EUR',
+    totali:{ entrate:+income.toFixed(2), uscite:+expense.toFixed(2), margineNetto:+net.toFixed(2),
+      marginePct: income? +((net/income)*100).toFixed(1):0, movimenti:txs.length },
+    trendUltimi6Mesi:months, perPiattaforma:piattaforme, topArtistiRoyalty:artisti, nonRecouped:recoup
+  };
+}
+let aiBusy=false;
+function renderAiPanel(){
+  const panel=$('#ai-panel'), body=$('#ai-body'); if(!panel||!body) return;
+  if(!can('ai')){
+    // mostra l'upsell solo se c'è qualche dato (altrimenti tieni pulita la dashboard)
+    if((DB.transactions||[]).length===0){ panel.hidden=true; return; }
+    panel.hidden=false;
+    body.innerHTML=`<div class="ai-upsell"><p>${tt('ai.locked')}</p><button class="btn btn-primary" data-goto="offers">${tt('ai.see_plans')}</button></div>`;
+    return;
+  }
+  panel.hidden=false;
+  if(!body.dataset.ready){
+    body.innerHTML=`<button class="btn btn-primary" id="ai-go">✦ ${tt('ai.analyze')}</button><div class="ai-out" id="ai-out"></div>`;
+    body.dataset.ready='1';
+    $('#ai-go').addEventListener('click', runAi);
+  }
+}
+async function runAi(){
+  if(aiBusy) return; aiBusy=true;
+  const out=$('#ai-out'), btn=$('#ai-go');
+  if(btn){ btn.disabled=true; btn.textContent='… '+tt('ai.thinking'); }
+  if(out) out.innerHTML=`<p class="muted">${tt('ai.thinking')}</p>`;
+  let res={error:'offline'};
+  try{ if(window.LF_aiAdvise) res=await window.LF_aiAdvise({ summary:buildAiSummary(), lang:(window.LFI18N?window.LFI18N.lang:'it') }); }catch(e){ res={error:e.message}; }
+  aiBusy=false;
+  if(btn){ btn.disabled=false; btn.textContent='✦ '+tt('ai.again'); }
+  if(!out) return;
+  if(res && res.text){
+    out.innerHTML=`<div class="ai-answer">${aiFormat(res.text)}</div>`;
+  } else {
+    const map={ upgrade_required:tt('ai.err_plan'), unauthorized:tt('ai.err_auth'), offline:tt('ai.err_offline'),
+      ai_not_configured:tt('ai.err_config'), refused:tt('ai.err_refused') };
+    out.innerHTML=`<p class="ai-err">${(res&&map[res.error])||tt('ai.err_generic')}</p>`;
+  }
+}
+function aiFormat(t){
+  // mini-markdown: **bold**, righe con - in elenco, paragrafi
+  const esc2=s=>s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const lines=esc2(t).split(/\n/); let html='', inList=false;
+  for(let raw of lines){
+    let l=raw.trim();
+    l=l.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
+    if(/^[-•*]\s+/.test(l)){ if(!inList){html+='<ul>';inList=true;} html+='<li>'+l.replace(/^[-•*]\s+/,'')+'</li>'; }
+    else { if(inList){html+='</ul>';inList=false;} if(l) html+='<p>'+l+'</p>'; }
+  }
+  if(inList) html+='</ul>';
+  return html;
+}
 
 /* ---------- Cambio lingua: rigenera i contenuti dinamici ---------- */
 window.addEventListener('langchange', ()=>{

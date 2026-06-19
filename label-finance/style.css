@@ -144,6 +144,7 @@ body.show-topsec .topbar-section{opacity:1;transform:none}
 .lang-pill button{background:none;border:none;color:var(--muted);font:inherit;font-weight:700;font-size:.74rem;letter-spacing:.02em;padding:5px 9px;border-radius:7px;cursor:pointer;transition:.15s}
 .lang-pill button:hover{color:var(--text)}
 .lang-pill button.is-active{background:var(--accent);color:var(--on-accent)}
+.topbar-divider{width:1px;height:24px;background:var(--line);flex:none}
 .topbar-label{font-weight:600;font-size:.92rem;color:var(--text);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .icon-btn{display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;
   background:var(--panel-2);border:1px solid var(--line);color:var(--text);cursor:pointer;transition:.15s;flex:none}
@@ -490,7 +491,7 @@ body.gate-signup #gate-signin{opacity:.5}
   /* ---- Rifiniture generali mobile ---- */
   .topbar{padding:env(safe-area-inset-top) 14px 0;height:calc(54px + env(safe-area-inset-top))}
   .topbar-section,.topbar-sep{display:none}
-  .lang-pill{display:none}        /* su mobile la lingua è nel pannello "Altro" */
+  .lang-pill,.topbar-divider{display:none}   /* su mobile la lingua è nel pannello "Altro" */
   .content{padding:14px 14px 78px;max-width:100%}
   /* niente sforamenti orizzontali: ogni sezione resta dentro lo schermo */
   .view,.panel,.kpi-grid,.grid-2,.releases-cards{max-width:100%;min-width:0}

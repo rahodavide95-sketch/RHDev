@@ -58,6 +58,7 @@ function ensureLabelShape(l){
   l.dashLayout=l.dashLayout||{order:DASH_DEFAULT_ORDER.slice(), hidden:DASH_EXTRAS.slice(), cols:2};
   l.txOrder=l.txOrder||DEFAULT_TX_ORDER.slice();
   l.txHidden=l.txHidden||DEFAULT_TX_ORDER.filter(c=>!DEFAULT_TX_VISIBLE.includes(c));
+  l.artists=l.artists||[]; l.tasks=l.tasks||[]; l.contracts=l.contracts||[];
   l.name=l.name||(l.profile&&l.profile.label)||'Etichetta';
   return l;
 }
@@ -94,7 +95,7 @@ window.LF = {
     if(typeof updateIdentity==='function') updateIdentity(); if(typeof rebuildAccountMenu==='function') rebuildAccountMenu(); },
   goto(v){ if(typeof goto==='function') goto(v); },
 };
-function reloadViews(){ renderDashboard(); renderTx(); renderReleases(); renderRoyalties(); renderOffers(); renderSettings(); }
+function reloadViews(){ renderDashboard(); renderTx(); renderReleases(); renderRoyalties(); renderArtists(); renderContracts(); renderTasks(); renderOffers(); renderSettings(); }
 // integra eventuali colonne nuove non ancora presenti nell'ordine salvato
 function ensureCols(){
   DB.txOrder = DB.txOrder || DEFAULT_TX_ORDER.slice();
@@ -227,7 +228,7 @@ function autoMap(headers){
 /* ============================================================================
    NAVIGAZIONE
    ============================================================================ */
-const VIEW_TITLES={dashboard:'Dashboard',transactions:'Movimenti',releases:'Release',royalties:'Royalty',import:'Importa CSV',settings:'Impostazioni',about:'Chi siamo',offers:'Offerte & Piani',faq:'Aiuto & FAQ'};
+const VIEW_TITLES={dashboard:'Dashboard',transactions:'Movimenti',releases:'Release',royalties:'Royalty',artists:'Artisti',contracts:'Contratti',tasks:'Task',import:'Importa CSV',settings:'Impostazioni',about:'Chi siamo',offers:'Offerte & Piani',faq:'Aiuto & FAQ'};
 function goto(view){
   $$('.nav-item').forEach(b=>b.classList.toggle('is-active',b.dataset.view===view));
   $$('.view').forEach(v=>v.classList.toggle('is-active',v.id==='view-'+view));
@@ -236,6 +237,9 @@ function goto(view){
   if(view==='transactions') renderTx();
   if(view==='releases') renderReleases();
   if(view==='royalties') renderRoyalties();
+  if(view==='artists') renderArtists();
+  if(view==='contracts') renderContracts();
+  if(view==='tasks') renderTasks();
   if(view==='offers') renderOffers();
   if(view==='settings') renderSettings();
   $('.main').scrollTop=0;
@@ -1425,11 +1429,12 @@ function aiFormat(t){
 /* ============================================================================
    DASHBOARD PERSONALIZZABILE (Studio/Agency) — widget riordinabili / nascondibili
    ============================================================================ */
-function dashLayout(){ const l=DB.dashLayout||(DB.dashLayout={order:DASH_DEFAULT_ORDER.slice(),hidden:DASH_EXTRAS.slice(),cols:2});
-  l.order=l.order&&l.order.length?l.order:DASH_DEFAULT_ORDER.slice(); l.hidden=l.hidden||[]; l.cols=l.cols||2;
+function dashLayout(){ const l=DB.dashLayout||(DB.dashLayout={order:DASH_DEFAULT_ORDER.slice(),hidden:DASH_EXTRAS.slice(),cols:2,widths:{}});
+  l.order=l.order&&l.order.length?l.order:DASH_DEFAULT_ORDER.slice(); l.hidden=l.hidden||[]; l.cols=l.cols||2; l.widths=l.widths||{};
   // integra widget nuovi non presenti nell'ordine salvato; gli extra entrano nascosti (libreria)
   DASH_DEFAULT_ORDER.forEach(id=>{ if(!l.order.includes(id)){ l.order.push(id); if(DASH_EXTRAS.includes(id)&&!l.hidden.includes(id)) l.hidden.push(id); } });
   return l; }
+function widgetWidth(id){ const l=dashLayout(); return l.widths[id] || (DASH_FULL.has(id)?'full':1); }
 let dashWired=false;
 function setupDashWidgets(){
   const view=$('#view-dashboard'); if(!view) return;
@@ -1447,8 +1452,13 @@ function setupDashWidgets(){
     // posiziona il contenitore dove c'era l'ai-panel (prima delle card dati)
     (map.ai||map.kpi).parentNode.insertBefore(cont, map.ai||map.kpi);
     Object.entries(map).forEach(([id,el])=>{ if(!el) return;
-      const w=document.createElement('div'); w.className='dash-widget'+(DASH_FULL.has(id)?' w-full':''); w.dataset.widget=id;
-      w.innerHTML='<span class="dw-handle" title="Trascina">⠿</span><button class="dw-hide" title="Nascondi">✕</button>';
+      const w=document.createElement('div'); w.className='dash-widget'; w.dataset.widget=id;
+      w.innerHTML='<span class="dw-handle" title="Trascina">⠿</span>'
+        +'<span class="dw-width" role="group">'
+        +'<button class="dw-w" data-w="1" title="Stretta">▯</button>'
+        +'<button class="dw-w" data-w="2" title="Media">▭</button>'
+        +'<button class="dw-w" data-w="full" title="Larga">▬</button></span>'
+        +'<button class="dw-hide" title="Nascondi">✕</button>';
       el.parentNode.removeChild(el); w.appendChild(el); cont.appendChild(w); });
     if(grid2&&grid2.parentNode) grid2.parentNode.removeChild(grid2);
     wireDashEdit(cont);
@@ -1463,6 +1473,12 @@ function applyDashLayout(){
   l.order.forEach(id=>{ const w=cont.querySelector(`.dash-widget[data-widget="${id}"]`); if(w) cont.appendChild(w); });
   cont.querySelectorAll('.dash-widget').forEach(w=>{
     const id=w.dataset.widget;
+    // larghezza: 'full' = tutta la riga, altrimenti N colonne (max = colonne disponibili)
+    let span=widgetWidth(id);
+    if(span==='full'){ w.style.gridColumn='1 / -1'; }
+    else { span=Math.min(Number(span)||1, l.cols); w.style.gridColumn='span '+span; }
+    // stato attivo dei pulsanti larghezza
+    w.querySelectorAll('.dw-w').forEach(b=>b.classList.toggle('is-active', String(widgetWidth(id))===b.dataset.w));
     // un widget è nascosto se l'utente l'ha tolto, o se il suo contenuto è vuoto (es. AI panel senza dati)
     const inner=w.firstElementChild&&w.querySelector('#ai-panel');
     const emptied = inner && inner.hidden && !document.body.classList.contains('dash-edit');
@@ -1493,7 +1509,7 @@ function wireDashEdit(cont){
   if(btn) btn.addEventListener('click', ()=>{ if(!requireFeature('layout')) return; toggleDashEdit(); });
   const done=$('#btn-dash-done'); if(done) done.addEventListener('click', ()=>toggleDashEdit(false));
   const reset=$('#btn-dash-reset'); if(reset) reset.addEventListener('click', ()=>{
-    DB.dashLayout={order:DASH_DEFAULT_ORDER.slice(),hidden:[],cols:2}; save(); applyDashLayout(); syncColsSeg(); });
+    DB.dashLayout={order:DASH_DEFAULT_ORDER.slice(),hidden:DASH_EXTRAS.slice(),cols:2,widths:{}}; save(); applyDashLayout(); syncColsSeg(); });
   const seg=$('#dash-cols-seg');
   if(seg) seg.addEventListener('click', e=>{ const b=e.target.closest('.seg-btn'); if(!b) return; setDashCols(+b.dataset.cols); syncColsSeg(); });
   syncColsSeg();
@@ -1501,6 +1517,9 @@ function wireDashEdit(cont){
   cont.addEventListener('click', e=>{ const h=e.target.closest('.dw-hide'); if(!h||!dashEdit) return;
     const w=h.closest('.dash-widget'); const id=w.dataset.widget; const l=dashLayout();
     if(!l.hidden.includes(id)) l.hidden.push(id); save(); applyDashLayout(); });
+  // pulsanti larghezza widget
+  cont.addEventListener('click', e=>{ const b=e.target.closest('.dw-w'); if(!b||!dashEdit) return;
+    const w=b.closest('.dash-widget'); setWidgetWidth(w.dataset.widget, b.dataset.w==='full'?'full':Number(b.dataset.w)); });
   // drag & drop riordino
   let dragEl=null;
   cont.addEventListener('dragstart', e=>{ const w=e.target.closest('.dash-widget'); if(!w||!dashEdit){ e.preventDefault(); return; } dragEl=w; w.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; });
@@ -1515,6 +1534,7 @@ function saveDashOrder(){
   l.order=[...cont.querySelectorAll('.dash-widget')].map(w=>w.dataset.widget); save();
 }
 function setDashCols(n){ const l=dashLayout(); l.cols=n; save(); applyDashLayout(); }
+function setWidgetWidth(id,w){ const l=dashLayout(); l.widths[id]=w; save(); applyDashLayout(); }
 /* ---- Widget extra: Top artisti, Ultimi movimenti, Cashflow previsionale ---- */
 function renderExtraWidgets(txs){
   // Top artisti per netto (royalty)
@@ -1565,6 +1585,273 @@ function renderExtraWidgets(txs){
 function syncColsSeg(){ const seg=$('#dash-cols-seg'); if(!seg) return; const c=dashLayout().cols;
   seg.querySelectorAll('.seg-btn').forEach(b=>b.classList.toggle('is-active', +b.dataset.cols===c)); }
 
+/* ============================================================================
+   ARTISTI (RUBRICA) · CONTRATTI · TASK
+   ============================================================================ */
+function resizeImage(file, S, cb){
+  const url=URL.createObjectURL(file); const img=new Image();
+  img.onload=()=>{ URL.revokeObjectURL(url);
+    const c=document.createElement('canvas'); c.width=S; c.height=S; const ctx=c.getContext('2d');
+    const min=Math.min(img.width,img.height), sx=(img.width-min)/2, sy=(img.height-min)/2;
+    ctx.drawImage(img,sx,sy,min,min,0,0,S,S); cb(c.toDataURL('image/jpeg',0.85)); };
+  img.onerror=()=>{ URL.revokeObjectURL(url); toast(tt('t.file_invalid')); };
+  img.src=url;
+}
+const initials = s => (String(s||'').trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('')||'?').toUpperCase();
+function artistById(id){ return (DB.artists||[]).find(a=>a.id===id); }
+
+/* ---------- Artisti ---------- */
+let editingArtistId=null, artistPhotoData='';
+function renderArtists(){
+  const grid=$('#artists-grid'); if(!grid) return;
+  const q=($('#art-search')&&$('#art-search').value||'').toLowerCase().trim();
+  const list=(DB.artists||[]).filter(a=> !q || (a.name+' '+(a.legal||'')+' '+(a.email||'')).toLowerCase().includes(q));
+  $('#artists-empty').hidden = (DB.artists||[]).length>0;
+  grid.innerHTML = list.map(a=>`
+    <div class="art-card" data-id="${a.id}">
+      <div class="art-av">${a.photo?`<img src="${a.photo}" alt="">`:`<span>${esc(initials(a.name))}</span>`}</div>
+      <div class="art-info">
+        <div class="art-cname">${esc(a.name)}</div>
+        ${a.legal?`<div class="art-meta">${esc(a.legal)}</div>`:''}
+        ${a.email?`<div class="art-meta">✉ ${esc(a.email)}</div>`:''}
+        ${a.phone?`<div class="art-meta">☎ ${esc(a.phone)}</div>`:''}
+        ${a.split?`<span class="art-split">${esc(a.split)}%</span>`:''}
+      </div>
+      <div class="art-actions">
+        <button class="icon-btn-sm" data-art-edit="${a.id}" title="${tt('common.edit')}">✎</button>
+        <button class="icon-btn-sm" data-art-del="${a.id}" title="${tt('common.delete')}">🗑</button>
+      </div>
+    </div>`).join('');
+}
+function setArtistPhoto(d){ artistPhotoData=d||''; const ph=$('#art-photo');
+  if(ph) ph.innerHTML = artistPhotoData?`<img src="${artistPhotoData}" alt="">`:`<span>${tt('art.photo')}</span>`; }
+function openArtistForm(id){
+  editingArtistId=id||null; const a=id?artistById(id):null;
+  $('#art-form-title').textContent = a?tt('art.edit'):tt('art.new');
+  $('#art-name').value=a?a.name||'':''; $('#art-legal').value=a?a.legal||'':'';
+  $('#art-email').value=a?a.email||'':''; $('#art-phone').value=a?a.phone||'':'';
+  $('#art-iban').value=a?a.iban||'':''; $('#art-split').value=a?(a.split||''):'';
+  $('#art-address').value=a?a.address||'':''; $('#art-note').value=a?a.note||'':'';
+  setArtistPhoto(a?a.photo:'');
+  $('#art-form').hidden=false; $('#art-form').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function saveArtist(){
+  const name=$('#art-name').value.trim(); if(!name){ toast(tt('art.need_name')); return; }
+  const data={ name, legal:$('#art-legal').value.trim(), email:$('#art-email').value.trim(),
+    phone:$('#art-phone').value.trim(), iban:$('#art-iban').value.trim(),
+    split:Number($('#art-split').value)||0, address:$('#art-address').value.trim(),
+    note:$('#art-note').value.trim(), photo:artistPhotoData };
+  if(editingArtistId){ const a=artistById(editingArtistId); if(a) Object.assign(a,data); }
+  else { DB.artists.push(Object.assign({id:newId()}, data)); }
+  save(); $('#art-form').hidden=true; editingArtistId=null; renderArtists(); toast(tt('art.saved'));
+}
+function deleteArtist(id){ const a=artistById(id); if(!a) return;
+  if(!confirm(tt('art.del_confirm').replace('{name}',a.name))) return;
+  DB.artists=DB.artists.filter(x=>x.id!==id); save(); renderArtists(); toast(tt('art.deleted')); }
+
+/* ---------- Contratti ---------- */
+let conSplits=[]; let currentContract=null;
+function labelName(){ return (DB.profile&&DB.profile.label)||DB.name||'Etichetta'; }
+function renderConSplitRows(){
+  const cont=$('#con-split-rows'); if(!cont) return;
+  const opts=(DB.artists||[]).map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');
+  cont.innerHTML = conSplits.map((s,i)=>`
+    <div class="con-split-row" data-i="${i}">
+      <select class="select con-art">${`<option value="">${tt('con.pick_artist')}</option>`+opts}</select>
+      <input class="input con-pct" type="number" min="0" max="100" step="1" value="${s.pct||''}" placeholder="%">
+      <button class="icon-btn-sm con-split-del" title="${tt('common.delete')}">✕</button>
+    </div>`).join('');
+  cont.querySelectorAll('.con-split-row').forEach((row,i)=>{
+    row.querySelector('.con-art').value = conSplits[i].artistId||'';
+  });
+  updateSplitSum();
+}
+function readConSplits(){
+  const rows=$$('#con-split-rows .con-split-row');
+  conSplits = rows.map(r=>({ artistId:r.querySelector('.con-art').value, pct:Number(r.querySelector('.con-pct').value)||0 }));
+}
+function updateSplitSum(){ const el=$('#con-split-sum'); if(!el) return;
+  readConSplits(); const sum=conSplits.reduce((s,x)=>s+(x.pct||0),0);
+  el.textContent=sum+'%'; el.classList.toggle('bad', sum>100); }
+function addSplitRow(artistId,pct){ readConSplits(); conSplits.push({artistId:artistId||'',pct:pct||0}); renderConSplitRows(); }
+function conNew(){
+  currentContract=null;
+  $('#con-work').value=''; $('#con-date').value=isoD(new Date());
+  $('#con-royalty').value=50; $('#con-advance').value=0;
+  $('#con-territory').value=''; $('#con-term').value='';
+  conSplits=[]; const arts=DB.artists||[];
+  if(arts.length){ conSplits.push({artistId:arts[0].id, pct:arts[0].split||0}); }
+  else { conSplits.push({artistId:'',pct:0}); }
+  renderConSplitRows();
+  $('#con-preview').hidden=true; $('#con-form').hidden=false;
+  $('#con-form').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function collectContract(){
+  readConSplits();
+  const splits=conSplits.filter(s=>s.artistId).map(s=>{ const a=artistById(s.artistId)||{};
+    return { artistId:s.artistId, name:a.name||'—', email:a.email||'', legal:a.legal||'', pct:s.pct||0 }; });
+  return { id:(currentContract&&currentContract.id)||newId(),
+    work:$('#con-work').value.trim(), date:$('#con-date').value||isoD(new Date()),
+    royalty:Number($('#con-royalty').value)||0, advance:Number($('#con-advance').value)||0,
+    territory:$('#con-territory').value.trim()||tt('con.world'), term:$('#con-term').value.trim()||'—',
+    splits, label:labelName(), status:(currentContract&&currentContract.status)||'draft' };
+}
+function generateContract(){
+  const c=collectContract();
+  if(!c.work){ toast(tt('con.need_work')); return; }
+  if(!c.splits.length){ toast(tt('con.need_artist')); return; }
+  currentContract=c;
+  $('#contract-doc').innerHTML=buildContractDoc(c);
+  $('#con-form').hidden=true; $('#con-preview').hidden=false;
+  $('#con-preview').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function buildContractDoc(c){
+  const L=esc(c.label);
+  const parties=c.splits.map(s=>`<li><b>${esc(s.name)}</b>${s.legal?` (${esc(s.legal)})`:''} — <b>${s.pct}%</b></li>`).join('');
+  const fmtAdv = c.advance>0 ? fmtMoney(c.advance) : tt('con.no_advance');
+  return `
+    <div class="cd-head"><h3>${tt('con.doc_title')}</h3><p class="cd-date">${esc(c.date)}</p></div>
+    <p>${tt('con.doc_intro').replace('{label}',L).replace('{work}','<b>'+esc(c.work)+'</b>')}</p>
+    <h4>${tt('con.doc_parties')}</h4><ul class="cd-parties">${parties}</ul>
+    <h4>${tt('con.doc_terms')}</h4>
+    <ol class="cd-terms">
+      <li>${tt('con.cl_royalty').replace('{pct}','<b>'+c.royalty+'%</b>')}</li>
+      <li>${tt('con.cl_split')}</li>
+      <li>${tt('con.cl_advance').replace('{adv}','<b>'+esc(fmtAdv)+'</b>')}</li>
+      <li>${tt('con.cl_territory').replace('{ter}','<b>'+esc(c.territory)+'</b>')}</li>
+      <li>${tt('con.cl_term').replace('{term}','<b>'+esc(c.term)+'</b>')}</li>
+      <li>${tt('con.cl_report')}</li>
+      <li>${tt('con.cl_law')}</li>
+    </ol>
+    <div class="cd-sign"><div><span>${L}</span><hr></div>${c.splits.map(s=>`<div><span>${esc(s.name)}</span><hr></div>`).join('')}</div>`;
+}
+function buildContractText(c){
+  const lines=[];
+  lines.push(tt('con.doc_title').toUpperCase()); lines.push(c.date); lines.push('');
+  lines.push(tt('con.doc_intro').replace(/<[^>]+>/g,'').replace('{label}',c.label).replace('{work}',c.work)); lines.push('');
+  lines.push(tt('con.doc_parties').toUpperCase());
+  c.splits.forEach(s=>lines.push(`- ${s.name}${s.legal?' ('+s.legal+')':''}: ${s.pct}%`));
+  lines.push('');
+  const fmtAdv=c.advance>0?fmtMoney(c.advance):tt('con.no_advance');
+  lines.push(tt('con.doc_terms').toUpperCase());
+  [['cl_royalty',{pct:c.royalty+'%'}],['cl_split',{}],['cl_advance',{adv:fmtAdv}],['cl_territory',{ter:c.territory}],['cl_term',{term:c.term}],['cl_report',{}],['cl_law',{}]]
+    .forEach(([k,vars],i)=>{ let t=tt('con.'+k).replace(/<[^>]+>/g,''); Object.entries(vars).forEach(([kk,vv])=>t=t.replace('{'+kk+'}',vv)); lines.push(`${i+1}. ${t}`); });
+  lines.push(''); lines.push(c.label);
+  return lines.join('\n');
+}
+function saveCurrentContract(){ if(!currentContract) return;
+  const i=DB.contracts.findIndex(x=>x.id===currentContract.id);
+  if(i>=0) DB.contracts[i]=currentContract; else DB.contracts.push(currentContract);
+  save(); }
+function sendContract(){
+  if(!currentContract) return; const c=currentContract;
+  const emails=c.splits.map(s=>s.email).filter(Boolean);
+  if(!emails.length){ toast(tt('con.no_emails')); }
+  c.status='sent'; c.sentAt=Date.now(); saveCurrentContract(); renderContracts();
+  const subject=encodeURIComponent(tt('con.mail_subject').replace('{work}',c.work).replace('{label}',c.label));
+  const body=encodeURIComponent(buildContractText(c)+'\n\n'+tt('con.mail_foot'));
+  window.location.href=`mailto:${encodeURIComponent(emails.join(','))}?subject=${subject}&body=${body}`;
+  toast(tt('con.sent'));
+}
+function printContract(){
+  if(!currentContract) return;
+  document.body.classList.add('printing-contract');
+  const done=()=>{ document.body.classList.remove('printing-contract'); window.removeEventListener('afterprint',done); };
+  window.addEventListener('afterprint',done); window.print(); setTimeout(done,1500);
+}
+function openContract(id){ const c=DB.contracts.find(x=>x.id===id); if(!c) return;
+  currentContract=c; $('#contract-doc').innerHTML=buildContractDoc(c);
+  $('#con-form').hidden=true; $('#con-preview').hidden=false; goto('contracts');
+  $('#con-preview').scrollIntoView({behavior:'smooth',block:'start'}); }
+function deleteContract(id){ const c=DB.contracts.find(x=>x.id===id); if(!c) return;
+  if(!confirm(tt('con.del_confirm'))) return;
+  DB.contracts=DB.contracts.filter(x=>x.id!==id); save(); renderContracts(); }
+function renderContracts(){
+  const tb=$('#contracts-table'); if(!tb) return;
+  const list=DB.contracts||[]; $('#contracts-empty').hidden=list.length>0;
+  if(!list.length){ tb.innerHTML=''; return; }
+  const head=`<thead><tr><th>${tt('con.work')}</th><th>${tt('con.parties_short')}</th><th>${tt('con.date')}</th><th>${tt('con.status')}</th><th></th></tr></thead>`;
+  const rows=list.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))).map(c=>{
+    const parties=c.splits.map(s=>esc(s.name)+' '+s.pct+'%').join(', ');
+    const st = c.status==='sent'?`<span class="pill pill-ok">${tt('con.st_sent')}</span>`:`<span class="pill">${tt('con.st_draft')}</span>`;
+    return `<tr><td><b>${esc(c.work)}</b></td><td class="muted small">${parties}</td><td>${esc(c.date)}</td><td>${st}</td>
+      <td class="con-row-act"><button class="icon-btn-sm" data-con-open="${c.id}" title="${tt('con.open')}">↗</button>
+        <button class="icon-btn-sm" data-con-del="${c.id}" title="${tt('common.delete')}">🗑</button></td></tr>`;
+  }).join('');
+  tb.innerHTML=head+'<tbody>'+rows+'</tbody>';
+}
+
+/* ---------- Task ---------- */
+function renderTasks(){
+  const cont=$('#tasks-list'); if(!cont) return;
+  const list=(DB.tasks||[]); $('#tasks-empty').hidden=list.length>0;
+  const today=isoD(new Date());
+  const open=list.filter(t=>!t.done).sort((a,b)=>(a.due||'9999').localeCompare(b.due||'9999'));
+  const done=list.filter(t=>t.done).sort((a,b)=>(b.due||'').localeCompare(a.due||''));
+  const icon={payment:'💸',contract:'📄',other:'•'};
+  const row=t=>{
+    const overdue=t.due && !t.done && t.due<today;
+    const soon=t.due && !t.done && t.due===today;
+    const due = t.due?`<span class="tsk-due ${overdue?'over':''} ${soon?'today':''}">${overdue?'⚠ ':''}${esc(t.due)}</span>`:'';
+    return `<div class="tsk-row ${t.done?'is-done':''}" data-id="${t.id}">
+      <button class="tsk-check" data-tsk-toggle="${t.id}" aria-label="done">${t.done?'✓':''}</button>
+      <span class="tsk-ico">${icon[t.type]||'•'}</span>
+      <span class="tsk-title">${esc(t.title)}</span>
+      ${due}
+      <button class="icon-btn-sm" data-tsk-del="${t.id}" title="${tt('common.delete')}">🗑</button>
+    </div>`;
+  };
+  let html='';
+  if(open.length) html+=`<div class="tsk-group">${open.map(row).join('')}</div>`;
+  if(done.length) html+=`<div class="tsk-group tsk-done-group"><div class="tsk-group-lbl">${tt('tsk.completed')}</div>${done.map(row).join('')}</div>`;
+  cont.innerHTML=html;
+}
+function addTask(){
+  const title=$('#tsk-title').value.trim(); if(!title){ toast(tt('tsk.need_title')); return; }
+  DB.tasks.push({ id:newId(), title, type:$('#tsk-type').value, due:$('#tsk-due').value||'', done:false, createdAt:Date.now() });
+  save(); $('#tsk-title').value=''; $('#tsk-due').value=''; renderTasks(); toast(tt('tsk.added'));
+}
+function toggleTask(id){ const t=(DB.tasks||[]).find(x=>x.id===id); if(!t) return; t.done=!t.done; save(); renderTasks(); }
+function deleteTask(id){ DB.tasks=(DB.tasks||[]).filter(x=>x.id!==id); save(); renderTasks(); }
+
+/* ---------- Wiring (una sola volta) ---------- */
+function initFeatures(){
+  // Artisti
+  $('#art-new')?.addEventListener('click',()=>openArtistForm());
+  $('#art-cancel')?.addEventListener('click',()=>{ $('#art-form').hidden=true; editingArtistId=null; });
+  $('#art-save')?.addEventListener('click',saveArtist);
+  $('#art-search')?.addEventListener('input',renderArtists);
+  $('#art-photo-btn')?.addEventListener('click',()=>$('#art-photo-input').click());
+  $('#art-photo-input')?.addEventListener('change',e=>{ const f=e.target.files[0]; if(f) resizeImage(f,256,setArtistPhoto); e.target.value=''; });
+  $('#artists-grid')?.addEventListener('click',e=>{
+    const ed=e.target.closest('[data-art-edit]'); if(ed) return openArtistForm(ed.dataset.artEdit);
+    const dl=e.target.closest('[data-art-del]'); if(dl) return deleteArtist(dl.dataset.artDel);
+  });
+  // Contratti
+  $('#con-new')?.addEventListener('click',conNew);
+  $('#con-cancel')?.addEventListener('click',()=>{ $('#con-form').hidden=true; });
+  $('#con-add-split')?.addEventListener('click',()=>addSplitRow());
+  $('#con-generate')?.addEventListener('click',generateContract);
+  $('#con-back')?.addEventListener('click',()=>{ $('#con-preview').hidden=true; $('#con-form').hidden=false; });
+  $('#con-print')?.addEventListener('click',printContract);
+  $('#con-send')?.addEventListener('click',()=>{ saveCurrentContract(); sendContract(); });
+  $('#con-split-rows')?.addEventListener('input',updateSplitSum);
+  $('#con-split-rows')?.addEventListener('change',updateSplitSum);
+  $('#con-split-rows')?.addEventListener('click',e=>{ const d=e.target.closest('.con-split-del'); if(!d) return;
+    const row=d.closest('.con-split-row'); readConSplits(); conSplits.splice(+row.dataset.i,1); renderConSplitRows(); });
+  $('#contracts-table')?.addEventListener('click',e=>{
+    const op=e.target.closest('[data-con-open]'); if(op) return openContract(op.dataset.conOpen);
+    const dl=e.target.closest('[data-con-del]'); if(dl) return deleteContract(dl.dataset.conDel);
+  });
+  // Task
+  $('#tsk-add')?.addEventListener('click',addTask);
+  $('#tsk-title')?.addEventListener('keydown',e=>{ if(e.key==='Enter') addTask(); });
+  $('#tasks-list')?.addEventListener('click',e=>{
+    const tg=e.target.closest('[data-tsk-toggle]'); if(tg) return toggleTask(tg.dataset.tskToggle);
+    const dl=e.target.closest('[data-tsk-del]'); if(dl) return deleteTask(dl.dataset.tskDel);
+  });
+}
+
 /* ---------- Cambio lingua: rigenera i contenuti dinamici ---------- */
 window.addEventListener('langchange', ()=>{
   try{ reloadViews(); rebuildAccountMenu(); }catch(e){}
@@ -1575,3 +1862,4 @@ renderDashboard();
 renderOffers();
 rebuildAccountMenu();
 initFAQ();
+initFeatures();

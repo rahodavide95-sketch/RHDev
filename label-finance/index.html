@@ -21,7 +21,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=33">
+  <link rel="stylesheet" href="style.css?v=34">
 </head>
 <body class="gated">
 
@@ -34,9 +34,16 @@
       <span class="gate-orb gate-orb--4"></span>
     </div>
     <div class="gate-eq" id="gate-eq" aria-hidden="true"></div>
-    <div class="gate-lang" role="group" aria-label="Lingua / Language">
-      <button type="button" data-lang-opt="it">IT</button>
-      <button type="button" data-lang-opt="en">EN</button>
+    <div class="gate-controls">
+      <div class="gate-theme" role="group" aria-label="Tema / Theme">
+        <button type="button" data-theme-opt="system" title="Sistema">◐</button>
+        <button type="button" data-theme-opt="light" title="Chiaro">☀</button>
+        <button type="button" data-theme-opt="dark" title="Scuro">☾</button>
+      </div>
+      <div class="gate-lang" role="group" aria-label="Lingua / Language">
+        <button type="button" data-lang-opt="it">IT</button>
+        <button type="button" data-lang-opt="en">EN</button>
+      </div>
     </div>
     <div class="gate-card">
       <img src="icon.png?v=3" alt="Label Finance" class="gate-logo">
@@ -86,6 +93,12 @@
         <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/></svg></span><span class="nav-label" data-i18n="nav.releases">Release</span></button>
       <button class="nav-item" data-view="royalties" title="Royalty">
         <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 5 5 19"/><circle cx="7.5" cy="7.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/></svg></span><span class="nav-label" data-i18n="nav.royalties">Royalty</span></button>
+      <button class="nav-item" data-view="artists" title="Artisti">
+        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><path d="M16 5.2a3 3 0 0 1 0 5.6"/><path d="M18 19c0-2.2-1-3.8-2.6-4.6"/></svg></span><span class="nav-label" data-i18n="nav.artists">Artisti</span></button>
+      <button class="nav-item" data-view="contracts" title="Contratti">
+        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 12h6"/><path d="M9 16h6"/></svg></span><span class="nav-label" data-i18n="nav.contracts">Contratti</span></button>
+      <button class="nav-item" data-view="tasks" title="Task">
+        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h11"/><path d="M4 12h11"/><path d="M4 18h7"/><path d="M18 5.5l1.6 1.6L22 4.5"/></svg></span><span class="nav-label" data-i18n="nav.tasks">Task</span></button>
       <button class="nav-item" data-view="import" title="Importa CSV">
         <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M4 21h16"/></svg></span><span class="nav-label" data-i18n="nav.import">Importa CSV</span></button>
       <button class="nav-item" data-view="settings" title="Impostazioni">
@@ -121,6 +134,12 @@
     <div class="msheet-card" role="dialog" aria-label="Altro">
       <div class="msheet-handle"></div>
       <div class="msheet-grid">
+        <button class="nav-item" data-view="artists" title="Artisti">
+          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><path d="M16 5.2a3 3 0 0 1 0 5.6"/><path d="M18 19c0-2.2-1-3.8-2.6-4.6"/></svg></span><span class="nav-label" data-i18n="nav.artists">Artisti</span></button>
+        <button class="nav-item" data-view="contracts" title="Contratti">
+          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 12h6"/><path d="M9 16h6"/></svg></span><span class="nav-label" data-i18n="nav.contracts">Contratti</span></button>
+        <button class="nav-item" data-view="tasks" title="Task">
+          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h11"/><path d="M4 12h11"/><path d="M4 18h7"/><path d="M18 5.5l1.6 1.6L22 4.5"/></svg></span><span class="nav-label" data-i18n="nav.tasks">Task</span></button>
         <button class="nav-item" data-view="import" title="Importa CSV">
           <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M4 21h16"/></svg></span><span class="nav-label" data-i18n="nav.import">Importa CSV</span></button>
         <button class="nav-item" data-view="settings" title="Impostazioni">
@@ -718,6 +737,140 @@
       </div>
     </section>
 
+    <!-- ====== ARTISTI (RUBRICA) ====== -->
+    <section class="view" id="view-artists">
+      <header class="view-head">
+        <div><div class="title-row"><h1 data-i18n="art.title">Artisti</h1><button class="info-btn" data-info="artists" title="Cos'è questa sezione?">i</button></div>
+          <p class="muted" data-i18n="art.subtitle">La rubrica del tuo roster: contatti, foto e dati per contratti e pagamenti.</p></div>
+        <div class="head-actions">
+          <input class="input" id="art-search" data-i18n-ph="art.search" placeholder="Cerca artista…">
+          <button class="btn btn-primary" id="art-new" data-i18n="art.new">＋ Nuovo artista</button>
+        </div>
+      </header>
+
+      <div class="info-panel" id="info-artists" hidden>
+        <h4>A cosa serve la rubrica Artisti</h4>
+        <p>Raccogli qui tutte le informazioni dei tuoi artisti: nome d'arte, nome legale, email, telefono, IBAN per i pagamenti, foto e una quota di split predefinita. Questi dati vengono riutilizzati per generare i <b>contratti</b> e per ricordarti i <b>pagamenti</b> nelle attività.</p>
+      </div>
+
+      <div class="panel art-form-panel" id="art-form" hidden>
+        <div class="panel-head"><h2 id="art-form-title" data-i18n="art.new">Nuovo artista</h2></div>
+        <div class="art-form-grid">
+          <div class="art-photo-col">
+            <div class="art-photo" id="art-photo"><span data-i18n="art.photo">Foto</span></div>
+            <input type="file" id="art-photo-input" accept="image/*" hidden>
+            <button class="btn btn-ghost btn-sm" id="art-photo-btn" data-i18n="art.upload">Carica foto</button>
+          </div>
+          <div class="art-fields">
+            <div class="form-grid">
+              <label class="fld"><span data-i18n="art.name">Nome d'arte *</span><input class="input" id="art-name"></label>
+              <label class="fld"><span data-i18n="art.legal">Nome legale</span><input class="input" id="art-legal"></label>
+              <label class="fld"><span data-i18n="art.email">Email</span><input class="input" id="art-email" type="email"></label>
+              <label class="fld"><span data-i18n="art.phone">Telefono</span><input class="input" id="art-phone"></label>
+              <label class="fld"><span data-i18n="art.iban">IBAN</span><input class="input" id="art-iban"></label>
+              <label class="fld"><span data-i18n="art.split">Split predefinito %</span><input class="input" id="art-split" type="number" min="0" max="100" step="1"></label>
+              <label class="fld fld--full"><span data-i18n="art.address">Indirizzo</span><input class="input" id="art-address"></label>
+              <label class="fld fld--full"><span data-i18n="art.note">Note</span><input class="input" id="art-note"></label>
+            </div>
+            <div class="row-inline wrap">
+              <button class="btn btn-primary" id="art-save" data-i18n="art.save">Salva artista</button>
+              <button class="btn btn-ghost" id="art-cancel" data-i18n="common.cancel">Annulla</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="art-grid" id="artists-grid"></div>
+      <div class="empty-hint" id="artists-empty" hidden>
+        <p data-i18n="art.empty">Nessun artista in rubrica. Aggiungi il primo per iniziare a creare contratti e promemoria.</p>
+      </div>
+    </section>
+
+    <!-- ====== CONTRATTI ====== -->
+    <section class="view" id="view-contracts">
+      <header class="view-head">
+        <div><div class="title-row"><h1 data-i18n="con.title">Contratti</h1><button class="info-btn" data-info="contracts" title="Cos'è questa sezione?">i</button></div>
+          <p class="muted" data-i18n="con.subtitle">Genera un contratto standard di split, pronto da inviare via email agli artisti.</p></div>
+        <div class="head-actions">
+          <button class="btn btn-primary" id="con-new" data-i18n="con.new">＋ Nuovo contratto</button>
+        </div>
+      </header>
+
+      <div class="info-panel" id="info-contracts" hidden>
+        <h4>Come funzionano i contratti</h4>
+        <p>Compili i campi (opera, percentuali di split per artista, royalty, territorio e durata), premi <b>Genera contratto</b> e ottieni un documento con clausole standard. Da lì puoi <b>stamparlo/salvarlo in PDF</b> oppure <b>inviarlo via email</b> a tutti gli artisti coinvolti in un clic. Il testo è uguale per tutti: cambiano solo i dati che inserisci.</p>
+      </div>
+
+      <div class="panel con-form-panel" id="con-form" hidden>
+        <div class="panel-head"><h2 data-i18n="con.build">Compila il contratto</h2></div>
+        <div class="form-grid">
+          <label class="fld"><span data-i18n="con.work">Opera / Release *</span><input class="input" id="con-work"></label>
+          <label class="fld"><span data-i18n="con.date">Data</span><input class="input" id="con-date" type="date"></label>
+          <label class="fld"><span data-i18n="con.royalty">Royalty su entrate nette %</span><input class="input" id="con-royalty" type="number" min="0" max="100" step="1" value="50"></label>
+          <label class="fld"><span data-i18n="con.advance">Anticipo (€)</span><input class="input" id="con-advance" type="number" min="0" step="1" value="0"></label>
+          <label class="fld"><span data-i18n="con.territory">Territorio</span><input class="input" id="con-territory" data-i18n-ph="con.territory_ph" placeholder="Mondo"></label>
+          <label class="fld"><span data-i18n="con.term">Durata</span><input class="input" id="con-term" data-i18n-ph="con.term_ph" placeholder="2 anni"></label>
+        </div>
+        <div class="con-splits">
+          <div class="con-splits-head"><span data-i18n="con.splits">Split tra gli artisti</span><span class="con-split-sum" id="con-split-sum">0%</span></div>
+          <div id="con-split-rows"></div>
+          <button class="btn btn-ghost btn-sm" id="con-add-split" data-i18n="con.add_split">＋ Aggiungi artista</button>
+        </div>
+        <div class="row-inline wrap">
+          <button class="btn btn-primary" id="con-generate" data-i18n="con.generate">⚙ Genera contratto</button>
+          <button class="btn btn-ghost" id="con-cancel" data-i18n="common.cancel">Annulla</button>
+        </div>
+      </div>
+
+      <div class="panel con-preview-panel" id="con-preview" hidden>
+        <div class="panel-head">
+          <h2 data-i18n="con.preview">Anteprima contratto</h2>
+          <div class="row-inline">
+            <button class="btn btn-sm" id="con-print" data-i18n="con.print">⤓ Stampa / PDF</button>
+            <button class="btn btn-primary btn-sm" id="con-send" data-i18n="con.send">✉ Invia agli artisti</button>
+            <button class="btn btn-ghost btn-sm" id="con-back" data-i18n="con.back">‹ Modifica</button>
+          </div>
+        </div>
+        <div class="contract-doc" id="contract-doc"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2 data-i18n="con.saved">Contratti salvati</h2></div>
+        <div class="table-wrap"><table class="data-table" id="contracts-table"></table></div>
+        <div class="empty-hint" id="contracts-empty" hidden><p data-i18n="con.empty">Ancora nessun contratto. Creane uno con “Nuovo contratto”.</p></div>
+      </div>
+    </section>
+
+    <!-- ====== TASK & PROMEMORIA ====== -->
+    <section class="view" id="view-tasks">
+      <header class="view-head">
+        <div><div class="title-row"><h1 data-i18n="tsk.title">Task</h1><button class="info-btn" data-info="tasks" title="Cos'è questa sezione?">i</button></div>
+          <p class="muted" data-i18n="tsk.subtitle">Promemoria per pagamenti, invio contratti e scadenze dell'etichetta.</p></div>
+      </header>
+
+      <div class="info-panel" id="info-tasks" hidden>
+        <h4>A cosa servono i Task</h4>
+        <p>Tieni traccia delle cose da fare: pagare un artista, inviare un contratto, rinnovare una distribuzione. Aggiungi una <b>scadenza</b> e l'attività verrà evidenziata quando è in arrivo o scaduta. Spunta il pallino quando è fatta.</p>
+      </div>
+
+      <div class="panel tsk-add">
+        <div class="form-grid">
+          <label class="fld fld--full"><span data-i18n="tsk.what">Cosa c'è da fare *</span><input class="input" id="tsk-title" data-i18n-ph="tsk.what_ph" placeholder="Es. Pagare royalty a Mario"></label>
+          <label class="fld"><span data-i18n="tsk.type">Tipo</span>
+            <select class="select" id="tsk-type">
+              <option value="payment" data-i18n="tsk.t_payment">Pagamento</option>
+              <option value="contract" data-i18n="tsk.t_contract">Contratto</option>
+              <option value="other" data-i18n="tsk.t_other">Altro</option>
+            </select></label>
+          <label class="fld"><span data-i18n="tsk.due">Scadenza</span><input class="input" id="tsk-due" type="date"></label>
+        </div>
+        <div class="row-inline"><button class="btn btn-primary" id="tsk-add" data-i18n="tsk.add">＋ Aggiungi task</button></div>
+      </div>
+
+      <div id="tasks-list"></div>
+      <div class="empty-hint" id="tasks-empty" hidden><p data-i18n="tsk.empty">Nessun task. Aggiungi il primo promemoria qui sopra.</p></div>
+    </section>
+
     <!-- ====== CHI SIAMO ====== -->
     <section class="view view-about" id="view-about">
       <div class="about-bg" aria-hidden="true">
@@ -1150,10 +1303,10 @@
   <!-- Area di stampa per lo statement royalty (visibile solo in stampa) -->
   <div id="print-area" aria-hidden="true"></div>
 
-  <script src="app.js?v=33"></script>
-  <script src="config.js?v=33"></script>
-  <script src="i18n.js?v=33"></script>
+  <script src="app.js?v=34"></script>
+  <script src="config.js?v=34"></script>
+  <script src="i18n.js?v=34"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="sync.js?v=33"></script>
+  <script src="sync.js?v=34"></script>
 </body>
 </html>

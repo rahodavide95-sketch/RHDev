@@ -297,6 +297,7 @@ function rebuildAccountMenu(){
   $$('#account-menu-labels .acct-del').forEach(b=>b.onclick=ev=>{ ev.stopPropagation(); deleteLabel(b.dataset.del); });
   const g=$('#account-greet'); if(g) g.textContent=(DB.profile&&DB.profile.name)?DB.profile.name:tt('acct.your_labels');
   const pn=$('#account-plan'); if(pn) pn.textContent=tt('acct.plan')+' '+((PLAN_INFO[ACCOUNT.plan]||{}).name||'Starter');
+  if(typeof updateAvatar==='function') updateAvatar();
 }
 function deleteLabel(id){
   if(ACCOUNT.labels.length<=1){ toast(tt('t.label_min')); return; }
@@ -362,7 +363,34 @@ function updateIdentity(){
   const p=(DB.profile)||{};
   const g=$('#greeting'); if(g) g.textContent = p.name ? `${tt('greet.hi')} ${p.name}` : tt('nav.dashboard');
   const tl=$('#topbar-label'); if(tl) tl.textContent = p.label || '';
+  updateAvatar();
 }
+
+/* ---------- Foto profilo ---------- */
+function profileAvatar(){ return (DB.profile && DB.profile.avatar) || ''; }
+function updateAvatar(){
+  const a=profileAvatar();
+  const top=$('#acct-avatar-top'), svg=$('#acct-icon-svg');
+  if(top){ if(a){ top.src=a; top.hidden=false; if(svg) svg.style.display='none'; } else { top.hidden=true; if(svg) svg.style.display=''; } }
+  const menu=$('#acct-avatar-menu'); if(menu){ if(a){ menu.src=a; menu.hidden=false; } else menu.hidden=true; }
+  const prevImg=$('#avatar-prev-img'), prev=$('#avatar-prev'), clr=$('#avatar-clear');
+  if(prevImg){ if(a){ prevImg.src=a; prevImg.hidden=false; if(prev) prev.classList.add('has-img'); } else { prevImg.hidden=true; if(prev) prev.classList.remove('has-img'); } }
+  if(clr) clr.hidden=!a;
+}
+function processAvatar(file){
+  const url=URL.createObjectURL(file); const img=new Image();
+  img.onload=()=>{ URL.revokeObjectURL(url);
+    const S=256, c=document.createElement('canvas'); c.width=S; c.height=S; const ctx=c.getContext('2d');
+    const min=Math.min(img.width,img.height), sx=(img.width-min)/2, sy=(img.height-min)/2;
+    ctx.drawImage(img, sx, sy, min, min, 0, 0, S, S);
+    window.LF.setProfile({ avatar:c.toDataURL('image/jpeg',0.85) }); updateAvatar();
+  };
+  img.onerror=()=>{ URL.revokeObjectURL(url); toast(tt('t.file_invalid')); };
+  img.src=url;
+}
+$('#avatar-btn')?.addEventListener('click',()=>$('#avatar-input').click());
+$('#avatar-input')?.addEventListener('change',e=>{ const f=e.target.files[0]; if(f) processAvatar(f); e.target.value=''; });
+$('#avatar-clear')?.addEventListener('click',()=>{ window.LF.setProfile({avatar:''}); updateAvatar(); });
 
 /* equalizer animato dello sfondo login */
 (function buildGateEq(){

@@ -277,6 +277,7 @@
       'cols.title':'Transaction columns','cols.reset':'Reset to default','common.done':'Done',
       'set.export_json':'⤓ Export backup (.json)','set.export_csv':'⤓ Export transactions (.csv)',
       'set.restore':'⤴ Restore backup','set.wipe':'Delete all data','set.update_pw':'Update password',
+      'set.photo':'Upload photo','set.photo_rm':'Remove','set.photo_hint':'JPG/PNG, auto-cropped and resized.',
       'f.date':'Date','f.dateTo':'Transaction date (to)','f.platform':'Platform','f.catalog':'Catalog',
       'f.product':'Product / Title','f.artist':'Artist','f.isrc':'ISRC','f.upc':'UPC','f.qty':'Quantity',
       'f.gross':'Gross','f.shipping':'Shipping','f.taxes':'Taxes','f.payproc':'Payment processor fees',

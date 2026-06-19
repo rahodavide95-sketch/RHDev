@@ -21,7 +21,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=27">
+  <link rel="stylesheet" href="style.css?v=28">
 </head>
 <body class="gated">
 
@@ -155,7 +155,8 @@
       <div class="topbar-right">
         <span class="topbar-label" id="topbar-label"></span>
         <button class="icon-btn" id="btn-account" title="Account" aria-label="Account">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.5 3.6-6 8-6s8 2.5 8 6"/></svg>
+          <svg id="acct-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.5 3.6-6 8-6s8 2.5 8 6"/></svg>
+          <img id="acct-avatar-top" class="avatar-img" alt="" hidden>
         </button>
       </div>
     </header>
@@ -584,6 +585,18 @@
 
           <div id="sync-account" hidden>
             <span class="badge-local" id="sync-account-label" style="color:var(--net)"></span>
+            <div class="avatar-row">
+              <div class="avatar-prev" id="avatar-prev" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.5 3.6-6 8-6s8 2.5 8 6"/></svg>
+                <img id="avatar-prev-img" alt="" hidden>
+              </div>
+              <div class="avatar-actions">
+                <button class="btn" id="avatar-btn" type="button" data-i18n="set.photo">Carica foto</button>
+                <button class="btn btn-danger" id="avatar-clear" type="button" hidden data-i18n="set.photo_rm">Rimuovi</button>
+                <input type="file" id="avatar-input" accept="image/*" hidden>
+                <span class="muted small" data-i18n="set.photo_hint">JPG/PNG, ritagliata e ridotta in automatico.</span>
+              </div>
+            </div>
             <div class="form-grid" style="margin-top:12px">
               <label>Nome <input id="account-name" class="input" type="text"></label>
               <label>Cognome <input id="account-surname" class="input" type="text"></label>
@@ -962,8 +975,11 @@
   <!-- ======= MENU ACCOUNT ======= -->
   <div class="acct-menu" id="account-menu" hidden>
     <div class="acct-head">
-      <span class="acct-greet" id="account-greet">Le tue etichette</span>
-      <span class="acct-plan" id="account-plan">Piano Starter</span>
+      <img id="acct-avatar-menu" class="avatar-img avatar-img--lg" alt="" hidden>
+      <div class="acct-head-txt">
+        <span class="acct-greet" id="account-greet">Le tue etichette</span>
+        <span class="acct-plan" id="account-plan">Piano Starter</span>
+      </div>
     </div>
     <div class="acct-labels" id="account-menu-labels"></div>
     <button class="acct-item acct-add" id="acct-add"><span data-i18n="acct.add">＋ Aggiungi etichetta</span><span class="pro-badge">PRO</span></button>
@@ -1082,10 +1098,10 @@
   <!-- Area di stampa per lo statement royalty (visibile solo in stampa) -->
   <div id="print-area" aria-hidden="true"></div>
 
-  <script src="app.js?v=27"></script>
-  <script src="config.js?v=27"></script>
-  <script src="i18n.js?v=27"></script>
+  <script src="app.js?v=28"></script>
+  <script src="config.js?v=28"></script>
+  <script src="i18n.js?v=28"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="sync.js?v=27"></script>
+  <script src="sync.js?v=28"></script>
 </body>
 </html>

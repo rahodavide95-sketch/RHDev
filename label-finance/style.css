@@ -144,7 +144,8 @@ body.show-topsec .topbar-section{opacity:1;transform:none}
 .lang-pill button{background:none;border:none;color:var(--muted);font:inherit;font-weight:700;font-size:.74rem;letter-spacing:.02em;padding:5px 9px;border-radius:7px;cursor:pointer;transition:.15s}
 .lang-pill button:hover{color:var(--text)}
 .lang-pill button.is-active{background:var(--accent);color:var(--on-accent)}
-.topbar-divider{width:1px;height:24px;background:var(--line);flex:none}
+.foot-controls{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap}
+.foot-controls .theme-switch{margin:0}
 .topbar-label{font-weight:600;font-size:.92rem;color:var(--text);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .icon-btn{display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;
   background:var(--panel-2);border:1px solid var(--line);color:var(--text);cursor:pointer;transition:.15s;flex:none}

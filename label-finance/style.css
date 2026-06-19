@@ -185,28 +185,51 @@ body.dash-edit .dw-width{display:inline-flex;gap:2px;position:absolute;top:8px;l
 
 /* ===== Contratti ===== */
 .con-form-panel,.con-preview-panel{margin-bottom:18px}
-.con-splits{margin:16px 0;border-top:1px solid var(--line);padding-top:14px}
-.con-splits-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-weight:600;font-size:.9rem}
-.con-split-sum{font-variant-numeric:tabular-nums;color:var(--muted)}
-.con-split-sum.bad{color:var(--out)}
-.con-split-row{display:grid;grid-template-columns:1fr 110px auto;gap:8px;margin-bottom:8px;align-items:center}
-.contract-doc{background:#fff;color:#1a1a1a;border:1px solid var(--line);border-radius:12px;padding:28px 32px;line-height:1.6;max-width:760px;margin:6px auto 0}
-.contract-doc h3{font-family:'Syne',sans-serif;font-size:1.25rem;margin:0;color:#15131f}
-.cd-head{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid #ddd;padding-bottom:10px;margin-bottom:14px}
-.cd-date{color:#777;font-size:.86rem}
+.con-top-row{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px}
+.con-pick{flex:1;min-width:220px}
+.con-logo-field{display:flex;flex-direction:column;gap:5px}
+.fld-lbl{font-size:.82rem;color:var(--muted)}
+.con-logo-row{display:flex;align-items:center;gap:12px}
+.con-logo-prev{width:96px;height:56px;border:1px dashed var(--line);border-radius:10px;background:var(--panel-2);
+  display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--muted);font-size:.72rem;text-align:center;padding:4px}
+.con-logo-prev img{max-width:100%;max-height:100%;object-fit:contain}
+.con-logo-btns{display:flex;flex-direction:column;gap:6px}
+.con-section-lbl{font-family:'Syne',sans-serif;font-weight:700;font-size:.92rem;margin:16px 0 8px;color:var(--text);
+  border-top:1px solid var(--line);padding-top:14px}
+.con-split-box{margin:6px 0 4px;max-width:360px}
+.con-split-bar{display:flex;height:26px;border-radius:8px;overflow:hidden;margin:10px 0 8px;font-size:.78rem;font-weight:700;color:#fff}
+.csb-art{background:var(--accent);display:flex;align-items:center;justify-content:center;min-width:26px;transition:width .2s}
+.csb-lab{background:var(--muted-2);display:flex;align-items:center;justify-content:center;min-width:26px;transition:width .2s}
+/* documento */
+.contract-doc{background:#fff;color:#1a1a1a;border:1px solid var(--line);border-radius:12px;padding:0;line-height:1.6;max-width:780px;margin:6px auto 0;overflow:hidden}
+.cd-page{padding:34px 40px}
+.cd-page--copy{border-top:8px solid #f0f0f3}
+.cd-letterhead{display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:1px solid #e3e3e8;padding-bottom:16px;margin-bottom:20px}
+.cd-lf{display:flex;align-items:center;gap:9px}
+.cd-lf-ico{width:34px;height:34px;border-radius:9px;display:block}
+.cd-lf-name{font-family:'Syne',sans-serif;font-weight:700;font-size:1.05rem;letter-spacing:-.03em;color:#15131f}
+.cd-lf-name .lf-fin{color:#7c3aed}
+.cd-label-logo{max-width:180px;max-height:60px;display:flex;align-items:center;justify-content:flex-end}
+.cd-label-logo img{max-width:180px;max-height:60px;object-fit:contain}
+.cd-label-logo--text{font-family:'Syne',sans-serif;font-weight:700;font-size:1.05rem;color:#15131f;text-align:right}
+.contract-doc h3.cd-title{font-family:'Syne',sans-serif;font-size:1.2rem;margin:0 0 6px;color:#15131f;text-align:center}
+.cd-intro{color:#555;text-align:center;margin-bottom:10px}
 .contract-doc h4{margin:18px 0 6px;font-size:.98rem;color:#15131f}
 .contract-doc p{margin:0 0 8px}
-.cd-parties{margin:0;padding-left:18px}
-.cd-parties li{margin-bottom:4px}
-.cd-terms{margin:0;padding-left:20px}
-.cd-terms li{margin-bottom:8px}
-.cd-sign{display:flex;flex-wrap:wrap;gap:28px;margin-top:38px}
+.cd-sign{display:flex;flex-wrap:wrap;gap:28px;margin-top:40px}
 .cd-sign>div{flex:1;min-width:160px}
 .cd-sign hr{border:none;border-top:1px solid #888;margin-top:34px}
 .cd-sign span{font-size:.82rem;color:#777}
+.cd-signed{margin-top:26px}
+.cd-sig-img{display:block;max-width:280px;max-height:110px;border-bottom:1px solid #888;padding-bottom:4px}
+.cd-sig-meta{margin-top:8px;font-size:.84rem;color:#555}
 .con-row-act{display:flex;gap:4px;justify-content:flex-end}
 .pill{display:inline-block;font-size:.74rem;font-weight:700;padding:2px 9px;border-radius:20px;background:var(--panel-2);color:var(--muted);border:1px solid var(--line)}
 .pill-ok{color:var(--in);background:color-mix(in srgb,var(--in) 14%,var(--panel));border-color:color-mix(in srgb,var(--in) 40%,var(--line))}
+.pill-sent{color:var(--net);background:color-mix(in srgb,var(--net) 14%,var(--panel));border-color:color-mix(in srgb,var(--net) 40%,var(--line))}
+/* firma */
+.sign-body{padding:4px 2px}
+.sign-canvas{width:100%;height:180px;background:#fff;border:1px solid var(--line);border-radius:10px;touch-action:none;cursor:crosshair;margin:6px 0 4px}
 
 /* ===== Task ===== */
 .tsk-add{margin-bottom:18px}
@@ -243,6 +266,8 @@ body.dash-edit .dw-width{display:inline-flex;gap:2px;position:absolute;top:8px;l
   body.printing-contract *{visibility:hidden!important}
   body.printing-contract #contract-doc,body.printing-contract #contract-doc *{visibility:visible!important}
   body.printing-contract #contract-doc{position:absolute;left:0;top:0;width:100%;max-width:none;border:none;border-radius:0;margin:0;background:#fff;color:#000}
+  body.printing-contract .cd-page{padding:0 6mm;page-break-after:always}
+  body.printing-contract .cd-page--copy{border-top:none}
 }
 /* widget extra */
 .top-list{display:flex;flex-direction:column;gap:10px}

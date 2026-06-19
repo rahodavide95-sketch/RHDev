@@ -21,7 +21,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=35">
+  <link rel="stylesheet" href="style.css?v=36">
 </head>
 <body class="gated">
 
@@ -798,23 +798,47 @@
 
       <div class="info-panel" id="info-contracts" hidden>
         <h4>Come funzionano i contratti</h4>
-        <p>Compili i campi (opera, percentuali di split per artista, royalty, territorio e durata), premi <b>Genera contratto</b> e ottieni un documento con clausole standard. Da lì puoi <b>stamparlo/salvarlo in PDF</b> oppure <b>inviarlo via email</b> a tutti gli artisti coinvolti in un clic. Il testo è uguale per tutti: cambiano solo i dati che inserisci.</p>
+        <p>Compili i dati della release e dell'artista, scegli la ripartizione (di default <b>50% artista / 50% etichetta</b>) e premi <b>Genera contratto</b>: ottieni l'<b>Authorization to Release</b> standard dell'etichetta, identica per tutti — cambia solo lo split se lo modifichi. Da lì puoi <b>stamparla/salvarla in PDF</b>, <b>inviarla all'artista</b> per la firma e archiviare la versione firmata.</p>
       </div>
 
       <div class="panel con-form-panel" id="con-form" hidden>
-        <div class="panel-head"><h2 data-i18n="con.build">Compila il contratto</h2></div>
-        <div class="form-grid">
-          <label class="fld"><span data-i18n="con.work">Opera / Release *</span><input class="input" id="con-work"></label>
-          <label class="fld"><span data-i18n="con.date">Data</span><input class="input" id="con-date" type="date"></label>
-          <label class="fld"><span data-i18n="con.royalty">Royalty su entrate nette %</span><input class="input" id="con-royalty" type="number" min="0" max="100" step="1" value="50"></label>
-          <label class="fld"><span data-i18n="con.advance">Anticipo (€)</span><input class="input" id="con-advance" type="number" min="0" step="1" value="0"></label>
-          <label class="fld"><span data-i18n="con.territory">Territorio</span><input class="input" id="con-territory" data-i18n-ph="con.territory_ph" placeholder="Mondo"></label>
-          <label class="fld"><span data-i18n="con.term">Durata</span><input class="input" id="con-term" data-i18n-ph="con.term_ph" placeholder="2 anni"></label>
+        <div class="panel-head"><h2 id="con-form-title" data-i18n="con.build">Compila il contratto</h2></div>
+        <div class="con-top-row">
+          <label class="fld con-pick">
+            <span data-i18n="con.from_rubrica">Precompila da rubrica artisti</span>
+            <select class="select" id="con-artist-pick"></select>
+          </label>
+          <div class="con-logo-field">
+            <span class="fld-lbl" data-i18n="con.logo_lbl">Logo etichetta</span>
+            <div class="con-logo-row">
+              <div class="con-logo-prev" id="con-logo-prev"><span data-i18n="con.logo">Logo etichetta</span></div>
+              <div class="con-logo-btns">
+                <input type="file" id="con-logo-input" accept="image/*" hidden>
+                <button type="button" class="btn btn-ghost btn-sm" id="con-logo-btn" data-i18n="con.logo_up">Carica logo</button>
+                <button type="button" class="btn btn-ghost btn-sm" id="con-logo-clear" data-i18n="con.logo_clear">Rimuovi</button>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="con-splits">
-          <div class="con-splits-head"><span data-i18n="con.splits">Split tra gli artisti</span><span class="con-split-sum" id="con-split-sum">0%</span></div>
-          <div id="con-split-rows"></div>
-          <button class="btn btn-ghost btn-sm" id="con-add-split" data-i18n="con.add_split">＋ Aggiungi artista</button>
+        <div class="con-section-lbl" data-i18n="con.sec_track">Track(s) Information</div>
+        <div class="form-grid">
+          <label class="fld fld--full"><span data-i18n="con.titles">Title(s) *</span><input class="input" id="con-titles" placeholder="Es. Midnight, Echoes"></label>
+          <label class="fld"><span data-i18n="con.artist_names">Artist Name(s)</span><input class="input" id="con-artist-names"></label>
+          <label class="fld"><span data-i18n="con.written">Written by</span><input class="input" id="con-written"></label>
+        </div>
+        <div class="con-section-lbl" data-i18n="con.sec_artist">Artist Details</div>
+        <div class="form-grid">
+          <label class="fld"><span data-i18n="con.fullname">Full Name *</span><input class="input" id="con-fullname"></label>
+          <label class="fld"><span data-i18n="con.project">Artist / Project Name</span><input class="input" id="con-project"></label>
+          <label class="fld"><span data-i18n="con.email">Email artista</span><input class="input" id="con-email" type="email"></label>
+          <label class="fld"><span data-i18n="con.date">Data</span><input class="input" id="con-date" type="date"></label>
+        </div>
+        <div class="con-section-lbl" data-i18n="con.sec_split">Revenue split</div>
+        <div class="con-split-box">
+          <label class="fld"><span data-i18n="con.artist_pct">Quota Artista %</span>
+            <input class="input" id="con-artist-pct" type="number" min="0" max="100" step="1" value="50"></label>
+          <div class="con-split-bar"><span class="csb-art" id="csb-art">50%</span><span class="csb-lab" id="csb-lab">50%</span></div>
+          <p class="muted small" data-i18n="con.split_note">Di default 50/50. Modifica solo se concordato diversamente per iscritto.</p>
         </div>
         <div class="row-inline wrap">
           <button class="btn btn-primary" id="con-generate" data-i18n="con.generate">⚙ Genera contratto</button>
@@ -825,10 +849,11 @@
       <div class="panel con-preview-panel" id="con-preview" hidden>
         <div class="panel-head">
           <h2 data-i18n="con.preview">Anteprima contratto</h2>
-          <div class="row-inline">
-            <button class="btn btn-sm" id="con-print" data-i18n="con.print">⤓ Stampa / PDF</button>
-            <button class="btn btn-primary btn-sm" id="con-send" data-i18n="con.send">✉ Invia agli artisti</button>
+          <div class="row-inline wrap">
             <button class="btn btn-ghost btn-sm" id="con-back" data-i18n="con.back">‹ Modifica</button>
+            <button class="btn btn-sm" id="con-sign" data-i18n="con.sign_now">✍ Firma ora</button>
+            <button class="btn btn-sm" id="con-print" data-i18n="con.print">⤓ Stampa / PDF</button>
+            <button class="btn btn-primary btn-sm" id="con-send" data-i18n="con.send">✉ Invia per firma</button>
           </div>
         </div>
         <div class="contract-doc" id="contract-doc"></div>
@@ -1248,6 +1273,27 @@
   </div>
 
   <!-- ======= MODAL: colonne ======= -->
+  <div class="modal" id="sign-modal" hidden>
+    <div class="modal-card modal-card--sm">
+      <div class="modal-head"><h2 data-i18n="con.sign_title">Firma del contratto</h2>
+        <button class="modal-x" id="sign-close">✕</button></div>
+      <div class="sign-body">
+        <div class="form-grid">
+          <label class="fld"><span data-i18n="con.sign_name">Nome firmatario</span><input class="input" id="sign-name"></label>
+          <label class="fld"><span data-i18n="con.sign_place">Luogo</span><input class="input" id="sign-place" data-i18n-ph="con.sign_place_ph" placeholder="Es. Milano"></label>
+        </div>
+        <span class="fld-lbl" data-i18n="con.sign_draw">Firma qui sotto</span>
+        <canvas id="sign-canvas" class="sign-canvas"></canvas>
+        <div class="modal-foot">
+          <button type="button" class="btn btn-ghost" id="sign-clear" data-i18n="con.sign_clear">Cancella</button>
+          <span class="spacer"></span>
+          <button type="button" class="btn btn-primary" id="sign-confirm" data-i18n="con.sign_confirm">✓ Conferma firma</button>
+        </div>
+        <p class="muted small" data-i18n="con.sign_hint">La firma viene registrata con data, ora e luogo nel documento.</p>
+      </div>
+    </div>
+  </div>
+
   <div class="modal" id="cols-modal" hidden>
     <div class="modal-card modal-card--sm">
       <div class="modal-head"><h2 data-i18n="cols.title">Colonne movimenti</h2>
@@ -1303,10 +1349,10 @@
   <!-- Area di stampa per lo statement royalty (visibile solo in stampa) -->
   <div id="print-area" aria-hidden="true"></div>
 
-  <script src="app.js?v=35"></script>
-  <script src="config.js?v=35"></script>
-  <script src="i18n.js?v=35"></script>
+  <script src="app.js?v=36"></script>
+  <script src="config.js?v=36"></script>
+  <script src="i18n.js?v=36"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="sync.js?v=35"></script>
+  <script src="sync.js?v=36"></script>
 </body>
 </html>

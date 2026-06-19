@@ -1674,6 +1674,16 @@ function resizeImage(file, S, cb){
   img.onerror=()=>{ URL.revokeObjectURL(url); toast(tt('t.file_invalid')); };
   img.src=url;
 }
+/* ridimensiona mantenendo le proporzioni (per loghi non quadrati) */
+function resizeImageW(file, maxW, cb){
+  const url=URL.createObjectURL(file); const img=new Image();
+  img.onload=()=>{ URL.revokeObjectURL(url);
+    const scale=Math.min(1, maxW/img.width); const w=Math.round(img.width*scale), h=Math.round(img.height*scale);
+    const c=document.createElement('canvas'); c.width=w; c.height=h;
+    c.getContext('2d').drawImage(img,0,0,w,h); cb(c.toDataURL('image/png')); };
+  img.onerror=()=>{ URL.revokeObjectURL(url); toast(tt('t.file_invalid')); };
+  img.src=url;
+}
 const initials = s => (String(s||'').trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('')||'?').toUpperCase();
 function artistById(id){ return (DB.artists||[]).find(a=>a.id===id); }
 
@@ -1728,95 +1738,141 @@ function deleteArtist(id){ const a=artistById(id); if(!a) return;
   if(!confirm(tt('art.del_confirm').replace('{name}',a.name))) return;
   DB.artists=DB.artists.filter(x=>x.id!==id); save(); renderArtists(); toast(tt('art.deleted')); }
 
-/* ---------- Contratti ---------- */
-let conSplits=[]; let currentContract=null;
-function labelName(){ return (DB.profile&&DB.profile.label)||DB.name||'Etichetta'; }
-function renderConSplitRows(){
-  const cont=$('#con-split-rows'); if(!cont) return;
+/* ---------- Contratti (Authorization to Release) ---------- */
+let currentContract=null; let conLogoData='';
+function labelName(){ return (DB.profile&&DB.profile.label)||DB.name||'Label'; }
+function setConLogo(d){ conLogoData=d||''; const box=$('#con-logo-prev');
+  if(box) box.innerHTML = conLogoData?`<img src="${conLogoData}" alt="logo">`:`<span data-i18n="con.logo">Logo etichetta</span>`; }
+function conArtistPickOptions(){
+  const sel=$('#con-artist-pick'); if(!sel) return;
   const opts=(DB.artists||[]).map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');
-  cont.innerHTML = conSplits.map((s,i)=>`
-    <div class="con-split-row" data-i="${i}">
-      <select class="select con-art">${`<option value="">${tt('con.pick_artist')}</option>`+opts}</select>
-      <input class="input con-pct" type="number" min="0" max="100" step="1" value="${s.pct||''}" placeholder="%">
-      <button class="icon-btn-sm con-split-del" title="${tt('common.delete')}">✕</button>
-    </div>`).join('');
-  cont.querySelectorAll('.con-split-row').forEach((row,i)=>{
-    row.querySelector('.con-art').value = conSplits[i].artistId||'';
-  });
-  updateSplitSum();
+  sel.innerHTML=`<option value="">${tt('con.pick_none')}</option>`+opts;
 }
-function readConSplits(){
-  const rows=$$('#con-split-rows .con-split-row');
-  conSplits = rows.map(r=>({ artistId:r.querySelector('.con-art').value, pct:Number(r.querySelector('.con-pct').value)||0 }));
+function conFillFromArtist(id){
+  const a=artistById(id); if(!a) return;
+  if(a.legal) $('#con-fullname').value=a.legal;
+  $('#con-project').value=a.name||'';
+  if(!$('#con-artist-names').value) $('#con-artist-names').value=a.name||'';
+  if(a.email) $('#con-email').value=a.email;
+  if(a.split){ $('#con-artist-pct').value=a.split; }
+  updateSplitBar();
 }
-function updateSplitSum(){ const el=$('#con-split-sum'); if(!el) return;
-  readConSplits(); const sum=conSplits.reduce((s,x)=>s+(x.pct||0),0);
-  el.textContent=sum+'%'; el.classList.toggle('bad', sum>100); }
-function addSplitRow(artistId,pct){ readConSplits(); conSplits.push({artistId:artistId||'',pct:pct||0}); renderConSplitRows(); }
+function updateSplitBar(){
+  let p=Number($('#con-artist-pct').value); if(isNaN(p)) p=50; p=Math.max(0,Math.min(100,p));
+  const lab=100-p, a=$('#csb-art'), l=$('#csb-lab');
+  if(a){ a.textContent=p+'%'; a.style.width=p+'%'; }
+  if(l){ l.textContent=lab+'%'; l.style.width=lab+'%'; }
+}
 function conNew(){
   currentContract=null;
-  $('#con-work').value=''; $('#con-date').value=isoD(new Date());
-  $('#con-royalty').value=50; $('#con-advance').value=0;
-  $('#con-territory').value=''; $('#con-term').value='';
-  conSplits=[]; const arts=DB.artists||[];
-  if(arts.length){ conSplits.push({artistId:arts[0].id, pct:arts[0].split||0}); }
-  else { conSplits.push({artistId:'',pct:0}); }
-  renderConSplitRows();
+  $('#con-form-title').textContent=tt('con.build');
+  ['con-titles','con-artist-names','con-written','con-fullname','con-project','con-email'].forEach(id=>{const e=document.getElementById(id); if(e) e.value='';});
+  $('#con-date').value=isoD(new Date()); $('#con-artist-pct').value=50;
+  conArtistPickOptions(); if($('#con-artist-pick')) $('#con-artist-pick').value='';
+  setConLogo((DB.profile&&DB.profile.logo)||''); updateSplitBar();
+  $('#con-preview').hidden=true; $('#con-form').hidden=false;
+  $('#con-form').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function editContract(){ // torna al form mantenendo i dati per correggere prima di generare
+  const c=currentContract; if(!c){ $('#con-preview').hidden=true; $('#con-form').hidden=false; return; }
+  $('#con-form-title').textContent=tt('con.edit');
+  conArtistPickOptions();
+  $('#con-titles').value=c.titles||''; $('#con-artist-names').value=c.artistNames||'';
+  $('#con-written').value=c.writtenBy||''; $('#con-fullname').value=c.fullName||'';
+  $('#con-project').value=c.projectName||''; $('#con-email').value=c.email||'';
+  $('#con-date').value=c.date||isoD(new Date()); $('#con-artist-pct').value=c.artistPct??50;
+  setConLogo(c.logo||(DB.profile&&DB.profile.logo)||''); updateSplitBar();
   $('#con-preview').hidden=true; $('#con-form').hidden=false;
   $('#con-form').scrollIntoView({behavior:'smooth',block:'start'});
 }
 function collectContract(){
-  readConSplits();
-  const splits=conSplits.filter(s=>s.artistId).map(s=>{ const a=artistById(s.artistId)||{};
-    return { artistId:s.artistId, name:a.name||'—', email:a.email||'', legal:a.legal||'', pct:s.pct||0 }; });
-  return { id:(currentContract&&currentContract.id)||newId(),
-    work:$('#con-work').value.trim(), date:$('#con-date').value||isoD(new Date()),
-    royalty:Number($('#con-royalty').value)||0, advance:Number($('#con-advance').value)||0,
-    territory:$('#con-territory').value.trim()||tt('con.world'), term:$('#con-term').value.trim()||'—',
-    splits, label:labelName(), status:(currentContract&&currentContract.status)||'draft' };
+  let p=Number($('#con-artist-pct').value); if(isNaN(p)) p=50; p=Math.max(0,Math.min(100,p));
+  return Object.assign({}, currentContract||{}, {
+    id:(currentContract&&currentContract.id)||newId(),
+    date:$('#con-date').value||isoD(new Date()),
+    titles:$('#con-titles').value.trim(), artistNames:$('#con-artist-names').value.trim(),
+    writtenBy:$('#con-written').value.trim(), fullName:$('#con-fullname').value.trim(),
+    projectName:$('#con-project').value.trim(), email:$('#con-email').value.trim(),
+    artistPct:p, label:labelName(), logo:conLogoData||'',
+    status:(currentContract&&currentContract.status)||'draft',
+    signed:(currentContract&&currentContract.signed)||null
+  });
 }
 function generateContract(){
   const c=collectContract();
-  if(!c.work){ toast(tt('con.need_work')); return; }
-  if(!c.splits.length){ toast(tt('con.need_artist')); return; }
+  if(!c.titles){ toast(tt('con.need_titles')); return; }
+  if(!c.fullName){ toast(tt('con.need_fullname')); return; }
+  // ricorda il logo dell'etichetta per i prossimi contratti
+  if(conLogoData && window.LF) window.LF.setProfile({ logo:conLogoData });
   currentContract=c;
   $('#contract-doc').innerHTML=buildContractDoc(c);
   $('#con-form').hidden=true; $('#con-preview').hidden=false;
   $('#con-preview').scrollIntoView({behavior:'smooth',block:'start'});
 }
-function buildContractDoc(c){
-  const L=esc(c.label);
-  const parties=c.splits.map(s=>`<li><b>${esc(s.name)}</b>${s.legal?` (${esc(s.legal)})`:''} — <b>${s.pct}%</b></li>`).join('');
-  const fmtAdv = c.advance>0 ? fmtMoney(c.advance) : tt('con.no_advance');
-  return `
-    <div class="cd-head"><h3>${tt('con.doc_title')}</h3><p class="cd-date">${esc(c.date)}</p></div>
-    <p>${tt('con.doc_intro').replace('{label}',L).replace('{work}','<b>'+esc(c.work)+'</b>')}</p>
-    <h4>${tt('con.doc_parties')}</h4><ul class="cd-parties">${parties}</ul>
-    <h4>${tt('con.doc_terms')}</h4>
-    <ol class="cd-terms">
-      <li>${tt('con.cl_royalty').replace('{pct}','<b>'+c.royalty+'%</b>')}</li>
-      <li>${tt('con.cl_split')}</li>
-      <li>${tt('con.cl_advance').replace('{adv}','<b>'+esc(fmtAdv)+'</b>')}</li>
-      <li>${tt('con.cl_territory').replace('{ter}','<b>'+esc(c.territory)+'</b>')}</li>
-      <li>${tt('con.cl_term').replace('{term}','<b>'+esc(c.term)+'</b>')}</li>
-      <li>${tt('con.cl_report')}</li>
-      <li>${tt('con.cl_law')}</li>
-    </ol>
-    <div class="cd-sign"><div><span>${L}</span><hr></div>${c.splits.map(s=>`<div><span>${esc(s.name)}</span><hr></div>`).join('')}</div>`;
+function numWord(n){ const w={0:'zero',10:'ten',20:'twenty',25:'twenty-five',30:'thirty',33:'thirty-three',40:'forty',
+  50:'fifty',60:'sixty',66:'sixty-six',67:'sixty-seven',70:'seventy',75:'seventy-five',80:'eighty',90:'ninety',100:'one hundred'};
+  return w[n]||String(n); }
+function contractLetterhead(c){
+  const lf=`<div class="cd-lf"><img src="icon.png?v=3" alt="Label Finance" class="cd-lf-ico"><span class="cd-lf-name">Label<span class="lf-fin">Finance</span></span></div>`;
+  const lbl=(c.logo)
+    ? `<div class="cd-label-logo"><img src="${c.logo}" alt="${esc(c.label)}"></div>`
+    : `<div class="cd-label-logo cd-label-logo--text">${esc(c.label)}</div>`;
+  return `<div class="cd-letterhead">${lf}${lbl}</div>`;
 }
-function buildContractText(c){
-  const lines=[];
-  lines.push(tt('con.doc_title').toUpperCase()); lines.push(c.date); lines.push('');
-  lines.push(tt('con.doc_intro').replace(/<[^>]+>/g,'').replace('{label}',c.label).replace('{work}',c.work)); lines.push('');
-  lines.push(tt('con.doc_parties').toUpperCase());
-  c.splits.forEach(s=>lines.push(`- ${s.name}${s.legal?' ('+s.legal+')':''}: ${s.pct}%`));
-  lines.push('');
-  const fmtAdv=c.advance>0?fmtMoney(c.advance):tt('con.no_advance');
-  lines.push(tt('con.doc_terms').toUpperCase());
-  [['cl_royalty',{pct:c.royalty+'%'}],['cl_split',{}],['cl_advance',{adv:fmtAdv}],['cl_territory',{ter:c.territory}],['cl_term',{term:c.term}],['cl_report',{}],['cl_law',{}]]
-    .forEach(([k,vars],i)=>{ let t=tt('con.'+k).replace(/<[^>]+>/g,''); Object.entries(vars).forEach(([kk,vv])=>t=t.replace('{'+kk+'}',vv)); lines.push(`${i+1}. ${t}`); });
-  lines.push(''); lines.push(c.label);
-  return lines.join('\n');
+function buildContractDoc(c){
+  const L=esc(c.label), aPct=c.artistPct, lPct=100-c.artistPct;
+  const sig = c.signed
+    ? `<div class="cd-signed"><img src="${c.signed.dataUrl}" alt="signature" class="cd-sig-img">
+         <div class="cd-sig-meta"><b>${esc(c.signed.name||c.fullName||'')}</b><br>${esc(c.signed.date||'')}${c.signed.time?(' · '+esc(c.signed.time)):''}${c.signed.place?(' · '+esc(c.signed.place)):''}</div></div>`
+    : `<div class="cd-sign"><div><span>Date</span><hr></div><div><span>Signature</span><hr></div></div>`;
+  return `
+  <div class="cd-page">
+    ${contractLetterhead(c)}
+    <h3 class="cd-title">AUTHORIZATION TO RELEASE AND COLLABORATION AGREEMENT</h3>
+    <p class="cd-intro"><em>This document is intended to clearly and transparently define the terms of the collaboration between the Artist and the Label.</em></p>
+    <h4>1. Declaration of ownership of rights</h4>
+    <p>The Artist declares that they are the sole owner, or that they have obtained full authorization from all entitled parties, of the <b>copyright and related rights necessary for the exploitation and release</b> of the track(s) covered by this agreement.</p>
+    <h4>2. Grant of rights</h4>
+    <p>The Artist grants <b>${L}</b>, as an independent project, the <b>exclusive right</b>, free of charge, with <b>worldwide validity</b> and <b>no time limitation</b>, to release, distribute, communicate to the public and promote the track(s), in any format and on any digital platform, including as part of compilations (VA), EPs, singles or similar releases.</p>
+    <p>This grant does <b>not</b> constitute a transfer of authorship of the work, which shall remain with the Artist.</p>
+    <h4>3. Warranties and indemnification</h4>
+    <p>The Artist warrants that the track(s) is/are original and do not infringe the rights of third parties, including, by way of example, copyright, related rights or image rights.</p>
+    <p>The Artist agrees to indemnify and hold the Label harmless from any claim, demand or damage arising from any breach of the above warranties.</p>
+    <h4>4. Compensation and revenue split</h4>
+    <p>Any proceeds derived from the exploitation of the released track(s) (including, by way of example and not limitation, digital sales and streaming) shall be considered <b>net revenues</b>, meaning revenues net of distribution platform fees, taxes and any refunds.</p>
+    <p>Such net revenues shall first be applied to the <b>recoupment of costs incurred by the Label</b>, including, by way of example but not limited to: mastering, artwork, promotion, marketing and distribution.</p>
+    <p>Once such costs have been fully recouped, the subsequent net revenues shall be split as follows: <b>${aPct}% (${numWord(aPct)} percent) to the Artist and ${lPct}% (${numWord(lPct)} percent) to the Label</b>, unless otherwise agreed in writing by the parties.</p>
+    <p>The methods and timing of accounting and payments shall depend on the distribution platform used. The Artist acknowledges that any compensation received may be subject to taxation and that the Label shall not be responsible for the Artist's personal tax obligations.</p>
+    <h4>5. Nature of the project</h4>
+    <p>The parties acknowledge that <b>${L}</b> operates as an independent project and is not structured as a company. This agreement constitutes a private authorization and an artistic collaboration.</p>
+    <h4>6. Final provisions</h4>
+    <p>This document constitutes the entire agreement between the parties with respect to the track(s) covered herein. Any amendments or additions must be agreed upon in writing.</p>
+    <p>The submission and signature of this document shall constitute full acceptance of the terms set forth above.</p>
+    <h4>7. Personal Data Processing</h4>
+    <p>Pursuant to article 13 of the Regulation (EU) 2016/679 (GDPR), the Artist acknowledges that their personal data will be processed by ${L}, acting as Data Controller, exclusively for purposes related to the negotiation, execution and performance of this contract, as well as to the publication, distribution, promotion and administrative management of any revenues that may derive from the exploitation of the recordings.</p>
+    <p>The processing of personal data is necessary for the performance of this contract, in accordance with Article 6(1)(b) of the Regulation (EU) 2016/679 (GDPR). Personal data will be retained for the time strictly necessary for the management of the contractual relationship and for the protection of the rights relating to the recordings. Personal data will not be disclosed to third parties nor used for purposes other than those stated above, except for disclosure to parties involved in digital distribution, promotion, rights management, and technical, accounting and administrative services, who will act as data processors. Where necessary, personal data may be transferred to countries outside the European Union in compliance with applicable data protection laws.</p>
+    <p>The Artist may at any time exercise their rights of access, rectification, erasure, restriction of processing, data portability and objection to processing, as well as lodge a complaint with the competent Data Protection Authority.</p>
+  </div>
+  <div class="cd-page cd-page--copy">
+    ${contractLetterhead(c)}
+    <h3 class="cd-title">LABEL COPY INFORMATION</h3>
+    <h4>The Company:</h4><p>${L}</p>
+    <h4>Track(s) Information</h4>
+    <p><b>Title(s):</b> ${esc(c.titles)||'—'}</p>
+    <p><b>Artist Name(s):</b> ${esc(c.artistNames)||'—'}</p>
+    <p><b>Written by:</b> ${esc(c.writtenBy)||'—'}</p>
+    <h4>Artist Details</h4>
+    <p><b>Full Name:</b> ${esc(c.fullName)||'—'}</p>
+    <p><b>Artist / Project Name:</b> ${esc(c.projectName)||'—'}</p>
+    <h4>Signature</h4>
+    <p>I confirm that I have read, understood, and accepted the terms of this Release Authorization.</p>
+    ${sig}
+  </div>`;
+}
+function contractPlainText(c){
+  const tmp=document.createElement('div'); tmp.innerHTML=buildContractDoc(c);
+  tmp.querySelectorAll('h3,h4,p,div').forEach(el=>el.appendChild(document.createTextNode('\n')));
+  return tmp.textContent.replace(/\n{2,}/g,'\n\n').replace(/[ \t]+\n/g,'\n').trim();
 }
 function saveCurrentContract(){ if(!currentContract) return;
   const i=DB.contracts.findIndex(x=>x.id===currentContract.id);
@@ -1824,13 +1880,12 @@ function saveCurrentContract(){ if(!currentContract) return;
   save(); }
 function sendContract(){
   if(!currentContract) return; const c=currentContract;
-  const emails=c.splits.map(s=>s.email).filter(Boolean);
-  if(!emails.length){ toast(tt('con.no_emails')); }
-  c.status='sent'; c.sentAt=Date.now(); saveCurrentContract(); renderContracts();
-  const subject=encodeURIComponent(tt('con.mail_subject').replace('{work}',c.work).replace('{label}',c.label));
-  const body=encodeURIComponent(buildContractText(c)+'\n\n'+tt('con.mail_foot'));
-  window.location.href=`mailto:${encodeURIComponent(emails.join(','))}?subject=${subject}&body=${body}`;
-  toast(tt('con.sent'));
+  if(c.status==='draft'){ c.status='sent'; c.sentAt=Date.now(); }
+  saveCurrentContract(); renderContracts();
+  const subject=encodeURIComponent(`Release Authorization — ${c.titles} · ${c.label}`);
+  const body=encodeURIComponent(tt('con.mail_intro').replace('{label}',c.label)+'\n\n'+contractPlainText(c)+'\n\n'+tt('con.mail_foot'));
+  if(c.email){ window.location.href=`mailto:${encodeURIComponent(c.email)}?subject=${subject}&body=${body}`; toast(tt('con.sent')); }
+  else { toast(tt('con.no_email')); }
 }
 function printContract(){
   if(!currentContract) return;
@@ -1845,22 +1900,58 @@ function openContract(id){ const c=DB.contracts.find(x=>x.id===id); if(!c) retur
 function deleteContract(id){ const c=DB.contracts.find(x=>x.id===id); if(!c) return;
   if(!confirm(tt('con.del_confirm'))) return;
   DB.contracts=DB.contracts.filter(x=>x.id!==id); save(); renderContracts(); }
+function conStatusPill(s){
+  if(s==='signed') return `<span class="pill pill-ok">${tt('con.st_signed')}</span>`;
+  if(s==='sent') return `<span class="pill pill-sent">${tt('con.st_sent')}</span>`;
+  return `<span class="pill">${tt('con.st_draft')}</span>`;
+}
 function renderContracts(){
   const tb=$('#contracts-table'); if(!tb) return;
   const all=(DB.contracts||[]).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
   $('#contracts-empty').hidden=all.length>0;
   if(!all.length){ tb.innerHTML=''; mountPager(tb,'contracts',{total:0}); return; }
   const info=paginate(all,'contracts'); const list=info.slice;
-  const head=`<thead><tr><th>${tt('con.work')}</th><th>${tt('con.parties_short')}</th><th>${tt('con.date')}</th><th>${tt('con.status')}</th><th></th></tr></thead>`;
+  const head=`<thead><tr><th>${tt('con.titles')}</th><th>${tt('con.fullname')}</th><th>${tt('con.split_short')}</th><th>${tt('con.date')}</th><th>${tt('con.status')}</th><th></th></tr></thead>`;
   const rows=list.map(c=>{
-    const parties=c.splits.map(s=>esc(s.name)+' '+s.pct+'%').join(', ');
-    const st = c.status==='sent'?`<span class="pill pill-ok">${tt('con.st_sent')}</span>`:`<span class="pill">${tt('con.st_draft')}</span>`;
-    return `<tr><td><b>${esc(c.work)}</b></td><td class="muted small">${parties}</td><td>${esc(c.date)}</td><td>${st}</td>
+    const who=esc(c.projectName||c.fullName||c.artistNames||'—');
+    return `<tr><td><b>${esc(c.titles||'—')}</b></td><td class="muted small">${who}</td><td>${c.artistPct}/${100-c.artistPct}</td><td>${esc(c.date)}</td><td>${conStatusPill(c.status)}</td>
       <td class="con-row-act"><button class="icon-btn-sm" data-con-open="${c.id}" title="${tt('con.open')}">↗</button>
         <button class="icon-btn-sm" data-con-del="${c.id}" title="${tt('common.delete')}">🗑</button></td></tr>`;
   }).join('');
   tb.innerHTML=head+'<tbody>'+rows+'</tbody>';
   mountPager(tb,'contracts',info);
+}
+
+/* ---------- Firma in-app (canvas) ---------- */
+let sigPad=null;
+function openSignPad(){
+  if(!currentContract){ toast(tt('con.gen_first')); return; }
+  $('#sign-place').value=''; $('#sign-name').value=currentContract.fullName||'';
+  $('#sign-modal').hidden=false;
+  const cv=$('#sign-canvas'); const ctx=cv.getContext('2d');
+  const rect=cv.getBoundingClientRect(); cv.width=rect.width*2; cv.height=180*2; ctx.scale(2,2);
+  ctx.lineWidth=2.2; ctx.lineCap='round'; ctx.strokeStyle='#111';
+  let drawing=false, last=null, has=false;
+  const pos=e=>{ const r=cv.getBoundingClientRect(); const t=e.touches?e.touches[0]:e; return {x:t.clientX-r.left, y:t.clientY-r.top}; };
+  const start=e=>{ drawing=true; last=pos(e); e.preventDefault(); };
+  const move=e=>{ if(!drawing) return; const p=pos(e); ctx.beginPath(); ctx.moveTo(last.x,last.y); ctx.lineTo(p.x,p.y); ctx.stroke(); last=p; has=true; e.preventDefault(); };
+  const end=()=>{ drawing=false; };
+  sigPad={cv,ctx,clear:()=>{ ctx.clearRect(0,0,cv.width,cv.height); has=false; }, isEmpty:()=>!has};
+  cv.onmousedown=start; cv.onmousemove=move; window.onmouseup=end;
+  cv.ontouchstart=start; cv.ontouchmove=move; cv.ontouchend=end;
+}
+function closeSignPad(){ $('#sign-modal').hidden=true; sigPad=null; }
+function confirmSign(){
+  if(!sigPad || sigPad.isEmpty()){ toast(tt('con.sign_empty')); return; }
+  const now=new Date();
+  currentContract.signed={ dataUrl:sigPad.cv.toDataURL('image/png'),
+    name:$('#sign-name').value.trim()||currentContract.fullName||'',
+    place:$('#sign-place').value.trim(),
+    date:isoD(now), time:now.toTimeString().slice(0,5) };
+  currentContract.status='signed';
+  saveCurrentContract(); renderContracts();
+  $('#contract-doc').innerHTML=buildContractDoc(currentContract);
+  closeSignPad(); toast(tt('con.signed_ok'));
 }
 
 /* ---------- Task ---------- */
@@ -1919,19 +2010,25 @@ function initFeatures(){
   // Contratti
   $('#con-new')?.addEventListener('click',conNew);
   $('#con-cancel')?.addEventListener('click',()=>{ $('#con-form').hidden=true; });
-  $('#con-add-split')?.addEventListener('click',()=>addSplitRow());
   $('#con-generate')?.addEventListener('click',generateContract);
-  $('#con-back')?.addEventListener('click',()=>{ $('#con-preview').hidden=true; $('#con-form').hidden=false; });
+  $('#con-back')?.addEventListener('click',editContract);
   $('#con-print')?.addEventListener('click',printContract);
-  $('#con-send')?.addEventListener('click',()=>{ saveCurrentContract(); sendContract(); });
-  $('#con-split-rows')?.addEventListener('input',updateSplitSum);
-  $('#con-split-rows')?.addEventListener('change',updateSplitSum);
-  $('#con-split-rows')?.addEventListener('click',e=>{ const d=e.target.closest('.con-split-del'); if(!d) return;
-    const row=d.closest('.con-split-row'); readConSplits(); conSplits.splice(+row.dataset.i,1); renderConSplitRows(); });
+  $('#con-send')?.addEventListener('click',sendContract);
+  $('#con-sign')?.addEventListener('click',openSignPad);
+  $('#con-artist-pick')?.addEventListener('change',e=>{ if(e.target.value) conFillFromArtist(e.target.value); });
+  $('#con-artist-pct')?.addEventListener('input',updateSplitBar);
+  $('#con-logo-btn')?.addEventListener('click',()=>$('#con-logo-input').click());
+  $('#con-logo-input')?.addEventListener('change',e=>{ const f=e.target.files[0]; if(f) resizeImageW(f,400,setConLogo); e.target.value=''; });
+  $('#con-logo-clear')?.addEventListener('click',()=>setConLogo(''));
   $('#contracts-table')?.addEventListener('click',e=>{
     const op=e.target.closest('[data-con-open]'); if(op) return openContract(op.dataset.conOpen);
     const dl=e.target.closest('[data-con-del]'); if(dl) return deleteContract(dl.dataset.conDel);
   });
+  // Firma
+  $('#sign-close')?.addEventListener('click',closeSignPad);
+  $('#sign-clear')?.addEventListener('click',()=>{ if(sigPad) sigPad.clear(); });
+  $('#sign-confirm')?.addEventListener('click',confirmSign);
+  $('#sign-modal')?.addEventListener('click',e=>{ if(e.target.id==='sign-modal') closeSignPad(); });
   // Task
   $('#tsk-add')?.addEventListener('click',addTask);
   $('#tsk-title')?.addEventListener('keydown',e=>{ if(e.key==='Enter') addTask(); });

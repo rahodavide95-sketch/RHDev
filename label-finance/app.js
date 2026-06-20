@@ -1102,6 +1102,96 @@ $('#rel-form').onsubmit=e=>{
 };
 
 /* ============================================================================
+   IMPORT CATALOGO universale — CSV di qualunque piattaforma → release + artisti
+   ============================================================================ */
+const CAT_SYN = {
+  upc:['upc','ean','barcode','upc/ean','upc code','grid'],
+  isrc:['isrc','isrc code'],
+  catalog:['catalogue number','catalog number','catalog #','cat no','cat. no','cat no.','catno','catalog','catalogue','catalogo','codice catalogo','cat'],
+  date:['original release date','digital release date','release date','data di uscita','data uscita','released','release_date','released on','date','data'],
+  artist:['display artist','primary artist','main artist','artist name','album artist','artist','artists','artista','performer','band'],
+  title:['release title','album title','album name','release name','product title','title','titolo','album','release','product'],
+};
+let catImpRaw='', catImpHeaders=[];
+function autoMapCat(headers){
+  const low=headers.map(h=>String(h||'').toLowerCase().trim()); const used=new Set(); const map={};
+  const fields=['upc','isrc','catalog','date','artist','title'];
+  fields.forEach(f=>{ for(const s of CAT_SYN[f]){ const i=low.findIndex((h,j)=>!used.has(j)&&h===s); if(i>=0){map[f]=i;used.add(i);break;} } });
+  fields.forEach(f=>{ if(map[f]!=null) return; for(const s of CAT_SYN[f]){ const i=low.findIndex((h,j)=>!used.has(j)&&h.includes(s)); if(i>=0){map[f]=i;used.add(i);break;} } });
+  fields.forEach(f=>{ if(map[f]==null) map[f]=-1; });
+  return map;
+}
+function normDate(s){ s=String(s||'').trim(); if(!s) return '';
+  let m=s.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/); if(m) return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+  m=s.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})/); if(m){ let a=+m[1],b=+m[2],day,mon;
+    if(a>12){day=a;mon=b;} else if(b>12){day=b;mon=a;} else {day=a;mon=b;} return `${m[3]}-${String(mon).padStart(2,'0')}-${String(day).padStart(2,'0')}`; }
+  const d=new Date(s); if(!isNaN(d.getTime())) return d.toISOString().slice(0,10); return '';
+}
+function catImpMap(){ const m={}; ['catalog','title','artist','date','upc','isrc'].forEach(f=>{ const sel=$('#catimp-'+f); m[f]=sel?(+sel.value):-1; }); return m; }
+function catImpCompute(commit){
+  const rows=parseCSV(catImpRaw||''); const data=rows.slice(1); const map=catImpMap();
+  const get=(r,f)=> map[f]>=0 ? String(r[map[f]]||'').trim() : '';
+  const groups=new Map();
+  data.forEach(r=>{ if(!r||!r.length) return;
+    const catalog=get(r,'catalog'), title=get(r,'title'), artist=get(r,'artist'), date=normDate(get(r,'date')), upc=get(r,'upc'), isrc=get(r,'isrc');
+    if(!catalog && !title && !upc) return;
+    const key=(upc||catalog||title).toLowerCase();
+    let g=groups.get(key); if(!g){ g={catalog,title,artist,date,upc,tracks:[],artists:new Set()}; groups.set(key,g); }
+    if(!g.catalog&&catalog) g.catalog=catalog; if(!g.title&&title) g.title=title;
+    if(!g.artist&&artist) g.artist=artist; if(!g.date&&date) g.date=date; if(!g.upc&&upc) g.upc=upc;
+    if(artist) g.artists.add(artist);
+    if(isrc && !g.tracks.some(t=>t.isrc===isrc)) g.tracks.push({isrc, title});
+  });
+  const existKeys=new Set(releases().map(x=>(x.upc||x.catalog||x.title||'').toLowerCase()).filter(Boolean));
+  const existArt=new Set((DB.artists||[]).map(a=>(a.name||'').toLowerCase()));
+  const newReleases=[], newArtists=[]; let relDup=0; const seenArt=new Set();
+  groups.forEach((g,key)=>{
+    g.artists.forEach(n=>{ const nm=n.trim(); const lk=nm.toLowerCase(); if(!nm||existArt.has(lk)||seenArt.has(lk)) return; seenArt.add(lk);
+      newArtists.push({id:newId(), name:nm, split:''}); });
+    if(existKeys.has(key)){ relDup++; return; }
+    newReleases.push({ id:uid(), catalog:g.catalog||'', title:g.title||'', artist:g.artist||'', upc:g.upc||'',
+      orderDate:g.date||'', year:g.date?new Date(g.date+'T00:00:00').getFullYear():'',
+      splits:[], tracks:g.tracks.map(t=>({id:uid(), title:t.title||'', isrc:t.isrc, splits:[]})) });
+  });
+  if(commit){
+    newReleases.forEach(r=>releases().push(r));
+    DB.artists=DB.artists||[]; newArtists.forEach(a=>DB.artists.push(a));
+    save(); renderReleases(); renderArtists(); renderRoyalties();
+  }
+  return { relNew:newReleases.length, relDup, artNew:newArtists.length, rows:data.length };
+}
+function catImpRenderMaps(){
+  const opts=(sel)=>['<option value="-1">—</option>'].concat(catImpHeaders.map((h,i)=>`<option value="${i}" ${i===sel?'selected':''}>${esc(h||('Col '+(i+1)))}</option>`)).join('');
+  const am=autoMapCat(catImpHeaders);
+  const fields=[['catalog','col.catalog'],['title','rel.c_title'],['artist','r.artist'],['date','r.order'],['upc','r.upc'],['isrc','ISRC']];
+  $('#catimp-maps').innerHTML = fields.map(([f,k])=>`<label><span>${k==='ISRC'?'ISRC':esc(tt(k).replace(' *',''))}</span>
+    <select class="select" id="catimp-${f}">${opts(am[f])}</select></label>`).join('');
+  $$('#catimp-maps select').forEach(s=>s.onchange=catImpPreview);
+  catImpPreview();
+}
+function catImpPreview(){ const r=catImpCompute(false);
+  const el=$('#catimp-preview'); if(el) el.textContent = tt('cimp.preview')
+    .replace('{rows}',r.rows).replace('{rel}',r.relNew).replace('{art}',r.artNew).replace('{dup}',r.relDup); }
+function catImpLoad(file){ const rd=new FileReader();
+  rd.onload=()=>{ catImpRaw=rd.result||''; const rows=parseCSV(catImpRaw); catImpHeaders=rows[0]||[];
+    if(!catImpHeaders.length){ toast(tt('cimp.empty')); return; }
+    $('#catimp-config').hidden=false; catImpRenderMaps(); };
+  rd.readAsText(file); }
+(function wireCatImp(){
+  const open=$('#catimp-open'); if(open) open.onclick=()=>{ $('#catimp-config').hidden=true; $('#catimp-preview').textContent=''; $('#catimp-modal').hidden=false; };
+  if($('#catimp-close')) $('#catimp-close').onclick=()=>$('#catimp-modal').hidden=true;
+  if($('#catimp-modal')) $('#catimp-modal').onclick=e=>{ if(e.target.id==='catimp-modal') $('#catimp-modal').hidden=true; };
+  if($('#catimp-browse')) $('#catimp-browse').onclick=()=>$('#catimp-file').click();
+  if($('#catimp-file')) $('#catimp-file').onchange=e=>{ if(e.target.files[0]) catImpLoad(e.target.files[0]); };
+  const drop=$('#catimp-drop');
+  if(drop){ ['dragover','dragenter'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('drag');}));
+    ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('drag');}));
+    drop.addEventListener('drop',e=>{ const f=e.dataTransfer.files[0]; if(f) catImpLoad(f); }); }
+  if($('#catimp-do')) $('#catimp-do').onclick=()=>{ const r=catImpCompute(true);
+    $('#catimp-modal').hidden=true; toast(tt('cimp.done').replace('{rel}',r.relNew).replace('{art}',r.artNew).replace('{dup}',r.relDup)); };
+})();
+
+/* ============================================================================
    ROYALTY — ripartizione per artista basata sulle quote delle release
    ============================================================================ */
 // range {from,to} generico da un selettore periodo + due date personalizzate

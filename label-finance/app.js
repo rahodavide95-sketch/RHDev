@@ -1853,10 +1853,19 @@ function artistById(id){ return (DB.artists||[]).find(a=>a.id===id); }
 
 /* ---------- Artisti ---------- */
 let editingArtistId=null, artistPhotoData='';
+let artSort={col:'name',dir:1};
+function sortArtists(arr){
+  const k=artSort.col, d=artSort.dir;
+  return arr.slice().sort((a,b)=>{
+    if(k==='split') return ((+a.split||0)-(+b.split||0))*d;
+    return String(a[k]||'').toLowerCase().localeCompare(String(b[k]||'').toLowerCase())*d;
+  });
+}
 function renderArtists(){
   const grid=$('#artists-grid'); if(!grid) return;
   const q=($('#art-search')&&$('#art-search').value||'').toLowerCase().trim();
-  const all=(DB.artists||[]).filter(a=> !q || (a.name+' '+(a.legal||'')+' '+(a.email||'')).toLowerCase().includes(q));
+  let all=(DB.artists||[]).filter(a=> !q || (a.name+' '+(a.legal||'')+' '+(a.email||'')).toLowerCase().includes(q));
+  all=sortArtists(all);
   $('#artists-empty').hidden = (DB.artists||[]).length>0;
   const info=paginate(all,'artists'); const list=info.slice;
   const mode=getVM('artists','cards');
@@ -1866,13 +1875,20 @@ function renderArtists(){
         <button class="icon-btn-sm" data-art-del="${a.id}" title="${tt('common.delete')}">🗑</button></div>`;
   if(mode==='list'){
     grid.className='art-list';
-    grid.innerHTML = list.map(a=>`
+    const arrow=c=>artSort.col===c?(artSort.dir>0?' ▲':' ▼'):'';
+    const head=`<div class="art-lrow art-lhead"><span></span>
+        <span class="art-sort" data-asort="name">${tt('art.h_name')}${arrow('name')}</span>
+        <span class="art-sort art-c-email" data-asort="email">${tt('art.h_email')}${arrow('email')}</span>
+        <span class="art-sort art-c-phone" data-asort="phone">${tt('art.h_phone')}${arrow('phone')}</span>
+        <span class="art-sort art-c-split" data-asort="split">${tt('art.h_split')}${arrow('split')}</span>
+        <span></span></div>`;
+    grid.innerHTML = head + list.map(a=>`
       <div class="art-lrow" data-id="${a.id}">
         ${av(a)}
-        <div class="art-lname"><b>${esc(a.name)}</b>${a.legal?`<span class="art-meta">${esc(a.legal)}</span>`:''}</div>
-        <div class="art-lcol art-meta">${a.email?('✉ '+esc(a.email)):''}</div>
-        <div class="art-lcol art-meta">${a.phone?('☎ '+esc(a.phone)):''}</div>
-        <div class="art-lcol">${a.split?`<span class="art-split">${esc(a.split)}%</span>`:''}</div>
+        <div class="art-c art-c-name"><b>${esc(a.name)}</b>${a.legal?`<span class="art-meta">${esc(a.legal)}</span>`:''}</div>
+        <div class="art-c art-c-email art-meta">${a.email?esc(a.email):'—'}</div>
+        <div class="art-c art-c-phone art-meta">${a.phone?esc(a.phone):'—'}</div>
+        <div class="art-c art-c-split">${a.split?`<span class="art-split">${esc(a.split)}%</span>`:'—'}</div>
         ${acts(a)}
       </div>`).join('');
   } else {
@@ -2409,6 +2425,8 @@ function initFeatures(){
   $('#art-photo-btn')?.addEventListener('click',()=>$('#art-photo-input').click());
   $('#art-photo-input')?.addEventListener('change',e=>{ const f=e.target.files[0]; if(f) resizeImage(f,256,setArtistPhoto); e.target.value=''; });
   $('#artists-grid')?.addEventListener('click',e=>{
+    const so=e.target.closest('[data-asort]'); if(so){ const c=so.dataset.asort;
+      if(artSort.col===c) artSort.dir*=-1; else artSort={col:c,dir:1}; renderArtists(); return; }
     const ed=e.target.closest('[data-art-edit]'); if(ed) return openArtistForm(ed.dataset.artEdit);
     const dl=e.target.closest('[data-art-del]'); if(dl) return deleteArtist(dl.dataset.artDel);
   });

@@ -1555,8 +1555,10 @@ function aiPopBody(){
   body._prompts=prompts;
   body.querySelectorAll('.ai-chip').forEach(b=>b.addEventListener('click',()=>{ const p=body._prompts[+b.dataset.aiq]; runAiQuestion(p.q,p.label); }));
 }
-function openAiPop(){ const pop=$('#ai-pop'); if(!pop) return; aiPopBody(); pop.hidden=false; document.body.classList.add('ai-open'); $('#ai-fab')?.setAttribute('aria-expanded','true'); }
-function closeAiPop(){ const pop=$('#ai-pop'); if(!pop) return; pop.hidden=true; document.body.classList.remove('ai-open'); $('#ai-fab')?.setAttribute('aria-expanded','false'); }
+function openAiPop(){ const pop=$('#ai-pop'); if(!pop) return; aiPopBody(); pop.hidden=false; document.body.classList.add('ai-open');
+  const f=$('#ai-fab'); if(f){ f.setAttribute('aria-expanded','true'); f.classList.add('is-open'); } }
+function closeAiPop(){ const pop=$('#ai-pop'); if(!pop) return; pop.hidden=true; document.body.classList.remove('ai-open');
+  const f=$('#ai-fab'); if(f){ f.setAttribute('aria-expanded','false'); f.classList.remove('is-open'); } }
 function toggleAiPop(){ const pop=$('#ai-pop'); if(pop) (pop.hidden?openAiPop():closeAiPop()); }
 const AI_KEY_LS='labelfinance.aikey';
 function aiLocalKey(){ try{ return localStorage.getItem(AI_KEY_LS)||''; }catch(e){ return ''; } }
@@ -1607,13 +1609,32 @@ async function runAiQuestion(question, label){
 }
 function exportAiAnalysis(){
   if(!aiLastResult) return; const r=aiLastResult;
-  const md=`# ${tt('ai.study_title')} — ${labelName()}\n`+
-    `_${r.when.toLocaleString()}${r.model?(' · '+r.model):''}_\n\n`+
-    `## ${tt('ai.q')}\n${r.question}\n\n`+
-    `## ${tt('ai.answer')}\n${r.text}\n\n`+
-    `## ${tt('ai.data')}\n\`\`\`json\n${JSON.stringify(r.summary,null,2)}\n\`\`\`\n`;
-  download('analisi-ai-'+isoD(new Date())+'.md', md, 'text/markdown;charset=utf-8');
-  toast(tt('ai.exported'));
+  const fname='analisi-ai-'+isoD(new Date());
+  if(typeof html2pdf==='undefined'){ // fallback testuale se la libreria PDF non c'è
+    const md=`${tt('ai.study_title')} — ${labelName()}\n${r.when.toLocaleString()}\n\n${tt('ai.q')}\n${r.question}\n\n${tt('ai.answer')}\n${r.text}\n\n${tt('ai.data')}\n${JSON.stringify(r.summary,null,2)}`;
+    download(fname+'.txt', md, 'text/plain;charset=utf-8'); return;
+  }
+  const host=document.createElement('div');
+  host.style.cssText='position:fixed;left:-99999px;top:0;width:760px;background:#fff';
+  host.innerHTML=`<div style="font-family:Inter,Arial,sans-serif;color:#1a1a1a;padding:26px 30px;background:#fff">
+    <div style="display:flex;align-items:center;gap:10px;border-bottom:1px solid #e3e3e8;padding-bottom:14px;margin-bottom:18px">
+      <img src="icon.png?v=3" style="width:32px;height:32px;border-radius:8px">
+      <div><div style="font-weight:800;font-size:17px;letter-spacing:-.3px">Label<span style="color:#7c3aed">Finance</span> — ${esc(tt('ai.study_title'))}</div>
+        <div style="font-size:12px;color:#777">${esc(labelName())} · ${esc(r.when.toLocaleString())}${r.model?(' · '+esc(r.model)):''}</div></div>
+    </div>
+    <h3 style="margin:0 0 4px;font-size:14px;color:#15131f">${esc(tt('ai.q'))}</h3>
+    <p style="margin:0 0 16px;line-height:1.55">${esc(r.question)}</p>
+    <h3 style="margin:0 0 6px;font-size:14px;color:#15131f">${esc(tt('ai.answer'))}</h3>
+    <div style="line-height:1.65;font-size:14px">${aiFormat(r.text)}</div>
+    <h3 style="margin:20px 0 6px;font-size:14px;color:#15131f">${esc(tt('ai.data'))}</h3>
+    <pre style="background:#f5f5f8;border:1px solid #e3e3e8;border-radius:8px;padding:12px;font-size:10.5px;line-height:1.45;white-space:pre-wrap;word-break:break-word;color:#333">${esc(JSON.stringify(r.summary,null,2))}</pre>
+  </div>`;
+  document.body.appendChild(host);
+  toast(tt('con.pdf_wait'));
+  const opt={ margin:[8,8,8,8], filename:fname+'.pdf', image:{type:'jpeg',quality:0.98},
+    html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff',windowWidth:800},
+    jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}, pagebreak:{mode:['css','legacy']} };
+  html2pdf().set(opt).from(host.firstElementChild).save().then(()=>host.remove(), ()=>host.remove());
 }
 function aiFormat(t){
   // mini-markdown: **bold**, righe con - in elenco, paragrafi

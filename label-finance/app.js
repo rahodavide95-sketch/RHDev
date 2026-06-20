@@ -233,6 +233,7 @@ const VIEW_TITLES={dashboard:'Dashboard',transactions:'Movimenti',releases:'Disc
 function goto(view){
   $$('.nav-item').forEach(b=>b.classList.toggle('is-active',b.dataset.view===view));
   $$('.view').forEach(v=>v.classList.toggle('is-active',v.id==='view-'+view));
+  if(typeof expandActiveGroup==='function') expandActiveGroup();
   const sec=$('#topbar-section'); if(sec) sec.textContent=VIEW_TITLES[view]||'';
   if(view==='dashboard') renderDashboard();
   if(view==='transactions') renderTx();
@@ -2853,6 +2854,19 @@ function notifDelete(id){ const it=NOTIFS.list.find(x=>x.id===id);
 function notifReadAll(){ NOTIFS.list.forEach(n=>n.read=true); notifSave(); renderNotifs(); }
 function notifClear(){ NOTIFS.list.forEach(it=>{ if(it.type==='unlinked') NOTIFS.dismissed=[...new Set([...(NOTIFS.dismissed||[]),(it.ref||'').toLowerCase()])]; });
   NOTIFS.list=[]; notifSave(); renderNotifs(); }
+/* ---------- Menu a gruppi (accordion) ---------- */
+const NAVGRP_KEY='labelfinance.navgroups';
+let navGrpState=(function(){ try{ return JSON.parse(localStorage.getItem(NAVGRP_KEY))||{}; }catch(e){ return {}; } })();
+function applyNavGroups(){ document.querySelectorAll('.nav-group').forEach(g=>g.classList.toggle('collapsed', !!navGrpState[g.dataset.group])); }
+function wireNavGroups(){
+  document.querySelectorAll('.nav-group-h').forEach(h=>h.addEventListener('click',()=>{
+    const g=h.closest('.nav-group'); if(!g) return; const k=g.dataset.group;
+    const now=!g.classList.contains('collapsed'); g.classList.toggle('collapsed', now);
+    navGrpState[k]=now; try{ localStorage.setItem(NAVGRP_KEY, JSON.stringify(navGrpState)); }catch(e){}
+  }));
+  applyNavGroups();
+}
+function expandActiveGroup(){ const act=document.querySelector('.nav-item.is-active'); const g=act&&act.closest('.nav-group'); if(g) g.classList.remove('collapsed'); }
 function wireNotifs(){
   $('#notif-btn')?.addEventListener('click',e=>{ e.stopPropagation(); const p=$('#notif-panel'); if(p) p.hidden=!p.hidden; });
   $('#notif-readall')?.addEventListener('click',notifReadAll);
@@ -2966,6 +2980,7 @@ initFeatures();
 wireAgenda();
 wireNotifs();
 notifScan();
+wireNavGroups();
 
 /* ---------- Avvisi task: scheduler + audio sbloccato al primo gesto ---------- */
 document.addEventListener('pointerdown', ()=>lfAudio(), {once:true});

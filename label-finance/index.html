@@ -21,7 +21,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=58">
+  <link rel="stylesheet" href="style.css?v=59">
 </head>
 <body class="gated">
 
@@ -87,28 +87,53 @@
     <nav class="nav">
       <button class="nav-item is-active" data-view="dashboard" title="Dashboard">
         <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span><span class="nav-label" data-i18n="nav.dashboard">Dashboard</span></button>
-      <button class="nav-item" data-view="transactions" title="Movimenti">
-        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v15"/><path d="M4 7l3-3 3 3"/><path d="M17 20V5"/><path d="M14 17l3 3 3-3"/></svg></span><span class="nav-label" data-i18n="nav.transactions">Movimenti</span></button>
-      <button class="nav-item" data-view="releases" title="Discografia">
-        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/></svg></span><span class="nav-label" data-i18n="nav.releases">Discografia</span></button>
-      <button class="nav-item" data-view="planning" title="Pianificazione">
-        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M8 2.5v4M16 2.5v4"/><path d="M7.5 13h3v3h-3z"/></svg></span><span class="nav-label" data-i18n="nav.planning">Pianificazione</span></button>
-      <button class="nav-item" data-view="events" title="Eventi">
-        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.4 5 5.6.8-4 4 1 5.6L12 21l-5 2.4 1-5.6-4-4 5.6-.8z"/></svg></span><span class="nav-label" data-i18n="nav.events">Eventi</span></button>
-      <button class="nav-item" data-view="supports" title="Support DJ">
-        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3.5 9h17M3.5 15h17M12 3a14 14 0 0 0 0 18M12 3a14 14 0 0 1 0 18"/></svg></span><span class="nav-label" data-i18n="nav.supports">Support DJ</span></button>
-      <button class="nav-item" data-view="royalties" title="Royalty">
-        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 5 5 19"/><circle cx="7.5" cy="7.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/></svg></span><span class="nav-label" data-i18n="nav.royalties">Royalty</span></button>
-      <button class="nav-item" data-view="artists" title="Artisti">
-        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><path d="M16 5.2a3 3 0 0 1 0 5.6"/><path d="M18 19c0-2.2-1-3.8-2.6-4.6"/></svg></span><span class="nav-label" data-i18n="nav.artists">Artisti</span></button>
-      <button class="nav-item" data-view="contracts" title="Contratti">
-        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 12h6"/><path d="M9 16h6"/></svg></span><span class="nav-label" data-i18n="nav.contracts">Contratti</span></button>
-      <button class="nav-item" data-view="tasks" title="Task">
-        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V4.2a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1V5"/><path d="M8.5 13.2l2.3 2.3L16 10.3"/></svg></span><span class="nav-label" data-i18n="nav.tasks">Task</span></button>
-      <button class="nav-item" data-view="merch" title="Merch">
-        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 5 6.5V20h14V6.5L15 4"/><path d="M9 4a3 3 0 0 0 6 0"/></svg></span><span class="nav-label" data-i18n="nav.merch">Merch</span></button>
-      <button class="nav-item" data-view="import" title="Importa CSV">
-        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M4 21h16"/></svg></span><span class="nav-label" data-i18n="nav.import">Importa CSV</span></button>
+
+      <div class="nav-group" data-group="catalog">
+        <button class="nav-group-h" type="button">
+          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/></svg></span>
+          <span class="nav-label" data-i18n="nav.grp_catalog">Musica & Catalogo</span><span class="nav-chev">▾</span></button>
+        <div class="nav-group-items">
+          <button class="nav-item" data-view="releases" title="Discografia">
+            <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/></svg></span><span class="nav-label" data-i18n="nav.releases">Discografia</span></button>
+          <button class="nav-item" data-view="planning" title="Pianificazione">
+            <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M8 2.5v4M16 2.5v4"/><path d="M7.5 13h3v3h-3z"/></svg></span><span class="nav-label" data-i18n="nav.planning">Pianificazione</span></button>
+          <button class="nav-item" data-view="events" title="Eventi">
+            <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.4 5 5.6.8-4 4 1 5.6L12 21l-5 2.4 1-5.6-4-4 5.6-.8z"/></svg></span><span class="nav-label" data-i18n="nav.events">Eventi</span></button>
+          <button class="nav-item" data-view="supports" title="Support DJ">
+            <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3.5 9h17M3.5 15h17M12 3a14 14 0 0 0 0 18M12 3a14 14 0 0 1 0 18"/></svg></span><span class="nav-label" data-i18n="nav.supports">Support DJ</span></button>
+        </div>
+      </div>
+
+      <div class="nav-group" data-group="finance">
+        <button class="nav-group-h" type="button">
+          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v15"/><path d="M4 7l3-3 3 3"/><path d="M17 20V5"/><path d="M14 17l3 3 3-3"/></svg></span>
+          <span class="nav-label" data-i18n="nav.grp_finance">Finanze</span><span class="nav-chev">▾</span></button>
+        <div class="nav-group-items">
+          <button class="nav-item" data-view="transactions" title="Movimenti">
+            <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v15"/><path d="M4 7l3-3 3 3"/><path d="M17 20V5"/><path d="M14 17l3 3 3-3"/></svg></span><span class="nav-label" data-i18n="nav.transactions">Movimenti</span></button>
+          <button class="nav-item" data-view="royalties" title="Royalty">
+            <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 5 5 19"/><circle cx="7.5" cy="7.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/></svg></span><span class="nav-label" data-i18n="nav.royalties">Royalty</span></button>
+          <button class="nav-item" data-view="import" title="Importa CSV">
+            <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M4 21h16"/></svg></span><span class="nav-label" data-i18n="nav.import">Importa CSV</span></button>
+        </div>
+      </div>
+
+      <div class="nav-group" data-group="manage">
+        <button class="nav-group-h" type="button">
+          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span>
+          <span class="nav-label" data-i18n="nav.grp_manage">Gestione</span><span class="nav-chev">▾</span></button>
+        <div class="nav-group-items">
+          <button class="nav-item" data-view="artists" title="Artisti">
+            <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><path d="M16 5.2a3 3 0 0 1 0 5.6"/><path d="M18 19c0-2.2-1-3.8-2.6-4.6"/></svg></span><span class="nav-label" data-i18n="nav.artists">Artisti</span></button>
+          <button class="nav-item" data-view="contracts" title="Contratti">
+            <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 12h6"/><path d="M9 16h6"/></svg></span><span class="nav-label" data-i18n="nav.contracts">Contratti</span></button>
+          <button class="nav-item" data-view="merch" title="Merch">
+            <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 5 6.5V20h14V6.5L15 4"/><path d="M9 4a3 3 0 0 0 6 0"/></svg></span><span class="nav-label" data-i18n="nav.merch">Merch</span></button>
+          <button class="nav-item" data-view="tasks" title="Task">
+            <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V4.2a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1V5"/><path d="M8.5 13.2l2.3 2.3L16 10.3"/></svg></span><span class="nav-label" data-i18n="nav.tasks">Task</span></button>
+        </div>
+      </div>
+
       <button class="nav-item" data-view="settings" title="Impostazioni">
         <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5v5M5 14v5M12 3v6M12 13v8M19 7v3M19 14v3"/><circle cx="5" cy="12" r="2"/><circle cx="12" cy="11" r="2"/><circle cx="19" cy="12" r="2"/></svg></span><span class="nav-label" data-i18n="nav.settings">Impostazioni</span></button>
 
@@ -1708,11 +1733,11 @@
   <!-- Area di stampa per lo statement royalty (visibile solo in stampa) -->
   <div id="print-area" aria-hidden="true"></div>
 
-  <script src="html2pdf.bundle.min.js?v=58"></script>
-  <script src="app.js?v=58"></script>
-  <script src="config.js?v=58"></script>
-  <script src="i18n.js?v=58"></script>
+  <script src="html2pdf.bundle.min.js?v=59"></script>
+  <script src="app.js?v=59"></script>
+  <script src="config.js?v=59"></script>
+  <script src="i18n.js?v=59"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="sync.js?v=58"></script>
+  <script src="sync.js?v=59"></script>
 </body>
 </html>

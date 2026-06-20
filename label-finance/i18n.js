@@ -15,6 +15,7 @@
       // Navigazione
       'nav.dashboard':'Dashboard','nav.transactions':'Movimenti','nav.releases':'Discografia',
       'nav.planning':'Pianificazione','nav.events':'Eventi','nav.supports':'Support DJ',
+      'nav.grp_catalog':'Musica & Catalogo','nav.grp_finance':'Finanze','nav.grp_manage':'Gestione',
       'nav.royalties':'Royalty','nav.import':'Importa CSV','nav.settings':'Impostazioni',
       'nav.faq':'Aiuto & FAQ','nav.about':'Chi siamo','nav.more':'Altro','nav.offers':'Offerte',
       'nav.artists':'Artisti','nav.contracts':'Contratti','nav.tasks':'Task','nav.merch':'Merch',
@@ -195,6 +196,7 @@
     en:{
       'nav.dashboard':'Dashboard','nav.transactions':'Transactions','nav.releases':'Discography',
       'nav.planning':'Planning','nav.events':'Events','nav.supports':'DJ Support',
+      'nav.grp_catalog':'Music & Catalog','nav.grp_finance':'Finance','nav.grp_manage':'Management',
       'nav.royalties':'Royalties','nav.import':'Import CSV','nav.settings':'Settings',
       'nav.faq':'Help & FAQ','nav.about':'About','nav.more':'More','nav.offers':'Plans',
       'nav.artists':'Artists','nav.contracts':'Contracts','nav.tasks':'Tasks','nav.merch':'Merch',

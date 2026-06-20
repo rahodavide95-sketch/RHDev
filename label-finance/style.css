@@ -51,6 +51,20 @@ h2{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:600}
 .nav-collapse:hover{color:var(--text);background:var(--panel)}
 .nav{display:flex;flex-direction:column;gap:4px}
 .nav-sep{height:1px;background:var(--glass-brd);margin:8px 6px}
+/* gruppi di menu (accordion) */
+.nav-group{display:flex;flex-direction:column;gap:4px}
+.nav-group-h{display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;cursor:pointer;color:var(--muted-2);font:inherit;font-weight:700;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;padding:10px 12px 5px;border-radius:10px}
+.nav-group-h:hover{color:var(--text)}
+.nav-group-h .nav-ico{width:18px;height:18px;opacity:.75}
+.nav-group-h .nav-ico svg{width:17px;height:17px}
+.nav-chev{margin-left:auto;font-size:.7rem;transition:transform .2s}
+.nav-group.collapsed .nav-chev{transform:rotate(-90deg)}
+.nav-group-items{display:flex;flex-direction:column;gap:4px}
+.nav-group.collapsed .nav-group-items{display:none}
+.nav-group-items .nav-item{padding-left:20px}
+.nav-collapsed .nav-group-h{display:none}
+.nav-collapsed .nav-group.collapsed .nav-group-items{display:flex}
+.nav-collapsed .nav-group-items .nav-item{padding-left:0}
 .nav-item{
   display:flex;align-items:center;gap:11px;
   text-align:left;background:none;border:none;color:var(--muted);font:inherit;font-size:.95rem;
@@ -108,11 +122,15 @@ body.nav-collapsed{grid-template-columns:78px 1fr}
 .topbar-section{font-family:'Syne',sans-serif;font-weight:600;font-size:1rem;color:var(--text);opacity:0;transform:translateY(4px);transition:opacity .2s,transform .2s;pointer-events:none}
 body.show-topsec .topbar-section{opacity:1;transform:none}
 /* Tasti Entrata/Uscita (verde/rosso tenui) — già colorati per riconoscerli a colpo d'occhio */
-.btn.btn-income,.btn.btn-expense{min-width:122px;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-weight:600}
-.btn.btn-income{background:#3f9b6e;border-color:#3f9b6e}
-.btn.btn-expense{background:#c46a78;border-color:#c46a78}
-.btn.btn-income:hover,.btn.btn-expense:hover{filter:brightness(1.08)}
-.btn.btn-income:active,.btn.btn-expense:active{filter:brightness(1.14)}
+.btn.btn-income,.btn.btn-expense{display:inline-flex;align-items:center;justify-content:center;font-weight:700;
+  backdrop-filter:blur(8px) saturate(1.3);-webkit-backdrop-filter:blur(8px) saturate(1.3);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18), 0 2px 10px rgba(0,0,0,.06)}
+.btn.btn-income:not(.btn-sm),.btn.btn-expense:not(.btn-sm){min-width:122px}
+.btn.btn-income{background:color-mix(in srgb,#22c55e 20%,transparent);border:1px solid color-mix(in srgb,#22c55e 52%,transparent);color:color-mix(in srgb,#16a34a 72%,var(--text))}
+.btn.btn-expense{background:color-mix(in srgb,#f43f5e 20%,transparent);border:1px solid color-mix(in srgb,#f43f5e 52%,transparent);color:color-mix(in srgb,#e11d48 74%,var(--text))}
+.btn.btn-income:hover{background:color-mix(in srgb,#22c55e 30%,transparent)}
+.btn.btn-expense:hover{background:color-mix(in srgb,#f43f5e 30%,transparent)}
+.btn.btn-income:active,.btn.btn-expense:active{filter:brightness(1.05)}
 /* ===== Assistente AI — bolla flottante + popover ===== */
 .ai-spark{color:var(--accent)}
 .ai-fab{position:fixed;right:22px;bottom:calc(22px + env(safe-area-inset-bottom));z-index:55;
@@ -986,6 +1004,10 @@ body.gate-signup #gate-signin{opacity:.5}
   }
   .sidebar-top,.sidebar-foot{display:none}
   .nav-sep,.nav-reopen{display:none!important}
+  /* su mobile i gruppi si dissolvono: gli item tornano nella barra in basso */
+  .nav-group,.nav-group-items{display:contents}
+  .nav-group-h{display:none}
+  .nav-group-items .nav-item{padding-left:0}
   .nav{flex-direction:row;flex:1;justify-content:space-between;gap:0;overflow:visible}
   /* in barra restano solo le 4 sezioni principali + Altro */
   .sidebar .nav-item[data-view="import"],

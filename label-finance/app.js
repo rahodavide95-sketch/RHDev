@@ -1176,7 +1176,16 @@ async function catOnlineSearch(){
   let html='';
   if(catCandidates.length) html+=catCandidates.map((c,i)=>`<label class="cat-cand"><input type="checkbox" data-cand="${i}" ${i===0?'checked':''}> <b>${esc(c.name)}</b> <span class="muted small">${esc(c.detail||c.source)}</span></label>`).join('');
   if(catSpotify) html+=`<label class="cat-cand"><input type="checkbox" id="cat-sp" checked> <b>Spotify</b> <span class="muted small">${tt('cimp.by_name').replace('{q}',esc(q))}</span></label>`;
-  html = (html||`<p class="muted small">${tt('cimp.no_label')}</p>`) + (catCandidates.length||catSpotify?`<button class="btn btn-primary" id="cat-import" style="margin-top:10px">${tt('cimp.fetch')}</button>`:'');
+  if(!catCandidates.length && !catSpotify){
+    let diag='';
+    if(res.sources){ const s=res.sources;
+      diag=`<p class="muted small" style="margin-top:8px">MusicBrainz: ${s.musicbrainz?(s.musicbrainz.err?('⚠ '+esc(s.musicbrainz.err)):s.musicbrainz.n):'—'} · Discogs: ${s.discogs?(s.discogs.err==='no token'?tt('cimp.no_token'):(s.discogs.err?('⚠ '+esc(s.discogs.err)):s.discogs.n)):'—'}</p>`;
+      diag+=`<p class="muted small">${tt('cimp.hint_token')}</p>`;
+    }
+    html=`<p class="muted small">${tt('cimp.no_label')}</p>`+diag;
+  } else {
+    html += `<button class="btn btn-primary" id="cat-import" style="margin-top:10px">${tt('cimp.fetch')}</button>`;
+  }
   box.innerHTML=html;
 }
 async function catOnlineImport(){

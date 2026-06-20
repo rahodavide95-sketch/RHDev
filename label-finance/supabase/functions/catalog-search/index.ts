@@ -19,13 +19,13 @@ const norm = (s: string) => (s || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").
 // ----------------------------- MusicBrainz --------------------------------
 async function mbSearchLabels(q: string) {
   const r = await fetch(`https://musicbrainz.org/ws/2/label?query=${encodeURIComponent(q)}&fmt=json&limit=8`,
-    { headers: { "User-Agent": UA } });
-  if (!r.ok) return [];
+    { headers: { "User-Agent": UA, "Accept": "application/json" } });
+  if (!r.ok) return { items: [], err: `HTTP ${r.status}` };
   const d = await r.json();
-  return (d.labels || []).map((l: any) => ({
+  return { items: (d.labels || []).map((l: any) => ({
     source: "mb", id: l.id, name: l.name,
-    detail: [l.country, l["life-span"]?.begin, l.disambiguation].filter(Boolean).join(" · "),
-  }));
+    detail: ["MusicBrainz", l.country, l.disambiguation].filter(Boolean).join(" · "),
+  })), err: null as string | null };
 }
 async function mbFetch(id: string) {
   const out: any[] = []; let offset = 0;
@@ -56,9 +56,9 @@ async function mbFetch(id: string) {
 async function dcSearchLabels(q: string, token: string) {
   const r = await fetch(`https://api.discogs.com/database/search?type=label&q=${encodeURIComponent(q)}&per_page=8&token=${token}`,
     { headers: { "User-Agent": UA } });
-  if (!r.ok) return [];
+  if (!r.ok) return { items: [], err: `HTTP ${r.status}` };
   const d = await r.json();
-  return (d.results || []).map((l: any) => ({ source: "discogs", id: String(l.id), name: l.title, detail: "Discogs" }));
+  return { items: (d.results || []).map((l: any) => ({ source: "discogs", id: String(l.id), name: l.title, detail: "Discogs" })), err: null as string | null };
 }
 async function dcFetch(id: string, token: string) {
   const out: any[] = [];
@@ -145,10 +145,14 @@ Deno.serve(async (req) => {
       const q = (query || "").trim();
       if (!q) return json({ candidates: [] });
       const [mb, dc] = await Promise.all([
-        mbSearchLabels(q).catch(() => []),
-        DISCOGS ? dcSearchLabels(q, DISCOGS).catch(() => []) : Promise.resolve([]),
+        mbSearchLabels(q).catch((e) => ({ items: [], err: String(e?.message || e) })),
+        DISCOGS ? dcSearchLabels(q, DISCOGS).catch((e) => ({ items: [], err: String(e?.message || e) })) : Promise.resolve({ items: [], err: "no token" }),
       ]);
-      return json({ candidates: [...mb, ...dc], spotify: !!(SP_ID && SP_SECRET) });
+      return json({
+        candidates: [...mb.items, ...dc.items],
+        spotify: !!(SP_ID && SP_SECRET),
+        sources: { musicbrainz: { n: mb.items.length, err: mb.err }, discogs: { n: dc.items.length, err: dc.err }, spotify: !!(SP_ID && SP_SECRET) },
+      });
     }
 
     if (action === "fetch") {

@@ -24,7 +24,7 @@ const DEFAULT_TX_ORDER = ['date','kind','platform','catalog','product','artist',
 const DEFAULT_TX_VISIBLE = ['date','kind','platform','catalog','product','artist','qty','net','eur'];
 /* Account = piu' etichette; DB punta all'etichetta attiva. */
 const DASH_BASE = ['kpi','chart','g_release','g_artist','g_platform','g_type'];
-const DASH_EXTRAS = ['forecast','w_top','recent','merch']; // libreria widget opzionali (nascosti di default)
+const DASH_EXTRAS = ['forecast','w_top','recent','merch','nextrel','nextevt','support','disco']; // libreria widget opzionali (nascosti di default)
 const DASH_DEFAULT_ORDER = [...DASH_BASE, ...DASH_EXTRAS];
 const DASH_FULL = new Set(['kpi','chart','forecast']);
 const PLAN_LIMITS = { free:1, studio:3, agency:Infinity };
@@ -1717,7 +1717,8 @@ function setupDashWidgets(){
       g_artist:$('#table-artist')&&$('#table-artist').closest('.panel'),
       g_platform:$('#table-platform')&&$('#table-platform').closest('.panel'),
       g_type:$('#table-type')&&$('#table-type').closest('.panel'),
-      forecast:$('#w-forecast'), w_top:$('#w-top'), recent:$('#w-recent'), merch:$('#w-merch') };
+      forecast:$('#w-forecast'), w_top:$('#w-top'), recent:$('#w-recent'), merch:$('#w-merch'),
+      nextrel:$('#w-nextrel'), nextevt:$('#w-nextevt'), support:$('#w-support'), disco:$('#w-disco') };
     const grid2=view.querySelector('.grid-2');
     // posiziona il contenitore prima delle card dati (dove c'erano i KPI)
     map.kpi.parentNode.insertBefore(cont, map.kpi);
@@ -1757,7 +1758,8 @@ function renderHiddenTray(){
   const tray=$('#dash-tray'); if(!tray) return; const l=dashLayout();
   const names={ ai:tt('ai.title'), kpi:'KPI', chart:tt('dash.chart.title'),
     g_release:tt('dash.byrelease'), g_artist:tt('dash.byartist'), g_platform:tt('dash.byplatform'), g_type:tt('dash.bytype'),
-    forecast:tt('dash.forecast'), w_top:tt('dash.top_artists'), recent:tt('dash.recent'), merch:tt('mch.title') };
+    forecast:tt('dash.forecast'), w_top:tt('dash.top_artists'), recent:tt('dash.recent'), merch:tt('mch.title'),
+    nextrel:tt('dash.next_rel'), nextevt:tt('dash.next_evt'), support:tt('dash.sup_top'), disco:tt('dash.disco') };
   if(!l.hidden.length){ tray.innerHTML=`<span class="muted small">${tt('dash.none_hidden')}</span>`; return; }
   tray.innerHTML=l.hidden.map(id=>`<button class="dw-restore" data-id="${id}">+ ${esc(names[id]||id)}</button>`).join('');
   tray.querySelectorAll('.dw-restore').forEach(b=>b.onclick=()=>{ const l=dashLayout(); l.hidden=l.hidden.filter(x=>x!==b.dataset.id); save(); applyDashLayout(); });
@@ -1839,6 +1841,51 @@ function renderExtraWidgets(txs){
         <span class="top-bar"><i style="width:${Math.round((+m.sold||0)/max*100)}%"></i></span>
         <span class="top-val">${m.sold||0}</span></div>`).join('')
       : `<p class="muted">${tt('mch.none_sold')}</p>`;
+  }
+  const todayStr=isoD(new Date());
+  // Prossime uscite (da Pianificazione)
+  const nrb=$('#nextrel-body');
+  if(nrb){
+    const up=(DB.planning||[]).filter(p=>p.date && p.date>=todayStr && p.status!=='done')
+      .sort((a,b)=>a.date.localeCompare(b.date)).slice(0,6);
+    nrb.innerHTML = up.length ? up.map(p=>`<div class="wrow" data-goto="planning">
+        <span class="wrow-date">${esc(fmtDate(p.date))}</span>
+        <span class="wrow-main"><b>${esc(p.title)}</b>${p.artist?`<span class="muted small"> · ${esc(p.artist)}</span>`:''}</span>
+        <span class="wrow-tag">${tt(PLN_KIND[p.kind]||'pln.k_release')}</span></div>`).join('')
+      : `<p class="muted">${tt('dash.next_rel_none')}</p>`;
+  }
+  // Prossimi eventi
+  const neb=$('#nextevt-body');
+  if(neb){
+    const up=(DB.events||[]).filter(e=>e.date && e.date>=todayStr)
+      .sort((a,b)=>(a.date+(a.time||'')).localeCompare(b.date+(b.time||''))).slice(0,6);
+    neb.innerHTML = up.length ? up.map(e=>`<div class="wrow" data-goto="events">
+        <span class="wrow-date">${esc(fmtDate(e.date))}${e.time?(' · '+esc(e.time)):''}</span>
+        <span class="wrow-main"><b>${esc(e.title)}</b>${e.city?`<span class="muted small"> · ${esc(e.city)}</span>`:''}</span>
+        <span class="wrow-tag">${tt(EVT_KIND[e.kind]||'evt.k_other')}</span></div>`).join('')
+      : `<p class="muted">${tt('dash.next_evt_none')}</p>`;
+  }
+  // Support nel mondo (top paesi)
+  const sb=$('#support-body');
+  if(sb){
+    const byC={}; (DB.supports||[]).forEach(s=>{ const c=(s.country||'—').trim()||'—'; byC[c]=(byC[c]||0)+1; });
+    const rows=Object.entries(byC).sort((a,b)=>b[1]-a[1]).slice(0,6);
+    const max=Math.max(1,...rows.map(r=>r[1]));
+    sb.innerHTML = rows.length ? rows.map(([c,n])=>`<div class="top-row"><span class="top-name">${esc(c)}</span>
+        <span class="top-bar"><i style="width:${Math.round(n/max*100)}%"></i></span><span class="top-val">${n}</span></div>`).join('')
+      : `<p class="muted">${tt('dash.sup_none')}</p>`;
+  }
+  // Discografia
+  const db=$('#disco-body'), dc=$('#disco-count');
+  if(db){
+    const rels=releases();
+    if(dc) dc.textContent = rels.length+' '+tt('dash.disco_count');
+    const last=rels.slice().sort((a,b)=>String(b.year||'').localeCompare(String(a.year||''))||String(b.catalog||'').localeCompare(String(a.catalog||''))).slice(0,6);
+    db.innerHTML = last.length ? last.map(r=>`<div class="wrow" data-goto="releases">
+        <span class="wrow-date">${esc(r.catalog||'')}</span>
+        <span class="wrow-main"><b>${esc(r.title||'—')}</b></span>
+        <span class="wrow-tag">${esc(r.year||'')}</span></div>`).join('')
+      : `<p class="muted">${tt('dash.disco_none')}</p>`;
   }
   // Cashflow previsionale: proiezione a 3 mesi sul netto medio dei mesi recenti
   const fb=$('#forecast-body');

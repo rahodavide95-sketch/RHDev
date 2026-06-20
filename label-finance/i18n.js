@@ -34,6 +34,10 @@
       'dash.customize':'⚙ Personalizza','dash.columns':'Colonne','dash.reset':'↺ Ripristina','dash.done':'✓ Fatto','dash.hidden':'Nascosti','dash.none_hidden':'Nessun elemento nascosto',
       'dash.forecast':'Cashflow previsionale','dash.forecast_sub':'Proiezione a 3 mesi sul trend recente','dash.forecast_avg':'Media mensile netta','dash.forecast_note':'Stima indicativa basata sulla media degli ultimi mesi. Non è una previsione garantita.','dash.forecast_empty':'Servono almeno alcuni mesi di dati per la proiezione.',
       'dash.top_artists':'Top artisti','dash.recent':'Ultimi movimenti',
+      'dash.next_rel':'Prossime uscite','dash.next_rel_sub':'Da Pianificazione','dash.next_rel_none':'Nessuna uscita in programma.',
+      'dash.next_evt':'Prossimi eventi','dash.next_evt_sub':'Showcase, live, radio…','dash.next_evt_none':'Nessun evento in programma.',
+      'dash.sup_top':'Support nel mondo','dash.sup_top_sub':'Top paesi per support','dash.sup_none':'Nessun support registrato.',
+      'dash.disco':'Discografia','dash.disco_count':'release in catalogo','dash.disco_none':'Nessuna release in catalogo.',
       // Artisti
       'art.title':'Artisti','art.subtitle':'La rubrica del tuo roster: contatti, foto e dati per contratti e pagamenti.',
       'art.search':'Cerca artista…','art.new':'Nuovo artista','art.edit':'Modifica artista','art.photo':'Foto','art.upload':'Carica foto',
@@ -206,6 +210,10 @@
       'dash.customize':'⚙ Customize','dash.columns':'Columns','dash.reset':'↺ Reset','dash.done':'✓ Done','dash.hidden':'Hidden','dash.none_hidden':'Nothing hidden',
       'dash.forecast':'Projected cashflow','dash.forecast_sub':'3-month projection on the recent trend','dash.forecast_avg':'Average monthly net','dash.forecast_note':'Indicative estimate based on the average of recent months. Not a guaranteed forecast.','dash.forecast_empty':'A few months of data are needed for the projection.',
       'dash.top_artists':'Top artists','dash.recent':'Recent movements',
+      'dash.next_rel':'Upcoming releases','dash.next_rel_sub':'From Planning','dash.next_rel_none':'No releases scheduled.',
+      'dash.next_evt':'Upcoming events','dash.next_evt_sub':'Showcase, live, radio…','dash.next_evt_none':'No events scheduled.',
+      'dash.sup_top':'Support worldwide','dash.sup_top_sub':'Top countries by support','dash.sup_none':'No support logged yet.',
+      'dash.disco':'Discography','dash.disco_count':'releases in catalog','dash.disco_none':'No releases in catalog.',
       // Artists
       'art.title':'Artists','art.subtitle':'Your roster address book: contacts, photos and data for contracts and payments.',
       'art.search':'Search artist…','art.new':'New artist','art.edit':'Edit artist','art.photo':'Photo','art.upload':'Upload photo',

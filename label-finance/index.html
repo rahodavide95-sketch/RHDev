@@ -21,7 +21,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=55">
+  <link rel="stylesheet" href="style.css?v=56">
 </head>
 <body class="gated">
 
@@ -346,6 +346,26 @@
         <div class="panel-head"><h2 data-i18n="mch.top_title">Merch più venduto</h2>
           <span class="muted small" data-i18n="mch.top_sub">Classifica per unità vendute</span></div>
         <div id="merch-body" class="top-list"></div>
+      </div>
+      <div class="panel" id="w-nextrel">
+        <div class="panel-head"><h2 data-i18n="dash.next_rel">Prossime uscite</h2>
+          <span class="muted small" data-i18n="dash.next_rel_sub">Da Pianificazione</span></div>
+        <div id="nextrel-body" class="wlist"></div>
+      </div>
+      <div class="panel" id="w-nextevt">
+        <div class="panel-head"><h2 data-i18n="dash.next_evt">Prossimi eventi</h2>
+          <span class="muted small" data-i18n="dash.next_evt_sub">Showcase, live, radio…</span></div>
+        <div id="nextevt-body" class="wlist"></div>
+      </div>
+      <div class="panel" id="w-support">
+        <div class="panel-head"><h2 data-i18n="dash.sup_top">Support nel mondo</h2>
+          <span class="muted small" data-i18n="dash.sup_top_sub">Top paesi per support</span></div>
+        <div id="support-body" class="top-list"></div>
+      </div>
+      <div class="panel" id="w-disco">
+        <div class="panel-head"><h2 data-i18n="dash.disco">Discografia</h2>
+          <span class="muted small" id="disco-count"></span></div>
+        <div id="disco-body" class="wlist"></div>
       </div>
 
       <div class="empty-hint" id="dash-empty" hidden>
@@ -1673,11 +1693,11 @@
   <!-- Area di stampa per lo statement royalty (visibile solo in stampa) -->
   <div id="print-area" aria-hidden="true"></div>
 
-  <script src="html2pdf.bundle.min.js?v=55"></script>
-  <script src="app.js?v=55"></script>
-  <script src="config.js?v=55"></script>
-  <script src="i18n.js?v=55"></script>
+  <script src="html2pdf.bundle.min.js?v=56"></script>
+  <script src="app.js?v=56"></script>
+  <script src="config.js?v=56"></script>
+  <script src="i18n.js?v=56"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="sync.js?v=55"></script>
+  <script src="sync.js?v=56"></script>
 </body>
 </html>

@@ -59,6 +59,7 @@ function ensureLabelShape(l){
   l.txOrder=l.txOrder||DEFAULT_TX_ORDER.slice();
   l.txHidden=l.txHidden||DEFAULT_TX_ORDER.filter(c=>!DEFAULT_TX_VISIBLE.includes(c));
   l.artists=l.artists||[]; l.tasks=l.tasks||[]; l.contracts=l.contracts||[]; l.merch=l.merch||[];
+  l.planning=l.planning||[]; l.events=l.events||[]; l.supports=l.supports||[];
   l.name=l.name||(l.profile&&l.profile.label)||'Etichetta';
   return l;
 }
@@ -95,7 +96,7 @@ window.LF = {
     if(typeof updateIdentity==='function') updateIdentity(); if(typeof rebuildAccountMenu==='function') rebuildAccountMenu(); },
   goto(v){ if(typeof goto==='function') goto(v); },
 };
-function reloadViews(){ renderDashboard(); renderTx(); renderReleases(); renderRoyalties(); renderArtists(); renderContracts(); renderTasks(); renderMerch(); renderOffers(); renderSettings(); }
+function reloadViews(){ renderDashboard(); renderTx(); renderReleases(); renderPlanning(); renderEvents(); renderSupports(); renderRoyalties(); renderArtists(); renderContracts(); renderTasks(); renderMerch(); renderOffers(); renderSettings(); }
 // integra eventuali colonne nuove non ancora presenti nell'ordine salvato
 function ensureCols(){
   DB.txOrder = DB.txOrder || DEFAULT_TX_ORDER.slice();
@@ -228,7 +229,7 @@ function autoMap(headers){
 /* ============================================================================
    NAVIGAZIONE
    ============================================================================ */
-const VIEW_TITLES={dashboard:'Dashboard',transactions:'Movimenti',releases:'Release',royalties:'Royalty',artists:'Artisti',contracts:'Contratti',tasks:'Task',merch:'Merch',import:'Importa CSV',settings:'Impostazioni',about:'Chi siamo',offers:'Offerte & Piani',faq:'Aiuto & FAQ'};
+const VIEW_TITLES={dashboard:'Dashboard',transactions:'Movimenti',releases:'Discografia',planning:'Pianificazione',events:'Eventi',supports:'Support DJ',royalties:'Royalty',artists:'Artisti',contracts:'Contratti',tasks:'Task',merch:'Merch',import:'Importa CSV',settings:'Impostazioni',about:'Chi siamo',offers:'Offerte & Piani',faq:'Aiuto & FAQ'};
 function goto(view){
   $$('.nav-item').forEach(b=>b.classList.toggle('is-active',b.dataset.view===view));
   $$('.view').forEach(v=>v.classList.toggle('is-active',v.id==='view-'+view));
@@ -236,6 +237,9 @@ function goto(view){
   if(view==='dashboard') renderDashboard();
   if(view==='transactions') renderTx();
   if(view==='releases') renderReleases();
+  if(view==='planning') renderPlanning();
+  if(view==='events') renderEvents();
+  if(view==='supports') renderSupports();
   if(view==='royalties') renderRoyalties();
   if(view==='artists') renderArtists();
   if(view==='contracts'){ renderContracts(); refreshContractStatuses(); }
@@ -610,7 +614,9 @@ let viewMode={};
 try{ viewMode=JSON.parse(localStorage.getItem(VIEWMODE_KEY))||{}; }catch(e){}
 function getVM(sec, def){ return viewMode[sec]||def; }
 function setVM(sec, m){ viewMode[sec]=m; try{ localStorage.setItem(VIEWMODE_KEY, JSON.stringify(viewMode)); }catch(e){}
-  if(sec==='artists') renderArtists(); else if(sec==='releases') renderReleases(); else if(sec==='royalties') renderRoyalties();
+  const R={artists:renderArtists, releases:renderReleases, royalties:renderRoyalties, merch:renderMerch,
+    planning:renderPlanning, events:renderEvents, supports:renderSupports};
+  if(R[sec]) R[sec]();
   syncVMButtons(); }
 function syncVMButtons(){ $$('.vm-toggle').forEach(t=>{ const m=getVM(t.dataset.vmSec, t.dataset.vmDef||'cards');
   t.querySelectorAll('.vm-btn').forEach(b=>b.classList.toggle('is-active', b.dataset.vm===m)); }); }
@@ -2521,6 +2527,216 @@ function deleteMerch(id){ const m=merchById(id); if(!m) return;
   if(!confirm(tt('mch.del_confirm').replace('{name}',m.name))) return;
   DB.merch=DB.merch.filter(x=>x.id!==id); save(); renderMerch(); }
 
+/* ============================================================================
+   PIANIFICAZIONE · EVENTI · SUPPORT DJ  (liste ordinabili + calendario)
+   ============================================================================ */
+function calLang(){ return (window.LFI18N&&window.LFI18N.lang==='en')?'en-US':'it-IT'; }
+function ymdStr(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function sortBy(arr, st, numKeys){
+  const k=st.col, d=st.dir, isNum=(numKeys||[]).includes(k);
+  return arr.slice().sort((a,b)=>{
+    if(isNum) return ((+a[k]||0)-(+b[k]||0))*d;
+    return String(a[k]||'').toLowerCase().localeCompare(String(b[k]||'').toLowerCase())*d;
+  });
+}
+function dbHead(cols, st){
+  const arrow=c=>st.col===c?(st.dir>0?' ▲':' ▼'):'';
+  return `<div class="dbl-row dbl-head">${cols.map(c=>`<span class="${c.cls||''} dbl-sort" data-sort="${c.key}">${esc(c.label)}${arrow(c.key)}</span>`).join('')}<span></span></div>`;
+}
+function dbRows(items, cols, actions){
+  return items.map(it=>`<div class="dbl-row" data-id="${it.id}">${cols.map(c=>`<span class="${c.cls||''}">${c.cell(it)||'—'}</span>`).join('')}<span class="dbl-act">${actions(it)}</span></div>`).join('');
+}
+const rowActs=(pfx,id)=>`<button class="icon-btn-sm" data-${pfx}-edit="${id}" title="${tt('common.edit')}">✎</button><button class="icon-btn-sm" data-${pfx}-del="${id}" title="${tt('common.delete')}">🗑</button>`;
+const ctag=(label,k)=>`<span class="ctag ctag-${k}">${esc(label)}</span>`;
+const fmtDate=ds=>{ if(!ds) return ''; try{ return new Date(ds+'T00:00:00').toLocaleDateString(calLang(),{day:'2-digit',month:'short',year:'numeric'}); }catch(e){ return ds; } };
+
+/* ---- Calendario riutilizzabile ---- */
+let calState={planning:new Date(), events:new Date()};
+function renderCalendar(sec, items, chip, cont){
+  const cur=calState[sec]; const y=cur.getFullYear(), m=cur.getMonth();
+  const dows=(window.LFI18N&&window.LFI18N.lang==='en')?['Mon','Tue','Wed','Thu','Fri','Sat','Sun']:['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
+  const startDow=(new Date(y,m,1).getDay()+6)%7, days=new Date(y,m+1,0).getDate(), today=ymdStr(new Date());
+  let cells='';
+  for(let i=0;i<startDow;i++) cells+='<div class="cal-cell cal-out"></div>';
+  for(let d=1;d<=days;d++){
+    const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const its=items.filter(x=>x.date===ds);
+    cells+=`<div class="cal-cell${ds===today?' cal-today':''}" data-calday="${ds}"><span class="cal-d">${d}</span><div class="cal-items">${its.map(chip).join('')}</div></div>`;
+  }
+  const label=cur.toLocaleDateString(calLang(),{month:'long',year:'numeric'});
+  cont.innerHTML=`<div class="cal-head">
+      <button class="cal-nav" data-calnav="-1" aria-label="prev">‹</button>
+      <span class="cal-title">${label.charAt(0).toUpperCase()+label.slice(1)}</span>
+      <button class="cal-nav" data-calnav="1" aria-label="next">›</button>
+      <button class="cal-nav cal-today-btn" data-calnav="0">${tt('cal.today')}</button>
+    </div>
+    <div class="cal">${dows.map(w=>`<div class="cal-dow">${w}</div>`).join('')}${cells}</div>`;
+}
+function calMove(sec, delta){ if(delta===0) calState[sec]=new Date(); else calState[sec]=new Date(calState[sec].getFullYear(), calState[sec].getMonth()+delta, 1); }
+function clearPager(anchor){ const m=anchor&&anchor.nextElementSibling; if(m&&m.classList&&m.classList.contains('pager-mount')) m.innerHTML=''; }
+
+/* ---- Pianificazione ---- */
+let plnSort={col:'date',dir:1}, editingPlnId=null;
+const PLN_KIND={release:'pln.k_release',premiere:'pln.k_premiere'};
+const PLN_STATUS={idea:'pln.s_idea',planned:'pln.s_planned',confirmed:'pln.s_confirmed',done:'pln.s_done'};
+const PLN_STK={idea:'mut',planned:'warn',confirmed:'info',done:'ok'};
+function plnById(id){ return (DB.planning||[]).find(x=>x.id===id); }
+function plnChip(p){ return `<span class="cal-chip cal-k-${p.kind}" data-pln="${p.id}" title="${esc(p.title)}">${esc(p.title)}</span>`; }
+function renderPlanning(){
+  const listC=$('#planning-list'), calC=$('#planning-cal'); if(!listC) return;
+  const all=DB.planning||[]; $('#planning-empty').hidden=all.length>0;
+  const mode=getVM('planning','list');
+  listC.hidden=(mode==='cal'); calC.hidden=(mode!=='cal');
+  if(mode==='cal'){ clearPager(listC); renderCalendar('planning', all, plnChip, calC); syncVMButtons(); return; }
+  const cols=[
+    {key:'date',label:tt('pln.f_date'),cell:p=>fmtDate(p.date)},
+    {key:'kind',label:tt('pln.f_kind'),cell:p=>tt(PLN_KIND[p.kind]||'pln.k_release')},
+    {key:'title',label:tt('pln.f_title').replace(' *',''),cell:p=>`<b>${esc(p.title)}</b>`,cls:'dbl-strong'},
+    {key:'artist',label:tt('pln.f_artist'),cell:p=>esc(p.artist),cls:'muted small'},
+    {key:'status',label:tt('pln.f_status'),cell:p=>ctag(tt(PLN_STATUS[p.status]||'pln.s_idea'),PLN_STK[p.status]||'mut')}];
+  const sorted=sortBy(all,plnSort);
+  const info=paginate(sorted,'planning');
+  listC.className='dbl dbl--planning';
+  listC.innerHTML=dbHead(cols,plnSort)+dbRows(info.slice,cols,p=>rowActs('pln',p.id));
+  mountPager(listC,'planning',info); syncVMButtons();
+}
+function openPlnForm(id){ editingPlnId=id||null; const p=id?plnById(id):null;
+  $('#pln-form-title').textContent = p?tt('common.edit'):tt('pln.new');
+  $('#pln-title').value=p?p.title||'':''; $('#pln-kind').value=p?p.kind||'release':'release';
+  $('#pln-artist').value=p?p.artist||'':''; $('#pln-date').value=p?p.date||'':( $('#pln-date').value||'');
+  $('#pln-status').value=p?p.status||'idea':'idea'; $('#pln-platform').value=p?p.platform||'':''; $('#pln-note').value=p?p.note||'':'';
+  $('#pln-form').hidden=false; $('#pln-form').scrollIntoView({behavior:'smooth',block:'start'}); }
+function savePlanning(){
+  const title=$('#pln-title').value.trim(); if(!title){ toast(tt('pln.need_title')); return; }
+  const data={ title, kind:$('#pln-kind').value, artist:$('#pln-artist').value.trim(), date:$('#pln-date').value||'',
+    status:$('#pln-status').value, platform:$('#pln-platform').value.trim(), note:$('#pln-note').value.trim() };
+  if(editingPlnId){ const p=plnById(editingPlnId); if(p) Object.assign(p,data); } else DB.planning.push(Object.assign({id:newId()},data));
+  save(); $('#pln-form').hidden=true; editingPlnId=null; renderPlanning(); toast(tt('common.saved')); }
+function deletePlanning(id){ const p=plnById(id); if(!p) return; if(!confirm(tt('common.del_q'))) return;
+  DB.planning=DB.planning.filter(x=>x.id!==id); save(); renderPlanning(); }
+
+/* ---- Eventi ---- */
+let evtSort={col:'date',dir:1}, editingEvtId=null;
+const EVT_KIND={showcase:'evt.k_showcase',radio:'evt.k_radio',live:'evt.k_live',club:'evt.k_club',festival:'evt.k_festival',other:'evt.k_other'};
+function evtById(id){ return (DB.events||[]).find(x=>x.id===id); }
+function evtChip(e){ return `<span class="cal-chip cal-k-${e.kind}" data-evt="${e.id}" title="${esc(e.title)}">${e.time?('<b>'+esc(e.time)+'</b> '):''}${esc(e.title)}</span>`; }
+function renderEvents(){
+  const listC=$('#events-list'), calC=$('#events-cal'); if(!listC) return;
+  const all=DB.events||[]; $('#events-empty').hidden=all.length>0;
+  const mode=getVM('events','list');
+  listC.hidden=(mode==='cal'); calC.hidden=(mode!=='cal');
+  if(mode==='cal'){ clearPager(listC); renderCalendar('events', all, evtChip, calC); syncVMButtons(); return; }
+  const cols=[
+    {key:'date',label:tt('evt.f_date'),cell:e=>fmtDate(e.date)+(e.time?(' · '+esc(e.time)):'')},
+    {key:'kind',label:tt('evt.f_kind'),cell:e=>tt(EVT_KIND[e.kind]||'evt.k_other')},
+    {key:'title',label:tt('evt.f_title').replace(' *',''),cell:e=>`<b>${esc(e.title)}</b>`,cls:'dbl-strong'},
+    {key:'venue',label:tt('evt.f_venue'),cell:e=>esc(e.venue),cls:'muted small'},
+    {key:'city',label:tt('evt.f_city'),cell:e=>esc(e.city)},
+    {key:'country',label:tt('evt.f_country'),cell:e=>esc(e.country),cls:'muted small'}];
+  const info=paginate(sortBy(all,evtSort),'events');
+  listC.className='dbl dbl--events';
+  listC.innerHTML=dbHead(cols,evtSort)+dbRows(info.slice,cols,e=>rowActs('evt',e.id));
+  mountPager(listC,'events',info); syncVMButtons();
+}
+function openEvtForm(id){ editingEvtId=id||null; const e=id?evtById(id):null;
+  $('#evt-form-title').textContent = e?tt('common.edit'):tt('evt.new');
+  $('#evt-title').value=e?e.title||'':''; $('#evt-kind').value=e?e.kind||'showcase':'showcase';
+  $('#evt-date').value=e?e.date||'':( $('#evt-date').value||''); $('#evt-time').value=e?e.time||'':'';
+  $('#evt-venue').value=e?e.venue||'':''; $('#evt-city').value=e?e.city||'':''; $('#evt-country').value=e?e.country||'':''; $('#evt-note').value=e?e.note||'':'';
+  $('#evt-form').hidden=false; $('#evt-form').scrollIntoView({behavior:'smooth',block:'start'}); }
+function saveEvent(){
+  const title=$('#evt-title').value.trim(); if(!title){ toast(tt('evt.need_title')); return; }
+  const data={ title, kind:$('#evt-kind').value, date:$('#evt-date').value||'', time:$('#evt-time').value||'',
+    venue:$('#evt-venue').value.trim(), city:$('#evt-city').value.trim(), country:$('#evt-country').value.trim(), note:$('#evt-note').value.trim() };
+  if(editingEvtId){ const e=evtById(editingEvtId); if(e) Object.assign(e,data); } else DB.events.push(Object.assign({id:newId()},data));
+  save(); $('#evt-form').hidden=true; editingEvtId=null; renderEvents(); toast(tt('common.saved')); }
+function deleteEvent(id){ const e=evtById(id); if(!e) return; if(!confirm(tt('common.del_q'))) return;
+  DB.events=DB.events.filter(x=>x.id!==id); save(); renderEvents(); }
+
+/* ---- Support DJ ---- */
+let supSort={col:'date',dir:-1}, editingSupId=null;
+function supById(id){ return (DB.supports||[]).find(x=>x.id===id); }
+function renderSupports(){
+  const listC=$('#supports-list'); if(!listC) return;
+  const q=($('#sup-search')&&$('#sup-search').value||'').toLowerCase().trim();
+  const all=(DB.supports||[]).filter(s=> !q || (s.dj+' '+(s.track||'')+' '+(s.venue||'')+' '+(s.city||'')+' '+(s.country||'')).toLowerCase().includes(q));
+  $('#supports-empty').hidden=(DB.supports||[]).length>0;
+  const cols=[
+    {key:'date',label:tt('sup.f_date'),cell:s=>fmtDate(s.date)},
+    {key:'dj',label:tt('sup.f_dj').replace(' *',''),cell:s=>`<b>${esc(s.dj)}</b>`,cls:'dbl-strong'},
+    {key:'track',label:tt('sup.f_track'),cell:s=>esc(s.track),cls:'muted small'},
+    {key:'venue',label:tt('sup.f_venue'),cell:s=>esc(s.venue)},
+    {key:'city',label:tt('sup.f_city'),cell:s=>esc(s.city)},
+    {key:'country',label:tt('sup.f_country'),cell:s=>esc(s.country),cls:'muted small'}];
+  const info=paginate(sortBy(all,supSort),'supports');
+  listC.className='dbl dbl--supports';
+  listC.innerHTML=dbHead(cols,supSort)+dbRows(info.slice,cols,s=>rowActs('sup',s.id));
+  mountPager(listC,'supports',info);
+}
+function openSupForm(id){ editingSupId=id||null; const s=id?supById(id):null;
+  $('#sup-form-title').textContent = s?tt('common.edit'):tt('sup.new');
+  $('#sup-dj').value=s?s.dj||'':''; $('#sup-track').value=s?s.track||'':''; $('#sup-venue').value=s?s.venue||'':'';
+  $('#sup-city').value=s?s.city||'':''; $('#sup-country').value=s?s.country||'':''; $('#sup-date').value=s?s.date||'':''; $('#sup-note').value=s?s.note||'':'';
+  $('#sup-form').hidden=false; $('#sup-form').scrollIntoView({behavior:'smooth',block:'start'}); }
+function saveSupport(){
+  const dj=$('#sup-dj').value.trim(); if(!dj){ toast(tt('sup.need_dj')); return; }
+  const data={ dj, track:$('#sup-track').value.trim(), venue:$('#sup-venue').value.trim(), city:$('#sup-city').value.trim(),
+    country:$('#sup-country').value.trim(), date:$('#sup-date').value||'', note:$('#sup-note').value.trim() };
+  if(editingSupId){ const s=supById(editingSupId); if(s) Object.assign(s,data); } else DB.supports.push(Object.assign({id:newId()},data));
+  save(); $('#sup-form').hidden=true; editingSupId=null; renderSupports(); toast(tt('common.saved')); }
+function deleteSupport(id){ const s=supById(id); if(!s) return; if(!confirm(tt('common.del_q'))) return;
+  DB.supports=DB.supports.filter(x=>x.id!==id); save(); renderSupports(); }
+
+/* ---- Esportazioni ---- */
+registerExport('planning', ()=>({ title:tt('pln.title'), headers:[tt('pln.f_date'),tt('pln.f_kind'),tt('pln.f_title').replace(' *',''),tt('pln.f_artist'),tt('pln.f_status'),tt('pln.f_platform'),tt('pln.f_note')],
+  rows:sortBy(DB.planning||[],plnSort).map(p=>[p.date||'',tt(PLN_KIND[p.kind]||''),p.title||'',p.artist||'',tt(PLN_STATUS[p.status]||''),p.platform||'',p.note||'']) }));
+registerExport('events', ()=>({ title:tt('evt.title'), headers:[tt('evt.f_date'),tt('evt.f_time'),tt('evt.f_kind'),tt('evt.f_title').replace(' *',''),tt('evt.f_venue'),tt('evt.f_city'),tt('evt.f_country'),tt('evt.f_note')],
+  rows:sortBy(DB.events||[],evtSort).map(e=>[e.date||'',e.time||'',tt(EVT_KIND[e.kind]||''),e.title||'',e.venue||'',e.city||'',e.country||'',e.note||'']) }));
+registerExport('supports', ()=>({ title:tt('sup.title'), headers:[tt('sup.f_date'),tt('sup.f_dj').replace(' *',''),tt('sup.f_track'),tt('sup.f_venue'),tt('sup.f_city'),tt('sup.f_country'),tt('sup.f_note')],
+  rows:sortBy(DB.supports||[],supSort).map(s=>[s.date||'',s.dj||'',s.track||'',s.venue||'',s.city||'',s.country||'',s.note||'']) }));
+
+/* ---- Wiring sezioni agenda ---- */
+function wireAgenda(){
+  // Pianificazione
+  $('#pln-new')?.addEventListener('click',()=>openPlnForm());
+  $('#pln-cancel')?.addEventListener('click',()=>{ $('#pln-form').hidden=true; editingPlnId=null; });
+  $('#pln-save')?.addEventListener('click',savePlanning);
+  $('#planning-list')?.addEventListener('click',e=>{
+    const so=e.target.closest('[data-sort]'); if(so){ const c=so.dataset.sort; if(plnSort.col===c) plnSort.dir*=-1; else plnSort={col:c,dir:1}; renderPlanning(); return; }
+    const ed=e.target.closest('[data-pln-edit]'); if(ed) return openPlnForm(ed.dataset.plnEdit);
+    const dl=e.target.closest('[data-pln-del]'); if(dl) return deletePlanning(dl.dataset.plnDel);
+  });
+  $('#planning-cal')?.addEventListener('click',e=>{
+    const nv=e.target.closest('[data-calnav]'); if(nv){ calMove('planning',+nv.dataset.calnav); renderPlanning(); return; }
+    const ch=e.target.closest('[data-pln]'); if(ch){ openPlnForm(ch.dataset.pln); return; }
+    const day=e.target.closest('[data-calday]'); if(day){ openPlnForm(); $('#pln-date').value=day.dataset.calday; }
+  });
+  // Eventi
+  $('#evt-new')?.addEventListener('click',()=>openEvtForm());
+  $('#evt-cancel')?.addEventListener('click',()=>{ $('#evt-form').hidden=true; editingEvtId=null; });
+  $('#evt-save')?.addEventListener('click',saveEvent);
+  $('#events-list')?.addEventListener('click',e=>{
+    const so=e.target.closest('[data-sort]'); if(so){ const c=so.dataset.sort; if(evtSort.col===c) evtSort.dir*=-1; else evtSort={col:c,dir:1}; renderEvents(); return; }
+    const ed=e.target.closest('[data-evt-edit]'); if(ed) return openEvtForm(ed.dataset.evtEdit);
+    const dl=e.target.closest('[data-evt-del]'); if(dl) return deleteEvent(dl.dataset.evtDel);
+  });
+  $('#events-cal')?.addEventListener('click',e=>{
+    const nv=e.target.closest('[data-calnav]'); if(nv){ calMove('events',+nv.dataset.calnav); renderEvents(); return; }
+    const ch=e.target.closest('[data-evt]'); if(ch){ openEvtForm(ch.dataset.evt); return; }
+    const day=e.target.closest('[data-calday]'); if(day){ openEvtForm(); $('#evt-date').value=day.dataset.calday; }
+  });
+  // Support DJ
+  $('#sup-new')?.addEventListener('click',()=>openSupForm());
+  $('#sup-cancel')?.addEventListener('click',()=>{ $('#sup-form').hidden=true; editingSupId=null; });
+  $('#sup-save')?.addEventListener('click',saveSupport);
+  $('#sup-search')?.addEventListener('input',renderSupports);
+  $('#supports-list')?.addEventListener('click',e=>{
+    const so=e.target.closest('[data-sort]'); if(so){ const c=so.dataset.sort; if(supSort.col===c) supSort.dir*=-1; else supSort={col:c,dir:1}; renderSupports(); return; }
+    const ed=e.target.closest('[data-sup-edit]'); if(ed) return openSupForm(ed.dataset.supEdit);
+    const dl=e.target.closest('[data-sup-del]'); if(dl) return deleteSupport(dl.dataset.supDel);
+  });
+}
+
 /* ---------- Wiring (una sola volta) ---------- */
 function initFeatures(){
   // Artisti
@@ -2619,6 +2835,7 @@ renderOffers();
 rebuildAccountMenu();
 initFAQ();
 initFeatures();
+wireAgenda();
 
 /* ---------- Avvisi task: scheduler + audio sbloccato al primo gesto ---------- */
 document.addEventListener('pointerdown', ()=>lfAudio(), {once:true});

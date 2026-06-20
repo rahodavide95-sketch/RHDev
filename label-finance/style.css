@@ -55,19 +55,23 @@ h2{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:600}
 .sidebar-foot{flex:none}
 .nav-sep{height:1px;background:var(--glass-brd);margin:8px 6px}
 /* gruppi di menu (accordion) */
-.nav-group{display:flex;flex-direction:column;gap:4px}
-.nav-group-h{display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;cursor:pointer;color:var(--muted-2);font:inherit;font-weight:700;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;padding:10px 12px 5px;border-radius:10px}
+.nav>.nav-item{margin:1px 0}
+.nav-group{display:flex;flex-direction:column;gap:3px;margin-top:10px}
+.nav-group:first-of-type{margin-top:6px}
+.nav-group-h{display:flex;align-items:center;gap:9px;width:100%;background:none;border:none;cursor:pointer;color:var(--muted-2);font:inherit;font-weight:700;font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;padding:6px 10px 7px;border-radius:9px}
 .nav-group-h:hover{color:var(--text)}
-.nav-group-h .nav-ico{width:18px;height:18px;opacity:.75}
-.nav-group-h .nav-ico svg{width:17px;height:17px}
-.nav-chev{margin-left:auto;font-size:.7rem;transition:transform .2s}
+.nav-group-h .nav-ico{width:17px;height:17px;opacity:.7}
+.nav-group-h .nav-ico svg{width:16px;height:16px}
+.nav-chev{margin-left:auto;font-size:.66rem;opacity:.8;transition:transform .2s}
 .nav-group.collapsed .nav-chev{transform:rotate(-90deg)}
-.nav-group-items{display:flex;flex-direction:column;gap:4px}
+.nav-group-items{display:flex;flex-direction:column;gap:3px;margin:1px 0 2px 16px;padding-left:10px;border-left:1.5px solid var(--glass-brd)}
 .nav-group.collapsed .nav-group-items{display:none}
-.nav-group-items .nav-item{padding-left:20px}
+.nav-group-items .nav-item{padding:9px 11px}
+.nav>.nav-item[data-view="settings"]{margin-top:12px}
+.nav-collapsed .nav-group{margin-top:6px}
 .nav-collapsed .nav-group-h{display:none}
 .nav-collapsed .nav-group.collapsed .nav-group-items{display:flex}
-.nav-collapsed .nav-group-items .nav-item{padding-left:0}
+.nav-collapsed .nav-group-items{margin-left:0;padding-left:0;border-left:none}
 .nav-item{
   display:flex;align-items:center;gap:11px;
   text-align:left;background:none;border:none;color:var(--muted);font:inherit;font-size:.95rem;

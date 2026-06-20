@@ -253,25 +253,29 @@ body.dash-edit .dw-width{display:inline-flex;gap:2px;position:absolute;top:8px;l
 /* documento */
 .contract-doc{background:#fff;color:#1a1a1a;border:1px solid var(--line);border-radius:12px;padding:0;line-height:1.6;max-width:780px;margin:6px auto 0;overflow:hidden}
 .contract-doc.pdf-exporting{border:none;border-radius:0;box-shadow:none}
-.cd-page{padding:34px 40px}
-.cd-page--copy{border-top:8px solid #f0f0f3}
-.cd-letterhead{display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:1px solid #e3e3e8;padding-bottom:16px;margin-bottom:20px}
+.contract-doc{font-size:13px;color:#222}
+.cd-page{padding:42px 52px}
+.cd-page--copy{border-top:6px solid #f1eefb}
+.cd-letterhead{display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:1.5px solid #d8d4e6;padding-bottom:16px;margin-bottom:26px}
 .cd-lf{display:flex;align-items:center;gap:9px}
 .cd-lf-ico{width:34px;height:34px;border-radius:9px;display:block}
-.cd-lf-name{font-family:'Syne',sans-serif;font-weight:700;font-size:1.05rem;letter-spacing:-.03em;color:#15131f}
+.cd-lf-name{font-family:'Syne',sans-serif;font-weight:800;font-size:1.05rem;letter-spacing:-.03em;color:#15131f}
 .cd-lf-name .lf-fin{color:#7c3aed}
-.cd-label-logo{max-width:180px;max-height:60px;display:flex;align-items:center;justify-content:flex-end}
-.cd-label-logo img{max-width:180px;max-height:60px;object-fit:contain}
-.cd-label-logo--text{font-family:'Syne',sans-serif;font-weight:700;font-size:1.05rem;color:#15131f;text-align:right}
-.contract-doc h3.cd-title{font-family:'Syne',sans-serif;font-size:1rem;letter-spacing:-.01em;margin:0 0 6px;color:#15131f;text-align:center}
-.cd-intro{color:#555;text-align:center;margin-bottom:10px}
-.contract-doc h4{margin:18px 0 6px;font-size:.98rem;color:#15131f}
-.contract-doc p{margin:0 0 8px;text-align:justify}
-.cd-page--copy p{text-align:left}
-.cd-sign{display:flex;flex-wrap:wrap;gap:28px;margin-top:40px}
+.cd-label-logo{max-width:180px;max-height:58px;display:flex;align-items:center;justify-content:flex-end}
+.cd-label-logo img{max-width:180px;max-height:58px;object-fit:contain}
+.cd-label-logo--text{font-family:'Syne',sans-serif;font-weight:800;font-size:1.05rem;color:#15131f;text-align:right}
+.contract-doc h3.cd-title{font-family:'Syne',sans-serif;font-size:1.18rem;font-weight:800;letter-spacing:.005em;line-height:1.25;margin:0 auto 4px;color:#15131f;text-align:center;max-width:90%}
+.contract-doc .cd-title::after{content:"";display:block;width:54px;height:3px;border-radius:2px;background:#7c3aed;margin:10px auto 0}
+.cd-intro{color:#555;text-align:center;font-size:.82rem;margin:0 auto 18px;max-width:80%}
+.contract-doc h4{font-family:'Syne',sans-serif;margin:20px 0 7px;font-size:.98rem;font-weight:800;color:#15131f;letter-spacing:-.01em}
+.contract-doc p{margin:0 0 8px;font-size:.82rem;line-height:1.62;text-align:justify;color:#333}
+.contract-doc b,.contract-doc strong{font-weight:700;color:#141019}
+.cd-page--copy h4{margin-top:18px}
+.cd-page--copy p{text-align:left;font-size:.86rem}
+.cd-sign{display:flex;flex-wrap:wrap;gap:30px;margin-top:46px}
 .cd-sign>div{flex:1;min-width:160px}
-.cd-sign hr{border:none;border-top:1px solid #888;margin-top:34px}
-.cd-sign span{font-size:.82rem;color:#777}
+.cd-sign hr{border:none;border-top:1px solid #999;margin-top:36px}
+.cd-sign span{font-size:.78rem;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.04em}
 .cd-signed{margin-top:26px}
 .cd-sig-img{display:block;max-width:280px;max-height:110px;border-bottom:1px solid #888;padding-bottom:4px}
 .cd-sig-meta{margin-top:8px;font-size:.84rem;color:#555}

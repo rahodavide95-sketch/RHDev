@@ -33,10 +33,12 @@
   .doc b,.doc strong{font-weight:700;color:#141019}
   .cd-page--copy p{text-align:left;font-size:.86rem}
   .intro{color:#555;text-align:center;font-style:italic;font-size:.82rem;max-width:80%;margin:0 auto 18px}
-  .sign-rows{display:flex;gap:28px;margin-top:40px;flex-wrap:wrap}
-  .sign-rows>div{flex:1;min-width:160px}
-  .sign-rows hr{border:none;border-top:1px solid #999;margin-top:34px}
-  .sign-rows span{font-size:.78rem;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.04em}
+  .signs{display:flex;gap:30px;margin-top:40px;flex-wrap:wrap}
+  .sgn{flex:1;min-width:200px}
+  .sgn-role{display:block;font-size:.74rem;font-weight:700;color:#15131f;margin-bottom:8px}
+  .sgn-blank{margin-top:8px}
+  .sgn-blank hr{border:none;border-top:1px solid #999;margin-top:34px}
+  .sgn-blank span{font-size:.74rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.04em}
   .signed-img{max-width:280px;max-height:110px;border-bottom:1px solid #888;padding-bottom:4px;display:block}
   .signed-meta{margin-top:8px;font-size:.84rem;color:#555}
   .panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px;margin-top:16px;box-shadow:0 10px 30px rgba(60,40,120,.08)}
@@ -112,7 +114,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js?v=50"></script>
+  <script src="config.js?v=51"></script>
   <script>
   (function(){
     const $=id=>document.getElementById(id);
@@ -128,9 +130,12 @@
       const lbl=c.logo?`<div class="cd-label-logo"><img src="${c.logo}" alt=""></div>`:`<div class="cd-label-logo--text">${esc(c.label)}</div>`;
       return `<div class="cd-letterhead">${lf}${lbl}</div>`;
     }
+    function sigCell(sig, role){
+      if(sig) return `<div class="sgn"><span class="sgn-role">${role}</span><img class="signed-img" src="${sig.dataUrl}" alt=""><div class="signed-meta"><b>${esc(sig.name||'')}</b><br>${esc(sig.date||'')}${sig.time?(' '+esc(sig.time)):''}${sig.place?(' · '+esc(sig.place)):''}</div></div>`;
+      return `<div class="sgn"><span class="sgn-role">${role}</span><div class="sgn-blank"><span>Date / Signature</span><hr></div></div>`;
+    }
     function signBlock(c){
-      if(c.signed) return `<div style="margin-top:24px"><img class="signed-img" src="${c.signed.dataUrl}" alt=""><div class="signed-meta"><b>${esc(c.signed.name||c.fullName||'')}</b><br>${esc(c.signed.date||'')}${c.signed.time?(' · '+esc(c.signed.time)):''}${c.signed.place?(' · '+esc(c.signed.place)):''}</div></div>`;
-      return `<div class="sign-rows"><div><span>Date</span><hr></div><div><span>Signature</span><hr></div></div>`;
+      return `<div class="signs">${sigCell(c.labelSign,'For the Label — '+esc(c.label||''))}${sigCell(c.artistSign,'For the Artist — '+(esc(c.fullName)||'Artist'))}</div>`;
     }
     function buildDoc(c){
       const L=esc(c.label), a=c.artistPct==null?50:c.artistPct, l=100-a;
@@ -186,7 +191,7 @@
         const { data, error } = await sb.rpc('get_contract_for_signing',{ p_token:token });
         if(error||!data||!data.length){ $('error-text').textContent='Contratto non trovato o link non valido.'; show('error'); return; }
         const row=data[0]; contract=row.data||{}; current={status:row.status, signature:row.signature, reason:row.reject_reason};
-        if(row.signature) contract.signed=row.signature;
+        if(row.signature) contract.artistSign=row.signature;
         $('doc').innerHTML=buildDoc(contract);
         if($('sg-name')) $('sg-name').value=contract.fullName||'';
         show('content');
@@ -229,7 +234,7 @@
         if(error){ alert('Errore: '+error.message); $('sg-confirm').disabled=false; return; }
         if(data==='already'){ finish('Già firmato','Questo contratto risultava già firmato.'); return; }
         if(data==='not_found'){ show('error'); return; }
-        contract.signed=sig; $('doc').innerHTML=buildDoc(contract);
+        contract.artistSign=sig; $('doc').innerHTML=buildDoc(contract);
         finish('Contratto firmato ✓','Grazie! La firma è stata registrata e l\'etichetta riceverà il contratto firmato.');
       }catch(e){ alert('Errore di rete.'); $('sg-confirm').disabled=false; }
     };

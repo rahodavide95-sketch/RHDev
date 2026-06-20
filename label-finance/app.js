@@ -1988,6 +1988,7 @@ function generateContract(){
   currentContract=c;
   $('#contract-doc').innerHTML=buildContractDoc(c);
   $('#con-form').hidden=true; $('#con-preview').hidden=false;
+  updateConSendBtn();
   $('#con-preview').scrollIntoView({behavior:'smooth',block:'start'});
 }
 function numWord(n){ const w={0:'zero',10:'ten',20:'twenty',25:'twenty-five',30:'thirty',33:'thirty-three',40:'forty',
@@ -2000,12 +2001,17 @@ function contractLetterhead(c){
     : `<div class="cd-label-logo cd-label-logo--text">${esc(c.label)}</div>`;
   return `<div class="cd-letterhead">${lf}${lbl}</div>`;
 }
+function cdSigCell(sig, role){
+  if(sig) return `<div class="cd-sgn"><span class="cd-sgn-role">${role}</span>
+    <img class="cd-sig-img" src="${sig.dataUrl}" alt="signature">
+    <div class="cd-sig-meta"><b>${esc(sig.name||'')}</b><br>${esc(sig.date||'')}${sig.time?(' '+esc(sig.time)):''}${sig.place?(' · '+esc(sig.place)):''}</div></div>`;
+  return `<div class="cd-sgn"><span class="cd-sgn-role">${role}</span><div class="cd-sgn-blank"><span>Date / Signature</span><hr></div></div>`;
+}
 function buildContractDoc(c){
   const L=esc(c.label), aPct=c.artistPct, lPct=100-c.artistPct;
-  const sig = c.signed
-    ? `<div class="cd-signed"><img src="${c.signed.dataUrl}" alt="signature" class="cd-sig-img">
-         <div class="cd-sig-meta"><b>${esc(c.signed.name||c.fullName||'')}</b><br>${esc(c.signed.date||'')}${c.signed.time?(' · '+esc(c.signed.time)):''}${c.signed.place?(' · '+esc(c.signed.place)):''}</div></div>`
-    : `<div class="cd-sign"><div><span>Date</span><hr></div><div><span>Signature</span><hr></div></div>`;
+  const sig = `<div class="cd-signs">
+    ${cdSigCell(c.labelSign, 'For the Label — '+L)}
+    ${cdSigCell(c.artistSign||c.signed, 'For the Artist — '+(esc(c.fullName)||'Artist'))}</div>`;
   return `
   <div class="cd-page">
     ${contractLetterhead(c)}
@@ -2061,6 +2067,7 @@ function saveCurrentContract(){ if(!currentContract) return;
   save(); }
 async function sendContract(){
   if(!currentContract) return; const c=currentContract;
+  if(!c.labelSign){ toast(tt('con.need_label_sign')); return; }   // firma etichetta obbligatoria
   if(window.LF_sendForSignature){
     const sendBtn=$('#con-send'); if(sendBtn) sendBtn.disabled=true;
     toast(tt('con.sending'));
@@ -2140,10 +2147,16 @@ async function refreshContractStatuses(){
   let changed=false;
   rows.forEach(r=>{ const c=(DB.contracts||[]).find(x=>x.token===r.token); if(!c) return;
     if(r.status && r.status!==c.status){ c.status=r.status; changed=true; }
-    if(r.signature && !c.signed){ c.signed=r.signature; changed=true; }
+    if(r.signature && !c.artistSign){ c.artistSign=r.signature; changed=true; }   // firma artista
     if(r.reject_reason && c.rejectReason!==r.reject_reason){ c.rejectReason=r.reject_reason; changed=true; }
   });
-  if(changed){ save(); renderContracts(); }
+  if(changed){ save(); renderContracts();
+    // se sto guardando proprio quel contratto, aggiorna l'anteprima senza refresh
+    if(currentContract && $('#con-preview') && !$('#con-preview').hidden){
+      const fresh=(DB.contracts||[]).find(x=>x.id===currentContract.id);
+      if(fresh){ currentContract=fresh; $('#contract-doc').innerHTML=buildContractDoc(fresh); }
+    }
+  }
 }
 function printContract(){
   if(!currentContract) return;
@@ -2170,6 +2183,7 @@ function downloadContractPDF(){
 function openContract(id){ const c=DB.contracts.find(x=>x.id===id); if(!c) return;
   currentContract=c; $('#contract-doc').innerHTML=buildContractDoc(c);
   $('#con-form').hidden=true; $('#con-preview').hidden=false; goto('contracts');
+  updateConSendBtn();
   $('#con-preview').scrollIntoView({behavior:'smooth',block:'start'}); }
 function deleteContract(id){ const c=DB.contracts.find(x=>x.id===id); if(!c) return;
   if(!confirm(tt('con.del_confirm'))) return;
@@ -2182,11 +2196,13 @@ function conStatusPill(s){
 }
 /* tag di stato: verdi se la situazione è risolta, rossi se ancora incompleta */
 function conTags(c){
-  if(c.status==='signed') return [{l:tt('con.tg_signed'),k:'ok'}];
+  // firmato da entrambi = risolto
+  if(c.status==='signed' || (c.labelSign && c.artistSign)) return [{l:tt('con.tg_signed'),k:'ok'}];
   const t=[];
-  if(c.status==='rejected') t.push({l:tt('con.tg_rejected'),k:'bad'});
-  else if(c.status==='sent') t.push({l:tt('con.tg_waiting'),k:'bad'});
-  else t.push({l:tt('con.tg_draft'),k:'bad'});
+  if(c.status==='rejected'){ t.push({l:tt('con.tg_rejected'),k:'bad'}); }
+  else if(!c.labelSign){ t.push({l:tt('con.tg_need_label'),k:'bad'}); }
+  else if(c.status==='sent'){ t.push({l:tt('con.tg_waiting'),k:'bad'}); }
+  else { t.push({l:tt('con.tg_ready'),k:'bad'}); }
   if(!c.email) t.push({l:tt('con.tg_noemail'),k:'bad'});
   return t;
 }
@@ -2213,7 +2229,7 @@ function renderContracts(){
 let sigPad=null;
 function openSignPad(){
   if(!currentContract){ toast(tt('con.gen_first')); return; }
-  $('#sign-place').value=''; $('#sign-name').value=currentContract.fullName||'';
+  $('#sign-place').value=''; $('#sign-name').value=(DB.profile&&DB.profile.name)||currentContract.label||labelName();
   $('#sign-modal').hidden=false;
   const cv=$('#sign-canvas'); const ctx=cv.getContext('2d');
   const rect=cv.getBoundingClientRect(); cv.width=rect.width*2; cv.height=180*2; ctx.scale(2,2);
@@ -2231,14 +2247,22 @@ function closeSignPad(){ $('#sign-modal').hidden=true; sigPad=null; }
 function confirmSign(){
   if(!sigPad || sigPad.isEmpty()){ toast(tt('con.sign_empty')); return; }
   const now=new Date();
-  currentContract.signed={ dataUrl:sigPad.cv.toDataURL('image/png'),
-    name:$('#sign-name').value.trim()||currentContract.fullName||'',
+  // firma dell'ETICHETTA (obbligatoria prima dell'invio all'artista)
+  currentContract.labelSign={ dataUrl:sigPad.cv.toDataURL('image/png'),
+    name:$('#sign-name').value.trim()||currentContract.label||labelName(),
     place:$('#sign-place').value.trim(),
     date:isoD(now), time:now.toTimeString().slice(0,5) };
-  currentContract.status='signed';
+  if(currentContract.status==='draft'||!currentContract.status) currentContract.status='ready';
   saveCurrentContract(); renderContracts();
   $('#contract-doc').innerHTML=buildContractDoc(currentContract);
-  closeSignPad(); toast(tt('con.signed_ok'));
+  updateConSendBtn();
+  closeSignPad(); toast(tt('con.signed_label_ok'));
+}
+function updateConSendBtn(){
+  const b=$('#con-send'); if(!b) return;
+  const ok=!!(currentContract && currentContract.labelSign);
+  b.disabled=!ok; b.classList.toggle('is-disabled',!ok);
+  b.title = ok ? '' : tt('con.need_label_sign');
 }
 
 /* ---------- Task ---------- */

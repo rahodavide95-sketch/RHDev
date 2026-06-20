@@ -277,13 +277,15 @@ body.dash-edit .dw-width{display:inline-flex;gap:2px;position:absolute;top:8px;l
 .contract-doc b,.contract-doc strong{font-weight:700;color:#141019}
 .cd-page--copy h4{margin-top:18px}
 .cd-page--copy p{text-align:left;font-size:.86rem}
-.cd-sign{display:flex;flex-wrap:wrap;gap:30px;margin-top:46px}
-.cd-sign>div{flex:1;min-width:160px}
-.cd-sign hr{border:none;border-top:1px solid #999;margin-top:36px}
-.cd-sign span{font-size:.78rem;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.04em}
-.cd-signed{margin-top:26px}
-.cd-sig-img{display:block;max-width:280px;max-height:110px;border-bottom:1px solid #888;padding-bottom:4px}
-.cd-sig-meta{margin-top:8px;font-size:.84rem;color:#555}
+.cd-signs{display:flex;flex-wrap:wrap;gap:30px;margin-top:42px}
+.cd-sgn{flex:1;min-width:200px}
+.cd-sgn-role{display:block;font-size:.74rem;font-weight:700;color:#15131f;margin-bottom:8px}
+.cd-sgn-blank{margin-top:6px}
+.cd-sgn-blank hr{border:none;border-top:1px solid #999;margin-top:34px}
+.cd-sgn-blank span{font-size:.74rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.04em}
+.cd-sig-img{display:block;max-width:260px;max-height:96px;border-bottom:1px solid #888;padding-bottom:4px}
+.cd-sig-meta{margin-top:8px;font-size:.82rem;color:#555}
+#con-send.is-disabled,#con-send:disabled{opacity:.5;cursor:not-allowed}
 .con-row-act{display:flex;gap:4px;justify-content:flex-end}
 .pill{display:inline-block;font-size:.74rem;font-weight:700;padding:2px 9px;border-radius:20px;background:var(--panel-2);color:var(--muted);border:1px solid var(--line)}
 .pill-ok{color:var(--in);background:color-mix(in srgb,var(--in) 14%,var(--panel));border-color:color-mix(in srgb,var(--in) 40%,var(--line))}

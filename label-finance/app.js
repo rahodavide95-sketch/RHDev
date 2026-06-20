@@ -24,7 +24,7 @@ const DEFAULT_TX_ORDER = ['date','kind','platform','catalog','product','artist',
 const DEFAULT_TX_VISIBLE = ['date','kind','platform','catalog','product','artist','qty','net','eur'];
 /* Account = piu' etichette; DB punta all'etichetta attiva. */
 const DASH_BASE = ['ai','kpi','chart','g_release','g_artist','g_platform','g_type'];
-const DASH_EXTRAS = ['forecast','w_top','recent']; // libreria widget opzionali (nascosti di default)
+const DASH_EXTRAS = ['forecast','w_top','recent','merch']; // libreria widget opzionali (nascosti di default)
 const DASH_DEFAULT_ORDER = [...DASH_BASE, ...DASH_EXTRAS];
 const DASH_FULL = new Set(['ai','kpi','chart','forecast']);
 const PLAN_LIMITS = { free:1, studio:3, agency:Infinity };
@@ -58,7 +58,7 @@ function ensureLabelShape(l){
   l.dashLayout=l.dashLayout||{order:DASH_DEFAULT_ORDER.slice(), hidden:DASH_EXTRAS.slice(), cols:2};
   l.txOrder=l.txOrder||DEFAULT_TX_ORDER.slice();
   l.txHidden=l.txHidden||DEFAULT_TX_ORDER.filter(c=>!DEFAULT_TX_VISIBLE.includes(c));
-  l.artists=l.artists||[]; l.tasks=l.tasks||[]; l.contracts=l.contracts||[];
+  l.artists=l.artists||[]; l.tasks=l.tasks||[]; l.contracts=l.contracts||[]; l.merch=l.merch||[];
   l.name=l.name||(l.profile&&l.profile.label)||'Etichetta';
   return l;
 }
@@ -95,7 +95,7 @@ window.LF = {
     if(typeof updateIdentity==='function') updateIdentity(); if(typeof rebuildAccountMenu==='function') rebuildAccountMenu(); },
   goto(v){ if(typeof goto==='function') goto(v); },
 };
-function reloadViews(){ renderDashboard(); renderTx(); renderReleases(); renderRoyalties(); renderArtists(); renderContracts(); renderTasks(); renderOffers(); renderSettings(); }
+function reloadViews(){ renderDashboard(); renderTx(); renderReleases(); renderRoyalties(); renderArtists(); renderContracts(); renderTasks(); renderMerch(); renderOffers(); renderSettings(); }
 // integra eventuali colonne nuove non ancora presenti nell'ordine salvato
 function ensureCols(){
   DB.txOrder = DB.txOrder || DEFAULT_TX_ORDER.slice();
@@ -228,7 +228,7 @@ function autoMap(headers){
 /* ============================================================================
    NAVIGAZIONE
    ============================================================================ */
-const VIEW_TITLES={dashboard:'Dashboard',transactions:'Movimenti',releases:'Release',royalties:'Royalty',artists:'Artisti',contracts:'Contratti',tasks:'Task',import:'Importa CSV',settings:'Impostazioni',about:'Chi siamo',offers:'Offerte & Piani',faq:'Aiuto & FAQ'};
+const VIEW_TITLES={dashboard:'Dashboard',transactions:'Movimenti',releases:'Release',royalties:'Royalty',artists:'Artisti',contracts:'Contratti',tasks:'Task',merch:'Merch',import:'Importa CSV',settings:'Impostazioni',about:'Chi siamo',offers:'Offerte & Piani',faq:'Aiuto & FAQ'};
 function goto(view){
   $$('.nav-item').forEach(b=>b.classList.toggle('is-active',b.dataset.view===view));
   $$('.view').forEach(v=>v.classList.toggle('is-active',v.id==='view-'+view));
@@ -240,6 +240,7 @@ function goto(view){
   if(view==='artists') renderArtists();
   if(view==='contracts'){ renderContracts(); refreshContractStatuses(); }
   if(view==='tasks') renderTasks();
+  if(view==='merch') renderMerch();
   if(view==='offers') renderOffers();
   if(view==='settings') renderSettings();
   $('.main').scrollTop=0;
@@ -729,6 +730,13 @@ registerExport('royalty', ()=>{
   const rows=Object.entries(byArtist).map(([n,v])=>[n, +v.total.toFixed(2)]).sort((a,b)=>b[1]-a[1]);
   rows.push(['Label (quota residua)', +labelTotal.toFixed(2)]);
   return {title:'Royalty — '+(DB.name||''), headers:['Artista','Royalty (€)'], rows};
+});
+registerExport('merch', ()=>{
+  const rows=(DB.merch||[]).slice().sort((a,b)=>(+b.sold||0)-(+a.sold||0)).map(m=>[
+    m.name, (window.t?window.t(MERCH_TYPES[m.type]||'mch.t_other'):m.type),
+    +(+m.price||0).toFixed(2), +(+m.cost||0).toFixed(2), m.sold||0,
+    +merchRevenue(m).toFixed(2), +merchMargin(m).toFixed(2), m.stock==null?'':m.stock ]);
+  return {title:'Merch — '+(DB.name||''), headers:['Articolo','Tipo','Prezzo','Costo','Venduti','Ricavi','Margine','Scorte'], rows};
 });
 function syncCustomDates(){ const cu=$('#dash-period').value==='custom'; $('#dash-from').hidden=!cu; $('#dash-to').hidden=!cu; }
 $('#dash-period').onchange=()=>{ syncCustomDates(); renderDashboard(); };
@@ -1605,7 +1613,7 @@ function setupDashWidgets(){
       g_artist:$('#table-artist')&&$('#table-artist').closest('.panel'),
       g_platform:$('#table-platform')&&$('#table-platform').closest('.panel'),
       g_type:$('#table-type')&&$('#table-type').closest('.panel'),
-      forecast:$('#w-forecast'), w_top:$('#w-top'), recent:$('#w-recent') };
+      forecast:$('#w-forecast'), w_top:$('#w-top'), recent:$('#w-recent'), merch:$('#w-merch') };
     const grid2=view.querySelector('.grid-2');
     // posiziona il contenitore dove c'era l'ai-panel (prima delle card dati)
     (map.ai||map.kpi).parentNode.insertBefore(cont, map.ai||map.kpi);
@@ -1648,7 +1656,7 @@ function renderHiddenTray(){
   const tray=$('#dash-tray'); if(!tray) return; const l=dashLayout();
   const names={ ai:tt('ai.title'), kpi:'KPI', chart:tt('dash.chart.title'),
     g_release:tt('dash.byrelease'), g_artist:tt('dash.byartist'), g_platform:tt('dash.byplatform'), g_type:tt('dash.bytype'),
-    forecast:tt('dash.forecast'), w_top:tt('dash.top_artists'), recent:tt('dash.recent') };
+    forecast:tt('dash.forecast'), w_top:tt('dash.top_artists'), recent:tt('dash.recent'), merch:tt('mch.title') };
   if(!l.hidden.length){ tray.innerHTML=`<span class="muted small">${tt('dash.none_hidden')}</span>`; return; }
   tray.innerHTML=l.hidden.map(id=>`<button class="dw-restore" data-id="${id}">+ ${esc(names[id]||id)}</button>`).join('');
   tray.querySelectorAll('.dw-restore').forEach(b=>b.onclick=()=>{ const l=dashLayout(); l.hidden=l.hidden.filter(x=>x!==b.dataset.id); save(); applyDashLayout(); });
@@ -1719,6 +1727,17 @@ function renderExtraWidgets(txs){
         <span class="recent-label">${esc(label)}</span>
         <span class="recent-amt ${inc?'pos':'neg'}">${inc?'+':'−'}${fmtMoney(Math.abs(v))}</span></div>`;
     }).join('') : `<p class="muted">${tt('empty.noperiod')}</p>`;
+  }
+  // Merch più venduto (per unità)
+  const mb=$('#merch-body');
+  if(mb){
+    const items=(DB.merch||[]).filter(m=>(+m.sold||0)>0).sort((a,b)=>(+b.sold||0)-(+a.sold||0)).slice(0,6);
+    const max=Math.max(1,...items.map(m=>+m.sold||0));
+    mb.innerHTML = items.length ? items.map(m=>`
+      <div class="top-row"><span class="top-name">${(MERCH_ICON[m.type]||'📦')} ${esc(m.name)}</span>
+        <span class="top-bar"><i style="width:${Math.round((+m.sold||0)/max*100)}%"></i></span>
+        <span class="top-val">${m.sold||0}</span></div>`).join('')
+      : `<p class="muted">${tt('mch.none_sold')}</p>`;
   }
   // Cashflow previsionale: proiezione a 3 mesi sul netto medio dei mesi recenti
   const fb=$('#forecast-body');
@@ -2141,6 +2160,100 @@ function addTask(){
 function toggleTask(id){ const t=(DB.tasks||[]).find(x=>x.id===id); if(!t) return; t.done=!t.done; save(); renderTasks(); }
 function deleteTask(id){ DB.tasks=(DB.tasks||[]).filter(x=>x.id!==id); save(); renderTasks(); }
 
+/* ---------- Merch ---------- */
+const MERCH_TYPES={tshirt:'mch.t_tshirt',vinyl:'mch.t_vinyl',cd:'mch.t_cd',hoodie:'mch.t_hoodie',poster:'mch.t_poster',other:'mch.t_other'};
+const MERCH_ICON={tshirt:'👕',vinyl:'🎵',cd:'💿',hoodie:'🧥',poster:'🖼️',other:'📦'};
+let editingMerchId=null;
+function merchById(id){ return (DB.merch||[]).find(m=>m.id===id); }
+function merchRevenue(m){ return (+m.price||0)*(+m.sold||0); }
+function merchMargin(m){ return ((+m.price||0)-(+m.cost||0))*(+m.sold||0); }
+function renderMerch(){
+  const grid=$('#merch-grid'); if(!grid) return;
+  const q=($('#mch-search')&&$('#mch-search').value||'').toLowerCase().trim();
+  const allItems=(DB.merch||[]);
+  // statistiche
+  const totRev=allItems.reduce((s,m)=>s+merchRevenue(m),0);
+  const totUnits=allItems.reduce((s,m)=>s+(+m.sold||0),0);
+  const totMargin=allItems.reduce((s,m)=>s+merchMargin(m),0);
+  const top=allItems.slice().sort((a,b)=>(+b.sold||0)-(+a.sold||0))[0];
+  const st=$('#mch-stats');
+  if(st) st.innerHTML = allItems.length ? `
+    <div class="mch-stat"><span class="mch-stat-l">${tt('mch.revenue')}</span><span class="mch-stat-v pos">${fmtMoney(totRev)}</span></div>
+    <div class="mch-stat"><span class="mch-stat-l">${tt('mch.margin')}</span><span class="mch-stat-v ${totMargin>=0?'pos':'neg'}">${fmtMoney(totMargin)}</span></div>
+    <div class="mch-stat"><span class="mch-stat-l">${tt('mch.units')}</span><span class="mch-stat-v">${totUnits}</span></div>
+    <div class="mch-stat"><span class="mch-stat-l">${tt('mch.top')}</span><span class="mch-stat-v">${top&&top.sold?esc(top.name):'—'}</span></div>` : '';
+  const list=allItems.filter(m=> !q || (m.name||'').toLowerCase().includes(q));
+  $('#merch-empty').hidden = allItems.length>0;
+  const sorted=list.slice().sort((a,b)=>(+b.sold||0)-(+a.sold||0));
+  const info=paginate(sorted,'merch'); const page=info.slice;
+  const mode=getVM('merch','cards');
+  const lowStock=m=>(m.stock!=null && +m.stock<=3);
+  if(mode==='list'){
+    grid.className='mch-list';
+    grid.innerHTML=page.map(m=>`
+      <div class="mch-lrow" data-id="${m.id}">
+        <span class="mch-ico">${MERCH_ICON[m.type]||'📦'}</span>
+        <span class="mch-lname"><b>${esc(m.name)}</b><span class="mch-meta">${tt(MERCH_TYPES[m.type]||'mch.t_other')}</span></span>
+        <span class="mch-lcol">${fmtMoney(m.price)}</span>
+        <span class="mch-lcol">${m.sold||0} ${tt('mch.sold_u')}</span>
+        <span class="mch-lcol pos">${fmtMoney(merchRevenue(m))}</span>
+        <span class="mch-lcol ${lowStock(m)?'mch-low':''}">${m.stock!=null?(tt('mch.stock')+': '+m.stock):''}</span>
+        <span class="mch-act">
+          <button class="btn btn-sm btn-income" data-mch-sell="${m.id}">+ ${tt('mch.sell')}</button>
+          <button class="icon-btn-sm" data-mch-edit="${m.id}">✎</button>
+          <button class="icon-btn-sm" data-mch-del="${m.id}">🗑</button></span>
+      </div>`).join('');
+  } else {
+    grid.className='mch-grid';
+    grid.innerHTML=page.map(m=>`
+      <div class="mch-card" data-id="${m.id}">
+        <div class="mch-card-head"><span class="mch-ico-lg">${MERCH_ICON[m.type]||'📦'}</span>
+          <div><div class="mch-cname">${esc(m.name)}</div><div class="mch-meta">${tt(MERCH_TYPES[m.type]||'mch.t_other')} · ${fmtMoney(m.price)}</div></div>
+        </div>
+        <div class="mch-kpis">
+          <div><span>${tt('mch.sold_u')}</span><b>${m.sold||0}</b></div>
+          <div><span>${tt('mch.revenue')}</span><b class="pos">${fmtMoney(merchRevenue(m))}</b></div>
+          <div><span>${tt('mch.stock')}</span><b class="${lowStock(m)?'mch-low':''}">${m.stock!=null?m.stock:'—'}</b></div>
+        </div>
+        <div class="mch-card-act">
+          <button class="btn btn-sm btn-income" data-mch-sell="${m.id}">+ ${tt('mch.sell')}</button>
+          <button class="icon-btn-sm" data-mch-edit="${m.id}">✎</button>
+          <button class="icon-btn-sm" data-mch-del="${m.id}">🗑</button>
+        </div>
+      </div>`).join('');
+  }
+  mountPager(grid,'merch',info);
+  syncVMButtons();
+}
+function openMerchForm(id){
+  editingMerchId=id||null; const m=id?merchById(id):null;
+  $('#mch-form-title').textContent = m?tt('mch.edit'):tt('mch.new');
+  $('#mch-name').value=m?m.name||'':''; $('#mch-type').value=m?m.type||'other':'tshirt';
+  $('#mch-price').value=m?(m.price??''):''; $('#mch-cost').value=m?(m.cost??''):'';
+  $('#mch-stock').value=m?(m.stock??''):''; $('#mch-sold').value=m?(m.sold||0):0;
+  $('#mch-form').hidden=false; $('#mch-form').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function saveMerch(){
+  const name=$('#mch-name').value.trim(); if(!name){ toast(tt('mch.need_name')); return; }
+  const price=+$('#mch-price').value; if(!price&&price!==0){ toast(tt('mch.need_price')); return; }
+  const data={ name, type:$('#mch-type').value, price:price||0, cost:+$('#mch-cost').value||0,
+    stock:$('#mch-stock').value===''?null:(+$('#mch-stock').value||0), sold:+$('#mch-sold').value||0 };
+  if(editingMerchId){ const m=merchById(editingMerchId); if(m) Object.assign(m,data); }
+  else DB.merch.push(Object.assign({id:newId()},data));
+  save(); $('#mch-form').hidden=true; editingMerchId=null; renderMerch(); toast(tt('mch.saved'));
+}
+function sellMerch(id){
+  const m=merchById(id); if(!m) return;
+  const qtyStr=prompt(tt('mch.sell_qty'),'1'); if(qtyStr===null) return;
+  const qty=Math.max(1,Math.floor(+qtyStr||0)); if(!qty) return;
+  m.sold=(+m.sold||0)+qty;
+  if(m.stock!=null) m.stock=Math.max(0,(+m.stock||0)-qty);
+  save(); renderMerch(); toast(tt('mch.sold_ok').replace('{n}',qty));
+}
+function deleteMerch(id){ const m=merchById(id); if(!m) return;
+  if(!confirm(tt('mch.del_confirm').replace('{name}',m.name))) return;
+  DB.merch=DB.merch.filter(x=>x.id!==id); save(); renderMerch(); }
+
 /* ---------- Wiring (una sola volta) ---------- */
 function initFeatures(){
   // Artisti
@@ -2190,6 +2303,16 @@ function initFeatures(){
   $('#sign-clear')?.addEventListener('click',()=>{ if(sigPad) sigPad.clear(); });
   $('#sign-confirm')?.addEventListener('click',confirmSign);
   $('#sign-modal')?.addEventListener('click',e=>{ if(e.target.id==='sign-modal') closeSignPad(); });
+  // Merch
+  $('#mch-new')?.addEventListener('click',()=>openMerchForm());
+  $('#mch-cancel')?.addEventListener('click',()=>{ $('#mch-form').hidden=true; editingMerchId=null; });
+  $('#mch-save')?.addEventListener('click',saveMerch);
+  $('#mch-search')?.addEventListener('input',renderMerch);
+  $('#merch-grid')?.addEventListener('click',e=>{
+    const s=e.target.closest('[data-mch-sell]'); if(s) return sellMerch(s.dataset.mchSell);
+    const ed=e.target.closest('[data-mch-edit]'); if(ed) return openMerchForm(ed.dataset.mchEdit);
+    const dl=e.target.closest('[data-mch-del]'); if(dl) return deleteMerch(dl.dataset.mchDel);
+  });
   // Task
   $('#tsk-add')?.addEventListener('click',addTask);
   $('#tsk-title')?.addEventListener('keydown',e=>{ if(e.key==='Enter') addTask(); });

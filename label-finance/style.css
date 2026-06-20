@@ -251,6 +251,41 @@ body.dash-edit .dw-width{display:inline-flex;gap:2px;position:absolute;top:8px;l
 .tsk-due.over{color:var(--out);font-weight:700}
 .tsk-due.today{color:var(--accent);font-weight:700}
 
+/* ===== Merch ===== */
+.mch-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.mch-stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:4px}
+.mch-stat-l{font-size:.78rem;color:var(--muted)}
+.mch-stat-v{font-weight:800;font-size:1.15rem;font-variant-numeric:tabular-nums}
+.mch-stat-v.pos{color:var(--in)}.mch-stat-v.neg{color:var(--out)}
+.mch-form-panel{margin-bottom:18px}
+.mch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.mch-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.mch-card-head{display:flex;gap:11px;align-items:center}
+.mch-ico-lg{font-size:1.7rem;flex:none}
+.mch-cname{font-weight:700}
+.mch-meta{font-size:.8rem;color:var(--muted)}
+.mch-kpis{display:flex;justify-content:space-between;gap:8px;border-top:1px solid var(--line);padding-top:10px}
+.mch-kpis>div{display:flex;flex-direction:column;gap:2px}
+.mch-kpis span{font-size:.72rem;color:var(--muted)}
+.mch-kpis b{font-variant-numeric:tabular-nums}
+.mch-kpis b.pos{color:var(--in)}
+.mch-low{color:var(--out)!important}
+.mch-card-act{display:flex;gap:6px;align-items:center}
+.mch-card-act .btn-sm{flex:1}
+.mch-list{display:flex;flex-direction:column;gap:8px}
+.mch-lrow{display:grid;grid-template-columns:auto 1.5fr .8fr 1fr 1fr 1fr auto;gap:12px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+.mch-ico{font-size:1.3rem}
+.mch-lname{display:flex;flex-direction:column;min-width:0}
+.mch-lname b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mch-lcol{font-size:.88rem;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mch-lcol.pos{color:var(--in)}
+.mch-act{display:flex;gap:5px;align-items:center}
+@media(max-width:880px){
+  .mch-stats{grid-template-columns:1fr 1fr}
+  .mch-lrow{grid-template-columns:auto 1fr auto}
+  .mch-lrow .mch-lcol{display:none}
+}
+
 /* ===== Paginazione (tutte le sezioni) ===== */
 .pager-mount{margin-top:12px}
 .pager{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
@@ -612,6 +647,11 @@ body.dash-edit .dw-width{display:inline-flex;gap:2px;position:absolute;top:8px;l
 .th-sort{cursor:pointer;user-select:none;white-space:nowrap}
 .th-sort:hover{color:var(--text)}
 .card-filter{max-width:150px;margin-left:auto;padding:6px 10px;font-size:.85rem}
+/* card dashboard: titolo sulla 1ª riga, cerca/ordina/esporta sulla 2ª (niente sfasamenti col titolo) */
+.panel-head:has(.card-filter){align-items:center}
+.panel-head:has(.card-filter)>h2{flex:1 1 100%}
+.panel-head:has(.card-filter) .card-filter{margin-left:0;max-width:220px;flex:1 1 auto}
+.panel-head:has(.card-filter) .btn-export{margin-left:auto}
 #btn-cols{margin-left:auto}
 .btn-export:not(.btn){background:none;border:1px solid var(--line);color:var(--muted);cursor:pointer;border-radius:8px;padding:5px 9px;font-size:.9rem;line-height:1;flex:none}
 .btn-export:not(.btn):hover{color:var(--accent);border-color:var(--accent)}
@@ -768,6 +808,7 @@ body.gate-signup #gate-signin{opacity:.5}
   .sidebar .nav-item[data-view="artists"],
   .sidebar .nav-item[data-view="contracts"],
   .sidebar .nav-item[data-view="tasks"],
+  .sidebar .nav-item[data-view="merch"],
   .sidebar .nav-item[data-view="faq"],
   .sidebar .nav-item[data-view="about"]{display:none}
   .nav>.nav-item,.nav-more-btn{

@@ -21,7 +21,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=42">
+  <link rel="stylesheet" href="style.css?v=43">
 </head>
 <body class="gated">
 
@@ -98,7 +98,9 @@
       <button class="nav-item" data-view="contracts" title="Contratti">
         <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 12h6"/><path d="M9 16h6"/></svg></span><span class="nav-label" data-i18n="nav.contracts">Contratti</span></button>
       <button class="nav-item" data-view="tasks" title="Task">
-        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h11"/><path d="M4 12h11"/><path d="M4 18h7"/><path d="M18 5.5l1.6 1.6L22 4.5"/></svg></span><span class="nav-label" data-i18n="nav.tasks">Task</span></button>
+        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V4.2a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1V5"/><path d="M8.5 13.2l2.3 2.3L16 10.3"/></svg></span><span class="nav-label" data-i18n="nav.tasks">Task</span></button>
+      <button class="nav-item" data-view="merch" title="Merch">
+        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 5 6.5V20h14V6.5L15 4"/><path d="M9 4a3 3 0 0 0 6 0"/></svg></span><span class="nav-label" data-i18n="nav.merch">Merch</span></button>
       <button class="nav-item" data-view="import" title="Importa CSV">
         <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M4 21h16"/></svg></span><span class="nav-label" data-i18n="nav.import">Importa CSV</span></button>
       <button class="nav-item" data-view="settings" title="Impostazioni">
@@ -139,7 +141,9 @@
         <button class="nav-item" data-view="contracts" title="Contratti">
           <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 12h6"/><path d="M9 16h6"/></svg></span><span class="nav-label" data-i18n="nav.contracts">Contratti</span></button>
         <button class="nav-item" data-view="tasks" title="Task">
-          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h11"/><path d="M4 12h11"/><path d="M4 18h7"/><path d="M18 5.5l1.6 1.6L22 4.5"/></svg></span><span class="nav-label" data-i18n="nav.tasks">Task</span></button>
+          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V4.2a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1V5"/><path d="M8.5 13.2l2.3 2.3L16 10.3"/></svg></span><span class="nav-label" data-i18n="nav.tasks">Task</span></button>
+        <button class="nav-item" data-view="merch" title="Merch">
+          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 5 6.5V20h14V6.5L15 4"/><path d="M9 4a3 3 0 0 0 6 0"/></svg></span><span class="nav-label" data-i18n="nav.merch">Merch</span></button>
         <button class="nav-item" data-view="import" title="Importa CSV">
           <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M4 21h16"/></svg></span><span class="nav-label" data-i18n="nav.import">Importa CSV</span></button>
         <button class="nav-item" data-view="settings" title="Impostazioni">
@@ -268,7 +272,7 @@
       <div class="grid-2">
         <div class="panel">
           <div class="panel-head"><h2 data-i18n="dash.byrelease">Per release / catalogo</h2>
-            <input class="input card-filter" data-table="#table-release" placeholder="Filtra…">
+            <input class="input card-filter" data-table="#table-release" data-i18n-ph="common.search" placeholder="Cerca…">
             <select class="select card-sort sort-mobile" data-table="#table-release" title="Ordina">
               <option value="net:-1">Ordina: Margine ↓</option>
               <option value="net:1">Ordina: Margine ↑</option>
@@ -281,7 +285,7 @@
         </div>
         <div class="panel">
           <div class="panel-head"><h2 data-i18n="dash.byartist">Per artista</h2>
-            <input class="input card-filter" data-table="#table-artist" placeholder="Filtra…">
+            <input class="input card-filter" data-table="#table-artist" data-i18n-ph="common.search" placeholder="Cerca…">
             <select class="select card-sort sort-mobile" data-table="#table-artist" title="Ordina">
               <option value="net:-1">Ordina: Margine ↓</option>
               <option value="net:1">Ordina: Margine ↑</option>
@@ -294,7 +298,7 @@
         </div>
         <div class="panel">
           <div class="panel-head"><h2 data-i18n="dash.byplatform">Per piattaforma</h2>
-            <input class="input card-filter" data-table="#table-platform" placeholder="Filtra…">
+            <input class="input card-filter" data-table="#table-platform" data-i18n-ph="common.search" placeholder="Cerca…">
             <select class="select card-sort sort-mobile" data-table="#table-platform" title="Ordina">
               <option value="net:-1">Ordina: Margine ↓</option>
               <option value="net:1">Ordina: Margine ↑</option>
@@ -307,7 +311,7 @@
         </div>
         <div class="panel">
           <div class="panel-head"><h2 data-i18n="dash.bytype">Per tipologia</h2>
-            <input class="input card-filter" data-table="#table-type" placeholder="Filtra…">
+            <input class="input card-filter" data-table="#table-type" data-i18n-ph="common.search" placeholder="Cerca…">
             <select class="select card-sort sort-mobile" data-table="#table-type" title="Ordina">
               <option value="net:-1">Ordina: Margine ↓</option>
               <option value="net:1">Ordina: Margine ↑</option>
@@ -333,6 +337,11 @@
       <div class="panel" id="w-recent">
         <div class="panel-head"><h2 data-i18n="dash.recent">Ultimi movimenti</h2></div>
         <div id="recent-body" class="recent-list"></div>
+      </div>
+      <div class="panel" id="w-merch">
+        <div class="panel-head"><h2 data-i18n="mch.top_title">Merch più venduto</h2>
+          <span class="muted small" data-i18n="mch.top_sub">Classifica per unità vendute</span></div>
+        <div id="merch-body" class="top-list"></div>
       </div>
 
       <div class="empty-hint" id="dash-empty" hidden>
@@ -923,6 +932,57 @@
       <div class="empty-hint" id="tasks-empty" hidden><p data-i18n="tsk.empty">Nessun task. Aggiungi il primo promemoria qui sopra.</p></div>
     </section>
 
+    <!-- ====== MERCH ====== -->
+    <section class="view" id="view-merch">
+      <header class="view-head">
+        <div><div class="title-row"><h1 data-i18n="mch.title">Merch</h1><button class="info-btn" data-info="merch" title="Cos'è questa sezione?">i</button></div>
+          <p class="muted" data-i18n="mch.subtitle">Catalogo merchandising, vendite, ricavi e magazzino.</p></div>
+        <div class="head-actions">
+          <input class="input" id="mch-search" data-i18n-ph="mch.search" placeholder="Cerca articolo…">
+          <div class="vm-toggle" data-vm-sec="merch" data-vm-def="cards">
+            <button class="vm-btn" data-vm="cards" title="Cards">▦</button>
+            <button class="vm-btn" data-vm="list" title="Elenco">☰</button>
+          </div>
+          <button class="btn btn-export" data-export="merch" title="Esporta CSV/Excel/PDF">⤓ Esporta</button>
+          <button class="btn btn-primary" id="mch-new" data-i18n="mch.new">＋ Nuovo articolo</button>
+        </div>
+      </header>
+
+      <div class="info-panel" id="info-merch" hidden>
+        <h4>A cosa serve la sezione Merch</h4>
+        <p>Gestisci il tuo merchandising (t-shirt, vinili, CD, poster…): per ogni articolo indichi <b>prezzo</b>, <b>costo</b> e <b>scorte</b>. Quando vendi, premi <b>+ vendita</b> e il sistema aggiorna unità vendute, ricavi, margine e magazzino. In alto trovi i totali e l'articolo più venduto; puoi anche aggiungere la card del merch in dashboard.</p>
+      </div>
+
+      <div class="mch-stats" id="mch-stats"></div>
+
+      <div class="panel mch-form-panel" id="mch-form" hidden>
+        <div class="panel-head"><h2 id="mch-form-title" data-i18n="mch.new">Nuovo articolo</h2></div>
+        <div class="form-grid">
+          <label class="fld"><span data-i18n="mch.name">Nome articolo *</span><input class="input" id="mch-name"></label>
+          <label class="fld"><span data-i18n="mch.type">Tipo</span>
+            <select class="select" id="mch-type">
+              <option value="tshirt" data-i18n="mch.t_tshirt">T-shirt</option>
+              <option value="vinyl" data-i18n="mch.t_vinyl">Vinile</option>
+              <option value="cd" data-i18n="mch.t_cd">CD</option>
+              <option value="hoodie" data-i18n="mch.t_hoodie">Felpa</option>
+              <option value="poster" data-i18n="mch.t_poster">Poster</option>
+              <option value="other" data-i18n="mch.t_other">Altro</option>
+            </select></label>
+          <label class="fld"><span data-i18n="mch.price">Prezzo (€) *</span><input class="input" id="mch-price" type="number" min="0" step="0.01"></label>
+          <label class="fld"><span data-i18n="mch.cost">Costo (€)</span><input class="input" id="mch-cost" type="number" min="0" step="0.01"></label>
+          <label class="fld"><span data-i18n="mch.stock">Scorte</span><input class="input" id="mch-stock" type="number" min="0" step="1"></label>
+          <label class="fld"><span data-i18n="mch.sold">Già venduti</span><input class="input" id="mch-sold" type="number" min="0" step="1" value="0"></label>
+        </div>
+        <div class="row-inline wrap">
+          <button class="btn btn-primary" id="mch-save" data-i18n="mch.save">Salva articolo</button>
+          <button class="btn btn-ghost" id="mch-cancel" data-i18n="common.cancel">Annulla</button>
+        </div>
+      </div>
+
+      <div class="mch-grid" id="merch-grid"></div>
+      <div class="empty-hint" id="merch-empty" hidden><p data-i18n="mch.empty">Nessun articolo. Aggiungi il primo prodotto di merchandising.</p></div>
+    </section>
+
     <!-- ====== CHI SIAMO ====== -->
     <section class="view view-about" id="view-about">
       <div class="about-bg" aria-hidden="true">
@@ -1394,11 +1454,11 @@
   <!-- Area di stampa per lo statement royalty (visibile solo in stampa) -->
   <div id="print-area" aria-hidden="true"></div>
 
-  <script src="html2pdf.bundle.min.js?v=42"></script>
-  <script src="app.js?v=42"></script>
-  <script src="config.js?v=42"></script>
-  <script src="i18n.js?v=42"></script>
+  <script src="html2pdf.bundle.min.js?v=43"></script>
+  <script src="app.js?v=43"></script>
+  <script src="config.js?v=43"></script>
+  <script src="i18n.js?v=43"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="sync.js?v=42"></script>
+  <script src="sync.js?v=43"></script>
 </body>
 </html>

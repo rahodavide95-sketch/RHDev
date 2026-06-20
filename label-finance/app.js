@@ -1509,7 +1509,7 @@ function buildAiSummary(){
 let aiBusy=false;
 function renderAiPanel(){
   const panel=$('#ai-panel'), body=$('#ai-body'); if(!panel||!body) return;
-  if(!can('ai')){
+  if(!can('ai') && !aiLocalKey()){
     // mostra l'upsell solo se c'è qualche dato (altrimenti tieni pulita la dashboard)
     if((DB.transactions||[]).length===0){ panel.hidden=true; return; }
     panel.hidden=false;
@@ -1523,13 +1523,37 @@ function renderAiPanel(){
     $('#ai-go').addEventListener('click', runAi);
   }
 }
+const AI_KEY_LS='labelfinance.aikey';
+function aiLocalKey(){ try{ return localStorage.getItem(AI_KEY_LS)||''; }catch(e){ return ''; } }
+async function aiAdviseDirect(payload){
+  const key=aiLocalKey(); if(!key) return { error:'no_key' };
+  const lang=payload.lang==='en'?'en':'it';
+  const system = lang==='en'
+    ? `You are a financial advisor for independent record labels. Analyze the label's data and give concrete, prioritized, actionable advice in clear English. Point out declining months, low-margin platforms, unrecouped artists, anomalous expenses and concrete next steps. Use short paragraphs and bullets. Never invent numbers not in the data. Keep it under ~350 words.`
+    : `Sei un consulente finanziario per etichette discografiche indipendenti. Analizza i dati e dai consigli concreti, prioritari e azionabili in italiano. Segnala mesi in calo, piattaforme a basso margine, artisti non recouped, spese anomale e i prossimi passi. Usa paragrafi brevi ed elenchi. Non inventare numeri non presenti nei dati. Max ~350 parole.`;
+  const userContent='Dati dell\'etichetta (JSON):\n```json\n'+JSON.stringify(payload.summary||{},null,2)+'\n```';
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{ method:'POST',
+      headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({ model:'claude-opus-4-8', max_tokens:1500, system, messages:[{role:'user',content:userContent}] }) });
+    if(!r.ok){ let d=''; try{ d=await r.text(); }catch{} return { error:`ai_http_${r.status}`, detail:d.slice(0,400) }; }
+    const data=await r.json();
+    if(data&&data.stop_reason==='refusal') return { error:'refused' };
+    const text=Array.isArray(data&&data.content)?data.content.filter(b=>b.type==='text').map(b=>b.text).join('\n'):'';
+    return { text, model:data&&data.model };
+  }catch(e){ return { error:e.message||'ai_error' }; }
+}
 async function runAi(){
   if(aiBusy) return; aiBusy=true;
   const out=$('#ai-out'), btn=$('#ai-go');
   if(btn){ btn.disabled=true; btn.textContent='… '+tt('ai.thinking'); }
   if(out) out.innerHTML=`<p class="muted">${tt('ai.thinking')}</p>`;
   let res={error:'offline'};
-  try{ if(window.LF_aiAdvise) res=await window.LF_aiAdvise({ summary:buildAiSummary(), lang:(window.LFI18N?window.LFI18N.lang:'it') }); }catch(e){ res={error:e.message}; }
+  const payload={ summary:buildAiSummary(), lang:(window.LFI18N?window.LFI18N.lang:'it') };
+  try{
+    if(aiLocalKey()) res=await aiAdviseDirect(payload);       // chiave locale: chiamata diretta
+    else if(window.LF_aiAdvise) res=await window.LF_aiAdvise(payload);  // default: Edge Function
+  }catch(e){ res={error:e.message}; }
   aiBusy=false;
   if(btn){ btn.disabled=false; btn.textContent='✦ '+tt('ai.again'); }
   if(!out) return;
@@ -2111,6 +2135,14 @@ function initFeatures(){
     const op=e.target.closest('[data-con-open]'); if(op) return openContract(op.dataset.conOpen);
     const dl=e.target.closest('[data-con-del]'); if(dl) return deleteContract(dl.dataset.conDel);
   });
+  // Chiave AI locale (fallback senza Edge Function)
+  const aiStat=()=>{ const s=$('#ai-key-status'); if(s) s.textContent = aiLocalKey()?tt('set.ai_set'):tt('set.ai_unset'); };
+  if($('#ai-key')){ $('#ai-key').value=''; aiStat(); }
+  $('#ai-key-save')?.addEventListener('click',()=>{ const v=$('#ai-key').value.trim();
+    if(!v){ toast(tt('set.ai_need')); return; }
+    try{ localStorage.setItem(AI_KEY_LS,v); }catch(e){} $('#ai-key').value=''; aiStat();
+    const b=$('#ai-body'); if(b) b.dataset.ready=''; renderAiPanel(); toast(tt('set.ai_saved')); });
+  $('#ai-key-clear')?.addEventListener('click',()=>{ try{ localStorage.removeItem(AI_KEY_LS); }catch(e){} aiStat(); toast(tt('set.ai_removed')); });
   // Firma
   $('#sign-close')?.addEventListener('click',closeSignPad);
   $('#sign-clear')?.addEventListener('click',()=>{ if(sigPad) sigPad.clear(); });

@@ -2146,7 +2146,8 @@ function downloadContractPDF(){
   if(!currentContract) return;
   const el=$('#contract-doc'); if(!el) return;
   if(typeof html2pdf==='undefined'){ printContract(); return; }  // fallback se la libreria non è caricata
-  const fname=(currentContract.titles||'contract').replace(/[^\w\-]+/g,'_').slice(0,60)||'contract';
+  const safe=s=>String(s||'').replace(/[\\/:*?"<>|]+/g,'').trim();
+  const fname=`${safe(currentContract.label||labelName())||'Label'} – Release Authorization`;
   toast(tt('con.pdf_wait'));
   el.classList.add('pdf-exporting');                 // toglie bordo/ombra/angoli durante la cattura
   const cleanup=()=>el.classList.remove('pdf-exporting');

@@ -108,12 +108,12 @@ body.nav-collapsed{grid-template-columns:78px 1fr}
 .topbar-section{font-family:'Syne',sans-serif;font-weight:600;font-size:1rem;color:var(--text);opacity:0;transform:translateY(4px);transition:opacity .2s,transform .2s;pointer-events:none}
 body.show-topsec .topbar-section{opacity:1;transform:none}
 /* Tasti Entrata/Uscita (verde/rosso tenui) — già colorati per riconoscerli a colpo d'occhio */
-.btn-income{background:#16a34a;border-color:#16a34a;color:#fff;font-weight:700}
-.btn-income:hover{filter:brightness(1.13)}
-.btn-income:active{filter:brightness(1.22)}
-.btn-expense{background:#e11d48;border-color:#e11d48;color:#fff;font-weight:700}
-.btn-expense:hover{filter:brightness(1.13)}
-.btn-expense:active{filter:brightness(1.22)}
+.btn.btn-income{background:#16a34a;border-color:#16a34a;color:#fff;font-weight:700}
+.btn.btn-income:hover{filter:brightness(1.13)}
+.btn.btn-income:active{filter:brightness(1.22)}
+.btn.btn-expense{background:#e11d48;border-color:#e11d48;color:#fff;font-weight:700}
+.btn.btn-expense:hover{filter:brightness(1.13)}
+.btn.btn-expense:active{filter:brightness(1.22)}
 /* ===== Assistente AI — bolla flottante + popover ===== */
 .ai-spark{color:var(--accent)}
 .ai-fab{position:fixed;right:22px;bottom:calc(22px + env(safe-area-inset-bottom));z-index:55;
@@ -128,7 +128,7 @@ body.show-topsec .topbar-section{opacity:1;transform:none}
 .ai-fab-spark{position:absolute;top:-2px;right:-2px;font-size:.8rem;color:#fff;filter:drop-shadow(0 1px 2px rgba(0,0,0,.3))}
 @keyframes ai-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 /* alla pressione: la sfera cambia tanti colori in movimento (come la home) */
-.ai-fab.is-open{background:conic-gradient(from 0deg,#7c3aed,#ec4899,#f59e0b,#22d3ee,#38bdf8,#7c3aed);
+.ai-fab.is-open{background:conic-gradient(from 0deg,#7c3aed,#4f46e5,#38bdf8,#a78bfa,#e8dcc0,#7c3aed);
   animation:ai-float 4.5s ease-in-out infinite, ai-hue 4s linear infinite}
 @keyframes ai-hue{to{filter:hue-rotate(360deg)}}
 @media(prefers-reduced-motion:reduce){.ai-fab,.ai-fab.is-open,.ai-fab .ai-eye{animation:none}}
@@ -142,9 +142,9 @@ body.gated .ai-fab{display:none}
 .ai-aura{position:absolute;inset:0;z-index:0;overflow:hidden;filter:saturate(170%)}
 .ai-aura span{position:absolute;width:130px;height:130px;border-radius:50%;filter:blur(26px);opacity:.85;will-change:transform}
 .ai-aura span:nth-child(1){background:radial-gradient(circle,#a78bfa,transparent 68%);left:-26px;top:-46px;animation:ai-orb1 7s ease-in-out infinite}
-.ai-aura span:nth-child(2){background:radial-gradient(circle,#ec4899,transparent 68%);right:-30px;top:-34px;animation:ai-orb2 9s ease-in-out infinite}
+.ai-aura span:nth-child(2){background:radial-gradient(circle,#6366f1,transparent 68%);right:-30px;top:-34px;animation:ai-orb2 9s ease-in-out infinite}
 .ai-aura span:nth-child(3){background:radial-gradient(circle,#38bdf8,transparent 68%);left:34%;bottom:-58px;animation:ai-orb3 8s ease-in-out infinite}
-.ai-aura span:nth-child(4){background:radial-gradient(circle,#22d3ee,transparent 68%);right:22%;bottom:-46px;animation:ai-orb1 11s ease-in-out infinite reverse}
+.ai-aura span:nth-child(4){background:radial-gradient(circle,#e8dcc0,transparent 68%);right:22%;bottom:-46px;animation:ai-orb1 11s ease-in-out infinite reverse}
 @keyframes ai-orb1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(46px,22px) scale(1.15)}}
 @keyframes ai-orb2{0%,100%{transform:translate(0,0) scale(1.05)}50%{transform:translate(-44px,26px) scale(.92)}}
 @keyframes ai-orb3{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(34px,-22px) scale(1.12)}}
@@ -369,6 +369,7 @@ body.dash-edit .dw-width{display:inline-flex;gap:2px;position:absolute;top:8px;l
   .mch-stats{grid-template-columns:1fr 1fr}
   .mch-lrow{grid-template-columns:auto 1fr auto}
   .mch-lrow .mch-lcol{display:none}
+  .mch-lhead{display:none}
 }
 
 /* ===== Paginazione (tutte le sezioni) ===== */
@@ -417,6 +418,10 @@ body.dash-edit .dw-width{display:inline-flex;gap:2px;position:absolute;top:8px;l
 .release-lhead{background:transparent;border:none;padding:4px 14px;cursor:default;font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--muted-2)}
 .release-lhead:hover{border:none}
 .release-lhead span{white-space:nowrap}
+.rl-sort,.mch-sort{cursor:pointer;user-select:none}
+.rl-sort:hover,.mch-sort:hover{color:var(--accent)}
+.mch-lhead{background:transparent;border:none;padding:2px 14px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--muted-2)}
+.mch-lhead span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* Royalty — cards */
 .roy-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
 .roy-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;cursor:pointer}

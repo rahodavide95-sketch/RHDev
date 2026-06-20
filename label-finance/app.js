@@ -899,17 +899,30 @@ function releaseByCatalog(cat){
   const c=cat.trim().toLowerCase();
   return releases().find(r=>(r.catalog||'').trim().toLowerCase()===c) || null;
 }
+let relSort={col:'catalog',dir:1};
+function sortReleases(arr){
+  const k=relSort.col, d=relSort.dir;
+  return arr.slice().sort((a,b)=>{
+    if(k==='year') return ((+a.year||0)-(+b.year||0))*d;
+    if(k==='isrc') return (((a.tracks||[]).length)-((b.tracks||[]).length))*d;
+    return String(a[k]||'').toLowerCase().localeCompare(String(b[k]||'').toLowerCase())*d;
+  });
+}
 function renderReleases(){
-  const all=releases().slice().sort((a,b)=>(a.catalog||'').localeCompare(b.catalog||''));
+  const all=sortReleases(releases().slice());
   $('#rel-count-label').textContent=`${all.length} release`;
   const info=paginate(all,'rel'); const list=info.slice;
   const cont=$('#releases-cards'); const mode=getVM('releases','cards');
   if(!list.length){ cont.className='releases-cards'; cont.innerHTML=`<p class="muted">${tt('empty.norel')}</p>`; mountPager(cont,'rel',info); syncVMButtons(); return; }
   if(mode==='list'){
     cont.className='release-list';
+    const arrow=c=>relSort.col===c?(relSort.dir>0?' ▲':' ▼'):'';
     const head=`<div class="release-lrow release-lhead">
-      <span>${tt('col.catalog')}</span><span>${tt('rel.c_title')}</span><span>${tt('rel.c_year')}</span>
-      <span>${tt('rel.c_split')}</span><span>ISRC</span></div>`;
+      <span class="rl-sort" data-rsort="catalog">${tt('col.catalog')}${arrow('catalog')}</span>
+      <span class="rl-sort" data-rsort="title">${tt('rel.c_title')}${arrow('title')}</span>
+      <span class="rl-sort" data-rsort="year">${tt('rel.c_year')}${arrow('year')}</span>
+      <span>${tt('rel.c_split')}</span>
+      <span class="rl-sort" data-rsort="isrc">ISRC${arrow('isrc')}</span></div>`;
     cont.innerHTML = head + list.map(r=>{
       const tot=(r.splits||[]).reduce((s,x)=>s+(+x.pct||0),0); const label=Math.max(0,100-tot);
       const who=(r.splits||[]).map(s=>esc(s.name)+' '+(+s.pct||0)+'%').join(' · ')+(label?` · Label ${label}%`:'');
@@ -939,6 +952,8 @@ function renderReleases(){
     }).join('');
   }
   cont.querySelectorAll('[data-id]').forEach(c=>c.onclick=()=>openRelease(c.dataset.id));
+  cont.querySelectorAll('[data-rsort]').forEach(h=>h.onclick=e=>{ e.stopPropagation(); const c=h.dataset.rsort;
+    if(relSort.col===c) relSort.dir*=-1; else relSort={col:c,dir:1}; renderReleases(); });
   mountPager(cont,'rel',info);
   syncVMButtons();
 }
@@ -1555,7 +1570,7 @@ function aiPopBody(){
   body._prompts=prompts;
   body.querySelectorAll('.ai-chip').forEach(b=>b.addEventListener('click',()=>{ const p=body._prompts[+b.dataset.aiq]; runAiQuestion(p.q,p.label); }));
 }
-function aiShowPrompts(){ const p=$('#ai-prompts'); if(p) p.style.display=''; const o=$('#ai-out'); if(o) o.innerHTML=''; }
+function aiShowPrompts(){ aiPopBody(); }   // torna sempre al menu principale (lista suggerimenti)
 function openAiPop(){ const pop=$('#ai-pop'); if(!pop) return; aiPopBody(); pop.hidden=false; document.body.classList.add('ai-open');
   const f=$('#ai-fab'); if(f){ f.setAttribute('aria-expanded','true'); f.classList.add('is-open'); } }
 function closeAiPop(){ const pop=$('#ai-pop'); if(!pop) return; pop.hidden=true; document.body.classList.remove('ai-open');
@@ -1616,11 +1631,27 @@ async function runAiQuestion(question, label){
     $('#ai-back2')?.addEventListener('click', aiShowPrompts);
   }
 }
+function aiReadableData(s){
+  const it=(window.LFI18N?window.LFI18N.lang:'it')!=='en';
+  const L = it
+    ? {tot:'Totali',inc:'Entrate',exp:'Uscite',net:'Margine netto',mov:'movimenti',trend:'Andamento mensile (netto)',plat:'Per piattaforma',art:'Top artisti (royalty)',rec:'Da recuperare (recoupment)',merch:'Merch più venduto',units:'venduti'}
+    : {tot:'Totals',inc:'Income',exp:'Expenses',net:'Net margin',mov:'transactions',trend:'Monthly trend (net)',plat:'By platform',art:'Top artists (royalty)',rec:'To recoup',merch:'Best-selling merch',units:'sold'};
+  const money=n=>'€'+(Number(n)||0).toLocaleString(it?'it-IT':'en-US',{maximumFractionDigits:2});
+  const t=s.totali||{}; const rows=[];
+  rows.push(`<b>${L.tot}:</b> ${L.inc} ${money(t.entrate)} · ${L.exp} ${money(t.uscite)} · ${L.net} ${money(t.margineNetto)} (${t.marginePct||0}%) · ${t.movimenti||0} ${L.mov}`);
+  if(s.trendUltimi6Mesi&&s.trendUltimi6Mesi.length) rows.push(`<b>${L.trend}:</b> ${s.trendUltimi6Mesi.map(m=>esc(m.mese)+' '+money(m.netto)).join(' · ')}`);
+  if(s.perPiattaforma&&s.perPiattaforma.length) rows.push(`<b>${L.plat}:</b> ${s.perPiattaforma.map(p=>esc(p.nome)+' '+money(p.netto)).join(' · ')}`);
+  if(s.topArtistiRoyalty&&s.topArtistiRoyalty.length) rows.push(`<b>${L.art}:</b> ${s.topArtistiRoyalty.map(a=>esc(a.nome)+' '+money(a.royalty)).join(' · ')}`);
+  if(s.nonRecouped&&s.nonRecouped.length) rows.push(`<b>${L.rec}:</b> ${s.nonRecouped.map(x=>esc(x.artista)+' '+money(x.nonRecuperato)).join(' · ')}`);
+  if(s.merch&&s.merch.length) rows.push(`<b>${L.merch}:</b> ${s.merch.slice(0,8).map(m=>esc(m.nome)+' ('+(m.venduti||0)+' '+L.units+', '+money(m.ricavi)+')').join(' · ')}`);
+  return rows.map(r=>`<p style="margin:0 0 7px;line-height:1.5">${r}</p>`).join('');
+}
 function exportAiAnalysis(){
   if(!aiLastResult) return; const r=aiLastResult;
   const fname='analisi-ai-'+isoD(new Date());
-  if(typeof html2pdf==='undefined'){ // fallback testuale se la libreria PDF non c'è
-    const md=`${tt('ai.study_title')} — ${labelName()}\n${r.when.toLocaleString()}\n\n${tt('ai.q')}\n${r.question}\n\n${tt('ai.answer')}\n${r.text}\n\n${tt('ai.data')}\n${JSON.stringify(r.summary,null,2)}`;
+  if(typeof html2pdf==='undefined'){ // fallback testuale leggibile se la libreria PDF non c'è
+    const plain=h=>String(h).replace(/<[^>]+>/g,'');
+    const md=`${tt('ai.study_title')} — ${labelName()}\n${r.when.toLocaleString()}\n\n${tt('ai.q')}\n${r.question}\n\n${tt('ai.answer')}\n${r.text}\n\n${tt('ai.data')}\n${plain(aiReadableData(r.summary)).replace(/\s*\n\s*/g,'\n')}`;
     download(fname+'.txt', md, 'text/plain;charset=utf-8'); return;
   }
   const host=document.createElement('div');
@@ -1636,7 +1667,7 @@ function exportAiAnalysis(){
     <h3 style="margin:0 0 6px;font-size:14px;color:#15131f">${esc(tt('ai.answer'))}</h3>
     <div style="line-height:1.65;font-size:14px">${aiFormat(r.text)}</div>
     <h3 style="margin:20px 0 6px;font-size:14px;color:#15131f">${esc(tt('ai.data'))}</h3>
-    <pre style="background:#f5f5f8;border:1px solid #e3e3e8;border-radius:8px;padding:12px;font-size:10.5px;line-height:1.45;white-space:pre-wrap;word-break:break-word;color:#333">${esc(JSON.stringify(r.summary,null,2))}</pre>
+    <div style="background:#f7f6fb;border:1px solid #e7e3f2;border-radius:8px;padding:14px 16px;font-size:12.5px;color:#333">${aiReadableData(r.summary)}</div>
   </div>`;
   document.body.appendChild(host);
   toast(tt('con.pdf_wait'));
@@ -2382,6 +2413,19 @@ let editingMerchId=null;
 function merchById(id){ return (DB.merch||[]).find(m=>m.id===id); }
 function merchRevenue(m){ return (+m.price||0)*(+m.sold||0); }
 function merchMargin(m){ return ((+m.price||0)-(+m.cost||0))*(+m.sold||0); }
+let merchSort={col:'sold',dir:-1};   // di default: più venduti
+function sortMerch(arr){
+  const k=merchSort.col, d=merchSort.dir;
+  return arr.slice().sort((a,b)=>{
+    if(k==='name') return String(a.name||'').toLowerCase().localeCompare(String(b.name||'').toLowerCase())*d;
+    let va,vb;
+    if(k==='price'){ va=+a.price||0; vb=+b.price||0; }
+    else if(k==='revenue'){ va=merchRevenue(a); vb=merchRevenue(b); }
+    else if(k==='stock'){ va=a.stock==null?-1:+a.stock; vb=b.stock==null?-1:+b.stock; }
+    else { va=+a.sold||0; vb=+b.sold||0; }
+    return (va-vb)*d;
+  });
+}
 function renderMerch(){
   const grid=$('#merch-grid'); if(!grid) return;
   const q=($('#mch-search')&&$('#mch-search').value||'').toLowerCase().trim();
@@ -2399,13 +2443,21 @@ function renderMerch(){
     <div class="mch-stat"><span class="mch-stat-l">${tt('mch.top')}</span><span class="mch-stat-v">${top&&top.sold?esc(top.name):'—'}</span></div>` : '';
   const list=allItems.filter(m=> !q || (m.name||'').toLowerCase().includes(q));
   $('#merch-empty').hidden = allItems.length>0;
-  const sorted=list.slice().sort((a,b)=>(+b.sold||0)-(+a.sold||0));
+  const sorted=sortMerch(list);
   const info=paginate(sorted,'merch'); const page=info.slice;
   const mode=getVM('merch','cards');
   const lowStock=m=>(m.stock!=null && +m.stock<=3);
   if(mode==='list'){
     grid.className='mch-list';
-    grid.innerHTML=page.map(m=>`
+    const arrow=c=>merchSort.col===c?(merchSort.dir>0?' ▲':' ▼'):'';
+    const head=`<div class="mch-lrow mch-lhead"><span></span>
+        <span class="mch-sort" data-msort="name">${tt('mch.name_h')}${arrow('name')}</span>
+        <span class="mch-sort" data-msort="price">${tt('mch.price_h')}${arrow('price')}</span>
+        <span class="mch-sort" data-msort="sold">${tt('mch.sold_h')}${arrow('sold')}</span>
+        <span class="mch-sort" data-msort="revenue">${tt('mch.revenue')}${arrow('revenue')}</span>
+        <span class="mch-sort" data-msort="stock">${tt('mch.stock')}${arrow('stock')}</span>
+        <span></span></div>`;
+    grid.innerHTML=head+page.map(m=>`
       <div class="mch-lrow" data-id="${m.id}">
         <span class="mch-ico">${MERCH_ICON[m.type]||'📦'}</span>
         <span class="mch-lname"><b>${esc(m.name)}</b><span class="mch-meta">${tt(MERCH_TYPES[m.type]||'mch.t_other')}</span></span>
@@ -2541,6 +2593,8 @@ function initFeatures(){
   $('#mch-save')?.addEventListener('click',saveMerch);
   $('#mch-search')?.addEventListener('input',renderMerch);
   $('#merch-grid')?.addEventListener('click',e=>{
+    const so=e.target.closest('[data-msort]'); if(so){ const c=so.dataset.msort;
+      if(merchSort.col===c) merchSort.dir*=-1; else merchSort={col:c,dir:(c==='name'?1:-1)}; renderMerch(); return; }
     const s=e.target.closest('[data-mch-sell]'); if(s) return sellMerch(s.dataset.mchSell);
     const ed=e.target.closest('[data-mch-edit]'); if(ed) return openMerchForm(ed.dataset.mchEdit);
     const dl=e.target.closest('[data-mch-del]'); if(dl) return deleteMerch(dl.dataset.mchDel);

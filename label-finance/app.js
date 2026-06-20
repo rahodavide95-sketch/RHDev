@@ -238,7 +238,7 @@ function goto(view){
   if(view==='releases') renderReleases();
   if(view==='royalties') renderRoyalties();
   if(view==='artists') renderArtists();
-  if(view==='contracts') renderContracts();
+  if(view==='contracts'){ renderContracts(); refreshContractStatuses(); }
   if(view==='tasks') renderTasks();
   if(view==='offers') renderOffers();
   if(view==='settings') renderSettings();
@@ -1976,14 +1976,48 @@ function saveCurrentContract(){ if(!currentContract) return;
   const i=DB.contracts.findIndex(x=>x.id===currentContract.id);
   if(i>=0) DB.contracts[i]=currentContract; else DB.contracts.push(currentContract);
   save(); }
-function sendContract(){
+async function sendContract(){
   if(!currentContract) return; const c=currentContract;
-  if(c.status==='draft'){ c.status='sent'; c.sentAt=Date.now(); }
-  saveCurrentContract(); renderContracts();
+  if(window.LF_sendForSignature){
+    const sendBtn=$('#con-send'); if(sendBtn) sendBtn.disabled=true;
+    toast(tt('con.sending'));
+    const r=await window.LF_sendForSignature(c);
+    if(sendBtn) sendBtn.disabled=false;
+    if(r && r.link){
+      c.token=r.token; if(c.status==='draft'||!c.status) c.status='sent'; c.sentAt=Date.now();
+      saveCurrentContract(); renderContracts();
+      openShareModal(r.link, c);
+      return;
+    }
+    // se manca il backend firma (tabella non creata), fallback su email
+    toast((r&&r.error)?(`${tt('con.send_fail')} (${r.error})`):tt('con.send_fail'));
+  }
+  // fallback: apre l'email con il testo del contratto
+  if(c.status==='draft'||!c.status){ c.status='sent'; c.sentAt=Date.now(); saveCurrentContract(); renderContracts(); }
   const subject=encodeURIComponent(`Release Authorization — ${c.titles} · ${c.label}`);
   const body=encodeURIComponent(tt('con.mail_intro').replace('{label}',c.label)+'\n\n'+contractPlainText(c)+'\n\n'+tt('con.mail_foot'));
-  if(c.email){ window.location.href=`mailto:${encodeURIComponent(c.email)}?subject=${subject}&body=${body}`; toast(tt('con.sent')); }
-  else { toast(tt('con.no_email')); }
+  if(c.email) window.location.href=`mailto:${encodeURIComponent(c.email)}?subject=${subject}&body=${body}`;
+}
+function openShareModal(link, c){
+  const m=$('#share-modal'); if(!m){ prompt(tt('con.share_link'), link); return; }
+  $('#share-link').value=link;
+  const msg=tt('con.share_msg').replace('{label}',c.label).replace('{titles}',c.titles||'');
+  const wa=`https://wa.me/?text=${encodeURIComponent(msg+'\n'+link)}`;
+  const subj=encodeURIComponent(`Firma il contratto — ${c.label}`);
+  const mail=`mailto:${encodeURIComponent(c.email||'')}?subject=${subj}&body=${encodeURIComponent(msg+'\n\n'+link)}`;
+  $('#share-wa').href=wa; $('#share-mail').href=mail;
+  m.hidden=false;
+}
+async function refreshContractStatuses(){
+  if(!window.LF_refreshContractStatuses) return;
+  const rows=await window.LF_refreshContractStatuses(); if(!rows) return;
+  let changed=false;
+  rows.forEach(r=>{ const c=(DB.contracts||[]).find(x=>x.token===r.token); if(!c) return;
+    if(r.status && r.status!==c.status){ c.status=r.status; changed=true; }
+    if(r.signature && !c.signed){ c.signed=r.signature; changed=true; }
+    if(r.reject_reason && c.rejectReason!==r.reject_reason){ c.rejectReason=r.reject_reason; changed=true; }
+  });
+  if(changed){ save(); renderContracts(); }
 }
 function printContract(){
   if(!currentContract) return;
@@ -2013,6 +2047,7 @@ function deleteContract(id){ const c=DB.contracts.find(x=>x.id===id); if(!c) ret
   DB.contracts=DB.contracts.filter(x=>x.id!==id); save(); renderContracts(); }
 function conStatusPill(s){
   if(s==='signed') return `<span class="pill pill-ok">${tt('con.st_signed')}</span>`;
+  if(s==='rejected') return `<span class="pill pill-bad">${tt('con.st_rejected')}</span>`;
   if(s==='sent') return `<span class="pill pill-sent">${tt('con.st_sent')}</span>`;
   return `<span class="pill">${tt('con.st_draft')}</span>`;
 }
@@ -2025,7 +2060,8 @@ function renderContracts(){
   const head=`<thead><tr><th>${tt('con.titles')}</th><th>${tt('con.fullname')}</th><th>${tt('con.split_short')}</th><th>${tt('con.date')}</th><th>${tt('con.status')}</th><th></th></tr></thead>`;
   const rows=list.map(c=>{
     const who=esc(c.projectName||c.fullName||c.artistNames||'—');
-    return `<tr><td><b>${esc(c.titles||'—')}</b></td><td class="muted small">${who}</td><td>${c.artistPct}/${100-c.artistPct}</td><td>${esc(c.date)}</td><td>${conStatusPill(c.status)}</td>
+    const reason = c.status==='rejected'&&c.rejectReason ? `<div class="con-reason">“${esc(c.rejectReason)}”</div>` : '';
+    return `<tr><td><b>${esc(c.titles||'—')}</b></td><td class="muted small">${who}</td><td>${c.artistPct}/${100-c.artistPct}</td><td>${esc(c.date)}</td><td>${conStatusPill(c.status)}${reason}</td>
       <td class="con-row-act"><button class="icon-btn-sm" data-con-open="${c.id}" title="${tt('con.open')}">↗</button>
         <button class="icon-btn-sm" data-con-del="${c.id}" title="${tt('common.delete')}">🗑</button></td></tr>`;
   }).join('');
@@ -2143,6 +2179,12 @@ function initFeatures(){
     try{ localStorage.setItem(AI_KEY_LS,v); }catch(e){} $('#ai-key').value=''; aiStat();
     const b=$('#ai-body'); if(b) b.dataset.ready=''; renderAiPanel(); toast(tt('set.ai_saved')); });
   $('#ai-key-clear')?.addEventListener('click',()=>{ try{ localStorage.removeItem(AI_KEY_LS); }catch(e){} aiStat(); toast(tt('set.ai_removed')); });
+  // Condivisione link firma
+  $('#share-close')?.addEventListener('click',()=>{ $('#share-modal').hidden=true; });
+  $('#share-modal')?.addEventListener('click',e=>{ if(e.target.id==='share-modal') $('#share-modal').hidden=true; });
+  $('#share-copy')?.addEventListener('click',()=>{ const i=$('#share-link'); i.select();
+    try{ navigator.clipboard.writeText(i.value); }catch(e){ document.execCommand&&document.execCommand('copy'); }
+    toast(tt('con.link_copied')); });
   // Firma
   $('#sign-close')?.addEventListener('click',closeSignPad);
   $('#sign-clear')?.addEventListener('click',()=>{ if(sigPad) sigPad.clear(); });

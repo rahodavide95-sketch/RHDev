@@ -169,6 +169,30 @@
       return data;
     }catch(e){ return { error:e.message||'ai_error' }; }
   };
+  /* ---------- Firma remota dei contratti ---------- */
+  function randToken(){ try{ return crypto.randomUUID().replace(/-/g,''); }catch(e){ return Date.now().toString(36)+Math.random().toString(36).slice(2,10); } }
+  window.LF_signLink = function(token){ try{ return new URL('firma.html?t='+encodeURIComponent(token), location.href).href; }catch(e){ return 'firma.html?t='+token; } };
+  /* salva il contratto sul cloud e restituisce token + link di firma */
+  window.LF_sendForSignature = async function(contract){
+    if(!client) return { error:'offline' };
+    if(!user) return { error:'unauthorized' };
+    const token = contract.token || randToken();
+    const row = { token, owner_id:user.id, label:contract.label||'', artist_email:contract.email||'',
+      data:contract, status:'sent', updated_at:new Date().toISOString() };
+    try{
+      const { error } = await client.from('contracts').upsert(row, { onConflict:'token' });
+      if(error) return { error:error.message||'db_error' };
+      return { token, link: window.LF_signLink(token) };
+    }catch(e){ return { error:e.message||'db_error' }; }
+  };
+  /* legge lo stato firma/rifiuto dei contratti dell'utente */
+  window.LF_refreshContractStatuses = async function(){
+    if(!client||!user) return null;
+    try{
+      const { data, error } = await client.from('contracts').select('token,status,signature,reject_reason,updated_at').eq('owner_id', user.id);
+      if(error) return null; return data||[];
+    }catch(e){ return null; }
+  };
   async function saveAccount(){
     const name=$('account-name').value.trim(), surname=$('account-surname')?$('account-surname').value.trim():'', label=$('account-label').value.trim();
     window.LF.setProfile({ name, surname, label });

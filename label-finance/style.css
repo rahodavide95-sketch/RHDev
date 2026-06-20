@@ -267,6 +267,7 @@ body.dash-edit .dw-width{display:inline-flex;gap:2px;position:absolute;top:8px;l
 .share-body{padding:4px 2px}
 .share-body .input[readonly]{background:var(--panel-2);font-size:.85rem}
 .share-body a.btn{text-decoration:none;text-align:center}
+.ej-template-box{margin-top:12px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:12px;font-size:.72rem;line-height:1.45;white-space:pre-wrap;word-break:break-word;max-height:260px;overflow:auto;color:var(--muted)}
 /* firma */
 .sign-body{padding:4px 2px}
 .sign-canvas{width:100%;height:180px;background:#fff;border:1px solid var(--line);border-radius:10px;touch-action:none;cursor:crosshair;margin:6px 0 4px}

@@ -21,7 +21,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=44">
+  <link rel="stylesheet" href="style.css?v=45">
 </head>
 <body class="gated">
 
@@ -747,6 +747,26 @@
       </div>
 
       <div class="panel">
+        <div class="panel-head"><h2 data-i18n="set.email">Email automatica contratti</h2>
+          <span class="muted small" data-i18n="set.email_sub">Invio automatico del contratto all'artista (via EmailJS).</span></div>
+        <div class="panel-body">
+          <p class="muted small" data-i18n="set.email_info">Con EmailJS l'email parte automaticamente dall'indirizzo della tua etichetta, senza server. Crea un account gratuito su emailjs.com, collega la tua email, crea un template e incolla qui i 3 codici. Restano salvati solo in questo browser.</p>
+          <div class="form-grid" style="margin-top:10px">
+            <label class="fld"><span data-i18n="set.email_service">Service ID</span><input class="input" id="ej-service" autocomplete="off"></label>
+            <label class="fld"><span data-i18n="set.email_template">Template ID</span><input class="input" id="ej-template" autocomplete="off"></label>
+            <label class="fld"><span data-i18n="set.email_key">Public Key</span><input class="input" id="ej-key" autocomplete="off"></label>
+          </div>
+          <div class="row-inline wrap" style="margin-top:10px">
+            <button class="btn btn-primary" id="ej-save" data-i18n="set.email_save">Salva</button>
+            <button class="btn btn-ghost" id="ej-clear" data-i18n="set.email_clear">Rimuovi</button>
+            <button class="btn btn-ghost" id="ej-template-btn" data-i18n="set.email_tpl">Mostra template email</button>
+          </div>
+          <p class="muted small" id="ej-status"></p>
+          <pre class="ej-template-box" id="ej-template-box" hidden></pre>
+        </div>
+      </div>
+
+      <div class="panel">
         <div class="panel-head"><h2 data-i18n="set.backup">Backup & dati</h2></div>
         <div class="panel-body">
           <p class="muted small">I dati sono salvati solo su questo dispositivo/browser. Esporta un backup regolarmente.</p>
@@ -1460,11 +1480,11 @@
   <!-- Area di stampa per lo statement royalty (visibile solo in stampa) -->
   <div id="print-area" aria-hidden="true"></div>
 
-  <script src="html2pdf.bundle.min.js?v=44"></script>
-  <script src="app.js?v=44"></script>
-  <script src="config.js?v=44"></script>
-  <script src="i18n.js?v=44"></script>
+  <script src="html2pdf.bundle.min.js?v=45"></script>
+  <script src="app.js?v=45"></script>
+  <script src="config.js?v=45"></script>
+  <script src="i18n.js?v=45"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="sync.js?v=44"></script>
+  <script src="sync.js?v=45"></script>
 </body>
 </html>

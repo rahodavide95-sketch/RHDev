@@ -2039,6 +2039,13 @@ async function sendContract(){
     if(r && r.link){
       c.token=r.token; if(c.status==='draft'||!c.status) c.status='sent'; c.sentAt=Date.now();
       saveCurrentContract(); renderContracts();
+      // invio email automatico se EmailJS è configurato e c'è l'indirizzo
+      if(ejReady() && c.email){
+        toast(tt('con.emailing'));
+        const er=await sendContractEmail(c, r.link);
+        if(er && er.ok) toast(tt('con.email_sent').replace('{email}',c.email));
+        else toast(tt('con.email_fail')+((er&&er.error)?` (${er.error})`:''));
+      }
       openShareModal(r.link, c);
       return;
     }
@@ -2051,6 +2058,42 @@ async function sendContract(){
   const body=encodeURIComponent(tt('con.mail_intro').replace('{label}',c.label)+'\n\n'+contractPlainText(c)+'\n\n'+tt('con.mail_foot'));
   if(c.email) window.location.href=`mailto:${encodeURIComponent(c.email)}?subject=${subject}&body=${body}`;
 }
+/* ---------- Invio email automatico (EmailJS, lato browser) ---------- */
+const EJ_LS='labelfinance.emailjs';
+function ejCfg(){ try{ return JSON.parse(localStorage.getItem(EJ_LS))||null; }catch(e){ return null; } }
+function ejReady(){ const c=ejCfg(); return !!(c&&c.service&&c.template&&c.key); }
+async function sendContractEmail(c, link){
+  const cfg=ejCfg(); if(!ejReady()) return {error:'not_configured'};
+  if(!c.email) return {error:'no_email'};
+  const params={ to_email:c.email, email:c.email, to_name:(c.fullName||c.projectName||''),
+    label:c.label, titles:c.titles||'', sign_link:link, message:tt('con.mail_intro').replace('{label}',c.label), reply_to:'' };
+  try{
+    const r=await fetch('https://api.emailjs.com/api/v1.0/email/send',{ method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ service_id:cfg.service, template_id:cfg.template, user_id:cfg.key, template_params:params }) });
+    if(!r.ok){ let d=''; try{ d=await r.text(); }catch{} return {error:`ej_http_${r.status}`, detail:d.slice(0,200)}; }
+    return {ok:true};
+  }catch(e){ return {error:e.message||'ej_error'}; }
+}
+const EJ_TEMPLATE=`<!-- Template email per EmailJS — incollalo nel campo "Content" (modalità HTML).
+     Imposta "To email" = {{to_email}}.  Variabili usate: label, titles, sign_link, to_name, message -->
+<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #eee;border-radius:14px;overflow:hidden">
+  <div style="background:linear-gradient(135deg,#7c3aed,#a78bfa);padding:26px 28px;color:#fff">
+    <div style="font-size:20px;font-weight:800;letter-spacing:-.4px">{{label}}</div>
+    <div style="opacity:.9;font-size:13px;margin-top:2px">Authorization to Release</div>
+  </div>
+  <div style="padding:26px 28px;color:#222;font-size:15px;line-height:1.6">
+    <p>Ciao {{to_name}},</p>
+    <p>{{message}}</p>
+    <p style="margin:18px 0">Opera/Release: <b>{{titles}}</b></p>
+    <p style="text-align:center;margin:26px 0">
+      <a href="{{sign_link}}" style="background:#7c3aed;color:#fff;text-decoration:none;font-weight:700;padding:14px 26px;border-radius:12px;display:inline-block">Leggi e firma il contratto</a>
+    </p>
+    <p style="font-size:13px;color:#666">Potrai leggere il contratto, firmarlo se sei d'accordo, oppure rifiutarlo indicando il motivo per un diverso accordo.</p>
+    <p style="font-size:13px;color:#666">Se il pulsante non funziona, copia questo link:<br>{{sign_link}}</p>
+  </div>
+  <div style="padding:14px 28px;background:#faf8ff;color:#999;font-size:12px;text-align:center">Inviato con Label Finance</div>
+</div>`;
 function openShareModal(link, c){
   const m=$('#share-modal'); if(!m){ prompt(tt('con.share_link'), link); return; }
   $('#share-link').value=link;
@@ -2328,6 +2371,14 @@ function initFeatures(){
     try{ localStorage.setItem(AI_KEY_LS,v); }catch(e){} $('#ai-key').value=''; aiStat();
     if($('#ai-pop') && !$('#ai-pop').hidden) aiPopBody(); toast(tt('set.ai_saved')); });
   $('#ai-key-clear')?.addEventListener('click',()=>{ try{ localStorage.removeItem(AI_KEY_LS); }catch(e){} aiStat(); toast(tt('set.ai_removed')); });
+  // EmailJS (invio automatico contratti)
+  const ejStat=()=>{ const s=$('#ej-status'); if(s) s.textContent= ejReady()?tt('set.email_set'):tt('set.email_unset'); };
+  { const c=ejCfg(); if(c){ if($('#ej-service'))$('#ej-service').value=c.service||''; if($('#ej-template'))$('#ej-template').value=c.template||''; if($('#ej-key'))$('#ej-key').value=c.key||''; } ejStat(); }
+  $('#ej-save')?.addEventListener('click',()=>{ const cfg={service:$('#ej-service').value.trim(),template:$('#ej-template').value.trim(),key:$('#ej-key').value.trim()};
+    if(!cfg.service||!cfg.template||!cfg.key){ toast(tt('set.email_need')); return; }
+    try{ localStorage.setItem(EJ_LS,JSON.stringify(cfg)); }catch(e){} ejStat(); toast(tt('set.email_saved')); });
+  $('#ej-clear')?.addEventListener('click',()=>{ try{ localStorage.removeItem(EJ_LS); }catch(e){} ['ej-service','ej-template','ej-key'].forEach(id=>{const e=$('#'+id); if(e)e.value='';}); ejStat(); toast(tt('set.email_removed')); });
+  $('#ej-template-btn')?.addEventListener('click',()=>{ const b=$('#ej-template-box'); if(!b) return; b.hidden=!b.hidden; if(!b.dataset.set){ b.textContent=EJ_TEMPLATE; b.dataset.set='1'; } });
   // Condivisione link firma
   $('#share-close')?.addEventListener('click',()=>{ $('#share-modal').hidden=true; });
   $('#share-modal')?.addEventListener('click',e=>{ if(e.target.id==='share-modal') $('#share-modal').hidden=true; });

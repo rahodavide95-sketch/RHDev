@@ -321,6 +321,20 @@ body.dash-edit .dw-width{display:inline-flex;gap:2px;position:absolute;top:8px;l
 .tsk-due{font-size:.8rem;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 .tsk-due.over{color:var(--out);font-weight:700}
 .tsk-due.today{color:var(--accent);font-weight:700}
+.tsk-bell{flex:none;font-size:.9rem}
+.tsk-notif-hint{margin-top:10px}
+/* popup avvisi scadenze (in-app) */
+.lf-alerts{position:fixed;top:calc(14px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:80;display:flex;flex-direction:column;gap:10px;width:min(420px,calc(100vw - 24px))}
+.lf-alert{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);
+  border-radius:14px;padding:12px 14px;box-shadow:0 16px 40px rgba(0,0,0,.3);animation:lf-alert-in .3s ease}
+.lf-alert.out{opacity:0;transform:translateY(-8px);transition:.4s}
+@keyframes lf-alert-in{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:none}}
+.lf-alert-ic{font-size:1.4rem;flex:none}
+.lf-alert-tx{flex:1;min-width:0;display:flex;flex-direction:column;cursor:pointer}
+.lf-alert-tx b{font-size:.92rem}
+.lf-alert-tx span{font-size:.84rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lf-alert-x{flex:none;background:none;border:none;color:var(--muted);font-size:.95rem;cursor:pointer;border-radius:8px;width:28px;height:28px}
+.lf-alert-x:hover{color:var(--text);background:var(--panel-2)}
 
 /* ===== Merch ===== */
 .mch-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}

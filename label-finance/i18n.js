@@ -75,6 +75,8 @@
       'tsk.what':"Cosa c'è da fare *",'tsk.what_ph':'Es. Pagare royalty a Mario','tsk.type':'Tipo','tsk.due':'Scadenza','tsk.add':'＋ Aggiungi task',
       'tsk.t_payment':'Pagamento','tsk.t_contract':'Contratto','tsk.t_other':'Altro','tsk.completed':'Completati',
       'tsk.empty':'Nessun task. Aggiungi il primo promemoria qui sopra.','tsk.need_title':'Scrivi cosa c’è da fare.','tsk.added':'Task aggiunto',
+      'tsk.time':'Orario','tsk.remind':'Preavviso','tsk.r_none':'Nessuno','tsk.r_10':'10 minuti prima','tsk.r_30':'30 minuti prima','tsk.r_60':'1 ora prima','tsk.r_180':'3 ore prima','tsk.r_1440':'1 giorno prima',
+      'tsk.notif_pre':'Promemoria in arrivo','tsk.notif_due':'Scadenza adesso','tsk.notif_hint':"Attiva le notifiche del browser per ricevere gli avvisi anche quando l'app è in secondo piano.",
       // Merch
       'mch.title':'Merch','mch.subtitle':'Catalogo merchandising, vendite, ricavi e magazzino.','mch.search':'Cerca articolo…',
       'mch.new':'Nuovo articolo','mch.edit':'Modifica articolo','mch.name':'Nome articolo *','mch.type':'Tipo',
@@ -234,6 +236,8 @@
       'tsk.what':'What needs doing *','tsk.what_ph':'E.g. Pay royalties to Mario','tsk.type':'Type','tsk.due':'Due date','tsk.add':'＋ Add task',
       'tsk.t_payment':'Payment','tsk.t_contract':'Contract','tsk.t_other':'Other','tsk.completed':'Completed',
       'tsk.empty':'No tasks. Add your first reminder above.','tsk.need_title':'Write what needs doing.','tsk.added':'Task added',
+      'tsk.time':'Time','tsk.remind':'Pre-alert','tsk.r_none':'None','tsk.r_10':'10 minutes before','tsk.r_30':'30 minutes before','tsk.r_60':'1 hour before','tsk.r_180':'3 hours before','tsk.r_1440':'1 day before',
+      'tsk.notif_pre':'Reminder coming up','tsk.notif_due':'Due now','tsk.notif_hint':'Enable browser notifications to get alerts even when the app is in the background.',
       // Merch
       'mch.title':'Merch','mch.subtitle':'Merchandising catalog, sales, revenue and stock.','mch.search':'Search item…',
       'mch.new':'New item','mch.edit':'Edit item','mch.name':'Item name *','mch.type':'Type',

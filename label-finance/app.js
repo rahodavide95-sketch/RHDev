@@ -2282,22 +2282,24 @@ function updateConSendBtn(){
 }
 
 /* ---------- Task ---------- */
+function tskKey(t){ return (t.due||'9999-99-99')+'T'+(t.time||'99:99'); }
 function renderTasks(){
   const cont=$('#tasks-list'); if(!cont) return;
   const list=(DB.tasks||[]); $('#tasks-empty').hidden=list.length>0;
   const today=isoD(new Date());
-  const open=list.filter(t=>!t.done).sort((a,b)=>(a.due||'9999').localeCompare(b.due||'9999'));
-  const done=list.filter(t=>t.done).sort((a,b)=>(b.due||'').localeCompare(a.due||''));
+  const open=list.filter(t=>!t.done).sort((a,b)=>tskKey(a).localeCompare(tskKey(b)));
+  const done=list.filter(t=>t.done).sort((a,b)=>tskKey(b).localeCompare(tskKey(a)));
   const icon={payment:'💸',contract:'📄',other:'•'};
   const row=t=>{
-    const overdue=t.due && !t.done && t.due<today;
+    const overdue=t.due && !t.done && tskKey(t) < (today+'T'+new Date().toTimeString().slice(0,5));
     const soon=t.due && !t.done && t.due===today;
-    const due = t.due?`<span class="tsk-due ${overdue?'over':''} ${soon?'today':''}">${overdue?'⚠ ':''}${esc(t.due)}</span>`:'';
+    const when = t.due?`<span class="tsk-due ${overdue?'over':''} ${soon?'today':''}">${overdue?'⚠ ':''}${esc(t.due)}${t.time?(' · '+esc(t.time)):''}</span>`:'';
+    const bell = (t.remind&&t.due&&!t.done)?`<span class="tsk-bell" title="${tt('tsk.remind')}">🔔</span>`:'';
     return `<div class="tsk-row ${t.done?'is-done':''}" data-id="${t.id}">
       <button class="tsk-check" data-tsk-toggle="${t.id}" aria-label="done">${t.done?'✓':''}</button>
       <span class="tsk-ico">${icon[t.type]||'•'}</span>
       <span class="tsk-title">${esc(t.title)}</span>
-      ${due}
+      ${bell}${when}
       <button class="icon-btn-sm" data-tsk-del="${t.id}" title="${tt('common.delete')}">🗑</button>
     </div>`;
   };
@@ -2315,11 +2317,63 @@ function renderTasks(){
 }
 function addTask(){
   const title=$('#tsk-title').value.trim(); if(!title){ toast(tt('tsk.need_title')); return; }
-  DB.tasks.push({ id:newId(), title, type:$('#tsk-type').value, due:$('#tsk-due').value||'', done:false, createdAt:Date.now() });
-  save(); $('#tsk-title').value=''; $('#tsk-due').value=''; renderTasks(); toast(tt('tsk.added'));
+  DB.tasks.push({ id:newId(), title, type:$('#tsk-type').value, due:$('#tsk-due').value||'',
+    time:$('#tsk-time').value||'', remind:+($('#tsk-remind')&&$('#tsk-remind').value)||0, done:false, createdAt:Date.now() });
+  save(); $('#tsk-title').value=''; $('#tsk-due').value=''; $('#tsk-time').value='';
+  renderTasks(); toast(tt('tsk.added'));
+  ensureNotifyPermission();
 }
 function toggleTask(id){ const t=(DB.tasks||[]).find(x=>x.id===id); if(!t) return; t.done=!t.done; save(); renderTasks(); }
 function deleteTask(id){ DB.tasks=(DB.tasks||[]).filter(x=>x.id!==id); save(); renderTasks(); }
+
+/* ---------- Avvisi task: suoneria + notifica ---------- */
+let lfAudioCtx=null;
+function lfAudio(){ try{ lfAudioCtx=lfAudioCtx||new (window.AudioContext||window.webkitAudioContext)(); if(lfAudioCtx.state==='suspended') lfAudioCtx.resume(); }catch(e){} return lfAudioCtx; }
+function playChime(){
+  const ctx=lfAudio(); if(!ctx) return;
+  try{
+    const t0=ctx.currentTime, notes=[523.25,659.25,783.99,1046.5]; // Do-Mi-Sol-Do, arpeggio dolce
+    notes.forEach((f,i)=>{ const o=ctx.createOscillator(), g=ctx.createGain();
+      o.type='sine'; o.frequency.value=f; const s=t0+i*0.13;
+      g.gain.setValueAtTime(0,s); g.gain.linearRampToValueAtTime(0.16,s+0.02); g.gain.exponentialRampToValueAtTime(0.0001,s+0.55);
+      o.connect(g).connect(ctx.destination); o.start(s); o.stop(s+0.6); });
+  }catch(e){}
+}
+function ensureNotifyPermission(){ try{ if('Notification' in window && Notification.permission==='default') Notification.requestPermission().then(updateNotifHint); }catch(e){} updateNotifHint(); }
+function updateNotifHint(){ const h=$('#tsk-notif-hint'); if(!h) return;
+  h.hidden = !('Notification' in window) || Notification.permission!=='default'; }
+function taskDateTime(t){ if(!t.due) return null; const d=new Date(t.due+'T'+((t.time||'09:00'))+':00'); return isNaN(d.getTime())?null:d.getTime(); }
+function fireTaskAlert(t, kind){
+  const icon={payment:'💸',contract:'📄',other:'•'}[t.type]||'•';
+  const title = kind==='pre' ? tt('tsk.notif_pre') : tt('tsk.notif_due');
+  const body = `${icon} ${t.title}`+(t.due?` — ${t.due}${t.time?(' '+t.time):''}`:'');
+  playChime();
+  let shown=false;
+  if('Notification' in window && Notification.permission==='granted'){
+    try{ const n=new Notification('Label Finance · '+title, { body, icon:'icon.png?v=3', tag:'lf-task-'+t.id, renotify:true });
+      n.onclick=()=>{ try{ window.focus(); }catch(e){} goto('tasks'); n.close(); }; shown=true; }catch(e){}
+  }
+  showTaskPopup(title, body); // mostra sempre anche il popup in-app
+}
+function showTaskPopup(title, body){
+  let wrap=$('#lf-alerts'); if(!wrap){ wrap=document.createElement('div'); wrap.id='lf-alerts'; wrap.className='lf-alerts'; document.body.appendChild(wrap); }
+  const el=document.createElement('div'); el.className='lf-alert';
+  el.innerHTML=`<div class="lf-alert-ic">🔔</div><div class="lf-alert-tx"><b>${esc(title)}</b><span>${esc(body)}</span></div>
+    <button class="lf-alert-x" aria-label="Chiudi">✕</button>`;
+  el.querySelector('.lf-alert-x').onclick=()=>el.remove();
+  el.querySelector('.lf-alert-tx').onclick=()=>{ goto('tasks'); el.remove(); };
+  wrap.appendChild(el);
+  setTimeout(()=>{ el.classList.add('out'); setTimeout(()=>el.remove(),400); }, 12000);
+}
+function checkTaskAlerts(){
+  const now=Date.now(); let changed=false; const WINDOW=12*3600000;
+  (DB.tasks||[]).forEach(t=>{ if(t.done) return; const due=taskDateTime(t); if(!due) return;
+    const pre = due - (t.remind||0)*60000;
+    if((t.remind||0)>0 && !t.notifiedPre && now>=pre){ if(now-pre<WINDOW && now<due) fireTaskAlert(t,'pre'); t.notifiedPre=true; changed=true; }
+    if(!t.notifiedDue && now>=due){ if(now-due<WINDOW) fireTaskAlert(t,'due'); t.notifiedDue=true; changed=true; }
+  });
+  if(changed) save();
+}
 
 /* ---------- Merch ---------- */
 const MERCH_TYPES={tshirt:'mch.t_tshirt',vinyl:'mch.t_vinyl',cd:'mch.t_cd',hoodie:'mch.t_hoodie',poster:'mch.t_poster',other:'mch.t_other'};
@@ -2511,6 +2565,13 @@ renderOffers();
 rebuildAccountMenu();
 initFAQ();
 initFeatures();
+
+/* ---------- Avvisi task: scheduler + audio sbloccato al primo gesto ---------- */
+document.addEventListener('pointerdown', ()=>lfAudio(), {once:true});
+setTimeout(checkTaskAlerts, 4000);
+setInterval(checkTaskAlerts, 30000);
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') checkTaskAlerts(); });
+try{ updateNotifHint(); }catch(e){}
 
 /* ---------- Aggiornamento automatico contratti (firma/rifiuto in tempo reale) ---------- */
 window.addEventListener('lf-contracts-changed', ()=>{ if(typeof refreshContractStatuses==='function') refreshContractStatuses(); });

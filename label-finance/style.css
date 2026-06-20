@@ -334,18 +334,17 @@ body.dash-edit .dw-width{display:inline-flex;gap:2px;position:absolute;top:8px;l
 .dbl-head{background:transparent;border:none;padding:2px 13px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--muted-2)}
 .dbl-sort{cursor:pointer;user-select:none}
 .dbl-sort:hover{color:var(--accent)}
-.dbl-act{display:flex;gap:5px;justify-content:flex-end}
-.dbl--planning .dbl-row{grid-template-columns:118px 96px minmax(0,1.6fr) minmax(0,1fr) 116px 64px}
-.dbl--events .dbl-row{grid-template-columns:150px 92px minmax(0,1.5fr) minmax(0,1.2fr) minmax(0,1fr) minmax(0,.85fr) 64px}
-.dbl--supports .dbl-row{grid-template-columns:118px minmax(0,1.2fr) minmax(0,1.2fr) minmax(0,1.2fr) minmax(0,1fr) minmax(0,.85fr) 64px}
+.dbl-act{display:flex;gap:5px;justify-content:flex-end;align-items:center}
+.dbl-lead{display:flex;align-items:center}
+.dbl-lead .art-av{width:38px;height:38px}
+.dbl-click{cursor:pointer}
+.dbl-click:hover{border-color:var(--accent)}
+.btn-cols2{padding:9px 12px;font-weight:600}
 @media(max-width:880px){
-  .dbl-head{display:none}
-  .dbl--planning .dbl-row{grid-template-columns:80px 1fr 64px}
-  .dbl--planning .dbl-row>span:nth-child(2),.dbl--planning .dbl-row>span:nth-child(4),.dbl--planning .dbl-row>span:nth-child(5){display:none}
-  .dbl--events .dbl-row{grid-template-columns:80px 1fr 64px}
-  .dbl--events .dbl-row>span:nth-child(2),.dbl--events .dbl-row>span:nth-child(4),.dbl--events .dbl-row>span:nth-child(5),.dbl--events .dbl-row>span:nth-child(6){display:none}
-  .dbl--supports .dbl-row{grid-template-columns:80px 1fr 64px}
-  .dbl--supports .dbl-row>span:nth-child(3),.dbl--supports .dbl-row>span:nth-child(4),.dbl--supports .dbl-row>span:nth-child(5),.dbl--supports .dbl-row>span:nth-child(6){display:none}
+  /* le liste a colonne scorrono in orizzontale per restare leggibili e allineate */
+  .dbl{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .dbl-row{min-width:620px}
+  .dbl-head{font-size:.68rem}
 }
 
 /* link di collegamento tra sezioni: mai nero, sempre sottolineato */

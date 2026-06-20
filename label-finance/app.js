@@ -937,32 +937,21 @@ function sortReleases(arr){
   });
 }
 function renderReleases(){
-  const all=sortReleases(releases().slice());
+  const all=colSort('releases', releases().slice(), relSort);
   $('#rel-count-label').textContent=`${all.length} release`;
   const info=paginate(all,'rel'); const list=info.slice;
   const cont=$('#releases-cards'); const mode=getVM('releases','cards');
   if(!list.length){ cont.className='releases-cards'; cont.innerHTML=`<p class="muted">${tt('empty.norel')}</p>`; mountPager(cont,'rel',info); syncVMButtons(); return; }
   if(mode==='list'){
-    cont.className='release-list';
-    const arrow=c=>relSort.col===c?(relSort.dir>0?' ▲':' ▼'):'';
-    const head=`<div class="release-lrow release-lhead">
-      <span class="rl-sort" data-rsort="catalog">${tt('col.catalog')}${arrow('catalog')}</span>
-      <span class="rl-sort" data-rsort="title">${tt('rel.c_title')}${arrow('title')}</span>
-      <span class="rl-sort" data-rsort="year">${tt('rel.c_year')}${arrow('year')}</span>
-      <span>${tt('rel.c_split')}</span>
-      <span class="rl-sort" data-rsort="isrc">ISRC${arrow('isrc')}</span></div>`;
-    cont.innerHTML = head + list.map(r=>{
-      const tot=(r.splits||[]).reduce((s,x)=>s+(+x.pct||0),0); const label=Math.max(0,100-tot);
-      const who=(r.splits||[]).map(s=>esc(s.name)+' '+(+s.pct||0)+'%').join(' · ')+(label?` · Label ${label}%`:'');
-      return `<div class="release-lrow" data-id="${r.id}">
-        <span class="release-cat">${esc(r.catalog)}</span>
-        <span class="release-lname">${esc(r.title)||'—'}</span>
-        <span class="muted small">${r.year||''}</span>
-        <span class="release-lsplit muted small">${who}</span>
-        ${(r.tracks&&r.tracks.length)?`<span class="release-ltag">${r.tracks.length} ISRC</span>`:'<span></span>'}
-      </div>`;
-    }).join('');
-  } else {
+    cont.className='dbl';
+    const cols=colsFor('releases');
+    cont.innerHTML = dbHead(cols,relSort,{})+dbRows(list,cols,{rowCls:'dbl-click'});
+    cont.querySelectorAll('.dbl-row[data-id]').forEach(c=>c.onclick=e=>{ if(e.target.closest('[data-sort]')) return; openRelease(c.dataset.id); });
+    cont.querySelectorAll('[data-sort]').forEach(h=>h.onclick=e=>{ e.stopPropagation(); const k=h.dataset.sort;
+      if(relSort.col===k) relSort.dir*=-1; else relSort={col:k,dir:1}; renderReleases(); });
+    mountPager(cont,'rel',info); syncVMButtons(); return;
+  }
+  {
     cont.className='releases-cards';
     cont.innerHTML = list.map(r=>{
       const tot=(r.splits||[]).reduce((s,x)=>s+(+x.pct||0),0); const label=Math.max(0,100-tot);
@@ -1977,7 +1966,7 @@ function renderArtists(){
   const grid=$('#artists-grid'); if(!grid) return;
   const q=($('#art-search')&&$('#art-search').value||'').toLowerCase().trim();
   let all=(DB.artists||[]).filter(a=> !q || (a.name+' '+(a.legal||'')+' '+(a.email||'')).toLowerCase().includes(q));
-  all=sortArtists(all);
+  all=colSort('artists', all, artSort);
   $('#artists-empty').hidden = (DB.artists||[]).length>0;
   const info=paginate(all,'artists'); const list=info.slice;
   const mode=getVM('artists','cards');
@@ -1986,23 +1975,9 @@ function renderArtists(){
         <button class="icon-btn-sm" data-art-edit="${a.id}" title="${tt('common.edit')}">✎</button>
         <button class="icon-btn-sm" data-art-del="${a.id}" title="${tt('common.delete')}">🗑</button></div>`;
   if(mode==='list'){
-    grid.className='art-list';
-    const arrow=c=>artSort.col===c?(artSort.dir>0?' ▲':' ▼'):'';
-    const head=`<div class="art-lrow art-lhead"><span></span>
-        <span class="art-sort" data-asort="name">${tt('art.h_name')}${arrow('name')}</span>
-        <span class="art-sort art-c-email" data-asort="email">${tt('art.h_email')}${arrow('email')}</span>
-        <span class="art-sort art-c-phone" data-asort="phone">${tt('art.h_phone')}${arrow('phone')}</span>
-        <span class="art-sort art-c-split" data-asort="split">${tt('art.h_split')}${arrow('split')}</span>
-        <span></span></div>`;
-    grid.innerHTML = head + list.map(a=>`
-      <div class="art-lrow" data-id="${a.id}">
-        ${av(a)}
-        <div class="art-c art-c-name"><b>${esc(a.name)}</b>${a.legal?`<span class="art-meta">${esc(a.legal)}</span>`:''}</div>
-        <div class="art-c art-c-email art-meta">${a.email?esc(a.email):'—'}</div>
-        <div class="art-c art-c-phone art-meta">${a.phone?esc(a.phone):'—'}</div>
-        <div class="art-c art-c-split">${a.split?`<span class="art-split">${esc(a.split)}%</span>`:'—'}</div>
-        ${acts(a)}
-      </div>`).join('');
+    grid.className='dbl';
+    const cols=colsFor('artists');
+    grid.innerHTML = dbHead(cols,artSort,{leadW:44,actions:1}) + dbRows(list,cols,{leadW:44,lead:av,actions:a=>rowActs('art',a.id)});
   } else {
     grid.className='art-grid';
     grid.innerHTML = list.map(a=>`
@@ -2524,33 +2499,15 @@ function renderMerch(){
     <div class="mch-stat"><span class="mch-stat-l">${tt('mch.top')}</span><span class="mch-stat-v">${top&&top.sold?esc(top.name):'—'}</span></div>` : '';
   const list=allItems.filter(m=> !q || (m.name||'').toLowerCase().includes(q));
   $('#merch-empty').hidden = allItems.length>0;
-  const sorted=sortMerch(list);
+  const sorted=colSort('merch', list, merchSort);
   const info=paginate(sorted,'merch'); const page=info.slice;
   const mode=getVM('merch','cards');
   const lowStock=m=>(m.stock!=null && +m.stock<=3);
   if(mode==='list'){
-    grid.className='mch-list';
-    const arrow=c=>merchSort.col===c?(merchSort.dir>0?' ▲':' ▼'):'';
-    const head=`<div class="mch-lrow mch-lhead"><span></span>
-        <span class="mch-sort" data-msort="name">${tt('mch.name_h')}${arrow('name')}</span>
-        <span class="mch-sort" data-msort="price">${tt('mch.price_h')}${arrow('price')}</span>
-        <span class="mch-sort" data-msort="sold">${tt('mch.sold_h')}${arrow('sold')}</span>
-        <span class="mch-sort" data-msort="revenue">${tt('mch.revenue')}${arrow('revenue')}</span>
-        <span class="mch-sort" data-msort="stock">${tt('mch.stock')}${arrow('stock')}</span>
-        <span></span></div>`;
-    grid.innerHTML=head+page.map(m=>`
-      <div class="mch-lrow" data-id="${m.id}">
-        <span class="mch-ico">${MERCH_ICON[m.type]||'📦'}</span>
-        <span class="mch-lname"><b>${esc(m.name)}</b><span class="mch-meta">${tt(MERCH_TYPES[m.type]||'mch.t_other')}</span></span>
-        <span class="mch-lcol">${fmtMoney(m.price)}</span>
-        <span class="mch-lcol">${m.sold||0} ${tt('mch.sold_u')}</span>
-        <span class="mch-lcol pos">${fmtMoney(merchRevenue(m))}</span>
-        <span class="mch-lcol ${lowStock(m)?'mch-low':''}">${m.stock!=null?(tt('mch.stock')+': '+m.stock):''}</span>
-        <span class="mch-act">
-          <button class="btn btn-sm btn-income" data-mch-sell="${m.id}">+ ${tt('mch.sell')}</button>
-          <button class="icon-btn-sm" data-mch-edit="${m.id}">✎</button>
-          <button class="icon-btn-sm" data-mch-del="${m.id}">🗑</button></span>
-      </div>`).join('');
+    grid.className='dbl';
+    const cols=colsFor('merch');
+    const acts=m=>`<button class="btn btn-sm btn-income" data-mch-sell="${m.id}">+ ${tt('mch.sell')}</button><button class="icon-btn-sm" data-mch-edit="${m.id}">✎</button><button class="icon-btn-sm" data-mch-del="${m.id}">🗑</button>`;
+    grid.innerHTML = dbHead(cols,merchSort,{actions:1,actW:170}) + dbRows(page,cols,{actions:acts,actW:170});
   } else {
     grid.className='mch-grid';
     grid.innerHTML=page.map(m=>`
@@ -2614,16 +2571,111 @@ function sortBy(arr, st, numKeys){
     return String(a[k]||'').toLowerCase().localeCompare(String(b[k]||'').toLowerCase())*d;
   });
 }
-function dbHead(cols, st){
-  const arrow=c=>st.col===c?(st.dir>0?' ▲':' ▼'):'';
-  return `<div class="dbl-row dbl-head">${cols.map(c=>`<span class="${c.cls||''} dbl-sort" data-sort="${c.key}">${esc(c.label)}${arrow(c.key)}</span>`).join('')}<span></span></div>`;
+function dblTmpl(cols, leadW, actW){ return (leadW?leadW+'px ':'')+cols.map(c=>c.w?c.w+'px':`minmax(0,${c.grow||1}fr)`).join(' ')+(actW?` ${actW}px`:''); }
+function colLab(c){ return typeof c.label==='function'?c.label():c.label; }
+function dbHead(cols, st, opt){ opt=opt||{}; const t=dblTmpl(cols,opt.leadW,opt.actions?(opt.actW||66):0); const arrow=c=>st.col===c?(st.dir>0?' ▲':' ▼'):'';
+  return `<div class="dbl-row dbl-head" style="grid-template-columns:${t}">${opt.leadW?'<span></span>':''}${cols.map(c=>`<span class="dbl-sort" data-sort="${c.key}">${esc(colLab(c))}${arrow(c.key)}</span>`).join('')}${opt.actions?'<span></span>':''}</div>`; }
+function dbRows(items, cols, opt){ opt=opt||{}; const t=dblTmpl(cols,opt.leadW,opt.actions?(opt.actW||66):0);
+  return items.map(it=>`<div class="dbl-row ${opt.rowCls||''}" data-id="${it.id}" style="grid-template-columns:${t}">${opt.lead?`<span class="dbl-lead">${opt.lead(it)}</span>`:''}${cols.map(c=>`<span class="${c.cls||''}">${c.cell(it)||'—'}</span>`).join('')}${opt.actions?`<span class="dbl-act">${opt.actions(it)}</span>`:''}</div>`).join('');
 }
-function dbRows(items, cols, actions){
-  return items.map(it=>`<div class="dbl-row" data-id="${it.id}">${cols.map(c=>`<span class="${c.cls||''}">${c.cell(it)||'—'}</span>`).join('')}<span class="dbl-act">${actions(it)}</span></div>`).join('');
-}
+/* registro colonne per sezione + configurazione (mostra/nascondi/ordina) */
+function relSplitText(r){ const tot=(r.splits||[]).reduce((s,x)=>s+(+x.pct||0),0); const lbl=Math.max(0,100-tot);
+  return (r.splits||[]).map(s=>esc(s.name)+' '+(+s.pct||0)+'%').join(' · ')+(lbl?` · Label ${lbl}%`:''); }
+function colCfg(sec){ DB.colCfg=DB.colCfg||{}; const all=(COLDEFS[sec]||[]).map(c=>c.key);
+  let cfg=DB.colCfg[sec]; if(!cfg||!Array.isArray(cfg.order)) cfg=DB.colCfg[sec]={order:all.slice(),hidden:[]};
+  all.forEach(k=>{ if(!cfg.order.includes(k)) cfg.order.push(k); });
+  cfg.order=cfg.order.filter(k=>all.includes(k)); cfg.hidden=(cfg.hidden||[]).filter(k=>all.includes(k));
+  return cfg; }
+function colsFor(sec){ const cfg=colCfg(sec), defs=COLDEFS[sec]||[];
+  return cfg.order.map(k=>defs.find(c=>c.key===k)).filter(c=>c && !cfg.hidden.includes(c.key)); }
+function colSort(sec, arr, st){ if(!st||!st.col) return arr.slice(); const def=(COLDEFS[sec]||[]).find(c=>c.key===st.col), d=st.dir;
+  const val=it=> def&&def.sortVal?def.sortVal(it):(def&&def.num?(+it[st.col]||0):String(it[st.col]||'').toLowerCase());
+  return arr.slice().sort((a,b)=>{ const va=val(a),vb=val(b); if(typeof va==='number'&&typeof vb==='number') return (va-vb)*d; return String(va).localeCompare(String(vb))*d; }); }
 const rowActs=(pfx,id)=>`<button class="icon-btn-sm" data-${pfx}-edit="${id}" title="${tt('common.edit')}">✎</button><button class="icon-btn-sm" data-${pfx}-del="${id}" title="${tt('common.delete')}">🗑</button>`;
 const ctag=(label,k)=>`<span class="ctag ctag-${k}">${esc(label)}</span>`;
 const fmtDate=ds=>{ if(!ds) return ''; try{ return new Date(ds+'T00:00:00').toLocaleDateString(calLang(),{day:'2-digit',month:'short',year:'numeric'}); }catch(e){ return ds; } };
+
+const COLDEFS = {
+  releases:[
+    {key:'catalog',label:()=>tt('col.catalog'),w:116,cell:r=>esc(r.catalog),cls:'release-cat'},
+    {key:'title',label:()=>tt('rel.c_title'),grow:1.5,cell:r=>esc(r.title)||'—',cls:'dbl-strong'},
+    {key:'order',label:()=>tt('r.order').replace(' *',''),w:122,cell:r=>fmtDate(r.orderDate)},
+    {key:'preorder',label:()=>tt('r.preorder'),w:122,cell:r=>fmtDate(r.preorder)},
+    {key:'year',label:()=>tt('rel.c_year'),w:64,cell:r=>r.year||'',cls:'muted small',num:true},
+    {key:'split',label:()=>tt('rel.c_split'),grow:1.7,cell:r=>relSplitText(r),cls:'muted small',sortVal:r=>(r.splits&&r.splits[0]&&r.splits[0].name||'').toLowerCase()},
+    {key:'exclusive',label:()=>tt('r.exclusive'),w:120,cell:r=>r.exclusive?ctag(esc(r.exclusivePlatform||tt('common.yes')),'info'):'',sortVal:r=>r.exclusive?0:1},
+    {key:'isrc',label:()=>'ISRC',w:78,cell:r=>(r.tracks&&r.tracks.length)?`<span class="release-ltag">${r.tracks.length}</span>`:'',sortVal:r=>(r.tracks||[]).length},
+    {key:'note',label:()=>tt('r.note'),grow:1.4,cell:r=>esc(r.note),cls:'muted small'},
+  ],
+  planning:[
+    {key:'date',label:()=>tt('pln.f_date'),w:122,cell:p=>fmtDate(p.date)},
+    {key:'kind',label:()=>tt('pln.f_kind'),w:98,cell:p=>tt(PLN_KIND[p.kind]||'pln.k_release')},
+    {key:'title',label:()=>tt('pln.f_title').replace(' *',''),grow:1.6,cell:p=>`<b>${esc(p.title)}</b>`,cls:'dbl-strong'},
+    {key:'artist',label:()=>tt('pln.f_artist'),grow:1,cell:p=>artNameLink(p.artist),cls:'muted small'},
+    {key:'status',label:()=>tt('pln.f_status'),w:122,cell:p=>ctag(tt(PLN_STATUS[p.status]||'pln.s_idea'),PLN_STK[p.status]||'mut')},
+    {key:'platform',label:()=>tt('pln.f_platform'),grow:1,cell:p=>esc(p.platform),cls:'muted small'},
+    {key:'note',label:()=>tt('pln.f_note'),grow:1.2,cell:p=>esc(p.note),cls:'muted small'},
+  ],
+  events:[
+    {key:'date',label:()=>tt('evt.f_date'),w:150,cell:e=>fmtDate(e.date)+(e.time?(' · '+esc(e.time)):'')},
+    {key:'kind',label:()=>tt('evt.f_kind'),w:98,cell:e=>tt(EVT_KIND[e.kind]||'evt.k_other')},
+    {key:'title',label:()=>tt('evt.f_title').replace(' *',''),grow:1.5,cell:e=>`<b>${esc(e.title)}</b>`,cls:'dbl-strong'},
+    {key:'venue',label:()=>tt('evt.f_venue'),grow:1.2,cell:e=>esc(e.venue),cls:'muted small'},
+    {key:'city',label:()=>tt('evt.f_city'),grow:1,cell:e=>esc(e.city)},
+    {key:'country',label:()=>tt('evt.f_country'),grow:.85,cell:e=>esc(e.country),cls:'muted small'},
+    {key:'note',label:()=>tt('evt.f_note'),grow:1.2,cell:e=>esc(e.note),cls:'muted small'},
+  ],
+  supports:[
+    {key:'date',label:()=>tt('sup.f_date'),w:122,cell:s=>fmtDate(s.date)},
+    {key:'dj',label:()=>tt('sup.f_dj').replace(' *',''),grow:1.2,cell:s=>`<b>${esc(s.dj)}</b>`,cls:'dbl-strong'},
+    {key:'track',label:()=>tt('sup.f_track'),grow:1.2,cell:s=>esc(s.track),cls:'muted small'},
+    {key:'venue',label:()=>tt('sup.f_venue'),grow:1.2,cell:s=>esc(s.venue)},
+    {key:'city',label:()=>tt('sup.f_city'),grow:1,cell:s=>esc(s.city)},
+    {key:'country',label:()=>tt('sup.f_country'),grow:.85,cell:s=>esc(s.country),cls:'muted small'},
+    {key:'note',label:()=>tt('sup.f_note'),grow:1.2,cell:s=>esc(s.note),cls:'muted small'},
+  ],
+  artists:[
+    {key:'name',label:()=>tt('art.h_name'),grow:1.6,cell:a=>`<b>${esc(a.name)}</b>`,cls:'dbl-strong'},
+    {key:'legal',label:()=>tt('art.h_legal'),grow:1.3,cell:a=>esc(a.legal),cls:'muted small'},
+    {key:'email',label:()=>tt('art.h_email'),grow:1.6,cell:a=>esc(a.email),cls:'muted small'},
+    {key:'phone',label:()=>tt('art.h_phone'),grow:1,cell:a=>esc(a.phone),cls:'muted small'},
+    {key:'split',label:()=>tt('art.h_split'),w:80,cell:a=>a.split?`<span class="art-split">${esc(a.split)}%</span>`:'',num:true},
+    {key:'iban',label:()=>'IBAN',grow:1.3,cell:a=>esc(a.iban),cls:'muted small'},
+  ],
+  merch:[
+    {key:'name',label:()=>tt('mch.name_h'),grow:1.4,cell:m=>`${MERCH_ICON[m.type]||'📦'} <b>${esc(m.name)}</b>`,cls:'dbl-strong'},
+    {key:'type',label:()=>tt('mch.type'),w:104,cell:m=>tt(MERCH_TYPES[m.type]||'mch.t_other'),cls:'muted small'},
+    {key:'price',label:()=>tt('mch.price_h'),w:92,cell:m=>fmtMoney(m.price),num:true},
+    {key:'sold',label:()=>tt('mch.sold_h'),w:96,cell:m=>String(m.sold||0),num:true},
+    {key:'revenue',label:()=>tt('mch.revenue'),w:110,cell:m=>`<span class="pos">${fmtMoney(merchRevenue(m))}</span>`,sortVal:m=>merchRevenue(m)},
+    {key:'stock',label:()=>tt('mch.stock'),w:96,cell:m=>m.stock!=null?String(m.stock):'—',sortVal:m=>m.stock==null?-1:+m.stock},
+  ],
+};
+
+/* ---- Gestione colonne (mostra/nascondi/ordina) ---- */
+let colCfgSec=null;
+function rerenderSec(sec){ ({releases:renderReleases,planning:renderPlanning,events:renderEvents,supports:renderSupports,artists:renderArtists,merch:renderMerch}[sec]||function(){})(); }
+function openColCfg(sec){ if(!COLDEFS[sec]) return; colCfgSec=sec; renderColCfgList(); const m=$('#colcfg-modal'); if(m) m.hidden=false; }
+function renderColCfgList(){ const sec=colCfgSec; if(!sec) return; const cfg=colCfg(sec), defs=COLDEFS[sec]; const box=$('#colcfg-list'); if(!box) return;
+  box.innerHTML = cfg.order.map(k=>{ const d=defs.find(c=>c.key===k); if(!d) return '';
+    return `<li class="col-item" data-col="${k}">
+      <label class="col-check"><input type="checkbox" ${cfg.hidden.includes(k)?'':'checked'} data-ccol-toggle="${k}"><span>${esc(colLab(d))}</span></label>
+      <span class="col-moves"><button type="button" data-ccol-up="${k}" title="↑">↑</button><button type="button" data-ccol-down="${k}" title="↓">↓</button></span>
+    </li>`; }).join('');
+  $$('[data-ccol-toggle]').forEach(b=>b.onchange=()=>{ const k=b.dataset.ccolToggle, c=colCfg(colCfgSec);
+    if(b.checked) c.hidden=c.hidden.filter(x=>x!==k); else if(!c.hidden.includes(k)) c.hidden.push(k);
+    save(); rerenderSec(colCfgSec); });
+  $$('[data-ccol-up]').forEach(b=>b.onclick=()=>moveColCfg(b.dataset.ccolUp,-1));
+  $$('[data-ccol-down]').forEach(b=>b.onclick=()=>moveColCfg(b.dataset.ccolDown,1));
+}
+function moveColCfg(k,dir){ const c=colCfg(colCfgSec), i=c.order.indexOf(k), j=i+dir;
+  if(i<0||j<0||j>=c.order.length) return; [c.order[i],c.order[j]]=[c.order[j],c.order[i]];
+  save(); renderColCfgList(); rerenderSec(colCfgSec); }
+document.addEventListener('click',e=>{ const b=e.target.closest('[data-colcfg]'); if(b) openColCfg(b.dataset.colcfg); });
+if($('#colcfg-close')) $('#colcfg-close').onclick=()=>$('#colcfg-modal').hidden=true;
+if($('#colcfg-done')) $('#colcfg-done').onclick=()=>$('#colcfg-modal').hidden=true;
+if($('#colcfg-modal')) $('#colcfg-modal').onclick=e=>{ if(e.target.id==='colcfg-modal') $('#colcfg-modal').hidden=true; };
+if($('#colcfg-reset')) $('#colcfg-reset').onclick=()=>{ if(!colCfgSec) return; DB.colCfg[colCfgSec]={order:COLDEFS[colCfgSec].map(c=>c.key),hidden:[]}; save(); renderColCfgList(); rerenderSec(colCfgSec); };
 
 /* ---- Calendario riutilizzabile ---- */
 let calState={planning:new Date(), events:new Date()};
@@ -2663,16 +2715,10 @@ function renderPlanning(){
   const mode=getVM('planning','list');
   listC.hidden=(mode==='cal'); calC.hidden=(mode!=='cal');
   if(mode==='cal'){ clearPager(listC); renderCalendar('planning', all, plnChip, calC); syncVMButtons(); return; }
-  const cols=[
-    {key:'date',label:tt('pln.f_date'),cell:p=>fmtDate(p.date)},
-    {key:'kind',label:tt('pln.f_kind'),cell:p=>tt(PLN_KIND[p.kind]||'pln.k_release')},
-    {key:'title',label:tt('pln.f_title').replace(' *',''),cell:p=>`<b>${esc(p.title)}</b>`,cls:'dbl-strong'},
-    {key:'artist',label:tt('pln.f_artist'),cell:p=>esc(p.artist),cls:'muted small'},
-    {key:'status',label:tt('pln.f_status'),cell:p=>ctag(tt(PLN_STATUS[p.status]||'pln.s_idea'),PLN_STK[p.status]||'mut')}];
-  const sorted=sortBy(all,plnSort);
-  const info=paginate(sorted,'planning');
-  listC.className='dbl dbl--planning';
-  listC.innerHTML=dbHead(cols,plnSort)+dbRows(info.slice,cols,p=>rowActs('pln',p.id));
+  const cols=colsFor('planning');
+  const info=paginate(colSort('planning',all,plnSort),'planning');
+  listC.className='dbl';
+  listC.innerHTML=dbHead(cols,plnSort,{actions:1})+dbRows(info.slice,cols,{actions:p=>rowActs('pln',p.id)});
   mountPager(listC,'planning',info); syncVMButtons();
 }
 function openPlnForm(id){ editingPlnId=id||null; const p=id?plnById(id):null;
@@ -2701,16 +2747,10 @@ function renderEvents(){
   const mode=getVM('events','list');
   listC.hidden=(mode==='cal'); calC.hidden=(mode!=='cal');
   if(mode==='cal'){ clearPager(listC); renderCalendar('events', all, evtChip, calC); syncVMButtons(); return; }
-  const cols=[
-    {key:'date',label:tt('evt.f_date'),cell:e=>fmtDate(e.date)+(e.time?(' · '+esc(e.time)):'')},
-    {key:'kind',label:tt('evt.f_kind'),cell:e=>tt(EVT_KIND[e.kind]||'evt.k_other')},
-    {key:'title',label:tt('evt.f_title').replace(' *',''),cell:e=>`<b>${esc(e.title)}</b>`,cls:'dbl-strong'},
-    {key:'venue',label:tt('evt.f_venue'),cell:e=>esc(e.venue),cls:'muted small'},
-    {key:'city',label:tt('evt.f_city'),cell:e=>esc(e.city)},
-    {key:'country',label:tt('evt.f_country'),cell:e=>esc(e.country),cls:'muted small'}];
-  const info=paginate(sortBy(all,evtSort),'events');
-  listC.className='dbl dbl--events';
-  listC.innerHTML=dbHead(cols,evtSort)+dbRows(info.slice,cols,e=>rowActs('evt',e.id));
+  const cols=colsFor('events');
+  const info=paginate(colSort('events',all,evtSort),'events');
+  listC.className='dbl';
+  listC.innerHTML=dbHead(cols,evtSort,{actions:1})+dbRows(info.slice,cols,{actions:e=>rowActs('evt',e.id)});
   mountPager(listC,'events',info); syncVMButtons();
 }
 function openEvtForm(id){ editingEvtId=id||null; const e=id?evtById(id):null;
@@ -2736,16 +2776,10 @@ function renderSupports(){
   const q=($('#sup-search')&&$('#sup-search').value||'').toLowerCase().trim();
   const all=(DB.supports||[]).filter(s=> !q || (s.dj+' '+(s.track||'')+' '+(s.venue||'')+' '+(s.city||'')+' '+(s.country||'')).toLowerCase().includes(q));
   $('#supports-empty').hidden=(DB.supports||[]).length>0;
-  const cols=[
-    {key:'date',label:tt('sup.f_date'),cell:s=>fmtDate(s.date)},
-    {key:'dj',label:tt('sup.f_dj').replace(' *',''),cell:s=>`<b>${esc(s.dj)}</b>`,cls:'dbl-strong'},
-    {key:'track',label:tt('sup.f_track'),cell:s=>esc(s.track),cls:'muted small'},
-    {key:'venue',label:tt('sup.f_venue'),cell:s=>esc(s.venue)},
-    {key:'city',label:tt('sup.f_city'),cell:s=>esc(s.city)},
-    {key:'country',label:tt('sup.f_country'),cell:s=>esc(s.country),cls:'muted small'}];
-  const info=paginate(sortBy(all,supSort),'supports');
-  listC.className='dbl dbl--supports';
-  listC.innerHTML=dbHead(cols,supSort)+dbRows(info.slice,cols,s=>rowActs('sup',s.id));
+  const cols=colsFor('supports');
+  const info=paginate(colSort('supports',all,supSort),'supports');
+  listC.className='dbl';
+  listC.innerHTML=dbHead(cols,supSort,{actions:1})+dbRows(info.slice,cols,{actions:s=>rowActs('sup',s.id)});
   mountPager(listC,'supports',info);
 }
 function openSupForm(id){ editingSupId=id||null; const s=id?supById(id):null;
@@ -2899,7 +2933,7 @@ function initFeatures(){
   $('#art-photo-btn')?.addEventListener('click',()=>$('#art-photo-input').click());
   $('#art-photo-input')?.addEventListener('change',e=>{ const f=e.target.files[0]; if(f) resizeImage(f,256,setArtistPhoto); e.target.value=''; });
   $('#artists-grid')?.addEventListener('click',e=>{
-    const so=e.target.closest('[data-asort]'); if(so){ const c=so.dataset.asort;
+    const so=e.target.closest('[data-sort]'); if(so){ const c=so.dataset.sort;
       if(artSort.col===c) artSort.dir*=-1; else artSort={col:c,dir:1}; renderArtists(); return; }
     const ed=e.target.closest('[data-art-edit]'); if(ed) return openArtistForm(ed.dataset.artEdit);
     const dl=e.target.closest('[data-art-del]'); if(dl) return deleteArtist(dl.dataset.artDel);
@@ -2962,7 +2996,7 @@ function initFeatures(){
   $('#mch-save')?.addEventListener('click',saveMerch);
   $('#mch-search')?.addEventListener('input',renderMerch);
   $('#merch-grid')?.addEventListener('click',e=>{
-    const so=e.target.closest('[data-msort]'); if(so){ const c=so.dataset.msort;
+    const so=e.target.closest('[data-sort]'); if(so){ const c=so.dataset.sort;
       if(merchSort.col===c) merchSort.dir*=-1; else merchSort={col:c,dir:(c==='name'?1:-1)}; renderMerch(); return; }
     const s=e.target.closest('[data-mch-sell]'); if(s) return sellMerch(s.dataset.mchSell);
     const ed=e.target.closest('[data-mch-edit]'); if(ed) return openMerchForm(ed.dataset.mchEdit);

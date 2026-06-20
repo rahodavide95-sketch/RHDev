@@ -46,7 +46,7 @@
       'art.split':'Split predefinito %','art.address':'Indirizzo','art.note':'Note','art.save':'Salva artista',
       'art.empty':'Nessun artista in rubrica. Aggiungi il primo per iniziare a creare contratti e promemoria.',
       'art.need_name':"Inserisci il nome d'arte.",'art.saved':'Artista salvato','art.deleted':'Artista eliminato','art.del_confirm':'Eliminare {name} dalla rubrica?',
-      'art.h_name':'Nome','art.h_email':'Email','art.h_phone':'Telefono','art.h_split':'Split',
+      'art.h_name':'Nome','art.h_email':'Email','art.h_phone':'Telefono','art.h_split':'Split','art.h_legal':'Nome legale',
       // Contratti
       'con.title':'Contratti','con.subtitle':'Genera l’Authorization to Release standard dell’etichetta, pronta da inviare e firmare.',
       'con.new':'Nuovo contratto','con.build':'Compila il contratto','con.edit':'Modifica contratto','con.date':'Data',
@@ -226,7 +226,7 @@
       'art.split':'Default split %','art.address':'Address','art.note':'Notes','art.save':'Save artist',
       'art.empty':'No artists yet. Add your first one to start creating contracts and reminders.',
       'art.need_name':'Enter the stage name.','art.saved':'Artist saved','art.deleted':'Artist deleted','art.del_confirm':'Remove {name} from the address book?',
-      'art.h_name':'Name','art.h_email':'Email','art.h_phone':'Phone','art.h_split':'Split',
+      'art.h_name':'Name','art.h_email':'Email','art.h_phone':'Phone','art.h_split':'Split','art.h_legal':'Legal name',
       // Contracts
       'con.title':'Contracts','con.subtitle':'Generate the label’s standard Authorization to Release, ready to send and sign.',
       'con.new':'New contract','con.build':'Fill in the contract','con.edit':'Edit contract','con.date':'Date',
@@ -471,7 +471,7 @@
       'tx.modal.new':'New transaction','rel.modal.new':'New release',
       'rel.splits_default':'Default split','rel.tracks_override':'Tracks — per-ISRC override',
       'rel.add_artist':'+ Add artist','rel.add_track':'+ Add track','rel.save':'Save release',
-      'cols.title':'Transaction columns','cols.reset':'Reset to default','common.done':'Done',
+      'cols.title':'Transaction columns','cols.title2':'Customize columns','cols.hint':'Tick the columns to show and reorder them with the arrows.','cols.reset':'Reset to default','common.done':'Done',
       'set.export_json':'⤓ Export backup (.json)','set.export_csv':'⤓ Export transactions (.csv)',
       'set.restore':'⤴ Restore backup','set.wipe':'Delete all data','set.update_pw':'Update password',
       'set.photo':'Upload photo','set.photo_rm':'Remove','set.photo_hint':'JPG/PNG, auto-cropped and resized.',

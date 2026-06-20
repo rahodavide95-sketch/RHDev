@@ -901,6 +901,7 @@ function moveCol(c,dir){
   if(i<0||j<0||j>=arr.length) return;
   [arr[i],arr[j]]=[arr[j],arr[i]]; save(); renderColsManager(); applyTxFilters();
 }
+$('#r-exclusive')?.addEventListener('change',e=>{ $('#r-excl-wrap').hidden = e.target.value!=='yes'; });
 $('#btn-cols').onclick=()=>{ renderColsManager(); $('#cols-modal').hidden=false; };
 $('#cols-close').onclick=$('#cols-done').onclick=()=>$('#cols-modal').hidden=true;
 $('#cols-modal').onclick=e=>{ if(e.target.id==='cols-modal') $('#cols-modal').hidden=true; };
@@ -1034,6 +1035,9 @@ function openRelease(id){
   $('#rel-modal-title').textContent = r ? tt('rel.modal.edit') : tt('rel.modal.new');
   $('#r-id').value=r?.id||'';
   $('#r-catalog').value=r?.catalog||''; $('#r-title').value=r?.title||''; $('#r-year').value=r?.year||'';
+  $('#r-preorder').value=r?.preorder||''; $('#r-order').value=r?.orderDate||''; $('#r-date').value=r?.date||'';
+  $('#r-note').value=r?.note||''; $('#r-exclusive').value=r?.exclusive?'yes':''; $('#r-excl-plat').value=r?.exclusivePlatform||'';
+  $('#r-excl-wrap').hidden = !r?.exclusive;
   const splits = (r?.splits&&r.splits.length) ? r.splits : [{name:'',pct:''}];
   $('#r-splits').innerHTML = splits.map(s=>splitRowHTML(s.name,s.pct)).join('');
   $('#r-tracks').innerHTML = (r?.tracks||[]).map(t=>trackBlockHTML(t)).join('');
@@ -1069,8 +1073,11 @@ $('#rel-form').onsubmit=e=>{
     if(title||isrc||tsplits.length) tracks.push({id:uid(), title, isrc, splits:tsplits});
   });
   const rec={ id:id||uid(), catalog:$('#r-catalog').value.trim(), title:$('#r-title').value.trim(),
-    year:Number($('#r-year').value)||'', splits, tracks };
+    year:Number($('#r-year').value)||'', splits, tracks,
+    preorder:$('#r-preorder').value||'', orderDate:$('#r-order').value||'', date:$('#r-date').value||'',
+    note:$('#r-note').value.trim(), exclusive:$('#r-exclusive').value==='yes', exclusivePlatform:$('#r-excl-plat').value.trim() };
   if(!rec.catalog){ toast(tt('t.cat_required')); return; }
+  if(!rec.orderDate){ toast(tt('r.order_required')); return; }
   if(id){ const i=releases().findIndex(r=>r.id===id); DB.releases[i]=rec; }
   else releases().push(rec);
   save(); $('#rel-modal').hidden=true; renderReleases(); renderRoyalties(); toast(tt('t.rel_saved'));

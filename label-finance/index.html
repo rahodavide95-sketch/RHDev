@@ -21,7 +21,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=64">
+  <link rel="stylesheet" href="style.css?v=65">
 </head>
 <body class="gated">
 
@@ -1742,15 +1742,28 @@
         <div class="form-grid">
           <label><span data-i18n="r.catalog">Catalogo</span> <input type="text" id="r-catalog" class="input" placeholder="SC003" required></label>
           <label><span data-i18n="r.title">Titolo</span> <input type="text" id="r-title" class="input" placeholder="Nightform EP"></label>
-          <label><span data-i18n="r.year">Anno</span> <input type="number" id="r-year" class="input" placeholder="2026" step="1"></label>
-          <label><span data-i18n="r.preorder">Preordine</span> <input type="date" id="r-preorder" class="input"></label>
+          <label class="ac-field"><span data-i18n="r.artist">Artista</span>
+            <input type="text" id="r-artist" class="input" autocomplete="off" data-i18n-ph="r.artist_ph" placeholder="Cerca tra i tuoi artisti…">
+            <div class="ac-list" id="r-artist-ac" hidden></div></label>
           <label><span data-i18n="r.order">Data di release *</span> <input type="date" id="r-order" class="input"></label>
-          <label><span data-i18n="r.date">Data</span> <input type="date" id="r-date" class="input"></label>
+          <label><span data-i18n="r.preorder">Preordine</span> <input type="date" id="r-preorder" class="input"></label>
+          <label><span data-i18n="r.upc">Codice UPC</span> <input type="text" id="r-upc" class="input" placeholder="0123456789012"></label>
           <label><span data-i18n="r.exclusive">Esclusiva</span>
             <select id="r-exclusive" class="select"><option value="" data-i18n="common.no">No</option><option value="yes" data-i18n="common.yes">Sì</option></select></label>
           <label id="r-excl-wrap" hidden><span data-i18n="r.exclusive_plat">Piattaforma esclusiva</span> <input type="text" id="r-excl-plat" class="input" placeholder="Beatport, Bandcamp…"></label>
           <label class="span-2"><span data-i18n="r.note">Note</span> <input type="text" id="r-note" class="input"></label>
         </div>
+        <details class="r-credits">
+          <summary data-i18n="r.credits">Crediti (facoltativi)</summary>
+          <div class="form-grid" style="margin-top:12px">
+            <label><span data-i18n="r.written">Scritto da (lyrics)</span> <input type="text" id="r-written" class="input"></label>
+            <label><span data-i18n="r.produced">Prodotto da</span> <input type="text" id="r-produced" class="input"></label>
+            <label><span data-i18n="r.mixed">Mixed by</span> <input type="text" id="r-mixed" class="input"></label>
+            <label><span data-i18n="r.mastered">Mastered by</span> <input type="text" id="r-mastered" class="input"></label>
+            <label><span data-i18n="r.artwork">Artwork by</span> <input type="text" id="r-artwork" class="input"></label>
+            <label><span data-i18n="r.publisher">Publisher</span> <input type="text" id="r-publisher" class="input"></label>
+          </div>
+        </details>
         <h3 class="splits-h" data-i18n="rel.splits_default">Ripartizione predefinita</h3>
         <p class="muted small">Quote applicate a tutte le tracce della release (salvo override). Il resto fino al 100% resta alla label.</p>
         <div id="r-splits"></div>
@@ -1778,11 +1791,11 @@
   <!-- Area di stampa per lo statement royalty (visibile solo in stampa) -->
   <div id="print-area" aria-hidden="true"></div>
 
-  <script src="html2pdf.bundle.min.js?v=64"></script>
-  <script src="app.js?v=64"></script>
-  <script src="config.js?v=64"></script>
-  <script src="i18n.js?v=64"></script>
+  <script src="html2pdf.bundle.min.js?v=65"></script>
+  <script src="app.js?v=65"></script>
+  <script src="config.js?v=65"></script>
+  <script src="i18n.js?v=65"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="sync.js?v=64"></script>
+  <script src="sync.js?v=65"></script>
 </body>
 </html>

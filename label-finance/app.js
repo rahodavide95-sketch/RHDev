@@ -902,6 +902,29 @@ function moveCol(c,dir){
   [arr[i],arr[j]]=[arr[j],arr[i]]; save(); renderColsManager(); applyTxFilters();
 }
 $('#r-exclusive')?.addEventListener('change',e=>{ $('#r-excl-wrap').hidden = e.target.value!=='yes'; });
+/* Autocomplete artista nella release (dagli artisti già creati) */
+function renderArtistAC(){
+  const inp=$('#r-artist'), box=$('#r-artist-ac'); if(!inp||!box) return;
+  const q=inp.value.trim().toLowerCase();
+  if(!q){ box.hidden=true; box.innerHTML=''; return; }
+  const matches=(DB.artists||[]).filter(a=>(a.name||'').toLowerCase().includes(q)||(a.legal||'').toLowerCase().includes(q)).slice(0,8);
+  box.innerHTML = matches.length
+    ? matches.map(a=>`<div class="ac-item" data-ac-name="${esc(a.name)}">${esc(a.name)}${a.legal?`<span class="muted small"> · ${esc(a.legal)}</span>`:''}</div>`).join('')
+    : `<div class="ac-item ac-add" data-ac-add="1">${tt('r.artist_add')}</div>`;
+  box.hidden=false;
+}
+function quickAddArtistFromRelease(name){
+  $('#rel-modal').hidden=true;
+  goto('artists'); openArtistForm(); if(name) $('#art-name').value=name;
+  $('#art-form')?.scrollIntoView({behavior:'smooth',block:'start'}); toast(tt('r.artist_after'));
+}
+$('#r-artist')?.addEventListener('input',renderArtistAC);
+$('#r-artist')?.addEventListener('focus',renderArtistAC);
+$('#r-artist-ac')?.addEventListener('click',e=>{
+  const pick=e.target.closest('[data-ac-name]'); if(pick){ $('#r-artist').value=pick.dataset.acName; $('#r-artist-ac').hidden=true; return; }
+  if(e.target.closest('[data-ac-add]')) quickAddArtistFromRelease($('#r-artist').value.trim());
+});
+document.addEventListener('click',e=>{ if(!e.target.closest('.ac-field')){ const b=$('#r-artist-ac'); if(b) b.hidden=true; } });
 $('#btn-cols').onclick=()=>{ renderColsManager(); $('#cols-modal').hidden=false; };
 $('#cols-close').onclick=$('#cols-done').onclick=()=>$('#cols-modal').hidden=true;
 $('#cols-modal').onclick=e=>{ if(e.target.id==='cols-modal') $('#cols-modal').hidden=true; };
@@ -1023,10 +1046,13 @@ function openRelease(id){
   artistDatalist();
   $('#rel-modal-title').textContent = r ? tt('rel.modal.edit') : tt('rel.modal.new');
   $('#r-id').value=r?.id||'';
-  $('#r-catalog').value=r?.catalog||''; $('#r-title').value=r?.title||''; $('#r-year').value=r?.year||'';
-  $('#r-preorder').value=r?.preorder||''; $('#r-order').value=r?.orderDate||''; $('#r-date').value=r?.date||'';
+  $('#r-catalog').value=r?.catalog||''; $('#r-title').value=r?.title||''; $('#r-artist').value=r?.artist||'';
+  $('#r-preorder').value=r?.preorder||''; $('#r-order').value=r?.orderDate||''; $('#r-upc').value=r?.upc||'';
   $('#r-note').value=r?.note||''; $('#r-exclusive').value=r?.exclusive?'yes':''; $('#r-excl-plat').value=r?.exclusivePlatform||'';
   $('#r-excl-wrap').hidden = !r?.exclusive;
+  $('#r-written').value=r?.writtenBy||''; $('#r-produced').value=r?.producedBy||''; $('#r-mixed').value=r?.mixedBy||'';
+  $('#r-mastered').value=r?.masteredBy||''; $('#r-artwork').value=r?.artworkBy||''; $('#r-publisher').value=r?.publisher||'';
+  if($('#r-artist-ac')) $('#r-artist-ac').hidden=true;
   const splits = (r?.splits&&r.splits.length) ? r.splits : [{name:'',pct:''}];
   $('#r-splits').innerHTML = splits.map(s=>splitRowHTML(s.name,s.pct)).join('');
   $('#r-tracks').innerHTML = (r?.tracks||[]).map(t=>trackBlockHTML(t)).join('');
@@ -1061,10 +1087,13 @@ $('#rel-form').onsubmit=e=>{
     const tsplits=collectSplits(tb.querySelector('.track-splits'));
     if(title||isrc||tsplits.length) tracks.push({id:uid(), title, isrc, splits:tsplits});
   });
+  const orderDate=$('#r-order').value||'';
   const rec={ id:id||uid(), catalog:$('#r-catalog').value.trim(), title:$('#r-title').value.trim(),
-    year:Number($('#r-year').value)||'', splits, tracks,
-    preorder:$('#r-preorder').value||'', orderDate:$('#r-order').value||'', date:$('#r-date').value||'',
-    note:$('#r-note').value.trim(), exclusive:$('#r-exclusive').value==='yes', exclusivePlatform:$('#r-excl-plat').value.trim() };
+    artist:$('#r-artist').value.trim(), upc:$('#r-upc').value.trim(), splits, tracks,
+    preorder:$('#r-preorder').value||'', orderDate, year: orderDate? new Date(orderDate+'T00:00:00').getFullYear() : '',
+    note:$('#r-note').value.trim(), exclusive:$('#r-exclusive').value==='yes', exclusivePlatform:$('#r-excl-plat').value.trim(),
+    writtenBy:$('#r-written').value.trim(), producedBy:$('#r-produced').value.trim(), mixedBy:$('#r-mixed').value.trim(),
+    masteredBy:$('#r-mastered').value.trim(), artworkBy:$('#r-artwork').value.trim(), publisher:$('#r-publisher').value.trim() };
   if(!rec.catalog){ toast(tt('t.cat_required')); return; }
   if(!rec.orderDate){ toast(tt('r.order_required')); return; }
   if(id){ const i=releases().findIndex(r=>r.id===id); DB.releases[i]=rec; }
@@ -2599,7 +2628,9 @@ const COLDEFS = {
   releases:[
     {key:'catalog',label:()=>tt('col.catalog'),w:116,cell:r=>esc(r.catalog),cls:'release-cat'},
     {key:'title',label:()=>tt('rel.c_title'),grow:1.5,cell:r=>esc(r.title)||'—',cls:'dbl-strong'},
+    {key:'artist',label:()=>tt('r.artist'),grow:1.2,cell:r=>artNameLink(r.artist),cls:'muted small'},
     {key:'order',label:()=>tt('r.order').replace(' *',''),w:122,cell:r=>fmtDate(r.orderDate)},
+    {key:'upc',label:()=>tt('r.upc'),w:130,cell:r=>esc(r.upc),cls:'muted small'},
     {key:'preorder',label:()=>tt('r.preorder'),w:122,cell:r=>fmtDate(r.preorder)},
     {key:'year',label:()=>tt('rel.c_year'),w:64,cell:r=>r.year||'',cls:'muted small',num:true},
     {key:'split',label:()=>tt('rel.c_split'),grow:1.7,cell:r=>relSplitText(r),cls:'muted small',sortVal:r=>(r.splits&&r.splits[0]&&r.splits[0].name||'').toLowerCase()},

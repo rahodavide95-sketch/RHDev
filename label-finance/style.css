@@ -55,19 +55,20 @@ h2{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:600}
 .sidebar-foot{flex:none}
 .nav-sep{height:1px;background:var(--glass-brd);margin:8px 6px}
 /* gruppi di menu (accordion) */
+.nav-item,.nav-group,.nav-group-h,.nav-sep{flex:none}   /* non comprimere: si scrolla */
 .nav>.nav-item{margin:1px 0}
-.nav-group{display:flex;flex-direction:column;gap:3px;margin-top:10px}
-.nav-group:first-of-type{margin-top:6px}
+.nav-group{display:flex;flex-direction:column;gap:2px;margin-top:8px}
+.nav-group:first-of-type{margin-top:5px}
 .nav-group-h{display:flex;align-items:center;gap:9px;width:100%;background:none;border:none;cursor:pointer;color:var(--muted-2);font:inherit;font-weight:700;font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;padding:6px 10px 7px;border-radius:9px}
 .nav-group-h:hover{color:var(--text)}
 .nav-group-h .nav-ico{width:17px;height:17px;opacity:.7}
 .nav-group-h .nav-ico svg{width:16px;height:16px}
 .nav-chev{margin-left:auto;font-size:.66rem;opacity:.8;transition:transform .2s}
 .nav-group.collapsed .nav-chev{transform:rotate(-90deg)}
-.nav-group-items{display:flex;flex-direction:column;gap:3px;margin:1px 0 2px 16px;padding-left:10px;border-left:1.5px solid var(--glass-brd)}
+.nav-group-items{display:flex;flex-direction:column;gap:2px;margin:1px 0 2px 16px;padding-left:10px;border-left:1.5px solid var(--glass-brd)}
 .nav-group.collapsed .nav-group-items{display:none}
-.nav-group-items .nav-item{padding:9px 11px}
-.nav>.nav-item[data-view="settings"]{margin-top:12px}
+.nav-group-items .nav-item{padding:8px 11px;font-size:.92rem}
+.nav>.nav-item[data-view="settings"]{margin-top:10px}
 .nav-collapsed .nav-group{margin-top:6px}
 .nav-collapsed .nav-group-h{display:none}
 .nav-collapsed .nav-group.collapsed .nav-group-items{display:flex}
@@ -340,6 +341,16 @@ body.dash-edit .dw-width{display:inline-flex;gap:2px;position:absolute;top:8px;l
 .dbl-click{cursor:pointer}
 .dbl-click:hover{border-color:var(--accent)}
 .btn-cols2{padding:9px 12px;font-weight:600}
+/* autocomplete artista nella release */
+.ac-field{position:relative}
+.ac-list{position:absolute;top:100%;left:0;right:0;z-index:30;margin-top:4px;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 14px 36px rgba(0,0,0,.28);overflow:hidden;max-height:240px;overflow-y:auto}
+.ac-item{padding:9px 12px;cursor:pointer;font-size:.9rem}
+.ac-item:hover{background:var(--panel-2)}
+.ac-add{color:var(--accent);font-weight:700}
+.r-credits{margin-top:14px;border:1px solid var(--line);border-radius:12px;padding:10px 14px;background:var(--panel-2)}
+.r-credits>summary{cursor:pointer;font-weight:600;font-size:.92rem;list-style:none}
+.r-credits>summary::-webkit-details-marker{display:none}
+.r-credits>summary::before{content:'🎚️ '}
 @media(max-width:880px){
   /* le liste a colonne scorrono in orizzontale per restare leggibili e allineate */
   .dbl{overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -650,8 +661,9 @@ body.dash-edit .dw-width{display:inline-flex;gap:2px;position:absolute;top:8px;l
 .about-title{font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:700;letter-spacing:-.045em;color:#fff}
 .about-title .lf-fin{color:#c4b5fd}
 .about-tag{color:rgba(255,255,255,.72);font-size:.96rem;margin:0}
-.about-cards{display:flex;flex-wrap:wrap;justify-content:center;gap:16px;width:100%;max-width:760px}
-.about-card{flex:1 1 320px;max-width:360px;text-align:left;
+.about-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;width:100%;max-width:1060px}
+@media(max-width:860px){ .about-cards{grid-template-columns:1fr;max-width:420px} }
+.about-card{text-align:left;
   background:rgba(22,18,34,.55);-webkit-backdrop-filter:blur(24px) saturate(160%);backdrop-filter:blur(24px) saturate(160%);
   border:1px solid rgba(255,255,255,.16);border-radius:20px;padding:24px 22px;box-shadow:0 20px 60px rgba(0,0,0,.42)}
 .about-card-h{font-family:'Syne',sans-serif;font-weight:700;font-size:1.05rem;margin-bottom:12px;color:#fff}

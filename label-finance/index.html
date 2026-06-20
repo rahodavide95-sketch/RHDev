@@ -21,7 +21,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=66">
+  <link rel="stylesheet" href="style.css?v=67">
 </head>
 <body class="gated">
 
@@ -1739,7 +1739,14 @@
         <button class="modal-x" id="catimp-close">✕</button></div>
       <div style="padding:20px">
         <p class="muted small" data-i18n="cimp.intro">Carica un CSV esportato da qualsiasi piattaforma (distributore, Spotify, Excel…). L'app riconosce le colonne da sola: crea release e artisti mancanti in un colpo, senza doppioni.</p>
-        <div class="import-drop" id="catimp-drop" style="margin-top:14px">
+        <h3 class="splits-h" data-i18n="cimp.search_t">Cerca la tua etichetta</h3>
+        <div class="row-inline">
+          <input class="input" id="catimp-q" data-i18n-ph="cimp.q_ph" placeholder="Nome della tua etichetta…" style="flex:1">
+          <button type="button" class="btn btn-primary" id="catimp-go" data-i18n="cimp.search_btn">Cerca</button>
+        </div>
+        <div id="catimp-results" class="cat-results"></div>
+        <div class="catimp-or" data-i18n="cimp.or">— oppure carica un file —</div>
+        <div class="import-drop" id="catimp-drop">
           <p data-i18n="cimp.drop">Trascina qui il CSV oppure</p>
           <button type="button" class="btn" id="catimp-browse" data-i18n="cimp.browse">Scegli file</button>
           <input type="file" id="catimp-file" accept=".csv,text/csv,text/plain" hidden>
@@ -1816,11 +1823,11 @@
   <!-- Area di stampa per lo statement royalty (visibile solo in stampa) -->
   <div id="print-area" aria-hidden="true"></div>
 
-  <script src="html2pdf.bundle.min.js?v=66"></script>
-  <script src="app.js?v=66"></script>
-  <script src="config.js?v=66"></script>
-  <script src="i18n.js?v=66"></script>
+  <script src="html2pdf.bundle.min.js?v=67"></script>
+  <script src="app.js?v=67"></script>
+  <script src="config.js?v=67"></script>
+  <script src="i18n.js?v=67"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="sync.js?v=66"></script>
+  <script src="sync.js?v=67"></script>
 </body>
 </html>

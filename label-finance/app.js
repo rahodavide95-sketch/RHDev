@@ -1128,37 +1128,70 @@ function normDate(s){ s=String(s||'').trim(); if(!s) return '';
   const d=new Date(s); if(!isNaN(d.getTime())) return d.toISOString().slice(0,10); return '';
 }
 function catImpMap(){ const m={}; ['catalog','title','artist','date','upc','isrc'].forEach(f=>{ const sel=$('#catimp-'+f); m[f]=sel?(+sel.value):-1; }); return m; }
-function catImpCompute(commit){
+// dedupe + creazione (condivisa da import CSV e ricerca online). items: {title,artist,date,upc,catalog,isrcs[]}
+function importReleasesData(items, commit){
+  const existKeys=new Set(releases().map(x=>(x.upc||x.catalog||x.title||'').toLowerCase()).filter(Boolean));
+  const existArt=new Set((DB.artists||[]).map(a=>(a.name||'').toLowerCase()));
+  const newReleases=[], newArtists=[]; let relDup=0; const seenArt=new Set(), seenRel=new Set();
+  items.forEach(it=>{
+    const title=(it.title||'').trim(), artist=(it.artist||'').trim(), upc=(it.upc||'').trim(), catalog=(it.catalog||'').trim();
+    const date=normDate(it.date||'');
+    if(!title && !upc) return;
+    (artist? artist.split(/,|&|;| feat\.?| ft\.?| x /i):[]).map(s=>s.trim()).filter(Boolean).forEach(nm=>{ const lk=nm.toLowerCase();
+      if(existArt.has(lk)||seenArt.has(lk)) return; seenArt.add(lk); newArtists.push({id:newId(), name:nm, split:''}); });
+    const key=(upc||catalog||title).toLowerCase();
+    if(existKeys.has(key)||seenRel.has(key)){ relDup++; return; } seenRel.add(key);
+    newReleases.push({ id:uid(), catalog, title, artist, upc, orderDate:date, year:date?new Date(date+'T00:00:00').getFullYear():'',
+      splits:[], tracks:(it.isrcs||[]).filter(Boolean).map(code=>({id:uid(), title:'', isrc:code, splits:[]})) });
+  });
+  if(commit){ newReleases.forEach(r=>releases().push(r)); DB.artists=DB.artists||[]; newArtists.forEach(a=>DB.artists.push(a));
+    save(); renderReleases(); renderArtists(); renderRoyalties(); }
+  return { relNew:newReleases.length, relDup, artNew:newArtists.length };
+}
+function catImpItems(){
   const rows=parseCSV(catImpRaw||''); const data=rows.slice(1); const map=catImpMap();
   const get=(r,f)=> map[f]>=0 ? String(r[map[f]]||'').trim() : '';
   const groups=new Map();
   data.forEach(r=>{ if(!r||!r.length) return;
-    const catalog=get(r,'catalog'), title=get(r,'title'), artist=get(r,'artist'), date=normDate(get(r,'date')), upc=get(r,'upc'), isrc=get(r,'isrc');
+    const catalog=get(r,'catalog'), title=get(r,'title'), artist=get(r,'artist'), date=get(r,'date'), upc=get(r,'upc'), isrc=get(r,'isrc');
     if(!catalog && !title && !upc) return;
     const key=(upc||catalog||title).toLowerCase();
-    let g=groups.get(key); if(!g){ g={catalog,title,artist,date,upc,tracks:[],artists:new Set()}; groups.set(key,g); }
+    let g=groups.get(key); if(!g){ g={catalog,title,artist,date,upc,isrcs:[]}; groups.set(key,g); }
     if(!g.catalog&&catalog) g.catalog=catalog; if(!g.title&&title) g.title=title;
     if(!g.artist&&artist) g.artist=artist; if(!g.date&&date) g.date=date; if(!g.upc&&upc) g.upc=upc;
-    if(artist) g.artists.add(artist);
-    if(isrc && !g.tracks.some(t=>t.isrc===isrc)) g.tracks.push({isrc, title});
+    if(isrc && !g.isrcs.includes(isrc)) g.isrcs.push(isrc);
   });
-  const existKeys=new Set(releases().map(x=>(x.upc||x.catalog||x.title||'').toLowerCase()).filter(Boolean));
-  const existArt=new Set((DB.artists||[]).map(a=>(a.name||'').toLowerCase()));
-  const newReleases=[], newArtists=[]; let relDup=0; const seenArt=new Set();
-  groups.forEach((g,key)=>{
-    g.artists.forEach(n=>{ const nm=n.trim(); const lk=nm.toLowerCase(); if(!nm||existArt.has(lk)||seenArt.has(lk)) return; seenArt.add(lk);
-      newArtists.push({id:newId(), name:nm, split:''}); });
-    if(existKeys.has(key)){ relDup++; return; }
-    newReleases.push({ id:uid(), catalog:g.catalog||'', title:g.title||'', artist:g.artist||'', upc:g.upc||'',
-      orderDate:g.date||'', year:g.date?new Date(g.date+'T00:00:00').getFullYear():'',
-      splits:[], tracks:g.tracks.map(t=>({id:uid(), title:t.title||'', isrc:t.isrc, splits:[]})) });
-  });
-  if(commit){
-    newReleases.forEach(r=>releases().push(r));
-    DB.artists=DB.artists||[]; newArtists.forEach(a=>DB.artists.push(a));
-    save(); renderReleases(); renderArtists(); renderRoyalties();
-  }
-  return { relNew:newReleases.length, relDup, artNew:newArtists.length, rows:data.length };
+  return { items:[...groups.values()], rows:data.length };
+}
+function catImpCompute(commit){ const {items,rows}=catImpItems(); const r=importReleasesData(items,commit); return {...r, rows}; }
+/* ---- Ricerca catalogo online (MusicBrainz/Discogs/Spotify) ---- */
+let catCandidates=[], catSpotify=false;
+async function catOnlineSearch(){
+  const q=($('#catimp-q').value||'').trim(); const box=$('#catimp-results'); if(!q||!box) return;
+  if(!window.LF_catalogSearch){ box.innerHTML=`<p class="ai-err">${tt('cimp.offline')}</p>`; return; }
+  box.innerHTML=`<p class="muted small">${tt('cimp.searching')}</p>`;
+  const res=await window.LF_catalogSearch({action:'search', query:q});
+  if(!res||res.error){ box.innerHTML=`<p class="ai-err">${tt('cimp.search_fail')}${res&&res.error?` (${esc(String(res.error))})`:''}</p>`; return; }
+  catCandidates=res.candidates||[]; catSpotify=!!res.spotify;
+  let html='';
+  if(catCandidates.length) html+=catCandidates.map((c,i)=>`<label class="cat-cand"><input type="checkbox" data-cand="${i}" ${i===0?'checked':''}> <b>${esc(c.name)}</b> <span class="muted small">${esc(c.detail||c.source)}</span></label>`).join('');
+  if(catSpotify) html+=`<label class="cat-cand"><input type="checkbox" id="cat-sp" checked> <b>Spotify</b> <span class="muted small">${tt('cimp.by_name').replace('{q}',esc(q))}</span></label>`;
+  html = (html||`<p class="muted small">${tt('cimp.no_label')}</p>`) + (catCandidates.length||catSpotify?`<button class="btn btn-primary" id="cat-import" style="margin-top:10px">${tt('cimp.fetch')}</button>`:'');
+  box.innerHTML=html;
+}
+async function catOnlineImport(){
+  const picks={ mb:[], discogs:[], spotifyName:null };
+  $$('#catimp-results [data-cand]:checked').forEach(c=>{ const cand=catCandidates[+c.dataset.cand]; if(!cand) return;
+    if(cand.source==='mb') picks.mb.push(cand.id); else if(cand.source==='discogs') picks.discogs.push(cand.id); });
+  if($('#cat-sp') && $('#cat-sp').checked) picks.spotifyName=($('#catimp-q').value||'').trim();
+  if(!picks.mb.length && !picks.discogs.length && !picks.spotifyName){ toast(tt('cimp.pick_one')); return; }
+  const btn=$('#cat-import'); if(btn){ btn.disabled=true; btn.textContent=tt('cimp.fetching'); }
+  const res=await window.LF_catalogSearch({action:'fetch', picks});
+  if(btn){ btn.disabled=false; btn.textContent=tt('cimp.fetch'); }
+  if(!res||res.error||!res.releases){ toast(tt('cimp.search_fail')+(res&&res.error?` (${res.error})`:'')); return; }
+  const r=importReleasesData(res.releases, true);
+  $('#catimp-modal').hidden=true;
+  toast(tt('cimp.done').replace('{rel}',r.relNew).replace('{art}',r.artNew).replace('{dup}',r.relDup));
 }
 function catImpRenderMaps(){
   const opts=(sel)=>['<option value="-1">—</option>'].concat(catImpHeaders.map((h,i)=>`<option value="${i}" ${i===sel?'selected':''}>${esc(h||('Col '+(i+1)))}</option>`)).join('');
@@ -1178,7 +1211,10 @@ function catImpLoad(file){ const rd=new FileReader();
     $('#catimp-config').hidden=false; catImpRenderMaps(); };
   rd.readAsText(file); }
 (function wireCatImp(){
-  const open=$('#catimp-open'); if(open) open.onclick=()=>{ $('#catimp-config').hidden=true; $('#catimp-preview').textContent=''; $('#catimp-modal').hidden=false; };
+  const open=$('#catimp-open'); if(open) open.onclick=()=>{ $('#catimp-config').hidden=true; $('#catimp-preview').textContent=''; $('#catimp-results').innerHTML=''; $('#catimp-modal').hidden=false; };
+  if($('#catimp-go')) $('#catimp-go').onclick=catOnlineSearch;
+  if($('#catimp-q')) $('#catimp-q').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); catOnlineSearch(); } });
+  if($('#catimp-results')) $('#catimp-results').addEventListener('click',e=>{ if(e.target.closest('#cat-import')) catOnlineImport(); });
   if($('#catimp-close')) $('#catimp-close').onclick=()=>$('#catimp-modal').hidden=true;
   if($('#catimp-modal')) $('#catimp-modal').onclick=e=>{ if(e.target.id==='catimp-modal') $('#catimp-modal').hidden=true; };
   if($('#catimp-browse')) $('#catimp-browse').onclick=()=>$('#catimp-file').click();

@@ -183,6 +183,15 @@
       return data;
     }catch(e){ return { error:e.message||'ai_error' }; }
   };
+  /* ---------- Ricerca catalogo etichetta (MusicBrainz/Discogs/Spotify) ---------- */
+  window.LF_catalogSearch = async function(payload){
+    if(!client) return { error:'offline' };
+    try{
+      const { data, error } = await client.functions.invoke('catalog-search', { body:payload });
+      if(error){ let d=null; try{ d=await error.context?.json?.(); }catch{} return d || { error:error.message||'cat_error' }; }
+      return data;
+    }catch(e){ return { error:e.message||'cat_error' }; }
+  };
   /* ---------- Firma remota dei contratti ---------- */
   function randToken(){ try{ return crypto.randomUUID().replace(/-/g,''); }catch(e){ return Date.now().toString(36)+Math.random().toString(36).slice(2,10); } }
   window.LF_signLink = function(token){ try{ return new URL('firma.html?t='+encodeURIComponent(token), location.href).href; }catch(e){ return 'firma.html?t='+token; } };

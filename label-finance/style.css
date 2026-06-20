@@ -351,6 +351,11 @@ body.dash-edit .dw-width{display:inline-flex;gap:2px;position:absolute;top:8px;l
 .r-credits>summary{cursor:pointer;font-weight:600;font-size:.92rem;list-style:none}
 .r-credits>summary::-webkit-details-marker{display:none}
 .r-credits>summary::before{content:'🎚️ '}
+/* import catalogo: ricerca etichetta */
+.cat-results{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.cat-cand{display:flex;align-items:center;gap:9px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2);cursor:pointer;font-size:.9rem}
+.cat-cand input{flex:none}
+.catimp-or{text-align:center;color:var(--muted-2);font-size:.78rem;margin:16px 0 12px;text-transform:uppercase;letter-spacing:.04em}
 @media(max-width:880px){
   /* le liste a colonne scorrono in orizzontale per restare leggibili e allineate */
   .dbl{overflow-x:auto;-webkit-overflow-scrolling:touch}

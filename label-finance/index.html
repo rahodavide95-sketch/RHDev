@@ -21,7 +21,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=39">
+  <link rel="stylesheet" href="style.css?v=40">
 </head>
 <body class="gated">
 
@@ -865,7 +865,7 @@
           <div class="row-inline wrap">
             <button class="btn btn-ghost btn-sm" id="con-back" data-i18n="con.back">‹ Modifica</button>
             <button class="btn btn-sm" id="con-sign" data-i18n="con.sign_now">✍ Firma ora</button>
-            <button class="btn btn-sm" id="con-print" data-i18n="con.print">⤓ Stampa / PDF</button>
+            <button class="btn btn-sm" id="con-print" data-i18n="con.print">⤓ Scarica PDF</button>
             <button class="btn btn-primary btn-sm" id="con-send" data-i18n="con.send">✉ Invia per firma</button>
           </div>
         </div>
@@ -1362,10 +1362,11 @@
   <!-- Area di stampa per lo statement royalty (visibile solo in stampa) -->
   <div id="print-area" aria-hidden="true"></div>
 
-  <script src="app.js?v=39"></script>
-  <script src="config.js?v=39"></script>
-  <script src="i18n.js?v=39"></script>
+  <script src="html2pdf.bundle.min.js?v=40"></script>
+  <script src="app.js?v=40"></script>
+  <script src="config.js?v=40"></script>
+  <script src="i18n.js?v=40"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="sync.js?v=39"></script>
+  <script src="sync.js?v=40"></script>
 </body>
 </html>

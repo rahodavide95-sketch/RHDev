@@ -1967,6 +1967,19 @@ function printContract(){
   const done=()=>{ document.body.classList.remove('printing-contract'); window.removeEventListener('afterprint',done); };
   window.addEventListener('afterprint',done); window.print(); setTimeout(done,1500);
 }
+function downloadContractPDF(){
+  if(!currentContract) return;
+  const el=$('#contract-doc'); if(!el) return;
+  if(typeof html2pdf==='undefined'){ printContract(); return; }  // fallback se la libreria non è caricata
+  const fname=(currentContract.titles||'contract').replace(/[^\w\-]+/g,'_').slice(0,60)||'contract';
+  toast(tt('con.pdf_wait'));
+  const opt={ margin:[8,8,8,8], filename:fname+'.pdf',
+    image:{type:'jpeg',quality:0.98},
+    html2canvas:{scale:2, useCORS:true, backgroundColor:'#ffffff', windowWidth:820},
+    jsPDF:{unit:'mm', format:'a4', orientation:'portrait'},
+    pagebreak:{ mode:['css','legacy'], before:'.cd-page--copy' } };
+  html2pdf().set(opt).from(el).save().catch(()=>printContract());
+}
 function openContract(id){ const c=DB.contracts.find(x=>x.id===id); if(!c) return;
   currentContract=c; $('#contract-doc').innerHTML=buildContractDoc(c);
   $('#con-form').hidden=true; $('#con-preview').hidden=false; goto('contracts');
@@ -2086,7 +2099,7 @@ function initFeatures(){
   $('#con-cancel')?.addEventListener('click',()=>{ $('#con-form').hidden=true; });
   $('#con-generate')?.addEventListener('click',generateContract);
   $('#con-back')?.addEventListener('click',editContract);
-  $('#con-print')?.addEventListener('click',printContract);
+  $('#con-print')?.addEventListener('click',downloadContractPDF);
   $('#con-send')?.addEventListener('click',sendContract);
   $('#con-sign')?.addEventListener('click',openSignPad);
   $('#con-artist-pick')?.addEventListener('change',e=>{ if(e.target.value) conFillFromArtist(e.target.value); });

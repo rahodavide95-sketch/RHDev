@@ -1597,7 +1597,7 @@ function aiPopBody(){
   body._prompts=prompts;
   body.querySelectorAll('.ai-chip').forEach(b=>b.addEventListener('click',()=>{ const p=body._prompts[+b.dataset.aiq]; runAiQuestion(p.q,p.label); }));
 }
-function aiShowPrompts(){ aiPopBody(); }   // torna sempre al menu principale (lista suggerimenti)
+function aiShowPrompts(e){ if(e&&e.stopPropagation) e.stopPropagation(); aiPopBody(); }   // torna sempre al menu del bot
 function openAiPop(){ const pop=$('#ai-pop'); if(!pop) return; aiPopBody(); pop.hidden=false; document.body.classList.add('ai-open');
   const f=$('#ai-fab'); if(f){ f.setAttribute('aria-expanded','true'); f.classList.add('is-open'); } }
 function closeAiPop(){ const pop=$('#ai-pop'); if(!pop) return; pop.hidden=true; document.body.classList.remove('ai-open');
@@ -2825,7 +2825,10 @@ function notifScan(){
   notifSave(); renderNotifs();
 }
 function notifText(n){
-  if(n.type==='unlinked') return { title:tt('notif.unlinked_t'), body:tt('notif.unlinked_b').replace('{p}',n.ref||'') };
+  const T=(k,fb)=>{ const v=tt(k); return (v&&v!==k)?v:fb; };   // fallback se i18n non aggiornata (cache)
+  if(n.type==='unlinked') return {
+    title: T('notif.unlinked_t','Prodotto non collegato'),
+    body: T('notif.unlinked_b','Il prodotto «{p}» non è collegato a nessuna release: registralo in Discografia perché i calcoli tornino.').replace('{p}', n.ref||'') };
   return { title:n.title||'', body:n.body||'' };
 }
 function notifTime(ts){ try{ return new Date(ts).toLocaleString(calLang(),{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); }catch(e){ return ''; } }
@@ -2944,6 +2947,7 @@ function initFeatures(){
   document.addEventListener('keydown',e=>{ if(e.key==='Escape' && $('#ai-pop') && !$('#ai-pop').hidden) closeAiPop(); });
   // chiudi cliccando fuori dal popover
   document.addEventListener('click',e=>{ const pop=$('#ai-pop'); if(!pop||pop.hidden) return;
+    if(!e.target.isConnected) return;   // target rimosso dal DOM (es. rebuild): non chiudere
     if(!e.target.closest('#ai-pop') && !e.target.closest('#ai-fab')) closeAiPop(); });
   // Merch
   $('#mch-new')?.addEventListener('click',()=>openMerchForm());

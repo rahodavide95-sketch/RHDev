@@ -65,3 +65,7 @@ end; $$;
 grant execute on function public.get_contract_for_signing(text) to anon, authenticated;
 grant execute on function public.sign_contract(text, jsonb)     to anon, authenticated;
 grant execute on function public.reject_contract(text, text)    to anon, authenticated;
+
+-- Aggiornamento in tempo reale: quando l'artista firma/rifiuta, l'app si
+-- aggiorna da sola senza ricaricare la pagina.
+alter publication supabase_realtime add table public.contracts;

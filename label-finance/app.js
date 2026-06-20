@@ -1549,12 +1549,13 @@ function aiPopBody(){
     return;
   }
   const prompts=contextPrompts();
-  body.innerHTML=`<p class="ai-pop-sub muted small">${tt('ai.sub')}</p>
-    <div class="ai-chips">${prompts.map((p,i)=>`<button class="ai-chip" data-aiq="${i}"><span class="ai-chip-i">${p.icon}</span>${esc(p.label)}</button>`).join('')}</div>
+  body.innerHTML=`<div class="ai-prompts" id="ai-prompts"><p class="ai-pop-sub muted small">${tt('ai.sub')}</p>
+      <div class="ai-chips">${prompts.map((p,i)=>`<button class="ai-chip" data-aiq="${i}"><span class="ai-chip-i">${p.icon}</span>${esc(p.label)}</button>`).join('')}</div></div>
     <div class="ai-out" id="ai-out"></div>`;
   body._prompts=prompts;
   body.querySelectorAll('.ai-chip').forEach(b=>b.addEventListener('click',()=>{ const p=body._prompts[+b.dataset.aiq]; runAiQuestion(p.q,p.label); }));
 }
+function aiShowPrompts(){ const p=$('#ai-prompts'); if(p) p.style.display=''; const o=$('#ai-out'); if(o) o.innerHTML=''; }
 function openAiPop(){ const pop=$('#ai-pop'); if(!pop) return; aiPopBody(); pop.hidden=false; document.body.classList.add('ai-open');
   const f=$('#ai-fab'); if(f){ f.setAttribute('aria-expanded','true'); f.classList.add('is-open'); } }
 function closeAiPop(){ const pop=$('#ai-pop'); if(!pop) return; pop.hidden=true; document.body.classList.remove('ai-open');
@@ -1583,7 +1584,12 @@ async function aiAdviseDirect(payload){
 }
 async function runAiQuestion(question, label){
   if(aiBusy) return; aiBusy=true;
-  const out=$('#ai-out'); if(out) out.innerHTML=`<p class="ai-thinking muted">${tt('ai.thinking')}</p>`;
+  const prompts=$('#ai-prompts'); if(prompts) prompts.style.display='none';
+  const out=$('#ai-out'); if(!out){ aiBusy=false; return; }
+  out.innerHTML=`<div class="ai-result-top"><button class="ai-back" id="ai-back">‹ ${tt('ai.back')}</button>
+      <span class="ai-q-echo">${esc(label||question)}</span></div>
+    <div id="ai-result"><p class="ai-thinking muted">${tt('ai.thinking')}</p></div>`;
+  $('#ai-back')?.addEventListener('click', aiShowPrompts);
   const summary=buildAiSummary();
   const payload={ summary, question, lang:(window.LFI18N?window.LFI18N.lang:'it') };
   let res={error:'offline'};
@@ -1592,19 +1598,22 @@ async function runAiQuestion(question, label){
     else if(window.LF_aiAdvise) res=await window.LF_aiAdvise(payload);
   }catch(e){ res={error:e.message}; }
   aiBusy=false;
-  if(!out) return;
+  const rb=$('#ai-result'); if(!rb) return;
   if(res && res.text){
     aiLastResult={ label:label||question, question, text:res.text, summary, model:res.model, when:new Date() };
-    out.innerHTML=`<div class="ai-answer">${aiFormat(res.text)}</div>
-      <div class="ai-out-actions"><button class="btn btn-ghost btn-sm" id="ai-export">⤓ ${tt('ai.export')}</button></div>`;
+    rb.innerHTML=`<div class="ai-answer">${aiFormat(res.text)}</div>
+      <div class="ai-out-actions"><button class="btn btn-ghost btn-sm" id="ai-back2">‹ ${tt('ai.back')}</button><button class="btn btn-ghost btn-sm" id="ai-export">⤓ ${tt('ai.export')}</button></div>`;
     $('#ai-export')?.addEventListener('click', exportAiAnalysis);
+    $('#ai-back2')?.addEventListener('click', aiShowPrompts);
   } else {
     const map={ upgrade_required:tt('ai.err_plan'), unauthorized:tt('ai.err_auth'), offline:tt('ai.err_offline'),
       ai_not_configured:tt('ai.err_config'), refused:tt('ai.err_refused') };
     const code=res&&res.error, known=code&&map[code];
     let html=`<p class="ai-err">${known||tt('ai.err_generic')}${(code&&!known)?` <span class="muted small">(${esc(String(code))})</span>`:''}</p>`;
     if(res&&res.detail) html+=`<p class="muted small" style="white-space:pre-wrap;margin-top:6px">${esc(String(res.detail).slice(0,300))}</p>`;
-    out.innerHTML=html;
+    html+=`<div class="ai-out-actions"><button class="btn btn-ghost btn-sm" id="ai-back2">‹ ${tt('ai.back')}</button></div>`;
+    rb.innerHTML=html;
+    $('#ai-back2')?.addEventListener('click', aiShowPrompts);
   }
 }
 function exportAiAnalysis(){
@@ -2171,6 +2180,16 @@ function conStatusPill(s){
   if(s==='sent') return `<span class="pill pill-sent">${tt('con.st_sent')}</span>`;
   return `<span class="pill">${tt('con.st_draft')}</span>`;
 }
+/* tag di stato: verdi se la situazione è risolta, rossi se ancora incompleta */
+function conTags(c){
+  if(c.status==='signed') return [{l:tt('con.tg_signed'),k:'ok'}];
+  const t=[];
+  if(c.status==='rejected') t.push({l:tt('con.tg_rejected'),k:'bad'});
+  else if(c.status==='sent') t.push({l:tt('con.tg_waiting'),k:'bad'});
+  else t.push({l:tt('con.tg_draft'),k:'bad'});
+  if(!c.email) t.push({l:tt('con.tg_noemail'),k:'bad'});
+  return t;
+}
 function renderContracts(){
   const tb=$('#contracts-table'); if(!tb) return;
   const all=(DB.contracts||[]).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
@@ -2181,7 +2200,8 @@ function renderContracts(){
   const rows=list.map(c=>{
     const who=esc(c.projectName||c.fullName||c.artistNames||'—');
     const reason = c.status==='rejected'&&c.rejectReason ? `<div class="con-reason">“${esc(c.rejectReason)}”</div>` : '';
-    return `<tr><td><b>${esc(c.titles||'—')}</b></td><td class="muted small">${who}</td><td>${c.artistPct}/${100-c.artistPct}</td><td>${esc(c.date)}</td><td>${conStatusPill(c.status)}${reason}</td>
+    const tags = `<div class="con-tags">${conTags(c).map(x=>`<span class="ctag ctag-${x.k}">${esc(x.l)}</span>`).join('')}</div>`;
+    return `<tr><td><b>${esc(c.titles||'—')}</b></td><td class="muted small">${who}</td><td>${c.artistPct}/${100-c.artistPct}</td><td>${esc(c.date)}</td><td>${tags}${reason}</td>
       <td class="con-row-act"><button class="icon-btn-sm" data-con-open="${c.id}" title="${tt('con.open')}">↗</button>
         <button class="icon-btn-sm" data-con-del="${c.id}" title="${tt('common.delete')}">🗑</button></td></tr>`;
   }).join('');
@@ -2416,6 +2436,9 @@ function initFeatures(){
   $('#ai-fab')?.addEventListener('click',toggleAiPop);
   $('#ai-pop-x')?.addEventListener('click',closeAiPop);
   document.addEventListener('keydown',e=>{ if(e.key==='Escape' && $('#ai-pop') && !$('#ai-pop').hidden) closeAiPop(); });
+  // chiudi cliccando fuori dal popover
+  document.addEventListener('click',e=>{ const pop=$('#ai-pop'); if(!pop||pop.hidden) return;
+    if(!e.target.closest('#ai-pop') && !e.target.closest('#ai-fab')) closeAiPop(); });
   // Merch
   $('#mch-new')?.addEventListener('click',()=>openMerchForm());
   $('#mch-cancel')?.addEventListener('click',()=>{ $('#mch-form').hidden=true; editingMerchId=null; });
@@ -2446,3 +2469,8 @@ renderOffers();
 rebuildAccountMenu();
 initFAQ();
 initFeatures();
+
+/* ---------- Aggiornamento automatico contratti (firma/rifiuto in tempo reale) ---------- */
+window.addEventListener('lf-contracts-changed', ()=>{ if(typeof refreshContractStatuses==='function') refreshContractStatuses(); });
+setInterval(()=>{ if(document.visibilityState==='visible' && document.querySelector('#view-contracts.is-active') && typeof refreshContractStatuses==='function') refreshContractStatuses(); }, 10000);
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible' && document.querySelector('#view-contracts.is-active') && typeof refreshContractStatuses==='function') refreshContractStatuses(); });

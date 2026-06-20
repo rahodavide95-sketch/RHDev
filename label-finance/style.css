@@ -159,6 +159,11 @@ body.gated .ai-fab{display:none}
 .ai-chip:hover{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--panel-2))}
 .ai-chip-i{font-size:1.05rem;flex:none}
 .ai-out{margin-top:14px}
+.ai-result-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.ai-back{flex:none;background:var(--panel-2);border:1px solid var(--line);color:var(--text);font:inherit;font-weight:600;font-size:.84rem;padding:5px 11px;border-radius:9px;cursor:pointer}
+.ai-back:hover{border-color:var(--accent);color:var(--accent)}
+.ai-q-echo{font-weight:700;font-size:.88rem;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ai-out-actions{margin-top:12px;display:flex;justify-content:space-between;gap:8px}
 .ai-thinking::after{content:'';display:inline-block;width:1em;text-align:left;animation:ai-dots 1.2s steps(4) infinite}
 @keyframes ai-dots{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
 .ai-answer{line-height:1.65;font-size:.92rem}
@@ -285,6 +290,10 @@ body.dash-edit .dw-width{display:inline-flex;gap:2px;position:absolute;top:8px;l
 .pill-sent{color:var(--net);background:color-mix(in srgb,var(--net) 14%,var(--panel));border-color:color-mix(in srgb,var(--net) 40%,var(--line))}
 .pill-bad{color:var(--out);background:color-mix(in srgb,var(--out) 14%,var(--panel));border-color:color-mix(in srgb,var(--out) 40%,var(--line))}
 .con-reason{margin-top:5px;font-size:.8rem;color:var(--out);max-width:260px;font-style:italic}
+.con-tags{display:flex;flex-wrap:wrap;gap:5px}
+.ctag{display:inline-block;font-size:.72rem;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap;border:1px solid}
+.ctag-ok{color:var(--in);background:color-mix(in srgb,var(--in) 15%,var(--panel));border-color:color-mix(in srgb,var(--in) 45%,var(--line))}
+.ctag-bad{color:var(--out);background:color-mix(in srgb,var(--out) 15%,var(--panel));border-color:color-mix(in srgb,var(--out) 45%,var(--line))}
 .share-body{padding:4px 2px}
 .share-body .input[readonly]{background:var(--panel-2);font-size:.85rem}
 .share-body a.btn{text-decoration:none;text-align:center}

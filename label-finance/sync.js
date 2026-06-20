@@ -121,11 +121,25 @@
       setStatus('Connesso — sincronizzo…'); gateStatus('');
       await pull();
       fillAccount();
+      watchContracts();
     } else {
       window.LF_push = null;
       if(getCfg()){ showGate(true); setStatus('Accedi per sincronizzare'); }
       else { showGate(false); setStatus('Non configurata'); }
     }
+  }
+
+  /* ---------- Aggiornamento in tempo reale dei contratti firmati ---------- */
+  let contractChannel=null;
+  function watchContracts(){
+    if(!client||!user) return;
+    try{ if(contractChannel) client.removeChannel(contractChannel); }catch(e){}
+    try{
+      contractChannel = client.channel('contracts-'+user.id)
+        .on('postgres_changes', { event:'*', schema:'public', table:'contracts', filter:'owner_id=eq.'+user.id },
+          ()=>{ try{ window.dispatchEvent(new CustomEvent('lf-contracts-changed')); }catch(e){} })
+        .subscribe();
+    }catch(e){}
   }
 
   /* ---------- Sync ---------- */

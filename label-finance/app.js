@@ -779,8 +779,8 @@ const TX_COLS = {
   kind:    {label:'',            cell:t=>`<span class="pill ${t.kind==='income'?'pill--in':'pill--out'}">${t.kind==='income'?'IN':'OUT'}</span>`},
   platform:{label:'Piattaforma', cell:t=>esc(t.platform)},
   type:    {label:'Tipologia',   cell:t=>esc(t.type)},
-  catalog: {label:'Catalogo',    cell:t=>esc(t.catalog)},
-  product: {label:'Prodotto',    cell:t=>esc(t.product)},
+  catalog: {label:'Catalogo',    cell:t=>{ const r=releaseForTx(t); return r&&t.catalog?`<span class="lf-link" data-rel-open="${r.id}">${esc(t.catalog)}</span>`:esc(t.catalog); }},
+  product: {label:'Prodotto',    cell:t=>{ const r=releaseForTx(t); return r?`<span class="lf-link" data-rel-open="${r.id}" title="${tt('tx.open_release')}">${esc(t.product||r.title||'')}</span>`:esc(t.product); }},
   artist:  {label:'Artista',     cell:t=>esc(t.artist)},
   isrc:    {label:'ISRC',        cell:t=>esc(t.isrc)},
   upc:     {label:'UPC',         cell:t=>esc(t.upc||t.code)},
@@ -845,7 +845,10 @@ function applyTxFilters(){
     if(txSort.col===c) txSort.dir*=-1; else txSort={col:c, dir:TX_COLS[c].num?-1:1};
     applyTxFilters();
   });
-  $$('#table-tx tbody tr[data-id]').forEach(tr=>tr.onclick=()=>openTx(tr.dataset.id));
+  $$('#table-tx tbody tr[data-id]').forEach(tr=>tr.onclick=e=>{
+    const lk=e.target.closest('[data-rel-open]'); if(lk){ e.stopPropagation(); openRelease(lk.dataset.relOpen); return; }
+    openTx(tr.dataset.id);
+  });
 }
 ['#tx-search','#tx-filter-kind','#tx-filter-platform','#tx-from','#tx-to'].forEach(s=>{
   $(s).addEventListener('input',applyTxFilters); $(s).addEventListener('change',applyTxFilters);
@@ -905,6 +908,12 @@ function releaseByCatalog(cat){
   const c=cat.trim().toLowerCase();
   return releases().find(r=>(r.catalog||'').trim().toLowerCase()===c) || null;
 }
+function releaseByTitle(name){
+  if(!name) return null; const n=name.trim().toLowerCase(); if(!n) return null;
+  return releases().find(r=>(r.title||'').trim().toLowerCase()===n) || null;
+}
+// release collegata a un movimento: per catalogo, oppure per nome prodotto = titolo release
+function releaseForTx(t){ return releaseByCatalog(t.catalog) || releaseByTitle(t.product) || null; }
 let relSort={col:'catalog',dir:1};
 function sortReleases(arr){
   const k=relSort.col, d=relSort.dir;
@@ -1078,7 +1087,7 @@ function royaltyPeriod(txs){
 // trova release + quote applicabili a una transazione (traccia per ISRC, poi release)
 function splitsForTx(t){
   const iso=(t.isrc||'').trim().toLowerCase();
-  const rel=releaseByCatalog(t.catalog);
+  const rel=releaseByCatalog(t.catalog) || releaseByTitle(t.product);
   if(rel){
     if(iso && rel.tracks){ const tr=rel.tracks.find(x=>(x.isrc||'').trim().toLowerCase()===iso && x.splits&&x.splits.length);
       if(tr) return {rel, splits:tr.splits}; }

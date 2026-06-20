@@ -87,6 +87,7 @@
       'tx.cols':'⚙ Colonne','tx.export':'⤓ Esporta',
       // Release
       'rel.title':'Release','rel.export':'⤓ Esporta','rel.new':'+ Nuova release',
+      'rel.c_title':'Titolo','rel.c_year':'Anno','rel.c_split':'Ripartizione',
       'rel.intro':'Definisci catalogo, titolo e le quote di ripartizione (%) per artista. Le vendite con lo stesso catalogo useranno automaticamente queste quote nella sezione Royalty.',
       // Royalty
       'roy.title':'Royalty','roy.subtitle':'Quanto spetta a ogni artista, calcolato sul netto delle entrate.',
@@ -153,6 +154,7 @@
       'ai.title':'Assistente AI','ai.sub':'Consigli sulla situazione della tua etichetta.',
       'ai.locked':'L\'assistente AI è disponibile con i piani Studio e Agency.','ai.see_plans':'Vedi i piani',
       'ai.analyze':'Analizza la mia etichetta','ai.again':'Analizza di nuovo','ai.thinking':'Sto analizzando i tuoi dati…',
+      'ai.export':'Esporta analisi','ai.exported':'Analisi esportata ✓','ai.study_title':'Analisi AI — Label Finance','ai.q':'Domanda','ai.answer':'Risposta','ai.data':'Dati analizzati',
       'ai.err_plan':'Funzione dei piani Studio/Agency.','ai.err_auth':'Accedi per usare l\'assistente.',
       'ai.err_offline':'Servizio non raggiungibile (sei offline?).','ai.err_config':'Assistente non ancora configurato.',
       'ai.err_refused':'Non posso rispondere a questa richiesta.','ai.err_generic':'Si è verificato un errore. Riprova.',
@@ -232,6 +234,7 @@
       'tx.only_income':'Income only','tx.only_expense':'Expenses only','tx.all_platforms':'All platforms',
       'tx.cols':'⚙ Columns','tx.export':'⤓ Export',
       'rel.title':'Releases','rel.export':'⤓ Export','rel.new':'+ New release',
+      'rel.c_title':'Title','rel.c_year':'Year','rel.c_split':'Split',
       'rel.intro':'Define catalog, title and the revenue split (%) per artist. Sales with the same catalog will automatically use these shares in the Royalties section.',
       'roy.title':'Royalties','roy.subtitle':'What each artist is owed, calculated on net income.',
       'roy.export':'⤓ Export','roy.byartist':'By artist','roy.statement':'⤓ PDF statement',
@@ -427,6 +430,7 @@
       'ai.title':'AI Assistant','ai.sub':'Advice on your label\'s situation.',
       'ai.locked':'The AI assistant is available on the Studio and Agency plans.','ai.see_plans':'See plans',
       'ai.analyze':'Analyze my label','ai.again':'Analyze again','ai.thinking':'Analyzing your data…',
+      'ai.export':'Export analysis','ai.exported':'Analysis exported ✓','ai.study_title':'AI analysis — Label Finance','ai.q':'Question','ai.answer':'Answer','ai.data':'Analyzed data',
       'ai.err_plan':'A Studio/Agency plan feature.','ai.err_auth':'Sign in to use the assistant.',
       'ai.err_offline':'Service unreachable (are you offline?).','ai.err_config':'Assistant not configured yet.',
       'ai.err_refused':'I can\'t answer this request.','ai.err_generic':'Something went wrong. Try again.',

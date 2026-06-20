@@ -23,10 +23,10 @@ const DEFAULT_TX_ORDER = ['date','kind','platform','catalog','product','artist',
   'dateTo','type','isrc','upc','gross','shipping','taxes','payProcFees','fees','csShare','currency','note'];
 const DEFAULT_TX_VISIBLE = ['date','kind','platform','catalog','product','artist','qty','net','eur'];
 /* Account = piu' etichette; DB punta all'etichetta attiva. */
-const DASH_BASE = ['ai','kpi','chart','g_release','g_artist','g_platform','g_type'];
+const DASH_BASE = ['kpi','chart','g_release','g_artist','g_platform','g_type'];
 const DASH_EXTRAS = ['forecast','w_top','recent','merch']; // libreria widget opzionali (nascosti di default)
 const DASH_DEFAULT_ORDER = [...DASH_BASE, ...DASH_EXTRAS];
-const DASH_FULL = new Set(['ai','kpi','chart','forecast']);
+const DASH_FULL = new Set(['kpi','chart','forecast']);
 const PLAN_LIMITS = { free:1, studio:3, agency:Infinity };
 // capacità per piano (gating funzioni). Recoupment è incluso ovunque.
 const PLAN_CAPS = {
@@ -484,7 +484,7 @@ function deltaTag(cur,prev,goodUp){
 }
 function renderDashboard(){
   updateIdentity();
-  if(typeof renderAiPanel==='function') renderAiPanel();
+  if(typeof aiPopBody==='function' && $('#ai-pop') && !$('#ai-pop').hidden) aiPopBody();
   const all=DB.transactions;
   $('#dash-empty').hidden = all.length>0;
   const range=periodRange();
@@ -907,7 +907,10 @@ function renderReleases(){
   if(!list.length){ cont.className='releases-cards'; cont.innerHTML=`<p class="muted">${tt('empty.norel')}</p>`; mountPager(cont,'rel',info); syncVMButtons(); return; }
   if(mode==='list'){
     cont.className='release-list';
-    cont.innerHTML = list.map(r=>{
+    const head=`<div class="release-lrow release-lhead">
+      <span>${tt('col.catalog')}</span><span>${tt('rel.c_title')}</span><span>${tt('rel.c_year')}</span>
+      <span>${tt('rel.c_split')}</span><span>ISRC</span></div>`;
+    cont.innerHTML = head + list.map(r=>{
       const tot=(r.splits||[]).reduce((s,x)=>s+(+x.pct||0),0); const label=Math.max(0,100-tot);
       const who=(r.splits||[]).map(s=>esc(s.name)+' '+(+s.pct||0)+'%').join(' · ')+(label?` · Label ${label}%`:'');
       return `<div class="release-lrow" data-id="${r.id}">
@@ -1507,30 +1510,54 @@ function buildAiSummary(){
   const life=royaltyTotalsByArtist(inc);
   const artisti=Object.entries(life).map(([k,v])=>({nome:k, royalty:+v.total.toFixed(2)})).sort((a,b)=>b.royalty-a.royalty).slice(0,5);
   const recoup=computeRecoup().filter(r=>r.unrecouped>0).map(r=>({artista:r.name, nonRecuperato:+r.unrecouped.toFixed(2)}));
+  // merch
+  const merch=(DB.merch||[]).map(m=>({nome:m.name, tipo:m.type, prezzo:+m.price||0, venduti:+m.sold||0,
+    ricavi:+merchRevenue(m).toFixed(2), margine:+merchMargin(m).toFixed(2), scorte:m.stock==null?null:m.stock}))
+    .sort((a,b)=>b.venduti-a.venduti);
   return {
     valuta:'EUR',
     totali:{ entrate:+income.toFixed(2), uscite:+expense.toFixed(2), margineNetto:+net.toFixed(2),
       marginePct: income? +((net/income)*100).toFixed(1):0, movimenti:txs.length },
-    trendUltimi6Mesi:months, perPiattaforma:piattaforme, topArtistiRoyalty:artisti, nonRecouped:recoup
+    trendUltimi6Mesi:months, perPiattaforma:piattaforme, topArtistiRoyalty:artisti, nonRecouped:recoup,
+    merch: merch.length?merch:undefined
   };
 }
-let aiBusy=false;
-function renderAiPanel(){
-  const panel=$('#ai-panel'), body=$('#ai-body'); if(!panel||!body) return;
-  if(!can('ai') && !aiLocalKey()){
-    // mostra l'upsell solo se c'è qualche dato (altrimenti tieni pulita la dashboard)
-    if((DB.transactions||[]).length===0){ panel.hidden=true; return; }
-    panel.hidden=false;
+let aiBusy=false, aiLastResult=null;
+function aiEntitled(){ return can('ai') || !!aiLocalKey(); }
+/* preprompt utili in base al contesto/dati */
+function contextPrompts(){
+  const it=(window.LFI18N?window.LFI18N.lang:'it')!=='en';
+  const p=[];
+  p.push({ icon:'✦', label: it?'Analizza la situazione':'Analyze the situation',
+    q: it?"Fammi un'analisi generale della situazione finanziaria dell'etichetta: punti di forza, criticità e i 3 prossimi passi più importanti.":"Give me a general analysis of the label's finances: strengths, issues and the 3 most important next steps." });
+  p.push({ icon:'📉', label: it?'Dove perdo margine?':'Where am I losing margin?',
+    q: it?'Quali piattaforme, release o spese stanno erodendo il mio margine e dove posso intervenire concretamente?':'Which platforms, releases or expenses are eroding my margin and where can I act concretely?' });
+  if((DB.recoup||[]).length || releases().length)
+    p.push({ icon:'💸', label: it?'Artisti da recoupare':'Artists to recoup',
+      q: it?'Quali artisti non hanno ancora recuperato anticipi/costi, quanto manca e come gestirli?':'Which artists have not recouped advances/costs yet, how much is left and how to manage them?' });
+  if((DB.merch||[]).length)
+    p.push({ icon:'👕', label: it?'Come va il merch?':'How is merch doing?',
+      q: it?'Analizza le vendite del merch: cosa vende di più, margini, scorte e cosa conviene spingere.':'Analyze merch sales: best sellers, margins, stock and what to push.' });
+  p.push({ icon:'🔮', label: it?'Previsione prossimi mesi':'Next months forecast',
+    q: it?'In base al trend recente, cosa posso aspettarmi nei prossimi 3 mesi e come migliorare i risultati?':'Based on the recent trend, what can I expect in the next 3 months and how to improve results?' });
+  return p;
+}
+function aiPopBody(){
+  const body=$('#ai-body'); if(!body) return;
+  if(!aiEntitled()){
     body.innerHTML=`<div class="ai-upsell"><p>${tt('ai.locked')}</p><button class="btn btn-primary" data-goto="offers">${tt('ai.see_plans')}</button></div>`;
     return;
   }
-  panel.hidden=false;
-  if(!body.dataset.ready){
-    body.innerHTML=`<button class="btn btn-primary" id="ai-go">✦ ${tt('ai.analyze')}</button><div class="ai-out" id="ai-out"></div>`;
-    body.dataset.ready='1';
-    $('#ai-go').addEventListener('click', runAi);
-  }
+  const prompts=contextPrompts();
+  body.innerHTML=`<p class="ai-pop-sub muted small">${tt('ai.sub')}</p>
+    <div class="ai-chips">${prompts.map((p,i)=>`<button class="ai-chip" data-aiq="${i}"><span class="ai-chip-i">${p.icon}</span>${esc(p.label)}</button>`).join('')}</div>
+    <div class="ai-out" id="ai-out"></div>`;
+  body._prompts=prompts;
+  body.querySelectorAll('.ai-chip').forEach(b=>b.addEventListener('click',()=>{ const p=body._prompts[+b.dataset.aiq]; runAiQuestion(p.q,p.label); }));
 }
+function openAiPop(){ const pop=$('#ai-pop'); if(!pop) return; aiPopBody(); pop.hidden=false; document.body.classList.add('ai-open'); $('#ai-fab')?.setAttribute('aria-expanded','true'); }
+function closeAiPop(){ const pop=$('#ai-pop'); if(!pop) return; pop.hidden=true; document.body.classList.remove('ai-open'); $('#ai-fab')?.setAttribute('aria-expanded','false'); }
+function toggleAiPop(){ const pop=$('#ai-pop'); if(pop) (pop.hidden?openAiPop():closeAiPop()); }
 const AI_KEY_LS='labelfinance.aikey';
 function aiLocalKey(){ try{ return localStorage.getItem(AI_KEY_LS)||''; }catch(e){ return ''; } }
 async function aiAdviseDirect(payload){
@@ -1539,7 +1566,8 @@ async function aiAdviseDirect(payload){
   const system = lang==='en'
     ? `You are a financial advisor for independent record labels. Analyze the label's data and give concrete, prioritized, actionable advice in clear English. Point out declining months, low-margin platforms, unrecouped artists, anomalous expenses and concrete next steps. Use short paragraphs and bullets. Never invent numbers not in the data. Keep it under ~350 words.`
     : `Sei un consulente finanziario per etichette discografiche indipendenti. Analizza i dati e dai consigli concreti, prioritari e azionabili in italiano. Segnala mesi in calo, piattaforme a basso margine, artisti non recouped, spese anomale e i prossimi passi. Usa paragrafi brevi ed elenchi. Non inventare numeri non presenti nei dati. Max ~350 parole.`;
-  const userContent='Dati dell\'etichetta (JSON):\n```json\n'+JSON.stringify(payload.summary||{},null,2)+'\n```';
+  const q=(payload.question||'').trim();
+  const userContent=(q?(q+'\n\n'):'')+'Dati dell\'etichetta (JSON):\n```json\n'+JSON.stringify(payload.summary||{},null,2)+'\n```';
   try{
     const r=await fetch('https://api.anthropic.com/v1/messages',{ method:'POST',
       headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
@@ -1551,32 +1579,41 @@ async function aiAdviseDirect(payload){
     return { text, model:data&&data.model };
   }catch(e){ return { error:e.message||'ai_error' }; }
 }
-async function runAi(){
+async function runAiQuestion(question, label){
   if(aiBusy) return; aiBusy=true;
-  const out=$('#ai-out'), btn=$('#ai-go');
-  if(btn){ btn.disabled=true; btn.textContent='… '+tt('ai.thinking'); }
-  if(out) out.innerHTML=`<p class="muted">${tt('ai.thinking')}</p>`;
+  const out=$('#ai-out'); if(out) out.innerHTML=`<p class="ai-thinking muted">${tt('ai.thinking')}</p>`;
+  const summary=buildAiSummary();
+  const payload={ summary, question, lang:(window.LFI18N?window.LFI18N.lang:'it') };
   let res={error:'offline'};
-  const payload={ summary:buildAiSummary(), lang:(window.LFI18N?window.LFI18N.lang:'it') };
   try{
-    if(aiLocalKey()) res=await aiAdviseDirect(payload);       // chiave locale: chiamata diretta
-    else if(window.LF_aiAdvise) res=await window.LF_aiAdvise(payload);  // default: Edge Function
+    if(aiLocalKey()) res=await aiAdviseDirect(payload);
+    else if(window.LF_aiAdvise) res=await window.LF_aiAdvise(payload);
   }catch(e){ res={error:e.message}; }
   aiBusy=false;
-  if(btn){ btn.disabled=false; btn.textContent='✦ '+tt('ai.again'); }
   if(!out) return;
   if(res && res.text){
-    out.innerHTML=`<div class="ai-answer">${aiFormat(res.text)}</div>`;
+    aiLastResult={ label:label||question, question, text:res.text, summary, model:res.model, when:new Date() };
+    out.innerHTML=`<div class="ai-answer">${aiFormat(res.text)}</div>
+      <div class="ai-out-actions"><button class="btn btn-ghost btn-sm" id="ai-export">⤓ ${tt('ai.export')}</button></div>`;
+    $('#ai-export')?.addEventListener('click', exportAiAnalysis);
   } else {
     const map={ upgrade_required:tt('ai.err_plan'), unauthorized:tt('ai.err_auth'), offline:tt('ai.err_offline'),
       ai_not_configured:tt('ai.err_config'), refused:tt('ai.err_refused') };
-    const code=res&&res.error;
-    const known=code&&map[code];
-    // per errori non previsti mostra anche il codice grezzo e il dettaglio, così è diagnosticabile
+    const code=res&&res.error, known=code&&map[code];
     let html=`<p class="ai-err">${known||tt('ai.err_generic')}${(code&&!known)?` <span class="muted small">(${esc(String(code))})</span>`:''}</p>`;
     if(res&&res.detail) html+=`<p class="muted small" style="white-space:pre-wrap;margin-top:6px">${esc(String(res.detail).slice(0,300))}</p>`;
     out.innerHTML=html;
   }
+}
+function exportAiAnalysis(){
+  if(!aiLastResult) return; const r=aiLastResult;
+  const md=`# ${tt('ai.study_title')} — ${labelName()}\n`+
+    `_${r.when.toLocaleString()}${r.model?(' · '+r.model):''}_\n\n`+
+    `## ${tt('ai.q')}\n${r.question}\n\n`+
+    `## ${tt('ai.answer')}\n${r.text}\n\n`+
+    `## ${tt('ai.data')}\n\`\`\`json\n${JSON.stringify(r.summary,null,2)}\n\`\`\`\n`;
+  download('analisi-ai-'+isoD(new Date())+'.md', md, 'text/markdown;charset=utf-8');
+  toast(tt('ai.exported'));
 }
 function aiFormat(t){
   // mini-markdown: **bold**, righe con - in elenco, paragrafi
@@ -1607,7 +1644,7 @@ function setupDashWidgets(){
   let cont=$('#dash-widgets');
   if(!cont){
     cont=document.createElement('div'); cont.id='dash-widgets'; cont.className='dash-widgets';
-    const map={ ai:$('#ai-panel'), kpi:view.querySelector('.kpi-grid'),
+    const map={ kpi:view.querySelector('.kpi-grid'),
       chart:$('#chart-monthly')&&$('#chart-monthly').closest('.panel'),
       g_release:$('#table-release')&&$('#table-release').closest('.panel'),
       g_artist:$('#table-artist')&&$('#table-artist').closest('.panel'),
@@ -1615,8 +1652,8 @@ function setupDashWidgets(){
       g_type:$('#table-type')&&$('#table-type').closest('.panel'),
       forecast:$('#w-forecast'), w_top:$('#w-top'), recent:$('#w-recent'), merch:$('#w-merch') };
     const grid2=view.querySelector('.grid-2');
-    // posiziona il contenitore dove c'era l'ai-panel (prima delle card dati)
-    (map.ai||map.kpi).parentNode.insertBefore(cont, map.ai||map.kpi);
+    // posiziona il contenitore prima delle card dati (dove c'erano i KPI)
+    map.kpi.parentNode.insertBefore(cont, map.kpi);
     Object.entries(map).forEach(([id,el])=>{ if(!el) return;
       const w=document.createElement('div'); w.className='dash-widget'; w.dataset.widget=id;
       w.innerHTML='<span class="dw-handle" title="Trascina">⠿</span>'
@@ -1645,10 +1682,7 @@ function applyDashLayout(){
     else { span=Math.min(Number(span)||1, l.cols); w.style.gridColumn='span '+span; }
     // stato attivo dei pulsanti larghezza
     w.querySelectorAll('.dw-w').forEach(b=>b.classList.toggle('is-active', String(widgetWidth(id))===b.dataset.w));
-    // un widget è nascosto se l'utente l'ha tolto, o se il suo contenuto è vuoto (es. AI panel senza dati)
-    const inner=w.firstElementChild&&w.querySelector('#ai-panel');
-    const emptied = inner && inner.hidden && !document.body.classList.contains('dash-edit');
-    w.classList.toggle('is-hidden', l.hidden.includes(id) || emptied);
+    w.classList.toggle('is-hidden', l.hidden.includes(id));
   });
   renderHiddenTray();
 }
@@ -2050,12 +2084,14 @@ function downloadContractPDF(){
   if(typeof html2pdf==='undefined'){ printContract(); return; }  // fallback se la libreria non è caricata
   const fname=(currentContract.titles||'contract').replace(/[^\w\-]+/g,'_').slice(0,60)||'contract';
   toast(tt('con.pdf_wait'));
-  const opt={ margin:[8,8,8,8], filename:fname+'.pdf',
+  el.classList.add('pdf-exporting');                 // toglie bordo/ombra/angoli durante la cattura
+  const cleanup=()=>el.classList.remove('pdf-exporting');
+  const opt={ margin:[6,6,6,6], filename:fname+'.pdf',
     image:{type:'jpeg',quality:0.98},
     html2canvas:{scale:2, useCORS:true, backgroundColor:'#ffffff', windowWidth:820},
     jsPDF:{unit:'mm', format:'a4', orientation:'portrait'},
     pagebreak:{ mode:['css','legacy'], before:'.cd-page--copy' } };
-  html2pdf().set(opt).from(el).save().catch(()=>printContract());
+  html2pdf().set(opt).from(el).save().then(cleanup, ()=>{ cleanup(); printContract(); });
 }
 function openContract(id){ const c=DB.contracts.find(x=>x.id===id); if(!c) return;
   currentContract=c; $('#contract-doc').innerHTML=buildContractDoc(c);
@@ -2290,7 +2326,7 @@ function initFeatures(){
   $('#ai-key-save')?.addEventListener('click',()=>{ const v=$('#ai-key').value.trim();
     if(!v){ toast(tt('set.ai_need')); return; }
     try{ localStorage.setItem(AI_KEY_LS,v); }catch(e){} $('#ai-key').value=''; aiStat();
-    const b=$('#ai-body'); if(b) b.dataset.ready=''; renderAiPanel(); toast(tt('set.ai_saved')); });
+    if($('#ai-pop') && !$('#ai-pop').hidden) aiPopBody(); toast(tt('set.ai_saved')); });
   $('#ai-key-clear')?.addEventListener('click',()=>{ try{ localStorage.removeItem(AI_KEY_LS); }catch(e){} aiStat(); toast(tt('set.ai_removed')); });
   // Condivisione link firma
   $('#share-close')?.addEventListener('click',()=>{ $('#share-modal').hidden=true; });
@@ -2303,6 +2339,10 @@ function initFeatures(){
   $('#sign-clear')?.addEventListener('click',()=>{ if(sigPad) sigPad.clear(); });
   $('#sign-confirm')?.addEventListener('click',confirmSign);
   $('#sign-modal')?.addEventListener('click',e=>{ if(e.target.id==='sign-modal') closeSignPad(); });
+  // Assistente AI (bolla flottante)
+  $('#ai-fab')?.addEventListener('click',toggleAiPop);
+  $('#ai-pop-x')?.addEventListener('click',closeAiPop);
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape' && $('#ai-pop') && !$('#ai-pop').hidden) closeAiPop(); });
   // Merch
   $('#mch-new')?.addEventListener('click',()=>openMerchForm());
   $('#mch-cancel')?.addEventListener('click',()=>{ $('#mch-form').hidden=true; editingMerchId=null; });

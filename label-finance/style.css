@@ -112,16 +112,49 @@ body.show-topsec .topbar-section{opacity:1;transform:none}
 .btn-income:hover{background:color-mix(in srgb,var(--in) 30%,var(--panel));border-color:var(--in)}
 .btn-expense{background:color-mix(in srgb,var(--out) 18%,var(--panel));border-color:color-mix(in srgb,var(--out) 46%,var(--line));color:var(--out);font-weight:600}
 .btn-expense:hover{background:color-mix(in srgb,var(--out) 28%,var(--panel));border-color:var(--out)}
-/* Assistente AI */
-.ai-panel .panel-head h2{display:flex;align-items:center;gap:8px}
+/* ===== Assistente AI — bolla flottante + popover ===== */
 .ai-spark{color:var(--accent)}
+.ai-fab{position:fixed;right:22px;bottom:calc(22px + env(safe-area-inset-bottom));z-index:55;
+  width:62px;height:62px;border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(circle at 32% 28%, #a78bfa, #7c3aed 62%, #6d28d9);
+  box-shadow:0 10px 28px rgba(124,58,237,.5), inset 0 2px 6px rgba(255,255,255,.35);
+  animation:ai-float 4.5s ease-in-out infinite;transition:transform .18s, box-shadow .18s}
+.ai-fab:hover{transform:translateY(-3px) scale(1.05);box-shadow:0 16px 36px rgba(124,58,237,.6), inset 0 2px 6px rgba(255,255,255,.35)}
+.ai-fab svg{width:30px;height:30px}
+.ai-fab-spark{position:absolute;top:-2px;right:-2px;font-size:.8rem;color:#fff;filter:drop-shadow(0 1px 2px rgba(0,0,0,.3))}
+@keyframes ai-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@media(prefers-reduced-motion:reduce){.ai-fab{animation:none}}
+body.gated .ai-fab{display:none}
+.ai-pop{position:fixed;right:22px;bottom:calc(96px + env(safe-area-inset-bottom));z-index:56;width:min(380px,calc(100vw - 32px));
+  max-height:min(560px,calc(100dvh - 130px));display:flex;flex-direction:column;overflow:hidden;
+  background:var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:0 24px 60px rgba(0,0,0,.35);animation:ai-pop-in .18s ease}
+@keyframes ai-pop-in{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+.ai-pop-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 12%,var(--panel)),var(--panel))}
+.ai-pop-title{font-weight:800;display:flex;align-items:center;gap:8px}
+.ai-pop-x{background:none;border:none;color:var(--muted);font-size:1rem;cursor:pointer;border-radius:8px;width:30px;height:30px}
+.ai-pop-x:hover{color:var(--text);background:var(--panel-2)}
+.ai-pop-body{padding:14px 16px;overflow-y:auto}
+.ai-pop-sub{margin:0 0 12px}
+.ai-chips{display:flex;flex-direction:column;gap:8px}
+.ai-chip{display:flex;align-items:center;gap:9px;text-align:left;background:var(--panel-2);border:1px solid var(--line);
+  color:var(--text);font:inherit;font-weight:600;font-size:.9rem;padding:11px 13px;border-radius:11px;cursor:pointer;transition:.15s}
+.ai-chip:hover{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--panel-2))}
+.ai-chip-i{font-size:1.05rem;flex:none}
 .ai-out{margin-top:14px}
-.ai-answer{line-height:1.65;font-size:.94rem}
+.ai-thinking::after{content:'';display:inline-block;width:1em;text-align:left;animation:ai-dots 1.2s steps(4) infinite}
+@keyframes ai-dots{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
+.ai-answer{line-height:1.65;font-size:.92rem}
 .ai-answer p{margin:0 0 10px}.ai-answer ul{margin:6px 0 12px;padding-left:20px}.ai-answer li{margin-bottom:5px}
 .ai-answer b{color:var(--accent)}
+.ai-out-actions{margin-top:12px;display:flex;justify-content:flex-end}
 .ai-err{color:var(--out);font-size:.92rem}
 .ai-upsell{display:flex;flex-direction:column;gap:10px;align-items:flex-start}
 .ai-upsell p{color:var(--muted);margin:0}
+@media(max-width:560px){
+  .ai-fab{right:16px;bottom:calc(74px + env(safe-area-inset-bottom));width:56px;height:56px}
+  .ai-pop{right:8px;left:8px;width:auto;bottom:calc(140px + env(safe-area-inset-bottom));max-height:calc(100dvh - 200px)}
+}
 /* ===== Dashboard personalizzabile (stile ServiceNow) ===== */
 .dash-widgets{display:grid;grid-template-columns:repeat(var(--dash-cols,2),minmax(0,1fr));gap:18px;margin-bottom:20px}
 .dash-widget{position:relative;min-width:0;grid-column:span 1}
@@ -202,6 +235,7 @@ body.dash-edit .dw-width{display:inline-flex;gap:2px;position:absolute;top:8px;l
 .csb-lab{background:var(--muted-2);display:flex;align-items:center;justify-content:center;min-width:26px;transition:width .2s}
 /* documento */
 .contract-doc{background:#fff;color:#1a1a1a;border:1px solid var(--line);border-radius:12px;padding:0;line-height:1.6;max-width:780px;margin:6px auto 0;overflow:hidden}
+.contract-doc.pdf-exporting{border:none;border-radius:0;box-shadow:none}
 .cd-page{padding:34px 40px}
 .cd-page--copy{border-top:8px solid #f0f0f3}
 .cd-letterhead{display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:1px solid #e3e3e8;padding-bottom:16px;margin-bottom:20px}
@@ -212,10 +246,11 @@ body.dash-edit .dw-width{display:inline-flex;gap:2px;position:absolute;top:8px;l
 .cd-label-logo{max-width:180px;max-height:60px;display:flex;align-items:center;justify-content:flex-end}
 .cd-label-logo img{max-width:180px;max-height:60px;object-fit:contain}
 .cd-label-logo--text{font-family:'Syne',sans-serif;font-weight:700;font-size:1.05rem;color:#15131f;text-align:right}
-.contract-doc h3.cd-title{font-family:'Syne',sans-serif;font-size:1.2rem;margin:0 0 6px;color:#15131f;text-align:center}
+.contract-doc h3.cd-title{font-family:'Syne',sans-serif;font-size:1rem;letter-spacing:-.01em;margin:0 0 6px;color:#15131f;text-align:center}
 .cd-intro{color:#555;text-align:center;margin-bottom:10px}
 .contract-doc h4{margin:18px 0 6px;font-size:.98rem;color:#15131f}
-.contract-doc p{margin:0 0 8px}
+.contract-doc p{margin:0 0 8px;text-align:justify}
+.cd-page--copy p{text-align:left}
 .cd-sign{display:flex;flex-wrap:wrap;gap:28px;margin-top:40px}
 .cd-sign>div{flex:1;min-width:160px}
 .cd-sign hr{border:none;border-top:1px solid #888;margin-top:34px}
@@ -321,6 +356,9 @@ body.dash-edit .dw-width{display:inline-flex;gap:2px;position:absolute;top:8px;l
 .release-lname{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .release-lsplit{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .release-ltag{font-size:.72rem;font-weight:700;color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--panel));border-radius:7px;padding:2px 7px;white-space:nowrap;justify-self:end}
+.release-lhead{background:transparent;border:none;padding:4px 14px;cursor:default;font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--muted-2)}
+.release-lhead:hover{border:none}
+.release-lhead span{white-space:nowrap}
 /* Royalty — cards */
 .roy-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
 .roy-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;cursor:pointer}

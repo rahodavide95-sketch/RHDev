@@ -86,7 +86,7 @@ function activeLabel(){ return ACCOUNT.labels.find(l=>l.id===ACCOUNT.activeLabel
 let DB = activeLabel();
 function planLimit(){ return PLAN_LIMITS[ACCOUNT.plan] ?? 1; }
 function saveLocal(){ localStorage.setItem(STORE_KEY, JSON.stringify(ACCOUNT)); }
-function save(){ saveLocal(); if(window.LF_push) window.LF_push(); }
+function save(){ saveLocal(); if(window.LF_push) window.LF_push(); if(typeof notifScan==='function') notifScan(); }
 /* API per il modulo di sincronizzazione cloud (sync.js) — sincronizza tutto l'account */
 window.LF = {
   data(){ return ACCOUNT; },
@@ -252,6 +252,17 @@ function goto(view){
 }
 $$('.nav-item').forEach(b=>b.onclick=()=>goto(b.dataset.view));
 document.addEventListener('click',e=>{ const g=e.target.closest('[data-goto]'); if(g) goto(g.dataset.goto); });
+// collegamenti tra sezioni (link .lf-link)
+document.addEventListener('click',e=>{
+  const r=e.target.closest('[data-rel-open]'); if(r){ e.stopPropagation(); openRelease(r.dataset.relOpen); return; }
+  const a=e.target.closest('[data-art-open]'); if(a){ e.stopPropagation(); openArtistByName(a.dataset.artOpen); }
+});
+function openArtistByName(name){ goto('artists');
+  const a=(DB.artists||[]).find(x=>(x.name||'').trim().toLowerCase()===(name||'').trim().toLowerCase());
+  if(a) openArtistForm(a.id); }
+function relCatLink(cat){ const r=releaseByCatalog(cat); return r?`<span class="lf-link" data-rel-open="${r.id}">${esc(cat)}</span>`:esc(cat); }
+function artNameLink(name){ const a=(DB.artists||[]).find(x=>(x.name||'').trim().toLowerCase()===(name||'').trim().toLowerCase());
+  return a?`<span class="lf-link" data-art-open="${esc(name)}">${esc(name)}</span>`:esc(name); }
 
 /* nome sezione nella topbar: visibile solo quando il titolo sotto è scrollato via */
 function updateTopbarSection(){
@@ -846,7 +857,7 @@ function applyTxFilters(){
     applyTxFilters();
   });
   $$('#table-tx tbody tr[data-id]').forEach(tr=>tr.onclick=e=>{
-    const lk=e.target.closest('[data-rel-open]'); if(lk){ e.stopPropagation(); openRelease(lk.dataset.relOpen); return; }
+    if(e.target.closest('[data-rel-open]')) return;   // link release: gestito a livello globale
     openTx(tr.dataset.id);
   });
 }
@@ -1153,22 +1164,22 @@ function renderRoyalties(){
     if(wrap) wrap.hidden=true; if(cardsBox) cardsBox.hidden=false;
     cardsBox.innerHTML = pr.map(r=>{
       const top=Object.entries(r.byRelease||{}).sort((a,b)=>b[1]-a[1]).slice(0,3)
-        .map(([c,a])=>`<div class="royc-line"><span>${esc(c)}</span><b>${fmtMoney(a)}</b></div>`).join('');
+        .map(([c,a])=>`<div class="royc-line"><span>${relCatLink(c)}</span><b>${fmtMoney(a)}</b></div>`).join('');
       return `<div class="roy-card" data-artist="${esc(r.name)}">
-        <div class="royc-head"><span class="royc-name">${esc(r.name)}</span><span class="royc-tot pos">${fmtMoney(r.total)}</span></div>
+        <div class="royc-head"><span class="royc-name">${artNameLink(r.name)}</span><span class="royc-tot pos">${fmtMoney(r.total)}</span></div>
         ${top?`<div class="royc-body">${top}</div>`:''}</div>`;
     }).join('') + (isLast?`<div class="roy-card roy-card--label"><div class="royc-head"><span class="royc-name">${tt('roy.label_residual')}</span><span class="royc-tot">${fmtMoney(labelTotal)}</span></div></div>`:'');
-    cardsBox.querySelectorAll('.roy-card[data-artist]').forEach(c=>c.onclick=()=>showRoyaltyDetail(c.dataset.artist,byArtist[c.dataset.artist]));
+    cardsBox.querySelectorAll('.roy-card[data-artist]').forEach(c=>c.onclick=e=>{ if(e.target.closest('[data-rel-open],[data-art-open]')) return; showRoyaltyDetail(c.dataset.artist,byArtist[c.dataset.artist]); });
     clearPagerAfter(tbl); mountPager(cardsBox,'roy',info);
   } else {
     if(wrap) wrap.hidden=false; if(cardsBox){ cardsBox.hidden=true; cardsBox.innerHTML=''; }
     clearPagerAfter(cardsBox);
     tbl.innerHTML=`<thead><tr><th>${tt('roy.h.artist')}</th><th class="num">${tt('roy.h.amount')}</th></tr></thead>
       <tbody>${pr.map(r=>`<tr data-artist="${esc(r.name)}" style="cursor:pointer">
-        <td data-label="Artista">${esc(r.name)}</td><td class="num pos" data-label="Royalty (€)">${fmtMoney(r.total)}</td></tr>`).join('')}
+        <td data-label="Artista">${artNameLink(r.name)}</td><td class="num pos" data-label="Royalty (€)">${fmtMoney(r.total)}</td></tr>`).join('')}
         ${isLast?`<tr><td data-label=""><strong>${tt('roy.label_residual')}</strong></td><td class="num" data-label="${tt('roy.h.amount')}"><strong>${fmtMoney(labelTotal)}</strong></td></tr>`:''}
         ${rows.length?'':`<tr><td colspan="2" class="muted">${tt('empty.noroy')}</td></tr>`}</tbody>`;
-    $$('#table-roy-artist tbody tr[data-artist]').forEach(tr=>tr.onclick=()=>showRoyaltyDetail(tr.dataset.artist,byArtist[tr.dataset.artist]));
+    $$('#table-roy-artist tbody tr[data-artist]').forEach(tr=>tr.onclick=e=>{ if(e.target.closest('[data-art-open]')) return; showRoyaltyDetail(tr.dataset.artist,byArtist[tr.dataset.artist]); });
     mountPager(tbl,'roy',info);
   }
   syncVMButtons();
@@ -1216,7 +1227,7 @@ function showRoyaltyDetail(name,data){
   const rows=Object.entries(data.byRelease).map(([cat,amt])=>({cat,amt})).sort((a,b)=>b.amt-a.amt);
   $('#table-roy-detail').innerHTML=`<thead><tr><th>${tt('roy.h.release')}</th><th class="num">${tt('roy.h.amount')}</th></tr></thead>
     <tbody>${rows.map(r=>{ const rel=releaseByCatalog(r.cat); const t=rel&&rel.title?` — ${esc(rel.title)}`:'';
-      return `<tr><td data-label="Release">${esc(r.cat)}${t}</td><td class="num pos" data-label="Royalty (€)">${fmtMoney(r.amt)}</td></tr>`; }).join('')}
+      return `<tr><td data-label="Release">${rel?`<span class="lf-link" data-rel-open="${rel.id}">${esc(r.cat)}${t}</span>`:esc(r.cat)+t}</td><td class="num pos" data-label="Royalty (€)">${fmtMoney(r.amt)}</td></tr>`; }).join('')}
       <tr><td data-label=""><strong>${tt('roy.total')}</strong></td><td class="num pos" data-label="${tt('roy.h.amount')}"><strong>${fmtMoney(data.total)}</strong></td></tr></tbody>`;
   $('#roy-detail-panel').hidden=false;
   $('#roy-detail-panel').scrollIntoView({behavior:'smooth',block:'nearest'});
@@ -2793,6 +2804,67 @@ function wireAgenda(){
   });
 }
 
+/* ============================================================================
+   NOTIFICHE  (tendina in alto a destra)
+   ============================================================================ */
+const NOTIF_KEY='labelfinance.notifs';
+let NOTIFS=(function(){ try{ const n=JSON.parse(localStorage.getItem(NOTIF_KEY)); if(n&&Array.isArray(n.list)) return {list:n.list, dismissed:n.dismissed||[]}; }catch(e){} return {list:[],dismissed:[]}; })();
+function notifSave(){ try{ localStorage.setItem(NOTIF_KEY, JSON.stringify(NOTIFS)); }catch(e){} }
+function notifScan(){
+  if(typeof DB==='undefined'||!DB) return;
+  const unlinked=new Set();
+  (DB.transactions||[]).forEach(t=>{ const p=(t.product||'').trim(); if(!p) return; if(!releaseForTx(t)) unlinked.add(p); });
+  const ukeys=new Set([...unlinked].map(p=>p.toLowerCase()));
+  NOTIFS.list=NOTIFS.list.filter(n=> n.type!=='unlinked' || ukeys.has((n.ref||'').toLowerCase()));   // risolti via
+  NOTIFS.dismissed=(NOTIFS.dismissed||[]).filter(k=>ukeys.has(k));
+  unlinked.forEach(p=>{ const lk=p.toLowerCase(), key='unlinked:'+lk;
+    if((NOTIFS.dismissed||[]).includes(lk)) return;
+    if(NOTIFS.list.some(n=>n.key===key)) return;
+    NOTIFS.list.unshift({ id:newId(), key, type:'unlinked', ref:p, read:false, ts:Date.now() }); });
+  notifSave(); renderNotifs();
+}
+function notifText(n){
+  if(n.type==='unlinked') return { title:tt('notif.unlinked_t'), body:tt('notif.unlinked_b').replace('{p}',n.ref||'') };
+  return { title:n.title||'', body:n.body||'' };
+}
+function notifTime(ts){ try{ return new Date(ts).toLocaleString(calLang(),{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); }catch(e){ return ''; } }
+function renderNotifs(){
+  const badge=$('#notif-badge'); const unread=NOTIFS.list.filter(n=>!n.read).length;
+  if(badge){ badge.textContent=unread>9?'9+':String(unread); badge.hidden=unread===0; }
+  const list=$('#notif-list'); if(!list) return;
+  if(!NOTIFS.list.length){ list.innerHTML=`<div class="notif-empty">${tt('notif.empty')}</div>`; return; }
+  list.innerHTML=NOTIFS.list.map(it=>{ const tx=notifText(it);
+    return `<div class="notif-item${it.read?'':' unread'}" data-nid="${it.id}">
+      <span class="notif-dot"></span>
+      <div class="notif-body">
+        <div class="notif-t">${esc(tx.title)}</div>
+        <div class="notif-b">${esc(tx.body)}</div>
+        <div class="notif-time">${esc(notifTime(it.ts))}</div>
+      </div>
+      <div class="notif-item-acts">
+        <button class="notif-mini" data-ntoggle="${it.id}" title="${it.read?tt('notif.mark_unread'):tt('notif.mark_read')}">${it.read?'○':'●'}</button>
+        <button class="notif-mini" data-ndel="${it.id}" title="${tt('common.delete')}">✕</button>
+      </div></div>`; }).join('');
+}
+function notifToggle(id){ const it=NOTIFS.list.find(x=>x.id===id); if(!it) return; it.read=!it.read; notifSave(); renderNotifs(); }
+function notifDelete(id){ const it=NOTIFS.list.find(x=>x.id===id);
+  if(it&&it.type==='unlinked') NOTIFS.dismissed=[...new Set([...(NOTIFS.dismissed||[]),(it.ref||'').toLowerCase()])];
+  NOTIFS.list=NOTIFS.list.filter(x=>x.id!==id); notifSave(); renderNotifs(); }
+function notifReadAll(){ NOTIFS.list.forEach(n=>n.read=true); notifSave(); renderNotifs(); }
+function notifClear(){ NOTIFS.list.forEach(it=>{ if(it.type==='unlinked') NOTIFS.dismissed=[...new Set([...(NOTIFS.dismissed||[]),(it.ref||'').toLowerCase()])]; });
+  NOTIFS.list=[]; notifSave(); renderNotifs(); }
+function wireNotifs(){
+  $('#notif-btn')?.addEventListener('click',e=>{ e.stopPropagation(); const p=$('#notif-panel'); if(p) p.hidden=!p.hidden; });
+  $('#notif-readall')?.addEventListener('click',notifReadAll);
+  $('#notif-clear')?.addEventListener('click',notifClear);
+  $('#notif-list')?.addEventListener('click',e=>{
+    const tg=e.target.closest('[data-ntoggle]'); if(tg){ notifToggle(tg.dataset.ntoggle); return; }
+    const dl=e.target.closest('[data-ndel]'); if(dl){ notifDelete(dl.dataset.ndel); return; }
+  });
+  document.addEventListener('click',e=>{ const p=$('#notif-panel'); if(!p||p.hidden) return;
+    if(!e.target.closest('#notif-panel') && !e.target.closest('#notif-btn')) p.hidden=true; });
+}
+
 /* ---------- Wiring (una sola volta) ---------- */
 function initFeatures(){
   // Artisti
@@ -2892,6 +2964,8 @@ rebuildAccountMenu();
 initFAQ();
 initFeatures();
 wireAgenda();
+wireNotifs();
+notifScan();
 
 /* ---------- Avvisi task: scheduler + audio sbloccato al primo gesto ---------- */
 document.addEventListener('pointerdown', ()=>lfAudio(), {once:true});

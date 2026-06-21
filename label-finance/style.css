@@ -329,8 +329,14 @@ body.dash-edit .dw-width{display:inline-flex;gap:2px;position:absolute;top:8px;l
 
 /* ===== Liste database: Pianificazione / Eventi / Support ===== */
 .dbl{display:flex;flex-direction:column;gap:7px}
-.dbl-row{display:grid;gap:10px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:9px 13px}
+.dbl-row{display:grid;gap:10px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:9px 13px;font-size:.9rem}
 .dbl-row>span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* font uniforme dei dati in vista elenco (tutte le sezioni) */
+.dbl-row>span{font-family:inherit}
+.dbl-row .dbl-strong,.dbl-row .dbl-strong b{font-weight:600;font-size:.9rem}
+.dbl-row .small,.dbl-row .muted.small{font-size:.82rem}
+.dbl-row .release-cat{font-family:inherit;font-weight:700;font-size:.9rem}
+.dbl-row .release-ltag,.dbl-row .art-split{margin-top:0}
 .dbl-strong b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dbl-head{background:transparent;border:none;padding:2px 13px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--muted-2)}
 .dbl-sort{cursor:pointer;user-select:none}

@@ -27,26 +27,28 @@
 html{scroll-behavior:smooth}
 body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
 a{color:inherit;text-decoration:none}
-h1,h2,h3,h4{font-family:'DM Sans',sans-serif;font-weight:700;letter-spacing:-.02em;line-height:1.12}
+h1,h2,h3,h4{font-family:'DM Sans',sans-serif;font-weight:700;letter-spacing:-.02em;line-height:1.12;text-wrap:balance}
+body{hyphens:none;-webkit-hyphens:none}
+p,.sub,.sec-head p,.feat p,.spot-txt p,.diff-card p,.faq p,.plan .desc,.cta-box p,.foot-brand p,.eyebrow{text-wrap:pretty}
 .wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
 img{max-width:100%}
 
 /* ===== BACKGROUND ANIMATO A TUTTA PAGINA (palette in movimento, come il login) ===== */
 .bg{position:fixed;inset:0;z-index:-2;overflow:hidden;filter:saturate(150%)}
 .bg b{position:absolute;border-radius:50%;filter:blur(70px);opacity:.85;will-change:transform}
-.bg .v1{width:52vmax;height:52vmax;left:-8vmax;top:-12vmax;background:radial-gradient(circle,rgba(124,58,237,.9),transparent 66%);animation:orb1 23s ease-in-out infinite}
-.bg .v2{width:46vmax;height:46vmax;right:-10vmax;top:-8vmax;background:radial-gradient(circle,rgba(167,139,250,.85),transparent 66%);animation:orb2 27s ease-in-out infinite}
-.bg .v3{width:48vmax;height:48vmax;left:12vmax;top:40vh;background:radial-gradient(circle,rgba(96,165,250,.7),transparent 66%);animation:orb3 31s ease-in-out infinite}
-.bg .v4{width:40vmax;height:40vmax;right:4vmax;top:55vh;background:radial-gradient(circle,rgba(56,189,248,.6),transparent 66%);animation:orb1 25s ease-in-out infinite reverse}
-.bg .v5{width:38vmax;height:38vmax;left:30vmax;bottom:-6vmax;background:radial-gradient(circle,rgba(196,181,253,.6),transparent 66%);animation:orb2 29s ease-in-out infinite}
-.bg .v6{width:30vmax;height:30vmax;right:24vmax;bottom:8vh;background:radial-gradient(circle,rgba(231,220,200,.4),transparent 66%);animation:orb3 33s ease-in-out infinite reverse}
-.bg .v7{width:26vmax;height:26vmax;left:46vw;top:18vh;background:radial-gradient(circle,rgba(255,255,255,.28),transparent 66%);animation:orb1 35s ease-in-out infinite}
+.bg .v1{width:52vmax;height:52vmax;left:-8vmax;top:-12vmax;background:radial-gradient(circle,rgba(124,58,237,.9),transparent 66%);animation:orb1 14s ease-in-out infinite}
+.bg .v2{width:46vmax;height:46vmax;right:-10vmax;top:-8vmax;background:radial-gradient(circle,rgba(167,139,250,.85),transparent 66%);animation:orb2 16s ease-in-out infinite}
+.bg .v3{width:48vmax;height:48vmax;left:12vmax;top:40vh;background:radial-gradient(circle,rgba(96,165,250,.7),transparent 66%);animation:orb3 18s ease-in-out infinite}
+.bg .v4{width:40vmax;height:40vmax;right:4vmax;top:55vh;background:radial-gradient(circle,rgba(56,189,248,.6),transparent 66%);animation:orb1 15s ease-in-out infinite reverse}
+.bg .v5{width:38vmax;height:38vmax;left:30vmax;bottom:-6vmax;background:radial-gradient(circle,rgba(196,181,253,.6),transparent 66%);animation:orb2 17s ease-in-out infinite}
+.bg .v6{width:30vmax;height:30vmax;right:24vmax;bottom:8vh;background:radial-gradient(circle,rgba(231,220,200,.4),transparent 66%);animation:orb3 19s ease-in-out infinite reverse}
+.bg .v7{width:26vmax;height:26vmax;left:46vw;top:18vh;background:radial-gradient(circle,rgba(255,255,255,.28),transparent 66%);animation:orb1 20s ease-in-out infinite}
 .bg-veil{position:fixed;inset:0;z-index:-1;pointer-events:none;background:
   radial-gradient(130% 90% at 50% 12%, transparent 36%, rgba(6,6,12,.66) 100%),
   linear-gradient(180deg, rgba(7,8,13,.34), rgba(7,8,13,.5))}
-@keyframes orb1{0%{transform:translate(0,0) scale(1)}25%{transform:translate(20vw,10vh) scale(1.14)}50%{transform:translate(14vw,26vh) scale(.94)}75%{transform:translate(-8vw,16vh) scale(1.08)}100%{transform:translate(0,0) scale(1)}}
-@keyframes orb2{0%{transform:translate(0,0) scale(1.05)}25%{transform:translate(-22vw,12vh) scale(.95)}50%{transform:translate(-14vw,28vh) scale(1.16)}75%{transform:translate(6vw,14vh) scale(1)}100%{transform:translate(0,0) scale(1.05)}}
-@keyframes orb3{0%{transform:translate(0,0) scale(1)}25%{transform:translate(16vw,-16vh) scale(1.12)}50%{transform:translate(4vw,-26vh) scale(.92)}75%{transform:translate(-16vw,-12vh) scale(1.08)}100%{transform:translate(0,0) scale(1)}}
+@keyframes orb1{0%{transform:translate(0,0) scale(1)}25%{transform:translate(34vw,18vh) scale(1.28)}50%{transform:translate(22vw,40vh) scale(.82)}75%{transform:translate(-16vw,26vh) scale(1.16)}100%{transform:translate(0,0) scale(1)}}
+@keyframes orb2{0%{transform:translate(0,0) scale(1.1)}25%{transform:translate(-36vw,20vh) scale(.82)}50%{transform:translate(-22vw,44vh) scale(1.32)}75%{transform:translate(12vw,22vh) scale(1)}100%{transform:translate(0,0) scale(1.1)}}
+@keyframes orb3{0%{transform:translate(0,0) scale(1)}25%{transform:translate(28vw,-26vh) scale(1.22)}50%{transform:translate(8vw,-42vh) scale(.82)}75%{transform:translate(-26vw,-18vh) scale(1.16)}100%{transform:translate(0,0) scale(1)}}
 
 /* ===== GLASS ===== */
 .glass{background:var(--glass);-webkit-backdrop-filter:blur(22px) saturate(1.5);backdrop-filter:blur(22px) saturate(1.5);
@@ -96,36 +98,57 @@ img{max-width:100%}
 .hero-note span{display:inline-flex;align-items:center;gap:6px}.hero-note b{color:var(--green)}
 
 /* ===== MOCKUP (ricostruzione fedele della dashboard) ===== */
-.mock{max-width:960px;margin:56px auto 0;border-radius:18px;overflow:hidden;border:1px solid rgba(255,255,255,.14);
-  box-shadow:0 50px 110px -34px rgba(0,0,0,.85)}
-.mock-bar{display:flex;align-items:center;gap:7px;padding:12px 15px;border-bottom:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.05)}
+.mock-wrap{position:relative;max-width:990px;margin:60px auto 0}
+.mock-glow{position:absolute;left:6%;right:6%;top:-34px;height:62%;z-index:-1;background:radial-gradient(60% 100% at 50% 0,rgba(124,58,237,.55),transparent 72%);filter:blur(48px)}
+.mock{position:relative;border-radius:20px;overflow:hidden;border:1px solid rgba(255,255,255,.16);
+  background:linear-gradient(180deg,rgba(19,20,30,.94),rgba(11,12,19,.96));box-shadow:0 70px 130px -44px rgba(0,0,0,.9),inset 0 1px 0 rgba(255,255,255,.1)}
+.mock::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;z-index:3;background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent)}
+.mock-bar{display:flex;align-items:center;gap:7px;padding:12px 15px;border-bottom:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04)}
 .mock-bar i{width:11px;height:11px;border-radius:50%}.mock-bar i:nth-child(1){background:#ff5f57}.mock-bar i:nth-child(2){background:#febc2e}.mock-bar i:nth-child(3){background:#28c840}
 .mock-bar span{margin-left:12px;font-size:.78rem;color:var(--muted)}
-.mock-body{display:grid;grid-template-columns:172px 1fr;min-height:360px;background:rgba(14,15,23,.82);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
-.mock-side{border-right:1px solid rgba(255,255,255,.07);padding:14px 11px;display:flex;flex-direction:column;gap:3px;background:rgba(255,255,255,.025)}
-.ms-h{font-size:.62rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted-2);padding:9px 8px 4px;font-weight:700}
-.ms-item{font-size:.82rem;color:var(--muted);padding:7px 9px;border-radius:8px;display:flex;align-items:center;gap:8px}
-.ms-item.on{background:rgba(167,139,250,.18);color:#fff}
+.mock-body{display:grid;grid-template-columns:184px 1fr;min-height:440px}
+.mock-side{border-right:1px solid rgba(255,255,255,.07);padding:14px 11px;display:flex;flex-direction:column;gap:3px;background:rgba(255,255,255,.02)}
+.ms-h{font-size:.6rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted-2);padding:10px 8px 4px;font-weight:700}
+.ms-item{font-size:.82rem;color:var(--muted);padding:7px 9px;border-radius:8px;display:flex;align-items:center;gap:9px}
+.ms-item.on{background:linear-gradient(90deg,rgba(167,139,250,.24),rgba(167,139,250,.04));color:#fff;box-shadow:inset 2px 0 0 var(--violet)}
 .ms-dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.55}
-.mock-main{padding:16px;display:flex;flex-direction:column;gap:13px}
+.mock-main{padding:18px;display:flex;flex-direction:column;gap:13px;position:relative}
 .mk-top{display:flex;align-items:center;justify-content:space-between}
-.mk-top b{font-size:1.05rem}
+.mk-top b{font-size:1.08rem}
+.mk-tools{display:flex;align-items:center;gap:8px}
 .mk-pill{font-size:.72rem;color:var(--muted);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:5px 12px;background:rgba(255,255,255,.04)}
-.mk-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.mk-kpi{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:12px;padding:11px 13px}
+.mk-ai-chip{font-size:.72rem;font-weight:700;color:#fff;border-radius:999px;padding:5px 12px;background:linear-gradient(120deg,var(--violet-2),var(--violet))}
+.mk-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}
+.mk-kpi{position:relative;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:13px;padding:12px 13px;overflow:hidden}
 .mk-kpi small{color:var(--muted);font-size:.7rem}
-.mk-kpi b{display:block;font-size:1.18rem;font-weight:700;margin-top:3px}
+.mk-kpi b{display:block;font-size:1.22rem;font-weight:700;margin-top:3px}
 .mk-kpi .d{font-size:.66rem;font-weight:700}
 .mk-kpi.green b{color:var(--green)}.mk-kpi.red b{color:#fb7185}.mk-kpi.blue b{color:var(--blue)}
 .d.up{color:var(--green)}.d.down{color:#fb7185}
-.mk-chart{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:12px;padding:14px 14px 8px}
-.mk-bars{display:flex;align-items:flex-end;gap:12px;height:120px}
-.mk-col{flex:1;display:flex;align-items:flex-end;justify-content:center;gap:3px}
-.mk-bar{width:9px;border-radius:5px 5px 0 0;background:linear-gradient(180deg,var(--violet),var(--violet-2))}
-.mk-bar.b{background:linear-gradient(180deg,var(--blue),#2563eb)}
-.mk-x{display:flex;gap:12px;margin-top:7px}.mk-x span{flex:1;text-align:center;font-size:.62rem;color:var(--muted-2)}
-.mk-legend{display:flex;gap:14px;margin-top:6px;font-size:.66rem;color:var(--muted)}
+.mk-spark{position:absolute;right:8px;bottom:9px;width:60px;height:24px;opacity:.85}
+.mk-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:13px;padding:14px}
+.mk-card h6{font-size:.74rem;color:var(--muted);font-weight:600;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.mk-chart svg{display:block;width:100%;height:88px}
+.mk-x{display:flex;margin-top:7px}.mk-x span{flex:1;text-align:center;font-size:.62rem;color:var(--muted-2)}
+.mk-legend{display:flex;gap:14px;font-size:.66rem;color:var(--muted);font-weight:500}
 .mk-legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px;vertical-align:middle}
+.mk-row2{display:grid;grid-template-columns:1.4fr 1fr;gap:11px}
+.mk-art{display:flex;align-items:center;gap:9px;margin-bottom:10px}.mk-art:last-child{margin-bottom:0}
+.mk-art .av{width:26px;height:26px;border-radius:50%;font-size:.6rem;background:linear-gradient(135deg,var(--violet),var(--blue));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;flex:none}
+.mk-art .nm{font-size:.8rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mk-art .vl{font-size:.8rem;font-weight:700;color:var(--green)}
+.mk-pb{height:5px;border-radius:3px;background:rgba(255,255,255,.08);margin-top:4px;overflow:hidden}
+.mk-pb i{display:block;height:100%;background:linear-gradient(90deg,var(--violet),var(--blue))}
+.mk-donut-wrap{display:flex;align-items:center;gap:14px}
+.mk-donut{width:84px;height:84px;border-radius:50%;flex:none;position:relative;background:conic-gradient(var(--violet) 0 46%,var(--blue) 46% 74%,var(--azure) 74% 100%)}
+.mk-donut::after{content:'';position:absolute;inset:13px;border-radius:50%;background:#12131c}
+.mk-donut span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:.74rem;font-weight:700}
+.mk-plat{display:flex;flex-direction:column;gap:7px;font-size:.72rem;color:var(--muted)}
+.mk-plat i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px}
+.mk-ai{position:absolute;right:15px;bottom:13px;width:46px;height:46px;border-radius:50%;
+  background:radial-gradient(circle at 34% 28%,#d9ccff,#7c3aed 72%);box-shadow:0 12px 26px -6px rgba(124,58,237,.85),inset 0 1px 2px rgba(255,255,255,.55);
+  display:flex;align-items:center;justify-content:center}
+.mk-ai svg{width:24px;height:24px}
 
 /* ===== SECTIONS (ognuna con frost di colore diverso) ===== */
 .section{position:relative;padding:88px 0}
@@ -271,7 +294,7 @@ footer{padding:54px 0 36px;background:rgba(8,9,14,.5);-webkit-backdrop-filter:bl
 <!-- ===== HERO ===== -->
 <section class="hero" id="top">
   <div class="wrap hero-in">
-    <span class="eyebrow reveal" data-i18n="hero.badge">🎚️ Il gestionale all-in-one per etichette indipendenti</span>
+    <span class="eyebrow reveal" data-i18n="hero.badge">Il gestionale all-in-one per etichette indipendenti</span>
     <h1 class="reveal" data-i18n-html="hero.h1">Tutto il business della tua etichetta, <span class="grad">in un solo posto.</span></h1>
     <p class="sub reveal" data-i18n="hero.sub">Royalty, contratti firmati digitalmente, merch, finanze e un assistente AI. Dalla produzione ai pagamenti — senza fogli Excel.</p>
     <div class="hero-cta reveal">
@@ -285,7 +308,9 @@ footer{padding:54px 0 36px;background:rgba(8,9,14,.5);-webkit-backdrop-filter:bl
     </div>
   </div>
 
-  <div class="wrap reveal"><div class="mock">
+  <div class="wrap reveal"><div class="mock-wrap">
+    <div class="mock-glow" aria-hidden="true"></div>
+    <div class="mock">
     <div class="mock-bar"><i></i><i></i><i></i><span>app.labelfinance — Dashboard</span></div>
     <div class="mock-body">
       <aside class="mock-side">
@@ -301,25 +326,50 @@ footer{padding:54px 0 36px;background:rgba(8,9,14,.5);-webkit-backdrop-filter:bl
         <span class="ms-item"><span class="ms-dot"></span>Merch</span>
       </aside>
       <div class="mock-main">
-        <div class="mk-top"><b>Dashboard</b><span class="mk-pill" data-i18n="mock.period">Ultimi 12 mesi ▾</span></div>
+        <div class="mk-top"><b>Dashboard</b>
+          <div class="mk-tools"><span class="mk-ai-chip">✦ AI</span><span class="mk-pill" data-i18n="mock.period">Ultimi 12 mesi ▾</span></div></div>
         <div class="mk-kpis">
-          <div class="mk-kpi green"><small data-i18n="kpi.in">Entrate</small><b>€ 8.420</b><span class="d up">▲ 18%</span></div>
-          <div class="mk-kpi red"><small data-i18n="kpi.out">Uscite</small><b>€ 2.180</b><span class="d down">▼ 6%</span></div>
-          <div class="mk-kpi blue"><small data-i18n="kpi.net">Margine netto</small><b>€ 6.240</b><span class="d up">▲ 24%</span></div>
+          <div class="mk-kpi green"><small data-i18n="kpi.in">Entrate</small><b>€ 8.420</b><span class="d up">▲ 18%</span>
+            <svg class="mk-spark" viewBox="0 0 60 24"><polyline points="0,19 12,15 22,17 33,9 45,11 60,3" fill="none" stroke="#4ade80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="mk-kpi red"><small data-i18n="kpi.out">Uscite</small><b>€ 2.180</b><span class="d down">▼ 6%</span>
+            <svg class="mk-spark" viewBox="0 0 60 24"><polyline points="0,7 12,11 22,8 33,13 45,11 60,15" fill="none" stroke="#fb7185" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="mk-kpi blue"><small data-i18n="kpi.net">Margine netto</small><b>€ 6.240</b><span class="d up">▲ 24%</span>
+            <svg class="mk-spark" viewBox="0 0 60 24"><polyline points="0,21 12,17 22,15 33,10 45,6 60,2" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
         </div>
-        <div class="mk-chart">
-          <div class="mk-bars">
-            <div class="mk-col"><span class="mk-bar" style="height:46%"></span><span class="mk-bar b" style="height:28%"></span></div>
-            <div class="mk-col"><span class="mk-bar" style="height:58%"></span><span class="mk-bar b" style="height:34%"></span></div>
-            <div class="mk-col"><span class="mk-bar" style="height:70%"></span><span class="mk-bar b" style="height:40%"></span></div>
-            <div class="mk-col"><span class="mk-bar" style="height:52%"></span><span class="mk-bar b" style="height:30%"></span></div>
-            <div class="mk-col"><span class="mk-bar" style="height:86%"></span><span class="mk-bar b" style="height:46%"></span></div>
-            <div class="mk-col"><span class="mk-bar" style="height:96%"></span><span class="mk-bar b" style="height:52%"></span></div>
+        <div class="mk-card mk-chart">
+          <h6><span data-i18n="mock.chart">Entrate vs uscite</span>
+            <span class="mk-legend"><span><i style="background:var(--violet)"></i><span data-i18n="kpi.in">Entrate</span></span><span><i style="background:var(--blue)"></i><span data-i18n="kpi.out">Uscite</span></span></span></h6>
+          <svg viewBox="0 0 600 150" preserveAspectRatio="none">
+            <defs><linearGradient id="ar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7c3aed" stop-opacity=".5"/><stop offset="1" stop-color="#7c3aed" stop-opacity="0"/></linearGradient></defs>
+            <line x1="0" y1="45" x2="600" y2="45" stroke="rgba(255,255,255,.06)"/><line x1="0" y1="90" x2="600" y2="90" stroke="rgba(255,255,255,.06)"/><line x1="0" y1="135" x2="600" y2="135" stroke="rgba(255,255,255,.06)"/>
+            <path d="M0,118 C40,110 70,96 100,99 C140,103 165,90 200,94 C240,98 270,74 300,77 C340,80 370,58 400,61 C440,64 470,42 500,40 C540,38 570,26 600,24 L600,150 L0,150 Z" fill="url(#ar)"/>
+            <path d="M0,118 C40,110 70,96 100,99 C140,103 165,90 200,94 C240,98 270,74 300,77 C340,80 370,58 400,61 C440,64 470,42 500,40 C540,38 570,26 600,24" fill="none" stroke="#a78bfa" stroke-width="3" stroke-linecap="round"/>
+            <path d="M0,138 C50,136 80,132 130,134 C190,136 230,126 300,128 C360,129 400,124 460,122 C520,120 560,118 600,117" fill="none" stroke="#60a5fa" stroke-width="2.4" stroke-linecap="round" opacity=".85"/>
+          </svg>
+          <div class="mk-x" id="mk-months"><span>Gen</span><span>Feb</span><span>Mar</span><span>Apr</span><span>Mag</span><span>Giu</span></div>
+        </div>
+        <div class="mk-row2">
+          <div class="mk-card">
+            <h6><span data-i18n="mock.top">Top artisti</span><span style="color:var(--muted-2)">€</span></h6>
+            <div class="mk-art"><span class="av">A1</span><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;gap:8px"><span class="nm" data-i18n="art1">Artista 1</span><span class="vl">€ 1.240</span></div><div class="mk-pb"><i style="width:100%"></i></div></div></div>
+            <div class="mk-art"><span class="av">A2</span><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;gap:8px"><span class="nm" data-i18n="art2">Artista 2</span><span class="vl">€ 980</span></div><div class="mk-pb"><i style="width:79%"></i></div></div></div>
+            <div class="mk-art"><span class="av">A3</span><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;gap:8px"><span class="nm" data-i18n="art3">Artista 3</span><span class="vl">€ 460</span></div><div class="mk-pb"><i style="width:37%"></i></div></div></div>
           </div>
-          <div class="mk-x"><span>Gen</span><span>Feb</span><span>Mar</span><span>Apr</span><span>Mag</span><span>Giu</span></div>
-          <div class="mk-legend"><span><i style="background:var(--violet)"></i><span data-i18n="kpi.in">Entrate</span></span><span><i style="background:var(--blue)"></i><span data-i18n="kpi.out">Uscite</span></span></div>
+          <div class="mk-card">
+            <h6 data-i18n="mock.plat">Per piattaforma</h6>
+            <div class="mk-donut-wrap">
+              <div class="mk-donut"><span>€8,4k</span></div>
+              <div class="mk-plat">
+                <span><i style="background:var(--violet)"></i><span data-i18n="plat.stream">Streaming</span> 46%</span>
+                <span><i style="background:var(--blue)"></i><span data-i18n="plat.dl">Download</span> 28%</span>
+                <span><i style="background:var(--azure)"></i><span data-i18n="plat.store">Store</span> 26%</span>
+              </div>
+            </div>
+          </div>
         </div>
+        <div class="mk-ai" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="3.2" r="1.5" fill="#fff"/><path d="M12 4.6V7" stroke="#fff" stroke-width="2" stroke-linecap="round"/><rect x="5" y="7" width="14" height="11" rx="3.6" fill="#fff"/><circle cx="9.6" cy="12.4" r="1.7" fill="#7c3aed"/><circle cx="14.4" cy="12.4" r="1.7" fill="#7c3aed"/></svg></div>
       </div>
+    </div>
     </div>
   </div></div>
 </section>
@@ -336,7 +386,7 @@ footer{padding:54px 0 36px;background:rgba(8,9,14,.5);-webkit-backdrop-filter:bl
       <div class="feat glass"><div class="feat-ico">📊</div><h3 data-i18n="f1.t">Dashboard & Finanze</h3><p data-i18n="f1.d">Entrate, uscite e margine con variazione % vs periodo. Grafici e cruscotto personalizzabile.</p></div>
       <div class="feat glass"><div class="feat-ico">💸</div><h3 data-i18n="f2.t">Royalty & Recoupment</h3><p data-i18n="f2.d">Calcolo automatico per artista, quote per release e override per singola traccia (ISRC).</p></div>
       <div class="feat glass"><div class="feat-ico">📄</div><h3 data-i18n="f3.t">Contratti & Firma</h3><p data-i18n="f3.d">Genera il contratto con carta intestata, invialo e ricevilo firmato in tempo reale.</p></div>
-      <div class="feat glass"><div class="feat-ico">📥</div><h3 data-i18n="f4.t">Import CSV</h3><p data-i18n="f4.d">Carica i report di vendita dal tuo store o distributore: le colonne si mappano da sole.</p></div>
+      <div class="feat glass"><div class="feat-ico">📥</div><h3 data-i18n="f4.t">Import catalogo</h3><p data-i18n="f4.d">Importa l'intera discografia da Discogs e MusicBrainz, oppure carica un CSV dal tuo store: le colonne si mappano da sole.</p></div>
       <div class="feat glass"><div class="feat-ico">👥</div><h3 data-i18n="f5.t">Rubrica Artisti</h3><p data-i18n="f5.d">Roster con contatti, IBAN e split: precompila contratti e pagamenti in automatico.</p></div>
       <div class="feat glass"><div class="feat-ico">👕</div><h3 data-i18n="f6.t">Merch</h3><p data-i18n="f6.d">Catalogo, vendite con un clic, ricavi, margini, best-seller e avviso scorte basse.</p></div>
       <div class="feat glass"><div class="feat-ico">🤖</div><h3 data-i18n="f7.t">Assistente AI</h3><p data-i18n="f7.d">Un consulente sempre a portata: analizza i dati e dà consigli concreti, esportabili in PDF.</p></div>
@@ -547,19 +597,20 @@ footer{padding:54px 0 36px;background:rgba(8,9,14,.5);-webkit-backdrop-filter:bl
 const LANG={
  it:{
   'nav.features':'Funzionalità','nav.how':'Come funziona','nav.pricing':'Prezzi','nav.faq':'FAQ','nav.why':'Perché noi','nav.login':'Accedi','nav.start':'Inizia gratis',
-  'hero.badge':'🎚️ Il gestionale all-in-one per etichette indipendenti',
+  'hero.badge':'Il gestionale all-in-one per etichette indipendenti',
   'hero.h1':'Tutto il business della tua etichetta, <span class="grad">in un solo posto.</span>',
   'hero.sub':'Royalty, contratti firmati digitalmente, merch, finanze e un assistente AI. Dalla produzione ai pagamenti — senza fogli Excel.',
   'hero.cta1':'Inizia gratis — 14 giorni','hero.cta2':'Scopri le funzionalità',
   'hero.n1':'Nessuna carta richiesta','hero.n2':'Offline-first, su ogni dispositivo','hero.n3':'Italiano / English',
   'nav_mock.tx':'Movimenti','nav_mock.grp':'Musica & Catalogo','nav_mock.cat':'Discografia','nav_mock.con':'Contratti','nav_mock.art':'Artisti','mock.period':'Ultimi 12 mesi ▾',
+  'mock.chart':'Entrate vs uscite','mock.top':'Top artisti','mock.plat':'Per piattaforma','plat.stream':'Streaming','plat.dl':'Download','plat.store':'Store','mock.months':'Gen,Feb,Mar,Apr,Mag,Giu',
   'kpi.in':'Entrate','kpi.out':'Uscite','kpi.net':'Margine netto',
   'features.badge':'Funzionalità','features.h2':'Una sola app per <span class="grad">l\'intero business</span>',
   'features.sub':'Gli altri fanno solo le royalty oppure solo i contratti. Label Finance copre tutto, dall\'incasso al pagamento dell\'artista.',
   'f1.t':'Dashboard & Finanze','f1.d':'Entrate, uscite e margine con variazione % vs periodo. Grafici e cruscotto personalizzabile.',
   'f2.t':'Royalty & Recoupment','f2.d':'Calcolo automatico per artista, quote per release e override per singola traccia (ISRC).',
   'f3.t':'Contratti & Firma','f3.d':'Genera il contratto con carta intestata, invialo e ricevilo firmato in tempo reale.',
-  'f4.t':'Import CSV','f4.d':'Carica i report di vendita dal tuo store o distributore: le colonne si mappano da sole.',
+  'f4.t':'Import catalogo','f4.d':'Importa l\'intera discografia da Discogs e MusicBrainz, oppure carica un CSV dal tuo store: le colonne si mappano da sole.',
   'f5.t':'Rubrica Artisti','f5.d':'Roster con contatti, IBAN e split: precompila contratti e pagamenti in automatico.',
   'f6.t':'Merch','f6.d':'Catalogo, vendite con un clic, ricavi, margini, best-seller e avviso scorte basse.',
   'f7.t':'Assistente AI','f7.d':'Un consulente sempre a portata: analizza i dati e dà consigli concreti, esportabili in PDF.',
@@ -601,19 +652,20 @@ const LANG={
  },
  en:{
   'nav.features':'Features','nav.how':'How it works','nav.pricing':'Pricing','nav.faq':'FAQ','nav.why':'Why us','nav.login':'Log in','nav.start':'Start free',
-  'hero.badge':'🎚️ The all-in-one tool for independent labels',
+  'hero.badge':'The all-in-one tool for independent labels',
   'hero.h1':'All your label\'s business, <span class="grad">in one place.</span>',
   'hero.sub':'Royalties, digitally signed contracts, merch, finances and an AI assistant. From production to payouts — without spreadsheets.',
   'hero.cta1':'Start free — 14 days','hero.cta2':'See the features',
   'hero.n1':'No card required','hero.n2':'Offline-first, on every device','hero.n3':'Italiano / English',
   'nav_mock.tx':'Transactions','nav_mock.grp':'Music & Catalog','nav_mock.cat':'Catalog','nav_mock.con':'Contracts','nav_mock.art':'Artists','mock.period':'Last 12 months ▾',
+  'mock.chart':'Income vs expenses','mock.top':'Top artists','mock.plat':'By platform','plat.stream':'Streaming','plat.dl':'Downloads','plat.store':'Store','mock.months':'Jan,Feb,Mar,Apr,May,Jun',
   'kpi.in':'Income','kpi.out':'Expenses','kpi.net':'Net margin',
   'features.badge':'Features','features.h2':'One app for <span class="grad">your whole business</span>',
   'features.sub':'Others do only royalties or only contracts. Label Finance covers it all, from the sale to the artist\'s payout.',
   'f1.t':'Dashboard & Finances','f1.d':'Income, expenses and margin with % change vs period. Charts and a customizable dashboard.',
   'f2.t':'Royalties & Recoupment','f2.d':'Automatic per-artist calculation, splits per release and per-track override (ISRC).',
   'f3.t':'Contracts & Signing','f3.d':'Generate the contract with letterhead, send it and get it back signed in real time.',
-  'f4.t':'CSV Import','f4.d':'Upload sales reports from your store or distributor: columns map themselves.',
+  'f4.t':'Catalog import','f4.d':'Import your whole discography from Discogs and MusicBrainz, or upload a CSV from your store: columns map themselves.',
   'f5.t':'Artist Directory','f5.d':'Roster with contacts, IBAN and splits: auto-fills contracts and payouts.',
   'f6.t':'Merch','f6.d':'Catalog, one-click sales, revenue, margins, best-sellers and low-stock alerts.',
   'f7.t':'AI Assistant','f7.d':'An advisor always at hand: it analyzes your data and gives concrete, PDF-exportable advice.',
@@ -676,6 +728,7 @@ function applyLang(l){ if(!LANG[l]) l='it'; curLang=l;
   document.querySelectorAll('[data-i18n]').forEach(el=>{ const v=LANG[l][el.dataset.i18n]; if(v!=null) el.textContent=v; });
   document.querySelectorAll('[data-i18n-html]').forEach(el=>{ const v=LANG[l][el.dataset.i18nHtml]; if(v!=null) el.innerHTML=v; });
   document.querySelectorAll('[data-lang-opt]').forEach(b=>b.classList.toggle('on',b.dataset.langOpt===l));
+  const mEl=document.getElementById('mk-months'); if(mEl&&LANG[l]['mock.months']) mEl.innerHTML=LANG[l]['mock.months'].split(',').map(m=>`<span>${m}</span>`).join('');
   setBilling(curYear);
 }
 document.querySelectorAll('[data-lang-opt]').forEach(b=>b.addEventListener('click',()=>applyLang(b.dataset.langOpt)));

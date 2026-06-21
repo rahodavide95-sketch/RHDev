@@ -268,6 +268,8 @@
     $('gate-forgot')?.addEventListener('click', gateForgot);
     // aggiorna il sottotitolo del gate al cambio lingua
     window.addEventListener('langchange', ()=> setGateMode(document.body.classList.contains('gate-signup')?'signup':'login'));
+    // modalità iniziale dalla landing: app.html?signup (o #signup) apre la registrazione
+    try{ if(/(?:[?&]signup\b)|#signup/i.test((location.search||'')+(location.hash||''))) setGateMode('signup'); }catch(e){}
     // impostazioni
     $('sync-save-config')?.addEventListener('click', ()=>{
       const url=$('sync-url').value.trim().replace(/\/$/,''), key=$('sync-key').value.trim();

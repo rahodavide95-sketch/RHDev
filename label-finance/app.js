@@ -554,7 +554,7 @@ let dashTxs=[]; const dashSort={}, dashFilter={};
 /* ============================================================================
    PAGINAZIONE RIUSABILE — max righe per pagina + selettore pagina, ovunque
    ============================================================================ */
-const PAGE_DEFAULT=15;
+const PAGE_DEFAULT=10;
 const PAGE_OPTIONS=[10,15,25,50,'all'];
 const pageState={};
 function pageGet(key){ return pageState[key]||(pageState[key]={page:1, per:PAGE_DEFAULT}); }

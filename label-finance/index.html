@@ -208,10 +208,10 @@ img{max-width:100%}
 .pop-badge{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:linear-gradient(120deg,var(--violet-2),var(--violet));color:#fff;font-size:.74rem;font-weight:700;padding:5px 14px;border-radius:999px;white-space:nowrap;box-shadow:0 6px 18px -4px rgba(124,58,237,.7)}
 .plan h3{font-size:1.25rem;margin-bottom:4px}
 .plan .desc{color:var(--muted);font-size:.88rem;min-height:38px}
-.plan .price{font-weight:700;font-size:2.4rem;margin:14px 0 2px;display:flex;align-items:baseline;gap:4px}
-.plan .price .cur{font-size:1.3rem}.plan .price .per{font-size:.95rem;color:var(--muted);font-weight:500}
-.plan .was{text-decoration:line-through;color:var(--muted-2);font-size:1.05rem;font-weight:600;margin-left:9px}
-.plan .bill{font-size:.82rem;color:var(--muted-2);min-height:20px}
+.plan .price{font-weight:800;font-size:3rem;margin:14px 0 3px;display:flex;align-items:baseline;gap:5px;line-height:1}
+.plan .price .cur{font-size:1.55rem;font-weight:700}.plan .price .per{font-size:1rem;color:var(--muted);font-weight:500}
+.plan .was{text-decoration:line-through;color:var(--muted-2);font-size:1.2rem;font-weight:600;margin-left:9px}
+.plan .bill{font-size:.84rem;color:var(--muted-2);min-height:20px}
 .plan .bill.year{color:var(--green);font-weight:600}
 .plan ul{list-style:none;display:flex;flex-direction:column;gap:10px;margin:20px 0 24px}
 .plan li{display:flex;gap:10px;font-size:.92rem}
@@ -518,7 +518,7 @@ footer{padding:54px 0 36px;background:rgba(8,9,14,.5);-webkit-backdrop-filter:bl
           <li><span class="ck">✓</span> <b data-i18n="p2.f3">Assistente AI</b></li>
           <li><span class="ck">✓</span> <b data-i18n="p2.f4">Dashboard personalizzabile</b></li>
           <li><span class="ck">✓</span> <span data-i18n="p2.f5">Contratti illimitati + email automatica</span></li>
-          <li><span class="ck">✓</span> <span data-i18n="p2.f6">Export Excel + branding</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="p2.f6">Export reports + branding</span></li>
           <li><span class="ck">✓</span> <span data-i18n="p2.f7">Statement royalty per artista</span></li>
         </ul>
         <a class="btn btn-primary" href="app.html?signup" data-i18n="p2.cta">Prova gratis 14 giorni</a>
@@ -636,9 +636,9 @@ const LANG={
   'w4.t':'Semplice e bello','w4.d':'Moderno, chiaro, veloce. Zero curva d\'apprendimento.',
   'w5.t':'Offline-first','w5.d':'I tuoi dati sempre con te, sincronizzati su ogni dispositivo.',
   'pricing.badge':'Prezzi','pricing.h2':'Scegli il piano <span class="grad">della tua crescita</span>','pricing.sub':'14 giorni di prova gratuita sul piano Studio. Disdici quando vuoi.',
-  'bill.month':'Mensile','bill.year':'Annuale','per.mo':'/mese','price.reco':'⭐ Consigliato','bill.note_m':'fatturazione mensile','bill.year_tpl':'{tot}/anno · risparmi {save}',
+  'bill.month':'Mensile','bill.year':'Annuale','per.mo':'/mese','price.reco':'⭐ Consigliato','bill.note_m':'fatturazione mensile','bill.year_tpl':'fatturato annualmente: {tot}/anno · risparmi {save}',
   'p1.desc':'Per chi parte e vuole ordine fin da subito.','p1.f1':'1 etichetta','p1.f2':'Finanze, royalty, recoupment','p1.f3':'Import CSV, dashboard, PDF','p1.f4':'Artisti, Task, Merch','p1.f5':'Contratti + firma (base)','p1.f6':'Assistente AI','p1.f7':'Dashboard personalizzabile','p1.cta':'Inizia con Starter',
-  'p2.desc':'Il piano con i "wow": AI e personalizzazione.','p2.f1':'Fino a 3 etichette','p2.f2':'Tutto di Starter','p2.f3':'Assistente AI','p2.f4':'Dashboard personalizzabile','p2.f5':'Contratti illimitati + email automatica','p2.f6':'Export Excel + branding','p2.f7':'Statement royalty per artista','p2.cta':'Prova gratis 14 giorni',
+  'p2.desc':'Il piano con i "wow": AI e personalizzazione.','p2.f1':'Fino a 3 etichette','p2.f2':'Tutto di Starter','p2.f3':'Assistente AI','p2.f4':'Dashboard personalizzabile','p2.f5':'Contratti illimitati + email automatica','p2.f6':'Export reports + branding','p2.f7':'Statement royalty per artista','p2.cta':'Prova gratis 14 giorni',
   'p3.desc':'Per manager e agenzie con più artisti.','p3.f1':'Etichette illimitate','p3.f2':'Tutto di Studio','p3.f3':'Team / accessi multipli','p3.f4':'Automazioni & audit log','p3.f5':'Onboarding dedicato','p3.f6':'Supporto prioritario','p3.cta':'Contatta le vendite',
   'faq.badge':'FAQ','faq.h2':'Le domande <span class="grad">più frequenti</span>',
   'q1.q':'I miei dati sono al sicuro?','q1.a':'Sì. I dati viaggiano cifrati e vengono sincronizzati in cloud in modo sicuro, nel rispetto del GDPR. L\'app è offline-first: i tuoi dati restano sul dispositivo anche senza connessione.',
@@ -691,9 +691,9 @@ const LANG={
   'w4.t':'Simple and beautiful','w4.d':'Modern, clear, fast. Zero learning curve.',
   'w5.t':'Offline-first','w5.d':'Your data always with you, synced on every device.',
   'pricing.badge':'Pricing','pricing.h2':'Pick the plan <span class="grad">for your growth</span>','pricing.sub':'14-day free trial on the Studio plan. Cancel anytime.',
-  'bill.month':'Monthly','bill.year':'Annual','per.mo':'/month','price.reco':'⭐ Recommended','bill.note_m':'billed monthly','bill.year_tpl':'{tot}/year · save {save}',
+  'bill.month':'Monthly','bill.year':'Annual','per.mo':'/month','price.reco':'⭐ Recommended','bill.note_m':'billed monthly','bill.year_tpl':'billed annually: {tot}/year · save {save}',
   'p1.desc':'For those starting out who want order from day one.','p1.f1':'1 label','p1.f2':'Finances, royalties, recoupment','p1.f3':'CSV import, dashboard, PDF','p1.f4':'Artists, Tasks, Merch','p1.f5':'Contracts + signing (basic)','p1.f6':'AI Assistant','p1.f7':'Customizable dashboard','p1.cta':'Start with Starter',
-  'p2.desc':'The plan with the "wow": AI and customization.','p2.f1':'Up to 3 labels','p2.f2':'Everything in Starter','p2.f3':'AI Assistant','p2.f4':'Customizable dashboard','p2.f5':'Unlimited contracts + auto email','p2.f6':'Excel export + branding','p2.f7':'Per-artist royalty statements','p2.cta':'Try free for 14 days',
+  'p2.desc':'The plan with the "wow": AI and customization.','p2.f1':'Up to 3 labels','p2.f2':'Everything in Starter','p2.f3':'AI Assistant','p2.f4':'Customizable dashboard','p2.f5':'Unlimited contracts + auto email','p2.f6':'Reports export + branding','p2.f7':'Per-artist royalty statements','p2.cta':'Try free for 14 days',
   'p3.desc':'For managers and agencies with multiple artists.','p3.f1':'Unlimited labels','p3.f2':'Everything in Studio','p3.f3':'Team / multiple seats','p3.f4':'Automations & audit log','p3.f5':'Dedicated onboarding','p3.f6':'Priority support','p3.cta':'Contact sales',
   'faq.badge':'FAQ','faq.h2':'Frequently <span class="grad">asked questions</span>',
   'q1.q':'Is my data safe?','q1.a':'Yes. Data travels encrypted and is securely synced to the cloud, GDPR-compliant. The app is offline-first: your data stays on your device even without a connection.',

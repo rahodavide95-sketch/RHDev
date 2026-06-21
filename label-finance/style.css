@@ -392,6 +392,10 @@ body.dash-edit .dw-width{display:inline-flex;gap:2px;position:absolute;top:8px;l
 .dup-opt:has(input:checked){color:var(--text);border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--panel))}
 .dup-opt input{accent-color:var(--accent)}
 @media(max-width:720px){ .dup-pair{grid-template-columns:1fr;gap:8px} .dup-score{justify-self:start} }
+/* --- arricchimento catalogo --- */
+.enr-row{display:flex;align-items:flex-start;gap:11px;cursor:pointer}
+.enr-row input{margin-top:3px;flex:none;accent-color:var(--accent)}
+.enr-info{display:flex;flex-direction:column;gap:4px;min-width:0}
 @media(max-width:880px){
   /* le liste a colonne scorrono in orizzontale per restare leggibili e allineate */
   .dbl{overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -428,6 +432,8 @@ body.dash-edit .dw-width{display:inline-flex;gap:2px;position:absolute;top:8px;l
 .notif-item-acts{display:flex;flex-direction:column;gap:4px}
 .notif-mini{background:none;border:none;color:var(--muted);cursor:pointer;font-size:.8rem;width:24px;height:24px;border-radius:6px}
 .notif-mini:hover{color:var(--accent);background:var(--panel-2)}
+.notif-act{width:auto;padding:0 10px;height:26px;font-weight:600;color:#fff;background:var(--accent);white-space:nowrap}
+.notif-act:hover{color:#fff;background:color-mix(in srgb,var(--accent) 85%,#000)}
 
 /* ===== Widget dashboard a lista (prossime uscite/eventi/discografia) ===== */
 .wlist{display:flex;flex-direction:column}

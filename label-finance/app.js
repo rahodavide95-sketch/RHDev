@@ -950,8 +950,12 @@ function releaseByTitle(name){
   if(!name) return null; const n=name.trim().toLowerCase(); if(!n) return null;
   return releases().find(r=>(r.title||'').trim().toLowerCase()===n) || null;
 }
-// release collegata a un movimento: per catalogo, oppure per nome prodotto = titolo release
-function releaseForTx(t){ return releaseByCatalog(t.catalog) || releaseByTitle(t.product) || null; }
+function releaseByUPC(upc){ const u=(''+(upc||'')).replace(/\D/g,''); if(!u) return null;
+  return releases().find(r=>(''+(r.upc||'')).replace(/\D/g,'')===u) || null; }
+function releaseByISRC(isrc){ const i=(isrc||'').trim().toLowerCase(); if(!i) return null;
+  return releases().find(r=>(r.tracks||[]).some(x=>(x.isrc||'').trim().toLowerCase()===i)) || null; }
+// release collegata a un movimento: per catalogo, UPC, ISRC di traccia, o nome prodotto = titolo release
+function releaseForTx(t){ return releaseByCatalog(t.catalog) || releaseByUPC(t.upc||t.code) || releaseByISRC(t.isrc) || releaseByTitle(t.product) || null; }
 let relSort={col:'catalog',dir:1};
 function sortReleases(arr){
   const k=relSort.col, d=relSort.dir;
@@ -1403,6 +1407,66 @@ function dupScanExisting(){
 })();
 
 /* ============================================================================
+   ARRICCHIMENTO — dati utili nei Movimenti per release già in catalogo
+   (UPC, ISRC, numero di catalogo, artista…). La data del movimento è la data
+   di vendita, non di uscita: per questo NON viene proposta come Data di release.
+   ============================================================================ */
+let enrichCache=[];
+function txEnrichments(){
+  const out=[], seen=new Set();
+  const fields=[
+    {f:'upc',    label:()=>tt('r.upc'),     get:t=>(t.upc||t.code||'').trim()},
+    {f:'catalog',label:()=>tt('col.catalog'),get:t=>(t.catalog||'').trim()},
+    {f:'artist', label:()=>tt('r.artist'),   get:t=>(t.artist||'').trim()},
+  ];
+  (DB.transactions||[]).forEach(t=>{
+    const rel=releaseForTx(t); if(!rel) return;
+    fields.forEach(fd=>{ const v=fd.get(t); if(!v) return;
+      if((''+(rel[fd.f]||'')).trim()) return;                 // campo già compilato → non toccare
+      const key=rel.id+'|'+fd.f; if(seen.has(key)) return; seen.add(key);
+      out.push({field:fd.f, label:fd.label(), relId:rel.id, relTitle:rel.title, value:v, product:t.product||''}); });
+    const isrc=(t.isrc||'').trim();
+    if(isrc){ const i=isrc.toLowerCase(); const key=rel.id+'|isrc|'+i;
+      const has=(rel.tracks||[]).some(x=>(x.isrc||'').trim().toLowerCase()===i);
+      if(!has && !seen.has(key)){ seen.add(key); out.push({field:'isrc', label:'ISRC', relId:rel.id, relTitle:rel.title, value:isrc, product:t.product||''}); } }
+  });
+  return out;
+}
+function applyEnrichments(list){
+  let n=0;
+  (list||[]).forEach(e=>{ const rel=releases().find(r=>r.id===e.relId); if(!rel) return;
+    if(e.field==='isrc'){ const i=e.value.trim().toLowerCase();
+      if(!(rel.tracks||[]).some(x=>(x.isrc||'').trim().toLowerCase()===i)){ (rel.tracks=rel.tracks||[]).push({id:uid(),title:e.product||'',isrc:e.value,splits:[]}); n++; } }
+    else if(!(''+(rel[e.field]||'')).trim()){ rel[e.field]=e.value; n++; } });
+  if(n){ save(); renderReleases&&renderReleases(); renderRoyalties&&renderRoyalties(); }
+  return n;
+}
+function renderEnrichList(){ const box=$('#enrich-list'); if(!box) return;
+  enrichCache=txEnrichments();
+  if(!enrichCache.length){ box.innerHTML=`<p class="muted small">${tt('enr.none')}</p>`; return; }
+  box.innerHTML=enrichCache.map((e,i)=>`<label class="dup-row enr-row">
+    <input type="checkbox" data-enr="${i}" checked>
+    <div class="enr-info">
+      <b>${esc(e.relTitle)||'—'}</b>
+      <span class="dup-rsn">${esc(e.label)}: ${esc(e.value)}</span>
+      ${e.product?`<span class="muted small">${tt('enr.from')} «${esc(e.product)}»</span>`:''}
+    </div></label>`).join('');
+}
+function openEnrichModal(){ renderEnrichList(); const m=$('#enrich-modal'); if(m) m.hidden=false; }
+function enrichApply(){
+  const sel=[]; $$('#enrich-list [data-enr]:checked').forEach(c=>{ const e=enrichCache[+c.dataset.enr]; if(e) sel.push(e); });
+  const n=applyEnrichments(sel); const m=$('#enrich-modal'); if(m) m.hidden=true;
+  toast(tt('enr.done').replace('{n}',n)); notifScan();
+}
+(function wireEnrich(){
+  const m=$('#enrich-modal'); if(!m) return;
+  $('#enrich-close')&&($('#enrich-close').onclick=()=>m.hidden=true);
+  $('#enrich-cancel')&&($('#enrich-cancel').onclick=()=>m.hidden=true);
+  $('#enrich-apply')&&($('#enrich-apply').onclick=enrichApply);
+  m.addEventListener('click',e=>{ if(e.target.id==='enrich-modal') m.hidden=true; });
+})();
+
+/* ============================================================================
    ROYALTY — ripartizione per artista basata sulle quote delle release
    ============================================================================ */
 // range {from,to} generico da un selettore periodo + due date personalizzate
@@ -1425,7 +1489,7 @@ function royaltyPeriod(txs){
 // trova release + quote applicabili a una transazione (traccia per ISRC, poi release)
 function splitsForTx(t){
   const iso=(t.isrc||'').trim().toLowerCase();
-  const rel=releaseByCatalog(t.catalog) || releaseByTitle(t.product);
+  const rel=releaseByCatalog(t.catalog) || releaseByUPC(t.upc||t.code) || releaseByISRC(t.isrc) || releaseByTitle(t.product);
   if(rel){
     if(iso && rel.tracks){ const tr=rel.tracks.find(x=>(x.isrc||'').trim().toLowerCase()===iso && x.splits&&x.splits.length);
       if(tr) return {rel, splits:tr.splits}; }
@@ -3257,6 +3321,12 @@ function notifScan(){
     if((NOTIFS.dismissed||[]).includes(lk)) return;
     if(NOTIFS.list.some(n=>n.key===key)) return;
     NOTIFS.list.unshift({ id:newId(), key, type:'unlinked', ref:p, read:false, ts:Date.now() }); });
+  // dati aggiuntivi (UPC/ISRC/catalogo/artista…) trovati in Movimenti per release esistenti
+  const enrN=txEnrichments().length;
+  const prevEnr=NOTIFS.list.find(n=>n.type==='enrich');
+  NOTIFS.list=NOTIFS.list.filter(n=>n.type!=='enrich');
+  if(enrN && !(NOTIFS.dismissed||[]).includes('enrich:'+enrN))
+    NOTIFS.list.unshift(prevEnr ? {...prevEnr, count:enrN} : { id:newId(), key:'enrich', type:'enrich', count:enrN, read:false, ts:Date.now() });
   notifSave(); renderNotifs();
 }
 function notifText(n){
@@ -3264,6 +3334,9 @@ function notifText(n){
   if(n.type==='unlinked') return {
     title: T('notif.unlinked_t','Prodotto non collegato'),
     body: T('notif.unlinked_b','Il prodotto «{p}» non è collegato a nessuna release: registralo in Discografia perché i calcoli tornino.').replace('{p}', n.ref||'') };
+  if(n.type==='enrich') return {
+    title: T('notif.enrich_t','Dati aggiuntivi trovati'),
+    body: T('notif.enrich_b','In Movimenti ci sono {n} dati utili (UPC, ISRC, catalogo, artista…) per release già presenti. Apri per arricchire la Discografia.').replace('{n}', n.count||0) };
   return { title:n.title||'', body:n.body||'' };
 }
 function notifTime(ts){ try{ return new Date(ts).toLocaleString(calLang(),{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); }catch(e){ return ''; } }
@@ -3281,17 +3354,19 @@ function renderNotifs(){
         <div class="notif-time">${esc(notifTime(it.ts))}</div>
       </div>
       <div class="notif-item-acts">
+        ${it.type==='enrich'?`<button class="notif-mini notif-act" data-naction="${it.id}">${tt('notif.enrich_btn')}</button>`:''}
         <button class="notif-mini" data-ntoggle="${it.id}" title="${it.read?tt('notif.mark_unread'):tt('notif.mark_read')}">${it.read?'○':'●'}</button>
         <button class="notif-mini" data-ndel="${it.id}" title="${tt('common.delete')}">✕</button>
       </div></div>`; }).join('');
 }
 function notifToggle(id){ const it=NOTIFS.list.find(x=>x.id===id); if(!it) return; it.read=!it.read; notifSave(); renderNotifs(); }
-function notifDelete(id){ const it=NOTIFS.list.find(x=>x.id===id);
-  if(it&&it.type==='unlinked') NOTIFS.dismissed=[...new Set([...(NOTIFS.dismissed||[]),(it.ref||'').toLowerCase()])];
+function notifDismiss(it){ if(!it) return;
+  if(it.type==='unlinked') NOTIFS.dismissed=[...new Set([...(NOTIFS.dismissed||[]),(it.ref||'').toLowerCase()])];
+  else if(it.type==='enrich') NOTIFS.dismissed=[...new Set([...(NOTIFS.dismissed||[]),'enrich:'+(it.count||0)])]; }
+function notifDelete(id){ const it=NOTIFS.list.find(x=>x.id===id); notifDismiss(it);
   NOTIFS.list=NOTIFS.list.filter(x=>x.id!==id); notifSave(); renderNotifs(); }
 function notifReadAll(){ NOTIFS.list.forEach(n=>n.read=true); notifSave(); renderNotifs(); }
-function notifClear(){ NOTIFS.list.forEach(it=>{ if(it.type==='unlinked') NOTIFS.dismissed=[...new Set([...(NOTIFS.dismissed||[]),(it.ref||'').toLowerCase()])]; });
-  NOTIFS.list=[]; notifSave(); renderNotifs(); }
+function notifClear(){ NOTIFS.list.forEach(notifDismiss); NOTIFS.list=[]; notifSave(); renderNotifs(); }
 /* ---------- Menu a gruppi (accordion) ---------- */
 const NAVGRP_KEY='labelfinance.navgroups';
 let navGrpState=(function(){ try{ return JSON.parse(localStorage.getItem(NAVGRP_KEY))||{}; }catch(e){ return {}; } })();
@@ -3310,6 +3385,8 @@ function wireNotifs(){
   $('#notif-readall')?.addEventListener('click',notifReadAll);
   $('#notif-clear')?.addEventListener('click',notifClear);
   $('#notif-list')?.addEventListener('click',e=>{
+    const ac=e.target.closest('[data-naction]'); if(ac){ const it=NOTIFS.list.find(x=>x.id===ac.dataset.naction);
+      if(it&&it.type==='enrich'){ $('#notif-panel')&&($('#notif-panel').hidden=true); openEnrichModal(); } return; }
     const tg=e.target.closest('[data-ntoggle]'); if(tg){ notifToggle(tg.dataset.ntoggle); return; }
     const dl=e.target.closest('[data-ndel]'); if(dl){ notifDelete(dl.dataset.ndel); return; }
   });

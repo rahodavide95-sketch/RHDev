@@ -1135,24 +1135,86 @@ function normDate(s){ s=String(s||'').trim(); if(!s) return '';
 }
 function catImpMap(){ const m={}; ['catalog','title','artist','date','upc','isrc'].forEach(f=>{ const sel=$('#catimp-'+f); m[f]=sel?(+sel.value):-1; }); return m; }
 // dedupe + creazione (condivisa da import CSV e ricerca online). items: {title,artist,date,upc,catalog,isrcs[]}
-function importReleasesData(items, commit){
-  const existKeys=new Set(releases().map(x=>(x.upc||x.catalog||x.title||'').toLowerCase()).filter(Boolean));
-  const existArt=new Set((DB.artists||[]).map(a=>(a.name||'').toLowerCase()));
-  const newReleases=[], newArtists=[]; let relDup=0; const seenArt=new Set(), seenRel=new Set();
-  items.forEach(it=>{
-    const title=(it.title||'').trim(), artist=(it.artist||'').trim(), upc=(it.upc||'').trim(), catalog=(it.catalog||'').trim();
-    const date=normDate(it.date||'');
-    if(!title && !upc) return;
-    (artist? artist.split(/,|&|;| feat\.?| ft\.?| x /i):[]).map(s=>s.trim()).filter(Boolean).forEach(nm=>{ const lk=nm.toLowerCase();
-      if(existArt.has(lk)||seenArt.has(lk)) return; seenArt.add(lk); newArtists.push({id:newId(), name:nm, split:''}); });
-    const key=(upc||catalog||title).toLowerCase();
-    if(existKeys.has(key)||seenRel.has(key)){ relDup++; return; } seenRel.add(key);
-    newReleases.push({ id:uid(), catalog, title, artist, upc, orderDate:date, year:date?new Date(date+'T00:00:00').getFullYear():'',
-      splits:[], tracks:(it.isrcs||[]).filter(Boolean).map(code=>({id:uid(), title:'', isrc:code, splits:[]})) });
+/* ---------- Motore di disambiguazione (similarità % + unione) ---------- */
+const DUP_ASK=58, DUP_AUTO=90;     // soglie: ≥ASK = possibile duplicato, ≥AUTO = unione automatica
+function strSim(a,b){ a=a||''; b=b||''; if(a===b) return a?1:0; if(a.length<2||b.length<2) return 0;
+  const bg=s=>{ const m={}; for(let i=0;i<s.length-1;i++){ const g=s.slice(i,i+2); m[g]=(m[g]||0)+1; } return m; };
+  const A=bg(a), B=bg(b); let inter=0, tot=0;
+  for(const k in A){ tot+=A[k]; if(B[k]) inter+=Math.min(A[k],B[k]); }
+  for(const k in B) tot+=B[k];
+  return tot? (2*inter)/tot : 0; }
+function normTitle(s){ return (s||'').toString().toLowerCase()
+  .replace(/\b(feat|ft|featuring)\.?\b.*$/,'')
+  .replace(/\([^)]*\b(remaster(ed)?|deluxe|edition|version|mono|stereo|expanded|bonus|reissue|anniversary|original)\b[^)]*\)/g,'')
+  .replace(/\[[^\]]*\]/g,'')
+  .replace(/[^a-z0-9]+/g,' ').trim(); }
+function normArt(s){ return (s||'').toString().toLowerCase().replace(/\b(feat|ft|featuring)\.?\b.*$/,'').replace(/[^a-z0-9]+/g,' ').trim(); }
+function relYear(r){ return (''+(r.year||r.orderDate||r.date||r.preorder||'')).slice(0,4); }
+function relMatch(a,b){
+  const dig=s=>(s||'').toString().replace(/\D/g,'');
+  const ua=dig(a.upc), ub=dig(b.upc);
+  if(ua&&ub&&ua===ub) return {score:100, reasons:['upc']};
+  const nc=s=>(s||'').toString().toLowerCase().replace(/[^a-z0-9]+/g,'');
+  const ca=nc(a.catalog), cb=nc(b.catalog);
+  const tS=strSim(normTitle(a.title),normTitle(b.title));
+  if(ca&&cb&&ca===cb&&ca.length>=3){ const r=['cat']; if(tS>=0.6) r.push(tS>=0.85?'title':'title2'); return {score:Math.max(88,Math.round(72+tS*28)), reasons:r}; }
+  const arBoth=!!(a.artist&&b.artist);
+  const arS=arBoth?strSim(normArt(a.artist),normArt(b.artist)):0.6;
+  let score=Math.round(tS*62 + arS*30);
+  const ya=relYear(a), yb=relYear(b);
+  if(ya&&yb){ score = ya===yb ? Math.min(98,score+8) : Math.max(0,score-10); }
+  if(ua&&ub&&ua!==ub) score=Math.max(0,score-25);  // barcode diversi → probabile edizione diversa
+  const reasons=[];
+  if(tS>=0.85) reasons.push('title'); else if(tS>=0.6) reasons.push('title2');
+  if(arBoth&&arS>=0.8) reasons.push('artist');
+  return {score:Math.min(100,Math.max(0,score)), reasons};
+}
+function itemToRelease(it){
+  const title=(it.title||'').trim(), artist=(it.artist||'').trim(), upc=(it.upc||'').trim(), catalog=(it.catalog||'').trim();
+  const date=normDate(it.date||'');
+  return { id:uid(), catalog, title, artist, upc, orderDate:date, preorder:'', note:'',
+    year:date?new Date(date+'T00:00:00').getFullYear():'',
+    splits:[], tracks:(it.isrcs||[]).filter(Boolean).map(code=>({id:uid(), title:'', isrc:code, splits:[]})) };
+}
+function mergeRelInto(target, src){
+  ['catalog','title','artist','upc','orderDate','preorder','year','note','exclusive','exclusivePlatform'].forEach(f=>{ if(!target[f] && src[f]) target[f]=src[f]; });
+  if((!target.splits||!target.splits.length) && src.splits&&src.splits.length) target.splits=src.splits;
+  const seen=new Set((target.tracks||[]).map(t=>(t.isrc||'').toLowerCase()).filter(Boolean));
+  (src.tracks||[]).forEach(t=>{ const k=(t.isrc||'').toLowerCase(); if(k && !seen.has(k)){ seen.add(k); (target.tracks=target.tracks||[]).push(t); } });
+}
+function collectNewArtists(items){
+  const exist=new Set((DB.artists||[]).map(a=>(a.name||'').toLowerCase()));
+  const seen=new Set(), out=[];
+  items.forEach(it=>{ (it.artist? (''+it.artist).split(/,|&|;| feat\.?| ft\.?| x /i):[]).map(s=>s.trim()).filter(Boolean)
+    .forEach(nm=>{ const lk=nm.toLowerCase(); if(exist.has(lk)||seen.has(lk)) return; seen.add(lk); out.push({id:newId(), name:nm, split:''}); }); });
+  return out;
+}
+function analyzeImport(items){
+  const incoming=items.map(itemToRelease).filter(r=>r.title||r.upc);
+  const existing=releases();
+  const toAdd=[], conflicts=[];
+  incoming.forEach(rel=>{
+    let best=null, bestKind='', bestRef=null;
+    existing.forEach(ex=>{ const m=relMatch(rel,ex); if(m.score>=DUP_ASK && (!best||m.score>best.score)){ best=m; bestKind='existing'; bestRef=ex; } });
+    toAdd.forEach(nw=>{ const m=relMatch(rel,nw); if(m.score>=DUP_ASK && (!best||m.score>best.score)){ best=m; bestKind='new'; bestRef=nw; } });
+    if(best) conflicts.push({incoming:rel, target:bestRef, kind:bestKind, score:best.score, reasons:best.reasons, decision:'keep'});
+    else toAdd.push(rel);
   });
-  if(commit){ newReleases.forEach(r=>releases().push(r)); DB.artists=DB.artists||[]; newArtists.forEach(a=>DB.artists.push(a));
-    save(); renderReleases(); renderArtists(); renderRoyalties(); }
-  return { relNew:newReleases.length, relDup, artNew:newArtists.length };
+  return {toAdd, conflicts};
+}
+// commit=false → solo conteggi per l'anteprima; commit=true → applica o apre la revisione duplicati
+function importReleasesData(items, commit){
+  const {toAdd, conflicts}=analyzeImport(items);
+  const newArtists=collectNewArtists(items);
+  if(!commit) return { relNew:toAdd.length, relDup:conflicts.length, artNew:newArtists.length };
+  if(!conflicts.length){
+    toAdd.forEach(r=>releases().push(r)); DB.artists=DB.artists||[]; newArtists.forEach(a=>DB.artists.push(a));
+    save(); renderReleases(); renderArtists(); renderRoyalties();
+    return { relNew:toAdd.length, relDup:0, artNew:newArtists.length, direct:true };
+  }
+  dupState={mode:'import', conflicts, toAdd, newArtists};
+  openDupModal();
+  return { relNew:toAdd.length, relDup:conflicts.length, artNew:newArtists.length, review:true };
 }
 function catImpItems(){
   const rows=parseCSV(catImpRaw||''); const data=rows.slice(1); const map=catImpMap();
@@ -1205,7 +1267,7 @@ async function catOnlineImport(){
   if(btn){ btn.disabled=false; btn.textContent=tt('cimp.fetch'); }
   if(!res||res.error||!res.releases){ toast(tt('cimp.search_fail')+(res&&res.error?` (${res.error})`:'')); return; }
   const r=importReleasesData(res.releases, true);
-  toast(tt('cimp.done').replace('{rel}',r.relNew).replace('{art}',r.artNew).replace('{dup}',r.relDup));
+  if(!r.review) toast(tt('cimp.done').replace('{rel}',r.relNew).replace('{art}',r.artNew).replace('{dup}',r.relDup));
   let hadErr=false, diag='';
   if(res.sources){ const s=res.sources; const p=[];
     if(picks.mb.length) p.push('MusicBrainz: '+(s.musicbrainz.err?('⚠ '+esc(s.musicbrainz.err)):s.musicbrainz.n));
@@ -1214,7 +1276,7 @@ async function catOnlineImport(){
     diag=p.join('<br>'); hadErr=!!(s.musicbrainz.err||s.discogs.err||s.spotify.err);
   }
   if(hadErr){ const box=$('#catimp-results'); if(box) box.insertAdjacentHTML('beforeend', `<p class="ai-err" style="margin-top:10px">${diag}</p>`); }
-  else $('#catimp-modal').hidden=true;
+  else if(!r.review) $('#catimp-modal').hidden=true;
 }
 function catImpRenderMaps(){
   const opts=(sel)=>['<option value="-1">—</option>'].concat(catImpHeaders.map((h,i)=>`<option value="${i}" ${i===sel?'selected':''}>${esc(h||('Col '+(i+1)))}</option>`)).join('');
@@ -1247,7 +1309,97 @@ function catImpLoad(file){ const rd=new FileReader();
     ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('drag');}));
     drop.addEventListener('drop',e=>{ const f=e.dataTransfer.files[0]; if(f) catImpLoad(f); }); }
   if($('#catimp-do')) $('#catimp-do').onclick=()=>{ const r=catImpCompute(true);
-    $('#catimp-modal').hidden=true; toast(tt('cimp.done').replace('{rel}',r.relNew).replace('{art}',r.artNew).replace('{dup}',r.relDup)); };
+    $('#catimp-modal').hidden=true;
+    if(!r.review) toast(tt('cimp.done').replace('{rel}',r.relNew).replace('{art}',r.artNew).replace('{dup}',r.relDup)); };
+})();
+
+/* ============================================================================
+   REVISIONE DUPLICATI — pannello con similarità % + unione dati
+   ============================================================================ */
+let dupState=null;
+const DUP_REASON={upc:'dup.r_upc',cat:'dup.r_cat',title:'dup.r_title',title2:'dup.r_title2',artist:'dup.r_artist'};
+function dupScoreCls(s){ return s>=DUP_AUTO?'hi':(s>=72?'mid':'lo'); }
+function relLabel(r){ const meta=[r.catalog,r.upc,relYear(r)].filter(Boolean).join(' · ');
+  return `<b>${esc(r.title)||'—'}</b><span class="muted small">${esc(r.artist||'')}${meta?(' · '+esc(meta)):''}</span>`; }
+function renderDupList(){
+  const box=$('#dup-list'); if(!box||!dupState) return;
+  const ex=dupState.mode==='existing';
+  box.innerHTML=dupState.conflicts.map((c,i)=>{
+    const reasons=(c.reasons||[]).map(r=>`<span class="dup-rsn">${esc(tt(DUP_REASON[r]||r))}</span>`).join('');
+    const lTag = ex?'A':tt('dup.new');
+    const rTag = ex?'B':(c.kind==='existing'?tt('dup.incat'):tt('dup.inimport'));
+    const opt=(val,lab)=>`<label class="dup-opt"><input type="radio" name="dup-${i}" value="${val}" ${c.decision===val?'checked':''}> ${esc(tt(lab))}</label>`;
+    const actions = ex
+      ? opt('merge','dup.merge')+opt('keep','dup.ignore')
+      : opt('merge','dup.merge')+opt('keep','dup.keep')+opt('skip','dup.skip');
+    return `<div class="dup-row" data-i="${i}">
+      <div class="dup-pair">
+        <div class="dup-side"><span class="dup-side-tag">${esc(lTag)}</span>${relLabel(c.incoming)}</div>
+        <div class="dup-score dup-${dupScoreCls(c.score)}">${c.score}%</div>
+        <div class="dup-side"><span class="dup-side-tag">${esc(rTag)}</span>${relLabel(c.target)}</div>
+      </div>
+      ${reasons?`<div class="dup-reasons">${reasons}</div>`:''}
+      <div class="dup-actions">${actions}</div>
+    </div>`;
+  }).join('');
+  dupUpdateSummary();
+}
+function dupUpdateSummary(){ const el=$('#dup-summary'); if(!el||!dupState) return;
+  const m=dupState.conflicts.filter(c=>c.decision==='merge').length;
+  el.textContent=tt('dup.summary').replace('{a}',m).replace('{n}',dupState.conflicts.length); }
+function openDupModal(){ if(!dupState) return;
+  const ex=dupState.mode==='existing';
+  $('#dup-title').textContent=tt('dup.title');
+  $('#dup-intro').textContent=(ex?tt('dup.intro_existing'):tt('dup.intro_import')).replace('{n}',dupState.conflicts.length);
+  renderDupList(); $('#dup-modal').hidden=false; }
+function closeDupModal(){ $('#dup-modal').hidden=true; dupState=null; }
+function dupAutoMerge(){ if(!dupState) return;
+  dupState.conflicts.forEach(c=>{ if(c.score>=DUP_AUTO) c.decision='merge'; }); renderDupList(); }
+function dupApply(){
+  if(!dupState) return;
+  if(dupState.mode==='existing'){
+    const del=new Set(); let merged=0;
+    dupState.conflicts.forEach(c=>{ if(c.decision==='merge' && !del.has(c.target.id) && !del.has(c.incoming.id)){ mergeRelInto(c.target,c.incoming); del.add(c.incoming.id); merged++; } });
+    if(del.size) DB.releases=releases().filter(r=>!del.has(r.id));
+    save(); renderReleases(); renderRoyalties();
+    toast(tt('dup.applied').replace('{m}',merged).replace('{k}',dupState.conflicts.length-merged).replace('{s}',0));
+  } else {
+    const {conflicts,toAdd,newArtists}=dupState;
+    toAdd.forEach(r=>releases().push(r));
+    let merged=0,kept=0,skipped=0;
+    conflicts.forEach(c=>{ if(c.decision==='merge'){ mergeRelInto(c.target,c.incoming); merged++; }
+      else if(c.decision==='skip'){ skipped++; }
+      else { releases().push(c.incoming); kept++; } });
+    DB.artists=DB.artists||[]; (newArtists||[]).forEach(a=>DB.artists.push(a));
+    save(); renderReleases(); renderArtists(); renderRoyalties();
+    toast(tt('dup.applied').replace('{m}',merged).replace('{k}',toAdd.length+kept).replace('{s}',skipped));
+  }
+  closeDupModal();
+}
+function dupScanExisting(){
+  const rels=releases();
+  if(rels.length<2){ toast(tt('dup.none')); return; }
+  const conflicts=[];
+  for(let i=0;i<rels.length;i++) for(let j=i+1;j<rels.length;j++){
+    const m=relMatch(rels[i],rels[j]);
+    if(m.score>=DUP_ASK) conflicts.push({incoming:rels[j], target:rels[i], kind:'existing-pair', score:m.score, reasons:m.reasons, decision:'keep'});
+  }
+  if(!conflicts.length){ toast(tt('dup.none')); return; }
+  conflicts.sort((a,b)=>b.score-a.score);
+  dupState={mode:'existing', conflicts, toAdd:[], newArtists:[]};
+  openDupModal();
+}
+(function wireDup(){
+  const m=$('#dup-modal'); if(!m) return;
+  $('#dup-close')&&($('#dup-close').onclick=closeDupModal);
+  $('#dup-cancel')&&($('#dup-cancel').onclick=closeDupModal);
+  $('#dup-apply')&&($('#dup-apply').onclick=dupApply);
+  $('#dup-auto')&&($('#dup-auto').onclick=dupAutoMerge);
+  $('#dup-find')&&($('#dup-find').onclick=dupScanExisting);
+  m.addEventListener('change',e=>{ const ip=e.target.closest('input[type="radio"]'); if(!ip||!dupState) return;
+    const row=e.target.closest('.dup-row'); if(!row) return; const i=+row.dataset.i;
+    if(dupState.conflicts[i]){ dupState.conflicts[i].decision=ip.value; dupUpdateSummary(); } });
+  m.addEventListener('click',e=>{ if(e.target.id==='dup-modal') closeDupModal(); });
 })();
 
 /* ============================================================================

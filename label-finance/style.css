@@ -367,6 +367,25 @@ body.dash-edit .dw-width{display:inline-flex;gap:2px;position:absolute;top:8px;l
 .cat-cand{display:flex;align-items:center;gap:9px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2);cursor:pointer;font-size:.9rem}
 .cat-cand input{flex:none}
 .catimp-or{text-align:center;color:var(--muted-2);font-size:.78rem;margin:16px 0 12px;text-transform:uppercase;letter-spacing:.04em}
+/* --- revisione duplicati --- */
+.dup-tools{display:flex;align-items:center;gap:10px;margin:14px 0 12px}
+.dup-list{display:flex;flex-direction:column;gap:10px;max-height:52vh;overflow:auto;padding-right:4px}
+.dup-row{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--panel-2)}
+.dup-pair{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px}
+.dup-side{display:flex;flex-direction:column;gap:2px;min-width:0}
+.dup-side b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dup-side-tag{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted-2)}
+.dup-score{font-weight:800;font-size:1.05rem;padding:5px 12px;border-radius:999px;white-space:nowrap;text-align:center}
+.dup-score.dup-hi{color:#fff;background:var(--accent)}
+.dup-score.dup-mid{color:var(--net);background:color-mix(in srgb,var(--net) 16%,transparent)}
+.dup-score.dup-lo{color:var(--muted);background:color-mix(in srgb,var(--muted) 16%,transparent)}
+.dup-reasons{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.dup-rsn{font-size:.72rem;font-weight:600;color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);border-radius:7px;padding:3px 9px}
+.dup-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:11px}
+.dup-opt{display:inline-flex;align-items:center;gap:6px;font-size:.86rem;color:var(--muted);cursor:pointer;border:1px solid var(--line);border-radius:9px;padding:5px 11px;transition:.15s}
+.dup-opt:has(input:checked){color:var(--text);border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--panel))}
+.dup-opt input{accent-color:var(--accent)}
+@media(max-width:720px){ .dup-pair{grid-template-columns:1fr;gap:8px} .dup-score{justify-self:start} }
 @media(max-width:880px){
   /* le liste a colonne scorrono in orizzontale per restare leggibili e allineate */
   .dbl{overflow-x:auto;-webkit-overflow-scrolling:touch}

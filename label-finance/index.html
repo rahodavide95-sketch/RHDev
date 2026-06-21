@@ -21,7 +21,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=71">
+  <link rel="stylesheet" href="style.css?v=72">
 </head>
 <body class="gated">
 
@@ -492,6 +492,7 @@
             <button class="vm-btn" data-vm="list" title="Elenco">☰</button>
           </div>
           <button class="btn" id="catimp-open" data-i18n="cimp.btn">⤒ Importa catalogo</button>
+          <button class="btn" id="dup-find" data-i18n="dup.find" title="Trova e unisci duplicati">⧉ Trova duplicati</button>
           <button class="btn btn-clear" data-clear="releases" data-i18n="bulk.clear">Svuota</button>
           <button class="btn btn-cols2" data-colcfg="releases" title="Personalizza colonne">⚙</button>
           <button class="btn btn-export" data-export="releases" title="Esporta CSV/Excel/PDF">⤓ Esporta</button>
@@ -1787,6 +1788,28 @@
     </div>
   </div>
 
+  <!-- ======= MODAL: revisione duplicati ======= -->
+  <div class="modal" id="dup-modal" hidden>
+    <div class="modal-card">
+      <div class="modal-head"><h2 id="dup-title">Possibili duplicati</h2>
+        <button class="modal-x" id="dup-close">✕</button></div>
+      <div style="padding:20px">
+        <p class="muted small" id="dup-intro"></p>
+        <div class="dup-tools">
+          <button type="button" class="btn" id="dup-auto" data-i18n="dup.auto">⚡ Unisci automaticamente &gt; 90%</button>
+          <span class="spacer"></span>
+          <span class="muted small" id="dup-summary"></span>
+        </div>
+        <div id="dup-list" class="dup-list"></div>
+        <div class="modal-foot">
+          <button type="button" class="btn" id="dup-cancel" data-i18n="common.cancel">Annulla</button>
+          <span class="spacer"></span>
+          <button type="button" class="btn btn-primary" id="dup-apply" data-i18n="dup.apply">Applica</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ======= MODAL: release ======= -->
   <div class="modal" id="rel-modal" hidden>
     <div class="modal-card">
@@ -1846,11 +1869,11 @@
   <!-- Area di stampa per lo statement royalty (visibile solo in stampa) -->
   <div id="print-area" aria-hidden="true"></div>
 
-  <script src="html2pdf.bundle.min.js?v=71"></script>
-  <script src="app.js?v=71"></script>
-  <script src="config.js?v=71"></script>
-  <script src="i18n.js?v=71"></script>
+  <script src="html2pdf.bundle.min.js?v=72"></script>
+  <script src="app.js?v=72"></script>
+  <script src="config.js?v=72"></script>
+  <script src="i18n.js?v=72"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="sync.js?v=71"></script>
+  <script src="sync.js?v=72"></script>
 </body>
 </html>

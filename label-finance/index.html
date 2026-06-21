@@ -15,20 +15,25 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#0a0b10; --bg2:#0e0f17; --panel:#15161f; --panel-2:#1b1d28; --line:#272a38;
   --text:#edeef4; --muted:#9094a6; --muted-2:#6a6e80;
-  --violet:#a78bfa; --violet-2:#7c3aed; --blue:#60a5fa; --azure:#38bdf8; --green:#4ade80; --beige:#e7dcc8;
+  --violet:#a78bfa; --violet-2:#7c3aed; --blue:#60a5fa; --azure:#38bdf8; --green:#4ade80; --lf:#c4b5fd;
   --radius:16px; --maxw:1180px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
 body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
 a{color:inherit;text-decoration:none}
-h1,h2,h3{font-family:'Syne',sans-serif;letter-spacing:-.02em;line-height:1.1}
+/* titoli in DM Sans (niente font largo) */
+h1,h2,h3,h4{font-family:'DM Sans',sans-serif;font-weight:700;letter-spacing:-.02em;line-height:1.12}
 .wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
+/* LOGO — identico all'app: Syne 600, icona 34px, "Finance" lilla */
+.logo{display:flex;align-items:center;gap:10px;font-family:'Syne',sans-serif;font-weight:600;font-size:1.08rem;letter-spacing:-.04em;color:var(--text)}
+.logo img{width:34px;height:34px;display:block;flex:none}
+.logo .fin{color:var(--lf);font-weight:inherit}
 .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:.8rem;font-weight:600;letter-spacing:.02em;color:var(--violet);
   background:color-mix(in srgb,var(--violet) 13%,transparent);border:1px solid color-mix(in srgb,var(--violet) 30%,transparent);
   padding:6px 13px;border-radius:999px}
@@ -45,14 +50,14 @@ h1,h2,h3{font-family:'Syne',sans-serif;letter-spacing:-.02em;line-height:1.1}
 .nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(14px);background:color-mix(in srgb,var(--bg) 78%,transparent);border-bottom:1px solid transparent;transition:.2s}
 .nav.scrolled{border-bottom-color:var(--line);background:color-mix(in srgb,var(--bg) 92%,transparent)}
 .nav-in{display:flex;align-items:center;gap:18px;height:66px}
-.brand{display:flex;align-items:center;gap:10px;font-family:'Syne',sans-serif;font-weight:700;font-size:1.22rem;letter-spacing:-.04em}
-.brand img{width:30px;height:30px;border-radius:8px}
-.brand .fin{color:var(--violet)}
-.nav-links{display:flex;gap:26px;margin-left:18px}
+.nav-links{display:flex;gap:26px;margin-left:22px}
 .nav-links a{color:var(--muted);font-weight:500;font-size:.95rem;transition:.15s}
 .nav-links a:hover{color:var(--text)}
 .nav-cta{margin-left:auto;display:flex;align-items:center;gap:10px}
 .nav-cta .btn{padding:9px 16px}
+.lang{display:inline-flex;background:color-mix(in srgb,#fff 5%,transparent);border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.lang button{font:inherit;font-weight:600;font-size:.82rem;border:none;background:none;color:var(--muted);padding:7px 11px;cursor:pointer;transition:.15s}
+.lang button.on{background:var(--violet-2);color:#fff}
 
 /* ===== HERO ===== */
 .hero{position:relative;padding:78px 0 60px;text-align:center;overflow:hidden}
@@ -67,8 +72,8 @@ h1,h2,h3{font-family:'Syne',sans-serif;letter-spacing:-.02em;line-height:1.1}
   background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
   background-size:46px 46px;mask-image:radial-gradient(ellipse 70% 55% at 50% 35%,#000 30%,transparent 75%)}
 .hero-in{position:relative;z-index:1;max-width:860px;margin:0 auto}
-.hero h1{font-size:clamp(2.3rem,6vw,4.1rem);font-weight:800;margin:22px 0 18px}
-.hero p.sub{font-size:clamp(1.05rem,2.2vw,1.28rem);color:var(--muted);max-width:680px;margin:0 auto 30px}
+.hero h1{font-size:clamp(2.2rem,5.4vw,3.7rem);font-weight:700;margin:22px 0 18px}
+.hero p.sub{font-size:clamp(1.05rem,2.2vw,1.26rem);color:var(--muted);max-width:680px;margin:0 auto 30px}
 .hero-cta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
 .hero-note{margin-top:18px;font-size:.85rem;color:var(--muted-2);display:flex;gap:18px;justify-content:center;flex-wrap:wrap}
 .hero-note span{display:inline-flex;align-items:center;gap:6px}
@@ -83,7 +88,7 @@ h1,h2,h3{font-family:'Syne',sans-serif;letter-spacing:-.02em;line-height:1.1}
 .mock-bar span{margin-left:12px;font-size:.78rem;color:var(--muted-2)}
 .mock-body{display:grid;grid-template-columns:160px 1fr;min-height:330px}
 .mock-side{border-right:1px solid var(--line);padding:16px 12px;display:flex;flex-direction:column;gap:7px;background:color-mix(in srgb,#fff 2%,transparent)}
-.mock-side b{font-family:'Syne';font-size:.9rem;margin-bottom:6px;padding-left:6px}
+.mock-side .logo{font-size:.95rem;margin:0 0 8px 4px}.mock-side .logo img{width:22px;height:22px}
 .ms-item{font-size:.82rem;color:var(--muted);padding:7px 9px;border-radius:8px;display:flex;align-items:center;gap:8px}
 .ms-item.on{background:color-mix(in srgb,var(--violet) 15%,transparent);color:#fff}
 .ms-dot{width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.6}
@@ -91,7 +96,7 @@ h1,h2,h3{font-family:'Syne',sans-serif;letter-spacing:-.02em;line-height:1.1}
 .mk-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .mk-kpi{background:var(--panel-2);border:1px solid var(--line);border-radius:12px;padding:12px}
 .mk-kpi small{color:var(--muted);font-size:.72rem}
-.mk-kpi b{display:block;font-size:1.2rem;font-family:'Syne';margin-top:3px}
+.mk-kpi b{display:block;font-size:1.2rem;font-weight:700;margin-top:3px}
 .mk-kpi.green b{color:var(--green)}.mk-kpi.red b{color:#fb7185}.mk-kpi.blue b{color:var(--blue)}
 .mk-chart{flex:1;background:var(--panel-2);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;align-items:flex-end;gap:10px;min-height:140px}
 .mk-bar{flex:1;border-radius:6px 6px 0 0;background:linear-gradient(180deg,var(--violet),var(--violet-2));opacity:.9;animation:rise .9s ease both}
@@ -99,13 +104,11 @@ h1,h2,h3{font-family:'Syne',sans-serif;letter-spacing:-.02em;line-height:1.1}
 @keyframes rise{from{height:0 !important;opacity:0}}
 
 /* ===== SECTIONS ===== */
-section{position:relative}
 .section{padding:84px 0}
 .sec-head{text-align:center;max-width:680px;margin:0 auto 50px}
-.sec-head h2{font-size:clamp(1.9rem,4vw,2.7rem);font-weight:800;margin:14px 0 12px}
+.sec-head h2{font-size:clamp(1.8rem,3.6vw,2.5rem);font-weight:700;margin:14px 0 12px}
 .sec-head p{color:var(--muted);font-size:1.06rem}
 
-/* features grid */
 .feat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
 .feat{background:linear-gradient(180deg,var(--panel),color-mix(in srgb,var(--panel) 70%,var(--bg)));border:1px solid var(--line);
   border-radius:var(--radius);padding:22px;transition:.2s}
@@ -115,11 +118,10 @@ section{position:relative}
 .feat h3{font-size:1.06rem;margin-bottom:7px}
 .feat p{color:var(--muted);font-size:.92rem}
 
-/* spotlight rows */
 .spot{display:grid;grid-template-columns:1fr 1fr;gap:54px;align-items:center;padding:46px 0}
 .spot:nth-child(even) .spot-txt{order:2}
 .spot-txt .eyebrow{margin-bottom:16px}
-.spot-txt h3{font-size:clamp(1.6rem,3vw,2.1rem);font-weight:800;margin-bottom:14px}
+.spot-txt h3{font-size:clamp(1.5rem,2.8vw,2rem);font-weight:700;margin-bottom:14px}
 .spot-txt p{color:var(--muted);font-size:1.04rem;margin-bottom:18px}
 .spot-list{list-style:none;display:flex;flex-direction:column;gap:11px}
 .spot-list li{display:flex;gap:11px;align-items:flex-start;font-size:.98rem}
@@ -127,41 +129,39 @@ section{position:relative}
   color:var(--green);display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;margin-top:1px}
 .spot-vis{border-radius:var(--radius);border:1px solid var(--line);background:linear-gradient(160deg,var(--panel),var(--bg2));
   padding:24px;min-height:280px;box-shadow:0 30px 70px -34px rgba(0,0,0,.8);display:flex;flex-direction:column;gap:12px}
-.vis-title{font-family:'Syne';font-weight:700;font-size:.95rem;color:var(--muted);display:flex;align-items:center;gap:8px}
+.vis-title{font-weight:700;font-size:.95rem;color:var(--muted);display:flex;align-items:center;gap:8px}
 .pay-row{display:flex;align-items:center;justify-content:space-between;background:var(--panel-2);border:1px solid var(--line);border-radius:11px;padding:11px 14px}
 .pay-row .who{display:flex;align-items:center;gap:10px;font-weight:600}
-.av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--violet),var(--blue));display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;color:#fff}
-.pay-row .amt{font-family:'Syne';font-weight:700;color:var(--green)}
+.av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--violet),var(--blue));display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:#fff}
+.pay-row .amt{font-weight:700;color:var(--green)}
 .tag{font-size:.72rem;font-weight:700;padding:3px 9px;border-radius:7px}
 .tag.ok{color:var(--green);background:color-mix(in srgb,var(--green) 16%,transparent)}
 .tag.wait{color:var(--azure);background:color-mix(in srgb,var(--azure) 16%,transparent)}
-.sign-pad{flex:1;border:1.5px dashed var(--line);border-radius:11px;display:flex;align-items:center;justify-content:center;color:var(--muted-2);font-style:italic;position:relative;min-height:90px}
-.sign-scribble{font-family:'Syne';font-size:1.7rem;color:var(--violet);transform:rotate(-6deg)}
+.sign-pad{flex:1;border:1.5px dashed var(--line);border-radius:11px;display:flex;align-items:center;justify-content:center;color:var(--muted-2);min-height:90px}
+.sign-scribble{font-family:'Syne';font-size:1.5rem;color:var(--violet);transform:rotate(-6deg)}
 .ai-msg{background:var(--panel-2);border:1px solid var(--line);border-left:3px solid var(--violet);border-radius:10px;padding:12px 14px;font-size:.92rem}
 .ai-msg .who{font-size:.74rem;color:var(--violet);font-weight:700;margin-bottom:5px;display:flex;align-items:center;gap:7px}
 
-/* differentiators */
 .diff{background:var(--bg2)}
 .diff-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
 .diff-card{text-align:center;padding:10px}
-.diff-num{font-family:'Syne';font-size:1.5rem;font-weight:800;color:var(--violet);margin-bottom:8px}
+.diff-num{font-size:1.4rem;font-weight:700;color:var(--violet);margin-bottom:8px}
 .diff-card h4{font-size:1rem;margin-bottom:6px}
 .diff-card p{color:var(--muted);font-size:.88rem}
 
-/* pricing */
 .toggle{display:inline-flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:5px;margin:0 auto;font-size:.9rem;font-weight:600}
 .toggle button{font:inherit;font-weight:600;border:none;background:none;color:var(--muted);padding:8px 18px;border-radius:999px;cursor:pointer;transition:.15s}
 .toggle button.on{background:var(--violet-2);color:#fff}
 .toggle .save{color:var(--green);font-size:.78rem;font-weight:700}
 .price-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;align-items:stretch;margin-top:40px}
-.plan{display:flex;flex-direction:column;background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--line);border-radius:18px;padding:26px}
-.plan.pop{border-color:var(--violet);box-shadow:0 30px 70px -30px rgba(124,58,237,.55);position:relative}
-.plan.pop::before{content:'⭐ Consigliato';position:absolute;top:-13px;left:50%;transform:translateX(-50%);
-  background:linear-gradient(120deg,var(--violet-2),var(--violet));color:#fff;font-size:.74rem;font-weight:700;padding:5px 14px;border-radius:999px}
+.plan{position:relative;display:flex;flex-direction:column;background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--line);border-radius:18px;padding:26px}
+.plan.pop{border-color:var(--violet);box-shadow:0 30px 70px -30px rgba(124,58,237,.55)}
+.pop-badge{position:absolute;top:-13px;left:50%;transform:translateX(-50%);
+  background:linear-gradient(120deg,var(--violet-2),var(--violet));color:#fff;font-size:.74rem;font-weight:700;padding:5px 14px;border-radius:999px;white-space:nowrap}
 .plan h3{font-size:1.25rem;margin-bottom:4px}
 .plan .desc{color:var(--muted);font-size:.88rem;min-height:38px}
-.plan .price{font-family:'Syne';font-weight:800;font-size:2.6rem;margin:14px 0 2px;display:flex;align-items:baseline;gap:4px}
-.plan .price .cur{font-size:1.3rem}.plan .price .per{font-size:.95rem;color:var(--muted);font-weight:500;font-family:'DM Sans'}
+.plan .price{font-weight:700;font-size:2.4rem;margin:14px 0 2px;display:flex;align-items:baseline;gap:4px}
+.plan .price .cur{font-size:1.3rem}.plan .price .per{font-size:.95rem;color:var(--muted);font-weight:500}
 .plan .bill{font-size:.8rem;color:var(--muted-2);min-height:18px}
 .plan ul{list-style:none;display:flex;flex-direction:column;gap:10px;margin:20px 0 24px}
 .plan li{display:flex;gap:10px;font-size:.92rem;color:var(--text)}
@@ -170,15 +170,13 @@ section{position:relative}
 .plan li.off .ck{background:color-mix(in srgb,var(--muted) 14%,transparent);color:var(--muted-2)}
 .plan .btn{margin-top:auto;width:100%}
 
-/* final CTA */
 .cta{padding:90px 0}
 .cta-box{position:relative;overflow:hidden;text-align:center;border-radius:24px;padding:60px 30px;
   background:linear-gradient(120deg,color-mix(in srgb,var(--violet-2) 30%,var(--panel)),color-mix(in srgb,var(--blue) 22%,var(--panel)));
   border:1px solid color-mix(in srgb,var(--violet) 35%,var(--line))}
-.cta-box h2{font-size:clamp(1.9rem,4vw,2.8rem);font-weight:800;margin-bottom:14px}
+.cta-box h2{font-size:clamp(1.8rem,3.6vw,2.6rem);font-weight:700;margin-bottom:14px}
 .cta-box p{color:var(--muted);font-size:1.1rem;max-width:560px;margin:0 auto 28px}
 
-/* footer */
 footer{border-top:1px solid var(--line);padding:50px 0 34px;background:var(--bg2)}
 .foot-top{display:flex;justify-content:space-between;gap:30px;flex-wrap:wrap;margin-bottom:30px}
 .foot-brand{max-width:280px}
@@ -189,7 +187,6 @@ footer{border-top:1px solid var(--line);padding:50px 0 34px;background:var(--bg2
 .foot-col a:hover{color:var(--text)}
 .foot-bot{border-top:1px solid var(--line);padding-top:20px;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;color:var(--muted-2);font-size:.84rem}
 
-.menu-btn{display:none;background:none;border:1px solid var(--line);color:var(--text);border-radius:10px;width:40px;height:38px;font-size:1.2rem;cursor:pointer}
 @media(max-width:880px){
   .nav-links{display:none}
   .feat-grid{grid-template-columns:repeat(2,1fr)}
@@ -208,60 +205,60 @@ footer{border-top:1px solid var(--line);padding:50px 0 34px;background:var(--bg2
 <!-- ===== NAV ===== -->
 <header class="nav" id="nav">
   <div class="wrap nav-in">
-    <a class="brand" href="#top"><img src="icon.png?v=3" alt="">Label<span class="fin">Finance</span></a>
+    <a class="logo" href="#top"><img src="icon.png?v=3" alt="">Label<span class="fin">Finance</span></a>
     <nav class="nav-links">
-      <a href="#features">Funzionalità</a>
-      <a href="#how">Come funziona</a>
-      <a href="#pricing">Prezzi</a>
-      <a href="#why">Perché noi</a>
+      <a href="#features" data-i18n="nav.features">Funzionalità</a>
+      <a href="#how" data-i18n="nav.how">Come funziona</a>
+      <a href="#pricing" data-i18n="nav.pricing">Prezzi</a>
+      <a href="#why" data-i18n="nav.why">Perché noi</a>
     </nav>
     <div class="nav-cta">
-      <a class="btn btn-ghost" href="app.html">Accedi</a>
-      <a class="btn btn-primary" href="app.html">Inizia gratis</a>
+      <div class="lang" role="group" aria-label="Lingua / Language">
+        <button data-lang-opt="it">IT</button><button data-lang-opt="en">EN</button>
+      </div>
+      <a class="btn btn-ghost" href="app.html" data-i18n="nav.login">Accedi</a>
+      <a class="btn btn-primary" href="app.html" data-i18n="nav.start">Inizia gratis</a>
     </div>
   </div>
 </header>
 
 <!-- ===== HERO ===== -->
 <section class="hero" id="top">
-  <div class="orbs" aria-hidden="true">
-    <span class="orb o1"></span><span class="orb o2"></span><span class="orb o3"></span><span class="orb o4"></span>
-  </div>
+  <div class="orbs" aria-hidden="true"><span class="orb o1"></span><span class="orb o2"></span><span class="orb o3"></span><span class="orb o4"></span></div>
   <div class="hero-grid-bg" aria-hidden="true"></div>
   <div class="wrap hero-in">
-    <span class="eyebrow">🎚️ Il gestionale all-in-one per etichette indipendenti</span>
-    <h1>Tutto il business della tua etichetta, <span class="grad">in un solo posto.</span></h1>
-    <p class="sub">Royalty, contratti firmati digitalmente, merch, finanze e un assistente AI. Dal mixaggio ai pagamenti — senza fogli Excel.</p>
+    <span class="eyebrow" data-i18n="hero.badge">🎚️ Il gestionale all-in-one per etichette indipendenti</span>
+    <h1 data-i18n-html="hero.h1">Tutto il business della tua etichetta, <span class="grad">in un solo posto.</span></h1>
+    <p class="sub" data-i18n="hero.sub">Royalty, contratti firmati digitalmente, merch, finanze e un assistente AI. Dalla produzione ai pagamenti — senza fogli Excel.</p>
     <div class="hero-cta">
-      <a class="btn btn-primary btn-lg" href="app.html">Inizia gratis — 14 giorni</a>
-      <a class="btn btn-ghost btn-lg" href="#features">Scopri le funzionalità</a>
+      <a class="btn btn-primary btn-lg" href="app.html" data-i18n="hero.cta1">Inizia gratis — 14 giorni</a>
+      <a class="btn btn-ghost btn-lg" href="#features" data-i18n="hero.cta2">Scopri le funzionalità</a>
     </div>
     <div class="hero-note">
-      <span><b>✓</b> Nessuna carta richiesta</span>
-      <span><b>✓</b> Offline-first, su ogni dispositivo</span>
-      <span><b>✓</b> Italiano / English</span>
+      <span><b>✓</b> <span data-i18n="hero.n1">Nessuna carta richiesta</span></span>
+      <span><b>✓</b> <span data-i18n="hero.n2">Offline-first, su ogni dispositivo</span></span>
+      <span><b>✓</b> <span data-i18n="hero.n3">Italiano / English</span></span>
     </div>
   </div>
 
-  <!-- app mockup -->
   <div class="wrap"><div class="mock">
     <div class="mock-bar"><i></i><i></i><i></i><span>app.labelfinance — Dashboard</span></div>
     <div class="mock-body">
       <aside class="mock-side">
-        <b>Label<span style="color:var(--violet)">Finance</span></b>
+        <span class="logo"><img src="icon.png?v=3" alt="">Label<span class="fin">Finance</span></span>
         <span class="ms-item on"><span class="ms-dot"></span>Dashboard</span>
-        <span class="ms-item"><span class="ms-dot"></span>Movimenti</span>
+        <span class="ms-item"><span class="ms-dot"></span><span data-i18n="nav_mock.tx">Movimenti</span></span>
         <span class="ms-item"><span class="ms-dot"></span>Royalty</span>
-        <span class="ms-item"><span class="ms-dot"></span>Discografia</span>
-        <span class="ms-item"><span class="ms-dot"></span>Contratti</span>
-        <span class="ms-item"><span class="ms-dot"></span>Artisti</span>
+        <span class="ms-item"><span class="ms-dot"></span><span data-i18n="nav_mock.cat">Discografia</span></span>
+        <span class="ms-item"><span class="ms-dot"></span><span data-i18n="nav_mock.con">Contratti</span></span>
+        <span class="ms-item"><span class="ms-dot"></span><span data-i18n="nav_mock.art">Artisti</span></span>
         <span class="ms-item"><span class="ms-dot"></span>Merch</span>
       </aside>
       <div class="mock-main">
         <div class="mk-kpis">
-          <div class="mk-kpi green"><small>Entrate</small><b>€ 8.420</b></div>
-          <div class="mk-kpi red"><small>Uscite</small><b>€ 2.180</b></div>
-          <div class="mk-kpi blue"><small>Margine netto</small><b>€ 6.240</b></div>
+          <div class="mk-kpi green"><small data-i18n="kpi.in">Entrate</small><b>€ 8.420</b></div>
+          <div class="mk-kpi red"><small data-i18n="kpi.out">Uscite</small><b>€ 2.180</b></div>
+          <div class="mk-kpi blue"><small data-i18n="kpi.net">Margine netto</small><b>€ 6.240</b></div>
         </div>
         <div class="mk-chart">
           <span class="mk-bar" style="height:48%"></span><span class="mk-bar b" style="height:30%"></span>
@@ -279,19 +276,19 @@ footer{border-top:1px solid var(--line);padding:50px 0 34px;background:var(--bg2
 <section class="section" id="features">
   <div class="wrap">
     <div class="sec-head">
-      <span class="eyebrow">Funzionalità</span>
-      <h2>Una sola app per <span class="grad">l'intero business</span></h2>
-      <p>Gli altri fanno solo le royalty <i>oppure</i> solo i contratti. Label Finance copre tutto, dall'incasso al pagamento dell'artista.</p>
+      <span class="eyebrow" data-i18n="features.badge">Funzionalità</span>
+      <h2 data-i18n-html="features.h2">Una sola app per <span class="grad">l'intero business</span></h2>
+      <p data-i18n="features.sub">Gli altri fanno solo le royalty oppure solo i contratti. Label Finance copre tutto, dall'incasso al pagamento dell'artista.</p>
     </div>
     <div class="feat-grid">
-      <div class="feat"><div class="feat-ico">📊</div><h3>Dashboard & Finanze</h3><p>Entrate, uscite e margine con variazione % vs periodo. Grafici e cruscotto personalizzabile.</p></div>
-      <div class="feat"><div class="feat-ico">💸</div><h3>Royalty & Recoupment</h3><p>Calcolo automatico per artista, quote per release e override per singola traccia (ISRC).</p></div>
-      <div class="feat"><div class="feat-ico">📄</div><h3>Contratti & Firma</h3><p>Genera il contratto con carta intestata, invialo e ricevilo firmato in tempo reale.</p></div>
-      <div class="feat"><div class="feat-ico">📥</div><h3>Import CSV</h3><p>Carica i report di vendita da Bandcamp o dal distributore: le colonne si mappano da sole.</p></div>
-      <div class="feat"><div class="feat-ico">👥</div><h3>Rubrica Artisti</h3><p>Roster con contatti, IBAN e split: precompila contratti e pagamenti in automatico.</p></div>
-      <div class="feat"><div class="feat-ico">👕</div><h3>Merch</h3><p>Catalogo, vendite con un clic, ricavi, margini, best-seller e avviso scorte basse.</p></div>
-      <div class="feat"><div class="feat-ico">🤖</div><h3>Assistente AI</h3><p>Un consulente sempre a portata: analizza i dati e dà consigli concreti, esportabili in PDF.</p></div>
-      <div class="feat"><div class="feat-ico">🏢</div><h3>Multi-etichetta</h3><p>Più etichette da un solo account, sync cloud su tutti i dispositivi, PWA installabile.</p></div>
+      <div class="feat"><div class="feat-ico">📊</div><h3 data-i18n="f1.t">Dashboard & Finanze</h3><p data-i18n="f1.d">Entrate, uscite e margine con variazione % vs periodo. Grafici e cruscotto personalizzabile.</p></div>
+      <div class="feat"><div class="feat-ico">💸</div><h3 data-i18n="f2.t">Royalty & Recoupment</h3><p data-i18n="f2.d">Calcolo automatico per artista, quote per release e override per singola traccia (ISRC).</p></div>
+      <div class="feat"><div class="feat-ico">📄</div><h3 data-i18n="f3.t">Contratti & Firma</h3><p data-i18n="f3.d">Genera il contratto con carta intestata, invialo e ricevilo firmato in tempo reale.</p></div>
+      <div class="feat"><div class="feat-ico">📥</div><h3 data-i18n="f4.t">Import CSV</h3><p data-i18n="f4.d">Carica i report di vendita dal tuo store o distributore: le colonne si mappano da sole.</p></div>
+      <div class="feat"><div class="feat-ico">👥</div><h3 data-i18n="f5.t">Rubrica Artisti</h3><p data-i18n="f5.d">Roster con contatti, IBAN e split: precompila contratti e pagamenti in automatico.</p></div>
+      <div class="feat"><div class="feat-ico">👕</div><h3 data-i18n="f6.t">Merch</h3><p data-i18n="f6.d">Catalogo, vendite con un clic, ricavi, margini, best-seller e avviso scorte basse.</p></div>
+      <div class="feat"><div class="feat-ico">🤖</div><h3 data-i18n="f7.t">Assistente AI</h3><p data-i18n="f7.d">Un consulente sempre a portata: analizza i dati e dà consigli concreti, esportabili in PDF.</p></div>
+      <div class="feat"><div class="feat-ico">🏢</div><h3 data-i18n="f8.t">Multi-etichetta</h3><p data-i18n="f8.d">Più etichette da un solo account, sync cloud su tutti i dispositivi, PWA installabile.</p></div>
     </div>
   </div>
 </section>
@@ -300,62 +297,62 @@ footer{border-top:1px solid var(--line);padding:50px 0 34px;background:var(--bg2
 <section class="section" id="how" style="padding-top:20px">
   <div class="wrap">
     <div class="sec-head">
-      <span class="eyebrow">Come funziona</span>
-      <h2>Le cose che ti fanno <span class="grad">risparmiare ore</span></h2>
+      <span class="eyebrow" data-i18n="how.badge">Come funziona</span>
+      <h2 data-i18n-html="how.h2">Le cose che ti fanno <span class="grad">risparmiare ore</span></h2>
     </div>
 
     <div class="spot">
       <div class="spot-txt">
-        <span class="eyebrow">💸 Royalty</span>
-        <h3>Quanto spetta a ogni artista? Lo sai in 3 secondi.</h3>
-        <p>Imposta le quote una volta e Label Finance calcola da solo le royalty da ogni vendita, anche con featuring e split diversi per singola traccia.</p>
+        <span class="eyebrow" data-i18n="s1.badge">💸 Royalty</span>
+        <h3 data-i18n="s1.t">Quanto spetta a ogni artista? Lo sai in pochi secondi.</h3>
+        <p data-i18n="s1.p">Imposta le quote una volta e Label Finance calcola da solo le royalty da ogni vendita, anche con collaborazioni e split diversi per singola traccia.</p>
         <ul class="spot-list">
-          <li><span class="ck">✓</span> Quote per release e override per ISRC</li>
-          <li><span class="ck">✓</span> Recoupment: vedi quanto manca e quanto pagare davvero</li>
-          <li><span class="ck">✓</span> Statement per artista pronti da inviare</li>
+          <li><span class="ck">✓</span> <span data-i18n="s1.l1">Quote per release e override per ISRC</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="s1.l2">Recoupment: vedi quanto manca e quanto pagare davvero</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="s1.l3">Statement per artista pronti da inviare</span></li>
         </ul>
       </div>
       <div class="spot-vis">
-        <div class="vis-title">💸 Pagamenti del periodo</div>
-        <div class="pay-row"><div class="who"><span class="av">RA</span> Raho</div><span class="amt">€ 1.240</span></div>
-        <div class="pay-row"><div class="who"><span class="av">JC</span> Jacom</div><span class="amt">€ 980</span></div>
-        <div class="pay-row"><div class="who"><span class="av">NK</span> Nova K.</div><span class="amt">€ 460</span></div>
+        <div class="vis-title">💸 <span data-i18n="s1.vis">Pagamenti del periodo</span></div>
+        <div class="pay-row"><div class="who"><span class="av">A1</span> <span data-i18n="art1">Artista 1</span></div><span class="amt">€ 1.240</span></div>
+        <div class="pay-row"><div class="who"><span class="av">A2</span> <span data-i18n="art2">Artista 2</span></div><span class="amt">€ 980</span></div>
+        <div class="pay-row"><div class="who"><span class="av">A3</span> <span data-i18n="art3">Artista 3</span></div><span class="amt">€ 460</span></div>
       </div>
     </div>
 
     <div class="spot">
       <div class="spot-txt">
-        <span class="eyebrow">📄 Firma digitale</span>
-        <h3>Manda il contratto. Lui firma dal telefono. Tu lo ricevi firmato.</h3>
-        <p>Generi un contratto professionale con il logo dell'etichetta, decidi la ripartizione e lo invii. L'artista legge, firma (o rifiuta indicando il motivo) e l'esito torna nel sistema senza ricaricare.</p>
+        <span class="eyebrow" data-i18n="s2.badge">📄 Firma digitale</span>
+        <h3 data-i18n="s2.t">Manda il contratto. Lui firma dal telefono. Tu lo ricevi firmato.</h3>
+        <p data-i18n="s2.p">Generi un contratto professionale con il logo dell'etichetta, decidi la ripartizione e lo invii. L'artista legge, firma (o rifiuta indicando il motivo) e l'esito torna nel sistema senza ricaricare.</p>
         <ul class="spot-list">
-          <li><span class="ck">✓</span> Carta intestata + testo legalmente strutturato (GDPR)</li>
-          <li><span class="ck">✓</span> Firma in-app o invio per firma a distanza</li>
-          <li><span class="ck">✓</span> Stato Firmato / In attesa / Rifiutato in tempo reale</li>
+          <li><span class="ck">✓</span> <span data-i18n="s2.l1">Carta intestata + testo legalmente strutturato (GDPR)</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="s2.l2">Firma in-app o invio per firma a distanza</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="s2.l3">Stato Firmato / In attesa / Rifiutato in tempo reale</span></li>
         </ul>
       </div>
       <div class="spot-vis">
-        <div class="vis-title">📄 Release Authorization <span class="tag wait" style="margin-left:auto">In attesa</span></div>
-        <div class="pay-row"><div class="who"><span class="av">LB</span> Per l'etichetta</div><span class="tag ok">Firmato</span></div>
+        <div class="vis-title">📄 <span data-i18n="s2.vis">Autorizzazione alla pubblicazione</span> <span class="tag wait" style="margin-left:auto" data-i18n="tag.wait">In attesa</span></div>
+        <div class="pay-row"><div class="who"><span class="av">★</span> <span data-i18n="s2.label">Per l'etichetta</span></div><span class="tag ok" data-i18n="tag.ok">Firmato</span></div>
         <div class="sign-pad"><span class="sign-scribble">✒ firma…</span></div>
       </div>
     </div>
 
     <div class="spot">
       <div class="spot-txt">
-        <span class="eyebrow">🤖 Assistente AI</span>
-        <h3>Un consulente per la tua etichetta, 24/7.</h3>
-        <p>La bolla AI conosce la sezione in cui ti trovi e i tuoi numeri: ti dice dove perdi margine, chi devi pagare, cosa spingere nel merch e cosa aspettarti nei prossimi mesi.</p>
+        <span class="eyebrow" data-i18n="s3.badge">🤖 Assistente AI</span>
+        <h3 data-i18n="s3.t">Un consulente per la tua etichetta, 24/7.</h3>
+        <p data-i18n="s3.p">La bolla AI conosce la sezione in cui ti trovi e i tuoi numeri: ti dice dove perdi margine, chi devi pagare, cosa spingere nel merch e cosa aspettarti nei prossimi mesi.</p>
         <ul class="spot-list">
-          <li><span class="ck">✓</span> Pre-prompt contestuali alla sezione attiva</li>
-          <li><span class="ck">✓</span> Analisi concrete e prioritizzate</li>
-          <li><span class="ck">✓</span> Esportazione in PDF</li>
+          <li><span class="ck">✓</span> <span data-i18n="s3.l1">Pre-prompt contestuali alla sezione attiva</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="s3.l2">Analisi concrete e prioritizzate</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="s3.l3">Esportazione in PDF</span></li>
         </ul>
       </div>
       <div class="spot-vis">
-        <div class="vis-title">🤖 Assistente</div>
-        <div class="ai-msg"><div class="who">✦ Analisi</div>Il margine è in crescita (+18%). Bandcamp rende più di Beatport: sposta lì la promo. <b style="color:var(--azure)">2 artisti</b> non hanno ancora recuperato l'anticipo.</div>
-        <div class="ai-msg"><div class="who">✦ Prossimo passo</div>Invia lo statement a Raho e Jacom: pagamento stimato € 2.220.</div>
+        <div class="vis-title">🤖 <span data-i18n="s3.vis">Assistente</span></div>
+        <div class="ai-msg"><div class="who">✦ <span data-i18n="s3.m1h">Analisi</span></div><span data-i18n="s3.m1">Il margine è in crescita (+18%). Una piattaforma rende più delle altre: concentra lì la promo. Due artisti non hanno ancora recuperato l'anticipo.</span></div>
+        <div class="ai-msg"><div class="who">✦ <span data-i18n="s3.m2h">Prossimo passo</span></div><span data-i18n="s3.m2">Invia lo statement agli artisti con saldo aperto: pagamento stimato € 2.220.</span></div>
       </div>
     </div>
   </div>
@@ -365,15 +362,15 @@ footer{border-top:1px solid var(--line);padding:50px 0 34px;background:var(--bg2
 <section class="section diff" id="why">
   <div class="wrap">
     <div class="sec-head">
-      <span class="eyebrow">Perché Label Finance</span>
-      <h2>Pensato per chi fa musica, <span class="grad">non per commercialisti</span></h2>
+      <span class="eyebrow" data-i18n="why.badge">Perché Label Finance</span>
+      <h2 data-i18n-html="why.h2">Pensato per chi fa musica, <span class="grad">non per commercialisti</span></h2>
     </div>
     <div class="diff-grid">
-      <div class="diff-card"><div class="diff-num">01</div><h4>Tutto-in-uno</h4><p>L'intero business in un posto, non dieci strumenti scollegati.</p></div>
-      <div class="diff-card"><div class="diff-num">02</div><h4>Firma integrata</h4><p>Contratti firmati digitalmente, con ritorno automatico nel sistema.</p></div>
-      <div class="diff-card"><div class="diff-num">03</div><h4>AI dedicata</h4><p>Un assistente pensato per le etichette. Nessun competitor ce l'ha.</p></div>
-      <div class="diff-card"><div class="diff-num">04</div><h4>Semplice e bello</h4><p>Moderno, chiaro, veloce. Zero curva d'apprendimento.</p></div>
-      <div class="diff-card"><div class="diff-num">05</div><h4>Offline-first</h4><p>I tuoi dati sempre con te, sincronizzati su ogni dispositivo.</p></div>
+      <div class="diff-card"><div class="diff-num">01</div><h4 data-i18n="w1.t">Tutto-in-uno</h4><p data-i18n="w1.d">L'intero business in un posto, non dieci strumenti scollegati.</p></div>
+      <div class="diff-card"><div class="diff-num">02</div><h4 data-i18n="w2.t">Firma integrata</h4><p data-i18n="w2.d">Contratti firmati digitalmente, con ritorno automatico nel sistema.</p></div>
+      <div class="diff-card"><div class="diff-num">03</div><h4 data-i18n="w3.t">AI dedicata</h4><p data-i18n="w3.d">Un assistente pensato per le etichette. Nessun competitor ce l'ha.</p></div>
+      <div class="diff-card"><div class="diff-num">04</div><h4 data-i18n="w4.t">Semplice e bello</h4><p data-i18n="w4.d">Moderno, chiaro, veloce. Zero curva d'apprendimento.</p></div>
+      <div class="diff-card"><div class="diff-num">05</div><h4 data-i18n="w5.t">Offline-first</h4><p data-i18n="w5.d">I tuoi dati sempre con te, sincronizzati su ogni dispositivo.</p></div>
     </div>
   </div>
 </section>
@@ -382,65 +379,66 @@ footer{border-top:1px solid var(--line);padding:50px 0 34px;background:var(--bg2
 <section class="section" id="pricing">
   <div class="wrap">
     <div class="sec-head">
-      <span class="eyebrow">Prezzi</span>
-      <h2>Scegli il piano <span class="grad">della tua crescita</span></h2>
-      <p>14 giorni di prova gratuita sul piano Studio. Disdici quando vuoi.</p>
+      <span class="eyebrow" data-i18n="pricing.badge">Prezzi</span>
+      <h2 data-i18n-html="pricing.h2">Scegli il piano <span class="grad">della tua crescita</span></h2>
+      <p data-i18n="pricing.sub">14 giorni di prova gratuita sul piano Studio. Disdici quando vuoi.</p>
       <div style="margin-top:22px">
         <div class="toggle" id="billing">
-          <button data-bill="month" class="on">Mensile</button>
-          <button data-bill="year">Annuale <span class="save">−30%</span></button>
+          <button data-bill="month" class="on" data-i18n="bill.month">Mensile</button>
+          <button data-bill="year">​<span data-i18n="bill.year">Annuale</span> <span class="save">−30%</span></button>
         </div>
       </div>
     </div>
     <div class="price-grid">
       <div class="plan">
         <h3>Starter</h3>
-        <p class="desc">Per chi parte e vuole ordine fin da subito.</p>
-        <div class="price"><span class="cur">€</span><span class="amount" data-m="9" data-y="6">9</span><span class="per">/mese</span></div>
-        <div class="bill" data-billnote>fatturazione mensile</div>
+        <p class="desc" data-i18n="p1.desc">Per chi parte e vuole ordine fin da subito.</p>
+        <div class="price"><span class="cur">€</span><span class="amount" data-m="9" data-y="6">9</span><span class="per" data-i18n="per.mo">/mese</span></div>
+        <div class="bill" data-billnote></div>
         <ul>
-          <li><span class="ck">✓</span> 1 etichetta</li>
-          <li><span class="ck">✓</span> Finanze, royalty, recoupment</li>
-          <li><span class="ck">✓</span> Import CSV, dashboard, PDF</li>
-          <li><span class="ck">✓</span> Artisti, Task, Merch</li>
-          <li><span class="ck">✓</span> Contratti + firma (base)</li>
-          <li class="off"><span class="ck">×</span> Assistente AI</li>
-          <li class="off"><span class="ck">×</span> Dashboard personalizzabile</li>
+          <li><span class="ck">✓</span> <span data-i18n="p1.f1">1 etichetta</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="p1.f2">Finanze, royalty, recoupment</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="p1.f3">Import CSV, dashboard, PDF</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="p1.f4">Artisti, Task, Merch</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="p1.f5">Contratti + firma (base)</span></li>
+          <li class="off"><span class="ck">×</span> <span data-i18n="p1.f6">Assistente AI</span></li>
+          <li class="off"><span class="ck">×</span> <span data-i18n="p1.f7">Dashboard personalizzabile</span></li>
         </ul>
-        <a class="btn btn-ghost" href="app.html">Inizia con Starter</a>
+        <a class="btn btn-ghost" href="app.html" data-i18n="p1.cta">Inizia con Starter</a>
       </div>
 
       <div class="plan pop">
+        <span class="pop-badge" data-i18n="price.reco">⭐ Consigliato</span>
         <h3>Studio</h3>
-        <p class="desc">Il piano con i "wow": AI e personalizzazione.</p>
-        <div class="price"><span class="cur">€</span><span class="amount" data-m="19" data-y="13">19</span><span class="per">/mese</span></div>
-        <div class="bill" data-billnote>fatturazione mensile</div>
+        <p class="desc" data-i18n="p2.desc">Il piano con i "wow": AI e personalizzazione.</p>
+        <div class="price"><span class="cur">€</span><span class="amount" data-m="19" data-y="13">19</span><span class="per" data-i18n="per.mo">/mese</span></div>
+        <div class="bill" data-billnote></div>
         <ul>
-          <li><span class="ck">✓</span> Fino a 3 etichette</li>
-          <li><span class="ck">✓</span> Tutto di Starter</li>
-          <li><span class="ck">✓</span> <b>Assistente AI</b></li>
-          <li><span class="ck">✓</span> <b>Dashboard personalizzabile</b></li>
-          <li><span class="ck">✓</span> Contratti illimitati + email automatica</li>
-          <li><span class="ck">✓</span> Export Excel + branding</li>
-          <li><span class="ck">✓</span> Statement royalty per artista</li>
+          <li><span class="ck">✓</span> <span data-i18n="p2.f1">Fino a 3 etichette</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="p2.f2">Tutto di Starter</span></li>
+          <li><span class="ck">✓</span> <b data-i18n="p2.f3">Assistente AI</b></li>
+          <li><span class="ck">✓</span> <b data-i18n="p2.f4">Dashboard personalizzabile</b></li>
+          <li><span class="ck">✓</span> <span data-i18n="p2.f5">Contratti illimitati + email automatica</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="p2.f6">Export Excel + branding</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="p2.f7">Statement royalty per artista</span></li>
         </ul>
-        <a class="btn btn-primary" href="app.html">Prova gratis 14 giorni</a>
+        <a class="btn btn-primary" href="app.html" data-i18n="p2.cta">Prova gratis 14 giorni</a>
       </div>
 
       <div class="plan">
         <h3>Agency</h3>
-        <p class="desc">Per manager e agenzie con più artisti.</p>
-        <div class="price"><span class="cur">€</span><span class="amount" data-m="49" data-y="34">49</span><span class="per">/mese</span></div>
-        <div class="bill" data-billnote>fatturazione mensile</div>
+        <p class="desc" data-i18n="p3.desc">Per manager e agenzie con più artisti.</p>
+        <div class="price"><span class="cur">€</span><span class="amount" data-m="49" data-y="34">49</span><span class="per" data-i18n="per.mo">/mese</span></div>
+        <div class="bill" data-billnote></div>
         <ul>
-          <li><span class="ck">✓</span> Etichette illimitate</li>
-          <li><span class="ck">✓</span> Tutto di Studio</li>
-          <li><span class="ck">✓</span> Team / accessi multipli</li>
-          <li><span class="ck">✓</span> Automazioni & audit log</li>
-          <li><span class="ck">✓</span> Onboarding dedicato</li>
-          <li><span class="ck">✓</span> Supporto prioritario</li>
+          <li><span class="ck">✓</span> <span data-i18n="p3.f1">Etichette illimitate</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="p3.f2">Tutto di Studio</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="p3.f3">Team / accessi multipli</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="p3.f4">Automazioni & audit log</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="p3.f5">Onboarding dedicato</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="p3.f6">Supporto prioritario</span></li>
         </ul>
-        <a class="btn btn-ghost" href="app.html">Contatta le vendite</a>
+        <a class="btn btn-ghost" href="app.html" data-i18n="p3.cta">Contatta le vendite</a>
       </div>
     </div>
   </div>
@@ -451,11 +449,11 @@ footer{border-top:1px solid var(--line);padding:50px 0 34px;background:var(--bg2
   <div class="wrap"><div class="cta-box">
     <div class="orbs" aria-hidden="true"><span class="orb o3" style="opacity:.3"></span></div>
     <div style="position:relative;z-index:1">
-      <h2>La tua etichetta, finalmente sotto controllo.</h2>
-      <p>Smetti di litigare con Excel. Prova Label Finance gratis per 14 giorni — nessuna carta richiesta.</p>
+      <h2 data-i18n="cta.t">La tua etichetta, finalmente sotto controllo.</h2>
+      <p data-i18n="cta.p">Smetti di litigare con Excel. Prova Label Finance gratis per 14 giorni — nessuna carta richiesta.</p>
       <div class="hero-cta">
-        <a class="btn btn-primary btn-lg" href="app.html">Inizia gratis</a>
-        <a class="btn btn-ghost btn-lg" href="app.html">Accedi al tuo account</a>
+        <a class="btn btn-primary btn-lg" href="app.html" data-i18n="cta.b1">Inizia gratis</a>
+        <a class="btn btn-ghost btn-lg" href="app.html" data-i18n="cta.b2">Accedi al tuo account</a>
       </div>
     </div>
   </div></div>
@@ -466,52 +464,158 @@ footer{border-top:1px solid var(--line);padding:50px 0 34px;background:var(--bg2
   <div class="wrap">
     <div class="foot-top">
       <div class="foot-brand">
-        <a class="brand" href="#top"><img src="icon.png?v=3" alt="">Label<span class="fin">Finance</span></a>
-        <p>Il gestionale all-in-one per etichette discografiche indipendenti. Royalty, contratti, merch, finanze e AI.</p>
+        <a class="logo" href="#top"><img src="icon.png?v=3" alt="">Label<span class="fin">Finance</span></a>
+        <p data-i18n="foot.tag">Il gestionale all-in-one per etichette discografiche indipendenti. Royalty, contratti, merch, finanze e AI.</p>
       </div>
       <div class="foot-cols">
         <div class="foot-col">
-          <h5>Prodotto</h5>
-          <a href="#features">Funzionalità</a>
-          <a href="#how">Come funziona</a>
-          <a href="#pricing">Prezzi</a>
-          <a href="app.html">Accedi</a>
+          <h5 data-i18n="foot.product">Prodotto</h5>
+          <a href="#features" data-i18n="nav.features">Funzionalità</a>
+          <a href="#how" data-i18n="nav.how">Come funziona</a>
+          <a href="#pricing" data-i18n="nav.pricing">Prezzi</a>
+          <a href="app.html" data-i18n="nav.login">Accedi</a>
         </div>
         <div class="foot-col">
-          <h5>Azienda</h5>
-          <a href="#why">Perché noi</a>
-          <a href="mailto:info.labelfinance@gmail.com">Contatti</a>
+          <h5 data-i18n="foot.company">Azienda</h5>
+          <a href="#why" data-i18n="nav.why">Perché noi</a>
+          <a href="mailto:info.labelfinance@gmail.com" data-i18n="foot.contact">Contatti</a>
         </div>
         <div class="foot-col">
-          <h5>Inizia</h5>
-          <a href="app.html">Crea un account</a>
-          <a href="app.html">Prova gratis</a>
+          <h5 data-i18n="foot.start">Inizia</h5>
+          <a href="app.html" data-i18n="foot.create">Crea un account</a>
+          <a href="app.html" data-i18n="foot.try">Prova gratis</a>
         </div>
       </div>
     </div>
     <div class="foot-bot">
-      <span>© <span id="year"></span> Label Finance — Davide Raho</span>
+      <span>© <span id="year"></span> Label Finance</span>
       <span>info.labelfinance@gmail.com</span>
     </div>
   </div>
 </footer>
 
 <script>
-  // anno
-  document.getElementById('year').textContent=new Date().getFullYear();
-  // nav ombra allo scroll
-  const nav=document.getElementById('nav');
-  addEventListener('scroll',()=>nav.classList.toggle('scrolled',scrollY>10),{passive:true});
-  // toggle prezzi mensile/annuale
-  const bill=document.getElementById('billing');
-  bill.addEventListener('click',e=>{ const b=e.target.closest('[data-bill]'); if(!b) return;
-    bill.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
-    const year=b.dataset.bill==='year';
-    document.querySelectorAll('.amount').forEach(a=>a.textContent=year?a.dataset.y:a.dataset.m);
-    document.querySelectorAll('[data-billnote]').forEach(n=>n.textContent=year?'fatturazione annuale (−30%)':'fatturazione mensile');
-  });
-  // service worker (per installazione PWA → apre l'app/login)
-  if('serviceWorker' in navigator){ addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }
+const LANG={
+ it:{
+  'nav.features':'Funzionalità','nav.how':'Come funziona','nav.pricing':'Prezzi','nav.why':'Perché noi','nav.login':'Accedi','nav.start':'Inizia gratis',
+  'hero.badge':'🎚️ Il gestionale all-in-one per etichette indipendenti',
+  'hero.h1':'Tutto il business della tua etichetta, <span class="grad">in un solo posto.</span>',
+  'hero.sub':'Royalty, contratti firmati digitalmente, merch, finanze e un assistente AI. Dalla produzione ai pagamenti — senza fogli Excel.',
+  'hero.cta1':'Inizia gratis — 14 giorni','hero.cta2':'Scopri le funzionalità',
+  'hero.n1':'Nessuna carta richiesta','hero.n2':'Offline-first, su ogni dispositivo','hero.n3':'Italiano / English',
+  'nav_mock.tx':'Movimenti','nav_mock.cat':'Discografia','nav_mock.con':'Contratti','nav_mock.art':'Artisti',
+  'kpi.in':'Entrate','kpi.out':'Uscite','kpi.net':'Margine netto',
+  'features.badge':'Funzionalità','features.h2':'Una sola app per <span class="grad">l\'intero business</span>',
+  'features.sub':'Gli altri fanno solo le royalty oppure solo i contratti. Label Finance copre tutto, dall\'incasso al pagamento dell\'artista.',
+  'f1.t':'Dashboard & Finanze','f1.d':'Entrate, uscite e margine con variazione % vs periodo. Grafici e cruscotto personalizzabile.',
+  'f2.t':'Royalty & Recoupment','f2.d':'Calcolo automatico per artista, quote per release e override per singola traccia (ISRC).',
+  'f3.t':'Contratti & Firma','f3.d':'Genera il contratto con carta intestata, invialo e ricevilo firmato in tempo reale.',
+  'f4.t':'Import CSV','f4.d':'Carica i report di vendita dal tuo store o distributore: le colonne si mappano da sole.',
+  'f5.t':'Rubrica Artisti','f5.d':'Roster con contatti, IBAN e split: precompila contratti e pagamenti in automatico.',
+  'f6.t':'Merch','f6.d':'Catalogo, vendite con un clic, ricavi, margini, best-seller e avviso scorte basse.',
+  'f7.t':'Assistente AI','f7.d':'Un consulente sempre a portata: analizza i dati e dà consigli concreti, esportabili in PDF.',
+  'f8.t':'Multi-etichetta','f8.d':'Più etichette da un solo account, sync cloud su tutti i dispositivi, PWA installabile.',
+  'how.badge':'Come funziona','how.h2':'Le cose che ti fanno <span class="grad">risparmiare ore</span>',
+  's1.badge':'💸 Royalty','s1.t':'Quanto spetta a ogni artista? Lo sai in pochi secondi.',
+  's1.p':'Imposta le quote una volta e Label Finance calcola da solo le royalty da ogni vendita, anche con collaborazioni e split diversi per singola traccia.',
+  's1.l1':'Quote per release e override per ISRC','s1.l2':'Recoupment: vedi quanto manca e quanto pagare davvero','s1.l3':'Statement per artista pronti da inviare','s1.vis':'Pagamenti del periodo',
+  'art1':'Artista 1','art2':'Artista 2','art3':'Artista 3',
+  's2.badge':'📄 Firma digitale','s2.t':'Manda il contratto. Lui firma dal telefono. Tu lo ricevi firmato.',
+  's2.p':'Generi un contratto professionale con il logo dell\'etichetta, decidi la ripartizione e lo invii. L\'artista legge, firma (o rifiuta indicando il motivo) e l\'esito torna nel sistema senza ricaricare.',
+  's2.l1':'Carta intestata + testo legalmente strutturato (GDPR)','s2.l2':'Firma in-app o invio per firma a distanza','s2.l3':'Stato Firmato / In attesa / Rifiutato in tempo reale',
+  's2.vis':'Autorizzazione alla pubblicazione','s2.label':'Per l\'etichetta','tag.wait':'In attesa','tag.ok':'Firmato',
+  's3.badge':'🤖 Assistente AI','s3.t':'Un consulente per la tua etichetta, 24/7.',
+  's3.p':'La bolla AI conosce la sezione in cui ti trovi e i tuoi numeri: ti dice dove perdi margine, chi devi pagare, cosa spingere nel merch e cosa aspettarti nei prossimi mesi.',
+  's3.l1':'Pre-prompt contestuali alla sezione attiva','s3.l2':'Analisi concrete e prioritizzate','s3.l3':'Esportazione in PDF','s3.vis':'Assistente',
+  's3.m1h':'Analisi','s3.m1':'Il margine è in crescita (+18%). Una piattaforma rende più delle altre: concentra lì la promo. Due artisti non hanno ancora recuperato l\'anticipo.',
+  's3.m2h':'Prossimo passo','s3.m2':'Invia lo statement agli artisti con saldo aperto: pagamento stimato € 2.220.',
+  'why.badge':'Perché Label Finance','why.h2':'Pensato per chi fa musica, <span class="grad">non per commercialisti</span>',
+  'w1.t':'Tutto-in-uno','w1.d':'L\'intero business in un posto, non dieci strumenti scollegati.',
+  'w2.t':'Firma integrata','w2.d':'Contratti firmati digitalmente, con ritorno automatico nel sistema.',
+  'w3.t':'AI dedicata','w3.d':'Un assistente pensato per le etichette. Nessun competitor ce l\'ha.',
+  'w4.t':'Semplice e bello','w4.d':'Moderno, chiaro, veloce. Zero curva d\'apprendimento.',
+  'w5.t':'Offline-first','w5.d':'I tuoi dati sempre con te, sincronizzati su ogni dispositivo.',
+  'pricing.badge':'Prezzi','pricing.h2':'Scegli il piano <span class="grad">della tua crescita</span>','pricing.sub':'14 giorni di prova gratuita sul piano Studio. Disdici quando vuoi.',
+  'bill.month':'Mensile','bill.year':'Annuale','per.mo':'/mese','price.reco':'⭐ Consigliato','bill.note_m':'fatturazione mensile','bill.note_y':'fatturazione annuale (−30%)',
+  'p1.desc':'Per chi parte e vuole ordine fin da subito.','p1.f1':'1 etichetta','p1.f2':'Finanze, royalty, recoupment','p1.f3':'Import CSV, dashboard, PDF','p1.f4':'Artisti, Task, Merch','p1.f5':'Contratti + firma (base)','p1.f6':'Assistente AI','p1.f7':'Dashboard personalizzabile','p1.cta':'Inizia con Starter',
+  'p2.desc':'Il piano con i "wow": AI e personalizzazione.','p2.f1':'Fino a 3 etichette','p2.f2':'Tutto di Starter','p2.f3':'Assistente AI','p2.f4':'Dashboard personalizzabile','p2.f5':'Contratti illimitati + email automatica','p2.f6':'Export Excel + branding','p2.f7':'Statement royalty per artista','p2.cta':'Prova gratis 14 giorni',
+  'p3.desc':'Per manager e agenzie con più artisti.','p3.f1':'Etichette illimitate','p3.f2':'Tutto di Studio','p3.f3':'Team / accessi multipli','p3.f4':'Automazioni & audit log','p3.f5':'Onboarding dedicato','p3.f6':'Supporto prioritario','p3.cta':'Contatta le vendite',
+  'cta.t':'La tua etichetta, finalmente sotto controllo.','cta.p':'Smetti di litigare con Excel. Prova Label Finance gratis per 14 giorni — nessuna carta richiesta.','cta.b1':'Inizia gratis','cta.b2':'Accedi al tuo account',
+  'foot.tag':'Il gestionale all-in-one per etichette discografiche indipendenti. Royalty, contratti, merch, finanze e AI.','foot.product':'Prodotto','foot.company':'Azienda','foot.start':'Inizia','foot.contact':'Contatti','foot.create':'Crea un account','foot.try':'Prova gratis'
+ },
+ en:{
+  'nav.features':'Features','nav.how':'How it works','nav.pricing':'Pricing','nav.why':'Why us','nav.login':'Log in','nav.start':'Start free',
+  'hero.badge':'🎚️ The all-in-one tool for independent labels',
+  'hero.h1':'All your label\'s business, <span class="grad">in one place.</span>',
+  'hero.sub':'Royalties, digitally signed contracts, merch, finances and an AI assistant. From production to payouts — without spreadsheets.',
+  'hero.cta1':'Start free — 14 days','hero.cta2':'See the features',
+  'hero.n1':'No card required','hero.n2':'Offline-first, on every device','hero.n3':'Italiano / English',
+  'nav_mock.tx':'Transactions','nav_mock.cat':'Catalog','nav_mock.con':'Contracts','nav_mock.art':'Artists',
+  'kpi.in':'Income','kpi.out':'Expenses','kpi.net':'Net margin',
+  'features.badge':'Features','features.h2':'One app for <span class="grad">your whole business</span>',
+  'features.sub':'Others do only royalties or only contracts. Label Finance covers it all, from the sale to the artist\'s payout.',
+  'f1.t':'Dashboard & Finances','f1.d':'Income, expenses and margin with % change vs period. Charts and a customizable dashboard.',
+  'f2.t':'Royalties & Recoupment','f2.d':'Automatic per-artist calculation, splits per release and per-track override (ISRC).',
+  'f3.t':'Contracts & Signing','f3.d':'Generate the contract with letterhead, send it and get it back signed in real time.',
+  'f4.t':'CSV Import','f4.d':'Upload sales reports from your store or distributor: columns map themselves.',
+  'f5.t':'Artist Directory','f5.d':'Roster with contacts, IBAN and splits: auto-fills contracts and payouts.',
+  'f6.t':'Merch','f6.d':'Catalog, one-click sales, revenue, margins, best-sellers and low-stock alerts.',
+  'f7.t':'AI Assistant','f7.d':'An advisor always at hand: it analyzes your data and gives concrete, PDF-exportable advice.',
+  'f8.t':'Multi-label','f8.d':'Multiple labels from one account, cloud sync on every device, installable PWA.',
+  'how.badge':'How it works','how.h2':'The things that <span class="grad">save you hours</span>',
+  's1.badge':'💸 Royalties','s1.t':'How much does each artist get? You know in seconds.',
+  's1.p':'Set the splits once and Label Finance calculates royalties from every sale on its own, even with collaborations and different per-track splits.',
+  's1.l1':'Splits per release and per-ISRC override','s1.l2':'Recoupment: see what\'s left and what to actually pay','s1.l3':'Per-artist statements ready to send','s1.vis':'Payouts for the period',
+  'art1':'Artist 1','art2':'Artist 2','art3':'Artist 3',
+  's2.badge':'📄 Digital signing','s2.t':'Send the contract. They sign from their phone. You get it back signed.',
+  's2.p':'Generate a professional contract with the label\'s logo, set the split and send it. The artist reads, signs (or rejects with a reason) and the result returns to the system without reloading.',
+  's2.l1':'Letterhead + legally structured text (GDPR)','s2.l2':'In-app signing or send for remote signature','s2.l3':'Signed / Pending / Rejected status in real time',
+  's2.vis':'Release Authorization','s2.label':'For the label','tag.wait':'Pending','tag.ok':'Signed',
+  's3.badge':'🤖 AI Assistant','s3.t':'An advisor for your label, 24/7.',
+  's3.p':'The AI bubble knows the section you\'re in and your numbers: it tells you where you lose margin, who to pay, what to push in merch and what to expect in the coming months.',
+  's3.l1':'Context-aware prompts for the active section','s3.l2':'Concrete, prioritized analysis','s3.l3':'PDF export','s3.vis':'Assistant',
+  's3.m1h':'Analysis','s3.m1':'Margin is growing (+18%). One platform earns more than the others: focus promo there. Two artists haven\'t recouped their advance yet.',
+  's3.m2h':'Next step','s3.m2':'Send the statement to artists with an open balance: estimated payout € 2,220.',
+  'why.badge':'Why Label Finance','why.h2':'Built for music people, <span class="grad">not accountants</span>',
+  'w1.t':'All-in-one','w1.d':'Your whole business in one place, not ten disconnected tools.',
+  'w2.t':'Built-in signing','w2.d':'Digitally signed contracts, returning automatically to the system.',
+  'w3.t':'Dedicated AI','w3.d':'An assistant built for labels. No competitor has one.',
+  'w4.t':'Simple and beautiful','w4.d':'Modern, clear, fast. Zero learning curve.',
+  'w5.t':'Offline-first','w5.d':'Your data always with you, synced on every device.',
+  'pricing.badge':'Pricing','pricing.h2':'Pick the plan <span class="grad">for your growth</span>','pricing.sub':'14-day free trial on the Studio plan. Cancel anytime.',
+  'bill.month':'Monthly','bill.year':'Annual','per.mo':'/month','price.reco':'⭐ Recommended','bill.note_m':'billed monthly','bill.note_y':'billed annually (−30%)',
+  'p1.desc':'For those starting out who want order from day one.','p1.f1':'1 label','p1.f2':'Finances, royalties, recoupment','p1.f3':'CSV import, dashboard, PDF','p1.f4':'Artists, Tasks, Merch','p1.f5':'Contracts + signing (basic)','p1.f6':'AI Assistant','p1.f7':'Customizable dashboard','p1.cta':'Start with Starter',
+  'p2.desc':'The plan with the "wow": AI and customization.','p2.f1':'Up to 3 labels','p2.f2':'Everything in Starter','p2.f3':'AI Assistant','p2.f4':'Customizable dashboard','p2.f5':'Unlimited contracts + auto email','p2.f6':'Excel export + branding','p2.f7':'Per-artist royalty statements','p2.cta':'Try free for 14 days',
+  'p3.desc':'For managers and agencies with multiple artists.','p3.f1':'Unlimited labels','p3.f2':'Everything in Studio','p3.f3':'Team / multiple seats','p3.f4':'Automations & audit log','p3.f5':'Dedicated onboarding','p3.f6':'Priority support','p3.cta':'Contact sales',
+  'cta.t':'Your label, finally under control.','cta.p':'Stop fighting with spreadsheets. Try Label Finance free for 14 days — no card required.','cta.b1':'Start free','cta.b2':'Log in to your account',
+  'foot.tag':'The all-in-one tool for independent record labels. Royalties, contracts, merch, finances and AI.','foot.product':'Product','foot.company':'Company','foot.start':'Get started','foot.contact':'Contact','foot.create':'Create an account','foot.try':'Try free'
+ }
+};
+let curLang='it', curYear=false;
+function setBilling(year){ curYear=year;
+  document.querySelectorAll('.amount').forEach(a=>a.textContent=year?a.dataset.y:a.dataset.m);
+  const note=LANG[curLang][year?'bill.note_y':'bill.note_m'];
+  document.querySelectorAll('[data-billnote]').forEach(n=>n.textContent=note);
+}
+function applyLang(l){
+  if(!LANG[l]) l='it'; curLang=l;
+  try{localStorage.setItem('lf_land_lang',l);}catch(e){}
+  document.documentElement.lang=l;
+  document.querySelectorAll('[data-i18n]').forEach(el=>{ const v=LANG[l][el.dataset.i18n]; if(v!=null) el.textContent=v; });
+  document.querySelectorAll('[data-i18n-html]').forEach(el=>{ const v=LANG[l][el.dataset.i18nHtml]; if(v!=null) el.innerHTML=v; });
+  document.querySelectorAll('[data-lang-opt]').forEach(b=>b.classList.toggle('on',b.dataset.langOpt===l));
+  setBilling(curYear);
+}
+document.querySelectorAll('[data-lang-opt]').forEach(b=>b.addEventListener('click',()=>applyLang(b.dataset.langOpt)));
+const bill=document.getElementById('billing');
+bill.addEventListener('click',e=>{ const b=e.target.closest('[data-bill]'); if(!b) return;
+  bill.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); setBilling(b.dataset.bill==='year'); });
+document.getElementById('year').textContent=new Date().getFullYear();
+const nav=document.getElementById('nav');
+addEventListener('scroll',()=>nav.classList.toggle('scrolled',scrollY>10),{passive:true});
+if('serviceWorker' in navigator){ addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }
+// lingua iniziale: salvata, altrimenti dal browser
+(function(){ let l='it'; try{ l=localStorage.getItem('lf_land_lang')||((navigator.language||'it').toLowerCase().startsWith('it')?'it':'en'); }catch(e){} applyLang(l); })();
 </script>
 </body>
 </html>

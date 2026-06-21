@@ -786,8 +786,8 @@ $('#btn-onb-income')?.addEventListener('click', ()=>{ curKind='income'; openTx(n
    ============================================================================ */
 const moneyCell=(v,t)=> v?fmtMoney(v,t.currency||'EUR'):'';
 const TX_COLS = {
-  date:    {label:'Data',        cell:t=>esc(t.date)},
-  dateTo:  {label:'Data (a)',    cell:t=>esc(t.dateTo)},
+  date:    {label:'Data vendita',cell:t=>esc(t.date)},
+  dateTo:  {label:'Data vendita (a)', cell:t=>esc(t.dateTo)},
   kind:    {label:'',            cell:t=>`<span class="pill ${t.kind==='income'?'pill--in':'pill--out'}">${t.kind==='income'?'IN':'OUT'}</span>`},
   platform:{label:'Piattaforma', cell:t=>esc(t.platform)},
   type:    {label:'Tipologia',   cell:t=>esc(t.type)},
@@ -3360,6 +3360,21 @@ function renderNotifs(){
       </div></div>`; }).join('');
 }
 function notifToggle(id){ const it=NOTIFS.list.find(x=>x.id===id); if(!it) return; it.read=!it.read; notifSave(); renderNotifs(); }
+// click su una notifica → porta alla cosa collegata
+function notifOpen(it){
+  if(!it) return;
+  it.read=true; notifSave(); renderNotifs();
+  const p=$('#notif-panel'); if(p) p.hidden=true;
+  if(it.type==='enrich'){ openEnrichModal(); return; }
+  if(it.type==='unlinked'){
+    // il prodotto non è collegato: apri Discografia con una nuova release già intitolata
+    goto('releases'); openRelease(null);
+    const ti=$('#r-title'); if(ti){ ti.value=it.ref||''; ti.focus(); }
+    return;
+  }
+  if(it.relId){ goto('releases'); openRelease(it.relId); return; }   // notifiche legate a una release
+  if(it.view){ goto(it.view); }                                       // tipi futuri (task, contratti…)
+}
 function notifDismiss(it){ if(!it) return;
   if(it.type==='unlinked') NOTIFS.dismissed=[...new Set([...(NOTIFS.dismissed||[]),(it.ref||'').toLowerCase()])];
   else if(it.type==='enrich') NOTIFS.dismissed=[...new Set([...(NOTIFS.dismissed||[]),'enrich:'+(it.count||0)])]; }
@@ -3389,6 +3404,7 @@ function wireNotifs(){
       if(it&&it.type==='enrich'){ $('#notif-panel')&&($('#notif-panel').hidden=true); openEnrichModal(); } return; }
     const tg=e.target.closest('[data-ntoggle]'); if(tg){ notifToggle(tg.dataset.ntoggle); return; }
     const dl=e.target.closest('[data-ndel]'); if(dl){ notifDelete(dl.dataset.ndel); return; }
+    const item=e.target.closest('.notif-item'); if(item){ notifOpen(NOTIFS.list.find(x=>x.id===item.dataset.nid)); }
   });
   document.addEventListener('click',e=>{ const p=$('#notif-panel'); if(!p||p.hidden) return;
     if(!e.target.closest('#notif-panel') && !e.target.closest('#notif-btn')) p.hidden=true; });

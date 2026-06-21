@@ -425,7 +425,8 @@ body.dash-edit .dw-width{display:inline-flex;gap:2px;position:absolute;top:8px;l
 .notif-item.unread{background:color-mix(in srgb,var(--accent) 7%,var(--panel))}
 .notif-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;background:transparent;flex:none}
 .notif-item.unread .notif-dot{background:var(--accent)}
-.notif-body{min-width:0}
+.notif-body{min-width:0;cursor:pointer}
+.notif-item:hover .notif-t{color:var(--accent)}
 .notif-t{font-weight:700;font-size:.86rem}
 .notif-b{font-size:.82rem;color:var(--muted);line-height:1.4;margin-top:2px}
 .notif-time{font-size:.7rem;color:var(--muted-2);margin-top:4px}

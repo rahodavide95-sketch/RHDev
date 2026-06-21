@@ -510,7 +510,7 @@ function renderDashboard(){
   $('#kpi-expense').textContent=fmtMoney(cur.exp);
   $('#kpi-net').textContent=fmtMoney(cur.net);
   $('#kpi-net').style.color = cur.net>=0?'var(--in)':'var(--out)';
-  $('#kpi-count').textContent=txs.length;
+  if($('#kpi-count')) $('#kpi-count').textContent=txs.length;
   // variazione % vs periodo precedente
   const prev = range.prevFrom ? sumKPI(all.filter(t=>inRange(t,range.prevFrom,range.prevTo))) : null;
   $('#delta-income').innerHTML = prev?deltaTag(cur.inc,prev.inc,true):'';

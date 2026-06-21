@@ -370,7 +370,7 @@
       't.file_invalid':'Invalid file','t.data_wiped':'Data cleared',
       // Pannelli Informazioni (HTML)
       'info.dashboard':`<h4>What the Dashboard is for</h4>
-        <p>It's the instant snapshot of your label. At the top you find the four key metrics: <b>Income</b>, <b>Expenses</b>, <b>Net margin</b> (income − expenses) and number of <b>Transactions</b>. The colored percentage under each value compares the selected period with the previous one, so you can see whether you're growing or declining.</p>
+        <p>It's the instant snapshot of your label. At the top you find the three key metrics: <b>Income</b>, <b>Expenses</b> and <b>Net margin</b> (income − expenses). The colored percentage under each value compares the selected period with the previous one, so you can see whether you're growing or declining.</p>
         <p>The chart shows income and expenses month by month. The tables below aggregate data <b>by release/catalog</b> and <b>by artist</b>, so you instantly see what earns the most.</p>
         <p>With the <b>period</b> menu in the top right you filter everything to a range (year, last 12 months… or <b>Custom</b> with your own dates). The <b>PDF report</b> button prints or saves a summary to archive or send.</p>
         <p class="muted" style="font-size:.86rem">Tip: data comes from Transactions. If the dashboard is empty, import a CSV or add a transaction manually.</p>`,

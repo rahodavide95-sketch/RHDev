@@ -51,8 +51,10 @@ img{max-width:100%}
 /* ===== GLASS ===== */
 .glass{background:var(--glass);-webkit-backdrop-filter:blur(22px) saturate(1.5);backdrop-filter:blur(22px) saturate(1.5);
   border:1px solid var(--glass-bd);box-shadow:0 10px 36px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.08)}
-.logo{display:flex;align-items:center}
-.logo img{height:30px;width:auto;display:block}
+/* LOGO — identico a quello nella piattaforma: icona LF + scritta in Syne */
+.logo{display:flex;align-items:center;gap:10px;font-family:'Syne',sans-serif;font-weight:600;font-size:1.12rem;letter-spacing:-.04em;color:var(--text)}
+.logo img{width:32px;height:32px;display:block;flex:none}
+.logo .fin{color:var(--lilac);font-weight:inherit}
 .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:.8rem;font-weight:600;letter-spacing:.02em;color:#fff;
   background:rgba(255,255,255,.08);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
   border:1px solid rgba(255,255,255,.16);padding:6px 13px;border-radius:999px}
@@ -101,7 +103,6 @@ img{max-width:100%}
 .mock-bar span{margin-left:12px;font-size:.78rem;color:var(--muted)}
 .mock-body{display:grid;grid-template-columns:172px 1fr;min-height:360px;background:rgba(14,15,23,.82);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
 .mock-side{border-right:1px solid rgba(255,255,255,.07);padding:14px 11px;display:flex;flex-direction:column;gap:3px;background:rgba(255,255,255,.025)}
-.mock-side img{height:22px;width:auto;margin:2px 0 10px 4px}
 .ms-h{font-size:.62rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted-2);padding:9px 8px 4px;font-weight:700}
 .ms-item{font-size:.82rem;color:var(--muted);padding:7px 9px;border-radius:8px;display:flex;align-items:center;gap:8px}
 .ms-item.on{background:rgba(167,139,250,.18);color:#fff}
@@ -186,7 +187,9 @@ img{max-width:100%}
 .plan .desc{color:var(--muted);font-size:.88rem;min-height:38px}
 .plan .price{font-weight:700;font-size:2.4rem;margin:14px 0 2px;display:flex;align-items:baseline;gap:4px}
 .plan .price .cur{font-size:1.3rem}.plan .price .per{font-size:.95rem;color:var(--muted);font-weight:500}
-.plan .bill{font-size:.8rem;color:var(--muted-2);min-height:18px}
+.plan .was{text-decoration:line-through;color:var(--muted-2);font-size:1.05rem;font-weight:600;margin-left:9px}
+.plan .bill{font-size:.82rem;color:var(--muted-2);min-height:20px}
+.plan .bill.year{color:var(--green);font-weight:600}
 .plan ul{list-style:none;display:flex;flex-direction:column;gap:10px;margin:20px 0 24px}
 .plan li{display:flex;gap:10px;font-size:.92rem}
 .plan li.off{color:var(--muted-2)}
@@ -211,7 +214,7 @@ img{max-width:100%}
 
 footer{padding:54px 0 36px;background:rgba(8,9,14,.5);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border-top:1px solid rgba(255,255,255,.07)}
 .foot-top{display:flex;justify-content:space-between;gap:30px;flex-wrap:wrap;margin-bottom:30px}
-.foot-brand{max-width:300px}.foot-brand img{height:28px;margin-bottom:12px}
+.foot-brand{max-width:300px}
 .foot-brand p{color:var(--muted);font-size:.9rem}
 .foot-cols{display:flex;gap:60px;flex-wrap:wrap}
 .foot-col h5{font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted-2);margin-bottom:12px}
@@ -250,7 +253,7 @@ footer{padding:54px 0 36px;background:rgba(8,9,14,.5);-webkit-backdrop-filter:bl
 <!-- ===== NAV ===== -->
 <header class="nav" id="nav">
   <div class="wrap nav-in">
-    <a class="logo" href="#top"><img src="lockup-v3.png?v=3" alt="Label Finance"></a>
+    <a class="logo" href="#top"><img src="icon.png?v=3" alt="">Label<span class="fin">Finance</span></a>
     <nav class="nav-links">
       <a href="#features" data-i18n="nav.features">Funzionalità</a>
       <a href="#how" data-i18n="nav.how">Come funziona</a>
@@ -286,7 +289,7 @@ footer{padding:54px 0 36px;background:rgba(8,9,14,.5);-webkit-backdrop-filter:bl
     <div class="mock-bar"><i></i><i></i><i></i><span>app.labelfinance — Dashboard</span></div>
     <div class="mock-body">
       <aside class="mock-side">
-        <img src="lockup-v3.png?v=3" alt="Label Finance">
+        <span class="logo" style="font-size:.92rem;margin:2px 0 9px 4px"><img src="icon.png?v=3" alt="" style="width:20px;height:20px">Label<span class="fin">Finance</span></span>
         <span class="ms-h">Panoramica</span>
         <span class="ms-item on"><span class="ms-dot"></span>Dashboard</span>
         <span class="ms-item"><span class="ms-dot"></span><span data-i18n="nav_mock.tx">Movimenti</span></span>
@@ -440,7 +443,7 @@ footer{padding:54px 0 36px;background:rgba(8,9,14,.5);-webkit-backdrop-filter:bl
       <div class="plan glass">
         <h3>Starter</h3>
         <p class="desc" data-i18n="p1.desc">Per chi parte e vuole ordine fin da subito.</p>
-        <div class="price"><span class="cur">€</span><span class="amount" data-m="9" data-y="6">9</span><span class="per" data-i18n="per.mo">/mese</span></div>
+        <div class="price" data-m="9" data-y="6" data-ytot="72" data-save="36"><span class="cur">€</span><span class="amount">9</span><span class="per" data-i18n="per.mo">/mese</span><span class="was" hidden></span></div>
         <div class="bill" data-billnote></div>
         <ul>
           <li><span class="ck">✓</span> <span data-i18n="p1.f1">1 etichetta</span></li>
@@ -457,7 +460,7 @@ footer{padding:54px 0 36px;background:rgba(8,9,14,.5);-webkit-backdrop-filter:bl
         <span class="pop-badge" data-i18n="price.reco">⭐ Consigliato</span>
         <h3>Studio</h3>
         <p class="desc" data-i18n="p2.desc">Il piano con i "wow": AI e personalizzazione.</p>
-        <div class="price"><span class="cur">€</span><span class="amount" data-m="19" data-y="13">19</span><span class="per" data-i18n="per.mo">/mese</span></div>
+        <div class="price" data-m="19" data-y="13" data-ytot="156" data-save="72"><span class="cur">€</span><span class="amount">19</span><span class="per" data-i18n="per.mo">/mese</span><span class="was" hidden></span></div>
         <div class="bill" data-billnote></div>
         <ul>
           <li><span class="ck">✓</span> <span data-i18n="p2.f1">Fino a 3 etichette</span></li>
@@ -473,7 +476,7 @@ footer{padding:54px 0 36px;background:rgba(8,9,14,.5);-webkit-backdrop-filter:bl
       <div class="plan glass">
         <h3>Agency</h3>
         <p class="desc" data-i18n="p3.desc">Per manager e agenzie con più artisti.</p>
-        <div class="price"><span class="cur">€</span><span class="amount" data-m="49" data-y="34">49</span><span class="per" data-i18n="per.mo">/mese</span></div>
+        <div class="price" data-m="49" data-y="34" data-ytot="408" data-save="180"><span class="cur">€</span><span class="amount">49</span><span class="per" data-i18n="per.mo">/mese</span><span class="was" hidden></span></div>
         <div class="bill" data-billnote></div>
         <ul>
           <li><span class="ck">✓</span> <span data-i18n="p3.f1">Etichette illimitate</span></li>
@@ -524,7 +527,7 @@ footer{padding:54px 0 36px;background:rgba(8,9,14,.5);-webkit-backdrop-filter:bl
   <div class="wrap">
     <div class="foot-top">
       <div class="foot-brand">
-        <a href="#top"><img src="lockup-v3.png?v=3" alt="Label Finance"></a>
+        <a class="logo" href="#top" style="margin-bottom:12px"><img src="icon.png?v=3" alt="">Label<span class="fin">Finance</span></a>
         <p data-i18n="foot.tag">Il gestionale all-in-one per etichette discografiche indipendenti. Royalty, contratti, merch, finanze e AI.</p>
       </div>
       <div class="foot-cols">
@@ -582,7 +585,7 @@ const LANG={
   'w4.t':'Semplice e bello','w4.d':'Moderno, chiaro, veloce. Zero curva d\'apprendimento.',
   'w5.t':'Offline-first','w5.d':'I tuoi dati sempre con te, sincronizzati su ogni dispositivo.',
   'pricing.badge':'Prezzi','pricing.h2':'Scegli il piano <span class="grad">della tua crescita</span>','pricing.sub':'14 giorni di prova gratuita sul piano Studio. Disdici quando vuoi.',
-  'bill.month':'Mensile','bill.year':'Annuale','per.mo':'/mese','price.reco':'⭐ Consigliato','bill.note_m':'fatturazione mensile','bill.note_y':'fatturazione annuale (−30%)',
+  'bill.month':'Mensile','bill.year':'Annuale','per.mo':'/mese','price.reco':'⭐ Consigliato','bill.note_m':'fatturazione mensile','bill.year_tpl':'{tot}/anno · risparmi {save}',
   'p1.desc':'Per chi parte e vuole ordine fin da subito.','p1.f1':'1 etichetta','p1.f2':'Finanze, royalty, recoupment','p1.f3':'Import CSV, dashboard, PDF','p1.f4':'Artisti, Task, Merch','p1.f5':'Contratti + firma (base)','p1.f6':'Assistente AI','p1.f7':'Dashboard personalizzabile','p1.cta':'Inizia con Starter',
   'p2.desc':'Il piano con i "wow": AI e personalizzazione.','p2.f1':'Fino a 3 etichette','p2.f2':'Tutto di Starter','p2.f3':'Assistente AI','p2.f4':'Dashboard personalizzabile','p2.f5':'Contratti illimitati + email automatica','p2.f6':'Export Excel + branding','p2.f7':'Statement royalty per artista','p2.cta':'Prova gratis 14 giorni',
   'p3.desc':'Per manager e agenzie con più artisti.','p3.f1':'Etichette illimitate','p3.f2':'Tutto di Studio','p3.f3':'Team / accessi multipli','p3.f4':'Automazioni & audit log','p3.f5':'Onboarding dedicato','p3.f6':'Supporto prioritario','p3.cta':'Contatta le vendite',
@@ -636,7 +639,7 @@ const LANG={
   'w4.t':'Simple and beautiful','w4.d':'Modern, clear, fast. Zero learning curve.',
   'w5.t':'Offline-first','w5.d':'Your data always with you, synced on every device.',
   'pricing.badge':'Pricing','pricing.h2':'Pick the plan <span class="grad">for your growth</span>','pricing.sub':'14-day free trial on the Studio plan. Cancel anytime.',
-  'bill.month':'Monthly','bill.year':'Annual','per.mo':'/month','price.reco':'⭐ Recommended','bill.note_m':'billed monthly','bill.note_y':'billed annually (−30%)',
+  'bill.month':'Monthly','bill.year':'Annual','per.mo':'/month','price.reco':'⭐ Recommended','bill.note_m':'billed monthly','bill.year_tpl':'{tot}/year · save {save}',
   'p1.desc':'For those starting out who want order from day one.','p1.f1':'1 label','p1.f2':'Finances, royalties, recoupment','p1.f3':'CSV import, dashboard, PDF','p1.f4':'Artists, Tasks, Merch','p1.f5':'Contracts + signing (basic)','p1.f6':'AI Assistant','p1.f7':'Customizable dashboard','p1.cta':'Start with Starter',
   'p2.desc':'The plan with the "wow": AI and customization.','p2.f1':'Up to 3 labels','p2.f2':'Everything in Starter','p2.f3':'AI Assistant','p2.f4':'Customizable dashboard','p2.f5':'Unlimited contracts + auto email','p2.f6':'Excel export + branding','p2.f7':'Per-artist royalty statements','p2.cta':'Try free for 14 days',
   'p3.desc':'For managers and agencies with multiple artists.','p3.f1':'Unlimited labels','p3.f2':'Everything in Studio','p3.f3':'Team / multiple seats','p3.f4':'Automations & audit log','p3.f5':'Dedicated onboarding','p3.f6':'Priority support','p3.cta':'Contact sales',
@@ -653,9 +656,19 @@ const LANG={
 };
 let curLang='it', curYear=false;
 function setBilling(year){ curYear=year;
-  document.querySelectorAll('.amount').forEach(a=>a.textContent=year?a.dataset.y:a.dataset.m);
-  const note=LANG[curLang][year?'bill.note_y':'bill.note_m'];
-  document.querySelectorAll('[data-billnote]').forEach(n=>n.textContent=note);
+  document.querySelectorAll('.plan').forEach(plan=>{
+    const pr=plan.querySelector('.price'); if(!pr) return;
+    const d=pr.dataset, amt=pr.querySelector('.amount'), was=pr.querySelector('.was'), note=plan.querySelector('[data-billnote]');
+    if(year){
+      if(amt) amt.textContent=d.y;
+      if(was){ was.textContent='€'+d.m; was.hidden=false; }
+      if(note){ note.classList.add('year'); note.textContent=LANG[curLang]['bill.year_tpl'].replace('{tot}','€'+d.ytot).replace('{save}','€'+d.save); }
+    } else {
+      if(amt) amt.textContent=d.m;
+      if(was) was.hidden=true;
+      if(note){ note.classList.remove('year'); note.textContent=LANG[curLang]['bill.note_m']; }
+    }
+  });
 }
 function applyLang(l){ if(!LANG[l]) l='it'; curLang=l;
   try{localStorage.setItem('lf_land_lang',l);}catch(e){}

@@ -5,7 +5,7 @@
 <!-- Chi usa la web-app installata (PWA) non deve vedere il sito: dritto al login -->
 <script>try{if(window.matchMedia('(display-mode: standalone)').matches||navigator.standalone){location.replace('app.html'+location.search+location.hash);}}catch(e){}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#0c0d12">
+<meta name="theme-color" content="#0a0b10">
 <title>Label Finance — Il gestionale all-in-one per etichette discografiche</title>
 <meta name="description" content="Royalty, contratti firmati digitalmente, merch, finanze e un assistente AI per etichette indipendenti. Tutto in una sola app, su ogni dispositivo.">
 <meta property="og:title" content="Label Finance — Tutto il business della tua etichetta, in un solo posto.">
@@ -18,182 +18,223 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#0a0b10; --bg2:#0e0f17; --panel:#15161f; --panel-2:#1b1d28; --line:#272a38;
-  --text:#edeef4; --muted:#9094a6; --muted-2:#6a6e80;
-  --violet:#a78bfa; --violet-2:#7c3aed; --blue:#60a5fa; --azure:#38bdf8; --green:#4ade80; --lf:#c4b5fd;
-  --radius:16px; --maxw:1180px;
+  --bg:#07080d; --text:#eef0f6; --muted:#9aa0b4; --muted-2:#6b6f82;
+  --violet:#a78bfa; --violet-2:#7c3aed; --lilac:#c4b5fd; --blue:#60a5fa; --azure:#38bdf8; --green:#4ade80; --beige:#e7dcc8;
+  --glass:rgba(255,255,255,.055); --glass-bd:rgba(255,255,255,.12);
+  --radius:18px; --maxw:1180px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
 body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
 a{color:inherit;text-decoration:none}
-/* titoli in DM Sans (niente font largo) */
 h1,h2,h3,h4{font-family:'DM Sans',sans-serif;font-weight:700;letter-spacing:-.02em;line-height:1.12}
 .wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
-/* LOGO — identico all'app: Syne 600, icona 34px, "Finance" lilla */
-.logo{display:flex;align-items:center;gap:10px;font-family:'Syne',sans-serif;font-weight:600;font-size:1.08rem;letter-spacing:-.04em;color:var(--text)}
-.logo img{width:34px;height:34px;display:block;flex:none}
-.logo .fin{color:var(--lf);font-weight:inherit}
-.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:.8rem;font-weight:600;letter-spacing:.02em;color:var(--violet);
-  background:color-mix(in srgb,var(--violet) 13%,transparent);border:1px solid color-mix(in srgb,var(--violet) 30%,transparent);
-  padding:6px 13px;border-radius:999px}
-.grad{background:linear-gradient(110deg,var(--violet),var(--blue) 60%,var(--azure));-webkit-background-clip:text;background-clip:text;color:transparent}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font:inherit;font-weight:600;cursor:pointer;
-  padding:13px 22px;border-radius:12px;border:1px solid transparent;transition:.18s;white-space:nowrap}
-.btn-primary{background:linear-gradient(120deg,var(--violet-2),var(--violet));color:#fff;box-shadow:0 10px 30px -8px color-mix(in srgb,var(--violet-2) 75%,transparent)}
-.btn-primary:hover{transform:translateY(-2px);box-shadow:0 16px 40px -10px color-mix(in srgb,var(--violet-2) 80%,transparent)}
-.btn-ghost{background:color-mix(in srgb,#fff 5%,transparent);border-color:var(--line);color:var(--text)}
-.btn-ghost:hover{border-color:var(--violet);color:#fff;background:color-mix(in srgb,var(--violet) 10%,transparent)}
-.btn-lg{padding:15px 28px;font-size:1.02rem;border-radius:14px}
+img{max-width:100%}
 
-/* ===== NAV ===== */
-.nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(14px);background:color-mix(in srgb,var(--bg) 78%,transparent);border-bottom:1px solid transparent;transition:.2s}
-.nav.scrolled{border-bottom-color:var(--line);background:color-mix(in srgb,var(--bg) 92%,transparent)}
-.nav-in{display:flex;align-items:center;gap:18px;height:66px}
-.nav-links{display:flex;gap:26px;margin-left:22px}
+/* ===== BACKGROUND ANIMATO A TUTTA PAGINA (palette in movimento, come il login) ===== */
+.bg{position:fixed;inset:0;z-index:-2;overflow:hidden;filter:saturate(150%)}
+.bg b{position:absolute;border-radius:50%;filter:blur(70px);opacity:.85;will-change:transform}
+.bg .v1{width:52vmax;height:52vmax;left:-8vmax;top:-12vmax;background:radial-gradient(circle,rgba(124,58,237,.9),transparent 66%);animation:orb1 23s ease-in-out infinite}
+.bg .v2{width:46vmax;height:46vmax;right:-10vmax;top:-8vmax;background:radial-gradient(circle,rgba(167,139,250,.85),transparent 66%);animation:orb2 27s ease-in-out infinite}
+.bg .v3{width:48vmax;height:48vmax;left:12vmax;top:40vh;background:radial-gradient(circle,rgba(96,165,250,.7),transparent 66%);animation:orb3 31s ease-in-out infinite}
+.bg .v4{width:40vmax;height:40vmax;right:4vmax;top:55vh;background:radial-gradient(circle,rgba(56,189,248,.6),transparent 66%);animation:orb1 25s ease-in-out infinite reverse}
+.bg .v5{width:38vmax;height:38vmax;left:30vmax;bottom:-6vmax;background:radial-gradient(circle,rgba(196,181,253,.6),transparent 66%);animation:orb2 29s ease-in-out infinite}
+.bg .v6{width:30vmax;height:30vmax;right:24vmax;bottom:8vh;background:radial-gradient(circle,rgba(231,220,200,.4),transparent 66%);animation:orb3 33s ease-in-out infinite reverse}
+.bg .v7{width:26vmax;height:26vmax;left:46vw;top:18vh;background:radial-gradient(circle,rgba(255,255,255,.28),transparent 66%);animation:orb1 35s ease-in-out infinite}
+.bg-veil{position:fixed;inset:0;z-index:-1;pointer-events:none;background:
+  radial-gradient(130% 90% at 50% 12%, transparent 36%, rgba(6,6,12,.66) 100%),
+  linear-gradient(180deg, rgba(7,8,13,.34), rgba(7,8,13,.5))}
+@keyframes orb1{0%{transform:translate(0,0) scale(1)}25%{transform:translate(20vw,10vh) scale(1.14)}50%{transform:translate(14vw,26vh) scale(.94)}75%{transform:translate(-8vw,16vh) scale(1.08)}100%{transform:translate(0,0) scale(1)}}
+@keyframes orb2{0%{transform:translate(0,0) scale(1.05)}25%{transform:translate(-22vw,12vh) scale(.95)}50%{transform:translate(-14vw,28vh) scale(1.16)}75%{transform:translate(6vw,14vh) scale(1)}100%{transform:translate(0,0) scale(1.05)}}
+@keyframes orb3{0%{transform:translate(0,0) scale(1)}25%{transform:translate(16vw,-16vh) scale(1.12)}50%{transform:translate(4vw,-26vh) scale(.92)}75%{transform:translate(-16vw,-12vh) scale(1.08)}100%{transform:translate(0,0) scale(1)}}
+
+/* ===== GLASS ===== */
+.glass{background:var(--glass);-webkit-backdrop-filter:blur(22px) saturate(1.5);backdrop-filter:blur(22px) saturate(1.5);
+  border:1px solid var(--glass-bd);box-shadow:0 10px 36px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.08)}
+.logo{display:flex;align-items:center}
+.logo img{height:30px;width:auto;display:block}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:.8rem;font-weight:600;letter-spacing:.02em;color:#fff;
+  background:rgba(255,255,255,.08);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  border:1px solid rgba(255,255,255,.16);padding:6px 13px;border-radius:999px}
+.grad{background:linear-gradient(110deg,var(--violet),var(--blue) 55%,var(--azure));-webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* pulsanti in vetro */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font:inherit;font-weight:600;cursor:pointer;
+  padding:13px 22px;border-radius:13px;border:1px solid rgba(255,255,255,.16);transition:.18s;white-space:nowrap;
+  -webkit-backdrop-filter:blur(14px) saturate(1.4);backdrop-filter:blur(14px) saturate(1.4)}
+.btn-primary{background:linear-gradient(120deg,rgba(124,58,237,.82),rgba(167,139,250,.62));color:#fff;
+  box-shadow:0 10px 30px -8px rgba(124,58,237,.6), inset 0 1px 0 rgba(255,255,255,.25)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 16px 40px -10px rgba(124,58,237,.7), inset 0 1px 0 rgba(255,255,255,.3)}
+.btn-ghost{background:rgba(255,255,255,.07);color:#fff}
+.btn-ghost:hover{background:rgba(255,255,255,.13);border-color:rgba(255,255,255,.28);transform:translateY(-2px)}
+.btn-lg{padding:15px 28px;font-size:1.02rem;border-radius:15px}
+
+/* ===== NAV (molto trasparente) ===== */
+.nav{position:sticky;top:0;z-index:50;background:rgba(8,9,14,.22);-webkit-backdrop-filter:blur(24px) saturate(1.5);backdrop-filter:blur(24px) saturate(1.5);
+  border-bottom:1px solid rgba(255,255,255,.06);transition:.25s}
+.nav.scrolled{background:rgba(8,9,14,.42);border-bottom-color:rgba(255,255,255,.1)}
+.nav-in{display:flex;align-items:center;gap:18px;height:68px}
+.nav-links{display:flex;gap:26px;margin-left:24px}
 .nav-links a{color:var(--muted);font-weight:500;font-size:.95rem;transition:.15s}
-.nav-links a:hover{color:var(--text)}
+.nav-links a:hover{color:#fff}
 .nav-cta{margin-left:auto;display:flex;align-items:center;gap:10px}
 .nav-cta .btn{padding:9px 16px}
-.lang{display:inline-flex;background:color-mix(in srgb,#fff 5%,transparent);border:1px solid var(--line);border-radius:9px;overflow:hidden}
-.lang button{font:inherit;font-weight:600;font-size:.82rem;border:none;background:none;color:var(--muted);padding:7px 11px;cursor:pointer;transition:.15s}
-.lang button.on{background:var(--violet-2);color:#fff}
+.lang{display:inline-flex;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:10px;overflow:hidden;
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.lang button{font:inherit;font-weight:700;font-size:.8rem;border:none;background:none;color:rgba(255,255,255,.7);padding:7px 11px;cursor:pointer;transition:.15s}
+.lang button.on{background:rgba(255,255,255,.2);color:#fff}
 
 /* ===== HERO ===== */
-.hero{position:relative;padding:78px 0 60px;text-align:center;overflow:hidden}
-.orbs{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
-.orb{position:absolute;border-radius:50%;filter:blur(70px);opacity:.55;mix-blend-mode:screen;animation:float 18s ease-in-out infinite}
-.orb.o1{width:520px;height:520px;background:radial-gradient(circle,#7c3aed,transparent 65%);top:-160px;left:-90px}
-.orb.o2{width:480px;height:480px;background:radial-gradient(circle,#2563eb,transparent 65%);top:-120px;right:-110px;animation-delay:-4s}
-.orb.o3{width:440px;height:440px;background:radial-gradient(circle,#38bdf8,transparent 65%);top:160px;left:36%;animation-delay:-8s;opacity:.4}
-.orb.o4{width:380px;height:380px;background:radial-gradient(circle,#a78bfa,transparent 65%);bottom:-120px;right:18%;animation-delay:-12s}
-@keyframes float{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(40px,30px) scale(1.08)}66%{transform:translate(-30px,20px) scale(.95)}}
-.hero-grid-bg{position:absolute;inset:0;z-index:0;opacity:.4;
-  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
-  background-size:46px 46px;mask-image:radial-gradient(ellipse 70% 55% at 50% 35%,#000 30%,transparent 75%)}
-.hero-in{position:relative;z-index:1;max-width:860px;margin:0 auto}
-.hero h1{font-size:clamp(2.2rem,5.4vw,3.7rem);font-weight:700;margin:22px 0 18px}
-.hero p.sub{font-size:clamp(1.05rem,2.2vw,1.26rem);color:var(--muted);max-width:680px;margin:0 auto 30px}
+.hero{position:relative;padding:84px 0 60px;text-align:center}
+.hero-in{max-width:870px;margin:0 auto}
+.hero h1{font-size:clamp(2.2rem,5.4vw,3.8rem);font-weight:700;margin:22px 0 18px;text-shadow:0 2px 30px rgba(0,0,0,.3)}
+.hero p.sub{font-size:clamp(1.05rem,2.2vw,1.28rem);color:#cfd2e0;max-width:680px;margin:0 auto 30px}
 .hero-cta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
-.hero-note{margin-top:18px;font-size:.85rem;color:var(--muted-2);display:flex;gap:18px;justify-content:center;flex-wrap:wrap}
-.hero-note span{display:inline-flex;align-items:center;gap:6px}
-.hero-note b{color:var(--green);font-weight:700}
+.hero-note{margin-top:18px;font-size:.85rem;color:var(--muted);display:flex;gap:18px;justify-content:center;flex-wrap:wrap}
+.hero-note span{display:inline-flex;align-items:center;gap:6px}.hero-note b{color:var(--green)}
 
-/* ===== APP MOCKUP ===== */
-.mock{position:relative;z-index:1;max-width:940px;margin:54px auto 0;border-radius:18px;border:1px solid var(--line);
-  background:linear-gradient(180deg,var(--panel),var(--bg2));box-shadow:0 40px 90px -30px rgba(0,0,0,.8);overflow:hidden}
-.mock-bar{display:flex;align-items:center;gap:7px;padding:12px 15px;border-bottom:1px solid var(--line);background:color-mix(in srgb,#fff 3%,transparent)}
-.mock-bar i{width:11px;height:11px;border-radius:50%;background:var(--line)}
-.mock-bar i:nth-child(1){background:#ff5f57}.mock-bar i:nth-child(2){background:#febc2e}.mock-bar i:nth-child(3){background:#28c840}
-.mock-bar span{margin-left:12px;font-size:.78rem;color:var(--muted-2)}
-.mock-body{display:grid;grid-template-columns:160px 1fr;min-height:330px}
-.mock-side{border-right:1px solid var(--line);padding:16px 12px;display:flex;flex-direction:column;gap:7px;background:color-mix(in srgb,#fff 2%,transparent)}
-.mock-side .logo{font-size:.95rem;margin:0 0 8px 4px}.mock-side .logo img{width:22px;height:22px}
+/* ===== MOCKUP (ricostruzione fedele della dashboard) ===== */
+.mock{max-width:960px;margin:56px auto 0;border-radius:18px;overflow:hidden;border:1px solid rgba(255,255,255,.14);
+  box-shadow:0 50px 110px -34px rgba(0,0,0,.85)}
+.mock-bar{display:flex;align-items:center;gap:7px;padding:12px 15px;border-bottom:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.05)}
+.mock-bar i{width:11px;height:11px;border-radius:50%}.mock-bar i:nth-child(1){background:#ff5f57}.mock-bar i:nth-child(2){background:#febc2e}.mock-bar i:nth-child(3){background:#28c840}
+.mock-bar span{margin-left:12px;font-size:.78rem;color:var(--muted)}
+.mock-body{display:grid;grid-template-columns:172px 1fr;min-height:360px;background:rgba(14,15,23,.82);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.mock-side{border-right:1px solid rgba(255,255,255,.07);padding:14px 11px;display:flex;flex-direction:column;gap:3px;background:rgba(255,255,255,.025)}
+.mock-side img{height:22px;width:auto;margin:2px 0 10px 4px}
+.ms-h{font-size:.62rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted-2);padding:9px 8px 4px;font-weight:700}
 .ms-item{font-size:.82rem;color:var(--muted);padding:7px 9px;border-radius:8px;display:flex;align-items:center;gap:8px}
-.ms-item.on{background:color-mix(in srgb,var(--violet) 15%,transparent);color:#fff}
-.ms-dot{width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.6}
-.mock-main{padding:18px;display:flex;flex-direction:column;gap:14px}
+.ms-item.on{background:rgba(167,139,250,.18);color:#fff}
+.ms-dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.55}
+.mock-main{padding:16px;display:flex;flex-direction:column;gap:13px}
+.mk-top{display:flex;align-items:center;justify-content:space-between}
+.mk-top b{font-size:1.05rem}
+.mk-pill{font-size:.72rem;color:var(--muted);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:5px 12px;background:rgba(255,255,255,.04)}
 .mk-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.mk-kpi{background:var(--panel-2);border:1px solid var(--line);border-radius:12px;padding:12px}
-.mk-kpi small{color:var(--muted);font-size:.72rem}
-.mk-kpi b{display:block;font-size:1.2rem;font-weight:700;margin-top:3px}
+.mk-kpi{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:12px;padding:11px 13px}
+.mk-kpi small{color:var(--muted);font-size:.7rem}
+.mk-kpi b{display:block;font-size:1.18rem;font-weight:700;margin-top:3px}
+.mk-kpi .d{font-size:.66rem;font-weight:700}
 .mk-kpi.green b{color:var(--green)}.mk-kpi.red b{color:#fb7185}.mk-kpi.blue b{color:var(--blue)}
-.mk-chart{flex:1;background:var(--panel-2);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;align-items:flex-end;gap:10px;min-height:140px}
-.mk-bar{flex:1;border-radius:6px 6px 0 0;background:linear-gradient(180deg,var(--violet),var(--violet-2));opacity:.9;animation:rise .9s ease both}
+.d.up{color:var(--green)}.d.down{color:#fb7185}
+.mk-chart{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:12px;padding:14px 14px 8px}
+.mk-bars{display:flex;align-items:flex-end;gap:12px;height:120px}
+.mk-col{flex:1;display:flex;align-items:flex-end;justify-content:center;gap:3px}
+.mk-bar{width:9px;border-radius:5px 5px 0 0;background:linear-gradient(180deg,var(--violet),var(--violet-2))}
 .mk-bar.b{background:linear-gradient(180deg,var(--blue),#2563eb)}
-@keyframes rise{from{height:0 !important;opacity:0}}
+.mk-x{display:flex;gap:12px;margin-top:7px}.mk-x span{flex:1;text-align:center;font-size:.62rem;color:var(--muted-2)}
+.mk-legend{display:flex;gap:14px;margin-top:6px;font-size:.66rem;color:var(--muted)}
+.mk-legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px;vertical-align:middle}
 
-/* ===== SECTIONS ===== */
-.section{padding:84px 0}
-.sec-head{text-align:center;max-width:680px;margin:0 auto 50px}
+/* ===== SECTIONS (ognuna con frost di colore diverso) ===== */
+.section{position:relative;padding:88px 0}
+.sec-tint{-webkit-backdrop-filter:blur(34px) saturate(1.25);backdrop-filter:blur(34px) saturate(1.25);border-top:1px solid rgba(255,255,255,.06)}
+.t-violet{background:rgba(30,20,52,.46)}
+.t-blue{background:rgba(15,23,48,.5)}
+.t-azure{background:rgba(11,30,44,.46)}
+.t-lilac{background:rgba(34,26,56,.44)}
+.t-beige{background:rgba(40,36,29,.4)}
+.t-deep{background:rgba(18,14,34,.5)}
+.sec-head{text-align:center;max-width:690px;margin:0 auto 50px}
 .sec-head h2{font-size:clamp(1.8rem,3.6vw,2.5rem);font-weight:700;margin:14px 0 12px}
-.sec-head p{color:var(--muted);font-size:1.06rem}
+.sec-head p{color:#c3c7d6;font-size:1.06rem}
 
 .feat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
-.feat{background:linear-gradient(180deg,var(--panel),color-mix(in srgb,var(--panel) 70%,var(--bg)));border:1px solid var(--line);
-  border-radius:var(--radius);padding:22px;transition:.2s}
-.feat:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--violet) 45%,var(--line));box-shadow:0 22px 50px -26px rgba(124,58,237,.6)}
-.feat-ico{width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:1.35rem;
-  background:color-mix(in srgb,var(--violet) 15%,transparent);border:1px solid color-mix(in srgb,var(--violet) 30%,transparent);margin-bottom:14px}
+.feat{border-radius:var(--radius);padding:22px;transition:.22s}
+.feat:hover{transform:translateY(-5px);border-color:rgba(167,139,250,.5);box-shadow:0 24px 54px -26px rgba(124,58,237,.7)}
+.feat-ico{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;
+  background:rgba(167,139,250,.16);border:1px solid rgba(167,139,250,.3);margin-bottom:14px}
 .feat h3{font-size:1.06rem;margin-bottom:7px}
 .feat p{color:var(--muted);font-size:.92rem}
 
-.spot{display:grid;grid-template-columns:1fr 1fr;gap:54px;align-items:center;padding:46px 0}
-.spot:nth-child(even) .spot-txt{order:2}
+.spot{display:grid;grid-template-columns:1fr 1fr;gap:54px;align-items:center;padding:42px 0}
+.spot:nth-child(odd) .spot-txt{order:2}
 .spot-txt .eyebrow{margin-bottom:16px}
 .spot-txt h3{font-size:clamp(1.5rem,2.8vw,2rem);font-weight:700;margin-bottom:14px}
-.spot-txt p{color:var(--muted);font-size:1.04rem;margin-bottom:18px}
+.spot-txt p{color:#c3c7d6;font-size:1.04rem;margin-bottom:18px}
 .spot-list{list-style:none;display:flex;flex-direction:column;gap:11px}
 .spot-list li{display:flex;gap:11px;align-items:flex-start;font-size:.98rem}
-.spot-list .ck{flex:none;width:22px;height:22px;border-radius:7px;background:color-mix(in srgb,var(--green) 18%,transparent);
-  color:var(--green);display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;margin-top:1px}
-.spot-vis{border-radius:var(--radius);border:1px solid var(--line);background:linear-gradient(160deg,var(--panel),var(--bg2));
-  padding:24px;min-height:280px;box-shadow:0 30px 70px -34px rgba(0,0,0,.8);display:flex;flex-direction:column;gap:12px}
+.spot-list .ck{flex:none;width:22px;height:22px;border-radius:7px;background:rgba(74,222,128,.18);color:var(--green);display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;margin-top:1px}
+.spot-vis{border-radius:var(--radius);padding:24px;min-height:280px;display:flex;flex-direction:column;gap:12px}
 .vis-title{font-weight:700;font-size:.95rem;color:var(--muted);display:flex;align-items:center;gap:8px}
-.pay-row{display:flex;align-items:center;justify-content:space-between;background:var(--panel-2);border:1px solid var(--line);border-radius:11px;padding:11px 14px}
+.pay-row{display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:11px 14px}
 .pay-row .who{display:flex;align-items:center;gap:10px;font-weight:600}
 .av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--violet),var(--blue));display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:#fff}
 .pay-row .amt{font-weight:700;color:var(--green)}
 .tag{font-size:.72rem;font-weight:700;padding:3px 9px;border-radius:7px}
-.tag.ok{color:var(--green);background:color-mix(in srgb,var(--green) 16%,transparent)}
-.tag.wait{color:var(--azure);background:color-mix(in srgb,var(--azure) 16%,transparent)}
-.sign-pad{flex:1;border:1.5px dashed var(--line);border-radius:11px;display:flex;align-items:center;justify-content:center;color:var(--muted-2);min-height:90px}
+.tag.ok{color:var(--green);background:rgba(74,222,128,.16)}
+.tag.wait{color:var(--azure);background:rgba(56,189,248,.16)}
+.sign-pad{flex:1;border:1.5px dashed rgba(255,255,255,.18);border-radius:11px;display:flex;align-items:center;justify-content:center;min-height:90px}
 .sign-scribble{font-family:'Syne';font-size:1.5rem;color:var(--violet);transform:rotate(-6deg)}
-.ai-msg{background:var(--panel-2);border:1px solid var(--line);border-left:3px solid var(--violet);border-radius:10px;padding:12px 14px;font-size:.92rem}
+.ai-msg{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-left:3px solid var(--violet);border-radius:10px;padding:12px 14px;font-size:.92rem}
 .ai-msg .who{font-size:.74rem;color:var(--violet);font-weight:700;margin-bottom:5px;display:flex;align-items:center;gap:7px}
 
-.diff{background:var(--bg2)}
 .diff-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
-.diff-card{text-align:center;padding:10px}
+.diff-card{text-align:center;padding:22px 14px;border-radius:var(--radius)}
 .diff-num{font-size:1.4rem;font-weight:700;color:var(--violet);margin-bottom:8px}
-.diff-card h4{font-size:1rem;margin-bottom:6px}
-.diff-card p{color:var(--muted);font-size:.88rem}
+.diff-card h4{font-size:1rem;margin-bottom:6px}.diff-card p{color:var(--muted);font-size:.88rem}
 
-.toggle{display:inline-flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:5px;margin:0 auto;font-size:.9rem;font-weight:600}
+.toggle{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:5px;margin:0 auto;font-size:.9rem;font-weight:600}
 .toggle button{font:inherit;font-weight:600;border:none;background:none;color:var(--muted);padding:8px 18px;border-radius:999px;cursor:pointer;transition:.15s}
-.toggle button.on{background:var(--violet-2);color:#fff}
+.toggle button.on{background:rgba(124,58,237,.8);color:#fff}
 .toggle .save{color:var(--green);font-size:.78rem;font-weight:700}
 .price-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;align-items:stretch;margin-top:40px}
-.plan{position:relative;display:flex;flex-direction:column;background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--line);border-radius:18px;padding:26px}
-.plan.pop{border-color:var(--violet);box-shadow:0 30px 70px -30px rgba(124,58,237,.55)}
-.pop-badge{position:absolute;top:-13px;left:50%;transform:translateX(-50%);
-  background:linear-gradient(120deg,var(--violet-2),var(--violet));color:#fff;font-size:.74rem;font-weight:700;padding:5px 14px;border-radius:999px;white-space:nowrap}
+.plan{position:relative;display:flex;flex-direction:column;border-radius:20px;padding:26px}
+.plan.pop{border-color:rgba(167,139,250,.55);box-shadow:0 30px 70px -30px rgba(124,58,237,.6)}
+.pop-badge{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:linear-gradient(120deg,var(--violet-2),var(--violet));color:#fff;font-size:.74rem;font-weight:700;padding:5px 14px;border-radius:999px;white-space:nowrap;box-shadow:0 6px 18px -4px rgba(124,58,237,.7)}
 .plan h3{font-size:1.25rem;margin-bottom:4px}
 .plan .desc{color:var(--muted);font-size:.88rem;min-height:38px}
 .plan .price{font-weight:700;font-size:2.4rem;margin:14px 0 2px;display:flex;align-items:baseline;gap:4px}
 .plan .price .cur{font-size:1.3rem}.plan .price .per{font-size:.95rem;color:var(--muted);font-weight:500}
 .plan .bill{font-size:.8rem;color:var(--muted-2);min-height:18px}
 .plan ul{list-style:none;display:flex;flex-direction:column;gap:10px;margin:20px 0 24px}
-.plan li{display:flex;gap:10px;font-size:.92rem;color:var(--text)}
+.plan li{display:flex;gap:10px;font-size:.92rem}
 .plan li.off{color:var(--muted-2)}
-.plan li .ck{flex:none;width:20px;height:20px;border-radius:6px;background:color-mix(in srgb,var(--green) 18%,transparent);color:var(--green);display:flex;align-items:center;justify-content:center;font-size:.74rem;font-weight:700}
-.plan li.off .ck{background:color-mix(in srgb,var(--muted) 14%,transparent);color:var(--muted-2)}
+.plan li .ck{flex:none;width:20px;height:20px;border-radius:6px;background:rgba(74,222,128,.18);color:var(--green);display:flex;align-items:center;justify-content:center;font-size:.74rem;font-weight:700}
+.plan li.off .ck{background:rgba(154,160,180,.14);color:var(--muted-2)}
 .plan .btn{margin-top:auto;width:100%}
 
-.cta{padding:90px 0}
-.cta-box{position:relative;overflow:hidden;text-align:center;border-radius:24px;padding:60px 30px;
-  background:linear-gradient(120deg,color-mix(in srgb,var(--violet-2) 30%,var(--panel)),color-mix(in srgb,var(--blue) 22%,var(--panel)));
-  border:1px solid color-mix(in srgb,var(--violet) 35%,var(--line))}
-.cta-box h2{font-size:clamp(1.8rem,3.6vw,2.6rem);font-weight:700;margin-bottom:14px}
-.cta-box p{color:var(--muted);font-size:1.1rem;max-width:560px;margin:0 auto 28px}
+/* FAQ */
+.faq-list{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.faq{border-radius:14px;padding:0 18px;overflow:hidden}
+.faq summary{list-style:none;cursor:pointer;padding:17px 0;font-weight:600;font-size:1.02rem;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:'+';font-size:1.4rem;color:var(--violet);font-weight:400;transition:.2s}
+.faq[open] summary::after{transform:rotate(45deg)}
+.faq p{color:var(--muted);font-size:.96rem;padding:0 0 17px;margin:0}
 
-footer{border-top:1px solid var(--line);padding:50px 0 34px;background:var(--bg2)}
+.cta{padding:96px 0}
+.cta-box{position:relative;overflow:hidden;text-align:center;border-radius:26px;padding:62px 30px;
+  background:linear-gradient(120deg,rgba(124,58,237,.34),rgba(96,165,250,.24));border:1px solid rgba(167,139,250,.34)}
+.cta-box h2{font-size:clamp(1.8rem,3.6vw,2.6rem);font-weight:700;margin-bottom:14px}
+.cta-box p{color:#d3d6e2;font-size:1.1rem;max-width:560px;margin:0 auto 28px}
+
+footer{padding:54px 0 36px;background:rgba(8,9,14,.5);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border-top:1px solid rgba(255,255,255,.07)}
 .foot-top{display:flex;justify-content:space-between;gap:30px;flex-wrap:wrap;margin-bottom:30px}
-.foot-brand{max-width:280px}
-.foot-brand p{color:var(--muted);font-size:.9rem;margin-top:12px}
+.foot-brand{max-width:300px}.foot-brand img{height:28px;margin-bottom:12px}
+.foot-brand p{color:var(--muted);font-size:.9rem}
 .foot-cols{display:flex;gap:60px;flex-wrap:wrap}
 .foot-col h5{font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted-2);margin-bottom:12px}
 .foot-col a{display:block;color:var(--muted);font-size:.92rem;margin-bottom:9px;transition:.15s}
-.foot-col a:hover{color:var(--text)}
-.foot-bot{border-top:1px solid var(--line);padding-top:20px;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;color:var(--muted-2);font-size:.84rem}
+.foot-col a:hover{color:#fff}
+.foot-bot{border-top:1px solid rgba(255,255,255,.07);padding-top:20px;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;color:var(--muted-2);font-size:.84rem}
+
+/* micro-animazioni allo scroll (stile Apple) */
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .7s ease,transform .8s cubic-bezier(.2,.7,.2,1)}
+.reveal.in{opacity:1;transform:none}
+.stagger>*{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .7s cubic-bezier(.2,.7,.2,1)}
+.stagger.in>*{opacity:1;transform:none}
+.stagger.in>*:nth-child(2){transition-delay:.06s}.stagger.in>*:nth-child(3){transition-delay:.12s}
+.stagger.in>*:nth-child(4){transition-delay:.18s}.stagger.in>*:nth-child(5){transition-delay:.24s}
+.stagger.in>*:nth-child(6){transition-delay:.3s}.stagger.in>*:nth-child(7){transition-delay:.36s}.stagger.in>*:nth-child(8){transition-delay:.42s}
+@media(prefers-reduced-motion:reduce){.reveal,.stagger>*{transition:none;opacity:1;transform:none}}
 
 @media(max-width:880px){
   .nav-links{display:none}
   .feat-grid{grid-template-columns:repeat(2,1fr)}
   .diff-grid{grid-template-columns:repeat(2,1fr)}
   .price-grid{grid-template-columns:1fr}
-  .spot{grid-template-columns:1fr;gap:26px}
-  .spot:nth-child(even) .spot-txt{order:0}
+  .spot{grid-template-columns:1fr;gap:26px}.spot:nth-child(odd) .spot-txt{order:0}
   .mock-body{grid-template-columns:1fr}.mock-side{display:none}
   .nav-cta .btn-ghost{display:none}
 }
@@ -202,20 +243,22 @@ footer{border-top:1px solid var(--line);padding:50px 0 34px;background:var(--bg2
 </head>
 <body>
 
+<!-- background animato -->
+<div class="bg" aria-hidden="true"><b class="v1"></b><b class="v2"></b><b class="v3"></b><b class="v4"></b><b class="v5"></b><b class="v6"></b><b class="v7"></b></div>
+<div class="bg-veil" aria-hidden="true"></div>
+
 <!-- ===== NAV ===== -->
 <header class="nav" id="nav">
   <div class="wrap nav-in">
-    <a class="logo" href="#top"><img src="icon.png?v=3" alt="">Label<span class="fin">Finance</span></a>
+    <a class="logo" href="#top"><img src="lockup-v3.png?v=3" alt="Label Finance"></a>
     <nav class="nav-links">
       <a href="#features" data-i18n="nav.features">Funzionalità</a>
       <a href="#how" data-i18n="nav.how">Come funziona</a>
       <a href="#pricing" data-i18n="nav.pricing">Prezzi</a>
-      <a href="#why" data-i18n="nav.why">Perché noi</a>
+      <a href="#faq" data-i18n="nav.faq">FAQ</a>
     </nav>
     <div class="nav-cta">
-      <div class="lang" role="group" aria-label="Lingua / Language">
-        <button data-lang-opt="it">IT</button><button data-lang-opt="en">EN</button>
-      </div>
+      <div class="lang" role="group" aria-label="Lingua / Language"><button data-lang-opt="it">IT</button><button data-lang-opt="en">EN</button></div>
       <a class="btn btn-ghost" href="app.html" data-i18n="nav.login">Accedi</a>
       <a class="btn btn-primary" href="app.html" data-i18n="nav.start">Inizia gratis</a>
     </div>
@@ -224,48 +267,54 @@ footer{border-top:1px solid var(--line);padding:50px 0 34px;background:var(--bg2
 
 <!-- ===== HERO ===== -->
 <section class="hero" id="top">
-  <div class="orbs" aria-hidden="true"><span class="orb o1"></span><span class="orb o2"></span><span class="orb o3"></span><span class="orb o4"></span></div>
-  <div class="hero-grid-bg" aria-hidden="true"></div>
   <div class="wrap hero-in">
-    <span class="eyebrow" data-i18n="hero.badge">🎚️ Il gestionale all-in-one per etichette indipendenti</span>
-    <h1 data-i18n-html="hero.h1">Tutto il business della tua etichetta, <span class="grad">in un solo posto.</span></h1>
-    <p class="sub" data-i18n="hero.sub">Royalty, contratti firmati digitalmente, merch, finanze e un assistente AI. Dalla produzione ai pagamenti — senza fogli Excel.</p>
-    <div class="hero-cta">
+    <span class="eyebrow reveal" data-i18n="hero.badge">🎚️ Il gestionale all-in-one per etichette indipendenti</span>
+    <h1 class="reveal" data-i18n-html="hero.h1">Tutto il business della tua etichetta, <span class="grad">in un solo posto.</span></h1>
+    <p class="sub reveal" data-i18n="hero.sub">Royalty, contratti firmati digitalmente, merch, finanze e un assistente AI. Dalla produzione ai pagamenti — senza fogli Excel.</p>
+    <div class="hero-cta reveal">
       <a class="btn btn-primary btn-lg" href="app.html" data-i18n="hero.cta1">Inizia gratis — 14 giorni</a>
       <a class="btn btn-ghost btn-lg" href="#features" data-i18n="hero.cta2">Scopri le funzionalità</a>
     </div>
-    <div class="hero-note">
+    <div class="hero-note reveal">
       <span><b>✓</b> <span data-i18n="hero.n1">Nessuna carta richiesta</span></span>
       <span><b>✓</b> <span data-i18n="hero.n2">Offline-first, su ogni dispositivo</span></span>
       <span><b>✓</b> <span data-i18n="hero.n3">Italiano / English</span></span>
     </div>
   </div>
 
-  <div class="wrap"><div class="mock">
+  <div class="wrap reveal"><div class="mock">
     <div class="mock-bar"><i></i><i></i><i></i><span>app.labelfinance — Dashboard</span></div>
     <div class="mock-body">
       <aside class="mock-side">
-        <span class="logo"><img src="icon.png?v=3" alt="">Label<span class="fin">Finance</span></span>
+        <img src="lockup-v3.png?v=3" alt="Label Finance">
+        <span class="ms-h">Panoramica</span>
         <span class="ms-item on"><span class="ms-dot"></span>Dashboard</span>
         <span class="ms-item"><span class="ms-dot"></span><span data-i18n="nav_mock.tx">Movimenti</span></span>
         <span class="ms-item"><span class="ms-dot"></span>Royalty</span>
+        <span class="ms-h" data-i18n="nav_mock.grp">Musica & Catalogo</span>
         <span class="ms-item"><span class="ms-dot"></span><span data-i18n="nav_mock.cat">Discografia</span></span>
-        <span class="ms-item"><span class="ms-dot"></span><span data-i18n="nav_mock.con">Contratti</span></span>
         <span class="ms-item"><span class="ms-dot"></span><span data-i18n="nav_mock.art">Artisti</span></span>
+        <span class="ms-item"><span class="ms-dot"></span><span data-i18n="nav_mock.con">Contratti</span></span>
         <span class="ms-item"><span class="ms-dot"></span>Merch</span>
       </aside>
       <div class="mock-main">
+        <div class="mk-top"><b>Dashboard</b><span class="mk-pill" data-i18n="mock.period">Ultimi 12 mesi ▾</span></div>
         <div class="mk-kpis">
-          <div class="mk-kpi green"><small data-i18n="kpi.in">Entrate</small><b>€ 8.420</b></div>
-          <div class="mk-kpi red"><small data-i18n="kpi.out">Uscite</small><b>€ 2.180</b></div>
-          <div class="mk-kpi blue"><small data-i18n="kpi.net">Margine netto</small><b>€ 6.240</b></div>
+          <div class="mk-kpi green"><small data-i18n="kpi.in">Entrate</small><b>€ 8.420</b><span class="d up">▲ 18%</span></div>
+          <div class="mk-kpi red"><small data-i18n="kpi.out">Uscite</small><b>€ 2.180</b><span class="d down">▼ 6%</span></div>
+          <div class="mk-kpi blue"><small data-i18n="kpi.net">Margine netto</small><b>€ 6.240</b><span class="d up">▲ 24%</span></div>
         </div>
         <div class="mk-chart">
-          <span class="mk-bar" style="height:48%"></span><span class="mk-bar b" style="height:30%"></span>
-          <span class="mk-bar" style="height:66%"></span><span class="mk-bar b" style="height:40%"></span>
-          <span class="mk-bar" style="height:82%"></span><span class="mk-bar b" style="height:52%"></span>
-          <span class="mk-bar" style="height:60%"></span><span class="mk-bar b" style="height:34%"></span>
-          <span class="mk-bar" style="height:94%"></span><span class="mk-bar b" style="height:58%"></span>
+          <div class="mk-bars">
+            <div class="mk-col"><span class="mk-bar" style="height:46%"></span><span class="mk-bar b" style="height:28%"></span></div>
+            <div class="mk-col"><span class="mk-bar" style="height:58%"></span><span class="mk-bar b" style="height:34%"></span></div>
+            <div class="mk-col"><span class="mk-bar" style="height:70%"></span><span class="mk-bar b" style="height:40%"></span></div>
+            <div class="mk-col"><span class="mk-bar" style="height:52%"></span><span class="mk-bar b" style="height:30%"></span></div>
+            <div class="mk-col"><span class="mk-bar" style="height:86%"></span><span class="mk-bar b" style="height:46%"></span></div>
+            <div class="mk-col"><span class="mk-bar" style="height:96%"></span><span class="mk-bar b" style="height:52%"></span></div>
+          </div>
+          <div class="mk-x"><span>Gen</span><span>Feb</span><span>Mar</span><span>Apr</span><span>Mag</span><span>Giu</span></div>
+          <div class="mk-legend"><span><i style="background:var(--violet)"></i><span data-i18n="kpi.in">Entrate</span></span><span><i style="background:var(--blue)"></i><span data-i18n="kpi.out">Uscite</span></span></div>
         </div>
       </div>
     </div>
@@ -273,35 +322,35 @@ footer{border-top:1px solid var(--line);padding:50px 0 34px;background:var(--bg2
 </section>
 
 <!-- ===== FEATURES ===== -->
-<section class="section" id="features">
+<section class="section sec-tint t-blue" id="features">
   <div class="wrap">
-    <div class="sec-head">
+    <div class="sec-head reveal">
       <span class="eyebrow" data-i18n="features.badge">Funzionalità</span>
       <h2 data-i18n-html="features.h2">Una sola app per <span class="grad">l'intero business</span></h2>
       <p data-i18n="features.sub">Gli altri fanno solo le royalty oppure solo i contratti. Label Finance copre tutto, dall'incasso al pagamento dell'artista.</p>
     </div>
-    <div class="feat-grid">
-      <div class="feat"><div class="feat-ico">📊</div><h3 data-i18n="f1.t">Dashboard & Finanze</h3><p data-i18n="f1.d">Entrate, uscite e margine con variazione % vs periodo. Grafici e cruscotto personalizzabile.</p></div>
-      <div class="feat"><div class="feat-ico">💸</div><h3 data-i18n="f2.t">Royalty & Recoupment</h3><p data-i18n="f2.d">Calcolo automatico per artista, quote per release e override per singola traccia (ISRC).</p></div>
-      <div class="feat"><div class="feat-ico">📄</div><h3 data-i18n="f3.t">Contratti & Firma</h3><p data-i18n="f3.d">Genera il contratto con carta intestata, invialo e ricevilo firmato in tempo reale.</p></div>
-      <div class="feat"><div class="feat-ico">📥</div><h3 data-i18n="f4.t">Import CSV</h3><p data-i18n="f4.d">Carica i report di vendita dal tuo store o distributore: le colonne si mappano da sole.</p></div>
-      <div class="feat"><div class="feat-ico">👥</div><h3 data-i18n="f5.t">Rubrica Artisti</h3><p data-i18n="f5.d">Roster con contatti, IBAN e split: precompila contratti e pagamenti in automatico.</p></div>
-      <div class="feat"><div class="feat-ico">👕</div><h3 data-i18n="f6.t">Merch</h3><p data-i18n="f6.d">Catalogo, vendite con un clic, ricavi, margini, best-seller e avviso scorte basse.</p></div>
-      <div class="feat"><div class="feat-ico">🤖</div><h3 data-i18n="f7.t">Assistente AI</h3><p data-i18n="f7.d">Un consulente sempre a portata: analizza i dati e dà consigli concreti, esportabili in PDF.</p></div>
-      <div class="feat"><div class="feat-ico">🏢</div><h3 data-i18n="f8.t">Multi-etichetta</h3><p data-i18n="f8.d">Più etichette da un solo account, sync cloud su tutti i dispositivi, PWA installabile.</p></div>
+    <div class="feat-grid stagger">
+      <div class="feat glass"><div class="feat-ico">📊</div><h3 data-i18n="f1.t">Dashboard & Finanze</h3><p data-i18n="f1.d">Entrate, uscite e margine con variazione % vs periodo. Grafici e cruscotto personalizzabile.</p></div>
+      <div class="feat glass"><div class="feat-ico">💸</div><h3 data-i18n="f2.t">Royalty & Recoupment</h3><p data-i18n="f2.d">Calcolo automatico per artista, quote per release e override per singola traccia (ISRC).</p></div>
+      <div class="feat glass"><div class="feat-ico">📄</div><h3 data-i18n="f3.t">Contratti & Firma</h3><p data-i18n="f3.d">Genera il contratto con carta intestata, invialo e ricevilo firmato in tempo reale.</p></div>
+      <div class="feat glass"><div class="feat-ico">📥</div><h3 data-i18n="f4.t">Import CSV</h3><p data-i18n="f4.d">Carica i report di vendita dal tuo store o distributore: le colonne si mappano da sole.</p></div>
+      <div class="feat glass"><div class="feat-ico">👥</div><h3 data-i18n="f5.t">Rubrica Artisti</h3><p data-i18n="f5.d">Roster con contatti, IBAN e split: precompila contratti e pagamenti in automatico.</p></div>
+      <div class="feat glass"><div class="feat-ico">👕</div><h3 data-i18n="f6.t">Merch</h3><p data-i18n="f6.d">Catalogo, vendite con un clic, ricavi, margini, best-seller e avviso scorte basse.</p></div>
+      <div class="feat glass"><div class="feat-ico">🤖</div><h3 data-i18n="f7.t">Assistente AI</h3><p data-i18n="f7.d">Un consulente sempre a portata: analizza i dati e dà consigli concreti, esportabili in PDF.</p></div>
+      <div class="feat glass"><div class="feat-ico">🏢</div><h3 data-i18n="f8.t">Multi-etichetta</h3><p data-i18n="f8.d">Più etichette da un solo account, sync cloud su tutti i dispositivi, PWA installabile.</p></div>
     </div>
   </div>
 </section>
 
-<!-- ===== HOW / SPOTLIGHTS ===== -->
-<section class="section" id="how" style="padding-top:20px">
+<!-- ===== HOW ===== -->
+<section class="section sec-tint t-azure" id="how">
   <div class="wrap">
-    <div class="sec-head">
+    <div class="sec-head reveal">
       <span class="eyebrow" data-i18n="how.badge">Come funziona</span>
       <h2 data-i18n-html="how.h2">Le cose che ti fanno <span class="grad">risparmiare ore</span></h2>
     </div>
 
-    <div class="spot">
+    <div class="spot reveal">
       <div class="spot-txt">
         <span class="eyebrow" data-i18n="s1.badge">💸 Royalty</span>
         <h3 data-i18n="s1.t">Quanto spetta a ogni artista? Lo sai in pochi secondi.</h3>
@@ -312,7 +361,7 @@ footer{border-top:1px solid var(--line);padding:50px 0 34px;background:var(--bg2
           <li><span class="ck">✓</span> <span data-i18n="s1.l3">Statement per artista pronti da inviare</span></li>
         </ul>
       </div>
-      <div class="spot-vis">
+      <div class="spot-vis glass">
         <div class="vis-title">💸 <span data-i18n="s1.vis">Pagamenti del periodo</span></div>
         <div class="pay-row"><div class="who"><span class="av">A1</span> <span data-i18n="art1">Artista 1</span></div><span class="amt">€ 1.240</span></div>
         <div class="pay-row"><div class="who"><span class="av">A2</span> <span data-i18n="art2">Artista 2</span></div><span class="amt">€ 980</span></div>
@@ -320,7 +369,7 @@ footer{border-top:1px solid var(--line);padding:50px 0 34px;background:var(--bg2
       </div>
     </div>
 
-    <div class="spot">
+    <div class="spot reveal">
       <div class="spot-txt">
         <span class="eyebrow" data-i18n="s2.badge">📄 Firma digitale</span>
         <h3 data-i18n="s2.t">Manda il contratto. Lui firma dal telefono. Tu lo ricevi firmato.</h3>
@@ -331,14 +380,14 @@ footer{border-top:1px solid var(--line);padding:50px 0 34px;background:var(--bg2
           <li><span class="ck">✓</span> <span data-i18n="s2.l3">Stato Firmato / In attesa / Rifiutato in tempo reale</span></li>
         </ul>
       </div>
-      <div class="spot-vis">
+      <div class="spot-vis glass">
         <div class="vis-title">📄 <span data-i18n="s2.vis">Autorizzazione alla pubblicazione</span> <span class="tag wait" style="margin-left:auto" data-i18n="tag.wait">In attesa</span></div>
         <div class="pay-row"><div class="who"><span class="av">★</span> <span data-i18n="s2.label">Per l'etichetta</span></div><span class="tag ok" data-i18n="tag.ok">Firmato</span></div>
         <div class="sign-pad"><span class="sign-scribble">✒ firma…</span></div>
       </div>
     </div>
 
-    <div class="spot">
+    <div class="spot reveal">
       <div class="spot-txt">
         <span class="eyebrow" data-i18n="s3.badge">🤖 Assistente AI</span>
         <h3 data-i18n="s3.t">Un consulente per la tua etichetta, 24/7.</h3>
@@ -349,7 +398,7 @@ footer{border-top:1px solid var(--line);padding:50px 0 34px;background:var(--bg2
           <li><span class="ck">✓</span> <span data-i18n="s3.l3">Esportazione in PDF</span></li>
         </ul>
       </div>
-      <div class="spot-vis">
+      <div class="spot-vis glass">
         <div class="vis-title">🤖 <span data-i18n="s3.vis">Assistente</span></div>
         <div class="ai-msg"><div class="who">✦ <span data-i18n="s3.m1h">Analisi</span></div><span data-i18n="s3.m1">Il margine è in crescita (+18%). Una piattaforma rende più delle altre: concentra lì la promo. Due artisti non hanno ancora recuperato l'anticipo.</span></div>
         <div class="ai-msg"><div class="who">✦ <span data-i18n="s3.m2h">Prossimo passo</span></div><span data-i18n="s3.m2">Invia lo statement agli artisti con saldo aperto: pagamento stimato € 2.220.</span></div>
@@ -359,38 +408,36 @@ footer{border-top:1px solid var(--line);padding:50px 0 34px;background:var(--bg2
 </section>
 
 <!-- ===== WHY ===== -->
-<section class="section diff" id="why">
+<section class="section sec-tint t-lilac" id="why">
   <div class="wrap">
-    <div class="sec-head">
+    <div class="sec-head reveal">
       <span class="eyebrow" data-i18n="why.badge">Perché Label Finance</span>
       <h2 data-i18n-html="why.h2">Pensato per chi fa musica, <span class="grad">non per commercialisti</span></h2>
     </div>
-    <div class="diff-grid">
-      <div class="diff-card"><div class="diff-num">01</div><h4 data-i18n="w1.t">Tutto-in-uno</h4><p data-i18n="w1.d">L'intero business in un posto, non dieci strumenti scollegati.</p></div>
-      <div class="diff-card"><div class="diff-num">02</div><h4 data-i18n="w2.t">Firma integrata</h4><p data-i18n="w2.d">Contratti firmati digitalmente, con ritorno automatico nel sistema.</p></div>
-      <div class="diff-card"><div class="diff-num">03</div><h4 data-i18n="w3.t">AI dedicata</h4><p data-i18n="w3.d">Un assistente pensato per le etichette. Nessun competitor ce l'ha.</p></div>
-      <div class="diff-card"><div class="diff-num">04</div><h4 data-i18n="w4.t">Semplice e bello</h4><p data-i18n="w4.d">Moderno, chiaro, veloce. Zero curva d'apprendimento.</p></div>
-      <div class="diff-card"><div class="diff-num">05</div><h4 data-i18n="w5.t">Offline-first</h4><p data-i18n="w5.d">I tuoi dati sempre con te, sincronizzati su ogni dispositivo.</p></div>
+    <div class="diff-grid stagger">
+      <div class="diff-card glass"><div class="diff-num">01</div><h4 data-i18n="w1.t">Tutto-in-uno</h4><p data-i18n="w1.d">L'intero business in un posto, non dieci strumenti scollegati.</p></div>
+      <div class="diff-card glass"><div class="diff-num">02</div><h4 data-i18n="w2.t">Firma integrata</h4><p data-i18n="w2.d">Contratti firmati digitalmente, con ritorno automatico nel sistema.</p></div>
+      <div class="diff-card glass"><div class="diff-num">03</div><h4 data-i18n="w3.t">AI dedicata</h4><p data-i18n="w3.d">Un assistente pensato per le etichette. Nessun competitor ce l'ha.</p></div>
+      <div class="diff-card glass"><div class="diff-num">04</div><h4 data-i18n="w4.t">Semplice e bello</h4><p data-i18n="w4.d">Moderno, chiaro, veloce. Zero curva d'apprendimento.</p></div>
+      <div class="diff-card glass"><div class="diff-num">05</div><h4 data-i18n="w5.t">Offline-first</h4><p data-i18n="w5.d">I tuoi dati sempre con te, sincronizzati su ogni dispositivo.</p></div>
     </div>
   </div>
 </section>
 
 <!-- ===== PRICING ===== -->
-<section class="section" id="pricing">
+<section class="section sec-tint t-beige" id="pricing">
   <div class="wrap">
-    <div class="sec-head">
+    <div class="sec-head reveal">
       <span class="eyebrow" data-i18n="pricing.badge">Prezzi</span>
       <h2 data-i18n-html="pricing.h2">Scegli il piano <span class="grad">della tua crescita</span></h2>
       <p data-i18n="pricing.sub">14 giorni di prova gratuita sul piano Studio. Disdici quando vuoi.</p>
-      <div style="margin-top:22px">
-        <div class="toggle" id="billing">
-          <button data-bill="month" class="on" data-i18n="bill.month">Mensile</button>
-          <button data-bill="year">​<span data-i18n="bill.year">Annuale</span> <span class="save">−30%</span></button>
-        </div>
-      </div>
+      <div style="margin-top:22px"><div class="toggle glass" id="billing">
+        <button data-bill="month" class="on" data-i18n="bill.month">Mensile</button>
+        <button data-bill="year"><span data-i18n="bill.year">Annuale</span> <span class="save">−30%</span></button>
+      </div></div>
     </div>
-    <div class="price-grid">
-      <div class="plan">
+    <div class="price-grid stagger">
+      <div class="plan glass">
         <h3>Starter</h3>
         <p class="desc" data-i18n="p1.desc">Per chi parte e vuole ordine fin da subito.</p>
         <div class="price"><span class="cur">€</span><span class="amount" data-m="9" data-y="6">9</span><span class="per" data-i18n="per.mo">/mese</span></div>
@@ -406,8 +453,7 @@ footer{border-top:1px solid var(--line);padding:50px 0 34px;background:var(--bg2
         </ul>
         <a class="btn btn-ghost" href="app.html" data-i18n="p1.cta">Inizia con Starter</a>
       </div>
-
-      <div class="plan pop">
+      <div class="plan glass pop">
         <span class="pop-badge" data-i18n="price.reco">⭐ Consigliato</span>
         <h3>Studio</h3>
         <p class="desc" data-i18n="p2.desc">Il piano con i "wow": AI e personalizzazione.</p>
@@ -424,8 +470,7 @@ footer{border-top:1px solid var(--line);padding:50px 0 34px;background:var(--bg2
         </ul>
         <a class="btn btn-primary" href="app.html" data-i18n="p2.cta">Prova gratis 14 giorni</a>
       </div>
-
-      <div class="plan">
+      <div class="plan glass">
         <h3>Agency</h3>
         <p class="desc" data-i18n="p3.desc">Per manager e agenzie con più artisti.</p>
         <div class="price"><span class="cur">€</span><span class="amount" data-m="49" data-y="34">49</span><span class="per" data-i18n="per.mo">/mese</span></div>
@@ -444,17 +489,32 @@ footer{border-top:1px solid var(--line);padding:50px 0 34px;background:var(--bg2
   </div>
 </section>
 
+<!-- ===== FAQ ===== -->
+<section class="section sec-tint t-deep" id="faq">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow" data-i18n="faq.badge">FAQ</span>
+      <h2 data-i18n-html="faq.h2">Le domande <span class="grad">più frequenti</span></h2>
+    </div>
+    <div class="faq-list stagger">
+      <details class="faq glass"><summary data-i18n="q1.q">I miei dati sono al sicuro?</summary><p data-i18n="q1.a">Sì. I dati viaggiano cifrati e vengono sincronizzati in cloud in modo sicuro, nel rispetto del GDPR. L'app è offline-first: i tuoi dati restano sul dispositivo anche senza connessione.</p></details>
+      <details class="faq glass"><summary data-i18n="q2.q">Posso disdire quando voglio?</summary><p data-i18n="q2.a">Certo, nessun vincolo. Disdici in qualsiasi momento e continui a usare il piano fino alla fine del periodo già pagato.</p></details>
+      <details class="faq glass"><summary data-i18n="q3.q">Funziona su più dispositivi?</summary><p data-i18n="q3.a">Sì. È una web-app installabile (PWA) su desktop e mobile, con sincronizzazione automatica su tutti i tuoi dispositivi.</p></details>
+      <details class="faq glass"><summary data-i18n="q4.q">Devo essere un esperto di contabilità?</summary><p data-i18n="q4.a">No. Label Finance è pensato per chi fa musica: imposti le quote una volta e royalty, margini e report si calcolano da soli.</p></details>
+      <details class="faq glass"><summary data-i18n="q5.q">Posso importare i miei dati?</summary><p data-i18n="q5.a">Sì. Importi i report di vendita in CSV da qualsiasi store o distributore: le colonne vengono riconosciute e mappate in automatico.</p></details>
+      <details class="faq glass"><summary data-i18n="q6.q">C'è una prova gratuita?</summary><p data-i18n="q6.a">Sì: 14 giorni sul piano Studio, senza carta di credito. Provi tutto, poi scegli.</p></details>
+    </div>
+  </div>
+</section>
+
 <!-- ===== FINAL CTA ===== -->
 <section class="cta">
-  <div class="wrap"><div class="cta-box">
-    <div class="orbs" aria-hidden="true"><span class="orb o3" style="opacity:.3"></span></div>
-    <div style="position:relative;z-index:1">
-      <h2 data-i18n="cta.t">La tua etichetta, finalmente sotto controllo.</h2>
-      <p data-i18n="cta.p">Smetti di litigare con Excel. Prova Label Finance gratis per 14 giorni — nessuna carta richiesta.</p>
-      <div class="hero-cta">
-        <a class="btn btn-primary btn-lg" href="app.html" data-i18n="cta.b1">Inizia gratis</a>
-        <a class="btn btn-ghost btn-lg" href="app.html" data-i18n="cta.b2">Accedi al tuo account</a>
-      </div>
+  <div class="wrap"><div class="cta-box reveal">
+    <h2 data-i18n="cta.t">La tua etichetta, finalmente sotto controllo.</h2>
+    <p data-i18n="cta.p">Smetti di litigare con Excel. Prova Label Finance gratis per 14 giorni — nessuna carta richiesta.</p>
+    <div class="hero-cta">
+      <a class="btn btn-primary btn-lg" href="app.html" data-i18n="cta.b1">Inizia gratis</a>
+      <a class="btn btn-ghost btn-lg" href="app.html" data-i18n="cta.b2">Accedi al tuo account</a>
     </div>
   </div></div>
 </section>
@@ -464,46 +524,32 @@ footer{border-top:1px solid var(--line);padding:50px 0 34px;background:var(--bg2
   <div class="wrap">
     <div class="foot-top">
       <div class="foot-brand">
-        <a class="logo" href="#top"><img src="icon.png?v=3" alt="">Label<span class="fin">Finance</span></a>
+        <a href="#top"><img src="lockup-v3.png?v=3" alt="Label Finance"></a>
         <p data-i18n="foot.tag">Il gestionale all-in-one per etichette discografiche indipendenti. Royalty, contratti, merch, finanze e AI.</p>
       </div>
       <div class="foot-cols">
-        <div class="foot-col">
-          <h5 data-i18n="foot.product">Prodotto</h5>
-          <a href="#features" data-i18n="nav.features">Funzionalità</a>
-          <a href="#how" data-i18n="nav.how">Come funziona</a>
-          <a href="#pricing" data-i18n="nav.pricing">Prezzi</a>
-          <a href="app.html" data-i18n="nav.login">Accedi</a>
-        </div>
-        <div class="foot-col">
-          <h5 data-i18n="foot.company">Azienda</h5>
-          <a href="#why" data-i18n="nav.why">Perché noi</a>
-          <a href="mailto:info.labelfinance@gmail.com" data-i18n="foot.contact">Contatti</a>
-        </div>
-        <div class="foot-col">
-          <h5 data-i18n="foot.start">Inizia</h5>
-          <a href="app.html" data-i18n="foot.create">Crea un account</a>
-          <a href="app.html" data-i18n="foot.try">Prova gratis</a>
-        </div>
+        <div class="foot-col"><h5 data-i18n="foot.product">Prodotto</h5>
+          <a href="#features" data-i18n="nav.features">Funzionalità</a><a href="#how" data-i18n="nav.how">Come funziona</a><a href="#pricing" data-i18n="nav.pricing">Prezzi</a><a href="#faq" data-i18n="nav.faq">FAQ</a></div>
+        <div class="foot-col"><h5 data-i18n="foot.company">Azienda</h5>
+          <a href="#why" data-i18n="nav.why">Perché noi</a><a href="mailto:info.labelfinance@gmail.com" data-i18n="foot.contact">Contatti</a><a href="app.html" data-i18n="nav.login">Accedi</a></div>
+        <div class="foot-col"><h5 data-i18n="foot.start">Inizia</h5>
+          <a href="app.html" data-i18n="foot.create">Crea un account</a><a href="app.html" data-i18n="foot.try">Prova gratis</a></div>
       </div>
     </div>
-    <div class="foot-bot">
-      <span>© <span id="year"></span> Label Finance</span>
-      <span>info.labelfinance@gmail.com</span>
-    </div>
+    <div class="foot-bot"><span>© <span id="year"></span> Label Finance</span><span>info.labelfinance@gmail.com</span></div>
   </div>
 </footer>
 
 <script>
 const LANG={
  it:{
-  'nav.features':'Funzionalità','nav.how':'Come funziona','nav.pricing':'Prezzi','nav.why':'Perché noi','nav.login':'Accedi','nav.start':'Inizia gratis',
+  'nav.features':'Funzionalità','nav.how':'Come funziona','nav.pricing':'Prezzi','nav.faq':'FAQ','nav.why':'Perché noi','nav.login':'Accedi','nav.start':'Inizia gratis',
   'hero.badge':'🎚️ Il gestionale all-in-one per etichette indipendenti',
   'hero.h1':'Tutto il business della tua etichetta, <span class="grad">in un solo posto.</span>',
   'hero.sub':'Royalty, contratti firmati digitalmente, merch, finanze e un assistente AI. Dalla produzione ai pagamenti — senza fogli Excel.',
   'hero.cta1':'Inizia gratis — 14 giorni','hero.cta2':'Scopri le funzionalità',
   'hero.n1':'Nessuna carta richiesta','hero.n2':'Offline-first, su ogni dispositivo','hero.n3':'Italiano / English',
-  'nav_mock.tx':'Movimenti','nav_mock.cat':'Discografia','nav_mock.con':'Contratti','nav_mock.art':'Artisti',
+  'nav_mock.tx':'Movimenti','nav_mock.grp':'Musica & Catalogo','nav_mock.cat':'Discografia','nav_mock.con':'Contratti','nav_mock.art':'Artisti','mock.period':'Ultimi 12 mesi ▾',
   'kpi.in':'Entrate','kpi.out':'Uscite','kpi.net':'Margine netto',
   'features.badge':'Funzionalità','features.h2':'Una sola app per <span class="grad">l\'intero business</span>',
   'features.sub':'Gli altri fanno solo le royalty oppure solo i contratti. Label Finance copre tutto, dall\'incasso al pagamento dell\'artista.',
@@ -540,17 +586,24 @@ const LANG={
   'p1.desc':'Per chi parte e vuole ordine fin da subito.','p1.f1':'1 etichetta','p1.f2':'Finanze, royalty, recoupment','p1.f3':'Import CSV, dashboard, PDF','p1.f4':'Artisti, Task, Merch','p1.f5':'Contratti + firma (base)','p1.f6':'Assistente AI','p1.f7':'Dashboard personalizzabile','p1.cta':'Inizia con Starter',
   'p2.desc':'Il piano con i "wow": AI e personalizzazione.','p2.f1':'Fino a 3 etichette','p2.f2':'Tutto di Starter','p2.f3':'Assistente AI','p2.f4':'Dashboard personalizzabile','p2.f5':'Contratti illimitati + email automatica','p2.f6':'Export Excel + branding','p2.f7':'Statement royalty per artista','p2.cta':'Prova gratis 14 giorni',
   'p3.desc':'Per manager e agenzie con più artisti.','p3.f1':'Etichette illimitate','p3.f2':'Tutto di Studio','p3.f3':'Team / accessi multipli','p3.f4':'Automazioni & audit log','p3.f5':'Onboarding dedicato','p3.f6':'Supporto prioritario','p3.cta':'Contatta le vendite',
+  'faq.badge':'FAQ','faq.h2':'Le domande <span class="grad">più frequenti</span>',
+  'q1.q':'I miei dati sono al sicuro?','q1.a':'Sì. I dati viaggiano cifrati e vengono sincronizzati in cloud in modo sicuro, nel rispetto del GDPR. L\'app è offline-first: i tuoi dati restano sul dispositivo anche senza connessione.',
+  'q2.q':'Posso disdire quando voglio?','q2.a':'Certo, nessun vincolo. Disdici in qualsiasi momento e continui a usare il piano fino alla fine del periodo già pagato.',
+  'q3.q':'Funziona su più dispositivi?','q3.a':'Sì. È una web-app installabile (PWA) su desktop e mobile, con sincronizzazione automatica su tutti i tuoi dispositivi.',
+  'q4.q':'Devo essere un esperto di contabilità?','q4.a':'No. Label Finance è pensato per chi fa musica: imposti le quote una volta e royalty, margini e report si calcolano da soli.',
+  'q5.q':'Posso importare i miei dati?','q5.a':'Sì. Importi i report di vendita in CSV da qualsiasi store o distributore: le colonne vengono riconosciute e mappate in automatico.',
+  'q6.q':'C\'è una prova gratuita?','q6.a':'Sì: 14 giorni sul piano Studio, senza carta di credito. Provi tutto, poi scegli.',
   'cta.t':'La tua etichetta, finalmente sotto controllo.','cta.p':'Smetti di litigare con Excel. Prova Label Finance gratis per 14 giorni — nessuna carta richiesta.','cta.b1':'Inizia gratis','cta.b2':'Accedi al tuo account',
   'foot.tag':'Il gestionale all-in-one per etichette discografiche indipendenti. Royalty, contratti, merch, finanze e AI.','foot.product':'Prodotto','foot.company':'Azienda','foot.start':'Inizia','foot.contact':'Contatti','foot.create':'Crea un account','foot.try':'Prova gratis'
  },
  en:{
-  'nav.features':'Features','nav.how':'How it works','nav.pricing':'Pricing','nav.why':'Why us','nav.login':'Log in','nav.start':'Start free',
+  'nav.features':'Features','nav.how':'How it works','nav.pricing':'Pricing','nav.faq':'FAQ','nav.why':'Why us','nav.login':'Log in','nav.start':'Start free',
   'hero.badge':'🎚️ The all-in-one tool for independent labels',
   'hero.h1':'All your label\'s business, <span class="grad">in one place.</span>',
   'hero.sub':'Royalties, digitally signed contracts, merch, finances and an AI assistant. From production to payouts — without spreadsheets.',
   'hero.cta1':'Start free — 14 days','hero.cta2':'See the features',
   'hero.n1':'No card required','hero.n2':'Offline-first, on every device','hero.n3':'Italiano / English',
-  'nav_mock.tx':'Transactions','nav_mock.cat':'Catalog','nav_mock.con':'Contracts','nav_mock.art':'Artists',
+  'nav_mock.tx':'Transactions','nav_mock.grp':'Music & Catalog','nav_mock.cat':'Catalog','nav_mock.con':'Contracts','nav_mock.art':'Artists','mock.period':'Last 12 months ▾',
   'kpi.in':'Income','kpi.out':'Expenses','kpi.net':'Net margin',
   'features.badge':'Features','features.h2':'One app for <span class="grad">your whole business</span>',
   'features.sub':'Others do only royalties or only contracts. Label Finance covers it all, from the sale to the artist\'s payout.',
@@ -587,6 +640,13 @@ const LANG={
   'p1.desc':'For those starting out who want order from day one.','p1.f1':'1 label','p1.f2':'Finances, royalties, recoupment','p1.f3':'CSV import, dashboard, PDF','p1.f4':'Artists, Tasks, Merch','p1.f5':'Contracts + signing (basic)','p1.f6':'AI Assistant','p1.f7':'Customizable dashboard','p1.cta':'Start with Starter',
   'p2.desc':'The plan with the "wow": AI and customization.','p2.f1':'Up to 3 labels','p2.f2':'Everything in Starter','p2.f3':'AI Assistant','p2.f4':'Customizable dashboard','p2.f5':'Unlimited contracts + auto email','p2.f6':'Excel export + branding','p2.f7':'Per-artist royalty statements','p2.cta':'Try free for 14 days',
   'p3.desc':'For managers and agencies with multiple artists.','p3.f1':'Unlimited labels','p3.f2':'Everything in Studio','p3.f3':'Team / multiple seats','p3.f4':'Automations & audit log','p3.f5':'Dedicated onboarding','p3.f6':'Priority support','p3.cta':'Contact sales',
+  'faq.badge':'FAQ','faq.h2':'Frequently <span class="grad">asked questions</span>',
+  'q1.q':'Is my data safe?','q1.a':'Yes. Data travels encrypted and is securely synced to the cloud, GDPR-compliant. The app is offline-first: your data stays on your device even without a connection.',
+  'q2.q':'Can I cancel anytime?','q2.a':'Of course, no lock-in. Cancel anytime and keep using the plan until the end of the period you already paid for.',
+  'q3.q':'Does it work on multiple devices?','q3.a':'Yes. It\'s an installable web app (PWA) on desktop and mobile, with automatic sync across all your devices.',
+  'q4.q':'Do I need to be an accounting expert?','q4.a':'No. Label Finance is built for music people: set the splits once and royalties, margins and reports calculate themselves.',
+  'q5.q':'Can I import my data?','q5.a':'Yes. Import sales reports as CSV from any store or distributor: columns are recognized and mapped automatically.',
+  'q6.q':'Is there a free trial?','q6.a':'Yes: 14 days on the Studio plan, no credit card. Try everything, then choose.',
   'cta.t':'Your label, finally under control.','cta.p':'Stop fighting with spreadsheets. Try Label Finance free for 14 days — no card required.','cta.b1':'Start free','cta.b2':'Log in to your account',
   'foot.tag':'The all-in-one tool for independent record labels. Royalties, contracts, merch, finances and AI.','foot.product':'Product','foot.company':'Company','foot.start':'Get started','foot.contact':'Contact','foot.create':'Create an account','foot.try':'Try free'
  }
@@ -597,8 +657,7 @@ function setBilling(year){ curYear=year;
   const note=LANG[curLang][year?'bill.note_y':'bill.note_m'];
   document.querySelectorAll('[data-billnote]').forEach(n=>n.textContent=note);
 }
-function applyLang(l){
-  if(!LANG[l]) l='it'; curLang=l;
+function applyLang(l){ if(!LANG[l]) l='it'; curLang=l;
   try{localStorage.setItem('lf_land_lang',l);}catch(e){}
   document.documentElement.lang=l;
   document.querySelectorAll('[data-i18n]').forEach(el=>{ const v=LANG[l][el.dataset.i18n]; if(v!=null) el.textContent=v; });
@@ -613,8 +672,12 @@ bill.addEventListener('click',e=>{ const b=e.target.closest('[data-bill]'); if(!
 document.getElementById('year').textContent=new Date().getFullYear();
 const nav=document.getElementById('nav');
 addEventListener('scroll',()=>nav.classList.toggle('scrolled',scrollY>10),{passive:true});
+// micro-animazioni allo scroll
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+if(reduce){ document.querySelectorAll('.reveal,.stagger').forEach(el=>el.classList.add('in')); }
+else{ const io=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } }),{threshold:.12,rootMargin:'0px 0px -8% 0px'});
+  document.querySelectorAll('.reveal,.stagger').forEach(el=>io.observe(el)); }
 if('serviceWorker' in navigator){ addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }
-// lingua iniziale: salvata, altrimenti dal browser
 (function(){ let l='it'; try{ l=localStorage.getItem('lf_land_lang')||((navigator.language||'it').toLowerCase().startsWith('it')?'it':'en'); }catch(e){} applyLang(l); })();
 </script>
 </body>

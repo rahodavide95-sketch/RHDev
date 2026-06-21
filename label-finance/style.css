@@ -180,6 +180,11 @@ body.gated .ai-fab{display:none}
 .ai-pop-x:hover{background:rgba(255,255,255,.26)}
 .ai-pop-body{padding:14px 16px;overflow-y:auto}
 .ai-pop-sub{margin:0 0 12px}
+.ai-thought{display:flex;gap:9px;align-items:flex-start;margin:0 0 12px;padding:11px 13px;border-radius:12px;
+  background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 14%,var(--panel)),color-mix(in srgb,var(--net) 10%,var(--panel)));
+  border:1px solid color-mix(in srgb,var(--accent) 30%,var(--line))}
+.ai-thought-i{flex:none;color:var(--accent);font-size:1rem;line-height:1.4}
+.ai-thought p{margin:0;font-size:.9rem;font-weight:600;color:var(--text)}
 .ai-chips{display:flex;flex-direction:column;gap:8px}
 .ai-chip{display:flex;align-items:center;gap:9px;text-align:left;background:var(--panel-2);border:1px solid var(--line);
   color:var(--text);font:inherit;font-weight:600;font-size:.9rem;padding:11px 13px;border-radius:11px;cursor:pointer;transition:.15s}

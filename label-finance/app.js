@@ -230,7 +230,9 @@ function autoMap(headers){
    NAVIGAZIONE
    ============================================================================ */
 const VIEW_TITLES={dashboard:'Dashboard',transactions:'Movimenti',releases:'Discografia',planning:'Pianificazione',events:'Eventi',supports:'Support DJ',royalties:'Royalty',artists:'Artisti',contracts:'Contratti',tasks:'Task',merch:'Merch',import:'Importa CSV',settings:'Impostazioni',about:'Chi siamo',offers:'Offerte & Piani',faq:'Aiuto & FAQ'};
+let currentView='dashboard';
 function goto(view){
+  currentView=view;
   $$('.nav-item').forEach(b=>b.classList.toggle('is-active',b.dataset.view===view));
   $$('.view').forEach(v=>v.classList.toggle('is-active',v.id==='view-'+view));
   if(typeof expandActiveGroup==='function') expandActiveGroup();
@@ -1956,6 +1958,110 @@ function buildAiSummary(){
 }
 let aiBusy=false, aiLastResult=null;
 function aiEntitled(){ return can('ai') || !!aiLocalKey(); }
+/* giorni mancanti a una data ISO */
+function daysTo(ds){ if(!ds) return null; try{ const d=new Date(ds+'T00:00:00'), n=new Date(); n.setHours(0,0,0,0); return Math.round((d-n)/86400000); }catch(e){ return null; } }
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+/* "pensiero" + prompt specifici della sezione in cui ci si trova quando si apre il bot */
+function sectionInsight(view, it){
+  const T=todayISO(); let thought='', prompts=[];
+  const Q=(icon,label,q)=>({icon,label,q});
+  switch(view){
+    case 'artists':{
+      const arts=DB.artists||[]; const noIban=arts.filter(a=>!(a.iban||'').trim()).length;
+      const recoup=(typeof computeRecoup==='function')?computeRecoup().filter(r=>r.unrecouped>0):[];
+      thought = it?`Sei negli Artisti: ne hai ${arts.length}.`:`You're in Artists: you have ${arts.length}.`;
+      if(noIban) thought += it?` ${noIban} senza IBAN, quindi impagabili.`:` ${noIban} without IBAN, so unpayable.`;
+      else if(recoup.length) thought += it?` ${recoup.length} non hanno ancora recuperato l'anticipo.`:` ${recoup.length} haven't recouped their advance yet.`;
+      prompts=[
+        Q('💸', it?'Chi devo pagare e quanto':'Who to pay & how much', it?'Per ogni artista dimmi quanto gli devo di royalty nel periodo selezionato e segnala chi non ha IBAN.':'For each artist tell me how much I owe in royalties for the selected period and flag who has no IBAN.'),
+        Q('⭐', it?'Artisti più redditizi':'Most profitable artists', it?'Quali artisti generano più margine per l\'etichetta e quali pesano sui costi?':'Which artists bring the most margin and which weigh on costs?'),
+        Q('🧾', it?'Chi non ha recuperato':'Who hasn\'t recouped', it?'Quali artisti non hanno ancora recuperato anticipi/costi, quanto manca e come gestirli?':'Which artists haven\'t recouped advances yet, how much is left and how to handle them?')];
+      break; }
+    case 'releases':{
+      const rels=releases(); const noUpc=rels.filter(r=>!(r.upc||'').trim()).length;
+      const noSplit=rels.filter(r=>!(r.splits&&r.splits.length)).length;
+      thought = it?`Sei nella Discografia: ${rels.length} release.`:`You're in the Catalog: ${rels.length} releases.`;
+      const gaps=[]; if(noUpc) gaps.push(it?`${noUpc} senza UPC`:`${noUpc} without UPC`); if(noSplit) gaps.push(it?`${noSplit} senza quote`:`${noSplit} without splits`);
+      if(gaps.length) thought += ' '+gaps.join(', ')+'.';
+      prompts=[
+        Q('🗂️', it?'Release con dati mancanti':'Releases missing data', it?'Quali release hanno dati incompleti (UPC, ISRC, quote, crediti) e cosa conviene completare prima?':'Which releases have incomplete data (UPC, ISRC, splits, credits) and what should I complete first?'),
+        Q('💰', it?'Release più redditizie':'Top-earning releases', it?'Quali release generano più margine e quali sono in perdita?':'Which releases bring the most margin and which are at a loss?')];
+      break; }
+    case 'transactions':{
+      const txs=DB.transactions||[]; const unl=new Set();
+      txs.forEach(t=>{ const p=(t.product||'').trim(); if(p&&!releaseForTx(t)) unl.add(p.toLowerCase()); });
+      thought = it?`Sei nei Movimenti: ${txs.length} registrati.`:`You're in Transactions: ${txs.length} recorded.`;
+      if(unl.size) thought += it?` ${unl.size} prodotti non collegati a release.`:` ${unl.size} products not linked to a release.`;
+      prompts=[
+        Q('📉', it?'Dove perdo margine?':'Where am I losing margin?', it?'Quali piattaforme, release o spese erodono il mio margine e dove intervenire?':'Which platforms, releases or expenses erode my margin and where to act?'),
+        Q('🔗', it?'Prodotti non collegati':'Unlinked products', it?'Elenca i prodotti dei movimenti non collegati a release e a quale potrebbero corrispondere.':'List transaction products not linked to a release and which they might match.')];
+      break; }
+    case 'merch':{
+      const m=DB.merch||[]; const low=m.filter(x=>x.stock!=null&&+x.stock<=5).length;
+      thought = it?`Sei nel Merch: ${m.length} articoli.`:`You're in Merch: ${m.length} items.`;
+      if(low) thought += it?` ${low} con scorte basse (≤5).`:` ${low} low on stock (≤5).`;
+      prompts=[
+        Q('👕', it?'Cosa conviene spingere':'What to push', it?'Analizza il merch: cosa vende di più, margini e cosa conviene promuovere.':'Analyze merch: best sellers, margins and what to promote.'),
+        Q('📦', it?'Scorte da riordinare':'Stock to reorder', it?'Quali articoli stanno per esaurirsi e quanto conviene riordinare?':'Which items are running low and how much should I reorder?')];
+      break; }
+    case 'planning':{
+      const pl=(DB.planning||[]).filter(p=>p.date);
+      const next=pl.filter(p=>p.date>=T).sort((a,b)=>a.date.localeCompare(b.date))[0];
+      thought = it?`Sei nella Pianificazione: ${pl.length} elementi.`:`You're in Planning: ${pl.length} items.`;
+      if(next){ const d=daysTo(next.date); thought += it?` Prossima: «${next.title}»${d!=null?` tra ${d} giorni`:''}.`:` Next: "${next.title}"${d!=null?` in ${d} days`:''}.`; }
+      prompts=[
+        Q('📅', it?'Ottimizza il piano uscite':'Optimize the release plan', it?'In base alle uscite pianificate, come distribuirle al meglio nei prossimi mesi?':'Based on planned releases, how to best schedule them over the coming months?'),
+        Q('🚀', it?'Strategia di lancio':'Launch strategy', it?'Per la prossima uscita pianificata, suggerisci una strategia di lancio (premiere, promo, support).':'For the next planned release, suggest a launch strategy (premiere, promo, support).')];
+      break; }
+    case 'events':{
+      const ev=(DB.events||[]).filter(e=>e.date);
+      const next=ev.filter(e=>e.date>=T).sort((a,b)=>a.date.localeCompare(b.date))[0];
+      thought = it?`Sei negli Eventi: ${ev.length} in agenda.`:`You're in Events: ${ev.length} scheduled.`;
+      if(next){ const d=daysTo(next.date); thought += it?` Prossimo: «${next.title}»${next.city?` a ${next.city}`:''}${d!=null?` tra ${d} giorni`:''}.`:` Next: "${next.title}"${next.city?` in ${next.city}`:''}${d!=null?` in ${d} days`:''}.`; }
+      prompts=[
+        Q('🎤', it?'Prepara il prossimo evento':'Prepare the next event', it?'Cosa dovrei organizzare per il prossimo evento in agenda perché vada bene?':'What should I arrange for the next scheduled event to make it a success?'),
+        Q('💶', it?'Eventi e ritorno economico':'Events & ROI', it?'Gli eventi stanno portando un ritorno economico o promozionale? Come valutarlo?':'Are events bringing financial or promotional returns? How to assess it?')];
+      break; }
+    case 'supports':{
+      const su=DB.supports||[]; const byC={};
+      su.forEach(s=>{ const c=(s.country||'').trim(); if(c) byC[c]=(byC[c]||0)+1; });
+      const top=Object.entries(byC).sort((a,b)=>b[1]-a[1])[0];
+      thought = it?`Sei nei Support: ${su.length} registrati.`:`You're in DJ Support: ${su.length} logged.`;
+      if(top) thought += it?` Più supportato in ${top[0]} (${top[1]}).`:` Most support from ${top[0]} (${top[1]}).`;
+      prompts=[
+        Q('🌍', it?'Dove spingere la promo':'Where to push promo', it?'In quali paesi/scene la mia musica gira di più e dove conviene concentrare la promozione?':'In which countries/scenes is my music played most and where should I focus promotion?'),
+        Q('🎧', it?'DJ che mi supportano di più':'Top supporting DJs', it?'Quali DJ supportano di più le mie uscite e come costruirci una relazione?':'Which DJs support my releases the most and how to build a relationship with them?')];
+      break; }
+    case 'royalties':{
+      thought = it?'Sei nelle Royalty: qui vedi quanto spetta a ciascun artista.':'You\'re in Royalties: here\'s what each artist is owed.';
+      prompts=[
+        Q('💸', it?'Riepilogo pagamenti':'Payouts summary', it?'Fammi il riepilogo di quanto devo a ogni artista nel periodo selezionato.':'Summarize how much I owe each artist for the selected period.'),
+        Q('🧾', it?'Recoupment aperti':'Open recoupments', it?'Quali anticipi/costi non sono ancora stati recuperati e quanto manca?':'Which advances/costs are not recouped yet and how much is left?')];
+      break; }
+    case 'contracts':{
+      const cs=DB.contracts||[];
+      const pending=cs.filter(c=>c.status==='sent').length;
+      const draft=cs.filter(c=>!c.status||c.status==='draft').length;
+      thought = it?`Sei nei Contratti: ${cs.length} in totale.`:`You're in Contracts: ${cs.length} total.`;
+      if(pending) thought += it?` ${pending} in attesa della firma dell'artista.`:` ${pending} waiting for the artist's signature.`;
+      else if(draft) thought += it?` ${draft} bozze da completare e inviare.`:` ${draft} drafts to complete and send.`;
+      prompts=[
+        Q('✍️', it?'Contratti da chiudere':'Contracts to close', it?'Quali contratti sono incompleti o in attesa di firma e cosa devo fare per chiuderli?':'Which contracts are incomplete or awaiting signature and what should I do to close them?'),
+        Q('📄', it?'Cosa scrivere in un contratto':'What to put in a contract', it?'Quali clausole chiave non dovrebbero mancare in un contratto di licenza/distribuzione per la mia etichetta?':'Which key clauses should a license/distribution contract for my label include?')];
+      break; }
+    case 'tasks':{
+      const ts=DB.tasks||[]; const open=ts.filter(t=>!t.done);
+      const over=open.filter(t=>t.due&&t.due<T).length; const todayN=open.filter(t=>t.due===T).length;
+      thought = it?`Sei nei Task: ${open.length} aperti.`:`You're in Tasks: ${open.length} open.`;
+      if(over) thought += it?` ${over} in ritardo.`:` ${over} overdue.`;
+      else if(todayN) thought += it?` ${todayN} in scadenza oggi.`:` ${todayN} due today.`;
+      prompts=[
+        Q('✅', it?'Priorità di oggi':'Today\'s priorities', it?'In base ai miei task e ai dati dell\'etichetta, cosa dovrei fare per primo oggi?':'Based on my tasks and the label data, what should I do first today?'),
+        Q('🧭', it?'Cosa sto trascurando':'What am I neglecting', it?'Guardando dati e scadenze, cosa sto trascurando che potrebbe costarmi?':'Looking at data and deadlines, what am I neglecting that could cost me?')];
+      break; }
+  }
+  return { thought, prompts };
+}
 /* preprompt utili in base al contesto/dati */
 function contextPrompts(){
   const it=(window.LFI18N?window.LFI18N.lang:'it')!=='en';
@@ -1980,8 +2086,12 @@ function aiPopBody(){
     body.innerHTML=`<div class="ai-upsell"><p>${tt('ai.locked')}</p><button class="btn btn-primary" data-goto="offers">${tt('ai.see_plans')}</button></div>`;
     return;
   }
-  const prompts=contextPrompts();
-  body.innerHTML=`<div class="ai-prompts" id="ai-prompts"><p class="ai-pop-sub muted small">${tt('ai.sub')}</p>
+  const it=(window.LFI18N?window.LFI18N.lang:'it')!=='en';
+  const ins=sectionInsight(currentView, it);
+  const prompts=[...ins.prompts, ...contextPrompts()].slice(0,6);
+  body.innerHTML=`<div class="ai-prompts" id="ai-prompts">
+      ${ins.thought?`<div class="ai-thought"><span class="ai-thought-i">✦</span><p>${esc(ins.thought)}</p></div>`:''}
+      <p class="ai-pop-sub muted small">${tt('ai.sub')}</p>
       <div class="ai-chips">${prompts.map((p,i)=>`<button class="ai-chip" data-aiq="${i}"><span class="ai-chip-i">${p.icon}</span>${esc(p.label)}</button>`).join('')}</div></div>
     <div class="ai-out" id="ai-out"></div>`;
   body._prompts=prompts;

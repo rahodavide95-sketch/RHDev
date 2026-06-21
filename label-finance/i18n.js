@@ -14,6 +14,7 @@
     it:{
       // Navigazione
       'nav.dashboard':'Dashboard','nav.transactions':'Movimenti','nav.releases':'Discografia',
+      'nav.consolidated':'Consolidato','cons.title':'Consolidato','cons.sub':"Tutte le tue etichette in un colpo d'occhio",'cons.byLabel':'Per etichetta','cons.hint':"Clicca una riga per aprire quell'etichetta",'cons.h_label':'Etichetta','cons.h_rel':'Release','cons.h_art':'Artisti','cons.best':'★ migliore','cons.label1':'etichetta','cons.labelN':'etichette',
       'nav.planning':'Pianificazione','nav.events':'Eventi','nav.supports':'Support DJ',
       'nav.grp_catalog':'Musica & Catalogo','nav.grp_finance':'Finanze','nav.grp_manage':'Gestione',
       'nav.royalties':'Royalty','nav.import':'Importa CSV','nav.settings':'Impostazioni',
@@ -218,6 +219,7 @@
     },
     en:{
       'nav.dashboard':'Dashboard','nav.transactions':'Transactions','nav.releases':'Discography',
+      'nav.consolidated':'Consolidated','cons.title':'Consolidated','cons.sub':'All your labels at a glance','cons.byLabel':'By label','cons.hint':'Click a row to open that label','cons.h_label':'Label','cons.h_rel':'Releases','cons.h_art':'Artists','cons.best':'★ best','cons.label1':'label','cons.labelN':'labels',
       'nav.planning':'Planning','nav.events':'Events','nav.supports':'DJ Support',
       'nav.grp_catalog':'Music & Catalog','nav.grp_finance':'Finance','nav.grp_manage':'Management',
       'nav.royalties':'Royalties','nav.import':'Import CSV','nav.settings':'Settings',

@@ -1292,3 +1292,13 @@ body.gate-signup #gate-signin{opacity:.5}
   body.print-statement .main{display:none!important}
   body.print-statement #print-area{display:block!important}
 }
+/* --- Vista consolidata multi-etichetta --- */
+#cons-table{width:100%;border-collapse:collapse;font-size:.92rem}
+#cons-table th{text-align:left;color:var(--muted);font-weight:600;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;padding:0 10px 10px;border-bottom:1px solid var(--line)}
+#cons-table th.num,#cons-table td.num{text-align:right;font-variant-numeric:tabular-nums}
+#cons-table td{padding:11px 10px;border-bottom:1px solid var(--line)}
+#cons-table tbody tr:last-child td{border-bottom:none}
+#cons-table .cons-row{cursor:pointer;transition:.12s}
+#cons-table .cons-row:hover td{background:var(--panel-2)}
+#cons-table .pos{color:var(--in)} #cons-table .neg{color:var(--out)}
+.cons-top{font-size:.64rem;font-weight:700;color:var(--in);background:color-mix(in srgb,var(--in) 16%,transparent);border-radius:6px;padding:2px 7px;margin-left:7px;white-space:nowrap}

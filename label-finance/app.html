@@ -88,6 +88,9 @@
       <button class="nav-item is-active" data-view="dashboard" title="Dashboard">
         <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span><span class="nav-label" data-i18n="nav.dashboard">Dashboard</span></button>
 
+      <button class="nav-item nav-multi" data-view="consolidated" title="Consolidato" hidden>
+        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg></span><span class="nav-label" data-i18n="nav.consolidated">Consolidato</span></button>
+
       <div class="nav-group" data-group="catalog">
         <button class="nav-group-h" type="button">
           <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/></svg></span>
@@ -424,6 +427,24 @@
         <div id="disco-body" class="wlist"></div>
       </div>
 
+    </section>
+
+    <!-- ====== CONSOLIDATO (multi-etichetta) ====== -->
+    <section class="view" id="view-consolidated">
+      <header class="view-head">
+        <div><div class="title-row"><h1 data-i18n="cons.title">Consolidato</h1></div>
+          <p class="muted" data-i18n="cons.sub">Tutte le tue etichette in un colpo d'occhio</p></div>
+      </header>
+      <div class="kpi-grid">
+        <div class="kpi kpi--in"><span class="kpi-label" data-i18n="dash.kpi.income">Entrate</span><span class="kpi-value" id="cons-in">€0,00</span><span class="kpi-delta" id="cons-nlabels"></span></div>
+        <div class="kpi kpi--out"><span class="kpi-label" data-i18n="dash.kpi.expense">Uscite</span><span class="kpi-value" id="cons-out">€0,00</span></div>
+        <div class="kpi kpi--net"><span class="kpi-label" data-i18n="dash.kpi.net">Margine netto</span><span class="kpi-value" id="cons-net">€0,00</span></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2 data-i18n="cons.byLabel">Per etichetta</h2>
+          <span class="muted small" data-i18n="cons.hint">Clicca una riga per aprire quell'etichetta</span></div>
+        <div class="table-wrap"><table id="cons-table"></table></div>
+      </div>
     </section>
 
     <!-- ====== TRANSACTIONS ====== -->

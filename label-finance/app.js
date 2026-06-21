@@ -97,6 +97,29 @@ window.LF = {
   goto(v){ if(typeof goto==='function') goto(v); },
 };
 function reloadViews(){ renderDashboard(); renderTx(); renderReleases(); renderPlanning(); renderEvents(); renderSupports(); renderRoyalties(); renderArtists(); renderContracts(); renderTasks(); renderMerch(); renderOffers(); renderSettings(); }
+/* ---- Vista consolidata multi-etichetta (Agency) ---- */
+function updateConsolidatedNav(){ const b=document.querySelector('[data-view="consolidated"]'); if(b) b.hidden=((ACCOUNT&&ACCOUNT.labels)||[]).length<2;
+  if(currentView==='consolidated' && ((ACCOUNT&&ACCOUNT.labels)||[]).length<2) goto('dashboard'); }
+function labelKPI(l){ const rates=l.rates||{}; const rate=c=>rates[(c||'EUR').toUpperCase()]??1; let inc=0,exp=0;
+  (l.transactions||[]).forEach(t=>{ const v=(Number(t.net)||0)*rate(t.currency); if(t.kind==='income') inc+=v; else exp+=Math.abs(v); });
+  return {inc,exp,net:inc-exp}; }
+function renderConsolidated(){
+  if(!$('#cons-table')) return;
+  const labels=(ACCOUNT&&ACCOUNT.labels)||[]; let tIn=0,tOut=0;
+  const rows=labels.map(l=>{ const k=labelKPI(l); tIn+=k.inc; tOut+=k.exp;
+    return { id:l.id, name:(l.profile&&l.profile.label)||l.name||'Etichetta', inc:k.inc, exp:k.exp, net:k.net, rel:(l.releases||[]).length, art:(l.artists||[]).length }; })
+    .sort((a,b)=>b.net-a.net);
+  $('#cons-in').textContent=fmtMoney(tIn); $('#cons-out').textContent=fmtMoney(tOut); $('#cons-net').textContent=fmtMoney(tIn-tOut);
+  const nl=$('#cons-nlabels'); if(nl) nl.textContent=labels.length+' '+(labels.length===1?tt('cons.label1'):tt('cons.labelN'));
+  const th=`<thead><tr><th>${tt('cons.h_label')}</th><th class="num">${tt('dash.kpi.income')}</th><th class="num">${tt('dash.kpi.expense')}</th><th class="num">${tt('dash.kpi.net')}</th><th class="num">${tt('cons.h_rel')}</th><th class="num">${tt('cons.h_art')}</th></tr></thead>`;
+  const body=rows.map((r,i)=>`<tr class="cons-row" data-label="${r.id}">
+    <td><b>${esc(r.name)}</b>${(i===0&&r.net>0&&rows.length>1)?` <span class="cons-top">${tt('cons.best')}</span>`:''}</td>
+    <td class="num pos">${fmtMoney(r.inc)}</td><td class="num neg">${fmtMoney(r.exp)}</td>
+    <td class="num ${r.net>=0?'pos':'neg'}">${fmtMoney(r.net)}</td>
+    <td class="num">${r.rel}</td><td class="num">${r.art}</td></tr>`).join('');
+  $('#cons-table').innerHTML=th+`<tbody>${body}</tbody>`;
+  $('#cons-table').querySelectorAll('.cons-row').forEach(tr=>tr.onclick=()=>switchLabel(tr.dataset.label));
+}
 // integra eventuali colonne nuove non ancora presenti nell'ordine salvato
 function ensureCols(){
   DB.txOrder = DB.txOrder || DEFAULT_TX_ORDER.slice();
@@ -229,7 +252,7 @@ function autoMap(headers){
 /* ============================================================================
    NAVIGAZIONE
    ============================================================================ */
-const VIEW_TITLES={dashboard:'Dashboard',transactions:'Movimenti',releases:'Discografia',planning:'Pianificazione',events:'Eventi',supports:'Support DJ',royalties:'Royalty',artists:'Artisti',contracts:'Contratti',tasks:'Task',merch:'Merch',import:'Importa CSV',settings:'Impostazioni',about:'Chi siamo',offers:'Offerte & Piani',faq:'Aiuto & FAQ'};
+const VIEW_TITLES={dashboard:'Dashboard',consolidated:'Consolidato',transactions:'Movimenti',releases:'Discografia',planning:'Pianificazione',events:'Eventi',supports:'Support DJ',royalties:'Royalty',artists:'Artisti',contracts:'Contratti',tasks:'Task',merch:'Merch',import:'Importa CSV',settings:'Impostazioni',about:'Chi siamo',offers:'Offerte & Piani',faq:'Aiuto & FAQ'};
 let currentView='dashboard';
 function goto(view){
   currentView=view;
@@ -238,6 +261,7 @@ function goto(view){
   if(typeof expandActiveGroup==='function') expandActiveGroup();
   const sec=$('#topbar-section'); if(sec) sec.textContent=VIEW_TITLES[view]||'';
   if(view==='dashboard') renderDashboard();
+  if(view==='consolidated') renderConsolidated();
   if(view==='transactions') renderTx();
   if(view==='releases') renderReleases();
   if(view==='planning') renderPlanning();
@@ -328,7 +352,7 @@ function initFAQ(){
 
 /* ===== Account: menu, etichette, piani ===== */
 const PLAN_INFO={ free:{name:'Starter'}, studio:{name:'Studio'}, agency:{name:'Agency'} };
-function rebuildAccountMenu(){
+function rebuildAccountMenu(){ if(typeof updateConsolidatedNav==='function') updateConsolidatedNav();
   const m=$('#account-menu-labels'); if(!m) return;
   const multi=ACCOUNT.labels.length>1;
   m.innerHTML=ACCOUNT.labels.map(l=>`<div class="acct-label-row ${l.id===ACCOUNT.activeLabel?'is-active':''}">
@@ -3636,6 +3660,7 @@ initFAQ();
 initFeatures();
 wireAgenda();
 wireNotifs();
+if(typeof updateConsolidatedNav==='function') updateConsolidatedNav();
 notifScan();
 wireNavGroups();
 

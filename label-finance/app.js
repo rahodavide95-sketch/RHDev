@@ -782,12 +782,15 @@ function loadDemo(){
   DB.transactions.push(...tx); save(); reloadViews(); updateDemoBanner(); toast(tt('t.demo_loaded')); goto('dashboard');
 }
 $('#btn-demo')?.addEventListener('click', loadDemo);
-function hasDemoData(){ return (DB.releases||[]).some(r=>r.demo) || (DB.transactions||[]).some(t=>t.demo); }
+// riconosce i dati demo: flag esplicito o marcatori legacy (catalogo SC-DEMO / nota "demo")
+function isDemoRel(r){ return !!(r&&(r.demo || r.catalog==='SC-DEMO')); }
+function isDemoTx(t){ return !!(t&&(t.demo || t.catalog==='SC-DEMO' || t.note==='demo')); }
+function hasDemoData(){ return (DB.releases||[]).some(isDemoRel) || (DB.transactions||[]).some(isDemoTx); }
 function removeDemo(){
   if(!hasDemoData()) return;
   if(!confirm(tt('demo.confirm'))) return;
-  DB.releases=(DB.releases||[]).filter(r=>!r.demo);
-  DB.transactions=(DB.transactions||[]).filter(t=>!t.demo);
+  DB.releases=(DB.releases||[]).filter(r=>!isDemoRel(r));
+  DB.transactions=(DB.transactions||[]).filter(t=>!isDemoTx(t));
   DB.artists=(DB.artists||[]).filter(a=>!a.demo);
   save(); reloadViews(); updateDemoBanner(); toast(tt('demo.removed'));
 }

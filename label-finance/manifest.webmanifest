@@ -2,7 +2,7 @@
   "name": "Label Finance",
   "short_name": "LabelFinance",
   "description": "Gestionale entrate, uscite e royalty per etichette discografiche",
-  "start_url": "./",
+  "start_url": "app.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",

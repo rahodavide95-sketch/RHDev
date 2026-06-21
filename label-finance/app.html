@@ -1,0 +1,1897 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Label Finance — Gestionale Etichetta</title>
+  <link rel="icon" href="icon.png?v=3" type="image/png">
+  <link rel="apple-touch-icon" href="icon.png?v=3">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#7c3aed">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Label Finance">
+  <script>
+    /* applica il tema prima del render per evitare lo sfarfallio */
+    (function(){try{var p=localStorage.getItem('labelfinance.theme')||'system';
+      var d=p==='dark'||(p==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.setAttribute('data-theme',d?'dark':'light');}catch(e){}})();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=79">
+</head>
+<body class="gated">
+
+  <!-- ======= LOGIN GATE ======= -->
+  <div class="gate" id="login-gate">
+    <div class="gate-bg" aria-hidden="true">
+      <span class="gate-orb gate-orb--1"></span>
+      <span class="gate-orb gate-orb--2"></span>
+      <span class="gate-orb gate-orb--3"></span>
+      <span class="gate-orb gate-orb--4"></span>
+    </div>
+    <div class="gate-eq" id="gate-eq" aria-hidden="true"></div>
+    <div class="gate-controls">
+      <div class="gate-theme" role="group" aria-label="Tema / Theme">
+        <button type="button" data-theme-opt="system" title="Sistema">◐</button>
+        <button type="button" data-theme-opt="light" title="Chiaro">☀</button>
+        <button type="button" data-theme-opt="dark" title="Scuro">☾</button>
+      </div>
+      <div class="gate-lang" role="group" aria-label="Lingua / Language">
+        <button type="button" data-lang-opt="it">IT</button>
+        <button type="button" data-lang-opt="en">EN</button>
+      </div>
+    </div>
+    <div class="gate-card">
+      <img src="icon.png?v=3" alt="Label Finance" class="gate-logo">
+      <h1 class="gate-title">Label<span class="lf-fin">Finance</span></h1>
+      <p class="gate-sub" id="gate-sub">Accedi al tuo gestionale</p>
+
+      <form id="gate-form" autocomplete="on">
+        <div class="gate-field gate-signup-only"><label for="gate-name">Nome</label>
+          <input id="gate-name" name="given-name" class="input" type="text" autocomplete="given-name" placeholder="Il tuo nome"></div>
+        <div class="gate-field gate-signup-only"><label for="gate-surname">Cognome</label>
+          <input id="gate-surname" name="family-name" class="input" type="text" autocomplete="family-name" placeholder="Il tuo cognome"></div>
+        <div class="gate-field gate-signup-only"><label for="gate-label">Nome label</label>
+          <input id="gate-label" name="organization" class="input" type="text" autocomplete="organization" placeholder="Nome dell'etichetta"></div>
+        <div class="gate-field"><label for="gate-email" data-i18n="gate.email">Email</label>
+          <input id="gate-email" name="username" class="input" type="email" autocomplete="username" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="email@esempio.com"></div>
+        <div class="gate-field"><label for="gate-pw" data-i18n="gate.password">Password</label>
+          <span class="input-eye"><input id="gate-pw" name="password" class="input" type="password" autocomplete="current-password" placeholder="••••••••">
+            <button type="button" class="eye-btn" aria-label="Mostra password"></button></span></div>
+        <button type="button" class="gate-forgot gate-login-only" id="gate-forgot" data-i18n="gate.forgot">Password dimenticata?</button>
+
+        <div class="gate-actions">
+          <button class="btn btn-primary" id="gate-signin" type="submit" data-i18n="gate.signin">Accedi</button>
+          <button class="btn btn-accent2" id="gate-signup" type="button" data-i18n="gate.signup">Registrati</button>
+        </div>
+      </form>
+      <p class="gate-status" id="gate-status"></p>
+    </div>
+  </div>
+
+  <!-- ======= SIDEBAR ======= -->
+  <aside class="sidebar">
+    <div class="sidebar-top">
+      <a class="brand" href="#" onclick="return false">
+        <img src="icon.png?v=3" alt="Label Finance" class="brand-logo">
+        <span class="brand-name">Label<span class="lf-fin">Finance</span></span>
+      </a>
+      <button class="nav-collapse" id="nav-collapse" title="Riduci / espandi menu" aria-label="Riduci o espandi menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><line x1="9.5" y1="4" x2="9.5" y2="20"/></svg>
+      </button>
+    </div>
+    <nav class="nav">
+      <button class="nav-item is-active" data-view="dashboard" title="Dashboard">
+        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span><span class="nav-label" data-i18n="nav.dashboard">Dashboard</span></button>
+
+      <div class="nav-group" data-group="catalog">
+        <button class="nav-group-h" type="button">
+          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/></svg></span>
+          <span class="nav-label" data-i18n="nav.grp_catalog">Musica & Catalogo</span><span class="nav-chev">▾</span></button>
+        <div class="nav-group-items">
+          <button class="nav-item" data-view="releases" title="Discografia">
+            <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/></svg></span><span class="nav-label" data-i18n="nav.releases">Discografia</span></button>
+          <button class="nav-item" data-view="planning" title="Pianificazione">
+            <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M8 2.5v4M16 2.5v4"/><path d="M7.5 13h3v3h-3z"/></svg></span><span class="nav-label" data-i18n="nav.planning">Pianificazione</span></button>
+          <button class="nav-item" data-view="events" title="Eventi">
+            <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.4 5 5.6.8-4 4 1 5.6L12 21l-5 2.4 1-5.6-4-4 5.6-.8z"/></svg></span><span class="nav-label" data-i18n="nav.events">Eventi</span></button>
+          <button class="nav-item" data-view="supports" title="Support DJ">
+            <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3.5 9h17M3.5 15h17M12 3a14 14 0 0 0 0 18M12 3a14 14 0 0 1 0 18"/></svg></span><span class="nav-label" data-i18n="nav.supports">Support DJ</span></button>
+        </div>
+      </div>
+
+      <div class="nav-group" data-group="finance">
+        <button class="nav-group-h" type="button">
+          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v15"/><path d="M4 7l3-3 3 3"/><path d="M17 20V5"/><path d="M14 17l3 3 3-3"/></svg></span>
+          <span class="nav-label" data-i18n="nav.grp_finance">Finanze</span><span class="nav-chev">▾</span></button>
+        <div class="nav-group-items">
+          <button class="nav-item" data-view="transactions" title="Movimenti">
+            <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v15"/><path d="M4 7l3-3 3 3"/><path d="M17 20V5"/><path d="M14 17l3 3 3-3"/></svg></span><span class="nav-label" data-i18n="nav.transactions">Movimenti</span></button>
+          <button class="nav-item" data-view="royalties" title="Royalty">
+            <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 5 5 19"/><circle cx="7.5" cy="7.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/></svg></span><span class="nav-label" data-i18n="nav.royalties">Royalty</span></button>
+          <button class="nav-item" data-view="import" title="Importa CSV">
+            <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M4 21h16"/></svg></span><span class="nav-label" data-i18n="nav.import">Importa CSV</span></button>
+        </div>
+      </div>
+
+      <div class="nav-group" data-group="manage">
+        <button class="nav-group-h" type="button">
+          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span>
+          <span class="nav-label" data-i18n="nav.grp_manage">Gestione</span><span class="nav-chev">▾</span></button>
+        <div class="nav-group-items">
+          <button class="nav-item" data-view="artists" title="Artisti">
+            <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><path d="M16 5.2a3 3 0 0 1 0 5.6"/><path d="M18 19c0-2.2-1-3.8-2.6-4.6"/></svg></span><span class="nav-label" data-i18n="nav.artists">Artisti</span></button>
+          <button class="nav-item" data-view="contracts" title="Contratti">
+            <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 12h6"/><path d="M9 16h6"/></svg></span><span class="nav-label" data-i18n="nav.contracts">Contratti</span></button>
+          <button class="nav-item" data-view="merch" title="Merch">
+            <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 5 6.5V20h14V6.5L15 4"/><path d="M9 4a3 3 0 0 0 6 0"/></svg></span><span class="nav-label" data-i18n="nav.merch">Merch</span></button>
+          <button class="nav-item" data-view="tasks" title="Task">
+            <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V4.2a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1V5"/><path d="M8.5 13.2l2.3 2.3L16 10.3"/></svg></span><span class="nav-label" data-i18n="nav.tasks">Task</span></button>
+        </div>
+      </div>
+
+      <button class="nav-item" data-view="settings" title="Impostazioni">
+        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5v5M5 14v5M12 3v6M12 13v8M19 7v3M19 14v3"/><circle cx="5" cy="12" r="2"/><circle cx="12" cy="11" r="2"/><circle cx="19" cy="12" r="2"/></svg></span><span class="nav-label" data-i18n="nav.settings">Impostazioni</span></button>
+
+      <div class="nav-sep"></div>
+      <button class="nav-item" data-view="faq" title="Aiuto & FAQ">
+        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.2 9.3a2.8 2.8 0 0 1 5.4 1c0 1.9-2.6 2.2-2.6 4"/><path d="M12 17.4v.1"/></svg></span><span class="nav-label" data-i18n="nav.faq">Aiuto & FAQ</span></button>
+      <button class="nav-item nav-item--about" data-view="about" title="Chi siamo">
+        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6v.1"/></svg></span><span class="nav-label" data-i18n="nav.about">Chi siamo</span></button>
+      <button class="nav-more-btn" id="nav-more" type="button" aria-label="Altro" title="Altro">
+        <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></span><span class="nav-label" data-i18n="nav.more">Altro</span></button>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="foot-controls">
+        <div class="theme-switch" role="group" aria-label="Tema">
+          <button data-theme-opt="system" title="Sistema" aria-label="Tema di sistema">◐</button>
+          <button data-theme-opt="light" title="Chiaro" aria-label="Tema chiaro">☀</button>
+          <button data-theme-opt="dark" title="Scuro" aria-label="Tema scuro">☾</button>
+        </div>
+        <div class="lang-pill" role="group" aria-label="Lingua / Language">
+          <button type="button" data-lang-opt="it">IT</button>
+          <button type="button" data-lang-opt="en">EN</button>
+        </div>
+      </div>
+      <span class="badge-local">● Dati salvati sul tuo dispositivo</span>
+    </div>
+  </aside>
+
+  <!-- ======= SHEET MOBILE "ALTRO" ======= -->
+  <div class="msheet" id="mobile-more" hidden>
+    <div class="msheet-backdrop" data-msheet-close></div>
+    <div class="msheet-card" role="dialog" aria-label="Altro">
+      <div class="msheet-handle"></div>
+      <div class="msheet-grid">
+        <button class="nav-item" data-view="planning" title="Pianificazione">
+          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M8 2.5v4M16 2.5v4"/><path d="M7.5 13h3v3h-3z"/></svg></span><span class="nav-label" data-i18n="nav.planning">Pianificazione</span></button>
+        <button class="nav-item" data-view="events" title="Eventi">
+          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.4 5 5.6.8-4 4 1 5.6L12 21l-5 2.4 1-5.6-4-4 5.6-.8z"/></svg></span><span class="nav-label" data-i18n="nav.events">Eventi</span></button>
+        <button class="nav-item" data-view="supports" title="Support DJ">
+          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3.5 9h17M3.5 15h17M12 3a14 14 0 0 0 0 18M12 3a14 14 0 0 1 0 18"/></svg></span><span class="nav-label" data-i18n="nav.supports">Support DJ</span></button>
+        <button class="nav-item" data-view="artists" title="Artisti">
+          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><path d="M16 5.2a3 3 0 0 1 0 5.6"/><path d="M18 19c0-2.2-1-3.8-2.6-4.6"/></svg></span><span class="nav-label" data-i18n="nav.artists">Artisti</span></button>
+        <button class="nav-item" data-view="contracts" title="Contratti">
+          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 12h6"/><path d="M9 16h6"/></svg></span><span class="nav-label" data-i18n="nav.contracts">Contratti</span></button>
+        <button class="nav-item" data-view="tasks" title="Task">
+          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V4.2a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1V5"/><path d="M8.5 13.2l2.3 2.3L16 10.3"/></svg></span><span class="nav-label" data-i18n="nav.tasks">Task</span></button>
+        <button class="nav-item" data-view="merch" title="Merch">
+          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 5 6.5V20h14V6.5L15 4"/><path d="M9 4a3 3 0 0 0 6 0"/></svg></span><span class="nav-label" data-i18n="nav.merch">Merch</span></button>
+        <button class="nav-item" data-view="import" title="Importa CSV">
+          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M4 21h16"/></svg></span><span class="nav-label" data-i18n="nav.import">Importa CSV</span></button>
+        <button class="nav-item" data-view="settings" title="Impostazioni">
+          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5v5M5 14v5M12 3v6M12 13v8M19 7v3M19 14v3"/><circle cx="5" cy="12" r="2"/><circle cx="12" cy="11" r="2"/><circle cx="19" cy="12" r="2"/></svg></span><span class="nav-label" data-i18n="nav.settings">Impostazioni</span></button>
+        <button class="nav-item" data-view="faq" title="Aiuto & FAQ">
+          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.2 9.3a2.8 2.8 0 0 1 5.4 1c0 1.9-2.6 2.2-2.6 4"/><path d="M12 17.4v.1"/></svg></span><span class="nav-label" data-i18n="nav.faq">Aiuto & FAQ</span></button>
+        <button class="nav-item" data-view="about" title="Chi siamo">
+          <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6v.1"/></svg></span><span class="nav-label" data-i18n="nav.about">Chi siamo</span></button>
+      </div>
+      <div class="msheet-theme">
+        <span class="msheet-theme-lbl" data-i18n="common.theme">Tema</span>
+        <div class="theme-switch theme-switch--lg" role="group" aria-label="Tema">
+          <button data-theme-opt="system" data-i18n="theme.system">◐ Sistema</button>
+          <button data-theme-opt="light" data-i18n="theme.light">☀ Chiaro</button>
+          <button data-theme-opt="dark" data-i18n="theme.dark">☾ Scuro</button>
+        </div>
+      </div>
+      <div class="msheet-theme">
+        <span class="msheet-theme-lbl" data-i18n="common.language">Lingua</span>
+        <div class="theme-switch theme-switch--lg" role="group" aria-label="Lingua">
+          <button data-lang-opt="it">Italiano</button>
+          <button data-lang-opt="en">English</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======= MAIN ======= -->
+  <main class="main">
+    <header class="topbar">
+      <div class="topbar-left"><span class="topbar-section" id="topbar-section">Dashboard</span></div>
+      <div class="topbar-right">
+        <button class="icon-btn notif-btn" id="notif-btn" title="Notifiche" aria-label="Notifiche">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+          <span class="notif-badge" id="notif-badge" hidden>0</span>
+        </button>
+        <span class="topbar-div" aria-hidden="true"></span>
+        <span class="topbar-label" id="topbar-label"></span>
+        <button class="icon-btn" id="btn-account" title="Account" aria-label="Account">
+          <svg id="acct-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.5 3.6-6 8-6s8 2.5 8 6"/></svg>
+          <img id="acct-avatar-top" class="avatar-img" alt="" hidden>
+        </button>
+      </div>
+    </header>
+    <div class="notif-panel" id="notif-panel" hidden>
+      <div class="notif-head">
+        <b data-i18n="notif.title">Notifiche</b>
+        <div class="notif-head-actions">
+          <button class="notif-act" id="notif-readall" data-i18n="notif.read_all">Segna tutte lette</button>
+          <button class="notif-act notif-act--danger" id="notif-clear" data-i18n="notif.clear">Svuota</button>
+        </div>
+      </div>
+      <div class="notif-list" id="notif-list"></div>
+    </div>
+    <div class="content">
+
+    <!-- ====== DASHBOARD ====== -->
+    <section class="view is-active" id="view-dashboard">
+      <header class="view-head">
+        <div>
+          <div class="title-row"><h1 id="greeting">Dashboard</h1><button class="info-btn" data-info="dashboard" title="Cos'è questa sezione?">i</button></div>
+          <p class="muted" id="dash-range-label">Tutti i periodi</p>
+        </div>
+        <div class="head-actions">
+          <select id="dash-period" class="select">
+            <option value="all" data-i18n="common.all_periods">Tutti i periodi</option>
+            <option value="ytd" data-i18n="common.period.ytd">Anno corrente</option>
+            <option value="12m" data-i18n="common.period.12m">Ultimi 12 mesi</option>
+            <option value="6m" data-i18n="common.period.6m">Ultimi 6 mesi</option>
+            <option value="3m" data-i18n="common.period.3m">Ultimi 3 mesi</option>
+            <option value="custom" data-i18n="common.period.custom">Personalizzato…</option>
+          </select>
+          <input type="date" id="dash-from" class="input input--date" title="Dalla data" hidden>
+          <input type="date" id="dash-to" class="input input--date" title="Alla data" hidden>
+          <button class="btn" id="btn-dash-edit" data-i18n="dash.customize" hidden>⚙ Personalizza</button>
+          <button class="btn btn-pdf" id="btn-print" title="Stampa o salva in PDF">⤓ Report PDF</button>
+        </div>
+      </header>
+
+      <div class="info-panel" id="info-dashboard" data-i18n-html="info.dashboard" hidden>
+        <h4>A cosa serve la Dashboard</h4>
+        <p>È la fotografia istantanea della tua etichetta. In alto trovi i tre indicatori chiave: <b>Entrate</b>, <b>Uscite</b> e <b>Margine netto</b> (entrate − uscite). La percentuale colorata sotto ogni valore confronta il periodo scelto con quello precedente, così vedi se stai crescendo o calando.</p>
+        <p>Il grafico mostra entrate e uscite mese per mese. Le tabelle in basso aggregano i dati <b>per release/catalogo</b> e <b>per artista</b>, così capisci al volo cosa rende di più.</p>
+        <p>Con il menu <b>periodo</b> in alto a destra filtri tutto su un intervallo (anno, ultimi 12 mesi… o <b>Personalizzato</b> con date a scelta). Il pulsante <b>Report PDF</b> stampa o salva una sintesi da archiviare o inviare.</p>
+        <p class="muted" style="font-size:.86rem">Suggerimento: i dati arrivano dai Movimenti. Se la dashboard è vuota, importa un CSV o aggiungi un movimento a mano.</p>
+      </div>
+
+      <div class="dash-edit-bar" id="dash-edit-bar">
+        <div class="deb-row">
+          <span class="deb-label" data-i18n="dash.columns">Colonne</span>
+          <div class="seg" id="dash-cols-seg">
+            <button class="seg-btn" data-cols="1">1</button>
+            <button class="seg-btn" data-cols="2">2</button>
+            <button class="seg-btn" data-cols="3">3</button>
+          </div>
+          <button class="btn btn-ghost btn-sm" id="btn-dash-reset" data-i18n="dash.reset">↺ Ripristina</button>
+          <button class="btn btn-primary btn-sm" id="btn-dash-done" data-i18n="dash.done">✓ Fatto</button>
+        </div>
+        <div class="deb-row deb-tray">
+          <span class="deb-label" data-i18n="dash.hidden">Nascosti</span>
+          <div class="dash-tray" id="dash-tray"></div>
+        </div>
+      </div>
+
+      <div class="demo-banner" id="demo-banner" hidden>
+        <span class="demo-banner-txt"><b data-i18n="demo.tag">Dati demo</b> <span data-i18n="demo.using">— stai vedendo dati dimostrativi.</span></span>
+        <button class="btn btn-sm" id="demo-remove" data-i18n="demo.remove">🗑 Rimuovi dati demo</button>
+      </div>
+
+      <div class="empty-hint" id="dash-empty" hidden>
+        <h2 class="onb-title" data-i18n-html="onb.title">Benvenuto in Label<span class="lf-fin">Finance</span></h2>
+        <p data-i18n="onb.intro">Inizia in pochi secondi — scegli come partire:</p>
+        <div class="onb-actions">
+          <button class="btn btn-primary" id="btn-demo" data-i18n="onb.demo">✨ Carica dati demo</button>
+          <button class="btn" data-goto="import" data-i18n="onb.import">⤓ Importa un CSV</button>
+          <button class="btn" id="btn-onb-income" data-i18n="onb.manual">+ Aggiungi a mano</button>
+        </div>
+        <ol class="onb-steps">
+          <li data-i18n="onb.s1">Importa i report di vendita (Bandcamp/distributore) o carica i dati demo.</li>
+          <li data-i18n-html="onb.s2">Crea le tue <b>Release</b> con le quote per artista (anche per singola traccia).</li>
+          <li data-i18n-html="onb.s3">Guarda <b>Royalty</b> e <b>Dashboard</b> calcolarsi da soli, ed esporta in PDF/Excel/CSV.</li>
+        </ol>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi kpi--in">
+          <span class="kpi-label" data-i18n="dash.kpi.income">Entrate</span>
+          <span class="kpi-value" id="kpi-income">€0,00</span>
+          <span class="kpi-delta" id="delta-income"></span>
+        </div>
+        <div class="kpi kpi--out">
+          <span class="kpi-label" data-i18n="dash.kpi.expense">Uscite</span>
+          <span class="kpi-value" id="kpi-expense">€0,00</span>
+          <span class="kpi-delta" id="delta-expense"></span>
+        </div>
+        <div class="kpi kpi--net">
+          <span class="kpi-label" data-i18n="dash.kpi.net">Margine netto</span>
+          <span class="kpi-value" id="kpi-net">€0,00</span>
+          <span class="kpi-delta" id="delta-net"></span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2 data-i18n="dash.chart.title">Entrate vs Uscite per mese</h2>
+          <span class="legend"><span class="legend-dot legend-dot--in"></span>Entrate<span class="legend-dot legend-dot--out"></span>Uscite</span></div>
+        <div class="chart" id="chart-monthly"></div>
+      </div>
+
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-head"><h2 data-i18n="dash.byrelease">Per release / catalogo</h2>
+            <input class="input card-filter" data-table="#table-release" data-i18n-ph="common.search" placeholder="Cerca…">
+            <select class="select card-sort sort-mobile" data-table="#table-release" title="Ordina">
+              <option value="net:-1">Ordina: Margine ↓</option>
+              <option value="net:1">Ordina: Margine ↑</option>
+              <option value="in:-1">Ordina: Entrate ↓</option>
+              <option value="out:-1">Ordina: Uscite ↓</option>
+              <option value="k:1">Ordina: Nome A–Z</option>
+            </select>
+            <button class="btn-export" data-export="group:#table-release" title="Esporta">⤓</button></div>
+          <div class="table-wrap"><table class="data-table data-table--cards" id="table-release"></table></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h2 data-i18n="dash.byartist">Per artista</h2>
+            <input class="input card-filter" data-table="#table-artist" data-i18n-ph="common.search" placeholder="Cerca…">
+            <select class="select card-sort sort-mobile" data-table="#table-artist" title="Ordina">
+              <option value="net:-1">Ordina: Margine ↓</option>
+              <option value="net:1">Ordina: Margine ↑</option>
+              <option value="in:-1">Ordina: Entrate ↓</option>
+              <option value="out:-1">Ordina: Uscite ↓</option>
+              <option value="k:1">Ordina: Nome A–Z</option>
+            </select>
+            <button class="btn-export" data-export="group:#table-artist" title="Esporta">⤓</button></div>
+          <div class="table-wrap"><table class="data-table data-table--cards" id="table-artist"></table></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h2 data-i18n="dash.byplatform">Per piattaforma</h2>
+            <input class="input card-filter" data-table="#table-platform" data-i18n-ph="common.search" placeholder="Cerca…">
+            <select class="select card-sort sort-mobile" data-table="#table-platform" title="Ordina">
+              <option value="net:-1">Ordina: Margine ↓</option>
+              <option value="net:1">Ordina: Margine ↑</option>
+              <option value="in:-1">Ordina: Entrate ↓</option>
+              <option value="out:-1">Ordina: Uscite ↓</option>
+              <option value="k:1">Ordina: Nome A–Z</option>
+            </select>
+            <button class="btn-export" data-export="group:#table-platform" title="Esporta">⤓</button></div>
+          <div class="table-wrap"><table class="data-table data-table--cards" id="table-platform"></table></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h2 data-i18n="dash.bytype">Per tipologia</h2>
+            <input class="input card-filter" data-table="#table-type" data-i18n-ph="common.search" placeholder="Cerca…">
+            <select class="select card-sort sort-mobile" data-table="#table-type" title="Ordina">
+              <option value="net:-1">Ordina: Margine ↓</option>
+              <option value="net:1">Ordina: Margine ↑</option>
+              <option value="in:-1">Ordina: Entrate ↓</option>
+              <option value="out:-1">Ordina: Uscite ↓</option>
+              <option value="k:1">Ordina: Nome A–Z</option>
+            </select>
+            <button class="btn-export" data-export="group:#table-type" title="Esporta">⤓</button></div>
+          <div class="table-wrap"><table class="data-table data-table--cards" id="table-type"></table></div>
+        </div>
+      </div>
+
+      <!-- Widget extra (libreria, nascosti di default) -->
+      <div class="panel" id="w-forecast">
+        <div class="panel-head"><h2 data-i18n="dash.forecast">Cashflow previsionale</h2>
+          <span class="muted small" data-i18n="dash.forecast_sub">Proiezione a 3 mesi sul trend recente</span></div>
+        <div id="forecast-body"></div>
+      </div>
+      <div class="panel" id="w-top">
+        <div class="panel-head"><h2 data-i18n="dash.top_artists">Top artisti</h2></div>
+        <div id="top-body" class="top-list"></div>
+      </div>
+      <div class="panel" id="w-recent">
+        <div class="panel-head"><h2 data-i18n="dash.recent">Ultimi movimenti</h2></div>
+        <div id="recent-body" class="recent-list"></div>
+      </div>
+      <div class="panel" id="w-merch">
+        <div class="panel-head"><h2 data-i18n="mch.top_title">Merch più venduto</h2>
+          <span class="muted small" data-i18n="mch.top_sub">Classifica per unità vendute</span></div>
+        <div id="merch-body" class="top-list"></div>
+      </div>
+      <div class="panel" id="w-nextrel">
+        <div class="panel-head"><h2 data-i18n="dash.next_rel">Prossime uscite</h2>
+          <span class="muted small" data-i18n="dash.next_rel_sub">Da Pianificazione</span></div>
+        <div id="nextrel-body" class="wlist"></div>
+      </div>
+      <div class="panel" id="w-nextevt">
+        <div class="panel-head"><h2 data-i18n="dash.next_evt">Prossimi eventi</h2>
+          <span class="muted small" data-i18n="dash.next_evt_sub">Showcase, live, radio…</span></div>
+        <div id="nextevt-body" class="wlist"></div>
+      </div>
+      <div class="panel" id="w-support">
+        <div class="panel-head"><h2 data-i18n="dash.sup_top">Support nel mondo</h2>
+          <span class="muted small" data-i18n="dash.sup_top_sub">Top paesi per support</span></div>
+        <div id="support-body" class="top-list"></div>
+      </div>
+      <div class="panel" id="w-disco">
+        <div class="panel-head"><h2 data-i18n="dash.disco">Discografia</h2>
+          <span class="muted small" id="disco-count"></span></div>
+        <div id="disco-body" class="wlist"></div>
+      </div>
+
+    </section>
+
+    <!-- ====== TRANSACTIONS ====== -->
+    <section class="view" id="view-transactions">
+      <header class="view-head">
+        <div><div class="title-row"><h1 data-i18n="tx.title">Movimenti</h1><button class="info-btn" data-info="transactions" title="Cos'è questa sezione?">i</button></div><p class="muted" id="tx-count-label">0 movimenti</p></div>
+        <div class="head-actions">
+          <button class="btn btn-expense" id="btn-add-expense" data-i18n="tx.add_expense">+ Uscita</button>
+          <button class="btn btn-income" id="btn-add-income" data-i18n="tx.add_income">+ Entrata</button>
+        </div>
+      </header>
+
+      <div class="info-panel" id="info-transactions" data-i18n-html="info.transactions" hidden>
+        <h4>A cosa serve la sezione Movimenti</h4>
+        <p>È il registro completo di ogni <b>entrata</b> e <b>uscita</b> dell'etichetta: la base da cui nascono dashboard e royalty. Ogni riga è una transazione con data, tipo, prodotto/descrizione, artista, catalogo, piattaforma e importo.</p>
+        <p>Puoi aggiungerle in due modi: a mano con <b>+ Entrata</b> / <b>+ Uscita</b>, oppure in blocco importando un CSV dalla sezione <b>Importa</b>. Il campo <b>Catalogo</b> è importante: è il codice che collega una vendita alla sua release e quindi alle quote di ripartizione delle royalty.</p>
+        <p>La barra strumenti permette di <b>cercare</b>, filtrare per tipo, piattaforma e intervallo di date. Con <b>⚙ Colonne</b> scegli quali colonne vedere; con <b>Esporta</b> scarichi tutto in CSV, Excel o PDF.</p>
+      </div>
+
+      <div class="toolbar">
+        <input type="search" id="tx-search" class="input" data-i18n-ph="tx.search" placeholder="Cerca prodotto, artista, catalogo…">
+        <select id="tx-filter-kind" class="select">
+          <option value="" data-i18n="tx.all_kinds">Tutti i tipi</option>
+          <option value="income" data-i18n="tx.only_income">Solo entrate</option>
+          <option value="expense" data-i18n="tx.only_expense">Solo uscite</option>
+        </select>
+        <select id="tx-filter-platform" class="select"><option value="">Tutte le piattaforme</option></select>
+        <select id="tx-period" class="select">
+          <option value="all" data-i18n="common.all_periods">Tutti i periodi</option>
+          <option value="ytd" data-i18n="common.period.ytd">Anno corrente</option>
+          <option value="12m" data-i18n="common.period.12m">Ultimi 12 mesi</option>
+          <option value="6m" data-i18n="common.period.6m">Ultimi 6 mesi</option>
+          <option value="3m" data-i18n="common.period.3m">Ultimi 3 mesi</option>
+          <option value="custom" data-i18n="common.period.custom">Personalizzato…</option>
+        </select>
+        <input type="date" id="tx-from" class="input input--date" title="Dalla data" hidden>
+        <input type="date" id="tx-to" class="input input--date" title="Alla data" hidden>
+        <select id="tx-sort" class="select sort-mobile" title="Ordina">
+          <option value="date:-1">Ordina: Data ↓ (recenti)</option>
+          <option value="date:1">Ordina: Data ↑ (vecchi)</option>
+          <option value="eur:-1">Ordina: Importo ↓</option>
+          <option value="eur:1">Ordina: Importo ↑</option>
+          <option value="artist:1">Ordina: Artista A–Z</option>
+          <option value="platform:1">Ordina: Piattaforma A–Z</option>
+          <option value="product:1">Ordina: Prodotto A–Z</option>
+        </select>
+        <div class="toolbar-actions">
+          <button class="btn btn-clear" data-clear="transactions" data-i18n="bulk.clear">Svuota</button>
+          <button class="btn" id="btn-cols" title="Personalizza colonne" data-i18n="tx.cols">⚙ Colonne</button>
+          <button class="btn btn-export" data-export="movimenti" title="Esporta CSV/Excel/PDF">⤓ Esporta</button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table data-table--full data-table--cards" id="table-tx"></table>
+      </div>
+    </section>
+
+    <!-- ====== RELEASES ====== -->
+    <section class="view" id="view-releases">
+      <header class="view-head">
+        <div><div class="title-row"><h1 data-i18n="rel.title">Release</h1><button class="info-btn" data-info="releases" title="Cos'è questa sezione?">i</button></div><p class="muted" id="rel-count-label">0 release</p></div>
+        <div class="head-actions">
+          <input class="input" id="rel-search" data-i18n-ph="common.search" placeholder="Cerca…">
+          <div class="vm-toggle" data-vm-sec="releases" data-vm-def="cards">
+            <button class="vm-btn" data-vm="cards" title="Cards">▦</button>
+            <button class="vm-btn" data-vm="list" title="Elenco">☰</button>
+          </div>
+          <button class="btn" id="catimp-open" data-i18n="cimp.btn">⤒ Importa catalogo</button>
+          <button class="btn" id="dup-find" data-i18n="dup.find" title="Trova e unisci duplicati">⧉ Trova duplicati</button>
+          <button class="btn btn-clear" data-clear="releases" data-i18n="bulk.clear">Svuota</button>
+          <button class="btn btn-cols2" data-colcfg="releases" title="Personalizza colonne">⚙</button>
+          <button class="btn btn-export" data-export="releases" title="Esporta CSV/Excel/PDF">⤓ Esporta</button>
+          <button class="btn btn-primary" id="btn-add-release" data-i18n="rel.new">+ Nuova release</button>
+        </div>
+      </header>
+
+      <div class="info-panel" id="info-releases" data-i18n-html="info.releases" hidden>
+        <h4>A cosa servono le Release</h4>
+        <p>Una release è un'uscita del catalogo (singolo, EP, album). Qui definisci, una volta sola, <b>chi prende cosa</b>: per ogni release imposti un <b>catalogo</b> (es. <i>RHD001</i>) e le <b>quote di ripartizione</b> in percentuale tra gli artisti/aventi diritto.</p>
+        <p>Il collegamento avviene tramite il <b>catalogo</b>: ogni vendita nei Movimenti con quel codice eredita automaticamente queste quote nel calcolo delle Royalty. Imposti le percentuali una volta e valgono per tutte le vendite future di quella release.</p>
+        <p><b>Override per traccia (ISRC).</b> A volte le quote non sono uguali per tutte le tracce di un EP: magari il brano 2 ha un featuring che cambia la spartizione. Aprendo una release puoi aggiungere le singole tracce con il loro <b>codice ISRC</b> e dare a ciascuna quote diverse. Quando una vendita riporta quell'ISRC, il programma usa le quote di <b>quella traccia</b> invece di quelle generali della release.</p>
+        <span class="ex">Esempio — EP <b>RHD007</b>, quote generali: Raho 50%, Jacom 50%.<br>Aggiungi la traccia 2 (ISRC <i>ITRH72500002</i>) con un feat e imposti: Raho 40%, Jacom 35%, Pol 25%.<br>→ Le vendite di tutto l'EP si dividono 50/50, ma quelle della <b>sola traccia 2</b> (riconosciute dall'ISRC) si dividono 40/35/25. Se una vendita non ha ISRC, o ha un ISRC non mappato, si usano le quote generali della release.</span>
+        <p class="muted" style="font-size:.86rem">L'ISRC è il codice univoco internazionale del brano (12 caratteri, es. <i>ITRH72500002</i>): lo trovi nel report del distributore. Se non lavori per singola traccia, ignora pure le tracce: basta impostare le quote generali della release.</p>
+      </div>
+      <p class="muted small" style="margin-bottom:16px">Definisci catalogo, titolo e le quote di ripartizione (%) per artista. Le vendite con lo stesso <strong>catalogo</strong> useranno automaticamente queste quote nella sezione Royalty.</p>
+      <div class="releases-cards" id="releases-cards"></div>
+    </section>
+
+    <!-- ====== PIANIFICAZIONE ====== -->
+    <section class="view" id="view-planning">
+      <header class="view-head">
+        <div><div class="title-row"><h1 data-i18n="pln.title">Pianificazione</h1><button class="info-btn" data-info="planning" title="Cos'è questa sezione?">i</button></div>
+          <p class="muted" data-i18n="pln.subtitle">Programma release e premiere: simulazione dell'anno e calendario effettivo.</p></div>
+        <div class="head-actions">
+          <input class="input" id="pln-search" data-i18n-ph="common.search" placeholder="Cerca…">
+          <div class="vm-toggle" data-vm-sec="planning" data-vm-def="list">
+            <button class="vm-btn" data-vm="list" title="Elenco">☰</button>
+            <button class="vm-btn" data-vm="cal" title="Calendario">▦</button>
+          </div>
+          <button class="btn btn-clear" data-clear="planning" data-i18n="bulk.clear">Svuota</button>
+          <button class="btn btn-cols2" data-colcfg="planning" title="Personalizza colonne">⚙</button>
+          <button class="btn btn-export" data-export="planning" title="Esporta">⤓ Esporta</button>
+          <button class="btn btn-primary" id="pln-new" data-i18n="pln.new">＋ Nuova voce</button>
+        </div>
+      </header>
+      <div class="info-panel" id="info-planning" hidden>
+        <h4>A cosa serve la Pianificazione</h4>
+        <p>Programma le tue <b>release</b> e le <b>premiere</b> nel tempo: usa lo stato per distinguere una <b>simulazione</b> (idea/pianificata) da quella <b>effettiva</b> (confermata/uscita). Vedi tutto come <b>elenco</b> ordinabile o come <b>calendario</b> su cui aggiungere voci cliccando un giorno.</p>
+      </div>
+      <div class="panel pln-form-panel" id="pln-form" hidden>
+        <div class="panel-head"><h2 id="pln-form-title" data-i18n="pln.new">Nuova voce</h2></div>
+        <div class="form-grid">
+          <label class="fld fld--full"><span data-i18n="pln.f_title">Titolo *</span><input class="input" id="pln-title"></label>
+          <label class="fld"><span data-i18n="pln.f_kind">Tipo</span>
+            <select class="select" id="pln-kind"><option value="release" data-i18n="pln.k_release">Release</option><option value="premiere" data-i18n="pln.k_premiere">Premiere</option></select></label>
+          <label class="fld"><span data-i18n="pln.f_artist">Artista</span><input class="input" id="pln-artist"></label>
+          <label class="fld"><span data-i18n="pln.f_date">Data</span><input class="input" id="pln-date" type="date"></label>
+          <label class="fld"><span data-i18n="pln.f_status">Stato</span>
+            <select class="select" id="pln-status">
+              <option value="idea" data-i18n="pln.s_idea">Idea</option>
+              <option value="planned" data-i18n="pln.s_planned">Pianificata</option>
+              <option value="confirmed" data-i18n="pln.s_confirmed">Confermata</option>
+              <option value="done" data-i18n="pln.s_done">Uscita</option>
+            </select></label>
+          <label class="fld"><span data-i18n="pln.f_platform">Piattaforma / canale</span><input class="input" id="pln-platform" placeholder="Spotify, YouTube, radio…"></label>
+          <label class="fld fld--full"><span data-i18n="pln.f_note">Note</span><input class="input" id="pln-note"></label>
+        </div>
+        <div class="row-inline wrap"><button class="btn btn-primary" id="pln-save" data-i18n="common.save">Salva</button><button class="btn btn-ghost" id="pln-cancel" data-i18n="common.cancel">Annulla</button></div>
+      </div>
+      <div id="planning-list"></div>
+      <div class="cal-wrap" id="planning-cal" hidden></div>
+      <div class="empty-hint" id="planning-empty" hidden><p data-i18n="pln.empty">Nessuna voce pianificata. Aggiungi la prima release o premiere.</p></div>
+    </section>
+
+    <!-- ====== EVENTI ====== -->
+    <section class="view" id="view-events">
+      <header class="view-head">
+        <div><div class="title-row"><h1 data-i18n="evt.title">Eventi</h1><button class="info-btn" data-info="events" title="Cos'è questa sezione?">i</button></div>
+          <p class="muted" data-i18n="evt.subtitle">Showcase, eventi in radio, live e date: tutte le info in un posto.</p></div>
+        <div class="head-actions">
+          <input class="input" id="evt-search" data-i18n-ph="common.search" placeholder="Cerca…">
+          <div class="vm-toggle" data-vm-sec="events" data-vm-def="list">
+            <button class="vm-btn" data-vm="list" title="Elenco">☰</button>
+            <button class="vm-btn" data-vm="cal" title="Calendario">▦</button>
+          </div>
+          <button class="btn btn-clear" data-clear="events" data-i18n="bulk.clear">Svuota</button>
+          <button class="btn btn-cols2" data-colcfg="events" title="Personalizza colonne">⚙</button>
+          <button class="btn btn-export" data-export="events" title="Esporta">⤓ Esporta</button>
+          <button class="btn btn-primary" id="evt-new" data-i18n="evt.new">＋ Nuovo evento</button>
+        </div>
+      </header>
+      <div class="info-panel" id="info-events" hidden>
+        <h4>A cosa serve la sezione Eventi</h4>
+        <p>Gestisci tutte le info su <b>showcase, eventi in radio, live, festival e serate</b>: tipo, luogo, città, data e orario, con note. Vista <b>elenco</b> ordinabile o <b>calendario</b>.</p>
+      </div>
+      <div class="panel pln-form-panel" id="evt-form" hidden>
+        <div class="panel-head"><h2 id="evt-form-title" data-i18n="evt.new">Nuovo evento</h2></div>
+        <div class="form-grid">
+          <label class="fld fld--full"><span data-i18n="evt.f_title">Titolo *</span><input class="input" id="evt-title"></label>
+          <label class="fld"><span data-i18n="evt.f_kind">Tipo</span>
+            <select class="select" id="evt-kind">
+              <option value="showcase" data-i18n="evt.k_showcase">Showcase</option>
+              <option value="radio" data-i18n="evt.k_radio">Radio</option>
+              <option value="live" data-i18n="evt.k_live">Live</option>
+              <option value="club" data-i18n="evt.k_club">Club</option>
+              <option value="festival" data-i18n="evt.k_festival">Festival</option>
+              <option value="other" data-i18n="evt.k_other">Altro</option>
+            </select></label>
+          <label class="fld"><span data-i18n="evt.f_date">Data</span><input class="input" id="evt-date" type="date"></label>
+          <label class="fld"><span data-i18n="evt.f_time">Orario</span><input class="input" id="evt-time" type="time"></label>
+          <label class="fld"><span data-i18n="evt.f_venue">Venue / luogo</span><input class="input" id="evt-venue"></label>
+          <label class="fld"><span data-i18n="evt.f_city">Città</span><input class="input" id="evt-city"></label>
+          <label class="fld"><span data-i18n="evt.f_country">Paese</span><input class="input" id="evt-country"></label>
+          <label class="fld fld--full"><span data-i18n="evt.f_note">Note</span><input class="input" id="evt-note"></label>
+        </div>
+        <div class="row-inline wrap"><button class="btn btn-primary" id="evt-save" data-i18n="common.save">Salva</button><button class="btn btn-ghost" id="evt-cancel" data-i18n="common.cancel">Annulla</button></div>
+      </div>
+      <div id="events-list"></div>
+      <div class="cal-wrap" id="events-cal" hidden></div>
+      <div class="empty-hint" id="events-empty" hidden><p data-i18n="evt.empty">Nessun evento. Aggiungi il primo showcase, live o evento radio.</p></div>
+    </section>
+
+    <!-- ====== SUPPORT DJ ====== -->
+    <section class="view" id="view-supports">
+      <header class="view-head">
+        <div><div class="title-row"><h1 data-i18n="sup.title">Support DJ</h1><button class="info-btn" data-info="supports" title="Cos'è questa sezione?">i</button></div>
+          <p class="muted" data-i18n="sup.subtitle">Dove e da chi vengono suonati i tuoi brani nel mondo.</p></div>
+        <div class="head-actions">
+          <input class="input" id="sup-search" data-i18n-ph="common.search" placeholder="Cerca…">
+          <button class="btn btn-clear" data-clear="supports" data-i18n="bulk.clear">Svuota</button>
+          <button class="btn btn-cols2" data-colcfg="supports" title="Personalizza colonne">⚙</button>
+          <button class="btn btn-export" data-export="supports" title="Esporta">⤓ Esporta</button>
+          <button class="btn btn-primary" id="sup-new" data-i18n="sup.new">＋ Nuovo support</button>
+        </div>
+      </header>
+      <div class="info-panel" id="info-supports" hidden>
+        <h4>A cosa serve la sezione Support DJ</h4>
+        <p>Tieni traccia dei <b>support</b>: quali DJ suonano i tuoi brani, in quali <b>venue, città e paesi</b> del mondo e quando. Un database utile per promozione e reportistica.</p>
+      </div>
+      <div class="panel pln-form-panel" id="sup-form" hidden>
+        <div class="panel-head"><h2 id="sup-form-title" data-i18n="sup.new">Nuovo support</h2></div>
+        <div class="form-grid">
+          <label class="fld"><span data-i18n="sup.f_dj">DJ *</span><input class="input" id="sup-dj"></label>
+          <label class="fld"><span data-i18n="sup.f_track">Brano</span><input class="input" id="sup-track"></label>
+          <label class="fld"><span data-i18n="sup.f_venue">Venue</span><input class="input" id="sup-venue"></label>
+          <label class="fld"><span data-i18n="sup.f_city">Città</span><input class="input" id="sup-city"></label>
+          <label class="fld"><span data-i18n="sup.f_country">Paese</span><input class="input" id="sup-country"></label>
+          <label class="fld"><span data-i18n="sup.f_date">Data</span><input class="input" id="sup-date" type="date"></label>
+          <label class="fld fld--full"><span data-i18n="sup.f_note">Note</span><input class="input" id="sup-note"></label>
+        </div>
+        <div class="row-inline wrap"><button class="btn btn-primary" id="sup-save" data-i18n="common.save">Salva</button><button class="btn btn-ghost" id="sup-cancel" data-i18n="common.cancel">Annulla</button></div>
+      </div>
+      <div id="supports-list"></div>
+      <div class="empty-hint" id="supports-empty" hidden><p data-i18n="sup.empty">Nessun support registrato. Aggiungi dove e da chi è suonata la tua musica.</p></div>
+    </section>
+
+    <!-- ====== ROYALTIES ====== -->
+    <section class="view" id="view-royalties">
+      <header class="view-head">
+        <div><div class="title-row"><h1 data-i18n="roy.title">Royalty</h1><button class="info-btn" data-info="royalties" title="Cos'è questa sezione?">i</button></div><p class="muted" data-i18n="roy.subtitle">Quanto spetta a ogni artista, calcolato sul netto delle entrate.</p></div>
+        <div class="head-actions">
+          <select id="roy-period" class="select">
+            <option value="all" data-i18n="common.all_periods">Tutti i periodi</option>
+            <option value="ytd" data-i18n="common.period.ytd">Anno corrente</option>
+            <option value="12m" data-i18n="common.period.12m">Ultimi 12 mesi</option>
+            <option value="6m" data-i18n="common.period.6m">Ultimi 6 mesi</option>
+            <option value="3m" data-i18n="common.period.3m">Ultimi 3 mesi</option>
+            <option value="custom" data-i18n="common.period.custom">Personalizzato…</option>
+          </select>
+          <input type="date" id="roy-from" class="input input--date" title="Dalla data" hidden>
+          <input type="date" id="roy-to" class="input input--date" title="Alla data" hidden>
+          <div class="vm-toggle" data-vm-sec="royalties" data-vm-def="list">
+            <button class="vm-btn" data-vm="cards" title="Cards">▦</button>
+            <button class="vm-btn" data-vm="list" title="Elenco">☰</button>
+          </div>
+          <button class="btn btn-export" data-export="royalty" title="Esporta CSV/Excel/PDF">⤓ Esporta</button>
+        </div>
+      </header>
+
+      <div class="info-panel" id="info-royalties" data-i18n-html="info.royalties" hidden>
+        <h4>A cosa serve la sezione Royalty</h4>
+        <p>Calcola in automatico <b>quanto spetta a ogni artista</b>. Prende ogni vendita (entrata) nei Movimenti, trova la release con lo stesso <b>catalogo</b> e applica le <b>quote di ripartizione</b> definite in quella release. La somma per artista è quello che vedi nella tabella.</p>
+        <p>Se hai impostato un <b>override per traccia (ISRC)</b> nella release, le vendite con quell'ISRC usano le quote della singola traccia; tutte le altre usano le quote generali della release. Le vendite con un catalogo non associato a nessuna release restano fuori dal calcolo (le riconosci perché non compaiono).</p>
+        <p>Clicca un artista per il <b>dettaglio per release</b> e usa <b>Statement PDF</b> per generare un rendiconto pronto da inviare. Il menu <b>periodo</b> limita il calcolo a un intervallo (utile per i pagamenti trimestrali/annuali).</p>
+        <p class="muted" style="font-size:.86rem">Le royalty si calcolano sul <b>netto delle entrate</b>: sono una ripartizione dei ricavi, non delle uscite. Se un artista manca, controlla che le vendite abbiano il catalogo giusto e che la release esista.</p>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2 data-i18n="dash.byartist">Per artista</h2>
+          <span class="muted small">Clicca un artista per il dettaglio per release.</span></div>
+        <div class="table-wrap" id="roy-table-wrap"><table class="data-table data-table--cards" id="table-roy-artist"></table></div>
+        <div class="roy-cards" id="roy-cards" hidden></div>
+      </div>
+
+      <div class="panel" id="recoup-panel">
+        <div class="panel-head"><h2 data-i18n="recoup.title">Recoupment &amp; anticipi</h2>
+          <button class="info-btn" data-info="recoup" title="Cos'è?">i</button>
+          <span class="muted small" data-i18n="recoup.sub">Anticipi e costi recuperabili dalle royalty maturate (saldo a vita).</span></div>
+
+        <div class="info-panel" id="info-recoup" data-i18n-html="info.recoup" hidden>
+          <h4>A cosa serve il Recoupment</h4>
+          <p>Quando anticipi del denaro a un artista (un <b>anticipo</b>) o sostieni <b>costi recuperabili</b> per suo conto (studio, video, promo), quelle somme vanno <b>recuperate dalle sue royalty</b> prima di pagargli il resto.</p>
+          <p>Qui registri anticipi e costi per artista. Il programma confronta il <b>totale recuperabile</b> con le <b>royalty maturate</b> (a vita) e ti mostra quanto è già stato <b>recuperato</b>, quanto manca (<b>non recuperato</b>) e quanto eventualmente è <b>da pagare</b> all'artista oltre il recoupment.</p>
+          <span class="ex">Esempio — Anticipo 1.000€ a Raho. Royalty maturate finora: 700€. → Recuperato 700€, <b>non recuperato</b> 300€, da pagare 0€. Quando le royalty supereranno i 1.000€, la differenza diventa "da pagare".</span>
+        </div>
+
+        <div class="recoup-form">
+          <input list="recoup-artists" id="recoup-artist" class="input" data-i18n-ph="recoup.artist" placeholder="Artista">
+          <datalist id="recoup-artists"></datalist>
+          <select id="recoup-kind" class="select">
+            <option value="advance" data-i18n="recoup.advance">Anticipo</option>
+            <option value="cost" data-i18n="recoup.cost">Costo recuperabile</option>
+          </select>
+          <input type="number" id="recoup-amount" class="input" step="0.01" placeholder="€">
+          <input type="date" id="recoup-date" class="input input--date" title="Data">
+          <input type="text" id="recoup-note" class="input" data-i18n-ph="recoup.note" placeholder="Nota">
+          <button class="btn btn-primary" id="recoup-add" data-i18n="recoup.add">+ Aggiungi</button>
+        </div>
+
+        <div class="table-wrap"><table class="data-table" id="table-recoup"></table></div>
+        <div id="recoup-entries"></div>
+      </div>
+
+      <div class="panel" id="roy-detail-panel" hidden>
+        <div class="panel-head"><h2 id="roy-detail-title">Dettaglio</h2>
+          <span class="spacer" style="flex:1"></span>
+          <button class="btn btn-pdf" id="roy-detail-pdf" title="Rendiconto PDF da inviare all'artista">⤓ Statement PDF</button>
+          <button class="btn" id="roy-detail-close">Chiudi</button></div>
+        <div class="table-wrap"><table class="data-table data-table--cards" id="table-roy-detail"></table></div>
+      </div>
+      <div class="empty-hint" id="roy-empty" hidden>
+        <p>Per calcolare le royalty servono delle release con le quote. Crea la prima release.</p>
+        <button class="btn btn-primary" data-goto="releases">Vai a Release</button>
+      </div>
+    </section>
+
+    <!-- ====== IMPORT ====== -->
+    <section class="view" id="view-import">
+      <header class="view-head"><div><div class="title-row"><h1 data-i18n="imp.title">Importa CSV</h1><button class="info-btn" data-info="import" title="Cos'è questa sezione?">i</button></div>
+        <p class="muted" data-i18n="imp.subtitle">Carica un file da Bandcamp, dal distributore o da qualsiasi piattaforma. Mappi le colonne una volta.</p></div></header>
+
+      <div class="info-panel" id="info-import" data-i18n-html="info.import" hidden>
+        <h4>A cosa serve l'Importazione CSV</h4>
+        <p>Distributori e piattaforme (Bandcamp, DistroKid, Believe, Symphonic…) ti danno i report di vendita come file <b>CSV</b>. Qui li carichi e li trasformi in Movimenti, senza inserire le righe a mano.</p>
+        <p>Ogni piattaforma usa nomi di colonna diversi. La <b>mappatura</b> serve a dire una volta sola «la colonna <i>Net Amount</i> è l'importo», «<i>Item</i> è il prodotto» e così via. Puoi salvare la mappatura come <b>preset</b>: la prossima volta scegli il preset e l'import è immediato. Il <b>Rilevamento automatico</b> riconosce i distributori più comuni e precompila tutto.</p>
+        <p>Tutta l'elaborazione avviene nel tuo browser: <b>nessun file viene caricato su server</b>. Dopo l'anteprima confermi e le righe entrano nei Movimenti.</p>
+      </div>
+
+      <div class="panel">
+        <div class="import-drop" id="import-drop">
+          <input type="file" id="file-input" accept=".csv,.txt,text/csv" hidden>
+          <p><strong>Trascina qui il CSV</strong> oppure <button class="link" id="browse-btn">scegli un file</button></p>
+          <p class="muted small">Vengono lette le prime righe per riconoscere le colonne. Nulla viene caricato online.</p>
+        </div>
+      </div>
+
+      <div id="import-config" hidden>
+        <div class="panel">
+          <div class="panel-head"><h2>1 · Impostazioni file</h2></div>
+          <div class="form-grid">
+            <label>Distributore
+              <select id="map-distro" class="select">
+                <option value="auto">Rilevamento automatico</option>
+                <option value="bandcamp">Bandcamp</option>
+                <option value="distrokid">DistroKid</option>
+                <option value="believe">Believe</option>
+                <option value="symphonic">Symphonic</option>
+              </select>
+            </label>
+            <label>Origine (preset)
+              <div class="row-inline">
+                <select id="map-preset" class="select"><option value="">— nuovo —</option></select>
+                <input id="map-preset-name" class="input" placeholder="es. Bandcamp">
+                <button class="btn" id="save-preset">Salva preset</button>
+              </div>
+            </label>
+            <label>Tipo movimento
+              <select id="map-kind" class="select">
+                <option value="income">Entrata (vendite)</option>
+                <option value="expense">Uscita (spese)</option>
+              </select>
+            </label>
+            <label>Separatore
+              <select id="map-delim" class="select">
+                <option value="auto">Automatico</option>
+                <option value=",">Virgola ,</option>
+                <option value=";">Punto e virgola ;</option>
+                <option value="\t">Tab</option>
+              </select>
+            </label>
+            <label>Formato data
+              <select id="map-datefmt" class="select">
+                <option value="auto">Automatico</option>
+                <option value="dmy">Giorno/Mese/Anno</option>
+                <option value="mdy">Mese/Giorno/Anno (es. Bandcamp)</option>
+                <option value="ymd">Anno-Mese-Giorno</option>
+              </select>
+            </label>
+            <label>Valuta predefinita
+              <input id="map-currency" class="input" placeholder="EUR" value="EUR">
+            </label>
+            <label>Piattaforma (scrivila a mano)
+              <input id="map-platform" class="input" placeholder="es. Bandcamp">
+              <span class="muted small">Usata per tutte le righe se nel CSV non c'è una colonna "Piattaforma".</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h2>2 · Associa le colonne</h2>
+            <span class="muted small">Indica quale colonna del file corrisponde a ciascun campo.</span></div>
+          <div class="map-grid" id="map-fields"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h2>3 · Anteprima</h2>
+            <span class="muted small" id="preview-count"></span></div>
+          <div class="table-wrap"><table class="data-table" id="preview-table"></table></div>
+          <div class="panel-foot">
+            <label class="check-inline" title="Non importa righe già presenti (stessa data, prodotto, importo…)">
+              <input type="checkbox" id="import-dedup" checked> Salta doppioni
+            </label>
+            <span class="spacer"></span>
+            <button class="btn" id="import-cancel">Annulla</button>
+            <button class="btn btn-primary" id="import-confirm">Importa movimenti</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== SETTINGS ====== -->
+    <section class="view" id="view-settings">
+      <header class="view-head"><div><div class="title-row"><h1 data-i18n="set.title">Impostazioni</h1><button class="info-btn" data-info="settings" title="Cos'è questa sezione?">i</button></div>
+        <p class="muted" data-i18n="set.subtitle">Sincronizzazione, aspetto, tassi di cambio, backup e gestione dati.</p></div></header>
+
+      <div class="info-panel" id="info-settings" data-i18n-html="info.settings" hidden>
+        <h4>A cosa servono le Impostazioni</h4>
+        <p><b>Sincronizzazione cloud:</b> attivandola vedi gli stessi dati su PC e telefono e li tieni al sicuro online. Senza sync i dati restano solo su questo dispositivo/browser.</p>
+        <p><b>Profilo &amp; etichette:</b> gestisci il tuo nome, le etichette (puoi averne più di una e passare dall'una all'altra) e il tuo piano. Ogni etichetta ha movimenti, release e impostazioni separati.</p>
+        <p><b>Aspetto:</b> tema chiaro/scuro/di sistema. <b>Tassi di cambio:</b> se vendi in valute diverse, qui imposti la conversione verso la tua valuta principale. <b>Backup:</b> esporti o reimporti tutti i dati come file, utile prima di un cambio dispositivo o come copia di sicurezza.</p>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2 data-i18n="set.sync">☁ Sincronizzazione cloud</h2>
+          <span class="muted small" id="sync-status">Non configurata</span></div>
+        <div class="panel-body">
+          <p class="muted small">Collega un progetto Supabase (gratuito) per vedere gli stessi dati su PC e telefono. La guida è in <code>docs/SYNC-SETUP.md</code>.</p>
+
+          <details id="sync-config-box">
+            <summary>1 · Configura connessione (una volta sola)</summary>
+            <div class="form-grid" style="margin-top:12px">
+              <label class="span-2">Project URL
+                <input id="sync-url" class="input" placeholder="https://xxxx.supabase.co"></label>
+              <label class="span-2">Anon public key
+                <input id="sync-key" class="input" placeholder="eyJhbGciOi…"></label>
+              <div class="span-2"><button class="btn" id="sync-save-config">Salva connessione</button></div>
+            </div>
+          </details>
+
+          <div id="sync-auth" hidden>
+            <div class="form-grid" style="margin-top:6px">
+              <label>Email <input id="sync-email" class="input" type="email" autocomplete="username"></label>
+              <label>Password
+                <span class="input-eye">
+                  <input id="sync-pw" class="input" type="password" autocomplete="current-password">
+                  <button type="button" class="eye-btn" id="sync-pw-eye" aria-label="Mostra password" title="Mostra/nascondi password"></button>
+                </span>
+              </label>
+              <div class="span-2 row-inline wrap">
+                <button class="btn btn-primary" id="sync-signin">Accedi</button>
+                <button class="btn" id="sync-signup">Registrati</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="sync-account" hidden>
+            <span class="badge-local" id="sync-account-label" style="color:var(--net)"></span>
+            <div class="avatar-row">
+              <div class="avatar-prev" id="avatar-prev" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.5 3.6-6 8-6s8 2.5 8 6"/></svg>
+                <img id="avatar-prev-img" alt="" hidden>
+              </div>
+              <div class="avatar-actions">
+                <button class="btn" id="avatar-btn" type="button" data-i18n="set.photo">Carica foto</button>
+                <button class="btn btn-danger" id="avatar-clear" type="button" hidden data-i18n="set.photo_rm">Rimuovi</button>
+                <input type="file" id="avatar-input" accept="image/*" hidden>
+                <span class="muted small" data-i18n="set.photo_hint">JPG/PNG, ritagliata e ridotta in automatico.</span>
+              </div>
+            </div>
+            <div class="form-grid" style="margin-top:12px">
+              <label>Nome <input id="account-name" class="input" type="text"></label>
+              <label>Cognome <input id="account-surname" class="input" type="text"></label>
+              <label class="span-2">Nome label <input id="account-label" class="input" type="text"></label>
+            </div>
+            <div class="row-inline wrap" style="margin-top:12px">
+              <button class="btn btn-primary" id="account-save" data-i18n="set.save_profile">Salva profilo</button>
+              <button class="btn" id="sync-pull" data-i18n="set.refresh">Aggiorna ora</button>
+              <button class="btn btn-danger" id="sync-signout" data-i18n="common.signout">Esci</button>
+            </div>
+
+            <details class="pw-change" id="pw-change-box" style="margin-top:16px">
+              <summary data-i18n="set.change_pw">Cambia password</summary>
+              <div class="form-grid" style="margin-top:12px">
+                <label class="span-2">Nuova password
+                  <span class="input-eye">
+                    <input id="pw-new" class="input" type="password" autocomplete="new-password" placeholder="Almeno 6 caratteri">
+                    <button type="button" class="eye-btn" aria-label="Mostra password"></button>
+                  </span>
+                </label>
+                <label class="span-2">Conferma nuova password
+                  <span class="input-eye">
+                    <input id="pw-new2" class="input" type="password" autocomplete="new-password" placeholder="Ripeti la password">
+                    <button type="button" class="eye-btn" aria-label="Mostra password"></button>
+                  </span>
+                </label>
+                <div class="span-2"><button class="btn btn-primary" id="pw-save" data-i18n="set.update_pw">Aggiorna password</button></div>
+              </div>
+              <p class="muted small" id="pw-status"></p>
+            </details>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2 data-i18n="set.appearance">Aspetto</h2>
+          <span class="muted small">"Sistema" segue le impostazioni del tuo dispositivo.</span></div>
+        <div class="theme-switch theme-switch--lg" role="group" aria-label="Tema">
+          <button data-theme-opt="system" data-i18n="theme.system">◐ Sistema</button>
+          <button data-theme-opt="light" data-i18n="theme.light">☀ Chiaro</button>
+          <button data-theme-opt="dark" data-i18n="theme.dark">☾ Scuro</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2 data-i18n="set.language">Lingua</h2></div>
+        <div class="theme-switch theme-switch--lg" role="group" aria-label="Lingua">
+          <button data-lang-opt="it">Italiano</button>
+          <button data-lang-opt="en">English</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2 data-i18n="set.rates">Tassi di cambio → EUR</h2>
+          <span class="muted small">Usati per convertire le valute in euro nei totali.</span></div>
+        <div class="rates-grid" id="rates-grid"></div>
+        <div class="panel-foot">
+          <div class="row-inline">
+            <input id="rate-cur" class="input" placeholder="USD" maxlength="3">
+            <input id="rate-val" class="input" placeholder="0.92" type="number" step="0.0001">
+            <button class="btn" id="add-rate">Aggiungi valuta</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2 data-i18n="set.ai">Assistente AI</h2>
+          <span class="muted small" data-i18n="set.ai_sub">Configurazione della chiave per i consigli AI.</span></div>
+        <div class="panel-body">
+          <p class="muted small" data-i18n="set.ai_info">Modalità consigliata: la chiave resta sul server (Edge Function). In alternativa, per usarlo subito, puoi inserire qui la tua chiave Anthropic: resterà salvata <b>solo in questo browser</b> e le richieste partiranno direttamente dal tuo dispositivo.</p>
+          <div class="row-inline wrap" style="margin-top:10px">
+            <input id="ai-key" class="input" type="password" placeholder="sk-ant-..." autocomplete="off" style="flex:1;min-width:220px">
+            <button class="btn btn-primary" id="ai-key-save" data-i18n="set.ai_save">Salva chiave</button>
+            <button class="btn btn-ghost" id="ai-key-clear" data-i18n="set.ai_clear">Rimuovi</button>
+          </div>
+          <p class="ai-key-status muted small" id="ai-key-status"></p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2 data-i18n="set.email">Email automatica contratti</h2>
+          <span class="muted small" data-i18n="set.email_sub">Invio automatico del contratto all'artista (via EmailJS).</span></div>
+        <div class="panel-body">
+          <p class="muted small" data-i18n="set.email_info">Con EmailJS l'email parte automaticamente dall'indirizzo della tua etichetta, senza server. Crea un account gratuito su emailjs.com, collega la tua email, crea un template e incolla qui i 3 codici. Restano salvati solo in questo browser.</p>
+          <div class="form-grid" style="margin-top:10px">
+            <label class="fld"><span data-i18n="set.email_service">Service ID</span><input class="input" id="ej-service" autocomplete="off"></label>
+            <label class="fld"><span data-i18n="set.email_template">Template ID</span><input class="input" id="ej-template" autocomplete="off"></label>
+            <label class="fld"><span data-i18n="set.email_key">Public Key</span><input class="input" id="ej-key" autocomplete="off"></label>
+          </div>
+          <div class="row-inline wrap" style="margin-top:10px">
+            <button class="btn btn-primary" id="ej-save" data-i18n="set.email_save">Salva</button>
+            <button class="btn btn-ghost" id="ej-clear" data-i18n="set.email_clear">Rimuovi</button>
+            <button class="btn btn-ghost" id="ej-template-btn" data-i18n="set.email_tpl">Mostra template email</button>
+          </div>
+          <p class="muted small" id="ej-status"></p>
+          <pre class="ej-template-box" id="ej-template-box" hidden></pre>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2 data-i18n="set.backup">Backup & dati</h2></div>
+        <div class="panel-body">
+          <p class="muted small">I dati sono salvati solo su questo dispositivo/browser. Esporta un backup regolarmente.</p>
+          <div class="row-inline wrap">
+            <button class="btn" id="export-json" data-i18n="set.export_json">⤓ Esporta backup (.json)</button>
+            <button class="btn" id="export-csv" data-i18n="set.export_csv">⤓ Esporta movimenti (.csv)</button>
+            <button class="btn" id="import-json" data-i18n="set.restore">⤴ Ripristina backup</button>
+            <input type="file" id="json-input" accept=".json" hidden>
+            <button class="btn btn-danger" id="wipe" data-i18n="set.wipe">Cancella tutti i dati</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== ARTISTI (RUBRICA) ====== -->
+    <section class="view" id="view-artists">
+      <header class="view-head">
+        <div><div class="title-row"><h1 data-i18n="art.title">Artisti</h1><button class="info-btn" data-info="artists" title="Cos'è questa sezione?">i</button></div>
+          <p class="muted" data-i18n="art.subtitle">La rubrica del tuo roster: contatti, foto e dati per contratti e pagamenti.</p></div>
+        <div class="head-actions">
+          <input class="input" id="art-search" data-i18n-ph="art.search" placeholder="Cerca artista…">
+          <div class="vm-toggle" data-vm-sec="artists" data-vm-def="cards">
+            <button class="vm-btn" data-vm="cards" title="Cards">▦</button>
+            <button class="vm-btn" data-vm="list" title="Elenco">☰</button>
+          </div>
+          <button class="btn btn-clear" data-clear="artists" data-i18n="bulk.clear">Svuota</button>
+          <button class="btn btn-cols2" data-colcfg="artists" title="Personalizza colonne">⚙</button>
+          <button class="btn btn-primary" id="art-new" data-i18n="art.new">＋ Nuovo artista</button>
+        </div>
+      </header>
+
+      <div class="info-panel" id="info-artists" hidden>
+        <h4>A cosa serve la rubrica Artisti</h4>
+        <p>Raccogli qui tutte le informazioni dei tuoi artisti: nome d'arte, nome legale, email, telefono, IBAN per i pagamenti, foto e una quota di split predefinita. Questi dati vengono riutilizzati per generare i <b>contratti</b> e per ricordarti i <b>pagamenti</b> nelle attività.</p>
+      </div>
+
+      <div class="panel art-form-panel" id="art-form" hidden>
+        <div class="panel-head"><h2 id="art-form-title" data-i18n="art.new">Nuovo artista</h2></div>
+        <div class="art-form-grid">
+          <div class="art-photo-col">
+            <div class="art-photo" id="art-photo"><span data-i18n="art.photo">Foto</span></div>
+            <input type="file" id="art-photo-input" accept="image/*" hidden>
+            <button class="btn btn-ghost btn-sm" id="art-photo-btn" data-i18n="art.upload">Carica foto</button>
+          </div>
+          <div class="art-fields">
+            <div class="form-grid">
+              <label class="fld"><span data-i18n="art.name">Nome d'arte *</span><input class="input" id="art-name"></label>
+              <label class="fld"><span data-i18n="art.legal">Nome legale</span><input class="input" id="art-legal"></label>
+              <label class="fld"><span data-i18n="art.email">Email</span><input class="input" id="art-email" type="email"></label>
+              <label class="fld"><span data-i18n="art.phone">Telefono</span><input class="input" id="art-phone"></label>
+              <label class="fld"><span data-i18n="art.iban">IBAN</span><input class="input" id="art-iban"></label>
+              <label class="fld"><span data-i18n="art.split">Split predefinito %</span><input class="input" id="art-split" type="number" min="0" max="100" step="1"></label>
+              <label class="fld fld--full"><span data-i18n="art.address">Indirizzo</span><input class="input" id="art-address"></label>
+              <label class="fld fld--full"><span data-i18n="art.note">Note</span><input class="input" id="art-note"></label>
+            </div>
+            <div class="row-inline wrap">
+              <button class="btn btn-primary" id="art-save" data-i18n="art.save">Salva artista</button>
+              <button class="btn btn-ghost" id="art-cancel" data-i18n="common.cancel">Annulla</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="art-grid" id="artists-grid"></div>
+      <div class="empty-hint" id="artists-empty" hidden>
+        <p data-i18n="art.empty">Nessun artista in rubrica. Aggiungi il primo per iniziare a creare contratti e promemoria.</p>
+      </div>
+    </section>
+
+    <!-- ====== CONTRATTI ====== -->
+    <section class="view" id="view-contracts">
+      <header class="view-head">
+        <div><div class="title-row"><h1 data-i18n="con.title">Contratti</h1><button class="info-btn" data-info="contracts" title="Cos'è questa sezione?">i</button></div>
+          <p class="muted" data-i18n="con.subtitle">Genera un contratto standard di split, pronto da inviare via email agli artisti.</p></div>
+        <div class="head-actions">
+          <input class="input" id="con-search" data-i18n-ph="common.search" placeholder="Cerca…">
+          <button class="btn btn-clear" data-clear="contracts" data-i18n="bulk.clear">Svuota</button>
+          <button class="btn btn-primary" id="con-new" data-i18n="con.new">＋ Nuovo contratto</button>
+        </div>
+      </header>
+
+      <div class="info-panel" id="info-contracts" hidden>
+        <h4>Come funzionano i contratti</h4>
+        <p>Compili i dati della release e dell'artista, scegli la ripartizione (di default <b>50% artista / 50% etichetta</b>) e premi <b>Genera contratto</b>: ottieni l'<b>Authorization to Release</b> standard dell'etichetta, identica per tutti — cambia solo lo split se lo modifichi. Da lì puoi <b>stamparla/salvarla in PDF</b>, <b>inviarla all'artista</b> per la firma e archiviare la versione firmata.</p>
+      </div>
+
+      <div class="panel con-form-panel" id="con-form" hidden>
+        <div class="panel-head"><h2 id="con-form-title" data-i18n="con.build">Compila il contratto</h2></div>
+        <div class="con-top-row">
+          <label class="fld con-pick">
+            <span data-i18n="con.from_rubrica">Precompila da rubrica artisti</span>
+            <select class="select" id="con-artist-pick"></select>
+          </label>
+          <div class="con-logo-field">
+            <span class="fld-lbl" data-i18n="con.logo_lbl">Logo etichetta</span>
+            <div class="con-logo-row">
+              <div class="con-logo-prev" id="con-logo-prev"><span data-i18n="con.logo">Logo etichetta</span></div>
+              <div class="con-logo-btns">
+                <input type="file" id="con-logo-input" accept="image/*" hidden>
+                <button type="button" class="btn btn-ghost btn-sm" id="con-logo-btn" data-i18n="con.logo_up">Carica logo</button>
+                <button type="button" class="btn btn-ghost btn-sm" id="con-logo-clear" data-i18n="con.logo_clear">Rimuovi</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="con-section-lbl" data-i18n="con.sec_track">Track(s) Information</div>
+        <div class="form-grid">
+          <label class="fld fld--full"><span data-i18n="con.titles">Title(s) *</span><input class="input" id="con-titles" placeholder="Es. Midnight, Echoes"></label>
+          <label class="fld"><span data-i18n="con.artist_names">Artist Name(s)</span><input class="input" id="con-artist-names"></label>
+          <label class="fld"><span data-i18n="con.written">Written by</span><input class="input" id="con-written"></label>
+        </div>
+        <div class="con-section-lbl" data-i18n="con.sec_artist">Artist Details</div>
+        <div class="form-grid">
+          <label class="fld"><span data-i18n="con.fullname">Full Name *</span><input class="input" id="con-fullname"></label>
+          <label class="fld"><span data-i18n="con.project">Artist / Project Name</span><input class="input" id="con-project"></label>
+          <label class="fld"><span data-i18n="con.email">Email artista</span><input class="input" id="con-email" type="email"></label>
+          <label class="fld"><span data-i18n="con.date">Data</span><input class="input" id="con-date" type="date"></label>
+        </div>
+        <div class="con-section-lbl" data-i18n="con.sec_split">Revenue split</div>
+        <div class="con-split-box">
+          <label class="fld"><span data-i18n="con.artist_pct">Quota Artista %</span>
+            <input class="input" id="con-artist-pct" type="number" min="0" max="100" step="1" value="50"></label>
+          <div class="con-split-bar"><span class="csb-art" id="csb-art">50%</span><span class="csb-lab" id="csb-lab">50%</span></div>
+          <p class="muted small" data-i18n="con.split_note">Di default 50/50. Modifica solo se concordato diversamente per iscritto.</p>
+        </div>
+        <div class="row-inline wrap">
+          <button class="btn btn-primary" id="con-generate" data-i18n="con.generate">⚙ Genera contratto</button>
+          <button class="btn btn-ghost" id="con-cancel" data-i18n="common.cancel">Annulla</button>
+        </div>
+      </div>
+
+      <div class="panel con-preview-panel" id="con-preview" hidden>
+        <div class="panel-head">
+          <h2 data-i18n="con.preview">Anteprima contratto</h2>
+          <div class="row-inline wrap">
+            <button class="btn btn-ghost btn-sm" id="con-back" data-i18n="con.back">‹ Modifica</button>
+            <button class="btn btn-sm" id="con-sign" data-i18n="con.sign_now">✍ Firma ora</button>
+            <button class="btn btn-sm" id="con-print" data-i18n="con.print">⤓ Scarica PDF</button>
+            <button class="btn btn-primary btn-sm" id="con-send" data-i18n="con.send">✉ Invia per firma</button>
+          </div>
+        </div>
+        <div class="contract-doc" id="contract-doc"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2 data-i18n="con.saved">Contratti salvati</h2></div>
+        <div class="table-wrap"><table class="data-table" id="contracts-table"></table></div>
+        <div class="empty-hint" id="contracts-empty" hidden><p data-i18n="con.empty">Ancora nessun contratto. Creane uno con “Nuovo contratto”.</p></div>
+      </div>
+    </section>
+
+    <!-- ====== TASK & PROMEMORIA ====== -->
+    <section class="view" id="view-tasks">
+      <header class="view-head">
+        <div><div class="title-row"><h1 data-i18n="tsk.title">Task</h1><button class="info-btn" data-info="tasks" title="Cos'è questa sezione?">i</button></div>
+          <p class="muted" data-i18n="tsk.subtitle">Promemoria per pagamenti, invio contratti e scadenze dell'etichetta.</p></div>
+        <div class="head-actions">
+          <input class="input" id="tsk-search" data-i18n-ph="common.search" placeholder="Cerca…">
+          <button class="btn btn-clear" data-clear="tasks" data-i18n="bulk.clear">Svuota</button>
+        </div>
+      </header>
+
+      <div class="info-panel" id="info-tasks" hidden>
+        <h4>A cosa servono i Task</h4>
+        <p>Tieni traccia delle cose da fare: pagare un artista, inviare un contratto, rinnovare una distribuzione. Aggiungi una <b>scadenza</b> e l'attività verrà evidenziata quando è in arrivo o scaduta. Spunta il pallino quando è fatta.</p>
+      </div>
+
+      <div class="panel tsk-add">
+        <div class="form-grid">
+          <label class="fld fld--full"><span data-i18n="tsk.what">Cosa c'è da fare *</span><input class="input" id="tsk-title" data-i18n-ph="tsk.what_ph" placeholder="Es. Pagare royalty a Mario"></label>
+          <label class="fld"><span data-i18n="tsk.type">Tipo</span>
+            <select class="select" id="tsk-type">
+              <option value="payment" data-i18n="tsk.t_payment">Pagamento</option>
+              <option value="contract" data-i18n="tsk.t_contract">Contratto</option>
+              <option value="other" data-i18n="tsk.t_other">Altro</option>
+            </select></label>
+          <label class="fld"><span data-i18n="tsk.due">Scadenza</span><input class="input" id="tsk-due" type="date"></label>
+          <label class="fld"><span data-i18n="tsk.time">Orario</span><input class="input" id="tsk-time" type="time"></label>
+          <label class="fld"><span data-i18n="tsk.remind">Preavviso</span>
+            <select class="select" id="tsk-remind">
+              <option value="0" data-i18n="tsk.r_none">Nessuno</option>
+              <option value="10" data-i18n="tsk.r_10">10 minuti prima</option>
+              <option value="30" data-i18n="tsk.r_30">30 minuti prima</option>
+              <option value="60" data-i18n="tsk.r_60">1 ora prima</option>
+              <option value="180" data-i18n="tsk.r_180">3 ore prima</option>
+              <option value="1440" data-i18n="tsk.r_1440">1 giorno prima</option>
+            </select></label>
+        </div>
+        <div class="row-inline"><button class="btn btn-primary" id="tsk-add" data-i18n="tsk.add">＋ Aggiungi task</button></div>
+        <p class="muted small tsk-notif-hint" id="tsk-notif-hint" hidden data-i18n="tsk.notif_hint">Attiva le notifiche del browser per ricevere gli avvisi anche quando l'app è in secondo piano.</p>
+      </div>
+
+      <div id="tasks-list"></div>
+      <div class="empty-hint" id="tasks-empty" hidden><p data-i18n="tsk.empty">Nessun task. Aggiungi il primo promemoria qui sopra.</p></div>
+    </section>
+
+    <!-- ====== MERCH ====== -->
+    <section class="view" id="view-merch">
+      <header class="view-head">
+        <div><div class="title-row"><h1 data-i18n="mch.title">Merch</h1><button class="info-btn" data-info="merch" title="Cos'è questa sezione?">i</button></div>
+          <p class="muted" data-i18n="mch.subtitle">Catalogo merchandising, vendite, ricavi e magazzino.</p></div>
+        <div class="head-actions">
+          <input class="input" id="mch-search" data-i18n-ph="mch.search" placeholder="Cerca articolo…">
+          <div class="vm-toggle" data-vm-sec="merch" data-vm-def="cards">
+            <button class="vm-btn" data-vm="cards" title="Cards">▦</button>
+            <button class="vm-btn" data-vm="list" title="Elenco">☰</button>
+          </div>
+          <button class="btn btn-clear" data-clear="merch" data-i18n="bulk.clear">Svuota</button>
+          <button class="btn btn-cols2" data-colcfg="merch" title="Personalizza colonne">⚙</button>
+          <button class="btn btn-export" data-export="merch" title="Esporta CSV/Excel/PDF">⤓ Esporta</button>
+          <button class="btn btn-primary" id="mch-new" data-i18n="mch.new">＋ Nuovo articolo</button>
+        </div>
+      </header>
+
+      <div class="info-panel" id="info-merch" hidden>
+        <h4>A cosa serve la sezione Merch</h4>
+        <p>Gestisci il tuo merchandising (t-shirt, vinili, CD, poster…): per ogni articolo indichi <b>prezzo</b>, <b>costo</b> e <b>scorte</b>. Quando vendi, premi <b>+ vendita</b> e il sistema aggiorna unità vendute, ricavi, margine e magazzino. In alto trovi i totali e l'articolo più venduto; puoi anche aggiungere la card del merch in dashboard.</p>
+      </div>
+
+      <div class="mch-stats" id="mch-stats"></div>
+
+      <div class="panel mch-form-panel" id="mch-form" hidden>
+        <div class="panel-head"><h2 id="mch-form-title" data-i18n="mch.new">Nuovo articolo</h2></div>
+        <div class="form-grid">
+          <label class="fld"><span data-i18n="mch.name">Nome articolo *</span><input class="input" id="mch-name"></label>
+          <label class="fld"><span data-i18n="mch.type">Tipo</span>
+            <select class="select" id="mch-type">
+              <option value="tshirt" data-i18n="mch.t_tshirt">T-shirt</option>
+              <option value="vinyl" data-i18n="mch.t_vinyl">Vinile</option>
+              <option value="cd" data-i18n="mch.t_cd">CD</option>
+              <option value="hoodie" data-i18n="mch.t_hoodie">Felpa</option>
+              <option value="poster" data-i18n="mch.t_poster">Poster</option>
+              <option value="other" data-i18n="mch.t_other">Altro</option>
+            </select></label>
+          <label class="fld"><span data-i18n="mch.price">Prezzo (€) *</span><input class="input" id="mch-price" type="number" min="0" step="0.01"></label>
+          <label class="fld"><span data-i18n="mch.cost">Costo (€)</span><input class="input" id="mch-cost" type="number" min="0" step="0.01"></label>
+          <label class="fld"><span data-i18n="mch.stock">Scorte</span><input class="input" id="mch-stock" type="number" min="0" step="1"></label>
+          <label class="fld"><span data-i18n="mch.sold">Già venduti</span><input class="input" id="mch-sold" type="number" min="0" step="1" value="0"></label>
+        </div>
+        <div class="row-inline wrap">
+          <button class="btn btn-primary" id="mch-save" data-i18n="mch.save">Salva articolo</button>
+          <button class="btn btn-ghost" id="mch-cancel" data-i18n="common.cancel">Annulla</button>
+        </div>
+      </div>
+
+      <div class="mch-grid" id="merch-grid"></div>
+      <div class="empty-hint" id="merch-empty" hidden><p data-i18n="mch.empty">Nessun articolo. Aggiungi il primo prodotto di merchandising.</p></div>
+    </section>
+
+    <!-- ====== CHI SIAMO ====== -->
+    <section class="view view-about" id="view-about">
+      <div class="about-bg" aria-hidden="true">
+        <span class="gate-orb gate-orb--1"></span>
+        <span class="gate-orb gate-orb--2"></span>
+        <span class="gate-orb gate-orb--3"></span>
+        <span class="gate-orb gate-orb--4"></span>
+      </div>
+
+      <div class="about-inner">
+        <div class="about-hero">
+          <img src="icon.png?v=3" alt="Label Finance" class="about-logo">
+          <h2 class="about-title">Label<span class="lf-fin">Finance</span></h2>
+          <p class="about-tag" data-i18n="about.subtitle">Il sistema operativo della tua etichetta discografica.</p>
+        </div>
+
+        <div class="about-cards">
+          <div class="about-card">
+            <h3 class="about-card-h" data-i18n="about.mission_t">La nostra missione</h3>
+            <p data-i18n-html="about.p1">Label Finance nasce da una passione vera per la musica indipendente. Abbiamo messo in
+               un'unica app — semplice, moderna e bellissima — tutto ciò che serve a una label per funzionare sul serio:
+               <strong>finanze, royalty e recoupment</strong> calcolati al centesimo, <strong>discografia</strong> e
+               <strong>contratti con firma digitale</strong>, <strong>pianificazione delle uscite</strong>, <strong>eventi</strong>,
+               <strong>merch</strong> e i <strong>support dei DJ</strong> in giro per il mondo. E un <strong>assistente AI</strong>
+               che legge i tuoi numeri e ti dice dove crescere. Niente più fogli Excel, niente più cose perse: solo la tua
+               musica, gestita come si deve. 🎧</p>
+          </div>
+          <div class="about-card">
+            <h3 class="about-card-h" data-i18n="about.caps_t">Cosa puoi fare</h3>
+            <ul class="about-caps" data-i18n-html="about.caps">
+              <li>💸 Finanze, royalty &amp; recoupment</li>
+              <li>📀 Discografia &amp; contratti con firma digitale</li>
+              <li>🗓️ Pianificazione, eventi &amp; calendario</li>
+              <li>👕 Merch &amp; magazzino</li>
+              <li>🌍 Support DJ nel mondo</li>
+              <li>🤖 Assistente AI &amp; report PDF/Excel</li>
+              <li>🏢 Multi-etichetta &amp; sync cloud</li>
+            </ul>
+          </div>
+          <div class="about-card">
+            <h3 class="about-card-h" data-i18n="about.team_t">Il team</h3>
+            <ul class="credits-list">
+              <li><span data-i18n="credits.founder">Founder</span><b>Davide Raho</b></li>
+              <li><span data-i18n="credits.dev">Sviluppo &amp; design</span><b>RHDev</b></li>
+              <li><span data-i18n="credits.version">Versione</span><b>1.0</b></li>
+            </ul>
+          </div>
+        </div>
+
+        <p class="about-contact">General info: <a href="mailto:info.labelfinance@gmail.com">info.labelfinance@gmail.com</a></p>
+        <p class="about-copy">© <span id="copyright-year">2026</span> Label Finance — <span data-i18n="about.rights">Tutti i diritti riservati.</span></p>
+        <p class="about-tm muted small" data-i18n="about.tm">Tutti i marchi citati (Bandcamp, DistroKid, Believe, Symphonic…) appartengono ai rispettivi proprietari.</p>
+      </div>
+    </section>
+
+    <!-- ====== OFFERTE & PIANI ====== -->
+    <section class="view" id="view-offers">
+      <header class="view-head"><div><div class="title-row"><h1 data-i18n="off.title">Offerte &amp; Piani</h1><button class="info-btn" data-info="offers" title="Cos'è questa sezione?">i</button></div>
+        <p class="muted" data-i18n="off.subtitle">Gestisci più etichette da un unico account. Scegli il piano adatto al tuo roster.</p></div></header>
+
+      <div class="info-panel" id="info-offers" data-i18n-html="info.offers" hidden>
+        <h4>Come funzionano i piani</h4>
+        <p>Il piano determina quante <b>etichette</b> puoi gestire dallo stesso account e quali funzioni avanzate hai a disposizione. Puoi cambiarlo quando vuoi: i tuoi dati restano sempre tuoi.</p>
+        <ul>
+          <li><b>Starter</b> — per chi avvia la propria etichetta: una etichetta, contabilità, royalty, import CSV e report.</li>
+          <li><b>Studio</b> — più etichette e strumenti per chi gestisce un roster.</li>
+          <li><b>Agency</b> — per chi amministra molte etichette/clienti, con i limiti più alti.</li>
+        </ul>
+        <p>Con il selettore <b>Mensile / Annuale</b> confronti i prezzi: il piano annuale costa meno (la rata mensile equivalente è più bassa, fino al 30% di risparmio).</p>
+      </div>
+
+      <div class="billing-toggle" id="billing-toggle">
+        <button data-billing="monthly" class="is-active" data-i18n="off.monthly">Mensile</button>
+        <button data-billing="annual"><span data-i18n="off.annual">Annuale</span> <span class="save">−30%</span></button>
+      </div>
+      <div class="plans">
+        <div class="plan-card" data-plan="free" data-monthly="9">
+          <div class="plan-name">Starter</div>
+          <div class="plan-price"></div>
+          <div class="plan-note"></div>
+          <p class="plan-desc" data-i18n="plan.free.desc">Il gestionale completo, per la tua prima etichetta.</p>
+          <ul class="plan-feat">
+            <li data-i18n="pf.free1">1 etichetta</li>
+            <li data-i18n="pf.free2">Movimenti, royalty e recoupment</li>
+            <li data-i18n="pf.free3">Discografia, contratti e firma digitale</li>
+            <li data-i18n="pf.free4">Pianificazione, eventi, merch e task</li>
+            <li data-i18n="pf.free5">Import CSV + report PDF</li>
+            <li data-i18n="pf.free6">Sync cloud su tutti i dispositivi</li>
+          </ul>
+          <button class="btn plan-btn" data-plan="free" data-i18n="off.activate">Attiva</button>
+        </div>
+        <div class="plan-card" data-plan="studio" data-monthly="19">
+          <div class="plan-name">Studio</div>
+          <div class="plan-price"></div>
+          <div class="plan-note"></div>
+          <p class="plan-desc" data-i18n="plan.studio.desc">Più potenza per chi fa sul serio: AI e personalizzazione.</p>
+          <ul class="plan-feat">
+            <li data-i18n="pf.studio1">Tutto del piano Starter</li>
+            <li data-i18n="pf.studio2">Fino a 3 etichette</li>
+            <li data-i18n-html="pf.studio3">🤖 <b>Assistente AI</b> dedicato</li>
+            <li data-i18n="pf.studio4">Dashboard personalizzabile + widget</li>
+            <li data-i18n="pf.studio5">Export Excel + documenti col tuo brand</li>
+            <li data-i18n="pf.studio6">Supporto prioritario</li>
+          </ul>
+          <button class="btn btn-primary plan-btn" data-plan="studio" data-i18n="off.activate">Attiva</button>
+        </div>
+        <div class="plan-card" data-plan="agency" data-monthly="49">
+          <div class="plan-name">Agency</div>
+          <div class="plan-price"></div>
+          <div class="plan-note"></div>
+          <p class="plan-desc" data-i18n="plan.agency.desc">Per agenzie e manager con più roster.</p>
+          <ul class="plan-feat">
+            <li data-i18n="pf.agency1">Tutto del piano Studio</li>
+            <li data-i18n="pf.agency2">Etichette illimitate</li>
+            <li data-i18n-html="pf.agency3">Accesso team <em>(prossimamente)</em></li>
+            <li data-i18n="pf.agency4">Automazioni e audit log</li>
+            <li data-i18n="pf.agency5">Onboarding dedicato</li>
+          </ul>
+          <button class="btn plan-btn" data-plan="agency" data-i18n="off.activate">Attiva</button>
+        </div>
+      </div>
+      <p class="muted small" style="margin-top:16px">I pagamenti reali (carta) saranno gestiti da un provider sicuro (es. Stripe). Per ora l'attivazione è dimostrativa, così puoi già usare più etichette.</p>
+    </section>
+
+    <!-- ====== AIUTO & FAQ ====== -->
+    <section class="view" id="view-faq">
+      <header class="view-head"><div><h1 data-i18n="faq.title">Aiuto &amp; FAQ</h1>
+        <p class="muted" data-i18n="faq.subtitle">Le risposte alle domande più comuni. Cerca una parola o sfoglia per argomento.</p></div></header>
+
+      <div class="faq-search-wrap">
+        <input type="search" id="faq-search" class="input" data-i18n-ph="faq.search" placeholder="Cerca nella guida… (es. ISRC, CSV, royalty, password)">
+      </div>
+
+      <div class="empty-hint" id="faq-empty" hidden>
+        <p>Nessuna risposta trovata. Prova con un'altra parola.</p>
+      </div>
+
+      <div class="faq-group">
+        <h3 class="faq-group-title" data-i18n="faq.g1">Per iniziare</h3>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false" data-i18n="faq.q1">Cos'è Label Finance e a chi serve?</button>
+          <div class="faq-a" data-i18n-html="faq.a1"><p>È un gestionale per <b>etichette discografiche indipendenti</b>: tieni traccia di entrate e uscite, importi i report di vendita di Bandcamp/distributori e calcoli in automatico le royalty da pagare a ogni artista. Tutto in un'unica schermata, senza fogli di calcolo.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false" data-i18n="faq.q2">Da dove comincio se è tutto vuoto?</button>
+          <div class="faq-a" data-i18n-html="faq.a2"><p>Tre strade dalla Dashboard: <b>Carica dati demo</b> per esplorare l'app con dati finti, <b>Importa un CSV</b> dal tuo distributore, oppure <b>Aggiungi a mano</b> il primo movimento. Poi crea le tue <b>Release</b> con le quote per artista e le Royalty si calcolano da sole.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false" data-i18n="faq.q3">Devo installare qualcosa?</button>
+          <div class="faq-a" data-i18n-html="faq.a3"><p>No, funziona nel browser. Su telefono puoi però <b>installarla come app</b> (PWA): apri il sito, menu del browser → «Aggiungi a schermata Home». Avrai un'icona dedicata e l'uso offline.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false" data-i18n="faq.q4">A cosa serve il pulsante «ⓘ» in ogni sezione?</button>
+          <div class="faq-a" data-i18n-html="faq.a4"><p>Apre un pannello <b>Informazioni</b> che spiega a cosa serve quella sezione e come usarla. Cliccalo di nuovo per chiuderlo.</p></div>
+        </div>
+      </div>
+
+      <div class="faq-group">
+        <h3 class="faq-group-title" data-i18n="faq.g2">Movimenti e Import CSV</h3>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false" data-i18n="faq.q5">Come importo i dati di vendita da Bandcamp o dal distributore?</button>
+          <div class="faq-a" data-i18n-html="faq.a5"><p>Vai in <b>Importa CSV</b>, trascina il file o sceglilo. L'app legge le colonne; se non riconosce subito il formato, in «Associa le colonne» indichi quale colonna è l'importo, quale la data, ecc. Controlli l'anteprima e confermi. Puoi salvare la configurazione come <b>preset</b> per le volte successive.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false" data-i18n="faq.q6">Devo rifare la mappatura delle colonne ogni volta?</button>
+          <div class="faq-a" data-i18n-html="faq.a6"><p>No. La prima volta mappi le colonne e <b>salvi un preset</b> (es. «Bandcamp»). Le volte dopo scegli quel preset e l'import è immediato. Per i distributori più comuni c'è anche il <b>Rilevamento automatico</b>.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false" data-i18n="faq.q7">Posso evitare di caricare il CSV e collegare le piattaforme via API?</button>
+          <div class="faq-a" data-i18n-html="faq.a7"><p>Oggi l'app lavora via <b>import CSV</b>, che è il formato che tutte le piattaforme esportano. Una connessione diretta via API è possibile solo per alcune piattaforme e richiede un componente lato server: è sul nostro piano di sviluppo. Nel frattempo i <b>preset</b> rendono l'import di pochi secondi.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false" data-i18n="faq.q8">L'import crea righe doppie. Come evito i duplicati?</button>
+          <div class="faq-a" data-i18n-html="faq.a8"><p>Tieni spuntato <b>«Salta doppioni»</b> nell'anteprima: le righe già presenti (stessa data, prodotto, importo…) non vengono reimportate. Utile se ricarichi un report che si sovrappone in parte al precedente.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false" data-i18n="faq.q9">Gli importi sono in dollari/sterline: come li converto in euro?</button>
+          <div class="faq-a" data-i18n-html="faq.a9"><p>In <b>Impostazioni → Tassi di cambio</b> aggiungi la valuta e il tasso verso l'euro (es. USD 0,92). I totali vengono convertiti usando quei tassi.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false" data-i18n="faq.q10">Posso personalizzare le colonne della tabella Movimenti?</button>
+          <div class="faq-a" data-i18n-html="faq.a10"><p>Sì: pulsante <b>⚙ Colonne</b>. Spunti quelle da mostrare e le riordini con le frecce.</p></div>
+        </div>
+      </div>
+
+      <div class="faq-group">
+        <h3 class="faq-group-title" data-i18n="faq.g3">Release e Royalty</h3>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false" data-i18n="faq.q11">Come fa l'app a sapere a chi spettano le royalty?</button>
+          <div class="faq-a" data-i18n-html="faq.a11"><p>Tramite il <b>catalogo</b>. In ogni release imposti il codice catalogo e le quote per artista. Ogni vendita nei Movimenti con lo stesso catalogo eredita quelle quote, e la sezione Royalty somma quanto spetta a ciascuno.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false" data-i18n="faq.q12">Cos'è l'«override della traccia con ISRC» e quando serve?</button>
+          <div class="faq-a" data-i18n-html="faq.a12">
+            <p>Serve quando, dentro la stessa release, <b>le tracce non si dividono tutte allo stesso modo</b> — tipicamente perché un brano ha un featuring in più.</p>
+            <p>Di base le quote valgono per tutta la release. Ma puoi aggiungere una traccia con il suo <b>ISRC</b> (il codice univoco del brano) e darle quote diverse. Le vendite che riportano quell'ISRC useranno le quote della traccia; tutte le altre useranno quelle generali della release.</p>
+            <span class="ex">EP <b>RHD007</b>, quote generali Raho 50% / Jacom 50%. La traccia 2 (ISRC <i>ITRH72500002</i>) ha un feat: imposti Raho 40% / Jacom 35% / Pol 25%. → Le vendite della traccia 2 si dividono 40/35/25, tutte le altre 50/50.</span>
+            <p class="muted small">Se tutte le tracce si dividono uguale, non ti serve: lascia stare le tracce e usa solo le quote generali.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false" data-i18n="faq.q13">Dove trovo l'ISRC di un brano?</button>
+          <div class="faq-a" data-i18n-html="faq.a13"><p>È nei report del distributore (spesso colonna «ISRC») e nei metadati del brano. Sono 12 caratteri, es. <i>ITRH72500002</i>. Se non hai bisogno delle quote per singola traccia, puoi ignorarlo.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false" data-i18n="faq.q14">Un artista non compare nelle royalty. Perché?</button>
+          <div class="faq-a" data-i18n-html="faq.a14"><p>Quasi sempre è il <b>catalogo</b> che non combacia: le vendite devono avere lo stesso codice catalogo della release. Controlla che la release esista, che il catalogo sia identico (anche maiuscole/spazi) e che le quote siano impostate.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false" data-i18n="faq.q15">Le percentuali non arrivano al 100%. È un errore?</button>
+          <div class="faq-a" data-i18n-html="faq.a15"><p>No: la parte che manca al 100% resta alla <b>label</b>. Se Raho 50% e Jacom 30%, il restante 20% è dell'etichetta.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false" data-i18n="faq.q16">Come genero il rendiconto da inviare a un artista?</button>
+          <div class="faq-a" data-i18n-html="faq.a16"><p>In <b>Royalty</b> clicca l'artista per aprire il dettaglio, poi <b>Statement PDF</b>: ottieni un documento pronto da inviare. Puoi limitarlo a un periodo (es. trimestre) col selettore in alto.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false" data-i18n="faq.q17">Le royalty si calcolano anche sulle uscite?</button>
+          <div class="faq-a" data-i18n-html="faq.a17"><p>No. Sono una ripartizione delle <b>entrate</b> (i ricavi). Le uscite incidono sul margine della label in Dashboard, non sulle quote degli artisti.</p></div>
+        </div>
+      </div>
+
+      <div class="faq-group">
+        <h3 class="faq-group-title" data-i18n="faq.g7">Artisti, Contratti, Task e Merch</h3>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false" data-i18n="faq.q18">A cosa serve la rubrica Artisti?</button>
+          <div class="faq-a" data-i18n-html="faq.a18"><p>È l'anagrafica del tuo roster: nome d'arte, nome legale, email, telefono, IBAN, foto e una quota di split predefinita. Questi dati vengono riusati per <b>precompilare i contratti</b> e ricordarti i pagamenti nei Task. Puoi vederla a <b>schede</b> o a <b>elenco</b>.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false" data-i18n="faq.q19">Come funziona la firma dei contratti?</button>
+          <div class="faq-a" data-i18n-html="faq.a19">
+            <p>In Contratti compili i dati della release e dell'artista e scegli la ripartizione (di default <b>50% / 50%</b>). Premi <b>Genera contratto</b> e ottieni l'<i>Authorization to Release</i> standard, con il logo della tua etichetta accanto a quello di Label Finance.</p>
+            <p>Da lì puoi <b>scaricare il PDF</b>, <b>firmarlo subito</b> sul dispositivo, oppure <b>inviarlo per la firma a distanza</b>: l'artista riceve un link (o un'email automatica), legge il contratto e lo <b>firma</b> o lo <b>rifiuta</b> indicando il motivo. L'esito torna in automatico nel sistema: stato <b>Firmato</b> o <b>Rifiutato</b>.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false" data-i18n="faq.q20">L'email del contratto parte davvero da sola?</button>
+          <div class="faq-a" data-i18n-html="faq.a20"><p>Sì, se attivi l'<b>invio automatico</b> in Impostazioni → Email automatica contratti (servizio gratuito EmailJS): l'email parte dall'indirizzo della tua etichetta, già impostata graficamente. Se preferisci, puoi sempre condividere tu il <b>link di firma</b> via WhatsApp, email o copia-incolla.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false" data-i18n="faq.q21">A cosa servono i Task?</button>
+          <div class="faq-a" data-i18n-html="faq.a21"><p>Sono i promemoria dell'etichetta: pagare un artista, inviare un contratto, rinnovare una distribuzione. Aggiungi una <b>scadenza</b> e l'attività viene evidenziata quando è in arrivo o scaduta. Spunta il pallino quando è fatta.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false" data-i18n="faq.q22">Come gestisco il merch?</button>
+          <div class="faq-a" data-i18n-html="faq.a22"><p>Nella sezione <b>Merch</b> aggiungi gli articoli (t-shirt, vinili, CD…) con prezzo, costo e scorte. A ogni vendita premi <b>+ vendita</b>: l'app aggiorna unità vendute, ricavi, margine e magazzino. In alto vedi i totali e l'articolo più venduto, e puoi aggiungere la card <b>“Merch più venduto”</b> in dashboard.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false" data-i18n="faq.q23">Cos'è l'assistente AI (la bolla viola)?</button>
+          <div class="faq-a" data-i18n-html="faq.a23"><p>È il consulente AI dell'etichetta, sempre a portata di mano in basso a destra. Dentro trovi dei <b>suggerimenti pronti</b> in base ai tuoi dati (analisi generale, margini, recoupment, merch, previsioni) e puoi <b>esportare l'analisi</b> come documento. È incluso nei piani <b>Studio</b> e <b>Agency</b>.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false" data-i18n="faq.q24">Posso personalizzare la dashboard e vedere i dati come voglio?</button>
+          <div class="faq-a" data-i18n-html="faq.a24"><p>Sì. Con <b>Personalizza</b> (piani Studio/Agency) riordini, nascondi e <b>ridimensioni</b> le card, scegli il numero di colonne e aggiungi widget extra (top artisti, ultimi movimenti, cashflow previsionale, merch). In più, ogni sezione lunga ha la <b>paginazione</b> (righe per pagina) e molte si possono vedere a <b>schede</b> o a <b>elenco</b>.</p></div>
+        </div>
+      </div>
+
+      <div class="faq-group">
+        <h3 class="faq-group-title" data-i18n="faq.g4">Account, sincronizzazione e più etichette</h3>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false" data-i18n="faq.q18">Come vedo gli stessi dati su PC e telefono?</button>
+          <div class="faq-a" data-i18n-html="faq.a18"><p>Attiva la <b>Sincronizzazione cloud</b> in Impostazioni e accedi con lo stesso account su entrambi i dispositivi. Senza sync, i dati restano solo sul dispositivo dove li hai inseriti.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false" data-i18n="faq.q19">Se vendo l'accesso a un altro utente, vede i miei dati?</button>
+          <div class="faq-a" data-i18n-html="faq.a19"><p>No. Ogni account vede <b>solo i propri dati</b>: sono isolati per utente. Account diversi non condividono nulla.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false" data-i18n="faq.q20">Posso gestire più etichette da un solo account?</button>
+          <div class="faq-a" data-i18n-html="faq.a20"><p>Sì, con i piani Studio/Agency. Ogni etichetta ha movimenti, release e impostazioni separati e passi dall'una all'altra dal menu Account. Aggiungi e rimuovi etichette dalle Impostazioni.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false" data-i18n="faq.q21">Come cambio nome, email o piano?</button>
+          <div class="faq-a" data-i18n-html="faq.a21"><p>Nome e nome label in <b>Impostazioni → Account</b>. Il piano si sceglie in <b>Offerte &amp; Piani</b>. I dati restano tuoi quando cambi piano.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false" data-i18n="faq.q22">Ho dimenticato la password.</button>
+          <div class="faq-a" data-i18n-html="faq.a22"><p>Usa il recupero password dalla schermata di accesso. Se la sync non è ancora attiva, i dati locali non hanno password: la password serve solo per il cloud.</p></div>
+        </div>
+      </div>
+
+      <div class="faq-group">
+        <h3 class="faq-group-title" data-i18n="faq.g5">Dati, privacy e backup</h3>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false" data-i18n="faq.q23">Dove sono salvati i miei dati?</button>
+          <div class="faq-a" data-i18n-html="faq.a23"><p>Sul tuo <b>dispositivo/browser</b> (localStorage). Se attivi la sincronizzazione, vengono salvati anche nel tuo spazio cloud privato, accessibile solo dal tuo account.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false" data-i18n="faq.q24">Il CSV che importo finisce online?</button>
+          <div class="faq-a" data-i18n-html="faq.a24"><p>No. La lettura e l'elaborazione del CSV avvengono <b>nel tuo browser</b>: il file non viene caricato su nessun server.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false" data-i18n="faq.q25">Come faccio un backup o sposto i dati su un altro dispositivo?</button>
+          <div class="faq-a" data-i18n-html="faq.a25"><p>In <b>Impostazioni → Backup &amp; dati</b>, <b>Esporta backup (.json)</b>. Sull'altro dispositivo usa <b>Ripristina backup</b>. In alternativa attiva la sincronizzazione e i dati si allineano da soli.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false" data-i18n="faq.q26">Posso esportare i dati in Excel o PDF?</button>
+          <div class="faq-a" data-i18n-html="faq.a26"><p>Sì. Quasi ogni sezione e card ha un pulsante <b>Esporta</b> (⤓) con CSV, Excel e PDF. Per la Dashboard c'è anche il <b>Report PDF</b>.</p></div>
+        </div>
+      </div>
+
+      <div class="faq-group">
+        <h3 class="faq-group-title" data-i18n="faq.g6">Problemi comuni</h3>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false" data-i18n="faq.q27">Ho aggiornato ma vedo ancora la versione vecchia.</button>
+          <div class="faq-a" data-i18n-html="faq.a27"><p>È la cache del browser. Fai un <b>ricarica forzato</b> (Ctrl/Cmd + Shift + R) o chiudi e riapri l'app installata. I dati non si perdono.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false" data-i18n="faq.q28">La Dashboard è vuota anche se ho importato.</button>
+          <div class="faq-a" data-i18n-html="faq.a28"><p>Controlla il <b>periodo</b> selezionato in alto a destra: se è ristretto potrebbe escludere i tuoi movimenti. Imposta «Tutti i periodi». Verifica anche di essere sull'etichetta giusta nel menu Account.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false" data-i18n="faq.q29">Gli importi vengono importati sbagliati (es. 1.234 diventa 1).</button>
+          <div class="faq-a" data-i18n-html="faq.a29"><p>Spesso è il <b>separatore</b> o il formato numerico/data del file. In «Impostazioni file» scegli il separatore corretto e il formato data della piattaforma, poi ricontrolla l'anteprima.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false" data-i18n="faq.q30">Su mobile l'app si vede male.</button>
+          <div class="faq-a" data-i18n-html="faq.a30"><p>Installala come app (Aggiungi a schermata Home) per la resa migliore e ruota in verticale. Se qualcosa esce dai bordi dopo un aggiornamento, fai un ricarica forzato.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false" data-i18n="faq.q31">Non ho trovato la risposta.</button>
+          <div class="faq-a" data-i18n-html="faq.a31"><p>Scrivici da <b>Chi siamo</b>. Indica cosa stavi facendo e, se puoi, allega un backup .json: ti aiutiamo a risolvere.</p></div>
+        </div>
+      </div>
+    </section>
+    </div><!-- /.content -->
+  </main>
+
+  <!-- ======= MENU ACCOUNT ======= -->
+  <div class="acct-menu" id="account-menu" hidden>
+    <div class="acct-head">
+      <img id="acct-avatar-menu" class="avatar-img avatar-img--lg" alt="" hidden>
+      <div class="acct-head-txt">
+        <span class="acct-greet" id="account-greet">Le tue etichette</span>
+        <span class="acct-plan" id="account-plan">Piano Starter</span>
+      </div>
+    </div>
+    <div class="acct-labels" id="account-menu-labels"></div>
+    <button class="acct-item acct-add" id="acct-add"><span data-i18n="acct.add">＋ Aggiungi etichetta</span><span class="pro-badge">PRO</span></button>
+    <div class="acct-divider"></div>
+    <button class="acct-item" id="acct-offers" data-i18n="acct.offers">Offerte e piani</button>
+    <button class="acct-item" id="acct-settings" data-i18n="acct.settings">Impostazioni account</button>
+    <button class="acct-item acct-danger" id="acct-signout" data-i18n="common.signout">Esci</button>
+  </div>
+
+  <!-- ======= MENU EXPORT (condiviso) ======= -->
+  <div class="export-menu" id="export-menu" hidden>
+    <button data-fmt="csv">⤓ CSV</button>
+    <button data-fmt="excel">⤓ Excel</button>
+    <button data-fmt="pdf">⤓ PDF</button>
+  </div>
+
+  <!-- ======= MODAL: movimento ======= -->
+  <div class="modal" id="tx-modal" hidden>
+    <div class="modal-card">
+      <div class="modal-head"><h2 id="tx-modal-title" data-i18n="tx.modal.new">Nuovo movimento</h2>
+        <button class="modal-x" id="tx-modal-close">✕</button></div>
+      <form id="tx-form" class="form-grid">
+        <input type="hidden" id="f-id">
+        <input type="hidden" id="f-kind">
+        <label><span data-i18n="f.date">Data vendita</span> <input type="date" id="f-date" class="input" required></label>
+        <label><span data-i18n="f.dateTo">Data vendita (a)</span> <input type="date" id="f-dateto" class="input"></label>
+        <label><span data-i18n="f.platform">Piattaforma</span> <input type="text" id="f-platform" class="input" placeholder="Bandcamp, DistroKid…"></label>
+        <label><span data-i18n="f.type">Tipologia</span>
+          <select id="f-type" class="select">
+            <option value="digital" data-i18n="ty.digital">Digitale</option>
+            <option value="physical" data-i18n="ty.physical">Fisico</option>
+            <option value="streaming" data-i18n="ty.streaming">Streaming</option>
+            <option value="merch" data-i18n="ty.merch">Merch</option>
+            <option value="expense" data-i18n="ty.expense">Spesa</option>
+            <option value="other" data-i18n="ty.other">Altro</option>
+          </select>
+        </label>
+        <label><span data-i18n="f.catalog">Catalogo</span> <input type="text" id="f-catalog" class="input" placeholder="SC003"></label>
+        <label><span data-i18n="f.product">Prodotto / Titolo</span> <input type="text" id="f-product" class="input"></label>
+        <label><span data-i18n="f.artist">Artista</span> <input type="text" id="f-artist" class="input"></label>
+        <label><span data-i18n="f.isrc">ISRC</span> <input type="text" id="f-isrc" class="input" placeholder="ITXXX2600123"></label>
+        <label><span data-i18n="f.upc">UPC</span> <input type="text" id="f-upc" class="input" placeholder="8001234567890"></label>
+        <label><span data-i18n="f.qty">Quantità</span> <input type="number" id="f-qty" class="input" value="1" step="1"></label>
+        <label><span data-i18n="f.gross">Lordo</span> <input type="number" id="f-gross" class="input" step="0.01"></label>
+        <label><span data-i18n="f.shipping">Spedizione</span> <input type="number" id="f-shipping" class="input" step="0.01"></label>
+        <label><span data-i18n="f.taxes">Tasse</span> <input type="number" id="f-taxes" class="input" step="0.01"></label>
+        <label><span data-i18n="f.payproc">Commissioni processore pagamento</span> <input type="number" id="f-payprocfees" class="input" step="0.01"></label>
+        <label><span data-i18n="f.fees">Commissioni</span> <input type="number" id="f-fees" class="input" step="0.01"></label>
+        <label><span data-i18n="f.net">Netto</span> <input type="number" id="f-net" class="input" step="0.01" required></label>
+        <label><span data-i18n="f.csshare">Collection society share</span> <input type="number" id="f-csshare" class="input" step="0.01"></label>
+        <label><span data-i18n="f.currency">Valuta</span> <input type="text" id="f-currency" class="input" value="EUR" maxlength="3"></label>
+        <label class="span-2"><span data-i18n="f.note">Nota</span> <input type="text" id="f-note" class="input"></label>
+        <div class="modal-foot span-2">
+          <button type="button" class="btn btn-danger" id="f-delete" hidden data-i18n="common.delete">Elimina</button>
+          <span class="spacer"></span>
+          <button type="button" class="btn" id="f-cancel" data-i18n="common.cancel">Annulla</button>
+          <button type="submit" class="btn btn-primary">Salva</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======= MODAL: colonne ======= -->
+  <!-- Barra azioni selezione multipla -->
+  <div class="bulk-bar" id="bulk-bar" hidden>
+    <span class="bulk-info"><b id="bulk-count">0</b> <span data-i18n="bulk.selected">selezionati</span></span>
+    <button class="btn btn-ghost" id="bulk-cancel" data-i18n="common.cancel">Annulla</button>
+    <button class="btn btn-danger" id="bulk-del"><span data-i18n="bulk.del">🗑 Elimina</span></button>
+  </div>
+
+  <!-- Assistente AI: bolla flottante + popover -->
+  <button class="ai-fab" id="ai-fab" aria-label="Assistente AI" aria-expanded="false" title="Assistente AI">
+    <svg class="ai-bot" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <line x1="12" y1="2.4" x2="12" y2="5"/><circle cx="12" cy="2" r="1.05" fill="#fff" stroke="none"/>
+      <rect x="4.4" y="5.5" width="15.2" height="13" rx="5"/>
+      <path d="M2.4 10.4v3.6M21.6 10.4v3.6"/>
+      <circle class="ai-eye" cx="9.2" cy="11.4" r="1.55" fill="#fff" stroke="none"/>
+      <circle class="ai-eye" cx="14.8" cy="11.4" r="1.55" fill="#fff" stroke="none"/>
+      <path d="M9.4 15.1c1.6 1.25 3.6 1.25 5.2 0"/></svg>
+    <span class="ai-fab-spark">✦</span>
+  </button>
+  <div class="ai-pop" id="ai-pop" hidden role="dialog" aria-label="Assistente AI">
+    <div class="ai-pop-head">
+      <div class="ai-aura" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+      <span class="ai-pop-title"><span class="ai-spark">✦</span> <span data-i18n="ai.title">Assistente AI</span></span>
+      <button class="ai-pop-x" id="ai-pop-x" aria-label="Chiudi">✕</button>
+    </div>
+    <div class="ai-pop-body" id="ai-body"></div>
+  </div>
+
+  <div class="modal" id="share-modal" hidden>
+    <div class="modal-card modal-card--sm">
+      <div class="modal-head"><h2 data-i18n="con.share_title">Invia per la firma</h2>
+        <button class="modal-x" id="share-close">✕</button></div>
+      <div class="share-body">
+        <p class="muted small" data-i18n="con.share_hint">Condividi questo link con l'artista: potrà leggere il contratto, firmarlo o richiedere modifiche. L'esito torna automaticamente qui.</p>
+        <div class="row-inline" style="margin:10px 0">
+          <input class="input" id="share-link" readonly style="flex:1">
+          <button class="btn btn-primary" id="share-copy" data-i18n="con.copy">Copia</button>
+        </div>
+        <div class="row-inline wrap">
+          <a class="btn" id="share-wa" target="_blank" rel="noopener">WhatsApp</a>
+          <a class="btn" id="share-mail" data-i18n="con.by_email">Email</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="sign-modal" hidden>
+    <div class="modal-card modal-card--sm">
+      <div class="modal-head"><h2 data-i18n="con.sign_title">Firma del contratto</h2>
+        <button class="modal-x" id="sign-close">✕</button></div>
+      <div class="sign-body">
+        <div class="form-grid">
+          <label class="fld"><span data-i18n="con.sign_name">Nome firmatario</span><input class="input" id="sign-name"></label>
+          <label class="fld"><span data-i18n="con.sign_place">Luogo</span><input class="input" id="sign-place" data-i18n-ph="con.sign_place_ph" placeholder="Es. Milano"></label>
+        </div>
+        <span class="fld-lbl" data-i18n="con.sign_draw">Firma qui sotto</span>
+        <canvas id="sign-canvas" class="sign-canvas"></canvas>
+        <div class="modal-foot">
+          <button type="button" class="btn btn-ghost" id="sign-clear" data-i18n="con.sign_clear">Cancella</button>
+          <span class="spacer"></span>
+          <button type="button" class="btn btn-primary" id="sign-confirm" data-i18n="con.sign_confirm">✓ Conferma firma</button>
+        </div>
+        <p class="muted small" data-i18n="con.sign_hint">La firma viene registrata con data, ora e luogo nel documento.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="cols-modal" hidden>
+    <div class="modal-card modal-card--sm">
+      <div class="modal-head"><h2 data-i18n="cols.title">Colonne movimenti</h2>
+        <button class="modal-x" id="cols-close">✕</button></div>
+      <div class="cols-body">
+        <p class="muted small">Spunta le colonne da mostrare e riordinale con le frecce.</p>
+        <ul class="cols-list" id="cols-list"></ul>
+        <div class="modal-foot">
+          <button type="button" class="btn" id="cols-reset" data-i18n="cols.reset">Ripristina default</button>
+          <span class="spacer"></span>
+          <button type="button" class="btn btn-primary" id="cols-done" data-i18n="common.done">Fatto</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="colcfg-modal" hidden>
+    <div class="modal-card modal-card--sm">
+      <div class="modal-head"><h2 data-i18n="cols.title2">Personalizza colonne</h2>
+        <button class="modal-x" id="colcfg-close">✕</button></div>
+      <div class="cols-body">
+        <p class="muted small" data-i18n="cols.hint">Spunta le colonne da mostrare e riordinale con le frecce.</p>
+        <ul class="cols-list" id="colcfg-list"></ul>
+        <div class="modal-foot">
+          <button type="button" class="btn" id="colcfg-reset" data-i18n="cols.reset">Ripristina default</button>
+          <span class="spacer"></span>
+          <button type="button" class="btn btn-primary" id="colcfg-done" data-i18n="common.done">Fatto</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="catimp-modal" hidden>
+    <div class="modal-card">
+      <div class="modal-head"><h2 data-i18n="cimp.title">Importa catalogo</h2>
+        <button class="modal-x" id="catimp-close">✕</button></div>
+      <div style="padding:20px">
+        <p class="muted small" data-i18n="cimp.intro">Carica un CSV esportato da qualsiasi piattaforma (distributore, Spotify, Excel…). L'app riconosce le colonne da sola: crea release e artisti mancanti in un colpo, senza doppioni.</p>
+        <h3 class="splits-h" data-i18n="cimp.search_t">Cerca la tua etichetta</h3>
+        <div class="row-inline">
+          <input class="input" id="catimp-q" data-i18n-ph="cimp.q_ph" placeholder="Nome della tua etichetta…" style="flex:1">
+          <button type="button" class="btn btn-primary" id="catimp-go" data-i18n="cimp.search_btn">Cerca</button>
+        </div>
+        <div id="catimp-results" class="cat-results"></div>
+        <div class="catimp-or" data-i18n="cimp.or">— oppure carica un file —</div>
+        <div class="import-drop" id="catimp-drop">
+          <p data-i18n="cimp.drop">Trascina qui il CSV oppure</p>
+          <button type="button" class="btn" id="catimp-browse" data-i18n="cimp.browse">Scegli file</button>
+          <input type="file" id="catimp-file" accept=".csv,text/csv,text/plain" hidden>
+        </div>
+        <div id="catimp-config" hidden>
+          <h3 class="splits-h" data-i18n="cimp.map">Abbina le colonne</h3>
+          <div class="form-grid" id="catimp-maps"></div>
+          <p class="muted small" id="catimp-preview" style="margin-top:10px"></p>
+          <div class="modal-foot">
+            <span class="spacer"></span>
+            <button type="button" class="btn btn-primary" id="catimp-do" data-i18n="cimp.do">Importa nel catalogo</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======= MODAL: revisione duplicati ======= -->
+  <div class="modal" id="dup-modal" hidden>
+    <div class="modal-card">
+      <div class="modal-head"><h2 id="dup-title">Possibili duplicati</h2>
+        <button class="modal-x" id="dup-close">✕</button></div>
+      <div style="padding:20px">
+        <p class="muted small" id="dup-intro"></p>
+        <div class="dup-tools">
+          <button type="button" class="btn" id="dup-auto" data-i18n="dup.auto">⚡ Unisci automaticamente &gt; 90%</button>
+          <span class="spacer"></span>
+          <span class="muted small" id="dup-summary"></span>
+        </div>
+        <div id="dup-list" class="dup-list"></div>
+        <div class="modal-foot">
+          <button type="button" class="btn" id="dup-cancel" data-i18n="common.cancel">Annulla</button>
+          <span class="spacer"></span>
+          <button type="button" class="btn btn-primary" id="dup-apply" data-i18n="dup.apply">Applica</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======= MODAL: arricchimento catalogo ======= -->
+  <div class="modal" id="enrich-modal" hidden>
+    <div class="modal-card modal-card--sm">
+      <div class="modal-head"><h2 data-i18n="enr.title">Arricchisci la Discografia</h2>
+        <button class="modal-x" id="enrich-close">✕</button></div>
+      <div style="padding:20px">
+        <p class="muted small" data-i18n="enr.intro">Dati trovati nei Movimenti per release già in catalogo. Spunta quelli da aggiungere: i campi già compilati non vengono toccati.</p>
+        <div id="enrich-list" class="dup-list"></div>
+        <div class="modal-foot">
+          <button type="button" class="btn" id="enrich-cancel" data-i18n="common.cancel">Annulla</button>
+          <span class="spacer"></span>
+          <button type="button" class="btn btn-primary" id="enrich-apply" data-i18n="enr.apply">Applica selezionati</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======= MODAL: release ======= -->
+  <div class="modal" id="rel-modal" hidden>
+    <div class="modal-card">
+      <div class="modal-head"><h2 id="rel-modal-title" data-i18n="rel.modal.new">Nuova release</h2>
+        <button class="modal-x" id="rel-modal-close">✕</button></div>
+      <form id="rel-form" style="padding:22px">
+        <input type="hidden" id="r-id">
+        <div class="form-grid">
+          <label><span data-i18n="r.catalog">Catalogo</span> <input type="text" id="r-catalog" class="input" placeholder="SC003" required></label>
+          <label><span data-i18n="r.title">Titolo</span> <input type="text" id="r-title" class="input" placeholder="Nightform EP"></label>
+          <label class="ac-field"><span data-i18n="r.artist">Artista</span>
+            <input type="text" id="r-artist" class="input" autocomplete="off" data-i18n-ph="r.artist_ph" placeholder="Cerca tra i tuoi artisti…">
+            <div class="ac-list" id="r-artist-ac" hidden></div></label>
+          <label><span data-i18n="r.order">Data di release *</span> <input type="date" id="r-order" class="input"></label>
+          <label><span data-i18n="r.preorder">Preordine</span> <input type="date" id="r-preorder" class="input"></label>
+          <label><span data-i18n="r.upc">Codice UPC</span> <input type="text" id="r-upc" class="input" placeholder="0123456789012"></label>
+          <label><span data-i18n="r.exclusive">Esclusiva</span>
+            <select id="r-exclusive" class="select"><option value="" data-i18n="common.no">No</option><option value="yes" data-i18n="common.yes">Sì</option></select></label>
+          <label id="r-excl-wrap" hidden><span data-i18n="r.exclusive_plat">Piattaforma esclusiva</span> <input type="text" id="r-excl-plat" class="input" placeholder="Beatport, Bandcamp…"></label>
+          <label class="span-2"><span data-i18n="r.note">Note</span> <input type="text" id="r-note" class="input"></label>
+        </div>
+        <details class="r-credits">
+          <summary data-i18n="r.credits">Crediti (facoltativi)</summary>
+          <div class="form-grid" style="margin-top:12px">
+            <label><span data-i18n="r.written">Scritto da (lyrics)</span> <input type="text" id="r-written" class="input"></label>
+            <label><span data-i18n="r.produced">Prodotto da</span> <input type="text" id="r-produced" class="input"></label>
+            <label><span data-i18n="r.mixed">Mixed by</span> <input type="text" id="r-mixed" class="input"></label>
+            <label><span data-i18n="r.mastered">Mastered by</span> <input type="text" id="r-mastered" class="input"></label>
+            <label><span data-i18n="r.artwork">Artwork by</span> <input type="text" id="r-artwork" class="input"></label>
+            <label><span data-i18n="r.publisher">Publisher</span> <input type="text" id="r-publisher" class="input"></label>
+          </div>
+        </details>
+        <h3 class="splits-h" data-i18n="rel.splits_default">Ripartizione predefinita</h3>
+        <p class="muted small">Quote applicate a tutte le tracce della release (salvo override). Il resto fino al 100% resta alla label.</p>
+        <div id="r-splits"></div>
+        <div class="row-inline" style="margin-top:8px">
+          <button type="button" class="btn" id="r-add-split" data-i18n="rel.add_artist">+ Aggiungi artista</button>
+          <span class="muted small" id="r-split-total"></span>
+        </div>
+
+        <h3 class="splits-h" data-i18n="rel.tracks_override">Tracce — override per ISRC</h3>
+        <p class="muted small">Opzionale: quote diverse per singola traccia. Le vendite con quell'ISRC useranno queste quote; le altre usano la predefinita.</p>
+        <div id="r-tracks"></div>
+        <button type="button" class="btn" id="r-add-track" style="margin-top:8px" data-i18n="rel.add_track">+ Aggiungi traccia</button>
+        <div class="modal-foot" style="margin-top:18px">
+          <button type="button" class="btn btn-danger" id="r-delete" hidden data-i18n="common.delete">Elimina</button>
+          <span class="spacer"></span>
+          <button type="button" class="btn" id="r-cancel" data-i18n="common.cancel">Annulla</button>
+          <button type="submit" class="btn btn-primary" data-i18n="rel.save">Salva release</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <!-- Area di stampa per lo statement royalty (visibile solo in stampa) -->
+  <div id="print-area" aria-hidden="true"></div>
+
+  <script src="html2pdf.bundle.min.js?v=79"></script>
+  <script src="app.js?v=79"></script>
+  <script src="config.js?v=79"></script>
+  <script src="i18n.js?v=79"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="sync.js?v=79"></script>
+</body>
+</html>

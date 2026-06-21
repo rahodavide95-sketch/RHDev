@@ -112,39 +112,43 @@ img{max-width:100%}
 .ms-item{font-size:.82rem;color:var(--muted);padding:7px 9px;border-radius:8px;display:flex;align-items:center;gap:9px}
 .ms-item.on{background:linear-gradient(90deg,rgba(167,139,250,.24),rgba(167,139,250,.04));color:#fff;box-shadow:inset 2px 0 0 var(--violet)}
 .ms-dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.55}
-.mock-main{padding:18px;display:flex;flex-direction:column;gap:13px;position:relative}
-.mk-top{display:flex;align-items:center;justify-content:space-between}
-.mk-top b{font-size:1.08rem}
-.mk-tools{display:flex;align-items:center;gap:8px}
-.mk-pill{font-size:.72rem;color:var(--muted);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:5px 12px;background:rgba(255,255,255,.04)}
-.mk-ai-chip{font-size:.72rem;font-weight:700;color:#fff;border-radius:999px;padding:5px 12px;background:linear-gradient(120deg,var(--violet-2),var(--violet))}
-.mk-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}
-.mk-kpi{position:relative;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:13px;padding:12px 13px;overflow:hidden}
-.mk-kpi small{color:var(--muted);font-size:.7rem}
-.mk-kpi b{display:block;font-size:1.22rem;font-weight:700;margin-top:3px}
-.mk-kpi .d{font-size:.66rem;font-weight:700}
-.mk-kpi.green b{color:var(--green)}.mk-kpi.red b{color:#fb7185}.mk-kpi.blue b{color:var(--blue)}
-.d.up{color:var(--green)}.d.down{color:#fb7185}
-.mk-spark{position:absolute;right:8px;bottom:9px;width:60px;height:24px;opacity:.85}
-.mk-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:13px;padding:14px}
-.mk-card h6{font-size:.74rem;color:var(--muted);font-weight:600;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
-.mk-chart svg{display:block;width:100%;height:88px}
-.mk-x{display:flex;margin-top:7px}.mk-x span{flex:1;text-align:center;font-size:.62rem;color:var(--muted-2)}
-.mk-legend{display:flex;gap:14px;font-size:.66rem;color:var(--muted);font-weight:500}
-.mk-legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px;vertical-align:middle}
-.mk-row2{display:grid;grid-template-columns:1.4fr 1fr;gap:11px}
-.mk-art{display:flex;align-items:center;gap:9px;margin-bottom:10px}.mk-art:last-child{margin-bottom:0}
-.mk-art .av{width:26px;height:26px;border-radius:50%;font-size:.6rem;background:linear-gradient(135deg,var(--violet),var(--blue));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;flex:none}
-.mk-art .nm{font-size:.8rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mk-art .vl{font-size:.8rem;font-weight:700;color:var(--green)}
-.mk-pb{height:5px;border-radius:3px;background:rgba(255,255,255,.08);margin-top:4px;overflow:hidden}
-.mk-pb i{display:block;height:100%;background:linear-gradient(90deg,var(--violet),var(--blue))}
-.mk-donut-wrap{display:flex;align-items:center;gap:14px}
-.mk-donut{width:84px;height:84px;border-radius:50%;flex:none;position:relative;background:conic-gradient(var(--violet) 0 46%,var(--blue) 46% 74%,var(--azure) 74% 100%)}
-.mk-donut::after{content:'';position:absolute;inset:13px;border-radius:50%;background:#12131c}
-.mk-donut span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:.74rem;font-weight:700}
-.mk-plat{display:flex;flex-direction:column;gap:7px;font-size:.72rem;color:var(--muted)}
-.mk-plat i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px}
+/* contenuto = dashboard reale (stessi componenti dell'app, dati simulati) */
+.mock-main{padding:18px;display:flex;flex-direction:column;gap:16px;position:relative}
+.da-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.da-head h4{font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:700}
+.da-tools{display:flex;align-items:center;gap:8px}
+.da-period{font-size:.72rem;color:var(--text);border:1px solid rgba(255,255,255,.16);border-radius:9px;padding:6px 11px;background:rgba(255,255,255,.05)}
+.da-pdf{font-size:.72rem;font-weight:600;color:var(--text);border:1px solid rgba(255,255,255,.16);border-radius:9px;padding:6px 11px;background:rgba(255,255,255,.05)}
+/* KPI — come .kpi dell'app (barra colore a sinistra, label Syne maiuscolo, valore Syne colorato) */
+.da-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.da-kpi{position:relative;overflow:hidden;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:7px}
+.da-kpi::after{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--muted-2)}
+.da-kpi.in::after{background:var(--green)}.da-kpi.out::after{background:#fb7185}.da-kpi.net::after{background:var(--blue)}
+.da-kpi .lab{font-family:'Syne',sans-serif;text-transform:uppercase;letter-spacing:.07em;font-size:.66rem;font-weight:600;color:var(--muted)}
+.da-kpi .val{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:700;line-height:1}
+.da-kpi.in .val{color:var(--green)}.da-kpi.out .val{color:#fb7185}.da-kpi.net .val{color:var(--blue)}
+.da-kpi .delta{font-size:.72rem;font-weight:700}
+.delta.up{color:var(--green)}.delta.down{color:#fb7185}
+/* pannello + grafico a barre (come .panel/.chart dell'app) */
+.da-panel{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:16px}
+.da-ph{display:flex;align-items:baseline;gap:12px;margin-bottom:14px}
+.da-ph h5{font-family:'Syne',sans-serif;font-size:1rem;font-weight:600}
+.da-legend{display:inline-flex;align-items:center;gap:6px;font-size:.72rem;color:var(--muted);margin-left:auto}
+.da-legend i{width:9px;height:9px;border-radius:3px;display:inline-block}
+.da-chart{display:flex;align-items:flex-end;gap:10px;height:168px;padding-top:6px}
+.da-col{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;min-width:26px}
+.da-bars{display:flex;align-items:flex-end;gap:3px;height:140px}
+.da-bar{width:13px;border-radius:4px 4px 0 0}
+.da-bar.in{background:var(--green)}.da-bar.out{background:#fb7185}
+.da-col span{font-size:.64rem;color:var(--muted-2);white-space:nowrap}
+/* tabelle Per release / Per artista (come .grid-2 + tabelle dell'app) */
+.da-grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.da-tbl{width:100%;border-collapse:collapse;font-size:.76rem}
+.da-tbl th{text-align:left;color:var(--muted-2);font-weight:600;font-size:.62rem;text-transform:uppercase;letter-spacing:.04em;padding:0 0 8px;border-bottom:1px solid rgba(255,255,255,.1)}
+.da-tbl td{padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);white-space:nowrap}
+.da-tbl th.n,.da-tbl td.n{text-align:right;font-variant-numeric:tabular-nums}
+.da-tbl .pos{color:var(--green)}.da-tbl .neg{color:#fb7185}
+/* bolla AI flottante (presente nella piattaforma) */
 .mk-ai{position:absolute;right:15px;bottom:13px;width:46px;height:46px;border-radius:50%;
   background:radial-gradient(circle at 34% 28%,#d9ccff,#7c3aed 72%);box-shadow:0 12px 26px -6px rgba(124,58,237,.85),inset 0 1px 2px rgba(255,255,255,.55);
   display:flex;align-items:center;justify-content:center}
@@ -326,45 +330,46 @@ footer{padding:54px 0 36px;background:rgba(8,9,14,.5);-webkit-backdrop-filter:bl
         <span class="ms-item"><span class="ms-dot"></span>Merch</span>
       </aside>
       <div class="mock-main">
-        <div class="mk-top"><b>Dashboard</b>
-          <div class="mk-tools"><span class="mk-ai-chip">✦ AI</span><span class="mk-pill" data-i18n="mock.period">Ultimi 12 mesi ▾</span></div></div>
-        <div class="mk-kpis">
-          <div class="mk-kpi green"><small data-i18n="kpi.in">Entrate</small><b>€ 8.420</b><span class="d up">▲ 18%</span>
-            <svg class="mk-spark" viewBox="0 0 60 24"><polyline points="0,19 12,15 22,17 33,9 45,11 60,3" fill="none" stroke="#4ade80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-          <div class="mk-kpi red"><small data-i18n="kpi.out">Uscite</small><b>€ 2.180</b><span class="d down">▼ 6%</span>
-            <svg class="mk-spark" viewBox="0 0 60 24"><polyline points="0,7 12,11 22,8 33,13 45,11 60,15" fill="none" stroke="#fb7185" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-          <div class="mk-kpi blue"><small data-i18n="kpi.net">Margine netto</small><b>€ 6.240</b><span class="d up">▲ 24%</span>
-            <svg class="mk-spark" viewBox="0 0 60 24"><polyline points="0,21 12,17 22,15 33,10 45,6 60,2" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="da-head"><h4>Dashboard</h4>
+          <div class="da-tools"><span class="da-period" data-i18n="mock.period">Ultimi 12 mesi ▾</span><span class="da-pdf">⤓ Report PDF</span></div></div>
+        <div class="da-kpis">
+          <div class="da-kpi in"><span class="lab" data-i18n="kpi.in">Entrate</span><span class="val">€ 8.420</span><span class="delta up">▲ 18%</span></div>
+          <div class="da-kpi out"><span class="lab" data-i18n="kpi.out">Uscite</span><span class="val">€ 2.180</span><span class="delta down">▼ 6%</span></div>
+          <div class="da-kpi net"><span class="lab" data-i18n="kpi.net">Margine netto</span><span class="val">€ 6.240</span><span class="delta up">▲ 24%</span></div>
         </div>
-        <div class="mk-card mk-chart">
-          <h6><span data-i18n="mock.chart">Entrate vs uscite</span>
-            <span class="mk-legend"><span><i style="background:var(--violet)"></i><span data-i18n="kpi.in">Entrate</span></span><span><i style="background:var(--blue)"></i><span data-i18n="kpi.out">Uscite</span></span></span></h6>
-          <svg viewBox="0 0 600 150" preserveAspectRatio="none">
-            <defs><linearGradient id="ar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7c3aed" stop-opacity=".5"/><stop offset="1" stop-color="#7c3aed" stop-opacity="0"/></linearGradient></defs>
-            <line x1="0" y1="45" x2="600" y2="45" stroke="rgba(255,255,255,.06)"/><line x1="0" y1="90" x2="600" y2="90" stroke="rgba(255,255,255,.06)"/><line x1="0" y1="135" x2="600" y2="135" stroke="rgba(255,255,255,.06)"/>
-            <path d="M0,118 C40,110 70,96 100,99 C140,103 165,90 200,94 C240,98 270,74 300,77 C340,80 370,58 400,61 C440,64 470,42 500,40 C540,38 570,26 600,24 L600,150 L0,150 Z" fill="url(#ar)"/>
-            <path d="M0,118 C40,110 70,96 100,99 C140,103 165,90 200,94 C240,98 270,74 300,77 C340,80 370,58 400,61 C440,64 470,42 500,40 C540,38 570,26 600,24" fill="none" stroke="#a78bfa" stroke-width="3" stroke-linecap="round"/>
-            <path d="M0,138 C50,136 80,132 130,134 C190,136 230,126 300,128 C360,129 400,124 460,122 C520,120 560,118 600,117" fill="none" stroke="#60a5fa" stroke-width="2.4" stroke-linecap="round" opacity=".85"/>
-          </svg>
-          <div class="mk-x" id="mk-months"><span>Gen</span><span>Feb</span><span>Mar</span><span>Apr</span><span>Mag</span><span>Giu</span></div>
-        </div>
-        <div class="mk-row2">
-          <div class="mk-card">
-            <h6><span data-i18n="mock.top">Top artisti</span><span style="color:var(--muted-2)">€</span></h6>
-            <div class="mk-art"><span class="av">A1</span><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;gap:8px"><span class="nm" data-i18n="art1">Artista 1</span><span class="vl">€ 1.240</span></div><div class="mk-pb"><i style="width:100%"></i></div></div></div>
-            <div class="mk-art"><span class="av">A2</span><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;gap:8px"><span class="nm" data-i18n="art2">Artista 2</span><span class="vl">€ 980</span></div><div class="mk-pb"><i style="width:79%"></i></div></div></div>
-            <div class="mk-art"><span class="av">A3</span><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;gap:8px"><span class="nm" data-i18n="art3">Artista 3</span><span class="vl">€ 460</span></div><div class="mk-pb"><i style="width:37%"></i></div></div></div>
+        <div class="da-panel">
+          <div class="da-ph"><h5 data-i18n="mock.chart">Entrate vs Uscite per mese</h5>
+            <span class="da-legend"><i style="background:var(--green)"></i><span data-i18n="kpi.in">Entrate</span> <i style="background:#fb7185;margin-left:8px"></i><span data-i18n="kpi.out">Uscite</span></span></div>
+          <div class="da-chart" id="da-chart">
+            <div class="da-col"><div class="da-bars"><span class="da-bar in" style="height:60px"></span><span class="da-bar out" style="height:34px"></span></div><span>Gen</span></div>
+            <div class="da-col"><div class="da-bars"><span class="da-bar in" style="height:72px"></span><span class="da-bar out" style="height:40px"></span></div><span>Feb</span></div>
+            <div class="da-col"><div class="da-bars"><span class="da-bar in" style="height:66px"></span><span class="da-bar out" style="height:30px"></span></div><span>Mar</span></div>
+            <div class="da-col"><div class="da-bars"><span class="da-bar in" style="height:88px"></span><span class="da-bar out" style="height:46px"></span></div><span>Apr</span></div>
+            <div class="da-col"><div class="da-bars"><span class="da-bar in" style="height:80px"></span><span class="da-bar out" style="height:38px"></span></div><span>Mag</span></div>
+            <div class="da-col"><div class="da-bars"><span class="da-bar in" style="height:104px"></span><span class="da-bar out" style="height:44px"></span></div><span>Giu</span></div>
+            <div class="da-col"><div class="da-bars"><span class="da-bar in" style="height:96px"></span><span class="da-bar out" style="height:40px"></span></div><span>Lug</span></div>
+            <div class="da-col"><div class="da-bars"><span class="da-bar in" style="height:120px"></span><span class="da-bar out" style="height:52px"></span></div><span>Ago</span></div>
+            <div class="da-col"><div class="da-bars"><span class="da-bar in" style="height:134px"></span><span class="da-bar out" style="height:48px"></span></div><span>Set</span></div>
           </div>
-          <div class="mk-card">
-            <h6 data-i18n="mock.plat">Per piattaforma</h6>
-            <div class="mk-donut-wrap">
-              <div class="mk-donut"><span>€8,4k</span></div>
-              <div class="mk-plat">
-                <span><i style="background:var(--violet)"></i><span data-i18n="plat.stream">Streaming</span> 46%</span>
-                <span><i style="background:var(--blue)"></i><span data-i18n="plat.dl">Download</span> 28%</span>
-                <span><i style="background:var(--azure)"></i><span data-i18n="plat.store">Store</span> 26%</span>
-              </div>
-            </div>
+        </div>
+        <div class="da-grid2">
+          <div class="da-panel">
+            <div class="da-ph"><h5 data-i18n="mock.byrel">Per release / catalogo</h5></div>
+            <table class="da-tbl"><thead><tr><th data-i18n="th.cat">Catalogo</th><th class="n" data-i18n="kpi.in">Entrate</th><th class="n" data-i18n="kpi.out">Uscite</th><th class="n" data-i18n="th.margin">Margine</th></tr></thead>
+            <tbody>
+              <tr><td>RHD001</td><td class="n pos">€ 3.120</td><td class="n neg">€ 640</td><td class="n">€ 2.480</td></tr>
+              <tr><td>RHD002</td><td class="n pos">€ 2.760</td><td class="n neg">€ 820</td><td class="n">€ 1.940</td></tr>
+              <tr><td>RHD003</td><td class="n pos">€ 1.540</td><td class="n neg">€ 420</td><td class="n">€ 1.120</td></tr>
+            </tbody></table>
+          </div>
+          <div class="da-panel">
+            <div class="da-ph"><h5 data-i18n="mock.byart">Per artista</h5></div>
+            <table class="da-tbl"><thead><tr><th data-i18n="th.art">Artista</th><th class="n" data-i18n="kpi.in">Entrate</th><th class="n" data-i18n="kpi.out">Uscite</th><th class="n" data-i18n="th.margin">Margine</th></tr></thead>
+            <tbody>
+              <tr><td data-i18n="art1">Artista 1</td><td class="n pos">€ 3.980</td><td class="n neg">€ 120</td><td class="n">€ 3.860</td></tr>
+              <tr><td data-i18n="art2">Artista 2</td><td class="n pos">€ 2.940</td><td class="n neg">€ 80</td><td class="n">€ 2.860</td></tr>
+              <tr><td data-i18n="art3">Artista 3</td><td class="n pos">€ 1.500</td><td class="n neg">€ 40</td><td class="n">€ 1.460</td></tr>
+            </tbody></table>
           </div>
         </div>
         <div class="mk-ai" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="3.2" r="1.5" fill="#fff"/><path d="M12 4.6V7" stroke="#fff" stroke-width="2" stroke-linecap="round"/><rect x="5" y="7" width="14" height="11" rx="3.6" fill="#fff"/><circle cx="9.6" cy="12.4" r="1.7" fill="#7c3aed"/><circle cx="14.4" cy="12.4" r="1.7" fill="#7c3aed"/></svg></div>
@@ -386,7 +391,7 @@ footer{padding:54px 0 36px;background:rgba(8,9,14,.5);-webkit-backdrop-filter:bl
       <div class="feat glass"><div class="feat-ico">📊</div><h3 data-i18n="f1.t">Dashboard & Finanze</h3><p data-i18n="f1.d">Entrate, uscite e margine con variazione % vs periodo. Grafici e cruscotto personalizzabile.</p></div>
       <div class="feat glass"><div class="feat-ico">💸</div><h3 data-i18n="f2.t">Royalty & Recoupment</h3><p data-i18n="f2.d">Calcolo automatico per artista, quote per release e override per singola traccia (ISRC).</p></div>
       <div class="feat glass"><div class="feat-ico">📄</div><h3 data-i18n="f3.t">Contratti & Firma</h3><p data-i18n="f3.d">Genera il contratto con carta intestata, invialo e ricevilo firmato in tempo reale.</p></div>
-      <div class="feat glass"><div class="feat-ico">📥</div><h3 data-i18n="f4.t">Import catalogo</h3><p data-i18n="f4.d">Importa l'intera discografia da Discogs e MusicBrainz, oppure carica un CSV dal tuo store: le colonne si mappano da sole.</p></div>
+      <div class="feat glass"><div class="feat-ico">📥</div><h3 data-i18n="f4.t">Import catalogo e movimenti</h3><p data-i18n="f4.d">Importa l'intera discografia da Discogs e MusicBrainz, oppure carica un CSV dal tuo store: le colonne si mappano da sole.</p></div>
       <div class="feat glass"><div class="feat-ico">👥</div><h3 data-i18n="f5.t">Rubrica Artisti</h3><p data-i18n="f5.d">Roster con contatti, IBAN e split: precompila contratti e pagamenti in automatico.</p></div>
       <div class="feat glass"><div class="feat-ico">👕</div><h3 data-i18n="f6.t">Merch</h3><p data-i18n="f6.d">Catalogo, vendite con un clic, ricavi, margini, best-seller e avviso scorte basse.</p></div>
       <div class="feat glass"><div class="feat-ico">🤖</div><h3 data-i18n="f7.t">Assistente AI</h3><p data-i18n="f7.d">Un consulente sempre a portata: analizza i dati e dà consigli concreti, esportabili in PDF.</p></div>
@@ -603,14 +608,14 @@ const LANG={
   'hero.cta1':'Inizia gratis — 14 giorni','hero.cta2':'Scopri le funzionalità',
   'hero.n1':'Nessuna carta richiesta','hero.n2':'Offline-first, su ogni dispositivo','hero.n3':'Italiano / English',
   'nav_mock.tx':'Movimenti','nav_mock.grp':'Musica & Catalogo','nav_mock.cat':'Discografia','nav_mock.con':'Contratti','nav_mock.art':'Artisti','mock.period':'Ultimi 12 mesi ▾',
-  'mock.chart':'Entrate vs uscite','mock.top':'Top artisti','mock.plat':'Per piattaforma','plat.stream':'Streaming','plat.dl':'Download','plat.store':'Store','mock.months':'Gen,Feb,Mar,Apr,Mag,Giu',
+  'mock.chart':'Entrate vs Uscite per mese','mock.byrel':'Per release / catalogo','mock.byart':'Per artista','th.cat':'Catalogo','th.art':'Artista','th.margin':'Margine','mock.top':'Top artisti','mock.plat':'Per piattaforma','plat.stream':'Streaming','plat.dl':'Download','plat.store':'Store','mock.months':'Gen,Feb,Mar,Apr,Mag,Giu,Lug,Ago,Set',
   'kpi.in':'Entrate','kpi.out':'Uscite','kpi.net':'Margine netto',
   'features.badge':'Funzionalità','features.h2':'Una sola app per <span class="grad">l\'intero business</span>',
   'features.sub':'Gli altri fanno solo le royalty oppure solo i contratti. Label Finance copre tutto, dall\'incasso al pagamento dell\'artista.',
   'f1.t':'Dashboard & Finanze','f1.d':'Entrate, uscite e margine con variazione % vs periodo. Grafici e cruscotto personalizzabile.',
   'f2.t':'Royalty & Recoupment','f2.d':'Calcolo automatico per artista, quote per release e override per singola traccia (ISRC).',
   'f3.t':'Contratti & Firma','f3.d':'Genera il contratto con carta intestata, invialo e ricevilo firmato in tempo reale.',
-  'f4.t':'Import catalogo','f4.d':'Importa l\'intera discografia da Discogs e MusicBrainz, oppure carica un CSV dal tuo store: le colonne si mappano da sole.',
+  'f4.t':'Import catalogo e movimenti','f4.d':'Importa l\'intera discografia da Discogs e MusicBrainz, oppure carica un CSV dal tuo store: le colonne si mappano da sole.',
   'f5.t':'Rubrica Artisti','f5.d':'Roster con contatti, IBAN e split: precompila contratti e pagamenti in automatico.',
   'f6.t':'Merch','f6.d':'Catalogo, vendite con un clic, ricavi, margini, best-seller e avviso scorte basse.',
   'f7.t':'Assistente AI','f7.d':'Un consulente sempre a portata: analizza i dati e dà consigli concreti, esportabili in PDF.',
@@ -658,14 +663,14 @@ const LANG={
   'hero.cta1':'Start free — 14 days','hero.cta2':'See the features',
   'hero.n1':'No card required','hero.n2':'Offline-first, on every device','hero.n3':'Italiano / English',
   'nav_mock.tx':'Transactions','nav_mock.grp':'Music & Catalog','nav_mock.cat':'Catalog','nav_mock.con':'Contracts','nav_mock.art':'Artists','mock.period':'Last 12 months ▾',
-  'mock.chart':'Income vs expenses','mock.top':'Top artists','mock.plat':'By platform','plat.stream':'Streaming','plat.dl':'Downloads','plat.store':'Store','mock.months':'Jan,Feb,Mar,Apr,May,Jun',
+  'mock.chart':'Income vs Expenses per month','mock.byrel':'By release / catalog','mock.byart':'By artist','th.cat':'Catalog','th.art':'Artist','th.margin':'Margin','mock.top':'Top artists','mock.plat':'By platform','plat.stream':'Streaming','plat.dl':'Downloads','plat.store':'Store','mock.months':'Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep',
   'kpi.in':'Income','kpi.out':'Expenses','kpi.net':'Net margin',
   'features.badge':'Features','features.h2':'One app for <span class="grad">your whole business</span>',
   'features.sub':'Others do only royalties or only contracts. Label Finance covers it all, from the sale to the artist\'s payout.',
   'f1.t':'Dashboard & Finances','f1.d':'Income, expenses and margin with % change vs period. Charts and a customizable dashboard.',
   'f2.t':'Royalties & Recoupment','f2.d':'Automatic per-artist calculation, splits per release and per-track override (ISRC).',
   'f3.t':'Contracts & Signing','f3.d':'Generate the contract with letterhead, send it and get it back signed in real time.',
-  'f4.t':'Catalog import','f4.d':'Import your whole discography from Discogs and MusicBrainz, or upload a CSV from your store: columns map themselves.',
+  'f4.t':'Catalog & transactions import','f4.d':'Import your whole discography from Discogs and MusicBrainz, or upload a CSV from your store: columns map themselves.',
   'f5.t':'Artist Directory','f5.d':'Roster with contacts, IBAN and splits: auto-fills contracts and payouts.',
   'f6.t':'Merch','f6.d':'Catalog, one-click sales, revenue, margins, best-sellers and low-stock alerts.',
   'f7.t':'AI Assistant','f7.d':'An advisor always at hand: it analyzes your data and gives concrete, PDF-exportable advice.',
@@ -728,7 +733,7 @@ function applyLang(l){ if(!LANG[l]) l='it'; curLang=l;
   document.querySelectorAll('[data-i18n]').forEach(el=>{ const v=LANG[l][el.dataset.i18n]; if(v!=null) el.textContent=v; });
   document.querySelectorAll('[data-i18n-html]').forEach(el=>{ const v=LANG[l][el.dataset.i18nHtml]; if(v!=null) el.innerHTML=v; });
   document.querySelectorAll('[data-lang-opt]').forEach(b=>b.classList.toggle('on',b.dataset.langOpt===l));
-  const mEl=document.getElementById('mk-months'); if(mEl&&LANG[l]['mock.months']) mEl.innerHTML=LANG[l]['mock.months'].split(',').map(m=>`<span>${m}</span>`).join('');
+  const mm=(LANG[l]['mock.months']||'').split(','); document.querySelectorAll('#da-chart .da-col span').forEach((c,i)=>{ if(mm[i]!=null) c.textContent=mm[i]; });
   setBilling(curYear);
 }
 document.querySelectorAll('[data-lang-opt]').forEach(b=>b.addEventListener('click',()=>applyLang(b.dataset.langOpt)));

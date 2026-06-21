@@ -845,11 +845,13 @@ function applyTxFilters(){
   const ss=$('#tx-sort'); if(ss){ const v=txSort.col+':'+txSort.dir; if([...ss.options].some(o=>o.value===v)) ss.value=v; }
   const info=paginate(rows,'tx'); const pageRows=info.slice;
   const cols=visibleCols();
-  const head=cols.map(c=>{ const act=txSort.col===c?(txSort.dir>0?' ▲':' ▼'):'';
+  const selH=`<th class="dbl-sel"><input type="checkbox" data-selall="transactions"></th>`;
+  const head=selH+cols.map(c=>{ const act=txSort.col===c?(txSort.dir>0?' ▲':' ▼'):'';
     return `<th class="th-sort ${TX_COLS[c].num?'num':''}" data-col="${c}">${esc(colLabel(c))}${act}</th>`; }).join('');
+  const selSet=(bulkSel.transactions||new Set());
   const body=pageRows.length
-    ? pageRows.map(t=>`<tr data-id="${t.id}">${cols.map(c=>`<td class="${TX_COLS[c].num?'num':''}" data-label="${esc(colLabel(c))}">${TX_COLS[c].cell(t)}</td>`).join('')}</tr>`).join('')
-    : `<tr><td colspan="${cols.length||1}" class="muted">${tt('empty.notx')}</td></tr>`;
+    ? pageRows.map(t=>`<tr data-id="${t.id}"><td class="dbl-sel"><input type="checkbox" data-sel="transactions|${t.id}" ${selSet.has(t.id)?'checked':''}></td>${cols.map(c=>`<td class="${TX_COLS[c].num?'num':''}" data-label="${esc(colLabel(c))}">${TX_COLS[c].cell(t)}</td>`).join('')}</tr>`).join('')
+    : `<tr><td colspan="${(cols.length||1)+1}" class="muted">${tt('empty.notx')}</td></tr>`;
   $('#table-tx').innerHTML=`<thead><tr>${head}</tr></thead><tbody>${body}</tbody>`;
   mountPager($('#table-tx'), 'tx', info);
   $$('#table-tx thead th[data-col]').forEach(th=>th.onclick=()=>{
@@ -858,7 +860,7 @@ function applyTxFilters(){
     applyTxFilters();
   });
   $$('#table-tx tbody tr[data-id]').forEach(tr=>tr.onclick=e=>{
-    if(e.target.closest('[data-rel-open]')) return;   // link release: gestito a livello globale
+    if(e.target.closest('[data-rel-open]')||e.target.closest('.dbl-sel')) return;
     openTx(tr.dataset.id);
   });
 }
@@ -960,7 +962,10 @@ function sortReleases(arr){
   });
 }
 function renderReleases(){
-  const all=colSort('releases', releases().slice(), relSort);
+  const rq=($('#rel-search')&&$('#rel-search').value||'').toLowerCase().trim();
+  let base=releases().slice();
+  if(rq) base=base.filter(r=>((r.catalog||'')+' '+(r.title||'')+' '+(r.artist||'')+' '+(r.upc||'')).toLowerCase().includes(rq));
+  const all=colSort('releases', base, relSort);
   $('#rel-count-label').textContent=`${all.length} release`;
   const info=paginate(all,'rel'); const list=info.slice;
   const cont=$('#releases-cards'); const mode=getVM('releases','cards');
@@ -968,8 +973,9 @@ function renderReleases(){
   if(mode==='list'){
     cont.className='dbl';
     const cols=colsFor('releases');
-    cont.innerHTML = dbHead(cols,relSort,{})+dbRows(list,cols,{rowCls:'dbl-click'});
-    cont.querySelectorAll('.dbl-row[data-id]').forEach(c=>c.onclick=e=>{ if(e.target.closest('[data-sort]')) return; openRelease(c.dataset.id); });
+    const sel=selOpt('releases');
+    cont.innerHTML = dbHead(cols,relSort,{sel})+dbRows(list,cols,{rowCls:'dbl-click',sel});
+    cont.querySelectorAll('.dbl-row[data-id]').forEach(c=>c.onclick=e=>{ if(e.target.closest('[data-sort]')||e.target.closest('.dbl-sel')) return; openRelease(c.dataset.id); });
     cont.querySelectorAll('[data-sort]').forEach(h=>h.onclick=e=>{ e.stopPropagation(); const k=h.dataset.sort;
       if(relSort.col===k) relSort.dir*=-1; else relSort={col:k,dir:1}; renderReleases(); });
     mountPager(cont,'rel',info); syncVMButtons(); return;
@@ -2141,7 +2147,8 @@ function renderArtists(){
   if(mode==='list'){
     grid.className='dbl';
     const cols=colsFor('artists');
-    grid.innerHTML = dbHead(cols,artSort,{leadW:44,actions:1}) + dbRows(list,cols,{leadW:44,lead:av,actions:a=>rowActs('art',a.id)});
+    const sel=selOpt('artists');
+    grid.innerHTML = dbHead(cols,artSort,{leadW:44,actions:1,sel}) + dbRows(list,cols,{leadW:44,lead:av,actions:a=>rowActs('art',a.id),sel});
   } else {
     grid.className='art-grid';
     grid.innerHTML = list.map(a=>`
@@ -2475,8 +2482,10 @@ function conTags(c){
 }
 function renderContracts(){
   const tb=$('#contracts-table'); if(!tb) return;
-  const all=(DB.contracts||[]).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
-  $('#contracts-empty').hidden=all.length>0;
+  const cq=($('#con-search')&&$('#con-search').value||'').toLowerCase().trim();
+  let all=(DB.contracts||[]).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  if(cq) all=all.filter(c=>((c.titles||'')+' '+(c.fullName||'')+' '+(c.projectName||'')+' '+(c.artistNames||'')+' '+(c.label||'')).toLowerCase().includes(cq));
+  $('#contracts-empty').hidden=(DB.contracts||[]).length>0;
   if(!all.length){ tb.innerHTML=''; mountPager(tb,'contracts',{total:0}); return; }
   const info=paginate(all,'contracts'); const list=info.slice;
   const head=`<thead><tr><th>${tt('con.titles')}</th><th>${tt('con.fullname')}</th><th>${tt('con.split_short')}</th><th>${tt('con.date')}</th><th>${tt('con.status')}</th><th></th></tr></thead>`;
@@ -2536,7 +2545,9 @@ function updateConSendBtn(){
 function tskKey(t){ return (t.due||'9999-99-99')+'T'+(t.time||'99:99'); }
 function renderTasks(){
   const cont=$('#tasks-list'); if(!cont) return;
-  const list=(DB.tasks||[]); $('#tasks-empty').hidden=list.length>0;
+  const tq=($('#tsk-search')&&$('#tsk-search').value||'').toLowerCase().trim();
+  const list=tq?(DB.tasks||[]).filter(t=>(t.title||'').toLowerCase().includes(tq)):(DB.tasks||[]);
+  $('#tasks-empty').hidden=(DB.tasks||[]).length>0;
   const today=isoD(new Date());
   const open=list.filter(t=>!t.done).sort((a,b)=>tskKey(a).localeCompare(tskKey(b)));
   const done=list.filter(t=>t.done).sort((a,b)=>tskKey(b).localeCompare(tskKey(a)));
@@ -2671,7 +2682,8 @@ function renderMerch(){
     grid.className='dbl';
     const cols=colsFor('merch');
     const acts=m=>`<button class="btn btn-sm btn-income" data-mch-sell="${m.id}">+ ${tt('mch.sell')}</button><button class="icon-btn-sm" data-mch-edit="${m.id}">✎</button><button class="icon-btn-sm" data-mch-del="${m.id}">🗑</button>`;
-    grid.innerHTML = dbHead(cols,merchSort,{actions:1,actW:170}) + dbRows(page,cols,{actions:acts,actW:170});
+    const sel=selOpt('merch');
+    grid.innerHTML = dbHead(cols,merchSort,{actions:1,actW:170,sel}) + dbRows(page,cols,{actions:acts,actW:170,sel});
   } else {
     grid.className='mch-grid';
     grid.innerHTML=page.map(m=>`
@@ -2735,12 +2747,20 @@ function sortBy(arr, st, numKeys){
     return String(a[k]||'').toLowerCase().localeCompare(String(b[k]||'').toLowerCase())*d;
   });
 }
-function dblTmpl(cols, leadW, actW){ return (leadW?leadW+'px ':'')+cols.map(c=>c.w?c.w+'px':`minmax(0,${c.grow||1}fr)`).join(' ')+(actW?` ${actW}px`:''); }
+function dblTmpl(cols, leadW, actW, selW){ return (selW?selW+'px ':'')+(leadW?leadW+'px ':'')+cols.map(c=>c.w?c.w+'px':`minmax(0,${c.grow||1}fr)`).join(' ')+(actW?` ${actW}px`:''); }
 function colLab(c){ return typeof c.label==='function'?c.label():c.label; }
-function dbHead(cols, st, opt){ opt=opt||{}; const t=dblTmpl(cols,opt.leadW,opt.actions?(opt.actW||66):0); const arrow=c=>st.col===c?(st.dir>0?' ▲':' ▼'):'';
-  return `<div class="dbl-row dbl-head" style="grid-template-columns:${t}">${opt.leadW?'<span></span>':''}${cols.map(c=>`<span class="dbl-sort" data-sort="${c.key}">${esc(colLab(c))}${arrow(c.key)}</span>`).join('')}${opt.actions?'<span></span>':''}</div>`; }
-function dbRows(items, cols, opt){ opt=opt||{}; const t=dblTmpl(cols,opt.leadW,opt.actions?(opt.actW||66):0);
-  return items.map(it=>`<div class="dbl-row ${opt.rowCls||''}" data-id="${it.id}" style="grid-template-columns:${t}">${opt.lead?`<span class="dbl-lead">${opt.lead(it)}</span>`:''}${cols.map(c=>`<span class="${c.cls||''}">${c.cell(it)||'—'}</span>`).join('')}${opt.actions?`<span class="dbl-act">${opt.actions(it)}</span>`:''}</div>`).join('');
+function dbHead(cols, st, opt){ opt=opt||{}; const sw=opt.sel?34:0; const t=dblTmpl(cols,opt.leadW,opt.actions?(opt.actW||66):0,sw); const arrow=c=>st.col===c?(st.dir>0?' ▲':' ▼'):'';
+  return `<div class="dbl-row dbl-head" style="grid-template-columns:${t}">`
+    +(opt.sel?`<span class="dbl-sel"><input type="checkbox" data-selall="${opt.sel.sec}"></span>`:'')
+    +(opt.leadW?'<span></span>':'')
+    +cols.map(c=>`<span class="dbl-sort" data-sort="${c.key}">${esc(colLab(c))}${arrow(c.key)}</span>`).join('')
+    +(opt.actions?'<span></span>':'')+`</div>`; }
+function dbRows(items, cols, opt){ opt=opt||{}; const sw=opt.sel?34:0; const t=dblTmpl(cols,opt.leadW,opt.actions?(opt.actW||66):0,sw);
+  return items.map(it=>`<div class="dbl-row ${opt.rowCls||''}" data-id="${it.id}" style="grid-template-columns:${t}">`
+    +(opt.sel?`<span class="dbl-sel"><input type="checkbox" data-sel="${opt.sel.sec}|${it.id}" ${opt.sel.set&&opt.sel.set.has(it.id)?'checked':''}></span>`:'')
+    +(opt.lead?`<span class="dbl-lead">${opt.lead(it)}</span>`:'')
+    +cols.map(c=>`<span class="${c.cls||''}">${c.cell(it)||'—'}</span>`).join('')
+    +(opt.actions?`<span class="dbl-act">${opt.actions(it)}</span>`:'')+`</div>`).join('');
 }
 /* registro colonne per sezione + configurazione (mostra/nascondi/ordina) */
 function relSplitText(r){ const tot=(r.splits||[]).reduce((s,x)=>s+(+x.pct||0),0); const lbl=Math.max(0,100-tot);
@@ -2821,6 +2841,39 @@ const COLDEFS = {
 /* ---- Gestione colonne (mostra/nascondi/ordina) ---- */
 let colCfgSec=null;
 function rerenderSec(sec){ ({releases:renderReleases,planning:renderPlanning,events:renderEvents,supports:renderSupports,artists:renderArtists,merch:renderMerch}[sec]||function(){})(); }
+
+/* ---- Selezione multipla + svuota lista (tutte le sezioni) ---- */
+const bulkSel = {};
+function selOpt(sec){ return { sec, set:(bulkSel[sec] ||= new Set()) }; }
+function secArr(sec){ return {transactions:'transactions',artists:'artists',releases:'releases',planning:'planning',events:'events',supports:'supports',merch:'merch',contracts:'contracts',tasks:'tasks'}[sec]; }
+function bulkRerender(sec){
+  const f={ transactions:()=>{ if(typeof applyTxFilters==='function') applyTxFilters(); else renderTx(); renderRoyalties&&renderRoyalties(); },
+    releases:()=>{ renderReleases(); renderRoyalties&&renderRoyalties(); }, artists:renderArtists, planning:renderPlanning,
+    events:renderEvents, supports:renderSupports, merch:renderMerch, contracts:renderContracts, tasks:renderTasks }[sec];
+  if(f) f();
+}
+function bulkBar(sec){ const bar=$('#bulk-bar'); if(!bar) return; const n=(bulkSel[sec]||new Set()).size;
+  if(!n){ bar.hidden=true; bar.dataset.sec=''; return; }
+  bar.dataset.sec=sec; const c=$('#bulk-count'); if(c) c.textContent=n; bar.hidden=false; }
+function bulkToggleAll(sec,on){ document.querySelectorAll(`[data-sel^="${sec}|"]`).forEach(cb=>{ cb.checked=on;
+    const id=cb.dataset.sel.split('|').slice(1).join('|'); (bulkSel[sec]||=new Set()); on?bulkSel[sec].add(id):bulkSel[sec].delete(id); });
+  bulkBar(sec); }
+function bulkDeleteSel(){ const bar=$('#bulk-bar'); const sec=bar&&bar.dataset.sec; const set=bulkSel[sec]; if(!set||!set.size) return;
+  if(!confirm(tt('bulk.del_q').replace('{n}',set.size))) return;
+  const arr=secArr(sec); if(arr) DB[arr]=(DB[arr]||[]).filter(x=>!set.has(x.id));
+  set.clear(); save(); bulkRerender(sec); bulkBar(sec); }
+function bulkClearAll(sec){ const arr=secArr(sec); const len=(DB[arr]||[]).length;
+  if(!len){ toast(tt('bulk.empty_already')); return; }
+  if(!confirm(tt('bulk.clear_q').replace('{n}',len))) return;
+  DB[arr]=[]; bulkSel[sec]&&bulkSel[sec].clear(); save(); bulkRerender(sec); bulkBar(sec); }
+document.addEventListener('change', e=>{
+  const one=e.target.closest('[data-sel]'); if(one){ const p=one.dataset.sel.split('|'); const sec=p[0], id=p.slice(1).join('|');
+    (bulkSel[sec]||=new Set()); one.checked?bulkSel[sec].add(id):bulkSel[sec].delete(id); bulkBar(sec); return; }
+  const all=e.target.closest('[data-selall]'); if(all){ bulkToggleAll(all.dataset.selall, all.checked); }
+});
+document.addEventListener('click', e=>{ const c=e.target.closest('[data-clear]'); if(c) bulkClearAll(c.dataset.clear); });
+if($('#bulk-del')) $('#bulk-del').onclick=bulkDeleteSel;
+if($('#bulk-cancel')) $('#bulk-cancel').onclick=()=>{ const bar=$('#bulk-bar'); const sec=bar&&bar.dataset.sec; if(sec){ bulkSel[sec]&&bulkSel[sec].clear(); bulkRerender(sec); bulkBar(sec); } };
 function openColCfg(sec){ if(!COLDEFS[sec]) return; colCfgSec=sec; renderColCfgList(); const m=$('#colcfg-modal'); if(m) m.hidden=false; }
 function renderColCfgList(){ const sec=colCfgSec; if(!sec) return; const cfg=colCfg(sec), defs=COLDEFS[sec]; const box=$('#colcfg-list'); if(!box) return;
   box.innerHTML = cfg.order.map(k=>{ const d=defs.find(c=>c.key===k); if(!d) return '';
@@ -2877,14 +2930,18 @@ function plnById(id){ return (DB.planning||[]).find(x=>x.id===id); }
 function plnChip(p){ return `<span class="cal-chip cal-k-${p.kind}" data-pln="${p.id}" title="${esc(p.title)}">${esc(p.title)}</span>`; }
 function renderPlanning(){
   const listC=$('#planning-list'), calC=$('#planning-cal'); if(!listC) return;
-  const all=DB.planning||[]; $('#planning-empty').hidden=all.length>0;
+  const pq=($('#pln-search')&&$('#pln-search').value||'').toLowerCase().trim();
+  const allRaw=DB.planning||[];
+  const all=pq?allRaw.filter(p=>((p.title||'')+' '+(p.artist||'')+' '+(p.platform||'')+' '+(p.note||'')).toLowerCase().includes(pq)):allRaw;
+  $('#planning-empty').hidden=allRaw.length>0;
   const mode=getVM('planning','list');
   listC.hidden=(mode==='cal'); calC.hidden=(mode!=='cal');
   if(mode==='cal'){ clearPager(listC); renderCalendar('planning', all, plnChip, calC); syncVMButtons(); return; }
   const cols=colsFor('planning');
   const info=paginate(colSort('planning',all,plnSort),'planning');
   listC.className='dbl';
-  listC.innerHTML=dbHead(cols,plnSort,{actions:1})+dbRows(info.slice,cols,{actions:p=>rowActs('pln',p.id)});
+  const sel=selOpt('planning');
+  listC.innerHTML=dbHead(cols,plnSort,{actions:1,sel})+dbRows(info.slice,cols,{actions:p=>rowActs('pln',p.id),sel});
   mountPager(listC,'planning',info); syncVMButtons();
 }
 function openPlnForm(id){ editingPlnId=id||null; const p=id?plnById(id):null;
@@ -2909,14 +2966,18 @@ function evtById(id){ return (DB.events||[]).find(x=>x.id===id); }
 function evtChip(e){ return `<span class="cal-chip cal-k-${e.kind}" data-evt="${e.id}" title="${esc(e.title)}">${e.time?('<b>'+esc(e.time)+'</b> '):''}${esc(e.title)}</span>`; }
 function renderEvents(){
   const listC=$('#events-list'), calC=$('#events-cal'); if(!listC) return;
-  const all=DB.events||[]; $('#events-empty').hidden=all.length>0;
+  const eq=($('#evt-search')&&$('#evt-search').value||'').toLowerCase().trim();
+  const allRaw=DB.events||[];
+  const all=eq?allRaw.filter(e=>((e.title||'')+' '+(e.venue||'')+' '+(e.city||'')+' '+(e.country||'')+' '+(e.note||'')).toLowerCase().includes(eq)):allRaw;
+  $('#events-empty').hidden=allRaw.length>0;
   const mode=getVM('events','list');
   listC.hidden=(mode==='cal'); calC.hidden=(mode!=='cal');
   if(mode==='cal'){ clearPager(listC); renderCalendar('events', all, evtChip, calC); syncVMButtons(); return; }
   const cols=colsFor('events');
   const info=paginate(colSort('events',all,evtSort),'events');
   listC.className='dbl';
-  listC.innerHTML=dbHead(cols,evtSort,{actions:1})+dbRows(info.slice,cols,{actions:e=>rowActs('evt',e.id)});
+  const sel=selOpt('events');
+  listC.innerHTML=dbHead(cols,evtSort,{actions:1,sel})+dbRows(info.slice,cols,{actions:e=>rowActs('evt',e.id),sel});
   mountPager(listC,'events',info); syncVMButtons();
 }
 function openEvtForm(id){ editingEvtId=id||null; const e=id?evtById(id):null;
@@ -2945,7 +3006,8 @@ function renderSupports(){
   const cols=colsFor('supports');
   const info=paginate(colSort('supports',all,supSort),'supports');
   listC.className='dbl';
-  listC.innerHTML=dbHead(cols,supSort,{actions:1})+dbRows(info.slice,cols,{actions:s=>rowActs('sup',s.id)});
+  const sel=selOpt('supports');
+  listC.innerHTML=dbHead(cols,supSort,{actions:1,sel})+dbRows(info.slice,cols,{actions:s=>rowActs('sup',s.id),sel});
   mountPager(listC,'supports',info);
 }
 function openSupForm(id){ editingSupId=id||null; const s=id?supById(id):null;
@@ -2972,6 +3034,12 @@ registerExport('supports', ()=>({ title:tt('sup.title'), headers:[tt('sup.f_date
 
 /* ---- Wiring sezioni agenda ---- */
 function wireAgenda(){
+  // ricerca per sezione
+  $('#rel-search')?.addEventListener('input',renderReleases);
+  $('#pln-search')?.addEventListener('input',renderPlanning);
+  $('#evt-search')?.addEventListener('input',renderEvents);
+  $('#con-search')?.addEventListener('input',renderContracts);
+  $('#tsk-search')?.addEventListener('input',renderTasks);
   // Pianificazione
   $('#pln-new')?.addEventListener('click',()=>openPlnForm());
   $('#pln-cancel')?.addEventListener('click',()=>{ $('#pln-form').hidden=true; editingPlnId=null; });

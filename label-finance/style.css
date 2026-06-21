@@ -336,6 +336,17 @@ body.dash-edit .dw-width{display:inline-flex;gap:2px;position:absolute;top:8px;l
 .dbl-sort{cursor:pointer;user-select:none}
 .dbl-sort:hover{color:var(--accent)}
 .dbl-act{display:flex;gap:5px;justify-content:flex-end;align-items:center}
+.dbl-sel{display:flex;align-items:center;justify-content:center}
+.dbl-sel input{width:17px;height:17px;cursor:pointer;accent-color:var(--accent)}
+/* barra azioni selezione multipla */
+.bulk-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom));z-index:70;
+  display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:14px;
+  background:var(--panel);border:1px solid var(--line);box-shadow:0 16px 44px rgba(0,0,0,.34)}
+.bulk-info{font-size:.9rem;font-weight:600}
+.bulk-info b{color:var(--accent)}
+@media(max-width:760px){ .bulk-bar{bottom:calc(78px + env(safe-area-inset-bottom))} }
+.btn-clear{color:var(--out);border-color:color-mix(in srgb,var(--out) 35%,var(--line))}
+.btn-clear:hover{background:color-mix(in srgb,var(--out) 14%,transparent)}
 .dbl-lead{display:flex;align-items:center}
 .dbl-lead .art-av{width:38px;height:38px}
 .dbl-click{cursor:pointer}

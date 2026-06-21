@@ -21,7 +21,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=68">
+  <link rel="stylesheet" href="style.css?v=69">
 </head>
 <body class="gated">
 
@@ -470,6 +470,7 @@
           <option value="product:1">Ordina: Prodotto A–Z</option>
         </select>
         <div class="toolbar-actions">
+          <button class="btn btn-clear" data-clear="transactions" data-i18n="bulk.clear">Svuota</button>
           <button class="btn" id="btn-cols" title="Personalizza colonne" data-i18n="tx.cols">⚙ Colonne</button>
           <button class="btn btn-export" data-export="movimenti" title="Esporta CSV/Excel/PDF">⤓ Esporta</button>
         </div>
@@ -485,11 +486,13 @@
       <header class="view-head">
         <div><div class="title-row"><h1 data-i18n="rel.title">Release</h1><button class="info-btn" data-info="releases" title="Cos'è questa sezione?">i</button></div><p class="muted" id="rel-count-label">0 release</p></div>
         <div class="head-actions">
+          <input class="input" id="rel-search" data-i18n-ph="common.search" placeholder="Cerca…">
           <div class="vm-toggle" data-vm-sec="releases" data-vm-def="cards">
             <button class="vm-btn" data-vm="cards" title="Cards">▦</button>
             <button class="vm-btn" data-vm="list" title="Elenco">☰</button>
           </div>
           <button class="btn" id="catimp-open" data-i18n="cimp.btn">⤒ Importa catalogo</button>
+          <button class="btn btn-clear" data-clear="releases" data-i18n="bulk.clear">Svuota</button>
           <button class="btn btn-cols2" data-colcfg="releases" title="Personalizza colonne">⚙</button>
           <button class="btn btn-export" data-export="releases" title="Esporta CSV/Excel/PDF">⤓ Esporta</button>
           <button class="btn btn-primary" id="btn-add-release" data-i18n="rel.new">+ Nuova release</button>
@@ -514,10 +517,12 @@
         <div><div class="title-row"><h1 data-i18n="pln.title">Pianificazione</h1><button class="info-btn" data-info="planning" title="Cos'è questa sezione?">i</button></div>
           <p class="muted" data-i18n="pln.subtitle">Programma release e premiere: simulazione dell'anno e calendario effettivo.</p></div>
         <div class="head-actions">
+          <input class="input" id="pln-search" data-i18n-ph="common.search" placeholder="Cerca…">
           <div class="vm-toggle" data-vm-sec="planning" data-vm-def="list">
             <button class="vm-btn" data-vm="list" title="Elenco">☰</button>
             <button class="vm-btn" data-vm="cal" title="Calendario">▦</button>
           </div>
+          <button class="btn btn-clear" data-clear="planning" data-i18n="bulk.clear">Svuota</button>
           <button class="btn btn-cols2" data-colcfg="planning" title="Personalizza colonne">⚙</button>
           <button class="btn btn-export" data-export="planning" title="Esporta">⤓ Esporta</button>
           <button class="btn btn-primary" id="pln-new" data-i18n="pln.new">＋ Nuova voce</button>
@@ -558,10 +563,12 @@
         <div><div class="title-row"><h1 data-i18n="evt.title">Eventi</h1><button class="info-btn" data-info="events" title="Cos'è questa sezione?">i</button></div>
           <p class="muted" data-i18n="evt.subtitle">Showcase, eventi in radio, live e date: tutte le info in un posto.</p></div>
         <div class="head-actions">
+          <input class="input" id="evt-search" data-i18n-ph="common.search" placeholder="Cerca…">
           <div class="vm-toggle" data-vm-sec="events" data-vm-def="list">
             <button class="vm-btn" data-vm="list" title="Elenco">☰</button>
             <button class="vm-btn" data-vm="cal" title="Calendario">▦</button>
           </div>
+          <button class="btn btn-clear" data-clear="events" data-i18n="bulk.clear">Svuota</button>
           <button class="btn btn-cols2" data-colcfg="events" title="Personalizza colonne">⚙</button>
           <button class="btn btn-export" data-export="events" title="Esporta">⤓ Esporta</button>
           <button class="btn btn-primary" id="evt-new" data-i18n="evt.new">＋ Nuovo evento</button>
@@ -605,6 +612,7 @@
           <p class="muted" data-i18n="sup.subtitle">Dove e da chi vengono suonati i tuoi brani nel mondo.</p></div>
         <div class="head-actions">
           <input class="input" id="sup-search" data-i18n-ph="common.search" placeholder="Cerca…">
+          <button class="btn btn-clear" data-clear="supports" data-i18n="bulk.clear">Svuota</button>
           <button class="btn btn-cols2" data-colcfg="supports" title="Personalizza colonne">⚙</button>
           <button class="btn btn-export" data-export="supports" title="Esporta">⤓ Esporta</button>
           <button class="btn btn-primary" id="sup-new" data-i18n="sup.new">＋ Nuovo support</button>
@@ -989,6 +997,7 @@
             <button class="vm-btn" data-vm="cards" title="Cards">▦</button>
             <button class="vm-btn" data-vm="list" title="Elenco">☰</button>
           </div>
+          <button class="btn btn-clear" data-clear="artists" data-i18n="bulk.clear">Svuota</button>
           <button class="btn btn-cols2" data-colcfg="artists" title="Personalizza colonne">⚙</button>
           <button class="btn btn-primary" id="art-new" data-i18n="art.new">＋ Nuovo artista</button>
         </div>
@@ -1038,6 +1047,8 @@
         <div><div class="title-row"><h1 data-i18n="con.title">Contratti</h1><button class="info-btn" data-info="contracts" title="Cos'è questa sezione?">i</button></div>
           <p class="muted" data-i18n="con.subtitle">Genera un contratto standard di split, pronto da inviare via email agli artisti.</p></div>
         <div class="head-actions">
+          <input class="input" id="con-search" data-i18n-ph="common.search" placeholder="Cerca…">
+          <button class="btn btn-clear" data-clear="contracts" data-i18n="bulk.clear">Svuota</button>
           <button class="btn btn-primary" id="con-new" data-i18n="con.new">＋ Nuovo contratto</button>
         </div>
       </header>
@@ -1117,6 +1128,10 @@
       <header class="view-head">
         <div><div class="title-row"><h1 data-i18n="tsk.title">Task</h1><button class="info-btn" data-info="tasks" title="Cos'è questa sezione?">i</button></div>
           <p class="muted" data-i18n="tsk.subtitle">Promemoria per pagamenti, invio contratti e scadenze dell'etichetta.</p></div>
+        <div class="head-actions">
+          <input class="input" id="tsk-search" data-i18n-ph="common.search" placeholder="Cerca…">
+          <button class="btn btn-clear" data-clear="tasks" data-i18n="bulk.clear">Svuota</button>
+        </div>
       </header>
 
       <div class="info-panel" id="info-tasks" hidden>
@@ -1164,6 +1179,7 @@
             <button class="vm-btn" data-vm="cards" title="Cards">▦</button>
             <button class="vm-btn" data-vm="list" title="Elenco">☰</button>
           </div>
+          <button class="btn btn-clear" data-clear="merch" data-i18n="bulk.clear">Svuota</button>
           <button class="btn btn-cols2" data-colcfg="merch" title="Personalizza colonne">⚙</button>
           <button class="btn btn-export" data-export="merch" title="Esporta CSV/Excel/PDF">⤓ Esporta</button>
           <button class="btn btn-primary" id="mch-new" data-i18n="mch.new">＋ Nuovo articolo</button>
@@ -1642,6 +1658,13 @@
   </div>
 
   <!-- ======= MODAL: colonne ======= -->
+  <!-- Barra azioni selezione multipla -->
+  <div class="bulk-bar" id="bulk-bar" hidden>
+    <span class="bulk-info"><b id="bulk-count">0</b> <span data-i18n="bulk.selected">selezionati</span></span>
+    <button class="btn btn-ghost" id="bulk-cancel" data-i18n="common.cancel">Annulla</button>
+    <button class="btn btn-danger" id="bulk-del"><span data-i18n="bulk.del">🗑 Elimina</span></button>
+  </div>
+
   <!-- Assistente AI: bolla flottante + popover -->
   <button class="ai-fab" id="ai-fab" aria-label="Assistente AI" aria-expanded="false" title="Assistente AI">
     <svg class="ai-bot" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -1823,11 +1846,11 @@
   <!-- Area di stampa per lo statement royalty (visibile solo in stampa) -->
   <div id="print-area" aria-hidden="true"></div>
 
-  <script src="html2pdf.bundle.min.js?v=68"></script>
-  <script src="app.js?v=68"></script>
-  <script src="config.js?v=68"></script>
-  <script src="i18n.js?v=68"></script>
+  <script src="html2pdf.bundle.min.js?v=69"></script>
+  <script src="app.js?v=69"></script>
+  <script src="config.js?v=69"></script>
+  <script src="i18n.js?v=69"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="sync.js?v=68"></script>
+  <script src="sync.js?v=69"></script>
 </body>
 </html>

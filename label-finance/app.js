@@ -1205,8 +1205,16 @@ async function catOnlineImport(){
   if(btn){ btn.disabled=false; btn.textContent=tt('cimp.fetch'); }
   if(!res||res.error||!res.releases){ toast(tt('cimp.search_fail')+(res&&res.error?` (${res.error})`:'')); return; }
   const r=importReleasesData(res.releases, true);
-  $('#catimp-modal').hidden=true;
   toast(tt('cimp.done').replace('{rel}',r.relNew).replace('{art}',r.artNew).replace('{dup}',r.relDup));
+  let hadErr=false, diag='';
+  if(res.sources){ const s=res.sources; const p=[];
+    if(picks.mb.length) p.push('MusicBrainz: '+(s.musicbrainz.err?('⚠ '+esc(s.musicbrainz.err)):s.musicbrainz.n));
+    if(picks.discogs.length) p.push('Discogs: '+(s.discogs.err?('⚠ '+esc(s.discogs.err)):s.discogs.n));
+    if(picks.spotifyName) p.push('Spotify: '+(s.spotify.err?('⚠ '+esc(s.spotify.err)):s.spotify.n));
+    diag=p.join('<br>'); hadErr=!!(s.musicbrainz.err||s.discogs.err||s.spotify.err);
+  }
+  if(hadErr){ const box=$('#catimp-results'); if(box) box.insertAdjacentHTML('beforeend', `<p class="ai-err" style="margin-top:10px">${diag}</p>`); }
+  else $('#catimp-modal').hidden=true;
 }
 function catImpRenderMaps(){
   const opts=(sel)=>['<option value="-1">—</option>'].concat(catImpHeaders.map((h,i)=>`<option value="${i}" ${i===sel?'selected':''}>${esc(h||('Col '+(i+1)))}</option>`)).join('');

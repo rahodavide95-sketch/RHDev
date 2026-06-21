@@ -86,15 +86,16 @@ async function spToken(id: string, secret: string) {
     headers: { "Content-Type": "application/x-www-form-urlencoded", Authorization: "Basic " + btoa(`${id}:${secret}`) },
     body: "grant_type=client_credentials",
   });
-  if (!r.ok) return "";
-  return (await r.json()).access_token || "";
+  if (!r.ok) { let t = ""; try { t = await r.text(); } catch (_) {} return { tok: "", err: `token HTTP ${r.status} ${t.slice(0, 120)}` }; }
+  const d = await r.json();
+  return { tok: d.access_token || "", err: d.access_token ? null : "no access_token" };
 }
 async function spFetch(name: string, tok: string) {
-  const out: any[] = []; const albumIds: string[] = [];
+  const out: any[] = []; const albumIds: string[] = []; let err: string | null = null;
   for (let offset = 0; offset < 1000; offset += 50) {
     const r = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent('label:"' + name + '"')}&type=album&limit=50&offset=${offset}`,
       { headers: { Authorization: "Bearer " + tok } });
-    if (!r.ok) break;
+    if (!r.ok) { if (offset === 0) { let t = ""; try { t = await r.text(); } catch (_) {} err = `search HTTP ${r.status} ${t.slice(0, 120)}`; } break; }
     const d = await r.json();
     const items = d.albums?.items || [];
     for (const a of items) {
@@ -104,7 +105,6 @@ async function spFetch(name: string, tok: string) {
     }
     if (items.length < 50) break;
   }
-  // UPC dai dettagli album (batch da 20)
   for (let i = 0; i < albumIds.length; i += 20) {
     const ids = albumIds.slice(i, i + 20).join(",");
     const r = await fetch(`https://api.spotify.com/v1/albums?ids=${ids}`, { headers: { Authorization: "Bearer " + tok } });
@@ -116,7 +116,7 @@ async function spFetch(name: string, tok: string) {
     }
   }
   out.forEach((o) => delete o._id);
-  return out;
+  return { items: out, err };
 }
 
 // ------------------------------- merge ------------------------------------
@@ -157,15 +157,20 @@ Deno.serve(async (req) => {
 
     if (action === "fetch") {
       const p = picks || {};
-      const tasks: Promise<any[]>[] = [];
-      for (const id of (p.mb || [])) tasks.push(mbFetch(id).catch(() => []));
-      if (DISCOGS) for (const id of (p.discogs || [])) tasks.push(dcFetch(id, DISCOGS).catch(() => []));
-      if (p.spotifyName && SP_ID && SP_SECRET) {
-        tasks.push((async () => { const t = await spToken(SP_ID, SP_SECRET); return t ? spFetch(p.spotifyName, t).catch(() => []) : []; })());
+      const out: any[] = [];
+      const sources: any = { musicbrainz: { n: 0, err: null }, discogs: { n: 0, err: null }, spotify: { n: 0, err: null } };
+      for (const id of (p.mb || [])) { try { const x = await mbFetch(id); out.push(...x); sources.musicbrainz.n += x.length; } catch (e) { sources.musicbrainz.err = String(e?.message || e); } }
+      if (DISCOGS) { for (const id of (p.discogs || [])) { try { const x = await dcFetch(id, DISCOGS); out.push(...x); sources.discogs.n += x.length; } catch (e) { sources.discogs.err = String(e?.message || e); } } }
+      else if ((p.discogs || []).length) sources.discogs.err = "no token";
+      if (p.spotifyName) {
+        if (SP_ID && SP_SECRET) {
+          const t = await spToken(SP_ID, SP_SECRET);
+          if (!t.tok) sources.spotify.err = t.err;
+          else { const x = await spFetch(p.spotifyName, t.tok); if (x.err) sources.spotify.err = x.err; out.push(...x.items); sources.spotify.n += x.items.length; }
+        } else sources.spotify.err = "not configured";
       }
-      const lists = await Promise.all(tasks);
-      const releases = merge(lists);
-      return json({ releases, count: releases.length });
+      const releases = merge([out]);
+      return json({ releases, count: releases.length, sources });
     }
     return json({ error: "bad_action" }, 400);
   } catch (e) {

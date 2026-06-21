@@ -1,6 +1,6 @@
 /* Service worker — offline-first leggero, network-first per evitare versioni vecchie */
-const CACHE='lf-cache-v69';
-const CORE=['./','index.html','style.css?v=69','app.js?v=69','config.js?v=69','i18n.js?v=69','sync.js?v=69','html2pdf.bundle.min.js?v=69','manifest.webmanifest','icon.png?v=3','pwa-192.png','pwa-512.png'];
+const CACHE='lf-cache-v70';
+const CORE=['./','index.html','style.css?v=70','app.js?v=70','config.js?v=70','i18n.js?v=70','sync.js?v=70','html2pdf.bundle.min.js?v=70','manifest.webmanifest','icon.png?v=3','pwa-192.png','pwa-512.png'];
 self.addEventListener('install',e=>{ e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).catch(()=>{}).then(()=>self.skipWaiting())); });
 self.addEventListener('activate',e=>{ e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())); });
 self.addEventListener('fetch',e=>{

@@ -505,6 +505,7 @@ function renderDashboard(){
   if(typeof aiPopBody==='function' && $('#ai-pop') && !$('#ai-pop').hidden) aiPopBody();
   const all=DB.transactions;
   $('#dash-empty').hidden = all.length>0;
+  if(typeof updateDemoBanner==='function') updateDemoBanner();
   const range=periodRange();
   const txs=all.filter(t=>inRange(t,range.from,range.to));
   const cur=sumKPI(txs);
@@ -768,19 +769,30 @@ $('#btn-print').onclick=()=>{ document.body.classList.add('printing'); window.pr
 function loadDemo(){
   if(DB.transactions.length && !confirm('Caricare i dati dimostrativi in questa etichetta?')) return;
   releases().push({ id:uid(), catalog:'SC-DEMO', title:'Demo EP', year:new Date().getFullYear(),
-    splits:[{name:'Raho',pct:50},{name:'Jacom',pct:30}], tracks:[] });
+    splits:[{name:'Raho',pct:50},{name:'Jacom',pct:30}], tracks:[], demo:true });
   const plats=['Bandcamp','Beatport','Spotify'], arts=['Raho','Jacom'], now=new Date(), tx=[];
   for(let m=5;m>=0;m--) for(let i=0;i<3;i++){
     const d=new Date(now.getFullYear(),now.getMonth()-m,3+i*7);
     tx.push({ id:uid(), kind:'income', date:d.toISOString().slice(0,10), platform:plats[(m+i)%3],
       type:'digital', catalog:'SC-DEMO', product:'Demo EP', artist:arts[i%2], isrc:'', upc:'',
-      qty:1+(i%3), gross:0, fees:0, net:+(5+Math.random()*20).toFixed(2), csShare:0, currency:'EUR', note:'demo' });
+      qty:1+(i%3), gross:0, fees:0, net:+(5+Math.random()*20).toFixed(2), csShare:0, currency:'EUR', note:'demo', demo:true });
   }
-  tx.push({ id:uid(), kind:'expense', date:new Date(now.getFullYear(),now.getMonth()-4,10).toISOString().slice(0,10), platform:'', type:'expense', catalog:'SC-DEMO', product:'Mastering', artist:'', qty:1, gross:0, fees:0, net:80, csShare:0, currency:'EUR', note:'demo' });
-  tx.push({ id:uid(), kind:'expense', date:new Date(now.getFullYear(),now.getMonth()-2,15).toISOString().slice(0,10), platform:'', type:'expense', catalog:'SC-DEMO', product:'Artwork', artist:'', qty:1, gross:0, fees:0, net:120, csShare:0, currency:'EUR', note:'demo' });
-  DB.transactions.push(...tx); save(); reloadViews(); toast(tt('t.demo_loaded')); goto('dashboard');
+  tx.push({ id:uid(), kind:'expense', date:new Date(now.getFullYear(),now.getMonth()-4,10).toISOString().slice(0,10), platform:'', type:'expense', catalog:'SC-DEMO', product:'Mastering', artist:'', qty:1, gross:0, fees:0, net:80, csShare:0, currency:'EUR', note:'demo', demo:true });
+  tx.push({ id:uid(), kind:'expense', date:new Date(now.getFullYear(),now.getMonth()-2,15).toISOString().slice(0,10), platform:'', type:'expense', catalog:'SC-DEMO', product:'Artwork', artist:'', qty:1, gross:0, fees:0, net:120, csShare:0, currency:'EUR', note:'demo', demo:true });
+  DB.transactions.push(...tx); save(); reloadViews(); updateDemoBanner(); toast(tt('t.demo_loaded')); goto('dashboard');
 }
 $('#btn-demo')?.addEventListener('click', loadDemo);
+function hasDemoData(){ return (DB.releases||[]).some(r=>r.demo) || (DB.transactions||[]).some(t=>t.demo); }
+function removeDemo(){
+  if(!hasDemoData()) return;
+  if(!confirm(tt('demo.confirm'))) return;
+  DB.releases=(DB.releases||[]).filter(r=>!r.demo);
+  DB.transactions=(DB.transactions||[]).filter(t=>!t.demo);
+  DB.artists=(DB.artists||[]).filter(a=>!a.demo);
+  save(); reloadViews(); updateDemoBanner(); toast(tt('demo.removed'));
+}
+function updateDemoBanner(){ const b=$('#demo-banner'); if(b) b.hidden=!hasDemoData(); }
+$('#demo-remove')?.addEventListener('click', removeDemo);
 $('#btn-onb-income')?.addEventListener('click', ()=>{ curKind='income'; openTx(null); });
 
 /* ============================================================================
@@ -1246,7 +1258,7 @@ async function catOnlineSearch(){
   box.innerHTML=`<p class="muted small">${tt('cimp.searching')}</p>`;
   const res=await window.LF_catalogSearch({action:'search', query:q});
   if(!res||res.error){ box.innerHTML=`<p class="ai-err">${tt('cimp.search_fail')}${res&&res.error?` (${esc(String(res.error))})`:''}</p>`; return; }
-  catCandidates=res.candidates||[]; catSpotify=!!res.spotify;
+  catCandidates=res.candidates||[]; catSpotify=false;   // Spotify disattivato dall'import (riattivabile)
   let html='';
   if(catCandidates.length) html+=catCandidates.map((c,i)=>`<label class="cat-cand"><input type="checkbox" data-cand="${i}" ${i===0?'checked':''}> <b>${esc(c.name)}</b> <span class="muted small">${esc(c.detail||c.source)}</span></label>`).join('');
   if(catSpotify) html+=`<label class="cat-cand"><input type="checkbox" id="cat-sp" checked> <b>Spotify</b> <span class="muted small">${tt('cimp.by_name').replace('{q}',esc(q))}</span></label>`;

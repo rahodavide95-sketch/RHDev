@@ -1023,7 +1023,7 @@ body.gate-signup .gate-login-only{display:none}
 .gate-actions{display:flex;gap:10px;margin-top:18px}
 .gate-actions .btn{flex:1;justify-content:center;display:flex;transition:.15s}
 .btn-accent2{background:var(--in);border-color:var(--in);color:var(--on-in);font-weight:600}
-.btn-accent2:hover{filter:brightness(1.07)}
+.btn-accent2:hover{filter:brightness(1.07);background:var(--in);border-color:var(--in);color:var(--on-in)}
 body:not(.gate-signup) #gate-signup{opacity:.5}
 body.gate-signup #gate-signin{opacity:.5}
 .gate-status{text-align:center;font-size:.85rem;color:rgba(255,255,255,.75);margin-top:14px;min-height:18px}

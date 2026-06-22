@@ -24,7 +24,7 @@ const DEFAULT_TX_ORDER = ['date','kind','platform','catalog','product','artist',
 const DEFAULT_TX_VISIBLE = ['date','kind','platform','catalog','product','artist','qty','net','eur'];
 /* Account = piu' etichette; DB punta all'etichetta attiva. */
 const DASH_BASE = ['kpi','chart','g_release','g_artist','g_platform','g_type'];
-const DASH_EXTRAS = ['forecast','w_top','recent','merch','nextrel','nextevt','support','disco']; // libreria widget opzionali (nascosti di default)
+const DASH_EXTRAS = ['forecast','w_top','recent','merch','nextrel','nextevt','support','disco','margin','expenses','payable','unrec','mom','pending','lowstock','duetasks']; // libreria widget opzionali (nascosti di default)
 const DASH_DEFAULT_ORDER = [...DASH_BASE, ...DASH_EXTRAS];
 const DASH_FULL = new Set(['kpi','chart','forecast']);
 const PLAN_LIMITS = { free:1, studio:3, agency:Infinity };
@@ -2447,7 +2447,8 @@ function setupDashWidgets(){
       g_platform:$('#table-platform')&&$('#table-platform').closest('.panel'),
       g_type:$('#table-type')&&$('#table-type').closest('.panel'),
       forecast:$('#w-forecast'), w_top:$('#w-top'), recent:$('#w-recent'), merch:$('#w-merch'),
-      nextrel:$('#w-nextrel'), nextevt:$('#w-nextevt'), support:$('#w-support'), disco:$('#w-disco') };
+      nextrel:$('#w-nextrel'), nextevt:$('#w-nextevt'), support:$('#w-support'), disco:$('#w-disco'),
+      margin:$('#w-margin'), expenses:$('#w-expenses'), payable:$('#w-payable'), unrec:$('#w-unrec'), mom:$('#w-mom'), pending:$('#w-pending'), lowstock:$('#w-lowstock'), duetasks:$('#w-duetasks') };
     const grid2=view.querySelector('.grid-2');
     // posiziona il contenitore prima delle card dati (dove c'erano i KPI)
     map.kpi.parentNode.insertBefore(cont, map.kpi);
@@ -2488,7 +2489,8 @@ function renderHiddenTray(){
   const names={ ai:tt('ai.title'), kpi:'KPI', chart:tt('dash.chart.title'),
     g_release:tt('dash.byrelease'), g_artist:tt('dash.byartist'), g_platform:tt('dash.byplatform'), g_type:tt('dash.bytype'),
     forecast:tt('dash.forecast'), w_top:tt('dash.top_artists'), recent:tt('dash.recent'), merch:tt('mch.title'),
-    nextrel:tt('dash.next_rel'), nextevt:tt('dash.next_evt'), support:tt('dash.sup_top'), disco:tt('dash.disco') };
+    nextrel:tt('dash.next_rel'), nextevt:tt('dash.next_evt'), support:tt('dash.sup_top'), disco:tt('dash.disco'),
+    margin:tt('dash.margin'), expenses:tt('dash.expenses'), payable:tt('dash.payable'), unrec:tt('dash.unrec'), mom:tt('dash.mom'), pending:tt('dash.pending'), lowstock:tt('dash.lowstock'), duetasks:tt('dash.duetasks') };
   if(!l.hidden.length){ tray.innerHTML=`<span class="muted small">${tt('dash.none_hidden')}</span>`; return; }
   tray.innerHTML=l.hidden.map(id=>`<button class="dw-restore" data-id="${id}">+ ${esc(names[id]||id)}</button>`).join('');
   tray.querySelectorAll('.dw-restore').forEach(b=>b.onclick=()=>{ const l=dashLayout(); l.hidden=l.hidden.filter(x=>x!==b.dataset.id); save(); applyDashLayout(); });
@@ -2635,6 +2637,60 @@ function renderExtraWidgets(txs){
         <p class="muted small">${tt('dash.forecast_note')}</p>`;
     }
   }
+  // ===== Nuovi widget selezionabili =====
+  const _eur=t=>toEur(t.net,t.currency), _inc=t=>t.kind==='income';
+  const mgb=$('#margin-body');
+  if(mgb){ let inc=0,exp=0; txs.forEach(t=>{ const v=_eur(t); if(_inc(t)) inc+=v; else exp+=Math.abs(v); });
+    const net=inc-exp, mar=inc?net/inc*100:0;
+    mgb.innerHTML=`<div class="wstat"><span>${tt('dash.m_income')}</span><b class="pos">${fmtMoney(inc)}</b></div>
+      <div class="wstat"><span>${tt('dash.m_expense')}</span><b class="neg">${fmtMoney(exp)}</b></div>
+      <div class="wstat"><span>${tt('dash.m_net')}</span><b class="${net>=0?'pos':'neg'}">${fmtMoney(net)}</b></div>
+      <div class="wstat wstat--big"><span>${tt('dash.m_margin')}</span><b class="${mar>=0?'pos':'neg'}">${mar.toFixed(1)}%</b></div>`; }
+  const exb=$('#expenses-body');
+  if(exb){ const g={}; txs.filter(t=>!_inc(t)).forEach(t=>{ const k=(t.product||t.type||'—').trim()||'—'; g[k]=(g[k]||0)+Math.abs(_eur(t)); });
+    const rows=Object.entries(g).sort((a,b)=>b[1]-a[1]).slice(0,6); const max=Math.max(1,...rows.map(r=>r[1]));
+    exb.innerHTML = rows.length ? rows.map(([k,v])=>`<div class="top-row"><span class="top-name">${esc(k)}</span>
+        <span class="top-bar top-bar--neg"><i style="width:${Math.round(v/max*100)}%"></i></span><span class="top-val neg">${fmtMoney(v)}</span></div>`).join('')
+      : `<p class="muted">${tt('dash.exp_none')}</p>`; }
+  const pyb=$('#payable-body');
+  if(pyb){ const rc=computeRecoup(); const pay=rc.filter(r=>r.payable>0).sort((a,b)=>b.payable-a.payable);
+    const tot=pay.reduce((s,r)=>s+r.payable,0);
+    pyb.innerHTML=`<div class="wstat wstat--big"><span>${tt('dash.pay_tot')}</span><b class="pos">${fmtMoney(tot)}</b></div>`
+      + (pay.length ? pay.slice(0,6).map(r=>`<div class="recent-row"><span class="recent-label">${esc(r.name)}</span><span class="recent-amt pos">${fmtMoney(r.payable)}</span></div>`).join('')
+        : `<p class="muted">${tt('dash.pay_none')}</p>`); }
+  const urb=$('#unrec-body');
+  if(urb){ const rc=computeRecoup(); const un=rc.filter(r=>r.unrecouped>0).sort((a,b)=>b.unrecouped-a.unrecouped);
+    const tot=un.reduce((s,r)=>s+r.unrecouped,0);
+    urb.innerHTML=`<div class="wstat wstat--big"><span>${tt('dash.unrec_tot')}</span><b class="neg">${fmtMoney(tot)}</b></div>`
+      + (un.length ? un.slice(0,6).map(r=>`<div class="recent-row"><span class="recent-label">${esc(r.name)}</span><span class="recent-amt neg">${fmtMoney(r.unrecouped)}</span></div>`).join('')
+        : `<p class="muted">${tt('dash.unrec_none')}</p>`); }
+  const momb=$('#mom-body');
+  if(momb){ const M={}; txs.forEach(t=>{ const k=monthKey(t.date); if(!k) return; M[k]=(M[k]||0)+(_inc(t)?_eur(t):-Math.abs(_eur(t))); });
+    const ks=Object.keys(M).sort();
+    if(!ks.length){ momb.innerHTML=`<p class="muted">${tt('dash.mom_none')}</p>`; }
+    else { const last=ks[ks.length-1], prev=ks[ks.length-2], lv=M[last], pv=prev!=null?M[prev]:null;
+      const chg=(pv!=null&&pv!==0)?(lv-pv)/Math.abs(pv)*100:null;
+      const best=ks.reduce((a,k)=>M[k]>M[a]?k:a,ks[0]), worst=ks.reduce((a,k)=>M[k]<M[a]?k:a,ks[0]);
+      momb.innerHTML=`<div class="wstat wstat--big"><span>${tt('dash.mom_this')} · ${last}</span><b class="${lv>=0?'pos':'neg'}">${fmtMoney(lv)}</b></div>
+        ${chg!=null?`<div class="wstat"><span>${tt('dash.mom_change')}</span><b class="${chg>=0?'pos':'neg'}">${chg>=0?'+':''}${chg.toFixed(1)}%</b></div>`:''}
+        <div class="wstat"><span>${tt('dash.mom_best')}</span><b class="pos">${best} · ${fmtMoney(M[best])}</b></div>
+        <div class="wstat"><span>${tt('dash.mom_worst')}</span><b class="${M[worst]>=0?'':'neg'}">${worst} · ${fmtMoney(M[worst])}</b></div>`; } }
+  const pgb=$('#pending-body');
+  if(pgb){ const pend=(DB.contracts||[]).filter(c=>c.status==='sent').sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).slice(0,6);
+    pgb.innerHTML = pend.length ? pend.map(c=>`<div class="wrow" data-goto="contracts">
+        <span class="wrow-main"><b>${esc(c.titles||c.fullName||'—')}</b>${c.fullName?`<span class="muted small"> · ${esc(c.fullName)}</span>`:''}</span>
+        <span class="wrow-tag">${esc(fmtDate(c.date||''))}</span></div>`).join('')
+      : `<p class="muted">${tt('dash.pend_none')}</p>`; }
+  const lsb=$('#lowstock-body');
+  if(lsb){ const low=(DB.merch||[]).filter(m=>m.stock!=null && m.stock!=='' && (+m.stock)<=10).sort((a,b)=>(+a.stock)-(+b.stock)).slice(0,6);
+    lsb.innerHTML = low.length ? low.map(m=>`<div class="recent-row"><span class="recent-label">${(MERCH_ICON[m.type]||'📦')} ${esc(m.name)}</span><span class="recent-amt ${(+m.stock)<=3?'neg':''}">${m.stock} ${tt('dash.low_unit')}</span></div>`).join('')
+      : `<p class="muted">${tt('dash.low_none')}</p>`; }
+  const dtb=$('#duetasks-body');
+  if(dtb){ const up=(DB.tasks||[]).filter(t=>!t.done && t.due).sort((a,b)=>tskKey(a).localeCompare(tskKey(b))).slice(0,6); const today=isoD(new Date());
+    dtb.innerHTML = up.length ? up.map(t=>{ const over=t.due<today; return `<div class="wrow" data-goto="tasks">
+        <span class="wrow-date ${over?'neg':''}">${fmtDate(t.due)}${t.time?(' · '+esc(t.time)):''}</span>
+        <span class="wrow-main"><b>${esc(t.title||'')}</b></span></div>`; }).join('')
+      : `<p class="muted">${tt('dash.due_none')}</p>`; }
 }
 function syncColsSeg(){ const seg=$('#dash-cols-seg'); if(!seg) return; const c=dashLayout().cols;
   seg.querySelectorAll('.seg-btn').forEach(b=>b.classList.toggle('is-active', +b.dataset.cols===c)); }

@@ -1339,3 +1339,10 @@ body.gate-signup #gate-signin{opacity:.5}
 /* --- Annulla ultimo import (banner Movimenti) --- */
 .imp-undo{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:10px 14px;border-radius:10px;background:color-mix(in srgb,var(--accent) 10%,var(--panel));border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line))}
 .imp-undo-txt{font-size:.88rem}
+/* --- Nuovi widget dashboard --- */
+.wstat{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--line)}
+.wstat:last-child{border-bottom:none}
+.wstat>span{color:var(--muted);font-size:.88rem}
+.wstat b{font-variant-numeric:tabular-nums}
+.wstat--big b{font-family:'Syne',sans-serif;font-size:1.25rem}
+.top-bar.top-bar--neg i{background:var(--out)}

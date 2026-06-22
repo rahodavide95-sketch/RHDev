@@ -208,6 +208,24 @@
       return { token, link: window.LF_signLink(token) };
     }catch(e){ return { error:e.message||'db_error' }; }
   };
+  /* ---------- Portale artista (link sola lettura) ---------- */
+  window.LF_artistPortalLink = function(token){ try{ return new URL('artista.html?t='+encodeURIComponent(token), location.href).href; }catch(e){ return 'artista.html?t='+token; } };
+  window.LF_shareArtist = async function(labelId, name){
+    if(!client) return { error:'offline' };
+    if(!user) return { error:'unauthorized' };
+    const token = randToken();
+    try{
+      const { error } = await client.from('artist_shares').insert({ token, owner_id:user.id, label_id:labelId, artist_name:name });
+      if(error) return { error:error.message||'db_error' };
+      return { token, link: window.LF_artistPortalLink(token) };
+    }catch(e){ return { error:e.message||'db_error' }; }
+  };
+  window.LF_revokeArtistShare = async function(token){
+    if(!client||!user) return { error:'offline' };
+    try{ const { error } = await client.from('artist_shares').update({ revoked:true }).eq('token', token);
+      if(error) return { error:error.message||'db_error' }; return { ok:true };
+    }catch(e){ return { error:e.message||'db_error' }; }
+  };
   /* legge lo stato firma/rifiuto dei contratti dell'utente */
   window.LF_refreshContractStatuses = async function(){
     if(!client||!user) return null;

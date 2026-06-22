@@ -1731,6 +1731,31 @@ $('#roy-detail-pdf').onclick=()=>{
     html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff',windowWidth:840},
     jsPDF:{unit:'mm',format:'a4',orientation:'portrait'} }).from(host.firstElementChild).save().then(done,done);
 };
+/* ---------- Portale artista (link sola lettura, statement live) ---------- */
+let portalArtist=null;
+function labelShares(){ return DB.shares || (DB.shares={}); }
+function openPortalModal(name){ portalArtist=name; if($('#portal-artist')) $('#portal-artist').textContent=name; renderPortalBody(); const m=$('#portal-modal'); if(m) m.hidden=false; }
+function renderPortalBody(){ const lc=(portalArtist||'').trim().toLowerCase(); const tok=labelShares()[lc]; const has=!!tok;
+  if($('#portal-gen')) $('#portal-gen').hidden=has;
+  if($('#portal-has')) $('#portal-has').hidden=!has;
+  if(has && $('#portal-link') && window.LF_artistPortalLink) $('#portal-link').value=window.LF_artistPortalLink(tok); }
+$('#roy-detail-portal')?.addEventListener('click',()=>{ if(royDetail) openPortalModal(royDetail.name); });
+$('#portal-close')?.addEventListener('click',()=>{ $('#portal-modal').hidden=true; });
+$('#portal-done')?.addEventListener('click',()=>{ $('#portal-modal').hidden=true; });
+$('#portal-modal')?.addEventListener('click',e=>{ if(e.target.id==='portal-modal') $('#portal-modal').hidden=true; });
+$('#portal-gen')?.addEventListener('click',async()=>{
+  if(!window.LF_shareArtist){ toast(tt('portal.offline')); return; }
+  const btn=$('#portal-gen'); btn.disabled=true;
+  const r=await window.LF_shareArtist(activeLabel().id, portalArtist);
+  btn.disabled=false;
+  if(r&&r.token){ labelShares()[(portalArtist||'').trim().toLowerCase()]=r.token; save(); renderPortalBody(); toast(tt('portal.created')); }
+  else toast((r&&r.error)||tt('portal.fail')); });
+$('#portal-copy')?.addEventListener('click',()=>{ const i=$('#portal-link'); if(!i) return; i.select();
+  try{ navigator.clipboard.writeText(i.value); }catch(e){ try{ document.execCommand('copy'); }catch(_){} } toast(tt('portal.copied')); });
+$('#portal-revoke')?.addEventListener('click',async()=>{ const lc=(portalArtist||'').trim().toLowerCase(); const tok=labelShares()[lc]; if(!tok) return;
+  if(!confirm(tt('portal.revoke_confirm'))) return;
+  if(window.LF_revokeArtistShare) await window.LF_revokeArtistShare(tok);
+  delete labelShares()[lc]; save(); renderPortalBody(); toast(tt('portal.revoked')); });
 
 /* ---------- Modal movimento ---------- */
 function openTx(id){

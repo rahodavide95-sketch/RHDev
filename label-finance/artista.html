@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0a0b10">
+<title>Statement Royalty — Label Finance</title>
+<link rel="icon" href="icon.png?v=3">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0b10;--panel:#15161f;--line:#272a38;--text:#edeef4;--muted:#9aa0b4;--violet:#a78bfa;--violet2:#7c3aed;--green:#4ade80;--red:#fb7185;--lilac:#c4b5fd}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.55;min-height:100vh;padding:24px 16px}
+.wrap{max-width:840px;margin:0 auto}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 30px 80px -40px rgba(0,0,0,.8)}
+.lh{display:flex;align-items:center;gap:14px;padding:22px 26px;border-bottom:1px solid var(--line);background:linear-gradient(120deg,rgba(124,58,237,.18),transparent)}
+.lh img{height:46px;width:auto;border-radius:9px}
+.lh-name{font-family:'Syne',sans-serif;font-weight:700;font-size:1.4rem}
+.lh-sub{margin-left:auto;text-align:right;color:var(--muted);font-size:.82rem}
+.body{padding:22px 26px}
+.h1{font-family:'Syne',sans-serif;font-size:1.3rem;color:var(--lilac);margin-bottom:14px}
+.meta{display:flex;flex-wrap:wrap;gap:6px 26px;margin-bottom:16px;font-size:.92rem}
+.meta span{color:var(--muted)}
+.periods{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.periods button{font:inherit;font-weight:600;font-size:.85rem;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:9px;padding:7px 13px;cursor:pointer;transition:.15s}
+.periods button.on{background:var(--violet2);color:#fff;border-color:transparent}
+table{width:100%;border-collapse:collapse;font-size:.86rem}
+th{text-align:left;color:var(--muted);font-weight:600;font-size:.68rem;text-transform:uppercase;letter-spacing:.04em;padding:0 10px 9px;border-bottom:1px solid var(--line)}
+td{padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.05)}
+th.r,td.r{text-align:right;font-variant-numeric:tabular-nums}
+td.b{font-weight:700}
+tfoot td{border-top:2px solid var(--line);font-weight:700;font-size:.95rem;padding-top:11px}
+.mut{color:var(--muted);text-align:center;padding:22px}
+.sum{margin:14px 0 0 auto;width:max-content;font-size:.88rem;color:var(--muted)}
+.sum div{display:flex;justify-content:space-between;gap:30px;padding:4px 0}
+.sum b{color:var(--text)}
+.net{display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding:14px 18px;border-radius:11px;background:rgba(124,58,237,.14);border:1px solid rgba(167,139,250,.32)}
+.net span{font-weight:600;color:var(--muted)}.net b{font-family:'Syne',sans-serif;font-size:1.5rem;color:var(--green)}
+.foot{padding:16px 26px;border-top:1px solid var(--line);color:var(--muted);font-size:.78rem;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.foot a{color:var(--lilac);text-decoration:none}
+.btn-print{font:inherit;font-weight:600;font-size:.82rem;background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:6px 12px;cursor:pointer}
+.state{text-align:center;padding:60px 20px;color:var(--muted)}
+.hidden{display:none}
+.pos{color:var(--green)}.neg{color:var(--red)}
+@media print{ body{background:#fff;color:#000} .card{box-shadow:none;border:none} .periods,.btn-print{display:none} .lh{background:none} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="loading" class="state">Carico lo statement…</div>
+  <div id="error" class="state hidden">Link non valido o revocato.</div>
+  <div id="content" class="card hidden">
+    <div class="lh">
+      <img id="lh-logo" alt="" class="hidden">
+      <div class="lh-name" id="lh-name">Label</div>
+      <div class="lh-sub">Statement Royalty<br><span id="lh-date"></span></div>
+    </div>
+    <div class="body">
+      <div class="h1">Rendiconto royalty</div>
+      <div class="meta">
+        <div><span>Artista:</span> <b id="m-artist"></b></div>
+        <div><span>Periodo:</span> <b id="m-period"></b></div>
+      </div>
+      <div class="periods" id="periods">
+        <button data-n="0" class="on">Tutto</button>
+        <button data-n="12">Ultimi 12 mesi</button>
+        <button data-n="6">Ultimi 6 mesi</button>
+        <button data-n="3">Ultimi 3 mesi</button>
+        <button class="btn-print" onclick="window.print()" style="margin-left:auto">⤓ Stampa / PDF</button>
+      </div>
+      <table>
+        <thead><tr><th>Data</th><th>Prodotto / Release</th><th>Catalogo</th><th class="r">Lordo</th><th class="r">Quota</th><th class="r">Royalty</th></tr></thead>
+        <tbody id="rows"></tbody>
+        <tfoot><tr><td colspan="5">Totale royalty del periodo</td><td class="r" id="t-total">—</td></tr></tfoot>
+      </table>
+      <div class="sum hidden" id="recoup">
+        <div><span>Anticipi/costi recuperabili</span><b id="r-recoupable"></b></div>
+        <div><span>Recuperato finora</span><b id="r-recouped"></b></div>
+        <div><span>Residuo da recuperare</span><b id="r-residual"></b></div>
+      </div>
+      <div class="net"><span>Netto da liquidare</span><b id="t-net">—</b></div>
+    </div>
+    <div class="foot">
+      <span>Documento generato da <b>Label Finance</b> per <span id="f-label"></span></span>
+      <span>Solo lettura · i dati si aggiornano in tempo reale</span>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js?v=94"></script>
+<script>
+const $=id=>document.getElementById(id);
+const token=new URLSearchParams(location.search).get('t')||new URLSearchParams(location.search).get('token');
+const cfg=window.LF_CONFIG||{};
+const sb=(window.supabase&&cfg.supabaseUrl)?window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey):null;
+const EUR=n=>new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR'}).format(+n||0);
+const fmtD=d=>{ if(!d) return ''; try{ return new Date(d+'T00:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'short',year:'numeric'}); }catch(e){ return d; } };
+function show(id){ ['loading','error','content'].forEach(x=>$(x).classList.toggle('hidden',x!==id)); }
+function period(n){ if(!n) return {from:null,to:null,label:'Tutti i periodi'};
+  const now=new Date(); const to=now.toISOString().slice(0,10);
+  const f=new Date(now.getFullYear(),now.getMonth()-(n-1),1); const from=f.toISOString().slice(0,10);
+  return {from,to,label:'Ultimi '+n+' mesi'}; }
+let labelName='';
+async function load(n){
+  const p=period(n);
+  if(!token||!sb){ show('error'); return; }
+  show('loading');
+  try{
+    const { data, error } = await sb.functions.invoke('artist-statement',{ body:{ token, from:p.from, to:p.to } });
+    if(error||!data||data.error||!data.ok){ show('error'); return; }
+    render(data, p);
+  }catch(e){ show('error'); }
+}
+function render(d, p){
+  const L=d.label||{}; labelName=L.name||'Label';
+  $('lh-name').textContent=labelName; $('f-label').textContent=labelName;
+  if(L.logo){ $('lh-logo').src=L.logo; $('lh-logo').classList.remove('hidden'); } else $('lh-logo').classList.add('hidden');
+  $('lh-date').textContent=new Date().toLocaleDateString('it-IT');
+  const s=d.statement||{};
+  $('m-artist').textContent=s.artist||'';
+  $('m-period').textContent=p.label;
+  const rows=(s.lines||[]);
+  $('rows').innerHTML = rows.length ? rows.map(l=>`<tr>
+     <td>${fmtD(l.date)}</td><td>${esc(l.product)||'—'}</td><td>${esc(l.catalog)}</td>
+     <td class="r">${EUR(l.gross)}</td><td class="r">${l.pct}%</td><td class="r b pos">${EUR(l.share)}</td></tr>`).join('')
+     : `<tr><td colspan="6" class="mut">Nessuna royalty nel periodo selezionato.</td></tr>`;
+  $('t-total').textContent=EUR(s.total);
+  if(s.recoupable>0){ $('recoup').classList.remove('hidden');
+    $('r-recoupable').textContent=EUR(s.recoupable); $('r-recouped').textContent=EUR(s.recouped); $('r-residual').textContent=EUR(s.residual);
+  } else $('recoup').classList.add('hidden');
+  $('t-net').textContent=EUR(s.netPay);
+  show('content');
+}
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+$('periods').addEventListener('click',e=>{ const b=e.target.closest('button[data-n]'); if(!b) return;
+  document.querySelectorAll('#periods button[data-n]').forEach(x=>x.classList.toggle('on',x===b));
+  load(+b.dataset.n); });
+load(0);
+</script>
+</body>
+</html>

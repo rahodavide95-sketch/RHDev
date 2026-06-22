@@ -733,6 +733,7 @@
         <div class="panel-head"><h2 id="roy-detail-title">Dettaglio</h2>
           <span class="spacer" style="flex:1"></span>
           <button class="btn btn-pdf" id="roy-detail-pdf" title="Rendiconto PDF da inviare all'artista">⤓ Statement PDF</button>
+          <button class="btn" id="roy-detail-portal" data-i18n="portal.btn" title="Link portale artista (sola lettura)">🔗 Portale artista</button>
           <button class="btn" id="roy-detail-close">Chiudi</button></div>
         <div class="table-wrap"><table class="data-table data-table--cards" id="table-roy-detail"></table></div>
       </div>
@@ -1853,6 +1854,22 @@
   </div>
 
   <!-- ======= MODAL: release ======= -->
+  <div class="modal" id="portal-modal" hidden>
+    <div class="modal-card modal-card--sm">
+      <div class="modal-head"><h2 data-i18n="portal.title">Portale artista</h2><button class="modal-x" id="portal-close">✕</button></div>
+      <div style="padding:20px">
+        <p class="muted small" data-i18n="portal.intro">Link in sola lettura dove l'artista vede i propri statement royalty, sempre aggiornati.</p>
+        <p style="margin:8px 0 14px"><b id="portal-artist"></b></p>
+        <button class="btn btn-primary" id="portal-gen" data-i18n="portal.gen">🔗 Genera link</button>
+        <div id="portal-has" hidden>
+          <label class="muted small" data-i18n="portal.link">Link del portale</label>
+          <div class="row-inline" style="margin-top:6px"><input class="input" id="portal-link" readonly style="flex:1"><button class="btn" id="portal-copy" data-i18n="portal.copy">Copia</button></div>
+          <div class="modal-foot" style="margin-top:14px"><button class="btn btn-clear" id="portal-revoke" data-i18n="portal.revoke">Revoca link</button><span class="spacer"></span><button class="btn" id="portal-done" data-i18n="common.done">Fatto</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="modal" id="rel-modal" hidden>
     <div class="modal-card">
       <div class="modal-head"><h2 id="rel-modal-title" data-i18n="rel.modal.new">Nuova release</h2>

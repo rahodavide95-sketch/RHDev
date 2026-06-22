@@ -57,3 +57,22 @@ importando, le release + artisti.
 ## Promemoria altri setup già fatti
 - **Firma contratti:** esegui una volta `supabase/contracts.sql` nel SQL Editor.
 - **Assistente AI:** Edge Function `ai-advisor` con la chiave Anthropic come secret.
+
+---
+
+## Portale artista (statement royalty in sola lettura)
+
+Per attivare i link del portale artista:
+
+1. **SQL** — Dashboard Supabase → SQL Editor → incolla e lancia `supabase/artist-portal.sql`
+   (crea la tabella `artist_shares` con RLS).
+2. **Edge Function** — dal terminale, nella cartella del progetto:
+   ```
+   supabase functions deploy artist-statement --no-verify-jwt
+   ```
+   La funzione usa `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` (già presenti di default
+   nelle Edge Functions: non devi configurarli a mano).
+
+Fatto questo, nell'app: **Royalty → clic su un artista → 🔗 Portale artista → Genera link**.
+L'artista apre il link e vede **solo i propri** statement, sempre aggiornati. Puoi **revocare**
+il link in qualsiasi momento.

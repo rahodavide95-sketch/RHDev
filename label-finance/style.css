@@ -1335,3 +1335,7 @@ body.gate-signup #gate-signin{opacity:.5}
 .card-tip{position:absolute;top:calc(100% + 8px);left:0;z-index:40;width:240px;max-width:72vw;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:.78rem;font-weight:400;font-style:normal;text-transform:none;letter-spacing:normal;color:var(--text);line-height:1.45;box-shadow:0 14px 34px rgba(0,0,0,.32);opacity:0;visibility:hidden;transform:translateY(-4px);transition:.15s;text-align:left;pointer-events:none}
 .card-i.show .card-tip{opacity:1;visibility:visible;transform:none;pointer-events:auto}
 .card-i.show .ci-dot{border-color:var(--accent);color:var(--accent)}
+
+/* --- Annulla ultimo import (banner Movimenti) --- */
+.imp-undo{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:10px 14px;border-radius:10px;background:color-mix(in srgb,var(--accent) 10%,var(--panel));border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line))}
+.imp-undo-txt{font-size:.88rem}

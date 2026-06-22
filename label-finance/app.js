@@ -933,6 +933,7 @@ function txSortKey(c,t){
 }
 
 function renderTx(){
+  updateImpUndo();
   const platSel=$('#tx-filter-platform');
   const plats=[...new Set(DB.transactions.map(t=>t.platform).filter(Boolean))].sort();
   platSel.innerHTML=`<option value="">${tt('tx.all_platforms')}</option>`+plats.map(p=>`<option>${esc(p)}</option>`).join('');
@@ -2014,15 +2015,38 @@ $('#import-confirm').onclick=()=>{
   const map=currentMap();
   if(map.net==null && map.gross==null){ toast(tt('t.map_min')); return; }
   let recs=importRows.map(r=>rowToRec(r,map));
+  const total=recs.length;
+  // quante righe risultano già presenti tra i movimenti esistenti?
+  const existing=new Set(DB.transactions.map(txSig));
+  let dupExisting=0; recs.forEach(r=>{ if(existing.has(txSig(r))) dupExisting++; });
+  const dedup=$('#import-dedup').checked;
+  // avviso pre-import se gran parte del file sembra già importato
+  if(dupExisting>0 && dupExisting/total>=0.5){
+    const msg=(dedup?tt('imp.warn_skip'):tt('imp.warn_dup')).replace('{d}',dupExisting).replace('{t}',total);
+    if(!confirm(msg)) return;
+  }
   let skipped=0;
-  if($('#import-dedup').checked){
-    const seen=new Set(DB.transactions.map(txSig));
+  if(dedup){
+    const seen=new Set(existing);
     recs=recs.filter(r=>{ const s=txSig(r); if(seen.has(s)){ skipped++; return false; } seen.add(s); return true; });
   }
-  DB.transactions.push(...recs); save();
+  if(recs.length){
+    const batchId=newId(); recs.forEach(r=>{ r._imp=batchId; });
+    DB.transactions.push(...recs);
+    DB.lastImport={ id:batchId, count:recs.length, ts:Date.now() };
+  }
+  save();
   $('#import-config').hidden=true; $('#file-input').value='';
-  toast(`${recs.length} ${tt('t.imported')}${skipped?` · ${skipped} ${tt('t.dupes_skipped')}`:''}`); goto('transactions');
+  toast(`${recs.length} ${tt('t.imported')}${skipped?` · ${skipped} ${tt('t.dupes_skipped')}`:''}`); goto('transactions'); updateImpUndo();
 };
+function updateImpUndo(){ const b=$('#imp-undo'); if(!b) return; const li=DB&&DB.lastImport;
+  if(li && li.count){ const n=$('#imp-undo-n'); if(n) n.textContent=li.count; b.hidden=false; } else b.hidden=true; }
+function undoLastImport(){ const li=DB&&DB.lastImport; if(!li) return;
+  if(!confirm(tt('imp.undo_confirm').replace('{n}',li.count))) return;
+  DB.transactions=(DB.transactions||[]).filter(t=>t._imp!==li.id);
+  DB.lastImport=null; save(); renderTx(); updateImpUndo(); toast(tt('imp.undone')); }
+$('#imp-undo-btn')?.addEventListener('click', undoLastImport);
+$('#imp-undo-x')?.addEventListener('click', ()=>{ if(DB) DB.lastImport=null; save(); updateImpUndo(); });
 
 /* ---------- Preset di mappatura ---------- */
 function snapshotPreset(){

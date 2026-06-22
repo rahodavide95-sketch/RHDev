@@ -1323,11 +1323,10 @@ body.gate-signup #gate-signin{opacity:.5}
 .stmt-note{font-size:10.5px;color:#888;margin-top:14px}
 .stmt-foot{font-size:10px;color:#aaa;margin-top:6px;border-top:1px solid #eee;padding-top:8px}
 /* --- Info per singola card (tooltip) --- */
-.panel:has(.card-i){position:relative}
-.panel:has(.card-i)>.panel-head{padding-right:26px}
-.card-i{position:absolute;top:14px;right:14px;z-index:6;margin:0;padding:0;border:none;background:none;cursor:pointer;display:inline-flex;align-items:center}
+.card-i{position:relative;margin-left:5px;flex:none;align-self:center;display:inline-flex;align-items:center;border:none;background:none;cursor:pointer;padding:0}
+.panel-head:has(.card-filter):has(.card-i)>h2{flex:0 1 auto}
 .ci-dot{width:16px;height:16px;border-radius:50%;border:1px solid var(--line);color:var(--muted);font-size:.64rem;font-weight:700;font-style:italic;display:flex;align-items:center;justify-content:center;line-height:1;transition:.15s}
 .card-i:hover .ci-dot,.card-i:focus-visible .ci-dot{border-color:var(--accent);color:var(--accent)}
-.card-tip{position:absolute;top:calc(100% + 8px);right:0;z-index:40;width:240px;max-width:72vw;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:.78rem;font-weight:400;font-style:normal;text-transform:none;letter-spacing:normal;color:var(--text);line-height:1.45;box-shadow:0 14px 34px rgba(0,0,0,.32);opacity:0;visibility:hidden;transform:translateY(-4px);transition:.15s;text-align:left;pointer-events:none}
+.card-tip{position:absolute;top:calc(100% + 8px);left:0;z-index:40;width:240px;max-width:72vw;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:.78rem;font-weight:400;font-style:normal;text-transform:none;letter-spacing:normal;color:var(--text);line-height:1.45;box-shadow:0 14px 34px rgba(0,0,0,.32);opacity:0;visibility:hidden;transform:translateY(-4px);transition:.15s;text-align:left;pointer-events:none}
 .card-i.show .card-tip{opacity:1;visibility:visible;transform:none;pointer-events:auto}
 .card-i.show .ci-dot{border-color:var(--accent);color:var(--accent)}

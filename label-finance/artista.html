@@ -97,7 +97,7 @@ const token=new URLSearchParams(location.search).get('t')||new URLSearchParams(l
 const cfg=window.LF_CONFIG||{};
 const sb=(window.supabase&&cfg.supabaseUrl)?window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey):null;
 const EUR=n=>new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR'}).format(+n||0);
-const fmtD=d=>{ if(!d) return ''; try{ return new Date(d+'T00:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'short',year:'numeric'}); }catch(e){ return d; } };
+const fmtD=d=>{ if(!d) return ''; const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(d); if(m) return m[3]+'/'+m[2]+'/'+m[1]; try{ const x=new Date(d); return String(x.getDate()).padStart(2,'0')+'/'+String(x.getMonth()+1).padStart(2,'0')+'/'+x.getFullYear(); }catch(e){ return d; } };
 function show(id){ ['loading','error','content'].forEach(x=>$(x).classList.toggle('hidden',x!==id)); }
 function period(n){ if(!n) return {from:null,to:null,label:'Tutti i periodi'};
   const now=new Date(); const to=now.toISOString().slice(0,10);

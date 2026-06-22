@@ -897,8 +897,8 @@ $('#btn-onb-income')?.addEventListener('click', ()=>{ curKind='income'; openTx(n
    ============================================================================ */
 const moneyCell=(v,t)=> v?fmtMoney(v,t.currency||'EUR'):'';
 const TX_COLS = {
-  date:    {label:'Data vendita',cell:t=>esc(t.date)},
-  dateTo:  {label:'Data vendita (a)', cell:t=>esc(t.dateTo)},
+  date:    {label:'Data vendita',cell:t=>fmtDate(t.date)},
+  dateTo:  {label:'Data vendita (a)', cell:t=>fmtDate(t.dateTo)},
   kind:    {label:'',            cell:t=>`<span class="pill ${t.kind==='income'?'pill--in':'pill--out'}">${t.kind==='income'?'IN':'OUT'}</span>`},
   platform:{label:'Piattaforma', cell:t=>esc(t.platform)},
   type:    {label:'Tipologia',   cell:t=>esc(t.type)},
@@ -1704,7 +1704,7 @@ function renderRecoup(){
   const el=$('#recoup-entries');
   if(el){ const list=(DB.recoup||[]).slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
     el.innerHTML = list.length
-      ? `<ul class="recoup-list">`+list.map(r=>`<li><span class="rc-kind rc-${r.kind}">${r.kind==='advance'?tt('recoup.advance'):tt('recoup.cost')}</span><b class="rc-art">${esc(r.artist)}</b><span class="muted small">${esc(r.date||'')}</span><span class="rc-amt">${fmtMoney(r.amount)}</span><span class="muted small rc-note">${esc(r.note||'')}</span><button class="rc-del" data-id="${esc(r.id)}" title="Elimina" aria-label="Elimina">✕</button></li>`).join('')+`</ul>`
+      ? `<ul class="recoup-list">`+list.map(r=>`<li><span class="rc-kind rc-${r.kind}">${r.kind==='advance'?tt('recoup.advance'):tt('recoup.cost')}</span><b class="rc-art">${esc(r.artist)}</b><span class="muted small">${fmtDate(r.date||'')}</span><span class="rc-amt">${fmtMoney(r.amount)}</span><span class="muted small rc-note">${esc(r.note||'')}</span><button class="rc-del" data-id="${esc(r.id)}" title="Elimina" aria-label="Elimina">✕</button></li>`).join('')+`</ul>`
       : '';
   }
 }
@@ -2003,7 +2003,7 @@ function renderPreview(){
   $('#preview-table').innerHTML=`<thead><tr>
     <th>Data</th><th>Piattaforma</th><th>Catalogo</th><th>Prodotto</th><th>Artista</th><th class="num">Q.tà</th><th class="num">Netto</th><th>Val.</th></tr></thead>
    <tbody>${recs.map(t=>`<tr>
-     <td>${esc(t.date)||'<span class=muted>?</span>'}</td><td>${esc(t.platform)}</td><td>${esc(t.catalog)}</td>
+     <td>${t.date?fmtDate(t.date):'<span class=muted>?</span>'}</td><td>${esc(t.platform)}</td><td>${esc(t.catalog)}</td>
      <td>${esc(t.product)}</td><td>${esc(t.artist)}</td><td class="num">${t.qty}</td>
      <td class="num">${fmtMoney(t.net,t.currency)}</td><td>${esc(t.currency)}</td></tr>`).join('')}</tbody>`;
 }
@@ -2531,7 +2531,7 @@ function renderExtraWidgets(txs){
     rb.innerHTML = recent.length ? recent.map(t=>{
       const v=toEur(t.net,t.currency); const inc=t.kind==='income';
       const label=t.artist||t.product||t.platform||t.catalog||'—';
-      return `<div class="recent-row"><span class="recent-date">${esc(t.date||'')}</span>
+      return `<div class="recent-row"><span class="recent-date">${fmtDate(t.date||'')}</span>
         <span class="recent-label">${esc(label)}</span>
         <span class="recent-amt ${inc?'pos':'neg'}">${inc?'+':'−'}${fmtMoney(Math.abs(v))}</span></div>`;
     }).join('') : `<p class="muted">${tt('empty.noperiod')}</p>`;
@@ -2796,7 +2796,7 @@ function contractLetterhead(c){
 function cdSigCell(sig, role){
   if(sig) return `<div class="cd-sgn"><span class="cd-sgn-role">${role}</span>
     <img class="cd-sig-img" src="${sig.dataUrl}" alt="signature">
-    <div class="cd-sig-meta"><b>${esc(sig.name||'')}</b><br>${esc(sig.date||'')}${sig.time?(' '+esc(sig.time)):''}${sig.place?(' · '+esc(sig.place)):''}</div></div>`;
+    <div class="cd-sig-meta"><b>${esc(sig.name||'')}</b><br>${fmtDate(sig.date||'')}${sig.time?(' '+esc(sig.time)):''}${sig.place?(' · '+esc(sig.place)):''}</div></div>`;
   return `<div class="cd-sgn"><span class="cd-sgn-role">${role}</span><div class="cd-sgn-blank"><span>Date / Signature</span><hr></div></div>`;
 }
 function buildContractDoc(c){
@@ -3011,7 +3011,7 @@ function renderContracts(){
     const who=esc(c.projectName||c.fullName||c.artistNames||'—');
     const reason = c.status==='rejected'&&c.rejectReason ? `<div class="con-reason">“${esc(c.rejectReason)}”</div>` : '';
     const tags = `<div class="con-tags">${conTags(c).map(x=>`<span class="ctag ctag-${x.k}">${esc(x.l)}</span>`).join('')}</div>`;
-    return `<tr><td><b>${esc(c.titles||'—')}</b></td><td class="muted small">${who}</td><td>${c.artistPct}/${100-c.artistPct}</td><td>${esc(c.date)}</td><td>${tags}${reason}</td>
+    return `<tr><td><b>${esc(c.titles||'—')}</b></td><td class="muted small">${who}</td><td>${c.artistPct}/${100-c.artistPct}</td><td>${fmtDate(c.date)}</td><td>${tags}${reason}</td>
       <td class="con-row-act"><button class="icon-btn-sm" data-con-open="${c.id}" title="${tt('con.open')}">↗</button>
         <button class="icon-btn-sm" data-con-del="${c.id}" title="${tt('common.delete')}">🗑</button></td></tr>`;
   }).join('');
@@ -3073,7 +3073,7 @@ function renderTasks(){
   const row=t=>{
     const overdue=t.due && !t.done && tskKey(t) < (today+'T'+new Date().toTimeString().slice(0,5));
     const soon=t.due && !t.done && t.due===today;
-    const when = t.due?`<span class="tsk-due ${overdue?'over':''} ${soon?'today':''}">${overdue?'⚠ ':''}${esc(t.due)}${t.time?(' · '+esc(t.time)):''}</span>`:'';
+    const when = t.due?`<span class="tsk-due ${overdue?'over':''} ${soon?'today':''}">${overdue?'⚠ ':''}${fmtDate(t.due)}${t.time?(' · '+esc(t.time)):''}</span>`:'';
     const bell = (t.remind&&t.due&&!t.done)?`<span class="tsk-bell" title="${tt('tsk.remind')}">🔔</span>`:'';
     const alert = !t.done && (overdue || t.notifiedDue);
     return `<div class="tsk-row ${t.done?'is-done':''} ${alert?'tsk-alert':''}" data-id="${t.id}">
@@ -3127,7 +3127,7 @@ function taskDateTime(t){ if(!t.due) return null; const d=new Date(t.due+'T'+((t
 function fireTaskAlert(t, kind){
   const icon={payment:'💸',contract:'📄',other:'•'}[t.type]||'•';
   const title = kind==='pre' ? tt('tsk.notif_pre') : tt('tsk.notif_due');
-  const body = `${icon} ${t.title}`+(t.due?` — ${t.due}${t.time?(' '+t.time):''}`:'');
+  const body = `${icon} ${t.title}`+(t.due?` — ${fmtDate(t.due)}${t.time?(' '+t.time):''}`:'');
   playChime();
   let shown=false;
   if('Notification' in window && Notification.permission==='granted'){
@@ -3296,7 +3296,7 @@ function colSort(sec, arr, st){ if(!st||!st.col) return arr.slice(); const def=(
   return arr.slice().sort((a,b)=>{ const va=val(a),vb=val(b); if(typeof va==='number'&&typeof vb==='number') return (va-vb)*d; return String(va).localeCompare(String(vb))*d; }); }
 const rowActs=(pfx,id)=>`<button class="icon-btn-sm" data-${pfx}-edit="${id}" title="${tt('common.edit')}">✎</button><button class="icon-btn-sm" data-${pfx}-del="${id}" title="${tt('common.delete')}">🗑</button>`;
 const ctag=(label,k)=>`<span class="ctag ctag-${k}">${esc(label)}</span>`;
-const fmtDate=ds=>{ if(!ds) return ''; try{ return new Date(ds+'T00:00:00').toLocaleDateString(calLang(),{day:'2-digit',month:'short',year:'numeric'}); }catch(e){ return ds; } };
+const fmtDate=ds=>{ if(!ds) return ''; const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(ds); if(m) return m[3]+'/'+m[2]+'/'+m[1]; try{ const d=new Date(ds); return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear(); }catch(e){ return ds; } };
 
 const COLDEFS = {
   releases:[
@@ -3655,12 +3655,12 @@ function notifText(n){
   if(n.type==='enrich') return {
     title: T('notif.enrich_t','Dati aggiuntivi trovati'),
     body: T('notif.enrich_b','In Movimenti ci sono {n} dati utili (UPC, ISRC, catalogo, artista…) per release già presenti. Apri per arricchire la Discografia.').replace('{n}', n.count||0) };
-  if(n.type==='task'){ const when=(n.due||'')+(n.time?(' '+n.time):'');
+  if(n.type==='task'){ const when=(n.due?fmtDate(n.due):'')+(n.time?(' '+n.time):'');
     return { title: n.title||T('notif.task_t','Promemoria'),
       body: (n.overdue?T('notif.task_over','Promemoria scaduto'):T('notif.task_due','Promemoria'))+(when?' · '+when:'') }; }
   return { title:n.title||'', body:n.body||'' };
 }
-function notifTime(ts){ try{ return new Date(ts).toLocaleString(calLang(),{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); }catch(e){ return ''; } }
+function notifTime(ts){ try{ const d=new Date(ts), p=n=>String(n).padStart(2,'0'); return p(d.getDate())+'/'+p(d.getMonth()+1)+'/'+d.getFullYear()+' · '+p(d.getHours())+':'+p(d.getMinutes()); }catch(e){ return ''; } }
 function renderNotifs(){
   const badge=$('#notif-badge'); const unread=NOTIFS.list.filter(n=>!n.read).length;
   if(badge){ badge.textContent=unread>9?'9+':String(unread); badge.hidden=unread===0; }

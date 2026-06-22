@@ -122,6 +122,7 @@
     const token=new URLSearchParams(location.search).get('t');
     const cfg=window.LF_CONFIG||{};
     const sb=(window.supabase&&cfg.supabaseUrl)?window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey):null;
+    const fmtD=d=>{ if(!d) return ''; const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(d); if(m) return m[3]+'/'+m[2]+'/'+m[1]; return d; };
     let contract=null, current=null;
 
     function numWord(n){const w={0:'zero',10:'ten',20:'twenty',25:'twenty-five',30:'thirty',33:'thirty-three',40:'forty',50:'fifty',60:'sixty',66:'sixty-six',67:'sixty-seven',70:'seventy',75:'seventy-five',80:'eighty',90:'ninety',100:'one hundred'};return w[n]||String(n);}
@@ -131,7 +132,7 @@
       return `<div class="cd-letterhead">${lf}${lbl}</div>`;
     }
     function sigCell(sig, role){
-      if(sig) return `<div class="sgn"><span class="sgn-role">${role}</span><img class="signed-img" src="${sig.dataUrl}" alt=""><div class="signed-meta"><b>${esc(sig.name||'')}</b><br>${esc(sig.date||'')}${sig.time?(' '+esc(sig.time)):''}${sig.place?(' · '+esc(sig.place)):''}</div></div>`;
+      if(sig) return `<div class="sgn"><span class="sgn-role">${role}</span><img class="signed-img" src="${sig.dataUrl}" alt=""><div class="signed-meta"><b>${esc(sig.name||'')}</b><br>${fmtD(sig.date)}${sig.time?(' '+esc(sig.time)):''}${sig.place?(' · '+esc(sig.place)):''}</div></div>`;
       return `<div class="sgn"><span class="sgn-role">${role}</span><div class="sgn-blank"><span>Date / Signature</span><hr></div></div>`;
     }
     function signBlock(c){

@@ -1830,6 +1830,22 @@ const DISTRO_PRESETS={
     date:['sale date','date','period'], platform:['store','dsp','retailer'],
     product:['title','track'], artist:['artist'], isrc:['isrc'], upc:['upc'],
     qty:['quantity','units'], net:['net','earnings','revenue'], currency:['currency'] } },
+  tunecore:{ name:'TuneCore', platform:'TuneCore', datefmt:'ymd', fields:{
+    date:['sales period','reporting','date','period'], platform:['store','retailer','dsp'],
+    product:['song title','album title','title','song'], artist:['artist'], isrc:['isrc'], upc:['upc'],
+    qty:['units sold','units','quantity','plays','streams'], net:['your earnings','earnings','net'], currency:['currency'] } },
+  ditto:{ name:'Ditto Music', platform:'Ditto', datefmt:'ymd', fields:{
+    date:['period','date','sale month'], platform:['store','shop','dsp'],
+    product:['track','release','title'], artist:['artist'], isrc:['isrc'], upc:['upc','barcode'],
+    qty:['quantity','units','streams'], net:['revenue','royalties','earnings','net'], currency:['currency'] } },
+  cdbaby:{ name:'CD Baby', platform:'CD Baby', datefmt:'ymd', fields:{
+    date:['report date','sale date','date','period'], platform:['partner','store','dsp'],
+    product:['track','album','title'], artist:['artist'], isrc:['isrc'], upc:['upc'],
+    qty:['quantity','units','plays'], net:['payable','earnings','net','your share'], currency:['currency'] } },
+  labelengine:{ name:'Label Engine', platform:'Label Engine', datefmt:'ymd', fields:{
+    date:['sales period','date','period','month'], platform:['store','retailer','dsp','shop'],
+    product:['track title','release title','title','track'], artist:['artist'], isrc:['isrc'], upc:['upc','catalog'],
+    qty:['quantity','units','qty'], net:['net','royalty','earnings','revenue'], currency:['currency'] } },
 };
 function detectDistro(){
   let best=null, bestScore=2;

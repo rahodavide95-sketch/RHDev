@@ -1926,6 +1926,14 @@
           <label class="ac-field"><span data-i18n="r.artist">Artista</span>
             <input type="text" id="r-artist" class="input" autocomplete="off" data-i18n-ph="r.artist_ph" placeholder="Cerca tra i tuoi artisti…">
             <div class="ac-list" id="r-artist-ac" hidden></div></label>
+          <label><span data-i18n="r.type">Release Type</span>
+            <select id="r-type" class="select">
+              <option value="SINGLE">SINGLE</option>
+              <option value="EP">EP</option>
+              <option value="ALBUM">ALBUM</option>
+              <option value="VA">VA</option>
+              <option value="VA - Single">VA - Single</option>
+            </select></label>
           <label><span data-i18n="r.order">Data di release *</span> <input type="date" id="r-order" class="input"></label>
           <label><span data-i18n="r.preorder">Preordine</span> <input type="date" id="r-preorder" class="input"></label>
           <label><span data-i18n="r.upc">Codice UPC</span> <input type="text" id="r-upc" class="input" placeholder="0123456789012"></label>
@@ -1941,6 +1949,7 @@
             <label><span data-i18n="r.produced">Prodotto da</span> <input type="text" id="r-produced" class="input"></label>
             <label><span data-i18n="r.mixed">Mixed by</span> <input type="text" id="r-mixed" class="input"></label>
             <label><span data-i18n="r.mastered">Mastered by</span> <input type="text" id="r-mastered" class="input"></label>
+            <label><span data-i18n="r.distributed">Distributed by</span> <input type="text" id="r-distributed" class="input"></label>
             <label><span data-i18n="r.artwork">Artwork by</span> <input type="text" id="r-artwork" class="input"></label>
             <label><span data-i18n="r.publisher">Publisher</span> <input type="text" id="r-publisher" class="input"></label>
           </div>

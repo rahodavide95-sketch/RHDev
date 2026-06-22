@@ -827,7 +827,8 @@ function loadDemo(){
   ];
   R.forEach(r=>releases().push({ id:uid(), catalog:r.cat, title:r.title, artist:r.artist, upc:r.upc,
     orderDate:r.rel, year:yOf(r.rel), preorder:r.preorder||'', exclusive:!!r.exclusive, exclusivePlatform:r.exclusivePlatform||'',
-    note:'', splits:r.splits, tracks:(r.tracks||[]).map(t=>({id:uid(), title:t.title, isrc:t.isrc, splits:[]})), demo:true }));
+    note:'', type:(r.tracks&&r.tracks.length>1)?'EP':'SINGLE', masteredBy:'Glowcast Audio', distributedBy:'Believe',
+    splits:r.splits, tracks:(r.tracks||[]).map(t=>({id:uid(), title:t.title, isrc:t.isrc, splits:[]})), demo:true }));
   // ---- Vendite (income) su più piattaforme e mesi ----
   const plats=['Spotify','Apple Music','Bandcamp','Amazon Music','YouTube Music','Deezer'];
   const tx=[]; const rnd=(a,b)=>a+Math.random()*(b-a);
@@ -1077,6 +1078,18 @@ function sortReleases(arr){
     return String(a[k]||'').toLowerCase().localeCompare(String(b[k]||'').toLowerCase())*d;
   });
 }
+function expandReleases(list){
+  const out=[];
+  list.forEach(r=>{ out.push(r);
+    const t=(r.type||'').toUpperCase();
+    if((t==='EP'||t==='VA') && Array.isArray(r.tracks)){
+      r.tracks.forEach(tr=>out.push({ _track:true, id:r.id, catalog:'', title:tr.title||'',
+        artist:(tr.artist||(tr.splits&&tr.splits[0]&&tr.splits[0].name)||r.artist||''),
+        type:(t==='VA'?'VA - Track':'EP - Track'), isrc:tr.isrc||'', masteredBy:'', distributedBy:'',
+        orderDate:'', preorder:'', year:'', upc:'', splits:(tr.splits&&tr.splits.length?tr.splits:r.splits), exclusive:false, note:'' }));
+    } });
+  return out;
+}
 function renderReleases(){
   const rq=($('#rel-search')&&$('#rel-search').value||'').toLowerCase().trim();
   let base=releases().slice();
@@ -1090,7 +1103,7 @@ function renderReleases(){
     cont.className='dbl';
     const cols=colsFor('releases');
     const sel=selOpt('releases');
-    cont.innerHTML = dbHead(cols,relSort,{sel})+dbRows(list,cols,{rowCls:'dbl-click',sel});
+    cont.innerHTML = dbHead(cols,relSort,{sel})+dbRows(expandReleases(list),cols,{rowCls:it=>'dbl-click'+(it._track?' rel-track-row':''),sel});
     cont.querySelectorAll('.dbl-row[data-id]').forEach(c=>c.onclick=e=>{ if(e.target.closest('[data-sort]')||e.target.closest('.dbl-sel')) return; openRelease(c.dataset.id); });
     cont.querySelectorAll('[data-sort]').forEach(h=>h.onclick=e=>{ e.stopPropagation(); const k=h.dataset.sort;
       if(relSort.col===k) relSort.dir*=-1; else relSort={col:k,dir:1}; renderReleases(); });
@@ -1174,6 +1187,7 @@ function openRelease(id){
   $('#r-excl-wrap').hidden = !r?.exclusive;
   $('#r-written').value=r?.writtenBy||''; $('#r-produced').value=r?.producedBy||''; $('#r-mixed').value=r?.mixedBy||'';
   $('#r-mastered').value=r?.masteredBy||''; $('#r-artwork').value=r?.artworkBy||''; $('#r-publisher').value=r?.publisher||'';
+  $('#r-type').value=r?.type||'SINGLE'; $('#r-distributed').value=r?.distributedBy||'';
   if($('#r-artist-ac')) $('#r-artist-ac').hidden=true;
   const splits = (r?.splits&&r.splits.length) ? r.splits : [{name:'',pct:''}];
   $('#r-splits').innerHTML = splits.map(s=>splitRowHTML(s.name,s.pct)).join('');
@@ -1215,7 +1229,8 @@ $('#rel-form').onsubmit=e=>{
     preorder:$('#r-preorder').value||'', orderDate, year: orderDate? new Date(orderDate+'T00:00:00').getFullYear() : '',
     note:$('#r-note').value.trim(), exclusive:$('#r-exclusive').value==='yes', exclusivePlatform:$('#r-excl-plat').value.trim(),
     writtenBy:$('#r-written').value.trim(), producedBy:$('#r-produced').value.trim(), mixedBy:$('#r-mixed').value.trim(),
-    masteredBy:$('#r-mastered').value.trim(), artworkBy:$('#r-artwork').value.trim(), publisher:$('#r-publisher').value.trim() };
+    masteredBy:$('#r-mastered').value.trim(), artworkBy:$('#r-artwork').value.trim(), publisher:$('#r-publisher').value.trim(),
+    type:$('#r-type').value||'SINGLE', distributedBy:$('#r-distributed').value.trim() };
   if(!rec.catalog){ toast(tt('t.cat_required')); return; }
   if(!rec.orderDate){ toast(tt('r.order_required')); return; }
   if(id){ const i=releases().findIndex(r=>r.id===id); DB.releases[i]=rec; }
@@ -3355,7 +3370,7 @@ function dbHead(cols, st, opt){ opt=opt||{}; const sw=opt.sel?34:0; const t=dblT
     +cols.map(c=>`<span class="dbl-sort" data-sort="${c.key}">${esc(colLab(c))}${arrow(c.key)}</span>`).join('')
     +(opt.actions?'<span></span>':'')+`</div>`; }
 function dbRows(items, cols, opt){ opt=opt||{}; const sw=opt.sel?34:0; const t=dblTmpl(cols,opt.leadW,opt.actions?(opt.actW||66):0,sw);
-  return items.map(it=>`<div class="dbl-row ${opt.rowCls||''}" data-id="${it.id}" style="grid-template-columns:${t}">`
+  return items.map(it=>`<div class="dbl-row ${typeof opt.rowCls==='function'?opt.rowCls(it):(opt.rowCls||'')}" data-id="${it.id}" style="grid-template-columns:${t}">`
     +(opt.sel?`<span class="dbl-sel"><input type="checkbox" data-sel="${opt.sel.sec}|${it.id}" ${opt.sel.set&&opt.sel.set.has(it.id)?'checked':''}></span>`:'')
     +(opt.lead?`<span class="dbl-lead">${opt.lead(it)}</span>`:'')
     +cols.map(c=>`<span class="${c.cls||''}">${c.cell(it)||'—'}</span>`).join('')
@@ -3380,7 +3395,8 @@ const fmtDate=ds=>{ if(!ds) return ''; const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(d
 
 const COLDEFS = {
   releases:[
-    {key:'catalog',label:()=>tt('col.catalog'),w:116,cell:r=>esc(r.catalog),cls:'release-cat'},
+    {key:'catalog',label:()=>tt('col.catalog'),w:116,cell:r=>r._track?'<span class="rel-track-mark">↳</span>':esc(r.catalog),cls:'release-cat'},
+    {key:'type',label:()=>tt('r.type'),w:118,cell:r=>r.type?ctag(esc(r.type),/track/i.test(r.type)?'mut':'info'):'',sortVal:r=>r.type||''},
     {key:'title',label:()=>tt('rel.c_title'),grow:1.5,cell:r=>esc(r.title)||'—',cls:'dbl-strong'},
     {key:'artist',label:()=>tt('r.artist'),grow:1.2,cell:r=>artNameLink(r.artist),cls:'muted small'},
     {key:'order',label:()=>tt('r.order').replace(' *',''),w:122,cell:r=>fmtDate(r.orderDate),sortVal:r=>r.orderDate||''},
@@ -3389,7 +3405,9 @@ const COLDEFS = {
     {key:'year',label:()=>tt('rel.c_year'),w:64,cell:r=>r.year||'',cls:'muted small',num:true},
     {key:'split',label:()=>tt('rel.c_split'),grow:1.7,cell:r=>relSplitText(r),cls:'muted small',sortVal:r=>(r.splits&&r.splits[0]&&r.splits[0].name||'').toLowerCase()},
     {key:'exclusive',label:()=>tt('r.exclusive'),w:120,cell:r=>r.exclusive?ctag(esc(r.exclusivePlatform||tt('common.yes')),'info'):'',sortVal:r=>r.exclusive?0:1},
-    {key:'isrc',label:()=>'ISRC',w:78,cell:r=>(r.tracks&&r.tracks.length)?`<span class="release-ltag">${r.tracks.length}</span>`:'',sortVal:r=>(r.tracks||[]).length},
+    {key:'isrc',label:()=>'ISRC',w:120,cell:r=>r._track?esc(r.isrc):((r.tracks&&r.tracks.length)?`<span class="release-ltag">${r.tracks.length}</span>`:''),sortVal:r=>r._track?(r.isrc||''):(r.tracks||[]).length},
+    {key:'mastered',label:()=>tt('r.mastered'),grow:1,cell:r=>esc(r.masteredBy),cls:'muted small'},
+    {key:'distributed',label:()=>tt('r.distributed'),grow:1,cell:r=>esc(r.distributedBy),cls:'muted small'},
     {key:'note',label:()=>tt('r.note'),grow:1.4,cell:r=>esc(r.note),cls:'muted small'},
   ],
   planning:[

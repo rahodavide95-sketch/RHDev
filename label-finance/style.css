@@ -1346,3 +1346,7 @@ body.gate-signup #gate-signin{opacity:.5}
 .wstat b{font-variant-numeric:tabular-nums}
 .wstat--big b{font-family:'Syne',sans-serif;font-size:1.25rem}
 .top-bar.top-bar--neg i{background:var(--out)}
+/* --- Righe-traccia nella Discografia (EP/VA) --- */
+.rel-track-row{background:color-mix(in srgb,var(--accent) 4%,transparent)}
+.rel-track-row .dbl-strong{font-weight:500;opacity:.9}
+.rel-track-mark{display:inline-block;padding-left:10px;color:var(--muted);opacity:.7}

@@ -494,6 +494,8 @@ body.dash-edit .dw-width{display:inline-flex;gap:2px;position:absolute;top:8px;l
 .tsk-title{flex:1;min-width:0}
 .tsk-due{font-size:.8rem;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 .tsk-due.over{color:var(--out);font-weight:700}
+.tsk-row.tsk-alert{border-color:color-mix(in srgb,var(--out) 55%,var(--line));background:color-mix(in srgb,var(--out) 9%,var(--panel));box-shadow:inset 3px 0 0 var(--out)}
+.tsk-row.tsk-alert .tsk-title{color:var(--out);font-weight:600}
 .tsk-due.today{color:var(--accent);font-weight:700}
 .tsk-bell{flex:none;font-size:.9rem}
 .tsk-notif-hint{margin-top:10px}

@@ -3075,7 +3075,8 @@ function renderTasks(){
     const soon=t.due && !t.done && t.due===today;
     const when = t.due?`<span class="tsk-due ${overdue?'over':''} ${soon?'today':''}">${overdue?'⚠ ':''}${esc(t.due)}${t.time?(' · '+esc(t.time)):''}</span>`:'';
     const bell = (t.remind&&t.due&&!t.done)?`<span class="tsk-bell" title="${tt('tsk.remind')}">🔔</span>`:'';
-    return `<div class="tsk-row ${t.done?'is-done':''}" data-id="${t.id}">
+    const alert = !t.done && (overdue || t.notifiedDue);
+    return `<div class="tsk-row ${t.done?'is-done':''} ${alert?'tsk-alert':''}" data-id="${t.id}">
       <button class="tsk-check" data-tsk-toggle="${t.id}" aria-label="done">${t.done?'✓':''}</button>
       <span class="tsk-ico">${icon[t.type]||'•'}</span>
       <span class="tsk-title">${esc(t.title)}</span>

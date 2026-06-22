@@ -3719,9 +3719,10 @@ function wireNavGroups(){
 function expandActiveGroup(){ const act=document.querySelector('.nav-item.is-active'); const g=act&&act.closest('.nav-group'); if(g) g.classList.remove('collapsed'); }
 function wireNotifs(){
   $('#notif-btn')?.addEventListener('click',e=>{ e.stopPropagation(); const p=$('#notif-panel'); if(p) p.hidden=!p.hidden; });
-  $('#notif-readall')?.addEventListener('click',notifReadAll);
-  $('#notif-clear')?.addEventListener('click',notifClear);
+  $('#notif-readall')?.addEventListener('click',e=>{ e.stopPropagation(); notifReadAll(); });
+  $('#notif-clear')?.addEventListener('click',e=>{ e.stopPropagation(); notifClear(); });
   $('#notif-list')?.addEventListener('click',e=>{
+    e.stopPropagation();   // le operazioni interne (elimina/segna/svuota) non devono chiudere il pannello
     const ac=e.target.closest('[data-naction]'); if(ac){ const it=NOTIFS.list.find(x=>x.id===ac.dataset.naction);
       if(it&&it.type==='enrich'){ $('#notif-panel')&&($('#notif-panel').hidden=true); openEnrichModal(); } return; }
     const tg=e.target.closest('[data-ntoggle]'); if(tg){ notifToggle(tg.dataset.ntoggle); return; }

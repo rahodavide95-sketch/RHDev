@@ -792,18 +792,80 @@ $('#btn-print').onclick=()=>{ document.body.classList.add('printing'); window.pr
 /* onboarding: dati dimostrativi */
 function loadDemo(){
   if(DB.transactions.length && !confirm('Caricare i dati dimostrativi in questa etichetta?')) return;
-  releases().push({ id:uid(), catalog:'SC-DEMO', title:'Demo EP', year:new Date().getFullYear(),
-    splits:[{name:'Raho',pct:50},{name:'Jacom',pct:30}], tracks:[], demo:true });
-  const plats=['Bandcamp','Beatport','Spotify'], arts=['Raho','Jacom'], now=new Date(), tx=[];
-  for(let m=5;m>=0;m--) for(let i=0;i<3;i++){
-    const d=new Date(now.getFullYear(),now.getMonth()-m,3+i*7);
-    tx.push({ id:uid(), kind:'income', date:d.toISOString().slice(0,10), platform:plats[(m+i)%3],
-      type:'digital', catalog:'SC-DEMO', product:'Demo EP', artist:arts[i%2], isrc:'', upc:'',
-      qty:1+(i%3), gross:0, fees:0, net:+(5+Math.random()*20).toFixed(2), csShare:0, currency:'EUR', note:'demo', demo:true });
+  const now=new Date();
+  const D=(mAgo,day)=>new Date(now.getFullYear(),now.getMonth()-mAgo,day).toISOString().slice(0,10);
+  const Dp=n=>{ const d=new Date(now); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
+  const yOf=ds=>{ try{ return new Date(ds+'T00:00:00').getFullYear(); }catch(e){ return now.getFullYear(); } };
+  DB.artists=DB.artists||[]; DB.merch=DB.merch||[]; DB.planning=DB.planning||[];
+  DB.events=DB.events||[]; DB.supports=DB.supports||[]; DB.recoup=DB.recoup||[]; DB.tasks=DB.tasks||[];
+  // ---- Artisti ----
+  const A=[
+    {name:'Nova Iris', legal:'Irene Conti',   email:'nova.iris@example.com', phone:'+39 333 1122334', iban:'IT60X0542811101000000123456', split:50},
+    {name:'Marlo',     legal:'Marco Lo Bianco',email:'marlo@example.com',     phone:'+39 348 9988776', iban:'IT60X0542811101000000654321', split:60},
+    {name:'Kavi',      legal:'Kavita Rao',     email:'kavi@example.com',      phone:'+44 7700 900123', iban:'', split:40},
+    {name:'Elia Sun',  legal:'Elia Soldati',   email:'elia.sun@example.com',  phone:'+39 351 4455667', iban:'IT60X0542811101000000998877', split:50},
+    {name:'Bloom',     legal:'Giulia Fiore',   email:'bloom.band@example.com',phone:'+39 320 7766554', iban:'IT60X0542811101000000112233', split:55},
+  ];
+  A.forEach(a=>DB.artists.push({ id:newId(), name:a.name, legal:a.legal, email:a.email, phone:a.phone, iban:a.iban, split:a.split, demo:true }));
+  // ---- Release ----
+  const isrc=i=>'ITRHD'+String(now.getFullYear()).slice(2)+String(i).padStart(6,'0');
+  const R=[
+    {cat:'RHD001', title:'Aurora',        artist:'Nova Iris', upc:'0884385001011', rel:D(10,12), splits:[{name:'Nova Iris',pct:50}], tracks:[{title:'Aurora',isrc:isrc(11)},{title:'Aurora (Reprise)',isrc:isrc(12)}]},
+    {cat:'RHD002', title:'Midnight Drive',artist:'Marlo',     upc:'0884385002028', rel:D(8,3),   splits:[{name:'Marlo',pct:60}], tracks:[{title:'Midnight Drive',isrc:isrc(21)}]},
+    {cat:'RHD003', title:'Echoes',        artist:'Kavi',      upc:'0884385003035', rel:D(6,20),  splits:[{name:'Kavi',pct:40},{name:'Nova Iris',pct:20}], tracks:[{title:'Echoes',isrc:isrc(31)}]},
+    {cat:'RHD004', title:'Golden Hour',   artist:'Elia Sun',  upc:'0884385004042', rel:D(4,9),   splits:[{name:'Elia Sun',pct:50}], tracks:[{title:'Golden Hour',isrc:isrc(41)}]},
+    {cat:'RHD005', title:'Bloom EP',      artist:'Bloom',     upc:'0884385005059', rel:D(3,5),   splits:[{name:'Bloom',pct:55}], tracks:[{title:'Bloom',isrc:isrc(51)},{title:'Petals',isrc:isrc(52)}]},
+    {cat:'RHD006', title:'Reverie',       artist:'Nova Iris', upc:'0884385006066', rel:D(1,18),  splits:[{name:'Nova Iris',pct:50}], exclusive:true, exclusivePlatform:'Bandcamp', preorder:D(2,1), tracks:[{title:'Reverie',isrc:isrc(61)}]},
+  ];
+  R.forEach(r=>releases().push({ id:uid(), catalog:r.cat, title:r.title, artist:r.artist, upc:r.upc,
+    orderDate:r.rel, year:yOf(r.rel), preorder:r.preorder||'', exclusive:!!r.exclusive, exclusivePlatform:r.exclusivePlatform||'',
+    note:'', splits:r.splits, tracks:(r.tracks||[]).map(t=>({id:uid(), title:t.title, isrc:t.isrc, splits:[]})), demo:true }));
+  // ---- Vendite (income) su più piattaforme e mesi ----
+  const plats=['Spotify','Apple Music','Bandcamp','Amazon Music','YouTube Music','Deezer'];
+  const tx=[]; const rnd=(a,b)=>a+Math.random()*(b-a);
+  for(let m=7;m>=0;m--){
+    const growth=1+(7-m)*0.06;                 // leggera crescita nel tempo
+    R.forEach((r,ri)=>{
+      const n=2+Math.floor(Math.random()*3);   // 2-4 vendite per release/mese
+      for(let k=0;k<n;k++){
+        const pf=plats[(m+ri+k)%plats.length];
+        const base=pf==='Bandcamp'?rnd(6,28):rnd(3,16);
+        tx.push({ id:uid(), kind:'income', date:D(m,2+Math.floor(Math.random()*24)), platform:pf,
+          type:'digital', catalog:r.cat, product:r.title, artist:r.artist, isrc:'', upc:r.upc,
+          qty:1+Math.floor(Math.random()*4), gross:0, fees:0, net:+(base*growth).toFixed(2),
+          csShare:0, currency:'EUR', note:'demo', demo:true });
+      }
+    });
   }
-  tx.push({ id:uid(), kind:'expense', date:new Date(now.getFullYear(),now.getMonth()-4,10).toISOString().slice(0,10), platform:'', type:'expense', catalog:'SC-DEMO', product:'Mastering', artist:'', qty:1, gross:0, fees:0, net:80, csShare:0, currency:'EUR', note:'demo', demo:true });
-  tx.push({ id:uid(), kind:'expense', date:new Date(now.getFullYear(),now.getMonth()-2,15).toISOString().slice(0,10), platform:'', type:'expense', catalog:'SC-DEMO', product:'Artwork', artist:'', qty:1, gross:0, fees:0, net:120, csShare:0, currency:'EUR', note:'demo', demo:true });
-  DB.transactions.push(...tx); save(); reloadViews(); updateDemoBanner(); toast(tt('t.demo_loaded')); goto('dashboard');
+  // ---- Spese ----
+  [['Mastering RHD004',4,260],['Artwork Bloom EP',3,180],['Stampa vinili Aurora',9,640],['Promo / ADV',2,300],['Distribuzione',1,90],['Foto session',6,150]]
+    .forEach(([name,mAgo,amt])=>tx.push({ id:uid(), kind:'expense', date:D(mAgo,12), platform:'', type:'expense',
+      catalog:'', product:name, artist:'', qty:1, gross:0, fees:0, net:amt, csShare:0, currency:'EUR', note:'demo', demo:true }));
+  DB.transactions.push(...tx);
+  // ---- Recoupment (anticipi/costi) ----
+  DB.recoup.push({ id:newId(), artist:'Nova Iris', kind:'advance', amount:800, demo:true });
+  DB.recoup.push({ id:newId(), artist:'Marlo',     kind:'cost',    amount:260, demo:true });
+  // ---- Merch ----
+  [['Aurora Vinyl','vinyl',25,9,34,60],['Label Tee','tshirt',22,7,51,40],['Tour Hoodie','hoodie',45,18,12,6],['Bloom Poster','poster',12,3,20,100]]
+    .forEach(([name,type,price,cost,sold,stock])=>DB.merch.push({ id:newId(), name, type, price, cost, sold, stock, demo:true }));
+  // ---- Pianificazione ----
+  DB.planning.push({ id:newId(), date:Dp(20), kind:'release',  title:'Solstice',        artist:'Marlo',     status:'confirmed', platform:'Tutte le piattaforme', note:'Master pronto', demo:true });
+  DB.planning.push({ id:newId(), date:Dp(7),  kind:'premiere', title:'Aurora (Premiere)',artist:'Nova Iris', status:'planned',   platform:'YouTube', note:'', demo:true });
+  DB.planning.push({ id:newId(), date:Dp(45), kind:'release',  title:'Bloom — Vol. 2',  artist:'Bloom',     status:'idea',      platform:'', note:'', demo:true });
+  // ---- Eventi ----
+  DB.events.push({ id:newId(), date:Dp(12), time:'22:00', kind:'showcase', title:'Label Night',   venue:'Magazzini Generali', city:'Milano',   country:'IT', note:'', demo:true });
+  DB.events.push({ id:newId(), date:Dp(5),  time:'18:00', kind:'radio',    title:'Radio Session',  venue:'NTS Radio',          city:'London',   country:'UK', note:'', demo:true });
+  DB.events.push({ id:newId(), date:Dp(30), time:'21:30', kind:'live',     title:'Bloom Live',     venue:'Covo Club',          city:'Bologna',  country:'IT', note:'', demo:true });
+  // ---- Support DJ ----
+  [['Amelie Lens','Aurora','Awakenings','Amsterdam','NL'],['Ben UFO','Echoes','Fabric','London','UK'],
+   ['Marcel Dettmann','Midnight Drive','Berghain','Berlin','DE'],['Honey Dijon','Golden Hour','Panorama Bar','Berlin','DE'],
+   ['Peggy Gou','Reverie','Sónar','Barcelona','ES']]
+   .forEach(([dj,track,venue,city,country],i)=>DB.supports.push({ id:newId(), date:D(i%4,6+i), dj, track, venue, city, country, note:'', demo:true }));
+  // ---- Task ----
+  DB.tasks.push({ id:newId(), title:'Pagare royalty a Nova Iris', due:Dp(3),  time:'10:00', type:'payment', done:false, remind:true, demo:true });
+  DB.tasks.push({ id:newId(), title:'Inviare contratto a Marlo',  due:Dp(1),  time:'12:00', type:'contract',done:false, remind:true, demo:true });
+  DB.tasks.push({ id:newId(), title:'Ordinare ristampa vinile Aurora', due:Dp(10), time:'', type:'task', done:false, remind:false, demo:true });
+  save(); reloadViews(); updateDemoBanner(); toast(tt('t.demo_loaded')); goto('dashboard');
 }
 $('#btn-demo')?.addEventListener('click', loadDemo);
 // riconosce i dati demo: flag esplicito o marcatori legacy (catalogo SC-DEMO / nota "demo")
@@ -815,7 +877,7 @@ function removeDemo(){
   if(!confirm(tt('demo.confirm'))) return;
   DB.releases=(DB.releases||[]).filter(r=>!isDemoRel(r));
   DB.transactions=(DB.transactions||[]).filter(t=>!isDemoTx(t));
-  DB.artists=(DB.artists||[]).filter(a=>!a.demo);
+  ['artists','merch','planning','events','supports','recoup','tasks'].forEach(k=>{ if(Array.isArray(DB[k])) DB[k]=DB[k].filter(x=>!x.demo); });
   save(); reloadViews(); updateDemoBanner(); toast(tt('demo.removed'));
 }
 function updateDemoBanner(){ const b=$('#demo-banner'); if(b) b.hidden=!hasDemoData(); }

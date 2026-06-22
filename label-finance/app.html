@@ -327,14 +327,14 @@
       </div>
 
       <div class="panel">
-        <div class="panel-head"><h2 data-i18n="dash.chart.title">Entrate vs Uscite per mese</h2>
+        <div class="panel-head"><h2 data-i18n="dash.chart.title">Entrate vs Uscite per mese</h2><button class="card-i" type="button" aria-label="Info"><span class="ci-dot">i</span><span class="card-tip" data-i18n="ci.chart">Confronto mensile tra incassi e spese: individua i mesi migliori e i cali.</span></button>
           <span class="legend"><span class="legend-dot legend-dot--in"></span>Entrate<span class="legend-dot legend-dot--out"></span>Uscite</span></div>
         <div class="chart" id="chart-monthly"></div>
       </div>
 
       <div class="grid-2">
         <div class="panel">
-          <div class="panel-head"><h2 data-i18n="dash.byrelease">Per release / catalogo</h2>
+          <div class="panel-head"><h2 data-i18n="dash.byrelease">Per release / catalogo</h2><button class="card-i" type="button" aria-label="Info"><span class="ci-dot">i</span><span class="card-tip" data-i18n="ci.byrelease">Quanto rende ogni release/catalogo: entrate, uscite e margine.</span></button>
             <input class="input card-filter" data-table="#table-release" data-i18n-ph="common.search" placeholder="Cerca…">
             <select class="select card-sort sort-mobile" data-table="#table-release" title="Ordina">
               <option value="net:-1">Ordina: Margine ↓</option>
@@ -347,7 +347,7 @@
           <div class="table-wrap"><table class="data-table data-table--cards" id="table-release"></table></div>
         </div>
         <div class="panel">
-          <div class="panel-head"><h2 data-i18n="dash.byartist">Per artista</h2>
+          <div class="panel-head"><h2 data-i18n="dash.byartist">Per artista</h2><button class="card-i" type="button" aria-label="Info"><span class="ci-dot">i</span><span class="card-tip" data-i18n="ci.byartist">Risultato economico aggregato per ciascun artista del roster.</span></button>
             <input class="input card-filter" data-table="#table-artist" data-i18n-ph="common.search" placeholder="Cerca…">
             <select class="select card-sort sort-mobile" data-table="#table-artist" title="Ordina">
               <option value="net:-1">Ordina: Margine ↓</option>
@@ -360,7 +360,7 @@
           <div class="table-wrap"><table class="data-table data-table--cards" id="table-artist"></table></div>
         </div>
         <div class="panel">
-          <div class="panel-head"><h2 data-i18n="dash.byplatform">Per piattaforma</h2>
+          <div class="panel-head"><h2 data-i18n="dash.byplatform">Per piattaforma</h2><button class="card-i" type="button" aria-label="Info"><span class="ci-dot">i</span><span class="card-tip" data-i18n="ci.byplatform">Da quali piattaforme arrivano gli incassi (Spotify, Bandcamp…).</span></button>
             <input class="input card-filter" data-table="#table-platform" data-i18n-ph="common.search" placeholder="Cerca…">
             <select class="select card-sort sort-mobile" data-table="#table-platform" title="Ordina">
               <option value="net:-1">Ordina: Margine ↓</option>
@@ -373,7 +373,7 @@
           <div class="table-wrap"><table class="data-table data-table--cards" id="table-platform"></table></div>
         </div>
         <div class="panel">
-          <div class="panel-head"><h2 data-i18n="dash.bytype">Per tipologia</h2>
+          <div class="panel-head"><h2 data-i18n="dash.bytype">Per tipologia</h2><button class="card-i" type="button" aria-label="Info"><span class="ci-dot">i</span><span class="card-tip" data-i18n="ci.bytype">Ripartizione dei movimenti per tipologia (digitale, fisico, spese…).</span></button>
             <input class="input card-filter" data-table="#table-type" data-i18n-ph="common.search" placeholder="Cerca…">
             <select class="select card-sort sort-mobile" data-table="#table-type" title="Ordina">
               <option value="net:-1">Ordina: Margine ↓</option>
@@ -389,40 +389,40 @@
 
       <!-- Widget extra (libreria, nascosti di default) -->
       <div class="panel" id="w-forecast">
-        <div class="panel-head"><h2 data-i18n="dash.forecast">Cashflow previsionale</h2>
+        <div class="panel-head"><h2 data-i18n="dash.forecast">Cashflow previsionale</h2><button class="card-i" type="button" aria-label="Info"><span class="ci-dot">i</span><span class="card-tip" data-i18n="ci.forecast">Stima dell'andamento di cassa nei prossimi mesi sul trend recente.</span></button>
           <span class="muted small" data-i18n="dash.forecast_sub">Proiezione a 3 mesi sul trend recente</span></div>
         <div id="forecast-body"></div>
       </div>
       <div class="panel" id="w-top">
-        <div class="panel-head"><h2 data-i18n="dash.top_artists">Top artisti</h2></div>
+        <div class="panel-head"><h2 data-i18n="dash.top_artists">Top artisti</h2><button class="card-i" type="button" aria-label="Info"><span class="ci-dot">i</span><span class="card-tip" data-i18n="ci.top_artists">Gli artisti che generano più valore nel periodo selezionato.</span></button></div>
         <div id="top-body" class="top-list"></div>
       </div>
       <div class="panel" id="w-recent">
-        <div class="panel-head"><h2 data-i18n="dash.recent">Ultimi movimenti</h2></div>
+        <div class="panel-head"><h2 data-i18n="dash.recent">Ultimi movimenti</h2><button class="card-i" type="button" aria-label="Info"><span class="ci-dot">i</span><span class="card-tip" data-i18n="ci.recent">Le ultime transazioni registrate, per un colpo d'occhio rapido.</span></button></div>
         <div id="recent-body" class="recent-list"></div>
       </div>
       <div class="panel" id="w-merch">
-        <div class="panel-head"><h2 data-i18n="mch.top_title">Merch più venduto</h2>
+        <div class="panel-head"><h2 data-i18n="mch.top_title">Merch più venduto</h2><button class="card-i" type="button" aria-label="Info"><span class="ci-dot">i</span><span class="card-tip" data-i18n="ci.merchtop">I prodotti merch con più vendite e ricavi.</span></button>
           <span class="muted small" data-i18n="mch.top_sub">Classifica per unità vendute</span></div>
         <div id="merch-body" class="top-list"></div>
       </div>
       <div class="panel" id="w-nextrel">
-        <div class="panel-head"><h2 data-i18n="dash.next_rel">Prossime uscite</h2>
+        <div class="panel-head"><h2 data-i18n="dash.next_rel">Prossime uscite</h2><button class="card-i" type="button" aria-label="Info"><span class="ci-dot">i</span><span class="card-tip" data-i18n="ci.next_rel">Le uscite pianificate in arrivo dal calendario.</span></button>
           <span class="muted small" data-i18n="dash.next_rel_sub">Da Pianificazione</span></div>
         <div id="nextrel-body" class="wlist"></div>
       </div>
       <div class="panel" id="w-nextevt">
-        <div class="panel-head"><h2 data-i18n="dash.next_evt">Prossimi eventi</h2>
+        <div class="panel-head"><h2 data-i18n="dash.next_evt">Prossimi eventi</h2><button class="card-i" type="button" aria-label="Info"><span class="ci-dot">i</span><span class="card-tip" data-i18n="ci.next_evt">Showcase, live e radio in programma.</span></button>
           <span class="muted small" data-i18n="dash.next_evt_sub">Showcase, live, radio…</span></div>
         <div id="nextevt-body" class="wlist"></div>
       </div>
       <div class="panel" id="w-support">
-        <div class="panel-head"><h2 data-i18n="dash.sup_top">Support nel mondo</h2>
+        <div class="panel-head"><h2 data-i18n="dash.sup_top">Support nel mondo</h2><button class="card-i" type="button" aria-label="Info"><span class="ci-dot">i</span><span class="card-tip" data-i18n="ci.sup_top">I paesi dove la tua musica viene suonata di più dai DJ.</span></button>
           <span class="muted small" data-i18n="dash.sup_top_sub">Top paesi per support</span></div>
         <div id="support-body" class="top-list"></div>
       </div>
       <div class="panel" id="w-disco">
-        <div class="panel-head"><h2 data-i18n="dash.disco">Discografia</h2>
+        <div class="panel-head"><h2 data-i18n="dash.disco">Discografia</h2><button class="card-i" type="button" aria-label="Info"><span class="ci-dot">i</span><span class="card-tip" data-i18n="ci.disco">Riepilogo del catalogo: numero di release e ultime aggiunte.</span></button>
           <span class="muted small" id="disco-count"></span></div>
         <div id="disco-body" class="wlist"></div>
       </div>
@@ -432,16 +432,21 @@
     <!-- ====== CONSOLIDATO (multi-etichetta) ====== -->
     <section class="view" id="view-consolidated">
       <header class="view-head">
-        <div><div class="title-row"><h1 data-i18n="cons.title">Consolidato</h1></div>
+        <div><div class="title-row"><h1 data-i18n="cons.title">Consolidato</h1><button class="info-btn" data-info="consolidated" title="Cos'è questa sezione?">i</button></div>
           <p class="muted" data-i18n="cons.sub">Tutte le tue etichette in un colpo d'occhio</p></div>
       </header>
+      <div class="info-panel" id="info-consolidated" data-i18n-html="info.consolidated" hidden>
+        <h4>A cosa serve il Consolidato</h4>
+        <p>Mette insieme <b>tutte le tue etichette</b> in un'unica vista: in alto gli indicatori totali (entrate, uscite, margine) sommati su ogni etichetta, anche con valute diverse.</p>
+        <p>La tabella <b>Per etichetta</b> confronta le label tra loro ed evidenzia la migliore per margine. Clicca una riga per entrare in quell'etichetta.</p>
+      </div>
       <div class="kpi-grid">
         <div class="kpi kpi--in"><span class="kpi-label" data-i18n="dash.kpi.income">Entrate</span><span class="kpi-value" id="cons-in">€0,00</span><span class="kpi-delta" id="cons-nlabels"></span></div>
         <div class="kpi kpi--out"><span class="kpi-label" data-i18n="dash.kpi.expense">Uscite</span><span class="kpi-value" id="cons-out">€0,00</span></div>
         <div class="kpi kpi--net"><span class="kpi-label" data-i18n="dash.kpi.net">Margine netto</span><span class="kpi-value" id="cons-net">€0,00</span></div>
       </div>
       <div class="panel">
-        <div class="panel-head"><h2 data-i18n="cons.byLabel">Per etichetta</h2>
+        <div class="panel-head"><h2 data-i18n="cons.byLabel">Per etichetta</h2><button class="card-i" type="button" aria-label="Info"><span class="ci-dot">i</span><span class="card-tip" data-i18n="ci.bylabel">Confronto tra le tue etichette: entrate, uscite e margine.</span></button>
           <span class="muted small" data-i18n="cons.hint">Clicca una riga per aprire quell'etichetta</span></div>
         <div class="table-wrap"><table id="cons-table"></table></div>
       </div>
@@ -694,7 +699,7 @@
       </div>
 
       <div class="panel">
-        <div class="panel-head"><h2 data-i18n="dash.byartist">Per artista</h2>
+        <div class="panel-head"><h2 data-i18n="dash.byartist">Per artista</h2><button class="card-i" type="button" aria-label="Info"><span class="ci-dot">i</span><span class="card-tip" data-i18n="ci.byartist">Risultato economico aggregato per ciascun artista del roster.</span></button>
           <span class="muted small">Clicca un artista per il dettaglio per release.</span></div>
         <div class="table-wrap" id="roy-table-wrap"><table class="data-table data-table--cards" id="table-roy-artist"></table></div>
         <div class="roy-cards" id="roy-cards" hidden></div>

@@ -3605,6 +3605,15 @@ function wireAgenda(){
 const NOTIF_KEY='labelfinance.notifs';
 let NOTIFS=(function(){ try{ const n=JSON.parse(localStorage.getItem(NOTIF_KEY)); if(n&&Array.isArray(n.list)) return {list:n.list, dismissed:n.dismissed||[]}; }catch(e){} return {list:[],dismissed:[]}; })();
 function notifSave(){ try{ localStorage.setItem(NOTIF_KEY, JSON.stringify(NOTIFS)); }catch(e){} }
+function svgIco(inner){ return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`; }
+const SECTION_SVG={
+  releases:    svgIco('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/>'),
+  transactions:svgIco('<path d="M7 4v15"/><path d="M4 7l3-3 3 3"/><path d="M17 20V5"/><path d="M14 17l3 3 3-3"/>'),
+  import:      svgIco('<path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M4 21h16"/>'),
+  royalties:   svgIco('<path d="M19 5 5 19"/><circle cx="7.5" cy="7.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/>'),
+  tasks:       svgIco('<rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V4.2a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1V5"/><path d="M8.5 13.2l2.3 2.3L16 10.3"/>'),
+};
+function notifIcon(it){ const v=it.view||(it.type==='unlinked'?'releases':it.type==='enrich'?'import':it.relId?'releases':'tasks'); return SECTION_SVG[v]||SECTION_SVG.tasks; }
 function notifScan(){
   if(typeof DB==='undefined'||!DB) return;
   const unlinked=new Set();
@@ -3622,6 +3631,20 @@ function notifScan(){
   NOTIFS.list=NOTIFS.list.filter(n=>n.type!=='enrich');
   if(enrN && !(NOTIFS.dismissed||[]).includes('enrich:'+enrN))
     NOTIFS.list.unshift(prevEnr ? {...prevEnr, count:enrN} : { id:newId(), key:'enrich', type:'enrich', count:enrN, read:false, ts:Date.now() });
+  // promemoria / task scaduti o con avviso già partito → nel centro notifiche
+  const prevTaskRead={}; NOTIFS.list.forEach(n=>{ if(n.type==='task') prevTaskRead[n.key]=n.read; });
+  NOTIFS.list=NOTIFS.list.filter(n=>n.type!=='task');
+  const nowMin=isoD(new Date())+'T'+new Date().toTimeString().slice(0,5);
+  (DB.tasks||[]).forEach(t=>{
+    if(t.done||!t.due) return;
+    const overdue = tskKey(t) < nowMin;
+    const fired = !!(t.notifiedDue || (t.remind && t.notifiedPre));
+    if(!(overdue||fired)) return;
+    const key='task:'+t.id;
+    if((NOTIFS.dismissed||[]).includes(key)) return;
+    let ts=Date.now(); try{ const d=new Date(t.due+'T'+(t.time||'09:00')).getTime(); if(d) ts=d; }catch(e){}
+    NOTIFS.list.unshift({ id:newId(), key, type:'task', taskId:t.id, view:'tasks', title:t.title||'', due:t.due, time:t.time||'', overdue, read:prevTaskRead[key]||false, ts });
+  });
   notifSave(); renderNotifs();
 }
 function notifText(n){
@@ -3632,6 +3655,9 @@ function notifText(n){
   if(n.type==='enrich') return {
     title: T('notif.enrich_t','Dati aggiuntivi trovati'),
     body: T('notif.enrich_b','In Movimenti ci sono {n} dati utili (UPC, ISRC, catalogo, artista…) per release già presenti. Apri per arricchire la Discografia.').replace('{n}', n.count||0) };
+  if(n.type==='task'){ const when=(n.due||'')+(n.time?(' '+n.time):'');
+    return { title: n.title||T('notif.task_t','Promemoria'),
+      body: (n.overdue?T('notif.task_over','Promemoria scaduto'):T('notif.task_due','Promemoria'))+(when?' · '+when:'') }; }
   return { title:n.title||'', body:n.body||'' };
 }
 function notifTime(ts){ try{ return new Date(ts).toLocaleString(calLang(),{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); }catch(e){ return ''; } }
@@ -3642,7 +3668,7 @@ function renderNotifs(){
   if(!NOTIFS.list.length){ list.innerHTML=`<div class="notif-empty">${tt('notif.empty')}</div>`; return; }
   list.innerHTML=NOTIFS.list.map(it=>{ const tx=notifText(it);
     return `<div class="notif-item${it.read?'':' unread'}" data-nid="${it.id}">
-      <span class="notif-dot"></span>
+      <span class="notif-ico">${notifIcon(it)}</span>
       <div class="notif-body">
         <div class="notif-t">${esc(tx.title)}</div>
         <div class="notif-b">${esc(tx.body)}</div>
@@ -3672,7 +3698,8 @@ function notifOpen(it){
 }
 function notifDismiss(it){ if(!it) return;
   if(it.type==='unlinked') NOTIFS.dismissed=[...new Set([...(NOTIFS.dismissed||[]),(it.ref||'').toLowerCase()])];
-  else if(it.type==='enrich') NOTIFS.dismissed=[...new Set([...(NOTIFS.dismissed||[]),'enrich:'+(it.count||0)])]; }
+  else if(it.type==='enrich') NOTIFS.dismissed=[...new Set([...(NOTIFS.dismissed||[]),'enrich:'+(it.count||0)])];
+  else if(it.type==='task') NOTIFS.dismissed=[...new Set([...(NOTIFS.dismissed||[]), it.key])]; }
 function notifDelete(id){ const it=NOTIFS.list.find(x=>x.id===id); notifDismiss(it);
   NOTIFS.list=NOTIFS.list.filter(x=>x.id!==id); notifSave(); renderNotifs(); }
 function notifReadAll(){ NOTIFS.list.forEach(n=>n.read=true); notifSave(); renderNotifs(); }

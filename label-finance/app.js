@@ -300,6 +300,14 @@ function updateTopbarSection(){
 $('.main').addEventListener('scroll', updateTopbarSection, {passive:true});
 
 /* pannelli Informazioni: toggle ⓘ per ogni sezione */
+/* finestrella info per ogni card: apre/chiude al click, chiude cliccando fuori */
+document.addEventListener('click',e=>{
+  const b=e.target.closest('.card-i');
+  if(b){ e.preventDefault(); e.stopPropagation(); const was=b.classList.contains('show');
+    document.querySelectorAll('.card-i.show').forEach(x=>x.classList.remove('show'));
+    if(!was) b.classList.add('show'); return; }
+  document.querySelectorAll('.card-i.show').forEach(x=>x.classList.remove('show'));
+});
 document.addEventListener('click',e=>{
   const b=e.target.closest('.info-btn'); if(!b) return;
   const p=document.getElementById('info-'+b.dataset.info); if(!p) return;

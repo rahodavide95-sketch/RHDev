@@ -14,6 +14,8 @@
     it:{
       // Navigazione
       'nav.dashboard':'Dashboard','nav.transactions':'Movimenti','nav.releases':'Discografia',
+      'stmt.title':'Statement Royalty','stmt.artist':'Artista','stmt.period':'Periodo','stmt.issued':'Emesso il','stmt.allperiods':'Tutti i periodi','stmt.c_date':'Data','stmt.c_prod':'Prodotto / Release','stmt.c_cat':'Catalogo','stmt.c_gross':'Lordo','stmt.c_pct':'Quota','stmt.c_roy':'Royalty','stmt.total':'Totale royalty del periodo','stmt.recoupable':'Anticipi/costi recuperabili','stmt.recouped':'Recuperato finora','stmt.residual':'Residuo da recuperare','stmt.net':'Netto da liquidare','stmt.nolines':'Nessuna royalty nel periodo selezionato.','stmt.note':'Il netto da liquidare tiene conto del recoupment (anticipi e costi recuperabili non ancora coperti).','stmt.gen':'Generato con','stmt.wait':'Genero lo statement…',
+
       'nav.consolidated':'Consolidato','cons.title':'Consolidato','cons.sub':"Tutte le tue etichette in un colpo d'occhio",'cons.byLabel':'Per etichetta','cons.hint':"Clicca una riga per aprire quell'etichetta",'cons.h_label':'Etichetta','cons.h_rel':'Release','cons.h_art':'Artisti','cons.best':'★ migliore','cons.label1':'etichetta','cons.labelN':'etichette',
       'nav.planning':'Pianificazione','nav.events':'Eventi','nav.supports':'Support DJ',
       'nav.grp_catalog':'Musica & Catalogo','nav.grp_finance':'Finanze','nav.grp_manage':'Gestione',
@@ -219,6 +221,8 @@
     },
     en:{
       'nav.dashboard':'Dashboard','nav.transactions':'Transactions','nav.releases':'Discography',
+      'stmt.title':'Royalty Statement','stmt.artist':'Artist','stmt.period':'Period','stmt.issued':'Issued on','stmt.allperiods':'All periods','stmt.c_date':'Date','stmt.c_prod':'Product / Release','stmt.c_cat':'Catalog','stmt.c_gross':'Gross','stmt.c_pct':'Share','stmt.c_roy':'Royalty','stmt.total':'Total royalties for the period','stmt.recoupable':'Recoupable advances/costs','stmt.recouped':'Recouped so far','stmt.residual':'Remaining to recoup','stmt.net':'Net payable','stmt.nolines':'No royalties in the selected period.','stmt.note':'The net payable accounts for recoupment (recoupable advances and costs not yet covered).','stmt.gen':'Generated with','stmt.wait':'Generating the statement…',
+
       'nav.consolidated':'Consolidated','cons.title':'Consolidated','cons.sub':'All your labels at a glance','cons.byLabel':'By label','cons.hint':'Click a row to open that label','cons.h_label':'Label','cons.h_rel':'Releases','cons.h_art':'Artists','cons.best':'★ best','cons.label1':'label','cons.labelN':'labels',
       'nav.planning':'Planning','nav.events':'Events','nav.supports':'DJ Support',
       'nav.grp_catalog':'Music & Catalog','nav.grp_finance':'Finance','nav.grp_manage':'Management',

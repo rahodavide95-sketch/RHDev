@@ -1669,33 +1669,67 @@ function syncRoyDates(){ const cu=$('#roy-period').value==='custom'; $('#roy-fro
 $('#roy-period').onchange=()=>{ syncRoyDates(); renderRoyalties(); };
 $('#roy-from').onchange=$('#roy-to').onchange=renderRoyalties;
 syncRoyDates();
+/* ---------- Statement royalty professionale per artista ---------- */
+function artistStatement(name){
+  const range=computeRange($('#roy-period'), $('#roy-from'), $('#roy-to'));
+  const inP = t => (!range.from && !range.to) ? true : inRange(t,range.from,range.to);
+  const income=(DB.transactions||[]).filter(t=>t.kind==='income');
+  const lc=(name||'').trim().toLowerCase();
+  const lines=[]; let total=0;
+  income.filter(inP).forEach(t=>{ const m=splitsForTx(t); if(!m||!m.splits) return;
+    const sp=m.splits.find(s=>(s.name||'').trim().toLowerCase()===lc); if(!sp) return;
+    const eur=toEur(t.net,t.currency); const pct=+sp.pct||0; const share=eur*pct/100; total+=share;
+    lines.push({date:t.date||'', product:(t.product||(m.rel&&m.rel.title)||''), catalog:(m.rel&&m.rel.catalog)||t.catalog||'', gross:eur, pct, share}); });
+  lines.sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  const recoupable=(DB.recoup||[]).filter(r=>(r.artist||'').trim().toLowerCase()===lc).reduce((s,r)=>s+(+r.amount||0),0);
+  const lifeRoy=(royaltyTotalsByArtist(income)[name]||{total:0}).total;
+  const beforeRoy=range.from?(royaltyTotalsByArtist(income.filter(t=>String(t.date||'')<range.from))[name]||{total:0}).total:0;
+  const netPay=Math.max(0, Math.max(0,lifeRoy-recoupable)-Math.max(0,beforeRoy-recoupable));
+  return { name, range, lines, total, recoupable, recouped:Math.min(lifeRoy,recoupable), residual:Math.max(0,recoupable-lifeRoy), netPay };
+}
+function statementHTML(st){
+  const logo=(DB.profile&&DB.profile.logo)||'';
+  const period=(!st.range.from&&!st.range.to)?tt('stmt.allperiods')
+    :((st.range.from?fmtDate(st.range.from):'—')+' – '+(st.range.to?fmtDate(st.range.to):fmtDate(isoD(new Date()))));
+  const rows=st.lines.length?st.lines.map(l=>`<tr>
+     <td>${fmtDate(l.date)}</td><td>${esc(l.product)||'—'}</td><td>${esc(l.catalog)}</td>
+     <td class="r">${fmtMoney(l.gross)}</td><td class="r">${l.pct}%</td><td class="r b">${fmtMoney(l.share)}</td></tr>`).join('')
+   :`<tr><td colspan="6" class="mut">${tt('stmt.nolines')}</td></tr>`;
+  const recoup=st.recoupable>0?`<table class="stmt-sum"><tbody>
+      <tr><td>${tt('stmt.recoupable')}</td><td class="r">${fmtMoney(st.recoupable)}</td></tr>
+      <tr><td>${tt('stmt.recouped')}</td><td class="r">${fmtMoney(st.recouped)}</td></tr>
+      <tr><td>${tt('stmt.residual')}</td><td class="r">${fmtMoney(st.residual)}</td></tr></tbody></table>`:'';
+  return `<div class="stmt-lh">${logo?`<img class="stmt-lh-logo" src="${logo}">`:''}<div class="stmt-lh-name">${esc(labelName())}</div></div>
+   <h1 class="stmt-h1">${tt('stmt.title')}</h1>
+   <div class="stmt-meta"><div><span>${tt('stmt.artist')}:</span> <b>${esc(st.name)}</b></div>
+     <div><span>${tt('stmt.period')}:</span> <b>${period}</b></div>
+     <div><span>${tt('stmt.issued')}:</span> <b>${fmtDate(isoD(new Date()))}</b></div></div>
+   <table class="stmt-tbl"><thead><tr><th>${tt('stmt.c_date')}</th><th>${tt('stmt.c_prod')}</th><th>${tt('stmt.c_cat')}</th>
+     <th class="r">${tt('stmt.c_gross')}</th><th class="r">${tt('stmt.c_pct')}</th><th class="r">${tt('stmt.c_roy')}</th></tr></thead>
+     <tbody>${rows}</tbody><tfoot><tr><td colspan="5">${tt('stmt.total')}</td><td class="r">${fmtMoney(st.total)}</td></tr></tfoot></table>
+   ${recoup}
+   <div class="stmt-net"><span>${tt('stmt.net')}</span><b>${fmtMoney(st.netPay)}</b></div>
+   <p class="stmt-note">${tt('stmt.note')}</p>
+   <p class="stmt-foot">${tt('stmt.gen')} Label Finance · ${esc(labelName())} · ${fmtDate(isoD(new Date()))}</p>`;
+}
 $('#roy-detail-pdf').onclick=()=>{
   if(!royDetail) return;
-  const { name, data } = royDetail;
-  const period=$('#roy-period').value==='custom'
-    ? (($('#roy-from').value||'inizio')+' → '+($('#roy-to').value||'oggi'))
-    : $('#roy-period').selectedOptions[0].textContent;
-  const rows=Object.entries(data.byRelease).map(([cat,amt])=>({cat,amt})).sort((a,b)=>b.amt-a.amt);
-  $('#print-area').innerHTML=`<div class="stmt">
-    <div class="stmt-head">
-      <img src="icon.png?v=3" alt="" class="stmt-logo">
-      <div><div class="stmt-brand">Label<span class="lf-fin">Finance</span></div>
-        <div class="stmt-doc">Rendiconto Royalty</div></div>
-    </div>
-    <p class="stmt-meta">Artista: <strong>${esc(name)}</strong><br>
-      Periodo: ${esc(period)}<br>
-      Generato il ${new Date().toLocaleDateString('it-IT')}</p>
-    <table class="stmt-table">
-      <thead><tr><th>Release</th><th style="text-align:right">Royalty (€)</th></tr></thead>
-      <tbody>${rows.map(r=>{ const rel=releaseByCatalog(r.cat); const t=rel&&rel.title?` — ${esc(rel.title)}`:'';
-        return `<tr><td>${esc(r.cat)}${t}</td><td style="text-align:right">${fmtMoney(r.amt)}</td></tr>`; }).join('')}</tbody>
-      <tfoot><tr><td><strong>Totale dovuto</strong></td><td style="text-align:right"><strong>${fmtMoney(data.total)}</strong></td></tr></tfoot>
-    </table>
-    <p class="stmt-foot">Documento generato automaticamente con Label Finance · ${new Date().toLocaleDateString('it-IT')}</p>
-  </div>`;
-  document.body.classList.add('print-statement');
-  window.print();
-  setTimeout(()=>document.body.classList.remove('print-statement'),600);
+  const st=artistStatement(royDetail.name);
+  const safe=s=>String(s||'').replace(/[\\/:*?"<>|]+/g,'').trim();
+  const fname=`${safe(labelName())||'Label'} – Statement ${safe(st.name)}`;
+  const host=document.createElement('div');
+  host.style.cssText='position:fixed;left:-9999px;top:0;width:800px;background:#fff';
+  host.innerHTML=`<div class="stmt-pdf">${statementHTML(st)}</div>`;
+  document.body.appendChild(host);
+  if(typeof html2pdf==='undefined'){
+    $('#print-area').innerHTML=host.firstElementChild.outerHTML; host.remove();
+    document.body.classList.add('print-statement'); window.print();
+    setTimeout(()=>document.body.classList.remove('print-statement'),600); return; }
+  toast(tt('stmt.wait'));
+  const done=()=>host.remove();
+  html2pdf().set({ margin:[8,8,8,8], filename:fname+'.pdf', image:{type:'jpeg',quality:0.98},
+    html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff',windowWidth:840},
+    jsPDF:{unit:'mm',format:'a4',orientation:'portrait'} }).from(host.firstElementChild).save().then(done,done);
 };
 
 /* ---------- Modal movimento ---------- */

@@ -401,11 +401,42 @@ body.dash-edit .dw-width{display:inline-flex;gap:2px;position:absolute;top:8px;l
 .enr-row{display:flex;align-items:flex-start;gap:11px;cursor:pointer}
 .enr-row input{margin-top:3px;flex:none;accent-color:var(--accent)}
 .enr-info{display:flex;flex-direction:column;gap:4px;min-width:0}
-@media(max-width:880px){
-  /* le liste a colonne scorrono in orizzontale per restare leggibili e allineate */
-  .dbl{overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .dbl-row{min-width:620px}
-  .dbl-head{font-size:.68rem}
+@media(max-width:760px){
+  /* === Mobile: liste e tabelle diventano "card" impilate (label: valore) === */
+  .dbl{overflow:visible}
+  .dbl-head{display:none}
+  .dbl-row{min-width:0!important;display:block!important;grid-template-columns:none!important;padding:12px 14px;position:relative}
+  .dbl-row>span{display:flex;justify-content:space-between;align-items:baseline;gap:14px;white-space:normal;overflow:visible;text-overflow:clip;padding:4px 0;min-width:0;text-align:right}
+  .dbl-row>span::before{content:attr(data-label);color:var(--muted);font-size:.74rem;font-weight:600;text-transform:uppercase;letter-spacing:.02em;text-align:left;flex:0 0 auto;max-width:42%;white-space:nowrap}
+  .dbl-row>span.is-empty{display:none}
+  /* colonna "forte" (titolo card) a tutta larghezza, senza etichetta */
+  .dbl-row>span.dbl-strong,.dbl-row>span.release-cat{display:block;text-align:left;font-size:1rem;margin-bottom:2px}
+  .dbl-row>span.dbl-strong::before,.dbl-row>span.release-cat::before{content:none}
+  /* checkbox di selezione: in alto a sinistra, niente etichetta */
+  .dbl-row>.dbl-sel{position:absolute;top:10px;right:12px;justify-content:flex-end;padding:0}
+  .dbl-row>.dbl-sel::before{content:none}
+  /* avatar/lead a sinistra, niente etichetta */
+  .dbl-row>.dbl-lead{justify-content:flex-start;padding:2px 0 6px}
+  .dbl-row>.dbl-lead::before{content:none}
+  /* azioni: tasti pieni in fondo alla card */
+  .dbl-row>.dbl-act{justify-content:flex-end;gap:8px;padding-top:10px;margin-top:6px;border-top:1px solid var(--line)}
+  .dbl-row>.dbl-act::before{content:none}
+  .dbl-row>.dbl-act .icon-btn-sm{min-width:38px;min-height:38px;font-size:1rem}
+
+  /* === Tabelle HTML (.data-table--cards): stesso trattamento === */
+  .table-wrap:has(.data-table--cards){overflow:visible}
+  .data-table--cards{display:block;min-width:0}
+  .data-table--cards thead{display:none}
+  .data-table--cards tbody,.data-table--cards tr,.data-table--cards td{display:block;width:100%}
+  .data-table--cards tr{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:12px 14px;margin-bottom:10px}
+  .data-table--cards td{display:flex;justify-content:space-between;align-items:baseline;gap:14px;padding:4px 0;border:none;text-align:right;white-space:normal}
+  .data-table--cards td::before{content:attr(data-label);color:var(--muted);font-size:.74rem;font-weight:600;text-transform:uppercase;letter-spacing:.02em;text-align:left;flex:0 0 auto;max-width:42%;white-space:nowrap}
+  .data-table--cards td:empty{display:none}
+  .data-table--cards td.is-empty{display:none}
+  .data-table--cards tr{position:relative}
+  .data-table--cards td.dbl-sel{position:absolute;top:10px;right:12px;width:auto;padding:0;justify-content:flex-end}
+  .data-table--cards td.dbl-sel::before{content:none}
+  .data-table--cards td.num{font-variant-numeric:tabular-nums}
 }
 
 /* link di collegamento tra sezioni: mai nero, sempre sottolineato */

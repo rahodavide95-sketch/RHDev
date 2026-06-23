@@ -3535,7 +3535,7 @@ function dbRows(items, cols, opt){ opt=opt||{}; const sw=opt.sel?34:0; const t=d
   return items.map(it=>`<div class="dbl-row ${typeof opt.rowCls==='function'?opt.rowCls(it):(opt.rowCls||'')}" data-id="${it.id}" style="grid-template-columns:${t}">`
     +(opt.sel?`<span class="dbl-sel"><input type="checkbox" data-sel="${opt.sel.sec}|${it.id}" ${opt.sel.set&&opt.sel.set.has(it.id)?'checked':''}></span>`:'')
     +(opt.lead?`<span class="dbl-lead">${opt.lead(it)}</span>`:'')
-    +cols.map(c=>`<span class="${c.cls||''}">${c.cell(it)||'—'}</span>`).join('')
+    +cols.map(c=>{ const v=c.cell(it); return `<span class="${c.cls||''} ${v?'':'is-empty'}" data-label="${esc(colLab(c))}">${v||'—'}</span>`; }).join('')
     +(opt.actions?`<span class="dbl-act">${opt.actions(it)}</span>`:'')+`</div>`).join('');
 }
 /* registro colonne per sezione + configurazione (mostra/nascondi/ordina) */

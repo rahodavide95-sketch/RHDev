@@ -1114,7 +1114,7 @@ function expandReleases(list){
     if((t==='EP'||t==='VA') && Array.isArray(r.tracks)){
       r.tracks.forEach(tr=>out.push({ _track:true, id:r.id, catalog:'', title:tr.title||'',
         artist:(tr.artist||(tr.splits&&tr.splits[0]&&tr.splits[0].name)||r.artist||''),
-        type:(t==='VA'?'VA - Track':'EP - Track'), isrc:tr.isrc||'', masteredBy:'', distributedBy:'',
+        type:(t==='VA'?'VA - Track':'EP - Track'), isrc:tr.isrc||'', masteredBy:(tr.masteredBy||r.masteredBy||''), distributedBy:(tr.distributedBy||r.distributedBy||''),
         orderDate:'', preorder:'', year:'', upc:'', splits:(tr.splits&&tr.splits.length?tr.splits:r.splits), exclusive:false, note:'' }));
     } });
   return out;
@@ -1199,12 +1199,20 @@ function enableTrackDrag(cont){ if(!cont) return; let drag=null;
 }
 function trackBlockHTML(t={}){
   const splits=(t.splits&&t.splits.length)?t.splits:[{name:'',pct:''}];
+  const relMast=($('#r-mastered')&&$('#r-mastered').value.trim())||'';
+  const relDist=($('#r-distributed')&&$('#r-distributed').value.trim())||'';
+  const phM=relMast?('Mastered by · default: '+relMast):'Mastered by';
+  const phD=relDist?('Distributed by · default: '+relDist):'Distributed by';
   return `<div class="track-block">
     <div class="track-head">
       <span class="track-grip" title="Trascina per riordinare">⠿</span>
       <input class="input track-title" placeholder="Titolo traccia" value="${esc(t.title||'')}">
       <input class="input track-isrc" placeholder="ISRC" value="${esc(t.isrc||'')}">
       <button type="button" class="btn track-del" title="Rimuovi traccia">✕</button>
+    </div>
+    <div class="track-credits">
+      <input class="input track-mastered" placeholder="${esc(phM)}" value="${esc(t.masteredBy||'')}">
+      <input class="input track-distributed" placeholder="${esc(phD)}" value="${esc(t.distributedBy||'')}">
     </div>
     <div class="track-splits">${splits.map(s=>splitRowHTML(s.name,s.pct)).join('')}</div>
     <button type="button" class="btn btn-mini track-add-split">+ artista</button>
@@ -1326,7 +1334,9 @@ $('#rel-form').onsubmit=e=>{
     const title=tb.querySelector('.track-title').value.trim();
     const isrc=tb.querySelector('.track-isrc').value.trim();
     const tsplits=collectSplits(tb.querySelector('.track-splits'));
-    if(title||isrc||tsplits.length) tracks.push({id:uid(), title, isrc, splits:tsplits});
+    const tMast=(tb.querySelector('.track-mastered')&&tb.querySelector('.track-mastered').value.trim())||'';
+    const tDist=(tb.querySelector('.track-distributed')&&tb.querySelector('.track-distributed').value.trim())||'';
+    if(title||isrc||tsplits.length||tMast||tDist) tracks.push({id:uid(), title, isrc, masteredBy:tMast, distributedBy:tDist, splits:tsplits});
   });
   const orderDate=$('#r-order').value||'';
   const rec={ id:id||uid(), catalog:$('#r-catalog').value.trim(), title:$('#r-title').value.trim(),

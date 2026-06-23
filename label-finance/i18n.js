@@ -141,7 +141,7 @@
       'sup.f_dj':'DJ *','sup.f_track':'Brano','sup.f_venue':'Venue','sup.f_city':'Città','sup.f_country':'Paese','sup.f_date':'Data','sup.f_note':'Note',
       'dash.report_pdf':'⤓ Report PDF','dash.filter':'Filtra…',
       // Movimenti
-      'tx.title':'Movimenti','tx.add_expense':'+ Uscita','tx.add_income':'+ Entrata','tx.open_release':'Apri la release collegata in Discografia',
+      'tx.title':'Movimenti','tx.import':'⤓ Importa CSV','tx.add_expense':'+ Uscita','tx.add_income':'+ Entrata','tx.open_release':'Apri la release collegata in Discografia',
       'tx.search':'Cerca prodotto, artista, catalogo…','tx.all_kinds':'Tutti i tipi',
       'tx.only_income':'Solo entrate','tx.only_expense':'Solo uscite','tx.all_platforms':'Tutte le piattaforme',
       'tx.cols':'⚙ Colonne','tx.export':'⤓ Esporta',
@@ -333,7 +333,7 @@
       'sup.title':'DJ Support','sup.subtitle':'Where and by whom your tracks are played around the world.','sup.new':'＋ New support','sup.empty':'No support logged yet. Add where and by whom your music is played.','sup.need_dj':'Enter the DJ name.',
       'sup.f_dj':'DJ *','sup.f_track':'Track','sup.f_venue':'Venue','sup.f_city':'City','sup.f_country':'Country','sup.f_date':'Date','sup.f_note':'Notes',
       'dash.report_pdf':'⤓ PDF report','dash.filter':'Filter…',
-      'tx.title':'Transactions','tx.add_expense':'+ Expense','tx.add_income':'+ Income','tx.open_release':'Open the linked release in Discography',
+      'tx.title':'Transactions','tx.import':'⤓ Import CSV','tx.add_expense':'+ Expense','tx.add_income':'+ Income','tx.open_release':'Open the linked release in Discography',
       'tx.search':'Search product, artist, catalog…','tx.all_kinds':'All types',
       'tx.only_income':'Income only','tx.only_expense':'Expenses only','tx.all_platforms':'All platforms',
       'tx.cols':'⚙ Columns','tx.export':'⤓ Export',

@@ -1356,3 +1356,7 @@ body.gate-signup #gate-signin{opacity:.5}
 .col-item.col-dragging{opacity:.45;background:color-mix(in srgb,var(--accent) 12%,var(--panel));border-radius:8px}
 .col-item[draggable=true]{user-select:none}
 .col-item>.col-check{flex:1;min-width:0}
+/* --- Avviso arricchimento catalogo (Discografia) --- */
+.rel-enrich{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:11px 14px;border-radius:11px;background:color-mix(in srgb,var(--accent) 9%,var(--panel));border:1px solid color-mix(in srgb,var(--accent) 32%,var(--line));flex-wrap:wrap}
+.rel-enrich-ico{font-size:1.05rem;flex:none}
+.rel-enrich-txt{font-size:.9rem;min-width:0}

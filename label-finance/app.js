@@ -1104,6 +1104,7 @@ function expandReleases(list){
   return out;
 }
 function renderReleases(){
+  updateRelEnrichBanner();
   const rq=($('#rel-search')&&$('#rel-search').value||'').toLowerCase().trim();
   let base=releases().slice();
   if(rq) base=base.filter(r=>((r.catalog||'')+' '+(r.title||'')+' '+(r.artist||'')+' '+(r.upc||'')).toLowerCase().includes(rq));
@@ -1189,6 +1190,34 @@ function collectSplits(container){
   });
   return out;
 }
+/* ---- Avviso intelligente in Discografia: arricchimento catalogo dai movimenti ---- */
+function catalogInsights(){
+  const enr=(typeof txEnrichments==='function')?txEnrichments():[];
+  const byField={}, rels=new Set();
+  enr.forEach(e=>{ byField[e.field]=(byField[e.field]||0)+1; rels.add(e.relId); });
+  const unlinked=new Set();
+  (DB.transactions||[]).forEach(t=>{ const p=(t.product||'').trim(); if(p && !releaseForTx(t)) unlinked.add(p.toLowerCase()); });
+  return { enrTotal:enr.length, enrRels:rels.size, byField, unlinked:unlinked.size };
+}
+let relEnrichDismissed='';
+function relEnrichSig(ci){ return ci.enrTotal+'|'+ci.enrRels+'|'+ci.unlinked; }
+function updateRelEnrichBanner(){
+  const b=$('#rel-enrich-banner'); if(!b) return;
+  const ci=catalogInsights(); const sig=relEnrichSig(ci);
+  if((!ci.enrTotal && !ci.unlinked) || sig===relEnrichDismissed){ b.hidden=true; return; }
+  const fmap={isrc:'ISRC', upc:tt('r.upc'), catalog:tt('col.catalog'), artist:tt('r.artist')};
+  const parts=Object.entries(ci.byField).sort((a,b)=>b[1]-a[1]).map(([f,n])=>`${n} ${fmap[f]||f}`);
+  const bits=[];
+  if(ci.enrTotal) bits.push(tt('rel.enrich_msg').replace('{r}',ci.enrRels).replace('{d}',parts.join(' · ')));
+  if(ci.unlinked) bits.push(tt('rel.enrich_unlinked').replace('{n}',ci.unlinked));
+  const txt=b.querySelector('.rel-enrich-txt'); if(txt) txt.textContent=bits.join('  ·  ');
+  if($('#rel-enrich-open')) $('#rel-enrich-open').hidden=!ci.enrTotal;
+  if($('#rel-enrich-import')) $('#rel-enrich-import').hidden=!ci.unlinked;
+  b.hidden=false;
+}
+$('#rel-enrich-open')?.addEventListener('click', ()=>{ if(typeof openEnrichModal==='function') openEnrichModal(); });
+$('#rel-enrich-import')?.addEventListener('click', ()=>{ const o=$('#catimp-open'); if(o) o.click(); });
+$('#rel-enrich-x')?.addEventListener('click', ()=>{ relEnrichDismissed=relEnrichSig(catalogInsights()); const b=$('#rel-enrich-banner'); if(b) b.hidden=true; });
 function openRelease(id){
   const r = id ? releases().find(x=>x.id===id) : null;
   artistDatalist();

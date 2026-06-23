@@ -146,7 +146,7 @@
       'tx.only_income':'Solo entrate','tx.only_expense':'Solo uscite','tx.all_platforms':'Tutte le piattaforme',
       'tx.cols':'⚙ Colonne','tx.export':'⤓ Esporta',
       // Release
-      'rel.title':'Discografia','rel.export':'⤓ Esporta','rel.new':'+ Nuova release',
+      'rel.title':'Discografia','rel.enrich_msg':'Dai movimenti possiamo completare {r} release: {d}.','rel.enrich_unlinked':'{n} prodotti venduti non sono ancora a catalogo.','rel.enrich_btn':'Rivedi e arricchisci','rel.export':'⤓ Esporta','rel.new':'+ Nuova release',
       'rel.c_title':'Titolo','rel.c_year':'Anno','rel.c_split':'Ripartizione',
       'rel.intro':'Definisci catalogo, titolo e le quote di ripartizione (%) per artista. Le vendite con lo stesso catalogo useranno automaticamente queste quote nella sezione Royalty.',
       // Royalty
@@ -337,7 +337,7 @@
       'tx.search':'Search product, artist, catalog…','tx.all_kinds':'All types',
       'tx.only_income':'Income only','tx.only_expense':'Expenses only','tx.all_platforms':'All platforms',
       'tx.cols':'⚙ Columns','tx.export':'⤓ Export',
-      'rel.title':'Discography','rel.export':'⤓ Export','rel.new':'+ New release',
+      'rel.title':'Discography','rel.enrich_msg':'From your transactions we can complete {r} releases: {d}.','rel.enrich_unlinked':'{n} sold products are not in the catalog yet.','rel.enrich_btn':'Review & enrich','rel.export':'⤓ Export','rel.new':'+ New release',
       'rel.c_title':'Title','rel.c_year':'Year','rel.c_split':'Split',
       'rel.intro':'Define catalog, title and the revenue split (%) per artist. Sales with the same catalog will automatically use these shares in the Royalties section.',
       'roy.title':'Royalties','roy.subtitle':'What each artist is owed, calculated on net income.',

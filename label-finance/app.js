@@ -1199,10 +1199,8 @@ function enableTrackDrag(cont){ if(!cont) return; let drag=null;
 }
 function trackBlockHTML(t={}){
   const splits=(t.splits&&t.splits.length)?t.splits:[{name:'',pct:''}];
-  const relMast=($('#r-mastered')&&$('#r-mastered').value.trim())||'';
-  const relDist=($('#r-distributed')&&$('#r-distributed').value.trim())||'';
-  const phM=relMast?('Mastered by · default: '+relMast):'Mastered by';
-  const phD=relDist?('Distributed by · default: '+relDist):'Distributed by';
+  const relV=id=>($('#'+id)&&$('#'+id).value.trim())||'';
+  const ph=(label,def)=>def?(label+' · default: '+def):label;
   return `<div class="track-block">
     <div class="track-head">
       <span class="track-grip" title="Trascina per riordinare">⠿</span>
@@ -1211,8 +1209,11 @@ function trackBlockHTML(t={}){
       <button type="button" class="btn track-del" title="Rimuovi traccia">✕</button>
     </div>
     <div class="track-credits">
-      <input class="input track-mastered" placeholder="${esc(phM)}" value="${esc(t.masteredBy||'')}">
-      <input class="input track-distributed" placeholder="${esc(phD)}" value="${esc(t.distributedBy||'')}">
+      <input class="input track-written"     placeholder="${esc(ph('Written by',relV('r-written')))}"        value="${esc(t.writtenBy||'')}">
+      <input class="input track-produced"    placeholder="${esc(ph('Produced by',relV('r-produced')))}"      value="${esc(t.producedBy||'')}">
+      <input class="input track-mixed"       placeholder="${esc(ph('Mixed by',relV('r-mixed')))}"           value="${esc(t.mixedBy||'')}">
+      <input class="input track-mastered"    placeholder="${esc(ph('Mastered by',relV('r-mastered')))}"     value="${esc(t.masteredBy||'')}">
+      <input class="input track-distributed" placeholder="${esc(ph('Distributed by',relV('r-distributed')))}" value="${esc(t.distributedBy||'')}">
     </div>
     <div class="track-splits">${splits.map(s=>splitRowHTML(s.name,s.pct)).join('')}</div>
     <button type="button" class="btn btn-mini track-add-split">+ artista</button>
@@ -1334,9 +1335,9 @@ $('#rel-form').onsubmit=e=>{
     const title=tb.querySelector('.track-title').value.trim();
     const isrc=tb.querySelector('.track-isrc').value.trim();
     const tsplits=collectSplits(tb.querySelector('.track-splits'));
-    const tMast=(tb.querySelector('.track-mastered')&&tb.querySelector('.track-mastered').value.trim())||'';
-    const tDist=(tb.querySelector('.track-distributed')&&tb.querySelector('.track-distributed').value.trim())||'';
-    if(title||isrc||tsplits.length||tMast||tDist) tracks.push({id:uid(), title, isrc, masteredBy:tMast, distributedBy:tDist, splits:tsplits});
+    const gv=cls=>{ const el=tb.querySelector('.'+cls); return el?el.value.trim():''; };
+    const tWrit=gv('track-written'), tProd=gv('track-produced'), tMix=gv('track-mixed'), tMast=gv('track-mastered'), tDist=gv('track-distributed');
+    if(title||isrc||tsplits.length||tWrit||tProd||tMix||tMast||tDist) tracks.push({id:uid(), title, isrc, writtenBy:tWrit, producedBy:tProd, mixedBy:tMix, masteredBy:tMast, distributedBy:tDist, splits:tsplits});
   });
   const orderDate=$('#r-order').value||'';
   const rec={ id:id||uid(), catalog:$('#r-catalog').value.trim(), title:$('#r-title').value.trim(),

@@ -1365,5 +1365,5 @@ body.gate-signup #gate-signin{opacity:.5}
 .track-grip:active{cursor:grabbing}
 .track-block.track-dragging{opacity:.5;background:color-mix(in srgb,var(--accent) 10%,var(--panel))}
 /* --- Crediti per singola traccia --- */
-.track-credits{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.track-credits{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:10px}
 @media(max-width:560px){.track-credits{grid-template-columns:1fr}}

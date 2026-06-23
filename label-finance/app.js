@@ -3381,7 +3381,11 @@ function relSplitText(r){ const tot=(r.splits||[]).reduce((s,x)=>s+(+x.pct||0),0
   return (r.splits||[]).map(s=>esc(s.name)+' '+(+s.pct||0)+'%').join(' · ')+(lbl?` · Label ${lbl}%`:''); }
 function colCfg(sec){ DB.colCfg=DB.colCfg||{}; const all=(COLDEFS[sec]||[]).map(c=>c.key);
   let cfg=DB.colCfg[sec]; if(!cfg||!Array.isArray(cfg.order)) cfg=DB.colCfg[sec]={order:all.slice(),hidden:[]};
-  all.forEach(k=>{ if(!cfg.order.includes(k)) cfg.order.push(k); });
+  all.forEach((k,idx)=>{ if(cfg.order.includes(k)) return;
+    // inserisci la colonna nuova nella sua posizione naturale (subito dopo la precedente di COLDEFS già presente)
+    let at=cfg.order.length;
+    for(let j=idx-1;j>=0;j--){ const p=cfg.order.indexOf(all[j]); if(p>=0){ at=p+1; break; } }
+    cfg.order.splice(at,0,k); });
   cfg.order=cfg.order.filter(k=>all.includes(k)); cfg.hidden=(cfg.hidden||[]).filter(k=>all.includes(k));
   return cfg; }
 function colsFor(sec){ const cfg=colCfg(sec), defs=COLDEFS[sec]||[];

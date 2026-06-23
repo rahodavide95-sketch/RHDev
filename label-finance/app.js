@@ -1224,12 +1224,38 @@ function updateRelEnrichBanner(){
   if(ci.unlinked) bits.push(tt('rel.enrich_unlinked').replace('{n}',ci.unlinked));
   const txt=b.querySelector('.rel-enrich-txt'); if(txt) txt.textContent=bits.join('  ·  ');
   if($('#rel-enrich-open')) $('#rel-enrich-open').hidden=!ci.enrTotal;
+  if($('#rel-enrich-create')) $('#rel-enrich-create').hidden=!ci.unlinked;
   if($('#rel-enrich-import')) $('#rel-enrich-import').hidden=!ci.unlinked;
   b.hidden=false;
 }
 $('#rel-enrich-open')?.addEventListener('click', ()=>{ if(typeof openEnrichModal==='function') openEnrichModal(); });
 $('#rel-enrich-import')?.addEventListener('click', ()=>{ const o=$('#catimp-open'); if(o) o.click(); });
 $('#rel-enrich-x')?.addEventListener('click', ()=>{ relEnrichDismissed=relEnrichSig(catalogInsights()); const b=$('#rel-enrich-banner'); if(b) b.hidden=true; });
+/* crea release direttamente dai movimenti non ancora a catalogo (riusa la pipeline import) */
+function unlinkedTxItems(){
+  const groups=new Map();
+  (DB.transactions||[]).forEach(t=>{
+    const product=(t.product||'').trim(), catalog=(t.catalog||'').trim(), upc=(t.upc||t.code||'').trim(), isrc=(t.isrc||'').trim(), artist=(t.artist||'').trim();
+    if(!product && !catalog && !upc) return;
+    if(releaseForTx(t)) return;                 // già a catalogo
+    const key=(upc||catalog||product).toLowerCase();
+    let g=groups.get(key); if(!g){ g={catalog,upc,title:product,artist:'',date:t.date||'',tracks:[],_a:new Set()}; groups.set(key,g); }
+    if(!g.catalog&&catalog) g.catalog=catalog; if(!g.upc&&upc) g.upc=upc; if(!g.title&&product) g.title=product; if(!g.date&&t.date) g.date=t.date;
+    if(artist){ g._a.add(artist.toLowerCase()); if(!g.artist) g.artist=artist; }
+    if(isrc && !g.tracks.some(x=>(x.isrc||'').toLowerCase()===isrc.toLowerCase())) g.tracks.push({title:'', isrc, artist});
+  });
+  return [...groups.values()].map(g=>{ const isVA=[...g._a].filter(Boolean).length>1;
+    return { catalog:g.catalog, upc:g.upc, date:g.date, title:g.title, artist:isVA?'Various Artists':(g.artist||''), isVA, tracks:g.tracks }; });
+}
+function createReleasesFromTx(){
+  const items=unlinkedTxItems();
+  if(!items.length){ toast(tt('rel.enrich_none')); return; }
+  if(!confirm(tt('rel.enrich_create_confirm').replace('{n}',items.length))) return;
+  const r=importReleasesData(items, true);
+  updateRelEnrichBanner();
+  if(r && r.direct) toast(tt('rel.enrich_created').replace('{n}', r.relNew||items.length));
+}
+$('#rel-enrich-create')?.addEventListener('click', createReleasesFromTx);
 function openRelease(id){
   const r = id ? releases().find(x=>x.id===id) : null;
   artistDatalist();

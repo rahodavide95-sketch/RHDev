@@ -217,35 +217,33 @@ function parseCSV(text, delim='auto'){
 
 /* ---------- Auto-mapping euristico ---------- */
 const HINTS = {
-  date:['date','data','sold','time','timestamp','giorno'],
-  platform:['platform','store','piattaforma','retailer','shop','source','channel'],
-  type:['type','tipo','format','formato','item type'],
-  catalog:['catalog','cat','catalogo','catno','catalogue'],
-  product:['item','product','title','titolo','prodotto','track','release','name','album'],
-  artist:['artist','artista','band'],
+  date:['date','data','sold','time','timestamp','giorno','sale month','sales period','reporting date','reporting','period','month','accounting','transaction date','order date','street date','sale date'],
+  platform:['platform','store','piattaforma','retailer','shop','source','channel','dsp','outlet','service','marketplace','partner','vendor'],
+  type:['type','tipo','format','formato','item type','product type','sale type'],
+  catalog:['catalog number','catalogue number','catalog','cat no','catalogue','catalogo','catno','cat#','cat'],
+  product:['item name','track title','song title','album title','release title','product title','item','product','title','titolo','prodotto','track','release','name','album','song','recording','content'],
+  artist:['artist name','primary artist','display artist','album artist','main artist','artist','artista','band','performer'],
   isrc:['isrc'],
-  upc:['upc','ean','barcode'],
-  qty:['qty','quantity','quantità','units','copies','count'],
-  gross:['gross','lordo','amount','sale','price','revenue','subtotal'],
+  upc:['upc','ean','barcode','upc/ean'],
+  qty:['quantity sold','units sold','quantity','quantità','units','copies','count','streams','plays','downloads','net qty','qty'],
+  gross:['gross revenue','item total','item price','list price','sales amount','gross','lordo','amount','sale','price','revenue','subtotal','retail'],
   shipping:['shipping','spedizione'],
   taxes:['tax','vat','iva','imposta'],
   payProcFees:['payment processor','processor fee','processor','paypal fee','stripe fee'],
-  fees:['fee','fees','commission','commissioni','charge'],
-  net:['net','netto','payout','net amount','net revenue','earnings','royalt'],
+  fees:['transaction fee','fee','fees','commission','commissioni','charge'],
+  net:['net revenue','net income','net payable','net amount','your earnings','amount payable','earnings','royalties','royalty','royalt','payout','payable','net','netto'],
   csShare:['collection society','society share','collecting society','cmo','pro share','mechanical'],
   dateTo:['date to','transaction date to','to date'],
-  currency:['currency','valuta','cur'],
+  currency:['currency code','currency','valuta','curr','ccy','cur'],
 };
+const colNorm = s => String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
 function autoMap(headers){
-  const map={}; const used=new Set();
+  const map={}; const used=new Set(); const nh=headers.map(colNorm);
   for(const [field] of CANON){
-    const hints=HINTS[field]||[];
+    const hints=(HINTS[field]||[]).map(colNorm).filter(Boolean);
     let best=-1;
-    headers.forEach((h,i)=>{
-      if(used.has(i)) return;
-      const hl=h.toLowerCase();
-      if(hints.some(k=>hl.includes(k))){ if(best===-1) best=i; }
-    });
+    nh.forEach((h,i)=>{ if(used.has(i)||best>-1) return; if(hints.includes(h)) best=i; });          // 1) intestazione == sinonimo
+    if(best===-1) nh.forEach((h,i)=>{ if(used.has(i)||best>-1) return; if(hints.some(k=>h.includes(k))) best=i; });  // 2) sinonimo contenuto
     if(best>-1){ map[field]=best; used.add(best); }
   }
   return map;
@@ -1244,19 +1242,20 @@ $('#rel-form').onsubmit=e=>{
    IMPORT CATALOGO universale — CSV di qualunque piattaforma → release + artisti
    ============================================================================ */
 const CAT_SYN = {
-  upc:['upc','ean','barcode','upc/ean','upc code','grid'],
-  isrc:['isrc','isrc code'],
-  catalog:['catalogue number','catalog number','catalog #','cat no','cat. no','cat no.','catno','catalog','catalogue','catalogo','codice catalogo','cat'],
-  date:['original release date','digital release date','release date','data di uscita','data uscita','released','release_date','released on','date','data'],
-  artist:['display artist','primary artist','main artist','artist name','album artist','artist','artists','artista','performer','band'],
-  title:['release title','album title','album name','release name','product title','title','titolo','album','release','product'],
+  upc:['upc/ean','upc code','release upc','upc','ean code','ean','barcode','grid'],
+  isrc:['isrc code','isrc'],
+  catalog:['catalogue number','catalog number','catalog #','cat number','cat no','cat. no','cat no.','catno','cat#','catalog id','catalog','catalogue','catalogo','codice catalogo','label code','cat'],
+  date:['original release date','digital release date','street date','release date','sale date','data di uscita','data uscita','released on','released','release_date','date','data'],
+  artist:['display artist','primary artist','main artist','album artist','artist name','artists','artist','artista','performer','band'],
+  title:['release title','album title','album name','release name','product title','title','titolo','album','release','product','track title','track name','song title','song','track'],
 };
 let catImpRaw='', catImpHeaders=[];
 function autoMapCat(headers){
-  const low=headers.map(h=>String(h||'').toLowerCase().trim()); const used=new Set(); const map={};
+  const low=headers.map(colNorm); const used=new Set(); const map={};
   const fields=['upc','isrc','catalog','date','artist','title'];
-  fields.forEach(f=>{ for(const s of CAT_SYN[f]){ const i=low.findIndex((h,j)=>!used.has(j)&&h===s); if(i>=0){map[f]=i;used.add(i);break;} } });
-  fields.forEach(f=>{ if(map[f]!=null) return; for(const s of CAT_SYN[f]){ const i=low.findIndex((h,j)=>!used.has(j)&&h.includes(s)); if(i>=0){map[f]=i;used.add(i);break;} } });
+  const syn=f=>(CAT_SYN[f]||[]).map(colNorm).filter(Boolean);
+  fields.forEach(f=>{ for(const s of syn(f)){ const i=low.findIndex((h,j)=>!used.has(j)&&h===s); if(i>=0){map[f]=i;used.add(i);break;} } });   // match esatto
+  fields.forEach(f=>{ if(map[f]!=null) return; for(const s of syn(f)){ const i=low.findIndex((h,j)=>!used.has(j)&&h.includes(s)); if(i>=0){map[f]=i;used.add(i);break;} } });   // sinonimo contenuto
   fields.forEach(f=>{ if(map[f]==null) map[f]=-1; });
   return map;
 }

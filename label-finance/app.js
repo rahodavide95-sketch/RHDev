@@ -60,6 +60,8 @@ function ensureLabelShape(l){
   l.txHidden=l.txHidden||DEFAULT_TX_ORDER.filter(c=>!DEFAULT_TX_VISIBLE.includes(c));
   l.artists=l.artists||[]; l.tasks=l.tasks||[]; l.contracts=l.contracts||[]; l.merch=l.merch||[];
   l.planning=l.planning||[]; l.events=l.events||[]; l.supports=l.supports||[];
+  // release legacy senza tipo: deducilo (così le tracce degli EP si vedono come righe)
+  l.releases.forEach(r=>{ if(r && !r.type) r.type=((r.tracks||[]).length>1)?'EP':'SINGLE'; });
   l.name=l.name||(l.profile&&l.profile.label)||'Etichetta';
   return l;
 }
@@ -1303,15 +1305,19 @@ function relMatch(a,b){
 function itemToRelease(it){
   const title=(it.title||'').trim(), artist=(it.artist||'').trim(), upc=(it.upc||'').trim(), catalog=(it.catalog||'').trim();
   const date=normDate(it.date||'');
+  const tracks=(it.isrcs||[]).filter(Boolean).map(code=>({id:uid(), title:'', isrc:code, splits:[]}));
   return { id:uid(), catalog, title, artist, upc, orderDate:date, preorder:'', note:'',
     year:date?new Date(date+'T00:00:00').getFullYear():'',
-    splits:[], tracks:(it.isrcs||[]).filter(Boolean).map(code=>({id:uid(), title:'', isrc:code, splits:[]})) };
+    type: tracks.length>1 ? 'EP' : 'SINGLE',   // così le tracce dell'EP si vedono come righe nella lista
+    splits:[], tracks };
 }
 function mergeRelInto(target, src){
   ['catalog','title','artist','upc','orderDate','preorder','year','note','exclusive','exclusivePlatform'].forEach(f=>{ if(!target[f] && src[f]) target[f]=src[f]; });
   if((!target.splits||!target.splits.length) && src.splits&&src.splits.length) target.splits=src.splits;
   const seen=new Set((target.tracks||[]).map(t=>(t.isrc||'').toLowerCase()).filter(Boolean));
   (src.tracks||[]).forEach(t=>{ const k=(t.isrc||'').toLowerCase(); if(k && !seen.has(k)){ seen.add(k); (target.tracks=target.tracks||[]).push(t); } });
+  // se la release accumula più tracce, marcala come EP (senza sovrascrivere ALBUM/VA scelti)
+  if((target.tracks||[]).length>1 && (!target.type || target.type==='SINGLE')) target.type='EP';
 }
 function collectNewArtists(items){
   const exist=new Set((DB.artists||[]).map(a=>(a.name||'').toLowerCase()));

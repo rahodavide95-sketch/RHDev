@@ -825,12 +825,8 @@
                 <option value="labelengine">Label Engine</option>
               </select>
             </label>
-            <label>Origine (preset)
-              <div class="row-inline">
-                <select id="map-preset" class="select"><option value="">— nuovo —</option></select>
-                <input id="map-preset-name" class="input" placeholder="es. Bandcamp">
-                <button class="btn" id="save-preset">Salva preset</button>
-              </div>
+            <label>Carica preset salvato
+              <select id="map-preset" class="select"><option value="">— nessuno —</option></select>
             </label>
             <label>Tipo movimento
               <select id="map-kind" class="select">
@@ -874,11 +870,15 @@
           <div class="panel-head"><h2>3 · Anteprima</h2>
             <span class="muted small" id="preview-count"></span></div>
           <div class="table-wrap"><table class="data-table" id="preview-table"></table></div>
-          <div class="panel-foot">
+          <div class="panel-foot" style="flex-wrap:wrap;gap:10px">
             <label class="check-inline" title="Non importa righe già presenti (stessa data, prodotto, importo…)">
               <input type="checkbox" id="import-dedup" checked> Salta doppioni
             </label>
             <span class="spacer"></span>
+            <div class="row-inline" style="gap:6px" title="Salva questa mappatura come preset per riusarla la prossima volta">
+              <input id="map-preset-name" class="input" placeholder="Nome preset (es. Bandcamp)" style="max-width:190px">
+              <button class="btn" id="save-preset">💾 Salva preset</button>
+            </div>
             <button class="btn" id="import-cancel">Annulla</button>
             <button class="btn btn-primary" id="import-confirm">Importa movimenti</button>
           </div>

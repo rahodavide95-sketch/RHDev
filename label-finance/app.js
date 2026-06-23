@@ -1181,10 +1181,23 @@ function refreshSplitTotal(){
   el.textContent = `Totale artisti ${tot}% · Label ${Math.max(0,100-tot)}%` + (tot>100?' ⚠ supera 100%':'');
   el.style.color = tot>100 ? 'var(--out)' : 'var(--muted)';
 }
+/* ---- Riordino tracce via drag (solo dalla maniglia) ---- */
+function trackDragAfter(cont,y){ const items=[...cont.querySelectorAll('.track-block:not(.track-dragging)')];
+  let best=null,bestOff=-Infinity; items.forEach(it=>{ const b=it.getBoundingClientRect(); const off=y-(b.top+b.height/2);
+    if(off<0 && off>bestOff){ bestOff=off; best=it; } }); return best; }
+function enableTrackDrag(cont){ if(!cont) return; let drag=null;
+  cont.querySelectorAll('.track-block').forEach(b=>{ const grip=b.querySelector('.track-grip'); if(!grip) return;
+    grip.setAttribute('draggable','true');
+    grip.ondragstart=e=>{ drag=b; b.classList.add('track-dragging'); try{ e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',''); }catch(_){} };
+    grip.ondragend=()=>{ if(drag){ drag.classList.remove('track-dragging'); drag=null; } }; });
+  cont.ondragover=e=>{ if(!drag) return; e.preventDefault(); const after=trackDragAfter(cont,e.clientY);
+    if(after==null) cont.appendChild(drag); else cont.insertBefore(drag,after); };
+}
 function trackBlockHTML(t={}){
   const splits=(t.splits&&t.splits.length)?t.splits:[{name:'',pct:''}];
   return `<div class="track-block">
     <div class="track-head">
+      <span class="track-grip" title="Trascina per riordinare">⠿</span>
       <input class="input track-title" placeholder="Titolo traccia" value="${esc(t.title||'')}">
       <input class="input track-isrc" placeholder="ISRC" value="${esc(t.isrc||'')}">
       <button type="button" class="btn track-del" title="Rimuovi traccia">✕</button>
@@ -1279,6 +1292,7 @@ function openRelease(id){
   const splits = (r?.splits&&r.splits.length) ? r.splits : [{name:'',pct:''}];
   $('#r-splits').innerHTML = splits.map(s=>splitRowHTML(s.name,s.pct)).join('');
   $('#r-tracks').innerHTML = (r?.tracks||[]).map(t=>trackBlockHTML(t)).join('');
+  enableTrackDrag($('#r-tracks'));
   refreshSplitTotal();
   $('#r-delete').hidden=!r;
   $('#rel-modal').hidden=false;
@@ -1287,7 +1301,7 @@ $('#btn-add-release').onclick=()=>openRelease(null);
 $('#rel-modal-close').onclick=$('#r-cancel').onclick=()=>$('#rel-modal').hidden=true;
 $('#rel-modal').onclick=e=>{ if(e.target.id==='rel-modal') $('#rel-modal').hidden=true; };
 $('#r-add-split').onclick=()=>{ $('#r-splits').insertAdjacentHTML('beforeend',splitRowHTML()); refreshSplitTotal(); };
-$('#r-add-track').onclick=()=>{ $('#r-tracks').insertAdjacentHTML('beforeend',trackBlockHTML()); };
+$('#r-add-track').onclick=()=>{ $('#r-tracks').insertAdjacentHTML('beforeend',trackBlockHTML()); enableTrackDrag($('#r-tracks')); };
 $('#rel-form').addEventListener('click', e=>{ const t=e.target;
   if(t.classList.contains('split-del')){ t.closest('.split-row').remove(); refreshSplitTotal(); }
   else if(t.classList.contains('track-del')){ t.closest('.track-block').remove(); }

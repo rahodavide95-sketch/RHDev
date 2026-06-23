@@ -1303,18 +1303,21 @@ function relMatch(a,b){
 function itemToRelease(it){
   const title=(it.title||'').trim(), artist=(it.artist||'').trim(), upc=(it.upc||'').trim(), catalog=(it.catalog||'').trim();
   const date=normDate(it.date||'');
+  const half = nm => nm ? [{name:nm, pct:50}] : [];   // default 50% artista / 50% label (resto)
   let tracks=[]; const seen=new Set();
   if(Array.isArray(it.tracks) && it.tracks.length){
     it.tracks.forEach(t=>{ const code=(t.isrc||'').trim(), k=code.toLowerCase();
       if(code && seen.has(k)) return; if(code) seen.add(k);
-      tracks.push({id:uid(), title:(t.title||'').trim(), isrc:code, artist:(t.artist||'').trim(), splits:[]}); });
+      const ta=(t.artist||'').trim()||artist;
+      tracks.push({id:uid(), title:(t.title||'').trim(), isrc:code, artist:(t.artist||'').trim(), splits:half(ta)}); });
   } else {
-    tracks=(it.isrcs||[]).filter(Boolean).map(code=>({id:uid(), title:'', isrc:code, splits:[]}));
+    tracks=(it.isrcs||[]).filter(Boolean).map(code=>({id:uid(), title:'', isrc:code, splits:half(artist)}));
   }
   const type = it.isVA ? 'VA' : (tracks.length>1 ? 'EP' : 'SINGLE');
+  const relSplits = (artist && !/^various artists?$/i.test(artist)) ? half(artist) : [];
   return { id:uid(), catalog, title, artist, upc, orderDate:date, preorder:'', note:'',
     year:date?new Date(date+'T00:00:00').getFullYear():'',
-    type, splits:[], tracks };
+    type, splits:relSplits, tracks };
 }
 function mergeRelInto(target, src){
   ['catalog','title','artist','upc','orderDate','preorder','year','note','exclusive','exclusivePlatform'].forEach(f=>{ if(!target[f] && src[f]) target[f]=src[f]; });

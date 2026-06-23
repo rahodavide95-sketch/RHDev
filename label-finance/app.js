@@ -1238,14 +1238,21 @@ function unlinkedTxItems(){
     const product=(t.product||'').trim(), catalog=(t.catalog||'').trim(), upc=(t.upc||t.code||'').trim(), isrc=(t.isrc||'').trim(), artist=(t.artist||'').trim();
     if(!product && !catalog && !upc) return;
     if(releaseForTx(t)) return;                 // già a catalogo
-    const key=(upc||catalog||product).toLowerCase();
-    let g=groups.get(key); if(!g){ g={catalog,upc,title:product,artist:'',date:t.date||'',tracks:[],_a:new Set()}; groups.set(key,g); }
-    if(!g.catalog&&catalog) g.catalog=catalog; if(!g.upc&&upc) g.upc=upc; if(!g.title&&product) g.title=product; if(!g.date&&t.date) g.date=t.date;
+    const key=(catalog||upc||product).toLowerCase();   // catalogo prima: unisce tutte le righe della stessa release
+    let g=groups.get(key); if(!g){ g={catalog,upc,date:t.date||'',artist:'',tracks:[],albumTitles:[],_a:new Set(),_tt:new Set()}; groups.set(key,g); }
+    if(!g.catalog&&catalog) g.catalog=catalog; if(!g.upc&&upc) g.upc=upc; if(!g.date&&t.date) g.date=t.date;
     if(artist){ g._a.add(artist.toLowerCase()); if(!g.artist) g.artist=artist; }
-    if(isrc && !g.tracks.some(x=>(x.isrc||'').toLowerCase()===isrc.toLowerCase())) g.tracks.push({title:'', isrc, artist});
+    if(isrc){
+      if(!g.tracks.some(x=>(x.isrc||'').toLowerCase()===isrc.toLowerCase())){ g.tracks.push({title:product, isrc, artist}); if(product) g._tt.add(product.toLowerCase()); }
+    } else if(product){ g.albumTitles.push(product); }   // riga senza ISRC = probabile titolo release/album
   });
-  return [...groups.values()].map(g=>{ const isVA=[...g._a].filter(Boolean).length>1;
-    return { catalog:g.catalog, upc:g.upc, date:g.date, title:g.title, artist:isVA?'Various Artists':(g.artist||''), isVA, tracks:g.tracks }; });
+  return [...groups.values()].map(g=>{
+    const isVA=[...g._a].filter(Boolean).length>1;
+    let title=g.albumTitles[0]||'';
+    if(!title){ const tt=[...g._tt]; title=(tt.length===1)?((g.tracks.find(t=>t.title)||{}).title||''):''; }
+    if(!title && !isVA) title=(g.tracks.find(t=>t.title)||{}).title||'';   // singolo: usa il titolo della traccia
+    return { catalog:g.catalog, upc:g.upc, date:g.date, title, artist:isVA?'Various Artists':(g.artist||''), isVA, tracks:g.tracks };
+  });
 }
 function createReleasesFromTx(){
   const items=unlinkedTxItems();
@@ -1466,7 +1473,7 @@ function catImpItems(){
     const trackArtist = val(r,cTrackA) || artistMapped;
     const albumArtist = val(r,cAlbumA);
     if(!catalog && !upc && !trackTitle && !albumTitle) return;
-    const key=(upc||catalog||albumTitle||trackTitle).toLowerCase();
+    const key=(catalog||upc||albumTitle||trackTitle).toLowerCase();
     let g=groups.get(key);
     if(!g){ g={catalog,upc,date,albumTitle,albumArtist,tracks:[],_titles:new Set(),_artists:new Set()}; groups.set(key,g); }
     if(!g.catalog&&catalog) g.catalog=catalog; if(!g.upc&&upc) g.upc=upc; if(!g.date&&date) g.date=date;

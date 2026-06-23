@@ -1350,3 +1350,9 @@ body.gate-signup #gate-signin{opacity:.5}
 .rel-track-row{background:color-mix(in srgb,var(--accent) 4%,transparent)}
 .rel-track-row .dbl-strong{font-weight:500;opacity:.9}
 .rel-track-mark{display:inline-block;padding-left:10px;color:var(--muted);opacity:.7}
+/* --- Riordino colonne via drag --- */
+.col-grip{cursor:grab;color:var(--muted);opacity:.55;padding:0 4px;user-select:none;font-size:.95rem;line-height:1;flex:none}
+.col-grip:active{cursor:grabbing}
+.col-item.col-dragging{opacity:.45;background:color-mix(in srgb,var(--accent) 12%,var(--panel));border-radius:8px}
+.col-item[draggable=true]{user-select:none}
+.col-item>.col-check{flex:1;min-width:0}

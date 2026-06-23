@@ -989,10 +989,23 @@ if(txSortSel) txSortSel.addEventListener('change',()=>{
 });
 
 /* ---------- Gestione colonne (mostra/nascondi + ordine) ---------- */
+/* ---- Riordino colonne via drag & drop (condiviso movimenti + sezioni) ---- */
+function colDragAfter(list,y){ const items=[...list.querySelectorAll('.col-item:not(.col-dragging)')];
+  let best=null,bestOff=-Infinity; items.forEach(it=>{ const b=it.getBoundingClientRect(); const off=y-(b.top+b.height/2);
+    if(off<0 && off>bestOff){ bestOff=off; best=it; } }); return best; }
+function enableColDrag(list, apply){ if(!list) return; let drag=null;
+  list.querySelectorAll('.col-item').forEach(li=>{ li.setAttribute('draggable','true');
+    li.ondragstart=e=>{ drag=li; li.classList.add('col-dragging'); try{ e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',li.dataset.col); }catch(_){} };
+    li.ondragend=()=>{ if(!drag) return; drag.classList.remove('col-dragging'); drag=null;
+      apply([...list.querySelectorAll('.col-item')].map(x=>x.dataset.col)); }; });
+  list.ondragover=e=>{ if(!drag) return; e.preventDefault(); const after=colDragAfter(list,e.clientY);
+    if(after==null) list.appendChild(drag); else list.insertBefore(drag,after); };
+}
 function renderColsManager(){
   ensureCols();
   $('#cols-list').innerHTML = DB.txOrder.filter(c=>TX_COLS[c]).map(c=>`
     <li class="col-item" data-col="${c}">
+      <span class="col-grip" title="Trascina per riordinare">⠿</span>
       <label class="col-check"><input type="checkbox" ${DB.txHidden.includes(c)?'':'checked'} data-col-toggle="${c}">
         <span>${esc(colLabel(c))||'(IN/OUT)'}</span></label>
       <span class="col-moves">
@@ -1008,6 +1021,7 @@ function renderColsManager(){
   });
   $$('[data-col-up]').forEach(b=>b.onclick=()=>moveCol(b.dataset.colUp,-1));
   $$('[data-col-down]').forEach(b=>b.onclick=()=>moveCol(b.dataset.colDown,1));
+  enableColDrag($('#cols-list'), order=>{ DB.txOrder=order; save(); applyTxFilters(); });
 }
 function moveCol(c,dir){
   ensureCols();
@@ -3544,6 +3558,7 @@ function openColCfg(sec){ if(!COLDEFS[sec]) return; colCfgSec=sec; renderColCfgL
 function renderColCfgList(){ const sec=colCfgSec; if(!sec) return; const cfg=colCfg(sec), defs=COLDEFS[sec]; const box=$('#colcfg-list'); if(!box) return;
   box.innerHTML = cfg.order.map(k=>{ const d=defs.find(c=>c.key===k); if(!d) return '';
     return `<li class="col-item" data-col="${k}">
+      <span class="col-grip" title="Trascina per riordinare">⠿</span>
       <label class="col-check"><input type="checkbox" ${cfg.hidden.includes(k)?'':'checked'} data-ccol-toggle="${k}"><span>${esc(colLab(d))}</span></label>
       <span class="col-moves"><button type="button" data-ccol-up="${k}" title="↑">↑</button><button type="button" data-ccol-down="${k}" title="↓">↓</button></span>
     </li>`; }).join('');
@@ -3552,6 +3567,7 @@ function renderColCfgList(){ const sec=colCfgSec; if(!sec) return; const cfg=col
     save(); rerenderSec(colCfgSec); });
   $$('[data-ccol-up]').forEach(b=>b.onclick=()=>moveColCfg(b.dataset.ccolUp,-1));
   $$('[data-ccol-down]').forEach(b=>b.onclick=()=>moveColCfg(b.dataset.ccolDown,1));
+  enableColDrag($('#colcfg-list'), order=>{ const c=colCfg(colCfgSec); c.order=order; save(); rerenderSec(colCfgSec); });
 }
 function moveColCfg(k,dir){ const c=colCfg(colCfgSec), i=c.order.indexOf(k), j=i+dir;
   if(i<0||j<0||j>=c.order.length) return; [c.order[i],c.order[j]]=[c.order[j],c.order[i]];

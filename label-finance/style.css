@@ -1367,3 +1367,7 @@ body.gate-signup #gate-signin{opacity:.5}
 /* --- Crediti per singola traccia --- */
 .track-credits{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:10px}
 @media(max-width:560px){.track-credits{grid-template-columns:1fr}}
+/* --- Intestazioni di tabelle e liste fisse durante lo scroll --- */
+.dbl-head{position:sticky;top:calc(58px + env(safe-area-inset-top));z-index:6;background:var(--bg);border-radius:0}
+.data-table thead th{position:sticky;top:calc(58px + env(safe-area-inset-top));z-index:6;background:var(--bg)}
+@media(min-width:881px){ .table-wrap{overflow:visible} }

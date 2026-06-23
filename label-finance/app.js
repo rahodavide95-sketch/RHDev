@@ -851,6 +851,18 @@ function loadDemo(){
     .forEach(([name,mAgo,amt])=>tx.push({ id:uid(), kind:'expense', date:D(mAgo,12), platform:'', type:'expense',
       catalog:'', product:name, artist:'', qty:1, gross:0, fees:0, net:amt, csShare:0, currency:'EUR', note:'demo', demo:true }));
   DB.transactions.push(...tx);
+  // ---- Scenario "arricchimento": release incompleta + vendite con dati extra dai movimenti ----
+  releases().push({ id:uid(), catalog:'RHD007', title:'Solstice', artist:'', upc:'', orderDate:D(2,8), year:yOf(D(2,8)),
+    type:'SINGLE', preorder:'', exclusive:false, note:'', splits:[], tracks:[], masteredBy:'', distributedBy:'', demo:true });
+  const enrTx=[];
+  for(let m=2;m>=0;m--) enrTx.push({ id:uid(), kind:'income', date:D(m,9), platform:'Spotify', type:'digital',
+    catalog:'RHD007', product:'Solstice', artist:'Marlo', isrc:isrc(71), upc:'0884385007073',
+    qty:2, gross:0, fees:0, net:+(8+Math.random()*14).toFixed(2), csShare:0, currency:'EUR', note:'demo', demo:true });
+  // prodotto venduto NON ancora a catalogo
+  enrTx.push({ id:uid(), kind:'income', date:D(1,15), platform:'Bandcamp', type:'digital',
+    catalog:'RHD099', product:'Lost Tape (Demo)', artist:'Kavi', isrc:'', upc:'',
+    qty:1, gross:0, fees:0, net:14, csShare:0, currency:'EUR', note:'demo', demo:true });
+  DB.transactions.push(...enrTx);
   // ---- Recoupment (anticipi/costi) ----
   DB.recoup.push({ id:newId(), artist:'Nova Iris', kind:'advance', amount:800, demo:true });
   DB.recoup.push({ id:newId(), artist:'Marlo',     kind:'cost',    amount:260, demo:true });

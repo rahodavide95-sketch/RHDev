@@ -19,9 +19,9 @@ const CANON = [
 ];
 
 /* ---------- Store ---------- */
-const DEFAULT_TX_ORDER = ['date','kind','platform','catalog','product','artist','qty','net','eur',
+const DEFAULT_TX_ORDER = ['date','kind','platform','catalog','product','artist','qty','net',
   'dateTo','type','isrc','upc','gross','shipping','taxes','payProcFees','fees','csShare','currency','note'];
-const DEFAULT_TX_VISIBLE = ['date','kind','platform','catalog','product','artist','qty','net','eur'];
+const DEFAULT_TX_VISIBLE = ['date','kind','platform','catalog','product','artist','qty','net'];
 /* Account = piu' etichette; DB punta all'etichetta attiva. */
 const DASH_BASE = ['kpi','chart','g_release','g_artist','g_platform','g_type'];
 const DASH_EXTRAS = ['forecast','w_top','recent','merch','nextrel','nextevt','support','disco','margin','expenses','payable','unrec','mom','pending','lowstock','duetasks']; // libreria widget opzionali (nascosti di default)
@@ -915,9 +915,8 @@ const TX_COLS = {
   payProcFees:{label:'Comm. processore', num:1, cell:t=>moneyCell(t.payProcFees,t)},
   fees:    {label:'Commissioni', num:1, cell:t=>moneyCell(t.fees,t)},
   csShare: {label:'Coll. society', num:1, cell:t=>moneyCell(t.csShare,t)},
-  net:     {label:'Netto', num:1,cell:t=>fmtMoney(t.net,t.currency||'EUR')},
+  net:     {label:'Netto', num:1,cell:t=>{ const inc=t.kind==='income'; return `<span class="${inc?'pos':'neg'}">${inc?'':'−'}${fmtMoney(Math.abs(+t.net||0),t.currency||'EUR')}</span>`; }},
   currency:{label:'Valuta',      cell:t=>esc(t.currency)},
-  eur:     {label:'€', num:1,    cell:t=>`<span class="${t.kind==='income'?'pos':'neg'}">${fmtMoney((t.kind==='income'?1:-1)*toEur(t.net,t.currency))}</span>`},
   note:    {label:'Nota',        cell:t=>esc(t.note)},
 };
 function visibleCols(){ ensureCols(); return DB.txOrder.filter(c=>!DB.txHidden.includes(c) && TX_COLS[c]); }
@@ -1304,11 +1303,18 @@ function relMatch(a,b){
 function itemToRelease(it){
   const title=(it.title||'').trim(), artist=(it.artist||'').trim(), upc=(it.upc||'').trim(), catalog=(it.catalog||'').trim();
   const date=normDate(it.date||'');
-  const tracks=(it.isrcs||[]).filter(Boolean).map(code=>({id:uid(), title:'', isrc:code, splits:[]}));
+  let tracks=[]; const seen=new Set();
+  if(Array.isArray(it.tracks) && it.tracks.length){
+    it.tracks.forEach(t=>{ const code=(t.isrc||'').trim(), k=code.toLowerCase();
+      if(code && seen.has(k)) return; if(code) seen.add(k);
+      tracks.push({id:uid(), title:(t.title||'').trim(), isrc:code, artist:(t.artist||'').trim(), splits:[]}); });
+  } else {
+    tracks=(it.isrcs||[]).filter(Boolean).map(code=>({id:uid(), title:'', isrc:code, splits:[]}));
+  }
+  const type = it.isVA ? 'VA' : (tracks.length>1 ? 'EP' : 'SINGLE');
   return { id:uid(), catalog, title, artist, upc, orderDate:date, preorder:'', note:'',
     year:date?new Date(date+'T00:00:00').getFullYear():'',
-    type: tracks.length>1 ? 'EP' : 'SINGLE',   // così le tracce dell'EP si vedono come righe nella lista
-    splits:[], tracks };
+    type, splits:[], tracks };
 }
 function mergeRelInto(target, src){
   ['catalog','title','artist','upc','orderDate','preorder','year','note','exclusive','exclusivePlatform'].forEach(f=>{ if(!target[f] && src[f]) target[f]=src[f]; });
@@ -1321,12 +1327,13 @@ function mergeRelInto(target, src){
 function collectNewArtists(items){
   const exist=new Set((DB.artists||[]).map(a=>(a.name||'').toLowerCase()));
   const seen=new Set(), out=[];
-  items.forEach(it=>{ (it.artist? (''+it.artist).split(/,|&|;| feat\.?| ft\.?| x /i):[]).map(s=>s.trim()).filter(Boolean)
-    .forEach(nm=>{ const lk=nm.toLowerCase(); if(exist.has(lk)||seen.has(lk)) return; seen.add(lk); out.push({id:newId(), name:nm, split:''}); }); });
+  const add=raw=>{ (raw? (''+raw).split(/,|&|;| feat\.?| ft\.?| x /i):[]).map(s=>s.trim()).filter(Boolean)
+    .forEach(nm=>{ if(/^various artists?$|^v\.?a\.?$/i.test(nm)) return; const lk=nm.toLowerCase(); if(exist.has(lk)||seen.has(lk)) return; seen.add(lk); out.push({id:newId(), name:nm, split:''}); }); };
+  items.forEach(it=>{ add(it.artist); (it.tracks||[]).forEach(t=>add(t.artist)); });
   return out;
 }
 function analyzeImport(items){
-  const incoming=items.map(itemToRelease).filter(r=>r.title||r.upc);
+  const incoming=items.map(itemToRelease).filter(r=>r.title||r.upc||r.catalog);
   const existing=releases();
   const toAdd=[], conflicts=[];
   incoming.forEach(rel=>{
@@ -1355,17 +1362,47 @@ function importReleasesData(items, commit){
 function catImpItems(){
   const rows=parseCSV(catImpRaw||''); const data=rows.slice(1); const map=catImpMap();
   const get=(r,f)=> map[f]>=0 ? String(r[map[f]]||'').trim() : '';
+  // colonne aggiuntive auto-rilevate per distinguere livello-release e livello-traccia
+  const hdr=(catImpHeaders||[]).map(colNorm);
+  const findCol=(names,ex)=>{ ex=(ex==null?-1:ex);
+    for(const n of names){ const i=hdr.indexOf(colNorm(n)); if(i>=0&&i!==ex) return i; }
+    for(const n of names){ const k=colNorm(n); const i=hdr.findIndex((h,j)=>j!==ex&&h.includes(k)); if(i>=0) return i; }
+    return -1; };
+  const cAlbumT=findCol(['album title','release title','album name','release name']);
+  const cTrackT=findCol(['track title','track name','song title','song name'], cAlbumT);
+  const cAlbumA=findCol(['album artist','release artist','main artist']);
+  const cTrackA=findCol(['track artist','performer','artist'], cAlbumA);
+  const val=(r,i)=> i>=0 ? String(r[i]||'').trim() : '';
   const groups=new Map();
   data.forEach(r=>{ if(!r||!r.length) return;
-    const catalog=get(r,'catalog'), title=get(r,'title'), artist=get(r,'artist'), date=get(r,'date'), upc=get(r,'upc'), isrc=get(r,'isrc');
-    if(!catalog && !title && !upc) return;
-    const key=(upc||catalog||title).toLowerCase();
-    let g=groups.get(key); if(!g){ g={catalog,title,artist,date,upc,isrcs:[]}; groups.set(key,g); }
-    if(!g.catalog&&catalog) g.catalog=catalog; if(!g.title&&title) g.title=title;
-    if(!g.artist&&artist) g.artist=artist; if(!g.date&&date) g.date=date; if(!g.upc&&upc) g.upc=upc;
-    if(isrc && !g.isrcs.includes(isrc)) g.isrcs.push(isrc);
+    const catalog=get(r,'catalog'), date=get(r,'date'), upc=get(r,'upc'), isrc=get(r,'isrc');
+    const titleMapped=get(r,'title'), artistMapped=get(r,'artist');
+    const trackTitle = val(r,cTrackT) || titleMapped;
+    const albumTitle = val(r,cAlbumT);
+    const trackArtist = val(r,cTrackA) || artistMapped;
+    const albumArtist = val(r,cAlbumA);
+    if(!catalog && !upc && !trackTitle && !albumTitle) return;
+    const key=(upc||catalog||albumTitle||trackTitle).toLowerCase();
+    let g=groups.get(key);
+    if(!g){ g={catalog,upc,date,albumTitle,albumArtist,tracks:[],_titles:new Set(),_artists:new Set()}; groups.set(key,g); }
+    if(!g.catalog&&catalog) g.catalog=catalog; if(!g.upc&&upc) g.upc=upc; if(!g.date&&date) g.date=date;
+    if(!g.albumTitle&&albumTitle) g.albumTitle=albumTitle;
+    if(!g.albumArtist&&albumArtist) g.albumArtist=albumArtist;
+    if(trackTitle) g._titles.add(trackTitle.toLowerCase());
+    if(trackArtist) g._artists.add(trackArtist.toLowerCase());
+    if(isrc && g.tracks.some(t=>(t.isrc||'').toLowerCase()===isrc.toLowerCase())) return;
+    g.tracks.push({ title:trackTitle, isrc, artist:trackArtist });
   });
-  return { items:[...groups.values()], rows:data.length };
+  const items=[...groups.values()].map(g=>{
+    const distinctArtists=[...g._artists].filter(Boolean);
+    const isVA = /various|compilation|^v\.?a\.?$/i.test(g.albumArtist||'') || distinctArtists.length>1;
+    let title=g.albumTitle;
+    if(!title){ const dt=[...g._titles].filter(Boolean); title = (dt.length===1) ? ((g.tracks.find(t=>t.title)||{}).title||'') : ''; }
+    let artist=g.albumArtist;
+    if(!artist){ artist = isVA ? 'Various Artists' : (distinctArtists.length===1 ? ((g.tracks.find(t=>t.artist)||{}).artist||'') : ''); }
+    return { catalog:g.catalog, upc:g.upc, date:g.date, title, artist, isVA, tracks:g.tracks };
+  });
+  return { items, rows:data.length };
 }
 function catImpCompute(commit){ const {items,rows}=catImpItems(); const r=importReleasesData(items,commit); return {...r, rows}; }
 /* ---- Ricerca catalogo online (MusicBrainz/Discogs/Spotify) ---- */

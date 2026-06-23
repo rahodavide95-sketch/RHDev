@@ -559,6 +559,7 @@
           </div>
           <button class="btn" id="catimp-open" data-i18n="cimp.btn">⤒ Importa catalogo</button>
           <button class="btn" id="dup-find" data-i18n="dup.find" title="Trova e unisci duplicati">⧉ Trova duplicati</button>
+          <button class="btn" id="rel-credits" title="Applica Mastered/Distributed by in blocco" data-i18n="rcred.btn">✎ Crediti</button>
           <button class="btn btn-clear" data-clear="releases" data-i18n="bulk.clear">Svuota</button>
           <button class="btn btn-cols2" data-colcfg="releases" title="Personalizza colonne">⚙</button>
           <button class="btn btn-primary" id="btn-add-release" data-i18n="rel.new">+ Nuova release</button>
@@ -1738,9 +1739,26 @@
 
   <!-- ======= MODAL: colonne ======= -->
   <!-- Barra azioni selezione multipla -->
+  <div class="modal" id="credits-modal" hidden>
+    <div class="modal-card modal-card--sm">
+      <div class="modal-head"><h2 data-i18n="rcred.title">Crediti in blocco</h2><button class="modal-x" id="credits-close">✕</button></div>
+      <div style="padding:20px">
+        <p class="muted small" data-i18n="rcred.intro">Applica Mastered by e/o Distributed by a più release in un colpo. Lascia vuoto un campo per non modificarlo.</p>
+        <label style="display:block;margin-top:12px"><span data-i18n="r.mastered">Mastered by</span><input class="input" id="credits-mastered" style="margin-top:4px"></label>
+        <label style="display:block;margin-top:10px"><span data-i18n="r.distributed">Distributed by</span><input class="input" id="credits-distributed" style="margin-top:4px"></label>
+        <div style="margin-top:14px;display:flex;gap:18px;flex-wrap:wrap">
+          <label class="check-inline"><input type="radio" name="credits-scope" value="all" checked> <span data-i18n="rcred.all">Tutte le release</span> (<span id="credits-all-n">0</span>)</label>
+          <label class="check-inline"><input type="radio" name="credits-scope" value="sel"> <span data-i18n="rcred.sel">Solo selezionate</span> (<span id="credits-sel-n">0</span>)</label>
+        </div>
+        <div class="modal-foot" style="margin-top:18px"><button class="btn" id="credits-cancel" data-i18n="common.cancel">Annulla</button><span class="spacer"></span><button class="btn btn-primary" id="credits-apply" data-i18n="rcred.apply">Applica</button></div>
+      </div>
+    </div>
+  </div>
+
   <div class="bulk-bar" id="bulk-bar" hidden>
     <span class="bulk-info"><b id="bulk-count">0</b> <span data-i18n="bulk.selected">selezionati</span></span>
     <button class="btn btn-ghost" id="bulk-cancel" data-i18n="common.cancel">Annulla</button>
+    <button class="btn" id="bulk-credits" hidden data-i18n="rcred.btn">✎ Crediti</button>
     <button class="btn btn-danger" id="bulk-del"><span data-i18n="bulk.del">🗑 Elimina</span></button>
   </div>
 

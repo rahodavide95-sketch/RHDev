@@ -288,8 +288,12 @@ function openArtistByName(name){ goto('artists');
   const a=(DB.artists||[]).find(x=>(x.name||'').trim().toLowerCase()===(name||'').trim().toLowerCase());
   if(a) openArtistForm(a.id); }
 function relCatLink(cat){ const r=releaseByCatalog(cat); return r?`<span class="lf-link" data-rel-open="${r.id}">${esc(cat)}</span>`:esc(cat); }
-function artNameLink(name){ const a=(DB.artists||[]).find(x=>(x.name||'').trim().toLowerCase()===(name||'').trim().toLowerCase());
+function artLink1(raw){ const name=(raw||'').trim(); if(!name) return esc(raw||'');
+  const a=(DB.artists||[]).find(x=>(x.name||'').trim().toLowerCase()===name.toLowerCase());
   return a?`<span class="lf-link" data-art-open="${esc(name)}">${esc(name)}</span>`:esc(name); }
+function artNameLink(name){ name=(name||'').toString(); if(!name.trim()) return esc(name);
+  const parts=name.split(/(\s*,\s*|\s*&\s*|\s*;\s*|\s*\/\s*|\s+feat\.?\s+|\s+ft\.?\s+)/i);
+  return parts.map((p,i)=> i%2===1 ? esc(p) : artLink1(p)).join(''); }
 
 /* nome sezione nella topbar: visibile solo quando il titolo sotto è scrollato via */
 function updateTopbarSection(){
@@ -1130,7 +1134,7 @@ function renderReleases(){
     const cols=colsFor('releases');
     const sel=selOpt('releases');
     cont.innerHTML = dbHead(cols,relSort,{sel})+dbRows(expandReleases(list),cols,{rowCls:it=>'dbl-click'+(it._track?' rel-track-row':''),sel});
-    cont.querySelectorAll('.dbl-row[data-id]').forEach(c=>c.onclick=e=>{ if(e.target.closest('[data-sort]')||e.target.closest('.dbl-sel')) return; openRelease(c.dataset.id); });
+    cont.querySelectorAll('.dbl-row[data-id]').forEach(c=>c.onclick=e=>{ if(e.target.closest('[data-sort]')||e.target.closest('.dbl-sel')||e.target.closest('[data-art-open]')||e.target.closest('[data-rel-open]')) return; openRelease(c.dataset.id); });
     cont.querySelectorAll('[data-sort]').forEach(h=>h.onclick=e=>{ e.stopPropagation(); const k=h.dataset.sort;
       if(relSort.col===k) relSort.dir*=-1; else relSort={col:k,dir:1}; renderReleases(); });
     mountPager(cont,'rel',info); syncVMButtons(); return;
@@ -1152,7 +1156,7 @@ function renderReleases(){
       </div>`;
     }).join('');
   }
-  cont.querySelectorAll('[data-id]').forEach(c=>c.onclick=()=>openRelease(c.dataset.id));
+  cont.querySelectorAll('[data-id]').forEach(c=>c.onclick=e=>{ if(e.target.closest('[data-art-open]')||e.target.closest('[data-rel-open]')) return; openRelease(c.dataset.id); });
   cont.querySelectorAll('[data-rsort]').forEach(h=>h.onclick=e=>{ e.stopPropagation(); const c=h.dataset.rsort;
     if(relSort.col===c) relSort.dir*=-1; else relSort={col:c,dir:1}; renderReleases(); });
   mountPager(cont,'rel',info);
@@ -3622,7 +3626,7 @@ function bulkRerender(sec){
 }
 function bulkBar(sec){ const bar=$('#bulk-bar'); if(!bar) return; const n=(bulkSel[sec]||new Set()).size;
   if(!n){ bar.hidden=true; bar.dataset.sec=''; return; }
-  bar.dataset.sec=sec; const c=$('#bulk-count'); if(c) c.textContent=n; bar.hidden=false; }
+  bar.dataset.sec=sec; const c=$('#bulk-count'); if(c) c.textContent=n; const bc=$('#bulk-credits'); if(bc) bc.hidden=(sec!=='releases'); bar.hidden=false; }
 function bulkToggleAll(sec,on){ document.querySelectorAll(`[data-sel^="${sec}|"]`).forEach(cb=>{ cb.checked=on;
     const id=cb.dataset.sel.split('|').slice(1).join('|'); (bulkSel[sec]||=new Set()); on?bulkSel[sec].add(id):bulkSel[sec].delete(id); });
   bulkBar(sec); }
@@ -3640,6 +3644,53 @@ document.addEventListener('change', e=>{
   const all=e.target.closest('[data-selall]'); if(all){ bulkToggleAll(all.dataset.selall, all.checked); }
 });
 document.addEventListener('click', e=>{ const c=e.target.closest('[data-clear]'); if(c) bulkClearAll(c.dataset.clear); });
+/* selezione multipla con Shift (da punto a punto) */
+let lastSelId={};
+document.addEventListener('click', e=>{
+  const cb=e.target.closest('input[type=checkbox][data-sel]'); if(!cb) return;
+  const sec=cb.dataset.sel.split('|')[0];
+  const id=cb.dataset.sel.split('|').slice(1).join('|');
+  const list=[...document.querySelectorAll('input[type=checkbox][data-sel^="'+sec+'|"]')];
+  const idx=list.indexOf(cb);
+  const lastId=lastSelId[sec];
+  const lastIdx=(lastId!=null)?list.findIndex(c=>c.dataset.sel.split('|').slice(1).join('|')===lastId):-1;
+  if(e.shiftKey && lastIdx>=0 && idx>=0){
+    try{ window.getSelection&&window.getSelection().removeAllRanges(); }catch(_){}
+    const a=Math.min(lastIdx,idx), b=Math.max(lastIdx,idx), state=cb.checked; (bulkSel[sec]||=new Set());
+    for(let i=a;i<=b;i++){ const c=list[i]; c.checked=state; const cid=c.dataset.sel.split('|').slice(1).join('|'); state?bulkSel[sec].add(cid):bulkSel[sec].delete(cid); }
+    bulkBar(sec);
+  }
+  lastSelId[sec]=id;
+});
+/* applica Mastered/Distributed by in blocco (tutte le release o solo selezionate) */
+function openCreditsModal(scope){
+  const m=$('#credits-modal'); if(!m) return;
+  $('#credits-mastered').value=''; $('#credits-distributed').value='';
+  if($('#credits-all-n')) $('#credits-all-n').textContent=releases().length;
+  const sel=(bulkSel.releases||new Set()).size;
+  if($('#credits-sel-n')) $('#credits-sel-n').textContent=sel;
+  const selRadio=m.querySelector('input[name="credits-scope"][value="sel"]'); if(selRadio) selRadio.disabled=!sel;
+  const want=(scope==='sel'&&sel)?'sel':'all';
+  const r=m.querySelector('input[name="credits-scope"][value="'+want+'"]'); if(r) r.checked=true;
+  m.hidden=false; setTimeout(()=>$('#credits-mastered')&&$('#credits-mastered').focus(),50);
+}
+function applyBulkCredits(){
+  const mb=$('#credits-mastered').value.trim(), db=$('#credits-distributed').value.trim();
+  if(!mb && !db){ toast(tt('rcred.empty')); return; }
+  const scope=(document.querySelector('input[name="credits-scope"]:checked')||{}).value||'all';
+  let targets;
+  if(scope==='sel'){ const set=bulkSel.releases||new Set(); targets=releases().filter(r=>set.has(r.id)); }
+  else targets=releases().slice();
+  if(!targets.length){ toast(tt('rcred.none')); return; }
+  targets.forEach(r=>{ if(mb) r.masteredBy=mb; if(db) r.distributedBy=db; });
+  save(); renderReleases(); $('#credits-modal').hidden=true; toast(tt('rcred.done').replace('{n}',targets.length));
+}
+$('#rel-credits')?.addEventListener('click', ()=>openCreditsModal('all'));
+$('#bulk-credits')?.addEventListener('click', ()=>openCreditsModal('sel'));
+$('#credits-close')?.addEventListener('click', ()=>$('#credits-modal').hidden=true);
+$('#credits-cancel')?.addEventListener('click', ()=>$('#credits-modal').hidden=true);
+$('#credits-apply')?.addEventListener('click', applyBulkCredits);
+$('#credits-modal')?.addEventListener('click', e=>{ if(e.target.id==='credits-modal') $('#credits-modal').hidden=true; });
 if($('#bulk-del')) $('#bulk-del').onclick=bulkDeleteSel;
 if($('#bulk-cancel')) $('#bulk-cancel').onclick=()=>{ const bar=$('#bulk-bar'); const sec=bar&&bar.dataset.sec; if(sec){ bulkSel[sec]&&bulkSel[sec].clear(); bulkRerender(sec); bulkBar(sec); } };
 function openColCfg(sec){ if(!COLDEFS[sec]) return; colCfgSec=sec; renderColCfgList(); const m=$('#colcfg-modal'); if(m) m.hidden=false; }

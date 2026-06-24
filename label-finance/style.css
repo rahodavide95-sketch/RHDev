@@ -129,6 +129,10 @@ body.nav-collapsed{grid-template-columns:78px 1fr}
 }
 .topbar-section{font-family:'Syne',sans-serif;font-weight:600;font-size:1rem;color:var(--text);opacity:0;transform:translateY(4px);transition:opacity .2s,transform .2s;pointer-events:none}
 body.show-topsec .topbar-section{opacity:1;transform:none}
+/* Bottone hamburger (solo mobile, attiva il cassetto menu) */
+.drawer-toggle{display:none;align-items:center;justify-content:center;width:40px;height:40px;margin-left:-6px;border:none;background:none;color:var(--text);cursor:pointer;border-radius:10px;flex:none}
+.drawer-toggle:hover{background:var(--panel-2)}
+.drawer-toggle svg{width:24px;height:24px}
 /* Tasti Entrata/Uscita (verde/rosso tenui) — già colorati per riconoscerli a colpo d'occhio */
 .btn.btn-income,.btn.btn-expense{display:inline-flex;align-items:center;justify-content:center;font-weight:700;
   backdrop-filter:blur(8px) saturate(1.3);-webkit-backdrop-filter:blur(8px) saturate(1.3);
@@ -1079,80 +1083,55 @@ body.gate-signup #gate-signin{opacity:.5}
 @media(max-width:880px){
   body,body.nav-collapsed{grid-template-columns:1fr}
 
-  /* ---- Barra inferiore a schede (no scroll orizzontale) ---- */
+  /* ---- Menu a cassetto laterale (drawer) ---- */
   .sidebar{
-    position:fixed;bottom:0;top:auto;left:0;right:0;height:auto;width:100%;
-    flex-direction:row;align-items:stretch;z-index:40;padding:6px 6px calc(6px + env(safe-area-inset-bottom));gap:0;
-    border-right:none;border-top:1px solid var(--glass-brd);box-shadow:0 -6px 24px rgba(0,0,0,.18)
+    position:fixed;top:0;left:0;bottom:0;height:100dvh;width:min(86vw,332px);
+    flex-direction:column;align-items:stretch;gap:4px;z-index:70;
+    padding:calc(12px + env(safe-area-inset-top)) 12px calc(14px + env(safe-area-inset-bottom));
+    border-right:1px solid var(--glass-brd);border-top:none;
+    transform:translateX(-100%);transition:transform .26s cubic-bezier(.2,.8,.2,1);
+    box-shadow:0 0 60px rgba(0,0,0,.5);overflow-y:auto;-webkit-overflow-scrolling:touch
   }
-  .sidebar-top,.sidebar-foot{display:none}
-  .nav-sep,.nav-reopen{display:none!important}
-  /* su mobile i gruppi si dissolvono: gli item tornano nella barra in basso */
-  .nav-group,.nav-group-items{display:contents}
-  .nav-group-h{display:none}
-  .nav-group-items .nav-item{padding-left:0}
-  .nav{flex-direction:row;flex:1;justify-content:space-between;gap:0;overflow:visible}
-  /* in barra restano solo le 4 sezioni principali + Altro */
-  .sidebar .nav-item[data-view="import"],
-  .sidebar .nav-item[data-view="settings"],
-  .sidebar .nav-item[data-view="artists"],
-  .sidebar .nav-item[data-view="contracts"],
-  .sidebar .nav-item[data-view="tasks"],
-  .sidebar .nav-item[data-view="merch"],
-  .sidebar .nav-item[data-view="planning"],
-  .sidebar .nav-item[data-view="events"],
-  .sidebar .nav-item[data-view="supports"],
-  .sidebar .nav-item[data-view="faq"],
-  .sidebar .nav-item[data-view="about"]{display:none}
-  .nav>.nav-item,.nav-more-btn{
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-    flex:1 1 0;min-width:0;padding:7px 2px;font-size:.66rem;text-align:center;white-space:nowrap;border-radius:12px;background:none
-  }
-  .nav>.nav-item.is-active{background:none;box-shadow:none;color:var(--accent)}
-  .nav>.nav-item.is-active .nav-ico{color:var(--accent)}
-  .nav-item.is-active::before{display:none}
-  .nav-more-btn.is-open{color:var(--accent)}
-  .nav-ico svg{width:22px;height:22px}
-  .nav-label{font-size:.66rem;line-height:1}
+  body.drawer-open .sidebar{transform:none}
+  body.drawer-open .main{overflow:hidden}
+  .sidebar-top{display:flex}
+  .sidebar-foot{display:block;margin-top:auto;padding-top:14px}
+  .nav-collapse,.nav-reopen{display:none!important}
+  /* nel cassetto i gruppi restano aperti e organizzati come sul desktop */
+  .nav{flex-direction:column;flex:0 0 auto;gap:3px;overflow:visible}
+  .nav-group{display:block}
+  .nav-group-items{display:flex!important;flex-direction:column;gap:3px}
+  .nav-group-h .nav-chev{display:none}
+  .nav-more-btn{display:none}            /* il cassetto mostra già tutto */
+  .nav-item{flex-direction:row;justify-content:flex-start;white-space:nowrap}
+  .nav-ico svg{width:21px;height:21px}
 
-  /* ---- Sheet "Altro" ---- */
-  .msheet{display:block;position:fixed;inset:0;z-index:60}
-  .msheet[hidden]{display:none}
-  .msheet-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.45);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);animation:fade .2s ease}
-  .msheet-card{
-    position:absolute;left:0;right:0;bottom:0;
-    background:var(--glass-bg);-webkit-backdrop-filter:blur(32px) saturate(180%);backdrop-filter:blur(32px) saturate(180%);
-    border-top:1px solid var(--glass-brd);border-radius:22px 22px 0 0;
-    padding:10px 16px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -10px 40px rgba(0,0,0,.4);
-    animation:sheetUp .26s cubic-bezier(.2,.8,.2,1)
-  }
-  @keyframes sheetUp{from{transform:translateY(100%)}to{transform:none}}
-  .msheet-handle{width:42px;height:5px;border-radius:3px;background:var(--muted-2);opacity:.6;margin:4px auto 14px}
-  .msheet-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:8px}
-  .msheet .nav-item{
-    flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;
-    background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 8px;color:var(--text);
-    font-size:.78rem;white-space:normal;line-height:1.2;min-height:84px
-  }
-  .msheet .nav-item:hover,.msheet .nav-item.is-active{border-color:var(--accent);color:var(--accent)}
-  .msheet .nav-ico svg{width:24px;height:24px}
-  .msheet-theme{display:flex;flex-direction:column;gap:8px;margin-top:6px;padding-top:14px;border-top:1px solid var(--line)}
-  .msheet-theme-lbl{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
-  .msheet-theme .theme-switch{width:100%;margin:0;display:flex}
-  .msheet-theme .theme-switch button{flex:1}
+  /* ---- Backdrop + bottone hamburger ---- */
+  .drawer-backdrop{position:fixed;inset:0;z-index:65;background:rgba(0,0,0,.5);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:opacity .26s}
+  body.drawer-open .drawer-backdrop{opacity:1;pointer-events:auto}
+  .drawer-toggle{display:inline-flex}
+
+  /* il vecchio sheet "Altro" non serve più: lo sostituisce il cassetto */
+  .msheet{display:none!important}
 
   /* ---- Rifiniture generali mobile ---- */
   .topbar{padding:env(safe-area-inset-top) 14px 0;height:calc(54px + env(safe-area-inset-top))}
-  .topbar-section,.topbar-sep{display:none}
-  .lang-pill,.topbar-divider{display:none}   /* su mobile la lingua è nel pannello "Altro" */
-  .content{padding:14px 14px 78px;max-width:100%}
+  .topbar-left{display:flex;align-items:center;gap:10px;min-width:0}
+  .topbar-section{display:block;opacity:1;transform:none;pointer-events:auto;font-family:'Syne',sans-serif;font-weight:700;font-size:1.05rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .topbar-sep{display:none}
+  .topbar-divider{display:none}   /* su mobile la lingua sta nel cassetto (foot) */
+  .sidebar-foot .foot-controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .sidebar-foot .lang-pill{display:block}
+  .sidebar-foot .lang-select{width:100%}
+  .content{padding:14px 14px 28px;max-width:100%}
   /* niente sforamenti orizzontali: ogni sezione resta dentro lo schermo */
   .view,.panel,.kpi-grid,.grid-2,.releases-cards{max-width:100%;min-width:0}
-  .kpi-grid{grid-template-columns:1fr 1fr}
+  /* dashboard: una card per riga, mai a griglia/tabella */
+  .kpi-grid{grid-template-columns:1fr;gap:11px}
   .grid-2,.form-grid,.map-grid,.plans{grid-template-columns:1fr}
   .dash-widgets{grid-template-columns:1fr!important}
   .about-card{flex:1 1 100%}
-  .view-about{margin:-14px -14px -78px}
+  .view-about{margin:-14px -14px -28px}
   .releases-cards{grid-template-columns:1fr}
   .view-head{flex-direction:column;align-items:stretch;gap:12px}
   .head-actions{flex-wrap:wrap}

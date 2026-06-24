@@ -256,6 +256,7 @@ const VIEW_TITLES={dashboard:'Dashboard',consolidated:'Consolidato',transactions
 let currentView='dashboard';
 function goto(view){
   currentView=view;
+  if(typeof closeDrawer==='function') closeDrawer();   // chiudi il cassetto menu su mobile
   $$('.nav-item').forEach(b=>b.classList.toggle('is-active',b.dataset.view===view));
   $$('.view').forEach(v=>v.classList.toggle('is-active',v.id==='view-'+view));
   if(typeof expandActiveGroup==='function') expandActiveGroup();
@@ -336,6 +337,17 @@ if(msheet){
   });
 }
 document.addEventListener('keydown',e=>{ if(e.key==='Escape' && msheet && !msheet.hidden) setMoreSheet(false); });
+
+/* cassetto menu (drawer) su mobile */
+const drawerToggle=$('#drawer-toggle'), drawerBackdrop=$('#drawer-backdrop');
+function setDrawer(open){
+  document.body.classList.toggle('drawer-open',open);
+  if(drawerBackdrop) drawerBackdrop.hidden=!open;
+}
+window.closeDrawer=()=>setDrawer(false);
+if(drawerToggle) drawerToggle.onclick=()=>setDrawer(!document.body.classList.contains('drawer-open'));
+if(drawerBackdrop) drawerBackdrop.onclick=()=>setDrawer(false);
+document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.body.classList.contains('drawer-open')) setDrawer(false); });
 
 /* ===== FAQ: ricerca + accordion ===== */
 function initFAQ(){

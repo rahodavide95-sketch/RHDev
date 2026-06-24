@@ -1355,3 +1355,38 @@ body.gate-signup #gate-signin{opacity:.5}
 .lang-select{font:inherit;font-size:.82rem;font-weight:600;color:var(--text);background:var(--panel-2);border:1px solid var(--line);border-radius:9px;padding:6px 26px 6px 10px;cursor:pointer;-webkit-appearance:none;appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 14px) center,calc(100% - 9px) center;background-size:5px 5px,5px 5px;background-repeat:no-repeat}
 .lang-select:hover{border-color:var(--accent)}
 .gate-lang .lang-select,.lang-pill .lang-select{background-color:transparent}
+
+/* ============================================================================
+   MOBILE (telefoni ≤760px): liste .dbl e tabelle .data-table--cards diventano
+   card impilate "etichetta: valore" — niente scroll orizzontale. Verificato a render.
+   ============================================================================ */
+@media(max-width:760px){
+  .dbl{overflow:visible!important}
+  .dbl-row.dbl-head{display:none!important}   /* intestazione: specificità maggiore di .dbl-row */
+  .dbl-row{min-width:0!important;display:flex!important;flex-direction:column;align-items:stretch;gap:1px;grid-template-columns:none!important;padding:12px 14px;position:relative}
+  .dbl-row>span{display:flex;justify-content:space-between;align-items:center;gap:14px;white-space:normal;overflow:hidden;text-overflow:ellipsis;text-align:right;padding:3px 0;min-width:0;max-width:100%}
+  .dbl-row>span::before{content:attr(data-label);color:var(--muted-2);font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.02em;text-align:left;flex:0 0 38%;white-space:nowrap}
+  .dbl-row>span.is-empty{display:none}
+  .dbl-row>span.dbl-strong,.dbl-row>span.release-cat{display:block;text-align:left;font-size:1rem;font-weight:600;padding-bottom:6px;margin-bottom:5px;border-bottom:1px solid var(--line)}
+  .dbl-row>span.dbl-strong::before,.dbl-row>span.release-cat::before{content:none}
+  .dbl-row>.dbl-sel{position:absolute;top:11px;right:13px;padding:0;justify-content:flex-end}
+  .dbl-row>.dbl-sel::before{content:none}
+  .dbl-row>.dbl-sel+span{padding-right:28px}   /* la prima riga non finisce sotto la checkbox */
+  .dbl-row>.dbl-lead{justify-content:flex-start}
+  .dbl-row>.dbl-lead::before{content:none}
+  .dbl-row>.dbl-act{justify-content:flex-end;gap:10px;padding-top:9px;margin-top:5px;border-top:1px solid var(--line)}
+  .dbl-row>.dbl-act::before{content:none}
+  .dbl-row>.dbl-act .icon-btn-sm{width:38px;height:38px;font-size:1rem}
+
+  .table-wrap:has(.data-table--cards){overflow:visible}
+  .data-table--cards{display:block;min-width:0}
+  .data-table--cards thead{display:none}
+  .data-table--cards tbody,.data-table--cards tr,.data-table--cards td{display:block;width:100%}
+  .data-table--cards tr{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:12px 14px 10px;margin-bottom:10px}
+  .data-table--cards td{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:3px 0;border:none!important;text-align:right;white-space:normal}
+  .data-table--cards td::before{content:attr(data-label);color:var(--muted-2);font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.02em;text-align:left;flex:0 0 38%;white-space:nowrap}
+  .data-table--cards td:empty,.data-table--cards td.is-empty{display:none}
+  .data-table--cards td.dbl-sel{position:absolute;top:11px;right:13px;width:auto;padding:0}
+  .data-table--cards td.dbl-sel::before{content:none}
+  .data-table--cards td.dbl-sel+td{padding-right:28px}
+}

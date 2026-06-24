@@ -277,10 +277,9 @@ footer{padding:54px 0 36px;background:rgba(8,9,14,.5);-webkit-backdrop-filter:bl
   .lang-sel{padding:7px 23px 7px 9px;font-size:.78rem}
 }
 @media(max-width:440px){
-  .logo-w{display:none}                 /* solo l'icona: lascia spazio al CTA */
   .nav-in{gap:8px}
   .nav-cta .btn{padding:8px 12px;font-size:.84rem}
-  .lang-sel{padding:7px 22px 7px 8px;font-size:.76rem}
+  .lang-sel{padding:7px 21px 7px 9px;font-size:.8rem}   /* ora è solo "IT": resta stretto */
 }
 </style>
 </head>
@@ -302,13 +301,13 @@ footer{padding:54px 0 36px;background:rgba(8,9,14,.5);-webkit-backdrop-filter:bl
     </nav>
     <div class="nav-cta">
       <select class="lang-sel" data-lang-select aria-label="Lingua / Language">
-        <option value="it">Italiano</option>
-        <option value="en">English</option>
-        <option value="es">Español</option>
-        <option value="fr">Français</option>
-        <option value="de">Deutsch</option>
-        <option value="pt">Português</option>
-        <option value="nl">Nederlands</option>
+        <option value="it">IT</option>
+        <option value="en">EN</option>
+        <option value="es">ES</option>
+        <option value="fr">FR</option>
+        <option value="de">DE</option>
+        <option value="pt">PT</option>
+        <option value="nl">NL</option>
       </select>
       <a class="btn btn-ghost" href="app.html" data-i18n="nav.login">Accedi</a>
       <a class="btn btn-primary" href="app.html?signup" data-i18n="nav.start">Inizia gratis</a>

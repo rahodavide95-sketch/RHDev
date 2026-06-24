@@ -206,6 +206,13 @@ img{max-width:100%}
 .toggle button.on{background:rgba(124,58,237,.8);color:#fff}
 .toggle .save{color:var(--green);font-size:.78rem;font-weight:700}
 .price-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;align-items:stretch;margin-top:40px}
+.price-grid--4{grid-template-columns:repeat(4,1fr);gap:16px}
+.price-grid--4 .plan{padding:24px 20px}
+.price--soon{min-height:62px;display:flex;align-items:center;margin:14px 0 3px}
+.soon-tag{font-size:1.05rem;font-weight:700;color:var(--violet);background:rgba(124,58,237,.12);border:1px solid rgba(124,58,237,.32);padding:7px 14px;border-radius:999px}
+.plan--soon{opacity:.92}
+@media(max-width:1080px){.price-grid--4{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:620px){.price-grid--4{grid-template-columns:1fr}}
 .plan{position:relative;display:flex;flex-direction:column;border-radius:20px;padding:26px}
 .plan.pop{border-color:rgba(167,139,250,.55);box-shadow:0 30px 70px -30px rgba(124,58,237,.6)}
 .pop-badge{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:linear-gradient(120deg,var(--violet-2),var(--violet));color:#fff;font-size:.74rem;font-weight:700;padding:5px 14px;border-radius:999px;white-space:nowrap;box-shadow:0 6px 18px -4px rgba(124,58,237,.7)}
@@ -515,7 +522,7 @@ footer{padding:54px 0 36px;background:rgba(8,9,14,.5);-webkit-backdrop-filter:bl
         <button data-bill="year"><span data-i18n="bill.year">Annuale</span> <span class="save">−30%</span></button>
       </div></div>
     </div>
-    <div class="price-grid stagger">
+    <div class="price-grid price-grid--4 stagger">
       <div class="plan glass">
         <h3>Starter</h3>
         <p class="desc" data-i18n="p1.desc">Il gestionale completo, per la tua prima etichetta.</p>
@@ -534,32 +541,47 @@ footer{padding:54px 0 36px;background:rgba(8,9,14,.5);-webkit-backdrop-filter:bl
       </div>
       <div class="plan glass pop">
         <span class="pop-badge" data-i18n="price.reco">⭐ Consigliato</span>
-        <h3>Studio</h3>
-        <p class="desc" data-i18n="p2.desc">Più potenza per chi fa sul serio: AI e personalizzazione.</p>
-        <div class="price" data-m="49" data-y="34" data-ytot="408" data-save="180"><span class="cur">€</span><span class="amount">49</span><span class="per" data-i18n="per.mo">/mese</span><span class="was" hidden></span></div>
+        <h3>Big Label</h3>
+        <p class="desc" data-i18n="pb.desc">Tutta la potenza di Label Finance per una singola etichetta.</p>
+        <div class="price" data-m="69" data-y="48" data-ytot="576" data-save="252"><span class="cur">€</span><span class="amount">69</span><span class="per" data-i18n="per.mo">/mese</span><span class="was" hidden></span></div>
         <div class="bill" data-billnote></div>
         <ul>
-          <li><span class="ck">✓</span> <span data-i18n="p2.f1">Tutto del piano Starter</span></li>
-          <li><span class="ck">✓</span> <span data-i18n="p2.f2">Fino a 3 etichette</span></li>
-          <li><span class="ck">✓</span> <b data-i18n="p2.f3">Assistente AI dedicato</b></li>
-          <li><span class="ck">✓</span> <b data-i18n="p2.f4">Dashboard personalizzabile + widget</b></li>
-          <li><span class="ck">✓</span> <span data-i18n="p2.f5">Export reports + documenti col tuo brand</span></li>
-          <li><span class="ck">✓</span> <span data-i18n="p2.f6">Supporto prioritario</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="pb.f1">1 etichetta</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="pb.f2">Tutto del piano Starter</span></li>
+          <li><span class="ck">✓</span> <b data-i18n="pb.f3">Assistente AI dedicato</b></li>
+          <li><span class="ck">✓</span> <b data-i18n="pb.f4">Dashboard personalizzabile + widget</b></li>
+          <li><span class="ck">✓</span> <span data-i18n="pb.f5">Export reports + documenti col tuo brand</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="pb.f6">Supporto prioritario</span></li>
         </ul>
-        <a class="btn btn-primary" href="app.html?signup" data-i18n="p2.cta">Prova gratis 14 giorni</a>
+        <a class="btn btn-primary" href="app.html?signup" data-i18n="pb.cta">Prova gratis 14 giorni</a>
       </div>
       <div class="plan glass">
-        <h3>Agency</h3>
-        <p class="desc" data-i18n="p3.desc">Per agenzie e chi gestisce più etichette con un team.</p>
-        <div class="price" data-m="99" data-y="69" data-ytot="828" data-save="360"><span class="cur">€</span><span class="amount">99</span><span class="per" data-i18n="per.mo">/mese</span><span class="was" hidden></span></div>
+        <h3>Company</h3>
+        <p class="desc" data-i18n="p2.desc">Per chi gestisce più etichette: tutto, fino a 3 label.</p>
+        <div class="price" data-m="150" data-y="105" data-ytot="1260" data-save="540"><span class="cur">€</span><span class="amount">150</span><span class="per" data-i18n="per.mo">/mese</span><span class="was" hidden></span></div>
         <div class="bill" data-billnote></div>
         <ul>
-          <li><span class="ck">✓</span> <span data-i18n="p3.f1">Tutto del piano Studio</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="p2.f1">Tutto del piano Big Label</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="p2.f2">Fino a 3 etichette</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="p2.f3">Gestione multi-etichetta</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="p2.f5">Statement royalty per artista</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="p2.f6">Supporto prioritario</span></li>
+        </ul>
+        <a class="btn btn-ghost" href="app.html?signup" data-i18n="p2.cta">Inizia con Company</a>
+      </div>
+      <div class="plan glass plan--soon">
+        <h3>Enterprise</h3>
+        <p class="desc" data-i18n="p3.desc">Per agenzie e gruppi: etichette illimitate e funzioni su misura.</p>
+        <div class="price price--soon"><span class="soon-tag" data-i18n="price.soon">Coming soon</span></div>
+        <div class="bill"></div>
+        <ul>
+          <li><span class="ck">✓</span> <span data-i18n="p3.f1">Tutto del piano Company</span></li>
           <li><span class="ck">✓</span> <span data-i18n="p3.f2">Etichette illimitate</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="p3.f4">Funzionalità su misura, su richiesta</span></li>
           <li><span class="ck">✓</span> <span data-i18n="p3.f3">Accesso team (prossimamente)</span></li>
           <li><span class="ck">✓</span> <span data-i18n="p3.f5">Onboarding dedicato</span></li>
         </ul>
-        <a class="btn btn-ghost" href="app.html?signup" data-i18n="p3.cta">Contatta le vendite</a>
+        <a class="btn btn-ghost" href="mailto:info.labelfinance@gmail.com" data-i18n="p3.cta">Contattaci</a>
       </div>
     </div>
   </div>
@@ -672,7 +694,8 @@ const LANG={
   'q5.q':'Posso importare i miei dati?','q5.a':'Sì. Importi i report di vendita in CSV da qualsiasi store o distributore: le colonne vengono riconosciute e mappate in automatico.',
   'q6.q':'C\'è una prova gratuita?','q6.a':'Sì: 14 giorni sul piano Studio, senza carta di credito. Provi tutto, poi scegli.',
   'cta.t':'La tua etichetta, finalmente sotto controllo.','cta.p':'Smetti di litigare con Excel. Prova Label Finance gratis per 14 giorni — nessuna carta richiesta.','cta.b1':'Inizia gratis','cta.b2':'Accedi al tuo account',
-  'foot.tag':'Il gestionale all-in-one per etichette discografiche indipendenti. Royalty, contratti, merch, finanze e AI.','foot.product':'Prodotto','foot.company':'Azienda','foot.start':'Inizia','foot.contact':'Contatti','foot.create':'Crea un account','foot.try':'Prova gratis'
+  'foot.tag':'Il gestionale all-in-one per etichette discografiche indipendenti. Royalty, contratti, merch, finanze e AI.','foot.product':'Prodotto','foot.company':'Azienda','foot.start':'Inizia','foot.contact':'Contatti','foot.create':'Crea un account','foot.try':'Prova gratis',
+  'pb.desc':'Tutta la potenza di Label Finance per una singola etichetta.','pb.f1':'1 etichetta','pb.f2':'Tutto del piano Starter','pb.f3':'Assistente AI dedicato','pb.f4':'Dashboard personalizzabile + widget','pb.f5':'Export reports + documenti col tuo brand','pb.f6':'Supporto prioritario','pb.cta':'Prova gratis 14 giorni','p2.desc':'Per chi gestisce più etichette: tutto, fino a 3 label.','p2.f1':'Tutto del piano Big Label','p2.f2':'Fino a 3 etichette','p2.f3':'Gestione multi-etichetta','p2.f5':'Statement royalty per artista','p2.f6':'Supporto prioritario','p2.cta':'Inizia con Company','p3.desc':'Per agenzie e gruppi: etichette illimitate e funzioni su misura.','p3.f1':'Tutto del piano Company','p3.f2':'Etichette illimitate','p3.f3':'Accesso team (prossimamente)','p3.f4':'Funzionalità su misura, su richiesta','p3.f5':'Onboarding dedicato','p3.cta':'Contattaci','price.soon':'Presto disponibile','pricing.sub':'Prova gratis Big Label per 14 giorni. Disdici quando vuoi.',
  },
  en:{
   'nav.features':'Features','nav.how':'How it works','nav.pricing':'Pricing','nav.faq':'FAQ','nav.why':'Why us','nav.login':'Log in','nav.start':'Start free',
@@ -728,7 +751,8 @@ const LANG={
   'q5.q':'Can I import my data?','q5.a':'Yes. Import sales reports as CSV from any store or distributor: columns are recognized and mapped automatically.',
   'q6.q':'Is there a free trial?','q6.a':'Yes: 14 days on the Studio plan, no credit card. Try everything, then choose.',
   'cta.t':'Your label, finally under control.','cta.p':'Stop fighting with spreadsheets. Try Label Finance free for 14 days — no card required.','cta.b1':'Start free','cta.b2':'Log in to your account',
-  'foot.tag':'The all-in-one tool for independent record labels. Royalties, contracts, merch, finances and AI.','foot.product':'Product','foot.company':'Company','foot.start':'Get started','foot.contact':'Contact','foot.create':'Create an account','foot.try':'Try free'
+  'foot.tag':'The all-in-one tool for independent record labels. Royalties, contracts, merch, finances and AI.','foot.product':'Product','foot.company':'Company','foot.start':'Get started','foot.contact':'Contact','foot.create':'Create an account','foot.try':'Try free',
+  'pb.desc':'All the power of Label Finance for a single label.','pb.f1':'1 label','pb.f2':'Everything in Starter','pb.f3':'Dedicated AI Assistant','pb.f4':'Customizable dashboard + widgets','pb.f5':'Reports export + your branded documents','pb.f6':'Priority support','pb.cta':'Try free for 14 days','p2.desc':'For managing multiple labels: everything, up to 3 labels.','p2.f1':'Everything in Big Label','p2.f2':'Up to 3 labels','p2.f3':'Multi-label management','p2.f5':'Per-artist royalty statements','p2.f6':'Priority support','p2.cta':'Start with Company','p3.desc':'For agencies and groups: unlimited labels and tailored features.','p3.f1':'Everything in Company','p3.f2':'Unlimited labels','p3.f3':'Team access (coming soon)','p3.f4':'Tailored features, on request','p3.f5':'Dedicated onboarding','p3.cta':'Contact us','price.soon':'Coming soon','pricing.sub':'Try Big Label free for 14 days. Cancel anytime.',
  },
  es:{
   'nav.features':'Funciones','nav.how':'Cómo funciona','nav.pricing':'Precios','nav.faq':'FAQ','nav.why':'Por qué nosotros','nav.login':'Iniciar sesión','nav.start':'Empieza gratis',
@@ -784,7 +808,8 @@ const LANG={
   'q5.q':'¿Puedo importar mis datos?','q5.a':'Sí. Importa informes de ventas en CSV de cualquier tienda o distribuidor: las columnas se reconocen y asignan automáticamente.',
   'q6.q':'¿Hay prueba gratis?','q6.a':'Sí: 14 días en el plan Studio, sin tarjeta de crédito. Pruébalo todo y luego elige.',
   'cta.t':'Tu sello, por fin bajo control.','cta.p':'Deja de pelear con hojas de cálculo. Prueba Label Finance gratis 14 días — sin tarjeta.','cta.b1':'Empieza gratis','cta.b2':'Inicia sesión en tu cuenta',
-  'foot.tag':'La herramienta todo en uno para sellos discográficos independientes. Royalties, contratos, merch, finanzas y AI.','foot.product':'Producto','foot.company':'Empresa','foot.start':'Empezar','foot.contact':'Contacto','foot.create':'Crear una cuenta','foot.try':'Prueba gratis'
+  'foot.tag':'La herramienta todo en uno para sellos discográficos independientes. Royalties, contratos, merch, finanzas y AI.','foot.product':'Producto','foot.company':'Empresa','foot.start':'Empezar','foot.contact':'Contacto','foot.create':'Crear una cuenta','foot.try':'Prueba gratis',
+  'pb.desc':'Toda la potencia de Label Finance para un solo sello.','pb.f1':'1 sello','pb.f2':'Todo lo del plan Starter','pb.f3':'Asistente IA dedicado','pb.f4':'Panel personalizable + widgets','pb.f5':'Exportación de informes + documentos con tu marca','pb.f6':'Soporte prioritario','pb.cta':'Prueba gratis 14 días','p2.desc':'Para gestionar varios sellos: todo, hasta 3 sellos.','p2.f1':'Todo lo del plan Big Label','p2.f2':'Hasta 3 sellos','p2.f3':'Gestión multi-sello','p2.f5':'Informes de royalties por artista','p2.f6':'Soporte prioritario','p2.cta':'Empieza con Company','p3.desc':'Para agencias y grupos: sellos ilimitados y funciones a medida.','p3.f1':'Todo lo del plan Company','p3.f2':'Sellos ilimitados','p3.f3':'Acceso de equipo (próximamente)','p3.f4':'Funciones a medida, bajo petición','p3.f5':'Onboarding dedicado','p3.cta':'Contáctanos','price.soon':'Próximamente','pricing.sub':'Prueba Big Label gratis 14 días. Cancela cuando quieras.',
  }
 ,
  fr:{
@@ -841,7 +866,8 @@ const LANG={
   'q5.q':'Puis-je importer mes données ?','q5.a':'Oui. Importez les rapports de ventes en CSV depuis n\'importe quelle boutique ou distributeur : les colonnes sont reconnues et mappées automatiquement.',
   'q6.q':'Y a-t-il un essai gratuit ?','q6.a':'Oui : 14 jours sur le plan Studio, sans carte bancaire. Essayez tout, puis choisissez.',
   'cta.t':'Votre label, enfin sous contrôle.','cta.p':'Arrêtez de vous battre avec les tableurs. Essayez Label Finance gratuitement pendant 14 jours — sans carte.','cta.b1':'Commencer gratuitement','cta.b2':'Connectez-vous à votre compte',
-  'foot.tag':'L\'outil tout-en-un pour les labels indépendants. Royalties, contrats, merch, finances et AI.','foot.product':'Produit','foot.company':'Entreprise','foot.start':'Commencer','foot.contact':'Contact','foot.create':'Créer un compte','foot.try':'Essai gratuit'
+  'foot.tag':'L\'outil tout-en-un pour les labels indépendants. Royalties, contrats, merch, finances et AI.','foot.product':'Produit','foot.company':'Entreprise','foot.start':'Commencer','foot.contact':'Contact','foot.create':'Créer un compte','foot.try':'Essai gratuit',
+  'pb.desc':'Toute la puissance de Label Finance pour un seul label.','pb.f1':'1 label','pb.f2':'Tout du plan Starter','pb.f3':'Assistant IA dédié','pb.f4':'Tableau de bord personnalisable + widgets','pb.f5':'Export de rapports + documents à votre marque','pb.f6':'Support prioritaire','pb.cta':'Essai gratuit 14 jours','p2.desc':'Pour gérer plusieurs labels : tout, jusqu’à 3 labels.','p2.f1':'Tout du plan Big Label','p2.f2':'Jusqu’à 3 labels','p2.f3':'Gestion multi-label','p2.f5':'Relevés de royalties par artiste','p2.f6':'Support prioritaire','p2.cta':'Commencer avec Company','p3.desc':'Pour agences et groupes : labels illimités et fonctions sur mesure.','p3.f1':'Tout du plan Company','p3.f2':'Labels illimités','p3.f3':'Accès équipe (bientôt)','p3.f4':'Fonctions sur mesure, sur demande','p3.f5':'Onboarding dédié','p3.cta':'Contactez-nous','price.soon':'Bientôt disponible','pricing.sub':'Essayez Big Label gratuitement 14 jours. Annulez quand vous voulez.',
  }
 ,
  de:{
@@ -898,7 +924,8 @@ const LANG={
   'q5.q':'Kann ich meine Daten importieren?','q5.a':'Ja. Importiere Verkaufsberichte als CSV von jedem Shop oder Vertrieb: die Spalten werden automatisch erkannt und zugeordnet.',
   'q6.q':'Gibt es eine kostenlose Testphase?','q6.a':'Ja: 14 Tage im Studio-Plan, ohne Kreditkarte. Probiere alles aus und entscheide dann.',
   'cta.t':'Dein Label, endlich unter Kontrolle.','cta.p':'Schluss mit dem Kampf gegen Tabellen. Teste Label Finance 14 Tage kostenlos — keine Karte nötig.','cta.b1':'Kostenlos starten','cta.b2':'In deinem Konto anmelden',
-  'foot.tag':'Das All-in-one-Tool für unabhängige Plattenlabels. Royalties, Verträge, merch, Finanzen und AI.','foot.product':'Produkt','foot.company':'Unternehmen','foot.start':'Loslegen','foot.contact':'Kontakt','foot.create':'Konto erstellen','foot.try':'Kostenlos testen'
+  'foot.tag':'Das All-in-one-Tool für unabhängige Plattenlabels. Royalties, Verträge, merch, Finanzen und AI.','foot.product':'Produkt','foot.company':'Unternehmen','foot.start':'Loslegen','foot.contact':'Kontakt','foot.create':'Konto erstellen','foot.try':'Kostenlos testen',
+  'pb.desc':'Die volle Power von Label Finance für ein einzelnes Label.','pb.f1':'1 Label','pb.f2':'Alles aus Starter','pb.f3':'Dedizierter KI-Assistent','pb.f4':'Anpassbares Dashboard + Widgets','pb.f5':'Berichte-Export + Dokumente mit deinem Branding','pb.f6':'Priorisierter Support','pb.cta':'14 Tage kostenlos testen','p2.desc':'Für die Verwaltung mehrerer Labels: alles, bis zu 3 Labels.','p2.f1':'Alles aus Big Label','p2.f2':'Bis zu 3 Labels','p2.f3':'Multi-Label-Verwaltung','p2.f5':'Royalty-Abrechnungen pro Künstler','p2.f6':'Priorisierter Support','p2.cta':'Mit Company starten','p3.desc':'Für Agenturen und Gruppen: unbegrenzte Labels und maßgeschneiderte Funktionen.','p3.f1':'Alles aus Company','p3.f2':'Unbegrenzte Labels','p3.f3':'Team-Zugang (demnächst)','p3.f4':'Maßgeschneiderte Funktionen auf Anfrage','p3.f5':'Persönliches Onboarding','p3.cta':'Kontaktiere uns','price.soon':'Demnächst','pricing.sub':'Big Label 14 Tage kostenlos testen. Jederzeit kündbar.',
  }
 ,
  pt:{
@@ -955,7 +982,8 @@ const LANG={
   'q5.q':'Posso importar os meus dados?','q5.a':'Sim. Importe relatórios de vendas em CSV de qualquer loja ou distribuidor: as colunas são reconhecidas e mapeadas automaticamente.',
   'q6.q':'Existe um teste grátis?','q6.a':'Sim: 14 dias no plano Studio, sem cartão de crédito. Experimente tudo e depois escolha.',
   'cta.t':'A sua editora, finalmente sob controlo.','cta.p':'Pare de lutar com folhas de cálculo. Experimente a Label Finance grátis durante 14 dias — sem cartão.','cta.b1':'Começar grátis','cta.b2':'Entrar na sua conta',
-  'foot.tag':'A ferramenta tudo-em-um para editoras discográficas independentes. Royalties, contratos, merch, finanças e AI.','foot.product':'Produto','foot.company':'Empresa','foot.start':'Começar','foot.contact':'Contacto','foot.create':'Criar uma conta','foot.try':'Experimentar grátis'
+  'foot.tag':'A ferramenta tudo-em-um para editoras discográficas independentes. Royalties, contratos, merch, finanças e AI.','foot.product':'Produto','foot.company':'Empresa','foot.start':'Começar','foot.contact':'Contacto','foot.create':'Criar uma conta','foot.try':'Experimentar grátis',
+  'pb.desc':'Toda a potência do Label Finance para uma única editora.','pb.f1':'1 editora','pb.f2':'Tudo do plano Starter','pb.f3':'Assistente de IA dedicado','pb.f4':'Painel personalizável + widgets','pb.f5':'Exportação de relatórios + documentos com a tua marca','pb.f6':'Suporte prioritário','pb.cta':'Teste grátis 14 dias','p2.desc':'Para gerir várias editoras: tudo, até 3 editoras.','p2.f1':'Tudo do plano Big Label','p2.f2':'Até 3 editoras','p2.f3':'Gestão multi-editora','p2.f5':'Relatórios de royalties por artista','p2.f6':'Suporte prioritário','p2.cta':'Começar com Company','p3.desc':'Para agências e grupos: editoras ilimitadas e funções à medida.','p3.f1':'Tudo do plano Company','p3.f2':'Editoras ilimitadas','p3.f3':'Acesso de equipa (em breve)','p3.f4':'Funcionalidades à medida, a pedido','p3.f5':'Onboarding dedicado','p3.cta':'Contacta-nos','price.soon':'Em breve','pricing.sub':'Experimenta o Big Label grátis 14 dias. Cancela quando quiseres.',
  }
 ,
  nl:{
@@ -1012,7 +1040,8 @@ const LANG={
   'q5.q':'Kan ik mijn gegevens importeren?','q5.a':'Ja. Importeer verkooprapporten als CSV van elke winkel of distributeur: kolommen worden automatisch herkend en gekoppeld.',
   'q6.q':'Is er een gratis proefperiode?','q6.a':'Ja: 14 dagen op het Studio-plan, zonder creditcard. Probeer alles en kies daarna.',
   'cta.t':'Je label, eindelijk onder controle.','cta.p':'Stop met vechten tegen spreadsheets. Probeer Label Finance 14 dagen gratis — geen kaart nodig.','cta.b1':'Gratis starten','cta.b2':'Inloggen op je account',
-  'foot.tag':'De alles-in-één tool voor onafhankelijke platenlabels. Royalty\'s, contracten, merch, financiën en AI.','foot.product':'Product','foot.company':'Bedrijf','foot.start':'Aan de slag','foot.contact':'Contact','foot.create':'Een account aanmaken','foot.try':'Gratis proberen'
+  'foot.tag':'De alles-in-één tool voor onafhankelijke platenlabels. Royalty\'s, contracten, merch, financiën en AI.','foot.product':'Product','foot.company':'Bedrijf','foot.start':'Aan de slag','foot.contact':'Contact','foot.create':'Een account aanmaken','foot.try':'Gratis proberen',
+  'pb.desc':'Alle kracht van Label Finance voor één label.','pb.f1':'1 label','pb.f2':'Alles uit Starter','pb.f3':'Eigen AI-assistent','pb.f4':'Aanpasbaar dashboard + widgets','pb.f5':'Rapporten exporteren + documenten met je merk','pb.f6':'Prioriteitsondersteuning','pb.cta':'14 dagen gratis proberen','p2.desc':'Voor het beheren van meerdere labels: alles, tot 3 labels.','p2.f1':'Alles uit Big Label','p2.f2':'Tot 3 labels','p2.f3':'Multi-label beheer','p2.f5':'Royaltyoverzichten per artiest','p2.f6':'Prioriteitsondersteuning','p2.cta':'Start met Company','p3.desc':'Voor bureaus en groepen: onbeperkte labels en functies op maat.','p3.f1':'Alles uit Company','p3.f2':'Onbeperkte labels','p3.f3':'Teamtoegang (binnenkort)','p3.f4':'Functies op maat, op aanvraag','p3.f5':'Persoonlijke onboarding','p3.cta':'Neem contact op','price.soon':'Binnenkort','pricing.sub':'Probeer Big Label 14 dagen gratis. Altijd opzegbaar.',
  }
 };
 let curLang='it', curYear=false;

@@ -1115,10 +1115,11 @@ body.gate-signup #gate-signin{opacity:.5}
   .msheet{display:none!important}
 
   /* ---- Rifiniture generali mobile ---- */
-  .topbar{padding:env(safe-area-inset-top) 14px 0;height:calc(54px + env(safe-area-inset-top))}
-  .topbar-left{display:flex;align-items:center;gap:10px;min-width:0}
+  .topbar{padding:env(safe-area-inset-top) 14px 0;height:calc(54px + env(safe-area-inset-top));gap:8px}
+  .topbar-left{display:flex;align-items:center;gap:8px;min-width:0;flex:1 1 auto}
   .topbar-section{display:block;opacity:1;transform:none;pointer-events:auto;font-family:'Syne',sans-serif;font-weight:700;font-size:1.05rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .topbar-sep{display:none}
+  .topbar-right{flex:none;gap:6px}
+  .topbar-sep,.topbar-label,.topbar-div{display:none}   /* su mobile niente etichetta/divisori che rubano spazio */
   .topbar-divider{display:none}   /* su mobile la lingua sta nel cassetto (foot) */
   .sidebar-foot .foot-controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
   .sidebar-foot .lang-pill{display:block}

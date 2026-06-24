@@ -260,7 +260,7 @@ function goto(view){
   $$('.nav-item').forEach(b=>b.classList.toggle('is-active',b.dataset.view===view));
   $$('.view').forEach(v=>v.classList.toggle('is-active',v.id==='view-'+view));
   if(typeof expandActiveGroup==='function') expandActiveGroup();
-  const sec=$('#topbar-section'); if(sec) sec.textContent=VIEW_TITLES[view]||'';
+  const sec=$('#topbar-section'); if(sec){ const tk='nav.'+view, tr=tt(tk); sec.textContent=(tr&&tr!==tk)?tr:(VIEW_TITLES[view]||''); }
   if(view==='dashboard') renderDashboard();
   if(view==='consolidated') renderConsolidated();
   if(view==='transactions') renderTx();
@@ -303,6 +303,14 @@ function updateTopbarSection(){
   document.body.classList.toggle('show-topsec', show);
 }
 $('.main').addEventListener('scroll', updateTopbarSection, {passive:true});
+
+/* Al cambio lingua: ri-traduci il titolo sezione e ri-renderizza i contenuti
+   generati da JS (liste, opzioni, badge) che usano tt() al momento del render. */
+window.addEventListener('langchange', ()=>{
+  const sec=$('#topbar-section');
+  if(sec){ const tk='nav.'+currentView, tr=tt(tk); sec.textContent=(tr&&tr!==tk)?tr:(VIEW_TITLES[currentView]||''); }
+  if(typeof reloadViews==='function') reloadViews();
+});
 
 /* pannelli Informazioni: toggle ⓘ per ogni sezione */
 /* finestrella info per ogni card: apre/chiude al click, chiude cliccando fuori */

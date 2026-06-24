@@ -210,8 +210,8 @@ body.gated .ai-fab{display:none}
 .ai-upsell{display:flex;flex-direction:column;gap:10px;align-items:flex-start}
 .ai-upsell p{color:var(--muted);margin:0}
 @media(max-width:560px){
-  .ai-fab{right:16px;bottom:calc(74px + env(safe-area-inset-bottom));width:56px;height:56px}
-  .ai-pop{right:8px;left:8px;width:auto;bottom:calc(140px + env(safe-area-inset-bottom));max-height:calc(100dvh - 200px)}
+  .ai-fab{right:16px;bottom:calc(18px + env(safe-area-inset-bottom));width:56px;height:56px}
+  .ai-pop{right:8px;left:8px;width:auto;bottom:calc(86px + env(safe-area-inset-bottom));max-height:calc(100dvh - 150px)}
 }
 /* ===== Dashboard personalizzabile (stile ServiceNow) ===== */
 .dash-widgets{display:grid;grid-template-columns:repeat(var(--dash-cols,2),minmax(0,1fr));gap:18px;margin-bottom:20px}

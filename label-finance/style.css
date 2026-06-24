@@ -1424,3 +1424,9 @@ body.gate-signup #gate-signin{opacity:.5}
 .rel-gap-tag{font-size:.7rem;font-weight:600;padding:2px 7px;border-radius:20px;background:color-mix(in srgb,var(--out) 16%,transparent);color:var(--out);border:1px solid color-mix(in srgb,var(--out) 30%,var(--line));white-space:nowrap}
 .rel-gap-more{padding:4px 2px}
 @media(max-width:560px){ .rel-gap-item{flex-wrap:wrap;gap:4px 8px} .rel-gap-ttl{flex:1 1 100%;order:3} }
+
+/* --- Controlli intelligenti pre-import --- */
+.imp-checks{display:flex;flex-direction:column;gap:6px;margin:10px 0}
+.imp-chk{display:flex;align-items:flex-start;gap:8px;font-size:.86rem;padding:8px 11px;border-radius:9px}
+.imp-chk--warn{background:color-mix(in srgb,var(--out) 12%,transparent);border:1px solid color-mix(in srgb,var(--out) 30%,var(--line));color:color-mix(in srgb,var(--out) 80%,var(--text))}
+.imp-chk--info{background:color-mix(in srgb,var(--accent) 9%,transparent);border:1px solid color-mix(in srgb,var(--accent) 26%,var(--line))}

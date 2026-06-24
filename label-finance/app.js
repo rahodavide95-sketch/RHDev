@@ -2280,12 +2280,35 @@ function rowToRec(cols,map){
     currency:(get('currency')||defCur).toUpperCase().slice(0,3), note:'',
   };
 }
+/* controlli intelligenti pre-import: segnala anomalie prima di salvare */
+function importChecks(map){
+  const recs=importRows.map(r=>rowToRec(r,map));
+  const noDate=recs.filter(r=>!r.date).length;
+  const noNet=recs.filter(r=>!(+r.net)).length;
+  const seen=new Set(); let dupIn=0;
+  recs.forEach(r=>{ const s=txSig(r); if(seen.has(s)) dupIn++; else seen.add(s); });
+  const existing=new Set(DB.transactions.map(txSig));
+  const dupEx=recs.filter(r=>existing.has(txSig(r))).length;
+  const curs=[...new Set(recs.map(r=>r.currency).filter(Boolean))];
+  const w=[];
+  if(noDate) w.push({lvl:'warn', t:tt('imp.chk_nodate').replace('{n}',noDate)});
+  if(noNet) w.push({lvl:'warn', t:tt('imp.chk_nonet').replace('{n}',noNet)});
+  if(dupIn) w.push({lvl:'warn', t:tt('imp.chk_dupin').replace('{n}',dupIn)});
+  if(dupEx) w.push({lvl:'info', t:tt('imp.chk_dupex').replace('{n}',dupEx)});
+  if(curs.length>1) w.push({lvl:'info', t:tt('imp.chk_curmix').replace('{c}',curs.join(', '))});
+  return w;
+}
 function renderPreview(){
   const map=currentMap();
   const recs=importRows.slice(0,8).map(r=>rowToRec(r,map));
-  $('#preview-count').textContent=`${importRows.length} righe nel file — anteprima prime ${Math.min(8,importRows.length)}`;
+  const cb=$('#preview-checks');
+  if(cb){ const w=importChecks(map);
+    cb.innerHTML=w.map(x=>`<div class="imp-chk imp-chk--${x.lvl}"><span>${x.lvl==='warn'?'⚠':'ℹ'}</span> ${esc(x.t)}</div>`).join('');
+    cb.hidden=!w.length;
+  }
+  $('#preview-count').textContent=tt('imp.preview_count').replace('{rows}',importRows.length).replace('{m}',Math.min(8,importRows.length));
   $('#preview-table').innerHTML=`<thead><tr>
-    <th>Data</th><th>Piattaforma</th><th>Catalogo</th><th>Prodotto</th><th>Artista</th><th class="num">Q.tà</th><th class="num">Netto</th><th>Val.</th></tr></thead>
+    <th>${tt('imp.h_date')}</th><th>${tt('imp.h_platform')}</th><th>${tt('imp.h_catalog')}</th><th>${tt('imp.h_product')}</th><th>${tt('imp.h_artist')}</th><th class="num">${tt('imp.h_qty')}</th><th class="num">${tt('imp.h_net')}</th><th>${tt('imp.h_cur')}</th></tr></thead>
    <tbody>${recs.map(t=>`<tr>
      <td>${t.date?fmtDate(t.date):'<span class=muted>?</span>'}</td><td>${esc(t.platform)}</td><td>${esc(t.catalog)}</td>
      <td>${esc(t.product)}</td><td>${esc(t.artist)}</td><td class="num">${t.qty}</td>

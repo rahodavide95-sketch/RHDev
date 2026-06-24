@@ -44,6 +44,10 @@
     if($('gate-signup')) $('gate-signup').type = signup ? 'submit' : 'button';
     // login = password esistente, registrazione = nuova password (suggerimenti iOS)
     if($('gate-pw')) $('gate-pw').setAttribute('autocomplete', signup ? 'new-password' : 'current-password');
+    // In login i campi di sola-registrazione (nome/cognome/label) vanno DISABILITATI:
+    // così iOS/Android non classificano il form come "registrazione" e propongono
+    // "Salva password" / l'autofill invece della "password sicura".
+    ['gate-name','gate-surname','gate-label'].forEach(id=>{ const el=$(id); if(el) el.disabled = !signup; });
     gateStatus('');
   }
   async function gateSignIn(){

@@ -2562,10 +2562,9 @@ const AI_KEY_LS='labelfinance.aikey';
 function aiLocalKey(){ try{ return localStorage.getItem(AI_KEY_LS)||''; }catch(e){ return ''; } }
 async function aiAdviseDirect(payload){
   const key=aiLocalKey(); if(!key) return { error:'no_key' };
-  const lang=payload.lang==='en'?'en':'it';
-  const system = lang==='en'
-    ? `You are a financial advisor for independent record labels. Analyze the label's data and give concrete, prioritized, actionable advice in clear English. Point out declining months, low-margin platforms, unrecouped artists, anomalous expenses and concrete next steps. Use short paragraphs and bullets. Never invent numbers not in the data. Keep it under ~350 words.`
-    : `Sei un consulente finanziario per etichette discografiche indipendenti. Analizza i dati e dai consigli concreti, prioritari e azionabili in italiano. Segnala mesi in calo, piattaforme a basso margine, artisti non recouped, spese anomale e i prossimi passi. Usa paragrafi brevi ed elenchi. Non inventare numeri non presenti nei dati. Max ~350 parole.`;
+  const LN={it:'Italian',en:'English',es:'Spanish',fr:'French',de:'German',pt:'Portuguese',nl:'Dutch'};
+  const langName=LN[payload.lang]||'Italian';
+  const system = `You are a financial advisor for independent record labels. Analyze the label's data and give concrete, prioritized, actionable advice. ALWAYS reply in ${langName}. Point out declining months, low-margin platforms, unrecouped artists, anomalous expenses and concrete next steps. Use short paragraphs and bullets. Never invent numbers not in the data. Keep it under ~350 words.`;
   const q=(payload.question||'').trim();
   const userContent=(q?(q+'\n\n'):'')+'Dati dell\'etichetta (JSON):\n```json\n'+JSON.stringify(payload.summary||{},null,2)+'\n```';
   try{

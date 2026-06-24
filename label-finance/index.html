@@ -267,7 +267,21 @@ footer{padding:54px 0 36px;background:rgba(8,9,14,.5);-webkit-backdrop-filter:bl
   .mock-body{grid-template-columns:1fr}.mock-side{display:none}
   .nav-cta .btn-ghost{display:none}
 }
-@media(max-width:560px){ .feat-grid{grid-template-columns:1fr} .hero-note{gap:10px} }
+@media(max-width:560px){
+  .feat-grid{grid-template-columns:1fr} .hero-note{gap:10px}
+  .nav-in{gap:9px;height:60px}
+  .logo img{height:27px}
+  .logo-w{font-size:1rem}
+  .nav-cta{gap:8px}
+  .nav-cta .btn{padding:8px 13px;font-size:.85rem;white-space:nowrap}
+  .lang-sel{padding:7px 23px 7px 9px;font-size:.78rem}
+}
+@media(max-width:440px){
+  .logo-w{display:none}                 /* solo l'icona: lascia spazio al CTA */
+  .nav-in{gap:8px}
+  .nav-cta .btn{padding:8px 12px;font-size:.84rem}
+  .lang-sel{padding:7px 22px 7px 8px;font-size:.76rem}
+}
 </style>
 </head>
 <body>

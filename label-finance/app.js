@@ -404,7 +404,7 @@ function rebuildAccountMenu(){ if(typeof updateConsolidatedNav==='function') upd
 function deleteLabel(id){
   if(ACCOUNT.labels.length<=1){ toast(tt('t.label_min')); return; }
   const lab=ACCOUNT.labels.find(l=>l.id===id); if(!lab) return;
-  if(!confirm(`Eliminare l'etichetta "${lab.name||''}" e tutti i suoi dati? Operazione irreversibile.`)) return;
+  if(!confirm(tt('confirm.del_label').replace('{name}', lab.name||''))) return;
   ACCOUNT.labels=ACCOUNT.labels.filter(l=>l.id!==id);
   if(ACCOUNT.activeLabel===id) ACCOUNT.activeLabel=ACCOUNT.labels[0].id;
   DB=activeLabel(); save(); reloadViews(); rebuildAccountMenu(); toast(tt('t.label_deleted')); goto('dashboard');
@@ -833,7 +833,7 @@ $('#btn-print').onclick=()=>{ document.body.classList.add('printing'); window.pr
 
 /* onboarding: dati dimostrativi */
 function loadDemo(){
-  if(DB.transactions.length && !confirm('Caricare i dati dimostrativi in questa etichetta?')) return;
+  if(DB.transactions.length && !confirm(tt('confirm.load_demo'))) return;
   const now=new Date();
   const D=(mAgo,day)=>new Date(now.getFullYear(),now.getMonth()-mAgo,day).toISOString().slice(0,10);
   const Dp=n=>{ const d=new Date(now); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
@@ -2346,7 +2346,7 @@ $('#json-input').onchange=e=>{
     catch{ toast(tt('t.file_invalid')); } };
   r.readAsText(f);
 };
-$('#wipe').onclick=()=>{ if(confirm('Cancellare TUTTI i dati (tutte le etichette) da questo dispositivo? Operazione irreversibile.')){
+$('#wipe').onclick=()=>{ if(confirm(tt('confirm.wipe_all'))){
   ACCOUNT=defaultAccount(); DB=activeLabel(); save(); reloadViews(); rebuildAccountMenu();
   toast(tt('t.data_wiped')); goto('dashboard'); } };
 

@@ -1410,3 +1410,17 @@ body.gate-signup #gate-signin{opacity:.5}
   .data-table--cards td.dbl-sel::before{content:none}
   .data-table--cards td.dbl-sel+td{padding-right:28px}
 }
+
+/* --- Pannello "release da completare" (dati mancanti) --- */
+.rel-gaps{margin-bottom:14px;padding:11px 14px;border-radius:11px;background:color-mix(in srgb,var(--accent) 6%,var(--panel));border:1px solid color-mix(in srgb,var(--accent) 26%,var(--line))}
+.rel-gaps-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.rel-gaps-title{font-size:.92rem}
+.rel-gaps-list{display:flex;flex-direction:column;gap:6px}
+.rel-gap-item{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--panel-2);border:1px solid var(--line);border-radius:9px;padding:8px 11px;cursor:pointer;font:inherit;color:var(--text);transition:.12s}
+.rel-gap-item:hover{border-color:var(--accent)}
+.rel-gap-cat{font-weight:700;font-size:.88rem;flex:none}
+.rel-gap-ttl{color:var(--muted);font-size:.85rem;flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rel-gap-tags{display:flex;gap:5px;flex:none;flex-wrap:wrap;justify-content:flex-end}
+.rel-gap-tag{font-size:.7rem;font-weight:600;padding:2px 7px;border-radius:20px;background:color-mix(in srgb,var(--out) 16%,transparent);color:var(--out);border:1px solid color-mix(in srgb,var(--out) 30%,var(--line));white-space:nowrap}
+.rel-gap-more{padding:4px 2px}
+@media(max-width:560px){ .rel-gap-item{flex-wrap:wrap;gap:4px 8px} .rel-gap-ttl{flex:1 1 100%;order:3} }

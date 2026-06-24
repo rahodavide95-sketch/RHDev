@@ -1151,6 +1151,7 @@ function expandReleases(list){
 }
 function renderReleases(){
   updateRelEnrichBanner();
+  updateRelGapsPanel();
   const rq=($('#rel-search')&&$('#rel-search').value||'').toLowerCase().trim();
   let base=releases().slice();
   if(rq) base=base.filter(r=>((r.catalog||'')+' '+(r.title||'')+' '+(r.artist||'')+' '+(r.upc||'')).toLowerCase().includes(rq));
@@ -1320,6 +1321,36 @@ function createReleasesFromTx(){
 }
 $('#rel-enrich-create')?.addEventListener('click', createReleasesFromTx);
 
+/* ---- Dati mancanti nelle release: pannello "da completare" (UPC, quote, ISRC, artista) ---- */
+function releaseGaps(){
+  return releases().map(r=>{
+    const g=[];
+    if(!(r.artist||'').trim()) g.push('artist');
+    if(!(r.splits||[]).some(s=>(s.name||'').trim() && +s.pct>0)) g.push('splits');
+    if(!(r.upc||'').trim()) g.push('upc');
+    const tracks=r.tracks||[];
+    if(tracks.length && tracks.some(t=>!(t.isrc||'').trim())) g.push('isrc');
+    return g.length?{r,gaps:g}:null;
+  }).filter(Boolean);
+}
+let relGapsDismissed='';
+function relGapsSig(list){ return list.length+'|'+list.map(x=>x.r.id+x.gaps.join('')).join(','); }
+function updateRelGapsPanel(){
+  const b=$('#rel-gaps'); if(!b) return;
+  const list=releaseGaps(); const sig=relGapsSig(list);
+  if(!list.length || sig===relGapsDismissed){ b.hidden=true; return; }
+  const gl={artist:tt('rel.gap_artist'), splits:tt('rel.gap_splits'), upc:'UPC', isrc:tt('rel.gap_isrc')};
+  const ttl=$('.rel-gaps-title',b); if(ttl) ttl.textContent=tt('rel.gaps_title').replace('{n}',list.length);
+  $('#rel-gaps-list').innerHTML=list.slice(0,8).map(x=>`
+    <button class="rel-gap-item" data-rel-open="${x.r.id}" type="button">
+      <span class="rel-gap-cat">${esc(x.r.catalog||x.r.title||'—')}</span>
+      <span class="rel-gap-ttl">${esc(x.r.title||'')}</span>
+      <span class="rel-gap-tags">${x.gaps.map(g=>`<span class="rel-gap-tag">${esc(gl[g]||g)}</span>`).join('')}</span>
+    </button>`).join('') + (list.length>8?`<div class="rel-gap-more muted small">+${list.length-8}</div>`:'');
+  b.hidden=false;
+}
+$('#rel-gaps-x')?.addEventListener('click', ()=>{ relGapsDismissed=relGapsSig(releaseGaps()); const b=$('#rel-gaps'); if(b) b.hidden=true; });
+
 /* ---- Avviso intelligente in Artisti: artisti trovati nei movimenti ma non in rubrica ---- */
 function splitArtistNames(s){
   return (s||'').toString().split(/,|&|;|\/|\bfeat\.?\b|\bft\.?\b|\bfeaturing\b/i).map(x=>x.trim()).filter(Boolean);
@@ -1372,7 +1403,12 @@ function openRelease(id){
   $('#r-mastered').value=r?.masteredBy||''; $('#r-artwork').value=r?.artworkBy||''; $('#r-publisher').value=r?.publisher||'';
   $('#r-type').value=r?.type||'SINGLE'; $('#r-distributed').value=r?.distributedBy||'';
   if($('#r-artist-ac')) $('#r-artist-ac').hidden=true;
-  const splits = (r?.splits&&r.splits.length) ? r.splits : [{name:'',pct:''}];
+  let splits = (r?.splits&&r.splits.length) ? r.splits : null;
+  if(!splits && r && (r.artist||'').trim()){          // suggerimento intelligente: usa lo split salvato dell'artista in rubrica
+    const a=(DB.artists||[]).find(x=>normArt(x.name)===normArt(r.artist));
+    if(a && (+a.split>0)) splits=[{name:a.name, pct:a.split}];
+  }
+  splits = splits || [{name:'',pct:''}];
   $('#r-splits').innerHTML = splits.map(s=>splitRowHTML(s.name,s.pct)).join('');
   $('#r-tracks').innerHTML = (r?.tracks||[]).map(t=>trackBlockHTML(t)).join('');
   enableTrackDrag($('#r-tracks'));

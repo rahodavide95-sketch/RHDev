@@ -27,14 +27,17 @@ const DASH_BASE = ['kpi','chart','g_release','g_artist','g_platform','g_type'];
 const DASH_EXTRAS = ['forecast','w_top','recent','merch','nextrel','nextevt','support','disco','margin','expenses','payable','unrec','mom','pending','lowstock','duetasks']; // libreria widget opzionali (nascosti di default)
 const DASH_DEFAULT_ORDER = [...DASH_BASE, ...DASH_EXTRAS];
 const DASH_FULL = new Set(['kpi','chart','forecast']);
-const PLAN_LIMITS = { free:1, studio:3, agency:Infinity };
+// ID interni invariati (free/studio/agency) + nuovo 'biglabel'; i nomi mostrati sono in PLAN_INFO.
+// free=Starter, biglabel=Big Label (1 etichetta, tutte le funzioni), studio=Company (3 etichette), agency=Enterprise (illimitate).
+const PLAN_LIMITS = { free:1, biglabel:1, studio:3, agency:Infinity };
 // capacità per piano (gating funzioni). Recoupment è incluso ovunque.
 const PLAN_CAPS = {
-  free:   { excel:false, batch:false, branding:false, audit:false, automations:false, team:false, ai:false, layout:false },
-  studio: { excel:true,  batch:true,  branding:true,  audit:false, automations:false, team:false, ai:true,  layout:true },
-  agency: { excel:true,  batch:true,  branding:true,  audit:true,  automations:true,  team:true,  ai:true,  layout:true },
+  free:     { excel:false, batch:false, branding:false, audit:false, automations:false, team:false, ai:false, layout:false },
+  biglabel: { excel:true,  batch:true,  branding:true,  audit:false, automations:false, team:false, ai:true,  layout:true },
+  studio:   { excel:true,  batch:true,  branding:true,  audit:false, automations:false, team:false, ai:true,  layout:true },
+  agency:   { excel:true,  batch:true,  branding:true,  audit:true,  automations:true,  team:true,  ai:true,  layout:true },
 };
-const FEATURE_MIN = { excel:'studio', batch:'studio', branding:'studio', ai:'studio', layout:'studio', audit:'agency', automations:'agency', team:'agency' };
+const FEATURE_MIN = { excel:'biglabel', batch:'biglabel', branding:'biglabel', ai:'biglabel', layout:'biglabel', audit:'agency', automations:'agency', team:'agency' };
 function planCaps(){ return PLAN_CAPS[ACCOUNT.plan] || PLAN_CAPS.free; }
 function can(feat){ return !!planCaps()[feat]; }
 function requireFeature(feat){
@@ -383,7 +386,7 @@ function initFAQ(){
 }
 
 /* ===== Account: menu, etichette, piani ===== */
-const PLAN_INFO={ free:{name:'Starter'}, studio:{name:'Studio'}, agency:{name:'Agency'} };
+const PLAN_INFO={ free:{name:'Starter'}, biglabel:{name:'Big Label'}, studio:{name:'Company'}, agency:{name:'Enterprise'} };
 function rebuildAccountMenu(){ if(typeof updateConsolidatedNav==='function') updateConsolidatedNav();
   const m=$('#account-menu-labels'); if(!m) return;
   const multi=ACCOUNT.labels.length>1;
@@ -432,15 +435,22 @@ function renderOffers(){
   $$('#view-offers .plan-card').forEach(c=>{
     const active=ACCOUNT.plan===c.dataset.plan;
     c.classList.toggle('is-current',active);
-    const btn=c.querySelector('.plan-btn'); if(btn){ btn.textContent=active?tt('off.current'):tt('off.activate'); btn.disabled=active; }
-    const m=+c.dataset.monthly||0;
     const priceEl=c.querySelector('.plan-price'), noteEl=c.querySelector('.plan-note');
+    const btn=c.querySelector('.plan-btn');
+    if(c.dataset.soon){   // Enterprise: prezzo non ancora attivo
+      if(priceEl) priceEl.innerHTML=`<span class="plan-soon">${tt('off.soon')}</span>`;
+      if(noteEl) noteEl.textContent='';
+      if(btn){ btn.textContent=tt('off.soon'); btn.disabled=true; }
+      return;
+    }
+    if(btn){ btn.textContent=active?tt('off.current'):tt('off.activate'); btn.disabled=active; }
+    const m=+c.dataset.monthly||0;
     if(priceEl){
       if(billing==='annual'){
-        priceEl.innerHTML=`${fmtEur(m*0.7)}<span>/mese</span> <s class="plan-old">${fmtEur(m)}</s>`;
+        priceEl.innerHTML=`${fmtEur(m*0.7)}<span>${tt('off.pm')}</span> <s class="plan-old">${fmtEur(m)}</s>`;
         if(noteEl) noteEl.textContent=`${tt('off.billed')} · ${fmtEur(m*12*0.7)}/${tt('off.year')} ${tt('off.instead')} ${fmtEur(m*12)}`;
       } else {
-        priceEl.innerHTML=`${fmtEur(m)}<span>/mese</span>`;
+        priceEl.innerHTML=`${fmtEur(m)}<span>${tt('off.pm')}</span>`;
         if(noteEl) noteEl.textContent='';
       }
     }

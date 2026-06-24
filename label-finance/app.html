@@ -47,15 +47,15 @@
     <div class="gate-card">
       <img src="icon.png?v=3" alt="Label Finance" class="gate-logo">
       <h1 class="gate-title">Label<span class="lf-fin">Finance</span></h1>
-      <p class="gate-sub" id="gate-sub">Accedi al tuo gestionale</p>
+      <p class="gate-sub" id="gate-sub" data-i18n="gate.sub">Accedi al tuo gestionale</p>
 
       <form id="gate-form" autocomplete="on">
-        <div class="gate-field gate-signup-only"><label for="gate-name">Nome</label>
-          <input id="gate-name" name="given-name" class="input" type="text" autocomplete="given-name" placeholder="Il tuo nome"></div>
-        <div class="gate-field gate-signup-only"><label for="gate-surname">Cognome</label>
-          <input id="gate-surname" name="family-name" class="input" type="text" autocomplete="family-name" placeholder="Il tuo cognome"></div>
-        <div class="gate-field gate-signup-only"><label for="gate-label">Nome label</label>
-          <input id="gate-label" name="organization" class="input" type="text" autocomplete="organization" placeholder="Nome dell'etichetta"></div>
+        <div class="gate-field gate-signup-only"><label for="gate-name" data-i18n="gate.name">Nome</label>
+          <input id="gate-name" name="given-name" class="input" type="text" autocomplete="given-name" data-i18n-ph="gate.name_ph" placeholder="Il tuo nome"></div>
+        <div class="gate-field gate-signup-only"><label for="gate-surname" data-i18n="gate.surname">Cognome</label>
+          <input id="gate-surname" name="family-name" class="input" type="text" autocomplete="family-name" data-i18n-ph="gate.surname_ph" placeholder="Il tuo cognome"></div>
+        <div class="gate-field gate-signup-only"><label for="gate-label" data-i18n="gate.label">Nome label</label>
+          <input id="gate-label" name="organization" class="input" type="text" autocomplete="organization" data-i18n-ph="gate.label_ph" placeholder="Nome dell'etichetta"></div>
         <div class="gate-field"><label for="gate-email" data-i18n="gate.email">Email</label>
           <input id="gate-email" name="username" class="input" type="email" autocomplete="username" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="email@esempio.com"></div>
         <div class="gate-field"><label for="gate-pw" data-i18n="gate.password">Password</label>
@@ -158,7 +158,7 @@
           <select class="lang-select" data-lang-select aria-label="Lingua / Language"><option value="it">🇮🇹 IT</option><option value="en">🇬🇧 EN</option><option value="es">🇪🇸 ES</option><option value="fr">🇫🇷 FR</option><option value="de">🇩🇪 DE</option><option value="pt">🇵🇹 PT</option><option value="nl">🇳🇱 NL</option></select>
         </div>
       </div>
-      <span class="badge-local">● Dati salvati sul tuo dispositivo</span>
+      <span class="badge-local" data-i18n="side.local_data">● Dati salvati sul tuo dispositivo</span>
     </div>
   </aside>
   <!-- backdrop del cassetto menu (mobile) -->
@@ -249,7 +249,7 @@
       <header class="view-head">
         <div>
           <div class="title-row"><h1 id="greeting">Dashboard</h1><button class="info-btn" data-info="dashboard" title="Cos'è questa sezione?">i</button></div>
-          <p class="muted" id="dash-range-label">Tutti i periodi</p>
+          <p class="muted" id="dash-range-label" data-i18n="common.all_periods">Tutti i periodi</p>
         </div>
         <div class="head-actions">
           <select id="dash-period" class="select">
@@ -520,7 +520,7 @@
           <option value="income" data-i18n="tx.only_income">Solo entrate</option>
           <option value="expense" data-i18n="tx.only_expense">Solo uscite</option>
         </select>
-        <select id="tx-filter-platform" class="select"><option value="">Tutte le piattaforme</option></select>
+        <select id="tx-filter-platform" class="select"><option value="" data-i18n="tx.all_platforms">Tutte le piattaforme</option></select>
         <select id="tx-period" class="select">
           <option value="all" data-i18n="common.all_periods">Tutti i periodi</option>
           <option value="ytd" data-i18n="common.period.ytd">Anno corrente</option>
@@ -588,7 +588,7 @@
         <span class="ex">Esempio — EP <b>RHD007</b>, quote generali: Raho 50%, Jacom 50%.<br>Aggiungi la traccia 2 (ISRC <i>ITRH72500002</i>) con un feat e imposti: Raho 40%, Jacom 35%, Pol 25%.<br>→ Le vendite di tutto l'EP si dividono 50/50, ma quelle della <b>sola traccia 2</b> (riconosciute dall'ISRC) si dividono 40/35/25. Se una vendita non ha ISRC, o ha un ISRC non mappato, si usano le quote generali della release.</span>
         <p class="muted" style="font-size:.86rem">L'ISRC è il codice univoco internazionale del brano (12 caratteri, es. <i>ITRH72500002</i>): lo trovi nel report del distributore. Se non lavori per singola traccia, ignora pure le tracce: basta impostare le quote generali della release.</p>
       </div>
-      <p class="muted small" style="margin-bottom:16px">Definisci catalogo, titolo e le quote di ripartizione (%) per artista. Le vendite con lo stesso <strong>catalogo</strong> useranno automaticamente queste quote nella sezione Royalty.</p>
+      <p class="muted small" style="margin-bottom:16px" data-i18n-html="rel.intro">Definisci catalogo, titolo e le quote di ripartizione (%) per artista. Le vendite con lo stesso <strong>catalogo</strong> useranno automaticamente queste quote nella sezione Royalty.</p>
       <div class="releases-cards" id="releases-cards"></div>
     </section>
 
@@ -752,7 +752,7 @@
 
       <div class="panel">
         <div class="panel-head"><h2 data-i18n="dash.byartist">Per artista</h2><button class="card-i" type="button" aria-label="Info"><span class="ci-dot">i</span><span class="card-tip" data-i18n="ci.byartist">Risultato economico aggregato per ciascun artista del roster.</span></button>
-          <span class="muted small">Clicca un artista per il dettaglio per release.</span></div>
+          <span class="muted small" data-i18n="roy.click_hint">Clicca un artista per il dettaglio per release.</span></div>
         <div class="table-wrap" id="roy-table-wrap"><table class="data-table data-table--cards" id="table-roy-artist"></table></div>
         <div class="roy-cards" id="roy-cards" hidden></div>
       </div>
@@ -787,16 +787,16 @@
       </div>
 
       <div class="panel" id="roy-detail-panel" hidden>
-        <div class="panel-head"><h2 id="roy-detail-title">Dettaglio</h2>
+        <div class="panel-head"><h2 id="roy-detail-title" data-i18n="roy.detail">Dettaglio</h2>
           <span class="spacer" style="flex:1"></span>
           <button class="btn btn-pdf" id="roy-detail-pdf" title="Rendiconto PDF da inviare all'artista">⤓ Statement PDF</button>
           <button class="btn" id="roy-detail-portal" data-i18n="portal.btn" title="Link portale artista (sola lettura)">🔗 Portale artista</button>
-          <button class="btn" id="roy-detail-close">Chiudi</button></div>
+          <button class="btn" id="roy-detail-close" data-i18n="common.close">Chiudi</button></div>
         <div class="table-wrap"><table class="data-table data-table--cards" id="table-roy-detail"></table></div>
       </div>
       <div class="empty-hint" id="roy-empty" hidden>
-        <p>Per calcolare le royalty servono delle release con le quote. Crea la prima release.</p>
-        <button class="btn btn-primary" data-goto="releases">Vai a Release</button>
+        <p data-i18n="roy.empty_text">Per calcolare le royalty servono delle release con le quote. Crea la prima release.</p>
+        <button class="btn btn-primary" data-goto="releases" data-i18n="roy.goto_rel">Vai a Release</button>
       </div>
     </section>
 
@@ -815,18 +815,18 @@
       <div class="panel">
         <div class="import-drop" id="import-drop">
           <input type="file" id="file-input" accept=".csv,.txt,text/csv" hidden>
-          <p><strong>Trascina qui il CSV</strong> oppure <button class="link" id="browse-btn">scegli un file</button></p>
-          <p class="muted small">Vengono lette le prime righe per riconoscere le colonne. Nulla viene caricato online.</p>
+          <p><strong data-i18n="imp.drop">Trascina qui il CSV</strong> <span data-i18n="common.or">oppure</span> <button class="link" id="browse-btn" data-i18n="imp.browse">scegli un file</button></p>
+          <p class="muted small" data-i18n="imp.drop_hint">Vengono lette le prime righe per riconoscere le colonne. Nulla viene caricato online.</p>
         </div>
       </div>
 
       <div id="import-config" hidden>
         <div class="panel">
-          <div class="panel-head"><h2>1 · Impostazioni file</h2></div>
+          <div class="panel-head"><h2 data-i18n="imp.s1_title">1 · Impostazioni file</h2></div>
           <div class="form-grid">
-            <label>Distributore
+            <label><span data-i18n="imp.distro">Distributore</span>
               <select id="map-distro" class="select">
-                <option value="auto">Rilevamento automatico</option>
+                <option value="auto" data-i18n="imp.auto_detect">Rilevamento automatico</option>
                 <option value="bandcamp">Bandcamp</option>
                 <option value="distrokid">DistroKid</option>
                 <option value="believe">Believe</option>
@@ -837,62 +837,62 @@
                 <option value="labelengine">Label Engine</option>
               </select>
             </label>
-            <label>Carica preset salvato
-              <select id="map-preset" class="select"><option value="">— nessuno —</option></select>
+            <label><span data-i18n="imp.load_preset">Carica preset salvato</span>
+              <select id="map-preset" class="select"><option value="" data-i18n="imp.none">— nessuno —</option></select>
             </label>
-            <label>Tipo movimento
+            <label><span data-i18n="imp.kind">Tipo movimento</span>
               <select id="map-kind" class="select">
-                <option value="income">Entrata (vendite)</option>
-                <option value="expense">Uscita (spese)</option>
+                <option value="income" data-i18n="imp.kind_income">Entrata (vendite)</option>
+                <option value="expense" data-i18n="imp.kind_expense">Uscita (spese)</option>
               </select>
             </label>
-            <label>Separatore
+            <label><span data-i18n="imp.delim">Separatore</span>
               <select id="map-delim" class="select">
-                <option value="auto">Automatico</option>
-                <option value=",">Virgola ,</option>
-                <option value=";">Punto e virgola ;</option>
-                <option value="\t">Tab</option>
+                <option value="auto" data-i18n="imp.delim_auto">Automatico</option>
+                <option value="," data-i18n="imp.delim_comma">Virgola ,</option>
+                <option value=";" data-i18n="imp.delim_semicolon">Punto e virgola ;</option>
+                <option value="\t" data-i18n="imp.delim_tab">Tab</option>
               </select>
             </label>
-            <label>Formato data
+            <label><span data-i18n="imp.datefmt">Formato data</span>
               <select id="map-datefmt" class="select">
-                <option value="auto">Automatico</option>
-                <option value="dmy">Giorno/Mese/Anno</option>
-                <option value="mdy">Mese/Giorno/Anno (es. Bandcamp)</option>
-                <option value="ymd">Anno-Mese-Giorno</option>
+                <option value="auto" data-i18n="imp.df_auto">Automatico</option>
+                <option value="dmy" data-i18n="imp.df_dmy">Giorno/Mese/Anno</option>
+                <option value="mdy" data-i18n="imp.df_mdy">Mese/Giorno/Anno (es. Bandcamp)</option>
+                <option value="ymd" data-i18n="imp.df_ymd">Anno-Mese-Giorno</option>
               </select>
             </label>
-            <label>Valuta predefinita
+            <label><span data-i18n="imp.def_currency">Valuta predefinita</span>
               <input id="map-currency" class="input" placeholder="EUR" value="EUR">
             </label>
-            <label>Piattaforma (scrivila a mano)
+            <label><span data-i18n="imp.platform_manual">Piattaforma (scrivila a mano)</span>
               <input id="map-platform" class="input" placeholder="es. Bandcamp">
-              <span class="muted small">Usata per tutte le righe se nel CSV non c'è una colonna "Piattaforma".</span>
+              <span class="muted small" data-i18n="imp.platform_hint">Usata per tutte le righe se nel CSV non c'è una colonna "Piattaforma".</span>
             </label>
           </div>
         </div>
 
         <div class="panel">
-          <div class="panel-head"><h2>2 · Associa le colonne</h2>
-            <span class="muted small">Indica quale colonna del file corrisponde a ciascun campo.</span></div>
+          <div class="panel-head"><h2 data-i18n="imp.s2_title">2 · Associa le colonne</h2>
+            <span class="muted small" data-i18n="imp.s2_hint">Indica quale colonna del file corrisponde a ciascun campo.</span></div>
           <div class="map-grid" id="map-fields"></div>
         </div>
 
         <div class="panel">
-          <div class="panel-head"><h2>3 · Anteprima</h2>
+          <div class="panel-head"><h2 data-i18n="imp.s3_title">3 · Anteprima</h2>
             <span class="muted small" id="preview-count"></span></div>
           <div class="table-wrap"><table class="data-table" id="preview-table"></table></div>
           <div class="panel-foot" style="flex-wrap:wrap;gap:10px">
-            <label class="check-inline" title="Non importa righe già presenti (stessa data, prodotto, importo…)">
-              <input type="checkbox" id="import-dedup" checked> Salta doppioni
+            <label class="check-inline" data-i18n-title="imp.dedup_hint" title="Non importa righe già presenti (stessa data, prodotto, importo…)">
+              <input type="checkbox" id="import-dedup" checked> <span data-i18n="imp.dedup">Salta doppioni</span>
             </label>
             <span class="spacer"></span>
-            <div class="row-inline" style="gap:6px" title="Salva questa mappatura come preset per riusarla la prossima volta">
-              <input id="map-preset-name" class="input" placeholder="Nome preset (es. Bandcamp)" style="max-width:190px">
-              <button class="btn" id="save-preset">💾 Salva preset</button>
+            <div class="row-inline" style="gap:6px" data-i18n-title="imp.preset_hint" title="Salva questa mappatura come preset per riusarla la prossima volta">
+              <input id="map-preset-name" class="input" data-i18n-ph="imp.preset_name_ph" placeholder="Nome preset (es. Bandcamp)" style="max-width:190px">
+              <button class="btn" id="save-preset" data-i18n="imp.save_preset">💾 Salva preset</button>
             </div>
-            <button class="btn" id="import-cancel">Annulla</button>
-            <button class="btn btn-primary" id="import-confirm">Importa movimenti</button>
+            <button class="btn" id="import-cancel" data-i18n="common.cancel">Annulla</button>
+            <button class="btn btn-primary" id="import-confirm" data-i18n="imp.confirm">Importa movimenti</button>
           </div>
         </div>
       </div>
@@ -912,33 +912,33 @@
 
       <div class="panel">
         <div class="panel-head"><h2 data-i18n="set.sync">☁ Sincronizzazione cloud</h2>
-          <span class="muted small" id="sync-status">Non configurata</span></div>
+          <span class="muted small" id="sync-status" data-i18n="set.sync_unconf">Non configurata</span></div>
         <div class="panel-body">
-          <p class="muted small">Collega un progetto Supabase (gratuito) per vedere gli stessi dati su PC e telefono. La guida è in <code>docs/SYNC-SETUP.md</code>.</p>
+          <p class="muted small" data-i18n-html="set.sync_hint">Collega un progetto Supabase (gratuito) per vedere gli stessi dati su PC e telefono. La guida è in <code>docs/SYNC-SETUP.md</code>.</p>
 
           <details id="sync-config-box">
-            <summary>1 · Configura connessione (una volta sola)</summary>
+            <summary data-i18n="set.sync_step1">1 · Configura connessione (una volta sola)</summary>
             <div class="form-grid" style="margin-top:12px">
-              <label class="span-2">Project URL
+              <label class="span-2"><span data-i18n="set.proj_url">Project URL</span>
                 <input id="sync-url" class="input" placeholder="https://xxxx.supabase.co"></label>
-              <label class="span-2">Anon public key
+              <label class="span-2"><span data-i18n="set.anon_key">Anon public key</span>
                 <input id="sync-key" class="input" placeholder="eyJhbGciOi…"></label>
-              <div class="span-2"><button class="btn" id="sync-save-config">Salva connessione</button></div>
+              <div class="span-2"><button class="btn" id="sync-save-config" data-i18n="set.save_conn">Salva connessione</button></div>
             </div>
           </details>
 
           <div id="sync-auth" hidden>
             <div class="form-grid" style="margin-top:6px">
-              <label>Email <input id="sync-email" class="input" type="email" autocomplete="username"></label>
-              <label>Password
+              <label><span data-i18n="set.email_lbl">Email</span> <input id="sync-email" class="input" type="email" autocomplete="username"></label>
+              <label><span data-i18n="set.pw_lbl">Password</span>
                 <span class="input-eye">
                   <input id="sync-pw" class="input" type="password" autocomplete="current-password">
                   <button type="button" class="eye-btn" id="sync-pw-eye" aria-label="Mostra password" title="Mostra/nascondi password"></button>
                 </span>
               </label>
               <div class="span-2 row-inline wrap">
-                <button class="btn btn-primary" id="sync-signin">Accedi</button>
-                <button class="btn" id="sync-signup">Registrati</button>
+                <button class="btn btn-primary" id="sync-signin" data-i18n="gate.signin">Accedi</button>
+                <button class="btn" id="sync-signup" data-i18n="gate.signup">Registrati</button>
               </div>
             </div>
           </div>
@@ -958,9 +958,9 @@
               </div>
             </div>
             <div class="form-grid" style="margin-top:12px">
-              <label>Nome <input id="account-name" class="input" type="text"></label>
-              <label>Cognome <input id="account-surname" class="input" type="text"></label>
-              <label class="span-2">Nome label <input id="account-label" class="input" type="text"></label>
+              <label><span data-i18n="set.name">Nome</span> <input id="account-name" class="input" type="text"></label>
+              <label><span data-i18n="set.surname">Cognome</span> <input id="account-surname" class="input" type="text"></label>
+              <label class="span-2"><span data-i18n="set.label">Nome label</span> <input id="account-label" class="input" type="text"></label>
             </div>
             <div class="row-inline wrap" style="margin-top:12px">
               <button class="btn btn-primary" id="account-save" data-i18n="set.save_profile">Salva profilo</button>
@@ -971,15 +971,15 @@
             <details class="pw-change" id="pw-change-box" style="margin-top:16px">
               <summary data-i18n="set.change_pw">Cambia password</summary>
               <div class="form-grid" style="margin-top:12px">
-                <label class="span-2">Nuova password
+                <label class="span-2"><span data-i18n="set.pw_new">Nuova password</span>
                   <span class="input-eye">
-                    <input id="pw-new" class="input" type="password" autocomplete="new-password" placeholder="Almeno 6 caratteri">
+                    <input id="pw-new" class="input" type="password" autocomplete="new-password" data-i18n-ph="set.pw_new_ph" placeholder="Almeno 6 caratteri">
                     <button type="button" class="eye-btn" aria-label="Mostra password"></button>
                   </span>
                 </label>
-                <label class="span-2">Conferma nuova password
+                <label class="span-2"><span data-i18n="set.pw_conf">Conferma nuova password</span>
                   <span class="input-eye">
-                    <input id="pw-new2" class="input" type="password" autocomplete="new-password" placeholder="Ripeti la password">
+                    <input id="pw-new2" class="input" type="password" autocomplete="new-password" data-i18n-ph="set.pw_conf_ph" placeholder="Ripeti la password">
                     <button type="button" class="eye-btn" aria-label="Mostra password"></button>
                   </span>
                 </label>
@@ -993,7 +993,7 @@
 
       <div class="panel">
         <div class="panel-head"><h2 data-i18n="set.appearance">Aspetto</h2>
-          <span class="muted small">"Sistema" segue le impostazioni del tuo dispositivo.</span></div>
+          <span class="muted small" data-i18n="set.system_hint">"Sistema" segue le impostazioni del tuo dispositivo.</span></div>
         <div class="theme-switch theme-switch--lg" role="group" aria-label="Tema">
           <button data-theme-opt="system" data-i18n="theme.system">◐ Sistema</button>
           <button data-theme-opt="light" data-i18n="theme.light">☀ Chiaro</button>
@@ -1010,13 +1010,13 @@
 
       <div class="panel">
         <div class="panel-head"><h2 data-i18n="set.rates">Tassi di cambio → EUR</h2>
-          <span class="muted small">Usati per convertire le valute in euro nei totali.</span></div>
+          <span class="muted small" data-i18n="set.rates_hint">Usati per convertire le valute in euro nei totali.</span></div>
         <div class="rates-grid" id="rates-grid"></div>
         <div class="panel-foot">
           <div class="row-inline">
             <input id="rate-cur" class="input" placeholder="USD" maxlength="3">
             <input id="rate-val" class="input" placeholder="0.92" type="number" step="0.0001">
-            <button class="btn" id="add-rate">Aggiungi valuta</button>
+            <button class="btn" id="add-rate" data-i18n="set.add_currency">Aggiungi valuta</button>
           </div>
         </div>
       </div>
@@ -1058,7 +1058,7 @@
       <div class="panel">
         <div class="panel-head"><h2 data-i18n="set.backup">Backup & dati</h2></div>
         <div class="panel-body">
-          <p class="muted small">I dati sono salvati solo su questo dispositivo/browser. Esporta un backup regolarmente.</p>
+          <p class="muted small" data-i18n="set.backup_hint">I dati sono salvati solo su questo dispositivo/browser. Esporta un backup regolarmente.</p>
           <div class="row-inline wrap">
             <button class="btn" id="export-json" data-i18n="set.export_json">⤓ Esporta backup (.json)</button>
             <button class="btn" id="export-csv" data-i18n="set.export_csv">⤓ Esporta movimenti (.csv)</button>
@@ -1362,7 +1362,7 @@
           </div>
         </div>
 
-        <p class="about-contact">General info: <a href="mailto:info.labelfinance@gmail.com">info.labelfinance@gmail.com</a></p>
+        <p class="about-contact"><span data-i18n="about.contact">General info:</span> <a href="mailto:info.labelfinance@gmail.com">info.labelfinance@gmail.com</a></p>
         <p class="about-copy">© <span id="copyright-year">2026</span> Label Finance — <span data-i18n="about.rights">Tutti i diritti riservati.</span></p>
         <p class="about-tm muted small" data-i18n="about.tm">Tutti i marchi citati (Bandcamp, DistroKid, Believe, Symphonic…) appartengono ai rispettivi proprietari.</p>
       </div>
@@ -1448,7 +1448,7 @@
           <button class="btn plan-btn" data-plan="agency" disabled data-i18n="off.soon">Presto disponibile</button>
         </div>
       </div>
-      <p class="muted small" style="margin-top:16px">I pagamenti reali (carta) saranno gestiti da un provider sicuro (es. Stripe). Per ora l'attivazione è dimostrativa, così puoi già usare più etichette.</p>
+      <p class="muted small" style="margin-top:16px" data-i18n="off.payments_note">I pagamenti reali (carta) saranno gestiti da un provider sicuro (es. Stripe). Per ora l'attivazione è dimostrativa, così puoi già usare più etichette.</p>
     </section>
 
     <!-- ====== AIUTO & FAQ ====== -->
@@ -1461,7 +1461,7 @@
       </div>
 
       <div class="empty-hint" id="faq-empty" hidden>
-        <p>Nessuna risposta trovata. Prova con un'altra parola.</p>
+        <p data-i18n="faq.empty">Nessuna risposta trovata. Prova con un'altra parola.</p>
       </div>
 
       <div class="faq-group">
@@ -1698,8 +1698,8 @@
     <div class="acct-head">
       <img id="acct-avatar-menu" class="avatar-img avatar-img--lg" alt="" hidden>
       <div class="acct-head-txt">
-        <span class="acct-greet" id="account-greet">Le tue etichette</span>
-        <span class="acct-plan" id="account-plan">Piano Starter</span>
+        <span class="acct-greet" id="account-greet" data-i18n="acct.your_labels">Le tue etichette</span>
+        <span class="acct-plan" id="account-plan" data-i18n="acct.plan">Piano Starter</span>
       </div>
     </div>
     <div class="acct-labels" id="account-menu-labels"></div>
@@ -1757,7 +1757,7 @@
           <button type="button" class="btn btn-danger" id="f-delete" hidden data-i18n="common.delete">Elimina</button>
           <span class="spacer"></span>
           <button type="button" class="btn" id="f-cancel" data-i18n="common.cancel">Annulla</button>
-          <button type="submit" class="btn btn-primary">Salva</button>
+          <button type="submit" class="btn btn-primary" data-i18n="common.save">Salva</button>
         </div>
       </form>
     </div>
@@ -1852,7 +1852,7 @@
       <div class="modal-head"><h2 data-i18n="cols.title">Colonne movimenti</h2>
         <button class="modal-x" id="cols-close">✕</button></div>
       <div class="cols-body">
-        <p class="muted small">Spunta le colonne da mostrare e riordinale con le frecce.</p>
+        <p class="muted small" data-i18n="cols.hint">Spunta le colonne da mostrare e riordinale con le frecce.</p>
         <ul class="cols-list" id="cols-list"></ul>
         <div class="modal-foot">
           <button type="button" class="btn" id="cols-reset" data-i18n="cols.reset">Ripristina default</button>
@@ -1913,7 +1913,7 @@
   <!-- ======= MODAL: revisione duplicati ======= -->
   <div class="modal" id="dup-modal" hidden>
     <div class="modal-card">
-      <div class="modal-head"><h2 id="dup-title">Possibili duplicati</h2>
+      <div class="modal-head"><h2 id="dup-title" data-i18n="dup.title">Possibili duplicati</h2>
         <button class="modal-x" id="dup-close">✕</button></div>
       <div style="padding:20px">
         <p class="muted small" id="dup-intro"></p>

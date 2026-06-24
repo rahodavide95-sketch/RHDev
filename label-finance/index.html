@@ -196,7 +196,7 @@ img{max-width:100%}
 .ai-msg{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-left:3px solid var(--violet);border-radius:10px;padding:12px 14px;font-size:.92rem}
 .ai-msg .who{font-size:.74rem;color:var(--violet);font-weight:700;margin-bottom:5px;display:flex;align-items:center;gap:7px}
 
-.diff-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
+.diff-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 .diff-card{text-align:center;padding:22px 14px;border-radius:var(--radius)}
 .diff-num{font-size:1.4rem;font-weight:700;color:var(--violet);margin-bottom:8px}
 .diff-card h4{font-size:1rem;margin-bottom:6px}.diff-card p{color:var(--muted);font-size:.88rem}
@@ -409,7 +409,7 @@ footer{padding:54px 0 36px;background:rgba(8,9,14,.5);-webkit-backdrop-filter:bl
     </div>
     <div class="feat-grid stagger">
       <div class="feat glass"><div class="feat-ico">📊</div><h3 data-i18n="f1.t">Dashboard & Finanze</h3><p data-i18n="f1.d">Entrate, uscite e margine con variazione % vs periodo. Grafici e cruscotto personalizzabile.</p></div>
-      <div class="feat glass"><div class="feat-ico">💸</div><h3 data-i18n="f2.t">Royalty & Recoupment</h3><p data-i18n="f2.d">Calcolo automatico per artista, quote per release e override per singola traccia (ISRC).</p></div>
+      <div class="feat glass"><div class="feat-ico">💸</div><h3 data-i18n="f2.t">Royalty & Recoupment</h3><p data-i18n="f2.d">Calcolo automatico per artista, quote per release e crediti per singola traccia (ISRC): Mastered, Distributed, Written, Produced, Mixed by.</p></div>
       <div class="feat glass"><div class="feat-ico">📄</div><h3 data-i18n="f3.t">Contratti & Firma</h3><p data-i18n="f3.d">Genera il contratto con carta intestata, invialo e ricevilo firmato in tempo reale.</p></div>
       <div class="feat glass"><div class="feat-ico">📥</div><h3 data-i18n="f4.t">Import catalogo e movimenti</h3><p data-i18n="f4.d">Importa l'intera discografia da Discogs e MusicBrainz, oppure carica un CSV dal tuo store: le colonne si mappano da sole.</p></div>
       <div class="feat glass"><div class="feat-ico">👥</div><h3 data-i18n="f5.t">Rubrica Artisti</h3><p data-i18n="f5.d">Roster con contatti, IBAN e split: precompila contratti e pagamenti in automatico.</p></div>
@@ -498,6 +498,7 @@ footer{padding:54px 0 36px;background:rgba(8,9,14,.5);-webkit-backdrop-filter:bl
       <div class="diff-card glass"><div class="diff-num">03</div><h4 data-i18n="w3.t">AI dedicata</h4><p data-i18n="w3.d">Un assistente pensato per le etichette. Nessun competitor ce l'ha.</p></div>
       <div class="diff-card glass"><div class="diff-num">04</div><h4 data-i18n="w4.t">Semplice e bello</h4><p data-i18n="w4.d">Moderno, chiaro, veloce. Zero curva d'apprendimento.</p></div>
       <div class="diff-card glass"><div class="diff-num">05</div><h4 data-i18n="w5.t">Offline-first</h4><p data-i18n="w5.d">I tuoi dati sempre con te, sincronizzati su ogni dispositivo.</p></div>
+      <div class="diff-card glass"><div class="diff-num">06</div><h4 data-i18n="w6.t">In 7 lingue</h4><p data-i18n="w6.d">Interfaccia completa in italiano, inglese, spagnolo, francese, tedesco, portoghese e olandese.</p></div>
     </div>
   </div>
 </section>
@@ -630,7 +631,7 @@ const LANG={
   'features.badge':'Funzionalità','features.h2':'Una sola app per <span class="grad">l\'intero business</span>',
   'features.sub':'Gli altri fanno solo le royalty oppure solo i contratti. Label Finance copre tutto, dall\'incasso al pagamento dell\'artista.',
   'f1.t':'Dashboard & Finanze','f1.d':'Entrate, uscite e margine con variazione % vs periodo. Grafici e cruscotto personalizzabile.',
-  'f2.t':'Royalty & Recoupment','f2.d':'Calcolo automatico per artista, quote per release e override per singola traccia (ISRC).',
+  'f2.t':'Royalty & Recoupment','f2.d':'Calcolo automatico per artista, quote per release e crediti per singola traccia (ISRC): Mastered, Distributed, Written, Produced, Mixed by.',
   'f3.t':'Contratti & Firma','f3.d':'Genera il contratto con carta intestata, invialo e ricevilo firmato in tempo reale.',
   'f4.t':'Import catalogo e movimenti','f4.d':'Importa l\'intera discografia da Discogs e MusicBrainz, oppure carica un CSV dal tuo store: le colonne si mappano da sole.',
   'f5.t':'Rubrica Artisti','f5.d':'Roster con contatti, IBAN e split: precompila contratti e pagamenti in automatico.',
@@ -657,6 +658,7 @@ const LANG={
   'w3.t':'AI dedicata','w3.d':'Un assistente pensato per le etichette. Nessun competitor ce l\'ha.',
   'w4.t':'Semplice e bello','w4.d':'Moderno, chiaro, veloce. Zero curva d\'apprendimento.',
   'w5.t':'Offline-first','w5.d':'I tuoi dati sempre con te, sincronizzati su ogni dispositivo.',
+  'w6.t':'In 7 lingue','w6.d':'Interfaccia completa in italiano, inglese, spagnolo, francese, tedesco, portoghese e olandese.',
   'pricing.badge':'Prezzi','pricing.h2':'Scegli il piano <span class="grad">della tua crescita</span>','pricing.sub':'14 giorni di prova gratuita sul piano Studio. Disdici quando vuoi.',
   'bill.month':'Mensile','bill.year':'Annuale','per.mo':'/mese','price.reco':'⭐ Consigliato','bill.note_m':'fatturazione mensile','bill.year_tpl':'fatturato annualmente: {tot}/anno · risparmi {save}',
   'p1.desc':'Il gestionale completo, per la tua prima etichetta.','p1.f1':'1 etichetta','p1.f2':'Movimenti, royalty e recoupment','p1.f3':'Discografia, contratti e firma digitale','p1.f4':'Pianificazione, eventi, merch e task','p1.f5':'Import CSV + report PDF','p1.f6':'Assistente AI','p1.f7':'Dashboard personalizzabile','p1.cta':'Inizia con Starter',
@@ -685,7 +687,7 @@ const LANG={
   'features.badge':'Features','features.h2':'One app for <span class="grad">your whole business</span>',
   'features.sub':'Others do only royalties or only contracts. Label Finance covers it all, from the sale to the artist\'s payout.',
   'f1.t':'Dashboard & Finances','f1.d':'Income, expenses and margin with % change vs period. Charts and a customizable dashboard.',
-  'f2.t':'Royalties & Recoupment','f2.d':'Automatic per-artist calculation, splits per release and per-track override (ISRC).',
+  'f2.t':'Royalties & Recoupment','f2.d':'Automatic per-artist calculation, splits per release and per-track credits (ISRC): Mastered, Distributed, Written, Produced, Mixed by.',
   'f3.t':'Contracts & Signing','f3.d':'Generate the contract with letterhead, send it and get it back signed in real time.',
   'f4.t':'Catalog & transactions import','f4.d':'Import your whole discography from Discogs and MusicBrainz, or upload a CSV from your store: columns map themselves.',
   'f5.t':'Artist Directory','f5.d':'Roster with contacts, IBAN and splits: auto-fills contracts and payouts.',
@@ -712,6 +714,7 @@ const LANG={
   'w3.t':'Dedicated AI','w3.d':'An assistant built for labels. No competitor has one.',
   'w4.t':'Simple and beautiful','w4.d':'Modern, clear, fast. Zero learning curve.',
   'w5.t':'Offline-first','w5.d':'Your data always with you, synced on every device.',
+  'w6.t':'In 7 languages','w6.d':'Full interface in Italian, English, Spanish, French, German, Portuguese and Dutch.',
   'pricing.badge':'Pricing','pricing.h2':'Pick the plan <span class="grad">for your growth</span>','pricing.sub':'14-day free trial on the Studio plan. Cancel anytime.',
   'bill.month':'Monthly','bill.year':'Annual','per.mo':'/month','price.reco':'⭐ Recommended','bill.note_m':'billed monthly','bill.year_tpl':'billed annually: {tot}/year · save {save}',
   'p1.desc':'The complete tool, for your first label.','p1.f1':'1 label','p1.f2':'Transactions, royalties & recoupment','p1.f3':'Catalog, contracts & e-signature','p1.f4':'Planning, events, merch & tasks','p1.f5':'CSV import + PDF reports','p1.f6':'AI Assistant','p1.f7':'Customizable dashboard','p1.cta':'Start with Starter',
@@ -740,7 +743,7 @@ const LANG={
   'features.badge':'Funciones','features.h2':'Una app para <span class="grad">todo tu negocio</span>',
   'features.sub':'Otros solo hacen royalties o solo contratos. Label Finance lo cubre todo, desde la venta hasta el pago al artista.',
   'f1.t':'Dashboard y finanzas','f1.d':'Ingresos, gastos y margen con % de variación respecto al periodo. Gráficos y un dashboard personalizable.',
-  'f2.t':'Royalties y recoupment','f2.d':'Cálculo automático por artista, splits por lanzamiento y override por pista (ISRC).',
+  'f2.t':'Royalties y recoupment','f2.d':'Cálculo automático por artista, splits por lanzamiento y créditos por pista (ISRC): Mastered, Distributed, Written, Produced, Mixed by.',
   'f3.t':'Contratos y firma','f3.d':'Genera el contrato con membrete, envíalo y recíbelo firmado en tiempo real.',
   'f4.t':'Importación de catálogo y transacciones','f4.d':'Importa toda tu discografía desde Discogs y MusicBrainz, o sube un CSV de tu tienda: las columnas se asignan solas.',
   'f5.t':'Directorio de artistas','f5.d':'Roster con contactos, IBAN y splits: rellena automáticamente contratos y pagos.',
@@ -767,6 +770,7 @@ const LANG={
   'w3.t':'AI dedicada','w3.d':'Un asistente creado para sellos. Ningún competidor tiene uno.',
   'w4.t':'Simple y bonito','w4.d':'Moderno, claro, rápido. Cero curva de aprendizaje.',
   'w5.t':'Offline-first','w5.d':'Tus datos siempre contigo, sincronizados en todos los dispositivos.',
+  'w6.t':'En 7 idiomas','w6.d':'Interfaz completa en italiano, inglés, español, francés, alemán, portugués y neerlandés.',
   'pricing.badge':'Precios','pricing.h2':'Elige el plan <span class="grad">para tu crecimiento</span>','pricing.sub':'Prueba gratis de 14 días en el plan Studio. Cancela cuando quieras.',
   'bill.month':'Mensual','bill.year':'Anual','per.mo':'/mes','price.reco':'⭐ Recomendado','bill.note_m':'facturado mensualmente','bill.year_tpl':'facturado anualmente: {tot}/año · ahorra {save}',
   'p1.desc':'La herramienta completa, para tu primer sello.','p1.f1':'1 sello','p1.f2':'Transacciones, royalties y recoupment','p1.f3':'Catálogo, contratos y firma electrónica','p1.f4':'Planificación, eventos, merch y tareas','p1.f5':'Importación CSV + informes PDF','p1.f6':'Asistente con AI','p1.f7':'Dashboard personalizable','p1.cta':'Empieza con Starter',
@@ -796,7 +800,7 @@ const LANG={
   'features.badge':'Fonctionnalités','features.h2':'Une app pour <span class="grad">toute votre activité</span>',
   'features.sub':'Les autres ne font que les royalties ou que les contrats. Label Finance couvre tout, de la vente au paiement de l\'artiste.',
   'f1.t':'Tableau de bord et finances','f1.d':'Revenus, dépenses et marge avec variation en % vs période. Graphiques et tableau de bord personnalisable.',
-  'f2.t':'Royalties et recoupment','f2.d':'Calcul automatique par artiste, splits par sortie et override par piste (ISRC).',
+  'f2.t':'Royalties et recoupment','f2.d':'Calcul automatique par artiste, splits par sortie et crédits par piste (ISRC) : Mastered, Distributed, Written, Produced, Mixed by.',
   'f3.t':'Contrats et signature','f3.d':'Générez le contrat à en-tête, envoyez-le et récupérez-le signé en temps réel.',
   'f4.t':'Import du catalogue et des transactions','f4.d':'Importez toute votre discographie depuis Discogs et MusicBrainz, ou chargez un CSV de votre boutique : les colonnes se mappent toutes seules.',
   'f5.t':'Répertoire des artistes','f5.d':'Roster avec contacts, IBAN et splits : remplit automatiquement contrats et paiements.',
@@ -823,6 +827,7 @@ const LANG={
   'w3.t':'AI dédiée','w3.d':'Un assistant conçu pour les labels. Aucun concurrent n\'en a un.',
   'w4.t':'Simple et beau','w4.d':'Moderne, clair, rapide. Aucune courbe d\'apprentissage.',
   'w5.t':'Offline-first','w5.d':'Vos données toujours avec vous, synchronisées sur tous les appareils.',
+  'w6.t':'En 7 langues','w6.d':'Interface complète en italien, anglais, espagnol, français, allemand, portugais et néerlandais.',
   'pricing.badge':'Tarifs','pricing.h2':'Choisissez le plan <span class="grad">pour votre croissance</span>','pricing.sub':'Essai gratuit de 14 jours sur le plan Studio. Annulez à tout moment.',
   'bill.month':'Mensuel','bill.year':'Annuel','per.mo':'/mois','price.reco':'⭐ Recommandé','bill.note_m':'facturé mensuellement','bill.year_tpl':'facturé annuellement : {tot}/an · économisez {save}',
   'p1.desc':'L\'outil complet, pour votre premier label.','p1.f1':'1 label','p1.f2':'Transactions, royalties et recoupment','p1.f3':'Catalogue, contrats et signature électronique','p1.f4':'Planning, événements, merch et tâches','p1.f5':'Import CSV + rapports PDF','p1.f6':'Assistant AI','p1.f7':'Tableau de bord personnalisable','p1.cta':'Commencer avec Starter',
@@ -852,7 +857,7 @@ const LANG={
   'features.badge':'Funktionen','features.h2':'Eine App für <span class="grad">dein ganzes Business</span>',
   'features.sub':'Andere machen nur royalties oder nur Verträge. Label Finance deckt alles ab, vom Verkauf bis zur Auszahlung an den Künstler.',
   'f1.t':'Dashboard & Finanzen','f1.d':'Einnahmen, Ausgaben und Marge mit % Veränderung zum Zeitraum. Diagramme und ein anpassbares Dashboard.',
-  'f2.t':'Royalties & Recoupment','f2.d':'Automatische Berechnung pro Künstler, Splits pro Release und Override pro Track (ISRC).',
+  'f2.t':'Royalties & Recoupment','f2.d':'Automatische Berechnung pro Künstler, Splits pro Release und Credits pro Track (ISRC): Mastered, Distributed, Written, Produced, Mixed by.',
   'f3.t':'Verträge & Signatur','f3.d':'Erstelle den Vertrag mit Briefkopf, sende ihn und erhalte ihn signiert in Echtzeit zurück.',
   'f4.t':'Katalog- & Transaktionsimport','f4.d':'Importiere deine gesamte Diskografie von Discogs und MusicBrainz oder lade eine CSV aus deinem Shop hoch: Spalten ordnen sich selbst zu.',
   'f5.t':'Künstlerverzeichnis','f5.d':'Roster mit Kontakten, IBAN und splits: füllt Verträge und Auszahlungen automatisch aus.',
@@ -879,6 +884,7 @@ const LANG={
   'w3.t':'Dedizierte AI','w3.d':'Ein Assistent, gebaut für Labels. Kein Wettbewerber hat einen.',
   'w4.t':'Einfach und schön','w4.d':'Modern, klar, schnell. Keine Lernkurve.',
   'w5.t':'Offline-first','w5.d':'Deine Daten immer bei dir, synchronisiert auf jedem Gerät.',
+  'w6.t':'In 7 Sprachen','w6.d':'Komplette Oberfläche auf Italienisch, Englisch, Spanisch, Französisch, Deutsch, Portugiesisch und Niederländisch.',
   'pricing.badge':'Preise','pricing.h2':'Wähle den Plan <span class="grad">für dein Wachstum</span>','pricing.sub':'14 Tage kostenlos testen im Studio-Plan. Jederzeit kündbar.',
   'bill.month':'Monatlich','bill.year':'Jährlich','per.mo':'/Monat','price.reco':'⭐ Empfohlen','bill.note_m':'monatlich abgerechnet','bill.year_tpl':'jährlich abgerechnet: {tot}/Jahr · spare {save}',
   'p1.desc':'Das komplette Tool, für dein erstes Label.','p1.f1':'1 Label','p1.f2':'Transaktionen, royalties & recoupment','p1.f3':'Katalog, Verträge & E-Signatur','p1.f4':'Planung, Events, merch & Aufgaben','p1.f5':'CSV-Import + PDF-Berichte','p1.f6':'AI-Assistent','p1.f7':'Anpassbares Dashboard','p1.cta':'Mit Starter beginnen',
@@ -908,7 +914,7 @@ const LANG={
   'features.badge':'Funcionalidades','features.h2':'Uma app para <span class="grad">todo o seu negócio</span>',
   'features.sub':'Outros fazem só royalties ou só contratos. A Label Finance cobre tudo, da venda ao pagamento ao artista.',
   'f1.t':'Dashboard e finanças','f1.d':'Receitas, despesas e margem com variação em % vs período. Gráficos e um dashboard personalizável.',
-  'f2.t':'Royalties e recoupment','f2.d':'Cálculo automático por artista, splits por lançamento e override por faixa (ISRC).',
+  'f2.t':'Royalties e recoupment','f2.d':'Cálculo automático por artista, splits por lançamento e créditos por faixa (ISRC): Mastered, Distributed, Written, Produced, Mixed by.',
   'f3.t':'Contratos e assinatura','f3.d':'Gere o contrato com timbre, envie-o e receba-o assinado em tempo real.',
   'f4.t':'Importação de catálogo e transações','f4.d':'Importe toda a sua discografia do Discogs e MusicBrainz, ou carregue um CSV da sua loja: as colunas mapeiam-se sozinhas.',
   'f5.t':'Diretório de artistas','f5.d':'Roster com contactos, IBAN e splits: preenche contratos e pagamentos automaticamente.',
@@ -935,6 +941,7 @@ const LANG={
   'w3.t':'AI dedicada','w3.d':'Um assistente feito para editoras. Nenhum concorrente tem um.',
   'w4.t':'Simples e bonito','w4.d':'Moderno, claro, rápido. Zero curva de aprendizagem.',
   'w5.t':'Offline-first','w5.d':'Os seus dados sempre consigo, sincronizados em todos os dispositivos.',
+  'w6.t':'Em 7 idiomas','w6.d':'Interface completa em italiano, inglês, espanhol, francês, alemão, português e neerlandês.',
   'pricing.badge':'Preços','pricing.h2':'Escolha o plano <span class="grad">para o seu crescimento</span>','pricing.sub':'Teste grátis de 14 dias no plano Studio. Cancele quando quiser.',
   'bill.month':'Mensal','bill.year':'Anual','per.mo':'/mês','price.reco':'⭐ Recomendado','bill.note_m':'faturado mensalmente','bill.year_tpl':'faturado anualmente: {tot}/ano · poupe {save}',
   'p1.desc':'A ferramenta completa, para a sua primeira editora.','p1.f1':'1 editora','p1.f2':'Transações, royalties e recoupment','p1.f3':'Catálogo, contratos e assinatura eletrónica','p1.f4':'Planeamento, eventos, merch e tarefas','p1.f5':'Importação CSV + relatórios PDF','p1.f6':'Assistente de AI','p1.f7':'Dashboard personalizável','p1.cta':'Começar com Starter',
@@ -964,7 +971,7 @@ const LANG={
   'features.badge':'Functies','features.h2':'Eén app voor <span class="grad">je hele business</span>',
   'features.sub':'Anderen doen alleen royalty\'s of alleen contracten. Label Finance dekt alles, van de verkoop tot de uitbetaling aan de artiest.',
   'f1.t':'Dashboard & financiën','f1.d':'Inkomsten, uitgaven en marge met % verandering t.o.v. periode. Grafieken en een aanpasbaar dashboard.',
-  'f2.t':'Royalty\'s & recoupment','f2.d':'Automatische berekening per artiest, splits per release en override per track (ISRC).',
+  'f2.t':'Royalty\'s & recoupment','f2.d':'Automatische berekening per artiest, splits per release en credits per track (ISRC): Mastered, Distributed, Written, Produced, Mixed by.',
   'f3.t':'Contracten & ondertekenen','f3.d':'Genereer het contract met briefhoofd, verstuur het en ontvang het ondertekend in realtime terug.',
   'f4.t':'Import van catalogus & transacties','f4.d':'Importeer je hele discografie uit Discogs en MusicBrainz, of upload een CSV uit je winkel: kolommen worden vanzelf gekoppeld.',
   'f5.t':'Artiestenoverzicht','f5.d':'Roster met contacten, IBAN en splits: vult contracten en uitbetalingen automatisch in.',
@@ -991,6 +998,7 @@ const LANG={
   'w3.t':'Toegewijde AI','w3.d':'Een assistent gebouwd voor labels. Geen enkele concurrent heeft er een.',
   'w4.t':'Eenvoudig en mooi','w4.d':'Modern, helder, snel. Geen leercurve.',
   'w5.t':'Offline-first','w5.d':'Je data altijd bij je, gesynchroniseerd op elk apparaat.',
+  'w6.t':'In 7 talen','w6.d':'Volledige interface in het Italiaans, Engels, Spaans, Frans, Duits, Portugees en Nederlands.',
   'pricing.badge':'Prijzen','pricing.h2':'Kies het plan <span class="grad">voor je groei</span>','pricing.sub':'14 dagen gratis proberen op het Studio-plan. Annuleer wanneer je wilt.',
   'bill.month':'Maandelijks','bill.year':'Jaarlijks','per.mo':'/maand','price.reco':'⭐ Aanbevolen','bill.note_m':'maandelijks gefactureerd','bill.year_tpl':'jaarlijks gefactureerd: {tot}/jaar · bespaar {save}',
   'p1.desc':'De complete tool, voor je eerste label.','p1.f1':'1 label','p1.f2':'Transacties, royalty\'s & recoupment','p1.f3':'Catalogus, contracten & e-handtekening','p1.f4':'Planning, evenementen, merch & taken','p1.f5':'CSV-import + PDF-rapporten','p1.f6':'AI-assistent','p1.f7':'Aanpasbaar dashboard','p1.cta':'Begin met Starter',

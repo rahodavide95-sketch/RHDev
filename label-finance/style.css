@@ -1088,23 +1088,30 @@ body.gate-signup #gate-signin{opacity:.5}
     position:fixed;top:0;left:0;bottom:0;height:100dvh;width:min(86vw,332px);
     flex-direction:column;align-items:stretch;gap:4px;z-index:70;
     padding:calc(12px + env(safe-area-inset-top)) 12px calc(14px + env(safe-area-inset-bottom));
-    border-right:1px solid var(--glass-brd);border-top:none;
+    /* sfondo OPACO e pulito (niente vetro grigio sopra il backdrop) */
+    background:var(--bg);-webkit-backdrop-filter:none;backdrop-filter:none;
+    border-right:1px solid var(--line);border-top:none;
     transform:translateX(-100%);transition:transform .26s cubic-bezier(.2,.8,.2,1);
-    box-shadow:0 0 60px rgba(0,0,0,.5);overflow-y:auto;-webkit-overflow-scrolling:touch
+    box-shadow:6px 0 40px rgba(0,0,0,.45);overflow-y:auto;-webkit-overflow-scrolling:touch
   }
   body.drawer-open .sidebar{transform:none}
   body.drawer-open .main{overflow:hidden}
-  .sidebar-top{display:flex}
-  .sidebar-foot{display:block;margin-top:auto;padding-top:14px}
+  /* logo staccato dal menu con un po' d'aria + linea di separazione */
+  .sidebar-top{display:flex;padding:2px 4px 14px;margin-bottom:8px;border-bottom:1px solid var(--line)}
+  .sidebar-foot{display:block;margin-top:auto;padding-top:14px;border-top:1px solid var(--line)}
   .nav-collapse,.nav-reopen{display:none!important}
   /* nel cassetto i gruppi restano aperti e organizzati come sul desktop */
-  .nav{flex-direction:column;flex:0 0 auto;gap:3px;overflow:visible}
-  .nav-group{display:block}
-  .nav-group-items{display:flex!important;flex-direction:column;gap:3px}
+  .nav{flex-direction:column;flex:0 0 auto;gap:2px;overflow:visible}
+  .nav-group{display:block;margin-bottom:4px}
+  .nav-group-items{display:flex!important;flex-direction:column;gap:2px}
+  .nav-group-h{pointer-events:none}      /* è solo un'etichetta nel cassetto */
   .nav-group-h .nav-chev{display:none}
   .nav-more-btn{display:none}            /* il cassetto mostra già tutto */
-  .nav-item{flex-direction:row;justify-content:flex-start;white-space:nowrap}
+  .nav-item{flex-direction:row;justify-content:flex-start;white-space:nowrap;padding:11px 12px;font-size:1rem}
   .nav-ico svg{width:21px;height:21px}
+  /* voce attiva ben visibile (accento), non grigia */
+  .nav-item.is-active{background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent);box-shadow:none}
+  .nav-item.is-active .nav-ico{color:var(--accent)}
 
   /* ---- Backdrop + bottone hamburger ---- */
   .drawer-backdrop{position:fixed;inset:0;z-index:65;background:rgba(0,0,0,.5);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:opacity .26s}

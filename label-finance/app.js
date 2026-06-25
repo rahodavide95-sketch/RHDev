@@ -2083,6 +2083,7 @@ function renderRoyalties(){
   const hasRel=releases().length>0;
   $('#roy-empty').hidden = hasRel;
   renderRecoup();
+  renderPayCenter();
   const { byArtist, labelTotal } = computeRoyalties();
   const rows=Object.entries(byArtist).map(([name,v])=>({name,...v})).sort((a,b)=>b.total-a.total);
   const tbl=$('#table-roy-artist'), cardsBox=$('#roy-cards'), wrap=$('#roy-table-wrap');
@@ -2114,6 +2115,44 @@ function renderRoyalties(){
   }
   syncVMButtons();
 }
+/* ---- Centro pagamenti artisti: chi è pronto da pagare (royalty − recoupment) ---- */
+function artistPayables(){
+  const life=royaltyTotalsByArtist(DB.transactions.filter(t=>t.kind==='income'));
+  const rec={};
+  (DB.recoup||[]).forEach(r=>{ const k=normArt(r.artist); rec[k]=(rec[k]||0)+(+r.amount||0); });
+  const out=[];
+  Object.keys(life).forEach(name=>{
+    const roy=(life[name]&&life[name].total)||0; if(roy<=0) return;
+    const recoupable=rec[normArt(name)]||0;
+    const payable=roy-recoupable;
+    if(payable<=0.005) return;
+    const art=(DB.artists||[]).find(a=>normArt(a.name)===normArt(name));
+    out.push({name, payable, royalties:roy, recoupable, iban:art?(art.iban||''):'', inRoster:!!art});
+  });
+  return out.sort((a,b)=>b.payable-a.payable);
+}
+function renderPayCenter(){
+  const panel=$('#pay-center'); if(!panel) return;
+  const rows=artistPayables();
+  if(!rows.length){ panel.hidden=true; return; }
+  const total=rows.reduce((s,r)=>s+r.payable,0);
+  const tot=$('#pay-total'); if(tot) tot.textContent=tt('pay.total').replace('{n}',rows.length).replace('{amt}',fmtMoney(total));
+  $('#pay-list').innerHTML=rows.map(r=>`
+    <button class="pay-row" data-pay-artist="${esc(r.name)}" type="button">
+      <span class="pay-name">${esc(r.name)}</span>
+      ${!r.iban?`<span class="pay-flag" title="${tt('pay.no_iban')}">⚠ ${tt('pay.no_iban')}</span>`:''}
+      <span class="spacer"></span>
+      <span class="pay-amt pos">${fmtMoney(r.payable)}</span>
+      <span class="pay-go">${tt('pay.statement')} →</span>
+    </button>`).join('');
+  panel.hidden=false;
+}
+$('#pay-list')?.addEventListener('click', e=>{
+  const b=e.target.closest('[data-pay-artist]'); if(!b) return;
+  const name=b.dataset.payArtist;
+  const { byArtist } = computeRoyalties();
+  if(byArtist&&byArtist[name]){ showRoyaltyDetail(name, byArtist[name]); $('#roy-detail-panel')?.scrollIntoView({behavior:'smooth'}); }
+});
 function renderRecoup(){
   const allRows=computeRecoup();
   const t=$('#table-recoup');

@@ -18,5 +18,10 @@ window.LF_CONFIG = {
 
   // Mostra il badge "BETA" accanto al logo durante la fase di prova.
   // Al lancio del prodotto, metti  false  (o togli questa riga) per nasconderlo.
-  beta: true
+  beta: true,
+
+  // Registrazione con approvazione: se true, i nuovi iscritti restano "in attesa"
+  // finché non li approvi tu da Supabase. Attivalo SOLO dopo aver eseguito
+  // supabase/approval.sql e aver approvato te stesso (vedi note nel file SQL).
+  requireApproval: false
 };

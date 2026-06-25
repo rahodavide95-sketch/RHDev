@@ -117,9 +117,25 @@
     client.auth.getSession().then(({data})=>{ user = data.session?.user || null; onAuth(); });
   }
 
+  function showPending(show){ const el=$('pending-screen'); if(el) el.hidden=!show; document.body.classList.toggle('pending-locked', !!show); }
+  async function isApproved(){
+    // Solo se richiesto in config. "Fail-open" se la tabella non c'è ancora
+    // o non c'è la riga, così non blocca prima del setup né il titolare.
+    if(!(window.LF_CONFIG && window.LF_CONFIG.requireApproval)) return true;
+    try{
+      const { data, error } = await client.from('profiles').select('approved').eq('id', user.id).maybeSingle();
+      if(error) return true;           // tabella mancante / non configurata → non bloccare
+      if(!data) return true;           // nessuna riga → non bloccare (es. titolare pre-esistente)
+      return !!data.approved;
+    }catch(e){ return true; }
+  }
   async function onAuth(){
     renderUI();
     if(user){
+      if(!(await isApproved())){
+        showPending(true); showGate(false); setStatus('In attesa di approvazione'); window.LF_push=null; return;
+      }
+      showPending(false);
       showGate(false);
       window.LF_push = schedulePush;
       setStatus('Connesso — sincronizzo…'); gateStatus('');
@@ -127,11 +143,13 @@
       fillAccount();
       watchContracts();
     } else {
+      showPending(false);
       window.LF_push = null;
       if(getCfg()){ showGate(true); setStatus('Accedi per sincronizzare'); }
       else { showGate(false); setStatus('Non configurata'); }
     }
   }
+  $('pending-logout')?.addEventListener('click', async ()=>{ try{ await client.auth.signOut(); }catch(e){} showPending(false); });
 
   /* ---------- Aggiornamento in tempo reale dei contratti firmati ---------- */
   let contractChannel=null;

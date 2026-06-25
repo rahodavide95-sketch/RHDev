@@ -1507,3 +1507,12 @@ body.gate-signup #gate-signin{opacity:.5}
 
 /* Badge BETA accanto al logo */
 .beta-badge{display:inline-block;margin-left:7px;padding:1px 7px;border-radius:6px;font-size:.62rem;font-weight:800;letter-spacing:.08em;background:var(--accent);color:var(--on-accent,#fff);vertical-align:middle;text-transform:uppercase}
+
+/* Schermata "in attesa di approvazione" */
+.pending-screen{position:fixed;inset:0;z-index:5000;display:flex;align-items:center;justify-content:center;padding:20px;background:var(--bg,#0e0f1a)}
+.pending-screen[hidden]{display:none}
+.pending-card{max-width:440px;text-align:center;background:var(--panel,#fff);border:1px solid var(--line);border-radius:18px;padding:34px 28px;box-shadow:0 24px 64px rgba(0,0,0,.35)}
+.pending-ico{font-size:2.8rem;line-height:1;margin-bottom:10px}
+.pending-card h2{margin:6px 0 10px}
+.pending-card p{margin:0 0 18px}
+body.pending-locked{overflow:hidden}

@@ -27,11 +27,37 @@ async function mbSearchLabels(q: string) {
     detail: ["MusicBrainz", l.country, l.disambiguation].filter(Boolean).join(" · "),
   })), err: null as string | null };
 }
+// Estrae la tracklist (titolo + ISRC + artista) da una release MusicBrainz.
+function mbTracks(x: any) {
+  const tracks: any[] = [];
+  for (const md of (x.media || [])) {
+    for (const tk of (md.tracks || [])) {
+      const rec = tk.recording || {};
+      const isrc = (rec.isrcs || [])[0] || "";
+      const artist = (tk["artist-credit"] || rec["artist-credit"] || [])
+        .map((a: any) => a.name || a.artist?.name).filter(Boolean).join(", ");
+      const title = tk.title || rec.title || "";
+      if (title || isrc) tracks.push({ title, isrc, artist });
+    }
+  }
+  return tracks;
+}
 async function mbFetch(id: string) {
   const out: any[] = []; let offset = 0;
+  // Includi le tracce (recordings) e i loro ISRC. Se la combinazione di "inc"
+  // non viene accettata, si scala automaticamente a un set più semplice.
+  const incLevels = ["artist-credits+recordings+isrcs", "artist-credits+recordings", "artist-credits"];
+  let inc = incLevels[0];
+  const mbUrl = (o: number) => `https://musicbrainz.org/ws/2/release?label=${id}&inc=${inc}&fmt=json&limit=100&offset=${o}`;
   for (let page = 0; page < 12; page++) {
-    const r = await fetch(`https://musicbrainz.org/ws/2/release?label=${id}&inc=artist-credits&fmt=json&limit=100&offset=${offset}`,
-      { headers: { "User-Agent": UA } });
+    let r = await fetch(mbUrl(offset), { headers: { "User-Agent": UA } });
+    if (!r.ok && page === 0) {
+      for (const lvl of incLevels.slice(1)) {   // fallback progressivo solo alla prima pagina
+        inc = lvl;
+        r = await fetch(mbUrl(offset), { headers: { "User-Agent": UA } });
+        if (r.ok) break;
+      }
+    }
     if (!r.ok) break;
     const d = await r.json();
     const rels = d.releases || [];
@@ -42,6 +68,7 @@ async function mbFetch(id: string) {
         date: x.date || "",
         upc: x.barcode || "",
         catalog: (x["label-info"] || []).map((li: any) => li["catalog-number"]).filter(Boolean)[0] || "",
+        tracks: mbTracks(x),
         source: "mb",
       });
     }
@@ -60,8 +87,24 @@ async function dcSearchLabels(q: string, token: string) {
   const d = await r.json();
   return { items: (d.results || []).map((l: any) => ({ source: "discogs", id: String(l.id), name: l.title, detail: "Discogs" })), err: null as string | null };
 }
+// Tracklist di una singola release Discogs (Discogs non espone gli ISRC).
+async function dcRelease(rid: string, token: string) {
+  try {
+    const r = await fetch(`https://api.discogs.com/releases/${rid}?token=${token}`, { headers: { "User-Agent": UA } });
+    if (!r.ok) return [];
+    const d = await r.json();
+    return (d.tracklist || [])
+      .filter((t: any) => (t.type_ ? t.type_ === "track" : true) && (t.title || "").trim())
+      .map((t: any) => ({
+        title: t.title || "",
+        isrc: "",
+        artist: (t.artists || []).map((a: any) => a.name).filter(Boolean).join(", "),
+      }));
+  } catch (_) { return []; }
+}
 async function dcFetch(id: string, token: string) {
   const out: any[] = [];
+  let deep = 0; const DEEP_MAX = 60;   // tetto di chiamate di dettaglio per restare entro i tempi
   for (let page = 1; page <= 10; page++) {
     const r = await fetch(`https://api.discogs.com/labels/${id}/releases?per_page=100&page=${page}&token=${token}`,
       { headers: { "User-Agent": UA } });
@@ -69,8 +112,14 @@ async function dcFetch(id: string, token: string) {
     const d = await r.json();
     const rels = d.releases || [];
     for (const x of rels) {
+      let tracks: any[] = [];
+      const rid = x.id || x.main_release;
+      if (rid && deep < DEEP_MAX) {
+        tracks = await dcRelease(String(rid), token); deep++;
+        await sleep(1000);  // ~60 richieste/min (rate limit Discogs autenticato)
+      }
       out.push({ title: x.title || "", artist: x.artist || "", date: x.year ? String(x.year) : "",
-        upc: "", catalog: x.catno || "", source: "discogs" });
+        upc: "", catalog: x.catno || "", tracks, source: "discogs" });
     }
     const pages = d.pagination?.pages || 1;
     if (page >= pages || !rels.length) break;
@@ -105,6 +154,7 @@ async function spFetch(name: string, tok: string) {
     }
     if (items.length < 50) break;
   }
+  const trackIndex = new Map<string, any>();   // id traccia -> oggetto traccia (per gli ISRC)
   for (let i = 0; i < albumIds.length; i += 20) {
     const ids = albumIds.slice(i, i + 20).join(",");
     const r = await fetch(`https://api.spotify.com/v1/albums?ids=${ids}`, { headers: { Authorization: "Bearer " + tok } });
@@ -112,23 +162,48 @@ async function spFetch(name: string, tok: string) {
     const d = await r.json();
     for (const a of d.albums || []) {
       const upc = a?.external_ids?.upc || "";
-      const m = out.find((o) => o._id === a.id); if (m && upc) m.upc = upc;
+      const m = out.find((o) => o._id === a.id); if (!m) continue;
+      if (upc) m.upc = upc;
+      m.tracks = (a.tracks?.items || []).map((t: any) => {
+        const obj = { title: t.name || "", artist: (t.artists || []).map((x: any) => x.name).join(", "), isrc: "", _tid: t.id };
+        if (t.id) trackIndex.set(t.id, obj);
+        return obj;
+      });
     }
   }
-  out.forEach((o) => delete o._id);
+  // ISRC delle tracce, in batch da 50
+  const tids = [...trackIndex.keys()];
+  for (let i = 0; i < tids.length; i += 50) {
+    const ids = tids.slice(i, i + 50).join(",");
+    const r = await fetch(`https://api.spotify.com/v1/tracks?ids=${ids}`, { headers: { Authorization: "Bearer " + tok } });
+    if (!r.ok) continue;
+    const d = await r.json();
+    for (const t of d.tracks || []) { const o = t && trackIndex.get(t.id); if (o) o.isrc = t.external_ids?.isrc || ""; }
+  }
+  out.forEach((o) => { delete o._id; (o.tracks || []).forEach((t: any) => delete t._tid); });
   return { items: out, err };
 }
 
 // ------------------------------- merge ------------------------------------
 function merge(lists: any[][]) {
   const map = new Map<string, any>();
+  const tkey = (t: any) => ((t.isrc || "").toLowerCase() || norm(t.title));
   for (const list of lists) for (const r of list) {
     if (!r.title && !r.upc) continue;
     const key = (r.upc || (norm(r.title) + "|" + norm(r.artist))).toLowerCase();
     const cur = map.get(key);
-    if (!cur) { map.set(key, r); continue; }
+    if (!cur) { map.set(key, { ...r, tracks: r.tracks || [] }); continue; }
     cur.upc = cur.upc || r.upc; cur.catalog = cur.catalog || r.catalog;
     cur.artist = cur.artist || r.artist; cur.date = cur.date || r.date;
+    // unisci le tracklist delle varie fonti (dedup per ISRC o titolo)
+    const incoming = r.tracks || [];
+    if (incoming.length) {
+      if (!cur.tracks || !cur.tracks.length) cur.tracks = incoming;
+      else {
+        const seen = new Set((cur.tracks as any[]).map(tkey).filter(Boolean));
+        for (const t of incoming) { const k = tkey(t); if (k && !seen.has(k)) { seen.add(k); cur.tracks.push(t); } }
+      }
+    }
   }
   return [...map.values()];
 }

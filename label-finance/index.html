@@ -221,7 +221,17 @@ img{max-width:100%}
 .plan .price{font-weight:800;font-size:3rem;margin:14px 0 3px;display:flex;align-items:baseline;gap:5px;line-height:1}
 .plan .price .cur{font-size:1.55rem;font-weight:700}.plan .price .per{font-size:1rem;color:var(--muted);font-weight:500}
 .plan .was{text-decoration:line-through;color:var(--muted-2);font-size:1.2rem;font-weight:600;margin-left:9px}
+.plan .price .vat-tag{font-size:.82rem;color:var(--muted);font-weight:600;margin-left:6px}
+.vat-note{margin:14px auto 0;max-width:560px;font-size:.86rem;color:var(--muted-2);text-align:center}
 .plan .bill{font-size:.84rem;color:var(--muted-2);min-height:20px}
+.plan[data-plan="biglabel"]{border-color:color-mix(in srgb,#b18be0 55%,var(--line,rgba(0,0,0,.12)))}
+.plan[data-plan="biglabel"] h3,.plan[data-plan="biglabel"] .price .cur,.plan[data-plan="biglabel"] .price .amount{color:#8b5cf6}
+.plan[data-plan="biglabel"] .pop-badge{background:#b18be0;color:#241036}
+.plan[data-plan="biglabel"] .btn-primary{background:#b18be0;border-color:#b18be0;color:#241036}
+.plan[data-plan="studio"]{border-color:color-mix(in srgb,#f59e0b 50%,var(--line,rgba(0,0,0,.12)))}
+.plan[data-plan="studio"] h3{color:#ea580c}
+.plan[data-plan="agency"]{border-color:color-mix(in srgb,#3b82f6 50%,var(--line,rgba(0,0,0,.12)))}
+.plan[data-plan="agency"] h3{color:#2563eb}
 .plan .bill.year{color:var(--green);font-weight:600}
 .plan ul{list-style:none;display:flex;flex-direction:column;gap:10px;margin:20px 0 24px;flex:1 1 auto}
 .plan>.btn{margin-top:auto}
@@ -522,12 +532,13 @@ footer{padding:54px 0 36px;background:rgba(8,9,14,.5);-webkit-backdrop-filter:bl
         <button data-bill="month" class="on" data-i18n="bill.month">Mensile</button>
         <button data-bill="year"><span data-i18n="bill.year">Annuale</span> <span class="save">−30%</span></button>
       </div></div>
+      <p class="vat-note" data-i18n="pricing.vat">Prezzi IVA esclusa. L'imposta applicabile viene calcolata al pagamento in base al tuo Paese.</p>
     </div>
     <div class="price-grid price-grid--4 stagger">
       <div class="plan glass">
         <h3>Starter</h3>
         <p class="desc" data-i18n="p1.desc">Il gestionale completo, per la tua prima etichetta.</p>
-        <div class="price" data-m="19" data-y="13" data-ytot="156" data-save="72"><span class="cur">€</span><span class="amount">19</span><span class="per" data-i18n="per.mo">/mese</span><span class="was" hidden></span></div>
+        <div class="price" data-m="19" data-y="13" data-ytot="156" data-save="72"><span class="cur">€</span><span class="amount">19</span><span class="per" data-i18n="per.mo">/mese</span><span class="vat-tag" data-i18n="price.vat">+ IVA</span><span class="was" hidden></span></div>
         <div class="bill" data-billnote></div>
         <ul>
           <li><span class="ck">✓</span> <span data-i18n="p1.f1">1 etichetta</span></li>
@@ -540,11 +551,11 @@ footer{padding:54px 0 36px;background:rgba(8,9,14,.5);-webkit-backdrop-filter:bl
         </ul>
         <a class="btn btn-ghost" href="app.html?signup" data-i18n="p1.cta">Inizia con Starter</a>
       </div>
-      <div class="plan glass pop">
+      <div class="plan glass pop" data-plan="biglabel">
         <span class="pop-badge" data-i18n="price.reco">⭐ Consigliato</span>
         <h3>Big Label</h3>
         <p class="desc" data-i18n="pb.desc">Tutta la potenza di Label Finance per una singola etichetta.</p>
-        <div class="price" data-m="69" data-y="48" data-ytot="576" data-save="252"><span class="cur">€</span><span class="amount">69</span><span class="per" data-i18n="per.mo">/mese</span><span class="was" hidden></span></div>
+        <div class="price" data-m="69" data-y="48" data-ytot="576" data-save="252"><span class="cur">€</span><span class="amount">69</span><span class="per" data-i18n="per.mo">/mese</span><span class="vat-tag" data-i18n="price.vat">+ IVA</span><span class="was" hidden></span></div>
         <div class="bill" data-billnote></div>
         <ul>
           <li><span class="ck">✓</span> <span data-i18n="pb.f1">1 etichetta</span></li>
@@ -556,10 +567,10 @@ footer{padding:54px 0 36px;background:rgba(8,9,14,.5);-webkit-backdrop-filter:bl
         </ul>
         <a class="btn btn-primary" href="app.html?signup" data-i18n="pb.cta">Prova gratis 14 giorni</a>
       </div>
-      <div class="plan glass">
+      <div class="plan glass" data-plan="studio">
         <h3>Company</h3>
         <p class="desc" data-i18n="p2.desc">Per chi gestisce più etichette: tutto, fino a 3 label.</p>
-        <div class="price" data-m="150" data-y="105" data-ytot="1260" data-save="540"><span class="cur">€</span><span class="amount">150</span><span class="per" data-i18n="per.mo">/mese</span><span class="was" hidden></span></div>
+        <div class="price" data-m="150" data-y="105" data-ytot="1260" data-save="540"><span class="cur">€</span><span class="amount">150</span><span class="per" data-i18n="per.mo">/mese</span><span class="vat-tag" data-i18n="price.vat">+ IVA</span><span class="was" hidden></span></div>
         <div class="bill" data-billnote></div>
         <ul>
           <li><span class="ck">✓</span> <span data-i18n="p2.f1">Tutto del piano Big Label</span></li>
@@ -570,7 +581,7 @@ footer{padding:54px 0 36px;background:rgba(8,9,14,.5);-webkit-backdrop-filter:bl
         </ul>
         <a class="btn btn-ghost" href="app.html?signup" data-i18n="p2.cta">Inizia con Company</a>
       </div>
-      <div class="plan glass plan--soon">
+      <div class="plan glass plan--soon" data-plan="agency">
         <h3>Enterprise</h3>
         <p class="desc" data-i18n="p3.desc">Per agenzie e gruppi: etichette illimitate e funzioni su misura.</p>
         <div class="price price--soon"><span class="soon-tag" data-i18n="price.soon">Coming soon</span></div>
@@ -642,6 +653,7 @@ footer{padding:54px 0 36px;background:rgba(8,9,14,.5);-webkit-backdrop-filter:bl
 <script>
 const LANG={
  it:{
+  "price.vat":"+ IVA","pricing.vat":"Prezzi IVA esclusa. L'imposta applicabile viene calcolata al pagamento in base al tuo Paese.",
   'nav.features':'Funzionalità','nav.how':'Come funziona','nav.pricing':'Prezzi','nav.faq':'FAQ','nav.why':'Perché noi','nav.login':'Accedi','nav.start':'Inizia gratis',
   'hero.badge':'Il gestionale all-in-one per etichette indipendenti',
   'hero.h1':'Tutto il business della tua etichetta, <span class="grad">in un solo posto.</span>',
@@ -699,6 +711,7 @@ const LANG={
   'pb.desc':'Tutta la potenza di Label Finance per una singola etichetta.','pb.f1':'1 etichetta','pb.f2':'Tutto del piano Starter','pb.f3':'Assistente AI dedicato','pb.f4':'Dashboard personalizzabile + widget','pb.f5':'Export reports + documenti col tuo brand','pb.f6':'Supporto prioritario','pb.cta':'Prova gratis 14 giorni','p2.desc':'Per chi gestisce più etichette: tutto, fino a 3 label.','p2.f1':'Tutto del piano Big Label','p2.f2':'Fino a 3 etichette','p2.f3':'Gestione multi-etichetta','p2.f5':'Statement royalty per artista','p2.f6':'Supporto prioritario','p2.cta':'Inizia con Company','p3.desc':'Per agenzie e gruppi: etichette illimitate e funzioni su misura.','p3.f1':'Tutto del piano Company','p3.f2':'Etichette illimitate','p3.f3':'Accesso team (prossimamente)','p3.f4':'Funzionalità su misura, su richiesta','p3.f5':'Onboarding dedicato','p3.cta':'Contattaci','price.soon':'Presto disponibile','pricing.sub':'Prova gratis Big Label per 14 giorni. Disdici quando vuoi.',
  },
  en:{
+  "price.vat":"+ tax","pricing.vat":"Prices exclude tax. Applicable tax is calculated at checkout based on your country.",
   'nav.features':'Features','nav.how':'How it works','nav.pricing':'Pricing','nav.faq':'FAQ','nav.why':'Why us','nav.login':'Log in','nav.start':'Start free',
   'hero.badge':'The all-in-one tool for independent labels',
   'hero.h1':'All your label\'s business, <span class="grad">in one place.</span>',
@@ -756,6 +769,7 @@ const LANG={
   'pb.desc':'All the power of Label Finance for a single label.','pb.f1':'1 label','pb.f2':'Everything in Starter','pb.f3':'Dedicated AI Assistant','pb.f4':'Customizable dashboard + widgets','pb.f5':'Reports export + your branded documents','pb.f6':'Priority support','pb.cta':'Try free for 14 days','p2.desc':'For managing multiple labels: everything, up to 3 labels.','p2.f1':'Everything in Big Label','p2.f2':'Up to 3 labels','p2.f3':'Multi-label management','p2.f5':'Per-artist royalty statements','p2.f6':'Priority support','p2.cta':'Start with Company','p3.desc':'For agencies and groups: unlimited labels and tailored features.','p3.f1':'Everything in Company','p3.f2':'Unlimited labels','p3.f3':'Team access (coming soon)','p3.f4':'Tailored features, on request','p3.f5':'Dedicated onboarding','p3.cta':'Contact us','price.soon':'Coming soon','pricing.sub':'Try Big Label free for 14 days. Cancel anytime.',
  },
  es:{
+  "price.vat":"+ IVA","pricing.vat":"Precios sin IVA. El impuesto aplicable se calcula en el pago según tu país.",
   'nav.features':'Funciones','nav.how':'Cómo funciona','nav.pricing':'Precios','nav.faq':'FAQ','nav.why':'Por qué nosotros','nav.login':'Iniciar sesión','nav.start':'Empieza gratis',
   'hero.badge':'La herramienta todo en uno para sellos independientes',
   'hero.h1':'Todo el negocio de tu sello, <span class="grad">en un solo lugar.</span>',
@@ -814,6 +828,7 @@ const LANG={
  }
 ,
  fr:{
+  "price.vat":"+ TVA","pricing.vat":"Prix hors taxes. La taxe applicable est calculée au paiement selon votre pays.",
   'nav.features':'Fonctionnalités','nav.how':'Comment ça marche','nav.pricing':'Tarifs','nav.faq':'FAQ','nav.why':'Pourquoi nous','nav.login':'Se connecter','nav.start':'Commencer gratuitement',
   'hero.badge':'L\'outil tout-en-un pour les labels indépendants',
   'hero.h1':'Toute l\'activité de votre label, <span class="grad">au même endroit.</span>',
@@ -872,6 +887,7 @@ const LANG={
  }
 ,
  de:{
+  "price.vat":"+ MwSt.","pricing.vat":"Preise zzgl. Steuern. Die anfallende Steuer wird beim Bezahlen je nach Land berechnet.",
   'nav.features':'Funktionen','nav.how':'So funktioniert\'s','nav.pricing':'Preise','nav.faq':'FAQ','nav.why':'Warum wir','nav.login':'Anmelden','nav.start':'Kostenlos starten',
   'hero.badge':'Das All-in-one-Tool für unabhängige Labels',
   'hero.h1':'Das gesamte Business deines Labels, <span class="grad">an einem Ort.</span>',
@@ -930,6 +946,7 @@ const LANG={
  }
 ,
  pt:{
+  "price.vat":"+ IVA","pricing.vat":"Preços sem IVA. O imposto aplicável é calculado no pagamento de acordo com o teu país.",
   'nav.features':'Funcionalidades','nav.how':'Como funciona','nav.pricing':'Preços','nav.faq':'FAQ','nav.why':'Porquê nós','nav.login':'Entrar','nav.start':'Começar grátis',
   'hero.badge':'A ferramenta tudo-em-um para editoras independentes',
   'hero.h1':'Todo o negócio da sua editora, <span class="grad">num só lugar.</span>',
@@ -988,6 +1005,7 @@ const LANG={
  }
 ,
  nl:{
+  "price.vat":"+ btw","pricing.vat":"Prijzen exclusief btw. De toepasselijke belasting wordt bij het afrekenen berekend op basis van je land.",
   'nav.features':'Functies','nav.how':'Hoe het werkt','nav.pricing':'Prijzen','nav.faq':'FAQ','nav.why':'Waarom wij','nav.login':'Inloggen','nav.start':'Gratis starten',
   'hero.badge':'De alles-in-één tool voor onafhankelijke labels',
   'hero.h1':'Alle business van je label, <span class="grad">op één plek.</span>',

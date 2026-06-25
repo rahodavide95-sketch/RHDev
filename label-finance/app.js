@@ -447,10 +447,10 @@ function renderOffers(){
     const m=+c.dataset.monthly||0;
     if(priceEl){
       if(billing==='annual'){
-        priceEl.innerHTML=`${fmtEur(m*0.7)}<span>${tt('off.pm')}</span> <s class="plan-old">${fmtEur(m)}</s>`;
+        priceEl.innerHTML=`${fmtEur(m*0.7)}<span>${tt('off.pm')}</span> <span class="plan-vat">${tt('off.vat')}</span> <s class="plan-old">${fmtEur(m)}</s>`;
         if(noteEl) noteEl.textContent=`${tt('off.billed')} · ${fmtEur(m*12*0.7)}/${tt('off.year')} ${tt('off.instead')} ${fmtEur(m*12)}`;
       } else {
-        priceEl.innerHTML=`${fmtEur(m)}<span>${tt('off.pm')}</span>`;
+        priceEl.innerHTML=`${fmtEur(m)}<span>${tt('off.pm')}</span> <span class="plan-vat">${tt('off.vat')}</span>`;
         if(noteEl) noteEl.textContent='';
       }
     }

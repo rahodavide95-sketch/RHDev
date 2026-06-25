@@ -23,5 +23,5 @@ window.LF_CONFIG = {
   // Registrazione con approvazione: se true, i nuovi iscritti restano "in attesa"
   // finché non li approvi tu da Supabase. Attivalo SOLO dopo aver eseguito
   // supabase/approval.sql e aver approvato te stesso (vedi note nel file SQL).
-  requireApproval: false
+  requireApproval: true
 };

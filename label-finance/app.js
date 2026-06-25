@@ -2174,6 +2174,15 @@ $('#f-delete').onclick=()=>{
   DB.transactions=DB.transactions.filter(t=>t.id!==id); save();
   $('#tx-modal').hidden=true; renderTx(); toast(tt('t.tx_deleted'));
 };
+/* intelligenza: rileva un importo fuori scala rispetto allo storico dello stesso tipo */
+function txAmountAnomaly(net, kind){
+  const v=Math.abs(+net||0); if(!v) return null;
+  const peers=(DB.transactions||[]).filter(t=>t.kind===kind && Math.abs(+t.net)>0).map(t=>Math.abs(+t.net));
+  if(peers.length<5) return null;
+  peers.sort((a,b)=>a-b);
+  const med=peers[Math.floor(peers.length/2)];
+  return (med>0 && v>med*25) ? {v, med} : null;
+}
 $('#tx-form').onsubmit=e=>{
   e.preventDefault();
   const id=$('#f-id').value;
@@ -2189,6 +2198,8 @@ $('#tx-form').onsubmit=e=>{
     net:parseAmount($('#f-net').value), csShare:parseAmount($('#f-csshare').value),
     currency:($('#f-currency').value||'EUR').toUpperCase().slice(0,3), note:$('#f-note').value.trim(),
   };
+  if(!id){ const an=txAmountAnomaly(rec.net, rec.kind);
+    if(an && !confirm(tt('tx.anomaly_confirm').replace('{v}',fmtMoney(an.v)).replace('{m}',fmtMoney(an.med)))) return; }
   if(id){ const i=DB.transactions.findIndex(t=>t.id===id); DB.transactions[i]=rec; }
   else DB.transactions.push(rec);
   save(); $('#tx-modal').hidden=true; renderTx(); toast(tt('t.saved'));
@@ -2323,7 +2334,11 @@ function importChecks(map){
   const existing=new Set(DB.transactions.map(txSig));
   const dupEx=recs.filter(r=>existing.has(txSig(r))).length;
   const curs=[...new Set(recs.map(r=>r.currency).filter(Boolean))];
+  const nets=recs.map(r=>Math.abs(+r.net)).filter(v=>v>0).sort((a,b)=>a-b);
+  let outliers=0;
+  if(nets.length>=5){ const med=nets[Math.floor(nets.length/2)]; if(med>0) outliers=nets.filter(v=>v>med*25).length; }
   const w=[];
+  if(outliers) w.push({lvl:'warn', t:tt('imp.chk_outlier').replace('{n}',outliers)});
   if(noDate) w.push({lvl:'warn', t:tt('imp.chk_nodate').replace('{n}',noDate)});
   if(noNet) w.push({lvl:'warn', t:tt('imp.chk_nonet').replace('{n}',noNet)});
   if(dupIn) w.push({lvl:'warn', t:tt('imp.chk_dupin').replace('{n}',dupIn)});

@@ -243,6 +243,7 @@
       'dash.insights':'In sintesi','ins.margin_up':'Margine netto in crescita del {p}% vs periodo precedente','ins.margin_down':'Margine netto in calo del {p}% vs periodo precedente','ins.top_platform':'Piattaforma migliore: {name} ({amt})','ins.low_stock':'{n} articoli merch con scorte basse','ins.overdue':'{n} task in ritardo','ins.unrecouped':'{n} artisti non hanno ancora recuperato l\'anticipo',
       'sug.title':'{n} task suggeriti','sug.pay':'Paga {name}: {amt}','sug.contract':'Sollecita la firma del contratto: {name}','sug.reorder':'Riordina merch: {name}','sug.add_all':'Aggiungi tutti','sug.added':'Task aggiunto ✓',
       'rel.dup_confirm':'Esiste già una release con catalogo/UPC "{cat}". Salvare comunque?',
+      'tx.anomaly_confirm':'Importo {v} molto più alto del solito (mediana {m}). Salvare comunque?','imp.chk_outlier':'{n} righe con importo fuori scala (molto più alto della media)',
     },
     en:{
       'art.enrich_msg':'{n} artists found in transactions, not yet in your roster: {names}','art.enrich_add':'＋ Add artists','art.enrich_none':'No new artists to add.','art.enrich_confirm':'Add {n} artists to your roster? You can fill in their details later.','art.enrich_added':'{n} artists added ✓',
@@ -616,6 +617,7 @@
       'dash.insights':'At a glance','ins.margin_up':'Net margin up {p}% vs previous period','ins.margin_down':'Net margin down {p}% vs previous period','ins.top_platform':'Top platform: {name} ({amt})','ins.low_stock':'{n} merch items low on stock','ins.overdue':'{n} overdue tasks','ins.unrecouped':'{n} artists haven\'t recouped their advance yet',
       'sug.title':'{n} suggested tasks','sug.pay':'Pay {name}: {amt}','sug.contract':'Chase contract signature: {name}','sug.reorder':'Reorder merch: {name}','sug.add_all':'Add all','sug.added':'Task added ✓',
       'rel.dup_confirm':'A release with catalog/UPC "{cat}" already exists. Save anyway?',
+      'tx.anomaly_confirm':'Amount {v} is much higher than usual (median {m}). Save anyway?','imp.chk_outlier':'{n} rows with an out-of-scale amount (far above the median)',
     },
     es:{
       'art.enrich_msg':'{n} artistas encontrados en los movimientos y aún no en tu lista: {names}','art.enrich_add':'＋ Añadir artistas','art.enrich_none':'No hay nuevos artistas que añadir.','art.enrich_confirm':'¿Añadir {n} artistas a tu lista? Podrás completar sus datos después.','art.enrich_added':'{n} artistas añadidos ✓',
@@ -970,6 +972,7 @@
       'dash.insights':'De un vistazo','ins.margin_up':'Margen neto +{p}% vs periodo anterior','ins.margin_down':'Margen neto -{p}% vs periodo anterior','ins.top_platform':'Mejor plataforma: {name} ({amt})','ins.low_stock':'{n} artículos de merch con stock bajo','ins.overdue':'{n} tareas atrasadas','ins.unrecouped':'{n} artistas aún no han recuperado el anticipo',
       'sug.title':'{n} tareas sugeridas','sug.pay':'Paga a {name}: {amt}','sug.contract':'Reclama la firma del contrato: {name}','sug.reorder':'Repón merch: {name}','sug.add_all':'Añadir todos','sug.added':'Tarea añadida ✓',
       'rel.dup_confirm':'Ya existe un lanzamiento con catálogo/UPC "{cat}". ¿Guardar de todos modos?',
+      'tx.anomaly_confirm':'Importe {v} mucho mayor de lo habitual (mediana {m}). ¿Guardar de todos modos?','imp.chk_outlier':'{n} filas con importe fuera de escala (muy por encima de la mediana)',
     },
     fr:{
       'art.enrich_msg':'{n} artistes trouvés dans les mouvements, pas encore dans votre répertoire : {names}','art.enrich_add':'＋ Ajouter les artistes','art.enrich_none':'Aucun nouvel artiste à ajouter.','art.enrich_confirm':'Ajouter {n} artistes à votre répertoire ? Vous pourrez compléter leurs données ensuite.','art.enrich_added':'{n} artistes ajoutés ✓',
@@ -1343,6 +1346,7 @@
       'dash.insights':'En un coup d\'œil','ins.margin_up':'Marge nette en hausse de {p}% vs période précédente','ins.margin_down':'Marge nette en baisse de {p}% vs période précédente','ins.top_platform':'Meilleure plateforme : {name} ({amt})','ins.low_stock':'{n} articles de merch en stock faible','ins.overdue':'{n} tâches en retard','ins.unrecouped':'{n} artistes n\'ont pas encore recoupé leur avance',
       'sug.title':'{n} tâches suggérées','sug.pay':'Payer {name} : {amt}','sug.contract':'Relancer la signature du contrat : {name}','sug.reorder':'Recommander du merch : {name}','sug.add_all':'Tout ajouter','sug.added':'Tâche ajoutée ✓',
       'rel.dup_confirm':'Une sortie avec le catalogue/UPC "{cat}" existe déjà. Enregistrer quand même ?',
+      'tx.anomaly_confirm':'Montant {v} bien plus élevé que d\'habitude (médiane {m}). Enregistrer quand même ?','imp.chk_outlier':'{n} lignes avec un montant hors échelle (bien au-dessus de la médiane)',
     },
     de:{
       'art.enrich_msg':'{n} Künstler in den Bewegungen gefunden, noch nicht in deiner Liste: {names}','art.enrich_add':'＋ Künstler hinzufügen','art.enrich_none':'Keine neuen Künstler hinzuzufügen.','art.enrich_confirm':'{n} Künstler zur Liste hinzufügen? Du kannst die Daten später ergänzen.','art.enrich_added':'{n} Künstler hinzugefügt ✓',
@@ -1716,6 +1720,7 @@
       'dash.insights':'Auf einen Blick','ins.margin_up':'Nettomarge {p}% höher als Vorperiode','ins.margin_down':'Nettomarge {p}% niedriger als Vorperiode','ins.top_platform':'Beste Plattform: {name} ({amt})','ins.low_stock':'{n} Merch-Artikel mit niedrigem Bestand','ins.overdue':'{n} überfällige Aufgaben','ins.unrecouped':'{n} Künstler haben ihren Vorschuss noch nicht recoupt',
       'sug.title':'{n} vorgeschlagene Aufgaben','sug.pay':'{name} bezahlen: {amt}','sug.contract':'Vertragsunterschrift anfragen: {name}','sug.reorder':'Merch nachbestellen: {name}','sug.add_all':'Alle hinzufügen','sug.added':'Aufgabe hinzugefügt ✓',
       'rel.dup_confirm':'Es existiert bereits ein Release mit Katalog/UPC "{cat}". Trotzdem speichern?',
+      'tx.anomaly_confirm':'Betrag {v} viel höher als üblich (Median {m}). Trotzdem speichern?','imp.chk_outlier':'{n} Zeilen mit Betrag außerhalb der Skala (weit über dem Median)',
     },
     pt:{
       'art.enrich_msg':'{n} artistas encontrados nos movimentos, ainda não no teu elenco: {names}','art.enrich_add':'＋ Adicionar artistas','art.enrich_none':'Nenhum novo artista para adicionar.','art.enrich_confirm':'Adicionar {n} artistas ao teu elenco? Podes completar os dados depois.','art.enrich_added':'{n} artistas adicionados ✓',
@@ -2089,6 +2094,7 @@
       'dash.insights':'Resumo','ins.margin_up':'Margem líquida +{p}% vs período anterior','ins.margin_down':'Margem líquida -{p}% vs período anterior','ins.top_platform':'Melhor plataforma: {name} ({amt})','ins.low_stock':'{n} artigos de merch com stock baixo','ins.overdue':'{n} tarefas atrasadas','ins.unrecouped':'{n} artistas ainda não recuperaram o adiantamento',
       'sug.title':'{n} tarefas sugeridas','sug.pay':'Pagar {name}: {amt}','sug.contract':'Pedir a assinatura do contrato: {name}','sug.reorder':'Repor merch: {name}','sug.add_all':'Adicionar todos','sug.added':'Tarefa adicionada ✓',
       'rel.dup_confirm':'Já existe um lançamento com catálogo/UPC "{cat}". Guardar mesmo assim?',
+      'tx.anomaly_confirm':'Valor {v} muito acima do habitual (mediana {m}). Guardar mesmo assim?','imp.chk_outlier':'{n} linhas com valor fora de escala (muito acima da mediana)',
     },
     nl:{
       'art.enrich_msg':'{n} artiesten gevonden in de bewegingen, nog niet in je lijst: {names}','art.enrich_add':'＋ Artiesten toevoegen','art.enrich_none':'Geen nieuwe artiesten om toe te voegen.','art.enrich_confirm':'{n} artiesten aan je lijst toevoegen? Je kunt de gegevens later invullen.','art.enrich_added':'{n} artiesten toegevoegd ✓',
@@ -2462,6 +2468,7 @@
       'dash.insights':'In één oogopslag','ins.margin_up':'Nettomarge {p}% hoger dan vorige periode','ins.margin_down':'Nettomarge {p}% lager dan vorige periode','ins.top_platform':'Beste platform: {name} ({amt})','ins.low_stock':'{n} merch-artikelen met lage voorraad','ins.overdue':'{n} achterstallige taken','ins.unrecouped':'{n} artiesten hebben hun voorschot nog niet gerecoupt',
       'sug.title':'{n} voorgestelde taken','sug.pay':'Betaal {name}: {amt}','sug.contract':'Vraag om contracthandtekening: {name}','sug.reorder':'Merch bijbestellen: {name}','sug.add_all':'Alles toevoegen','sug.added':'Taak toegevoegd ✓',
       'rel.dup_confirm':'Er bestaat al een release met catalogus/UPC "{cat}". Toch opslaan?',
+      'tx.anomaly_confirm':'Bedrag {v} veel hoger dan normaal (mediaan {m}). Toch opslaan?','imp.chk_outlier':'{n} rijen met een bedrag buiten schaal (ver boven de mediaan)',
     },
   };
 

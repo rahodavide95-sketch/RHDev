@@ -62,7 +62,7 @@ function ensureLabelShape(l){
   l.txOrder=l.txOrder||DEFAULT_TX_ORDER.slice();
   l.txHidden=l.txHidden||DEFAULT_TX_ORDER.filter(c=>!DEFAULT_TX_VISIBLE.includes(c));
   l.artists=l.artists||[]; l.tasks=l.tasks||[]; l.contracts=l.contracts||[]; l.merch=l.merch||[];
-  l.planning=l.planning||[]; l.events=l.events||[]; l.supports=l.supports||[];
+  l.planning=l.planning||[]; l.events=l.events||[]; l.supports=l.supports||[]; l.recurring=l.recurring||[];
   // release legacy senza tipo: deducilo (così le tracce degli EP si vedono come righe)
   l.releases.forEach(r=>{ if(r && !r.type) r.type=((r.tracks||[]).length>1)?'EP':'SINGLE'; });
   l.name=l.name||(l.profile&&l.profile.label)||'Etichetta';
@@ -1036,6 +1036,7 @@ function renderTx(){
   const plats=[...new Set(DB.transactions.map(t=>t.platform).filter(Boolean))].sort();
   platSel.innerHTML=`<option value="">${tt('tx.all_platforms')}</option>`+plats.map(p=>`<option>${esc(p)}</option>`).join('');
   applyTxFilters();
+  if(typeof renderRecurPanel==='function') renderRecurPanel();
 }
 function applyTxFilters(){
   const q=$('#tx-search').value.toLowerCase().trim();
@@ -2341,6 +2342,11 @@ function openTx(id){
   $('#f-delete').hidden=!t;
   $('#tx-modal').hidden=false;
   updateExpCatHint();
+  // ricorrenza: solo per nuove uscite
+  const rbx=$('#f-recur-box'); if(rbx) rbx.hidden = !(k==='expense' && !t);
+  if($('#f-recurring')) $('#f-recurring').checked=false;
+  if($('#f-recur-opts')) $('#f-recur-opts').hidden=true;
+  if($('#f-recur-freq')) $('#f-recur-freq').value='monthly';
 }
 /* ---- Auto-categoria spese: deduce la categoria dalle parole della descrizione ---- */
 const EXP_CATS=['production','promo','distribution','artwork','manufacturing','shipping','software','fees','travel','other'];
@@ -2408,8 +2414,63 @@ $('#tx-form').onsubmit=e=>{
     if(an && !confirm(tt('tx.anomaly_confirm').replace('{v}',fmtMoney(an.v)).replace('{m}',fmtMoney(an.med)))) return; }
   if(id){ const i=DB.transactions.findIndex(t=>t.id===id); DB.transactions[i]=rec; }
   else DB.transactions.push(rec);
+  // uscita ricorrente: crea la regola che si ripeterà da sola
+  if(!id && rec.kind==='expense' && $('#f-recurring')?.checked){
+    const tpl={...rec}; delete tpl.id; delete tpl.date; delete tpl.dateTo; delete tpl._recur;
+    const freq=$('#f-recur-freq')?.value||'monthly';
+    DB.recurring=DB.recurring||[];
+    DB.recurring.push({ id:newId(), active:true, freq, tpl, anchor:rec.date, nextDate:recurAddPeriod(rec.date, freq) });
+  }
   save(); $('#tx-modal').hidden=true; renderTx(); toast(tt('t.saved'));
 };
+
+/* ---- Uscite ricorrenti (es. abbonamenti): si aggiungono da sole alla data del pagamento ---- */
+function recurAddPeriod(dateStr, freq){
+  const d=new Date((dateStr||'')+'T00:00:00'); if(isNaN(+d)) return dateStr;
+  if(freq==='weekly') d.setDate(d.getDate()+7);
+  else if(freq==='yearly') d.setFullYear(d.getFullYear()+1);
+  else d.setMonth(d.getMonth()+1);
+  return d.toISOString().slice(0,10);
+}
+function processRecurring(){
+  const today=todayISO(); let added=0;
+  (DB.recurring||[]).forEach(r=>{
+    if(!r.active || !r.tpl) return; let guard=0;
+    while(r.nextDate && r.nextDate<=today && guard<400){
+      DB.transactions.push(Object.assign({}, r.tpl, { id:uid(), kind:'expense', date:r.nextDate, _recur:r.id }));
+      added++; guard++; r.nextDate=recurAddPeriod(r.nextDate, r.freq);
+    }
+  });
+  if(added){
+    save();
+    try{ NOTIFS.list.unshift({ id:newId(), type:'recur', view:'transactions', count:added, read:false, ts:Date.now() }); notifSave(); if(typeof renderNotifs==='function') renderNotifs(); }catch(e){}
+    if(typeof renderTx==='function') renderTx();
+    setTimeout(()=>toast(tt('recur.added_toast').replace('{n}',added)), 800);
+  }
+}
+let recurDismissed=false;
+function renderRecurPanel(){
+  const box=$('#recur-panel'); if(!box) return;
+  const list=(DB.recurring||[]).filter(r=>r.active);
+  if(!list.length || recurDismissed){ box.hidden=true; return; }
+  const ttl=$('.rel-gaps-title',box); if(ttl) ttl.textContent=tt('recur.title').replace('{n}',list.length);
+  const FRQ={weekly:tt('f.recur_weekly'), monthly:tt('f.recur_monthly'), yearly:tt('f.recur_yearly')};
+  $('#recur-list').innerHTML=list.map(r=>`
+    <div class="rel-gap-item" style="cursor:default">
+      <span class="rel-gap-cat">${esc(r.tpl.product||r.tpl.note||tt('ty.expense'))}</span>
+      <span class="rel-gap-ttl" style="flex:1 1 auto;white-space:normal">${fmtMoney(Math.abs(+r.tpl.net||0))} · ${esc(FRQ[r.freq]||r.freq)} · ${tt('recur.next')} ${esc(fmtDate(r.nextDate))}</span>
+      <button class="btn btn-sm btn-ghost" data-recur-stop="${r.id}" type="button">${tt('recur.stop')}</button>
+    </div>`).join('');
+  box.hidden=false;
+}
+$('#recur-x')?.addEventListener('click', ()=>{ recurDismissed=true; const b=$('#recur-panel'); if(b) b.hidden=true; });
+$('#recur-list')?.addEventListener('click', e=>{
+  const b=e.target.closest('[data-recur-stop]'); if(!b) return;
+  const r=(DB.recurring||[]).find(x=>x.id===b.dataset.recurStop); if(!r) return;
+  if(!confirm(tt('recur.stop_confirm'))) return;
+  r.active=false; save(); renderRecurPanel();
+});
+$('#f-recurring')?.addEventListener('change', e=>{ const o=$('#f-recur-opts'); if(o) o.hidden=!e.target.checked; });
 
 /* ============================================================================
    IMPORT CSV
@@ -4498,6 +4559,9 @@ function notifText(n){
   if(n.type==='recoup') return {
     title: T('notif.recoup_t','Anticipo recuperato'),
     body: T('notif.recoup_b','{name} ha recuperato l\'anticipo: ora ci sono {amt} da pagare. Ho aggiunto un task di pagamento.').replace('{name}', n.ref||'').replace('{amt}', fmtMoney(n.amt||0)) };
+  if(n.type==='recur') return {
+    title: T('notif.recur_t','Movimento ricorrente aggiunto'),
+    body: T('notif.recur_b','{n} movimento/i ricorrente/i è stato aggiunto automaticamente alla lista movimenti.').replace('{n}', n.count||0) };
   if(n.type==='task'){ const when=(n.due?fmtDate(n.due):'')+(n.time?(' '+n.time):'');
     return { title: n.title||T('notif.task_t','Promemoria'),
       body: (n.overdue?T('notif.task_over','Promemoria scaduto'):T('notif.task_due','Promemoria'))+(when?' · '+when:'') }; }
@@ -4743,6 +4807,7 @@ function maybeStartTour(){
   setTimeout(startTour, 700);
 }
 maybeStartTour();
+try{ processRecurring(); }catch(e){}
 
 /* ---------- Avvisi task: scheduler + audio sbloccato al primo gesto ---------- */
 document.addEventListener('pointerdown', ()=>lfAudio(), {once:true});

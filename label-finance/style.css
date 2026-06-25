@@ -812,7 +812,7 @@ body.dash-edit .dw-width{display:inline-flex;gap:2px;position:absolute;top:8px;l
 .billing-toggle .save{font-size:.68rem;font-weight:700;background:var(--in);color:var(--on-in);padding:1px 6px;border-radius:6px}
 .billing-toggle button.is-active .save{background:rgba(255,255,255,.28);color:inherit}
 .plan-name{font-family:'Syne',sans-serif;font-weight:700;font-size:1.15rem}
-.plan-price{font-family:'Syne',sans-serif;font-weight:700;font-size:1.9rem;line-height:1;letter-spacing:-.055em}
+.plan-price{font-family:'DM Sans',sans-serif;font-weight:800;font-size:2.5rem;line-height:1;letter-spacing:-.02em}
 .plan-price span{font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:500;color:var(--muted);letter-spacing:normal;margin-left:2px}
 .plan-old{font-family:'DM Sans',sans-serif;color:var(--muted);font-size:.95rem;font-weight:600;margin-left:8px;letter-spacing:normal}
 .plan-note{font-size:.76rem;color:var(--in);min-height:15px;font-weight:600}
@@ -1495,3 +1495,8 @@ body.gate-signup #gate-signin{opacity:.5}
 .tour-never input{accent-color:var(--accent)}
 .nav-item.tour-spot{box-shadow:0 0 0 3px var(--accent),0 0 0 7px color-mix(in srgb,var(--accent) 35%,transparent);border-radius:10px;position:relative;z-index:4100}
 @media(max-width:560px){ .tour-card{padding:20px 16px 14px} .tour-title{font-size:1.1rem} .tour-foot .btn{flex:1 1 auto} .tour-never{flex:1 1 100%;order:-1;margin-bottom:4px} }
+
+/* Uscite ricorrenti */
+.f-recur{display:flex;flex-direction:column;gap:10px;padding:12px 14px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px}
+.f-recur-opts{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding-left:26px}
+.f-recur-opts .fld{min-width:160px}

@@ -518,6 +518,16 @@
         <p>La barra strumenti permette di <b>cercare</b>, filtrare per tipo, piattaforma e intervallo di date. Con <b>⚙ Colonne</b> scegli quali colonne vedere; con <b>Esporta</b> scarichi tutto in CSV, Excel o PDF.</p>
       </div>
 
+      <div class="rel-gaps" id="recur-panel" hidden>
+        <div class="rel-gaps-head">
+          <span class="rel-enrich-ico">🔁</span>
+          <b class="rel-gaps-title"></b>
+          <span class="spacer"></span>
+          <button class="icon-btn-sm" id="recur-x" title="Nascondi">✕</button>
+        </div>
+        <div class="rel-gaps-list" id="recur-list"></div>
+      </div>
+
       <div class="toolbar">
         <input type="search" id="tx-search" class="input" data-i18n-ph="tx.search" placeholder="Cerca prodotto, artista, catalogo…">
         <select id="tx-filter-kind" class="select">
@@ -1820,6 +1830,18 @@
         <label><span data-i18n="f.currency">Valuta</span> <input type="text" id="f-currency" class="input" value="EUR" maxlength="3"></label>
         <label class="span-2"><span data-i18n="f.note">Nota</span> <input type="text" id="f-note" class="input"></label>
         <div class="span-2 f-cat-hint" id="f-cat-hint" hidden></div>
+        <div class="span-2 f-recur" id="f-recur-box" hidden>
+          <label class="check-inline"><input type="checkbox" id="f-recurring"> <span data-i18n="f.recurring">Spesa ricorrente (si ripete da sola)</span></label>
+          <div class="f-recur-opts" id="f-recur-opts" hidden>
+            <label class="fld"><span data-i18n="f.recur_freq">Frequenza</span>
+              <select id="f-recur-freq" class="select">
+                <option value="weekly" data-i18n="f.recur_weekly">Settimanale</option>
+                <option value="monthly" selected data-i18n="f.recur_monthly">Mensile</option>
+                <option value="yearly" data-i18n="f.recur_yearly">Annuale</option>
+              </select></label>
+            <span class="muted small" data-i18n="f.recur_hint">Verrà aggiunta automaticamente alla data del pagamento, con un avviso.</span>
+          </div>
+        </div>
         <div class="modal-foot span-2">
           <button type="button" class="btn btn-danger" id="f-delete" hidden data-i18n="common.delete">Elimina</button>
           <span class="spacer"></span>

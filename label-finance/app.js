@@ -875,7 +875,7 @@ function loadDemo(){
   ];
   A.forEach(a=>DB.artists.push({ id:newId(), name:a.name, legal:a.legal, email:a.email, phone:a.phone, iban:a.iban, split:a.split, demo:true }));
   // ---- Release ----
-  const isrc=i=>'ITRHD'+String(now.getFullYear()).slice(2)+String(i).padStart(6,'0');
+  const isrc=i=>'ITRHD'+String(now.getFullYear()).slice(2)+String(i).padStart(5,'0');   // ISRC valido a 12 caratteri
   const R=[
     {cat:'RHD001', title:'Aurora',        artist:'Nova Iris', upc:'0884385001011', rel:D(10,12), splits:[{name:'Nova Iris',pct:50}], tracks:[{title:'Aurora',isrc:isrc(11)},{title:'Aurora (Reprise)',isrc:isrc(12)}]},
     {cat:'RHD002', title:'Midnight Drive',artist:'Marlo',     upc:'0884385002028', rel:D(8,3),   splits:[{name:'Marlo',pct:60}], tracks:[{title:'Midnight Drive',isrc:isrc(21)}]},
@@ -1347,6 +1347,7 @@ function createReleasesFromTx(){
 $('#rel-enrich-create')?.addEventListener('click', createReleasesFromTx);
 
 /* ---- Dati mancanti nelle release: pannello "da completare" (UPC, quote, ISRC, artista) ---- */
+const ISRC_RE=/^[A-Za-z]{2}[A-Za-z0-9]{3}\d{7}$/;
 function releaseGaps(){
   return releases().map(r=>{
     const g=[];
@@ -1355,6 +1356,14 @@ function releaseGaps(){
     if(!(r.upc||'').trim()) g.push('upc');
     const tracks=r.tracks||[];
     if(tracks.length && tracks.some(t=>!(t.isrc||'').trim())) g.push('isrc');
+    // --- validazione dati ---
+    const sum=(r.splits||[]).reduce((s,x)=>s+(+x.pct||0),0);
+    if(sum>100) g.push('split_over');
+    const upcd=(r.upc||'').replace(/\D/g,'');
+    if(upcd && upcd.length!==12 && upcd.length!==13) g.push('upc_bad');
+    if(tracks.some(t=>(t.isrc||'').trim() && !ISRC_RE.test((t.isrc||'').trim()))) g.push('isrc_bad');
+    const ty=(r.type||'').toUpperCase();
+    if(ty==='SINGLE' && tracks.length>1) g.push('type_single');
     return g.length?{r,gaps:g}:null;
   }).filter(Boolean);
 }
@@ -1364,13 +1373,15 @@ function updateRelGapsPanel(){
   const b=$('#rel-gaps'); if(!b) return;
   const list=releaseGaps(); const sig=relGapsSig(list);
   if(!list.length || sig===relGapsDismissed){ b.hidden=true; return; }
-  const gl={artist:tt('rel.gap_artist'), splits:tt('rel.gap_splits'), upc:'UPC', isrc:tt('rel.gap_isrc')};
+  const gl={artist:tt('rel.gap_artist'), splits:tt('rel.gap_splits'), upc:'UPC', isrc:tt('rel.gap_isrc'),
+    split_over:tt('rel.gap_split_over'), upc_bad:tt('rel.gap_upc_bad'), isrc_bad:tt('rel.gap_isrc_bad'), type_single:tt('rel.gap_type')};
+  const errSet=new Set(['split_over','upc_bad','isrc_bad','type_single']);
   const ttl=$('.rel-gaps-title',b); if(ttl) ttl.textContent=tt('rel.gaps_title').replace('{n}',list.length);
   $('#rel-gaps-list').innerHTML=list.slice(0,8).map(x=>`
     <button class="rel-gap-item" data-rel-open="${x.r.id}" type="button">
       <span class="rel-gap-cat">${esc(x.r.catalog||x.r.title||'—')}</span>
       <span class="rel-gap-ttl">${esc(x.r.title||'')}</span>
-      <span class="rel-gap-tags">${x.gaps.map(g=>`<span class="rel-gap-tag">${esc(gl[g]||g)}</span>`).join('')}</span>
+      <span class="rel-gap-tags">${x.gaps.map(g=>`<span class="rel-gap-tag ${errSet.has(g)?'rel-gap-tag--err':''}">${esc(gl[g]||g)}</span>`).join('')}</span>
     </button>`).join('') + (list.length>8?`<div class="rel-gap-more muted small">+${list.length-8}</div>`:'');
   b.hidden=false;
 }

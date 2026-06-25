@@ -1450,3 +1450,6 @@ body.gate-signup #gate-signin{opacity:.5}
 .art-disco-cat{font-weight:700;font-size:.88rem;flex:none}
 .art-disco-ttl{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .art-disco-meta{color:var(--muted);font-size:.8rem;flex:none}
+
+/* tag errore (validazione dati catalogo) — più marcato del "mancante" */
+.rel-gap-tag--err{background:color-mix(in srgb,var(--out) 26%,transparent);border-color:var(--out);color:var(--out);font-weight:700}

@@ -248,6 +248,7 @@
       'art.disco_title':'Discografia dell\'artista',
       'rel.gap_split_over':'Quote >100%','rel.gap_upc_bad':'UPC non valido','rel.gap_isrc_bad':'ISRC non valido','rel.gap_type':'Tipo/tracce',
       'mh.title':'{n} articoli con margine da rivedere','mh.loss':'In perdita: margine {u} a pezzo','mh.low':'Margine basso: {u} a pezzo','mh.suggest':'Min. consigliato {p}',
+      'fc.trend_up':'In miglioramento: gli ultimi mesi vanno meglio dei precedenti.','fc.trend_down':'In peggioramento: gli ultimi mesi vanno peggio dei precedenti.','fc.trend_flat':'Trend stabile.','fc.driver':'Traina soprattutto {name}.','fc.risk':'Mesi a rischio: la proiezione va in negativo.',
     },
     en:{
       'art.enrich_msg':'{n} artists found in transactions, not yet in your roster: {names}','art.enrich_add':'＋ Add artists','art.enrich_none':'No new artists to add.','art.enrich_confirm':'Add {n} artists to your roster? You can fill in their details later.','art.enrich_added':'{n} artists added ✓',
@@ -626,6 +627,7 @@
       'art.disco_title':'Artist\'s discography',
       'rel.gap_split_over':'Splits >100%','rel.gap_upc_bad':'Invalid UPC','rel.gap_isrc_bad':'Invalid ISRC','rel.gap_type':'Type/tracks',
       'mh.title':'{n} items with margin to review','mh.loss':'At a loss: {u} margin per unit','mh.low':'Low margin: {u} per unit','mh.suggest':'Suggested min {p}',
+      'fc.trend_up':'Improving: recent months are better than earlier ones.','fc.trend_down':'Worsening: recent months are worse than earlier ones.','fc.trend_flat':'Stable trend.','fc.driver':'Mainly driven by {name}.','fc.risk':'Months at risk: the projection turns negative.',
     },
     es:{
       'art.enrich_msg':'{n} artistas encontrados en los movimientos y aún no en tu lista: {names}','art.enrich_add':'＋ Añadir artistas','art.enrich_none':'No hay nuevos artistas que añadir.','art.enrich_confirm':'¿Añadir {n} artistas a tu lista? Podrás completar sus datos después.','art.enrich_added':'{n} artistas añadidos ✓',
@@ -985,6 +987,7 @@
       'art.disco_title':'Discografía del artista',
       'rel.gap_split_over':'Cuotas >100%','rel.gap_upc_bad':'UPC no válido','rel.gap_isrc_bad':'ISRC no válido','rel.gap_type':'Tipo/pistas',
       'mh.title':'{n} artículos con margen a revisar','mh.loss':'En pérdida: margen {u} por unidad','mh.low':'Margen bajo: {u} por unidad','mh.suggest':'Mín. recomendado {p}',
+      'fc.trend_up':'Mejorando: los últimos meses van mejor que los anteriores.','fc.trend_down':'Empeorando: los últimos meses van peor que los anteriores.','fc.trend_flat':'Tendencia estable.','fc.driver':'Impulsado sobre todo por {name}.','fc.risk':'Meses en riesgo: la proyección se vuelve negativa.',
     },
     fr:{
       'art.enrich_msg':'{n} artistes trouvés dans les mouvements, pas encore dans votre répertoire : {names}','art.enrich_add':'＋ Ajouter les artistes','art.enrich_none':'Aucun nouvel artiste à ajouter.','art.enrich_confirm':'Ajouter {n} artistes à votre répertoire ? Vous pourrez compléter leurs données ensuite.','art.enrich_added':'{n} artistes ajoutés ✓',
@@ -1363,6 +1366,7 @@
       'art.disco_title':'Discographie de l\'artiste',
       'rel.gap_split_over':'Parts >100%','rel.gap_upc_bad':'UPC invalide','rel.gap_isrc_bad':'ISRC invalide','rel.gap_type':'Type/pistes',
       'mh.title':'{n} articles avec marge à revoir','mh.loss':'En perte : marge {u} par unité','mh.low':'Marge faible : {u} par unité','mh.suggest':'Min. conseillé {p}',
+      'fc.trend_up':'En amélioration : les derniers mois sont meilleurs que les précédents.','fc.trend_down':'En baisse : les derniers mois sont moins bons que les précédents.','fc.trend_flat':'Tendance stable.','fc.driver':'Tiré surtout par {name}.','fc.risk':'Mois à risque : la projection devient négative.',
     },
     de:{
       'art.enrich_msg':'{n} Künstler in den Bewegungen gefunden, noch nicht in deiner Liste: {names}','art.enrich_add':'＋ Künstler hinzufügen','art.enrich_none':'Keine neuen Künstler hinzuzufügen.','art.enrich_confirm':'{n} Künstler zur Liste hinzufügen? Du kannst die Daten später ergänzen.','art.enrich_added':'{n} Künstler hinzugefügt ✓',
@@ -1741,6 +1745,7 @@
       'art.disco_title':'Diskografie des Künstlers',
       'rel.gap_split_over':'Splits >100%','rel.gap_upc_bad':'Ungültiger UPC','rel.gap_isrc_bad':'Ungültiger ISRC','rel.gap_type':'Typ/Tracks',
       'mh.title':'{n} Artikel mit zu prüfender Marge','mh.loss':'Verlust: {u} Marge pro Stück','mh.low':'Niedrige Marge: {u} pro Stück','mh.suggest':'Empf. Min. {p}',
+      'fc.trend_up':'Verbessert sich: die letzten Monate sind besser als zuvor.','fc.trend_down':'Verschlechtert sich: die letzten Monate sind schlechter als zuvor.','fc.trend_flat':'Stabiler Trend.','fc.driver':'Vor allem getrieben von {name}.','fc.risk':'Monate in Gefahr: die Prognose wird negativ.',
     },
     pt:{
       'art.enrich_msg':'{n} artistas encontrados nos movimentos, ainda não no teu elenco: {names}','art.enrich_add':'＋ Adicionar artistas','art.enrich_none':'Nenhum novo artista para adicionar.','art.enrich_confirm':'Adicionar {n} artistas ao teu elenco? Podes completar os dados depois.','art.enrich_added':'{n} artistas adicionados ✓',
@@ -2119,6 +2124,7 @@
       'art.disco_title':'Discografia do artista',
       'rel.gap_split_over':'Quotas >100%','rel.gap_upc_bad':'UPC inválido','rel.gap_isrc_bad':'ISRC inválido','rel.gap_type':'Tipo/faixas',
       'mh.title':'{n} artigos com margem a rever','mh.loss':'Em prejuízo: margem {u} por unidade','mh.low':'Margem baixa: {u} por unidade','mh.suggest':'Mín. recomendado {p}',
+      'fc.trend_up':'A melhorar: os últimos meses estão melhores que os anteriores.','fc.trend_down':'A piorar: os últimos meses estão piores que os anteriores.','fc.trend_flat':'Tendência estável.','fc.driver':'Impulsionado sobretudo por {name}.','fc.risk':'Meses em risco: a projeção fica negativa.',
     },
     nl:{
       'art.enrich_msg':'{n} artiesten gevonden in de bewegingen, nog niet in je lijst: {names}','art.enrich_add':'＋ Artiesten toevoegen','art.enrich_none':'Geen nieuwe artiesten om toe te voegen.','art.enrich_confirm':'{n} artiesten aan je lijst toevoegen? Je kunt de gegevens later invullen.','art.enrich_added':'{n} artiesten toegevoegd ✓',
@@ -2497,6 +2503,7 @@
       'art.disco_title':'Discografie van de artiest',
       'rel.gap_split_over':'Splits >100%','rel.gap_upc_bad':'Ongeldige UPC','rel.gap_isrc_bad':'Ongeldige ISRC','rel.gap_type':'Type/tracks',
       'mh.title':'{n} artikelen met marge om te bekijken','mh.loss':'Verlies: {u} marge per stuk','mh.low':'Lage marge: {u} per stuk','mh.suggest':'Aanbevolen min. {p}',
+      'fc.trend_up':'Verbetert: de laatste maanden zijn beter dan eerder.','fc.trend_down':'Verslechtert: de laatste maanden zijn slechter dan eerder.','fc.trend_flat':'Stabiele trend.','fc.driver':'Vooral aangedreven door {name}.','fc.risk':'Maanden met risico: de prognose wordt negatief.',
     },
   };
 

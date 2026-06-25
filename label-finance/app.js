@@ -2997,10 +2997,22 @@ function renderExtraWidgets(txs){
       const avg=keys.reduce((s,k)=>s+months[k],0)/keys.length;
       const last=keys[keys.length-1]; let [yy,mm]=last.split('-').map(Number); let cum=0; const proj=[];
       for(let i=0;i<3;i++){ mm++; if(mm>12){mm=1;yy++;} cum+=avg; proj.push({k:`${yy}-${String(mm).padStart(2,'0')}`, v:avg, cum}); }
+      // --- spiegazione: trend, driver, rischio ---
+      const exp=[];
+      if(keys.length>=4){ const half=Math.ceil(keys.length/2);
+        const rec=keys.slice(-half), old=keys.slice(0,keys.length-half);
+        const ra=rec.reduce((s,k)=>s+months[k],0)/rec.length, oa=old.reduce((s,k)=>s+months[k],0)/old.length;
+        const dir = ra>oa+Math.abs(oa)*0.05 ? 'up' : ra<oa-Math.abs(oa)*0.05 ? 'down' : 'flat';
+        exp.push({warn:dir==='down', t:tt('fc.trend_'+dir)}); }
+      const plat={}; txs.forEach(t=>{ if(t.kind==='income'){const k=t.platform||'—'; plat[k]=(plat[k]||0)+toEur(t.net,t.currency);} });
+      const topP=Object.entries(plat).sort((a,b)=>b[1]-a[1])[0];
+      if(topP&&topP[1]>0) exp.push({warn:false, t:tt('fc.driver').replace('{name}',topP[0])});
+      if(avg<0 || (proj.length && proj[proj.length-1].cum<0)) exp.push({warn:true, t:tt('fc.risk')});
       fb.innerHTML = `<div class="fc-avg">${tt('dash.forecast_avg')}: <b class="${avg>=0?'pos':'neg'}">${fmtMoney(avg)}</b></div>
         <div class="fc-rows">${proj.map(p=>`<div class="fc-row"><span class="fc-m">${p.k}</span>
           <span class="fc-v ${p.v>=0?'pos':'neg'}">${p.v>=0?'+':'−'}${fmtMoney(Math.abs(p.v))}</span>
           <span class="fc-cum">Σ ${fmtMoney(p.cum)}</span></div>`).join('')}</div>
+        ${exp.length?`<div class="fc-why">${exp.map(x=>`<div class="fc-why-row ${x.warn?'fc-why--warn':''}"><span>${x.warn?'⚠':'•'}</span> ${esc(x.t)}</div>`).join('')}</div>`:''}
         <p class="muted small">${tt('dash.forecast_note')}</p>`;
     }
   }

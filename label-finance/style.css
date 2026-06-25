@@ -1453,3 +1453,8 @@ body.gate-signup #gate-signin{opacity:.5}
 
 /* tag errore (validazione dati catalogo) — più marcato del "mancante" */
 .rel-gap-tag--err{background:color-mix(in srgb,var(--out) 26%,transparent);border-color:var(--out);color:var(--out);font-weight:700}
+
+/* --- Spiegazione previsione cashflow --- */
+.fc-why{margin-top:10px;display:flex;flex-direction:column;gap:5px}
+.fc-why-row{display:flex;align-items:flex-start;gap:7px;font-size:.84rem;color:var(--muted)}
+.fc-why-row.fc-why--warn{color:var(--out);font-weight:600}

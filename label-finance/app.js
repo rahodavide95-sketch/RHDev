@@ -566,6 +566,30 @@ function deltaTag(cur,prev,goodUp){
   const up=pct>0, good=(up===goodUp);
   return `<span class="kpi-delta ${good?'up':'down'}" title="rispetto al periodo precedente">${up?'▲':'▼'} ${Math.abs(pct)}%</span>`;
 }
+/* Insight proattivi (dashboard): cosa è cambiato e cosa richiede attenzione, senza AI */
+function renderInsights(txs, cur, prev){
+  const box=$('#dash-insights'), list=$('#dash-insights-list'); if(!box||!list) return;
+  const out=[];
+  if(prev && (Math.abs(prev.net)>0 || Math.abs(cur.net)>0)){
+    const d=cur.net-prev.net, base=Math.abs(prev.net)||1, pct=Math.round(Math.abs(d)/base*100);
+    if(pct>=1) out.push({ico:d>=0?'📈':'📉', cls:d>=0?'in':'out', t:tt(d>=0?'ins.margin_up':'ins.margin_down').replace('{p}',pct)});
+  }
+  const plat={}; txs.forEach(t=>{ if(t.kind==='income'){ const k=t.platform||'—'; plat[k]=(plat[k]||0)+toEur(t.net,t.currency); } });
+  const topP=Object.entries(plat).sort((a,b)=>b[1]-a[1])[0];
+  if(topP && topP[1]>0) out.push({ico:'🏆', cls:'', go:'transactions', t:tt('ins.top_platform').replace('{name}',topP[0]).replace('{amt}',fmtMoney(topP[1]))});
+  const low=(DB.merch||[]).filter(m=>m.stock!=null && +m.stock<=5).length;
+  if(low) out.push({ico:'📦', cls:'out', go:'merch', t:tt('ins.low_stock').replace('{n}',low)});
+  const T=todayISO();
+  const over=(DB.tasks||[]).filter(x=>!x.done && x.due && x.due<T).length;
+  if(over) out.push({ico:'⏰', cls:'out', go:'tasks', t:tt('ins.overdue').replace('{n}',over)});
+  if(typeof computeRecoup==='function'){ try{ const u=computeRecoup().filter(r=>r.unrecouped>0).length;
+    if(u) out.push({ico:'🧾', cls:'', go:'royalties', t:tt('ins.unrecouped').replace('{n}',u)}); }catch(e){} }
+  list.innerHTML=out.map(o=>`<button class="dash-insight ins--${o.cls||'n'}" ${o.go?`data-goto="${o.go}"`:''} type="button"><span class="dash-insight-i">${o.ico}</span><span>${esc(o.t)}</span></button>`).join('');
+  box.hidden=!out.length;
+  // posiziona la card subito sotto i KPI (il sistema widget sposta gli altri elementi)
+  const kpiW=document.querySelector('.dash-widget[data-widget="kpi"]');
+  if(out.length && kpiW && kpiW.parentNode && kpiW.nextElementSibling!==box) kpiW.parentNode.insertBefore(box, kpiW.nextSibling);
+}
 function renderDashboard(){
   updateIdentity();
   if(typeof aiPopBody==='function' && $('#ai-pop') && !$('#ai-pop').hidden) aiPopBody();
@@ -585,6 +609,7 @@ function renderDashboard(){
   $('#delta-income').innerHTML = prev?deltaTag(cur.inc,prev.inc,true):'';
   $('#delta-expense').innerHTML = prev?deltaTag(cur.exp,prev.exp,false):'';
   $('#delta-net').innerHTML = prev?deltaTag(cur.net,prev.net,true):'';
+  renderInsights(txs, cur, prev);
   const psel=$('#dash-period');
   $('#dash-range-label').textContent = psel.value==='custom'
     ? ((range.from||'inizio')+' → '+(range.to||'oggi'))

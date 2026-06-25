@@ -1430,3 +1430,12 @@ body.gate-signup #gate-signin{opacity:.5}
 .imp-chk{display:flex;align-items:flex-start;gap:8px;font-size:.86rem;padding:8px 11px;border-radius:9px}
 .imp-chk--warn{background:color-mix(in srgb,var(--out) 12%,transparent);border:1px solid color-mix(in srgb,var(--out) 30%,var(--line));color:color-mix(in srgb,var(--out) 80%,var(--text))}
 .imp-chk--info{background:color-mix(in srgb,var(--accent) 9%,transparent);border:1px solid color-mix(in srgb,var(--accent) 26%,var(--line))}
+
+/* --- Insight proattivi dashboard ("In sintesi") --- */
+.dash-insights-list{display:flex;flex-direction:column;gap:7px}
+.dash-insight{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 13px;font:inherit;font-size:.9rem;color:var(--text);cursor:default;transition:.12s}
+.dash-insight[data-goto]{cursor:pointer}
+.dash-insight[data-goto]:hover{border-color:var(--accent)}
+.dash-insight-i{font-size:1.1rem;flex:none;line-height:1}
+.dash-insight.ins--in{border-left:3px solid var(--in)}
+.dash-insight.ins--out{border-left:3px solid var(--out)}

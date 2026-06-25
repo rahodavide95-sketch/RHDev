@@ -4681,6 +4681,18 @@ if(typeof updateConsolidatedNav==='function') updateConsolidatedNav();
 notifScan();
 wireNavGroups();
 
+/* ---------- Pannelli riservati alla versione test ----------
+   Chiave AI manuale ed EmailJS sono nascosti ai clienti (l'AI gira lato server).
+   Per rivederli in locale: in config.js aggiungi  devSettings:true
+   NB: config.js viene caricato dopo app.js, quindi controllo al 'load'.           */
+function applyDevSettings(){
+  try{ if(window.LF_CONFIG && window.LF_CONFIG.devSettings){
+    document.querySelectorAll('.dev-only').forEach(el=>{ el.hidden=false; });
+  } }catch(e){}
+}
+window.addEventListener('load', applyDevSettings);
+applyDevSettings();
+
 /* ---------- Tutorial guidato (primo accesso, ripetibile, disattivabile) ---------- */
 const TOUR_STEPS=[
   {ico:'👋', view:'dashboard', key:'welcome'},

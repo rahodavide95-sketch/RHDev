@@ -1247,6 +1247,17 @@
         <p>Tieni traccia delle cose da fare: pagare un artista, inviare un contratto, rinnovare una distribuzione. Aggiungi una <b>scadenza</b> e l'attività verrà evidenziata quando è in arrivo o scaduta. Spunta il pallino quando è fatta.</p>
       </div>
 
+      <div class="rel-gaps" id="task-suggest" hidden>
+        <div class="rel-gaps-head">
+          <span class="rel-enrich-ico">💡</span>
+          <b class="task-suggest-title"></b>
+          <span class="spacer"></span>
+          <button class="btn btn-sm btn-primary" id="task-suggest-all" data-i18n="sug.add_all">Aggiungi tutti</button>
+          <button class="icon-btn-sm" id="task-suggest-x" title="Nascondi">✕</button>
+        </div>
+        <div class="rel-gaps-list" id="task-suggest-list"></div>
+      </div>
+
       <div class="panel tsk-add">
         <div class="form-grid">
           <label class="fld fld--full"><span data-i18n="tsk.what">Cosa c'è da fare *</span><input class="input" id="tsk-title" data-i18n-ph="tsk.what_ph" placeholder="Es. Pagare royalty a Mario"></label>

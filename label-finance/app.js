@@ -3475,8 +3475,44 @@ function updateConSendBtn(){
 
 /* ---------- Task ---------- */
 function tskKey(t){ return (t.due||'9999-99-99')+'T'+(t.time||'99:99'); }
+/* ---- Task suggeriti automaticamente in base ai dati (pagamenti, contratti, scorte) ---- */
+function isoPlus(n){ const d=new Date(); d.setDate(d.getDate()+(n||0)); return d.toISOString().slice(0,10); }
+function suggestedTasks(){
+  const existing=new Set((DB.tasks||[]).filter(t=>!t.done).map(t=>t.autoKey).filter(Boolean));
+  const sug=[];
+  if(typeof computeRecoup==='function'){ try{
+    computeRecoup().filter(r=>r.payable>0.5).forEach(r=>{ const k='pay:'+normArt(r.name); if(existing.has(k))return;
+      sug.push({key:k, type:'payment', due:isoPlus(7), title:tt('sug.pay').replace('{name}',r.name).replace('{amt}',fmtMoney(r.payable))}); });
+  }catch(e){} }
+  (DB.contracts||[]).filter(c=>c.status==='sent').forEach(c=>{ const who=(c.artistNames||c.artist||'').trim();
+    const k='contract:'+(c.id||normArt(who)); if(existing.has(k))return;
+    sug.push({key:k, type:'contract', due:isoPlus(3), title:tt('sug.contract').replace('{name}',who||'—')}); });
+  (DB.merch||[]).filter(m=>m.stock!=null && +m.stock<=5).forEach(m=>{ const k='reorder:'+normArt(m.name||''); if(existing.has(k))return;
+    sug.push({key:k, type:'task', due:isoPlus(7), title:tt('sug.reorder').replace('{name}',m.name||'—')}); });
+  return sug;
+}
+function addSuggestedTask(s){ if(!s)return; DB.tasks.push({ id:newId(), title:s.title, due:s.due, time:'', type:s.type, done:false, remind:true, autoKey:s.key }); }
+function updateTaskSuggest(){
+  const b=$('#task-suggest'); if(!b) return;
+  const sug=suggestedTasks(); b._sug=sug;
+  if(!sug.length){ b.hidden=true; return; }
+  const ttl=$('.task-suggest-title',b); if(ttl) ttl.textContent=tt('sug.title').replace('{n}',sug.length);
+  $('#task-suggest-list').innerHTML=sug.map((s,i)=>`
+    <div class="rel-gap-item" style="cursor:default">
+      <span class="rel-gap-ttl" style="flex:1 1 auto;white-space:normal">${esc(s.title)}</span>
+      <button class="btn btn-sm btn-primary" data-sug-add="${i}" type="button">＋</button>
+    </div>`).join('');
+  b.hidden=false;
+}
+$('#task-suggest-list')?.addEventListener('click', e=>{ const btn=e.target.closest('[data-sug-add]'); if(!btn)return;
+  const b=$('#task-suggest'); const s=(b._sug||[])[+btn.dataset.sugAdd]; if(s){ addSuggestedTask(s); save(); renderTasks(); toast(tt('sug.added')); } });
+$('#task-suggest-all')?.addEventListener('click', ()=>{ const b=$('#task-suggest'); const sug=b._sug||suggestedTasks(); if(!sug.length)return;
+  sug.forEach(addSuggestedTask); save(); renderTasks(); toast(tt('sug.added')); });
+$('#task-suggest-x')?.addEventListener('click', ()=>{ const b=$('#task-suggest'); if(b) b.hidden=true; });
+
 function renderTasks(){
   const cont=$('#tasks-list'); if(!cont) return;
+  updateTaskSuggest();
   const tq=($('#tsk-search')&&$('#tsk-search').value||'').toLowerCase().trim();
   const list=tq?(DB.tasks||[]).filter(t=>(t.title||'').toLowerCase().includes(tq)):(DB.tasks||[]);
   $('#tasks-empty').hidden=(DB.tasks||[]).length>0;

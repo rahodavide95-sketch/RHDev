@@ -1505,8 +1505,11 @@ body.gate-signup #gate-signin{opacity:.5}
 .ct-error{color:var(--out,#e5484d);font-size:.86rem;font-weight:600;margin:0}
 #contact-form textarea.input{resize:vertical;font:inherit;min-height:90px}
 
-/* Badge BETA accanto al logo */
-.beta-badge{display:inline-block;margin-left:7px;padding:1px 7px;border-radius:6px;font-size:.62rem;font-weight:800;letter-spacing:.08em;background:var(--accent);color:var(--on-accent,#fff);vertical-align:middle;text-transform:uppercase}
+/* Nome + badge BETA impilati a destra del logo (BETA va SOTTO il nome) */
+.brand-text{display:flex;flex-direction:column;min-width:0;flex:1;gap:1px;line-height:1.05}
+/* Badge BETA: sotto il nome, allineato a sinistra, non ruba spazio orizzontale */
+.beta-badge{align-self:flex-start;margin-top:2px;padding:1px 7px;border-radius:6px;font-size:.62rem;font-weight:800;letter-spacing:.08em;background:var(--accent);color:var(--on-accent,#fff);text-transform:uppercase}
+.nav-collapsed .beta-badge{display:none}
 
 /* Schermata "in attesa di approvazione" */
 .pending-screen{position:fixed;inset:0;z-index:5000;display:flex;align-items:center;justify-content:center;padding:20px;background:var(--bg,#0e0f1a)}

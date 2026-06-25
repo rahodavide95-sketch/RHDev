@@ -4789,6 +4789,7 @@ function applyDevSettings(){
   try{ if(window.LF_CONFIG && window.LF_CONFIG.devSettings){
     document.querySelectorAll('.dev-only').forEach(el=>{ el.hidden=false; });
   } }catch(e){}
+  try{ const bb=$('#beta-badge'); if(bb) bb.hidden = !(window.LF_CONFIG && window.LF_CONFIG.beta); }catch(e){}
 }
 window.addEventListener('load', applyDevSettings);
 applyDevSettings();

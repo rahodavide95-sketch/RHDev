@@ -14,5 +14,9 @@ window.LF_CONFIG = {
 
   // Modulo "Contattaci": incolla qui la Access Key gratuita di web3forms.com
   // (1 minuto, nessun server). Se vuota, il modulo apre il client email come ripiego.
-  web3formsKey: ''
+  web3formsKey: '',
+
+  // Mostra il badge "BETA" accanto al logo durante la fase di prova.
+  // Al lancio del prodotto, metti  false  (o togli questa riga) per nasconderlo.
+  beta: true
 };

@@ -4174,6 +4174,26 @@ function notifScan(){
     let ts=Date.now(); try{ const d=new Date(t.due+'T'+(t.time||'09:00')).getTime(); if(d) ts=d; }catch(e){}
     NOTIFS.list.unshift({ id:newId(), key, type:'task', taskId:t.id, view:'tasks', title:t.title||'', due:t.due, time:t.time||'', overdue, read:prevTaskRead[key]||false, ts });
   });
+  // recoupment chiuso: artista passato da "non recuperato" a "da pagare" → notifica + task
+  if(typeof computeRecoup==='function'){ try{
+    const seen=NOTIFS.recoupSeen||(NOTIFS.recoupSeen={});
+    const haveBaseline=!!NOTIFS._recoupInit;
+    computeRecoup().forEach(r=>{ const k=normArt(r.name); if(!k) return;
+      const state=r.unrecouped>0?'unrec':(r.payable>0?'clear':'none');
+      if(haveBaseline && seen[k]==='unrec' && state==='clear'){
+        const nkey='recoup:'+k;
+        if(!(NOTIFS.dismissed||[]).includes(nkey) && !NOTIFS.list.some(n=>n.key===nkey))
+          NOTIFS.list.unshift({ id:newId(), key:nkey, type:'recoup', view:'royalties', ref:r.name, amt:r.payable, read:false, ts:Date.now() });
+        const tkey='pay:'+k;
+        if(DB.tasks && !DB.tasks.some(t=>!t.done && t.autoKey===tkey)){
+          DB.tasks.push({ id:newId(), title:tt('sug.pay').replace('{name}',r.name).replace('{amt}',fmtMoney(r.payable)), due:isoPlus(7), time:'', type:'payment', done:false, remind:true, autoKey:tkey });
+          if(typeof save==='function') save();
+        }
+      }
+      seen[k]=state;
+    });
+    NOTIFS._recoupInit=true;
+  }catch(e){} }
   notifSave(); renderNotifs();
 }
 function notifText(n){
@@ -4184,6 +4204,9 @@ function notifText(n){
   if(n.type==='enrich') return {
     title: T('notif.enrich_t','Dati aggiuntivi trovati'),
     body: T('notif.enrich_b','In Movimenti ci sono {n} dati utili (UPC, ISRC, catalogo, artista…) per release già presenti. Apri per arricchire la Discografia.').replace('{n}', n.count||0) };
+  if(n.type==='recoup') return {
+    title: T('notif.recoup_t','Anticipo recuperato'),
+    body: T('notif.recoup_b','{name} ha recuperato l\'anticipo: ora ci sono {amt} da pagare. Ho aggiunto un task di pagamento.').replace('{name}', n.ref||'').replace('{amt}', fmtMoney(n.amt||0)) };
   if(n.type==='task'){ const when=(n.due?fmtDate(n.due):'')+(n.time?(' '+n.time):'');
     return { title: n.title||T('notif.task_t','Promemoria'),
       body: (n.overdue?T('notif.task_over','Promemoria scaduto'):T('notif.task_due','Promemoria'))+(when?' · '+when:'') }; }

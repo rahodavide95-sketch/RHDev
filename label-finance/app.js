@@ -1480,6 +1480,14 @@ $('#rel-form').onsubmit=e=>{
     type:$('#r-type').value||'SINGLE', distributedBy:$('#r-distributed').value.trim() };
   if(!rec.catalog){ toast(tt('t.cat_required')); return; }
   if(!rec.orderDate){ toast(tt('r.order_required')); return; }
+  // intelligenza: in creazione, avvisa se catalogo/UPC esiste già
+  if(!id){
+    const dup = releaseByCatalog(rec.catalog) || (rec.upc && releaseByUPC(rec.upc));
+    if(dup && !confirm(tt('rel.dup_confirm').replace('{cat}', dup.catalog||dup.title||'—'))) return;
+  }
+  // intelligenza: memorizza lo split per artista (riusato nelle release future)
+  (splits||[]).forEach(s=>{ const nm=(s.name||'').trim(); if(!nm||!(+s.pct))return;
+    const a=(DB.artists||[]).find(x=>normArt(x.name)===normArt(nm)); if(a) a.split=+s.pct; });
   if(id){ const i=releases().findIndex(r=>r.id===id); DB.releases[i]=rec; }
   else releases().push(rec);
   save(); $('#rel-modal').hidden=true; renderReleases(); renderRoyalties(); toast(tt('t.rel_saved'));

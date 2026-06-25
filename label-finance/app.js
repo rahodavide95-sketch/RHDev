@@ -2472,6 +2472,42 @@ $('#recur-list')?.addEventListener('click', e=>{
 });
 $('#f-recurring')?.addEventListener('change', e=>{ const o=$('#f-recur-opts'); if(o) o.hidden=!e.target.checked; });
 
+/* ---- Contattaci: il modulo invia un'email a Label Finance (Web3Forms; ripiego mailto) ---- */
+const CONTACT_EMAIL='info.labelfinance@gmail.com';
+$('#contact-open')?.addEventListener('click', ()=>{ const m=$('#contact-modal'); if(m){ const er=$('#ct-error'); if(er) er.hidden=true; m.hidden=false; } });
+$('#contact-close')?.addEventListener('click', ()=>{ $('#contact-modal').hidden=true; });
+$('#contact-cancel')?.addEventListener('click', ()=>{ $('#contact-modal').hidden=true; });
+$('#contact-modal')?.addEventListener('click', e=>{ if(e.target.id==='contact-modal') $('#contact-modal').hidden=true; });
+$('#contact-sent-ok')?.addEventListener('click', ()=>{ $('#contact-sent').hidden=true; });
+$('#contact-form')?.addEventListener('submit', async e=>{
+  e.preventDefault();
+  const first=$('#ct-first').value.trim(), last=$('#ct-last').value.trim(), email=$('#ct-email').value.trim(),
+        subject=$('#ct-subject').value.trim(), message=$('#ct-message').value.trim();
+  if(!first||!last||!email||!subject||!message) return;
+  const err=$('#ct-error'); if(err) err.hidden=true;
+  const btn=$('#ct-send'); const old=btn?btn.textContent:'';
+  const reset=()=>{ if(btn){ btn.disabled=false; btn.textContent=old; } };
+  const success=()=>{ reset(); $('#contact-modal').hidden=true; $('#contact-form').reset(); $('#contact-sent').hidden=false; };
+  const key=(window.LF_CONFIG&&window.LF_CONFIG.web3formsKey)||'';
+  if(key){
+    if(btn){ btn.disabled=true; btn.textContent=tt('contact.sending'); }
+    try{
+      const res=await fetch('https://api.web3forms.com/submit',{ method:'POST',
+        headers:{'Content-Type':'application/json','Accept':'application/json'},
+        body:JSON.stringify({ access_key:key, subject:'[Label Finance] '+subject, from_name:`${first} ${last}`, email,
+          message:`Nome: ${first} ${last}\nEmail: ${email}\nOggetto: ${subject}\n\n${message}` }) });
+      const j=await res.json().catch(()=>({}));
+      if(res.ok && j.success){ success(); return; }
+      throw new Error(j.message||'send_failed');
+    }catch(ex){ reset(); if(err){ err.textContent=tt('contact.error'); err.hidden=false; } }
+  } else {
+    // nessun servizio email configurato: apri il client di posta come ripiego
+    const body=encodeURIComponent(`Nome: ${first} ${last}\nEmail: ${email}\n\n${message}`);
+    window.location.href=`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent('[Label Finance] '+subject)}&body=${body}`;
+    $('#contact-modal').hidden=true;
+  }
+});
+
 /* ============================================================================
    IMPORT CSV
    ============================================================================ */

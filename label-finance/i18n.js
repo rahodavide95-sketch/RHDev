@@ -12,6 +12,7 @@
 
   const DICT={
     it:{
+      "contact.btn":"✉ Contattaci","contact.title":"Contattaci","contact.intro":"Scrivici: ti rispondiamo via email il prima possibile.","contact.first":"Nome *","contact.last":"Cognome *","contact.email":"Email *","contact.subject":"Oggetto *","contact.message":"Descrizione *","contact.send":"Invia messaggio","contact.sending":"Invio…","contact.error":"Invio non riuscito. Riprova tra poco.","contact.sent_t":"Messaggio inviato","contact.sent_b":"Grazie! Un operatore ti risponderà nel più breve tempo possibile.",
       "f.recurring":"Spesa ricorrente (si ripete da sola)","f.recur_freq":"Frequenza","f.recur_weekly":"Settimanale","f.recur_monthly":"Mensile","f.recur_yearly":"Annuale","f.recur_hint":"Verrà aggiunta automaticamente alla data del pagamento, con un avviso.","recur.title":"{n} spese ricorrenti attive","recur.next":"prossima","recur.stop":"Interrompi","recur.stop_confirm":"Interrompere questa spesa ricorrente? I movimenti già aggiunti restano.","recur.added_toast":"{n} movimento ricorrente aggiunto ✓","notif.recur_t":"Movimento ricorrente aggiunto","notif.recur_b":"{n} movimento/i ricorrente/i aggiunto automaticamente alla lista movimenti.",
       "off.vat":"+ IVA","off.vat_note":"Prezzi IVA esclusa. L'imposta applicabile viene calcolata al pagamento in base al tuo Paese.",
       "set.tutorial":"Tutorial guidato","set.tutorial_hint":"Rivedi il giro guidato della piattaforma quando vuoi.",
@@ -258,6 +259,7 @@
       'rel.all_artists':'Tutti gli artisti',
     },
     en:{
+      "contact.btn":"✉ Contact us","contact.title":"Contact us","contact.intro":"Write to us: we reply by email as soon as possible.","contact.first":"First name *","contact.last":"Last name *","contact.email":"Email *","contact.subject":"Subject *","contact.message":"Description *","contact.send":"Send message","contact.sending":"Sending…","contact.error":"Sending failed. Please try again shortly.","contact.sent_t":"Message sent","contact.sent_b":"Thanks! An operator will reply as soon as possible.",
       "f.recurring":"Recurring expense (adds itself automatically)","f.recur_freq":"Frequency","f.recur_weekly":"Weekly","f.recur_monthly":"Monthly","f.recur_yearly":"Yearly","f.recur_hint":"It will be added automatically on the payment date, with a notice.","recur.title":"{n} active recurring expenses","recur.next":"next","recur.stop":"Stop","recur.stop_confirm":"Stop this recurring expense? Already-added entries stay.","recur.added_toast":"{n} recurring transaction added ✓","notif.recur_t":"Recurring transaction added","notif.recur_b":"{n} recurring transaction(s) were added automatically to your transactions list.",
       "off.vat":"+ tax","off.vat_note":"Prices exclude tax. Applicable tax is calculated at checkout based on your country.",
       "set.tutorial":"Guided tutorial","set.tutorial_hint":"Replay the guided tour of the platform whenever you want.",
@@ -643,6 +645,7 @@
       'rel.all_artists':'All artists',
     },
     es:{
+      "contact.btn":"✉ Contáctanos","contact.title":"Contáctanos","contact.intro":"Escríbenos: te respondemos por email lo antes posible.","contact.first":"Nombre *","contact.last":"Apellido *","contact.email":"Email *","contact.subject":"Asunto *","contact.message":"Descripción *","contact.send":"Enviar mensaje","contact.sending":"Enviando…","contact.error":"No se pudo enviar. Inténtalo de nuevo en breve.","contact.sent_t":"Mensaje enviado","contact.sent_b":"¡Gracias! Un operador te responderá lo antes posible.",
       "f.recurring":"Gasto recurrente (se añade solo)","f.recur_freq":"Frecuencia","f.recur_weekly":"Semanal","f.recur_monthly":"Mensual","f.recur_yearly":"Anual","f.recur_hint":"Se añadirá automáticamente en la fecha del pago, con un aviso.","recur.title":"{n} gastos recurrentes activos","recur.next":"próximo","recur.stop":"Detener","recur.stop_confirm":"¿Detener este gasto recurrente? Los movimientos ya añadidos permanecen.","recur.added_toast":"{n} movimiento recurrente añadido ✓","notif.recur_t":"Movimiento recurrente añadido","notif.recur_b":"{n} movimiento(s) recurrente(s) se añadieron automáticamente a tu lista de movimientos.",
       "off.vat":"+ IVA","off.vat_note":"Precios sin IVA. El impuesto aplicable se calcula en el pago según tu país.",
       "set.tutorial":"Tutorial guiado","set.tutorial_hint":"Vuelve a ver el recorrido guiado cuando quieras.",
@@ -1009,6 +1012,7 @@
       'rel.all_artists':'Todos los artistas',
     },
     fr:{
+      "contact.btn":"✉ Contactez-nous","contact.title":"Contactez-nous","contact.intro":"Écrivez-nous : nous répondons par email dès que possible.","contact.first":"Prénom *","contact.last":"Nom *","contact.email":"Email *","contact.subject":"Objet *","contact.message":"Description *","contact.send":"Envoyer le message","contact.sending":"Envoi…","contact.error":"Échec de l’envoi. Réessayez bientôt.","contact.sent_t":"Message envoyé","contact.sent_b":"Merci ! Un opérateur vous répondra dans les plus brefs délais.",
       "f.recurring":"Dépense récurrente (s’ajoute toute seule)","f.recur_freq":"Fréquence","f.recur_weekly":"Hebdomadaire","f.recur_monthly":"Mensuelle","f.recur_yearly":"Annuelle","f.recur_hint":"Elle sera ajoutée automatiquement à la date du paiement, avec une notification.","recur.title":"{n} dépenses récurrentes actives","recur.next":"prochaine","recur.stop":"Arrêter","recur.stop_confirm":"Arrêter cette dépense récurrente ? Les mouvements déjà ajoutés restent.","recur.added_toast":"{n} mouvement récurrent ajouté ✓","notif.recur_t":"Mouvement récurrent ajouté","notif.recur_b":"{n} mouvement(s) récurrent(s) ont été ajoutés automatiquement à votre liste de mouvements.",
       "off.vat":"+ TVA","off.vat_note":"Prix hors taxes. La taxe applicable est calculée au paiement selon votre pays.",
       "set.tutorial":"Tutoriel guidé","set.tutorial_hint":"Revoyez la visite guidée de la plateforme quand vous voulez.",
@@ -1394,6 +1398,7 @@
       'rel.all_artists':'Tous les artistes',
     },
     de:{
+      "contact.btn":"✉ Kontakt","contact.title":"Kontakt","contact.intro":"Schreib uns: Wir antworten so schnell wie möglich per E-Mail.","contact.first":"Vorname *","contact.last":"Nachname *","contact.email":"E-Mail *","contact.subject":"Betreff *","contact.message":"Beschreibung *","contact.send":"Nachricht senden","contact.sending":"Senden…","contact.error":"Senden fehlgeschlagen. Bitte versuche es gleich erneut.","contact.sent_t":"Nachricht gesendet","contact.sent_b":"Danke! Ein Mitarbeiter antwortet dir so schnell wie möglich.",
       "f.recurring":"Wiederkehrende Ausgabe (fügt sich selbst hinzu)","f.recur_freq":"Häufigkeit","f.recur_weekly":"Wöchentlich","f.recur_monthly":"Monatlich","f.recur_yearly":"Jährlich","f.recur_hint":"Sie wird am Zahlungsdatum automatisch hinzugefügt, mit einem Hinweis.","recur.title":"{n} aktive wiederkehrende Ausgaben","recur.next":"nächste","recur.stop":"Stoppen","recur.stop_confirm":"Diese wiederkehrende Ausgabe stoppen? Bereits hinzugefügte Bewegungen bleiben.","recur.added_toast":"{n} wiederkehrende Bewegung hinzugefügt ✓","notif.recur_t":"Wiederkehrende Bewegung hinzugefügt","notif.recur_b":"{n} wiederkehrende Bewegung(en) wurden automatisch zur Bewegungsliste hinzugefügt.",
       "off.vat":"+ MwSt.","off.vat_note":"Preise zzgl. Steuern. Die anfallende Steuer wird beim Bezahlen je nach Land berechnet.",
       "set.tutorial":"Geführtes Tutorial","set.tutorial_hint":"Sieh dir die geführte Tour jederzeit erneut an.",
@@ -1779,6 +1784,7 @@
       'rel.all_artists':'Alle Künstler',
     },
     pt:{
+      "contact.btn":"✉ Contacta-nos","contact.title":"Contacta-nos","contact.intro":"Escreve-nos: respondemos por email o mais rápido possível.","contact.first":"Nome *","contact.last":"Apelido *","contact.email":"Email *","contact.subject":"Assunto *","contact.message":"Descrição *","contact.send":"Enviar mensagem","contact.sending":"A enviar…","contact.error":"Falha no envio. Tenta novamente em breve.","contact.sent_t":"Mensagem enviada","contact.sent_b":"Obrigado! Um operador responderá o mais breve possível.",
       "f.recurring":"Despesa recorrente (adiciona-se sozinha)","f.recur_freq":"Frequência","f.recur_weekly":"Semanal","f.recur_monthly":"Mensal","f.recur_yearly":"Anual","f.recur_hint":"Será adicionada automaticamente na data do pagamento, com um aviso.","recur.title":"{n} despesas recorrentes ativas","recur.next":"próxima","recur.stop":"Parar","recur.stop_confirm":"Parar esta despesa recorrente? Os movimentos já adicionados permanecem.","recur.added_toast":"{n} movimento recorrente adicionado ✓","notif.recur_t":"Movimento recorrente adicionado","notif.recur_b":"{n} movimento(s) recorrente(s) foram adicionados automaticamente à lista de movimentos.",
       "off.vat":"+ IVA","off.vat_note":"Preços sem IVA. O imposto aplicável é calculado no pagamento de acordo com o teu país.",
       "set.tutorial":"Tutorial guiado","set.tutorial_hint":"Revê a visita guiada da plataforma quando quiseres.",
@@ -2164,6 +2170,7 @@
       'rel.all_artists':'Todos os artistas',
     },
     nl:{
+      "contact.btn":"✉ Contact","contact.title":"Contact","contact.intro":"Schrijf ons: we antwoorden zo snel mogelijk per e-mail.","contact.first":"Voornaam *","contact.last":"Achternaam *","contact.email":"E-mail *","contact.subject":"Onderwerp *","contact.message":"Beschrijving *","contact.send":"Bericht versturen","contact.sending":"Versturen…","contact.error":"Versturen mislukt. Probeer het zo opnieuw.","contact.sent_t":"Bericht verzonden","contact.sent_b":"Bedankt! Een medewerker antwoordt je zo snel mogelijk.",
       "f.recurring":"Terugkerende uitgave (voegt zichzelf toe)","f.recur_freq":"Frequentie","f.recur_weekly":"Wekelijks","f.recur_monthly":"Maandelijks","f.recur_yearly":"Jaarlijks","f.recur_hint":"Wordt automatisch toegevoegd op de betaaldatum, met een melding.","recur.title":"{n} actieve terugkerende uitgaven","recur.next":"volgende","recur.stop":"Stoppen","recur.stop_confirm":"Deze terugkerende uitgave stoppen? Reeds toegevoegde bewegingen blijven.","recur.added_toast":"{n} terugkerende beweging toegevoegd ✓","notif.recur_t":"Terugkerende beweging toegevoegd","notif.recur_b":"{n} terugkerende beweging(en) zijn automatisch aan je bewegingenlijst toegevoegd.",
       "off.vat":"+ btw","off.vat_note":"Prijzen exclusief btw. De toepasselijke belasting wordt bij het afrekenen berekend op basis van je land.",
       "set.tutorial":"Begeleide tutorial","set.tutorial_hint":"Bekijk de rondleiding wanneer je wilt opnieuw.",

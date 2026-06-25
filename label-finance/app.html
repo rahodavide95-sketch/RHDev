@@ -1530,7 +1530,8 @@
     <!-- ====== AIUTO & FAQ ====== -->
     <section class="view" id="view-faq">
       <header class="view-head"><div><h1 data-i18n="faq.title">Aiuto &amp; FAQ</h1>
-        <p class="muted" data-i18n="faq.subtitle">Le risposte alle domande più comuni. Cerca una parola o sfoglia per argomento.</p></div></header>
+        <p class="muted" data-i18n="faq.subtitle">Le risposte alle domande più comuni. Cerca una parola o sfoglia per argomento.</p></div>
+        <div class="head-actions"><button class="btn btn-primary" id="contact-open" data-i18n="contact.btn">✉ Contattaci</button></div></header>
 
       <div class="faq-search-wrap">
         <input type="search" id="faq-search" class="input" data-i18n-ph="faq.search" placeholder="Cerca nella guida… (es. ISRC, CSV, royalty, password)">
@@ -2134,6 +2135,39 @@
         <button class="btn btn-ghost btn-sm" id="tour-skip" data-i18n="tour.skip">Salta</button>
         <button class="btn btn-sm" id="tour-prev" data-i18n="tour.prev">Indietro</button>
         <button class="btn btn-primary btn-sm" id="tour-next" data-i18n="tour.next">Avanti</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======= MODAL: Contattaci ======= -->
+  <div class="modal" id="contact-modal" hidden>
+    <div class="modal-card modal-card--sm">
+      <div class="modal-head"><h2 data-i18n="contact.title">Contattaci</h2><button class="modal-x" id="contact-close">✕</button></div>
+      <form id="contact-form" class="form-grid" style="padding:20px">
+        <p class="muted small span-2" data-i18n="contact.intro">Scrivici: ti rispondiamo via email il prima possibile.</p>
+        <label class="fld"><span data-i18n="contact.first">Nome *</span><input class="input" id="ct-first" required></label>
+        <label class="fld"><span data-i18n="contact.last">Cognome *</span><input class="input" id="ct-last" required></label>
+        <label class="fld span-2"><span data-i18n="contact.email">Email *</span><input class="input" id="ct-email" type="email" required></label>
+        <label class="fld span-2"><span data-i18n="contact.subject">Oggetto *</span><input class="input" id="ct-subject" required></label>
+        <label class="fld span-2"><span data-i18n="contact.message">Descrizione *</span><textarea class="input" id="ct-message" rows="5" required></textarea></label>
+        <p class="ct-error span-2" id="ct-error" hidden></p>
+        <div class="modal-foot span-2">
+          <span class="spacer"></span>
+          <button type="button" class="btn" id="contact-cancel" data-i18n="common.cancel">Annulla</button>
+          <button type="submit" class="btn btn-primary" id="ct-send" data-i18n="contact.send">Invia messaggio</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======= MODAL: messaggio inviato ======= -->
+  <div class="modal" id="contact-sent" hidden>
+    <div class="modal-card modal-card--sm">
+      <div style="padding:30px 24px;text-align:center">
+        <div style="font-size:2.6rem;line-height:1">✅</div>
+        <h2 style="margin:10px 0 8px" data-i18n="contact.sent_t">Messaggio inviato</h2>
+        <p class="muted" data-i18n="contact.sent_b">Grazie! Un operatore ti risponderà nel più breve tempo possibile.</p>
+        <button class="btn btn-primary" id="contact-sent-ok" style="margin-top:16px" data-i18n="common.close">Chiudi</button>
       </div>
     </div>
   </div>

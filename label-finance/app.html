@@ -1035,6 +1035,14 @@
       </div>
 
       <div class="panel">
+        <div class="panel-head"><h2 data-i18n="set.tutorial">Tutorial guidato</h2>
+          <span class="muted small" data-i18n="set.tutorial_hint">Rivedi il giro guidato della piattaforma quando vuoi.</span></div>
+        <div class="panel-body">
+          <button class="btn btn-primary" id="tour-restart" data-i18n="tour.restart">↻ Rivedi il tutorial</button>
+        </div>
+      </div>
+
+      <div class="panel">
         <div class="panel-head"><h2 data-i18n="set.rates">Tassi di cambio → EUR</h2>
           <span class="muted small" data-i18n="set.rates_hint">Usati per convertire le valute in euro nei totali.</span></div>
         <div class="rates-grid" id="rates-grid"></div>
@@ -2087,6 +2095,25 @@
   </div>
 
   <div class="toast" id="toast" hidden></div>
+
+  <!-- ======= Tutorial guidato (primo accesso) ======= -->
+  <div class="tour" id="tour" hidden aria-modal="true" role="dialog">
+    <div class="tour-backdrop" id="tour-backdrop"></div>
+    <div class="tour-card" id="tour-card">
+      <div class="tour-ico" id="tour-ico">👋</div>
+      <div class="tour-step" id="tour-step"></div>
+      <h3 class="tour-title" id="tour-title"></h3>
+      <p class="tour-body" id="tour-body"></p>
+      <div class="tour-dots" id="tour-dots"></div>
+      <div class="tour-foot">
+        <label class="tour-never"><input type="checkbox" id="tour-never"> <span data-i18n="tour.never">Non mostrarlo più</span></label>
+        <span class="spacer"></span>
+        <button class="btn btn-ghost btn-sm" id="tour-skip" data-i18n="tour.skip">Salta</button>
+        <button class="btn btn-sm" id="tour-prev" data-i18n="tour.prev">Indietro</button>
+        <button class="btn btn-primary btn-sm" id="tour-next" data-i18n="tour.next">Avanti</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Area di stampa per lo statement royalty (visibile solo in stampa) -->
   <div id="print-area" aria-hidden="true"></div>

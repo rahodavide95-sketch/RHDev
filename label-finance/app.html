@@ -352,7 +352,7 @@
               <option value="out:-1" data-i18n="sort.out_desc">Ordina: Uscite ↓</option>
               <option value="k:1" data-i18n="sort.name_az">Ordina: Nome A–Z</option>
             </select>
-            <button class="btn-export" data-export="group:#table-release" title="Esporta">⤓</button></div>
+            <button class="btn-export" data-export="group:#table-release" data-i18n-title="common.export" title="Esporta">⤓</button></div>
           <div class="table-wrap"><table class="data-table data-table--cards" id="table-release"></table></div>
         </div>
         <div class="panel">
@@ -365,7 +365,7 @@
               <option value="out:-1" data-i18n="sort.out_desc">Ordina: Uscite ↓</option>
               <option value="k:1" data-i18n="sort.name_az">Ordina: Nome A–Z</option>
             </select>
-            <button class="btn-export" data-export="group:#table-artist" title="Esporta">⤓</button></div>
+            <button class="btn-export" data-export="group:#table-artist" data-i18n-title="common.export" title="Esporta">⤓</button></div>
           <div class="table-wrap"><table class="data-table data-table--cards" id="table-artist"></table></div>
         </div>
         <div class="panel">
@@ -378,7 +378,7 @@
               <option value="out:-1" data-i18n="sort.out_desc">Ordina: Uscite ↓</option>
               <option value="k:1" data-i18n="sort.name_az">Ordina: Nome A–Z</option>
             </select>
-            <button class="btn-export" data-export="group:#table-platform" title="Esporta">⤓</button></div>
+            <button class="btn-export" data-export="group:#table-platform" data-i18n-title="common.export" title="Esporta">⤓</button></div>
           <div class="table-wrap"><table class="data-table data-table--cards" id="table-platform"></table></div>
         </div>
         <div class="panel">
@@ -391,7 +391,7 @@
               <option value="out:-1" data-i18n="sort.out_desc">Ordina: Uscite ↓</option>
               <option value="k:1" data-i18n="sort.name_az">Ordina: Nome A–Z</option>
             </select>
-            <button class="btn-export" data-export="group:#table-type" title="Esporta">⤓</button></div>
+            <button class="btn-export" data-export="group:#table-type" data-i18n-title="common.export" title="Esporta">⤓</button></div>
           <div class="table-wrap"><table class="data-table data-table--cards" id="table-type"></table></div>
         </div>
       </div>
@@ -666,7 +666,7 @@
           </div>
           <button class="btn btn-clear" data-clear="events" data-i18n="bulk.clear">Svuota</button>
           <button class="btn btn-cols2" data-colcfg="events" title="Personalizza colonne">⚙</button>
-          <button class="btn btn-export" data-export="events" title="Esporta">⤓ Esporta</button>
+          <button class="btn btn-export" data-export="events" data-i18n-title="common.export" title="Esporta"><span>⤓</span> <span data-i18n="common.export">Esporta</span></button>
           <button class="btn btn-primary" id="evt-new" data-i18n="evt.new">＋ Nuovo evento</button>
         </div>
       </header>
@@ -710,7 +710,7 @@
           <input class="input" id="sup-search" data-i18n-ph="common.search" placeholder="Cerca…">
           <button class="btn btn-clear" data-clear="supports" data-i18n="bulk.clear">Svuota</button>
           <button class="btn btn-cols2" data-colcfg="supports" title="Personalizza colonne">⚙</button>
-          <button class="btn btn-export" data-export="supports" title="Esporta">⤓ Esporta</button>
+          <button class="btn btn-export" data-export="supports" data-i18n-title="common.export" title="Esporta"><span>⤓</span> <span data-i18n="common.export">Esporta</span></button>
           <button class="btn btn-primary" id="sup-new" data-i18n="sup.new">＋ Nuovo support</button>
         </div>
       </header>
@@ -754,7 +754,7 @@
             <button class="vm-btn" data-vm="cards" title="Cards">▦</button>
             <button class="vm-btn" data-vm="list" title="Elenco">☰</button>
           </div>
-          <button class="btn btn-export" data-export="royalty" title="Esporta CSV/Excel/PDF">⤓ Esporta</button>
+          <button class="btn btn-export" data-export="royalty" data-i18n-title="common.export" title="Esporta CSV/Excel/PDF"><span>⤓</span> <span data-i18n="common.export">Esporta</span></button>
         </div>
       </header>
 
@@ -1320,7 +1320,7 @@
           </div>
           <button class="btn btn-clear" data-clear="merch" data-i18n="bulk.clear">Svuota</button>
           <button class="btn btn-cols2" data-colcfg="merch" title="Personalizza colonne">⚙</button>
-          <button class="btn btn-export" data-export="merch" title="Esporta CSV/Excel/PDF">⤓ Esporta</button>
+          <button class="btn btn-export" data-export="merch" data-i18n-title="common.export" title="Esporta CSV/Excel/PDF"><span>⤓</span> <span data-i18n="common.export">Esporta</span></button>
           <button class="btn btn-primary" id="mch-new" data-i18n="mch.new">＋ Nuovo articolo</button>
         </div>
       </header>
@@ -2065,7 +2065,7 @@
           </div>
         </details>
         <h3 class="splits-h" data-i18n="rel.splits_default">Ripartizione predefinita</h3>
-        <p class="muted small">Quote applicate a tutte le tracce della release (salvo override). Il resto fino al 100% resta alla label.</p>
+        <p class="muted small" data-i18n="rel.splits_help">Quote applicate a tutte le tracce della release (salvo override). Il resto fino al 100% resta alla label.</p>
         <div id="r-splits"></div>
         <div class="row-inline" style="margin-top:8px">
           <button type="button" class="btn" id="r-add-split" data-i18n="rel.add_artist">+ Aggiungi artista</button>
@@ -2073,7 +2073,7 @@
         </div>
 
         <h3 class="splits-h" data-i18n="rel.tracks_override">Tracce — override per ISRC</h3>
-        <p class="muted small">Opzionale: quote diverse per singola traccia. Le vendite con quell'ISRC useranno queste quote; le altre usano la predefinita.</p>
+        <p class="muted small" data-i18n="rel.tracks_help">Opzionale: quote diverse per singola traccia. Le vendite con quell'ISRC useranno queste quote; le altre usano la predefinita.</p>
         <div id="r-tracks"></div>
         <button type="button" class="btn" id="r-add-track" style="margin-top:8px" data-i18n="rel.add_track">+ Aggiungi traccia</button>
         <div class="modal-foot" style="margin-top:18px">

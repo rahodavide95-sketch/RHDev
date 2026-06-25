@@ -562,6 +562,7 @@
         <div><div class="title-row"><h1 data-i18n="rel.title">Release</h1><button class="info-btn" data-info="releases" title="Cos'è questa sezione?">i</button></div><p class="muted" id="rel-count-label">0 release</p></div>
         <div class="head-actions">
           <input class="input" id="rel-search" data-i18n-ph="common.search" placeholder="Cerca…">
+          <select class="select" id="rel-artist-filter"><option value="" data-i18n="rel.all_artists">Tutti gli artisti</option></select>
           <div class="vm-toggle" data-vm-sec="releases" data-vm-def="cards">
             <button class="vm-btn" data-vm="cards" title="Cards">▦</button>
             <button class="vm-btn" data-vm="list" title="Elenco">☰</button>
@@ -1138,10 +1139,6 @@
             <div class="row-inline wrap">
               <button class="btn btn-primary" id="art-save" data-i18n="art.save">Salva artista</button>
               <button class="btn btn-ghost" id="art-cancel" data-i18n="common.cancel">Annulla</button>
-            </div>
-            <div class="art-disco" id="art-discography" hidden>
-              <h3 class="art-disco-h"><span data-i18n="art.disco_title">Discografia dell'artista</span> <span class="art-disco-count" id="art-disco-count"></span></h3>
-              <div class="art-disco-list" id="art-disco-list"></div>
             </div>
           </div>
         </div>

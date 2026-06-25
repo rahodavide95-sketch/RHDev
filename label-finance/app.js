@@ -3124,6 +3124,30 @@ function renderArtists(){
 }
 function setArtistPhoto(d){ artistPhotoData=d||''; const ph=$('#art-photo');
   if(ph) ph.innerHTML = artistPhotoData?`<img src="${artistPhotoData}" alt="">`:`<span>${tt('art.photo')}</span>`; }
+/* tutte le release in cui compare un artista (come artista, in traccia o negli split) */
+function artistReleases(name){
+  const nn=normArt(name); if(!nn) return [];
+  const has=raw=>splitArtistNames(raw).some(x=>normArt(x)===nn);
+  return releases().filter(r=>
+    has(r.artist) ||
+    (r.tracks||[]).some(t=>has(t.artist)) ||
+    (r.splits||[]).some(s=>normArt(s.name)===nn) ||
+    (r.tracks||[]).some(t=>(t.splits||[]).some(s=>normArt(s.name)===nn))
+  );
+}
+function renderArtistDisco(name){
+  const box=$('#art-discography'), list=$('#art-disco-list'); if(!box||!list) return;
+  const rels=artistReleases(name);
+  const cnt=$('#art-disco-count'); if(cnt) cnt.textContent=rels.length?`(${rels.length})`:'';
+  if(!rels.length){ box.hidden=true; return; }
+  list.innerHTML=rels.map(r=>`
+    <button class="art-disco-item" data-rel-open="${r.id}" type="button">
+      <span class="art-disco-cat">${esc(r.catalog||'—')}</span>
+      <span class="art-disco-ttl">${esc(r.title||'')}</span>
+      <span class="art-disco-meta">${esc(r.type||'')}${r.year?` · ${esc(r.year)}`:''}</span>
+    </button>`).join('');
+  box.hidden=false;
+}
 function openArtistForm(id){
   editingArtistId=id||null; const a=id?artistById(id):null;
   $('#art-form-title').textContent = a?tt('art.edit'):tt('art.new');
@@ -3132,6 +3156,7 @@ function openArtistForm(id){
   $('#art-iban').value=a?a.iban||'':''; $('#art-split').value=a?(a.split||''):'';
   $('#art-address').value=a?a.address||'':''; $('#art-note').value=a?a.note||'':'';
   setArtistPhoto(a?a.photo:'');
+  if(a) renderArtistDisco(a.name); else { const b=$('#art-discography'); if(b) b.hidden=true; }
   $('#art-form').hidden=false; $('#art-form').scrollIntoView({behavior:'smooth',block:'start'});
 }
 function saveArtist(){

@@ -1439,3 +1439,14 @@ body.gate-signup #gate-signin{opacity:.5}
 .dash-insight-i{font-size:1.1rem;flex:none;line-height:1}
 .dash-insight.ins--in{border-left:3px solid var(--in)}
 .dash-insight.ins--out{border-left:3px solid var(--out)}
+
+/* --- Discografia dell'artista (nel form artista) --- */
+.art-disco{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+.art-disco-h{font-size:1rem;margin-bottom:10px;display:flex;align-items:baseline;gap:8px}
+.art-disco-count{color:var(--muted);font-weight:600;font-size:.9rem}
+.art-disco-list{display:flex;flex-direction:column;gap:6px}
+.art-disco-item{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--panel-2);border:1px solid var(--line);border-radius:9px;padding:9px 12px;cursor:pointer;font:inherit;color:var(--text);transition:.12s}
+.art-disco-item:hover{border-color:var(--accent)}
+.art-disco-cat{font-weight:700;font-size:.88rem;flex:none}
+.art-disco-ttl{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.art-disco-meta{color:var(--muted);font-size:.8rem;flex:none}

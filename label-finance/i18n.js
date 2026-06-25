@@ -245,6 +245,7 @@
       'rel.dup_confirm':'Esiste già una release con catalogo/UPC "{cat}". Salvare comunque?',
       'tx.anomaly_confirm':'Importo {v} molto più alto del solito (mediana {m}). Salvare comunque?','imp.chk_outlier':'{n} righe con importo fuori scala (molto più alto della media)',
       'notif.recoup_t':'Anticipo recuperato','notif.recoup_b':'{name} ha recuperato l\'anticipo: ora ci sono {amt} da pagare. Ho aggiunto un task di pagamento.',
+      'art.disco_title':'Discografia dell\'artista',
     },
     en:{
       'art.enrich_msg':'{n} artists found in transactions, not yet in your roster: {names}','art.enrich_add':'＋ Add artists','art.enrich_none':'No new artists to add.','art.enrich_confirm':'Add {n} artists to your roster? You can fill in their details later.','art.enrich_added':'{n} artists added ✓',
@@ -620,6 +621,7 @@
       'rel.dup_confirm':'A release with catalog/UPC "{cat}" already exists. Save anyway?',
       'tx.anomaly_confirm':'Amount {v} is much higher than usual (median {m}). Save anyway?','imp.chk_outlier':'{n} rows with an out-of-scale amount (far above the median)',
       'notif.recoup_t':'Advance recouped','notif.recoup_b':'{name} has recouped their advance: {amt} is now payable. I added a payment task.',
+      'art.disco_title':'Artist\'s discography',
     },
     es:{
       'art.enrich_msg':'{n} artistas encontrados en los movimientos y aún no en tu lista: {names}','art.enrich_add':'＋ Añadir artistas','art.enrich_none':'No hay nuevos artistas que añadir.','art.enrich_confirm':'¿Añadir {n} artistas a tu lista? Podrás completar sus datos después.','art.enrich_added':'{n} artistas añadidos ✓',
@@ -976,6 +978,7 @@
       'rel.dup_confirm':'Ya existe un lanzamiento con catálogo/UPC "{cat}". ¿Guardar de todos modos?',
       'tx.anomaly_confirm':'Importe {v} mucho mayor de lo habitual (mediana {m}). ¿Guardar de todos modos?','imp.chk_outlier':'{n} filas con importe fuera de escala (muy por encima de la mediana)',
       'notif.recoup_t':'Anticipo recuperado','notif.recoup_b':'{name} ha recuperado el anticipo: ahora hay {amt} por pagar. He añadido una tarea de pago.',
+      'art.disco_title':'Discografía del artista',
     },
     fr:{
       'art.enrich_msg':'{n} artistes trouvés dans les mouvements, pas encore dans votre répertoire : {names}','art.enrich_add':'＋ Ajouter les artistes','art.enrich_none':'Aucun nouvel artiste à ajouter.','art.enrich_confirm':'Ajouter {n} artistes à votre répertoire ? Vous pourrez compléter leurs données ensuite.','art.enrich_added':'{n} artistes ajoutés ✓',
@@ -1351,6 +1354,7 @@
       'rel.dup_confirm':'Une sortie avec le catalogue/UPC "{cat}" existe déjà. Enregistrer quand même ?',
       'tx.anomaly_confirm':'Montant {v} bien plus élevé que d\'habitude (médiane {m}). Enregistrer quand même ?','imp.chk_outlier':'{n} lignes avec un montant hors échelle (bien au-dessus de la médiane)',
       'notif.recoup_t':'Avance recoupée','notif.recoup_b':'{name} a recoupé son avance : {amt} sont maintenant à payer. J\'ai ajouté une tâche de paiement.',
+      'art.disco_title':'Discographie de l\'artiste',
     },
     de:{
       'art.enrich_msg':'{n} Künstler in den Bewegungen gefunden, noch nicht in deiner Liste: {names}','art.enrich_add':'＋ Künstler hinzufügen','art.enrich_none':'Keine neuen Künstler hinzuzufügen.','art.enrich_confirm':'{n} Künstler zur Liste hinzufügen? Du kannst die Daten später ergänzen.','art.enrich_added':'{n} Künstler hinzugefügt ✓',
@@ -1726,6 +1730,7 @@
       'rel.dup_confirm':'Es existiert bereits ein Release mit Katalog/UPC "{cat}". Trotzdem speichern?',
       'tx.anomaly_confirm':'Betrag {v} viel höher als üblich (Median {m}). Trotzdem speichern?','imp.chk_outlier':'{n} Zeilen mit Betrag außerhalb der Skala (weit über dem Median)',
       'notif.recoup_t':'Vorschuss recoupt','notif.recoup_b':'{name} hat den Vorschuss recoupt: {amt} sind jetzt fällig. Ich habe eine Zahlungsaufgabe hinzugefügt.',
+      'art.disco_title':'Diskografie des Künstlers',
     },
     pt:{
       'art.enrich_msg':'{n} artistas encontrados nos movimentos, ainda não no teu elenco: {names}','art.enrich_add':'＋ Adicionar artistas','art.enrich_none':'Nenhum novo artista para adicionar.','art.enrich_confirm':'Adicionar {n} artistas ao teu elenco? Podes completar os dados depois.','art.enrich_added':'{n} artistas adicionados ✓',
@@ -2101,6 +2106,7 @@
       'rel.dup_confirm':'Já existe um lançamento com catálogo/UPC "{cat}". Guardar mesmo assim?',
       'tx.anomaly_confirm':'Valor {v} muito acima do habitual (mediana {m}). Guardar mesmo assim?','imp.chk_outlier':'{n} linhas com valor fora de escala (muito acima da mediana)',
       'notif.recoup_t':'Adiantamento recuperado','notif.recoup_b':'{name} recuperou o adiantamento: agora há {amt} a pagar. Adicionei uma tarefa de pagamento.',
+      'art.disco_title':'Discografia do artista',
     },
     nl:{
       'art.enrich_msg':'{n} artiesten gevonden in de bewegingen, nog niet in je lijst: {names}','art.enrich_add':'＋ Artiesten toevoegen','art.enrich_none':'Geen nieuwe artiesten om toe te voegen.','art.enrich_confirm':'{n} artiesten aan je lijst toevoegen? Je kunt de gegevens later invullen.','art.enrich_added':'{n} artiesten toegevoegd ✓',
@@ -2476,6 +2482,7 @@
       'rel.dup_confirm':'Er bestaat al een release met catalogus/UPC "{cat}". Toch opslaan?',
       'tx.anomaly_confirm':'Bedrag {v} veel hoger dan normaal (mediaan {m}). Toch opslaan?','imp.chk_outlier':'{n} rijen met een bedrag buiten schaal (ver boven de mediaan)',
       'notif.recoup_t':'Voorschot gerecoupt','notif.recoup_b':'{name} heeft het voorschot gerecoupt: {amt} is nu te betalen. Ik heb een betaaltaak toegevoegd.',
+      'art.disco_title':'Discografie van de artiest',
     },
   };
 

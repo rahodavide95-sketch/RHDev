@@ -1452,6 +1452,80 @@ function addArtistsFromTx(){
 $('#art-enrich-add')?.addEventListener('click', addArtistsFromTx);
 $('#art-enrich-x')?.addEventListener('click', ()=>{ const names=unlinkedArtists(); artEnrichDismissed=names.length+'|'+names.slice(0,4).join(',').toLowerCase(); const b=$('#art-enrich-banner'); if(b) b.hidden=true; });
 
+/* ---- Artisti duplicati in rubrica: stesso artista sotto nomi diversi ---- */
+const ART_DUP_STOP=new Set(['dj','mc','the','feat','ft','featuring','official','prod','prods','x']);
+function artTokens(name){ return normArt(name).split(' ').filter(Boolean); }
+function duplicateArtists(){
+  const arts=(DB.artists||[]).filter(a=>(a.name||'').trim());
+  const pairs=[]; const seen=new Set();
+  for(let i=0;i<arts.length;i++){
+    for(let j=i+1;j<arts.length;j++){
+      const A=arts[i], B=arts[j];
+      const na=normArt(A.name), nb=normArt(B.name);
+      if(!na||!nb) continue;
+      let dup=false;
+      if(na===nb) dup=true;
+      else {
+        // uguali una volta tolti i prefissi di ruolo (dj/mc/the…)
+        const ma=artTokens(A.name).filter(t=>!ART_DUP_STOP.has(t)).join(' ');
+        const mb=artTokens(B.name).filter(t=>!ART_DUP_STOP.has(t)).join(' ');
+        if(ma && ma===mb) dup=true;
+      }
+      if(!dup) continue;
+      const key=[na,nb].sort().join('<'); if(seen.has(key)) continue; seen.add(key);
+      // canonico = quello con più release; a parità, profilo più completo
+      const ca=artistReleases(A.name).length, cb=artistReleases(B.name).length;
+      let keep=A, drop=B;
+      const full=a=>(a.legal||a.email||a.iban||a.phone)?1:0;
+      if(cb>ca || (cb===ca && full(B)>full(A))){ keep=B; drop=A; }
+      pairs.push({keep, drop});
+    }
+  }
+  return pairs;
+}
+function mergeArtists(keepName, dropName){
+  const nd=normArt(dropName); if(!nd) return;
+  const fix=raw=>{
+    if(!raw) return raw;
+    const parts=splitArtistNames(raw); if(!parts.length) return raw;
+    let changed=false;
+    const out=parts.map(p=>{ if(normArt(p)===nd){ changed=true; return keepName; } return p; });
+    return changed ? out.join(', ') : raw;
+  };
+  (DB.transactions||[]).forEach(t=>{ t.artist=fix(t.artist); });
+  (DB.releases||[]).forEach(r=>{
+    r.artist=fix(r.artist);
+    (r.splits||[]).forEach(s=>{ if(normArt(s.name)===nd) s.name=keepName; });
+    (r.tracks||[]).forEach(tr=>{ tr.artist=fix(tr.artist); (tr.splits||[]).forEach(s=>{ if(normArt(s.name)===nd) s.name=keepName; }); });
+  });
+  DB.artists=(DB.artists||[]).filter(a=>!(normArt(a.name)===nd && a.name!==keepName));
+  save(); renderArtists();
+  toast(tt('art.dup_merged').replace('{name}',keepName));
+}
+let artDupDismissed=''; let _artDupPairs=[];
+function artDupSig(pairs){ return pairs.map(p=>[normArt(p.keep.name),normArt(p.drop.name)].sort().join('<')).sort().join('|'); }
+function updateArtDupPanel(){
+  const b=$('#art-dup'); if(!b) return;
+  const pairs=duplicateArtists(); _artDupPairs=pairs;
+  const sig=artDupSig(pairs);
+  if(!pairs.length || sig===artDupDismissed){ b.hidden=true; return; }
+  const ttl=$('.rel-gaps-title',b); if(ttl) ttl.textContent=tt('art.dup_title').replace('{n}',pairs.length);
+  $('#art-dup-list').innerHTML = pairs.slice(0,8).map((p,i)=>`
+    <div class="art-dup-item">
+      <span class="art-dup-names"><b>${esc(p.drop.name)}</b> → <b>${esc(p.keep.name)}</b></span>
+      <span class="spacer"></span>
+      <button class="btn btn-sm btn-primary" data-dup-merge="${i}" type="button">${tt('art.dup_merge')}</button>
+    </div>`).join('') + (pairs.length>8?`<div class="rel-gap-more muted small">+${pairs.length-8}</div>`:'');
+  b.hidden=false;
+}
+$('#art-dup-list')?.addEventListener('click', e=>{
+  const btn=e.target.closest('[data-dup-merge]'); if(!btn) return;
+  const p=_artDupPairs[+btn.dataset.dupMerge]; if(!p) return;
+  if(!confirm(tt('art.dup_confirm').replace('{drop}',p.drop.name).replace('{keep}',p.keep.name))) return;
+  mergeArtists(p.keep.name, p.drop.name);
+});
+$('#art-dup-x')?.addEventListener('click', ()=>{ artDupDismissed=artDupSig(duplicateArtists()); const b=$('#art-dup'); if(b) b.hidden=true; });
+
 function openRelease(id){
   const r = id ? releases().find(x=>x.id===id) : null;
   artistDatalist();
@@ -3170,6 +3244,7 @@ function renderArtists(){
   mountPager(grid,'artists',info);
   syncVMButtons();
   updateArtEnrichBanner();
+  updateArtDupPanel();
 }
 function setArtistPhoto(d){ artistPhotoData=d||''; const ph=$('#art-photo');
   if(ph) ph.innerHTML = artistPhotoData?`<img src="${artistPhotoData}" alt="">`:`<span>${tt('art.photo')}</span>`; }

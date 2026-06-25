@@ -2313,7 +2313,36 @@ function openTx(id){
   $('#f-currency').value=t?.currency||'EUR'; $('#f-note').value=t?.note||'';
   $('#f-delete').hidden=!t;
   $('#tx-modal').hidden=false;
+  updateExpCatHint();
 }
+/* ---- Auto-categoria spese: deduce la categoria dalle parole della descrizione ---- */
+const EXP_CATS=['production','promo','distribution','artwork','manufacturing','shipping','software','fees','travel','other'];
+const EXP_RULES=[
+  ['production',['master','mastering','mix','mixing','record','recording','studio','registrazion','produzion','beat','vocal','tracking','session','sound design']],
+  ['promo',['adv','ads','advert','promo','marketing','playlist',' pr ','pubblicit','influencer','sponsor','campaign','campagn','facebook','google ads','tiktok ad','meta ads','spotify ad']],
+  ['distribution',['distrokid','distribut','distribuz','tunecore','cd baby','cdbaby','believe','label engine','aggregat','symphonic','ditto','spinnup']],
+  ['artwork',['artwork','cover','design','grafic','foto','photo','video','videoclip','visual','logo','render','3d']],
+  ['manufacturing',['vinyl','vinile','pressing','press','stampa','duplicat','manifattur','test pressing','lacquer','cd duplica']],
+  ['shipping',['shipping','spedizion','courier','corriere','postage','affranc','dhl','ups','fedex','poste','tracking number']],
+  ['software',['software','plugin','subscription','abbonament','saas','licens','licenz','canva','adobe','splice','app store','membership']],
+  ['fees',['fee','commission','commissione','bank','banca','paypal','stripe','wise','process','tassa',' iva',' vat','withhold','ritenut','bonifico','imposta']],
+  ['travel',['travel','viaggio','hotel','flight','volo','treno','train','fuel','benzina','trasfert','taxi','rental','noleggio','soggiorno']],
+];
+function expenseCategory(t){
+  if(t&&t.type==='merch') return 'manufacturing';
+  const hay=(' '+((t&&t.product)||'')+' '+((t&&t.note)||'')+' '+((t&&t.platform)||'')+' '+((t&&t.type)||'')+' ').toLowerCase();
+  for(const [cat,kws] of EXP_RULES){ if(kws.some(k=>hay.includes(k))) return cat; }
+  return 'other';
+}
+function updateExpCatHint(){
+  const el=$('#f-cat-hint'); if(!el) return;
+  if(($('#f-kind')?.value)!=='expense'){ el.hidden=true; return; }
+  const cat=expenseCategory({product:$('#f-product')?.value, note:$('#f-note')?.value, platform:$('#f-platform')?.value, type:$('#f-type')?.value});
+  el.innerHTML=`<span class="muted small">${tt('ecat.auto')}</span> <span class="f-cat-badge">${tt('ecat.'+cat)}</span>`;
+  el.hidden=false;
+}
+['#f-product','#f-note','#f-platform','#f-type'].forEach(s=>$(s)?.addEventListener('input',updateExpCatHint));
+$('#f-type')?.addEventListener('change',updateExpCatHint);
 let curKind='income';
 $('#btn-add-income').onclick=()=>{curKind='income';openTx(null);};
 $('#btn-add-expense').onclick=()=>{curKind='expense';openTx(null);};
@@ -3165,9 +3194,9 @@ function renderExtraWidgets(txs){
       <div class="wstat"><span>${tt('dash.m_net')}</span><b class="${net>=0?'pos':'neg'}">${fmtMoney(net)}</b></div>
       <div class="wstat wstat--big"><span>${tt('dash.m_margin')}</span><b class="${mar>=0?'pos':'neg'}">${mar.toFixed(1)}%</b></div>`; }
   const exb=$('#expenses-body');
-  if(exb){ const g={}; txs.filter(t=>!_inc(t)).forEach(t=>{ const k=(t.product||t.type||'—').trim()||'—'; g[k]=(g[k]||0)+Math.abs(_eur(t)); });
-    const rows=Object.entries(g).sort((a,b)=>b[1]-a[1]).slice(0,6); const max=Math.max(1,...rows.map(r=>r[1]));
-    exb.innerHTML = rows.length ? rows.map(([k,v])=>`<div class="top-row"><span class="top-name">${esc(k)}</span>
+  if(exb){ const g={}; txs.filter(t=>!_inc(t)).forEach(t=>{ const k=expenseCategory(t); g[k]=(g[k]||0)+Math.abs(_eur(t)); });
+    const rows=Object.entries(g).sort((a,b)=>b[1]-a[1]).slice(0,8); const max=Math.max(1,...rows.map(r=>r[1]));
+    exb.innerHTML = rows.length ? rows.map(([k,v])=>`<div class="top-row"><span class="top-name">${esc(tt('ecat.'+k))}</span>
         <span class="top-bar top-bar--neg"><i style="width:${Math.round(v/max*100)}%"></i></span><span class="top-val neg">${fmtMoney(v)}</span></div>`).join('')
       : `<p class="muted">${tt('dash.exp_none')}</p>`; }
   const pyb=$('#payable-body');

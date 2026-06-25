@@ -1435,6 +1435,8 @@ body.gate-signup #gate-signin{opacity:.5}
 .pay-amt{font-weight:700;flex:none}
 .pay-go{font-size:.78rem;color:var(--muted);flex:none}
 @media(max-width:560px){ .pay-row{flex-wrap:wrap;gap:4px 8px} .pay-go{flex:1 1 100%} }
+.f-cat-hint{display:flex;align-items:center;gap:8px;margin-top:-4px}
+.f-cat-badge{font-size:.78rem;font-weight:700;padding:3px 10px;border-radius:20px;background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 32%,var(--line))}
 @media(max-width:560px){ .rel-gap-item{flex-wrap:wrap;gap:4px 8px} .rel-gap-ttl{flex:1 1 100%;order:3} .art-dup-item{flex-wrap:wrap} }
 
 /* --- Controlli intelligenti pre-import --- */

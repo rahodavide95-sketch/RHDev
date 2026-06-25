@@ -15,7 +15,8 @@ const ANTHROPIC_MODEL = Deno.env.get("ANTHROPIC_MODEL") ?? "claude-opus-4-8";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
-const AI_PLANS = new Set(["studio", "agency"]);
+// Allineato al gating lato client (FEATURE_MIN.ai = 'biglabel'): tutti i piani a pagamento.
+const AI_PLANS = new Set(["biglabel", "studio", "agency"]);
 
 const cors = {
   "Access-Control-Allow-Origin": "*",

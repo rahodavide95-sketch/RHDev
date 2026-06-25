@@ -1026,6 +1026,19 @@
               </div>
               <p class="muted small" id="pw-status"></p>
             </details>
+
+            <details class="pw-change" id="email-change-box" style="margin-top:12px">
+              <summary data-i18n="set.change_email">Cambia email</summary>
+              <div class="form-grid" style="margin-top:12px">
+                <label class="span-2"><span data-i18n="set.email_current">Email attuale</span>
+                  <input id="email-current" class="input" type="email" disabled autocomplete="off"></label>
+                <label class="span-2"><span data-i18n="set.email_new">Nuova email</span>
+                  <input id="email-new" class="input" type="email" autocomplete="email" data-i18n-ph="set.email_new_ph" placeholder="nuova@email.com"></label>
+                <div class="span-2"><button class="btn btn-primary" id="email-save" data-i18n="set.update_email">Cambia email</button></div>
+              </div>
+              <p class="muted small" id="email-status"></p>
+              <p class="muted small" data-i18n="set.email_hint">Per sicurezza riceverai un link di conferma: il cambio diventa effettivo solo dopo aver cliccato il link nell'email.</p>
+            </details>
           </div>
         </div>
       </div>
@@ -2188,11 +2201,11 @@
   <!-- Area di stampa per lo statement royalty (visibile solo in stampa) -->
   <div id="print-area" aria-hidden="true"></div>
 
-  <script src="html2pdf.bundle.min.js?v=80"></script>
-  <script src="app.js?v=80"></script>
-  <script src="config.js?v=80"></script>
-  <script src="i18n.js?v=80"></script>
+  <script src="html2pdf.bundle.min.js?v=82"></script>
+  <script src="app.js?v=82"></script>
+  <script src="config.js?v=82"></script>
+  <script src="i18n.js?v=82"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="sync.js?v=80"></script>
+  <script src="sync.js?v=82"></script>
 </body>
 </html>

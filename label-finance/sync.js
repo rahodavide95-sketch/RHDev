@@ -26,6 +26,9 @@
     if(/Email not confirmed/i.test(m)) return 'Email non confermata: controlla la posta (o disattiva la conferma su Supabase), poi accedi.';
     if(/Invalid login credentials/i.test(m)) return 'Email o password non corretti.';
     if(/already registered|already.*registered|User already/i.test(m)) return 'Email già registrata: prova ad accedere.';
+    if(/already.*(in use|exists|been used)|email_exists|email address.*registered/i.test(m)) return 'Questa email è già usata da un altro account. Scegline un\'altra.';
+    if(/invalid.*email|email.*invalid|unable to validate email/i.test(m)) return 'Indirizzo email non valido.';
+    if(/for security purposes|rate limit|too many/i.test(m)) return 'Troppi tentativi ravvicinati: riprova tra qualche minuto.';
     if(/at least 6|password.*6/i.test(m)) return 'La password deve avere almeno 6 caratteri.';
     return m;
   }
@@ -102,6 +105,7 @@
     if($('account-name')) $('account-name').value = md.full_name || p.name || '';
     if($('account-surname')) $('account-surname').value = md.last_name || p.surname || '';
     if($('account-label')) $('account-label').value = md.label_name || p.label || '';
+    if($('email-current')) $('email-current').value = (user && user.email) || '';
   }
 
   /* ---------- Client ---------- */
@@ -276,6 +280,19 @@
     $('pw-new').value=''; $('pw-new2').value='';
     set('Password aggiornata ✓',true);
   }
+  async function changeEmail(){
+    const st=$('email-status'); const set=(m,ok)=>{ if(st){ st.textContent=m; st.style.color = ok?'var(--in)':'var(--out)'; } };
+    if(!client || !user){ set('Devi essere connesso per cambiare email.',false); return; }
+    const ne=($('email-new').value||'').trim();
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(ne)){ set('Inserisci un indirizzo email valido.',false); return; }
+    if(ne.toLowerCase()===(user.email||'').toLowerCase()){ set('La nuova email è uguale a quella attuale.',false); return; }
+    set('Invio del link di conferma…',true);
+    const redirect = location.href.split('#')[0];
+    const { error } = await client.auth.updateUser({ email:ne }, { emailRedirectTo: redirect });
+    if(error){ set(authMsg(error.message),false); return; }
+    $('email-new').value='';
+    set('Ti abbiamo inviato un link di conferma a '+ne+' (controlla anche la posta attuale). Il cambio sarà effettivo solo dopo aver cliccato il link.',true);
+  }
 
   /* ---------- Recupero password: porta l'utente al cambio password ---------- */
   function onRecovery(){
@@ -321,6 +338,7 @@
     $('sync-pull')?.addEventListener('click', ()=>{ setStatus('Aggiorno…'); pull(); });
     $('account-save')?.addEventListener('click', saveAccount);
     $('pw-save')?.addEventListener('click', changePassword);
+    $('email-save')?.addEventListener('click', changeEmail);
   }
 
   wire(); wireEyes();

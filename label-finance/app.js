@@ -567,6 +567,28 @@ function deltaTag(cur,prev,goodUp){
   return `<span class="kpi-delta ${good?'up':'down'}" title="rispetto al periodo precedente">${up?'▲':'▼'} ${Math.abs(pct)}%</span>`;
 }
 /* Insight proattivi (dashboard): cosa è cambiato e cosa richiede attenzione, senza AI */
+/* stagionalità: media netto per mese-calendario su più anni → mese migliore per pubblicare */
+function seasonality(){
+  const byMonth={}; const periods=new Set();
+  (DB.transactions||[]).forEach(t=>{ const d=t.date; if(!d||d.length<7) return;
+    const mm=+d.slice(5,7); if(!mm) return;
+    const v=(t.kind==='income'?1:-1)*Math.abs(toEur(t.net,t.currency));
+    (byMonth[mm]??={sum:0,years:new Set()}); byMonth[mm].sum+=v; byMonth[mm].years.add(d.slice(0,4));
+    periods.add(d.slice(0,7)); });
+  if(periods.size<10) return null;                       // servono abbastanza dati
+  const rows=Object.keys(byMonth).map(mm=>({mm:+mm, avg:byMonth[mm].sum/byMonth[mm].years.size}));
+  if(rows.length<6) return null;
+  rows.sort((a,b)=>b.avg-a.avg);
+  return { best:rows[0], worst:rows[rows.length-1] };
+}
+function monthName(mm){ try{ return new Date(2021,mm-1,1).toLocaleString(window.LFI18N?window.LFI18N.lang:'it',{month:'long'}); }catch(e){ return ''+mm; } }
+/* valute usate nei movimenti senza cambio impostato → conteggiate 1:1 (errato) */
+function fxIssues(){
+  const rates=DB.rates||{}; const bad={};
+  (DB.transactions||[]).forEach(t=>{ const c=(t.currency||'EUR').toUpperCase(); if(c==='EUR') return;
+    if(rates[c]==null){ bad[c]=(bad[c]||0)+1; } });
+  return bad;
+}
 function renderInsights(txs, cur, prev){
   const box=$('#dash-insights'), list=$('#dash-insights-list'); if(!box||!list) return;
   const out=[];
@@ -584,6 +606,11 @@ function renderInsights(txs, cur, prev){
   if(over) out.push({ico:'⏰', cls:'out', go:'tasks', t:tt('ins.overdue').replace('{n}',over)});
   if(typeof computeRecoup==='function'){ try{ const u=computeRecoup().filter(r=>r.unrecouped>0).length;
     if(u) out.push({ico:'🧾', cls:'', go:'royalties', t:tt('ins.unrecouped').replace('{n}',u)}); }catch(e){} }
+  const fx=fxIssues(); const fxCur=Object.keys(fx);
+  if(fxCur.length){ const n=fxCur.reduce((s,c)=>s+fx[c],0);
+    out.push({ico:'💱', cls:'out', go:'settings', t:tt('ins.fx').replace('{n}',n).replace('{cur}',fxCur.join(', '))}); }
+  const seas=seasonality();
+  if(seas && seas.best.avg>0) out.push({ico:'📅', cls:'in', go:'planning', t:tt('ins.season').replace('{m}',monthName(seas.best.mm)).replace('{amt}',fmtMoney(seas.best.avg))});
   list.innerHTML=out.map(o=>`<button class="dash-insight ins--${o.cls||'n'}" ${o.go?`data-goto="${o.go}"`:''} type="button"><span class="dash-insight-i">${o.ico}</span><span>${esc(o.t)}</span></button>`).join('');
   box.hidden=!out.length;
   // posiziona la card subito sotto i KPI (il sistema widget sposta gli altri elementi)
@@ -3864,21 +3891,41 @@ function merchHealth(){
     return null;
   }).filter(Boolean);
 }
+/* prezzo unitario incoerente: stesso prodotto venduto a prezzi molto diversi nei movimenti */
+function merchPriceIssues(){
+  const g={};
+  (DB.transactions||[]).forEach(t=>{ if(t.kind!=='income' || (t.type||'')!=='merch') return;
+    const qty=Math.abs(+t.qty||0)||1; const net=Math.abs(toEur(t.net,t.currency)); if(net<=0) return;
+    const k=normArt(t.product||t.catalog||''); if(!k) return;
+    (g[k]??={name:(t.product||t.catalog||'—'), units:[]}).units.push(net/qty); });
+  const out=[];
+  Object.values(g).forEach(o=>{ const u=o.units; if(u.length<3) return;
+    const s=u.slice().sort((a,b)=>a-b); const med=s[Math.floor(s.length/2)];
+    const min=s[0], max=s[s.length-1];
+    if(med>0 && (max-min)/med>0.35) out.push({name:o.name, min, max, n:u.length}); });
+  return out.sort((a,b)=>(b.max-b.min)-(a.max-a.min));
+}
 let merchHealthDismissed='';
 function updateMerchHealth(){
   const b=$('#merch-health'); if(!b) return;
-  const list=merchHealth(); const sig=list.map(x=>x.m.id+x.lvl).join(',');
-  if(!list.length || sig===merchHealthDismissed){ b.hidden=true; return; }
-  const ttl=$('.merch-health-title',b); if(ttl) ttl.textContent=tt('mh.title').replace('{n}',list.length);
+  const list=merchHealth(); const price=merchPriceIssues();
+  const sig=list.map(x=>x.m.id+x.lvl).join(',')+'|'+price.map(p=>p.name+p.n).join(',');
+  if((!list.length && !price.length) || sig===merchHealthDismissed){ b.hidden=true; return; }
+  const ttl=$('.merch-health-title',b); if(ttl) ttl.textContent=tt('mh.title').replace('{n}',list.length+price.length);
   $('#merch-health-list').innerHTML=list.map(x=>`
     <button class="rel-gap-item" data-mch-edit="${x.m.id}" type="button">
       <span class="rel-gap-cat">${esc(x.m.name||'—')}</span>
       <span class="rel-gap-ttl" style="flex:1 1 auto;white-space:normal">${tt(x.lvl==='neg'?'mh.loss':'mh.low').replace('{u}',fmtMoney(x.unit))}</span>
       <span class="rel-gap-tag rel-gap-tag--err">${tt('mh.suggest').replace('{p}',fmtMoney(x.suggest))}</span>
-    </button>`).join('');
+    </button>`).join('') + price.map(p=>`
+    <div class="rel-gap-item" style="cursor:default">
+      <span class="rel-gap-cat">${esc(p.name)}</span>
+      <span class="rel-gap-ttl" style="flex:1 1 auto;white-space:normal">${tt('mh.price').replace('{min}',fmtMoney(p.min)).replace('{max}',fmtMoney(p.max)).replace('{n}',p.n)}</span>
+      <span class="rel-gap-tag rel-gap-tag--err">${tt('mh.price_tag')}</span>
+    </div>`).join('');
   b.hidden=false;
 }
-$('#merch-health-x')?.addEventListener('click', ()=>{ const list=merchHealth(); merchHealthDismissed=list.map(x=>x.m.id+x.lvl).join(','); const b=$('#merch-health'); if(b) b.hidden=true; });
+$('#merch-health-x')?.addEventListener('click', ()=>{ const list=merchHealth(), price=merchPriceIssues(); merchHealthDismissed=list.map(x=>x.m.id+x.lvl).join(',')+'|'+price.map(p=>p.name+p.n).join(','); const b=$('#merch-health'); if(b) b.hidden=true; });
 let merchSort={col:'sold',dir:-1};   // di default: più venduti
 function sortMerch(arr){
   const k=merchSort.col, d=merchSort.dir;

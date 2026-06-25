@@ -247,6 +247,7 @@
       'notif.recoup_t':'Anticipo recuperato','notif.recoup_b':'{name} ha recuperato l\'anticipo: ora ci sono {amt} da pagare. Ho aggiunto un task di pagamento.',
       'art.disco_title':'Discografia dell\'artista',
       'rel.gap_split_over':'Quote >100%','rel.gap_upc_bad':'UPC non valido','rel.gap_isrc_bad':'ISRC non valido','rel.gap_type':'Tipo/tracce',
+      'mh.title':'{n} articoli con margine da rivedere','mh.loss':'In perdita: margine {u} a pezzo','mh.low':'Margine basso: {u} a pezzo','mh.suggest':'Min. consigliato {p}',
     },
     en:{
       'art.enrich_msg':'{n} artists found in transactions, not yet in your roster: {names}','art.enrich_add':'＋ Add artists','art.enrich_none':'No new artists to add.','art.enrich_confirm':'Add {n} artists to your roster? You can fill in their details later.','art.enrich_added':'{n} artists added ✓',
@@ -624,6 +625,7 @@
       'notif.recoup_t':'Advance recouped','notif.recoup_b':'{name} has recouped their advance: {amt} is now payable. I added a payment task.',
       'art.disco_title':'Artist\'s discography',
       'rel.gap_split_over':'Splits >100%','rel.gap_upc_bad':'Invalid UPC','rel.gap_isrc_bad':'Invalid ISRC','rel.gap_type':'Type/tracks',
+      'mh.title':'{n} items with margin to review','mh.loss':'At a loss: {u} margin per unit','mh.low':'Low margin: {u} per unit','mh.suggest':'Suggested min {p}',
     },
     es:{
       'art.enrich_msg':'{n} artistas encontrados en los movimientos y aún no en tu lista: {names}','art.enrich_add':'＋ Añadir artistas','art.enrich_none':'No hay nuevos artistas que añadir.','art.enrich_confirm':'¿Añadir {n} artistas a tu lista? Podrás completar sus datos después.','art.enrich_added':'{n} artistas añadidos ✓',
@@ -982,6 +984,7 @@
       'notif.recoup_t':'Anticipo recuperado','notif.recoup_b':'{name} ha recuperado el anticipo: ahora hay {amt} por pagar. He añadido una tarea de pago.',
       'art.disco_title':'Discografía del artista',
       'rel.gap_split_over':'Cuotas >100%','rel.gap_upc_bad':'UPC no válido','rel.gap_isrc_bad':'ISRC no válido','rel.gap_type':'Tipo/pistas',
+      'mh.title':'{n} artículos con margen a revisar','mh.loss':'En pérdida: margen {u} por unidad','mh.low':'Margen bajo: {u} por unidad','mh.suggest':'Mín. recomendado {p}',
     },
     fr:{
       'art.enrich_msg':'{n} artistes trouvés dans les mouvements, pas encore dans votre répertoire : {names}','art.enrich_add':'＋ Ajouter les artistes','art.enrich_none':'Aucun nouvel artiste à ajouter.','art.enrich_confirm':'Ajouter {n} artistes à votre répertoire ? Vous pourrez compléter leurs données ensuite.','art.enrich_added':'{n} artistes ajoutés ✓',
@@ -1359,6 +1362,7 @@
       'notif.recoup_t':'Avance recoupée','notif.recoup_b':'{name} a recoupé son avance : {amt} sont maintenant à payer. J\'ai ajouté une tâche de paiement.',
       'art.disco_title':'Discographie de l\'artiste',
       'rel.gap_split_over':'Parts >100%','rel.gap_upc_bad':'UPC invalide','rel.gap_isrc_bad':'ISRC invalide','rel.gap_type':'Type/pistes',
+      'mh.title':'{n} articles avec marge à revoir','mh.loss':'En perte : marge {u} par unité','mh.low':'Marge faible : {u} par unité','mh.suggest':'Min. conseillé {p}',
     },
     de:{
       'art.enrich_msg':'{n} Künstler in den Bewegungen gefunden, noch nicht in deiner Liste: {names}','art.enrich_add':'＋ Künstler hinzufügen','art.enrich_none':'Keine neuen Künstler hinzuzufügen.','art.enrich_confirm':'{n} Künstler zur Liste hinzufügen? Du kannst die Daten später ergänzen.','art.enrich_added':'{n} Künstler hinzugefügt ✓',
@@ -1736,6 +1740,7 @@
       'notif.recoup_t':'Vorschuss recoupt','notif.recoup_b':'{name} hat den Vorschuss recoupt: {amt} sind jetzt fällig. Ich habe eine Zahlungsaufgabe hinzugefügt.',
       'art.disco_title':'Diskografie des Künstlers',
       'rel.gap_split_over':'Splits >100%','rel.gap_upc_bad':'Ungültiger UPC','rel.gap_isrc_bad':'Ungültiger ISRC','rel.gap_type':'Typ/Tracks',
+      'mh.title':'{n} Artikel mit zu prüfender Marge','mh.loss':'Verlust: {u} Marge pro Stück','mh.low':'Niedrige Marge: {u} pro Stück','mh.suggest':'Empf. Min. {p}',
     },
     pt:{
       'art.enrich_msg':'{n} artistas encontrados nos movimentos, ainda não no teu elenco: {names}','art.enrich_add':'＋ Adicionar artistas','art.enrich_none':'Nenhum novo artista para adicionar.','art.enrich_confirm':'Adicionar {n} artistas ao teu elenco? Podes completar os dados depois.','art.enrich_added':'{n} artistas adicionados ✓',
@@ -2113,6 +2118,7 @@
       'notif.recoup_t':'Adiantamento recuperado','notif.recoup_b':'{name} recuperou o adiantamento: agora há {amt} a pagar. Adicionei uma tarefa de pagamento.',
       'art.disco_title':'Discografia do artista',
       'rel.gap_split_over':'Quotas >100%','rel.gap_upc_bad':'UPC inválido','rel.gap_isrc_bad':'ISRC inválido','rel.gap_type':'Tipo/faixas',
+      'mh.title':'{n} artigos com margem a rever','mh.loss':'Em prejuízo: margem {u} por unidade','mh.low':'Margem baixa: {u} por unidade','mh.suggest':'Mín. recomendado {p}',
     },
     nl:{
       'art.enrich_msg':'{n} artiesten gevonden in de bewegingen, nog niet in je lijst: {names}','art.enrich_add':'＋ Artiesten toevoegen','art.enrich_none':'Geen nieuwe artiesten om toe te voegen.','art.enrich_confirm':'{n} artiesten aan je lijst toevoegen? Je kunt de gegevens later invullen.','art.enrich_added':'{n} artiesten toegevoegd ✓',
@@ -2490,6 +2496,7 @@
       'notif.recoup_t':'Voorschot gerecoupt','notif.recoup_b':'{name} heeft het voorschot gerecoupt: {amt} is nu te betalen. Ik heb een betaaltaak toegevoegd.',
       'art.disco_title':'Discografie van de artiest',
       'rel.gap_split_over':'Splits >100%','rel.gap_upc_bad':'Ongeldige UPC','rel.gap_isrc_bad':'Ongeldige ISRC','rel.gap_type':'Type/tracks',
+      'mh.title':'{n} artikelen met marge om te bekijken','mh.loss':'Verlies: {u} marge per stuk','mh.low':'Lage marge: {u} per stuk','mh.suggest':'Aanbevolen min. {p}',
     },
   };
 

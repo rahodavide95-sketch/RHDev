@@ -3672,6 +3672,33 @@ let editingMerchId=null;
 function merchById(id){ return (DB.merch||[]).find(m=>m.id===id); }
 function merchRevenue(m){ return (+m.price||0)*(+m.sold||0); }
 function merchMargin(m){ return ((+m.price||0)-(+m.cost||0))*(+m.sold||0); }
+/* salute margini: articoli in perdita o con markup troppo basso + prezzo minimo consigliato */
+function merchHealth(){
+  return (DB.merch||[]).map(m=>{
+    const price=+m.price||0, cost=+m.cost||0;
+    if(!cost) return null;                                  // senza costo non si valuta
+    const unit=price-cost, markup=unit/cost;
+    const suggest=+(cost*1.4).toFixed(2);                   // +40% markup consigliato
+    if(unit<0) return {m, lvl:'neg', unit, markup, suggest};
+    if(markup<0.2) return {m, lvl:'low', unit, markup, suggest};
+    return null;
+  }).filter(Boolean);
+}
+let merchHealthDismissed='';
+function updateMerchHealth(){
+  const b=$('#merch-health'); if(!b) return;
+  const list=merchHealth(); const sig=list.map(x=>x.m.id+x.lvl).join(',');
+  if(!list.length || sig===merchHealthDismissed){ b.hidden=true; return; }
+  const ttl=$('.merch-health-title',b); if(ttl) ttl.textContent=tt('mh.title').replace('{n}',list.length);
+  $('#merch-health-list').innerHTML=list.map(x=>`
+    <button class="rel-gap-item" data-mch-edit="${x.m.id}" type="button">
+      <span class="rel-gap-cat">${esc(x.m.name||'—')}</span>
+      <span class="rel-gap-ttl" style="flex:1 1 auto;white-space:normal">${tt(x.lvl==='neg'?'mh.loss':'mh.low').replace('{u}',fmtMoney(x.unit))}</span>
+      <span class="rel-gap-tag rel-gap-tag--err">${tt('mh.suggest').replace('{p}',fmtMoney(x.suggest))}</span>
+    </button>`).join('');
+  b.hidden=false;
+}
+$('#merch-health-x')?.addEventListener('click', ()=>{ const list=merchHealth(); merchHealthDismissed=list.map(x=>x.m.id+x.lvl).join(','); const b=$('#merch-health'); if(b) b.hidden=true; });
 let merchSort={col:'sold',dir:-1};   // di default: più venduti
 function sortMerch(arr){
   const k=merchSort.col, d=merchSort.dir;
@@ -3733,6 +3760,7 @@ function renderMerch(){
   }
   mountPager(grid,'merch',info);
   syncVMButtons();
+  updateMerchHealth();
 }
 function openMerchForm(id){
   editingMerchId=id||null; const m=id?merchById(id):null;

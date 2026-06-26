@@ -3,7 +3,8 @@
 //  - offusca app.js, sync.js, i18n.js nella copia pubblicata
 // Il sorgente nel repo resta leggibile: l'offuscamento avviene solo qui.
 import { readdirSync, cpSync, rmSync, mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { obfuscate } from 'javascript-obfuscator';
+import obfuscator from 'javascript-obfuscator';
+const { obfuscate } = obfuscator;
 
 const OUT = 'dist';
 // Cartelle/file da NON pubblicare (backend, documentazione interna, file di build).

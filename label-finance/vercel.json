@@ -1,1 +1,5 @@
-{ "cleanUrls": true }
+{
+  "buildCommand": "node build-vercel.mjs",
+  "outputDirectory": "dist",
+  "cleanUrls": true
+}

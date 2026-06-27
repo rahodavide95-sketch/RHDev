@@ -251,7 +251,7 @@ body.dash-edit .dw-width{display:inline-flex;gap:2px;position:absolute;top:8px;l
 #btn-dash-edit.is-active{background:var(--accent);color:#fff;border-color:var(--accent)}
 
 /* ===== Campi form generici (Artisti / Contratti / Task) ===== */
-.fld{display:flex;flex-direction:column;gap:5px}
+.fld{display:flex;flex-direction:column;gap:5px;min-width:0}
 .fld>span{font-size:.82rem;color:var(--muted)}
 .fld--full{grid-column:1/-1}
 
@@ -937,6 +937,10 @@ body.dash-edit .dw-width{display:inline-flex;gap:2px;position:absolute;top:8px;l
 .toolbar .select{max-width:220px}
 .toolbar-actions{display:flex;gap:10px;margin-left:auto}
 .input--date{max-width:160px}
+/* Campi data/ora nei form: niente overflow su mobile (iOS/WebKit hanno una
+   larghezza intrinseca). Esclude i filtri compatti .input--date. */
+.input[type="date"]:not(.input--date),.input[type="time"]{-webkit-appearance:none;appearance:none;min-width:0;max-width:100%}
+.form-grid label{min-width:0}
 .th-sort{cursor:pointer;user-select:none;white-space:nowrap}
 .th-sort:hover{color:var(--text)}
 .card-filter{max-width:150px;margin-left:auto;padding:6px 10px;font-size:.85rem}

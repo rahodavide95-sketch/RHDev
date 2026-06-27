@@ -3652,6 +3652,7 @@ async function sendContract(){
         if(er && er.ok) toast(tt('con.email_sent').replace('{email}',c.email));
         else toast(tt('con.email_fail')+((er&&er.error)?` (${er.error})`:''));
       }
+      closeContractEditor();
       openShareModal(r.link, c);
       return;
     }
@@ -3660,6 +3661,7 @@ async function sendContract(){
   }
   // fallback: apre l'email con il testo del contratto
   if(c.status==='draft'||!c.status){ c.status='sent'; c.sentAt=Date.now(); saveCurrentContract(); renderContracts(); }
+  closeContractEditor();
   const subject=encodeURIComponent(`Release Authorization — ${c.titles} · ${c.label}`);
   const body=encodeURIComponent(tt('con.mail_intro').replace('{label}',c.label)+'\n\n'+contractPlainText(c)+'\n\n'+tt('con.mail_foot'));
   if(c.email) window.location.href=`mailto:${encodeURIComponent(c.email)}?subject=${subject}&body=${body}`;
@@ -3710,9 +3712,25 @@ function openShareModal(link, c){
   $('#share-wa').href=wa; $('#share-mail').href=mail;
   m.hidden=false;
 }
+// Chiude i pannelli di compilazione/anteprima e riporta al riepilogo contratti.
+function closeContractEditor(){
+  if($('#con-form')) $('#con-form').hidden=true;
+  if($('#con-preview')) $('#con-preview').hidden=true;
+  const tb=$('#contracts-table'); const panel=tb&&tb.closest('.panel');
+  if(panel) panel.scrollIntoView({behavior:'smooth',block:'start'});
+}
+// Refresh manuale degli stati (per quando l'artista firma subito).
+async function manualRefreshContracts(){
+  const btn=$('#con-refresh'); if(btn) btn.disabled=true;
+  try{
+    const rows=await refreshContractStatuses();
+    toast(rows ? tt('con.refreshed') : tt('con.refresh_offline'));
+  }catch(e){ toast(tt('con.refresh_fail')); }
+  finally{ if(btn) btn.disabled=false; }
+}
 async function refreshContractStatuses(){
-  if(!window.LF_refreshContractStatuses) return;
-  const rows=await window.LF_refreshContractStatuses(); if(!rows) return;
+  if(!window.LF_refreshContractStatuses) return null;
+  const rows=await window.LF_refreshContractStatuses(); if(!rows) return null;
   let changed=false;
   rows.forEach(r=>{ const c=(DB.contracts||[]).find(x=>x.token===r.token); if(!c) return;
     if(r.status && r.status!==c.status){ c.status=r.status; changed=true; }
@@ -3726,6 +3744,7 @@ async function refreshContractStatuses(){
       if(fresh){ currentContract=fresh; $('#contract-doc').innerHTML=buildContractDoc(fresh); }
     }
   }
+  return rows;
 }
 function printContract(){
   if(!currentContract) return;
@@ -4698,6 +4717,7 @@ function initFeatures(){
   $('#con-back')?.addEventListener('click',editContract);
   $('#con-print')?.addEventListener('click',downloadContractPDF);
   $('#con-send')?.addEventListener('click',sendContract);
+  $('#con-refresh')?.addEventListener('click',manualRefreshContracts);
   $('#con-sign')?.addEventListener('click',openSignPad);
   $('#con-artist-pick')?.addEventListener('change',e=>{ if(e.target.value) conFillFromArtist(e.target.value); });
   $('#con-artist-pct')?.addEventListener('input',updateSplitBar);

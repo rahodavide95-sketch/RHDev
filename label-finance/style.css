@@ -1138,7 +1138,9 @@ body.gate-signup #gate-signin{opacity:.5}
   /* ---- Rifiniture generali mobile ---- */
   .topbar{padding:env(safe-area-inset-top) 14px 0;height:calc(54px + env(safe-area-inset-top));gap:8px}
   .topbar-left{display:flex;align-items:center;gap:8px;min-width:0;flex:1 1 auto}
-  .topbar-section{display:block;opacity:1;transform:none;pointer-events:auto;font-family:'Syne',sans-serif;font-weight:700;font-size:1.05rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* come su desktop: il nome sezione compare nella topbar solo scrollando
+     (gestito da body.show-topsec). Niente più "sempre visibile". */
+  .topbar-section{display:block;font-family:'Syne',sans-serif;font-weight:700;font-size:1.05rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .topbar-right{flex:none;gap:6px}
   .topbar-sep,.topbar-label,.topbar-div{display:none}   /* su mobile niente etichetta/divisori che rubano spazio */
   .topbar-divider{display:none}   /* su mobile la lingua sta nel cassetto (foot) */
@@ -1166,6 +1168,10 @@ body.gate-signup #gate-signin{opacity:.5}
   .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
   .data-table{font-size:.82rem}
   .data-table th,.data-table td{padding:8px 9px}
+  /* Su mobile .table-wrap è un contenitore scrollabile: l'header sticky con
+     top:58px finirebbe spinto sotto la prima riga. Header statico = nessun overlap.
+     Specificità più alta della regola globale .data-table thead th (sticky). */
+  .table-wrap .data-table thead th{position:static;top:auto}
 
   /* "Ordina per" su mobile: titolo sopra, poi cerca + ordina + esporta sulla stessa riga */
   .sort-mobile{display:block}

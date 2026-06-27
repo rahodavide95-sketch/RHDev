@@ -34,7 +34,8 @@
   }
 
   /* ---------- Pagina di login (gate) ---------- */
-  function showGate(show){ document.body.classList.toggle('gated', show); }
+  function showGate(show){ document.body.classList.toggle('gated', show);
+    if(!show){ try{ window.LF_maybeStartTour && window.LF_maybeStartTour(); }catch(e){} } }
   function gateStatus(msg,err){ const e=$('gate-status'); if(!e) return; e.textContent=msg||''; e.classList.toggle('err',!!err); }
   function setGateMode(mode){
     const signup = mode==='signup';

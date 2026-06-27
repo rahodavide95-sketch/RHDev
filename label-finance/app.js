@@ -4838,11 +4838,20 @@ $('#tour-backdrop')?.addEventListener('click',endTour);
 $('#tour-dots')?.addEventListener('click',e=>{ const d=e.target.closest('[data-tdot]'); if(d){ tourIdx=+d.dataset.tdot; renderTour(); } });
 $('#tour-restart')?.addEventListener('click',()=>{ try{ localStorage.removeItem(TOUR_DONE_KEY); }catch(e){} const nv=$('#tour-never'); if(nv) nv.checked=false; startTour(); });
 window.addEventListener('langchange',()=>{ const el=$('#tour'); if(el && !el.hidden) renderTour(); });
+let tourPending=false;
+// Il tour parte SOLO quando l'utente è dentro l'app: mai sopra la schermata
+// di login (body.gated) né su quella di attesa approvazione (pending-locked).
+function inApp(){ return !document.body.classList.contains('gated') && !document.body.classList.contains('pending-locked'); }
 function maybeStartTour(){
   try{ if(localStorage.getItem(TOUR_DONE_KEY)==='1') return; }catch(e){}
   try{ if(sessionStorage.getItem('labelfinance.tourSeen')==='1') return; }catch(e){}
-  setTimeout(startTour, 700);
+  if(!inApp()) return;
+  const el=$('#tour'); if(el && !el.hidden) return;   // già aperto
+  if(tourPending) return;
+  tourPending=true;
+  setTimeout(()=>{ tourPending=false; if(inApp()) startTour(); }, 700);
 }
+window.LF_maybeStartTour=maybeStartTour;   // lo richiama sync.js quando si entra
 maybeStartTour();
 try{ processRecurring(); }catch(e){}
 

@@ -32,6 +32,15 @@
     if(/at least 6|password.*6/i.test(m)) return 'La password deve avere almeno 6 caratteri.';
     return m;
   }
+  // Salva/aggiorna la credenziale nel gestore password (Chromium/Android).
+  // Su iOS l'API non esiste: lì ci pensa il <form> con i campi autocomplete.
+  async function storeCred(email, password){
+    try{
+      if(email && password && navigator.credentials && window.PasswordCredential){
+        await navigator.credentials.store(new window.PasswordCredential({ id:email, password, name:email }));
+      }
+    }catch(e){}
+  }
 
   /* ---------- Pagina di login (gate) ---------- */
   function showGate(show){ document.body.classList.toggle('gated', show);
@@ -57,19 +66,23 @@
   async function gateSignIn(){
     if(!client){ gateStatus('Servizio non disponibile, usa "Continua senza account".',true); return; }
     gateStatus('Accesso in corso…');
-    const { error } = await client.auth.signInWithPassword({ email:$('gate-email').value.trim(), password:$('gate-pw').value });
+    const email=$('gate-email').value.trim(), pw=$('gate-pw').value;
+    const { error } = await client.auth.signInWithPassword({ email, password:pw });
     if(error) gateStatus(authMsg(error.message),true);
+    else storeCred(email, pw);
   }
   async function gateSignUp(){
     if(!client){ gateStatus('Servizio non disponibile, usa "Continua senza account".',true); return; }
     const name=$('gate-name').value.trim(), surname=$('gate-surname')?$('gate-surname').value.trim():'', label=$('gate-label').value.trim();
     if(!name||!label){ gateStatus('Inserisci nome e nome label.',true); return; }
     gateStatus('Registrazione in corso…');
+    const email=$('gate-email').value.trim(), pw=$('gate-pw').value;
     const { data, error } = await client.auth.signUp({
-      email:$('gate-email').value.trim(), password:$('gate-pw').value,
+      email, password:pw,
       options:{ data:{ full_name:name, last_name:surname, label_name:label } }
     });
     if(error){ gateStatus(authMsg(error.message),true); return; }
+    storeCred(email, pw);
     window.LF.setProfile({ name, surname, label });
     if(data.session) gateStatus('Account creato ✓');                       // login immediato → onAuth nasconde il gate
     else gateStatus('Account creato. Controlla l\'email per confermare, poi premi Accedi.');
@@ -107,6 +120,7 @@
     if($('account-surname')) $('account-surname').value = md.last_name || p.surname || '';
     if($('account-label')) $('account-label').value = md.label_name || p.label || '';
     if($('email-current')) $('email-current').value = (user && user.email) || '';
+    if($('pw-username')) $('pw-username').value = (user && user.email) || '';
   }
 
   /* ---------- Client ---------- */
@@ -280,6 +294,7 @@
     if(error){ set(authMsg(error.message),false); return; }
     $('pw-new').value=''; $('pw-new2').value='';
     set('Password aggiornata ✓',true);
+    storeCred(user.email, p1);
   }
   async function changeEmail(){
     const st=$('email-status'); const set=(m,ok)=>{ if(st){ st.textContent=m; st.style.color = ok?'var(--in)':'var(--out)'; } };
@@ -338,7 +353,7 @@
     $('sync-signout')?.addEventListener('click', signOut);
     $('sync-pull')?.addEventListener('click', ()=>{ setStatus('Aggiorno…'); pull(); });
     $('account-save')?.addEventListener('click', saveAccount);
-    $('pw-save')?.addEventListener('click', changePassword);
+    $('pw-form')?.addEventListener('submit', e=>{ e.preventDefault(); changePassword(); });
     $('email-save')?.addEventListener('click', changeEmail);
   }
 

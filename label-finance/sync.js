@@ -271,7 +271,7 @@
   window.LF_refreshContractStatuses = async function(){
     if(!client||!user) return null;
     try{
-      const { data, error } = await client.from('contracts').select('token,status,signature,reject_reason,updated_at').eq('owner_id', user.id);
+      const { data, error } = await client.from('contracts').select('token,status,signature,reject_reason,updated_at,data').eq('owner_id', user.id);
       if(error) return null; return data||[];
     }catch(e){ return null; }
   };

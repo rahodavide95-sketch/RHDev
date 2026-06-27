@@ -3732,7 +3732,17 @@ async function refreshContractStatuses(){
   if(!window.LF_refreshContractStatuses) return null;
   const rows=await window.LF_refreshContractStatuses(); if(!rows) return null;
   let changed=false;
-  rows.forEach(r=>{ const c=(DB.contracts||[]).find(x=>x.token===r.token); if(!c) return;
+  DB.contracts = DB.contracts||[];
+  rows.forEach(r=>{
+    let c=DB.contracts.find(x=>x.token===r.token);
+    if(!c && r.data){
+      // Contratto presente nel cloud ma assente in locale (es. creato su un altro
+      // dispositivo): lo ripristino dai dati salvati al momento dell'invio.
+      c={...r.data, token:r.token};
+      if(!c.id || DB.contracts.some(x=>x.id===c.id)) c.id=uid();
+      DB.contracts.push(c); changed=true;
+    }
+    if(!c) return;
     if(r.status && r.status!==c.status){ c.status=r.status; changed=true; }
     if(r.signature && !c.artistSign){ c.artistSign=r.signature; changed=true; }   // firma artista
     if(r.reject_reason && c.rejectReason!==r.reject_reason){ c.rejectReason=r.reject_reason; changed=true; }

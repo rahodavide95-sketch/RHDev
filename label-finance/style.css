@@ -273,6 +273,11 @@ body.dash-edit .dw-width{display:inline-flex;gap:2px;position:absolute;top:8px;l
 .art-actions{display:flex;flex-direction:column;gap:5px}
 .icon-btn-sm{background:none;border:1px solid var(--line);color:var(--muted);border-radius:8px;min-width:30px;height:30px;cursor:pointer;font-size:.85rem;display:inline-flex;align-items:center;justify-content:center;padding:0 7px}
 .icon-btn-sm:hover{color:var(--text);border-color:var(--accent)}
+/* Pulsante refresh contratti: sola icona + animazione di caricamento */
+.con-refresh svg{width:16px;height:16px;display:block}
+.con-refresh:disabled{cursor:progress;opacity:1;border-color:var(--accent);color:var(--accent)}
+.con-refresh.spin svg{animation:lf-spin .7s linear infinite;transform-origin:50% 50%}
+@keyframes lf-spin{to{transform:rotate(360deg)}}
 
 /* ===== Contratti ===== */
 .con-form-panel,.con-preview-panel{margin-bottom:18px}

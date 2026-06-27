@@ -3721,12 +3721,13 @@ function closeContractEditor(){
 }
 // Refresh manuale degli stati (per quando l'artista firma subito).
 async function manualRefreshContracts(){
-  const btn=$('#con-refresh'); if(btn) btn.disabled=true;
+  const btn=$('#con-refresh'); if(btn){ btn.disabled=true; btn.classList.add('spin'); }
   try{
-    const rows=await refreshContractStatuses();
+    // gira almeno ~650ms così l'animazione di caricamento è sempre percepibile
+    const [rows]=await Promise.all([ refreshContractStatuses(), new Promise(r=>setTimeout(r,650)) ]);
     toast(rows ? tt('con.refreshed') : tt('con.refresh_offline'));
   }catch(e){ toast(tt('con.refresh_fail')); }
-  finally{ if(btn) btn.disabled=false; }
+  finally{ if(btn){ btn.disabled=false; btn.classList.remove('spin'); } }
 }
 async function refreshContractStatuses(){
   if(!window.LF_refreshContractStatuses) return null;

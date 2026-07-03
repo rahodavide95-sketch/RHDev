@@ -278,18 +278,58 @@ header{
   background:var(--bg2); border:1px solid var(--border);
   border-radius:var(--radius); box-shadow:var(--shadow);
   overflow:hidden; z-index:300; display:none;
+  max-height:min(70vh,560px); overflow-y:auto;
 }
 .search-dropdown.open{display:block;}
+/* intestazione + footer del menu risultati */
+.s-head{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;
+  font-size:.64rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--t3);
+  border-bottom:1px solid var(--border);background:var(--bg3);position:sticky;top:0;z-index:2;}
+.s-head-count{color:var(--accent);}
+.s-foot{padding:7px 14px;font-size:.66rem;color:var(--t3);border-top:1px solid var(--border);
+  display:flex;gap:14px;align-items:center;flex-wrap:wrap;background:var(--bg3);}
+.s-foot kbd{background:var(--bg2);border:1px solid var(--border);border-radius:4px;
+  padding:1px 5px;font-family:inherit;font-size:.62rem;color:var(--t2);font-weight:600;}
 .s-item{
-  padding:10px 14px; cursor:pointer;
-  display:flex; align-items:center; gap:10px;
+  padding:9px 14px; cursor:pointer;
+  display:flex; align-items:center; gap:11px;
   transition:background .1s; border-bottom:1px solid var(--border);
+  position:relative;
 }
-.s-item:last-child{border-bottom:none;}
+.s-item::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:transparent;transition:background .12s;}
+.s-item:last-of-type{border-bottom:none;}
 .s-item:hover,.s-item.active{background:var(--bg3);}
-.s-sym{font-weight:700;font-size:.875rem;color:var(--accent);min-width:52px;font-variant-numeric:tabular-nums;}
-.s-name{color:var(--t2);font-size:.8rem;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.s-cat{font-size:.7rem;color:var(--t3);background:var(--bg3);padding:2px 7px;border-radius:20px;white-space:nowrap;border:1px solid var(--border);}
+.s-item:hover::before,.s-item.active::before{background:var(--accent);}
+.s-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+.s-top{display:flex;align-items:center;gap:7px;min-width:0;flex-wrap:wrap;}
+.s-sym{font-weight:800;font-size:.9rem;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:.01em;}
+.s-sym mark,.s-name mark{background:rgba(59,130,246,.22);color:var(--accent);border-radius:2px;padding:0 1px;}
+.s-name{color:var(--t2);font-size:.76rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.s-exch{font-size:.66rem;color:var(--t3);white-space:nowrap;display:inline-flex;align-items:center;gap:3px;}
+.s-badge{font-size:.6rem;font-weight:700;padding:2px 7px;border-radius:20px;white-space:nowrap;
+  text-transform:uppercase;letter-spacing:.04em;border:1px solid transparent;}
+.s-badge-stock{background:rgba(59,130,246,.14);color:#3b82f6;border-color:rgba(59,130,246,.3);}
+.s-badge-etf{background:rgba(139,92,246,.14);color:#8b5cf6;border-color:rgba(139,92,246,.3);}
+.s-badge-crypto{background:rgba(245,158,11,.14);color:#f59e0b;border-color:rgba(245,158,11,.3);}
+.s-badge-index{background:rgba(16,185,129,.14);color:#10b981;border-color:rgba(16,185,129,.3);}
+.s-badge-fx{background:rgba(6,182,212,.14);color:#06b6d4;border-color:rgba(6,182,212,.3);}
+.s-badge-comm{background:rgba(217,119,6,.14);color:#d97706;border-color:rgba(217,119,6,.3);}
+.s-badge-other{background:var(--bg3);color:var(--t3);border-color:var(--border);}
+.s-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.s-score{display:flex;flex-direction:column;align-items:center;gap:1px;min-width:34px;}
+.s-score-val{font-size:.9rem;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;}
+.s-score-lbl{font-size:.5rem;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;font-weight:700;}
+.s-go{color:var(--t3);flex-shrink:0;opacity:0;transition:opacity .12s;}
+.s-item:hover .s-go,.s-item.active .s-go{opacity:1;}
+/* skeleton di caricamento */
+.s-skel{padding:11px 14px;display:flex;align-items:center;gap:11px;border-bottom:1px solid var(--border);}
+.s-skel-c{border-radius:50%;width:28px;height:28px;flex-shrink:0;}
+.s-skel-l{height:9px;border-radius:4px;}
+.s-skel-c,.s-skel-l{background:linear-gradient(90deg,var(--bg3) 25%,var(--border) 50%,var(--bg3) 75%);
+  background-size:200% 100%;animation:s-shimmer 1.2s linear infinite;}
+@keyframes s-shimmer{to{background-position:-200% 0;}}
+.s-empty{padding:26px 16px;text-align:center;color:var(--t3);font-size:.8rem;line-height:1.6;}
+.s-empty b{color:var(--t2);}
 
 /* Header divider */
 .header-divider{
@@ -1119,13 +1159,15 @@ input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size
   box-shadow:0 4px 24px rgba(59,130,246,.07);
 }
 .opp-hd{
-  display:flex; align-items:center; justify-content:space-between;
-  margin-bottom:18px;
+  display:flex; align-items:flex-start; justify-content:space-between;
+  gap:12px; margin-bottom:18px;
 }
+.opp-title-wrap{display:flex; flex-direction:column; gap:3px; min-width:0;}
 .opp-title{
   font-size:.8rem; font-weight:700; color:var(--text);
   text-transform:uppercase; letter-spacing:.1em;
 }
+.opp-subtitle{font-size:.72rem; color:var(--t2); font-weight:400; letter-spacing:0; line-height:1.4;}
 .opp-badge{
   font-size:.68rem; background:rgba(16,185,129,.12); color:#10b981;
   border:1px solid rgba(16,185,129,.25); padding:2px 9px; border-radius:20px;
@@ -1138,40 +1180,44 @@ input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size
 @media(max-width:640px){.opp-grid{grid-template-columns:1fr;}}
 .opp-item{
   background:var(--bg3); border:1px solid var(--border);
-  border-radius:10px; padding:12px 14px;
-  cursor:pointer; transition:border-color .15s, transform .15s;
-  display:flex; flex-direction:column; gap:4px;
+  border-radius:12px; padding:13px 15px;
+  cursor:pointer; transition:border-color .15s, transform .15s, box-shadow .15s;
+  display:flex; flex-direction:column; gap:9px;
   min-width:0; overflow:hidden;
 }
-@media(max-width:640px){
-  .opp-item{
-    flex-direction:row; align-items:center; gap:10px; padding:10px 12px;
-  }
-  .opp-item-left{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;}
-  .opp-item-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;}
-  .opp-bottom{margin-top:0;}
-}
-.opp-item:hover{border-color:var(--accent); transform:translateY(-2px);}
-.opp-sym{font-size:.95rem; font-weight:700; color:var(--accent);}
+.opp-item:hover{border-color:var(--accent); transform:translateY(-2px); box-shadow:0 6px 18px rgba(59,130,246,.1);}
+.opp-item-head{display:flex; align-items:center; gap:10px; min-width:0;}
+.opp-item-id{flex:1; min-width:0; display:flex; flex-direction:column; gap:2px;}
+.opp-sym-row{display:flex; align-items:center; gap:7px; min-width:0;}
+.opp-sym{font-size:.95rem; font-weight:800; color:var(--text); letter-spacing:.01em;}
 .opp-name{font-size:.72rem; color:var(--t2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0;}
-.opp-item-left{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0;}
-.opp-item-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;}
-.opp-bottom{display:flex; align-items:center; justify-content:space-between; margin-top:6px; min-width:0;}
-.opp-score{font-size:1.05rem; font-weight:700; flex-shrink:0;}
-.opp-bar-wrap{flex:1; height:4px; background:var(--bg2); border-radius:2px; margin:0 8px; min-width:0;}
+.opp-score-box{display:flex; flex-direction:column; align-items:center; gap:1px; flex-shrink:0; min-width:40px;}
+.opp-score{font-size:1.25rem; font-weight:800; line-height:1; font-variant-numeric:tabular-nums;}
+.opp-score-lbl{font-size:.5rem; color:var(--t3); text-transform:uppercase; letter-spacing:.08em; font-weight:700;}
+.opp-bar-wrap{height:4px; background:var(--bg2); border-radius:2px; min-width:0; overflow:hidden;}
 .opp-bar{height:4px; border-radius:2px; transition:width .8s ease;}
-.opp-signal{font-size:.65rem; font-weight:600; padding:2px 7px; border-radius:20px; white-space:nowrap; flex-shrink:0;}
-.opp-signal.opp{background:rgba(56,189,248,.15); color:#38bdf8; border:1px solid rgba(56,189,248,.3);}
-.opp-signal.hold{background:rgba(245,158,11,.15); color:#f59e0b;}
-.opp-signal.dip{background:rgba(100,116,139,.12); color:var(--t2);}
+.opp-metrics{display:flex; flex-wrap:wrap; gap:5px;}
+.opp-chip{font-size:.63rem; font-weight:600; padding:2px 8px; border-radius:20px; white-space:nowrap;
+  background:var(--bg2); border:1px solid var(--border); color:var(--t2);}
+.opp-chip-rsi{background:rgba(56,189,248,.12); color:#38bdf8; border-color:rgba(56,189,248,.28);}
+.opp-chip-strong{background:rgba(59,130,246,.16); color:var(--accent); border-color:rgba(59,130,246,.4); font-weight:700;}
+.opp-chip-up{background:rgba(16,185,129,.12); color:var(--g); border-color:rgba(16,185,129,.28);}
 .opp-type{
-  font-size:.62rem; color:var(--t3); background:var(--bg2);
+  font-size:.6rem; color:var(--t3); background:var(--bg2);
   border:1px solid var(--border); padding:1px 6px; border-radius:10px;
-  white-space:nowrap; flex-shrink:0;
+  white-space:nowrap; flex-shrink:0; text-transform:uppercase; letter-spacing:.03em;
 }
 .opp-sections{display:flex; flex-direction:column; gap:0;}
-.opp-empty{font-size:.82rem; color:var(--t2); padding:12px 0; text-align:center;}
-.opp-why{font-size:.68rem;color:var(--t3);margin-top:3px;font-style:italic; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.opp-empty{font-size:.82rem; color:var(--t2); padding:16px 4px; text-align:center; line-height:1.6;}
+/* metodologia — trasparenza sui criteri di selezione */
+.opp-method{font-size:.73rem; color:var(--t2); line-height:1.65; background:var(--bg3);
+  border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:8px;
+  padding:12px 14px; margin-bottom:18px;}
+.opp-crit{display:inline-block; font-size:.65rem; font-weight:600; color:var(--accent);
+  background:rgba(59,130,246,.1); border:1px solid rgba(59,130,246,.25); border-radius:20px;
+  padding:2px 9px; margin:4px 5px 0 0; white-space:nowrap;}
+.opp-cat-n{display:inline-block; font-size:.6rem; font-weight:700; color:var(--accent);
+  background:rgba(59,130,246,.12); border-radius:20px; padding:1px 7px; margin-left:4px; letter-spacing:0;}
 .opp-cat{margin-bottom:20px;}
 .opp-cat:last-child{margin-bottom:0;}
 .opp-cat-title{
@@ -1762,9 +1808,13 @@ input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size
   <div class="sec" style="padding-top:12px;">
     <div class="opp-card" id="opp-card">
       <div class="opp-hd">
-        <span class="opp-title">⚡ Migliori Opportunità</span>
-        <div style="display:flex;align-items:center;gap:6px">
+        <div class="opp-title-wrap">
+          <span class="opp-title">⚡ Migliori Opportunità</span>
+          <span class="opp-subtitle">Titoli in zona di sconto statistico — ipervenduti ma con trend di fondo ancora sano</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
           <span class="opp-badge" id="opp-badge" style="display:none"></span>
+          <button class="info-btn" data-tip="opportunities" title="Come vengono selezionate?">i</button>
           <button class="refresh-btn" onclick="refreshCard(this,()=>Promise.all([loadPanoramica(),new Promise(r=>setTimeout(r,3000))]))" title="Aggiorna">↻</button>
         </div>
       </div>
@@ -2988,7 +3038,13 @@ async function fetchAndScore(ticker){
       const R=rsi(cl),M50=ma(cl,50),M200=ma(cl,200),cur=cl[cl.length-1];
       const maxRecent=Math.max(...cl.slice(-252));
       const dd=maxRecent>0?(maxRecent-cur)/maxRecent*100:0;
-      dipMap[ticker]={isDip:R!=null&&R<40&&M50!=null&&M200!=null&&M50>M200,rsi:R,dd:dd.toFixed(1)};
+      const trendUp=M50!=null&&M200!=null&&M50>M200;
+      const Mo3m=cl.length>=65?mom(cl,65):null;
+      const aboveMA200=M200!=null&&cur>M200;
+      dipMap[ticker]={
+        isDip:R!=null&&R<40&&trendUp,   // ipervenduto MA trend di fondo ancora rialzista
+        rsi:R, dd:+dd.toFixed(1), trendUp, aboveMA200, mo3m:Mo3m!=null?+Mo3m.toFixed(1):null,
+      };
     }
     return score;
   }catch{ return null; }
@@ -3432,33 +3488,43 @@ function _buildOppMaps(){
   for(const[id,entries]of Object.entries(PANO))
     for(const[s,name]of entries){ _oppNameMap[s]=name; _oppTypeMap[s]=PANO_TYPE[id]||''; }
 }
+// forza dell'opportunità: quanto è ipervenduto (RSI basso) + conferma trend + APEX score
+function oppStrength(sym,score){
+  const d=dipMap[sym]||{};
+  const oversold=d.rsi!=null?Math.max(0,45-d.rsi):0;   // 0..45
+  return oversold + (score||0)*0.3 + (d.aboveMA200?5:0);
+}
 function oppItemHTML(sym, score, extra=false){
   _buildOppMaps();
   const color=sc(score);
   const name=_oppNameMap[sym]||sym;
   const type=_oppTypeMap[sym]||'';
-  const reason=reasonMap[sym]||'';
-  const signal={cls:'opp',lbl:'Sconto'};
+  const d=dipMap[sym]||{};
   const extraCls=extra?' opp-item-extra':'';
+  // chip metriche concrete e verificabili
+  const chips=[];
+  if(d.rsi!=null){
+    const rc=d.rsi<30?'opp-chip-strong':'opp-chip-rsi';
+    chips.push(`<span class="opp-chip ${rc}">RSI ${d.rsi.toFixed(0)}${d.rsi<30?' · molto ipervenduto':' · ipervenduto'}</span>`);
+  }
+  if(d.dd!=null&&d.dd>=1) chips.push(`<span class="opp-chip">−${d.dd.toFixed(0)}% dai massimi 52s</span>`);
+  if(d.trendUp) chips.push(`<span class="opp-chip opp-chip-up">✓ trend di fondo rialzista</span>`);
+  if(d.aboveMA200) chips.push(`<span class="opp-chip opp-chip-up">✓ sopra MA200</span>`);
+  if(d.mo3m!=null&&d.mo3m>0) chips.push(`<span class="opp-chip opp-chip-up">+${d.mo3m.toFixed(0)}% in 3 mesi</span>`);
   return `<div class="opp-item${extraCls}" onclick="quickAnalyze('${sym}')">
-    <div class="opp-item-left">
-      <div style="display:flex;align-items:center;gap:8px;">
-        ${logoHTML(sym,32)}
-        <div style="flex:1;min-width:0;">
-          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-            <span class="opp-sym">${sym}</span>
-            <span class="opp-signal ${signal.cls}">${signal.lbl}</span>
-            ${type?`<span class="opp-type">${type}</span>`:''}
-          </div>
-          <span class="opp-name">${name}</span>
-        </div>
+    <div class="opp-item-head">
+      ${logoHTML(sym,34)}
+      <div class="opp-item-id">
+        <div class="opp-sym-row"><span class="opp-sym">${sym}</span>${type?`<span class="opp-type">${type}</span>`:''}</div>
+        <span class="opp-name">${name}</span>
       </div>
-      ${reason?`<div class="opp-why" style="margin-top:4px;">${reason}</div>`:''}
+      <div class="opp-score-box" title="APEX Score">
+        <span class="opp-score" style="color:${color}">${score}</span>
+        <span class="opp-score-lbl">APEX</span>
+      </div>
     </div>
-    <div class="opp-item-right">
-      <span class="opp-score" style="color:${color}">${score}</span>
-      <div class="opp-bar-wrap"><div class="opp-bar" style="width:${score}%;background:${color}"></div></div>
-    </div>
+    <div class="opp-bar-wrap"><div class="opp-bar" style="width:${score}%;background:${color}"></div></div>
+    <div class="opp-metrics">${chips.join('')}</div>
   </div>`;
 }
 
@@ -3478,17 +3544,18 @@ function renderOpportunities(scoreMap){
       .map(([sym])=>({sym,score:scoreMap[sym]}))
       .filter(x=>{
         const d=dipMap[x.sym];
-        // zona sconto (RSI<40 + trend sano) E score che conferma — coerente con l'analisi
+        // zona sconto (RSI<40 + trend di fondo rialzista) E score che conferma — coerente con l'analisi
         return d && d.isDip && x.score!=null && x.score>=45;
       })
-      .sort((a,b)=>b.score-a.score);
+      // ordina per FORZA dell'opportunità (più ipervenduto + trend sano + score), non solo score
+      .sort((a,b)=>oppStrength(b.sym,b.score)-oppStrength(a.sym,a.score));
     if(!ranked.length) continue;
     totalAll+=ranked.length;
     const catId=`opp-cat-${id}`;
     const hasMore=ranked.length>3;
     sections.push(`
       <div class="opp-cat" id="${catId}">
-        <div class="opp-cat-title">${CAT_LABELS[id]||id}</div>
+        <div class="opp-cat-title">${CAT_LABELS[id]||id} <span class="opp-cat-n">${ranked.length}</span></div>
         <div class="opp-grid">
           ${ranked.map(({sym,score},i)=>oppItemHTML(sym,score,i>=3)).join('')}
         </div>
@@ -3497,13 +3564,20 @@ function renderOpportunities(scoreMap){
   }
 
   if(!sections.length){
-    grid.innerHTML='<div class="opp-empty">Nessun titolo in zona sconto al momento — il mercato è in fase normale o ribassista</div>';
+    grid.innerHTML=`<div class="opp-empty"><b style="color:var(--t2)">Nessun titolo in zona di sconto statistico al momento.</b><br>
+      Significa che i titoli monitorati non sono ipervenduti, oppure il trend di fondo non è abbastanza sano da giustificare un ingresso. È una fase normale o ribassista: meglio attendere.</div>`;
     badge.style.display='none';
     return;
   }
   badge.style.display='';
-  badge.textContent=`${totalAll} titoli in zona sconto`;
-  grid.innerHTML=sections.join('');
+  badge.textContent=`${totalAll} in zona sconto`;
+  grid.innerHTML=`<div class="opp-method">
+      <b>Come funziona:</b> analizziamo i titoli monitorati e selezioniamo solo quelli in <b>zona di sconto statistico</b> — che soddisfano <b>tutti</b> questi criteri oggettivi:
+      <span class="opp-crit">RSI &lt; 40 (ipervenduto)</span>
+      <span class="opp-crit">MA50 &gt; MA200 (trend di fondo rialzista)</span>
+      <span class="opp-crit">APEX Score ≥ 45 (conferma quantitativa)</span>
+      <br>Ordinati per forza del segnale. Ogni titolo mostra i dati reali su cui si basa la selezione. <b>Non è un consiglio finanziario</b>: è uno screening statistico da verificare con la tua analisi.
+    </div>`+sections.join('');
 }
 
 function toggleOppCat(catId){
@@ -4801,24 +4875,83 @@ function resetView(){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-// ── SMART SEARCH ──
+// ── SMART SEARCH — helpers ──
+// normalizza il tipo strumento (etichetta IT + classe colore)
+function searchNormType(cat,sym){
+  const c=(cat||'').toLowerCase();
+  if(/-(usd|eur|usdt|btc)$/i.test(sym||'')||/crypto/.test(c)) return {lbl:'Crypto',cls:'crypto'};
+  if(/etf|etp|fund|etc\b/.test(c)) return {lbl:'ETF',cls:'etf'};
+  if(/^\^/.test(sym||'')||/index|indice/.test(c)) return {lbl:'Indice',cls:'index'};
+  if(/=x$/i.test(sym||'')||/curren|forex|\bfx\b|valuta/.test(c)) return {lbl:'Valuta',cls:'fx'};
+  if(/=f$/i.test(sym||'')||/futur|commodit|materia/.test(c)) return {lbl:'Materia prima',cls:'comm'};
+  if(/equity|common stock|^stock$|azion|\bcs\b/.test(c)) return {lbl:'Azione',cls:'stock'};
+  return {lbl:(cat&&cat!=='—'?cat:'Strumento'),cls:'other'};
+}
+// bandiera + nome borsa da suffisso ticker o campo exch
+function searchExch(sym,exch){
+  const suf={'.MI':['🇮🇹','Milano'],'.DE':['🇩🇪','Xetra'],'.L':['🇬🇧','Londra'],'.PA':['🇫🇷','Parigi'],
+    '.SW':['🇨🇭','Svizzera'],'.AS':['🇳🇱','Amsterdam'],'.MC':['🇪🇸','Madrid'],'.ST':['🇸🇪','Stoccolma'],
+    '.HK':['🇭🇰','Hong Kong'],'.T':['🇯🇵','Tokyo'],'.TO':['🇨🇦','Toronto'],'.AX':['🇦🇺','Australia']};
+  for(const k in suf){ if((sym||'').toUpperCase().endsWith(k)) return `${suf[k][0]} ${suf[k][1]}`; }
+  if(/-(USD|EUR|USDT|BTC)$/i.test(sym||'')) return '🌐 Crypto';
+  if(exch){
+    const e=exch.toLowerCase();
+    if(/nasdaq/.test(e)) return '🇺🇸 NASDAQ';
+    if(/nyse|new york/.test(e)) return '🇺🇸 NYSE';
+    if(/bats|us\b|arca|amex/.test(e)) return '🇺🇸 USA';
+    return exch;
+  }
+  if(!/[.\-=^]/.test(sym||'')) return '🇺🇸 USA';
+  return '';
+}
+// evidenzia la porzione che corrisponde alla ricerca
+function searchHL(text,q){
+  if(!text) return '';
+  const esc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  const safe=String(text).replace(/</g,'&lt;');
+  if(!q) return safe;
+  try{ return safe.replace(new RegExp(`(${esc(q)})`,'i'),'<mark>$1</mark>'); }catch{ return safe; }
+}
+
 function setupSearch(){
   const input=document.getElementById('search-input');
   const dd=document.getElementById('search-dropdown');
   let activeIdx=-1, lastQ='', searchTimer=null;
 
-  function renderDrop(items){
-    if(!items.length){dd.classList.remove('open');return;}
-    dd.innerHTML=items.slice(0,9).map(({sym,name,cat,exch},i)=>`
-      <div class="s-item" data-sym="${sym}">
-        ${logoHTML(sym,28)}
-        <span class="s-sym">${sym}</span>
-        <span class="s-name">${name}</span>
-        <div style="display:flex;gap:4px;flex-shrink:0;align-items:center">
-          ${exch?`<span class="s-cat" style="color:var(--t3)">${exch}</span>`:''}
-          <span class="s-cat">${cat}</span>
+  function scoreChip(sym){
+    const s=globalScoreMap[sym];
+    if(s==null) return '';
+    const col=sc(s);
+    return `<div class="s-score"><span class="s-score-val" style="color:${col}">${s}</span><span class="s-score-lbl">APEX</span></div>`;
+  }
+  const goArrow=`<svg class="s-go" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>`;
+
+  function renderDrop(items,q,loading){
+    // dedup mantenendo l'ordine
+    const seen=new Set(); items=items.filter(r=>{ if(!r.sym||seen.has(r.sym)) return false; seen.add(r.sym); return true; });
+    if(!items.length && !loading){
+      dd.innerHTML=`<div class="s-empty"><b>Nessun risultato per "${(q||'').replace(/</g,'&lt;')}"</b><br>Prova con il ticker (es. AAPL), il nome completo o il codice ISIN.</div>`;
+      dd.classList.add('open'); activeIdx=-1; return;
+    }
+    const rows=items.slice(0,10).map(({sym,name,cat,exch})=>{
+      const t=searchNormType(cat,sym);
+      const ex=searchExch(sym,exch);
+      return `<div class="s-item" data-sym="${sym}">
+        ${logoHTML(sym,30)}
+        <div class="s-main">
+          <div class="s-top">
+            <span class="s-sym">${searchHL(sym,q)}</span>
+            <span class="s-badge s-badge-${t.cls}">${t.lbl}</span>
+            ${ex?`<span class="s-exch">${ex}</span>`:''}
+          </div>
+          <div class="s-name">${searchHL(name,q)}</div>
         </div>
-      </div>`).join('');
+        <div class="s-right">${scoreChip(sym)}${goArrow}</div>
+      </div>`;
+    }).join('');
+    const skel=loading?`<div class="s-skel"><div class="s-skel-c"></div><div style="flex:1"><div class="s-skel-l" style="width:35%"></div><div class="s-skel-l" style="width:60%;margin-top:6px"></div></div></div>`:'';
+    dd.innerHTML=`<div class="s-head"><span>Risultati</span><span class="s-head-count">${items.length}${loading?'+':''}</span></div>${rows}${skel}
+      <div class="s-foot"><span><kbd>↑</kbd><kbd>↓</kbd> naviga</span><span><kbd>↵</kbd> analizza</span><span><kbd>esc</kbd> chiudi</span></div>`;
     dd.classList.add('open');
     activeIdx=-1;
     dd.querySelectorAll('.s-item').forEach(el=>{
@@ -4831,40 +4964,48 @@ function setupSearch(){
     });
   }
 
+  // ricerca locale ordinata per rilevanza (exact ticker > prefix > name)
+  function localMatches(q){
+    const up=q.toUpperCase();
+    return DB.filter(([s,n])=>s.startsWith(up)||n.toUpperCase().includes(up))
+      .sort((a,b)=>{
+        const ra=a[0]===up?0:a[0].startsWith(up)?1:2;
+        const rb=b[0]===up?0:b[0].startsWith(up)?1:2;
+        return ra-rb;
+      })
+      .slice(0,6).map(([s,n,c])=>({sym:s,name:n,cat:c,exch:''}));
+  }
+
   async function doSearch(q){
     lastQ=q;
-    const up=q.toUpperCase();
-    const local=DB.filter(([s,n])=>s.startsWith(up)||n.toUpperCase().includes(up))
-      .slice(0,5).map(([s,n,c])=>({sym:s,name:n,cat:c,exch:''}));
-    if(local.length) renderDrop(local);
+    const local=localMatches(q);
+    if(local.length) renderDrop(local,q,true);
     setSearchLoading(true);
-    // Try server-side first (Finnhub + Yahoo + OpenFIGI), fallback to client-side
+    // Server-side (Finnhub + Yahoo + OpenFIGI), fallback client-side Yahoo
     let res=await searchAPI(q);
     if(!res.length) res=await searchYahoo(q);
     setSearchLoading(false);
     if(q!==lastQ) return;
+    // unisci: risultati API (nomi migliori) + extra locali non già presenti
     const apiSyms=new Set(res.map(r=>r.sym));
     const extra=local.filter(r=>!apiSyms.has(r.sym));
-    renderDrop([...res,...extra]);
+    renderDrop([...res,...extra],q,false);
   }
 
   input.addEventListener('input',()=>{
     const q=input.value.trim();
     clearTimeout(searchTimer);
     if(!q){dd.classList.remove('open');lastQ='';return;}
-    // show local immediately
-    const up=q.toUpperCase();
-    const local=DB.filter(([s,n])=>s.startsWith(up)||n.toUpperCase().includes(up))
-      .slice(0,5).map(([s,n,c])=>({sym:s,name:n,cat:c,exch:''}));
-    if(local.length) renderDrop(local);
-    // debounce Yahoo
-    searchTimer=setTimeout(()=>doSearch(q),320);
+    const local=localMatches(q);
+    // mostra subito i locali con skeleton mentre carica l'API
+    renderDrop(local,q,true);
+    searchTimer=setTimeout(()=>doSearch(q),300);
   });
 
   input.addEventListener('keydown',e=>{
     const items=dd.querySelectorAll('.s-item');
-    if(e.key==='ArrowDown'){e.preventDefault();activeIdx=Math.min(activeIdx+1,items.length-1);items.forEach((el,i)=>el.classList.toggle('active',i===activeIdx));}
-    else if(e.key==='ArrowUp'){e.preventDefault();activeIdx=Math.max(activeIdx-1,-1);items.forEach((el,i)=>el.classList.toggle('active',i===activeIdx));}
+    if(e.key==='ArrowDown'){e.preventDefault();activeIdx=Math.min(activeIdx+1,items.length-1);items.forEach((el,i)=>el.classList.toggle('active',i===activeIdx));items[activeIdx]?.scrollIntoView({block:'nearest'});}
+    else if(e.key==='ArrowUp'){e.preventDefault();activeIdx=Math.max(activeIdx-1,-1);items.forEach((el,i)=>el.classList.toggle('active',i===activeIdx));if(activeIdx>=0)items[activeIdx]?.scrollIntoView({block:'nearest'});}
     else if(e.key==='Enter'){
       e.preventDefault();
       if(activeIdx>=0&&items[activeIdx]){input.value=items[activeIdx].dataset.sym;dd.classList.remove('open');analyze(input.value);}
@@ -4878,6 +5019,17 @@ function setupSearch(){
 
 // ── TOOLTIP CONTENT ──
 const TIPS={
+  opportunities:{
+    title:'Migliori Opportunità — metodologia',
+    body:`Questa sezione <b>non è un consiglio di acquisto</b>: è uno <b>screening statistico</b> oggettivo che evidenzia i titoli in "zona di sconto".<br><br>
+Un titolo compare <b>solo se soddisfa TUTTI e tre</b> questi criteri, calcolati sui prezzi reali:<br><br>
+<b>1. RSI &lt; 40</b> → il titolo è <b>ipervenduto</b>: è sceso in fretta e statisticamente tende a rimbalzare.<br>
+<b>2. MA50 &gt; MA200</b> → il <b>trend di fondo resta rialzista</b>: evitiamo i titoli in caduta strutturale ("catch a falling knife").<br>
+<b>3. APEX Score ≥ 45</b> → il modello quantitativo <b>conferma</b> che il quadro tecnico complessivo non è compromesso.<br><br>
+La combinazione "ipervenduto + trend sano" è un classico setup di <b>ingresso su ritracciamento</b>: comprare la debolezza temporanea di un asset che sale nel lungo periodo.<br><br>
+I titoli sono ordinati per <b>forza del segnale</b> (quanto è ipervenduto + conferma del trend + score). Ogni card mostra i <b>dati reali</b> (RSI, distanza dai massimi, stato del trend) così puoi verificare tu stesso perché è stato selezionato.<br><br>
+<i>⚠ Screening statistico basato su dati storici. Verifica sempre con la tua analisi prima di investire.</i>`
+  },
   score:{
     title:'APEX Score — cos\'è e come usarlo',
     body:`Punteggio composito (0–100) che sintetizza tutti gli indicatori tecnici in un'unica metrica operativa.

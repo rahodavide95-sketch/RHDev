@@ -260,7 +260,7 @@
       <p class="credits-tagline">serendipity engine for sound designers</p>
       <p class="credits-line">For your subconscious creativity, wherever you are.</p>
       <p class="credits-line">With love, by Raho.</p>
-      <p class="credits-copy">© Sonorium 2026 &nbsp;|&nbsp; v2.3</p>
+      <p class="credits-copy">© Sonorium 2026 &nbsp;|&nbsp; v2.4</p>
     </div>
   </div>
 
@@ -510,6 +510,15 @@ let globalAnalyser = null;
     const ang=Math.PI*(.18+Math.random()*.18)*(Math.random()<.5?1:-1)+Math.PI*.5;
     const spd=1.5+Math.random()*2.5;
     const len=110+Math.random()*200;
+    // 3D world streak (used in universe mode): a point on the sky sphere with
+    // a tangent velocity, so it reprojects realistically as the camera rotates.
+    const th=Math.random()*Math.PI*2, ph=Math.acos(2*Math.random()-1), sp=Math.sin(ph);
+    let wx=sp*Math.cos(th), wy=Math.cos(ph), wz=sp*Math.sin(th);
+    // tangent = normalize(cross(w, random)) — direction the meteor streaks along
+    const ax=Math.random()-.5, ay=Math.random()-.5, az=Math.random()-.5;
+    let tx=wy*az-wz*ay, ty=wz*ax-wx*az, tz=wx*ay-wy*ax;
+    const tl=Math.hypot(tx,ty,tz)||1; tx/=tl; ty/=tl; tz/=tl;
+    const wspd=0.010+Math.random()*0.015;
     return{
       x:Math.random()*W*1.2-W*.1,
       y:Math.random()*H*.45,
@@ -519,6 +528,7 @@ let globalAnalyser = null;
       op:0.7+Math.random()*0.3,
       r:0.8+Math.random()*0.8,
       hueOff:(Math.random()-.5)*30,
+      wx,wy,wz, vwx:tx*wspd, vwy:ty*wspd, vwz:tz*wspd,
     };
   }
 
@@ -1008,18 +1018,42 @@ let globalAnalyser = null;
     // Meteors — spawn
     if(autoTime>=nextMeteorAt){meteors.push(mkMeteor());nextMeteorAt=autoTime+3.5+Math.random()*7;}
 
-    // Meteors — draw
+    // Meteors — draw (3D-projected in universe mode, 2D screen streak at home)
+    const _md=Math.max(0,Math.min(1,Math.sqrt(_uniCamX*_uniCamX+_uniCamY*_uniCamY+(_uniCamZ+500)*(_uniCamZ+500))/250));
+    const _mcY=Math.cos(_uniYaw),_msY=Math.sin(_uniYaw),_mcP=Math.cos(_uniPitch),_msP=Math.sin(_uniPitch);
     for(let mi=meteors.length-1;mi>=0;mi--){
       const m=meteors[mi];
-      m.life++;m.x+=m.vx;m.y+=m.vy;
+      m.life++;
       const p=m.life/m.maxLife;
       const fade=p<.12?p/.12:p>.55?Math.max(0,1-(p-.55)/.45):1;
       const op=m.op*fade;
       if(op<.01||m.life>m.maxLife){meteors.splice(mi,1);continue;}
-      const tx=m.x-Math.cos(Math.atan2(m.vy,m.vx))*m.len*Math.min(1,p*4);
-      const ty=m.y-Math.sin(Math.atan2(m.vy,m.vx))*m.len*Math.min(1,p*4);
       const[mr,mg,mb]=hsl2rgb(baseH+m.hueOff,Math.max(5,baseS*.4),92);
-      const grad=ctx.createLinearGradient(m.x,m.y,tx,ty);
+      let hx,hy,tx,ty;
+      if(_md>0.04){
+        // 3D: advance the streak along its tangent, keep it on the sky sphere
+        if(m.wx===undefined){const th=Math.random()*Math.PI*2,ph=Math.acos(2*Math.random()-1),sp=Math.sin(ph);m.wx=sp*Math.cos(th);m.wy=Math.cos(ph);m.wz=sp*Math.sin(th);m.vwx=0.006;m.vwy=0.004;m.vwz=0.006;}
+        m.wx+=m.vwx;m.wy+=m.vwy;m.wz+=m.vwz;
+        const wl=Math.hypot(m.wx,m.wy,m.wz)||1;m.wx/=wl;m.wy/=wl;m.wz/=wl;
+        const lx=m.wx*_mcY-m.wz*_msY, lz0=m.wx*_msY+m.wz*_mcY;
+        const ly=m.wy*_mcP+lz0*_msP, lz=-m.wy*_msP+lz0*_mcP;
+        if(lz<=0.05)continue;
+        hx=lx*_U_F/lz+cW*.5;hy=ly*_U_F/lz+cH*.5;
+        if(hx<-200||hx>cW+200||hy<-200||hy>cH+200)continue;
+        // tail = a few streak-steps behind the head, projected separately
+        const K=9+p*6;
+        let bx=m.wx-m.vwx*K, by=m.wy-m.vwy*K, bz=m.wz-m.vwz*K;
+        const bl=Math.hypot(bx,by,bz)||1;bx/=bl;by/=bl;bz/=bl;
+        const lx2=bx*_mcY-bz*_msY, lz02=bx*_msY+bz*_mcY;
+        const ly2=by*_mcP+lz02*_msP, lz2=-by*_msP+lz02*_mcP;
+        if(lz2<=0.05){tx=hx;ty=hy;}else{tx=lx2*_U_F/lz2+cW*.5;ty=ly2*_U_F/lz2+cH*.5;}
+      }else{
+        m.x+=m.vx;m.y+=m.vy;
+        hx=m.x;hy=m.y;
+        tx=m.x-Math.cos(Math.atan2(m.vy,m.vx))*m.len*Math.min(1,p*4);
+        ty=m.y-Math.sin(Math.atan2(m.vy,m.vx))*m.len*Math.min(1,p*4);
+      }
+      const grad=ctx.createLinearGradient(hx,hy,tx,ty);
       grad.addColorStop(0,`rgba(${mr},${mg},${mb},${op.toFixed(3)})`);
       grad.addColorStop(0.12,`rgba(255,255,255,${(op*.9).toFixed(3)})`);
       grad.addColorStop(1,'rgba(0,0,0,0)');
@@ -1029,7 +1063,7 @@ let globalAnalyser = null;
       ctx.strokeStyle=grad;
       ctx.shadowColor=`rgba(${mr},${mg},${mb},${(op*.6).toFixed(3)})`;
       ctx.shadowBlur=m.r*5;
-      ctx.beginPath();ctx.moveTo(m.x,m.y);ctx.lineTo(tx,ty);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(hx,hy);ctx.lineTo(tx,ty);ctx.stroke();
       ctx.restore();
     }
 

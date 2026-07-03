@@ -171,6 +171,55 @@
   }
   .meta-item { text-align: center; }
 
+  /* COUNTDOWN */
+  .countdown {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 28px;
+    background: rgba(0,0,0,0.35);
+    border: 1px solid rgba(245,166,35,0.3);
+    border-radius: 10px;
+    padding: 14px 24px;
+    backdrop-filter: blur(4px);
+  }
+  .cd-unit {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 52px;
+  }
+  .cd-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 40px;
+    color: var(--amber);
+    line-height: 1;
+    letter-spacing: 2px;
+    text-shadow: 0 0 20px rgba(245,166,35,0.4);
+  }
+  .cd-lbl {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: rgba(240,237,230,0.5);
+    text-transform: uppercase;
+    margin-top: 3px;
+  }
+  .cd-sep {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px;
+    color: rgba(245,166,35,0.4);
+    line-height: 1;
+    padding-bottom: 14px;
+  }
+  @media (max-width: 640px) {
+    .countdown { padding: 12px 16px; gap: 4px; }
+    .cd-num { font-size: 30px; }
+    .cd-unit { min-width: 40px; }
+    .cd-sep { font-size: 24px; }
+  }
+
   /* NAV GIORNI */
   .day-nav {
     background: var(--surface);
@@ -1049,6 +1098,16 @@
     <div class="meta-item"><span class="val">~3.800</span><span class="lbl">km totali</span></div>
     <div class="meta-item"><span class="val">8</span><span class="lbl">Destinazioni</span></div>
     <div class="meta-item"><span class="val">5</span><span class="lbl">Stati</span></div>
+  </div>
+
+  <div class="countdown">
+    <div class="cd-unit"><span class="cd-num" id="cd-days">--</span><span class="cd-lbl">GG</span></div>
+    <div class="cd-sep">:</div>
+    <div class="cd-unit"><span class="cd-num" id="cd-hours">--</span><span class="cd-lbl">ORE</span></div>
+    <div class="cd-sep">:</div>
+    <div class="cd-unit"><span class="cd-num" id="cd-mins">--</span><span class="cd-lbl">MIN</span></div>
+    <div class="cd-sep">:</div>
+    <div class="cd-unit"><span class="cd-num" id="cd-secs">--</span><span class="cd-lbl">SEC</span></div>
   </div>
   </div>
 </div>
@@ -2734,6 +2793,32 @@
 </div>
 
 <script>
+  // Countdown al 10 agosto 2026
+  (function() {
+    var target = new Date('2026-08-10T00:00:00');
+    function pad(n) { return String(n).padStart(2, '0'); }
+    function tick() {
+      var diff = target - new Date();
+      if (diff <= 0) {
+        document.getElementById('cd-days').textContent = '00';
+        document.getElementById('cd-hours').textContent = '00';
+        document.getElementById('cd-mins').textContent = '00';
+        document.getElementById('cd-secs').textContent = '00';
+        return;
+      }
+      var d = Math.floor(diff / 86400000);
+      var h = Math.floor((diff % 86400000) / 3600000);
+      var m = Math.floor((diff % 3600000) / 60000);
+      var s = Math.floor((diff % 60000) / 1000);
+      document.getElementById('cd-days').textContent  = pad(d);
+      document.getElementById('cd-hours').textContent = pad(h);
+      document.getElementById('cd-mins').textContent  = pad(m);
+      document.getElementById('cd-secs').textContent  = pad(s);
+    }
+    tick();
+    setInterval(tick, 1000);
+  })();
+
   // Sempre dall'inizio — iOS Safari ripristina la posizione tardi,
   // quindi forziamo lo scroll a 0 in più momenti per batterlo sul tempo
   if (history.scrollRestoration) history.scrollRestoration = 'manual';

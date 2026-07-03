@@ -2804,7 +2804,6 @@
   // Countdown al 10 agosto 2026
   (function() {
     var start = new Date('2026-08-10T00:00:00');
-    var end   = new Date('2026-08-24T00:00:00'); // fine viaggio (23 ago incluso)
     var box   = document.querySelector('.countdown');
     var timer = null;
     function pad(n) { return String(n).padStart(2, '0'); }
@@ -2816,12 +2815,7 @@
       var now = new Date();
       var diff = start - now;
       if (diff <= 0) {
-        // Viaggio in corso o concluso
-        if (now < end) {
-          showMessage('🚗 BUON VIAGGIO!');
-        } else {
-          showMessage('🌅 UN VIAGGIO INDIMENTICABILE');
-        }
+        showMessage('🚗 BUON VIAGGIO!');
         return;
       }
       var d = Math.floor(diff / 86400000);

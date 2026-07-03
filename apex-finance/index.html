@@ -362,21 +362,26 @@ header{
 .nav-caret{width:12px!important;height:12px!important;opacity:.7;}
 .nav-dd{position:relative;}
 .nav-menu{
-  position:absolute;top:calc(100% + 8px);right:0;min-width:230px;max-width:min(300px,calc(100vw - 16px));z-index:300;
+  position:absolute;top:calc(100% + 8px);right:0;min-width:256px;max-width:min(320px,calc(100vw - 16px));z-index:300;
   background:var(--bg2);border:1px solid var(--b2);border-radius:var(--radius);
   box-shadow:var(--shadow);padding:6px;display:none;flex-direction:column;gap:2px;
 }
 .nav-menu.open{display:flex;}
 .nav-menu-item{
-  display:flex;align-items:center;justify-content:space-between;gap:10px;
-  padding:9px 12px;border-radius:var(--radius-sm);cursor:pointer;
+  display:flex;align-items:center;gap:10px;
+  padding:8px 12px;border-radius:var(--radius-sm);cursor:pointer;
   font-size:.82rem;color:var(--text);transition:background .12s;
 }
 .nav-menu-item:hover{background:var(--bg3);}
-.nav-menu-item .nm-count{font-size:.68rem;color:var(--t3);font-weight:600;}
+.nav-menu-item .nm-count{font-size:.68rem;color:var(--t3);font-weight:600;margin-left:auto;flex-shrink:0;}
+.nm-text{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1;}
+.nm-title{font-size:.84rem;font-weight:600;color:var(--text);line-height:1.2;}
+.nm-sub{font-size:.66rem;color:var(--t3);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.nm-chevron{color:var(--t3);flex-shrink:0;opacity:.5;transition:opacity .12s,transform .12s;}
+.nav-menu-item:hover .nm-chevron{opacity:1;transform:translateX(2px);color:var(--accent);}
 .nav-menu-sep{height:1px;background:var(--border);margin:4px 6px;}
 .nav-menu-head{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);padding:8px 12px 4px;}
-.nav-menu-item .nm-ico{display:flex;align-items:center;color:var(--accent);flex-shrink:0;}
+.nav-menu-item .nm-ico{display:flex;align-items:center;justify-content:center;color:var(--accent);flex-shrink:0;width:20px;}
 .nav-menu-feat{gap:9px;font-weight:600;background:rgba(59,130,246,.07);justify-content:flex-start;}
 .nav-menu-feat:hover{background:rgba(59,130,246,.16);}
 @media(max-width:720px){
@@ -5947,26 +5952,42 @@ function renderDollarFromValues(dxy,dxyPct,eur,eurPct){
 function buildMainMenu(){
   const menu=document.getElementById('main-menu');
   if(!menu) return;
+  // icona per categoria
+  const ic={
+    't-azioni':'<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/>',
+    't-etf-az':'<circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/>',
+    't-etf-bond':'<path d="M4 5h16M4 12h16M4 19h10"/>',
+    't-commodities':'<path d="M12 2l3 6 6 .5-4.5 4 1.5 6-6-3.5L6 18.5 7.5 12.5 3 8.5 9 8z"/>',
+    't-crypto':'<circle cx="12" cy="12" r="9"/><path d="M9 8h4a2 2 0 0 1 0 4H9m0 0h4.5a2 2 0 0 1 0 4H9m1-10v12"/>',
+  };
   const cats=[
-    ['t-azioni','Azioni'],['t-etf-az','ETF Azionari'],['t-etf-bond','ETF Obbligazionari'],
-    ['t-commodities','Materie Prime'],['t-crypto','Crypto'],
+    ['t-azioni','Azioni','Titoli di tutto il mondo'],
+    ['t-etf-az','ETF Azionari','Indici, settori e temi'],
+    ['t-etf-bond','ETF Obbligazionari','Bond e titoli di stato'],
+    ['t-commodities','Materie Prime','Oro, petrolio, gas, agricoli'],
+    ['t-crypto','Crypto','Le principali criptovalute'],
   ];
   const exch=[
-    ['US','🇺🇸 Azioni USA','~8000'],['MI','🇮🇹 Borsa di Milano','tutti'],
-    ['DE','🇩🇪 Borsa di Francoforte','tutti'],['L','🇬🇧 Borsa di Londra','tutti'],
-    ['PA','🇫🇷 Borsa di Parigi','tutti'],
+    ['US','🇺🇸 Azioni USA','NYSE + Nasdaq · elenco completo'],
+    ['MI','🇮🇹 Borsa di Milano','Principali titoli quotati'],
+    ['DE','🇩🇪 Borsa di Francoforte','Principali titoli quotati'],
+    ['L','🇬🇧 Borsa di Londra','Principali titoli quotati'],
+    ['PA','🇫🇷 Borsa di Parigi','Principali titoli quotati'],
   ];
+  const chevron=`<svg class="nm-chevron" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>`;
   let html=`<div class="nav-menu-head">Strumenti</div>`;
   html+=`<div class="nav-menu-item nav-menu-feat" onclick="closeMainMenu();openPortfolio()">
     <span class="nm-ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span>
     <span>Simulatore di Portafoglio</span></div>`;
-  html+=`<div class="nav-menu-sep"></div><div class="nav-menu-head">Mercati & categorie</div>`;
-  html+=cats.map(([id,label])=>{
-    const n=(PANO_FULL[id]||PANO[id]||[]).length;
-    return `<div class="nav-menu-item" onclick="openCatFromMenu('${id}')"><span>${label}</span><span class="nm-count">${n}+</span></div>`;
-  }).join('');
-  html+=`<div class="nav-menu-sep"></div><div class="nav-menu-head">Borse mondiali</div>`;
-  html+=exch.map(([c,label,n])=>`<div class="nav-menu-item" onclick="openAllMarket('${c}')"><span>${label}</span><span class="nm-count">${n}</span></div>`).join('');
+  html+=`<div class="nav-menu-sep"></div><div class="nav-menu-head">Sfoglia per categoria</div>`;
+  html+=cats.map(([id,label,sub])=>
+    `<div class="nav-menu-item" onclick="openCatFromMenu('${id}')">
+      <span class="nm-ico"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ic[id]||''}</svg></span>
+      <span class="nm-text"><span class="nm-title">${label}</span><span class="nm-sub">${sub}</span></span>${chevron}</div>`).join('');
+  html+=`<div class="nav-menu-sep"></div><div class="nav-menu-head">Sfoglia per borsa</div>`;
+  html+=exch.map(([c,label,sub])=>
+    `<div class="nav-menu-item" onclick="openAllMarket('${c}')">
+      <span class="nm-text"><span class="nm-title">${label}</span><span class="nm-sub">${sub}</span></span>${chevron}</div>`).join('');
   menu.innerHTML=html;
 }
 function toggleMainMenu(e){

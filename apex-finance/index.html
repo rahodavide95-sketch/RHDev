@@ -2221,6 +2221,7 @@ input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size
           <div class="ind-sig" id="is-peg">—</div>
         </div>
       </div>
+      <div id="fund-msg" style="display:none"></div>
     </div>
 
     <!-- Scheda strumento & documenti (stile justETF) -->
@@ -4504,25 +4505,39 @@ function renderProfile(ticker,meta){
   sec.style.display='block';
 }
 
-function renderFundamentals(fund,ticker){
+function renderFundamentals(fund,ticker,resolved=false){
   const sec=document.getElementById('fund-section');
+  const grid=sec.querySelector('.ind-grid');
+  const msg=document.getElementById('fund-msg');
+  sec.style.display='block';
+  const showMsg=(html)=>{ if(grid) grid.style.display='none'; if(msg){ msg.innerHTML=html; msg.style.display='block'; } };
+  const showGrid=()=>{ if(msg) msg.style.display='none'; if(grid) grid.style.display=''; };
+
   const isCrypto=ticker&&(/-(USD|EUR|BTC|ETH|USDT)$/i.test(ticker)||/^(BTC|ETH|SOL|BNB|XRP|ADA|DOGE|AVAX|DOT|MATIC)$/i.test(ticker));
   if(isCrypto){
-    sec.style.display='block';
-    const grid=sec.querySelector('.ind-grid');
-    if(grid) grid.innerHTML=`<div style="grid-column:1/-1;color:var(--t3);font-size:.82rem;padding:8px 0">Le criptovalute non hanno fondamentali aziendali (P/E, ROE, margini). L'analisi si basa esclusivamente su dati tecnici e storici.</div>`;
+    showMsg(`<div style="color:var(--t3);font-size:.82rem;padding:8px 0">Le criptovalute non hanno fondamentali aziendali (P/E, ROE, margini). L'analisi si basa esclusivamente su dati tecnici e storici.</div>`);
     return;
   }
-  if(!fund){
-    sec.style.display='block';
-    const grid=sec.querySelector('.ind-grid');
-    if(grid) grid.innerHTML=`<div style="grid-column:1/-1;color:var(--t3);font-size:.82rem;padding:10px 0;line-height:1.7">
+
+  // Ci sono dati fondamentali reali? (almeno una metrica valorizzata)
+  const hasData=fund&&['roe','opMargin','earningsGrowth','revenueGrowth','trailingPE','forwardPE','pb','peg']
+    .some(k=>fund[k]!=null);
+
+  // Chiamata iniziale (placeholder, dati non ancora arrivati): mostra la griglia in attesa, nessun messaggio
+  if(!resolved && !hasData){ showGrid(); return; }
+
+  // Criterio PRECISO per il messaggio: la richiesta è conclusa e NON è arrivato alcun dato fondamentale
+  if(resolved && !hasData){
+    showMsg(`<div style="color:var(--t3);font-size:.82rem;padding:10px 0;line-height:1.7">
       <b style="color:var(--t2)">Fondamentali non disponibili per questo strumento.</b><br>
-      I dati fondamentali (P/E, ROE, margini, ecc.) sono tipicamente disponibili solo per <b>azioni quotate</b> su borse principali con bilancio pubblico.<br>
-      Possibili cause: ETF, criptovaluta, indice, forex, materia prima, o azione di mercato emergente senza copertura Finnhub.
-    </div>`;
+      I dati di bilancio (P/E, ROE, margini, crescita…) esistono solo per <b>azioni quotate con bilancio pubblico</b>.
+      Questo strumento è un ETF, indice, valuta, materia prima o un titolo senza copertura dati.
+    </div>`);
     return;
   }
+
+  // Ci sono dati → mostra le card
+  showGrid();
 
   // Fundamentals cards
   const pctFmt=v=>v!=null?(v*100).toFixed(1)+'%':'—';
@@ -4695,10 +4710,10 @@ async function analyze(ticker){
       // Mostra dip e BHS subito con fund=null, poi aggiorna quando arrivano i fondamentali
       buildDipSignal(R,M50,M200,Mo3m,Mo12m,DD,cur,w30,score);
       renderBHS(score,null);
-      renderFundamentals(null,ticker);
+      renderFundamentals(null,ticker,false);
       document.getElementById('profile-section').style.display='none';
       fundPromise.then(fund=>{
-        renderFundamentals(fund,ticker);
+        renderFundamentals(fund,ticker,true);
         renderProfile(ticker,meta);
         // Affina lo score includendo i fondamentali (solo azioni: ETF/crypto hanno fund=null)
         if(fund){

@@ -260,7 +260,7 @@
       <p class="credits-tagline">serendipity engine for sound designers</p>
       <p class="credits-line">For your subconscious creativity, wherever you are.</p>
       <p class="credits-line">With love, by Raho.</p>
-      <p class="credits-copy">© Sonorium 2026 &nbsp;|&nbsp; v2.1</p>
+      <p class="credits-copy">© Sonorium 2026 &nbsp;|&nbsp; v2.2</p>
     </div>
   </div>
 
@@ -1896,6 +1896,16 @@ function sanitizeJSON(s){
 }
 
 // ── SPIN ──────────────────────────────────────────────────────
+// Make a generation error visible even from the home screen: the desc lives
+// inside .sound-identity which is hidden until revealed, so without this a
+// failed generation would show nothing at all ("non succede niente").
+function _showError(){
+  const idEl=document.getElementById('sound-identity');
+  if(idEl)idEl.classList.add('revealed');
+  if(nameEl)nameEl.textContent='—';
+  if(metaEl)metaEl.textContent='—';
+}
+
 async function spin(evt,promptFn=buildPrompt){
   if(isLoading)return;
   isLoading=true;
@@ -1981,6 +1991,7 @@ async function spin(evt,promptFn=buildPrompt){
       const preview=buf.slice(0,120).replace(/</g,'&lt;');
       descEl.innerHTML=`<span style="opacity:0.5;font-size:0.8em">${t('errUnexpected')}<br><small>${preview}</small></span>`;
       descEl.className='sound-desc';
+      _showError();
       console.warn('unparsed buf:',buf);
     }
   }catch(e){
@@ -1991,6 +2002,7 @@ async function spin(evt,promptFn=buildPrompt){
       ? `<span style="cursor:pointer;text-decoration:underline;opacity:0.7" onclick="document.getElementById('btn-key').click()">${isKeyError?t('errKey'):t('errNet')}. ${t('errTap')}</span>`
       : t('errPrefix')+msg;
     descEl.className='sound-desc';
+    _showError();
     console.error(e);
   }
   }finally{

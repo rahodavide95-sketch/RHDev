@@ -260,7 +260,7 @@
       <p class="credits-tagline">serendipity engine for sound designers</p>
       <p class="credits-line">For your subconscious creativity, wherever you are.</p>
       <p class="credits-line">With love, by Raho.</p>
-      <p class="credits-copy">© Sonorium 2026 &nbsp;|&nbsp; v2.0</p>
+      <p class="credits-copy">© Sonorium 2026 &nbsp;|&nbsp; v2.1</p>
     </div>
   </div>
 
@@ -1899,6 +1899,7 @@ function sanitizeJSON(s){
 async function spin(evt,promptFn=buildPrompt){
   if(isLoading)return;
   isLoading=true;
+  try{
   // Unlock AudioContext immediately in the gesture handler (iOS requires this before any await)
   try{if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
     if(audioCtx.state==='suspended') await audioCtx.resume();}catch(_){}
@@ -1992,9 +1993,12 @@ async function spin(evt,promptFn=buildPrompt){
     descEl.className='sound-desc';
     console.error(e);
   }
-
-  isLoading=false;
-  if(window.setGenerating) window.setGenerating(false);
+  }finally{
+    // ALWAYS release the loading lock — otherwise one thrown error would
+    // silently kill every future click ("non succede più niente").
+    isLoading=false;
+    if(window.setGenerating) window.setGenerating(false);
+  }
 }
 
 function applyGeneratedSound(data,px,py,fromHistory){

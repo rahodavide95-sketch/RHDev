@@ -4007,7 +4007,8 @@ function renderCatPage(page){
     const row=document.createElement('div');
     row.className='cm-row';
     row.id=`mrow-${ticker}`;
-    row.onclick=()=>{ closeCatModal(); quickAnalyze(ticker); };
+    // NON chiudere la lista: l'analisi si apre sopra (overlay), così la X torna alla lista
+    row.onclick=()=>{ quickAnalyze(ticker); };
     renderCmRow(row,ticker,name,score);
     body.appendChild(row);
     if(score==null){

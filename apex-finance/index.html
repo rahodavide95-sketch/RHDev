@@ -713,6 +713,10 @@ header{
 .ind-label{font-size:.65rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.09em;margin-bottom:7px;padding-right:22px;}
 .ind-val{font-size:1.25rem;font-weight:700;font-variant-numeric:tabular-nums;}
 .ind-sig{font-size:.75rem;color:var(--t2);margin-top:6px;line-height:1.5;}
+/* spinner riutilizzabile per lo stato di caricamento delle card */
+.card-spin{display:inline-block;width:15px;height:15px;border:2px solid var(--border);
+  border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;}
+.ind-sig.loading{color:var(--t3);font-style:italic;}
 
 /* ── WIN RATE CARDS ── */
 .wr-row{
@@ -4825,8 +4829,17 @@ function renderFundamentals(fund,ticker,resolved=false){
   const hasData=fund&&['roe','opMargin','earningsGrowth','revenueGrowth','trailingPE','forwardPE','pb','peg']
     .some(k=>fund[k]!=null);
 
-  // Chiamata iniziale (placeholder, dati non ancora arrivati): mostra la griglia in attesa, nessun messaggio
-  if(!resolved && !hasData){ showGrid(); return; }
+  // Chiamata iniziale (dati non ancora arrivati): mostra uno SPINNER in ogni card
+  if(!resolved && !hasData){
+    showGrid();
+    [['iv-roe','is-roe'],['iv-opm','is-opm'],['iv-eg','is-eg'],['iv-rg','is-rg'],
+     ['iv-tpe','is-tpe'],['iv-fpe','is-fpe'],['iv-pb','is-pb'],['iv-peg','is-peg']].forEach(([vid,sid])=>{
+      const v=document.getElementById(vid), s=document.getElementById(sid);
+      if(v){ v.innerHTML='<span class="card-spin"></span>'; v.style.color=''; }
+      if(s){ s.textContent='Caricamento dati…'; s.className='ind-sig loading'; }
+    });
+    return;
+  }
 
   // Criterio PRECISO per il messaggio: la richiesta è conclusa e NON è arrivato alcun dato fondamentale
   if(resolved && !hasData){
@@ -4838,35 +4851,38 @@ function renderFundamentals(fund,ticker,resolved=false){
     return;
   }
 
-  // Ci sono dati → mostra le card
+  // Ci sono dati → mostra le card. Reset classe loading dei sig.
   showGrid();
+  ['is-roe','is-opm','is-eg','is-rg','is-tpe','is-fpe','is-pb','is-peg'].forEach(id=>{
+    const s=document.getElementById(id); if(s) s.className='ind-sig';
+  });
 
-  // Fundamentals cards
-  const pctFmt=v=>v!=null?(v*100).toFixed(1)+'%':'—';
+  // Quando un singolo dato manca, spieghiamo SEMPRE il perché (niente "—" muto)
+  const pctFmt=v=>v!=null?(v*100).toFixed(1)+'%':'N/D';
 
   const roeC=fund.roe==null?'var(--t3)':fund.roe>0.15?'var(--g)':fund.roe>0?'var(--y)':'var(--r)';
-  setInd('iv-roe','is-roe',pctFmt(fund.roe),fund.roe==null?'N/D — ETF/crypto/forex':fund.roe>0.2?'Eccellente':fund.roe>0.1?'Buono':fund.roe>0?'Accettabile':'Negativo',roeC);
+  setInd('iv-roe','is-roe',pctFmt(fund.roe),fund.roe==null?'Dato non comunicato dalla fonte':fund.roe>0.2?'Eccellente':fund.roe>0.1?'Buono':fund.roe>0?'Accettabile':'Negativo',roeC);
 
   const opmC=fund.opMargin==null?'var(--t3)':fund.opMargin>0.15?'var(--g)':fund.opMargin>0?'var(--y)':'var(--r)';
-  setInd('iv-opm','is-opm',pctFmt(fund.opMargin),fund.opMargin==null?'N/D':fund.opMargin>0.2?'Alta efficienza':fund.opMargin>0.1?'Buono':fund.opMargin>0?'Moderato':'Negativo',opmC);
+  setInd('iv-opm','is-opm',pctFmt(fund.opMargin),fund.opMargin==null?'Margine non comunicato dalla fonte':fund.opMargin>0.2?'Alta efficienza':fund.opMargin>0.1?'Buono':fund.opMargin>0?'Moderato':'Negativo',opmC);
 
   const egC=fund.earningsGrowth==null?'var(--t3)':fund.earningsGrowth>0.1?'var(--g)':fund.earningsGrowth>=0?'var(--y)':'var(--r)';
-  setInd('iv-eg','is-eg',pctFmt(fund.earningsGrowth),fund.earningsGrowth==null?'N/D':fund.earningsGrowth>0.2?'Forte crescita':fund.earningsGrowth>0.05?'Crescita positiva':fund.earningsGrowth>=0?'Stabile':'In calo',egC);
+  setInd('iv-eg','is-eg',pctFmt(fund.earningsGrowth),fund.earningsGrowth==null?'Crescita utili non disponibile':fund.earningsGrowth>0.2?'Forte crescita':fund.earningsGrowth>0.05?'Crescita positiva':fund.earningsGrowth>=0?'Stabile':'In calo',egC);
 
   const rgC=fund.revenueGrowth==null?'var(--t3)':fund.revenueGrowth>0.1?'var(--g)':fund.revenueGrowth>=0?'var(--y)':'var(--r)';
-  setInd('iv-rg','is-rg',pctFmt(fund.revenueGrowth),fund.revenueGrowth==null?'N/D':fund.revenueGrowth>0.15?'Forte espansione':fund.revenueGrowth>0.05?'In crescita':fund.revenueGrowth>=0?'Stabile':'In calo',rgC);
+  setInd('iv-rg','is-rg',pctFmt(fund.revenueGrowth),fund.revenueGrowth==null?'Crescita ricavi non disponibile':fund.revenueGrowth>0.15?'Forte espansione':fund.revenueGrowth>0.05?'In crescita':fund.revenueGrowth>=0?'Stabile':'In calo',rgC);
 
-  const peFmt=v=>v!=null?v.toFixed(1)+'x':'—';
-  const peLabel=v=>v==null?'N/D — ETF/crypto/non profittevole':v<0?'Negativo — utili in perdita':v<15?'Basso — potenziale valore':v<25?'Nella norma':v<40?'Elevato — growth premium':v<60?'Molto elevato':'Estremo — attenzione';
+  const peFmt=v=>v!=null?v.toFixed(1)+'x':'N/D';
+  const peLabel=v=>v<0?'Negativo — utili in perdita':v<15?'Basso — potenziale valore':v<25?'Nella norma':v<40?'Elevato — growth premium':v<60?'Molto elevato':'Estremo — attenzione';
   const peC=v=>v==null||v<0?'var(--t3)':v<15?'var(--g)':v<25?'var(--y)':'var(--r)';
-  setInd('iv-tpe','is-tpe',peFmt(fund.trailingPE),peLabel(fund.trailingPE),peC(fund.trailingPE));
-  setInd('iv-fpe','is-fpe',peFmt(fund.forwardPE),fund.forwardPE==null?'N/D':fund.forwardPE!=null&&fund.trailingPE!=null&&fund.forwardPE<fund.trailingPE&&fund.trailingPE>0?'Attesa crescita utili':fund.forwardPE!=null&&fund.trailingPE!=null&&fund.forwardPE>fund.trailingPE&&fund.trailingPE>0?'Attesa calo utili':peLabel(fund.forwardPE),peC(fund.forwardPE));
+  setInd('iv-tpe','is-tpe',peFmt(fund.trailingPE),fund.trailingPE==null?'Nessun utile positivo o dato mancante':peLabel(fund.trailingPE),peC(fund.trailingPE));
+  setInd('iv-fpe','is-fpe',peFmt(fund.forwardPE),fund.forwardPE==null?'Stima analisti non disponibile':fund.trailingPE!=null&&fund.forwardPE<fund.trailingPE&&fund.trailingPE>0?'Attesa crescita utili':fund.trailingPE!=null&&fund.forwardPE>fund.trailingPE&&fund.trailingPE>0?'Attesa calo utili':peLabel(fund.forwardPE),peC(fund.forwardPE));
 
   const pbC=fund.pb==null?'var(--t3)':fund.pb<1?'var(--g)':fund.pb<3?'var(--y)':'var(--r)';
-  setInd('iv-pb','is-pb',fund.pb!=null?fund.pb.toFixed(2)+'x':'—',fund.pb==null?'N/D':fund.pb<1?'Sotto book — potenziale valore':fund.pb<3?'Nella norma':fund.pb<6?'Premium':'Molto elevato',pbC);
+  setInd('iv-pb','is-pb',fund.pb!=null?fund.pb.toFixed(2)+'x':'N/D',fund.pb==null?'Valore di libro non disponibile':fund.pb<1?'Sotto book — potenziale valore':fund.pb<3?'Nella norma':fund.pb<6?'Premium':'Molto elevato',pbC);
 
   const pegC=fund.peg==null?'var(--t3)':fund.peg<1?'var(--g)':fund.peg<2?'var(--y)':'var(--r)';
-  setInd('iv-peg','is-peg',fund.peg!=null?fund.peg.toFixed(2):'—',fund.peg==null?'N/D':fund.peg<1?'Sottovalutato':fund.peg<2?'Fair value':fund.peg<3?'Leggermente caro':'Sopravvalutato',pegC);
+  setInd('iv-peg','is-peg',fund.peg!=null?fund.peg.toFixed(2):'N/D',fund.peg==null?'Richiede stime di crescita non disponibili':fund.peg<1?'Sottovalutato':fund.peg<2?'Fair value':fund.peg<3?'Leggermente caro':'Sopravvalutato',pegC);
 
   sec.style.display='block';
 }
@@ -4950,21 +4966,23 @@ async function analyze(ticker){
 
     // Indicators
     const rc=R==null?'var(--t3)':R<30?'var(--g)':R>70?'var(--r)':'var(--t2)';
-    setInd('iv-rsi','is-rsi',R?R.toFixed(1):'—',R?R<30?'Ipervenduto — rimbalzo probabile':R>70?'Ipercomprato — possibile correzione':R<50?'Zona di valore':'Zona di equilibrio alto':'—',rc);
+    // Se un indicatore manca, spieghiamo SEMPRE il perché (di norma: storico troppo breve)
+    const nBars=cl.length;
+    setInd('iv-rsi','is-rsi',R!=null?R.toFixed(1):'N/D',R!=null?(R<30?'Ipervenduto — rimbalzo probabile':R>70?'Ipercomprato — possibile correzione':R<50?'Zona di valore':'Zona di equilibrio alto'):'Servono ≥15 giorni di storico',rc);
 
     const m50c=M50?(cur>M50?'var(--g)':'var(--r)'):'var(--t3)';
-    setInd('iv-ma50','is-ma50',M50?fmt(M50):'—',M50?(cur>M50?`+${((cur-M50)/M50*100).toFixed(1)}% sopra MA50`:`${((cur-M50)/M50*100).toFixed(1)}% sotto MA50`):'—',m50c);
+    setInd('iv-ma50','is-ma50',M50?fmt(M50):'N/D',M50?(cur>M50?`+${((cur-M50)/M50*100).toFixed(1)}% sopra MA50`:`${((cur-M50)/M50*100).toFixed(1)}% sotto MA50`):`Servono ≥50 giorni (ora ${nBars})`,m50c);
 
     const m200c=M200?(cur>M200?'var(--g)':'var(--r)'):'var(--t3)';
-    setInd('iv-ma200','is-ma200',M200?fmt(M200):'—',M200?(cur>M200?`+${((cur-M200)/M200*100).toFixed(1)}% sopra MA200`:`${((cur-M200)/M200*100).toFixed(1)}% sotto MA200`):'—',m200c);
+    setInd('iv-ma200','is-ma200',M200?fmt(M200):'N/D',M200?(cur>M200?`+${((cur-M200)/M200*100).toFixed(1)}% sopra MA200`:`${((cur-M200)/M200*100).toFixed(1)}% sotto MA200`):`Servono ≥200 giorni (ora ${nBars})`,m200c);
 
     const vc=V==null?'var(--t3)':V>50?'var(--r)':V>25?'var(--y)':'var(--g)';
-    setInd('iv-vol','is-vol',V?V.toFixed(1)+'%':'—',V?V>50?'Alta — ridurre il sizing':V>25?'Moderata':'Bassa — condizioni favorevoli':'—',vc);
+    setInd('iv-vol','is-vol',V?V.toFixed(1)+'%':'N/D',V?V>50?'Alta — ridurre il sizing':V>25?'Moderata':'Bassa — condizioni favorevoli':'Storico insufficiente',vc);
 
-    [[Mo3m,'iv-mo3m','is-mo3m','3M'],[Mo6m,'iv-mo6m','is-mo6m','6M'],[Mo12m,'iv-mo12m','is-mo12m','12M']].forEach(([mo,vid,sid,lbl])=>{
+    [[Mo3m,'iv-mo3m','is-mo3m',65],[Mo6m,'iv-mo6m','is-mo6m',130],[Mo12m,'iv-mo12m','is-mo12m',252]].forEach(([mo,vid,sid,need])=>{
       const c=mo==null?'var(--t3)':mo>0?'var(--g)':'var(--r)';
-      const sig=mo==null?'—':mo>10?'Forte rialzo':mo>5?'Positivo':mo>0?'Lieve positivo':mo>-5?'Lieve negativo':mo<-10?'Forte ribasso':'Negativo';
-      setInd(vid,sid,mo!=null?(mo>0?'+':'')+mo.toFixed(2)+'%':'—',sig,c);
+      const sig=mo==null?`Servono ≥${need} giorni (ora ${nBars})`:mo>10?'Forte rialzo':mo>5?'Positivo':mo>0?'Lieve positivo':mo>-5?'Lieve negativo':mo<-10?'Forte ribasso':'Negativo';
+      setInd(vid,sid,mo!=null?(mo>0?'+':'')+mo.toFixed(2)+'%':'N/D',sig,c);
     });
 
     const dc=DD>30?'var(--r)':DD>15?'var(--y)':'var(--g)';

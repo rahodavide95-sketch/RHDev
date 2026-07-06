@@ -1989,7 +1989,11 @@ input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size
                   <option value="annual">Annuale</option>
                 </select>
               </div>
+              <div class="pf-set"><span class="pf-set-top">Rendimento annuo atteso (%)<button class="info-btn pf-info" data-tip="pf_expret">i</button></span>
+                <input type="number" id="pf-expret" value="" min="-20" max="60" step="0.5" placeholder="Auto — dallo storico">
+              </div>
             </div>
+            <div class="pf-info-line" style="margin-top:2px">Lascia <b>vuoto</b> per usare il rendimento storico calcolato dai prezzi reali dei tuoi asset. Inserisci un valore per proiettare con una tua ipotesi (es. 7%).</div>
           </div>
 
           <div class="pf-step-section">
@@ -5509,6 +5513,19 @@ Invece di darti un singolo numero (che sarebbe falsamente preciso), ti mostra un
 Più simulazioni = stima più stabile (ma più lenta). <b>1.000</b> è un buon equilibrio; <b>10.000</b> per massima precisione.<br><br>
 <i>È lo stesso metodo usato dai consulenti finanziari professionali per la pianificazione pensionistica.</i>`
   },
+  pf_expret:{
+    title:'Rendimento annuo atteso',
+    body:`È il <b>tasso di crescita medio annuo</b> che il simulatore usa come "motore" della proiezione Monte Carlo verso il futuro.<br><br>
+<b>Come funziona di default (campo vuoto):</b><br>
+Se lasci il campo <b>vuoto</b>, il simulatore lo calcola <b>automaticamente</b> dal <b>CAGR storico reale</b> dei tuoi asset — cioè quanto ha effettivamente reso quella combinazione di titoli nel periodo di backtest selezionato (1/2/5/10 anni), sui prezzi veri.<br><br>
+<b>Perché impostarlo a mano:</b><br>
+Il rendimento passato <b>non si ripete</b> mai identico. Impostando un tuo valore puoi fare scenari realistici e prudenti, invece di proiettare all'infinito un passato magari eccezionale:<br>
+• <b>5–7%</b> → ipotesi prudente/realistica per un portafoglio azionario diversificato di lungo periodo.<br>
+• <b>3–4%</b> → scenario conservativo (o portafoglio con molte obbligazioni).<br>
+• <b>8–10%</b> → ottimistico, sostenibile solo da azionario puro in periodi favorevoli.<br><br>
+<b>Cosa cambia:</b> modifica solo la <b>proiezione futura</b> (scenari, probabilità, valore finale). Le metriche storiche in alto (CAGR, Sharpe, drawdown…) restano quelle reali calcolate dai dati.<br><br>
+<i>Consiglio: prova prima con lo storico (vuoto), poi rifai la simulazione con un 5–6% prudente per vedere quanto è robusto il tuo piano anche in uno scenario meno brillante.</i>`
+  },
   pf_invested:{
     title:'Capitale investito',
     body:`Il <b>totale dei soldi che metti di tasca tua</b> nel periodo, prima di qualsiasi rendimento.<br><br>
@@ -6426,7 +6443,11 @@ async function pfCalculate(){
     const runs=+document.getElementById('pf-mcruns').value||1000;
     const target=+document.getElementById('pf-target').value||0;
     const infl=(+document.getElementById('pf-infl').value||0)/100;
-    const mc=pfMonteCarlo(annRet,vol,capital,contrib,horizon,runs);
+    // rendimento atteso per la PROIEZIONE: se l'utente lo imposta, usa il suo; altrimenti lo storico
+    const expRetRaw=document.getElementById('pf-expret').value;
+    const projCustom=(expRetRaw!==''&&!isNaN(+expRetRaw));
+    const projRet=projCustom?(+expRetRaw/100):annRet;
+    const mc=pfMonteCarlo(projRet,vol,capital,contrib,horizon,runs);
     const probTarget=target>0?(mc.finals.filter(v=>v>=target).length/runs):null;
     const totInvested=capital+contrib*horizon;
     const probLoss=mc.finals.filter(v=>v<totInvested).length/runs;
@@ -6437,7 +6458,7 @@ async function pfCalculate(){
 
     pfRenderResults({okTickers,weights,annRet,vol,sharpe,sortino,beta,maxdd,corr,effN,
       eq,benchEq,benchT,hasBench,ts:aligned.ts,varDaily,cvarDaily,conf,capital,contrib,horizon,
-      mc,probTarget,target,probLoss,totInvested,rf,period,failed,
+      mc,probTarget,target,probLoss,totInvested,rf,period,failed,projRet,projCustom,
       calmar,posMonths,bestDay,worstDay,infl,realRet,finalMedReal,realFactor,
       contribAmt,freqLabel:{weekly:'a settimana',biweekly:'ogni 2 sett.',monthly:'al mese',quarterly:'a trimestre',semiannual:'a semestre',annual:'all\'anno'}[freq]||''});
     pfSwitchTab(3);
@@ -6545,6 +6566,7 @@ function pfRenderResults(R){
 
     <div class="pf-section">
       <div class="pf-section-hd">Proiezione Monte Carlo — ${R.horizon} anni (${R.mc.finals.length.toLocaleString('it-IT')} simulazioni) <button class="info-btn pf-info" data-tip="pf_mc">i</button></div>
+      <div class="pf-info-line" style="margin-bottom:10px">Proiezione basata su un rendimento annuo atteso del <b style="color:var(--accent)">${(R.projRet*100).toFixed(1)}%</b> ${R.projCustom?'(ipotesi impostata da te)':'(rendimento storico dei tuoi asset)'} e volatilità storica del ${(R.vol*100).toFixed(1)}%.</div>
       <div class="pf-chart-wrap"><canvas id="pf-mc-chart"></canvas></div>
       <div class="pf-metrics" style="margin-top:16px">
         <div class="pf-metric"><div class="pf-metric-lbl">Capitale investito <button class="info-btn pf-info" data-tip="pf_invested">i</button></div><div class="pf-metric-val">${pfFmtEur(R.totInvested)}</div><div class="pf-metric-sub">${pfFmtEur(R.capital)}${R.contrib>0?` + ${pfFmtEur(R.contribAmt)} ${R.freqLabel}`:''}</div></div>

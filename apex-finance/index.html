@@ -1507,6 +1507,19 @@ input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size
 .pf-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.66rem;font-weight:700;}
 .pf-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
 .pf-tr-note{font-size:.66rem;color:var(--t3);margin-left:auto;}
+/* ── Analisi AI ── */
+.pf-ai-card{background:linear-gradient(160deg,color-mix(in srgb,var(--bg2) 88%,var(--accent)) 0%,var(--bg2) 55%);
+  border:1px solid rgba(59,130,246,.28);border-left:3px solid var(--accent);border-radius:var(--radius);
+  padding:15px 17px;margin-bottom:18px;}
+.pf-ai-hd{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
+.pf-ai-badge{font-size:.72rem;font-weight:800;letter-spacing:.03em;color:var(--accent);
+  background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.3);border-radius:20px;padding:3px 11px;}
+.pf-ai-status{font-size:.68rem;color:var(--t3);display:inline-flex;align-items:center;gap:6px;}
+.pf-ai-body{font-size:.84rem;color:var(--t2);line-height:1.65;}
+.pf-ai-body p{margin:0 0 8px;}
+.pf-ai-body p:last-child{margin-bottom:0;}
+.pf-ai-body b{color:var(--text);}
+.pf-ai-verdict{font-size:1rem;font-weight:800;margin-bottom:8px;}
 .pf-cmp-backdrop{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.65);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:20px;}
 .pf-cmp-box{background:var(--bg);border:1px solid var(--b2);border-radius:var(--radius);box-shadow:var(--shadow);max-width:840px;width:100%;max-height:80vh;overflow:hidden;display:flex;flex-direction:column;}
 .pf-cmp-hd{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;font-weight:700;font-size:.95rem;border-bottom:1px solid var(--border);}
@@ -6526,6 +6539,10 @@ function pfRenderResults(R){
       <button class="pf-mini-btn" onclick="pfExportCSV()">⬇ Esporta CSV</button>
       <span class="pf-tr-note">Rendimenti total-return: i dividendi sono già reinvestiti (prezzi aggiustati).</span>
     </div>
+    <div class="pf-ai-card" id="pf-ai-card">
+      <div class="pf-ai-hd"><span class="pf-ai-badge">✨ Analisi AI</span><span class="pf-ai-status" id="pf-ai-status"><span class="card-spin"></span> Sto valutando il portafoglio…</span></div>
+      <div class="pf-ai-body" id="pf-ai-body"></div>
+    </div>
     <div class="pf-metrics">
       <div class="pf-metric"><div class="pf-metric-lbl">Rendimento annuo (CAGR) <button class="info-btn pf-info" data-tip="pf_cagr">i</button></div><div class="pf-metric-val" style="color:${col(R.annRet)}">${pfFmtPct(R.annRet)}</div><div class="pf-metric-sub">CAGR storico (${R.period})</div></div>
       <div class="pf-metric"><div class="pf-metric-lbl">Volatilità annua <button class="info-btn pf-info" data-tip="pf_vol">i</button></div><div class="pf-metric-val" style="color:var(--y)">${(R.vol*100).toFixed(1)}%</div><div class="pf-metric-sub">deviazione standard</div></div>
@@ -6589,6 +6606,96 @@ function pfRenderResults(R){
 
   pfDestroyCharts();
   requestAnimationFrame(()=>{ pfDrawCharts(R); });
+  pfRunAnalysis(R);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  ANALISI AI DEL PORTAFOGLIO
+//  Mostra subito un'analisi esperta locale; se su Vercel è configurata
+//  la chiave ANTHROPIC_API_KEY, la sostituisce con l'analisi di Claude.
+// ══════════════════════════════════════════════════════════════
+function pfAvgCorr(R){
+  if(!R.corr||R.corr.length<2) return null;
+  let s=0,n=0; for(let i=0;i<R.corr.length;i++)for(let j=i+1;j<R.corr.length;j++){s+=R.corr[i][j];n++;}
+  return n?s/n:null;
+}
+function pfLocalAnalysis(R){
+  const pct=v=>(v*100).toFixed(1)+'%';
+  const avgCorr=pfAvgCorr(R);
+  const strengths=[],weaknesses=[],tips=[];
+  let score=50;
+  // rischio/rendimento
+  if(R.sharpe>=1){score+=15;strengths.push(`ottimo rapporto rischio/rendimento (Sharpe ${R.sharpe.toFixed(2)})`);}
+  else if(R.sharpe>=0.5){score+=6;strengths.push(`rapporto rischio/rendimento accettabile (Sharpe ${R.sharpe.toFixed(2)})`);}
+  else {score-=10;weaknesses.push(`stai ottenendo poco rendimento per il rischio che corri (Sharpe ${R.sharpe.toFixed(2)})`);tips.push('riduci gli asset più volatili o sostituiscili con altri dal miglior rendimento corretto per il rischio');}
+  // diversificazione
+  if(R.effN>=4){score+=10;strengths.push(`buona diversificazione reale (${R.effN.toFixed(1)} asset effettivi)`);}
+  else if(R.effN<2.5){score-=10;weaknesses.push(`portafoglio concentrato: in pratica è come averne solo ${R.effN.toFixed(1)}`);tips.push('bilancia meglio i pesi o aggiungi strumenti poco correlati');}
+  if(avgCorr!=null&&avgCorr>0.7){score-=8;weaknesses.push(`i tuoi asset sono molto correlati (correlazione media ${avgCorr.toFixed(2)}): si muovono insieme, quindi ti proteggono poco nei ribassi`);tips.push('inserisci classi diverse (obbligazioni, oro, aree geografiche diverse) per abbassare la correlazione');}
+  else if(avgCorr!=null&&avgCorr<0.4){score+=6;strengths.push(`asset poco correlati (media ${avgCorr.toFixed(2)}): la diversificazione sta funzionando`);}
+  // drawdown
+  if(R.maxdd>0.4){score-=10;weaknesses.push(`in passato ha perso fino al -${pct(R.maxdd)} dal picco: richiede nervi saldi`);tips.push('valuta una quota difensiva per contenere le perdite massime');}
+  else if(R.maxdd<0.2){score+=6;strengths.push(`perdite massime storiche contenute (-${pct(R.maxdd)})`);}
+  // prob perdita
+  if(R.probLoss>0.3){score-=8;weaknesses.push(`c'è una probabilità del ${pct(R.probLoss)} di ritrovarti sotto il capitale investito a fine orizzonte`);tips.push('allunga l\'orizzonte temporale: è la leva più efficace per ridurre il rischio di perdita');}
+  else if(R.probLoss<0.1){score+=6;strengths.push(`bassa probabilità di chiudere in perdita (${pct(R.probLoss)})`);}
+  // rendimento reale
+  if(R.realRet<0){score-=6;weaknesses.push(`il rendimento reale è negativo: l'inflazione erode il potere d'acquisto`);tips.push('serve un rendimento atteso stabilmente sopra l\'inflazione per arricchirti davvero');}
+  else if(R.realRet>0.04){strengths.push(`buon rendimento reale (${pct(R.realRet)} oltre l'inflazione)`);}
+
+  score=Math.max(5,Math.min(95,score));
+  const verdict=score>=70?{lbl:'Portafoglio solido',col:'var(--g)',emo:'🟢'}:score>=48?{lbl:'Portafoglio discreto, migliorabile',col:'var(--y)',emo:'🟡'}:{lbl:'Portafoglio da rivedere',col:'var(--r)',emo:'🔴'};
+
+  const finalMed=R.mc.bands[R.mc.bands.length-1].p50;
+  const gain=finalMed-R.totInvested;
+  const gainPct=R.totInvested>0?gain/R.totInvested*100:0;
+
+  let html=`<div class="pf-ai-verdict" style="color:${verdict.col}">${verdict.emo} ${verdict.lbl}</div>`;
+  html+=`<p>Con questo mix, storicamente il portafoglio ha reso circa <b>${pct(R.annRet)} l'anno</b> con una volatilità del ${pct(R.vol)}. `;
+  html+=`Proiettando ${R.horizon} anni con un rendimento atteso del <b>${pct(R.projRet)}</b>${R.projCustom?' (tua ipotesi)':' (storico)'}, lo scenario mediano porta a circa <b>${pfFmtEur(finalMed)}</b> — un ${gain>=0?'guadagno':'risultato'} di ${pfFmtEur(gain)} (${gainPct>=0?'+':''}${gainPct.toFixed(0)}%) sui ${pfFmtEur(R.totInvested)} investiti.</p>`;
+  if(strengths.length) html+=`<p><b style="color:var(--g)">Punti di forza:</b> ${strengths.join('; ')}.</p>`;
+  if(weaknesses.length) html+=`<p><b style="color:var(--r)">Punti deboli:</b> ${weaknesses.join('; ')}.</p>`;
+  if(tips.length) html+=`<p><b style="color:var(--accent)">Cosa farei:</b> ${tips.slice(0,3).join('; ')}.</p>`;
+  html+=`<p style="color:var(--t3);font-size:.72rem;margin-top:8px"><i>Analisi automatica basata sulle metriche calcolate. Non è una raccomandazione d'investimento personalizzata.</i></p>`;
+  return html;
+}
+async function pfRunAnalysis(R){
+  const statusEl=document.getElementById('pf-ai-status');
+  const bodyEl=document.getElementById('pf-ai-body');
+  if(!bodyEl) return;
+  // 1) mostra subito l'analisi locale
+  bodyEl.innerHTML=pfLocalAnalysis(R);
+  if(statusEl) statusEl.innerHTML='<span class="card-spin"></span> Chiedo un parere a Claude…';
+  // 2) prova ad arricchire con Claude (se la chiave è configurata su Vercel)
+  try{
+    const payload={
+      tickers:R.okTickers, weights:R.weights.map(w=>+(w*100).toFixed(1)),
+      annRet:+(R.annRet*100).toFixed(1), projRet:+(R.projRet*100).toFixed(1), projCustom:R.projCustom,
+      vol:+(R.vol*100).toFixed(1), sharpe:+R.sharpe.toFixed(2), sortino:+R.sortino.toFixed(2),
+      maxdd:+(R.maxdd*100).toFixed(1), calmar:+R.calmar.toFixed(2), effN:+R.effN.toFixed(1),
+      avgCorr:pfAvgCorr(R)!=null?+pfAvgCorr(R).toFixed(2):null, beta:R.beta!=null?+R.beta.toFixed(2):null,
+      probLoss:+(R.probLoss*100).toFixed(0), realRet:+(R.realRet*100).toFixed(1),
+      horizon:R.horizon, invested:Math.round(R.totInvested), medianFinal:Math.round(R.mc.bands[R.mc.bands.length-1].p50),
+    };
+    const r=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:AbortSignal.timeout(30000)});
+    if(r.ok){
+      const j=await r.json();
+      if(j&&j.text){
+        bodyEl.innerHTML=pfFormatAI(j.text);
+        if(statusEl) statusEl.innerHTML='<span style="color:var(--accent)">✦ generata da Claude</span>';
+        return;
+      }
+    }
+  }catch{}
+  // fallback: resta l'analisi locale
+  if(statusEl) statusEl.textContent='';
+}
+// formatta il testo dell'AI (paragrafi + **grassetto**) in HTML sicuro
+function pfFormatAI(t){
+  const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return esc(t).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')
+    .split(/\n{2,}|\n/).filter(l=>l.trim()).map(l=>`<p>${l.trim()}</p>`).join('')
+    +`<p style="color:var(--t3);font-size:.72rem;margin-top:8px"><i>Generata da Claude sulla base delle metriche del portafoglio. Non è una raccomandazione d'investimento personalizzata.</i></p>`;
 }
 
 // ── Salva / Confronta / Export ──

@@ -5491,6 +5491,55 @@ Invece di darti un singolo numero (che sarebbe falsamente preciso), ti mostra un
 Più simulazioni = stima più stabile (ma più lenta). <b>1.000</b> è un buon equilibrio; <b>10.000</b> per massima precisione.<br><br>
 <i>È lo stesso metodo usato dai consulenti finanziari professionali per la pianificazione pensionistica.</i>`
   },
+  pf_invested:{
+    title:'Capitale investito',
+    body:`Il <b>totale dei soldi che metti di tasca tua</b> nel periodo, prima di qualsiasi rendimento.<br><br>
+È la somma di:<br>
+• <b>Capitale iniziale</b> → la cifra versata all'inizio.<br>
+• <b>Versamenti ricorrenti</b> → tutti i contributi periodici (settimanali/mensili/ecc.) sommati fino alla fine dell'orizzonte.<br><br>
+Serve come <b>riferimento</b>: tutti gli scenari finali (mediano, pessimistico, ottimistico) vanno confrontati con questa cifra per capire quanto hai effettivamente <b>guadagnato o perso</b>.<br><br>
+<i>Esempio: 10.000€ iniziali + 200€/mese per 10 anni = 10.000 + 24.000 = 34.000€ investiti.</i>`
+  },
+  pf_median:{
+    title:'Scenario mediano (50° percentile)',
+    body:`Il valore finale <b>più rappresentativo</b> del tuo portafoglio: la <b>mediana</b> di tutte le migliaia di simulazioni.<br><br>
+Significa che <b>metà</b> degli scenari finisce sopra questa cifra e metà sotto. Non è la media (che sarebbe gonfiata dai pochi scenari estremamente positivi): è l'esito "centrale", il più onesto da usare come aspettativa realistica.<br><br>
+<b>"In moneta di oggi"</b> → la stessa cifra depurata dall'inflazione attesa, cioè quanto varrebbe davvero quel capitale futuro <b>al potere d'acquisto attuale</b>. È il numero che conta per capire il tuo reale arricchimento.<br><br>
+<i>Se lo scenario mediano è di poco superiore al capitale investito, il portafoglio rende poco in termini reali.</i>`
+  },
+  pf_p5:{
+    title:'Scenario pessimistico (5° percentile)',
+    body:`L'esito in un <b>brutto scenario</b>: solo il <b>5% delle simulazioni</b> finisce peggio di così. Non è il caso peggiore in assoluto, ma un "brutto ma plausibile".<br><br>
+È la cifra più importante per la <b>gestione del rischio</b>: rispondi alla domanda "se le cose vanno male, con quanto potrei ritrovarmi?".<br><br>
+<b>Come usarla:</b> se anche questo scenario pessimistico ti lascia con un capitale accettabile, il portafoglio è robusto. Se invece ti spaventa, forse stai rischiando troppo per i tuoi obiettivi.<br><br>
+<i>95 volte su 100 il risultato sarà migliore di questo — ma devi essere pronto psicologicamente ed economicamente anche a questo 5%.</i>`
+  },
+  pf_p95:{
+    title:'Scenario ottimistico (95° percentile)',
+    body:`L'esito in uno <b>scenario molto favorevole</b>: solo il <b>5% delle simulazioni</b> fa meglio di così.<br><br>
+Serve a dimensionare il <b>potenziale al rialzo</b>, ma va preso con prudenza: contare su questo scenario per i propri piani è <b>rischioso</b>, perché è improbabile (1 caso su 20).<br><br>
+<b>Come usarlo:</b> confronta la distanza tra pessimistico (5%) e ottimistico (95%). Un ventaglio molto ampio = portafoglio volatile e imprevedibile; un ventaglio stretto = risultato più affidabile.<br><br>
+<i>Pianifica sullo scenario mediano, preparati al pessimistico, e considera l'ottimistico un bonus.</i>`
+  },
+  pf_probloss:{
+    title:'Probabilità di perdita',
+    body:`La <b>percentuale di simulazioni</b> in cui, alla fine dell'orizzonte, ti ritrovi con <b>meno soldi di quanti ne hai investiti</b> (valore finale &lt; capitale versato).<br><br>
+È la misura più diretta e intuitiva del rischio di <b>perdere denaro in termini nominali</b>.<br><br>
+<b>Come interpretarla:</b><br>
+• <b>&lt; 10%</b> → Portafoglio molto solido sull'orizzonte scelto.<br>
+• <b>10–30%</b> → Rischio normale per un portafoglio con azioni.<br>
+• <b>&gt; 30%</b> → Rischio elevato: orizzonte troppo breve o portafoglio troppo aggressivo.<br><br>
+<i>Allungare l'orizzonte temporale è il modo più efficace per ridurre questa probabilità: nel lungo periodo i mercati tendono a salire.</i>`
+  },
+  pf_probtarget:{
+    title:'Probabilità di raggiungere l\'obiettivo',
+    body:`La <b>percentuale di simulazioni</b> in cui il valore finale <b>raggiunge o supera il traguardo</b> che hai impostato.<br><br>
+Trasforma la simulazione in uno strumento di <b>pianificazione concreta</b>: "che probabilità ho di arrivare alla cifra che mi serve?".<br><br>
+<b>Come usarla:</b><br>
+• Se la probabilità è <b>bassa</b>, hai tre leve: aumentare i versamenti, allungare l'orizzonte, o accettare più rischio (rendimento atteso più alto).<br>
+• Se è <b>molto alta</b> (&gt; 90%), potresti permetterti un portafoglio più prudente e dormire sonni tranquilli.<br><br>
+<i>Un buon piano punta a una probabilità dell'obiettivo intorno all'80–90%: ambizioso ma realistico.</i>`
+  },
   pf_var:{
     title:'VaR & CVaR — Value at Risk',
     body:`Misurano <b>quanto puoi perdere</b> in un brutto giorno.<br><br>
@@ -6480,12 +6529,12 @@ function pfRenderResults(R){
       <div class="pf-section-hd">Proiezione Monte Carlo — ${R.horizon} anni (${R.mc.finals.length.toLocaleString('it-IT')} simulazioni) <button class="info-btn pf-info" data-tip="pf_mc">i</button></div>
       <div class="pf-chart-wrap"><canvas id="pf-mc-chart"></canvas></div>
       <div class="pf-metrics" style="margin-top:16px">
-        <div class="pf-metric"><div class="pf-metric-lbl">Capitale investito</div><div class="pf-metric-val">${pfFmtEur(R.totInvested)}</div><div class="pf-metric-sub">${pfFmtEur(R.capital)}${R.contrib>0?` + ${pfFmtEur(R.contribAmt)} ${R.freqLabel}`:''}</div></div>
-        <div class="pf-metric"><div class="pf-metric-lbl">Scenario mediano</div><div class="pf-metric-val" style="color:var(--g)">${pfFmtEur(finalMed)}</div><div class="pf-metric-sub">≈ ${pfFmtEur(R.finalMedReal)} in moneta di oggi</div></div>
-        <div class="pf-metric"><div class="pf-metric-lbl">Pessimistico (5%)</div><div class="pf-metric-val" style="color:var(--r)">${pfFmtEur(R.mc.bands[R.mc.bands.length-1].p5)}</div><div class="pf-metric-sub">5° percentile</div></div>
-        <div class="pf-metric"><div class="pf-metric-lbl">Ottimistico (95%)</div><div class="pf-metric-val">${pfFmtEur(R.mc.bands[R.mc.bands.length-1].p95)}</div><div class="pf-metric-sub">95° percentile</div></div>
-        <div class="pf-metric"><div class="pf-metric-lbl">Prob. perdita</div><div class="pf-metric-val" style="color:${R.probLoss>0.3?'var(--r)':'var(--y)'}">${(R.probLoss*100).toFixed(0)}%</div><div class="pf-metric-sub">finale < investito</div></div>
-        ${R.probTarget!=null?`<div class="pf-metric"><div class="pf-metric-lbl">Prob. obiettivo</div><div class="pf-metric-val" style="color:${R.probTarget>0.5?'var(--g)':'var(--y)'}">${(R.probTarget*100).toFixed(0)}%</div><div class="pf-metric-sub">≥ ${pfFmtEur(R.target)}</div></div>`:''}
+        <div class="pf-metric"><div class="pf-metric-lbl">Capitale investito <button class="info-btn pf-info" data-tip="pf_invested">i</button></div><div class="pf-metric-val">${pfFmtEur(R.totInvested)}</div><div class="pf-metric-sub">${pfFmtEur(R.capital)}${R.contrib>0?` + ${pfFmtEur(R.contribAmt)} ${R.freqLabel}`:''}</div></div>
+        <div class="pf-metric"><div class="pf-metric-lbl">Scenario mediano <button class="info-btn pf-info" data-tip="pf_median">i</button></div><div class="pf-metric-val" style="color:var(--g)">${pfFmtEur(finalMed)}</div><div class="pf-metric-sub">≈ ${pfFmtEur(R.finalMedReal)} in moneta di oggi</div></div>
+        <div class="pf-metric"><div class="pf-metric-lbl">Pessimistico (5%) <button class="info-btn pf-info" data-tip="pf_p5">i</button></div><div class="pf-metric-val" style="color:var(--r)">${pfFmtEur(R.mc.bands[R.mc.bands.length-1].p5)}</div><div class="pf-metric-sub">5° percentile</div></div>
+        <div class="pf-metric"><div class="pf-metric-lbl">Ottimistico (95%) <button class="info-btn pf-info" data-tip="pf_p95">i</button></div><div class="pf-metric-val">${pfFmtEur(R.mc.bands[R.mc.bands.length-1].p95)}</div><div class="pf-metric-sub">95° percentile</div></div>
+        <div class="pf-metric"><div class="pf-metric-lbl">Prob. perdita <button class="info-btn pf-info" data-tip="pf_probloss">i</button></div><div class="pf-metric-val" style="color:${R.probLoss>0.3?'var(--r)':'var(--y)'}">${(R.probLoss*100).toFixed(0)}%</div><div class="pf-metric-sub">finale < investito</div></div>
+        ${R.probTarget!=null?`<div class="pf-metric"><div class="pf-metric-lbl">Prob. obiettivo <button class="info-btn pf-info" data-tip="pf_probtarget">i</button></div><div class="pf-metric-val" style="color:${R.probTarget>0.5?'var(--g)':'var(--y)'}">${(R.probTarget*100).toFixed(0)}%</div><div class="pf-metric-sub">≥ ${pfFmtEur(R.target)}</div></div>`:''}
       </div>
     </div>
 
@@ -6647,12 +6696,18 @@ function pfDrawCharts(R){
       const pr=new Array(T).fill(0); okTickers.forEach((t,i)=>{const ri=rets[t];for(let d=0;d<T;d++)pr[d]+=w[i]*ri[d];});
       pts.push({x:+(pfStd(pr)*Math.sqrt(252)*100).toFixed(2),y:+(w.reduce((a,wi,i)=>a+wi*annR[i],0)*100).toFixed(2)});
     }
+    const isLight=isLightTheme();
     PFCH.frontier=new Chart(document.getElementById('pf-frontier-chart'),{type:'scatter',
       data:{datasets:[
-        {label:'Portafogli',data:pts,backgroundColor:'rgba(59,130,246,.25)',pointRadius:2},
-        {label:'Tuo',data:[{x:+(R.vol*100).toFixed(2),y:+(R.annRet*100).toFixed(2)}],backgroundColor:'#f59e0b',pointRadius:9,pointStyle:'star'},
+        {label:'Portafogli possibili',data:pts,backgroundColor:'rgba(59,130,246,.22)',pointRadius:2,order:1},
+        // "Tuo portafoglio": stella grande, bordata e disegnata SOPRA la nuvola (order più alto = in cima)
+        {label:'★ Il tuo portafoglio',data:[{x:+(R.vol*100).toFixed(2),y:+(R.annRet*100).toFixed(2)}],
+         backgroundColor:'#f59e0b',borderColor:isLight?'#0b1829':'#ffffff',borderWidth:2.5,
+         pointRadius:17,pointHoverRadius:19,pointStyle:'star',order:2},
       ]},
-      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:true,position:'top',labels:{color:tickC,font:{size:11},usePointStyle:true,boxWidth:8,padding:12}},
+          tooltip:{callbacks:{label:c=>`${c.dataset.label}: rischio ${c.parsed.x}% · rend. ${c.parsed.y}%`}}},
         scales:{x:{title:{display:true,text:'Rischio (volatilità %)',color:tickC,font:{size:10}},grid:{color:gridC},ticks:{color:tickC,font:{size:9}}},
                 y:{title:{display:true,text:'Rendimento atteso %',color:tickC,font:{size:10}},grid:{color:gridC},ticks:{color:tickC,font:{size:9}}}}}});
   }

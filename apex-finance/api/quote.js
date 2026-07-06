@@ -39,25 +39,30 @@ export default async function handler(req) {
     const [profile, metrics] = await Promise.all([profileRes.json(), metricsRes.json()]);
     const m = metrics?.metric || {};
 
-    // Map to quoteSummary-compatible shape so the frontend parser works unchanged
+    // helper: primo valore non nullo, diviso 100 (i margini/crescite Finnhub sono in %)
+    const pick = (...v) => { for (const x of v) if (x != null) return x; return null; };
+    const pct = (...v) => { const x = pick(...v); return x != null ? x / 100 : null; };
+
+    // Map to quoteSummary-compatible shape so the frontend parser works unchanged.
+    // Uso più chiavi Finnhub come fallback per massimizzare la copertura dati.
     const result = {
       quoteSummary: {
         result: [{
           financialData: {
-            returnOnEquity: { raw: m.roeTTM != null ? m.roeTTM / 100 : null },
-            operatingMargins: { raw: m.operatingMarginTTM != null ? m.operatingMarginTTM / 100 : null },
-            earningsGrowth: { raw: m.epsGrowthTTMYoy != null ? m.epsGrowthTTMYoy / 100 : null },
-            revenueGrowth: { raw: m.revenueGrowthTTMYoy != null ? m.revenueGrowthTTMYoy / 100 : null },
+            returnOnEquity: { raw: pct(m.roeTTM, m.roeRfy, m.roe5Y) },
+            operatingMargins: { raw: pct(m.operatingMarginTTM, m.operatingMarginAnnual, m.operatingMargin5Y) },
+            earningsGrowth: { raw: pct(m.epsGrowthTTMYoy, m.epsGrowthQuarterlyYoy, m.epsGrowth3Y, m.epsGrowth5Y) },
+            revenueGrowth: { raw: pct(m.revenueGrowthTTMYoy, m.revenueGrowthQuarterlyYoy, m.revenueGrowth3Y, m.revenueGrowth5Y) },
           },
           defaultKeyStatistics: {
-            trailingPE: { raw: m.peTTM ?? null },
-            forwardPE: { raw: m.forwardPE ?? null },
-            priceToBook: { raw: m.pbAnnual ?? null },
-            pegRatio: { raw: m.pegNormalizedAnnual ?? null },
+            trailingPE: { raw: pick(m.peTTM, m.peBasicExclExtraTTM, m.peAnnual, m.peExclExtraAnnual) },
+            forwardPE: { raw: pick(m.forwardPE, m.forwardPe) },
+            priceToBook: { raw: pick(m.pbAnnual, m.pbQuarterly, m.ptbvAnnual) },
+            pegRatio: { raw: pick(m.pegNormalizedAnnual, m.pegTTM, m.pegRatio) },
           },
           summaryDetail: {
-            trailingPE: { raw: m.peTTM ?? null },
-            forwardPE: { raw: m.forwardPE ?? null },
+            trailingPE: { raw: pick(m.peTTM, m.peBasicExclExtraTTM, m.peAnnual) },
+            forwardPE: { raw: pick(m.forwardPE, m.forwardPe) },
           },
           recommendationTrend: { trend: [] },
         }],

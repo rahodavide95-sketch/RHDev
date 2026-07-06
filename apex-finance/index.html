@@ -3071,15 +3071,30 @@ async function fetchFundamentals(ticker){
     fetchJSON(`https://query1.finance.yahoo.com/v10/finance/quoteSummary/${t}?modules=${modules}`).then(parseSummary).catch(()=>null),
   ];
 
-  // Return first non-null result
+  // UNISCI i risultati campo per campo (massima copertura):
+  // Finnhub fornisce ROE/margini/crescita/P-E/P-B ma NON forward P/E e PEG (piano free);
+  // Yahoo colma i buchi. Prima si prendeva solo la prima risposta → dati mancanti.
+  const valFields=['roe','opMargin','earningsGrowth','revenueGrowth','pb','peg','trailingPE','forwardPE'];
+  const cntFields=['strongBuy','buy','hold','sell','strongSell'];
   return new Promise(resolve=>{
-    let done=false, remaining=attempts.length;
-    attempts.forEach(p=>p.then(r=>{
+    const acc={}; let remaining=attempts.length, resolved=false;
+    const hasAnyValue=()=>valFields.some(f=>acc[f]!=null)||cntFields.some(f=>acc[f]);
+    const complete=()=>valFields.every(f=>acc[f]!=null);
+    const finish=()=>{ if(resolved) return; resolved=true;
+      cntFields.forEach(f=>{ if(acc[f]==null) acc[f]=0; });
+      resolve(hasAnyValue()?acc:null);
+    };
+    const merge=r=>{
+      if(!r) return;
+      valFields.forEach(f=>{ if(acc[f]==null && r[f]!=null) acc[f]=r[f]; });   // primo valore non nullo vince
+      cntFields.forEach(f=>{ if(!acc[f] && r[f]) acc[f]=r[f]; });
+    };
+    attempts.forEach(p=>p.then(r=>merge(r)).catch(()=>{}).finally(()=>{
       remaining--;
-      if(!done&&r&&Object.values(r).some(v=>v!==null&&v!==0)){
-        done=true; resolve(r);
-      } else if(remaining===0&&!done) resolve(null);
+      if(complete() || remaining===0) finish();
     }));
+    // cap morbido: dopo 7s risolvi con ciò che è arrivato (non aspettare proxy lenti)
+    setTimeout(()=>{ if(hasAnyValue()) finish(); },7000);
   });
 }
 

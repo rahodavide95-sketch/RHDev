@@ -419,6 +419,112 @@
   }
   .tl-body strong { color: var(--text); font-weight: 500; }
 
+  /* ── CONTROLLI INTERATTIVI (fatto / stella / note) ── */
+  .tl-item.done { opacity: 0.5; }
+  .tl-item.done .tl-title { text-decoration: line-through; text-decoration-color: var(--muted); }
+  .tl-item.starred::before { box-shadow: 0 0 0 3px rgba(245,166,35,0.35); }
+
+  .tl-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+  .tl-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--card);
+    border: 1px solid var(--divider);
+    color: var(--text-sec);
+    font-family: 'Roboto Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .tl-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .tl-btn.check.on {
+    background: rgba(39,174,96,0.15);
+    border-color: var(--green);
+    color: var(--green);
+  }
+  .tl-btn.star.on {
+    background: rgba(245,166,35,0.15);
+    border-color: var(--amber);
+    color: var(--amber);
+  }
+  .tl-btn.note.has-note {
+    background: rgba(74,144,217,0.12);
+    border-color: var(--sky);
+    color: var(--sky);
+  }
+  .tl-note-wrap { margin-top: 8px; }
+  .tl-note-wrap[hidden] { display: none; }
+  .tl-note-area {
+    width: 100%;
+    min-height: 64px;
+    background: var(--card2);
+    border: 1px solid var(--divider);
+    border-left: 3px solid var(--sky);
+    border-radius: 4px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 13.5px;
+    line-height: 1.6;
+    resize: vertical;
+    outline: none;
+  }
+  .tl-note-area:focus { border-color: var(--sky); }
+  .tl-note-area::placeholder { color: var(--muted); }
+
+  /* progress badge nel day-header */
+  .day-progress {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 11px;
+    color: var(--green);
+    background: rgba(39,174,96,0.12);
+    border: 1px solid rgba(39,174,96,0.3);
+    padding: 3px 10px;
+    border-radius: 4px;
+  }
+  .day-progress.complete { color: var(--green); font-weight: 600; }
+
+  /* barra strumenti globale */
+  .tools-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 12px 24px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--divider);
+    font-size: 12px;
+  }
+  .tools-bar .tb-info {
+    color: var(--muted);
+    font-family: 'Roboto Mono', monospace;
+    font-size: 11px;
+  }
+  .tools-bar .tb-btn {
+    background: var(--card);
+    border: 1px solid var(--divider);
+    color: var(--text-sec);
+    font-family: 'Roboto Mono', monospace;
+    font-size: 11px;
+    padding: 5px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .tools-bar .tb-btn:hover { border-color: var(--amber); color: var(--amber); }
+
   /* BADGE TYPES */
   .badge {
     font-size: 10px;
@@ -1147,6 +1253,12 @@
   <a class="day-pill" href="#g13">22/8 · SF→Fresno</a>
   <a class="day-pill" href="#g14">23/8 · Fresno→LAX rientro</a>
 </nav>
+
+<div class="tools-bar">
+  <span class="tb-info">✓ spunta · ⭐ priorità · 📝 note — tutto salvato su questo dispositivo</span>
+  <button class="tb-btn" id="tb-export">⬇ Esporta note</button>
+  <button class="tb-btn" id="tb-reset">↺ Azzera tutto</button>
+</div>
 
 <div class="container">
 
@@ -2892,6 +3004,167 @@
 </div>
 
 <script>
+  // ── Itinerario interattivo: spunta / priorità / note ──
+  (function() {
+    var STORE_KEY = 'r66-items';
+    var state = {};
+    try { state = JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch (e) { state = {}; }
+
+    function save() {
+      try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) {}
+    }
+    function get(id) { return state[id] || {}; }
+    function set(id, patch) {
+      state[id] = Object.assign({}, state[id], patch);
+      // pulizia se vuoto
+      var s = state[id];
+      if (!s.done && !s.star && !(s.note && s.note.trim())) delete state[id];
+      save();
+    }
+
+    var sections = document.querySelectorAll('.day-section');
+    sections.forEach(function(section) {
+      var sid = section.id || 'sec';
+      var items = section.querySelectorAll('.tl-item');
+
+      items.forEach(function(item, idx) {
+        var id = sid + '-' + idx;
+        var st = get(id);
+
+        // stato iniziale
+        if (st.done) item.classList.add('done');
+        if (st.star) item.classList.add('starred');
+
+        // controlli
+        var controls = document.createElement('div');
+        controls.className = 'tl-controls';
+
+        var checkBtn = document.createElement('button');
+        checkBtn.type = 'button';
+        checkBtn.className = 'tl-btn check' + (st.done ? ' on' : '');
+        checkBtn.innerHTML = (st.done ? '✓ Fatto' : '○ Segna fatto');
+
+        var starBtn = document.createElement('button');
+        starBtn.type = 'button';
+        starBtn.className = 'tl-btn star' + (st.star ? ' on' : '');
+        starBtn.innerHTML = (st.star ? '★ Priorità' : '☆ Priorità');
+
+        var noteBtn = document.createElement('button');
+        noteBtn.type = 'button';
+        var hasNote = !!(st.note && st.note.trim());
+        noteBtn.className = 'tl-btn note' + (hasNote ? ' has-note' : '');
+        noteBtn.innerHTML = '📝 Nota';
+
+        controls.appendChild(checkBtn);
+        controls.appendChild(starBtn);
+        controls.appendChild(noteBtn);
+
+        // area note
+        var noteWrap = document.createElement('div');
+        noteWrap.className = 'tl-note-wrap';
+        noteWrap.hidden = !hasNote;
+        var area = document.createElement('textarea');
+        area.className = 'tl-note-area';
+        area.placeholder = 'Scrivi qui una nota (prenotazioni, orari, promemoria)…';
+        area.value = st.note || '';
+        noteWrap.appendChild(area);
+
+        item.appendChild(controls);
+        item.appendChild(noteWrap);
+
+        // eventi
+        checkBtn.addEventListener('click', function() {
+          var done = !item.classList.contains('done');
+          item.classList.toggle('done', done);
+          checkBtn.classList.toggle('on', done);
+          checkBtn.innerHTML = done ? '✓ Fatto' : '○ Segna fatto';
+          set(id, { done: done });
+          updateProgress(section);
+        });
+
+        starBtn.addEventListener('click', function() {
+          var star = !item.classList.contains('starred');
+          item.classList.toggle('starred', star);
+          starBtn.classList.toggle('on', star);
+          starBtn.innerHTML = star ? '★ Priorità' : '☆ Priorità';
+          set(id, { star: star });
+        });
+
+        noteBtn.addEventListener('click', function() {
+          noteWrap.hidden = !noteWrap.hidden;
+          if (!noteWrap.hidden) area.focus();
+        });
+
+        area.addEventListener('input', function() {
+          set(id, { note: area.value });
+          var has = !!area.value.trim();
+          noteBtn.classList.toggle('has-note', has);
+        });
+      });
+
+      // badge progresso nel day-header
+      var header = section.querySelector('.day-header .day-info');
+      if (header && items.length) {
+        var badge = document.createElement('span');
+        badge.className = 'day-progress';
+        var stats = header.querySelector('.day-stats');
+        if (stats) stats.appendChild(badge); else header.appendChild(badge);
+        section._progressBadge = badge;
+        updateProgress(section);
+      }
+    });
+
+    function updateProgress(section) {
+      var badge = section._progressBadge;
+      if (!badge) return;
+      var items = section.querySelectorAll('.tl-item');
+      var done = section.querySelectorAll('.tl-item.done').length;
+      badge.textContent = '✓ ' + done + '/' + items.length;
+      badge.classList.toggle('complete', done === items.length && items.length > 0);
+    }
+
+    // Esporta note
+    var exportBtn = document.getElementById('tb-export');
+    if (exportBtn) exportBtn.addEventListener('click', function() {
+      var lines = ['ROUTE 66 — LE MIE NOTE\n'];
+      sections.forEach(function(section) {
+        var sid = section.id || 'sec';
+        var h2 = section.querySelector('.day-info h2');
+        var date = section.querySelector('.date-badge');
+        var items = section.querySelectorAll('.tl-item');
+        var dayLines = [];
+        items.forEach(function(item, idx) {
+          var st = get(sid + '-' + idx);
+          var note = st.note && st.note.trim();
+          if (!st.done && !st.star && !note) return;
+          var title = (item.querySelector('.tl-title') || {}).textContent || '';
+          title = title.replace(/\s+/g, ' ').trim();
+          var flags = (st.done ? '[✓] ' : '[ ] ') + (st.star ? '⭐ ' : '');
+          dayLines.push('  ' + flags + title);
+          if (note) dayLines.push('      → ' + note.replace(/\n/g, '\n      '));
+        });
+        if (dayLines.length) {
+          lines.push('\n' + (date ? date.textContent + ' — ' : '') + (h2 ? h2.textContent : sid));
+          lines.push(dayLines.join('\n'));
+        }
+      });
+      var blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url; a.download = 'route66-note.txt';
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a); URL.revokeObjectURL(url);
+    });
+
+    // Azzera tutto
+    var resetBtn = document.getElementById('tb-reset');
+    if (resetBtn) resetBtn.addEventListener('click', function() {
+      if (!confirm('Vuoi azzerare tutte le spunte, priorità e note?')) return;
+      state = {}; save();
+      location.reload();
+    });
+  })();
+
   // Countdown al 10 agosto 2026
   (function() {
     var start = new Date('2026-08-10T00:00:00');

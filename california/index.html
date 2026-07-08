@@ -787,6 +787,44 @@
     .drive-card .route-line {
       font-size: 11px;
     }
+
+    /* ── CONTROLLI INTERATTIVI SU MOBILE ── */
+    .tl-controls {
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .tl-btn {
+      flex: 1 1 auto;
+      justify-content: center;
+      min-height: 40px;      /* target tocco comodo */
+      font-size: 12px;
+      padding: 8px 12px;
+    }
+    .tl-note-area {
+      min-height: 88px;
+      font-size: 16px;       /* evita lo zoom automatico di iOS al focus */
+      padding: 12px 14px;
+    }
+    .day-progress {
+      font-size: 11px;
+      padding: 4px 10px;
+    }
+    /* barra strumenti: info sopra, bottoni sotto a piena larghezza */
+    .tools-bar {
+      padding: 10px 14px;
+      gap: 8px;
+    }
+    .tools-bar .tb-info {
+      flex: 1 1 100%;
+      text-align: center;
+      font-size: 10px;
+      line-height: 1.5;
+    }
+    .tools-bar .tb-btn {
+      flex: 1 1 0;
+      min-height: 40px;
+      font-size: 12px;
+    }
   }
 
   /* ── SMALL MOBILE (≤380px) ── */

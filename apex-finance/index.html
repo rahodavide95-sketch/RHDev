@@ -5642,7 +5642,8 @@ Invece di darti un singolo numero (che sarebbe falsamente preciso), ti mostra un
 • <b>5° percentile</b> → scenario pessimistico (solo il 5% dei casi va peggio).<br>
 • <b>95° percentile</b> → scenario ottimistico.<br><br>
 Più simulazioni = stima più stabile (ma più lenta). <b>1.000</b> è un buon equilibrio; <b>10.000</b> per massima precisione.<br><br>
-<i>È lo stesso metodo usato dai consulenti finanziari professionali per la pianificazione pensionistica.</i>`
+<b>Come genera gli scenari (metodo affidabile):</b> non usa una curva "a campana" teorica, ma il <b>block bootstrap</b>: ricampiona i <b>rendimenti mensili realmente accaduti</b> dei tuoi asset (a blocchi), ri-centrandoli sul rendimento atteso. Così conserva le <b>"code grasse"</b> del mercato reale — crolli e rimbalzi improvvisi — che una gaussiana sottostimerebbe. Lo scenario pessimistico che vedi è quindi più realistico.<br><br>
+<i>È lo stesso approccio usato dai risk manager professionali: proiettare partendo da ciò che è davvero successo, non da un'ipotesi idealizzata.</i>`
   },
   pf_expret:{
     title:'Rendimento annuo atteso',
@@ -6578,7 +6579,7 @@ async function pfCalculate(){
     const expRetRaw=document.getElementById('pf-expret').value;
     const projCustom=(expRetRaw!==''&&!isNaN(+expRetRaw));
     const projRet=projCustom?(+expRetRaw/100):annRet;
-    const mc=pfMonteCarlo(projRet,vol,capital,contrib,horizon,runs);
+    const mc=pfMonteCarlo(pr,projRet,capital,contrib,horizon,runs);
     const probTarget=target>0?(mc.finals.filter(v=>v>=target).length/runs):null;
     const totInvested=capital+contrib*horizon;
     const probLoss=mc.finals.filter(v=>v<totInvested).length/runs;
@@ -6598,16 +6599,30 @@ async function pfCalculate(){
   }
 }
 
-function pfMonteCarlo(annRet,vol,capital,contrib,horizon,runs){
-  const steps=horizon*12, mu=annRet/12, sig=vol/Math.sqrt(12), cMon=contrib/12;
+// Monte Carlo con BLOCK BOOTSTRAP dei rendimenti reali (code grasse realistiche).
+// Invece di estrarre da una gaussiana, ricampiona i rendimenti mensili realmente
+// accaduti (blocchi sovrapposti di 21 giorni), ri-centrati sul rendimento atteso.
+function pfMonteCarlo(prDaily,targetAnnRet,capital,contrib,horizon,runs){
+  const W=21;
+  // pool di rendimenti "mensili" da blocchi sovrapposti di 21 giorni di trading
+  let pool=[];
+  if(prDaily && prDaily.length>W){
+    for(let i=0;i+W<=prDaily.length;i++){ let g=1; for(let j=i;j<i+W;j++) g*=(1+prDaily[j]); pool.push(g-1); }
+  }
+  if(!pool.length){ // fallback: usa i rendimenti giornalieri composti per mese, o zero
+    pool=(prDaily&&prDaily.length)?prDaily.map(r=>Math.pow(1+r,W)-1):[0];
+  }
+  const histMeanM=pool.reduce((a,b)=>a+b,0)/pool.length;
+  const targetMeanM=Math.pow(1+targetAnnRet,1/12)-1;
+  const shift=targetMeanM-histMeanM;   // sposta la MEDIA sul rendimento atteso, conservando forma e code
+  const steps=horizon*12, cMon=contrib/12, P=pool.length;
   const finals=new Array(runs);
-  // yearly percentile bands
   const yearVals=Array.from({length:horizon+1},()=>new Array(runs));
-  const gauss=()=>{ let u=0,v=0; while(u===0)u=Math.random(); while(v===0)v=Math.random(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); };
   for(let r=0;r<runs;r++){
     let v=capital; yearVals[0][r]=v;
     for(let s=1;s<=steps;s++){
-      v=v*(1+mu+sig*gauss())+cMon;
+      const rr=pool[(Math.random()*P)|0]+shift;
+      v=v*(1+rr)+cMon;
       if(v<0)v=0;
       if(s%12===0) yearVals[s/12][r]=v;
     }

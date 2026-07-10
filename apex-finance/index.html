@@ -1560,6 +1560,21 @@ input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size
   border-radius:8px;font-size:.82rem;color:var(--text);line-height:1.55;}
 .ai-reco-tag{font-weight:800;white-space:nowrap;flex-shrink:0;}
 .ai-reco b{color:var(--text);}
+/* ── Zona opportunità ── */
+.oz-card{margin-top:14px;border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;background:var(--bg2);}
+.oz-card.oz-in{border-color:rgba(16,185,129,.4);background:linear-gradient(160deg,rgba(16,185,129,.06),var(--bg2) 60%);}
+.oz-hd{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.oz-title{font-size:.92rem;font-weight:800;}
+.oz-criteria{display:flex;flex-direction:column;gap:7px;}
+.oz-crit{display:flex;align-items:center;gap:9px;font-size:.82rem;}
+.oz-crit .oz-ic{width:20px;height:20px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;color:#fff;}
+.oz-crit.ok .oz-ic{background:var(--g);}
+.oz-crit.no .oz-ic{background:var(--r);}
+.oz-crit.na .oz-ic{background:var(--t3);}
+.oz-crit-txt{color:var(--t2);}
+.oz-crit-txt b{color:var(--text);}
+.oz-note{margin-top:11px;font-size:.82rem;line-height:1.6;color:var(--text);padding-top:11px;border-top:1px solid var(--border);}
+.oz-note b{color:var(--text);}
 .pf-cmp-backdrop{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.65);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:20px;}
 .pf-cmp-box{background:var(--bg);border:1px solid var(--b2);border-radius:var(--radius);box-shadow:var(--shadow);max-width:840px;width:100%;max-height:80vh;overflow:hidden;display:flex;flex-direction:column;}
 .pf-cmp-hd{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;font-weight:700;font-size:.95rem;border-bottom:1px solid var(--border);}
@@ -2189,6 +2204,13 @@ input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size
     <div class="pf-ai-card" id="ai-analysis" style="display:none;margin-top:16px">
       <div class="pf-ai-hd"><span class="pf-ai-badge">✨ Analisi AI</span><span class="pf-ai-status" id="ai-analysis-status"></span></div>
       <div class="pf-ai-body" id="ai-analysis-body"></div>
+    </div>
+
+    <!-- Zona opportunità: perché sì / perché no -->
+    <div class="oz-card" id="opp-zone" style="display:none">
+      <div class="oz-hd"><span class="oz-title" id="oz-title">🎯 Zona opportunità</span><button class="info-btn" data-tip="opportunities" title="Come funziona la zona opportunità?">i</button></div>
+      <div class="oz-criteria" id="oz-criteria"></div>
+      <div class="oz-note" id="oz-note"></div>
     </div>
 
     <hr class="sec-divider">
@@ -4966,7 +4988,39 @@ function stockLocalAnalysis(d){
   html+=`<p style="color:var(--t3);font-size:.72rem;margin-top:8px"><i>Analisi automatica basata sui dati tecnici e fondamentali del titolo. È a scopo informativo, non una raccomandazione d'investimento personalizzata.</i></p>`;
   return html;
 }
+// Spiega perché il titolo È o NON È in "zona opportunità" (stessi 3 criteri della sezione dedicata)
+function renderOppZone(d){
+  const card=document.getElementById('opp-zone');
+  const critEl=document.getElementById('oz-criteria');
+  const noteEl=document.getElementById('oz-note');
+  const titleEl=document.getElementById('oz-title');
+  if(!card) return;
+  card.style.display='block';
+  const c1={ok:d.rsi!=null&&d.rsi<40, na:d.rsi==null, label:'Ipervenduto — RSI &lt; 40',
+    val:d.rsi!=null?`RSI ${d.rsi.toFixed(0)}`:'RSI non disponibile'};
+  const c2={ok:d.trendUp===true, na:d.trendUp==null, label:'Trend di fondo rialzista — MA50 &gt; MA200',
+    val:d.trendUp==null?'trend non disponibile':(d.trendUp?'MA50 sopra MA200':'MA50 sotto MA200')};
+  const c3={ok:d.score>=45, na:false, label:'Conferma quantitativa — APEX Score ≥ 45', val:`Score ${d.score}`};
+  const crits=[c1,c2,c3];
+  const inZone=crits.every(c=>c.ok);
+  card.classList.toggle('oz-in',inZone);
+  titleEl.textContent=inZone?'🎯 In zona opportunità':'🎯 Zona opportunità';
+  critEl.innerHTML=crits.map(c=>{
+    const cls=c.na?'na':(c.ok?'ok':'no'); const ic=c.na?'?':(c.ok?'✓':'✗');
+    return `<div class="oz-crit ${cls}"><span class="oz-ic">${ic}</span><span class="oz-crit-txt"><b>${c.label}</b> — ${c.val}</span></div>`;
+  }).join('');
+  if(inZone){
+    noteEl.innerHTML=`<b style="color:var(--g)">✅ Sì, è in zona opportunità.</b> Soddisfa <b>tutti e tre</b> i criteri: è ipervenduto ma con il trend di fondo ancora rialzista e con la conferma del modello. È il setup classico di <b>acquisto sul ritracciamento</b> — comprare la debolezza temporanea di un asset che nel lungo periodo sale. <i>Verifica sempre con la tua analisi: non è un consiglio personalizzato.</i>`;
+  } else {
+    const fails=[];
+    if(!c1.ok) fails.push(c1.na?'non c\'è abbastanza storico per calcolare l\'RSI':`non è ipervenduto (RSI ${d.rsi!=null?d.rsi.toFixed(0):'n/d'} ≥ 40), quindi il prezzo non offre uno "sconto" statistico ora`);
+    if(!c2.ok) fails.push(c2.na?'non c\'è abbastanza storico per definire il trend':(d.trendUp===false?'il trend di fondo non è rialzista (MA50 sotto MA200): si evita di "prendere un coltello che cade"':'il trend non è disponibile'));
+    if(!c3.ok) fails.push(`il modello non conferma (APEX Score ${d.score} &lt; 45): il quadro tecnico complessivo è troppo debole`);
+    noteEl.innerHTML=`<b style="color:var(--y)">Non è in zona opportunità.</b> Perché ${fails.join('; e ')}. La zona opportunità richiede <b>tutti e tre</b> i criteri insieme. <i>Non vuol dire che sia un cattivo titolo: solo che ora manca il setup "sconto + trend sano".</i>`;
+  }
+}
 async function renderStockAI(d,tryAI){
+  renderOppZone(d);
   const card=document.getElementById('ai-analysis');
   const body=document.getElementById('ai-analysis-body');
   const status=document.getElementById('ai-analysis-status');

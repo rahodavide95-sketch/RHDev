@@ -695,11 +695,6 @@ header{
 .sig-headline{font-size:.9375rem;font-weight:600;}
 .sig-body{font-size:.82rem;color:var(--t2);line-height:1.6;margin-top:14px;}
 .sig-body b{color:var(--text);}
-.sig-points{display:flex;flex-direction:column;gap:8px;margin-top:12px;}
-.sig-point{display:flex;gap:10px;align-items:flex-start;font-size:.82rem;color:var(--t2);line-height:1.5;}
-.sig-point::before{content:'·';color:var(--accent);font-size:1.1rem;flex-shrink:0;margin-top:-1px;}
-.sig-decision{margin-top:14px;padding:12px 16px;border-radius:var(--radius-sm);background:rgba(255,255,255,.05);border:1px solid var(--border);font-size:.83rem;font-weight:500;line-height:1.6;}
-.sig-decision b{color:var(--text);}
 .sig-tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px;margin-bottom:4px;}
 .sig-tag{padding:4px 12px;border-radius:20px;font-size:.72rem;font-weight:600;background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--t2);}
 .stag{
@@ -2185,8 +2180,6 @@ input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size
         <span class="sig-headline" id="sig-headline">—</span>
       </div>
       <div class="sig-tags" id="sig-tags"></div>
-      <div class="sig-points" id="sig-points"></div>
-      <div class="sig-decision" id="sig-decision"></div>
     </div><!-- /sig-box -->
 
     <!-- Analisi AI in linguaggio naturale -->
@@ -3466,81 +3459,6 @@ function edgeScore(R,M50,M200,V,Mo,w7,w30,w90,price,Mo3m=null,Mo6m=null,Mo12m=nu
 }
 
 // ── SIGNAL TEXT GENERATOR ──
-function buildSignalText(ticker,price,R,M50,M200,V,Mo,DD,w7,w30,w90,score){
-  const fmt=n=>n>=10000?n.toLocaleString('it-IT',{maximumFractionDigits:0}):n>=100?n.toFixed(2):n>=1?n.toFixed(2):n.toFixed(4);
-  let p=[];
-
-  // MA200 — structural trend
-  if(M200){
-    const pct=((price-M200)/M200*100);
-    if(price>M200){
-      p.push(`<b>Trend strutturale rialzista:</b> il prezzo (${fmt(price)}) si trova ${pct.toFixed(1)}% sopra la media mobile a 200 giorni (MA200: ${fmt(M200)}).`);
-      if(M50&&M50>M200) p.push(`La MA50 (${fmt(M50)}) è sopra la MA200: <b>Golden Cross attivo</b>, segnale tecnico fortemente positivo.`);
-    } else {
-      p.push(`<b>Trend strutturale ribassista:</b> il prezzo (${fmt(price)}) è ${Math.abs(pct).toFixed(1)}% sotto la media mobile a 200 giorni (MA200: ${fmt(M200)}).`);
-      if(M50&&M50<M200) p.push(`La MA50 (${fmt(M50)}) è sotto la MA200: <b>Death Cross attivo</b>, segnale tecnico negativo.`);
-    }
-  }
-
-  // RSI
-  if(R!=null){
-    if(R<30) p.push(`<b>RSI a ${R.toFixed(1)}:</b> zona di ipervenduto — rimbalzo statisticamente probabile nel breve termine.`);
-    else if(R>70) p.push(`<b>RSI a ${R.toFixed(1)}:</b> zona di ipercomprato — attenzione a una possibile correzione.`);
-    else p.push(`RSI a ${R.toFixed(1)}: zona ${R<50?'neutro-negativa':'neutro-positiva'}.`);
-  }
-
-  // Win rate (solo i valori disponibili — N/D se storia insufficiente)
-  const wrAvail=[w7,w30,w90].filter(w=>w!=null);
-  if(wrAvail.length){
-    const avgWr=wrAvail.reduce((a,b)=>a+b,0)/wrAvail.length;
-    const fw=w=>w!=null?w.toFixed(0)+'%':'N/D';
-    p.push(`<b>Win rate storico:</b> 7gg ${fw(w7)} · 30gg ${fw(w30)} · 90gg ${fw(w90)} (media ${avgWr.toFixed(0)}%).`);
-  }
-
-  // Volatility
-  if(V!=null){
-    const vDesc=V>60?'molto alta — ridurre il sizing':V>40?'elevata — gestire il rischio':V>20?'moderata':'bassa — condizioni favorevoli per posizioni più grandi';
-    p.push(`Volatilità annualizzata: <b>${V.toFixed(1)}%</b> (${vDesc}).`);
-  }
-
-  // Conclusion
-  let action;
-  if(score>=65) action=`✅ <b>DECISIONE: INGRESSO.</b> Edge statistico favorevole (${score}/100). Condizioni tecniche e di momentum supportano una posizione long. Stop-loss consigliato: sotto MA200${M200?` (${fmt(M200)})`:''}.`;
-  else if(score>=55) action=`🟢 <b>DECISIONE: INGRESSO PRUDENTE.</b> Edge positivo (${score}/100). Le condizioni sono favorevoli ma non ottimali. Ridurre il sizing rispetto al normale e mantenere uno stop rigido.`;
-  else if(score>=45) action=`⏸ <b>DECISIONE: ATTESA.</b> Edge neutro (${score}/100). Nessun vantaggio statistico chiaro in questo momento. Aspettare un setup più definito prima di aprire nuove posizioni.`;
-  else if(score>=35) action=`🟡 <b>DECISIONE: ATTENZIONE.</b> Edge negativo (${score}/100). Le condizioni sono sfavorevoli. Evitare nuovi ingressi. Se già in posizione, valutare riduzione o stop-loss più stretto.`;
-  else action=`🔴 <b>DECISIONE: USCITA.</b> Edge statistico negativo (${score}/100). Pressione ribassista dominante. Uscire o proteggere il capitale con stop rigidi. Attendere il ritorno sopra MA200 per rivalutare.`;
-
-  return {points: p, decision: action};
-}
-
-function buildTags(R,M50,M200,price,V,Mo,w30){
-  const tags=[];
-  if(M200){
-    if(price>M200) tags.push({t:'Sopra MA200',c:'pos'});
-    else tags.push({t:'Sotto MA200',c:'neg'});
-    if(M50&&M50>M200) tags.push({t:'Golden Cross',c:'pos'});
-    else if(M50&&M50<M200) tags.push({t:'Death Cross',c:'neg'});
-  }
-  if(R!=null){
-    if(R<30) tags.push({t:`RSI ${R.toFixed(0)} — ipervenduto`,c:'pos'});
-    else if(R>70) tags.push({t:`RSI ${R.toFixed(0)} — ipercomprato`,c:'neg'});
-    else tags.push({t:`RSI ${R.toFixed(0)}`,c:'neu'});
-  }
-  if(V!=null){
-    if(V>50) tags.push({t:`Vol ${V.toFixed(0)}% alta`,c:'neg'});
-    else if(V<20) tags.push({t:`Vol ${V.toFixed(0)}% bassa`,c:'pos'});
-    else tags.push({t:`Vol ${V.toFixed(0)}%`,c:'neu'});
-  }
-  if(Mo!=null){
-    if(Mo>3) tags.push({t:'Momentum +',c:'pos'});
-    else if(Mo<-3) tags.push({t:'Momentum −',c:'neg'});
-  }
-  if(w30>60) tags.push({t:`WR30 ${w30.toFixed(0)}%`,c:'pos'});
-  else if(w30<40) tags.push({t:`WR30 ${w30.toFixed(0)}%`,c:'neg'});
-  return tags;
-}
-
 // ── RACCOMANDAZIONE OPERATIVA (fonde dip signal in sig-box) ──
 function buildDipSignal(R,M50,M200,Mo3m,Mo12m,DD,cur,w30,score){
   const fmt=n=>n>=10000?n.toLocaleString('it-IT',{maximumFractionDigits:0}):n>=1?n.toFixed(2):n.toFixed(4);
@@ -3560,30 +3478,7 @@ function buildDipSignal(R,M50,M200,Mo3m,Mo12m,DD,cur,w30,score){
   document.getElementById('sig-tags').innerHTML=chips.map(c=>
     `<span class="sig-tag">${c.l}: <span style="color:${c.c};font-weight:700">${c.v}</span></span>`
   ).join('');
-
-  // Raccomandazione in sig-decision
-  let body,action;
-  if(inCrash && ma50BelowMA200 && bearMom){
-    body=`Il calo attuale (<b>${DD.toFixed(1)}%</b> dal picco) configura un bear market strutturale. Death Cross attivo, momentum 12M negativo.`;
-    action=`<b>Non entrare.</b> Se sei in posizione, valuta di ridurla.`;
-  } else if(score < 40){
-    body=`Debolezza tecnica generalizzata.`+(ma50BelowMA200?' Death Cross attivo.':'')+(bearMom?` Momentum 12M fortemente negativo (${Mo12m.toFixed(1)}%).`:'');
-    action=`<b>Non entrare.</b> Se sei in posizione, valuta di ridurla.`;
-  } else if(oversold && !ma50BelowMA200 && score >= 45){
-    const stopRef=aboveMA200&&M200!=null?`sotto la MA200 (${fmt(M200)})`:'al minimo recente';
-    body=`RSI a <b>${R.toFixed(1)}</b> — ipervenduto in trend strutturalmente sano (MA50 sopra MA200). Setup classico di acquisto sul ribasso.`;
-    action=`<b>Ingresso graduale</b> (30–50% del sizing). Stop ${stopRef}.`;
-  } else if(score >= 70 && aboveMA200 && !oversold){
-    body=`Trend rialzista solido: prezzo sopra MA200, momentum positivo, nessun segnale di debolezza.`;
-    action=`<b>Mantieni la posizione.</b> Puoi aggiungere su correzioni intraday.`;
-  } else if(score >= 60){
-    body=`Condizioni tecniche buone. Trend generalmente favorevole con qualche incertezza sul timing.`;
-    action=`<b>Ingresso con sizing normale</b> se non sei già in posizione.`;
-  } else {
-    body=`Trend laterale o inconcludente. Nessun vantaggio statistico chiaro.`;
-    action=`<b>Attendi.</b> Non aprire nuove posizioni adesso.`;
-  }
-  document.getElementById('sig-decision').innerHTML=body+'<br><br>'+action;
+  // La raccomandazione discorsiva è nella card "Analisi AI" — qui restano solo le chip sintetiche
 }
 // ── SESSION CACHE ──
 const CK='qe7_',TTL=300000; // 5 min — allineato alla cache dei dati grafici per evitare punteggi obsoleti
@@ -5153,15 +5048,9 @@ async function analyze(ticker){
         sco>=45?'Zona di equilibrio — attendere un segnale più chiaro':
         sco>=35?'Condizioni sfavorevoli — evitare nuovi ingressi':
         'Pressione ribassista dominante — proteggere il capitale';
-      const sig=buildSignalText(ticker,cur,R,M50,M200,V,Mo,DD,w7,w30,w90,sco);
-      document.getElementById('sig-points').innerHTML=sig.points.map(p=>'<div class="sig-point"><span>'+p+'</span></div>').join('');
-      document.getElementById('sig-decision').innerHTML=sig.decision;
+      // narrativa e raccomandazione sono ora nella card "Analisi AI" (niente doppioni)
     };
     renderScoreUI(score);
-
-    // Tags
-    const tags=buildTags(R,M50,M200,cur,V,Mo,w30);
-    document.getElementById('sig-tags').innerHTML=tags.map(t=>`<span class="stag ${t.c}">${t.t}</span>`).join('');
 
     // Indicators
     const rc=R==null?'var(--t3)':R<30?'var(--g)':R>70?'var(--r)':'var(--t2)';

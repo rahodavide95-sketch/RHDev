@@ -5402,16 +5402,25 @@ I titoli sono ordinati per <b>forza del segnale</b> (quanto è ipervenduto + con
 <i>⚠ Screening statistico basato su dati storici. Verifica sempre con la tua analisi prima di investire.</i>`
   },
   score:{
-    title:'APEX Score — cos\'è e come usarlo',
-    body:`Punteggio composito (0–100) che sintetizza tutti gli indicatori tecnici in un'unica metrica operativa.
+    title:'APEX Score — cos\'è e come si calcola',
+    body:`Punteggio composito (0–100) che sintetizza tutti gli indicatori in un'unica metrica operativa.
 <br><br>
+<b>Come nasce il numero:</b> si parte da una base di <b>50</b> (neutro) e si sommano/sottraggono punti in base a ciascun fattore. Ecco esattamente il peso di ognuno:<br><br>
+<b>📈 Trend (fino a ±21)</b> — posizione del prezzo rispetto a MA50 (±4/8) e MA200 (±5/10), più Golden/Death Cross (±3).<br>
+<b>🚀 Momentum (fino a ±22)</b> — performance a 3 mesi (±10), 6 mesi (±7) e 12 mesi (±5).<br>
+<b>🎯 RSI (±8)</b> — bonus se ipervenduto, malus se ipercomprato.<br>
+<b>📊 Volatilità (−10 … +3)</b> — penalizza la volatilità eccessiva, premia quella bassa.<br>
+<b>🎲 Win rate storico (±12)</b> — frequenza storica di rialzo a 7/30/90 giorni.<br>
+<b>📅 Stagionalità (±7)</b> — comportamento tipico del mese corrente.<br>
+<b>💼 Fondamentali (±15, solo azioni)</b> — ROE (±6), margine operativo (±4), crescita utili (±5).<br><br>
+<b>Come leggerlo:</b><br>
 <b>≥ 65</b> → Forte vantaggio rialzista. Condizioni ottimali per entrare.<br>
 <b>55–64</b> → Vantaggio. Ingresso prudente ammesso.<br>
 <b>45–54</b> → Neutro. Nessun edge chiaro, meglio aspettare.<br>
 <b>35–44</b> → Svantaggio. Evitare nuovi ingressi.<br>
 <b>&lt; 35</b> → Forte svantaggio ribassista. Uscire o proteggersi.
 <br><br>
-Non è una garanzia, ma un riassunto delle probabilità statistiche storiche.`
+<i>Per ETF, crypto e indici la parte fondamentale non si applica: il punteggio si basa solo su trend, momentum e statistica. Non è una garanzia, ma un riassunto delle probabilità storiche.</i>`
   },
   rsi:{
     title:'RSI — Relative Strength Index',

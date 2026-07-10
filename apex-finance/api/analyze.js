@@ -6,8 +6,29 @@ const CORS = {
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
-const json = (obj, status = 200) =>
-  new Response(JSON.stringify(obj), { status, headers: { ...CORS, 'Content-Type': 'application/json' } });
+const json = (obj, status = 200, extra = {}) =>
+  new Response(JSON.stringify(obj), { status, headers: { ...CORS, 'Content-Type': 'application/json', ...extra } });
+
+// ── Protezioni best-effort (stato per-istanza edge) ──
+const CACHE = new Map();          // key → { text, ts }
+const CACHE_TTL = 60 * 60 * 1000; // 1 ora
+const CACHE_MAX = 300;
+const HITS = new Map();           // ip → [timestamps]
+const RATE_MAX = 15;              // richieste
+const RATE_WIN = 60 * 1000;       // per minuto
+
+function rateLimited(ip, now) {
+  const arr = (HITS.get(ip) || []).filter(t => now - t < RATE_WIN);
+  arr.push(now);
+  HITS.set(ip, arr);
+  if (HITS.size > 5000) { for (const k of HITS.keys()) { HITS.delete(k); if (HITS.size < 2500) break; } }
+  return arr.length > RATE_MAX;
+}
+// chiave di cache stabile dai campi salienti del payload
+function cacheKey(m) {
+  if (m.kind === 'stock') return `s:${m.ticker}:${m.score}:${m.rsi}:${m.mo3m}:${m.aboveMA200}:${m.trendUp}`;
+  return `p:${(m.tickers || []).join(',')}:${(m.weights || []).join(',')}:${m.projRet}:${m.horizon}:${m.sharpe}`;
+}
 
 export default async function handler(req) {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
@@ -17,8 +38,17 @@ export default async function handler(req) {
   // Nessuna chiave configurata → il frontend usa l'analisi locale
   if (!key) return json({ error: 'no_key' }, 503);
 
+  const now = Date.now();
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'anon';
+  if (rateLimited(ip, now)) return json({ error: 'rate_limited' }, 429, { 'Retry-After': '60' });
+
   let m;
   try { m = await req.json(); } catch { return json({ error: 'bad_json' }, 400); }
+
+  // cache hit → risposta immediata, nessun costo API
+  const ck = cacheKey(m);
+  const cached = CACHE.get(ck);
+  if (cached && now - cached.ts < CACHE_TTL) return json({ text: cached.text, cached: true }, 200);
 
   // ── Analisi di un SINGOLO TITOLO ──
   if (m.kind === 'stock') {
@@ -38,7 +68,7 @@ Win rate storico: 30gg ${m.w30 ?? 'n/d'}% · 90gg ${m.w90 ?? 'n/d'}%
 ${fundLine}
 
 Scrivi 3 brevi paragrafi in prosa: (1) il quadro tecnico e di trend; (2) rischio, momentum e valutazione fondamentale; (3) una conclusione che dica ESPLICITAMENTE se i dati CONSIGLIANO o SCONSIGLIANO l'acquisto ora (o suggeriscono di attendere), con il perché. Usa **grassetto** per le parole chiave. Massimo ~170 parole. Non inventare dati. Chiudi con una riga che ricorda che non è una raccomandazione d'investimento personalizzata.`;
-    return await callClaude(key, sPrompt);
+    return await callClaude(key, sPrompt, ck);
   }
 
   const holdings = (m.tickers || [])
@@ -66,10 +96,10 @@ Scrivi 4 brevi paragrafi:
 4) 2-3 suggerimenti pratici e specifici per migliorarlo.
 Usa **grassetto** per le parole chiave. Massimo ~180 parole totali. Non inventare dati oltre a quelli forniti. Chiudi ricordando in una riga che non è una raccomandazione d'investimento personalizzata.`;
 
-  return await callClaude(key, prompt);
+  return await callClaude(key, prompt, ck);
 }
 
-async function callClaude(key, prompt) {
+async function callClaude(key, prompt, ck) {
   try {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -92,6 +122,11 @@ async function callClaude(key, prompt) {
     const data = await r.json();
     const text = (data?.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
     if (!text) return json({ error: 'empty' }, 502);
+    // salva in cache (con eviction FIFO grezza)
+    if (ck) {
+      CACHE.set(ck, { text, ts: Date.now() });
+      if (CACHE.size > CACHE_MAX) { const first = CACHE.keys().next().value; CACHE.delete(first); }
+    }
     return json({ text }, 200);
   } catch (e) {
     return json({ error: e.message || 'fetch_failed' }, 502);

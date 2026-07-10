@@ -364,8 +364,11 @@ header{
 .nav-menu{
   position:absolute;top:calc(100% + 8px);right:0;min-width:256px;max-width:min(320px,calc(100vw - 16px));z-index:300;
   background:var(--bg2);border:1px solid var(--b2);border-radius:var(--radius);
-  box-shadow:var(--shadow);padding:6px;display:none;flex-direction:column;gap:2px;
-  max-height:calc(100vh - 104px);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+  box-shadow:var(--shadow);padding:6px 6px calc(10px + env(safe-area-inset-bottom,0px));display:none;flex-direction:column;gap:2px;
+  /* usa la viewport DINAMICA (dvh) così su mobile la barra del browser non taglia l'ultima voce */
+  max-height:calc(100vh - 104px);
+  max-height:calc(100dvh - 110px);
+  overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
 }
 .nav-menu::-webkit-scrollbar{width:8px;}
 .nav-menu::-webkit-scrollbar-thumb{background:var(--b2);border-radius:8px;}

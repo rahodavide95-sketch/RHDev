@@ -4260,6 +4260,15 @@ const CAT_TYPE={'t-azioni':'stocks','t-etf-az':'etf-equity','t-etf-bond':'etf-bo
 const CAT_NAMES={'t-etf-az':'ETF Azionari','t-etf-bond':'ETF Obbligazionari',
   't-commodities':'Materie Prime','t-crypto':'Crypto','t-azioni':'Azioni'};
 let _catLoadToken=0;
+// riconosce un ETF/fondo dal nome — rete di sicurezza lato client
+const CLIENT_ETF_RE=/\b(ETF|ETN|ETP|ETC|UCITS|index fund|iShares|Vanguard|SPDR|Invesco|Xtrackers|Lyxor|Amundi|ProShares|WisdomTree|VanEck|First Trust|Global X|ARK |Direxion|Roundhill|Defiance|GraniteShares|21Shares|HANetf)\b/i;
+// filtra i risultati API in base alla categoria: azioni senza ETF, ETF senza azioni
+function catFilterApi(id,x){
+  const isEtf=CLIENT_ETF_RE.test(x.name||'');
+  if(id==='t-azioni') return !isEtf;                 // niente ETF fra le azioni
+  if(id==='t-etf-az'||id==='t-etf-bond') return isEtf; // solo ETF
+  return true;
+}
 
 function loadSectionRest(id){
   // lista curata immediata (fallback istantaneo)
@@ -4284,9 +4293,9 @@ function loadSectionRest(id){
       .then(r=>r.ok?r.json():null)
       .then(list=>{
         if(token!==_catLoadToken||!Array.isArray(list)||!list.length) return;
-        // merge: prima i curati (ordine/qualità), poi tutti gli altri
+        // merge: prima i curati (ordine/qualità), poi tutti gli altri — con filtro anti-mescolamento
         const seen=new Set(curated.map(c=>c[0]));
-        const extra=list.filter(x=>!seen.has(x.sym)).map(x=>[x.sym,x.name]);
+        const extra=list.filter(x=>!seen.has(x.sym)&&catFilterApi(id,x)).map(x=>[x.sym,x.name]);
         _modalData=[...curated,...extra];
         setTitle(_modalData.length,false);
         if(_modalSort==='default') renderCatPage(_modalPage);

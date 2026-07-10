@@ -27,6 +27,20 @@ async function cryptoSymbols(key) {
 // keyword per distinguere ETF obbligazionari da azionari
 const BOND_RE = /\b(bond|treasury|govt|government|gilt|bund|btp|oat|corporate|aggregate|fixed income|duration|maturity|yield|credit|tips|inflation.?linked|money market|ultrashort|short.?term|floating rate|muni|municipal|sukuk|obblig)\b/i;
 
+// riconosce un ETF/ETN/fondo dal NOME (i tipi Finnhub sono spesso vuoti o incoerenti)
+const ETF_NAME_RE = /\b(ETF|ETN|ETP|ETC|UCITS|index fund|iShares|Vanguard|SPDR|Invesco|Xtrackers|Lyxor|Amundi|ProShares|WisdomTree|VanEck|First Trust|Global X|ARK |Direxion|Franklin FTSE|Roundhill|Defiance|GraniteShares|21Shares|HANetf)\b/i;
+// classifica un simbolo Finnhub in: 'stock' | 'etf' | null
+function classify(x) {
+  const t = (x.type || '').toLowerCase();
+  const name = x.description || '';
+  const isEtfName = ETF_NAME_RE.test(name);
+  if (t.includes('etf') || t === 'etp' || t.includes('fund') || t.includes('etn') || isEtfName) return 'etf';
+  if (t === 'common stock' || t === 'ads' || t === 'reit') return 'stock';
+  // tipo vuoto/ignoto: azione SOLO se il nome non sembra un ETF
+  if (t === '' && !isEtfName) return 'stock';
+  return null;
+}
+
 function mapSym(x, exch) {
   let sym = x.symbol;
   if (exch !== 'US') {
@@ -61,13 +75,13 @@ export default async function handler(req) {
 
     } else if (type === 'stocks') {
       const all = await Promise.all(STOCK_EXCH.map(e => exchangeSymbols(e, key).then(list =>
-        list.filter(x => x.type === 'Common Stock' || x.type === '').map(x => mapSym(x, e)))));
+        list.filter(x => classify(x) === 'stock').map(x => mapSym(x, e)))));
       out = all.flat();
 
     } else if (type === 'etf-equity' || type === 'etf-bond') {
       const wantBond = type === 'etf-bond';
       const all = await Promise.all(STOCK_EXCH.map(e => exchangeSymbols(e, key).then(list =>
-        list.filter(x => x.type === 'ETP' || /ETF/i.test(x.type || '')).map(x => mapSym(x, e)))));
+        list.filter(x => classify(x) === 'etf').map(x => mapSym(x, e)))));
       out = all.flat().filter(x => BOND_RE.test(x.name) === wantBond);
 
     } else {

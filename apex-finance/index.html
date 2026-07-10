@@ -594,6 +594,10 @@ header{
 .a-left{flex:1;min-width:0;}
 .a-name{font-size:1.4rem;font-weight:700;line-height:1.2;}
 .a-meta{font-size:.8rem;color:var(--t2);margin-top:5px;}
+.a-star{background:none;border:none;cursor:pointer;font-size:1.5rem;line-height:1;color:var(--t3);
+  padding:2px 4px;flex-shrink:0;align-self:center;transition:color .15s,transform .15s;}
+.a-star:hover{transform:scale(1.15);}
+.a-star.on{color:#f59e0b;}
 .a-right{text-align:right;flex-shrink:0;}
 .a-price{font-size:1.8rem;font-weight:700;font-variant-numeric:tabular-nums;}
 .a-ch{font-size:.875rem;font-weight:600;margin-top:3px;}
@@ -2111,6 +2115,7 @@ input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size
           <div class="a-name" id="a-name">—</div>
           <div class="a-meta" id="a-meta">—</div>
         </div>
+        <button class="a-star" id="a-star" onclick="watchToggleCurrent()" title="Aggiungi ai preferiti" aria-label="Aggiungi ai preferiti">☆</button>
       </div>
       <div class="a-right">
         <div class="a-price" id="a-price">—</div>
@@ -5054,6 +5059,7 @@ async function analyze(ticker){
     // Header
     document.getElementById('a-name').textContent=meta.longName||meta.shortName||ticker;
     document.getElementById('a-meta').textContent=`${ticker} · ${meta.exchangeName||'—'} · ${meta.currency||''}`;
+    _analyzedTicker=ticker; _analyzedName=(meta.longName||meta.shortName||ticker); watchUpdateStar();
     (()=>{const lg=document.getElementById('a-logo');const tmp=document.createElement('div');tmp.innerHTML=logoHTML(ticker,48);const src=tmp.querySelector('img')?.src||'';const fb=tmp.querySelector('img')?.getAttribute('onerror')?.match(/this\.src='([^']+)'/)?.[1]||'';lg.src=src;lg.onerror=()=>{if(fb)lg.src=fb;};})();
     document.getElementById('a-price').textContent=(meta.currency||'')+' '+fmt(cur);
     const chEl=document.getElementById('a-ch');
@@ -6195,6 +6201,51 @@ function renderDollarFromValues(dxy,dxyPct,eur,eurPct){
 }
 
 // ═══════════════════════════════════════════════════════════
+//  WATCHLIST / PREFERITI
+// ═══════════════════════════════════════════════════════════
+const WATCH_STORE='apex_watchlist';
+let _analyzedTicker=null, _analyzedName=null;
+function watchGet(){ try{ return JSON.parse(localStorage.getItem(WATCH_STORE)||'[]'); }catch{ return []; } }
+function watchSet(list){ localStorage.setItem(WATCH_STORE,JSON.stringify(list)); }
+function watchHas(t){ return watchGet().some(x=>x.ticker===t); }
+function watchToggle(ticker,name){
+  if(!ticker) return false;
+  let list=watchGet();
+  if(list.some(x=>x.ticker===ticker)){ list=list.filter(x=>x.ticker!==ticker); }
+  else { list.unshift({ticker,name:name||ticker}); }
+  watchSet(list); return watchHas(ticker);
+}
+function watchToggleCurrent(){
+  if(!_analyzedTicker) return;
+  watchToggle(_analyzedTicker,_analyzedName);
+  watchUpdateStar();
+  if(document.getElementById('main-menu')?.innerHTML) buildMainMenu();
+}
+function watchUpdateStar(){
+  const btn=document.getElementById('a-star'); if(!btn) return;
+  const on=_analyzedTicker&&watchHas(_analyzedTicker);
+  btn.classList.toggle('on',!!on);
+  btn.textContent=on?'★':'☆';
+  btn.title=on?'Rimuovi dai preferiti':'Aggiungi ai preferiti';
+}
+function openWatchlist(){
+  closeMainMenu();
+  const list=watchGet();
+  _modalId='__watch'; _modalPage=1; _modalSort='default'; _modalFilter='';
+  const inp=document.getElementById('cat-modal-search'), sel=document.getElementById('cat-modal-sort');
+  if(inp) inp.value=''; if(sel) sel.value='default';
+  _modalData=list.map(x=>[x.ticker,x.name]);
+  document.getElementById('cat-modal-title').textContent=`⭐ Preferiti — ${list.length} ${list.length===1?'titolo':'titoli'}`;
+  _openCatPage();
+  if(!list.length){
+    document.getElementById('cat-modal-body').innerHTML=`<div style="padding:40px 20px;text-align:center;color:var(--t3);line-height:1.7">
+      <b style="color:var(--t2)">Nessun titolo tra i preferiti.</b><br>Apri l'analisi di un titolo e tocca la <b style="color:#f59e0b">☆ stella</b> in alto per aggiungerlo qui.</div>`;
+  } else {
+    _initModalControls(); renderCatPage(1);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
 //  MERCATI DROPDOWN
 // ═══════════════════════════════════════════════════════════
 function buildMainMenu(){
@@ -6223,10 +6274,15 @@ function buildMainMenu(){
     ['PA','🇫🇷 Borsa di Parigi','Principali titoli quotati'],
   ];
   const chevron=`<svg class="nm-chevron" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>`;
+  const nWatch=watchGet().length;
   let html=`<div class="nav-menu-head">Strumenti</div>`;
   html+=`<div class="nav-menu-item nav-menu-feat" onclick="closeMainMenu();openPortfolio()">
     <span class="nm-ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span>
     <span>Simulatore di Portafoglio</span></div>`;
+  html+=`<div class="nav-menu-item" onclick="openWatchlist()">
+    <span class="nm-ico" style="color:#f59e0b">★</span>
+    <span class="nm-text"><span class="nm-title">Preferiti</span><span class="nm-sub">I titoli che segui</span></span>
+    ${nWatch?`<span class="nm-count">${nWatch}</span>`:chevron}</div>`;
   html+=`<div class="nav-menu-sep"></div><div class="nav-menu-head">Sfoglia per categoria</div>`;
   html+=cats.map(([id,label,sub])=>
     `<div class="nav-menu-item" onclick="openCatFromMenu('${id}')">

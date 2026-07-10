@@ -5081,11 +5081,13 @@ async function analyze(ticker){
     const nBars=cl.length;
     setInd('iv-rsi','is-rsi',R!=null?R.toFixed(1):'N/D',R!=null?(R<30?'Ipervenduto — rimbalzo probabile':R>70?'Ipercomprato — possibile correzione':R<50?'Zona di valore':'Zona di equilibrio alto'):'Servono ≥15 giorni di storico',rc);
 
+    // La card mostra il LIVELLO della media; la sig chiarisce dov'è il PREZZO attuale rispetto ad essa
+    const maSig=mv=>{ const p=(cur-mv)/mv*100; return `Prezzo ${fmt(cur)} · ${p>=0?'+':''}${p.toFixed(1)}% ${cur>mv?'sopra':'sotto'}`; };
     const m50c=M50?(cur>M50?'var(--g)':'var(--r)'):'var(--t3)';
-    setInd('iv-ma50','is-ma50',M50?fmt(M50):'N/D',M50?(cur>M50?`+${((cur-M50)/M50*100).toFixed(1)}% sopra MA50`:`${((cur-M50)/M50*100).toFixed(1)}% sotto MA50`):`Servono ≥50 giorni (ora ${nBars})`,m50c);
+    setInd('iv-ma50','is-ma50',M50?fmt(M50):'N/D',M50?maSig(M50):`Servono ≥50 giorni (ora ${nBars})`,m50c);
 
     const m200c=M200?(cur>M200?'var(--g)':'var(--r)'):'var(--t3)';
-    setInd('iv-ma200','is-ma200',M200?fmt(M200):'N/D',M200?(cur>M200?`+${((cur-M200)/M200*100).toFixed(1)}% sopra MA200`:`${((cur-M200)/M200*100).toFixed(1)}% sotto MA200`):`Servono ≥200 giorni (ora ${nBars})`,m200c);
+    setInd('iv-ma200','is-ma200',M200?fmt(M200):'N/D',M200?maSig(M200):`Servono ≥200 giorni (ora ${nBars})`,m200c);
 
     const vc=V==null?'var(--t3)':V>50?'var(--r)':V>25?'var(--y)':'var(--g)';
     setInd('iv-vol','is-vol',V?V.toFixed(1)+'%':'N/D',V?V>50?'Alta — ridurre il sizing':V>25?'Moderata':'Bassa — condizioni favorevoli':'Storico insufficiente',vc);
@@ -5426,21 +5428,31 @@ Utile soprattutto per <b>identificare punti di ingresso</b> in prossimità dei m
     title:'MA 50 — Media Mobile a 50 Giorni',
     body:`Media dei prezzi di chiusura degli <b>ultimi 50 giorni</b>. Indica il trend a <b>medio termine</b>.
 <br><br>
-<b>Prezzo sopra MA50</b> → Momentum positivo, l'asset ha forza. Supporto dinamico.<br>
-<b>Prezzo sotto MA50</b> → Debolezza a medio termine. Resistenza dinamica.
+<b>📊 Come leggere questa card:</b><br>
+• Il <b>numero grande</b> è il <b>livello</b> della media (un prezzo, es. 150,30): è la "linea" di riferimento.<br>
+• La riga sotto mostra <b>dove sta il prezzo attuale</b> rispetto a quella linea, es. "Prezzo 162,50 · +8,2% sopra".<br>
+• Il prezzo di riferimento del confronto è la <b>quotazione corrente</b> (quella grande in cima alla scheda).
 <br><br>
-Si usa per confermare che il trend a breve sia allineato con quello di lungo (MA200). Quando MA50 è sopra MA200, il trend complessivo è positivo.`
+<b>Prezzo sopra MA50</b> → Momentum positivo, l'asset ha forza. La media agisce da <b>supporto dinamico</b>.<br>
+<b>Prezzo sotto MA50</b> → Debolezza a medio termine. La media agisce da <b>resistenza dinamica</b>.
+<br><br>
+Non esiste una soglia % "magica": più il prezzo è <b>sopra</b> la media meglio è per il trend, ma un +20% può anche indicare che è "tirato" e vicino a una pausa. Conta soprattutto <b>da che lato</b> si trova.`
   },
   ma200:{
     title:'MA 200 — Media Mobile a 200 Giorni',
     body:`L'indicatore di trend strutturale <b>più seguito dagli investitori istituzionali</b>. Separa i bull market dai bear market.
+<br><br>
+<b>📊 Come leggere questa card:</b><br>
+• Il <b>numero grande</b> è il <b>livello</b> della MA200 (un prezzo di riferimento).<br>
+• Sotto trovi il <b>prezzo attuale</b> e di quanto % è sopra/sotto quella linea.<br>
+• Il confronto è sempre tra la <b>quotazione corrente</b> (in cima alla scheda) e questo livello.
 <br><br>
 <b>Prezzo sopra MA200</b> → Trend di lungo periodo positivo. Statisticamente favorevole.<br>
 <b>Golden Cross</b> (MA50 supera MA200) → Segnale fortemente rialzista.<br>
 <b>Death Cross</b> (MA50 scende sotto MA200) → Segnale ribassista.<br>
 <b>Prezzo sotto MA200</b> → Trend strutturale negativo.
 <br><br>
-Lo <b>stop-loss</b> si posiziona tipicamente appena sotto la MA200.`
+Non c'è una % di riferimento fissa: ciò che conta è se il prezzo è <b>sopra o sotto</b> la linea. La distanza % dice solo <i>quanto</i> è esteso il movimento (una distanza molto ampia può precedere un ritorno verso la media). Lo <b>stop-loss</b> si posiziona tipicamente appena sotto la MA200.`
   },
   vol:{
     title:'Volatilità Annualizzata',

@@ -597,8 +597,9 @@ header{
 .a-left{flex:1;min-width:0;}
 .a-name{font-size:1.4rem;font-weight:700;line-height:1.2;}
 .a-meta{font-size:.8rem;color:var(--t2);margin-top:5px;}
-.a-star{background:none;border:none;cursor:pointer;font-size:1.5rem;line-height:1;color:var(--t3);
-  padding:2px 4px;flex-shrink:0;align-self:center;transition:color .15s,transform .15s;}
+.a-name-row{display:flex;align-items:center;gap:8px;}
+.a-star{background:none;border:none;cursor:pointer;font-size:1.35rem;line-height:1;color:var(--t3);
+  padding:0 2px;flex-shrink:0;transition:color .15s,transform .15s;}
 .a-star:hover{transform:scale(1.15);}
 .a-star.on{color:#f59e0b;}
 .a-price-eur{font-size:.8rem;color:var(--t3);font-weight:600;margin-top:2px;}
@@ -1351,6 +1352,10 @@ input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size
 .cm-row:last-child{border-bottom:none;}
 .cm-ticker{font-size:.85rem;font-weight:700;color:var(--accent);width:52px;flex-shrink:0;}
 .cm-name{font-size:.8rem;color:var(--t2);flex:1;overflow:hidden;line-height:1.4;}
+.cm-star{background:none;border:none;cursor:pointer;font-size:1.05rem;line-height:1;color:var(--t3);
+  padding:0 4px;flex-shrink:0;align-self:center;transition:color .15s,transform .15s;}
+.cm-star:hover{transform:scale(1.2);color:#f59e0b;}
+.cm-star.on{color:#f59e0b;}
 .cm-bar{flex:0 0 80px;height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;}
 .cm-bar-f{height:100%;border-radius:2px;}
 .cm-score{font-size:.9rem;font-weight:700;width:30px;text-align:right;flex-shrink:0;}
@@ -2155,10 +2160,12 @@ input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size
       <div class="a-hd-left">
         <img id="a-logo" class="a-logo" src="" alt="" loading="lazy">
         <div class="a-left">
-          <div class="a-name" id="a-name">—</div>
+          <div class="a-name-row">
+            <div class="a-name" id="a-name">—</div>
+            <button class="a-star" id="a-star" onclick="watchToggleCurrent()" title="Aggiungi ai preferiti" aria-label="Aggiungi ai preferiti">☆</button>
+          </div>
           <div class="a-meta" id="a-meta">—</div>
         </div>
-        <button class="a-star" id="a-star" onclick="watchToggleCurrent()" title="Aggiungi ai preferiti" aria-label="Aggiungi ai preferiti">☆</button>
       </div>
       <div class="a-right">
         <div class="a-price" id="a-price">—</div>
@@ -4412,13 +4419,26 @@ function renderCmRow(el,ticker,name,score){
   const full=isETFcat?ETF_FULLNAME[ticker]:null;
   const displayName=full||name;
   const sub=isETFcat?[`Ticker: <b style="color:var(--t2)">${ticker}</b>`,isin?`ISIN: ${isin}`:null].filter(Boolean).join(' · '):'';
+  const attr=s=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+  const fav=watchHas(ticker);
   el.innerHTML=`
     ${logoHTML(ticker,32)}
     <span class="cm-ticker">${ticker}</span>
     <span class="cm-name">${displayName}${sub?`<br><span style="font-size:.64rem;color:var(--t3);font-weight:400">${sub}</span>`:''}</span>
+    <button class="cm-star${fav?' on':''}" data-sym="${ticker}" data-name="${attr(displayName)}" onclick="event.stopPropagation();cmRowStar(this)" title="${fav?'Rimuovi dai preferiti':'Aggiungi ai preferiti'}" aria-label="Preferiti">${fav?'★':'☆'}</button>
     <span class="cm-bar"><span class="cm-bar-f" style="width:${score??0}%;background:${c||'transparent'}"></span></span>
     ${score!=null?`<span class="cm-score" style="color:${c}">${score}</span>`:'<span class="cm-noscore">—</span>'}
   `;
+}
+function cmRowStar(btn){
+  const t=btn.dataset.sym, n=btn.dataset.name;
+  watchToggle(t,n);
+  const on=watchHas(t);
+  btn.classList.toggle('on',on);
+  btn.textContent=on?'★':'☆';
+  btn.title=on?'Rimuovi dai preferiti':'Aggiungi ai preferiti';
+  if(_analyzedTicker===t) watchUpdateStar();
+  if(document.getElementById('main-menu')?.innerHTML) buildMainMenu();
 }
 
 // ── CHARTS ──

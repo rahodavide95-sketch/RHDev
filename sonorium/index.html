@@ -265,7 +265,7 @@
       <p class="credits-tagline">serendipity engine for sound designers</p>
       <p class="credits-line">For your subconscious creativity, wherever you are.</p>
       <p class="credits-line">With love, by Raho.</p>
-      <p class="credits-copy">© Sonorium 2026 &nbsp;|&nbsp; v3.0</p>
+      <p class="credits-copy">© Sonorium 2026 &nbsp;|&nbsp; v3.1</p>
     </div>
   </div>
 
@@ -603,7 +603,11 @@ let globalAnalyser = null;
   let _uniFlash=null;
   let _uniSunX=0,_uniSunY=0,_uniSunZ=2000;
   let _uniSphR=90,_uniSphG=100,_uniSphB=200;
-  const _uniStars3D=(()=>{const a=[];for(let i=0;i<2200;i++){const th=Math.random()*Math.PI*2,ph=Math.acos(2*Math.random()-1),sp=Math.sin(ph);a.push({wx:sp*Math.cos(th),wy:Math.cos(ph),wz:sp*Math.sin(th),sz:.6+Math.random()*1.6,bright:Math.random()>.96});}return a;})();
+  // Realistic stellar colours (blue-white → white → sun-like → orange → red), weighted to cool/white
+  const _STAR_COL=[[155,176,255],[190,205,255],[228,236,255],[255,255,255],[255,248,232],[255,236,205],[255,214,170],[255,190,150]];
+  const _uniStars3D=(()=>{const a=[];for(let i=0;i<2200;i++){const th=Math.random()*Math.PI*2,ph=Math.acos(2*Math.random()-1),sp=Math.sin(ph);
+    const wgt=Math.random();const ci=wgt<.5?3:wgt<.72?2:wgt<.86?4:wgt<.93?1:wgt<.97?5:wgt<.99?0:(Math.random()<.5?6:7);
+    const br=Math.random();a.push({wx:sp*Math.cos(th),wy:Math.cos(ph),wz:sp*Math.sin(th),sz:.6+Math.random()*1.6,bright:br>.96,spike:br>.988,c:_STAR_COL[ci],tw:Math.random()*Math.PI*2,tws:.6+Math.random()*1.8,psx:null,psy:null});}return a;})();
   // ── Deep Field: nebulae, stardust, autopilot ──────────────────────────────
   const _uniNeb=(()=>{const cols=[[96,72,178],[52,120,168],[168,80,140],[70,96,190],[44,140,128],[150,100,80],[120,70,170]];const a=[];for(let i=0;i<7;i++){const ang=(i/7)*Math.PI*2+.6,r=760+(i%3)*640+((i*97)%180);a.push({x:Math.cos(ang)*r,y:Math.sin(ang)*r*.85+((i%2)?260:-220),z:2000+((i*53)%160-80)+(i%2?900:-700),wr:520+((i*131)%420),c:cols[i%cols.length],ph:i*1.7});}return a;})();
   const _uniDust=(()=>{const a=[];for(let i=0;i<130;i++)a.push({x:(Math.random()-.5)*1200,y:(Math.random()-.5)*1200,z:(Math.random()-.5)*1200,r:.5+Math.random()*1.3,o:.1+Math.random()*.22,psx:null,psy:null});return a;})();
@@ -693,7 +697,8 @@ let globalAnalyser = null;
       const ca=Math.cos(w),sa=Math.sin(w);
       p.x=_uniSunX+ox*ca-oy*sa;p.y=_uniSunY+ox*sa+oy*ca;
     }
-    // ── Nebulae (behind everything, additive breath) ─────────────────────────
+    // ── Nebulae (behind everything, additive breath = real light bloom) ──────
+    ctx.save();ctx.globalCompositeOperation='lighter';
     for(const nb of _uniNeb){
       const wob=Math.sin(_uniTime*.0016+nb.ph)*40;
       const rx=nb.x+wob-_uniCamX,ry=nb.y-wob*.6-_uniCamY,rz=nb.z-_uniCamZ;
@@ -703,28 +708,58 @@ let globalAnalyser = null;
       const nsx=ncx*_U_F/ncz+W*.5,nsy=ncy*_U_F/ncz+H*.5;
       const nr=Math.min(1800,nb.wr*_U_F/ncz);
       if(nsx<-nr||nsx>W+nr||nsy<-nr||nsy>H+nr)continue;
-      const na=alpha*.085*Math.min(1,2600/ncz);
+      const na=alpha*.07*Math.min(1,2600/ncz)*(.85+.15*Math.sin(_uniTime*.004+nb.ph));
       if(na<.004)continue;
       const ng=ctx.createRadialGradient(nsx,nsy,nr*.1,nsx,nsy,nr);
       ng.addColorStop(0,`rgba(${nb.c[0]},${nb.c[1]},${nb.c[2]},${na.toFixed(3)})`);
-      ng.addColorStop(.55,`rgba(${nb.c[0]},${nb.c[1]},${nb.c[2]},${(na*.4).toFixed(3)})`);
+      ng.addColorStop(.45,`rgba(${nb.c[0]},${nb.c[1]},${nb.c[2]},${(na*.42).toFixed(3)})`);
       ng.addColorStop(1,'rgba(0,0,0,0)');
       ctx.fillStyle=ng;ctx.beginPath();ctx.arc(nsx,nsy,nr,0,Math.PI*2);ctx.fill();
     }
-    // ── 3D background stars ───────────────────────────────────────────────────
+    ctx.restore();
+    // ── 3D background stars (additive, colour-graded, twinkling, warp streaks) ─
+    ctx.save();ctx.globalCompositeOperation='lighter';
+    const _starWarp=Math.min(1,Math.abs(_uniSpeed)/9);
     for(const us of _uniStars3D){
       const lcx=us.wx*cosY-us.wz*sinY;
       const lcz0=us.wx*sinY+us.wz*cosY;
       const lcy=us.wy*cosP+lcz0*sinP;
       const lcz=-us.wy*sinP+lcz0*cosP;
-      if(lcz<=0.08)continue;
+      if(lcz<=0.08){us.psx=null;continue;}
       const usx=lcx*_U_F/lcz+W*.5,usy=lcy*_U_F/lcz+H*.5;
-      if(usx<-1||usx>W+1||usy<-1||usy>H+1)continue;
-      const usop=alpha*(us.bright?.9:.2+Math.random()*.18);
-      if(usop<.01)continue;
-      ctx.fillStyle=`rgba(255,255,255,${usop.toFixed(2)})`;
-      ctx.fillRect(usx-.5,usy-.5,us.sz,us.sz);
+      if(usx<-2||usx>W+2||usy<-2||usy>H+2){us.psx=usx;us.psy=usy;continue;}
+      const tw=us.bright?(.82+.18*Math.sin(_uniTime*.05*us.tws+us.tw)):(.32+Math.sin(_uniTime*.04*us.tws+us.tw)*.16+.12);
+      const usop=alpha*Math.max(0,tw);
+      if(usop<.012){us.psx=usx;us.psy=usy;continue;}
+      const c=us.c;
+      // Warp streak from previous position when flying fast
+      if(_starWarp>.15&&us.psx!==null){
+        const dsx=usx-us.psx,dsy=usy-us.psy;
+        if(dsx*dsx+dsy*dsy>1){
+          ctx.strokeStyle=`rgba(${c[0]},${c[1]},${c[2]},${(usop*_starWarp*.9).toFixed(3)})`;
+          ctx.lineWidth=us.sz*.9;ctx.lineCap='round';
+          ctx.beginPath();ctx.moveTo(us.psx,us.psy);ctx.lineTo(usx,usy);ctx.stroke();
+        }
+      }
+      const sz=us.sz*(us.bright?1.3:1);
+      if(us.bright){
+        const g=ctx.createRadialGradient(usx,usy,0,usx,usy,sz*3.2);
+        g.addColorStop(0,`rgba(${c[0]},${c[1]},${c[2]},${usop.toFixed(3)})`);
+        g.addColorStop(.4,`rgba(${c[0]},${c[1]},${c[2]},${(usop*.35).toFixed(3)})`);
+        g.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.fillStyle=g;ctx.beginPath();ctx.arc(usx,usy,sz*3.2,0,Math.PI*2);ctx.fill();
+        // Diffraction spikes on the brightest
+        if(us.spike){
+          const sl=sz*(4.5+Math.sin(_uniTime*.05*us.tws+us.tw)*1.2);
+          ctx.strokeStyle=`rgba(${c[0]},${c[1]},${c[2]},${(usop*.5).toFixed(3)})`;ctx.lineWidth=.7;
+          ctx.beginPath();ctx.moveTo(usx-sl,usy);ctx.lineTo(usx+sl,usy);ctx.moveTo(usx,usy-sl);ctx.lineTo(usx,usy+sl);ctx.stroke();
+        }
+      }
+      ctx.fillStyle=`rgba(${c[0]},${c[1]},${c[2]},${usop.toFixed(3)})`;
+      ctx.fillRect(usx-sz*.5,usy-sz*.5,sz,sz);
+      us.psx=usx;us.psy=usy;
     }
+    ctx.restore();
     // ── Orbit guides (very faint dashes) ─────────────────────────────────────
     {const ringR=[360,600,860,1140,1460,1820];
     ctx.save();ctx.setLineDash([2,14]);ctx.lineWidth=0.4;
@@ -824,17 +859,41 @@ let globalAnalyser = null;
       const op=alpha*Math.max(.07,df);if(op<.015)continue;
       let fb=0;
       if(_uniFlash&&_uniFlash.planet===p)fb=Math.max(0,1-_uniFlash.life/_uniFlash.maxLife);
-      const gr=ctx.createRadialGradient(sx,sy,sr*.4,sx,sy,sr*3.6);
-      const gop=op*(.36+fb*.5);
+      // Light direction: from this planet toward the Sonorium sphere on screen
+      let lvx=-.42,lvy=-.5;const _ss=window._uniSunScreen;
+      if(_ss){lvx=_ss.sx-sx;lvy=_ss.sy-sy;const _ll=Math.hypot(lvx,lvy)||1;lvx/=_ll;lvy/=_ll;}
+      // Atmosphere glow, offset toward the light (additive bloom)
+      ctx.save();ctx.globalCompositeOperation='lighter';
+      const gr=ctx.createRadialGradient(sx+lvx*sr*.3,sy+lvy*sr*.3,sr*.3,sx,sy,sr*3.4);
+      const gop=op*(.3+fb*.5);
       gr.addColorStop(0,`rgba(${pr},${pg},${pb},${gop.toFixed(3)})`);
-      gr.addColorStop(.38,`rgba(${pr},${pg},${pb},${(gop*.18).toFixed(3)})`);
+      gr.addColorStop(.4,`rgba(${pr},${pg},${pb},${(gop*.16).toFixed(3)})`);
       gr.addColorStop(1,'rgba(0,0,0,0)');
-      ctx.fillStyle=gr;ctx.beginPath();ctx.arc(sx,sy,sr*3.6,0,Math.PI*2);ctx.fill();
-      const sg=ctx.createRadialGradient(sx-sr*.3,sy-sr*.28,sr*.06,sx,sy,sr);
-      sg.addColorStop(0,`rgba(255,255,255,${(op*(.42+fb*.3)).toFixed(3)})`);
-      sg.addColorStop(.33,`rgba(${pr},${pg},${pb},${(op*(1+fb*.4)).toFixed(3)})`);
-      sg.addColorStop(1,`rgba(0,0,0,${(op*.9).toFixed(3)})`);
+      ctx.fillStyle=gr;ctx.beginPath();ctx.arc(sx,sy,sr*3.4,0,Math.PI*2);ctx.fill();
+      ctx.restore();
+      // Lit body: day side (toward light) → planet colour → night terminator
+      const lx2=sx+lvx*sr*.62,ly2=sy+lvy*sr*.62,lit=1+fb*.4;
+      const sg=ctx.createRadialGradient(lx2,ly2,sr*.04,sx,sy,sr*1.05);
+      sg.addColorStop(0,`rgba(${Math.min(255,pr+125)},${Math.min(255,pg+125)},${Math.min(255,pb+120)},${(op*lit).toFixed(3)})`);
+      sg.addColorStop(.34,`rgba(${pr},${pg},${pb},${(op*lit).toFixed(3)})`);
+      sg.addColorStop(.72,`rgba(${Math.round(pr*.3)},${Math.round(pg*.3)},${Math.round(pb*.33)},${(op*.96).toFixed(3)})`);
+      sg.addColorStop(1,`rgba(${Math.round(pr*.05)},${Math.round(pg*.05)},${Math.round(pb*.08)},${(op*.94).toFixed(3)})`);
       ctx.fillStyle=sg;ctx.beginPath();ctx.arc(sx,sy,sr,0,Math.PI*2);ctx.fill();
+      // Atmospheric limb + specular glint (additive) on bigger discs
+      if(sr>4){
+        ctx.save();ctx.globalCompositeOperation='lighter';
+        const rim=ctx.createRadialGradient(sx,sy,sr*.72,sx,sy,sr*1.05);
+        rim.addColorStop(0,'rgba(0,0,0,0)');
+        rim.addColorStop(.78,`rgba(${Math.min(255,pr+45)},${Math.min(255,pg+65)},${Math.min(255,pb+75)},${(op*.15).toFixed(3)})`);
+        rim.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.fillStyle=rim;ctx.beginPath();ctx.arc(sx,sy,sr*1.05,0,Math.PI*2);ctx.fill();
+        const spx=sx+lvx*sr*.5,spy=sy+lvy*sr*.5;
+        const sp=ctx.createRadialGradient(spx,spy,0,spx,spy,sr*.42);
+        sp.addColorStop(0,`rgba(255,255,255,${(op*.5).toFixed(3)})`);
+        sp.addColorStop(1,'rgba(255,255,255,0)');
+        ctx.fillStyle=sp;ctx.beginPath();ctx.arc(spx,spy,sr*.42,0,Math.PI*2);ctx.fill();
+        ctx.restore();
+      }
       if(sr>5&&alpha>.17){
         const la=Math.min(1,(alpha-.17)/.28)*df;
         if(la>.04){
@@ -854,6 +913,7 @@ let globalAnalyser = null;
     }
     if(_uniFlash){_uniFlash.life++;if(_uniFlash.life>=_uniFlash.maxLife)_uniFlash=null;}
     // ── Stardust: world-fixed motes wrapping around the camera (speed feel) ──
+    ctx.save();ctx.globalCompositeOperation='lighter';
     {const D=620;const spd=Math.abs(_uniSpeed);
     for(const dd of _uniDust){
       let rx=dd.x-_uniCamX,ry=dd.y-_uniCamY,rz=dd.z-_uniCamZ;let wrapped=false;
@@ -879,6 +939,7 @@ let globalAnalyser = null;
       }
       dd.psx=dsx;dd.psy=dsy;
     }}
+    ctx.restore();
     // ── Home compass: edge chevron + distance when Sonorium is out of view ──
     {const hd=Math.hypot(_uniSunX-_uniCamX,_uniSunY-_uniCamY,_uniSunZ-_uniCamZ);
     let off=true;
@@ -1646,6 +1707,18 @@ function _uniBuildAudio(){
   if(UNI_SND.bus||!audioCtx||audioCtx.state!=='running')return;
   const ctx=audioCtx;
   const bus=ctx.createGain();bus.gain.value=0;bus.connect(ctx.destination);
+  // Space reverb — parallel wet path gives everything depth and distance
+  try{
+    const conv=ctx.createConvolver();
+    const rl=Math.floor(ctx.sampleRate*2.8);
+    const ir=ctx.createBuffer(2,rl,ctx.sampleRate);
+    for(let ch=0;ch<2;ch++){const d=ir.getChannelData(ch);for(let i=0;i<rl;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/rl,2.7);}
+    conv.buffer=ir;
+    const wet=ctx.createGain();wet.gain.value=.32;
+    bus.connect(conv);conv.connect(wet);wet.connect(ctx.destination);
+  }catch(e){}
+  // Sub rumble — the vastness underneath everything
+  try{const sub=ctx.createOscillator();sub.type='sine';sub.frequency.value=31;const sg2=ctx.createGain();sg2.gain.value=.05;sub.connect(sg2);sg2.connect(bus);sub.start();}catch(e){}
   const filt=ctx.createBiquadFilter();filt.type='lowpass';filt.frequency.value=520;filt.Q.value=.6;filt.connect(bus);
   const lfo=ctx.createOscillator();lfo.frequency.value=.045;
   const lfoG=ctx.createGain();lfoG.gain.value=160;
@@ -1701,16 +1774,20 @@ setInterval(()=>{
     want.add(pr.id);
     let v=UNI_SND.voices.get(pr.id);
     if(!v){
-      const o=audioCtx.createOscillator();o.type='sine';o.frequency.value=_uniPentaFreq(pr.f);
+      const bf=_uniPentaFreq(pr.f);
+      const o=audioCtx.createOscillator();o.type='sine';o.frequency.value=bf;
       const g=audioCtx.createGain();g.gain.value=0;
       let pan=null;
       if(audioCtx.createStereoPanner){pan=audioCtx.createStereoPanner();o.connect(g);g.connect(pan);pan.connect(UNI_SND.bus);}
       else{o.connect(g);g.connect(UNI_SND.bus);}
-      o.start();v={o,g,pan,dieAt:0};UNI_SND.voices.set(pr.id,v);
+      o.start();v={o,g,pan,dieAt:0,baseF:bf,pd:pr.d};UNI_SND.voices.set(pr.id,v);
     }
     v.dieAt=0;
     v.g.gain.setTargetAtTime(Math.pow(Math.max(0,1-pr.d/RANGE),2)*.13,t,.28);
     if(v.pan)v.pan.pan.setTargetAtTime(Math.max(-1,Math.min(1,pr.pan)),t,.3);
+    // Doppler: approaching = higher, receding = lower (subtle, clamped ±6%)
+    const vr=pr.d-(v.pd!=null?v.pd:pr.d);v.pd=pr.d;
+    v.o.frequency.setTargetAtTime(v.baseF*Math.max(.94,Math.min(1.06,1-vr*.0016)),t,.09);
   }
   for(const[id,v]of UNI_SND.voices){
     if(!want.has(id)){

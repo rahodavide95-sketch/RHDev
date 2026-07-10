@@ -1525,6 +1525,11 @@ input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size
 .pf-ai-body p:last-child{margin-bottom:0;}
 .pf-ai-body b{color:var(--text);}
 .pf-ai-verdict{font-size:1rem;font-weight:800;margin-bottom:8px;}
+.ai-reco{display:flex;gap:9px;align-items:flex-start;margin-top:10px;padding:10px 12px;
+  background:var(--bg3);border:1px solid var(--border);border-left:3px solid var(--accent);
+  border-radius:8px;font-size:.82rem;color:var(--text);line-height:1.55;}
+.ai-reco-tag{font-weight:800;white-space:nowrap;flex-shrink:0;}
+.ai-reco b{color:var(--text);}
 .pf-cmp-backdrop{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.65);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:20px;}
 .pf-cmp-box{background:var(--bg);border:1px solid var(--b2);border-radius:var(--radius);box-shadow:var(--shadow);max-width:840px;width:100%;max-height:80vh;overflow:hidden;display:flex;flex-direction:column;}
 .pf-cmp-hd{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;font-weight:700;font-size:.95rem;border-bottom:1px solid var(--border);}
@@ -2127,6 +2132,12 @@ input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size
       <div class="sig-points" id="sig-points"></div>
       <div class="sig-decision" id="sig-decision"></div>
     </div><!-- /sig-box -->
+
+    <!-- Analisi AI in linguaggio naturale -->
+    <div class="pf-ai-card" id="ai-analysis" style="display:none;margin-top:16px">
+      <div class="pf-ai-hd"><span class="pf-ai-badge">✨ Analisi AI</span><span class="pf-ai-status" id="ai-analysis-status"></span></div>
+      <div class="pf-ai-body" id="ai-analysis-body"></div>
+    </div>
 
     <hr class="sec-divider">
 
@@ -4909,6 +4920,84 @@ function renderFundamentals(fund,ticker,resolved=false){
   sec.style.display='block';
 }
 
+// ══════════════════════════════════════════════════════════════
+//  ANALISI AI DEL SINGOLO TITOLO — descrizione discorsiva + consiglio
+// ══════════════════════════════════════════════════════════════
+function stockLocalAnalysis(d){
+  const fmtP=v=>(d.currency?d.currency+' ':'')+(v>=100?v.toFixed(2):v>=1?v.toFixed(2):v.toFixed(4));
+  const sign=v=>(v>=0?'+':'')+v;
+  // verdetto + raccomandazione operativa (in base allo score e al contesto)
+  const v=d.score>=65?{t:'Quadro tecnico forte',c:'var(--g)',e:'🟢'}
+    :d.score>=55?{t:'Quadro moderatamente positivo',c:'var(--g)',e:'🟢'}
+    :d.score>=45?{t:'Quadro neutro',c:'var(--y)',e:'🟡'}
+    :d.score>=35?{t:'Quadro debole',c:'var(--r)',e:'🔴'}
+    :{t:'Quadro negativo',c:'var(--r)',e:'🔴'};
+  // consiglio operativo
+  let reco, recoCol, recoIco;
+  if(d.score>=65){ reco='I dati <b>favoriscono un ingresso</b>: la struttura è solida e il momentum positivo. Un ingresso graduale è ragionevole, con stop-loss di protezione.'; recoCol='var(--g)'; recoIco='✅ Suggerito'; }
+  else if(d.score>=55){ reco='I dati sono <b>moderatamente favorevoli</b>: si può valutare un ingresso prudente o incrementare con cautela, meglio se su debolezza.'; recoCol='var(--g)'; recoIco='🟢 Valutabile'; }
+  else if(d.score>=45){ reco='I dati <b>non offrono un vantaggio chiaro</b>: meglio <b>attendere</b> un segnale più netto prima di entrare. Chi è già dentro può mantenere monitorando.'; recoCol='var(--y)'; recoIco='⏳ Attendere'; }
+  else if(d.score>=35){ reco='I dati <b>sconsigliano nuovi ingressi</b>: il quadro è debole. Chi detiene valuti di ridurre o proteggere la posizione.'; recoCol='var(--r)'; recoIco='⚠ Sconsigliato'; }
+  else { reco='I dati <b>sconsigliano l\'acquisto</b>: trend e momentum sono negativi. Priorità alla protezione del capitale.'; recoCol='var(--r)'; recoIco='🛑 Da evitare'; }
+
+  const P=[];
+  // 1) sintesi + trend strutturale
+  let s1=`<b>${d.name} (${d.ticker})</b> ottiene un APEX Score di <b>${d.score}/100</b>, al prezzo attuale di <b>${fmtP(d.price)}</b> (${sign(d.chP)}% da ieri). `;
+  if(d.trendUp&&d.aboveMA200) s1+=`Il <b>trend di fondo è rialzista</b>: la media a 50 giorni è sopra quella a 200 e il prezzo quota sopra la MA200 — la configurazione strutturalmente più solida.`;
+  else if(d.trendUp===false&&d.aboveMA200===false) s1+=`Il <b>trend di fondo è ribassista</b>: prezzo sotto la MA200 con MA50 sotto MA200 (death cross), contesto strutturalmente debole.`;
+  else if(d.aboveMA200) s1+=`Il prezzo è <b>sopra la MA200</b> (trend di lungo periodo ancora positivo), ma il quadro di medio periodo è in transizione.`;
+  else if(d.aboveMA200===false) s1+=`Il prezzo è <b>sotto la MA200</b>: il trend di lungo periodo resta sotto pressione.`;
+  P.push(s1);
+
+  // 2) momentum + RSI
+  if(d.rsi!=null||d.mo3m!=null){
+    let s2='';
+    if(d.rsi!=null){
+      s2+= d.rsi<30?`Sul fronte del timing è <b>ipervenduto</b> (RSI ${d.rsi}): statisticamente incline a un rimbalzo di breve. `
+        : d.rsi>70?`È <b>ipercomprato</b> (RSI ${d.rsi}): possibile una pausa o correzione nel breve. `
+        : `Il timing è in <b>zona neutra</b> (RSI ${d.rsi}). `;
+    }
+    if(d.mo3m!=null) s2+=`Il momentum è ${d.mo3m>=0?'positivo':'negativo'}: ${sign(d.mo3m)}% negli ultimi 3 mesi`+(d.mo12m!=null?`, ${sign(d.mo12m)}% su 12 mesi.`:'.');
+    if(s2) P.push(s2);
+  }
+  // 3) rischio
+  let s3=`La <b>volatilità</b> annua è del ${d.vol!=null?d.vol+'%':'—'} (${d.vol==null?'n/d':d.vol>40?'elevata':d.vol>25?'moderata':'contenuta'})`;
+  s3+=`, e nell'ultimo anno la <b>perdita massima</b> dal picco è stata del -${d.dd}%. `;
+  s3+= d.dd>35?'Serve tolleranza al rischio elevata.':d.dd>20?'Oscillazioni nella norma per un\'azione.':'Ha mostrato buona resilienza.';
+  P.push(s3);
+  // 4) probabilità storiche
+  if(d.w30!=null) P.push(`Storicamente, comprando in un giorno qualsiasi, dopo 30 giorni la posizione era in guadagno nel <b>${d.w30}%</b> dei casi`+(d.w90!=null?` (a 90 giorni ${d.w90}%).`:'.'));
+  // 5) fondamentali (se azione con dati)
+  if(d.fund){
+    const f=d.fund; const bits=[];
+    if(f.trailingPE!=null) bits.push(`P/E ${f.trailingPE.toFixed(1)}x (${f.trailingPE<15?'valutazione contenuta':f.trailingPE<25?'nella norma':f.trailingPE<40?'premio di crescita':'valutazione elevata'})`);
+    if(f.roe!=null) bits.push(`ROE ${(f.roe*100).toFixed(0)}% (${f.roe>0.15?'redditività elevata':f.roe>0?'redditività modesta':'redditività negativa'})`);
+    if(f.earningsGrowth!=null) bits.push(`utili ${f.earningsGrowth>=0?'in crescita':'in calo'} (${(f.earningsGrowth*100).toFixed(0)}%)`);
+    if(bits.length) P.push(`Sul piano <b>fondamentale</b>: ${bits.join(', ')}.`);
+  }
+
+  let html=`<div class="pf-ai-verdict" style="color:${v.c}">${v.e} ${v.t}</div>`;
+  html+=P.map(p=>`<p>${p}</p>`).join('');
+  html+=`<div class="ai-reco" style="border-left-color:${recoCol}"><span class="ai-reco-tag" style="color:${recoCol}">${recoIco}</span><span>${reco}</span></div>`;
+  html+=`<p style="color:var(--t3);font-size:.72rem;margin-top:8px"><i>Analisi automatica basata sui dati tecnici e fondamentali del titolo. È a scopo informativo, non una raccomandazione d'investimento personalizzata.</i></p>`;
+  return html;
+}
+async function renderStockAI(d,tryAI){
+  const card=document.getElementById('ai-analysis');
+  const body=document.getElementById('ai-analysis-body');
+  const status=document.getElementById('ai-analysis-status');
+  if(!card||!body) return;
+  card.style.display='block';
+  body.innerHTML=stockLocalAnalysis(d);
+  if(!tryAI){ if(status) status.textContent=''; return; }
+  if(status) status.innerHTML='<span class="card-spin"></span> Chiedo un parere a Claude…';
+  try{
+    const r=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'stock',...d,fund:d.fund?{trailingPE:d.fund.trailingPE,forwardPE:d.fund.forwardPE,roe:d.fund.roe,pb:d.fund.pb,earningsGrowth:d.fund.earningsGrowth,revenueGrowth:d.fund.revenueGrowth}:null}),signal:AbortSignal.timeout(30000)});
+    if(r.ok){ const j=await r.json(); if(j&&j.text){ body.innerHTML=pfFormatAI(j.text); if(status) status.innerHTML='<span style="color:var(--accent)">✦ generata da Claude</span>'; return; } }
+  }catch{}
+  if(status) status.textContent='';
+}
+
 // ── ANALYZE ──
 let _analyzeAbort=null;
 function cancelAnalyze(){
@@ -5054,6 +5143,17 @@ async function analyze(ticker){
       renderBHS(score,null);
       renderFundamentals(null,ticker,false);
       document.getElementById('profile-section').style.display='none';
+      const buildAIData=(fund)=>({
+        ticker, name:(meta.longName||meta.shortName||ticker), currency:meta.currency||'',
+        price:cur, chP:+chP.toFixed(2), score,
+        rsi:R!=null?+R.toFixed(1):null,
+        aboveMA50:M50!=null?cur>M50:null, aboveMA200:M200!=null?cur>M200:null,
+        trendUp:(M50!=null&&M200!=null)?M50>M200:null,
+        vol:V!=null?+V.toFixed(1):null, dd:+DD.toFixed(1),
+        mo3m:Mo3m!=null?+Mo3m.toFixed(1):null, mo6m:Mo6m!=null?+Mo6m.toFixed(1):null, mo12m:Mo12m!=null?+Mo12m.toFixed(1):null,
+        w30:w30!=null?+w30.toFixed(0):null, w90:w90!=null?+w90.toFixed(0):null, fund:fund||null,
+      });
+      renderStockAI(buildAIData(null),false);   // subito, dati tecnici
       fundPromise.then(fund=>{
         renderFundamentals(fund,ticker,true);
         renderProfile(ticker,meta);
@@ -5065,6 +5165,7 @@ async function analyze(ticker){
           buildDipSignal(R,M50,M200,Mo3m,Mo12m,DD,cur,w30,score);
         }
         renderBHS(score,fund);
+        renderStockAI(buildAIData(fund),true);  // analisi completa + eventuale Claude
       });
     }));
     return; // skip finally's setAnalyzeLoading

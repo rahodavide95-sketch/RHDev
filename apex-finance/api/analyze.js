@@ -20,6 +20,27 @@ export default async function handler(req) {
   let m;
   try { m = await req.json(); } catch { return json({ error: 'bad_json' }, 400); }
 
+  // ── Analisi di un SINGOLO TITOLO ──
+  if (m.kind === 'stock') {
+    const f = m.fund || {};
+    const fundLine = (f.trailingPE != null || f.roe != null)
+      ? `Fondamentali: ${[f.trailingPE != null ? `P/E ${f.trailingPE}` : '', f.forwardPE != null ? `P/E fwd ${f.forwardPE}` : '', f.roe != null ? `ROE ${(f.roe * 100).toFixed(0)}%` : '', f.pb != null ? `P/B ${f.pb}` : '', f.earningsGrowth != null ? `cresc. utili ${(f.earningsGrowth * 100).toFixed(0)}%` : '', f.revenueGrowth != null ? `cresc. ricavi ${(f.revenueGrowth * 100).toFixed(0)}%` : ''].filter(Boolean).join(', ')}`
+      : 'Fondamentali: non disponibili (ETF/crypto/indice o dato mancante).';
+    const sPrompt =
+`Sei un analista finanziario. Analizza questo titolo e dai un parere chiaro, discorsivo e onesto in ITALIANO, rivolgendoti direttamente all'investitore ("tu"). Evita elenchi puntati: scrivi in prosa scorrevole.
+
+Titolo: ${m.name} (${m.ticker}) — prezzo ${m.currency} ${m.price} (${m.chP >= 0 ? '+' : ''}${m.chP}% da ieri)
+APEX Score (0-100): ${m.score}
+RSI: ${m.rsi ?? 'n/d'} | sopra MA200: ${m.aboveMA200} | trend rialzista (MA50>MA200): ${m.trendUp}
+Momentum: 3M ${m.mo3m ?? 'n/d'}% · 6M ${m.mo6m ?? 'n/d'}% · 12M ${m.mo12m ?? 'n/d'}%
+Volatilità annua: ${m.vol ?? 'n/d'}% | max drawdown 1 anno: -${m.dd}%
+Win rate storico: 30gg ${m.w30 ?? 'n/d'}% · 90gg ${m.w90 ?? 'n/d'}%
+${fundLine}
+
+Scrivi 3 brevi paragrafi in prosa: (1) il quadro tecnico e di trend; (2) rischio, momentum e valutazione fondamentale; (3) una conclusione che dica ESPLICITAMENTE se i dati CONSIGLIANO o SCONSIGLIANO l'acquisto ora (o suggeriscono di attendere), con il perché. Usa **grassetto** per le parole chiave. Massimo ~170 parole. Non inventare dati. Chiudi con una riga che ricorda che non è una raccomandazione d'investimento personalizzata.`;
+    return await callClaude(key, sPrompt);
+  }
+
   const holdings = (m.tickers || [])
     .map((t, i) => `${t} ${(m.weights || [])[i] ?? '?'}%`).join(', ');
 
@@ -45,6 +66,10 @@ Scrivi 4 brevi paragrafi:
 4) 2-3 suggerimenti pratici e specifici per migliorarlo.
 Usa **grassetto** per le parole chiave. Massimo ~180 parole totali. Non inventare dati oltre a quelli forniti. Chiudi ricordando in una riga che non è una raccomandazione d'investimento personalizzata.`;
 
+  return await callClaude(key, prompt);
+}
+
+async function callClaude(key, prompt) {
   try {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',

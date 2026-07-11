@@ -1600,6 +1600,20 @@ input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size
 .risk-tgt-val{font-size:.92rem;font-weight:800;margin-top:3px;color:var(--g);}
 .risk-tgt-sub{font-size:.64rem;color:var(--t3);margin-top:2px;}
 .risk-warn{margin-top:10px;font-size:.76rem;color:var(--y);line-height:1.5;}
+/* ── Prova dell'edge (backtest segnali) ── */
+.edge-intro{font-size:.78rem;color:var(--t2);line-height:1.6;margin-bottom:12px;}
+.edge-table{overflow-x:auto;}
+.edge-tbl{width:100%;border-collapse:collapse;font-size:.8rem;min-width:520px;}
+.edge-tbl th,.edge-tbl td{padding:9px 10px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap;}
+.edge-tbl th{font-size:.66rem;text-transform:uppercase;letter-spacing:.05em;color:var(--t3);font-weight:700;}
+.edge-tbl td:first-child,.edge-tbl th:first-child{text-align:left;color:var(--text);font-weight:600;}
+.edge-tbl tr.edge-base td{color:var(--t3);}
+.edge-tbl .edge-pos{color:var(--g);font-weight:700;}
+.edge-tbl .edge-neg{color:var(--r);font-weight:700;}
+.edge-badge{display:inline-block;font-size:.62rem;font-weight:700;padding:1px 7px;border-radius:20px;margin-left:6px;}
+.edge-badge.yes{background:rgba(16,185,129,.14);color:var(--g);border:1px solid rgba(16,185,129,.3);}
+.edge-badge.no{background:rgba(239,68,68,.12);color:var(--r);border:1px solid rgba(239,68,68,.3);}
+.edge-note{font-size:.72rem;color:var(--t3);margin-top:10px;line-height:1.5;}
 .pf-cmp-backdrop{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.65);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:20px;}
 .pf-cmp-box{background:var(--bg);border:1px solid var(--b2);border-radius:var(--radius);box-shadow:var(--shadow);max-width:840px;width:100%;max-height:80vh;overflow:hidden;display:flex;flex-direction:column;}
 .pf-cmp-hd{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;font-weight:700;font-size:.95rem;border-bottom:1px solid var(--border);}
@@ -2435,6 +2449,14 @@ input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size
       <div class="prof-grid" id="prof-grid"></div>
       <div class="a-sec-lbl" style="margin-top:22px">Documenti &amp; approfondimenti</div>
       <div class="prof-docs" id="prof-docs"></div>
+    </div>
+
+    <!-- Prova dell'edge: backtest dei segnali su questo titolo -->
+    <div id="edge-section" style="display:none">
+      <hr class="sec-divider">
+      <div class="a-sec-lbl">Prova dell'edge — backtest sui dati reali <button class="info-btn" data-tip="edge" title="Come leggere il backtest?">i</button></div>
+      <div class="edge-intro" id="edge-intro"></div>
+      <div class="edge-table" id="edge-table"></div>
     </div>
 
     <!-- Charts -->
@@ -3508,6 +3530,69 @@ function oppBacktest(cl,horizon=30){
   }
   if(tot<8) return null;                        // troppi pochi casi → statistica non affidabile
   return {rate:Math.round(hits/tot*100), n:tot, horizon, avgRet:+(sum/tot*100).toFixed(1)};
+}
+
+// BACKTEST DEI SEGNALI: forward-return condizionati a ciascun segnale vs baseline.
+// Dimostra, sui dati reali del titolo, se i segnali che usiamo hanno avuto un vantaggio.
+function signalBacktest(cl,horizon=30){
+  const n=cl.length, P=14;
+  if(n<200+horizon+P+10) return null;
+  const R=new Array(n).fill(null);
+  let ag=0,al=0;
+  for(let i=1;i<=P;i++){const d=cl[i]-cl[i-1];d>0?ag+=d:al-=d;}
+  ag/=P; al/=P; R[P]=al===0?100:100-100/(1+ag/al);
+  for(let i=P+1;i<n;i++){const d=cl[i]-cl[i-1];ag=(ag*(P-1)+Math.max(d,0))/P;al=(al*(P-1)+Math.max(-d,0))/P;R[i]=al===0?100:100-100/(1+ag/al);}
+  let s50=0,s200=0; const M50=new Array(n).fill(null),M200=new Array(n).fill(null);
+  for(let i=0;i<n;i++){ s50+=cl[i]; if(i>=50)s50-=cl[i-50]; if(i>=49)M50[i]=s50/50;
+    s200+=cl[i]; if(i>=200)s200-=cl[i-200]; if(i>=199)M200[i]=s200/200; }
+  const mk=()=>({n:0,pos:0,sum:0});
+  const acc=(o,r)=>{ o.n++; o.sum+=r; if(r>0)o.pos++; };
+  const base=mk(), oversold=mk(), above=mk(), golden=mk();
+  for(let i=200;i+horizon<n;i++){
+    if(M200[i]==null) continue;
+    const r=(cl[i+horizon]-cl[i])/cl[i];
+    acc(base,r);
+    if(R[i]!=null&&R[i]<30) acc(oversold,r);
+    if(cl[i]>M200[i]) acc(above,r);
+    if(M50[i]!=null&&M50[i]>M200[i]) acc(golden,r);
+  }
+  const fin=o=>o.n>=15?{n:o.n,rate:Math.round(o.pos/o.n*100),avg:+(o.sum/o.n*100).toFixed(1)}:null;
+  const b=fin(base); if(!b) return null;
+  return {horizon, years:+(n/252).toFixed(1), baseline:b,
+    signals:[
+      {key:'RSI < 30 (ipervenduto)', d:fin(oversold)},
+      {key:'Prezzo sopra MA200 (trend positivo)', d:fin(above)},
+      {key:'MA50 > MA200 (regime rialzista)', d:fin(golden)},
+    ].filter(s=>s.d)};
+}
+function renderEdge(cl){
+  const sec=document.getElementById('edge-section');
+  const intro=document.getElementById('edge-intro');
+  const tbl=document.getElementById('edge-table');
+  if(!sec) return;
+  const bt=signalBacktest(cl,30);
+  if(!bt){ sec.style.display='none'; return; }
+  sec.style.display='block';
+  intro.innerHTML=`Verifica <b>sui dati reali</b> degli ultimi <b>${bt.years} anni</b> di questo titolo: quando si verificava ciascun segnale, com'è andato il prezzo <b>nei ~${bt.horizon} giorni successivi</b>? Confrontalo con la media di <b>tutti</b> i giorni (baseline). Un segnale ha "edge" se batte la baseline.`;
+  const b=bt.baseline;
+  const cmp=(v,base)=>v>base+0.3?'edge-pos':v<base-0.3?'edge-neg':'';
+  const rows=bt.signals.map(s=>{
+    const beatsRate=s.d.rate>b.rate+2, beatsAvg=s.d.avg>b.avg+0.3;
+    const edge=beatsRate&&beatsAvg;
+    return `<tr>
+      <td>${s.key}${edge?'<span class="edge-badge yes">edge ✓</span>':(s.d.avg<b.avg?'<span class="edge-badge no">nessun edge</span>':'')}</td>
+      <td>${s.d.n}</td>
+      <td class="${cmp(s.d.rate,b.rate)}">${s.d.rate}%</td>
+      <td class="${cmp(s.d.avg,b.avg)}">${s.d.avg>=0?'+':''}${s.d.avg}%</td>
+    </tr>`;
+  }).join('');
+  tbl.innerHTML=`<table class="edge-tbl">
+    <thead><tr><th>Condizione</th><th>Casi</th><th>% positivi (${bt.horizon}gg)</th><th>Rend. medio (${bt.horizon}gg)</th></tr></thead>
+    <tbody>
+      <tr class="edge-base"><td>Baseline — tutti i giorni</td><td>${b.n}</td><td>${b.rate}%</td><td>${b.avg>=0?'+':''}${b.avg}%</td></tr>
+      ${rows}
+    </tbody></table>
+    <div class="edge-note">🔬 Backtest senza look-ahead (i segnali usano solo i dati fino a quel giorno; l'esito è preso ${bt.horizon} giorni dopo). Campione minimo 15 casi. <b>È la storia di questo singolo titolo</b>, non una garanzia: su un altro titolo o in futuro i numeri possono cambiare.</div>`;
 }
 function seasonal(ts,cl){
   const m={};
@@ -5334,6 +5419,7 @@ async function analyze(ticker){
         w30:w30!=null?+w30.toFixed(0):null, w90:w90!=null?+w90.toFixed(0):null, fund:fund||null,
       });
       renderStockAI(buildAIData(null),false);   // subito, dati tecnici
+      renderEdge(cl);                            // prova dell'edge (backtest segnali)
       fundPromise.then(fund=>{
         renderFundamentals(fund,ticker,true);
         renderProfile(ticker,meta);
@@ -5579,6 +5665,17 @@ La combinazione "ipervenduto + trend sano" è un classico setup di <b>ingresso s
 <b>⚠ Perché l'APEX Score qui è moderato e non alto?</b> È del tutto normale e voluto. L'APEX misura la <b>forza tecnica ATTUALE</b>: è alto quando un titolo è in pieno slancio (cioè <i>dopo</i> che è già salito). Un'opportunità è l'opposto — un titolo <b>momentaneamente ipervenduto</b>, quindi "debole ora" per definizione, con un APEX tipicamente tra 45 e 55. Il valore non sta nella forza di oggi ma nel <b>rimbalzo statisticamente atteso</b>. In sintesi: <b>score alto = compra la forza; opportunità = compra la debolezza temporanea di un titolo sano.</b><br><br>
 I titoli sono ordinati per <b>forza del segnale</b> (quanto è ipervenduto + conferma del trend + score). Ogni card mostra i <b>dati reali</b> (RSI, distanza dai massimi, stato del trend) così puoi verificare tu stesso perché è stato selezionato.<br><br>
 <i>⚠ Screening statistico basato su dati storici. Verifica sempre con la tua analisi prima di investire.</i>`
+  },
+  edge:{
+    title:'Prova dell\'edge — cos\'è e come si legge',
+    body:`È la <b>verifica onesta</b> se i segnali che usiamo hanno davvero avuto valore su <b>questo specifico titolo</b>, misurata sui suoi <b>prezzi storici reali</b>.<br><br>
+<b>Come funziona:</b> per ogni giorno del passato controlliamo se un segnale era attivo (es. "RSI&lt;30"), poi guardiamo <b>com'è andato il prezzo nei ~30 giorni dopo</b>. Aggreghiamo tutti questi casi e li confrontiamo con la <b>baseline</b> (la media di <i>tutti</i> i giorni, cioè "comprare a caso").<br><br>
+<b>Come leggerlo:</b><br>
+• <b>% positivi</b> → in quanti casi, dopo 30 giorni, il prezzo era più alto.<br>
+• <b>Rend. medio</b> → il guadagno/perdita medio a 30 giorni.<br>
+• <b>edge ✓</b> → il segnale ha <b>battuto la baseline</b> sia in frequenza sia in rendimento: aveva un vantaggio storico. <b>nessun edge</b> → non ha fatto meglio del caso.<br><br>
+<b>Perché è importante:</b> un tool serio non ti chiede di fidarti — ti mostra le prove. Se un segnale non ha edge su un titolo, lo vedi e lo sai.<br><br>
+<i>⚠ Nessun look-ahead (usiamo solo dati passati per il segnale). Ma è la storia di <b>un solo titolo</b>: campioni limitati e mercati che cambiano fanno sì che il passato non garantisca il futuro.</i>`
   },
   risk:{
     title:'Gestione del rischio — position sizing',

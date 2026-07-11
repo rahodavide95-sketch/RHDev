@@ -3836,6 +3836,7 @@ function renderOpportunities(scoreMap){
       <span class="opp-crit">RSI &lt; 40 (ipervenduto)</span>
       <span class="opp-crit">MA50 &gt; MA200 (trend di fondo rialzista)</span>
       <span class="opp-crit">Score tecnico ≥ 45</span>
+      <br><b>Perché l'APEX Score qui è moderato (e non alto)?</b> È normale e voluto: l'APEX misura la <b>forza ATTUALE</b>. Un'opportunità è per definizione un titolo <b>temporaneamente ipervenduto</b> (quindi "debole ora") ma con basi sane — il valore sta nel <b>rimbalzo atteso</b>, non nella forza di oggi. Score alto = "compra la forza"; opportunità = "compra la debolezza di un titolo sano".
       <br>Ordinati per forza del segnale. <b>Non è un consiglio finanziario</b>: è uno screening statistico da verificare con la tua analisi.
     </div>
     <div class="opp-grid">${top.map(({sym,score})=>oppItemHTML(sym,score,false)).join('')}</div>
@@ -5497,6 +5498,7 @@ Un titolo compare <b>solo se soddisfa TUTTI e tre</b> questi criteri, calcolati 
 <b>2. MA50 &gt; MA200</b> → il <b>trend di fondo resta rialzista</b>: evitiamo i titoli in caduta strutturale ("catch a falling knife").<br>
 <b>3. APEX Score ≥ 45</b> → il modello quantitativo <b>conferma</b> che il quadro tecnico complessivo non è compromesso.<br><br>
 La combinazione "ipervenduto + trend sano" è un classico setup di <b>ingresso su ritracciamento</b>: comprare la debolezza temporanea di un asset che sale nel lungo periodo.<br><br>
+<b>⚠ Perché l'APEX Score qui è moderato e non alto?</b> È del tutto normale e voluto. L'APEX misura la <b>forza tecnica ATTUALE</b>: è alto quando un titolo è in pieno slancio (cioè <i>dopo</i> che è già salito). Un'opportunità è l'opposto — un titolo <b>momentaneamente ipervenduto</b>, quindi "debole ora" per definizione, con un APEX tipicamente tra 45 e 55. Il valore non sta nella forza di oggi ma nel <b>rimbalzo statisticamente atteso</b>. In sintesi: <b>score alto = compra la forza; opportunità = compra la debolezza temporanea di un titolo sano.</b><br><br>
 I titoli sono ordinati per <b>forza del segnale</b> (quanto è ipervenduto + conferma del trend + score). Ogni card mostra i <b>dati reali</b> (RSI, distanza dai massimi, stato del trend) così puoi verificare tu stesso perché è stato selezionato.<br><br>
 <i>⚠ Screening statistico basato su dati storici. Verifica sempre con la tua analisi prima di investire.</i>`
   },

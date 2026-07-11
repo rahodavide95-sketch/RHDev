@@ -385,8 +385,8 @@ header{
 .nm-sub{font-size:.66rem;color:var(--t3);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .nm-chevron{color:var(--t3);flex-shrink:0;opacity:.5;transition:opacity .12s,transform .12s;}
 .nav-menu-item:hover .nm-chevron{opacity:1;transform:translateX(2px);color:var(--accent);}
-.nav-menu-sep{height:1px;background:var(--border);margin:4px 6px;}
-.nav-menu-head{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);padding:8px 12px 4px;}
+.nav-menu-sep{height:1px;background:var(--border);margin:6px 6px 2px;}
+.nav-menu-head{font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);opacity:.85;padding:8px 12px 5px;}
 .nav-menu-item .nm-ico{display:flex;align-items:center;justify-content:center;color:var(--accent);flex-shrink:0;width:20px;}
 .nav-menu-feat{gap:9px;font-weight:600;background:rgba(59,130,246,.07);justify-content:flex-start;}
 .nav-menu-feat:hover{background:rgba(59,130,246,.16);}
@@ -6831,10 +6831,11 @@ function buildMainMenu(){
   ];
   const chevron=`<svg class="nm-chevron" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>`;
   const nWatch=watchGet().length;
+  // ── Sezione: Strumenti ──
   let html=`<div class="nav-menu-head">Strumenti</div>`;
   html+=`<div class="nav-menu-item nav-menu-feat" onclick="closeMainMenu();openPortfolio()">
-    <span class="nm-ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span>
-    <span>Simulatore di Portafoglio</span></div>`;
+    <span class="nm-ico"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span>
+    <span class="nm-text"><span class="nm-title">Simulatore di Portafoglio</span><span class="nm-sub">Proietta, ottimizza, confronta scenari</span></span>${chevron}</div>`;
   html+=`<div class="nav-menu-item" onclick="openWatchlist()">
     <span class="nm-ico" style="color:#f59e0b">★</span>
     <span class="nm-text"><span class="nm-title">Preferiti</span><span class="nm-sub">I titoli che segui</span></span>
@@ -6842,19 +6843,22 @@ function buildMainMenu(){
   html+=`<div class="nav-menu-item" onclick="closeMainMenu();openCompare()">
     <span class="nm-ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5v18h4M15 3h4v18h-4M9 8h6M9 12h6M9 16h6"/></svg></span>
     <span class="nm-text"><span class="nm-title">Confronta titoli</span><span class="nm-sub">Fino a 4 affiancati</span></span>${chevron}</div>`;
+  // ── Sezione: Sfoglia per categoria ──
   html+=`<div class="nav-menu-sep"></div><div class="nav-menu-head">Sfoglia per categoria</div>`;
   html+=cats.map(([id,label,sub])=>
     `<div class="nav-menu-item" onclick="openCatFromMenu('${id}')">
       <span class="nm-ico"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ic[id]||''}</svg></span>
       <span class="nm-text"><span class="nm-title">${label}</span><span class="nm-sub">${sub}</span></span>${chevron}</div>`).join('');
+  // ── Sezione: Sfoglia per borsa ──
   html+=`<div class="nav-menu-sep"></div><div class="nav-menu-head">Sfoglia per borsa</div>`;
   html+=exch.map(([c,label,sub])=>
     `<div class="nav-menu-item" onclick="openAllMarket('${c}')">
       <span class="nm-text"><span class="nm-title">${label}</span><span class="nm-sub">${sub}</span></span>${chevron}</div>`).join('');
-  html+=`<div class="nav-menu-sep"></div>`;
+  // ── Sezione: Informazioni ──
+  html+=`<div class="nav-menu-sep"></div><div class="nav-menu-head">Informazioni</div>`;
   html+=`<div class="nav-menu-item" onclick="openAbout()">
-    <span class="nm-ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></span>
-    <span class="nm-text"><span class="nm-title">Chi siamo</span><span class="nm-sub">Filosofia e trasparenza</span></span>${chevron}</div>`;
+    <span class="nm-ico"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></span>
+    <span class="nm-text"><span class="nm-title">Chi siamo</span><span class="nm-sub">Filosofia, metodo e trasparenza</span></span>${chevron}</div>`;
   menu.innerHTML=html;
 }
 function toggleMainMenu(e){
@@ -7670,9 +7674,8 @@ document.addEventListener('DOMContentLoaded',()=>{
 </script>
 
 <footer class="site-footer">
-  <div style="display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;">
-    <span style="max-width:640px;font-size:.68rem;line-height:1.5;opacity:.85">Dati di mercato: <strong>Yahoo Finance</strong>, ritardati di ~15 minuti — adatti ad analisi swing/posizione, non a operatività intraday. Fondamentali: Finnhub. <strong>APEX Finance è uno strumento di analisi e supporto alle decisioni, NON una consulenza finanziaria.</strong> Punteggi e opportunità sono screening statistici su dati storici: il passato non garantisce il futuro. Investi solo capitale che puoi permetterti di perdere.</span>
-    <span>Sviluppato con cura da <strong>Davide Raho</strong> &nbsp;|&nbsp; v3.1</span>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;">
+    <span><a href="#" onclick="openAbout();return false;" style="color:inherit;text-decoration:underline;text-underline-offset:2px">Chi siamo</a> &nbsp;|&nbsp; Sviluppato con cura da <strong>Davide Raho</strong> &nbsp;|&nbsp; v3.1</span>
     <span>© APEX Finance 2026</span>
   </div>
 </footer>

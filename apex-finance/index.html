@@ -4064,7 +4064,8 @@ async function loadPulse(){
         const tss=valid.map(p=>p.t), cl=valid.map(p=>p.c);
         if(sym==='SPY') spyCl=cl;
         const score=cached!==null?cached:scoreFromHistory(cl,tss);
-        if(score!=null){ globalScoreMap[sym]=score; setCached(sym,score); }
+        // conserva l'eventuale dato "dip" già in cache: non azzerarlo ri-salvando il solo score
+        if(score!=null){ globalScoreMap[sym]=score; setCached(sym,score,getCachedDip(sym)); }
         const cur=cl[cl.length-1], prev=cl[cl.length-2];
         const chPct=(cur-prev)/prev*100;
         const chEl=document.getElementById(`pc-ch-${sym}`);

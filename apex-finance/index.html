@@ -1234,6 +1234,8 @@ input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size
 .opp-method{font-size:.73rem; color:var(--t2); line-height:1.65; background:var(--bg3);
   border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:8px;
   padding:12px 14px; margin-bottom:18px;}
+.opp-rel-box{font-size:.82rem; color:var(--text); background:rgba(16,185,129,.08);
+  border:1px solid rgba(16,185,129,.25); border-radius:8px; padding:9px 12px; margin-bottom:10px; line-height:1.5;}
 .opp-crit{display:inline-block; font-size:.65rem; font-weight:600; color:var(--accent);
   background:rgba(59,130,246,.1); border:1px solid rgba(59,130,246,.25); border-radius:20px;
   padding:2px 9px; margin:4px 5px 0 0; white-space:nowrap;}
@@ -3392,9 +3394,12 @@ async function fetchAndScore(ticker){
       const trendUp=M50!=null&&M200!=null&&M50>M200;
       const Mo3m=cl.length>=65?mom(cl,65):null;
       const aboveMA200=M200!=null&&cur>M200;
+      const isDip=R!=null&&R<40&&trendUp;
       dip={
-        isDip:R!=null&&R<40&&trendUp,   // ipervenduto MA trend di fondo ancora rialzista
+        isDip,   // ipervenduto MA trend di fondo ancora rialzista
         rsi:R, dd:+dd.toFixed(1), trendUp, aboveMA200, mo3m:Mo3m!=null?+Mo3m.toFixed(1):null,
+        // affidabilità storica del setup solo per i titoli in zona (evita calcolo inutile su tutti)
+        rel: isDip?oppBacktest(cl,30):null,
       };
       dipMap[ticker]=dip;
     }
@@ -3440,6 +3445,34 @@ function mom(cl,p=20){return cl.length<p+1?null:(cl[cl.length-1]-cl[cl.length-1-
 function drawdown(cl){let pk=cl[0],dd=0;for(const c of cl){if(c>pk)pk=c;const d=(pk-c)/pk;if(d>dd)dd=d;}return dd*100;}
 // Win rate: null se campioni insufficienti (evita percentuali inventate su storia corta)
 function wr(cl,h){let w=0,t=0;for(let i=0;i<cl.length-h;i++){t++;if(cl[i+h]>cl[i])w++;}return t>=20?(w/t)*100:null;}
+
+// BACKTEST DEL SETUP OPPORTUNITÀ: quante volte, storicamente su QUESTO titolo, quando era
+// "ipervenduto (RSI<40) in trend rialzista (MA50>MA200)" il prezzo era più alto dopo `horizon` giorni.
+// Nessun look-ahead: RSI/MA calcolati solo con i dati fino a quel giorno; esito preso `horizon` giorni dopo.
+function oppBacktest(cl,horizon=30){
+  const n=cl.length, P=14;
+  if(n<200+horizon+P+10) return null;
+  // RSI rolling (Wilder) coerente con rsi()
+  const R=new Array(n).fill(null);
+  let ag=0,al=0;
+  for(let i=1;i<=P;i++){const d=cl[i]-cl[i-1];d>0?ag+=d:al-=d;}
+  ag/=P; al/=P; R[P]=al===0?100:100-100/(1+ag/al);
+  for(let i=P+1;i<n;i++){const d=cl[i]-cl[i-1];ag=(ag*(P-1)+Math.max(d,0))/P;al=(al*(P-1)+Math.max(-d,0))/P;R[i]=al===0?100:100-100/(1+ag/al);}
+  // MA50 / MA200 rolling
+  let s50=0,s200=0; const M50=new Array(n).fill(null),M200=new Array(n).fill(null);
+  for(let i=0;i<n;i++){ s50+=cl[i]; if(i>=50)s50-=cl[i-50]; if(i>=49)M50[i]=s50/50;
+    s200+=cl[i]; if(i>=200)s200-=cl[i-200]; if(i>=199)M200[i]=s200/200; }
+  let hits=0,tot=0,sum=0,prev=false;
+  for(let i=200;i+horizon<n;i++){
+    const setup = R[i]!=null && R[i]<40 && M50[i]!=null && M200[i]!=null && M50[i]>M200[i];
+    if(setup && !prev){                        // conta ogni "ingresso" nella zona una sola volta
+      tot++; const r=(cl[i+horizon]-cl[i])/cl[i]; sum+=r; if(r>0)hits++;
+    }
+    prev=setup;
+  }
+  if(tot<8) return null;                        // troppi pochi casi → statistica non affidabile
+  return {rate:Math.round(hits/tot*100), n:tot, horizon, avgRet:+(sum/tot*100).toFixed(1)};
+}
 function seasonal(ts,cl){
   const m={};
   for(let i=1;i<cl.length;i++){const mo=new Date(ts[i]*1000).getMonth();if(!m[mo])m[mo]={w:0,t:0};if(cl[i]>cl[i-1])m[mo].w++;m[mo].t++;}
@@ -3766,6 +3799,7 @@ function oppItemHTML(sym, score, extra=false){
     chips.push(`<span class="opp-chip ${rc}">RSI ${d.rsi.toFixed(0)}${d.rsi<30?' · molto ipervenduto':' · ipervenduto'}</span>`);
   }
   if(d.dd!=null&&d.dd>=1) chips.push(`<span class="opp-chip">−${d.dd.toFixed(0)}% dai massimi 52s</span>`);
+  if(d.rel) chips.push(`<span class="opp-chip ${d.rel.rate>=60?'opp-chip-up':d.rel.rate>=50?'':'opp-chip-rsi'}" title="Frequenza storica con cui, dopo un setup simile su questo titolo, il prezzo era più alto dopo ${d.rel.horizon} giorni (${d.rel.n} casi)">🎯 affidabilità storica ${d.rel.rate}%</span>`);
   if(d.trendUp) chips.push(`<span class="opp-chip opp-chip-up">✓ trend di fondo rialzista</span>`);
   if(d.aboveMA200) chips.push(`<span class="opp-chip opp-chip-up">✓ sopra MA200</span>`);
   if(d.mo3m!=null&&d.mo3m>0) chips.push(`<span class="opp-chip opp-chip-up">+${d.mo3m.toFixed(0)}% in 3 mesi</span>`);
@@ -3831,7 +3865,11 @@ function renderOpportunities(scoreMap){
   badge.style.display='';
   badge.textContent=`${all.length} in zona sconto${scanning?' · scansione…':''}`;
   const top=all.slice(0,OPP_HOME_MAX);
+  // affidabilità storica media dei setup mostrati (backtest reale su ogni titolo)
+  const rels=all.map(o=>dipMap[o.sym]?.rel?.rate).filter(v=>v!=null);
+  const avgRel=rels.length?Math.round(rels.reduce((a,b)=>a+b,0)/rels.length):null;
   grid.innerHTML=`<div class="opp-method">
+      ${avgRel!=null?`<div class="opp-rel-box">🎯 <b>Affidabilità storica media: ${avgRel}%</b> <span style="color:var(--t3);font-weight:400">— quante volte, in passato su questi stessi titoli, un setup simile era in guadagno dopo ~30 giorni (${rels.length} titoli con dati sufficienti). <b>Il passato non garantisce il futuro.</b></span></div>`:''}
       <b>Come funziona:</b> ogni volta scansioniamo <b>automaticamente tutti i titoli monitorati</b> e selezioniamo <b>tutti</b> quelli in <b>zona di sconto statistico</b> — che soddisfano contemporaneamente:
       <span class="opp-crit">RSI &lt; 40 (ipervenduto)</span>
       <span class="opp-crit">MA50 &gt; MA200 (trend di fondo rialzista)</span>
@@ -5067,7 +5105,8 @@ function renderOppZone(d){
   }).join('');
   if(inZone){
     const inWatch=watchHas(d.ticker);
-    noteEl.innerHTML=`<b style="color:var(--g)">✅ Sì, è in zona opportunità.</b> Soddisfa <b>tutti e tre</b> i criteri: è ipervenduto ma con il trend di fondo ancora rialzista e con la conferma del modello. È il setup classico di <b>acquisto sul ritracciamento</b> — comprare la debolezza temporanea di un asset che nel lungo periodo sale.
+    const relLine=d.rel?`<br><br><span style="display:inline-block;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.28);border-radius:8px;padding:6px 10px;font-size:.82rem;color:var(--text)">🎯 <b>Affidabilità storica ${d.rel.rate}%</b> — su questo titolo, in <b>${d.rel.n} casi</b> passati con un setup simile, il prezzo era più alto dopo ~${d.rel.horizon} giorni (rendimento medio ${d.rel.avgRet>=0?'+':''}${d.rel.avgRet}%). <span style="color:var(--t3)">Il passato non garantisce il futuro.</span></span>`:'<br><br><span style="font-size:.78rem;color:var(--t3)">🎯 Affidabilità storica non calcolabile: storico troppo breve o pochi casi passati di questo setup.</span>';
+    noteEl.innerHTML=`<b style="color:var(--g)">✅ Sì, è in zona opportunità.</b> Soddisfa <b>tutti e tre</b> i criteri: è ipervenduto ma con il trend di fondo ancora rialzista e con la conferma del modello. È il setup classico di <b>acquisto sul ritracciamento</b> — comprare la debolezza temporanea di un asset che nel lungo periodo sale.${relLine}
     <br><br><span style="color:var(--t3);font-size:.78rem">ℹ️ La sezione <b>Migliori Opportunità</b> in home elenca solo i titoli <b>monitorati</b> (i più scambiati) e i tuoi <b>⭐ preferiti</b>. ${inWatch?'Questo titolo è tra i preferiti, quindi comparirà anche lì quando in zona.':'Se non lo vedi lì, è perché non fa parte di quella selezione: aggiungilo ai <b>⭐ preferiti</b> per tenerlo monitorato in home.'}</span>
     <br><i style="font-size:.72rem;color:var(--t3)">Verifica sempre con la tua analisi: non è un consiglio personalizzato.</i>`;
   } else {
@@ -5142,7 +5181,8 @@ async function analyze(ticker){
     // popola dip + cache così il titolo entra SUBITO nello screening Opportunità della home
     const _mx=Math.max(...cl.slice(-252)); const _dd=_mx>0?(_mx-cur)/_mx*100:0;
     const _trendUp=M50!=null&&M200!=null&&M50>M200;
-    const _dip={isDip:R!=null&&R<40&&_trendUp, rsi:R, dd:+_dd.toFixed(1), trendUp:_trendUp, aboveMA200:M200!=null&&cur>M200, mo3m:Mo3m!=null?+Mo3m.toFixed(1):null};
+    const oppRel=oppBacktest(cl,30);   // affidabilità storica del setup su questo titolo
+    const _dip={isDip:R!=null&&R<40&&_trendUp, rsi:R, dd:+_dd.toFixed(1), trendUp:_trendUp, aboveMA200:M200!=null&&cur>M200, mo3m:Mo3m!=null?+Mo3m.toFixed(1):null, rel:oppRel};
     dipMap[ticker]=_dip;
     globalScoreMap[ticker]=techScore; setCached(ticker,techScore,_dip);
     if(!_oppNameMap[ticker]) _oppNameMap[ticker]=(meta.longName||meta.shortName||ticker);
@@ -5247,7 +5287,7 @@ async function analyze(ticker){
       document.getElementById('profile-section').style.display='none';
       const buildAIData=(fund)=>({
         ticker, name:(meta.longName||meta.shortName||ticker), currency:meta.currency||'',
-        price:cur, chP:+chP.toFixed(2), score, techScore,
+        price:cur, chP:+chP.toFixed(2), score, techScore, rel:oppRel,
         rsi:R!=null?+R.toFixed(1):null,
         aboveMA50:M50!=null?cur>M50:null, aboveMA200:M200!=null?cur>M200:null,
         trendUp:(M50!=null&&M200!=null)?M50>M200:null,

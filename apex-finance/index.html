@@ -1581,6 +1581,25 @@ input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size
 .oz-crit-txt b{color:var(--text);}
 .oz-note{margin-top:11px;font-size:.82rem;line-height:1.6;color:var(--text);padding-top:11px;border-top:1px solid var(--border);}
 .oz-note b{color:var(--text);}
+/* ── Gestione del rischio ── */
+.risk-card{margin-top:14px;border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;background:var(--bg2);}
+.risk-hd{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.risk-title{font-size:.92rem;font-weight:800;}
+.risk-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;}
+.risk-in{display:flex;flex-direction:column;gap:4px;font-size:.68rem;font-weight:600;color:var(--t2);}
+.risk-in input{padding:8px 9px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:16px;outline:none;}
+.risk-in input:focus{border-color:var(--accent);}
+.risk-out{margin-top:13px;}
+.risk-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:.84rem;}
+.risk-row:last-child{border-bottom:none;}
+.risk-row .rk-lbl{color:var(--t2);}
+.risk-row .rk-val{font-weight:700;font-variant-numeric:tabular-nums;text-align:right;}
+.risk-targets{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;}
+.risk-tgt{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px;text-align:center;}
+.risk-tgt-lbl{font-size:.6rem;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;font-weight:700;}
+.risk-tgt-val{font-size:.92rem;font-weight:800;margin-top:3px;color:var(--g);}
+.risk-tgt-sub{font-size:.64rem;color:var(--t3);margin-top:2px;}
+.risk-warn{margin-top:10px;font-size:.76rem;color:var(--y);line-height:1.5;}
 .pf-cmp-backdrop{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.65);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:20px;}
 .pf-cmp-box{background:var(--bg);border:1px solid var(--b2);border-radius:var(--radius);box-shadow:var(--shadow);max-width:840px;width:100%;max-height:80vh;overflow:hidden;display:flex;flex-direction:column;}
 .pf-cmp-hd{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;font-weight:700;font-size:.95rem;border-bottom:1px solid var(--border);}
@@ -2218,6 +2237,18 @@ input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size
       <div class="oz-hd"><span class="oz-title" id="oz-title">🎯 Zona opportunità</span><button class="info-btn" data-tip="opportunities" title="Come funziona la zona opportunità?">i</button></div>
       <div class="oz-criteria" id="oz-criteria"></div>
       <div class="oz-note" id="oz-note"></div>
+    </div>
+
+    <!-- Gestione del rischio / position sizing -->
+    <div class="risk-card" id="risk-card" style="display:none">
+      <div class="risk-hd"><span class="risk-title">🛡️ Gestione del rischio</span><button class="info-btn" data-tip="risk" title="Come funziona il position sizing?">i</button></div>
+      <div class="risk-grid">
+        <label class="risk-in">Capitale totale (€)<input id="rk-cap" type="number" min="0" step="500" oninput="computeRisk()"></label>
+        <label class="risk-in">Rischio per operazione (%)<input id="rk-risk" type="number" min="0.1" max="10" step="0.5" oninput="computeRisk()"></label>
+        <label class="risk-in">Prezzo d'ingresso<input id="rk-entry" type="number" min="0" step="0.01" oninput="computeRisk()"></label>
+        <label class="risk-in">Stop-loss<input id="rk-stop" type="number" min="0" step="0.01" oninput="computeRisk()"></label>
+      </div>
+      <div class="risk-out" id="risk-out"></div>
     </div>
 
     <hr class="sec-divider">
@@ -5200,6 +5231,7 @@ async function analyze(ticker){
     document.getElementById('a-price').textContent=(meta.currency||'')+' '+fmt(cur);
     showEurEquivalent(cur, meta.currency);
     renderDataInfo(meta, tss);
+    renderRisk(cur, M200, meta.currency);
     const chEl=document.getElementById('a-ch');
     chEl.innerHTML=`${chA>=0?'+':''}${fmt(chA)} (${chP>=0?'+':''}${chP.toFixed(2)}%) <span class="a-ch-per">· variazione da ieri</span>`;
     chEl.className='a-ch '+(chP>=0?'up':'dn');
@@ -5547,6 +5579,19 @@ La combinazione "ipervenduto + trend sano" è un classico setup di <b>ingresso s
 <b>⚠ Perché l'APEX Score qui è moderato e non alto?</b> È del tutto normale e voluto. L'APEX misura la <b>forza tecnica ATTUALE</b>: è alto quando un titolo è in pieno slancio (cioè <i>dopo</i> che è già salito). Un'opportunità è l'opposto — un titolo <b>momentaneamente ipervenduto</b>, quindi "debole ora" per definizione, con un APEX tipicamente tra 45 e 55. Il valore non sta nella forza di oggi ma nel <b>rimbalzo statisticamente atteso</b>. In sintesi: <b>score alto = compra la forza; opportunità = compra la debolezza temporanea di un titolo sano.</b><br><br>
 I titoli sono ordinati per <b>forza del segnale</b> (quanto è ipervenduto + conferma del trend + score). Ogni card mostra i <b>dati reali</b> (RSI, distanza dai massimi, stato del trend) così puoi verificare tu stesso perché è stato selezionato.<br><br>
 <i>⚠ Screening statistico basato su dati storici. Verifica sempre con la tua analisi prima di investire.</i>`
+  },
+  risk:{
+    title:'Gestione del rischio — position sizing',
+    body:`Lo strumento più importante del trading professionale: <b>non "quanto posso guadagnare", ma "quanto rischio se sbaglio"</b>.<br><br>
+Il principio: su ogni operazione rischi solo una <b>piccola % fissa del capitale</b> (di norma <b>1–2%</b>). Così anche una serie di operazioni sbagliate non intacca gravemente il conto.<br><br>
+<b>Come si calcola la quantità:</b><br>
+• <b>Rischio per azione</b> = prezzo d'ingresso − stop-loss.<br>
+• <b>Importo a rischio</b> = capitale × rischio %.<br>
+• <b>Quantità</b> = importo a rischio ÷ rischio per azione.<br><br>
+In questo modo, se il prezzo tocca lo stop, perdi <b>esattamente</b> la % che avevi deciso — né più né meno.<br><br>
+<b>I target in "R":</b> R è quanto rischi. Un target a <b>2R</b> significa che punti a guadagnare il doppio di quanto rischi. Cercare operazioni con rapporto rischio/rendimento ≥ 2 è ciò che rende profittevole una strategia anche con meno del 50% di operazioni vincenti.<br><br>
+<b>Stop suggerito:</b> lo proponiamo appena sotto la MA200 (o −8% dall'ingresso) come punto tecnico dove la tesi rialzista verrebbe invalidata — ma <b>adattalo</b> alla tua strategia.<br><br>
+<i>Regola d'oro: decidi PRIMA di entrare dove uscirai in perdita. Se non sai dove mettere lo stop, non entrare.</i>`
   },
   score:{
     title:'APEX Score — cos\'è e come si calcola',
@@ -6376,6 +6421,62 @@ function renderDataInfo(meta,tss){
   const when = ageMin<1440 ? `agg. ${hh}` : `agg. ${dd} ${hh}`;
   el.innerHTML=`<span class="a-dot"></span><span>Yahoo Finance · ${when}</span><span class="a-delay">· ritardo ~15 min${stale?' · dato non recente':''}</span>`;
   el.title=stale?'Il dato potrebbe non essere aggiornato (mercato chiuso o ritardo del provider).':'Dati di fine giornata/ritardati ~15 min. Adatti ad analisi swing/posizione, non a operatività intraday.';
+}
+
+// ═══════════════════════════════════════════════════════════
+//  GESTIONE DEL RISCHIO / POSITION SIZING
+// ═══════════════════════════════════════════════════════════
+let _riskCur='';
+function renderRisk(cur,M200,currency){
+  const card=document.getElementById('risk-card'); if(!card) return;
+  card.style.display='block';
+  _riskCur=currency||'';
+  const dec=cur>=100?2:cur>=1?2:4;
+  // stop suggerito: appena sotto la MA200 se il prezzo è sopra, altrimenti −8% dall'ingresso
+  const sugg=(M200!=null&&cur>M200)?M200*0.98:cur*0.92;
+  const entryEl=document.getElementById('rk-entry'), stopEl=document.getElementById('rk-stop');
+  const capEl=document.getElementById('rk-cap'), riskEl=document.getElementById('rk-risk');
+  // capitale e rischio% sono persistenti; entry/stop si aggiornano a ogni titolo
+  capEl.value=capEl.value||localStorage.getItem('apex_rk_cap')||'10000';
+  riskEl.value=riskEl.value||localStorage.getItem('apex_rk_risk')||'1';
+  entryEl.value=(+cur).toFixed(dec);
+  stopEl.value=(+sugg).toFixed(dec);
+  computeRisk();
+}
+function computeRisk(){
+  const out=document.getElementById('risk-out'); if(!out) return;
+  const cap=+document.getElementById('rk-cap').value||0;
+  const riskPct=+document.getElementById('rk-risk').value||0;
+  const entry=+document.getElementById('rk-entry').value||0;
+  const stop=+document.getElementById('rk-stop').value||0;
+  localStorage.setItem('apex_rk_cap',cap); localStorage.setItem('apex_rk_risk',riskPct);
+  const cur=_riskCur?_riskCur+' ':'';
+  const money=v=>cur+(v>=1000?v.toLocaleString('it-IT',{maximumFractionDigits:0}):v.toFixed(2));
+  if(!(cap>0&&riskPct>0&&entry>0)){ out.innerHTML='<div class="risk-warn">Inserisci capitale, rischio % e prezzo d\'ingresso.</div>'; return; }
+  const rps=entry-stop;
+  if(!(rps>0)){ out.innerHTML='<div class="risk-warn">⚠ Lo <b>stop-loss</b> deve essere <b>sotto</b> il prezzo d\'ingresso (per una posizione long).</div>'; return; }
+  const riskAmt=cap*riskPct/100;
+  let shares=Math.floor(riskAmt/rps);
+  const stopPct=rps/entry*100;
+  let capped=false;
+  if(shares*entry>cap){ shares=Math.floor(cap/entry); capped=true; }   // niente leva: max sostenibile col capitale
+  const posValue=shares*entry;
+  const actualRisk=shares*rps;
+  const R=rps;
+  const tgt=m=>{ const p=entry+m*R; return {p, gain:(p-entry)/entry*100}; };
+  const t1=tgt(1),t2=tgt(2),t3=tgt(3);
+  const dec=entry>=1?2:4;
+  out.innerHTML=`
+    <div class="risk-row"><span class="rk-lbl">Quantità da comprare</span><span class="rk-val">${shares.toLocaleString('it-IT')} azioni</span></div>
+    <div class="risk-row"><span class="rk-lbl">Valore posizione</span><span class="rk-val">${money(posValue)} <span style="color:var(--t3);font-weight:400">(${(posValue/cap*100).toFixed(0)}% del capitale)</span></span></div>
+    <div class="risk-row"><span class="rk-lbl">Perdita se scatta lo stop</span><span class="rk-val" style="color:var(--r)">−${money(actualRisk)} <span style="color:var(--t3);font-weight:400">(−${(actualRisk/cap*100).toFixed(1)}% del capitale · −${stopPct.toFixed(1)}% sul titolo)</span></span></div>
+    <div class="risk-targets">
+      <div class="risk-tgt"><div class="risk-tgt-lbl">Target 1R</div><div class="risk-tgt-val">${(+t1.p).toFixed(dec)}</div><div class="risk-tgt-sub">+${t1.gain.toFixed(1)}% · guadagno ${money(shares*R)}</div></div>
+      <div class="risk-tgt"><div class="risk-tgt-lbl">Target 2R</div><div class="risk-tgt-val">${(+t2.p).toFixed(dec)}</div><div class="risk-tgt-sub">+${t2.gain.toFixed(1)}% · guadagno ${money(shares*2*R)}</div></div>
+      <div class="risk-tgt"><div class="risk-tgt-lbl">Target 3R</div><div class="risk-tgt-val">${(+t3.p).toFixed(dec)}</div><div class="risk-tgt-sub">+${t3.gain.toFixed(1)}% · guadagno ${money(shares*3*R)}</div></div>
+    </div>
+    ${capped?`<div class="risk-warn">⚠ Con questo stop, per rischiare il ${riskPct}% servirebbe più capitale del disponibile: la quantità è stata limitata a ciò che copri col capitale (rischio effettivo ${(actualRisk/cap*100).toFixed(1)}%). Allarga lo stop o riduci il rischio % per rispettare la regola.</div>`:
+      `<div class="risk-warn" style="color:var(--t3)">Regola: rischi solo il ${riskPct}% del capitale (${money(riskAmt)}) su questa operazione. I target sono multipli del rischio (R): a 2R guadagni il doppio di quanto rischi.</div>`}`;
 }
 
 // ═══════════════════════════════════════════════════════════

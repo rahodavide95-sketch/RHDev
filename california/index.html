@@ -496,6 +496,20 @@
   }
   .day-progress.complete { color: var(--green); font-weight: 600; }
 
+  /* badge temperatura media */
+  .day-temp {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 4px;
+    border: 1px solid;
+    white-space: nowrap;
+  }
+  .day-temp.cool    { color: var(--sky);   border-color: rgba(74,144,217,0.4);  background: rgba(74,144,217,0.10); }
+  .day-temp.warm    { color: var(--green); border-color: rgba(39,174,96,0.4);   background: rgba(39,174,96,0.10); }
+  .day-temp.hot     { color: var(--amber); border-color: rgba(245,166,35,0.4);  background: rgba(245,166,35,0.12); }
+  .day-temp.extreme { color: var(--rust);  border-color: rgba(192,57,43,0.5);   background: rgba(192,57,43,0.12); font-weight: 600; }
+
   /* barra strumenti globale */
   .tools-bar {
     display: flex;
@@ -3282,6 +3296,36 @@
       if (!confirm('Vuoi azzerare tutte le spunte, priorità e note?')) return;
       state = {}; save();
       location.reload();
+    });
+  })();
+
+  // ── Temperature medie di agosto per giornata ──
+  (function() {
+    var TEMPS = {
+      g1:  { t: '🌡 LA ~28°/18°',                 lvl: 'warm' },
+      g2:  { t: '🌡 Costa ~25°/18°',              lvl: 'warm' },
+      g3:  { t: '🌡 LA ~29°/18°',                 lvl: 'warm' },
+      g4:  { t: '🌡 Mojave ~37° · GC/Williams 27°/11°', lvl: 'hot' },
+      g5:  { t: '🌡 Page/Monument V. ~35°/20°',   lvl: 'hot' },
+      g6:  { t: '🌡 Bryce 26°/9° · Zion 38° · Vegas 40°', lvl: 'hot' },
+      g7:  { t: '🌡 Las Vegas ~40°/26°',          lvl: 'hot' },
+      g8:  { t: '🌡 Death Valley ~46°/30°',       lvl: 'extreme' },
+      g9:  { t: '🌡 Death Valley ~46° · Fresno 36°/19°', lvl: 'extreme' },
+      g10: { t: '🌡 Fresno 36° · SF 21°/14°',     lvl: 'hot' },
+      g11: { t: '🌡 San Francisco ~20°/14°',      lvl: 'cool' },
+      g12: { t: '🌡 San Francisco ~20°/14°',      lvl: 'cool' },
+      g13: { t: '🌡 SF 20° · Fresno 36°/19°',     lvl: 'hot' },
+      g14: { t: '🌡 Fresno 36° · LA 28°',         lvl: 'hot' }
+    };
+    Object.keys(TEMPS).forEach(function(id) {
+      var section = document.getElementById(id);
+      if (!section) return;
+      var stats = section.querySelector('.day-stats');
+      if (!stats) return;
+      var badge = document.createElement('div');
+      badge.className = 'day-temp ' + TEMPS[id].lvl;
+      badge.textContent = TEMPS[id].t;
+      stats.appendChild(badge);
     });
   })();
 

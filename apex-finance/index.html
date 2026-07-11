@@ -5239,7 +5239,7 @@ function renderOppZone(d){
   }
 }
 async function renderStockAI(d,tryAI){
-  renderOppZone(d);
+  try{ renderOppZone(d); }catch(e){ console.warn('oppzone',e); }
   const card=document.getElementById('ai-analysis');
   const body=document.getElementById('ai-analysis-body');
   const status=document.getElementById('ai-analysis-status');
@@ -5314,9 +5314,10 @@ async function analyze(ticker){
     _analyzedTicker=ticker; _analyzedName=(meta.longName||meta.shortName||ticker); watchUpdateStar();
     (()=>{const lg=document.getElementById('a-logo');const tmp=document.createElement('div');tmp.innerHTML=logoHTML(ticker,48);const src=tmp.querySelector('img')?.src||'';const fb=tmp.querySelector('img')?.getAttribute('onerror')?.match(/this\.src='([^']+)'/)?.[1]||'';lg.src=src;lg.onerror=()=>{if(fb)lg.src=fb;};})();
     document.getElementById('a-price').textContent=(meta.currency||'')+' '+fmt(cur);
-    showEurEquivalent(cur, meta.currency);
-    renderDataInfo(meta, tss);
-    renderRisk(cur, M200, meta.currency);
+    // moduli accessori isolati: un errore qui non deve mai rompere l'analisi
+    try{ showEurEquivalent(cur, meta.currency); }catch(e){ console.warn('eur',e); }
+    try{ renderDataInfo(meta, tss); }catch(e){ console.warn('datainfo',e); }
+    try{ renderRisk(cur, M200, meta.currency); }catch(e){ console.warn('risk',e); }
     const chEl=document.getElementById('a-ch');
     chEl.innerHTML=`${chA>=0?'+':''}${fmt(chA)} (${chP>=0?'+':''}${chP.toFixed(2)}%) <span class="a-ch-per">· variazione da ieri</span>`;
     chEl.className='a-ch '+(chP>=0?'up':'dn');
@@ -5419,7 +5420,7 @@ async function analyze(ticker){
         w30:w30!=null?+w30.toFixed(0):null, w90:w90!=null?+w90.toFixed(0):null, fund:fund||null,
       });
       renderStockAI(buildAIData(null),false);   // subito, dati tecnici
-      renderEdge(cl);                            // prova dell'edge (backtest segnali)
+      try{ renderEdge(cl); }catch(e){ console.warn('edge',e); }   // prova dell'edge (backtest segnali)
       fundPromise.then(fund=>{
         renderFundamentals(fund,ticker,true);
         renderProfile(ticker,meta);
@@ -6557,6 +6558,7 @@ function computeRisk(){
   const stopPct=rps/entry*100;
   let capped=false;
   if(shares*entry>cap){ shares=Math.floor(cap/entry); capped=true; }   // niente leva: max sostenibile col capitale
+  if(shares<1){ out.innerHTML=`<div class="risk-warn">⚠ Con ${money(cap)} di capitale non copri nemmeno <b>una singola azione</b> a ${money(entry)}. Aumenta il capitale o scegli un titolo dal prezzo più basso (oppure valuta ETF/frazioni).</div>`; return; }
   const posValue=shares*entry;
   const actualRisk=shares*rps;
   const R=rps;

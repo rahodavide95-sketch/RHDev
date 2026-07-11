@@ -3367,7 +3367,8 @@ const globalScoreMap={};
 // ── FETCH & SCORE A SINGLE TICKER (for panoramica) ──
 async function fetchAndScore(ticker){
   const cached=getCached(ticker);
-  if(cached!==null) return cached;
+  // usa la cache solo se abbiamo GIÀ anche i dati di "dip" (servono alle Opportunità)
+  if(cached!==null && dipMap[ticker]) return cached;
   try{
     const res=await fetchChart(ticker,'2y','1d');
     const tsRaw=res.timestamp||[];
@@ -3784,19 +3785,31 @@ function renderOpportunities(scoreMap){
   if(!grid||!scoreMap) return;
 
   _buildOppMaps();
+  // aggiungi i nomi dei preferiti alla mappa nomi (potrebbero non essere in PANO)
+  watchGet().forEach(w=>{ if(!_oppNameMap[w.ticker]) _oppNameMap[w.ticker]=w.name; });
   let totalAll=0;
   const sections=[];
+  const qualifies=(sym,score)=>{ const d=dipMap[sym]; return d && d.isDip && score!=null && score>=45; };
+  const rankGroup=arr=>arr.filter(x=>qualifies(x.sym,x.score)).sort((a,b)=>oppStrength(b.sym,b.score)-oppStrength(a.sym,a.score));
+  const shownSyms=new Set();
+
+  // GRUPPO PREFERITI — i titoli che l'utente segue, così l'analisi e la home coincidono
+  const favRanked=rankGroup(watchGet().map(w=>({sym:w.ticker,score:scoreMap[w.ticker]})));
+  if(favRanked.length){
+    favRanked.forEach(x=>shownSyms.add(x.sym));
+    totalAll+=favRanked.length;
+    const hasMore=favRanked.length>3;
+    sections.push(`
+      <div class="opp-cat" id="opp-cat-fav">
+        <div class="opp-cat-title">⭐ I tuoi preferiti <span class="opp-cat-n">${favRanked.length}</span></div>
+        <div class="opp-grid">${favRanked.map(({sym,score},i)=>oppItemHTML(sym,score,i>=3)).join('')}</div>
+        ${hasMore?`<button class="opp-toggle" id="opp-toggle-opp-cat-fav" data-label="Vedi altri ${favRanked.length-3} →" onclick="toggleOppCat('opp-cat-fav')">Vedi altri ${favRanked.length-3} →</button>`:''}
+      </div>`);
+  }
 
   for(const[id,entries]of Object.entries(PANO)){
-    const ranked=entries
-      .map(([sym])=>({sym,score:scoreMap[sym]}))
-      .filter(x=>{
-        const d=dipMap[x.sym];
-        // zona sconto (RSI<40 + trend di fondo rialzista) E score che conferma — coerente con l'analisi
-        return d && d.isDip && x.score!=null && x.score>=45;
-      })
-      // ordina per FORZA dell'opportunità (più ipervenduto + trend sano + score), non solo score
-      .sort((a,b)=>oppStrength(b.sym,b.score)-oppStrength(a.sym,a.score));
+    // escludi i titoli già mostrati nel gruppo preferiti (niente doppioni)
+    const ranked=rankGroup(entries.map(([sym])=>({sym,score:scoreMap[sym]})).filter(x=>!shownSyms.has(x.sym)));
     if(!ranked.length) continue;
     totalAll+=ranked.length;
     const catId=`opp-cat-${id}`;
@@ -3820,7 +3833,7 @@ function renderOpportunities(scoreMap){
   badge.style.display='';
   badge.textContent=`${totalAll} in zona sconto`;
   grid.innerHTML=`<div class="opp-method">
-      <b>Come funziona:</b> analizziamo i titoli monitorati e selezioniamo solo quelli in <b>zona di sconto statistico</b> — che soddisfano <b>tutti</b> questi criteri oggettivi:
+      <b>Come funziona:</b> analizziamo i titoli <b>monitorati</b> e i tuoi <b>⭐ preferiti</b>, e selezioniamo solo quelli in <b>zona di sconto statistico</b> — che soddisfano <b>tutti</b> questi criteri oggettivi:
       <span class="opp-crit">RSI &lt; 40 (ipervenduto)</span>
       <span class="opp-crit">MA50 &gt; MA200 (trend di fondo rialzista)</span>
       <span class="opp-crit">APEX Score ≥ 45 (conferma quantitativa)</span>
@@ -4027,6 +4040,20 @@ async function loadPanoramica(){
       renderSecRows(id);
   });
 
+  renderOpportunities(globalScoreMap);
+  scoreWatchlistForOpp();
+}
+
+// Valuta anche i PREFERITI per la sezione Opportunità (così coincide con l'analisi)
+async function scoreWatchlistForOpp(){
+  const tix=watchGet().map(w=>w.ticker).filter(t=>!dipMap[t]);   // manca il dato "dip"
+  if(!tix.length){ renderOpportunities(globalScoreMap); return; }
+  const CONC=5;
+  for(let i=0;i<tix.length;i+=CONC){
+    const batch=tix.slice(i,i+CONC);
+    const scores=await Promise.all(batch.map(fetchAndScore));   // popola anche dipMap
+    scores.forEach((s,j)=>{ if(s!=null) globalScoreMap[batch[j]]=s; });
+  }
   renderOpportunities(globalScoreMap);
 }
 
@@ -4368,6 +4395,7 @@ function cmRowStar(btn){
   btn.title=on?'Rimuovi dai preferiti':'Aggiungi ai preferiti';
   if(_analyzedTicker===t) watchUpdateStar();
   if(document.getElementById('main-menu')?.innerHTML) buildMainMenu();
+  if(typeof scoreWatchlistForOpp==='function') scoreWatchlistForOpp();  // aggiorna le Opportunità in home
 }
 
 // ── CHARTS ──
@@ -5000,7 +5028,9 @@ function renderOppZone(d){
     val:d.rsi!=null?`RSI ${d.rsi.toFixed(0)}`:'RSI non disponibile'};
   const c2={ok:d.trendUp===true, na:d.trendUp==null, label:'Trend di fondo rialzista — MA50 &gt; MA200',
     val:d.trendUp==null?'trend non disponibile':(d.trendUp?'MA50 sopra MA200':'MA50 sotto MA200')};
-  const c3={ok:d.score>=45, na:false, label:'Conferma quantitativa — APEX Score ≥ 45', val:`Score ${d.score}`};
+  // usa lo score TECNICO (stessa base della home) per essere coerente al 100%
+  const zScore=d.techScore!=null?d.techScore:d.score;
+  const c3={ok:zScore>=45, na:false, label:'Conferma quantitativa — Score tecnico ≥ 45', val:`Score ${zScore}`};
   const crits=[c1,c2,c3];
   const inZone=crits.every(c=>c.ok);
   card.classList.toggle('oz-in',inZone);
@@ -5010,7 +5040,10 @@ function renderOppZone(d){
     return `<div class="oz-crit ${cls}"><span class="oz-ic">${ic}</span><span class="oz-crit-txt"><b>${c.label}</b> — ${c.val}</span></div>`;
   }).join('');
   if(inZone){
-    noteEl.innerHTML=`<b style="color:var(--g)">✅ Sì, è in zona opportunità.</b> Soddisfa <b>tutti e tre</b> i criteri: è ipervenduto ma con il trend di fondo ancora rialzista e con la conferma del modello. È il setup classico di <b>acquisto sul ritracciamento</b> — comprare la debolezza temporanea di un asset che nel lungo periodo sale. <i>Verifica sempre con la tua analisi: non è un consiglio personalizzato.</i>`;
+    const inWatch=watchHas(d.ticker);
+    noteEl.innerHTML=`<b style="color:var(--g)">✅ Sì, è in zona opportunità.</b> Soddisfa <b>tutti e tre</b> i criteri: è ipervenduto ma con il trend di fondo ancora rialzista e con la conferma del modello. È il setup classico di <b>acquisto sul ritracciamento</b> — comprare la debolezza temporanea di un asset che nel lungo periodo sale.
+    <br><br><span style="color:var(--t3);font-size:.78rem">ℹ️ La sezione <b>Migliori Opportunità</b> in home elenca solo i titoli <b>monitorati</b> (i più scambiati) e i tuoi <b>⭐ preferiti</b>. ${inWatch?'Questo titolo è tra i preferiti, quindi comparirà anche lì quando in zona.':'Se non lo vedi lì, è perché non fa parte di quella selezione: aggiungilo ai <b>⭐ preferiti</b> per tenerlo monitorato in home.'}</span>
+    <br><i style="font-size:.72rem;color:var(--t3)">Verifica sempre con la tua analisi: non è un consiglio personalizzato.</i>`;
   } else {
     const fails=[];
     if(!c1.ok) fails.push(c1.na?'non c\'è abbastanza storico per calcolare l\'RSI':`non è ipervenduto (RSI ${d.rsi!=null?d.rsi.toFixed(0):'n/d'} ≥ 40), quindi il prezzo non offre uno "sconto" statistico ora`);
@@ -5079,6 +5112,7 @@ async function analyze(ticker){
     const fundPromise=fetchFundamentals(ticker).catch(()=>null);
     // Score tecnico immediato (coerente con home); i fondamentali lo affinano quando arrivano
     let score=edgeScore(R,M50,M200,V,Mo,w7,w30,w90,cur,Mo3m,Mo6m,Mo12m,null,seasonPct);
+    const techScore=score;   // score PURO tecnico — stessa base della sezione Opportunità in home
     globalScoreMap[ticker]=score; setCached(ticker,score);
 
     // Header
@@ -5181,7 +5215,7 @@ async function analyze(ticker){
       document.getElementById('profile-section').style.display='none';
       const buildAIData=(fund)=>({
         ticker, name:(meta.longName||meta.shortName||ticker), currency:meta.currency||'',
-        price:cur, chP:+chP.toFixed(2), score,
+        price:cur, chP:+chP.toFixed(2), score, techScore,
         rsi:R!=null?+R.toFixed(1):null,
         aboveMA50:M50!=null?cur>M50:null, aboveMA200:M200!=null?cur>M200:null,
         trendUp:(M50!=null&&M200!=null)?M50>M200:null,
@@ -6267,6 +6301,7 @@ function watchToggleCurrent(){
   watchToggle(_analyzedTicker,_analyzedName);
   watchUpdateStar();
   if(document.getElementById('main-menu')?.innerHTML) buildMainMenu();
+  if(typeof scoreWatchlistForOpp==='function') scoreWatchlistForOpp();  // aggiorna le Opportunità in home
 }
 function watchUpdateStar(){
   const btn=document.getElementById('a-star'); if(!btn) return;

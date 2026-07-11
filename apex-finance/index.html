@@ -3366,9 +3366,13 @@ const globalScoreMap={};
 
 // ── FETCH & SCORE A SINGLE TICKER (for panoramica) ──
 async function fetchAndScore(ticker){
+  if(dipMap[ticker]!==undefined && getCached(ticker)!==null) return getCached(ticker);
+  // ripristina dalla cache (score + dip) senza rifare la fetch, se ancora valida
   const cached=getCached(ticker);
-  // usa la cache solo se abbiamo GIÀ anche i dati di "dip" (servono alle Opportunità)
-  if(cached!==null && dipMap[ticker]) return cached;
+  if(cached!==null){
+    const cdip=getCachedDip(ticker);
+    if(cdip!==null){ dipMap[ticker]=cdip; return cached; }
+  }
   try{
     const res=await fetchChart(ticker,'2y','1d');
     const tsRaw=res.timestamp||[];
@@ -3377,8 +3381,8 @@ async function fetchAndScore(ticker){
     if(valid.length<30) return null;
     const tss=valid.map(p=>p.t), cl=valid.map(p=>p.c);
     const score=scoreFromHistory(cl,tss);
+    let dip=null;
     if(score!=null){
-      setCached(ticker,score);
       reasonMap[ticker]=scoreReason(cl);
     }
     if(score!=null && cl.length>=50){
@@ -3388,11 +3392,13 @@ async function fetchAndScore(ticker){
       const trendUp=M50!=null&&M200!=null&&M50>M200;
       const Mo3m=cl.length>=65?mom(cl,65):null;
       const aboveMA200=M200!=null&&cur>M200;
-      dipMap[ticker]={
+      dip={
         isDip:R!=null&&R<40&&trendUp,   // ipervenduto MA trend di fondo ancora rialzista
         rsi:R, dd:+dd.toFixed(1), trendUp, aboveMA200, mo3m:Mo3m!=null?+Mo3m.toFixed(1):null,
       };
+      dipMap[ticker]=dip;
     }
+    if(score!=null) setCached(ticker,score,dip);
     return score;
   }catch{ return null; }
 }
@@ -3509,7 +3515,8 @@ function buildDipSignal(R,M50,M200,Mo3m,Mo12m,DD,cur,w30,score){
 // ── SESSION CACHE ──
 const CK='qe7_',TTL=300000; // 5 min — allineato alla cache dei dati grafici per evitare punteggi obsoleti
 function getCached(k){try{const v=sessionStorage.getItem(CK+k);if(!v)return null;const p=JSON.parse(v);if(Date.now()-p.ts>TTL)return null;return p.d;}catch{return null;}}
-function setCached(k,d){try{sessionStorage.setItem(CK+k,JSON.stringify({d,ts:Date.now()}));}catch{}}
+function getCachedDip(k){try{const v=sessionStorage.getItem(CK+k);if(!v)return null;const p=JSON.parse(v);if(Date.now()-p.ts>TTL)return null;return p.dip||null;}catch{return null;}}
+function setCached(k,d,dip){try{sessionStorage.setItem(CK+k,JSON.stringify({d,dip:dip||null,ts:Date.now()}));}catch{}}
 
 // ── RENDER HELPERS ──
 function renderSkel(id,n){
@@ -3736,6 +3743,8 @@ function _buildOppMaps(){
   if(Object.keys(_oppNameMap).length) return;
   for(const[id,entries]of Object.entries(PANO))
     for(const[s,name]of entries){ _oppNameMap[s]=name; _oppTypeMap[s]=PANO_TYPE[id]||''; }
+  for(const[id,entries]of Object.entries(PANO_FULL||{}))
+    for(const[s,name]of entries){ if(!_oppNameMap[s]){ _oppNameMap[s]=name; _oppTypeMap[s]=PANO_TYPE[id]||''; } }
 }
 // forza dell'opportunità: quanto è ipervenduto (RSI basso) + conferma trend + APEX score
 function oppStrength(sym,score){
@@ -3779,66 +3788,94 @@ function oppItemHTML(sym, score, extra=false){
 
 const CAT_LABELS={'t-etf-az':'ETF Azionari','t-etf-bond':'ETF Obbligazionari','t-commodities':'Materie Prime','t-crypto':'Crypto','t-azioni':'Azioni'};
 
+// Universo scansionato per le Opportunità: TUTTI i titoli monitorati + i preferiti
+function oppUniverse(){
+  const uni=new Map();
+  const CATS=['t-azioni','t-etf-az','t-etf-bond','t-commodities','t-crypto'];
+  for(const id of CATS){
+    const list=(PANO_FULL&&PANO_FULL[id])||PANO[id]||[];
+    for(const[sym,name]of list){ if(!uni.has(sym)) uni.set(sym,{name,catId:id}); }
+  }
+  watchGet().forEach(w=>{ if(!uni.has(w.ticker)) uni.set(w.ticker,{name:w.name,catId:'t-azioni'}); });
+  return uni;
+}
+// tutti i titoli qualificati (RSI<40 + MA50>MA200 + score≥45), ordinati per forza del segnale
+function oppQualified(scoreMap){
+  const seen=new Set(), all=[];
+  for(const sym in scoreMap){
+    const score=scoreMap[sym], d=dipMap[sym];
+    if(d && d.isDip && score!=null && score>=45 && !seen.has(sym)){ seen.add(sym); all.push({sym,score}); }
+  }
+  all.sort((a,b)=>oppStrength(b.sym,b.score)-oppStrength(a.sym,a.score));
+  return all;
+}
+const OPP_HOME_MAX=10;
 function renderOpportunities(scoreMap){
   const grid=document.getElementById('opp-grid');
   const badge=document.getElementById('opp-badge');
   if(!grid||!scoreMap) return;
-
   _buildOppMaps();
-  // aggiungi i nomi dei preferiti alla mappa nomi (potrebbero non essere in PANO)
-  watchGet().forEach(w=>{ if(!_oppNameMap[w.ticker]) _oppNameMap[w.ticker]=w.name; });
-  let totalAll=0;
-  const sections=[];
-  const qualifies=(sym,score)=>{ const d=dipMap[sym]; return d && d.isDip && score!=null && score>=45; };
-  const rankGroup=arr=>arr.filter(x=>qualifies(x.sym,x.score)).sort((a,b)=>oppStrength(b.sym,b.score)-oppStrength(a.sym,a.score));
-  const shownSyms=new Set();
+  oppUniverse().forEach((v,sym)=>{ if(!_oppNameMap[sym]){ _oppNameMap[sym]=v.name; _oppTypeMap[sym]=PANO_TYPE[v.catId]||''; } });
 
-  // GRUPPO PREFERITI — i titoli che l'utente segue, così l'analisi e la home coincidono
-  const favRanked=rankGroup(watchGet().map(w=>({sym:w.ticker,score:scoreMap[w.ticker]})));
-  if(favRanked.length){
-    favRanked.forEach(x=>shownSyms.add(x.sym));
-    totalAll+=favRanked.length;
-    const hasMore=favRanked.length>3;
-    sections.push(`
-      <div class="opp-cat" id="opp-cat-fav">
-        <div class="opp-cat-title">⭐ I tuoi preferiti <span class="opp-cat-n">${favRanked.length}</span></div>
-        <div class="opp-grid">${favRanked.map(({sym,score},i)=>oppItemHTML(sym,score,i>=3)).join('')}</div>
-        ${hasMore?`<button class="opp-toggle" id="opp-toggle-opp-cat-fav" data-label="Vedi altri ${favRanked.length-3} →" onclick="toggleOppCat('opp-cat-fav')">Vedi altri ${favRanked.length-3} →</button>`:''}
-      </div>`);
-  }
+  const all=oppQualified(scoreMap);
+  window._oppAll=all;
+  const scanning=window._oppScanning;
 
-  for(const[id,entries]of Object.entries(PANO)){
-    // escludi i titoli già mostrati nel gruppo preferiti (niente doppioni)
-    const ranked=rankGroup(entries.map(([sym])=>({sym,score:scoreMap[sym]})).filter(x=>!shownSyms.has(x.sym)));
-    if(!ranked.length) continue;
-    totalAll+=ranked.length;
-    const catId=`opp-cat-${id}`;
-    const hasMore=ranked.length>3;
-    sections.push(`
-      <div class="opp-cat" id="${catId}">
-        <div class="opp-cat-title">${CAT_LABELS[id]||id} <span class="opp-cat-n">${ranked.length}</span></div>
-        <div class="opp-grid">
-          ${ranked.map(({sym,score},i)=>oppItemHTML(sym,score,i>=3)).join('')}
-        </div>
-        ${hasMore?`<button class="opp-toggle" id="opp-toggle-${catId}" data-label="Vedi altri ${ranked.length-3} →" onclick="toggleOppCat('${catId}')">Vedi altri ${ranked.length-3} →</button>`:''}
-      </div>`);
-  }
-
-  if(!sections.length){
-    grid.innerHTML=`<div class="opp-empty"><b style="color:var(--t2)">Nessun titolo in zona di sconto statistico al momento.</b><br>
-      Significa che i titoli monitorati non sono ipervenduti, oppure il trend di fondo non è abbastanza sano da giustificare un ingresso. È una fase normale o ribassista: meglio attendere.</div>`;
+  if(!all.length){
     badge.style.display='none';
+    grid.innerHTML=`<div class="opp-empty">${scanning?'<span class="card-spin"></span> Scansione dei mercati in corso…':
+      `<b style="color:var(--t2)">Nessun titolo in zona di sconto statistico al momento.</b><br>
+      Nessuno dei titoli monitorati è ipervenduto con un trend di fondo ancora sano. È una fase normale o ribassista: meglio attendere.`}</div>`;
     return;
   }
   badge.style.display='';
-  badge.textContent=`${totalAll} in zona sconto`;
+  badge.textContent=`${all.length} in zona sconto${scanning?' · scansione…':''}`;
+  const top=all.slice(0,OPP_HOME_MAX);
   grid.innerHTML=`<div class="opp-method">
-      <b>Come funziona:</b> analizziamo i titoli <b>monitorati</b> e i tuoi <b>⭐ preferiti</b>, e selezioniamo solo quelli in <b>zona di sconto statistico</b> — che soddisfano <b>tutti</b> questi criteri oggettivi:
+      <b>Come funziona:</b> ogni volta scansioniamo <b>automaticamente tutti i titoli monitorati</b> e selezioniamo <b>tutti</b> quelli in <b>zona di sconto statistico</b> — che soddisfano contemporaneamente:
       <span class="opp-crit">RSI &lt; 40 (ipervenduto)</span>
       <span class="opp-crit">MA50 &gt; MA200 (trend di fondo rialzista)</span>
-      <span class="opp-crit">APEX Score ≥ 45 (conferma quantitativa)</span>
-      <br>Ordinati per forza del segnale. Ogni titolo mostra i dati reali su cui si basa la selezione. <b>Non è un consiglio finanziario</b>: è uno screening statistico da verificare con la tua analisi.
-    </div>`+sections.join('');
+      <span class="opp-crit">Score tecnico ≥ 45</span>
+      <br>Ordinati per forza del segnale. <b>Non è un consiglio finanziario</b>: è uno screening statistico da verificare con la tua analisi.
+    </div>
+    <div class="opp-grid">${top.map(({sym,score})=>oppItemHTML(sym,score,false)).join('')}</div>
+    ${all.length>OPP_HOME_MAX?`<button class="opp-toggle" onclick="openAllOpportunities()">Vedi tutte le ${all.length} opportunità →</button>`:''}`;
+}
+
+// Apre l'elenco COMPLETO delle opportunità in una finestra a pagina intera
+function openAllOpportunities(){
+  const all=window._oppAll||[];
+  _modalId='__opp'; _modalPage=1; _modalSort='default'; _modalFilter='';
+  const inp=document.getElementById('cat-modal-search'), sel=document.getElementById('cat-modal-sort');
+  if(inp) inp.value=''; if(sel) sel.value='default';
+  _modalData=all.map(o=>[o.sym,_oppNameMap[o.sym]||o.sym]);   // già ordinati per forza del segnale
+  document.getElementById('cat-modal-title').textContent=`⚡ Migliori Opportunità — ${all.length} titoli`;
+  _openCatPage();
+  if(!all.length){
+    document.getElementById('cat-modal-body').innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--t3)">Nessuna opportunità al momento.</div>';
+  } else { _initModalControls(); renderCatPage(1); }
+}
+
+// Scansione automatica di TUTTO l'universo monitorato (in background, aggiorna man mano)
+let _oppScanning=false;
+async function scanAllOpportunities(){
+  if(_oppScanning) return;
+  window._oppScanning=_oppScanning=true;
+  try{
+    const tix=[...oppUniverse().keys()].filter(t=>dipMap[t]===undefined);
+    const CONC=12; let sinceRender=0;
+    for(let i=0;i<tix.length;i+=CONC){
+      const batch=tix.slice(i,i+CONC).filter(t=>dipMap[t]===undefined);
+      if(batch.length){
+        const scores=await Promise.all(batch.map(fetchAndScore));
+        scores.forEach((s,j)=>{ if(s!=null) globalScoreMap[batch[j]]=s; });
+        sinceRender+=batch.length;
+        if(sinceRender>=24){ sinceRender=0; renderOpportunities(globalScoreMap); }
+      }
+    }
+  }catch{}
+  window._oppScanning=_oppScanning=false;
+  renderOpportunities(globalScoreMap);
 }
 
 function toggleOppCat(catId){
@@ -3996,6 +4033,7 @@ async function loadPanoramica(){
   if(!toFetch.length){
     document.getElementById('pbar').classList.remove('on');
     _showOpportunities(globalScoreMap);
+    scanAllOpportunities();   // scansiona comunque tutto l'universo
     return;
   }
 
@@ -4041,20 +4079,7 @@ async function loadPanoramica(){
   });
 
   renderOpportunities(globalScoreMap);
-  scoreWatchlistForOpp();
-}
-
-// Valuta anche i PREFERITI per la sezione Opportunità (così coincide con l'analisi)
-async function scoreWatchlistForOpp(){
-  const tix=watchGet().map(w=>w.ticker).filter(t=>!dipMap[t]);   // manca il dato "dip"
-  if(!tix.length){ renderOpportunities(globalScoreMap); return; }
-  const CONC=5;
-  for(let i=0;i<tix.length;i+=CONC){
-    const batch=tix.slice(i,i+CONC);
-    const scores=await Promise.all(batch.map(fetchAndScore));   // popola anche dipMap
-    scores.forEach((s,j)=>{ if(s!=null) globalScoreMap[batch[j]]=s; });
-  }
-  renderOpportunities(globalScoreMap);
+  scanAllOpportunities();   // scansione automatica dell'intero universo monitorato
 }
 
 // ── EXTENDED TICKER LISTS (for modal "Vedi tutti") ──
@@ -4395,7 +4420,7 @@ function cmRowStar(btn){
   btn.title=on?'Rimuovi dai preferiti':'Aggiungi ai preferiti';
   if(_analyzedTicker===t) watchUpdateStar();
   if(document.getElementById('main-menu')?.innerHTML) buildMainMenu();
-  if(typeof scoreWatchlistForOpp==='function') scoreWatchlistForOpp();  // aggiorna le Opportunità in home
+  if(typeof renderOpportunities==='function') renderOpportunities(globalScoreMap);
 }
 
 // ── CHARTS ──
@@ -5113,7 +5138,13 @@ async function analyze(ticker){
     // Score tecnico immediato (coerente con home); i fondamentali lo affinano quando arrivano
     let score=edgeScore(R,M50,M200,V,Mo,w7,w30,w90,cur,Mo3m,Mo6m,Mo12m,null,seasonPct);
     const techScore=score;   // score PURO tecnico — stessa base della sezione Opportunità in home
-    globalScoreMap[ticker]=score; setCached(ticker,score);
+    // popola dip + cache così il titolo entra SUBITO nello screening Opportunità della home
+    const _mx=Math.max(...cl.slice(-252)); const _dd=_mx>0?(_mx-cur)/_mx*100:0;
+    const _trendUp=M50!=null&&M200!=null&&M50>M200;
+    const _dip={isDip:R!=null&&R<40&&_trendUp, rsi:R, dd:+_dd.toFixed(1), trendUp:_trendUp, aboveMA200:M200!=null&&cur>M200, mo3m:Mo3m!=null?+Mo3m.toFixed(1):null};
+    dipMap[ticker]=_dip;
+    globalScoreMap[ticker]=techScore; setCached(ticker,techScore,_dip);
+    if(!_oppNameMap[ticker]) _oppNameMap[ticker]=(meta.longName||meta.shortName||ticker);
 
     // Header
     document.getElementById('a-name').textContent=meta.longName||meta.shortName||ticker;
@@ -5227,10 +5258,10 @@ async function analyze(ticker){
       fundPromise.then(fund=>{
         renderFundamentals(fund,ticker,true);
         renderProfile(ticker,meta);
-        // Affina lo score includendo i fondamentali (solo azioni: ETF/crypto hanno fund=null)
+        // Affina lo score visualizzato includendo i fondamentali (solo per il display;
+        // la cache/home restano sullo score TECNICO per coerenza con lo screening opportunità)
         if(fund){
           score=edgeScore(R,M50,M200,V,Mo,w7,w30,w90,cur,Mo3m,Mo6m,Mo12m,fund,seasonPct);
-          globalScoreMap[ticker]=score; setCached(ticker,score);
           renderScoreUI(score);
           buildDipSignal(R,M50,M200,Mo3m,Mo12m,DD,cur,w30,score);
         }
@@ -6301,7 +6332,7 @@ function watchToggleCurrent(){
   watchToggle(_analyzedTicker,_analyzedName);
   watchUpdateStar();
   if(document.getElementById('main-menu')?.innerHTML) buildMainMenu();
-  if(typeof scoreWatchlistForOpp==='function') scoreWatchlistForOpp();  // aggiorna le Opportunità in home
+  if(typeof renderOpportunities==='function') renderOpportunities(globalScoreMap);
 }
 function watchUpdateStar(){
   const btn=document.getElementById('a-star'); if(!btn) return;

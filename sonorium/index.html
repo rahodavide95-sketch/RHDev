@@ -40,10 +40,6 @@
 
   #ambient-canvas { position:fixed; inset:0; z-index:0; pointer-events:none; }
 
-  #uni-audio-btn { position:fixed; top:0.9rem; right:1.2rem; z-index:60; width:34px; height:34px; border-radius:50%; border:0.5px solid rgba(255,255,255,0.14); background:rgba(10,10,20,0.35); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); color:rgba(255,255,255,0.75); font-size:15px; line-height:1; display:flex; align-items:center; justify-content:center; cursor:pointer; opacity:0; pointer-events:none; transition:opacity 0.5s ease,color 0.3s ease; }
-  #uni-audio-btn.show { opacity:1; pointer-events:auto; }
-  #uni-audio-btn.muted { color:rgba(255,255,255,0.25); }
-
   #bg-glow { position:fixed; inset:0; z-index:0; pointer-events:none; background:radial-gradient(ellipse 60% 50% at 50% 40%,rgba(100,80,255,0.15),transparent); transition:background 2s ease; }
 
   .app { position:relative; z-index:1; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:1.5rem 1.5rem 2rem; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
@@ -237,7 +233,6 @@
 <body>
 
 <canvas id="ambient-canvas"></canvas>
-<button id="uni-audio-btn" title="universe sound">♪</button>
 <div id="bg-glow"></div>
 
 <div class="app">
@@ -265,7 +260,7 @@
       <p class="credits-tagline">serendipity engine for sound designers</p>
       <p class="credits-line">For your subconscious creativity, wherever you are.</p>
       <p class="credits-line">With love, by Raho.</p>
-      <p class="credits-copy">© Sonorium 2026 &nbsp;|&nbsp; v3.2</p>
+      <p class="credits-copy">© Sonorium 2026 &nbsp;|&nbsp; v2.5 · base</p>
     </div>
   </div>
 
@@ -603,101 +598,7 @@ let globalAnalyser = null;
   let _uniFlash=null;
   let _uniSunX=0,_uniSunY=0,_uniSunZ=2000;
   let _uniSphR=90,_uniSphG=100,_uniSphB=200;
-  // Realistic stellar colours (blue-white → white → sun-like → orange → red), weighted to cool/white
-  const _STAR_COL=[[155,176,255],[190,205,255],[228,236,255],[255,255,255],[255,248,232],[255,236,205],[255,214,170],[255,190,150]];
-  const _uniStars3D=(()=>{const a=[];for(let i=0;i<2200;i++){const th=Math.random()*Math.PI*2,ph=Math.acos(2*Math.random()-1),sp=Math.sin(ph);
-    const wgt=Math.random();const ci=wgt<.5?3:wgt<.72?2:wgt<.86?4:wgt<.93?1:wgt<.97?5:wgt<.99?0:(Math.random()<.5?6:7);
-    const br=Math.random();a.push({wx:sp*Math.cos(th),wy:Math.cos(ph),wz:sp*Math.sin(th),sz:.6+Math.random()*1.6,bright:br>.96,spike:br>.988,c:_STAR_COL[ci],tw:Math.random()*Math.PI*2,tws:.6+Math.random()*1.8,psx:null,psy:null});}return a;})();
-  // ── Deep Field: nebulae, stardust, autopilot ──────────────────────────────
-  const _uniNeb=(()=>{const cols=[[96,72,178],[52,120,168],[168,80,140],[70,96,190],[44,140,128],[150,100,80],[120,70,170]];const a=[];for(let i=0;i<7;i++){const ang=(i/7)*Math.PI*2+.6,r=760+(i%3)*640+((i*97)%180);a.push({x:Math.cos(ang)*r,y:Math.sin(ang)*r*.85+((i%2)?260:-220),z:2000+((i*53)%160-80)+(i%2?900:-700),wr:520+((i*131)%420),c:cols[i%cols.length],ph:i*1.7});}return a;})();
-  const _uniDust=(()=>{const a=[];for(let i=0;i<130;i++)a.push({x:(Math.random()-.5)*1200,y:(Math.random()-.5)*1200,z:(Math.random()-.5)*1200,r:.5+Math.random()*1.3,o:.1+Math.random()*.22,psx:null,psy:null});return a;})();
-  let _uniAuto=null,_uniTime=0;
-
-  // ── Planet materials — each world gets a distinct, deterministic surface ────
-  function _hash(s){let h=2166136261;s=String(s);for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
-  function _rng(seed){let s=(seed>>>0)||1;return()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;return s/4294967296;};}
-  const _MAT_TYPES=['rocky','gas','icy','lava','ocean','desert','banded'];
-  function _planetMat(p){
-    if(p._mat)return p._mat;
-    const c=(p.data&&p.data.color)||{};
-    const seed=_hash((p.id||0)+'|'+((p.data&&p.data.name)||'')+'|'+(c.ar||0)+(c.ab||0));
-    const rnd=_rng(seed);
-    // Bias type by hue so warm sounds→lava/desert, cool→ice/ocean, mid→rocky/gas
-    const ar=c.ar||120,ab=c.ab||220;const warm=ar-ab;
-    let type;const r0=rnd();
-    if(warm>60)type=r0<.5?'lava':(r0<.8?'desert':'rocky');
-    else if(warm<-60)type=r0<.45?'icy':(r0<.8?'ocean':'gas');
-    else type=_MAT_TYPES[Math.floor(rnd()*_MAT_TYPES.length)];
-    const feats=[];
-    if(type==='gas'||type==='desert'||type==='banded'){
-      const n=5+Math.floor(rnd()*5);
-      for(let i=0;i<n;i++)feats.push({y:-1+(i+.5)/n*2+(rnd()-.5)*.12,h:.06+rnd()*.16,d:(rnd()-.5)*(type==='banded'?1:.7),sw:(rnd()-.5)*.4});
-    }else if(type==='lava'){
-      const n=6+Math.floor(rnd()*6);
-      for(let i=0;i<n;i++){const a=rnd()*Math.PI*2,rr=rnd()*.72;feats.push({x:Math.cos(a)*rr,y:Math.sin(a)*rr,len:.18+rnd()*.5,ang:rnd()*Math.PI});}
-    }else{ // rocky / icy / ocean → blobs (continents, craters, ice sheets)
-      const n=(type==='icy'?3:6)+Math.floor(rnd()*5);
-      for(let i=0;i<n;i++){const a=rnd()*Math.PI*2,rr=rnd()*.8;feats.push({x:Math.cos(a)*rr,y:Math.sin(a)*rr,r:.12+rnd()*.3,d:rnd()<.5?-1:1,k:rnd()});}
-    }
-    p._mat={type,feats,spin:.08+rnd()*.5,ph:rnd()*Math.PI*2};
-    return p._mat;
-  }
-  // Paint a textured, lit planet disc at screen (sx,sy) radius sr
-  function _paintPlanet(sx,sy,sr,pr,pg,pb,op,lvx,lvy,mat){
-    const cl=v=>v<0?0:v>255?255:v|0;
-    ctx.save();
-    ctx.beginPath();ctx.arc(sx,sy,sr,0,Math.PI*2);ctx.clip();
-    // base albedo
-    ctx.fillStyle=`rgba(${cl(pr)},${cl(pg)},${cl(pb)},${op.toFixed(3)})`;
-    ctx.fillRect(sx-sr,sy-sr,sr*2,sr*2);
-    const t=mat.type, drift=Math.sin(_uniTime*.004*mat.spin+mat.ph)*sr*.18;
-    if(t==='gas'||t==='desert'||t==='banded'){
-      for(const b of mat.feats){
-        const yy=sy+b.y*sr,hh=Math.max(1,b.h*sr);
-        ctx.fillStyle=`rgba(${cl(pr+b.d*80)},${cl(pg+b.d*80)},${cl(pb+b.d*70)},${(op*.7).toFixed(3)})`;
-        ctx.beginPath();ctx.ellipse(sx+drift*b.sw,yy,sr*1.05,hh,0,0,Math.PI*2);ctx.fill();
-      }
-      if(t!=='banded'){ // a swirling storm spot
-        const spx=sx+drift, spy=sy+sr*.2;
-        const g=ctx.createRadialGradient(spx,spy,0,spx,spy,sr*.3);
-        g.addColorStop(0,`rgba(${cl(pr+60)},${cl(pg+30)},${cl(pb)},${(op*.5).toFixed(3)})`);g.addColorStop(1,'rgba(0,0,0,0)');
-        ctx.fillStyle=g;ctx.beginPath();ctx.arc(spx,spy,sr*.3,0,Math.PI*2);ctx.fill();
-      }
-    }else if(t==='lava'){
-      ctx.fillStyle=`rgba(${cl(pr*.24)},${cl(pg*.16)},${cl(pb*.16)},${(op*.9).toFixed(3)})`;
-      ctx.fillRect(sx-sr,sy-sr,sr*2,sr*2);
-      ctx.globalCompositeOperation='lighter';
-      for(const f of mat.feats){
-        const fx=sx+f.x*sr+drift*.3,fy=sy+f.y*sr,ex=fx+Math.cos(f.ang)*f.len*sr,ey=fy+Math.sin(f.ang)*f.len*sr;
-        const g=ctx.createLinearGradient(fx,fy,ex,ey);
-        g.addColorStop(0,'rgba(255,140,40,0)');g.addColorStop(.5,`rgba(255,150,60,${(op*.75).toFixed(3)})`);g.addColorStop(1,'rgba(255,90,30,0)');
-        ctx.strokeStyle=g;ctx.lineWidth=Math.max(.6,sr*.055);ctx.lineCap='round';
-        ctx.beginPath();ctx.moveTo(fx,fy);ctx.lineTo(ex,ey);ctx.stroke();
-      }
-    }else{
-      for(const f of mat.feats){
-        const fx=sx+f.x*sr+drift*.4,fy=sy+f.y*sr,fr=f.r*sr;
-        let col;
-        if(t==='ocean')col=f.d>0?[cl(pr*.6+60),cl(pg*.7+50),cl(pb*.3)]:[cl(pr*.3),cl(pg*.5),cl(pb)];
-        else if(t==='icy')col=f.d>0?[255,255,255]:[cl(pr*.6+40),cl(pg*.7+60),cl(pb*.8+60)];
-        else col=f.d>0?[cl(pr+40),cl(pg+38),cl(pb+30)]:[cl(pr*.5),cl(pg*.5),cl(pb*.55)];
-        const a=op*(t==='icy'?.42:.52);
-        const g=ctx.createRadialGradient(fx,fy,0,fx,fy,fr);
-        g.addColorStop(0,`rgba(${col[0]},${col[1]},${col[2]},${a.toFixed(3)})`);
-        g.addColorStop(1,`rgba(${col[0]},${col[1]},${col[2]},0)`);
-        ctx.fillStyle=g;ctx.beginPath();ctx.arc(fx,fy,fr,0,Math.PI*2);ctx.fill();
-      }
-    }
-    ctx.restore();
-    // Day/night lighting overlay (terminator) — darken away from the light
-    ctx.save();ctx.beginPath();ctx.arc(sx,sy,sr,0,Math.PI*2);ctx.clip();
-    const shg=ctx.createRadialGradient(sx+lvx*sr*.55,sy+lvy*sr*.55,sr*.1,sx-lvx*sr*.15,sy-lvy*sr*.15,sr*1.15);
-    shg.addColorStop(0,'rgba(0,0,0,0)');
-    shg.addColorStop(.5,`rgba(0,0,0,${(op*.3).toFixed(3)})`);
-    shg.addColorStop(1,`rgba(0,0,0,${(op*.92).toFixed(3)})`);
-    ctx.fillStyle=shg;ctx.fillRect(sx-sr,sy-sr,sr*2,sr*2);
-    ctx.restore();
-  }
+  const _uniStars3D=(()=>{const a=[];for(let i=0;i<2200;i++){const th=Math.random()*Math.PI*2,ph=Math.acos(2*Math.random()-1),sp=Math.sin(ph);a.push({wx:sp*Math.cos(th),wy:Math.cos(ph),wz:sp*Math.sin(th),sz:.6+Math.random()*1.6,bright:Math.random()>.96});}return a;})();
 
   function _uSave(){try{localStorage.setItem(_U_KEY,JSON.stringify({ver:4,planets:_uniPlanets.slice(-60)}));}catch(e){}}
   function _uSolarPos(idx){
@@ -737,33 +638,16 @@ let globalAnalyser = null;
   window.uniDepth=function(){const dx=_uniCamX,dy=_uniCamY,dz=_uniCamZ+500;return Math.max(0,Math.min(1,Math.sqrt(dx*dx+dy*dy+dz*dz)/250));};
   window.addUniRotate=function(dx,dy){_uniDYaw+=dx*.003;_uniDPitch-=dy*.003;};
   window.addUniSpeed=function(ds){_uniSpeed=Math.max(-15,Math.min(15,_uniSpeed+ds));};
-  window.uniReturnToSurface=function(){_uniAuto=null;_uniCamX=0;_uniCamY=0;_uniCamZ=-500;_uniYaw=0;_uniPitch=0;_uniDYaw=0;_uniDPitch=0;_uniSpeed=0;};
+  window.uniReturnToSurface=function(){_uniCamX=0;_uniCamY=0;_uniCamZ=-500;_uniYaw=0;_uniPitch=0;_uniDYaw=0;_uniDPitch=0;_uniSpeed=0;};
   window.uniFlashPlanet=function(planet){if(planet)_uniFlash={planet,life:0,maxLife:24};};
   window.uniHitTest=function(cx,cy){
     const sun=window._uniSunScreen;
-    if(sun){const dx=cx-sun.sx,dy=cy-sun.sy;if(Math.sqrt(dx*dx+dy*dy)<Math.max(sun.sr*3,46))return{isSun:true};}
+    if(sun){const dx=cx-sun.sx,dy=cy-sun.sy;if(Math.sqrt(dx*dx+dy*dy)<Math.max(sun.sr*3,36))return{isSun:true};}
     const v=window._uniVis;if(!v)return null;
     let best=null,bd=Infinity;
-    for(const e of v){const dx=cx-e.sx,dy=cy-e.sy,d=Math.sqrt(dx*dx+dy*dy);if(d<Math.max(e.sr*2.6,46)&&d<bd){bd=d;best=e.p;}}
+    for(const e of v){const dx=cx-e.sx,dy=cy-e.sy,d=Math.sqrt(dx*dx+dy*dy);if(d<Math.max(e.sr*2.4,30)&&d<bd){bd=d;best=e.p;}}
     return best;
   };
-  // Autopilot: fly to a planet and "land", glide home, or travel toward a tapped point
-  window.uniApproachPlanet=function(p){
-    const d=Math.hypot(p.x-_uniCamX,p.y-_uniCamY,p.z-_uniCamZ);
-    if(d<380){if(window.uniOnArrivePlanet)window.uniOnArrivePlanet(p);return;}
-    _uniAuto={planet:p,arriveR:300,mode:'planet'};
-  };
-  window.uniAutoHome=function(){_uniAuto={tx:0,ty:0,tz:-500,arriveR:70,mode:'home'};};
-  window.uniAutoToward=function(sx,sy){
-    // screen point → world direction (inverse pitch, then inverse yaw)
-    const cY=Math.cos(_uniYaw),sY=Math.sin(_uniYaw),cP=Math.cos(_uniPitch),sP=Math.sin(_uniPitch);
-    let lx=sx-cW*.5,ly=sy-cH*.5,lz=_U_F;
-    const L=Math.hypot(lx,ly,lz);lx/=L;ly/=L;lz/=L;
-    const wy=ly*cP-lz*sP, lz0=ly*sP+lz*cP;
-    const wx=lx*cY+lz0*sY, wz=-lx*sY+lz0*cY;
-    _uniAuto={tx:_uniCamX+wx*1500,ty:_uniCamY+wy*1500,tz:_uniCamZ+wz*1500,arriveR:140,mode:'free'};
-  };
-  window.uniCancelAuto=function(){_uniAuto=null;};
 
   function _drawUni(){
     const _dx=_uniCamX,_dy=_uniCamY,_dz=_uniCamZ+500;
@@ -773,79 +657,20 @@ let globalAnalyser = null;
     const alpha=Math.min(1,depth/.28);
     const cosY=Math.cos(_uniYaw),sinY=Math.sin(_uniYaw);
     const cosP=Math.cos(_uniPitch),sinP=Math.sin(_uniPitch);
-    _uniTime++;
-    // First entries: gentle hint on how to travel (max 5 sessions)
-    if(!window._uniHintDone&&depth>0.32){window._uniHintDone=true;try{const n=+(localStorage.getItem('sn_hintN')||0);if(n<5){window._uniShowHintUntil=performance.now()+9000;localStorage.setItem('sn_hintN',n+1);}}catch(e){}}
-    // Slow orbital drift — the world is alive (inner rings faster, ~40min/orbit)
-    for(const p of _uniPlanets){
-      const ox=p.x-_uniSunX,oy=p.y-_uniSunY;const r2=ox*ox+oy*oy;if(r2<1)continue;
-      const w=.022/(Math.sqrt(r2)+120);
-      const ca=Math.cos(w),sa=Math.sin(w);
-      p.x=_uniSunX+ox*ca-oy*sa;p.y=_uniSunY+ox*sa+oy*ca;
-    }
-    // ── Nebulae (behind everything, additive breath = real light bloom) ──────
-    ctx.save();ctx.globalCompositeOperation='lighter';
-    for(const nb of _uniNeb){
-      const wob=Math.sin(_uniTime*.0016+nb.ph)*40;
-      const rx=nb.x+wob-_uniCamX,ry=nb.y-wob*.6-_uniCamY,rz=nb.z-_uniCamZ;
-      const ncx=rx*cosY-rz*sinY,ncz0=rx*sinY+rz*cosY;
-      const ncy=ry*cosP+ncz0*sinP,ncz=-ry*sinP+ncz0*cosP;
-      if(ncz<140)continue;
-      const nsx=ncx*_U_F/ncz+W*.5,nsy=ncy*_U_F/ncz+H*.5;
-      const nr=Math.min(1800,nb.wr*_U_F/ncz);
-      if(nsx<-nr||nsx>W+nr||nsy<-nr||nsy>H+nr)continue;
-      const na=alpha*.07*Math.min(1,2600/ncz)*(.85+.15*Math.sin(_uniTime*.004+nb.ph));
-      if(na<.004)continue;
-      const ng=ctx.createRadialGradient(nsx,nsy,nr*.1,nsx,nsy,nr);
-      ng.addColorStop(0,`rgba(${nb.c[0]},${nb.c[1]},${nb.c[2]},${na.toFixed(3)})`);
-      ng.addColorStop(.45,`rgba(${nb.c[0]},${nb.c[1]},${nb.c[2]},${(na*.42).toFixed(3)})`);
-      ng.addColorStop(1,'rgba(0,0,0,0)');
-      ctx.fillStyle=ng;ctx.beginPath();ctx.arc(nsx,nsy,nr,0,Math.PI*2);ctx.fill();
-    }
-    ctx.restore();
-    // ── 3D background stars (additive, colour-graded, twinkling, warp streaks) ─
-    ctx.save();ctx.globalCompositeOperation='lighter';
-    const _starWarp=Math.min(1,Math.abs(_uniSpeed)/9);
+    // ── 3D background stars ───────────────────────────────────────────────────
     for(const us of _uniStars3D){
       const lcx=us.wx*cosY-us.wz*sinY;
       const lcz0=us.wx*sinY+us.wz*cosY;
       const lcy=us.wy*cosP+lcz0*sinP;
       const lcz=-us.wy*sinP+lcz0*cosP;
-      if(lcz<=0.08){us.psx=null;continue;}
+      if(lcz<=0.08)continue;
       const usx=lcx*_U_F/lcz+W*.5,usy=lcy*_U_F/lcz+H*.5;
-      if(usx<-2||usx>W+2||usy<-2||usy>H+2){us.psx=usx;us.psy=usy;continue;}
-      const tw=us.bright?(.82+.18*Math.sin(_uniTime*.05*us.tws+us.tw)):(.32+Math.sin(_uniTime*.04*us.tws+us.tw)*.16+.12);
-      const usop=alpha*Math.max(0,tw);
-      if(usop<.012){us.psx=usx;us.psy=usy;continue;}
-      const c=us.c;
-      // Warp streak from previous position when flying fast
-      if(_starWarp>.15&&us.psx!==null){
-        const dsx=usx-us.psx,dsy=usy-us.psy;
-        if(dsx*dsx+dsy*dsy>1){
-          ctx.strokeStyle=`rgba(${c[0]},${c[1]},${c[2]},${(usop*_starWarp*.9).toFixed(3)})`;
-          ctx.lineWidth=us.sz*.9;ctx.lineCap='round';
-          ctx.beginPath();ctx.moveTo(us.psx,us.psy);ctx.lineTo(usx,usy);ctx.stroke();
-        }
-      }
-      const sz=us.sz*(us.bright?1.3:1);
-      if(us.bright){
-        const g=ctx.createRadialGradient(usx,usy,0,usx,usy,sz*3.2);
-        g.addColorStop(0,`rgba(${c[0]},${c[1]},${c[2]},${usop.toFixed(3)})`);
-        g.addColorStop(.4,`rgba(${c[0]},${c[1]},${c[2]},${(usop*.35).toFixed(3)})`);
-        g.addColorStop(1,'rgba(0,0,0,0)');
-        ctx.fillStyle=g;ctx.beginPath();ctx.arc(usx,usy,sz*3.2,0,Math.PI*2);ctx.fill();
-        // Diffraction spikes on the brightest
-        if(us.spike){
-          const sl=sz*(4.5+Math.sin(_uniTime*.05*us.tws+us.tw)*1.2);
-          ctx.strokeStyle=`rgba(${c[0]},${c[1]},${c[2]},${(usop*.5).toFixed(3)})`;ctx.lineWidth=.7;
-          ctx.beginPath();ctx.moveTo(usx-sl,usy);ctx.lineTo(usx+sl,usy);ctx.moveTo(usx,usy-sl);ctx.lineTo(usx,usy+sl);ctx.stroke();
-        }
-      }
-      ctx.fillStyle=`rgba(${c[0]},${c[1]},${c[2]},${usop.toFixed(3)})`;
-      ctx.fillRect(usx-sz*.5,usy-sz*.5,sz,sz);
-      us.psx=usx;us.psy=usy;
+      if(usx<-1||usx>W+1||usy<-1||usy>H+1)continue;
+      const usop=alpha*(us.bright?.9:.2+Math.random()*.18);
+      if(usop<.01)continue;
+      ctx.fillStyle=`rgba(255,255,255,${usop.toFixed(2)})`;
+      ctx.fillRect(usx-.5,usy-.5,us.sz,us.sz);
     }
-    ctx.restore();
     // ── Orbit guides (very faint dashes) ─────────────────────────────────────
     {const ringR=[360,600,860,1140,1460,1820];
     ctx.save();ctx.setLineDash([2,14]);ctx.lineWidth=0.4;
@@ -866,11 +691,9 @@ let globalAnalyser = null;
     }
     ctx.restore();}
     // ── Sonorium sphere (home) ────────────────────────────────────────────────
-    let _sunLx=0,_sunLy=0,_sunLz=-1;
     {const srx=_uniSunX-_uniCamX,sry=_uniSunY-_uniCamY,srz=_uniSunZ-_uniCamZ;
     const scx2=srx*cosY-srz*sinY,scz02=srx*sinY+srz*cosY;
     const scy2=sry*cosP+scz02*sinP,scz2=-sry*sinP+scz02*cosP;
-    _sunLx=scx2;_sunLy=scy2;_sunLz=scz2;
     if(scz2>60){
       const ssx=scx2*_U_F/scz2+W*.5,ssy=scy2*_U_F/scz2+H*.5;
       const ssr=Math.max(4,Math.min(55,32*_U_F/scz2));
@@ -902,18 +725,13 @@ let globalAnalyser = null;
       // Label
       if(alpha>.4){const lfs=Math.max(9,Math.min(14,ssr*.6));ctx.save();ctx.font=`${lfs}px 'Space Grotesk',sans-serif`;ctx.textAlign='center';ctx.fillStyle=`rgba(255,255,255,${((alpha-.4)/.6*.68).toFixed(3)})`;ctx.fillText('Sonorium',ssx,ssy+ssr+lfs+3);ctx.restore();}
     }else{window._uniSunScreen=null;}}
-    const vis=[],prox=[];
+    const vis=[];
     for(const p of _uniPlanets){
       const rpx=p.x-_uniCamX,rpy=p.y-_uniCamY,rpz=p.z-_uniCamZ;
       const cx=rpx*cosY-rpz*sinY;
       const cz0=rpx*sinY+rpz*cosY;
       const cy=rpy*cosP+cz0*sinP;
       const cz=-rpy*sinP+cz0*cosP;
-      // proximity feed for spatial audio (also planets behind the camera)
-      if(p.id!=null){
-        const pd=Math.hypot(rpx,rpy,rpz);
-        if(pd<1800)prox.push({id:p.id,f:(p.data&&p.data.synthesis&&p.data.synthesis.frequency)||220,d:pd,pan:cx/(Math.hypot(cx,cz)||1)});
-      }
       if(cz<60)continue;
       const sx=cx*_U_F/cz+W*.5;
       const sy=cy*_U_F/cz+H*.5;
@@ -924,20 +742,6 @@ let globalAnalyser = null;
     }
     vis.sort((a,b)=>b.dz-a.dz);
     window._uniVis=vis;
-    prox.sort((a,b)=>a.d-b.d);
-    window._uniProx=prox.slice(0,4);
-    // ── Constellations: faint threads between neighbouring sounds ────────────
-    if(vis.length>1){ctx.save();ctx.lineWidth=.5;
-      for(let i=0;i<vis.length;i++)for(let j=i+1;j<vis.length;j++){
-        const A=vis[i],B=vis[j];
-        const wdx=A.p.x-B.p.x,wdy=A.p.y-B.p.y,wdz=A.p.z-B.p.z;
-        const wd=Math.hypot(wdx,wdy,wdz);
-        if(wd>640)continue;
-        const la=alpha*.06*(1-wd/640);
-        if(la<.006)continue;
-        ctx.strokeStyle=`rgba(180,190,255,${la.toFixed(3)})`;
-        ctx.beginPath();ctx.moveTo(A.sx,A.sy);ctx.lineTo(B.sx,B.sy);ctx.stroke();
-      }ctx.restore();}
     for(const v of vis){
       const{sx,sy,sr,pr,pg,pb,dz,p}=v;
       if(sx<-sr*4||sx>W+sr*4||sy<-sr*4||sy>H+sr*4)continue;
@@ -945,47 +749,17 @@ let globalAnalyser = null;
       const op=alpha*Math.max(.07,df);if(op<.015)continue;
       let fb=0;
       if(_uniFlash&&_uniFlash.planet===p)fb=Math.max(0,1-_uniFlash.life/_uniFlash.maxLife);
-      // Light direction: from this planet toward the Sonorium sphere on screen
-      let lvx=-.42,lvy=-.5;const _ss=window._uniSunScreen;
-      if(_ss){lvx=_ss.sx-sx;lvy=_ss.sy-sy;const _ll=Math.hypot(lvx,lvy)||1;lvx/=_ll;lvy/=_ll;}
-      // Atmosphere glow, offset toward the light (additive bloom)
-      ctx.save();ctx.globalCompositeOperation='lighter';
-      const gr=ctx.createRadialGradient(sx+lvx*sr*.3,sy+lvy*sr*.3,sr*.3,sx,sy,sr*3.4);
-      const gop=op*(.3+fb*.5);
+      const gr=ctx.createRadialGradient(sx,sy,sr*.4,sx,sy,sr*3.6);
+      const gop=op*(.36+fb*.5);
       gr.addColorStop(0,`rgba(${pr},${pg},${pb},${gop.toFixed(3)})`);
-      gr.addColorStop(.4,`rgba(${pr},${pg},${pb},${(gop*.16).toFixed(3)})`);
+      gr.addColorStop(.38,`rgba(${pr},${pg},${pb},${(gop*.18).toFixed(3)})`);
       gr.addColorStop(1,'rgba(0,0,0,0)');
-      ctx.fillStyle=gr;ctx.beginPath();ctx.arc(sx,sy,sr*3.4,0,Math.PI*2);ctx.fill();
-      ctx.restore();
-      const lit=1+fb*.4;
-      if(sr>6){
-        // Close enough to resolve the surface → distinct realistic material
-        _paintPlanet(sx,sy,sr,pr,pg,pb,op*lit,lvx,lvy,_planetMat(p));
-      }else{
-        // Far away → cheap lit gradient (day side → colour → night terminator)
-        const lx2=sx+lvx*sr*.62,ly2=sy+lvy*sr*.62;
-        const sg=ctx.createRadialGradient(lx2,ly2,sr*.04,sx,sy,sr*1.05);
-        sg.addColorStop(0,`rgba(${Math.min(255,pr+125)},${Math.min(255,pg+125)},${Math.min(255,pb+120)},${(op*lit).toFixed(3)})`);
-        sg.addColorStop(.34,`rgba(${pr},${pg},${pb},${(op*lit).toFixed(3)})`);
-        sg.addColorStop(.72,`rgba(${Math.round(pr*.3)},${Math.round(pg*.3)},${Math.round(pb*.33)},${(op*.96).toFixed(3)})`);
-        sg.addColorStop(1,`rgba(${Math.round(pr*.05)},${Math.round(pg*.05)},${Math.round(pb*.08)},${(op*.94).toFixed(3)})`);
-        ctx.fillStyle=sg;ctx.beginPath();ctx.arc(sx,sy,sr,0,Math.PI*2);ctx.fill();
-      }
-      // Atmospheric limb + specular glint (additive) on bigger discs
-      if(sr>4){
-        ctx.save();ctx.globalCompositeOperation='lighter';
-        const rim=ctx.createRadialGradient(sx,sy,sr*.72,sx,sy,sr*1.05);
-        rim.addColorStop(0,'rgba(0,0,0,0)');
-        rim.addColorStop(.78,`rgba(${Math.min(255,pr+45)},${Math.min(255,pg+65)},${Math.min(255,pb+75)},${(op*.15).toFixed(3)})`);
-        rim.addColorStop(1,'rgba(0,0,0,0)');
-        ctx.fillStyle=rim;ctx.beginPath();ctx.arc(sx,sy,sr*1.05,0,Math.PI*2);ctx.fill();
-        const spx=sx+lvx*sr*.5,spy=sy+lvy*sr*.5;
-        const sp=ctx.createRadialGradient(spx,spy,0,spx,spy,sr*.42);
-        sp.addColorStop(0,`rgba(255,255,255,${(op*.5).toFixed(3)})`);
-        sp.addColorStop(1,'rgba(255,255,255,0)');
-        ctx.fillStyle=sp;ctx.beginPath();ctx.arc(spx,spy,sr*.42,0,Math.PI*2);ctx.fill();
-        ctx.restore();
-      }
+      ctx.fillStyle=gr;ctx.beginPath();ctx.arc(sx,sy,sr*3.6,0,Math.PI*2);ctx.fill();
+      const sg=ctx.createRadialGradient(sx-sr*.3,sy-sr*.28,sr*.06,sx,sy,sr);
+      sg.addColorStop(0,`rgba(255,255,255,${(op*(.42+fb*.3)).toFixed(3)})`);
+      sg.addColorStop(.33,`rgba(${pr},${pg},${pb},${(op*(1+fb*.4)).toFixed(3)})`);
+      sg.addColorStop(1,`rgba(0,0,0,${(op*.9).toFixed(3)})`);
+      ctx.fillStyle=sg;ctx.beginPath();ctx.arc(sx,sy,sr,0,Math.PI*2);ctx.fill();
       if(sr>5&&alpha>.17){
         const la=Math.min(1,(alpha-.17)/.28)*df;
         if(la>.04){
@@ -995,82 +769,13 @@ let globalAnalyser = null;
           ctx.fillText(p.data.name||'',sx,sy+sr+fs+2);ctx.restore();
         }
       }
-      // Autopilot destination marker — soft pulsing ring
-      if(_uniAuto&&_uniAuto.planet===p){
-        const pu=1+Math.sin(_uniTime*.12)*.14;
-        ctx.strokeStyle=`rgba(255,255,255,${(op*.5).toFixed(3)})`;
-        ctx.lineWidth=1;
-        ctx.beginPath();ctx.arc(sx,sy,Math.max(14,sr*2.2)*pu,0,Math.PI*2);ctx.stroke();
-      }
     }
     if(_uniFlash){_uniFlash.life++;if(_uniFlash.life>=_uniFlash.maxLife)_uniFlash=null;}
-    // ── Stardust: world-fixed motes wrapping around the camera (speed feel) ──
-    ctx.save();ctx.globalCompositeOperation='lighter';
-    {const D=620;const spd=Math.abs(_uniSpeed);
-    for(const dd of _uniDust){
-      let rx=dd.x-_uniCamX,ry=dd.y-_uniCamY,rz=dd.z-_uniCamZ;let wrapped=false;
-      if(rx>D){dd.x-=D*2;rx-=D*2;wrapped=true;}else if(rx<-D){dd.x+=D*2;rx+=D*2;wrapped=true;}
-      if(ry>D){dd.y-=D*2;ry-=D*2;wrapped=true;}else if(ry<-D){dd.y+=D*2;ry+=D*2;wrapped=true;}
-      if(rz>D){dd.z-=D*2;rz-=D*2;wrapped=true;}else if(rz<-D){dd.z+=D*2;rz+=D*2;wrapped=true;}
-      const dcx=rx*cosY-rz*sinY,dcz0=rx*sinY+rz*cosY;
-      const dcy=ry*cosP+dcz0*sinP,dcz=-ry*sinP+dcz0*cosP;
-      if(dcz<20){dd.psx=null;continue;}
-      const dsx=dcx*_U_F/dcz+W*.5,dsy=dcy*_U_F/dcz+H*.5;
-      if(dsx<-30||dsx>W+30||dsy<-30||dsy>H+30){dd.psx=null;continue;}
-      const near=Math.min(1,620/dcz);
-      const dop=alpha*dd.o*near;
-      if(dop>.008){
-        if(spd>2.2&&dd.psx!==null&&!wrapped){
-          ctx.strokeStyle=`rgba(210,215,255,${dop.toFixed(3)})`;ctx.lineWidth=Math.max(.4,dd.r*near);
-          ctx.beginPath();ctx.moveTo(dd.psx,dd.psy);ctx.lineTo(dsx,dsy);ctx.stroke();
-        }else{
-          const dz2=Math.max(.6,dd.r*near);
-          ctx.fillStyle=`rgba(210,215,255,${dop.toFixed(3)})`;
-          ctx.fillRect(dsx-dz2*.5,dsy-dz2*.5,dz2,dz2);
-        }
-      }
-      dd.psx=dsx;dd.psy=dsy;
-    }}
-    ctx.restore();
-    // ── Home compass: edge chevron + distance when Sonorium is out of view ──
-    {const hd=Math.hypot(_uniSunX-_uniCamX,_uniSunY-_uniCamY,_uniSunZ-_uniCamZ);
-    let off=true;
-    const s=window._uniSunScreen;
-    if(s&&s.sx>40&&s.sx<W-40&&s.sy>40&&s.sy<H-40)off=false;
-    window._uniHomeArrow=null;
-    if(off&&alpha>.5){
-      let ax,ay;
-      if(_sunLz>0.001){ax=_sunLx*_U_F/_sunLz;ay=_sunLy*_U_F/_sunLz;}
-      else{ax=_sunLx;ay=_sunLy;if(Math.abs(ax)+Math.abs(ay)<.001)ay=-1;}
-      const aa=Math.atan2(ay,ax);
-      const rad=Math.min(W,H)*.5-58;
-      const ex=W*.5+Math.cos(aa)*rad,ey=H*.5+Math.sin(aa)*rad;
-      const ao=(alpha-.5)/.5*.6;
-      ctx.save();ctx.translate(ex,ey);ctx.rotate(aa);
-      ctx.strokeStyle=`rgba(${_uniSphR},${_uniSphG},${_uniSphB},${(ao*.95).toFixed(3)})`;
-      ctx.lineWidth=1.4;ctx.lineCap='round';
-      ctx.beginPath();ctx.moveTo(-7,-6);ctx.lineTo(4,0);ctx.lineTo(-7,6);ctx.stroke();
-      ctx.rotate(-aa);
-      ctx.font=`10px 'Space Grotesk',sans-serif`;ctx.textAlign='center';
-      ctx.fillStyle=`rgba(255,255,255,${(ao*.6).toFixed(3)})`;
-      ctx.fillText('Sonorium · '+(hd>=1000?(hd/1000).toFixed(1)+'k':Math.round(hd)),0,20);
-      ctx.restore();
-      window._uniHomeArrow={sx:ex,sy:ey,r:38};
-    }}
-    // ── Travel hint (first few visits) ───────────────────────────────────────
-    if(window._uniShowHintUntil&&performance.now()<window._uniShowHintUntil&&alpha>.5){
-      const ho=Math.min(1,(window._uniShowHintUntil-performance.now())/800)*.5*((alpha-.5)/.5);
-      ctx.save();ctx.font=`11px 'Space Grotesk',sans-serif`;ctx.textAlign='center';
-      ctx.fillStyle=`rgba(255,255,255,${ho.toFixed(3)})`;
-      ctx.fillText(window.uniHintL1||'trascina per guardarti intorno · scorri o pizzica per volare',W*.5,H-64);
-      ctx.fillText(window.uniHintL2||'doppio tap per viaggiare · tocca un pianeta per atterrare',W*.5,H-46);
-      ctx.restore();
+    if(alpha>.75){
+      ctx.save();ctx.font='11px Inter,sans-serif';ctx.textAlign='center';
+      ctx.fillStyle=`rgba(255,255,255,${((alpha-.75)/.25*.28).toFixed(3)})`;
+      ctx.fillText('drag · scroll/pinch to fly · tap planet · tap ☀ home',W*.5,H-20);ctx.restore();
     }
-    // ── Cinematic vignette ───────────────────────────────────────────────────
-    {const vg=ctx.createRadialGradient(W*.5,H*.55,Math.min(W,H)*.42,W*.5,H*.55,Math.max(W,H)*.78);
-    vg.addColorStop(0,'rgba(0,0,0,0)');
-    vg.addColorStop(1,`rgba(2,2,12,${(alpha*.4).toFixed(3)})`);
-    ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);}
   }
 
   // Circular waveform ring
@@ -1561,40 +1266,6 @@ let globalAnalyser = null;
     _uniYaw+=_uniDYaw;
     _uniPitch=Math.max(-1.15,Math.min(1.15,_uniPitch+_uniDPitch));
     _uniSpeed*=.94;
-    // Autopilot: steer softly toward target, ease speed by distance, dock on arrival
-    if(_uniAuto){
-      const T=_uniAuto.planet||_uniAuto;
-      const tx=(T.x!==undefined?T.x:T.tx),ty=(T.y!==undefined?T.y:T.ty),tz=(T.z!==undefined?T.z:T.tz);
-      const adx=tx-_uniCamX,ady=ty-_uniCamY,adz=tz-_uniCamZ;
-      const dist=Math.hypot(adx,ady,adz)||1;
-      if(dist<=_uniAuto.arriveR){
-        const done=_uniAuto;_uniAuto=null;_uniSpeed*=.3;
-        if(done.mode==='planet'&&window.uniOnArrivePlanet)window.uniOnArrivePlanet(done.planet);
-        else if(done.mode==='home'&&window.uniReturnToSurface)window.uniReturnToSurface();
-      }else{
-        let yawT=Math.atan2(adx,adz);
-        let pitchT=Math.asin(Math.max(-1,Math.min(1,ady/dist)));
-        const docking=_uniAuto.mode==='home'&&dist<620;
-        if(docking){
-          // Dock: glide straight onto the surface while the view levels out —
-          // position no longer follows the gaze, so it can never stall
-          const f=1-dist/620;
-          yawT*=(1-f);pitchT*=(1-f);
-          const pull=Math.min(9,Math.max(1.6,dist*.045));
-          _uniCamX+=adx/dist*pull;_uniCamY+=ady/dist*pull;_uniCamZ+=adz/dist*pull;
-          _uniSpeed*=.86;
-        }
-        let dYw=yawT-_uniYaw;while(dYw>Math.PI)dYw-=Math.PI*2;while(dYw<-Math.PI)dYw+=Math.PI*2;
-        _uniYaw+=dYw*.07;
-        _uniPitch+=(Math.max(-1.15,Math.min(1.15,pitchT))-_uniPitch)*.07;
-        if(!docking){
-          const align=Math.max(.15,Math.cos(dYw))*Math.max(.15,Math.cos(pitchT-_uniPitch));
-          const want=Math.min(30,Math.max(2.5,dist*.028))*align;
-          _uniSpeed+=(want-_uniSpeed)*.08;
-        }
-      }
-    }
-    window._uniSpeedAbs=Math.abs(_uniSpeed);
     const _fX=Math.sin(_uniYaw)*Math.cos(_uniPitch);
     const _fY=Math.sin(_uniPitch);
     const _fZ=Math.cos(_uniYaw)*Math.cos(_uniPitch);
@@ -1617,29 +1288,13 @@ let globalAnalyser = null;
 })();
 
 // ── UNIVERSE GESTURES ─────────────────────────────────────────────────────────
-let _uDrag=false,_uDX=0,_uDY=0,_uStartX=0,_uStartY=0,_uMoved=0;
+let _uDrag=false,_uDX=0,_uDY=0;
 let _uPinch0=null,_uPinchPrev=null;
-
-// Shared selection: planet → journey there · Sonorium/compass → glide home ·
-// double-tap on empty space → travel that way. Used by both mouse and touch.
-function _uniSelectAt(x,y,isDouble){
-  const depth=window.uniDepth?window.uniDepth():0;
-  if(depth<0.28)return false;
-  const arrow=window._uniHomeArrow;
-  if(arrow&&Math.hypot(x-arrow.sx,y-arrow.sy)<arrow.r){window.uniAutoHome&&window.uniAutoHome();return true;}
-  const hit=window.uniHitTest?window.uniHitTest(x,y):null;
-  if(hit&&hit.isSun){window.uniAutoHome&&window.uniAutoHome();return true;}
-  if(hit){window.uniApproachPlanet&&window.uniApproachPlanet(hit);return true;}
-  if(isDouble&&window.uniAutoToward){window.uniAutoToward(x,y);return true;}
-  return false;
-}
 
 // Touch: 1-finger drag = rotate, 2-finger pinch = fly in/out
 document.addEventListener('touchstart',e=>{
-  try{getAudioCtx();}catch(_){}
-  if(window.uniCancelAuto&&window.uniDepth&&window.uniDepth()>0.05)window.uniCancelAuto();
   if(e.touches.length===1){
-    _uDX=_uStartX=e.touches[0].clientX;_uDY=_uStartY=e.touches[0].clientY;_uMoved=0;
+    _uDX=e.touches[0].clientX;_uDY=e.touches[0].clientY;
     _uDrag=window.uniDepth&&window.uniDepth()>0.12;
   }
   if(e.touches.length===2){
@@ -1658,41 +1313,23 @@ document.addEventListener('touchmove',e=>{
       if(window.addUniSpeed)window.addUniSpeed((d-_uPinchPrev)*0.14);
       _uPinchPrev=d;
     }
-  } else if(e.touches.length===1){
-    _uMoved=Math.max(_uMoved,Math.hypot(e.touches[0].clientX-_uStartX,e.touches[0].clientY-_uStartY));
-    if(_uDrag){
-      const depth=window.uniDepth?window.uniDepth():0;
-      if(depth>0.12)e.preventDefault();
-      const dx=e.touches[0].clientX-_uDX,dy=e.touches[0].clientY-_uDY;
-      _uDX=e.touches[0].clientX;_uDY=e.touches[0].clientY;
-      if(window.addUniRotate)window.addUniRotate(dx,dy);
-    }
+  } else if(_uDrag&&e.touches.length===1){
+    const depth=window.uniDepth?window.uniDepth():0;
+    if(depth>0.12)e.preventDefault();
+    const dx=e.touches[0].clientX-_uDX,dy=e.touches[0].clientY-_uDY;
+    _uDX=e.touches[0].clientX;_uDY=e.touches[0].clientY;
+    if(window.addUniRotate)window.addUniRotate(dx,dy);
   }
 },{passive:false});
 
-let _lastTapT=0,_lastTapX=0,_lastTapY=0;
 document.addEventListener('touchend',e=>{
   if(e.touches.length<2){_uPinch0=null;_uPinchPrev=null;}
   if(e.touches.length<1)_uDrag=false;
-  // A tap = a touch that barely moved. Handle selection here (planet/home/travel)
-  // and suppress the synthetic click so it doesn't fire twice.
-  if(e.changedTouches&&e.changedTouches.length===1&&_uMoved<16){
-    const t=e.changedTouches[0];
-    const depth=window.uniDepth?window.uniDepth():0;
-    if(depth>0.28){
-      const now=performance.now();
-      const isDouble=now-_lastTapT<380&&Math.hypot(t.clientX-_lastTapX,t.clientY-_lastTapY)<50;
-      if(_uniSelectAt(t.clientX,t.clientY,isDouble)){e.preventDefault();_lastTapT=0;return;}
-      _lastTapT=now;_lastTapX=t.clientX;_lastTapY=t.clientY;
-    }
-  }
 });
 
 // Mouse drag to rotate
 document.addEventListener('mousedown',e=>{
-  try{getAudioCtx();}catch(_){}
   if(window.uniDepth&&window.uniDepth()>0.12&&!e.target.closest('button,input,a,.sphere-wrap')){
-    if(window.uniCancelAuto)window.uniCancelAuto();
     _uDrag=true;_uDX=e.clientX;_uDY=e.clientY;
   }
 });
@@ -1706,46 +1343,43 @@ document.addEventListener('mouseup',()=>_uDrag=false);
 // Scroll wheel — fly forward/backward (always prevent page scroll)
 document.addEventListener('wheel',e=>{
   e.preventDefault();
-  if(window.uniCancelAuto&&window.uniDepth&&window.uniDepth()>0.05)window.uniCancelAuto();
   if(!window.addUniSpeed)return;
   const delta=e.deltaMode===1?e.deltaY*20:e.deltaMode===2?e.deltaY*400:e.deltaY;
   window.addUniSpeed(-delta*0.05);
 },{passive:false});
 
-// Click in universe → planet = fly there and land · sun/compass = glide home
+// Click in universe → tap sun = home, tap planet = load, tap space = nothing
 document.addEventListener('click',e=>{
   const depth=window.uniDepth?window.uniDepth():0;
   if(depth<0.28)return;
-  if(_uniSelectAt(e.clientX,e.clientY,false))e.stopPropagation();
-},true);
-window.uniOnArrivePlanet=p=>_loadPlanetSound(p);
-
-// Desktop double-click on empty space → travel toward that point
-document.addEventListener('dblclick',e=>{
-  const depth=window.uniDepth?window.uniDepth():0;
-  if(depth<0.28)return;
-  e.preventDefault();
+  e.stopPropagation();
   const hit=window.uniHitTest?window.uniHitTest(e.clientX,e.clientY):null;
-  if(!hit&&window.uniAutoToward)window.uniAutoToward(e.clientX,e.clientY);
-});
+  if(!hit)return;
+  if(hit.isSun){if(window.uniReturnToSurface)window.uniReturnToSurface();}
+  else _loadPlanetSound(hit);
+},true);
 
 function _loadPlanetSound(planet){
-  if(window.uniFlashPlanet)window.uniFlashPlanet(planet); // the planet flares as you reach it
-  // Apply the sound NOW, while we're still deep in space and the UI is faded out.
-  // When the camera glides home the sound is already in place → no visible transition.
+  if(window.uniFlashPlanet)window.uniFlashPlanet(planet);
+  if(window.uniSetActive)window.uniSetActive(planet.id);
+  if(window.uniReturnToSurface)window.uniReturnToSurface();
   stopActiveSources();
   isPlaying=false;
-  const idEl=document.getElementById('sound-identity');
-  const acEl=document.getElementById('actions-wrap');
-  idEl.classList.remove('suck-in');acEl.classList.remove('suck-in');
-  current=null;lastBuffer=null;isReversed=false;playbackSpeed=1.0;
-  techSheet.classList.remove('visible');
-  applyGeneratedSound(planet.data,window.innerWidth*.5,window.innerHeight*.5,true);
-  isLoading=false;
-  if(window.setGenerating)window.setGenerating(false);
-  // Linger a beat at the planet, then glide smoothly back to the home surface.
-  // The app UI fades in on its own as depth→0, so the return is one seamless motion.
-  setTimeout(()=>{ if(window.uniAutoHome)window.uniAutoHome(); },820);
+  setTimeout(()=>{
+    const idEl=document.getElementById('sound-identity');
+    const acEl=document.getElementById('actions-wrap');
+    idEl.classList.remove('revealed','suck-in');
+    acEl.classList.remove('revealed','suck-in');
+    divider.style.display='none';
+    current=null;lastBuffer=null;isReversed=false;playbackSpeed=1.0;
+    nameEl.textContent='—';metaEl.textContent='—';
+    tagsEl.innerHTML='';descEl.textContent='';
+    techSheet.classList.remove('visible');
+    const cx=window.innerWidth*.5,cy=window.innerHeight*.5;
+    applyGeneratedSound(planet.data,cx,cy,true);
+    isLoading=false;
+    if(window.setGenerating)window.setGenerating(false);
+  },420);
 }
 
 // ── WEB AUDIO SYNTHESIS ───────────────────────────────────────
@@ -1776,116 +1410,6 @@ function createNoiseBuffer(ctx,dur){
   for(let i=0;i<len;i++)data[i]=Math.random()*2-1;
   return buf;
 }
-
-// ── UNIVERSE SPATIAL AUDIO ────────────────────────────────────
-// Ambient pad + speed wind + per-planet hums (pentatonic, panned by 3D position).
-const UNI_SND={bus:null,pad:[],windG:null,voices:new Map(),on:true};
-try{UNI_SND.on=localStorage.getItem('sn_uniSound')!=='0';}catch(e){}
-const _PENTA=[0,2,4,7,9];
-function _uniPentaFreq(f){
-  const root=116.54; // Bb2 — everything folds into 2 octaves above, snapped to pentatonic
-  if(!f||!isFinite(f)||f<=0)f=220;
-  let s=Math.round(12*Math.log2(f/root));
-  s=((s%24)+24)%24;
-  const oct=Math.floor(s/12),deg=s%12;
-  let best=_PENTA[0],bd=99;
-  for(const d of _PENTA){const dd=Math.min(Math.abs(deg-d),12-Math.abs(deg-d));if(dd<bd){bd=dd;best=d;}}
-  return root*Math.pow(2,(oct*12+best)/12);
-}
-function _uniBuildAudio(){
-  if(UNI_SND.bus||!audioCtx||audioCtx.state!=='running')return;
-  const ctx=audioCtx;
-  const bus=ctx.createGain();bus.gain.value=0;bus.connect(ctx.destination);
-  // Space reverb — parallel wet path gives everything depth and distance
-  try{
-    const conv=ctx.createConvolver();
-    const rl=Math.floor(ctx.sampleRate*2.8);
-    const ir=ctx.createBuffer(2,rl,ctx.sampleRate);
-    for(let ch=0;ch<2;ch++){const d=ir.getChannelData(ch);for(let i=0;i<rl;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/rl,2.7);}
-    conv.buffer=ir;
-    const wet=ctx.createGain();wet.gain.value=.32;
-    bus.connect(conv);conv.connect(wet);wet.connect(ctx.destination);
-  }catch(e){}
-  // Sub rumble — the vastness underneath everything
-  try{const sub=ctx.createOscillator();sub.type='sine';sub.frequency.value=31;const sg2=ctx.createGain();sg2.gain.value=.05;sub.connect(sg2);sg2.connect(bus);sub.start();}catch(e){}
-  const filt=ctx.createBiquadFilter();filt.type='lowpass';filt.frequency.value=520;filt.Q.value=.6;filt.connect(bus);
-  const lfo=ctx.createOscillator();lfo.frequency.value=.045;
-  const lfoG=ctx.createGain();lfoG.gain.value=160;
-  lfo.connect(lfoG);lfoG.connect(filt.frequency);lfo.start();
-  const defs=[[58.27,.5,'sine'],[87.31,.3,'sine'],[116.54,.16,'triangle'],[174.61,.07,'sine']];
-  UNI_SND.pad=defs.map(([f,g,ty],i)=>{
-    const o=ctx.createOscillator();o.type=ty;o.frequency.value=f;o.detune.value=(i%2?3:-3);
-    const og=ctx.createGain();og.gain.value=0;
-    o.connect(og);og.connect(filt);o.start();
-    return{og,base:g,ph:i*2.1,rate:.05+i*.017};
-  });
-  const ns=ctx.createBufferSource();ns.buffer=createNoiseBuffer(ctx,2);ns.loop=true;
-  const nf=ctx.createBiquadFilter();nf.type='lowpass';nf.frequency.value=240;
-  const ng=ctx.createGain();ng.gain.value=0;
-  ns.connect(nf);nf.connect(ng);ng.connect(bus);ns.start();
-  UNI_SND.windG=ng;UNI_SND.bus=bus;
-}
-const _uniAudioBtn=document.getElementById('uni-audio-btn');
-if(_uniAudioBtn){
-  _uniAudioBtn.classList.toggle('muted',!UNI_SND.on);
-  _uniAudioBtn.addEventListener('click',()=>{
-    UNI_SND.on=!UNI_SND.on;
-    try{localStorage.setItem('sn_uniSound',UNI_SND.on?'1':'0');}catch(e){}
-    _uniAudioBtn.classList.toggle('muted',!UNI_SND.on);
-    try{getAudioCtx();}catch(e){}
-  });
-}
-setInterval(()=>{
-  const depth=window.uniDepth?window.uniDepth():0;
-  if(_uniAudioBtn)_uniAudioBtn.classList.toggle('show',depth>0.35);
-  const active=depth>0.06&&UNI_SND.on;
-  if(active&&!UNI_SND.bus){
-    try{if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume();}catch(e){}
-    _uniBuildAudio();
-  }
-  if(!UNI_SND.bus)return;
-  const t=audioCtx.currentTime;
-  UNI_SND.bus.gain.setTargetAtTime(active?Math.min(1,depth*1.4)*.9:0,t,.35);
-  if(!active){
-    for(const[,v]of UNI_SND.voices)v.g.gain.setTargetAtTime(0,t,.3);
-    return;
-  }
-  const now=performance.now()*.001;
-  for(const p of UNI_SND.pad)p.og.gain.setTargetAtTime(p.base*.06*(0.72+0.28*Math.sin(now*p.rate*Math.PI*2+p.ph)),t,.5);
-  if(UNI_SND.windG){
-    const sp=window._uniSpeedAbs||0;
-    UNI_SND.windG.gain.setTargetAtTime(Math.pow(Math.min(1,sp/16),1.6)*.09,t,.25);
-  }
-  // Planet hums — nearest few, volume by distance, stereo pan by 3D position
-  const prox=window._uniProx||[],RANGE=1500,want=new Set();
-  for(const pr of prox){
-    if(pr.id==null||pr.d>RANGE)continue;
-    want.add(pr.id);
-    let v=UNI_SND.voices.get(pr.id);
-    if(!v){
-      const bf=_uniPentaFreq(pr.f);
-      const o=audioCtx.createOscillator();o.type='sine';o.frequency.value=bf;
-      const g=audioCtx.createGain();g.gain.value=0;
-      let pan=null;
-      if(audioCtx.createStereoPanner){pan=audioCtx.createStereoPanner();o.connect(g);g.connect(pan);pan.connect(UNI_SND.bus);}
-      else{o.connect(g);g.connect(UNI_SND.bus);}
-      o.start();v={o,g,pan,dieAt:0,baseF:bf,pd:pr.d};UNI_SND.voices.set(pr.id,v);
-    }
-    v.dieAt=0;
-    v.g.gain.setTargetAtTime(Math.pow(Math.max(0,1-pr.d/RANGE),2)*.13,t,.28);
-    if(v.pan)v.pan.pan.setTargetAtTime(Math.max(-1,Math.min(1,pr.pan)),t,.3);
-    // Doppler: approaching = higher, receding = lower (subtle, clamped ±6%)
-    const vr=pr.d-(v.pd!=null?v.pd:pr.d);v.pd=pr.d;
-    v.o.frequency.setTargetAtTime(v.baseF*Math.max(.94,Math.min(1.06,1-vr*.0016)),t,.09);
-  }
-  for(const[id,v]of UNI_SND.voices){
-    if(!want.has(id)){
-      v.g.gain.setTargetAtTime(0,t,.3);
-      if(!v.dieAt)v.dieAt=performance.now()+900;
-      else if(performance.now()>v.dieAt){try{v.o.stop();}catch(e){}UNI_SND.voices.delete(id);}
-    }
-  }
-},95);
 
 function createReverb(ctx,amount){
   const conv=ctx.createConvolver();
@@ -2569,11 +2093,11 @@ const LANG_DESC={it:'italiano poetico',en:'evocative English',es:'español poét
 const LANG_DAW ={it:'italiano',en:'English',es:'español',fr:'français',de:'Deutsch'};
 
 const UI={
-  it:{replay:'↺ Replay',reverse:'⟺ Reverse',original:'⟺ Original',similar:'≈ Simile',export:'↓ Export',preview:'Descrizione sensoriale',daw:'Guida DAW',hint:'touch to explore',generating:'generating...',rendering:'rendering…',techPreview:'descrizione sensoriale',techDaw:'guida daw',errUnexpected:'Risposta inattesa — riprova.',errKey:'Chiave non valida o senza crediti',errNet:'Rete bloccata',errTap:'Tocca qui ⚷',errApi:'Errore API.',errPrefix:'Errore: ',uniHint1:'trascina per guardarti intorno · scorri o pizzica per volare',uniHint2:'doppio tap per viaggiare · tocca un pianeta per atterrare'},
-  en:{replay:'↺ Replay',reverse:'⟺ Reverse',original:'⟺ Original',similar:'≈ Similar',export:'↓ Export',preview:'Sensory description',daw:'DAW guide',hint:'touch to explore',generating:'generating...',rendering:'rendering…',techPreview:'sensory description',techDaw:'daw guide',errUnexpected:'Unexpected response — try again.',errKey:'Invalid key or no credits',errNet:'Network blocked',errTap:'Tap here ⚷',errApi:'API error.',errPrefix:'Error: ',uniHint1:'drag to look around · scroll or pinch to fly',uniHint2:'double-tap to travel · tap a planet to land'},
-  es:{replay:'↺ Replay',reverse:'⟺ Invertir',original:'⟺ Original',similar:'≈ Similar',export:'↓ Exportar',preview:'Descripción sensorial',daw:'Guía DAW',hint:'toca para explorar',generating:'generando...',rendering:'procesando…',techPreview:'descripción sensorial',techDaw:'guía daw',errUnexpected:'Respuesta inesperada — reintenta.',errKey:'Clave inválida o sin créditos',errNet:'Red bloqueada',errTap:'Toca aquí ⚷',errApi:'Error de API.',errPrefix:'Error: ',uniHint1:'arrastra para mirar · desplaza o pellizca para volar',uniHint2:'doble toque para viajar · toca un planeta para aterrizar'},
-  fr:{replay:'↺ Replay',reverse:'⟺ Inverser',original:'⟺ Original',similar:'≈ Similaire',export:'↓ Exporter',preview:'Description sensorielle',daw:'Guide DAW',hint:'toucher pour explorer',generating:'génération...',rendering:'traitement…',techPreview:'description sensorielle',techDaw:'guide daw',errUnexpected:'Réponse inattendue — réessayez.',errKey:'Clé invalide ou sans crédits',errNet:'Réseau bloqué',errTap:'Touchez ici ⚷',errApi:'Erreur API.',errPrefix:'Erreur : ',uniHint1:'glissez pour regarder · défilez ou pincez pour voler',uniHint2:'double-tap pour voyager · touchez une planète pour atterrir'},
-  de:{replay:'↺ Replay',reverse:'⟺ Umkehren',original:'⟺ Original',similar:'≈ Ähnlich',export:'↓ Exportieren',preview:'Sensorische Beschreibung',daw:'DAW-Anleitung',hint:'berühren zum Erkunden',generating:'Generierung...',rendering:'Verarbeitung…',techPreview:'sensorische beschreibung',techDaw:'daw-anleitung',errUnexpected:'Unerwartete Antwort — erneut versuchen.',errKey:'Ungültiger Schlüssel oder kein Guthaben',errNet:'Netzwerk blockiert',errTap:'Hier tippen ⚷',errApi:'API-Fehler.',errPrefix:'Fehler: ',uniHint1:'ziehen zum Umsehen · scrollen oder kneifen zum Fliegen',uniHint2:'Doppeltipp zum Reisen · Planet antippen zum Landen'},
+  it:{replay:'↺ Replay',reverse:'⟺ Reverse',original:'⟺ Original',similar:'≈ Simile',export:'↓ Export',preview:'Descrizione sensoriale',daw:'Guida DAW',hint:'touch to explore',generating:'generating...',rendering:'rendering…',techPreview:'descrizione sensoriale',techDaw:'guida daw',errUnexpected:'Risposta inattesa — riprova.',errKey:'Chiave non valida o senza crediti',errNet:'Rete bloccata',errTap:'Tocca qui ⚷',errApi:'Errore API.',errPrefix:'Errore: '},
+  en:{replay:'↺ Replay',reverse:'⟺ Reverse',original:'⟺ Original',similar:'≈ Similar',export:'↓ Export',preview:'Sensory description',daw:'DAW guide',hint:'touch to explore',generating:'generating...',rendering:'rendering…',techPreview:'sensory description',techDaw:'daw guide',errUnexpected:'Unexpected response — try again.',errKey:'Invalid key or no credits',errNet:'Network blocked',errTap:'Tap here ⚷',errApi:'API error.',errPrefix:'Error: '},
+  es:{replay:'↺ Replay',reverse:'⟺ Invertir',original:'⟺ Original',similar:'≈ Similar',export:'↓ Exportar',preview:'Descripción sensorial',daw:'Guía DAW',hint:'toca para explorar',generating:'generando...',rendering:'procesando…',techPreview:'descripción sensorial',techDaw:'guía daw',errUnexpected:'Respuesta inesperada — reintenta.',errKey:'Clave inválida o sin créditos',errNet:'Red bloqueada',errTap:'Toca aquí ⚷',errApi:'Error de API.',errPrefix:'Error: '},
+  fr:{replay:'↺ Replay',reverse:'⟺ Inverser',original:'⟺ Original',similar:'≈ Similaire',export:'↓ Exporter',preview:'Description sensorielle',daw:'Guide DAW',hint:'toucher pour explorer',generating:'génération...',rendering:'traitement…',techPreview:'description sensorielle',techDaw:'guide daw',errUnexpected:'Réponse inattendue — réessayez.',errKey:'Clé invalide ou sans crédits',errNet:'Réseau bloqué',errTap:'Touchez ici ⚷',errApi:'Erreur API.',errPrefix:'Erreur : '},
+  de:{replay:'↺ Replay',reverse:'⟺ Umkehren',original:'⟺ Original',similar:'≈ Ähnlich',export:'↓ Exportieren',preview:'Sensorische Beschreibung',daw:'DAW-Anleitung',hint:'berühren zum Erkunden',generating:'Generierung...',rendering:'Verarbeitung…',techPreview:'sensorische beschreibung',techDaw:'daw-anleitung',errUnexpected:'Unerwartete Antwort — erneut versuchen.',errKey:'Ungültiger Schlüssel oder kein Guthaben',errNet:'Netzwerk blockiert',errTap:'Hier tippen ⚷',errApi:'API-Fehler.',errPrefix:'Fehler: '},
 };
 function t(k){ return (UI[techLang]||UI.it)[k]||k; }
 function applyLang(){
@@ -2586,7 +2110,6 @@ function applyLang(){
   if(_ex&&_ex.textContent!==t('rendering'))_ex.textContent=t('export');
   if(sphereHint)sphereHint.textContent=t('hint');
   if(techMode)techTitle.textContent=t(techMode==='preview'?'techPreview':'techDaw');
-  window.uniHintL1=t('uniHint1');window.uniHintL2=t('uniHint2');
 }
 
 function buildPreviewPrompt(){
@@ -2848,45 +2371,34 @@ window.setGenerating=function(on){
   if(sphereHint)sphereHint.style.opacity=(on||isPlaying)?'0':'';
 };
 
-// ── LONG-PRESS RESET (hold ~0.9s on empty space → suction) ────
-// Driven by BOTH pointer (desktop) and touch (mobile) events. Mobile browsers
-// fire spurious pointercancel during a static hold, so touch is handled on its
-// own reliable events and the hold is short enough to complete first.
+// ── LONG-PRESS RESET (2s on empty space → suction) ────────────
 let _resetRaf=null,_resetStart=0,_resetOX=0,_resetOY=0;
-const _RESET_MS=900;
-const _RESET_SKIP='button,input,a,.sphere-wrap,.tech-sheet,.key-overlay,.sound-name,.sound-meta,.tags,.tag,.btn,.sound-playing,.tech-content,.tech-title,.logo,.spin-badge,.lang-wrap';
 function _cancelReset(){
   if(_resetRaf){cancelAnimationFrame(_resetRaf);_resetRaf=null;}
   _resetStart=0;window._resetHold=0;
 }
 function _tickReset(){
   if(!_resetStart)return;
-  const p=Math.min(1,(performance.now()-_resetStart)/_RESET_MS);
+  const p=Math.min(1,(performance.now()-_resetStart)/2000);
   window._resetHold=p;
   if(p>=1){_resetStart=0;window._resetHold=0;_doReset();return;}
   _resetRaf=requestAnimationFrame(_tickReset);
 }
-function _resetBegin(x,y,target){
+document.querySelector('.app').addEventListener('pointerdown',e=>{
   if(!current)return;
-  if(window.uniDepth&&window.uniDepth()>0.06)return; // only on the home surface
-  if(target&&target.closest&&target.closest(_RESET_SKIP))return;
-  _resetOX=x;_resetOY=y;_resetStart=performance.now();
-  if(_resetRaf)cancelAnimationFrame(_resetRaf);
+  if(e.target.closest('button,input,a,.sphere-wrap,.tech-sheet,.key-overlay,.sound-name,.sound-meta,.tags,.tag,.btn,.sound-playing,.tech-content,.tech-title,.logo,.spin-badge,.lang-wrap'))return;
+  _resetOX=e.clientX;_resetOY=e.clientY;
+  _resetStart=performance.now();
   _resetRaf=requestAnimationFrame(_tickReset);
-}
-function _resetMove(x,y,isMouse){
+});
+document.addEventListener('pointermove',e=>{
   if(!_resetStart)return;
-  const dx=x-_resetOX,dy=y-_resetOY,thresh=isMouse?625:225;
+  const dx=e.clientX-_resetOX,dy=e.clientY-_resetOY;
+  const thresh=e.pointerType==='mouse'?625:144;
   if(dx*dx+dy*dy>thresh)_cancelReset();
-}
-// Desktop (mouse) — ignore touch-typed pointer events, handled below
-document.querySelector('.app').addEventListener('pointerdown',e=>{ if(e.pointerType!=='touch')_resetBegin(e.clientX,e.clientY,e.target); });
-document.addEventListener('pointermove',e=>{ if(e.pointerType!=='touch')_resetMove(e.clientX,e.clientY,e.pointerType==='mouse'); });
-document.addEventListener('pointerup',e=>{ if(e.pointerType!=='touch')_cancelReset(); });
-// Mobile (touch) — reliable events, not subject to spurious pointercancel
-document.addEventListener('touchstart',e=>{ if(e.touches.length===1){const t=e.touches[0];_resetBegin(t.clientX,t.clientY,e.target);}else _cancelReset(); },{passive:true});
-document.addEventListener('touchmove',e=>{ if(e.touches.length){const t=e.touches[0];_resetMove(t.clientX,t.clientY,false);} },{passive:true});
-document.addEventListener('touchend',_cancelReset);
+});
+document.addEventListener('pointerup',_cancelReset);
+document.addEventListener('pointercancel',_cancelReset);
 document.addEventListener('contextmenu',e=>{ if(_resetStart)e.preventDefault(); });
 
 function _doReset(){

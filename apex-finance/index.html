@@ -1443,7 +1443,8 @@ input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size
   background:var(--bg);display:flex;flex-direction:column;overflow:hidden;}
 /* ── Confronta titoli ── */
 .cmp-addbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px var(--page-gutter);flex-shrink:0;}
-.cmp-addbar .pf-search-input{max-width:240px;}
+.cmp-search{flex:1 1 220px;max-width:340px;min-width:180px;}
+.cmp-search .pf-search-input{width:100%;}
 .cmp-wrap{flex:1;overflow:auto;padding:4px var(--page-gutter) 24px;}
 /* ── Chi siamo ── */
 .about-body{flex:1;overflow-y:auto;padding:8px var(--page-gutter) 40px;-webkit-overflow-scrolling:touch;}
@@ -2099,8 +2100,10 @@ input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size
         <button class="pf-close" onclick="closeCompare()" title="Chiudi">✕</button>
       </div>
       <div class="cmp-addbar">
-        <input id="cmp-input" class="pf-search-input" placeholder="Aggiungi ticker (es. AAPL, ENI.MI)" autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter')cmpAddFromInput()">
-        <button class="pf-mini-btn" onclick="cmpAddFromInput()">+ Aggiungi</button>
+        <div class="pf-add-search cmp-search">
+          <input id="cmp-input" class="pf-search-input" placeholder="Cerca per nome, ticker o ISIN (es. Apple, AAPL, Enel…)" autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter')cmpAddFromInput()">
+          <div class="pf-search-dd" id="cmp-dd"></div>
+        </div>
         <button class="pf-mini-btn" onclick="cmpAddWatch()">★ Da preferiti</button>
         <span class="pf-tr-note" id="cmp-note">Fino a 4 titoli affiancati</span>
       </div>
@@ -6701,6 +6704,7 @@ function openCompare(){
   m.style.top=h+'px'; m.style.display='flex';
   const sy=window.scrollY; document.body.dataset.pfScroll=sy;
   document.body.style.position='fixed'; document.body.style.top=`-${sy}px`; document.body.style.width='100%';
+  cmpSetupSearch();
   cmpRender();
 }
 function closeCompare(){
@@ -6728,17 +6732,47 @@ function closeAbout(){
 function cmpAddFromInput(){
   const inp=document.getElementById('cmp-input');
   const t=(inp.value||'').trim().toUpperCase();
-  inp.value='';
+  inp.value=''; document.getElementById('cmp-dd')?.classList.remove('open');
   if(t) cmpAdd(t);
 }
-function cmpAddWatch(){ watchGet().forEach(w=>cmpAdd(w.ticker)); }
-function cmpAdd(ticker){
+function cmpAddWatch(){ watchGet().forEach(w=>cmpAdd(w.ticker,w.name)); }
+function cmpAdd(ticker,name){
   if(CMP.length>=4){ const n=document.getElementById('cmp-note'); if(n){n.textContent='Massimo 4 titoli — rimuovine uno per aggiungerne altri';n.style.color='var(--y)';} return; }
   if(CMP.some(c=>c.ticker===ticker)) return;
-  const entry={ticker,data:null,loading:true,error:null};
+  const entry={ticker,name:name||ticker,data:null,loading:true,error:null};
   CMP.push(entry); cmpRender();
   cmpFetch(ticker).then(d=>{ entry.data=d; }).catch(e=>{ entry.error=e.message||'errore'; })
     .finally(()=>{ entry.loading=false; cmpRender(); });
+}
+// ricerca con suggerimenti nel confronto (per nome, ticker o ISIN)
+function cmpSetupSearch(){
+  const input=document.getElementById('cmp-input'), dd=document.getElementById('cmp-dd');
+  if(!input||input.dataset.bound) return; input.dataset.bound='1';
+  let timer=null,lastQ='';
+  const render=items=>{
+    if(!items.length){ dd.classList.remove('open'); return; }
+    dd.innerHTML=items.slice(0,10).map(r=>`<div class="pf-dd-item" data-sym="${r.sym}" data-name="${(r.name||'').replace(/"/g,'&quot;')}">
+      <span class="pf-dd-sym">${r.sym}</span><span class="pf-dd-name">${r.name||''}</span><span class="pf-dd-cat">${r.cat||''}</span></div>`).join('');
+    dd.classList.add('open');
+    dd.querySelectorAll('.pf-dd-item').forEach(it=>it.onmousedown=e=>{
+      e.preventDefault();
+      cmpAdd(it.dataset.sym, it.dataset.name);
+      input.value=''; dd.classList.remove('open');
+    });
+  };
+  input.addEventListener('input',()=>{
+    const q=input.value.trim(); clearTimeout(timer);
+    if(!q){ dd.classList.remove('open'); return; }
+    const up=q.toUpperCase();
+    const local=DB.filter(([s,n])=>s.startsWith(up)||n.toUpperCase().includes(up)).slice(0,6).map(([s,n,c])=>({sym:s,name:n,cat:c}));
+    if(local.length) render(local);
+    timer=setTimeout(async()=>{
+      lastQ=q; let res=await searchAPI(q); if(q!==lastQ) return;
+      if(!res.length) res=await searchYahoo(q);
+      const syms=new Set(res.map(r=>r.sym)); render([...res,...local.filter(r=>!syms.has(r.sym))]);
+    },300);
+  });
+  input.addEventListener('blur',()=>setTimeout(()=>dd.classList.remove('open'),200));
 }
 function cmpRemove(ticker){ CMP=CMP.filter(c=>c.ticker!==ticker); cmpRender(); }
 async function cmpFetch(ticker){
@@ -6786,7 +6820,8 @@ function cmpRender(){
   ];
   const head=CMP.map(c=>{
     const d=c.data;
-    const inner=`<div class="cmp-col-hd">${logoHTML(c.ticker,26)}<span class="cmp-col-sym">${c.ticker}</span>${d?`<span class="cmp-col-name">${d.name}</span>`:''}<button class="cmp-col-x" onclick="cmpRemove('${c.ticker}')" title="Rimuovi">✕ rimuovi</button></div>`;
+    const nm=(d&&d.name)||c.name||'';
+    const inner=`<div class="cmp-col-hd">${logoHTML(c.ticker,26)}<span class="cmp-col-sym">${c.ticker}</span>${nm?`<span class="cmp-col-name">${nm}</span>`:''}<button class="cmp-col-x" onclick="cmpRemove('${c.ticker}')" title="Rimuovi">✕ rimuovi</button></div>`;
     return `<th>${inner}</th>`;
   }).join('');
   const body=rows.map(([label,fn])=>{

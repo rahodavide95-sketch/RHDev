@@ -4506,9 +4506,17 @@ function loadSectionRest(id){
 }
 
 // apre la categoria come PAGINA INTERA sotto la barra (header sempre visibile)
+// chiude qualsiasi ALTRA finestra a pagina intera già aperta (così la nuova "sovrascrive")
+function closeOtherFullpages(except){
+  if(except!=='pf'    && document.getElementById('pf-modal')?.style.display==='flex') closePortfolio();
+  if(except!=='cmp'   && document.getElementById('cmp-modal')?.style.display==='flex') closeCompare();
+  if(except!=='about' && document.getElementById('about-modal')?.style.display==='flex') closeAbout();
+  if(except!=='cat'){ const cat=document.getElementById('cat-modal'); if(cat?.classList.contains('cat-fullpage')) closeCatModal(); }
+}
 function _openCatPage() {
   const modal = document.getElementById('cat-modal');
   if (!modal) return;
+  closeOtherFullpages('cat');
   const hdr = document.querySelector('header') || document.querySelector('.header');
   const h = hdr ? hdr.getBoundingClientRect().height : 56;
   modal.style.setProperty('--header-h', h + 'px');
@@ -4631,10 +4639,10 @@ function renderCmRow(el,ticker,name,score){
   const attr=s=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
   const fav=watchHas(ticker);
   el.innerHTML=`
+    <button class="cm-star${fav?' on':''}" data-sym="${ticker}" data-name="${attr(displayName)}" onclick="event.stopPropagation();cmRowStar(this)" title="${fav?'Rimuovi dai preferiti':'Aggiungi ai preferiti'}" aria-label="Preferiti">${fav?'★':'☆'}</button>
     ${logoHTML(ticker,32)}
     <span class="cm-ticker">${ticker}</span>
     <span class="cm-name">${displayName}${sub?`<br><span style="font-size:.64rem;color:var(--t3);font-weight:400">${sub}</span>`:''}</span>
-    <button class="cm-star${fav?' on':''}" data-sym="${ticker}" data-name="${attr(displayName)}" onclick="event.stopPropagation();cmRowStar(this)" title="${fav?'Rimuovi dai preferiti':'Aggiungi ai preferiti'}" aria-label="Preferiti">${fav?'★':'☆'}</button>
     <span class="cm-bar"><span class="cm-bar-f" style="width:${score??0}%;background:${c||'transparent'}"></span></span>
     ${score!=null?`<span class="cm-score" style="color:${c}">${score}</span>`:'<span class="cm-noscore">—</span>'}
   `;
@@ -5306,7 +5314,21 @@ function renderOppZone(d){
     noteEl.innerHTML=`<b style="color:var(--y)">Non è in zona opportunità.</b> Perché ${fails.join('; e ')}. La zona opportunità richiede <b>tutti e tre</b> i criteri insieme. <i>Non vuol dire che sia un cattivo titolo: solo che ora manca il setup "sconto + trend sano".</i>`;
   }
 }
+let _analyzeSeq=0;
+// azzera ogni pannello dell'analisi prima di caricarne uno nuovo (niente testo residuo)
+function resetAnalysisPanels(){
+  const set=(id,html='')=>{ const el=document.getElementById(id); if(el) el.innerHTML=html; };
+  const hide=id=>{ const el=document.getElementById(id); if(el) el.style.display='none'; };
+  set('ai-analysis-body'); set('ai-analysis-status'); hide('ai-analysis');
+  set('oz-criteria'); set('oz-note'); hide('opp-zone');
+  set('risk-out'); hide('risk-card');
+  set('edge-intro'); set('edge-table'); hide('edge-section');
+  set('sig-tags'); const fm=document.getElementById('fund-msg'); if(fm){ fm.innerHTML=''; fm.style.display='none'; }
+  const ai=document.getElementById('a-datainfo'); if(ai) ai.innerHTML='';
+  const eur=document.getElementById('a-price-eur'); if(eur) eur.textContent='';
+}
 async function renderStockAI(d,tryAI){
+  const mySeq=_analyzeSeq;   // fotografa l'analisi corrente
   try{ renderOppZone(d); }catch(e){ console.warn('oppzone',e); }
   const card=document.getElementById('ai-analysis');
   const body=document.getElementById('ai-analysis-body');
@@ -5318,9 +5340,10 @@ async function renderStockAI(d,tryAI){
   if(status) status.innerHTML='<span class="card-spin"></span> Chiedo un parere a Claude…';
   try{
     const r=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'stock',...d,fund:d.fund?{trailingPE:d.fund.trailingPE,forwardPE:d.fund.forwardPE,roe:d.fund.roe,pb:d.fund.pb,earningsGrowth:d.fund.earningsGrowth,revenueGrowth:d.fund.revenueGrowth}:null}),signal:AbortSignal.timeout(30000)});
-    if(r.ok){ const j=await r.json(); if(j&&j.text){ body.innerHTML=pfFormatAI(j.text); if(status) status.innerHTML='<span style="color:var(--accent)">✦ generata da Claude</span>'; return; } }
+    if(mySeq!==_analyzeSeq) return;   // nel frattempo è partita un'altra analisi → NON scrivere qui
+    if(r.ok){ const j=await r.json(); if(mySeq!==_analyzeSeq) return; if(j&&j.text){ body.innerHTML=pfFormatAI(j.text); if(status) status.innerHTML='<span style="color:var(--accent)">✦ generata da Claude</span>'; return; } }
   }catch{}
-  if(status) status.textContent='';
+  if(mySeq===_analyzeSeq && status) status.textContent='';
 }
 
 // ── ANALYZE ──
@@ -5337,6 +5360,8 @@ async function analyze(ticker){
 
   document.getElementById('ao').classList.remove('open');
   document.getElementById('err-box').style.display='none';
+  _analyzeSeq=(_analyzeSeq||0)+1;   // invalida eventuali risposte async del titolo precedente
+  resetAnalysisPanels();            // pulisci ogni contenuto residuo prima della nuova analisi
   setAnalyzeLoading(true,'Recupero dati…');
 
   try{
@@ -6697,7 +6722,7 @@ function openWatchlist(){
 // ═══════════════════════════════════════════════════════════
 let CMP=[];   // { ticker, data|null, loading, error }
 function openCompare(){
-  closeMainMenu();
+  closeMainMenu(); closeOtherFullpages('cmp');
   const m=document.getElementById('cmp-modal');
   const hdr=document.querySelector('header');
   const h=hdr?Math.round(hdr.getBoundingClientRect().height):56;
@@ -6714,7 +6739,7 @@ function closeCompare(){
   window.scrollTo(0,sy);
 }
 function openAbout(){
-  closeMainMenu();
+  closeMainMenu(); closeOtherFullpages('about');
   const m=document.getElementById('about-modal');
   const hdr=document.querySelector('header');
   const h=hdr?Math.round(hdr.getBoundingClientRect().height):56;
@@ -7015,7 +7040,7 @@ let _pfData=null;           // cached aligned data after calculate
 function pfDestroyCharts(){ Object.values(PFCH).forEach(c=>c&&c.destroy()); PFCH={}; }
 
 function openPortfolio(){
-  closeMainMenu();
+  closeMainMenu(); closeOtherFullpages('pf');
   const m=document.getElementById('pf-modal');
   const hdr=document.querySelector('header');
   const h=hdr?Math.round(hdr.getBoundingClientRect().height):56;

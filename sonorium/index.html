@@ -260,7 +260,7 @@
       <p class="credits-tagline">serendipity engine for sound designers</p>
       <p class="credits-line">For your subconscious creativity, wherever you are.</p>
       <p class="credits-line">With love, by Raho.</p>
-      <p class="credits-copy">© Sonorium 2026 &nbsp;|&nbsp; v2.6</p>
+      <p class="credits-copy">© Sonorium 2026 &nbsp;|&nbsp; v2.7</p>
     </div>
   </div>
 
@@ -600,6 +600,8 @@ let globalAnalyser = null;
   let _uniSphR=90,_uniSphG=100,_uniSphB=200;
   let _uniAuto=null,_uniTime=0;
   const _uniStars3D=(()=>{const a=[];for(let i=0;i<2200;i++){const th=Math.random()*Math.PI*2,ph=Math.acos(2*Math.random()-1),sp=Math.sin(ph);a.push({wx:sp*Math.cos(th),wy:Math.cos(ph),wz:sp*Math.sin(th),sz:.6+Math.random()*1.6,bright:Math.random()>.96});}return a;})();
+  // Near-field motes with real world positions → they stream past to sell speed
+  const _uniDust=(()=>{const a=[];for(let i=0;i<160;i++)a.push({x:(Math.random()-.5)*920,y:(Math.random()-.5)*920,z:(Math.random()-.5)*920,psx:null,psy:null});return a;})();
 
   // ── Planet materials: rich sprite baked ONCE per world, then just blitted ────
   // (baking is the perf trick — no per-frame gradients/clips, so it stays fast)
@@ -728,16 +730,17 @@ let globalAnalyser = null;
   window.uniCancelAuto=function(){_uniAuto=null;};
   window.uniReturnToSurface=function(){_uniAuto=null;_uniCamX=0;_uniCamY=0;_uniCamZ=-500;_uniYaw=0;_uniPitch=0;_uniDYaw=0;_uniDPitch=0;_uniSpeed=0;};
   window.uniFlashPlanet=function(planet){if(planet)_uniFlash={planet,life:0,maxLife:24};};
-  // Curved flight with a duration that scales with distance (near=quick, far=long)
+  // Curved, TIME-BASED flight: duration scales with distance (far = longer trip),
+  // so it stays smooth at any frame rate and feels real.
   function _startFlight(tx,ty,tz,mode,planet){
     const sx=_uniCamX,sy=_uniCamY,sz=_uniCamZ;
     const dist=Math.hypot(tx-sx,ty-sy,tz-sz)||1;
-    const dur=Math.max(46,Math.min(360,Math.round(dist*0.16)));
+    const durMs=Math.max(850,Math.min(8000,dist*2.1));
     // a randomised control point → the path curves naturally, never robotic
     const mx=(sx+tx)/2,my=(sy+ty)/2,mz=(sz+tz)/2;
-    const off=dist*(0.1+Math.random()*0.22);
-    let rx=Math.random()-.5,ry=(Math.random()-.5)*.7,rz=Math.random()-.5;const rl=Math.hypot(rx,ry,rz)||1;
-    _uniAuto={mode,planet,t:0,dur,sx,sy,sz,tx,ty,tz,cx:mx+rx/rl*off,cy:my+ry/rl*off,cz:mz+rz/rl*off};
+    const off=dist*(0.07+Math.random()*0.14);
+    let rx=Math.random()-.5,ry=(Math.random()-.5)*.6,rz=Math.random()-.5;const rl=Math.hypot(rx,ry,rz)||1;
+    _uniAuto={mode,planet,elapsed:0,last:0,durMs,sx,sy,sz,tx,ty,tz,cx:mx+rx/rl*off,cy:my+ry/rl*off,cz:mz+rz/rl*off};
   }
   window.uniApproachPlanet=function(p){
     const dx=p.x-_uniCamX,dy=p.y-_uniCamY,dz=p.z-_uniCamZ,d=Math.hypot(dx,dy,dz)||1;
@@ -776,6 +779,27 @@ let globalAnalyser = null;
       ctx.fillStyle=`rgba(255,255,255,${usop.toFixed(2)})`;
       ctx.fillRect(usx-.5,usy-.5,us.sz,us.sz);
     }
+    // ── Near-field dust: real world positions that stream past = sense of speed ─
+    {const D=460,mv=_uniAuto?9:Math.abs(_uniSpeed),streak=mv>1.4;
+     for(const d of _uniDust){
+       let rx=d.x-_uniCamX,ry=d.y-_uniCamY,rz=d.z-_uniCamZ,wrapped=false;
+       while(rx>D){rx-=2*D;wrapped=true;}while(rx<-D){rx+=2*D;wrapped=true;}
+       while(ry>D){ry-=2*D;wrapped=true;}while(ry<-D){ry+=2*D;wrapped=true;}
+       while(rz>D){rz-=2*D;wrapped=true;}while(rz<-D){rz+=2*D;wrapped=true;}
+       const lcx=rx*cosY-rz*sinY,lcz0=rx*sinY+rz*cosY;
+       const lcy=ry*cosP+lcz0*sinP,lcz=-ry*sinP+lcz0*cosP;
+       if(lcz<14){d.psx=null;continue;}
+       const dsx=lcx*_U_F/lcz+W*.5,dsy=lcy*_U_F/lcz+H*.5;
+       if(dsx<-20||dsx>W+20||dsy<-20||dsy>H+20){d.psx=null;continue;}
+       const near=Math.min(1,540/lcz),dop=alpha*(.12+near*.5);
+       if(dop>.01){
+         if(streak&&d.psx!=null&&!wrapped){
+           ctx.strokeStyle=`rgba(200,215,255,${dop.toFixed(3)})`;ctx.lineWidth=Math.max(.5,near*1.4);
+           ctx.beginPath();ctx.moveTo(d.psx,d.psy);ctx.lineTo(dsx,dsy);ctx.stroke();
+         }else{const s=Math.max(.6,near*1.6);ctx.fillStyle=`rgba(200,215,255,${dop.toFixed(3)})`;ctx.fillRect(dsx-s*.5,dsy-s*.5,s,s);}
+       }
+       d.psx=dsx;d.psy=dsy;
+     }}
     // ── Orbit guides (very faint dashes) ─────────────────────────────────────
     {const ringR=[360,600,860,1140,1460,1820];
     ctx.save();ctx.setLineDash([2,14]);ctx.lineWidth=0.4;
@@ -1416,19 +1440,22 @@ let globalAnalyser = null;
     // Universe camera — autopilot flight OR manual rotation+flight
     _uniTime++;
     if(_uniAuto){
-      const a=_uniAuto;a.t++;
-      let u=a.t/a.dur;if(u>1)u=1;
-      const e=u<.5?2*u*u:1-Math.pow(-2*u+2,2)/2,om=1-e;
+      const a=_uniAuto;
+      const now=performance.now();if(!a.last)a.last=now;
+      let dt=now-a.last;a.last=now;if(dt>60)dt=60;if(dt<1)dt=1; // clamp after any stall
+      a.elapsed+=dt;
+      let u=a.elapsed/a.durMs;if(u>1)u=1;
+      // easeInOutCubic — smooth accel then decel (real cruise feel)
+      const e=u<.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2,om=1-e;
       _uniCamX=om*om*a.sx+2*om*e*a.cx+e*e*a.tx;
       _uniCamY=om*om*a.sy+2*om*e*a.cy+e*e*a.ty;
       _uniCamZ=om*om*a.sz+2*om*e*a.cz+e*e*a.tz;
-      // orient toward the path tangent (natural look-ahead) with a little sway
-      const tgx=2*om*(a.cx-a.sx)+2*e*(a.tx-a.cx);
-      const tgy=2*om*(a.cy-a.sy)+2*e*(a.ty-a.cy);
-      const tgz=2*om*(a.cz-a.sz)+2*e*(a.tz-a.cz),tl=Math.hypot(tgx,tgy,tgz)||1;
-      let dY=Math.atan2(tgx,tgz)-_uniYaw;while(dY>Math.PI)dY-=Math.PI*2;while(dY<-Math.PI)dY+=Math.PI*2;
-      _uniYaw+=dY*.09+Math.sin(a.t*.045)*(1-u)*.006;
-      _uniPitch+=(Math.max(-1.15,Math.min(1.15,Math.asin(Math.max(-1,Math.min(1,tgy/tl)))))-_uniPitch)*.09;
+      // Look smoothly toward the destination (frame-rate-independent easing → no jerks)
+      const ldx=a.tx-_uniCamX,ldy=a.ty-_uniCamY,ldz=a.tz-_uniCamZ,ll=Math.hypot(ldx,ldy,ldz)||1;
+      const k=1-Math.pow(0.9,dt/16.67);
+      let dY=Math.atan2(ldx,ldz)-_uniYaw;while(dY>Math.PI)dY-=Math.PI*2;while(dY<-Math.PI)dY+=Math.PI*2;
+      _uniYaw+=dY*k;
+      _uniPitch+=(Math.max(-1.15,Math.min(1.15,Math.asin(Math.max(-1,Math.min(1,ldy/ll)))))-_uniPitch)*k;
       _uniSpeed=0;_uniDYaw=0;_uniDPitch=0;
       if(u>=1){const done=a;_uniAuto=null;if(done.mode==='planet'){if(window.uniOnArrivePlanet)window.uniOnArrivePlanet(done.planet);}else if(done.mode==='home'){if(window.uniReturnToSurface)window.uniReturnToSurface();}}
     }else{

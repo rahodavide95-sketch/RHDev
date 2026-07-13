@@ -1445,6 +1445,42 @@ input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size
 .cmp-addbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px var(--page-gutter);flex-shrink:0;}
 .cmp-search{flex:1 1 220px;max-width:340px;min-width:180px;}
 .cmp-search .pf-search-input{width:100%;}
+/* ── Il mio portafoglio (tracker) ── */
+.track-body{flex:1;overflow-y:auto;padding:8px var(--page-gutter) 40px;-webkit-overflow-scrolling:touch;}
+.track-empty{max-width:560px;margin:40px auto;text-align:center;color:var(--t2);line-height:1.7;}
+.track-empty h3{color:var(--text);font-size:1.05rem;margin-bottom:8px;}
+.track-add{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:18px;}
+.track-add-hd{font-size:.8rem;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;}
+.track-add-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1.2fr auto;gap:9px;align-items:end;}
+@media(max-width:720px){.track-add-grid{grid-template-columns:1fr 1fr;}}
+.track-fld{display:flex;flex-direction:column;gap:4px;font-size:.66rem;font-weight:600;color:var(--t2);position:relative;}
+.track-fld input{padding:8px 9px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:16px;outline:none;}
+.track-fld input:focus{border-color:var(--accent);}
+.track-add-btn{padding:9px 16px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-family:inherit;font-weight:700;font-size:.82rem;cursor:pointer;white-space:nowrap;}
+.track-add-btn:hover{opacity:.9;}
+.track-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:11px;margin-bottom:18px;}
+.tk-metric{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:13px 15px;}
+.tk-metric-lbl{font-size:.64rem;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;font-weight:700;}
+.tk-metric-val{font-size:1.35rem;font-weight:800;margin-top:5px;font-variant-numeric:tabular-nums;}
+.tk-metric-sub{font-size:.66rem;color:var(--t3);margin-top:3px;}
+.track-chart-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:18px;}
+.track-chart-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px;}
+.track-chart-title{font-size:.9rem;font-weight:800;}
+.track-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.7rem;color:var(--t2);margin:6px 0 12px;}
+.track-legend span{display:inline-flex;align-items:center;gap:5px;}
+.track-legend i{width:14px;height:3px;border-radius:2px;display:inline-block;}
+.track-chart-wrap{position:relative;height:300px;}
+.track-note{font-size:.72rem;color:var(--t3);line-height:1.5;margin-top:10px;}
+.track-tbl-wrap{overflow-x:auto;}
+.track-tbl{width:100%;border-collapse:collapse;font-size:.82rem;min-width:620px;}
+.track-tbl th,.track-tbl td{padding:10px 11px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap;}
+.track-tbl th{font-size:.64rem;text-transform:uppercase;letter-spacing:.04em;color:var(--t3);font-weight:700;}
+.track-tbl td:first-child,.track-tbl th:first-child{text-align:left;}
+.track-tbl .tk-pos-name{display:flex;align-items:center;gap:8px;}
+.track-tbl .tk-pos-sym{font-weight:700;color:var(--accent);}
+.track-tbl .tk-x{background:none;border:none;color:var(--t3);cursor:pointer;font-size:.9rem;padding:0 4px;}
+.track-tbl .tk-x:hover{color:var(--r);}
+.tk-sec-lbl{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin:4px 0 10px;}
 .cmp-wrap{flex:1;overflow:auto;padding:4px var(--page-gutter) 24px;}
 /* ── Chi siamo ── */
 .about-body{flex:1;overflow-y:auto;padding:8px var(--page-gutter) 40px;-webkit-overflow-scrolling:touch;}
@@ -2086,6 +2122,23 @@ input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size
 
         <div class="about-foot">Sviluppato con cura da <b>Davide Raho</b> · APEX Finance © 2026</div>
       </div>
+    </div>
+  </div>
+
+  <!-- ── IL MIO PORTAFOGLIO (tracker reale) ── -->
+  <div class="pf-modal" id="track-modal" style="display:none">
+    <div class="pf-box">
+      <div class="pf-hd">
+        <div class="pf-hd-title">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>
+          <span>Il mio portafoglio</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="refresh-btn" onclick="refreshCard(this,trackRefresh)" title="Aggiorna prezzi">↻</button>
+          <button class="pf-close" onclick="closeTracker()" title="Chiudi">✕</button>
+        </div>
+      </div>
+      <div class="track-body" id="track-body"></div>
     </div>
   </div>
 
@@ -4511,6 +4564,7 @@ function closeOtherFullpages(except){
   if(except!=='pf'    && document.getElementById('pf-modal')?.style.display==='flex') closePortfolio();
   if(except!=='cmp'   && document.getElementById('cmp-modal')?.style.display==='flex') closeCompare();
   if(except!=='about' && document.getElementById('about-modal')?.style.display==='flex') closeAbout();
+  if(except!=='track' && document.getElementById('track-modal')?.style.display==='flex') closeTracker();
   if(except!=='cat'){ const cat=document.getElementById('cat-modal'); if(cat?.classList.contains('cat-fullpage')) closeCatModal(); }
 }
 function _openCatPage() {
@@ -6754,6 +6808,257 @@ function closeAbout(){
   document.body.style.position=''; document.body.style.top=''; document.body.style.width='';
   window.scrollTo(0,sy);
 }
+
+// ═══════════════════════════════════════════════════════════
+//  IL MIO PORTAFOGLIO — tracking reale + statistica + proiezione
+// ═══════════════════════════════════════════════════════════
+const TRACK_STORE='apex_myportfolio';
+let TRACKCH=null, _tkSel=null;
+function trackGet(){ try{ return JSON.parse(localStorage.getItem(TRACK_STORE)||'[]'); }catch{ return []; } }
+function trackSet(l){ localStorage.setItem(TRACK_STORE,JSON.stringify(l)); }
+const tkEur=v=>'€ '+(Math.abs(v)>=1000?v.toLocaleString('it-IT',{maximumFractionDigits:0}):v.toFixed(2));
+const tkDate=sec=>new Date(sec*1000).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'2-digit'});
+
+function openTracker(){
+  closeMainMenu(); closeOtherFullpages('track');
+  const m=document.getElementById('track-modal');
+  const hdr=document.querySelector('header'); const h=hdr?Math.round(hdr.getBoundingClientRect().height):56;
+  m.style.top=h+'px'; m.style.display='flex';
+  const sy=window.scrollY; document.body.dataset.pfScroll=sy;
+  document.body.style.position='fixed'; document.body.style.top=`-${sy}px`; document.body.style.width='100%';
+  trackRender();
+}
+function closeTracker(){
+  document.getElementById('track-modal').style.display='none';
+  if(TRACKCH){ TRACKCH.destroy(); TRACKCH=null; }
+  const sy=+document.body.dataset.pfScroll||0;
+  document.body.style.position=''; document.body.style.top=''; document.body.style.width='';
+  window.scrollTo(0,sy);
+}
+function trackRefresh(){ Object.keys(sessionStorage).forEach(k=>{ if(k.startsWith(CK)) sessionStorage.removeItem(k); }); trackRender(); }
+
+function trackRender(){
+  const body=document.getElementById('track-body'); if(!body) return;
+  const pos=trackGet();
+  const addBar=`<div class="track-add">
+    <div class="track-add-hd">➕ Aggiungi una posizione reale</div>
+    <div class="track-add-grid">
+      <div class="track-fld">Titolo
+        <div class="pf-add-search"><input id="tk-search" class="pf-search-input" placeholder="Cerca nome, ticker o ISIN" autocomplete="off" spellcheck="false"><div class="pf-search-dd" id="tk-dd"></div></div>
+      </div>
+      <label class="track-fld">Quantità<input id="tk-qty" type="number" min="0" step="any" placeholder="es. 10"></label>
+      <label class="track-fld">Prezzo di carico<input id="tk-price" type="number" min="0" step="any" placeholder="medio"></label>
+      <label class="track-fld">Data acquisto<input id="tk-date" type="date"></label>
+      <button class="track-add-btn" onclick="trackAdd()">Aggiungi</button>
+    </div>
+    <div id="tk-add-hint" style="font-size:.66rem;color:var(--t3);margin-top:8px">Il prezzo è nella valuta di quotazione del titolo; i totali sono convertiti in € al cambio attuale.</div>
+  </div>`;
+  if(!pos.length){
+    body.innerHTML=addBar+`<div class="track-empty"><h3>📈 Traccia il tuo portafoglio reale</h3>
+      <p>Aggiungi le tue posizioni con quantità, prezzo di carico e data. Vedrai il <b>valore live</b>, l'andamento <b>dall'inizio a oggi</b>, il confronto con l'<b>andamento statisticamente atteso</b> e la <b>proiezione futura</b>.</p></div>`;
+    trackSetupSearch(); return;
+  }
+  body.innerHTML=addBar+`<div id="track-content"><div style="padding:44px;text-align:center;color:var(--t3)"><span class="card-spin"></span> Ricostruisco la performance dai prezzi reali…</div></div>`;
+  trackSetupSearch();
+  trackCompute().then(trackRenderContent).catch(e=>{ console.warn('track',e); const c=document.getElementById('track-content'); if(c) c.innerHTML='<div class="track-empty">Impossibile calcolare la performance ora (dati non disponibili). Riprova tra poco.</div>'; });
+}
+
+function trackSetupSearch(){
+  const input=document.getElementById('tk-search'), dd=document.getElementById('tk-dd');
+  if(!input) return;
+  let timer=null,lastQ='';
+  const render=items=>{
+    if(!items.length){ dd.classList.remove('open'); return; }
+    dd.innerHTML=items.slice(0,10).map(r=>`<div class="pf-dd-item" data-sym="${r.sym}" data-name="${(r.name||'').replace(/"/g,'&quot;')}">
+      <span class="pf-dd-sym">${r.sym}</span><span class="pf-dd-name">${r.name||''}</span><span class="pf-dd-cat">${r.cat||''}</span></div>`).join('');
+    dd.classList.add('open');
+    dd.querySelectorAll('.pf-dd-item').forEach(it=>it.onmousedown=e=>{
+      e.preventDefault(); _tkSel={sym:it.dataset.sym,name:it.dataset.name};
+      input.value=`${it.dataset.sym} — ${it.dataset.name}`; dd.classList.remove('open');
+      document.getElementById('tk-qty')?.focus();
+    });
+  };
+  input.addEventListener('input',()=>{
+    _tkSel=null; const q=input.value.trim(); clearTimeout(timer);
+    if(!q){ dd.classList.remove('open'); return; }
+    const up=q.toUpperCase();
+    const local=DB.filter(([s,n])=>s.startsWith(up)||n.toUpperCase().includes(up)).slice(0,6).map(([s,n,c])=>({sym:s,name:n,cat:c}));
+    if(local.length) render(local);
+    timer=setTimeout(async()=>{ lastQ=q; let res=await searchAPI(q); if(q!==lastQ) return; if(!res.length) res=await searchYahoo(q);
+      const syms=new Set(res.map(r=>r.sym)); render([...res,...local.filter(r=>!syms.has(r.sym))]); },300);
+  });
+  input.addEventListener('blur',()=>setTimeout(()=>dd.classList.remove('open'),200));
+}
+function trackAdd(){
+  const inp=document.getElementById('tk-search');
+  let sym=_tkSel?_tkSel.sym:(inp.value||'').trim().toUpperCase().split(' ')[0];
+  const name=_tkSel?_tkSel.name:sym;
+  const qty=+document.getElementById('tk-qty').value||0;
+  const price=+document.getElementById('tk-price').value||0;
+  const date=document.getElementById('tk-date').value||new Date().toISOString().slice(0,10);
+  const hint=document.getElementById('tk-add-hint');
+  if(!sym||qty<=0||price<=0){ if(hint){hint.textContent='⚠ Inserisci titolo, quantità e prezzo di carico validi.';hint.style.color='var(--y)';} return; }
+  const pos=trackGet();
+  pos.push({id:sym+'_'+Math.round(qty*price*100), ticker:sym, name, qty, buyPrice:price, buyDate:date});
+  trackSet(pos); _tkSel=null;
+  trackRender();
+}
+function trackRemove(id){ trackSet(trackGet().filter(p=>p.id!==id)); trackRender(); }
+
+async function trackCompute(){
+  const pos=trackGet(); if(!pos.length) return null;
+  const nowSec=Date.now()/1000;
+  const earliest=Math.min(...pos.map(p=>new Date(p.buyDate).getTime()/1000));
+  const yrs=(nowSec-earliest)/(365*86400);
+  const range=yrs>10?'max':yrs>5?'10y':yrs>2?'5y':yrs>1?'2y':'1y';
+  // 1) scarica lo storico di ogni posizione
+  const raw=await Promise.all(pos.map(async p=>{
+    try{ const res=await fetchChart(p.ticker,range,'1d');
+      const ts=res.timestamp||[], q=res.indicators?.quote?.[0]?.close||[];
+      const v=ts.map((t,i)=>({t,c:q[i]})).filter(x=>x.c!=null&&x.c>0);
+      return {p, meta:res.meta||{}, ts:v.map(x=>x.t), cl:v.map(x=>x.c)};
+    }catch{ return {p, meta:{}, ts:[], cl:[], err:true}; }
+  }));
+  // 2) cambi in EUR per ogni valuta
+  const curs=[...new Set(raw.map(s=>(s.meta.currency||'EUR').toUpperCase()))];
+  const rates={}; await Promise.all(curs.map(async c=>{ rates[c]=(await fxRateToEur(c))||1; }));
+  const dayKey=t=>Math.floor(t/86400);
+  const series=raw.filter(s=>s.cl.length>0);
+  series.forEach(s=>{
+    s.rate=rates[(s.meta.currency||'EUR').toUpperCase()]||1;
+    s.priceEUR=s.cl.map(c=>c/s.rate);
+    s.map=new Map(); s.keys=[];
+    s.ts.forEach((t,i)=>{ const k=dayKey(t); s.map.set(k,s.priceEUR[i]); });
+    s.keys=[...s.map.keys()].sort((a,b)=>a-b);
+    s.buyKey=dayKey(new Date(s.p.buyDate).getTime()/1000);
+    s.curEUR=s.priceEUR[s.priceEUR.length-1];
+    s.buyEUR=s.p.buyPrice/s.rate;
+    const g=s.priceEUR[s.priceEUR.length-1]/s.priceEUR[0];
+    s.cagr=s.priceEUR.length>60?Math.pow(g,252/s.priceEUR.length)-1:0;
+  });
+  if(!series.length) throw new Error('no data');
+  // 3) timeline unione + ricostruzione valore reale + valore atteso
+  const allKeys=new Set();
+  series.forEach(s=>s.keys.forEach(k=>{ if(k>=s.buyKey) allKeys.add(k); }));
+  const timeline=[...allKeys].sort((a,b)=>a-b);
+  series.forEach(s=>{ s.ptr=0; s.last=null; });
+  const tsOut=[], actual=[], expected=[];
+  timeline.forEach(day=>{
+    let v=0, ev=0, any=false;
+    series.forEach(s=>{
+      if(day<s.buyKey) return;
+      while(s.ptr<s.keys.length && s.keys[s.ptr]<=day){ s.last=s.map.get(s.keys[s.ptr]); s.ptr++; }
+      if(s.last!=null){ v+=s.p.qty*s.last; any=true;
+        const yh=(day-s.buyKey)/365; ev+=s.p.qty*s.buyEUR*Math.pow(1+s.cagr,yh);
+      }
+    });
+    if(any){ tsOut.push(day*86400); actual.push(v); expected.push(ev); }
+  });
+  // 4) metriche correnti
+  const perPos=series.map(s=>{ const val=s.p.qty*s.curEUR, cost=s.p.qty*s.buyEUR;
+    return {ticker:s.p.ticker,name:s.p.name,id:s.p.id,qty:s.p.qty,buyPrice:s.p.buyPrice,cur:s.cl[s.cl.length-1],
+      currency:(s.meta.currency||'EUR'),valEUR:val,costEUR:cost,pnl:val-cost,pnlPct:cost>0?(val-cost)/cost*100:0,buyDate:s.buyKey*86400}; });
+  const curVal=perPos.reduce((a,b)=>a+b.valEUR,0), invested=perPos.reduce((a,b)=>a+b.costEUR,0);
+  perPos.forEach(p=>p.weight=curVal>0?p.valEUR/curVal*100:0);
+  const pnl=curVal-invested, pnlPct=invested>0?pnl/invested*100:0;
+  const heldYrs=(nowSec-earliest)/(365*86400);
+  const annual=(invested>0&&curVal>0&&heldYrs>0.1)?(Math.pow(curVal/invested,1/heldYrs)-1)*100:null;
+  const best=[...perPos].sort((a,b)=>b.pnlPct-a.pnlPct)[0], worst=[...perPos].sort((a,b)=>a.pnlPct-b.pnlPct)[0];
+  // 5) proiezione futura (Monte Carlo bootstrap sui pesi attuali)
+  let projection=null;
+  try{
+    const sl=series.filter(s=>s.cl.length>60).map(s=>({ticker:s.p.ticker,ts:s.ts,cl:s.priceEUR}));
+    if(sl.length){
+      const aligned=pfAlign(sl);
+      if(aligned.ts.length>30){
+        const rets={}; sl.forEach(s=>rets[s.ticker]=pfDailyRets(aligned.cols[s.ticker]));
+        const T=rets[sl[0].ticker].length;
+        const w=sl.map(s=>{ const pp=perPos.find(x=>x.ticker===s.ticker); return (pp?pp.valEUR:0)/curVal; });
+        const pr=new Array(T).fill(0);
+        sl.forEach((s,i)=>{ const ri=rets[s.ticker]; for(let d=0;d<T;d++) pr[d]+=w[i]*ri[d]; });
+        const grow=pr.reduce((a,r)=>a*(1+r),1); const annRet=Math.pow(grow,252/T)-1;
+        const horizon=5;
+        const mc=pfMonteCarlo(pr,annRet,curVal,0,horizon,1000);
+        projection={annRet,mc,horizon};
+      }
+    }
+  }catch(e){ console.warn('track proj',e); }
+  return {tsOut,actual,expected,perPos,curVal,invested,pnl,pnlPct,annual,best,worst,projection,heldYrs,startDate:earliest};
+}
+
+function trackRenderContent(d){
+  const c=document.getElementById('track-content'); if(!c||!d) return;
+  const col=v=>v>=0?'var(--g)':'var(--r)';
+  const projFinal=d.projection?d.projection.mc.bands[d.projection.mc.bands.length-1]:null;
+  const metrics=`<div class="track-metrics">
+    <div class="tk-metric"><div class="tk-metric-lbl">Valore attuale</div><div class="tk-metric-val">${tkEur(d.curVal)}</div><div class="tk-metric-sub">live, in € al cambio odierno</div></div>
+    <div class="tk-metric"><div class="tk-metric-lbl">Capitale investito</div><div class="tk-metric-val">${tkEur(d.invested)}</div><div class="tk-metric-sub">somma dei carichi</div></div>
+    <div class="tk-metric"><div class="tk-metric-lbl">Profitto / Perdita</div><div class="tk-metric-val" style="color:${col(d.pnl)}">${d.pnl>=0?'+':''}${tkEur(d.pnl)}</div><div class="tk-metric-sub" style="color:${col(d.pnl)}">${d.pnlPct>=0?'+':''}${d.pnlPct.toFixed(1)}%</div></div>
+    ${d.annual!=null?`<div class="tk-metric"><div class="tk-metric-lbl">Rendimento annuo</div><div class="tk-metric-val" style="color:${col(d.annual)}">${d.annual>=0?'+':''}${d.annual.toFixed(1)}%</div><div class="tk-metric-sub">annualizzato (~${d.heldYrs.toFixed(1)} anni)</div></div>`:''}
+    ${d.best?`<div class="tk-metric"><div class="tk-metric-lbl">Migliore</div><div class="tk-metric-val" style="color:var(--g);font-size:1.05rem">${d.best.ticker} +${d.best.pnlPct.toFixed(0)}%</div><div class="tk-metric-sub">${d.worst&&d.worst!==d.best?`Peggiore: ${d.worst.ticker} ${d.worst.pnlPct.toFixed(0)}%`:''}</div></div>`:''}
+    ${projFinal?`<div class="tk-metric"><div class="tk-metric-lbl">Proiezione ${d.projection.horizon} anni</div><div class="tk-metric-val" style="color:var(--accent)">${tkEur(projFinal.p50)}</div><div class="tk-metric-sub">scenario mediano</div></div>`:''}
+  </div>`;
+  const chart=`<div class="track-chart-card">
+    <div class="track-chart-hd"><span class="track-chart-title">Andamento: reale vs atteso + proiezione</span></div>
+    <div class="track-legend">
+      <span><i style="background:#3b82f6"></i> Valore reale</span>
+      <span><i style="background:#8b949e"></i> Atteso (statistico)</span>
+      <span><i style="background:#10b981"></i> Proiezione mediana</span>
+      <span><i style="background:rgba(16,185,129,.35)"></i> Fascia 5–95%</span>
+    </div>
+    <div class="track-chart-wrap"><canvas id="track-chart"></canvas></div>
+    <div class="track-note">La linea <b>reale</b> è ricostruita dai prezzi effettivi delle tue posizioni. La linea <b>attesa</b> mostra dove saresti se ogni titolo fosse cresciuto al suo rendimento storico medio (sopra = hai fatto meglio della statistica, sotto = peggio). La <b>proiezione</b> è un Monte Carlo bootstrap sui rendimenti reali dei tuoi asset: il passato non garantisce il futuro.</div>
+  </div>`;
+  const rows=d.perPos.map(p=>`<tr>
+    <td><div class="tk-pos-name">${logoHTML(p.ticker,22)}<span><span class="tk-pos-sym">${p.ticker}</span> <span style="color:var(--t3);font-size:.72rem">${p.name||''}</span></span></div></td>
+    <td>${p.qty.toLocaleString('it-IT')}</td>
+    <td>${p.currency} ${p.buyPrice.toFixed(2)}</td>
+    <td>${p.currency} ${p.cur.toFixed(2)}</td>
+    <td>${tkEur(p.valEUR)}</td>
+    <td style="color:${col(p.pnl)}">${p.pnl>=0?'+':''}${tkEur(p.pnl)}<br><span style="font-size:.72rem">${p.pnlPct>=0?'+':''}${p.pnlPct.toFixed(1)}%</span></td>
+    <td>${p.weight.toFixed(0)}%</td>
+    <td><button class="tk-x" onclick="trackRemove('${p.id}')" title="Rimuovi">✕</button></td>
+  </tr>`).join('');
+  const table=`<div class="tk-sec-lbl">Le tue posizioni</div><div class="track-tbl-wrap"><table class="track-tbl">
+    <thead><tr><th>Titolo</th><th>Qtà</th><th>Carico</th><th>Attuale</th><th>Valore</th><th>P&L</th><th>Peso</th><th></th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+  c.innerHTML=metrics+chart+table;
+  requestAnimationFrame(()=>trackDrawChart(d));
+}
+
+function trackDrawChart(d){
+  const el=document.getElementById('track-chart'); if(!el||typeof Chart==='undefined') return;
+  if(TRACKCH){ TRACKCH.destroy(); TRACKCH=null; }
+  const gridC=chartGridColor(), tickC=chartTickColor();
+  // subsample storico
+  const n=d.tsOut.length; const step=Math.max(1,Math.floor(n/120));
+  const idx=[]; for(let i=0;i<n;i+=step) idx.push(i); if(idx[idx.length-1]!==n-1) idx.push(n-1);
+  const pLabels=idx.map(i=>tkDate(d.tsOut[i]));
+  const pAct=idx.map(i=>d.actual[i]);
+  const pExp=idx.map(i=>d.expected[i]);
+  const nPast=pLabels.length;
+  const fLabels=[], fMed=[], fP5=[], fP95=[];
+  if(d.projection){ const b=d.projection.mc.bands; for(let y=1;y<=d.projection.horizon;y++){ fLabels.push('+'+y+' anno'+(y>1?'i':'')); fMed.push(Math.round(b[y].p50)); fP5.push(Math.round(b[y].p5)); fP95.push(Math.round(b[y].p95)); } }
+  const labels=[...pLabels,...fLabels];
+  const nulls=k=>new Array(k).fill(null);
+  const lastAct=pAct[pAct.length-1];
+  const mk=(fut)=>{ const a=nulls(nPast); a[nPast-1]=lastAct; return a.concat(fut); };
+  const ds=[
+    {label:'Valore reale',data:[...pAct,...nulls(fLabels.length)],borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,.08)',borderWidth:2,pointRadius:0,fill:true,tension:.15},
+    {label:'Atteso',data:[...pExp,...nulls(fLabels.length)],borderColor:'#8b949e',borderWidth:1.5,borderDash:[5,4],pointRadius:0,fill:false,tension:.15},
+  ];
+  if(d.projection){
+    ds.push({label:'P95',data:mk(fP95),borderColor:'rgba(16,185,129,.5)',backgroundColor:'rgba(16,185,129,.14)',borderWidth:1,pointRadius:0,fill:false,tension:.2});
+    ds.push({label:'P5',data:mk(fP5),borderColor:'rgba(239,68,68,.4)',backgroundColor:'rgba(16,185,129,.14)',borderWidth:1,pointRadius:0,fill:'-1',tension:.2});
+    ds.push({label:'Proiezione mediana',data:mk(fMed),borderColor:'#10b981',borderWidth:2.4,borderDash:[6,3],pointRadius:0,fill:false,tension:.2});
+  }
+  TRACKCH=new Chart(el,{type:'line',data:{labels,datasets:ds},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{intersect:false,mode:'index'},
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y!=null?tkEur(c.parsed.y):'—'}`}}},
+      scales:{x:{grid:{color:gridC},ticks:{color:tickC,maxTicksLimit:9,font:{size:9}}},
+        y:{grid:{color:gridC},ticks:{color:tickC,font:{size:9},callback:v=>'€'+(v>=1000?(v/1000).toFixed(0)+'k':v.toFixed(0))}}}}});
+}
+
 function cmpAddFromInput(){
   const inp=document.getElementById('cmp-input');
   const t=(inp.value||'').trim().toUpperCase();
@@ -6893,6 +7198,10 @@ function buildMainMenu(){
   const nWatch=watchGet().length;
   // ── Sezione: Strumenti ──
   let html=`<div class="nav-menu-head">Strumenti</div>`;
+  const nTrack=trackGet().length;
+  html+=`<div class="nav-menu-item nav-menu-feat" onclick="openTracker()">
+    <span class="nm-ico"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg></span>
+    <span class="nm-text"><span class="nm-title">Il mio portafoglio</span><span class="nm-sub">Tracking reale, live e proiezione</span></span>${nTrack?`<span class="nm-count">${nTrack}</span>`:chevron}</div>`;
   html+=`<div class="nav-menu-item nav-menu-feat" onclick="closeMainMenu();openPortfolio()">
     <span class="nm-ico"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v13H3z"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span>
     <span class="nm-text"><span class="nm-title">Simulatore di Portafoglio</span><span class="nm-sub">Proietta, ottimizza, confronta scenari</span></span>${chevron}</div>`;
@@ -7702,7 +8011,8 @@ document.addEventListener('DOMContentLoaded',()=>{
   initSecControls();
   document.addEventListener('keydown',e=>{
     if(e.key==='Escape'){
-      if(document.getElementById('about-modal').style.display==='flex') closeAbout();
+      if(document.getElementById('track-modal').style.display==='flex') closeTracker();
+      else if(document.getElementById('about-modal').style.display==='flex') closeAbout();
       else if(document.getElementById('cmp-modal').style.display==='flex') closeCompare();
       else if(document.getElementById('pf-modal').style.display==='flex') closePortfolio();
       else if(document.getElementById('ao').classList.contains('open')) closeAnalysisOverlay();

@@ -1458,7 +1458,9 @@ input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size
   .track-add-btn{padding:12px;width:100%;}
 }
 .track-fld{display:flex;flex-direction:column;gap:4px;font-size:.66rem;font-weight:600;color:var(--t2);position:relative;min-width:0;}
-.track-fld input{width:100%;box-sizing:border-box;padding:8px 9px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:16px;outline:none;}
+.track-fld input{width:100%;max-width:100%;box-sizing:border-box;padding:8px 9px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:16px;outline:none;}
+/* iOS: il date input nativo ignora width e sfora — forziamolo a comportarsi come una casella normale */
+.track-fld input[type=date]{-webkit-appearance:none;appearance:none;min-width:0;min-height:38px;}
 .track-fld .pf-add-search{width:100%;}
 .track-fld input:focus{border-color:var(--accent);}
 .track-add-btn{padding:9px 16px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-family:inherit;font-weight:700;font-size:.82rem;cursor:pointer;white-space:nowrap;}

@@ -1452,7 +1452,13 @@ input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size
 .track-add{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:18px;}
 .track-add-hd{font-size:.8rem;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;}
 .track-add-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1.2fr auto;gap:9px;align-items:end;}
-@media(max-width:720px){.track-add-grid{grid-template-columns:1fr 1fr;}}
+@media(max-width:720px){
+  .track-add-grid{grid-template-columns:1fr 1fr;gap:10px;}
+  .track-add-grid>.track-fld:nth-child(1),
+  .track-add-grid>.track-fld:nth-child(4),
+  .track-add-grid>.track-add-btn{grid-column:1/-1;}
+  .track-add-btn{padding:12px;}
+}
 .track-fld{display:flex;flex-direction:column;gap:4px;font-size:.66rem;font-weight:600;color:var(--t2);position:relative;}
 .track-fld input{padding:8px 9px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:16px;outline:none;}
 .track-fld input:focus{border-color:var(--accent);}
@@ -1481,6 +1487,16 @@ input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size
 .track-tbl .tk-x{background:none;border:none;color:var(--t3);cursor:pointer;font-size:.9rem;padding:0 4px;}
 .track-tbl .tk-x:hover{color:var(--r);}
 .tk-sec-lbl{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin:4px 0 10px;}
+@media(max-width:640px){
+  .track-body{padding:8px 14px 40px;}
+  .track-metrics{grid-template-columns:1fr 1fr;gap:9px;}
+  .tk-metric{padding:11px 12px;}
+  .tk-metric-val{font-size:1.1rem;}
+  .track-chart-card{padding:12px 12px;}
+  .track-chart-wrap{height:250px;}
+  .track-legend{gap:10px 14px;font-size:.66rem;}
+  .track-add{padding:12px 13px;}
+}
 .cmp-wrap{flex:1;overflow:auto;padding:4px var(--page-gutter) 24px;}
 /* ── Chi siamo ── */
 .about-body{flex:1;overflow-y:auto;padding:8px var(--page-gutter) 40px;-webkit-overflow-scrolling:touch;}

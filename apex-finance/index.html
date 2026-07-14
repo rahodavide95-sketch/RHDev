@@ -1451,10 +1451,16 @@ input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size
 .track-empty h3{color:var(--text);font-size:1.05rem;margin-bottom:8px;}
 .track-add{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:18px;}
 .track-add-hd{font-size:.8rem;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;}
-.track-add-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1.2fr auto;gap:9px;align-items:end;}
+.track-mode{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+.tk-mode-btn{flex:1 1 auto;padding:8px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--t2);font-family:inherit;font-size:.76rem;font-weight:600;cursor:pointer;transition:all .15s;}
+.tk-mode-btn.active{background:rgba(59,130,246,.12);border-color:var(--accent);color:var(--accent);}
+.track-add-grid{display:flex;flex-wrap:wrap;gap:10px;align-items:end;}
+.track-add-grid>.track-fld{flex:1 1 150px;min-width:0;}
+.track-add-grid>.track-fld:first-child{flex:2 1 220px;}
+.track-add-grid>.track-fld select{padding:8px 9px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:16px;outline:none;width:100%;}
+.track-add-grid>.track-add-btn{flex:0 0 auto;align-self:end;}
 @media(max-width:720px){
-  /* su mobile una sola colonna: niente campi tagliati fuori schermo */
-  .track-add-grid{grid-template-columns:1fr;gap:11px;}
+  .track-add-grid>.track-fld,.track-add-grid>.track-add-btn{flex:1 1 100%;}
   .track-add-btn{padding:12px;width:100%;}
 }
 .track-fld{display:flex;flex-direction:column;gap:4px;font-size:.66rem;font-weight:600;color:var(--t2);position:relative;min-width:0;}
@@ -6831,7 +6837,8 @@ function closeAbout(){
 //  IL MIO PORTAFOGLIO — tracking reale + statistica + proiezione
 // ═══════════════════════════════════════════════════════════
 const TRACK_STORE='apex_myportfolio';
-let TRACKCH=null, _tkSel=null;
+let TRACKCH=null, _tkSel=null, _tkMode='lump';
+function trackSetMode(m){ _tkMode=m; trackRender(); setTimeout(()=>document.getElementById('tk-search')?.focus(),0); }
 function trackGet(){ try{ return JSON.parse(localStorage.getItem(TRACK_STORE)||'[]'); }catch{ return []; } }
 function trackSet(l){ localStorage.setItem(TRACK_STORE,JSON.stringify(l)); }
 const tkEur=v=>'€ '+(Math.abs(v)>=1000?v.toLocaleString('it-IT',{maximumFractionDigits:0}):v.toFixed(2));
@@ -6858,18 +6865,28 @@ function trackRefresh(){ Object.keys(sessionStorage).forEach(k=>{ if(k.startsWit
 function trackRender(){
   const body=document.getElementById('track-body'); if(!body) return;
   const pos=trackGet();
+  const md=_tkMode||'lump';
   const addBar=`<div class="track-add">
-    <div class="track-add-hd">➕ Aggiungi una posizione reale</div>
+    <div class="track-add-hd">➕ Aggiungi una posizione</div>
+    <div class="track-mode">
+      <button class="tk-mode-btn ${md==='lump'?'active':''}" onclick="trackSetMode('lump')">Acquisto unico</button>
+      <button class="tk-mode-btn ${md==='pac'?'active':''}" onclick="trackSetMode('pac')">PAC — versamenti ricorrenti</button>
+    </div>
     <div class="track-add-grid">
       <div class="track-fld">Titolo
         <div class="pf-add-search"><input id="tk-search" class="pf-search-input" placeholder="Cerca nome, ticker o ISIN" autocomplete="off" spellcheck="false"><div class="pf-search-dd" id="tk-dd"></div></div>
       </div>
-      <label class="track-fld">Quantità<input id="tk-qty" type="number" min="0" step="any" placeholder="es. 10"></label>
-      <label class="track-fld">Prezzo di carico<input id="tk-price" type="number" min="0" step="any" placeholder="medio"></label>
-      <label class="track-fld">Data acquisto <span style="color:var(--t3);font-weight:400">(facolt.)</span><input id="tk-date" type="date"></label>
+      <label class="track-fld tk-lump" ${md==='pac'?'style="display:none"':''}>Quantità<input id="tk-qty" type="number" min="0" step="any" placeholder="es. 10"></label>
+      <label class="track-fld tk-lump" ${md==='pac'?'style="display:none"':''}>Prezzo di carico<input id="tk-price" type="number" min="0" step="any" placeholder="medio"></label>
+      <label class="track-fld tk-lump" ${md==='pac'?'style="display:none"':''}>Data acquisto <span style="color:var(--t3);font-weight:400">(facolt.)</span><input id="tk-date" type="date"></label>
+      <label class="track-fld tk-pac" ${md==='lump'?'style="display:none"':''}>Importo periodico (€)<input id="tk-amount" type="number" min="0" step="any" placeholder="es. 200"></label>
+      <label class="track-fld tk-pac" ${md==='lump'?'style="display:none"':''}>Frequenza<select id="tk-freq"><option value="monthly">Mensile</option><option value="biweekly">Ogni 2 sett.</option><option value="weekly">Settimanale</option><option value="quarterly">Trimestrale</option></select></label>
+      <label class="track-fld tk-pac" ${md==='lump'?'style="display:none"':''}>Data inizio<input id="tk-start" type="date"></label>
       <button class="track-add-btn" onclick="trackAdd()">Aggiungi</button>
     </div>
-    <div id="tk-add-hint" style="font-size:.66rem;color:var(--t3);margin-top:8px"><b>Prezzo</b> = quanto hai pagato (per il P&L). <b>Data</b> = quando hai comprato: serve per l'andamento storico e il rendimento annuo — se la ometti, la posizione conta comunque per valore e guadagno. Prezzo nella valuta del titolo; totali in € al cambio attuale.</div>
+    <div id="tk-add-hint" style="font-size:.66rem;color:var(--t3);margin-top:8px">${md==='pac'
+      ? '<b>PAC:</b> simuliamo un versamento dell\'importo indicato a ogni scadenza, dalla data d\'inizio a oggi, comprando al prezzo reale di quel giorno. Ricostruisce la vera accumulazione (quote e prezzo medio).'
+      : '<b>Acquisto unico:</b> tutta la quantità al prezzo di carico indicato. Prezzo nella valuta del titolo; totali in € al cambio attuale. La data (facolt.) serve per l\'andamento storico.'}</div>
   </div>`;
   if(!pos.length){
     body.innerHTML=addBar+`<div class="track-empty"><h3>📈 Traccia il tuo portafoglio reale</h3>
@@ -6911,15 +6928,25 @@ function trackSetupSearch(){
 }
 function trackAdd(){
   const inp=document.getElementById('tk-search');
-  let sym=_tkSel?_tkSel.sym:(inp.value||'').trim().toUpperCase().split(' ')[0];
+  const sym=_tkSel?_tkSel.sym:(inp.value||'').trim().toUpperCase().split(' ')[0];
   const name=_tkSel?_tkSel.name:sym;
-  const qty=+document.getElementById('tk-qty').value||0;
-  const price=+document.getElementById('tk-price').value||0;
-  const date=document.getElementById('tk-date').value||new Date().toISOString().slice(0,10);
   const hint=document.getElementById('tk-add-hint');
-  if(!sym||qty<=0||price<=0){ if(hint){hint.textContent='⚠ Inserisci titolo, quantità e prezzo di carico validi.';hint.style.color='var(--y)';} return; }
+  const warn=t=>{ if(hint){ hint.textContent='⚠ '+t; hint.style.color='var(--y)'; } };
+  if(!sym){ return warn('Cerca e seleziona un titolo.'); }
   const pos=trackGet();
-  pos.push({id:sym+'_'+Math.round(qty*price*100), ticker:sym, name, qty, buyPrice:price, buyDate:date});
+  if(_tkMode==='pac'){
+    const amount=+document.getElementById('tk-amount').value||0;
+    const freq=document.getElementById('tk-freq').value||'monthly';
+    const start=document.getElementById('tk-start').value;
+    if(amount<=0||!start){ return warn('Per il PAC inserisci importo periodico e data d\'inizio.'); }
+    pos.push({id:sym+'_pac_'+Date.now().toString(36), ticker:sym, name, mode:'pac', amount, freq, startDate:start});
+  } else {
+    const qty=+document.getElementById('tk-qty').value||0;
+    const price=+document.getElementById('tk-price').value||0;
+    const date=document.getElementById('tk-date').value||new Date().toISOString().slice(0,10);
+    if(qty<=0||price<=0){ return warn('Inserisci quantità e prezzo di carico validi.'); }
+    pos.push({id:sym+'_'+Date.now().toString(36), ticker:sym, name, mode:'lump', qty, buyPrice:price, buyDate:date});
+  }
   trackSet(pos); _tkSel=null;
   trackRender();
 }
@@ -6938,7 +6965,8 @@ function trackLoadDemo(){
 async function trackCompute(){
   const pos=trackGet(); if(!pos.length) return null;
   const nowSec=Date.now()/1000;
-  const earliest=Math.min(...pos.map(p=>new Date(p.buyDate).getTime()/1000));
+  const startOf=p=>(p.mode==='pac'?p.startDate:p.buyDate)||new Date().toISOString().slice(0,10);
+  const earliest=Math.min(...pos.map(p=>new Date(startOf(p)).getTime()/1000));
   const yrs=(nowSec-earliest)/(365*86400);
   const range=yrs>10?'max':yrs>5?'10y':yrs>2?'5y':yrs>1?'2y':'1y';
   // 1) scarica lo storico di ogni posizione
@@ -6954,45 +6982,67 @@ async function trackCompute(){
   const rates={}; await Promise.all(curs.map(async c=>{ rates[c]=(await fxRateToEur(c))||1; }));
   const dayKey=t=>Math.floor(t/86400);
   const series=raw.filter(s=>s.cl.length>0);
+  const todayKey=dayKey(nowSec);
   series.forEach(s=>{
     s.rate=rates[(s.meta.currency||'EUR').toUpperCase()]||1;
     s.priceEUR=s.cl.map(c=>c/s.rate);
-    s.map=new Map(); s.keys=[];
+    s.map=new Map();
     s.ts.forEach((t,i)=>{ const k=dayKey(t); s.map.set(k,s.priceEUR[i]); });
     s.keys=[...s.map.keys()].sort((a,b)=>a-b);
-    s.buyKey=dayKey(new Date(s.p.buyDate).getTime()/1000);
     s.curEUR=s.priceEUR[s.priceEUR.length-1];
-    s.buyEUR=s.p.buyPrice/s.rate;
     const g=s.priceEUR[s.priceEUR.length-1]/s.priceEUR[0];
     s.cagr=s.priceEUR.length>60?Math.pow(g,252/s.priceEUR.length)-1:0;
+    // prezzo EUR al giorno k (forward-fill: ultimo prezzo <= k)
+    s.priceAt=k=>{ const ks=s.keys; if(!ks.length||k<ks[0]) return null; let lo=0,hi=ks.length-1,a=0; while(lo<=hi){ const m=(lo+hi)>>1; if(ks[m]<=k){a=m;lo=m+1;}else hi=m-1; } return s.map.get(ks[a]); };
+    // LOTTI: PIC = 1 lotto; PAC = N versamenti al prezzo reale di ogni scadenza
+    s.lots=[];
+    if(s.p.mode==='pac'){
+      const stepDays={weekly:7,biweekly:14,monthly:30,quarterly:91}[s.p.freq]||30;
+      const startKey=dayKey(new Date(s.p.startDate).getTime()/1000);
+      for(let k=startKey;k<=todayKey;k+=stepDays){ const pr=s.priceAt(k); if(pr==null||pr<=0) continue; s.lots.push({key:k,shares:s.p.amount/pr,costEUR:s.p.amount}); }
+      if(!s.lots.length&&s.curEUR>0) s.lots.push({key:todayKey,shares:s.p.amount/s.curEUR,costEUR:s.p.amount});
+    } else {
+      const buyKey=dayKey(new Date(s.p.buyDate).getTime()/1000);
+      s.lots.push({key:buyKey,shares:s.p.qty,costEUR:s.p.qty*(s.p.buyPrice/s.rate)});
+    }
+    s.lots.sort((a,b)=>a.key-b.key);
+    s.totShares=s.lots.reduce((a,l)=>a+l.shares,0);
+    s.totCost=s.lots.reduce((a,l)=>a+l.costEUR,0);
+    s.firstKey=s.lots.length?s.lots[0].key:todayKey;
+    s.wKey=s.totCost>0?s.lots.reduce((a,l)=>a+l.costEUR*l.key,0)/s.totCost:s.firstKey;
   });
   if(!series.length) throw new Error('no data');
-  // 3) timeline unione + ricostruzione valore reale + valore atteso
+  // 3) timeline: valore REALE (accumulo effettivo) + valore ATTESO (ogni versamento cresce al CAGR storico)
   const allKeys=new Set();
-  series.forEach(s=>s.keys.forEach(k=>{ if(k>=s.buyKey) allKeys.add(k); }));
+  series.forEach(s=>s.keys.forEach(k=>{ if(k>=s.firstKey) allKeys.add(k); }));
   const timeline=[...allKeys].sort((a,b)=>a-b);
-  series.forEach(s=>{ s.ptr=0; s.last=null; });
+  series.forEach(s=>{ s.lotPtr=0; s.cumShares=0; });
   const tsOut=[], actual=[], expected=[];
   timeline.forEach(day=>{
     let v=0, ev=0, any=false;
     series.forEach(s=>{
-      if(day<s.buyKey) return;
-      while(s.ptr<s.keys.length && s.keys[s.ptr]<=day){ s.last=s.map.get(s.keys[s.ptr]); s.ptr++; }
-      if(s.last!=null){ v+=s.p.qty*s.last; any=true;
-        const yh=(day-s.buyKey)/365; ev+=s.p.qty*s.buyEUR*Math.pow(1+s.cagr,yh);
-      }
+      if(day<s.firstKey) return;
+      while(s.lotPtr<s.lots.length && s.lots[s.lotPtr].key<=day){ s.cumShares+=s.lots[s.lotPtr].shares; s.lotPtr++; }
+      const pr=s.priceAt(day);
+      if(pr!=null && s.cumShares>0){ v+=s.cumShares*pr; any=true; }
+      for(let i=0;i<s.lots.length;i++){ const l=s.lots[i]; if(l.key>day) break; ev+=l.costEUR*Math.pow(1+s.cagr,(day-l.key)/365); }
     });
     if(any){ tsOut.push(day*86400); actual.push(v); expected.push(ev); }
   });
   // 4) metriche correnti
-  const perPos=series.map(s=>{ const val=s.p.qty*s.curEUR, cost=s.p.qty*s.buyEUR;
-    return {ticker:s.p.ticker,name:s.p.name,id:s.p.id,qty:s.p.qty,buyPrice:s.p.buyPrice,cur:s.cl[s.cl.length-1],
-      currency:(s.meta.currency||'EUR'),valEUR:val,costEUR:cost,pnl:val-cost,pnlPct:cost>0?(val-cost)/cost*100:0,buyDate:s.buyKey*86400}; });
+  const perPos=series.map(s=>{ const val=s.totShares*s.curEUR, cost=s.totCost, avgEUR=s.totShares>0?cost/s.totShares:0;
+    return {ticker:s.p.ticker,name:s.p.name,id:s.p.id,mode:s.p.mode||'lump',qty:s.totShares,
+      avgNative:avgEUR*s.rate,cur:s.cl[s.cl.length-1],currency:(s.meta.currency||'EUR'),
+      amount:s.p.amount,freq:s.p.freq,startDate:s.p.startDate,
+      valEUR:val,costEUR:cost,pnl:val-cost,pnlPct:cost>0?(val-cost)/cost*100:0}; });
   const curVal=perPos.reduce((a,b)=>a+b.valEUR,0), invested=perPos.reduce((a,b)=>a+b.costEUR,0);
   perPos.forEach(p=>p.weight=curVal>0?p.valEUR/curVal*100:0);
   const pnl=curVal-invested, pnlPct=invested>0?pnl/invested*100:0;
   const heldYrs=(nowSec-earliest)/(365*86400);
-  const annual=(invested>0&&curVal>0&&heldYrs>0.1)?(Math.pow(curVal/invested,1/heldYrs)-1)*100:null;
+  // rendimento annualizzato money-weighted (usa la data media ponderata per capitale: giusto anche col PAC)
+  const wKeyAll=invested>0?series.reduce((a,s)=>a+s.totCost*s.wKey,0)/invested:todayKey;
+  const wYears=(todayKey-wKeyAll)/365;
+  const annual=(invested>0&&curVal>0&&wYears>0.15)?(Math.pow(curVal/invested,1/wYears)-1)*100:null;
   const best=[...perPos].sort((a,b)=>b.pnlPct-a.pnlPct)[0], worst=[...perPos].sort((a,b)=>a.pnlPct-b.pnlPct)[0];
   // 5) proiezione futura (Monte Carlo bootstrap sui pesi attuali)
   let projection=null;
@@ -7039,18 +7089,21 @@ function trackRenderContent(d){
     <div class="track-chart-wrap"><canvas id="track-chart"></canvas></div>
     <div class="track-note">La linea <b>reale</b> è ricostruita dai prezzi effettivi delle tue posizioni. La linea <b>attesa</b> mostra dove saresti se ogni titolo fosse cresciuto al suo rendimento storico medio (sopra = hai fatto meglio della statistica, sotto = peggio). La <b>proiezione</b> è un Monte Carlo bootstrap sui rendimenti reali dei tuoi asset: il passato non garantisce il futuro.</div>
   </div>`;
-  const rows=d.perPos.map(p=>`<tr>
-    <td><div class="tk-pos-name">${logoHTML(p.ticker,22)}<span><span class="tk-pos-sym">${p.ticker}</span> <span style="color:var(--t3);font-size:.72rem">${p.name||''}</span></span></div></td>
-    <td>${p.qty.toLocaleString('it-IT')}</td>
-    <td>${p.currency} ${p.buyPrice.toFixed(2)}</td>
+  const freqLbl={weekly:'/sett.',biweekly:'/2sett.',monthly:'/mese',quarterly:'/trim.'};
+  const rows=d.perPos.map(p=>{
+    const tag=p.mode==='pac'?`<span style="font-size:.6rem;background:rgba(59,130,246,.14);color:var(--accent);border:1px solid rgba(59,130,246,.3);border-radius:20px;padding:1px 6px;margin-left:5px">PAC ${tkEur(p.amount)}${freqLbl[p.freq]||''}</span>`:'';
+    return `<tr>
+    <td><div class="tk-pos-name">${logoHTML(p.ticker,22)}<span><span class="tk-pos-sym">${p.ticker}</span>${tag} <span style="color:var(--t3);font-size:.72rem">${p.name||''}</span></span></div></td>
+    <td>${p.qty>=100?p.qty.toLocaleString('it-IT',{maximumFractionDigits:0}):p.qty.toFixed(3)}</td>
+    <td>${p.currency} ${p.avgNative.toFixed(2)}</td>
     <td>${p.currency} ${p.cur.toFixed(2)}</td>
     <td>${tkEur(p.valEUR)}</td>
     <td style="color:${col(p.pnl)}">${p.pnl>=0?'+':''}${tkEur(p.pnl)}<br><span style="font-size:.72rem">${p.pnlPct>=0?'+':''}${p.pnlPct.toFixed(1)}%</span></td>
     <td>${p.weight.toFixed(0)}%</td>
     <td><button class="tk-x" onclick="trackRemove('${p.id}')" title="Rimuovi">✕</button></td>
-  </tr>`).join('');
+  </tr>`;}).join('');
   const table=`<div class="tk-sec-lbl">Le tue posizioni</div><div class="track-tbl-wrap"><table class="track-tbl">
-    <thead><tr><th>Titolo</th><th>Qtà</th><th>Carico</th><th>Attuale</th><th>Valore</th><th>P&L</th><th>Peso</th><th></th></tr></thead>
+    <thead><tr><th>Titolo</th><th>Qtà</th><th>Prezzo medio</th><th>Attuale</th><th>Valore</th><th>P&L</th><th>Peso</th><th></th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
   c.innerHTML=metrics+chart+table;
   requestAnimationFrame(()=>trackDrawChart(d));

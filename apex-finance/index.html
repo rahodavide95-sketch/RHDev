@@ -25,9 +25,14 @@
   --border:#21262d; --b2:#30363d;
   --accent:#3b82f6; --g:#10b981; --r:#ef4444; --y:#f59e0b;
   --text:#e6edf3; --t2:#8b949e; --t3:#484f58;
-  --radius:13px; --radius-sm:9px;
+  --radius:18px; --radius-sm:12px; --radius-lg:24px;
   --shadow:0 4px 20px rgba(0,0,0,.4);
   --shadow-sm:0 2px 10px rgba(0,0,0,.18);
+  --elev:0 1px 0 rgba(255,255,255,.05) inset, 0 8px 30px rgba(0,0,0,.34);
+  --elev-hi:0 1px 0 rgba(255,255,255,.08) inset, 0 16px 44px rgba(0,0,0,.46);
+  --card-surface:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,0) 42%);
+  --hairline:rgba(255,255,255,.08);
+  --ring:0 0 0 1px rgba(59,130,246,.5), 0 12px 34px rgba(59,130,246,.20);
   --header-h: 56px;
   /* gutter laterale identico alla dashboard (.wrap max-width:1400 + padding 20):
      centra il contenuto a 1400px mantenendo lo sfondo a tutta larghezza */
@@ -39,6 +44,11 @@
   --accent:#2563eb; --g:#059669; --r:#dc2626; --y:#d97706;
   --text:#1a1f2e; --t2:#5b6472; --t3:#9aa3b2;
   --shadow:0 4px 20px rgba(15,23,42,.08); --shadow-sm:0 2px 10px rgba(15,23,42,.06);
+  --elev:0 1px 2px rgba(30,40,90,.04), 0 10px 28px rgba(40,50,110,.10);
+  --elev-hi:0 2px 4px rgba(30,40,90,.06), 0 18px 40px rgba(40,50,110,.16);
+  --card-surface:linear-gradient(180deg,rgba(255,255,255,.7),rgba(255,255,255,0) 46%);
+  --hairline:rgba(20,30,70,.06);
+  --ring:0 0 0 1px rgba(37,99,235,.35), 0 12px 32px rgba(37,99,235,.14);
 }
 @media(prefers-color-scheme:light){
   [data-theme="system"]{
@@ -47,7 +57,12 @@
     --accent:#2563eb; --g:#059669; --r:#dc2626; --y:#d97706;
     --text:#1a1f2e; --t2:#5b6472; --t3:#9aa3b2;
     --shadow:0 4px 20px rgba(15,23,42,.08); --shadow-sm:0 2px 10px rgba(15,23,42,.06);
-  }
+  --elev:0 1px 2px rgba(30,40,90,.04), 0 10px 28px rgba(40,50,110,.10);
+  --elev-hi:0 2px 4px rgba(30,40,90,.06), 0 18px 40px rgba(40,50,110,.16);
+  --card-surface:linear-gradient(180deg,rgba(255,255,255,.7),rgba(255,255,255,0) 46%);
+  --hairline:rgba(20,30,70,.06);
+  --ring:0 0 0 1px rgba(37,99,235,.35), 0 12px 32px rgba(37,99,235,.14);
+}
 }
 /* ── BLUE GLASS — applied to all bars on all themes ── */
 :root{
@@ -109,6 +124,25 @@ body{
   -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
   text-rendering:optimizeLegibility; letter-spacing:-.006em; overflow-x:hidden;
 }
+/* ── AURORA BACKDROP — light pooling behind the whole app for depth ── */
+body::before{
+  content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
+  background:
+    radial-gradient(56% 44% at 6% -10%, rgba(59,130,246,.20), transparent 62%),
+    radial-gradient(50% 42% at 104% -6%, rgba(139,92,246,.15), transparent 58%),
+    radial-gradient(44% 40% at 50% 114%, rgba(16,185,129,.10), transparent 60%);
+}
+body::after{
+  content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;opacity:.5;
+  background-image:radial-gradient(rgba(255,255,255,.022) 1px,transparent 1px);background-size:24px 24px;
+}
+[data-theme="light"] body::before,[data-theme="system"] body::before{
+  background:
+    radial-gradient(56% 44% at 6% -10%, rgba(37,99,235,.10), transparent 62%),
+    radial-gradient(50% 42% at 104% -6%, rgba(139,92,246,.08), transparent 58%),
+    radial-gradient(44% 40% at 50% 114%, rgba(16,185,129,.06), transparent 60%);
+}
+[data-theme="light"] body::after,[data-theme="system"] body::after{opacity:.45;background-image:radial-gradient(rgba(40,50,110,.035) 1px,transparent 1px);}
 /* ── MODERN POLISH (platform-wide) ── */
 *{scrollbar-width:thin;scrollbar-color:var(--b2) transparent;}
 ::-webkit-scrollbar{width:9px;height:9px;}
@@ -499,16 +533,17 @@ header{
 }
 .sec-title{
   display:flex;align-items:center;
-  font-size:1.15rem;font-weight:800;color:var(--text);
-  text-transform:none;letter-spacing:-.02em;flex-shrink:0;line-height:1.2;
-  padding-left:13px;position:relative;
+  font-size:1.5rem;font-weight:820;color:var(--text);
+  text-transform:none;letter-spacing:-.03em;flex-shrink:0;line-height:1.15;
+  padding-left:17px;position:relative;
 }
 .sec-title::before{
   content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);
-  width:4px;height:1.05em;border-radius:3px;
+  width:5px;height:1.15em;border-radius:4px;
   background:linear-gradient(180deg,var(--accent),#8b5cf6);
+  box-shadow:0 2px 12px rgba(59,130,246,.5);
 }
-.sec-sub{font-size:.78rem;color:var(--t2);}
+.sec-sub{font-size:.8rem;color:var(--t2);font-weight:500;}
 /* Section controls: search + sort */
 .sec-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 .sec-search{
@@ -989,10 +1024,10 @@ input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size
 
 /* ── SECTION SUBLABEL ── */
 .a-sec-lbl{
-  display:flex;align-items:center;gap:11px;flex-wrap:wrap;
-  font-size:1.08rem;font-weight:750;color:var(--text);
-  text-transform:none;letter-spacing:-.015em;
-  margin:0 0 18px;line-height:1.25;
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  font-size:1.32rem;font-weight:800;color:var(--text);
+  text-transform:none;letter-spacing:-.025em;
+  margin:0 0 20px;line-height:1.2;
 }
 .a-sec-lbl::before{
   content:"";width:4px;align-self:stretch;min-height:1.15em;border-radius:3px;flex:none;
@@ -1034,7 +1069,7 @@ input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size
 
 
 /* ── SECTIONS SPACING ── */
-.sec{padding:28px 0 10px;}
+.sec{padding:44px 0 14px;}
 
 /* ── NEEDLE REV + VIX SCAN ── */
 @keyframes needle-rev{
@@ -1062,6 +1097,25 @@ input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size
   align-items:stretch;
 }
 .home-cards>*{min-width:0;}
+.home-cards{gap:16px;margin-bottom:24px;}
+/* ═══ CARD LANGUAGE v2 — depth over flatness (form redesign) ═══
+   Le stesse card di prima, ma trattate come superfici elevate: niente più
+   riquadri piatti tutti uguali, ma profondità morbida, hairline in alto e
+   sollevamento all'hover. Struttura e contenuti invariati. */
+.fg-card,.ind-card,.wr-card,.chart-card,.pf-metric,.opp-item{
+  border:1px solid var(--hairline)!important;
+  background-image:var(--card-surface);
+  background-color:var(--bg2);
+  border-radius:var(--radius);
+  box-shadow:var(--elev);
+  transition:transform .2s cubic-bezier(.2,.7,.3,1),box-shadow .2s ease,border-color .2s ease;
+}
+.fg-card:hover,.ind-card:hover,.wr-card:hover,.chart-card:hover,.pf-metric:hover{
+  transform:translateY(-3px);
+  box-shadow:var(--elev-hi);
+  border-color:color-mix(in srgb,var(--accent) 45%,var(--hairline));
+}
+.opp-item:hover{transform:translateY(-3px);box-shadow:var(--ring)!important;border-color:transparent!important;}
 /* Desktop: riga 2 — Curva e Rotazione occupano 2 col ciascuna */
 .home-cards .home-yc-card{grid-column:span 2;}
 .home-cards .home-sector-card{grid-column:span 2;}

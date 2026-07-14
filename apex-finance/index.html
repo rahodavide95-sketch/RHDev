@@ -6873,7 +6873,9 @@ function trackRender(){
   </div>`;
   if(!pos.length){
     body.innerHTML=addBar+`<div class="track-empty"><h3>📈 Traccia il tuo portafoglio reale</h3>
-      <p>Aggiungi le tue posizioni con quantità, prezzo di carico e data. Vedrai il <b>valore live</b>, l'andamento <b>dall'inizio a oggi</b>, il confronto con l'<b>andamento statisticamente atteso</b> e la <b>proiezione futura</b>.</p></div>`;
+      <p>Aggiungi le tue posizioni con quantità, prezzo di carico e data. Vedrai il <b>valore live</b>, l'andamento <b>dall'inizio a oggi</b>, il confronto con l'<b>andamento statisticamente atteso</b> e la <b>proiezione futura</b>.</p>
+      <button class="track-add-btn" style="margin-top:16px;max-width:340px" onclick="trackLoadDemo()">📊 Carica un portafoglio di esempio</button>
+      <p style="font-size:.72rem;color:var(--t3);margin-top:8px">Cinque titoli reali con acquisti nel 2023, per vedere subito come funziona. Potrai poi rimuoverli o modificarli.</p></div>`;
     trackSetupSearch(); return;
   }
   body.innerHTML=addBar+`<div id="track-content"><div style="padding:44px;text-align:center;color:var(--t3)"><span class="card-spin"></span> Ricostruisco la performance dai prezzi reali…</div></div>`;
@@ -6922,6 +6924,16 @@ function trackAdd(){
   trackRender();
 }
 function trackRemove(id){ trackSet(trackGet().filter(p=>p.id!==id)); trackRender(); }
+function trackLoadDemo(){
+  trackSet([
+    {id:'demo_AAPL',  ticker:'AAPL',  name:'Apple Inc.',            qty:12, buyPrice:130, buyDate:'2023-01-16'},
+    {id:'demo_MSFT',  ticker:'MSFT',  name:'Microsoft Corp.',       qty:6,  buyPrice:240, buyDate:'2023-01-16'},
+    {id:'demo_GOOGL', ticker:'GOOGL', name:'Alphabet Inc.',         qty:15, buyPrice:95,  buyDate:'2023-02-01'},
+    {id:'demo_VOO',   ticker:'VOO',   name:'Vanguard S&P 500 ETF',  qty:4,  buyPrice:355, buyDate:'2023-01-16'},
+    {id:'demo_GLD',   ticker:'GLD',   name:'SPDR Gold Shares',      qty:8,  buyPrice:172, buyDate:'2023-03-01'},
+  ]);
+  trackRender();
+}
 
 async function trackCompute(){
   const pos=trackGet(); if(!pos.length) return null;

@@ -6866,10 +6866,10 @@ function trackRender(){
       </div>
       <label class="track-fld">Quantità<input id="tk-qty" type="number" min="0" step="any" placeholder="es. 10"></label>
       <label class="track-fld">Prezzo di carico<input id="tk-price" type="number" min="0" step="any" placeholder="medio"></label>
-      <label class="track-fld">Data acquisto<input id="tk-date" type="date"></label>
+      <label class="track-fld">Data acquisto <span style="color:var(--t3);font-weight:400">(facolt.)</span><input id="tk-date" type="date"></label>
       <button class="track-add-btn" onclick="trackAdd()">Aggiungi</button>
     </div>
-    <div id="tk-add-hint" style="font-size:.66rem;color:var(--t3);margin-top:8px">Il prezzo è nella valuta di quotazione del titolo; i totali sono convertiti in € al cambio attuale.</div>
+    <div id="tk-add-hint" style="font-size:.66rem;color:var(--t3);margin-top:8px"><b>Prezzo</b> = quanto hai pagato (per il P&L). <b>Data</b> = quando hai comprato: serve per l'andamento storico e il rendimento annuo — se la ometti, la posizione conta comunque per valore e guadagno. Prezzo nella valuta del titolo; totali in € al cambio attuale.</div>
   </div>`;
   if(!pos.length){
     body.innerHTML=addBar+`<div class="track-empty"><h3>📈 Traccia il tuo portafoglio reale</h3>

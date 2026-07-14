@@ -7006,7 +7006,8 @@ async function trackParseCSV(text){
     const asset=(f[iAsset]||'').trim(); const date=tkParseDate(f[iDate]);
     const qty=tkNum(f[iQuote]);
     const cq=iCost>=0?tkNum(f[iCost]):NaN, total=iTot>=0?tkNum(f[iTot]):NaN, importo=iImporto>=0?tkNum(f[iImporto]):NaN;
-    const cost=isFinite(total)?total:isFinite(importo)?importo:(isFinite(qty)&&isFinite(cq)?qty*cq:NaN);
+    // il rendimento si basa sull'IMPORTO investito (quote × costo quota), SENZA fee/imposte
+    const cost=isFinite(importo)?importo:(isFinite(qty)&&isFinite(cq)?qty*cq:(isFinite(total)?total:NaN));
     if(!asset||!date||!(qty>0)||!(cost>0)){ skipped++; continue; }
     if(!byAsset.has(asset)) byAsset.set(asset,{cat:iCat>=0?f[iCat]:'',txns:[]});
     byAsset.get(asset).txns.push({date,qty,cost});

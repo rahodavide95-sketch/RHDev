@@ -702,6 +702,8 @@ header{
 .sig-headline{font-size:.9375rem;font-weight:600;}
 .sig-body{font-size:.82rem;color:var(--t2);line-height:1.6;margin-top:14px;}
 .sig-body b{color:var(--text);}
+.sig-disclaimer{font-size:.72rem;color:var(--t2);line-height:1.5;margin-top:14px;padding:9px 12px;border:1px dashed var(--border);border-radius:10px;background:rgba(255,255,255,.02);}
+.sig-disclaimer b{color:var(--text);}
 .sig-tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px;margin-bottom:4px;}
 .sig-tag{padding:4px 12px;border-radius:20px;font-size:.72rem;font-weight:600;background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--t2);}
 .stag{
@@ -2393,6 +2395,7 @@ input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size
         <span class="sig-headline" id="sig-headline">—</span>
       </div>
       <div class="sig-tags" id="sig-tags"></div>
+      <div class="sig-disclaimer">⚠️ L'APEX Score è un'<b>euristica</b> che riassume gli indicatori tecnici — <b>non è una previsione</b> né una garanzia. I dati descrittivi (prezzo, RSI, trend, volatilità) sono affidabili; il giudizio sul futuro è un aiuto al ragionamento, non un oracolo.</div>
     </div><!-- /sig-box -->
 
     <!-- Analisi automatica (regole) + feedback AI on-demand -->
@@ -4077,7 +4080,7 @@ function oppItemHTML(sym, score, extra=false){
     chips.push(`<span class="opp-chip ${rc}">RSI ${d.rsi.toFixed(0)}${d.rsi<30?' · molto ipervenduto':' · ipervenduto'}</span>`);
   }
   if(d.dd!=null&&d.dd>=1) chips.push(`<span class="opp-chip">−${d.dd.toFixed(0)}% dai massimi 52s</span>`);
-  if(d.rel) chips.push(`<span class="opp-chip ${d.rel.rate>=60?'opp-chip-up':d.rel.rate>=50?'':'opp-chip-rsi'}" title="Frequenza storica con cui, dopo un setup simile su questo titolo, il prezzo era più alto dopo ${d.rel.horizon} giorni (${d.rel.n} casi)">🎯 affidabilità storica ${d.rel.rate}%</span>`);
+  if(d.rel) chips.push(`<span class="opp-chip ${d.rel.n<20?'':d.rel.rate>=60?'opp-chip-up':d.rel.rate>=50?'':'opp-chip-rsi'}" title="Frequenza storica con cui, dopo un setup simile su questo titolo, il prezzo era più alto dopo ${d.rel.horizon} giorni (${d.rel.n} casi).${d.rel.n<20?' ⚠️ Pochi casi ('+d.rel.n+'): margine d\'errore ampio, dato poco significativo.':' Il passato non garantisce il futuro.'}">🎯 affidabilità storica ${d.rel.rate}%${d.rel.n<20?' ⚠️':''}</span>`);
   if(d.trendUp) chips.push(`<span class="opp-chip opp-chip-up">✓ trend di fondo rialzista</span>`);
   if(d.aboveMA200) chips.push(`<span class="opp-chip opp-chip-up">✓ sopra MA200</span>`);
   if(d.mo3m!=null&&d.mo3m>0) chips.push(`<span class="opp-chip opp-chip-up">+${d.mo3m.toFixed(0)}% in 3 mesi</span>`);

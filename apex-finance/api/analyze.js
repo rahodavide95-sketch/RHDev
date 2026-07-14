@@ -66,8 +66,9 @@ Momentum: 3M ${m.mo3m ?? 'n/d'}% · 6M ${m.mo6m ?? 'n/d'}% · 12M ${m.mo12m ?? '
 Volatilità annua: ${m.vol ?? 'n/d'}% | max drawdown 1 anno: -${m.dd}%
 Win rate storico: 30gg ${m.w30 ?? 'n/d'}% · 90gg ${m.w90 ?? 'n/d'}%
 ${fundLine}
+${m.tool ? `\nVerdetto dello SCREENING AUTOMATICO del tool (regole meccaniche): ${m.tool.inZone ? 'in "zona opportunità" (ipervenduto + trend di fondo rialzista)' : 'NON in zona opportunità'}; raccomandazione automatica: "${m.tool.reco}"${m.tool.oppRate != null ? `; affidabilità storica del setto ${m.tool.oppRate}%` : ''}.` : ''}
 
-Scrivi 3 brevi paragrafi in prosa: (1) il quadro tecnico e di trend; (2) rischio, momentum e valutazione fondamentale; (3) una conclusione che dica ESPLICITAMENTE se i dati CONSIGLIANO o SCONSIGLIANO l'acquisto ora (o suggeriscono di attendere), con il perché. Usa **grassetto** per le parole chiave. Massimo ~170 parole. Non inventare dati. Chiudi con una riga che ricorda che non è una raccomandazione d'investimento personalizzata.`;
+Scrivi 3 brevi paragrafi in prosa: (1) il quadro tecnico e di trend; (2) rischio, momentum e valutazione fondamentale; (3) una conclusione che dica ESPLICITAMENTE se i dati CONSIGLIANO o SCONSIGLIANO l'acquisto ora (o suggeriscono di attendere), con il perché.${m.tool ? ' In chiusura, di\' CHIARAMENTE se sei d\'accordo o in disaccordo con il verdetto automatico del tool qui sopra e spiega il PERCHÉ della differenza (lo screening è meccanico su poche regole; tu puoi pesare momentum, fondamentali e rischio diversamente).' : ''} Usa **grassetto** per le parole chiave. Massimo ~190 parole. Non inventare dati. Chiudi con una riga che ricorda che non è una raccomandazione d'investimento personalizzata.`;
     return await callClaude(key, sPrompt, ck);
   }
 

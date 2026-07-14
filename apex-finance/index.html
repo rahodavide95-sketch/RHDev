@@ -1641,6 +1641,17 @@ input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size
 .pf-ai-body p:last-child{margin-bottom:0;}
 .pf-ai-body b{color:var(--text);}
 .pf-ai-verdict{font-size:1rem;font-weight:800;margin-bottom:8px;}
+.ai-claude-btn{margin-top:13px;display:inline-flex;align-items:center;gap:7px;padding:10px 16px;
+  background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff;border:none;border-radius:8px;
+  font-family:inherit;font-size:.82rem;font-weight:700;cursor:pointer;transition:opacity .15s;}
+.ai-claude-btn:hover{opacity:.92;}
+.ai-claude-btn:disabled{opacity:.7;cursor:default;}
+.ai-claude-box{margin-top:13px;padding:13px 15px;background:var(--bg2);border:1px solid rgba(124,58,237,.35);
+  border-left:3px solid #7c3aed;border-radius:10px;}
+.ai-claude-hd{font-size:.8rem;font-weight:800;color:#8b5cf6;margin-bottom:8px;}
+.ai-claude-box p{font-size:.84rem;color:var(--t2);line-height:1.65;margin:0 0 8px;}
+.ai-claude-box p:last-child{margin-bottom:0;}
+.ai-claude-box b{color:var(--text);}
 .ai-reco{display:flex;gap:9px;align-items:flex-start;margin-top:10px;padding:10px 12px;
   background:var(--bg3);border:1px solid var(--border);border-left:3px solid var(--accent);
   border-radius:8px;font-size:.82rem;color:var(--text);line-height:1.55;}
@@ -2384,10 +2395,12 @@ input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size
       <div class="sig-tags" id="sig-tags"></div>
     </div><!-- /sig-box -->
 
-    <!-- Analisi AI in linguaggio naturale -->
+    <!-- Analisi automatica (regole) + feedback AI on-demand -->
     <div class="pf-ai-card" id="ai-analysis" style="display:none;margin-top:16px">
-      <div class="pf-ai-hd"><span class="pf-ai-badge">✨ Analisi AI</span><span class="pf-ai-status" id="ai-analysis-status"></span></div>
+      <div class="pf-ai-hd"><span class="pf-ai-badge">🔧 Analisi automatica</span><span class="pf-ai-status" id="ai-analysis-status"></span></div>
       <div class="pf-ai-body" id="ai-analysis-body"></div>
+      <button class="ai-claude-btn" id="ai-claude-btn" onclick="askClaudeFeedback()">✨ Chiedi un feedback reale all'AI</button>
+      <div id="ai-claude-out"></div>
     </div>
 
     <!-- Zona opportunità: perché sì / perché no -->
@@ -5397,7 +5410,7 @@ let _analyzeSeq=0;
 function resetAnalysisPanels(){
   const set=(id,html='')=>{ const el=document.getElementById(id); if(el) el.innerHTML=html; };
   const hide=id=>{ const el=document.getElementById(id); if(el) el.style.display='none'; };
-  set('ai-analysis-body'); set('ai-analysis-status'); hide('ai-analysis');
+  set('ai-analysis-body'); set('ai-analysis-status'); set('ai-claude-out'); hide('ai-analysis');
   set('oz-criteria'); set('oz-note'); hide('opp-zone');
   set('risk-out'); hide('risk-card');
   set('edge-intro'); set('edge-table'); hide('edge-section');
@@ -5405,23 +5418,45 @@ function resetAnalysisPanels(){
   const ai=document.getElementById('a-datainfo'); if(ai) ai.innerHTML='';
   const eur=document.getElementById('a-price-eur'); if(eur) eur.textContent='';
 }
-async function renderStockAI(d,tryAI){
-  const mySeq=_analyzeSeq;   // fotografa l'analisi corrente
+let _lastStockAI=null;
+function renderStockAI(d,tryAI){
   try{ renderOppZone(d); }catch(e){ console.warn('oppzone',e); }
   const card=document.getElementById('ai-analysis');
   const body=document.getElementById('ai-analysis-body');
   const status=document.getElementById('ai-analysis-status');
   if(!card||!body) return;
+  _lastStockAI=d;
   card.style.display='block';
   body.innerHTML=stockLocalAnalysis(d);
-  if(!tryAI){ if(status) status.textContent=''; return; }
-  if(status) status.innerHTML='<span class="card-spin"></span> Chiedo un parere a Claude…';
+  if(status) status.textContent='';
+  const out=document.getElementById('ai-claude-out'); if(out) out.innerHTML='';
+  const btn=document.getElementById('ai-claude-btn'); if(btn){ btn.style.display=''; btn.disabled=false; btn.innerHTML='✨ Chiedi un feedback reale all\'AI'; }
+}
+// feedback AI REALE (Claude) su richiesta esplicita
+async function askClaudeFeedback(){
+  const d=_lastStockAI; if(!d) return;
+  const seq=_analyzeSeq;
+  const btn=document.getElementById('ai-claude-btn');
+  const out=document.getElementById('ai-claude-out');
+  if(btn){ btn.disabled=true; btn.innerHTML='<span class="card-spin"></span> Sto chiedendo a Claude…'; }
+  const fail=msg=>{ if(out) out.innerHTML=`<div class="track-note" style="color:var(--y)">${msg}</div>`; if(btn){ btn.disabled=false; btn.innerHTML='✨ Riprova'; } };
+  // verdetto dello screening automatico, così Claude può confermarlo o contestarlo esplicitamente
+  const zScore=d.techScore!=null?d.techScore:d.score;
+  const inZone = d.rsi!=null&&d.rsi<40 && d.trendUp===true && zScore>=45;
+  const s=d.score;
+  const toolReco = s>=65?'ingresso suggerito':s>=55?'ingresso valutabile':s>=45?'attendere / nessun vantaggio chiaro':s>=35?'sconsigliato':'da evitare';
   try{
-    const r=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'stock',...d,fund:d.fund?{trailingPE:d.fund.trailingPE,forwardPE:d.fund.forwardPE,roe:d.fund.roe,pb:d.fund.pb,earningsGrowth:d.fund.earningsGrowth,revenueGrowth:d.fund.revenueGrowth}:null}),signal:AbortSignal.timeout(30000)});
-    if(mySeq!==_analyzeSeq) return;   // nel frattempo è partita un'altra analisi → NON scrivere qui
-    if(r.ok){ const j=await r.json(); if(mySeq!==_analyzeSeq) return; if(j&&j.text){ body.innerHTML=pfFormatAI(j.text); if(status) status.innerHTML='<span style="color:var(--accent)">✦ generata da Claude</span>'; return; } }
-  }catch{}
-  if(mySeq===_analyzeSeq && status) status.textContent='';
+    const r=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'stock',...d,tool:{inZone,reco:toolReco,oppRate:d.rel?d.rel.rate:null},fund:d.fund?{trailingPE:d.fund.trailingPE,forwardPE:d.fund.forwardPE,roe:d.fund.roe,pb:d.fund.pb,earningsGrowth:d.fund.earningsGrowth,revenueGrowth:d.fund.revenueGrowth}:null}),signal:AbortSignal.timeout(35000)});
+    if(seq!==_analyzeSeq) return;
+    if(r.ok){ const j=await r.json(); if(seq!==_analyzeSeq) return;
+      if(j&&j.text){ out.innerHTML=`<div class="ai-claude-box"><div class="ai-claude-hd">✦ Feedback di Claude</div>${pfFormatAI(j.text)}</div>`; if(btn) btn.style.display='none'; return; }
+      return fail('Risposta AI vuota. Riprova tra poco.');
+    }
+    const err=await r.json().catch(()=>({}));
+    fail(err&&err.error==='no_key' ? 'Il feedback AI non è ancora attivo: manca la chiave API sul server (ANTHROPIC_API_KEY).'
+        : err&&err.error==='rate_limited' ? 'Troppe richieste in poco tempo — attendi un minuto e riprova.'
+        : 'Feedback AI non disponibile al momento. Riprova tra poco.');
+  }catch{ if(seq===_analyzeSeq) fail('Feedback AI non raggiungibile (rete). Riprova.'); }
 }
 
 // ── ANALYZE ──

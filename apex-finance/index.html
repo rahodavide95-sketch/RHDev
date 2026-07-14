@@ -6871,6 +6871,8 @@ function trackRender(){
     <div class="track-mode">
       <button class="tk-mode-btn ${md==='lump'?'active':''}" onclick="trackSetMode('lump')">Acquisto unico</button>
       <button class="tk-mode-btn ${md==='pac'?'active':''}" onclick="trackSetMode('pac')">PAC — versamenti ricorrenti</button>
+      <button class="tk-mode-btn" onclick="document.getElementById('tk-csv').click()">📄 Importa CSV</button>
+      <input type="file" id="tk-csv" accept=".csv,text/csv,text/plain" style="display:none" onchange="trackImportCSV(this)">
     </div>
     <div class="track-add-grid">
       <div class="track-fld">Titolo
@@ -6962,6 +6964,68 @@ function trackLoadDemo(){
   trackRender();
 }
 
+// ── Import CSV transazioni ──
+function tkNum(x){ if(x==null) return NaN; let s=String(x).replace(/[€$£%\s]/g,'').trim(); if(!s) return NaN;
+  if(s.includes(',')&&s.includes('.')){ if(s.lastIndexOf(',')>s.lastIndexOf('.')) s=s.replace(/\./g,'').replace(',','.'); else s=s.replace(/,/g,''); }
+  else if(s.includes(',')) s=s.replace(',','.');
+  const n=parseFloat(s); return isFinite(n)?n:NaN; }
+function tkParseDate(s){ if(!s) return null; s=String(s).trim(); let m;
+  if(m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/)) return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+  if(m=s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/)){ let d=m[1].padStart(2,'0'),mo=m[2].padStart(2,'0'),y=m[3]; if(y.length===2)y='20'+y; return `${y}-${mo}-${d}`; }
+  const t=Date.parse(s); return isNaN(t)?null:new Date(t).toISOString().slice(0,10); }
+async function tkResolve(asset){
+  const a=asset.trim(), up=a.toUpperCase();
+  const exact=DB.find(([s])=>s.toUpperCase()===up); if(exact) return {sym:exact[0],name:exact[1]};
+  try{ let r=await searchAPI(a); if(!r.length) r=await searchYahoo(a); if(r&&r.length) return {sym:r[0].sym,name:r[0].name}; }catch{}
+  const byName=DB.find(([s,n])=>n.toUpperCase().includes(up)); if(byName) return {sym:byName[0],name:byName[1]};
+  return {sym:up.split(/\s/)[0], name:a};
+}
+function trackImportCSV(input){
+  const file=input.files&&input.files[0]; input.value='';
+  if(!file) return;
+  const rd=new FileReader();
+  rd.onload=e=>{ trackParseCSV(String(e.target.result||'')).catch(err=>alert('Errore CSV: '+(err.message||err))); };
+  rd.readAsText(file);
+}
+async function trackParseCSV(text){
+  const lines=text.split(/\r?\n/).filter(l=>l.trim());
+  if(lines.length<2) throw new Error('file vuoto o senza righe');
+  const header=lines[0];
+  const delim=[['\t',header.split('\t').length],[';',header.split(';').length],[',',header.split(',').length]].sort((a,b)=>b[1]-a[1])[0][0];
+  const parseLine=l=>{ const out=[]; let cur='',q=false; for(let i=0;i<l.length;i++){ const ch=l[i];
+    if(ch==='"'){ if(q&&l[i+1]==='"'){cur+='"';i++;} else q=!q; } else if(ch===delim&&!q){ out.push(cur);cur=''; } else cur+=ch; }
+    out.push(cur); return out.map(x=>x.trim()); };
+  const cols=parseLine(header).map(h=>h.toUpperCase().trim());
+  const idx=n=>cols.findIndex(c=>c===n);
+  const iDate=idx('DATA ACQUISTO'), iAsset=idx('ASSET'), iCat=idx('CATEGORY'),
+        iQuote=idx('QUOTE'), iCost=idx('COSTO QUOTA'), iImporto=idx('IMPORTO'), iTot=idx('TOTALE');
+  if(iAsset<0||iDate<0) throw new Error('intestazioni non riconosciute: servono almeno "DATA ACQUISTO" e "ASSET"');
+  const byAsset=new Map(); let skipped=0;
+  for(let r=1;r<lines.length;r++){
+    const f=parseLine(lines[r]); if(f.length<2) continue;
+    const asset=(f[iAsset]||'').trim(); const date=tkParseDate(f[iDate]);
+    const qty=tkNum(f[iQuote]);
+    const cq=iCost>=0?tkNum(f[iCost]):NaN, total=iTot>=0?tkNum(f[iTot]):NaN, importo=iImporto>=0?tkNum(f[iImporto]):NaN;
+    const cost=isFinite(total)?total:isFinite(importo)?importo:(isFinite(qty)&&isFinite(cq)?qty*cq:NaN);
+    if(!asset||!date||!(qty>0)||!(cost>0)){ skipped++; continue; }
+    if(!byAsset.has(asset)) byAsset.set(asset,{cat:iCat>=0?f[iCat]:'',txns:[]});
+    byAsset.get(asset).txns.push({date,qty,cost});
+  }
+  if(!byAsset.size) throw new Error('nessuna transazione valida trovata (controlla QUOTE / IMPORTO / TOTALE)');
+  // stato di caricamento
+  const body=document.getElementById('track-body');
+  if(body){ const c=document.getElementById('track-content'); if(c) c.innerHTML='<div style="padding:44px;text-align:center;color:var(--t3)"><span class="card-spin"></span> Importo e risolvo i titoli…</div>'; }
+  const positions=[];
+  for(const [asset,info] of byAsset){
+    const res=await tkResolve(asset);
+    positions.push({id:'csv_'+res.sym+'_'+Date.now().toString(36)+Math.round(Math.random()*1e4),
+      ticker:res.sym, name:res.name||asset, mode:'txns', category:info.cat, txns:info.txns});
+  }
+  trackSet(trackGet().concat(positions));
+  trackRender();
+  if(skipped) setTimeout(()=>{ const h=document.getElementById('tk-add-hint'); if(h){ h.textContent=`Importate ${positions.length} posizioni. ${skipped} righe saltate (dati mancanti/non validi).`; h.style.color='var(--t2)'; } },300);
+}
+
 async function trackCompute(){
   const pos=trackGet(); if(!pos.length) return null;
   const nowSec=Date.now()/1000;
@@ -6994,9 +7058,12 @@ async function trackCompute(){
     s.cagr=s.priceEUR.length>60?Math.pow(g,252/s.priceEUR.length)-1:0;
     // prezzo EUR al giorno k (forward-fill: ultimo prezzo <= k)
     s.priceAt=k=>{ const ks=s.keys; if(!ks.length||k<ks[0]) return null; let lo=0,hi=ks.length-1,a=0; while(lo<=hi){ const m=(lo+hi)>>1; if(ks[m]<=k){a=m;lo=m+1;}else hi=m-1; } return s.map.get(ks[a]); };
-    // LOTTI: PIC = 1 lotto; PAC = N versamenti al prezzo reale di ogni scadenza
+    // LOTTI: PIC = 1 lotto; PAC = N versamenti; TXNS = transazioni reali da CSV
     s.lots=[];
-    if(s.p.mode==='pac'){
+    if(s.p.mode==='txns'){
+      s.lots=(s.p.txns||[]).map(t=>({key:dayKey(new Date(t.date).getTime()/1000),shares:+t.qty||0,costEUR:+t.cost||0}))
+        .filter(l=>l.shares>0&&isFinite(l.key));
+    } else if(s.p.mode==='pac'){
       const stepDays={weekly:7,biweekly:14,monthly:30,quarterly:91}[s.p.freq]||30;
       const startKey=dayKey(new Date(s.p.startDate).getTime()/1000);
       for(let k=startKey;k<=todayKey;k+=stepDays){ const pr=s.priceAt(k); if(pr==null||pr<=0) continue; s.lots.push({key:k,shares:s.p.amount/pr,costEUR:s.p.amount}); }
@@ -7031,8 +7098,9 @@ async function trackCompute(){
   });
   // 4) metriche correnti
   const perPos=series.map(s=>{ const val=s.totShares*s.curEUR, cost=s.totCost, avgEUR=s.totShares>0?cost/s.totShares:0;
-    return {ticker:s.p.ticker,name:s.p.name,id:s.p.id,mode:s.p.mode||'lump',qty:s.totShares,
-      avgNative:avgEUR*s.rate,cur:s.cl[s.cl.length-1],currency:(s.meta.currency||'EUR'),
+    const isTx=s.p.mode==='txns';
+    return {ticker:s.p.ticker,name:s.p.name,id:s.p.id,mode:s.p.mode||'lump',qty:s.totShares,nTx:(s.p.txns||[]).length,
+      avgNative:isTx?avgEUR:avgEUR*s.rate,cur:isTx?s.curEUR:s.cl[s.cl.length-1],currency:isTx?'€':(s.meta.currency||'EUR'),
       amount:s.p.amount,freq:s.p.freq,startDate:s.p.startDate,
       valEUR:val,costEUR:cost,pnl:val-cost,pnlPct:cost>0?(val-cost)/cost*100:0}; });
   const curVal=perPos.reduce((a,b)=>a+b.valEUR,0), invested=perPos.reduce((a,b)=>a+b.costEUR,0);
@@ -7091,7 +7159,8 @@ function trackRenderContent(d){
   </div>`;
   const freqLbl={weekly:'/sett.',biweekly:'/2sett.',monthly:'/mese',quarterly:'/trim.'};
   const rows=d.perPos.map(p=>{
-    const tag=p.mode==='pac'?`<span style="font-size:.6rem;background:rgba(59,130,246,.14);color:var(--accent);border:1px solid rgba(59,130,246,.3);border-radius:20px;padding:1px 6px;margin-left:5px">PAC ${tkEur(p.amount)}${freqLbl[p.freq]||''}</span>`:'';
+    const tag=p.mode==='pac'?`<span style="font-size:.6rem;background:rgba(59,130,246,.14);color:var(--accent);border:1px solid rgba(59,130,246,.3);border-radius:20px;padding:1px 6px;margin-left:5px">PAC ${tkEur(p.amount)}${freqLbl[p.freq]||''}</span>`
+      :p.mode==='txns'?`<span style="font-size:.6rem;background:rgba(139,92,246,.14);color:#8b5cf6;border:1px solid rgba(139,92,246,.3);border-radius:20px;padding:1px 6px;margin-left:5px">${p.nTx} transazioni</span>`:'';
     return `<tr>
     <td><div class="tk-pos-name">${logoHTML(p.ticker,22)}<span><span class="tk-pos-sym">${p.ticker}</span>${tag} <span style="color:var(--t3);font-size:.72rem">${p.name||''}</span></span></div></td>
     <td>${p.qty>=100?p.qty.toLocaleString('it-IT',{maximumFractionDigits:0}):p.qty.toFixed(3)}</td>

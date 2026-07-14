@@ -702,6 +702,9 @@ header{
 .sig-headline{font-size:.9375rem;font-weight:600;}
 .sig-body{font-size:.82rem;color:var(--t2);line-height:1.6;margin-top:14px;}
 .sig-body b{color:var(--text);}
+.sig-meta-row{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:12px;}
+.sig-meta{font-size:.74rem;color:var(--t2);}
+.sig-meta b{font-weight:700;}
 .sig-disclaimer{font-size:.72rem;color:var(--t2);line-height:1.5;margin-top:14px;padding:9px 12px;border:1px dashed var(--border);border-radius:10px;background:rgba(255,255,255,.02);}
 .sig-disclaimer b{color:var(--text);}
 .sig-tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px;margin-bottom:4px;}
@@ -1508,6 +1511,32 @@ input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size
   .track-add{padding:12px 13px;}
 }
 .cmp-wrap{flex:1;overflow:auto;padding:4px var(--page-gutter) 24px;}
+/* ── Calibrazione APEX Score ── */
+.calib-body{flex:1;overflow-y:auto;padding:14px var(--page-gutter) 40px;-webkit-overflow-scrolling:touch;max-width:820px;margin:0 auto;width:100%;}
+.cal-intro p{font-size:.92rem;line-height:1.6;color:var(--t2);}
+.cal-intro b{color:var(--text);}
+.cal-base{margin:16px 0;padding:11px 14px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid var(--border);font-size:.85rem;color:var(--t2);line-height:1.5;}
+.cal-base b{color:var(--text);}
+.cal-chart{display:flex;flex-direction:column;gap:14px;margin:18px 0;}
+.cal-row{display:flex;flex-direction:column;gap:5px;}
+.cal-band{font-size:.8rem;font-weight:700;color:var(--text);}
+.cal-bar-wrap{position:relative;height:26px;background:rgba(255,255,255,.04);border-radius:7px;overflow:hidden;}
+.cal-bar{height:100%;border-radius:7px;transition:width .5s ease;min-width:2px;}
+.cal-val{position:absolute;left:10px;top:0;height:26px;display:flex;align-items:center;font-size:.78rem;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.5);}
+.cal-side{font-size:.76rem;color:var(--t3);}
+.cal-side b{font-weight:700;}
+.cal-empty{padding:4px 10px;font-size:.74rem;color:var(--t3);font-style:italic;}
+.cal-verdict{margin:18px 0;padding:14px 16px;border-radius:12px;font-size:.88rem;line-height:1.55;}
+.cal-verdict.cal-ok{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.3);color:var(--t2);}
+.cal-verdict.cal-warn{background:rgba(234,179,8,.08);border:1px solid rgba(234,179,8,.3);color:var(--t2);}
+.cal-verdict b{color:var(--text);}
+.cal-note{font-size:.73rem;color:var(--t3);line-height:1.5;margin-top:14px;padding-top:12px;border-top:1px dashed var(--border);}
+.cal-note b{color:var(--t2);}
+.cal-loading{text-align:center;padding:60px 20px;color:var(--t2);}
+.cal-loading p{margin-top:16px;font-size:.9rem;}
+.cal-spin{width:34px;height:34px;border:3px solid var(--border);border-top-color:var(--acc,#3b82f6);border-radius:50%;margin:0 auto;animation:calspin 1s linear infinite;}
+@keyframes calspin{to{transform:rotate(360deg)}}
+
 /* ── Chi siamo ── */
 .about-body{flex:1;overflow-y:auto;padding:8px var(--page-gutter) 40px;-webkit-overflow-scrolling:touch;}
 .about-hero{text-align:center;padding:18px 0 10px;max-width:720px;margin:0 auto;}
@@ -2162,6 +2191,20 @@ input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size
     </div>
   </div>
 
+  <!-- ── CALIBRAZIONE APEX SCORE (prova reale) ── -->
+  <div class="pf-modal" id="calib-modal" style="display:none">
+    <div class="pf-box">
+      <div class="pf-hd">
+        <div class="pf-hd-title">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 9l-5 5-3-3-4 4"/></svg>
+          <span>Quanto è affidabile davvero l'APEX Score?</span>
+        </div>
+        <button class="pf-close" onclick="closeCalibration()" title="Chiudi">✕</button>
+      </div>
+      <div class="calib-body" id="calib-body"></div>
+    </div>
+  </div>
+
   <!-- ── IL MIO PORTAFOGLIO (tracker reale) ── -->
   <div class="pf-modal" id="track-modal" style="display:none">
     <div class="pf-box">
@@ -2395,7 +2438,8 @@ input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size
         <span class="sig-headline" id="sig-headline">—</span>
       </div>
       <div class="sig-tags" id="sig-tags"></div>
-      <div class="sig-disclaimer">⚠️ L'APEX Score è un'<b>euristica</b> che riassume gli indicatori tecnici — <b>non è una previsione</b> né una garanzia. I dati descrittivi (prezzo, RSI, trend, volatilità) sono affidabili; il giudizio sul futuro è un aiuto al ragionamento, non un oracolo.</div>
+      <div class="sig-meta-row" id="sig-meta-row" style="display:none"></div>
+      <div class="sig-disclaimer">⚠️ L'APEX Score è un'<b>euristica</b> che riassume gli indicatori tecnici — <b>non è una previsione</b> né una garanzia. I dati descrittivi (prezzo, RSI, trend, volatilità) sono affidabili; il giudizio sul futuro è un aiuto al ragionamento, non un oracolo. <a onclick="openCalibration()" style="color:var(--acc,#3b82f6);cursor:pointer;text-decoration:underline;text-underline-offset:2px">Quanto è affidabile davvero? →</a></div>
     </div><!-- /sig-box -->
 
     <!-- Analisi automatica (regole) + feedback AI on-demand -->
@@ -3600,7 +3644,7 @@ async function fetchAndScore(ticker){
     const valid=tsRaw.map((t,i)=>({t,c:raw[i]})).filter(p=>p.c!=null&&!isNaN(p.c)&&p.c>0);
     if(valid.length<30) return null;
     const tss=valid.map(p=>p.t), cl=valid.map(p=>p.c);
-    const score=scoreFromHistory(cl,tss);
+    const score=scoreFromHistory(cl,tss,ticker);
     let dip=null;
     if(score!=null){
       reasonMap[ticker]=scoreReason(cl);
@@ -3627,7 +3671,7 @@ async function fetchAndScore(ticker){
 }
 
 // ── SCORE DA CHIUSURE STORICHE — formula identica all'analisi ──
-function scoreFromHistory(cl,tss=null){
+function scoreFromHistory(cl,tss=null,ticker=null){
   if(!cl||cl.length<30) return null;
   const cur=cl[cl.length-1];
   const R=rsi(cl),M50=ma(cl,50),M200=ma(cl,200),V=vol(cl),Mo=mom(cl);
@@ -3640,7 +3684,7 @@ function scoreFromHistory(cl,tss=null){
     const curMonthSea=seasonal(tss,cl)[new Date().getMonth()];
     seasonPct=curMonthSea?curMonthSea.p:null;
   }
-  return edgeScore(R,M50,M200,V,Mo,w7,w30,w90,cur,Mo3m,Mo6m,Mo12m,null,seasonPct);
+  return edgeScore(R,M50,M200,V,Mo,w7,w30,w90,cur,Mo3m,Mo6m,Mo12m,null,seasonPct,{cls:clsOf(ticker)});
 }
 
 // ── MATH ──
@@ -3767,7 +3811,43 @@ function retDist(returns){
   returns.forEach(r=>{const p=r*100;if(p<bk[0]){ct[0]++;return;}for(let i=0;i<bk.length-1;i++)if(p>=bk[i]&&p<bk[i+1]){ct[i+1]++;return;}ct[ct.length-1]++;});
   return{lb,ct};
 }
-function edgeScore(R,M50,M200,V,Mo,w7,w30,w90,price,Mo3m=null,Mo6m=null,Mo12m=null,fund=null,seasonPct=null){
+// ── REGIME DI MERCATO (#2) ──
+// Stato globale: -1 risk-off, 0 neutro, +1 risk-on, + momentum del benchmark (S&P 500).
+// In risk-off il momentum è spesso una trappola → lo score lo pesa meno.
+let _REGIME={regime:0, benchMo3m:null, ts:0, label:'neutro'};
+async function refreshRegime(){
+  try{
+    const res=await fetchChart('^GSPC','2y','1d');
+    const cl=(res?.indicators?.quote?.[0]?.close||[]).filter(x=>x!=null&&x>0);
+    if(cl.length<200) return;
+    const cur=cl[cl.length-1], m200=ma(cl,200), m50=ma(cl,50);
+    const bMo3m=cl.length>=65?mom(cl,65):null;
+    let regime=0,label='neutro';
+    if(cur>m200 && m50>m200){ regime=1; label='favorevole (risk-on)'; }
+    else if(cur<m200 && m50<m200){ regime=-1; label='avverso (risk-off)'; }
+    _REGIME={regime,benchMo3m:bMo3m,ts:Date.now(),label};
+  }catch{}
+}
+// Classe di asset dal ticker (le soglie di RSI/volatilità differiscono molto per classe)
+function clsOf(ticker){ return /-USD$/i.test(ticker||'')?'crypto':'stock'; }
+
+// Confidenza dello score (#6): quanti input chiave erano disponibili.
+function scoreConfidence(inp){
+  const checks=[inp.R!=null, inp.M200!=null, inp.Mo3m!=null, inp.Mo12m!=null, inp.V!=null, inp.w30!=null, inp.fund!=null, (inp.histLen||0)>=252];
+  const have=checks.filter(Boolean).length, tot=checks.length;
+  const pct=Math.round(have/tot*100);
+  return {pct, have, tot, level: pct>=75?'alta':pct>=50?'media':'bassa'};
+}
+
+function edgeScore(R,M50,M200,V,Mo,w7,w30,w90,price,Mo3m=null,Mo6m=null,Mo12m=null,fund=null,seasonPct=null,opts=null){
+  const o=opts||{};
+  const cls=o.cls||'stock';
+  const regime=(o.regime!=null?o.regime:_REGIME.regime)||0;      // #2
+  const benchMo3m=o.benchMo3m!=null?o.benchMo3m:_REGIME.benchMo3m; // per forza relativa #3
+  const isCrypto=cls==='crypto';
+  // #5 soglie per classe di asset
+  const rLo=isCrypto?35:30, rLo2=isCrypto?45:40, rHi=isCrypto?78:70, rHi2=isCrypto?68:60;
+  const vT=isCrypto?{a:120,b:80,c:50,d:35}:{a:60,b:40,c:25,d:15};
   let s=50;
 
   // TREND (MA50 + MA200 + cross)
@@ -3775,17 +3855,28 @@ function edgeScore(R,M50,M200,V,Mo,w7,w30,w90,price,Mo3m=null,Mo6m=null,Mo12m=nu
   if(M200!=null) s+=price>M200*1.05?10:price>M200?5:price<M200*.95?-10:-5;
   if(M50&&M200) s+=M50>M200?3:-3; // golden/death cross
 
-  // MOMENTUM multi-timeframe
-  if(Mo3m!=null) s+=Mo3m>10?9:Mo3m>5?5:Mo3m>0?2:Mo3m>-5?-3:Mo3m>-10?-7:-10;
-  else if(Mo!=null) s+=Mo>5?6:Mo>0?3:Mo<-5?-6:-3; // fallback 20gg
-  if(Mo6m!=null) s+=Mo6m>15?6:Mo6m>5?3:Mo6m>0?1:Mo6m>-10?-4:-7;
-  if(Mo12m!=null) s+=Mo12m>20?5:Mo12m>5?2:Mo12m>0?1:Mo12m>-15?-3:-5;
+  // MOMENTUM multi-timeframe — #4 attenuato (0.85) per ridurre il doppio conteggio col trend,
+  // e #2 pesato dal regime (in risk-off vale meno: 0.6; in risk-on pieno: 1.0)
+  let mo=0;
+  if(Mo3m!=null) mo+=Mo3m>10?9:Mo3m>5?5:Mo3m>0?2:Mo3m>-5?-3:Mo3m>-10?-7:-10;
+  else if(Mo!=null) mo+=Mo>5?6:Mo>0?3:Mo<-5?-6:-3; // fallback 20gg
+  if(Mo6m!=null) mo+=Mo6m>15?6:Mo6m>5?3:Mo6m>0?1:Mo6m>-10?-4:-7;
+  if(Mo12m!=null) mo+=Mo12m>20?5:Mo12m>5?2:Mo12m>0?1:Mo12m>-15?-3:-5;
+  const momW=regime<0?0.6:regime>0?1.0:0.85;
+  s+=mo*momW;
 
-  // RSI
-  if(R!=null) s+=R<30?8:R<40?4:R>70?-8:R>60?-4:0;
+  // #3 FORZA RELATIVA vs mercato (S&P 500): un +5% mentre il mercato fa +15% è debolezza.
+  // Non si applica alle crypto (benchmark azionario non pertinente).
+  if(!isCrypto && Mo3m!=null && benchMo3m!=null){
+    const rel=Mo3m-benchMo3m;
+    s+=rel>10?6:rel>3?3:rel>-3?0:rel>-10?-4:-7;
+  }
 
-  // VOLATILITY
-  if(V!=null) s+=V>60?-10:V>40?-5:V>25?-2:V<15?3:0;
+  // RSI (#5 soglie per classe)
+  if(R!=null) s+=R<rLo?8:R<rLo2?4:R>rHi?-8:R>rHi2?-4:0;
+
+  // VOLATILITY (#5 soglie per classe)
+  if(V!=null) s+=V>vT.a?-10:V>vT.b?-5:V>vT.c?-2:V<vT.d?3:0;
 
   // WIN RATE storico (solo i valori disponibili)
   const wrs=[w7,w30,w90].filter(w=>w!=null);
@@ -3794,11 +3885,15 @@ function edgeScore(R,M50,M200,V,Mo,w7,w30,w90,price,Mo3m=null,Mo6m=null,Mo12m=nu
   // STAGIONALITÀ mese corrente
   if(seasonPct!=null) s+=(seasonPct-50)*0.15;
 
-  // FONDAMENTALI (solo se disponibili — azioni)
+  // FONDAMENTALI: qualità + #7 VALUTAZIONE (solo se disponibili — azioni)
   if(fund){
     if(fund.roe!=null) s+=fund.roe>0.2?6:fund.roe>0.1?3:fund.roe>0?1:fund.roe>-0.05?-3:-6;
     if(fund.opMargin!=null) s+=fund.opMargin>0.2?4:fund.opMargin>0.1?2:fund.opMargin>=0?0:-4;
     if(fund.earningsGrowth!=null) s+=fund.earningsGrowth>0.2?5:fund.earningsGrowth>0.05?2:fund.earningsGrowth>=0?1:-4;
+    // #7 VALUTAZIONE: P/E — premia lo sconto, penalizza il caro (ignora P/E negativi o assurdi)
+    const pe=fund.trailingPE??fund.forwardPE;
+    if(pe!=null && pe>0 && pe<200) s+=pe<12?5:pe<20?2:pe<30?0:pe<50?-3:-6;
+    if(fund.pb!=null && fund.pb>0) s+=fund.pb<1?4:fund.pb<3?1:fund.pb<6?0:-3;
   }
 
   return Math.max(0,Math.min(100,Math.round(s)));
@@ -4223,7 +4318,7 @@ async function loadPulse(){
         if(valid.length<2) return;
         const tss=valid.map(p=>p.t), cl=valid.map(p=>p.c);
         if(sym==='SPY') spyCl=cl;
-        const score=cached!==null?cached:scoreFromHistory(cl,tss);
+        const score=cached!==null?cached:scoreFromHistory(cl,tss,sym);
         // conserva l'eventuale dato "dip" già in cache: non azzerarlo ri-salvando il solo score
         if(score!=null){ globalScoreMap[sym]=score; setCached(sym,score,getCachedDip(sym)); }
         const cur=cl[cl.length-1], prev=cl[cl.length-2];
@@ -4605,6 +4700,7 @@ function closeOtherFullpages(except){
   if(except!=='cmp'   && document.getElementById('cmp-modal')?.style.display==='flex') closeCompare();
   if(except!=='about' && document.getElementById('about-modal')?.style.display==='flex') closeAbout();
   if(except!=='track' && document.getElementById('track-modal')?.style.display==='flex') closeTracker();
+  if(except!=='calib' && document.getElementById('calib-modal')?.style.display==='flex') closeCalibration();
   if(except!=='cat'){ const cat=document.getElementById('cat-modal'); if(cat?.classList.contains('cat-fullpage')) closeCatModal(); }
 }
 function _openCatPage() {
@@ -5506,8 +5602,10 @@ async function analyze(ticker){
     // fetch fondamentali in parallelo — NON blocca il rendering principale
     const fundPromise=fetchFundamentals(ticker).catch(()=>null);
     // Score tecnico immediato (coerente con home); i fondamentali lo affinano quando arrivano
-    let score=edgeScore(R,M50,M200,V,Mo,w7,w30,w90,cur,Mo3m,Mo6m,Mo12m,null,seasonPct);
+    const _cls=clsOf(ticker);
+    let score=edgeScore(R,M50,M200,V,Mo,w7,w30,w90,cur,Mo3m,Mo6m,Mo12m,null,seasonPct,{cls:_cls});
     const techScore=score;   // score PURO tecnico — stessa base della sezione Opportunità in home
+    const _conf=scoreConfidence({R,M200,Mo3m,Mo12m,V,w30,fund:null,histLen:cl.length});
     // popola dip + cache così il titolo entra SUBITO nello screening Opportunità della home
     const _mx=Math.max(...cl.slice(-252)); const _dd=_mx>0?(_mx-cur)/_mx*100:0;
     const _trendUp=M50!=null&&M200!=null&&M50>M200;
@@ -5547,6 +5645,20 @@ async function analyze(ticker){
       // narrativa e raccomandazione sono ora nella card "Analisi AI" (niente doppioni)
     };
     renderScoreUI(score);
+
+    // #6 Confidenza dello score + #2 regime di mercato — resi visibili
+    (()=>{
+      const mr=document.getElementById('sig-meta-row'); if(!mr) return;
+      const cc=_conf.level==='alta'?'var(--g)':_conf.level==='media'?'var(--y)':'var(--r)';
+      const rg=_REGIME.regime, rgc=rg>0?'var(--g)':rg<0?'var(--r)':'var(--t2)';
+      const bits=[
+        `<span class="sig-meta" title="Quanti input chiave (RSI, MA200, momentum, volatilità, win rate, fondamentali, storico ≥1 anno) erano disponibili. Meno dati = score meno affidabile.">Confidenza dato: <b style="color:${cc}">${_conf.level}</b> <span style="color:var(--t3)">(${_conf.have}/${_conf.tot})</span></span>`,
+        `<span class="sig-meta" title="Contesto di mercato basato su S&P 500 vs la sua media a 200 giorni. In fase 'avversa' lo score pesa meno il momentum, che spesso inganna nei ribassi.">Regime mercato: <b style="color:${rgc}">${_REGIME.label}</b></span>`,
+      ];
+      if(_cls==='crypto') bits.push(`<span class="sig-meta" style="color:var(--t3)">soglie tarate per crypto</span>`);
+      mr.innerHTML=bits.join('');
+      mr.style.display='';
+    })();
 
     // Indicators
     const rc=R==null?'var(--t3)':R<30?'var(--g)':R>70?'var(--r)':'var(--t2)';
@@ -5627,6 +5739,7 @@ async function analyze(ticker){
         vol:V!=null?+V.toFixed(1):null, dd:+DD.toFixed(1),
         mo3m:Mo3m!=null?+Mo3m.toFixed(1):null, mo6m:Mo6m!=null?+Mo6m.toFixed(1):null, mo12m:Mo12m!=null?+Mo12m.toFixed(1):null,
         w30:w30!=null?+w30.toFixed(0):null, w90:w90!=null?+w90.toFixed(0):null, fund:fund||null,
+        regime:_REGIME.label, confidence:_conf.level,
       });
       renderStockAI(buildAIData(null),false);   // subito, dati tecnici
       try{ renderEdge(cl); }catch(e){ console.warn('edge',e); }   // prova dell'edge (backtest segnali)
@@ -5636,7 +5749,7 @@ async function analyze(ticker){
         // Affina lo score visualizzato includendo i fondamentali (solo per il display;
         // la cache/home restano sullo score TECNICO per coerenza con lo screening opportunità)
         if(fund){
-          score=edgeScore(R,M50,M200,V,Mo,w7,w30,w90,cur,Mo3m,Mo6m,Mo12m,fund,seasonPct);
+          score=edgeScore(R,M50,M200,V,Mo,w7,w30,w90,cur,Mo3m,Mo6m,Mo12m,fund,seasonPct,{cls:_cls});
           renderScoreUI(score);
           buildDipSignal(R,M50,M200,Mo3m,Mo12m,DD,cur,w30,score);
         }
@@ -6872,6 +6985,115 @@ function closeAbout(){
 }
 
 // ═══════════════════════════════════════════════════════════
+//  #1 CALIBRAZIONE APEX SCORE — la prova reale, out-of-sample
+//  Per un paniere rappresentativo di titoli liquidi con lunga storia,
+//  ricostruiamo lo score in ogni giorno del passato usando SOLO i dati
+//  disponibili fino a quel giorno (nessun look-ahead), poi misuriamo cosa
+//  è successo davvero `horizon` giorni dopo. Raggruppiamo per fascia di
+//  score e mostriamo % di casi in guadagno e rendimento medio reale.
+// ═══════════════════════════════════════════════════════════
+const CALIB_BASKET=['AAPL','MSFT','AMZN','GOOGL','META','NVDA','TSLA','JPM','V','JNJ','WMT','PG','XOM','KO','DIS','BAC','INTC','CSCO','PFE','NKE','MCD','CVX','IBM','ORCL','SPY','QQQ','GLD','EEM'];
+const CALIB_BANDS=[{lo:0,hi:40,lbl:'0–40'},{lo:40,hi:50,lbl:'40–50'},{lo:50,hi:60,lbl:'50–60'},{lo:60,hi:70,lbl:'60–70'},{lo:70,hi:101,lbl:'70+'}];
+let _calibCache=null;
+
+// score TECNICO storico calcolato su cl[0..i] (niente regime storico: neutro, come dichiarato)
+function calibHistScore(cl,i){
+  if(i<252) return null;
+  const w=cl.slice(0,i+1);
+  const cur=w[w.length-1];
+  const R=rsi(w),M50=ma(w,50),M200=ma(w,200),V=vol(w),Mo=mom(w);
+  const w7=wr(w,7),w30=wr(w,30),w90=wr(w,90);
+  const Mo3m=w.length>=65?mom(w,65):null, Mo6m=w.length>=130?mom(w,130):null, Mo12m=w.length>=252?mom(w,252):null;
+  return edgeScore(R,M50,M200,V,Mo,w7,w30,w90,cur,Mo3m,Mo6m,Mo12m,null,null,{regime:0,benchMo3m:null});
+}
+
+async function runCalibration(horizon=63,onProg=null){
+  const bands=CALIB_BANDS.map(b=>({...b,n:0,pos:0,sumRet:0}));
+  let total=0,totalPos=0,sumAll=0,tickersUsed=0;
+  for(let k=0;k<CALIB_BASKET.length;k++){
+    const sym=CALIB_BASKET[k];
+    if(onProg) onProg(k,CALIB_BASKET.length,sym);
+    let cl;
+    try{
+      const res=await fetchChart(sym,'5y','1d');
+      cl=(res?.indicators?.quote?.[0]?.close||[]).filter(x=>x!=null&&x>0);
+    }catch{ continue; }
+    if(!cl||cl.length<252+horizon+30) continue;
+    tickersUsed++;
+    // campiona ogni 5 giorni per restare veloce; forward return reale a `horizon`
+    for(let i=252;i<cl.length-horizon;i+=5){
+      const sco=calibHistScore(cl,i); if(sco==null) continue;
+      const fwd=(cl[i+horizon]-cl[i])/cl[i];
+      const b=bands.find(x=>sco>=x.lo&&sco<x.hi); if(!b) continue;
+      b.n++; b.sumRet+=fwd; if(fwd>0) b.pos++;
+      total++; sumAll+=fwd; if(fwd>0) totalPos++;
+    }
+    // cede il thread all'UI tra un titolo e l'altro
+    await new Promise(r=>setTimeout(r,0));
+  }
+  bands.forEach(b=>{ b.rate=b.n?Math.round(b.pos/b.n*100):null; b.avg=b.n?b.sumRet/b.n*100:null; });
+  return { bands, total, baseRate:total?Math.round(totalPos/total*100):null, baseAvg:total?sumAll/total*100:null, horizon, tickersUsed };
+}
+
+function renderCalibration(r){
+  const body=document.getElementById('calib-body'); if(!body) return;
+  const mono=(()=>{ // lo score è "monotòno"? fasce alte → hit-rate ≥ fasce basse
+    const rates=r.bands.filter(b=>b.n>=30).map(b=>b.rate);
+    let ok=true; for(let i=1;i<rates.length;i++) if(rates[i]<rates[i-1]-4) ok=false;
+    return ok&&rates.length>=3;
+  })();
+  const maxRate=Math.max(...r.bands.map(b=>b.rate||0),r.baseRate||0,1);
+  const rows=r.bands.map(b=>{
+    if(!b.n) return `<div class="cal-row"><div class="cal-band">${b.lbl}</div><div class="cal-bar-wrap"><div class="cal-empty">dati insufficienti</div></div></div>`;
+    const wpc=Math.round((b.rate/maxRate)*100);
+    const col=b.rate>=(r.baseRate+5)?'var(--g)':b.rate<=(r.baseRate-5)?'var(--r)':'var(--y)';
+    const small=b.n<30;
+    return `<div class="cal-row">
+      <div class="cal-band">APEX ${b.lbl}</div>
+      <div class="cal-bar-wrap">
+        <div class="cal-bar" style="width:${wpc}%;background:${col}"></div>
+        <span class="cal-val">${b.rate}% in guadagno${small?' ⚠️':''}</span>
+      </div>
+      <div class="cal-side">reso medio <b style="color:${b.avg>=0?'var(--g)':'var(--r)'}">${b.avg>=0?'+':''}${b.avg.toFixed(1)}%</b> · ${b.n} casi${small?' (pochi)':''}</div>
+    </div>`;
+  }).join('');
+  body.innerHTML=`
+    <div class="cal-intro">
+      <p>Questa è la <b>prova onesta</b> dello score: non ti chiediamo di fidarti, ti mostriamo cosa è realmente successo. Su un paniere di <b>${r.tickersUsed} titoli liquidi</b> con 5 anni di storia, abbiamo ricostruito l'APEX Score in <b>${r.total.toLocaleString('it-IT')} giorni</b> del passato — usando <b>solo</b> i dati disponibili fino a quel giorno (nessun trucco col senno di poi) — e misurato il rendimento reale <b>${r.horizon} giorni di borsa (~3 mesi)</b> dopo.</p>
+    </div>
+    <div class="cal-base">📊 Riferimento: comprando a caso in un giorno qualsiasi, il prezzo era più alto dopo ~3 mesi il <b>${r.baseRate}%</b> delle volte (reso medio ${r.baseAvg>=0?'+':''}${r.baseAvg.toFixed(1)}%). <b>Una fascia di score è utile solo se batte questo ${r.baseRate}%.</b></div>
+    <div class="cal-chart">${rows}</div>
+    <div class="cal-verdict ${mono?'cal-ok':'cal-warn'}">
+      ${mono
+        ? `✓ <b>Lo score discrimina.</b> Salendo di fascia, la probabilità di essere in guadagno tende a crescere: il numero ha un significato misurabile, non è arbitrario.`
+        : `⚠️ <b>Onestà prima di tutto:</b> su questo paniere le fasce alte <b>non</b> battono in modo netto e monotòno quelle basse. Lo score resta un riassunto utile degli indicatori, ma <b>non</b> trattarlo come una probabilità affidabile di guadagno. Usalo per capire <i>cosa</i> guardi, non per decidere da solo.`}
+    </div>
+    <div class="cal-note">Metodo: score puramente tecnico (senza il fattore regime, non ricostruibile storicamente qui), campionamento ogni 5 giorni, orizzonte ${r.horizon}gg, nessun look-ahead. Paniere di grandi capitalizzazioni USA + ETF — non è l'intero universo, ma un campione rappresentativo e liquido. <b>Il passato non garantisce il futuro.</b></div>`;
+}
+
+function openCalibration(){
+  closeMainMenu(); if(typeof closeOtherFullpages==='function') closeOtherFullpages('calib');
+  const m=document.getElementById('calib-modal');
+  const hdr=document.querySelector('header');
+  const h=hdr?Math.round(hdr.getBoundingClientRect().height):56;
+  m.style.top=h+'px'; m.style.display='flex';
+  const sy=window.scrollY; document.body.dataset.pfScroll=sy;
+  document.body.style.position='fixed'; document.body.style.top=`-${sy}px`; document.body.style.width='100%';
+  const body=document.getElementById('calib-body'); body.scrollTop=0;
+  if(_calibCache){ renderCalibration(_calibCache); return; }
+  body.innerHTML=`<div class="cal-loading"><div class="cal-spin"></div><p id="cal-prog">Ricostruzione dello score sul passato… questo richiede qualche secondo.</p></div>`;
+  runCalibration(63,(k,tot,sym)=>{ const p=document.getElementById('cal-prog'); if(p) p.textContent=`Analisi storica: ${sym} (${k+1}/${tot})…`; })
+    .then(r=>{ _calibCache=r; renderCalibration(r); })
+    .catch(()=>{ body.innerHTML=`<div class="cal-loading"><p>⚠️ Impossibile completare la calibrazione ora (dati non disponibili). Riprova tra poco.</p></div>`; });
+}
+function closeCalibration(){
+  document.getElementById('calib-modal').style.display='none';
+  const sy=+document.body.dataset.pfScroll||0;
+  document.body.style.position=''; document.body.style.top=''; document.body.style.width='';
+  window.scrollTo(0,sy);
+}
+
+// ═══════════════════════════════════════════════════════════
 //  IL MIO PORTAFOGLIO — tracking reale + statistica + proiezione
 // ═══════════════════════════════════════════════════════════
 const TRACK_STORE='apex_myportfolio';
@@ -7307,7 +7529,7 @@ async function cmpFetch(ticker){
   const mx=Math.max(...cl.slice(-252)); const dd=mx>0?(mx-cur)/mx*100:0;
   const fund=await fetchFundamentals(ticker).catch(()=>null);
   return { ticker, name:meta.longName||meta.shortName||ticker, currency:meta.currency||'',
-    price:cur, chP:(cur-prev)/prev*100, score:scoreFromHistory(cl,tss),
+    price:cur, chP:(cur-prev)/prev*100, score:scoreFromHistory(cl,tss,ticker),
     rsi:rsi(cl), M50, M200, cur, vol:vol(cl),
     mo3m:cl.length>=65?mom(cl,65):null, mo12m:cl.length>=252?mom(cl,252):null, dd,
     pe:fund?.trailingPE??null, roe:fund?.roe??null };
@@ -7419,6 +7641,9 @@ function buildMainMenu(){
   html+=`<div class="nav-menu-item" onclick="openAbout()">
     <span class="nm-ico"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></span>
     <span class="nm-text"><span class="nm-title">Chi siamo</span><span class="nm-sub">Filosofia, metodo e trasparenza</span></span>${chevron}</div>`;
+  html+=`<div class="nav-menu-item" onclick="openCalibration()">
+    <span class="nm-ico"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 9l-5 5-3-3-4 4"/></svg></span>
+    <span class="nm-text"><span class="nm-title">Affidabilità dello Score</span><span class="nm-sub">La prova reale: calibrazione sui dati storici</span></span>${chevron}</div>`;
   menu.innerHTML=html;
 }
 function toggleMainMenu(e){
@@ -8214,7 +8439,9 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('cat-modal').addEventListener('click',e=>{ if(e.target===e.currentTarget && !e.currentTarget.classList.contains('cat-fullpage')) closeCatModal(); });
   loadNews();
   setInterval(loadNews,5*60*1000);
-  loadPulse().then(()=>loadPanoramica());
+  refreshRegime();   // #2 stato del mercato (S&P vs MA200) prima dello scoring
+  setInterval(refreshRegime,10*60*1000);
+  loadPulse().then(()=>refreshRegime()).then(()=>loadPanoramica());
   loadMacro();
   fetchMacroData().then(renderMacro).catch(()=>{});
   // Auto-refresh Dollar/YieldCurve/Sectors every 5 min when market is open

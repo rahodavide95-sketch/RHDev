@@ -24,7 +24,7 @@ textarea { resize: none; }
 
   --pad-section: clamp(6rem, 12vw, 11rem);
   --pad-x:       clamp(1.5rem, 4vw, 4rem);
-  --max-w:       1200px;
+  --max-w:       1500px;
 
   --ease:        cubic-bezier(0.25, 0.46, 0.45, 0.94);
   --ease-out:    cubic-bezier(0.0,  0.0,  0.2,  1.0);
@@ -554,8 +554,8 @@ img.broken-hide                   { visibility: hidden; }
    ============================================================ */
 .releases-grid {
   display:               grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap:                   3rem 2rem;
+  grid-template-columns: repeat(5, 1fr);
+  gap:                   2.5rem 1.6rem;
 }
 #releases .releases-grid,
 #artists .artists-grid {
@@ -668,8 +668,8 @@ img.broken-hide                   { visibility: hidden; }
    ============================================================ */
 .artists-grid {
   display:               grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap:                   2.5rem 2rem;
+  grid-template-columns: repeat(5, 1fr);
+  gap:                   2.2rem 1.6rem;
 }
 #artists {
   padding-bottom: 4rem;
@@ -1235,6 +1235,17 @@ img.broken-hide                   { visibility: hidden; }
 /* ============================================================
    RESPONSIVE
    ============================================================ */
+
+/* 5 cols → 4 on narrower desktops/tablets */
+@media (max-width: 1180px) {
+  .releases-grid,
+  .artists-grid { grid-template-columns: repeat(4, 1fr); }
+}
+/* 4 → 3 on small tablets */
+@media (max-width: 860px) {
+  .releases-grid,
+  .artists-grid { grid-template-columns: repeat(3, 1fr); }
+}
 
 @media (max-width: 960px) {
   .form-row { grid-template-columns: 1fr; }

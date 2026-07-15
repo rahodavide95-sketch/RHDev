@@ -126,7 +126,16 @@ function setText(id, value) {
 function applyPeekMask(gridEl) {
   if (!gridEl) return;
   const cards = Array.from(gridEl.children);
-  const cols = 3;
+  if (cards.length < 2) return;
+
+  // Detect column count from the actual DOM layout (5 / 4 / 3 responsive)
+  const firstTop = cards[0].getBoundingClientRect().top;
+  let cols = 1;
+  for (let i = 1; i < cards.length; i++) {
+    if (Math.abs(cards[i].getBoundingClientRect().top - firstTop) > 5) break;
+    cols++;
+  }
+
   if (cards.length <= cols * 2) {
     gridEl.style.removeProperty('-webkit-mask-image');
     gridEl.style.removeProperty('mask-image');
@@ -184,7 +193,7 @@ function buildReleases(releases) {
 
   const recent = [...releases]
     .sort((a, b) => parseReleaseDate(b.date || b.year) - parseReleaseDate(a.date || a.year))
-    .slice(0, 9);
+    .slice(0, 10);
 
   grid.innerHTML = recent.map((r, i) => renderReleaseCard(r, i)).join('');
 
@@ -295,7 +304,7 @@ function buildArtists(artists) {
 
   grid.innerHTML = [...artists]
     .sort((a, b) => a.name.localeCompare(b.name))
-    .slice(0, 9)
+    .slice(0, 10)
     .map((a, i) => renderArtistCard(a, i)).join('');
 
   document.getElementById('artistsViewAll')

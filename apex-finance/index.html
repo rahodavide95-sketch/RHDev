@@ -1521,6 +1521,8 @@ input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size
 .prof-doc-arrow{color:var(--t3);flex-shrink:0;}
 
 /* ── PORTFOLIO SIMULATOR ── */
+/* la calibrazione si apre DALL'analisi (#ao z-index:300): deve stargli sopra, non dietro */
+#calib-modal{z-index:350!important;}
 .pf-modal{position:fixed;left:0;right:0;bottom:0;z-index:150;
   background:var(--bg);display:flex;flex-direction:column;overflow:hidden;
   border-radius:var(--radius-lg) var(--radius-lg) 0 0;
@@ -5661,8 +5663,11 @@ function renderOppZone(d){
   const titleEl=document.getElementById('oz-title');
   if(!card) return;
   card.style.display='block';
-  const c1={ok:d.rsi!=null&&d.rsi<40, na:d.rsi==null, label:'Ipervenduto — RSI &lt; 40',
-    val:d.rsi!=null?`RSI ${d.rsi.toFixed(0)}`:'RSI non disponibile'};
+  // usa l'RSI GREZZO (non arrotondato) — identico al valore che la home usa per la selezione,
+  // così un RSI tipo 39.96 non "sfora" a 40.0 e i due verdetti non si contraddicono più
+  const rsiForZone=d.rsiRaw!=null?d.rsiRaw:d.rsi;
+  const c1={ok:rsiForZone!=null&&rsiForZone<40, na:rsiForZone==null, label:'Ipervenduto — RSI &lt; 40',
+    val:rsiForZone!=null?`RSI ${rsiForZone.toFixed(0)}`:'RSI non disponibile'};
   const c2={ok:d.trendUp===true, na:d.trendUp==null, label:'Trend di fondo rialzista — MA50 &gt; MA200',
     val:d.trendUp==null?'trend non disponibile':(d.trendUp?'MA50 sopra MA200':'MA50 sotto MA200')};
   // usa lo score TECNICO (stessa base della home) per essere coerente al 100%
@@ -5920,7 +5925,7 @@ async function analyze(ticker){
       const buildAIData=(fund)=>({
         ticker, name:(meta.longName||meta.shortName||ticker), currency:meta.currency||'',
         price:cur, chP:+chP.toFixed(2), score, techScore, rel:oppRel,
-        rsi:R!=null?+R.toFixed(1):null,
+        rsi:R!=null?+R.toFixed(1):null, rsiRaw:R,
         aboveMA50:M50!=null?cur>M50:null, aboveMA200:M200!=null?cur>M200:null,
         trendUp:(M50!=null&&M200!=null)?M50>M200:null,
         vol:V!=null?+V.toFixed(1):null, dd:+DD.toFixed(1),

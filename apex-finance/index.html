@@ -64,56 +64,35 @@
   --ring:0 0 0 1px rgba(10,132,255,.4), 0 12px 32px rgba(10,132,255,.18);
 }
 }
-/* ── GLASS BARS — dark navy on dark theme, fresh azure on light theme ── */
+/* ── GLASS BARS — vivid blue on ALL themes, white content ── */
 :root{
-  --bar-bg:linear-gradient(135deg,rgba(15,30,70,.72) 0%,rgba(20,45,110,.78) 50%,rgba(15,30,70,.72) 100%);
+  --bar-bg:linear-gradient(135deg,rgba(23,88,220,.90) 0%,rgba(12,120,246,.92) 50%,rgba(23,88,220,.90) 100%);
   --bar-blur:blur(28px) saturate(180%);
-  --bar-border:rgba(255,255,255,.12);
+  --bar-border:rgba(255,255,255,.18);
   --bar-txt:#fff;
 }
-[data-theme="light"]{
-  --bar-bg:linear-gradient(135deg,rgba(224,241,255,.82) 0%,rgba(198,228,255,.9) 50%,rgba(224,241,255,.82) 100%);
-  --bar-border:rgba(10,110,220,.16);
-  --bar-txt:#0c2340;
-}
-@media(prefers-color-scheme:light){[data-theme="system"]{
-  --bar-bg:linear-gradient(135deg,rgba(224,241,255,.82) 0%,rgba(198,228,255,.9) 50%,rgba(224,241,255,.82) 100%);
-  --bar-border:rgba(10,110,220,.16);
-  --bar-txt:#0c2340;
-}}
 header,.site-footer{
   background:var(--bar-bg)!important;
   backdrop-filter:var(--bar-blur)!important;
   -webkit-backdrop-filter:var(--bar-blur)!important;
   border-color:var(--bar-border)!important;
 }
-/* Fresh azure bar (light theme): dark, legible content instead of white-on-navy */
-[data-theme="light"] .logo-apex{background:linear-gradient(135deg,#0a84ff 0%,#0b3a72 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
-[data-theme="light"] .logo-finance{color:#3f6088;}
-[data-theme="light"] .search-ico{color:#5a7ba3;}
-[data-theme="light"] .btn-theme,
-[data-theme="light"] .live-ind{background:transparent;border-color:transparent;color:#0c2340;}
-[data-theme="light"] .search-input{background:rgba(255,255,255,.72);border-color:rgba(10,110,220,.26);color:#0c2340;box-shadow:0 1px 3px rgba(10,90,190,.08);}
-[data-theme="light"] .search-input::placeholder{color:#7d97b5;}
-[data-theme="light"] .search-input:focus{border-color:#0a84ff;box-shadow:0 0 0 3px rgba(10,132,255,.2);}
-[data-theme="system"] .search-input:focus{border-color:#0a84ff;box-shadow:0 0 0 3px rgba(10,132,255,.2);}
-[data-theme="light"] .btn-search,
-[data-theme="light"] header .btn-search{background:#0a84ff!important;color:#fff!important;border:none!important;}
-[data-theme="light"] .site-footer{color:#41607f;}
-[data-theme="light"] .site-footer strong{color:#0c2340;}
-@media(prefers-color-scheme:light){
-  [data-theme="system"] .logo-apex{background:linear-gradient(135deg,#0a84ff 0%,#0b3a72 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
-  [data-theme="system"] .logo-finance{color:#3f6088;}
-  [data-theme="system"] .search-ico{color:#5a7ba3;}
-  [data-theme="system"] .btn-theme,
-  [data-theme="system"] .live-ind{background:transparent;border-color:transparent;color:#0c2340;}
-  [data-theme="system"] .search-input{background:rgba(255,255,255,.72);border-color:rgba(10,110,220,.26);color:#0c2340;box-shadow:0 1px 3px rgba(10,90,190,.08);}
-  [data-theme="system"] .search-input::placeholder{color:#7d97b5;}
-  [data-theme="system"] .btn-search,
-  [data-theme="system"] header .btn-search{background:#0a84ff!important;color:#fff!important;border:none!important;}
-  [data-theme="system"] .site-footer{color:#41607f;}
-  [data-theme="system"] .site-footer strong{color:#0c2340;}
-}
+/* Everything sitting on a blue bar is WHITE, so it's always legible — on every theme.
+   (Content OUTSIDE the bars keeps the normal theme colors.) */
+header,header .live-ind,header .btn-theme,.site-footer{color:#fff;}
+header .btn-theme svg,header .nav-btn svg,header .nav-btn,header .live-ind svg{color:#fff;stroke:#fff;}
+header .nav-btn:hover,header .btn-theme:hover{background:rgba(255,255,255,.16)!important;}
+header .btn-theme:hover{color:#fff;background:rgba(255,255,255,.16);}
+.logo-apex{background:linear-gradient(135deg,#ffffff 0%,#bfe0ff 100%)!important;-webkit-background-clip:text!important;background-clip:text!important;-webkit-text-fill-color:transparent!important;}
+.logo-finance{color:rgba(255,255,255,.72)!important;}
+.search-ico{color:rgba(255,255,255,.75)!important;}
+.search-input{background:rgba(255,255,255,.15)!important;border-color:rgba(255,255,255,.28)!important;color:#fff!important;box-shadow:0 0 0 1px rgba(255,255,255,.08)!important;}
+.search-input::placeholder{color:rgba(255,255,255,.6)!important;}
+.search-input:focus{border-color:rgba(255,255,255,.7)!important;box-shadow:0 0 0 3px rgba(255,255,255,.22)!important;}
+.btn-search{background:#fff!important;color:#0c56d0!important;border:none!important;font-weight:800!important;}
+.btn-search:hover{background:#eaf2ff!important;}
+.site-footer{color:rgba(255,255,255,.72);}
+.site-footer strong{color:#fff;}
 
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 html,body,footer,header{margin:0;padding:0;}

@@ -44,12 +44,13 @@ function buildContent() {
   if (typeof SITE === 'undefined') return;
   const { label, releases, artists, contact } = SITE;
 
-  // Hero title: split last word onto new line (SUBCONSCIOUS / Culture)
+  // Hero title: split last word — first words heavy, last word light
   const heroTitle = document.getElementById('hero-title');
   if (heroTitle && label.name) {
     const words = label.name.trim().split(' ');
     const last  = words.pop();
-    heroTitle.innerHTML = (words.length ? words.join(' ') + '<br>' : '') + last;
+    const top   = words.length ? `<span class="ht-top">${words.join(' ')}</span><br>` : '';
+    heroTitle.innerHTML = top + `<span class="ht-bot">${last}</span>`;
   }
   const taglineEl = document.getElementById('hero-tagline');
   if (taglineEl && label.tagline) {
@@ -126,7 +127,16 @@ function setText(id, value) {
 function applyPeekMask(gridEl) {
   if (!gridEl) return;
   const cards = Array.from(gridEl.children);
-  const cols = 3;
+  if (cards.length < 2) return;
+
+  // Detect column count from actual DOM layout
+  const firstTop = cards[0].getBoundingClientRect().top;
+  let cols = 1;
+  for (let i = 1; i < cards.length; i++) {
+    if (Math.abs(cards[i].getBoundingClientRect().top - firstTop) > 5) break;
+    cols++;
+  }
+
   if (cards.length <= cols * 2) {
     gridEl.style.removeProperty('-webkit-mask-image');
     gridEl.style.removeProperty('mask-image');
@@ -170,10 +180,12 @@ function renderReleaseCard(r, i) {
         ${coverHtml}
         ${overlayHtml}
       </div>
-      <div class="release-artist">${esc(r.artist)}</div>
-      <div class="release-title">${esc(r.title)}</div>
-      <div class="release-meta">
-        ${metaParts.map(p => `<span>${esc(p)}</span>`).join('')}
+      <div class="release-info">
+        <div class="release-artist">${esc(r.artist)}</div>
+        <div class="release-title">${esc(r.title)}</div>
+        <div class="release-meta">
+          ${metaParts.map(p => `<span>${esc(p)}</span>`).join('')}
+        </div>
       </div>
     </article>`;
 }
@@ -281,11 +293,13 @@ function renderArtistCard(a, i) {
   return `
     <article class="artist-card" style="transition-delay:${i * 0.09}s">
       <div class="artist-photo">${photoHtml}</div>
-      <div class="artist-name">${esc(a.name)}</div>
-      ${links.length ? `
-        <div class="artist-links">
-          ${links.map(l => `<a href="${l.url}" target="_blank" rel="noopener" class="artist-link">${l.text}</a>`).join('')}
-        </div>` : ''}
+      <div class="artist-info">
+        <div class="artist-name">${esc(a.name)}</div>
+        ${links.length ? `
+          <div class="artist-links">
+            ${links.map(l => `<a href="${l.url}" target="_blank" rel="noopener" class="artist-link">${l.text}</a>`).join('')}
+          </div>` : ''}
+      </div>
     </article>`;
 }
 

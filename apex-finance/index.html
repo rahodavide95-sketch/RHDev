@@ -736,6 +736,13 @@ header{
 .sig-meta-row{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:12px;}
 .sig-meta{font-size:.74rem;color:var(--t2);}
 .sig-meta b{font-weight:700;}
+.apex-plus{margin-top:14px;padding:12px 14px;border-radius:12px;border:1px solid var(--border);
+  background:linear-gradient(135deg,rgba(59,130,246,.08),rgba(139,92,246,.05));
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:.82rem;color:var(--t2);line-height:1.5;}
+.apex-plus .ap-num{font-size:1.5rem;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;flex-shrink:0;}
+.apex-plus .ap-lbl{font-weight:800;color:var(--text);}
+.apex-plus .ap-delta{font-weight:700;font-size:.76rem;padding:2px 8px;border-radius:20px;}
+.apex-plus b{color:var(--text);}
 .sig-disclaimer{font-size:.72rem;color:var(--t2);line-height:1.5;margin-top:14px;padding:9px 12px;border:1px dashed var(--border);border-radius:10px;background:rgba(255,255,255,.02);}
 .sig-disclaimer b{color:var(--text);}
 .sig-tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px;margin-bottom:4px;}
@@ -2542,6 +2549,7 @@ input,select,textarea,.search-input,.cat-modal-search,.pf-search-input{font-size
       </div>
       <div class="sig-tags" id="sig-tags"></div>
       <div class="sig-meta-row" id="sig-meta-row" style="display:none"></div>
+      <div class="apex-plus" id="apex-plus" style="display:none"></div>
       <div class="sig-disclaimer">⚠️ L'APEX Score è un'<b>euristica</b> che riassume gli indicatori tecnici — <b>non è una previsione</b> né una garanzia. I dati descrittivi (prezzo, RSI, trend, volatilità) sono affidabili; il giudizio sul futuro è un aiuto al ragionamento, non un oracolo. <a onclick="openCalibration()" style="color:var(--acc,#3b82f6);cursor:pointer;text-decoration:underline;text-underline-offset:2px">Quanto è affidabile davvero? →</a></div>
     </div><!-- /sig-box -->
 
@@ -5689,6 +5697,7 @@ function resetAnalysisPanels(){
   const hide=id=>{ const el=document.getElementById(id); if(el) el.style.display='none'; };
   set('ai-analysis-body'); set('ai-analysis-status'); set('ai-claude-out'); hide('ai-analysis');
   set('oz-criteria'); set('oz-note'); hide('opp-zone');
+  { const ap=document.getElementById('apex-plus'); if(ap){ ap.innerHTML=''; ap.style.display='none'; } }
   set('risk-out'); hide('risk-card');
   set('edge-intro'); set('edge-table'); hide('edge-section');
   set('sig-tags'); const fm=document.getElementById('fund-msg'); if(fm){ fm.innerHTML=''; fm.style.display='none'; }
@@ -5925,9 +5934,22 @@ async function analyze(ticker){
       fundPromise.then(fund=>{
         renderFundamentals(fund,ticker,true);
         renderProfile(ticker,meta);
-        // L'APEX Score mostrato resta lo score TECNICO — identico a home, Opportunità,
-        // Zona opportunità, Confronto e Calibrazione (niente più numero diverso nell'header).
-        // I fondamentali restano visibili nella loro sezione e guidano l'analisi/Claude.
+        // APEX Score (header) = SEMPRE tecnico, identico a home/Opportunità/Zona/Confronto/Calibrazione.
+        // APEX+ = versione arricchita coi fondamentali, mostrata SOLO qui e chiaramente etichettata.
+        const apEl=document.getElementById('apex-plus');
+        if(apEl){
+          const hasFund=fund && (fund.roe!=null||fund.trailingPE!=null||fund.forwardPE!=null||fund.pb!=null||fund.earningsGrowth!=null);
+          if(hasFund){
+            const full=edgeScore(R,M50,M200,V,Mo,w7,w30,w90,cur,Mo3m,Mo6m,Mo12m,fund,seasonPct,{cls:_cls});
+            const d=full-techScore;
+            const dc=d>0?'var(--g)':d<0?'var(--r)':'var(--t2)';
+            const dbg=d>0?'rgba(16,185,129,.14)':d<0?'rgba(239,68,68,.14)':'rgba(255,255,255,.06)';
+            apEl.innerHTML=`<span class="ap-num" style="color:${sc(full)}">${full}</span>
+              <span><span class="ap-lbl">APEX+ · con fondamentali</span> <span class="ap-delta" style="color:${dc};background:${dbg}">${d>0?'+':''}${d} vs tecnico ${techScore}</span><br>
+              Include valutazione e qualità del business (P/E, ROE, crescita…) oltre al quadro tecnico. Vale <b>solo</b> per questo titolo: nello screening (home, Opportunità) resta l'APEX tecnico ${techScore}.</span>`;
+            apEl.style.display='';
+          } else { apEl.style.display='none'; }
+        }
         renderBHS(techScore,fund);
         renderStockAI(buildAIData(fund),true);  // analisi completa + eventuale Claude
       });

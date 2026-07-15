@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nesca Music — Studio di Registrazione a Tricase (Lecce)</title>
+<meta name="description" content="Nesca Music è lo studio di registrazione di Francesco Nesca a Tricase, nel Salento. Produzione, recording, mixing e mastering per artisti emergenti e professionisti.">
+<meta name="theme-color" content="#0a0a0b">
+<meta property="og:title" content="Nesca Music — Studio di Registrazione a Tricase">
+<meta property="og:description" content="Produzione, recording, mixing e mastering nel cuore del Salento.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #0a0a0b;
+    --bg-2: #101012;
+    --surface: #151517;
+    --surface-2: #1b1b1e;
+    --line: #26262b;
+    --line-soft: #1f1f23;
+    --text: #f4f2ee;
+    --text-2: #b6b4ae;
+    --muted: #7b7a76;
+    --accent: #ff6a3d;
+    --accent-2: #ffb057;
+    --accent-glow: rgba(255,106,61,0.35);
+    --radius: 16px;
+    --maxw: 1180px;
+    --ease: cubic-bezier(.2,.7,.2,1);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* Subtle film-grain texture */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  ::selection { background: var(--accent); color: #0a0a0b; }
+
+  a { color: inherit; text-decoration: none; }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+
+  h1, h2, h3, .display {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+  }
+
+  .accent { color: var(--accent); }
+  .eyebrow {
+    font-family: 'Space Grotesk', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.28em;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--accent);
+  }
+
+  /* ---------- NAV ---------- */
+  header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    transition: background .4s var(--ease), border-color .4s var(--ease), backdrop-filter .4s;
+    border-bottom: 1px solid transparent;
+  }
+  header.scrolled {
+    background: rgba(10,10,11,0.72);
+    backdrop-filter: blur(16px) saturate(140%);
+    border-bottom: 1px solid var(--line-soft);
+  }
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    height: 72px;
+  }
+  .logo {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 1.15rem;
+    letter-spacing: 0.02em;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .logo .dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 12px var(--accent-glow);
+    animation: pulse 2.4s var(--ease) infinite;
+  }
+  @keyframes pulse {
+    0%,100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.5); opacity: .55; }
+  }
+  .nav-links { display: flex; gap: 34px; align-items: center; }
+  .nav-links a {
+    font-size: 0.88rem;
+    color: var(--text-2);
+    transition: color .25s;
+    position: relative;
+  }
+  .nav-links a:not(.btn)::after {
+    content: ""; position: absolute; left: 0; bottom: -6px;
+    width: 0; height: 1.5px; background: var(--accent); transition: width .3s var(--ease);
+  }
+  .nav-links a:not(.btn):hover { color: var(--text); }
+  .nav-links a:not(.btn):hover::after { width: 100%; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 9px;
+    background: var(--accent); color: #0a0a0b;
+    font-weight: 600; font-size: 0.9rem;
+    padding: 11px 20px; border-radius: 999px;
+    transition: transform .25s var(--ease), box-shadow .3s, background .25s;
+    box-shadow: 0 6px 24px -8px var(--accent-glow);
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 12px 32px -8px var(--accent-glow); }
+  .btn.ghost {
+    background: transparent; color: var(--text);
+    border: 1px solid var(--line);
+    box-shadow: none;
+  }
+  .btn.ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+  .nav-toggle { display: none; background: none; border: none; color: var(--text); cursor: pointer; }
+
+  /* ---------- HERO ---------- */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex; align-items: center;
+    padding: 120px 0 80px;
+    overflow: hidden;
+  }
+  .hero-bg {
+    position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(60% 55% at 78% 20%, rgba(255,106,61,0.18), transparent 60%),
+      radial-gradient(50% 50% at 15% 80%, rgba(255,176,87,0.10), transparent 60%);
+  }
+  .hero-grid {
+    position: absolute; inset: 0; z-index: 0; opacity: .5;
+    background-image:
+      linear-gradient(var(--line-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, #000 30%, transparent 75%);
+  }
+  .hero .wrap { position: relative; z-index: 2; }
+  .hero-inner { max-width: 880px; }
+  .hero h1 {
+    font-size: clamp(2.8rem, 8.5vw, 6.4rem);
+    margin: 22px 0 26px;
+  }
+  .hero h1 .line { display: block; overflow: hidden; }
+  .hero h1 .line span { display: inline-block; }
+  .hero p.lead {
+    font-size: clamp(1.05rem, 2.3vw, 1.35rem);
+    color: var(--text-2);
+    max-width: 620px;
+    font-weight: 300;
+  }
+  .hero-cta { display: flex; gap: 14px; margin-top: 40px; flex-wrap: wrap; }
+
+  .hero-meta {
+    display: flex; gap: 40px; margin-top: 56px; flex-wrap: wrap;
+  }
+  .hero-meta div .k {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.9rem; font-weight: 700; color: var(--text);
+  }
+  .hero-meta div .l { font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.14em; }
+
+  /* waveform */
+  .waveform {
+    position: absolute; bottom: 0; left: 0; right: 0; z-index: 1;
+    display: flex; align-items: flex-end; justify-content: center;
+    gap: 5px; height: 120px; padding: 0 20px;
+    opacity: 0.5;
+    mask-image: linear-gradient(90deg, transparent, #000 20%, #000 80%, transparent);
+  }
+  .waveform i {
+    flex: 1; max-width: 6px; border-radius: 3px 3px 0 0;
+    background: linear-gradient(180deg, var(--accent), rgba(255,106,61,0.1));
+    animation: eq 1.4s ease-in-out infinite;
+  }
+  @keyframes eq {
+    0%,100% { height: 12%; }
+    50% { height: 90%; }
+  }
+
+  /* ---------- SECTION SHELL ---------- */
+  section { position: relative; z-index: 2; }
+  .band { padding: 110px 0; }
+  .section-head { max-width: 720px; margin-bottom: 60px; }
+  .section-head h2 {
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    margin: 16px 0 18px;
+  }
+  .section-head p { color: var(--text-2); font-size: 1.05rem; font-weight: 300; }
+
+  /* reveal */
+  .reveal { opacity: 0; transform: translateY(30px); transition: opacity .8s var(--ease), transform .8s var(--ease); }
+  .reveal.in { opacity: 1; transform: none; }
+
+  /* ---------- STUDIO / ABOUT ---------- */
+  .studio-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 60px; align-items: center; }
+  .studio-copy p { color: var(--text-2); margin-bottom: 18px; font-weight: 300; font-size: 1.05rem; }
+  .studio-copy p strong { color: var(--text); font-weight: 500; }
+  .studio-visual {
+    position: relative;
+    aspect-ratio: 4/5;
+    border-radius: var(--radius);
+    border: 1px solid var(--line);
+    background:
+      radial-gradient(80% 60% at 30% 10%, rgba(255,106,61,0.16), transparent 60%),
+      linear-gradient(160deg, var(--surface-2), var(--bg));
+    overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .studio-visual .rings { position: absolute; inset: 0; display:flex; align-items:center; justify-content:center; }
+  .studio-visual .rings span {
+    position: absolute; border: 1px solid var(--line); border-radius: 50%;
+  }
+  .studio-visual .knob {
+    width: 150px; height: 150px; border-radius: 50%;
+    background: conic-gradient(from 220deg, var(--accent), var(--accent-2), var(--surface-2) 70%);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 60px -10px var(--accent-glow), inset 0 0 30px rgba(0,0,0,.5);
+    position: relative;
+    animation: spin 18s linear infinite;
+  }
+  .studio-visual .knob::after {
+    content: ""; position: absolute; top: 14px; width: 5px; height: 34px; border-radius: 3px; background: #0a0a0b;
+  }
+  .studio-visual .knob .core {
+    width: 92px; height: 92px; border-radius: 50%;
+    background: radial-gradient(circle at 40% 35%, var(--surface-2), var(--bg));
+    border: 1px solid var(--line);
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .studio-tag {
+    position: absolute; bottom: 18px; left: 18px; right: 18px;
+    font-family: 'Space Grotesk', sans-serif; font-size: 0.8rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--muted);
+    display: flex; justify-content: space-between;
+  }
+
+  /* ---------- SERVICES ---------- */
+  .services { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+  .svc {
+    background: var(--surface);
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius);
+    padding: 30px 26px 34px;
+    transition: transform .35s var(--ease), border-color .35s, background .35s;
+    position: relative; overflow: hidden;
+  }
+  .svc::before {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(120% 80% at 50% 0%, rgba(255,106,61,0.12), transparent 60%);
+    opacity: 0; transition: opacity .4s;
+  }
+  .svc:hover { transform: translateY(-6px); border-color: var(--line); background: var(--surface-2); }
+  .svc:hover::before { opacity: 1; }
+  .svc .num {
+    font-family: 'Space Grotesk', sans-serif; font-size: 0.8rem; color: var(--accent);
+    letter-spacing: 0.1em;
+  }
+  .svc h3 { font-size: 1.35rem; margin: 14px 0 10px; }
+  .svc p { color: var(--text-2); font-size: 0.94rem; font-weight: 300; position: relative; }
+  .svc .icn {
+    width: 46px; height: 46px; border-radius: 12px;
+    background: var(--surface-2); border: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center; margin-bottom: 20px;
+    color: var(--accent);
+  }
+  .svc .icn svg { width: 22px; height: 22px; }
+
+  /* ---------- GEAR ---------- */
+  .gear-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .gear-card {
+    background: linear-gradient(160deg, var(--surface-2), var(--surface));
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius);
+    padding: 38px;
+  }
+  .gear-card.feature {
+    grid-row: span 2;
+    display: flex; flex-direction: column; justify-content: space-between;
+    background:
+      radial-gradient(90% 60% at 80% 0%, rgba(255,106,61,0.14), transparent 55%),
+      linear-gradient(160deg, var(--surface-2), var(--surface));
+    border-color: var(--line);
+  }
+  .gear-card h3 { font-size: 1.5rem; margin-bottom: 12px; }
+  .gear-card.feature h3 { font-size: 2rem; }
+  .gear-card p { color: var(--text-2); font-weight: 300; }
+  .gear-card .tag { display:inline-block; font-size:0.72rem; letter-spacing:0.14em; text-transform:uppercase; color:var(--accent); margin-bottom:20px; font-family:'Space Grotesk',sans-serif;}
+  .gear-list { list-style: none; margin-top: 26px; }
+  .gear-list li { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line-soft); color: var(--text-2); font-size: 0.95rem; }
+  .gear-list li:last-child { border-bottom: none; }
+  .gear-list li .b { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+
+  /* ---------- FOR WHO ---------- */
+  .who { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 10px; }
+  .who .chip {
+    padding: 12px 22px; border-radius: 999px; border: 1px solid var(--line);
+    font-family: 'Space Grotesk', sans-serif; font-size: 1.05rem; color: var(--text-2);
+    transition: all .3s var(--ease);
+  }
+  .who .chip:hover { border-color: var(--accent); color: var(--text); transform: translateY(-3px); }
+
+  /* ---------- CONTACT ---------- */
+  .contact { position: relative; overflow: hidden; }
+  .contact-inner {
+    background:
+      radial-gradient(80% 120% at 100% 0%, rgba(255,106,61,0.16), transparent 55%),
+      linear-gradient(160deg, var(--surface-2), var(--bg));
+    border: 1px solid var(--line);
+    border-radius: 28px;
+    padding: clamp(40px, 6vw, 80px);
+    display: grid; grid-template-columns: 1.2fr 1fr; gap: 60px; align-items: center;
+  }
+  .contact h2 { font-size: clamp(2rem, 5vw, 3.4rem); margin-bottom: 20px; }
+  .contact p { color: var(--text-2); font-weight: 300; font-size: 1.08rem; max-width: 460px; }
+  .contact-actions { display: flex; flex-direction: column; gap: 14px; }
+  .contact-link {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    background: var(--surface); border: 1px solid var(--line-soft);
+    padding: 20px 24px; border-radius: 14px;
+    transition: all .3s var(--ease);
+  }
+  .contact-link:hover { border-color: var(--accent); transform: translateX(6px); background: var(--surface-2); }
+  .contact-link .cl-l { display: flex; align-items: center; gap: 16px; }
+  .contact-link .cl-ic { width: 42px; height: 42px; border-radius: 11px; background: var(--surface-2); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; color: var(--accent); }
+  .contact-link .cl-ic svg { width: 20px; height: 20px; }
+  .contact-link .cl-t { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+  .contact-link .cl-v { font-family: 'Space Grotesk', sans-serif; font-weight: 500; }
+  .contact-link .arw { color: var(--muted); transition: transform .3s, color .3s; }
+  .contact-link:hover .arw { color: var(--accent); transform: translateX(4px); }
+
+  /* ---------- FOOTER ---------- */
+  footer { border-top: 1px solid var(--line-soft); padding: 50px 0 40px; }
+  .foot { display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; }
+  .foot .logo { font-size: 1rem; }
+  .foot-links { display: flex; gap: 24px; }
+  .foot-links a { color: var(--muted); font-size: 0.85rem; transition: color .25s; }
+  .foot-links a:hover { color: var(--accent); }
+  .copy { color: var(--muted); font-size: 0.8rem; }
+
+  /* ---------- RESPONSIVE ---------- */
+  @media (max-width: 900px) {
+    .studio-grid { grid-template-columns: 1fr; gap: 40px; }
+    .studio-visual { max-width: 380px; }
+    .services { grid-template-columns: 1fr 1fr; }
+    .gear-grid { grid-template-columns: 1fr; }
+    .gear-card.feature { grid-row: auto; }
+    .contact-inner { grid-template-columns: 1fr; gap: 36px; }
+  }
+  @media (max-width: 640px) {
+    .nav-links { display: none; }
+    .nav-toggle { display: block; }
+    .services { grid-template-columns: 1fr; }
+    .hero-meta { gap: 26px; }
+    .band { padding: 80px 0; }
+    .foot { flex-direction: column; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<header id="header">
+  <div class="wrap">
+    <nav>
+      <a href="#top" class="logo"><span class="dot"></span>NESCA&nbsp;<span style="color:var(--muted)">MUSIC</span></a>
+      <div class="nav-links">
+        <a href="#studio">Studio</a>
+        <a href="#servizi">Servizi</a>
+        <a href="#gear">Setup</a>
+        <a href="#contatti" class="btn">Prenota una sessione</a>
+      </div>
+      <button class="nav-toggle" id="navToggle" aria-label="Menu">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-grid"></div>
+    <div class="wrap">
+      <div class="hero-inner">
+        <div class="eyebrow reveal">Recording Studio · Tricase, Salento</div>
+        <h1 class="reveal">Il tuo suono,<br><span class="accent">registrato</span> come lo senti.</h1>
+        <p class="lead reveal">Nesca Music è lo studio di <strong style="color:var(--text)">Francesco Nesca</strong>: produzione, recording, mixing e mastering per artisti emergenti e professionisti, nel cuore del Salento.</p>
+        <div class="hero-cta reveal">
+          <a href="#contatti" class="btn">Prenota una sessione
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+          <a href="#servizi" class="btn ghost">Scopri i servizi</a>
+        </div>
+        <div class="hero-meta reveal">
+          <div><div class="k">4</div><div class="l">Servizi in studio</div></div>
+          <div><div class="k">100%</div><div class="l">Suono analogico + ITB</div></div>
+          <div><div class="k">Salento</div><div class="l">Provincia di Lecce</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="waveform" id="waveform"></div>
+  </section>
+
+  <!-- STUDIO -->
+  <section class="band" id="studio">
+    <div class="wrap">
+      <div class="studio-grid">
+        <div class="studio-copy reveal">
+          <div class="eyebrow">Lo studio</div>
+          <h2 style="font-size:clamp(2rem,5vw,3.2rem);margin:16px 0 24px">Uno spazio per realizzare i tuoi progetti, senza andare via.</h2>
+          <p>Nesca Music nasce a <strong>Tricase</strong>, un piccolo comune in provincia di Lecce, nel sud della Puglia. L'idea è semplice: offrire agli artisti emergenti e amatoriali del territorio un luogo professionale dove dare forma alle proprie idee musicali, <strong>senza doversi spostare nelle grandi città</strong>.</p>
+          <p>Dietro alla console c'è Francesco Nesca, producer e sound engineer, che segue ogni progetto sia dal punto di vista <strong>tecnico</strong> che <strong>artistico</strong> — dalla prima take alla master finale.</p>
+          <p>Un ambiente essenziale ma potente, pensato per far suonare al meglio la tua musica.</p>
+        </div>
+        <div class="studio-visual reveal">
+          <div class="rings">
+            <span style="width:70%;height:70%"></span>
+            <span style="width:90%;height:90%"></span>
+            <span style="width:50%;height:50%"></span>
+          </div>
+          <div class="knob"><div class="core"></div></div>
+          <div class="studio-tag"><span>REC · MIX · MASTER</span><span>TRICASE (LE)</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SERVICES -->
+  <section class="band" id="servizi" style="background:var(--bg-2)">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <div class="eyebrow">Servizi</div>
+        <h2>Dalla take alla master.</h2>
+        <p>Tutto quello che serve per portare la tua musica dall'idea al risultato finale, curato in ogni dettaglio.</p>
+      </div>
+      <div class="services">
+        <div class="svc reveal">
+          <div class="icn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M5 12H2M22 12h-3M6.3 6.3 4.2 4.2M19.8 19.8l-2.1-2.1M17.7 6.3l2.1-2.1M4.2 19.8l2.1-2.1"/></svg></div>
+          <div class="num">01</div>
+          <h3>Produzione</h3>
+          <p>Arrangiamenti, beatmaking e produzione musicale su misura per il tuo progetto e il tuo genere.</p>
+        </div>
+        <div class="svc reveal">
+          <div class="icn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/></svg></div>
+          <div class="num">02</div>
+          <h3>Recording</h3>
+          <p>Sessioni di registrazione per voce e strumenti, con un suono pulito e caldo già dalla ripresa.</p>
+        </div>
+        <div class="svc reveal">
+          <div class="icn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg></div>
+          <div class="num">03</div>
+          <h3>Mixing</h3>
+          <p>Bilanciamento, spazialità e carattere: ogni elemento al suo posto per un mix che respira.</p>
+        </div>
+        <div class="svc reveal">
+          <div class="icn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h3l3-8 4 16 3-8h5"/></svg></div>
+          <div class="num">04</div>
+          <h3>Mastering</h3>
+          <p>La rifinitura finale: volume, coerenza e impatto, pronti per streaming e distribuzione.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- GEAR / SETUP -->
+  <section class="band" id="gear">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <div class="eyebrow">Il setup</div>
+        <h2>Minimale, ma potente.</h2>
+        <p>Poche scelte, giuste. Un flusso di lavoro prevalentemente in-the-box con un cuore analogico che fa la differenza già in fase di ripresa.</p>
+      </div>
+      <div class="gear-grid">
+        <div class="gear-card feature reveal">
+          <div>
+            <span class="tag">Pezzo del cuore</span>
+            <h3>Neve 1073SPX</h3>
+            <p>Il preamp che ha portato le produzioni a un vero salto di qualità: garantisce un ottimo risultato già in registrazione, riducendo la necessità di interventi in post-produzione. Presente in quasi ogni sessione.</p>
+          </div>
+          <div class="gear-list" style="margin-top:30px">
+            <div style="font-family:'Space Grotesk',sans-serif;font-size:2.6rem;font-weight:700;color:var(--accent)">1073</div>
+          </div>
+        </div>
+        <div class="gear-card reveal">
+          <span class="tag">Workflow</span>
+          <h3>In-the-box</h3>
+          <p>Produzione e mix gestiti principalmente nel dominio digitale su MacBook Pro, per flessibilità e richiami immediati di ogni sessione.</p>
+        </div>
+        <div class="gear-card reveal">
+          <span class="tag">Filosofia</span>
+          <h3>Suono prima di tutto</h3>
+          <ul class="gear-list">
+            <li><span class="b"></span>Catena di ripresa curata dalla sorgente</li>
+            <li><span class="b"></span>Meno plugin, più decisioni giuste</li>
+            <li><span class="b"></span>Calore analogico + precisione digitale</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOR WHO -->
+  <section class="band" id="perchi" style="background:var(--bg-2)">
+    <div class="wrap">
+      <div class="studio-grid" style="align-items:start">
+        <div class="reveal">
+          <div class="eyebrow">Per chi</div>
+          <h2 style="font-size:clamp(2rem,5vw,3.2rem);margin:16px 0 22px">Professionisti ed emergenti.</h2>
+          <p style="color:var(--text-2);font-weight:300;font-size:1.05rem;max-width:520px">Lo studio lavora con artisti di generi diversi, professionisti o alla prima esperienza. Se hai un progetto in testa, qui trovi lo spazio per realizzarlo.</p>
+        </div>
+        <div class="reveal">
+          <div class="who">
+            <span class="chip">Rapper</span>
+            <span class="chip">Band</span>
+            <span class="chip">Cantautori</span>
+            <span class="chip">Songwriter</span>
+            <span class="chip">Artisti emergenti</span>
+            <span class="chip">Progetti professionali</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section class="band contact" id="contatti">
+    <div class="wrap">
+      <div class="contact-inner reveal">
+        <div>
+          <div class="eyebrow">Contatti</div>
+          <h2>Portiamo in studio la tua prossima traccia.</h2>
+          <p>Raccontami il tuo progetto: scrivimi via email o mandami un messaggio sui social. Organizziamo insieme la sessione.</p>
+        </div>
+        <div class="contact-actions">
+          <a class="contact-link" href="mailto:nescamusic@gmail.com">
+            <span class="cl-l">
+              <span class="cl-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg></span>
+              <span><span class="cl-t">Email</span><br><span class="cl-v">nescamusic@gmail.com</span></span>
+            </span>
+            <span class="arw"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17 17 7M7 7h10v10"/></svg></span>
+          </a>
+          <a class="contact-link" href="https://www.instagram.com/nescamusic/" target="_blank" rel="noopener">
+            <span class="cl-l">
+              <span class="cl-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></span>
+              <span><span class="cl-t">Instagram</span><br><span class="cl-v">@nescamusic</span></span>
+            </span>
+            <span class="arw"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17 17 7M7 7h10v10"/></svg></span>
+          </a>
+          <a class="contact-link" href="https://soundcloud.com/" target="_blank" rel="noopener">
+            <span class="cl-l">
+              <span class="cl-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 14v4M7 11v7M10 9v9M13 12v6M16 8v10a3 3 0 0 0 3-3 3 3 0 0 0 0-6 4 4 0 0 0-7-1"/></svg></span>
+              <span><span class="cl-t">Ascolta</span><br><span class="cl-v">SoundCloud</span></span>
+            </span>
+            <span class="arw"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17 17 7M7 7h10v10"/></svg></span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <a href="#top" class="logo"><span class="dot"></span>NESCA&nbsp;<span style="color:var(--muted)">MUSIC</span></a>
+      <div class="foot-links">
+        <a href="#studio">Studio</a>
+        <a href="#servizi">Servizi</a>
+        <a href="#gear">Setup</a>
+        <a href="mailto:nescamusic@gmail.com">Email</a>
+      </div>
+      <div class="copy">Tricase (LE), Salento · © <span id="yr"></span> Nesca Music</div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Header scroll state
+  const header = document.getElementById('header');
+  const onScroll = () => header.classList.toggle('scrolled', window.scrollY > 20);
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  // Year
+  document.getElementById('yr').textContent = new Date().getFullYear();
+
+  // Build waveform bars
+  const wf = document.getElementById('waveform');
+  const BARS = 64;
+  for (let i = 0; i < BARS; i++) {
+    const b = document.createElement('i');
+    b.style.animationDelay = (Math.random() * 1.4).toFixed(2) + 's';
+    b.style.animationDuration = (1 + Math.random() * 1.1).toFixed(2) + 's';
+    wf.appendChild(b);
+  }
+
+  // Scroll reveal
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+    });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach((el, i) => {
+    el.style.transitionDelay = (i % 4 * 0.06) + 's';
+    io.observe(el);
+  });
+
+  // Mobile nav (simple anchor scroll — reveal full list)
+  const toggle = document.getElementById('navToggle');
+  toggle && toggle.addEventListener('click', () => {
+    document.querySelector('#contatti').scrollIntoView({ behavior: 'smooth' });
+  });
+</script>
+</body>
+</html>

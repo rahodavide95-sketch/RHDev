@@ -4456,7 +4456,7 @@ function renderOpportunities(scoreMap){
 
   if(!all.length){
     badge.style.display='none';
-    grid.innerHTML=scanning?oppRadarHTML():`<div class="opp-empty"><b style="color:var(--t2)">Nessun titolo in zona di sconto statistico al momento.</b><br>
+    grid.innerHTML=(scanning||!_oppScanDone)?oppRadarHTML():`<div class="opp-empty"><b style="color:var(--t2)">Nessun titolo in zona di sconto statistico al momento.</b><br>
       Nessuno dei titoli monitorati è ipervenduto con un trend di fondo ancora sano. È una fase normale o ribassista: meglio attendere.</div>`;
     return;
   }
@@ -4495,7 +4495,7 @@ function openAllOpportunities(){
 }
 
 // Scansione automatica di TUTTO l'universo monitorato (in background, aggiorna man mano)
-let _oppScanning=false;
+let _oppScanning=false, _oppScanDone=false;
 async function scanAllOpportunities(){
   if(_oppScanning) return;
   window._oppScanning=_oppScanning=true;
@@ -4512,7 +4512,7 @@ async function scanAllOpportunities(){
       }
     }
   }catch{}
-  window._oppScanning=_oppScanning=false;
+  window._oppScanning=_oppScanning=false; _oppScanDone=true;
   renderOpportunities(globalScoreMap);
 }
 

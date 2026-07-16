@@ -510,6 +510,73 @@
   .day-temp.hot     { color: var(--amber); border-color: rgba(245,166,35,0.4);  background: rgba(245,166,35,0.12); }
   .day-temp.extreme { color: var(--rust);  border-color: rgba(192,57,43,0.5);   background: rgba(192,57,43,0.12); font-weight: 600; }
 
+  /* ── CHECKLIST PRENOTAZIONI ── */
+  .book-group { margin-bottom: 24px; }
+  .book-group-title {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--divider);
+  }
+  .book-group-title.urgent { color: var(--rust); }
+  .book-group-title.soon   { color: var(--amber); }
+  .book-group-title.verify { color: var(--sky); }
+  .book-group-title.food   { color: var(--green); }
+  .book-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 11px 14px;
+    background: var(--card);
+    border: 1px solid var(--divider);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .book-item:hover { border-color: var(--muted); }
+  .book-item input {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    border: 2px solid var(--muted);
+    border-radius: 6px;
+    margin-top: 1px;
+    cursor: pointer;
+    position: relative;
+    background: transparent;
+  }
+  .book-item input:checked {
+    background: var(--green);
+    border-color: var(--green);
+  }
+  .book-item input:checked::after {
+    content: '✓';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -52%);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .book-item .book-txt { flex: 1; font-size: 13.5px; color: var(--text); line-height: 1.5; }
+  .book-item .book-txt .b-name { font-weight: 600; }
+  .book-item .book-txt .b-meta { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .book-item.done .book-txt { opacity: 0.5; text-decoration: line-through; text-decoration-color: var(--muted); }
+  .book-when {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    white-space: nowrap;
+    padding-top: 2px;
+  }
+
   /* barra strumenti globale */
   .tools-bar {
     display: flex;
@@ -1288,6 +1355,7 @@
 
 <nav class="day-nav">
   <a class="day-pill" href="#stats" style="border-color:#27AE60;color:#27AE60;">💰 Budget & Stats</a>
+  <a class="day-pill" href="#prenotazioni" style="border-color:#8E44AD;color:#8E44AD;">🎟️ Prenotazioni</a>
   <a class="day-pill" href="#apps" style="border-color:#4A90D9;color:#4A90D9;">📱 App</a>
   <button class="day-pill theme-toggle" onclick="toggleTheme()" id="theme-btn" style="border-color:var(--muted);cursor:pointer;background:var(--toggle-bg);">🌙 Tema</button>
   <a class="day-pill" href="#g1">10/8 · LA #1</a>
@@ -2847,6 +2915,106 @@
 </div><!-- /container -->
 
 <!-- ══════════════════════════════════════════════════
+     SEZIONE PRENOTAZIONI
+     ══════════════════════════════════════════════════ -->
+<div class="stats-section" id="prenotazioni" style="border-top:1px solid var(--divider);">
+<div class="stats-inner">
+
+  <div class="stats-title">🎟️ PRENOTAZIONI <span>DA FARE</span></div>
+  <div class="stats-subtitle">Spunta man mano — lo stato si salva su questo dispositivo</div>
+
+  <div class="book-group">
+    <div class="book-group-title urgent">🔴 Appena possibile — si esauriscono</div>
+    <label class="book-item">
+      <input type="checkbox" data-book="alcatraz">
+      <span class="book-txt"><span class="b-name">Alcatraz</span> — tour dell'isola<span class="b-meta">cityexperiences.com · i biglietti aprono ~90 giorni prima e vanno a ruba. Nessuna alternativa ufficiale.</span></span>
+      <span class="book-when">20/8</span>
+    </label>
+    <label class="book-item">
+      <input type="checkbox" data-book="sphere">
+      <span class="book-txt"><span class="b-name">Sphere — "The Wizard of Oz"</span><span class="b-meta">thesphere.com · posti assegnati, si esauriscono. VERIFICA che sia in cartellone il 16/8/2026. Punta a uno show ~17:00.</span></span>
+      <span class="book-when">16/8</span>
+    </label>
+    <label class="book-item">
+      <input type="checkbox" data-book="antelope">
+      <span class="book-txt"><span class="b-name">Lower Antelope Canyon</span> — tour Navajo<span class="b-meta">Ken's Tours (o operatore scelto) · prenota dall'Italia. Controlla il FUSO dell'orario (Navajo vs Page).</span></span>
+      <span class="book-when">14/8</span>
+    </label>
+  </div>
+
+  <div class="book-group">
+    <div class="book-group-title soon">🟠 Prima di partire</div>
+    <label class="book-item">
+      <input type="checkbox" data-book="nps">
+      <span class="book-txt"><span class="b-name">NPS Pass non residenti $250</span><span class="b-meta">store.usgs.gov · copre l'ingresso di tutti i parchi (Grand Canyon, Zion, Bryce, Sequoia, Yosemite, Death Valley…).</span></span>
+      <span class="book-when">prima</span>
+    </label>
+    <label class="book-item">
+      <input type="checkbox" data-book="flyover">
+      <span class="book-txt"><span class="b-name">FlyOver Las Vegas</span><span class="b-meta">flyoverlasvegas.com · prenota lo slot ~11:30 (tarda mattinata = poca coda).</span></span>
+      <span class="book-when">16/8</span>
+    </label>
+    <label class="book-item">
+      <input type="checkbox" data-book="highroller">
+      <span class="book-txt"><span class="b-name">High Roller</span> — ruota panoramica<span class="b-meta">caesars.com/linq · prenota la fascia del tramonto (~19:30).</span></span>
+      <span class="book-when">16/8</span>
+    </label>
+    <label class="book-item">
+      <input type="checkbox" data-book="mvjeep">
+      <span class="book-txt"><span class="b-name">Monument Valley — Jeep tour Navajo</span><span class="b-meta">monumentvalleyjeeptours.com · tour pomeridiano guidato.</span></span>
+      <span class="book-when">14/8</span>
+    </label>
+    <label class="book-item">
+      <input type="checkbox" data-book="getty">
+      <span class="book-txt"><span class="b-name">Getty Center</span> — parcheggio<span class="b-meta">getty.edu · ingresso gratis ma il parcheggio ($25) va prenotato online.</span></span>
+      <span class="book-when">12/8</span>
+    </label>
+    <label class="book-item">
+      <input type="checkbox" data-book="broad">
+      <span class="book-txt"><span class="b-name">The Broad</span> — museo<span class="b-meta">thebroad.org · ingresso gratis ma richiede prenotazione a fascia oraria.</span></span>
+      <span class="book-when">12/8</span>
+    </label>
+  </div>
+
+  <div class="book-group">
+    <div class="book-group-title verify">🔵 Da verificare vicino alla partenza</div>
+    <label class="book-item">
+      <input type="checkbox" data-book="yosemite">
+      <span class="book-txt"><span class="b-name">Yosemite — Day Use Reservation</span><span class="b-meta">recreation.gov · SOLO se il sistema è attivo nel 2026 (~$2, separata dalla tessera). Controlla su nps.gov/yosemite; una parte esce ~7 giorni prima.</span></span>
+      <span class="book-when">19/8</span>
+    </label>
+  </div>
+
+  <div class="book-group">
+    <div class="book-group-title food">🟢 Ristoranti da prenotare</div>
+    <label class="book-item">
+      <input type="checkbox" data-book="hugos">
+      <span class="book-txt"><span class="b-name">Hugo's Cellar</span> — Las Vegas (Four Queens)<span class="b-meta">steakhouse storica · prenota la sera prima.</span></span>
+      <span class="book-when">15/8</span>
+    </label>
+    <label class="book-item">
+      <input type="checkbox" data-book="monami">
+      <span class="book-txt"><span class="b-name">Mon Ami Gabi</span> — Las Vegas (Paris)<span class="b-meta">terrazza sulle fontane del Bellagio · prenotazione obbligatoria.</span></span>
+      <span class="book-when">16/8</span>
+    </label>
+    <label class="book-item">
+      <input type="checkbox" data-book="landmark">
+      <span class="book-txt"><span class="b-name">Landmark Steakhouse</span> — Fresno<span class="b-meta">carne della Central Valley · consigliata la prenotazione.</span></span>
+      <span class="book-when">18/8</span>
+    </label>
+    <label class="book-item">
+      <input type="checkbox" data-book="trelio">
+      <span class="book-txt"><span class="b-name">Trelio</span> — Fresno<span class="b-meta">cena finale del viaggio · prenota.</span></span>
+      <span class="book-when">22/8</span>
+    </label>
+  </div>
+
+  <p style="color:var(--muted);font-size:12px;margin-top:8px;">Nota: <strong>hotel</strong> e <strong>auto a noleggio</strong> si presumono già prenotati (ritiro auto 10/8 ore 16:30 a LAX). In-N-Out, Fremont Street, Bellagio Fountains, Glacier Point, Mist Trail e i belvedere <strong>non</strong> richiedono prenotazione.</p>
+
+</div><!-- /stats-inner -->
+</div><!-- /prenotazioni -->
+
+<!-- ══════════════════════════════════════════════════
      SEZIONE APP CONSIGLIATE
      ══════════════════════════════════════════════════ -->
 <div class="stats-section" id="apps" style="background:var(--bg);border-top:1px solid var(--divider);border-bottom:none;">
@@ -3490,6 +3658,25 @@
       if (!confirm('Vuoi azzerare tutte le spunte, priorità e note?')) return;
       state = {}; save();
       location.reload();
+    });
+  })();
+
+  // ── Checklist prenotazioni (persistente) ──
+  (function() {
+    var KEY = 'r66-bookings';
+    var state = {};
+    try { state = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { state = {}; }
+    var items = document.querySelectorAll('.book-item input[data-book]');
+    items.forEach(function(input) {
+      var id = input.getAttribute('data-book');
+      var label = input.closest('.book-item');
+      if (state[id]) { input.checked = true; if (label) label.classList.add('done'); }
+      input.addEventListener('change', function() {
+        state[id] = input.checked;
+        if (!input.checked) delete state[id];
+        if (label) label.classList.toggle('done', input.checked);
+        try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+      });
     });
   })();
 

@@ -151,6 +151,17 @@
   .drag{margin-top:.9rem;font-size:.73rem;color:var(--txt-3);line-height:1.55}
   .drag b{color:var(--txt-2);font-weight:600}
 
+  /* ---------- RICETTA SYNTAKT ---------- */
+  .st-rec{font-size:.83rem;color:var(--txt);background:rgba(255,90,60,0.06);border:1px solid rgba(255,90,60,0.2);border-radius:12px;padding:.75rem .9rem;margin-bottom:1rem;line-height:1.55}
+  .st-rec b{color:var(--accent-2);font-weight:600}
+  .st-grid{display:grid;grid-template-columns:1fr;gap:.5rem}
+  @media(min-width:640px){ .st-grid{grid-template-columns:1fr 1fr} }
+  .st-row{display:flex;align-items:center;gap:.7rem;background:rgba(255,255,255,0.02);border:1px solid var(--line);border-radius:10px;padding:.56rem .75rem}
+  .st-p{font-family:var(--font-d);font-weight:700;font-size:.84rem;color:var(--txt);min-width:70px}
+  .st-p small{display:block;font-family:var(--font-b);font-weight:400;color:var(--txt-3);font-size:.62rem;letter-spacing:.02em;margin-top:1px}
+  .st-v{font-family:var(--font-d);font-weight:600;font-size:.86rem;color:var(--accent-2);font-variant-numeric:tabular-nums;margin-left:auto;text-align:right;white-space:nowrap}
+  .st-v small{display:block;font-family:var(--font-b);font-weight:500;color:var(--txt-2);font-size:.66rem;margin-top:1px}
+
   footer{max-width:1160px;margin:2.2rem auto 0;padding:0 1.3rem;color:var(--txt-3);font-size:.7rem;text-align:center;line-height:1.7}
   .kbd{font-family:var(--font-d);background:var(--panel-2);border:1px solid var(--line);border-radius:5px;padding:1px 7px;color:var(--txt-2);font-size:.68rem}
 </style>
@@ -252,7 +263,15 @@
       </div>
     </div>
 
-    <!-- 5 · EXPORT -->
+    <!-- 5 · RICETTA SYNTAKT -->
+    <div class="card">
+      <div class="head">Ricetta Syntakt <span class="sub">come rifarlo su Elektron Syntakt</span></div>
+      <div id="syntakt-rec" class="st-rec"></div>
+      <div id="syntakt" class="st-grid"></div>
+      <p class="drag">Valori di partenza per una traccia <b>analogica</b> del Syntakt (machine <b>BD Silky</b>/<b>BD Sharp</b>), da rifinire a orecchio. <b>TUNE</b> = accorda alla nota mostrata · <b>SDEP</b>/<b>STIM</b> = profondità e tempo dello sweep di pitch · <b>DEC/HOLD</b> = coda e tenuta · <b>TRAN</b> = click/tick · <b>OVER</b> = overdrive · <b>FLTR</b> = filtro passa-basso. Il sub “corpo” si ottiene con DEC lunga + TUNE basso, o una 2ª traccia un’ottava sotto.</p>
+    </div>
+
+    <!-- 6 · EXPORT -->
     <div class="card">
       <div class="head">Esporta</div>
       <div class="export-row">
@@ -711,7 +730,7 @@
   }
 
   let specPending=false;
-  function redrawSpectrum(){ if(specPending) return; specPending=true; requestAnimationFrame(()=>{ specPending=false; computeStaticSpectrum(); updateReadouts(); if(!liveOn) drawSpectrumFrame(); }); }
+  function redrawSpectrum(){ if(specPending) return; specPending=true; requestAnimationFrame(()=>{ specPending=false; computeStaticSpectrum(); updateReadouts(); updateSyntakt(); if(!liveOn) drawSpectrumFrame(); }); }
 
   // ---------- Readouts ----------
   function updateReadouts(){
@@ -722,6 +741,38 @@
     const total=(Math.max(P.decay,P.subDecay)+P.attack+P.hold)/1000+0.06;
     document.getElementById('ro-len').textContent=total.toFixed(2)+' s';
     document.getElementById('ro-peak').textContent = staticPeakHz ? Math.round(staticPeakHz)+' Hz' : '—';
+  }
+
+  // ---------- Ricetta Syntakt (traduzione parametri) ----------
+  function stCC(t){ t=Math.max(0,Math.min(1,t)); return Math.round(t*127); }
+  function mapv(x,a,b){ let t=(x-a)/(b-a); return t<0?0:t>1?1:t; }
+  function logmap(x,a,b){ let t=Math.log(x/a)/Math.log(b/a); return t<0?0:t>1?1:t; }
+  function stLevel(t){ return t<0.2?'minimo':t<0.4?'basso':t<0.6?'medio':t<0.8?'alto':'massimo'; }
+  function stRow(p,d,v,n){ return '<div class="st-row"><span class="st-p">'+p+'<small>'+d+'</small></span><span class="st-v">'+v+'<small>'+n+'</small></span></div>'; }
+  function updateSyntakt(){
+    const punchy=(P.clickLevel>0.18 || P.pitchAmt>26 || P.ampCurve>5.2);
+    const deep=(P.subLevel>0.75 || P.subDecay>1500 || P.decay>560);
+    const machine=punchy?'BD Sharp':'BD Silky';
+    const why=punchy?'attacco marcato / click presente':'suono rotondo e morbido';
+    document.getElementById('syntakt-rec').innerHTML=
+      'Machine consigliata: <b>'+machine+'</b> su una traccia analogica — '+why+'.'+
+      (deep?' Coda ipnotica profonda: alza <b>DEC</b>, tieni <b>TUNE</b> basso e, per più peso, raddoppia con una 2ª traccia analogica un’ottava sotto.':'');
+    const cents=noteCents(P.tune), cs=cents?(cents>0?' +':' ')+cents+'c':'';
+    const sdep=mapv(P.pitchAmt,0,48), stim=mapv(P.pitchDecay,4,160), dec=mapv(P.decay,60,1600);
+    const tran=Math.min(1,P.clickLevel/0.5), cut=logmap(P.lowpass,200,18000), reso=mapv(P.reso,0.3,4);
+    const html=[
+      stRow('TUNE','pitch osc', noteShort(P.tune)+cs, P.tune.toFixed(0)+' Hz'),
+      stRow('SDEP','sweep depth', stCC(sdep)+'/127', stLevel(sdep)+' · +'+P.pitchAmt.toFixed(0)+' st'),
+      stRow('STIM','sweep time', stCC(stim)+'/127', stLevel(stim)+' · '+P.pitchDecay.toFixed(0)+' ms'),
+      stRow('DEC','decay', stCC(dec)+'/127', stLevel(dec)+' · '+P.decay.toFixed(0)+' ms'),
+      stRow('HOLD','hold time', stCC(mapv(P.hold,0,80))+'/127', P.hold.toFixed(0)+' ms'),
+      stRow('TRAN','transient/tick', stCC(tran)+'/127', stLevel(tran)),
+      stRow('OVER','overdrive', stCC(P.drive)+'/127', stLevel(P.drive)),
+      stRow('FLTR','LP cutoff', stCC(cut)+'/127', (P.lowpass>=1000?(P.lowpass/1000).toFixed(1)+'k':P.lowpass.toFixed(0))+' Hz'),
+      stRow('FLTR','risonanza', stCC(reso)+'/127', 'Q '+P.reso.toFixed(1)),
+      stRow('ATK','amp attack', stCC(mapv(P.attack,0,20))+'/127', P.attack.toFixed(1)+' ms'),
+    ].join('');
+    document.getElementById('syntakt').innerHTML=html;
   }
 
   // ---------- UI build ----------
@@ -891,7 +942,7 @@
   // stato iniziale
   applyPreset('Rotondo & Morbido');
   fitCanvases();
-  computeStaticSpectrum(); updateReadouts();
+  computeStaticSpectrum(); updateReadouts(); updateSyntakt();
   drawScope(); drawSpectrumFrame();
   history=[snapshot()]; hIdx=0; updateUndoBtns();
   // secondo fit dopo il layout dei font

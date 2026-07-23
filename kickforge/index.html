@@ -52,8 +52,9 @@
   .card h2::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--accent)}
   .card h2 .sub{font-weight:400;color:var(--txt-3);text-transform:none;letter-spacing:0;font-size:.66rem;margin-left:auto}
 
-  #scope{width:100%;height:130px;display:block;border-radius:12px;background:#05050a;border:1px solid var(--line)}
-  #spectrum{width:100%;height:190px;display:block;border-radius:12px;background:#05050a;border:1px solid var(--line)}
+  #scope{width:100%;height:160px;display:block;border-radius:12px;background:#05050a;border:1px solid var(--line)}
+  #spectrum{width:100%;height:340px;display:block;border-radius:12px;background:#05050a;border:1px solid var(--line)}
+  @media(min-width:760px){ #spectrum{height:400px} }
   .specleg{display:flex;gap:1.1rem;margin-top:.6rem;font-size:.68rem;color:var(--txt-2);flex-wrap:wrap}
   .specleg .lg{display:flex;align-items:center;gap:.4rem}
   .specleg .lg i{width:15px;height:3px;border-radius:2px;display:inline-block}
@@ -143,7 +144,7 @@
 
     <div class="card">
       <h2>Spettro <span class="sub">FFT · asse log · dove suona</span></h2>
-      <canvas id="spectrum" width="1200" height="380"></canvas>
+      <canvas id="spectrum" width="1200" height="520"></canvas>
       <div class="specleg">
         <span class="lg lg-static"><i></i>energia del colpo</span>
         <span class="lg lg-live"><i></i>tempo reale</span>
@@ -490,17 +491,18 @@
   }
 
   function drawSpectrumFrame(){
-    const w=spec.width, h=spec.height, gh=h-16;
+    const w=spec.width, h=spec.height, gh=h-24;
     spx.clearRect(0,0,w,h);
-    // dB grid
+    // dB grid + labels
     spx.strokeStyle='rgba(255,255,255,0.045)'; spx.lineWidth=1;
-    for(let dbv=0;dbv>=-72;dbv-=12){ const y=dbToY(dbv,gh); spx.beginPath(); spx.moveTo(0,y); spx.lineTo(w,y); spx.stroke(); }
+    spx.fillStyle='rgba(150,150,180,0.45)'; spx.font='12px "Space Grotesk",monospace'; spx.textAlign='left';
+    for(let dbv=0;dbv>=-72;dbv-=12){ const y=dbToY(dbv,gh); spx.beginPath(); spx.moveTo(0,y); spx.lineTo(w,y); spx.stroke(); if(dbv<0) spx.fillText(dbv+' dB', 4, y-3); }
     // freq grid + labels
-    spx.fillStyle='rgba(150,150,180,0.55)'; spx.font='10px "Space Grotesk",monospace'; spx.textAlign='center';
+    spx.fillStyle='rgba(150,150,180,0.6)'; spx.font='13px "Space Grotesk",monospace'; spx.textAlign='center';
     SPEC_LABELS.forEach(f=>{
       const x=freqToX(f,w);
       spx.strokeStyle='rgba(255,255,255,0.05)'; spx.beginPath(); spx.moveTo(x,0); spx.lineTo(x,gh); spx.stroke();
-      spx.fillText(f>=1000?(f/1000)+'k':f, x, h-3);
+      spx.fillText(f>=1000?(f/1000)+'k':f, x, h-5);
     });
     // static energy (filled + stroked)
     if(staticDb){
@@ -531,10 +533,10 @@
     spx.beginPath(); spx.moveTo(fx,0); spx.lineTo(fx,gh); spx.stroke(); spx.setLineDash([]);
     const cents=noteCents(P.tune), cs=cents?(cents>0?' +':' ')+cents+'c':'';
     const lbl=noteShort(P.tune)+cs+' · '+P.tune.toFixed(0)+' Hz';
-    spx.fillStyle='#ffb03a'; spx.font='600 11px "Space Grotesk",monospace';
-    const right = fx > w-90;
+    spx.fillStyle='#ffb03a'; spx.font='600 15px "Space Grotesk",monospace';
+    const right = fx > w-120;
     spx.textAlign = right?'right':'left';
-    spx.fillText(lbl, right?fx-6:fx+6, 13);
+    spx.fillText(lbl, right?fx-7:fx+7, 17);
   }
   function liveTick(){
     if(!ac){ liveOn=false; return; }

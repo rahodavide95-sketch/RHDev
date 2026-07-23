@@ -98,11 +98,25 @@
   .bpm input{width:66px;background:var(--panel-2);border:1px solid var(--line-2);color:var(--txt);border-radius:9px;padding:.46rem .5rem;font-family:var(--font-d);font-size:.95rem;text-align:center;font-variant-numeric:tabular-nums}
   .bpm input:focus{outline:none;border-color:var(--accent)}
 
-  /* ---------- PRESET ---------- */
-  .presets{display:flex;gap:.5rem;flex-wrap:wrap;max-height:172px;overflow-y:auto;padding:2px 6px 2px 0;scrollbar-width:thin;-webkit-mask-image:linear-gradient(180deg,#000 calc(100% - 22px),transparent);mask-image:linear-gradient(180deg,#000 calc(100% - 22px),transparent)}
-  .preset{font-family:var(--font-d);font-size:.78rem;font-weight:500;color:var(--txt-2);background:var(--panel-2);border:1px solid var(--line);border-radius:22px;padding:.46rem .9rem;cursor:pointer;transition:.15s;letter-spacing:.01em}
-  .preset:hover{color:var(--txt);border-color:var(--line-2)}
-  .preset.active{color:var(--accent);border-color:var(--accent);background:rgba(255,90,60,0.09);box-shadow:0 0 14px rgba(255,90,60,0.12)}
+  /* ---------- PRESET (tendina) ---------- */
+  .preset-dd{position:relative;max-width:440px}
+  .preset-trigger{width:100%;display:flex;align-items:center;justify-content:space-between;gap:.6rem;font-family:var(--font-d);font-weight:600;font-size:.95rem;color:var(--txt);background:var(--panel-2);border:1px solid var(--line-2);border-radius:12px;padding:.72rem 1rem;cursor:pointer;transition:.15s}
+  .preset-trigger:hover{border-color:var(--accent)}
+  .preset-trigger:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .preset-trigger .chev{width:19px;height:19px;fill:var(--txt-2);transition:transform .2s;flex-shrink:0}
+  .preset-dd.open .preset-trigger{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,90,60,0.1)}
+  .preset-dd.open .chev{transform:rotate(180deg)}
+  .preset-menu{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:30;background:var(--panel);border:1px solid var(--line-2);border-radius:12px;box-shadow:0 20px 55px rgba(0,0,0,0.65);max-height:min(64vh,440px);overflow-y:auto;padding:.35rem;display:none;scrollbar-width:thin}
+  .preset-dd.open .preset-menu{display:block}
+  .pg-label{font-family:var(--font-d);font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:var(--txt-3);font-weight:600;padding:.7rem .65rem .35rem;position:sticky;top:0;background:var(--panel);z-index:1}
+  .pg-item{display:flex;align-items:center;gap:.55rem;padding:.52rem .65rem;border-radius:9px;cursor:pointer;font-size:.88rem;color:var(--txt-2);transition:.12s}
+  .pg-item:hover{background:rgba(255,255,255,0.045);color:var(--txt)}
+  .pg-item.active{color:var(--accent);background:rgba(255,90,60,0.09)}
+  .pg-item .dot{width:6px;height:6px;border-radius:50%;background:transparent;flex-shrink:0}
+  .pg-item.active .dot{background:var(--accent);box-shadow:0 0 8px var(--accent-glow)}
+  .pg-item .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pg-item .nt{font-family:var(--font-d);font-size:.72rem;color:var(--txt-3);font-variant-numeric:tabular-nums;flex-shrink:0}
+  .pg-item.active .nt{color:var(--accent-2)}
 
   /* ---------- CARATTERE / MACRO ---------- */
   .macrogrid{display:grid;grid-template-columns:1fr;gap:1.1rem}
@@ -158,8 +172,14 @@
 
     <!-- 1 · PRESET (in cima) -->
     <div class="card">
-      <div class="head">Preset <span class="sub" id="preset-count">kick per techno ipnotica — parti da qui</span></div>
-      <div class="presets" id="presets"></div>
+      <div class="head">Preset <span class="sub" id="preset-count">kick per techno ipnotica</span></div>
+      <div class="preset-dd" id="preset-dd">
+        <button class="preset-trigger" id="preset-trigger" aria-haspopup="listbox" aria-expanded="false">
+          <span id="preset-current">Scegli un preset</span>
+          <svg class="chev" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+        </button>
+        <div class="preset-menu" id="preset-menu" role="listbox"></div>
+      </div>
     </div>
 
     <!-- 2 · DISPLAY -->
@@ -377,6 +397,18 @@
   ];
   const PRESETS={};
   PRESET_DATA.forEach(r=>{ const o={gain:1}; for(let i=0;i<PK.length;i++) o[PK[i]]=r[i+1]; PRESETS[r[0]]=o; });
+
+  const PRESET_GROUPS=[
+    ['Rotondi & morbidi', ['Rotondo & Morbido','Velluto','Luna Piena','Seta','Onda Calda']],
+    ['Con punta / punch', ['Morbido con Punta','Punta Secca','Spillo','Colpo Netto','Punchy Driver','Testa Dura']],
+    ['Profondi / sub', ['Deep Hypnotic','Rumble Sub','Abisso','Sottosuolo','Caverna','Marea','Basso Profondo']],
+    ['Scuri / tight', ['Tight & Dark','Notte','Ombra','Catacomba','Ferro','Bunker']],
+    ['Driver ipnotici', ['Ipnosi','Loop Infinito','Trance Motorik','Berghain Pulse','Warehouse','Tunnel','Mantra','Ripetizione']],
+    ['Accordati (nota)', ['E1 Fondamenta','F1 Radice','F#1 Sub Melodico','G1 Motore','A1 Spinta','Tonale Caldo']],
+    ['Analogici / saturi', ['Analogico 909','Saturazione','Valvola','Nastro','Distorto Soft']],
+    ['Minimali / asciutti', ['Minimale','Asciutto','Puntino','Click Sottile']],
+    ['Lunghi / rolling', ['Rolling Deep','Coda Lunga','Dub Techno Kick','Eco Profondo','Respiro']],
+  ];
 
   function lerp(a,b,t){ return a+(b-a)*t; }
 
@@ -736,21 +768,31 @@
   function syncMacros(){ MACROS.forEach(m=>{ const el=document.getElementById('mc-'+m.key); if(el){ el.value=macroVal[m.key]; el._render(); } }); }
 
   function buildPresets(){
-    const wrap=document.getElementById('presets');
-    Object.keys(PRESETS).forEach(name=>{
-      const b=document.createElement('button'); b.className='preset'; b.textContent=name; b.dataset.name=name;
-      b.addEventListener('click',()=>{ applyPreset(name); commitHistory(); });
-      wrap.appendChild(b);
+    const menu=document.getElementById('preset-menu');
+    PRESET_GROUPS.forEach(([label,items])=>{
+      const gl=document.createElement('div'); gl.className='pg-label'; gl.textContent=label; menu.appendChild(gl);
+      items.forEach(name=>{
+        if(!PRESETS[name]) return;
+        const it=document.createElement('div'); it.className='pg-item'; it.dataset.name=name; it.setAttribute('role','option');
+        it.innerHTML='<span class="dot"></span><span class="nm">'+name+'</span><span class="nt">'+noteShort(PRESETS[name].tune)+'</span>';
+        it.addEventListener('click',()=>{ applyPreset(name); commitHistory(); closePresetMenu(); });
+        menu.appendChild(it);
+      });
     });
     const cnt=document.getElementById('preset-count');
-    if(cnt) cnt.textContent=Object.keys(PRESETS).length+' kick per techno ipnotica — parti da qui';
+    if(cnt) cnt.textContent=Object.keys(PRESETS).length+' kick per techno ipnotica';
   }
+  function setPresetLabel(name){ const el=document.getElementById('preset-current'); if(el) el.textContent = name || 'Personalizzato'; }
+  function markPresetActive(name){ document.querySelectorAll('.pg-item').forEach(x=>x.classList.toggle('active', x.dataset.name===name)); }
+  function openPresetMenu(){ const dd=document.getElementById('preset-dd'); dd.classList.add('open'); document.getElementById('preset-trigger').setAttribute('aria-expanded','true'); const a=dd.querySelector('.pg-item.active'); if(a) a.scrollIntoView({block:'center'}); }
+  function closePresetMenu(){ const dd=document.getElementById('preset-dd'); dd.classList.remove('open'); document.getElementById('preset-trigger').setAttribute('aria-expanded','false'); }
+
   function applyPreset(name){
     Object.assign(P, PRESETS[name]); curPreset=name;
     syncAll(); markDirty(); redrawScope(); redrawSpectrum();
-    document.querySelectorAll('.preset').forEach(x=>x.classList.toggle('active', x.dataset.name===name));
+    markPresetActive(name); setPresetLabel(name);
   }
-  function clearPresetSel(){ document.querySelectorAll('.preset.active').forEach(x=>x.classList.remove('active')); }
+  function clearPresetSel(){ document.querySelectorAll('.pg-item.active').forEach(x=>x.classList.remove('active')); setPresetLabel(null); }
 
   let rafPending=false;
   function redrawScope(){ if(rafPending) return; rafPending=true; requestAnimationFrame(()=>{ rafPending=false; drawScope(); }); }
@@ -771,7 +813,7 @@
   function restore(snap){
     Object.assign(P, snap.P); Object.assign(macroVal, snap.macros); curPreset=snap.preset;
     syncAll(); syncMacros(); markDirty(); redrawScope(); redrawSpectrum();
-    document.querySelectorAll('.preset').forEach(x=>x.classList.toggle('active', x.dataset.name===curPreset));
+    markPresetActive(curPreset); setPresetLabel(curPreset);
     updateUndoBtns();
   }
   function undo(){ if(hIdx>0){ hIdx--; restore(history[hIdx]); } }
@@ -826,7 +868,12 @@
   document.getElementById('redo').addEventListener('click', redo);
   document.getElementById('export').addEventListener('click', exportWAV);
 
+  const presetTrigger=document.getElementById('preset-trigger');
+  presetTrigger.addEventListener('click',e=>{ e.stopPropagation(); document.getElementById('preset-dd').classList.contains('open')?closePresetMenu():openPresetMenu(); });
+  document.addEventListener('click',e=>{ const dd=document.getElementById('preset-dd'); if(dd && !dd.contains(e.target)) closePresetMenu(); });
+
   document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){ closePresetMenu(); return; }
     if((e.ctrlKey||e.metaKey) && (e.key==='z'||e.key==='Z')){ e.preventDefault(); e.shiftKey?redo():undo(); return; }
     if((e.ctrlKey||e.metaKey) && (e.key==='y'||e.key==='Y')){ e.preventDefault(); redo(); return; }
     if(e.target.tagName==='INPUT'&&e.target.type==='number') return;

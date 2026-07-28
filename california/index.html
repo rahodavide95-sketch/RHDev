@@ -266,6 +266,28 @@
     font-weight: 600;
   }
 
+  /* PULSANTE TEMA — fisso in alto a destra */
+  .theme-fixed {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    z-index: 300;
+    background: var(--toggle-bg);
+    color: var(--text);
+    border: 1px solid var(--divider);
+    border-radius: 20px;
+    padding: 7px 13px;
+    font-size: 12px;
+    font-family: 'Roboto Mono', monospace;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.35);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .theme-fixed:hover { border-color: var(--amber); color: var(--amber); }
+  @media (max-width: 640px) {
+    .theme-fixed { top: 10px; right: 10px; padding: 6px 11px; font-size: 11px; }
+  }
+
   /* MAIN LAYOUT */
   .container {
     max-width: 900px;
@@ -1296,6 +1318,8 @@
 </head>
 <body>
 
+<button class="theme-fixed" onclick="toggleTheme()" id="theme-btn">🌙 Tema</button>
+
 <div class="hero">
   <!-- Monument Valley SVG background -->
   <svg class="hero-bg" viewBox="0 0 1400 340" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
@@ -1458,7 +1482,6 @@
   <a class="day-pill" href="#shopping" style="border-color:#27AE60;color:#27AE60;">🛍️ Shopping</a>
   <a class="day-pill" href="#makeup" style="border-color:#e84393;color:#e84393;">💄 Makeup</a>
   <a class="day-pill" href="#apps" style="border-color:#4A90D9;color:#4A90D9;">📱 App</a>
-  <button class="day-pill theme-toggle" onclick="toggleTheme()" id="theme-btn" style="border-color:var(--muted);cursor:pointer;background:var(--toggle-bg);">🌙 Tema</button>
   <a class="day-pill" href="#g1">10/8 · LA #1</a>
   <a class="day-pill" href="#g2">11/8 · LA #2</a>
   <a class="day-pill" href="#g3">12/8 · LA #3</a>

@@ -649,6 +649,32 @@
   }
   .sh-link:hover { color: var(--amber); border-color: var(--amber); }
 
+  /* ── SEZIONE MAKEUP / BEAUTY ── */
+  .mk-item {
+    scroll-margin-top: 80px;
+    background: var(--card);
+    border: 1px solid var(--divider);
+    border-left: 3px solid #e84393;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    transition: box-shadow 0.2s, border-color 0.2s;
+  }
+  .mk-item:target {
+    border-color: var(--amber);
+    box-shadow: 0 0 0 2px rgba(245,166,35,0.35);
+  }
+  .mk-item .m-place { font-family: 'Bebas Neue', sans-serif; font-size: 17px; letter-spacing: 1px; color: #e84393; }
+  .mk-item .m-body { color: var(--text-sec); font-size: 13px; line-height: 1.55; margin-top: 4px; }
+  .mk-item .m-body strong { color: var(--text); }
+  .mk-link {
+    color: #e84393;
+    text-decoration: none;
+    border-bottom: 1px dashed #e84393;
+    font-weight: 500;
+  }
+  .mk-link:hover { color: var(--amber); border-color: var(--amber); }
+
   /* barra strumenti globale */
   .tools-bar {
     display: flex;
@@ -1430,6 +1456,7 @@
   <a class="day-pill" href="#prenotazioni" style="border-color:#8E44AD;color:#8E44AD;">🎟️ Prenotazioni</a>
   <a class="day-pill" href="#vinili" style="border-color:#8E44AD;color:#8E44AD;">💿 Vinili</a>
   <a class="day-pill" href="#shopping" style="border-color:#27AE60;color:#27AE60;">🛍️ Shopping</a>
+  <a class="day-pill" href="#makeup" style="border-color:#e84393;color:#e84393;">💄 Makeup</a>
   <a class="day-pill" href="#apps" style="border-color:#4A90D9;color:#4A90D9;">📱 App</a>
   <button class="day-pill theme-toggle" onclick="toggleTheme()" id="theme-btn" style="border-color:var(--muted);cursor:pointer;background:var(--toggle-bg);">🌙 Tema</button>
   <a class="day-pill" href="#g1">10/8 · LA #1</a>
@@ -1690,6 +1717,10 @@
       <div class="tl-title">Rodeo Drive — Beverly Hills <span class="badge badge-sight">VISITA</span></div>
       <div class="tl-body">
         Da Getty: <strong>I-405 S → Wilshire Blvd E → N Rodeo Dr</strong>. La strada più famosa dello shopping di lusso del mondo. Anche solo passeggiare è un'esperienza. <strong>Parcheggio: Rodeo Drive è pedonale</strong>, parcheggia nel garage <strong>Brighton Way Parking</strong> (305 N Beverly Dr, ~$2–3 prime ore).
+      </div>
+      <div class="tip-box" style="border-color:rgba(232,67,147,0.25);background:rgba(232,67,147,0.06)">
+        <strong style="color:#e84393">💄 Makeup qui (per lei)</strong>
+        A LA c'è il <strong>Glossier Melrose</strong> + Ulta/Sephora/Target con brand introvabili in Italia → tocca <a href="#mk-la" class="mk-link">Los Angeles</a> nella sezione <a href="#makeup" class="mk-link">Makeup</a>.
       </div>
     </div>
 
@@ -2267,6 +2298,10 @@
       <div class="tl-body">
         Passeggiata veloce verso nord: <strong>Bellagio → Caesars Palace (Forum Shops) → The LINQ → Venetian (Grand Canal Shoppes)</strong>. Tutto al chiuso con aria condizionata — fondamentale ad agosto. Oggi la tieni corta perché il pomeriggio è dedicato alla Sphere. Passando dal Venetian dai un primo sguardo alla <strong>Sphere</strong> di giorno.
       </div>
+      <div class="tip-box" style="border-color:rgba(232,67,147,0.25);background:rgba(232,67,147,0.06)">
+        <strong style="color:#e84393">💄 Makeup qui (per lei)</strong>
+        Ai <strong>Grand Canal Shoppes (Venetian)</strong> c'è un enorme Sephora, più Ulta sullo Strip → tocca <a href="#mk-vegas" class="mk-link">Las Vegas</a> nella sezione <a href="#makeup" class="mk-link">Makeup</a>.
+      </div>
     </div>
 
     <div class="tl-item warn">
@@ -2738,6 +2773,10 @@
       <div class="tl-title">Prima sera leggera — Union Square e dintorni <span class="badge badge-sight">VISITA</span></div>
       <div class="tl-body">
         Dopo una giornata piena, serata soft: cena in zona <strong>Union Square</strong> e due passi nel quartiere. Se avete ancora energie, imboccate il <strong>Cable Car di Powell</strong> ($8) verso Fisherman's Wharf — altrimenti lasciatelo per domani. Il Golden Gate e Alcatraz sono il piatto forte del giorno dopo, a mente fresca.
+      </div>
+      <div class="tip-box" style="border-color:rgba(232,67,147,0.25);background:rgba(232,67,147,0.06)">
+        <strong style="color:#e84393">💄 Makeup qui (per lei)</strong>
+        Il <strong>Sephora Powell St</strong> (flagship storico) è a due passi dall'hotel, più Glossier SF e Credo Beauty → tocca <a href="#mk-sf" class="mk-link">San Francisco</a> nella sezione <a href="#makeup" class="mk-link">Makeup</a>.
       </div>
     </div>
 
@@ -3334,6 +3373,63 @@
 
 </div><!-- /stats-inner -->
 </div><!-- /shopping -->
+
+<!-- ══════════════════════════════════════════════════
+     SEZIONE MAKEUP / BEAUTY
+     ══════════════════════════════════════════════════ -->
+<div class="stats-section" id="makeup" style="background:var(--bg);border-top:1px solid var(--divider);border-bottom:none;">
+<div class="stats-inner">
+
+  <div class="stats-title">💄 MAKEUP &amp; <span>BEAUTY</span></div>
+  <div class="stats-subtitle">Negozi e brand introvabili (o carissimi) in Italia — dai giorni ci arrivi col link</div>
+
+  <div class="shop-item" id="mk-brands" style="border-left-color:#e84393">
+    <div class="s-place" style="color:#e84393">🇺🇸 Brand da cacciare (solo/quasi solo USA)</div>
+    <div class="s-body">
+      <strong>Cult US difficili in Italia:</strong> Glossier, ColourPop, Rhode (Hailey Bieber), r.e.m. beauty (Ariana Grande), Tower 28, Saie, Kosas, Merit, Milk Makeup, Rare Beauty (più ampia negli USA). <br>
+      <strong>Drugstore economicissimi</strong> (da Target/CVS): e.l.f., Wet n Wild, Milani, CoverGirl, Physicians Formula, NYX.
+    </div>
+  </div>
+
+  <div class="mk-item" id="mk-stores">
+    <div class="m-place">I negozi che in Europa non esistono</div>
+    <div class="m-body">
+      <strong>Ulta Beauty</strong> — il megastore beauty USA (drugstore + prestige), se andate in uno solo scegliete questo. <strong>Target / CVS / Walgreens</strong> — makeup economicissimo. <strong>Credo Beauty</strong> — clean beauty (nato a SF). <strong>Sephora USA</strong> — ha brand che il Sephora italiano non tiene.
+    </div>
+  </div>
+
+  <div class="mk-item" id="mk-la">
+    <div class="m-place">Los Angeles</div>
+    <div class="m-body">
+      <strong>Glossier Melrose Place</strong> (flagship del brand di culto) · <strong>Ulta</strong> · <strong>Sephora</strong> a The Grove · <strong>Target</strong>. La zona <strong>Melrose / Abbot Kinney</strong> per il beauty indie.
+    </div>
+  </div>
+
+  <div class="mk-item" id="mk-vegas">
+    <div class="m-place">Las Vegas</div>
+    <div class="m-body">
+      <strong>Sephora</strong> gigante ai <strong>Grand Canal Shoppes (Venetian)</strong> e <strong>Ulta</strong> — comodissimi mentre siete sullo Strip.
+    </div>
+  </div>
+
+  <div class="mk-item" id="mk-sf">
+    <div class="m-place">San Francisco</div>
+    <div class="m-body">
+      <strong>Sephora Powell St</strong> (flagship storico, a due passi dall'hotel di Union Square) · <strong>Glossier SF</strong> · <strong>Credo Beauty</strong> (clean) · <strong>Ulta</strong>.
+    </div>
+  </div>
+
+  <div class="mk-item" id="mk-fresno">
+    <div class="m-place">Fresno</div>
+    <div class="m-body">
+      <strong>Ulta</strong>, <strong>Target</strong> e <strong>Sephora</strong> al centro commerciale — comodi per rifornirsi nella tappa di transito.
+    </div>
+  </div>
+
+  <p style="color:var(--muted);font-size:12px;margin-top:16px;">💡 Prezzi sul cartellino <strong>senza tasse</strong>: alla cassa si aggiunge la sales tax (~8-10%). Comunque quasi sempre più conveniente che in Italia.</p>
+
+</div><!-- /stats-inner -->
+</div><!-- /makeup -->
 
 <!-- ══════════════════════════════════════════════════
      SEZIONE APP CONSIGLIATE

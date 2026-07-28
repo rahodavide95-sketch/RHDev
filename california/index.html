@@ -577,6 +577,52 @@
     padding-top: 2px;
   }
 
+  /* ── SEZIONE VINILI ── */
+  .vinyl-city {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    letter-spacing: 2px;
+    color: var(--amber);
+    margin: 22px 0 10px;
+  }
+  .vinyl-item {
+    scroll-margin-top: 80px;              /* così la nav sticky non lo copre */
+    background: var(--card);
+    border: 1px solid var(--divider);
+    border-left: 3px solid var(--purple);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    transition: box-shadow 0.2s, border-color 0.2s;
+  }
+  .vinyl-item:target {                    /* evidenzia quando ci arrivi col link */
+    border-color: var(--amber);
+    box-shadow: 0 0 0 2px rgba(245,166,35,0.35);
+  }
+  .vinyl-item .v-name { font-weight: 600; color: var(--text); font-size: 14px; }
+  .vinyl-item .v-addr { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .vinyl-genre {
+    display: inline-block;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    margin-top: 6px;
+  }
+  .vinyl-genre.all  { color: var(--text-sec); background: rgba(136,136,128,0.15); }
+  .vinyl-genre.elec { color: var(--purple);   background: rgba(142,68,173,0.15); }
+  .vinyl-genre.jazz { color: var(--green);    background: rgba(39,174,96,0.15); }
+
+  /* link "record store" dentro i giorni */
+  .rs-link {
+    color: var(--purple);
+    text-decoration: none;
+    border-bottom: 1px dashed var(--purple);
+    font-weight: 500;
+  }
+  .rs-link:hover { color: var(--amber); border-color: var(--amber); }
+
   /* barra strumenti globale */
   .tools-bar {
     display: flex;
@@ -1356,6 +1402,7 @@
 <nav class="day-nav">
   <a class="day-pill" href="#stats" style="border-color:#27AE60;color:#27AE60;">💰 Budget & Stats</a>
   <a class="day-pill" href="#prenotazioni" style="border-color:#8E44AD;color:#8E44AD;">🎟️ Prenotazioni</a>
+  <a class="day-pill" href="#vinili" style="border-color:#8E44AD;color:#8E44AD;">💿 Vinili</a>
   <a class="day-pill" href="#apps" style="border-color:#4A90D9;color:#4A90D9;">📱 App</a>
   <button class="day-pill theme-toggle" onclick="toggleTheme()" id="theme-btn" style="border-color:var(--muted);cursor:pointer;background:var(--toggle-bg);">🌙 Tema</button>
   <a class="day-pill" href="#g1">10/8 · LA #1</a>
@@ -1461,8 +1508,8 @@
         Passeggia su <strong>Hollywood Blvd tra La Brea Ave e Vine St</strong> (~1,6 km). Cerca le stelle di artisti che conosci — ce ne sono oltre 2.700. Il <strong>TCL Chinese Theatre</strong> (ex Grauman's) con le impronte delle mani delle star è sul lato nord. Al <strong>Dolby Theatre / Hollywood & Highland</strong> l'arco centrale inquadra il <strong>Cartello Hollywood</strong> sulle colline — foto garantita con la luce dorata del tramonto (~20:00). <strong>Tutto gratuito.</strong>
       </div>
       <div class="tip-box">
-        <strong>💿 Vinile — Amoeba Hollywood</strong>
-        Proprio sull'Hollywood Blvd (6200): il flagship di <strong>Amoeba</strong>, il più grande record store del mondo, con un'enorme sezione <strong>dance/electronic 12"</strong> — scava lì per techno e roba underground. Aperto fino a tardi, ci passi durante la camminata.
+        <strong>💿 Record store qui</strong>
+        Proprio sull'Hollywood Blvd potresti passare da <a href="#rs-amoeba-hw" class="rs-link">Amoeba Hollywood</a> (grande sezione dance/electronic 12") → tocca per i dettagli nella sezione <a href="#vinili" class="rs-link">Vinili</a>.
       </div>
     </div>
 
@@ -1638,8 +1685,8 @@
         <strong>Angels Flight Railway</strong> (351 S Hill St) — la funicolare più corta del mondo, $1 a tratta, sali e scendi sulla collina di Bunker Hill. Poi entra al <strong>Grand Central Market</strong> (317 S Broadway) — mercato storico del 1917 con decine di bancarelle. Prova i tacos da <strong>Villa Moreliana</strong> o il ramen da <strong>Ramen Hood</strong>.
       </div>
       <div class="tip-box">
-        <strong>🖤 Techno vinile — deviazione LA (opzionale)</strong>
-        A ~15-25 min a NE del Downtown ci sono i due templi elettronici di LA: <strong>Mount Analog</strong> (Highland Park) — experimental/underground — e <strong>Poo-Bah Records</strong> (Pasadena) — leggendario per techno/beat/sperimentale. Vale la deviazione per un digger come te: incastrali qui nel pomeriggio se hai voglia (controlla gli orari).
+        <strong>🖤 Record store qui (deviazione opzionale)</strong>
+        A NE del Downtown i due templi techno di LA: potresti andare a <a href="#rs-mount-analog" class="rs-link">Mount Analog</a> e <a href="#rs-poobah" class="rs-link">Poo-Bah</a> → tocca per i dettagli. Deviazione da digger, incastrali nel pomeriggio se hai voglia.
       </div>
     </div>
 
@@ -2084,8 +2131,8 @@
         La volta LED di 460 metri che copre tutta la Fremont Street si illumina ogni sera con show di luce e musica (ogni ora da quando fa buio). Attrazione gratuita. Musica live su più palchi contemporaneamente. Atmosfera completamente diversa dallo Strip — più autentica, più caotica, più divertente.
       </div>
       <div class="tip-box">
-        <strong>💿 Vinile — 11th Street Records</strong>
-        Nel <strong>Fremont East</strong>, a piedi dall'hotel (1023 Fremont St): piccolo record store con studio interno e una sezione elettronica. Vegas non è terra techno, ma se apre <strong>di giorno</strong> (il 16) fai un salto. Chiude presto — non la sera.
+        <strong>💿 Record store qui</strong>
+        Nel Fremont East, a piedi dall'hotel, potresti passare da <a href="#rs-11th" class="rs-link">11th Street Records</a> → tocca per i dettagli nella sezione <a href="#vinili" class="rs-link">Vinili</a>. Chiude presto: vai di giorno.
       </div>
     </div>
 
@@ -2773,8 +2820,8 @@
         L'incrocio tra <strong>Haight St e Ashbury St</strong> è il simbolo del movimento hippie del 1967. Il quartiere è ancora pieno di negozi vintage, record shop, murali psichedelici. <strong>Amoeba Music</strong> (1855 Haight St) è il più grande negozio di dischi indipendenti del mondo — grossa sezione elettronica.
       </div>
       <div class="tip-box">
-        <strong>🖤 Techno vinile — Vinyl Dreams</strong>
-        A ~10 min a piedi, nel <strong>Lower Haight</strong> (594 Haight St): <strong>Vinyl Dreams</strong>, IL negozio <strong>house/techno</strong> di San Francisco, tutto dance/elettronica. Il Lower Haight è il distretto dei dischi elettronici — perfetto per la tua roba hypnotic/underground.
+        <strong>🖤 Record store qui</strong>
+        Oltre ad <a href="#rs-amoeba-sf" class="rs-link">Amoeba</a>, a ~10 min nel Lower Haight potresti andare da <a href="#rs-vinyl-dreams" class="rs-link">Vinyl Dreams</a> (house/techno) e <a href="#rs-groove" class="rs-link">Groove Merchant</a> → tocca per i dettagli.
       </div>
     </div>
 
@@ -3061,6 +3108,88 @@
 
 </div><!-- /stats-inner -->
 </div><!-- /prenotazioni -->
+
+<!-- ══════════════════════════════════════════════════
+     SEZIONE VINILI / RECORD STORE
+     ══════════════════════════════════════════════════ -->
+<div class="stats-section" id="vinili" style="background:var(--bg);border-top:1px solid var(--divider);border-bottom:none;">
+<div class="stats-inner">
+
+  <div class="stats-title">💿 VINILI &amp; <span>RECORD STORE</span></div>
+  <div class="stats-subtitle">Con il genere di ciascuno — dai giorni dell'itinerario ci arrivi col link</div>
+
+  <div class="vinyl-city">Los Angeles</div>
+  <div class="vinyl-item" id="rs-amoeba-hw">
+    <div class="v-name">Amoeba Music Hollywood</div>
+    <div class="v-addr">6200 Hollywood Blvd · sull'Hollywood Blvd (giorno 1)</div>
+    <span class="vinyl-genre all">TUTTI I GENERI</span> <span class="vinyl-genre elec">grande sezione dance/electronic 12"</span>
+  </div>
+  <div class="vinyl-item" id="rs-mount-analog">
+    <div class="v-name">Mount Analog</div>
+    <div class="v-addr">Highland Park · ~20 min NE del Downtown</div>
+    <span class="vinyl-genre elec">ELETTRONICA / SPERIMENTALE / UNDERGROUND</span>
+  </div>
+  <div class="vinyl-item" id="rs-poobah">
+    <div class="v-name">Poo-Bah Records</div>
+    <div class="v-addr">Pasadena · ~25 min NE del Downtown</div>
+    <span class="vinyl-genre elec">TECHNO / ELETTRONICA / BEAT / SPERIMENTALE</span>
+  </div>
+  <div class="vinyl-item" id="rs-rockaway">
+    <div class="v-name">Rockaway Records</div>
+    <div class="v-addr">Silver Lake</div>
+    <span class="vinyl-genre all">TUTTI I GENERI · rarità e da collezione</span>
+  </div>
+
+  <div class="vinyl-city">Las Vegas</div>
+  <div class="vinyl-item" id="rs-11th">
+    <div class="v-name">11th Street Records</div>
+    <div class="v-addr">1023 Fremont St · Fremont East, a piedi dall'hotel (giorno 15-16)</div>
+    <span class="vinyl-genre all">TUTTI I GENERI</span> <span class="vinyl-genre elec">piccola sezione elettronica</span>
+  </div>
+  <div class="vinyl-item" id="rs-waxtrax">
+    <div class="v-name">Wax Trax Records</div>
+    <div class="v-addr">Downtown Las Vegas</div>
+    <span class="vinyl-genre all">TUTTI I GENERI · usato storico</span>
+  </div>
+  <div class="vinyl-item" id="rs-zia">
+    <div class="v-name">Zia Records</div>
+    <div class="v-addr">più sedi a Las Vegas</div>
+    <span class="vinyl-genre all">TUTTI I GENERI · grande usato</span>
+  </div>
+
+  <div class="vinyl-city">San Francisco</div>
+  <div class="vinyl-item" id="rs-amoeba-sf">
+    <div class="v-name">Amoeba Music SF</div>
+    <div class="v-addr">1855 Haight St · Haight-Ashbury (giorno 21)</div>
+    <span class="vinyl-genre all">TUTTI I GENERI</span> <span class="vinyl-genre elec">grande sezione elettronica</span>
+  </div>
+  <div class="vinyl-item" id="rs-vinyl-dreams">
+    <div class="v-name">Vinyl Dreams</div>
+    <div class="v-addr">594 Haight St · Lower Haight (giorno 21)</div>
+    <span class="vinyl-genre elec">HOUSE / TECHNO / ELETTRONICA — il tuo posto</span>
+  </div>
+  <div class="vinyl-item" id="rs-groove">
+    <div class="v-name">Groove Merchant</div>
+    <div class="v-addr">776 Haight St · Lower Haight</div>
+    <span class="vinyl-genre jazz">FUNK / SOUL / JAZZ (rari)</span>
+  </div>
+  <div class="vinyl-item" id="rs-101">
+    <div class="v-name">101 Music</div>
+    <div class="v-addr">North Beach (giorno 21)</div>
+    <span class="vinyl-genre all">TUTTI I GENERI · vinili e strumenti vintage</span>
+  </div>
+
+  <div class="vinyl-city">Fresno</div>
+  <div class="vinyl-item" id="rs-rogue">
+    <div class="v-name">Rogue Records</div>
+    <div class="v-addr">Fresno (giorni 18 e 22)</div>
+    <span class="vinyl-genre all">TUTTI I GENERI</span>
+  </div>
+
+  <p style="color:var(--muted);font-size:12px;margin-top:16px;">🖤 Per techno/hypnotic underground i tuoi migliori: <strong>Poo-Bah</strong> e <strong>Mount Analog</strong> (LA), <strong>Vinyl Dreams</strong> (SF). Controlla sempre gli orari di apertura.</p>
+
+</div><!-- /stats-inner -->
+</div><!-- /vinili -->
 
 <!-- ══════════════════════════════════════════════════
      SEZIONE APP CONSIGLIATE

@@ -623,6 +623,32 @@
   }
   .rs-link:hover { color: var(--amber); border-color: var(--amber); }
 
+  /* ── SEZIONE SHOPPING / SOUVENIR ── */
+  .shop-item {
+    scroll-margin-top: 80px;
+    background: var(--card);
+    border: 1px solid var(--divider);
+    border-left: 3px solid var(--green);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    transition: box-shadow 0.2s, border-color 0.2s;
+  }
+  .shop-item:target {
+    border-color: var(--amber);
+    box-shadow: 0 0 0 2px rgba(245,166,35,0.35);
+  }
+  .shop-item .s-place { font-family: 'Bebas Neue', sans-serif; font-size: 17px; letter-spacing: 1px; color: var(--green); }
+  .shop-item .s-body { color: var(--text-sec); font-size: 13px; line-height: 1.55; margin-top: 4px; }
+  .shop-item .s-body strong { color: var(--text); }
+  .sh-link {
+    color: var(--green);
+    text-decoration: none;
+    border-bottom: 1px dashed var(--green);
+    font-weight: 500;
+  }
+  .sh-link:hover { color: var(--amber); border-color: var(--amber); }
+
   /* barra strumenti globale */
   .tools-bar {
     display: flex;
@@ -1403,6 +1429,7 @@
   <a class="day-pill" href="#stats" style="border-color:#27AE60;color:#27AE60;">💰 Budget & Stats</a>
   <a class="day-pill" href="#prenotazioni" style="border-color:#8E44AD;color:#8E44AD;">🎟️ Prenotazioni</a>
   <a class="day-pill" href="#vinili" style="border-color:#8E44AD;color:#8E44AD;">💿 Vinili</a>
+  <a class="day-pill" href="#shopping" style="border-color:#27AE60;color:#27AE60;">🛍️ Shopping</a>
   <a class="day-pill" href="#apps" style="border-color:#4A90D9;color:#4A90D9;">📱 App</a>
   <button class="day-pill theme-toggle" onclick="toggleTheme()" id="theme-btn" style="border-color:var(--muted);cursor:pointer;background:var(--toggle-bg);">🌙 Tema</button>
   <a class="day-pill" href="#g1">10/8 · LA #1</a>
@@ -1510,6 +1537,10 @@
       <div class="tip-box">
         <strong>💿 Record store qui</strong>
         Proprio sull'Hollywood Blvd potresti passare da <a href="#rs-amoeba-hw" class="rs-link">Amoeba Hollywood</a> (grande sezione dance/electronic 12") → tocca per i dettagli nella sezione <a href="#vinili" class="rs-link">Vinili</a>.
+      </div>
+      <div class="tip-box" style="border-color:rgba(39,174,96,0.2);background:rgba(39,174,96,0.06)">
+        <strong style="color:var(--green)">🛍️ Shopping tipico qui</strong>
+        Memorabilia di Hollywood, merch In-N-Out, vintage a Venice/Melrose → tocca <a href="#sh-la" class="sh-link">Los Angeles</a> nella sezione <a href="#shopping" class="sh-link">Shopping</a>.
       </div>
     </div>
 
@@ -1769,6 +1800,10 @@
       <div class="tl-body">
         <strong>Oatman, AZ</strong> — città dell'oro con asini liberi per strada. 45 minuti: porta carote, passeggia, fai foto. Strade di montagna strette prima e dopo — guida con attenzione con il SUV.
       </div>
+      <div class="tip-box" style="border-color:rgba(39,174,96,0.2);background:rgba(39,174,96,0.06)">
+        <strong style="color:var(--green)">🛍️ Shopping tipico qui</strong>
+        Souvenir Route 66 (insegne, targhe, patch) nei negozietti di Oatman e Kingman → tocca <a href="#sh-route66" class="sh-link">Route 66</a> nella sezione <a href="#shopping" class="sh-link">Shopping</a>.
+      </div>
     </div>
 
     <div class="tl-item food">
@@ -1944,6 +1979,10 @@
       <div class="tl-title">Monument Valley — pomeriggio e relax <span class="badge badge-sight">VISITA</span></div>
       <div class="tl-body">
         Visitor Center, panorama, negozio Navajo. Hai tempo — il tramonto è alle 18:00. Rilassati nell'ombra del Visitor Center, mangia qualcosa, riposa un po' — sei in piedi dalle 4:30.
+      </div>
+      <div class="tip-box" style="border-color:rgba(39,174,96,0.2);background:rgba(39,174,96,0.06)">
+        <strong style="color:var(--green)">🛍️ Shopping tipico qui — il più speciale</strong>
+        Artigianato Navajo autentico (turchese, tappeti, ceramiche) dagli artigiani — <strong>porta contanti</strong>. Tocca <a href="#sh-navajo" class="sh-link">Monument Valley &amp; Navajo</a> nella sezione <a href="#shopping" class="sh-link">Shopping</a>.
       </div>
     </div>
 
@@ -2133,6 +2172,10 @@
       <div class="tip-box">
         <strong>💿 Record store qui</strong>
         Nel Fremont East, a piedi dall'hotel, potresti passare da <a href="#rs-11th" class="rs-link">11th Street Records</a> → tocca per i dettagli nella sezione <a href="#vinili" class="rs-link">Vinili</a>. Chiude presto: vai di giorno.
+      </div>
+      <div class="tip-box" style="border-color:rgba(39,174,96,0.2);background:rgba(39,174,96,0.06)">
+        <strong style="color:var(--green)">🛍️ Shopping tipico qui</strong>
+        Kitsch di Vegas: fiches, carte dei casinò, magneti al neon → tocca <a href="#sh-vegas" class="sh-link">Las Vegas</a> nella sezione <a href="#shopping" class="sh-link">Shopping</a>.
       </div>
     </div>
 
@@ -2635,6 +2678,10 @@
         <strong>🅿 Yosemite Valley</strong>
         Parcheggia a <strong>Curry Village</strong> (Aree 13-17): da lì parte lo <strong>shuttle gratuito</strong> che porta all'imbocco dei sentieri. Non serve spostare l'auto tra i punti della valle.
       </div>
+      <div class="tip-box" style="border-color:rgba(39,174,96,0.2);background:rgba(39,174,96,0.06)">
+        <strong style="color:var(--green)">🛍️ Shopping tipico qui</strong>
+        La <strong>Ansel Adams Gallery</strong> (stampe fotografiche) e il merch del parco → tocca <a href="#sh-yosemite" class="sh-link">Yosemite</a> nella sezione <a href="#shopping" class="sh-link">Shopping</a>.
+      </div>
     </div>
 
     <div class="tl-item food">
@@ -2731,6 +2778,10 @@
       <div class="tl-title">Fisherman's Wharf — Pier 39 e Ghirardelli <span class="badge badge-sight">VISITA</span></div>
       <div class="tl-body">
         Due passi sul lungomare: i <strong>leoni marini di Pier 39</strong> (chiassosi e spassosi) e la <strong>Ghirardelli Square</strong> (cioccolato storico). Assaggio veloce, poi si va nel quartiere giapponese.
+      </div>
+      <div class="tip-box" style="border-color:rgba(39,174,96,0.2);background:rgba(39,174,96,0.06)">
+        <strong style="color:var(--green)">🛍️ Shopping tipico qui</strong>
+        Cioccolato Ghirardelli, souvenir del Wharf, tè e portafortuna a Chinatown, cioccolato/vintage a Haight → tocca <a href="#sh-sf" class="sh-link">San Francisco</a> nella sezione <a href="#shopping" class="sh-link">Shopping</a>.
       </div>
     </div>
 
@@ -3190,6 +3241,90 @@
 
 </div><!-- /stats-inner -->
 </div><!-- /vinili -->
+
+<!-- ══════════════════════════════════════════════════
+     SEZIONE SHOPPING / SOUVENIR
+     ══════════════════════════════════════════════════ -->
+<div class="stats-section" id="shopping" style="border-top:1px solid var(--divider);border-bottom:none;">
+<div class="stats-inner">
+
+  <div class="stats-title">🛍️ SHOPPING &amp; <span>SOUVENIR</span></div>
+  <div class="stats-subtitle">Cosa comprare di caratteristico in ogni tappa — dai giorni ci arrivi col link</div>
+
+  <div class="shop-item" id="sh-la">
+    <div class="s-place">Los Angeles</div>
+    <div class="s-body">
+      <strong>Memorabilia di Hollywood</strong> (ciak, magneti, star) sull'Hollywood Blvd; <strong>merch In-N-Out</strong> (t-shirt/cappellini iconici); boutique indie e <strong>vintage a Abbot Kinney (Venice)</strong> e su <strong>Melrose Ave</strong>; lusso a Rodeo Drive.
+    </div>
+  </div>
+
+  <div class="shop-item" id="sh-route66">
+    <div class="s-place">Route 66</div>
+    <div class="s-body">
+      <strong>Memorabilia Route 66</strong>: insegne, targhe metalliche, magneti, patch e adesivi vintage nei gift shop lungo la strada (Oatman, Kingman, Williams). Il souvenir più "on the road" del viaggio.
+    </div>
+  </div>
+
+  <div class="shop-item" id="sh-grandcanyon">
+    <div class="s-place">Grand Canyon / Williams</div>
+    <div class="s-body">
+      <strong>Merch dei parchi nazionali</strong> (poster NPS vintage, borracce, pin) e primo artigianato nativo americano. Bookstore del parco per libri e mappe.
+    </div>
+  </div>
+
+  <div class="shop-item" id="sh-navajo">
+    <div class="s-place">Monument Valley &amp; terre Navajo</div>
+    <div class="s-body">
+      <strong>Artigianato Navajo autentico</strong>: gioielli in <strong>turchese e argento</strong>, <strong>tappeti tessuti a mano</strong>, ceramiche, sand paintings — comprali <strong>direttamente dagli artigiani</strong> al Visitor Center e ai banchetti lungo la US-163. <strong>⚠ Porta CONTANTI</strong> (spesso non prendono carte) e comprare da loro sostiene la comunità. Il souvenir più prezioso del viaggio.
+    </div>
+  </div>
+
+  <div class="shop-item" id="sh-vegas">
+    <div class="s-place">Las Vegas</div>
+    <div class="s-body">
+      <strong>Kitsch di Vegas</strong>: fiches e mazzi di carte dei casinò, magneti "Welcome to Fabulous Las Vegas", gadget al neon. Sullo Strip e in Fremont Street.
+    </div>
+  </div>
+
+  <div class="shop-item" id="sh-deathvalley">
+    <div class="s-place">Death Valley</div>
+    <div class="s-body">
+      <strong>Merch del parco</strong> al Furnace Creek: t-shirt "hottest place on Earth", termometri souvenir, patch. Chicca da deserto.
+    </div>
+  </div>
+
+  <div class="shop-item" id="sh-sequoia">
+    <div class="s-place">Sequoia &amp; Kings Canyon</div>
+    <div class="s-body">
+      <strong>Souvenir a tema sequoia</strong> (poster, magneti, libri sugli alberi giganti) nei visitor center di Giant Forest e Grant Grove.
+    </div>
+  </div>
+
+  <div class="shop-item" id="sh-yosemite">
+    <div class="s-place">Yosemite</div>
+    <div class="s-body">
+      La <strong>Ansel Adams Gallery</strong> (Yosemite Village): stampe fotografiche e libri d'autore — souvenir di classe. Più il classico merch NPS (poster vintage, magneti).
+    </div>
+  </div>
+
+  <div class="shop-item" id="sh-fresno">
+    <div class="s-place">Fresno / Central Valley</div>
+    <div class="s-body">
+      <strong>Prodotti agricoli locali</strong>: mandorle, frutta secca, pistacchi, vino della Central Valley — buoni da portare a casa.
+    </div>
+  </div>
+
+  <div class="shop-item" id="sh-sf">
+    <div class="s-place">San Francisco</div>
+    <div class="s-body">
+      <strong>Cioccolato Ghirardelli</strong> (Ghirardelli Square); souvenir SF e magneti a <strong>Fisherman's Wharf</strong>; <strong>Chinatown</strong> per tè, ceramiche, portafortuna e fortune cookies (Golden Gate Fortune Cookie Factory); <strong>vintage, tie-dye e poster psichedelici a Haight</strong>; ceramiche e cartoleria giapponese a <strong>Japantown</strong>; pane <strong>sourdough Boudin</strong>.
+    </div>
+  </div>
+
+  <p style="color:var(--muted);font-size:12px;margin-top:16px;">💡 Il souvenir più speciale e unico del viaggio è l'<strong>artigianato Navajo</strong> a Monument Valley — porta contanti.</p>
+
+</div><!-- /stats-inner -->
+</div><!-- /shopping -->
 
 <!-- ══════════════════════════════════════════════════
      SEZIONE APP CONSIGLIATE

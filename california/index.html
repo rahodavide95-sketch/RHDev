@@ -1313,7 +1313,36 @@
     color: var(--amber);
     margin-bottom: 6px;
   }
+
+  /* ── MAPPA INTERATTIVA ── */
+  .map-section { padding: 32px 20px; border-bottom: 1px solid var(--divider); background: var(--bg); }
+  .map-inner { max-width: 1000px; margin: 0 auto; }
+  #route-map {
+    height: 460px;
+    width: 100%;
+    border-radius: 14px;
+    border: 1px solid var(--divider);
+    z-index: 1;
+    background: var(--card);
+  }
+  .map-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0 4px; }
+  .map-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 10px 16px; border-radius: 24px;
+    font-size: 13px; font-weight: 600; text-decoration: none;
+    border: 1px solid var(--divider); cursor: pointer;
+  }
+  .map-btn.g  { background: #4285F4; color: #fff; border-color: #4285F4; }
+  .map-btn.a  { background: var(--card); color: var(--text); }
+  .map-btn:hover { opacity: 0.9; }
+  .leaflet-popup-content { font-family: inherit; font-size: 13px; line-height: 1.5; }
+  .leaflet-popup-content b { color: #111; }
+  .pin-links a { display:inline-block; margin-top:6px; margin-right:10px; font-weight:600; text-decoration:none; }
+  .pin-links a.gm { color:#1a73e8; }
+  .pin-links a.am { color:#555; }
+  .map-note { color: var(--muted); font-size: 12px; margin-top: 10px; }
 </style>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 <body>
 
@@ -1477,6 +1506,7 @@
 </div>
 
 <nav class="day-nav">
+  <a class="day-pill" href="#mappa" style="border-color:#4285F4;color:#4285F4;">🗺️ Mappa</a>
   <a class="day-pill" href="#stats" style="border-color:#27AE60;color:#27AE60;">💰 Budget & Stats</a>
   <a class="day-pill" href="#prenotazioni" style="border-color:#8E44AD;color:#8E44AD;">🎟️ Prenotazioni</a>
   <a class="day-pill" href="#vinili" style="border-color:#8E44AD;color:#8E44AD;">💿 Vinili</a>
@@ -1504,6 +1534,21 @@
   <span class="tb-info">✓ spunta · ⭐ priorità · 📝 note — tutto salvato su questo dispositivo</span>
   <button class="tb-btn" id="tb-export">⬇ Esporta note</button>
   <button class="tb-btn" id="tb-reset">↺ Azzera tutto</button>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     MAPPA INTERATTIVA
+     ══════════════════════════════════════════════════ -->
+<div class="map-section" id="mappa">
+  <div class="map-inner">
+    <div class="section-head" style="margin-bottom:6px;">🗺️ MAPPA <span>DEL VIAGGIO</span></div>
+    <p class="map-note" style="margin-bottom:14px;">Clicca un <strong>pin numerato</strong> per aprire quella tappa in Google Maps o Apple Maps. Oppure apri l'intero percorso in un colpo solo:</p>
+    <div class="map-actions">
+      <a class="map-btn g" id="gmaps-all" href="https://www.google.com/maps" target="_blank" rel="noopener">📍 Apri il percorso in Google Maps</a>
+    </div>
+    <div id="route-map"></div>
+    <p class="map-note">⚠️ Apple Maps da link apre <strong>una tappa alla volta</strong> (usali dai pin). Google Maps limita a ~10 tappe per rotta: il pulsante mostra le principali; per il dettaglio completo usa i pin.</p>
+  </div>
 </div>
 
 <div class="container">
@@ -4445,6 +4490,64 @@
     if (saved === 'light' || (!saved && preferLight)) {
       document.documentElement.setAttribute('data-theme', 'light');
     }
+  })();
+</script>
+
+<!-- ── MAPPA INTERATTIVA (Leaflet) ── -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+  (function() {
+    if (typeof L === 'undefined') return;
+    var stops = [
+      { n:'Los Angeles — arrivo (Hollywood)', d:'Giorno 1-3 · 10-12/8', lat:34.0928, lng:-118.3287 },
+      { n:'Williams, AZ (Route 66)',          d:'Giorno 4 · 13/8',       lat:35.2494, lng:-112.1910 },
+      { n:'Grand Canyon (South Rim)',         d:'Giorno 4 · 13/8',       lat:36.0544, lng:-112.1401 },
+      { n:'Page, AZ (Antelope · Horseshoe)',  d:'Giorno 5 · 14/8',       lat:36.9147, lng:-111.4558 },
+      { n:'Monument Valley',                  d:'Giorno 5 · 14/8',       lat:36.9800, lng:-110.1000 },
+      { n:'Bluff, UT',                        d:'Giorno 5 · 14/8',       lat:37.2839, lng:-109.5529 },
+      { n:'Bryce Canyon',                     d:'Giorno 6 · 15/8',       lat:37.5930, lng:-112.1871 },
+      { n:'Zion National Park',               d:'Giorno 6 · 15/8',       lat:37.2982, lng:-113.0263 },
+      { n:'Las Vegas',                        d:'Giorno 6-7 · 15-16/8',  lat:36.1699, lng:-115.1398 },
+      { n:'Death Valley (Furnace Creek)',     d:'Giorno 8 · 17/8',       lat:36.4614, lng:-116.8656 },
+      { n:'Sequoia & Kings Canyon',           d:'Giorno 9 · 18/8',       lat:36.5758, lng:-118.7739 },
+      { n:'Fresno',                           d:'Giorno 9 · 18/8',       lat:36.7378, lng:-119.7871 },
+      { n:'Yosemite Valley',                  d:'Giorno 10 · 19/8',      lat:37.7456, lng:-119.5936 },
+      { n:'San Francisco',                    d:'Giorno 10-12 · 19-21/8',lat:37.7749, lng:-122.4194 },
+      { n:'Apple Park (Cupertino)',           d:'Giorno 13 · 22/8',      lat:37.3348, lng:-122.0091 },
+      { n:'Big Sur (Bixby Bridge)',           d:'Giorno 13 · 22/8',      lat:36.3717, lng:-121.9020 },
+      { n:'Morro Bay',                        d:'Giorno 13 · 22/8',      lat:35.3659, lng:-120.8499 },
+      { n:'Los Angeles — LAX (rientro)',      d:'Giorno 14 · 23/8',      lat:33.9416, lng:-118.4085 }
+    ];
+    var map = L.map('route-map', { scrollWheelZoom:false }).setView([37.0, -119.0], 5);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18, attribution: '© OpenStreetMap'
+    }).addTo(map);
+    var line = [];
+    stops.forEach(function(s, i) {
+      line.push([s.lat, s.lng]);
+      var gm = 'https://www.google.com/maps/search/?api=1&query=' + s.lat + ',' + s.lng;
+      var am = 'https://maps.apple.com/?ll=' + s.lat + ',' + s.lng + '&q=' + encodeURIComponent(s.n);
+      var icon = L.divIcon({
+        className: '',
+        html: '<div style="background:#C0392B;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45)">' + (i+1) + '</div>',
+        iconSize: [24,24], iconAnchor: [12,12]
+      });
+      L.marker([s.lat, s.lng], { icon:icon }).addTo(map)
+        .bindPopup('<b>' + s.n + '</b><br>' + s.d +
+          '<div class="pin-links"><a class="gm" href="' + gm + '" target="_blank" rel="noopener">📍 Google Maps</a>' +
+          '<a class="am" href="' + am + '" target="_blank" rel="noopener">🍎 Apple Maps</a></div>');
+    });
+    L.polyline(line, { color:'#C0392B', weight:3, opacity:0.65 }).addTo(map);
+    map.fitBounds(line, { padding:[30,30] });
+    // Pulsante "intero percorso in Google Maps" (max ~10 tappe principali)
+    var route = [
+      [34.0928,-118.3287],[36.0544,-112.1401],[36.9800,-110.1000],[37.2982,-113.0263],
+      [36.1699,-115.1398],[36.5758,-118.7739],[37.7456,-119.5936],[37.7749,-122.4194],
+      [36.3717,-121.9020],[33.9416,-118.4085]
+    ];
+    var url = 'https://www.google.com/maps/dir/' + route.map(function(p){ return p[0] + ',' + p[1]; }).join('/');
+    var btn = document.getElementById('gmaps-all');
+    if (btn) btn.href = url;
   })();
 </script>
 </body>

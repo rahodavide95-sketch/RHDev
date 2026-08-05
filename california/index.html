@@ -4778,5 +4778,44 @@
     if (bounds.length) map.fitBounds(bounds, { padding:[30,30] });
   })();
 </script>
+
+<!-- ── Link navigatori (Google/Apple/Waze) su benzina, supermercati, parcheggi ── -->
+<script>
+  (function(){
+    function trio(q){
+      var e = encodeURIComponent(q);
+      return '<div style="margin-top:6px;display:flex;gap:11px;flex-wrap:wrap;font-size:11px;font-weight:600">'
+        + '<a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=' + e + '" style="color:#1a73e8;text-decoration:none">📍 Google</a>'
+        + '<a target="_blank" rel="noopener" href="https://maps.apple.com/?q=' + e + '" style="color:#8a8a8a;text-decoration:none">🍎 Apple</a>'
+        + '<a target="_blank" rel="noopener" href="https://waze.com/ul?q=' + e + '" style="color:#0aa3d6;text-decoration:none">🚗 Waze</a></div>';
+    }
+    function firstText(el){
+      for (var n = el.firstChild; n; n = n.nextSibling){
+        if (n.nodeType === 3 && n.textContent.trim()) return n.textContent.trim();
+      }
+      return (el.textContent || '').trim();
+    }
+    // ⛽ Benzina
+    document.querySelectorAll('table.fuel-table tbody tr').forEach(function(tr){
+      var td = tr.querySelectorAll('td'); if (td.length < 2) return;
+      var city = firstText(td[0]).replace(/\s*\(.*?\)\s*/g, ' ').trim();
+      if (city) td[0].insertAdjacentHTML('beforeend', trio(city + ' gas station'));
+    });
+    // 🛒 Supermercati
+    document.querySelectorAll('table.market-table tbody tr').forEach(function(tr){
+      var td = tr.querySelectorAll('td'); if (td.length < 2) return;
+      var city = firstText(td[0]).replace(/\s*\(.*?\)\s*/g, ' ').trim();
+      var st = td[1].querySelector('strong');
+      var q = ((st ? st.textContent.trim() + ' ' : '') + city).trim();
+      if (q) td[1].insertAdjacentHTML('beforeend', trio(q));
+    });
+    // 🅿 Parcheggi
+    document.querySelectorAll('.parking-box').forEach(function(box){
+      var s = box.querySelector('strong'); if (!s) return;
+      var q = s.textContent.replace(/^\s*🅿\s*/, '').split('—')[0].trim();
+      if (q) box.insertAdjacentHTML('beforeend', trio(q));
+    });
+  })();
+</script>
 </body>
 </html>

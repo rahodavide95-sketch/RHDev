@@ -4815,6 +4815,18 @@
       var q = s.textContent.replace(/^\s*🅿\s*/, '').split('—')[0].trim();
       if (q) box.insertAdjacentHTML('beforeend', trio(q));
     });
+    // 🧭 Itinerario: link su ogni tappa-luogo (attrazioni, cibo, hotel)
+    document.querySelectorAll('.tl-item.sight, .tl-item.food, .tl-item.hotel').forEach(function(item){
+      var t = item.querySelector('.tl-title'); if (!t) return;
+      var c = t.cloneNode(true);
+      c.querySelectorAll('.badge').forEach(function(b){ b.remove(); });
+      var q = (c.textContent || '').trim();
+      q = q.replace(/^(Cena(?:\s+di\s+pesce)?|Pranzo(?:\s+veloce)?|Colazione|Aperitivo|Brunch|Check-?in|Check-?out)\b[^—–-]*[—–-]\s*/i, '');
+      q = q.replace(/\s*[—–-]\s*versione breve$/i, '');
+      if (!q) return;
+      var body = item.querySelector('.tl-body') || item;
+      body.insertAdjacentHTML('beforeend', trio(q));
+    });
   })();
 </script>
 </body>

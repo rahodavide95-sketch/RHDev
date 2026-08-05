@@ -4622,8 +4622,8 @@
       var wz = 'https://waze.com/ul?ll=' + s.lat + ',' + s.lng + '&navigate=yes';
       var icon = L.divIcon({
         className: '',
-        html: '<div style="background:' + col + ';width:15px;height:15px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.5)"></div>',
-        iconSize: [15,15], iconAnchor: [7,7]
+        html: '<div style="background:' + col + ';width:24px;height:24px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid #fff;box-shadow:0 2px 5px rgba(0,0,0,.55)"></div>',
+        iconSize: [24,24], iconAnchor: [12,22], popupAnchor: [0,-20]
       });
       L.marker([s.lat, s.lng], { icon:icon })
         .bindPopup('<b>' + s.n + '</b><br>' + s.d +

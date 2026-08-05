@@ -4632,6 +4632,28 @@
           '<a class="wz" href="' + wz + '" target="_blank" rel="noopener">🚗 Waze</a></div>')
         .addTo(group);
     });
+    // Linea del percorso (tappe principali in ordine di viaggio)
+    var route = [
+      [34.0928,-118.3287], // Los Angeles
+      [35.2506,-112.1912], // Williams
+      [36.0614,-112.1077], // Grand Canyon
+      [36.9147,-111.4558], // Page
+      [36.9807,-110.1119], // Monument Valley
+      [37.2839,-109.5529], // Bluff
+      [37.6255,-112.1656], // Bryce
+      [37.2982,-113.0263], // Zion
+      [36.1699,-115.1398], // Las Vegas
+      [36.4614,-116.8656], // Death Valley
+      [36.5758,-118.7739], // Sequoia
+      [36.7378,-119.7871], // Fresno
+      [37.7456,-119.5936], // Yosemite
+      [37.7749,-122.4194], // San Francisco
+      [37.3327,-122.0055], // Apple Park (Cupertino)
+      [36.3717,-121.9020], // Big Sur
+      [35.3688,-120.8656], // Morro Bay
+      [33.9416,-118.4085]  // LAX
+    ];
+    L.polyline(route, { color:'#C0392B', weight:3, opacity:0.55, dashArray:'2,7', lineCap:'round' }).addTo(map);
     map.addLayer(group);
     if (bounds.length) map.fitBounds(bounds, { padding:[30,30] });
   })();

@@ -266,26 +266,30 @@
     font-weight: 600;
   }
 
-  /* PULSANTE TEMA — icona minimale, fissa in alto a destra */
+  /* PULSANTE TEMA — pulsante tondo fisso in alto a destra, sempre visibile */
   .theme-fixed {
     position: fixed;
     top: 10px;
-    right: 12px;
-    z-index: 300;
-    background: none;
-    border: none;
-    padding: 4px;
+    right: 10px;
+    z-index: 500;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     line-height: 0;
-    color: var(--text);
+    background: var(--card);
+    border: 1px solid var(--divider);
+    border-radius: 50%;
+    color: var(--amber);
     cursor: pointer;
-    opacity: 0.65;
-    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.55));
-    transition: opacity 0.15s, color 0.15s, transform 0.15s;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+    transition: transform 0.15s, background 0.15s;
     -webkit-tap-highlight-color: transparent;
   }
-  .theme-fixed:hover { opacity: 1; color: var(--amber); transform: rotate(20deg); }
-  /* spazio a destra nella nav così le pill non finiscono sotto l'icona */
-  .day-nav { padding-right: 44px; }
+  .theme-fixed:hover { transform: rotate(25deg); }
+  /* spazio a destra nella nav così le pill non finiscono sotto il tasto */
+  .day-nav { padding-right: 54px; }
 
   /* MAIN LAYOUT */
   .container {
@@ -1341,9 +1345,13 @@
   .pin-links a.gm { color:#1a73e8; }
   .pin-links a.am { color:#555; }
   .map-note { color: var(--muted); font-size: 12px; margin-top: 10px; }
-  /* cluster bubble in tinta col sito */
-  .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large { background: rgba(192,57,43,0.30); }
-  .marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div { background:#C0392B; color:#fff; font-weight:700; }
+  /* cluster bubble ROSSO (forzato sopra il CSS di default) */
+  .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large { background: rgba(192,57,43,0.35) !important; }
+  .marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div { background:#C0392B !important; color:#fff !important; font-weight:700 !important; }
+  .map-legend { display:flex; flex-wrap:wrap; gap:16px; margin-top:12px; }
+  .map-legend span { display:inline-flex; align-items:center; gap:6px; font-size:12px; color:var(--text-sec); }
+  .map-legend i { width:12px; height:12px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 0 1px rgba(0,0,0,.2); }
+  .pin-links a.wz { color:#0aa3d6; }
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
@@ -1549,7 +1557,12 @@
     <div class="section-head" style="margin-bottom:6px;">🗺️ MAPPA <span>DEL VIAGGIO</span></div>
     <p class="map-note" style="margin-bottom:14px;">Ogni <strong>attività</strong> del viaggio è un pin. I pin vicini si raggruppano in un <strong>cerchio col numero</strong> (= quante attività in zona): toccalo per <strong>zoomare</strong> e vederli tutti.</p>
     <div id="route-map"></div>
-    <p class="map-note">👆 Cerchio numerato → zoom → pin singolo → link <strong>📍 Google Maps</strong> / <strong>🍎 Apple Maps</strong> di quel posto. La navigazione vera avviene poi nell'app che scegli tu.</p>
+    <div class="map-legend">
+      <span><i style="background:#C0392B"></i> Attrazioni / visite</span>
+      <span><i style="background:#2563EB"></i> Hotel</span>
+      <span><i style="background:#E67E22"></i> Ristoranti / cibo</span>
+      <span><i style="background:#8E44AD"></i> Shopping / vinili / makeup</span>
+    </div>
   </div>
 </div>
 
@@ -4501,74 +4514,98 @@
 <script>
   (function() {
     if (typeof L === 'undefined') return;
-    // Ogni ATTIVITÀ del viaggio (i pin vicini si raggruppano da soli)
+    // Categorie: a=attrazione, h=hotel, r=ristorante, s=shopping/vinili/makeup
+    var COL = { a:'#C0392B', h:'#2563EB', r:'#E67E22', s:'#8E44AD' };
     var A = [
-      // Los Angeles (G1-3)
-      {n:'Hollywood Walk of Fame + TCL', d:'G1 · 10/8', lat:34.1017, lng:-118.3410},
-      {n:'Amoeba Music Hollywood (vinili)', d:'G1 · 10/8', lat:34.1018, lng:-118.3253},
-      {n:'Griffith Observatory', d:'G2 · 11/8', lat:34.1184, lng:-118.3004},
-      {n:'Santa Monica Pier', d:'G2 · 11/8', lat:34.0089, lng:-118.4973},
-      {n:'Venice Beach & Skate Park', d:'G2 · 11/8', lat:33.9850, lng:-118.4718},
-      {n:'Abbot Kinney Blvd', d:'G2 · 11/8', lat:33.9908, lng:-118.4657},
-      {n:'Getty Center', d:'G3 · 12/8', lat:34.0780, lng:-118.4741},
-      {n:'Rodeo Drive (Beverly Hills)', d:'G3 · 12/8', lat:34.0674, lng:-118.4016},
-      {n:'Halliwell Manor (Streghe) — Carroll Ave', d:'G3 · 12/8', lat:34.0672, lng:-118.2586},
-      {n:'The Broad + Grand Central Market', d:'G3 · 12/8', lat:34.0518, lng:-118.2500},
-      // Route 66 / Grand Canyon (G4)
-      {n:'Oatman (Route 66)', d:'G4 · 13/8', lat:35.0264, lng:-114.3835},
-      {n:'Grand Canyon — Mather Point', d:'G4 · 13/8', lat:36.0614, lng:-112.1077},
-      {n:'Williams, AZ', d:'G4 · 13/8', lat:35.2506, lng:-112.1912},
-      // Page / Monument Valley (G5)
-      {n:'Lower Antelope Canyon', d:'G5 · 14/8', lat:36.8619, lng:-111.4244},
-      {n:'Horseshoe Bend', d:'G5 · 14/8', lat:36.8791, lng:-111.5104},
-      {n:'Forrest Gump Point (US-163)', d:'G5 · 14/8', lat:37.1030, lng:-109.9906},
-      {n:'Monument Valley — The View', d:'G5 · 14/8', lat:36.9807, lng:-110.1119},
-      {n:'Bluff Dwellings Resort', d:'G5 · 14/8', lat:37.2839, lng:-109.5529},
-      // Bryce / Zion (G6)
-      {n:'Bryce Canyon — Sunset Point', d:'G6 · 15/8', lat:37.6255, lng:-112.1656},
-      {n:'Zion — Visitor Center / Overlook', d:'G6 · 15/8', lat:37.2000, lng:-112.9870},
-      {n:'Zion — Riverside Walk / Narrows', d:'G6 · 15/8', lat:37.2850, lng:-112.9480},
-      // Las Vegas (G6-7)
-      {n:'Fremont Street Experience', d:'G6 · 15/8', lat:36.1706, lng:-115.1426},
-      {n:'FlyOver Las Vegas', d:'G7 · 16/8', lat:36.0888, lng:-115.1728},
-      {n:'Bellagio Fountains + Conservatory', d:'G7 · 16/8', lat:36.1126, lng:-115.1745},
-      {n:'High Roller (LINQ)', d:'G7 · 16/8', lat:36.1175, lng:-115.1682},
-      {n:'The Sphere', d:'G7 · 16/8', lat:36.1207, lng:-115.1616},
-      {n:'11th Street Records (vinili)', d:'G7 · 16/8', lat:36.1660, lng:-115.1359},
-      // Death Valley (G8)
-      {n:'Zabriskie Point', d:'G8 · 17/8', lat:36.4200, lng:-116.8110},
-      {n:'Badwater Basin', d:'G8 · 17/8', lat:36.2297, lng:-116.7677},
-      {n:'Mesquite Flat Sand Dunes', d:'G8 · 17/8', lat:36.6100, lng:-117.1140},
-      {n:"Artist's Palette", d:'G8 · 17/8', lat:36.3620, lng:-116.7990},
-      // Sequoia & Kings Canyon (G9)
-      {n:'General Sherman Tree', d:'G9 · 18/8', lat:36.5816, lng:-118.7514},
-      {n:'Moro Rock', d:'G9 · 18/8', lat:36.5470, lng:-118.7654},
-      {n:'General Grant Tree (Kings Canyon)', d:'G9 · 18/8', lat:36.7476, lng:-118.9714},
-      // Yosemite (G10)
-      {n:'Glacier Point', d:'G10 · 19/8', lat:37.7275, lng:-119.5737},
-      {n:'Tunnel View', d:'G10 · 19/8', lat:37.7156, lng:-119.6774},
-      {n:'El Capitan Meadow', d:'G10 · 19/8', lat:37.7220, lng:-119.6305},
-      {n:'Vernal Fall footbridge (Mist Trail)', d:'G10 · 19/8', lat:37.7274, lng:-119.5585},
-      // San Francisco (G10-12)
-      {n:'Golden Gate — Battery Spencer', d:'G11 · 20/8', lat:37.8329, lng:-122.4832},
-      {n:'Lombard Street', d:'G11 · 20/8', lat:37.8021, lng:-122.4187},
-      {n:"Pier 39 / Fisherman's Wharf", d:'G11 · 20/8', lat:37.8087, lng:-122.4098},
-      {n:'Japantown (Peace Pagoda)', d:'G11 · 20/8', lat:37.7852, lng:-122.4300},
-      {n:'Twin Peaks', d:'G12 · 21/8', lat:37.7544, lng:-122.4477},
-      {n:'Haight-Ashbury + Amoeba SF (vinili)', d:'G12 · 21/8', lat:37.7700, lng:-122.4469},
-      {n:'Vinyl Dreams (techno)', d:'G12 · 21/8', lat:37.7716, lng:-122.4310},
-      {n:'Painted Ladies (Alamo Square)', d:'G12 · 21/8', lat:37.7763, lng:-122.4324},
-      {n:'Coit Tower + Chinatown', d:'G12 · 21/8', lat:37.8000, lng:-122.4070},
-      // Apple Park / Big Sur / Morro Bay (G13)
-      {n:'Apple Park Visitor Center', d:'G13 · 22/8', lat:37.3327, lng:-122.0055},
-      {n:'Point Lobos', d:'G13 · 22/8', lat:36.5160, lng:-121.9430},
-      {n:'Bixby Bridge (Big Sur)', d:'G13 · 22/8', lat:36.3717, lng:-121.9020},
-      {n:'McWay Falls', d:'G13 · 22/8', lat:36.1578, lng:-121.6716},
-      {n:'Piedras Blancas (foche elefante)', d:'G13 · 22/8', lat:35.6620, lng:-121.2565},
-      {n:'Morro Rock — Morro Bay', d:'G13 · 22/8', lat:35.3688, lng:-120.8656},
-      // Rientro (G14)
-      {n:'Santa Barbara — Stearns Wharf', d:'G14 · 23/8', lat:34.4103, lng:-119.6857},
-      {n:'Los Angeles — LAX', d:'G14 · 23/8', lat:33.9416, lng:-118.4085}
+      // ── Los Angeles (G1-3) ──
+      {n:'Hollywood Walk of Fame + TCL', c:'a', d:'G1 · 10/8', lat:34.1017, lng:-118.3410},
+      {n:'Amoeba Music Hollywood (vinili)', c:'s', d:'G1 · 10/8', lat:34.1018, lng:-118.3253},
+      {n:'In-N-Out Hollywood', c:'r', d:'G1 · 10/8', lat:34.0983, lng:-118.3470},
+      {n:'Glossier Melrose (makeup)', c:'s', d:'G1-3 · LA', lat:34.0838, lng:-118.3730},
+      {n:'Griffith Observatory', c:'a', d:'G2 · 11/8', lat:34.1184, lng:-118.3004},
+      {n:'Santa Monica Pier', c:'a', d:'G2 · 11/8', lat:34.0089, lng:-118.4973},
+      {n:'Venice Beach & Skate Park', c:'a', d:'G2 · 11/8', lat:33.9850, lng:-118.4718},
+      {n:'Abbot Kinney Blvd', c:'a', d:'G2 · 11/8', lat:33.9908, lng:-118.4657},
+      {n:'Getty Center', c:'a', d:'G3 · 12/8', lat:34.0780, lng:-118.4741},
+      {n:'Rodeo Drive (Beverly Hills)', c:'a', d:'G3 · 12/8', lat:34.0674, lng:-118.4016},
+      {n:'Urth Caffé Beverly Hills', c:'r', d:'G3 · 12/8', lat:34.0668, lng:-118.4005},
+      {n:'Halliwell Manor (Streghe)', c:'a', d:'G3 · 12/8', lat:34.0672, lng:-118.2586},
+      {n:'The Broad + Grand Central Market', c:'a', d:'G3 · 12/8', lat:34.0518, lng:-118.2500},
+      {n:'Mount Analog (vinili techno)', c:'s', d:'LA · opz.', lat:34.1122, lng:-118.1922},
+      {n:'Poo-Bah Records (vinili)', c:'s', d:'LA · opz.', lat:34.1466, lng:-118.1350},
+      // ── Route 66 / Grand Canyon (G4) ──
+      {n:'Oatman (Route 66)', c:'a', d:'G4 · 13/8', lat:35.0264, lng:-114.3835},
+      {n:'Grand Canyon — Mather Point', c:'a', d:'G4 · 13/8', lat:36.0614, lng:-112.1077},
+      {n:'Williams, AZ', c:'a', d:'G4 · 13/8', lat:35.2506, lng:-112.1912},
+      {n:'Hotel a Williams', c:'h', d:'G4 · 13/8', lat:35.2490, lng:-112.1880},
+      // ── Page / Monument Valley (G5) ──
+      {n:'Lower Antelope Canyon', c:'a', d:'G5 · 14/8', lat:36.8619, lng:-111.4244},
+      {n:'Horseshoe Bend', c:'a', d:'G5 · 14/8', lat:36.8791, lng:-111.5104},
+      {n:'Forrest Gump Point (US-163)', c:'a', d:'G5 · 14/8', lat:37.1030, lng:-109.9906},
+      {n:'Monument Valley — The View', c:'a', d:'G5 · 14/8', lat:36.9807, lng:-110.1119},
+      {n:'Bluff Dwellings Resort (hotel)', c:'h', d:'G5 · 14/8', lat:37.2839, lng:-109.5529},
+      // ── Bryce / Zion (G6) ──
+      {n:'Bryce Canyon — Sunset Point', c:'a', d:'G6 · 15/8', lat:37.6255, lng:-112.1656},
+      {n:'Zion — Visitor Center / Overlook', c:'a', d:'G6 · 15/8', lat:37.2000, lng:-112.9870},
+      {n:'Zion — Riverside Walk / Narrows', c:'a', d:'G6 · 15/8', lat:37.2850, lng:-112.9480},
+      // ── Las Vegas (G6-7) ──
+      {n:'Four Queens (hotel)', c:'h', d:'G6-7 · Vegas', lat:36.1694, lng:-115.1440},
+      {n:'Fremont Street Experience', c:'a', d:'G6 · 15/8', lat:36.1706, lng:-115.1426},
+      {n:"Hugo's Cellar (ristorante)", c:'r', d:'G6 · 15/8', lat:36.1697, lng:-115.1443},
+      {n:'Le Thai (Fremont East)', c:'r', d:'Vegas', lat:36.1690, lng:-115.1392},
+      {n:'11th Street Records (vinili)', c:'s', d:'G7 · 16/8', lat:36.1660, lng:-115.1359},
+      {n:'FlyOver Las Vegas', c:'a', d:'G7 · 16/8', lat:36.0888, lng:-115.1728},
+      {n:'Block 16 — Cosmopolitan (cibo)', c:'r', d:'G7 · 16/8', lat:36.1097, lng:-115.1740},
+      {n:'Bellagio Fountains + Conservatory', c:'a', d:'G7 · 16/8', lat:36.1126, lng:-115.1745},
+      {n:'Mon Ami Gabi (ristorante)', c:'r', d:'G7 · 16/8', lat:36.1125, lng:-115.1728},
+      {n:'High Roller (LINQ)', c:'a', d:'G7 · 16/8', lat:36.1175, lng:-115.1682},
+      {n:'The Sphere', c:'a', d:'G7 · 16/8', lat:36.1207, lng:-115.1616},
+      {n:'Sephora Grand Canal (makeup)', c:'s', d:'G7 · 16/8', lat:36.1215, lng:-115.1699},
+      // ── Death Valley (G8) ──
+      {n:'The Ranch at Death Valley (hotel)', c:'h', d:'G8 · 17/8', lat:36.4614, lng:-116.8656},
+      {n:'Zabriskie Point', c:'a', d:'G8 · 17/8', lat:36.4200, lng:-116.8110},
+      {n:'Badwater Basin', c:'a', d:'G8 · 17/8', lat:36.2297, lng:-116.7677},
+      {n:'Mesquite Flat Sand Dunes', c:'a', d:'G8 · 17/8', lat:36.6100, lng:-117.1140},
+      {n:"Artist's Palette", c:'a', d:'G8 · 17/8', lat:36.3620, lng:-116.7990},
+      // ── Sequoia & Kings Canyon (G9) ──
+      {n:'General Sherman Tree', c:'a', d:'G9 · 18/8', lat:36.5816, lng:-118.7514},
+      {n:'Moro Rock', c:'a', d:'G9 · 18/8', lat:36.5470, lng:-118.7654},
+      {n:'General Grant Tree (Kings Canyon)', c:'a', d:'G9 · 18/8', lat:36.7476, lng:-118.9714},
+      {n:'Hotel Piccadilly Fresno', c:'h', d:'G9 · 18/8', lat:36.8085, lng:-119.8270},
+      {n:'Landmark Steakhouse (Fresno)', c:'r', d:'G9 · 18/8', lat:36.8148, lng:-119.7900},
+      // ── Yosemite (G10) ──
+      {n:'Glacier Point', c:'a', d:'G10 · 19/8', lat:37.7275, lng:-119.5737},
+      {n:'Tunnel View', c:'a', d:'G10 · 19/8', lat:37.7156, lng:-119.6774},
+      {n:'El Capitan Meadow', c:'a', d:'G10 · 19/8', lat:37.7220, lng:-119.6305},
+      {n:'Vernal Fall footbridge (Mist Trail)', c:'a', d:'G10 · 19/8', lat:37.7274, lng:-119.5585},
+      // ── San Francisco (G10-12) ──
+      {n:'Hotel Fusion (Union Square)', c:'h', d:'G10-12 · SF', lat:37.7857, lng:-122.4083},
+      {n:'Sephora Powell St (makeup)', c:'s', d:'SF', lat:37.7847, lng:-122.4076},
+      {n:'Golden Gate — Battery Spencer', c:'a', d:'G11 · 20/8', lat:37.8329, lng:-122.4832},
+      {n:'Lombard Street', c:'a', d:'G11 · 20/8', lat:37.8021, lng:-122.4187},
+      {n:"Pier 39 / Fisherman's Wharf", c:'a', d:'G11 · 20/8', lat:37.8087, lng:-122.4098},
+      {n:'Boudin Bakery (Wharf)', c:'r', d:'G11 · 20/8', lat:37.8083, lng:-122.4155},
+      {n:'Japantown (Peace Pagoda)', c:'a', d:'G11 · 20/8', lat:37.7852, lng:-122.4300},
+      {n:'Twin Peaks', c:'a', d:'G12 · 21/8', lat:37.7544, lng:-122.4477},
+      {n:'Haight-Ashbury + Amoeba SF (vinili)', c:'s', d:'G12 · 21/8', lat:37.7700, lng:-122.4469},
+      {n:'Vinyl Dreams (techno)', c:'s', d:'G12 · 21/8', lat:37.7716, lng:-122.4310},
+      {n:'Magnolia Brewing (Haight)', c:'r', d:'G12 · 21/8', lat:37.7699, lng:-122.4308},
+      {n:'Painted Ladies (Alamo Square)', c:'a', d:'G12 · 21/8', lat:37.7763, lng:-122.4324},
+      {n:'Coit Tower + Chinatown', c:'a', d:'G12 · 21/8', lat:37.8000, lng:-122.4070},
+      {n:"Tony's Pizza (North Beach)", c:'r', d:'G12 · 21/8', lat:37.7998, lng:-122.4083},
+      {n:'Tartine Bakery (Mission)', c:'r', d:'G13 · 22/8', lat:37.7614, lng:-122.4241},
+      // ── Apple Park / Big Sur / Morro Bay (G13) ──
+      {n:'Apple Park Visitor Center', c:'a', d:'G13 · 22/8', lat:37.3327, lng:-122.0055},
+      {n:'Point Lobos', c:'a', d:'G13 · 22/8', lat:36.5160, lng:-121.9430},
+      {n:'Bixby Bridge (Big Sur)', c:'a', d:'G13 · 22/8', lat:36.3717, lng:-121.9020},
+      {n:'McWay Falls', c:'a', d:'G13 · 22/8', lat:36.1578, lng:-121.6716},
+      {n:'Piedras Blancas (foche elefante)', c:'a', d:'G13 · 22/8', lat:35.6620, lng:-121.2565},
+      {n:'Morro Bay Sandpiper Inn (hotel)', c:'h', d:'G13 · 22/8', lat:35.3720, lng:-120.8500},
+      {n:'Morro Rock', c:'a', d:'G13 · 22/8', lat:35.3688, lng:-120.8656},
+      {n:"Giovanni's Fish Market (Morro Bay)", c:'r', d:'G13 · 22/8', lat:35.3690, lng:-120.8560},
+      // ── Rientro (G14) ──
+      {n:'Santa Barbara — Stearns Wharf', c:'a', d:'G14 · 23/8', lat:34.4103, lng:-119.6857},
+      {n:'Los Angeles — LAX', c:'a', d:'G14 · 23/8', lat:33.9416, lng:-118.4085}
     ];
     var map = L.map('route-map', { scrollWheelZoom:false }).setView([37.0, -119.0], 5);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -4580,17 +4617,20 @@
     var bounds = [];
     A.forEach(function(s) {
       bounds.push([s.lat, s.lng]);
+      var col = COL[s.c] || COL.a;
       var gm = 'https://www.google.com/maps/search/?api=1&query=' + s.lat + ',' + s.lng;
       var am = 'https://maps.apple.com/?ll=' + s.lat + ',' + s.lng + '&q=' + encodeURIComponent(s.n);
+      var wz = 'https://waze.com/ul?ll=' + s.lat + ',' + s.lng + '&navigate=yes';
       var icon = L.divIcon({
         className: '',
-        html: '<div style="background:#C0392B;width:15px;height:15px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.5)"></div>',
+        html: '<div style="background:' + col + ';width:15px;height:15px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.5)"></div>',
         iconSize: [15,15], iconAnchor: [7,7]
       });
       L.marker([s.lat, s.lng], { icon:icon })
         .bindPopup('<b>' + s.n + '</b><br>' + s.d +
           '<div class="pin-links"><a class="gm" href="' + gm + '" target="_blank" rel="noopener">📍 Google Maps</a>' +
-          '<a class="am" href="' + am + '" target="_blank" rel="noopener">🍎 Apple Maps</a></div>')
+          '<a class="am" href="' + am + '" target="_blank" rel="noopener">🍎 Apple Maps</a>' +
+          '<a class="wz" href="' + wz + '" target="_blank" rel="noopener">🚗 Waze</a></div>')
         .addTo(group);
     });
     map.addLayer(group);

@@ -31,6 +31,15 @@
     --drive-card-border: #3a3020;
     --toggle-bg: #2a2a2a;
     --toggle-icon: '☀️';
+
+    /* HERO — cielo notturno stellato (tema scuro) */
+    --h-sky0:#060512; --h-sky1:#0c0a20; --h-sky2:#1c1230; --h-sky3:#371c10; --h-sky4:#5e2e0e;
+    --h-glow:#e8780a; --h-glow-op:0.35; --h-haze:#e8780a; --h-haze-op:0.16;
+    --h-ground0:#3a1808; --h-ground1:#0b0402;
+    --h-butte-top:#5a2408; --h-butte-bot:#1a0802; --h-butte-shadow:#0d0401;
+    --h-rim:#c05a18; --h-rim-op:0.40;
+    --h-stars:0.82; --h-sun-op:0; --h-moon-op:0.92; --h-cloud-op:0;
+    --h-road:#c8a060; --h-road-op:0.45;
   }
 
   [data-theme="light"] {
@@ -53,6 +62,15 @@
     --sky: #2a6ab0;
     --green: #1e8a48;
     --purple: #6e34a0;
+
+    /* HERO — tramonto colorato Monument Valley (tema chiaro) */
+    --h-sky0:#4a5da6; --h-sky1:#8a5fa0; --h-sky2:#d76a86; --h-sky3:#ff8f45; --h-sky4:#ffd57e;
+    --h-glow:#ffd070; --h-glow-op:0.80; --h-haze:#ffdca6; --h-haze-op:0.55;
+    --h-ground0:#c96a2c; --h-ground1:#6f3212;
+    --h-butte-top:#c85f24; --h-butte-bot:#5e260c; --h-butte-shadow:#3f1806;
+    --h-rim:#ffe2a6; --h-rim-op:0.9;
+    --h-stars:0; --h-sun-op:1; --h-moon-op:0; --h-cloud-op:0.75;
+    --h-road:#7a3a14; --h-road-op:0.5;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1368,52 +1386,62 @@
     <!-- Sky gradient: deep indigo at top → warm amber/orange at horizon -->
     <defs>
       <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#0d0a1a"/>
-        <stop offset="45%" stop-color="#1a0f2e"/>
-        <stop offset="75%" stop-color="#5c2a0a"/>
-        <stop offset="90%" stop-color="#c45a0a"/>
-        <stop offset="100%" stop-color="#e8780a"/>
+        <stop offset="0%"   style="stop-color:var(--h-sky0)"/>
+        <stop offset="34%"  style="stop-color:var(--h-sky1)"/>
+        <stop offset="60%"  style="stop-color:var(--h-sky2)"/>
+        <stop offset="82%"  style="stop-color:var(--h-sky3)"/>
+        <stop offset="100%" style="stop-color:var(--h-sky4)"/>
       </linearGradient>
       <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#8b3a0a"/>
-        <stop offset="100%" stop-color="#1a0a02"/>
+        <stop offset="0%"   style="stop-color:var(--h-ground0)"/>
+        <stop offset="100%" style="stop-color:var(--h-ground1)"/>
       </linearGradient>
-      <linearGradient id="mesa1" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#7a2e08"/>
-        <stop offset="100%" stop-color="#3d1504"/>
+      <linearGradient id="butte" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%"   style="stop-color:var(--h-butte-top)"/>
+        <stop offset="100%" style="stop-color:var(--h-butte-bot)"/>
       </linearGradient>
-      <linearGradient id="mesa2" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#8c3a0c"/>
-        <stop offset="100%" stop-color="#4a1a06"/>
-      </linearGradient>
-      <linearGradient id="mitten-l" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#9b420e"/>
-        <stop offset="100%" stop-color="#3a1203"/>
-      </linearGradient>
-      <linearGradient id="mitten-r" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#8a3b0c"/>
-        <stop offset="100%" stop-color="#351103"/>
-      </linearGradient>
-      <linearGradient id="merrick" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#6e2a07"/>
-        <stop offset="100%" stop-color="#2e0e02"/>
-      </linearGradient>
-      <radialGradient id="glow" cx="50%" cy="95%" r="50%">
-        <stop offset="0%" stop-color="#e8780a" stop-opacity="0.6"/>
-        <stop offset="100%" stop-color="#e8780a" stop-opacity="0"/>
+      <radialGradient id="hglow" cx="50%" cy="100%" r="65%">
+        <stop offset="0%"   style="stop-color:var(--h-glow)" stop-opacity="0.9"/>
+        <stop offset="100%" style="stop-color:var(--h-glow)" stop-opacity="0"/>
       </radialGradient>
-      <!-- Stars -->
+      <radialGradient id="sunGlow" cx="50%" cy="50%" r="50%">
+        <stop offset="0%"   stop-color="#fff4d6" stop-opacity="0.95"/>
+        <stop offset="28%"  stop-color="#ffd889" stop-opacity="0.65"/>
+        <stop offset="65%"  stop-color="#ff9245" stop-opacity="0.22"/>
+        <stop offset="100%" stop-color="#ff9245" stop-opacity="0"/>
+      </radialGradient>
+      <filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="7"/></filter>
       <filter id="star-blur"><feGaussianBlur stdDeviation="0.3"/></filter>
     </defs>
 
     <!-- Sky -->
     <rect width="1400" height="340" fill="url(#sky)"/>
 
-    <!-- Horizon glow -->
-    <rect x="0" y="220" width="1400" height="120" fill="url(#glow)" opacity="0.7"/>
+    <!-- Sole che tramonta (tema chiaro) -->
+    <g style="opacity:var(--h-sun-op)">
+      <circle cx="705" cy="255" r="170" fill="url(#sunGlow)"/>
+      <circle cx="705" cy="255" r="48" fill="#fff3cf"/>
+      <circle cx="705" cy="255" r="48" fill="#ffcf7a" opacity="0.45"/>
+    </g>
+    <!-- Luna crescente (tema scuro) -->
+    <g style="opacity:var(--h-moon-op)">
+      <circle cx="1148" cy="66" r="24" fill="#eef1ff"/>
+      <circle cx="1159" cy="61" r="21" style="fill:var(--h-sky1)"/>
+    </g>
+    <!-- Nuvole sottili al tramonto (tema chiaro) -->
+    <g style="opacity:var(--h-cloud-op)">
+      <ellipse cx="300"  cy="120" rx="140" ry="7" fill="#ffb877" opacity="0.5"/>
+      <ellipse cx="520"  cy="98"  rx="95"  ry="5" fill="#ff9a5c" opacity="0.4"/>
+      <ellipse cx="1010" cy="128" rx="160" ry="8" fill="#ffb877" opacity="0.45"/>
+      <ellipse cx="880"  cy="104" rx="85"  ry="5" fill="#ff9a5c" opacity="0.35"/>
+    </g>
+    <!-- Bagliore sull'orizzonte -->
+    <rect x="0" y="180" width="1400" height="160" fill="url(#hglow)" style="opacity:var(--h-glow-op)"/>
+    <!-- Foschia calda sull'orizzonte -->
+    <rect x="0" y="228" width="1400" height="66" style="fill:var(--h-haze);opacity:var(--h-haze-op)" filter="url(#soft)"/>
 
-    <!-- Stars (top portion) -->
-    <g fill="white" opacity="0.7" filter="url(#star-blur)">
+    <!-- Stelle (solo tema scuro) -->
+    <g fill="white" filter="url(#star-blur)" style="opacity:var(--h-stars)">
       <circle cx="45" cy="18" r="0.8"/><circle cx="120" cy="8" r="1.1"/>
       <circle cx="200" cy="22" r="0.7"/><circle cx="310" cy="12" r="0.9"/>
       <circle cx="380" cy="30" r="0.6"/><circle cx="460" cy="9" r="1.0"/>
@@ -1430,60 +1458,45 @@
       <circle cx="1150" cy="56" r="0.7"/><circle cx="1300" cy="46" r="0.8"/>
     </g>
 
-    <!-- ── BACKGROUND BUTTES (lontane, più basse, meno sature) ── -->
-    <!-- Distant left mesa -->
-    <path d="M0 260 L0 230 L40 220 L90 215 L140 218 L180 228 L200 260 Z" fill="#3d1a06" opacity="0.7"/>
-    <!-- Distant right mesa -->
-    <path d="M1200 260 L1220 235 L1260 222 L1310 218 L1360 224 L1400 232 L1400 260 Z" fill="#3d1a06" opacity="0.7"/>
-    <!-- Far center butte -->
-    <path d="M580 260 L590 245 L610 238 L640 235 L670 238 L690 244 L700 260 Z" fill="#4a2008" opacity="0.6"/>
+    <!-- ── BUTTES LONTANE (silhouette) ── -->
+    <path d="M0 260 L0 230 L40 220 L90 215 L140 218 L180 228 L200 260 Z" style="fill:var(--h-butte-bot)" opacity="0.65"/>
+    <path d="M1200 260 L1220 235 L1260 222 L1310 218 L1360 224 L1400 232 L1400 260 Z" style="fill:var(--h-butte-bot)" opacity="0.65"/>
+    <path d="M580 260 L590 245 L610 238 L640 235 L670 238 L690 244 L700 260 Z" style="fill:var(--h-butte-bot)" opacity="0.55"/>
 
-    <!-- ── LEFT MITTEN (West Mitten Butte) ── -->
-    <!-- Main body -->
-    <path d="M220 340 L225 280 L230 255 L242 235 L258 222 L275 218 L292 220 L305 228 L312 242 L315 260 L318 280 L320 340 Z" fill="url(#mitten-l)"/>
-    <!-- Thumb -->
-    <path d="M315 280 L318 265 L324 255 L332 250 L340 252 L344 260 L342 272 L336 282 L325 288 Z" fill="#7a2e08"/>
-    <!-- Shadow/depth on main body left -->
-    <path d="M220 340 L225 280 L230 260 L234 245 L240 235 L248 230 L248 340 Z" fill="#2a0e03" opacity="0.5"/>
-    <!-- Top cap highlight -->
-    <path d="M242 235 L258 222 L275 218 L292 220 L305 228 L298 225 L280 220 L265 220 L252 228 Z" fill="#c05a18" opacity="0.4"/>
+    <!-- ── LEFT MITTEN ── -->
+    <path d="M220 340 L225 280 L230 255 L242 235 L258 222 L275 218 L292 220 L305 228 L312 242 L315 260 L318 280 L320 340 Z" fill="url(#butte)"/>
+    <path d="M315 280 L318 265 L324 255 L332 250 L340 252 L344 260 L342 272 L336 282 L325 288 Z" style="fill:var(--h-butte-top)"/>
+    <path d="M220 340 L225 280 L230 260 L234 245 L240 235 L248 230 L248 340 Z" style="fill:var(--h-butte-shadow)" opacity="0.55"/>
+    <path d="M242 235 L258 222 L275 218 L292 220 L305 228 L298 225 L280 220 L265 220 L252 228 Z" style="fill:var(--h-rim);opacity:var(--h-rim-op)"/>
 
-    <!-- ── RIGHT MITTEN (East Mitten Butte) ── -->
-    <!-- Main body -->
-    <path d="M430 340 L432 285 L434 265 L440 248 L450 236 L464 226 L480 222 L496 224 L510 232 L518 246 L522 265 L524 295 L526 340 Z" fill="url(#mitten-r)"/>
-    <!-- Thumb (left side) -->
-    <path d="M430 285 L428 270 L422 258 L414 253 L406 255 L402 264 L404 275 L410 285 L422 290 Z" fill="#7a2e08"/>
-    <!-- Shadow right side -->
-    <path d="M510 232 L518 246 L522 265 L524 295 L526 340 L510 340 L508 265 L504 245 L498 234 Z" fill="#2a0e03" opacity="0.5"/>
-    <!-- Top cap -->
-    <path d="M450 236 L464 226 L480 222 L496 224 L510 232 L500 228 L484 224 L468 226 L456 234 Z" fill="#c05a18" opacity="0.4"/>
+    <!-- ── RIGHT MITTEN ── -->
+    <path d="M430 340 L432 285 L434 265 L440 248 L450 236 L464 226 L480 222 L496 224 L510 232 L518 246 L522 265 L524 295 L526 340 Z" fill="url(#butte)"/>
+    <path d="M430 285 L428 270 L422 258 L414 253 L406 255 L402 264 L404 275 L410 285 L422 290 Z" style="fill:var(--h-butte-top)"/>
+    <path d="M510 232 L518 246 L522 265 L524 295 L526 340 L510 340 L508 265 L504 245 L498 234 Z" style="fill:var(--h-butte-shadow)" opacity="0.55"/>
+    <path d="M450 236 L464 226 L480 222 L496 224 L510 232 L500 228 L484 224 L468 226 L456 234 Z" style="fill:var(--h-rim);opacity:var(--h-rim-op)"/>
 
-    <!-- ── MERRICK BUTTE (right side, taller/slimmer) ── -->
-    <path d="M840 340 L844 295 L848 270 L856 248 L868 232 L882 222 L898 218 L914 220 L926 230 L932 248 L934 275 L936 340 Z" fill="url(#merrick)"/>
-    <!-- Shadow -->
-    <path d="M926 230 L932 248 L934 275 L936 340 L918 340 L916 270 L912 248 L906 234 Z" fill="#1a0702" opacity="0.6"/>
-    <!-- Top -->
-    <path d="M856 248 L868 232 L882 222 L898 218 L914 220 L908 218 L896 220 L880 226 L868 236 Z" fill="#b04e14" opacity="0.35"/>
+    <!-- ── MERRICK BUTTE ── -->
+    <path d="M840 340 L844 295 L848 270 L856 248 L868 232 L882 222 L898 218 L914 220 L926 230 L932 248 L934 275 L936 340 Z" fill="url(#butte)"/>
+    <path d="M926 230 L932 248 L934 275 L936 340 L918 340 L916 270 L912 248 L906 234 Z" style="fill:var(--h-butte-shadow)" opacity="0.6"/>
+    <path d="M856 248 L868 232 L882 222 L898 218 L914 220 L908 218 L896 220 L880 226 L868 236 Z" style="fill:var(--h-rim);opacity:var(--h-rim-op)"/>
 
-    <!-- ── MIDDLE DISTANCE MESA (left of center) ── -->
-    <path d="M100 340 L108 300 L115 278 L125 262 L140 252 L160 248 L178 250 L190 260 L195 278 L196 340 Z" fill="url(#mesa1)" opacity="0.9"/>
-    <path d="M125 262 L140 252 L160 248 L178 250 L172 250 L158 250 L144 256 L132 266 Z" fill="#b04e14" opacity="0.3"/>
+    <!-- ── MESA MEDIA (sx) ── -->
+    <path d="M100 340 L108 300 L115 278 L125 262 L140 252 L160 248 L178 250 L190 260 L195 278 L196 340 Z" fill="url(#butte)" opacity="0.92"/>
+    <path d="M125 262 L140 252 L160 248 L178 250 L172 250 L158 250 L144 256 L132 266 Z" style="fill:var(--h-rim);opacity:var(--h-rim-op)"/>
 
-    <!-- ── THREE SISTERS (far right cluster) ── -->
-    <path d="M1060 340 L1064 308 L1068 292 L1075 280 L1084 274 L1094 272 L1102 276 L1106 288 L1108 340 Z" fill="#5a2208" opacity="0.95"/>
-    <path d="M1108 328 L1110 305 L1115 290 L1122 282 L1130 279 L1137 281 L1141 292 L1142 340 Z" fill="#4e1e07" opacity="0.9"/>
-    <path d="M1142 335 L1144 312 L1149 298 L1156 291 L1163 289 L1170 292 L1173 305 L1174 340 Z" fill="#44190600" fill-opacity="0" stroke="none"/>
-    <path d="M1142 340 L1144 312 L1149 298 L1156 291 L1163 289 L1170 292 L1173 305 L1174 340 Z" fill="#441906" opacity="0.85"/>
+    <!-- ── THREE SISTERS (dx) ── -->
+    <path d="M1060 340 L1064 308 L1068 292 L1075 280 L1084 274 L1094 272 L1102 276 L1106 288 L1108 340 Z" fill="url(#butte)" opacity="0.95"/>
+    <path d="M1108 328 L1110 305 L1115 290 L1122 282 L1130 279 L1137 281 L1141 292 L1142 340 Z" fill="url(#butte)" opacity="0.9"/>
+    <path d="M1142 340 L1144 312 L1149 298 L1156 291 L1163 289 L1170 292 L1173 305 L1174 340 Z" fill="url(#butte)" opacity="0.85"/>
 
-    <!-- ── FLAT DESERT FLOOR ── -->
+    <!-- ── SUOLO DESERTO ── -->
     <path d="M0 310 Q200 295 400 305 Q600 315 700 308 Q900 298 1100 310 Q1250 318 1400 308 L1400 340 L0 340 Z" fill="url(#ground)"/>
-    <!-- Subtle desert texture lines -->
-    <path d="M0 325 Q350 318 700 322 Q1050 326 1400 320" stroke="#5a2208" stroke-width="0.5" fill="none" opacity="0.4"/>
-    <path d="M0 332 Q300 327 700 330 Q1100 333 1400 328" stroke="#3a1504" stroke-width="0.5" fill="none" opacity="0.3"/>
+    <path d="M0 325 Q350 318 700 322 Q1050 326 1400 320" style="stroke:var(--h-butte-bot)" stroke-width="0.5" fill="none" opacity="0.4"/>
+    <path d="M0 332 Q300 327 700 330 Q1100 333 1400 328" style="stroke:var(--h-butte-shadow)" stroke-width="0.5" fill="none" opacity="0.3"/>
 
-    <!-- Road: the US-163 straight line toward the mittens -->
-    <path d="M620 340 L660 305 L690 285 L710 275" stroke="#c8a060" stroke-width="1.5" fill="none" opacity="0.5" stroke-dasharray="4 3"/>
-    <path d="M780 340 L740 305 L710 285 L710 275" stroke="#c8a060" stroke-width="1.5" fill="none" opacity="0.5" stroke-dasharray="4 3"/>
+    <!-- Strada US-163 verso le Mittens -->
+    <path d="M620 340 L660 305 L690 285 L710 275" style="stroke:var(--h-road);opacity:var(--h-road-op)" stroke-width="1.5" fill="none" stroke-dasharray="4 3"/>
+    <path d="M780 340 L740 305 L710 285 L710 275" style="stroke:var(--h-road);opacity:var(--h-road-op)" stroke-width="1.5" fill="none" stroke-dasharray="4 3"/>
   </svg>
 
   <div class="hero-content">

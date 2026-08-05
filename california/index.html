@@ -1341,8 +1341,13 @@
   .pin-links a.gm { color:#1a73e8; }
   .pin-links a.am { color:#555; }
   .map-note { color: var(--muted); font-size: 12px; margin-top: 10px; }
+  /* cluster bubble in tinta col sito */
+  .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large { background: rgba(192,57,43,0.30); }
+  .marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div { background:#C0392B; color:#fff; font-weight:700; }
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
 </head>
 <body>
 
@@ -1542,12 +1547,9 @@
 <div class="map-section" id="mappa">
   <div class="map-inner">
     <div class="section-head" style="margin-bottom:6px;">🗺️ MAPPA <span>DEL VIAGGIO</span></div>
-    <p class="map-note" style="margin-bottom:14px;">Clicca un <strong>pin numerato</strong> per aprire quella tappa in Google Maps o Apple Maps. Oppure apri l'intero percorso in un colpo solo:</p>
-    <div class="map-actions">
-      <a class="map-btn g" id="gmaps-all" href="https://www.google.com/maps" target="_blank" rel="noopener">📍 Apri il percorso in Google Maps</a>
-    </div>
+    <p class="map-note" style="margin-bottom:14px;">Ogni <strong>attività</strong> del viaggio è un pin. I pin vicini si raggruppano in un <strong>cerchio col numero</strong> (= quante attività in zona): toccalo per <strong>zoomare</strong> e vederli tutti.</p>
     <div id="route-map"></div>
-    <p class="map-note">⚠️ Apple Maps da link apre <strong>una tappa alla volta</strong> (usali dai pin). Google Maps limita a ~10 tappe per rotta: il pulsante mostra le principali; per il dettaglio completo usa i pin.</p>
+    <p class="map-note">👆 Cerchio numerato → zoom → pin singolo → link <strong>📍 Google Maps</strong> / <strong>🍎 Apple Maps</strong> di quel posto. La navigazione vera avviene poi nell'app che scegli tu.</p>
   </div>
 </div>
 
@@ -4493,61 +4495,106 @@
   })();
 </script>
 
-<!-- ── MAPPA INTERATTIVA (Leaflet) ── -->
+<!-- ── MAPPA INTERATTIVA (Leaflet + cluster) ── -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js" crossorigin=""></script>
 <script>
   (function() {
     if (typeof L === 'undefined') return;
-    var stops = [
-      { n:'Los Angeles — arrivo (Hollywood)', d:'Giorno 1-3 · 10-12/8', lat:34.0928, lng:-118.3287 },
-      { n:'Williams, AZ (Route 66)',          d:'Giorno 4 · 13/8',       lat:35.2494, lng:-112.1910 },
-      { n:'Grand Canyon (South Rim)',         d:'Giorno 4 · 13/8',       lat:36.0544, lng:-112.1401 },
-      { n:'Page, AZ (Antelope · Horseshoe)',  d:'Giorno 5 · 14/8',       lat:36.9147, lng:-111.4558 },
-      { n:'Monument Valley',                  d:'Giorno 5 · 14/8',       lat:36.9800, lng:-110.1000 },
-      { n:'Bluff, UT',                        d:'Giorno 5 · 14/8',       lat:37.2839, lng:-109.5529 },
-      { n:'Bryce Canyon',                     d:'Giorno 6 · 15/8',       lat:37.5930, lng:-112.1871 },
-      { n:'Zion National Park',               d:'Giorno 6 · 15/8',       lat:37.2982, lng:-113.0263 },
-      { n:'Las Vegas',                        d:'Giorno 6-7 · 15-16/8',  lat:36.1699, lng:-115.1398 },
-      { n:'Death Valley (Furnace Creek)',     d:'Giorno 8 · 17/8',       lat:36.4614, lng:-116.8656 },
-      { n:'Sequoia & Kings Canyon',           d:'Giorno 9 · 18/8',       lat:36.5758, lng:-118.7739 },
-      { n:'Fresno',                           d:'Giorno 9 · 18/8',       lat:36.7378, lng:-119.7871 },
-      { n:'Yosemite Valley',                  d:'Giorno 10 · 19/8',      lat:37.7456, lng:-119.5936 },
-      { n:'San Francisco',                    d:'Giorno 10-12 · 19-21/8',lat:37.7749, lng:-122.4194 },
-      { n:'Apple Park (Cupertino)',           d:'Giorno 13 · 22/8',      lat:37.3348, lng:-122.0091 },
-      { n:'Big Sur (Bixby Bridge)',           d:'Giorno 13 · 22/8',      lat:36.3717, lng:-121.9020 },
-      { n:'Morro Bay',                        d:'Giorno 13 · 22/8',      lat:35.3659, lng:-120.8499 },
-      { n:'Los Angeles — LAX (rientro)',      d:'Giorno 14 · 23/8',      lat:33.9416, lng:-118.4085 }
+    // Ogni ATTIVITÀ del viaggio (i pin vicini si raggruppano da soli)
+    var A = [
+      // Los Angeles (G1-3)
+      {n:'Hollywood Walk of Fame + TCL', d:'G1 · 10/8', lat:34.1017, lng:-118.3410},
+      {n:'Amoeba Music Hollywood (vinili)', d:'G1 · 10/8', lat:34.1018, lng:-118.3253},
+      {n:'Griffith Observatory', d:'G2 · 11/8', lat:34.1184, lng:-118.3004},
+      {n:'Santa Monica Pier', d:'G2 · 11/8', lat:34.0089, lng:-118.4973},
+      {n:'Venice Beach & Skate Park', d:'G2 · 11/8', lat:33.9850, lng:-118.4718},
+      {n:'Abbot Kinney Blvd', d:'G2 · 11/8', lat:33.9908, lng:-118.4657},
+      {n:'Getty Center', d:'G3 · 12/8', lat:34.0780, lng:-118.4741},
+      {n:'Rodeo Drive (Beverly Hills)', d:'G3 · 12/8', lat:34.0674, lng:-118.4016},
+      {n:'Halliwell Manor (Streghe) — Carroll Ave', d:'G3 · 12/8', lat:34.0672, lng:-118.2586},
+      {n:'The Broad + Grand Central Market', d:'G3 · 12/8', lat:34.0518, lng:-118.2500},
+      // Route 66 / Grand Canyon (G4)
+      {n:'Oatman (Route 66)', d:'G4 · 13/8', lat:35.0264, lng:-114.3835},
+      {n:'Grand Canyon — Mather Point', d:'G4 · 13/8', lat:36.0614, lng:-112.1077},
+      {n:'Williams, AZ', d:'G4 · 13/8', lat:35.2506, lng:-112.1912},
+      // Page / Monument Valley (G5)
+      {n:'Lower Antelope Canyon', d:'G5 · 14/8', lat:36.8619, lng:-111.4244},
+      {n:'Horseshoe Bend', d:'G5 · 14/8', lat:36.8791, lng:-111.5104},
+      {n:'Forrest Gump Point (US-163)', d:'G5 · 14/8', lat:37.1030, lng:-109.9906},
+      {n:'Monument Valley — The View', d:'G5 · 14/8', lat:36.9807, lng:-110.1119},
+      {n:'Bluff Dwellings Resort', d:'G5 · 14/8', lat:37.2839, lng:-109.5529},
+      // Bryce / Zion (G6)
+      {n:'Bryce Canyon — Sunset Point', d:'G6 · 15/8', lat:37.6255, lng:-112.1656},
+      {n:'Zion — Visitor Center / Overlook', d:'G6 · 15/8', lat:37.2000, lng:-112.9870},
+      {n:'Zion — Riverside Walk / Narrows', d:'G6 · 15/8', lat:37.2850, lng:-112.9480},
+      // Las Vegas (G6-7)
+      {n:'Fremont Street Experience', d:'G6 · 15/8', lat:36.1706, lng:-115.1426},
+      {n:'FlyOver Las Vegas', d:'G7 · 16/8', lat:36.0888, lng:-115.1728},
+      {n:'Bellagio Fountains + Conservatory', d:'G7 · 16/8', lat:36.1126, lng:-115.1745},
+      {n:'High Roller (LINQ)', d:'G7 · 16/8', lat:36.1175, lng:-115.1682},
+      {n:'The Sphere', d:'G7 · 16/8', lat:36.1207, lng:-115.1616},
+      {n:'11th Street Records (vinili)', d:'G7 · 16/8', lat:36.1660, lng:-115.1359},
+      // Death Valley (G8)
+      {n:'Zabriskie Point', d:'G8 · 17/8', lat:36.4200, lng:-116.8110},
+      {n:'Badwater Basin', d:'G8 · 17/8', lat:36.2297, lng:-116.7677},
+      {n:'Mesquite Flat Sand Dunes', d:'G8 · 17/8', lat:36.6100, lng:-117.1140},
+      {n:"Artist's Palette", d:'G8 · 17/8', lat:36.3620, lng:-116.7990},
+      // Sequoia & Kings Canyon (G9)
+      {n:'General Sherman Tree', d:'G9 · 18/8', lat:36.5816, lng:-118.7514},
+      {n:'Moro Rock', d:'G9 · 18/8', lat:36.5470, lng:-118.7654},
+      {n:'General Grant Tree (Kings Canyon)', d:'G9 · 18/8', lat:36.7476, lng:-118.9714},
+      // Yosemite (G10)
+      {n:'Glacier Point', d:'G10 · 19/8', lat:37.7275, lng:-119.5737},
+      {n:'Tunnel View', d:'G10 · 19/8', lat:37.7156, lng:-119.6774},
+      {n:'El Capitan Meadow', d:'G10 · 19/8', lat:37.7220, lng:-119.6305},
+      {n:'Vernal Fall footbridge (Mist Trail)', d:'G10 · 19/8', lat:37.7274, lng:-119.5585},
+      // San Francisco (G10-12)
+      {n:'Golden Gate — Battery Spencer', d:'G11 · 20/8', lat:37.8329, lng:-122.4832},
+      {n:'Lombard Street', d:'G11 · 20/8', lat:37.8021, lng:-122.4187},
+      {n:"Pier 39 / Fisherman's Wharf", d:'G11 · 20/8', lat:37.8087, lng:-122.4098},
+      {n:'Japantown (Peace Pagoda)', d:'G11 · 20/8', lat:37.7852, lng:-122.4300},
+      {n:'Twin Peaks', d:'G12 · 21/8', lat:37.7544, lng:-122.4477},
+      {n:'Haight-Ashbury + Amoeba SF (vinili)', d:'G12 · 21/8', lat:37.7700, lng:-122.4469},
+      {n:'Vinyl Dreams (techno)', d:'G12 · 21/8', lat:37.7716, lng:-122.4310},
+      {n:'Painted Ladies (Alamo Square)', d:'G12 · 21/8', lat:37.7763, lng:-122.4324},
+      {n:'Coit Tower + Chinatown', d:'G12 · 21/8', lat:37.8000, lng:-122.4070},
+      // Apple Park / Big Sur / Morro Bay (G13)
+      {n:'Apple Park Visitor Center', d:'G13 · 22/8', lat:37.3327, lng:-122.0055},
+      {n:'Point Lobos', d:'G13 · 22/8', lat:36.5160, lng:-121.9430},
+      {n:'Bixby Bridge (Big Sur)', d:'G13 · 22/8', lat:36.3717, lng:-121.9020},
+      {n:'McWay Falls', d:'G13 · 22/8', lat:36.1578, lng:-121.6716},
+      {n:'Piedras Blancas (foche elefante)', d:'G13 · 22/8', lat:35.6620, lng:-121.2565},
+      {n:'Morro Rock — Morro Bay', d:'G13 · 22/8', lat:35.3688, lng:-120.8656},
+      // Rientro (G14)
+      {n:'Santa Barbara — Stearns Wharf', d:'G14 · 23/8', lat:34.4103, lng:-119.6857},
+      {n:'Los Angeles — LAX', d:'G14 · 23/8', lat:33.9416, lng:-118.4085}
     ];
     var map = L.map('route-map', { scrollWheelZoom:false }).setView([37.0, -119.0], 5);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 18, attribution: '© OpenStreetMap'
+      maxZoom: 19, attribution: '© OpenStreetMap'
     }).addTo(map);
-    var line = [];
-    stops.forEach(function(s, i) {
-      line.push([s.lat, s.lng]);
+    var group = L.markerClusterGroup
+      ? L.markerClusterGroup({ maxClusterRadius: 45, showCoverageOnHover: false, spiderfyOnMaxZoom: true })
+      : L.layerGroup();
+    var bounds = [];
+    A.forEach(function(s) {
+      bounds.push([s.lat, s.lng]);
       var gm = 'https://www.google.com/maps/search/?api=1&query=' + s.lat + ',' + s.lng;
       var am = 'https://maps.apple.com/?ll=' + s.lat + ',' + s.lng + '&q=' + encodeURIComponent(s.n);
       var icon = L.divIcon({
         className: '',
-        html: '<div style="background:#C0392B;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45)">' + (i+1) + '</div>',
-        iconSize: [24,24], iconAnchor: [12,12]
+        html: '<div style="background:#C0392B;width:15px;height:15px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.5)"></div>',
+        iconSize: [15,15], iconAnchor: [7,7]
       });
-      L.marker([s.lat, s.lng], { icon:icon }).addTo(map)
+      L.marker([s.lat, s.lng], { icon:icon })
         .bindPopup('<b>' + s.n + '</b><br>' + s.d +
           '<div class="pin-links"><a class="gm" href="' + gm + '" target="_blank" rel="noopener">📍 Google Maps</a>' +
-          '<a class="am" href="' + am + '" target="_blank" rel="noopener">🍎 Apple Maps</a></div>');
+          '<a class="am" href="' + am + '" target="_blank" rel="noopener">🍎 Apple Maps</a></div>')
+        .addTo(group);
     });
-    L.polyline(line, { color:'#C0392B', weight:3, opacity:0.65 }).addTo(map);
-    map.fitBounds(line, { padding:[30,30] });
-    // Pulsante "intero percorso in Google Maps" (max ~10 tappe principali)
-    var route = [
-      [34.0928,-118.3287],[36.0544,-112.1401],[36.9800,-110.1000],[37.2982,-113.0263],
-      [36.1699,-115.1398],[36.5758,-118.7739],[37.7456,-119.5936],[37.7749,-122.4194],
-      [36.3717,-121.9020],[33.9416,-118.4085]
-    ];
-    var url = 'https://www.google.com/maps/dir/' + route.map(function(p){ return p[0] + ',' + p[1]; }).join('/');
-    var btn = document.getElementById('gmaps-all');
-    if (btn) btn.href = url;
+    map.addLayer(group);
+    if (bounds.length) map.fitBounds(bounds, { padding:[30,30] });
   })();
 </script>
 </body>

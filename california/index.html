@@ -1370,6 +1370,32 @@
   .map-legend { display:flex; flex-wrap:wrap; gap:16px; margin-top:12px; }
   .map-legend span { display:inline-flex; align-items:center; gap:6px; font-size:12px; color:var(--text-sec); }
   .map-legend i { width:14px; height:14px; border-radius:50% 50% 50% 0; transform:rotate(-45deg); border:2px solid #fff; box-shadow:0 1px 2px rgba(0,0,0,.35); }
+  /* ── Listening bar section ── */
+  .lb-city { font-family:'Roboto Mono',monospace; font-size:12px; letter-spacing:2px; text-transform:uppercase; margin:24px 0 12px; display:flex; align-items:baseline; gap:9px; flex-wrap:wrap; }
+  .lb-city .lb-when { color:var(--muted); letter-spacing:.5px; text-transform:none; font-size:11px; font-family:inherit; }
+  .lb-list { display:flex; flex-direction:column; gap:14px; }
+  .lb-card { background:var(--card); border:1px solid var(--divider); border-radius:12px; padding:16px 18px; }
+  .lb-head { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap; }
+  .lb-name { font-weight:700; color:var(--text); font-size:15.5px; line-height:1.3; }
+  .lb-name .lb-loc { color:var(--muted); font-weight:500; font-size:12px; }
+  .lb-badge { font-weight:700; font-size:10.5px; padding:3px 10px; border-radius:20px; white-space:nowrap; letter-spacing:.3px; }
+  .lb-badge.walk { background:rgba(39,174,96,.15); color:#27AE60; }
+  .lb-badge.book { background:rgba(52,152,219,.15); color:#3498db; }
+  .lb-badge.event { background:rgba(142,68,173,.18); color:#a569d6; }
+  .lb-desc { color:var(--text-sec); font-size:13px; line-height:1.55; margin:10px 0 12px; }
+  .lb-rows { display:flex; flex-direction:column; gap:8px; padding-top:12px; border-top:1px solid var(--divider); }
+  .lb-row { display:flex; gap:10px; font-size:12.5px; line-height:1.5; align-items:baseline; }
+  .lb-k { flex:0 0 118px; color:var(--muted); font-weight:600; font-size:10.5px; text-transform:uppercase; letter-spacing:.5px; }
+  .lb-v { flex:1; color:var(--text-sec); min-width:0; }
+  .lb-links { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
+  .lb-links a { font-size:12px; font-weight:600; text-decoration:none; padding:6px 12px; border-radius:8px; border:1px solid var(--divider); white-space:nowrap; }
+  .lb-links a.g { color:#1a73e8; }
+  .lb-links a.book { color:#e84393; }
+  .lb-links a.ig { color:#8E44AD; }
+  @media (max-width:520px) {
+    .lb-row { flex-direction:column; gap:1px; }
+    .lb-k { flex-basis:auto; }
+  }
   .pin-links a.wz { color:#0aa3d6; }
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -3520,231 +3546,263 @@
   <div class="stats-title">🎧 LISTENING BAR <span>&amp; HI-FI</span></div>
   <div class="stats-subtitle">Bar audiophile dove si ascolta vinile su impianti seri — con prenotazioni, orari e come arrivarci</div>
 
-  <div class="tip-card" style="border-left:3px solid #8E44AD;margin-bottom:18px;">
+  <div class="tip-card" style="border-left:3px solid #8E44AD;margin-bottom:6px;">
     <strong>ℹ️ Come leggere le schede</strong>
-    <span style="display:block;margin-top:6px;color:var(--text-sec);font-size:13px;line-height:1.7;">
-      <span style="display:inline-block;background:rgba(39,174,96,.15);color:#27AE60;font-weight:700;font-size:11px;padding:2px 8px;border-radius:20px;">🟢 WALK-IN</span> = entri senza prenotare ·
-      <span style="display:inline-block;background:rgba(52,152,219,.15);color:#3498db;font-weight:700;font-size:11px;padding:2px 8px;border-radius:20px;">🔵 MEGLIO PRENOTARE</span> = walk-in possibile ma i posti finiscono ·
-      <span style="display:inline-block;background:rgba(142,68,173,.18);color:#a569d6;font-weight:700;font-size:11px;padding:2px 8px;border-radius:20px;">🟣 SOLO EVENTI</span> = si entra solo a serate/biglietto.<br>
-      <strong>Consiglio:</strong> quasi tutti aprono alle <strong>16:00-17:00</strong> e chiudono tardi — sono perfetti come <strong>aperitivo/dopocena</strong>. Verifica sempre orari il giorno stesso (link Google qui sotto).
+    <span style="display:block;margin-top:8px;color:var(--text-sec);font-size:13px;line-height:1.9;">
+      <span class="lb-badge walk">🟢 WALK-IN</span> &nbsp;entri senza prenotare<br>
+      <span class="lb-badge book">🔵 MEGLIO PRENOTARE</span> &nbsp;walk-in possibile, ma i posti finiscono<br>
+      <span class="lb-badge event">🟣 SOLO EVENTI</span> &nbsp;si entra solo a serate/biglietto
+    </span>
+    <span style="display:block;margin-top:10px;color:var(--text-sec);font-size:13px;line-height:1.6;">
+      <strong>Consiglio:</strong> quasi tutti aprono alle 16:00-17:00 e chiudono tardi — perfetti come aperitivo o dopocena. Verifica sempre gli orari il giorno stesso col link Google di ogni scheda.
     </span>
   </div>
 
   <!-- ═══ LOS ANGELES ═══ -->
-  <div style="font-family:'Roboto Mono',monospace;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#C0392B;margin:6px 0 12px;">🌴 Los Angeles <span style="color:var(--muted);">· 10-11 agosto</span></div>
-  <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:26px;">
+  <div class="lb-city" style="color:#C0392B;">🌴 Los Angeles <span class="lb-when">· 10-11 agosto</span></div>
+  <div class="lb-list" style="margin-bottom:8px;">
 
-    <div style="background:var(--card);border:1px solid var(--divider);border-radius:10px;padding:15px 17px;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
-        <div style="font-weight:700;color:var(--text);font-size:15px;">🥇 Gold Line <span style="color:var(--muted);font-weight:500;font-size:12px;">— Highland Park</span></div>
-        <span style="background:rgba(39,174,96,.15);color:#27AE60;font-weight:700;font-size:10.5px;padding:3px 9px;border-radius:20px;white-space:nowrap;">🟢 WALK-IN</span>
+    <div class="lb-card">
+      <div class="lb-head">
+        <div class="lb-name">🥇 Gold Line <span class="lb-loc">— Highland Park</span></div>
+        <span class="lb-badge walk">🟢 WALK-IN</span>
       </div>
-      <div style="color:var(--text-sec);font-size:12.5px;line-height:1.7;margin-top:7px;">
-        <div>🎵 Bar dell'etichetta <strong>Stones Throw</strong> (Peanut Butter Wolf) · 7.500+ dischi, impianto pazzesco.</div>
-        <div>📍 5607 N Figueroa St · 🕐 tutti i giorni 17:00–tardi · ☎️ (323) 274-4496</div>
-        <div>🚗 ~20 min in auto da Hollywood (dove dormite). <strong>Nessuna prenotazione</strong>, si entra e basta.</div>
+      <p class="lb-desc">Bar dell'etichetta <strong>Stones Throw</strong> (Peanut Butter Wolf): 7.500+ dischi e un impianto pazzesco.</p>
+      <div class="lb-rows">
+        <div class="lb-row"><span class="lb-k">📍 Indirizzo</span><span class="lb-v">5607 N Figueroa St, Highland Park</span></div>
+        <div class="lb-row"><span class="lb-k">🕐 Orari</span><span class="lb-v">Tutti i giorni, 17:00–tardi</span></div>
+        <div class="lb-row"><span class="lb-k">☎️ Telefono</span><span class="lb-v">(323) 274-4496</span></div>
+        <div class="lb-row"><span class="lb-k">🚗 Come arrivare</span><span class="lb-v">~20 min in auto da Hollywood (dove dormite)</span></div>
+        <div class="lb-row"><span class="lb-k">🎫 Prenotazione</span><span class="lb-v">Non serve — si entra e basta</span></div>
       </div>
-      <div style="margin-top:9px;display:flex;gap:16px;flex-wrap:wrap;font-size:12px;font-weight:600;">
-        <a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Gold%20Line%2C%205607%20N%20Figueroa%20St%2C%20Los%20Angeles" style="color:#1a73e8;text-decoration:none">📍 Google Maps</a>
-        <a target="_blank" rel="noopener" href="https://www.instagram.com/goldlinela/" style="color:#8E44AD;text-decoration:none">📷 Instagram</a>
+      <div class="lb-links">
+        <a class="g" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Gold%20Line%2C%205607%20N%20Figueroa%20St%2C%20Los%20Angeles">📍 Google Maps</a>
+        <a class="ig" target="_blank" rel="noopener" href="https://www.instagram.com/goldlinela/">📷 Instagram</a>
       </div>
     </div>
 
-    <div style="background:var(--card);border:1px solid var(--divider);border-radius:10px;padding:15px 17px;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
-        <div style="font-weight:700;color:var(--text);font-size:15px;">🎧 Only The Wild Ones <span style="color:var(--muted);font-weight:500;font-size:12px;">— Venice (Abbot Kinney)</span></div>
-        <span style="background:rgba(52,152,219,.15);color:#3498db;font-weight:700;font-size:10.5px;padding:3px 9px;border-radius:20px;white-space:nowrap;">🔵 MEGLIO PRENOTARE</span>
+    <div class="lb-card">
+      <div class="lb-head">
+        <div class="lb-name">🎧 Only The Wild Ones <span class="lb-loc">— Venice (Abbot Kinney)</span></div>
+        <span class="lb-badge book">🔵 MEGLIO PRENOTARE</span>
       </div>
-      <div style="color:var(--text-sec);font-size:12.5px;line-height:1.7;margin-top:7px;">
-        <div>🎵 Impianto da veri audiofili (<strong>Klipsch × Ojas, Accuphase, Technics</strong>) · vino naturale + cocktail.</div>
-        <div>📍 1031 Abbot Kinney Blvd, Venice · 🕐 Mer-Gio 16-22, Ven 16-24, Sab 14-24, Dom 14-21 (<strong>Lun-Mar chiuso</strong>) · ☎️ (424) 722-9558</div>
-        <div>🚗 ~35-45 min da Hollywood (lato ovest/mare). <strong>Prenota su Resy</strong> — walk-in solo se c'è posto.</div>
+      <p class="lb-desc">Impianto da veri audiofili (<strong>Klipsch × Ojas, Accuphase, Technics</strong>): vino naturale e cocktail.</p>
+      <div class="lb-rows">
+        <div class="lb-row"><span class="lb-k">📍 Indirizzo</span><span class="lb-v">1031 Abbot Kinney Blvd, Venice</span></div>
+        <div class="lb-row"><span class="lb-k">🕐 Orari</span><span class="lb-v">Mer-Gio 16-22 · Ven 16-24 · Sab 14-24 · Dom 14-21 <strong>(Lun-Mar chiuso)</strong></span></div>
+        <div class="lb-row"><span class="lb-k">☎️ Telefono</span><span class="lb-v">(424) 722-9558</span></div>
+        <div class="lb-row"><span class="lb-k">🚗 Come arrivare</span><span class="lb-v">~35-45 min da Hollywood (lato ovest/mare)</span></div>
+        <div class="lb-row"><span class="lb-k">🎫 Prenotazione</span><span class="lb-v">Consigliata su Resy; walk-in solo se c'è posto</span></div>
       </div>
-      <div style="margin-top:9px;display:flex;gap:16px;flex-wrap:wrap;font-size:12px;font-weight:600;">
-        <a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Only%20The%20Wild%20Ones%2C%201031%20Abbot%20Kinney%20Blvd%2C%20Venice%2C%20Los%20Angeles" style="color:#1a73e8;text-decoration:none">📍 Google Maps</a>
-        <a target="_blank" rel="noopener" href="https://resy.com/cities/venice-los-angeles-ca/venues/only-the-wild-ones" style="color:#e84393;text-decoration:none">🎟️ Prenota (Resy)</a>
-      </div>
-    </div>
-
-    <div style="background:var(--card);border:1px solid var(--divider);border-radius:10px;padding:15px 17px;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
-        <div style="font-weight:700;color:var(--text);font-size:15px;">🎛️ In Sheep's Clothing <span style="color:var(--muted);font-weight:500;font-size:12px;">— Hollywood (residency)</span></div>
-        <span style="background:rgba(142,68,173,.18);color:#a569d6;font-weight:700;font-size:10.5px;padding:3px 9px;border-radius:20px;white-space:nowrap;">🟣 SOLO EVENTI</span>
-      </div>
-      <div style="color:var(--text-sec);font-size:12.5px;line-height:1.7;margin-top:7px;">
-        <div>🎵 Il più leggendario (curatela ambient/elettronica di Zach Cowie). ⚠️ <strong>La sede storica Arts District è CHIUSA</strong>: ora vive di serate/residency (es. NeueHouse Hollywood, Roosevelt).</div>
-        <div>🎫 Non ha un indirizzo fisso: <strong>controlla il calendario eventi</strong> per le vostre date e prenota lì.</div>
-      </div>
-      <div style="margin-top:9px;display:flex;gap:16px;flex-wrap:wrap;font-size:12px;font-weight:600;">
-        <a target="_blank" rel="noopener" href="https://insheepsclothinghifi.com/events/" style="color:#e84393;text-decoration:none">🎫 Calendario &amp; biglietti</a>
-        <a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=NeueHouse%20Hollywood" style="color:#1a73e8;text-decoration:none">📍 NeueHouse (sede tipica)</a>
+      <div class="lb-links">
+        <a class="g" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Only%20The%20Wild%20Ones%2C%201031%20Abbot%20Kinney%20Blvd%2C%20Venice%2C%20Los%20Angeles">📍 Google Maps</a>
+        <a class="book" target="_blank" rel="noopener" href="https://resy.com/cities/venice-los-angeles-ca/venues/only-the-wild-ones">🎟️ Prenota (Resy)</a>
       </div>
     </div>
 
-    <div style="background:var(--card);border:1px solid var(--divider);border-radius:10px;padding:15px 17px;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
-        <div style="font-weight:700;color:var(--text);font-size:15px;">🍷 Tabula Rasa Bar <span style="color:var(--muted);font-weight:500;font-size:12px;">— East Hollywood</span></div>
-        <span style="background:rgba(39,174,96,.15);color:#27AE60;font-weight:700;font-size:10.5px;padding:3px 9px;border-radius:20px;white-space:nowrap;">🟢 WALK-IN</span>
+    <div class="lb-card">
+      <div class="lb-head">
+        <div class="lb-name">🎛️ In Sheep's Clothing <span class="lb-loc">— Hollywood (residency)</span></div>
+        <span class="lb-badge event">🟣 SOLO EVENTI</span>
       </div>
-      <div style="color:var(--text-sec);font-size:12.5px;line-height:1.7;margin-top:7px;">
-        <div>🎵 Piccolo <strong>wine bar con giradischi</strong>, ritrovo di nicchia dei musicisti · vino naturale + vinile.</div>
-        <div>📍 5125 Hollywood Blvd · 🚗 vicinissimo al vostro hotel (~5-10 min). <strong>Si entra senza prenotare</strong> (verifica orari).</div>
+      <p class="lb-desc">Il più leggendario (curatela ambient/elettronica di Zach Cowie). ⚠️ La sede storica dell'Arts District è <strong>chiusa</strong>: oggi vive di serate e residency (NeueHouse Hollywood, Roosevelt…).</p>
+      <div class="lb-rows">
+        <div class="lb-row"><span class="lb-k">📍 Sede</span><span class="lb-v">Nessuna fissa — cambia a ogni evento</span></div>
+        <div class="lb-row"><span class="lb-k">🎫 Prenotazione</span><span class="lb-v">Dal calendario eventi, per le vostre date</span></div>
+        <div class="lb-row"><span class="lb-k">🎵 Genere</span><span class="lb-v">Ambient, elettronica, jazz raro</span></div>
       </div>
-      <div style="margin-top:9px;display:flex;gap:16px;flex-wrap:wrap;font-size:12px;font-weight:600;">
-        <a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Tabula%20Rasa%20Bar%2C%205125%20Hollywood%20Blvd%2C%20Los%20Angeles" style="color:#1a73e8;text-decoration:none">📍 Google Maps</a>
+      <div class="lb-links">
+        <a class="book" target="_blank" rel="noopener" href="https://insheepsclothinghifi.com/events/">🎫 Calendario &amp; biglietti</a>
+        <a class="g" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=NeueHouse%20Hollywood">📍 NeueHouse (sede tipica)</a>
+      </div>
+    </div>
+
+    <div class="lb-card">
+      <div class="lb-head">
+        <div class="lb-name">🍷 Tabula Rasa Bar <span class="lb-loc">— East Hollywood</span></div>
+        <span class="lb-badge walk">🟢 WALK-IN</span>
+      </div>
+      <p class="lb-desc">Piccolo wine bar con giradischi, ritrovo di nicchia dei musicisti: vino naturale + vinile.</p>
+      <div class="lb-rows">
+        <div class="lb-row"><span class="lb-k">📍 Indirizzo</span><span class="lb-v">5125 Hollywood Blvd</span></div>
+        <div class="lb-row"><span class="lb-k">🚗 Come arrivare</span><span class="lb-v">Vicinissimo al vostro hotel (~5-10 min)</span></div>
+        <div class="lb-row"><span class="lb-k">🎫 Prenotazione</span><span class="lb-v">Non serve — walk-in (verifica gli orari)</span></div>
+      </div>
+      <div class="lb-links">
+        <a class="g" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Tabula%20Rasa%20Bar%2C%205125%20Hollywood%20Blvd%2C%20Los%20Angeles">📍 Google Maps</a>
       </div>
     </div>
 
   </div>
 
   <!-- ═══ LAS VEGAS ═══ -->
-  <div style="font-family:'Roboto Mono',monospace;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#E67E22;margin:6px 0 12px;">🎰 Las Vegas <span style="color:var(--muted);">· 15-16 agosto</span></div>
-  <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:26px;">
+  <div class="lb-city" style="color:#E67E22;">🎰 Las Vegas <span class="lb-when">· 15-16 agosto</span></div>
+  <div class="lb-list" style="margin-bottom:8px;">
 
-    <div style="background:var(--card);border:1px solid var(--divider);border-radius:10px;padding:15px 17px;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
-        <div style="font-weight:700;color:var(--text);font-size:15px;">🥇 ECHO — taste &amp; sound <span style="color:var(--muted);font-weight:500;font-size:12px;">— Arts District</span></div>
-        <span style="background:rgba(52,152,219,.15);color:#3498db;font-weight:700;font-size:10.5px;padding:3px 9px;border-radius:20px;white-space:nowrap;">🔵 MEGLIO PRENOTARE</span>
+    <div class="lb-card">
+      <div class="lb-head">
+        <div class="lb-name">🥇 ECHO — taste &amp; sound <span class="lb-loc">— Arts District</span></div>
+        <span class="lb-badge book">🔵 MEGLIO PRENOTARE</span>
       </div>
-      <div style="color:var(--text-sec);font-size:12.5px;line-height:1.7;margin-top:7px;">
-        <div>🎵 Lounge vinile intimo con impianto <strong>McIntosh</strong>, cocktail + piccoli piatti. Il più "vero" di Vegas. Cerca la loro <strong>Analog Night</strong>.</div>
-        <div>📍 1301 S Main St, Ste 160 · 🕐 Mer-Gio 18-23, Ven-Sab 18-24 (<strong>Lun-Mar chiuso</strong>) · ☎️ (702) 268-7466</div>
-        <div>🚗 ~7-10 min dal vostro hotel downtown (Four Queens/Fremont). <strong>Prenota su Tock</strong> (slot da 1h30) — tengono comunque posto per i walk-in.</div>
+      <p class="lb-desc">Lounge vinile intimo con impianto <strong>McIntosh</strong>, cocktail e piccoli piatti. Il più "vero" di Vegas — cerca la loro <strong>Analog Night</strong>.</p>
+      <div class="lb-rows">
+        <div class="lb-row"><span class="lb-k">📍 Indirizzo</span><span class="lb-v">1301 S Main St, Ste 160</span></div>
+        <div class="lb-row"><span class="lb-k">🕐 Orari</span><span class="lb-v">Mer-Gio 18-23 · Ven-Sab 18-24 <strong>(Lun-Mar chiuso)</strong></span></div>
+        <div class="lb-row"><span class="lb-k">☎️ Telefono</span><span class="lb-v">(702) 268-7466</span></div>
+        <div class="lb-row"><span class="lb-k">🚗 Come arrivare</span><span class="lb-v">~7-10 min dal vostro hotel downtown (Four Queens/Fremont)</span></div>
+        <div class="lb-row"><span class="lb-k">🎫 Prenotazione</span><span class="lb-v">Su Tock (slot da 1h30); tengono posto per i walk-in</span></div>
       </div>
-      <div style="margin-top:9px;display:flex;gap:16px;flex-wrap:wrap;font-size:12px;font-weight:600;">
-        <a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=ECHO%20Taste%20and%20Sound%2C%201301%20S%20Main%20St%2C%20Las%20Vegas" style="color:#1a73e8;text-decoration:none">📍 Google Maps</a>
-        <a target="_blank" rel="noopener" href="https://www.exploretock.com/echo-las-vegas" style="color:#e84393;text-decoration:none">🎟️ Prenota (Tock)</a>
+      <div class="lb-links">
+        <a class="g" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=ECHO%20Taste%20and%20Sound%2C%201301%20S%20Main%20St%2C%20Las%20Vegas">📍 Google Maps</a>
+        <a class="book" target="_blank" rel="noopener" href="https://www.exploretock.com/echo-las-vegas">🎟️ Prenota (Tock)</a>
       </div>
     </div>
 
-    <div style="background:var(--card);border:1px solid var(--divider);border-radius:10px;padding:15px 17px;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
-        <div style="font-weight:700;color:var(--text);font-size:15px;">🌆 Vinyl Room <span style="color:var(--muted);font-weight:500;font-size:12px;">— Mandalay Bay (Strip)</span></div>
-        <span style="background:rgba(52,152,219,.15);color:#3498db;font-weight:700;font-size:10.5px;padding:3px 9px;border-radius:20px;white-space:nowrap;">🔵 MEGLIO PRENOTARE</span>
+    <div class="lb-card">
+      <div class="lb-head">
+        <div class="lb-name">🌆 Vinyl Room <span class="lb-loc">— Mandalay Bay (Strip)</span></div>
+        <span class="lb-badge book">🔵 MEGLIO PRENOTARE</span>
       </div>
-      <div style="color:var(--text-sec);font-size:12.5px;line-height:1.7;margin-top:7px;">
-        <div>🎵 <strong>Nuovissimo</strong> (apertura 8 agosto 2026!), ispirato ai lounge hi-fi giapponesi anni '70, vista sullo Strip. Più glam/scenografico.</div>
-        <div>📍 Mandalay Bay (Strip sud) · 🕐 tutti i giorni dalle 16:00 · 📱 prenotazioni: manda SMS "VINYL" al (702) 394-3428 o dal sito.</div>
-        <div>🚗 ~15-20 min dal downtown. Comodo se passate dallo Strip.</div>
+      <p class="lb-desc"><strong>Nuovissimo</strong> (apertura 8 agosto 2026), ispirato ai lounge hi-fi giapponesi anni '70, con vista sullo Strip. Più glam e scenografico.</p>
+      <div class="lb-rows">
+        <div class="lb-row"><span class="lb-k">📍 Indirizzo</span><span class="lb-v">Mandalay Bay (Strip sud)</span></div>
+        <div class="lb-row"><span class="lb-k">🕐 Orari</span><span class="lb-v">Tutti i giorni, dalle 16:00</span></div>
+        <div class="lb-row"><span class="lb-k">🚗 Come arrivare</span><span class="lb-v">~15-20 min dal downtown</span></div>
+        <div class="lb-row"><span class="lb-k">🎫 Prenotazione</span><span class="lb-v">SMS "VINYL" al (702) 394-3428, oppure dal sito</span></div>
       </div>
-      <div style="margin-top:9px;display:flex;gap:16px;flex-wrap:wrap;font-size:12px;font-weight:600;">
-        <a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Vinyl%20Room%2C%20Mandalay%20Bay%2C%20Las%20Vegas" style="color:#1a73e8;text-decoration:none">📍 Google Maps</a>
-        <a target="_blank" rel="noopener" href="https://www.vinylroomlasvegas.com/" style="color:#e84393;text-decoration:none">🎟️ Sito &amp; prenotazioni</a>
+      <div class="lb-links">
+        <a class="g" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Vinyl%20Room%2C%20Mandalay%20Bay%2C%20Las%20Vegas">📍 Google Maps</a>
+        <a class="book" target="_blank" rel="noopener" href="https://www.vinylroomlasvegas.com/">🎟️ Sito &amp; prenotazioni</a>
       </div>
     </div>
 
   </div>
 
   <!-- ═══ SAN FRANCISCO ═══ -->
-  <div style="font-family:'Roboto Mono',monospace;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#2563EB;margin:6px 0 12px;">🌉 San Francisco <span style="color:var(--muted);">· 19-21 agosto</span></div>
-  <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:8px;">
+  <div class="lb-city" style="color:#2563EB;">🌉 San Francisco <span class="lb-when">· 19-21 agosto</span></div>
+  <div class="lb-list" style="margin-bottom:8px;">
 
-    <div style="background:var(--card);border:1px solid var(--divider);border-radius:10px;padding:15px 17px;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
-        <div style="font-weight:700;color:var(--text);font-size:15px;">🥇 Harlan Records <span style="color:var(--muted);font-weight:500;font-size:12px;">— Union Square</span></div>
-        <span style="background:rgba(39,174,96,.15);color:#27AE60;font-weight:700;font-size:10.5px;padding:3px 9px;border-radius:20px;white-space:nowrap;">🟢 WALK-IN</span>
+    <div class="lb-card">
+      <div class="lb-head">
+        <div class="lb-name">🥇 Harlan Records <span class="lb-loc">— Union Square</span></div>
+        <span class="lb-badge walk">🟢 WALK-IN</span>
       </div>
-      <div style="color:var(--text-sec);font-size:12.5px;line-height:1.7;margin-top:7px;">
-        <div>🎵 Hi-fi kissa in un vicolo nascosto: luci soffuse, estetica mid-century, cocktail + vinile (jazz/funk/new wave).</div>
-        <div>📍 18 Harlan Pl · ☎️ (415) 400-4083 · 🕐 sera (verifica il giorno).</div>
-        <div>🚶 <strong>A piedi</strong> dal vostro hotel a Union Square (~5 min!). Walk-in per piccoli gruppi.</div>
+      <p class="lb-desc">Hi-fi kissa in un vicolo nascosto: luci soffuse, estetica mid-century, cocktail e vinile (jazz/funk/new wave).</p>
+      <div class="lb-rows">
+        <div class="lb-row"><span class="lb-k">📍 Indirizzo</span><span class="lb-v">18 Harlan Pl</span></div>
+        <div class="lb-row"><span class="lb-k">🕐 Orari</span><span class="lb-v">Di sera (verifica il giorno stesso)</span></div>
+        <div class="lb-row"><span class="lb-k">☎️ Telefono</span><span class="lb-v">(415) 400-4083</span></div>
+        <div class="lb-row"><span class="lb-k">🚶 Come arrivare</span><span class="lb-v">A piedi dal vostro hotel a Union Square (~5 min!)</span></div>
+        <div class="lb-row"><span class="lb-k">🎫 Prenotazione</span><span class="lb-v">Non serve per piccoli gruppi</span></div>
       </div>
-      <div style="margin-top:9px;display:flex;gap:16px;flex-wrap:wrap;font-size:12px;font-weight:600;">
-        <a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Harlan%20Records%2C%2018%20Harlan%20Pl%2C%20San%20Francisco" style="color:#1a73e8;text-decoration:none">📍 Google Maps</a>
+      <div class="lb-links">
+        <a class="g" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Harlan%20Records%2C%2018%20Harlan%20Pl%2C%20San%20Francisco">📍 Google Maps</a>
       </div>
     </div>
 
-    <div style="background:var(--card);border:1px solid var(--divider);border-radius:10px;padding:15px 17px;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
-        <div style="font-weight:700;color:var(--text);font-size:15px;">🍽️ Side A <span style="color:var(--muted);font-weight:500;font-size:12px;">— Mission District</span></div>
-        <span style="background:rgba(52,152,219,.15);color:#3498db;font-weight:700;font-size:10.5px;padding:3px 9px;border-radius:20px;white-space:nowrap;">🔵 MEGLIO PRENOTARE</span>
+    <div class="lb-card">
+      <div class="lb-head">
+        <div class="lb-name">🍽️ Side A <span class="lb-loc">— Mission District</span></div>
+        <span class="lb-badge book">🔵 MEGLIO PRENOTARE</span>
       </div>
-      <div style="color:var(--text-sec);font-size:12.5px;line-height:1.7;margin-top:7px;">
-        <div>🎵 Bistrò + vinyl bar hi-fi (cucina d'autore con DJ set su vinile). Il più raffinato per una cena/ascolto.</div>
-        <div>📍 2814 19th St · 🕐 Lun/Gio/Dom 16-22, Ven/Sab 16-23 (cucina dalle 17) · ☎️ (415) 231-4969</div>
-        <div>🚗 ~12-15 min dal centro. <strong>Prenota (SevenRooms dal sito)</strong>, obbligatorio per 6+; walk-in benvenuti.</div>
+      <p class="lb-desc">Bistrò + vinyl bar hi-fi (cucina d'autore con DJ set su vinile). Il più raffinato per una cena con ascolto.</p>
+      <div class="lb-rows">
+        <div class="lb-row"><span class="lb-k">📍 Indirizzo</span><span class="lb-v">2814 19th St</span></div>
+        <div class="lb-row"><span class="lb-k">🕐 Orari</span><span class="lb-v">Lun/Gio/Dom 16-22 · Ven/Sab 16-23 (cucina dalle 17)</span></div>
+        <div class="lb-row"><span class="lb-k">☎️ Telefono</span><span class="lb-v">(415) 231-4969</span></div>
+        <div class="lb-row"><span class="lb-k">🚗 Come arrivare</span><span class="lb-v">~12-15 min dal centro</span></div>
+        <div class="lb-row"><span class="lb-k">🎫 Prenotazione</span><span class="lb-v">Su SevenRooms (obbligatoria per 6+); walk-in benvenuti</span></div>
       </div>
-      <div style="margin-top:9px;display:flex;gap:16px;flex-wrap:wrap;font-size:12px;font-weight:600;">
-        <a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Side%20A%2C%202814%2019th%20St%2C%20San%20Francisco" style="color:#1a73e8;text-decoration:none">📍 Google Maps</a>
-        <a target="_blank" rel="noopener" href="https://www.sideasf.com/" style="color:#e84393;text-decoration:none">🎟️ Prenota (sito)</a>
-      </div>
-    </div>
-
-    <div style="background:var(--card);border:1px solid var(--divider);border-radius:10px;padding:15px 17px;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
-        <div style="font-weight:700;color:var(--text);font-size:15px;">🎧 Bar Shiru <span style="color:var(--muted);font-weight:500;font-size:12px;">— Oakland (Uptown)</span></div>
-        <span style="background:rgba(52,152,219,.15);color:#3498db;font-weight:700;font-size:10.5px;padding:3px 9px;border-radius:20px;white-space:nowrap;">🔵 MEGLIO PRENOTARE</span>
-      </div>
-      <div style="color:var(--text-sec);font-size:12.5px;line-height:1.7;margin-top:7px;">
-        <div>🎵 Il <strong>primo vero hi-fi kissa</strong> della Bay Area (dal 2019): ascolto in silenzio, jazz/soul/grooves internazionali.</div>
-        <div>📍 1611 Telegraph Ave, Oakland · 🕐 Mar-Dom dalle 16 (<strong>Lun chiuso</strong>) · ☎️ (510) 920-0299</div>
-        <div>🚗 ~25-30 min da SF (ponte Bay Bridge). <strong>Prenota su Tock</strong> (fino a 30 giorni prima); walk-in solo gruppi ≤6.</div>
-      </div>
-      <div style="margin-top:9px;display:flex;gap:16px;flex-wrap:wrap;font-size:12px;font-weight:600;">
-        <a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Bar%20Shiru%2C%201611%20Telegraph%20Ave%2C%20Oakland" style="color:#1a73e8;text-decoration:none">📍 Google Maps</a>
-        <a target="_blank" rel="noopener" href="https://www.exploretock.com/barshiru/" style="color:#e84393;text-decoration:none">🎟️ Prenota (Tock)</a>
+      <div class="lb-links">
+        <a class="g" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Side%20A%2C%202814%2019th%20St%2C%20San%20Francisco">📍 Google Maps</a>
+        <a class="book" target="_blank" rel="noopener" href="https://www.sideasf.com/">🎟️ Prenota (sito)</a>
       </div>
     </div>
 
-    <div style="background:var(--card);border:1px solid var(--divider);border-radius:10px;padding:15px 17px;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
-        <div style="font-weight:700;color:var(--text);font-size:15px;">🖤 Dark Entries Records <span style="color:var(--muted);font-weight:500;font-size:12px;">— Tenderloin</span></div>
-        <span style="background:rgba(39,174,96,.15);color:#27AE60;font-weight:700;font-size:10.5px;padding:3px 9px;border-radius:20px;white-space:nowrap;">🟢 NEGOZIO</span>
+    <div class="lb-card">
+      <div class="lb-head">
+        <div class="lb-name">🎧 Bar Shiru <span class="lb-loc">— Oakland (Uptown)</span></div>
+        <span class="lb-badge book">🔵 MEGLIO PRENOTARE</span>
       </div>
-      <div style="color:var(--text-sec);font-size:12.5px;line-height:1.7;margin-top:7px;">
-        <div>🎵 Non è un bar ma un'<strong>etichetta/negozio di culto</strong>: post-punk, synth, elettronica oscura. Tappa da intenditori.</div>
-        <div>📍 910 Larkin St · 🚶 vicino al centro (~10 min). Nessuna prenotazione, orari da negozio.</div>
+      <p class="lb-desc">Il primo vero hi-fi kissa della Bay Area (dal 2019): ascolto in silenzio, jazz/soul/grooves internazionali.</p>
+      <div class="lb-rows">
+        <div class="lb-row"><span class="lb-k">📍 Indirizzo</span><span class="lb-v">1611 Telegraph Ave, Oakland</span></div>
+        <div class="lb-row"><span class="lb-k">🕐 Orari</span><span class="lb-v">Mar-Dom dalle 16 <strong>(Lun chiuso)</strong></span></div>
+        <div class="lb-row"><span class="lb-k">☎️ Telefono</span><span class="lb-v">(510) 920-0299</span></div>
+        <div class="lb-row"><span class="lb-k">🚗 Come arrivare</span><span class="lb-v">~25-30 min da SF (ponte Bay Bridge)</span></div>
+        <div class="lb-row"><span class="lb-k">🎫 Prenotazione</span><span class="lb-v">Su Tock (fino a 30 gg prima); walk-in solo gruppi ≤6</span></div>
       </div>
-      <div style="margin-top:9px;display:flex;gap:16px;flex-wrap:wrap;font-size:12px;font-weight:600;">
-        <a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Dark%20Entries%20Records%2C%20910%20Larkin%20St%2C%20San%20Francisco" style="color:#1a73e8;text-decoration:none">📍 Google Maps</a>
+      <div class="lb-links">
+        <a class="g" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Bar%20Shiru%2C%201611%20Telegraph%20Ave%2C%20Oakland">📍 Google Maps</a>
+        <a class="book" target="_blank" rel="noopener" href="https://www.exploretock.com/barshiru/">🎟️ Prenota (Tock)</a>
+      </div>
+    </div>
+
+    <div class="lb-card">
+      <div class="lb-head">
+        <div class="lb-name">🖤 Dark Entries Records <span class="lb-loc">— Tenderloin</span></div>
+        <span class="lb-badge walk">🟢 NEGOZIO</span>
+      </div>
+      <p class="lb-desc">Non è un bar ma un'<strong>etichetta/negozio di culto</strong>: post-punk, synth, elettronica oscura. Tappa da intenditori.</p>
+      <div class="lb-rows">
+        <div class="lb-row"><span class="lb-k">📍 Indirizzo</span><span class="lb-v">910 Larkin St</span></div>
+        <div class="lb-row"><span class="lb-k">🚶 Come arrivare</span><span class="lb-v">Vicino al centro (~10 min a piedi)</span></div>
+        <div class="lb-row"><span class="lb-k">🎫 Prenotazione</span><span class="lb-v">Nessuna — orari da negozio</span></div>
+      </div>
+      <div class="lb-links">
+        <a class="g" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Dark%20Entries%20Records%2C%20910%20Larkin%20St%2C%20San%20Francisco">📍 Google Maps</a>
       </div>
     </div>
 
   </div>
 
   <!-- ═══ UNDERGROUND / TECHNO ═══ -->
-  <div style="font-family:'Roboto Mono',monospace;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#a569d6;margin:6px 0 12px;">🔊 Underground / Techno <span style="color:var(--muted);">· LA · solo serate</span></div>
+  <div class="lb-city" style="color:#a569d6;">🔊 Underground / Techno <span class="lb-when">· LA · solo serate</span></div>
   <div class="tip-card" style="border-left:3px solid #a569d6;margin-bottom:14px;">
     <strong>⚠️ Come funzionano</strong>
     <span style="display:block;margin-top:6px;color:var(--text-sec);font-size:13px;line-height:1.7;">
-      Questi <strong>non sono bar da ascolto seduti</strong>: sono spazi/party underground dove si <strong>balla techno-minimal-hypnotic</strong>. Aprono <strong>solo a serate specifiche</strong> (spesso venerdì/sabato notte) e i biglietti si comprano <strong>in anticipo su Resident Advisor (RA)</strong> — a volte l'indirizzo esatto viene svelato solo poche ore prima. <strong>Controlla il calendario per le vostre date a LA (10-11 agosto)</strong> prima di contare su di loro.
+      Questi <strong>non sono bar da ascolto seduti</strong>: sono spazi/party underground dove si <strong>balla techno-minimal-hypnotic</strong>. Aprono <strong>solo a serate specifiche</strong> (spesso venerdì/sabato notte) e i biglietti si comprano <strong>in anticipo su Resident Advisor (RA)</strong> — a volte l'indirizzo esatto viene svelato solo poche ore prima. Controlla il calendario per le vostre date a LA <strong>(10-11 agosto)</strong> prima di contare su di loro.
     </span>
   </div>
-  <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:8px;">
+  <div class="lb-list" style="margin-bottom:8px;">
 
-    <div style="background:var(--card);border:1px solid var(--divider);border-radius:10px;padding:15px 17px;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
-        <div style="font-weight:700;color:var(--text);font-size:15px;">🔊 Canary Sound Werk <span style="color:var(--muted);font-weight:500;font-size:12px;">— DTLA / Fashion District</span></div>
-        <span style="background:rgba(142,68,173,.18);color:#a569d6;font-weight:700;font-size:10.5px;padding:3px 9px;border-radius:20px;white-space:nowrap;">🟣 SOLO EVENTI</span>
+    <div class="lb-card">
+      <div class="lb-head">
+        <div class="lb-name">🔊 Canary Sound Werk <span class="lb-loc">— DTLA / Fashion District</span></div>
+        <span class="lb-badge event">🟣 SOLO EVENTI</span>
       </div>
-      <div style="color:var(--text-sec);font-size:12.5px;line-height:1.7;margin-top:7px;">
-        <div>🎵 Raro <strong>warehouse permanente</strong> con impianto tarato fine e crew underground di LA a rotazione (Spiraling, Pranks…). Suono bass-heavy, dubbed-out, techno.</div>
-        <div>📍 526 E 12th St (ha una sede fissa, raro per il genere) · 🎫 biglietti e date <strong>solo su Resident Advisor</strong>.</div>
+      <p class="lb-desc">Raro <strong>warehouse permanente</strong> con impianto tarato fine e crew underground di LA a rotazione (Spiraling, Pranks…). Suono bass-heavy, dubbed-out, techno.</p>
+      <div class="lb-rows">
+        <div class="lb-row"><span class="lb-k">📍 Indirizzo</span><span class="lb-v">526 E 12th St (sede fissa, raro per il genere)</span></div>
+        <div class="lb-row"><span class="lb-k">🎫 Biglietti</span><span class="lb-v">Solo su Resident Advisor</span></div>
+        <div class="lb-row"><span class="lb-k">📅 Quando</span><span class="lb-v">Serate specifiche (spesso ven/sab notte)</span></div>
       </div>
-      <div style="margin-top:9px;display:flex;gap:16px;flex-wrap:wrap;font-size:12px;font-weight:600;">
-        <a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=526%20E%2012th%20St%2C%20Los%20Angeles" style="color:#1a73e8;text-decoration:none">📍 Google Maps</a>
-        <a target="_blank" rel="noopener" href="https://ra.co/clubs/270685" style="color:#e84393;text-decoration:none">🎫 Eventi &amp; biglietti (RA)</a>
+      <div class="lb-links">
+        <a class="g" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=526%20E%2012th%20St%2C%20Los%20Angeles">📍 Google Maps</a>
+        <a class="book" target="_blank" rel="noopener" href="https://ra.co/clubs/270685">🎫 Eventi &amp; biglietti (RA)</a>
       </div>
     </div>
 
-    <div style="background:var(--card);border:1px solid var(--divider);border-radius:10px;padding:15px 17px;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
-        <div style="font-weight:700;color:var(--text);font-size:15px;">🔊 If You Know You Know (IYKYK) <span style="color:var(--muted);font-weight:500;font-size:12px;">— location a sorpresa</span></div>
-        <span style="background:rgba(142,68,173,.18);color:#a569d6;font-weight:700;font-size:10.5px;padding:3px 9px;border-radius:20px;white-space:nowrap;">🟣 SOLO EVENTI</span>
+    <div class="lb-card">
+      <div class="lb-head">
+        <div class="lb-name">🔊 If You Know You Know (IYKYK) <span class="lb-loc">— location a sorpresa</span></div>
+        <span class="lb-badge event">🟣 SOLO EVENTI</span>
       </div>
-      <div style="color:var(--text-sec);font-size:12.5px;line-height:1.7;margin-top:7px;">
-        <div>🎵 Party sotto il radar, ethos <strong>minimal / prog / techno</strong>: intimità e qualità sopra lo spettacolo, programmazione raffinata. Proprio il tuo mondo hypnotic.</div>
-        <div>📍 <strong>Nessuna sede fissa</strong> (location comunicata prima dell'evento) · 🎫 date su Resident Advisor + Instagram @iykyk.la.</div>
+      <p class="lb-desc">Party sotto il radar, ethos <strong>minimal / prog / techno</strong>: intimità e qualità sopra lo spettacolo, programmazione raffinata. Proprio il tuo mondo hypnotic.</p>
+      <div class="lb-rows">
+        <div class="lb-row"><span class="lb-k">📍 Sede</span><span class="lb-v">Nessuna fissa (comunicata prima dell'evento)</span></div>
+        <div class="lb-row"><span class="lb-k">🎫 Biglietti</span><span class="lb-v">Resident Advisor + Instagram @iykyk.la</span></div>
+        <div class="lb-row"><span class="lb-k">📅 Quando</span><span class="lb-v">Serate specifiche</span></div>
       </div>
-      <div style="margin-top:9px;display:flex;gap:16px;flex-wrap:wrap;font-size:12px;font-weight:600;">
-        <a target="_blank" rel="noopener" href="https://ra.co/events/1847273" style="color:#e84393;text-decoration:none">🎫 IYKYK su RA</a>
-        <a target="_blank" rel="noopener" href="https://www.instagram.com/iykyk.la/" style="color:#8E44AD;text-decoration:none">📷 Instagram @iykyk.la</a>
+      <div class="lb-links">
+        <a class="book" target="_blank" rel="noopener" href="https://ra.co/events/1847273">🎫 IYKYK su RA</a>
+        <a class="ig" target="_blank" rel="noopener" href="https://www.instagram.com/iykyk.la/">📷 Instagram @iykyk.la</a>
       </div>
     </div>
 
   </div>
 
-  <p style="color:var(--muted);font-size:12px;margin-top:14px;">💡 <strong>Vinyl Dreams</strong> (593 Haight St, techno/house/dub, con postazioni d'ascolto) è già nella sezione 💿 Vinili — perfetto anche come "listening spot" underground. Verifica sempre orari e prenotazioni il giorno stesso.</p>
+  <p style="color:var(--muted);font-size:12px;margin-top:14px;line-height:1.6;">💡 <strong>Vinyl Dreams</strong> (593 Haight St, techno/house/dub, con postazioni d'ascolto) è già nella sezione 💿 Vinili — perfetto anche come "listening spot" underground. Verifica sempre orari e prenotazioni il giorno stesso.</p>
 
 </div><!-- /stats-inner -->
 </div><!-- /listening -->

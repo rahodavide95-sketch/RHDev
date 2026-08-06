@@ -1632,6 +1632,7 @@
       <span><i style="background:#2563EB"></i> Hotel</span>
       <span><i style="background:#E67E22"></i> Ristoranti / cibo</span>
       <span><i style="background:#8E44AD"></i> Shopping / vinili / makeup</span>
+      <span><i style="background:#0891b2"></i> Lavanderie</span>
     </div>
   </div>
 </div>
@@ -4636,7 +4637,7 @@
   (function() {
     if (typeof L === 'undefined') return;
     // Categorie: a=attrazione, h=hotel, r=ristorante, s=shopping/vinili/makeup
-    var COL = { a:'#C0392B', h:'#2563EB', r:'#E67E22', s:'#8E44AD' };
+    var COL = { a:'#C0392B', h:'#2563EB', r:'#E67E22', s:'#8E44AD', l:'#0891b2' };
     var A = [
       // ── Los Angeles (G1-3) ──
       {n:'Hollywood Walk of Fame + TCL', c:'a', d:'G1 · 10/8', lat:34.1017, lng:-118.3410},
@@ -4726,7 +4727,12 @@
       {n:"Giovanni's Fish Market (Morro Bay)", c:'r', d:'G13 · 22/8', lat:35.3690, lng:-120.8560},
       // ── Rientro (G14) ──
       {n:'Santa Barbara — Stearns Wharf', c:'a', d:'G14 · 23/8', lat:34.4103, lng:-119.6857},
-      {n:'Los Angeles — LAX', c:'a', d:'G14 · 23/8', lat:33.9416, lng:-118.4085}
+      {n:'Los Angeles — LAX', c:'a', d:'G14 · 23/8', lat:33.9416, lng:-118.4085},
+      // 🧺 Lavanderie
+      {n:'The Hollywood Laundry (LA)', c:'l', d:'🧺 Lavanderia · Hollywood', lat:34.0983, lng:-118.3267},
+      {n:'Busy Bee Laundromat (Las Vegas)', c:'l', d:'🧺 Lavanderia · 1201 Stewart Ave', lat:36.1762, lng:-115.1360},
+      {n:'The Laundry King (Fresno)', c:'l', d:'🧺 Lavanderia · 3225 W Shaw Ave', lat:36.8085, lng:-119.8455},
+      {n:'Laundromat 1868 Larkin St (SF · Nob Hill)', c:'l', d:'🧺 Lavanderia · 24h', lat:37.7967, lng:-122.4186}
     ];
     var map = L.map('route-map', { scrollWheelZoom:false }).setView([37.0, -119.0], 5);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {

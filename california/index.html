@@ -444,6 +444,14 @@
     margin-bottom: 3px;
     letter-spacing: 1px;
   }
+  .ora-it {
+    color: var(--green);
+    font-size: 10px;
+    margin-left: 7px;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+  .ora-it .carry { opacity: 0.7; }
   .tl-title {
     font-weight: 600;
     font-size: 14px;
@@ -1669,6 +1677,10 @@
 </div>
 
 <div class="container">
+
+  <div style="background:var(--card);border:1px solid var(--divider);border-left:3px solid var(--green);border-radius:10px;padding:12px 15px;margin-bottom:22px;font-size:12.5px;line-height:1.6;color:var(--text-sec);">
+    <span style="color:var(--green);font-weight:700;">🇮🇹 Ora in Italia</span> — accanto a ogni orario trovi (in verde) <strong>che ore sono in Italia</strong>. Fuso: California/Nevada/Arizona <strong>+9h</strong>; Utah e Monument Valley (14-15/8) <strong>+8h</strong>. <span style="color:var(--muted);">"(+1g)" = giorno dopo in Italia.</span> <em>Il 15/8 sera, a Las Vegas, si torna a +9h.</em>
+  </div>
 
 <!-- ══════════════════════════════════════════════════
      GIORNO 1 — 10 AGOSTO · LOS ANGELES ARRIVO
@@ -5072,6 +5084,41 @@
       badge.className = 'day-temp ' + TEMPS[id].lvl;
       badge.textContent = TEMPS[id].t;
       stats.appendChild(badge);
+    });
+  })();
+
+  // ── Ora italiana accanto a ogni orario della timeline ──
+  (function() {
+    // Ore da AGGIUNGERE all'orario locale per ottenere l'ora in Italia.
+    // Pacifico (CA/NV/Arizona no-DST) = +9h · Utah/Monument Valley (Mountain) = +8h
+    var OFF = {
+      g1:9, g2:9, g3:9, g4:9, g5:8, g6:8, g7:9,
+      g8:9, g9:9, g10:9, g11:9, g12:9, g13:9, g14:9
+    };
+    function pad(n){ return String(n).padStart(2,'0'); }
+    function toIt(h, m, off){
+      var day = 0, hh = h + off;
+      while (hh >= 24){ hh -= 24; day++; }
+      return pad(hh) + ':' + pad(m) + (day ? ' <span class="carry">(+' + day + 'g)</span>' : '');
+    }
+    var days = document.querySelectorAll('.day-section[id]');
+    days.forEach(function(day){
+      var off = OFF[day.id];
+      if (off == null) return;
+      day.querySelectorAll('.tl-time').forEach(function(el){
+        if (el.querySelector('.ora-it')) return;           // già fatto
+        var txt = el.textContent;
+        var matches = txt.match(/\b(\d{1,2}):(\d{2})\b/g);
+        if (!matches || !matches.length) return;
+        var conv = matches.map(function(t){
+          var p = t.split(':');
+          return toIt(parseInt(p[0],10), parseInt(p[1],10), off);
+        });
+        var span = document.createElement('span');
+        span.className = 'ora-it';
+        span.innerHTML = '🇮🇹 ' + conv.join('–');
+        el.appendChild(span);
+      });
     });
   })();
 

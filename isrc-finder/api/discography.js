@@ -279,8 +279,10 @@ export default async function handler(req) {
   const id = (body.id || '').trim();
   if (mode !== 'suggest' && !q && !id) return json({ error: 'missing_query' }, 400);
 
-  const SP_ID = process.env.SPOTIFY_CLIENT_ID || '';
-  const SP_SECRET = process.env.SPOTIFY_CLIENT_SECRET || '';
+  // Chiavi: prima quelle inviate dall'app (localStorage dell'utente),
+  // poi le variabili d'ambiente di Vercel.
+  const SP_ID = (body.spotifyId || process.env.SPOTIFY_CLIENT_ID || '').trim();
+  const SP_SECRET = (body.spotifySecret || process.env.SPOTIFY_CLIENT_SECRET || '').trim();
   const hasSp = !!(SP_ID && SP_SECRET);
 
   try {

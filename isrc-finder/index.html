@@ -86,6 +86,19 @@
   a{color:var(--accent2)}
   audio{height:34px}
   .hidden{display:none !important}
+  /* settings chiavi */
+  details.settings{margin-top:14px}
+  details.settings>summary{cursor:pointer; color:var(--txt); font-size:13px; list-style:none; display:flex; align-items:center; gap:8px}
+  details.settings>summary::-webkit-details-marker{display:none}
+  .spdot{width:9px;height:9px;border-radius:50%;display:inline-block}
+  .spdot.on{background:var(--sp)} .spdot.off{background:var(--muted)}
+  .settings-body{margin-top:12px; display:grid; gap:12px}
+  .note{font-size:12px; color:var(--muted); background:var(--panel2); border:1px dashed var(--line); border-radius:10px; padding:10px 12px; margin:0}
+  .note b{color:var(--txt)} .note code{background:var(--chip); padding:1px 5px; border-radius:5px}
+  .krow{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+  @media(max-width:520px){.krow{grid-template-columns:1fr}}
+  .fl{display:block; font-size:11px; color:var(--muted); margin-bottom:5px; text-transform:uppercase; letter-spacing:.4px}
+  .krow2{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
   .footer{margin-top:28px; color:var(--muted); font-size:12px; text-align:center}
 </style>
 </head>
@@ -106,6 +119,22 @@
       </div>
       <button class="go" id="go">Cerca</button>
     </div>
+
+    <details class="settings" id="settings">
+      <summary><span id="sp-state" class="spdot off"></span> Chiavi Spotify <span id="sp-label" style="color:var(--muted)">— non impostate</span></summary>
+      <div class="settings-body">
+        <p class="note">Incolla qui le tue chiavi Spotify: restano <b>solo nel tuo browser</b> e attivano suggerimenti con foto e info complete. Le ottieni gratis su <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">developer.spotify.com/dashboard</a> → Create app (Redirect URI: <code>http://localhost</code>).</p>
+        <div class="krow">
+          <div><label class="fl">Client ID</label><input type="text" id="sp-id" placeholder="Client ID" autocomplete="off"></div>
+          <div><label class="fl">Client Secret</label><input type="password" id="sp-secret" placeholder="Client Secret" autocomplete="off"></div>
+        </div>
+        <div class="krow2">
+          <button class="go" id="sp-save">Salva chiavi</button>
+          <button class="ghost" id="sp-clear">Rimuovi</button>
+          <span id="sp-msg" style="color:var(--muted);font-size:12px"></span>
+        </div>
+      </div>
+    </details>
   </div>
 
   <div id="log"></div>
@@ -146,6 +175,26 @@ let MODE='artist', ROWS=[], VIEW=[], TRACKS=[], sortK='date', sortDir=-1;
 let selId=''; // id scelto da un suggerimento
 let sugItems=[], sugActive=-1, sugTimer=null, sugSeq=0;
 
+/* ---------------- chiavi Spotify (nel browser) ---------------- */
+const KEYS='isrcfinder.spotify.v1';
+function getKeys(){ try{ return JSON.parse(localStorage.getItem(KEYS)||'{}'); }catch(_){ return {}; } }
+function keyBody(){ const k=getKeys(); return (k.id&&k.secret)?{spotifyId:k.id,spotifySecret:k.secret}:{}; }
+function refreshKeyState(){
+  const k=getKeys(); const on=!!(k.id&&k.secret);
+  $('sp-state').className='spdot '+(on?'on':'off');
+  $('sp-label').textContent = on ? '— attive ✓' : '— non impostate';
+  if($('sp-id')) $('sp-id').value=k.id||'';
+  if($('sp-secret')) $('sp-secret').value=k.secret||'';
+}
+$('sp-save').onclick=()=>{
+  const id=$('sp-id').value.trim(), secret=$('sp-secret').value.trim();
+  if(!id||!secret){ $('sp-msg').textContent='Inserisci sia Client ID sia Client Secret.'; return; }
+  try{ localStorage.setItem(KEYS,JSON.stringify({id,secret})); $('sp-msg').textContent='Salvate ✓ — ora prova a cercare.'; }
+  catch(_){ $('sp-msg').textContent='Impossibile salvare (storage bloccato).'; }
+  refreshKeyState(); setTimeout(()=>{$('sp-msg').textContent='';},3000);
+};
+$('sp-clear').onclick=()=>{ try{ localStorage.removeItem(KEYS); }catch(_){} $('sp-id').value='';$('sp-secret').value=''; refreshKeyState(); $('sp-msg').textContent='Rimosse.'; setTimeout(()=>{$('sp-msg').textContent='';},2000); };
+
 /* ---------------- modalità ---------------- */
 $('seg').addEventListener('click',(e)=>{const b=e.target.closest('button');if(!b)return;
   MODE=b.dataset.mode; [...$('seg').children].forEach(x=>x.classList.toggle('on',x===b));
@@ -161,7 +210,7 @@ $('q').addEventListener('input',()=>{ selId=''; const v=$('q').value.trim();
 async function loadSug(v){
   const seq=++sugSeq;
   try{
-    const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'suggest',kind:MODE,q:v})});
+    const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'suggest',kind:MODE,q:v,...keyBody()})});
     if(!r.ok){ hideSug(); return; }
     const d=await r.json(); if(seq!==sugSeq) return; // risposta obsoleta
     renderSug(d.suggestions||[]);
@@ -204,13 +253,13 @@ async function runSearch(){
   $('go').disabled=true; $('res-artist').classList.add('hidden'); $('res-track').classList.add('hidden');
   log(`Cerco ${MODE==='artist'?'la discografia':'la traccia'} “${esc(q)}”…`,true);
   try{
-    const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:MODE,q,id:selId})});
+    const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:MODE,q,id:selId,...keyBody()})});
     if(r.status===404){ log('Serve il deploy su Vercel (la funzione /api non è attiva su questo hosting).',false,true); return; }
     if(!r.ok){ log('Errore server: HTTP '+r.status,false,true); return; }
     const d=await r.json();
     if(d.error){ log('Errore: '+d.error,false,true); return; }
     const note = d.note==='not_configured'
-      ? 'Spotify non configurato su Vercel: sto usando MusicBrainz (dati base, niente immagini).'
+      ? 'Chiavi Spotify mancanti: apri “Chiavi Spotify” qui sopra e incollale per avere suggerimenti con foto e info complete. (Ora sto usando MusicBrainz, dati base.)'
       : (d.note||'');
     if(MODE==='artist') showArtist(d,note); else showTrack(d,note);
   }catch(e){ log('Errore di rete: '+(e.message||e),false,true); }
@@ -286,6 +335,7 @@ $('filter').addEventListener('input',render);
 document.querySelectorAll('#tbl th').forEach((th)=>{th.onclick=()=>{const k=th.dataset.k;if(k==='idx')return;if(sortK===k)sortDir*=-1;else{sortK=k;sortDir=1;}render();};});
 document.body.addEventListener('click',async(e)=>{const b=e.target.closest('.copy');if(!b)return;
   try{await navigator.clipboard.writeText(b.dataset.copy);const o=b.textContent;b.textContent='✓';setTimeout(()=>b.textContent=o,1200);}catch(_){}});
+refreshKeyState();
 </script>
 </body>
 </html>

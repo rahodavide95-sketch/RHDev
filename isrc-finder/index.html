@@ -227,6 +227,12 @@ async function loadSug(v){
     const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'suggest',kind:MODE,q:v,...keyBody()})});
     if(!r.ok){ hideSug(); return; }
     const d=await r.json(); if(seq!==sugSeq) return; // risposta obsoleta
+    if(d.err){
+      hideSug();
+      if(d.err==='not_configured') log('Incolla le chiavi Spotify (qui sopra, “Chiavi Spotify”) per avere suggerimenti con foto.',false,true);
+      else log('⚠ Spotify: '+d.err+' — le chiavi sembrano errate. Riaprile in “Chiavi Spotify” e reincollale (attento a non invertire ID e Secret).',false,true);
+      return;
+    }
     renderSug(d.suggestions||[]);
   }catch(_){ hideSug(); }
 }

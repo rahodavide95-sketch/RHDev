@@ -141,6 +141,33 @@ async function spTrackById(id, auth) {
   const t = await r.json();
   return { results: await enrichTracks([t], auth), err: null };
 }
+// Album da link diretto → tutte le tracce con ISRC (formato "rows" come la discografia)
+async function spAlbumById(id, auth) {
+  const r = await fetch(`https://api.spotify.com/v1/albums/${id}`, { headers: auth, signal: AbortSignal.timeout(15000) });
+  if (!r.ok) return { rows: [], artist: '', err: `album HTTP ${r.status}` };
+  const a = await r.json();
+  const items = [...(a.tracks?.items || [])];
+  let next = a.tracks?.next;
+  while (next) {
+    const nr = await fetch(next, { headers: auth, signal: AbortSignal.timeout(15000) });
+    if (!nr.ok) break; const nd = await nr.json();
+    items.push(...(nd.items || [])); next = nd.next;
+  }
+  const rows = []; const trackIndex = new Map();
+  for (const tk of items) {
+    const obj = { artist: (tk.artists || []).map((x) => x.name).join(', '), title: tk.name || '', isrc: '',
+      release: a.name || '', date: a.release_date || '', sources: ['spotify'], url: tk.external_urls?.spotify || '', _tid: tk.id };
+    rows.push(obj); if (tk.id) trackIndex.set(tk.id, obj);
+  }
+  const tids = [...trackIndex.keys()];
+  for (let i = 0; i < tids.length; i += 50) {
+    const tr = await fetch(`https://api.spotify.com/v1/tracks?ids=${tids.slice(i, i + 50).join(',')}`, { headers: auth, signal: AbortSignal.timeout(15000) });
+    if (!tr.ok) continue; const td = await tr.json();
+    for (const tk of td.tracks || []) { const o = tk && trackIndex.get(tk.id); if (o) o.isrc = tk.external_ids?.isrc || ''; }
+  }
+  rows.forEach((o) => delete o._tid);
+  return { rows, artist: (a.artists || []).map((x) => x.name).join(', ') + ' — ' + (a.name || ''), err: null };
+}
 
 // ------------------------------- discografia -------------------------------
 async function spArtistId(name, auth) {
@@ -286,40 +313,50 @@ export default async function handler(req) {
   const hasSp = !!(SP_ID && SP_SECRET);
 
   try {
+    // Un solo token per richiesta; se le chiavi ci sono ma il token fallisce,
+    // l'errore viene SEMPRE propagato (niente più fallimenti silenziosi).
+    const t = hasSp ? await spToken(SP_ID, SP_SECRET) : { tok: '', err: 'not_configured' };
+    const auth = t.tok ? bearer(t.tok) : null;
+    const spNote = () => (t.err === 'not_configured' ? 'not_configured' : ('Spotify: ' + t.err));
+
     // -------- suggerimenti (solo Spotify: servono le immagini) --------
     if (mode === 'suggest') {
-      if (!hasSp || (q.length < 2)) return json({ suggestions: [] });
-      const t = await spToken(SP_ID, SP_SECRET);
-      if (!t.tok) return json({ suggestions: [], err: t.err });
-      const x = await spSuggest(body.kind || 'artist', q, bearer(t.tok));
+      if (!auth || q.length < 2) return json({ suggestions: [], err: t.err || null });
+      const x = await spSuggest(body.kind || 'artist', q, auth);
       return json({ suggestions: x.suggestions, err: x.err });
+    }
+
+    // -------- album (da link diretto) --------
+    if (mode === 'album') {
+      if (!auth) return json({ mode: 'artist', rows: [], source: 'mb', note: spNote() });
+      if (!id) return json({ error: 'missing_id' }, 400);
+      const x = await spAlbumById(id, auth);
+      if (x.err) return json({ mode: 'artist', rows: [], artist: '', source: 'spotify', note: 'Spotify: ' + x.err });
+      return json({ mode: 'artist', artist: x.artist, rows: x.rows, count: x.rows.length, source: 'spotify' });
     }
 
     // -------- traccia --------
     if (mode === 'track') {
-      if (hasSp) {
-        const t = await spToken(SP_ID, SP_SECRET);
-        if (t.tok) {
-          const x = id ? await spTrackById(id, bearer(t.tok)) : await spTrackSearch(q, bearer(t.tok));
-          if (!x.err) return json({ mode, results: x.results, source: 'spotify' });
-          const mb = await mbTrackSearch(q); return json({ mode, results: mb.results, source: 'mb', note: 'Spotify: ' + x.err });
-        }
+      if (auth) {
+        const x = id ? await spTrackById(id, auth) : await spTrackSearch(q, auth);
+        if (!x.err && (x.results || []).length) return json({ mode, results: x.results, source: 'spotify' });
+        const mb = await mbTrackSearch(q);
+        const useSp = !x.err && (x.results || []).length;
+        return json({ mode, results: useSp ? x.results : mb.results, source: useSp ? 'spotify' : 'mb', note: x.err ? ('Spotify: ' + x.err) : null });
       }
       const mb = await mbTrackSearch(q);
-      return json({ mode, results: mb.results, source: 'mb', note: hasSp ? null : 'not_configured', err: mb.err });
+      return json({ mode, results: mb.results, source: 'mb', note: spNote(), err: mb.err });
     }
 
     // -------- artista --------
-    if (hasSp) {
-      const t = await spToken(SP_ID, SP_SECRET);
-      if (t.tok) {
-        const x = await spDiscography(q, id, bearer(t.tok));
-        if (!x.err) return json({ mode: 'artist', artist: x.artist, rows: x.rows, count: x.rows.length, source: 'spotify' });
-        const mb = await mbDiscography(q); return json({ mode: 'artist', artist: mb.artist, rows: mb.rows, count: mb.rows.length, source: 'mb', note: 'Spotify: ' + x.err });
-      }
+    if (auth) {
+      const x = await spDiscography(q, id, auth);
+      if (!x.err) return json({ mode: 'artist', artist: x.artist, rows: x.rows, count: x.rows.length, source: 'spotify' });
+      const mb = await mbDiscography(q);
+      return json({ mode: 'artist', artist: mb.artist, rows: mb.rows, count: mb.rows.length, source: 'mb', note: 'Spotify: ' + x.err });
     }
     const mb = await mbDiscography(q);
-    return json({ mode: 'artist', artist: mb.artist, rows: mb.rows, count: mb.rows.length, source: 'mb', note: hasSp ? null : 'not_configured', err: mb.err });
+    return json({ mode: 'artist', artist: mb.artist, rows: mb.rows, count: mb.rows.length, source: 'mb', note: spNote(), err: mb.err });
   } catch (e) {
     return json({ error: String(e?.message || e) }, 200);
   }

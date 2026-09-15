@@ -105,7 +105,7 @@
 <body>
 <div class="wrap">
   <header class="top"><div class="logo">ISRC</div><div><h1>ISRC Finder</h1></div></header>
-  <p class="sub">Cerca un <b>artista</b> (tutta la discografia con ISRC) o una <b>traccia</b> (tutte le info). Suggerimenti automatici con le immagini.</p>
+  <p class="sub">Cerca un <b>artista</b> (tutta la discografia con ISRC) o una <b>traccia</b> (tutte le info), oppure <b>incolla un link Spotify</b> (artista, traccia o album). Suggerimenti automatici con le immagini.</p>
 
   <div class="card">
     <div class="seg" id="seg">
@@ -114,7 +114,7 @@
     </div>
     <div class="searchbar">
       <div class="inputwrap">
-        <input type="text" id="q" placeholder="Scrivi il nome dell'artista…" autocomplete="off" autofocus>
+        <input type="text" id="q" placeholder="Nome artista o incolla un link Spotify…" autocomplete="off" autofocus>
         <div id="suggest" class="suggest hidden"></div>
       </div>
       <button class="go" id="go">Cerca</button>
@@ -206,13 +206,19 @@ $('sp-clear').onclick=()=>{ try{ localStorage.removeItem(KEYS); }catch(_){} $('s
 /* ---------------- modalità ---------------- */
 $('seg').addEventListener('click',(e)=>{const b=e.target.closest('button');if(!b)return;
   MODE=b.dataset.mode; [...$('seg').children].forEach(x=>x.classList.toggle('on',x===b));
-  $('q').placeholder = MODE==='artist' ? "Scrivi il nome dell'artista…" : "Scrivi il titolo della traccia…";
+  $('q').placeholder = (MODE==='artist' ? "Nome artista" : "Titolo traccia") + " o incolla un link Spotify…";
   selId=''; hideSug(); $('q').focus();
 });
 
 /* ---------------- suggerimenti (typeahead) ---------------- */
+function parseSpotify(s){
+  const m=(s||'').match(/(?:open\.spotify\.com\/(?:intl-[a-z]+\/)?|spotify:)(artist|track|album)[/:]([A-Za-z0-9]+)/i);
+  return m?{type:m[1].toLowerCase(), id:m[2]}:null;
+}
 $('q').addEventListener('input',()=>{ selId=''; const v=$('q').value.trim();
-  clearTimeout(sugTimer); if(v.length<2){ hideSug(); return; }
+  clearTimeout(sugTimer);
+  if(parseSpotify(v)){ hideSug(); return; }        // è un link: niente suggerimenti
+  if(v.length<2){ hideSug(); return; }
   sugTimer=setTimeout(()=>loadSug(v),220);
 });
 async function loadSug(v){
@@ -258,10 +264,17 @@ $('q').addEventListener('blur',()=>setTimeout(hideSug,150));
 $('go').onclick=()=>{ hideSug(); runSearch(); };
 async function runSearch(){
   const q=$('q').value.trim(); if(!q && !selId){ $('q').focus(); return; }
+  // Se è un link Spotify diretto, uso tipo + ID esatti (artista/traccia/album).
+  const link=parseSpotify(q);
+  const reqMode = link ? link.type : MODE;
+  const reqId   = link ? link.id   : selId;
+  const reqQ    = link ? ''        : q;
   $('go').disabled=true; $('res-artist').classList.add('hidden'); $('res-track').classList.add('hidden');
-  log(`Cerco ${MODE==='artist'?'la discografia':'la traccia'} “${esc(q)}”…`,true);
+  const what = link ? (link.type==='track'?'la traccia':link.type==='album'?"l'album":"l'artista")+' dal link Spotify'
+                    : (MODE==='artist'?'la discografia':'la traccia')+` “${esc(q)}”`;
+  log(`Cerco ${what}…`,true);
   try{
-    const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:MODE,q,id:selId,...keyBody()})});
+    const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:reqMode,q:reqQ,id:reqId,...keyBody()})});
     if(r.status===404){ log('Serve il deploy su Vercel (la funzione /api non è attiva su questo hosting).',false,true); return; }
     if(!r.ok){ log('Errore server: HTTP '+r.status,false,true); return; }
     const d=await r.json();
@@ -269,7 +282,8 @@ async function runSearch(){
     const note = d.note==='not_configured'
       ? 'Chiavi Spotify mancanti: apri “Chiavi Spotify” qui sopra e incollale per avere suggerimenti con foto e info complete. (Ora sto usando MusicBrainz, dati base.)'
       : (d.note||'');
-    if(MODE==='artist') showArtist(d,note); else showTrack(d,note);
+    // instrada in base al formato della risposta: results = schede traccia, rows = tabella
+    if(d.results!==undefined) showTrack(d,note); else showArtist(d,note);
   }catch(e){ log('Errore di rete: '+(e.message||e),false,true); }
   finally{ $('go').disabled=false; refreshKeyState(); }
 }

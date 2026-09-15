@@ -284,17 +284,17 @@ export default async function handler(req) {
   // Vercel sta passando le chiavi Spotify alla function. Mostra solo sì/no,
   // MAI i valori dei segreti.
   if (req.method === 'GET') {
-    const idOk = !!(process.env.SPOTIFY_CLIENT_ID || '');
-    const secOk = !!(process.env.SPOTIFY_CLIENT_SECRET || '');
+    const eId = (process.env.SPOTIFY_CLIENT_ID || '').trim();
+    const eSec = (process.env.SPOTIFY_CLIENT_SECRET || '').trim();
     return json({
       ok: true,
       runtime: 'edge',
-      spotify_configured: idOk && secOk,
-      has_SPOTIFY_CLIENT_ID: idOk,
-      has_SPOTIFY_CLIENT_SECRET: secOk,
-      hint: (idOk && secOk)
-        ? 'Chiavi presenti: Spotify attivo.'
-        : 'Chiavi mancanti: aggiungi SPOTIFY_CLIENT_ID e SPOTIFY_CLIENT_SECRET su Vercel (ambiente Production) e fai Redeploy.',
+      env_spotify_configured: !!(eId && eSec),
+      env_client_id: eId || '(vuoto)',          // il Client ID è pubblico
+      env_secret_length: eSec.length,           // solo la lunghezza, mai il valore
+      hint: (eId && eSec)
+        ? 'Su Vercel ci sono queste env. Se il Client ID qui sopra NON è il tuo, sono chiavi vecchie/sbagliate: correggile o rimuovile, così il tool userà quelle incollate nell app.'
+        : 'Nessuna env su Vercel: il tool usa le chiavi incollate nell app.',
     });
   }
 
@@ -308,20 +308,28 @@ export default async function handler(req) {
 
   // Chiavi: prima quelle inviate dall'app (localStorage dell'utente),
   // poi le variabili d'ambiente di Vercel.
-  const SP_ID = (body.spotifyId || process.env.SPOTIFY_CLIENT_ID || '').trim();
-  const SP_SECRET = (body.spotifySecret || process.env.SPOTIFY_CLIENT_SECRET || '').trim();
+  const bodyId = (body.spotifyId || '').trim(), bodySecret = (body.spotifySecret || '').trim();
+  const envId = (process.env.SPOTIFY_CLIENT_ID || '').trim(), envSecret = (process.env.SPOTIFY_CLIENT_SECRET || '').trim();
+  const SP_ID = bodyId || envId;
+  const SP_SECRET = bodySecret || envSecret;
   const hasSp = !!(SP_ID && SP_SECRET);
+  // Origine delle chiavi + info non sensibili per diagnosticare invalid_client.
+  const keySrc = (bodyId && bodySecret) ? 'app(browser)' : (envId ? 'vercel(env)' : 'nessuna');
+  const dbg = ` [fonte: ${keySrc} · Client ID: ${SP_ID || '—'} · lunghezza secret: ${SP_SECRET.length}]`;
 
   try {
     // Un solo token per richiesta; se le chiavi ci sono ma il token fallisce,
     // l'errore viene SEMPRE propagato (niente più fallimenti silenziosi).
     const t = hasSp ? await spToken(SP_ID, SP_SECRET) : { tok: '', err: 'not_configured' };
     const auth = t.tok ? bearer(t.tok) : null;
-    const spNote = () => (t.err === 'not_configured' ? 'not_configured' : ('Spotify: ' + t.err));
+    const spNote = () => (t.err === 'not_configured' ? 'not_configured' : ('Spotify: ' + t.err + dbg));
 
     // -------- suggerimenti (solo Spotify: servono le immagini) --------
     if (mode === 'suggest') {
-      if (!auth || q.length < 2) return json({ suggestions: [], err: t.err || null });
+      if (!auth || q.length < 2) {
+        const e = t.err ? (t.err === 'not_configured' ? 'not_configured' : (t.err + dbg)) : null;
+        return json({ suggestions: [], err: e });
+      }
       const x = await spSuggest(body.kind || 'artist', q, auth);
       return json({ suggestions: x.suggestions, err: x.err });
     }

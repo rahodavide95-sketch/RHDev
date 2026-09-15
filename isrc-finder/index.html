@@ -178,7 +178,15 @@ let sugItems=[], sugActive=-1, sugTimer=null, sugSeq=0;
 /* ---------------- chiavi Spotify (nel browser) ---------------- */
 const KEYS='isrcfinder.spotify.v1';
 function getKeys(){ try{ return JSON.parse(localStorage.getItem(KEYS)||'{}'); }catch(_){ return {}; } }
-function keyBody(){ const k=getKeys(); return (k.id&&k.secret)?{spotifyId:k.id,spotifySecret:k.secret}:{}; }
+function currentKeys(){
+  let k=getKeys();
+  if(!(k.id&&k.secret)){ // ripiego: leggi dai campi anche senza "Salva"
+    const id=($('sp-id')?.value||'').trim(), secret=($('sp-secret')?.value||'').trim();
+    if(id&&secret){ k={id,secret}; try{ localStorage.setItem(KEYS,JSON.stringify(k)); }catch(_){} }
+  }
+  return k;
+}
+function keyBody(){ const k=currentKeys(); return (k.id&&k.secret)?{spotifyId:k.id,spotifySecret:k.secret}:{}; }
 function refreshKeyState(){
   const k=getKeys(); const on=!!(k.id&&k.secret);
   $('sp-state').className='spdot '+(on?'on':'off');
@@ -263,7 +271,7 @@ async function runSearch(){
       : (d.note||'');
     if(MODE==='artist') showArtist(d,note); else showTrack(d,note);
   }catch(e){ log('Errore di rete: '+(e.message||e),false,true); }
-  finally{ $('go').disabled=false; }
+  finally{ $('go').disabled=false; refreshKeyState(); }
 }
 
 /* ---------------- ARTISTA ---------------- */

@@ -252,6 +252,25 @@ async function mbTrackSearch(q) {
 // ================================== HTTP ===================================
 export default async function handler(req) {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
+
+  // Diagnostica: apri /api/discography nel browser (GET) per verificare se
+  // Vercel sta passando le chiavi Spotify alla function. Mostra solo sì/no,
+  // MAI i valori dei segreti.
+  if (req.method === 'GET') {
+    const idOk = !!(process.env.SPOTIFY_CLIENT_ID || '');
+    const secOk = !!(process.env.SPOTIFY_CLIENT_SECRET || '');
+    return json({
+      ok: true,
+      runtime: 'edge',
+      spotify_configured: idOk && secOk,
+      has_SPOTIFY_CLIENT_ID: idOk,
+      has_SPOTIFY_CLIENT_SECRET: secOk,
+      hint: (idOk && secOk)
+        ? 'Chiavi presenti: Spotify attivo.'
+        : 'Chiavi mancanti: aggiungi SPOTIFY_CLIENT_ID e SPOTIFY_CLIENT_SECRET su Vercel (ambiente Production) e fai Redeploy.',
+    });
+  }
+
   if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
   let body; try { body = await req.json(); } catch (_) { return json({ error: 'bad_json' }, 400); }
 

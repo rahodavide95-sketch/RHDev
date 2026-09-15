@@ -278,7 +278,10 @@ async function runSearch(){
 function showArtist(d,note){
   ROWS=d.rows||[]; render();
   const nm=d.artist?` per “${esc(d.artist)}”`:'';
-  log(ROWS.length?`Trovate ${ROWS.length} tracce${nm}.`+(note?'  ⚠ '+note:''):`Nessun risultato${nm}.`+(note?'  ⚠ '+note:''),false,!ROWS.length);
+  if(ROWS.length){ log(`Trovate ${ROWS.length} tracce${nm}.`+(note?'  ⚠ '+note:'')); return; }
+  const tip = note ? '  ⚠ '+note
+    : '  👉 Scrivi il nome e SELEZIONA il tuo artista dai suggerimenti con la foto: esistono più artisti con lo stesso nome, così uso quello giusto.';
+  log(`Nessun risultato${nm}.`+tip,false,true);
 }
 function applyFilterSort(){
   const f=norm($('filter').value);

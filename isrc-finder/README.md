@@ -1,64 +1,43 @@
-# ISRC Finder — discografia per artista
+# ISRC Finder — discografia e tracce
 
-Strumento standalone che recupera gli **ISRC** della discografia di un artista da
-**MusicBrainz**, **Spotify** e **Discogs**, unisce i risultati (dedup per ISRC/titolo)
-ed esporta in **CSV**/JSON.
+Strumento standalone, **automatico**, per recuperare **ISRC e metadati** con
+suggerimenti live e immagini.
 
-## Come funziona (architettura)
+- **Modalità Artista** → tutta la discografia con ISRC, esportabile in CSV/JSON.
+- **Modalità Traccia** → una singola traccia con **tutte le info**: ISRC, UPC,
+  album, etichetta, data, durata, popolarità, generi, n. traccia/disco, mercati,
+  link Spotify, anteprima audio.
+- **Suggerimenti mentre scrivi**, con foto profilo (artisti) o copertina (tracce).
 
-| Fonte | Dove gira | Chiave richiesta | Fornisce ISRC |
-|-------|-----------|------------------|:-------------:|
-| **MusicBrainz** | direttamente nel browser (CORS libero) | nessuna | ✅ |
-| **Spotify** | edge function `api/discography.js` | Client ID + Secret | ✅ |
-| **Discogs** | edge function `api/discography.js` | Token | ❌ (solo tracklist/metadati) |
+## Fonte dati
 
-MusicBrainz è la fonte principale e **funziona subito ovunque**, anche su GitHub Pages,
-senza configurazione. Spotify e Discogs richiedono la edge function, quindi il deploy su
-**Vercel** (dove esiste `/api/*`). Il token Spotify usa il flusso *client credentials*, che
-non può girare nel browser (CORS): per questo passa dalla function.
+Usa **Spotify** (completa e veloce). I suggerimenti con immagini richiedono Spotify.
 
-Se la function non è disponibile (es. GitHub Pages), il tool continua a funzionare con la
-sola MusicBrainz e mostra un avviso per Spotify/Discogs.
+Se le chiavi Spotify non sono impostate, lo strumento ripiega su **MusicBrainz**
+(solo dati base, niente immagini né suggerimenti), chiamato lato server con lo
+User-Agent corretto — dal browser MusicBrainz risponderebbe con errore 503.
 
-## Uso
+## Configurazione (una volta sola)
 
-1. Apri `index.html`.
-2. Scrivi il nome dell'artista e premi **Cerca**.
-3. Se ci sono più artisti omonimi su MusicBrainz, scegli quello giusto.
-4. Attiva/disattiva le fonti con gli interruttori (Spotify/Discogs vanno configurati, vedi sotto).
-5. Filtra, ordina e usa **⬇ CSV**, **⬇ JSON** o **⧉ Copia tutti gli ISRC**.
-
-## Configurare Spotify e Discogs
-
-Le credenziali possono essere fornite in due modi:
-
-### A) Variabili d'ambiente su Vercel (consigliato per la versione pubblica)
-
-Nel progetto Vercel → *Settings → Environment Variables*:
+Nel progetto **Vercel** → *Settings → Environment Variables*:
 
 - `SPOTIFY_CLIENT_ID`
-- `SPOTIFY_CLIENT_SECRET`  (da <https://developer.spotify.com/dashboard>)
-- `DISCOGS_TOKEN`  (da <https://www.discogs.com/settings/developers>)
+- `SPOTIFY_CLIENT_SECRET`
 
-### B) Direttamente nell'interfaccia (uso personale)
-
-Apri **Impostazioni fonti & chiavi API** e incolla le credenziali: restano nel
-`localStorage` del tuo browser e vengono inviate solo alla edge function dello stesso
-sito, mai scritte nel codice pubblicato.
+Le ottieni gratis creando un'app su <https://developer.spotify.com/dashboard>
+(non serve alcun redirect URI: si usa il flusso *Client Credentials*).
+Dopo aver aggiunto le variabili, fai un **Redeploy**.
 
 ## Deploy
 
-- **Vercel** (tutte le fonti): root del progetto = questa cartella. `api/discography.js`
-  viene servita come edge function su `/api/discography`.
-- **GitHub Pages** (solo MusicBrainz): la cartella è pubblicata come sito statico; l'endpoint
-  `/api/*` non esiste, quindi restano attive solo le funzioni lato browser.
+- **Vercel** (consigliato): *Root Directory* = `isrc-finder`. La funzione
+  `api/discography.js` viene servita come edge function su `/api/discography`.
+- Su hosting statico senza server (es. GitHub Pages) la funzione non esiste,
+  quindi lo strumento non è operativo: serve Vercel.
 
 ## Note
 
-- MusicBrainz applica un rate limit (~1 richiesta/secondo): per artisti molto prolifici il
-  caricamento può richiedere qualche secondo.
-- Discogs non espone gli ISRC: contribuisce con tracklist e metadati (titoli/release) che
-  vengono incrociati con le altre fonti; le tracce presenti solo su Discogs compaiono con
-  ISRC vuoto, da completare a mano.
-- Una registrazione con più ISRC (edizioni per territorio) viene mostrata con gli ISRC
-  separati da ` / `.
+- L'artista/traccia viene scelto in automatico (miglior corrispondenza); se
+  selezioni un suggerimento, viene usato l'**ID esatto** di Spotify.
+- Nella discografia si tengono solo le tracce effettivamente accreditate
+  all'artista (le compilation di altri vengono filtrate).

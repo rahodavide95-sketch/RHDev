@@ -1,21 +1,15 @@
 // ============================================================================
-//  api/discography — recupera la discografia (tracce + ISRC) di un ARTISTA
-//  da Spotify e/o Discogs. MusicBrainz viene chiamato direttamente dal browser
-//  (CORS libero, nessuna chiave) e non passa da qui.
+//  api/discography — ISRC & metadati, tutto automatico, con suggerimenti.
 //
-//  Ogni richiesta gestisce UNA sola fonte (source: "spotify" | "discogs") così
-//  da restare entro i tempi della edge function; il browser fa le due chiamate
-//  in parallelo e unisce i risultati con quelli di MusicBrainz.
+//  mode:
+//    • "suggest" → suggerimenti live (kind: "artist" | "track") con immagini
+//    • "artist"  → discografia completa dell'artista, con ISRC  (q oppure id)
+//    • "track"   → una traccia con TUTTE le info possibili       (q oppure id)
 //
-//  Le credenziali possono arrivare da:
-//    1) variabili d'ambiente Vercel  → SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET,
-//                                       DISCOGS_TOKEN
-//    2) corpo della richiesta        → spotifyId, spotifySecret, discogsToken
-//       (utile per uso personale: la chiave resta nel browser dell'utente e
-//        transita solo verso questa function, mai nel codice statico pubblicato)
-//
-//  Deploy: Vercel (runtime edge). Su GitHub Pages puro questa function non
-//  esiste: in quel caso il tool funziona comunque con la sola MusicBrainz.
+//  Fonte: Spotify (completa e veloce). Su Vercel imposta:
+//     SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET
+//  Ripiego senza chiavi: MusicBrainz (dati base, niente immagini),
+//  chiamato lato server con User-Agent corretto (dal browser dà 503).
 // ============================================================================
 
 export const config = { runtime: 'edge', regions: ['iad1'] };
@@ -26,235 +20,286 @@ const CORS = {
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 const UA = 'ISRCFinder/1.0 ( https://github.com/rahodavide95-sketch/rhdev )';
+const MB = 'https://musicbrainz.org/ws/2';
 const json = (o, status = 200) =>
   new Response(JSON.stringify(o), { status, headers: { ...CORS, 'Content-Type': 'application/json' } });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const norm = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+const enc = encodeURIComponent;
+const fmtDur = (ms) => { const s = Math.round((ms || 0) / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+const smallImg = (imgs) => { const a = imgs || []; return (a[a.length - 1] || a[0] || {}).url || ''; };
+const bigImg = (imgs) => { const a = imgs || []; return (a[1] || a[0] || {}).url || ''; };
 
-// --------------------------------- Spotify ---------------------------------
+// ================================ Spotify ==================================
+let _tok = { v: '', exp: 0 };
 async function spToken(id, secret) {
+  const now = Date.now();
+  if (_tok.v && _tok.exp > now + 5000) return { tok: _tok.v, err: null };
   const r = await fetch('https://accounts.spotify.com/api/token', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      Authorization: 'Basic ' + btoa(`${id}:${secret}`),
-    },
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', Authorization: 'Basic ' + btoa(`${id}:${secret}`) },
     body: 'grant_type=client_credentials',
     signal: AbortSignal.timeout(15000),
   });
-  if (!r.ok) {
-    let t = ''; try { t = await r.text(); } catch (_) {}
-    return { tok: '', err: `token HTTP ${r.status} ${t.slice(0, 120)}` };
-  }
+  if (!r.ok) { let t = ''; try { t = await r.text(); } catch (_) {} return { tok: '', err: `token HTTP ${r.status} ${t.slice(0, 100)}` }; }
   const d = await r.json();
+  if (d.access_token) _tok = { v: d.access_token, exp: now + (d.expires_in || 3600) * 1000 };
   return { tok: d.access_token || '', err: d.access_token ? null : 'no access_token' };
 }
+const bearer = (tok) => ({ Authorization: 'Bearer ' + tok });
 
-async function spArtistId(name, tok) {
-  const r = await fetch(
-    `https://api.spotify.com/v1/search?q=${encodeURIComponent(name)}&type=artist&limit=5`,
-    { headers: { Authorization: 'Bearer ' + tok }, signal: AbortSignal.timeout(15000) });
+// ------------------------------ suggerimenti -------------------------------
+async function spSuggest(kind, q, auth) {
+  const type = kind === 'track' ? 'track' : 'artist';
+  const r = await fetch(`https://api.spotify.com/v1/search?q=${enc(q)}&type=${type}&limit=${type === 'track' ? 8 : 6}`,
+    { headers: auth, signal: AbortSignal.timeout(10000) });
+  if (!r.ok) return { suggestions: [], err: `search HTTP ${r.status}` };
+  const d = await r.json();
+  if (type === 'artist') {
+    const items = d.artists?.items || [];
+    return {
+      suggestions: items.map((a) => ({
+        id: a.id, kind: 'artist', label: a.name,
+        sub: [(a.genres || [])[0], a.followers?.total ? (a.followers.total.toLocaleString('it-IT') + ' follower') : ''].filter(Boolean).join(' · '),
+        image: smallImg(a.images), round: true,
+      })), err: null,
+    };
+  }
+  const items = d.tracks?.items || [];
+  return {
+    suggestions: items.map((t) => ({
+      id: t.id, kind: 'track', label: t.name,
+      sub: (t.artists || []).map((x) => x.name).join(', ') + (t.album?.name ? ' · ' + t.album.name : ''),
+      image: smallImg(t.album?.images), round: false,
+    })), err: null,
+  };
+}
+
+// --------------------------- costruzione traccia ---------------------------
+function buildTrack(f, al, artistMap) {
+  const genres = [...new Set((f.artists || []).flatMap((a) => artistMap.get(a.id)?.genres || []))];
+  return {
+    title: f.name || '',
+    artists: (f.artists || []).map((a) => a.name).join(', '),
+    isrc: f.external_ids?.isrc || '',
+    album: al.name || '',
+    albumType: al.album_type || '',
+    upc: al.external_ids?.upc || '',
+    label: al.label || '',
+    releaseDate: al.release_date || f.album?.release_date || '',
+    totalTracks: al.total_tracks || f.album?.total_tracks || '',
+    trackNumber: f.track_number || '',
+    discNumber: f.disc_number || '',
+    duration: fmtDur(f.duration_ms || 0),
+    durationMs: f.duration_ms || 0,
+    explicit: !!f.explicit,
+    popularity: (f.popularity ?? ''),
+    genres: genres.join(', '),
+    markets: (f.available_markets || []).length,
+    spotifyUrl: f.external_urls?.spotify || '',
+    previewUrl: f.preview_url || '',
+    image: bigImg(al.images || f.album?.images),
+    source: 'spotify',
+  };
+}
+async function enrichTracks(tracks, auth) {
+  const albumIds = [...new Set(tracks.map((t) => t.album?.id).filter(Boolean))];
+  const albumMap = new Map();
+  for (let i = 0; i < albumIds.length; i += 20) {
+    const r = await fetch(`https://api.spotify.com/v1/albums?ids=${albumIds.slice(i, i + 20).join(',')}`, { headers: auth, signal: AbortSignal.timeout(15000) });
+    if (!r.ok) continue; const d = await r.json();
+    for (const a of d.albums || []) if (a) albumMap.set(a.id, a);
+  }
+  const artistIds = [...new Set(tracks.flatMap((t) => (t.artists || []).map((a) => a.id)).filter(Boolean))];
+  const artistMap = new Map();
+  for (let i = 0; i < artistIds.length; i += 50) {
+    const r = await fetch(`https://api.spotify.com/v1/artists?ids=${artistIds.slice(i, i + 50).join(',')}`, { headers: auth, signal: AbortSignal.timeout(15000) });
+    if (!r.ok) continue; const d = await r.json();
+    for (const a of d.artists || []) if (a) artistMap.set(a.id, a);
+  }
+  return tracks.map((t) => buildTrack(t, albumMap.get(t.album?.id) || t.album || {}, artistMap));
+}
+
+async function spTrackSearch(q, auth) {
+  const r = await fetch(`https://api.spotify.com/v1/search?q=${enc(q)}&type=track&limit=10`, { headers: auth, signal: AbortSignal.timeout(15000) });
+  if (!r.ok) return { results: [], err: `search HTTP ${r.status}` };
+  const d = await r.json();
+  const items = d.tracks?.items || [];
+  if (!items.length) return { results: [], err: null };
+  const ids = items.map((x) => x.id).filter(Boolean);
+  const fulls = [];
+  for (let i = 0; i < ids.length; i += 50) {
+    const rr = await fetch(`https://api.spotify.com/v1/tracks?ids=${ids.slice(i, i + 50).join(',')}`, { headers: auth, signal: AbortSignal.timeout(15000) });
+    if (!rr.ok) continue; const dd = await rr.json();
+    for (const x of dd.tracks || []) if (x) fulls.push(x);
+  }
+  return { results: await enrichTracks(fulls.length ? fulls : items, auth), err: null };
+}
+async function spTrackById(id, auth) {
+  const r = await fetch(`https://api.spotify.com/v1/tracks/${id}`, { headers: auth, signal: AbortSignal.timeout(15000) });
+  if (!r.ok) return { results: [], err: `track HTTP ${r.status}` };
+  const t = await r.json();
+  return { results: await enrichTracks([t], auth), err: null };
+}
+
+// ------------------------------- discografia -------------------------------
+async function spArtistId(name, auth) {
+  const r = await fetch(`https://api.spotify.com/v1/search?q=${enc(name)}&type=artist&limit=5`, { headers: auth, signal: AbortSignal.timeout(15000) });
   if (!r.ok) return { id: '', name: '', err: `search HTTP ${r.status}` };
   const d = await r.json();
   const items = d.artists?.items || [];
   if (!items.length) return { id: '', name: '', err: null };
-  const exact = items.find((a) => norm(a.name) === norm(name));
-  const pick = exact || items[0];
+  const pick = items.find((a) => norm(a.name) === norm(name)) || items[0];
   return { id: pick.id, name: pick.name, err: null };
 }
-
-async function spFetch(name, tok) {
-  const who = await spArtistId(name, tok);
-  if (who.err) return { items: [], artist: '', err: who.err };
-  if (!who.id) return { items: [], artist: '', err: null };
-
-  // 1) tutti gli album/singoli/compilation dell'artista
-  const albums = [];
-  const seen = new Set();
-  for (let offset = 0; offset < 1000; offset += 50) {
-    const r = await fetch(
-      `https://api.spotify.com/v1/artists/${who.id}/albums?include_groups=album,single,compilation&limit=50&offset=${offset}`,
-      { headers: { Authorization: 'Bearer ' + tok }, signal: AbortSignal.timeout(15000) });
-    if (!r.ok) break;
-    const d = await r.json();
-    const items = d.items || [];
-    for (const a of items) {
-      if (a.id && !seen.has(a.id)) { seen.add(a.id); albums.push(a); }
-    }
-    if (items.length < 50) break;
+async function spDiscography(name, artistId, auth) {
+  let who = { id: artistId, name: name };
+  if (!artistId) {
+    const s = await spArtistId(name, auth);
+    if (s.err) return { rows: [], artist: '', err: s.err };
+    if (!s.id) return { rows: [], artist: '', err: null };
+    who = s;
+  } else {
+    const ar = await fetch(`https://api.spotify.com/v1/artists/${artistId}`, { headers: auth, signal: AbortSignal.timeout(15000) });
+    if (ar.ok) { const ad = await ar.json(); who.name = ad.name || name; }
   }
 
-  // 2) tracce di ogni album (batch da 20) — teniamo solo quelle in cui l'artista è accreditato
-  const out = [];
-  const trackIndex = new Map(); // id traccia -> oggetto (per l'ISRC)
-  const albumIds = albums.map((a) => a.id);
-  const albumMeta = new Map(albums.map((a) => [a.id, a]));
-  for (let i = 0; i < albumIds.length; i += 20) {
-    const ids = albumIds.slice(i, i + 20).join(',');
-    const r = await fetch(`https://api.spotify.com/v1/albums?ids=${ids}`,
-      { headers: { Authorization: 'Bearer ' + tok }, signal: AbortSignal.timeout(15000) });
-    if (!r.ok) continue;
-    const d = await r.json();
+  const albums = []; const seen = new Set();
+  for (let offset = 0; offset < 1000; offset += 50) {
+    const r = await fetch(`https://api.spotify.com/v1/artists/${who.id}/albums?include_groups=album,single,compilation&limit=50&offset=${offset}`, { headers: auth, signal: AbortSignal.timeout(15000) });
+    if (!r.ok) break; const d = await r.json();
+    const items = d.items || [];
+    for (const a of items) if (a.id && !seen.has(a.id)) { seen.add(a.id); albums.push(a); }
+    if (items.length < 50) break;
+  }
+  const rows = []; const trackIndex = new Map();
+  const meta = new Map(albums.map((a) => [a.id, a]));
+  const ids = albums.map((a) => a.id);
+  for (let i = 0; i < ids.length; i += 20) {
+    const r = await fetch(`https://api.spotify.com/v1/albums?ids=${ids.slice(i, i + 20).join(',')}`, { headers: auth, signal: AbortSignal.timeout(15000) });
+    if (!r.ok) continue; const d = await r.json();
     for (const a of d.albums || []) {
-      const meta = albumMeta.get(a.id) || a;
-      const rel = meta.name || a.name || '';
-      const date = meta.release_date || a.release_date || '';
-      for (const t of (a.tracks?.items || [])) {
-        const credited = (t.artists || []).some((x) => x.id === who.id) ||
-          (t.artists || []).some((x) => norm(x.name) === norm(who.name));
-        if (!credited) continue; // salta le tracce di altri artisti nelle compilation
-        const obj = {
-          artist: (t.artists || []).map((x) => x.name).join(', '),
-          title: t.name || '',
-          isrc: '',
-          release: rel,
-          date,
-          sources: ['spotify'],
-          _tid: t.id,
-        };
-        out.push(obj);
-        if (t.id) trackIndex.set(t.id, obj);
+      const m = meta.get(a.id) || a;
+      for (const tk of (a.tracks?.items || [])) {
+        const credited = (tk.artists || []).some((x) => x.id === who.id || norm(x.name) === norm(who.name));
+        if (!credited) continue;
+        const obj = { artist: (tk.artists || []).map((x) => x.name).join(', '), title: tk.name || '', isrc: '',
+          release: m.name || a.name || '', date: m.release_date || a.release_date || '', sources: ['spotify'],
+          url: tk.external_urls?.spotify || '', image: bigImg(m.images || a.images), _tid: tk.id };
+        rows.push(obj);
+        if (tk.id) trackIndex.set(tk.id, obj);
       }
     }
   }
-
-  // 3) ISRC delle tracce (batch da 50)
   const tids = [...trackIndex.keys()];
   for (let i = 0; i < tids.length; i += 50) {
-    const ids = tids.slice(i, i + 50).join(',');
-    const r = await fetch(`https://api.spotify.com/v1/tracks?ids=${ids}`,
-      { headers: { Authorization: 'Bearer ' + tok }, signal: AbortSignal.timeout(15000) });
-    if (!r.ok) continue;
-    const d = await r.json();
-    for (const t of d.tracks || []) {
-      const o = t && trackIndex.get(t.id);
-      if (o) o.isrc = t.external_ids?.isrc || '';
-    }
+    const r = await fetch(`https://api.spotify.com/v1/tracks?ids=${tids.slice(i, i + 50).join(',')}`, { headers: auth, signal: AbortSignal.timeout(15000) });
+    if (!r.ok) continue; const d = await r.json();
+    for (const tk of d.tracks || []) { const o = tk && trackIndex.get(tk.id); if (o) o.isrc = tk.external_ids?.isrc || ''; }
   }
-  out.forEach((o) => delete o._tid);
-  return { items: out, artist: who.name, err: null };
+  rows.forEach((o) => delete o._tid);
+  rows.sort((a, b) => (b.date || '').localeCompare(a.date || '') || (a.title || '').localeCompare(b.title || ''));
+  return { rows, artist: who.name, err: null };
 }
 
-// --------------------------------- Discogs ---------------------------------
-// Discogs NON espone gli ISRC. Recuperiamo comunque le tracklist (titolo +
-// artista) così da incrociarle con MusicBrainz/Spotify e far emergere le
-// tracce che solo Discogs conosce (ISRC vuoto, da completare a mano).
-async function dcArtistId(name, token) {
-  const r = await fetch(
-    `https://api.discogs.com/database/search?type=artist&q=${encodeURIComponent(name)}&per_page=5&token=${token}`,
-    { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(15000) });
-  if (!r.ok) return { id: '', err: `search HTTP ${r.status}` };
-  const d = await r.json();
-  const items = d.results || [];
-  if (!items.length) return { id: '', err: null };
-  const exact = items.find((a) => norm(a.title) === norm(name));
-  return { id: String((exact || items[0]).id), err: null };
-}
-
-async function dcRelease(rid, token) {
-  try {
-    const r = await fetch(`https://api.discogs.com/releases/${rid}?token=${token}`,
-      { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(15000) });
-    if (!r.ok) return { title: '', date: '', catalog: '', tracks: [] };
-    const d = await r.json();
-    const tracks = (d.tracklist || [])
-      .filter((t) => (t.type_ ? t.type_ === 'track' : true) && (t.title || '').trim())
-      .map((t) => ({
-        artist: (t.artists || []).map((a) => a.name).filter(Boolean).join(', '),
-        title: t.title || '',
-        isrc: '',
-      }));
-    return {
-      title: d.title || '',
-      date: d.released || (d.year ? String(d.year) : ''),
-      catalog: (d.labels || []).map((l) => l.catno).filter(Boolean)[0] || '',
-      tracks,
-    };
-  } catch (_) { return { title: '', date: '', catalog: '', tracks: [] }; }
-}
-
-async function dcFetch(name, token) {
-  const who = await dcArtistId(name, token);
-  if (who.err) return { items: [], err: who.err };
-  if (!who.id) return { items: [], err: null };
-
-  // elenco release dell'artista (solo ruolo "Main"), deduplicate per master
-  const rels = [];
-  const seenMaster = new Set();
-  for (let page = 1; page <= 5; page++) {
-    const r = await fetch(
-      `https://api.discogs.com/artists/${who.id}/releases?per_page=100&page=${page}&sort=year&token=${token}`,
-      { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(15000) });
-    if (!r.ok) break;
-    const d = await r.json();
-    for (const x of (d.releases || [])) {
-      if ((x.role || 'Main') !== 'Main') continue;
-      const mkey = x.type === 'master' ? 'm' + x.id : (x.main_release ? 'm' + x.main_release : 'r' + x.id);
-      if (seenMaster.has(mkey)) continue;
-      seenMaster.add(mkey);
-      rels.push({ id: x.main_release || x.id, title: x.title || '', year: x.year ? String(x.year) : '' });
+// ============================== MusicBrainz (ripiego) ======================
+async function mbDiscography(name) {
+  const s = await fetch(`${MB}/artist?query=${enc(name)}&fmt=json&limit=5`, { headers: { 'User-Agent': UA, Accept: 'application/json' }, signal: AbortSignal.timeout(15000) });
+  if (!s.ok) return { rows: [], artist: '', err: `search HTTP ${s.status}` };
+  const sd = await s.json(); const arr = sd.artists || [];
+  if (!arr.length) return { rows: [], artist: '', err: null };
+  const who = arr.find((a) => norm(a.name) === norm(name)) || arr[0];
+  const rows = []; let offset = 0;
+  for (let page = 0; page < 10; page++) {
+    const r = await fetch(`${MB}/recording?artist=${who.id}&inc=isrcs+artist-credits+releases&fmt=json&limit=100&offset=${offset}`, { headers: { 'User-Agent': UA, Accept: 'application/json' }, signal: AbortSignal.timeout(20000) });
+    if (!r.ok) { if (page === 0) return { rows, artist: who.name, err: `recordings HTTP ${r.status}` }; break; }
+    const d = await r.json(); const recs = d.recordings || [];
+    for (const rec of recs) {
+      const rel = (rec.releases || [])[0] || {};
+      rows.push({ artist: (rec['artist-credit'] || []).map((a) => a.name || a.artist?.name).filter(Boolean).join(', '),
+        title: rec.title || '', isrc: (rec.isrcs || []).join(' / '), release: rel.title || '',
+        date: rec['first-release-date'] || rel.date || '', sources: ['mb'], url: '', image: '' });
     }
-    const pages = d.pagination?.pages || 1;
-    if (page >= pages) break;
-    await sleep(300);
+    const total = d['recording-count'] || 0; offset += 100;
+    if (offset >= total || !recs.length) break;
+    await sleep(1000);
   }
-
-  // dettaglio (tracklist) con tetto per restare nei tempi
-  const DEEP_MAX = 20;
-  const out = [];
-  let deep = 0;
-  for (const rel of rels) {
-    if (deep >= DEEP_MAX || !rel.id) {
-      out.push({ artist: name, title: '', isrc: '', release: rel.title, date: rel.year, sources: ['discogs'], _releaseOnly: true });
-      continue;
+  const map = new Map();
+  for (const r of rows) { const k = (r.isrc || '').split('/')[0].trim().toUpperCase() || ('t:' + norm(r.title)); if (!map.has(k)) map.set(k, r); }
+  return { rows: [...map.values()].sort((a, b) => (b.date || '').localeCompare(a.date || '')), artist: who.name, err: null };
+}
+async function mbTrackSearch(q) {
+  const r = await fetch(`${MB}/recording?query=${enc(q)}&fmt=json&limit=8`, { headers: { 'User-Agent': UA, Accept: 'application/json' }, signal: AbortSignal.timeout(15000) });
+  if (!r.ok) return { results: [], err: `search HTTP ${r.status}` };
+  const d = await r.json(); const recs = (d.recordings || []).slice(0, 6); const results = [];
+  for (const rec of recs) {
+    let isrcs = rec.isrcs || [];
+    if (!isrcs.length) {
+      try { const lr = await fetch(`${MB}/recording/${rec.id}?inc=isrcs+releases+artist-credits&fmt=json`, { headers: { 'User-Agent': UA, Accept: 'application/json' }, signal: AbortSignal.timeout(15000) });
+        if (lr.ok) { const ld = await lr.json(); isrcs = ld.isrcs || []; rec.releases = ld.releases || rec.releases; } } catch (_) {}
+      await sleep(1000);
     }
-    const det = await dcRelease(String(rel.id), token);
-    deep++;
-    await sleep(700); // rate limit Discogs autenticato (~60/min)
-    const relTitle = det.title || rel.title;
-    const relDate = det.date || rel.year;
-    if (!det.tracks.length) {
-      out.push({ artist: name, title: '', isrc: '', release: relTitle, date: relDate, sources: ['discogs'], _releaseOnly: true });
-      continue;
-    }
-    for (const t of det.tracks) {
-      out.push({ artist: t.artist || name, title: t.title, isrc: '', release: relTitle, date: relDate, sources: ['discogs'] });
-    }
+    const rel = (rec.releases || [])[0] || {};
+    results.push({ title: rec.title || '', artists: (rec['artist-credit'] || []).map((a) => a.name || a.artist?.name).filter(Boolean).join(', '),
+      isrc: (isrcs || []).join(' / '), album: rel.title || '', albumType: '', upc: '', label: '',
+      releaseDate: rec['first-release-date'] || rel.date || '', totalTracks: '', trackNumber: '', discNumber: '',
+      duration: fmtDur(rec.length || 0), durationMs: rec.length || 0, explicit: false, popularity: '', genres: '',
+      markets: '', spotifyUrl: '', previewUrl: '', image: '', source: 'mb' });
   }
-  return { items: out, err: null };
+  return { results, err: null };
 }
 
-// ----------------------------------- HTTP ----------------------------------
+// ================================== HTTP ===================================
 export default async function handler(req) {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
   if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
+  let body; try { body = await req.json(); } catch (_) { return json({ error: 'bad_json' }, 400); }
 
-  let body;
-  try { body = await req.json(); } catch (_) { return json({ error: 'bad_json' }, 400); }
+  const mode = (body.mode || 'artist').trim();
+  const q = (body.q || body.artist || '').trim();
+  const id = (body.id || '').trim();
+  if (mode !== 'suggest' && !q && !id) return json({ error: 'missing_query' }, 400);
 
-  const source = (body.source || '').trim();
-  const artist = (body.artist || '').trim();
-  if (!artist) return json({ error: 'missing_artist' }, 400);
-
-  const SP_ID = body.spotifyId || process.env.SPOTIFY_CLIENT_ID || '';
-  const SP_SECRET = body.spotifySecret || process.env.SPOTIFY_CLIENT_SECRET || '';
-  const DISCOGS = body.discogsToken || process.env.DISCOGS_TOKEN || '';
+  const SP_ID = process.env.SPOTIFY_CLIENT_ID || '';
+  const SP_SECRET = process.env.SPOTIFY_CLIENT_SECRET || '';
+  const hasSp = !!(SP_ID && SP_SECRET);
 
   try {
-    if (source === 'spotify') {
-      if (!SP_ID || !SP_SECRET) return json({ items: [], err: 'not_configured' });
+    // -------- suggerimenti (solo Spotify: servono le immagini) --------
+    if (mode === 'suggest') {
+      if (!hasSp || (q.length < 2)) return json({ suggestions: [] });
       const t = await spToken(SP_ID, SP_SECRET);
-      if (!t.tok) return json({ items: [], err: t.err });
-      const x = await spFetch(artist, t.tok);
-      return json({ items: x.items, artist: x.artist, err: x.err });
+      if (!t.tok) return json({ suggestions: [], err: t.err });
+      const x = await spSuggest(body.kind || 'artist', q, bearer(t.tok));
+      return json({ suggestions: x.suggestions, err: x.err });
     }
-    if (source === 'discogs') {
-      if (!DISCOGS) return json({ items: [], err: 'not_configured' });
-      const x = await dcFetch(artist, DISCOGS);
-      return json({ items: x.items, err: x.err });
+
+    // -------- traccia --------
+    if (mode === 'track') {
+      if (hasSp) {
+        const t = await spToken(SP_ID, SP_SECRET);
+        if (t.tok) {
+          const x = id ? await spTrackById(id, bearer(t.tok)) : await spTrackSearch(q, bearer(t.tok));
+          if (!x.err) return json({ mode, results: x.results, source: 'spotify' });
+          const mb = await mbTrackSearch(q); return json({ mode, results: mb.results, source: 'mb', note: 'Spotify: ' + x.err });
+        }
+      }
+      const mb = await mbTrackSearch(q);
+      return json({ mode, results: mb.results, source: 'mb', note: hasSp ? null : 'not_configured', err: mb.err });
     }
-    return json({ error: 'bad_source' }, 400);
+
+    // -------- artista --------
+    if (hasSp) {
+      const t = await spToken(SP_ID, SP_SECRET);
+      if (t.tok) {
+        const x = await spDiscography(q, id, bearer(t.tok));
+        if (!x.err) return json({ mode: 'artist', artist: x.artist, rows: x.rows, count: x.rows.length, source: 'spotify' });
+        const mb = await mbDiscography(q); return json({ mode: 'artist', artist: mb.artist, rows: mb.rows, count: mb.rows.length, source: 'mb', note: 'Spotify: ' + x.err });
+      }
+    }
+    const mb = await mbDiscography(q);
+    return json({ mode: 'artist', artist: mb.artist, rows: mb.rows, count: mb.rows.length, source: 'mb', note: hasSp ? null : 'not_configured', err: mb.err });
   } catch (e) {
-    return json({ items: [], err: String(e?.message || e) }, 200);
+    return json({ error: String(e?.message || e) }, 200);
   }
 }

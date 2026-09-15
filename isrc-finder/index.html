@@ -3,160 +3,115 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>ISRC Finder — discografia per artista</title>
-<meta name="description" content="Recupera gli ISRC della discografia di un artista da MusicBrainz, Spotify e Discogs. Esporta in CSV.">
+<title>ISRC Finder — discografia e tracce</title>
+<meta name="description" content="Recupera automaticamente ISRC e metadati di artisti e tracce, con suggerimenti e immagini. Esporta in CSV.">
 <style>
   :root{
     --bg:#0b0d10; --panel:#14181d; --panel2:#1b2027; --line:#262d36;
     --txt:#e8ecf1; --muted:#8b95a3; --accent:#4dd0a7; --accent2:#6aa8ff;
-    --warn:#e0b34d; --err:#ff6b6b; --chip:#232a33;
-    --mb:#ba68c8; --sp:#1db954; --dc:#ff8a3d;
+    --warn:#e0b34d; --err:#ff6b6b; --chip:#232a33; --sp:#1db954; --mb:#ba68c8;
     --radius:14px;
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
-  body{
-    background:radial-gradient(1200px 600px at 20% -10%, #16202a 0%, var(--bg) 55%);
+  body{background:radial-gradient(1200px 600px at 20% -10%, #16202a 0%, var(--bg) 55%);
     color:var(--txt); font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    min-height:100vh; padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
-  }
-  .wrap{max-width:1060px; margin:0 auto; padding:24px 16px 64px}
+    min-height:100vh; padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);}
+  .wrap{max-width:1040px; margin:0 auto; padding:24px 16px 64px}
   header.top{display:flex; align-items:center; gap:12px; margin-bottom:6px; flex-wrap:wrap}
   .logo{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));
     display:grid;place-items:center;font-weight:800;color:#04110d;font-size:15px;letter-spacing:-.5px}
   h1{font-size:20px; margin:0; font-weight:700; letter-spacing:-.3px}
-  .sub{color:var(--muted); margin:2px 0 20px; font-size:13px}
+  .sub{color:var(--muted); margin:2px 0 18px; font-size:13px}
   .card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:16px}
-  .searchbar{display:flex; gap:10px; flex-wrap:wrap}
-  .searchbar input[type=text]{flex:1; min-width:200px}
-  input[type=text],input[type=password],select{
-    background:var(--panel2); border:1px solid var(--line); color:var(--txt);
-    border-radius:10px; padding:11px 13px; font-size:14px; outline:none; width:100%}
+  /* segmented */
+  .seg{display:inline-flex; background:var(--panel2); border:1px solid var(--line); border-radius:12px; padding:4px; margin-bottom:14px}
+  .seg button{background:transparent; color:var(--muted); border:0; border-radius:9px; padding:8px 18px; font-size:14px; font-weight:600; cursor:pointer}
+  .seg button.on{background:var(--accent); color:#04110d}
+  /* searchbar + typeahead */
+  .searchbar{display:flex; gap:10px; flex-wrap:wrap; position:relative}
+  .inputwrap{flex:1; min-width:200px; position:relative}
+  input[type=text]{width:100%; background:var(--panel2); border:1px solid var(--line); color:var(--txt);
+    border-radius:10px; padding:13px 15px; font-size:15px; outline:none}
   input:focus{border-color:var(--accent)}
-  button{
-    background:var(--accent); color:#04110d; border:0; border-radius:10px; font-weight:700;
-    padding:11px 18px; font-size:14px; cursor:pointer; white-space:nowrap; transition:filter .15s}
-  button:hover{filter:brightness(1.07)}
-  button:disabled{opacity:.5; cursor:not-allowed}
-  button.ghost{background:transparent; color:var(--txt); border:1px solid var(--line)}
+  button.go{background:var(--accent); color:#04110d; border:0; border-radius:10px; font-weight:700; padding:13px 22px; font-size:15px; cursor:pointer}
+  button.go:hover{filter:brightness(1.07)} button:disabled{opacity:.5; cursor:not-allowed}
+  button.ghost{background:transparent; color:var(--txt); border:1px solid var(--line); border-radius:10px; padding:9px 14px; font-size:13px; cursor:pointer}
   button.ghost:hover{border-color:var(--accent)}
-  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
-  .toggles{display:flex; gap:16px; flex-wrap:wrap; margin-top:14px}
-  .tg{display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13px; user-select:none; cursor:pointer}
-  .tg input{width:auto; accent-color:var(--accent)}
-  .dot{width:9px;height:9px;border-radius:50%;display:inline-block}
-  .dot.mb{background:var(--mb)} .dot.sp{background:var(--sp)} .dot.dc{background:var(--dc)}
-  details.settings{margin-top:14px}
-  details.settings>summary{cursor:pointer; color:var(--muted); font-size:13px; list-style:none; display:flex; align-items:center; gap:6px}
-  details.settings>summary::-webkit-details-marker{display:none}
-  details.settings>summary::before{content:"⚙";}
-  .settings-body{margin-top:14px; display:grid; gap:14px}
-  .fieldgrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px}
-  label.fl{display:block; font-size:12px; color:var(--muted); margin-bottom:5px}
-  .note{font-size:12px; color:var(--muted); background:var(--panel2); border:1px dashed var(--line);
-    border-radius:10px; padding:10px 12px}
-  .note b{color:var(--txt)}
-  .stats{display:flex; gap:10px; flex-wrap:wrap; margin:18px 0 12px}
-  .stat{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:10px 14px; min-width:96px}
-  .stat .n{font-size:20px; font-weight:800}
-  .stat .l{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px}
-  .toolbar{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:10px}
-  .toolbar input[type=text]{max-width:280px}
-  .tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:var(--radius)}
-  table{border-collapse:collapse; width:100%; font-size:13px; min-width:720px}
-  th,td{text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:top}
-  th{position:sticky; top:0; background:var(--panel2); color:var(--muted); font-weight:600; font-size:12px;
-    text-transform:uppercase; letter-spacing:.4px; cursor:pointer; white-space:nowrap}
-  th .arr{opacity:.5; font-size:10px}
-  tr:hover td{background:rgba(255,255,255,.02)}
-  td.isrc{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; letter-spacing:.5px; white-space:nowrap}
-  td.isrc .copy{margin-left:8px; cursor:pointer; color:var(--muted); border:0; background:none; padding:0; font-size:12px}
-  td.isrc .copy:hover{color:var(--accent)}
-  .badge{display:inline-block; font-size:10px; font-weight:700; padding:2px 7px; border-radius:999px; margin-right:4px; background:var(--chip); color:var(--muted)}
-  .badge.mb{color:var(--mb)} .badge.sp{color:var(--sp)} .badge.dc{color:var(--dc)}
-  .noisrc{color:var(--warn); font-style:italic; font-size:12px}
-  .pickers{display:grid; gap:8px; margin-top:12px}
-  .pick{display:flex; align-items:center; gap:12px; background:var(--panel2); border:1px solid var(--line);
-    border-radius:10px; padding:10px 12px; cursor:pointer}
-  .pick:hover{border-color:var(--accent)}
-  .pick .nm{font-weight:600}
-  .pick .meta{color:var(--muted); font-size:12px}
-  #log{margin-top:12px; font-size:12px; color:var(--muted); white-space:pre-wrap; min-height:18px}
-  .spinner{display:inline-block;width:13px;height:13px;border:2px solid var(--line);border-top-color:var(--accent);
-    border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:6px}
+  /* dropdown suggerimenti */
+  .suggest{position:absolute; z-index:30; left:0; right:0; top:calc(100% + 6px); background:var(--panel);
+    border:1px solid var(--line); border-radius:12px; overflow:hidden; box-shadow:0 18px 50px rgba(0,0,0,.5)}
+  .suggest .it{display:flex; align-items:center; gap:12px; padding:9px 12px; cursor:pointer}
+  .suggest .it:hover,.suggest .it.active{background:var(--panel2)}
+  .suggest img,.suggest .ph{width:42px;height:42px;object-fit:cover;flex:0 0 42px;background:var(--chip)}
+  .suggest img.round,.suggest .ph.round{border-radius:50%} .suggest img.sq,.suggest .ph.sq{border-radius:8px}
+  .suggest .nm{font-weight:600; font-size:14px}
+  .suggest .mt{color:var(--muted); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%}
+  .suggest .txt{min-width:0; flex:1}
+  #log{margin-top:14px; font-size:13px; color:var(--muted); white-space:pre-wrap; min-height:18px}
+  #log.err{color:var(--err)}
+  .spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:7px}
   @keyframes spin{to{transform:rotate(360deg)}}
-  .hidden{display:none !important}
+  /* stats + toolbar */
+  .stats{display:flex; gap:10px; flex-wrap:wrap; margin:18px 0 12px}
+  .stat{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:10px 14px; min-width:92px}
+  .stat .n{font-size:20px; font-weight:800} .stat .l{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px}
+  .toolbar{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:10px}
+  .toolbar input[type=text]{max-width:280px; padding:9px 12px; font-size:13px}
+  /* table */
+  .tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:var(--radius)}
+  table{border-collapse:collapse; width:100%; font-size:13px; min-width:680px}
+  th,td{text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:top}
+  th{position:sticky; top:0; background:var(--panel2); color:var(--muted); font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.4px; cursor:pointer; white-space:nowrap}
+  th .arr{opacity:.6; font-size:10px} tr:hover td{background:rgba(255,255,255,.02)}
+  td.isrc{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; letter-spacing:.5px; white-space:nowrap}
+  .copy{cursor:pointer; color:var(--muted); border:0; background:none; padding:0 0 0 8px; font-size:12px}
+  .copy:hover{color:var(--accent)}
+  .badge{display:inline-block; font-size:10px; font-weight:700; padding:2px 7px; border-radius:999px; background:var(--chip); color:var(--muted)}
+  .badge.sp{color:var(--sp)} .badge.mb{color:var(--mb)}
+  .noisrc{color:var(--warn); font-style:italic; font-size:12px}
+  /* track cards */
+  .cards{display:grid; gap:14px}
+  .tcard{display:flex; gap:16px; background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:16px; flex-wrap:wrap}
+  .tcard .cover{width:120px;height:120px;border-radius:10px;object-fit:cover;background:var(--chip);flex:0 0 120px}
+  .tcard .body{flex:1; min-width:240px}
+  .tcard h3{margin:0 0 2px; font-size:17px}
+  .tcard .by{color:var(--muted); margin-bottom:12px}
+  .isrcbig{display:inline-flex; align-items:center; gap:8px; background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:8px 12px; margin-bottom:12px; font-family:ui-monospace,Menlo,monospace; letter-spacing:.5px; font-size:15px}
+  .isrcbig .k{font-family:inherit; color:var(--muted); font-size:11px; letter-spacing:.4px}
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px 18px}
+  .f .k{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px}
+  .f .v{font-size:14px; word-break:break-word}
+  .links{margin-top:12px; display:flex; gap:12px; align-items:center; flex-wrap:wrap}
   a{color:var(--accent2)}
+  audio{height:34px}
+  .hidden{display:none !important}
   .footer{margin-top:28px; color:var(--muted); font-size:12px; text-align:center}
 </style>
 </head>
 <body>
 <div class="wrap">
-
-  <header class="top">
-    <div class="logo">ISRC</div>
-    <div>
-      <h1>ISRC Finder</h1>
-    </div>
-  </header>
-  <p class="sub">Recupera gli <b>ISRC</b> della discografia di un artista da MusicBrainz, Spotify e Discogs, poi esporta in CSV.</p>
+  <header class="top"><div class="logo">ISRC</div><div><h1>ISRC Finder</h1></div></header>
+  <p class="sub">Cerca un <b>artista</b> (tutta la discografia con ISRC) o una <b>traccia</b> (tutte le info). Suggerimenti automatici con le immagini.</p>
 
   <div class="card">
+    <div class="seg" id="seg">
+      <button data-mode="artist" class="on">Artista</button>
+      <button data-mode="track">Traccia</button>
+    </div>
     <div class="searchbar">
-      <input type="text" id="q" placeholder="Nome artista (es. Raho, Rhythm Assembler, Jacom…)" autocomplete="off">
-      <button id="go">Cerca</button>
-    </div>
-
-    <div class="toggles">
-      <label class="tg"><input type="checkbox" id="src-mb" checked><span class="dot mb"></span> MusicBrainz</label>
-      <label class="tg"><input type="checkbox" id="src-sp"><span class="dot sp"></span> Spotify</label>
-      <label class="tg"><input type="checkbox" id="src-dc"><span class="dot dc"></span> Discogs</label>
-    </div>
-
-    <details class="settings">
-      <summary>Impostazioni fonti &amp; chiavi API</summary>
-      <div class="settings-body">
-        <div class="note">
-          <b>MusicBrainz</b> funziona subito, senza chiavi.<br>
-          <b>Spotify</b> e <b>Discogs</b> richiedono la edge function (deploy su Vercel). Puoi incollare qui le tue
-          credenziali — restano solo nel tuo browser e vengono inviate esclusivamente alla function del sito, mai
-          scritte nel codice. In alternativa impostale come variabili d'ambiente su Vercel
-          (<code>SPOTIFY_CLIENT_ID</code>, <code>SPOTIFY_CLIENT_SECRET</code>, <code>DISCOGS_TOKEN</code>).<br>
-          Su GitHub Pages (senza server) è disponibile solo MusicBrainz.
-        </div>
-        <div class="fieldgrid">
-          <div>
-            <label class="fl">Spotify Client ID</label>
-            <input type="text" id="sp-id" placeholder="da developer.spotify.com" autocomplete="off">
-          </div>
-          <div>
-            <label class="fl">Spotify Client Secret</label>
-            <input type="password" id="sp-secret" placeholder="••••••••" autocomplete="off">
-          </div>
-          <div>
-            <label class="fl">Discogs Token</label>
-            <input type="password" id="dc-token" placeholder="da discogs.com/settings/developers" autocomplete="off">
-          </div>
-        </div>
-        <div class="row">
-          <button class="ghost" id="save-keys">Salva chiavi (in questo browser)</button>
-          <span id="keys-status" style="color:var(--muted);font-size:12px"></span>
-        </div>
+      <div class="inputwrap">
+        <input type="text" id="q" placeholder="Scrivi il nome dell'artista…" autocomplete="off" autofocus>
+        <div id="suggest" class="suggest hidden"></div>
       </div>
-    </details>
+      <button class="go" id="go">Cerca</button>
+    </div>
   </div>
 
   <div id="log"></div>
 
-  <!-- disambiguazione artista MusicBrainz -->
-  <div id="picker" class="card hidden" style="margin-top:16px">
-    <div style="font-weight:600;margin-bottom:4px">Quale artista? <span class="badge mb">MusicBrainz</span></div>
-    <div class="meta" style="color:var(--muted);font-size:12px">Seleziona per caricare la discografia.</div>
-    <div class="pickers" id="picker-list"></div>
-  </div>
-
-  <!-- risultati -->
-  <div id="results" class="hidden">
+  <!-- risultati ARTISTA -->
+  <div id="res-artist" class="hidden">
     <div class="stats" id="stats"></div>
     <div class="toolbar">
       <input type="text" id="filter" placeholder="Filtra per titolo, ISRC, release…">
@@ -164,333 +119,173 @@
       <button class="ghost" id="btn-json">⬇ JSON</button>
       <button class="ghost" id="btn-copy-isrc">⧉ Copia tutti gli ISRC</button>
     </div>
-    <div class="tablewrap">
-      <table id="tbl">
-        <thead>
-          <tr>
-            <th data-k="idx">#</th>
-            <th data-k="artist">Artista <span class="arr"></span></th>
-            <th data-k="title">Titolo <span class="arr"></span></th>
-            <th data-k="isrc">ISRC <span class="arr"></span></th>
-            <th data-k="release">Release <span class="arr"></span></th>
-            <th data-k="date">Data <span class="arr"></span></th>
-            <th data-k="src">Fonti</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
-    </div>
+    <div class="tablewrap"><table id="tbl"><thead><tr>
+      <th data-k="idx">#</th><th data-k="title">Titolo <span class="arr"></span></th>
+      <th data-k="isrc">ISRC <span class="arr"></span></th><th data-k="release">Release <span class="arr"></span></th>
+      <th data-k="date">Data <span class="arr"></span></th>
+    </tr></thead><tbody id="tbody"></tbody></table></div>
   </div>
 
-  <div class="footer">
-    Dati: MusicBrainz · Spotify · Discogs — gli ISRC provengono da MusicBrainz e Spotify (Discogs non li espone).
+  <!-- risultati TRACCIA -->
+  <div id="res-track" class="hidden">
+    <div class="toolbar"><button class="ghost" id="btn-csv-t">⬇ CSV</button><button class="ghost" id="btn-json-t">⬇ JSON</button></div>
+    <div class="cards" id="cards"></div>
   </div>
+
+  <div class="footer">Dati da Spotify (ISRC, UPC, metadati). Tutto automatico.</div>
 </div>
 
 <script>
-/* ======================================================================== */
-const $ = (id) => document.getElementById(id);
-const MB = 'https://musicbrainz.org/ws/2';
-const API = new URL('api/discography', location.href).href;
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const norm = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
-const log = (m, spin) => { $('log').innerHTML = (spin ? '<span class="spinner"></span>' : '') + m; };
+const $=(id)=>document.getElementById(id);
+const API=new URL('api/discography',location.href).href;
+const norm=(s)=>(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+const esc=(s)=>(s==null?'':String(s)).replace(/[&<>"]/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function log(m,spin,isErr){const el=$('log');el.className=isErr?'err':'';el.innerHTML=(spin?'<span class="spinner"></span>':'')+m;}
 
-let ROWS = [];
-let VIEW = [];
-let sortK = 'date', sortDir = 1;
+let MODE='artist', ROWS=[], VIEW=[], TRACKS=[], sortK='date', sortDir=-1;
+let selId=''; // id scelto da un suggerimento
+let sugItems=[], sugActive=-1, sugTimer=null, sugSeq=0;
 
-/* ---- persistenza chiavi (localStorage) ---- */
-const KEYS = 'isrcfinder.keys.v1';
-function loadKeys(){
-  try{ const k = JSON.parse(localStorage.getItem(KEYS) || '{}');
-    $('sp-id').value = k.spId || ''; $('sp-secret').value = k.spSecret || ''; $('dc-token').value = k.dcToken || '';
-  }catch(_){}
-}
-function saveKeys(){
-  try{ localStorage.setItem(KEYS, JSON.stringify({
-    spId:$('sp-id').value.trim(), spSecret:$('sp-secret').value.trim(), dcToken:$('dc-token').value.trim() }));
-    $('keys-status').textContent = 'Salvato ✓';
-    setTimeout(()=>{ $('keys-status').textContent=''; }, 2000);
-  }catch(_){ $('keys-status').textContent = 'Impossibile salvare (storage bloccato).'; }
-}
-const getKeys = () => ({ spId:$('sp-id').value.trim(), spSecret:$('sp-secret').value.trim(), dcToken:$('dc-token').value.trim() });
+/* ---------------- modalità ---------------- */
+$('seg').addEventListener('click',(e)=>{const b=e.target.closest('button');if(!b)return;
+  MODE=b.dataset.mode; [...$('seg').children].forEach(x=>x.classList.toggle('on',x===b));
+  $('q').placeholder = MODE==='artist' ? "Scrivi il nome dell'artista…" : "Scrivi il titolo della traccia…";
+  selId=''; hideSug(); $('q').focus();
+});
 
-/* ======================= MusicBrainz (lato browser) ===================== */
-async function mbSearchArtists(q){
-  const r = await fetch(`${MB}/artist?query=${encodeURIComponent(q)}&fmt=json&limit=8`,
-    { headers:{ Accept:'application/json' } });
-  if(!r.ok) throw new Error(`MusicBrainz HTTP ${r.status}`);
-  const d = await r.json();
-  return (d.artists || []).map((a) => ({
-    id:a.id, name:a.name, score:a.score,
-    disambiguation:a.disambiguation || '',
-    type:a.type || '', country:a.country || '',
-    life:(a['life-span'] && a['life-span'].begin) ? a['life-span'].begin.slice(0,4) : '',
-  }));
-}
-async function mbRecordings(mbid, onProgress){
-  const out = [];
-  let offset = 0;
-  const inc = 'isrcs+artist-credits+releases';
-  for(let page=0; page<40; page++){
-    const url = `${MB}/recording?artist=${mbid}&inc=${inc}&fmt=json&limit=100&offset=${offset}`;
-    const r = await fetch(url, { headers:{ Accept:'application/json' } });
-    if(!r.ok){ if(page===0) throw new Error(`MusicBrainz HTTP ${r.status}`); break; }
-    const d = await r.json();
-    const recs = d.recordings || [];
-    for(const rec of recs){
-      const artist = (rec['artist-credit'] || []).map((a)=>a.name || a.artist?.name).filter(Boolean).join(', ');
-      const isrcs = rec.isrcs || [];
-      const rel = (rec.releases || [])[0] || {};
-      const date = rec['first-release-date'] || rel.date || '';
-      out.push({
-        artist, title: rec.title || '',
-        isrc: isrcs.join(' / '),
-        release: rel.title || '',
-        date,
-        sources: ['mb'],
-      });
-    }
-    const total = d['recording-count'] || 0;
-    offset += 100;
-    if(onProgress) onProgress(Math.min(offset,total), total);
-    if(offset >= total || !recs.length) break;
-    await sleep(1100); // rate limit MusicBrainz ~1/sec
-  }
-  return out;
-}
-
-/* ============================ edge function ============================= */
-async function fetchSource(source, artist){
-  const k = getKeys();
+/* ---------------- suggerimenti (typeahead) ---------------- */
+$('q').addEventListener('input',()=>{ selId=''; const v=$('q').value.trim();
+  clearTimeout(sugTimer); if(v.length<2){ hideSug(); return; }
+  sugTimer=setTimeout(()=>loadSug(v),220);
+});
+async function loadSug(v){
+  const seq=++sugSeq;
   try{
-    const r = await fetch(API, {
-      method:'POST', headers:{ 'Content-Type':'application/json' },
-      body: JSON.stringify({ source, artist,
-        spotifyId:k.spId, spotifySecret:k.spSecret, discogsToken:k.dcToken }),
-    });
-    if(r.status === 404) return { items:[], err:'unavailable' }; // GitHub Pages: nessun server
-    if(!r.ok) return { items:[], err:`HTTP ${r.status}` };
-    return await r.json();
-  }catch(e){ return { items:[], err:'unavailable' }; }
+    const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'suggest',kind:MODE,q:v})});
+    if(!r.ok){ hideSug(); return; }
+    const d=await r.json(); if(seq!==sugSeq) return; // risposta obsoleta
+    renderSug(d.suggestions||[]);
+  }catch(_){ hideSug(); }
 }
-
-/* =============================== merge ================================== */
-function keyOf(r){
-  const isrc = (r.isrc || '').split('/')[0].trim().toUpperCase();
-  if(isrc) return 'i:' + isrc;
-  return 't:' + norm(r.title) + '|' + norm(r.artist);
+function renderSug(items){
+  sugItems=items; sugActive=-1;
+  if(!items.length){ hideSug(); return; }
+  const box=$('suggest');
+  box.innerHTML=items.map((s,i)=>{
+    const shape=s.round?'round':'sq';
+    const img=s.image?`<img class="${shape}" src="${esc(s.image)}" alt="" loading="lazy">`:`<div class="ph ${shape}"></div>`;
+    return `<div class="it" data-i="${i}">${img}<div class="txt"><div class="nm">${esc(s.label)}</div><div class="mt">${esc(s.sub||'')}</div></div></div>`;
+  }).join('');
+  box.classList.remove('hidden');
 }
-function mergeAll(lists){
-  const map = new Map();
-  for(const list of lists){
-    for(const r of (list || [])){
-      if(!r.title) continue;
-      const k = keyOf(r);
-      const cur = map.get(k);
-      if(!cur){ map.set(k, { ...r, sources:[...(r.sources||[])] }); continue; }
-      if(!cur.isrc && r.isrc) cur.isrc = r.isrc;
-      if(!cur.release && r.release) cur.release = r.release;
-      if(!cur.date && r.date) cur.date = r.date;
-      if(!cur.artist && r.artist) cur.artist = r.artist;
-      for(const s of (r.sources||[])) if(!cur.sources.includes(s)) cur.sources.push(s);
-    }
+function hideSug(){ $('suggest').classList.add('hidden'); sugItems=[]; sugActive=-1; }
+$('suggest').addEventListener('mousedown',(e)=>{ // mousedown: precede il blur
+  const it=e.target.closest('.it'); if(!it) return; e.preventDefault();
+  pickSug(sugItems[+it.dataset.i]);
+});
+function pickSug(s){ if(!s) return; $('q').value=s.label; selId=s.id||''; hideSug(); runSearch(); }
+$('q').addEventListener('keydown',(e)=>{
+  const open=!$('suggest').classList.contains('hidden');
+  if(open && (e.key==='ArrowDown'||e.key==='ArrowUp')){ e.preventDefault();
+    sugActive += e.key==='ArrowDown'?1:-1;
+    if(sugActive<0) sugActive=sugItems.length-1; if(sugActive>=sugItems.length) sugActive=0;
+    [...$('suggest').children].forEach((c,i)=>c.classList.toggle('active',i===sugActive));
+    return;
   }
-  return [...map.values()];
-}
+  if(e.key==='Enter'){ if(open && sugActive>=0){ pickSug(sugItems[sugActive]); } else { hideSug(); runSearch(); } }
+  if(e.key==='Escape') hideSug();
+});
+$('q').addEventListener('blur',()=>setTimeout(hideSug,150));
 
-/* =============================== ricerca =============================== */
-async function onSearch(){
-  const q = $('q').value.trim();
-  if(!q){ $('q').focus(); return; }
-  $('go').disabled = true;
-  $('results').classList.add('hidden');
-  $('picker').classList.add('hidden');
-  ROWS = [];
+/* ---------------- ricerca ---------------- */
+$('go').onclick=()=>{ hideSug(); runSearch(); };
+async function runSearch(){
+  const q=$('q').value.trim(); if(!q && !selId){ $('q').focus(); return; }
+  $('go').disabled=true; $('res-artist').classList.add('hidden'); $('res-track').classList.add('hidden');
+  log(`Cerco ${MODE==='artist'?'la discografia':'la traccia'} “${esc(q)}”…`,true);
   try{
-    if($('src-mb').checked){
-      log('Cerco l\'artista su MusicBrainz…', true);
-      const artists = await mbSearchArtists(q);
-      if(artists.length > 1){
-        showPicker(artists, q);
-        $('go').disabled = false;
-        log('');
-        return;
-      }
-      const chosen = artists[0];
-      if(!chosen){
-        // niente su MB: procedi comunque con le altre fonti usando il nome digitato
-        await runFetch(null, q);
-        return;
-      }
-      await runFetch(chosen, q);
-    } else {
-      await runFetch(null, q);
-    }
-  }catch(e){
-    log('Errore: ' + (e.message || e));
-    $('go').disabled = false;
-  }
+    const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:MODE,q,id:selId})});
+    if(r.status===404){ log('Serve il deploy su Vercel (la funzione /api non è attiva su questo hosting).',false,true); return; }
+    if(!r.ok){ log('Errore server: HTTP '+r.status,false,true); return; }
+    const d=await r.json();
+    if(d.error){ log('Errore: '+d.error,false,true); return; }
+    const note = d.note==='not_configured'
+      ? 'Spotify non configurato su Vercel: sto usando MusicBrainz (dati base, niente immagini).'
+      : (d.note||'');
+    if(MODE==='artist') showArtist(d,note); else showTrack(d,note);
+  }catch(e){ log('Errore di rete: '+(e.message||e),false,true); }
+  finally{ $('go').disabled=false; }
 }
 
-function showPicker(artists, q){
-  const box = $('picker-list');
-  box.innerHTML = '';
-  artists.forEach((a) => {
-    const meta = [a.type, a.country, a.life, a.disambiguation].filter(Boolean).join(' · ');
-    const el = document.createElement('div');
-    el.className = 'pick';
-    el.innerHTML = `<div style="flex:1"><div class="nm">${esc(a.name)}</div>
-      <div class="meta">${esc(meta || '—')}</div></div>
-      <div class="meta">match ${a.score||''}</div>`;
-    el.onclick = () => { $('picker').classList.add('hidden'); runFetch(a, q); };
-    box.appendChild(el);
-  });
-  $('picker').classList.remove('hidden');
+/* ---------------- ARTISTA ---------------- */
+function showArtist(d,note){
+  ROWS=d.rows||[]; render();
+  const nm=d.artist?` per “${esc(d.artist)}”`:'';
+  log(ROWS.length?`Trovate ${ROWS.length} tracce${nm}.`+(note?'  ⚠ '+note:''):`Nessun risultato${nm}.`+(note?'  ⚠ '+note:''),false,!ROWS.length);
 }
-
-async function runFetch(mbArtist, q){
-  $('go').disabled = true;
-  const lists = [];
-  const errs = [];
-
-  try{
-    // MusicBrainz (browser)
-    if($('src-mb').checked && mbArtist){
-      log(`MusicBrainz: carico la discografia di “${esc(mbArtist.name)}”…`, true);
-      const mb = await mbRecordings(mbArtist.id, (done,total)=>{
-        log(`MusicBrainz: ${done}/${total} registrazioni…`, true);
-      });
-      lists.push(mb);
-    }
-
-    // Spotify + Discogs (edge function, in parallelo)
-    const jobs = [];
-    if($('src-sp').checked){ log('Interrogo Spotify…', true);
-      jobs.push(fetchSource('spotify', mbArtist ? mbArtist.name : q).then((x)=>({ src:'Spotify', ...x }))); }
-    if($('src-dc').checked){ log('Interrogo Discogs…', true);
-      jobs.push(fetchSource('discogs', mbArtist ? mbArtist.name : q).then((x)=>({ src:'Discogs', ...x }))); }
-    if(jobs.length){
-      log('Interrogo le fonti esterne (Spotify/Discogs)…', true);
-      const res = await Promise.all(jobs);
-      for(const x of res){
-        if(x.items && x.items.length) lists.push(x.items);
-        if(x.err === 'unavailable') errs.push(`${x.src}: non disponibile (serve il deploy della edge function su Vercel).`);
-        else if(x.err === 'not_configured') errs.push(`${x.src}: credenziali mancanti (impostale nelle Impostazioni o su Vercel).`);
-        else if(x.err) errs.push(`${x.src}: ${x.err}`);
-      }
-    }
-
-    ROWS = mergeAll(lists);
-    render();
-    const msg = ROWS.length
-      ? `Trovate ${ROWS.length} tracce.` + (errs.length ? '  ⚠ ' + errs.join('  ') : '')
-      : 'Nessun risultato.' + (errs.length ? '  ⚠ ' + errs.join('  ') : '');
-    log(msg);
-  }catch(e){
-    log('Errore: ' + (e.message || e));
-  }finally{
-    $('go').disabled = false;
-  }
-}
-
-/* =============================== render ================================= */
-function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g, (c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-const SRCNAME = { mb:'MB', spotify:'Spotify', discogs:'Discogs' };
-const SRCCLS = { mb:'mb', spotify:'sp', discogs:'dc' };
-
 function applyFilterSort(){
-  const f = norm($('filter').value);
-  VIEW = ROWS.filter((r)=> !f || norm(`${r.artist} ${r.title} ${r.isrc} ${r.release}`).includes(f));
-  VIEW.sort((a,b)=>{
-    let x, y;
-    if(sortK==='src'){ x=(a.sources||[]).join(); y=(b.sources||[]).join(); }
-    else if(sortK==='idx'){ return 0; }
-    else { x=(a[sortK]||'').toString().toLowerCase(); y=(b[sortK]||'').toString().toLowerCase(); }
-    return x<y ? -sortDir : x>y ? sortDir : 0;
-  });
+  const f=norm($('filter').value);
+  VIEW=ROWS.filter((r)=>!f||norm(`${r.title} ${r.isrc} ${r.release}`).includes(f));
+  if(sortK!=='idx') VIEW.sort((a,b)=>{const x=(a[sortK]||'').toString().toLowerCase(),y=(b[sortK]||'').toString().toLowerCase();return x<y?-sortDir:x>y?sortDir:0;});
 }
 function render(){
   applyFilterSort();
-  const withIsrc = ROWS.filter((r)=>r.isrc).length;
-  const bySrc = { mb:0, spotify:0, discogs:0 };
-  ROWS.forEach((r)=> (r.sources||[]).forEach((s)=>{ if(bySrc[s]!=null) bySrc[s]++; }));
-  $('stats').innerHTML = `
+  const withIsrc=ROWS.filter((r)=>r.isrc).length;
+  $('stats').innerHTML=`
     <div class="stat"><div class="n">${ROWS.length}</div><div class="l">Tracce</div></div>
     <div class="stat"><div class="n" style="color:var(--accent)">${withIsrc}</div><div class="l">Con ISRC</div></div>
-    <div class="stat"><div class="n" style="color:var(--warn)">${ROWS.length-withIsrc}</div><div class="l">Senza ISRC</div></div>
-    <div class="stat"><div class="n" style="color:var(--mb)">${bySrc.mb}</div><div class="l">MusicBrainz</div></div>
-    <div class="stat"><div class="n" style="color:var(--sp)">${bySrc.spotify}</div><div class="l">Spotify</div></div>
-    <div class="stat"><div class="n" style="color:var(--dc)">${bySrc.discogs}</div><div class="l">Discogs</div></div>`;
-
-  const tb = $('tbody');
-  tb.innerHTML = VIEW.map((r,i)=>{
-    const badges = (r.sources||[]).map((s)=>`<span class="badge ${SRCCLS[s]||''}">${SRCNAME[s]||s}</span>`).join('');
-    const isrcCell = r.isrc
-      ? `<span>${esc(r.isrc)}</span><button class="copy" title="Copia" data-copy="${esc(r.isrc.split('/')[0].trim())}">⧉</button>`
-      : `<span class="noisrc">— assente —</span>`;
-    return `<tr>
-      <td>${i+1}</td>
-      <td>${esc(r.artist)}</td>
-      <td>${esc(r.title)}</td>
-      <td class="isrc">${isrcCell}</td>
-      <td>${esc(r.release)}</td>
-      <td>${esc(r.date)}</td>
-      <td>${badges}</td>
-    </tr>`;
+    <div class="stat"><div class="n" style="color:var(--warn)">${ROWS.length-withIsrc}</div><div class="l">Senza ISRC</div></div>`;
+  $('tbody').innerHTML=VIEW.map((r,i)=>{
+    const isrc=r.isrc?`<span>${esc(r.isrc)}</span><button class="copy" data-copy="${esc(r.isrc.split('/')[0].trim())}">⧉</button>`:`<span class="noisrc">— assente —</span>`;
+    return `<tr><td>${i+1}</td><td>${esc(r.title)}</td><td class="isrc">${isrc}</td><td>${esc(r.release)}</td><td>${esc(r.date)}</td></tr>`;
   }).join('');
-  $('results').classList.remove('hidden');
-  updateArrows();
-}
-function updateArrows(){
-  document.querySelectorAll('#tbl th').forEach((th)=>{
-    const a = th.querySelector('.arr'); if(!a) return;
-    a.textContent = th.dataset.k===sortK ? (sortDir>0?'▲':'▼') : '';
-  });
+  $('res-artist').classList.remove('hidden');
+  document.querySelectorAll('#tbl th').forEach((th)=>{const a=th.querySelector('.arr');if(a)a.textContent=th.dataset.k===sortK?(sortDir>0?'▲':'▼'):'';});
 }
 
-/* =============================== export ================================ */
-function download(name, text, type){
-  const blob = new Blob([text], { type });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = name; document.body.appendChild(a); a.click();
-  a.remove(); setTimeout(()=>URL.revokeObjectURL(url), 1000);
-}
-function toCSV(rows){
-  const head = ['Artista','Titolo','ISRC','Release','Data','Fonti'];
-  const q = (v)=>`"${String(v==null?'':v).replace(/"/g,'""')}"`;
-  const lines = rows.map((r)=>[r.artist,r.title,r.isrc,r.release,r.date,(r.sources||[]).map(s=>SRCNAME[s]||s).join('+')].map(q).join(','));
-  return '﻿' + [head.map(q).join(','), ...lines].join('\r\n');
-}
-function exportCSV(){ if(!ROWS.length) return; download('isrc-discografia.csv', toCSV(ROWS), 'text/csv;charset=utf-8'); }
-function exportJSON(){ if(!ROWS.length) return; download('isrc-discografia.json', JSON.stringify(ROWS,null,2), 'application/json'); }
-async function copyAllIsrc(){
-  const list = [...new Set(ROWS.map((r)=>(r.isrc||'').split('/').map(s=>s.trim())).flat().filter(Boolean))];
-  if(!list.length){ log('Nessun ISRC da copiare.'); return; }
-  try{ await navigator.clipboard.writeText(list.join('\n')); log(`Copiati ${list.length} ISRC negli appunti ✓`); }
-  catch(_){ log('Copia non riuscita (permesso negato dal browser).'); }
+/* ---------------- TRACCIA ---------------- */
+const FIELDS=[
+  ['album','Album'],['albumType','Tipo album'],['label','Etichetta'],['upc','UPC'],
+  ['releaseDate','Data uscita'],['totalTracks','Tracce album'],['trackNumber','Traccia n.'],
+  ['discNumber','Disco n.'],['duration','Durata'],['popularity','Popolarità'],
+  ['genres','Generi'],['markets','Mercati'],
+];
+function showTrack(d,note){
+  TRACKS=d.results||[];
+  $('cards').innerHTML=TRACKS.map((t)=>{
+    const cover=t.image?`<img class="cover" src="${esc(t.image)}" alt="">`:`<div class="cover"></div>`;
+    const isrc=t.isrc?`<div class="isrcbig"><span class="k">ISRC</span> ${esc(t.isrc)} <button class="copy" data-copy="${esc(t.isrc.split('/')[0].trim())}">⧉</button></div>`
+      :`<div class="isrcbig"><span class="k">ISRC</span> <span class="noisrc">assente</span></div>`;
+    const fields=FIELDS.map(([k,lbl])=>{const v=t[k]; if(v===''||v==null||v===0&&k!=='popularity') return ''; return `<div class="f"><div class="k">${lbl}</div><div class="v">${esc(v)}${k==='popularity'?'/100':''}</div></div>`;}).filter(Boolean).join('');
+    const expl=t.explicit?`<div class="f"><div class="k">Esplicito</div><div class="v">Sì</div></div>`:'';
+    const links=[]; if(t.spotifyUrl) links.push(`<a href="${esc(t.spotifyUrl)}" target="_blank" rel="noopener">Apri su Spotify ↗</a>`);
+    const audio=t.previewUrl?`<audio controls src="${esc(t.previewUrl)}"></audio>`:'';
+    return `<div class="tcard">${cover}<div class="body">
+      <h3>${esc(t.title)}</h3><div class="by">${esc(t.artists)}</div>
+      ${isrc}<div class="grid">${fields}${expl}</div>
+      <div class="links">${links.join('')}${audio}</div></div></div>`;
+  }).join('');
+  $('res-track').classList.remove('hidden');
+  log(TRACKS.length?`${TRACKS.length} risultato/i.`+(note?'  ⚠ '+note:''):'Nessun risultato.'+(note?'  ⚠ '+note:''),false,!TRACKS.length);
 }
 
-/* =============================== eventi ================================ */
-$('go').onclick = onSearch;
-$('q').addEventListener('keydown', (e)=>{ if(e.key==='Enter') onSearch(); });
-$('filter').addEventListener('input', render);
-$('save-keys').onclick = saveKeys;
-$('btn-csv').onclick = exportCSV;
-$('btn-json').onclick = exportJSON;
-$('btn-copy-isrc').onclick = copyAllIsrc;
-document.querySelectorAll('#tbl th').forEach((th)=>{
-  th.onclick = ()=>{ const k=th.dataset.k; if(k==='idx') return;
-    if(sortK===k) sortDir*=-1; else { sortK=k; sortDir=1; } render(); };
-});
-$('tbody').addEventListener('click', async (e)=>{
-  const b = e.target.closest('.copy'); if(!b) return;
-  try{ await navigator.clipboard.writeText(b.dataset.copy); b.textContent='✓'; setTimeout(()=>b.textContent='⧉',1200); }catch(_){}
-});
-// abilita/disabilita in base alla presenza credenziali? le lasciamo sempre attivabili.
-loadKeys();
+/* ---------------- export & copie ---------------- */
+function download(name,text,type){const b=new Blob([text],{type}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000);}
+function csvArtist(rows){const h=['Artista','Titolo','ISRC','Release','Data'],q=(v)=>`"${String(v==null?'':v).replace(/"/g,'""')}"`;
+  return '﻿'+[h.map(q).join(','),...rows.map((r)=>[r.artist,r.title,r.isrc,r.release,r.date].map(q).join(','))].join('\r\n');}
+function csvTrack(rows){const cols=[['title','Titolo'],['artists','Artista'],['isrc','ISRC'],['album','Album'],['albumType','Tipo'],['label','Etichetta'],['upc','UPC'],['releaseDate','Data'],['trackNumber','Traccia'],['discNumber','Disco'],['duration','Durata'],['popularity','Popolarità'],['genres','Generi'],['markets','Mercati'],['spotifyUrl','Spotify']];
+  const q=(v)=>`"${String(v==null?'':v).replace(/"/g,'""')}"`;
+  return '﻿'+[cols.map((c)=>q(c[1])).join(','),...rows.map((r)=>cols.map((c)=>q(r[c[0]])).join(','))].join('\r\n');}
+$('btn-csv').onclick=()=>{if(ROWS.length)download('isrc-discografia.csv',csvArtist(ROWS),'text/csv;charset=utf-8');};
+$('btn-json').onclick=()=>{if(ROWS.length)download('isrc-discografia.json',JSON.stringify(ROWS,null,2),'application/json');};
+$('btn-csv-t').onclick=()=>{if(TRACKS.length)download('traccia.csv',csvTrack(TRACKS),'text/csv;charset=utf-8');};
+$('btn-json-t').onclick=()=>{if(TRACKS.length)download('traccia.json',JSON.stringify(TRACKS,null,2),'application/json');};
+$('btn-copy-isrc').onclick=async()=>{const l=[...new Set(ROWS.map((r)=>(r.isrc||'').split('/').map(s=>s.trim())).flat().filter(Boolean))];
+  if(!l.length){log('Nessun ISRC da copiare.');return;} try{await navigator.clipboard.writeText(l.join('\n'));log(`Copiati ${l.length} ISRC ✓`);}catch(_){log('Copia non riuscita.');}};
+$('filter').addEventListener('input',render);
+document.querySelectorAll('#tbl th').forEach((th)=>{th.onclick=()=>{const k=th.dataset.k;if(k==='idx')return;if(sortK===k)sortDir*=-1;else{sortK=k;sortDir=1;}render();};});
+document.body.addEventListener('click',async(e)=>{const b=e.target.closest('.copy');if(!b)return;
+  try{await navigator.clipboard.writeText(b.dataset.copy);const o=b.textContent;b.textContent='✓';setTimeout(()=>b.textContent=o,1200);}catch(_){}});
 </script>
 </body>
 </html>

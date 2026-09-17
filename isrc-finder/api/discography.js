@@ -229,6 +229,93 @@ async function spDiscography(name, artistId, auth) {
   return { rows, artist: who.name, err: null };
 }
 
+// ============================== Deezer (senza chiavi) ======================
+// API pubblica, nessuna chiave/login. Restituisce ISRC, UPC, etichetta, generi,
+// anteprime e immagini. Chiamata lato server (nessun problema di CORS).
+const DZ = 'https://api.deezer.com';
+async function dzGet(url) {
+  const r = await fetch(url, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(15000) });
+  if (!r.ok) throw new Error(`deezer HTTP ${r.status}`);
+  const d = await r.json();
+  if (d && d.error) throw new Error('deezer ' + (d.error.message || d.error.type || 'error'));
+  return d;
+}
+async function dzSuggest(kind, q) {
+  if (kind === 'track') {
+    const d = await dzGet(`${DZ}/search?q=${enc(q)}&limit=8`);
+    return (d.data || []).map((t) => ({ id: String(t.id), kind: 'track', label: t.title,
+      sub: [t.artist?.name, t.album?.title].filter(Boolean).join(' · '),
+      image: t.album?.cover_small || t.album?.cover_medium || '', round: false }));
+  }
+  const d = await dzGet(`${DZ}/search/artist?q=${enc(q)}&limit=6`);
+  return (d.data || []).map((a) => ({ id: String(a.id), kind: 'artist', label: a.name,
+    sub: (a.nb_fan ? a.nb_fan.toLocaleString('it-IT') + ' fan' : ''),
+    image: a.picture_small || a.picture_medium || '', round: true }));
+}
+function dzBuildTrack(t, album) {
+  const al = album || t.album || {};
+  return {
+    title: t.title || '', artists: t.artist?.name || (t.contributors || []).map((c) => c.name).join(', '),
+    isrc: t.isrc || '', album: al.title || '', albumType: al.record_type || '', upc: al.upc || '', label: al.label || '',
+    releaseDate: t.release_date || al.release_date || '', totalTracks: al.nb_tracks || '',
+    trackNumber: t.track_position || '', discNumber: t.disk_number || '',
+    duration: fmtDur((t.duration || 0) * 1000), durationMs: (t.duration || 0) * 1000,
+    explicit: !!t.explicit_lyrics, popularity: t.rank ? Math.round(t.rank / 10000) : '',
+    genres: (al.genres?.data || []).map((g) => g.name).join(', '),
+    markets: (t.available_countries || []).length,
+    spotifyUrl: t.link || '', previewUrl: t.preview || '', image: al.cover_medium || t.album?.cover_medium || '', source: 'deezer',
+  };
+}
+async function dzTrackById(id) {
+  const t = await dzGet(`${DZ}/track/${id}`);
+  let album = null; try { if (t.album?.id) album = await dzGet(`${DZ}/album/${t.album.id}`); } catch (_) {}
+  return { results: [dzBuildTrack(t, album)], err: null };
+}
+async function dzTrackSearch(q) {
+  const d = await dzGet(`${DZ}/search?q=${enc(q)}&limit=10`);
+  const items = d.data || [];
+  if (!items.length) return { results: [], err: null };
+  const albumCache = new Map(); const results = [];
+  for (const t of items) {
+    let album = null; const aid = t.album?.id;
+    if (aid) { if (albumCache.has(aid)) album = albumCache.get(aid);
+      else { try { album = await dzGet(`${DZ}/album/${aid}`); } catch (_) { album = null; } albumCache.set(aid, album); } }
+    results.push(dzBuildTrack(t, album));
+  }
+  return { results, err: null };
+}
+async function dzAlbumById(id) {
+  const a = await dzGet(`${DZ}/album/${id}`);
+  const rows = (a.tracks?.data || []).map((t) => ({ artist: t.artist?.name || '', title: t.title || '', isrc: t.isrc || '',
+    release: a.title || '', date: a.release_date || '', sources: ['deezer'], url: t.link || '' }));
+  return { rows, artist: (a.artist?.name || '') + ' — ' + (a.title || ''), err: null };
+}
+async function dzArtistId(name) {
+  const d = await dzGet(`${DZ}/search/artist?q=${enc(name)}&limit=5`);
+  const arr = d.data || []; if (!arr.length) return null;
+  const pick = arr.find((a) => norm(a.name) === norm(name)) || arr[0];
+  return { id: pick.id, name: pick.name };
+}
+async function dzDiscography(name, artistId) {
+  let who;
+  if (artistId) { try { const a = await dzGet(`${DZ}/artist/${artistId}`); who = { id: artistId, name: a.name }; } catch (_) { who = { id: artistId, name }; } }
+  else { who = await dzArtistId(name); if (!who) return { rows: [], artist: '', err: null }; }
+  const albums = []; let url = `${DZ}/artist/${who.id}/albums?limit=100`;
+  for (let i = 0; i < 20 && url; i++) { const d = await dzGet(url); albums.push(...(d.data || [])); url = d.next || ''; }
+  const rows = []; const seen = new Set();
+  for (const al of albums) {
+    let ad; try { ad = await dzGet(`${DZ}/album/${al.id}`); } catch (_) { continue; }
+    const rel = ad.title || al.title || ''; const date = ad.release_date || al.release_date || '';
+    for (const t of (ad.tracks?.data || [])) {
+      const key = (t.isrc || '').toUpperCase() || (norm(t.title) + '|' + norm(t.artist?.name || ''));
+      if (seen.has(key)) continue; seen.add(key);
+      rows.push({ artist: t.artist?.name || who.name, title: t.title || '', isrc: t.isrc || '', release: rel, date, sources: ['deezer'], url: t.link || '' });
+    }
+  }
+  rows.sort((a, b) => (b.date || '').localeCompare(a.date || '') || (a.title || '').localeCompare(b.title || ''));
+  return { rows, artist: who.name, err: null };
+}
+
 // ============================== MusicBrainz (ripiego) ======================
 async function mbDiscography(name) {
   const s = await fetch(`${MB}/artist?query=${enc(name)}&fmt=json&limit=5`, { headers: { 'User-Agent': UA, Accept: 'application/json' }, signal: AbortSignal.timeout(15000) });
@@ -320,29 +407,25 @@ export default async function handler(req) {
     + (sameKey ? ' · ⚠ IL SECRET È UGUALE AL CLIENT ID: hai incollato l\'ID due volte, serve il Client SECRET' : '') + ']';
 
   try {
-    // Un solo token per richiesta; se le chiavi ci sono ma il token fallisce,
-    // l'errore viene SEMPRE propagato (niente più fallimenti silenziosi).
+    // Spotify SOLO se le chiavi funzionano davvero; altrimenti Deezer (senza
+    // chiavi) come predefinito, MusicBrainz come ultima spiaggia.
     const t = hasSp ? await spToken(SP_ID, SP_SECRET) : { tok: '', err: 'not_configured' };
     const auth = t.tok ? bearer(t.tok) : null;
-    const spNote = () => (t.err === 'not_configured' ? 'not_configured' : ('Spotify: ' + t.err + dbg));
 
-    // -------- suggerimenti (solo Spotify: servono le immagini) --------
+    // -------- suggerimenti (con immagini) --------
     if (mode === 'suggest') {
-      if (!auth || q.length < 2) {
-        const e = t.err ? (t.err === 'not_configured' ? 'not_configured' : (t.err + dbg)) : null;
-        return json({ suggestions: [], err: e });
-      }
-      const x = await spSuggest(body.kind || 'artist', q, auth);
-      return json({ suggestions: x.suggestions, err: x.err });
+      if (q.length < 2) return json({ suggestions: [] });
+      if (auth) { const x = await spSuggest(body.kind || 'artist', q, auth); return json({ suggestions: x.suggestions, source: 'spotify', err: x.err }); }
+      try { const s = await dzSuggest(body.kind || 'artist', q); return json({ suggestions: s, source: 'deezer' }); }
+      catch (e) { return json({ suggestions: [], err: 'deezer: ' + String(e?.message || e) }); }
     }
 
     // -------- album (da link diretto) --------
     if (mode === 'album') {
-      if (!auth) return json({ mode: 'artist', rows: [], source: 'mb', note: spNote() });
       if (!id) return json({ error: 'missing_id' }, 400);
-      const x = await spAlbumById(id, auth);
-      if (x.err) return json({ mode: 'artist', rows: [], artist: '', source: 'spotify', note: 'Spotify: ' + x.err });
-      return json({ mode: 'artist', artist: x.artist, rows: x.rows, count: x.rows.length, source: 'spotify' });
+      if (auth) { const x = await spAlbumById(id, auth); if (!x.err) return json({ mode: 'artist', artist: x.artist, rows: x.rows, count: x.rows.length, source: 'spotify' }); }
+      try { const x = await dzAlbumById(id); return json({ mode: 'artist', artist: x.artist, rows: x.rows, count: x.rows.length, source: 'deezer' }); }
+      catch (e) { return json({ mode: 'artist', rows: [], source: 'deezer', note: 'Deezer: ' + String(e?.message || e) }); }
     }
 
     // -------- traccia --------
@@ -350,23 +433,25 @@ export default async function handler(req) {
       if (auth) {
         const x = id ? await spTrackById(id, auth) : await spTrackSearch(q, auth);
         if (!x.err && (x.results || []).length) return json({ mode, results: x.results, source: 'spotify' });
-        const mb = await mbTrackSearch(q);
-        const useSp = !x.err && (x.results || []).length;
-        return json({ mode, results: useSp ? x.results : mb.results, source: useSp ? 'spotify' : 'mb', note: x.err ? ('Spotify: ' + x.err) : null });
       }
-      const mb = await mbTrackSearch(q);
-      return json({ mode, results: mb.results, source: 'mb', note: spNote(), err: mb.err });
+      try { const dz = id ? await dzTrackById(id) : await dzTrackSearch(q); return json({ mode, results: dz.results, source: 'deezer' }); }
+      catch (e) { const mb = await mbTrackSearch(q); return json({ mode, results: mb.results, source: 'mb', note: 'Deezer: ' + String(e?.message || e) }); }
     }
 
     // -------- artista --------
     if (auth) {
       const x = await spDiscography(q, id, auth);
-      if (!x.err) return json({ mode: 'artist', artist: x.artist, rows: x.rows, count: x.rows.length, source: 'spotify' });
-      const mb = await mbDiscography(q);
-      return json({ mode: 'artist', artist: mb.artist, rows: mb.rows, count: mb.rows.length, source: 'mb', note: 'Spotify: ' + x.err });
+      if (!x.err && x.rows.length) return json({ mode: 'artist', artist: x.artist, rows: x.rows, count: x.rows.length, source: 'spotify' });
     }
-    const mb = await mbDiscography(q);
-    return json({ mode: 'artist', artist: mb.artist, rows: mb.rows, count: mb.rows.length, source: 'mb', note: spNote(), err: mb.err });
+    try {
+      const dz = await dzDiscography(q, id);
+      if (dz.rows.length || !q) return json({ mode: 'artist', artist: dz.artist, rows: dz.rows, count: dz.rows.length, source: 'deezer' });
+      const mb = await mbDiscography(q);
+      return json({ mode: 'artist', artist: mb.artist || dz.artist, rows: mb.rows, count: mb.rows.length, source: 'mb' });
+    } catch (e) {
+      const mb = await mbDiscography(q);
+      return json({ mode: 'artist', artist: mb.artist, rows: mb.rows, count: mb.rows.length, source: 'mb', note: 'Deezer: ' + String(e?.message || e) });
+    }
   } catch (e) {
     return json({ error: String(e?.message || e) }, 200);
   }

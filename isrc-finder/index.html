@@ -105,7 +105,7 @@
 <body>
 <div class="wrap">
   <header class="top"><div class="logo">ISRC</div><div><h1>ISRC Finder</h1></div></header>
-  <p class="sub">Cerca un <b>artista</b> (tutta la discografia con ISRC) o una <b>traccia</b> (tutte le info), oppure <b>incolla un link Spotify</b> (artista, traccia o album). Suggerimenti automatici con le immagini.</p>
+  <p class="sub">Cerca un <b>artista</b> (tutta la discografia con ISRC) o una <b>traccia</b> (tutte le info). Funziona <b>senza login</b> (fonte Deezer). Suggerimenti automatici con le immagini.</p>
 
   <div class="card">
     <div class="seg" id="seg">
@@ -123,7 +123,7 @@
     <details class="settings" id="settings">
       <summary><span id="sp-state" class="spdot off"></span> Chiavi Spotify <span id="sp-label" style="color:var(--muted)">— non impostate</span></summary>
       <div class="settings-body">
-        <p class="note">Incolla qui le tue chiavi Spotify: restano <b>solo nel tuo browser</b> e attivano suggerimenti con foto e info complete. Le ottieni gratis su <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">developer.spotify.com/dashboard</a> → Create app (Redirect URI: <code>http://localhost</code>).</p>
+        <p class="note"><b>Facoltativo.</b> Il tool funziona già senza login (fonte Deezer). Se vuoi usare Spotify come fonte, incolla qui le chiavi: restano <b>solo nel tuo browser</b>. Le ottieni gratis su <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">developer.spotify.com/dashboard</a> → Create app (Redirect URI: <code>http://localhost</code>).</p>
         <div class="krow">
           <div><label class="fl">Client ID</label><input type="text" id="sp-id" placeholder="Client ID" autocomplete="off"></div>
           <div><label class="fl">Client Secret</label><input type="password" id="sp-secret" placeholder="Client Secret" autocomplete="off"></div>
@@ -161,7 +161,7 @@
     <div class="cards" id="cards"></div>
   </div>
 
-  <div class="footer">Dati da Spotify (ISRC, UPC, metadati). Tutto automatico.</div>
+  <div class="footer">Dati da Deezer (ISRC, UPC, metadati) — nessun login. Spotify facoltativo se aggiungi le chiavi.</div>
 </div>
 
 <script>
@@ -338,7 +338,7 @@ function showTrack(d,note){
       :`<div class="isrcbig"><span class="k">ISRC</span> <span class="noisrc">assente</span></div>`;
     const fields=FIELDS.map(([k,lbl])=>{const v=t[k]; if(v===''||v==null||v===0&&k!=='popularity') return ''; return `<div class="f"><div class="k">${lbl}</div><div class="v">${esc(v)}${k==='popularity'?'/100':''}</div></div>`;}).filter(Boolean).join('');
     const expl=t.explicit?`<div class="f"><div class="k">Esplicito</div><div class="v">Sì</div></div>`:'';
-    const links=[]; if(t.spotifyUrl) links.push(`<a href="${esc(t.spotifyUrl)}" target="_blank" rel="noopener">Apri su Spotify ↗</a>`);
+    const links=[]; if(t.spotifyUrl) links.push(`<a href="${esc(t.spotifyUrl)}" target="_blank" rel="noopener">Ascolta ↗</a>`);
     const audio=t.previewUrl?`<audio controls src="${esc(t.previewUrl)}"></audio>`:'';
     return `<div class="tcard">${cover}<div class="body">
       <h3>${esc(t.title)}</h3><div class="by">${esc(t.artists)}</div>

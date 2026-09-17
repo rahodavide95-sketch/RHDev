@@ -315,7 +315,9 @@ export default async function handler(req) {
   const hasSp = !!(SP_ID && SP_SECRET);
   // Origine delle chiavi + info non sensibili per diagnosticare invalid_client.
   const keySrc = (bodyId && bodySecret) ? 'app(browser)' : (envId ? 'vercel(env)' : 'nessuna');
-  const dbg = ` [fonte: ${keySrc} · Client ID: ${SP_ID || '—'} · lunghezza secret: ${SP_SECRET.length}]`;
+  const sameKey = !!(SP_SECRET && SP_SECRET === SP_ID);
+  const dbg = ` [fonte: ${keySrc} · Client ID: ${SP_ID || '—'} · lunghezza secret: ${SP_SECRET.length}`
+    + (sameKey ? ' · ⚠ IL SECRET È UGUALE AL CLIENT ID: hai incollato l\'ID due volte, serve il Client SECRET' : '') + ']';
 
   try {
     // Un solo token per richiesta; se le chiavi ci sono ma il token fallisce,

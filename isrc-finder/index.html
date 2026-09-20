@@ -563,10 +563,10 @@ async function spBrowserToken(){
 }
 const smallSp=(im)=>{const a=im||[];return (a[a.length-1]||a[0]||{}).url||'';};
 const bigSp=(im)=>{const a=im||[];return (a[1]||a[0]||{}).url||'';};
-async function spG(path,tok,tries=4){ for(let i=0;i<tries;i++){ let r;
+async function spG(path,tok,tries=3){ for(let i=0;i<tries;i++){ let r;
     try{ r=await fetch('https://api.spotify.com/v1'+path,{headers:{Authorization:'Bearer '+tok}}); }
-    catch(e){ if(i<tries-1){ await new Promise(res=>setTimeout(res,500*(i+1))); continue; } throw e; }
-    if(r.status===429){ const ra=parseInt(r.headers.get('retry-after')||'',10); await new Promise(res=>setTimeout(res,Math.min(Number.isFinite(ra)?ra:(i+1),6)*1000)); continue; }
+    catch(e){ if(i<tries-1){ await new Promise(res=>setTimeout(res,400*(i+1))); continue; } throw e; }
+    if(r.status===429){ const ra=parseInt(r.headers.get('retry-after')||'',10); await new Promise(res=>setTimeout(res,Math.min(Number.isFinite(ra)?ra:(i+1),3)*1000)); continue; }
     if(r.status>=500){ await new Promise(res=>setTimeout(res,500*(i+1))); continue; }
     if(!r.ok){ let body=''; try{ const j=await r.json(); body=(j&&j.error&&(j.error.message||j.error))||''; }catch(_){ try{ body=await r.text(); }catch(__){}} throw new Error('spotify '+r.status+(body?': '+String(body).slice(0,120):'')); }
     return r.json(); }
@@ -598,7 +598,7 @@ async function pmap(items, fn, conc){
   await Promise.all(Array.from({length:Math.min(conc,n)||1}, worker));
 }
 async function bSpArtist(name,id,tok){
-  let who={id,name}; let dbg='';
+  let who={id,name}; let dbg=''; const T0=Date.now(); const overBudget=()=>Date.now()-T0>16000;
   if(!id){ let s; try{ s=await spG(`/search?q=${encodeURIComponent(name)}&type=artist&limit=5`,tok);}catch(e){ return {rows:[],artist:name,artistInfo:null,diag:'ricerca artista fallita: '+(e.message||e)}; }
     const items=(s.artists&&s.artists.items)||[]; if(!items.length) return {rows:[],artist:name,artistInfo:null,diag:'nessun artista trovato con questo nome'}; const pick=items.find(a=>norm(a.name)===norm(name))||items[0]; who={id:pick.id,name:pick.name}; }
   let artistInfo={name:who.name,source:'spotify'}; let infoErr='';
@@ -635,9 +635,9 @@ async function bSpArtist(name,id,tok){
   // Estrazione tracce PER ALBUM con /albums/{id}/tracks (il batch /albums?ids= puo' dare 403).
   // In PARALLELO (piu' album insieme) per velocizzare; 403 => stop immediato (non si recupera).
   await pmap(albums, async(m)=>{
-    if(albForbidden||!m||!m.id) return; detAlb++;
+    if(albForbidden||overBudget()||!m||!m.id) return; detAlb++;
     for(let toff=0; toff<400; toff+=LIM){
-      if(albForbidden) return;
+      if(albForbidden||overBudget()) return;
       let td=null;
       for(let a=0;a<2 && !td;a++){ try{ td=await spG(`/albums/${m.id}/tracks?limit=${LIM}&offset=${toff}`,tok); }catch(e){ detErr=(e.message||e)+''; if(is403(e.message)){ albForbidden=true; return; } if(a<1) await bsleep(250); } }
       if(!td) return;
@@ -647,21 +647,23 @@ async function bSpArtist(name,id,tok){
         const o={artist:(tk.artists||[]).map(x=>x.name).join(', '),title:tk.name||'',isrc:'',release:rel,date:m.release_date||'',sources:['spotify'],url:(tk.external_urls&&tk.external_urls.spotify)||'',image:bigSp(m.images),tid:tk.id}; rows.push(o); if(tk.id) idx.set(tk.id,o); }
       if(its.length<LIM) return;
     }
-  }, 6);
+  }, 4);
   const nFromAlb=rows.length; let searchErr='';
-  // FALLBACK ricerca per nome artista (comparse/compilation): pagine in PARALLELO, con tetto.
-  const CAPS=600; // massimo risultati per query da esaminare (tempo limitato)
+  // FALLBACK ricerca per nome artista (comparse/compilation): pagine in PARALLELO, con tetto e budget.
+  const CAPS=300; // massimo risultati da esaminare (tempo limitato)
   const addTk=(tk)=>{ const cr=(tk.artists||[]).some(x=>x.id===who.id||norm(x.name)===norm(who.name)); if(!cr) return;
     const rel=(tk.album&&tk.album.name)||''; const key=keyOf(tk,rel); if(seenKey.has(key)) return; seenKey.add(key);
     const o={artist:(tk.artists||[]).map(x=>x.name).join(', '),title:tk.name||'',isrc:(tk.external_ids&&tk.external_ids.isrc)||'',release:rel,date:(tk.album&&tk.album.release_date)||'',sources:['spotify'],url:(tk.external_urls&&tk.external_urls.spotify)||'',image:bigSp(tk.album&&tk.album.images),tid:tk.id};
     rows.push(o); if(tk.id&&!o.isrc) idx.set(tk.id,o); };
   const spSearch=async(field,off)=>{ let sd=null; for(let a=0;a<2 && !sd;a++){ try{ sd=await spG(`/search?q=${encodeURIComponent(field)}&type=track&limit=${LIM}&offset=${off}`,tok); }catch(e){ searchErr=(e.message||e)+''; if(a<1) await bsleep(250); } } return sd; };
-  for(const field of ['artist:"'+who.name+'"', who.name]){
-    const first=await spSearch(field,0); if(!first) continue;
-    for(const tk of (first.tracks&&first.tracks.items)||[]) addTk(tk);
-    const total=Math.min((first.tracks&&first.tracks.total)||0, CAPS, 1000);
-    const offs=[]; for(let off=LIM; off<total; off+=LIM) offs.push(off);
-    await pmap(offs, async(off)=>{ const sd=await spSearch(field,off); if(sd) for(const tk of (sd.tracks&&sd.tracks.items)||[]) addTk(tk); }, 6);
+  if(!overBudget()){
+    const field='artist:"'+who.name+'"'; // solo query precisa (la generica riempie di risultati altrui)
+    const first=await spSearch(field,0);
+    if(first){ for(const tk of (first.tracks&&first.tracks.items)||[]) addTk(tk);
+      const total=Math.min((first.tracks&&first.tracks.total)||0, CAPS, 1000);
+      const offs=[]; for(let off=LIM; off<total; off+=LIM) offs.push(off);
+      await pmap(offs, async(off)=>{ if(overBudget()) return; const sd=await spSearch(field,off); if(sd) for(const tk of (sd.tracks&&sd.tracks.items)||[]) addTk(tk); }, 4);
+    }
   }
   // Arricchimento ISRC in PARALLELO: batch /tracks?ids=; se vietato (403) passa al singolo /tracks/{id}.
   const tids=[...idx.keys()]; let isrcMode='batch', batchForbidden=false;
@@ -670,11 +672,11 @@ async function bSpArtist(name,id,tok){
     if(batchForbidden) return; let d=null;
     for(let a=0;a<2 && !d;a++){ try{ d=await spG(`/tracks?ids=${chunk.join(',')}`,tok); }catch(e){ if(is403(e.message)){ batchForbidden=true; return; } if(a<1) await bsleep(250); } }
     if(!d) return; for(const tk of d.tracks||[]){const o=tk&&idx.get(tk.id); if(o) o.isrc=(tk.external_ids&&tk.external_ids.isrc)||'';}
-  }, 5);
+  }, 4);
   if(batchForbidden){ isrcMode='singolo'; let singForbidden=false;
-    await pmap(tids.slice(0,600), async(tid)=>{ if(singForbidden) return; const o=idx.get(tid); if(!o) return;
+    await pmap(tids.slice(0,400), async(tid)=>{ if(singForbidden||overBudget()) return; const o=idx.get(tid); if(!o) return;
       try{ const tk=await spG(`/tracks/${tid}`,tok); o.isrc=(tk.external_ids&&tk.external_ids.isrc)||''; }
-      catch(e){ if(is403(e.message)){ singForbidden=true; isrcMode='vietato'; } } }, 6); }
+      catch(e){ if(is403(e.message)){ singForbidden=true; isrcMode='vietato'; } } }, 4); }
   // DEDUPLICA solo per ISRC (stessa registrazione uscita in piu' release = 1 riga).
   // Le tracce SENZA ISRC restano tutte.
   const seenIsrc=new Set(); const out=[];
@@ -1118,7 +1120,7 @@ $('cards').addEventListener('click',(e)=>{ const b=e.target.closest('[data-album
   e.preventDefault(); openAlbum(b.dataset.album, b.dataset.atitle, b.dataset.prov||'deezer'); });
 // gestisci l'eventuale ritorno dal login Spotify, poi aggiorna lo stato
 /* >>> VERSIONE: aggiornare questo numero a OGNI deploy <<< */
-const VERSION='V25';
+const VERSION='V26';
 try{ const vb=$('ver-badge'); if(vb) vb.textContent=VERSION; console.log('ISRC Finder', VERSION); }catch(_){}
 spHandleRedirect().then(()=>refreshKeyState()).catch(()=>refreshKeyState());
 if('serviceWorker' in navigator){

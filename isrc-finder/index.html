@@ -597,8 +597,12 @@ async function pmap(items, fn, conc){
   const worker=async()=>{ while(i<n){ const k=i++; try{ await fn(items[k],k); }catch(_){} } };
   await Promise.all(Array.from({length:Math.min(conc,n)||1}, worker));
 }
+const DISCO_TTL=6*3600*1000; // cache 6 ore
+function discoCacheGet(id){ try{ const c=JSON.parse(localStorage.getItem('isrcfinder.disco.'+id)||'null'); if(c&&c.rows&&(Date.now()-c.t<DISCO_TTL)) return c; }catch(_){} return null; }
+function discoCacheSet(id,obj){ try{ localStorage.setItem('isrcfinder.disco.'+id, JSON.stringify({t:Date.now(),...obj})); }catch(_){} }
 async function bSpArtist(name,id,tok){
   let who={id,name}; let dbg=''; const T0=Date.now(); const overBudget=()=>Date.now()-T0>16000;
+  if(id){ const c=discoCacheGet(id); if(c) return {rows:c.rows,artist:c.artist,artistInfo:c.artistInfo,diag:'(cache) '+(c.diag||'')}; }
   if(!id){ let s; try{ s=await spG(`/search?q=${encodeURIComponent(name)}&type=artist&limit=5`,tok);}catch(e){ return {rows:[],artist:name,artistInfo:null,diag:'ricerca artista fallita: '+(e.message||e)}; }
     const items=(s.artists&&s.artists.items)||[]; if(!items.length) return {rows:[],artist:name,artistInfo:null,diag:'nessun artista trovato con questo nome'}; const pick=items.find(a=>norm(a.name)===norm(name))||items[0]; who={id:pick.id,name:pick.name}; }
   let artistInfo={name:who.name,source:'spotify'}; let infoErr='';
@@ -669,7 +673,7 @@ async function bSpArtist(name,id,tok){
   const tids=[...idx.keys()]; let isrcMode='batch', batchForbidden=false;
   const chunks=[]; for(let i=0;i<tids.length;i+=BAT) chunks.push(tids.slice(i,i+BAT));
   await pmap(chunks, async(chunk)=>{
-    if(batchForbidden) return; let d=null;
+    if(batchForbidden||overBudget()) return; let d=null;
     for(let a=0;a<2 && !d;a++){ try{ d=await spG(`/tracks?ids=${chunk.join(',')}`,tok); }catch(e){ if(is403(e.message)){ batchForbidden=true; return; } if(a<1) await bsleep(250); } }
     if(!d) return; for(const tk of d.tracks||[]){const o=tk&&idx.get(tk.id); if(o) o.isrc=(tk.external_ids&&tk.external_ids.isrc)||'';}
   }, 4);
@@ -684,7 +688,8 @@ async function bSpArtist(name,id,tok){
     if(code){ if(seenIsrc.has(code)) continue; seenIsrc.add(code); }
     out.push(r); }
   out.sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(a.title||'').localeCompare(b.title||''));
-  dbg='['+(typeof VERSION!=='undefined'?VERSION:'?')+'] artista="'+who.name+'" (id '+(who.id||'?')+')'+(infoErr?(' [err info: '+infoErr+']'):'')+' · limit='+LIM+(probeInfo?(' ['+probeInfo+']'):'')+' · album '+albums.length+(igUsed?(' [ig:'+igUsed+']'):'')+(albErr?(' [err album: '+albErr+']'):'')+' · dettagli(alb '+detAlb+', tracce viste '+detSeen+', accreditate '+detCred+')'+(detErr?(' [err dettagli: '+detErr+']'):'')+' · tracce da album '+nFromAlb+' · da ricerca '+(rows.length-nFromAlb)+' · isrc:'+isrcMode+(searchErr?(' [err ricerca: '+searchErr+']'):'')+' · totale '+out.length;
+  dbg='['+(typeof VERSION!=='undefined'?VERSION:'?')+'] artista="'+who.name+'" (id '+(who.id||'?')+')'+(infoErr?(' [err info: '+infoErr+']'):'')+' · limit='+LIM+(probeInfo?(' ['+probeInfo+']'):'')+' · album '+albums.length+(igUsed?(' [ig:'+igUsed+']'):'')+(albErr?(' [err album: '+albErr+']'):'')+' · dettagli(alb '+detAlb+', tracce viste '+detSeen+', accreditate '+detCred+')'+(detErr?(' [err dettagli: '+detErr+']'):'')+' · tracce da album '+nFromAlb+' · da ricerca '+(rows.length-nFromAlb)+' · isrc:'+isrcMode+(searchErr?(' [err ricerca: '+searchErr+']'):'')+(overBudget()?' · TEMPO SCADUTO (parziale)':'')+' · totale '+out.length;
+  if(who.id && out.length) discoCacheSet(who.id, {rows:out,artist:who.name,artistInfo,diag:dbg});
   return {rows:out,artist:who.name,artistInfo,diag:dbg}; }
 
 async function dzLocal(payload){
@@ -1120,7 +1125,7 @@ $('cards').addEventListener('click',(e)=>{ const b=e.target.closest('[data-album
   e.preventDefault(); openAlbum(b.dataset.album, b.dataset.atitle, b.dataset.prov||'deezer'); });
 // gestisci l'eventuale ritorno dal login Spotify, poi aggiorna lo stato
 /* >>> VERSIONE: aggiornare questo numero a OGNI deploy <<< */
-const VERSION='V26';
+const VERSION='V27';
 try{ const vb=$('ver-badge'); if(vb) vb.textContent=VERSION; console.log('ISRC Finder', VERSION); }catch(_){}
 spHandleRedirect().then(()=>refreshKeyState()).catch(()=>refreshKeyState());
 if('serviceWorker' in navigator){

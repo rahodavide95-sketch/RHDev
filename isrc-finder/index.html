@@ -558,7 +558,14 @@ async function spBrowserToken(){
 }
 const smallSp=(im)=>{const a=im||[];return (a[a.length-1]||a[0]||{}).url||'';};
 const bigSp=(im)=>{const a=im||[];return (a[1]||a[0]||{}).url||'';};
-async function spG(path,tok){ const r=await fetch('https://api.spotify.com/v1'+path,{headers:{Authorization:'Bearer '+tok}}); if(!r.ok) throw new Error('spotify '+r.status); return r.json(); }
+async function spG(path,tok,tries=4){ for(let i=0;i<tries;i++){ let r;
+    try{ r=await fetch('https://api.spotify.com/v1'+path,{headers:{Authorization:'Bearer '+tok}}); }
+    catch(e){ if(i<tries-1){ await new Promise(res=>setTimeout(res,500*(i+1))); continue; } throw e; }
+    if(r.status===429){ const ra=parseInt(r.headers.get('retry-after')||'',10); await new Promise(res=>setTimeout(res,Math.min(Number.isFinite(ra)?ra:(i+1),6)*1000)); continue; }
+    if(r.status>=500){ await new Promise(res=>setTimeout(res,500*(i+1))); continue; }
+    if(!r.ok) throw new Error('spotify '+r.status);
+    return r.json(); }
+  throw new Error('spotify 429'); }
 async function bSpSuggest(kind,q,tok){ const type=kind==='track'?'track':'artist';
   const d=await spG(`/search?q=${encodeURIComponent(q)}&type=${type}&limit=${type==='track'?8:6}`,tok);
   if(type==='artist') return (d.artists&&d.artists.items||[]).map(a=>({id:a.id,kind:'artist',label:a.name,sub:[(a.genres||[])[0],a.followers&&a.followers.total?a.followers.total.toLocaleString('it-IT')+' follower':''].filter(Boolean).join(' · '),image:smallSp(a.images),round:true,prov:'spotify'}));
@@ -601,20 +608,27 @@ async function dzLocal(payload){
     if(spTok){ try{ const s=await bSpSuggest(payload.kind||'artist',payload.q,spTok); if(s.length) return {suggestions:s,source:'spotify'}; }catch(_){} }
     try{ return {suggestions:await bSuggest(payload.kind||'artist',payload.q)}; }catch(_){ return {suggestions:[]}; } }
   const wantDz = use.includes('deezer'); const wantSp = !!spTok;
+  // needSource/needSpotifyLogin SOLO se davvero non c'è alcuna fonte utilizzabile
   if(!wantDz && !wantSp){ return use.includes('spotify') ? {needSpotifyLogin:true} : {needSource:true}; }
+  // provo Spotify se attivo, a meno che tu abbia scelto un risultato Deezer con Deezer attivo
+  const trySp = wantSp && !(wantDz && payload.prov==='deezer');
+  let spErr='';
   try{
     if(payload.mode==='album'){ if(!payload.id) return {error:'missing_id'};
-      if(payload.prov==='spotify' && wantSp){ return await bSpAlbum(payload.id,spTok); }
+      if(payload.prov==='spotify' && wantSp){ try{ return await bSpAlbum(payload.id,spTok); }catch(e){ spErr=(e.message||e)+''; } }
       if(wantDz) return await bAlbum(payload.id);
-      return {needSource:true}; }
+      return {mode:'artist',artist:'',rows:[],count:0,source:'spotify',note:'Album non recuperato da Spotify'+(spErr?' ('+spErr+')':'')+'.'}; }
     if(payload.mode==='track'){
-      if(wantSp && payload.prov!=='deezer'){ try{ const r=payload.id?await bSpTrackById(payload.id,spTok):await bSpTrackSearch(payload.q,spTok); if(r.results.length) return {mode:'track',results:r.results,source:'spotify'}; }catch(_){} }
+      if(trySp){ try{ const r=payload.id?await bSpTrackById(payload.id,spTok):await bSpTrackSearch(payload.q,spTok); if(r.results.length) return {mode:'track',results:r.results,source:'spotify'}; }catch(e){ spErr=(e.message||e)+''; } }
       if(wantDz){ const r=payload.id?await bTrackById(payload.id):await bTrackSearch(payload.q); return {mode:'track',results:r.results,source:'deezer'}; }
-      return {needSource:true}; }
+      return {mode:'track',results:[],source:'spotify',note:'Nessuna traccia trovata su Spotify'+(spErr?' ('+spErr+')':'')+'.'}; }
     // artista
-    if(wantSp && payload.prov!=='deezer'){ try{ const x=await bSpArtist(payload.q,payload.prov==='spotify'?payload.id:'',spTok); if(x.rows.length) return {mode:'artist',artist:x.artist,artistInfo:x.artistInfo,rows:x.rows,count:x.rows.length,source:'spotify'}; }catch(_){} }
+    if(trySp){ try{ const x=await bSpArtist(payload.q,payload.prov==='spotify'?payload.id:'',spTok);
+      if(x.rows.length) return {mode:'artist',artist:x.artist,artistInfo:x.artistInfo,rows:x.rows,count:x.rows.length,source:'spotify'};
+      if(!wantDz) return {mode:'artist',artist:x.artist||payload.q,artistInfo:x.artistInfo,rows:[],count:0,source:'spotify',note:'Spotify non ha restituito tracce per questo artista.'};
+    }catch(e){ spErr=(e.message||e)+''; if(!wantDz) return {mode:'artist',artist:payload.q,rows:[],count:0,source:'spotify',note:'Spotify non raggiungibile ('+spErr+').'}; } }
     if(wantDz){ const x=await bArtist(payload.q,payload.prov==='deezer'?payload.id:''); return {mode:'artist',artist:x.artist,artistInfo:x.artistInfo,rows:x.rows,count:x.rows.length,source:'deezer'}; }
-    return {needSource:true};
+    return {mode:'artist',artist:payload.q,rows:[],count:0,source:'spotify',note:'Nessun risultato'+(spErr?' ('+spErr+')':'')+'.'};
   }catch(e){ return {error:(e.message||e)+''}; }
 }
 async function apiCall(payload){
@@ -1017,7 +1031,7 @@ $('cards').addEventListener('click',(e)=>{ const b=e.target.closest('[data-album
   e.preventDefault(); openAlbum(b.dataset.album, b.dataset.atitle, b.dataset.prov||'deezer'); });
 // gestisci l'eventuale ritorno dal login Spotify, poi aggiorna lo stato
 /* >>> VERSIONE: aggiornare questo numero a OGNI deploy <<< */
-const VERSION='V7';
+const VERSION='V8';
 try{ const vb=$('ver-badge'); if(vb) vb.textContent=VERSION; console.log('ISRC Finder', VERSION); }catch(_){}
 spHandleRedirect().then(()=>refreshKeyState()).catch(()=>refreshKeyState());
 if('serviceWorker' in navigator){ window.addEventListener('load', ()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }

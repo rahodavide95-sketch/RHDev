@@ -63,6 +63,7 @@
   .iconbtn{position:relative; width:46px;height:46px;border-radius:14px;border:1px solid var(--line);
     background:var(--card); color:var(--ink); font-size:20px; cursor:pointer; box-shadow:var(--shadow); transition:.15s}
   .iconbtn:hover{transform:translateY(-1px); border-color:var(--b1)}
+  .head-actions{display:flex; gap:10px}
   .iconbtn .dot{position:absolute; top:9px; right:9px; width:9px;height:9px;border-radius:50%; background:var(--muted); border:2px solid var(--card)}
   .iconbtn .dot.on{background:var(--sp)}
 
@@ -129,7 +130,16 @@
   .copy:hover{color:var(--b1)}
   .noisrc{color:var(--warn); font-style:italic; font-size:12px}
   .badge{display:inline-block; font-size:10px; font-weight:800; padding:3px 9px; border-radius:999px; background:var(--chip); color:var(--muted)}
-  .badge.sp{color:var(--sp)} .badge.mb{color:var(--mb)}
+  .badge.sp{color:var(--sp)} .badge.mb{color:var(--mb)} .badge.dz{color:var(--dz)} .badge.td{color:#00cbb8}
+  /* pannello differenze (confronto fonti) */
+  .diffbox{background:var(--card); border:1.5px solid var(--warn); border-radius:var(--radius); padding:14px 16px; margin-bottom:16px; box-shadow:var(--shadow)}
+  .diff-h{font-size:13px; color:var(--ink); display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px}
+  .diff-actions{margin-left:auto; display:flex; gap:8px}
+  .diff-list{display:grid; gap:6px; max-height:320px; overflow:auto}
+  .diff{display:flex; align-items:center; gap:12px; padding:9px 11px; border-radius:11px; background:var(--soft); cursor:pointer}
+  .diff input{width:18px;height:18px;accent-color:var(--accent); flex:0 0 auto; cursor:pointer}
+  .diff-main{flex:1; min-width:0; font-size:13px} .diff-main code{background:var(--chip); padding:1px 5px; border-radius:5px; font-size:12px; font-weight:600}
+  .diff-src{display:flex; align-items:center; gap:7px; flex-wrap:wrap} .diff-miss{color:var(--warn); font-size:11px; font-weight:600}
 
   /* schede traccia */
   .cards{display:grid; gap:18px}
@@ -219,7 +229,10 @@
         </div>
       </div>
     </div>
-    <button class="iconbtn" id="btn-settings" title="Impostazioni" aria-label="Impostazioni">⚙<span class="dot off" id="gear-dot"></span></button>
+    <div class="head-actions">
+      <button class="iconbtn" id="btn-theme" title="Tema" aria-label="Cambia tema">🖥️</button>
+      <button class="iconbtn" id="btn-settings" title="Impostazioni" aria-label="Impostazioni">⚙<span class="dot off" id="gear-dot"></span></button>
+    </div>
   </header>
 
   <div class="card">
@@ -288,6 +301,7 @@
   <!-- risultati ARTISTA -->
   <div id="res-artist" class="hidden">
     <div id="ahero"></div>
+    <div id="diffs"></div>
     <div class="stats" id="stats"></div>
     <div class="toolbar">
       <input type="text" id="filter" placeholder="Filtra per titolo, ISRC, release…">
@@ -301,6 +315,7 @@
       <th data-k="artist">Artista <span class="arr"></span></th>
       <th data-k="date">Data <span class="arr"></span></th>
       <th data-k="isrc">ISRC <span class="arr"></span></th>
+      <th data-k="src" id="th-src" hidden>Fonti</th>
     </tr></thead><tbody id="tbody"></tbody></table></div>
   </div>
 
@@ -326,7 +341,7 @@ function log(m,spin,isErr){const el=$('log');el.className=isErr?'err':'';el.inne
 let MODE='artist', ROWS=[], VIEW=[], TRACKS=[], sortK='date', sortDir=-1;
 let catalogD=null; // ultima discografia artista, per "Torna al catalogo"
 function showBack(v){ const el=$('backbar'); if(el) el.hidden=!(v&&catalogD); }
-function backToCatalog(){ if(!catalogD) return; showArtist(catalogD,''); showBack(false); try{window.scrollTo({top:0,behavior:'smooth'});}catch(_){} }
+function backToCatalog(){ if(!catalogD) return; renderArtistResponse(catalogD,''); showBack(false); try{window.scrollTo({top:0,behavior:'smooth'});}catch(_){} }
 let selId='', selProv=''; // id + provenienza scelti da un suggerimento (Deezer)
 let sugItems=[], sugActive=-1, sugTimer=null, sugSeq=0;
 
@@ -368,9 +383,12 @@ function refreshKeyState(){
 const THEME='isrcfinder.theme';
 function getTheme(){ try{ return localStorage.getItem(THEME)||'system'; }catch(_){ return 'system'; } }
 function applyTheme(t){ const r=document.documentElement; if(t==='light'||t==='dark') r.setAttribute('data-theme',t); else r.removeAttribute('data-theme'); }
-function updateThemeUI(t){ const seg=$('theme-seg'); if(!seg) return; [...seg.children].forEach(b=>b.classList.toggle('on', b.dataset.theme===t)); }
+const THEME_ICONS={system:'🖥️',light:'☀️',dark:'🌙'}, THEME_ORDER=['system','light','dark'];
+function updateThemeUI(t){ const seg=$('theme-seg'); if(seg)[...seg.children].forEach(b=>b.classList.toggle('on', b.dataset.theme===t));
+  const bt=$('btn-theme'); if(bt){ bt.textContent=THEME_ICONS[t]||'🖥️'; bt.title='Tema: '+t; } }
 function setTheme(t){ try{ localStorage.setItem(THEME,t); }catch(_){} applyTheme(t); updateThemeUI(t); }
 $('theme-seg').addEventListener('click',(e)=>{ const b=e.target.closest('button'); if(!b) return; setTheme(b.dataset.theme); });
+$('btn-theme').onclick=()=>{ const cur=getTheme(); setTheme(THEME_ORDER[(THEME_ORDER.indexOf(cur)+1)%3]); };
 applyTheme(getTheme()); updateThemeUI(getTheme());
 
 /* modale impostazioni */
@@ -478,7 +496,7 @@ async function runSearch(){
       : (d.note||'');
     // instrada in base al formato della risposta: results = schede traccia, rows = tabella
     if(d.results!==undefined){ showTrack(d,note); catalogD=null; }
-    else { showArtist(d,note); catalogD = (reqMode==='artist') ? d : null; }
+    else { renderArtistResponse(d,note); catalogD = (reqMode==='artist') ? d : null; }
     showBack(false); // ricerca dalla barra = nuovo contesto
   }catch(e){ log('Errore di rete: '+(e.message||e),false,true); }
   finally{ $('go').disabled=false; refreshKeyState(); }
@@ -493,7 +511,7 @@ async function openBy(payload, msg){
     const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...payload,...keyBody()})});
     if(!r.ok){ log('Errore server: HTTP '+r.status,false,true); return; }
     const d=await r.json(); if(d.error){ log('Errore: '+d.error,false,true); return; }
-    if(d.results!==undefined) showTrack(d,d.note||''); else showArtist(d,d.note||'');
+    if(d.results!==undefined) showTrack(d,d.note||''); else renderArtistResponse(d,d.note||'');
     showBack(true); // sei in un dettaglio: mostra il ritorno al catalogo
     try{ window.scrollTo({top:0,behavior:'smooth'}); }catch(_){}
   }catch(e){ log('Errore di rete: '+(e.message||e),false,true); }
@@ -515,7 +533,62 @@ function artistHero(info){
   return `<div class="ahero">${img}<div class="ah-b"><div class="ah-name">${esc(info.name||'')}</div>
     <div class="ah-meta">${bits.join(' &nbsp;·&nbsp; ')}</div>${link}</div></div>`;
 }
+const SRCNAME={deezer:'Deezer',spotify:'Spotify',tidal:'Tidal',mb:'MusicBrainz'};
+const SRCCLS={deezer:'dz',spotify:'sp',tidal:'td',mb:'mb'};
+let COMPARE=false, MERGED=[], CMP_NAMES=[], CMP_TOTAL=1;
+
+function renderArtistResponse(d,note){ if(d && d.compare) showCompare(d,note); else showArtist(d,note); }
+
+/* ---- confronto tra più fonti ---- */
+function mergeSources(sources){
+  const names=sources.map(s=>s.name); const map=new Map();
+  sources.forEach(s=>{ (s.rows||[]).forEach(r=>{
+    const isrc=(r.isrc||'').split('/')[0].trim().toUpperCase();
+    const key=isrc?('i:'+isrc):('t:'+norm(r.title));
+    let it=map.get(key);
+    if(!it){ it={title:r.title,artist:r.artist,release:r.release,date:r.date,isrc:r.isrc,image:r.image||'',tid:r.tid||'',src:new Set()}; map.set(key,it); }
+    it.src.add(s.name);
+    if(!it.isrc&&r.isrc) it.isrc=r.isrc; if(!it.release&&r.release) it.release=r.release;
+    if(!it.date&&r.date) it.date=r.date; if(!it.image&&r.image) it.image=r.image; if(!it.tid&&r.tid) it.tid=r.tid;
+  }); });
+  const items=[...map.values()].map(it=>({...it, sources:[...it.src], inAll:it.src.size===names.length}));
+  return {items, names, total:names.length};
+}
+function recomputeCompareRows(){
+  ROWS=MERGED.filter(it=>it.sel).map(it=>({title:it.title,artist:it.artist,release:it.release,date:it.date,isrc:it.isrc,image:it.image,tid:it.tid,sources:it.sources}));
+}
+function renderDiffs(){
+  const box=$('diffs'); if(!box) return;
+  const diffs=MERGED.filter(it=>!it.inAll);
+  if(!diffs.length){ box.innerHTML=''; return; }
+  const rows=diffs.map((it)=>{ const idx=MERGED.indexOf(it);
+    const present=it.sources.map(sn=>`<span class="badge ${SRCCLS[sn]||''}">${SRCNAME[sn]||sn}</span>`).join(' ');
+    const missing=CMP_NAMES.filter(n=>!it.sources.includes(n)).map(n=>SRCNAME[n]||n).join(', ');
+    return `<label class="diff"><input type="checkbox" data-i="${idx}" ${it.sel?'checked':''}>
+      <span class="diff-main"><b>${esc(it.title)}</b>${it.release?' · '+esc(it.release):''}${it.isrc?` · <code>${esc(it.isrc.split('/')[0].trim())}</code>`:''}</span>
+      <span class="diff-src">${present}<span class="diff-miss">manca su ${esc(missing)}</span></span></label>`;
+  }).join('');
+  box.innerHTML=`<div class="diffbox">
+    <div class="diff-h"><b>⚠ ${diffs.length} differenze tra le fonti</b> — a volte sono release di artisti diversi: scegli cosa aggiungere al catalogo.
+      <span class="diff-actions"><button class="ghost" id="diff-all">Tutte</button><button class="ghost" id="diff-none">Nessuna</button></span></div>
+    <div class="diff-list">${rows}</div></div>`;
+  box.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.onchange=()=>{ MERGED[+cb.dataset.i].sel=cb.checked; recomputeCompareRows(); render(); });
+  $('diff-all').onclick=()=>{ diffs.forEach(it=>it.sel=true); recomputeCompareRows(); renderDiffs(); render(); };
+  $('diff-none').onclick=()=>{ diffs.forEach(it=>it.sel=false); recomputeCompareRows(); renderDiffs(); render(); };
+}
+function showCompare(d){
+  COMPARE=true;
+  $('ahero').innerHTML=artistHero(d.artistInfo);
+  const m=mergeSources(d.sources||[]);
+  CMP_NAMES=m.names; CMP_TOTAL=m.total;
+  MERGED=m.items.map(it=>({...it, sel:true}));
+  renderDiffs(); recomputeCompareRows(); render();
+  $('res-artist').classList.remove('hidden');
+  const diffs=MERGED.filter(it=>!it.inAll).length, common=MERGED.length-diffs;
+  log(`Confronto di ${m.total} fonti (${m.names.map(n=>SRCNAME[n]||n).join(', ')}): ${common} in comune, ${diffs} differenze da rivedere.`);
+}
 function showArtist(d,note){
+  COMPARE=false; MERGED=[]; $('diffs').innerHTML='';
   ROWS=d.rows||[];
   $('ahero').innerHTML = artistHero(d.artistInfo);
   render();
@@ -533,15 +606,18 @@ function applyFilterSort(){
 function render(){
   applyFilterSort();
   const withIsrc=ROWS.filter((r)=>r.isrc).length;
+  const th=$('th-src'); if(th) th.hidden=!COMPARE;
+  const extra = COMPARE ? `<div class="stat"><div class="n" style="color:var(--b2)">${CMP_TOTAL}</div><div class="l">Fonti</div></div>` : '';
   $('stats').innerHTML=`
     <div class="stat"><div class="n">${ROWS.length}</div><div class="l">Tracce</div></div>
     <div class="stat"><div class="n" style="color:var(--accent)">${withIsrc}</div><div class="l">Con ISRC</div></div>
-    <div class="stat"><div class="n" style="color:var(--warn)">${ROWS.length-withIsrc}</div><div class="l">Senza ISRC</div></div>`;
+    <div class="stat"><div class="n" style="color:var(--warn)">${ROWS.length-withIsrc}</div><div class="l">Senza ISRC</div></div>${extra}`;
   $('tbody').innerHTML=VIEW.map((r,i)=>{
     const isrc=r.isrc?`<span>${esc(r.isrc)}</span><button class="copy" data-copy="${esc(r.isrc.split('/')[0].trim())}">⧉</button>`:`<span class="noisrc">— assente —</span>`;
     const rel = (r.image?`<img class="relimg" src="${esc(r.image)}" alt="" loading="lazy">`:'')+esc(r.release);
     const attr = r.tid?` class="rowlink" data-tid="${esc(r.tid)}" data-src="${esc((r.sources||[])[0]||'deezer')}" title="Apri la scheda completa"`:'';
-    return `<tr${attr}><td>${rel}</td><td>${esc(r.title)}</td><td>${esc(r.artist)}</td><td>${esc(r.date)}</td><td class="isrc">${isrc}</td></tr>`;
+    const srcCell = COMPARE ? `<td>${(r.sources||[]).map(sn=>`<span class="badge ${SRCCLS[sn]||''}">${SRCNAME[sn]||sn}</span>`).join(' ')}</td>` : '';
+    return `<tr${attr}><td>${rel}</td><td>${esc(r.title)}</td><td>${esc(r.artist)}</td><td>${esc(r.date)}</td><td class="isrc">${isrc}</td>${srcCell}</tr>`;
   }).join('');
   $('res-artist').classList.remove('hidden');
   document.querySelectorAll('#tbl th').forEach((th)=>{const a=th.querySelector('.arr');if(!a)return;

@@ -557,15 +557,13 @@ export default async function handler(req) {
 
     // Provenienza (da un suggerimento Deezer, da un link Spotify, o testo libero)
     const prov = (body.prov || '').trim();
-    const t = (hasSp && prov !== 'deezer') ? await spToken(SP_ID, SP_SECRET) : { tok: '', err: 'not_configured' };
-    const auth = t.tok ? bearer(t.tok) : null;
-    const trySpotify = !!auth && prov !== 'deezer';
-    // Tidal come fonte alternativa (se ci sono le chiavi e non si usa Spotify/Deezer diretto)
+    // Token piattaforme (se ci sono le chiavi) — servono anche per il CONFRONTO
+    const spTokRes = hasSp ? await spToken(SP_ID, SP_SECRET) : { tok: '', err: 'not_configured' };
+    const auth = spTokRes.tok ? bearer(spTokRes.tok) : null;
     let tdTok = '';
-    if (!trySpotify && hasTd && prov !== 'deezer' && prov !== 'spotify') {
-      try { const tt = await tdToken(TD_ID, TD_SECRET); tdTok = tt.tok || ''; } catch (_) {}
-    }
-    const tryTidal = !!tdTok;
+    if (hasTd) { try { tdTok = (await tdToken(TD_ID, TD_SECRET)).tok || ''; } catch (_) {} }
+    const trySpotify = !!auth && prov !== 'deezer';
+    const tryTidal = !!tdTok && prov !== 'deezer' && prov !== 'spotify';
 
     // -------- album (da link diretto) --------
     if (mode === 'album') {
@@ -587,21 +585,24 @@ export default async function handler(req) {
     }
 
     // -------- artista --------
-    if (trySpotify) {
-      const x = await spDiscography(q, id, auth);
-      if (!x.err && x.rows.length) return json({ mode: 'artist', artist: x.artist, artistInfo: x.artistInfo || null, rows: x.rows, count: x.rows.length, source: 'spotify' });
-    }
-    if (tryTidal) {
-      try { const x = await tdArtistDisco(q, '', tdTok); if (x.rows.length) return json({ mode: 'artist', artist: x.artist, artistInfo: x.artistInfo || null, rows: x.rows, count: x.rows.length, source: 'tidal' }); } catch (_) {}
-    }
-    try {
-      const dz = await dzDiscography(q, id);
-      if (dz.rows.length || !q) return json({ mode: 'artist', artist: dz.artist, artistInfo: dz.artistInfo || null, rows: dz.rows, count: dz.rows.length, source: 'deezer' });
+    // Raccogli da TUTTE le fonti disponibili (Deezer sempre; Spotify/Tidal se
+    // le chiavi ci sono). Con ≥2 fonti restituisco un payload di CONFRONTO.
+    {
+      const avail = [];
+      try { const dz = await dzDiscography(q, prov === 'deezer' ? id : ''); if (dz.rows.length) avail.push({ name: 'deezer', rows: dz.rows, artist: dz.artist, artistInfo: dz.artistInfo }); } catch (_) {}
+      if (auth) { try { const sp = await spDiscography(q, prov === 'spotify' ? id : '', auth); if (sp.rows.length) avail.push({ name: 'spotify', rows: sp.rows, artist: sp.artist, artistInfo: sp.artistInfo }); } catch (_) {} }
+      if (tdTok) { try { const td = await tdArtistDisco(q, '', tdTok); if (td.rows.length) avail.push({ name: 'tidal', rows: td.rows, artist: td.artist, artistInfo: td.artistInfo }); } catch (_) {} }
+
+      if (avail.length >= 2) {
+        const info = avail.find((s) => s.artistInfo)?.artistInfo || null;
+        return json({ mode: 'artist', compare: true, sources: avail, artist: avail[0].artist, artistInfo: info });
+      }
+      if (avail.length === 1) {
+        const s = avail[0];
+        return json({ mode: 'artist', artist: s.artist, artistInfo: s.artistInfo || null, rows: s.rows, count: s.rows.length, source: s.name });
+      }
       const mb = await mbDiscography(q);
-      return json({ mode: 'artist', artist: mb.artist || dz.artist, rows: mb.rows, count: mb.rows.length, source: 'mb' });
-    } catch (e) {
-      const mb = await mbDiscography(q);
-      return json({ mode: 'artist', artist: mb.artist, rows: mb.rows, count: mb.rows.length, source: 'mb', note: 'Deezer: ' + String(e?.message || e) });
+      return json({ mode: 'artist', artist: mb.artist, rows: mb.rows, count: mb.rows.length, source: 'mb' });
     }
   } catch (e) {
     return json({ error: String(e?.message || e) }, 200);

@@ -545,17 +545,7 @@ export default async function handler(req) {
     + (sameKey ? ' · ⚠ IL SECRET È UGUALE AL CLIENT ID: hai incollato l\'ID due volte, serve il Client SECRET' : '') + ']';
 
   try {
-    // Spotify SOLO se le chiavi funzionano davvero; altrimenti Deezer (senza
-    // chiavi) come predefinito, MusicBrainz come ultima spiaggia.
-    // I SUGGERIMENTI sono sempre Deezer (veloci, con immagini, nessuna chiave):
-    // così compaiono subito mentre si scrive, senza attendere Spotify.
-    if (mode === 'suggest') {
-      if (q.length < 2) return json({ suggestions: [] });
-      try { const s = await dzSuggest(body.kind || 'artist', q); return json({ suggestions: s, source: 'deezer' }); }
-      catch (e) { return json({ suggestions: [], err: 'deezer: ' + String(e?.message || e) }); }
-    }
-
-    // Provenienza (da un suggerimento Deezer, da un link Spotify, o testo libero)
+    // Provenienza (da un suggerimento, da un link Spotify, o testo libero)
     const prov = (body.prov || '').trim();
     // Fonti scelte dall'utente (Deezer non è più predefinito): se assente, tutte.
     const use = Array.isArray(body.use) ? body.use.map(String) : null;
@@ -563,13 +553,24 @@ export default async function handler(req) {
     const useSp = use ? use.includes('spotify') : true;
     const useTd = use ? use.includes('tidal') : true;
     const noSource = !useDz && !useSp && !useTd;
-    // Token piattaforme (solo se abilitate e con chiavi) — servono anche per il CONFRONTO
+    // Token piattaforme (solo se abilitate e con chiavi) — servono anche per i suggerimenti e il CONFRONTO
     const spTokRes = (hasSp && useSp) ? await spToken(SP_ID, SP_SECRET) : { tok: '', err: 'not_configured' };
     const auth = spTokRes.tok ? bearer(spTokRes.tok) : null;
     let tdTok = '';
     if (hasTd && useTd) { try { tdTok = (await tdToken(TD_ID, TD_SECRET)).tok || ''; } catch (_) {} }
     const trySpotify = !!auth && prov !== 'deezer';
     const tryTidal = !!tdTok && prov !== 'deezer' && prov !== 'spotify';
+
+    // -------- suggerimenti: seguono la fonte attiva (Spotify se abilitato, altrimenti Deezer) --------
+    if (mode === 'suggest') {
+      if (q.length < 2) return json({ suggestions: [] });
+      if (useSp && auth) {
+        try { const x = await spSuggest(body.kind || 'artist', q, auth);
+          if ((x.suggestions || []).length) return json({ suggestions: x.suggestions.map((s) => ({ ...s, prov: 'spotify' })), source: 'spotify' }); } catch (_) {}
+      }
+      try { const s = await dzSuggest(body.kind || 'artist', q); return json({ suggestions: s.map((x) => ({ ...x, prov: 'deezer' })), source: 'deezer' }); }
+      catch (e) { return json({ suggestions: [], err: 'deezer: ' + String(e?.message || e) }); }
+    }
 
     // Nessuna fonte selezionata → chiedi all'utente di scegliere (nelle Impostazioni)
     if (noSource) return json({ needSource: true });

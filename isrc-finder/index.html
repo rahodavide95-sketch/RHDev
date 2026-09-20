@@ -298,15 +298,15 @@
       </div>
 
       <h3 class="mh">Da dove prendere la discografia?</h3>
-      <p class="note">Scegli una o più fonti (spunta la casella). Con <b>più fonti</b> il tool le <b>confronta</b> e ti mostra le differenze da accettare. Le chiavi restano <b>solo nel tuo browser</b>; gli ISRC sono identici ovunque.</p>
+      <p class="note"><b>Deezer</b> è gratis: spuntala per usarla. <b>Spotify/Tidal</b> si attivano da soli appena inserisci le chiavi. Con <b>più fonti attive</b> il tool le <b>confronta</b> e mostra le differenze da accettare. Le chiavi restano <b>solo nel tuo browser</b>.</p>
 
       <div class="plat">
         <label class="plat-h"><input type="checkbox" id="use-deezer"> <span id="dz-state" class="pdot off"></span> <b>Deezer</b> <span class="ptag free">Gratuita · nessuna chiave</span></label>
       </div>
 
       <div class="plat">
-        <label class="plat-h"><input type="checkbox" id="use-spotify"> <span id="sp-state" class="pdot off"></span> <b>Spotify</b> <span id="sp-label" class="ptag">🔑 serve Client ID + Secret</span>
-          <a class="phelp" href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">ottieni chiavi ↗</a></label>
+        <div class="plat-h"><span id="sp-state" class="pdot off"></span> <b>Spotify</b> <span id="sp-label" class="ptag">🔑 serve Client ID + Secret</span>
+          <a class="phelp" href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">ottieni chiavi ↗</a></div>
         <div class="krow">
           <div><label class="fl">Client ID</label><input type="text" id="sp-id" placeholder="Client ID" autocomplete="off"></div>
           <div><label class="fl">Client Secret</label><input type="password" id="sp-secret" placeholder="Client Secret" autocomplete="off"></div>
@@ -314,8 +314,8 @@
       </div>
 
       <div class="plat">
-        <label class="plat-h"><input type="checkbox" id="use-tidal"> <span id="td-state" class="pdot off"></span> <b>Tidal</b> <span id="td-label" class="ptag">🔑 serve Client ID + Secret</span>
-          <a class="phelp" href="https://developer.tidal.com/dashboard" target="_blank" rel="noopener">ottieni chiavi ↗</a></label>
+        <div class="plat-h"><span id="td-state" class="pdot off"></span> <b>Tidal</b> <span id="td-label" class="ptag">🔑 serve Client ID + Secret</span>
+          <a class="phelp" href="https://developer.tidal.com/dashboard" target="_blank" rel="noopener">ottieni chiavi ↗</a></div>
         <div class="krow">
           <div><label class="fl">Client ID</label><input type="text" id="td-id" placeholder="Client ID" autocomplete="off"></div>
           <div><label class="fl">Client Secret</label><input type="password" id="td-secret" placeholder="Client Secret" autocomplete="off"></div>
@@ -425,10 +425,11 @@ async function bArtist(name,id){
   rows.sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(a.title||'').localeCompare(b.title||''));
   return {rows,artist:who.name,artistInfo};}
 async function dzLocal(payload){
+  // i suggerimenti (autocomplete) funzionano sempre via Deezer, anche se non è la fonte scelta
+  if(payload.mode==='suggest'){ if((payload.q||'').length<2) return {suggestions:[]}; try{ return {suggestions:await bSuggest(payload.kind||'artist',payload.q)}; }catch(_){ return {suggestions:[]}; } }
   const wantDz = !payload.use || payload.use.includes('deezer');
   if(!wantDz) return {needSource:true};
   try{
-    if(payload.mode==='suggest'){ if((payload.q||'').length<2) return {suggestions:[]}; return {suggestions:await bSuggest(payload.kind||'artist',payload.q)}; }
     if(payload.mode==='album'){ if(!payload.id) return {error:'missing_id'}; return await bAlbum(payload.id); }
     if(payload.mode==='track'){ const r=payload.id?await bTrackById(payload.id):await bTrackSearch(payload.q); return {mode:'track',results:r.results,source:'deezer'}; }
     const x=await bArtist(payload.q, payload.prov==='deezer'?payload.id:'');
@@ -475,9 +476,9 @@ const SRC_PREF='isrcfinder.sources.v1';
 function getSources(){ try{ return JSON.parse(localStorage.getItem(SRC_PREF)||'{}'); }catch(_){ return {}; } }
 function setSources(s){ try{ localStorage.setItem(SRC_PREF,JSON.stringify(s)); }catch(_){} }
 function enabledSources(){ const s=getSources(), k=getKeys(); const out=[];
-  if(s.deezer) out.push('deezer');
-  if(s.spotify && k.spId && k.spSecret) out.push('spotify');
-  if(s.tidal && k.tdId && k.tdSecret) out.push('tidal');
+  if(s.deezer) out.push('deezer');                 // Deezer: opt-in (spunta)
+  if(k.spId && k.spSecret) out.push('spotify');    // Spotify: attivo se hai le chiavi
+  if(k.tdId && k.tdSecret) out.push('tidal');      // Tidal: attivo se hai le chiavi
   return out;
 }
 function keyBody(){ const k=currentKeys(); const b={ use:enabledSources() };
@@ -493,16 +494,14 @@ function refreshKeyState(){
   setDot('dz-state', en.includes('deezer'));
   setDot('sp-state', en.includes('spotify'));
   setDot('td-state', en.includes('tidal'));
-  if($('sp-label')) $('sp-label').textContent = spKey ? '🔑 chiavi ok ✓' : '🔑 serve Client ID + Secret';
-  if($('td-label')) $('td-label').textContent = tdKey ? '🔑 chiavi ok ✓' : '🔑 serve Client ID + Secret';
+  if($('sp-label')) $('sp-label').textContent = spKey ? '🔑 chiavi ok ✓ · attiva' : '🔑 serve Client ID + Secret';
+  if($('td-label')) $('td-label').textContent = tdKey ? '🔑 chiavi ok ✓ · attiva' : '🔑 serve Client ID + Secret';
   if($('use-deezer')) $('use-deezer').checked=!!s.deezer;
-  if($('use-spotify')) $('use-spotify').checked=!!s.spotify;
-  if($('use-tidal')) $('use-tidal').checked=!!s.tidal;
   const gd=$('gear-dot'); if(gd) gd.className='dot '+(en.length?'on':'off');
   if($('sp-id')) $('sp-id').value=k.spId||''; if($('sp-secret')) $('sp-secret').value=k.spSecret||'';
   if($('td-id')) $('td-id').value=k.tdId||''; if($('td-secret')) $('td-secret').value=k.tdSecret||'';
 }
-function onSourceToggle(){ setSources({ deezer:$('use-deezer').checked, spotify:$('use-spotify').checked, tidal:$('use-tidal').checked }); refreshKeyState(); }
+function onSourceToggle(){ const s=getSources(); s.deezer=$('use-deezer').checked; setSources(s); refreshKeyState(); }
 /* ---------------- tema (sistema / chiaro / scuro) ---------------- */
 const THEME='isrcfinder.theme';
 function getTheme(){ try{ return localStorage.getItem(THEME)||'system'; }catch(_){ return 'system'; } }
@@ -521,21 +520,15 @@ $('btn-settings').onclick=()=>openSettings(true);
 $('btn-settings-close').onclick=()=>openSettings(false);
 $('settings-modal').addEventListener('click',(e)=>{ if(e.target===$('settings-modal')) openSettings(false); });
 document.addEventListener('keydown',(e)=>{ if(e.key==='Escape') openSettings(false); });
-['use-deezer','use-spotify','use-tidal'].forEach(id=>{ const el=$(id); if(el) el.addEventListener('change', onSourceToggle); });
+{ const el=$('use-deezer'); if(el) el.addEventListener('change', onSourceToggle); }
 $('sp-save').onclick=()=>{
   const f=readFields();
   try{ localStorage.setItem(KEYS,JSON.stringify(f)); }catch(_){}
-  // abilita in automatico le piattaforme di cui hai appena messo le chiavi
-  const s=getSources();
-  if(f.spId&&f.spSecret) s.spotify=true;
-  if(f.tdId&&f.tdSecret) s.tidal=true;
-  setSources(s);
   $('sp-msg').textContent='Salvate ✓ — ora prova a cercare.';
   refreshKeyState(); setTimeout(()=>{$('sp-msg').textContent='';},3000);
 };
 $('sp-clear').onclick=()=>{ try{ localStorage.removeItem(KEYS); }catch(_){}
   ['sp-id','sp-secret','td-id','td-secret'].forEach(id=>{ if($(id)) $(id).value=''; });
-  const s=getSources(); s.spotify=false; s.tidal=false; setSources(s);
   refreshKeyState(); $('sp-msg').textContent='Rimosse.'; setTimeout(()=>{$('sp-msg').textContent='';},2000); };
 
 /* ---------------- modalità ---------------- */
@@ -581,7 +574,7 @@ $('suggest').addEventListener('mousedown',(e)=>{ // mousedown: precede il blur
   const it=e.target.closest('.it'); if(!it) return; e.preventDefault();
   pickSug(sugItems[+it.dataset.i]);
 });
-function pickSug(s){ if(!s) return; $('q').value=s.label; selId=s.id||''; selProv='deezer'; hideSug(); runSearch(); }
+function pickSug(s){ if(!s) return; $('q').value=s.label; selId=s.id||''; selProv=s.prov||'deezer'; hideSug(); runSearch(); }
 $('q').addEventListener('keydown',(e)=>{
   const open=!$('suggest').classList.contains('hidden');
   if(open && (e.key==='ArrowDown'||e.key==='ArrowUp')){ e.preventDefault();

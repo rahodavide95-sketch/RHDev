@@ -614,7 +614,7 @@ async function bSpArtist(name,id,tok){
   // PROBE: alcuni token Spotify rifiutano certi valori di limit ("Invalid limit").
   // Trovo il massimo davvero accettato (da 20 giu' fino a 1), usando lo stesso formato reale.
   let LIM=0, probeInfo='';
-  for(const L of [20,10,5,3,1]){
+  for(const L of [50,20,10,5,3,1]){
     try{ await spG(`/artists/${who.id}/albums?include_groups=album,single&limit=${L}&offset=0`,tok); LIM=L; break; }
     catch(e){ probeInfo='fail@'+L+':'+(e.message||e); }
   }
@@ -1146,7 +1146,7 @@ $('cards').addEventListener('click',(e)=>{ const b=e.target.closest('[data-album
   e.preventDefault(); openAlbum(b.dataset.album, b.dataset.atitle, b.dataset.prov||'deezer'); });
 // gestisci l'eventuale ritorno dal login Spotify, poi aggiorna lo stato
 /* >>> VERSIONE: aggiornare questo numero a OGNI deploy <<< */
-const VERSION='V32';
+const VERSION='V33';
 try{ const vb=$('ver-badge'); if(vb) vb.textContent=VERSION; console.log('ISRC Finder', VERSION); }catch(_){}
 spHandleRedirect().then(()=>refreshKeyState()).catch(()=>refreshKeyState());
 if('serviceWorker' in navigator){

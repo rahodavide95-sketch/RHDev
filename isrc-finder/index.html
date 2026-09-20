@@ -65,6 +65,7 @@
   th{position:sticky; top:0; background:var(--panel2); color:var(--muted); font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.4px; cursor:pointer; white-space:nowrap}
   th .arr{opacity:.6; font-size:10px} tr:hover td{background:rgba(255,255,255,.02)}
   td.isrc{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; letter-spacing:.5px; white-space:nowrap}
+  .relimg{width:26px;height:26px;border-radius:5px;object-fit:cover;vertical-align:middle;margin-right:8px}
   .copy{cursor:pointer; color:var(--muted); border:0; background:none; padding:0 0 0 8px; font-size:12px}
   .copy:hover{color:var(--accent)}
   .badge{display:inline-block; font-size:10px; font-weight:700; padding:2px 7px; border-radius:999px; background:var(--chip); color:var(--muted)}
@@ -317,7 +318,8 @@ function render(){
     <div class="stat"><div class="n" style="color:var(--warn)">${ROWS.length-withIsrc}</div><div class="l">Senza ISRC</div></div>`;
   $('tbody').innerHTML=VIEW.map((r,i)=>{
     const isrc=r.isrc?`<span>${esc(r.isrc)}</span><button class="copy" data-copy="${esc(r.isrc.split('/')[0].trim())}">⧉</button>`:`<span class="noisrc">— assente —</span>`;
-    return `<tr><td>${i+1}</td><td>${esc(r.title)}</td><td class="isrc">${isrc}</td><td>${esc(r.release)}</td><td>${esc(r.date)}</td></tr>`;
+    const rel = (r.image?`<img class="relimg" src="${esc(r.image)}" alt="" loading="lazy">`:'')+esc(r.release);
+    return `<tr><td>${i+1}</td><td>${esc(r.title)}</td><td class="isrc">${isrc}</td><td>${rel}</td><td>${esc(r.date)}</td></tr>`;
   }).join('');
   $('res-artist').classList.remove('hidden');
   document.querySelectorAll('#tbl th').forEach((th)=>{const a=th.querySelector('.arr');if(a)a.textContent=th.dataset.k===sortK?(sortDir>0?'▲':'▼'):'';});

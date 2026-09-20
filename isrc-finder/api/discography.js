@@ -286,8 +286,16 @@ async function dzTrackSearch(q) {
 }
 async function dzAlbumById(id) {
   const a = await dzGet(`${DZ}/album/${id}`);
-  const rows = (a.tracks?.data || []).map((t) => ({ artist: t.artist?.name || '', title: t.title || '', isrc: t.isrc || '',
-    release: a.title || '', date: a.release_date || '', sources: ['deezer'], url: t.link || '' }));
+  const cover = a.cover_small || a.cover_medium || '';
+  const rows = (a.tracks?.data || []).map((t) => ({ id: t.id, artist: t.artist?.name || '', title: t.title || '', isrc: t.isrc || '',
+    release: a.title || '', date: a.release_date || '', sources: ['deezer'], url: t.link || '', image: cover }));
+  const need = rows.filter((p) => !p.isrc && p.id);
+  for (let i = 0; i < need.length; i += 8) {
+    await Promise.all(need.slice(i, i + 8).map(async (p) => {
+      try { const t = await dzGet(`${DZ}/track/${p.id}`); p.isrc = t.isrc || ''; } catch (_) {}
+    }));
+  }
+  rows.forEach((p) => delete p.id);
   return { rows, artist: (a.artist?.name || '') + ' — ' + (a.title || ''), err: null };
 }
 async function dzArtistId(name) {
@@ -302,20 +310,29 @@ async function dzDiscography(name, artistId) {
   else { who = await dzArtistId(name); if (!who) return { rows: [], artist: '', err: null }; }
   const albums = []; let url = `${DZ}/artist/${who.id}/albums?limit=100`;
   for (let i = 0; i < 20 && url; i++) { const d = await dzGet(url); albums.push(...(d.data || [])); url = d.next || ''; }
-  const rows = []; const seen = new Set();
+  // raccogli le tracce dell'artista (filtrando le compilation altrui)
+  const picked = []; const seen = new Set();
   for (const al of albums) {
     let ad; try { ad = await dzGet(`${DZ}/album/${al.id}`); } catch (_) { continue; }
     const rel = ad.title || al.title || ''; const date = ad.release_date || al.release_date || '';
+    const cover = ad.cover_small || ad.cover_medium || al.cover_small || al.cover_medium || '';
     for (const t of (ad.tracks?.data || [])) {
-      // TIENI solo le tracce effettivamente del nostro artista: scarta quelle di
-      // altri artisti presenti nelle compilation / Various Artists.
       const credited = t.artist && (String(t.artist.id) === String(who.id) || norm(t.artist.name) === norm(who.name));
       if (!credited) continue;
-      const key = (t.isrc || '').toUpperCase() || (norm(t.title) + '|' + norm(t.artist?.name || ''));
+      const key = norm(t.title) + '|' + norm(rel);
       if (seen.has(key)) continue; seen.add(key);
-      rows.push({ artist: t.artist?.name || who.name, title: t.title || '', isrc: t.isrc || '', release: rel, date, sources: ['deezer'], url: t.link || '' });
+      picked.push({ id: t.id, artist: t.artist?.name || who.name, title: t.title || '', isrc: t.isrc || '', release: rel, date, image: cover, url: t.link || '' });
     }
   }
+  // l'ISRC NON è nella tracklist dell'album: leggilo dal dettaglio traccia (a lotti)
+  const need = picked.filter((p) => !p.isrc && p.id);
+  const CAP = 600;
+  for (let i = 0; i < need.length && i < CAP; i += 8) {
+    await Promise.all(need.slice(i, i + 8).map(async (p) => {
+      try { const t = await dzGet(`${DZ}/track/${p.id}`); p.isrc = t.isrc || ''; } catch (_) {}
+    }));
+  }
+  const rows = picked.map((p) => ({ artist: p.artist, title: p.title, isrc: p.isrc, release: p.release, date: p.date, sources: ['deezer'], url: p.url, image: p.image }));
   rows.sort((a, b) => (b.date || '').localeCompare(a.date || '') || (a.title || '').localeCompare(b.title || ''));
   return { rows, artist: who.name, err: null };
 }

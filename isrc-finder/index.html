@@ -649,25 +649,20 @@ async function bSpArtist(name,id,tok){
     }
   }, 6);
   const nFromAlb=rows.length; let searchErr='';
-  // FALLBACK: cerca le tracce per nome artista (prende comparse/compilation che la scansione album non vede)
-  try{
-    for(const field of ['artist:"'+who.name+'"', who.name]){
-      let sfails=0;
-      for(let off=0; off+LIM<=1000; off+=LIM){
-        let sd=null;
-        for(let a=0;a<3 && !sd;a++){ try{ sd=await spG(`/search?q=${encodeURIComponent(field)}&type=track&limit=${LIM}&offset=${off}`,tok); }catch(e){ searchErr=(e.message||e)+''; if(a<2) await bsleep(400*(a+1)); } }
-        if(!sd){ sfails++; if(sfails>=3) break; continue; }
-        const items=(sd.tracks&&sd.tracks.items)||[];
-        for(const tk of items){
-          const cr=(tk.artists||[]).some(x=>x.id===who.id||norm(x.name)===norm(who.name)); if(!cr) continue;
-          const rel=(tk.album&&tk.album.name)||''; const key=keyOf(tk,rel); if(seenKey.has(key)) continue; seenKey.add(key);
-          const o={artist:(tk.artists||[]).map(x=>x.name).join(', '),title:tk.name||'',isrc:(tk.external_ids&&tk.external_ids.isrc)||'',release:rel,date:(tk.album&&tk.album.release_date)||'',sources:['spotify'],url:(tk.external_urls&&tk.external_urls.spotify)||'',image:bigSp(tk.album&&tk.album.images),tid:tk.id};
-          rows.push(o); if(tk.id&&!o.isrc) idx.set(tk.id,o);
-        }
-        if(!(sd.tracks&&sd.tracks.next)||items.length<LIM) break;
-      }
-    }
-  }catch(_){}
+  // FALLBACK ricerca per nome artista (comparse/compilation): pagine in PARALLELO, con tetto.
+  const CAPS=600; // massimo risultati per query da esaminare (tempo limitato)
+  const addTk=(tk)=>{ const cr=(tk.artists||[]).some(x=>x.id===who.id||norm(x.name)===norm(who.name)); if(!cr) return;
+    const rel=(tk.album&&tk.album.name)||''; const key=keyOf(tk,rel); if(seenKey.has(key)) return; seenKey.add(key);
+    const o={artist:(tk.artists||[]).map(x=>x.name).join(', '),title:tk.name||'',isrc:(tk.external_ids&&tk.external_ids.isrc)||'',release:rel,date:(tk.album&&tk.album.release_date)||'',sources:['spotify'],url:(tk.external_urls&&tk.external_urls.spotify)||'',image:bigSp(tk.album&&tk.album.images),tid:tk.id};
+    rows.push(o); if(tk.id&&!o.isrc) idx.set(tk.id,o); };
+  const spSearch=async(field,off)=>{ let sd=null; for(let a=0;a<2 && !sd;a++){ try{ sd=await spG(`/search?q=${encodeURIComponent(field)}&type=track&limit=${LIM}&offset=${off}`,tok); }catch(e){ searchErr=(e.message||e)+''; if(a<1) await bsleep(250); } } return sd; };
+  for(const field of ['artist:"'+who.name+'"', who.name]){
+    const first=await spSearch(field,0); if(!first) continue;
+    for(const tk of (first.tracks&&first.tracks.items)||[]) addTk(tk);
+    const total=Math.min((first.tracks&&first.tracks.total)||0, CAPS, 1000);
+    const offs=[]; for(let off=LIM; off<total; off+=LIM) offs.push(off);
+    await pmap(offs, async(off)=>{ const sd=await spSearch(field,off); if(sd) for(const tk of (sd.tracks&&sd.tracks.items)||[]) addTk(tk); }, 6);
+  }
   // Arricchimento ISRC in PARALLELO: batch /tracks?ids=; se vietato (403) passa al singolo /tracks/{id}.
   const tids=[...idx.keys()]; let isrcMode='batch', batchForbidden=false;
   const chunks=[]; for(let i=0;i<tids.length;i+=BAT) chunks.push(tids.slice(i,i+BAT));
@@ -1123,7 +1118,7 @@ $('cards').addEventListener('click',(e)=>{ const b=e.target.closest('[data-album
   e.preventDefault(); openAlbum(b.dataset.album, b.dataset.atitle, b.dataset.prov||'deezer'); });
 // gestisci l'eventuale ritorno dal login Spotify, poi aggiorna lo stato
 /* >>> VERSIONE: aggiornare questo numero a OGNI deploy <<< */
-const VERSION='V24';
+const VERSION='V25';
 try{ const vb=$('ver-badge'); if(vb) vb.textContent=VERSION; console.log('ISRC Finder', VERSION); }catch(_){}
 spHandleRedirect().then(()=>refreshKeyState()).catch(()=>refreshKeyState());
 if('serviceWorker' in navigator){

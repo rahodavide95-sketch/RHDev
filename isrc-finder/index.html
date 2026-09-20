@@ -603,7 +603,7 @@ const DISCO_TTL=6*3600*1000; // cache 6 ore
 function discoCacheGet(id){ try{ const c=JSON.parse(localStorage.getItem('isrcfinder.disco.'+id)||'null'); if(c&&c.rows&&(Date.now()-c.t<DISCO_TTL)) return c; }catch(_){} return null; }
 function discoCacheSet(id,obj){ try{ localStorage.setItem('isrcfinder.disco.'+id, JSON.stringify({t:Date.now(),...obj})); }catch(_){} }
 async function bSpArtist(name,id,tok){
-  let who={id,name}; let dbg=''; const T0=Date.now(); const overBudget=()=>Date.now()-T0>16000;
+  let who={id,name}; let dbg=''; const T0=Date.now(); const overBudget=()=>Date.now()-T0>12000;
   if(id){ const c=discoCacheGet(id); if(c) return {rows:c.rows,artist:c.artist,artistInfo:c.artistInfo,diag:'(cache) '+(c.diag||'')}; }
   if(!id){ let s; try{ s=await spG(`/search?q=${encodeURIComponent(name)}&type=artist&limit=5`,tok);}catch(e){ return {rows:[],artist:name,artistInfo:null,diag:'ricerca artista fallita: '+(e.message||e)}; }
     const items=(s.artists&&s.artists.items)||[]; if(!items.length) return {rows:[],artist:name,artistInfo:null,diag:'nessun artista trovato con questo nome'}; const pick=items.find(a=>norm(a.name)===norm(name))||items[0]; who={id:pick.id,name:pick.name}; }
@@ -642,7 +642,8 @@ async function bSpArtist(name,id,tok){
   // In PARALLELO (piu' album insieme) per velocizzare; 403 => stop immediato (non si recupera).
   await pmap(albums, async(m)=>{
     if(albForbidden||overBudget()||!m||!m.id) return; detAlb++;
-    for(let toff=0; toff<400; toff+=LIM){
+    const cap=Math.min(400, Math.max(LIM, (m.total_tracks||LIM))); // niente pagine vuote: uso total_tracks
+    for(let toff=0; toff<cap; toff+=LIM){
       if(albForbidden||overBudget()) return;
       let td=null;
       for(let a=0;a<2 && !td;a++){ try{ td=await spG(`/albums/${m.id}/tracks?limit=${LIM}&offset=${toff}`,tok); }catch(e){ detErr=(e.message||e)+''; if(is403(e.message)){ albForbidden=true; return; } if(a<1) await bsleep(250); } }
@@ -656,7 +657,7 @@ async function bSpArtist(name,id,tok){
   }, 4);
   const nFromAlb=rows.length; let searchErr='';
   // FALLBACK ricerca per nome artista (comparse/compilation): pagine in PARALLELO, con tetto e budget.
-  const CAPS=300; // massimo risultati da esaminare (tempo limitato)
+  const CAPS=150; // massimo risultati da esaminare (tempo limitato)
   const addTk=(tk)=>{ const cr=(tk.artists||[]).some(x=>x.id===who.id||norm(x.name)===norm(who.name)); if(!cr) return;
     const rel=(tk.album&&tk.album.name)||''; const key=keyOf(tk,rel); if(seenKey.has(key)) return; seenKey.add(key);
     const o={artist:(tk.artists||[]).map(x=>x.name).join(', '),title:tk.name||'',isrc:(tk.external_ids&&tk.external_ids.isrc)||'',release:rel,date:(tk.album&&tk.album.release_date)||'',sources:['spotify'],url:(tk.external_urls&&tk.external_urls.spotify)||'',image:bigSp(tk.album&&tk.album.images),tid:tk.id};
@@ -1127,7 +1128,7 @@ $('cards').addEventListener('click',(e)=>{ const b=e.target.closest('[data-album
   e.preventDefault(); openAlbum(b.dataset.album, b.dataset.atitle, b.dataset.prov||'deezer'); });
 // gestisci l'eventuale ritorno dal login Spotify, poi aggiorna lo stato
 /* >>> VERSIONE: aggiornare questo numero a OGNI deploy <<< */
-const VERSION='V28';
+const VERSION='V29';
 try{ const vb=$('ver-badge'); if(vb) vb.textContent=VERSION; console.log('ISRC Finder', VERSION); }catch(_){}
 spHandleRedirect().then(()=>refreshKeyState()).catch(()=>refreshKeyState());
 if('serviceWorker' in navigator){

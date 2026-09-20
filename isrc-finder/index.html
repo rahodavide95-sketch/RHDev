@@ -163,6 +163,7 @@
   <div id="res-artist" class="hidden">
     <div class="stats" id="stats"></div>
     <div class="toolbar">
+      <button class="ghost back" id="btn-back-a" hidden>← Torna al catalogo</button>
       <input type="text" id="filter" placeholder="Filtra per titolo, ISRC, release…">
       <button class="ghost" id="btn-csv">⬇ CSV</button>
       <button class="ghost" id="btn-json">⬇ JSON</button>
@@ -180,7 +181,7 @@
 
   <!-- risultati TRACCIA -->
   <div id="res-track" class="hidden">
-    <div class="toolbar"><button class="ghost" id="btn-csv-t">⬇ CSV</button><button class="ghost" id="btn-json-t">⬇ JSON</button></div>
+    <div class="toolbar"><button class="ghost back" id="btn-back-t" hidden>← Torna al catalogo</button><button class="ghost" id="btn-csv-t">⬇ CSV</button><button class="ghost" id="btn-json-t">⬇ JSON</button></div>
     <div class="cards" id="cards"></div>
   </div>
 
@@ -195,6 +196,9 @@ const esc=(s)=>(s==null?'':String(s)).replace(/[&<>"]/g,(c)=>({'&':'&amp;','<':'
 function log(m,spin,isErr){const el=$('log');el.className=isErr?'err':'';el.innerHTML=(spin?'<span class="spinner"></span>':'')+m;}
 
 let MODE='artist', ROWS=[], VIEW=[], TRACKS=[], sortK='date', sortDir=-1;
+let catalogD=null; // ultima discografia artista, per "Torna al catalogo"
+function showBack(v){ ['btn-back-a','btn-back-t'].forEach((id)=>{const el=$(id); if(el) el.hidden=!(v&&catalogD);}); }
+function backToCatalog(){ if(!catalogD) return; showArtist(catalogD,''); showBack(false); try{window.scrollTo({top:0,behavior:'smooth'});}catch(_){} }
 let selId='', selProv=''; // id + provenienza scelti da un suggerimento (Deezer)
 let sugItems=[], sugActive=-1, sugTimer=null, sugSeq=0;
 
@@ -313,7 +317,9 @@ async function runSearch(){
       ? 'Chiavi Spotify mancanti: apri “Chiavi Spotify” qui sopra e incollale per avere suggerimenti con foto e info complete. (Ora sto usando MusicBrainz, dati base.)'
       : (d.note||'');
     // instrada in base al formato della risposta: results = schede traccia, rows = tabella
-    if(d.results!==undefined) showTrack(d,note); else showArtist(d,note);
+    if(d.results!==undefined){ showTrack(d,note); catalogD=null; }
+    else { showArtist(d,note); catalogD = (reqMode==='artist') ? d : null; }
+    showBack(false); // ricerca dalla barra = nuovo contesto
   }catch(e){ log('Errore di rete: '+(e.message||e),false,true); }
   finally{ $('go').disabled=false; refreshKeyState(); }
 }
@@ -328,6 +334,7 @@ async function openBy(payload, msg){
     if(!r.ok){ log('Errore server: HTTP '+r.status,false,true); return; }
     const d=await r.json(); if(d.error){ log('Errore: '+d.error,false,true); return; }
     if(d.results!==undefined) showTrack(d,d.note||''); else showArtist(d,d.note||'');
+    showBack(true); // sei in un dettaglio: mostra il ritorno al catalogo
     try{ window.scrollTo({top:0,behavior:'smooth'}); }catch(_){}
   }catch(e){ log('Errore di rete: '+(e.message||e),false,true); }
   finally{ $('go').disabled=false; }
@@ -416,6 +423,7 @@ $('btn-csv-t').onclick=()=>{if(TRACKS.length)download('traccia.csv',csvTrack(TRA
 $('btn-json-t').onclick=()=>{if(TRACKS.length)download('traccia.json',JSON.stringify(TRACKS,null,2),'application/json');};
 $('btn-copy-isrc').onclick=async()=>{const l=[...new Set(ROWS.map((r)=>(r.isrc||'').split('/').map(s=>s.trim())).flat().filter(Boolean))];
   if(!l.length){log('Nessun ISRC da copiare.');return;} try{await navigator.clipboard.writeText(l.join('\n'));log(`Copiati ${l.length} ISRC ✓`);}catch(_){log('Copia non riuscita.');}};
+$('btn-back-a').onclick=backToCatalog; $('btn-back-t').onclick=backToCatalog;
 $('filter').addEventListener('input',render);
 document.querySelectorAll('#tbl th').forEach((th)=>{th.onclick=()=>{const k=th.dataset.k;if(k==='idx')return;if(sortK===k)sortDir*=-1;else{sortK=k;sortDir=1;}render();};});
 document.body.addEventListener('click',async(e)=>{const b=e.target.closest('.copy');if(!b)return;

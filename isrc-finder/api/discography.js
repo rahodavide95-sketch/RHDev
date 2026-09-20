@@ -307,6 +307,10 @@ async function dzDiscography(name, artistId) {
     let ad; try { ad = await dzGet(`${DZ}/album/${al.id}`); } catch (_) { continue; }
     const rel = ad.title || al.title || ''; const date = ad.release_date || al.release_date || '';
     for (const t of (ad.tracks?.data || [])) {
+      // TIENI solo le tracce effettivamente del nostro artista: scarta quelle di
+      // altri artisti presenti nelle compilation / Various Artists.
+      const credited = t.artist && (String(t.artist.id) === String(who.id) || norm(t.artist.name) === norm(who.name));
+      if (!credited) continue;
       const key = (t.isrc || '').toUpperCase() || (norm(t.title) + '|' + norm(t.artist?.name || ''));
       if (seen.has(key)) continue; seen.add(key);
       rows.push({ artist: t.artist?.name || who.name, title: t.title || '', isrc: t.isrc || '', release: rel, date, sources: ['deezer'], url: t.link || '' });

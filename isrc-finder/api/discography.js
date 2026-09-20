@@ -430,28 +430,31 @@ export default async function handler(req) {
   try {
     // Spotify SOLO se le chiavi funzionano davvero; altrimenti Deezer (senza
     // chiavi) come predefinito, MusicBrainz come ultima spiaggia.
-    const t = hasSp ? await spToken(SP_ID, SP_SECRET) : { tok: '', err: 'not_configured' };
-    const auth = t.tok ? bearer(t.tok) : null;
-
-    // -------- suggerimenti (con immagini) --------
+    // I SUGGERIMENTI sono sempre Deezer (veloci, con immagini, nessuna chiave):
+    // così compaiono subito mentre si scrive, senza attendere Spotify.
     if (mode === 'suggest') {
       if (q.length < 2) return json({ suggestions: [] });
-      if (auth) { const x = await spSuggest(body.kind || 'artist', q, auth); return json({ suggestions: x.suggestions, source: 'spotify', err: x.err }); }
       try { const s = await dzSuggest(body.kind || 'artist', q); return json({ suggestions: s, source: 'deezer' }); }
       catch (e) { return json({ suggestions: [], err: 'deezer: ' + String(e?.message || e) }); }
     }
 
+    // Provenienza (da un suggerimento Deezer, da un link Spotify, o testo libero)
+    const prov = (body.prov || '').trim();
+    const t = (hasSp && prov !== 'deezer') ? await spToken(SP_ID, SP_SECRET) : { tok: '', err: 'not_configured' };
+    const auth = t.tok ? bearer(t.tok) : null;
+    const trySpotify = !!auth && prov !== 'deezer';
+
     // -------- album (da link diretto) --------
     if (mode === 'album') {
       if (!id) return json({ error: 'missing_id' }, 400);
-      if (auth) { const x = await spAlbumById(id, auth); if (!x.err) return json({ mode: 'artist', artist: x.artist, rows: x.rows, count: x.rows.length, source: 'spotify' }); }
+      if (trySpotify) { const x = await spAlbumById(id, auth); if (!x.err) return json({ mode: 'artist', artist: x.artist, rows: x.rows, count: x.rows.length, source: 'spotify' }); }
       try { const x = await dzAlbumById(id); return json({ mode: 'artist', artist: x.artist, rows: x.rows, count: x.rows.length, source: 'deezer' }); }
       catch (e) { return json({ mode: 'artist', rows: [], source: 'deezer', note: 'Deezer: ' + String(e?.message || e) }); }
     }
 
     // -------- traccia --------
     if (mode === 'track') {
-      if (auth) {
+      if (trySpotify) {
         const x = id ? await spTrackById(id, auth) : await spTrackSearch(q, auth);
         if (!x.err && (x.results || []).length) return json({ mode, results: x.results, source: 'spotify' });
       }
@@ -460,7 +463,7 @@ export default async function handler(req) {
     }
 
     // -------- artista --------
-    if (auth) {
+    if (trySpotify) {
       const x = await spDiscography(q, id, auth);
       if (!x.err && x.rows.length) return json({ mode: 'artist', artist: x.artist, rows: x.rows, count: x.rows.length, source: 'spotify' });
     }

@@ -639,10 +639,11 @@ async function bSpArtist(name,id,tok){
 async function dzLocal(payload){
   const use=payload.use||[];
   const spTok = use.includes('spotify') ? await spBrowserToken() : '';
-  // suggerimenti: Spotify se sei loggato e attivo, altrimenti Deezer (sempre)
+  // suggerimenti: seguono SOLO le fonti attive (Spotify se loggato; Deezer solo se attivo)
   if(payload.mode==='suggest'){ if((payload.q||'').length<2) return {suggestions:[]};
     if(spTok){ try{ const s=await bSpSuggest(payload.kind||'artist',payload.q,spTok); if(s.length) return {suggestions:s,source:'spotify'}; }catch(_){} }
-    try{ return {suggestions:await bSuggest(payload.kind||'artist',payload.q)}; }catch(_){ return {suggestions:[]}; } }
+    if(use.includes('deezer')){ try{ return {suggestions:await bSuggest(payload.kind||'artist',payload.q),source:'deezer'}; }catch(_){ return {suggestions:[]}; } }
+    return {suggestions:[]}; }
   const wantDz = use.includes('deezer'); const wantSp = !!spTok;
   // needSource/needSpotifyLogin SOLO se davvero non c'è alcuna fonte utilizzabile
   if(!wantDz && !wantSp){ return use.includes('spotify') ? {needSpotifyLogin:true} : {needSource:true}; }
@@ -1067,7 +1068,7 @@ $('cards').addEventListener('click',(e)=>{ const b=e.target.closest('[data-album
   e.preventDefault(); openAlbum(b.dataset.album, b.dataset.atitle, b.dataset.prov||'deezer'); });
 // gestisci l'eventuale ritorno dal login Spotify, poi aggiorna lo stato
 /* >>> VERSIONE: aggiornare questo numero a OGNI deploy <<< */
-const VERSION='V14';
+const VERSION='V15';
 try{ const vb=$('ver-badge'); if(vb) vb.textContent=VERSION; console.log('ISRC Finder', VERSION); }catch(_){}
 spHandleRedirect().then(()=>refreshKeyState()).catch(()=>refreshKeyState());
 if('serviceWorker' in navigator){ window.addEventListener('load', ()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }

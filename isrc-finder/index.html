@@ -625,20 +625,22 @@ async function bSpArtist(name,id,tok){
   // OGNI singola traccia: deduplica solo per ID univoco della traccia (mai per titolo/release,
   // cosi' remix, versioni e uscite diverse restano TUTTE). Ripiego su titolo|release solo se manca l'id.
   const keyOf=(tk,rel)=> tk.id ? ('id:'+tk.id) : ('t:'+norm(tk.name)+'|'+norm(rel||''));
-  let detErr=''; let detAlb=0, detSeen=0, detCred=0; const BAT=Math.min(LIM,20)||10;
+  let detErr=''; let detAlb=0, detSeen=0, detCred=0, albForbidden=false; const BAT=Math.min(LIM,20)||10;
+  const is403=(m)=>((m||'')+'').indexOf('403')>=0;
   // Estrazione tracce PER ALBUM con /albums/{id}/tracks (il batch /albums?ids= puo' dare 403).
-  for(const m of albums){ if(!m||!m.id) continue; detAlb++;
+  // Se un endpoint album e' vietato (403) smetto SUBITO: non si recupera, evito decine di secondi persi.
+  for(const m of albums){ if(albForbidden) break; if(!m||!m.id) continue; detAlb++;
     for(let toff=0; toff<400; toff+=LIM){
-      let td=null;
-      for(let a=0;a<3 && !td;a++){ try{ td=await spG(`/albums/${m.id}/tracks?limit=${LIM}&offset=${toff}`,tok); }catch(e){ detErr=(e.message||e)+''; if(a<2) await bsleep(350*(a+1)); } }
-      if(!td) break;
+      let td=null, stop=false;
+      for(let a=0;a<2 && !td;a++){ try{ td=await spG(`/albums/${m.id}/tracks?limit=${LIM}&offset=${toff}`,tok); }catch(e){ detErr=(e.message||e)+''; if(is403(e.message)){ albForbidden=true; stop=true; break; } if(a<1) await bsleep(300); } }
+      if(stop||!td) break;
       const its=td.items||[];
       for(const tk of its){ detSeen++; const cr=(tk.artists||[]).some(x=>x.id===who.id||norm(x.name)===norm(who.name)); if(!cr) continue; detCred++;
         const rel=m.name||''; const key=keyOf(tk,rel); if(seenKey.has(key)) continue; seenKey.add(key);
         const o={artist:(tk.artists||[]).map(x=>x.name).join(', '),title:tk.name||'',isrc:'',release:rel,date:m.release_date||'',sources:['spotify'],url:(tk.external_urls&&tk.external_urls.spotify)||'',image:bigSp(m.images),tid:tk.id}; rows.push(o); if(tk.id) idx.set(tk.id,o); }
       if(its.length<LIM) break;
     }
-    await bsleep(40);
+    await bsleep(30);
   }
   const nFromAlb=rows.length; let searchErr='';
   // FALLBACK: cerca le tracce per nome artista (prende comparse/compilation che la scansione album non vede)
@@ -666,10 +668,11 @@ async function bSpArtist(name,id,tok){
   for(let i=0;i<tids.length && !batchForbidden;i+=BAT){ let d=null;
     for(let a=0;a<3 && !d;a++){ try{ d=await spG(`/tracks?ids=${tids.slice(i,i+BAT).join(',')}`,tok); }catch(e){ if((e.message||'').indexOf('403')>=0){ batchForbidden=true; break; } if(a<2) await bsleep(300*(a+1)); } }
     if(!d) continue; for(const tk of d.tracks||[]){const o=tk&&idx.get(tk.id); if(o) o.isrc=(tk.external_ids&&tk.external_ids.isrc)||'';} await bsleep(60); }
-  if(batchForbidden){ isrcMode='singolo';
-    for(const tid of tids){ const o=idx.get(tid); if(!o) continue;
-      try{ const tk=await spG(`/tracks/${tid}`,tok); o.isrc=(tk.external_ids&&tk.external_ids.isrc)||''; }catch(_){}
-      await bsleep(35); } }
+  if(batchForbidden){ isrcMode='singolo'; let singForbidden=false, done=0;
+    for(const tid of tids){ if(singForbidden||done>=400) break; const o=idx.get(tid); if(!o) continue;
+      try{ const tk=await spG(`/tracks/${tid}`,tok); o.isrc=(tk.external_ids&&tk.external_ids.isrc)||''; done++; }
+      catch(e){ if(is403(e.message)){ singForbidden=true; isrcMode='vietato'; break; } }
+      await bsleep(20); } }
   // DEDUPLICA solo per ISRC (stessa registrazione uscita in piu' release = 1 riga).
   // Le tracce SENZA ISRC restano tutte.
   const seenIsrc=new Set(); const out=[];
@@ -1113,7 +1116,7 @@ $('cards').addEventListener('click',(e)=>{ const b=e.target.closest('[data-album
   e.preventDefault(); openAlbum(b.dataset.album, b.dataset.atitle, b.dataset.prov||'deezer'); });
 // gestisci l'eventuale ritorno dal login Spotify, poi aggiorna lo stato
 /* >>> VERSIONE: aggiornare questo numero a OGNI deploy <<< */
-const VERSION='V22';
+const VERSION='V23';
 try{ const vb=$('ver-badge'); if(vb) vb.textContent=VERSION; console.log('ISRC Finder', VERSION); }catch(_){}
 spHandleRedirect().then(()=>refreshKeyState()).catch(()=>refreshKeyState());
 if('serviceWorker' in navigator){

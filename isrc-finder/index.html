@@ -455,7 +455,16 @@ async function bArtist(name,id){
   return {rows,artist:who.name,artistInfo};}
 /* ====== Spotify nel browser (PKCE, senza secret) — funziona su GitHub Pages ====== */
 const SP_TOK='isrcfinder.sptok.v1';
-const spRedirect=()=>(location.origin+location.pathname).replace(/index\.html$/,'');
+// redirect_uri SEMPRE canonico con slash finale: cosi' combacia con quello che
+// GitHub Pages usa al ritorno (aggiunge lo slash) e non fallisce lo scambio token.
+const spRedirect=()=>{ let u=(location.origin+location.pathname).replace(/index\.html$/,''); if(!u.endsWith('/')) u+='/'; return u; };
+// PKCE store: localStorage (sopravvive al redirect anche su iOS/Safari), con ripiego su sessionStorage.
+function pkceSet(k,v){ try{localStorage.setItem('isrcfinder.pkce.'+k,v);}catch(_){}
+  try{sessionStorage.setItem(k,v);}catch(_){} }
+function pkceGet(k){ try{const a=localStorage.getItem('isrcfinder.pkce.'+k); if(a!=null) return a;}catch(_){}
+  try{return sessionStorage.getItem(k);}catch(_){return null;} }
+function pkceDel(k){ try{localStorage.removeItem('isrcfinder.pkce.'+k);}catch(_){}
+  try{sessionStorage.removeItem(k);}catch(_){} }
 function spGetTok(){ try{ return JSON.parse(localStorage.getItem(SP_TOK)||'null'); }catch(_){ return null; } }
 function spSetTok(t){ try{ t?localStorage.setItem(SP_TOK,JSON.stringify(t)):localStorage.removeItem(SP_TOK); }catch(_){}}
 function b64url(buf){ let s=''; const b=new Uint8Array(buf); for(const x of b) s+=String.fromCharCode(x); return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
@@ -465,7 +474,7 @@ async function spLogin(){
   const cid=(getKeys().spId||'').trim();
   if(!cid){ log('Inserisci prima il <b>Client ID</b> di Spotify in ⚙ Impostazioni, poi premi Accedi.',false,true); openSettings(true); return; }
   const v=randHex(48), ch=b64url(await sha256(v)), st=randHex(8);
-  try{ sessionStorage.setItem('sp_v',v); sessionStorage.setItem('sp_cid',cid); sessionStorage.setItem('sp_st',st); }catch(_){}
+  pkceSet('sp_v',v); pkceSet('sp_cid',cid); pkceSet('sp_st',st);
   const u=new URL('https://accounts.spotify.com/authorize');
   u.search=new URLSearchParams({client_id:cid,response_type:'code',redirect_uri:spRedirect(),code_challenge_method:'S256',code_challenge:ch,state:st}).toString();
   location.href=u.toString();
@@ -475,17 +484,21 @@ async function spHandleRedirect(){
   const q=new URLSearchParams(location.search);
   const code=q.get('code'), st=q.get('state');
   if(!code) return;
-  const v=sessionStorage.getItem('sp_v'), cid=sessionStorage.getItem('sp_cid'), st0=sessionStorage.getItem('sp_st');
-  try{ history.replaceState({},'',spRedirect()); }catch(_){}
-  if(!v||!cid||st!==st0) return;
+  const v=pkceGet('sp_v'), cid=pkceGet('sp_cid'), st0=pkceGet('sp_st');
+  const redir=spRedirect();
+  try{ history.replaceState({},'',redir); }catch(_){}
+  if(!v||!cid){ log('Login Spotify non completato (sessione persa). Riprova l\'accesso da ⚙ Impostazioni.',false,true); return; }
+  if(st!==st0){ log('Login Spotify: controllo di sicurezza (state) non valido. Riprova l\'accesso.',false,true); return; }
   try{
     const r=await fetch('https://accounts.spotify.com/api/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
-      body:new URLSearchParams({client_id:cid,grant_type:'authorization_code',code,redirect_uri:spRedirect(),code_verifier:v}).toString()});
-    if(!r.ok) return;
+      body:new URLSearchParams({client_id:cid,grant_type:'authorization_code',code,redirect_uri:redir,code_verifier:v}).toString()});
+    if(!r.ok){ let msg=''; try{ const e=await r.json(); msg=(e.error||'')+(e.error_description?': '+e.error_description:''); }catch(_){}
+      log('Spotify non ha rilasciato il token (HTTP '+r.status+(msg?' — '+msg:'')+'). Verifica che in Spotify Dashboard sia registrato ESATTAMENTE questo Redirect URI: <b>'+redir+'</b>',false,true);
+      return; }
     const d=await r.json();
     if(d.access_token){ spSetTok({access:d.access_token,refresh:d.refresh_token||'',exp:Date.now()+(d.expires_in||3600)*1000,cid}); }
-  }catch(_){}
-  try{ sessionStorage.removeItem('sp_v'); sessionStorage.removeItem('sp_st'); }catch(_){}
+  }catch(e){ log('Errore di rete nello scambio token Spotify: '+(e&&e.message||e),false,true); return; }
+  finally{ pkceDel('sp_v'); pkceDel('sp_st'); pkceDel('sp_cid'); }
 }
 async function spBrowserToken(){
   const t=spGetTok(); if(!t) return '';

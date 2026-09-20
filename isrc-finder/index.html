@@ -62,12 +62,9 @@
   .logo{width:56px;height:56px;border-radius:16px;background:var(--grad);display:grid;place-items:center;
     font-size:15px;font-weight:900;color:#fff;letter-spacing:.5px;box-shadow:0 10px 26px rgba(37,99,235,.35)}
   .brand-txt{min-width:0}
-  h1{font-size:30px; margin:0; font-weight:900; letter-spacing:-1px; line-height:1;
-    background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent; width:max-content; max-width:100%}
-  .chips-row{display:flex; gap:8px; flex-wrap:wrap; margin-top:9px}
-  .fchip{font-size:12px; font-weight:700; color:var(--accent-ink); background:var(--chip); border:1px solid var(--line);
-    padding:4px 11px; border-radius:999px; white-space:nowrap}
-  .tag{margin:1px 0 0; color:var(--muted); font-size:13px}
+  h1{font-size:30px; margin:0; font-weight:900; letter-spacing:-1px; line-height:1.05;
+    background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent}
+  .tag{margin:4px 0 0; color:var(--muted); font-size:13px}
   .iconbtn{position:relative; width:46px;height:46px;border-radius:14px;border:1px solid var(--line);
     background:var(--card); color:var(--ink); font-size:20px; cursor:pointer; box-shadow:var(--shadow); transition:.15s}
   .iconbtn:hover{transform:translateY(-1px); border-color:var(--b1)}
@@ -221,6 +218,38 @@
   .listen.big{padding:14px 26px; font-size:15px}
   .hidden{display:none !important}
   .footer{margin-top:34px; color:var(--muted); font-size:12.5px; text-align:center}
+
+  /* ---------------- mobile ---------------- */
+  @media (max-width:560px){
+    .wrap{padding:16px 14px 60px}
+    header.top{gap:10px; margin-bottom:14px}
+    .logo{width:46px;height:46px;font-size:12px;border-radius:13px}
+    h1{font-size:22px; letter-spacing:-.6px}
+    .tag{font-size:12px; margin-top:3px}
+    .head-actions{gap:8px}
+    .iconbtn{width:42px;height:42px;font-size:17px;border-radius:12px}
+    .seg button{padding:9px 18px}
+    input[type=text],input[type=password]{font-size:16px; padding:13px 15px}
+    button.go{width:100%}
+    .searchbar{gap:10px}
+    .stats{gap:8px}
+    .stat{flex:1 1 30%; min-width:0; padding:10px 12px}
+    .stat .n{font-size:20px}
+    .toolbar{gap:8px}
+    .toolbar input[type=text]{max-width:none; flex:1 1 100%}
+    /* tabella: più compatta e senza la colonna Artista (già nell'intestazione) */
+    table{min-width:0; width:100%; font-size:13px}
+    th,td{padding:11px 10px}
+    #tbl th:nth-child(3), #tbl td:nth-child(3){display:none}
+    .relimg{width:30px;height:30px}
+    /* schede traccia */
+    .tcard{padding:16px; gap:16px}
+    .tcard h3{font-size:20px}
+    .ahero{padding:14px; gap:14px}
+    .ah-img{width:74px;height:74px;flex-basis:74px}
+    .ah-name{font-size:20px}
+    .diff{flex-wrap:wrap}
+  }
 </style>
 </head>
 <body>
@@ -230,11 +259,7 @@
       <div class="logo">ISRC</div>
       <div class="brand-txt">
         <h1>ISRC Finder</h1>
-        <div class="chips-row">
-          <span class="fchip">💿 Discografie complete</span>
-          <span class="fchip">🏷️ ISRC &amp; UPC</span>
-          <span class="fchip">⚡ Nessun login</span>
-        </div>
+        <p class="tag">Discografie e ISRC in un attimo</p>
       </div>
     </div>
     <div class="head-actions">
@@ -346,6 +371,79 @@ const API=new URL('api/discography',location.href).href;
 const norm=(s)=>(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
 const esc=(s)=>(s==null?'':String(s)).replace(/[&<>"]/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function log(m,spin,isErr){const el=$('log');el.className=isErr?'err':'';el.innerHTML=(spin?'<span class="spinner"></span>':'')+m;}
+
+/* ============ Deezer diretto dal browser (JSONP) — per hosting statico ============
+   Su GitHub Pages non c'è la funzione /api: in quel caso usiamo Deezer via JSONP,
+   così l'app funziona lo stesso (Spotify/Tidal restano solo con il server). */
+let STATIC=false, _jn=0;
+const fmtDur=(ms)=>{const s=Math.round((ms||0)/1000);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');};
+function jsonp(url){return new Promise((res,rej)=>{const cb='__dz'+(++_jn);const s=document.createElement('script');
+  const to=setTimeout(()=>{done();rej(new Error('timeout'));},15000);
+  function done(){try{delete window[cb];}catch(_){window[cb]=void 0;}s.remove();clearTimeout(to);}
+  window[cb]=(d)=>{done();res(d);};s.onerror=()=>{done();rej(new Error('jsonp'));};
+  s.src=url+(url.includes('?')?'&':'?')+'output=jsonp&callback='+cb;document.body.appendChild(s);});}
+const DZB='https://api.deezer.com';
+async function dzb(path){const d=await jsonp(DZB+path);if(d&&d.error)throw new Error(d.error.message||d.error.type||'deezer');return d;}
+async function bSuggest(kind,q){
+  if(kind==='track'){const d=await dzb(`/search?q=${encodeURIComponent(q)}&limit=8`);
+    return (d.data||[]).map(t=>({id:String(t.id),kind:'track',label:t.title,sub:[t.artist&&t.artist.name,t.album&&t.album.title].filter(Boolean).join(' · '),image:(t.album&&(t.album.cover_small||t.album.cover_medium))||'',round:false}));}
+  const d=await dzb(`/search/artist?q=${encodeURIComponent(q)}&limit=6`);
+  return (d.data||[]).map(a=>({id:String(a.id),kind:'artist',label:a.name,sub:a.nb_fan?a.nb_fan.toLocaleString('it-IT')+' fan':'',image:a.picture_small||a.picture_medium||'',round:true}));}
+function bBuildTrack(t,al){al=al||t.album||{};const contrib=(t.contributors||[]).map(c=>c.name).filter(Boolean);
+  return {title:t.title||'',version:t.title_version||'',artists:(t.artist&&t.artist.name)||contrib.join(', '),contributors:contrib.join(', '),
+    isrc:t.isrc||'',album:al.title||'',albumType:al.record_type||'',upc:al.upc||'',label:al.label||'',releaseDate:t.release_date||al.release_date||'',
+    totalTracks:al.nb_tracks||'',trackNumber:t.track_position||'',discNumber:t.disk_number||'',duration:fmtDur((t.duration||0)*1000),
+    bpm:t.bpm?Math.round(t.bpm):'',explicit:!!t.explicit_lyrics,genres:((al.genres&&al.genres.data)||[]).map(g=>g.name).join(', '),
+    markets:(t.available_countries||[]).length,albumId:String(al.id||(t.album&&t.album.id)||''),spotifyUrl:t.link||'',previewUrl:t.preview||'',
+    image:al.cover_xl||al.cover_big||al.cover_medium||(t.album&&t.album.cover_big)||'',source:'deezer'};}
+async function bTrackById(id){const t=await dzb(`/track/${id}`);let al=null;try{if(t.album&&t.album.id)al=await dzb(`/album/${t.album.id}`);}catch(_){}return {results:[bBuildTrack(t,al)]};}
+async function bTrackSearch(q){const d=await dzb(`/search?q=${encodeURIComponent(q)}&limit=10`);const items=d.data||[];const cache=new Map();const results=[];
+  for(const t of items){let al=null;const aid=t.album&&t.album.id;if(aid){if(cache.has(aid))al=cache.get(aid);else{try{al=await dzb(`/album/${aid}`);}catch(_){al=null;}cache.set(aid,al);}}results.push(bBuildTrack(t,al));}
+  return {results};}
+async function bAlbum(id){const a=await dzb(`/album/${id}`);const cover=a.cover_small||a.cover_medium||'';
+  const rows=((a.tracks&&a.tracks.data)||[]).map(t=>({tid:String(t.id||''),artist:(t.artist&&t.artist.name)||'',title:t.title||'',isrc:t.isrc||'',release:a.title||'',date:a.release_date||'',sources:['deezer'],url:t.link||'',image:cover}));
+  const need=rows.filter(p=>!p.isrc&&p.tid);for(let i=0;i<need.length;i+=6){await Promise.all(need.slice(i,i+6).map(async p=>{try{const t=await dzb(`/track/${p.tid}`);p.isrc=t.isrc||'';}catch(_){}}));}
+  return {mode:'artist',artist:((a.artist&&a.artist.name)||'')+' — '+(a.title||''),rows,count:rows.length,source:'deezer'};}
+async function bArtist(name,id){
+  let art=null;
+  if(id){try{art=await dzb(`/artist/${id}`);}catch(_){}}
+  if(!art){const s=await dzb(`/search/artist?q=${encodeURIComponent(name)}&limit=5`);const arr=s.data||[];if(!arr.length)return {rows:[],artist:'',artistInfo:null};const pick=arr.find(a=>norm(a.name)===norm(name))||arr[0];try{art=await dzb(`/artist/${pick.id}`);}catch(_){art=pick;}}
+  const who={id:art.id,name:art.name};
+  const artistInfo={name:art.name,image:art.picture_xl||art.picture_big||art.picture_medium||'',fans:art.nb_fan||0,albums:art.nb_album||0,link:art.link||'',source:'deezer'};
+  const albums=[];let index=0;
+  for(let i=0;i<12;i++){const d=await dzb(`/artist/${who.id}/albums?limit=50&index=${index}`);const data=d.data||[];albums.push(...data);if(!d.next||data.length<50)break;index+=50;}
+  const picked=[];const seen=new Set();
+  for(const al of albums){let ad;try{ad=await dzb(`/album/${al.id}`);}catch(_){continue;}
+    const rel=ad.title||al.title||'';const date=ad.release_date||al.release_date||'';const cover=ad.cover_small||ad.cover_medium||'';
+    const ours=ad.artist&&(String(ad.artist.id)===String(who.id)||norm(ad.artist.name)===norm(who.name));
+    for(const t of ((ad.tracks&&ad.tracks.data)||[])){const cr=ours||(t.artist&&(String(t.artist.id)===String(who.id)||norm(t.artist.name)===norm(who.name)));if(!cr)continue;
+      const key=norm(t.title)+'|'+norm(rel);if(seen.has(key))continue;seen.add(key);
+      picked.push({id:t.id,artist:(t.artist&&t.artist.name)||who.name,title:t.title||'',isrc:t.isrc||'',release:rel,date,image:cover,url:t.link||''});}}
+  const need=picked.filter(p=>!p.isrc&&p.id);const CAP=250;
+  for(let i=0;i<need.length&&i<CAP;i+=6){await Promise.all(need.slice(i,i+6).map(async p=>{try{const t=await dzb(`/track/${p.id}`);p.isrc=t.isrc||'';if(!p.date)p.date=t.release_date||'';}catch(_){}}));}
+  const rows=picked.map(p=>({artist:p.artist,title:p.title,isrc:p.isrc,release:p.release,date:p.date,sources:['deezer'],url:p.url,image:p.image,tid:String(p.id||'')}));
+  rows.sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(a.title||'').localeCompare(b.title||''));
+  return {rows,artist:who.name,artistInfo};}
+async function dzLocal(payload){
+  const wantDz = !payload.use || payload.use.includes('deezer');
+  if(!wantDz) return {needSource:true};
+  try{
+    if(payload.mode==='suggest'){ if((payload.q||'').length<2) return {suggestions:[]}; return {suggestions:await bSuggest(payload.kind||'artist',payload.q)}; }
+    if(payload.mode==='album'){ if(!payload.id) return {error:'missing_id'}; return await bAlbum(payload.id); }
+    if(payload.mode==='track'){ const r=payload.id?await bTrackById(payload.id):await bTrackSearch(payload.q); return {mode:'track',results:r.results,source:'deezer'}; }
+    const x=await bArtist(payload.q, payload.prov==='deezer'?payload.id:'');
+    return {mode:'artist',artist:x.artist,artistInfo:x.artistInfo,rows:x.rows,count:x.rows.length,source:'deezer'};
+  }catch(e){ return {error:'Deezer (browser): '+(e.message||e)}; }
+}
+async function apiCall(payload){
+  if(STATIC) return dzLocal(payload);
+  try{
+    const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    if(r.status===404||r.status===405){ STATIC=true; return dzLocal(payload); }
+    if(!r.ok) return {error:'HTTP '+r.status};
+    return await r.json();
+  }catch(e){ try{ return await dzLocal(payload); }catch(_){ return {error:e.message||'rete'}; } }
+}
 
 let MODE='artist', ROWS=[], VIEW=[], TRACKS=[], sortK='date', sortDir=-1;
 let catalogD=null; // ultima discografia artista, per "Torna al catalogo"
@@ -461,15 +559,9 @@ $('q').addEventListener('input',()=>{ selId=''; selProv=''; const v=$('q').value
 async function loadSug(v){
   const seq=++sugSeq;
   try{
-    const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'suggest',kind:MODE,q:v,...keyBody()})});
-    if(!r.ok){ hideSug(); return; }
-    const d=await r.json(); if(seq!==sugSeq) return; // risposta obsoleta
-    if(d.err){
-      hideSug();
-      if(d.err==='not_configured') log('Incolla le chiavi Spotify (qui sopra, “Chiavi Spotify”) per avere suggerimenti con foto.',false,true);
-      else log('⚠ Spotify: '+d.err+' — le chiavi sembrano errate. Riaprile in “Chiavi Spotify” e reincollale (attento a non invertire ID e Secret).',false,true);
-      return;
-    }
+    const d=await apiCall({mode:'suggest',kind:MODE,q:v,...keyBody()});
+    if(seq!==sugSeq) return; // risposta obsoleta
+    if(!d || d.err){ hideSug(); return; }
     renderSug(d.suggestions||[]);
   }catch(_){ hideSug(); }
 }
@@ -533,10 +625,7 @@ async function runSearch(){
                     : (MODE==='artist'?'la discografia':'la traccia')+` “${esc(q)}”`;
   log(`Cerco ${what}…`,true);
   try{
-    const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:reqMode,q:reqQ,id:reqId,prov:reqProv,...keyBody()})});
-    if(r.status===404){ log('Serve il deploy su Vercel (la funzione /api non è attiva su questo hosting).',false,true); return; }
-    if(!r.ok){ log('Errore server: HTTP '+r.status,false,true); return; }
-    const d=await r.json();
+    const d=await apiCall({mode:reqMode,q:reqQ,id:reqId,prov:reqProv,...keyBody()});
     if(d.needSource){ promptChooseSource(); return; }
     if(d.error){ log('Errore: '+d.error,false,true); return; }
     const note = d.note==='not_configured' ? '' : (d.note||'');
@@ -554,9 +643,7 @@ async function openBy(payload, msg){
   $('res-artist').classList.add('hidden'); $('res-track').classList.add('hidden');
   log(msg,true);
   try{
-    const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...payload,...keyBody()})});
-    if(!r.ok){ log('Errore server: HTTP '+r.status,false,true); return; }
-    const d=await r.json();
+    const d=await apiCall({...payload,...keyBody()});
     if(d.needSource){ promptChooseSource(); return; }
     if(d.error){ log('Errore: '+d.error,false,true); return; }
     if(d.results!==undefined) showTrack(d,d.note||''); else renderArtistResponse(d,d.note||'');

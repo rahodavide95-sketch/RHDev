@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>ISRC Finder — discografia e tracce</title>
 <meta name="description" content="Recupera automaticamente ISRC e metadati di artisti e tracce, con suggerimenti e immagini. Esporta in CSV.">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0ea5e9">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ISRC Finder">
 <style>
   :root{
     --bg:#eef6fb; --card:#ffffff; --ink:#0e2233; --muted:#5a7488; --line:#e0edf4;
@@ -51,8 +59,8 @@
   /* header */
   header.top{display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:18px}
   .brand{display:flex; align-items:center; gap:14px}
-  .logo{width:52px;height:52px;border-radius:16px;background:var(--grad);display:grid;place-items:center;
-    font-size:26px;box-shadow:0 10px 26px rgba(37,99,235,.35)}
+  .logo{width:56px;height:56px;border-radius:16px;background:var(--grad);display:grid;place-items:center;
+    font-size:15px;font-weight:900;color:#fff;letter-spacing:.5px;box-shadow:0 10px 26px rgba(37,99,235,.35)}
   .brand-txt{min-width:0}
   h1{font-size:30px; margin:0; font-weight:900; letter-spacing:-1px; line-height:1;
     background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent; width:max-content; max-width:100%}
@@ -219,7 +227,7 @@
 <div class="wrap">
   <header class="top">
     <div class="brand">
-      <div class="logo">🎧</div>
+      <div class="logo">ISRC</div>
       <div class="brand-txt">
         <h1>ISRC Finder</h1>
         <div class="chips-row">
@@ -230,6 +238,7 @@
       </div>
     </div>
     <div class="head-actions">
+      <button class="iconbtn" id="btn-reset" title="Cancella ricerca" aria-label="Cancella ricerca">↺</button>
       <button class="iconbtn" id="btn-theme" title="Tema" aria-label="Cambia tema">🖥️</button>
       <button class="iconbtn" id="btn-settings" title="Impostazioni" aria-label="Impostazioni">⚙<span class="dot off" id="gear-dot"></span></button>
     </div>
@@ -263,16 +272,16 @@
         </div>
       </div>
 
-      <h3 class="mh">Fonti dati</h3>
-      <p class="note">Il tool funziona già <b>senza login</b> con <b>Deezer</b>. Se usi altre piattaforme puoi aggiungere le loro chiavi API (client credentials): ognuno mette quelle che ha. Restano <b>solo nel tuo browser</b>. Nota: gli ISRC sono identici su tutte le piattaforme.</p>
+      <h3 class="mh">Da dove prendere la discografia?</h3>
+      <p class="note">Scegli una o più fonti (spunta la casella). Con <b>più fonti</b> il tool le <b>confronta</b> e ti mostra le differenze da accettare. Le chiavi restano <b>solo nel tuo browser</b>; gli ISRC sono identici ovunque.</p>
 
       <div class="plat">
-        <div class="plat-h"><span class="pdot on"></span> <b>Deezer</b> <span class="ptag">Attiva · nessuna chiave</span></div>
+        <label class="plat-h"><input type="checkbox" id="use-deezer"> <span class="pdot on"></span> <b>Deezer</b> <span class="ptag free">🟢 Gratuita · nessuna chiave</span></label>
       </div>
 
       <div class="plat">
-        <div class="plat-h"><span id="sp-state" class="pdot off"></span> <b>Spotify</b> <span id="sp-label" class="ptag">non impostata</span>
-          <a class="phelp" href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">ottieni chiavi ↗</a></div>
+        <label class="plat-h"><input type="checkbox" id="use-spotify"> <span id="sp-state" class="pdot off"></span> <b>Spotify</b> <span id="sp-label" class="ptag">🔑 serve Client ID + Secret</span>
+          <a class="phelp" href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">ottieni chiavi ↗</a></label>
         <div class="krow">
           <div><label class="fl">Client ID</label><input type="text" id="sp-id" placeholder="Client ID" autocomplete="off"></div>
           <div><label class="fl">Client Secret</label><input type="password" id="sp-secret" placeholder="Client Secret" autocomplete="off"></div>
@@ -280,8 +289,8 @@
       </div>
 
       <div class="plat">
-        <div class="plat-h"><span id="td-state" class="pdot off"></span> <b>Tidal</b> <span id="td-label" class="ptag">non impostata</span>
-          <a class="phelp" href="https://developer.tidal.com/dashboard" target="_blank" rel="noopener">ottieni chiavi ↗</a></div>
+        <label class="plat-h"><input type="checkbox" id="use-tidal"> <span id="td-state" class="pdot off"></span> <b>Tidal</b> <span id="td-label" class="ptag">🔑 serve Client ID + Secret</span>
+          <a class="phelp" href="https://developer.tidal.com/dashboard" target="_blank" rel="noopener">ottieni chiavi ↗</a></label>
         <div class="krow">
           <div><label class="fl">Client ID</label><input type="text" id="td-id" placeholder="Client ID" autocomplete="off"></div>
           <div><label class="fl">Client Secret</label><input type="password" id="td-secret" placeholder="Client Secret" autocomplete="off"></div>
@@ -363,22 +372,36 @@ function currentKeys(){
   }
   return k;
 }
-function keyBody(){ const k=currentKeys(); const b={};
+/* fonti selezionate (Deezer NON è predefinito: l'utente sceglie) */
+const SRC_PREF='isrcfinder.sources.v1';
+function getSources(){ try{ return JSON.parse(localStorage.getItem(SRC_PREF)||'{}'); }catch(_){ return {}; } }
+function setSources(s){ try{ localStorage.setItem(SRC_PREF,JSON.stringify(s)); }catch(_){} }
+function enabledSources(){ const s=getSources(), k=getKeys(); const out=[];
+  if(s.deezer) out.push('deezer');
+  if(s.spotify && k.spId && k.spSecret) out.push('spotify');
+  if(s.tidal && k.tdId && k.tdSecret) out.push('tidal');
+  return out;
+}
+function keyBody(){ const k=currentKeys(); const b={ use:enabledSources() };
   if(k.spId&&k.spSecret){ b.spotifyId=k.spId; b.spotifySecret=k.spSecret; }
   if(k.tdId&&k.tdSecret){ b.tidalId=k.tdId; b.tidalSecret=k.tdSecret; }
   return b;
 }
 function refreshKeyState(){
-  const k=getKeys();
-  const spOn=!!(k.spId&&k.spSecret), tdOn=!!(k.tdId&&k.tdSecret);
-  if($('sp-state')) $('sp-state').className='pdot '+(spOn?'on':'off');
-  if($('sp-label')) $('sp-label').textContent = spOn ? 'attiva ✓' : 'non impostata';
-  if($('td-state')) $('td-state').className='pdot '+(tdOn?'on':'off');
-  if($('td-label')) $('td-label').textContent = tdOn ? 'attiva ✓' : 'non impostata';
-  const gd=$('gear-dot'); if(gd) gd.className='dot '+((spOn||tdOn)?'on':'off');
+  const k=getKeys(), s=getSources();
+  const spKey=!!(k.spId&&k.spSecret), tdKey=!!(k.tdId&&k.tdSecret);
+  if($('sp-state')) $('sp-state').className='pdot '+(spKey?'on':'off');
+  if($('sp-label')) $('sp-label').textContent = spKey ? '🔑 chiavi ok ✓' : '🔑 serve Client ID + Secret';
+  if($('td-state')) $('td-state').className='pdot '+(tdKey?'on':'off');
+  if($('td-label')) $('td-label').textContent = tdKey ? '🔑 chiavi ok ✓' : '🔑 serve Client ID + Secret';
+  if($('use-deezer')) $('use-deezer').checked=!!s.deezer;
+  if($('use-spotify')) $('use-spotify').checked=!!s.spotify;
+  if($('use-tidal')) $('use-tidal').checked=!!s.tidal;
+  const gd=$('gear-dot'); if(gd) gd.className='dot '+(enabledSources().length?'on':'off');
   if($('sp-id')) $('sp-id').value=k.spId||''; if($('sp-secret')) $('sp-secret').value=k.spSecret||'';
   if($('td-id')) $('td-id').value=k.tdId||''; if($('td-secret')) $('td-secret').value=k.tdSecret||'';
 }
+function onSourceToggle(){ setSources({ deezer:$('use-deezer').checked, spotify:$('use-spotify').checked, tidal:$('use-tidal').checked }); refreshKeyState(); }
 /* ---------------- tema (sistema / chiaro / scuro) ---------------- */
 const THEME='isrcfinder.theme';
 function getTheme(){ try{ return localStorage.getItem(THEME)||'system'; }catch(_){ return 'system'; } }
@@ -397,15 +420,21 @@ $('btn-settings').onclick=()=>openSettings(true);
 $('btn-settings-close').onclick=()=>openSettings(false);
 $('settings-modal').addEventListener('click',(e)=>{ if(e.target===$('settings-modal')) openSettings(false); });
 document.addEventListener('keydown',(e)=>{ if(e.key==='Escape') openSettings(false); });
+['use-deezer','use-spotify','use-tidal'].forEach(id=>{ const el=$(id); if(el) el.addEventListener('change', onSourceToggle); });
 $('sp-save').onclick=()=>{
   const f=readFields();
-  if(!f.spId&&!f.spSecret&&!f.tdId&&!f.tdSecret){ $('sp-msg').textContent='Inserisci le chiavi di almeno una piattaforma.'; return; }
-  try{ localStorage.setItem(KEYS,JSON.stringify(f)); $('sp-msg').textContent='Salvate ✓ — ora prova a cercare.'; }
-  catch(_){ $('sp-msg').textContent='Impossibile salvare (storage bloccato).'; }
+  try{ localStorage.setItem(KEYS,JSON.stringify(f)); }catch(_){}
+  // abilita in automatico le piattaforme di cui hai appena messo le chiavi
+  const s=getSources();
+  if(f.spId&&f.spSecret) s.spotify=true;
+  if(f.tdId&&f.tdSecret) s.tidal=true;
+  setSources(s);
+  $('sp-msg').textContent='Salvate ✓ — ora prova a cercare.';
   refreshKeyState(); setTimeout(()=>{$('sp-msg').textContent='';},3000);
 };
 $('sp-clear').onclick=()=>{ try{ localStorage.removeItem(KEYS); }catch(_){}
   ['sp-id','sp-secret','td-id','td-secret'].forEach(id=>{ if($(id)) $(id).value=''; });
+  const s=getSources(); s.spotify=false; s.tidal=false; setSources(s);
   refreshKeyState(); $('sp-msg').textContent='Rimosse.'; setTimeout(()=>{$('sp-msg').textContent='';},2000); };
 
 /* ---------------- modalità ---------------- */
@@ -472,9 +501,24 @@ $('q').addEventListener('keydown',(e)=>{
 $('q').addEventListener('blur',()=>setTimeout(hideSug,150));
 
 /* ---------------- ricerca ---------------- */
+function resetSearch(){
+  $('q').value=''; selId=''; selProv=''; hideSug();
+  ROWS=[]; VIEW=[]; TRACKS=[]; MERGED=[]; COMPARE=false; catalogD=null;
+  $('res-artist').classList.add('hidden'); $('res-track').classList.add('hidden');
+  $('ahero').innerHTML=''; $('diffs').innerHTML=''; $('tbody').innerHTML=''; $('cards').innerHTML='';
+  showBack(false); log(''); $('q').focus();
+}
+$('btn-reset').onclick=resetSearch;
 $('go').onclick=()=>{ hideSug(); runSearch(); };
+function promptChooseSource(){
+  log('Scegli <b>da dove</b> prendere la discografia: apri le Impostazioni ⚙ e attiva almeno una fonte. 🟢 <b>Deezer</b> è gratis (nessuna chiave); 🔑 <b>Spotify/Tidal</b> richiedono Client ID e Secret.',false,true);
+  openSettings(true);
+}
 async function runSearch(){
   const q=$('q').value.trim(); if(!q && !selId){ $('q').focus(); return; }
+  if(enabledSources().length===0){ promptChooseSource(); return; }
+  // se il suggerimento scelto è di una fonte non attiva, cerco per nome
+  if(selProv && !enabledSources().includes(selProv)){ selId=''; selProv=''; }
   // Se è un link Spotify diretto, uso tipo + ID esatti (artista/traccia/album).
   const link=parseSpotify(q);
   const reqMode = link ? link.type : MODE;
@@ -490,10 +534,9 @@ async function runSearch(){
     if(r.status===404){ log('Serve il deploy su Vercel (la funzione /api non è attiva su questo hosting).',false,true); return; }
     if(!r.ok){ log('Errore server: HTTP '+r.status,false,true); return; }
     const d=await r.json();
+    if(d.needSource){ promptChooseSource(); return; }
     if(d.error){ log('Errore: '+d.error,false,true); return; }
-    const note = d.note==='not_configured'
-      ? 'Chiavi Spotify mancanti: apri “Chiavi Spotify” qui sopra e incollale per avere suggerimenti con foto e info complete. (Ora sto usando MusicBrainz, dati base.)'
-      : (d.note||'');
+    const note = d.note==='not_configured' ? '' : (d.note||'');
     // instrada in base al formato della risposta: results = schede traccia, rows = tabella
     if(d.results!==undefined){ showTrack(d,note); catalogD=null; }
     else { renderArtistResponse(d,note); catalogD = (reqMode==='artist') ? d : null; }
@@ -510,7 +553,9 @@ async function openBy(payload, msg){
   try{
     const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...payload,...keyBody()})});
     if(!r.ok){ log('Errore server: HTTP '+r.status,false,true); return; }
-    const d=await r.json(); if(d.error){ log('Errore: '+d.error,false,true); return; }
+    const d=await r.json();
+    if(d.needSource){ promptChooseSource(); return; }
+    if(d.error){ log('Errore: '+d.error,false,true); return; }
     if(d.results!==undefined) showTrack(d,d.note||''); else renderArtistResponse(d,d.note||'');
     showBack(true); // sei in un dettaglio: mostra il ritorno al catalogo
     try{ window.scrollTo({top:0,behavior:'smooth'}); }catch(_){}
@@ -685,6 +730,7 @@ $('tbody').addEventListener('click',(e)=>{ if(e.target.closest('.copy')) return;
 $('cards').addEventListener('click',(e)=>{ const b=e.target.closest('[data-album]'); if(!b) return;
   e.preventDefault(); openAlbum(b.dataset.album, b.dataset.atitle, b.dataset.prov||'deezer'); });
 refreshKeyState();
+if('serviceWorker' in navigator){ window.addEventListener('load', ()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }
 </script>
 </body>
 </html>

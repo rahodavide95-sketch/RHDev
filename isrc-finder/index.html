@@ -67,6 +67,7 @@
   th:hover{color:var(--txt)} th.sorted{color:var(--accent)}
   th .arr{opacity:.4; font-size:10px; margin-left:2px} th.sorted .arr{opacity:1}
   tr:hover td{background:rgba(255,255,255,.02)}
+  tr.rowlink{cursor:pointer} tr.rowlink:hover td{background:rgba(77,208,167,.06)}
   td.isrc{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; letter-spacing:.5px; white-space:nowrap}
   .relimg{width:26px;height:26px;border-radius:5px;object-fit:cover;vertical-align:middle;margin-right:8px}
   .copy{cursor:pointer; color:var(--muted); border:0; background:none; padding:0 0 0 8px; font-size:12px}
@@ -98,8 +99,10 @@
   .f .k{font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:2px}
   .f .v{font-size:14px; word-break:break-word}
   .links{margin-top:18px; display:flex; gap:14px; align-items:center; flex-wrap:wrap}
-  .listen{display:inline-flex; align-items:center; gap:6px; background:var(--sp); color:#04110d; font-weight:700; text-decoration:none; padding:9px 16px; border-radius:10px; font-size:14px}
+  .listen{display:inline-flex; align-items:center; gap:6px; background:var(--sp); color:#04110d; font-weight:700; text-decoration:none; padding:9px 16px; border-radius:10px; font-size:14px; border:0; cursor:pointer}
   .listen:hover{filter:brightness(1.08)}
+  .listen.alt{background:var(--panel2); color:var(--txt); border:1px solid var(--line)}
+  .listen.alt:hover{border-color:var(--accent); filter:none}
   a{color:var(--accent2)}
   audio{height:36px}
   .hidden{display:none !important}
@@ -315,6 +318,23 @@ async function runSearch(){
   finally{ $('go').disabled=false; refreshKeyState(); }
 }
 
+/* apre un album/EP (tabella completa) o una singola traccia (scheda) per ID */
+async function openBy(payload, msg){
+  $('go').disabled=true; hideSug();
+  $('res-artist').classList.add('hidden'); $('res-track').classList.add('hidden');
+  log(msg,true);
+  try{
+    const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...payload,...keyBody()})});
+    if(!r.ok){ log('Errore server: HTTP '+r.status,false,true); return; }
+    const d=await r.json(); if(d.error){ log('Errore: '+d.error,false,true); return; }
+    if(d.results!==undefined) showTrack(d,d.note||''); else showArtist(d,d.note||'');
+    try{ window.scrollTo({top:0,behavior:'smooth'}); }catch(_){}
+  }catch(e){ log('Errore di rete: '+(e.message||e),false,true); }
+  finally{ $('go').disabled=false; }
+}
+const openAlbum=(id,title,prov)=>openBy({mode:'album',id,prov:prov||'deezer'}, `Apro ${title?('“'+esc(title)+'”'):"l'album"}…`);
+const openTrack=(id,prov)=>openBy({mode:'track',id,prov:prov||'deezer'}, 'Carico la scheda della traccia…');
+
 /* ---------------- ARTISTA ---------------- */
 function showArtist(d,note){
   ROWS=d.rows||[]; render();
@@ -339,7 +359,8 @@ function render(){
   $('tbody').innerHTML=VIEW.map((r,i)=>{
     const isrc=r.isrc?`<span>${esc(r.isrc)}</span><button class="copy" data-copy="${esc(r.isrc.split('/')[0].trim())}">⧉</button>`:`<span class="noisrc">— assente —</span>`;
     const rel = (r.image?`<img class="relimg" src="${esc(r.image)}" alt="" loading="lazy">`:'')+esc(r.release);
-    return `<tr><td>${rel}</td><td>${esc(r.title)}</td><td>${esc(r.artist)}</td><td>${esc(r.date)}</td><td class="isrc">${isrc}</td></tr>`;
+    const attr = r.tid?` class="rowlink" data-tid="${esc(r.tid)}" data-src="${esc((r.sources||[])[0]||'deezer')}" title="Apri la scheda completa"`:'';
+    return `<tr${attr}><td>${rel}</td><td>${esc(r.title)}</td><td>${esc(r.artist)}</td><td>${esc(r.date)}</td><td class="isrc">${isrc}</td></tr>`;
   }).join('');
   $('res-artist').classList.remove('hidden');
   document.querySelectorAll('#tbl th').forEach((th)=>{const a=th.querySelector('.arr');if(!a)return;
@@ -367,6 +388,7 @@ function showTrack(d,note){
     const fields=FIELDS.map(([k,lbl,suf])=>{ let v=t[k]; if(v===''||v==null) return ''; if(k==='albumType') v=String(v).toUpperCase(); return `<div class="f"><div class="k">${esc(lbl)}</div><div class="v">${esc(v)}${suf||''}</div></div>`;}).filter(Boolean).join('');
     const audio=t.previewUrl?`<audio controls preload="none" src="${esc(t.previewUrl)}"></audio>`:'';
     const link=t.spotifyUrl?`<a class="listen" href="${esc(t.spotifyUrl)}" target="_blank" rel="noopener">▶ Ascolta</a>`:'';
+    const alb=t.albumId?`<button class="listen alt" data-album="${esc(t.albumId)}" data-atitle="${esc(t.album)}" data-prov="${esc(t.source||'deezer')}">📀 Apri ${esc(String(t.albumType||'album').toUpperCase())}</button>`:'';
     return `<div class="tcard">
       <div class="coverwrap">${cover}</div>
       <div class="body">
@@ -374,7 +396,7 @@ function showTrack(d,note){
         <div class="by">${esc(sub)}</div>
         <div class="codes">${codes.join('')}</div>
         <div class="grid">${fields}</div>
-        <div class="links">${link}${audio}</div>
+        <div class="links">${alb}${link}${audio}</div>
       </div></div>`;
   }).join('');
   $('res-track').classList.remove('hidden');
@@ -398,6 +420,12 @@ $('filter').addEventListener('input',render);
 document.querySelectorAll('#tbl th').forEach((th)=>{th.onclick=()=>{const k=th.dataset.k;if(k==='idx')return;if(sortK===k)sortDir*=-1;else{sortK=k;sortDir=1;}render();};});
 document.body.addEventListener('click',async(e)=>{const b=e.target.closest('.copy');if(!b)return;
   try{await navigator.clipboard.writeText(b.dataset.copy);const o=b.textContent;b.textContent='✓';setTimeout(()=>b.textContent=o,1200);}catch(_){}});
+// riga del catalogo → apre la scheda completa della traccia
+$('tbody').addEventListener('click',(e)=>{ if(e.target.closest('.copy')) return;
+  const tr=e.target.closest('tr.rowlink'); if(!tr) return; openTrack(tr.dataset.tid, tr.dataset.src||'deezer'); });
+// pulsante "Apri EP/Album" nella scheda traccia
+$('cards').addEventListener('click',(e)=>{ const b=e.target.closest('[data-album]'); if(!b) return;
+  e.preventDefault(); openAlbum(b.dataset.album, b.dataset.atitle, b.dataset.prov||'deezer'); });
 refreshKeyState();
 </script>
 </body>

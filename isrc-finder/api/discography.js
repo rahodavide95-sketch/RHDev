@@ -212,7 +212,7 @@ async function spDiscography(name, artistId, auth) {
         if (!credited) continue;
         const obj = { artist: (tk.artists || []).map((x) => x.name).join(', '), title: tk.name || '', isrc: '',
           release: m.name || a.name || '', date: m.release_date || a.release_date || '', sources: ['spotify'],
-          url: tk.external_urls?.spotify || '', image: bigImg(m.images || a.images), _tid: tk.id };
+          url: tk.external_urls?.spotify || '', image: bigImg(m.images || a.images), tid: tk.id || '', _tid: tk.id };
         rows.push(obj);
         if (tk.id) trackIndex.set(tk.id, obj);
       }
@@ -279,7 +279,7 @@ function dzBuildTrack(t, album) {
     explicit: !!t.explicit_lyrics, popularity: t.rank ? Math.round(t.rank / 10000) : '',
     genres: (al.genres?.data || []).map((g) => g.name).join(', '),
     markets: (t.available_countries || []).length,
-    deezerId: String(t.id || ''),
+    deezerId: String(t.id || ''), albumId: String(al.id || t.album?.id || ''),
     spotifyUrl: t.link || '', previewUrl: t.preview || '',
     image: al.cover_xl || al.cover_big || al.cover_medium || t.album?.cover_big || t.album?.cover_medium || '',
     source: 'deezer',
@@ -306,15 +306,14 @@ async function dzTrackSearch(q) {
 async function dzAlbumById(id) {
   const a = await dzGet(`${DZ}/album/${id}`);
   const cover = a.cover_small || a.cover_medium || '';
-  const rows = (a.tracks?.data || []).map((t) => ({ id: t.id, artist: t.artist?.name || '', title: t.title || '', isrc: t.isrc || '',
+  const rows = (a.tracks?.data || []).map((t) => ({ tid: String(t.id || ''), artist: t.artist?.name || '', title: t.title || '', isrc: t.isrc || '',
     release: a.title || '', date: a.release_date || '', sources: ['deezer'], url: t.link || '', image: cover }));
-  const need = rows.filter((p) => !p.isrc && p.id);
+  const need = rows.filter((p) => !p.isrc && p.tid);
   for (let i = 0; i < need.length; i += 8) {
     await Promise.all(need.slice(i, i + 8).map(async (p) => {
-      try { const t = await dzGet(`${DZ}/track/${p.id}`); p.isrc = t.isrc || ''; } catch (_) {}
+      try { const t = await dzGet(`${DZ}/track/${p.tid}`); p.isrc = t.isrc || ''; } catch (_) {}
     }));
   }
-  rows.forEach((p) => delete p.id);
   return { rows, artist: (a.artist?.name || '') + ' — ' + (a.title || ''), err: null };
 }
 async function dzArtistId(name) {
@@ -377,7 +376,7 @@ async function dzDiscography(name, artistId) {
       } catch (_) {}
     }));
   }
-  const rows = picked.map((p) => ({ artist: p.artist, title: p.title, isrc: p.isrc, release: p.release, date: p.date, sources: ['deezer'], url: p.url, image: p.image }));
+  const rows = picked.map((p) => ({ artist: p.artist, title: p.title, isrc: p.isrc, release: p.release, date: p.date, sources: ['deezer'], url: p.url, image: p.image, tid: String(p.id || '') }));
   rows.sort((a, b) => (b.date || '').localeCompare(a.date || '') || (a.title || '').localeCompare(b.title || ''));
   return { rows, artist: who.name, err: null };
 }

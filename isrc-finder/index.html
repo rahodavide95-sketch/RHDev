@@ -440,7 +440,15 @@ async function bArtist(name,id){
     for(const t of ((ad.tracks&&ad.tracks.data)||[])){const cr=ours||(t.artist&&(String(t.artist.id)===String(who.id)||norm(t.artist.name)===norm(who.name)));if(!cr)continue;
       const key=norm(t.title)+'|'+norm(rel);if(seen.has(key))continue;seen.add(key);
       picked.push({id:t.id,artist:(t.artist&&t.artist.name)||who.name,title:t.title||'',isrc:t.isrc||'',release:rel,date,image:cover,url:t.link||''});}}
-  const need=picked.filter(p=>!p.isrc&&p.id);const CAP=1000;
+  // supplementare: cattura le uscite fuori dall'elenco album (comparsate su compilation/VA)
+  try{ let idx2=0;
+    for(let i=0;i<10;i++){ const sd=await dzb(`/search?q=${encodeURIComponent('artist:"'+who.name+'"')}&limit=100&index=${idx2}`);
+      for(const t of (sd.data||[])){ if(!t.artist||String(t.artist.id)!==String(who.id)) continue;
+        const rel=(t.album&&t.album.title)||''; const key=norm(t.title)+'|'+norm(rel); if(seen.has(key)) continue; seen.add(key);
+        picked.push({id:t.id,artist:(t.artist&&t.artist.name)||who.name,title:t.title||'',isrc:t.isrc||'',release:rel,date:'',image:(t.album&&t.album.cover_small)||'',url:t.link||''}); }
+      if(!sd.next||(sd.data||[]).length<100) break; idx2+=100; }
+  }catch(_){}
+  const need=picked.filter(p=>(!p.isrc||!p.date)&&p.id);const CAP=1000;
   for(let i=0;i<need.length&&i<CAP;i+=5){await Promise.all(need.slice(i,i+5).map(async p=>{try{const t=await dzb(`/track/${p.id}`);p.isrc=t.isrc||'';if(!p.date)p.date=t.release_date||'';}catch(_){}}));await sleep(90);}
   const rows=picked.map(p=>({artist:p.artist,title:p.title,isrc:p.isrc,release:p.release,date:p.date,sources:['deezer'],url:p.url,image:p.image,tid:String(p.id||'')}));
   rows.sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(a.title||'').localeCompare(b.title||''));

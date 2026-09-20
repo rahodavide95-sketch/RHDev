@@ -58,12 +58,15 @@
   .stat .n{font-size:20px; font-weight:800} .stat .l{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px}
   .toolbar{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:10px}
   .toolbar input[type=text]{max-width:280px; padding:9px 12px; font-size:13px}
+  .hint{color:var(--muted); font-size:12px}
   /* table */
   .tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:var(--radius)}
   table{border-collapse:collapse; width:100%; font-size:13px; min-width:680px}
   th,td{text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:top}
   th{position:sticky; top:0; background:var(--panel2); color:var(--muted); font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.4px; cursor:pointer; white-space:nowrap}
-  th .arr{opacity:.6; font-size:10px} tr:hover td{background:rgba(255,255,255,.02)}
+  th:hover{color:var(--txt)} th.sorted{color:var(--accent)}
+  th .arr{opacity:.4; font-size:10px; margin-left:2px} th.sorted .arr{opacity:1}
+  tr:hover td{background:rgba(255,255,255,.02)}
   td.isrc{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; letter-spacing:.5px; white-space:nowrap}
   .relimg{width:26px;height:26px;border-radius:5px;object-fit:cover;vertical-align:middle;margin-right:8px}
   .copy{cursor:pointer; color:var(--muted); border:0; background:none; padding:0 0 0 8px; font-size:12px}
@@ -161,6 +164,7 @@
       <button class="ghost" id="btn-csv">⬇ CSV</button>
       <button class="ghost" id="btn-json">⬇ JSON</button>
       <button class="ghost" id="btn-copy-isrc">⧉ Copia tutti gli ISRC</button>
+      <span class="hint">↕ Clicca un'intestazione per ordinare (di nuovo per invertire)</span>
     </div>
     <div class="tablewrap"><table id="tbl"><thead><tr>
       <th data-k="release">Release <span class="arr"></span></th>
@@ -338,7 +342,8 @@ function render(){
     return `<tr><td>${rel}</td><td>${esc(r.title)}</td><td>${esc(r.artist)}</td><td>${esc(r.date)}</td><td class="isrc">${isrc}</td></tr>`;
   }).join('');
   $('res-artist').classList.remove('hidden');
-  document.querySelectorAll('#tbl th').forEach((th)=>{const a=th.querySelector('.arr');if(a)a.textContent=th.dataset.k===sortK?(sortDir>0?'▲':'▼'):'';});
+  document.querySelectorAll('#tbl th').forEach((th)=>{const a=th.querySelector('.arr');if(!a)return;
+    const on=th.dataset.k===sortK; a.textContent=on?(sortDir>0?'▲':'▼'):'⇅'; th.classList.toggle('sorted',on);});
 }
 
 /* ---------------- TRACCIA ---------------- */

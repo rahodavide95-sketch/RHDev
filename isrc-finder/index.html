@@ -591,13 +591,21 @@ async function bSpArtist(name,id,tok){
     const items=(s.artists&&s.artists.items)||[]; if(!items.length) return {rows:[],artist:name,artistInfo:null,diag:'nessun artista trovato con questo nome'}; const pick=items.find(a=>norm(a.name)===norm(name))||items[0]; who={id:pick.id,name:pick.name}; }
   let artistInfo={name:who.name,source:'spotify'}; let infoErr='';
   try{ const ad=await spG(`/artists/${who.id}`,tok); who.name=ad.name||who.name; artistInfo={name:ad.name||who.name,image:bigSp(ad.images),followers:(ad.followers&&ad.followers.total)||0,genres:(ad.genres||[]).slice(0,3).join(', '),link:(ad.external_urls&&ad.external_urls.spotify)||'',source:'spotify'}; }catch(e){ infoErr=(e.message||e)+''; }
+  // PROBE: alcuni token Spotify rifiutano certi valori di limit ("Invalid limit").
+  // Trovo il massimo davvero accettato (da 20 giu' fino a 1), usando lo stesso formato reale.
+  let LIM=0, probeInfo='';
+  for(const L of [20,10,5,3,1]){
+    try{ await spG(`/artists/${who.id}/albums?include_groups=album,single&limit=${L}&offset=0`,tok); LIM=L; break; }
+    catch(e){ probeInfo='fail@'+L+':'+(e.message||e); }
+  }
+  if(!LIM){ LIM=1; }
   const albums=[]; const seen=new Set(); let albErr='';
   // set di include_groups con degradazione: se Spotify rifiuta il primo (400), prova set piu' semplici
   const IG=['album,single,compilation,appears_on','album,single,compilation','album,single','album'];
   let igUsed='';
   for(const ig of IG){ albErr=''; albums.length=0; seen.clear();
     let ok=true;
-    for(let off=0;off<1000;off+=20){ let d; try{ d=await spG(`/artists/${who.id}/albums?include_groups=${ig}&limit=20&offset=${off}`,tok);}catch(e){albErr=(e.message||e)+''; ok=false; break;} const items=d.items||[]; for(const a of items) if(a.id&&!seen.has(a.id)){seen.add(a.id);albums.push(a);} if(items.length<20) break; }
+    for(let off=0;off<1000;off+=LIM){ let d; try{ d=await spG(`/artists/${who.id}/albums?include_groups=${ig}&limit=${LIM}&offset=${off}`,tok);}catch(e){albErr=(e.message||e)+''; ok=false; break;} const items=d.items||[]; for(const a of items) if(a.id&&!seen.has(a.id)){seen.add(a.id);albums.push(a);} if(items.length<LIM) break; }
     if(ok){ igUsed=ig; break; } // questo set ha funzionato
   }
   const rows=[]; const idx=new Map(); const seenKey=new Set(); const meta=new Map(albums.map(a=>[a.id,a])); const ids=albums.map(a=>a.id);
@@ -612,8 +620,8 @@ async function bSpArtist(name,id,tok){
   // FALLBACK: cerca le tracce per nome artista (prende comparse/compilation che la scansione album non vede)
   try{
     for(const field of ['artist:"'+who.name+'"', who.name]){
-      for(let off=0; off<960; off+=20){
-        let sd; try{ sd=await spG(`/search?q=${encodeURIComponent(field)}&type=track&limit=20&offset=${off}`,tok); }catch(e){ searchErr=(e.message||e)+''; break; }
+      for(let off=0; off+LIM<=1000; off+=LIM){
+        let sd; try{ sd=await spG(`/search?q=${encodeURIComponent(field)}&type=track&limit=${LIM}&offset=${off}`,tok); }catch(e){ searchErr=(e.message||e)+''; break; }
         const items=(sd.tracks&&sd.tracks.items)||[];
         for(const tk of items){
           const cr=(tk.artists||[]).some(x=>x.id===who.id||norm(x.name)===norm(who.name)); if(!cr) continue;
@@ -621,7 +629,7 @@ async function bSpArtist(name,id,tok){
           const o={artist:(tk.artists||[]).map(x=>x.name).join(', '),title:tk.name||'',isrc:(tk.external_ids&&tk.external_ids.isrc)||'',release:rel,date:(tk.album&&tk.album.release_date)||'',sources:['spotify'],url:(tk.external_urls&&tk.external_urls.spotify)||'',image:bigSp(tk.album&&tk.album.images),tid:tk.id};
           rows.push(o); if(tk.id&&!o.isrc) idx.set(tk.id,o);
         }
-        if(!(sd.tracks&&sd.tracks.next)||items.length<20) break;
+        if(!(sd.tracks&&sd.tracks.next)||items.length<LIM) break;
       }
     }
   }catch(_){}
@@ -633,7 +641,7 @@ async function bSpArtist(name,id,tok){
     if(code){ if(seenIsrc.has(code)) continue; seenIsrc.add(code); }
     out.push(r); }
   out.sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(a.title||'').localeCompare(b.title||''));
-  dbg='['+(typeof VERSION!=='undefined'?VERSION:'?')+'] artista="'+who.name+'" (id '+(who.id||'?')+')'+(infoErr?(' [err info: '+infoErr+']'):'')+' · album '+albums.length+(igUsed?(' [ig:'+igUsed+']'):'')+(albErr?(' [err album: '+albErr+']'):'')+' · tracce da album '+nFromAlb+' · da ricerca '+(rows.length-nFromAlb)+(searchErr?(' [err ricerca: '+searchErr+']'):'')+' · totale '+out.length;
+  dbg='['+(typeof VERSION!=='undefined'?VERSION:'?')+'] artista="'+who.name+'" (id '+(who.id||'?')+')'+(infoErr?(' [err info: '+infoErr+']'):'')+' · limit='+LIM+(probeInfo?(' ['+probeInfo+']'):'')+' · album '+albums.length+(igUsed?(' [ig:'+igUsed+']'):'')+(albErr?(' [err album: '+albErr+']'):'')+' · tracce da album '+nFromAlb+' · da ricerca '+(rows.length-nFromAlb)+(searchErr?(' [err ricerca: '+searchErr+']'):'')+' · totale '+out.length;
   return {rows:out,artist:who.name,artistInfo,diag:dbg}; }
 
 async function dzLocal(payload){
@@ -1068,7 +1076,7 @@ $('cards').addEventListener('click',(e)=>{ const b=e.target.closest('[data-album
   e.preventDefault(); openAlbum(b.dataset.album, b.dataset.atitle, b.dataset.prov||'deezer'); });
 // gestisci l'eventuale ritorno dal login Spotify, poi aggiorna lo stato
 /* >>> VERSIONE: aggiornare questo numero a OGNI deploy <<< */
-const VERSION='V17';
+const VERSION='V18';
 try{ const vb=$('ver-badge'); if(vb) vb.textContent=VERSION; console.log('ISRC Finder', VERSION); }catch(_){}
 spHandleRedirect().then(()=>refreshKeyState()).catch(()=>refreshKeyState());
 if('serviceWorker' in navigator){

@@ -447,7 +447,7 @@ async function bArtist(name,id){
   return {rows,artist:who.name,artistInfo};}
 /* ====== Spotify nel browser (PKCE, senza secret) — funziona su GitHub Pages ====== */
 const SP_TOK='isrcfinder.sptok.v1';
-const spRedirect=()=>location.origin+location.pathname;
+const spRedirect=()=>(location.origin+location.pathname).replace(/index\.html$/,'');
 function spGetTok(){ try{ return JSON.parse(localStorage.getItem(SP_TOK)||'null'); }catch(_){ return null; } }
 function spSetTok(t){ try{ t?localStorage.setItem(SP_TOK,JSON.stringify(t)):localStorage.removeItem(SP_TOK); }catch(_){}}
 function b64url(buf){ let s=''; const b=new Uint8Array(buf); for(const x of b) s+=String.fromCharCode(x); return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }

@@ -92,6 +92,8 @@
   .seg button.on{background:var(--card); color:var(--accent-ink); box-shadow:0 4px 14px rgba(37,99,235,.18)}
   .searchbar{display:flex; gap:12px; flex-wrap:wrap; position:relative}
   .inputwrap{flex:1; min-width:220px; position:relative}
+  .searchicon{position:absolute; left:16px; top:50%; transform:translateY(-50%); width:20px; height:20px; color:var(--muted); pointer-events:none; z-index:1}
+  #q{padding-left:46px}
   input[type=text],input[type=password]{width:100%; background:var(--soft); border:1.5px solid var(--line); color:var(--ink);
     border-radius:14px; padding:15px 17px; font-size:16px; outline:none; transition:.15s}
   input::placeholder{color:#a7a3bd}
@@ -129,6 +131,9 @@
 
   /* toolbar */
   .toolbar{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:12px}
+  .toolbar #filter{flex:1 1 200px; width:auto} /* filtro a sinistra, occupa lo spazio */
+  .toolbar .ghost{margin-left:0}
+  #res-track .toolbar{justify-content:flex-end} /* solo export: a destra */
   .toolbar input[type=text]{max-width:300px; padding:11px 14px; font-size:14px}
   .hint{color:var(--muted); font-size:12px}
 
@@ -219,15 +224,14 @@
   .keystate{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--muted); margin-top:2px}
 
   /* maschera artista */
-  .ahero{display:flex; align-items:center; gap:20px; background:var(--card); border:1px solid var(--line);
-    border-radius:var(--radius); padding:18px 20px; box-shadow:var(--shadow); margin-bottom:4px; position:relative; overflow:hidden}
-  .ahero::before{content:""; position:absolute; left:0; top:0; bottom:0; width:6px; background:var(--grad)}
-  .ah-img{width:96px;height:96px;border-radius:50%;object-fit:cover;flex:0 0 96px;box-shadow:0 10px 26px rgba(12,74,110,.28)}
+  .ahero{display:inline-flex; align-items:center; gap:16px; background:var(--card); border:1px solid var(--line);
+    border-radius:16px; padding:12px 18px 12px 14px; box-shadow:var(--shadow); margin-bottom:4px; position:relative; overflow:hidden; max-width:100%}
+  .ah-img{width:64px;height:64px;border-radius:50%;object-fit:cover;flex:0 0 64px;box-shadow:0 8px 20px rgba(12,74,110,.24)}
   .ah-img.ph{background:var(--grad); opacity:.4}
-  .ah-name{font-size:26px; font-weight:800; letter-spacing:-.5px}
+  .ah-name{font-size:20px; font-weight:800; letter-spacing:-.4px}
   .ah-meta{color:var(--muted); font-size:14px; margin-top:4px} .ah-meta b{color:var(--ink)}
   .ah-link{display:inline-block; margin-top:8px; font-size:13px}
-  @media(max-width:520px){ .ahero{flex-direction:column; text-align:center} .ah-img{width:110px;height:110px;flex-basis:110px} }
+  @media(max-width:520px){ .ah-img{width:60px;height:60px;flex-basis:60px} .ah-name{font-size:18px} }
   /* barra "torna al catalogo" in fondo */
   .backbar{display:flex; justify-content:center; margin-top:24px}
   .listen.big{padding:14px 26px; font-size:15px}
@@ -260,9 +264,9 @@
     /* schede traccia */
     .tcard{padding:16px; gap:16px}
     .tcard h3{font-size:20px}
-    .ahero{padding:14px; gap:14px}
-    .ah-img{width:74px;height:74px;flex-basis:74px}
-    .ah-name{font-size:20px}
+    .ahero{padding:12px 14px; gap:12px}
+    .ah-img{width:56px;height:56px;flex-basis:56px}
+    .ah-name{font-size:18px}
     .diff{flex-wrap:wrap}
   }
 </style>
@@ -291,6 +295,7 @@
     </div>
     <div class="searchbar">
       <div class="inputwrap">
+        <svg class="searchicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
         <input type="text" id="q" placeholder="Cerca un artista…" autocomplete="off" autofocus>
         <div id="suggest" class="suggest hidden"></div>
       </div>
@@ -620,10 +625,15 @@ async function bSpArtist(name,id,tok){
   // OGNI singola traccia: deduplica solo per ID univoco della traccia (mai per titolo/release,
   // cosi' remix, versioni e uscite diverse restano TUTTE). Ripiego su titolo|release solo se manca l'id.
   const keyOf=(tk,rel)=> tk.id ? ('id:'+tk.id) : ('t:'+norm(tk.name)+'|'+norm(rel||''));
-  for(let i=0;i<ids.length;i+=20){ let d; try{ d=await spG(`/albums?ids=${ids.slice(i,i+20).join(',')}`,tok);}catch(_){continue;}
+  let detErr=''; const BAT=Math.min(LIM,20)||10; // batch dettagli album (con retry, non silenzioso)
+  for(let i=0;i<ids.length;i+=BAT){
+    let d=null;
+    for(let a=0;a<3 && !d;a++){ try{ d=await spG(`/albums?ids=${ids.slice(i,i+BAT).join(',')}`,tok); }catch(e){ detErr=(e.message||e)+''; if(a<2) await bsleep(400*(a+1)); } }
+    if(!d) continue;
     for(const a of d.albums||[]){ const m=meta.get(a.id)||a; for(const tk of (a.tracks&&a.tracks.items)||[]){ const cr=(tk.artists||[]).some(x=>x.id===who.id||norm(x.name)===norm(who.name)); if(!cr) continue;
       const rel=m.name||a.name||''; const key=keyOf(tk,rel); if(seenKey.has(key)) continue; seenKey.add(key);
-      const o={artist:(tk.artists||[]).map(x=>x.name).join(', '),title:tk.name||'',isrc:'',release:rel,date:m.release_date||a.release_date||'',sources:['spotify'],url:(tk.external_urls&&tk.external_urls.spotify)||'',image:bigSp(m.images||a.images),tid:tk.id}; rows.push(o); if(tk.id) idx.set(tk.id,o); } } }
+      const o={artist:(tk.artists||[]).map(x=>x.name).join(', '),title:tk.name||'',isrc:'',release:rel,date:m.release_date||a.release_date||'',sources:['spotify'],url:(tk.external_urls&&tk.external_urls.spotify)||'',image:bigSp(m.images||a.images),tid:tk.id}; rows.push(o); if(tk.id) idx.set(tk.id,o); } }
+    await bsleep(60); }
   const nFromAlb=rows.length; let searchErr='';
   // FALLBACK: cerca le tracce per nome artista (prende comparse/compilation che la scansione album non vede)
   try{
@@ -645,7 +655,7 @@ async function bSpArtist(name,id,tok){
       }
     }
   }catch(_){}
-  const tids=[...idx.keys()]; for(let i=0;i<tids.length;i+=50){ try{const d=await spG(`/tracks?ids=${tids.slice(i,i+50).join(',')}`,tok); for(const tk of d.tracks||[]){const o=tk&&idx.get(tk.id); if(o) o.isrc=(tk.external_ids&&tk.external_ids.isrc)||'';}}catch(_){}}
+  const tids=[...idx.keys()]; for(let i=0;i<tids.length;i+=BAT){ let d=null; for(let a=0;a<3 && !d;a++){ try{ d=await spG(`/tracks?ids=${tids.slice(i,i+BAT).join(',')}`,tok); }catch(_){ if(a<2) await bsleep(300*(a+1)); } } if(!d) continue; for(const tk of d.tracks||[]){const o=tk&&idx.get(tk.id); if(o) o.isrc=(tk.external_ids&&tk.external_ids.isrc)||'';} await bsleep(60); }
   // DEDUPLICA solo per ISRC (stessa registrazione uscita in piu' release = 1 riga).
   // Le tracce SENZA ISRC restano tutte.
   const seenIsrc=new Set(); const out=[];
@@ -653,7 +663,7 @@ async function bSpArtist(name,id,tok){
     if(code){ if(seenIsrc.has(code)) continue; seenIsrc.add(code); }
     out.push(r); }
   out.sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(a.title||'').localeCompare(b.title||''));
-  dbg='['+(typeof VERSION!=='undefined'?VERSION:'?')+'] artista="'+who.name+'" (id '+(who.id||'?')+')'+(infoErr?(' [err info: '+infoErr+']'):'')+' · limit='+LIM+(probeInfo?(' ['+probeInfo+']'):'')+' · album '+albums.length+(igUsed?(' [ig:'+igUsed+']'):'')+(albErr?(' [err album: '+albErr+']'):'')+' · tracce da album '+nFromAlb+' · da ricerca '+(rows.length-nFromAlb)+(searchErr?(' [err ricerca: '+searchErr+']'):'')+' · totale '+out.length;
+  dbg='['+(typeof VERSION!=='undefined'?VERSION:'?')+'] artista="'+who.name+'" (id '+(who.id||'?')+')'+(infoErr?(' [err info: '+infoErr+']'):'')+' · limit='+LIM+(probeInfo?(' ['+probeInfo+']'):'')+' · album '+albums.length+(igUsed?(' [ig:'+igUsed+']'):'')+(albErr?(' [err album: '+albErr+']'):'')+' · tracce da album '+nFromAlb+(detErr?(' [err dettagli: '+detErr+']'):'')+' · da ricerca '+(rows.length-nFromAlb)+(searchErr?(' [err ricerca: '+searchErr+']'):'')+' · totale '+out.length;
   return {rows:out,artist:who.name,artistInfo,diag:dbg}; }
 
 async function dzLocal(payload){
@@ -995,7 +1005,8 @@ function showArtist(d,note){
   $('ahero').innerHTML = artistHero(d.artistInfo);
   render();
   const nm=d.artist?` per “${esc(d.artist)}”`:'';
-  if(ROWS.length){ log(`Trovate ${ROWS.length} tracce${nm}.`+(note?'  ⚠ '+note:'')); return; }
+  try{ if(note) console.log('ISRC diag:', note); }catch(_){}
+  if(ROWS.length){ log(''); return; } // nessun messaggio quando i risultati escono
   const tip = note ? '  ⚠ '+note
     : '  👉 Scrivi il nome e SELEZIONA il tuo artista dai suggerimenti con la foto: esistono più artisti con lo stesso nome, così uso quello giusto.';
   log(`Nessun risultato${nm}.`+tip,false,true);
@@ -1088,7 +1099,7 @@ $('cards').addEventListener('click',(e)=>{ const b=e.target.closest('[data-album
   e.preventDefault(); openAlbum(b.dataset.album, b.dataset.atitle, b.dataset.prov||'deezer'); });
 // gestisci l'eventuale ritorno dal login Spotify, poi aggiorna lo stato
 /* >>> VERSIONE: aggiornare questo numero a OGNI deploy <<< */
-const VERSION='V19';
+const VERSION='V20';
 try{ const vb=$('ver-badge'); if(vb) vb.textContent=VERSION; console.log('ISRC Finder', VERSION); }catch(_){}
 spHandleRedirect().then(()=>refreshKeyState()).catch(()=>refreshKeyState());
 if('serviceWorker' in navigator){

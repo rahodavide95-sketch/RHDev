@@ -233,12 +233,24 @@ async function spDiscography(name, artistId, auth) {
 // API pubblica, nessuna chiave/login. Restituisce ISRC, UPC, etichetta, generi,
 // anteprime e immagini. Chiamata lato server (nessun problema di CORS).
 const DZ = 'https://api.deezer.com';
-async function dzGet(url) {
-  const r = await fetch(url, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(15000) });
-  if (!r.ok) throw new Error(`deezer HTTP ${r.status}`);
-  const d = await r.json();
-  if (d && d.error) throw new Error('deezer ' + (d.error.message || d.error.type || 'error'));
-  return d;
+async function dzGet(url, tries = 4) {
+  let lastErr = 'errore';
+  for (let i = 0; i < tries; i++) {
+    try {
+      const r = await fetch(url, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(15000) });
+      if (r.status === 429) { lastErr = 'HTTP 429'; await sleep(700 * (i + 1)); continue; }
+      if (!r.ok) { lastErr = 'HTTP ' + r.status; if (i < tries - 1) { await sleep(300); continue; } throw new Error('deezer ' + lastErr); }
+      const d = await r.json();
+      if (d && d.error) {
+        // Deezer manda 200 con {error} anche per il rate limit (quota) → ritenta
+        const msg = d.error.message || d.error.type || 'error';
+        if ((d.error.code === 4 || /quota|limit|rate/i.test(msg)) && i < tries - 1) { lastErr = 'quota'; await sleep(700 * (i + 1)); continue; }
+        throw new Error('deezer ' + msg);
+      }
+      return d;
+    } catch (e) { lastErr = String(e?.message || e); if (i < tries - 1) await sleep(300); }
+  }
+  throw new Error('deezer ' + lastErr);
 }
 async function dzSuggest(kind, q) {
   if (kind === 'track') {
@@ -316,20 +328,46 @@ async function dzDiscography(name, artistId) {
     let ad; try { ad = await dzGet(`${DZ}/album/${al.id}`); } catch (_) { continue; }
     const rel = ad.title || al.title || ''; const date = ad.release_date || al.release_date || '';
     const cover = ad.cover_small || ad.cover_medium || al.cover_small || al.cover_medium || '';
+    // Se l'album è del nostro artista, tieni TUTTE le sue tracce (anche i feat.);
+    // se è una compilation di altri, tieni solo le tracce del nostro artista.
+    const albumIsOurs = ad.artist && (String(ad.artist.id) === String(who.id) || norm(ad.artist.name) === norm(who.name));
     for (const t of (ad.tracks?.data || [])) {
-      const credited = t.artist && (String(t.artist.id) === String(who.id) || norm(t.artist.name) === norm(who.name));
+      const credited = albumIsOurs || (t.artist && (String(t.artist.id) === String(who.id) || norm(t.artist.name) === norm(who.name)));
       if (!credited) continue;
       const key = norm(t.title) + '|' + norm(rel);
       if (seen.has(key)) continue; seen.add(key);
       picked.push({ id: t.id, artist: t.artist?.name || who.name, title: t.title || '', isrc: t.isrc || '', release: rel, date, image: cover, url: t.link || '' });
     }
   }
-  // l'ISRC NON è nella tracklist dell'album: leggilo dal dettaglio traccia (a lotti)
-  const need = picked.filter((p) => !p.isrc && p.id);
-  const CAP = 600;
+  // Passaggio supplementare: cerca le tracce dell'artista per ID esatto, così da
+  // recuperare uscite non presenti nell'elenco album (apparizioni su VA, ecc.).
+  try {
+    let surl = `${DZ}/search?q=${enc('artist:"' + who.name + '"')}&limit=100`;
+    for (let i = 0; i < 8 && surl; i++) {
+      const sd = await dzGet(surl);
+      for (const t of (sd.data || [])) {
+        if (!t.artist || String(t.artist.id) !== String(who.id)) continue;
+        const rel = t.album?.title || '';
+        const key = norm(t.title) + '|' + norm(rel);
+        if (seen.has(key)) continue; seen.add(key);
+        picked.push({ id: t.id, artist: t.artist?.name || who.name, title: t.title || '', isrc: t.isrc || '', release: rel, date: '', image: t.album?.cover_small || '', url: t.link || '' });
+      }
+      surl = sd.next || '';
+    }
+  } catch (_) {}
+
+  // ISRC / data / copertina mancanti: dal dettaglio traccia (a lotti)
+  const need = picked.filter((p) => (!p.isrc || !p.date) && p.id);
+  const CAP = 900;
   for (let i = 0; i < need.length && i < CAP; i += 8) {
     await Promise.all(need.slice(i, i + 8).map(async (p) => {
-      try { const t = await dzGet(`${DZ}/track/${p.id}`); p.isrc = t.isrc || ''; } catch (_) {}
+      try {
+        const t = await dzGet(`${DZ}/track/${p.id}`);
+        if (!p.isrc) p.isrc = t.isrc || '';
+        if (!p.date) p.date = t.release_date || t.album?.release_date || '';
+        if (!p.release) p.release = t.album?.title || '';
+        if (!p.image) p.image = t.album?.cover_small || '';
+      } catch (_) {}
     }));
   }
   const rows = picked.map((p) => ({ artist: p.artist, title: p.title, isrc: p.isrc, release: p.release, date: p.date, sources: ['deezer'], url: p.url, image: p.image }));

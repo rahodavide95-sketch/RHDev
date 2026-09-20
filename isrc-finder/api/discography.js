@@ -266,16 +266,23 @@ async function dzSuggest(kind, q) {
 }
 function dzBuildTrack(t, album) {
   const al = album || t.album || {};
+  const contributors = (t.contributors || []).map((c) => c.name).filter(Boolean);
   return {
-    title: t.title || '', artists: t.artist?.name || (t.contributors || []).map((c) => c.name).join(', '),
+    title: t.title || '', titleShort: t.title_short || '', version: t.title_version || '',
+    artists: t.artist?.name || contributors.join(', '),
+    contributors: contributors.join(', '),
     isrc: t.isrc || '', album: al.title || '', albumType: al.record_type || '', upc: al.upc || '', label: al.label || '',
     releaseDate: t.release_date || al.release_date || '', totalTracks: al.nb_tracks || '',
     trackNumber: t.track_position || '', discNumber: t.disk_number || '',
     duration: fmtDur((t.duration || 0) * 1000), durationMs: (t.duration || 0) * 1000,
+    bpm: t.bpm ? Math.round(t.bpm) : '', gain: (t.gain != null && t.gain !== 0) ? t.gain : '',
     explicit: !!t.explicit_lyrics, popularity: t.rank ? Math.round(t.rank / 10000) : '',
     genres: (al.genres?.data || []).map((g) => g.name).join(', '),
     markets: (t.available_countries || []).length,
-    spotifyUrl: t.link || '', previewUrl: t.preview || '', image: al.cover_medium || t.album?.cover_medium || '', source: 'deezer',
+    deezerId: String(t.id || ''),
+    spotifyUrl: t.link || '', previewUrl: t.preview || '',
+    image: al.cover_xl || al.cover_big || al.cover_medium || t.album?.cover_big || t.album?.cover_medium || '',
+    source: 'deezer',
   };
 }
 async function dzTrackById(id) {

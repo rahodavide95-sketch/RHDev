@@ -635,7 +635,7 @@ async function bSpArtist(name,id,tok){
     if(albums.length){ igUsed=ig; break; } // raccolto qualcosa: basta questo set
   }
   const rows=[]; const idx=new Map(); const seenKey=new Set(); const meta=new Map(albums.map(a=>[a.id,a])); const ids=albums.map(a=>a.id);
-  let lastEmit=0; const emit=(force)=>{ if(!PROGRESS) return; const now=Date.now(); if(!force && now-lastEmit<300) return; lastEmit=now; try{ PROGRESS(rows.slice(), artistInfo, false); }catch(_){} };
+  let lastEmit=0; const emit=(force)=>{ if(!PROGRESS) return; const now=Date.now(); if(!force && now-lastEmit<300) return; lastEmit=now; try{ PROGRESS(rows.slice(), artistInfo, {alb:albums.length, done:detAlb, cred:detCred}); }catch(_){} };
   // OGNI singola traccia: deduplica solo per ID univoco della traccia (mai per titolo/release,
   // cosi' remix, versioni e uscite diverse restano TUTTE). Ripiego su titolo|release solo se manca l'id.
   const keyOf=(tk,rel)=> tk.id ? ('id:'+tk.id) : ('t:'+norm(tk.name)+'|'+norm(rel||''));
@@ -950,13 +950,14 @@ async function runSearch(){
   finally{ PROGRESS=null; $('go').disabled=false; refreshKeyState(); }
 }
 // render parziale durante il caricamento progressivo (maschera + tracce che arrivano)
-function renderPartialArtist(rows, info){
+function renderPartialArtist(rows, info, st){
   if(COMPARE) return;
   ROWS=rows||[]; MERGED=[]; $('diffs').innerHTML='';
   if(info) $('ahero').innerHTML=artistHero(info);
   render();
   $('res-artist').classList.remove('hidden');
-  log('Caricamento… '+ROWS.length+' tracce (continua)', true);
+  const extra = (st&&typeof st==='object') ? ` · album ${st.done||0}/${st.alb||0}` : '';
+  log('Caricamento… '+ROWS.length+' tracce'+extra, true);
 }
 
 /* apre un album/EP (tabella completa) o una singola traccia (scheda) per ID */
@@ -1145,7 +1146,7 @@ $('cards').addEventListener('click',(e)=>{ const b=e.target.closest('[data-album
   e.preventDefault(); openAlbum(b.dataset.album, b.dataset.atitle, b.dataset.prov||'deezer'); });
 // gestisci l'eventuale ritorno dal login Spotify, poi aggiorna lo stato
 /* >>> VERSIONE: aggiornare questo numero a OGNI deploy <<< */
-const VERSION='V30';
+const VERSION='V31';
 try{ const vb=$('ver-badge'); if(vb) vb.textContent=VERSION; console.log('ISRC Finder', VERSION); }catch(_){}
 spHandleRedirect().then(()=>refreshKeyState()).catch(()=>refreshKeyState());
 if('serviceWorker' in navigator){

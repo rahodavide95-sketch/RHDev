@@ -179,6 +179,24 @@ async function spArtistId(name, auth) {
   const pick = items.find((a) => norm(a.name) === norm(name)) || items[0];
   return { id: pick.id, name: pick.name, err: null };
 }
+// Fetch JSON da Spotify con retry sul rate-limit (429) e sui 5xx.
+async function spJson(url, auth, tries = 4) {
+  for (let i = 0; i < tries; i++) {
+    let r;
+    try { r = await fetch(url, { headers: auth, signal: AbortSignal.timeout(15000) }); }
+    catch (_) { await sleep(600 * (i + 1)); continue; }
+    if (r.status === 429) {
+      const ra = parseInt(r.headers.get('retry-after') || '', 10);
+      await sleep(Math.min((Number.isFinite(ra) ? ra : (i + 1)), 6) * 1000);
+      continue;
+    }
+    if (r.status >= 500) { await sleep(600 * (i + 1)); continue; }
+    if (!r.ok) return { ok: false, status: r.status, data: null };
+    try { return { ok: true, status: r.status, data: await r.json() }; }
+    catch (_) { return { ok: false, status: r.status, data: null }; }
+  }
+  return { ok: false, status: 429, data: null };
+}
 async function spDiscography(name, artistId, auth) {
   let who = { id: artistId, name: name };
   if (!artistId) {
@@ -194,11 +212,11 @@ async function spDiscography(name, artistId, auth) {
       artistInfo = { name: ad.name || who.name, image: bigImg(ad.images), followers: ad.followers?.total || 0, genres: (ad.genres || []).slice(0, 3).join(', '), link: ad.external_urls?.spotify || '', source: 'spotify' }; }
   } catch (_) {}
 
-  const albums = []; const seen = new Set();
+  const albums = []; const seen = new Set(); let albErr = '';
   for (let offset = 0; offset < 1000; offset += 50) {
-    const r = await fetch(`https://api.spotify.com/v1/artists/${who.id}/albums?include_groups=album,single,compilation,appears_on&limit=50&offset=${offset}`, { headers: auth, signal: AbortSignal.timeout(15000) });
-    if (!r.ok) break; const d = await r.json();
-    const items = d.items || [];
+    const rr = await spJson(`https://api.spotify.com/v1/artists/${who.id}/albums?include_groups=album,single,compilation,appears_on&limit=50&offset=${offset}`, auth);
+    if (!rr.ok) { albErr = 'HTTP ' + rr.status + ' su /albums'; break; }
+    const items = rr.data.items || [];
     for (const a of items) if (a.id && !seen.has(a.id)) { seen.add(a.id); albums.push(a); }
     if (items.length < 50) break;
   }
@@ -206,8 +224,8 @@ async function spDiscography(name, artistId, auth) {
   const meta = new Map(albums.map((a) => [a.id, a]));
   const ids = albums.map((a) => a.id);
   for (let i = 0; i < ids.length; i += 20) {
-    const r = await fetch(`https://api.spotify.com/v1/albums?ids=${ids.slice(i, i + 20).join(',')}`, { headers: auth, signal: AbortSignal.timeout(15000) });
-    if (!r.ok) continue; const d = await r.json();
+    const rr = await spJson(`https://api.spotify.com/v1/albums?ids=${ids.slice(i, i + 20).join(',')}`, auth);
+    if (!rr.ok) continue; const d = rr.data;
     for (const a of d.albums || []) {
       const m = meta.get(a.id) || a;
       for (const tk of (a.tracks?.items || [])) {
@@ -223,13 +241,13 @@ async function spDiscography(name, artistId, auth) {
   }
   const tids = [...trackIndex.keys()];
   for (let i = 0; i < tids.length; i += 50) {
-    const r = await fetch(`https://api.spotify.com/v1/tracks?ids=${tids.slice(i, i + 50).join(',')}`, { headers: auth, signal: AbortSignal.timeout(15000) });
-    if (!r.ok) continue; const d = await r.json();
+    const rr = await spJson(`https://api.spotify.com/v1/tracks?ids=${tids.slice(i, i + 50).join(',')}`, auth);
+    if (!rr.ok) continue; const d = rr.data;
     for (const tk of d.tracks || []) { const o = tk && trackIndex.get(tk.id); if (o) o.isrc = tk.external_ids?.isrc || ''; }
   }
   rows.forEach((o) => delete o._tid);
   rows.sort((a, b) => (b.date || '').localeCompare(a.date || '') || (a.title || '').localeCompare(b.title || ''));
-  return { rows, artist: who.name, artistInfo, err: null };
+  return { rows, artist: who.name, artistInfo, err: (rows.length ? null : (albErr || (albums.length ? 'nessuna traccia accreditata' : 'nessun album'))) };
 }
 
 // ============================== Deezer (senza chiavi) ======================
@@ -599,9 +617,9 @@ export default async function handler(req) {
     // -------- artista --------
     // Raccogli dalle fonti ABILITATE. Con ≥2 fonti restituisco un payload di CONFRONTO.
     {
-      const avail = [];
-      if (useDz) { try { const dz = await dzDiscography(q, prov === 'deezer' ? id : ''); if (dz.rows.length) avail.push({ name: 'deezer', rows: dz.rows, artist: dz.artist, artistInfo: dz.artistInfo }); } catch (_) {} }
-      if (auth) { try { const sp = await spDiscography(q, prov === 'spotify' ? id : '', auth); if (sp.rows.length) avail.push({ name: 'spotify', rows: sp.rows, artist: sp.artist, artistInfo: sp.artistInfo }); } catch (_) {} }
+      const avail = []; const diag = [];
+      if (useDz) { try { const dz = await dzDiscography(q, prov === 'deezer' ? id : ''); if (dz.rows.length) avail.push({ name: 'deezer', rows: dz.rows, artist: dz.artist, artistInfo: dz.artistInfo }); else diag.push('Deezer: 0'); } catch (e) { diag.push('Deezer err: ' + String(e?.message || e)); } }
+      if (auth) { try { const sp = await spDiscography(q, prov === 'spotify' ? id : '', auth); if (sp.rows.length) avail.push({ name: 'spotify', rows: sp.rows, artist: sp.artist, artistInfo: sp.artistInfo }); else diag.push('Spotify: 0 tracce (artist=' + (sp.artist || '?') + (sp.err ? ', ' + sp.err : '') + ')'); } catch (e) { diag.push('Spotify err: ' + String(e?.message || e)); } }
       if (tdTok) { try { const td = await tdArtistDisco(q, '', tdTok); if (td.rows.length) avail.push({ name: 'tidal', rows: td.rows, artist: td.artist, artistInfo: td.artistInfo }); } catch (_) {} }
 
       if (avail.length >= 2) {
@@ -613,7 +631,7 @@ export default async function handler(req) {
         return json({ mode: 'artist', artist: s.artist, artistInfo: s.artistInfo || null, rows: s.rows, count: s.rows.length, source: s.name });
       }
       const mb = await mbDiscography(q);
-      return json({ mode: 'artist', artist: mb.artist, rows: mb.rows, count: mb.rows.length, source: 'mb' });
+      return json({ mode: 'artist', artist: mb.artist, rows: mb.rows, count: mb.rows.length, source: 'mb', note: diag.length ? diag.join(' · ') : null });
     }
   } catch (e) {
     return json({ error: String(e?.message || e) }, 200);

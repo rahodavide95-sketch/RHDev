@@ -186,10 +186,13 @@ async function spDiscography(name, artistId, auth) {
     if (s.err) return { rows: [], artist: '', err: s.err };
     if (!s.id) return { rows: [], artist: '', err: null };
     who = s;
-  } else {
-    const ar = await fetch(`https://api.spotify.com/v1/artists/${artistId}`, { headers: auth, signal: AbortSignal.timeout(15000) });
-    if (ar.ok) { const ad = await ar.json(); who.name = ad.name || name; }
   }
+  let artistInfo = { name: who.name, source: 'spotify' };
+  try {
+    const ar = await fetch(`https://api.spotify.com/v1/artists/${who.id}`, { headers: auth, signal: AbortSignal.timeout(15000) });
+    if (ar.ok) { const ad = await ar.json(); who.name = ad.name || who.name;
+      artistInfo = { name: ad.name || who.name, image: bigImg(ad.images), followers: ad.followers?.total || 0, genres: (ad.genres || []).slice(0, 3).join(', '), link: ad.external_urls?.spotify || '', source: 'spotify' }; }
+  } catch (_) {}
 
   const albums = []; const seen = new Set();
   for (let offset = 0; offset < 1000; offset += 50) {
@@ -226,7 +229,7 @@ async function spDiscography(name, artistId, auth) {
   }
   rows.forEach((o) => delete o._tid);
   rows.sort((a, b) => (b.date || '').localeCompare(a.date || '') || (a.title || '').localeCompare(b.title || ''));
-  return { rows, artist: who.name, err: null };
+  return { rows, artist: who.name, artistInfo, err: null };
 }
 
 // ============================== Deezer (senza chiavi) ======================
@@ -323,9 +326,11 @@ async function dzArtistId(name) {
   return { id: pick.id, name: pick.name };
 }
 async function dzDiscography(name, artistId) {
-  let who;
-  if (artistId) { try { const a = await dzGet(`${DZ}/artist/${artistId}`); who = { id: artistId, name: a.name }; } catch (_) { who = { id: artistId, name }; } }
-  else { who = await dzArtistId(name); if (!who) return { rows: [], artist: '', err: null }; }
+  let who, art = null;
+  if (artistId) { try { art = await dzGet(`${DZ}/artist/${artistId}`); } catch (_) {} who = { id: artistId, name: art?.name || name }; }
+  else { const s = await dzArtistId(name); if (!s) return { rows: [], artist: '', artistInfo: null, err: null }; who = s; try { art = await dzGet(`${DZ}/artist/${s.id}`); } catch (_) {} }
+  const artistInfo = { name: art?.name || who.name, image: art ? (art.picture_xl || art.picture_big || art.picture_medium || '') : '',
+    fans: art?.nb_fan || 0, albums: art?.nb_album || 0, link: art?.link || '', source: 'deezer' };
   const albums = []; let url = `${DZ}/artist/${who.id}/albums?limit=100`;
   for (let i = 0; i < 20 && url; i++) { const d = await dzGet(url); albums.push(...(d.data || [])); url = d.next || ''; }
   // raccogli le tracce dell'artista (filtrando le compilation altrui)
@@ -378,7 +383,72 @@ async function dzDiscography(name, artistId) {
   }
   const rows = picked.map((p) => ({ artist: p.artist, title: p.title, isrc: p.isrc, release: p.release, date: p.date, sources: ['deezer'], url: p.url, image: p.image, tid: String(p.id || '') }));
   rows.sort((a, b) => (b.date || '').localeCompare(a.date || '') || (a.title || '').localeCompare(b.title || ''));
-  return { rows, artist: who.name, err: null };
+  return { rows, artist: who.name, artistInfo, err: null };
+}
+
+// ================================= Tidal ===================================
+// Stesso schema "client credentials" di Spotify. API v2 (JSON:API). Se qualcosa
+// non combacia, la funzione restituisce vuoto e si ripiega su Deezer.
+const TD_AUTH = 'https://auth.tidal.com/v1/oauth2/token';
+const TD_API = 'https://openapi.tidal.com/v2';
+const TD_CC = 'US';
+let _td = { v: '', exp: 0, fk: '', fu: 0, fe: '' };
+async function tdToken(id, secret) {
+  const now = Date.now(); const key = id + ':' + secret;
+  if (_td.v && _td.exp > now + 5000) return { tok: _td.v, err: null };
+  if (_td.fk === key && _td.fu > now) return { tok: '', err: _td.fe };
+  const r = await fetch(TD_AUTH, { method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', Authorization: 'Basic ' + btoa(key) },
+    body: 'grant_type=client_credentials', signal: AbortSignal.timeout(15000) });
+  if (!r.ok) { let t = ''; try { t = await r.text(); } catch (_) {} const e = `token HTTP ${r.status} ${t.slice(0, 90)}`; _td = { v: '', exp: 0, fk: key, fu: now + 60000, fe: e }; return { tok: '', err: e }; }
+  const d = await r.json(); if (d.access_token) _td = { v: d.access_token, exp: now + (d.expires_in || 3600) * 1000, fk: '', fu: 0, fe: '' };
+  return { tok: d.access_token || '', err: d.access_token ? null : 'no token' };
+}
+const tdHead = (tok) => ({ Authorization: 'Bearer ' + tok, Accept: 'application/vnd.api+json' });
+async function tdGet(url, tok) { const r = await fetch(url, { headers: tdHead(tok), signal: AbortSignal.timeout(15000) }); if (!r.ok) throw new Error('tidal HTTP ' + r.status); return r.json(); }
+const tdAttr = (x) => (x && x.attributes) || {};
+function tdImg(at) { const l = at.imageLinks || at.picture || []; return (Array.isArray(l) && l[0] && (l[0].href || l[0].url)) || ''; }
+
+async function tdArtistDisco(name, artistId, tok) {
+  let aid = artistId;
+  if (!aid) {
+    const s = await tdGet(`${TD_API}/searchResults/${enc(name)}?countryCode=${TD_CC}&include=artists`, tok);
+    const inc = (s.included || []).filter((x) => x.type === 'artists');
+    const pick = inc.find((x) => norm(tdAttr(x).name) === norm(name)) || inc[0];
+    aid = pick ? pick.id : '';
+  }
+  if (!aid) return { rows: [], artist: '', artistInfo: null, err: null };
+  let artistInfo = null;
+  try { const a = await tdGet(`${TD_API}/artists/${aid}?countryCode=${TD_CC}`, tok); const at = tdAttr(a.data); artistInfo = { name: at.name || name, image: tdImg(at), link: `https://tidal.com/browse/artist/${aid}`, source: 'tidal' }; } catch (_) {}
+  const albumIds = [];
+  try { let url = `${TD_API}/artists/${aid}/relationships/albums?countryCode=${TD_CC}`;
+    for (let i = 0; i < 12 && url; i++) { const d = await tdGet(url, tok); for (const it of (d.data || [])) if (it.id) albumIds.push(it.id);
+      url = d.links && d.links.next ? ('https://openapi.tidal.com' + d.links.next) : ''; }
+  } catch (_) {}
+  const rows = []; const seen = new Set();
+  for (const alid of albumIds) {
+    try {
+      const al = await tdGet(`${TD_API}/albums/${alid}?countryCode=${TD_CC}&include=items`, tok);
+      const at = tdAttr(al.data); const rel = at.title || ''; const date = at.releaseDate || ''; const cover = tdImg(at);
+      for (const t of (al.included || []).filter((x) => x.type === 'tracks')) {
+        const ta = tdAttr(t); const key = norm(ta.title) + '|' + norm(rel); if (!ta.title || seen.has(key)) continue; seen.add(key);
+        rows.push({ artist: artistInfo?.name || name, title: ta.title, isrc: ta.isrc || '', release: rel, date, sources: ['tidal'], url: `https://tidal.com/browse/track/${t.id}`, image: cover, tid: String(t.id || '') });
+      }
+    } catch (_) {}
+  }
+  rows.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  return { rows, artist: artistInfo?.name || name, artistInfo, err: null };
+}
+async function tdTrackSearch(q, tok) {
+  const s = await tdGet(`${TD_API}/searchResults/${enc(q)}?countryCode=${TD_CC}&include=tracks`, tok);
+  const tracks = (s.included || []).filter((x) => x.type === 'tracks').slice(0, 10);
+  const results = tracks.map((t) => { const a = tdAttr(t); return {
+    title: a.title || '', artists: (a.artists || []).map((x) => x.name).join(', ') || '', isrc: a.isrc || '',
+    album: '', albumType: '', upc: '', label: (a.copyright || ''), releaseDate: a.releaseDate || '', totalTracks: '',
+    trackNumber: a.trackNumber || '', discNumber: a.volumeNumber || '', duration: a.duration || '', durationMs: 0,
+    bpm: '', explicit: !!a.explicit, popularity: '', genres: '', markets: '', deezerId: '', albumId: '',
+    spotifyUrl: `https://tidal.com/browse/track/${t.id}`, previewUrl: '', image: '', source: 'tidal' }; });
+  return { results, err: null };
 }
 
 // ============================== MusicBrainz (ripiego) ======================
@@ -465,6 +535,9 @@ export default async function handler(req) {
   const SP_ID = bodyId || envId;
   const SP_SECRET = bodySecret || envSecret;
   const hasSp = !!(SP_ID && SP_SECRET);
+  const TD_ID = (body.tidalId || process.env.TIDAL_CLIENT_ID || '').trim();
+  const TD_SECRET = (body.tidalSecret || process.env.TIDAL_CLIENT_SECRET || '').trim();
+  const hasTd = !!(TD_ID && TD_SECRET);
   // Origine delle chiavi + info non sensibili per diagnosticare invalid_client.
   const keySrc = (bodyId && bodySecret) ? 'app(browser)' : (envId ? 'vercel(env)' : 'nessuna');
   const sameKey = !!(SP_SECRET && SP_SECRET === SP_ID);
@@ -487,6 +560,12 @@ export default async function handler(req) {
     const t = (hasSp && prov !== 'deezer') ? await spToken(SP_ID, SP_SECRET) : { tok: '', err: 'not_configured' };
     const auth = t.tok ? bearer(t.tok) : null;
     const trySpotify = !!auth && prov !== 'deezer';
+    // Tidal come fonte alternativa (se ci sono le chiavi e non si usa Spotify/Deezer diretto)
+    let tdTok = '';
+    if (!trySpotify && hasTd && prov !== 'deezer' && prov !== 'spotify') {
+      try { const tt = await tdToken(TD_ID, TD_SECRET); tdTok = tt.tok || ''; } catch (_) {}
+    }
+    const tryTidal = !!tdTok;
 
     // -------- album (da link diretto) --------
     if (mode === 'album') {
@@ -502,6 +581,7 @@ export default async function handler(req) {
         const x = id ? await spTrackById(id, auth) : await spTrackSearch(q, auth);
         if (!x.err && (x.results || []).length) return json({ mode, results: x.results, source: 'spotify' });
       }
+      if (tryTidal && !id) { try { const x = await tdTrackSearch(q, tdTok); if ((x.results || []).length) return json({ mode, results: x.results, source: 'tidal' }); } catch (_) {} }
       try { const dz = id ? await dzTrackById(id) : await dzTrackSearch(q); return json({ mode, results: dz.results, source: 'deezer' }); }
       catch (e) { const mb = await mbTrackSearch(q); return json({ mode, results: mb.results, source: 'mb', note: 'Deezer: ' + String(e?.message || e) }); }
     }
@@ -509,11 +589,14 @@ export default async function handler(req) {
     // -------- artista --------
     if (trySpotify) {
       const x = await spDiscography(q, id, auth);
-      if (!x.err && x.rows.length) return json({ mode: 'artist', artist: x.artist, rows: x.rows, count: x.rows.length, source: 'spotify' });
+      if (!x.err && x.rows.length) return json({ mode: 'artist', artist: x.artist, artistInfo: x.artistInfo || null, rows: x.rows, count: x.rows.length, source: 'spotify' });
+    }
+    if (tryTidal) {
+      try { const x = await tdArtistDisco(q, '', tdTok); if (x.rows.length) return json({ mode: 'artist', artist: x.artist, artistInfo: x.artistInfo || null, rows: x.rows, count: x.rows.length, source: 'tidal' }); } catch (_) {}
     }
     try {
       const dz = await dzDiscography(q, id);
-      if (dz.rows.length || !q) return json({ mode: 'artist', artist: dz.artist, rows: dz.rows, count: dz.rows.length, source: 'deezer' });
+      if (dz.rows.length || !q) return json({ mode: 'artist', artist: dz.artist, artistInfo: dz.artistInfo || null, rows: dz.rows, count: dz.rows.length, source: 'deezer' });
       const mb = await mbDiscography(q);
       return json({ mode: 'artist', artist: mb.artist || dz.artist, rows: mb.rows, count: mb.rows.length, source: 'mb' });
     } catch (e) {

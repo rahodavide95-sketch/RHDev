@@ -602,6 +602,7 @@ async function pmap(items, fn, conc){
 const DISCO_TTL=6*3600*1000; // cache 6 ore
 function discoCacheGet(id){ try{ const c=JSON.parse(localStorage.getItem('isrcfinder.disco.'+id)||'null'); if(c&&c.rows&&(Date.now()-c.t<DISCO_TTL)) return c; }catch(_){} return null; }
 function discoCacheSet(id,obj){ try{ localStorage.setItem('isrcfinder.disco.'+id, JSON.stringify({t:Date.now(),...obj})); }catch(_){} }
+let PROGRESS=null; // callback per il caricamento progressivo (impostato da runSearch)
 async function bSpArtist(name,id,tok){
   let who={id,name}; let dbg=''; const T0=Date.now(); const overBudget=()=>Date.now()-T0>12000;
   if(id){ const c=discoCacheGet(id); if(c) return {rows:c.rows,artist:c.artist,artistInfo:c.artistInfo,diag:'(cache) '+(c.diag||'')}; }
@@ -609,6 +610,7 @@ async function bSpArtist(name,id,tok){
     const items=(s.artists&&s.artists.items)||[]; if(!items.length) return {rows:[],artist:name,artistInfo:null,diag:'nessun artista trovato con questo nome'}; const pick=items.find(a=>norm(a.name)===norm(name))||items[0]; who={id:pick.id,name:pick.name}; }
   let artistInfo={name:who.name,source:'spotify'}; let infoErr='';
   try{ const ad=await spG(`/artists/${who.id}`,tok); who.name=ad.name||who.name; artistInfo={name:ad.name||who.name,image:bigSp(ad.images),followers:(ad.followers&&ad.followers.total)||0,genres:(ad.genres||[]).slice(0,3).join(', '),link:(ad.external_urls&&ad.external_urls.spotify)||'',source:'spotify'}; }catch(e){ infoErr=(e.message||e)+''; }
+  if(PROGRESS){ try{ PROGRESS([], artistInfo, false); }catch(_){} } // maschera artista subito
   // PROBE: alcuni token Spotify rifiutano certi valori di limit ("Invalid limit").
   // Trovo il massimo davvero accettato (da 20 giu' fino a 1), usando lo stesso formato reale.
   let LIM=0, probeInfo='';
@@ -633,6 +635,7 @@ async function bSpArtist(name,id,tok){
     if(albums.length){ igUsed=ig; break; } // raccolto qualcosa: basta questo set
   }
   const rows=[]; const idx=new Map(); const seenKey=new Set(); const meta=new Map(albums.map(a=>[a.id,a])); const ids=albums.map(a=>a.id);
+  let lastEmit=0; const emit=(force)=>{ if(!PROGRESS) return; const now=Date.now(); if(!force && now-lastEmit<300) return; lastEmit=now; try{ PROGRESS(rows.slice(), artistInfo, false); }catch(_){} };
   // OGNI singola traccia: deduplica solo per ID univoco della traccia (mai per titolo/release,
   // cosi' remix, versioni e uscite diverse restano TUTTE). Ripiego su titolo|release solo se manca l'id.
   const keyOf=(tk,rel)=> tk.id ? ('id:'+tk.id) : ('t:'+norm(tk.name)+'|'+norm(rel||''));
@@ -652,16 +655,18 @@ async function bSpArtist(name,id,tok){
       for(const tk of its){ detSeen++; const cr=(tk.artists||[]).some(x=>x.id===who.id||norm(x.name)===norm(who.name)); if(!cr) continue; detCred++;
         const rel=m.name||''; const key=keyOf(tk,rel); if(seenKey.has(key)) continue; seenKey.add(key);
         const o={artist:(tk.artists||[]).map(x=>x.name).join(', '),title:tk.name||'',isrc:'',release:rel,date:m.release_date||'',sources:['spotify'],url:(tk.external_urls&&tk.external_urls.spotify)||'',image:bigSp(m.images),tid:tk.id}; rows.push(o); if(tk.id) idx.set(tk.id,o); }
+      emit();
       if(its.length<LIM) return;
     }
   }, 4);
+  emit(true);
   const nFromAlb=rows.length; let searchErr='';
   // FALLBACK ricerca per nome artista (comparse/compilation): pagine in PARALLELO, con tetto e budget.
   const CAPS=150; // massimo risultati da esaminare (tempo limitato)
   const addTk=(tk)=>{ const cr=(tk.artists||[]).some(x=>x.id===who.id||norm(x.name)===norm(who.name)); if(!cr) return;
     const rel=(tk.album&&tk.album.name)||''; const key=keyOf(tk,rel); if(seenKey.has(key)) return; seenKey.add(key);
     const o={artist:(tk.artists||[]).map(x=>x.name).join(', '),title:tk.name||'',isrc:(tk.external_ids&&tk.external_ids.isrc)||'',release:rel,date:(tk.album&&tk.album.release_date)||'',sources:['spotify'],url:(tk.external_urls&&tk.external_urls.spotify)||'',image:bigSp(tk.album&&tk.album.images),tid:tk.id};
-    rows.push(o); if(tk.id&&!o.isrc) idx.set(tk.id,o); };
+    rows.push(o); if(tk.id&&!o.isrc) idx.set(tk.id,o); emit(); };
   const spSearch=async(field,off)=>{ let sd=null; for(let a=0;a<2 && !sd;a++){ try{ sd=await spG(`/search?q=${encodeURIComponent(field)}&type=track&limit=${LIM}&offset=${off}`,tok); }catch(e){ searchErr=(e.message||e)+''; if(a<1) await bsleep(250); } } return sd; };
   if(!overBudget()){
     const field='artist:"'+who.name+'"'; // solo query precisa (la generica riempie di risultati altrui)
@@ -678,11 +683,11 @@ async function bSpArtist(name,id,tok){
   await pmap(chunks, async(chunk)=>{
     if(batchForbidden||overBudget()) return; let d=null;
     for(let a=0;a<2 && !d;a++){ try{ d=await spG(`/tracks?ids=${chunk.join(',')}`,tok); }catch(e){ if(is403(e.message)){ batchForbidden=true; return; } if(a<1) await bsleep(250); } }
-    if(!d) return; for(const tk of d.tracks||[]){const o=tk&&idx.get(tk.id); if(o) o.isrc=(tk.external_ids&&tk.external_ids.isrc)||'';}
+    if(!d) return; for(const tk of d.tracks||[]){const o=tk&&idx.get(tk.id); if(o) o.isrc=(tk.external_ids&&tk.external_ids.isrc)||'';} emit();
   }, 4);
   if(batchForbidden){ isrcMode='singolo'; let singForbidden=false;
     await pmap(tids.slice(0,400), async(tid)=>{ if(singForbidden||overBudget()) return; const o=idx.get(tid); if(!o) return;
-      try{ const tk=await spG(`/tracks/${tid}`,tok); o.isrc=(tk.external_ids&&tk.external_ids.isrc)||''; }
+      try{ const tk=await spG(`/tracks/${tid}`,tok); o.isrc=(tk.external_ids&&tk.external_ids.isrc)||''; emit(); }
       catch(e){ if(is403(e.message)){ singForbidden=true; isrcMode='vietato'; } } }, 4); }
   // DEDUPLICA solo per ISRC (stessa registrazione uscita in piu' release = 1 riga).
   // Le tracce SENZA ISRC restano tutte.
@@ -928,8 +933,11 @@ async function runSearch(){
   const what = link ? (link.type==='track'?'la traccia':link.type==='album'?"l'album":"l'artista")+' dal link Spotify'
                     : (MODE==='artist'?'la discografia':'la traccia')+` “${esc(q)}”`;
   log(`Cerco ${what}…`,true);
+  // caricamento progressivo: mostra maschera + tracce man mano che arrivano (solo ricerca artista)
+  PROGRESS = (reqMode==='artist') ? (rows,info)=>renderPartialArtist(rows,info) : null;
   try{
     const d=await apiCall({mode:reqMode,q:reqQ,id:reqId,prov:reqProv,...keyBody()});
+    PROGRESS=null;
     if(d.needSpotifyLogin){ promptSpotifyLogin(); return; }
     if(d.needSource){ promptChooseSource(); return; }
     if(d.error){ log('Errore: '+d.error,false,true); return; }
@@ -939,7 +947,16 @@ async function runSearch(){
     else { renderArtistResponse(d,note); catalogD = (reqMode==='artist') ? d : null; }
     showBack(false); // ricerca dalla barra = nuovo contesto
   }catch(e){ log('Errore di rete: '+(e.message||e),false,true); }
-  finally{ $('go').disabled=false; refreshKeyState(); }
+  finally{ PROGRESS=null; $('go').disabled=false; refreshKeyState(); }
+}
+// render parziale durante il caricamento progressivo (maschera + tracce che arrivano)
+function renderPartialArtist(rows, info){
+  if(COMPARE) return;
+  ROWS=rows||[]; MERGED=[]; $('diffs').innerHTML='';
+  if(info) $('ahero').innerHTML=artistHero(info);
+  render();
+  $('res-artist').classList.remove('hidden');
+  log('Caricamento… '+ROWS.length+' tracce (continua)', true);
 }
 
 /* apre un album/EP (tabella completa) o una singola traccia (scheda) per ID */
@@ -1128,7 +1145,7 @@ $('cards').addEventListener('click',(e)=>{ const b=e.target.closest('[data-album
   e.preventDefault(); openAlbum(b.dataset.album, b.dataset.atitle, b.dataset.prov||'deezer'); });
 // gestisci l'eventuale ritorno dal login Spotify, poi aggiorna lo stato
 /* >>> VERSIONE: aggiornare questo numero a OGNI deploy <<< */
-const VERSION='V29';
+const VERSION='V30';
 try{ const vb=$('ver-badge'); if(vb) vb.textContent=VERSION; console.log('ISRC Finder', VERSION); }catch(_){}
 spHandleRedirect().then(()=>refreshKeyState()).catch(()=>refreshKeyState());
 if('serviceWorker' in navigator){

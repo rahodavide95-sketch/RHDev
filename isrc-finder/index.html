@@ -563,7 +563,7 @@ async function spG(path,tok,tries=4){ for(let i=0;i<tries;i++){ let r;
     catch(e){ if(i<tries-1){ await new Promise(res=>setTimeout(res,500*(i+1))); continue; } throw e; }
     if(r.status===429){ const ra=parseInt(r.headers.get('retry-after')||'',10); await new Promise(res=>setTimeout(res,Math.min(Number.isFinite(ra)?ra:(i+1),6)*1000)); continue; }
     if(r.status>=500){ await new Promise(res=>setTimeout(res,500*(i+1))); continue; }
-    if(!r.ok) throw new Error('spotify '+r.status);
+    if(!r.ok){ let body=''; try{ const j=await r.json(); body=(j&&j.error&&(j.error.message||j.error))||''; }catch(_){ try{ body=await r.text(); }catch(__){}} throw new Error('spotify '+r.status+(body?': '+String(body).slice(0,120):'')); }
     return r.json(); }
   throw new Error('spotify 429'); }
 async function bSpSuggest(kind,q,tok){ const type=kind==='track'?'track':'artist';
@@ -1060,7 +1060,7 @@ $('cards').addEventListener('click',(e)=>{ const b=e.target.closest('[data-album
   e.preventDefault(); openAlbum(b.dataset.album, b.dataset.atitle, b.dataset.prov||'deezer'); });
 // gestisci l'eventuale ritorno dal login Spotify, poi aggiorna lo stato
 /* >>> VERSIONE: aggiornare questo numero a OGNI deploy <<< */
-const VERSION='V11';
+const VERSION='V12';
 try{ const vb=$('ver-badge'); if(vb) vb.textContent=VERSION; console.log('ISRC Finder', VERSION); }catch(_){}
 spHandleRedirect().then(()=>refreshKeyState()).catch(()=>refreshKeyState());
 if('serviceWorker' in navigator){ window.addEventListener('load', ()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }

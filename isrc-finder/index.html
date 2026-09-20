@@ -72,6 +72,11 @@
   .tag{margin:4px 0 0; color:var(--muted); font-size:13px}
   .ver{-webkit-text-fill-color:initial; color:var(--muted); font-family:'Inter',sans-serif; font-size:11px; font-weight:600;
     letter-spacing:.3px; vertical-align:middle; padding:2px 7px; border:1px solid var(--line); border-radius:999px; margin-left:6px}
+  .spdiag{margin-top:10px; padding:10px 12px; border-radius:10px; font-size:12.5px; line-height:1.5; white-space:pre-wrap; word-break:break-word;
+    border:1px solid var(--line); background:var(--card2,rgba(127,127,127,.08))}
+  .spdiag.ok{border-color:#10b981; color:#0b8b63}
+  .spdiag.bad{border-color:#ef4444; color:#c81e1e}
+  .spdiag code{font-size:12px}
   .iconbtn{position:relative; width:46px;height:46px;border-radius:14px;border:1px solid var(--line);
     background:var(--card); color:var(--ink); cursor:pointer; box-shadow:var(--shadow); transition:.15s;
     display:grid; place-items:center; padding:0}
@@ -326,9 +331,11 @@
         </div>
         <div class="krow2">
           <button class="go" id="sp-login" type="button">Accedi con Spotify</button>
+          <button class="ghost" id="sp-test" type="button">Testa Spotify</button>
           <button class="ghost" id="sp-logout" type="button" hidden>Disconnetti</button>
           <span id="sp-login-state" class="ptag"></span>
         </div>
+        <div id="sp-diag" class="spdiag" hidden></div>
       </div>
 
       <div class="plat">
@@ -470,6 +477,29 @@ function pkceDel(k){ try{localStorage.removeItem('isrcfinder.pkce.'+k);}catch(_)
 function spGetTok(){ try{ return JSON.parse(localStorage.getItem(SP_TOK)||'null'); }catch(_){ return null; } }
 // token davvero utilizzabile: presente e non scaduto senza refresh
 function spTokenUsable(){ const t=spGetTok(); if(!t||!t.access) return false; if(t.exp>Date.now()+10000) return true; return !!t.refresh; }
+// riquadro diagnostico persistente (sopravvive ai reload, cosi' l'errore non sfugge)
+const SP_DIAG='isrcfinder.spdiag.v1';
+function spDiag(html,cls){ try{ localStorage.setItem(SP_DIAG,JSON.stringify({html,cls,t:Date.now()})); }catch(_){}
+  const el=document.getElementById('sp-diag'); if(!el) return; el.hidden=false; el.className='spdiag '+(cls||''); el.innerHTML=html; }
+function spDiagRestore(){ const el=document.getElementById('sp-diag'); if(!el) return;
+  try{ const d=JSON.parse(localStorage.getItem(SP_DIAG)||'null'); if(d&&d.html){ el.hidden=false; el.className='spdiag '+(d.cls||''); el.innerHTML=d.html; } }catch(_){} }
+// test LIVE: chiede davvero a Spotify e mostra l'esito esatto
+async function spTest(){
+  const cid=(getKeys().spId||'').trim();
+  spDiag('Controllo in corso…','');
+  const tok=await spBrowserToken();
+  if(!tok){
+    const cidTxt = cid ? ('impostato ('+cid.slice(0,6)+'…)') : '<b>MANCANTE</b>';
+    spDiag('❌ Nessun token valido salvato.\nClient ID: '+cidTxt+'\nRedirect URI atteso: <code>'+spRedirect()+'</code>\n→ Premi <b>Accedi con Spotify</b>.','bad');
+    return;
+  }
+  try{
+    const r=await fetch('https://api.spotify.com/v1/search?q=test&type=artist&limit=1',{headers:{Authorization:'Bearer '+tok}});
+    if(r.ok){ spDiag('✅ Spotify risponde: <b>connesso e funzionante</b>.\nClient ID: '+cid.slice(0,6)+'…\nToken valido.','ok'); refreshKeyState(); }
+    else { let m=''; try{ const e=await r.json(); m=(e.error&&e.error.message)||''; }catch(_){}
+      spDiag('❌ Spotify ha rifiutato la chiamata (HTTP '+r.status+(m?' — '+m:'')+').\nProva a <b>Ri-accedere</b>.','bad'); }
+  }catch(e){ spDiag('❌ Errore di rete verso Spotify: '+(e&&e.message||e),'bad'); }
+}
 function spSetTok(t){ try{ t?localStorage.setItem(SP_TOK,JSON.stringify(t)):localStorage.removeItem(SP_TOK); }catch(_){}}
 function b64url(buf){ let s=''; const b=new Uint8Array(buf); for(const x of b) s+=String.fromCharCode(x); return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
 async function sha256(str){ return crypto.subtle.digest('SHA-256', new TextEncoder().encode(str)); }
@@ -486,29 +516,33 @@ async function spLogin(){
 function spLogout(){ spSetTok(null); refreshKeyState(); log('Disconnesso da Spotify.'); }
 async function spHandleRedirect(){
   const q=new URLSearchParams(location.search);
-  const code=q.get('code'), st=q.get('state');
+  const code=q.get('code'), st=q.get('state'), err=q.get('error');
+  const redir=spRedirect();
+  if(err){ try{ history.replaceState({},'',redir); }catch(_){}
+    spDiag('❌ Spotify ha annullato il login: <b>'+err+'</b>.\nDi solito significa Redirect URI non registrato. Aggiungi ESATTAMENTE:\n<code>'+redir+'</code>','bad');
+    log('Login Spotify annullato: '+err,false,true); return; }
   if(!code) return;
   const v=pkceGet('sp_v'), cid=pkceGet('sp_cid'), st0=pkceGet('sp_st');
-  const redir=spRedirect();
   try{ history.replaceState({},'',redir); }catch(_){}
-  if(!v||!cid){ log('Login Spotify non completato (sessione persa). Riprova l\'accesso da ⚙ Impostazioni.',false,true); return; }
-  if(st!==st0){ log('Login Spotify: controllo di sicurezza (state) non valido. Riprova l\'accesso.',false,true); return; }
+  if(!v||!cid){ spDiag('❌ Sessione di login persa (code_verifier assente). Può succedere in navigazione privata o se lo storage è bloccato. Riprova l\'accesso.','bad'); log('Login Spotify non completato (sessione persa).',false,true); return; }
+  if(st!==st0){ spDiag('❌ Controllo di sicurezza (state) non valido. Riprova l\'accesso.','bad'); log('Login Spotify: state non valido.',false,true); return; }
   try{
     const r=await fetch('https://accounts.spotify.com/api/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
       body:new URLSearchParams({client_id:cid,grant_type:'authorization_code',code,redirect_uri:redir,code_verifier:v}).toString()});
     if(!r.ok){ let msg=''; try{ const e=await r.json(); msg=(e.error||'')+(e.error_description?': '+e.error_description:''); }catch(_){}
-      log('Spotify non ha rilasciato il token (HTTP '+r.status+(msg?' — '+msg:'')+'). Verifica che in Spotify Dashboard sia registrato ESATTAMENTE questo Redirect URI: <b>'+redir+'</b>',false,true);
+      spDiag('❌ Spotify non ha rilasciato il token (HTTP '+r.status+(msg?' — '+msg:'')+').\nControlla che in Spotify Dashboard sia registrato ESATTAMENTE questo Redirect URI:\n<code>'+redir+'</code>','bad');
+      log('Spotify non ha rilasciato il token (HTTP '+r.status+(msg?' — '+msg:'')+').',false,true);
       return; }
     const d=await r.json();
-    if(!d.access_token){ log('Spotify: risposta senza token. Riprova l\'accesso.',false,true); return; }
+    if(!d.access_token){ spDiag('❌ Spotify: risposta senza token. Riprova l\'accesso.','bad'); log('Spotify: risposta senza token.',false,true); return; }
     spSetTok({access:d.access_token,refresh:d.refresh_token||'',exp:Date.now()+(d.expires_in||3600)*1000,cid});
     // verifica LIVE: chiedo davvero a Spotify se il token funziona
     try{
       const t=await fetch('https://api.spotify.com/v1/search?q=test&type=artist&limit=1',{headers:{Authorization:'Bearer '+d.access_token}});
-      if(t.ok){ refreshKeyState(); log('Connesso a Spotify ✓ — fonte attiva. Ora cerca pure.'); }
-      else { spSetTok(null); log('Spotify ha rifiutato il token (HTTP '+t.status+'). Riprova l\'accesso.',false,true); }
-    }catch(_){ refreshKeyState(); log('Connesso a Spotify ✓ (verifica di rete non riuscita, ma il token è salvato).'); }
-  }catch(e){ log('Errore di rete nello scambio token Spotify: '+(e&&e.message||e),false,true); return; }
+      if(t.ok){ refreshKeyState(); spDiag('✅ Connesso a Spotify e <b>verificato</b>: la fonte è attiva.','ok'); log('Connesso a Spotify ✓ — fonte attiva. Ora cerca pure.'); }
+      else { spSetTok(null); spDiag('❌ Spotify ha rifiutato il token appena emesso (HTTP '+t.status+'). Riprova l\'accesso.','bad'); log('Spotify ha rifiutato il token (HTTP '+t.status+'). Riprova l\'accesso.',false,true); }
+    }catch(_){ refreshKeyState(); spDiag('✅ Token Spotify salvato (verifica di rete non riuscita, ma dovrebbe funzionare).','ok'); log('Connesso a Spotify ✓ (verifica di rete non riuscita, ma il token è salvato).'); }
+  }catch(e){ spDiag('❌ Errore di rete nello scambio token Spotify: '+(e&&e.message||e),'bad'); log('Errore di rete nello scambio token Spotify: '+(e&&e.message||e),false,true); return; }
   finally{ pkceDel('sp_v'); pkceDel('sp_st'); pkceDel('sp_cid'); }
 }
 async function spBrowserToken(){
@@ -678,13 +712,14 @@ $('btn-theme').onclick=()=>{ const cur=getTheme(); setTheme(THEME_ORDER[(THEME_O
 applyTheme(getTheme()); updateThemeUI(getTheme());
 
 /* modale impostazioni */
-function openSettings(v){ $('settings-modal').classList.toggle('hidden', !v); }
+function openSettings(v){ $('settings-modal').classList.toggle('hidden', !v); if(v) spDiagRestore(); }
 $('btn-settings').onclick=()=>openSettings(true);
 $('btn-settings-close').onclick=()=>openSettings(false);
 $('settings-modal').addEventListener('click',(e)=>{ if(e.target===$('settings-modal')) openSettings(false); });
 document.addEventListener('keydown',(e)=>{ if(e.key==='Escape') openSettings(false); });
 { const el=$('use-deezer'); if(el) el.addEventListener('change', onSourceToggle); }
 if($('sp-login')) $('sp-login').onclick=spLogin;
+if($('sp-test')) $('sp-test').onclick=spTest;
 if($('sp-logout')) $('sp-logout').onclick=spLogout;
 if($('sp-copy-uri')) $('sp-copy-uri').onclick=async()=>{ try{ await navigator.clipboard.writeText(spRedirect()); $('sp-copy-uri').textContent='copiato ✓'; setTimeout(()=>{$('sp-copy-uri').textContent='copia';},1200); }catch(_){} };
 $('sp-save').onclick=()=>{
@@ -982,7 +1017,7 @@ $('cards').addEventListener('click',(e)=>{ const b=e.target.closest('[data-album
   e.preventDefault(); openAlbum(b.dataset.album, b.dataset.atitle, b.dataset.prov||'deezer'); });
 // gestisci l'eventuale ritorno dal login Spotify, poi aggiorna lo stato
 /* >>> VERSIONE: aggiornare questo numero a OGNI deploy <<< */
-const VERSION='V6';
+const VERSION='V7';
 try{ const vb=$('ver-badge'); if(vb) vb.textContent=VERSION; console.log('ISRC Finder', VERSION); }catch(_){}
 spHandleRedirect().then(()=>refreshKeyState()).catch(()=>refreshKeyState());
 if('serviceWorker' in navigator){ window.addEventListener('load', ()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }

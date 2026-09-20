@@ -934,7 +934,7 @@ async function runSearch(){
                     : (MODE==='artist'?'la discografia':'la traccia')+` “${esc(q)}”`;
   log(`Cerco ${what}…`,true);
   // caricamento progressivo: mostra maschera + tracce man mano che arrivano (solo ricerca artista)
-  PROGRESS = (reqMode==='artist') ? (rows,info)=>renderPartialArtist(rows,info) : null;
+  PROGRESS = (reqMode==='artist') ? (rows,info,st)=>renderPartialArtist(rows,info,st) : null;
   try{
     const d=await apiCall({mode:reqMode,q:reqQ,id:reqId,prov:reqProv,...keyBody()});
     PROGRESS=null;
@@ -1146,7 +1146,7 @@ $('cards').addEventListener('click',(e)=>{ const b=e.target.closest('[data-album
   e.preventDefault(); openAlbum(b.dataset.album, b.dataset.atitle, b.dataset.prov||'deezer'); });
 // gestisci l'eventuale ritorno dal login Spotify, poi aggiorna lo stato
 /* >>> VERSIONE: aggiornare questo numero a OGNI deploy <<< */
-const VERSION='V31';
+const VERSION='V32';
 try{ const vb=$('ver-badge'); if(vb) vb.textContent=VERSION; console.log('ISRC Finder', VERSION); }catch(_){}
 spHandleRedirect().then(()=>refreshKeyState()).catch(()=>refreshKeyState());
 if('serviceWorker' in navigator){

@@ -592,10 +592,28 @@ async function bSpArtist(name,id,tok){
   try{ const ad=await spG(`/artists/${who.id}`,tok); who.name=ad.name||who.name; artistInfo={name:ad.name||who.name,image:bigSp(ad.images),followers:(ad.followers&&ad.followers.total)||0,genres:(ad.genres||[]).slice(0,3).join(', '),link:(ad.external_urls&&ad.external_urls.spotify)||'',source:'spotify'}; }catch(_){}
   const albums=[]; const seen=new Set();
   for(let off=0;off<1000;off+=50){ let d; try{ d=await spG(`/artists/${who.id}/albums?include_groups=album,single,compilation,appears_on&limit=50&offset=${off}`,tok);}catch(_){break;} const items=d.items||[]; for(const a of items) if(a.id&&!seen.has(a.id)){seen.add(a.id);albums.push(a);} if(items.length<50) break; }
-  const rows=[]; const idx=new Map(); const meta=new Map(albums.map(a=>[a.id,a])); const ids=albums.map(a=>a.id);
+  const rows=[]; const idx=new Map(); const seenKey=new Set(); const meta=new Map(albums.map(a=>[a.id,a])); const ids=albums.map(a=>a.id);
+  const keyOf=(title,rel)=>norm(title)+'|'+norm(rel||'');
   for(let i=0;i<ids.length;i+=20){ let d; try{ d=await spG(`/albums?ids=${ids.slice(i,i+20).join(',')}`,tok);}catch(_){continue;}
     for(const a of d.albums||[]){ const m=meta.get(a.id)||a; for(const tk of (a.tracks&&a.tracks.items)||[]){ const cr=(tk.artists||[]).some(x=>x.id===who.id||norm(x.name)===norm(who.name)); if(!cr) continue;
-      const o={artist:(tk.artists||[]).map(x=>x.name).join(', '),title:tk.name||'',isrc:'',release:m.name||a.name||'',date:m.release_date||a.release_date||'',sources:['spotify'],url:(tk.external_urls&&tk.external_urls.spotify)||'',image:bigSp(m.images||a.images),tid:tk.id}; rows.push(o); if(tk.id) idx.set(tk.id,o); } } }
+      const rel=m.name||a.name||''; const key=keyOf(tk.name,rel); if(seenKey.has(key)) continue; seenKey.add(key);
+      const o={artist:(tk.artists||[]).map(x=>x.name).join(', '),title:tk.name||'',isrc:'',release:rel,date:m.release_date||a.release_date||'',sources:['spotify'],url:(tk.external_urls&&tk.external_urls.spotify)||'',image:bigSp(m.images||a.images),tid:tk.id}; rows.push(o); if(tk.id) idx.set(tk.id,o); } } }
+  // FALLBACK: cerca le tracce per nome artista (prende comparse/compilation che la scansione album non vede)
+  try{
+    for(const field of ['artist:"'+who.name+'"', who.name]){
+      for(let off=0; off<200; off+=50){
+        let sd; try{ sd=await spG(`/search?q=${encodeURIComponent(field)}&type=track&limit=50&offset=${off}`,tok); }catch(_){ break; }
+        const items=(sd.tracks&&sd.tracks.items)||[];
+        for(const tk of items){
+          const cr=(tk.artists||[]).some(x=>x.id===who.id||norm(x.name)===norm(who.name)); if(!cr) continue;
+          const rel=(tk.album&&tk.album.name)||''; const key=keyOf(tk.name,rel); if(seenKey.has(key)) continue; seenKey.add(key);
+          const o={artist:(tk.artists||[]).map(x=>x.name).join(', '),title:tk.name||'',isrc:(tk.external_ids&&tk.external_ids.isrc)||'',release:rel,date:(tk.album&&tk.album.release_date)||'',sources:['spotify'],url:(tk.external_urls&&tk.external_urls.spotify)||'',image:bigSp(tk.album&&tk.album.images),tid:tk.id};
+          rows.push(o); if(tk.id&&!o.isrc) idx.set(tk.id,o);
+        }
+        if(items.length<50) break;
+      }
+    }
+  }catch(_){}
   const tids=[...idx.keys()]; for(let i=0;i<tids.length;i+=50){ try{const d=await spG(`/tracks?ids=${tids.slice(i,i+50).join(',')}`,tok); for(const tk of d.tracks||[]){const o=tk&&idx.get(tk.id); if(o) o.isrc=(tk.external_ids&&tk.external_ids.isrc)||'';}}catch(_){}}
   rows.sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(a.title||'').localeCompare(b.title||''));
   return {rows,artist:who.name,artistInfo}; }
@@ -1031,7 +1049,7 @@ $('cards').addEventListener('click',(e)=>{ const b=e.target.closest('[data-album
   e.preventDefault(); openAlbum(b.dataset.album, b.dataset.atitle, b.dataset.prov||'deezer'); });
 // gestisci l'eventuale ritorno dal login Spotify, poi aggiorna lo stato
 /* >>> VERSIONE: aggiornare questo numero a OGNI deploy <<< */
-const VERSION='V8';
+const VERSION='V9';
 try{ const vb=$('ver-badge'); if(vb) vb.textContent=VERSION; console.log('ISRC Finder', VERSION); }catch(_){}
 spHandleRedirect().then(()=>refreshKeyState()).catch(()=>refreshKeyState());
 if('serviceWorker' in navigator){ window.addEventListener('load', ()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }

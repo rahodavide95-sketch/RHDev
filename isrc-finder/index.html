@@ -350,7 +350,7 @@ function render(){
 const FIELDS=[
   ['label','Etichetta'],['albumType','Tipo'],['releaseDate','Data uscita'],
   ['totalTracks','Tracce album'],['trackNumber','Traccia n°'],['discNumber','Disco n°'],
-  ['duration','Durata'],['bpm','BPM'],['popularity','Popolarità','/100'],
+  ['duration','Durata'],['bpm','BPM'],
   ['markets','Mercati'],['genres','Generi'],['contributors','Artisti'],
 ];
 function showTrack(d,note){
@@ -364,7 +364,7 @@ function showTrack(d,note){
     const chips=[];
     if(t.explicit) chips.push('<span class="chip ex">EXPLICIT</span>');
     if(t.version) chips.push(`<span class="chip">${esc(t.version)}</span>`);
-    const fields=FIELDS.map(([k,lbl,suf])=>{ const v=t[k]; if(v===''||v==null) return ''; return `<div class="f"><div class="k">${esc(lbl)}</div><div class="v">${esc(v)}${suf||''}</div></div>`;}).filter(Boolean).join('');
+    const fields=FIELDS.map(([k,lbl,suf])=>{ let v=t[k]; if(v===''||v==null) return ''; if(k==='albumType') v=String(v).toUpperCase(); return `<div class="f"><div class="k">${esc(lbl)}</div><div class="v">${esc(v)}${suf||''}</div></div>`;}).filter(Boolean).join('');
     const audio=t.previewUrl?`<audio controls preload="none" src="${esc(t.previewUrl)}"></audio>`:'';
     const link=t.spotifyUrl?`<a class="listen" href="${esc(t.spotifyUrl)}" target="_blank" rel="noopener">▶ Ascolta</a>`:'';
     return `<div class="tcard">
@@ -385,7 +385,7 @@ function showTrack(d,note){
 function download(name,text,type){const b=new Blob([text],{type}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000);}
 function csvArtist(rows){const h=['Release','Titolo','Artista','Data','ISRC'],q=(v)=>`"${String(v==null?'':v).replace(/"/g,'""')}"`;
   return '﻿'+[h.map(q).join(','),...rows.map((r)=>[r.release,r.title,r.artist,r.date,r.isrc].map(q).join(','))].join('\r\n');}
-function csvTrack(rows){const cols=[['title','Titolo'],['artists','Artista'],['contributors','Artisti'],['isrc','ISRC'],['album','Album'],['albumType','Tipo'],['label','Etichetta'],['upc','UPC'],['releaseDate','Data'],['trackNumber','Traccia'],['discNumber','Disco'],['duration','Durata'],['bpm','BPM'],['popularity','Popolarità'],['genres','Generi'],['markets','Mercati'],['spotifyUrl','Link']];
+function csvTrack(rows){const cols=[['title','Titolo'],['artists','Artista'],['contributors','Artisti'],['isrc','ISRC'],['album','Album'],['albumType','Tipo'],['label','Etichetta'],['upc','UPC'],['releaseDate','Data'],['trackNumber','Traccia'],['discNumber','Disco'],['duration','Durata'],['bpm','BPM'],['genres','Generi'],['markets','Mercati'],['spotifyUrl','Link']];
   const q=(v)=>`"${String(v==null?'':v).replace(/"/g,'""')}"`;
   return '﻿'+[cols.map((c)=>q(c[1])).join(','),...rows.map((r)=>cols.map((c)=>q(r[c[0]])).join(','))].join('\r\n');}
 $('btn-csv').onclick=()=>{if(ROWS.length)download('isrc-discografia.csv',csvArtist(ROWS),'text/csv;charset=utf-8');};

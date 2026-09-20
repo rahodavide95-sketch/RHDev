@@ -53,7 +53,12 @@
   .brand{display:flex; align-items:center; gap:14px}
   .logo{width:52px;height:52px;border-radius:16px;background:var(--grad);display:grid;place-items:center;
     font-size:26px;box-shadow:0 10px 26px rgba(37,99,235,.35)}
-  h1{font-size:24px; margin:0; font-weight:800; letter-spacing:-.5px}
+  .brand-txt{min-width:0}
+  h1{font-size:30px; margin:0; font-weight:900; letter-spacing:-1px; line-height:1;
+    background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent; width:max-content; max-width:100%}
+  .chips-row{display:flex; gap:8px; flex-wrap:wrap; margin-top:9px}
+  .fchip{font-size:12px; font-weight:700; color:var(--accent-ink); background:var(--chip); border:1px solid var(--line);
+    padding:4px 11px; border-radius:999px; white-space:nowrap}
   .tag{margin:1px 0 0; color:var(--muted); font-size:13px}
   .iconbtn{position:relative; width:46px;height:46px;border-radius:14px;border:1px solid var(--line);
     background:var(--card); color:var(--ink); font-size:20px; cursor:pointer; box-shadow:var(--shadow); transition:.15s}
@@ -205,7 +210,14 @@
   <header class="top">
     <div class="brand">
       <div class="logo">🎧</div>
-      <div><h1>ISRC Finder</h1><p class="tag">Discografie & ISRC in un attimo — senza login</p></div>
+      <div class="brand-txt">
+        <h1>ISRC Finder</h1>
+        <div class="chips-row">
+          <span class="fchip">💿 Discografie complete</span>
+          <span class="fchip">🏷️ ISRC &amp; UPC</span>
+          <span class="fchip">⚡ Nessun login</span>
+        </div>
+      </div>
     </div>
     <button class="iconbtn" id="btn-settings" title="Impostazioni" aria-label="Impostazioni">⚙<span class="dot off" id="gear-dot"></span></button>
   </header>

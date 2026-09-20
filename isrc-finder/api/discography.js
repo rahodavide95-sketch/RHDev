@@ -213,12 +213,12 @@ async function spDiscography(name, artistId, auth) {
   } catch (_) {}
 
   const albums = []; const seen = new Set(); let albErr = '';
-  for (let offset = 0; offset < 1000; offset += 50) {
-    const rr = await spJson(`https://api.spotify.com/v1/artists/${who.id}/albums?include_groups=album,single,compilation,appears_on&limit=50&offset=${offset}`, auth);
+  for (let offset = 0; offset < 1000; offset += 20) {
+    const rr = await spJson(`https://api.spotify.com/v1/artists/${who.id}/albums?include_groups=album,single,compilation,appears_on&limit=20&offset=${offset}`, auth);
     if (!rr.ok) { albErr = 'HTTP ' + rr.status + ' su /albums'; break; }
     const items = rr.data.items || [];
     for (const a of items) if (a.id && !seen.has(a.id)) { seen.add(a.id); albums.push(a); }
-    if (items.length < 50) break;
+    if (items.length < 20) break;
   }
   const rows = []; const trackIndex = new Map();
   const meta = new Map(albums.map((a) => [a.id, a]));

@@ -597,7 +597,7 @@ async function bSpArtist(name,id,tok){
   let igUsed='';
   for(const ig of IG){ albErr=''; albums.length=0; seen.clear();
     let ok=true;
-    for(let off=0;off<1000;off+=50){ let d; try{ d=await spG(`/artists/${who.id}/albums?include_groups=${ig}&limit=50&offset=${off}`,tok);}catch(e){albErr=(e.message||e)+''; ok=false; break;} const items=d.items||[]; for(const a of items) if(a.id&&!seen.has(a.id)){seen.add(a.id);albums.push(a);} if(items.length<50) break; }
+    for(let off=0;off<1000;off+=20){ let d; try{ d=await spG(`/artists/${who.id}/albums?include_groups=${ig}&limit=20&offset=${off}`,tok);}catch(e){albErr=(e.message||e)+''; ok=false; break;} const items=d.items||[]; for(const a of items) if(a.id&&!seen.has(a.id)){seen.add(a.id);albums.push(a);} if(items.length<20) break; }
     if(ok){ igUsed=ig; break; } // questo set ha funzionato
   }
   const rows=[]; const idx=new Map(); const seenKey=new Set(); const meta=new Map(albums.map(a=>[a.id,a])); const ids=albums.map(a=>a.id);
@@ -612,8 +612,8 @@ async function bSpArtist(name,id,tok){
   // FALLBACK: cerca le tracce per nome artista (prende comparse/compilation che la scansione album non vede)
   try{
     for(const field of ['artist:"'+who.name+'"', who.name]){
-      for(let off=0; off<900; off+=50){
-        let sd; try{ sd=await spG(`/search?q=${encodeURIComponent(field)}&type=track&limit=50&offset=${off}`,tok); }catch(e){ searchErr=(e.message||e)+''; break; }
+      for(let off=0; off<960; off+=20){
+        let sd; try{ sd=await spG(`/search?q=${encodeURIComponent(field)}&type=track&limit=20&offset=${off}`,tok); }catch(e){ searchErr=(e.message||e)+''; break; }
         const items=(sd.tracks&&sd.tracks.items)||[];
         for(const tk of items){
           const cr=(tk.artists||[]).some(x=>x.id===who.id||norm(x.name)===norm(who.name)); if(!cr) continue;
@@ -621,7 +621,7 @@ async function bSpArtist(name,id,tok){
           const o={artist:(tk.artists||[]).map(x=>x.name).join(', '),title:tk.name||'',isrc:(tk.external_ids&&tk.external_ids.isrc)||'',release:rel,date:(tk.album&&tk.album.release_date)||'',sources:['spotify'],url:(tk.external_urls&&tk.external_urls.spotify)||'',image:bigSp(tk.album&&tk.album.images),tid:tk.id};
           rows.push(o); if(tk.id&&!o.isrc) idx.set(tk.id,o);
         }
-        if(!(sd.tracks&&sd.tracks.next)||items.length<50) break;
+        if(!(sd.tracks&&sd.tracks.next)||items.length<20) break;
       }
     }
   }catch(_){}
@@ -1068,7 +1068,7 @@ $('cards').addEventListener('click',(e)=>{ const b=e.target.closest('[data-album
   e.preventDefault(); openAlbum(b.dataset.album, b.dataset.atitle, b.dataset.prov||'deezer'); });
 // gestisci l'eventuale ritorno dal login Spotify, poi aggiorna lo stato
 /* >>> VERSIONE: aggiornare questo numero a OGNI deploy <<< */
-const VERSION='V15';
+const VERSION='V16';
 try{ const vb=$('ver-badge'); if(vb) vb.textContent=VERSION; console.log('ISRC Finder', VERSION); }catch(_){}
 spHandleRedirect().then(()=>refreshKeyState()).catch(()=>refreshKeyState());
 if('serviceWorker' in navigator){ window.addEventListener('load', ()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }

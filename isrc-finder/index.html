@@ -633,7 +633,7 @@ async function bSpArtist(name,id,tok){
     if(code){ if(seenIsrc.has(code)) continue; seenIsrc.add(code); }
     out.push(r); }
   out.sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(a.title||'').localeCompare(b.title||''));
-  dbg='artista="'+who.name+'" (id '+(who.id||'?')+')'+(infoErr?(' [err info: '+infoErr+']'):'')+' · album '+albums.length+(igUsed?(' [ig:'+igUsed+']'):'')+(albErr?(' [err album: '+albErr+']'):'')+' · tracce da album '+nFromAlb+' · da ricerca '+(rows.length-nFromAlb)+(searchErr?(' [err ricerca: '+searchErr+']'):'')+' · totale '+out.length;
+  dbg='['+(typeof VERSION!=='undefined'?VERSION:'?')+'] artista="'+who.name+'" (id '+(who.id||'?')+')'+(infoErr?(' [err info: '+infoErr+']'):'')+' · album '+albums.length+(igUsed?(' [ig:'+igUsed+']'):'')+(albErr?(' [err album: '+albErr+']'):'')+' · tracce da album '+nFromAlb+' · da ricerca '+(rows.length-nFromAlb)+(searchErr?(' [err ricerca: '+searchErr+']'):'')+' · totale '+out.length;
   return {rows:out,artist:who.name,artistInfo,diag:dbg}; }
 
 async function dzLocal(payload){
@@ -1068,10 +1068,15 @@ $('cards').addEventListener('click',(e)=>{ const b=e.target.closest('[data-album
   e.preventDefault(); openAlbum(b.dataset.album, b.dataset.atitle, b.dataset.prov||'deezer'); });
 // gestisci l'eventuale ritorno dal login Spotify, poi aggiorna lo stato
 /* >>> VERSIONE: aggiornare questo numero a OGNI deploy <<< */
-const VERSION='V16';
+const VERSION='V17';
 try{ const vb=$('ver-badge'); if(vb) vb.textContent=VERSION; console.log('ISRC Finder', VERSION); }catch(_){}
 spHandleRedirect().then(()=>refreshKeyState()).catch(()=>refreshKeyState());
-if('serviceWorker' in navigator){ window.addEventListener('load', ()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }
+if('serviceWorker' in navigator){
+  // auto-reload quando un nuovo service worker prende il controllo (nuova versione)
+  let swReloaded=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(swReloaded) return; swReloaded=true; location.reload(); });
+  window.addEventListener('load', ()=>navigator.serviceWorker.register('sw.js').then(reg=>{ try{ reg.update(); }catch(_){}}).catch(()=>{}));
+}
 </script>
 </body>
 </html>

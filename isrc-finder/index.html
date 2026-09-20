@@ -466,6 +466,8 @@ function pkceGet(k){ try{const a=localStorage.getItem('isrcfinder.pkce.'+k); if(
 function pkceDel(k){ try{localStorage.removeItem('isrcfinder.pkce.'+k);}catch(_){}
   try{sessionStorage.removeItem(k);}catch(_){} }
 function spGetTok(){ try{ return JSON.parse(localStorage.getItem(SP_TOK)||'null'); }catch(_){ return null; } }
+// token davvero utilizzabile: presente e non scaduto senza refresh
+function spTokenUsable(){ const t=spGetTok(); if(!t||!t.access) return false; if(t.exp>Date.now()+10000) return true; return !!t.refresh; }
 function spSetTok(t){ try{ t?localStorage.setItem(SP_TOK,JSON.stringify(t)):localStorage.removeItem(SP_TOK); }catch(_){}}
 function b64url(buf){ let s=''; const b=new Uint8Array(buf); for(const x of b) s+=String.fromCharCode(x); return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
 async function sha256(str){ return crypto.subtle.digest('SHA-256', new TextEncoder().encode(str)); }
@@ -496,7 +498,14 @@ async function spHandleRedirect(){
       log('Spotify non ha rilasciato il token (HTTP '+r.status+(msg?' — '+msg:'')+'). Verifica che in Spotify Dashboard sia registrato ESATTAMENTE questo Redirect URI: <b>'+redir+'</b>',false,true);
       return; }
     const d=await r.json();
-    if(d.access_token){ spSetTok({access:d.access_token,refresh:d.refresh_token||'',exp:Date.now()+(d.expires_in||3600)*1000,cid}); }
+    if(!d.access_token){ log('Spotify: risposta senza token. Riprova l\'accesso.',false,true); return; }
+    spSetTok({access:d.access_token,refresh:d.refresh_token||'',exp:Date.now()+(d.expires_in||3600)*1000,cid});
+    // verifica LIVE: chiedo davvero a Spotify se il token funziona
+    try{
+      const t=await fetch('https://api.spotify.com/v1/search?q=test&type=artist&limit=1',{headers:{Authorization:'Bearer '+d.access_token}});
+      if(t.ok){ refreshKeyState(); log('Connesso a Spotify ✓ — fonte attiva. Ora cerca pure.'); }
+      else { spSetTok(null); log('Spotify ha rifiutato il token (HTTP '+t.status+'). Riprova l\'accesso.',false,true); }
+    }catch(_){ refreshKeyState(); log('Connesso a Spotify ✓ (verifica di rete non riuscita, ma il token è salvato).'); }
   }catch(e){ log('Errore di rete nello scambio token Spotify: '+(e&&e.message||e),false,true); return; }
   finally{ pkceDel('sp_v'); pkceDel('sp_st'); pkceDel('sp_cid'); }
 }
@@ -643,7 +652,12 @@ function refreshKeyState(){
   if($('sp-logout')) $('sp-logout').hidden = !tok;
   if($('sp-login')) $('sp-login').textContent = tok ? 'Ri-accedi con Spotify' : 'Accedi con Spotify';
 }
-function promptSpotifyLogin(){ log('Per usare Spotify su questo hosting devi <b>accedere</b>: apri ⚙ Impostazioni → <b>Accedi con Spotify</b>. In alternativa attiva Deezer.',false,true); openSettings(true); }
+function promptSpotifyLogin(){
+  const t=spGetTok();
+  if(t && !spTokenUsable()){ spSetTok(null); refreshKeyState();
+    log('La sessione Spotify è <b>scaduta</b>. Apri ⚙ Impostazioni → <b>Ri-accedi con Spotify</b>.',false,true); openSettings(true); return; }
+  log('Per usare Spotify su questo hosting devi <b>accedere</b>: apri ⚙ Impostazioni → <b>Accedi con Spotify</b>. In alternativa attiva Deezer.',false,true); openSettings(true);
+}
 function onSourceToggle(){ const s=getSources(); s.deezer=$('use-deezer').checked; setSources(s); refreshKeyState(); }
 /* ---------------- tema (sistema / chiaro / scuro) ---------------- */
 const THEME='isrcfinder.theme';
@@ -965,7 +979,8 @@ $('tbody').addEventListener('click',(e)=>{ if(e.target.closest('.copy')) return;
 $('cards').addEventListener('click',(e)=>{ const b=e.target.closest('[data-album]'); if(!b) return;
   e.preventDefault(); openAlbum(b.dataset.album, b.dataset.atitle, b.dataset.prov||'deezer'); });
 // gestisci l'eventuale ritorno dal login Spotify, poi aggiorna lo stato
-spHandleRedirect().then(()=>{ refreshKeyState(); if(spGetTok()) log('Connesso a Spotify ✓ — ora puoi cercare.'); }).catch(()=>refreshKeyState());
+const BUILD='2026-09-20b'; try{ console.log('ISRC Finder build', BUILD); }catch(_){}
+spHandleRedirect().then(()=>refreshKeyState()).catch(()=>refreshKeyState());
 if('serviceWorker' in navigator){ window.addEventListener('load', ()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }
 </script>
 </body>

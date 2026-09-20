@@ -70,6 +70,8 @@
   h1{font-family:'Space Grotesk',sans-serif; font-size:29px; margin:0; font-weight:700; letter-spacing:-.5px; line-height:1.05;
     background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent}
   .tag{margin:4px 0 0; color:var(--muted); font-size:13px}
+  .ver{-webkit-text-fill-color:initial; color:var(--muted); font-family:'Inter',sans-serif; font-size:11px; font-weight:600;
+    letter-spacing:.3px; vertical-align:middle; padding:2px 7px; border:1px solid var(--line); border-radius:999px; margin-left:6px}
   .iconbtn{position:relative; width:46px;height:46px;border-radius:14px;border:1px solid var(--line);
     background:var(--card); color:var(--ink); cursor:pointer; box-shadow:var(--shadow); transition:.15s;
     display:grid; place-items:center; padding:0}
@@ -266,7 +268,7 @@
     <div class="brand">
       <div class="logo">ISRC</div>
       <div class="brand-txt">
-        <h1>ISRC Finder</h1>
+        <h1>ISRC Finder <span id="ver-badge" class="ver" title="Versione attiva"></span></h1>
         <p class="tag">Discografie e ISRC in un attimo</p>
       </div>
     </div>
@@ -979,7 +981,9 @@ $('tbody').addEventListener('click',(e)=>{ if(e.target.closest('.copy')) return;
 $('cards').addEventListener('click',(e)=>{ const b=e.target.closest('[data-album]'); if(!b) return;
   e.preventDefault(); openAlbum(b.dataset.album, b.dataset.atitle, b.dataset.prov||'deezer'); });
 // gestisci l'eventuale ritorno dal login Spotify, poi aggiorna lo stato
-const BUILD='2026-09-20b'; try{ console.log('ISRC Finder build', BUILD); }catch(_){}
+/* >>> VERSIONE: aggiornare questo numero a OGNI deploy <<< */
+const VERSION='V6';
+try{ const vb=$('ver-badge'); if(vb) vb.textContent=VERSION; console.log('ISRC Finder', VERSION); }catch(_){}
 spHandleRedirect().then(()=>refreshKeyState()).catch(()=>refreshKeyState());
 if('serviceWorker' in navigator){ window.addEventListener('load', ()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }
 </script>

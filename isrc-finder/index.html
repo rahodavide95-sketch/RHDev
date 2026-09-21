@@ -446,8 +446,9 @@ async function bArtist(name,id){
   const who={id:art.id,name:art.name};
   const artistInfo={name:art.name,image:art.picture_xl||art.picture_big||art.picture_medium||'',fans:art.nb_fan||0,albums:art.nb_album||0,link:art.link||'',source:'deezer'};
   const nq=norm(who.name);
-  const isOurs=(t)=>{ if(t.artist&&(String(t.artist.id)===String(who.id)||norm(t.artist.name)===nq))return true;
-    if(Array.isArray(t.contributors)&&t.contributors.some(c=>String(c.id)===String(who.id)||norm(c.name)===nq))return true; return false; };
+  // match SOLO per ID artista: evita di prendere tracce di altri artisti omonimi ("Raho")
+  const isOurs=(t)=>{ if(t.artist&&String(t.artist.id)===String(who.id))return true;
+    if(Array.isArray(t.contributors)&&t.contributors.some(c=>String(c.id)===String(who.id)))return true; return false; };
   const strip=(u)=>String(u||'').replace(/^https?:\/\/api\.deezer\.com/,'');
   // elenco album propri (album/EP/singoli)
   const albums=[];let index=0;
@@ -455,7 +456,7 @@ async function bArtist(name,id){
   const picked=[];const seen=new Set();
   for(const al of albums){let ad;try{ad=await dzb(`/album/${al.id}`);}catch(_){continue;}
     const rel=ad.title||al.title||'';const date=ad.release_date||al.release_date||'';const cover=ad.cover_small||ad.cover_medium||'';
-    const ours=ad.artist&&(String(ad.artist.id)===String(who.id)||norm(ad.artist.name)===nq);
+    const ours=ad.artist&&String(ad.artist.id)===String(who.id);
     // tracce dell'album PAGINATE (compilation lunghe)
     let trs=(ad.tracks&&ad.tracks.data)||[]; let tn=(ad.tracks&&ad.tracks.next)||''; let g=0;
     while(tn&&g++<15){try{const td=await dzb(strip(tn));trs=trs.concat(td.data||[]);tn=td.next||'';}catch(_){break;}}
@@ -1180,7 +1181,7 @@ $('cards').addEventListener('click',(e)=>{ const b=e.target.closest('[data-album
   e.preventDefault(); openAlbum(b.dataset.album, b.dataset.atitle, b.dataset.prov||'deezer'); });
 // gestisci l'eventuale ritorno dal login Spotify, poi aggiorna lo stato
 /* >>> VERSIONE: aggiornare questo numero a OGNI deploy <<< */
-const VERSION='V47';
+const VERSION='V48';
 try{ const vb=$('ver-badge'); if(vb) vb.textContent=VERSION; console.log('ISRC Finder', VERSION); }catch(_){}
 spHandleRedirect().then(()=>refreshKeyState()).catch(()=>refreshKeyState());
 if('serviceWorker' in navigator){

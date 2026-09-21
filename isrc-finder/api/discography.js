@@ -13,6 +13,7 @@
 // ============================================================================
 
 export const config = { runtime: 'edge', regions: ['iad1'] };
+const SRV_VERSION = 'V46'; // versione del server (per capire se Vercel ha deployato)
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -461,7 +462,7 @@ async function dzDiscography(name, artistId) {
   }
   const rows = picked.map((p) => ({ artist: p.artist, title: p.title, isrc: p.isrc, release: p.release, date: p.date, sources: ['deezer'], url: p.url, image: p.image, tid: String(p.id || '') }));
   rows.sort((a, b) => (b.date || '').localeCompare(a.date || '') || (a.title || '').localeCompare(b.title || ''));
-  const diag = `Deezer: album ${albums.length} · da album ${nFromAlbums} · da comparse ${picked.length - nFromAlbums} · totale ${rows.length}`;
+  const diag = `[srv ${SRV_VERSION}] Deezer id=${who.id} · album ${albums.length} · da album ${nFromAlbums} · da comparse ${picked.length - nFromAlbums} · totale ${rows.length}`;
   return { rows, artist: who.name, artistInfo, err: null, diag };
 }
 

@@ -445,28 +445,49 @@ async function bArtist(name,id){
   if(!art){const s=await dzb(`/search/artist?q=${encodeURIComponent(name)}&limit=5`);const arr=s.data||[];if(!arr.length)return {rows:[],artist:'',artistInfo:null};const pick=arr.find(a=>norm(a.name)===norm(name))||arr[0];try{art=await dzb(`/artist/${pick.id}`);}catch(_){art=pick;}}
   const who={id:art.id,name:art.name};
   const artistInfo={name:art.name,image:art.picture_xl||art.picture_big||art.picture_medium||'',fans:art.nb_fan||0,albums:art.nb_album||0,link:art.link||'',source:'deezer'};
+  const nq=norm(who.name);
+  const isOurs=(t)=>{ if(t.artist&&(String(t.artist.id)===String(who.id)||norm(t.artist.name)===nq))return true;
+    if(Array.isArray(t.contributors)&&t.contributors.some(c=>String(c.id)===String(who.id)||norm(c.name)===nq))return true; return false; };
+  const strip=(u)=>String(u||'').replace(/^https?:\/\/api\.deezer\.com/,'');
+  // elenco album propri (album/EP/singoli)
   const albums=[];let index=0;
-  for(let i=0;i<12;i++){const d=await dzb(`/artist/${who.id}/albums?limit=50&index=${index}`);const data=d.data||[];albums.push(...data);if(!d.next||data.length<50)break;index+=50;}
+  for(let i=0;i<20;i++){const d=await dzb(`/artist/${who.id}/albums?limit=100&index=${index}`);const data=d.data||[];albums.push(...data);if(!d.next||data.length<100)break;index+=100;}
   const picked=[];const seen=new Set();
   for(const al of albums){let ad;try{ad=await dzb(`/album/${al.id}`);}catch(_){continue;}
     const rel=ad.title||al.title||'';const date=ad.release_date||al.release_date||'';const cover=ad.cover_small||ad.cover_medium||'';
-    const ours=ad.artist&&(String(ad.artist.id)===String(who.id)||norm(ad.artist.name)===norm(who.name));
-    for(const t of ((ad.tracks&&ad.tracks.data)||[])){const cr=ours||(t.artist&&(String(t.artist.id)===String(who.id)||norm(t.artist.name)===norm(who.name)));if(!cr)continue;
+    const ours=ad.artist&&(String(ad.artist.id)===String(who.id)||norm(ad.artist.name)===nq);
+    // tracce dell'album PAGINATE (compilation lunghe)
+    let trs=(ad.tracks&&ad.tracks.data)||[]; let tn=(ad.tracks&&ad.tracks.next)||''; let g=0;
+    while(tn&&g++<15){try{const td=await dzb(strip(tn));trs=trs.concat(td.data||[]);tn=td.next||'';}catch(_){break;}}
+    for(const t of trs){const cr=ours||isOurs(t);if(!cr)continue;
       const key=norm(t.title)+'|'+norm(rel);if(seen.has(key))continue;seen.add(key);
       picked.push({id:t.id,artist:(t.artist&&t.artist.name)||who.name,title:t.title||'',isrc:t.isrc||'',release:rel,date,image:cover,url:t.link||''});}}
-  // supplementare: cattura le uscite fuori dall'elenco album (comparsate su compilation/VA)
-  try{ let idx2=0;
-    for(let i=0;i<10;i++){ const sd=await dzb(`/search?q=${encodeURIComponent('artist:"'+who.name+'"')}&limit=100&index=${idx2}`);
-      for(const t of (sd.data||[])){ if(!t.artist||String(t.artist.id)!==String(who.id)) continue;
-        const rel=(t.album&&t.album.title)||''; const key=norm(t.title)+'|'+norm(rel); if(seen.has(key)) continue; seen.add(key);
-        picked.push({id:t.id,artist:(t.artist&&t.artist.name)||who.name,title:t.title||'',isrc:t.isrc||'',release:rel,date:'',image:(t.album&&t.album.cover_small)||'',url:t.link||''}); }
-      if(!sd.next||(sd.data||[]).length<100) break; idx2+=100; }
-  }catch(_){}
-  const need=picked.filter(p=>(!p.isrc||!p.date)&&p.id);const CAP=1000;
-  for(let i=0;i<need.length&&i<CAP;i+=5){await Promise.all(need.slice(i,i+5).map(async p=>{try{const t=await dzb(`/track/${p.id}`);p.isrc=t.isrc||'';if(!p.date)p.date=t.release_date||'';}catch(_){}}));await sleep(90);}
+  const nFromAlbums=picked.length;
+  // COMPARSE: /artist/{id}/top + ricerca (2 endpoint x 2 query) + verifica contributori
+  const maybe=new Map();
+  const addPk=(t,rel)=>{const key=norm(t.title)+'|'+norm(rel);if(seen.has(key))return;seen.add(key);
+    picked.push({id:t.id,artist:(t.artist&&t.artist.name)||who.name,title:t.title||'',isrc:t.isrc||'',release:rel,date:(t.album&&t.album.release_date)||'',image:(t.album&&t.album.cover_small)||'',url:t.link||''});};
+  const addFS=(t)=>{const rel=(t.album&&t.album.title)||'';if(isOurs(t)){addPk(t,rel);return;}if(t.id&&!maybe.has(t.id))maybe.set(t.id,rel);};
+  try{const top=await dzb(`/artist/${who.id}/top?limit=100`);for(const t of (top.data||[]))addFS(t);}catch(_){}
+  for(const base of ['/search','/search/track']){
+    for(const query of ['artist:"'+who.name+'"',who.name]){
+      try{ let idx2=0;
+        for(let i=0;i<12;i++){ const sd=await dzb(`${base}?q=${encodeURIComponent(query)}&limit=100&index=${idx2}`);
+          for(const t of (sd.data||[])) addFS(t);
+          if(!sd.next||(sd.data||[]).length<100) break; idx2+=100; }
+      }catch(_){}
+    }
+  }
+  // verifica candidati (feat/comparse) sul dettaglio traccia (contributori)
+  const cand=[...maybe.keys()].slice(0,800);
+  for(let i=0;i<cand.length;i+=8){await Promise.all(cand.slice(i,i+8).map(async tid=>{try{const t=await dzb(`/track/${tid}`);if(isOurs(t))addPk(t,(t.album&&t.album.title)||maybe.get(tid)||'');}catch(_){}}));await sleep(60);}
+  // ISRC/data mancanti
+  const need=picked.filter(p=>(!p.isrc||!p.date)&&p.id);const CAP=1200;
+  for(let i=0;i<need.length&&i<CAP;i+=8){await Promise.all(need.slice(i,i+8).map(async p=>{try{const t=await dzb(`/track/${p.id}`);if(!p.isrc)p.isrc=t.isrc||'';if(!p.date)p.date=t.release_date||(t.album&&t.album.release_date)||'';if(!p.release)p.release=(t.album&&t.album.title)||'';}catch(_){}}));await sleep(60);}
   const rows=picked.map(p=>({artist:p.artist,title:p.title,isrc:p.isrc,release:p.release,date:p.date,sources:['deezer'],url:p.url,image:p.image,tid:String(p.id||'')}));
   rows.sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(a.title||'').localeCompare(b.title||''));
-  return {rows,artist:who.name,artistInfo};}
+  const diag='[browser '+(typeof VERSION!=='undefined'?VERSION:'?')+'] Deezer id='+who.id+' · album '+albums.length+' · da album '+nFromAlbums+' · da comparse '+(picked.length-nFromAlbums)+' · totale '+rows.length;
+  return {rows,artist:who.name,artistInfo,diag};}
 /* ====== Spotify nel browser (PKCE, senza secret) — funziona su GitHub Pages ====== */
 const SP_TOK='isrcfinder.sptok.v1';
 // redirect_uri SEMPRE canonico con slash finale: cosi' combacia con quello che
@@ -728,7 +749,7 @@ async function dzLocal(payload){
       if(x.rows.length) return {mode:'artist',artist:x.artist,artistInfo:x.artistInfo,rows:x.rows,count:x.rows.length,source:'spotify',note:x.diag||''};
       if(!wantDz) return {mode:'artist',artist:x.artist||payload.q,artistInfo:x.artistInfo,rows:[],count:0,source:'spotify',note:'Spotify 0 tracce — '+(x.diag||'nessun dettaglio')};
     }catch(e){ spErr=(e.message||e)+''; if(!wantDz) return {mode:'artist',artist:payload.q,rows:[],count:0,source:'spotify',note:'Spotify non raggiungibile ('+spErr+').'}; } }
-    if(wantDz){ const x=await bArtist(payload.q,payload.prov==='deezer'?payload.id:''); return {mode:'artist',artist:x.artist,artistInfo:x.artistInfo,rows:x.rows,count:x.rows.length,source:'deezer'}; }
+    if(wantDz){ const x=await bArtist(payload.q,payload.prov==='deezer'?payload.id:''); return {mode:'artist',artist:x.artist,artistInfo:x.artistInfo,rows:x.rows,count:x.rows.length,source:'deezer',note:x.diag||''}; }
     return {mode:'artist',artist:payload.q,rows:[],count:0,source:'spotify',note:'Nessun risultato'+(spErr?' ('+spErr+')':'')+'.'};
   }catch(e){ return {error:(e.message||e)+''}; }
 }
@@ -1159,7 +1180,7 @@ $('cards').addEventListener('click',(e)=>{ const b=e.target.closest('[data-album
   e.preventDefault(); openAlbum(b.dataset.album, b.dataset.atitle, b.dataset.prov||'deezer'); });
 // gestisci l'eventuale ritorno dal login Spotify, poi aggiorna lo stato
 /* >>> VERSIONE: aggiornare questo numero a OGNI deploy <<< */
-const VERSION='V46';
+const VERSION='V47';
 try{ const vb=$('ver-badge'); if(vb) vb.textContent=VERSION; console.log('ISRC Finder', VERSION); }catch(_){}
 spHandleRedirect().then(()=>refreshKeyState()).catch(()=>refreshKeyState());
 if('serviceWorker' in navigator){

@@ -657,17 +657,6 @@ export default async function handler(req) {
         const s = avail[0];
         return json({ mode: 'artist', artist: s.artist, artistInfo: s.artistInfo || null, rows: s.rows, count: s.rows.length, source: s.name });
       }
-      // FALLBACK AFFIDABILE: se le fonti scelte non hanno prodotto nulla (es. Spotify in
-      // penalita'/429), recupera da Deezer — gli ISRC sono UNIVERSALI, identici a Spotify.
-      if (!useDz) {
-        try {
-          const dz = await dzDiscography(q, prov === 'deezer' ? id : '');
-          if (dz.rows.length) return json({ mode: 'artist', artist: dz.artist, artistInfo: dz.artistInfo || null,
-            rows: dz.rows, count: dz.rows.length, source: 'deezer',
-            note: 'Spotify non disponibile ora (rate-limit) — stessa discografia con ISRC identici da Deezer.' });
-          diag.push('Deezer(fallback): 0');
-        } catch (e) { diag.push('Deezer(fallback) err: ' + String(e?.message || e)); }
-      }
       const mb = await mbDiscography(q);
       return json({ mode: 'artist', artist: mb.artist, rows: mb.rows, count: mb.rows.length, source: 'mb', note: diag.length ? diag.join(' · ') : null });
     }

@@ -403,22 +403,32 @@ async function dzDiscography(name, artistId) {
       picked.push({ id: t.id, artist: t.artist?.name || who.name, title: t.title || '', isrc: t.isrc || '', release: rel, date, image: cover, url: t.link || '' });
     }
   }
-  // Passaggio supplementare: cerca le tracce dell'artista per ID esatto, così da
-  // recuperare uscite non presenti nell'elenco album (apparizioni su VA, ecc.).
-  try {
-    let surl = `${DZ}/search?q=${enc('artist:"' + who.name + '"')}&limit=100`;
-    for (let i = 0; i < 8 && surl; i++) {
-      const sd = await dzGet(surl);
-      for (const t of (sd.data || [])) {
-        if (!t.artist || String(t.artist.id) !== String(who.id)) continue;
-        const rel = t.album?.title || '';
-        const key = norm(t.title) + '|' + norm(rel);
-        if (seen.has(key)) continue; seen.add(key);
-        picked.push({ id: t.id, artist: t.artist?.name || who.name, title: t.title || '', isrc: t.isrc || '', release: rel, date: '', image: t.album?.cover_small || '', url: t.link || '' });
+  // Passaggio supplementare: recupera "compare in"/compilation/feat non presenti
+  // nell'elenco album dell'artista. Due query (per artista + per nome) e match anche
+  // sui contributori, così prendo TUTTO senza far entrare tracce di altri.
+  const nq = norm(who.name);
+  const isOurs = (t) => {
+    if (t.artist && (String(t.artist.id) === String(who.id) || norm(t.artist.name) === nq)) return true;
+    if (Array.isArray(t.contributors) && t.contributors.some((c) => String(c.id) === String(who.id) || norm(c.name) === nq)) return true;
+    return false;
+  };
+  const addFromSearch = (t) => {
+    if (!isOurs(t)) return;
+    const rel = t.album?.title || '';
+    const key = norm(t.title) + '|' + norm(rel);
+    if (seen.has(key)) return; seen.add(key);
+    picked.push({ id: t.id, artist: t.artist?.name || who.name, title: t.title || '', isrc: t.isrc || '', release: rel, date: '', image: t.album?.cover_small || '', url: t.link || '' });
+  };
+  for (const query of ['artist:"' + who.name + '"', who.name]) {
+    try {
+      let surl = `${DZ}/search?q=${enc(query)}&limit=100`;
+      for (let i = 0; i < 12 && surl; i++) {
+        const sd = await dzGet(surl);
+        for (const t of (sd.data || [])) addFromSearch(t);
+        surl = sd.next || '';
       }
-      surl = sd.next || '';
-    }
-  } catch (_) {}
+    } catch (_) {}
+  }
 
   // ISRC / data / copertina mancanti: dal dettaglio traccia (a lotti)
   const need = picked.filter((p) => (!p.isrc || !p.date) && p.id);

@@ -933,9 +933,7 @@ async function runSearch(){
   const reqId   = link ? link.id   : selId;
   const reqQ    = link ? ''        : q;
   const reqProv = link ? 'spotify' : (reqId ? selProv : '');
-  // cache: se ho già la discografia di questo artista, la mostro subito senza chiamare nulla
-  const cacheKey = (reqMode==='artist') ? (reqMode+'|'+(reqId||norm(reqQ))+'|'+enabledSources().join(',')) : '';
-  if(cacheKey){ const cd=respCacheGet(cacheKey); if(cd){ $('res-track').classList.add('hidden'); renderArtistResponse(cd,''); catalogD=cd; showBack(false); log('✓ risultati dalla cache (istantaneo). Ripeti tra qualche ora per aggiornare.'); return; } }
+  // Ricerca sempre LIVE (nessuna cache): risultati aggiornati a ogni ricerca.
   $('go').disabled=true; $('res-artist').classList.add('hidden'); $('res-track').classList.add('hidden');
   const what = link ? (link.type==='track'?'la traccia':link.type==='album'?"l'album":"l'artista")+' dal link Spotify'
                     : (MODE==='artist'?'la discografia':'la traccia')+` “${esc(q)}”`;
@@ -951,8 +949,7 @@ async function runSearch(){
     const note = d.note==='not_configured' ? '' : (d.note||'');
     // instrada in base al formato della risposta: results = schede traccia, rows = tabella
     if(d.results!==undefined){ showTrack(d,note); catalogD=null; }
-    else { renderArtistResponse(d,note); catalogD = (reqMode==='artist') ? d : null;
-      if(cacheKey && ((d.rows&&d.rows.length) || d.compare)) respCacheSet(cacheKey,d); } // salva solo risultati validi
+    else { renderArtistResponse(d,note); catalogD = (reqMode==='artist') ? d : null; }
     showBack(false); // ricerca dalla barra = nuovo contesto
   }catch(e){ log('Errore di rete: '+(e.message||e),false,true); }
   finally{ PROGRESS=null; $('go').disabled=false; refreshKeyState(); }
@@ -1154,7 +1151,7 @@ $('cards').addEventListener('click',(e)=>{ const b=e.target.closest('[data-album
   e.preventDefault(); openAlbum(b.dataset.album, b.dataset.atitle, b.dataset.prov||'deezer'); });
 // gestisci l'eventuale ritorno dal login Spotify, poi aggiorna lo stato
 /* >>> VERSIONE: aggiornare questo numero a OGNI deploy <<< */
-const VERSION='V41';
+const VERSION='V42';
 try{ const vb=$('ver-badge'); if(vb) vb.textContent=VERSION; console.log('ISRC Finder', VERSION); }catch(_){}
 spHandleRedirect().then(()=>refreshKeyState()).catch(()=>refreshKeyState());
 if('serviceWorker' in navigator){

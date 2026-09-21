@@ -211,10 +211,6 @@ async function spDiscography(name, artistId, auth) {
     if (!s.id) return { rows: [], artist: '', err: null };
     who = s;
   }
-  // cache: se ho gia' la discografia di questo artista, la restituisco senza toccare Spotify
-  const ckey = 'sp:' + who.id;
-  const cc = _spDisco.get(ckey);
-  if (cc && Date.now() - cc.t < SP_DISCO_TTL) return cc.data;
   let artistInfo = { name: who.name, source: 'spotify' };
   try {
     const ar = await fetch(`https://api.spotify.com/v1/artists/${who.id}`, { headers: auth, signal: AbortSignal.timeout(15000) });
@@ -280,9 +276,7 @@ async function spDiscography(name, artistId, auth) {
   for (const r of rows) { const code = (r.isrc || '').split('/')[0].trim().toUpperCase();
     if (code) { if (seenIsrc.has(code)) continue; seenIsrc.add(code); } out.push(r); }
   out.sort((a, b) => (b.date || '').localeCompare(a.date || '') || (a.title || '').localeCompare(b.title || ''));
-  const result = { rows: out, artist: who.name, artistInfo, err: (out.length ? null : (albErr || (albums.length ? 'nessuna traccia accreditata' : 'nessun album'))) };
-  if (out.length) _spDisco.set(ckey, { t: Date.now(), data: result }); // cache solo i risultati validi
-  return result;
+  return { rows: out, artist: who.name, artistInfo, err: (out.length ? null : (albErr || (albums.length ? 'nessuna traccia accreditata' : 'nessun album'))) };
 }
 
 // ============================== Deezer (senza chiavi) ======================

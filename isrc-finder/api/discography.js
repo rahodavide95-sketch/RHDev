@@ -241,9 +241,10 @@ async function spDiscography(name, artistId, auth) {
       }
     }
   }
-  // FALLBACK ricerca: comparse/compilation non elencate negli album dell'artista
+  // FALLBACK ricerca (leggero): comparse/compilation non gia' coperte da appears_on.
+  // Tenuto a 2 pagine per non sovraccaricare il rate-limit di Spotify.
   try {
-    for (let offset = 0; offset < 400; offset += 50) {
+    for (let offset = 0; offset < 100; offset += 50) {
       const rr = await spJson(`https://api.spotify.com/v1/search?q=${enc('artist:"' + who.name + '"')}&type=track&limit=50&offset=${offset}`, auth);
       if (!rr.ok) break; const its = rr.data.tracks?.items || [];
       for (const tk of its) {

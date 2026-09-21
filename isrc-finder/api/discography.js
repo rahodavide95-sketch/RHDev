@@ -180,14 +180,18 @@ async function spArtistId(name, auth) {
   return { id: pick.id, name: pick.name, err: null };
 }
 // Fetch JSON da Spotify con retry sul rate-limit (429) e sui 5xx.
-async function spJson(url, auth, tries = 4) {
+async function spJson(url, auth, tries = 3) {
+  let last429 = 0;
   for (let i = 0; i < tries; i++) {
     let r;
     try { r = await fetch(url, { headers: auth, signal: AbortSignal.timeout(12000) }); }
     catch (_) { await sleep(500 * (i + 1)); continue; }
     if (r.status === 429) {
       const ra = parseInt(r.headers.get('retry-after') || '', 10);
-      await sleep(Math.min((Number.isFinite(ra) ? ra : (i + 1)), 4) * 1000);
+      last429 = Number.isFinite(ra) ? ra : 0;
+      if (i === tries - 1) break; // ultimo tentativo: non aspettare inutilmente
+      // rispetta il tempo REALE richiesto da Spotify (con margine), fino a 8s per la edge function
+      await sleep(Math.min(Number.isFinite(ra) && ra > 0 ? ra : (i + 1), 8) * 1000 + 400);
       continue;
     }
     if (r.status >= 500) { await sleep(600 * (i + 1)); continue; }
@@ -195,7 +199,7 @@ async function spJson(url, auth, tries = 4) {
     try { return { ok: true, status: r.status, data: await r.json() }; }
     catch (_) { return { ok: false, status: r.status, data: null }; }
   }
-  return { ok: false, status: 429, data: null };
+  return { ok: false, status: 429, data: null, retryAfter: last429 };
 }
 async function spDiscography(name, artistId, auth) {
   let who = { id: artistId, name: name };
@@ -215,7 +219,7 @@ async function spDiscography(name, artistId, auth) {
   const albums = []; const seen = new Set(); let albErr = '';
   for (let offset = 0; offset < 1000; offset += 50) {
     const rr = await spJson(`https://api.spotify.com/v1/artists/${who.id}/albums?include_groups=album,single,compilation,appears_on&limit=50&offset=${offset}`, auth);
-    if (!rr.ok) { albErr = 'HTTP ' + rr.status + ' su /albums'; break; }
+    if (!rr.ok) { albErr = 'HTTP ' + rr.status + ' su /albums' + (rr.retryAfter ? ' (Spotify chiede ' + rr.retryAfter + 's)' : ''); break; }
     const items = rr.data.items || [];
     for (const a of items) if (a.id && !seen.has(a.id)) { seen.add(a.id); albums.push(a); }
     if (items.length < 50) break;

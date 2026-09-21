@@ -213,14 +213,15 @@ async function spDiscography(name, artistId, auth) {
   } catch (_) {}
 
   const albums = []; const seen = new Set(); let albErr = '';
-  for (let offset = 0; offset < 1000; offset += 20) {
-    const rr = await spJson(`https://api.spotify.com/v1/artists/${who.id}/albums?include_groups=album,single,compilation,appears_on&limit=20&offset=${offset}`, auth);
+  for (let offset = 0; offset < 1000; offset += 50) {
+    const rr = await spJson(`https://api.spotify.com/v1/artists/${who.id}/albums?include_groups=album,single,compilation,appears_on&limit=50&offset=${offset}`, auth);
     if (!rr.ok) { albErr = 'HTTP ' + rr.status + ' su /albums'; break; }
     const items = rr.data.items || [];
     for (const a of items) if (a.id && !seen.has(a.id)) { seen.add(a.id); albums.push(a); }
-    if (items.length < 20) break;
+    if (items.length < 50) break;
   }
-  const rows = []; const trackIndex = new Map();
+  const rows = []; const trackIndex = new Map(); const seenKey = new Set();
+  const keyOf = (tk, rel) => tk.id ? ('id:' + tk.id) : ('t:' + norm(tk.name) + '|' + norm(rel || ''));
   const meta = new Map(albums.map((a) => [a.id, a]));
   const ids = albums.map((a) => a.id);
   for (let i = 0; i < ids.length; i += 20) {
@@ -231,14 +232,31 @@ async function spDiscography(name, artistId, auth) {
       for (const tk of (a.tracks?.items || [])) {
         const credited = (tk.artists || []).some((x) => x.id === who.id || norm(x.name) === norm(who.name));
         if (!credited) continue;
+        const rel = m.name || a.name || ''; const key = keyOf(tk, rel); if (seenKey.has(key)) continue; seenKey.add(key);
         const obj = { artist: (tk.artists || []).map((x) => x.name).join(', '), title: tk.name || '', isrc: '',
-          release: m.name || a.name || '', date: m.release_date || a.release_date || '', sources: ['spotify'],
+          release: rel, date: m.release_date || a.release_date || '', sources: ['spotify'],
           url: tk.external_urls?.spotify || '', image: bigImg(m.images || a.images), tid: tk.id || '', _tid: tk.id };
         rows.push(obj);
         if (tk.id) trackIndex.set(tk.id, obj);
       }
     }
   }
+  // FALLBACK ricerca: comparse/compilation non elencate negli album dell'artista
+  try {
+    for (let offset = 0; offset < 400; offset += 50) {
+      const rr = await spJson(`https://api.spotify.com/v1/search?q=${enc('artist:"' + who.name + '"')}&type=track&limit=50&offset=${offset}`, auth);
+      if (!rr.ok) break; const its = rr.data.tracks?.items || [];
+      for (const tk of its) {
+        const credited = (tk.artists || []).some((x) => x.id === who.id || norm(x.name) === norm(who.name));
+        if (!credited) continue;
+        const rel = tk.album?.name || ''; const key = keyOf(tk, rel); if (seenKey.has(key)) continue; seenKey.add(key);
+        rows.push({ artist: (tk.artists || []).map((x) => x.name).join(', '), title: tk.name || '', isrc: tk.external_ids?.isrc || '',
+          release: rel, date: tk.album?.release_date || '', sources: ['spotify'], url: tk.external_urls?.spotify || '',
+          image: bigImg(tk.album?.images), tid: tk.id || '' });
+      }
+      if (!rr.data.tracks?.next || its.length < 50) break;
+    }
+  } catch (_) {}
   const tids = [...trackIndex.keys()];
   for (let i = 0; i < tids.length; i += 50) {
     const rr = await spJson(`https://api.spotify.com/v1/tracks?ids=${tids.slice(i, i + 50).join(',')}`, auth);
@@ -246,8 +264,12 @@ async function spDiscography(name, artistId, auth) {
     for (const tk of d.tracks || []) { const o = tk && trackIndex.get(tk.id); if (o) o.isrc = tk.external_ids?.isrc || ''; }
   }
   rows.forEach((o) => delete o._tid);
-  rows.sort((a, b) => (b.date || '').localeCompare(a.date || '') || (a.title || '').localeCompare(b.title || ''));
-  return { rows, artist: who.name, artistInfo, err: (rows.length ? null : (albErr || (albums.length ? 'nessuna traccia accreditata' : 'nessun album'))) };
+  // Deduplica per ISRC (stessa registrazione uscita in piu' release = 1 riga); le tracce senza ISRC restano tutte.
+  const seenIsrc = new Set(); const out = [];
+  for (const r of rows) { const code = (r.isrc || '').split('/')[0].trim().toUpperCase();
+    if (code) { if (seenIsrc.has(code)) continue; seenIsrc.add(code); } out.push(r); }
+  out.sort((a, b) => (b.date || '').localeCompare(a.date || '') || (a.title || '').localeCompare(b.title || ''));
+  return { rows: out, artist: who.name, artistInfo, err: (out.length ? null : (albErr || (albums.length ? 'nessuna traccia accreditata' : 'nessun album'))) };
 }
 
 // ============================== Deezer (senza chiavi) ======================

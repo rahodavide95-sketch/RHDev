@@ -859,9 +859,17 @@ function parseSpotify(s){
   const m=(s||'').match(/(?:open\.spotify\.com\/(?:intl-[a-z]+\/)?|spotify:)(artist|track|album)[/:]([A-Za-z0-9]+)/i);
   return m?{type:m[1].toLowerCase(), id:m[2]}:null;
 }
+// link o ID Deezer: deezer.com/artist/123, /album/123, /track/123, oppure un ID numerico puro (artista)
+function parseDeezer(s){
+  s=(s||'').trim();
+  const m=s.match(/deezer\.com\/(?:[a-z]{2}\/)?(artist|album|track)\/(\d+)/i);
+  if(m) return {type:m[1].toLowerCase(), id:m[2]};
+  if(/^\d{4,}$/.test(s)) return {type:'artist', id:s}; // solo numero = ID artista Deezer
+  return null;
+}
 $('q').addEventListener('input',()=>{ selId=''; selProv=''; const v=$('q').value.trim();
   clearTimeout(sugTimer);
-  if(parseSpotify(v)){ hideSug(); return; }        // è un link: niente suggerimenti
+  if(parseSpotify(v)||parseDeezer(v)){ hideSug(); return; }   // link/ID diretto: niente suggerimenti
   if(v.length<2){ hideSug(); return; }
   sugTimer=setTimeout(()=>loadSug(v),220);
 });
@@ -927,12 +935,12 @@ async function runSearch(){
   if(enabledSources().length===0){ promptChooseSource(); return; }
   // se il suggerimento scelto è di una fonte non attiva, cerco per nome
   if(selProv && !enabledSources().includes(selProv)){ selId=''; selProv=''; }
-  // Se è un link Spotify diretto, uso tipo + ID esatti (artista/traccia/album).
-  const link=parseSpotify(q);
-  const reqMode = link ? link.type : MODE;
-  const reqId   = link ? link.id   : selId;
-  const reqQ    = link ? ''        : q;
-  const reqProv = link ? 'spotify' : (reqId ? selProv : '');
+  // Link/ID diretto: Spotify o Deezer → uso tipo + ID esatti (niente ambiguità sull'artista).
+  const link=parseSpotify(q); const dzl = link ? null : parseDeezer(q);
+  const reqMode = link ? link.type : (dzl ? dzl.type : MODE);
+  const reqId   = link ? link.id   : (dzl ? dzl.id : selId);
+  const reqQ    = (link||dzl) ? '' : q;
+  const reqProv = link ? 'spotify' : (dzl ? 'deezer' : (reqId ? selProv : ''));
   // Ricerca sempre LIVE (nessuna cache): risultati aggiornati a ogni ricerca.
   $('go').disabled=true; $('res-artist').classList.add('hidden'); $('res-track').classList.add('hidden');
   const what = link ? (link.type==='track'?'la traccia':link.type==='album'?"l'album":"l'artista")+' dal link Spotify'
@@ -1151,7 +1159,7 @@ $('cards').addEventListener('click',(e)=>{ const b=e.target.closest('[data-album
   e.preventDefault(); openAlbum(b.dataset.album, b.dataset.atitle, b.dataset.prov||'deezer'); });
 // gestisci l'eventuale ritorno dal login Spotify, poi aggiorna lo stato
 /* >>> VERSIONE: aggiornare questo numero a OGNI deploy <<< */
-const VERSION='V44';
+const VERSION='V45';
 try{ const vb=$('ver-badge'); if(vb) vb.textContent=VERSION; console.log('ISRC Finder', VERSION); }catch(_){}
 spHandleRedirect().then(()=>refreshKeyState()).catch(()=>refreshKeyState());
 if('serviceWorker' in navigator){

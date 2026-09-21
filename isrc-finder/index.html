@@ -918,6 +918,10 @@ function promptChooseSource(){
   log('Scegli <b>da dove</b> prendere la discografia: apri le Impostazioni ⚙ e attiva almeno una fonte. 🟢 <b>Deezer</b> è gratis (nessuna chiave); 🔑 <b>Spotify/Tidal</b> richiedono Client ID e Secret.',false,true);
   openSettings(true);
 }
+// cache della risposta artista nel browser: la 2ª ricerca dello stesso artista è ISTANTANEA (anche su Vercel)
+const RESP_TTL=6*3600*1000;
+function respCacheGet(k){ try{ const c=JSON.parse(localStorage.getItem('isrcfinder.resp.'+k)||'null'); if(c&&Date.now()-c.t<RESP_TTL) return c.d; }catch(_){} return null; }
+function respCacheSet(k,d){ try{ localStorage.setItem('isrcfinder.resp.'+k, JSON.stringify({t:Date.now(),d})); }catch(_){} }
 async function runSearch(){
   const q=$('q').value.trim(); if(!q && !selId){ $('q').focus(); return; }
   if(enabledSources().length===0){ promptChooseSource(); return; }
@@ -929,6 +933,9 @@ async function runSearch(){
   const reqId   = link ? link.id   : selId;
   const reqQ    = link ? ''        : q;
   const reqProv = link ? 'spotify' : (reqId ? selProv : '');
+  // cache: se ho già la discografia di questo artista, la mostro subito senza chiamare nulla
+  const cacheKey = (reqMode==='artist') ? (reqMode+'|'+(reqId||norm(reqQ))+'|'+enabledSources().join(',')) : '';
+  if(cacheKey){ const cd=respCacheGet(cacheKey); if(cd){ $('res-track').classList.add('hidden'); renderArtistResponse(cd,''); catalogD=cd; showBack(false); log('✓ risultati dalla cache (istantaneo). Ripeti tra qualche ora per aggiornare.'); return; } }
   $('go').disabled=true; $('res-artist').classList.add('hidden'); $('res-track').classList.add('hidden');
   const what = link ? (link.type==='track'?'la traccia':link.type==='album'?"l'album":"l'artista")+' dal link Spotify'
                     : (MODE==='artist'?'la discografia':'la traccia')+` “${esc(q)}”`;
@@ -944,7 +951,8 @@ async function runSearch(){
     const note = d.note==='not_configured' ? '' : (d.note||'');
     // instrada in base al formato della risposta: results = schede traccia, rows = tabella
     if(d.results!==undefined){ showTrack(d,note); catalogD=null; }
-    else { renderArtistResponse(d,note); catalogD = (reqMode==='artist') ? d : null; }
+    else { renderArtistResponse(d,note); catalogD = (reqMode==='artist') ? d : null;
+      if(cacheKey && ((d.rows&&d.rows.length) || d.compare)) respCacheSet(cacheKey,d); } // salva solo risultati validi
     showBack(false); // ricerca dalla barra = nuovo contesto
   }catch(e){ log('Errore di rete: '+(e.message||e),false,true); }
   finally{ PROGRESS=null; $('go').disabled=false; refreshKeyState(); }
@@ -1146,7 +1154,7 @@ $('cards').addEventListener('click',(e)=>{ const b=e.target.closest('[data-album
   e.preventDefault(); openAlbum(b.dataset.album, b.dataset.atitle, b.dataset.prov||'deezer'); });
 // gestisci l'eventuale ritorno dal login Spotify, poi aggiorna lo stato
 /* >>> VERSIONE: aggiornare questo numero a OGNI deploy <<< */
-const VERSION='V38';
+const VERSION='V39';
 try{ const vb=$('ver-badge'); if(vb) vb.textContent=VERSION; console.log('ISRC Finder', VERSION); }catch(_){}
 spHandleRedirect().then(()=>refreshKeyState()).catch(()=>refreshKeyState());
 if('serviceWorker' in navigator){

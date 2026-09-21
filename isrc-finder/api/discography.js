@@ -386,10 +386,11 @@ async function dzDiscography(name, artistId) {
     let ad; try { ad = await dzGet(`${DZ}/album/${al.id}`); } catch (_) { continue; }
     const rel = ad.title || al.title || ''; const date = ad.release_date || al.release_date || '';
     const cover = ad.cover_small || ad.cover_medium || al.cover_small || al.cover_medium || '';
-    // Se l'album è del nostro artista, tieni TUTTE le sue tracce (anche i feat.);
-    // se è una compilation di altri, tieni solo le tracce del nostro artista.
     const albumIsOurs = ad.artist && (String(ad.artist.id) === String(who.id) || norm(ad.artist.name) === norm(who.name));
-    for (const t of (ad.tracks?.data || [])) {
+    // tracce dell'album, PAGINATE (album/compilation lunghe non stanno in una pagina sola)
+    let trs = ad.tracks?.data || []; let tnext = ad.tracks?.next || ''; let g = 0;
+    while (tnext && g++ < 15) { try { const td = await dzGet(tnext); trs = trs.concat(td.data || []); tnext = td.next || ''; } catch (_) { break; } }
+    for (const t of trs) {
       const credited = albumIsOurs || (t.artist && (String(t.artist.id) === String(who.id) || norm(t.artist.name) === norm(who.name)));
       if (!credited) continue;
       const key = norm(t.title) + '|' + norm(rel);
@@ -397,6 +398,7 @@ async function dzDiscography(name, artistId) {
       picked.push({ id: t.id, artist: t.artist?.name || who.name, title: t.title || '', isrc: t.isrc || '', release: rel, date, image: cover, url: t.link || '' });
     }
   }
+  const nFromAlbums = picked.length;
   // Passaggio supplementare: recupera "compare in"/compilation/feat non presenti
   // nell'elenco album dell'artista. Due query (per artista + per nome) e match anche
   // sui contributori, così prendo TUTTO senza far entrare tracce di altri.
@@ -418,15 +420,17 @@ async function dzDiscography(name, artistId) {
     // t.artist non è il nostro artista: potrebbe essere una comparsa (feat) → verifico dopo
     if (t.id && !maybe.has(t.id)) maybe.set(t.id, rel);
   };
-  for (const query of ['artist:"' + who.name + '"', who.name]) {
-    try {
-      let surl = `${DZ}/search?q=${enc(query)}&limit=100`;
-      for (let i = 0; i < 12 && surl; i++) {
-        const sd = await dzGet(surl);
-        for (const t of (sd.data || [])) addFromSearch(t);
-        surl = sd.next || '';
-      }
-    } catch (_) {}
+  for (const base of [`${DZ}/search`, `${DZ}/search/track`]) {
+    for (const query of ['artist:"' + who.name + '"', who.name]) {
+      try {
+        let surl = `${base}?q=${enc(query)}&limit=100`;
+        for (let i = 0; i < 12 && surl; i++) {
+          const sd = await dzGet(surl);
+          for (const t of (sd.data || [])) addFromSearch(t);
+          surl = sd.next || '';
+        }
+      } catch (_) {}
+    }
   }
   // verifica i candidati sul dettaglio traccia (contributori): recupera le comparse/feat
   const cand = [...maybe.keys()].filter((tid) => !seen.has('did:' + tid)).slice(0, 200);
@@ -455,7 +459,8 @@ async function dzDiscography(name, artistId) {
   }
   const rows = picked.map((p) => ({ artist: p.artist, title: p.title, isrc: p.isrc, release: p.release, date: p.date, sources: ['deezer'], url: p.url, image: p.image, tid: String(p.id || '') }));
   rows.sort((a, b) => (b.date || '').localeCompare(a.date || '') || (a.title || '').localeCompare(b.title || ''));
-  return { rows, artist: who.name, artistInfo, err: null };
+  const diag = `Deezer: album ${albums.length} · da album ${nFromAlbums} · da comparse ${picked.length - nFromAlbums} · totale ${rows.length}`;
+  return { rows, artist: who.name, artistInfo, err: null, diag };
 }
 
 // ================================= Tidal ===================================
@@ -672,7 +677,7 @@ export default async function handler(req) {
     // Raccogli dalle fonti ABILITATE. Con ≥2 fonti restituisco un payload di CONFRONTO.
     {
       const avail = []; const diag = [];
-      if (useDz) { try { const dz = await dzDiscography(q, prov === 'deezer' ? id : ''); if (dz.rows.length) avail.push({ name: 'deezer', rows: dz.rows, artist: dz.artist, artistInfo: dz.artistInfo }); else diag.push('Deezer: 0'); } catch (e) { diag.push('Deezer err: ' + String(e?.message || e)); } }
+      if (useDz) { try { const dz = await dzDiscography(q, prov === 'deezer' ? id : ''); if (dz.rows.length) avail.push({ name: 'deezer', rows: dz.rows, artist: dz.artist, artistInfo: dz.artistInfo, diag: dz.diag }); else diag.push('Deezer: 0'); } catch (e) { diag.push('Deezer err: ' + String(e?.message || e)); } }
       if (auth) { try { const sp = await spDiscography(q, prov === 'spotify' ? id : '', auth); if (sp.rows.length) avail.push({ name: 'spotify', rows: sp.rows, artist: sp.artist, artistInfo: sp.artistInfo }); else diag.push('Spotify: 0 tracce (artist=' + (sp.artist || '?') + (sp.err ? ', ' + sp.err : '') + ')'); } catch (e) { diag.push('Spotify err: ' + String(e?.message || e)); } }
       if (tdTok) { try { const td = await tdArtistDisco(q, '', tdTok); if (td.rows.length) avail.push({ name: 'tidal', rows: td.rows, artist: td.artist, artistInfo: td.artistInfo }); } catch (_) {} }
 
@@ -682,7 +687,7 @@ export default async function handler(req) {
       }
       if (avail.length === 1) {
         const s = avail[0];
-        return json({ mode: 'artist', artist: s.artist, artistInfo: s.artistInfo || null, rows: s.rows, count: s.rows.length, source: s.name });
+        return json({ mode: 'artist', artist: s.artist, artistInfo: s.artistInfo || null, rows: s.rows, count: s.rows.length, source: s.name, note: s.diag || null });
       }
       const mb = await mbDiscography(q);
       return json({ mode: 'artist', artist: mb.artist, rows: mb.rows, count: mb.rows.length, source: 'mb', note: diag.length ? diag.join(' · ') : null });

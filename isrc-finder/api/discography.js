@@ -420,6 +420,8 @@ async function dzDiscography(name, artistId) {
     // t.artist non è il nostro artista: potrebbe essere una comparsa (feat) → verifico dopo
     if (t.id && !maybe.has(t.id)) maybe.set(t.id, rel);
   };
+  // via mirata con l'ID artista: le "top track" dell'artista includono spesso le comparse
+  try { const top = await dzGet(`${DZ}/artist/${who.id}/top?limit=100`); for (const t of (top.data || [])) addFromSearch(t); } catch (_) {}
   for (const base of [`${DZ}/search`, `${DZ}/search/track`]) {
     for (const query of ['artist:"' + who.name + '"', who.name]) {
       try {
@@ -433,9 +435,9 @@ async function dzDiscography(name, artistId) {
     }
   }
   // verifica i candidati sul dettaglio traccia (contributori): recupera le comparse/feat
-  const cand = [...maybe.keys()].filter((tid) => !seen.has('did:' + tid)).slice(0, 200);
-  for (let i = 0; i < cand.length; i += 8) {
-    await Promise.all(cand.slice(i, i + 8).map(async (tid) => {
+  const cand = [...maybe.keys()].slice(0, 800);
+  for (let i = 0; i < cand.length; i += 12) {
+    await Promise.all(cand.slice(i, i + 12).map(async (tid) => {
       try {
         const t = await dzGet(`${DZ}/track/${tid}`);
         if (isOurs(t)) addPicked(t, t.album?.title || maybe.get(tid) || '');

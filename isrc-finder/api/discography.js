@@ -183,11 +183,11 @@ async function spArtistId(name, auth) {
 async function spJson(url, auth, tries = 4) {
   for (let i = 0; i < tries; i++) {
     let r;
-    try { r = await fetch(url, { headers: auth, signal: AbortSignal.timeout(15000) }); }
-    catch (_) { await sleep(600 * (i + 1)); continue; }
+    try { r = await fetch(url, { headers: auth, signal: AbortSignal.timeout(12000) }); }
+    catch (_) { await sleep(500 * (i + 1)); continue; }
     if (r.status === 429) {
       const ra = parseInt(r.headers.get('retry-after') || '', 10);
-      await sleep(Math.min((Number.isFinite(ra) ? ra : (i + 1)), 6) * 1000);
+      await sleep(Math.min((Number.isFinite(ra) ? ra : (i + 1)), 4) * 1000);
       continue;
     }
     if (r.status >= 500) { await sleep(600 * (i + 1)); continue; }

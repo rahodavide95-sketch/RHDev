@@ -412,12 +412,17 @@ async function dzDiscography(name, artistId) {
     if (Array.isArray(t.contributors) && t.contributors.some((c) => String(c.id) === String(who.id) || norm(c.name) === nq)) return true;
     return false;
   };
-  const addFromSearch = (t) => {
-    if (!isOurs(t)) return;
-    const rel = t.album?.title || '';
+  const maybe = new Map(); // candidati feat/comparse da verificare sui contributori
+  const addPicked = (t, rel) => {
     const key = norm(t.title) + '|' + norm(rel);
     if (seen.has(key)) return; seen.add(key);
     picked.push({ id: t.id, artist: t.artist?.name || who.name, title: t.title || '', isrc: t.isrc || '', release: rel, date: '', image: t.album?.cover_small || '', url: t.link || '' });
+  };
+  const addFromSearch = (t) => {
+    const rel = t.album?.title || '';
+    if (isOurs(t)) { addPicked(t, rel); return; }
+    // t.artist non è il nostro artista: potrebbe essere una comparsa (feat) → verifico dopo
+    if (t.id && !maybe.has(t.id)) maybe.set(t.id, rel);
   };
   for (const query of ['artist:"' + who.name + '"', who.name]) {
     try {
@@ -428,6 +433,16 @@ async function dzDiscography(name, artistId) {
         surl = sd.next || '';
       }
     } catch (_) {}
+  }
+  // verifica i candidati sul dettaglio traccia (contributori): recupera le comparse/feat
+  const cand = [...maybe.keys()].filter((tid) => !seen.has('did:' + tid)).slice(0, 200);
+  for (let i = 0; i < cand.length; i += 8) {
+    await Promise.all(cand.slice(i, i + 8).map(async (tid) => {
+      try {
+        const t = await dzGet(`${DZ}/track/${tid}`);
+        if (isOurs(t)) addPicked(t, t.album?.title || maybe.get(tid) || '');
+      } catch (_) {}
+    }));
   }
 
   // ISRC / data / copertina mancanti: dal dettaglio traccia (a lotti)

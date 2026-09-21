@@ -440,23 +440,29 @@ async function bAlbum(id){const a=await dzb(`/album/${id}`);const cover=a.cover_
   const need=rows.filter(p=>!p.isrc&&p.tid);for(let i=0;i<need.length;i+=6){await Promise.all(need.slice(i,i+6).map(async p=>{try{const t=await dzb(`/track/${p.tid}`);p.isrc=t.isrc||'';}catch(_){}}));}
   return {mode:'artist',artist:((a.artist&&a.artist.name)||'')+' — '+(a.title||''),rows,count:rows.length,source:'deezer'};}
 async function bArtist(name,id){
+  // id può essere uno o più ID (profili doppioni dello stesso artista): "111" o "111,222"
+  const idSet=new Set(String(id||'').split(',').map(x=>x.trim()).filter(Boolean));
+  const primary=[...idSet][0]||'';
   let art=null;
-  if(id){try{art=await dzb(`/artist/${id}`);}catch(_){}}
-  if(!art){const s=await dzb(`/search/artist?q=${encodeURIComponent(name)}&limit=5`);const arr=s.data||[];if(!arr.length)return {rows:[],artist:'',artistInfo:null};const pick=arr.find(a=>norm(a.name)===norm(name))||arr[0];try{art=await dzb(`/artist/${pick.id}`);}catch(_){art=pick;}}
-  const who={id:art.id,name:art.name};
+  if(primary){try{art=await dzb(`/artist/${primary}`);}catch(_){}}
+  if(!art){const s=await dzb(`/search/artist?q=${encodeURIComponent(name)}&limit=5`);const arr=s.data||[];if(!arr.length)return {rows:[],artist:'',artistInfo:null};const pick=arr.find(a=>norm(a.name)===norm(name))||arr[0];try{art=await dzb(`/artist/${pick.id}`);}catch(_){art=pick;} idSet.add(String(pick.id));}
+  const who={id:art.id,name:art.name}; idSet.add(String(who.id));
   const artistInfo={name:art.name,image:art.picture_xl||art.picture_big||art.picture_medium||'',fans:art.nb_fan||0,albums:art.nb_album||0,link:art.link||'',source:'deezer'};
   const nq=norm(who.name);
-  // match SOLO per ID artista: evita di prendere tracce di altri artisti omonimi ("Raho")
-  const isOurs=(t)=>{ if(t.artist&&String(t.artist.id)===String(who.id))return true;
-    if(Array.isArray(t.contributors)&&t.contributors.some(c=>String(c.id)===String(who.id)))return true; return false; };
+  const inSet=(x)=>idSet.has(String(x));
+  // match per ID (uno o più profili tuoi): niente omonimi, ma prende i doppioni indicati
+  const isOurs=(t)=>{ if(t.artist&&inSet(t.artist.id))return true;
+    if(Array.isArray(t.contributors)&&t.contributors.some(c=>inSet(c.id)))return true; return false; };
   const strip=(u)=>String(u||'').replace(/^https?:\/\/api\.deezer\.com/,'');
-  // elenco album propri (album/EP/singoli)
-  const albums=[];let index=0;
-  for(let i=0;i<20;i++){const d=await dzb(`/artist/${who.id}/albums?limit=100&index=${index}`);const data=d.data||[];albums.push(...data);if(!d.next||data.length<100)break;index+=100;}
+  // elenco album propri (album/EP/singoli) da OGNI profilo indicato
+  const albums=[]; const aseen=new Set();
+  for(const aid of idSet){ let index=0;
+    for(let i=0;i<20;i++){ let d; try{ d=await dzb(`/artist/${aid}/albums?limit=100&index=${index}`);}catch(_){break;} const data=d.data||[];
+      for(const a of data) if(a&&a.id&&!aseen.has(a.id)){aseen.add(a.id);albums.push(a);} if(!d.next||data.length<100)break; index+=100; } }
   const picked=[];const seen=new Set();
   for(const al of albums){let ad;try{ad=await dzb(`/album/${al.id}`);}catch(_){continue;}
     const rel=ad.title||al.title||'';const date=ad.release_date||al.release_date||'';const cover=ad.cover_small||ad.cover_medium||'';
-    const ours=ad.artist&&String(ad.artist.id)===String(who.id);
+    const ours=ad.artist&&inSet(ad.artist.id);
     // tracce dell'album PAGINATE (compilation lunghe)
     let trs=(ad.tracks&&ad.tracks.data)||[]; let tn=(ad.tracks&&ad.tracks.next)||''; let g=0;
     while(tn&&g++<15){try{const td=await dzb(strip(tn));trs=trs.concat(td.data||[]);tn=td.next||'';}catch(_){break;}}
@@ -469,7 +475,7 @@ async function bArtist(name,id){
   const addPk=(t,rel)=>{const key=norm(t.title)+'|'+norm(rel);if(seen.has(key))return;seen.add(key);
     picked.push({id:t.id,artist:(t.artist&&t.artist.name)||who.name,title:t.title||'',isrc:t.isrc||'',release:rel,date:(t.album&&t.album.release_date)||'',image:(t.album&&t.album.cover_small)||'',url:t.link||''});};
   const addFS=(t)=>{const rel=(t.album&&t.album.title)||'';if(isOurs(t)){addPk(t,rel);return;}if(t.id&&!maybe.has(t.id))maybe.set(t.id,rel);};
-  try{const top=await dzb(`/artist/${who.id}/top?limit=100`);for(const t of (top.data||[]))addFS(t);}catch(_){}
+  for(const aid of idSet){ try{const top=await dzb(`/artist/${aid}/top?limit=100`);for(const t of (top.data||[]))addFS(t);}catch(_){} }
   for(const base of ['/search','/search/track']){
     for(const query of ['artist:"'+who.name+'"',who.name]){
       try{ let idx2=0;
@@ -487,7 +493,7 @@ async function bArtist(name,id){
   for(let i=0;i<need.length&&i<CAP;i+=8){await Promise.all(need.slice(i,i+8).map(async p=>{try{const t=await dzb(`/track/${p.id}`);if(!p.isrc)p.isrc=t.isrc||'';if(!p.date)p.date=t.release_date||(t.album&&t.album.release_date)||'';if(!p.release)p.release=(t.album&&t.album.title)||'';}catch(_){}}));await sleep(60);}
   const rows=picked.map(p=>({artist:p.artist,title:p.title,isrc:p.isrc,release:p.release,date:p.date,sources:['deezer'],url:p.url,image:p.image,tid:String(p.id||'')}));
   rows.sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(a.title||'').localeCompare(b.title||''));
-  const diag='[browser '+(typeof VERSION!=='undefined'?VERSION:'?')+'] Deezer id='+who.id+' · album '+albums.length+' · da album '+nFromAlbums+' · da comparse '+(picked.length-nFromAlbums)+' · totale '+rows.length;
+  const diag='[browser '+(typeof VERSION!=='undefined'?VERSION:'?')+'] Deezer id='+[...idSet].join(',')+' · album '+albums.length+' · da album '+nFromAlbums+' · da comparse '+(picked.length-nFromAlbums)+' · totale '+rows.length;
   return {rows,artist:who.name,artistInfo,diag};}
 /* ====== Spotify nel browser (PKCE, senza secret) — funziona su GitHub Pages ====== */
 const SP_TOK='isrcfinder.sptok.v1';
@@ -725,10 +731,11 @@ async function bSpArtist(name,id,tok){
 async function dzLocal(payload){
   const use=payload.use||[];
   const spTok = use.includes('spotify') ? await spBrowserToken() : '';
-  // suggerimenti: seguono SOLO le fonti attive (Spotify se loggato; Deezer solo se attivo)
+  // suggerimenti: se Deezer è attivo lo uso per PRIMO (così il click porta l'ID Deezer
+  // corretto e non finisce sul Spotify bannato o su un omonimo cercato per nome).
   if(payload.mode==='suggest'){ if((payload.q||'').length<2) return {suggestions:[]};
+    if(use.includes('deezer')){ try{ const s=await bSuggest(payload.kind||'artist',payload.q); if(s.length) return {suggestions:s,source:'deezer'}; }catch(_){} }
     if(spTok){ try{ const s=await bSpSuggest(payload.kind||'artist',payload.q,spTok); if(s.length) return {suggestions:s,source:'spotify'}; }catch(_){} }
-    if(use.includes('deezer')){ try{ return {suggestions:await bSuggest(payload.kind||'artist',payload.q),source:'deezer'}; }catch(_){ return {suggestions:[]}; } }
     return {suggestions:[]}; }
   const wantDz = use.includes('deezer'); const wantSp = !!spTok;
   // needSource/needSpotifyLogin SOLO se davvero non c'è alcuna fonte utilizzabile
@@ -886,7 +893,8 @@ function parseDeezer(s){
   s=(s||'').trim();
   const m=s.match(/deezer\.com\/(?:[a-z]{2}\/)?(artist|album|track)\/(\d+)/i);
   if(m) return {type:m[1].toLowerCase(), id:m[2]};
-  if(/^\d{4,}$/.test(s)) return {type:'artist', id:s}; // solo numero = ID artista Deezer
+  // uno o più ID numerici (profili doppioni dello stesso artista): "259185762" o "259185762,12345"
+  if(/^\d{4,}(\s*,\s*\d{4,})*$/.test(s)) return {type:'artist', id:s.replace(/\s+/g,'')};
   return null;
 }
 $('q').addEventListener('input',()=>{ selId=''; selProv=''; const v=$('q').value.trim();
@@ -1181,7 +1189,7 @@ $('cards').addEventListener('click',(e)=>{ const b=e.target.closest('[data-album
   e.preventDefault(); openAlbum(b.dataset.album, b.dataset.atitle, b.dataset.prov||'deezer'); });
 // gestisci l'eventuale ritorno dal login Spotify, poi aggiorna lo stato
 /* >>> VERSIONE: aggiornare questo numero a OGNI deploy <<< */
-const VERSION='V48';
+const VERSION='V49';
 try{ const vb=$('ver-badge'); if(vb) vb.textContent=VERSION; console.log('ISRC Finder', VERSION); }catch(_){}
 spHandleRedirect().then(()=>refreshKeyState()).catch(()=>refreshKeyState());
 if('serviceWorker' in navigator){

@@ -13,7 +13,7 @@
 // ============================================================================
 
 export const config = { runtime: 'edge', regions: ['iad1'] };
-const SRV_VERSION = 'V50'; // versione del server (per capire se Vercel ha deployato)
+const SRV_VERSION = 'V51'; // versione del server (per capire se Vercel ha deployato)
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -219,40 +219,62 @@ async function spDiscography(name, artistId, auth) {
       artistInfo = { name: ad.name || who.name, image: bigImg(ad.images), followers: ad.followers?.total || 0, genres: (ad.genres || []).slice(0, 3).join(', '), link: ad.external_urls?.spotify || '', source: 'spotify' }; }
   } catch (_) {}
 
+  const is403 = (s) => String(s) === '403';
+  // PROBE: alcune app Spotify rifiutano limit alti ("Invalid limit"). Trovo il massimo accettato.
+  let LIM = 0;
+  for (const L of [50, 20, 10, 5, 1]) {
+    const pr = await spJson(`https://api.spotify.com/v1/artists/${who.id}/albums?include_groups=album,single&limit=${L}&offset=0`, auth);
+    if (pr.ok) { LIM = L; break; }
+  }
+  if (!LIM) LIM = 1;
   const albums = []; const seen = new Set(); let albErr = '';
-  for (let offset = 0; offset < 1000; offset += 50) {
-    const rr = await spJson(`https://api.spotify.com/v1/artists/${who.id}/albums?include_groups=album,single,compilation,appears_on&limit=50&offset=${offset}`, auth);
-    if (!rr.ok) { albErr = 'HTTP ' + rr.status + ' su /albums' + (rr.retryAfter ? ' (Spotify chiede ' + rr.retryAfter + 's)' : ''); break; }
-    const items = rr.data.items || [];
-    for (const a of items) if (a.id && !seen.has(a.id)) { seen.add(a.id); albums.push(a); }
-    if (items.length < 50) break;
+  for (const ig of ['album,single,compilation,appears_on', 'album,single,compilation', 'album,single', 'album']) {
+    albums.length = 0; seen.clear(); albErr = '';
+    for (let offset = 0; offset < 1000; offset += LIM) {
+      const rr = await spJson(`https://api.spotify.com/v1/artists/${who.id}/albums?include_groups=${ig}&limit=${LIM}&offset=${offset}`, auth);
+      if (!rr.ok) { albErr = 'HTTP ' + rr.status + ' su /albums'; break; }
+      const items = rr.data.items || [];
+      for (const a of items) if (a.id && !seen.has(a.id)) { seen.add(a.id); albums.push(a); }
+      if (items.length < LIM) break;
+    }
+    if (albums.length) break;
   }
   const rows = []; const trackIndex = new Map(); const seenKey = new Set();
   const keyOf = (tk, rel) => tk.id ? ('id:' + tk.id) : ('t:' + norm(tk.name) + '|' + norm(rel || ''));
   const meta = new Map(albums.map((a) => [a.id, a]));
+  const addTrack = (tk, m) => {
+    const credited = (tk.artists || []).some((x) => x.id === who.id || norm(x.name) === norm(who.name));
+    if (!credited) return;
+    const rel = (m && m.name) || ''; const key = keyOf(tk, rel); if (seenKey.has(key)) return; seenKey.add(key);
+    const obj = { artist: (tk.artists || []).map((x) => x.name).join(', '), title: tk.name || '', isrc: '',
+      release: rel, date: (m && m.release_date) || '', sources: ['spotify'],
+      url: tk.external_urls?.spotify || '', image: bigImg(m && m.images), tid: tk.id || '', _tid: tk.id };
+    rows.push(obj); if (tk.id) trackIndex.set(tk.id, obj);
+  };
   const ids = albums.map((a) => a.id);
-  for (let i = 0; i < ids.length; i += 20) {
+  // dettagli album: prova in blocco (/albums?ids=); se vietato (403) passa ad album per album
+  let batchAlbForbidden = false;
+  for (let i = 0; i < ids.length && !batchAlbForbidden; i += 20) {
     const rr = await spJson(`https://api.spotify.com/v1/albums?ids=${ids.slice(i, i + 20).join(',')}`, auth);
-    if (!rr.ok) continue; const d = rr.data;
-    for (const a of d.albums || []) {
-      const m = meta.get(a.id) || a;
-      for (const tk of (a.tracks?.items || [])) {
-        const credited = (tk.artists || []).some((x) => x.id === who.id || norm(x.name) === norm(who.name));
-        if (!credited) continue;
-        const rel = m.name || a.name || ''; const key = keyOf(tk, rel); if (seenKey.has(key)) continue; seenKey.add(key);
-        const obj = { artist: (tk.artists || []).map((x) => x.name).join(', '), title: tk.name || '', isrc: '',
-          release: rel, date: m.release_date || a.release_date || '', sources: ['spotify'],
-          url: tk.external_urls?.spotify || '', image: bigImg(m.images || a.images), tid: tk.id || '', _tid: tk.id };
-        rows.push(obj);
-        if (tk.id) trackIndex.set(tk.id, obj);
+    if (!rr.ok) { if (is403(rr.status)) { batchAlbForbidden = true; break; } continue; }
+    for (const a of rr.data.albums || []) { const m = meta.get(a.id) || a; for (const tk of (a.tracks?.items || [])) addTrack(tk, m); }
+  }
+  if (batchAlbForbidden) {
+    for (const m of albums) {
+      if (!m || !m.id) continue;
+      const cap = Math.min(400, Math.max(LIM, m.total_tracks || LIM));
+      for (let toff = 0; toff < cap; toff += LIM) {
+        const rr = await spJson(`https://api.spotify.com/v1/albums/${m.id}/tracks?limit=${LIM}&offset=${toff}`, auth);
+        if (!rr.ok) break; const its = rr.data.items || [];
+        for (const tk of its) addTrack(tk, m);
+        if (its.length < LIM) break;
       }
     }
   }
-  // FALLBACK ricerca (leggero): comparse/compilation non gia' coperte da appears_on.
-  // Tenuto a 2 pagine per non sovraccaricare il rate-limit di Spotify.
+  // FALLBACK ricerca comparse
   try {
-    for (let offset = 0; offset < 100; offset += 50) {
-      const rr = await spJson(`https://api.spotify.com/v1/search?q=${enc('artist:"' + who.name + '"')}&type=track&limit=50&offset=${offset}`, auth);
+    for (let offset = 0; offset < 200 && offset + LIM <= 1000; offset += LIM) {
+      const rr = await spJson(`https://api.spotify.com/v1/search?q=${enc('artist:"' + who.name + '"')}&type=track&limit=${LIM}&offset=${offset}`, auth);
       if (!rr.ok) break; const its = rr.data.tracks?.items || [];
       for (const tk of its) {
         const credited = (tk.artists || []).some((x) => x.id === who.id || norm(x.name) === norm(who.name));
@@ -262,14 +284,23 @@ async function spDiscography(name, artistId, auth) {
           release: rel, date: tk.album?.release_date || '', sources: ['spotify'], url: tk.external_urls?.spotify || '',
           image: bigImg(tk.album?.images), tid: tk.id || '' });
       }
-      if (!rr.data.tracks?.next || its.length < 50) break;
+      if (!rr.data.tracks?.next || its.length < LIM) break;
     }
   } catch (_) {}
+  // ISRC: batch /tracks?ids=; se vietato (403) per traccia /tracks/{id}
   const tids = [...trackIndex.keys()];
-  for (let i = 0; i < tids.length; i += 50) {
+  let batchTrkForbidden = false;
+  for (let i = 0; i < tids.length && !batchTrkForbidden; i += 50) {
     const rr = await spJson(`https://api.spotify.com/v1/tracks?ids=${tids.slice(i, i + 50).join(',')}`, auth);
-    if (!rr.ok) continue; const d = rr.data;
-    for (const tk of d.tracks || []) { const o = tk && trackIndex.get(tk.id); if (o) o.isrc = tk.external_ids?.isrc || ''; }
+    if (!rr.ok) { if (is403(rr.status)) { batchTrkForbidden = true; break; } continue; }
+    for (const tk of rr.data.tracks || []) { const o = tk && trackIndex.get(tk.id); if (o) o.isrc = tk.external_ids?.isrc || ''; }
+  }
+  if (batchTrkForbidden) {
+    for (const tid of tids.slice(0, 600)) {
+      const rr = await spJson(`https://api.spotify.com/v1/tracks/${tid}`, auth);
+      if (!rr.ok) { if (is403(rr.status)) break; continue; }
+      const o = trackIndex.get(tid); if (o) o.isrc = rr.data.external_ids?.isrc || '';
+    }
   }
   rows.forEach((o) => delete o._tid);
   // Deduplica per ISRC (stessa registrazione uscita in piu' release = 1 riga); le tracce senza ISRC restano tutte.
@@ -277,7 +308,7 @@ async function spDiscography(name, artistId, auth) {
   for (const r of rows) { const code = (r.isrc || '').split('/')[0].trim().toUpperCase();
     if (code) { if (seenIsrc.has(code)) continue; seenIsrc.add(code); } out.push(r); }
   out.sort((a, b) => (b.date || '').localeCompare(a.date || '') || (a.title || '').localeCompare(b.title || ''));
-  return { rows: out, artist: who.name, artistInfo, err: (out.length ? null : (albErr || (albums.length ? 'nessuna traccia accreditata' : 'nessun album'))) };
+  return { rows: out, artist: who.name, artistInfo, err: (out.length ? null : ('[srv ' + SRV_VERSION + ' limit=' + LIM + '] ' + (albErr || (albums.length ? 'nessuna traccia accreditata (album ' + albums.length + ')' : 'nessun album')))) };
 }
 
 // ============================== Deezer (senza chiavi) ======================

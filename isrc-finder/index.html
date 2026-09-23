@@ -1158,7 +1158,11 @@ function showTrack(d,note){
   TRACKS=d.results||[];
   $('cards').innerHTML=TRACKS.map((t)=>{
     const cover=t.image?`<img class="cover" src="${esc(t.image)}" alt="">`:`<div class="cover ph"></div>`;
-    const sub=[t.artists,t.album].filter(Boolean).join(' · ');
+    // release come link (sottolineato + freccetta ↗), stesso stile della tabella
+    const relLink = (t.albumId && t.album)
+      ? `<button type="button" class="relopen" data-album="${esc(t.albumId)}" data-atitle="${esc(t.album)}" data-prov="${esc(t.source||'deezer')}" title="Apri la release: ${esc(t.album)}"><span class="reltxt">${esc(t.album)}</span><span class="relgo">↗</span></button>`
+      : esc(t.album||'');
+    const sub=[t.artists?esc(t.artists):'', t.album?relLink:''].filter(Boolean).join(' · ');
     const codes=[];
     codes.push(`<div class="codepill hl"><div class="cp"><span class="k">ISRC</span><span class="val">${t.isrc?esc(t.isrc):'—'}</span></div>${t.isrc?`<button class="copy" data-copy="${esc(t.isrc.split('/')[0].trim())}" title="Copia ISRC">⧉</button>`:''}</div>`);
     if(t.upc) codes.push(`<div class="codepill"><div class="cp"><span class="k">UPC</span><span class="val">${esc(t.upc)}</span></div><button class="copy" data-copy="${esc(t.upc)}" title="Copia UPC">⧉</button></div>`);
@@ -1173,7 +1177,7 @@ function showTrack(d,note){
       <div class="coverwrap">${cover}</div>
       <div class="body">
         <div class="thead"><h3>${esc(t.title)}</h3>${chips.join('')}</div>
-        <div class="by">${esc(sub)}</div>
+        <div class="by">${sub}</div>
         <div class="codes">${codes.join('')}</div>
         <div class="grid">${fields}</div>
         <div class="links">${alb}${link}${audio}</div>
@@ -1238,7 +1242,7 @@ $('cards').addEventListener('click',(e)=>{ const b=e.target.closest('[data-album
   e.preventDefault(); openAlbum(b.dataset.album, b.dataset.atitle, b.dataset.prov||'deezer'); });
 // gestisci l'eventuale ritorno dal login Spotify, poi aggiorna lo stato
 /* >>> VERSIONE: aggiornare questo numero a OGNI deploy <<< */
-const VERSION='V55';
+const VERSION='V56';
 try{ const vb=$('ver-badge'); if(vb) vb.textContent=VERSION; console.log('ISRC Finder', VERSION); }catch(_){}
 spHandleRedirect().then(()=>refreshKeyState()).catch(()=>refreshKeyState());
 if('serviceWorker' in navigator){

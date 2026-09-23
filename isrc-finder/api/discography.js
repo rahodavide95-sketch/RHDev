@@ -13,7 +13,7 @@
 // ============================================================================
 
 export const config = { runtime: 'edge', regions: ['iad1'] };
-const SRV_VERSION = 'V60'; // versione del server (per capire se Vercel ha deployato)
+const SRV_VERSION = 'V61'; // versione del server (per capire se Vercel ha deployato)
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -268,9 +268,11 @@ async function spDiscography(name, artistId, auth) {
     if (albums.length) break;
   }
   const rows = []; const trackIndex = new Map(); const seenKey = new Set();
+  const coveredAlb = new Set(); // album da cui abbiamo gia' estratto le tracce
   const keyOf = (tk, rel) => tk.id ? ('id:' + tk.id) : ('t:' + norm(tk.name) + '|' + norm(rel || ''));
   const meta = new Map(albums.map((a) => [a.id, a]));
   const addTrack = (tk, m) => {
+    if (m && m.id) coveredAlb.add(m.id);
     const credited = (tk.artists || []).some((x) => x.id === who.id || norm(x.name) === norm(who.name));
     if (!credited) return;
     const rel = (m && m.name) || ''; const key = keyOf(tk, rel); if (seenKey.has(key)) return; seenKey.add(key);
@@ -280,16 +282,19 @@ async function spDiscography(name, artistId, auth) {
     rows.push(obj); if (tk.id) trackIndex.set(tk.id, obj);
   };
   const ids = albums.map((a) => a.id);
-  // dettagli album: prova in blocco (/albums?ids=); se vietato (403) passa ad album per album
+  // dettagli album: prima prova il blocco veloce (/albums?ids=). Non affidabile con app
+  // ristrette (403) o sotto rate-limit (429), quindi dopo recupero SEMPRE per-album le
+  // release non ancora coperte, chiamando /albums/{id}/tracks (che l'app ristretta accetta).
   let batchAlbForbidden = false;
   for (let i = 0; i < ids.length && !batchAlbForbidden; i += 20) {
     if (overDL()) break;
     const rr = await spJson(`https://api.spotify.com/v1/albums?ids=${ids.slice(i, i + 20).join(',')}`, auth, DL);
-    if (!rr.ok) { if (is403(rr.status)) { batchAlbForbidden = true; break; } continue; }
+    if (!rr.ok) { if (is403(rr.status)) batchAlbForbidden = true; continue; }
     for (const a of rr.data.albums || []) { const m = meta.get(a.id) || a; for (const tk of (a.tracks?.items || [])) addTrack(tk, m); }
   }
-  if (batchAlbForbidden) {
-    await pmapSrv(albums, async (m) => {
+  const missingAlb = albums.filter((m) => m && m.id && !coveredAlb.has(m.id));
+  if (missingAlb.length) {
+    await pmapSrv(missingAlb, async (m) => {
       if (!m || !m.id || overDL()) return;
       const cap = Math.min(400, Math.max(LIM, m.total_tracks || LIM));
       for (let toff = 0; toff < cap; toff += LIM) {

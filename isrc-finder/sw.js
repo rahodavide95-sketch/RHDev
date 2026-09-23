@@ -1,6 +1,6 @@
 /* Service worker: network-first per la pagina (mostra SEMPRE l'ultima versione),
    cache solo come ripiego offline. API sempre da rete. */
-const CACHE = 'isrc-finder-V59';
+const CACHE = 'isrc-finder-V60';
 const ASSETS = ['manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', (e) => {

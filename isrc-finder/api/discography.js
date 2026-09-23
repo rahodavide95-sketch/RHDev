@@ -13,7 +13,7 @@
 // ============================================================================
 
 export const config = { runtime: 'edge', regions: ['iad1'] };
-const SRV_VERSION = 'V59'; // versione del server (per capire se Vercel ha deployato)
+const SRV_VERSION = 'V60'; // versione del server (per capire se Vercel ha deployato)
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -168,18 +168,19 @@ async function spAlbumById(id, auth) {
     rows.push(obj); if (tk.id) trackIndex.set(tk.id, obj);
   }
   // ISRC: batch /tracks?ids=; se l'app ha restrizioni (403) ripiega su /tracks/{id} singolo.
+  const DL = Date.now() + 20000; const overDL = () => Date.now() > DL;
   const tids = [...trackIndex.keys()];
   let batchForbidden = false;
   for (let i = 0; i < tids.length && !batchForbidden; i += 50) {
-    const rr = await spJson(`https://api.spotify.com/v1/tracks?ids=${tids.slice(i, i + 50).join(',')}`, auth);
+    if (overDL()) break;
+    const rr = await spJson(`https://api.spotify.com/v1/tracks?ids=${tids.slice(i, i + 50).join(',')}`, auth, DL);
     if (!rr.ok) { if (String(rr.status) === '403') { batchForbidden = true; break; } continue; }
     for (const tk of rr.data.tracks || []) { const o = tk && trackIndex.get(tk.id); if (o) o.isrc = tk.external_ids?.isrc || ''; }
   }
   if (batchForbidden) {
-    const DL = Date.now() + 20000;
     await pmapSrv(tids.slice(0, 800), async (tid) => {
-      if (Date.now() > DL) return;
-      const rr = await spJson(`https://api.spotify.com/v1/tracks/${tid}`, auth);
+      if (overDL()) return;
+      const rr = await spJson(`https://api.spotify.com/v1/tracks/${tid}`, auth, DL);
       if (!rr.ok) return;
       const o = trackIndex.get(tid); if (o) o.isrc = rr.data.external_ids?.isrc || '';
     }, 6);
@@ -199,21 +200,27 @@ async function spArtistId(name, auth) {
   return { id: pick.id, name: pick.name, err: null };
 }
 // Fetch JSON da Spotify con retry sul rate-limit (429) e sui 5xx.
-async function spJson(url, auth, tries = 3) {
+// `deadline` (timestamp ms, opzionale): oltre quel momento non aspetta/riprova piu'
+// e accorcia il timeout della fetch, per non far scadere la funzione edge (HTTP 504).
+async function spJson(url, auth, deadline = 0, tries = 3) {
   let last429 = 0;
   for (let i = 0; i < tries; i++) {
+    if (deadline && Date.now() >= deadline) break;
+    const to = deadline ? Math.max(1500, Math.min(12000, deadline - Date.now())) : 12000;
     let r;
-    try { r = await fetch(url, { headers: auth, signal: AbortSignal.timeout(12000) }); }
-    catch (_) { await sleep(500 * (i + 1)); continue; }
+    try { r = await fetch(url, { headers: auth, signal: AbortSignal.timeout(to) }); }
+    catch (_) { if (deadline && Date.now() >= deadline) break; await sleep(Math.min(500 * (i + 1), 800)); continue; }
     if (r.status === 429) {
       const ra = parseInt(r.headers.get('retry-after') || '', 10);
       last429 = Number.isFinite(ra) ? ra : 0;
       if (i === tries - 1) break; // ultimo tentativo: non aspettare inutilmente
       // rispetta il tempo REALE richiesto da Spotify (con margine), fino a 8s per la edge function
-      await sleep(Math.min(Number.isFinite(ra) && ra > 0 ? ra : (i + 1), 8) * 1000 + 400);
+      const waitMs = Math.min(Number.isFinite(ra) && ra > 0 ? ra : (i + 1), 8) * 1000 + 400;
+      if (deadline && Date.now() + waitMs >= deadline) break; // non aspettare oltre il budget
+      await sleep(waitMs);
       continue;
     }
-    if (r.status >= 500) { await sleep(600 * (i + 1)); continue; }
+    if (r.status >= 500) { if (deadline && Date.now() >= deadline) break; await sleep(Math.min(600 * (i + 1), 800)); continue; }
     if (!r.ok) return { ok: false, status: r.status, data: null };
     try { return { ok: true, status: r.status, data: await r.json() }; }
     catch (_) { return { ok: false, status: r.status, data: null }; }
@@ -223,6 +230,8 @@ async function spJson(url, auth, tries = 3) {
 const _spDisco = new Map(); // cache server: discografie Spotify (meno chiamate = meno 429/ban, ricerche ripetute istantanee)
 const SP_DISCO_TTL = 6 * 3600 * 1000; // 6 ore
 async function spDiscography(name, artistId, auth) {
+  // Budget totale dall'ingresso: la funzione edge Vercel scade a ~25s (HTTP 504).
+  const DL = Date.now() + 22000; const overDL = () => Date.now() > DL;
   let who = { id: artistId, name: name };
   if (!artistId) {
     const s = await spArtistId(name, auth);
@@ -232,19 +241,16 @@ async function spDiscography(name, artistId, auth) {
   }
   let artistInfo = { name: who.name, source: 'spotify' };
   try {
-    const ar = await fetch(`https://api.spotify.com/v1/artists/${who.id}`, { headers: auth, signal: AbortSignal.timeout(15000) });
+    const ar = await fetch(`https://api.spotify.com/v1/artists/${who.id}`, { headers: auth, signal: AbortSignal.timeout(8000) });
     if (ar.ok) { const ad = await ar.json(); who.name = ad.name || who.name;
       artistInfo = { name: ad.name || who.name, image: bigImg(ad.images), followers: ad.followers?.total || 0, genres: (ad.genres || []).slice(0, 3).join(', '), link: ad.external_urls?.spotify || '', source: 'spotify' }; }
   } catch (_) {}
 
   const is403 = (s) => String(s) === '403';
-  // Budget totale: le funzioni edge di Vercel scadono a ~25s (HTTP 504). Restituisco
-  // cio' che ho raccolto prima del limite invece di far scadere il gateway.
-  const DL = Date.now() + 21000; const overDL = () => Date.now() > DL;
   // PROBE: alcune app Spotify rifiutano limit alti ("Invalid limit"). Trovo il massimo accettato.
   let LIM = 0;
   for (const L of [50, 20, 10, 5, 1]) {
-    const pr = await spJson(`https://api.spotify.com/v1/artists/${who.id}/albums?include_groups=album,single&limit=${L}&offset=0`, auth);
+    const pr = await spJson(`https://api.spotify.com/v1/artists/${who.id}/albums?include_groups=album,single&limit=${L}&offset=0`, auth, DL);
     if (pr.ok) { LIM = L; break; }
   }
   if (!LIM) LIM = 1;
@@ -253,7 +259,7 @@ async function spDiscography(name, artistId, auth) {
     albums.length = 0; seen.clear(); albErr = '';
     for (let offset = 0; offset < 1000; offset += LIM) {
       if (overDL()) break;
-      const rr = await spJson(`https://api.spotify.com/v1/artists/${who.id}/albums?include_groups=${ig}&limit=${LIM}&offset=${offset}`, auth);
+      const rr = await spJson(`https://api.spotify.com/v1/artists/${who.id}/albums?include_groups=${ig}&limit=${LIM}&offset=${offset}`, auth, DL);
       if (!rr.ok) { albErr = 'HTTP ' + rr.status + ' su /albums'; break; }
       const items = rr.data.items || [];
       for (const a of items) if (a.id && !seen.has(a.id)) { seen.add(a.id); albums.push(a); }
@@ -278,7 +284,7 @@ async function spDiscography(name, artistId, auth) {
   let batchAlbForbidden = false;
   for (let i = 0; i < ids.length && !batchAlbForbidden; i += 20) {
     if (overDL()) break;
-    const rr = await spJson(`https://api.spotify.com/v1/albums?ids=${ids.slice(i, i + 20).join(',')}`, auth);
+    const rr = await spJson(`https://api.spotify.com/v1/albums?ids=${ids.slice(i, i + 20).join(',')}`, auth, DL);
     if (!rr.ok) { if (is403(rr.status)) { batchAlbForbidden = true; break; } continue; }
     for (const a of rr.data.albums || []) { const m = meta.get(a.id) || a; for (const tk of (a.tracks?.items || [])) addTrack(tk, m); }
   }
@@ -288,7 +294,7 @@ async function spDiscography(name, artistId, auth) {
       const cap = Math.min(400, Math.max(LIM, m.total_tracks || LIM));
       for (let toff = 0; toff < cap; toff += LIM) {
         if (overDL()) return;
-        const rr = await spJson(`https://api.spotify.com/v1/albums/${m.id}/tracks?limit=${LIM}&offset=${toff}`, auth);
+        const rr = await spJson(`https://api.spotify.com/v1/albums/${m.id}/tracks?limit=${LIM}&offset=${toff}`, auth, DL);
         if (!rr.ok) return; const its = rr.data.items || [];
         for (const tk of its) addTrack(tk, m);
         if (its.length < LIM) return;
@@ -299,7 +305,7 @@ async function spDiscography(name, artistId, auth) {
   try {
     for (let offset = 0; offset < 200 && offset + LIM <= 1000; offset += LIM) {
       if (overDL()) break;
-      const rr = await spJson(`https://api.spotify.com/v1/search?q=${enc('artist:"' + who.name + '"')}&type=track&limit=${LIM}&offset=${offset}`, auth);
+      const rr = await spJson(`https://api.spotify.com/v1/search?q=${enc('artist:"' + who.name + '"')}&type=track&limit=${LIM}&offset=${offset}`, auth, DL);
       if (!rr.ok) break; const its = rr.data.tracks?.items || [];
       for (const tk of its) {
         const credited = (tk.artists || []).some((x) => x.id === who.id || norm(x.name) === norm(who.name));
@@ -316,14 +322,14 @@ async function spDiscography(name, artistId, auth) {
   const tids = [...trackIndex.keys()];
   let batchTrkForbidden = false;
   for (let i = 0; i < tids.length && !batchTrkForbidden; i += 50) {
-    const rr = await spJson(`https://api.spotify.com/v1/tracks?ids=${tids.slice(i, i + 50).join(',')}`, auth);
+    const rr = await spJson(`https://api.spotify.com/v1/tracks?ids=${tids.slice(i, i + 50).join(',')}`, auth, DL);
     if (!rr.ok) { if (is403(rr.status)) { batchTrkForbidden = true; break; } continue; }
     for (const tk of rr.data.tracks || []) { const o = tk && trackIndex.get(tk.id); if (o) o.isrc = tk.external_ids?.isrc || ''; }
   }
   if (batchTrkForbidden) {
     await pmapSrv(tids.slice(0, 800), async (tid) => {
       if (overDL()) return;
-      const rr = await spJson(`https://api.spotify.com/v1/tracks/${tid}`, auth);
+      const rr = await spJson(`https://api.spotify.com/v1/tracks/${tid}`, auth, DL);
       if (!rr.ok) return;
       const o = trackIndex.get(tid); if (o) o.isrc = rr.data.external_ids?.isrc || '';
     }, 6);

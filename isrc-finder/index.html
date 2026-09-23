@@ -156,11 +156,11 @@
   td.isrc{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; letter-spacing:.5px; white-space:nowrap; font-weight:600}
   .relimg{width:34px;height:34px;border-radius:8px;object-fit:cover;vertical-align:middle;margin-right:10px;box-shadow:0 3px 8px rgba(0,0,0,.12)}
   .relwrap{display:inline-flex;align-items:center}
-  .relopen{display:inline-flex;align-items:center;gap:0;border:0;background:none;padding:0;margin:0;font:inherit;color:inherit;text-align:left;cursor:pointer;max-width:100%}
-  .relopen .reltxt{border-bottom:1px dashed transparent}
-  .relopen .relgo{opacity:0;margin-left:6px;color:var(--b1);font-size:12px;transition:opacity .12s}
-  .relopen:hover .reltxt{border-bottom-color:var(--b1);color:var(--b1)}
-  .relopen:hover .relgo{opacity:1}
+  .relopen{display:inline-flex;align-items:center;gap:0;border:0;background:none;padding:0;margin:0;font:inherit;color:var(--b2);font-weight:600;text-align:left;cursor:pointer;max-width:100%}
+  .relopen .reltxt{text-decoration:underline;text-decoration-style:dotted;text-underline-offset:2px}
+  .relopen .relgo{margin-left:6px;color:var(--b2);font-size:12px;opacity:.9}
+  .relopen:hover{color:var(--b1)} .relopen:hover .relgo{color:var(--b1);opacity:1}
+  .relopen:hover .reltxt{text-decoration-style:solid}
   .relopen:focus-visible{outline:2px solid var(--b1);outline-offset:2px;border-radius:6px}
   .copy{cursor:pointer; color:var(--muted); border:0; background:none; padding:0 0 0 8px; font-size:13px}
   .copy:hover{color:var(--b1)}
@@ -1236,7 +1236,7 @@ $('cards').addEventListener('click',(e)=>{ const b=e.target.closest('[data-album
   e.preventDefault(); openAlbum(b.dataset.album, b.dataset.atitle, b.dataset.prov||'deezer'); });
 // gestisci l'eventuale ritorno dal login Spotify, poi aggiorna lo stato
 /* >>> VERSIONE: aggiornare questo numero a OGNI deploy <<< */
-const VERSION='V53';
+const VERSION='V54';
 try{ const vb=$('ver-badge'); if(vb) vb.textContent=VERSION; console.log('ISRC Finder', VERSION); }catch(_){}
 spHandleRedirect().then(()=>refreshKeyState()).catch(()=>refreshKeyState());
 if('serviceWorker' in navigator){

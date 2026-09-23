@@ -631,7 +631,9 @@ async function bSpTrackSearch(q,tok){ const d=await spG(`/search?q=${encodeURICo
 async function bSpTrackById(id,tok){ const t=await spG(`/tracks/${id}`,tok); return {results:await bSpEnrich([t],tok)}; }
 async function bSpAlbum(id,tok){ const a=await spG(`/albums/${id}`,tok); const cover=bigSp(a.images); const rows=[]; const idx=new Map();
   for(const tk of (a.tracks&&a.tracks.items)||[]){ const o={tid:tk.id,artist:(tk.artists||[]).map(x=>x.name).join(', '),title:tk.name||'',isrc:'',release:a.name||'',date:a.release_date||'',sources:['spotify'],url:(tk.external_urls&&tk.external_urls.spotify)||'',image:cover}; rows.push(o); if(tk.id) idx.set(tk.id,o); }
-  const tids=[...idx.keys()]; for(let i=0;i<tids.length;i+=50){ try{const d=await spG(`/tracks?ids=${tids.slice(i,i+50).join(',')}`,tok); for(const tk of d.tracks||[]){const o=tk&&idx.get(tk.id); if(o) o.isrc=(tk.external_ids&&tk.external_ids.isrc)||'';}}catch(_){}}
+  const tids=[...idx.keys()]; let bF=false;
+  for(let i=0;i<tids.length&&!bF;i+=50){ try{const d=await spG(`/tracks?ids=${tids.slice(i,i+50).join(',')}`,tok); for(const tk of d.tracks||[]){const o=tk&&idx.get(tk.id); if(o) o.isrc=(tk.external_ids&&tk.external_ids.isrc)||'';}}catch(e){ if((((e&&e.message)||e)+'').indexOf('403')>=0) bF=true; } }
+  if(bF){ for(const tid of tids.slice(0,600)){ const o=idx.get(tid); if(!o) continue; try{const tk=await spG(`/tracks/${tid}`,tok); o.isrc=(tk.external_ids&&tk.external_ids.isrc)||'';}catch(e){ if((((e&&e.message)||e)+'').indexOf('403')>=0) break; } } }
   return {mode:'artist',artist:((a.artists||[]).map(x=>x.name).join(', '))+' — '+(a.name||''),rows,count:rows.length,source:'spotify'}; }
 const bsleep=(ms)=>new Promise(r=>setTimeout(r,ms));
 // esegue fn su tutti gli item con al massimo "conc" chiamate in parallelo (veloce, senza sovraccaricare)
@@ -1236,7 +1238,7 @@ $('cards').addEventListener('click',(e)=>{ const b=e.target.closest('[data-album
   e.preventDefault(); openAlbum(b.dataset.album, b.dataset.atitle, b.dataset.prov||'deezer'); });
 // gestisci l'eventuale ritorno dal login Spotify, poi aggiorna lo stato
 /* >>> VERSIONE: aggiornare questo numero a OGNI deploy <<< */
-const VERSION='V54';
+const VERSION='V55';
 try{ const vb=$('ver-badge'); if(vb) vb.textContent=VERSION; console.log('ISRC Finder', VERSION); }catch(_){}
 spHandleRedirect().then(()=>refreshKeyState()).catch(()=>refreshKeyState());
 if('serviceWorker' in navigator){

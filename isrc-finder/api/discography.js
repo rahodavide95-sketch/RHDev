@@ -13,7 +13,7 @@
 // ============================================================================
 
 export const config = { runtime: 'edge', regions: ['iad1'] };
-const SRV_VERSION = 'V53'; // versione del server (per capire se Vercel ha deployato)
+const SRV_VERSION = 'V55'; // versione del server (per capire se Vercel ha deployato)
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -160,11 +160,20 @@ async function spAlbumById(id, auth) {
       release: a.name || '', date: a.release_date || '', sources: ['spotify'], url: tk.external_urls?.spotify || '', _tid: tk.id };
     rows.push(obj); if (tk.id) trackIndex.set(tk.id, obj);
   }
+  // ISRC: batch /tracks?ids=; se l'app ha restrizioni (403) ripiega su /tracks/{id} singolo.
   const tids = [...trackIndex.keys()];
-  for (let i = 0; i < tids.length; i += 50) {
-    const tr = await fetch(`https://api.spotify.com/v1/tracks?ids=${tids.slice(i, i + 50).join(',')}`, { headers: auth, signal: AbortSignal.timeout(15000) });
-    if (!tr.ok) continue; const td = await tr.json();
-    for (const tk of td.tracks || []) { const o = tk && trackIndex.get(tk.id); if (o) o.isrc = tk.external_ids?.isrc || ''; }
+  let batchForbidden = false;
+  for (let i = 0; i < tids.length && !batchForbidden; i += 50) {
+    const rr = await spJson(`https://api.spotify.com/v1/tracks?ids=${tids.slice(i, i + 50).join(',')}`, auth);
+    if (!rr.ok) { if (String(rr.status) === '403') { batchForbidden = true; break; } continue; }
+    for (const tk of rr.data.tracks || []) { const o = tk && trackIndex.get(tk.id); if (o) o.isrc = tk.external_ids?.isrc || ''; }
+  }
+  if (batchForbidden) {
+    for (const tid of tids.slice(0, 600)) {
+      const rr = await spJson(`https://api.spotify.com/v1/tracks/${tid}`, auth);
+      if (!rr.ok) { if (String(rr.status) === '403') break; continue; }
+      const o = trackIndex.get(tid); if (o) o.isrc = rr.data.external_ids?.isrc || '';
+    }
   }
   rows.forEach((o) => delete o._tid);
   return { rows, artist: (a.artists || []).map((x) => x.name).join(', ') + ' — ' + (a.name || ''), err: null };

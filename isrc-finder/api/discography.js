@@ -13,7 +13,7 @@
 // ============================================================================
 
 export const config = { runtime: 'edge', regions: ['iad1'] };
-const SRV_VERSION = 'V57'; // versione del server (per capire se Vercel ha deployato)
+const SRV_VERSION = 'V59'; // versione del server (per capire se Vercel ha deployato)
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -25,6 +25,12 @@ const MB = 'https://musicbrainz.org/ws/2';
 const json = (o, status = 200) =>
   new Response(JSON.stringify(o), { status, headers: { ...CORS, 'Content-Type': 'application/json' } });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// map con concorrenza limitata (parallelo controllato): molto piu' veloce dei loop sequenziali
+async function pmapSrv(items, fn, conc = 6) {
+  let i = 0; const n = items.length;
+  const worker = async () => { while (i < n) { const k = i++; try { await fn(items[k], k); } catch (_) {} } };
+  await Promise.all(Array.from({ length: Math.min(conc, n) || 1 }, worker));
+}
 const norm = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 const enc = encodeURIComponent;
 const fmtDur = (ms) => { const s = Math.round((ms || 0) / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
@@ -170,11 +176,13 @@ async function spAlbumById(id, auth) {
     for (const tk of rr.data.tracks || []) { const o = tk && trackIndex.get(tk.id); if (o) o.isrc = tk.external_ids?.isrc || ''; }
   }
   if (batchForbidden) {
-    for (const tid of tids.slice(0, 600)) {
+    const DL = Date.now() + 20000;
+    await pmapSrv(tids.slice(0, 800), async (tid) => {
+      if (Date.now() > DL) return;
       const rr = await spJson(`https://api.spotify.com/v1/tracks/${tid}`, auth);
-      if (!rr.ok) { if (String(rr.status) === '403') break; continue; }
+      if (!rr.ok) return;
       const o = trackIndex.get(tid); if (o) o.isrc = rr.data.external_ids?.isrc || '';
-    }
+    }, 6);
   }
   rows.forEach((o) => delete o._tid);
   return { rows, artist: (a.artists || []).map((x) => x.name).join(', ') + ' — ' + (a.name || ''), err: null };
@@ -230,6 +238,9 @@ async function spDiscography(name, artistId, auth) {
   } catch (_) {}
 
   const is403 = (s) => String(s) === '403';
+  // Budget totale: le funzioni edge di Vercel scadono a ~25s (HTTP 504). Restituisco
+  // cio' che ho raccolto prima del limite invece di far scadere il gateway.
+  const DL = Date.now() + 21000; const overDL = () => Date.now() > DL;
   // PROBE: alcune app Spotify rifiutano limit alti ("Invalid limit"). Trovo il massimo accettato.
   let LIM = 0;
   for (const L of [50, 20, 10, 5, 1]) {
@@ -241,6 +252,7 @@ async function spDiscography(name, artistId, auth) {
   for (const ig of ['album,single,compilation,appears_on', 'album,single,compilation', 'album,single', 'album']) {
     albums.length = 0; seen.clear(); albErr = '';
     for (let offset = 0; offset < 1000; offset += LIM) {
+      if (overDL()) break;
       const rr = await spJson(`https://api.spotify.com/v1/artists/${who.id}/albums?include_groups=${ig}&limit=${LIM}&offset=${offset}`, auth);
       if (!rr.ok) { albErr = 'HTTP ' + rr.status + ' su /albums'; break; }
       const items = rr.data.items || [];
@@ -265,25 +277,28 @@ async function spDiscography(name, artistId, auth) {
   // dettagli album: prova in blocco (/albums?ids=); se vietato (403) passa ad album per album
   let batchAlbForbidden = false;
   for (let i = 0; i < ids.length && !batchAlbForbidden; i += 20) {
+    if (overDL()) break;
     const rr = await spJson(`https://api.spotify.com/v1/albums?ids=${ids.slice(i, i + 20).join(',')}`, auth);
     if (!rr.ok) { if (is403(rr.status)) { batchAlbForbidden = true; break; } continue; }
     for (const a of rr.data.albums || []) { const m = meta.get(a.id) || a; for (const tk of (a.tracks?.items || [])) addTrack(tk, m); }
   }
   if (batchAlbForbidden) {
-    for (const m of albums) {
-      if (!m || !m.id) continue;
+    await pmapSrv(albums, async (m) => {
+      if (!m || !m.id || overDL()) return;
       const cap = Math.min(400, Math.max(LIM, m.total_tracks || LIM));
       for (let toff = 0; toff < cap; toff += LIM) {
+        if (overDL()) return;
         const rr = await spJson(`https://api.spotify.com/v1/albums/${m.id}/tracks?limit=${LIM}&offset=${toff}`, auth);
-        if (!rr.ok) break; const its = rr.data.items || [];
+        if (!rr.ok) return; const its = rr.data.items || [];
         for (const tk of its) addTrack(tk, m);
-        if (its.length < LIM) break;
+        if (its.length < LIM) return;
       }
-    }
+    }, 6);
   }
   // FALLBACK ricerca comparse
   try {
     for (let offset = 0; offset < 200 && offset + LIM <= 1000; offset += LIM) {
+      if (overDL()) break;
       const rr = await spJson(`https://api.spotify.com/v1/search?q=${enc('artist:"' + who.name + '"')}&type=track&limit=${LIM}&offset=${offset}`, auth);
       if (!rr.ok) break; const its = rr.data.tracks?.items || [];
       for (const tk of its) {
@@ -306,11 +321,12 @@ async function spDiscography(name, artistId, auth) {
     for (const tk of rr.data.tracks || []) { const o = tk && trackIndex.get(tk.id); if (o) o.isrc = tk.external_ids?.isrc || ''; }
   }
   if (batchTrkForbidden) {
-    for (const tid of tids.slice(0, 600)) {
+    await pmapSrv(tids.slice(0, 800), async (tid) => {
+      if (overDL()) return;
       const rr = await spJson(`https://api.spotify.com/v1/tracks/${tid}`, auth);
-      if (!rr.ok) { if (is403(rr.status)) break; continue; }
+      if (!rr.ok) return;
       const o = trackIndex.get(tid); if (o) o.isrc = rr.data.external_ids?.isrc || '';
-    }
+    }, 6);
   }
   rows.forEach((o) => delete o._tid);
   // Deduplica per ISRC (stessa registrazione uscita in piu' release = 1 riga); le tracce senza ISRC restano tutte.

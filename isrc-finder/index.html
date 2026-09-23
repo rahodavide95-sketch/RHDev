@@ -1054,7 +1054,7 @@ const SRCNAME={deezer:'Deezer',spotify:'Spotify',tidal:'Tidal',mb:'MusicBrainz'}
 const SRCCLS={deezer:'dz',spotify:'sp',tidal:'td',mb:'mb'};
 let COMPARE=false, MERGED=[], CMP_NAMES=[], CMP_TOTAL=1;
 
-function renderArtistResponse(d,note){ if(d && d.compare) showCompare(d,note); else showArtist(d,note); }
+function renderArtistResponse(d,note){ $('res-track').classList.add('hidden'); TRACKS=[]; $('cards').innerHTML=''; if(d && d.compare) showCompare(d,note); else showArtist(d,note); }
 
 /* ---- confronto tra più fonti ---- */
 function mergeSources(sources){
@@ -1183,6 +1183,7 @@ function showTrack(d,note){
         <div class="links">${alb}${link}${audio}</div>
       </div></div>`;
   }).join('');
+  $('res-artist').classList.add('hidden');
   $('res-track').classList.remove('hidden');
   log(TRACKS.length?`${TRACKS.length} risultato/i.`+(note?'  ⚠ '+note:''):'Nessun risultato.'+(note?'  ⚠ '+note:''),false,!TRACKS.length);
 }
@@ -1242,7 +1243,7 @@ $('cards').addEventListener('click',(e)=>{ const b=e.target.closest('[data-album
   e.preventDefault(); openAlbum(b.dataset.album, b.dataset.atitle, b.dataset.prov||'deezer'); });
 // gestisci l'eventuale ritorno dal login Spotify, poi aggiorna lo stato
 /* >>> VERSIONE: aggiornare questo numero a OGNI deploy <<< */
-const VERSION='V57';
+const VERSION='V58';
 try{ const vb=$('ver-badge'); if(vb) vb.textContent=VERSION; console.log('ISRC Finder', VERSION); }catch(_){}
 spHandleRedirect().then(()=>refreshKeyState()).catch(()=>refreshKeyState());
 if('serviceWorker' in navigator){

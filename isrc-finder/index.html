@@ -131,17 +131,23 @@
 
   /* toolbar */
   .toolbar{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:12px}
-  .toolbar #filter{flex:1 1 200px; width:auto} /* filtro a sinistra, occupa lo spazio */
-  .toolbar .ghost{margin-left:0}
+  .toolbar #filter{flex:0 1 300px; width:auto} /* filtro a sinistra */
+  .toolbar #btn-csv{margin-left:auto}          /* export (CSV/JSON/Copia) spinti a DESTRA */
   #res-track .toolbar{justify-content:flex-end} /* solo export: a destra */
   .toolbar input[type=text]{max-width:300px; padding:11px 14px; font-size:14px}
   .hint{color:var(--muted); font-size:12px}
 
-  /* tabella */
+  /* tabella — larghezza colonne AUTOMATICA in base al testo (table-layout:auto) e RIDIMENSIONABILE */
   .tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:var(--radius); background:var(--card); box-shadow:var(--shadow)}
-  table{border-collapse:collapse; width:100%; font-size:14px; min-width:680px}
+  table{border-collapse:collapse; width:100%; font-size:14px; min-width:680px; table-layout:auto}
+  #tbl.fixed{table-layout:fixed}
   th,td{text-align:left; padding:13px 15px; border-bottom:1px solid var(--line); vertical-align:middle}
+  #tbl.fixed td{overflow:hidden; text-overflow:ellipsis}
   thead th{position:sticky; top:0; background:var(--soft); color:var(--muted); font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:.5px; cursor:pointer; white-space:nowrap; user-select:none}
+  #tbl th{position:relative}
+  .colgrip{position:absolute; top:0; right:-4px; width:9px; height:100%; cursor:col-resize; z-index:3; touch-action:none}
+  .colgrip::after{content:""; position:absolute; top:22%; right:4px; width:2px; height:56%; background:var(--line); border-radius:2px}
+  .colgrip:hover::after{background:var(--b1)}
   th:hover{color:var(--ink)} th.sorted{color:var(--accent-ink)}
   th .arr{opacity:.4; font-size:10px; margin-left:2px} th.sorted .arr{opacity:1}
   tbody tr:last-child td{border-bottom:0}
@@ -1179,6 +1185,34 @@ $('btn-copy-isrc').onclick=async()=>{const l=[...new Set(ROWS.map((r)=>(r.isrc||
 $('btn-back-bottom').onclick=backToCatalog;
 $('filter').addEventListener('input',render);
 document.querySelectorAll('#tbl th').forEach((th)=>{th.onclick=()=>{const k=th.dataset.k;if(k==='idx')return;if(sortK===k)sortDir*=-1;else{sortK=k;sortDir=1;}render();};});
+/* ---- colonne ridimensionabili (trascina il bordo; doppio clic per ripristinare) ---- */
+(function colResize(){
+  const tbl=$('tbl'); if(!tbl) return;
+  const KEY='isrcfinder.colw';
+  const load=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'{}');}catch(_){return {};}};
+  const widths=load();
+  const ths=[...tbl.querySelectorAll('thead th')];
+  const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(widths));}catch(_){}};
+  const applyAll=()=>{ let any=false; ths.forEach(th=>{const k=th.dataset.k; if(k&&widths[k]){th.style.width=widths[k]+'px'; any=true;} else th.style.width='';}); tbl.classList.toggle('fixed',any); };
+  applyAll();
+  ths.forEach(th=>{
+    const grip=document.createElement('div'); grip.className='colgrip';
+    grip.addEventListener('click',e=>e.stopPropagation());
+    grip.addEventListener('dblclick',e=>{ e.stopPropagation(); const k=th.dataset.k; if(k){ delete widths[k]; save(); } applyAll(); });
+    grip.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation();
+      const k=th.dataset.k; if(!k) return;
+      // fissa le larghezze correnti di tutte le colonne, poi entra in modalità "fixed"
+      ths.forEach(x=>{ const kk=x.dataset.k; if(kk&&!widths[kk]) widths[kk]=Math.round(x.getBoundingClientRect().width); });
+      tbl.classList.add('fixed'); applyAll();
+      const startX=e.clientX, startW=widths[k]||th.getBoundingClientRect().width;
+      try{ grip.setPointerCapture(e.pointerId); }catch(_){}
+      const move=(ev)=>{ widths[k]=Math.max(60,Math.round(startW+(ev.clientX-startX))); th.style.width=widths[k]+'px'; };
+      const up=()=>{ grip.removeEventListener('pointermove',move); grip.removeEventListener('pointerup',up); save(); };
+      grip.addEventListener('pointermove',move); grip.addEventListener('pointerup',up);
+    });
+    th.appendChild(grip);
+  });
+})();
 document.body.addEventListener('click',async(e)=>{const b=e.target.closest('.copy');if(!b)return;
   try{await navigator.clipboard.writeText(b.dataset.copy);const o=b.textContent;b.textContent='✓';setTimeout(()=>b.textContent=o,1200);}catch(_){}});
 // riga del catalogo → apre la scheda completa della traccia
@@ -1189,7 +1223,7 @@ $('cards').addEventListener('click',(e)=>{ const b=e.target.closest('[data-album
   e.preventDefault(); openAlbum(b.dataset.album, b.dataset.atitle, b.dataset.prov||'deezer'); });
 // gestisci l'eventuale ritorno dal login Spotify, poi aggiorna lo stato
 /* >>> VERSIONE: aggiornare questo numero a OGNI deploy <<< */
-const VERSION='V51';
+const VERSION='V52';
 try{ const vb=$('ver-badge'); if(vb) vb.textContent=VERSION; console.log('ISRC Finder', VERSION); }catch(_){}
 spHandleRedirect().then(()=>refreshKeyState()).catch(()=>refreshKeyState());
 if('serviceWorker' in navigator){

@@ -13,7 +13,7 @@
 // ============================================================================
 
 export const config = { runtime: 'edge', regions: ['iad1'] };
-const SRV_VERSION = 'V55'; // versione del server (per capire se Vercel ha deployato)
+const SRV_VERSION = 'V57'; // versione del server (per capire se Vercel ha deployato)
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -97,6 +97,7 @@ function buildTrack(f, al, artistMap) {
     popularity: (f.popularity ?? ''),
     genres: genres.join(', '),
     markets: (f.available_markets || []).length,
+    albumId: al.id || f.album?.id || '',
     spotifyUrl: f.external_urls?.spotify || '',
     previewUrl: f.preview_url || '',
     image: bigImg(al.images || f.album?.images),

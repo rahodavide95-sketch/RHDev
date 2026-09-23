@@ -13,7 +13,7 @@
 // ============================================================================
 
 export const config = { runtime: 'edge', regions: ['iad1'] };
-const SRV_VERSION = 'V51'; // versione del server (per capire se Vercel ha deployato)
+const SRV_VERSION = 'V53'; // versione del server (per capire se Vercel ha deployato)
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -248,7 +248,7 @@ async function spDiscography(name, artistId, auth) {
     const rel = (m && m.name) || ''; const key = keyOf(tk, rel); if (seenKey.has(key)) return; seenKey.add(key);
     const obj = { artist: (tk.artists || []).map((x) => x.name).join(', '), title: tk.name || '', isrc: '',
       release: rel, date: (m && m.release_date) || '', sources: ['spotify'],
-      url: tk.external_urls?.spotify || '', image: bigImg(m && m.images), tid: tk.id || '', _tid: tk.id };
+      url: tk.external_urls?.spotify || '', image: bigImg(m && m.images), tid: tk.id || '', relId: (m && m.id) || '', _tid: tk.id };
     rows.push(obj); if (tk.id) trackIndex.set(tk.id, obj);
   };
   const ids = albums.map((a) => a.id);
@@ -282,7 +282,7 @@ async function spDiscography(name, artistId, auth) {
         const rel = tk.album?.name || ''; const key = keyOf(tk, rel); if (seenKey.has(key)) continue; seenKey.add(key);
         rows.push({ artist: (tk.artists || []).map((x) => x.name).join(', '), title: tk.name || '', isrc: tk.external_ids?.isrc || '',
           release: rel, date: tk.album?.release_date || '', sources: ['spotify'], url: tk.external_urls?.spotify || '',
-          image: bigImg(tk.album?.images), tid: tk.id || '' });
+          image: bigImg(tk.album?.images), tid: tk.id || '', relId: tk.album?.id || '' });
       }
       if (!rr.data.tracks?.next || its.length < LIM) break;
     }
@@ -427,7 +427,7 @@ async function dzDiscography(name, artistId) {
       if (!credited) continue;
       const key = norm(t.title) + '|' + norm(rel);
       if (seen.has(key)) continue; seen.add(key);
-      picked.push({ id: t.id, artist: t.artist?.name || who.name, title: t.title || '', isrc: t.isrc || '', release: rel, date, image: cover, url: t.link || '' });
+      picked.push({ id: t.id, artist: t.artist?.name || who.name, title: t.title || '', isrc: t.isrc || '', release: rel, date, image: cover, url: t.link || '', relId: al.id || '' });
     }
   }
   const nFromAlbums = picked.length;
@@ -444,7 +444,7 @@ async function dzDiscography(name, artistId) {
   const addPicked = (t, rel) => {
     const key = norm(t.title) + '|' + norm(rel);
     if (seen.has(key)) return; seen.add(key);
-    picked.push({ id: t.id, artist: t.artist?.name || who.name, title: t.title || '', isrc: t.isrc || '', release: rel, date: '', image: t.album?.cover_small || '', url: t.link || '' });
+    picked.push({ id: t.id, artist: t.artist?.name || who.name, title: t.title || '', isrc: t.isrc || '', release: rel, date: '', image: t.album?.cover_small || '', url: t.link || '', relId: t.album?.id || '' });
   };
   const addFromSearch = (t) => {
     const rel = t.album?.title || '';
@@ -491,7 +491,7 @@ async function dzDiscography(name, artistId) {
       } catch (_) {}
     }));
   }
-  const rows = picked.map((p) => ({ artist: p.artist, title: p.title, isrc: p.isrc, release: p.release, date: p.date, sources: ['deezer'], url: p.url, image: p.image, tid: String(p.id || '') }));
+  const rows = picked.map((p) => ({ artist: p.artist, title: p.title, isrc: p.isrc, release: p.release, date: p.date, sources: ['deezer'], url: p.url, image: p.image, tid: String(p.id || ''), relId: p.relId ? String(p.relId) : '' }));
   rows.sort((a, b) => (b.date || '').localeCompare(a.date || '') || (a.title || '').localeCompare(b.title || ''));
   const diag = `[srv ${SRV_VERSION}] Deezer id=${who.id} · album ${albums.length} · da album ${nFromAlbums} · da comparse ${picked.length - nFromAlbums} · totale ${rows.length}`;
   return { rows, artist: who.name, artistInfo, err: null, diag };
@@ -689,6 +689,8 @@ export default async function handler(req) {
     // -------- album (da link diretto) --------
     if (mode === 'album') {
       if (!id) return json({ error: 'missing_id' }, 400);
+      // Onora la fonte richiesta: se la release è di Deezer, aprila da Deezer (keyless) anche se Spotify è attivo.
+      if (prov === 'deezer') { try { const x = await dzAlbumById(id); return json({ mode: 'artist', artist: x.artist, rows: x.rows, count: x.rows.length, source: 'deezer' }); } catch (_) {} }
       if (trySpotify) { const x = await spAlbumById(id, auth); if (!x.err) return json({ mode: 'artist', artist: x.artist, rows: x.rows, count: x.rows.length, source: 'spotify' }); }
       if (useDz) { try { const x = await dzAlbumById(id); return json({ mode: 'artist', artist: x.artist, rows: x.rows, count: x.rows.length, source: 'deezer' }); }
         catch (e) { return json({ mode: 'artist', rows: [], source: 'deezer', note: 'Deezer: ' + String(e?.message || e) }); } }

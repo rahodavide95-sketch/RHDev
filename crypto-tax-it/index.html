@@ -17,13 +17,14 @@
   --good: #1d7a4b; --good-soft: #dff2e8; --warn: #8f5400; --warn-soft: #fdf0d2; --bad: #b3261e; --bad-soft: #fce7e5;
   --font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
-  --radius: 10px;
+  --radius: 10px; --ic-l: 34%;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #0d1319; --surface: #151d26; --surface-2: #1d2833; --ink: #e7eef5; --ink-2: #9db0c2; --line: #2a3745;
     --accent: #7dbde6; --accent-ink: #07202f; --accent-soft: #15303f;
     --good: #52c68b; --good-soft: #12301f; --warn: #e6a844; --warn-soft: #33270f; --bad: #f38b83; --bad-soft: #3a1c1a;
+    --ic-l: 72%;
     color-scheme: dark;
   }
 }
@@ -31,6 +32,7 @@
   --bg: #0d1319; --surface: #151d26; --surface-2: #1d2833; --ink: #e7eef5; --ink-2: #9db0c2; --line: #2a3745;
   --accent: #7dbde6; --accent-ink: #07202f; --accent-soft: #15303f;
   --good: #52c68b; --good-soft: #12301f; --warn: #e6a844; --warn-soft: #33270f; --bad: #f38b83; --bad-soft: #3a1c1a;
+  --ic-l: 72%;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -107,7 +109,30 @@ button.pill { cursor: pointer; }
 .file .name { font-weight: 600; overflow-wrap: anywhere; }
 .file .meta { color: var(--ink-2); font-size: 13px; display: flex; flex-wrap: wrap; gap: 4px 12px; }
 
-/* piattaforme */
+/* piattaforme: elenco con icone, scelta del metodo, finestra "aggiungi altro" */
+.pico { flex: none; display: grid; place-items: center; width: 46px; height: 46px; border-radius: 12px; color: hsl(var(--h) 60% var(--ic-l)); background: color-mix(in srgb, hsl(var(--h) 75% 50%) 15%, var(--surface)); border: 1px solid color-mix(in srgb, hsl(var(--h) 60% 50%) 25%, var(--line)); }
+.pico svg { width: 24px; height: 24px; }
+.pico.sm { width: 36px; height: 36px; border-radius: 10px; }
+.pico.sm svg { width: 20px; height: 20px; }
+ul.plist { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.prow { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px 14px; align-items: center; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.prow.on { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); }
+.prow .ptxt { min-width: 0; display: grid; gap: 4px; }
+.prow .pname { font-weight: 600; }
+.prow .pact { justify-self: end; }
+.opts { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); }
+.opt { appearance: none; text-align: left; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 14px; align-items: start; padding: 16px; background: var(--surface); border: 2px solid var(--line); border-radius: var(--radius); cursor: pointer; color: inherit; }
+.opt:hover:not([disabled]) { border-color: color-mix(in srgb, var(--accent) 50%, var(--line)); }
+.opt.sel { border-color: var(--accent); background: var(--accent-soft); }
+.opt[disabled] { opacity: .6; cursor: not-allowed; }
+.opt .otxt { display: grid; gap: 4px; min-width: 0; }
+.opt .row { grid-column: 2; }
+.modal-back { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: rgb(8 14 20 / .55); }
+.modal { width: min(100%, 460px); display: grid; gap: 14px; padding: 22px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 18px 60px rgb(0 0 0 / .35); }
+.modal .btns { display: grid; gap: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+@media (max-width: 560px) { .prow { grid-template-columns: auto minmax(0, 1fr); } .prow .pact { grid-column: 1 / -1; justify-self: stretch; } .prow .pact .btn { width: 100%; } }
+/* piattaforme (vecchie schede) */
 .plats { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr)); }
 .pcard { align-content: space-between; }
 .pcard.on { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); }
@@ -7394,6 +7419,8 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
 
   const PLATFORMS = {
     cryptocom_app: {
+      hue: 215,
+      icon: ['M8 3h8a1.5 1.5 0 0 1 1.5 1.5v15A1.5 1.5 0 0 1 16 21H8a1.5 1.5 0 0 1-1.5-1.5v-15A1.5 1.5 0 0 1 8 3z', 'M10.5 18h3', 'M12 7.5l2.6 1.5v3L12 13.5 9.4 12V9z'],
       name: 'Crypto.com App',
       blurb: 'Acquisti, scambi, Earn e staking, carta Visa e cashback dell\'app.',
       account: 'Crypto.com App',
@@ -7413,6 +7440,8 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
       api: { status: 'none', text: 'L\'App di Crypto.com non offre un\'API pubblica per scaricare lo storico: l\'unica via è il file.', points: [] },
     },
     cryptocom_exchange: {
+      hue: 262,
+      icon: ['M4 8h14', 'M15 4.5L18.5 8 15 11.5', 'M20 16H6', 'M9 12.5L5.5 16 9 19.5'],
       name: 'Crypto.com Exchange',
       blurb: 'Trading spot, depositi e prelievi sull\'Exchange.',
       account: 'Crypto.com Exchange',
@@ -7436,6 +7465,8 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
       api: API_CONNECTOR('Crypto.com Exchange', 'cryptocom_exchange'),
     },
     bitpanda: {
+      hue: 152,
+      icon: ['M3.5 18.5l2-7.5h13l2 7.5z', 'M9 11l1-3.5h4l1 3.5', 'M8 15h8'],
       name: 'Bitpanda',
       blurb: 'Cripto, oro e altri metalli preziosi. Azioni ed ETF non ancora calcolati.',
       account: 'Bitpanda',
@@ -7454,6 +7485,8 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
       api: API_CONNECTOR('Bitpanda', 'bitpanda'),
     },
     binance: {
+      hue: 40,
+      icon: ['M7 3.5v3', 'M7 17.5v3', 'M5 6.5h4v11H5z', 'M17 2.5v3', 'M17 15.5v4', 'M15 5.5h4v10h-4z'],
       name: 'Binance',
       blurb: 'Spot, convert, Earn e altri prodotti Binance.',
       account: 'Binance',
@@ -7469,6 +7502,8 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
       api: API_CONNECTOR('Binance', 'binance'),
     },
     coinbase: {
+      hue: 196,
+      icon: ['M3 9.5L12 4l9 5.5', 'M5.5 11v7', 'M10 11v7', 'M14 11v7', 'M18.5 11v7', 'M3.5 20.5h17'],
       name: 'Coinbase',
       blurb: 'Acquisti, vendite, convert e rendite su Coinbase.',
       account: 'Coinbase',
@@ -7484,6 +7519,8 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
       api: API_PLANNED('Coinbase'),
     },
     other: {
+      hue: 18,
+      icon: ['M4 7.5A1.5 1.5 0 0 1 5.5 6H17a1.5 1.5 0 0 1 1.5 1.5V9', 'M4 7.5V18a1.5 1.5 0 0 0 1.5 1.5H19a1.5 1.5 0 0 0 1.5-1.5v-8A1.5 1.5 0 0 0 19 8.5H5.5A1.5 1.5 0 0 1 4 7.5z', 'M16 14h2'],
       name: 'Altra piattaforma o wallet personale',
       blurb: 'Qualsiasi altra piattaforma, wallet personali o operazioni che mancano nei file.',
       account: '',
@@ -7581,6 +7618,1220 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
   CT.api.common = { ApiError, hmacHex, sleep, request, redact, NETWORK_MSG };
   CT.ApiError = ApiError;
   if (typeof module !== 'undefined') module.exports = CT.api.common;
+})();
+
+</script>
+<script data-app>
+/* Crypto.com Exchange: collegamento API REST v1 (sola lettura) chiamata direttamente dal browser.
+
+   FONTI (le pagine ufficiali sono state lette tramite il mirror GitHub che le riproduce byte per byte, perche' dal
+   sandbox exchange-developer.crypto.com / exchange-docs.crypto.com non sono raggiungibili):
+   [D0] https://exchange-developer.crypto.com/exchange/v1/docs/api/rest-common-api-reference  (ufficiale)
+   [D1] .../docs/api/rest/private-get-trades                  [D2] .../docs/api/rest/private-get-deposit-history
+   [D3] .../docs/api/rest/private-get-withdrawal-history      [D4] .../docs/api/rest/private-create-withdrawal
+   [D5] .../docs/api/rest/private-get-currency-networks       [D6] .../docs/api/rest/private-staking-get-reward-history
+   [D7] .../docs/api/rest/private-fiat-fiat-deposit-history   [D8] .../docs/api/rest/private-get-transactions
+   [M]  https://github.com/justrhoto/crypto-com-exchange-docs (mirror NON ufficiale, aggiornato ogni notte)
+   [C]  https://github.com/ccxt/ccxt/blob/master/ts/src/cryptocom.ts (libreria open source molto diffusa)
+
+   VERIFICATO sulla fonte
+   - Radice REST di produzione https://api.crypto.com/exchange/v1/{metodo}; richieste POST con Content-Type: application/json [D0].
+   - Corpo: id, method, api_key, params, nonce (ms), sig; "tutti i numeri devono essere stringhe tra virgolette" [D0].
+   - Firma: HMAC-SHA256 esadecimale con il segreto come chiave sul testo  method + id + api_key + stringaParametri + nonce;
+     la stringa dei parametri si ottiene ordinando le chiavi in ordine crescente e concatenando chiave + valore, senza spazi,
+     con ricorsione per oggetti e liste e "null" per i valori nulli [D0, esempi JavaScript e Python]. Conferma in [C] sign().
+     La documentazione NON pubblica un vettore con l'hash atteso: i test usano vettori calcolati con l'algoritmo ufficiale.
+   - Risposta: code 0 = successo; i codici 40101/40103/40104 (401), 40102 (nonce oltre 60 secondi), 42901 (429) [D0].
+     Il codice di errore compare nel corpo e coincide con lo stato HTTP: qui si gestisce comunque anche code != 0 con HTTP 200.
+   - Limiti: private/get-trades 1 richiesta al secondo; "tutti gli altri" 3 richieste ogni 100 ms, per metodo e per chiave [D0].
+   - private/get-trades [D1]: start_time (incluso) / end_time (escluso) in ms o ns, "nanosecondi consigliati per una paginazione
+     accurata"; limit predefinito e massimo 100; senza start_time si legge solo 1 giorno; campi traded_quantity, traded_price,
+     fees ("segno negativo = addebito sul saldo, al netto dei crediti commissione"), fee_instrument_name, trade_id, side,
+     instrument_name, create_time, create_time_ns, transact_time_ns, isolation_id/isolation_type (margine isolato).
+     L'ordine delle righe NON e' dichiarato.
+   - private/get-deposit-history e private/get-withdrawal-history [D2, D3]: start_ts/end_ts in ms (predefinito: ultimi 90 giorni),
+     page (da 0) e page_size (predefinito 20, massimo 200), campi id, currency, amount, fee, create_time, update_time, status
+     (deposito: 0 non arrivato, 1 arrivato, 2 fallito, 3 in attesa; prelievo: 0 in attesa, 1 in elaborazione, 2 rifiutato,
+     3 pagamento in corso, 4 pagamento fallito, 5 completato, 6 annullato), txid, address, network_id.
+   - private/staking/get-reward-history [D6]: "Min: end_time - 180 giorni": per lo staking la profondita' e' limitata.
+   - private/fiat/fiat-deposit-history [D7]: la risposta 200 NON e' descritta nella documentazione (quindi non si scarica).
+   - private/get-transactions [D8] elenca journal_type come AUTO_CONVERSION, MANUAL_CONVERSION, ADJUSTMENT, SUBACCOUNT_TX: private/get-trades
+     dichiara solo journal_type TRADING, quindi conversioni, rettifiche e sottoconti NON sono in questo elenco (non scaricati).
+
+   ASSUNTO (non confermato da una fonte ufficiale: dichiarato anche negli avvisi)
+   - Finestra massima di 24 ore per private/get-trades: [C] scrive "maximum date range is one day" e la documentazione indica
+     solo "predefinito: end_time - 1 giorno". Si usano finestre di 23h59m59s: se il limite non esiste si e' solo piu' lenti.
+   - Finestra massima di 90 giorni per i depositi e i prelievi: [C] scrive "90 days date range", [D2/D3] "predefinito 90 giorni".
+     Si usano finestre di 89 giorni con 1 ora di sovrapposizione (i doppioni si eliminano con l'id).
+   - Profondita' dello storico offerta dalla piattaforma: NON dichiarata. Si parte da una data di inizio (predefinita
+     01/10/2019, prima dell'apertura in beta di novembre 2019 riportata da fonti di stampa non verificabili da qui).
+   - Prelievi: la documentazione NON dice se "amount" comprende gia' la commissione di rete. Predefinito: la comprende
+     (indizio: in [D5] min_withdrawal_amount e' sempre il doppio di withdrawal_fee); l'opzione "feeIncluded" = no la aggiunge.
+   - Depositi: se fee != 0 non e' documentato se amount sia lordo o netto: la riga diventa "non riconosciuta" (mai ipotesi).
+   - Il campo su cui i depositi/prelievi (create_time o update_time) e le operazioni (create_time_ns o transact_time_ns) vengono
+     filtrati per tempo non e' dichiarato: la scansione per finestre sovrapposte e la divisione delle pagine piene
+     prendono i confini in modo prudente su tutti i campi.
+   - I numeri possono arrivare come numeri JSON invece che come stringhe (esempi di [C]): si accettano solo se esatti
+     (al massimo 15 cifre significative), altrimenti errore 'format'.
+   - Il margine su coppie spot non e' distinguibile in private/get-trades (solo l'isolato ha isolation_id).
+
+   UNITA': le quantita' sono quelle della piattaforma (cripto: unita' dell'asset). Nessun metallo prezioso su questo conto. */
+(function () {
+  'use strict';
+  const CT = (globalThis.CT = globalThis.CT || {});
+  CT.api = CT.api || {};
+  const { D, FIAT, Kind, mkEvent } = CT;
+
+  const ID = 'cryptocom_exchange';
+  const PLATFORM = 'cryptocom_exchange';
+  const LABEL = 'Crypto.com Exchange';
+  const ROOT = 'https://api.crypto.com/exchange/v1/';
+  const common = () => CT.api.common;
+  const ApiError = (...a) => new (CT.api.common.ApiError)(...a);
+
+  // ---------------------------------------------------------------- costanti
+  const DAY = 86400000;
+  const NS = 1000000n;                       // ns per ms
+  const FLOOR = '2019-10-01';                // data di inizio predefinita (vedi ASSUNTO)
+  const HARD_FLOOR = '2018-01-01';
+  const TRADE_LIMIT = 100;                   // massimo documentato di righe per richiesta
+  const TRADE_WINDOW_MS = DAY - 1000;        // sotto il massimo (assunto) di 24 ore
+  const TRADE_OVERLAP_MS = 1000;
+  const TRADE_STEP_MS = TRADE_WINDOW_MS - TRADE_OVERLAP_MS;
+  const TRADE_PACE_MS = 1050;                // limite documentato: 1 richiesta al secondo
+  const TRADE_TOL_NS = 1000000000n;          // tolleranza (1 s) sul controllo "riga dentro la finestra"
+  const TRADE_MAX_REQ_PER_WINDOW = 200;
+  const WALLET_WINDOW_MS = 89 * DAY;         // sotto il massimo (assunto) di 90 giorni
+  const WALLET_OVERLAP_MS = 3600000;
+  const WALLET_PAGE = 200;                   // massimo documentato di page_size
+  const WALLET_PACE_MS = 150;                // limite documentato: 3 richieste ogni 100 ms
+  const WALLET_MAX_PAGES = 500;
+  const NONCE_TOL_MS = 60000;
+  const NET_RETRIES = 4;                     // errori di rete dopo almeno una risposta riuscita: si riprova (2, 4, 8, 16 s)
+
+  const DEPOSIT_STATUS_OK = '1';
+  const DEPOSIT_STATUS_IGNORED = { 0: 'non ancora arrivato', 2: 'fallito', 3: 'in attesa' };
+  const WITHDRAWAL_STATUS_OK = '5';
+  const WITHDRAWAL_STATUS_IGNORED = { 2: 'rifiutato', 4: 'pagamento fallito', 6: 'annullato' };
+  const WITHDRAWAL_STATUS_PENDING = { 0: 'in attesa', 1: 'in elaborazione', 3: 'pagamento in corso' };
+
+  const K_TRADES = 'private/get-trades';
+  const K_DEPOSITS = 'private/get-deposit-history';
+  const K_WITHDRAWALS = 'private/get-withdrawal-history';
+
+  // ---------------------------------------------------------------- firma
+  /** Stringa dei parametri come nell'esempio JavaScript ufficiale: chiavi ordinate, chiave + valore, ricorsione, null -> "null". */
+  function paramsToString(obj) {
+    const isObj = (o) => o !== undefined && o !== null && o.constructor === Object;
+    const isArr = (o) => Array.isArray(o);
+    const arr = (a) => a.reduce((s, b) => s + (isObj(b) ? objStr(b) : (isArr(b) ? arr(b) : String(b))), '');
+    function objStr(o) {
+      return Object.keys(o).sort().reduce((s, k) => s + k + (isArr(o[k]) ? arr(o[k]) : (isObj(o[k]) ? objStr(o[k]) : String(o[k]))), '');
+    }
+    return obj === undefined || obj === null ? '' : objStr(obj);
+  }
+
+  /** Aggiunge `sig` a {id, method, api_key, params, nonce}. */
+  async function signRequest(req, secret) {
+    const payload = req.method + req.id + req.api_key + paramsToString(req.params) + req.nonce;
+    return Object.assign({}, req, { sig: await common().hmacHex(secret, payload) });
+  }
+
+  // ---------------------------------------------------------------- lettura sicura dei campi
+  const DEC_RE = /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/;
+  /** Decimale esatto come stringa, oppure null. I numeri JSON si accettano solo se hanno al massimo 15 cifre significative. */
+  function decStr(v) {
+    if (typeof v === 'string') { const t = v.trim(); return DEC_RE.test(t) ? t : null; }
+    if (typeof v === 'number') return Number.isFinite(v) && Number(v.toPrecision(15)) === v ? String(v) : null;
+    return null;
+  }
+  function idStr(v) {
+    if (typeof v === 'string') { const t = v.trim(); return /^[A-Za-z0-9_.:-]{1,64}$/.test(t) ? t : null; }
+    if (typeof v === 'number' && Number.isSafeInteger(v) && v >= 0) return String(v);
+    return null;
+  }
+  /** Millisecondi Unix (13 cifre) oppure null. */
+  function msVal(v) {
+    if (typeof v === 'string' && /^\d{13}$/.test(v.trim())) return Number(v.trim());
+    if (typeof v === 'number' && Number.isSafeInteger(v) && v >= 1e12 && v < 1e13) return v;
+    return null;
+  }
+  /** Nanosecondi Unix (19 cifre, solo come stringa: un numero JSON perderebbe precisione) oppure null. */
+  function nsVal(v) { return typeof v === 'string' && /^\d{19}$/.test(v.trim()) ? BigInt(v.trim()) : null; }
+  const isObject = (o) => o !== null && typeof o === 'object' && !Array.isArray(o);
+  const upper = (s) => String(s).trim().toUpperCase();
+  const isoDay = (ms) => new Date(ms).toISOString().slice(0, 10);
+  const cmpBig = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+  const cmpId = (a, b) => (/^\d+$/.test(a) && /^\d+$/.test(b) ? cmpBig(BigInt(a), BigInt(b)) : (a < b ? -1 : a > b ? 1 : 0));
+
+  // ---------------------------------------------------------------- forma delle righe
+  /** Analizza una riga di private/get-trades. problems = cio' che manca o non e' interpretabile. */
+  function tradeInfo(r) {
+    const p = [];
+    if (!isObject(r)) return { problems: ['la riga non e\' un oggetto'] };
+    const id = idStr(r.trade_id); if (!id) p.push('trade_id');
+    const inst = typeof r.instrument_name === 'string' ? r.instrument_name.trim() : ''; if (!inst) p.push('instrument_name');
+    const side = typeof r.side === 'string' ? r.side.trim().toUpperCase() : ''; if (side !== 'BUY' && side !== 'SELL') p.push('side');
+    const qty = decStr(r.traded_quantity); if (qty === null) p.push('traded_quantity');
+    const price = decStr(r.traded_price); if (price === null) p.push('traded_price');
+    const fees = decStr(r.fees); if (fees === null) p.push('fees');
+    const c = nsVal(r.create_time_ns), ms = msVal(r.create_time), t = nsVal(r.transact_time_ns);
+    const k = c !== null ? c : (ms !== null ? BigInt(ms) * NS : null);
+    if (k === null) p.push('create_time_ns/create_time');
+    const m = ms !== null ? BigInt(ms) * NS : (k !== null ? (k / NS) * NS : null);
+    const times = [k, m, t].filter((x) => x !== null);
+    const min = times.length ? times.reduce((a, b) => (a < b ? a : b)) : null, max = times.length ? times.reduce((a, b) => (a > b ? a : b)) : null;
+    return { problems: p, id, inst, side, qty, price, fees, keyNs: k, k, m, t, minNs: min, maxNs: max };
+  }
+
+  /** Analizza una riga di deposito o prelievo. */
+  function walletInfo(r) {
+    const p = [];
+    if (!isObject(r)) return { problems: ['la riga non e\' un oggetto'] };
+    const id = idStr(r.id); if (!id) p.push('id');
+    const cur = typeof r.currency === 'string' ? upper(r.currency) : ''; if (!cur) p.push('currency');
+    const amount = decStr(r.amount); if (amount === null) p.push('amount');
+    let fee = null;
+    if (r.fee !== undefined && r.fee !== null) { fee = decStr(r.fee); if (fee === null) p.push('fee'); }
+    const status = typeof r.status === 'string' || typeof r.status === 'number' ? String(r.status).trim() : ''; if (!/^\d+$/.test(status)) p.push('status');
+    const ms = msVal(r.create_time); if (ms === null) p.push('create_time');
+    return { problems: p, id, cur, amount, fee, status, ms };
+  }
+
+  const formatErr = (method, what, detail) => ApiError('format', `La risposta della piattaforma (${method}) non ha la forma documentata: ${what}.`, Object.assign({ method }, detail || {}));
+
+  // ---------------------------------------------------------------- chiamate
+  const AUTH_HELP = ' Se le chiavi sono giuste, la chiave potrebbe non poter leggere depositi e prelievi: NON abilitare il permesso di prelievo, usa invece il file di depositi e prelievi.';
+  const isWalletMethod = (m) => m === K_DEPOSITS || m === K_WITHDRAWALS;
+
+  /** Messaggi chiari per i codici documentati [D0]. */
+  function codeError(code, message, method, secrets) {
+    const detail = { method, platformCode: code };
+    if (code === 40102) return ApiError('config', 'L\'orologio del computer non è allineato: la piattaforma accetta uno scarto massimo di 60 secondi. Sincronizza data e ora del computer e riprova.', detail);
+    if (code === 40103) return ApiError('auth', 'Questa chiave è limitata ad alcuni indirizzi IP e quello da cui stai usando la pagina non è tra quelli. Aggiungi il tuo indirizzo IP alla chiave oppure togli la limitazione.', detail);
+    if (code === 40104) return ApiError('auth', 'La piattaforma non permette l\'accesso API con il livello del tuo account.', detail);
+    if (code === 40101) return ApiError('auth', 'La piattaforma ha rifiutato le chiavi: controlla che siano corrette, attive e abilitate alla lettura.' + (isWalletMethod(method) ? AUTH_HELP : ''), detail);
+    if (code === 42901) return ApiError('rate', 'Troppe richieste: la piattaforma ha limitato l\'accesso. Riprova tra qualche minuto.', detail);
+    const msg = common().redact(String(message === undefined || message === null ? '' : message), secrets).slice(0, 120);
+    return ApiError('http', `La piattaforma ha risposto con un errore (codice ${code}${msg ? ': ' + msg : ''}).`, detail);
+  }
+
+  /** Dal corpo (gia' ripulito dalle chiavi) di una risposta HTTP non riuscita, il codice della piattaforma. */
+  function platformCodeOf(bodyText) {
+    const m = /"code"\s*:\s*"?(-?\d+)"?/.exec(String(bodyText || ''));
+    return m ? Number(m[1]) : null;
+  }
+
+  function makeCaller(o) {
+    let seq = 0;
+    return async function call(method, params) {
+      const id = String(++seq);
+      const url = ROOT + method;
+      const secrets = [o.apiKey, o.apiSecret];
+      // la firma si rifa ad ogni tentativo: dopo le attese per i limiti il nonce vecchio supererebbe i 60 secondi
+      const signed = async () => {
+        let body;
+        try {
+          const nonce = String(o.now().getTime());
+          body = JSON.stringify(await signRequest({ id, method, api_key: o.apiKey, params, nonce }, o.apiSecret));
+        } catch (e) {
+          throw ApiError('config', 'Il browser non permette di calcolare la firma (serve una pagina in contesto sicuro, https o file locale).', { method });
+        }
+        return o.fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, credentials: 'omit' });
+      };
+      let json;
+      for (let attempt = 0; ; attempt++) {
+        try {
+          json = await common().request(signed, url, {}, { sleep: o.sleep, secrets });
+          o.reached = true;
+          break;
+        } catch (e) {
+          if (!(e instanceof CT.api.common.ApiError)) throw e;
+          // un'interruzione di rete a meta' di uno scaricamento lungo non deve far perdere tutto: si riprova.
+          // Se la piattaforma non e' mai stata raggiunta (rete assente, collegamento bloccato dal browser) ci si ferma subito.
+          if (e.code === 'network' && o.reached && attempt < NET_RETRIES) { await o.sleep(2000 * 2 ** attempt); continue; }
+          const pc = platformCodeOf(e.detail && e.detail.body);
+          if (pc === 40102 || pc === 40103 || pc === 40104) throw codeError(pc, '', method, secrets);
+          if (e.code === 'auth' && isWalletMethod(method)) throw ApiError('auth', e.message + AUTH_HELP, Object.assign({ method }, e.detail));
+          e.detail = Object.assign({ method }, e.detail);
+          throw e;
+        }
+      }
+      if (!isObject(json)) throw formatErr(method, 'la risposta non è un oggetto');
+      const code = typeof json.code === 'string' && /^-?\d+$/.test(json.code.trim()) ? Number(json.code.trim()) : json.code;
+      if (!Number.isInteger(code)) throw formatErr(method, 'manca il campo code');
+      if (code !== 0) throw codeError(code, json.message, method, secrets);
+      if (json.method !== undefined && json.method !== method) throw formatErr(method, 'la risposta riguarda un altro metodo');
+      if (!isObject(json.result)) throw formatErr(method, 'manca il campo result');
+      return json.result;
+    };
+  }
+
+  /** Attesa tra richieste dello stesso tipo (limiti per metodo): conta anche il tempo gia' trascorso. */
+  function makePacer(ms, now, sleep, signal) {
+    let last = null;
+    return async () => {
+      if (signal && signal.aborted) throw ApiError('incomplete', 'Scaricamento interrotto: i dati ricevuti finora non sono stati salvati.');
+      if (last !== null) { const w = ms - (now().getTime() - last); if (w > 0) await sleep(w); }
+      last = now().getTime();
+    };
+  }
+
+  // ---------------------------------------------------------------- scansione
+  /** Operazioni spot: finestre di meno di 24 ore; una pagina piena (100 righe) si divide senza presumere l'ordine. */
+  async function scanTrades(call, startMs, endMs, ctx) {
+    const rows = new Map();
+    const total = Math.max(1, Math.ceil((endMs - startMs) / TRADE_STEP_MS));
+    let k = 0;
+
+    async function scanWindow(sNs, eNs) {
+      const stack = [[sNs, eNs]];
+      let requests = 0;
+      while (stack.length) {
+        const [s, e] = stack.pop();
+        if (++requests > TRADE_MAX_REQ_PER_WINDOW) { ctx.problems.push(`Operazioni del ${isoDay(Number(sNs / NS))}: troppe richieste per esaurire il giorno.`); return; }
+        await ctx.pace();
+        const result = await call(K_TRADES, { start_time: String(s), end_time: String(e), limit: TRADE_LIMIT });
+        if (!Array.isArray(result.data)) throw formatErr(K_TRADES, 'data non è un elenco');
+        if (result.data.length > TRADE_LIMIT) throw formatErr(K_TRADES, `la pagina contiene più di ${TRADE_LIMIT} righe`);
+        const infos = result.data.map((r) => {
+          const i = tradeInfo(r);
+          if (i.problems.length) throw formatErr(K_TRADES, `operazione senza ${i.problems.join(', ')}`);
+          if (i.minNs < s - TRADE_TOL_NS || i.maxNs >= e + TRADE_TOL_NS) throw formatErr(K_TRADES, 'operazione fuori dall\'intervallo richiesto');
+          return i;
+        });
+        result.data.forEach((r, n) => { const id = infos[n].id; if (!rows.has(id)) rows.set(id, r); });
+        if (infos.length < TRADE_LIMIT) continue;
+        // pagina piena: potrebbero mancare righe da un lato o dall'altro (l'ordine non e' dichiarato) e il campo
+        // su cui la piattaforma filtra per tempo non e' dichiarato: i confini si prendono prudenzialmente su tutti i campi
+        const keys = infos.map((i) => i.k);
+        const nonInc = keys.every((x, n) => n === 0 || x <= keys[n - 1]);
+        const nonDec = keys.every((x, n) => n === 0 || x >= keys[n - 1]);
+        const fields = infos.every((i) => i.t !== null) ? ['k', 'm', 't'] : ['k', 'm'];
+        const mins = fields.map((f) => infos.reduce((a, i) => (i[f] < a ? i[f] : a), infos[0][f]));
+        const maxs = fields.map((f) => infos.reduce((a, i) => (i[f] > a ? i[f] : a), infos[0][f]));
+        const lo = mins.reduce((a, b) => (a > b ? a : b));      // le righe mancanti piu' vecchie hanno tempo <= lo
+        const hi = maxs.reduce((a, b) => (a < b ? a : b));      // le righe mancanti piu' nuove hanno tempo >= hi
+        const day = isoDay(Number(lo / NS));
+        if (!nonInc && !nonDec) { ctx.problems.push(`Operazioni del ${day}: la piattaforma le restituisce in un ordine non interpretabile, non posso garantire di averle tutte.`); continue; }
+        if (lo >= hi) { ctx.problems.push(`Operazioni del ${day}: più di ${TRADE_LIMIT} operazioni nello stesso istante, non posso scaricarle tutte con certezza.`); continue; }
+        if (lo + 1n >= e || hi <= s) { ctx.problems.push(`Operazioni del ${day}: pagina piena che non si riesce a dividere, non posso garantire di averle tutte.`); continue; }
+        stack.push([hi, e]);          // se la pagina e' la piu' vecchia: restano le piu' nuove
+        stack.push([s, lo + 1n]);     // se la pagina e' la piu' nuova: restano le piu' vecchie
+      }
+    }
+
+    for (let s = startMs; s < endMs; s += TRADE_STEP_MS) {
+      const e = Math.min(s + TRADE_WINDOW_MS, endMs);
+      k++;
+      ctx.say(`Operazioni di trading: giorno ${k} di ${total} (${isoDay(s)}), ${rows.size} trovate…`);
+      await scanWindow(BigInt(s) * NS, BigInt(e) * NS);
+      if (e >= endMs) break;
+    }
+    return rows;
+  }
+
+  /** Depositi o prelievi: finestre di 89 giorni sovrapposte, pagine da 200 fino alla prima pagina non piena. */
+  async function scanWallet(call, method, listKey, label, startMs, endMs, ctx) {
+    const rows = new Map();
+    const total = Math.max(1, Math.ceil((endMs - startMs) / (WALLET_WINDOW_MS - WALLET_OVERLAP_MS)));
+    let k = 0;
+    let s = startMs;
+    for (;;) {
+      const e = Math.min(s + WALLET_WINDOW_MS, endMs);
+      k++;
+      ctx.say(`${label}: periodo ${k} di ${total} (dal ${isoDay(s)}), ${rows.size} trovati…`);
+      for (let page = 0; ; page++) {
+        await ctx.pace();
+        const result = await call(method, { start_ts: String(s), end_ts: String(e), page_size: String(WALLET_PAGE), page: String(page) });
+        const list = result[listKey];
+        if (!Array.isArray(list)) throw formatErr(method, `${listKey} non è un elenco`);
+        if (list.length > WALLET_PAGE) throw formatErr(method, `la pagina contiene più di ${WALLET_PAGE} righe`);
+        let fresh = 0;
+        for (const r of list) {
+          const i = walletInfo(r);
+          if (i.problems.length) throw formatErr(method, `riga senza ${i.problems.join(', ')}`);
+          if (i.ms > e + NONCE_TOL_MS) throw formatErr(method, 'riga oltre la fine dell\'intervallo richiesto');
+          if (!rows.has(i.id)) { rows.set(i.id, r); fresh++; }
+        }
+        if (list.length < WALLET_PAGE) break;
+        if (fresh === 0) { ctx.problems.push(`${label} del periodo dal ${isoDay(s)}: la paginazione non avanza, non posso garantire di averli tutti.`); break; }
+        if (page + 1 >= WALLET_MAX_PAGES) { ctx.problems.push(`${label} del periodo dal ${isoDay(s)}: troppe pagine, non posso garantire di averli tutti.`); break; }
+      }
+      if (e >= endMs) break;
+      s = e - WALLET_OVERLAP_MS;
+    }
+    return rows;
+  }
+
+  // ---------------------------------------------------------------- opzioni
+  function readOptions(options, nowDate) {
+    const o = options || {};
+    const startDate = String(o.startDate === undefined || o.startDate === null ? '' : o.startDate).trim() || FLOOR;
+    const ms = /^\d{4}-\d{2}-\d{2}$/.test(startDate) ? Date.parse(startDate + 'T00:00:00Z') : NaN;
+    if (!Number.isFinite(ms) || isoDay(ms) !== startDate) throw ApiError('config', 'La data di inizio non è valida: scrivila come AAAA-MM-GG (per esempio 2020-03-15).');
+    if (ms < Date.parse(HARD_FLOOR + 'T00:00:00Z')) throw ApiError('config', `La data di inizio è troppo lontana: usa una data dal ${HARD_FLOOR} in poi.`);
+    if (ms >= nowDate.getTime()) throw ApiError('config', 'La data di inizio è nel futuro: indica la data da cui vuoi scaricare lo storico.');
+    const f = String(o.feeIncluded === undefined || o.feeIncluded === null ? '' : o.feeIncluded).trim().toLowerCase();
+    let feeIncluded = true;
+    if (f === '' || ['si', 'sì', 's', 'yes', 'true'].includes(f)) feeIncluded = true;
+    else if (['no', 'n', 'false'].includes(f)) feeIncluded = false;
+    else throw ApiError('config', 'L\'opzione sulla commissione dei prelievi accetta solo «si» oppure «no».');
+    return { startDate, startMs: ms, feeIncluded };
+  }
+
+  // ---------------------------------------------------------------- sincronizzazione
+  async function sync(creds, opts) {
+    opts = opts || {};
+    const fetchImpl = opts.fetch || globalThis.fetch;
+    if (typeof fetchImpl !== 'function') throw ApiError('config', 'Questo browser non permette di collegarsi alla piattaforma.');
+    const sleep = opts.sleep || common().sleep;
+    const now = opts.now || (() => new Date());
+    const say = typeof opts.onProgress === 'function' ? opts.onProgress : () => {};
+    const apiKey = String((creds && creds.apiKey) || '').trim();
+    const apiSecret = String((creds && creds.apiSecret) || '').trim();
+    if (!apiKey || !apiSecret) throw ApiError('config', 'Inserisci sia la chiave API sia la chiave segreta.');
+    const t0 = now();
+    const settings = readOptions(opts.options, t0);
+    const endMs = t0.getTime();
+    const call = makeCaller({ apiKey, apiSecret, fetch: fetchImpl, now, sleep });
+    const wctx = { problems: [], say, pace: makePacer(WALLET_PACE_MS, now, sleep, opts.signal) };
+    const tctx = { problems: [], say, pace: makePacer(TRADE_PACE_MS, now, sleep, opts.signal) };
+
+    // prima i depositi e i prelievi (veloci): un problema di permessi emerge subito, non dopo ore di operazioni
+    const dep = await scanWallet(call, K_DEPOSITS, 'deposit_list', 'Depositi', settings.startMs, endMs, wctx);
+    const wdr = await scanWallet(call, K_WITHDRAWALS, 'withdrawal_list', 'Prelievi', settings.startMs, endMs, wctx);
+    const trd = await scanTrades(call, settings.startMs, endMs, tctx);
+    say('Scaricamento terminato: preparo il riepilogo…');
+
+    const trades = [...trd.values()].sort((a, b) => cmpBig(tradeInfo(a).keyNs, tradeInfo(b).keyNs) || cmpId(idStr(a.trade_id), idStr(b.trade_id)));
+    const byTime = (a, b) => (msVal(a.create_time) - msVal(b.create_time)) || cmpId(idStr(a.id), idStr(b.id));
+    const deposits = [...dep.values()].sort(byTime);
+    const withdrawals = [...wdr.values()].sort(byTime);
+
+    const raw = {
+      version: 1,
+      fetchedAt: t0.toISOString(),
+      settings: { startDate: settings.startDate, feeIncluded: settings.feeIncluded },
+      [K_TRADES]: trades,
+      [K_DEPOSITS]: deposits,
+      [K_WITHDRAWALS]: withdrawals,
+    };
+
+    const fromIso = new Date(settings.startMs).toISOString(), toIso = t0.toISOString();
+    const startOk = settings.startDate <= FLOOR;
+    const first = (rows, f) => (rows.length ? isoDay(f(rows[0])) : null), last = (rows, f) => (rows.length ? isoDay(f(rows[rows.length - 1])) : null);
+    const tradeMs = (r) => Number(tradeInfo(r).keyNs / NS), walMs = (r) => msVal(r.create_time);
+    const range = (rows, f) => (rows.length ? ` Prima: ${first(rows, f)}, ultima: ${last(rows, f)}.` : ' Nessun dato nel periodo.');
+    const lateStart = `Hai scelto di partire dal ${settings.startDate}: ciò che è precedente non è stato scaricato.`;
+    const note = (problems, extra) => [startOk ? '' : lateStart, ...problems, extra].filter(Boolean).join(' ');
+    const DEPTH = 'La piattaforma non dichiara quanto indietro arriva lo storico via API: se il conto è più vecchio della prima data scaricata, integra con il file.';
+
+    const coverage = [
+      { what: 'Operazioni di trading spot', count: trades.length, from: fromIso, to: toIso, complete: startOk && !tctx.problems.length, note: note(tctx.problems, DEPTH + range(trades, tradeMs)) },
+      { what: 'Depositi di criptovalute', count: deposits.length, from: fromIso, to: toIso, complete: startOk && !wctx.problems.filter((p) => p.startsWith('Depositi')).length, note: note(wctx.problems.filter((p) => p.startsWith('Depositi')), DEPTH + range(deposits, walMs)) },
+      { what: 'Prelievi di criptovalute', count: withdrawals.length, from: fromIso, to: toIso, complete: startOk && !wctx.problems.filter((p) => p.startsWith('Prelievi')).length, note: note(wctx.problems.filter((p) => p.startsWith('Prelievi')), DEPTH + range(withdrawals, walMs)) },
+      { what: 'Margine e derivati (futures, perpetui)', count: 0, from: null, to: null, complete: false, note: 'Non scaricati. Se li hai usati, integra con il file dell\'Exchange: senza, plusvalenze e minusvalenze possono essere sbagliate.' },
+      { what: 'Staking, interessi e premi', count: 0, from: null, to: null, complete: false, note: 'Non scaricati (per lo staking la piattaforma permette di leggere solo gli ultimi 180 giorni). Premi e interessi possono avere effetto fiscale: se ne hai ricevuti, integra con il file.' },
+      { what: 'Conversioni, airdrop, rettifiche e sottoconti', count: 0, from: null, to: null, complete: false, note: 'Non scaricati: la piattaforma li registra in un altro elenco, non documentato in modo sufficiente per questo programma. Se hai usato conversioni, airdrop o sottoconti, integra con il file.' },
+      { what: 'Depositi e prelievi in valuta (fiat)', count: 0, from: null, to: null, complete: false, note: 'Non scaricati: il formato della risposta non è descritto nella documentazione. Non hanno effetto fiscale diretto, ma servono a verificare i saldi.' },
+    ];
+
+    const warnings = [];
+    if (!startOk) warnings.push(lateStart);
+    for (const p of [...wctx.problems, ...tctx.problems]) warnings.push(p);
+    const nonSpot = trades.filter((r) => { const i = tradeInfo(r); return !/^[A-Z0-9]+_[A-Z0-9]+$/.test(i.inst) || (r.isolation_id && String(r.isolation_id) !== '0') || r.isolation_type; }).length;
+    if (nonSpot) warnings.push(`${nonSpot} operazioni riguardano derivati o margine isolato: verranno segnalate come «non riconosciute» e vanno integrate dal file.`);
+    const pend = (rows, table) => rows.filter((r) => String(r.status) in table).length;
+    const pendDep = pend(deposits, DEPOSIT_STATUS_IGNORED), pendWdr = pend(withdrawals, WITHDRAWAL_STATUS_PENDING);
+    if (pendDep) warnings.push(`${pendDep} depositi non risultano arrivati (in attesa, non arrivati o falliti): non sono conteggiati. Se arrivano dopo, scarica di nuovo lo storico.`);
+    if (pendWdr) warnings.push(`${pendWdr} prelievi non sono ancora completati: verranno segnalati come «non riconosciuti» finché non sono conclusi. Poi scarica di nuovo lo storico.`);
+    warnings.push(settings.feeIncluded
+      ? 'Prelievi: la documentazione non dice se l\'importo comprende già la commissione di rete. Ho assunto di sì (l\'importo è ciò che esce dal conto). Se nell\'Exchange il saldo scende di importo + commissione, ripeti con l\'opzione «commissione già compresa» = no.'
+      : 'Prelievi: la documentazione non dice se l\'importo comprende già la commissione di rete. Per tua scelta la commissione è stata aggiunta all\'importo (esce importo + commissione).');
+    warnings.push('Su private/get-trades le operazioni a margine su coppie spot non sono distinguibili dalle altre: se hai usato il margine verrebbero trattate come operazioni spot normali.');
+    warnings.push('Il valore in euro di ogni operazione è calcolato come quantità × prezzo nella valuta della coppia; le commissioni sono quelle addebitate (già al netto degli eventuali crediti commissione).');
+    warnings.push('Controlla i saldi finali (scheda Dettaglio, Giacenze) e confrontali con quelli dell\'Exchange.');
+    return { raw, coverage, warnings };
+  }
+
+  // ---------------------------------------------------------------- conversione in eventi
+  function accountName() {
+    const p = CT.PLATFORMS && CT.PLATFORMS[PLATFORM];
+    return (p && p.account) || LABEL;
+  }
+
+  /** Puro e deterministico: nessuna rete. `raw` e' l'oggetto prodotto da sync (o il suo JSON come testo). */
+  function parse(raw, fileName) {
+    const imp = CT.importers;
+    let data = raw;
+    if (typeof data === 'string') { try { data = JSON.parse(data); } catch (e) { throw ApiError('format', 'I dati scaricati dall\'API non sono leggibili (JSON non valido).'); } }
+    if (!isObject(data) || data.version !== 1) throw ApiError('format', 'I dati scaricati dall\'API hanno una versione non supportata.');
+    const list = (k) => { const v = data[k]; if (v === undefined || v === null) return []; if (!Array.isArray(v)) throw ApiError('format', `I dati scaricati dall'API non sono nel formato atteso (${k}).`); return v; };
+    const settings = isObject(data.settings) ? data.settings : {};
+    const feeIncluded = settings.feeIncluded !== false;
+    const account = accountName();
+    const where = fileName || 'API Crypto.com Exchange';
+    const events = [];
+    const orphan = imp.uidFactory(`api:${ID}:senza-id`);
+    let rows = 0;
+
+    // ---- operazioni spot
+    const seenT = new Set();
+    for (const r of list(K_TRADES)) {
+      const i = tradeInfo(r);
+      const id = i.id || null;
+      if (id && seenT.has(id)) continue;
+      if (id) seenT.add(id);
+      rows++;
+      const uid = id ? `api:${ID}:trade:${id}` : orphan(isObject(r) ? r : { v: String(r) });
+      const ts = i.keyNs === null || i.keyNs === undefined ? null : new Date(Number(i.keyNs / NS));
+      const base = { uid, ts, account, ref: id || '', src: `${where} · operazione ${id || '?'}`, raw: r };
+      const bad = (key, note) => imp.unresolved(base, `Crypto.com Exchange (API) · ${key}`, note);
+      if (i.problems.length) { events.push(bad('operazione non interpretabile', `Operazione senza ${i.problems.join(', ')}: non interpretabile.`)); continue; }
+      if (r.journal_type !== undefined && r.journal_type !== null && String(r.journal_type).toUpperCase() !== 'TRADING') { events.push(bad('operazione non di trading', `Movimento di tipo "${r.journal_type}" in private/get-trades: non gestito.`)); continue; }
+      if ((r.isolation_id && String(r.isolation_id) !== '0') || r.isolation_type) { events.push(bad('margine isolato', `Operazione a margine isolato su ${i.inst}: non supportata.`)); continue; }
+      if (!/^[A-Z0-9]+_[A-Z0-9]+$/.test(i.inst)) { events.push(bad('strumento non spot', `Operazione su ${i.inst} (derivati o strumento non spot): non supportata.`)); continue; }
+      const [baseA, quote] = imp.splitPair(i.inst);
+      const qty = D(i.qty), price = D(i.price);
+      if (FIAT.has(baseA)) { events.push(bad('coppia con valuta base', `Coppia ${i.inst} con valuta come asset principale: non interpretabile.`)); continue; }
+      if (qty.lte(0) || price.lte(0)) { events.push(bad('operazione non valida', `Quantità o prezzo non positivi (${i.side} ${i.qty} @ ${i.price} su ${i.inst}).`)); continue; }
+      const feeAmt = D(i.fees);
+      const feeAsset = typeof r.fee_instrument_name === 'string' ? upper(r.fee_instrument_name) : '';
+      if (feeAmt.gt(0)) { events.push(bad('commissione positiva', `Commissione positiva (${i.fees}): sarebbe un accredito, non un costo. Serve una decisione.`)); continue; }
+      if (feeAmt.lt(0) && !feeAsset) { events.push(bad('commissione senza valuta', 'Commissione senza valuta.')); continue; }
+      const feeP = feeAmt.lt(0) ? { feeAsset, feeQty: feeAmt.abs() } : {};
+      let credits = '';
+      const fc = decStr(r.fee_credits);
+      if (fc !== null && !D(fc).isZero()) credits = ` Crediti commissione usati: ${D(fc).abs().toFixed()} (la commissione registrata è già al netto).`;
+      const note = `${i.side === 'BUY' ? 'Acquisto' : 'Vendita'} ${i.inst} sull'Exchange (ordine ${r.order_id === undefined ? 'n.d.' : r.order_id}).${credits}`;
+      const quoteAmt = qty.times(price);
+      let ev;
+      if (i.side === 'BUY') {
+        ev = FIAT.has(quote)
+          ? mkEvent({ ...base, ...feeP, note, kind: Kind.BUY, asset: baseA, qty, value: quoteAmt, valueCcy: quote })
+          : mkEvent({ ...base, ...feeP, note, kind: Kind.SWAP, asset: quote, qty: quoteAmt, counterAsset: baseA, counterQty: qty });
+      } else {
+        ev = FIAT.has(quote)
+          ? mkEvent({ ...base, ...feeP, note, kind: Kind.SELL, asset: baseA, qty, value: quoteAmt, valueCcy: quote })
+          : mkEvent({ ...base, ...feeP, note, kind: Kind.SWAP, asset: baseA, qty, counterAsset: quote, counterQty: quoteAmt });
+      }
+      events.push(ev);
+    }
+
+    // ---- depositi e prelievi
+    const transfers = (key, isDeposit) => {
+      const seen = new Set();
+      for (const r of list(key)) {
+        const i = walletInfo(r);
+        const id = i.id || null;
+        if (id && seen.has(id)) continue;
+        if (id) seen.add(id);
+        rows++;
+        const tag = isDeposit ? 'deposito' : 'prelievo';
+        const uid = id ? `api:${ID}:${tag}:${id}` : orphan(isObject(r) ? r : { v: String(r) });
+        const txid = isObject(r) && typeof r.txid === 'string' && r.txid.trim() ? r.txid.trim() : '';
+        const base = { uid, ts: i.ms ? new Date(i.ms) : null, account, asset: i.cur || '', ref: txid || id || '', src: `${where} · ${tag} ${id || '?'}`, raw: r };
+        const bad = (k, n) => imp.unresolved(base, `Crypto.com Exchange (API) · ${k}`, n);
+        if (i.problems.length) { events.push(bad(`${tag} non interpretabile`, `${isDeposit ? 'Deposito' : 'Prelievo'} senza ${i.problems.join(', ')}: non interpretabile.`)); continue; }
+        const amount = D(i.amount);
+        if (amount.lte(0)) { events.push(bad(`${tag} con importo non valido`, `Importo non positivo (${i.amount} ${i.cur}).`)); continue; }
+        const fiat = FIAT.has(i.cur);
+        if (isDeposit) {
+          if (i.status === DEPOSIT_STATUS_OK) {
+            if (i.fee === null || !D(i.fee).isZero()) { events.push(bad('deposito con commissione', `Deposito di ${i.amount} ${i.cur} con commissione ${i.fee === null ? 'non indicata' : i.fee}: non è documentato se l'importo sia lordo o netto. Serve una decisione.`)); continue; }
+            events.push(mkEvent({ ...base, kind: fiat ? Kind.FIAT_IN : Kind.TRANSFER_IN, qty: amount, note: `Deposito sull'Exchange (rete ${isObject(r) && r.network_id ? r.network_id : 'n.d.'}).` }));
+          } else if (i.status in DEPOSIT_STATUS_IGNORED) {
+            events.push(mkEvent({ ...base, kind: Kind.INFO, note: `Deposito ${DEPOSIT_STATUS_IGNORED[i.status]} (stato ${i.status}): non conteggiato.` }));
+          } else events.push(bad(`stato deposito "${i.status}"`, `Stato di deposito non riconosciuto: "${i.status}" (${i.amount} ${i.cur}).`));
+        } else if (i.status === WITHDRAWAL_STATUS_OK) {
+          let qty = amount;
+          if (!feeIncluded) {
+            if (i.fee === null) { events.push(bad('prelievo senza commissione', `Prelievo di ${i.amount} ${i.cur} senza commissione indicata: non posso calcolare quanto è uscito.`)); continue; }
+            qty = amount.plus(D(i.fee).abs());
+          }
+          const feeTxt = i.fee === null ? 'non indicata' : i.fee;
+          events.push(mkEvent({ ...base, kind: fiat ? Kind.FIAT_OUT : Kind.TRANSFER_OUT, qty, note: `Prelievo dall'Exchange: importo ${i.amount} ${i.cur}, commissione ${feeTxt} (${feeIncluded ? 'già compresa nell\'importo' : 'aggiunta all\'importo'}).` }));
+        } else if (i.status in WITHDRAWAL_STATUS_IGNORED) {
+          events.push(mkEvent({ ...base, kind: Kind.INFO, note: `Prelievo ${WITHDRAWAL_STATUS_IGNORED[i.status]} (stato ${i.status}): non conteggiato.` }));
+        } else if (i.status in WITHDRAWAL_STATUS_PENDING) {
+          events.push(bad('prelievo non concluso', `Prelievo di ${i.amount} ${i.cur} non ancora concluso (${WITHDRAWAL_STATUS_PENDING[i.status]}): scarica di nuovo lo storico a prelievo concluso, oppure ignoralo se non è andato a buon fine.`));
+        } else events.push(bad(`stato prelievo "${i.status}"`, `Stato di prelievo non riconosciuto: "${i.status}" (${i.amount} ${i.cur}).`));
+      }
+    };
+    transfers(K_DEPOSITS, true);
+    transfers(K_WITHDRAWALS, false);
+
+    return imp.finish(`${LABEL} (API)`, rows, events);
+  }
+
+  CT.api.cryptocom_exchange = {
+    id: ID,
+    label: LABEL,
+    platform: PLATFORM,
+    fields: [
+      { key: 'apiKey', label: 'Chiave API (API Key)', secret: false, placeholder: 'Incolla qui la API Key' },
+      { key: 'apiSecret', label: 'Chiave segreta (Secret Key)', secret: true, placeholder: 'Incolla qui la Secret Key' },
+    ],
+    options: [
+      { key: 'startDate', label: 'Scarica a partire dal (AAAA-MM-GG)', placeholder: FLOOR, default: FLOOR,
+        help: 'La piattaforma ammette una richiesta al secondo e, per prudenza, il programma legge un giorno di operazioni per volta: partire da ottobre 2019 richiede circa 45 minuti. Se sai da quando usi l\'Exchange puoi indicare una data più recente per far prima, ma ciò che è precedente non viene scaricato (e andrà integrato con il file).' },
+      { key: 'feeIncluded', label: 'Prelievi: la commissione è già compresa nell\'importo? (si/no)', placeholder: 'si', default: 'si',
+        help: 'La documentazione non lo chiarisce. «si»: l\'importo di un prelievo è ciò che esce dal conto. «no»: esce importo + commissione. Se non sei sicuro lascia «si» e confronta un prelievo con il saldo dell\'Exchange.' },
+    ],
+    help: [
+      'Accedi a Crypto.com Exchange dal sito e apri User Center (Centro utente) → API.',
+      'Crea una nuova chiave API. La chiave nasce in sola lettura («Can Read»): lasciala così e NON attivare mai il permesso di trading né quello di prelievo.',
+      'Facoltativo: puoi limitare la chiave a certi indirizzi IP. In quel caso inserisci l\'indirizzo IP da cui stai usando questa pagina, altrimenti la piattaforma rifiuta le richieste.',
+      'Copia la Chiave API e la Chiave segreta (Secret Key) e incollale nei campi qui sotto.',
+      'Premi «Collega e scarica lo storico» e lascia questa scheda aperta e in primo piano: il primo scaricamento può durare a lungo (circa un secondo per ogni giorno di storico), perché la piattaforma ammette una richiesta al secondo.',
+      'A scaricamento finito elimina la chiave dall\'Exchange.',
+    ],
+    limits: [
+      'Margine, futures e perpetui non vengono scaricati. Le operazioni a margine su coppie spot non sono distinguibili e sarebbero trattate come spot.',
+      'Staking, interessi, premi, airdrop, conversioni, rettifiche e sottoconti non vengono scaricati (per lo staking la piattaforma permette di leggere solo gli ultimi 180 giorni): integra con il file dell\'Exchange.',
+      'Depositi e prelievi in valuta (euro, dollari…) non vengono scaricati: la loro risposta non è documentata.',
+      'Dei depositi e dei prelievi in cripto si usano solo quelli conclusi. I depositi con commissione e i prelievi non ancora conclusi vengono segnalati come righe da controllare.',
+      'La piattaforma non dichiara quanto indietro arriva lo storico via API: se il conto è molto vecchio confronta la prima data scaricata con la tua prima operazione.',
+      'I trasferimenti da e verso l\'App Crypto.com compaiono se la piattaforma li riporta tra i depositi e i prelievi: servono per abbinarli all\'App.',
+      'Se il browser blocca il collegamento diretto alla piattaforma (succede spesso) usa i file.',
+    ],
+    sync,
+    parse,
+    signRequest,
+    paramsToString,
+  };
+  if (typeof module !== 'undefined') module.exports = CT.api.cryptocom_exchange;
+})();
+
+</script>
+<script data-app>
+/* Collegamento API Bitpanda (sola lettura): scarica lo storico delle operazioni e lo converte in eventi.
+
+   ======================================================================================================
+   STATO DELLA VERIFICA (leggere prima di fidarsi dei dati)
+   ======================================================================================================
+   Il sito della documentazione ufficiale (docs.public.bitpanda.com, developers.bitpanda.com) NON e' raggiungibile
+   dal sandbox di sviluppo. La struttura delle risposte di /operations si basa percio' su:
+     - repository ufficiale Bitpanda (README e OpenAPI): autenticazione, URL, endpoint, paginazione;
+     - una estensione open source di terzi provata su risposte REALI (settembre-ottobre 2026): forma di /operations.
+   Il collegamento NON e' stato provato da noi con un conto reale. Per questo ogni dubbio viene trasformato in un
+   blocco visibile (evento UNRESOLVED, errore 'format', coverage.complete = false) e MAI in un'ipotesi silenziosa.
+
+   FONTI
+   [F1] https://github.com/bitpanda-labs/bitpanda-public-api  (ufficiale: README.md, docs/openapi.yaml, docs/mcp-tools.md)
+   [F2] https://github.com/bitpanda-labs/bitpanda-public-api/issues/6  (ufficiale, discussione)
+   [F3] https://docs.public.bitpanda.com/api-key-generation  (ufficiale; NON raggiungibile: letto solo tramite un
+        riassunto di un motore di ricerca)
+   [F4] https://docs.public.bitpanda.com/migrating-from-the-legacy-api  (ufficiale; NON raggiungibile: idem)
+   [F5] https://github.com/navimike/MoneyMoney-Bitpanda-PublicAPI  (NON ufficiale, licenza MIT, versione 2.03 del
+        2026-10-04: codice e test provati su risposte reali dell'API pubblica; usato solo come riferimento sui fatti,
+        nessun codice copiato)
+   [F6] https://github.com/matteoantoci/mcp-bitpanda, file docs/bitpanda-api.md  (copia della documentazione ufficiale
+        dell'API "legacy" https://developers.bitpanda.com/platform, usata solo per oro/metalli e commissioni)
+   [F7] https://github.com/bitpanda-labs/agent-skills, skills/bitpanda/references/api_reference.md  (ufficiale: tipi
+        di asset "cryptocoin", "metal", "stock", "commodity", "etf")
+
+   ELENCO DEI FATTI  (V = verificato sulla fonte citata; O = osservato da terzi su dati reali [F5]; A = ASSUNTO)
+   URL base https://api.public.bitpanda.com/v1 ................ V [F1] (server di produzione) e [F2] (le risorse stanno
+                                                                  sotto /v1; i percorsi senza /v1 danno 404)
+   Intestazione di autenticazione "x-api-key" ................. V [F1] (README e securityScheme dell'OpenAPI)
+   Dove si crea la chiave ..................................... V [F1] app.bitpanda.com/my-account/apikey, scheda "Bitpanda"
+   Permessi della chiave ...................................... V [F3 via riassunto]: Trade (Read), Trade (Write), Balances,
+                                                                  Transaction, Earn (Read), Earn (Write). "Transaction" =
+                                                                  storico di depositi, prelievi e scambi; "Trade (Read)" =
+                                                                  asset, valute e prezzi. Qui servono SOLO questi due.
+   Le API "legacy" (trades, wallets/transactions,
+   fiatwallets/transactions, assets/transactions/commodity)
+   sono sostituite da un unico GET /v1/operations ............. V [F4 via riassunto]
+   Paginazione a cursore: parametri "cursor" e "page_size" .... O [F5] (l'OpenAPI ufficiale [F1] scrive "pageSize" in camelCase,
+                                                                  ma l'API risponde e accetta snake_case: si accettano
+                                                                  entrambe le grafie nelle RISPOSTE; nelle richieste
+                                                                  si usa quella osservata)
+   page_size massimo 100 ...................................... V [F1] docs/mcp-tools.md (1-100, predefinito 25) e O [F5]
+   Risposta: { data:[...], has_next_page, next_cursor } ....... O [F5]
+   Anomalie dell'API: l'ultima pagina riporta ancora un
+   next_cursor con has_next_page=false; un cursore sconosciuto
+   fa ripartire dalla pagina 1 (nessun errore) ................ O [F5] -> si usa SOLO has_next_page e si riconosce il riavvio
+   Filtro "from" su /operations ............................... esiste in [F1]; il confronto con credited_at NON e' noto.
+                                                                  NON viene usato: si legge tutto lo storico senza finestre.
+   Forma dell'operazione { operation_id, operation_type,
+   transactions:[ ... ] } ..................................... O [F5]. ATTENZIONE: lo schema "Operation" dell'OpenAPI ufficiale
+                                                                  [F1] ({id,type,assetId,amount,timestamp}) e' DIVERSO e non
+                                                                  contiene importi in euro ne' commissioni: non e' usabile per
+                                                                  il calcolo delle tasse. Si segue [F5].
+   Movimento (transactions[i]): transaction_id,
+   transaction_type, flow = INCOMING|OUTGOING, currency_id
+   (movimento in valuta) oppure asset_id (movimento in asset),
+   index_asset_id, asset_amount = { value:"..." }, credited_at
+   (ISO 8601, UTC), asset_balance_after = { value }, wallet_id . O [F5]
+   Importi come STRINGHE decimali ............................. O [F5]. Un importo non stringa o non numerico rende
+                                                                  l'operazione "non riconosciuta" (mai arrotondamenti float).
+   Tipi di operazione visti: deposit, withdrawal, buy, sell,
+   savings_plan, "*_reserve" (prenotazione fondi per ordini
+   di borsa); tipi di movimento: buy, sell, deposit, withdrawal,
+   transfer, fee, tax, dividend, reward, interest ............. O [F5]. Ogni altro tipo -> UNRESOLVED.
+   Deposito annullato: asset_balance_after = -1 ............... O [F5] (un solo osservatore) -> solo per deposit/withdrawal
+                                                                  interamente negativi, altrimenti UNRESOLVED
+   Catalogo asset: GET /assets?id=<uuid> -> { data:[{ id, name,
+   symbol, isin, type, group }] } ............................. V [F1] (filtro "id" uuid singolo) e O [F5] (forma). Si
+                                                                  chiede un asset per volta (solo il caso documentato).
+   Valori di type/group: cryptocoin/coin|token; commodity/metal;
+   index/index; equity_security|security / stock|etf|etc|
+   equity_stock|equity_etf|...|fiat_earn ...................... O [F5]; tipi "cryptocoin", "metal", "stock", "etf" anche in [F7]
+   Valute: GET /currencies -> { data:[{ id, symbol }] } ....... V [F1] (endpoint) e O [F5] (forma)
+   ORO: asset con type commodity e group metal, simbolo XAU ... V [F6] (wallet "Gold Wallet", cryptocoin_symbol "XAU",
+                                                                  gruppo commodity>metal) e O [F5]. Nel CSV e' "Asset class = Metal".
+   Unita' dell'oro = GRAMMI ................................... A (dedotta da [F6]: 24,7636 unita' per 1000 EUR a 40,38 EUR
+                                                                  nel luglio 2019 = prezzo dell'oro al grammo; non dichiarata).
+                                                                  Si usa XAU come nel file CSV; l'unita' resta quella di Bitpanda.
+   Importo fiat di buy/sell = totale pagato/incassato ......... A. Come nel CSV (Amount Fiat) il valore e' preso cosi' com'e'.
+   Commissioni come movimenti "fee" separati ................... A: se presenti, si SOMMANO al costo (acquisto) o si
+                                                                  sottraggono dall'incasso (vendita) perche' il saldo del conto
+                                                                  scende anche di quelle ([F5] riconcilia i saldi cosi').
+                                                                  Se l'importo fiat gia' le includesse, il costo sarebbe
+                                                                  sovrastimato: per questo viene sempre emesso un avviso.
+   Storico completo dall'apertura del conto senza "from" ....... A. Si VERIFICA dopo lo scarico con la continuita' dei saldi
+                                                                  (asset_balance_after, O [F5]): senza esito positivo
+                                                                  coverage.complete = false.
+   Limiti di frequenza ........................................ non documentati: si rispettano 429/Retry-After (common.js)
+   CORS dal browser ........................................... non verificato: un blocco appare come errore 'network'
+
+   COSA NON VIENE SCARICATO / CALCOLATO (dichiarato in coverage e limits)
+   - Azioni, ETF, ETC, Cash Plus: scaricati ma ignorati dal motore (assetHint "Stock"/"ETF"/"ETC"/"Cash Plus").
+   - Earn, staking, interessi, premi, dividendi: non interpretati -> UNRESOLVED.
+   - Indici cripto (Bitpanda Crypto Index), token a leva, scambi tra cripto (swap), tipi sconosciuti: UNRESOLVED.
+   - Bitpanda Pro / Exchange (One Trading), carta e altri conti: prodotti separati, non inclusi.
+
+   SICUREZZA: la chiave viaggia solo nell'intestazione x-api-key (mai nell'URL), e' passata a common.request come segreto da
+   oscurare e non compare in raw, errori, avvisi. Si consiglia una chiave con SOLI i permessi di lettura indicati.
+   ====================================================================================================== */
+(function () {
+  'use strict';
+  const CT = (globalThis.CT = globalThis.CT || {});
+  CT.api = CT.api || {};
+  const C = CT.api.common;
+  if (!C) throw new Error('Bitpanda: caricare prima api/common.js');
+  const { D, Kind, mkEvent, METAL_ALIASES } = CT;
+  const I = CT.importers;
+  const { ApiError } = C;
+
+  const ID = 'bitpanda';
+  const BASE_URL = 'https://api.public.bitpanda.com/v1';
+  const PAGE_SIZE = 100;          // massimo accettato dall'API (V [F1] mcp-tools.md, O [F5])
+  const MAX_PAGES = 2000;         // 200.000 operazioni: oltre, la sincronizzazione si ferma invece di girare all'infinito
+  const UID_PREFIX = 'api:bitpanda:';
+  const METALS = new Set(['XAU', 'XAG', 'XPT', 'XPD']);
+  const COV = {
+    ops: 'Operazioni (acquisti, vendite, depositi, prelievi)',
+    stock: 'Azioni, ETF, ETC e Cash Plus',
+    earn: 'Earn, staking, interessi e premi',
+    index: 'Indici cripto e token a leva',
+    other: 'Bitpanda Pro / Exchange, carta e altri conti',
+  };
+
+  // ---------------------------------------------------------------- utilita'
+  const isObj = (x) => x !== null && typeof x === 'object' && !Array.isArray(x);
+  const nonEmpty = (x) => typeof x === 'string' && x.trim() !== '';
+  const low = (x) => (typeof x === 'string' ? x.trim().toLowerCase() : '');
+  const show = (x) => String(x === undefined ? '(assente)' : typeof x === 'string' ? x : JSON.stringify(x)).slice(0, 40);
+  const short = (id) => String(id).slice(0, 8);
+  const pickKey = (o, a, b) => (o[a] !== undefined ? o[a] : o[b]);
+  const accountName = () => (CT.PLATFORMS && CT.PLATFORMS.bitpanda && CT.PLATFORMS.bitpanda.account) || 'Bitpanda';
+
+  /** JSON con chiavi in ordine: serve a confrontare due copie dello stesso record. */
+  function stable(x) {
+    if (Array.isArray(x)) return '[' + x.map(stable).join(',') + ']';
+    if (isObj(x)) return '{' + Object.keys(x).sort().map((k) => JSON.stringify(k) + ':' + stable(x[k])).join(',') + '}';
+    return JSON.stringify(x);
+  }
+
+  /** Importo decimale da { value: "0.5" } (o stringa nuda). Solo stringhe: un numero JS ha gia' perso precisione. */
+  function amountOf(m) {
+    const v = isObj(m) ? m.value : m;
+    if (typeof v !== 'string') return null;
+    const s = v.trim();
+    if (!/^[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/i.test(s)) return null;
+    return D(s);
+  }
+
+  function tsOf(s) {
+    if (typeof s !== 'string') return null;
+    try { const d = I.parseTs(s); return Number.isNaN(d.getTime()) ? null : d; } catch (e) { return null; }
+  }
+
+  // ---------------------------------------------------------------- classificazione degli asset
+  /** { cls: 'crypto'|'metal'|'other'|'index'|'unknown', label?: nome per l'utente / assetHint dei non calcolati } */
+  function classOfAsset(a) {
+    const t = low(a.type), g = low(a.group);
+    const word = (s, w) => new RegExp('(^|_)' + w + '($|_)').test(s);
+    if (g === 'fiat_earn' || g.includes('cash')) return { cls: 'other', label: 'Cash Plus' };
+    if (t === 'index' || g === 'index') return { cls: 'index' };
+    if (t === 'metal' || g === 'metal') return { cls: 'metal' };
+    if (t === 'cryptocoin' || t === 'crypto') return g === '' || g === 'coin' || g === 'token' ? { cls: 'crypto' } : { cls: 'unknown' };
+    if (word(g, 'etf') || t === 'etf') return { cls: 'other', label: 'ETF' };
+    if (word(g, 'etc') || t === 'etc') return { cls: 'other', label: 'ETC' };
+    if (word(g, 'stock') || t === 'stock') return { cls: 'other', label: 'Stock' };
+    return { cls: 'unknown' };
+  }
+
+  /** Dati utili di un asset: { cls, sym, hint, label } oppure { err }. */
+  function assetInfo(env, id) {
+    const a = env.assets.get(id);
+    if (!a) return { err: `asset sconosciuto (${short(id)}…): non compare tra i dati scaricati da Bitpanda` };
+    const c = classOfAsset(a);
+    const raw = typeof a.symbol === 'string' ? a.symbol.trim().toUpperCase() : '';
+    const where = `${show(a.type)}/${show(a.group)}`;
+    if (c.cls === 'metal') {
+      const sym = METAL_ALIASES[raw] || raw;
+      if (!METALS.has(sym)) return { err: `metallo non riconosciuto (simbolo "${show(a.symbol)}", ${where})` };
+      return { cls: 'metal', sym, hint: 'Metal', label: 'metallo prezioso' };
+    }
+    if (c.cls === 'crypto') {
+      if (!raw) return { err: `criptovaluta senza simbolo (${where})` };
+      return { cls: 'crypto', sym: raw, hint: 'Cryptocurrency', label: 'criptovaluta' };
+    }
+    if (c.cls === 'other') {
+      const sym = (typeof a.isin === 'string' && a.isin.trim() ? a.isin.trim() : raw).toUpperCase();   // l'ISIN non puo' scontrarsi con un simbolo cripto
+      if (!sym) return { err: `strumento senza simbolo né ISIN (${where})` };
+      return { cls: 'other', sym, hint: c.label, label: c.label };
+    }
+    return { cls: c.cls, sym: raw, hint: null, label: `${where}` };
+  }
+
+  // ---------------------------------------------------------------- lettura dei movimenti
+  /** Un movimento (gamba) di un'operazione, validato. { leg } oppure { why } con il motivo in italiano. */
+  function readLeg(tx, index, opId) {
+    if (!isObj(tx)) return { why: 'movimento non valido (non è un oggetto)' };
+    const txType = low(tx.transaction_type);
+    if (!txType) return { why: 'movimento senza tipo (transaction_type)' };
+    const flow = typeof tx.flow === 'string' ? tx.flow.trim().toUpperCase() : '';
+    if (flow !== 'INCOMING' && flow !== 'OUTGOING') return { why: `direzione non riconosciuta (flow = "${show(tx.flow)}")` };
+    const hasCur = nonEmpty(tx.currency_id), hasAsset = nonEmpty(tx.asset_id);
+    if (hasCur === hasAsset) return { why: 'il movimento deve riferirsi a una valuta (currency_id) oppure a un asset (asset_id), non a entrambi o a nessuno' };
+    const amount = amountOf(tx.asset_amount);
+    if (amount === null) return { why: 'importo mancante o non numerico (asset_amount.value deve essere una stringa decimale)' };
+    if (amount.isNegative()) return { why: 'importo negativo (la direzione è data da flow)' };
+    if (isObj(tx.asset_amount)) {
+      const a = tx.asset_amount;
+      if ((hasCur && nonEmpty(a.currency_id) && a.currency_id !== tx.currency_id) || (hasAsset && nonEmpty(a.asset_id) && a.asset_id !== tx.asset_id)) {
+        return { why: "la valuta o l'asset dell'importo non coincidono con quelli del movimento" };
+      }
+    }
+    const after = tx.asset_balance_after === undefined ? null : amountOf(tx.asset_balance_after);
+    return {
+      leg: {
+        id: nonEmpty(tx.transaction_id) ? tx.transaction_id : `${opId}:${index}`,
+        txType, flow, fiat: hasCur, refId: hasCur ? tx.currency_id : tx.asset_id,
+        indexId: nonEmpty(tx.index_asset_id) ? tx.index_asset_id : '',
+        amount, after, ts: tsOf(tx.credited_at), wallet: nonEmpty(tx.wallet_id) ? tx.wallet_id : '',
+        sym: '', asset: null,
+      },
+    };
+  }
+
+  const EARN_TYPES = /^(reward|interest|dividend|staking)/;
+  const isEarnLike = (opType, legs) => /staking|earn|reward|interest|dividend/.test(opType) || legs.some((l) => EARN_TYPES.test(l.txType));
+
+  // ---------------------------------------------------------------- operazione -> eventi
+  /** Converte UNA operazione in eventi. Tutto cio' che non e' un caso noto e certo diventa UNRESOLVED. */
+  function convertOperation(op, env) {
+    const opId = op.operation_id;
+    const opType = low(op.operation_type);
+    const uid = UID_PREFIX + opId;
+    const parsed = op.transactions.map((tx, i) => readLeg(tx, i, opId));
+    const bad = parsed.find((p) => p.why);
+    const legs = parsed.filter((p) => p.leg).map((p) => p.leg);
+    const stamps = legs.map((l) => l.ts).filter(Boolean).sort((a, b) => a - b);
+    const base = { account: env.account, ts: stamps.length ? stamps[0] : null, ref: opId, src: `${env.src}:${opId}`, raw: op };
+    const U = (key, note) => { env.stats.unresolved++; return [I.unresolved({ ...base, uid }, `Bitpanda API · ${key}`, `Operazione ${opId} (${opType || 'tipo mancante'}): ${note}`)]; };
+    const INFO = (note) => [mkEvent({ ...base, uid, kind: Kind.INFO, note })];
+    const typeKey = `tipo "${opType}"`;
+
+    if (!opType) return U('operazione senza tipo', 'manca operation_type.');
+    if (bad) return U('movimento in formato inatteso', `${bad.why}.`);
+    if (!legs.length) return U(`${typeKey} senza movimenti`, 'non contiene nessun movimento.');
+    if (/_reserve$/.test(opType)) return INFO('Prenotazione di fondi per un ordine: nessun effetto fiscale (l\'esecuzione è un\'altra operazione).');
+
+    const voided = legs.filter((l) => l.after && l.after.isNegative());
+    if (voided.length === legs.length && (opType === 'deposit' || opType === 'withdrawal')) {
+      env.stats.voided++;
+      return INFO('Operazione annullata (saldo dopo l\'operazione negativo): nessun effetto.');
+    }
+    if (voided.length) return U(`${typeKey} con saldo negativo`, 'ha movimenti con saldo finale negativo che non so interpretare.');
+
+    // risolve valute e asset
+    if (legs.some((l) => l.indexId)) { env.stats.index++; return U('indice cripto (Bitpanda Crypto Index)', 'riguarda un indice cripto: serve una decisione, non viene calcolato in automatico.'); }
+    for (const l of legs) {
+      if (l.fiat) {
+        const sym = env.currencies.get(l.refId);
+        if (!sym) return U('valuta sconosciuta', `valuta non presente nell'elenco di Bitpanda (${short(l.refId)}…).`);
+        l.sym = sym;
+      } else {
+        const info = assetInfo(env, l.refId);
+        if (info.err) return U('asset sconosciuto o non gestito', `${info.err}.`);
+        l.asset = info; l.sym = info.sym;
+      }
+    }
+    const assetLegs = legs.filter((l) => !l.fiat);
+    if (assetLegs.some((l) => l.asset.cls === 'index')) { env.stats.index++; return U('indice cripto (Bitpanda Crypto Index)', 'riguarda un indice cripto: serve una decisione, non viene calcolato in automatico.'); }
+    const unknown = assetLegs.find((l) => l.asset.cls === 'unknown');
+    if (unknown) { env.stats.index++; return U(`asset di tipo non gestito (${unknown.asset.label})`, `lo strumento ${unknown.sym || short(unknown.refId)} è di un tipo che non so trattare (${unknown.asset.label}).`); }
+    const computed = assetLegs.filter((l) => l.asset.cls === 'crypto' || l.asset.cls === 'metal');
+    const others = assetLegs.filter((l) => l.asset.cls === 'other');
+    if (computed.length && others.length) return U(`${typeKey} con strumenti di tipo diverso`, 'mescola criptovalute/metalli con azioni o ETF.');
+
+    // azioni, ETF, ETC, Cash Plus: non calcolati dall'app (il motore li ignora con un avviso)
+    if (others.length) {
+      env.stats.stock++;
+      const trades = others.filter((l) => l.txType === 'buy' || l.txType === 'sell');
+      if (trades.length === 1 && (trades[0].ts || base.ts) && trades[0].flow === (trades[0].txType === 'buy' ? 'INCOMING' : 'OUTGOING')) {
+        const t = trades[0];
+        const fiat = legs.filter((l) => l.fiat && l.txType === t.txType);
+        return [mkEvent({ ...base, uid, ts: t.ts || base.ts, kind: t.txType === 'buy' ? Kind.BUY : Kind.SELL, asset: t.sym, qty: t.amount, assetHint: t.asset.hint,
+          value: fiat.length === 1 ? fiat[0].amount : null, valueCcy: fiat.length === 1 ? fiat[0].sym : 'EUR', note: `${t.asset.label}: non calcolato dall'app` })];
+      }
+      return INFO(`Operazione su ${others[0].asset.label} (${opType}): non calcolata dall'app.`);
+    }
+
+    if (isEarnLike(opType, legs)) {
+      env.stats.earn++;
+      return U('premio, interesse o staking', 'è un premio, un interesse, un dividendo o un movimento di staking/Earn: serve una decisione sul trattamento fiscale.');
+    }
+
+    // solo movimenti in valuta: depositi e prelievi in euro (o altra valuta)
+    if (!assetLegs.length) {
+      if (opType !== 'deposit' && opType !== 'withdrawal') return U(typeKey, 'tipo di operazione in valuta non riconosciuto.');
+      const mains = legs.filter((l) => l.txType === opType);
+      const extra = legs.filter((l) => l.txType !== opType && l.txType !== 'fee');
+      if (extra.length || !mains.length) return U(`${typeKey} con movimenti inattesi`, `contiene movimenti di tipo "${(extra[0] || {}).txType || '-'}" che non so interpretare.`);
+      if (mains.some((l) => l.flow !== (opType === 'deposit' ? 'INCOMING' : 'OUTGOING'))) return U(`${typeKey} con direzione inattesa`, 'la direzione dei movimenti non corrisponde al tipo di operazione.');
+      if (legs.some((l) => l.txType === 'fee' && l.flow !== 'OUTGOING')) return U(`${typeKey} con commissione inattesa`, 'una commissione ha direzione in entrata.');
+      if (mains.some((l) => !(l.ts || base.ts))) return U(`${typeKey} senza data`, 'manca la data (credited_at).');
+      return mains.map((l) => mkEvent({ ...base, uid: mains.length === 1 ? uid : `${uid}#${l.id}`, ts: l.ts || base.ts, ref: l.id, kind: opType === 'deposit' ? Kind.FIAT_IN : Kind.FIAT_OUT, asset: l.sym, qty: l.amount }));
+    }
+
+    // da qui: criptovalute e metalli
+    if (opType === 'buy' || opType === 'sell' || opType === 'savings_plan') return convertTrade(opType, legs, base, uid, env, U);
+    if (opType === 'deposit' || opType === 'withdrawal') return convertTransfer(opType, legs, base, uid, env, U);
+    return U(typeKey, 'tipo di operazione non riconosciuto.');
+  }
+
+  /** Acquisto/vendita di cripto o metalli: un movimento in valuta + uno in asset (+ commissioni 'fee'). */
+  function convertTrade(opType, legs, base, uid, env, U) {
+    const typeKey = `tipo "${opType}"`;
+    const want = opType === 'sell' ? 'sell' : 'buy';          // il piano di accumulo ("savings_plan") compra soltanto
+    const fiatMain = legs.filter((l) => l.fiat && l.txType === want);
+    const assetMain = legs.filter((l) => !l.fiat && l.txType === want);
+    const fees = legs.filter((l) => l.txType === 'fee');
+    const other = legs.find((l) => l.txType !== want && l.txType !== 'fee');
+    if (other) return U(`${typeKey} con movimenti "${other.txType}"`, `contiene un movimento "${other.txType}" che non so interpretare (imposte, trasferimenti interni…).`);
+    if (fiatMain.length !== 1 || assetMain.length !== 1) return U(`${typeKey} con struttura diversa dall'atteso`, `mi aspettavo un movimento in valuta e uno in asset, ne ho trovati ${fiatMain.length} e ${assetMain.length} (scambio tra cripto?).`);
+    const f = fiatMain[0], a = assetMain[0];
+    if (a.flow !== (want === 'buy' ? 'INCOMING' : 'OUTGOING') || f.flow === a.flow) return U(`${typeKey} con direzione inattesa`, 'la direzione dei movimenti non corrisponde a un acquisto/vendita.');
+    if (a.amount.isZero() || f.amount.isZero()) return U(`${typeKey} con importo zero`, 'la quantità o l\'importo in valuta è zero.');
+    const ts = a.ts || f.ts;
+    if (!ts) return U(`${typeKey} senza data`, 'manca la data (credited_at).');
+    const feeP = {};
+    if (fees.length) {
+      if (fees.some((x) => x.flow !== 'OUTGOING')) return U(`${typeKey} con commissione inattesa`, 'una commissione ha direzione in entrata.');
+      if (new Set(fees.map((x) => `${x.fiat ? 'c' : 'a'}:${x.refId}`)).size > 1) return U(`${typeKey} con commissioni in più valute`, 'le commissioni sono in più valute/asset diversi.');
+      feeP.feeAsset = fees[0].sym;
+      feeP.feeQty = fees.reduce((s, x) => s.plus(x.amount), D(0));
+      env.stats.fees++;
+    }
+    if (a.asset.cls === 'metal') env.stats.metals++;
+    return [mkEvent({ ...base, ...feeP, uid, ts, ref: a.id, kind: want === 'buy' ? Kind.BUY : Kind.SELL, asset: a.sym, qty: a.amount, assetHint: a.asset.hint, value: f.amount, valueCcy: f.sym,
+      note: fees.length ? 'Commissione separata: sommata al costo / sottratta dall\'incasso' : '' })];
+  }
+
+  /** Depositi e prelievi di criptovalute (e di valuta) -> trasferimenti. Il prelievo include la commissione di rete. */
+  function convertTransfer(opType, legs, base, uid, env, U) {
+    const typeKey = `tipo "${opType}"`;
+    const mains = legs.filter((l) => l.txType === opType);
+    const fees = legs.filter((l) => l.txType === 'fee');
+    const extra = legs.find((l) => l.txType !== opType && l.txType !== 'fee');
+    if (extra) return U(`${typeKey} con movimenti "${extra.txType}"`, `contiene un movimento "${extra.txType}" che non so interpretare.`);
+    if (!mains.length) return U(`${typeKey} senza movimento principale`, 'non contiene il movimento di deposito/prelievo.');
+    const dir = opType === 'deposit' ? 'INCOMING' : 'OUTGOING';
+    if (mains.some((l) => l.flow !== dir)) return U(`${typeKey} con direzione inattesa`, 'la direzione dei movimenti non corrisponde al tipo di operazione.');
+    if (mains.some((l) => !l.fiat && l.asset.cls === 'metal')) return U(`${typeKey} di metalli`, 'deposito/prelievo di metalli preziosi: serve una decisione (non è né un acquisto né una vendita).');
+    if (fees.length) {
+      const assetMains = mains.filter((l) => !l.fiat);
+      if (opType !== 'withdrawal' || assetMains.length !== 1 || fees.some((x) => x.fiat || x.refId !== assetMains[0].refId || x.flow !== 'OUTGOING')) {
+        return U(`${typeKey} con commissioni`, 'ha commissioni in una forma che non so interpretare (solo la commissione di rete nello stesso asset di un prelievo è gestita).');
+      }
+    }
+    const events = [];
+    for (const l of mains) {
+      const evUid = mains.length === 1 ? uid : `${uid}#${l.id}`;
+      const ts = l.ts || base.ts;
+      if (!ts) return U(`${typeKey} senza data`, 'manca la data (credited_at).');
+      if (l.fiat) { events.push(mkEvent({ ...base, uid: evUid, ts, ref: l.id, kind: opType === 'deposit' ? Kind.FIAT_IN : Kind.FIAT_OUT, asset: l.sym, qty: l.amount })); continue; }
+      if (opType === 'deposit') events.push(mkEvent({ ...base, uid: evUid, ts, ref: l.id, kind: Kind.TRANSFER_IN, asset: l.sym, assetHint: l.asset.hint, qty: l.amount }));
+      else {
+        const total = fees.reduce((s, x) => s.plus(x.amount), l.amount);   // quantita' totale addebitata = prelievo + commissione di rete
+        events.push(mkEvent({ ...base, uid: evUid, ts, ref: l.id, kind: Kind.TRANSFER_OUT, asset: l.sym, assetHint: l.asset.hint, qty: total, note: fees.length ? 'La quantità include la commissione di rete' : '' }));
+      }
+    }
+    return events;
+  }
+
+  // ---------------------------------------------------------------- raw -> eventi (puro, nessuna rete)
+  function validRaw(raw) {
+    return isObj(raw) && raw.version === 1 && Array.isArray(raw.operations) && Array.isArray(raw.currencies) && Array.isArray(raw.assets);
+  }
+
+  function mapsOf(raw) {
+    const currencies = new Map(), assets = new Map();
+    for (const c of raw.currencies) if (isObj(c) && nonEmpty(c.id) && nonEmpty(c.symbol)) currencies.set(c.id, c.symbol.trim().toUpperCase());
+    for (const a of raw.assets) if (isObj(a) && nonEmpty(a.id)) assets.set(a.id, a);
+    return { currencies, assets };
+  }
+
+  function analyze(raw, fileName) {
+    if (!validRaw(raw)) throw new ApiError('format', 'I dati Bitpanda salvati non hanno il formato atteso (versione 1): rifai la sincronizzazione.');
+    const { currencies, assets } = mapsOf(raw);
+    const stats = { ops: 0, unresolved: 0, voided: 0, stock: 0, earn: 0, index: 0, fees: 0, metals: 0 };
+    const env = { account: accountName(), src: fileName || 'API Bitpanda', currencies, assets, stats };
+    const events = [];
+    const seen = new Map();
+    raw.operations.forEach((op, i) => {
+      if (!isObj(op) || !nonEmpty(op.operation_id) || !Array.isArray(op.transactions)) {
+        stats.unresolved++;
+        events.push(I.unresolved({ uid: `${UID_PREFIX}?#${i}`, ts: null, account: env.account, src: `${env.src}:#${i}`, raw: op === undefined ? null : op }, 'Bitpanda API · operazione in formato inatteso',
+          `L'operazione n. ${i + 1} non ha operation_id o transactions nella forma attesa.`));
+        return;
+      }
+      const sig = stable(op);
+      if (seen.has(op.operation_id)) {
+        if (seen.get(op.operation_id) !== sig) {
+          stats.unresolved++;
+          events.push(I.unresolved({ uid: `${UID_PREFIX}${op.operation_id}#conflitto${i}`, ts: null, account: env.account, src: `${env.src}:${op.operation_id}`, raw: op }, 'Bitpanda API · operazione duplicata con contenuto diverso',
+            `L'operazione ${op.operation_id} compare due volte con contenuto diverso: scarica di nuovo i dati.`));
+        }
+        return;                                                     // stessa operazione letta due volte (finestre sovrapposte): conta una volta
+      }
+      seen.set(op.operation_id, sig);
+      stats.ops++;
+      events.push(...convertOperation(op, env));
+    });
+    // ordine cronologico, a parità di istante per uid: il risultato non dipende dall'ordine delle pagine (l'API parte dalle più recenti)
+    events.sort((a, b) => (a.ts && b.ts ? a.ts - b.ts : (a.ts ? -1 : b.ts ? 1 : 0)) || (a.uid < b.uid ? -1 : a.uid > b.uid ? 1 : 0));
+    return { events, stats, env };
+  }
+
+  function parse(raw, fileName) {
+    const { events, stats } = analyze(raw, fileName);
+    return I.finish('Bitpanda · dati da API', stats.ops, events);
+  }
+
+  // ---------------------------------------------------------------- controllo di continuita' dei saldi
+  /**
+   * Per ogni portafoglio (wallet_id) confronta le operazioni scaricate con i saldi riportati da Bitpanda (asset_balance_after):
+   *  - coerenza: saldo finale - saldo iniziale = somma dei movimenti (manca qualcosa in mezzo/in fondo se no);
+   *  - inizio: il primo movimento deve partire da saldo zero (se no, manca lo storico precedente).
+   * Per non dare falsi allarmi con movimenti nello stesso istante si accetta qualsiasi candidato tra quelli a pari data.
+   * Ritorna { verified, unverifiable, problems[] }.
+   */
+  function checkContinuity(ops, env) {
+    const wallets = new Map();
+    for (const op of ops) {
+      op.transactions.forEach((tx, i) => {
+        const w = isObj(tx) && nonEmpty(tx.wallet_id) ? tx.wallet_id : '';
+        const key = w || `senza-portafoglio:${op.operation_id}:${i}`;
+        if (!wallets.has(key)) wallets.set(key, { legs: [], bad: !w, label: '' });
+        const W = wallets.get(key);
+        const r = readLeg(tx, i, op.operation_id);
+        if (!r.leg || !r.leg.after || !r.leg.ts) { W.bad = true; return; }
+        const l = r.leg;
+        if (!W.label) W.label = l.fiat ? (env.currencies.get(l.refId) || '') : ((env.assets.get(l.refId) || {}).symbol || '');
+        if (l.after.isNegative()) return;                           // movimento annullato: non ha toccato il saldo
+        W.legs.push({ signed: l.flow === 'INCOMING' ? l.amount : l.amount.neg(), after: l.after, t: l.ts.getTime() });
+      });
+    }
+    const out = { verified: 0, unverifiable: 0, problems: [] };
+    for (const [key, W] of wallets) {
+      if (W.bad || !W.legs.length) { if (W.bad) out.unverifiable++; continue; }
+      const name = `${W.label || 'portafoglio'} (${short(key)}…)`;
+      const total = W.legs.reduce((s, l) => s.plus(l.signed), D(0));
+      const tMin = Math.min(...W.legs.map((l) => l.t)), tMax = Math.max(...W.legs.map((l) => l.t));
+      const starts = W.legs.filter((l) => l.t === tMin).map((l) => l.after.minus(l.signed));
+      const ends = W.legs.filter((l) => l.t === tMax).map((l) => l.after);
+      const consistent = starts.some((b) => ends.some((e) => e.minus(b).eq(total)));
+      out.verified++;
+      if (!consistent) out.problems.push(`${name}: i movimenti scaricati non sono coerenti con i saldi indicati da Bitpanda (mancano operazioni).`);
+      else if (!starts.some((b) => b.isZero())) out.problems.push(`${name}: il primo movimento parte da un saldo di ${starts[0].toFixed()} invece che da zero (manca lo storico precedente).`);
+    }
+    return out;
+  }
+
+  // ---------------------------------------------------------------- rete
+  const qs = (o) => {
+    const parts = Object.keys(o).filter((k) => o[k] !== undefined && o[k] !== null).map((k) => `${k}=${encodeURIComponent(String(o[k]))}`);
+    return parts.length ? '?' + parts.join('&') : '';
+  };
+
+  /**
+   * Legge TUTTE le pagine di un elenco a cursore. Si ferma con un errore (mai dati parziali) se la paginazione non si puo' esaurire.
+   * o = { idOf(item) -> id (lancia 'format' se l'elemento non e' valido), pageSize (null = non inviarlo), progress(n, pagina) }
+   */
+  async function getAll(get, path, params, o) {
+    const items = [], seen = new Map();
+    let cursor = null, pages = 0;
+    for (;;) {
+      if (++pages > MAX_PAGES) throw new ApiError('incomplete', `Troppe pagine da leggere (oltre ${MAX_PAGES}): sincronizzazione interrotta per evitare dati parziali.`);
+      const p = { ...params };
+      if (o.pageSize) p.page_size = o.pageSize;
+      if (cursor !== null) p.cursor = cursor;
+      const body = await get(path, p);
+      if (!isObj(body) || !Array.isArray(body.data)) throw new ApiError('format', 'La risposta di Bitpanda non ha la forma attesa (manca l\'elenco "data").', { path });
+      let fresh = 0;
+      for (const it of body.data) {
+        const id = o.idOf(it);
+        if (seen.has(id)) {
+          if (stable(seen.get(id)) !== stable(it)) throw new ApiError('incomplete', `I dati sono cambiati durante lo scarico (l'elemento ${short(id)}… è stato letto due volte con contenuto diverso): ripeti la sincronizzazione.`, { path });
+          continue;                                                 // stesso elemento in due pagine: si conta una volta
+        }
+        seen.set(id, it); items.push(it); fresh++;
+      }
+      if (body.data.length > 0 && fresh === 0) throw new ApiError('incomplete', 'La paginazione di Bitpanda è ripartita dall\'inizio (cursore non accettato): lo storico non può essere letto per intero.', { path });
+      const hasNext = pickKey(body, 'has_next_page', 'hasNextPage');
+      const next = pickKey(body, 'next_cursor', 'nextCursor');
+      if (hasNext === undefined) {
+        if (o.pageSize && body.data.length >= o.pageSize) throw new ApiError('format', 'La risposta di Bitpanda non dice se ci sono altre pagine: non posso sapere se lo storico è completo.', { path });
+        break;
+      }
+      if (typeof hasNext !== 'boolean') throw new ApiError('format', 'La risposta di Bitpanda ha un indicatore di pagina successiva non valido.', { path });
+      if (!hasNext) break;                                          // NB: l'ultima pagina puo' avere ancora un next_cursor: si ignora
+      if (typeof next !== 'string' || next === '') throw new ApiError('incomplete', 'Bitpanda annuncia altre pagine ma non indica come leggerle (pagina troncata): lo storico è incompleto.', { path });
+      if (next === cursor) throw new ApiError('incomplete', 'Il cursore di Bitpanda non avanza: lo storico non può essere letto per intero.', { path });
+      cursor = next;
+      if (o.progress) o.progress(items.length, pages);
+    }
+    return items;
+  }
+
+  const AUTH_MSG = 'Bitpanda ha rifiutato la chiave: controlla che sia copiata per intero e attiva, e che abbia i permessi di sola lettura «Transaction» e «Trade (Read)» (il permesso «Balances» non serve).';
+
+  async function sync(creds, opts) {
+    opts = opts || {};
+    const key = creds && typeof creds.apiKey === 'string' ? creds.apiKey.trim() : '';
+    if (!key) throw new ApiError('config', 'Inserisci la chiave API di Bitpanda.');
+    if (!/^[\x21-\x7e]+$/.test(key)) throw new ApiError('config', 'La chiave API contiene spazi o caratteri non validi: copiala di nuovo per intero.');
+    const fetchImpl = opts.fetch || ((u, i) => globalThis.fetch(u, i));
+    const now = opts.now || (() => new Date());
+    const progress = opts.onProgress || (() => {});
+    const ropts = { sleep: opts.sleep || C.sleep, secrets: [key] };
+    const init = { method: 'GET', headers: { 'x-api-key': key, Accept: 'application/json' } };
+
+    const get = async (path, params) => {
+      try { return await C.request(fetchImpl, BASE_URL + path + qs(params || {}), init, ropts); }
+      catch (e) { if (e instanceof ApiError && e.code === 'auth') throw new ApiError('auth', AUTH_MSG, e.detail); throw e; }
+    };
+    const idField = (what) => (it) => {
+      if (!isObj(it) || !nonEmpty(it.id)) throw new ApiError('format', `Un elemento di "${what}" non ha l'identificativo atteso.`, { what });
+      return it.id;
+    };
+
+    // 1) operazioni: tutte le pagine, senza finestre di date (nessun filtro "from")
+    progress('Bitpanda: scarico le operazioni…');
+    const operations = await getAll(get, '/operations', {}, {
+      pageSize: PAGE_SIZE,
+      idOf: (op) => {
+        if (!isObj(op) || !nonEmpty(op.operation_id) || !Array.isArray(op.transactions)) throw new ApiError('format', 'Una operazione di Bitpanda non ha la forma attesa (operation_id e transactions).', { what: 'operations' });
+        return op.operation_id;
+      },
+      progress: (n, page) => progress(`Bitpanda: scarico le operazioni (pagina ${page + 1}, ${n} finora)…`),
+    });
+
+    // 2) valute
+    progress('Bitpanda: scarico l\'elenco delle valute…');
+    const currencies = await getAll(get, '/currencies', {}, { pageSize: null, idOf: idField('currencies') });
+
+    // 3) asset citati nelle operazioni (uno per richiesta: e' il caso documentato del filtro "id")
+    const ids = [];
+    const idSeen = new Set();
+    for (const op of operations) {
+      for (const tx of op.transactions) {
+        if (!isObj(tx)) continue;
+        for (const id of [tx.asset_id, tx.index_asset_id]) if (nonEmpty(id) && !idSeen.has(id)) { idSeen.add(id); ids.push(id); }
+      }
+    }
+    const assets = [];
+    const missing = [];
+    for (let i = 0; i < ids.length; i++) {
+      progress(`Bitpanda: leggo i dati degli asset (${i + 1} di ${ids.length})…`);
+      // elenco vuoto = asset non in catalogo (risposta documentata): le sue operazioni diventano "non riconosciute"; qualunque errore di rete/HTTP ferma tutto
+      const list = await getAll(get, '/assets', { id: ids[i] }, { pageSize: null, idOf: idField('assets') });
+      const found = list.find((a) => a.id.toLowerCase() === ids[i].toLowerCase());
+      if (found) assets.push(found); else missing.push(ids[i]);
+    }
+
+    const raw = { version: 1, fetchedAt: now().toISOString(), currencies, operations, assets };
+
+    // 4) analisi: conteggi per la copertura e controllo di continuita' dello storico
+    progress('Bitpanda: controllo la completezza dello storico…');
+    const A = analyze(raw, 'API Bitpanda');
+    const stats = A.stats;
+    const res = I.finish('Bitpanda · dati da API', stats.ops, A.events);
+    const cont = checkContinuity(operations, A.env);
+    const warnings = [];
+
+    const complete = cont.problems.length === 0 && cont.unverifiable === 0 && cont.verified > 0;
+    let opsNote;
+    if (!operations.length) opsNote = 'Bitpanda non ha restituito nessuna operazione: controlla che la chiave abbia il permesso «Transaction». Se il conto è vuoto, usa il file.';
+    else if (complete) opsNote = `Lette tutte le pagine (${stats.ops} operazioni). Controllo dei saldi superato su ${cont.verified} portafogli: lo storico parte da saldo zero e non ha buchi.`;
+    else if (cont.problems.length) opsNote = `Letture complete ma lo storico non risulta completo: ${cont.problems[0]}${cont.problems.length > 1 ? ` (e altri ${cont.problems.length - 1} portafogli)` : ''} Integra con il file CSV dello storico completo.`;
+    else opsNote = `Lette tutte le pagine (${stats.ops} operazioni), ma Bitpanda non ha fornito i saldi necessari per verificare che lo storico parta dall'apertura del conto. Controlla il primo movimento o integra con il file CSV.`;
+    for (const p of cont.problems.slice(0, 10)) warnings.push(`Storico possibilmente incompleto: ${p}`);
+    if (cont.problems.length > 10) warnings.push(`…e altri ${cont.problems.length - 10} portafogli con lo stesso problema.`);
+
+    const coverage = [
+      { what: COV.ops, count: stats.ops, from: res.from ? res.from.toISOString() : null, to: res.to ? res.to.toISOString() : null, complete, note: opsNote },
+      { what: COV.stock, count: stats.stock, from: null, to: null, complete: false, note: 'Azioni, ETF, ETC e Cash Plus vengono scaricati ma NON calcolati dall\'app (vengono ignorati con un avviso): se ne hai, i relativi redditi vanno dichiarati a parte.' },
+      { what: COV.earn, count: stats.earn, from: null, to: null, complete: false, note: 'Premi, interessi, dividendi e staking/Earn non vengono interpretati: se compaiono diventano operazioni da controllare. Integra con il file se ne hai.' },
+      { what: COV.index, count: stats.index, from: null, to: null, complete: false, note: 'Indici cripto (Bitpanda Crypto Index), token a leva e scambi tra cripto non vengono calcolati in automatico: compaiono come operazioni da controllare.' },
+      { what: COV.other, count: 0, from: null, to: null, complete: false, note: 'Bitpanda Pro / Exchange (One Trading), carta Bitpanda e altri conti sono prodotti separati e non vengono scaricati: usa i loro file.' },
+    ];
+
+    warnings.push('Questo collegamento non è ancora stato provato con un conto reale: controlla a campione alcune operazioni (data, quantità, importo in euro) confrontandole con l\'app Bitpanda prima di usare il risultato.');
+    if (stats.unresolved) warnings.push(`${stats.unresolved} operazioni non sono state riconosciute e richiedono una decisione (vengono segnalate in "Da controllare"): non sono mai indovinate.`);
+    if (missing.length) warnings.push(`${missing.length} asset citati nelle operazioni non risultano nel catalogo di Bitpanda: le operazioni relative sono segnalate come non riconosciute.`);
+    if (stats.metals) warnings.push('Oro e metalli preziosi: la quantità è espressa nell\'unità usata da Bitpanda (si assume il grammo, come nel file CSV; non è dichiarato dall\'API). Verifica con un acquisto reale.');
+    if (stats.fees) warnings.push(`${stats.fees} operazioni hanno commissioni come movimenti separati: sono sommate al costo (acquisti) o sottratte dall'incasso (vendite). Se l'importo in euro di Bitpanda le includesse già, il costo risulterebbe più alto del reale: confronta con l'estratto.`);
+    if (stats.voided) warnings.push(`${stats.voided} depositi/prelievi annullati sono stati ignorati.`);
+
+    return { raw, coverage, warnings };
+  }
+
+  CT.api[ID] = {
+    id: ID,
+    label: 'Bitpanda',
+    platform: 'bitpanda',
+    fields: [{ key: 'apiKey', label: 'Chiave API di Bitpanda (sola lettura)', secret: true, placeholder: 'Incolla qui la chiave' }],
+    options: [],
+    help: [
+      'Accedi a Bitpanda dal sito, apri le impostazioni dell\'account → sezione «Chiavi API» (indirizzo diretto: app.bitpanda.com/my-account/apikey) e scegli la scheda «Bitpanda». I nomi dei menu possono cambiare.',
+      'Crea una nuova chiave e dalle un nome riconoscibile, per esempio «Dichiarazione».',
+      'Spunta SOLO i permessi di lettura «Transaction» (storico delle operazioni) e «Trade (Read)» (elenco di asset e valute). Non spuntare mai «Trade (Write)», «Earn (Write)» né altri permessi di scrittura: «Balances» non serve.',
+      'Copia la chiave (di solito viene mostrata una sola volta) e incollala qui. Resta nel tuo browser e viene inviata solo a Bitpanda.',
+      'Finita la sincronizzazione puoi eliminare la chiave dalle impostazioni di Bitpanda.',
+    ],
+    limits: [
+      'Viene letto lo storico delle operazioni che l\'API pubblica di Bitpanda mette a disposizione. L\'app controlla che parta da saldo zero e non abbia buchi; se il controllo non riesce, integra con il file CSV dello storico completo.',
+      'Azioni, ETF, ETC e Cash Plus vengono scaricati ma non calcolati dall\'app.',
+      'Premi, interessi, staking/Earn, indici cripto (Bitpanda Crypto Index), token a leva, scambi tra cripto e depositi/prelievi di metalli non vengono interpretati: compaiono come operazioni da controllare, mai indovinate.',
+      'L\'oro è registrato come XAU in grammi (unità assunta, non dichiarata dall\'API); le commissioni indicate come movimenti separati sono sommate al costo.',
+      'Bitpanda Pro / Exchange (One Trading), carta Bitpanda e altri conti sono prodotti separati: non sono inclusi.',
+      'Se il browser blocca il collegamento (succede con alcune piattaforme) usa il file CSV.',
+    ],
+    sync,
+    parse,
+    // esposti per i test
+    _internal: { analyze, checkContinuity, classOfAsset, readLeg, BASE_URL, PAGE_SIZE, COV },
+  };
+  if (typeof module !== 'undefined') module.exports = CT.api.bitpanda;
 })();
 
 </script>
@@ -7768,6 +9019,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       } catch (e) { failed.push(f.name); }
     }
     changed();
+    if (added) { ui.askMore = platformKey; render(); }
     toast(added ? `${added} file aggiunti${skipped.length ? ` · ${skipped.length} file dello zip non necessari ignorati` : ''}` : failed.length ? `Non riesco a leggere: ${failed.join(', ')}` : 'File già caricati');
   }
   function loadExample() {
@@ -7787,14 +9039,35 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     return { files, parsed, rows, unknown, errors, missing };
   }
 
-  // ------------------------------------------------------------------ pannello: Piattaforme (elenco)
+  // ------------------------------------------------------------------ icone
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  function svgIcon(paths) {
+    const el = document.createElementNS(SVG_NS, 'svg');
+    el.setAttribute('viewBox', '0 0 24 24'); el.setAttribute('fill', 'none'); el.setAttribute('stroke', 'currentColor');
+    el.setAttribute('stroke-width', '1.7'); el.setAttribute('stroke-linecap', 'round'); el.setAttribute('stroke-linejoin', 'round');
+    el.setAttribute('aria-hidden', 'true'); el.setAttribute('focusable', 'false');
+    for (const d of paths) { const pa = document.createElementNS(SVG_NS, 'path'); pa.setAttribute('d', d); el.appendChild(pa); }
+    return el;
+  }
+  const ICON_FILE = ['M7 3h7l4 4v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z', 'M14 3v4h4', 'M9 12h6', 'M9 16h6'];
+  const ICON_API = ['M9 3v5', 'M15 3v5', 'M7 8h10v3a5 5 0 0 1-10 0V8z', 'M12 16v5'];
+  function platIcon(k, small) {
+    const p = P[k];
+    return h('span', { class: `pico${small ? ' sm' : ''}`, style: `--h:${p.hue}`, 'aria-hidden': 'true' }, svgIcon(p.icon));
+  }
+  const toolIcon = (paths) => h('span', { class: 'pico', style: '--h:215', 'aria-hidden': 'true' }, svgIcon(paths));
+
+  // ------------------------------------------------------------------ pannello 1: elenco delle piattaforme
   function panelPlatforms() {
     const nodes = [];
+    const addedKeys = Object.keys(P).filter((k) => (state.platforms || []).includes(k) || platformStats(k).files.length > 0);
     nodes.push(h('div', { class: 'card' },
-      h('h2', null, 'Da quali piattaforme vuoi importare i dati?'),
-      h('p', { class: 'muted' }, 'Scegli una piattaforma, poi aggiungi i suoi file o, quando sarà disponibile, il collegamento API. Puoi aggiungerne quante vuoi: i trasferimenti tra le tue piattaforme vengono riconosciuti da soli.'),
-      !state.files.length ? h('div', { class: 'row' }, h('button', { class: 'btn', onclick: loadExample }, 'Prima vedi un esempio'), state.example ? null : null) : null));
-    nodes.push(h('div', { class: 'plats' }, Object.keys(P).map(platformCard)));
+      h('h2', null, addedKeys.length ? 'Le tue piattaforme' : 'Scegli la piattaforma da aggiungere'),
+      h('p', { class: 'muted' }, 'Scegli una piattaforma, poi decidi se aggiungerla con i file o con le API. Puoi aggiungerne quante vuoi: i trasferimenti tra le tue piattaforme vengono riconosciuti da soli.'),
+      h('div', { class: 'row' },
+        addedKeys.length ? h('button', { class: 'btn primary', onclick: () => { ui.tab = ui.res && ui.res.groups.blockCount ? 'checks' : 'result'; render(); window.scrollTo(0, 0); } }, 'Continua: controlla e calcola') : null,
+        !state.files.length ? h('button', { class: 'btn', onclick: loadExample }, 'Prima vedi un esempio') : null)));
+    nodes.push(h('ul', { class: 'plist' }, Object.keys(P).map(platformRow)));
     nodes.push(optionsCard());
     nodes.push(h('div', { class: 'row' },
       ui.confirmReset
@@ -7805,41 +9078,92 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     return h('div', { class: 'stack' }, nodes);
   }
 
-  function platformCard(k) {
+  function apiBadge(k) {
+    const p = P[k], conn = CT.api && CT.api.forPlatform ? CT.api.forPlatform(k) : null;
+    if (p.api.status === 'none') return h('span', { class: 'pill idle' }, 'API: non disponibile');
+    return conn ? h('span', { class: 'pill warn' }, 'API: sperimentale') : h('span', { class: 'pill idle' }, 'API: in arrivo');
+  }
+
+  function platformRow(k) {
     const p = P[k], st = platformStats(k);
     const added = (state.platforms || []).includes(k) || st.files.length > 0;
     let status;
-    if (!added) status = h('p', { class: 'muted small' }, 'Non ancora aggiunta');
-    else if (!st.files.length) status = h('p', { class: 'small' }, 'Aggiunta · nessun file ancora');
-    else status = h('p', { class: 'small' }, `${st.files.length} ${st.files.length === 1 ? 'file' : 'file'} · ${st.rows} righe`,
+    if (!added) status = null;
+    else if (!st.files.length) status = h('span', { class: 'small' }, 'Aggiunta · nessun dato ancora');
+    else status = h('span', { class: 'small' }, `✓ ${st.files.length} ${st.files.length === 1 ? 'fonte' : 'fonti'} · ${st.rows} ${st.rows === 1 ? 'riga' : 'righe'}`,
       st.unknown ? ` · ${st.unknown} da controllare` : '', st.errors ? ` · ${st.errors} con errori` : '',
       p.kinds.length > 1 && st.missing.length ? ` · mancano: ${st.missing.map((m) => m.label).join(', ')}` : '');
-    return h('div', { class: `card pcard${added ? ' on' : ''}` },
-      h('h3', null, p.name), h('p', { class: 'muted small' }, p.blurb),
-      h('div', { class: 'row' },
-        h('span', { class: `pill ${p.native ? 'good' : 'idle'}` }, p.native ? 'File' : 'File (modello)'),
-        h('span', { class: `pill ${CT.api && CT.api.forPlatform && CT.api.forPlatform(k) ? 'warn' : 'idle'}` }, p.api.status === 'none' ? 'API: non disponibile' : (CT.api && CT.api.forPlatform && CT.api.forPlatform(k) ? 'API: sperimentale' : 'API: in arrivo'))),
-      status,
-      h('button', { class: `btn ${added ? '' : 'primary'}`, onclick: () => { ensurePlatform(k); ui.platform = k; ui.method = 'file'; save(); render(); window.scrollTo(0, 0); } }, added ? 'Apri' : 'Aggiungi'));
+    return h('li', { class: `prow${added ? ' on' : ''}` },
+      platIcon(k),
+      h('div', { class: 'ptxt' }, h('span', { class: 'pname' }, p.name), h('span', { class: 'muted small' }, p.blurb),
+        h('span', { class: 'chips' }, h('span', { class: `pill ${p.native ? 'good' : 'idle'}` }, p.native ? 'File' : 'File (modello)'), apiBadge(k)), status),
+      h('div', { class: 'pact' }, h('button', { class: `btn ${added ? '' : 'primary'}`, 'aria-label': `${added ? 'Apri' : 'Aggiungi'} ${p.name}`, onclick: () => openPlatform(k) }, added ? 'Apri' : 'Aggiungi')));
   }
 
-  // ------------------------------------------------------------------ pannello: una piattaforma
+  function openPlatform(k) {
+    ensurePlatform(k);
+    ui.platform = k;
+    // se l'API non c'e', l'unica strada e' il file: si seleziona da solo; altrimenti la scelta resta all'utente
+    ui.method = CT.api && CT.api.forPlatform && CT.api.forPlatform(k) ? null : 'file';
+    save(); render(); window.scrollTo(0, 0);
+  }
+
+  // ------------------------------------------------------------------ pannello 2: una piattaforma (scelta API o file)
+  function methodChoice(k) {
+    const p = P[k], a = p.api, conn = CT.api && CT.api.forPlatform ? CT.api.forPlatform(k) : null;
+    const apiOk = !!conn && a.status !== 'none';
+    const apiChip = a.status === 'none' ? h('span', { class: 'pill idle' }, 'Non disponibile') : conn ? h('span', { class: 'pill warn' }, 'Sperimentale') : h('span', { class: 'pill idle' }, 'In arrivo');
+    const apiDesc = a.status === 'none' ? a.text : conn ? 'Collegamento diretto con una chiave di sola lettura. Sperimentale: non ancora provato con un account reale.' : 'Non ancora disponibile: per ora usa i file.';
+    const opt = (m, icon, title, desc, chip, enabled) => h('button', { class: `opt${ui.method === m ? ' sel' : ''}`, disabled: !enabled, 'aria-pressed': ui.method === m ? 'true' : 'false', onclick: () => { ui.method = m; render(); } },
+      toolIcon(icon), h('div', { class: 'otxt' }, h('strong', null, title), h('span', { class: 'muted small' }, desc), chip ? h('span', { class: 'chips' }, chip) : null));
+    return h('div', { class: 'opts', role: 'group', 'aria-label': 'Come aggiungere i dati' },
+      opt('file', ICON_FILE, 'Con i file', 'Carica i file (CSV o .zip) scaricati dalla piattaforma. È la via più completa e verificabile.', p.native ? h('span', { class: 'pill good' }, 'Consigliato') : h('span', { class: 'pill idle' }, 'Modello universale'), true),
+      opt('api', ICON_API, 'Con le API', apiDesc, apiChip, apiOk));
+  }
+
+  function existingData(k, st) {
+    const apiFiles = st.files.filter((f) => String(f.type).startsWith('api_'));
+    const otherFiles = st.files.filter((f) => !String(f.type).startsWith('api_'));
+    if (!st.files.length) return h('p', { class: 'muted small' }, 'Scegli un metodo per continuare.');
+    return h('div', { class: 'stack', style: 'padding:0' },
+      otherFiles.length ? h('div', { class: 'card' }, h('h3', null, `File già aggiunti (${otherFiles.length})`), otherFiles.map((f) => fileRow(f, st.parsed.find((x) => x.file.id === f.id), k))) : null,
+      apiFiles.map((f) => apiDataCard(f)));
+  }
+
   function panelPlatform(k) {
     const p = P[k], st = platformStats(k);
-    const seg = h('div', { class: 'subtabs', role: 'group', 'aria-label': 'Come aggiungere i dati' },
-      [['file', 'Con i file'], ['api', 'Con le API']].map(([m, t]) => h('button', { class: 'chip', 'aria-pressed': ui.method === m ? 'true' : 'false', onclick: () => { ui.method = m; render(); } }, t)));
     const remove = ui.confirmRemove === k
-      ? h('span', { class: 'row' }, h('span', { class: 'small' }, 'Rimuovere la piattaforma e i suoi file?'),
+      ? h('span', { class: 'row' }, h('span', { class: 'small' }, 'Rimuovere la piattaforma e i suoi dati?'),
         h('button', { class: 'btn danger', onclick: () => { state.files = state.files.filter((f) => platformOfFile(f) !== k); state.platforms = (state.platforms || []).filter((x) => x !== k); ui.confirmRemove = null; ui.platform = null; changed('files'); toast('Piattaforma rimossa'); } }, 'Sì, rimuovi'),
         h('button', { class: 'btn', onclick: () => { ui.confirmRemove = null; render(); } }, 'Annulla'))
       : h('button', { class: 'btn quiet danger', onclick: () => { ui.confirmRemove = k; render(); } }, 'Rimuovi piattaforma');
     return h('div', { class: 'stack' },
       h('div', null, h('button', { class: 'btn quiet', onclick: goPlatforms }, '← Tutte le piattaforme')),
       h('div', { class: 'card' },
-        h('div', { class: 'row between' }, h('h2', null, p.name), remove),
-        h('p', { class: 'muted' }, p.blurb),
-        h('p', { class: 'lbl' }, 'Come vuoi aggiungere i dati?'), seg),
-      ui.method === 'api' ? apiPanel(k) : filePanel(k, st));
+        h('div', { class: 'row between' }, h('div', { class: 'row' }, platIcon(k), h('div', null, h('h2', null, p.name), h('p', { class: 'muted small' }, p.blurb))), remove),
+        h('h3', null, 'Come vuoi aggiungere i dati?'), methodChoice(k)),
+      ui.method === 'api' ? apiPanel(k) : ui.method === 'file' ? filePanel(k, st) : existingData(k, st));
+  }
+
+  // ------------------------------------------------------------------ finestra: "vuoi aggiungere altro?"
+  function askMoreModal() {
+    const k = ui.askMore;
+    if (!k || !P[k]) return null;
+    const p = P[k], st = platformStats(k);
+    const added = Object.keys(P).filter((x) => (state.platforms || []).includes(x) || platformStats(x).files.length > 0);
+    const blk = ui.res ? ui.res.groups.blockCount : 0;
+    const close = () => { ui.askMore = null; };
+    return h('div', { class: 'modal-back', onclick: (e) => { if (e.target === e.currentTarget) { close(); render(); } } },
+      h('div', { class: 'modal', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'askTitle' },
+        h('div', { class: 'row' }, platIcon(k),
+          h('div', null, h('h2', { id: 'askTitle' }, `${p.name}: dati aggiunti`),
+            h('p', { class: 'muted small' }, `${st.rows} ${st.rows === 1 ? 'riga letta' : 'righe lette'}${st.unknown ? ` · ${st.unknown} da controllare` : ''}${st.errors ? ` · ${st.errors} con errori` : ''}`))),
+        h('p', null, 'Vuoi aggiungere un altro wallet o un\'altra piattaforma?'),
+        added.length > 1 ? h('div', { class: 'chips' }, added.map((x) => h('span', { class: 'row', style: 'gap:6px' }, platIcon(x, true), h('span', { class: 'small' }, P[x].name)))) : null,
+        h('div', { class: 'btns' },
+          h('button', { class: 'btn primary', onclick: () => { close(); goPlatforms(); } }, 'Sì, aggiungi un\'altra piattaforma o wallet'),
+          h('button', { class: 'btn', onclick: () => { close(); ui.platform = null; ui.tab = blk ? 'checks' : 'result'; render(); window.scrollTo(0, 0); } }, 'No, continua: controlla e calcola'),
+          h('button', { class: 'btn quiet', onclick: () => { close(); render(); } }, `Resto su ${p.name}`))));
   }
 
   function apiPanel(k) {
@@ -7922,6 +9246,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       });
       ensurePlatform(k);
       changed();
+      ui.askMore = k; render();
       toast('Storico scaricato: controlla il riepilogo qui sotto');
     } catch (e) {
       if (!(e instanceof CT.ApiError)) console.error(e);
@@ -7980,7 +9305,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       meta.push(h('span', null, `${r.rows} righe`));
       if (r.from) meta.push(h('span', null, `dal ${dmy(CT.taxDate(r.from))} al ${dmy(CT.taxDate(r.to))}`));
       const unk = r.unknown.reduce((a, u) => a + u.count, 0);
-      chip = unk ? h('span', { class: 'pill warn' }, `${unk} righe da controllare`) : h('span', { class: 'pill good' }, 'Letto correttamente');
+      chip = unk ? h('span', { class: 'pill warn' }, `${unk} ${unk === 1 ? 'riga da controllare' : 'righe da controllare'}`) : h('span', { class: 'pill good' }, 'Letto correttamente');
     }
     if (f.type && !plat.types.includes(f.type) && !isApi) {
       const other = CT.platformOfType(f.type);
@@ -8411,11 +9736,14 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
         h('div', { class: 'top-in' }, h('div', null, h('div', { class: 'brand-name' }, 'Dichiarazione Crypto'), h('div', { class: 'brand-sub' }, 'Cripto e oro · redditi diversi · quadri RT e RW')),
           h('div', { class: 'top-ctl' }, h('label', { class: 'lbl', for: 'yearSel' }, 'Anno d\'imposta'), yearSel, status)), nav)),
       h('main', { class: 'wrap', id: 'main' }, panel),
-      ui.toast ? h('div', { class: 'toast', role: 'status' }, ui.toast) : null].filter(Boolean));
+      ui.toast ? h('div', { class: 'toast', role: 'status' }, ui.toast) : null, askMoreModal()].filter(Boolean));
     window.scrollTo(0, scrollY);
+    const mf = root.querySelector('.modal .btn.primary');
+    if (mf) mf.focus();
   }
 
   async function start() {
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && ui.askMore) { ui.askMore = null; render(); } });
     await load();
     recompute();
     if (state.files.length && ui.res) ui.tab = ui.res.groups.blockCount ? 'checks' : 'result';

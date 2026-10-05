@@ -6,6 +6,8 @@ test('catalogo piattaforme: ogni tipo di file esiste e ha un parser', () => {
   const types = Object.keys(CT.importers.TYPES);
   for (const [k, p] of Object.entries(CT.PLATFORMS)) {
     assert.ok(p.name && p.blurb && p.steps.length, `${k}: dati mancanti`);
+    assert.ok(Array.isArray(p.icon) && p.icon.length && p.icon.every((d) => typeof d === 'string'), `${k}: icona mancante`);
+    assert.ok(Number.isFinite(p.hue), `${k}: tonalita' mancante`);
     for (const t of p.types) assert.ok(types.includes(t), `${k}: tipo ${t} senza parser`);
     for (const kd of p.kinds) assert.ok(p.types.includes(kd.type), `${k}: kind ${kd.type} non nei tipi`);
     assert.ok(['none', 'planned', 'experimental'].includes(p.api.status), `${k}: stato API`);

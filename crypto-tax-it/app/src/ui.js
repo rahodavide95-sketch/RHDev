@@ -32,8 +32,8 @@
   const uid = () => Math.random().toString(36).slice(2, 9);
 
   // ------------------------------------------------------------------ stato e salvataggio
-  const state = { files: [], manual: [], resolutions: {}, prices: {}, settings: { year: 2025, rebase2025: false, useCarry: true }, taxpayer: { name: '', cf: '' }, custodians: {}, example: false };
-  const ui = { tab: 'files', res: null, error: null, detail: 'cessioni', filter: '', confirmReset: false, toast: '', busy: '', ver: 0, pdf: null, pdfBusy: false };
+  const state = { files: [], manual: [], resolutions: {}, prices: {}, settings: { year: 2025, rebase2025: false, useCarry: true }, taxpayer: { name: '', cf: '' }, custodians: {}, platforms: [], example: false };
+  const ui = { tab: 'files', res: null, error: null, detail: 'cessioni', filter: '', confirmReset: false, toast: '', busy: '', ver: 0, pdf: null, pdfBusy: false, platform: null, method: 'file', confirmRemove: null };
 
   function idb() {
     return new Promise((res, rej) => {
@@ -53,7 +53,14 @@
   async function load() {
     try {
       const s = await idbGet('state');
-      if (s && Array.isArray(s.files)) Object.assign(state, s, { settings: Object.assign(state.settings, s.settings || {}) });
+      if (s && Array.isArray(s.files)) {
+        Object.assign(state, s, { settings: Object.assign(state.settings, s.settings || {}) });
+        if (!Array.isArray(state.platforms)) state.platforms = [];
+        for (const f of state.files) {          // progetti salvati prima dell'elenco piattaforme
+          if (!f.platform) f.platform = CT.platformOfType(f.type) || 'other';
+          if (!state.platforms.includes(f.platform)) state.platforms.push(f.platform);
+        }
+      }
     } catch (e) { /* archiviazione non disponibile: si parte da zero */ }
   }
 
@@ -97,7 +104,12 @@
     }
   }
 
-  // ------------------------------------------------------------------ file
+  // ------------------------------------------------------------------ piattaforme e file
+  const P = CT.PLATFORMS;
+  const platformOfFile = (f) => f.platform || CT.platformOfType(f.type) || 'other';
+  const goPlatforms = () => { ui.tab = 'files'; ui.platform = null; render(); window.scrollTo(0, 0); };
+  function ensurePlatform(k) { if (!Array.isArray(state.platforms)) state.platforms = []; if (!state.platforms.includes(k)) state.platforms.push(k); }
+
   const EXAMPLE_APP = `Timestamp (UTC),Transaction Description,Currency,Amount,To Currency,To Amount,Native Currency,Native Amount,Native Amount (in USD),Transaction Kind
 2025-01-10 10:00:00,Buy BTC,EUR,-1000,BTC,0.01,EUR,1000,1100,viban_purchase
 2025-02-01 10:00:00,BTC -> ETH,BTC,-0.01,ETH,0.2,EUR,1200,1300,crypto_exchange
@@ -111,88 +123,181 @@ E1,2025-01-05T09:05:00+01:00,buy,incoming,500.00,EUR,10.0,XAU,50,EUR,Metal,,5.00
 E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00,EUR,0,EUR
 `;
 
-  function addFileText(name, text) {
-    if (state.files.some((f) => f.name === name && f.text === text)) return false;
-    state.files.push({ id: uid(), name, text, type: CT.importers.detectType(text) || '', account: '' });
-    return true;
+  /** Aggiunge un file a una piattaforma. Il tipo si riconosce da solo; se e' di un'altra piattaforma viene segnalato. */
+  function addFileText(name, text, platformKey) {
+    if (state.files.some((f) => f.name === name && f.text === text)) return null;
+    const plat = P[platformKey];
+    const det = CT.importers.detectType(text);
+    let type = det && plat.types.includes(det) ? det : '';
+    if (!type && det) type = det;                                  // riconosciuto, ma di un'altra piattaforma
+    if (!type && plat.types.length === 1) type = plat.types[0];    // piattaforma con un solo tipo di file
+    const f = { id: uid(), name, text, type, account: plat.account && type === 'generic' ? plat.account : '', platform: platformKey };
+    state.files.push(f);
+    ensurePlatform(platformKey);
+    return f;
   }
-  async function addFiles(list) {
-    let added = 0, failed = [];
+  async function addFiles(list, platformKey) {
+    const plat = P[platformKey];
+    let added = 0; const failed = [], skipped = [];
     for (const f of Array.from(list)) {
       try {
         if (/\.zip$/i.test(f.name)) {
-          for (const z of await CT.unzip(await f.arrayBuffer())) if (/\.(csv|txt)$/i.test(z.name) && addFileText(z.name, z.text)) added++;
-        } else if (addFileText(f.name, await f.text())) added++;
+          const entries = (await CT.unzip(await f.arrayBuffer())).filter((z) => /\.(csv|txt)$/i.test(z.name));
+          for (const z of entries) {
+            if (plat.zipPolicy && entries.length > 1 && !plat.zipPolicy(z.name)) { skipped.push(z.name); continue; }
+            if (addFileText(z.name, z.text, platformKey)) added++;
+          }
+        } else if (addFileText(f.name, await f.text(), platformKey)) added++;
       } catch (e) { failed.push(f.name); }
     }
-    const was = ui.tab;
     changed();
-    if (was === 'files' && added) { ui.tab = ui.res && ui.res.groups.blockCount ? 'checks' : 'result'; render(); }
-    toast(added ? `${added} file aggiunti` : failed.length ? `Non riesco a leggere: ${failed.join(', ')}` : 'File già caricati');
+    toast(added ? `${added} file aggiunti${skipped.length ? ` · ${skipped.length} file dello zip non necessari ignorati` : ''}` : failed.length ? `Non riesco a leggere: ${failed.join(', ')}` : 'File già caricati');
   }
   function loadExample() {
-    addFileText('ESEMPIO-crypto.com-app.csv', EXAMPLE_APP);
-    addFileText('ESEMPIO-bitpanda.csv', EXAMPLE_BP);
+    addFileText('ESEMPIO-crypto.com-app.csv', EXAMPLE_APP, 'cryptocom_app');
+    addFileText('ESEMPIO-bitpanda.csv', EXAMPLE_BP, 'bitpanda');
     state.example = true;
+    ui.platform = null;
     changed('checks');
   }
 
-  // ------------------------------------------------------------------ pannello: File
-  function panelFiles() {
-    const res = ui.res;
-    const nodes = [];
-    const input = h('input', { type: 'file', id: 'fileInput', multiple: true, accept: '.csv,.txt,.zip', class: 'sr', onchange: (e) => { addFiles(e.target.files); e.target.value = ''; } });
-    const drop = h('label', { class: 'drop', for: 'fileInput' },
-      h('strong', null, 'Trascina qui i tuoi file'),
-      h('span', { class: 'muted' }, 'CSV di Crypto.com e Bitpanda, oppure direttamente lo .zip scaricato. Puoi caricarne quanti vuoi, anche di anni diversi.'),
-      h('span', { class: 'btn primary' }, 'Scegli i file'), input);
-    drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('over'); });
-    drop.addEventListener('dragleave', () => drop.classList.remove('over'));
-    drop.addEventListener('drop', (e) => { e.preventDefault(); drop.classList.remove('over'); if (e.dataTransfer && e.dataTransfer.files.length) addFiles(e.dataTransfer.files); });
-    nodes.push(h('p', { class: 'muted small' }, 'I file restano nel tuo browser e non vengono inviati a nessuno.'));
-    nodes.push(drop);
+  function platformStats(k) {
+    const files = state.files.filter((f) => platformOfFile(f) === k);
+    const parsed = ui.res ? ui.res.parsed.filter((x) => files.some((f) => f.id === x.file.id)) : [];
+    let rows = 0, unknown = 0, errors = 0;
+    for (const x of parsed) { if (!x.ok) errors++; else { rows += x.result.rows; unknown += x.result.unknown.reduce((a, u) => a + u.count, 0); } }
+    const missing = P[k].kinds.filter((kd) => !files.some((f) => f.type === kd.type));
+    return { files, parsed, rows, unknown, errors, missing };
+  }
 
-    if (!state.files.length) {
-      nodes.push(h('div', { class: 'card empty' },
-        h('h2', null, 'Nessun file caricato'),
-        h('p', { class: 'muted' }, 'Carica gli export delle tue piattaforme, poi scegli l\'anno in alto a destra. Vuoi prima vedere come funziona?'),
-        h('button', { class: 'btn', onclick: loadExample }, 'Carica un esempio')));
-    } else {
-      const parsed = res ? res.parsed : [];
-      nodes.push(h('div', { class: 'card' },
-        h('div', { class: 'row between' }, h('h2', null, `File caricati (${state.files.length})`), state.example ? h('span', { class: 'example' }, 'CONTIENE DATI DI ESEMPIO') : null),
-        state.files.map((f) => fileRow(f, parsed.find((p) => p.file.id === f.id)))));
-    }
-    nodes.push(manualCard());
+  // ------------------------------------------------------------------ pannello: Piattaforme (elenco)
+  function panelPlatforms() {
+    const nodes = [];
+    nodes.push(h('div', { class: 'card' },
+      h('h2', null, 'Da quali piattaforme vuoi importare i dati?'),
+      h('p', { class: 'muted' }, 'Scegli una piattaforma, poi aggiungi i suoi file o, quando sarà disponibile, il collegamento API. Puoi aggiungerne quante vuoi: i trasferimenti tra le tue piattaforme vengono riconosciuti da soli.'),
+      !state.files.length ? h('div', { class: 'row' }, h('button', { class: 'btn', onclick: loadExample }, 'Prima vedi un esempio'), state.example ? null : null) : null));
+    nodes.push(h('div', { class: 'plats' }, Object.keys(P).map(platformCard)));
     nodes.push(optionsCard());
-    nodes.push(helpCard());
     nodes.push(h('div', { class: 'row' },
       ui.confirmReset
-        ? [h('span', { class: 'small' }, 'Cancellare tutti i file, le scelte e i prezzi?'),
-          h('button', { class: 'btn danger', onclick: () => { state.files = []; state.manual = []; state.resolutions = {}; state.prices = {}; state.example = false; ui.confirmReset = false; changed('files'); toast('Dati cancellati'); } }, 'Sì, cancella tutto'),
+        ? [h('span', { class: 'small' }, 'Cancellare tutte le piattaforme, i file, le scelte e i prezzi?'),
+          h('button', { class: 'btn danger', onclick: () => { state.files = []; state.manual = []; state.resolutions = {}; state.prices = {}; state.platforms = []; state.example = false; ui.confirmReset = false; ui.platform = null; changed('files'); toast('Dati cancellati'); } }, 'Sì, cancella tutto'),
           h('button', { class: 'btn', onclick: () => { ui.confirmReset = false; render(); } }, 'Annulla')]
         : h('button', { class: 'btn quiet danger', onclick: () => { ui.confirmReset = true; render(); } }, 'Cancella tutti i dati salvati')));
     return h('div', { class: 'stack' }, nodes);
   }
 
-  function fileRow(f, p) {
+  function platformCard(k) {
+    const p = P[k], st = platformStats(k);
+    const added = (state.platforms || []).includes(k) || st.files.length > 0;
+    let status;
+    if (!added) status = h('p', { class: 'muted small' }, 'Non ancora aggiunta');
+    else if (!st.files.length) status = h('p', { class: 'small' }, 'Aggiunta · nessun file ancora');
+    else status = h('p', { class: 'small' }, `${st.files.length} ${st.files.length === 1 ? 'file' : 'file'} · ${st.rows} righe`,
+      st.unknown ? ` · ${st.unknown} da controllare` : '', st.errors ? ` · ${st.errors} con errori` : '',
+      p.kinds.length > 1 && st.missing.length ? ` · mancano: ${st.missing.map((m) => m.label).join(', ')}` : '');
+    return h('div', { class: `card pcard${added ? ' on' : ''}` },
+      h('h3', null, p.name), h('p', { class: 'muted small' }, p.blurb),
+      h('div', { class: 'row' },
+        h('span', { class: `pill ${p.native ? 'good' : 'idle'}` }, p.native ? 'File' : 'File (modello)'),
+        h('span', { class: 'pill idle' }, p.api.status === 'none' ? 'API: non disponibile' : 'API: in arrivo')),
+      status,
+      h('button', { class: `btn ${added ? '' : 'primary'}`, onclick: () => { ensurePlatform(k); ui.platform = k; ui.method = 'file'; save(); render(); window.scrollTo(0, 0); } }, added ? 'Apri' : 'Aggiungi'));
+  }
+
+  // ------------------------------------------------------------------ pannello: una piattaforma
+  function panelPlatform(k) {
+    const p = P[k], st = platformStats(k);
+    const seg = h('div', { class: 'subtabs', role: 'group', 'aria-label': 'Come aggiungere i dati' },
+      [['file', 'Con i file'], ['api', 'Con le API']].map(([m, t]) => h('button', { class: 'chip', 'aria-pressed': ui.method === m ? 'true' : 'false', onclick: () => { ui.method = m; render(); } }, t)));
+    const remove = ui.confirmRemove === k
+      ? h('span', { class: 'row' }, h('span', { class: 'small' }, 'Rimuovere la piattaforma e i suoi file?'),
+        h('button', { class: 'btn danger', onclick: () => { state.files = state.files.filter((f) => platformOfFile(f) !== k); state.platforms = (state.platforms || []).filter((x) => x !== k); ui.confirmRemove = null; ui.platform = null; changed('files'); toast('Piattaforma rimossa'); } }, 'Sì, rimuovi'),
+        h('button', { class: 'btn', onclick: () => { ui.confirmRemove = null; render(); } }, 'Annulla'))
+      : h('button', { class: 'btn quiet danger', onclick: () => { ui.confirmRemove = k; render(); } }, 'Rimuovi piattaforma');
+    return h('div', { class: 'stack' },
+      h('div', null, h('button', { class: 'btn quiet', onclick: goPlatforms }, '← Tutte le piattaforme')),
+      h('div', { class: 'card' },
+        h('div', { class: 'row between' }, h('h2', null, p.name), remove),
+        h('p', { class: 'muted' }, p.blurb),
+        h('p', { class: 'lbl' }, 'Come vuoi aggiungere i dati?'), seg),
+      ui.method === 'api' ? apiPanel(k) : filePanel(k, st));
+  }
+
+  function apiPanel(k) {
+    const a = P[k].api;
+    return h('div', { class: `card tone-${a.status === 'none' ? 'warn' : 'warn'}` },
+      h('div', { class: 'row' }, h('h3', null, a.status === 'none' ? 'Nessuna API disponibile' : 'Collegamento API non ancora disponibile'),
+        h('span', { class: `pill ${a.status === 'none' ? 'idle' : 'warn'}` }, a.status === 'none' ? 'Non esiste' : 'In arrivo')),
+      h('p', { class: 'muted' }, a.text),
+      a.points.length ? h('ul', { class: 'clean muted small' }, a.points.map((t) => h('li', null, t))) : null,
+      h('div', { class: 'row' }, h('button', { class: 'btn primary', onclick: () => { ui.method = 'file'; render(); } }, 'Aggiungi i file')));
+  }
+
+  function filePanel(k, st) {
+    const p = P[k];
+    const nodes = [];
+    if (p.kinds.length > 1) {
+      nodes.push(h('div', { class: 'card' }, h('h3', null, 'File che servono'),
+        h('ul', { class: 'clean' }, p.kinds.map((kd) => { const n = st.files.filter((f) => f.type === kd.type).length; return h('li', null, n ? '✓ ' : '○ ', kd.label, n ? ` · ${n} caricato${n === 1 ? '' : 'i'}` : ' · mancante'); }))));
+    }
+    nodes.push(h('div', { class: 'card' }, h('h3', null, 'Come ottenere i file'),
+      h('ol', { class: 'steps' }, p.steps.map((x) => h('li', null, x))),
+      !p.native ? h('div', { class: 'row' }, h('button', { class: 'btn', onclick: () => saveFile('modello-universale.csv', '﻿' + CT.importers.GENERIC_TEMPLATE, 'text/csv') }, 'Scarica il modello universale')) : null));
+
+    const inputId = `fileInput_${k}`;
+    const input = h('input', { type: 'file', id: inputId, multiple: true, accept: '.csv,.txt,.zip', class: 'sr', onchange: (e) => { addFiles(e.target.files, k); e.target.value = ''; } });
+    const drop = h('label', { class: 'drop', for: inputId },
+      h('strong', null, `Trascina qui i file di ${p.name}`),
+      h('span', { class: 'muted' }, 'CSV oppure .zip. Puoi caricarne più d\'uno, anche di periodi diversi.'),
+      h('span', { class: 'btn primary' }, 'Scegli i file'), input);
+    drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('over'); });
+    drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+    drop.addEventListener('drop', (e) => { e.preventDefault(); drop.classList.remove('over'); if (e.dataTransfer && e.dataTransfer.files.length) addFiles(e.dataTransfer.files, k); });
+    nodes.push(drop);
+    nodes.push(h('p', { class: 'muted small' }, 'I file restano nel tuo browser e non vengono inviati a nessuno.'));
+
+    if (st.files.length) {
+      nodes.push(h('div', { class: 'card' }, h('h3', null, `File di ${p.name} (${st.files.length})`),
+        st.files.map((f) => fileRow(f, st.parsed.find((x) => x.file.id === f.id), k))));
+      nodes.push(h('div', { class: 'row' },
+        h('button', { class: 'btn primary', onclick: () => { ui.platform = null; ui.tab = ui.res && ui.res.groups.blockCount ? 'checks' : 'result'; render(); window.scrollTo(0, 0); } }, 'Continua: controlla e calcola'),
+        h('button', { class: 'btn', onclick: goPlatforms }, 'Aggiungi un\'altra piattaforma')));
+    }
+    if (p.manual) nodes.push(manualCard());
+    nodes.push(h('details', { class: 'card' }, h('summary', null, 'Cosa viene letto e cosa no'), h('ul', { class: 'clean muted' }, p.limits.map((x) => h('li', null, x)))));
+    return h('div', { class: 'stack', style: 'padding:0' }, nodes);
+  }
+
+  function fileRow(f, x, k) {
+    const plat = P[k];
     const meta = [];
-    let chip;
-    if (!p) chip = h('span', { class: 'pill idle' }, '…');
-    else if (!p.ok) chip = h('span', { class: 'pill bad' }, p.error);
+    let chip, warn = null;
+    if (!x) chip = h('span', { class: 'pill idle' }, '…');
+    else if (!x.ok) chip = h('span', { class: 'pill bad' }, x.error);
     else {
-      const r = p.result;
+      const r = x.result;
       meta.push(h('span', null, `${r.rows} righe`));
       if (r.from) meta.push(h('span', null, `dal ${dmy(CT.taxDate(r.from))} al ${dmy(CT.taxDate(r.to))}`));
-      const unk = r.unknown.reduce((s, u) => s + u.count, 0);
+      const unk = r.unknown.reduce((a, u) => a + u.count, 0);
       chip = unk ? h('span', { class: 'pill warn' }, `${unk} righe da controllare`) : h('span', { class: 'pill good' }, 'Letto correttamente');
+    }
+    if (f.type && !plat.types.includes(f.type)) {
+      const other = CT.platformOfType(f.type);
+      warn = h('div', { class: 'row' }, h('span', { class: 'pill warn' }, `Sembra un export di ${P[other].name}`),
+        h('button', { class: 'btn', onclick: () => { f.platform = other; ensurePlatform(other); changed(); toast(`Spostato su ${P[other].name}`); } }, `Spostalo su ${P[other].name}`));
     }
     const sel = h('select', { 'aria-label': `Tipo di file per ${f.name}`, onchange: (e) => { f.type = e.target.value; changed(); } },
       h('option', { value: '' }, 'Scegli il tipo di file…'),
-      Object.entries(CT.importers.TYPES).map(([k, t]) => h('option', { value: k, selected: f.type === k }, t.label)));
+      plat.kinds.map((kd) => h('option', { value: kd.type, selected: f.type === kd.type }, kd.label)),
+      f.type && !plat.types.includes(f.type) ? h('option', { value: f.type, selected: true }, CT.importers.TYPES[f.type].label) : null);
+    const needsDiag = x && (!x.ok || x.result.unknown.length);
     return h('div', { class: 'file' },
-      h('div', null, h('div', { class: 'name' }, f.name), h('div', { class: 'meta' }, meta), h('div', { class: 'row', style: 'margin-top:8px' }, sel, chip)),
-      h('button', { class: 'btn quiet danger', onclick: () => { state.files = state.files.filter((x) => x.id !== f.id); changed(); } }, 'Rimuovi'));
+      h('div', null, h('div', { class: 'name' }, f.name), h('div', { class: 'meta' }, meta), h('div', { class: 'row', style: 'margin-top:8px' }, sel, chip), warn ? h('div', { style: 'margin-top:8px' }, warn) : null),
+      h('div', { class: 'row' },
+        needsDiag ? h('button', { class: 'btn quiet', onclick: () => copyText(R.diagnostics(ui.res, [f]), 'Diagnostica') }, 'Copia diagnostica') : null,
+        h('button', { class: 'btn quiet danger', onclick: () => { state.files = state.files.filter((y) => y.id !== f.id); changed(); } }, 'Rimuovi')));
   }
 
   function manualCard() {
@@ -233,15 +338,6 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     return h('div', { class: 'card' }, h('h2', null, 'Opzioni di calcolo'),
       check('o_carry', 'useCarry', 'Riporta le minusvalenze degli anni precedenti', 'Le perdite che emergono dai tuoi file (dal 2023) riducono le tasse degli anni successivi, entro 4 anni. Calcolate in automatico: non serve sapere cosa hai dichiarato.'),
       check('o_rebase', 'rebase2025', 'Ho rideterminato il costo al 1° gennaio 2025', 'Facoltativo e raro: pagando un\'imposta del 18% sul valore delle cripto possedute il 1/1/2025, quel valore diventa il nuovo costo di acquisto. Se non sai di cosa si tratta lascia spento: vuol dire che non l\'hai fatto.'));
-  }
-
-  function helpCard() {
-    return h('details', { class: 'card' }, h('summary', null, 'Dove trovo i file da caricare?'),
-      h('ul', { class: 'clean muted' },
-        h('li', null, h('strong', null, 'Crypto.com App: '), 'nell\'app vai in Contabilità → Cronologia transazioni → Esporta (CSV). Scarica un file per ogni periodo se te lo chiede.'),
-        h('li', null, h('strong', null, 'Crypto.com Exchange: '), 'dal sito, sezione Ordini/Cronologia → Esporta. Ricevi uno .zip: puoi caricarlo così com\'è. Servono anche i file di depositi e prelievi.'),
-        h('li', null, h('strong', null, 'Bitpanda: '), 'dal profilo, Cronologia transazioni → Scarica/Esporta (CSV). Per l\'oro scarica tutto lo storico.'),
-        h('li', null, 'I nomi dei menu possono cambiare. Scarica sempre lo storico completo dall\'apertura del conto: servono anche gli anni passati per calcolare il costo di acquisto.')));
   }
 
   // ------------------------------------------------------------------ pannello: Da controllare
@@ -294,7 +390,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
         h('div', { class: 'fields' }, cost.el, when.el),
         h('div', { class: 'row' },
           h('button', { class: 'btn primary', onclick: () => { const v = needNumber(cost.input.value, 'il costo'); if (v) resolve(i.uid, { action: 'cover_cost', cost_eur: v, acquired: when.input.value || undefined }, 'Costo salvato'); } }, 'Salva il costo'),
-          h('button', { class: 'btn', onclick: () => { ui.tab = 'files'; render(); } }, 'Carica altri file'))));
+          h('button', { class: 'btn', onclick: goPlatforms }, 'Aggiungi altri file'))));
     }
     for (const u of g.unknown.values()) {
       const ex = u.items.slice(0, 3).map((i) => i.message);
@@ -560,12 +656,12 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
   }
 
   function noData() {
-    return h('div', { class: 'stack' }, h('div', { class: 'card empty' }, h('h2', null, 'Prima carica i tuoi file'), h('p', { class: 'muted' }, ui.error ? `Errore: ${ui.error.message}` : 'Qui comparirà il risultato appena carichi gli export delle piattaforme.'),
-      h('button', { class: 'btn primary', onclick: () => { ui.tab = 'files'; render(); } }, 'Vai ai file')));
+    return h('div', { class: 'stack' }, h('div', { class: 'card empty' }, h('h2', null, 'Prima scegli le piattaforme'), h('p', { class: 'muted' }, ui.error ? `Errore: ${ui.error.message}` : 'Qui comparirà il risultato appena aggiungi una piattaforma e i suoi file.'),
+      h('button', { class: 'btn primary', onclick: goPlatforms }, 'Scegli le piattaforme')));
   }
 
   // ------------------------------------------------------------------ cornice
-  const TABS = [['files', 'File'], ['checks', 'Da controllare'], ['result', 'Risultato'], ['detail', 'Dettaglio'], ['prices', 'Prezzi'], ['export', 'Documenti']];
+  const TABS = [['files', 'Piattaforme'], ['checks', 'Da controllare'], ['result', 'Risultato'], ['detail', 'Dettaglio'], ['prices', 'Prezzi'], ['export', 'Documenti']];
   function render() {
     const root = document.getElementById('app');
     const res = ui.res;
@@ -579,7 +675,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     const nav = h('nav', { class: 'nav', role: 'tablist' }, TABS.map(([k, t], i) => h('button', { class: 'tab', role: 'tab', 'aria-selected': ui.tab === k ? 'true' : 'false', onclick: () => { ui.tab = k; render(); window.scrollTo(0, 0); } },
       h('span', { class: 'n' }, i + 1), t,
       k === 'checks' && blk ? h('span', { class: 'badge' }, blk) : null, k === 'prices' && missing ? h('span', { class: 'badge' }, missing) : null)));
-    const panel = { files: panelFiles, checks: panelChecks, result: panelResult, detail: panelDetail, prices: panelPrices, export: panelExport }[ui.tab]();
+    const panel = { files: () => (ui.platform ? panelPlatform(ui.platform) : panelPlatforms()), checks: panelChecks, result: panelResult, detail: panelDetail, prices: panelPrices, export: panelExport }[ui.tab]();
     const scrollY = window.scrollY;
     root.replaceChildren(...[
       h('header', { class: 'top' }, h('div', { class: 'wrap' },

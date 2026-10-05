@@ -64,9 +64,12 @@ fonti consultate erano discordanti: vanno presi dalle istruzioni del modello.
 
 ## Cosa NON è incluso (ancora)
 
-- **API degli exchange**: una pagina web non può chiamarle da sola (blocchi CORS e chiavi segrete). Servirebbe un piccolo
-  programma o servizio di appoggio. Per Crypto.com App non esiste comunque un'API pubblica. Per ora: export CSV/ZIP e
-  modello universale.
+- **API degli exchange**: la pagina di ogni piattaforma ha la sezione API, ma il collegamento non è attivo. Motivi: (1) dall'ambiente di sviluppo
+  non si raggiungono i server delle piattaforme, quindi nessun collegamento può essere provato; (2) uno storico incompleto darebbe imposte
+  sbagliate (le API limitano finestre temporali e prodotti); (3) i browser spesso bloccano le chiamate dirette (CORS) e dentro claude.ai
+  la pagina non può contattare siti esterni. Per attivarlo servono la versione pubblicata fuori da claude.ai e un test con chiavi di sola
+  lettura dell'utente, una piattaforma alla volta. Crypto.com App non ha comunque un'API pubblica. Per ora: export CSV/ZIP e modello universale.
+- **Formati nativi di Binance e Coinbase**: non ancora validati; si usa il modello universale o si invia la diagnostica per farli aggiungere.
 - **PDF** come input: poco affidabili; si preferiscono CSV.
 - Azioni, ETF, obbligazioni, dividendi, IVAFE, imposta sulle transazioni finanziarie, forex.
 - DeFi, NFT, margin/futures, hard fork, wrapped, rebase: le righe diventano "tipo sconosciuto".

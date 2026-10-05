@@ -12,13 +12,15 @@ leggono i risultati. È un'unica pagina web: **nessuna installazione, nessun ser
 ## Come si usa
 
 1. Apri `index.html` (doppio clic) oppure il link della pagina pubblicata.
-2. **File**: trascina gli export (CSV o direttamente lo .zip). Il tipo viene riconosciuto da solo.
+2. **Piattaforme**: scegli la piattaforma (Crypto.com App o Exchange, Bitpanda, Binance, Coinbase, altra o wallet personale) e poi aggiungi i suoi dati: nella pagina della piattaforma trovi le istruzioni per scaricare i file, i file che servono e la sezione API. Trascini i CSV (o direttamente lo .zip) e il tipo viene riconosciuto da solo; se un file è di un'altra piattaforma lo segnala e lo sposta.
 3. **Da controllare**: il programma non indovina; ti chiede solo ciò che non può sapere (dove sono finite delle
    crypto uscite, a che costo hai preso quelle arrivate da fuori, righe di tipo sconosciuto, prezzi mancanti).
 4. **Risultato**: imposta stimata, quadro RT per cripto e oro, prospetto RW, confronto tra anni.
 5. **Documenti**: fascicolo **PDF** per la dichiarazione (copertina e riepilogo, prospetti per i quadri RT cripto, RT oro e RW, imposte e versamenti, allegati A-E con elenco cessioni, lotti di acquisto, proventi, saldi, fonti dei dati con impronta SHA-256, decisioni prese e problemi). Si scarica completo oppure un PDF per documento (.zip). Se ci sono punti irrisolti ogni pagina porta la filigrana BOZZA. Inoltre CSV per Excel e salvataggio del progetto.
 
 Il lavoro si salva da solo nel browser; si può anche salvare/riaprire come file di progetto.
+
+**API:** per ora ogni piattaforma si aggiunge con i file. Il collegamento API non è attivo: va costruito e provato con un account reale (dall'ambiente di sviluppo non si raggiungono i server delle piattaforme) e, dentro claude.ai, la pagina non può comunque collegarsi a siti esterni. Vedi `docs/SPECIFICA.md`.
 
 ## Attenzione: questo repository pubblica su GitHub Pages
 
@@ -34,5 +36,5 @@ node --test app/test/      # test del motore, degli importatori, dell'analisi e 
 ```
 
 Sorgenti in `app/src`: `core` (tipi, date), `csv`, `importers`, `engine` (lotti LIFO, permute, trasferimenti),
-`tax` (panieri, riporto perdite, franchigie per anno), `rw`, `zip` (lettura/scrittura), `pipeline`, `report`, `pdf`, `ui`.
+`tax` (panieri, riporto perdite, franchigie per anno), `rw`, `zip` (lettura/scrittura), `pipeline`, `report`, `pdf`, `platforms` (catalogo piattaforme), `ui`.
 Librerie incluse in `app/src/vendor` (licenza MIT): `decimal.js` (calcoli esatti sui decimali), `jsPDF` e `jsPDF-AutoTable` (PDF).

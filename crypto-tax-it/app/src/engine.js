@@ -9,6 +9,7 @@
   const REBASE_DAY = '2025-01-01';
   const NEW_REGIME_DAY = '2023-01-01'; // dal 2023 le permute cripto-cripto sono realizzi imponibili
   const WALLET = 'Wallet personale';
+  const it = (day) => day.split('-').reverse().join('/'); // 2025-03-07 -> 07/03/2025 (solo nei messaggi)
 
   // ------------------------------------------------------------ prezzi
   class PriceBook {
@@ -101,7 +102,7 @@
       const p = this.prices.get(ccy, taxDate(e.ts));
       if (p) return amount.times(p.price);
       this.need(ccy, e.ts);
-      this.issue('block', 'missing_price', e.uid, `Manca il cambio ${ccy}/EUR del ${taxDate(e.ts)}`, { symbol: ccy, day: taxDate(e.ts) });
+      this.issue('block', 'missing_price', e.uid, `Manca il cambio ${ccy}/EUR del ${it(taxDate(e.ts))}`, { symbol: ccy, day: taxDate(e.ts) });
       return null;
     }
 
@@ -121,7 +122,7 @@
         if (p) return { v: p.price.times(e.counterQty), src: p.src === 'manuale' ? 'prezzo inserito' : 'prezzo dedotto dalle tue operazioni' };
       }
       this.need(e.asset || e.counterAsset, e.ts);
-      this.issue('block', 'missing_value', e.uid, `Impossibile valorizzare in euro ${e.qty.toFixed()} ${e.asset} del ${day}: manca il prezzo`, { symbol: e.asset, day });
+      this.issue('block', 'missing_value', e.uid, `Impossibile valorizzare in euro ${e.qty.toFixed()} ${e.asset} del ${it(day)}: manca il prezzo`, { symbol: e.asset, day });
       return { v: ZERO, src: 'MANCANTE' };
     }
 
@@ -133,7 +134,7 @@
       const p = this.prices.get(e.feeAsset, taxDate(e.ts));
       if (!p) {
         this.need(e.feeAsset, e.ts);
-        this.issue('block', 'missing_price', e.uid, `Manca il prezzo di ${e.feeAsset} per valorizzare la commissione del ${taxDate(e.ts)}`, { symbol: e.feeAsset, day: taxDate(e.ts) });
+        this.issue('block', 'missing_price', e.uid, `Manca il prezzo di ${e.feeAsset} per valorizzare la commissione del ${it(taxDate(e.ts))}`, { symbol: e.feeAsset, day: taxDate(e.ts) });
         return ZERO;
       }
       return p.price.times(e.feeQty);
@@ -163,7 +164,7 @@
         }
         if (short.gt(0)) {
           this.issue('block', 'missing_history', uid,
-            `Vendita/uso di ${CT.fq(qty)} ${asset} del ${taxDate(e.ts)}, ma dai file risultano solo ${CT.fq(qty.minus(short))} disponibili: mancano ${CT.fq(short)}.`,
+            `Vendita/uso di ${CT.fq(qty)} ${asset} del ${it(taxDate(e.ts))}, ma dai file risultano solo ${CT.fq(qty.minus(short))} disponibili: mancano ${CT.fq(short)}.`,
             { asset, qty: short, day: taxDate(e.ts), account: e.account });
           uses.push({ lotId: 'MANCANTE', ts: e.ts, day: taxDate(e.ts), qty: short, cost: ZERO, documented: false, rebased: false, origin: '' });
         }
@@ -289,7 +290,7 @@
           // Prima del 2023 la permuta cripto-cripto non era un realizzo: il costo si trasferisce al nuovo asset.
           const { uses, short } = this.pool(e.asset).consume(e.qty);
           let cost = uses.reduce((s, u) => s.plus(u.cost), ZERO);
-          if (short.gt(0)) this.issue('block', 'missing_history', e.uid, `Permuta di ${CT.fq(e.qty)} ${e.asset} del ${taxDate(e.ts)}: mancano ${CT.fq(short)} negli acquisti caricati.`, { asset: e.asset, qty: short, day: taxDate(e.ts), account: e.account });
+          if (short.gt(0)) this.issue('block', 'missing_history', e.uid, `Permuta di ${CT.fq(e.qty)} ${e.asset} del ${it(taxDate(e.ts))}: mancano ${CT.fq(short)} negli acquisti caricati.`, { asset: e.asset, qty: short, day: taxDate(e.ts), account: e.account });
           this.acquire(e, e.counterAsset, e.counterQty, cost, short.isZero());
         } else {
           this.dispose(e, e.uid, e.asset, e.qty, v.minus(fee), fee, 'swap', src, e.note);
@@ -336,7 +337,7 @@
       this.move(e, wallet, e.asset, e.qty, this.hint(e));
       if (res.action === 'self_custody') this.issue('info', 'resolved_self_custody', e.uid, `Uscita verso ${wallet}: nessuna vendita`);
       else this.issue('block', 'transfer_out_unmatched', e.uid,
-        `Il ${taxDate(e.ts)} sono usciti ${CT.fq(e.qty)} ${e.asset} da ${e.account}, ma non risultano arrivati su un altro tuo conto.`,
+        `Il ${it(taxDate(e.ts))} sono usciti ${CT.fq(e.qty)} ${e.asset} da ${e.account}, ma non risultano arrivati su un altro tuo conto.`,
         { asset: e.asset, qty: e.qty, day: taxDate(e.ts), account: e.account });
     }
 
@@ -360,7 +361,7 @@
       this.acquire(e, e.asset, e.qty, ZERO, false);
       this.move(e, e.account, e.asset, e.qty, this.hint(e));
       this.issue('block', 'transfer_in_unmatched', e.uid,
-        `Il ${taxDate(e.ts)} sono arrivati ${CT.fq(e.qty)} ${e.asset} su ${e.account} da un'origine che non conosco.`,
+        `Il ${it(taxDate(e.ts))} sono arrivati ${CT.fq(e.qty)} ${e.asset} su ${e.account} da un'origine che non conosco.`,
         { asset: e.asset, qty: e.qty, day: taxDate(e.ts), account: e.account });
     }
   }

@@ -77,7 +77,7 @@
 
   function need(engine, asset, day, account, notes, label) {
     engine.missingPrices.set(`${asset.toUpperCase()}|${day}`, { symbol: asset.toUpperCase(), day });
-    engine.issue('block', 'missing_price', '', `Per il prospetto RW serve il ${label} di ${asset} (${day})`, { symbol: asset.toUpperCase(), day, forRW: true });
+    engine.issue('block', 'missing_price', '', `Per il prospetto RW serve il ${label} di ${asset}`, { symbol: asset.toUpperCase(), day, forRW: true });
     notes.push('manca ' + label);
   }
 

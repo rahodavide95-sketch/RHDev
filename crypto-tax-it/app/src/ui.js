@@ -32,8 +32,8 @@
   const uid = () => Math.random().toString(36).slice(2, 9);
 
   // ------------------------------------------------------------------ stato e salvataggio
-  const state = { files: [], manual: [], resolutions: {}, prices: {}, settings: { year: 2025, rebase2025: false, useCarry: true }, example: false };
-  const ui = { tab: 'files', res: null, error: null, detail: 'cessioni', filter: '', confirmReset: false, toast: '', busy: '' };
+  const state = { files: [], manual: [], resolutions: {}, prices: {}, settings: { year: 2025, rebase2025: false, useCarry: true }, taxpayer: { name: '', cf: '' }, custodians: {}, example: false };
+  const ui = { tab: 'files', res: null, error: null, detail: 'cessioni', filter: '', confirmReset: false, toast: '', busy: '', ver: 0, pdf: null, pdfBusy: false };
 
   function idb() {
     return new Promise((res, rej) => {
@@ -61,6 +61,7 @@
     try { ui.res = CT.analyze(state); ui.error = null; } catch (e) { console.error(e); ui.res = null; ui.error = e; }
   }
   function changed(nextTab) {
+    ui.ver++; ui.pdf = null;
     recompute(); save();
     if (nextTab) ui.tab = nextTab;
     render();
@@ -488,9 +489,9 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       h('div', null, h('strong', null, title), h('div', { class: 'muted small' }, desc)),
       h('div', { class: 'row' }, h('button', { class: 'btn primary', onclick: () => saveFile(name, build(), mime) }, 'Salva'), h('button', { class: 'btn', onclick: () => copyText(build().replace(/^﻿/, ''), title) }, 'Copia')));
     return h('div', { class: 'stack' },
-      h('div', { class: 'card' }, h('h2', null, `Esporta · ${y}`),
+      pdfCard(res),
+      h('div', { class: 'card' }, h('h2', null, `Altri formati · ${y}`),
         h('p', { class: 'muted small' }, 'I file CSV si aprono con Excel (separatore ; e virgola decimale).'),
-        item('Report completo', 'Documento da aprire nel browser e stampare o salvare in PDF', `riepilogo-${y}.html`, () => R.reportHtml(res), 'text/html'),
         item('Riepilogo', 'Testo con i totali per quadro', `riepilogo-${y}.txt`, () => R.summaryText(res), 'text/plain'),
         item('Vendite e scambi', 'Una riga per ogni cessione, con il costo e il guadagno', `cessioni-${y}.csv`, () => R.csv(R.DISPOSAL_HEAD, R.disposalsRows(res)), 'text/csv'),
         item('Dettaglio lotti', 'Per ogni cessione, i lotti di acquisto usati (utile in caso di controllo)', `lotti-${y}.csv`, () => R.csv(R.LOTS_HEAD, R.lotsRows(res)), 'text/csv'),
@@ -508,13 +509,63 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
           h('button', { class: 'btn', onclick: () => copyText(R.diagnostics(res, state.files), 'Diagnostica') }, 'Copia diagnostica (senza importi)'))));
   }
 
+
+  // ------------------------------------------------------------------ PDF
+  async function makePdfs() {
+    if (ui.pdf && ui.pdf.ver === ui.ver) return ui.pdf.out;
+    ui.pdfBusy = true; render();
+    try {
+      const out = await CT.pdf.buildAll(ui.res, state);
+      ui.pdf = { ver: ui.ver, out };
+      return out;
+    } catch (e) {
+      console.error(e); toast('Non sono riuscito a creare i PDF: ' + e.message); return null;
+    } finally { ui.pdfBusy = false; render(); }
+  }
+  async function downloadPdf(which) {
+    const out = await makePdfs();
+    if (!out) return;
+    const f = which === 'full' ? out.full : which === 'zip' ? out.zip : out.parts.find((x) => x.name === which);
+    if (f) saveFile(f.name, f.data, which === 'zip' ? 'application/zip' : 'application/pdf');
+  }
+  function pdfCard(res) {
+    const tp = state.taxpayer = state.taxpayer || { name: '', cf: '' };
+    state.custodians = state.custodians || {};
+    const touch = () => { ui.ver++; ui.pdf = null; save(); };
+    const name = field('Cognome e nome', { id: 'tp_name', value: tp.name, placeholder: 'es. Rossi Mario', oninput: (e) => { tp.name = e.target.value; touch(); } });
+    const cf = field('Codice fiscale', { id: 'tp_cf', value: tp.cf, maxlength: '16', placeholder: 'es. RSSMRA80A01H501U', oninput: (e) => { e.target.value = e.target.value.toUpperCase(); tp.cf = e.target.value; touch(); } });
+    const accounts = [...new Set(res.rw.map((r) => r.account))];
+    const cust = accounts.map((a) => {
+      const c = state.custodians[a] = state.custodians[a] || { name: '', country: '' };
+      const n = field(`${a}: società che custodisce i fondi`, { id: `cu_n_${a}`, value: c.name, placeholder: 'dai termini e condizioni della piattaforma', oninput: (e) => { c.name = e.target.value; touch(); } });
+      const k = field('Stato', { id: `cu_s_${a}`, value: c.country, placeholder: 'es. Malta', oninput: (e) => { c.country = e.target.value; touch(); } });
+      return h('div', { class: 'fields' }, n.el, k.el);
+    });
+    const blk = res.groups.blockCount;
+    const busy = ui.pdfBusy;
+    return h('div', { class: `card tone-${blk ? 'warn' : 'good'}` },
+      h('h2', null, `Documenti per la dichiarazione · ${res.year}`),
+      h('p', { class: 'muted' }, 'PDF pronti per te o per il commercialista: prospetti per i quadri RT e RW, riepilogo delle imposte e allegati che documentano ogni calcolo.'),
+      h('p', { class: 'small muted' }, 'Attenzione: l\'Agenzia delle Entrate non ha un modulo ufficiale per questi dati e non vuole allegati. I dati si dichiarano nel Modello Redditi PF; questi documenti servono a compilarlo e a dimostrare i calcoli in caso di controllo. Non sono moduli ufficiali.'),
+      blk ? h('p', { class: 'pill warn block' }, `Ci sono ${blk} punti da controllare: ogni pagina avrà la filigrana BOZZA.`) : h('p', { class: 'pill good block' }, 'Nessun punto aperto: i PDF non avranno la filigrana BOZZA.'),
+      h('h3', null, 'Dati del contribuente (facoltativi)'),
+      h('div', { class: 'fields' }, name.el, cf.el),
+      accounts.length ? [h('h3', null, 'Custodi per il quadro RW'), h('p', { class: 'small muted' }, 'Per ogni piattaforma o wallet servono la denominazione della società che custodisce i fondi e lo Stato. Se non li indichi, nel prospetto resta "(da indicare)".'), cust] : null,
+      h('div', { class: 'row' },
+        h('button', { class: 'btn primary', disabled: busy, onclick: () => downloadPdf('full') }, busy ? 'Sto preparando i PDF…' : 'Scarica il fascicolo completo (PDF)'),
+        h('button', { class: 'btn', disabled: busy, onclick: () => downloadPdf('zip') }, 'Scarica tutti i PDF separati (.zip)')),
+      h('details', null, h('summary', null, 'Scarica un singolo documento'),
+        h('div', null, CT.pdf.SECTIONS.map((sec) => h('div', { class: 'row between', style: 'padding:8px 0;border-top:1px solid var(--line)' },
+          h('span', null, sec.title), h('button', { class: 'btn', disabled: busy, onclick: () => downloadPdf(`${res.year}-${sec.file}.pdf`) }, 'Scarica'))))));
+  }
+
   function noData() {
     return h('div', { class: 'stack' }, h('div', { class: 'card empty' }, h('h2', null, 'Prima carica i tuoi file'), h('p', { class: 'muted' }, ui.error ? `Errore: ${ui.error.message}` : 'Qui comparirà il risultato appena carichi gli export delle piattaforme.'),
       h('button', { class: 'btn primary', onclick: () => { ui.tab = 'files'; render(); } }, 'Vai ai file')));
   }
 
   // ------------------------------------------------------------------ cornice
-  const TABS = [['files', 'File'], ['checks', 'Da controllare'], ['result', 'Risultato'], ['detail', 'Dettaglio'], ['prices', 'Prezzi'], ['export', 'Esporta']];
+  const TABS = [['files', 'File'], ['checks', 'Da controllare'], ['result', 'Risultato'], ['detail', 'Dettaglio'], ['prices', 'Prezzi'], ['export', 'Documenti']];
   function render() {
     const root = document.getElementById('app');
     const res = ui.res;

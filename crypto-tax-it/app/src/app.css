@@ -53,6 +53,7 @@ select:focus-visible, input:focus-visible, button:focus-visible, summary:focus-v
 .pill.bad { background: var(--bad-soft); color: var(--bad); }
 .pill.idle { background: var(--surface-2); color: var(--ink-2); }
 button.pill { cursor: pointer; }
+.pill.block { display: block; white-space: normal; border-radius: 10px; padding: 8px 12px; }
 
 /* navigazione */
 .nav { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: thin; padding-bottom: 0; }
@@ -63,7 +64,7 @@ button.pill { cursor: pointer; }
 .badge { background: var(--warn-soft); color: var(--warn); border-radius: 999px; font-size: 12px; padding: 0 7px; min-width: 20px; text-align: center; font-weight: 600; }
 
 /* componenti */
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; display: grid; gap: 12px; align-content: start; min-width: 0; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-content: start; min-width: 0; }
 .card > h2 { font-size: 17px; }
 .card > h3 { font-size: 15px; }
 .card.tone-bad { border-color: color-mix(in srgb, var(--bad) 45%, var(--line)); }
@@ -90,7 +91,7 @@ button.pill { cursor: pointer; }
 .drop { display: grid; justify-items: center; gap: 8px; text-align: center; padding: 34px 18px; border: 2px dashed color-mix(in srgb, var(--accent) 50%, var(--line)); border-radius: var(--radius); background: var(--accent-soft); cursor: pointer; }
 .drop.over { background: var(--surface); border-style: solid; }
 .drop strong { font-size: 18px; }
-.file { display: grid; grid-template-columns: 1fr auto; gap: 8px 14px; align-items: center; padding: 12px 0; border-top: 1px solid var(--line); }
+.file { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 14px; align-items: center; padding: 12px 0; border-top: 1px solid var(--line); }
 .file:first-of-type { border-top: 0; }
 .file .name { font-weight: 600; overflow-wrap: anywhere; }
 .file .meta { color: var(--ink-2); font-size: 13px; display: flex; flex-wrap: wrap; gap: 4px 12px; }
@@ -118,7 +119,7 @@ ul.clean { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
 .empty { display: grid; gap: 10px; justify-items: start; }
 @media (max-width: 560px) {
   .card { padding: 14px; }
-  .file { grid-template-columns: 1fr; }
+  .file { grid-template-columns: minmax(0, 1fr); }
   th, td { padding: 7px 9px; }
 }
 @media (prefers-reduced-motion: no-preference) { .btn, .tab, .chip { transition: background .12s, color .12s, border-color .12s; } }

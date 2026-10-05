@@ -16,7 +16,7 @@ leggono i risultati. È un'unica pagina web: **nessuna installazione, nessun ser
 3. **Da controllare**: il programma non indovina; ti chiede solo ciò che non può sapere (dove sono finite delle
    crypto uscite, a che costo hai preso quelle arrivate da fuori, righe di tipo sconosciuto, prezzi mancanti).
 4. **Risultato**: imposta stimata, quadro RT per cripto e oro, prospetto RW, confronto tra anni.
-5. **Esporta**: report stampabile, CSV per Excel, dettaglio dei lotti (per un eventuale controllo).
+5. **Documenti**: fascicolo **PDF** per la dichiarazione (copertina e riepilogo, prospetti per i quadri RT cripto, RT oro e RW, imposte e versamenti, allegati A-E con elenco cessioni, lotti di acquisto, proventi, saldi, fonti dei dati con impronta SHA-256, decisioni prese e problemi). Si scarica completo oppure un PDF per documento (.zip). Se ci sono punti irrisolti ogni pagina porta la filigrana BOZZA. Inoltre CSV per Excel e salvataggio del progetto.
 
 Il lavoro si salva da solo nel browser; si può anche salvare/riaprire come file di progetto.
 
@@ -30,9 +30,9 @@ chiavi o report: il `.gitignore` di questa cartella li esclude, ma controlla sem
 
 ```bash
 node app/build.js          # ricostruisce index.html (pagina unica) e app/dist/artifact.html
-node --test app/test/      # test del motore, degli importatori e dell'analisi
+node --test app/test/      # test del motore, degli importatori, dell'analisi e dei PDF
 ```
 
 Sorgenti in `app/src`: `core` (tipi, date), `csv`, `importers`, `engine` (lotti LIFO, permute, trasferimenti),
-`tax` (panieri, riporto perdite, franchigie per anno), `rw`, `zip`, `pipeline`, `report`, `ui`.
-Unica libreria: `decimal.js` (MIT) in `app/src/vendor`, per i calcoli esatti sui decimali.
+`tax` (panieri, riporto perdite, franchigie per anno), `rw`, `zip` (lettura/scrittura), `pipeline`, `report`, `pdf`, `ui`.
+Librerie incluse in `app/src/vendor` (licenza MIT): `decimal.js` (calcoli esatti sui decimali), `jsPDF` e `jsPDF-AutoTable` (PDF).

@@ -39,6 +39,29 @@ Un dato mancante o ambiguo non viene mai risolto in silenzio. Genera un punto "d
 l'ipotesi più prudente (costo zero, valore zero), così il risultato resta visibile ma marcato BOZZA. L'utente risolve dalla
 schermata **Da controllare** (wallet proprio, costo, vendita, ignora, prezzo), senza scrivere file.
 
+## Documenti PDF
+
+L'Agenzia delle Entrate non ha un modulo ufficiale né richiede allegati per cripto e metalli preziosi: i dati si dichiarano
+nel Modello Redditi PF (quadri RT e RW) e i calcoli si conservano per un eventuale controllo. Il programma genera quindi
+**prospetti di supporto** (non moduli ufficiali), che l'utente o il commercialista usano per compilare il modello:
+
+| Documento | Contenuto |
+|---|---|
+| 00 Copertina e riepilogo | contribuente, stato (BOZZA o completo), riepilogo imposte, a cosa servono i documenti, indice |
+| 01 Quadro RT · cripto | dati da riportare (corrispettivi, costi, plus/minus, proventi, minus utilizzate, imponibile, imposta, minus da riportare), riepilogo per asset, metodo di calcolo |
+| 02 Quadro RT · oro e metalli | idem per il paniere c-ter, con avviso sulla qualificazione |
+| 03 Quadro RW | per custode/asset: giorni, valore iniziale e finale, IVCA indicativa; custode e Stato inseriti dall'utente |
+| 04 Imposte e versamenti | totali, scadenze ordinarie indicative |
+| A Elenco cessioni | ogni cessione con corrispettivo, costo, risultato e riga del file di origine |
+| B Lotti di acquisto | per ogni cessione i lotti LIFO usati e il costo (documentazione del costo) |
+| C Proventi | staking, interessi, premi al valore normale |
+| D Saldi al 31/12 | per conto, da confrontare con le piattaforme |
+| E Fonti, decisioni e problemi | file usati con impronta SHA-256, operazioni e prezzi inseriti a mano, decisioni dell'utente, problemi, scelte interpretative |
+
+Ogni pagina ha intestazione, piè di pagina con la dicitura "non è un modulo ufficiale" e numero di pagina; con punti
+irrisolti ogni pagina porta la filigrana BOZZA. I righi esatti dei quadri e i codici tributo non sono riportati perché le
+fonti consultate erano discordanti: vanno presi dalle istruzioni del modello.
+
 ## Cosa NON è incluso (ancora)
 
 - **API degli exchange**: una pagina web non può chiamarle da sola (blocchi CORS e chiavi segrete). Servirebbe un piccolo
@@ -47,7 +70,7 @@ schermata **Da controllare** (wallet proprio, costo, vendita, ignora, prezzo), s
 - **PDF** come input: poco affidabili; si preferiscono CSV.
 - Azioni, ETF, obbligazioni, dividendi, IVAFE, imposta sulle transazioni finanziarie, forex.
 - DeFi, NFT, margin/futures, hard fork, wrapped, rebase: le righe diventano "tipo sconosciuto".
-- Mappatura sui **righi esatti** di RT/RW e codici tributo F24 (le fonti sono discordanti: serve il modello ufficiale).
+- Mappatura sui **righi esatti** di RT/RW e codici tributo F24 (le fonti sono discordanti: serve il modello ufficiale); compilazione dei moduli ufficiali.
 - Ravvedimento per anni omessi.
 
 ## Ipotesi da far verificare

@@ -7,10 +7,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const src = (f) => fs.readFileSync(path.join(__dirname, 'src', f), 'utf8');
 
-const SCRIPTS = ['vendor/decimal.js', 'core.js', 'csv.js', 'importers.js', 'engine.js', 'tax.js', 'rw.js', 'zip.js', 'pipeline.js', 'report.js', 'ui.js'];
+const SCRIPTS = ['vendor/decimal.js', 'vendor/jspdf.umd.min.js', 'vendor/jspdf.plugin.autotable.min.js', 'core.js', 'csv.js', 'importers.js', 'engine.js', 'tax.js', 'rw.js', 'zip.js', 'pipeline.js', 'report.js', 'pdf.js', 'ui.js'];
 const scripts = SCRIPTS.map((f) => {
-  const code = src(f);
-  if (/<\/script/i.test(code)) throw new Error(`${f} contiene </script`);
+  const code = src(f).replace(/<\/script/gi, '<\\/script'); // '<\/' e' equivalente a '</' dentro stringhe e regex JS
   return `<script>\n${code}\n</script>`;
 }).join('\n');
 

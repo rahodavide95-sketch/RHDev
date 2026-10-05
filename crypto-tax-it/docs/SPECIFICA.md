@@ -1,61 +1,68 @@
-# Specifica - perimetro: dichiarazione anno d'imposta 2025 (Redditi PF 2026)
+# Specifica
 
-Persona fisica residente in Italia, non esercente attivita' d'impresa, regime **dichiarativo**.
-Piattaforme: Crypto.com App, Crypto.com Exchange, Bitpanda (solo oro/metalli preziosi).
-Scadenza invio telematico Redditi PF 2026: **2 novembre 2026** (il 31/10 e' sabato).
+Persona fisica residente in Italia, non esercente attività d'impresa, regime **dichiarativo**.
+Perimetro attuale: **cripto** (Crypto.com App ed Exchange, altre piattaforme/wallet tramite modello universale) e
+**oro e metalli preziosi** (Bitpanda). Anni selezionabili: **2023, 2024, 2025, 2026**.
 
 ## Regole applicate (stato: da verificare su fonti primarie)
 
-| Tema | Regola implementata | Fonte (secondaria, da riverificare) |
-|---|---|---|
-| Aliquota cripto 2025 | 26%, nessuna franchigia (abolita la soglia 2.000 EUR dal 2025) | L. 207/2024 |
-| Aliquota metalli preziosi | 26% (art. 67 c.1 lett. c-ter TUIR) | stampa specializzata |
-| Costo | LIFO, un pool per asset su tutti i conti | Circ. AdE 30/E 2023 |
-| Eventi imponibili | vendita in fiat, permuta cripto/cripto, cripto/stablecoin, pagamenti in cripto, commissioni pagate in cripto | art. 67 c.1 lett. c-sexies |
-| Proventi | staking, interessi, cashback, airdrop: valore normale alla percezione, che diventa costo del lotto | Circ. 30/E 2023 |
-| Minusvalenze | cripto compensano solo cripto; riporto 4 anni solo se dichiarate; metalli (c-ter) separati | Circ. 30/E 2023 |
-| Rideterminazione | opzionale: costo = valore al 1/1/2025 (imposta sostitutiva 18%, pagata a parte) | L. 207/2024 |
-| IVCA | 0,2% x valore finale x giorni/365 (indicativa) | L. 197/2022 |
-| Oro senza costo documentato (cessioni dal 2024) | plusvalenza = intero corrispettivo | stampa specializzata |
-| Data fiscale | data di calendario in Italia | scelta di progetto |
+I valori vengono da fonti secondarie: il sito dell'Agenzia delle Entrate non era raggiungibile durante lo sviluppo.
+Fonti primarie da controllare: L. 197/2022, L. 207/2024, L. 199/2025, Circolare AdE 30/E del 27/10/2023, istruzioni
+Redditi PF dell'anno. Le regole per anno sono in `app/src/tax.js` (`RULES`).
 
-Anni **precedenti al 2025**: il motore elabora tutto lo storico per costruire i lotti, ma **non calcola l'imposta**
-(franchigia 2.000 EUR non implementata): `baskets_for_year` solleva `NotImplementedError`.
+| Anno | Aliquota cripto | Franchigia | Note |
+|---|---|---|---|
+| 2023 | 26% | 2.000 € (sopra si tassa tutto) | permute cripto-cripto imponibili dal 2023 |
+| 2024 | 26% | 2.000 € | |
+| 2025 | 26% | nessuna | franchigia abolita |
+| 2026 | 33% | nessuna | 26% per stablecoin in euro conformi a MiCA (E-money token; lista indicativa in `core.js`) |
 
-## Elenco dei calcoli: stato
+Oro/metalli preziosi (art. 67 c.1 lett. c-ter TUIR): 26% tutti gli anni, paniere separato.
 
-| # | Calcolo | Stato |
-|---|---|---|
-| 1 | Normalizzazione eventi, UID deterministici | fatto |
-| 2 | Abbinamento trasferimenti tra conti propri (finestra 72h, commissione <=10%), commissione di rete come cessione | fatto |
-| 3 | Valorizzazione EUR (valore dalla fonte > prezzario; cambio BCE con gap max 7 gg) | fatto, **manca il download automatico dei prezzi** |
-| 4 | Riconciliazione: cessione oltre i lotti disponibili => blocco + costo zero | fatto; **manca il confronto con i saldi dichiarati dalle piattaforme** |
-| 5 | LIFO, plus/minus, commissioni accessorie, rideterminazione 1/1/2025 | fatto |
-| 6 | Permute, proventi, commissioni in cripto | fatto |
-| 7 | Compensazione e riporto minusvalenze (4 anni, piu' vecchie prima, scadute segnalate) | fatto |
-| 8 | Imposta sostitutiva per paniere, arrotondamento all'euro | fatto |
-| 9 | RW: giorni, valore iniziale/finale, IVCA indicativa | fatto come **bozza**; mappatura sui righi e codici da fare con le istruzioni ufficiali |
-| 10 | Report e audit lotto per lotto | fatto |
-| 11 | Mappatura sui righi esatti RT/RW/RX e importi F24 con codici tributo | **da fare** (richiede istruzioni ufficiali) |
-| 12 | Ravvedimento per anni precedenti omessi | non in perimetro |
-| 13 | Azioni/ETF/obbligazioni, dividendi, IVAFE, FTT, forex | non in perimetro (Bitpanda usato solo per l'oro) |
-| 14 | DeFi, NFT, margin/futures, fork, wrapped, rebase | non supportati: le righe diventano UNRESOLVED e bloccano il report |
+| Tema | Regola implementata |
+|---|---|
+| Costo | LIFO, un pool per asset su tutti i conti (Circ. 30/E 2023) |
+| Eventi imponibili (dal 2023) | vendita in fiat, permuta cripto/cripto, cripto/stablecoin, pagamenti, commissioni pagate in cripto |
+| Prima del 2023 | la permuta cripto-cripto non è un realizzo: il costo si trasferisce al nuovo asset (scelta di progetto) |
+| Proventi | staking, interessi, cashback, airdrop: valore normale alla percezione = nuovo costo del lotto; non compensabili con minusvalenze da cessione (scelta prudenziale) |
+| Minusvalenze | cripto compensano solo cripto; oro separato; riporto automatico dai file per 4 anni (opzione) |
+| Rideterminazione 1/1/2025 | opzionale: costo = valore al 1/1/2025 (imposta sostitutiva 18% pagata a parte) |
+| IVCA | 0,2% x valore finale x giorni/365, indicativa, solo cripto |
+| Data fiscale | data di calendario in Italia (Europe/Rome) |
+| Arrotondamento | all'euro sui totali di quadro |
 
-## Ipotesi che richiedono una verifica umana
+Anni **precedenti al 2023**: regime diverso (soglia di giacenza), **non calcolato**.
 
-1. **Qualificazione dell'oro Bitpanda** come metallo prezioso (c-ter) e non come altro strumento; obbligo e codice RW
-   per metalli detenuti presso un custode estero; eventuali imposte patrimoniali.
-2. `Amount Fiat` Bitpanda comprende gia' le commissioni (altrimenti l'errore e' pari alla commissione).
-3. Unita' dei metalli Bitpanda (di norma grammi) e fuso orario dei timestamp.
-4. Formati e valori di `Transaction Kind` di Crypto.com App; nomi colonne Crypto.com Exchange.
-5. Cashback/rimborsi della carta Crypto.com: qui trattati come provento (scelta prudenziale; alternativa: riduzione di costo).
-6. Proventi non compensabili con minusvalenze (scelta prudenziale).
-7. Formula IVCA e criterio di valorizzazione RW (fonti discordanti).
-8. Sezione e righi del quadro RT per le cripto (fonti discordanti: sezione V-A vs XI).
+## Principio di funzionamento
+
+Un dato mancante o ambiguo non viene mai risolto in silenzio. Genera un punto "da controllare" e il calcolo prosegue con
+l'ipotesi più prudente (costo zero, valore zero), così il risultato resta visibile ma marcato BOZZA. L'utente risolve dalla
+schermata **Da controllare** (wallet proprio, costo, vendita, ignora, prezzo), senza scrivere file.
+
+## Cosa NON è incluso (ancora)
+
+- **API degli exchange**: una pagina web non può chiamarle da sola (blocchi CORS e chiavi segrete). Servirebbe un piccolo
+  programma o servizio di appoggio. Per Crypto.com App non esiste comunque un'API pubblica. Per ora: export CSV/ZIP e
+  modello universale.
+- **PDF** come input: poco affidabili; si preferiscono CSV.
+- Azioni, ETF, obbligazioni, dividendi, IVAFE, imposta sulle transazioni finanziarie, forex.
+- DeFi, NFT, margin/futures, hard fork, wrapped, rebase: le righe diventano "tipo sconosciuto".
+- Mappatura sui **righi esatti** di RT/RW e codici tributo F24 (le fonti sono discordanti: serve il modello ufficiale).
+- Ravvedimento per anni omessi.
+
+## Ipotesi da far verificare
+
+1. Qualificazione dell'oro Bitpanda come metallo prezioso (c-ter); obbligo e codice RW per metalli presso custode estero.
+2. `Amount Fiat` di Bitpanda comprende già le commissioni; unità dei metalli (grammi); fuso orario dei timestamp.
+3. Valori di `Transaction Kind` di Crypto.com App; nomi colonna di Crypto.com Exchange.
+4. Cashback/rimborsi della carta Crypto.com trattati come provento (alternativa: riduzione di costo).
+5. Franchigia 2023-2024 valutata sul totale (plusvalenze nette + proventi) prima del riporto perdite.
+6. Formula IVCA e criterio di valorizzazione RW.
+7. Stablecoin in euro al 26% dal 2026: lista di token in `core.js` (`EMT_EUR`).
 
 ## Prossimi passi
 
-1. Validare gli importatori sugli export reali (`inspect` stampa solo struttura e valori categoriali, nessun importo).
-2. Fornire prezzi 1/1/2025, 31/12/2025 e per le permute (`prezzi_mancanti.csv` elenca cosa serve).
-3. Riconciliazione con i saldi 31/12 mostrati dalle piattaforme.
-4. Mappatura sui righi ufficiali e revisione di un commercialista.
+1. Validare gli importatori sugli export reali (pulsante **Copia diagnostica**: struttura dei file, nessun importo).
+2. Confronto dei saldi finali con quelli mostrati dalle piattaforme.
+3. Revisione di un commercialista su regole, scelte interpretative e righi del modello.
+4. Eventuale servizio di appoggio per le API e per i prezzi storici.

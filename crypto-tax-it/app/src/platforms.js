@@ -14,6 +14,16 @@
     ],
   });
 
+  const API_CONNECTOR = (name, connector) => ({
+    status: 'experimental',
+    connector,
+    text: `Il collegamento diretto a ${name} scarica lo storico con una chiave di sola lettura. È sperimentale: costruito sulla documentazione ufficiale e provato solo su risposte simulate, non ancora con un account reale.`,
+    points: [
+      'La chiave dovrà essere di sola lettura, senza permesso di prelievo né di trading.',
+      'Le piattaforme di solito limitano quanto indietro si può leggere via API: per la dichiarazione il file con lo storico completo resta la via più sicura.',
+    ],
+  });
+
   const UNIVERSAL_STEPS = [
     'Scarica il modello universale (pulsante qui sotto): è un file CSV con le colonne già pronte e qualche riga di esempio.',
     'Compila una riga per ogni operazione: data, tipo (acquisto, vendita, scambio, provento, trasferimento…), asset, quantità e valore in euro.',
@@ -61,7 +71,7 @@
         'Margine, futures e altri derivati non sono gestiti: le righe vengono segnalate.',
         'Senza il file di depositi e prelievi i trasferimenti verso altri conti non vengono riconosciuti.',
       ],
-      api: API_PLANNED('Crypto.com Exchange'),
+      api: API_CONNECTOR('Crypto.com Exchange', 'cryptocom_exchange'),
     },
     bitpanda: {
       name: 'Bitpanda',
@@ -79,7 +89,7 @@
         'Azioni ed ETF acquistati su Bitpanda non sono ancora calcolati: vengono segnalati e ignorati.',
         'L\'oro è trattato come metallo prezioso (art. 67, c. 1, lett. c-ter): la qualificazione va confermata con il commercialista.',
       ],
-      api: API_PLANNED('Bitpanda'),
+      api: API_CONNECTOR('Bitpanda', 'bitpanda'),
     },
     binance: {
       name: 'Binance',
@@ -94,7 +104,7 @@
         'Se vuoi caricare direttamente l\'export di Binance (Ordini → Cronologia transazioni): provalo qui. Se non viene riconosciuto premi «Copia diagnostica» e mandala a chi sviluppa l\'app: il formato verrà aggiunto.',
       ],
       limits: ['Il formato nativo di Binance non è ancora supportato.'],
-      api: API_PLANNED('Binance'),
+      api: API_CONNECTOR('Binance', 'binance'),
     },
     coinbase: {
       name: 'Coinbase',
@@ -127,6 +137,10 @@
 
   const TYPE_TO_PLATFORM = { cryptocom_app: 'cryptocom_app', cryptocom_exchange_trades: 'cryptocom_exchange', cryptocom_exchange_transfers: 'cryptocom_exchange', bitpanda: 'bitpanda', generic: 'other' };
   CT.PLATFORMS = PLATFORMS;
-  CT.platformOfType = (t) => TYPE_TO_PLATFORM[t] || null;
+  CT.platformOfType = (t) => {
+    if (TYPE_TO_PLATFORM[t]) return TYPE_TO_PLATFORM[t];
+    if (typeof t === 'string' && t.startsWith('api_')) { const c = CT.api && CT.api[t.slice(4)]; return c ? c.platform : null; }
+    return null;
+  };
   if (typeof module !== 'undefined') module.exports = { PLATFORMS };
 })();

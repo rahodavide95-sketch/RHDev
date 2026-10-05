@@ -8,7 +8,8 @@ test('catalogo piattaforme: ogni tipo di file esiste e ha un parser', () => {
     assert.ok(p.name && p.blurb && p.steps.length, `${k}: dati mancanti`);
     for (const t of p.types) assert.ok(types.includes(t), `${k}: tipo ${t} senza parser`);
     for (const kd of p.kinds) assert.ok(p.types.includes(kd.type), `${k}: kind ${kd.type} non nei tipi`);
-    assert.ok(['none', 'planned'].includes(p.api.status), `${k}: stato API`);
+    assert.ok(['none', 'planned', 'experimental'].includes(p.api.status), `${k}: stato API`);
+    if (p.api.status === 'experimental') assert.ok(p.api.connector, `${k}: manca l'id del collegamento`);
   }
 });
 

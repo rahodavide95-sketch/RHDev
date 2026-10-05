@@ -201,7 +201,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       h('h3', null, p.name), h('p', { class: 'muted small' }, p.blurb),
       h('div', { class: 'row' },
         h('span', { class: `pill ${p.native ? 'good' : 'idle'}` }, p.native ? 'File' : 'File (modello)'),
-        h('span', { class: 'pill idle' }, p.api.status === 'none' ? 'API: non disponibile' : 'API: in arrivo')),
+        h('span', { class: `pill ${CT.api && CT.api.forPlatform && CT.api.forPlatform(k) ? 'warn' : 'idle'}` }, p.api.status === 'none' ? 'API: non disponibile' : (CT.api && CT.api.forPlatform && CT.api.forPlatform(k) ? 'API: sperimentale' : 'API: in arrivo'))),
       status,
       h('button', { class: `btn ${added ? '' : 'primary'}`, onclick: () => { ensurePlatform(k); ui.platform = k; ui.method = 'file'; save(); render(); window.scrollTo(0, 0); } }, added ? 'Apri' : 'Aggiungi'));
   }
@@ -226,13 +226,93 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
   }
 
   function apiPanel(k) {
+    const conn = CT.api && CT.api.forPlatform ? CT.api.forPlatform(k) : null;
+    if (conn) return connectorPanel(k, conn);
     const a = P[k].api;
-    return h('div', { class: `card tone-${a.status === 'none' ? 'warn' : 'warn'}` },
+    return h('div', { class: 'card tone-warn' },
       h('div', { class: 'row' }, h('h3', null, a.status === 'none' ? 'Nessuna API disponibile' : 'Collegamento API non ancora disponibile'),
         h('span', { class: `pill ${a.status === 'none' ? 'idle' : 'warn'}` }, a.status === 'none' ? 'Non esiste' : 'In arrivo')),
       h('p', { class: 'muted' }, a.text),
-      a.points.length ? h('ul', { class: 'clean muted small' }, a.points.map((t) => h('li', null, t))) : null,
+      a.points && a.points.length ? h('ul', { class: 'clean muted small' }, a.points.map((t) => h('li', null, t))) : null,
       h('div', { class: 'row' }, h('button', { class: 'btn primary', onclick: () => { ui.method = 'file'; render(); } }, 'Aggiungi i file')));
+  }
+
+  /** Collegamento API vero: le chiavi restano in memoria, non vengono mai salvate e vanno solo alla piattaforma. */
+  function connectorPanel(k, c) {
+    const p = P[k];
+    const existing = state.files.filter((f) => platformOfFile(f) === k && String(f.type).startsWith('api_'));
+    const inputs = {}, optInputs = {};
+    const fieldEls = c.fields.map((f) => {
+      const input = h('input', { type: f.secret ? 'password' : 'text', id: `api_${k}_${f.key}`, placeholder: f.placeholder || '', autocomplete: 'off', spellcheck: 'false' });
+      inputs[f.key] = input;
+      return h('label', { class: 'field' }, h('span', null, f.label), input);
+    });
+    const optEls = (c.options || []).map((o) => {
+      const input = h('input', { type: 'text', id: `api_${k}_opt_${o.key}`, placeholder: o.placeholder || '', value: o.default || '', autocomplete: 'off' });
+      optInputs[o.key] = input;
+      return h('label', { class: 'field' }, h('span', null, o.label), input, o.help ? h('span', { class: 'small muted' }, o.help) : null);
+    });
+    const status = h('div', { id: 'apiStatus', class: 'small', role: 'status', 'aria-live': 'polite' });
+    const btn = h('button', { class: 'btn primary', id: 'apiGo', onclick: () => runSync(k, c, inputs, optInputs, btn, status) }, existing.length ? 'Scarica di nuovo lo storico' : 'Collega e scarica lo storico');
+    return h('div', { class: 'stack', style: 'padding:0' },
+      h('div', { class: 'card tone-warn' },
+        h('div', { class: 'row' }, h('h3', null, `Collegamento API di ${p.name}`), h('span', { class: 'pill warn' }, 'Sperimentale')),
+        h('p', { class: 'muted' }, 'Costruito sulla documentazione ufficiale e provato solo su risposte simulate, non ancora con un account reale. Dopo il download controlla i saldi (scheda Dettaglio, Giacenze) e confrontali con la piattaforma. Per la dichiarazione il file con lo storico completo resta la via più sicura.')),
+      h('div', { class: 'card' }, h('h3', null, 'Come creare la chiave (solo lettura)'),
+        h('ol', { class: 'steps' }, c.help.map((x) => h('li', null, x))),
+        h('p', { class: 'small muted' }, `Non abilitare mai prelievi o trading. La chiave resta in questa pagina, non viene salvata e viene inviata solo a ${p.name}. A lavoro finito eliminala dalla piattaforma.`)),
+      h('div', { class: 'card' }, h('h3', null, 'Collega'),
+        h('div', { class: 'fields' }, fieldEls, optEls),
+        h('div', { class: 'row' }, btn), status),
+      existing.length ? existing.map((f) => apiDataCard(f)) : null,
+      h('details', { class: 'card' }, h('summary', null, 'Cosa non viene scaricato'), h('ul', { class: 'clean muted' }, c.limits.map((x) => h('li', null, x)))));
+  }
+
+  function apiDataCard(f) {
+    const info = f.api || { coverage: [], warnings: [] };
+    const rows = (info.coverage || []).map((c) => h('tr', null,
+      h('td', null, c.what), h('td', { class: 'num' }, c.count === undefined ? '' : c.count),
+      h('td', null, c.from ? `${dmy(CT.taxDate(new Date(c.from)))} - ${c.to ? dmy(CT.taxDate(new Date(c.to))) : ''}` : ''),
+      h('td', null, c.complete === false ? h('span', { class: 'pill warn' }, 'Da integrare') : h('span', { class: 'pill good' }, 'Completo')),
+      h('td', { class: 'small muted' }, c.note || '')));
+    return h('div', { class: 'card' }, h('h3', null, 'Dati scaricati'),
+      h('p', { class: 'muted small' }, f.name + (f.disabled ? ' · disattivati (non conteggiati)' : '')),
+      rows.length ? h('div', { class: 'tbl-wrap' }, h('table', null, h('thead', null, h('tr', null, ['Cosa', 'Righe', 'Periodo', 'Stato', 'Note'].map((x) => h('th', null, x)))), h('tbody', null, rows))) : null,
+      info.warnings && info.warnings.length ? h('ul', { class: 'clean small' }, info.warnings.map((w) => h('li', null, w))) : null,
+      h('div', { class: 'row' },
+        h('button', { class: 'btn quiet', onclick: () => { f.disabled = !f.disabled; changed(); } }, f.disabled ? 'Riattiva' : 'Disattiva'),
+        h('button', { class: 'btn quiet danger', onclick: () => { state.files = state.files.filter((y) => y.id !== f.id); changed(); toast('Dati API rimossi'); } }, 'Rimuovi i dati API')));
+  }
+
+  async function runSync(k, c, inputs, optInputs, btn, statusEl) {
+    const creds = {};
+    for (const f of c.fields) creds[f.key] = inputs[f.key].value.trim();
+    if (c.fields.some((f) => !creds[f.key])) { toast('Compila tutte le chiavi richieste'); return; }
+    const options = {};
+    for (const o of c.options || []) options[o.key] = (optInputs[o.key].value || '').trim() || o.default || '';
+    const say = (m, bad) => { statusEl.textContent = m; statusEl.className = 'small' + (bad ? ' err' : ''); };
+    btn.disabled = true;
+    say('Mi collego…');
+    try {
+      const out = await c.sync(creds, { onProgress: (m) => say(m), options });
+      for (const f of c.fields) inputs[f.key].value = '';           // le chiavi non restano nemmeno nei campi
+      state.files = state.files.filter((f) => !(platformOfFile(f) === k && String(f.type).startsWith('api_')));
+      const t = new Date();
+      state.files.push({
+        id: uid(), platform: k, type: 'api_' + c.id, account: '', text: JSON.stringify(out.raw),
+        name: `${P[k].name} · dati da API · ${t.toLocaleDateString('it-IT')} ${t.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}`,
+        api: { coverage: out.coverage || [], warnings: out.warnings || [], fetchedAt: (out.raw && out.raw.fetchedAt) || t.toISOString() },
+      });
+      ensurePlatform(k);
+      changed();
+      toast('Storico scaricato: controlla il riepilogo qui sotto');
+    } catch (e) {
+      if (!(e instanceof CT.ApiError)) console.error(e);
+      btn.disabled = false;
+      say(e instanceof CT.ApiError ? e.message : `Errore imprevisto: ${e.message}`, true);
+      const diag = JSON.stringify({ piattaforma: k, codice: e.code || 'imprevisto', messaggio: e.message, dettaglio: e.detail || {} }, null, 2);
+      statusEl.append(' ', h('button', { class: 'btn quiet', onclick: () => copyText(diag, 'Diagnostica dell\'errore') }, 'Copia diagnostica dell\'errore'));
+    }
   }
 
   function filePanel(k, st) {
@@ -274,7 +354,9 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     const plat = P[k];
     const meta = [];
     let chip, warn = null;
-    if (!x) chip = h('span', { class: 'pill idle' }, '…');
+    const isApi = String(f.type).startsWith('api_');
+    if (f.disabled) chip = h('span', { class: 'pill idle' }, 'Disattivato: non conteggiato');
+    else if (!x) chip = h('span', { class: 'pill idle' }, '…');
     else if (!x.ok) chip = h('span', { class: 'pill bad' }, x.error);
     else {
       const r = x.result;
@@ -283,7 +365,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       const unk = r.unknown.reduce((a, u) => a + u.count, 0);
       chip = unk ? h('span', { class: 'pill warn' }, `${unk} righe da controllare`) : h('span', { class: 'pill good' }, 'Letto correttamente');
     }
-    if (f.type && !plat.types.includes(f.type)) {
+    if (f.type && !plat.types.includes(f.type) && !isApi) {
       const other = CT.platformOfType(f.type);
       warn = h('div', { class: 'row' }, h('span', { class: 'pill warn' }, `Sembra un export di ${P[other].name}`),
         h('button', { class: 'btn', onclick: () => { f.platform = other; ensurePlatform(other); changed(); toast(`Spostato su ${P[other].name}`); } }, `Spostalo su ${P[other].name}`));
@@ -292,11 +374,13 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       h('option', { value: '' }, 'Scegli il tipo di file…'),
       plat.kinds.map((kd) => h('option', { value: kd.type, selected: f.type === kd.type }, kd.label)),
       f.type && !plat.types.includes(f.type) ? h('option', { value: f.type, selected: true }, CT.importers.TYPES[f.type].label) : null);
-    const needsDiag = x && (!x.ok || x.result.unknown.length);
+    const needsDiag = x && !f.disabled && (!x.ok || x.result.unknown.length);
+    const selOrApi = isApi ? h('span', { class: 'pill idle' }, 'Dati da API') : sel;
     return h('div', { class: 'file' },
-      h('div', null, h('div', { class: 'name' }, f.name), h('div', { class: 'meta' }, meta), h('div', { class: 'row', style: 'margin-top:8px' }, sel, chip), warn ? h('div', { style: 'margin-top:8px' }, warn) : null),
+      h('div', null, h('div', { class: 'name' }, f.name), h('div', { class: 'meta' }, meta), h('div', { class: 'row', style: 'margin-top:8px' }, selOrApi, chip), warn ? h('div', { style: 'margin-top:8px' }, warn) : null),
       h('div', { class: 'row' },
         needsDiag ? h('button', { class: 'btn quiet', onclick: () => copyText(R.diagnostics(ui.res, [f]), 'Diagnostica') }, 'Copia diagnostica') : null,
+        h('button', { class: 'btn quiet', onclick: () => { f.disabled = !f.disabled; changed(); } }, f.disabled ? 'Riattiva' : 'Disattiva'),
         h('button', { class: 'btn quiet danger', onclick: () => { state.files = state.files.filter((y) => y.id !== f.id); changed(); } }, 'Rimuovi')));
   }
 
@@ -391,6 +475,22 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
         h('div', { class: 'row' },
           h('button', { class: 'btn primary', onclick: () => { const v = needNumber(cost.input.value, 'il costo'); if (v) resolve(i.uid, { action: 'cover_cost', cost_eur: v, acquired: when.input.value || undefined }, 'Costo salvato'); } }, 'Salva il costo'),
           h('button', { class: 'btn', onclick: goPlatforms }, 'Aggiungi altri file'))));
+    }
+    for (const i of g.overlap) {
+      const pk = i.data.platform;
+      out.push(issueCard('bad', `${P[pk].name}: dati API e file sullo stesso periodo`,
+        'Le stesse operazioni verrebbero contate due volte. Scegli quale fonte tenere: l\'altra viene disattivata, non cancellata.',
+        h('div', { class: 'row' },
+          h('button', { class: 'btn primary', onclick: () => { state.files.forEach((f) => { if (i.data.fileIds.includes(f.id)) f.disabled = true; }); changed(); toast('Uso i dati API: i file sono disattivati'); } }, 'Tieni i dati API'),
+          h('button', { class: 'btn', onclick: () => { state.files.forEach((f) => { if (i.data.apiIds.includes(f.id)) f.disabled = true; }); changed(); toast('Uso i file: i dati API sono disattivati'); } }, 'Tieni i file'))));
+    }
+    for (const i of g.apiIncomplete) {
+      out.push(issueCard('bad', `${P[i.data.platform].name} (API): ${i.data.what}`,
+        i.data.note || 'Questo tipo di dati non viene scaricato dall\'API oppure lo storico potrebbe essere incompleto.',
+        h('p', { class: 'small muted' }, 'Per essere sicuro aggiungi anche il file di questa piattaforma, oppure conferma di non avere operazioni di questo tipo.'),
+        h('div', { class: 'row' },
+          h('button', { class: 'btn primary', onclick: () => { ui.platform = i.data.platform; ui.method = 'file'; ui.tab = 'files'; render(); window.scrollTo(0, 0); } }, 'Aggiungi il file'),
+          h('button', { class: 'btn', onclick: () => resolve(i.uid, { action: 'ack' }, 'Annotato: nessuna operazione di questo tipo') }, 'Non ho operazioni di questo tipo'))));
     }
     for (const u of g.unknown.values()) {
       const ex = u.items.slice(0, 3).map((i) => i.message);
@@ -684,7 +784,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       : blk ? h('button', { class: 'pill warn', onclick: () => { ui.tab = 'checks'; render(); } }, `Bozza · ${blk} da controllare`) : h('span', { class: 'pill good' }, 'Pronto');
     const yearSel = h('select', { id: 'yearSel', 'aria-label': 'Anno d\'imposta', onchange: (e) => { state.settings.year = +e.target.value; changed(); } },
       CT.tax.YEARS.map((y) => h('option', { value: y, selected: state.settings.year === y }, y)));
-    const nav = h('nav', { class: 'nav', role: 'tablist' }, TABS.map(([k, t], i) => h('button', { class: 'tab', role: 'tab', 'aria-selected': ui.tab === k ? 'true' : 'false', onclick: () => { ui.tab = k; render(); window.scrollTo(0, 0); } },
+    const nav = h('nav', { class: 'nav', role: 'tablist' }, TABS.map(([k, t], i) => h('button', { class: 'tab', role: 'tab', 'aria-selected': ui.tab === k ? 'true' : 'false', onclick: () => { ui.tab = k; if (k === 'files') ui.platform = null; render(); window.scrollTo(0, 0); } },
       h('span', { class: 'n' }, i + 1), t,
       k === 'checks' && blk ? h('span', { class: 'badge' }, blk) : null, k === 'prices' && missing ? h('span', { class: 'badge' }, missing) : null)));
     const panel = { files: () => (ui.platform ? panelPlatform(ui.platform) : panelPlatforms()), checks: panelChecks, result: panelResult, detail: panelDetail, prices: panelPrices, export: panelExport }[ui.tab]();

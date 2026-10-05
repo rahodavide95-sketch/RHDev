@@ -51,3 +51,24 @@ test('anni diversi: il 2026 usa 33%', () => {
   const r = CT.analyze({ files: files(), settings: { year: 2026 } });
   assert.equal(r.y.rule.cryptoRate.toString(), '0.33');
 });
+
+test('dati API: sovrapposizione con un file e copertura incompleta, con conferma', () => {
+  const apiRaw = { version: 1, fetchedAt: '2025-10-05T10:00:00Z' };
+  CT.importers.TYPES.api_prova = { label: 'Prova · API', parse: (text, name) => {
+    const ev = [CT.mkEvent({ uid: 'api:prova:1', ts: new Date('2025-02-01T10:00:00Z'), account: 'Prova', kind: CT.Kind.BUY, asset: 'BTC', qty: CT.D('0.01'), value: CT.D('1000'), valueCcy: 'EUR' })];
+    return CT.importers.finish('Prova', 1, ev);
+  } };
+  const apiFile = { id: 'ap', name: 'api', type: 'api_prova', text: JSON.stringify(apiRaw), platform: 'binance', api: { coverage: [{ what: 'Earn', complete: false, note: 'non scaricato' }, { what: 'Spot', complete: true }], warnings: [] } };
+  const csv = 'data;tipo;conto;asset;quantita;valore_eur\n2025-02-01 12:00;acquisto;Binance;ETH;1;2000\n';
+  const fileSameDay = { id: 'fl', name: 'm.csv', type: 'generic', text: csv, platform: 'binance' };
+  let r = CT.analyze({ files: [apiFile, fileSameDay], settings: { year: 2025 } });
+  assert.equal(r.groups.overlap.length, 1);
+  assert.deepEqual(r.groups.overlap[0].data.apiIds, ['ap']);
+  assert.equal(r.groups.apiIncomplete.length, 1);
+  // conferma "nessuna operazione di questo tipo" e file disattivato
+  fileSameDay.disabled = true;
+  r = CT.analyze({ files: [apiFile, fileSameDay], resolutions: { 'api_cov:binance:Earn': { action: 'ack' } }, settings: { year: 2025 } });
+  assert.equal(r.groups.overlap.length, 0);
+  assert.equal(r.groups.apiIncomplete.length, 0);
+  delete CT.importers.TYPES.api_prova;
+});

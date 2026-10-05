@@ -44,7 +44,7 @@ p { margin: 0; }
 .brand-sub { font-size: 12.5px; color: var(--ink-2); }
 .top-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .lbl { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-2); }
-select, input[type=text], input[type=number], input[type=date] {
+select, input[type=text], input[type=number], input[type=date], input[type=password] {
   background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; min-height: 38px; max-width: 100%;
 }
 select:focus-visible, input:focus-visible, button:focus-visible, summary:focus-visible, label.drop:focus-within {
@@ -104,6 +104,7 @@ button.pill { cursor: pointer; }
 .pcard { align-content: space-between; }
 .pcard.on { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); }
 .pcard .btn { justify-self: start; }
+.err { color: var(--bad); }
 .steps { margin: 0; padding-left: 22px; display: grid; gap: 8px; }
 
 /* risultato */
@@ -6054,7 +6055,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
     return { headers: tbl.headers, headerLine: tbl.headerLine, rows: tbl.rows.length, categorical: cats };
   }
 
-  CT.importers = { TYPES, detectType, describeFile, parseNum, parseTs, splitPair, GENERIC_TEMPLATE, GENERIC_HEADERS, uidFactory };
+  CT.importers = { TYPES, detectType, describeFile, parseNum, parseTs, splitPair, GENERIC_TEMPLATE, GENERIC_HEADERS, uidFactory, finish, unresolved };
   if (typeof module !== 'undefined') module.exports = CT.importers;
 })();
 
@@ -6756,21 +6757,62 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
     for (const [k, v] of Object.entries(prices)) { const [sym, day] = k.split('|'); if (v !== '' && v !== null) pb.setManual(sym, day, v); }
     const engine = new CT.Engine({ rebase2025: !!settings.rebase2025, resolutions, prices: pb }).run(events);
     if (duplicates) engine.issue('info', 'duplicates', '', `${duplicates} righe presenti in più file (periodi sovrapposti) sono state contate una sola volta.`);
+    apiIssues(engine, parsed, resolutions);
     const years = CT.tax.computeYears(engine, { toYear: year, useCarry: settings.useCarry !== false });
     const y = years[year];
     const rw = CT.computeRW(engine, year, y.rule);
     return { year, parsed, events, engine, years, y, rw, groups: groupIssues(engine), balances: balancesAt(engine, `${year}-12-31`) };
   }
 
+  /** Problemi propri dei dati da API: copertura incompleta e fonti sovrapposte (API + file). */
+  function apiIssues(engine, parsed, resolutions) {
+    const PL = CT.PLATFORMS || {};
+    const name = (k) => (PL[k] && PL[k].name) || k;
+    for (const x of parsed) {
+      const f = x.file;
+      if (!f.api || !Array.isArray(f.api.coverage)) continue;
+      for (const c of f.api.coverage) {
+        if (c.complete !== false) continue;
+        const key = `api_cov:${f.platform}:${c.what}`;
+        const ack = resolutions[key] && resolutions[key].action === 'ack';
+        engine.issue(ack ? 'info' : 'block', 'api_incomplete', key,
+          `${name(f.platform)} (API): ${c.what}${c.note ? ' - ' + c.note : ': non scaricato o storico possibilmente incompleto'}`,
+          { platform: f.platform, what: c.what, note: c.note || '' });
+      }
+    }
+    const byPlat = new Map();
+    for (const x of parsed) {
+      if (!x.ok || !x.result.from) continue;
+      const k = x.file.platform || (CT.platformOfType && CT.platformOfType(x.file.type));
+      if (!k) continue;
+      if (!byPlat.has(k)) byPlat.set(k, { api: [], files: [] });
+      byPlat.get(k)[String(x.file.type).startsWith('api_') ? 'api' : 'files'].push(x);
+    }
+    for (const [k, g] of byPlat) {
+      const apiIds = new Set(), fileIds = new Set();
+      for (const a of g.api) for (const b of g.files) {
+        const day = (d) => CT.taxDate(d);   // i periodi si confrontano per giorno: basta un giorno in comune
+        if (day(a.result.from) <= day(b.result.to) && day(b.result.from) <= day(a.result.to)) { apiIds.add(a.file.id); fileIds.add(b.file.id); }
+      }
+      if (apiIds.size) {
+        engine.issue('block', 'source_overlap', `overlap:${k}`,
+          `${name(k)}: i dati da API e i file coprono lo stesso periodo, quindi le operazioni verrebbero contate due volte.`,
+          { platform: k, apiIds: [...apiIds], fileIds: [...fileIds] });
+      }
+    }
+  }
+
   /** Raggruppa i problemi per la schermata "Da controllare". */
   function groupIssues(engine) {
-    const g = { transferOut: [], transferIn: [], history: [], unknown: new Map(), prices: new Map(), outOfScope: [], notes: [], blockCount: 0 };
+    const g = { transferOut: [], transferIn: [], history: [], unknown: new Map(), prices: new Map(), outOfScope: [], notes: [], apiIncomplete: [], overlap: [], blockCount: 0 };
     const seenPrice = new Set();
     for (const i of engine.issues) {
       if (i.level === 'block') {
         if (i.code === 'transfer_out_unmatched') g.transferOut.push(i);
         else if (i.code === 'transfer_in_unmatched') g.transferIn.push(i);
         else if (i.code === 'missing_history') g.history.push(i);
+        else if (i.code === 'api_incomplete') g.apiIncomplete.push(i);
+        else if (i.code === 'source_overlap') g.overlap.push(i);
         else if (i.code === 'unrecognized_row') {
           const k = i.data.key || 'Riga non riconosciuta';
           if (!g.unknown.has(k)) g.unknown.set(k, { key: k, items: [] });
@@ -6782,7 +6824,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
       } else if (i.code === 'out_of_scope') g.outOfScope.push(i);
       else g.notes.push(i);
     }
-    g.blockCount = g.transferOut.length + g.transferIn.length + g.history.length +
+    g.blockCount = g.transferOut.length + g.transferIn.length + g.history.length + g.apiIncomplete.length + g.overlap.length +
       [...g.unknown.values()].length + (g.prices.size ? 1 : 0) + g.notes.filter((i) => i.level === 'block').length;
     return g;
   }
@@ -7211,6 +7253,13 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
     if (rows.length) p.table(['File', 'Tipo', 'Righe', 'Periodo', 'Impronta SHA-256'], rows, { num: [2], fontSize: 7, columnStyles: { 4: { cellWidth: 62, font: 'courier', fontSize: 5.5 } } });
     else p.para('Nessun file.');
     p.para('L\'impronta SHA-256 permette di dimostrare che i file originali conservati sono quelli usati per il calcolo.', { size: 8.5, color: MUTED });
+    const apiFiles = res.parsed.map((x) => x.file).filter((f) => f.api && Array.isArray(f.api.coverage));
+    for (const f of apiFiles) {
+      p.h2(`Copertura dei dati scaricati da API · ${f.name}`);
+      p.table(['Cosa', 'Righe', 'Periodo', 'Stato', 'Note'], f.api.coverage.map((c) => [c.what, c.count === undefined ? '' : String(c.count),
+        c.from ? `${dmy(CT.taxDate(new Date(c.from)))} - ${c.to ? dmy(CT.taxDate(new Date(c.to))) : ''}` : '', c.complete === false ? 'DA INTEGRARE' : 'completo', c.note || '']), { num: [1], fontSize: 7.5 });
+      if ((f.api.warnings || []).length) p.bullets(f.api.warnings, { size: 8.5 });
+    }
     if (state.manual && state.manual.length) {
       p.h2('Operazioni inserite a mano');
       p.table(['Data', 'Operazione', 'Conto', 'Asset', 'Quantità', 'Valore (€)'], state.manual.map((m) => [dmy(m.data.slice(0, 10)), m.tipo.replace(/_/g, ' '), m.conto, m.asset, m.quantita, m.valore_eur]), { num: [4, 5], fontSize: 8 });
@@ -7319,6 +7368,16 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
     ],
   });
 
+  const API_CONNECTOR = (name, connector) => ({
+    status: 'experimental',
+    connector,
+    text: `Il collegamento diretto a ${name} scarica lo storico con una chiave di sola lettura. È sperimentale: costruito sulla documentazione ufficiale e provato solo su risposte simulate, non ancora con un account reale.`,
+    points: [
+      'La chiave dovrà essere di sola lettura, senza permesso di prelievo né di trading.',
+      'Le piattaforme di solito limitano quanto indietro si può leggere via API: per la dichiarazione il file con lo storico completo resta la via più sicura.',
+    ],
+  });
+
   const UNIVERSAL_STEPS = [
     'Scarica il modello universale (pulsante qui sotto): è un file CSV con le colonne già pronte e qualche riga di esempio.',
     'Compila una riga per ogni operazione: data, tipo (acquisto, vendita, scambio, provento, trasferimento…), asset, quantità e valore in euro.',
@@ -7366,7 +7425,7 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
         'Margine, futures e altri derivati non sono gestiti: le righe vengono segnalate.',
         'Senza il file di depositi e prelievi i trasferimenti verso altri conti non vengono riconosciuti.',
       ],
-      api: API_PLANNED('Crypto.com Exchange'),
+      api: API_CONNECTOR('Crypto.com Exchange', 'cryptocom_exchange'),
     },
     bitpanda: {
       name: 'Bitpanda',
@@ -7384,7 +7443,7 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
         'Azioni ed ETF acquistati su Bitpanda non sono ancora calcolati: vengono segnalati e ignorati.',
         'L\'oro è trattato come metallo prezioso (art. 67, c. 1, lett. c-ter): la qualificazione va confermata con il commercialista.',
       ],
-      api: API_PLANNED('Bitpanda'),
+      api: API_CONNECTOR('Bitpanda', 'bitpanda'),
     },
     binance: {
       name: 'Binance',
@@ -7399,7 +7458,7 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
         'Se vuoi caricare direttamente l\'export di Binance (Ordini → Cronologia transazioni): provalo qui. Se non viene riconosciuto premi «Copia diagnostica» e mandala a chi sviluppa l\'app: il formato verrà aggiunto.',
       ],
       limits: ['Il formato nativo di Binance non è ancora supportato.'],
-      api: API_PLANNED('Binance'),
+      api: API_CONNECTOR('Binance', 'binance'),
     },
     coinbase: {
       name: 'Coinbase',
@@ -7432,8 +7491,118 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
 
   const TYPE_TO_PLATFORM = { cryptocom_app: 'cryptocom_app', cryptocom_exchange_trades: 'cryptocom_exchange', cryptocom_exchange_transfers: 'cryptocom_exchange', bitpanda: 'bitpanda', generic: 'other' };
   CT.PLATFORMS = PLATFORMS;
-  CT.platformOfType = (t) => TYPE_TO_PLATFORM[t] || null;
+  CT.platformOfType = (t) => {
+    if (TYPE_TO_PLATFORM[t]) return TYPE_TO_PLATFORM[t];
+    if (typeof t === 'string' && t.startsWith('api_')) { const c = CT.api && CT.api[t.slice(4)]; return c ? c.platform : null; }
+    return null;
+  };
   if (typeof module !== 'undefined') module.exports = { PLATFORMS };
+})();
+
+</script>
+<script data-app>
+/* Base comune dei collegamenti API: errori, firma HMAC, richieste con ripetizioni, attese.
+   Regole di progetto:
+   - le chiavi non compaiono MAI in errori, log, avvisi o dati scaricati;
+   - se una richiesta fallisce dopo le ripetizioni la sincronizzazione si ferma: mai dati parziali spacciati per completi;
+   - una risposta diversa dal previsto e' un errore 'format' (nessuna ipotesi). */
+(function () {
+  'use strict';
+  const CT = (globalThis.CT = globalThis.CT || {});
+  CT.api = CT.api || {};
+
+  class ApiError extends Error {
+    /** code: 'network' | 'auth' | 'rate' | 'http' | 'format' | 'incomplete' | 'config' */
+    constructor(code, message, detail) { super(message); this.name = 'ApiError'; this.code = code; this.detail = detail || {}; }
+  }
+
+  const enc = new TextEncoder();
+  const hex = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+
+  /** HMAC (default SHA-256) in esadecimale minuscolo, con Web Crypto (browser e Node >= 20). */
+  async function hmacHex(secret, message, hash) {
+    const key = await globalThis.crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: hash || 'SHA-256' }, false, ['sign']);
+    return hex(await globalThis.crypto.subtle.sign('HMAC', key, enc.encode(message)));
+  }
+
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  /** Toglie da un URL/testo tutto cio' che somiglia a chiavi o firme. */
+  function redact(text, secrets) {
+    let t = String(text);
+    for (const sec of secrets || []) if (sec && String(sec).length >= 4) t = t.split(String(sec)).join('***');   // valori delle chiavi note
+    return t
+      .replace(/([?&](?:signature|sig|api[_-]?key|apikey|key|secret|token)=)[^&\s]*/gi, '$1***')
+      .replace(/("(?:api_key|apikey|sig|signature|secret|token)"\s*:\s*")[^"]*/gi, '$1***');
+  }
+
+  const NETWORK_MSG = 'Collegamento non riuscito: il browser ha bloccato la richiesta oppure manca la rete. Le piattaforme spesso non permettono il collegamento diretto da una pagina web, e dentro claude.ai la pagina non può contattare siti esterni: in quel caso usa i file.';
+
+  /**
+   * Esegue una richiesta e ritorna il JSON. `fetchImpl` e' iniettabile (test). Ripete su 429/418/5xx con attesa crescente.
+   * o = { retries = 4, sleep, maxWaitMs = 30000, secrets: [chiave, segreto, ...] (rimossi da ogni messaggio d'errore) }
+   */
+  async function request(fetchImpl, url, init, o) {
+    o = o || {};
+    const wait = o.sleep || sleep;
+    const retries = o.retries === undefined ? 4 : o.retries;
+    let attempt = 0;
+    for (;;) {
+      let res;
+      try { res = await fetchImpl(url, init || {}); }
+      catch (e) { throw new ApiError('network', NETWORK_MSG, { url: redact(url, o.secrets) }); }
+      if (res.status === 429 || res.status === 418 || res.status >= 500) {
+        if (attempt < retries) {
+          attempt++;
+          const ra = Number(res.headers && res.headers.get && res.headers.get('retry-after'));
+          await wait(ra > 0 ? Math.min(ra * 1000, o.maxWaitMs || 30000) : Math.min(o.maxWaitMs || 30000, 1000 * 2 ** attempt));
+          continue;
+        }
+        throw new ApiError(res.status >= 500 ? 'http' : 'rate', res.status >= 500 ? `La piattaforma risponde con un errore (${res.status}).` : 'Troppe richieste: la piattaforma ha limitato l\'accesso. Riprova tra qualche minuto.', { status: res.status, url: redact(url, o.secrets) });
+      }
+      const text = await res.text();
+      let body = null;
+      try { body = text ? JSON.parse(text) : null; } catch (e) { body = null; }
+      if (res.status === 401 || res.status === 403) throw new ApiError('auth', 'La piattaforma ha rifiutato le chiavi: controlla che siano corrette, attive e abilitate alla sola lettura (e che l\'accesso non sia limitato a un altro indirizzo IP).', { status: res.status, body: redact(text, o.secrets).slice(0, 300) });
+      if (!res.ok) throw new ApiError('http', `La piattaforma ha risposto con un errore (${res.status}).`, { status: res.status, body: redact(text, o.secrets).slice(0, 300), url: redact(url, o.secrets) });
+      if (body === null) throw new ApiError('format', 'La risposta della piattaforma non è nel formato atteso (non è JSON).', { text: redact(text, o.secrets).slice(0, 200), url: redact(url, o.secrets) });
+      return body;
+    }
+  }
+
+  CT.api.common = { ApiError, hmacHex, sleep, request, redact, NETWORK_MSG };
+  CT.ApiError = ApiError;
+  if (typeof module !== 'undefined') module.exports = CT.api.common;
+})();
+
+</script>
+<script data-app>
+/* Registro dei collegamenti API: li collega al catalogo piattaforme e ai tipi di file.
+   Un collegamento mancante (file non presente) viene semplicemente ignorato: la piattaforma resta "in arrivo". */
+(function () {
+  'use strict';
+  const CT = (globalThis.CT = globalThis.CT || {});
+  CT.api = CT.api || {};
+
+  const ids = () => Object.keys(CT.api).filter((k) => k !== 'common' && CT.api[k] && typeof CT.api[k].sync === 'function' && typeof CT.api[k].parse === 'function');
+
+  function register() {
+    for (const id of ids()) {
+      const c = CT.api[id];
+      const type = 'api_' + id;
+      if (!CT.importers.TYPES[type]) {
+        CT.importers.TYPES[type] = { label: `${c.label} · dati da API`, parse: (text, fileName) => c.parse(JSON.parse(text), fileName) };
+      }
+      const p = CT.PLATFORMS && CT.PLATFORMS[c.platform];
+      if (p && !p.types.includes(type)) p.types.push(type);
+    }
+  }
+
+  CT.api.ids = ids;
+  CT.api.register = register;
+  CT.api.forPlatform = (platformKey) => { const id = CT.PLATFORMS[platformKey] && CT.PLATFORMS[platformKey].api && CT.PLATFORMS[platformKey].api.connector; return id && CT.api[id] && typeof CT.api[id].sync === 'function' ? CT.api[id] : null; };
+  register();
+  if (typeof module !== 'undefined') module.exports = CT.api;
 })();
 
 </script>
@@ -7641,7 +7810,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       h('h3', null, p.name), h('p', { class: 'muted small' }, p.blurb),
       h('div', { class: 'row' },
         h('span', { class: `pill ${p.native ? 'good' : 'idle'}` }, p.native ? 'File' : 'File (modello)'),
-        h('span', { class: 'pill idle' }, p.api.status === 'none' ? 'API: non disponibile' : 'API: in arrivo')),
+        h('span', { class: `pill ${CT.api && CT.api.forPlatform && CT.api.forPlatform(k) ? 'warn' : 'idle'}` }, p.api.status === 'none' ? 'API: non disponibile' : (CT.api && CT.api.forPlatform && CT.api.forPlatform(k) ? 'API: sperimentale' : 'API: in arrivo'))),
       status,
       h('button', { class: `btn ${added ? '' : 'primary'}`, onclick: () => { ensurePlatform(k); ui.platform = k; ui.method = 'file'; save(); render(); window.scrollTo(0, 0); } }, added ? 'Apri' : 'Aggiungi'));
   }
@@ -7666,13 +7835,93 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
   }
 
   function apiPanel(k) {
+    const conn = CT.api && CT.api.forPlatform ? CT.api.forPlatform(k) : null;
+    if (conn) return connectorPanel(k, conn);
     const a = P[k].api;
-    return h('div', { class: `card tone-${a.status === 'none' ? 'warn' : 'warn'}` },
+    return h('div', { class: 'card tone-warn' },
       h('div', { class: 'row' }, h('h3', null, a.status === 'none' ? 'Nessuna API disponibile' : 'Collegamento API non ancora disponibile'),
         h('span', { class: `pill ${a.status === 'none' ? 'idle' : 'warn'}` }, a.status === 'none' ? 'Non esiste' : 'In arrivo')),
       h('p', { class: 'muted' }, a.text),
-      a.points.length ? h('ul', { class: 'clean muted small' }, a.points.map((t) => h('li', null, t))) : null,
+      a.points && a.points.length ? h('ul', { class: 'clean muted small' }, a.points.map((t) => h('li', null, t))) : null,
       h('div', { class: 'row' }, h('button', { class: 'btn primary', onclick: () => { ui.method = 'file'; render(); } }, 'Aggiungi i file')));
+  }
+
+  /** Collegamento API vero: le chiavi restano in memoria, non vengono mai salvate e vanno solo alla piattaforma. */
+  function connectorPanel(k, c) {
+    const p = P[k];
+    const existing = state.files.filter((f) => platformOfFile(f) === k && String(f.type).startsWith('api_'));
+    const inputs = {}, optInputs = {};
+    const fieldEls = c.fields.map((f) => {
+      const input = h('input', { type: f.secret ? 'password' : 'text', id: `api_${k}_${f.key}`, placeholder: f.placeholder || '', autocomplete: 'off', spellcheck: 'false' });
+      inputs[f.key] = input;
+      return h('label', { class: 'field' }, h('span', null, f.label), input);
+    });
+    const optEls = (c.options || []).map((o) => {
+      const input = h('input', { type: 'text', id: `api_${k}_opt_${o.key}`, placeholder: o.placeholder || '', value: o.default || '', autocomplete: 'off' });
+      optInputs[o.key] = input;
+      return h('label', { class: 'field' }, h('span', null, o.label), input, o.help ? h('span', { class: 'small muted' }, o.help) : null);
+    });
+    const status = h('div', { id: 'apiStatus', class: 'small', role: 'status', 'aria-live': 'polite' });
+    const btn = h('button', { class: 'btn primary', id: 'apiGo', onclick: () => runSync(k, c, inputs, optInputs, btn, status) }, existing.length ? 'Scarica di nuovo lo storico' : 'Collega e scarica lo storico');
+    return h('div', { class: 'stack', style: 'padding:0' },
+      h('div', { class: 'card tone-warn' },
+        h('div', { class: 'row' }, h('h3', null, `Collegamento API di ${p.name}`), h('span', { class: 'pill warn' }, 'Sperimentale')),
+        h('p', { class: 'muted' }, 'Costruito sulla documentazione ufficiale e provato solo su risposte simulate, non ancora con un account reale. Dopo il download controlla i saldi (scheda Dettaglio, Giacenze) e confrontali con la piattaforma. Per la dichiarazione il file con lo storico completo resta la via più sicura.')),
+      h('div', { class: 'card' }, h('h3', null, 'Come creare la chiave (solo lettura)'),
+        h('ol', { class: 'steps' }, c.help.map((x) => h('li', null, x))),
+        h('p', { class: 'small muted' }, `Non abilitare mai prelievi o trading. La chiave resta in questa pagina, non viene salvata e viene inviata solo a ${p.name}. A lavoro finito eliminala dalla piattaforma.`)),
+      h('div', { class: 'card' }, h('h3', null, 'Collega'),
+        h('div', { class: 'fields' }, fieldEls, optEls),
+        h('div', { class: 'row' }, btn), status),
+      existing.length ? existing.map((f) => apiDataCard(f)) : null,
+      h('details', { class: 'card' }, h('summary', null, 'Cosa non viene scaricato'), h('ul', { class: 'clean muted' }, c.limits.map((x) => h('li', null, x)))));
+  }
+
+  function apiDataCard(f) {
+    const info = f.api || { coverage: [], warnings: [] };
+    const rows = (info.coverage || []).map((c) => h('tr', null,
+      h('td', null, c.what), h('td', { class: 'num' }, c.count === undefined ? '' : c.count),
+      h('td', null, c.from ? `${dmy(CT.taxDate(new Date(c.from)))} - ${c.to ? dmy(CT.taxDate(new Date(c.to))) : ''}` : ''),
+      h('td', null, c.complete === false ? h('span', { class: 'pill warn' }, 'Da integrare') : h('span', { class: 'pill good' }, 'Completo')),
+      h('td', { class: 'small muted' }, c.note || '')));
+    return h('div', { class: 'card' }, h('h3', null, 'Dati scaricati'),
+      h('p', { class: 'muted small' }, f.name + (f.disabled ? ' · disattivati (non conteggiati)' : '')),
+      rows.length ? h('div', { class: 'tbl-wrap' }, h('table', null, h('thead', null, h('tr', null, ['Cosa', 'Righe', 'Periodo', 'Stato', 'Note'].map((x) => h('th', null, x)))), h('tbody', null, rows))) : null,
+      info.warnings && info.warnings.length ? h('ul', { class: 'clean small' }, info.warnings.map((w) => h('li', null, w))) : null,
+      h('div', { class: 'row' },
+        h('button', { class: 'btn quiet', onclick: () => { f.disabled = !f.disabled; changed(); } }, f.disabled ? 'Riattiva' : 'Disattiva'),
+        h('button', { class: 'btn quiet danger', onclick: () => { state.files = state.files.filter((y) => y.id !== f.id); changed(); toast('Dati API rimossi'); } }, 'Rimuovi i dati API')));
+  }
+
+  async function runSync(k, c, inputs, optInputs, btn, statusEl) {
+    const creds = {};
+    for (const f of c.fields) creds[f.key] = inputs[f.key].value.trim();
+    if (c.fields.some((f) => !creds[f.key])) { toast('Compila tutte le chiavi richieste'); return; }
+    const options = {};
+    for (const o of c.options || []) options[o.key] = (optInputs[o.key].value || '').trim() || o.default || '';
+    const say = (m, bad) => { statusEl.textContent = m; statusEl.className = 'small' + (bad ? ' err' : ''); };
+    btn.disabled = true;
+    say('Mi collego…');
+    try {
+      const out = await c.sync(creds, { onProgress: (m) => say(m), options });
+      for (const f of c.fields) inputs[f.key].value = '';           // le chiavi non restano nemmeno nei campi
+      state.files = state.files.filter((f) => !(platformOfFile(f) === k && String(f.type).startsWith('api_')));
+      const t = new Date();
+      state.files.push({
+        id: uid(), platform: k, type: 'api_' + c.id, account: '', text: JSON.stringify(out.raw),
+        name: `${P[k].name} · dati da API · ${t.toLocaleDateString('it-IT')} ${t.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}`,
+        api: { coverage: out.coverage || [], warnings: out.warnings || [], fetchedAt: (out.raw && out.raw.fetchedAt) || t.toISOString() },
+      });
+      ensurePlatform(k);
+      changed();
+      toast('Storico scaricato: controlla il riepilogo qui sotto');
+    } catch (e) {
+      if (!(e instanceof CT.ApiError)) console.error(e);
+      btn.disabled = false;
+      say(e instanceof CT.ApiError ? e.message : `Errore imprevisto: ${e.message}`, true);
+      const diag = JSON.stringify({ piattaforma: k, codice: e.code || 'imprevisto', messaggio: e.message, dettaglio: e.detail || {} }, null, 2);
+      statusEl.append(' ', h('button', { class: 'btn quiet', onclick: () => copyText(diag, 'Diagnostica dell\'errore') }, 'Copia diagnostica dell\'errore'));
+    }
   }
 
   function filePanel(k, st) {
@@ -7714,7 +7963,9 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     const plat = P[k];
     const meta = [];
     let chip, warn = null;
-    if (!x) chip = h('span', { class: 'pill idle' }, '…');
+    const isApi = String(f.type).startsWith('api_');
+    if (f.disabled) chip = h('span', { class: 'pill idle' }, 'Disattivato: non conteggiato');
+    else if (!x) chip = h('span', { class: 'pill idle' }, '…');
     else if (!x.ok) chip = h('span', { class: 'pill bad' }, x.error);
     else {
       const r = x.result;
@@ -7723,7 +7974,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       const unk = r.unknown.reduce((a, u) => a + u.count, 0);
       chip = unk ? h('span', { class: 'pill warn' }, `${unk} righe da controllare`) : h('span', { class: 'pill good' }, 'Letto correttamente');
     }
-    if (f.type && !plat.types.includes(f.type)) {
+    if (f.type && !plat.types.includes(f.type) && !isApi) {
       const other = CT.platformOfType(f.type);
       warn = h('div', { class: 'row' }, h('span', { class: 'pill warn' }, `Sembra un export di ${P[other].name}`),
         h('button', { class: 'btn', onclick: () => { f.platform = other; ensurePlatform(other); changed(); toast(`Spostato su ${P[other].name}`); } }, `Spostalo su ${P[other].name}`));
@@ -7732,11 +7983,13 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       h('option', { value: '' }, 'Scegli il tipo di file…'),
       plat.kinds.map((kd) => h('option', { value: kd.type, selected: f.type === kd.type }, kd.label)),
       f.type && !plat.types.includes(f.type) ? h('option', { value: f.type, selected: true }, CT.importers.TYPES[f.type].label) : null);
-    const needsDiag = x && (!x.ok || x.result.unknown.length);
+    const needsDiag = x && !f.disabled && (!x.ok || x.result.unknown.length);
+    const selOrApi = isApi ? h('span', { class: 'pill idle' }, 'Dati da API') : sel;
     return h('div', { class: 'file' },
-      h('div', null, h('div', { class: 'name' }, f.name), h('div', { class: 'meta' }, meta), h('div', { class: 'row', style: 'margin-top:8px' }, sel, chip), warn ? h('div', { style: 'margin-top:8px' }, warn) : null),
+      h('div', null, h('div', { class: 'name' }, f.name), h('div', { class: 'meta' }, meta), h('div', { class: 'row', style: 'margin-top:8px' }, selOrApi, chip), warn ? h('div', { style: 'margin-top:8px' }, warn) : null),
       h('div', { class: 'row' },
         needsDiag ? h('button', { class: 'btn quiet', onclick: () => copyText(R.diagnostics(ui.res, [f]), 'Diagnostica') }, 'Copia diagnostica') : null,
+        h('button', { class: 'btn quiet', onclick: () => { f.disabled = !f.disabled; changed(); } }, f.disabled ? 'Riattiva' : 'Disattiva'),
         h('button', { class: 'btn quiet danger', onclick: () => { state.files = state.files.filter((y) => y.id !== f.id); changed(); } }, 'Rimuovi')));
   }
 
@@ -7831,6 +8084,22 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
         h('div', { class: 'row' },
           h('button', { class: 'btn primary', onclick: () => { const v = needNumber(cost.input.value, 'il costo'); if (v) resolve(i.uid, { action: 'cover_cost', cost_eur: v, acquired: when.input.value || undefined }, 'Costo salvato'); } }, 'Salva il costo'),
           h('button', { class: 'btn', onclick: goPlatforms }, 'Aggiungi altri file'))));
+    }
+    for (const i of g.overlap) {
+      const pk = i.data.platform;
+      out.push(issueCard('bad', `${P[pk].name}: dati API e file sullo stesso periodo`,
+        'Le stesse operazioni verrebbero contate due volte. Scegli quale fonte tenere: l\'altra viene disattivata, non cancellata.',
+        h('div', { class: 'row' },
+          h('button', { class: 'btn primary', onclick: () => { state.files.forEach((f) => { if (i.data.fileIds.includes(f.id)) f.disabled = true; }); changed(); toast('Uso i dati API: i file sono disattivati'); } }, 'Tieni i dati API'),
+          h('button', { class: 'btn', onclick: () => { state.files.forEach((f) => { if (i.data.apiIds.includes(f.id)) f.disabled = true; }); changed(); toast('Uso i file: i dati API sono disattivati'); } }, 'Tieni i file'))));
+    }
+    for (const i of g.apiIncomplete) {
+      out.push(issueCard('bad', `${P[i.data.platform].name} (API): ${i.data.what}`,
+        i.data.note || 'Questo tipo di dati non viene scaricato dall\'API oppure lo storico potrebbe essere incompleto.',
+        h('p', { class: 'small muted' }, 'Per essere sicuro aggiungi anche il file di questa piattaforma, oppure conferma di non avere operazioni di questo tipo.'),
+        h('div', { class: 'row' },
+          h('button', { class: 'btn primary', onclick: () => { ui.platform = i.data.platform; ui.method = 'file'; ui.tab = 'files'; render(); window.scrollTo(0, 0); } }, 'Aggiungi il file'),
+          h('button', { class: 'btn', onclick: () => resolve(i.uid, { action: 'ack' }, 'Annotato: nessuna operazione di questo tipo') }, 'Non ho operazioni di questo tipo'))));
     }
     for (const u of g.unknown.values()) {
       const ex = u.items.slice(0, 3).map((i) => i.message);
@@ -8124,7 +8393,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       : blk ? h('button', { class: 'pill warn', onclick: () => { ui.tab = 'checks'; render(); } }, `Bozza · ${blk} da controllare`) : h('span', { class: 'pill good' }, 'Pronto');
     const yearSel = h('select', { id: 'yearSel', 'aria-label': 'Anno d\'imposta', onchange: (e) => { state.settings.year = +e.target.value; changed(); } },
       CT.tax.YEARS.map((y) => h('option', { value: y, selected: state.settings.year === y }, y)));
-    const nav = h('nav', { class: 'nav', role: 'tablist' }, TABS.map(([k, t], i) => h('button', { class: 'tab', role: 'tab', 'aria-selected': ui.tab === k ? 'true' : 'false', onclick: () => { ui.tab = k; render(); window.scrollTo(0, 0); } },
+    const nav = h('nav', { class: 'nav', role: 'tablist' }, TABS.map(([k, t], i) => h('button', { class: 'tab', role: 'tab', 'aria-selected': ui.tab === k ? 'true' : 'false', onclick: () => { ui.tab = k; if (k === 'files') ui.platform = null; render(); window.scrollTo(0, 0); } },
       h('span', { class: 'n' }, i + 1), t,
       k === 'checks' && blk ? h('span', { class: 'badge' }, blk) : null, k === 'prices' && missing ? h('span', { class: 'badge' }, missing) : null)));
     const panel = { files: () => (ui.platform ? panelPlatform(ui.platform) : panelPlatforms()), checks: panelChecks, result: panelResult, detail: panelDetail, prices: panelPrices, export: panelExport }[ui.tab]();

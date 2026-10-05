@@ -285,6 +285,13 @@
     if (rows.length) p.table(['File', 'Tipo', 'Righe', 'Periodo', 'Impronta SHA-256'], rows, { num: [2], fontSize: 7, columnStyles: { 4: { cellWidth: 62, font: 'courier', fontSize: 5.5 } } });
     else p.para('Nessun file.');
     p.para('L\'impronta SHA-256 permette di dimostrare che i file originali conservati sono quelli usati per il calcolo.', { size: 8.5, color: MUTED });
+    const apiFiles = res.parsed.map((x) => x.file).filter((f) => f.api && Array.isArray(f.api.coverage));
+    for (const f of apiFiles) {
+      p.h2(`Copertura dei dati scaricati da API · ${f.name}`);
+      p.table(['Cosa', 'Righe', 'Periodo', 'Stato', 'Note'], f.api.coverage.map((c) => [c.what, c.count === undefined ? '' : String(c.count),
+        c.from ? `${dmy(CT.taxDate(new Date(c.from)))} - ${c.to ? dmy(CT.taxDate(new Date(c.to))) : ''}` : '', c.complete === false ? 'DA INTEGRARE' : 'completo', c.note || '']), { num: [1], fontSize: 7.5 });
+      if ((f.api.warnings || []).length) p.bullets(f.api.warnings, { size: 8.5 });
+    }
     if (state.manual && state.manual.length) {
       p.h2('Operazioni inserite a mano');
       p.table(['Data', 'Operazione', 'Conto', 'Asset', 'Quantità', 'Valore (€)'], state.manual.map((m) => [dmy(m.data.slice(0, 10)), m.tipo.replace(/_/g, ' '), m.conto, m.asset, m.quantita, m.valore_eur]), { num: [4, 5], fontSize: 8 });

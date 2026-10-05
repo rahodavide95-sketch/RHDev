@@ -83,21 +83,35 @@
   const unresolved = (base, key, note) => mkEvent(Object.assign({}, base, { kind: Kind.UNRESOLVED, unkKey: key, note }));
 
   // ---------------------------------------------------------------- Crypto.com App
+  // Tipi di "Transaction Kind" verificati confrontando la struttura con parser open source collaudati (BittyTax),
+  // usati solo come riferimento sui fatti del formato: nessun codice copiato.
   const APP = {
-    buy: new Set(['crypto_purchase', 'viban_purchase']),
-    sell: new Set(['crypto_viban_exchange']),
-    swap: new Set(['crypto_exchange']),
-    out: new Set(['crypto_to_exchange_transfer', 'crypto_withdrawal']),
+    // scambi: Currency/Amount = gamba ceduta, To Currency/To Amount = gamba ricevuta
+    trade: new Set(['viban_purchase', 'van_purchase', 'crypto_viban_exchange', 'crypto_exchange', 'crypto_to_van_sell_order',
+      'trading.limit_order.fiat_wallet.sell_commit', 'trading.limit_order.cash_account.purchase_commit',
+      'trading.limit_order.crypto_wallet.exchange', 'recurring_buy_order']),
+    // acquisto/vendita contro il valore in valuta nativa: Amount > 0 = acquisto, Amount < 0 = vendita
+    nativeTrade: new Set(['crypto_purchase', 'trading.crypto_purchase.google_pay', 'dust_conversion_debited', 'dust_conversion_credited']),
+    out: new Set(['crypto_withdrawal', 'crypto_to_exchange_transfer']),
     in: new Set(['exchange_to_crypto_transfer', 'crypto_deposit']),
-    spend: new Set(['crypto_payment']),
+    spend: new Set(['crypto_payment', 'card_top_up', 'card_cashback_reverted', 'reimbursement_reverted']),
     income: {
-      crypto_earn_interest_paid: 'interest', crypto_earn_extra_interest_paid: 'interest',
-      mco_stake_reward: 'staking', staking_reward: 'staking',
-      referral_card_cashback: 'cashback', reimbursement: 'cashback',
-      referral_gift: 'referral', referral_bonus: 'referral', admin_wallet_credited: 'other',
+      crypto_earn_interest_paid: 'interest', crypto_earn_extra_interest_paid: 'interest', supercharger_reward_to_app_credited: 'interest',
+      'finance.lockup.dpos_compound_interest.crypto_wallet': 'interest', 'finance.dpos.non_compound_interest.crypto_wallet': 'interest',
+      'finance.dpos.compound_interest.crypto_wallet': 'interest', 'finance.crypto_earn.loyalty_program_extra_interest_paid.crypto_wallet': 'interest',
+      mco_stake_reward: 'staking', rewards_platform_deposit_credited: 'other',
+      referral_bonus: 'referral', referral_gift: 'referral', referral_card_cashback: 'cashback', transfer_cashback: 'cashback',
+      reimbursement: 'cashback', gift_card_reward: 'other', admin_wallet_credited: 'other', campaign_reward: 'other',
     },
-    info: new Set(['crypto_earn_program_created', 'crypto_earn_program_withdrawn', 'crypto_earn_program_extended',
-      'lockup_lock', 'lockup_upgrade', 'supercharger_deposit', 'supercharger_withdrawal']),
+    // spostamenti interni (blocco/sblocco, Earn, ordini limite): la proprieta' non cambia
+    info: new Set(['crypto_earn_program_created', 'crypto_earn_program_withdrawn', 'crypto_earn_program_extended', 'lockup_lock', 'lockup_unlock', 'lockup_upgrade',
+      'lockup_swap_credited', 'lockup_swap_debited', 'dynamic_coin_swap_credited', 'dynamic_coin_swap_debited', 'dynamic_coin_swap_bonus_exchange_deposit',
+      'interest_swap_credited', 'interest_swap_debited', 'crypto_wallet_swap_credited', 'crypto_wallet_swap_debited', 'supercharger_deposit', 'supercharger_withdrawal',
+      'council_node_deposit_created', 'trading.limit_order.fiat_wallet.purchase_lock', 'trading.limit_order.fiat_wallet.purchase_unlock',
+      'trading.limit_order.fiat_wallet.sell_lock', 'trading.limit_order.fiat_wallet.sell_unlock', 'trading.limit_order.cash_account.purchase_lock',
+      'trading.limit_order.cash_account.purchase_unlock', 'trading.limit_order.cash_account.sell_unlock', 'trading.limit_order.cash_account.sell_lock',
+      'trading.limit_order.crypto_wallet.fund_lock', 'trading.limit_order.crypto_wallet.fund_unlock', 'finance.lockup.dpos_lock.crypto_wallet',
+      'finance.dpos.staking.crypto_wallet', 'finance.dpos.unstaking.crypto_wallet', 'viban_deposit_precredit', 'viban_deposit_precredit_repayment']),
     fiatIn: new Set(['viban_deposit', 'fiat_deposit']),
     fiatOut: new Set(['viban_withdrawal', 'fiat_withdrawal']),
   };
@@ -116,33 +130,43 @@
       const ts = parseTs(row['Timestamp (UTC)']);
       const kind = row['Transaction Kind'].trim().toLowerCase();
       const cur = row['Currency'].trim().toUpperCase();
-      const amt = absN(parseNum(row['Amount'])) || ZERO;
+      const rawAmt = parseNum(row['Amount']) || ZERO;
+      const amt = rawAmt.abs();
       const toCur = (row['To Currency'] || '').trim().toUpperCase();
       const toAmt = absN(parseNum(row['To Amount'])) || ZERO;
       const nCcy = (row['Native Currency'] || '').trim().toUpperCase() || 'EUR';
       const nAmt = absN(parseNum(row['Native Amount']));
-      const base = { uid, ts, account, ref: row['Transaction Hash'] || '', src, note: row['Transaction Description'] || '', raw: row };
+      const desc = row['Transaction Description'] || '';
+      const base = { uid, ts, account, ref: row['Transaction Hash'] || '', src, note: desc, raw: row };
       let ev;
-      if (APP.buy.has(kind)) {
-        ev = toCur && FIAT.has(cur)
-          ? mkEvent({ ...base, kind: Kind.BUY, asset: toCur, qty: toAmt, value: amt, valueCcy: cur })
-          : mkEvent({ ...base, kind: Kind.BUY, asset: cur, qty: amt, value: nAmt, valueCcy: nCcy });
-      } else if (APP.sell.has(kind)) {
-        ev = toCur && FIAT.has(toCur)
-          ? mkEvent({ ...base, kind: Kind.SELL, asset: cur, qty: amt, value: toAmt, valueCcy: toCur })
-          : mkEvent({ ...base, kind: Kind.SELL, asset: cur, qty: amt, value: nAmt, valueCcy: nCcy });
-      } else if (APP.swap.has(kind)) {
+      if (APP.trade.has(kind)) {
         if (FIAT.has(cur) && toCur && !FIAT.has(toCur)) ev = mkEvent({ ...base, kind: Kind.BUY, asset: toCur, qty: toAmt, value: amt, valueCcy: cur });
         else if (FIAT.has(toCur) && !FIAT.has(cur)) ev = mkEvent({ ...base, kind: Kind.SELL, asset: cur, qty: amt, value: toAmt, valueCcy: toCur });
-        else ev = mkEvent({ ...base, kind: Kind.SWAP, asset: cur, qty: amt, counterAsset: toCur, counterQty: toAmt, value: nAmt, valueCcy: nCcy });
+        else if (toCur && !FIAT.has(cur) && !FIAT.has(toCur)) ev = mkEvent({ ...base, kind: Kind.SWAP, asset: cur, qty: amt, counterAsset: toCur, counterQty: toAmt, value: nAmt, valueCcy: nCcy });
+        else ev = unresolved(base, `Crypto.com App · tipo "${kind}" (valute ${cur}/${toCur || '-'})`, `Scambio con valute non interpretabili (${cur} → ${toCur || '-'})`);
+      } else if (APP.nativeTrade.has(kind)) {
+        ev = rawAmt.gt(0)
+          ? mkEvent({ ...base, kind: Kind.BUY, asset: cur, qty: amt, value: nAmt, valueCcy: nCcy })
+          : mkEvent({ ...base, kind: Kind.SELL, asset: cur, qty: amt, value: nAmt, valueCcy: nCcy });
       } else if (APP.out.has(kind)) ev = mkEvent({ ...base, kind: Kind.TRANSFER_OUT, asset: cur, qty: amt, value: nAmt, valueCcy: nCcy });
       else if (APP.in.has(kind)) ev = mkEvent({ ...base, kind: Kind.TRANSFER_IN, asset: cur, qty: amt, value: nAmt, valueCcy: nCcy });
       else if (APP.spend.has(kind)) ev = mkEvent({ ...base, kind: Kind.SPEND, asset: cur, qty: amt, value: nAmt, valueCcy: nCcy });
-      else if (kind in APP.income) ev = mkEvent({ ...base, kind: Kind.INCOME, asset: cur, qty: amt, value: nAmt, valueCcy: nCcy, incomeType: APP.income[kind] });
-      else if (APP.info.has(kind)) ev = mkEvent({ ...base, kind: Kind.INFO });
+      else if (kind in APP.income) {
+        ev = rawAmt.gt(0)
+          ? mkEvent({ ...base, kind: Kind.INCOME, asset: cur, qty: amt, value: nAmt, valueCcy: nCcy, incomeType: APP.income[kind] })
+          : unresolved(base, `Crypto.com App · tipo "${kind}" con importo negativo`, `Provento con importo negativo (storno?): "${kind}" (${cur} ${rawAmt.toFixed()})`);
+      } else if (kind === 'crypto_transfer') {
+        ev = unresolved(base, `Crypto.com App · "crypto_transfer" (${rawAmt.gt(0) ? 'ricevuto' : 'inviato'} tra utenti)`,
+          `Trasferimento tra utenti Crypto.com (regalo ${rawAmt.gt(0) ? 'ricevuto' : 'inviato'}): ${cur} ${amt.toFixed()}. Serve una decisione: non è né un acquisto né una vendita.`);
+      } else if (APP.info.has(kind)) ev = mkEvent({ ...base, kind: Kind.INFO });
       else if (APP.fiatIn.has(kind)) ev = mkEvent({ ...base, kind: Kind.FIAT_IN, asset: cur, qty: amt });
       else if (APP.fiatOut.has(kind)) ev = mkEvent({ ...base, kind: Kind.FIAT_OUT, asset: cur, qty: amt });
-      else ev = unresolved(base, `Crypto.com App · tipo "${kind}"`, `Tipo di transazione non riconosciuto: "${kind}" (${cur} ${amt.toFixed()})`);
+      else if (kind === '') {
+        // riga senza tipo: nei file veri sono movimenti in euro (deposito/prelievo)
+        if (/deposit/i.test(desc)) ev = mkEvent({ ...base, kind: Kind.FIAT_IN, asset: cur, qty: amt });
+        else if (/withdraw/i.test(desc)) ev = mkEvent({ ...base, kind: Kind.FIAT_OUT, asset: cur, qty: amt });
+        else ev = unresolved(base, 'Crypto.com App · riga senza tipo', `Riga senza tipo e senza descrizione riconoscibile: "${desc}" (${cur} ${rawAmt.toFixed()})`);
+      } else ev = unresolved(base, `Crypto.com App · tipo "${kind}"`, `Tipo di transazione non riconosciuto: "${kind}" (${cur} ${rawAmt.toFixed()})`);
       events.push(ev);
     }
     return finish('Crypto.com App', rows.length, events);
@@ -175,9 +199,27 @@
     for (const q of QUOTES) if (t.endsWith(q) && t.length > q.length) return [t.slice(0, -q.length), q];
     throw new FormatError(`Coppia di trading non interpretabile: "${s}"`);
   }
+  // Se nessun alias esatto corrisponde, si cerca per parola chiave (prima corrispondenza non ambigua con la commissione).
+  const FUZZY = {
+    time: (h) => /(date|time)/.test(h) && !/(update|expire|cancel)/.test(h),
+    instrument: (h) => /(instrument|symbol|pair|market)/.test(h) && !/fee/.test(h),
+    side: (h) => h === 'side',
+    qty: (h) => /quantity|qty/.test(h) && !/(cumulative|order|fee)/.test(h),
+    price: (h) => /price/.test(h) && !/(order|stop|trigger|avg)/.test(h),
+    fee: (h) => /^fees?$|^fee /.test(h) && !/(currency|instrument|asset|coin|ccy)/.test(h),
+    feeCcy: (h) => /fee/.test(h) && /(currency|instrument|asset|coin|ccy)/.test(h),
+    margin: (h) => /margin/.test(h),
+    asset: (h) => /(currency|asset|coin)/.test(h) && !/fee/.test(h),
+    amount: (h) => /(amount|quantity|qty)/.test(h) && !/fee/.test(h),
+    type: (h) => /(type|direction)/.test(h) && !/instrument/.test(h),
+    id: (h) => /(txid|tx id|hash|trade id|transaction id|^id$)/.test(h),
+  };
   function mapCols(headers, aliases, required, label) {
     const m = {};
-    for (const k of Object.keys(aliases)) m[k] = pick(headers, aliases[k]);
+    for (const k of Object.keys(aliases)) {
+      m[k] = pick(headers, aliases[k]);
+      if (!m[k] && FUZZY[k]) m[k] = headers.find((h) => FUZZY[k](h.toLowerCase())) || null;
+    }
     const miss = required.filter((k) => !m[k]);
     if (miss.length) throw new FormatError(`${label}: campi non riconosciuti (${miss.join(', ')})`);
     return m;
@@ -250,46 +292,60 @@
   }
 
   // ---------------------------------------------------------------- Bitpanda
-  const BP_INCOME = { staking: 'staking', reward: 'other', bonus: 'other', cashback: 'cashback', referral: 'referral', interest: 'interest', airdrop: 'airdrop' };
+  // Due varianti di file (verificate sulla struttura di parser open source collaudati, usati solo come riferimento):
+  //  - recente: Transaction ID, Timestamp, Transaction Type, In/Out, Amount Fiat, Fiat, Amount Asset, Asset, Asset market price,
+  //    Asset market price currency, Asset class, Product ID, Fee, Fee asset, Spread, Spread Currency, Tax Fiat
+  //  - precedente: ID, Type, In/Out, Amount Fiat, Fee, Fiat, Amount Asset, Asset, Status, Created at (si contano solo le "finished")
+  // Il file puo' avere righe di testo prima dell'intestazione, titoli di sezione e intestazioni ripetute tra una tabella e l'altra.
+  const isFiatMove = (amtAsset) => amtAsset === null || amtAsset.isZero();
 
   function parseBitpanda(text, fileName, account) {
     account = account || 'Bitpanda';
-    const { headers, rows } = readTable(text, 'Transaction ID');
-    const req = ['Transaction ID', 'Timestamp', 'Transaction Type', 'Amount Fiat', 'Fiat', 'Amount Asset', 'Asset'];
+    const marker = /transaction id/i.test(text) ? 'Transaction ID' : 'Amount Fiat';
+    const { headers, rows } = readTable(text, marker);
+    const recent = headers.includes('Transaction ID');
+    const req = recent ? ['Transaction ID', 'Timestamp', 'Transaction Type', 'Amount Fiat', 'Fiat', 'Amount Asset', 'Asset']
+      : ['ID', 'Type', 'Amount Fiat', 'Fiat', 'Amount Asset', 'Asset', 'Created at'];
     const miss = req.filter((h) => !headers.includes(h));
     if (miss.length) throw new FormatError(`Bitpanda: colonne mancanti ${miss.join(', ')}`);
+    const idCol = recent ? 'Transaction ID' : 'ID', tsCol = recent ? 'Timestamp' : 'Created at', typeCol = recent ? 'Transaction Type' : 'Type';
     const mkUid = uidFactory(account);
     const events = [];
+    let dataRows = 0;
     for (const row of rows) {
+      if (row[idCol] === idCol) continue;                                   // intestazione ripetuta tra due tabelle
+      const others = Object.keys(row).filter((k) => k !== idCol && k !== '__line' && row[k] !== '');
+      if (!others.length) continue;                                         // riga di titolo o separatore
+      dataRows++;
       const uid = mkUid(row);
       const src = `${fileName}:${row.__line}`;
-      const ts = parseTs(row['Timestamp']);
-      const typ = row['Transaction Type'].trim().toLowerCase();
+      const ts = parseTs(row[tsCol]);
+      const typ = (row[typeCol] || '').trim().toLowerCase();
       const dir = (row['In/Out'] || '').trim().toLowerCase();
       const assetClass = (row['Asset class'] || '').trim();
-      let asset = row['Asset'].trim().toUpperCase();
+      let asset = (row['Asset'] || '').trim().toUpperCase();
       asset = METAL_ALIASES[asset] || asset;
       const qty = absN(parseNum(row['Amount Asset'])) || ZERO;
       const fiatAmt = absN(parseNum(row['Amount Fiat']));
       const fiat = (row['Fiat'] || '').trim().toUpperCase() || 'EUR';
+      const fee = absN(parseNum(row['Fee'])) || ZERO;
       const cls = assetClass ? classify(asset, assetClass) : classify(asset);
-      const base = { uid, ts, account, ref: row['Transaction ID'], src, raw: row, assetHint: assetClass || null };
+      const base = { uid, ts, account, ref: row[idCol], src, raw: row, assetHint: assetClass || null };
       let ev;
-      if (cls === 'fiat' || FIAT.has(asset)) {
-        if (typ === 'deposit') ev = mkEvent({ ...base, kind: Kind.FIAT_IN, asset, qty: qty.gt(0) ? qty : fiatAmt || ZERO });
-        else if (typ === 'withdrawal') ev = mkEvent({ ...base, kind: Kind.FIAT_OUT, asset, qty: qty.gt(0) ? qty : fiatAmt || ZERO });
-        else ev = unresolved(base, `Bitpanda · movimento fiat "${typ}"`, `Movimento in valuta di tipo non riconosciuto: "${typ}"`);
+      if (!recent && (row['Status'] || '').trim().toLowerCase() !== 'finished') {
+        ev = mkEvent({ ...base, kind: Kind.INFO, note: `Operazione non completata (stato "${row['Status']}"): ignorata` });
       } else if (typ === 'buy') ev = mkEvent({ ...base, kind: Kind.BUY, asset, qty, value: fiatAmt, valueCcy: fiat });
       else if (typ === 'sell') ev = mkEvent({ ...base, kind: Kind.SELL, asset, qty, value: fiatAmt, valueCcy: fiat });
-      else if (typ === 'deposit') ev = mkEvent({ ...base, kind: Kind.TRANSFER_IN, asset, qty });
-      else if (typ === 'withdrawal') ev = mkEvent({ ...base, kind: Kind.TRANSFER_OUT, asset, qty });
-      else if (typ === 'transfer' && ['incoming', 'in'].includes(dir)) ev = mkEvent({ ...base, kind: Kind.TRANSFER_IN, asset, qty });
-      else if (typ === 'transfer' && ['outgoing', 'out'].includes(dir)) ev = mkEvent({ ...base, kind: Kind.TRANSFER_OUT, asset, qty });
-      else if (typ in BP_INCOME) ev = mkEvent({ ...base, kind: Kind.INCOME, asset, qty, value: fiatAmt, valueCcy: fiat, incomeType: BP_INCOME[typ] });
-      else ev = unresolved(base, `Bitpanda · tipo "${typ}" (${assetClass || 'classe n.d.'})`, `Tipo di transazione non riconosciuto: "${typ}" (In/Out="${dir}", classe="${assetClass}")`);
+      else if (typ === 'deposit' || typ === 'withdrawal') {
+        const fiatMove = isFiatMove(parseNum(row['Amount Asset'])) || cls === 'fiat' || FIAT.has(asset);
+        if (fiatMove) ev = mkEvent({ ...base, kind: typ === 'deposit' ? Kind.FIAT_IN : Kind.FIAT_OUT, asset: fiat, qty: fiatAmt || ZERO });
+        else if (typ === 'deposit') ev = mkEvent({ ...base, kind: Kind.TRANSFER_IN, asset, qty });
+        else ev = mkEvent({ ...base, kind: Kind.TRANSFER_OUT, asset, qty: qty.plus(fee) });   // la commissione esce in aggiunta alla quantita' inviata
+      } else ev = unresolved(base, `Bitpanda · tipo "${typ}" (${assetClass || 'classe n.d.'})`,
+        `Tipo di transazione non riconosciuto: "${typ}" (In/Out="${dir}", classe="${assetClass}", ${asset} ${qty.toFixed()})`);
       events.push(ev);
     }
-    return finish('Bitpanda', rows.length, events);
+    return finish('Bitpanda', dataRows, events);
   }
 
   // ---------------------------------------------------------------- Modello universale (qualsiasi piattaforma / wallet)
@@ -351,6 +407,7 @@
   function detectType(text) {
     const t = String(text).replace(/^﻿/, '');
     if (/transaction id/i.test(t) && /asset class/i.test(t)) return 'bitpanda';
+    if (/amount fiat/i.test(t) && /amount asset/i.test(t) && /created at/i.test(t)) return 'bitpanda';
     let tbl;
     try { tbl = readTable(t); } catch (e) { return null; }
     const H = tbl.headers.map((h) => h.toLowerCase());
@@ -366,7 +423,7 @@
   function describeFile(text) {
     const t = String(text).replace(/^﻿/, '');
     let tbl;
-    try { tbl = readTable(t, /transaction id/i.test(t) ? 'Transaction ID' : undefined); } catch (e) { return { error: e.message }; }
+    try { tbl = readTable(t, /transaction id/i.test(t) ? 'Transaction ID' : (/amount fiat/i.test(t) && /amount asset/i.test(t) ? 'Amount Fiat' : undefined)); } catch (e) { return { error: e.message }; }
     const cats = {};
     for (const h of tbl.headers) {
       const c = new Map();

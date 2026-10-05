@@ -10,7 +10,7 @@ const src = (f) => fs.readFileSync(path.join(__dirname, 'src', f), 'utf8');
 const SCRIPTS = ['vendor/decimal.js', 'vendor/jspdf.umd.min.js', 'vendor/jspdf.plugin.autotable.min.js', 'core.js', 'csv.js', 'importers.js', 'engine.js', 'tax.js', 'rw.js', 'zip.js', 'pipeline.js', 'report.js', 'pdf.js', 'platforms.js', 'ui.js'];
 const scripts = SCRIPTS.map((f) => {
   const code = src(f).replace(/<\/script/gi, '<\\/script'); // '<\/' e' equivalente a '</' dentro stringhe e regex JS
-  return `<script>\n${code}\n</script>`;
+  return `<script data-app>\n${code}\n</script>`;
 }).join('\n');
 
 const fragment = src('index.src.html').replace('/*@@CSS@@*/', () => src('app.css')).replace('/*@@SCRIPTS@@*/', () => scripts);

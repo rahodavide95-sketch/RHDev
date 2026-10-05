@@ -20,6 +20,8 @@ leggono i risultati. È un'unica pagina web: **nessuna installazione, nessun ser
 
 Il lavoro si salva da solo nel browser; si può anche salvare/riaprire come file di progetto.
 
+**Fuori da claude.ai:** nella scheda Documenti il pulsante "Scarica il programma per il computer" salva un unico file .html che si apre con un doppio clic, anche senza internet.
+
 **API:** per ora ogni piattaforma si aggiunge con i file. Il collegamento API non è attivo: va costruito e provato con un account reale (dall'ambiente di sviluppo non si raggiungono i server delle piattaforme) e, dentro claude.ai, la pagina non può comunque collegarsi a siti esterni. Vedi `docs/SPECIFICA.md`.
 
 ## Attenzione: questo repository pubblica su GitHub Pages

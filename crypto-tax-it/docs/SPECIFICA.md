@@ -80,7 +80,8 @@ fonti consultate erano discordanti: vanno presi dalle istruzioni del modello.
 
 1. Qualificazione dell'oro Bitpanda come metallo prezioso (c-ter); obbligo e codice RW per metalli presso custode estero.
 2. `Amount Fiat` di Bitpanda comprende già le commissioni; unità dei metalli (grammi); fuso orario dei timestamp.
-3. Valori di `Transaction Kind` di Crypto.com App; nomi colonna di Crypto.com Exchange.
+3. Formati dei file: per **Crypto.com App** e **Bitpanda** (due varianti) la struttura e i tipi di riga sono stati verificati confrontandoli con un parser open source collaudato (BittyTax, usato solo come riferimento sui fatti del formato, senza copiarne il codice); mancano ancora prove su file reali dell'utente. **Crypto.com Exchange**: colonne riconosciute per nome o per parola chiave, formato non verificato. Righe non previste restano "da controllare".
+   Bitpanda: tipi diversi da buy/sell/deposit/withdrawal (es. staking, transfer) non sono mappati e vengono segnalati. Crypto.com App: i trasferimenti tra utenti (`crypto_transfer`) richiedono una decisione.
 4. Cashback/rimborsi della carta Crypto.com trattati come provento (alternativa: riduzione di costo).
 5. Franchigia 2023-2024 valutata sul totale (plusvalenze nette + proventi) prima del riporto perdite.
 6. Formula IVCA e criterio di valorizzazione RW.

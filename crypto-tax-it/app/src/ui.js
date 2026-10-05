@@ -602,9 +602,21 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
           h('label', { class: 'btn', for: 'projIn' }, 'Apri un progetto salvato', h('input', { type: 'file', id: 'projIn', accept: '.json', class: 'sr', onchange: async (e) => {
             try { const s = JSON.parse(await e.target.files[0].text()); if (!Array.isArray(s.files)) throw new Error(); Object.assign(state, s); changed('result'); toast('Progetto caricato'); } catch (err) { toast('Il file non è un progetto valido'); }
           } })),
-          h('button', { class: 'btn', onclick: () => copyText(R.diagnostics(res, state.files), 'Diagnostica') }, 'Copia diagnostica (senza importi)'))));
+          h('button', { class: 'btn', onclick: () => copyText(R.diagnostics(res, state.files), 'Diagnostica') }, 'Copia diagnostica (senza importi)'))),
+      h('div', { class: 'card' }, h('h2', null, 'Usa il programma sul tuo computer'),
+        h('p', { class: 'muted small' }, 'Un unico file .html con lo stesso programma: lo apri con un doppio clic, anche senza internet e fuori da claude.ai. I dati che inserisci restano su quel computer. Per portarci il lavoro fatto qui usa "Salva il progetto" e poi "Apri un progetto salvato".'),
+        h('div', { class: 'row' }, h('button', { class: 'btn', onclick: () => { const html = standaloneHtml(); if (!html) { toast('Non riesco a preparare il file'); return; } saveFile('dichiarazione-crypto.html', html, 'text/html'); } }, 'Scarica il programma per il computer (.html)'))));
   }
 
+
+  // ------------------------------------------------------------------ versione per il computer
+  /** Ricostruisce dalla pagina aperta un file .html autonomo (stesso codice), da usare fuori da claude.ai. */
+  function standaloneHtml() {
+    const style = document.querySelector('style[data-app]');
+    const scripts = [...document.querySelectorAll('script[data-app]')];
+    if (!style || !scripts.length) return null;
+    return `<!doctype html>\n<html lang="it">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n<meta name="robots" content="noindex">\n<title>Dichiarazione Crypto</title>\n<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">\n<style>\n${style.textContent}\n</style>\n</head>\n<body>\n<div id="app"></div>\n${scripts.map((x) => `<script>\n${x.textContent}\n</script>`).join('\n')}\n</body>\n</html>\n`;
+  }
 
   // ------------------------------------------------------------------ PDF
   async function makePdfs() {

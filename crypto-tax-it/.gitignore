@@ -1,0 +1,15 @@
+# DATI PERSONALI E CHIAVI: non vanno MAI committati
+data/
+out/
+*.csv
+*.xlsx
+*.xls
+*.pdf
+*.zip
+config.json
+resolutions.json
+.env
+*.key
+*.pem
+__pycache__/
+*.pyc

@@ -10879,9 +10879,10 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
         'Le API non scaricano tutto. Per ognuno qui sotto aggiungi il file della piattaforma oppure conferma di non avere operazioni di quel tipo. Se le conosci già tutte puoi confermarle insieme.',
         h('ul', { class: 'clean muted small' }, g.apiIncomplete.map((i) => h('li', null, `${P[i.data.platform].name}: ${i.data.what}`))),
         h('div', { class: 'row' },
-          h('button', { class: 'btn', onclick: () => { g.apiIncomplete.forEach((i) => { state.resolutions[i.uid] = { action: 'ack' }; }); changed(); toast('Annotato: nessuna operazione di questi tipi'); } }, `Non ho operazioni di nessuno di questi tipi (${g.apiIncomplete.length})`))));
+          h('button', { class: 'btn primary', onclick: () => { g.apiIncomplete.forEach((i) => { state.resolutions[i.uid] = { action: 'ack' }; }); changed(); toast('Annotato: nessuna operazione di questi tipi'); } }, `Non ho operazioni di nessuno di questi tipi (${g.apiIncomplete.length})`),
+          h('button', { class: 'btn', onclick: goPlatforms }, 'Ne ho: aggiungo il file'))));
     }
-    for (const i of g.apiIncomplete) {
+    for (const i of g.apiIncomplete.length > 1 ? [] : g.apiIncomplete) {   // con più voci basta la scheda unica sopra
       out.push(issueCard('bad', `${P[i.data.platform].name} (API): ${i.data.what}`,
         i.data.note || 'Questo tipo di dati non viene scaricato dall\'API oppure lo storico potrebbe essere incompleto.',
         h('p', { class: 'small muted' }, 'Per essere sicuro aggiungi anche il file di questa piattaforma, oppure conferma di non avere operazioni di questo tipo.'),

@@ -25,10 +25,16 @@
      fees ("segno negativo = addebito sul saldo, al netto dei crediti commissione"), fee_instrument_name, trade_id, side,
      instrument_name, create_time, create_time_ns, transact_time_ns, isolation_id/isolation_type (margine isolato).
      L'ordine delle righe NON e' dichiarato.
-   - private/get-deposit-history e private/get-withdrawal-history [D2, D3]: start_ts/end_ts in ms (predefinito: ultimi 90 giorni),
-     page (da 0) e page_size (predefinito 20, massimo 200), campi id, currency, amount, fee, create_time, update_time, status
-     (deposito: 0 non arrivato, 1 arrivato, 2 fallito, 3 in attesa; prelievo: 0 in attesa, 1 in elaborazione, 2 rifiutato,
-     3 pagamento in corso, 4 pagamento fallito, 5 completato, 6 annullato), txid, address, network_id.
+   - private/get-deposit-history [D2]: start_ts/end_ts in ms (predefinito: ultimi 90 giorni), page (da 0) e page_size
+     (predefinito 20, massimo 200). Campi di deposit_list DOCUMENTATI in [D2]: address, amount, create_time (ms), currency, fee,
+     id, status (0 non arrivato, 1 arrivato, 2 fallito, 3 in attesa), update_time. txid NON e' tra i campi documentati di [D2]
+     (compare solo nell'esempio di deposito di [C]): si legge come facoltativo e serve solo come riferimento.
+   - private/get-withdrawal-history [D3]: stessi parametri di [D2]. Campi di withdrawal_list DOCUMENTATI in [D3]: address, amount,
+     client_wid, create_time, currency, fee, id, network_id (solo se la valuta ha piu' reti), status (0 in attesa, 1 in
+     elaborazione, 2 rifiutato, 3 pagamento in corso, 4 pagamento fallito, 5 completato, 6 annullato), txid, update_time.
+     In [D3] create_time e' descritto solo come "Creation timestamp" (senza unita'): l'esempio e [C] mostrano millisecondi.
+   - Codici di errore transitori elencati in [D0]: 408 / 40801 REQUEST_TIMEOUT, 400 / 50001 ERR_INTERNAL, 429 / 42901
+     TOO_MANY_REQUESTS; 400 / 40005 INVALID_DATE, 40004 MISSING_OR_INVALID_ARGUMENT, 40001 BAD_REQUEST.
    - private/staking/get-reward-history [D6]: "Min: end_time - 180 giorni": per lo staking la profondita' e' limitata.
    - private/fiat/fiat-deposit-history [D7]: la risposta 200 NON e' descritta nella documentazione (quindi non si scarica).
    - private/get-transactions [D8] elenca journal_type come AUTO_CONVERSION, MANUAL_CONVERSION, ADJUSTMENT, SUBACCOUNT_TX: private/get-trades
@@ -39,11 +45,22 @@
      solo "predefinito: end_time - 1 giorno". Si usano finestre di 23h59m59s: se il limite non esiste si e' solo piu' lenti.
    - Finestra massima di 90 giorni per i depositi e i prelievi: [C] scrive "90 days date range", [D2/D3] "predefinito 90 giorni".
      Si usano finestre di 89 giorni con 1 ora di sovrapposizione (i doppioni si eliminano con l'id).
-   - Profondita' dello storico offerta dalla piattaforma: NON dichiarata. Si parte da una data di inizio (predefinita
-     01/10/2019, prima dell'apertura in beta di novembre 2019 riportata da fonti di stampa non verificabili da qui).
-   - Prelievi: la documentazione NON dice se "amount" comprende gia' la commissione di rete. Predefinito: la comprende
-     (indizio: in [D5] min_withdrawal_amount e' sempre il doppio di withdrawal_fee); l'opzione "feeIncluded" = no la aggiunge.
+   - Profondita' dello storico offerta dalla piattaforma: NON dichiarata ([D1] dice anzi che private/get-trades "should primarily
+     be used for recovery"). Si parte da una data di inizio (predefinita 01/10/2019, prima dell'apertura in beta di novembre 2019
+     riportata da fonti di stampa non verificabili da qui), ma NON si puo' sapere se il server restituisce tutto cio' che e'
+     piu' vecchio: per questo coverage.complete e' SEMPRE false per operazioni, depositi e prelievi (anche con zero righe, che
+     non distingue un conto vuoto da uno storico non raggiungibile). L'utente confronta la prima data scaricata con la propria
+     prima operazione e conferma con il meccanismo di conferma dell'interfaccia.
+   - Prelievi: la documentazione NON dice se "amount" comprende gia' la commissione di rete ([D3]: "Withdrawal amount" e
+     "Withdrawal fee"; l'esempio di [D4] mostra amount "1" e fee "0.0004" senza chiarire il saldo). Nessun indizio e' affidabile:
+     in [D5] withdrawal_fee puo' essere null (AGLD) e min_withdrawal_amount non e' sempre il doppio della commissione. Percio'
+     NON c'e' un valore predefinito: finche' l'utente non sceglie l'opzione "feeIncluded" (si/no) ogni prelievo con commissione
+     diversa da zero (o senza commissione indicata) diventa "non riconosciuto", come per i depositi (mai ipotesi). La scelta
+     dell'utente si applica a tutti i prelievi ed e' dichiarata negli avvisi come scelta, non come fatto documentato.
    - Depositi: se fee != 0 non e' documentato se amount sia lordo o netto: la riga diventa "non riconosciuta" (mai ipotesi).
+   - Ripetizione degli errori transitori: 408/40801, 50001 e 42901 (anche se consegnato con HTTP 200) vengono ripetuti fino a 4
+     volte con attese di 2, 4, 8, 16 secondi (la firma si rifa a ogni tentativo); che siano davvero transitori e' un'interpretazione
+     prudente dei nomi dei codici in [D0]. Dopo i tentativi la sincronizzazione si ferma con errore (nessun dato parziale).
    - Il campo su cui i depositi/prelievi (create_time o update_time) e le operazioni (create_time_ns o transact_time_ns) vengono
      filtrati per tempo non e' dichiarato: la scansione per finestre sovrapposte e la divisione delle pagine piene
      prendono i confini in modo prudente su tutti i campi.
@@ -83,7 +100,7 @@
   const WALLET_PACE_MS = 150;                // limite documentato: 3 richieste ogni 100 ms
   const WALLET_MAX_PAGES = 500;
   const NONCE_TOL_MS = 60000;
-  const NET_RETRIES = 4;                     // errori di rete dopo almeno una risposta riuscita: si riprova (2, 4, 8, 16 s)
+  const NET_RETRIES = 4;                     // errori di rete (dopo almeno una risposta) e codici transitori: si riprova (2, 4, 8, 16 s)
 
   const DEPOSIT_STATUS_OK = '1';
   const DEPOSIT_STATUS_IGNORED = { 0: 'non ancora arrivato', 2: 'fallito', 3: 'in attesa' };
@@ -134,6 +151,8 @@
   }
   /** Nanosecondi Unix (19 cifre, solo come stringa: un numero JSON perderebbe precisione) oppure null. */
   function nsVal(v) { return typeof v === 'string' && /^\d{19}$/.test(v.trim()) ? BigInt(v.trim()) : null; }
+  /** Commissione presente e uguale a zero (se manca o non e' leggibile NON e' zero). */
+  function feeIsZero(v) { const t = decStr(v); return t !== null && D(t).isZero(); }
   const isObject = (o) => o !== null && typeof o === 'object' && !Array.isArray(o);
   const upper = (s) => String(s).trim().toUpperCase();
   const isoDay = (ms) => new Date(ms).toISOString().slice(0, 10);
@@ -188,6 +207,9 @@
     if (code === 40104) return ApiError('auth', 'La piattaforma non permette l\'accesso API con il livello del tuo account.', detail);
     if (code === 40101) return ApiError('auth', 'La piattaforma ha rifiutato le chiavi: controlla che siano corrette, attive e abilitate alla lettura.' + (isWalletMethod(method) ? AUTH_HELP : ''), detail);
     if (code === 42901) return ApiError('rate', 'Troppe richieste: la piattaforma ha limitato l\'accesso. Riprova tra qualche minuto.', detail);
+    if (code === 40005) return ApiError('http', 'La piattaforma ha rifiutato l\'intervallo di date richiesto (codice 40005, data non valida). Può dipendere da una data di inizio troppo lontana nel passato (prova con una data più recente) oppure da limiti sugli intervalli che non sono documentati: in quel caso usa i file.', detail);
+    if (code === 40004) return ApiError('http', 'La piattaforma ha rifiutato la richiesta perché manca un parametro obbligatorio o ha un valore non valido (codice 40004).', detail);
+    if (code === 40001) return ApiError('http', 'La piattaforma ha rifiutato la richiesta perché non valida (codice 40001).', detail);
     const msg = common().redact(String(message === undefined || message === null ? '' : message), secrets).slice(0, 120);
     return ApiError('http', `La piattaforma ha risposto con un errore (codice ${code}${msg ? ': ' + msg : ''}).`, detail);
   }
@@ -197,6 +219,14 @@
     const m = /"code"\s*:\s*"?(-?\d+)"?/.exec(String(bodyText || ''));
     return m ? Number(m[1]) : null;
   }
+  /** Dal corpo (ripulito e troncato) il testo del campo message, se c'e'. */
+  function messageOf(bodyText) {
+    const m = /"message"\s*:\s*"([^"]*)"/.exec(String(bodyText || ''));
+    return m ? m[1] : '';
+  }
+
+  // codici documentati [D0] che si ripetono (vedi ASSUNTO): REQUEST_TIMEOUT, ERR_INTERNAL, TOO_MANY_REQUESTS
+  const TRANSIENT_CODES = new Set([40801, 50001, 42901]);
 
   function makeCaller(o) {
     let seq = 0;
@@ -204,6 +234,7 @@
       const id = String(++seq);
       const url = ROOT + method;
       const secrets = [o.apiKey, o.apiSecret];
+      let signError = null;
       // la firma si rifa ad ogni tentativo: dopo le attese per i limiti il nonce vecchio supererebbe i 60 secondi
       const signed = async () => {
         let body;
@@ -211,35 +242,57 @@
           const nonce = String(o.now().getTime());
           body = JSON.stringify(await signRequest({ id, method, api_key: o.apiKey, params, nonce }, o.apiSecret));
         } catch (e) {
-          throw ApiError('config', 'Il browser non permette di calcolare la firma (serve una pagina in contesto sicuro, https o file locale).', { method });
+          // common.request trasforma ogni eccezione della funzione di rete in 'network': l'errore vero si conserva qui e si rilancia sotto
+          signError = ApiError('config', 'Il browser non permette di calcolare la firma (serve una pagina in contesto sicuro, https o file locale).', { method });
+          throw signError;
         }
-        return o.fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, credentials: 'omit' });
+        // fetch si chiama come funzione "nuda": il fetch del browser, invocato come metodo di un altro oggetto, lancia "Illegal invocation"
+        const doFetch = o.fetch;
+        return doFetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, credentials: 'omit' });
       };
-      let json;
       for (let attempt = 0; ; attempt++) {
+        let json = null, failure = null;
         try {
           json = await common().request(signed, url, {}, { sleep: o.sleep, secrets });
           o.reached = true;
-          break;
         } catch (e) {
+          if (signError) throw signError;
           if (!(e instanceof CT.api.common.ApiError)) throw e;
+          failure = e;
+        }
+        if (failure) {
+          const pc = platformCodeOf(failure.detail && failure.detail.body);
           // un'interruzione di rete a meta' di uno scaricamento lungo non deve far perdere tutto: si riprova.
           // Se la piattaforma non e' mai stata raggiunta (rete assente, collegamento bloccato dal browser) ci si ferma subito.
-          if (e.code === 'network' && o.reached && attempt < NET_RETRIES) { await o.sleep(2000 * 2 ** attempt); continue; }
-          const pc = platformCodeOf(e.detail && e.detail.body);
+          const wasReached = o.reached;
+          if (failure.code !== 'network') o.reached = true;          // ha risposto qualcuno: la piattaforma e' raggiungibile
+          const transient = failure.code === 'network'
+            ? wasReached
+            : failure.code === 'http' && ((failure.detail && failure.detail.status === 408) || TRANSIENT_CODES.has(pc));
+          if (transient && attempt < NET_RETRIES) { await o.sleep(2000 * 2 ** attempt); continue; }
           if (pc === 40102 || pc === 40103 || pc === 40104) throw codeError(pc, '', method, secrets);
-          if (e.code === 'auth' && isWalletMethod(method)) throw ApiError('auth', e.message + AUTH_HELP, Object.assign({ method }, e.detail));
-          e.detail = Object.assign({ method }, e.detail);
-          throw e;
+          if (failure.code === 'auth' && isWalletMethod(method)) throw ApiError('auth', failure.message + AUTH_HELP, Object.assign({ method }, failure.detail));
+          if (failure.code === 'http' && pc !== null) {
+            // il codice della piattaforma deve comparire nel messaggio (es. 40005 = date non accettate)
+            const err = codeError(pc, messageOf(failure.detail.body), method, secrets);
+            err.detail = Object.assign({}, failure.detail, err.detail);
+            throw err;
+          }
+          failure.detail = Object.assign({ method }, failure.detail);
+          throw failure;
         }
+        if (!isObject(json)) throw formatErr(method, 'la risposta non è un oggetto');
+        const code = typeof json.code === 'string' && /^-?\d+$/.test(json.code.trim()) ? Number(json.code.trim()) : json.code;
+        if (!Number.isInteger(code)) throw formatErr(method, 'manca il campo code');
+        if (code !== 0) {
+          // anche con HTTP 200 il corpo puo' portare un errore transitorio (es. 42901): stesse attese e stesso numero di tentativi
+          if (TRANSIENT_CODES.has(code) && attempt < NET_RETRIES) { await o.sleep(2000 * 2 ** attempt); continue; }
+          throw codeError(code, json.message, method, secrets);
+        }
+        if (json.method !== undefined && json.method !== method) throw formatErr(method, 'la risposta riguarda un altro metodo');
+        if (!isObject(json.result)) throw formatErr(method, 'manca il campo result');
+        return json.result;
       }
-      if (!isObject(json)) throw formatErr(method, 'la risposta non è un oggetto');
-      const code = typeof json.code === 'string' && /^-?\d+$/.test(json.code.trim()) ? Number(json.code.trim()) : json.code;
-      if (!Number.isInteger(code)) throw formatErr(method, 'manca il campo code');
-      if (code !== 0) throw codeError(code, json.message, method, secrets);
-      if (json.method !== undefined && json.method !== method) throw formatErr(method, 'la risposta riguarda un altro metodo');
-      if (!isObject(json.result)) throw formatErr(method, 'manca il campo result');
-      return json.result;
     };
   }
 
@@ -349,17 +402,18 @@
     if (ms < Date.parse(HARD_FLOOR + 'T00:00:00Z')) throw ApiError('config', `La data di inizio è troppo lontana: usa una data dal ${HARD_FLOOR} in poi.`);
     if (ms >= nowDate.getTime()) throw ApiError('config', 'La data di inizio è nel futuro: indica la data da cui vuoi scaricare lo storico.');
     const f = String(o.feeIncluded === undefined || o.feeIncluded === null ? '' : o.feeIncluded).trim().toLowerCase();
-    let feeIncluded = true;
-    if (f === '' || ['si', 'sì', 's', 'yes', 'true'].includes(f)) feeIncluded = true;
+    let feeIncluded = null;                  // null = l'utente non ha scelto: nessuna ipotesi (vedi ASSUNTO)
+    if (['si', 'sì', 's', 'yes', 'true'].includes(f)) feeIncluded = true;
     else if (['no', 'n', 'false'].includes(f)) feeIncluded = false;
-    else throw ApiError('config', 'L\'opzione sulla commissione dei prelievi accetta solo «si» oppure «no».');
+    else if (f !== '') throw ApiError('config', 'L\'opzione sulla commissione dei prelievi accetta solo «si» oppure «no» (oppure vuota).');
     return { startDate, startMs: ms, feeIncluded };
   }
 
   // ---------------------------------------------------------------- sincronizzazione
   async function sync(creds, opts) {
     opts = opts || {};
-    const fetchImpl = opts.fetch || globalThis.fetch;
+    // il fetch del browser va chiamato come globalThis.fetch(...): estratto e invocato come metodo di un altro oggetto lancia "Illegal invocation"
+    const fetchImpl = opts.fetch || (typeof globalThis.fetch === 'function' ? (u, i) => globalThis.fetch(u, i) : null);
     if (typeof fetchImpl !== 'function') throw ApiError('config', 'Questo browser non permette di collegarsi alla piattaforma.');
     const sleep = opts.sleep || common().sleep;
     const now = opts.now || (() => new Date());
@@ -398,15 +452,16 @@
     const startOk = settings.startDate <= FLOOR;
     const first = (rows, f) => (rows.length ? isoDay(f(rows[0])) : null), last = (rows, f) => (rows.length ? isoDay(f(rows[rows.length - 1])) : null);
     const tradeMs = (r) => Number(tradeInfo(r).keyNs / NS), walMs = (r) => msVal(r.create_time);
-    const range = (rows, f) => (rows.length ? ` Prima: ${first(rows, f)}, ultima: ${last(rows, f)}.` : ' Nessun dato nel periodo.');
+    const range = (rows, f) => (rows.length ? ` Prima: ${first(rows, f)}, ultima: ${last(rows, f)}.` : ' Nessun dato nel periodo: se ti aspettavi delle operazioni, lo storico potrebbe non essere raggiungibile con questa chiave.');
     const lateStart = `Hai scelto di partire dal ${settings.startDate}: ciò che è precedente non è stato scaricato.`;
     const note = (problems, extra) => [startOk ? '' : lateStart, ...problems, extra].filter(Boolean).join(' ');
-    const DEPTH = 'La piattaforma non dichiara quanto indietro arriva lo storico via API: se il conto è più vecchio della prima data scaricata, integra con il file.';
+    // La profondita' dello storico non e' dichiarata: complete e' SEMPRE false (anche con zero righe), l'utente conferma di aver controllato.
+    const DEPTH = 'La piattaforma non dichiara quanto indietro arriva lo storico via API, quindi non si può garantire che sia completo. Confronta la prima data scaricata con quella della tua prima operazione sull\'Exchange: se il conto è più vecchio, integra con il file; se coincide, conferma.';
 
     const coverage = [
-      { what: 'Operazioni di trading spot', count: trades.length, from: fromIso, to: toIso, complete: startOk && !tctx.problems.length, note: note(tctx.problems, DEPTH + range(trades, tradeMs)) },
-      { what: 'Depositi di criptovalute', count: deposits.length, from: fromIso, to: toIso, complete: startOk && !wctx.problems.filter((p) => p.startsWith('Depositi')).length, note: note(wctx.problems.filter((p) => p.startsWith('Depositi')), DEPTH + range(deposits, walMs)) },
-      { what: 'Prelievi di criptovalute', count: withdrawals.length, from: fromIso, to: toIso, complete: startOk && !wctx.problems.filter((p) => p.startsWith('Prelievi')).length, note: note(wctx.problems.filter((p) => p.startsWith('Prelievi')), DEPTH + range(withdrawals, walMs)) },
+      { what: 'Operazioni di trading spot', count: trades.length, from: fromIso, to: toIso, complete: false, note: note(tctx.problems, DEPTH + range(trades, tradeMs)) },
+      { what: 'Depositi di criptovalute', count: deposits.length, from: fromIso, to: toIso, complete: false, note: note(wctx.problems.filter((p) => p.startsWith('Depositi')), DEPTH + range(deposits, walMs)) },
+      { what: 'Prelievi di criptovalute', count: withdrawals.length, from: fromIso, to: toIso, complete: false, note: note(wctx.problems.filter((p) => p.startsWith('Prelievi')), DEPTH + range(withdrawals, walMs)) },
       { what: 'Margine e derivati (futures, perpetui)', count: 0, from: null, to: null, complete: false, note: 'Non scaricati. Se li hai usati, integra con il file dell\'Exchange: senza, plusvalenze e minusvalenze possono essere sbagliate.' },
       { what: 'Staking, interessi e premi', count: 0, from: null, to: null, complete: false, note: 'Non scaricati (per lo staking la piattaforma permette di leggere solo gli ultimi 180 giorni). Premi e interessi possono avere effetto fiscale: se ne hai ricevuti, integra con il file.' },
       { what: 'Conversioni, airdrop, rettifiche e sottoconti', count: 0, from: null, to: null, complete: false, note: 'Non scaricati: la piattaforma li registra in un altro elenco, non documentato in modo sufficiente per questo programma. Se hai usato conversioni, airdrop o sottoconti, integra con il file.' },
@@ -416,15 +471,21 @@
     const warnings = [];
     if (!startOk) warnings.push(lateStart);
     for (const p of [...wctx.problems, ...tctx.problems]) warnings.push(p);
+    warnings.push('La piattaforma non dichiara quanto indietro arriva lo storico via API: operazioni, depositi e prelievi risultano «da integrare» finché non confermi di aver confrontato la prima data scaricata con la tua prima operazione sull\'Exchange.');
     const nonSpot = trades.filter((r) => { const i = tradeInfo(r); return !/^[A-Z0-9]+_[A-Z0-9]+$/.test(i.inst) || (r.isolation_id && String(r.isolation_id) !== '0') || r.isolation_type; }).length;
     if (nonSpot) warnings.push(`${nonSpot} operazioni riguardano derivati o margine isolato: verranno segnalate come «non riconosciute» e vanno integrate dal file.`);
     const pend = (rows, table) => rows.filter((r) => String(r.status) in table).length;
     const pendDep = pend(deposits, DEPOSIT_STATUS_IGNORED), pendWdr = pend(withdrawals, WITHDRAWAL_STATUS_PENDING);
     if (pendDep) warnings.push(`${pendDep} depositi non risultano arrivati (in attesa, non arrivati o falliti): non sono conteggiati. Se arrivano dopo, scarica di nuovo lo storico.`);
     if (pendWdr) warnings.push(`${pendWdr} prelievi non sono ancora completati: verranno segnalati come «non riconosciuti» finché non sono conclusi. Poi scarica di nuovo lo storico.`);
-    warnings.push(settings.feeIncluded
-      ? 'Prelievi: la documentazione non dice se l\'importo comprende già la commissione di rete. Ho assunto di sì (l\'importo è ciò che esce dal conto). Se nell\'Exchange il saldo scende di importo + commissione, ripeti con l\'opzione «commissione già compresa» = no.'
-      : 'Prelievi: la documentazione non dice se l\'importo comprende già la commissione di rete. Per tua scelta la commissione è stata aggiunta all\'importo (esce importo + commissione).');
+    const feeWdr = withdrawals.filter((r) => String(r.status) === WITHDRAWAL_STATUS_OK && !feeIsZero(r.fee)).length;
+    if (settings.feeIncluded === null) {
+      if (feeWdr) warnings.push(`${feeWdr} prelievi con commissione verranno segnalati come «non riconosciuti»: la documentazione non dice se l'importo comprende già la commissione di rete e non hai indicato la tua scelta. Controlla un prelievo nel saldo dell'Exchange (scende dell'importo oppure di importo + commissione?), poi scarica di nuovo lo storico indicando «si» o «no» nell'opzione dei prelievi.`);
+    } else if (settings.feeIncluded) {
+      warnings.push('Prelievi: la documentazione non dice se l\'importo comprende già la commissione di rete. Per tua scelta l\'importo è ciò che esce dal conto (la commissione è già compresa). Se nell\'Exchange il saldo scende di importo + commissione, scarica di nuovo lo storico con l\'opzione dei prelievi = no.');
+    } else {
+      warnings.push('Prelievi: la documentazione non dice se l\'importo comprende già la commissione di rete. Per tua scelta la commissione è stata aggiunta all\'importo (esce importo + commissione). Se nell\'Exchange il saldo scende solo dell\'importo, scarica di nuovo lo storico con l\'opzione dei prelievi = si.');
+    }
     warnings.push('Su private/get-trades le operazioni a margine su coppie spot non sono distinguibili dalle altre: se hai usato il margine verrebbero trattate come operazioni spot normali.');
     warnings.push('Il valore in euro di ogni operazione è calcolato come quantità × prezzo nella valuta della coppia; le commissioni sono quelle addebitate (già al netto degli eventuali crediti commissione).');
     warnings.push('Controlla i saldi finali (scheda Dettaglio, Giacenze) e confrontali con quelli dell\'Exchange.');
@@ -445,7 +506,8 @@
     if (!isObject(data) || data.version !== 1) throw ApiError('format', 'I dati scaricati dall\'API hanno una versione non supportata.');
     const list = (k) => { const v = data[k]; if (v === undefined || v === null) return []; if (!Array.isArray(v)) throw ApiError('format', `I dati scaricati dall'API non sono nel formato atteso (${k}).`); return v; };
     const settings = isObject(data.settings) ? data.settings : {};
-    const feeIncluded = settings.feeIncluded !== false;
+    // true / false = scelta dell'utente; qualsiasi altro valore = nessuna scelta (nessuna ipotesi)
+    const feeIncluded = settings.feeIncluded === true ? true : settings.feeIncluded === false ? false : null;
     const account = accountName();
     const where = fileName || 'API Crypto.com Exchange';
     const events = [];
@@ -521,13 +583,19 @@
             events.push(mkEvent({ ...base, kind: Kind.INFO, note: `Deposito ${DEPOSIT_STATUS_IGNORED[i.status]} (stato ${i.status}): non conteggiato.` }));
           } else events.push(bad(`stato deposito "${i.status}"`, `Stato di deposito non riconosciuto: "${i.status}" (${i.amount} ${i.cur}).`));
         } else if (i.status === WITHDRAWAL_STATUS_OK) {
+          const feeTxt = i.fee === null ? 'non indicata' : i.fee;
+          const noFee = i.fee !== null && D(i.fee).isZero();         // senza commissione la semantica non conta: esce l'importo
+          if (!noFee && feeIncluded === null) {
+            events.push(bad('prelievo con commissione (semantica non documentata)', `Prelievo di ${i.amount} ${i.cur} con commissione ${feeTxt}: la documentazione non dice se l'importo comprende già la commissione di rete e non hai indicato la tua scelta. Controlla un prelievo nel saldo dell'Exchange, poi scarica di nuovo lo storico indicando «si» o «no» nell'opzione dei prelievi.`));
+            continue;
+          }
           let qty = amount;
-          if (!feeIncluded) {
+          if (feeIncluded === false) {
             if (i.fee === null) { events.push(bad('prelievo senza commissione', `Prelievo di ${i.amount} ${i.cur} senza commissione indicata: non posso calcolare quanto è uscito.`)); continue; }
             qty = amount.plus(D(i.fee).abs());
           }
-          const feeTxt = i.fee === null ? 'non indicata' : i.fee;
-          events.push(mkEvent({ ...base, kind: fiat ? Kind.FIAT_OUT : Kind.TRANSFER_OUT, qty, note: `Prelievo dall'Exchange: importo ${i.amount} ${i.cur}, commissione ${feeTxt} (${feeIncluded ? 'già compresa nell\'importo' : 'aggiunta all\'importo'}).` }));
+          const how = noFee ? 'nessuna commissione' : feeIncluded ? 'già compresa nell\'importo' : 'aggiunta all\'importo';
+          events.push(mkEvent({ ...base, kind: fiat ? Kind.FIAT_OUT : Kind.TRANSFER_OUT, qty, note: `Prelievo dall'Exchange: importo ${i.amount} ${i.cur}, commissione ${feeTxt} (${how}).` }));
         } else if (i.status in WITHDRAWAL_STATUS_IGNORED) {
           events.push(mkEvent({ ...base, kind: Kind.INFO, note: `Prelievo ${WITHDRAWAL_STATUS_IGNORED[i.status]} (stato ${i.status}): non conteggiato.` }));
         } else if (i.status in WITHDRAWAL_STATUS_PENDING) {
@@ -552,8 +620,8 @@
     options: [
       { key: 'startDate', label: 'Scarica a partire dal (AAAA-MM-GG)', placeholder: FLOOR, default: FLOOR,
         help: 'La piattaforma ammette una richiesta al secondo e, per prudenza, il programma legge un giorno di operazioni per volta: partire da ottobre 2019 richiede circa 45 minuti. Se sai da quando usi l\'Exchange puoi indicare una data più recente per far prima, ma ciò che è precedente non viene scaricato (e andrà integrato con il file).' },
-      { key: 'feeIncluded', label: 'Prelievi: la commissione è già compresa nell\'importo? (si/no)', placeholder: 'si', default: 'si',
-        help: 'La documentazione non lo chiarisce. «si»: l\'importo di un prelievo è ciò che esce dal conto. «no»: esce importo + commissione. Se non sei sicuro lascia «si» e confronta un prelievo con il saldo dell\'Exchange.' },
+      { key: 'feeIncluded', label: 'Prelievi: la commissione è già compresa nell\'importo? (si/no)', placeholder: 'si oppure no',
+        help: 'La documentazione non lo chiarisce, quindi il programma non fa ipotesi. Controlla un prelievo nel saldo dell\'Exchange: se è sceso solo dell\'importo scrivi «si»; se è sceso di importo + commissione scrivi «no». Se lasci vuoto, i prelievi con commissione compaiono come «da controllare» finché non scegli.' },
     ],
     help: [
       'Accedi a Crypto.com Exchange dal sito e apri User Center (Centro utente) → API.',
@@ -567,8 +635,8 @@
       'Margine, futures e perpetui non vengono scaricati. Le operazioni a margine su coppie spot non sono distinguibili e sarebbero trattate come spot.',
       'Staking, interessi, premi, airdrop, conversioni, rettifiche e sottoconti non vengono scaricati (per lo staking la piattaforma permette di leggere solo gli ultimi 180 giorni): integra con il file dell\'Exchange.',
       'Depositi e prelievi in valuta (euro, dollari…) non vengono scaricati: la loro risposta non è documentata.',
-      'Dei depositi e dei prelievi in cripto si usano solo quelli conclusi. I depositi con commissione e i prelievi non ancora conclusi vengono segnalati come righe da controllare.',
-      'La piattaforma non dichiara quanto indietro arriva lo storico via API: se il conto è molto vecchio confronta la prima data scaricata con la tua prima operazione.',
+      'Dei depositi e dei prelievi in cripto si usano solo quelli conclusi. I depositi con commissione, i prelievi con commissione (finché non scegli l\'opzione dei prelievi) e i prelievi non ancora conclusi vengono segnalati come righe da controllare.',
+      'La piattaforma non dichiara quanto indietro arriva lo storico via API: operazioni, depositi e prelievi restano «da integrare» finché non confronti la prima data scaricata con la tua prima operazione e confermi.',
       'I trasferimenti da e verso l\'App Crypto.com compaiono se la piattaforma li riporta tra i depositi e i prelievi: servono per abbinarli all\'App.',
       'Se il browser blocca il collegamento diretto alla piattaforma (succede spesso) usa i file.',
     ],

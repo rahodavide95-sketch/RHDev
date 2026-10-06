@@ -1,6 +1,8 @@
 // Collegamento API Bitpanda. La rete e' SIMULATA e implementa il comportamento descritto nelle fonti citate in
 // src/api/bitpanda.js: autenticazione x-api-key, /operations paginato a cursore (page_size massimo 100, ultima pagina con
-// next_cursor residuo, cursore sconosciuto = riparte da pagina 1), /currencies, /assets?id=, errori 401/429/5xx.
+// next_cursor residuo, cursore sconosciuto = riparte da pagina 1), /currencies, /assets?id=, errori 401/429/5xx, e per i difetti
+// emersi nella verifica: commissioni nei campi fee_amount/trade, storni (compensates), cursori senza has_next_page, pagine vuote,
+// errori scritti nel corpo, rifiuto di page_size, reindirizzamenti/tempo massimo, date nulle.
 // ATTENZIONE: la forma dei movimenti e' quella OSSERVATA da terzi su dati reali, non verificata da noi su un conto reale:
 // questi test provano che il codice fa cio' che si intende, non che Bitpanda risponda davvero cosi'.
 const { test } = require('node:test');
@@ -80,7 +82,7 @@ function fakeBitpanda(s) {
     const u = new URL(url);
     const headers = {};
     for (const [k, v] of Object.entries((init && init.headers) || {})) headers[k.toLowerCase()] = v;
-    log.push({ url, path: u.pathname, params: Object.fromEntries(u.searchParams), headers, method: init && init.method });
+    log.push({ url, path: u.pathname, params: Object.fromEntries(u.searchParams), headers, method: init && init.method, redirect: init && init.redirect, signal: init && init.signal });
     if (s.networkDown) throw new TypeError('Failed to fetch');
     if (s.respond) { const r = s.respond(u, calls.n, log); if (r) return r; }
     if (u.origin !== 'https://api.public.bitpanda.com' || !u.pathname.startsWith('/v1/')) return res(404, { error: { code: 'not_found' } });
@@ -615,4 +617,340 @@ test('end-to-end: sync (rete simulata) -> raw -> parse -> motore, con la stessa 
   assert.deepEqual(blocking(engine), []);
   eq(y.metals.net, 80); eq(y.crypto.net, 91);
   assert.ok(!JSON.stringify(out).includes(KEY));
+});
+
+// ====================================================================================================================
+// CORREZIONI DOPO LA VERIFICA: ogni test sotto protegge da un difetto confermato (nessun dato fiscale sbagliato in silenzio)
+// ====================================================================================================================
+const fromSrc = () => require('node:fs').readFileSync(require('node:path').join(__dirname, '../src/api/bitpanda.js'), 'utf8');
+const money = (value, extra = {}) => ({ value, ...extra });
+
+// ---------------------------------------------------------------- commissioni nei campi fee_amount / trade.fee / rate_with_fee
+test('parse: commissione in fee_amount / trade.fee / rate_with_fee -> UNRESOLVED (mai evento identico a quello senza commissione)', () => {
+  const buyLegs = (assetExtra = {}, fiatExtra = {}, assetId = IDS.btc, qty = '0.01') => [L('buy', 'OUTGOING', IDS.eur, '500', { extra: fiatExtra }), L('buy', 'INCOMING', assetId, qty, { extra: assetExtra })];
+  const cases = {
+    'acquisto, fee_amount sul movimento asset': ['buy', buyLegs({ fee_amount: money('0.0001', { asset_id: IDS.btc }) }), /fee_amount = 0\.0001/],
+    'acquisto, fee_amount sul movimento in valuta': ['buy', buyLegs({}, { fee_amount: money('5', { currency_id: IDS.eur }) }), /fee_amount = 5/],
+    'acquisto, trade.fee con rate e rate_with_fee': ['buy', buyLegs({ trade: { trade_id: 'T1', fee: money('5'), rate: money('50000'), rate_with_fee: money('50500') } }), /trade\.fee = 5/],
+    'acquisto, solo rate_with_fee diverso da rate': ['buy', buyLegs({ trade: { rate: money('50000'), rate_with_fee: money('50500') } }), /rate_with_fee \(50500\) diverso da trade\.rate \(50000\)/],
+    'acquisto di oro con fee_amount': ['buy', buyLegs({ fee_amount: money('0.01') }, {}, IDS.gold, '10'), /fee_amount = 0\.01/],
+    'piano di accumulo con trade.fee come stringa': ['savings_plan', buyLegs({ trade: { fee: '1.5' } }), /trade\.fee = 1\.5/],
+    'fee_amount non leggibile (numero JS)': ['buy', buyLegs({ fee_amount: 5 }), /valore non leggibile/],
+    'fee_amount con valore nullo': ['buy', buyLegs({ fee_amount: { value: null } }), /valore non leggibile/],
+    'fee_amount negativo': ['buy', buyLegs({ fee_amount: money('-1') }), /valore non leggibile/],
+    'vendita con fee_amount': ['sell', [L('sell', 'OUTGOING', IDS.btc, '0.004', { extra: { fee_amount: money('0.00001') } }), L('sell', 'INCOMING', IDS.eur, '200')], /fee_amount = 0\.00001/],
+    'prelievo di cripto con fee_amount': ['withdrawal', [L('withdrawal', 'OUTGOING', IDS.btc, '0.2', { extra: { fee_amount: money('0.0005') } })], /fee_amount = 0\.0005/],
+    'prelievo con fee_amount E movimento fee (rischio di doppio conteggio)': ['withdrawal', [L('withdrawal', 'OUTGOING', IDS.btc, '0.2', { extra: { fee_amount: money('0.0005') } }), L('fee', 'OUTGOING', IDS.btc, '0.0005')], /fee_amount = 0\.0005/],
+    'deposito di cripto con fee_amount': ['deposit', [L('deposit', 'INCOMING', IDS.btc, '1', { extra: { fee_amount: money('0.0002') } })], /fee_amount = 0\.0002/],
+  };
+  for (const [name, [opType, legs, re]] of Object.entries(cases)) {
+    const r = parseOps(rich().add(opType, '2025-01-10T10:00:00.000Z', legs).ops());
+    assert.equal(r.events.length, 1, name); assert.equal(r.events[0].kind, Kind.UNRESOLVED, name);
+    assert.match(r.events[0].note, re, name); assert.match(r.events[0].note, /non documenta se è già compresa/, name);
+    assert.ok(r.events[0].unkKey.startsWith('Bitpanda API · '), name); assert.equal(r.unknown.length, 1, name);
+    const { engine } = run(r.events); assert.deepEqual(codes(engine, 'block'), ['unrecognized_row'], name);
+  }
+});
+
+test('parse: commissioni assenti, vuote o a zero NON bloccano; azioni e valute non sono toccate dai campi commissione', () => {
+  const ok = (assetExtra, fiatExtra = {}) => parseOps(rich().add('buy', '2025-01-10T10:00:00.000Z', [L('buy', 'OUTGOING', IDS.eur, '500', { extra: fiatExtra }), L('buy', 'INCOMING', IDS.btc, '0.01', { extra: assetExtra })]).ops());
+  for (const [name, extra, fiat] of [
+    ['fee_amount zero', { fee_amount: money('0.00000000') }, {}], ['fee_amount null', { fee_amount: null }, {}], ['fee_amount oggetto vuoto', { fee_amount: {} }, {}],
+    ['fee_amount zero sul movimento in valuta', {}, { fee_amount: money('0') }],
+    ['trade senza commissione', { trade: { trade_id: 'T1' } }, {}], ['trade.fee zero', { trade: { fee: money('0'), rate: money('50000'), rate_with_fee: money('50000') } }, {}],
+    ['rate e rate_with_fee uguali come numeri', { trade: { rate: money('50000'), rate_with_fee: money('50000.00') } }, {}],
+  ]) {
+    const r = ok(extra, fiat);
+    assert.deepEqual(kinds(r), [Kind.BUY], name); eq(r.events[0].qty, '0.01'); eq(r.events[0].value, 500); assert.equal(r.events[0].feeAsset, '', name);
+  }
+  // azioni/ETF (non calcolati) e depositi in euro: un fee_amount non li trasforma in blocchi
+  const stock = parseOps(rich().add('buy', '2025-01-10T10:00:00.000Z', [L('buy', 'OUTGOING', IDS.eur, '800'), L('buy', 'INCOMING', IDS.aapl, '4', { extra: { fee_amount: money('1') } })]).ops());
+  assert.deepEqual(kinds(stock), [Kind.BUY]); assert.equal(stock.events[0].assetHint, 'Stock');
+  const fiat = parseOps(rich().add('withdrawal', '2025-01-10T10:00:00.000Z', [L('withdrawal', 'OUTGOING', IDS.eur, '10', { extra: { fee_amount: money('1') } })]).ops());
+  assert.deepEqual(kinds(fiat), [Kind.FIAT_OUT]);
+});
+
+test('sync: operazioni con commissione in un campo -> avviso; prelievi con movimento fee separato -> avviso (anche senza commissioni sugli acquisti)', async () => {
+  const withFee = ledger()
+    .add('deposit', '2025-01-05T09:00:00.000Z', [L('deposit', 'INCOMING', IDS.eur, '1500')])
+    .add('buy', '2025-01-10T10:00:00.000Z', [L('buy', 'OUTGOING', IDS.eur, '1000'), L('buy', 'INCOMING', IDS.btc, '0.02', { extra: { fee_amount: money('0.0001') } })]);
+  const a = await doSync(fakeBitpanda({ ops: withFee.ops() }));
+  assert.ok(a.out.warnings.some((w) => /commissione in un campo \(fee_amount o trade\.fee\)/.test(w)));
+  assert.ok(a.out.warnings.some((w) => /1 operazioni non sono state riconosciute/.test(w)));
+  assert.equal(JSON.stringify(a.out.raw).includes('"fee_amount":{"value":"0.0001"}'), true, 'raw conserva la risposta com\'e\'');
+  assert.deepEqual(kinds(B.parse(a.out.raw, 'x')), [Kind.FIAT_IN, Kind.UNRESOLVED]);
+
+  const wd = ledger()
+    .add('deposit', '2025-01-05T09:00:00.000Z', [L('deposit', 'INCOMING', IDS.eur, '1000')])
+    .add('buy', '2025-01-10T10:00:00.000Z', [L('buy', 'OUTGOING', IDS.eur, '1000'), L('buy', 'INCOMING', IDS.btc, '0.02')])
+    .add('withdrawal', '2025-01-20T10:00:00.000Z', [L('withdrawal', 'OUTGOING', IDS.btc, '0.01'), L('fee', 'OUTGOING', IDS.btc, '0.0005')]);
+  const b = await doSync(fakeBitpanda({ ops: wd.ops() }));
+  assert.ok(b.out.warnings.some((w) => /1 prelievi di criptovalute hanno la commissione di rete come movimento separato/.test(w) && /non è documentata/.test(w)));
+  assert.ok(!b.out.warnings.some((w) => /commissioni come movimenti separati: sono sommate/.test(w)), 'nessuna commissione su acquisti/vendite');
+  const out = B.parse(b.out.raw, 'x').events.find((e) => e.kind === Kind.TRANSFER_OUT);
+  eq(out.qty, '0.0105');
+  // senza commissioni nessuno dei due avvisi
+  const c = await doSync(fakeBitpanda({ ops: sampleLedger().ops().filter((o) => !['op-5', 'op-6'].includes(o.operation_id)) }));
+  assert.ok(!c.out.warnings.some((w) => /prelievi di criptovalute|commissione in un campo/.test(w)));
+});
+
+// ---------------------------------------------------------------- storni e correzioni (compensates)
+test('parse: storno (compensates) E operazione stornata -> UNRESOLVED; niente acquisto fantasma', () => {
+  const bought = (extra) => rich()
+    .add('buy', '2025-01-10T10:00:00.000Z', [L('buy', 'OUTGOING', IDS.eur, '500'), L('buy', 'INCOMING', IDS.btc, '0.01')])
+    .add('sell', '2025-01-11T10:00:00.000Z', [L('sell', 'OUTGOING', IDS.btc, '0.01', { extra }), L('sell', 'INCOMING', IDS.eur, '500')])
+    .add('deposit', '2025-01-12T10:00:00.000Z', [L('deposit', 'INCOMING', IDS.eur, '10')]);
+  for (const [name, extra, re] of [
+    ['compensates con l\'id di una transazione', { compensates: 'tx-1-1' }, /fa riferimento a tx-1-1/],
+    ['compensates come oggetto', { compensates: { transaction_id: 'tx-1-1' } }, /tx-1-1/],
+    ['compensates_info', { compensates_info: { original_transaction_id: 'tx-1-1', reason: 'errore' } }, /tx-1-1/],
+    ['compensates con l\'id dell\'operazione', { compensates: 'op-1' }, /op-1/],
+  ]) {
+    const r = parseOps(bought(extra).ops());
+    assert.deepEqual(kinds(r), [Kind.UNRESOLVED, Kind.UNRESOLVED, Kind.FIAT_IN], name);
+    const [orig, rev] = r.events;
+    assert.equal(orig.uid, 'api:bitpanda:op-1', name); assert.match(orig.note, /è stata stornata o corretta dall'operazione op-2/, name);
+    assert.equal(rev.uid, 'api:bitpanda:op-2', name); assert.match(rev.note, /è uno storno o una correzione/, name); assert.match(rev.note, re, name);
+    assert.ok(!r.events.some((e) => e.kind === Kind.BUY || e.kind === Kind.SELL), name);
+    assert.equal(r.unknown.length, 1); assert.equal(r.unknown[0].count, 2);
+    const { engine } = run(r.events); assert.deepEqual(codes(engine, 'block'), ['unrecognized_row', 'unrecognized_row'], name); assert.equal(engine.disposals.length, 0);
+  }
+});
+
+test('parse: compensates senza riferimenti noti blocca solo lo storno; compensates vuoto o assente non cambia nulla; anche a livello di operazione', () => {
+  const ops = rich().add('buy', '2025-01-10T10:00:00.000Z', [L('buy', 'OUTGOING', IDS.eur, '500'), L('buy', 'INCOMING', IDS.btc, '0.01')])
+    .add('deposit', '2025-01-12T10:00:00.000Z', [L('deposit', 'INCOMING', IDS.eur, '10', { extra: { compensates: 'tx-che-non-ho-scaricato' } })]).ops();
+  const r = parseOps(ops);
+  assert.deepEqual(kinds(r), [Kind.BUY, Kind.UNRESOLVED]); assert.match(r.events[1].note, /compensates/);
+  for (const empty of [null, '', [], {}, false, '  ']) {
+    const q = parseOps(rich().add('buy', '2025-01-10T10:00:00.000Z', [L('buy', 'OUTGOING', IDS.eur, '500', { extra: { compensates: empty, compensates_info: empty } }), L('buy', 'INCOMING', IDS.btc, '0.01')]).ops());
+    assert.deepEqual(kinds(q), [Kind.BUY], JSON.stringify(empty));
+  }
+  // compensates scritto sull'operazione invece che sul movimento
+  const top = JSON.parse(JSON.stringify(rich().add('buy', '2025-01-10T10:00:00.000Z', [L('buy', 'OUTGOING', IDS.eur, '500'), L('buy', 'INCOMING', IDS.btc, '0.01')]).ops()));
+  top[0].compensates = 'tx-9-9';
+  assert.deepEqual(kinds(parseOps(top)), [Kind.UNRESOLVED]);
+  // l'uid resta quello dell'operazione: nessun doppione
+  assert.equal(new Set(r.events.map((e) => e.uid)).size, 2);
+});
+
+test('sync: storno rilevato -> avviso e coverage non completa', async () => {
+  const led = sampleLedger().add('sell', '2025-09-05T10:00:00.000Z', [L('sell', 'OUTGOING', IDS.gold, '1', { extra: { compensates: 'tx-2-1' } }), L('sell', 'INCOMING', IDS.eur, '90')]);
+  const { out } = await doSync(fakeBitpanda({ ops: led.ops() }));
+  assert.ok(out.warnings.some((w) => /sono storni o correzioni \(campo "compensates"\)/.test(w)));
+  const r = B.parse(out.raw, 'x');
+  assert.equal(r.events.filter((e) => e.kind === Kind.UNRESOLVED).length, 2);
+});
+
+// ---------------------------------------------------------------- paginazione: cursore senza has_next_page, pagine vuote, page_size rifiutato
+test('sync: cursore di continuazione SENZA has_next_page -> errore, anche con pagina corta (forma OpenAPI { data, cursor })', async () => {
+  const ops = sampleLedger().ops();
+  for (const shape of [{ next_cursor: 'c2' }, { nextCursor: 'c2' }, { cursor: 'c2' }, { end_cursor: 'c2' }]) {
+    const srv = fakeBitpanda({ ops, respond: (u) => (u.pathname === '/v1/operations' ? res(200, { data: ops.slice(0, 2), ...shape }) : null) });
+    await assert.rejects(() => B.sync({ apiKey: KEY }, { fetch: srv.f, sleep: async () => {} }), (e) => e instanceof ApiError && e.code === 'incomplete' && /non dice se ci sono altre pagine/.test(e.message), JSON.stringify(shape));
+    assert.equal(opsRequests(srv).length, 1, JSON.stringify(shape));
+  }
+  // la forma ufficiale con 60 operazioni e pagine da 25: prima 25 su 60 con complete=true (a volte), ora errore
+  const led = ledger();
+  for (let i = 0; i < 60; i++) led.add('deposit', new Date(Date.UTC(2024, 0, 1, 0, 0, i)).toISOString(), [L('deposit', 'INCOMING', IDS.eur, '1')]);
+  const all = led.ops();
+  const official = fakeBitpanda({ ops: all, respond: (u) => (u.pathname === '/v1/operations' ? res(200, { data: all.slice(0, 25), cursor: 'abc' }) : null) });
+  await rejects(B.sync({ apiKey: KEY }, { fetch: official.f, sleep: async () => {} }), 'incomplete');
+  // lo stesso vale per /currencies e /assets
+  await rejects(B.sync({ apiKey: KEY }, { fetch: fakeBitpanda({ ops, respond: (u) => (u.pathname === '/v1/currencies' ? res(200, { data: CURRENCIES, cursor: 'x' }) : null) }).f, sleep: async () => {} }), 'incomplete');
+});
+
+test('sync: senza has_next_page e senza cursore la pagina corta e\' accettata, ma la fine NON e\' confermata (complete=false, nota onesta)', async () => {
+  const ops = sampleLedger().ops();
+  for (const extra of [{}, { next_cursor: null, cursor: '' }]) {
+    const srv = fakeBitpanda({ ops, respond: (u) => (u.pathname === '/v1/operations' ? res(200, { data: ops, ...extra }) : null) });
+    const { out } = await doSync(srv);
+    assert.equal(out.raw.operations.length, ops.length);
+    assert.equal(out.coverage[0].complete, false);
+    assert.match(out.coverage[0].note, /non ha confermato la fine dell'elenco/); assert.doesNotMatch(out.coverage[0].note, /Lette tutte le pagine/);
+    assert.ok(out.warnings.some((w) => /non ha confermato la fine dell'elenco delle operazioni/.test(w)), 'avviso visibile anche fuori dalla copertura');
+  }
+  // con has_next_page === false la fine e' confermata
+  const { out } = await doSync(fakeBitpanda({ ops }));
+  assert.equal(out.coverage[0].complete, true); assert.match(out.coverage[0].note, /fine confermata da Bitpanda/);
+});
+
+test('sync: pagine vuote con has_next_page=true -> ci si ferma dopo 3 richieste, non 2000', async () => {
+  const loop = fakeBitpanda({ respond: (u, n) => (u.pathname === '/v1/operations' ? res(200, { data: [], has_next_page: true, next_cursor: `c${n}` }) : null) });
+  await assert.rejects(() => B.sync({ apiKey: KEY }, { fetch: loop.f, sleep: async () => {} }), (e) => e instanceof ApiError && e.code === 'incomplete' && /pagine vuote/.test(e.message));
+  assert.equal(opsRequests(loop).length, 3);
+  // pagine vuote NON consecutive (separate da pagine con dati) sono ammesse: il conteggio riparte
+  const ops = sampleLedger().ops();
+  const seq = [[], [], ops.slice(0, 3), [], [], ops.slice(3)];
+  let i = 0;
+  const ok = fakeBitpanda({ ops, respond: (u) => { if (u.pathname !== '/v1/operations') return null; const page = seq[i++]; return res(200, { data: page, has_next_page: i < seq.length, next_cursor: `c${i}` }); } });
+  const { out } = await doSync(ok);
+  assert.equal(out.raw.operations.length, ops.length); assert.equal(out.coverage[0].complete, true);
+});
+
+test('sync: page_size=100 rifiutato (HTTP 400) alla prima pagina -> una ripetizione senza page_size; poi errore chiaro', async () => {
+  const led = ledger();
+  for (let i = 0; i < 60; i++) led.add('deposit', new Date(Date.UTC(2024, 0, 1, 0, 0, i)).toISOString(), [L('deposit', 'INCOMING', IDS.eur, '1')]);
+  const ops = led.ops();
+  const srv = fakeBitpanda({ ops, respond: (u) => (u.pathname === '/v1/operations' && u.searchParams.has('page_size') ? res(400, { errors: [{ status: 400, code: 'bad_request', title: `page_size ${KEY}` }] }) : null) });
+  const { out } = await doSync(srv);
+  const reqs = opsRequests(srv);
+  assert.equal(reqs.length, 4, 'prova con page_size, poi tre pagine da 25 senza');
+  assert.equal(reqs[0].params.page_size, '100'); assert.ok(reqs.slice(1).every((r) => !('page_size' in r.params)));
+  assert.equal(out.raw.operations.length, 60); assert.equal(out.coverage[0].complete, true);
+  assert.ok(out.warnings.some((w) => /dimensione di pagina/.test(w)));
+  assert.ok(!JSON.stringify(out).includes(KEY));
+  // il rifiuto persiste: errore 'http' con spiegazione e invito a usare il file, dopo 2 sole richieste
+  const dead = fakeBitpanda({ respond: (u) => (u.pathname === '/v1/operations' ? res(400, { errors: [{ status: 400 }] }) : null) });
+  await assert.rejects(() => B.sync({ apiKey: KEY }, { fetch: dead.f, sleep: async () => {} }), (e) => e instanceof ApiError && e.code === 'http' && /rifiutato la richiesta delle operazioni/.test(e.message) && /file CSV/.test(e.message));
+  assert.equal(opsRequests(dead).length, 2);
+  // un 400 su una pagina successiva alla prima (cursore) NON innesca la ripetizione: errore subito
+  const big = ledger();
+  for (let i = 0; i < 150; i++) big.add('deposit', new Date(Date.UTC(2024, 0, 1, 0, 0, i)).toISOString(), [L('deposit', 'INCOMING', IDS.eur, '1')]);
+  const late = fakeBitpanda({ ops: big.ops(), respond: (u) => (u.pathname === '/v1/operations' && u.searchParams.has('cursor') ? res(400, { errors: [{ status: 400 }] }) : null) });
+  await rejects(B.sync({ apiKey: KEY }, { fetch: late.f, sleep: async () => {} }), 'http');
+  assert.equal(opsRequests(late).length, 2); assert.equal(opsRequests(late)[1].params.page_size, '100');
+  // un 400 su /currencies non ha alternative
+  const cur = fakeBitpanda({ ops, respond: (u) => (u.pathname === '/v1/currencies' ? res(400, { errors: [{ status: 400 }] }) : null) });
+  await rejects(B.sync({ apiKey: KEY }, { fetch: cur.f, sleep: async () => {} }), 'http');
+  assert.equal(cur.log.filter((r) => r.path === '/v1/currencies').length, 1);
+});
+
+// ---------------------------------------------------------------- errori scritti nel corpo di una risposta HTTP 200
+test('sync: errore nel corpo con HTTP 200 -> classificato (auth, rate, http), ripetuto se transitorio, mai accettato come dati', async () => {
+  const ops = sampleLedger().ops();
+  const bodyOf = (body) => fakeBitpanda({ ops, respond: (u) => (u.pathname === '/v1/operations' ? res(200, body) : null) });
+  // chiave rifiutata: messaggio sui permessi, nessuna ripetizione, la chiave mai nel testo (nemmeno se il server la ripete)
+  for (const body of [{ errors: [{ status: 401, code: 'unauthorized', title: `Unauthorized ${KEY}` }] }, { errors: [{ status: 403, code: 'forbidden' }] }, { error: { code: 'invalid_api_key' } }, { error: { status: 401 } }]) {
+    const srv = bodyOf(body);
+    await assert.rejects(() => B.sync({ apiKey: KEY }, { fetch: srv.f, sleep: async () => {} }), (e) => e instanceof ApiError && e.code === 'auth' && /Transaction/.test(e.message) && !JSON.stringify([e.message, e.detail]).includes(KEY), JSON.stringify(body));
+    assert.equal(opsRequests(srv).length, 1);
+  }
+  // limite di frequenza nel corpo: ripetuto con attesa crescente, poi 'rate'
+  const rate = bodyOf({ error: { code: 'rate_limited', status: 429 } });
+  const sl = noSleep();
+  await assert.rejects(() => B.sync({ apiKey: KEY }, { fetch: rate.f, sleep: sl.sleep }), (e) => e instanceof ApiError && e.code === 'rate');
+  assert.deepEqual(sl.waits, [2000, 4000, 8000, 16000]); assert.equal(opsRequests(rate).length, 5);
+  // errore del server nel corpo, anche insieme a data: 'http' dopo le ripetizioni, mai "conto vuoto"
+  const both = bodyOf({ data: [], errors: [{ status: 500, code: 'internal' }], has_next_page: false });
+  await rejects(B.sync({ apiKey: KEY }, { fetch: both.f, sleep: async () => {} }), 'http');
+  assert.equal(opsRequests(both).length, 5);
+  // altro errore (422) e codice senza stato: 'http' subito, nessuna ripetizione
+  for (const body of [{ errors: [{ status: 422, code: 'invalid' }] }, { error: { code: 'not_found' } }, { error: 'boom' }]) {
+    const srv = bodyOf(body);
+    await assert.rejects(() => B.sync({ apiKey: KEY }, { fetch: srv.f, sleep: async () => {} }), (e) => e instanceof ApiError && e.code === 'http' && !JSON.stringify([e.message, e.detail]).includes(KEY), JSON.stringify(body));
+    assert.equal(opsRequests(srv).length, 1);
+  }
+  // un errore transitorio che poi passa: completo
+  let first = true;
+  const flaky = fakeBitpanda({ ops, respond: (u) => { if (first && u.pathname === '/v1/operations') { first = false; return res(200, { errors: [{ status: 503, code: 'unavailable' }] }); } return null; } });
+  const r = await doSync(flaky);
+  assert.deepEqual(r.waits, [2000]); assert.equal(r.out.raw.operations.length, ops.length); assert.equal(r.out.coverage[0].complete, true);
+  // campi di errore vuoti NON sono errori
+  for (const extra of [{ errors: [] }, { error: null }, { errors: [], error: null }]) {
+    const srv = bodyOf({ data: ops, has_next_page: false, ...extra });
+    assert.equal((await doSync(srv)).out.raw.operations.length, ops.length, JSON.stringify(extra));
+  }
+  assert.equal(B._internal.bodyError({ data: [] }, KEY), null); assert.equal(B._internal.bodyError([1], KEY), null);
+});
+
+// ---------------------------------------------------------------- reindirizzamenti e tempo massimo
+test('sync: nessun reindirizzamento seguito e tempo massimo per OGNI richiesta (anche nelle ripetizioni)', async () => {
+  let first = true;
+  const srv = fakeBitpanda({ ops: sampleLedger().ops(), respond: (u) => { if (first && u.pathname === '/v1/operations') { first = false; return res(429, {}, { 'retry-after': '1' }); } return null; } });
+  await doSync(srv);
+  assert.ok(srv.log.length > 4);
+  assert.ok(srv.log.every((r) => r.redirect === 'error'), 'la chiave non deve seguire un redirect verso un\'altra origine');
+  if (typeof AbortSignal.timeout === 'function') {
+    assert.ok(srv.log.every((r) => r.signal instanceof AbortSignal));
+    assert.equal(new Set(srv.log.map((r) => r.signal)).size, srv.log.length, 'un segnale nuovo per ogni tentativo: uno scaduto resterebbe scaduto');
+  }
+  // un reindirizzamento rifiutato o un tempo scaduto sono errori di rete: nessun dato, nessuna chiave nel messaggio
+  for (const err of [new TypeError('redirect mode is set to error'), new DOMException('The operation timed out.', 'TimeoutError')]) {
+    await assert.rejects(() => B.sync({ apiKey: KEY }, { fetch: async () => { throw err; }, sleep: async () => {} }), (e) => e instanceof ApiError && e.code === 'network' && !JSON.stringify([e.message, e.detail]).includes(KEY));
+  }
+});
+
+// ---------------------------------------------------------------- date nulle: mai ts=null (il motore e il PDF non le accettano)
+test('parse: operazione senza credited_at -> UNRESOLVED con data dello scarico (mai null); il motore con rebase2025 non va in crash', () => {
+  const undated = (opType, legs, o = {}) => { const ops = JSON.parse(JSON.stringify(rich().add(opType, '2025-01-10T10:00:00.000Z', legs).ops())); for (const t of ops[0].transactions) delete t.credited_at; return parseOps(ops, o); };
+  const r = undated('deposit', [L('deposit', 'INCOMING', IDS.eur, '100')]);
+  assert.deepEqual(kinds(r), [Kind.UNRESOLVED]);
+  assert.ok(r.events[0].ts instanceof Date && !Number.isNaN(r.events[0].ts.getTime()));
+  assert.equal(r.events[0].ts.toISOString(), '2026-10-05T10:00:00.000Z', 'data dello scarico (raw.fetchedAt)');
+  assert.match(r.events[0].note, /Bitpanda non indica la data di questa operazione/);
+  for (const rebase2025 of [false, true]) {
+    const engine = new CT.Engine({ prices: new CT.PriceBook(), rebase2025 }).run(r.events);
+    assert.deepEqual(codes(engine, 'block'), ['unrecognized_row'], `rebase2025=${rebase2025}`);
+  }
+  // anche insieme a operazioni normali del 2025 (il rebase scatta durante il ciclo)
+  const mixed = parseOps([...sampleLedger().ops(), ...JSON.parse(JSON.stringify(rich().add('deposit', '2025-01-10T10:00:00.000Z', [L('deposit', 'INCOMING', IDS.eur, '1')], { id: 'op-nodate' }).ops())).map((o) => { for (const t of o.transactions) delete t.credited_at; return o; })]);
+  assert.ok(mixed.events.every((e) => e.ts instanceof Date && !Number.isNaN(e.ts.getTime())));
+  const eng = new CT.Engine({ prices: new CT.PriceBook(), rebase2025: true }).run(mixed.events);
+  assert.ok(codes(eng, 'block').includes('unrecognized_row'));
+  assert.equal(CT.taxDate(mixed.events.find((e) => e.uid === 'api:bitpanda:op-nodate').ts), '2026-10-05');
+  // prenotazione senza data (INFO), acquisto senza data, record non valido, duplicato con contenuto diverso: tutti con ts valido
+  const info = undated('buy_reserve', [L('transfer', 'OUTGOING', IDS.eur, '100')]);
+  assert.deepEqual(kinds(info), [Kind.INFO]); assert.ok(info.events[0].ts instanceof Date);
+  assert.deepEqual(kinds(undated('buy', [L('buy', 'OUTGOING', IDS.eur, '10'), L('buy', 'INCOMING', IDS.btc, '0.001')])), [Kind.UNRESOLVED]);
+  const bad = parseOps([null, 'x', { operation_id: 'z' }]);
+  assert.ok(bad.events.every((e) => e.kind === Kind.UNRESOLVED && e.ts instanceof Date));
+  const dupOps = sampleLedger().ops(); const alt = JSON.parse(JSON.stringify(dupOps[0])); alt.transactions[0].asset_amount.value = '123';
+  assert.ok(parseOps([...dupOps, alt]).events.every((e) => e.ts instanceof Date));
+});
+
+test('parse: data di ripiego senza raw.fetchedAt = ultima data nota; senza nessuna data = 1/1/1970 (deterministico, mai l\'orologio)', () => {
+  const dated = rich().add('buy', '2025-01-10T10:00:00.000Z', [L('buy', 'OUTGOING', IDS.eur, '10'), L('buy', 'INCOMING', IDS.btc, '0.001')]).add('buy', '2025-02-10T10:00:00.000Z', [L('buy', 'OUTGOING', IDS.eur, '10'), L('buy', 'INCOMING', IDS.btc, '0.001')]).ops();
+  const noDate = JSON.parse(JSON.stringify(rich().add('deposit', '2025-03-01T10:00:00.000Z', [L('deposit', 'INCOMING', IDS.eur, '5')], { id: 'op-nd' }).ops()));
+  for (const t of noDate[0].transactions) delete t.credited_at;
+  const withLast = parseOps([...dated, ...noDate], { fetchedAt: undefined });
+  assert.equal(withLast.events.find((e) => e.kind === Kind.UNRESOLVED).ts.toISOString(), '2025-02-10T10:00:00.000Z');
+  const onlyUndated = parseOps(noDate, { fetchedAt: 'non e una data' });
+  assert.equal(onlyUndated.events[0].ts.getTime(), 0);
+});
+
+test('sync: gli eventi senza data non allargano l\'intervallo delle date della copertura', async () => {
+  const ops = [...sampleLedger().ops(), { operation_id: 'op-nodate', operation_type: 'deposit', transactions: [{ transaction_id: 't-nd', transaction_type: 'deposit', flow: 'INCOMING', currency_id: IDS.eur, asset_amount: { value: '5' }, wallet_id: 'w-extra' }] }];
+  const { out } = await doSync(fakeBitpanda({ ops }));
+  assert.equal(out.coverage[0].from, '2025-01-05T09:00:00.000Z'); assert.equal(out.coverage[0].to, '2025-09-01T10:00:00.000Z');
+  assert.equal(out.coverage[0].complete, false, 'il portafoglio senza data non e\' verificabile');
+  assert.ok(out.warnings.some((w) => /1 operazioni non sono state riconosciute/.test(w)));
+});
+
+// ---------------------------------------------------------------- campi non interpretati e onesta' delle note
+test('sync: campi sconosciuti (status, state...) nelle operazioni o nei movimenti -> avviso con i NOMI, mai i valori', async () => {
+  const ops = JSON.parse(JSON.stringify(sampleLedger().ops()));
+  for (const o of ops) for (const t of o.transactions) delete t.order_id;
+  const clean = await doSync(fakeBitpanda({ ops }));
+  assert.ok(!clean.out.warnings.some((w) => /non interpreta/.test(w)), 'nessun campo sconosciuto, nessun avviso');
+  ops[0].status = 'cancelled-QWERTY'; ops[1].transactions[0].state = 'SETTLED-ASDFG';
+  const { out } = await doSync(fakeBitpanda({ ops }));
+  const w = out.warnings.find((x) => /non interpreta/.test(x));
+  assert.ok(w, 'avviso presente'); assert.match(w, /\bstate\b/); assert.match(w, /\bstatus\b/);
+  assert.ok(!/QWERTY|ASDFG/.test(w), 'mai i valori');
+  assert.deepEqual(B._internal.unknownKeys(ops), ['state', 'status']);
+  assert.deepEqual(B._internal.unknownKeys([null, { operation_id: 'a', operation_type: 'x', transactions: [null, 'x', { flow: 'INCOMING', fee_amount: null, trade: {}, compensates: null }] }]), []);
+});
+
+test('onesta\' delle note: il controllo dei saldi e\' un rilevatore, non una garanzia (note, limiti e commento di testa)', async () => {
+  const { out } = await doSync(fakeBitpanda({ ops: sampleLedger().ops() }));
+  assert.equal(out.coverage[0].complete, true);
+  assert.doesNotMatch(out.coverage[0].note, /non ha buchi/); assert.match(out.coverage[0].note, /non può escludere ogni buco/);
+  const lim = B.limits[0];
+  assert.doesNotMatch(lim, /non abbia buchi/); assert.match(lim, /non una garanzia/); assert.match(lim, /non può escludere ogni buco/);
+  assert.ok(B.limits.some((x) => /compensates/.test(x) && /fee_amount/.test(x)));
+});
+
+test('documentazione: nel commento di testa le prove non verificate sono classificate O (osservato), non V (verificato)', () => {
+  const src = fromSrc();
+  const line = (re) => { const l = src.split('\n').filter((x) => re.test(x)); assert.ok(l.length >= 1, String(re)); return l.join('\n'); };
+  assert.doesNotMatch(line(/Prefisso \/v1 dei percorsi/), /\bV \[/); assert.match(line(/Prefisso \/v1 dei percorsi/), /\bO \[F5\]/);
+  assert.doesNotMatch(line(/Paginazione a cursore: parametri/), /\bV \[/);
+  assert.doesNotMatch(line(/^\s*page_size = 100/), /\bV \[/); assert.match(line(/^\s*page_size = 100/), /\bO \[F5\]/);
+  assert.match(src, /TOOL\s+MCP, non per la REST/);
+  assert.match(src, /\[F7\][^\n]*ALTRA API/); assert.match(src, /SKILL\.md elenca i tipi di asset/);
+  assert.doesNotMatch(src, /risposta documentata/);
+  assert.match(src, /\[F8\] https:\/\/github\.com\/pneumann1980\/portfolia/);
+  // l'URL base dichiarato nel codice coincide con quello descritto (e con il test del contratto)
+  assert.equal(B._internal.BASE_URL, 'https://api.public.bitpanda.com/v1');
 });

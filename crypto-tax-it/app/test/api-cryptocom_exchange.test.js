@@ -21,7 +21,7 @@ const SECRET = 'TESTSECRET-0123456789abcdef';
 const DAY = 86400000;
 const T0 = Date.parse('2025-01-01T00:00:00Z');
 const NOW = Date.parse('2025-06-15T12:00:00Z');
-const OPTS = { startDate: '2025-01-01' };
+const OPTS = { startDate: '2025-01-01', feeIncluded: 'si' };      // la semantica della commissione dei prelievi la sceglie l'utente (non e' documentata)
 
 // ---------------------------------------------------------------- orologio virtuale (sleep e now iniettati)
 function mkClock(ms) {
@@ -248,21 +248,39 @@ test('sync: finestre entro i massimi, senza buchi e senza doppioni; bordi delle 
   }
 });
 
-test('sync: copertura completa dal 1/10/2019 con data predefinita; con data piu\' recente e\' dichiarata incompleta', async () => {
+test('sync: copertura con la data predefinita (1/10/2019): MAI "completa" perche\' la profondita\' dello storico non e\' dichiarata; con data piu\' recente lo dice anche', async () => {
   const c1 = mkClock(Date.parse('2019-10-04T00:00:00Z'));
-  const f1 = new FakeExchange(c1);
+  const f1 = new FakeExchange(c1, { trades: [mkTrade(Date.parse('2019-10-02T10:00:00Z'))] });
   const o1 = await X.sync({ apiKey: KEY, apiSecret: SECRET }, { fetch: f1.fetch, sleep: c1.sleep, now: c1.now });
   assert.equal(o1.raw.settings.startDate, '2019-10-01');
-  for (const w of ['Operazioni di trading spot', 'Depositi di criptovalute', 'Prelievi di criptovalute']) assert.equal(cov(o1, w).complete, true, w);
+  for (const w of ['Operazioni di trading spot', 'Depositi di criptovalute', 'Prelievi di criptovalute']) {
+    const c = cov(o1, w);
+    assert.equal(c.complete, false, w);                                   // non verificabile: l'utente deve confermare
+    assert.ok(c.note.includes('non dichiara quanto indietro arriva lo storico'), w);
+    assert.ok(!c.note.includes('Hai scelto di partire dal'), w);
+  }
   assert.equal(cov(o1, 'Operazioni di trading spot').from, '2019-10-01T00:00:00.000Z');
   assert.equal(cov(o1, 'Operazioni di trading spot').to, '2019-10-04T00:00:00.000Z');
+  assert.ok(cov(o1, 'Operazioni di trading spot').note.includes('Prima: 2019-10-02, ultima: 2019-10-02.'));
+  assert.ok(o1.warnings.some((w) => w.includes('non dichiara quanto indietro arriva lo storico')));
   const clock = mkClock(NOW); const fake = new FakeExchange(clock);
   const o2 = await doSync(fake, clock);          // data di inizio 2025-01-01
   for (const w of ['Operazioni di trading spot', 'Depositi di criptovalute', 'Prelievi di criptovalute']) {
     assert.equal(cov(o2, w).complete, false, w);
     assert.ok(cov(o2, w).note.includes('Hai scelto di partire dal 2025-01-01'));
+    assert.ok(cov(o2, w).note.includes('non dichiara quanto indietro arriva lo storico'));
   }
   assert.ok(o2.warnings.some((w) => w.includes('Hai scelto di partire dal 2025-01-01')));
+});
+
+test('sync: storico completamente vuoto: nessuna voce "completa" e nota esplicita (un conto vuoto non si distingue da uno storico non raggiungibile)', async () => {
+  const clock = mkClock(NOW); const out = await doSync(new FakeExchange(clock), clock);
+  for (const w of ['Operazioni di trading spot', 'Depositi di criptovalute', 'Prelievi di criptovalute']) {
+    const c = cov(out, w);
+    assert.equal(c.count, 0); assert.equal(c.complete, false, w);
+    assert.ok(c.note.includes('Nessun dato nel periodo') && c.note.includes('potrebbe non essere raggiungibile'), w);
+  }
+  assert.ok(out.coverage.every((c) => c.complete === false), 'nessuna voce della copertura puo\' risultare completa');
 });
 
 test('sync: copertura dichiara non scaricati margine, derivati, staking, conversioni e valuta', async () => {
@@ -431,6 +449,26 @@ test('formato: risposte diverse dalla documentazione fermano la sincronizzazione
   await tcase('riga non oggetto', tr(['x']));
 });
 
+test('sync: opzione prelievi non scelta -> raw.settings.feeIncluded null, avviso che conta i prelievi con commissione; scelta si/no dichiarata come scelta', async () => {
+  const clock = mkClock(NOW);
+  const wdrs = [mkWdr(Date.parse('2025-06-14T09:00:00Z'), { id: 1, fee: '0.0001' }), mkWdr(Date.parse('2025-06-14T10:00:00Z'), { id: 2, fee: '0' })];
+  const sync1 = (options) => { const c = mkClock(NOW); return X.sync({ apiKey: KEY, apiSecret: SECRET }, { fetch: new FakeExchange(c, { withdrawals: wdrs }).fetch, sleep: c.sleep, now: c.now, options }); };
+  const none = await sync1({ startDate: '2025-06-13' });
+  assert.equal(none.raw.settings.feeIncluded, null);
+  assert.ok(none.warnings.some((w) => /^1 prelievi con commissione verranno segnalati come «non riconosciuti»/.test(w)), JSON.stringify(none.warnings));
+  assert.ok(!none.warnings.some((w) => /Ho assunto/.test(w)));
+  const ev = X.parse(none.raw, 'a.json').events;
+  assert.deepEqual(ev.map((e) => e.kind).sort(), [Kind.TRANSFER_OUT, Kind.UNRESOLVED].sort());
+  assert.equal(X.options.find((o) => o.key === 'feeIncluded').default, undefined);         // nessun valore predefinito
+  for (const [v, flag, re] of [['si', true, /Per tua scelta l'importo è ciò che esce dal conto/], ['No', false, /Per tua scelta la commissione è stata aggiunta/]]) {
+    const out = await sync1({ startDate: '2025-06-13', feeIncluded: v });
+    assert.equal(out.raw.settings.feeIncluded, flag);
+    assert.ok(out.warnings.some((w) => re.test(w)), v);
+    assert.ok(!out.warnings.some((w) => /verranno segnalati come «non riconosciuti»: la documentazione/.test(w)), v);
+  }
+  assert.equal(clock.slept.length, 0);
+});
+
 test('credenziali e opzioni non valide: errore "config" prima di qualsiasi richiesta', async () => {
   const clock = mkClock(NOW); const fake = new FakeExchange(clock);
   const go = (creds, options) => X.sync(creds, { fetch: fake.fetch, sleep: clock.sleep, now: clock.now, options });
@@ -471,8 +509,145 @@ test('raw: JSON serializzabile, importi esattamente come restituiti, nessuna cre
   assert.ok(!JSON.stringify(out).includes('"nonce"'));
 });
 
+// ================================================================ regressioni: percorso reale del browser, errori transitori, firma, codici
+// Il fetch del browser lancia "Illegal invocation" se viene chiamato come metodo di un altro oggetto (this diverso da window).
+const strictThis = (f) => function (url, init) {
+  if (this !== undefined && this !== globalThis) throw new TypeError("Failed to execute 'fetch' on 'Window': Illegal invocation");
+  return f(url, init);
+};
+const SMALL = { startDate: '2025-06-13', feeIncluded: 'si' };       // pochi giorni: test veloci
+
+test('fetch predefinito del browser: sync senza opts.fetch chiama globalThis.fetch come funzione globale (no "Illegal invocation")', async () => {
+  const clock = mkClock(NOW);
+  const fake = new FakeExchange(clock, { trades: [mkTrade(Date.parse('2025-06-14T08:00:00Z'))], deposits: [mkDep(Date.parse('2025-06-14T09:00:00Z'))] });
+  const saved = globalThis.fetch;
+  globalThis.fetch = strictThis((u, i) => fake.fetch(u, i));
+  try {
+    // percorso dell'interfaccia: c.sync(creds, { onProgress, options }) senza fetch
+    const out = await X.sync({ apiKey: KEY, apiSecret: SECRET }, { sleep: clock.sleep, now: clock.now, options: SMALL, onProgress: () => {} });
+    assert.equal(out.raw['private/get-trades'].length, 1);
+    assert.equal(out.raw['private/get-deposit-history'].length, 1);
+    assert.ok(fake.log.length > 3);
+  } finally { globalThis.fetch = saved; }
+});
+
+test('fetch passato in opts: viene chiamato come funzione "nuda", mai come metodo dell\'oggetto interno', async () => {
+  const clock = mkClock(NOW);
+  const fake = new FakeExchange(clock, { trades: [mkTrade(Date.parse('2025-06-14T08:00:00Z'))] });
+  const out = await X.sync({ apiKey: KEY, apiSecret: SECRET }, { fetch: strictThis((u, i) => fake.fetch(u, i)), sleep: clock.sleep, now: clock.now, options: SMALL });
+  assert.equal(out.raw['private/get-trades'].length, 1);
+  // se invece il fetch globale rifiuta la chiamata il messaggio resta quello della rete (e non si ripete: la piattaforma non e' mai stata raggiunta)
+  const saved = globalThis.fetch;
+  globalThis.fetch = () => { throw new TypeError('Failed to fetch'); };
+  try { await assert.rejects(() => X.sync({ apiKey: KEY, apiSecret: SECRET }, { sleep: clock.sleep, now: clock.now, options: SMALL }), (e) => e instanceof CT.ApiError && e.code === 'network'); } finally { globalThis.fetch = saved; }
+});
+
+test('forme numeriche viste in ccxt (code numerico, create_time/amount/fee/trade_id come numeri JSON): sync() le accetta e parse() le converte esatte', async () => {
+  const clock = mkClock(NOW);
+  const fake = new FakeExchange(clock);
+  const dayMs = Date.parse('2025-06-14T08:00:00Z');
+  fake.inject.push((method, params, nth) => {
+    if (nth !== 1) return null;
+    if (method === 'private/get-deposit-history') return res(200, { id: 1, method, code: 0, result: { deposit_list: [{ currency: 'BTC', fee: 0, create_time: dayMs, id: '6201135', update_time: dayMs + 1000, amount: 0.00114571, address: 'bc1qesempio', status: '1', txid: 'abc/2' }] } });
+    if (method === 'private/get-withdrawal-history') return res(200, { id: 1, method, code: 0, result: { withdrawal_list: [{ currency: 'BTC', client_wid: '', fee: 0.0005, create_time: dayMs + 5000, id: '5775977', update_time: dayMs + 6000, amount: 0.0005, address: 'bc1qesempio', status: '1', txid: '', network_id: 'BTC' }] } });
+    if (method === 'private/get-trades') {
+      const s = Number(BigInt(params.start_time) / 1000000n);
+      return res(200, { id: 1, method, code: 0, result: { data: [{ trade_id: 38554669, instrument_name: 'BTC_EUR', side: 'BUY', traded_quantity: 0.5, traded_price: 30000, fees: -0.25, fee_instrument_name: 'EUR', create_time: s + 5000 }] } });
+    }
+    return null;
+  });
+  const out = await X.sync({ apiKey: KEY, apiSecret: SECRET }, { fetch: fake.fetch, sleep: clock.sleep, now: clock.now, options: SMALL });
+  assert.equal(out.raw['private/get-deposit-history'].length, 1);
+  assert.equal(out.raw['private/get-withdrawal-history'].length, 1);
+  assert.equal(out.raw['private/get-trades'].length, 1);
+  const ev = X.parse(out.raw, 'api.json').events;
+  const dep = ev.find((e) => e.kind === Kind.TRANSFER_IN), buy = ev.find((e) => e.kind === Kind.BUY);
+  eq(dep.qty, '0.00114571'); eq(buy.qty, '0.5'); eq(buy.value, 15000); eq(buy.feeQty, '0.25');
+  assert.equal(buy.uid, 'api:cryptocom_exchange:trade:38554669');
+  // il prelievo con stato 1 (in elaborazione) e' "non concluso": mai ipotesi
+  assert.ok(ev.some((e) => e.kind === Kind.UNRESOLVED && /non ancora concluso/.test(e.note)));
+});
+
+test('errori transitori documentati (408/40801, 400/50001, 200+42901): si ripetono con attese crescenti e poi riescono, senza perdere nulla', async () => {
+  const mk = (injectFor) => {
+    const clock = mkClock(NOW);
+    const fake = new FakeExchange(clock, { trades: [mkTrade(Date.parse('2025-06-14T08:00:00Z'))] });
+    let n = 0;
+    fake.inject.push((method) => (method === 'private/get-trades' && n++ < 3 ? injectFor() : null));
+    return { clock, fake };
+  };
+  const cases = {
+    'HTTP 408 con 40801': () => res(408, { id: '1', method: 'private/get-trades', code: 40801, message: 'REQUEST_TIMEOUT' }),
+    'HTTP 408 senza corpo': () => res(408, ''),
+    'HTTP 400 con 50001': () => res(400, { id: '1', method: 'private/get-trades', code: 50001, message: 'ERR_INTERNAL' }),
+    'HTTP 200 con code 50001': () => res(200, { id: '1', method: 'private/get-trades', code: 50001, message: 'ERR_INTERNAL' }),
+    'HTTP 200 con code 40801': () => res(200, { id: '1', method: 'private/get-trades', code: '40801', message: 'REQUEST_TIMEOUT' }),
+    'HTTP 200 con code 42901': () => res(200, { id: '1', method: 'private/get-trades', code: '42901', message: 'TOO_MANY_REQUESTS' }),
+  };
+  for (const [name, f] of Object.entries(cases)) {
+    const { clock, fake } = mk(f);
+    const out = await X.sync({ apiKey: KEY, apiSecret: SECRET }, { fetch: fake.fetch, sleep: clock.sleep, now: clock.now, options: SMALL });
+    assert.equal(out.raw['private/get-trades'].length, 1, name);
+    assert.deepEqual(clock.slept.filter((x) => x === 2000 || x === 4000 || x === 8000), [2000, 4000, 8000], name);
+    // la firma si rifa ad ogni tentativo: ogni nonce e' fresco rispetto all'orologio al momento della richiesta
+    for (const l of fake.log) assert.ok(Math.abs(Number(l.nonce) - l.t) <= 60000, name);
+    assert.equal(new Set(fake.log.map((l) => l.nonce)).size > 1, true);
+  }
+});
+
+test('errori transitori persistenti: dopo 4 ripetizioni (2, 4, 8, 16 s) errore, nessun dato parziale; gli errori NON transitori non si ripetono', async () => {
+  const persistent = {
+    'HTTP 408': [() => res(408, { code: 40801, message: 'REQUEST_TIMEOUT' }), 'http', /40801|408/],
+    'HTTP 400 con 50001': [() => res(400, { code: 50001, message: 'ERR_INTERNAL' }), 'http', /50001/],
+    'HTTP 200 con 42901': [() => res(200, { id: '1', method: 'private/get-trades', code: 42901 }), 'rate', /Troppe richieste/],
+  };
+  for (const [name, [f, code, re]] of Object.entries(persistent)) {
+    const clock = mkClock(NOW);
+    const fake = new FakeExchange(clock, { inject: [(m) => (m === 'private/get-trades' ? f() : null)] });
+    await assert.rejects(() => X.sync({ apiKey: KEY, apiSecret: SECRET }, { fetch: fake.fetch, sleep: clock.sleep, now: clock.now, options: SMALL }),
+      (e) => e instanceof CT.ApiError && e.code === code && re.test(e.message) && secretFree(e.message) && secretFree(e.detail), name);
+    assert.deepEqual(clock.slept.filter((x) => x >= 2000 && x % 2000 === 0 && x <= 16000), [2000, 4000, 8000, 16000], name);
+    assert.equal(fake.log.filter((l) => l.method === 'private/get-trades').length, 5, name);        // 1 + 4 ripetizioni
+  }
+  // 40001/40004/40005/40101 non sono transitori: una sola richiesta
+  for (const [status, code] of [[400, 40001], [400, 40004], [400, 40005], [401, 40101]]) {
+    const clock = mkClock(NOW);
+    const fake = new FakeExchange(clock, { inject: [(m) => (m === 'private/get-trades' ? res(status, { code, message: 'X' }) : null)] });
+    await assert.rejects(() => X.sync({ apiKey: KEY, apiSecret: SECRET }, { fetch: fake.fetch, sleep: clock.sleep, now: clock.now, options: SMALL }), (e) => e instanceof CT.ApiError, String(code));
+    assert.equal(fake.log.filter((l) => l.method === 'private/get-trades').length, 1, String(code));
+  }
+});
+
+test('errori HTTP 4xx: il codice della piattaforma compare nel messaggio (40005 date, 40004 parametro, 40001 richiesta) e in detail', async () => {
+  const run1 = (status, body) => {
+    const clock = mkClock(NOW);
+    const fake = new FakeExchange(clock, { inject: [(m) => (m === 'private/get-deposit-history' ? res(status, body) : null)] });
+    return X.sync({ apiKey: KEY, apiSecret: SECRET }, { fetch: fake.fetch, sleep: clock.sleep, now: clock.now, options: SMALL });
+  };
+  const bad = (p, check) => assert.rejects(p, (e) => e instanceof CT.ApiError && e.code === 'http' && check(e) && secretFree(e.message) && secretFree(e.detail));
+  await bad(run1(400, { id: '1', method: 'x', code: 40005, message: 'INVALID_DATE' }), (e) => /40005/.test(e.message) && /data di inizio|intervallo di date/.test(e.message) && e.detail.platformCode === 40005 && e.detail.status === 400 && e.detail.method === 'private/get-deposit-history');
+  await bad(run1(400, { id: '1', method: 'x', code: '40004', message: 'MISSING_OR_INVALID_ARGUMENT' }), (e) => /40004/.test(e.message) && e.detail.platformCode === 40004);
+  await bad(run1(400, { id: '1', method: 'x', code: 40001, message: 'BAD_REQUEST' }), (e) => /40001/.test(e.message));
+  // altri codici 4xx: codice e testo della piattaforma (ripulito dalle chiavi) nel messaggio
+  await bad(run1(400, { id: '1', method: 'x', code: 40003, message: 'INVALID_REQUEST ' + KEY }), (e) => /40003/.test(e.message) && /INVALID_REQUEST/.test(e.message));
+  // senza codice nel corpo: messaggio generico con lo stato HTTP
+  await bad(run1(400, 'Bad Request'), (e) => /\(400\)/.test(e.message));
+});
+
+test('firma impossibile (crypto.subtle assente): errore "config" con il messaggio giusto, non "network"; nessuna richiesta inviata', async () => {
+  const clock = mkClock(NOW); const fake = new FakeExchange(clock);
+  const desc = Object.getOwnPropertyDescriptor(globalThis, 'crypto');
+  Object.defineProperty(globalThis, 'crypto', { value: {}, configurable: true, writable: true });
+  try {
+    await assert.rejects(() => X.sync({ apiKey: KEY, apiSecret: SECRET }, { fetch: fake.fetch, sleep: clock.sleep, now: clock.now, options: SMALL }),
+      (e) => e instanceof CT.ApiError && e.code === 'config' && /calcolare la firma/.test(e.message) && !/bloccato la richiesta/.test(e.message) && secretFree(e.message) && secretFree(e.detail));
+  } finally { if (desc) Object.defineProperty(globalThis, 'crypto', desc); else delete globalThis.crypto; }
+  assert.equal(fake.log.length, 0);
+  assert.equal(typeof globalThis.crypto.subtle.importKey, 'function');         // ripristinato
+});
+
 // ================================================================ parse: ogni tipo di record
-const mkRaw = (o = {}) => ({ version: 1, fetchedAt: '2025-06-15T12:00:00.000Z', settings: { startDate: '2025-01-01', feeIncluded: o.feeIncluded !== false },
+const mkRaw = (o = {}) => ({ version: 1, fetchedAt: '2025-06-15T12:00:00.000Z', settings: { startDate: '2025-01-01', feeIncluded: o.feeIncluded === undefined ? true : o.feeIncluded },
   'private/get-trades': o.trades || [], 'private/get-deposit-history': o.deposits || [], 'private/get-withdrawal-history': o.withdrawals || [] });
 const one = (raw) => { const r = X.parse(raw, 'api.json'); assert.equal(r.events.length, 1); return r.events[0]; };
 
@@ -552,6 +727,27 @@ test('parse: prelievi cripto -> TRANSFER_OUT (commissione compresa o aggiunta); 
   assert.equal(wd({ cur: 'USD' }, true).kind, Kind.FIAT_OUT);
 });
 
+test('parse: semantica della commissione dei prelievi NON scelta (null o assente) -> UNRESOLVED per ogni prelievo con commissione, nessuna ipotesi; senza commissione nessuna ambiguita\'', () => {
+  const wd = (o, feeIncluded) => one(mkRaw({ feeIncluded, withdrawals: [mkWdr(Date.parse('2025-04-01T09:00:00Z'), o)] }));
+  for (const choice of [null, 'forse']) {
+    const e = wd({ id: 9, amount: '0.001', fee: '0.0001' }, choice);
+    assert.equal(e.kind, Kind.UNRESOLVED); assert.ok(e.unkKey.endsWith('prelievo con commissione (semantica non documentata)'));
+    assert.ok(/non dice se l'importo comprende già la commissione/.test(e.note) && /si» o «no/.test(e.note));
+  }
+  assert.equal(wd({ fee: undefined }, null).kind, Kind.UNRESOLVED);          // commissione non indicata: non si sa quanto e' uscito
+  for (const f of ['0', '0.0', '0.00000000']) {
+    const e = wd({ fee: f, amount: '0.5' }, null);
+    assert.equal(e.kind, Kind.TRANSFER_OUT, f); eq(e.qty, '0.5'); assert.ok(e.note.includes('nessuna commissione'));
+  }
+  // raw senza la sezione settings (o senza feeIncluded): stesso comportamento prudente
+  const raw = mkRaw({ withdrawals: [mkWdr(T0 + DAY, { id: 4, fee: '0.0001' })] }); delete raw.settings;
+  assert.equal(one(raw).kind, Kind.UNRESOLVED);
+  // le scelte dell'utente restano applicate come prima
+  eq(wd({ amount: '0.001', fee: '0.0001' }, true).qty, '0.001'); eq(wd({ amount: '0.001', fee: '0.0001' }, false).qty, '0.0011');
+  // i depositi non dipendono dalla scelta sui prelievi
+  assert.equal(one(mkRaw({ feeIncluded: null, deposits: [mkDep(T0 + DAY)] })).kind, Kind.TRANSFER_IN);
+});
+
 test('parse: duplicati contati una volta, uid distinti tra depositi, prelievi e operazioni con lo stesso id, risultato deterministico', () => {
   const t = mkTrade(T0 + DAY, { id: 77 });
   const d = mkDep(T0 + DAY, { id: 77 }), w = mkWdr(T0 + DAY, { id: 77 });
@@ -626,6 +822,31 @@ test('prova completa: trasferimenti App -> Exchange e Exchange -> altro conto ab
   // senza il conto di arrivo il prelievo resta "non abbinato" e blocca (nessuna ipotesi)
   const lonely = run([...exch, ...appEv]).engine;
   assert.ok(codes(lonely, 'block').includes('transfer_out_unmatched'));
+});
+
+test('prova completa: prelievo con commissione e arrivo sul conto di destinazione: la scelta si/no cambia la commissione di rete (e senza scelta il prelievo blocca)', () => {
+  // 0,05 BTC comprati a 100.000 EUR (nessuna commissione). Prelievo di 0,02 BTC con commissione documentata 0,0001; sul Ledger arrivano 0,0199.
+  // Scelta "si" (l'importo comprende la commissione): esce 0,02, arriva 0,0199 -> commissione di rete 0,0001 BTC = pari alla commissione indicata
+  //   dalla piattaforma: ricavo 0,0001 x 90.000 = 9, costo 0,0001 x 100.000 = 10 -> -1.
+  // Scelta "no" (esce importo + commissione = 0,0201): arriva 0,0199 -> commissione di rete 0,0002 BTC, il DOPPIO di quella indicata
+  //   (segnale che la scelta non coincide con la realta'): ricavo 18, costo 20 -> -2.
+  const buy = mkTrade(Date.parse('2025-01-10T10:00:00Z'), { id: 1, side: 'BUY', inst: 'BTC_EUR', qty: '0.05', price: '100000', fees: '0', feeInst: '' });
+  const wdr = mkWdr(Date.parse('2025-04-01T09:00:00Z'), { id: 12, amount: '0.02', fee: '0.0001' });
+  const ledger = I.TYPES.generic.parse('data;tipo;conto;asset;quantita;valore_eur\n2025-04-01 09:30;trasferimento_entrata;Ledger;BTC;0.0199;\n', 'm.csv').events;
+  const go = (feeIncluded) => {
+    const prices = new CT.PriceBook(); prices.setManual('BTC', '2025-04-01', 90000);
+    return run([...X.parse(mkRaw({ feeIncluded, trades: [buy], withdrawals: [wdr] }), 'api.json').events, ...ledger], { prices });
+  };
+  const yes = go(true).engine, no = go(false).engine;
+  assert.equal(blocking(yes).length, 0, JSON.stringify(yes.issues)); assert.equal(blocking(no).length, 0, JSON.stringify(no.issues));
+  const d1 = yes.disposals[0], d2 = no.disposals[0];
+  assert.equal(yes.disposals.length, 1); assert.equal(no.disposals.length, 1);
+  eq(d1.qty, '0.0001'); eq(d1.proceeds, 9); eq(d1.cost, 10); eq(d1.gain, -1);
+  eq(d2.qty, '0.0002'); eq(d2.proceeds, 18); eq(d2.cost, 20); eq(d2.gain, -2);
+  // senza scelta: il prelievo e' "non riconosciuto" e il risultato non e' definitivo
+  const none = go(null);
+  assert.ok(blocking(none.engine).length > 0);
+  assert.ok(X.parse(mkRaw({ feeIncluded: null, trades: [buy], withdrawals: [wdr] }), 'api.json').unknown.some((u) => u.key.includes('prelievo con commissione')));
 });
 
 test('prova completa: sync su server finto -> parse -> motore, con avvisi e copertura coerenti', async () => {

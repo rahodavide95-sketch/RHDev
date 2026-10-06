@@ -1,71 +1,131 @@
 /* Binance: collegamento API REST (sola lettura) chiamato direttamente dal browser, chiave HMAC-SHA256.
 
-   FONTI (dal sandbox api.binance.com e developers.binance.com NON sono raggiungibili: si e' letto solo cio' che e' su GitHub
-   e, per le pagine di developers.binance.com, i riassunti restituiti da una ricerca web che le cita)
-   [S]  https://github.com/binance/binance-spot-api-docs  rest-api.md, enums.md, errors.md, faqs/api_key_types.md  (ufficiale)
-   [W]  https://github.com/binance/binance-connector-js  clients/wallet (capital-api.ts, asset-api.ts e tipi di risposta),
-        clients/convert (trade-api.ts), clients/fiat (api.ts) - SDK ufficiale generato dalla specifica OpenAPI di Binance
-   [H]  https://github.com/binance/binance-skills-hub  skills/binance/fiat/references/sapi-endpoints.md  (ufficiale)
-   [D]  https://developers.binance.com/docs/wallet/... , /convert/... , /fiat/...  (ufficiale; solo via ricerca web: i campi
-        "limit/rows" predefiniti e massimi sotto citati vengono da qui)
+   FONTI (dal sandbox api.binance.com e developers.binance.com NON sono raggiungibili: si e' letto solo cio' che e' su GitHub;
+   per le pagine di developers.binance.com esistono soltanto i riassunti di una ricerca web, usati come indizio e dichiarati ASSUNTI)
+   [S]  https://github.com/binance/binance-spot-api-docs  rest-api.md (ufficiale)
+   [W]  https://github.com/binance/binance-connector-js  clients/wallet/src/rest-api/modules/capital-api.ts e asset-api.ts,
+        clients/convert/src/rest-api/modules/trade-api.ts, clients/fiat/src/rest-api/modules/api.ts e i tipi di risposta
+        (SDK ufficiale generato dalla specifica OpenAPI di Binance: i commenti "Notes" sono la documentazione dell'endpoint)
+   [H]  https://github.com/binance/binance-skills-hub  skills/binance/fiat/SKILL.md e references/sapi-endpoints.md (ufficiale)
    [C]  https://github.com/ccxt/ccxt  ts/src/binance.ts  (libreria open source molto diffusa: esempi di risposta e pesi SAPI)
+   [D]  https://developers.binance.com/docs/wallet/..., /convert/..., /fiat/...  (ufficiale; NON letto direttamente, solo riassunti)
+   [Y]  https://github.com/binance/binance-api-swagger  spot_api.yaml (specifica OpenAPI ufficiale, letta direttamente) e
+        https://github.com/binance/binance-spot-api-docs  errors.md (codice -1121 BAD_SYMBOL "Invalid symbol.")
+   [F]  https://dev.binance.vision (forum ufficiale per sviluppatori; NON raggiungibile dal sandbox, solo il riassunto di una ricerca
+        web: "se hai sottoscritto un prodotto Earn le monete compaiono con il prefisso LD nelle informazioni del conto")
 
    VERIFICATO sulla fonte
    - Radice https://api.binance.com; intestazione X-MBX-APIKEY; firma HMAC-SHA256 esadecimale (chiave = segreto) della query
      string (parametro "signature" aggiunto in coda); "timestamp" (ms) obbligatorio; recvWindow predefinito 5000, massimo
      60000; regola: timestamp < serverTime + 1 s e serverTime - timestamp <= recvWindow [S]. Il vettore di firma della
-     documentazione e' in test/api-common.test.js e in test/api-binance.test.js.
-   - GET /api/v3/time (peso 1, pubblico) -> {serverTime}; GET /api/v3/exchangeInfo (peso 20) -> symbols[] con symbol,
-     status, baseAsset, quoteAsset, e rateLimits[] con REQUEST_WEIGHT (esempio 6000 al minuto); parametro showPermissionSets;
-     senza "permissions" restituisce i simboli con permesso SPOT, MARGIN o LEVERAGED [S].
-   - GET /api/v3/account (peso 20), omitZeroBalances; balances[] {asset, free, locked} [S].
+     documentazione (c8db5682...) e' in test/api-binance.test.js.
+   - GET /api/v3/time (peso 1, pubblico) -> {serverTime}; GET /api/v3/exchangeInfo (peso 20, pubblico) -> symbols[] con
+     symbol, status, baseAsset, quoteAsset, e rateLimits[] con REQUEST_WEIGHT (esempio 6000 al minuto); parametro
+     showPermissionSets; senza "permissions" restituisce solo i simboli con permesso SPOT, MARGIN o LEVERAGED [S].
+   - GET /api/v3/account (peso 20), omitZeroBalances, balances[] {asset, free, locked} [S].
    - GET /api/v3/myTrades (peso 20 senza orderId) [S]: limit predefinito 500, massimo 1000; "se fromId e' indicato restituisce
      le operazioni con id >= fromId"; "il tempo tra startTime ed endTime non puo' superare 24 ore"; combinazioni ammesse:
      symbol, symbol+fromId, symbol+startTime+endTime ...: fromId NON si combina con startTime/endTime (si usa solo fromId).
      Campi: symbol, id, orderId, price, qty, quoteQty, commission, commissionAsset, time (ms), isBuyer, isMaker, isBestMatch.
-   - Limiti: 429 = superamento, 418 = ban dell'IP, intestazione Retry-After in secondi; i limiti sono per IP; 403 = regola WAF;
-     i 5XX NON sono necessariamente fallimenti [S].
-   - GET /sapi/v1/capital/deposit/hisrec (peso IP 1) [W][D]: finestra startTime..endTime "inferiore a 90 giorni", predefinito
-     ultimi 90 giorni; offset e limit (predefinito 1000, massimo 1000); stato: 0 in attesa, 1 accreditato, 2 respinto, 6
-     accreditato ma non prelevabile, 7 deposito errato, 8 in attesa di conferma utente; campi id, amount, coin, network,
-     status, address, txId, insertTime (ms), completeTime, transferType (0 esterno, 1 interno [C]), walletType.
-   - GET /sapi/v1/capital/withdraw/history (peso UID 18000, "10 richieste al secondo") [W][D]: stessa finestra < 90 giorni,
-     offset/limit (1000/1000); campi id, amount, transactionFee, coin, status, address, txId, applyTime (testo
-     "aaaa-MM-gg HH:mm:ss"), network, transferType, completeTime. Stati: 0 mail inviata, 2 attesa approvazione, 3 respinto,
-     4 in elaborazione, 6 completato [W]; 1 annullato e 5 fallito [C].
-   - GET /sapi/v1/convert/tradeFlow (peso UID 3000) [W][D]: startTime ed endTime OBBLIGATORI, intervallo massimo 30 giorni,
-     limit predefinito 100 e massimo 1000; risposta {list[], startTime, endTime, limit, moreData}; campi quoteId, orderId,
-     orderStatus, fromAsset, fromAmount, toAsset, toAmount, ratio, inverseRatio, createTime.
-   - GET /sapi/v1/asset/assetDividend (peso IP 10) [W][D]: "non piu' di 180 giorni tra startTime ed endTime"; limit
-     predefinito 20, massimo 500; nessun offset; risposta {rows[], total}; campi id, amount, asset, divTime, enInfo, tranId.
-   - GET /sapi/v1/asset/dribblet (peso IP 1) [W][D]: "restituisce solo le ultime 100 registrazioni" e "solo quelle dopo il
-     01/12/2020"; senza paginazione; risposta {total, userAssetDribblets[{operateTime, totalTransferedAmount,
-     totalServiceChargeAmount, transId, userAssetDribbletDetails[{transId, serviceChargeAmount, amount, operateTime,
-     transferedAmount, fromAsset, targetAsset?}]}]}; "totalTransferedAmount" e' l'importo in BNB trasferito [D].
-   - GET /sapi/v1/fiat/payments (peso IP 1) [W][H][D]: transactionType 0 acquisto / 1 vendita, beginTime, endTime, page
-     (predefinito 1), rows (predefinito 100, massimo 500); senza date restituisce gli ultimi 30 giorni; risposta
-     {code, message, data[], total, success}; campi orderNo, sourceAmount, fiatCurrency, obtainAmount, cryptoCurrency,
-     totalFee, price, status (Processing, Completed, Failed, Refunded [D]), paymentMethod, createTime, updateTime.
-   - GET /sapi/v1/fiat/orders [W][H][D]: peso UID 45000 [W] (90000 secondo [C]): meno di 3 richieste al minuto.
+   - Limiti: 429 = superamento, 418 = ban dell'IP, intestazione Retry-After in SECONDI; limiti per IP e non per chiave;
+     ban da 2 minuti a 3 giorni; 403 = regola WAF; i 5XX NON sono necessariamente fallimenti [S].
+   - GET /sapi/v1/capital/deposit/hisrec (peso IP 1) [W]: "startTime ed endTime: tra le due date meno di 90 giorni" e
+     predefinito ultimi 90 giorni; offset e limit; stato: 0 in attesa, 1 accreditato, 2 respinto, 6 accreditato ma non
+     prelevabile, 7 deposito errato, 8 in attesa di conferma utente; campi id, amount, coin, network, status, address, txId,
+     insertTime (ms), completeTime, transferType, walletType. Esempi con id e importi come stringhe [C].
+   - GET /sapi/v1/capital/withdraw/history (peso UID 18000, "10 richieste al secondo") [W]: stessa finestra < 90 giorni,
+     offset/limit; campi id, amount, transactionFee, coin, status, address, txId, applyTime (testo "aaaa-MM-gg HH:mm:ss"),
+     network, transferType. Stati: 0 mail inviata, 2 attesa approvazione, 3 respinto, 4 in elaborazione, 6 completato [W];
+     1 annullato e 5 fallito [C].
+   - GET /sapi/v1/convert/tradeFlow (peso UID 3000) [W]: startTime ed endTime OBBLIGATORI, intervallo massimo 30 giorni;
+     risposta {list[], startTime, endTime, limit, moreData (booleano)}; campi quoteId, orderId, orderStatus, fromAsset,
+     fromAmount, toAsset, toAmount, ratio, inverseRatio, createTime.
+   - GET /sapi/v1/asset/assetDividend (peso IP 10) [W]: "non piu' di 180 giorni tra startTime ed endTime"; parametri asset,
+     startTime, endTime, limit (NESSUN offset); risposta {rows[], total}; campi id, amount, asset, divTime, enInfo, tranId e
+     "direction" (presente nei tipi ufficiali, senza descrizione).
+   - GET /sapi/v1/asset/dribblet (peso IP 1) [W]: "restituisce solo le ultime 100 registrazioni" e "solo quelle dopo il
+     01/12/2020"; parametri accountType (SPOT | MARGIN), startTime, endTime; risposta {total, userAssetDribblets[{operateTime,
+     totalTransferedAmount, totalServiceChargeAmount, transId, userAssetDribbletDetails[{transId, serviceChargeAmount,
+     amount, operateTime, transferedAmount, fromAsset, targetAsset?}]}]}.
+   - GET /sapi/v1/fiat/payments (peso IP 1) [W][H]: transactionType 0 acquisto / 1 vendita, beginTime, endTime, page
+     (predefinito 1), rows (predefinito 100, massimo 500); "senza date restituisce gli ultimi 30 giorni"; paymentMethod solo
+     per gli acquisti (Cash Balance, Credit Card, Online Banking, Bank Transfer); risposta {code, message, data[], total,
+     success}; campi orderNo, sourceAmount, fiatCurrency, obtainAmount, cryptoCurrency, totalFee, price, status, paymentMethod,
+     createTime, updateTime.
+   - GET /sapi/v1/fiat/orders (depositi e prelievi in euro): peso UID 45000 secondo [W], 90000 secondo [Y] e [C]: fonti discordanti,
+     quindi da 2 a 4 richieste al minuto (limite 180000 al minuto per UID [C]). NON scaricato (vedi coverage): non ha effetto sulle
+     plusvalenze e servirebbero ore.
+   - GET /sapi/v1/asset/dribblet: "total" = "Total counts of exchange" ([Y]: conteggio delle registrazioni esterne, ciascuna con
+     "totalTransferedAmount ... for this exchange" e i suoi dettagli).
+   - Codice -1121 (BAD_SYMBOL, "Invalid symbol.") [S]: simbolo non valido. Che sia proprio la risposta di myTrades a una coppia
+     ritirata dal listino e' ASSUNTO (per questo vale solo per le coppie scritte dall'utente e fuori da exchangeInfo).
+   - Retry-After: "numero di SECONDI da attendere: su un 429 per evitare il ban, su un 418 fino alla fine del ban" [S]. Il 418 e'
+     il ban automatico di chi non rallenta dopo i 429 (da 2 minuti a 3 giorni).
+   - Altri elenchi di Binance hanno uno storico LIMITATO e dichiarato ([Y]: asset/transfer "ultimi 6 mesi", margin/capital-flow
+     "ultimi 90 giorni", pay/transactions "ultimi 18 mesi"): per quelli usati qui NON e' dichiarato nulla (vedi ASSUNTO).
+   - Esistono, ma NON sono scaricati (finestre, limiti e semantica dello stato non sono documentati con certezza, vedi coverage):
+     GET /sapi/v1/asset/convert-transfer/queryByPage (Convert Transfer: startTime/endTime obbligatori, current/size, righe con
+     tranId, time, deductedAsset/Amount, targetAsset/Amount, status "S"; nessun massimo di finestra ne' significato di status
+     dichiarati [Y]), GET /sapi/v1/c2c/orderMatch/listUserOrderHistory (P2P, finestra massima 30 giorni, 100 righe [Y]),
+     /sapi/v1/dci/* (Dual Investment), /sapi/v1/giftcard/*, /sapi/v1/blvt/* [Y].
 
-   ASSUNTO (non confermato da una fonte ufficiale: dichiarato anche in avvisi e note)
-   - fromId = 0 equivale a "dalla prima operazione": e' la lettura letterale di "id >= fromId", ma non e' mostrato in un esempio.
+   ASSUNTO (non confermato da una fonte ufficiale letta: dichiarato anche in avvisi, note di copertura e test)
+   - fromId = 0 equivale a "dalla prima operazione" (lettura di "id >= fromId", non e' in un esempio). Con una prima pagina piena
+     si fa una PROVA con fromId = 1: se la prima operazione non coincide l'errore e' 'incomplete' (mai le piu' recenti spacciate
+     per tutte). Con meno di 1000 operazioni il risultato e' comunque esatto.
+   - Limiti di righe: depositi/prelievi 1000, Convert 1000, dividendi 500 (riassunti [D]); i codici non dipendono dal valore
+     reale per depositi, prelievi e acquisti con carta (si continua fino alla pagina VUOTA) e per Convert (moreData); dipendono
+     per i dividendi e i piccoli saldi (pagina piena = finestra divisa a meta', fino a 2 secondi, poi errore 'incomplete').
+   - "total" delle risposte non ha una descrizione ufficiale: se supera le righe ricevute NON si ipotizza nulla, la copertura
+     (dividendi, acquisti con carta) diventa incompleta con un avviso.
+   - "direction" dei dividendi: solo il valore 1 e' accettato come accredito; ogni altro valore -> "non riconosciuto".
    - Prelievi: se "amount" comprenda gia' la commissione di rete NON e' documentato. Predefinito: NON la comprende, quindi
      quantita' uscita = amount + transactionFee (indizio negli esempi di [C]: amount 20 con transactionFee 20 per USDT su ETH,
      impossibile se la comprendesse). L'opzione "withdrawFee" = si' usa amount cosi' com'e'. Un errore qui sposta solo la
      commissione di rete (il motore la ricava abbinando l'arrivo sull'altro conto).
-   - Acquisti con carta: "sourceAmount" = fiat realmente pagato, commissione "totalFee" gia' compresa: non viene sommata.
-     (se la commissione fosse in piu', il costo risulta sottostimato di quella cifra: la plusvalenza e' sovrastimata, mai il contrario).
-     Le vendite con carta/bonifico (transactionType 1) hanno campi non documentati: ogni registrazione e' "non riconosciuta".
-   - Dust: "transferedAmount" e' l'importo accreditato al netto di "serviceChargeAmount"; senza "targetAsset" l'asset e' BNB [D].
-   - Finestre non documentate per fiat/payments e dribblet: si usano 29 e 30 giorni (non oltre il periodo "predefinito di 30 giorni").
-   - Limiti SAPI per IP 12000/min e per UID 180000/min (commenti in [C]): le pause tra le richieste sono calcolate su questi valori.
+   - Acquisti con carta: sourceAmount = fiat pagato (esempio dei riassunti [D]: 20,0 EUR, totalFee 0,2, obtainAmount 4,462 LUNA,
+     price 4,437472 = (20 - 0,2) / 4,462, quindi commissione COMPRESA in sourceAmount). La relazione si controlla su OGNI acquisto con
+     commissione: se il prezzo non la conferma l'acquisto e' "non riconosciuto". Per le vendite (transactionType 1) i riassunti
+     indicano campi invertiti (sourceAmount = cripto, obtainAmount = fiat) ma nulla sulla commissione: ogni vendita e' "non riconosciuta".
+   - Piccoli saldi: "transferedAmount" e' l'importo accreditato al netto di "serviceChargeAmount"; senza "targetAsset" l'asset e' BNB;
+     senza accountType si assume il conto spot; "ultime 100" riferito alla finestra richiesta (non e' verificabile: con 100 o piu'
+     registrazioni la copertura e' dichiarata incompleta). Non e' dichiarato se le 100 siano le registrazioni esterne o i loro
+     dettagli: si divide la finestra se UNA delle due misure arriva a 100; se una singola registrazione ha da sola 100 o piu'
+     dettagli la finestra non si puo' ridurre e si accetta il risultato dichiarando la copertura incompleta (nessun errore).
+     "total" = conteggio delle registrazioni esterne [Y]: se supera quelle ricevute (e la pagina non e' piena) la copertura e'
+     incompleta con un avviso (senza dividere la finestra: se "total" fosse esteso oltre la finestra si farebbero migliaia di richieste).
+   - Convert: orderStatus SUCCESS = eseguita, FAIL = fallita (ignorata), ogni altro valore -> "non riconosciuto".
+     Acquisti con carta: Completed = eseguito, Failed e Refunded = ignorati, Processing e altri -> "non riconosciuti".
+   - Acquisti con carta o "Cash Balance" (entrambi in fiat/payments con transactionType 0 [D]): non e' dichiarato se compaiano ANCHE tra
+     le operazioni spot (doppio conteggio). Se c'e' un acquisto spot della stessa cripto, di pari quantita' (entro 0,2%) e entro 10
+     minuti, si scrive un avviso (nulla viene scartato).
+   - Finestre non documentate per fiat/payments e dribblet: 29 e 30 giorni (non oltre il periodo "predefinito di 30 giorni").
+   - Confini inclusi/esclusi delle finestre NON dichiarati: finestre sovrapposte di un'ora e deduplica per identificativo.
+   - Limiti per IP: dal REQUEST_WEIGHT di exchangeInfo (si usa al massimo meta' del limite per myTrades); SAPI 12000/min per IP e
+     180000/min per UID [C]. Le pause sono calcolate su questi valori e raddoppiate per il tipo di richiesta che riceve un 429.
+     Su un 429 si attende il Retry-After; se non e' leggibile (nel browser un'intestazione di risposta e' visibile solo se il server la
+     elenca in Access-Control-Expose-Headers: non verificabile da qui) si attendono almeno 60 secondi; un 418 ferma subito lo scarico.
+   - Errori di rete: tutte le richieste sono GET ripetibili senza effetti. Dopo almeno una risposta ricevuta si ripete fino a 3 volte
+     (con firma e timestamp nuovi); se fallisce la prima richiesta e' blocco del browser (CORS) o rete assente: errore subito.
    - applyTime dei prelievi e' in UTC (come in [C]); orderId di Convert puo' superare 2^53: in quel caso si usa quoteId.
-   - Profondita' dello storico conservata da Binance per depositi/prelievi/convert/dividendi: NON dichiarata. Si parte da
+   - Profondita' dello storico conservata da Binance per depositi/prelievi/convert/dividendi/piccoli saldi/acquisti con carta: NON
+     dichiarata (e altri elenchi di Binance la limitano). Una finestra piu' vecchia dello storico conservato restituirebbe [] senza
+     errori, indistinguibile da "nessuna operazione": per questo la copertura di queste fonti e' SEMPRE complete:false. Si parte da
      "startDate" (predefinito 01/07/2017, mese di avvio di Binance: dato di cronaca non verificabile da qui).
+   - Prefisso "LD" dei saldi (Risparmio flessibile) [F]: si toglie il prefisso solo per decidere quali coppie interrogare (aggiunta,
+     mai esclusione); il forum segnala casi con il nome sbagliato (QTUM mostrato come LDBAKE): le coppie in piu' costano solo richieste.
    - Il collegamento diretto dal browser (CORS) non e' verificabile da qui: se Binance lo blocca si ottiene l'errore 'network'.
-   - Una coppia non presente in exchangeInfo (ritirata dal listino) non e' interrogabile: lo scrive il compito, ma nessuna
-     fonte letta lo dichiara esplicitamente; la coppia viene saltata e segnalata, mai ipotizzata.
+   - Una coppia non presente in exchangeInfo (ritirata dal listino, o con permessi diversi da SPOT/MARGIN/LEVERAGED) potrebbe non
+     essere interrogabile, ma nessuna fonte letta lo dichiara: le coppie scritte dall'utente (extraSymbols) si provano COMUNQUE e
+     solo la risposta -1121 le dichiara non interrogabili (avviso); se invece rispondono con operazioni, queste sono "non
+     riconosciute" (senza elenco non si sa cosa e' base e cosa e' quota) e bloccano il risultato.
+   - Operazioni spot precedenti a "startDate": myTrades non si filtra per data (fromId e startTime/endTime non si combinano), quindi
+     si scaricano tutte, ma parse() le ignora (INFO) per restare coerente con le altre fonti, che partono da startDate.
+
+   COPERTURA: la spot e' SEMPRE dichiarata incompleta (l'elenco delle coppie usate non esiste); le altre fonti scaricate lo sono
+   per la profondita' dello storico non dichiarata (vedi ASSUNTO). Non scaricati e dichiarati in coverage: depositi/prelievi in
+   euro, Earn, staking/Launchpool, margine, futures/opzioni, P2P, Pay/Carta, Auto-Invest, Convert Transfer (stablecoin/BUSD),
+   Dual Investment, gift card, token a leva (BLVT).
 
    UNITA': quantita' nell'unita' di ciascun asset cosi' come le restituisce la piattaforma. Nessun metallo prezioso su questo conto. */
 (function () {
@@ -98,6 +158,10 @@
   const MAX_PAGES = 2000;
   const MAX_ATTEMPTS = 6;                         // tentativi per richiesta su 429/418/5xx (ogni tentativo viene firmato di nuovo)
   const MAX_WAIT_S = 300;                         // attesa massima accettata per un Retry-After
+  const MIN_RATE_WAIT_S = 60;                     // 429 senza Retry-After leggibile: il peso si misura su 1 minuto, si aspetta almeno quanto
+  const NET_RETRIES = 3;                          // errori di rete: ripetizioni, solo dopo che almeno una richiesta e' andata a buon fine
+  const BISECT_OVERLAP_MS = 1;                    // sovrapposizione delle due meta' di una finestra divisa (basta 1 ms: i tempi sono interi)
+  const DUP_WINDOW_MS = 10 * 60000, DUP_TOL = '0.002';   // possibile doppione acquisto con carta / spot / Convert: 10 minuti, 0,2%
   const DEFAULT_QUOTES = 'EUR,USDT,USDC,BTC,ETH,BNB,FDUSD';
   const DEFAULT_START = '2017-07-01';
   const MIN_START = '2017-01-01';
@@ -232,12 +296,15 @@
     const f = opts.fetch || ((...a) => globalThis.fetch(...a));
     const nowFn = opts.now || (() => new Date());
     const say = (m) => { try { if (typeof opts.onProgress === 'function') opts.onProgress(m); } catch (e) { /* un errore dell'interfaccia non deve fermare lo scarico */ } };
-    const ctx = { key, secret, fetch: f, sleep: opts.sleep || ((ms) => common().sleep(ms)), nowFn, offset: 0, lastRetryAfter: null, say, spotPace: PACE.ip, warnings: [] };
+    const ctx = { key, secret, fetch: f, sleep: opts.sleep || ((ms) => common().sleep(ms)), nowFn, offset: 0, lastRetryAfter: null, responses: 0, say, spotPace: PACE.ip, slow: {}, flags: {}, warnings: [] };
     ctx.localMs = () => toMs(nowFn());
     ctx.nowMs = () => ctx.localMs() + ctx.offset;
-    // la risposta passa da qui per leggere Retry-After (common.request non lo espone)
+    // la risposta passa da qui per leggere Retry-After (common.request non lo espone) e per contare le risposte ricevute:
+    // dopo la prima risposta e' provato che il collegamento dal browser funziona (niente blocco CORS), quindi un errore di rete
+    // successivo e' un guasto transitorio e si puo' ripetere
     ctx.fetchSeen = async (url, init) => {
       const res = await f(url, init);
+      ctx.responses++;
       try { ctx.lastRetryAfter = res && res.headers && typeof res.headers.get === 'function' ? res.headers.get('retry-after') : null; } catch (e) { ctx.lastRetryAfter = null; }
       return res;
     };
@@ -263,11 +330,26 @@
     return e;
   }
 
-  /** Una richiesta GET. `signed`: chiave + firma. Su 429/418/5xx attende e RIFIRMA con un timestamp nuovo (un Retry-After lungo
-      renderebbe scaduto il vecchio). `paceMs`: pausa dopo la risposta, per restare sotto i limiti di frequenza. */
+  /** Codice di errore di Binance (campo "code" del corpo della risposta) oppure null. */
+  function platformCodeOf(e) {
+    const d = e instanceof common().ApiError ? (e.detail || {}) : {};
+    if (Number.isFinite(d.platformCode)) return d.platformCode;
+    const m = /"code"\s*:\s*(-?\d+)/.exec(String(d.body || ''));
+    return m ? Number(m[1]) : null;
+  }
+
+  /** Una richiesta GET. `signed`: chiave + firma. Attese e ripetizioni (ogni tentativo e' RIFIRMATO con un timestamp nuovo, un
+      Retry-After lungo renderebbe scaduto il vecchio):
+      - 418 (ban dell'IP): ci si FERMA subito. Insistere e' proprio cio' che allunga il ban (da 2 minuti a 3 giorni) [S];
+      - 429: si attende il Retry-After (secondi); se non e' leggibile (dal browser l'intestazione e' visibile solo se il server la
+        espone con Access-Control-Expose-Headers) si attende almeno 60 secondi, perche' il peso si misura sul minuto;
+      - 5xx: attesa crescente (2, 4, 8... secondi);
+      - errore di rete: solo dopo che almeno una risposta e' arrivata (altrimenti e' CORS o rete assente: errore subito) si
+        ripete fino a NET_RETRIES volte con attesa crescente.
+      `paceMs`: pausa dopo la risposta, per restare sotto i limiti di frequenza. */
   async function call(ctx, path, params, paceMs, signed) {
     const isSigned = signed !== false;
-    let attempt = 0;
+    let attempt = 0, netAttempt = 0;
     for (;;) {
       const p = Object.assign({}, params);
       if (isSigned) { p.recvWindow = RECV_WINDOW; p.timestamp = ctx.nowMs() - SKEW_SAFETY_MS; }
@@ -280,23 +362,38 @@
       try {
         body = await common().request(ctx.fetchSeen, url, init, { sleep: ctx.sleep, secrets: [ctx.key, ctx.secret], retries: 0 });
       } catch (e) {
-        const d = e instanceof common().ApiError ? (e.detail || {}) : {};
-        const retryable = e instanceof common().ApiError && (e.code === 'rate' || (e.code === 'http' && d.status >= 500));
+        const isApi = e instanceof common().ApiError;
+        const d = isApi ? (e.detail || {}) : {};
+        if (isApi && e.code === 'network' && ctx.responses > 0) {
+          netAttempt++;
+          if (netAttempt > NET_RETRIES) throw apiError('network', 'Il collegamento con Binance si è interrotto durante lo scarico (la rete è caduta, Binance non ha risposto o il browser ha bloccato la richiesta), anche dopo alcuni nuovi tentativi. Controlla la connessione e riprova: lo scarico riparte da capo.', { url: d.url });
+          await ctx.sleep(Math.min(2 ** netAttempt, 30) * 1000);
+          continue;
+        }
+        const ra = Number(ctx.lastRetryAfter);
+        if (isApi && e.code === 'rate' && d.status === 418) {
+          const wait = ra > 0 ? ` per circa ${Math.max(1, Math.ceil(ra / 60))} minuti` : ' (da 2 minuti a 3 giorni)';
+          throw apiError('rate', `Binance ha bloccato il tuo indirizzo IP${wait}: erano state fatte troppe richieste (errore 418). Non insistere: riprova più tardi.`, { status: 418, url: d.url });
+        }
+        const retryable = isApi && (e.code === 'rate' || (e.code === 'http' && d.status >= 500));
         if (!retryable) throw translate(e);
         attempt++;
-        const ra = Number(ctx.lastRetryAfter);
         if (ra > MAX_WAIT_S) throw apiError('rate', `Binance ha limitato l'accesso per circa ${Math.ceil(ra / 60)} minuti (troppe richieste dallo stesso indirizzo IP). Riprova più tardi.`, { status: d.status });
         if (attempt >= MAX_ATTEMPTS) throw translate(e);
-        await ctx.sleep((ra > 0 ? ra : Math.min(2 ** attempt, 60)) * 1000);
+        if (e.code === 'rate') ctx.slow[path] = Math.min(10000, Math.max((ctx.slow[path] || 0), (paceMs || 100) * 2));   // il limite reale e' piu' basso del previsto: si rallenta questo tipo di richiesta
+        const waitS = ra > 0 ? ra : (e.code === 'rate' ? Math.max(MIN_RATE_WAIT_S, 2 ** attempt) : Math.min(2 ** attempt, 60));
+        await ctx.sleep(waitS * 1000);
         continue;
       }
-      if (paceMs) await ctx.sleep(paceMs);
+      const pace = Math.max(paceMs || 0, ctx.slow[path] || 0);
+      if (pace) await ctx.sleep(pace);
       return body;
     }
   }
 
   // ---------------------------------------------------------------- scarico: schemi di paginazione
-  /** Elenco con offset/limit (depositi e prelievi). */
+  /** Elenco con offset/limit (depositi e prelievi). Si continua finche' una pagina non torna VUOTA (non basta una pagina
+      "corta": il limite massimo reale non e' verificabile da qui e una pagina piu' piccola del richiesto non prova la fine). */
   async function pagedOffset(ctx, path, params, limit, paceMs, keyFn) {
     const rows = [], seen = new Set();
     for (let offset = 0, page = 0; ; page++) {
@@ -304,13 +401,13 @@
       const body = await call(ctx, path, Object.assign({}, params, { offset, limit }), paceMs);
       if (!Array.isArray(body)) throw formatErr(path, 'attesa una lista');
       if (body.length > limit) throw formatErr(path, `la pagina ha più righe del massimo richiesto (${limit})`);
+      if (body.length === 0) return rows;
       let fresh = 0;
       for (const r of body) {
         const k = keyFn(r);
         if (k === null) throw formatErr(path, 'una riga non ha un identificativo riconoscibile');
         if (!seen.has(k)) { seen.add(k); rows.push(r); fresh++; }
       }
-      if (body.length < limit) return rows;
       if (page > 0 && fresh === 0) throw formatErr(path, 'la pagina successiva ripete righe già lette (offset ignorato)');
       offset += body.length;
     }
@@ -332,13 +429,20 @@
   }
   const sortedRows = (map, tsFn) => [...map.entries()].sort((a, b) => ((tsFn(a[1]) || 0) - (tsFn(b[1]) || 0)) || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)).map((x) => x[1]);
 
-  /** Se la finestra e' troppo piena per la richiesta la si divide a meta' (si riparte dai due lati), fino a 2 secondi. */
+  /** Se la finestra e' troppo piena per la richiesta la si divide a meta' (si riparte dai due lati), fino a 2 secondi.
+      Le due meta' si SOVRAPPONGONO di 1 ms ([s, mid+1] e [mid-1, e]): i confini inclusi/esclusi non sono dichiarati e con confini
+      esclusi su entrambi i lati una riga esattamente a meta' non starebbe in nessuna delle due; i doppioni si eliminano con la chiave.
+      `fetchOne` ritorna { rows, truncated, soft }: `soft` (nome di un flag) indica una troncatura solo SOSPETTATA da un criterio
+      ambiguo; se la finestra non si puo' ridurre oltre, il risultato e' accettato e il flag segnato (la copertura diventa incompleta). */
   async function bisect(ctx, s, e, fetchOne, path) {
     const r = await fetchOne(s, e);
     if (!r.truncated) return r.rows;
-    if (e - s < 2000) throw apiError('incomplete', `Binance (${path}): troppe registrazioni in un intervallo di pochi secondi, non si riesce a scaricarle tutte.`, { path });
+    if (e - s < 2000) {
+      if (r.soft) { ctx.flags[r.soft] = true; return r.rows; }
+      throw apiError('incomplete', `Binance (${path}): troppe registrazioni in un intervallo di pochi secondi, non si riesce a scaricarle tutte.`, { path });
+    }
     const mid = Math.floor((s + e) / 2);
-    return (await bisect(ctx, s, mid, fetchOne, path)).concat(await bisect(ctx, mid, e, fetchOne, path));
+    return (await bisect(ctx, s, mid + BISECT_OVERLAP_MS, fetchOne, path)).concat(await bisect(ctx, mid - BISECT_OVERLAP_MS, e, fetchOne, path));
   }
 
   // ---------------------------------------------------------------- scarico: singoli prodotti
@@ -373,6 +477,8 @@
       const body = await call(ctx, path, { startTime: s, endTime: e, limit: LIM.dividend }, PACE.dividend);
       if (!isObject(body) || !Array.isArray(body.rows)) throw formatErr(path, 'attesa la lista "rows"');
       if (body.rows.length > LIM.dividend) throw formatErr(path, 'più righe del massimo richiesto');
+      // "total" non ha una descrizione ufficiale: se supera le righe ricevute (e la pagina non e' piena) non si ipotizza nulla, si dichiara la copertura incompleta
+      if (typeof body.total === 'number' && Number.isFinite(body.total) && body.total > body.rows.length && body.rows.length < LIM.dividend) ctx.flags.dividendsTotal = Math.max(ctx.flags.dividendsTotal || 0, body.total - body.rows.length);
       return { rows: body.rows, truncated: body.rows.length >= LIM.dividend };   // senza offset: pagina piena = si divide la finestra
     };
     await scanWindows(ctx, wins, 'Dividendi e airdrop', async (w) => addRows(map, await bisect(ctx, w.s, w.e, one, path), dividendKey, path));
@@ -389,15 +495,27 @@
         if (x.userAssetDribbletDetails !== undefined && !Array.isArray(x.userAssetDribbletDetails)) throw formatErr(path, '"userAssetDribbletDetails" non è una lista');
         details += (x.userAssetDribbletDetails || []).length;
       }
-      return { rows: body.userAssetDribblets, truncated: body.userAssetDribblets.length >= LIM.dust || details >= LIM.dust };   // "solo le ultime 100"
+      const n = body.userAssetDribblets.length;
+      // "solo le ultime 100 registrazioni": non e' dichiarato se si contino le registrazioni esterne o i loro dettagli.
+      // Registrazioni piene = troncatura certa (si divide, se non si puo' piu' e' un errore); solo dettagli pieni = troncatura
+      // sospettata ("soft": si divide, e se una singola registrazione ha da sola 100 dettagli si accetta e si dichiara incompleto)
+      const truncated = n >= LIM.dust || details >= LIM.dust;
+      // "total" = conteggio delle registrazioni esterne (specifica ufficiale): se supera quelle ricevute su una pagina non piena
+      // qualcosa manca, ma il suo ambito non e' dichiarato: copertura incompleta con avviso (non si divide la finestra)
+      const total = decStr(body.total) !== null && /^\d+$/.test(decStr(body.total)) ? Number(decStr(body.total)) : null;
+      if (!truncated && total !== null && total > n) ctx.flags.dustTotal = Math.max(ctx.flags.dustTotal || 0, total - n);
+      return { rows: body.userAssetDribblets, truncated, soft: n >= LIM.dust ? null : 'dustDetails' };
     };
     await scanWindows(ctx, wins, 'Piccoli saldi convertiti', async (w) => addRows(map, await bisect(ctx, w.s, w.e, one, path), dustKey, path));
     return sortedRows(map, tsOf.dust);
   }
+  /** Acquisti/vendite con carta: pagine (page, rows 500) fino alla pagina VUOTA; "total" serve solo da controllo di coerenza: se e'
+      maggiore delle righe ricevute non si lancia un errore (il suo significato esatto non e' documentato) ma la copertura diventa incompleta. */
   async function fetchPayments(ctx, wins, type) {
     const path = '/sapi/v1/fiat/payments', map = new Map();
     await scanWindows(ctx, wins, type === 0 ? 'Acquisti con carta o bonifico' : 'Vendite verso carta o bonifico', async (w) => {
-      let collected = 0, total = null;
+      const inWindow = new Set();
+      let total = null;
       for (let page = 1; ; page++) {
         if (page > MAX_PAGES) throw apiError('incomplete', `Binance (${path}): troppe pagine, l'elenco non si riesce a esaurire.`, { path });
         const body = await call(ctx, path, { transactionType: type, beginTime: w.s, endTime: w.e, page, rows: LIM.fiatRows }, PACE.ip);
@@ -411,19 +529,17 @@
         if (data.length > LIM.fiatRows) throw formatErr(path, 'più righe del massimo richiesto');
         if (typeof body.total === 'number' && Number.isFinite(body.total)) total = body.total;
         else if (typeof body.total === 'string' && /^\d+$/.test(body.total.trim())) total = Number(body.total.trim());
+        if (data.length === 0) break;
         let fresh = 0;
         for (const r of data) {
           const k = paymentKey(r);
           if (k === null) throw formatErr(path, 'una riga non ha un identificativo riconoscibile');
-          if (!map.has(k)) { map.set(k, r); fresh++; }
+          if (!inWindow.has(k)) { inWindow.add(k); fresh++; }
+          if (!map.has(k)) map.set(k, r);
         }
-        collected += data.length;
-        if (data.length === 0) break;
-        const more = data.length >= LIM.fiatRows || (total !== null && collected < total);
-        if (!more) break;
-        if (page > 1 && fresh === 0) throw formatErr(path, 'la pagina successiva ripete righe già lette');
+        if (fresh === 0) throw formatErr(path, 'la pagina successiva ripete righe già lette (page ignorato)');
       }
-      if (total !== null && collected < total) throw apiError('incomplete', `Binance (${path}) dichiara ${total} registrazioni nel periodo ma ne ha consegnate ${collected}.`, { path });
+      if (total !== null && inWindow.size < total) ctx.flags.paymentsTotal = Math.max(ctx.flags.paymentsTotal || 0, total - inWindow.size);
     });
     return sortedRows(map, tsOf.payment);
   }
@@ -446,10 +562,63 @@
         if (!seen.has(id)) { seen.add(id); rows.push(r); }
         if (id > maxId) maxId = id;
       }
+      if (page === 0 && body.length === LIM.trades) {
+        // "fromId = 0 parte dalla prima operazione" e' una lettura della documentazione, non un esempio ufficiale: se Binance lo trattasse come
+        // "fromId assente" restituirebbe le ULTIME 1000 operazioni e le piu' vecchie mancherebbero in silenzio. Prova: con fromId = 1 si deve
+        // ottenere la stessa prima operazione (a parte un'eventuale operazione con id 0).
+        const probe = await call(ctx, path, { symbol, fromId: 1, limit: LIM.trades }, ctx.spotPace);
+        if (!Array.isArray(probe) || probe.length > LIM.trades) throw formatErr(path, 'attesa una lista', { symbol });
+        const ids = probe.map((r) => { if (tradeKey(r) === null) throw formatErr(path, 'un\'operazione non ha un id numerico valido', { symbol }); return r.id; });
+        const firstProbe = ids.length ? Math.min(...ids) : null;
+        const firstBody = Math.min(...body.map((r) => r.id).filter((id) => id >= 1));
+        if (firstProbe !== firstBody) throw apiError('incomplete', `Binance (${path}): per la coppia ${symbol} non si riesce a partire dalla prima operazione (fromId non rispettato): le operazioni più vecchie mancherebbero. Aggiungi questa coppia con il file.`, { path, symbol });
+      }
       if (body.length < LIM.trades) return rows;
       fromId = maxId + 1;
     }
     throw apiError('incomplete', `Binance (${path}): troppe pagine per la coppia ${symbol}, l'elenco non si riesce a esaurire.`, { path, symbol });
+  }
+
+  // ---------------------------------------------------------------- possibili doppioni tra acquisti con carta e operazioni spot/Convert
+  /** Binance non dice se un acquisto con carta o con "Cash Balance" compare ANCHE tra le operazioni spot o tra le conversioni Convert.
+      Se la stessa cripto, in quantita' uguale (entro 0,2%), compare in un acquisto spot (o in una conversione da valuta verso quella
+      cripto, riuscita) entro 10 minuti da un acquisto con carta completato, quell'acquisto e' un possibile doppione.
+      Funzione pura sui dati grezzi: la usano sync (avviso) e parse (l'acquisto con carta diventa "da controllare").
+      `baseOf(simbolo)` -> asset base della coppia o null. Ritorna Map(orderNo -> descrizione del confronto). */
+  function possibleDuplicates(payBuy, spotTrades, baseOf, convertRows) {
+    const byAsset = new Map();
+    const add = (asset, ms, qty, what) => { if (!byAsset.has(asset)) byAsset.set(asset, []); byAsset.get(asset).push({ ms, qty, what }); };
+    for (const sym of Object.keys(spotTrades || {})) {
+      const base = baseOf(sym);
+      if (!base || !Array.isArray(spotTrades[sym])) continue;
+      for (const t of spotTrades[sym]) {
+        if (!isObject(t)) continue;
+        const ms = msVal(t.time);
+        if (t.isBuyer !== true || ms === null) continue;
+        add(base, ms, t.qty, `acquisto spot ${sym}`);
+      }
+    }
+    for (const c of Array.isArray(convertRows) ? convertRows : []) {
+      if (!isObject(c) || str(c.orderStatus).toUpperCase() !== 'SUCCESS' || !str(c.toAsset) || !FIAT.has(upper(c.fromAsset || ''))) continue;
+      const ms = msVal(c.createTime);
+      if (ms !== null) add(upper(c.toAsset), ms, c.toAmount, 'conversione Convert');
+    }
+    for (const a of byAsset.values()) a.sort((x, y) => x.ms - y.ms);
+    const out = new Map();
+    for (const r of Array.isArray(payBuy) ? payBuy : []) {
+      if (!isObject(r) || str(r.status).toLowerCase() !== PAYMENT_OK) continue;
+      const k = paymentKey(r);
+      const list = byAsset.get(str(r.cryptoCurrency).toUpperCase());
+      const ms = msVal(r.createTime), want = dec(r.obtainAmount);
+      if (k === null || !list || ms === null || !want || !want.gt(0)) continue;
+      let lo = 0, hi = list.length;
+      while (lo < hi) { const mid = (lo + hi) >> 1; if (list[mid].ms < ms - DUP_WINDOW_MS) lo = mid + 1; else hi = mid; }
+      for (let i = lo; i < list.length && list[i].ms <= ms + DUP_WINDOW_MS; i++) {
+        const q = dec(list[i].qty);
+        if (q && q.minus(want).abs().lte(want.times(DUP_TOL))) { out.set(k, `${list[i].what} di ${q.toFixed()} ${str(r.cryptoCurrency).toUpperCase()} del ${iso(list[i].ms).replace('T', ' ').slice(0, 19)} UTC`); break; }
+      }
+    }
+    return out;
   }
 
   // ---------------------------------------------------------------- sync
@@ -526,7 +695,15 @@
 
     // ---- elenco delle coppie spot da interrogare
     const seen = new Set();
-    for (const b of account.balances) seen.add(b.asset);
+    const baseAssets = new Set([...info.symbols.values()].map((x) => x.baseAsset));
+    for (const b of account.balances) {
+      seen.add(b.asset);
+      // Risparmio flessibile: l'asset in Earn compare nei saldi con il prefisso "LD" (LDSOL per SOL). Chi ha comprato SOL e l'ha
+      // messo tutto in Earn non ha SOL tra i saldi, ne' depositi: senza questo si salterebbero le sue coppie. Si AGGIUNGE l'asset senza
+      // prefisso se e' base di una coppia (un falso positivo, per esempio LDO, costa solo qualche richiesta in piu')
+      const ld = /^LD(.+)$/.exec(b.asset);
+      if (ld && baseAssets.has(ld[1])) seen.add(ld[1]);
+    }
     for (const r of deposits) if (str(r.coin)) seen.add(upper(r.coin));
     for (const r of withdrawals) if (str(r.coin)) seen.add(upper(r.coin));
     for (const r of convert) { if (str(r.fromAsset)) seen.add(upper(r.fromAsset)); if (str(r.toAsset)) seen.add(upper(r.toAsset)); }
@@ -537,16 +714,14 @@
     const quoteSet = new Set(cfg.quotes);
     quoteSet.add('EUR');                                        // le coppie in euro si interrogano sempre
     const candidates = [...info.symbols.values()].filter((s) => quoteSet.has(s.quoteAsset)).sort((a, b) => (a.symbol < b.symbol ? -1 : 1));
-    const extras = [];
-    for (const s of cfg.extraSymbols) {
-      if (info.symbols.has(s)) extras.push(info.symbols.get(s));
-      else warnings.push(`La coppia «${s}» che hai indicato non è nell'elenco attuale di Binance (ritirata dal listino o scritta in modo diverso): non posso interrogarla. Le sue operazioni vanno aggiunte con il file.`);
-    }
-    const queried = new Set(), trades = {};
+    // le coppie scritte dall'utente si provano SEMPRE, anche se non sono in exchangeInfo (nessuna fonte dice che myTrades le rifiuti):
+    // solo la risposta -1121 le dichiara non interrogabili
+    const extras = cfg.extraSymbols.map((s) => info.symbols.get(s) || { symbol: s, baseAsset: '', quoteAsset: '', status: '', unlisted: true });
+    const queried = new Set(), rejected = new Set(), unlistedWithTrades = [], trades = {};
     let tradeCount = 0, round = 0;
     for (;;) {
       const todo = new Map();
-      for (const s of candidates) if (!queried.has(s.symbol) && (s.quoteAsset === 'EUR' || seen.has(s.baseAsset))) todo.set(s.symbol, s);
+      for (const s of candidates) if (!queried.has(s.symbol) && (s.quoteAsset === 'EUR' || FIAT.has(s.baseAsset) || seen.has(s.baseAsset))) todo.set(s.symbol, s);   // base fiat (es. EURUSDT): e' la via d'ingresso dei fondi, un saldo a zero non la rivela
       if (round === 0) for (const s of extras) if (!queried.has(s.symbol)) todo.set(s.symbol, s);
       round++;
       if (!todo.size) break;
@@ -555,20 +730,34 @@
         const s = list[i];
         queried.add(s.symbol);
         say(`Operazioni spot: coppia ${i + 1} di ${list.length} (${s.symbol}), trovate finora ${tradeCount}…`);
-        const rows = await fetchTrades(ctx, s.symbol);
+        let rows;
+        try { rows = await fetchTrades(ctx, s.symbol); }
+        catch (e) {
+          if (s.unlisted && e instanceof common().ApiError && e.code === 'http' && (e.detail || {}).status === 400 && platformCodeOf(e) === -1121) {
+            queried.delete(s.symbol); rejected.add(s.symbol);
+            warnings.push(`La coppia «${s.symbol}» che hai indicato non è nell'elenco attuale di Binance e Binance risponde che non è valida (ritirata dal listino o scritta in modo diverso): non posso interrogarla. Le sue operazioni vanno aggiunte con il file.`);
+            continue;
+          }
+          throw e;
+        }
         if (!rows.length) continue;
         trades[s.symbol] = rows.sort((a, b) => a.id - b.id);
         tradeCount += rows.length;
+        if (s.unlisted) unlistedWithTrades.push(s.symbol);
         // le coppie scoperte allargano la ricerca: l'altra gamba e la valuta della commissione contano come "viste"
-        seen.add(s.baseAsset); seen.add(s.quoteAsset);
+        if (s.baseAsset) seen.add(s.baseAsset);
+        if (s.quoteAsset) seen.add(s.quoteAsset);
         for (const r of rows) if (str(r.commissionAsset)) seen.add(upper(r.commissionAsset));
       }
     }
     const withTrades = Object.keys(trades).sort();
+    const tradeRows = withTrades.reduce((a, s) => a.concat(trades[s]), []);
+    const inRangeRows = tradeRows.filter((t) => { const ms = tsOf.trade(t); return ms === null || ms >= cfg.startMs; });
+    const preStart = tradeRows.length - inRangeRows.length;
 
     // ---- avvisi
     const nPay = payBuy.length + paySell.length;
-    warnings.push(`Operazioni spot: Binance non dice con quali coppie hai operato. Ho interrogato ${queried.size} coppie (tutte quelle in euro e quelle con ${[...quoteSet].filter((q) => q !== 'EUR').join(', ') || 'nessun\'altra valuta'} il cui asset risulta nel tuo conto, nei depositi, nei prelievi, nelle conversioni o nelle operazioni già trovate): ne hanno dato operazioni ${withTrades.length}. Le coppie ritirate dal listino non si possono interrogare e un asset venduto per intero e mai depositato può sfuggire: controlla i saldi finali con quelli di Binance e, se manca qualcosa, aggiungi le coppie nell'opzione «Coppie aggiuntive» oppure integra con il file.`);
+    warnings.push(`Operazioni spot: Binance non dice con quali coppie hai operato. Ho interrogato ${queried.size} coppie (tutte quelle in euro, quelle che hanno una valuta come base, per esempio EUR/USDT, e quelle con ${[...quoteSet].filter((q) => q !== 'EUR').join(', ') || 'nessun\'altra valuta'} il cui asset risulta nel tuo conto, nei depositi, nei prelievi, nelle conversioni o nelle operazioni già trovate): ne hanno dato operazioni ${withTrades.length}. Le coppie ritirate dal listino non si possono interrogare e un asset venduto per intero e mai depositato può sfuggire: controlla i saldi finali con quelli di Binance e, se manca qualcosa, aggiungi le coppie nell'opzione «Coppie aggiuntive» oppure integra con il file.`);
     const pendDep = deposits.filter((r) => DEPOSIT_PENDING[Number(r.status)] !== undefined).length;
     const pendWd = withdrawals.filter((r) => WITHDRAW_PENDING[Number(r.status)] !== undefined).length;
     if (pendDep) warnings.push(`${pendDep} deposit${pendDep === 1 ? 'o non è' : 'i non sono'} ancora completat${pendDep === 1 ? 'o' : 'i'} (in attesa, errat${pendDep === 1 ? 'o' : 'i'} o da confermare): vengono segnalat${pendDep === 1 ? 'o' : 'i'} come da controllare.`);
@@ -578,41 +767,59 @@
         ? 'Prelievi: Binance non documenta se l\'importo comprende la commissione di rete. Come da tua opzione, è considerato comprensivo: la quantità uscita è l\'importo indicato.'
         : 'Prelievi: Binance non documenta se l\'importo comprende la commissione di rete. È considerato senza commissione: la quantità uscita è importo + commissione. Se i trasferimenti verso un altro tuo conto risultano con una commissione doppia, rifai lo scarico con l\'opzione «L\'importo dei prelievi comprende già la commissione» impostata su «sì».');
     }
+    const dupes = possibleDuplicates(payBuy, trades, (sym) => (info.symbols.has(sym) ? info.symbols.get(sym).baseAsset : null), convert).size;
+    if (dupes) warnings.push(`${dupes} acquist${dupes === 1 ? 'o' : 'i'} con carta o «Cash Balance» ${dupes === 1 ? 'ha' : 'hanno'} un acquisto spot (o una conversione Convert da valuta) di pari quantità entro 10 minuti: Binance non dice se lo stesso acquisto compare in più elenchi, quindi ${dupes === 1 ? 'è segnalato' : 'sono segnalati'} come da controllare (se è lo stesso acquisto, ignora la riga dell'acquisto con carta; l'altra resta). Nulla viene scartato nei dati scaricati.`);
+    if (ctx.flags.dividendsTotal) warnings.push('Dividendi e premi: Binance dichiara un totale di registrazioni maggiore di quelle consegnate. Il significato del totale non è documentato: se mancano dei premi aggiungili con il file.');
+    if (ctx.flags.paymentsTotal) warnings.push('Acquisti con carta: Binance dichiara più registrazioni di quelle consegnate. Se mancano acquisti aggiungili con il file.');
+    if (ctx.flags.dustTotal) warnings.push('Conversioni di piccoli saldi: Binance dichiara più registrazioni di quelle consegnate. Se mancano conversioni aggiungile con il file.');
+    if (ctx.flags.dustDetails) warnings.push('Conversioni di piccoli saldi: una singola registrazione contiene 100 o più dettagli e Binance dice di restituire «solo le ultime 100»: non si può escludere che ne manchino. Controlla il saldo BNB e integra con il file.');
+    warnings.push(`Storico: Binance non dichiara per quanto tempo conserva lo storico di depositi, prelievi, conversioni, dividendi, piccoli saldi e acquisti con carta (per altri elenchi lo limita a pochi mesi). Una richiesta per un periodo troppo vecchio non dà errori ma elenchi vuoti. Lo scarico parte dal ${dmy(cfg.startMs)}: per gli anni più vecchi confronta con i saldi e le date di Binance e integra con il file.`);
+    if (preStart) warnings.push(`${preStart} operazion${preStart === 1 ? 'e spot è precedente' : 'i spot sono precedenti'} alla data di inizio (${dmy(cfg.startMs)}): Binance non permette di filtrarle per data, quindi sono scaricate ma NON conteggiate, come per le altre fonti. Se servono, imposta una data di inizio più vecchia.`);
+    if (unlistedWithTrades.length) warnings.push(`Le coppie ${unlistedWithTrades.join(', ')} non sono nell'elenco attuale di Binance ma hanno restituito operazioni: senza l'elenco non si sa quale valuta sia stata comprata e quale usata per pagare, quindi quelle operazioni sono segnalate come da controllare. Aggiungile con il file.`);
+    if (dust.length) warnings.push('Conversioni di piccoli saldi in BNB: Binance non documenta se l\'importo ricevuto è già al netto della commissione di servizio. È considerato al netto (come indicato dal nome del campo "transferedAmount"): controlla il saldo BNB finale.');
+    if (dividends.some((r) => isObject(r) && r.direction !== undefined && r.direction !== null)) warnings.push('Dividendi e premi: Binance restituisce un campo «direction» senza descrizione. Sono accettati solo i valori «1» (accredito); gli altri vengono segnalati come da controllare.');
     if (paySell.length) warnings.push(`Ci sono ${paySell.length} vendite verso carta o bonifico: Binance non documenta i campi di queste registrazioni, quindi vengono segnalate come da controllare.`);
     if (account.balances.some((b) => /^LD[A-Z0-9]{2,}$/.test(b.asset))) warnings.push('Il conto contiene asset con prefisso «LD» (Risparmio flessibile): gli interessi di Earn non vengono scaricati e vanno aggiunti con il file.');
     if (!nPay && !deposits.length && !withdrawals.length && !convert.length && !dividends.length && !dust.length && !tradeCount) warnings.push('Non ho trovato nessuna operazione. Controlla di aver usato la chiave del conto giusto (non di un sotto-conto) e che la data di inizio sia corretta.');
 
     // ---- copertura
     const cov = (what, rows, tsFn, complete, note) => Object.assign({ what, count: rows.length }, spanOf(rows, tsFn), { complete, note });
-    const scanNote = `Scansione per periodi dal ${dmy(cfg.startMs)} a oggi. Binance non dichiara per quanto tempo conserva lo storico: se prima del ${dmy(cfg.startMs)} avevi già operato, integra con il file.`;
-    const tradeRows = withTrades.reduce((a, s) => a.concat(trades[s]), []);
+    // Storico: la profondita' conservata da Binance non e' dichiarata (e altri suoi elenchi la limitano): un periodo troppo vecchio
+    // darebbe [] senza errori. Quindi queste fonti NON si possono dichiarare complete con certezza, mai.
+    const scanNote = `Scansione per periodi dal ${dmy(cfg.startMs)} a oggi. Binance non dichiara per quanto tempo conserva lo storico e un periodo troppo vecchio darebbe un elenco vuoto senza errori: non si può essere certi che non manchi nulla. Confronta con la data di apertura del conto e con i saldi di Binance; per gli anni precedenti al ${dmy(cfg.startMs)} o se hai dubbi, integra con il file.`;
     const coverage = [
-      cov('Operazioni spot (acquisti, vendite e scambi)', tradeRows, tsOf.trade, false,
-        `Interrogate ${queried.size} coppie, ${withTrades.length} con operazioni. Binance non permette di elencare le coppie usate: quelle ritirate dal listino non sono interrogabili e un asset venduto per intero e mai depositato può sfuggire. Controlla i saldi finali e integra con il file se manca qualcosa.`),
-      cov('Depositi di cripto', deposits, tsOf.deposit, true, scanNote),
-      cov('Prelievi di cripto', withdrawals, tsOf.withdrawal, true, scanNote),
-      cov('Conversioni (Binance Convert)', convert, tsOf.convert, true, scanNote),
-      cov('Dividendi, airdrop e premi (Asset Dividend)', dividends, tsOf.dividend, true, scanNote + ' Il tipo di premio è un testo libero di Binance: tutti sono trattati come proventi.'),
-      cov('Conversioni di piccoli saldi in BNB', dust, tsOf.dust, cfg.startMs >= DUST_FLOOR,
-        'Binance restituisce solo le registrazioni successive al 01/12/2020 (e le ultime 100 per richiesta, gestite dividendo i periodi). Le conversioni di piccoli saldi precedenti vanno aggiunte con il file. Il conto margine non è compreso.'),
-      cov('Acquisti con carta o bonifico (Compra cripto)', payBuy, tsOf.payment, true, `${scanNote} La commissione è considerata già compresa nell'importo pagato.`),
-      { what: 'Depositi e prelievi in euro (bonifico, carta, SEPA)', complete: false, note: 'Non scaricati: non sono acquisti né vendite e non cambiano il calcolo delle plusvalenze; la richiesta di Binance è molto lenta (meno di 3 richieste al minuto). Gli acquisti fatti con quei fondi compaiono tra le operazioni spot.' },
+      cov('Operazioni spot (acquisti, vendite e scambi)', inRangeRows, tsOf.trade, false,
+        `Interrogate ${queried.size} coppie, ${withTrades.length} con operazioni. Binance non permette di elencare le coppie usate: quelle ritirate dal listino non sono interrogabili e un asset venduto per intero e mai depositato può sfuggire. Controlla i saldi finali e integra con il file se manca qualcosa.${preStart ? ` Altre ${preStart} operazioni sono precedenti alla data di inizio (${dmy(cfg.startMs)}): scaricate ma non conteggiate.` : ''}`),
+      cov('Depositi di cripto', deposits, tsOf.deposit, false, scanNote),
+      cov('Prelievi di cripto', withdrawals, tsOf.withdrawal, false, scanNote),
+      cov('Conversioni (Binance Convert)', convert, tsOf.convert, false, scanNote),
+      cov('Dividendi, airdrop e premi (Asset Dividend)', dividends, tsOf.dividend, false, scanNote + ' Il tipo di premio è un testo libero di Binance: tutti sono trattati come proventi.'
+        + (ctx.flags.dividendsTotal ? ' ATTENZIONE: Binance dichiara un totale di registrazioni maggiore di quelle consegnate, quindi qualche premio potrebbe mancare: controlla con il file.' : '')),
+      cov('Conversioni di piccoli saldi in BNB', dust, tsOf.dust, false,
+        `Binance restituisce solo le registrazioni successive al 01/12/2020 e "le ultime 100": con periodi brevi se ne ottengono di più, ma non è verificabile che il limite valga per periodo e non in assoluto${dust.length >= LIM.dust ? ' (qui le registrazioni sono 100 o più)' : ''}. Le conversioni di piccoli saldi precedenti al 01/12/2020 vanno aggiunte con il file. Il conto margine non è compreso. ${scanNote}`
+        + (ctx.flags.dustTotal ? ' ATTENZIONE: Binance dichiara più registrazioni di quelle consegnate: qualche conversione potrebbe mancare.' : '')
+        + (ctx.flags.dustDetails ? ' ATTENZIONE: una singola registrazione ha 100 o più dettagli e potrebbe essere stata troncata da Binance.' : '')),
+      cov('Acquisti con carta o bonifico (Compra cripto)', payBuy, tsOf.payment, false, `${scanNote}${ctx.flags.paymentsTotal ? ' ATTENZIONE: Binance dichiara più registrazioni di quelle consegnate: qualche acquisto potrebbe mancare, controlla con il file.' : ''} Per ogni acquisto con commissione si controlla che il prezzo registrato da Binance confermi che la commissione è compresa nell'importo pagato; se non lo conferma l'acquisto è segnalato come da controllare. Se lo stesso acquisto compare anche tra le operazioni spot o le conversioni (stessa cripto e quantità entro 10 minuti), l'acquisto con carta è segnalato come possibile doppione.`),
+      { what: 'Depositi e prelievi in euro (bonifico, carta, SEPA)', complete: false, note: 'Non scaricati: non sono acquisti né vendite e non cambiano il calcolo delle plusvalenze; la richiesta di Binance è molto lenta (da 2 a 4 richieste al minuto, le fonti ufficiali indicano pesi diversi). Gli acquisti fatti con quei fondi compaiono tra le operazioni spot.' },
       { what: 'Simple Earn (Risparmio flessibile e bloccato)', complete: false, note: 'Non scaricato: interessi e premi di Earn vanno aggiunti con il file (Binance → Ordini → Cronologia transazioni, oppure il modello universale).' },
       { what: 'Staking, Launchpool, Megadrop e altri premi', complete: false, note: 'Non scaricati (alcuni premi possono comparire tra i dividendi, ma non c\'è modo di saperlo con certezza). Integra con il file.' },
       { what: 'Margine (cross e isolato)', complete: false, note: 'Non scaricato: se hai operato a margine, aggiungi le operazioni con il file.' },
       { what: 'Futures (USDⓈ-M e COIN-M) e opzioni', complete: false, note: 'Non scaricati e non gestiti dal programma: i derivati vanno valutati a parte.' },
-      { what: 'P2P', complete: false, note: 'Non scaricato (Binance non offre uno storico P2P in questo collegamento): aggiungi gli scambi P2P con il file.' },
+      { what: 'P2P', complete: false, note: 'Non scaricato dal programma: Binance ha uno storico degli scambi P2P, ma questo collegamento non lo legge. Aggiungi gli scambi P2P con il file.' },
       { what: 'Binance Pay e Carta Binance', complete: false, note: 'Non scaricati: pagamenti, regali e cashback vanno aggiunti con il file.' },
       { what: 'Acquisti ricorrenti (Auto-Invest) e altri prodotti', complete: false, note: 'Non scaricati: non è verificabile che compaiano tra le operazioni spot. Vale anche per prestiti, mining, NFT, Alpha e sotto-conti (ogni sotto-conto ha le sue chiavi).' },
+      { what: 'Conversioni tra stablecoin (Convert Transfer, per esempio da BUSD a USDC)', complete: false, note: 'Non scaricate: sono scambi tra due asset che cambiano i lotti, ma non compaiono tra le conversioni di Binance Convert e l\'elenco di Binance non dichiara né la finestra massima né il significato dello stato, quindi non si scaricano. Se hai convertito stablecoin (per esempio verso BUSD o da BUSD), aggiungile con il file: senza, i lotti di USDC, TUSD, USDP e BUSD possono risultare sbagliati o senza origine.' },
+      { what: 'Dual Investment, gift card e token a leva (BLVT)', complete: false, note: 'Non scaricati: sottoscrizioni e rimborsi di Dual Investment, acquisto e uso di gift card, sottoscrizione e rimborso di token a leva (BLVT) cambiano le quantità e vanno aggiunti con il file.' },
     ];
 
-    const symbolsOut = withTrades.map((s) => { const x = info.symbols.get(s); return { symbol: x.symbol, baseAsset: x.baseAsset, quoteAsset: x.quoteAsset, status: x.status }; });
+    const symbolsOut = withTrades.filter((s) => info.symbols.has(s)).map((s) => { const x = info.symbols.get(s); return { symbol: x.symbol, baseAsset: x.baseAsset, quoteAsset: x.quoteAsset, status: x.status }; });
     const raw = {
       version: 1,
       fetchedAt: iso(startedAt),
       range: { from: iso(cfg.startMs), to: iso(toMsEnd) },
       options: { quotes: cfg.quotes, extraSymbols: cfg.extraSymbols, startDate: cfg.startDate, withdrawFeeIncluded: cfg.withdrawFeeIncluded },
       queriedSymbols: [...queried].sort(),
+      rejectedSymbols: [...rejected].sort(),
       symbols: symbolsOut,
       account,
       spotTrades: trades,
@@ -635,13 +842,21 @@
     return v;
   };
 
-  /** Evento per uno scambio in cui si cede (give) e si riceve (get): fiat -> cripto = BUY, cripto -> fiat = SELL, cripto -> cripto = SWAP. */
+  /** Eventi per uno scambio in cui si cede (give) e si riceve (get): fiat -> cripto = BUY, cripto -> fiat = SELL, cripto -> cripto = SWAP.
+      Ritorna una LISTA (di norma un evento). Tra due valute (fiat -> fiat) non c'e' effetto sulle cripto (INFO), ma una commissione
+      pagata in una cripto (per esempio BNB) e' comunque una cessione: diventa un evento FEE separato (mai persa in silenzio). */
   function exchangeEvent(base, give, giveQty, get, getQty, fee) {
     const gf = FIAT.has(give), tf = FIAT.has(get);
-    if (gf && tf) return mkEvent({ ...base, kind: Kind.INFO, note: `${base.note ? base.note + ' · ' : ''}Cambio tra valute (${give} → ${get}): nessun effetto sulle cripto` });
-    if (gf) return mkEvent({ ...base, ...fee, kind: Kind.BUY, asset: get, qty: getQty, value: giveQty, valueCcy: give });
-    if (tf) return mkEvent({ ...base, ...fee, kind: Kind.SELL, asset: give, qty: giveQty, value: getQty, valueCcy: get });
-    return mkEvent({ ...base, ...fee, kind: Kind.SWAP, asset: give, qty: giveQty, counterAsset: get, counterQty: getQty });
+    if (gf && tf) {
+      const hasFee = fee && fee.feeQty && fee.feeQty.gt(0);
+      const feeFiat = hasFee && FIAT.has(fee.feeAsset);
+      const out = [mkEvent({ ...base, kind: Kind.INFO, note: `${base.note ? base.note + ' · ' : ''}Cambio tra valute (${give} → ${get}): nessun effetto sulle cripto${feeFiat ? `; commissione in valuta (${fee.feeQty.toFixed()} ${fee.feeAsset}) senza effetto sulle cripto` : ''}` })];
+      if (hasFee && !feeFiat) out.push(mkEvent({ ...base, uid: `${base.uid}#fee`, kind: Kind.FEE, asset: fee.feeAsset, qty: fee.feeQty, note: `${base.note ? base.note + ' · ' : ''}Commissione pagata in ${fee.feeAsset} su un cambio tra valute` }));
+      return out;
+    }
+    if (gf) return [mkEvent({ ...base, ...fee, kind: Kind.BUY, asset: get, qty: getQty, value: giveQty, valueCcy: give })];
+    if (tf) return [mkEvent({ ...base, ...fee, kind: Kind.SELL, asset: give, qty: giveQty, value: getQty, valueCcy: get })];
+    return [mkEvent({ ...base, ...fee, kind: Kind.SWAP, asset: give, qty: giveQty, counterAsset: get, counterQty: getQty })];
   }
 
   function parse(raw, fileName) {
@@ -661,11 +876,17 @@
     const mkBase = (uid, ts, o) => ({ uid, ts: ts === null ? fallbackTs : new Date(ts), account, ...o });
     const dupe = new Set();
     const first = (k) => { if (dupe.has(k)) return false; dupe.add(k); rows++; return true; };
+    // data di inizio dello scarico: le altre fonti partono da li' (le finestre), le operazioni spot no (myTrades non si filtra per data)
+    const rangeFrom = isObject(raw.range) ? Date.parse(raw.range.from) : NaN;
+    const startMs = Number.isFinite(rangeFrom) ? rangeFrom : null;
 
     // ---- operazioni spot
     const sym = new Map();
     for (const s of listOf(raw.symbols, 'symbols')) if (isObject(s) && str(s.symbol)) sym.set(str(s.symbol), { base: upper(s.baseAsset || ''), quote: upper(s.quoteAsset || '') });
     if (raw.spotTrades !== undefined && !isObject(raw.spotTrades)) throw new FE('Dati Binance non validi: "spotTrades" non è un oggetto.');
+    // possibili doppioni: acquisti con carta che compaiono anche tra le operazioni spot o le conversioni (stessa funzione di sync)
+    const baseOfSym = (symbol) => { const x = sym.get(symbol); return x && x.base ? x.base : null; };
+    const payDupes = isObject(raw.fiatPayments) ? possibleDuplicates(raw.fiatPayments.buy, raw.spotTrades || {}, baseOfSym, raw.convert) : new Map();
     for (const symbol of Object.keys(raw.spotTrades || {}).sort()) {
       const info = sym.get(symbol);
       for (const r of listOf(raw.spotTrades[symbol], `spotTrades.${symbol}`)) {
@@ -676,15 +897,16 @@
         const base = mkBase(uid, ts, { ref: isObject(r) && idStr(r.orderId) ? idStr(r.orderId) : '', src: `${file}:${symbol}#${k}`, raw: r, note: `Spot ${symbol}` });
         const bad = (why) => unres(base, `Binance · operazione spot non interpretabile (${symbol})`, `Operazione spot ${symbol} non interpretabile: ${why}`);
         if (!isObject(r)) { bad('la riga non è un oggetto'); continue; }
+        if (ts !== null && startMs !== null && ts < startMs) { events.push(mkEvent({ ...base, kind: Kind.INFO, note: `Spot ${symbol}: operazione precedente alla data di inizio dello scarico (${dmy(startMs)}): non conteggiata` })); continue; }
         if (!info || !info.base || !info.quote) { unres(base, `Binance · coppia ${symbol} sconosciuta`, `Per la coppia ${symbol} mancano le valute (base/quota): non si può dire cosa è stato acquistato o venduto.`); continue; }
         const qty = dec(r.qty), quoteQty = dec(r.quoteQty), fee = dec(r.commission);
         const feeAsset = str(r.commissionAsset) ? upper(r.commissionAsset) : '';
         if (k === null || ts === null || !qty || !qty.gt(0) || !quoteQty || !quoteQty.gt(0) || typeof r.isBuyer !== 'boolean' || !fee || fee.lt(0)) { bad('mancano o non sono validi id, data, qty, quoteQty, isBuyer o commission'); continue; }
         if (fee.gt(0) && !feeAsset) { bad('commissione senza valuta'); continue; }
         const feeP = fee.gt(0) ? { feeAsset, feeQty: fee } : {};
-        events.push(r.isBuyer
+        events.push(...(r.isBuyer
           ? exchangeEvent(base, info.quote, quoteQty, info.base, qty, feeP)
-          : exchangeEvent(base, info.base, qty, info.quote, quoteQty, feeP));
+          : exchangeEvent(base, info.base, qty, info.quote, quoteQty, feeP)));
       }
     }
 
@@ -739,7 +961,7 @@
       if (status === 'FAIL') { events.push(mkEvent({ ...base, kind: Kind.INFO, note: 'Conversione fallita: ignorata' })); continue; }
       if (k === null || !from || !to || ts === null || !fromQty || !fromQty.gt(0) || !toQty || !toQty.gt(0)) { unres(base, 'Binance · conversione non interpretabile', 'Conversione non interpretabile: mancano o non sono validi id, valute, importi o data.'); continue; }
       if (status !== 'SUCCESS') { unres(base, `Binance · conversione con stato "${status}"`, `Conversione ${fromQty.toFixed()} ${from} → ${toQty.toFixed()} ${to} con stato "${status || 'mancante'}": non è chiaro se sia stata eseguita.`); continue; }
-      events.push(exchangeEvent(base, from, fromQty, to, toQty, {}));
+      events.push(...exchangeEvent(base, from, fromQty, to, toQty, {}));
     }
 
     // ---- dividendi, airdrop, premi
@@ -753,6 +975,11 @@
       const info = isObject(r) ? str(r.enInfo).slice(0, 120) : '';
       const base = mkBase(uid, ts, { ref: isObject(r) && idStr(r.tranId) ? idStr(r.tranId) : '', src: `${file}:dividendo`, raw: r, asset, note: info ? `Binance: ${info}` : 'Binance: dividendo/premio' });
       if (k === null || !asset || ts === null || !qty || !qty.gt(0)) { unres(base, 'Binance · dividendo non interpretabile', `Dividendo/premio non interpretabile: mancano o non sono validi id, asset, data o importo positivo${info ? ` ("${info}")` : ''}.`); continue; }
+      // "direction" compare nella specifica ufficiale senza descrizione: 1 = accredito e' l'unico valore ammesso, ogni altro e' "non riconosciuto"
+      if (isObject(r) && r.direction !== undefined && r.direction !== null && String(r.direction).trim() !== '1') {
+        unres(base, 'Binance · dividendo con direzione sconosciuta', `Dividendo/premio di ${qty.toFixed()} ${asset} con "direction" = ${String(r.direction).slice(0, 20)}: il significato non è documentato e potrebbe essere un addebito. Aggiungilo con il file.`);
+        continue;
+      }
       events.push(mkEvent({ ...base, kind: Kind.INCOME, qty, incomeType: 'other' }));
     }
 
@@ -775,7 +1002,7 @@
         const from = isObject(x) && str(x.fromAsset) ? upper(x.fromAsset) : '', to = isObject(x) && str(x.targetAsset) ? upper(x.targetAsset) : 'BNB';
         const qty = isObject(x) ? dec(x.amount) : null, got = isObject(x) ? dec(x.transferedAmount) : null;
         if (!from || dts === null || !qty || !qty.gt(0) || !got || !got.gt(0)) { unres(base, 'Binance · conversione di piccoli saldi non interpretabile', 'Conversione di piccoli saldi: mancano o non sono validi asset, importi o data.'); return; }
-        events.push(exchangeEvent(base, from, qty, to, got, {}));
+        events.push(...exchangeEvent(base, from, qty, to, got, {}));
       });
     }
 
@@ -796,7 +1023,19 @@
       if (PAYMENT_PENDING.has(status)) { unres(base, `Binance · acquisto con carta in corso (${str(r.status)})`, `Acquisto di ${qty.toFixed()} ${asset} ancora in elaborazione: rifai lo scarico a operazione conclusa, oppure ignoralo.`); continue; }
       if (status !== PAYMENT_OK) { unres(base, `Binance · acquisto con carta con stato "${str(r.status)}"`, `Acquisto di ${qty.toFixed()} ${asset} con uno stato sconosciuto ("${str(r.status)}").`); continue; }
       if (FIAT.has(asset)) { unres(base, 'Binance · acquisto con carta non interpretabile', `Acquisto con carta in cui l'asset ottenuto (${asset}) è una valuta.`); continue; }
-      // importo pagato = sourceAmount, commissione gia' compresa (ASSUNTO, vedi intestazione): nessuna commissione separata
+      // La commissione e' compresa in sourceAmount solo se il prezzo registrato da Binance e' (sourceAmount - totalFee) / obtainAmount
+      // (relazione dell'esempio dei riassunti della documentazione, NON verificato sulla fonte: 20,0 EUR, 0,2 di commissione,
+      // 4,462 LUNA, prezzo 4,437472): si controlla su OGNI acquisto e, se non torna, l'acquisto e' "non riconosciuto".
+      const fee = dec(r.totalFee), price = dec(r.price);
+      if (!fee || fee.lt(0)) { unres(base, 'Binance · acquisto con carta senza commissione valida', `Acquisto di ${qty.toFixed()} ${asset}: la commissione ("totalFee") manca o non è valida, quindi non si può dire quanto hai pagato in totale.`); continue; }
+      if (fee.gt(0)) {
+        const net = paid.minus(fee);
+        const coherent = price && price.gt(0) && net.gt(0) && price.minus(net.div(qty)).abs().div(price).times(4).lte(fee.div(paid));
+        if (!coherent) { unres(base, 'Binance · acquisto con carta: commissione non chiara', `Acquisto di ${qty.toFixed()} ${asset} per ${paid.toFixed()} ${fiat} con commissione ${fee.toFixed()}: il prezzo indicato da Binance non conferma che la commissione sia compresa nell'importo pagato, quindi il costo non è certo. Aggiungilo con il file.`); continue; }
+      }
+      // Binance non dice se un acquisto con carta compare ANCHE tra le operazioni spot o le conversioni: se c'e' una coincidenza
+      // (stessa cripto, stessa quantita', pochi minuti) il doppio conteggio e' probabile e il risultato NON e' definitivo
+      if (payDupes.has(k)) { unres(base, 'Binance · possibile doppione: acquisto con carta e operazione spot', `Acquisto di ${qty.toFixed()} ${asset} per ${paid.toFixed()} ${fiat}: nello stesso momento c'è ${payDupes.get(k)} di pari quantità, quindi potrebbe essere lo stesso acquisto contato due volte. Se è lo stesso acquisto, ignora questa riga (resta l'altra); se sono due acquisti diversi, aggiungi questo con il file.`); continue; }
       events.push(mkEvent({ ...base, kind: Kind.BUY, asset, qty, value: paid, valueCcy: fiat }));
     }
     for (const r of listOf(pay.sell, 'fiatPayments.sell')) {
@@ -825,7 +1064,7 @@
     options: [
       { key: 'quotes', label: 'Valute di quotazione da cercare nelle operazioni spot', placeholder: DEFAULT_QUOTES, default: DEFAULT_QUOTES, help: 'Binance non elenca le coppie in cui hai operato. Vengono cercate le coppie quotate in queste valute il cui asset compare nel tuo conto, più sempre tutte quelle in euro. Se hai usato altre valute (per esempio BUSD o TRY) aggiungile qui, separate da virgole.' },
       { key: 'extraSymbols', label: 'Coppie aggiuntive da cercare', placeholder: 'Per esempio: BTCBUSD, ADAEUR', help: 'Coppie scritte come le chiama Binance (senza trattini), separate da virgole. Servono per operazioni su coppie che il programma non cerca da solo. Le coppie ritirate da Binance non si possono interrogare.' },
-      { key: 'startDate', label: 'Data di inizio della ricerca', placeholder: DEFAULT_START, default: DEFAULT_START, help: 'Binance non dice da quando conserva lo storico. Si parte dal 1 luglio 2017 (avvio di Binance). Se hai aperto il conto dopo, indica qui la data di apertura (aaaa-mm-gg): lo scarico sarà molto più veloce.' },
+      { key: 'startDate', label: 'Data di inizio della ricerca', placeholder: DEFAULT_START, default: DEFAULT_START, help: 'Binance non dice da quando conserva lo storico. Si parte dal 1 luglio 2017 (avvio di Binance). Se hai aperto il conto dopo, indica qui la data di apertura (aaaa-mm-gg): lo scarico sarà molto più veloce. Vale per tutte le fonti: le operazioni spot precedenti a questa data non vengono conteggiate.' },
       { key: 'withdrawFee', label: 'L\'importo dei prelievi comprende già la commissione di rete? (sì/no)', placeholder: 'no', default: 'no', help: 'Binance non lo documenta. Con «no» la quantità uscita è importo + commissione. Cambia in «sì» solo se i trasferimenti verso un altro tuo conto risultano con una commissione doppia.' },
     ],
     help: [
@@ -837,13 +1076,15 @@
       'A scarico finito, elimina la chiave da Binance.',
     ],
     limits: [
-      'Operazioni spot: Binance non permette di sapere con quali coppie hai operato. Il programma cerca le coppie in euro e quelle quotate nelle valute scelte il cui asset risulta nel tuo conto, nei depositi, nei prelievi o nelle conversioni. Le coppie ritirate da Binance non si possono interrogare e un asset venduto per intero e mai depositato può sfuggire: confronta i saldi finali con quelli di Binance e integra con il file se manca qualcosa.',
+      'Operazioni spot: Binance non permette di sapere con quali coppie hai operato. Il programma cerca le coppie in euro, quelle che hanno una valuta come base (per esempio EUR/USDT) e quelle quotate nelle valute scelte il cui asset risulta nel tuo conto, nei depositi, nei prelievi o nelle conversioni. Le coppie ritirate da Binance non si possono interrogare e un asset venduto per intero e mai depositato può sfuggire: confronta i saldi finali con quelli di Binance e integra con il file se manca qualcosa.',
       'Non vengono scaricati: Simple Earn (interessi del Risparmio flessibile e bloccato), staking, Launchpool e Megadrop, margine, futures e opzioni, P2P, Binance Pay e Carta Binance, acquisti ricorrenti (Auto-Invest), prestiti, mining, NFT e sotto-conti. Vanno aggiunti con il file o con il modello universale.',
+      'Non vengono scaricate nemmeno le conversioni tra stablecoin (Convert Transfer, per esempio da o verso BUSD), che non compaiono tra le conversioni di Binance Convert ma cambiano i lotti, né Dual Investment, gift card e token a leva (BLVT): se li hai usati, aggiungili con il file, altrimenti i lotti delle stablecoin possono risultare sbagliati.',
       'Depositi e prelievi in euro (bonifico, carta) non vengono scaricati: non cambiano le plusvalenze e la richiesta di Binance è lentissima.',
       'Le conversioni di piccoli saldi in BNB sono disponibili solo dal 1 dicembre 2020.',
-      'Binance non dichiara quanto indietro conserva lo storico di depositi, prelievi e conversioni: per gli anni più vecchi il file con lo storico completo resta la via più sicura.',
+      'Binance non dichiara quanto indietro conserva lo storico di depositi, prelievi, conversioni, dividendi, piccoli saldi e acquisti con carta (per altri elenchi lo limita a pochi mesi) e un periodo troppo vecchio darebbe un elenco vuoto senza errori: per questo queste voci risultano sempre «Da integrare». Controlla le date e i saldi e, per gli anni più vecchi, usa il file con lo storico completo.',
+      'La data di inizio vale per tutte le fonti: le operazioni spot precedenti vengono scaricate (Binance non permette di filtrarle) ma non conteggiate.',
       'Prelievi: Binance non documenta se l\'importo comprende la commissione di rete; per impostazione predefinita si considera esclusa (vedi l\'opzione dedicata).',
-      'Acquisti con carta: la commissione è considerata già compresa nell\'importo pagato; le vendite verso carta o bonifico vengono segnalate come da controllare.',
+      'Acquisti con carta: si controlla acquisto per acquisto che la commissione sia compresa nell\'importo pagato (dal prezzo registrato da Binance); se non è chiaro l\'acquisto è segnalato come da controllare. Le vendite verso carta o bonifico vengono sempre segnalate come da controllare.',
       'Lo scarico può durare diversi minuti (Binance limita il numero di richieste): non chiudere la pagina.',
       'Sono supportate solo chiavi «generate dal sistema» (HMAC), non quelle Ed25519 o RSA.',
     ],

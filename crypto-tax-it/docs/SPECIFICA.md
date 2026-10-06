@@ -64,11 +64,16 @@ fonti consultate erano discordanti: vanno presi dalle istruzioni del modello.
 
 ## Cosa NON è incluso (ancora)
 
-- **API degli exchange**: la pagina di ogni piattaforma ha la sezione API, ma il collegamento non è attivo. Motivi: (1) dall'ambiente di sviluppo
-  non si raggiungono i server delle piattaforme, quindi nessun collegamento può essere provato; (2) uno storico incompleto darebbe imposte
-  sbagliate (le API limitano finestre temporali e prodotti); (3) i browser spesso bloccano le chiamate dirette (CORS) e dentro claude.ai
-  la pagina non può contattare siti esterni. Per attivarlo servono la versione pubblicata fuori da claude.ai e un test con chiavi di sola
-  lettura dell'utente, una piattaforma alla volta. Crypto.com App non ha comunque un'API pubblica. Per ora: export CSV/ZIP e modello universale.
+- **API degli exchange: sperimentali, mai provate con un account reale.** Esistono i collegamenti per Crypto.com Exchange, Bitpanda
+  e Binance (`app/src/api/`), costruiti sulla documentazione ufficiale e sulle librerie open source (le fonti e, per ogni punto, se è
+  *verificato* o *assunto* sono nel commento di testa di ogni modulo), verificati da agenti indipendenti e provati con reti simulate
+  (firma HMAC con vettori ufficiali, finestre e paginazione, rate limit, errori, record sconosciuti, scenario completo fino alla plusvalenza)
+  e in un browser reale con la rete simulata. Restano non verificabili da qui: se la piattaforma consente le chiamate dal browser (CORS),
+  la profondità storica dell'API, alcune semantiche non documentate (commissione nei prelievi, unità dei metalli). Regole: chiave di sola
+  lettura mai salvata né scritta negli errori; richiesta fallita = errore, mai dati parziali; ogni prodotto non scaricato (Earn, staking,
+  margine, azioni, conversioni tra stablecoin…) o storico di profondità ignota è «Da controllare» finché l'utente non aggiunge il file o
+  conferma; API e file sullo stesso periodo = blocco finché non si sceglie una fonte. Crypto.com App non ha un'API pubblica; Coinbase è
+  pianificato. La via più sicura per la dichiarazione resta il file con lo storico completo.
 - **Formati nativi di Binance e Coinbase**: non ancora validati; si usa il modello universale o si invia la diagnostica per farli aggiungere.
 - **PDF** come input: poco affidabili; si preferiscono CSV.
 - Azioni, ETF, obbligazioni, dividendi, IVAFE, imposta sulle transazioni finanziarie, forex.

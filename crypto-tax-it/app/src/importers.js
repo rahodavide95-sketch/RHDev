@@ -436,6 +436,6 @@
     return { headers: tbl.headers, headerLine: tbl.headerLine, rows: tbl.rows.length, categorical: cats };
   }
 
-  CT.importers = { TYPES, detectType, describeFile, parseNum, parseTs, splitPair, GENERIC_TEMPLATE, GENERIC_HEADERS, uidFactory };
+  CT.importers = { TYPES, detectType, describeFile, parseNum, parseTs, splitPair, GENERIC_TEMPLATE, GENERIC_HEADERS, uidFactory, finish, unresolved };
   if (typeof module !== 'undefined') module.exports = CT.importers;
 })();

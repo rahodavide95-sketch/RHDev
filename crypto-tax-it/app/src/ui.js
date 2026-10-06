@@ -107,7 +107,8 @@
   // ------------------------------------------------------------------ piattaforme e file
   const P = CT.PLATFORMS;
   const platformOfFile = (f) => f.platform || CT.platformOfType(f.type) || 'other';
-  const goPlatforms = () => { ui.tab = 'files'; ui.platform = null; render(); window.scrollTo(0, 0); };
+  const goPlatforms = () => { ui.tab = 'files'; ui.platform = null; ui.picker = false; render(); window.scrollTo(0, 0); };
+  const goAdd = () => { ui.tab = 'files'; ui.platform = null; ui.picker = true; render(); window.scrollTo(0, 0); };   // apre direttamente la scelta di un'altra piattaforma
   function ensurePlatform(k) { if (!Array.isArray(state.platforms)) state.platforms = []; if (!state.platforms.includes(k)) state.platforms.push(k); }
 
   const EXAMPLE_APP = `Timestamp (UTC),Transaction Description,Currency,Amount,To Currency,To Amount,Native Currency,Native Amount,Native Amount (in USD),Transaction Kind
@@ -151,6 +152,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       } catch (e) { failed.push(f.name); }
     }
     changed();
+    if (added) { ui.askMore = platformKey; render(); }
     toast(added ? `${added} file aggiunti${skipped.length ? ` · ${skipped.length} file dello zip non necessari ignorati` : ''}` : failed.length ? `Non riesco a leggere: ${failed.join(', ')}` : 'File già caricati');
   }
   function loadExample() {
@@ -170,69 +172,243 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     return { files, parsed, rows, unknown, errors, missing };
   }
 
-  // ------------------------------------------------------------------ pannello: Piattaforme (elenco)
+  // ------------------------------------------------------------------ icone
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  function svgIcon(paths) {
+    const el = document.createElementNS(SVG_NS, 'svg');
+    el.setAttribute('viewBox', '0 0 24 24'); el.setAttribute('fill', 'none'); el.setAttribute('stroke', 'currentColor');
+    el.setAttribute('stroke-width', '1.7'); el.setAttribute('stroke-linecap', 'round'); el.setAttribute('stroke-linejoin', 'round');
+    el.setAttribute('aria-hidden', 'true'); el.setAttribute('focusable', 'false');
+    for (const d of paths) { const pa = document.createElementNS(SVG_NS, 'path'); pa.setAttribute('d', d); el.appendChild(pa); }
+    return el;
+  }
+  const ICON_FILE = ['M7 3h7l4 4v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z', 'M14 3v4h4', 'M9 12h6', 'M9 16h6'];
+  const ICON_API = ['M9 3v5', 'M15 3v5', 'M7 8h10v3a5 5 0 0 1-10 0V8z', 'M12 16v5'];
+  function platIcon(k, small) {
+    const p = P[k];
+    return h('span', { class: `pico${small ? ' sm' : ''}`, style: `--h:${p.hue}`, 'aria-hidden': 'true' }, svgIcon(p.icon));
+  }
+  const toolIcon = (paths) => h('span', { class: 'pico', style: '--h:215', 'aria-hidden': 'true' }, svgIcon(paths));
+
+  // ------------------------------------------------------------------ pannello 1: le piattaforme aggiunte + scelta di una nuova
+  const isAdded = (k) => (state.platforms || []).includes(k) || platformStats(k).files.length > 0;
+
   function panelPlatforms() {
     const nodes = [];
-    nodes.push(h('div', { class: 'card' },
-      h('h2', null, 'Da quali piattaforme vuoi importare i dati?'),
-      h('p', { class: 'muted' }, 'Scegli una piattaforma, poi aggiungi i suoi file o, quando sarà disponibile, il collegamento API. Puoi aggiungerne quante vuoi: i trasferimenti tra le tue piattaforme vengono riconosciuti da soli.'),
-      !state.files.length ? h('div', { class: 'row' }, h('button', { class: 'btn', onclick: loadExample }, 'Prima vedi un esempio'), state.example ? null : null) : null));
-    nodes.push(h('div', { class: 'plats' }, Object.keys(P).map(platformCard)));
+    const addedKeys = Object.keys(P).filter(isAdded);
+    const free = Object.keys(P).filter((k) => !addedKeys.includes(k));
+    if (!addedKeys.length) {
+      nodes.push(h('div', { class: 'card' },
+        h('h2', null, 'Scegli la piattaforma da aggiungere'),
+        h('p', { class: 'muted' }, 'Scegli una piattaforma dall\'elenco, poi decidi se aggiungerla con i file o con le API. Dopo la prima potrai aggiungerne altre: i trasferimenti tra le tue piattaforme vengono riconosciuti da soli.'),
+        !state.files.length ? h('div', { class: 'row' }, h('button', { class: 'btn', onclick: loadExample }, 'Prima vedi un esempio')) : null));
+      nodes.push(pickerCard(free, false));
+    } else {
+      nodes.push(h('div', { class: 'card' },
+        h('div', { class: 'row between' },
+          h('div', null, h('h2', null, 'Le tue piattaforme'), h('p', { class: 'muted small' }, 'Solo quelle che hai scelto. Ognuna può avere più file e dati da API.')),
+          h('button', { class: 'btn primary', onclick: () => { ui.tab = ui.res && ui.res.groups.blockCount ? 'checks' : 'result'; render(); window.scrollTo(0, 0); } }, 'Continua: controlla e calcola'))));
+      nodes.push(h('ul', { class: 'plist' }, addedKeys.map(platformBlock)));
+      if (free.length) nodes.push(ui.picker ? pickerCard(free, true) : h('div', null, h('button', { class: 'btn', onclick: () => { ui.picker = true; render(); } }, '+ Aggiungi un\'altra piattaforma o wallet')));
+    }
     nodes.push(optionsCard());
     nodes.push(h('div', { class: 'row' },
       ui.confirmReset
         ? [h('span', { class: 'small' }, 'Cancellare tutte le piattaforme, i file, le scelte e i prezzi?'),
-          h('button', { class: 'btn danger', onclick: () => { state.files = []; state.manual = []; state.resolutions = {}; state.prices = {}; state.platforms = []; state.example = false; ui.confirmReset = false; ui.platform = null; changed('files'); toast('Dati cancellati'); } }, 'Sì, cancella tutto'),
+          h('button', { class: 'btn danger', onclick: () => { state.files = []; state.manual = []; state.resolutions = {}; state.prices = {}; state.platforms = []; state.example = false; ui.confirmReset = false; ui.platform = null; ui.picker = false; changed('files'); toast('Dati cancellati'); } }, 'Sì, cancella tutto'),
           h('button', { class: 'btn', onclick: () => { ui.confirmReset = false; render(); } }, 'Annulla')]
         : h('button', { class: 'btn quiet danger', onclick: () => { ui.confirmReset = true; render(); } }, 'Cancella tutti i dati salvati')));
     return h('div', { class: 'stack' }, nodes);
   }
 
-  function platformCard(k) {
-    const p = P[k], st = platformStats(k);
-    const added = (state.platforms || []).includes(k) || st.files.length > 0;
-    let status;
-    if (!added) status = h('p', { class: 'muted small' }, 'Non ancora aggiunta');
-    else if (!st.files.length) status = h('p', { class: 'small' }, 'Aggiunta · nessun file ancora');
-    else status = h('p', { class: 'small' }, `${st.files.length} ${st.files.length === 1 ? 'file' : 'file'} · ${st.rows} righe`,
-      st.unknown ? ` · ${st.unknown} da controllare` : '', st.errors ? ` · ${st.errors} con errori` : '',
-      p.kinds.length > 1 && st.missing.length ? ` · mancano: ${st.missing.map((m) => m.label).join(', ')}` : '');
-    return h('div', { class: `card pcard${added ? ' on' : ''}` },
-      h('h3', null, p.name), h('p', { class: 'muted small' }, p.blurb),
-      h('div', { class: 'row' },
-        h('span', { class: `pill ${p.native ? 'good' : 'idle'}` }, p.native ? 'File' : 'File (modello)'),
-        h('span', { class: 'pill idle' }, p.api.status === 'none' ? 'API: non disponibile' : 'API: in arrivo')),
-      status,
-      h('button', { class: `btn ${added ? '' : 'primary'}`, onclick: () => { ensurePlatform(k); ui.platform = k; ui.method = 'file'; save(); render(); window.scrollTo(0, 0); } }, added ? 'Apri' : 'Aggiungi'));
+  /** Elenco compatto di scelta: una riga con icona per ogni piattaforma non ancora aggiunta. Scegliere una riga la aggiunge. */
+  function pickerCard(keys, closable) {
+    return h('div', { class: 'card' },
+      h('div', { class: 'row between' },
+        h('h2', null, closable ? 'Quale vuoi aggiungere?' : 'Piattaforme e wallet'),
+        closable ? h('button', { class: 'btn quiet', onclick: () => { ui.picker = false; render(); } }, 'Chiudi') : null),
+      h('ul', { class: 'plist pick' }, keys.map((k) => h('li', null,
+        h('button', { class: 'pickrow', 'aria-label': `Aggiungi ${P[k].name}`, onclick: () => openPlatform(k) },
+          platIcon(k),
+          h('span', { class: 'ptxt' }, h('span', { class: 'pname' }, P[k].name), h('span', { class: 'muted small' }, P[k].blurb),
+            h('span', { class: 'chips' }, h('span', { class: `pill ${P[k].native ? 'good' : 'idle'}` }, P[k].native ? 'File' : 'File (modello)'), apiBadge(k))),
+          h('span', { class: 'chev', 'aria-hidden': 'true' }, '›'))))));
   }
 
-  // ------------------------------------------------------------------ pannello: una piattaforma
+  function apiBadge(k) {
+    const p = P[k], conn = CT.api && CT.api.forPlatform ? CT.api.forPlatform(k) : null;
+    if (p.api.status === 'none') return h('span', { class: 'pill idle' }, 'API: non disponibile');
+    return conn ? h('span', { class: 'pill warn' }, 'API: sperimentale') : h('span', { class: 'pill idle' }, 'API: in arrivo');
+  }
+
+  /** Blocco di una piattaforma gia' aggiunta. */
+  function platformBlock(k) {
+    const p = P[k], st = platformStats(k);
+    const status = !st.files.length ? h('span', { class: 'small' }, 'Nessun dato ancora: scegli come aggiungerlo')
+      : h('span', { class: 'small' }, `✓ ${st.files.length} ${st.files.length === 1 ? 'fonte' : 'fonti'} · ${st.rows} ${st.rows === 1 ? 'riga' : 'righe'}`,
+        st.unknown ? ` · ${st.unknown} da controllare` : '', st.errors ? ` · ${st.errors} con errori` : '',
+        p.kinds.length > 1 && st.missing.length ? ` · mancano: ${st.missing.map((m) => m.label).join(', ')}` : '');
+    return h('li', { class: 'prow on' },
+      platIcon(k),
+      h('div', { class: 'ptxt' }, h('span', { class: 'pname' }, p.name), status),
+      h('div', { class: 'pact' }, h('button', { class: 'btn', 'aria-label': `Apri ${p.name}`, onclick: () => openPlatform(k) }, st.files.length ? 'Apri' : 'Aggiungi dati')));
+  }
+
+  function openPlatform(k) {
+    ensurePlatform(k);
+    ui.platform = k; ui.picker = false;
+    // se l'API non c'e', l'unica strada e' il file: si seleziona da solo; altrimenti la scelta resta all'utente
+    ui.method = CT.api && CT.api.forPlatform && CT.api.forPlatform(k) ? null : 'file';
+    save(); render(); window.scrollTo(0, 0);
+  }
+
+  // ------------------------------------------------------------------ pannello 2: una piattaforma (scelta API o file)
+  function methodChoice(k) {
+    const p = P[k], a = p.api, conn = CT.api && CT.api.forPlatform ? CT.api.forPlatform(k) : null;
+    const apiOk = !!conn && a.status !== 'none';
+    const apiChip = a.status === 'none' ? h('span', { class: 'pill idle' }, 'Non disponibile') : conn ? h('span', { class: 'pill warn' }, 'Sperimentale') : h('span', { class: 'pill idle' }, 'In arrivo');
+    const apiDesc = a.status === 'none' ? a.text : conn ? 'Collegamento diretto con una chiave di sola lettura. Sperimentale: non ancora provato con un account reale.' : 'Non ancora disponibile: per ora usa i file.';
+    const opt = (m, icon, title, desc, chip, enabled) => h('button', { class: `opt${ui.method === m ? ' sel' : ''}`, disabled: !enabled, 'aria-pressed': ui.method === m ? 'true' : 'false', onclick: () => { ui.method = m; render(); } },
+      toolIcon(icon), h('div', { class: 'otxt' }, h('strong', null, title), h('span', { class: 'muted small' }, desc), chip ? h('span', { class: 'chips' }, chip) : null));
+    return h('div', { class: 'opts', role: 'group', 'aria-label': 'Come aggiungere i dati' },
+      opt('file', ICON_FILE, 'Con i file', 'Carica i file (CSV o .zip) scaricati dalla piattaforma. È la via più completa e verificabile.', p.native ? h('span', { class: 'pill good' }, 'Consigliato') : h('span', { class: 'pill idle' }, 'Modello universale'), true),
+      opt('api', ICON_API, 'Con le API', apiDesc, apiChip, apiOk));
+  }
+
+  function existingData(k, st) {
+    const apiFiles = st.files.filter((f) => String(f.type).startsWith('api_'));
+    const otherFiles = st.files.filter((f) => !String(f.type).startsWith('api_'));
+    if (!st.files.length) return h('p', { class: 'muted small' }, 'Scegli un metodo per continuare.');
+    return h('div', { class: 'stack', style: 'padding:0' },
+      otherFiles.length ? h('div', { class: 'card' }, h('h3', null, `File già aggiunti (${otherFiles.length})`), otherFiles.map((f) => fileRow(f, st.parsed.find((x) => x.file.id === f.id), k))) : null,
+      apiFiles.map((f) => apiDataCard(f)));
+  }
+
   function panelPlatform(k) {
     const p = P[k], st = platformStats(k);
-    const seg = h('div', { class: 'subtabs', role: 'group', 'aria-label': 'Come aggiungere i dati' },
-      [['file', 'Con i file'], ['api', 'Con le API']].map(([m, t]) => h('button', { class: 'chip', 'aria-pressed': ui.method === m ? 'true' : 'false', onclick: () => { ui.method = m; render(); } }, t)));
     const remove = ui.confirmRemove === k
-      ? h('span', { class: 'row' }, h('span', { class: 'small' }, 'Rimuovere la piattaforma e i suoi file?'),
+      ? h('span', { class: 'row' }, h('span', { class: 'small' }, 'Rimuovere la piattaforma e i suoi dati?'),
         h('button', { class: 'btn danger', onclick: () => { state.files = state.files.filter((f) => platformOfFile(f) !== k); state.platforms = (state.platforms || []).filter((x) => x !== k); ui.confirmRemove = null; ui.platform = null; changed('files'); toast('Piattaforma rimossa'); } }, 'Sì, rimuovi'),
         h('button', { class: 'btn', onclick: () => { ui.confirmRemove = null; render(); } }, 'Annulla'))
       : h('button', { class: 'btn quiet danger', onclick: () => { ui.confirmRemove = k; render(); } }, 'Rimuovi piattaforma');
     return h('div', { class: 'stack' },
       h('div', null, h('button', { class: 'btn quiet', onclick: goPlatforms }, '← Tutte le piattaforme')),
       h('div', { class: 'card' },
-        h('div', { class: 'row between' }, h('h2', null, p.name), remove),
-        h('p', { class: 'muted' }, p.blurb),
-        h('p', { class: 'lbl' }, 'Come vuoi aggiungere i dati?'), seg),
-      ui.method === 'api' ? apiPanel(k) : filePanel(k, st));
+        h('div', { class: 'row between' }, h('div', { class: 'row' }, platIcon(k), h('div', null, h('h2', null, p.name), h('p', { class: 'muted small' }, p.blurb))), remove),
+        h('h3', null, 'Come vuoi aggiungere i dati?'), methodChoice(k)),
+      ui.method === 'api' ? apiPanel(k) : ui.method === 'file' ? filePanel(k, st) : existingData(k, st));
+  }
+
+  // ------------------------------------------------------------------ finestra: "vuoi aggiungere altro?"
+  function askMoreModal() {
+    const k = ui.askMore;
+    if (!k || !P[k]) return null;
+    const p = P[k], st = platformStats(k);
+    const added = Object.keys(P).filter((x) => (state.platforms || []).includes(x) || platformStats(x).files.length > 0);
+    const blk = ui.res ? ui.res.groups.blockCount : 0;
+    const close = () => { ui.askMore = null; };
+    return h('div', { class: 'modal-back', onclick: (e) => { if (e.target === e.currentTarget) { close(); render(); } } },
+      h('div', { class: 'modal', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'askTitle' },
+        h('div', { class: 'row' }, platIcon(k),
+          h('div', null, h('h2', { id: 'askTitle' }, `${p.name}: dati aggiunti`),
+            h('p', { class: 'muted small' }, `${st.rows} ${st.rows === 1 ? 'riga letta' : 'righe lette'}${st.unknown ? ` · ${st.unknown} da controllare` : ''}${st.errors ? ` · ${st.errors} con errori` : ''}`))),
+        h('p', null, 'Vuoi aggiungere un altro wallet o un\'altra piattaforma?'),
+        added.length > 1 ? h('div', { class: 'chips' }, added.map((x) => h('span', { class: 'row', style: 'gap:6px' }, platIcon(x, true), h('span', { class: 'small' }, P[x].name)))) : null,
+        h('div', { class: 'btns' },
+          h('button', { class: 'btn primary', onclick: () => { close(); goAdd(); } }, 'Sì, aggiungi un\'altra piattaforma o wallet'),
+          h('button', { class: 'btn', onclick: () => { close(); ui.platform = null; ui.tab = blk ? 'checks' : 'result'; render(); window.scrollTo(0, 0); } }, 'No, continua: controlla e calcola'),
+          h('button', { class: 'btn quiet', onclick: () => { close(); render(); } }, `Resto su ${p.name}`))));
   }
 
   function apiPanel(k) {
+    const conn = CT.api && CT.api.forPlatform ? CT.api.forPlatform(k) : null;
+    if (conn) return connectorPanel(k, conn);
     const a = P[k].api;
-    return h('div', { class: `card tone-${a.status === 'none' ? 'warn' : 'warn'}` },
+    return h('div', { class: 'card tone-warn' },
       h('div', { class: 'row' }, h('h3', null, a.status === 'none' ? 'Nessuna API disponibile' : 'Collegamento API non ancora disponibile'),
         h('span', { class: `pill ${a.status === 'none' ? 'idle' : 'warn'}` }, a.status === 'none' ? 'Non esiste' : 'In arrivo')),
       h('p', { class: 'muted' }, a.text),
-      a.points.length ? h('ul', { class: 'clean muted small' }, a.points.map((t) => h('li', null, t))) : null,
+      a.points && a.points.length ? h('ul', { class: 'clean muted small' }, a.points.map((t) => h('li', null, t))) : null,
       h('div', { class: 'row' }, h('button', { class: 'btn primary', onclick: () => { ui.method = 'file'; render(); } }, 'Aggiungi i file')));
+  }
+
+  /** Collegamento API vero: le chiavi restano in memoria, non vengono mai salvate e vanno solo alla piattaforma. */
+  function connectorPanel(k, c) {
+    const p = P[k];
+    const existing = state.files.filter((f) => platformOfFile(f) === k && String(f.type).startsWith('api_'));
+    const inputs = {}, optInputs = {};
+    const fieldEls = c.fields.map((f) => {
+      const input = h('input', { type: f.secret ? 'password' : 'text', id: `api_${k}_${f.key}`, placeholder: f.placeholder || '', autocomplete: 'off', spellcheck: 'false' });
+      inputs[f.key] = input;
+      return h('label', { class: 'field' }, h('span', null, f.label), input);
+    });
+    const optEls = (c.options || []).map((o) => {
+      const input = h('input', { type: 'text', id: `api_${k}_opt_${o.key}`, placeholder: o.placeholder || '', value: o.default || '', autocomplete: 'off' });
+      optInputs[o.key] = input;
+      return h('label', { class: 'field' }, h('span', null, o.label), input, o.help ? h('span', { class: 'small muted' }, o.help) : null);
+    });
+    const status = h('div', { id: 'apiStatus', class: 'small', role: 'status', 'aria-live': 'polite' });
+    const btn = h('button', { class: 'btn primary', id: 'apiGo', onclick: () => runSync(k, c, inputs, optInputs, btn, status) }, existing.length ? 'Scarica di nuovo lo storico' : 'Collega e scarica lo storico');
+    return h('div', { class: 'stack', style: 'padding:0' },
+      h('div', { class: 'card tone-warn' },
+        h('div', { class: 'row' }, h('h3', null, `Collegamento API di ${p.name}`), h('span', { class: 'pill warn' }, 'Sperimentale')),
+        h('p', { class: 'muted' }, 'Costruito sulla documentazione ufficiale e provato solo su risposte simulate, non ancora con un account reale. Dopo il download controlla i saldi (scheda Dettaglio, Giacenze) e confrontali con la piattaforma. Per la dichiarazione il file con lo storico completo resta la via più sicura.')),
+      h('div', { class: 'card' }, h('h3', null, 'Come creare la chiave (solo lettura)'),
+        h('ol', { class: 'steps' }, c.help.map((x) => h('li', null, x))),
+        h('p', { class: 'small muted' }, `Non abilitare mai prelievi o trading. La chiave resta in questa pagina, non viene salvata e viene inviata solo a ${p.name}. A lavoro finito eliminala dalla piattaforma.`)),
+      h('div', { class: 'card' }, h('h3', null, 'Collega'),
+        h('div', { class: 'fields' }, fieldEls, optEls),
+        h('div', { class: 'row' }, btn), status),
+      existing.length ? existing.map((f) => apiDataCard(f)) : null,
+      h('details', { class: 'card' }, h('summary', null, 'Cosa non viene scaricato'), h('ul', { class: 'clean muted' }, c.limits.map((x) => h('li', null, x)))));
+  }
+
+  function apiDataCard(f) {
+    const info = f.api || { coverage: [], warnings: [] };
+    const rows = (info.coverage || []).map((c) => h('tr', null,
+      h('td', null, c.what), h('td', { class: 'num' }, c.count === undefined ? '' : c.count),
+      h('td', null, c.from ? `${dmy(CT.taxDate(new Date(c.from)))} - ${c.to ? dmy(CT.taxDate(new Date(c.to))) : ''}` : ''),
+      h('td', null, c.complete === false ? h('span', { class: 'pill warn' }, 'Da integrare') : h('span', { class: 'pill good' }, 'Completo')),
+      h('td', { class: 'small muted' }, c.note || '')));
+    return h('div', { class: 'card' }, h('h3', null, 'Dati scaricati'),
+      h('p', { class: 'muted small' }, f.name + (f.disabled ? ' · disattivati (non conteggiati)' : '')),
+      rows.length ? h('div', { class: 'tbl-wrap' }, h('table', null, h('thead', null, h('tr', null, ['Cosa', 'Righe', 'Periodo', 'Stato', 'Note'].map((x) => h('th', null, x)))), h('tbody', null, rows))) : null,
+      info.warnings && info.warnings.length ? h('ul', { class: 'clean small' }, info.warnings.map((w) => h('li', null, w))) : null,
+      h('div', { class: 'row' },
+        h('button', { class: 'btn quiet', onclick: () => { f.disabled = !f.disabled; changed(); } }, f.disabled ? 'Riattiva' : 'Disattiva'),
+        h('button', { class: 'btn quiet danger', onclick: () => { state.files = state.files.filter((y) => y.id !== f.id); changed(); toast('Dati API rimossi'); } }, 'Rimuovi i dati API')));
+  }
+
+  async function runSync(k, c, inputs, optInputs, btn, statusEl) {
+    const creds = {};
+    for (const f of c.fields) creds[f.key] = inputs[f.key].value.trim();
+    if (c.fields.some((f) => !creds[f.key])) { toast('Compila tutte le chiavi richieste'); return; }
+    const options = {};
+    for (const o of c.options || []) options[o.key] = (optInputs[o.key].value || '').trim() || o.default || '';
+    const say = (m, bad) => { statusEl.textContent = m; statusEl.className = 'small' + (bad ? ' err' : ''); };
+    btn.disabled = true;
+    say('Mi collego…');
+    try {
+      const out = await c.sync(creds, { onProgress: (m) => say(m), options });
+      for (const f of c.fields) inputs[f.key].value = '';           // le chiavi non restano nemmeno nei campi
+      state.files = state.files.filter((f) => !(platformOfFile(f) === k && String(f.type).startsWith('api_')));
+      const t = new Date();
+      state.files.push({
+        id: uid(), platform: k, type: 'api_' + c.id, account: '', text: JSON.stringify(out.raw),
+        name: `${P[k].name} · dati da API · ${t.toLocaleDateString('it-IT')} ${t.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}`,
+        api: { coverage: out.coverage || [], warnings: out.warnings || [], fetchedAt: (out.raw && out.raw.fetchedAt) || t.toISOString() },
+      });
+      ensurePlatform(k);
+      changed();
+      ui.askMore = k; render();
+      toast('Storico scaricato: controlla il riepilogo qui sotto');
+    } catch (e) {
+      if (!(e instanceof CT.ApiError)) console.error(e);
+      btn.disabled = false;
+      say(e instanceof CT.ApiError ? e.message : `Errore imprevisto: ${e.message}`, true);
+      const diag = JSON.stringify({ piattaforma: k, codice: e.code || 'imprevisto', messaggio: e.message, dettaglio: e.detail || {} }, null, 2);
+      statusEl.append(' ', h('button', { class: 'btn quiet', onclick: () => copyText(diag, 'Diagnostica dell\'errore') }, 'Copia diagnostica dell\'errore'));
+    }
   }
 
   function filePanel(k, st) {
@@ -263,7 +439,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
         st.files.map((f) => fileRow(f, st.parsed.find((x) => x.file.id === f.id), k))));
       nodes.push(h('div', { class: 'row' },
         h('button', { class: 'btn primary', onclick: () => { ui.platform = null; ui.tab = ui.res && ui.res.groups.blockCount ? 'checks' : 'result'; render(); window.scrollTo(0, 0); } }, 'Continua: controlla e calcola'),
-        h('button', { class: 'btn', onclick: goPlatforms }, 'Aggiungi un\'altra piattaforma')));
+        h('button', { class: 'btn', onclick: goAdd }, 'Aggiungi un\'altra piattaforma')));
     }
     if (p.manual) nodes.push(manualCard());
     nodes.push(h('details', { class: 'card' }, h('summary', null, 'Cosa viene letto e cosa no'), h('ul', { class: 'clean muted' }, p.limits.map((x) => h('li', null, x)))));
@@ -274,16 +450,18 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     const plat = P[k];
     const meta = [];
     let chip, warn = null;
-    if (!x) chip = h('span', { class: 'pill idle' }, '…');
+    const isApi = String(f.type).startsWith('api_');
+    if (f.disabled) chip = h('span', { class: 'pill idle' }, 'Disattivato: non conteggiato');
+    else if (!x) chip = h('span', { class: 'pill idle' }, '…');
     else if (!x.ok) chip = h('span', { class: 'pill bad' }, x.error);
     else {
       const r = x.result;
       meta.push(h('span', null, `${r.rows} righe`));
       if (r.from) meta.push(h('span', null, `dal ${dmy(CT.taxDate(r.from))} al ${dmy(CT.taxDate(r.to))}`));
       const unk = r.unknown.reduce((a, u) => a + u.count, 0);
-      chip = unk ? h('span', { class: 'pill warn' }, `${unk} righe da controllare`) : h('span', { class: 'pill good' }, 'Letto correttamente');
+      chip = unk ? h('span', { class: 'pill warn' }, `${unk} ${unk === 1 ? 'riga da controllare' : 'righe da controllare'}`) : h('span', { class: 'pill good' }, 'Letto correttamente');
     }
-    if (f.type && !plat.types.includes(f.type)) {
+    if (f.type && !plat.types.includes(f.type) && !isApi) {
       const other = CT.platformOfType(f.type);
       warn = h('div', { class: 'row' }, h('span', { class: 'pill warn' }, `Sembra un export di ${P[other].name}`),
         h('button', { class: 'btn', onclick: () => { f.platform = other; ensurePlatform(other); changed(); toast(`Spostato su ${P[other].name}`); } }, `Spostalo su ${P[other].name}`));
@@ -292,11 +470,13 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       h('option', { value: '' }, 'Scegli il tipo di file…'),
       plat.kinds.map((kd) => h('option', { value: kd.type, selected: f.type === kd.type }, kd.label)),
       f.type && !plat.types.includes(f.type) ? h('option', { value: f.type, selected: true }, CT.importers.TYPES[f.type].label) : null);
-    const needsDiag = x && (!x.ok || x.result.unknown.length);
+    const needsDiag = x && !f.disabled && (!x.ok || x.result.unknown.length);
+    const selOrApi = isApi ? h('span', { class: 'pill idle' }, 'Dati da API') : sel;
     return h('div', { class: 'file' },
-      h('div', null, h('div', { class: 'name' }, f.name), h('div', { class: 'meta' }, meta), h('div', { class: 'row', style: 'margin-top:8px' }, sel, chip), warn ? h('div', { style: 'margin-top:8px' }, warn) : null),
+      h('div', null, h('div', { class: 'name' }, f.name), h('div', { class: 'meta' }, meta), h('div', { class: 'row', style: 'margin-top:8px' }, selOrApi, chip), warn ? h('div', { style: 'margin-top:8px' }, warn) : null),
       h('div', { class: 'row' },
         needsDiag ? h('button', { class: 'btn quiet', onclick: () => copyText(R.diagnostics(ui.res, [f]), 'Diagnostica') }, 'Copia diagnostica') : null,
+        h('button', { class: 'btn quiet', onclick: () => { f.disabled = !f.disabled; changed(); } }, f.disabled ? 'Riattiva' : 'Disattiva'),
         h('button', { class: 'btn quiet danger', onclick: () => { state.files = state.files.filter((y) => y.id !== f.id); changed(); } }, 'Rimuovi')));
   }
 
@@ -390,7 +570,31 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
         h('div', { class: 'fields' }, cost.el, when.el),
         h('div', { class: 'row' },
           h('button', { class: 'btn primary', onclick: () => { const v = needNumber(cost.input.value, 'il costo'); if (v) resolve(i.uid, { action: 'cover_cost', cost_eur: v, acquired: when.input.value || undefined }, 'Costo salvato'); } }, 'Salva il costo'),
-          h('button', { class: 'btn', onclick: goPlatforms }, 'Aggiungi altri file'))));
+          h('button', { class: 'btn', onclick: goAdd }, 'Aggiungi altri file'))));
+    }
+    for (const i of g.overlap) {
+      const pk = i.data.platform;
+      out.push(issueCard('bad', `${P[pk].name}: dati API e file sullo stesso periodo`,
+        'Le stesse operazioni verrebbero contate due volte. Scegli quale fonte tenere: l\'altra viene disattivata, non cancellata.',
+        h('div', { class: 'row' },
+          h('button', { class: 'btn primary', onclick: () => { state.files.forEach((f) => { if (i.data.fileIds.includes(f.id)) f.disabled = true; }); changed(); toast('Uso i dati API: i file sono disattivati'); } }, 'Tieni i dati API'),
+          h('button', { class: 'btn', onclick: () => { state.files.forEach((f) => { if (i.data.apiIds.includes(f.id)) f.disabled = true; }); changed(); toast('Uso i file: i dati API sono disattivati'); } }, 'Tieni i file'))));
+    }
+    if (g.apiIncomplete.length > 1) {
+      out.push(issueCard('bad', `${g.apiIncomplete.length} tipi di dati non scaricati dalle API`,
+        'Le API non scaricano tutto. Per ognuno qui sotto aggiungi il file della piattaforma oppure conferma di non avere operazioni di quel tipo. Se le conosci già tutte puoi confermarle insieme.',
+        h('ul', { class: 'clean muted small' }, g.apiIncomplete.map((i) => h('li', null, `${P[i.data.platform].name}: ${i.data.what}`))),
+        h('div', { class: 'row' },
+          h('button', { class: 'btn primary', onclick: () => { g.apiIncomplete.forEach((i) => { state.resolutions[i.uid] = { action: 'ack' }; }); changed(); toast('Annotato: nessuna operazione di questi tipi'); } }, `Non ho operazioni di nessuno di questi tipi (${g.apiIncomplete.length})`),
+          h('button', { class: 'btn', onclick: goPlatforms }, 'Ne ho: aggiungo il file'))));
+    }
+    for (const i of g.apiIncomplete.length > 1 ? [] : g.apiIncomplete) {   // con più voci basta la scheda unica sopra
+      out.push(issueCard('bad', `${P[i.data.platform].name} (API): ${i.data.what}`,
+        i.data.note || 'Questo tipo di dati non viene scaricato dall\'API oppure lo storico potrebbe essere incompleto.',
+        h('p', { class: 'small muted' }, 'Per essere sicuro aggiungi anche il file di questa piattaforma, oppure conferma di non avere operazioni di questo tipo.'),
+        h('div', { class: 'row' },
+          h('button', { class: 'btn primary', onclick: () => { ui.platform = i.data.platform; ui.method = 'file'; ui.tab = 'files'; render(); window.scrollTo(0, 0); } }, 'Aggiungi il file'),
+          h('button', { class: 'btn', onclick: () => resolve(i.uid, { action: 'ack' }, 'Annotato: nessuna operazione di questo tipo') }, 'Non ho operazioni di questo tipo'))));
     }
     for (const u of g.unknown.values()) {
       const ex = u.items.slice(0, 3).map((i) => i.message);
@@ -684,7 +888,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       : blk ? h('button', { class: 'pill warn', onclick: () => { ui.tab = 'checks'; render(); } }, `Bozza · ${blk} da controllare`) : h('span', { class: 'pill good' }, 'Pronto');
     const yearSel = h('select', { id: 'yearSel', 'aria-label': 'Anno d\'imposta', onchange: (e) => { state.settings.year = +e.target.value; changed(); } },
       CT.tax.YEARS.map((y) => h('option', { value: y, selected: state.settings.year === y }, y)));
-    const nav = h('nav', { class: 'nav', role: 'tablist' }, TABS.map(([k, t], i) => h('button', { class: 'tab', role: 'tab', 'aria-selected': ui.tab === k ? 'true' : 'false', onclick: () => { ui.tab = k; render(); window.scrollTo(0, 0); } },
+    const nav = h('nav', { class: 'nav', role: 'tablist' }, TABS.map(([k, t], i) => h('button', { class: 'tab', role: 'tab', 'aria-selected': ui.tab === k ? 'true' : 'false', onclick: () => { ui.tab = k; if (k === 'files') ui.platform = null; render(); window.scrollTo(0, 0); } },
       h('span', { class: 'n' }, i + 1), t,
       k === 'checks' && blk ? h('span', { class: 'badge' }, blk) : null, k === 'prices' && missing ? h('span', { class: 'badge' }, missing) : null)));
     const panel = { files: () => (ui.platform ? panelPlatform(ui.platform) : panelPlatforms()), checks: panelChecks, result: panelResult, detail: panelDetail, prices: panelPrices, export: panelExport }[ui.tab]();
@@ -694,11 +898,14 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
         h('div', { class: 'top-in' }, h('div', null, h('div', { class: 'brand-name' }, 'Dichiarazione Crypto'), h('div', { class: 'brand-sub' }, 'Cripto e oro · redditi diversi · quadri RT e RW')),
           h('div', { class: 'top-ctl' }, h('label', { class: 'lbl', for: 'yearSel' }, 'Anno d\'imposta'), yearSel, status)), nav)),
       h('main', { class: 'wrap', id: 'main' }, panel),
-      ui.toast ? h('div', { class: 'toast', role: 'status' }, ui.toast) : null].filter(Boolean));
+      ui.toast ? h('div', { class: 'toast', role: 'status' }, ui.toast) : null, askMoreModal()].filter(Boolean));
     window.scrollTo(0, scrollY);
+    const mf = root.querySelector('.modal .btn.primary');
+    if (mf) mf.focus();
   }
 
   async function start() {
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && ui.askMore) { ui.askMore = null; render(); } });
     await load();
     recompute();
     if (state.files.length && ui.res) ui.tab = ui.res.groups.blockCount ? 'checks' : 'result';

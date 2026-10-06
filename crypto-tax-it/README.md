@@ -12,7 +12,7 @@ leggono i risultati. È un'unica pagina web: **nessuna installazione, nessun ser
 ## Come si usa
 
 1. Apri `index.html` (doppio clic) oppure il link della pagina pubblicata.
-2. **Piattaforme**: scegli la piattaforma (Crypto.com App o Exchange, Bitpanda, Binance, Coinbase, altra o wallet personale) e poi aggiungi i suoi dati: nella pagina della piattaforma trovi le istruzioni per scaricare i file, i file che servono e la sezione API. Trascini i CSV (o direttamente lo .zip) e il tipo viene riconosciuto da solo; se un file è di un'altra piattaforma lo segnala e lo sposta.
+2. **Piattaforme**: scegli la piattaforma dall'elenco (Crypto.com App o Exchange, Bitpanda, Binance, Coinbase, altra o wallet personale), poi decidi se aggiungerla **con i file** (CSV o .zip: il tipo viene riconosciuto da solo; se un file è di un'altra piattaforma lo segnala e lo sposta) **o con le API** (chiave di sola lettura). Dopo il primo inserimento il programma ti chiede se vuoi aggiungere un altro wallet o un'altra piattaforma.
 3. **Da controllare**: il programma non indovina; ti chiede solo ciò che non può sapere (dove sono finite delle
    crypto uscite, a che costo hai preso quelle arrivate da fuori, righe di tipo sconosciuto, prezzi mancanti).
 4. **Risultato**: imposta stimata, quadro RT per cripto e oro, prospetto RW, confronto tra anni.
@@ -22,7 +22,7 @@ Il lavoro si salva da solo nel browser; si può anche salvare/riaprire come file
 
 **Fuori da claude.ai:** nella scheda Documenti il pulsante "Scarica il programma per il computer" salva un unico file .html che si apre con un doppio clic, anche senza internet.
 
-**API:** per ora ogni piattaforma si aggiunge con i file. Il collegamento API non è attivo: va costruito e provato con un account reale (dall'ambiente di sviluppo non si raggiungono i server delle piattaforme) e, dentro claude.ai, la pagina non può comunque collegarsi a siti esterni. Vedi `docs/SPECIFICA.md`.
+**API (sperimentali):** Crypto.com Exchange, Bitpanda e Binance si possono collegare con una chiave di sola lettura (la chiave resta nel browser, non viene salvata e viene inviata solo alla piattaforma). I collegamenti sono costruiti sulla documentazione ufficiale e provati su risposte **simulate**, non con un account reale: dall'ambiente di sviluppo non si raggiungono i server delle piattaforme. Inoltre i browser possono bloccare le chiamate dirette (CORS) e dentro claude.ai la pagina non può collegarsi a siti esterni: in quel caso si usano i file. Ciò che l'API non scarica (Earn, staking, margine, azioni…) compare in **Da controllare** finché non aggiungi il file o confermi di non avere operazioni di quel tipo; se API e file coprono lo stesso periodo il programma ti fa scegliere una sola fonte. Crypto.com App non ha un'API pubblica. Dettagli e limiti in `docs/SPECIFICA.md`.
 
 ## Attenzione: questo repository pubblica su GitHub Pages
 

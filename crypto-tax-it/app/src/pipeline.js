@@ -51,21 +51,62 @@
     for (const [k, v] of Object.entries(prices)) { const [sym, day] = k.split('|'); if (v !== '' && v !== null) pb.setManual(sym, day, v); }
     const engine = new CT.Engine({ rebase2025: !!settings.rebase2025, resolutions, prices: pb }).run(events);
     if (duplicates) engine.issue('info', 'duplicates', '', `${duplicates} righe presenti in più file (periodi sovrapposti) sono state contate una sola volta.`);
+    apiIssues(engine, parsed, resolutions);
     const years = CT.tax.computeYears(engine, { toYear: year, useCarry: settings.useCarry !== false });
     const y = years[year];
     const rw = CT.computeRW(engine, year, y.rule);
     return { year, parsed, events, engine, years, y, rw, groups: groupIssues(engine), balances: balancesAt(engine, `${year}-12-31`) };
   }
 
+  /** Problemi propri dei dati da API: copertura incompleta e fonti sovrapposte (API + file). */
+  function apiIssues(engine, parsed, resolutions) {
+    const PL = CT.PLATFORMS || {};
+    const name = (k) => (PL[k] && PL[k].name) || k;
+    for (const x of parsed) {
+      const f = x.file;
+      if (!f.api || !Array.isArray(f.api.coverage)) continue;
+      for (const c of f.api.coverage) {
+        if (c.complete !== false) continue;
+        const key = `api_cov:${f.platform}:${c.what}`;
+        const ack = resolutions[key] && resolutions[key].action === 'ack';
+        engine.issue(ack ? 'info' : 'block', 'api_incomplete', key,
+          `${name(f.platform)} (API): ${c.what}${c.note ? ' - ' + c.note : ': non scaricato o storico possibilmente incompleto'}`,
+          { platform: f.platform, what: c.what, note: c.note || '' });
+      }
+    }
+    const byPlat = new Map();
+    for (const x of parsed) {
+      if (!x.ok || !x.result.from) continue;
+      const k = x.file.platform || (CT.platformOfType && CT.platformOfType(x.file.type));
+      if (!k) continue;
+      if (!byPlat.has(k)) byPlat.set(k, { api: [], files: [] });
+      byPlat.get(k)[String(x.file.type).startsWith('api_') ? 'api' : 'files'].push(x);
+    }
+    for (const [k, g] of byPlat) {
+      const apiIds = new Set(), fileIds = new Set();
+      for (const a of g.api) for (const b of g.files) {
+        const day = (d) => CT.taxDate(d);   // i periodi si confrontano per giorno: basta un giorno in comune
+        if (day(a.result.from) <= day(b.result.to) && day(b.result.from) <= day(a.result.to)) { apiIds.add(a.file.id); fileIds.add(b.file.id); }
+      }
+      if (apiIds.size) {
+        engine.issue('block', 'source_overlap', `overlap:${k}`,
+          `${name(k)}: i dati da API e i file coprono lo stesso periodo, quindi le operazioni verrebbero contate due volte.`,
+          { platform: k, apiIds: [...apiIds], fileIds: [...fileIds] });
+      }
+    }
+  }
+
   /** Raggruppa i problemi per la schermata "Da controllare". */
   function groupIssues(engine) {
-    const g = { transferOut: [], transferIn: [], history: [], unknown: new Map(), prices: new Map(), outOfScope: [], notes: [], blockCount: 0 };
+    const g = { transferOut: [], transferIn: [], history: [], unknown: new Map(), prices: new Map(), outOfScope: [], notes: [], apiIncomplete: [], overlap: [], blockCount: 0 };
     const seenPrice = new Set();
     for (const i of engine.issues) {
       if (i.level === 'block') {
         if (i.code === 'transfer_out_unmatched') g.transferOut.push(i);
         else if (i.code === 'transfer_in_unmatched') g.transferIn.push(i);
         else if (i.code === 'missing_history') g.history.push(i);
+        else if (i.code === 'api_incomplete') g.apiIncomplete.push(i);
+        else if (i.code === 'source_overlap') g.overlap.push(i);
         else if (i.code === 'unrecognized_row') {
           const k = i.data.key || 'Riga non riconosciuta';
           if (!g.unknown.has(k)) g.unknown.set(k, { key: k, items: [] });
@@ -77,7 +118,7 @@
       } else if (i.code === 'out_of_scope') g.outOfScope.push(i);
       else g.notes.push(i);
     }
-    g.blockCount = g.transferOut.length + g.transferIn.length + g.history.length +
+    g.blockCount = g.transferOut.length + g.transferIn.length + g.history.length + g.apiIncomplete.length + g.overlap.length +
       [...g.unknown.values()].length + (g.prices.size ? 1 : 0) + g.notes.filter((i) => i.level === 'block').length;
     return g;
   }

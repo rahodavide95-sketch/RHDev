@@ -286,8 +286,15 @@
           this.issue('info', 'stable_swap', e.uid, `Scambio tra stablecoin ${e.asset}→${e.counterAsset}: trattato come permuta imponibile (scelta prudenziale).`);
         }
         this.move(e, e.account, e.asset, e.qty.neg(), v);
-        if (taxDate(e.ts) < NEW_REGIME_DAY) {
-          // Prima del 2023 la permuta cripto-cripto non era un realizzo: il costo si trasferisce al nuovo asset.
+        // conversione di saldo (cambio di nome o migrazione di un token): dal 2023 serve una scelta dell'utente
+        const convChoice = e.conv ? (this.opts.resolutions[e.uid] || {}).action : null;
+        if (e.conv && taxDate(e.ts) >= NEW_REGIME_DAY && convChoice !== 'migration' && convChoice !== 'swap') {
+          this.issue('block', 'conversion_pending', e.uid,
+            `Conversione di saldo del ${it(taxDate(e.ts))}: ${CT.fq(e.qty)} ${e.asset} → ${CT.fq(e.counterQty)} ${e.counterAsset}`,
+            { asset: e.asset, counter: e.counterAsset, qty: e.qty, counterQty: e.counterQty, day: taxDate(e.ts), account: e.account });
+        }
+        if (taxDate(e.ts) < NEW_REGIME_DAY || convChoice === 'migration') {
+          // Prima del 2023 la permuta cripto-cripto non era un realizzo (e una migrazione di token non lo e'): il costo si trasferisce al nuovo asset.
           const { uses, short } = this.pool(e.asset).consume(e.qty);
           let cost = uses.reduce((s, u) => s.plus(u.cost), ZERO);
           if (short.gt(0)) this.issue('block', 'missing_history', e.uid, `Permuta di ${CT.fq(e.qty)} ${e.asset} del ${it(taxDate(e.ts))}: mancano ${CT.fq(short)} negli acquisti caricati.`, { asset: e.asset, qty: short, day: taxDate(e.ts), account: e.account });

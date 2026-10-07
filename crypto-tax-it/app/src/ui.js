@@ -588,6 +588,33 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
           h('button', { class: 'btn primary', onclick: () => { g.apiIncomplete.forEach((i) => { state.resolutions[i.uid] = { action: 'ack' }; }); changed(); toast('Annotato: nessuna operazione di questi tipi'); } }, `Non ho operazioni di nessuno di questi tipi (${g.apiIncomplete.length})`),
           h('button', { class: 'btn', onclick: goPlatforms }, 'Ne ho: aggiungo il file'))));
     }
+    if (g.conversions.length) {
+      const setAll = (action, msg) => { g.conversions.forEach((i) => { state.resolutions[i.uid] = { action }; }); changed(); toast(msg); };
+      if (g.conversions.length > 1) {
+        out.push(issueCard('bad', `${g.conversions.length} conversioni di saldo da classificare`,
+          'Crypto.com ha convertito da solo alcuni tuoi saldi in un altro token (per esempio quando un token cambia nome o viene aggiornato). Se è un aggiornamento 1 a 1 dello stesso token non è una vendita: nessuna tassa e il costo di acquisto passa al nuovo token. Se invece lo consideri uno scambio tra cripto diverse, è una vendita imponibile.',
+          h('ul', { class: 'clean muted small' }, g.conversions.map((i) => h('li', null, i.message))),
+          h('div', { class: 'row' },
+            h('button', { class: 'btn primary', onclick: () => setAll('migration', 'Trattate come aggiornamento del token') }, 'Sono tutti aggiornamenti dello stesso token'),
+            h('button', { class: 'btn', onclick: () => setAll('swap', 'Trattate come scambi imponibili') }, 'Trattali tutti come scambi imponibili'))));
+      } else {
+        const i = g.conversions[0];
+        out.push(issueCard('bad', i.message,
+          'Crypto.com ha convertito da solo questo saldo in un altro token. Se è un aggiornamento 1 a 1 dello stesso token (cambio di nome o migrazione) non è una vendita: nessuna tassa e il costo di acquisto passa al nuovo token. Se lo consideri uno scambio tra cripto diverse, è una vendita imponibile.',
+          h('div', { class: 'row' },
+            h('button', { class: 'btn primary', onclick: () => resolve(i.uid, { action: 'migration' }, 'Trattata come aggiornamento del token') }, 'È un aggiornamento dello stesso token'),
+            h('button', { class: 'btn', onclick: () => resolve(i.uid, { action: 'swap' }, 'Trattata come scambio imponibile') }, 'Trattala come scambio imponibile'))));
+      }
+    }
+    for (const i of g.nearDup) {
+      const d = i.data;
+      out.push(issueCard('bad', `Sembra la stessa operazione in due file (${d.count})`,
+        `In «${d.nameA}» e in «${d.nameB}» ci sono operazioni con la stessa data (entro 5 minuti), lo stesso asset e la stessa quantità. Di solito sono le stesse operazioni esportate due volte (per esempio l'export «contanti» e quello «criptovaluta»): se le contassi due volte, acquisti e vendite risulterebbero doppi.`,
+        h('ul', { class: 'clean muted small' }, d.examples.map((m) => h('li', null, m))),
+        h('div', { class: 'row' },
+          h('button', { class: 'btn primary', onclick: () => resolve(i.uid, { action: 'dup_skip' }, 'Contate una volta sola') }, 'Sono le stesse: contale una volta'),
+          h('button', { class: 'btn', onclick: () => resolve(i.uid, { action: 'ack' }, 'Annotato: sono operazioni diverse') }, 'Sono diverse: tienile tutte'))));
+    }
     for (const i of g.apiIncomplete.length > 1 ? [] : g.apiIncomplete) {   // con più voci basta la scheda unica sopra
       out.push(issueCard('bad', `${P[i.data.platform].name} (API): ${i.data.what}`,
         i.data.note || 'Questo tipo di dati non viene scaricato dall\'API oppure lo storico potrebbe essere incompleto.',
@@ -607,7 +634,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     }
     if (g.prices.size || [...res.engine.missingPrices.keys()].length) {
       const n = res.engine.missingPrices.size;
-      out.push(issueCard('bad', `Mancano ${n} prezzi in euro`, 'Servono per valorizzare gli scambi e per il prospetto del monitoraggio (valore al 1° gennaio e al 31 dicembre).',
+      out.push(issueCard('bad', `Mancano ${n} prezzi in euro`, 'Servono soprattutto al prospetto del monitoraggio (RW: valore delle cripto al 1° gennaio e al 31 dicembre) e a valorizzare qualche operazione. Di solito basta premere «Scarica i prezzi in automatico».',
         h('div', { class: 'row' }, h('button', { class: 'btn primary', onclick: () => { ui.tab = 'prices'; render(); } }, 'Inserisci i prezzi'))));
     }
     for (const i of g.notes.filter((x) => x.level === 'block')) out.push(issueCard('bad', i.message, null));
@@ -743,12 +770,25 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     if (!res) return noData();
     const need = [...res.engine.missingPrices.values()].sort((a, b) => (a.symbol + a.day < b.symbol + b.day ? -1 : 1));
     const inputs = new Map();
+    // perche' serve ogni prezzo: dal quadro RW (valore a inizio/fine anno) oppure per valorizzare un'operazione in euro
+    const why = new Map();
+    for (const i of res.engine.issues) {
+      if ((i.code !== 'missing_price' && i.code !== 'missing_value') || !i.data) continue;
+      const k = `${i.data.symbol}|${i.data.day}`;
+      if (why.get(k) === 'op') continue;
+      why.set(k, i.data.forRW ? 'rw' : 'op');
+    }
+    const reason = (n) => {
+      if (why.get(`${n.symbol}|${n.day}`) !== 'rw') return 'Per valorizzare un\'operazione';
+      return n.day.endsWith('-12-31') ? 'Quadro RW: valore a fine anno' : n.day.endsWith('-01-01') ? 'Quadro RW: valore a inizio anno' : 'Quadro RW: valore quando l\'hai acquistata o venduta';
+    };
+    const nRW = need.filter((n) => why.get(`${n.symbol}|${n.day}`) === 'rw').length;
     const rows = need.map((n) => {
       const key = `${n.symbol}|${n.day}`;
       const sug = res.engine.prices.nearest(n.symbol, n.day);
       const input = h('input', { type: 'text', 'aria-label': `Prezzo ${n.symbol} ${n.day}`, placeholder: '€ per 1 ' + n.symbol, id: `p_${key}`, style: 'width:140px' });
       inputs.set(key, input);
-      return h('tr', null, h('td', null, n.symbol), h('td', null, dmy(n.day)),
+      return h('tr', null, h('td', null, n.symbol), h('td', null, dmy(n.day)), h('td', { class: 'small' }, reason(n)),
         h('td', { class: 'muted small' }, sug ? h('span', null, `${money(sug.price)} (${dmy(sug.day)}, ${sug.daysApart} gg ${sug.daysApart === 1 ? 'prima/dopo' : 'di distanza'}) `, h('button', { class: 'btn quiet', onclick: () => { input.value = sug.price.toDecimalPlaces(8).toString(); } }, 'Usa')) : 'nessun prezzo noto'),
         h('td', null, input));
     });
@@ -770,11 +810,15 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     const have = Object.entries(state.prices);
     return h('div', { class: 'stack' },
       h('div', { class: 'card' }, h('h2', null, need.length ? `Prezzi mancanti (${need.length})` : 'Nessun prezzo mancante'),
-        h('p', { class: 'muted' }, 'Il programma usa già i prezzi che ricava dalle tue operazioni dello stesso giorno. Per gli altri casi serve il prezzo in euro (chiusura giornaliera). Per l\'oro scrivi il prezzo di 1 grammo.'),
-        need.length ? [h('div', { class: 'tbl-wrap' }, h('table', null, h('thead', null, h('tr', null, ['Asset', 'Data', 'Suggerimento', 'Prezzo in €'].map((x) => h('th', null, x)))), h('tbody', null, rows))),
-          h('div', { class: 'row' }, h('button', { class: 'btn primary', onclick: saveAll }, 'Salva i prezzi'),
-            h('button', { class: 'btn', disabled: !!ui.busy, onclick: auto }, ui.busy || 'Scarica i prezzi in automatico'),
-            h('span', { class: 'muted small' }, 'Il download automatico (CryptoCompare) invia solo simbolo e data. Potrebbe non funzionare in tutte le versioni dell\'app.'))] : null),
+        need.length ? h('div', { class: 'stack', style: 'padding:0;gap:8px' },
+          h('p', null, 'Per calcolare le tasse sulle vendite il programma usa gli importi in euro scritti nei tuoi file. Qui mancano invece alcuni prezzi in euro di una cripto in un certo giorno.'),
+          h('p', { class: 'muted' }, nRW ? `${nRW} di questi servono solo al prospetto RW (il quadro del monitoraggio): il valore in euro che le cripto che possiedi avevano il 1° gennaio e il 31 dicembre. ` : '', need.length - nRW ? `${need.length - nRW} servono a valorizzare singole operazioni. ` : '', 'Nella tabella, la colonna «Perché serve» dice a cosa serve ciascun prezzo.'),
+          h('p', { class: 'muted' }, 'Il modo più veloce: premi «Scarica i prezzi in automatico». Funziona dal link pubblicato o dal programma scaricato sul computer, non dentro claude.ai. Se qualche prezzo non arriva, scrivilo a mano (prezzo in euro di 1 unità alla chiusura del giorno) oppure premi «Usa» sul suggerimento: è il prezzo di un\'operazione vicina, quindi meno preciso. Per l\'oro scrivi il prezzo di 1 grammo.')) : h('p', { class: 'muted' }, 'Il programma usa già i prezzi che ricava dalle tue operazioni dello stesso giorno.'),
+        need.length ? [h('div', { class: 'row' },
+            h('button', { class: 'btn primary', disabled: !!ui.busy, onclick: auto }, ui.busy || 'Scarica i prezzi in automatico'),
+            h('button', { class: 'btn', onclick: saveAll }, 'Salva i prezzi scritti a mano'),
+            h('span', { class: 'muted small' }, 'Il download automatico (CryptoCompare) invia solo simbolo e data.')),
+          h('div', { class: 'tbl-wrap' }, h('table', null, h('thead', null, h('tr', null, ['Asset', 'Data', 'Perché serve', 'Suggerimento', 'Prezzo in €'].map((x) => h('th', null, x)))), h('tbody', null, rows)))] : null),
       have.length ? h('div', { class: 'card' }, h('h3', null, `Prezzi inseriti (${have.length})`),
         h('div', { class: 'tbl-wrap' }, h('table', null, h('thead', null, h('tr', null, ['Asset', 'Data', 'Prezzo €', ''].map((x) => h('th', null, x)))),
           h('tbody', null, have.map(([k, v]) => { const [s, d] = k.split('|'); return h('tr', null, h('td', null, s), h('td', null, dmy(d)), h('td', { class: 'num' }, v), h('td', null, h('button', { class: 'btn quiet danger', onclick: () => { delete state.prices[k]; changed(); } }, 'Elimina'))); }))))) : null);

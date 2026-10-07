@@ -106,12 +106,15 @@
     // spostamenti interni (blocco/sblocco, Earn, ordini limite): la proprieta' non cambia
     info: new Set(['crypto_earn_program_created', 'crypto_earn_program_withdrawn', 'crypto_earn_program_extended', 'lockup_lock', 'lockup_unlock', 'lockup_upgrade',
       'lockup_swap_credited', 'lockup_swap_debited', 'dynamic_coin_swap_credited', 'dynamic_coin_swap_debited', 'dynamic_coin_swap_bonus_exchange_deposit',
-      'interest_swap_credited', 'interest_swap_debited', 'crypto_wallet_swap_credited', 'crypto_wallet_swap_debited', 'supercharger_deposit', 'supercharger_withdrawal',
+      'interest_swap_credited', 'interest_swap_debited', 'supercharger_deposit', 'supercharger_withdrawal',
       'council_node_deposit_created', 'trading.limit_order.fiat_wallet.purchase_lock', 'trading.limit_order.fiat_wallet.purchase_unlock',
       'trading.limit_order.fiat_wallet.sell_lock', 'trading.limit_order.fiat_wallet.sell_unlock', 'trading.limit_order.cash_account.purchase_lock',
       'trading.limit_order.cash_account.purchase_unlock', 'trading.limit_order.cash_account.sell_unlock', 'trading.limit_order.cash_account.sell_lock',
       'trading.limit_order.crypto_wallet.fund_lock', 'trading.limit_order.crypto_wallet.fund_unlock', 'finance.lockup.dpos_lock.crypto_wallet',
-      'finance.dpos.staking.crypto_wallet', 'finance.dpos.unstaking.crypto_wallet', 'viban_deposit_precredit', 'viban_deposit_precredit_repayment']),
+      'finance.dpos.staking.crypto_wallet', 'finance.dpos.unstaking.crypto_wallet', 'viban_deposit_precredit', 'viban_deposit_precredit_repayment',
+      'viban_card_top_up']),   // euro spostati dal conto in euro alla carta: nessun effetto fiscale
+    // stessa operazione, etichetta diversa tra i due export (contanti / criptovaluta): si legge come l'altra e si conta una volta
+    alias: { crypto_viban: 'crypto_viban_exchange' },
     fiatIn: new Set(['viban_deposit', 'fiat_deposit']),
     fiatOut: new Set(['viban_withdrawal', 'fiat_withdrawal']),
   };
@@ -123,12 +126,28 @@
     const miss = req.filter((h) => !headers.includes(h));
     if (miss.length) throw new FormatError(`Crypto.com App: colonne mancanti ${miss.join(', ')}`);
     const mkUid = uidFactory(account);
+    const dupSeen = new Map();
     const events = [];
+    // "Balance Conversion": una riga in uscita e una in entrata quasi nello stesso istante (cambio di nome o migrazione di un
+    // token, per esempio MATIC -> POL). Si appaiono solo se l'abbinamento e' univoco (entro 5 secondi); altrimenti non si indovina.
+    const convD = [], convC = [];
+    for (const row of rows) {
+      const k = (row['Transaction Kind'] || '').trim().toLowerCase();
+      if (k === 'crypto_wallet_swap_debited') convD.push({ row, ts: parseTs(row['Timestamp (UTC)']) });
+      else if (k === 'crypto_wallet_swap_credited') convC.push({ row, ts: parseTs(row['Timestamp (UTC)']) });
+    }
+    const nearTo = (x, list) => list.filter((y) => Math.abs(y.ts - x.ts) <= 5000);
+    const partner = new Map();
+    for (const d of convD) {
+      const cs = nearTo(d, convC);
+      if (cs.length === 1 && nearTo(cs[0], convD).length === 1) { partner.set(d.row, cs[0].row); partner.set(cs[0].row, d.row); }
+    }
     for (const row of rows) {
       const uid = mkUid(row);
       const src = `${fileName}:${row.__line}`;
       const ts = parseTs(row['Timestamp (UTC)']);
-      const kind = row['Transaction Kind'].trim().toLowerCase();
+      const kindRaw = row['Transaction Kind'].trim().toLowerCase();
+      const kind = APP.alias[kindRaw] || kindRaw;
       const cur = row['Currency'].trim().toUpperCase();
       const rawAmt = parseNum(row['Amount']) || ZERO;
       const amt = rawAmt.abs();
@@ -137,7 +156,12 @@
       const nCcy = (row['Native Currency'] || '').trim().toUpperCase() || 'EUR';
       const nAmt = absN(parseNum(row['Native Amount']));
       const desc = row['Transaction Description'] || '';
-      const base = { uid, ts, account, ref: row['Transaction Hash'] || '', src, note: desc, raw: row };
+      // Chiave di deduplica tra file: numeri e data normalizzati, senza la colonna in dollari e con l'etichetta del tipo unificata,
+      // cosi' la stessa operazione presente in piu' export (contanti / criptovaluta) si conta una volta anche se il testo differisce.
+      const dh = hash([ts.toISOString(), kind, desc.trim(), cur, rawAmt.toFixed(), toCur, toAmt.toFixed(), nCcy, nAmt ? nAmt.toFixed() : '', (row['Transaction Hash'] || '').trim()].join('|'));
+      const dn = (dupSeen.get(dh) || 0) + 1; dupSeen.set(dh, dn);
+      const dupKey = `${account}:d:${dh}${dn > 1 ? '#' + dn : ''}`;
+      const base = { uid, dupKey, ts, account, ref: row['Transaction Hash'] || '', src, note: desc, raw: row };
       let ev;
       if (APP.trade.has(kind)) {
         if (FIAT.has(cur) && toCur && !FIAT.has(toCur)) ev = mkEvent({ ...base, kind: Kind.BUY, asset: toCur, qty: toAmt, value: amt, valueCcy: cur });
@@ -158,6 +182,17 @@
       } else if (kind === 'crypto_transfer') {
         ev = unresolved(base, `Crypto.com App · "crypto_transfer" (${rawAmt.gt(0) ? 'ricevuto' : 'inviato'} tra utenti)`,
           `Trasferimento tra utenti Crypto.com (regalo ${rawAmt.gt(0) ? 'ricevuto' : 'inviato'}): ${cur} ${amt.toFixed()}. Serve una decisione: non è né un acquisto né una vendita.`);
+      } else if (kind === 'crypto_wallet_swap_debited' || kind === 'crypto_wallet_swap_credited') {
+        const pr = partner.get(row);
+        if (!pr) {
+          ev = unresolved(base, 'Crypto.com App · conversione di saldo non abbinabile', `Conversione di saldo (${cur} ${rawAmt.toFixed()}) senza una riga opposta univoca alla stessa data e ora: non so cosa sia stato convertito in cosa.`);
+        } else if (kind === 'crypto_wallet_swap_credited') ev = mkEvent({ ...base, kind: Kind.INFO });   // gia' contata con la riga in uscita
+        else {
+          const cCur = (pr['Currency'] || '').trim().toUpperCase(), cAmt = (parseNum(pr['Amount']) || ZERO).abs();
+          if (!cCur || cCur === cur || cAmt.isZero() || amt.isZero() || FIAT.has(cur) || FIAT.has(cCur)) {
+            ev = unresolved(base, 'Crypto.com App · conversione di saldo non interpretabile', `Conversione di saldo non interpretabile (${cur} ${rawAmt.toFixed()} → ${cCur || '-'} ${pr['Amount']}).`);
+          } else ev = mkEvent({ ...base, kind: Kind.SWAP, asset: cur, qty: amt, counterAsset: cCur, counterQty: cAmt, value: nAmt, valueCcy: nCcy, conv: true });
+        }
       } else if (APP.info.has(kind)) ev = mkEvent({ ...base, kind: Kind.INFO });
       else if (APP.fiatIn.has(kind)) ev = mkEvent({ ...base, kind: Kind.FIAT_IN, asset: cur, qty: amt });
       else if (APP.fiatOut.has(kind)) ev = mkEvent({ ...base, kind: Kind.FIAT_OUT, asset: cur, qty: amt });

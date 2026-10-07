@@ -267,9 +267,15 @@
   }
 
   function describeResolution(c, uid, r) {
-    const base = uid.replace(/#(fee|netfee)$/, '');
+    const base = uid.replace(/#(fee|netfee)$/, '').replace(/^conv:/, '');
     const e = c.res.events.find((x) => x.uid === base);
-    const what = e ? `${dmy(CT.taxDate(e.ts))} · ${e.account} · ${qty(e.qty)} ${e.asset}` : uid;
+    const names = (c.state && c.state.files) ? new Map(c.state.files.map((f) => [f.id, f.name])) : new Map();
+    let what = e ? `${dmy(CT.taxDate(e.ts))} · ${e.account} · ${qty(e.qty)} ${e.asset}${uid.startsWith('conv:') ? ` → ${qty(e.counterQty)} ${e.counterAsset}` : ''}` : uid;
+    if (uid.startsWith('neardup:')) {
+      what = 'Operazioni presenti in più file: ' + uid.slice(8).split('|').map((id) => names.get(id) || '(file rimosso)').join(', ');
+      if (r.action === 'ack') return [what, 'Confermate come operazioni diverse (tutte conteggiate)'];
+      if (r.action === 'dup_skip') return [what, 'Sono la stessa operazione: contata una volta sola'];
+    }
     const A = { ignore: 'Riga ignorata', self_custody: `Trasferimento verso un proprio wallet (${r.wallet || 'Wallet personale'})`, from_self_custody: 'Ingresso da un proprio wallet', disposal: `Uscita trattata come vendita, valore ${r.value_eur} €`, set_cost: `Costo impostato: ${r.cost_eur} €${r.acquired ? ` (acquisto del ${dmy(r.acquired)})` : ''}`, cover_cost: `Costo del mancante impostato: ${r.cost_eur} €${r.acquired ? ` (acquisto del ${dmy(r.acquired)})` : ''}`, set_value: `Valore impostato: ${r.value_eur} €`, migration: 'Conversione di saldo trattata come aggiornamento del token (nessuna vendita, costo trasferito)', swap: 'Conversione di saldo trattata come scambio imponibile', dup_skip: 'Operazioni presenti in due file contate una volta sola', ack: 'Confermato dall\'utente' };
     return [what, A[r.action] || r.action];
   }

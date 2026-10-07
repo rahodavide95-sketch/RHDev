@@ -128,19 +128,30 @@
     const mkUid = uidFactory(account);
     const dupSeen = new Map();
     const events = [];
-    // "Balance Conversion": una riga in uscita e una in entrata quasi nello stesso istante (cambio di nome o migrazione di un
-    // token, per esempio MATIC -> POL). Si appaiono solo se l'abbinamento e' univoco (entro 5 secondi); altrimenti non si indovina.
-    const convD = [], convC = [];
+    // "Balance Conversion" (cambio di nome o migrazione di un token, per esempio MATIC -> POL): righe in uscita e in entrata quasi
+    // nello stesso istante. Un "grappolo" (righe a meno di 5 secondi l'una dall'altra) con UNA sola valuta in uscita e UNA sola in entrata
+    // e' una conversione (anche se divisa in piu' righe: si sommano). Altrimenti non si indovina: righe da controllare.
+    const convRows = [];
     for (const row of rows) {
       const k = (row['Transaction Kind'] || '').trim().toLowerCase();
-      if (k === 'crypto_wallet_swap_debited') convD.push({ row, ts: parseTs(row['Timestamp (UTC)']) });
-      else if (k === 'crypto_wallet_swap_credited') convC.push({ row, ts: parseTs(row['Timestamp (UTC)']) });
+      if (k === 'crypto_wallet_swap_debited' || k === 'crypto_wallet_swap_credited') convRows.push({ row, ts: parseTs(row['Timestamp (UTC)']), debit: k.endsWith('debited') });
     }
-    const nearTo = (x, list) => list.filter((y) => Math.abs(y.ts - x.ts) <= 5000);
-    const partner = new Map();
-    for (const d of convD) {
-      const cs = nearTo(d, convC);
-      if (cs.length === 1 && nearTo(cs[0], convD).length === 1) { partner.set(d.row, cs[0].row); partner.set(cs[0].row, d.row); }
+    convRows.sort((x, y) => x.ts - y.ts);
+    const convLead = new Map(), convMember = new Set();
+    for (let i = 0; i < convRows.length;) {
+      let j = i + 1;
+      while (j < convRows.length && convRows[j].ts - convRows[j - 1].ts <= 5000) j++;
+      const grp = convRows.slice(i, j); i = j;
+      const D = grp.filter((x) => x.debit), C = grp.filter((x) => !x.debit);
+      const ccy = (x) => (x.row['Currency'] || '').trim().toUpperCase();
+      const dSet = new Set(D.map(ccy)), cSet = new Set(C.map(ccy));
+      if (D.length && C.length && dSet.size === 1 && cSet.size === 1 && [...dSet][0] && [...cSet][0] && [...dSet][0] !== [...cSet][0]) {
+        const sum = (list, col) => list.reduce((t, x) => t.plus((parseNum(x.row[col]) || ZERO).abs()), ZERO);
+        const nat = (list) => { const v = list.map((x) => absN(parseNum(x.row['Native Amount'])) || ZERO); return v.every((n) => n.gt(0)) ? v.reduce((t, n) => t.plus(n), ZERO) : null; };
+        const lead = D[0].row;
+        convLead.set(lead, { asset: [...dSet][0], qty: sum(D, 'Amount'), counter: [...cSet][0], counterQty: sum(C, 'Amount'), value: nat(D) || nat(C), n: grp.length });
+        for (const x of grp) if (x.row !== lead) convMember.add(x.row);
+      }
     }
     for (const row of rows) {
       const uid = mkUid(row);
@@ -164,10 +175,12 @@
       const base = { uid, dupKey, ts, account, ref: row['Transaction Hash'] || '', src, note: desc, raw: row };
       let ev;
       if (APP.trade.has(kind)) {
-        if (FIAT.has(cur) && toCur && !FIAT.has(toCur)) ev = mkEvent({ ...base, kind: Kind.BUY, asset: toCur, qty: toAmt, value: amt, valueCcy: cur });
+        // per i tipi letti tramite alias l'orientamento delle colonne non e' stato visto su file reali: segno e importi devono tornare
+        if (kindRaw !== kind && (rawAmt.gte(0) || toAmt.lte(0))) ev = unresolved(base, `Crypto.com App · tipo "${kindRaw}" con segni o importi inattesi`, `Riga "${kindRaw}" con segni o importi inattesi (${cur} ${rawAmt.toFixed()} → ${toCur || '-'} ${toAmt.toFixed()}): non la interpreto.`);
+        else if (FIAT.has(cur) && toCur && !FIAT.has(toCur)) ev = mkEvent({ ...base, kind: Kind.BUY, asset: toCur, qty: toAmt, value: amt, valueCcy: cur });
         else if (FIAT.has(toCur) && !FIAT.has(cur)) ev = mkEvent({ ...base, kind: Kind.SELL, asset: cur, qty: amt, value: toAmt, valueCcy: toCur });
         else if (toCur && !FIAT.has(cur) && !FIAT.has(toCur)) ev = mkEvent({ ...base, kind: Kind.SWAP, asset: cur, qty: amt, counterAsset: toCur, counterQty: toAmt, value: nAmt, valueCcy: nCcy });
-        else ev = unresolved(base, `Crypto.com App · tipo "${kind}" (valute ${cur}/${toCur || '-'})`, `Scambio con valute non interpretabili (${cur} → ${toCur || '-'})`);
+        else ev = unresolved(base, `Crypto.com App · tipo "${kindRaw}" (valute ${cur}/${toCur || '-'})`, `Scambio con valute non interpretabili (${cur} → ${toCur || '-'})`);
       } else if (APP.nativeTrade.has(kind)) {
         ev = rawAmt.gt(0)
           ? mkEvent({ ...base, kind: Kind.BUY, asset: cur, qty: amt, value: nAmt, valueCcy: nCcy })
@@ -178,20 +191,19 @@
       else if (kind in APP.income) {
         ev = rawAmt.gt(0)
           ? mkEvent({ ...base, kind: Kind.INCOME, asset: cur, qty: amt, value: nAmt, valueCcy: nCcy, incomeType: APP.income[kind] })
-          : unresolved(base, `Crypto.com App · tipo "${kind}" con importo negativo`, `Provento con importo negativo (storno?): "${kind}" (${cur} ${rawAmt.toFixed()})`);
+          : unresolved(base, `Crypto.com App · tipo "${kindRaw}" con importo negativo`, `Provento con importo negativo (storno?): "${kindRaw}" (${cur} ${rawAmt.toFixed()})`);
       } else if (kind === 'crypto_transfer') {
         ev = unresolved(base, `Crypto.com App · "crypto_transfer" (${rawAmt.gt(0) ? 'ricevuto' : 'inviato'} tra utenti)`,
           `Trasferimento tra utenti Crypto.com (regalo ${rawAmt.gt(0) ? 'ricevuto' : 'inviato'}): ${cur} ${amt.toFixed()}. Serve una decisione: non è né un acquisto né una vendita.`);
       } else if (kind === 'crypto_wallet_swap_debited' || kind === 'crypto_wallet_swap_credited') {
-        const pr = partner.get(row);
-        if (!pr) {
-          ev = unresolved(base, 'Crypto.com App · conversione di saldo non abbinabile', `Conversione di saldo (${cur} ${rawAmt.toFixed()}) senza una riga opposta univoca alla stessa data e ora: non so cosa sia stato convertito in cosa.`);
-        } else if (kind === 'crypto_wallet_swap_credited') ev = mkEvent({ ...base, kind: Kind.INFO });   // gia' contata con la riga in uscita
+        const lead = convLead.get(row);
+        if (lead) {
+          if (FIAT.has(lead.asset) || FIAT.has(lead.counter) || lead.qty.isZero() || lead.counterQty.isZero()) {
+            ev = unresolved(base, 'Crypto.com App · conversione di saldo non interpretabile', `Conversione di saldo non interpretabile (${lead.asset} ${lead.qty.toFixed()} → ${lead.counter} ${lead.counterQty.toFixed()}).`);
+          } else ev = mkEvent({ ...base, kind: Kind.SWAP, asset: lead.asset, qty: lead.qty, counterAsset: lead.counter, counterQty: lead.counterQty, value: lead.value, valueCcy: nCcy, conv: true });
+        } else if (convMember.has(row)) ev = mkEvent({ ...base, kind: Kind.INFO });   // gia' contata con la riga capofila
         else {
-          const cCur = (pr['Currency'] || '').trim().toUpperCase(), cAmt = (parseNum(pr['Amount']) || ZERO).abs();
-          if (!cCur || cCur === cur || cAmt.isZero() || amt.isZero() || FIAT.has(cur) || FIAT.has(cCur)) {
-            ev = unresolved(base, 'Crypto.com App · conversione di saldo non interpretabile', `Conversione di saldo non interpretabile (${cur} ${rawAmt.toFixed()} → ${cCur || '-'} ${pr['Amount']}).`);
-          } else ev = mkEvent({ ...base, kind: Kind.SWAP, asset: cur, qty: amt, counterAsset: cCur, counterQty: cAmt, value: nAmt, valueCcy: nCcy, conv: true });
+          ev = unresolved(base, 'Crypto.com App · conversione di saldo non abbinabile', `Conversione di saldo (${cur} ${rawAmt.toFixed()}) non abbinabile: nello stesso istante ci sono piu' valute diverse o manca la riga opposta, quindi non so cosa sia stato convertito in cosa.`);
         }
       } else if (APP.info.has(kind)) ev = mkEvent({ ...base, kind: Kind.INFO });
       else if (APP.fiatIn.has(kind)) ev = mkEvent({ ...base, kind: Kind.FIAT_IN, asset: cur, qty: amt });
@@ -201,7 +213,7 @@
         if (/deposit/i.test(desc)) ev = mkEvent({ ...base, kind: Kind.FIAT_IN, asset: cur, qty: amt });
         else if (/withdraw/i.test(desc)) ev = mkEvent({ ...base, kind: Kind.FIAT_OUT, asset: cur, qty: amt });
         else ev = unresolved(base, 'Crypto.com App · riga senza tipo', `Riga senza tipo e senza descrizione riconoscibile: "${desc}" (${cur} ${rawAmt.toFixed()})`);
-      } else ev = unresolved(base, `Crypto.com App · tipo "${kind}"`, `Tipo di transazione non riconosciuto: "${kind}" (${cur} ${rawAmt.toFixed()})`);
+      } else ev = unresolved(base, `Crypto.com App · tipo "${kindRaw}"`, `Tipo di transazione non riconosciuto: "${kindRaw}" (${cur} ${rawAmt.toFixed()})`);
       events.push(ev);
     }
     return finish('Crypto.com App', rows.length, events);

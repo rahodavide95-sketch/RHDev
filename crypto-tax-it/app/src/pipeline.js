@@ -55,7 +55,7 @@
     const pb = new CT.PriceBook();
     for (const [k, v] of Object.entries(prices)) { const [sym, day] = k.split('|'); if (v !== '' && v !== null) pb.setManual(sym, day, v); }
     const engine = new CT.Engine({ rebase2025: !!settings.rebase2025, resolutions, prices: pb }).run(events);
-    if (duplicates) engine.issue('info', 'duplicates', '', `${duplicates} righe presenti in più file (periodi sovrapposti) sono state contate una sola volta.`);
+    if (duplicates) engine.issue('info', 'duplicates', '', `${duplicates} ${duplicates === 1 ? 'riga presente' : 'righe presenti'} in più file (periodi sovrapposti) ${duplicates === 1 ? 'è stata contata' : 'sono state contate'} una sola volta.`);
     apiIssues(engine, parsed, resolutions);
     for (const g of near.issues) engine.issue('block', 'possible_duplicate', g.key, g.message, g.data);
     const years = CT.tax.computeYears(engine, { toYear: year, useCarry: settings.useCarry !== false });
@@ -66,11 +66,13 @@
 
   /**
    * Operazioni che sembrano la stessa ma arrivano da file diversi con righe non identiche (esempio: i due export dell'App Crypto.com).
-   * Stesso conto, stesso tipo, stesso asset, stesse quantita', orario entro 5 minuti. Non si decide da soli: si chiede all'utente.
-   * Risposte: 'dup_skip' = sono le stesse, si tengono quelle del primo file; 'ack' = sono diverse.
+   * Stesso conto, stesso tipo, stesso asset, stesse quantita', orario entro 5 minuti (a catena). Non si decide da soli: si chiede.
+   * Un "grappolo" puo' toccare piu' di due file: se si risponde 'dup_skip' si tiene l'operazione del file che ne ha di piu'
+   * (a parita' il primo) e si scartano le altre. 'ack' = sono operazioni diverse.
    */
   function nearDuplicates(events, fileOf, resolutions) {
     const WATCH = new Set([Kind.BUY, Kind.SELL, Kind.SWAP, Kind.INCOME, Kind.SPEND, Kind.TRANSFER_IN, Kind.TRANSFER_OUT]);
+    const order = new Map(); [...new Set([...fileOf.values()])].forEach((f, i) => order.set(f.id, i));
     const buckets = new Map();
     for (const e of events) {
       const f = fileOf.get(e);
@@ -79,33 +81,40 @@
       if (!buckets.has(key)) buckets.set(key, []);
       buckets.get(key).push(e);
     }
-    const order = new Map(); [...new Set([...fileOf.values()])].forEach((f, i) => order.set(f.id, i));
-    const groups = new Map();
+    const groups = new Map();   // insieme di file -> grappoli
     for (const list of buckets.values()) {
       if (list.length < 2) continue;
-      const taken = new Set();
-      for (const b of list) {
-        const fb = fileOf.get(b);
-        for (const a of list) {
-          const fa = fileOf.get(a);
-          if (a === b || taken.has(a) || taken.has(b) || fa.id === fb.id || order.get(fa.id) > order.get(fb.id)) continue;
-          if (Math.abs(a.ts - b.ts) > 300000) continue;
-          taken.add(a); taken.add(b);
-          const key = `neardup:${fa.id}|${fb.id}`;
-          if (!groups.has(key)) groups.set(key, { key, fileA: fa, fileB: fb, pairs: [] });
-          groups.get(key).pairs.push({ a, b });
-          break;
-        }
+      list.sort((x, y) => x.ts - y.ts);
+      for (let i = 0; i < list.length;) {
+        let j = i + 1;
+        while (j < list.length && list[j].ts - list[j - 1].ts <= 300000) j++;
+        const cl = list.slice(i, j); i = j;
+        const files = [...new Set(cl.map((e) => fileOf.get(e).id))].sort((a, b) => order.get(a) - order.get(b));
+        if (files.length < 2) continue;
+        const key = 'neardup:' + files.join('|');
+        if (!groups.has(key)) groups.set(key, { key, files: files.map((id) => [...fileOf.values()].find((f) => f.id === id)), clusters: [] });
+        groups.get(key).clusters.push(cl);
       }
     }
     const skip = new Set(), issues = [];
+    const dmy = (ts) => CT.taxDate(ts).split('-').reverse().join('/');
+    const KIND = { buy: 'acquisto', sell: 'vendita', swap: 'scambio', income: 'provento', spend: 'spesa', transfer_in: 'ingresso', transfer_out: 'uscita' };
     for (const g of groups.values()) {
       const res = resolutions[g.key] && resolutions[g.key].action;
-      if (res === 'dup_skip') { g.pairs.forEach((p) => skip.add(p.b)); continue; }
+      if (res === 'dup_skip') {
+        for (const cl of g.clusters) {
+          const per = new Map(); cl.forEach((e) => { const id = fileOf.get(e).id; per.set(id, (per.get(id) || 0) + 1); });
+          const keep = [...per].sort((a, b) => b[1] - a[1] || order.get(a[0]) - order.get(b[0]))[0][0];
+          cl.forEach((e) => { if (fileOf.get(e).id !== keep) skip.add(e); });
+        }
+        continue;
+      }
       if (res === 'ack') continue;
-      const ex = g.pairs.slice(0, 3).map((p) => `${p.b.asset} ${CT.fq(p.b.qty)} del ${CT.taxDate(p.b.ts)}`);
-      issues.push({ key: g.key, message: `${g.pairs.length} operazioni compaiono sia in «${g.fileA.name}» sia in «${g.fileB.name}» con date e quantità uguali (${ex.join('; ')}${g.pairs.length > 3 ? '…' : ''}).`,
-        data: { fileA: g.fileA.id, fileB: g.fileB.id, nameA: g.fileA.name, nameB: g.fileB.name, count: g.pairs.length, examples: ex } });
+      const n = g.clusters.length;
+      const ex = g.clusters.slice(0, 3).map((cl) => { const e = cl[0]; return `${KIND[e.kind] || e.kind} ${CT.fq(e.qty)} ${e.asset} del ${dmy(e.ts)}`; });
+      const names = g.files.map((f) => `«${f.name}»`).join(', ');
+      issues.push({ key: g.key, message: `${n} ${n === 1 ? 'operazione compare' : 'operazioni compaiono'} in più file (${names}) con data (entro 5 minuti), asset e quantità uguali (${ex.join('; ')}${n > 3 ? '…' : ''}).`,
+        data: { files: g.files.map((f) => f.id), names: g.files.map((f) => f.name), count: n, examples: ex } });
     }
     return { skip, issues };
   }

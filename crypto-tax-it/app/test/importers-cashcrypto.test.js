@@ -119,3 +119,73 @@ test('conversione di saldo con righe a un secondo di distanza si abbina; due cop
   assert.equal(r2.groups.conversions.length, 0);
   assert.ok(r2.groups.unknown.size >= 1, 'abbinamento ambiguo: righe da controllare');
 });
+
+// ---- difetti trovati dai verificatori indipendenti
+test('crypto_viban con segni invertiti non diventa un acquisto in silenzio', () => {
+  const inverted = '2025-09-01 10:00:00,Sold ETH,EUR,1500,ETH,0.5,EUR,1500,1770,crypto_viban,';
+  const r = CT.importers.TYPES.cryptocom_app.parse(HEAD + inverted + '\n', 'c.csv');
+  assert.equal(r.events[0].kind, CT.Kind.UNRESOLVED);
+  assert.match(r.events[0].unkKey, /crypto_viban/);
+  const noAmount = '2025-09-01 10:00:00,Sold ETH,ETH,-0.5,EUR,,EUR,1500,1770,crypto_viban,';
+  assert.equal(CT.importers.TYPES.cryptocom_app.parse(HEAD + noAmount + '\n', 'c.csv').events[0].kind, CT.Kind.UNRESOLVED);
+});
+
+test('la stessa operazione in tre file: con "sono le stesse" resta una sola', () => {
+  const rows = (sec) => [BUY.replace('10:00:00', '10:00:' + sec)];
+  const files3 = [file('t1', 'a.csv', rows('00')), file('t2', 'b.csv', rows('10')), file('t3', 'c.csv', rows('20'))];
+  const r = CT.analyze({ files: files3, settings: { year: 2025 } });
+  assert.equal(r.groups.nearDup.length, 1);
+  assert.equal(r.groups.nearDup[0].data.names.length, 3);
+  const k = r.groups.nearDup[0].uid;
+  const done = CT.analyze({ files: files3, resolutions: { [k]: { action: 'dup_skip' } }, settings: { year: 2025 } });
+  assert.equal(done.groups.nearDup.length, 0);
+  assert.equal(done.events.length, 1);
+});
+
+test('due righe identiche in ciascuno di due file: se sono le stesse ne restano due, non una', () => {
+  const rows = (sec) => [BUY.replace('10:00:00', '10:00:' + sec), BUY.replace('10:00:00', '10:01:' + sec)];
+  const fs2 = [file('u1', 'a.csv', rows('00')), file('u2', 'b.csv', rows('10'))];
+  const r = CT.analyze({ files: fs2, settings: { year: 2025 } });
+  const k = r.groups.nearDup[0].uid;
+  const done = CT.analyze({ files: fs2, resolutions: { [k]: { action: 'dup_skip' } }, settings: { year: 2025 } });
+  assert.equal(done.events.length, 2);
+});
+
+test('conversione divisa in piu\' righe nello stesso istante: si sommano', () => {
+  const rows = [BUY_MATIC, CONV_OUT.replace('-100', '-60').replace(',50,55', ',30,33'), CONV_OUT.replace('-100', '-40').replace(',50,55', ',20,22'),
+    CONV_IN.replace('POL,100', 'POL,60').replace(',50,55', ',30,33'), CONV_IN.replace('POL,100', 'POL,40').replace(',50,55', ',20,22'), SELL_POL];
+  const r = CT.analyze({ files: conversionFiles(rows), settings: { year: 2025 } });
+  assert.equal(r.groups.unknown.size, 0);
+  assert.equal(r.groups.conversions.length, 1);
+  assert.match(r.groups.conversions[0].message, /100 MATIC → 100 POL/);
+});
+
+test('conversione con storico mancante: scelta e costo del mancante non si sovrascrivono', () => {
+  const rows = [CONV_OUT, CONV_IN, SELL_POL];   // nessun acquisto di MATIC nei file
+  let res = {};
+  let r = CT.analyze({ files: conversionFiles(rows), resolutions: res, settings: { year: 2025 } });
+  const convKey = r.groups.conversions[0].uid;
+  assert.ok(convKey.startsWith('conv:'));
+  assert.equal(r.groups.history.length, 1, 'finche\' non si sceglie, si tratta come scambio e manca il costo');
+  res = { [convKey]: { action: 'migration' } };
+  r = CT.analyze({ files: conversionFiles(rows), resolutions: res, settings: { year: 2025 } });
+  assert.equal(r.groups.conversions.length, 0);
+  assert.equal(r.groups.history.length, 1);
+  const evUid = convKey.slice(5);
+  res = { ...res, [evUid]: { action: 'cover_cost', cost_eur: '100' } };
+  r = CT.analyze({ files: conversionFiles(rows), resolutions: res, settings: { year: 2025 } });
+  assert.equal(r.groups.history.length, 0);
+  assert.equal(r.groups.conversions.length, 0);
+  assert.equal(String(r.y.crypto.gains.minus(r.y.crypto.losses)), '-20');
+});
+
+test('conversione senza valore in euro: con "aggiornamento" non si chiede un prezzo, con "scambio" si', () => {
+  const noVal = [BUY_MATIC, CONV_OUT.replace(',50,55,', ',0,0,'), CONV_IN.replace(',50,55,', ',0,0,'), SELL_POL];
+  let r = CT.analyze({ files: conversionFiles(noVal), settings: { year: 2025 } });
+  const k = r.groups.conversions[0].uid;
+  r = CT.analyze({ files: conversionFiles(noVal), resolutions: { [k]: { action: 'migration' } }, settings: { year: 2025 } });
+  assert.equal(r.engine.issues.filter((i) => i.code === 'missing_value').length, 0);
+  assert.equal(String(r.y.crypto.gains.minus(r.y.crypto.losses)), '-20');
+  r = CT.analyze({ files: conversionFiles(noVal), resolutions: { [k]: { action: 'swap' } }, settings: { year: 2025 } });
+  assert.ok(r.engine.issues.some((i) => i.code === 'missing_value'), 'un realizzo senza valore non e\' un realizzo da zero');
+});

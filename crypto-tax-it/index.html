@@ -5787,19 +5787,30 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
     const mkUid = uidFactory(account);
     const dupSeen = new Map();
     const events = [];
-    // "Balance Conversion": una riga in uscita e una in entrata quasi nello stesso istante (cambio di nome o migrazione di un
-    // token, per esempio MATIC -> POL). Si appaiono solo se l'abbinamento e' univoco (entro 5 secondi); altrimenti non si indovina.
-    const convD = [], convC = [];
+    // "Balance Conversion" (cambio di nome o migrazione di un token, per esempio MATIC -> POL): righe in uscita e in entrata quasi
+    // nello stesso istante. Un "grappolo" (righe a meno di 5 secondi l'una dall'altra) con UNA sola valuta in uscita e UNA sola in entrata
+    // e' una conversione (anche se divisa in piu' righe: si sommano). Altrimenti non si indovina: righe da controllare.
+    const convRows = [];
     for (const row of rows) {
       const k = (row['Transaction Kind'] || '').trim().toLowerCase();
-      if (k === 'crypto_wallet_swap_debited') convD.push({ row, ts: parseTs(row['Timestamp (UTC)']) });
-      else if (k === 'crypto_wallet_swap_credited') convC.push({ row, ts: parseTs(row['Timestamp (UTC)']) });
+      if (k === 'crypto_wallet_swap_debited' || k === 'crypto_wallet_swap_credited') convRows.push({ row, ts: parseTs(row['Timestamp (UTC)']), debit: k.endsWith('debited') });
     }
-    const nearTo = (x, list) => list.filter((y) => Math.abs(y.ts - x.ts) <= 5000);
-    const partner = new Map();
-    for (const d of convD) {
-      const cs = nearTo(d, convC);
-      if (cs.length === 1 && nearTo(cs[0], convD).length === 1) { partner.set(d.row, cs[0].row); partner.set(cs[0].row, d.row); }
+    convRows.sort((x, y) => x.ts - y.ts);
+    const convLead = new Map(), convMember = new Set();
+    for (let i = 0; i < convRows.length;) {
+      let j = i + 1;
+      while (j < convRows.length && convRows[j].ts - convRows[j - 1].ts <= 5000) j++;
+      const grp = convRows.slice(i, j); i = j;
+      const D = grp.filter((x) => x.debit), C = grp.filter((x) => !x.debit);
+      const ccy = (x) => (x.row['Currency'] || '').trim().toUpperCase();
+      const dSet = new Set(D.map(ccy)), cSet = new Set(C.map(ccy));
+      if (D.length && C.length && dSet.size === 1 && cSet.size === 1 && [...dSet][0] && [...cSet][0] && [...dSet][0] !== [...cSet][0]) {
+        const sum = (list, col) => list.reduce((t, x) => t.plus((parseNum(x.row[col]) || ZERO).abs()), ZERO);
+        const nat = (list) => { const v = list.map((x) => absN(parseNum(x.row['Native Amount'])) || ZERO); return v.every((n) => n.gt(0)) ? v.reduce((t, n) => t.plus(n), ZERO) : null; };
+        const lead = D[0].row;
+        convLead.set(lead, { asset: [...dSet][0], qty: sum(D, 'Amount'), counter: [...cSet][0], counterQty: sum(C, 'Amount'), value: nat(D) || nat(C), n: grp.length });
+        for (const x of grp) if (x.row !== lead) convMember.add(x.row);
+      }
     }
     for (const row of rows) {
       const uid = mkUid(row);
@@ -5823,10 +5834,12 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
       const base = { uid, dupKey, ts, account, ref: row['Transaction Hash'] || '', src, note: desc, raw: row };
       let ev;
       if (APP.trade.has(kind)) {
-        if (FIAT.has(cur) && toCur && !FIAT.has(toCur)) ev = mkEvent({ ...base, kind: Kind.BUY, asset: toCur, qty: toAmt, value: amt, valueCcy: cur });
+        // per i tipi letti tramite alias l'orientamento delle colonne non e' stato visto su file reali: segno e importi devono tornare
+        if (kindRaw !== kind && (rawAmt.gte(0) || toAmt.lte(0))) ev = unresolved(base, `Crypto.com App · tipo "${kindRaw}" con segni o importi inattesi`, `Riga "${kindRaw}" con segni o importi inattesi (${cur} ${rawAmt.toFixed()} → ${toCur || '-'} ${toAmt.toFixed()}): non la interpreto.`);
+        else if (FIAT.has(cur) && toCur && !FIAT.has(toCur)) ev = mkEvent({ ...base, kind: Kind.BUY, asset: toCur, qty: toAmt, value: amt, valueCcy: cur });
         else if (FIAT.has(toCur) && !FIAT.has(cur)) ev = mkEvent({ ...base, kind: Kind.SELL, asset: cur, qty: amt, value: toAmt, valueCcy: toCur });
         else if (toCur && !FIAT.has(cur) && !FIAT.has(toCur)) ev = mkEvent({ ...base, kind: Kind.SWAP, asset: cur, qty: amt, counterAsset: toCur, counterQty: toAmt, value: nAmt, valueCcy: nCcy });
-        else ev = unresolved(base, `Crypto.com App · tipo "${kind}" (valute ${cur}/${toCur || '-'})`, `Scambio con valute non interpretabili (${cur} → ${toCur || '-'})`);
+        else ev = unresolved(base, `Crypto.com App · tipo "${kindRaw}" (valute ${cur}/${toCur || '-'})`, `Scambio con valute non interpretabili (${cur} → ${toCur || '-'})`);
       } else if (APP.nativeTrade.has(kind)) {
         ev = rawAmt.gt(0)
           ? mkEvent({ ...base, kind: Kind.BUY, asset: cur, qty: amt, value: nAmt, valueCcy: nCcy })
@@ -5837,20 +5850,19 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
       else if (kind in APP.income) {
         ev = rawAmt.gt(0)
           ? mkEvent({ ...base, kind: Kind.INCOME, asset: cur, qty: amt, value: nAmt, valueCcy: nCcy, incomeType: APP.income[kind] })
-          : unresolved(base, `Crypto.com App · tipo "${kind}" con importo negativo`, `Provento con importo negativo (storno?): "${kind}" (${cur} ${rawAmt.toFixed()})`);
+          : unresolved(base, `Crypto.com App · tipo "${kindRaw}" con importo negativo`, `Provento con importo negativo (storno?): "${kindRaw}" (${cur} ${rawAmt.toFixed()})`);
       } else if (kind === 'crypto_transfer') {
         ev = unresolved(base, `Crypto.com App · "crypto_transfer" (${rawAmt.gt(0) ? 'ricevuto' : 'inviato'} tra utenti)`,
           `Trasferimento tra utenti Crypto.com (regalo ${rawAmt.gt(0) ? 'ricevuto' : 'inviato'}): ${cur} ${amt.toFixed()}. Serve una decisione: non è né un acquisto né una vendita.`);
       } else if (kind === 'crypto_wallet_swap_debited' || kind === 'crypto_wallet_swap_credited') {
-        const pr = partner.get(row);
-        if (!pr) {
-          ev = unresolved(base, 'Crypto.com App · conversione di saldo non abbinabile', `Conversione di saldo (${cur} ${rawAmt.toFixed()}) senza una riga opposta univoca alla stessa data e ora: non so cosa sia stato convertito in cosa.`);
-        } else if (kind === 'crypto_wallet_swap_credited') ev = mkEvent({ ...base, kind: Kind.INFO });   // gia' contata con la riga in uscita
+        const lead = convLead.get(row);
+        if (lead) {
+          if (FIAT.has(lead.asset) || FIAT.has(lead.counter) || lead.qty.isZero() || lead.counterQty.isZero()) {
+            ev = unresolved(base, 'Crypto.com App · conversione di saldo non interpretabile', `Conversione di saldo non interpretabile (${lead.asset} ${lead.qty.toFixed()} → ${lead.counter} ${lead.counterQty.toFixed()}).`);
+          } else ev = mkEvent({ ...base, kind: Kind.SWAP, asset: lead.asset, qty: lead.qty, counterAsset: lead.counter, counterQty: lead.counterQty, value: lead.value, valueCcy: nCcy, conv: true });
+        } else if (convMember.has(row)) ev = mkEvent({ ...base, kind: Kind.INFO });   // gia' contata con la riga capofila
         else {
-          const cCur = (pr['Currency'] || '').trim().toUpperCase(), cAmt = (parseNum(pr['Amount']) || ZERO).abs();
-          if (!cCur || cCur === cur || cAmt.isZero() || amt.isZero() || FIAT.has(cur) || FIAT.has(cCur)) {
-            ev = unresolved(base, 'Crypto.com App · conversione di saldo non interpretabile', `Conversione di saldo non interpretabile (${cur} ${rawAmt.toFixed()} → ${cCur || '-'} ${pr['Amount']}).`);
-          } else ev = mkEvent({ ...base, kind: Kind.SWAP, asset: cur, qty: amt, counterAsset: cCur, counterQty: cAmt, value: nAmt, valueCcy: nCcy, conv: true });
+          ev = unresolved(base, 'Crypto.com App · conversione di saldo non abbinabile', `Conversione di saldo (${cur} ${rawAmt.toFixed()}) non abbinabile: nello stesso istante ci sono piu' valute diverse o manca la riga opposta, quindi non so cosa sia stato convertito in cosa.`);
         }
       } else if (APP.info.has(kind)) ev = mkEvent({ ...base, kind: Kind.INFO });
       else if (APP.fiatIn.has(kind)) ev = mkEvent({ ...base, kind: Kind.FIAT_IN, asset: cur, qty: amt });
@@ -5860,7 +5872,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
         if (/deposit/i.test(desc)) ev = mkEvent({ ...base, kind: Kind.FIAT_IN, asset: cur, qty: amt });
         else if (/withdraw/i.test(desc)) ev = mkEvent({ ...base, kind: Kind.FIAT_OUT, asset: cur, qty: amt });
         else ev = unresolved(base, 'Crypto.com App · riga senza tipo', `Riga senza tipo e senza descrizione riconoscibile: "${desc}" (${cur} ${rawAmt.toFixed()})`);
-      } else ev = unresolved(base, `Crypto.com App · tipo "${kind}"`, `Tipo di transazione non riconosciuto: "${kind}" (${cur} ${rawAmt.toFixed()})`);
+      } else ev = unresolved(base, `Crypto.com App · tipo "${kindRaw}"`, `Tipo di transazione non riconosciuto: "${kindRaw}" (${cur} ${rawAmt.toFixed()})`);
       events.push(ev);
     }
     return finish('Crypto.com App', rows.length, events);
@@ -6287,19 +6299,25 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
       this.pool(asset).add({ id: `L${String(++this._seq).padStart(6, '0')}`, asset, ts: ts || e.ts, qty, unitCost: cost.div(qty), origin: e.uid, documented, rebased: false });
     }
 
+    /** Se l'utente ha indicato a che costo ha preso la quantita' mancante, la aggiunge come lotto e consuma di nuovo. */
+    coverMissing(pool, e, uid, uses, short) {
+      const res = this.opts.resolutions[uid];
+      if (short.gt(0) && res && res.action === 'cover_cost') {
+        const when = res.acquired ? new Date(res.acquired + 'T00:00:00Z') : new Date(e.ts.getTime() - 1000);
+        pool.add({ id: `L${String(++this._seq).padStart(6, '0')}`, asset: e.asset, ts: when, qty: short, unitCost: D(res.cost_eur).div(short), origin: 'manuale', documented: true, rebased: false });
+        const more = pool.consume(short);
+        uses = uses.concat(more.uses);
+        short = more.short;
+        this.issue('info', 'resolved_cover_cost', uid, `Costo del mancante impostato manualmente: ${res.cost_eur} €`);
+      }
+      return { uses, short };
+    }
+
     dispose(e, uid, asset, qty, proceeds, fee, kind, source, note) {
       const pool = this.pool(asset);
       let { uses, short } = pool.consume(qty);
       if (short.gt(0)) {
-        const res = this.opts.resolutions[uid];
-        if (res && res.action === 'cover_cost') {
-          const when = res.acquired ? new Date(res.acquired + 'T00:00:00Z') : new Date(e.ts.getTime() - 1000);
-          pool.add({ id: `L${String(++this._seq).padStart(6, '0')}`, asset, ts: when, qty: short, unitCost: D(res.cost_eur).div(short), origin: 'manuale', documented: true, rebased: false });
-          const more = pool.consume(short);
-          uses = uses.concat(more.uses);
-          short = more.short;
-          this.issue('info', 'resolved_cover_cost', uid, `Costo del mancante impostato manualmente: ${res.cost_eur} €`);
-        }
+        ({ uses, short } = this.coverMissing(pool, Object.assign({}, e, { asset }), uid, uses, short));
         if (short.gt(0)) {
           this.issue('block', 'missing_history', uid,
             `Vendita/uso di ${CT.fq(qty)} ${asset} del ${it(taxDate(e.ts))}, ma dai file risultano solo ${CT.fq(qty.minus(short))} disponibili: mancano ${CT.fq(short)}.`,
@@ -6376,7 +6394,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
         const p = this.prices.get(asset, REBASE_DAY);
         if (!p) {
           this.missingPrices.set(`${asset.toUpperCase()}|${REBASE_DAY}`, { symbol: asset.toUpperCase(), day: REBASE_DAY });
-          this.issue('block', 'missing_price', '', `Per la rideterminazione serve il prezzo di ${asset} al 1/1/2025`, { symbol: asset.toUpperCase(), day: REBASE_DAY });
+          this.issue('block', 'missing_price', '', `Per la rideterminazione serve il prezzo di ${asset} al 1/1/2025`, { symbol: asset.toUpperCase(), day: REBASE_DAY, forRebase: true });
           continue;
         }
         for (const lot of pool.lots) { lot.unitCost = p.price; lot.rebased = true; lot.documented = true; }
@@ -6419,22 +6437,33 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
         this.feeDisposal(e, fee);
       } else if (k === Kind.SWAP) {
         if (!e.counterAsset || classify(e.counterAsset) === 'fiat') { this.issue('block', 'unrecognized_row', e.uid, 'Permuta senza asset di destinazione valido'); return; }
-        const { v, src } = this.valueEur(e); const fee = this.feeEur(e);
+        // conversione di saldo (cambio di nome o migrazione di un token): dal 2023 serve una scelta dell'utente.
+        // La scelta e' salvata con una chiave propria ("conv:"+uid) per non sovrapporsi al costo del mancante (stesso uid).
+        const preRegime = taxDate(e.ts) < NEW_REGIME_DAY;
+        const convKey = 'conv:' + e.uid;
+        const convChoice = e.conv ? (this.opts.resolutions[convKey] || {}).action : null;
+        if (e.conv && !preRegime && convChoice !== 'migration' && convChoice !== 'swap') {
+          this.issue('block', 'conversion_pending', convKey,
+            `Conversione di saldo del ${it(taxDate(e.ts))}: ${CT.fq(e.qty)} ${e.asset} → ${CT.fq(e.counterQty)} ${e.counterAsset}`,
+            { asset: e.asset, counter: e.counterAsset, qty: e.qty, counterQty: e.counterQty, day: taxDate(e.ts), account: e.account });
+        }
+        const carry = preRegime || convChoice === 'migration';   // nessun realizzo: il costo passa al nuovo asset
+        let v, src;
+        if (e.conv && carry) {
+          // senza realizzo il valore in euro non serve al calcolo (solo, se c'e', al prospetto RW): non si chiede un prezzo
+          v = e.value !== null && e.value !== undefined && e.valueCcy === 'EUR' && e.value.gt(0) ? e.value : null; src = 'dal file';
+        } else ({ v, src } = this.valueEur(e));
+        const fee = this.feeEur(e);
         if (STABLE.has(e.asset) && STABLE.has(e.counterAsset)) {
           this.issue('info', 'stable_swap', e.uid, `Scambio tra stablecoin ${e.asset}→${e.counterAsset}: trattato come permuta imponibile (scelta prudenziale).`);
         }
         this.move(e, e.account, e.asset, e.qty.neg(), v);
-        // conversione di saldo (cambio di nome o migrazione di un token): dal 2023 serve una scelta dell'utente
-        const convChoice = e.conv ? (this.opts.resolutions[e.uid] || {}).action : null;
-        if (e.conv && taxDate(e.ts) >= NEW_REGIME_DAY && convChoice !== 'migration' && convChoice !== 'swap') {
-          this.issue('block', 'conversion_pending', e.uid,
-            `Conversione di saldo del ${it(taxDate(e.ts))}: ${CT.fq(e.qty)} ${e.asset} → ${CT.fq(e.counterQty)} ${e.counterAsset}`,
-            { asset: e.asset, counter: e.counterAsset, qty: e.qty, counterQty: e.counterQty, day: taxDate(e.ts), account: e.account });
-        }
-        if (taxDate(e.ts) < NEW_REGIME_DAY || convChoice === 'migration') {
+        if (carry) {
           // Prima del 2023 la permuta cripto-cripto non era un realizzo (e una migrazione di token non lo e'): il costo si trasferisce al nuovo asset.
-          const { uses, short } = this.pool(e.asset).consume(e.qty);
-          let cost = uses.reduce((s, u) => s.plus(u.cost), ZERO);
+          const pool = this.pool(e.asset);
+          let { uses, short } = pool.consume(e.qty);
+          ({ uses, short } = this.coverMissing(pool, e, e.uid, uses, short));
+          let cost = uses.reduce((t, u) => t.plus(u.cost), ZERO);
           if (short.gt(0)) this.issue('block', 'missing_history', e.uid, `Permuta di ${CT.fq(e.qty)} ${e.asset} del ${it(taxDate(e.ts))}: mancano ${CT.fq(short)} negli acquisti caricati.`, { asset: e.asset, qty: short, day: taxDate(e.ts), account: e.account });
           this.acquire(e, e.counterAsset, e.counterQty, cost, short.isZero());
         } else {
@@ -6843,7 +6872,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
     const pb = new CT.PriceBook();
     for (const [k, v] of Object.entries(prices)) { const [sym, day] = k.split('|'); if (v !== '' && v !== null) pb.setManual(sym, day, v); }
     const engine = new CT.Engine({ rebase2025: !!settings.rebase2025, resolutions, prices: pb }).run(events);
-    if (duplicates) engine.issue('info', 'duplicates', '', `${duplicates} righe presenti in più file (periodi sovrapposti) sono state contate una sola volta.`);
+    if (duplicates) engine.issue('info', 'duplicates', '', `${duplicates} ${duplicates === 1 ? 'riga presente' : 'righe presenti'} in più file (periodi sovrapposti) ${duplicates === 1 ? 'è stata contata' : 'sono state contate'} una sola volta.`);
     apiIssues(engine, parsed, resolutions);
     for (const g of near.issues) engine.issue('block', 'possible_duplicate', g.key, g.message, g.data);
     const years = CT.tax.computeYears(engine, { toYear: year, useCarry: settings.useCarry !== false });
@@ -6854,11 +6883,13 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
 
   /**
    * Operazioni che sembrano la stessa ma arrivano da file diversi con righe non identiche (esempio: i due export dell'App Crypto.com).
-   * Stesso conto, stesso tipo, stesso asset, stesse quantita', orario entro 5 minuti. Non si decide da soli: si chiede all'utente.
-   * Risposte: 'dup_skip' = sono le stesse, si tengono quelle del primo file; 'ack' = sono diverse.
+   * Stesso conto, stesso tipo, stesso asset, stesse quantita', orario entro 5 minuti (a catena). Non si decide da soli: si chiede.
+   * Un "grappolo" puo' toccare piu' di due file: se si risponde 'dup_skip' si tiene l'operazione del file che ne ha di piu'
+   * (a parita' il primo) e si scartano le altre. 'ack' = sono operazioni diverse.
    */
   function nearDuplicates(events, fileOf, resolutions) {
     const WATCH = new Set([Kind.BUY, Kind.SELL, Kind.SWAP, Kind.INCOME, Kind.SPEND, Kind.TRANSFER_IN, Kind.TRANSFER_OUT]);
+    const order = new Map(); [...new Set([...fileOf.values()])].forEach((f, i) => order.set(f.id, i));
     const buckets = new Map();
     for (const e of events) {
       const f = fileOf.get(e);
@@ -6867,33 +6898,40 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
       if (!buckets.has(key)) buckets.set(key, []);
       buckets.get(key).push(e);
     }
-    const order = new Map(); [...new Set([...fileOf.values()])].forEach((f, i) => order.set(f.id, i));
-    const groups = new Map();
+    const groups = new Map();   // insieme di file -> grappoli
     for (const list of buckets.values()) {
       if (list.length < 2) continue;
-      const taken = new Set();
-      for (const b of list) {
-        const fb = fileOf.get(b);
-        for (const a of list) {
-          const fa = fileOf.get(a);
-          if (a === b || taken.has(a) || taken.has(b) || fa.id === fb.id || order.get(fa.id) > order.get(fb.id)) continue;
-          if (Math.abs(a.ts - b.ts) > 300000) continue;
-          taken.add(a); taken.add(b);
-          const key = `neardup:${fa.id}|${fb.id}`;
-          if (!groups.has(key)) groups.set(key, { key, fileA: fa, fileB: fb, pairs: [] });
-          groups.get(key).pairs.push({ a, b });
-          break;
-        }
+      list.sort((x, y) => x.ts - y.ts);
+      for (let i = 0; i < list.length;) {
+        let j = i + 1;
+        while (j < list.length && list[j].ts - list[j - 1].ts <= 300000) j++;
+        const cl = list.slice(i, j); i = j;
+        const files = [...new Set(cl.map((e) => fileOf.get(e).id))].sort((a, b) => order.get(a) - order.get(b));
+        if (files.length < 2) continue;
+        const key = 'neardup:' + files.join('|');
+        if (!groups.has(key)) groups.set(key, { key, files: files.map((id) => [...fileOf.values()].find((f) => f.id === id)), clusters: [] });
+        groups.get(key).clusters.push(cl);
       }
     }
     const skip = new Set(), issues = [];
+    const dmy = (ts) => CT.taxDate(ts).split('-').reverse().join('/');
+    const KIND = { buy: 'acquisto', sell: 'vendita', swap: 'scambio', income: 'provento', spend: 'spesa', transfer_in: 'ingresso', transfer_out: 'uscita' };
     for (const g of groups.values()) {
       const res = resolutions[g.key] && resolutions[g.key].action;
-      if (res === 'dup_skip') { g.pairs.forEach((p) => skip.add(p.b)); continue; }
+      if (res === 'dup_skip') {
+        for (const cl of g.clusters) {
+          const per = new Map(); cl.forEach((e) => { const id = fileOf.get(e).id; per.set(id, (per.get(id) || 0) + 1); });
+          const keep = [...per].sort((a, b) => b[1] - a[1] || order.get(a[0]) - order.get(b[0]))[0][0];
+          cl.forEach((e) => { if (fileOf.get(e).id !== keep) skip.add(e); });
+        }
+        continue;
+      }
       if (res === 'ack') continue;
-      const ex = g.pairs.slice(0, 3).map((p) => `${p.b.asset} ${CT.fq(p.b.qty)} del ${CT.taxDate(p.b.ts)}`);
-      issues.push({ key: g.key, message: `${g.pairs.length} operazioni compaiono sia in «${g.fileA.name}» sia in «${g.fileB.name}» con date e quantità uguali (${ex.join('; ')}${g.pairs.length > 3 ? '…' : ''}).`,
-        data: { fileA: g.fileA.id, fileB: g.fileB.id, nameA: g.fileA.name, nameB: g.fileB.name, count: g.pairs.length, examples: ex } });
+      const n = g.clusters.length;
+      const ex = g.clusters.slice(0, 3).map((cl) => { const e = cl[0]; return `${KIND[e.kind] || e.kind} ${CT.fq(e.qty)} ${e.asset} del ${dmy(e.ts)}`; });
+      const names = g.files.map((f) => `«${f.name}»`).join(', ');
+      issues.push({ key: g.key, message: `${n} ${n === 1 ? 'operazione compare' : 'operazioni compaiono'} in più file (${names}) con data (entro 5 minuti), asset e quantità uguali (${ex.join('; ')}${n > 3 ? '…' : ''}).`,
+        data: { files: g.files.map((f) => f.id), names: g.files.map((f) => f.name), count: n, examples: ex } });
     }
     return { skip, issues };
   }
@@ -7371,9 +7409,15 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
   }
 
   function describeResolution(c, uid, r) {
-    const base = uid.replace(/#(fee|netfee)$/, '');
+    const base = uid.replace(/#(fee|netfee)$/, '').replace(/^conv:/, '');
     const e = c.res.events.find((x) => x.uid === base);
-    const what = e ? `${dmy(CT.taxDate(e.ts))} · ${e.account} · ${qty(e.qty)} ${e.asset}` : uid;
+    const names = (c.state && c.state.files) ? new Map(c.state.files.map((f) => [f.id, f.name])) : new Map();
+    let what = e ? `${dmy(CT.taxDate(e.ts))} · ${e.account} · ${qty(e.qty)} ${e.asset}${uid.startsWith('conv:') ? ` → ${qty(e.counterQty)} ${e.counterAsset}` : ''}` : uid;
+    if (uid.startsWith('neardup:')) {
+      what = 'Operazioni presenti in più file: ' + uid.slice(8).split('|').map((id) => names.get(id) || '(file rimosso)').join(', ');
+      if (r.action === 'ack') return [what, 'Confermate come operazioni diverse (tutte conteggiate)'];
+      if (r.action === 'dup_skip') return [what, 'Sono la stessa operazione: contata una volta sola'];
+    }
     const A = { ignore: 'Riga ignorata', self_custody: `Trasferimento verso un proprio wallet (${r.wallet || 'Wallet personale'})`, from_self_custody: 'Ingresso da un proprio wallet', disposal: `Uscita trattata come vendita, valore ${r.value_eur} €`, set_cost: `Costo impostato: ${r.cost_eur} €${r.acquired ? ` (acquisto del ${dmy(r.acquired)})` : ''}`, cover_cost: `Costo del mancante impostato: ${r.cost_eur} €${r.acquired ? ` (acquisto del ${dmy(r.acquired)})` : ''}`, set_value: `Valore impostato: ${r.value_eur} €`, migration: 'Conversione di saldo trattata come aggiornamento del token (nessuna vendita, costo trasferito)', swap: 'Conversione di saldo trattata come scambio imponibile', dup_skip: 'Operazioni presenti in due file contate una volta sola', ack: 'Confermato dall\'utente' };
     return [what, A[r.action] || r.action];
   }
@@ -7533,6 +7577,7 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
       steps: [
         'Apri l\'app Crypto.com e vai in Contabilità → Cronologia transazioni.',
         'Scegli Esporta (CSV) e seleziona tutto il periodo, dall\'apertura del conto a oggi.',
+        'L\'app crea due file per periodo: «contanti» (conto in euro) e «criptovaluta». Caricali entrambi: molte operazioni compaiono in tutti e due e vengono contate una volta sola; se ti chiede conferma su qualcuna, rispondi dopo aver guardato le date.',
         'Se l\'app ti fa scegliere un intervallo, fai più esportazioni e carica tutti i file: le righe presenti in più file vengono contate una volta sola.',
         'Trascina qui i file scaricati.',
       ],
@@ -10967,6 +11012,36 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     if (!g.blockCount) out.push(h('div', { class: 'card tone-good' }, h('h2', null, 'Tutto a posto'), h('p', { class: 'muted' }, 'Non ci sono punti da risolvere. Controlla comunque i saldi finali nella scheda Dettaglio e confrontali con quelli che vedi nelle piattaforme.')));
     else out.push(h('div', { class: 'card tone-warn' }, h('h2', null, g.blockCount === 1 ? '1 cosa da controllare' : `${g.blockCount} cose da controllare`), h('p', { class: 'muted' }, 'Finché non le risolvi i numeri del Risultato sono una bozza. Il programma non indovina: ti chiede quello che non può sapere.')));
 
+    // prima le domande che cambiano il conteggio delle operazioni: le schede che ne dipendono (storico mancante, trasferimenti) vengono dopo
+    if (g.nearDup.length) {
+      const applyAll = (action, msg) => { g.nearDup.forEach((i) => { state.resolutions[i.uid] = { action }; }); changed(); toast(msg); };
+      for (const i of g.nearDup) {
+        const d = i.data;
+        out.push(issueCard('bad', `Sembra la stessa operazione in più file (${d.count})`,
+          `In ${d.names.map((x) => `«${x}»`).join(' e in ')} ${d.count === 1 ? 'c\'è un\'operazione' : 'ci sono ' + d.count + ' operazioni'} con la stessa data (entro 5 minuti), lo stesso asset e la stessa quantità. Di solito sono le stesse operazioni esportate due volte (per esempio l'export «contanti» e quello «criptovaluta»): se le contassi due volte, acquisti e vendite risulterebbero doppi.`,
+          h('ul', { class: 'clean muted small' }, d.examples.map((m) => h('li', null, m))),
+          h('div', { class: 'row' },
+            h('button', { class: 'btn primary', onclick: () => resolve(i.uid, { action: 'dup_skip' }, 'Contate una volta sola') }, 'Sono le stesse: contale una volta'),
+            h('button', { class: 'btn', onclick: () => resolve(i.uid, { action: 'ack' }, 'Annotato: sono operazioni diverse') }, 'Sono diverse: tienile tutte'))));
+      }
+      if (g.nearDup.length > 1) out.push(h('div', { class: 'row' },
+        h('button', { class: 'btn', onclick: () => applyAll('dup_skip', 'Contate una volta sola') }, `Sono le stesse in tutti i casi (${g.nearDup.length})`),
+        h('button', { class: 'btn', onclick: () => applyAll('ack', 'Annotato: sono operazioni diverse') }, 'Sono sempre diverse')));
+    }
+    if (g.conversions.length) {
+      const setAll = (action, msg) => { g.conversions.forEach((i) => { state.resolutions[i.uid] = { action }; }); changed(); toast(msg); };
+      const WHAT = 'Crypto.com ha convertito da solo questo saldo in un altro token (per esempio quando un token cambia nome o viene aggiornato). Se è un aggiornamento 1 a 1 dello stesso token non è una vendita: nessuna tassa e il costo di acquisto passa al nuovo token. Se lo consideri uno scambio tra cripto diverse, è una vendita imponibile.';
+      out.push(issueCard('bad', g.conversions.length === 1 ? 'Conversione di saldo da classificare' : `${g.conversions.length} conversioni di saldo da classificare`, WHAT,
+        h('ul', { class: 'clean', style: 'display:grid;gap:10px' }, g.conversions.map((i) => h('li', { class: 'row between' },
+          h('span', null, i.message),
+          h('span', { class: 'row' },
+            h('button', { class: 'btn primary', onclick: () => resolve(i.uid, { action: 'migration' }, 'Trattata come aggiornamento del token') }, 'Aggiornamento del token'),
+            h('button', { class: 'btn', onclick: () => resolve(i.uid, { action: 'swap' }, 'Trattata come scambio imponibile') }, 'Scambio imponibile'))))),
+        g.conversions.length > 1 ? h('div', { class: 'row' },
+          h('button', { class: 'btn', onclick: () => setAll('migration', 'Trattate come aggiornamento del token') }, 'Tutte: aggiornamento del token'),
+          h('button', { class: 'btn', onclick: () => setAll('swap', 'Trattate come scambi imponibili') }, 'Tutte: scambio imponibile')) : null));
+    }
+
     for (const i of g.transferOut) {
       const wallet = field('Nome del wallet', { value: 'Wallet personale', id: `w_${i.uid}` });
       const val = field('Valore in € al momento', { placeholder: 'es. 1500', id: `v_${i.uid}` });
@@ -11015,33 +11090,6 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
           h('button', { class: 'btn primary', onclick: () => { g.apiIncomplete.forEach((i) => { state.resolutions[i.uid] = { action: 'ack' }; }); changed(); toast('Annotato: nessuna operazione di questi tipi'); } }, `Non ho operazioni di nessuno di questi tipi (${g.apiIncomplete.length})`),
           h('button', { class: 'btn', onclick: goPlatforms }, 'Ne ho: aggiungo il file'))));
     }
-    if (g.conversions.length) {
-      const setAll = (action, msg) => { g.conversions.forEach((i) => { state.resolutions[i.uid] = { action }; }); changed(); toast(msg); };
-      if (g.conversions.length > 1) {
-        out.push(issueCard('bad', `${g.conversions.length} conversioni di saldo da classificare`,
-          'Crypto.com ha convertito da solo alcuni tuoi saldi in un altro token (per esempio quando un token cambia nome o viene aggiornato). Se è un aggiornamento 1 a 1 dello stesso token non è una vendita: nessuna tassa e il costo di acquisto passa al nuovo token. Se invece lo consideri uno scambio tra cripto diverse, è una vendita imponibile.',
-          h('ul', { class: 'clean muted small' }, g.conversions.map((i) => h('li', null, i.message))),
-          h('div', { class: 'row' },
-            h('button', { class: 'btn primary', onclick: () => setAll('migration', 'Trattate come aggiornamento del token') }, 'Sono tutti aggiornamenti dello stesso token'),
-            h('button', { class: 'btn', onclick: () => setAll('swap', 'Trattate come scambi imponibili') }, 'Trattali tutti come scambi imponibili'))));
-      } else {
-        const i = g.conversions[0];
-        out.push(issueCard('bad', i.message,
-          'Crypto.com ha convertito da solo questo saldo in un altro token. Se è un aggiornamento 1 a 1 dello stesso token (cambio di nome o migrazione) non è una vendita: nessuna tassa e il costo di acquisto passa al nuovo token. Se lo consideri uno scambio tra cripto diverse, è una vendita imponibile.',
-          h('div', { class: 'row' },
-            h('button', { class: 'btn primary', onclick: () => resolve(i.uid, { action: 'migration' }, 'Trattata come aggiornamento del token') }, 'È un aggiornamento dello stesso token'),
-            h('button', { class: 'btn', onclick: () => resolve(i.uid, { action: 'swap' }, 'Trattata come scambio imponibile') }, 'Trattala come scambio imponibile'))));
-      }
-    }
-    for (const i of g.nearDup) {
-      const d = i.data;
-      out.push(issueCard('bad', `Sembra la stessa operazione in due file (${d.count})`,
-        `In «${d.nameA}» e in «${d.nameB}» ci sono operazioni con la stessa data (entro 5 minuti), lo stesso asset e la stessa quantità. Di solito sono le stesse operazioni esportate due volte (per esempio l'export «contanti» e quello «criptovaluta»): se le contassi due volte, acquisti e vendite risulterebbero doppi.`,
-        h('ul', { class: 'clean muted small' }, d.examples.map((m) => h('li', null, m))),
-        h('div', { class: 'row' },
-          h('button', { class: 'btn primary', onclick: () => resolve(i.uid, { action: 'dup_skip' }, 'Contate una volta sola') }, 'Sono le stesse: contale una volta'),
-          h('button', { class: 'btn', onclick: () => resolve(i.uid, { action: 'ack' }, 'Annotato: sono operazioni diverse') }, 'Sono diverse: tienile tutte'))));
-    }
     for (const i of g.apiIncomplete.length > 1 ? [] : g.apiIncomplete) {   // con più voci basta la scheda unica sopra
       out.push(issueCard('bad', `${P[i.data.platform].name} (API): ${i.data.what}`,
         i.data.note || 'Questo tipo di dati non viene scaricato dall\'API oppure lo storico potrebbe essere incompleto.',
@@ -11054,14 +11102,16 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       const ex = u.items.slice(0, 3).map((i) => i.message);
       out.push(issueCard('bad', `${u.items.length} righe di tipo sconosciuto`, u.key,
         h('ul', { class: 'clean muted small' }, ex.map((m) => h('li', null, m))),
-        h('p', { class: 'small muted' }, 'Questo tipo di riga non è ancora gestito. Se è solo uno spostamento interno senza effetti fiscali puoi ignorarla; se invece è un acquisto, una vendita o un premio, copia la diagnostica e mandala a chi sviluppa l\'app così la aggiungiamo.'),
+        /conversione di saldo/.test(u.key)
+          ? h('p', { class: 'small muted' }, 'Sono conversioni di saldo che non riesco ad abbinare con certezza. Se le ignori il saldo resta sbagliato: il vecchio token risulta ancora posseduto e quello nuovo manca (e il quadro RW ne risente). La strada più sicura è inserire la conversione a mano come «scambio» (nel modello universale, piattaforma «Altra piattaforma o wallet personale») e poi ignorare queste righe. Oppure copia la diagnostica e mandala a chi sviluppa l\'app.')
+          : h('p', { class: 'small muted' }, 'Questo tipo di riga non è ancora gestito. Se è solo uno spostamento interno senza effetti fiscali puoi ignorarla; se invece è un acquisto, una vendita o un premio, copia la diagnostica e mandala a chi sviluppa l\'app così la aggiungiamo.'),
         h('div', { class: 'row' },
-          h('button', { class: 'btn', onclick: () => { u.items.forEach((i) => { state.resolutions[i.uid] = { action: 'ignore' }; }); changed(); toast('Righe ignorate'); } }, `Ignora tutte (${u.items.length})`),
+          h('button', { class: 'btn', onclick: () => { u.items.forEach((i) => { state.resolutions[i.uid] = { action: 'ignore' }; }); changed(); toast('Righe ignorate'); } }, /conversione di saldo/.test(u.key) ? `Ignora comunque (${u.items.length})` : `Ignora tutte (${u.items.length})`),
           h('button', { class: 'btn', onclick: () => copyText(R.diagnostics(res, state.files), 'Diagnostica') }, 'Copia diagnostica'))));
     }
     if (g.prices.size || [...res.engine.missingPrices.keys()].length) {
       const n = res.engine.missingPrices.size;
-      out.push(issueCard('bad', `Mancano ${n} prezzi in euro`, 'Servono soprattutto al prospetto del monitoraggio (RW: valore delle cripto al 1° gennaio e al 31 dicembre) e a valorizzare qualche operazione. Di solito basta premere «Scarica i prezzi in automatico».',
+      out.push(issueCard('bad', n === 1 ? 'Manca 1 prezzo in euro' : `Mancano ${n} prezzi in euro`, 'Servono soprattutto al prospetto del monitoraggio (RW: valore delle cripto al 1° gennaio e al 31 dicembre) e a valorizzare qualche operazione. Di solito basta premere «Scarica i prezzi in automatico».',
         h('div', { class: 'row' }, h('button', { class: 'btn primary', onclick: () => { ui.tab = 'prices'; render(); } }, 'Inserisci i prezzi'))));
     }
     for (const i of g.notes.filter((x) => x.level === 'block')) out.push(issueCard('bad', i.message, null));
@@ -11071,7 +11121,30 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     }
     const notes = g.notes.filter((x) => x.level !== 'block');
     if (notes.length) out.push(h('details', { class: 'card' }, h('summary', null, `Altre note (${notes.length})`), h('ul', { class: 'clean muted small' }, notes.slice(0, 200).map((i) => h('li', null, i.message)))));
+    const decided = Object.entries(state.resolutions || {});
+    if (decided.length) out.push(decisionsCard(res, decided));
     return h('div', { class: 'stack' }, out);
+  }
+
+  /** Elenco delle scelte fatte, con possibilita' di annullarle (un clic sbagliato non deve restare per sempre). */
+  function decisionsCard(res, decided) {
+    const ACT = { ignore: 'riga ignorata', ack: 'confermato', dup_skip: 'contate una volta sola', migration: 'aggiornamento del token (nessuna vendita)', swap: 'scambio imponibile',
+      self_custody: 'verso un proprio wallet', from_self_custody: 'da un proprio wallet', disposal: 'trattata come vendita', set_cost: 'costo impostato', cover_cost: 'costo del mancante impostato', set_value: 'valore impostato' };
+    const fname = (id) => { const f = state.files.find((x) => x.id === id); return f ? f.name : '(file rimosso)'; };
+    const label = ([key, r]) => {
+      const act = ACT[r.action] || r.action;
+      if (key.startsWith('neardup:')) return `Operazioni uguali in ${key.slice(8).split('|').map(fname).join(' e ')}: ${act}`;
+      if (key.startsWith('api_cov:')) return `Dati non scaricati dalle API (${key.split(':').slice(2).join(':')}): ${act}`;
+      const base = key.replace(/^conv:/, '').replace(/#(fee|netfee)$/, '');
+      const e = res.events.find((x) => x.uid === base);
+      const what = e ? `${dmy(CT.taxDate(e.ts))} · ${e.account} · ${CT.fq(e.qty)} ${e.asset}${key.startsWith('conv:') ? ' → ' + CT.fq(e.counterQty) + ' ' + e.counterAsset : ''}` : key;
+      return `${what}: ${act}`;
+    };
+    return h('details', { class: 'card' }, h('summary', null, `Decisioni prese (${decided.length})`),
+      h('p', { class: 'muted small' }, 'Le scelte che hai fatto finora. Se ti sei sbagliato annullala: il punto tornerà tra le cose da controllare.'),
+      h('ul', { class: 'clean', style: 'display:grid;gap:8px' }, decided.map((d) => h('li', { class: 'row between' },
+        h('span', { class: 'small' }, label(d)),
+        h('button', { class: 'btn quiet', onclick: () => { delete state.resolutions[d[0]]; changed(); toast('Scelta annullata'); } }, 'Annulla')))));
   }
 
   // ------------------------------------------------------------------ pannello: Risultato
@@ -11203,20 +11276,25 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       if ((i.code !== 'missing_price' && i.code !== 'missing_value') || !i.data) continue;
       const k = `${i.data.symbol}|${i.data.day}`;
       if (why.get(k) === 'op') continue;
-      why.set(k, i.data.forRW ? 'rw' : 'op');
+      why.set(k, i.data.forRW ? 'rw' : i.data.forRebase ? 'rebase' : 'op');
     }
     const reason = (n) => {
-      if (why.get(`${n.symbol}|${n.day}`) !== 'rw') return 'Per valorizzare un\'operazione';
+      const w = why.get(`${n.symbol}|${n.day}`);
+      if (w === 'rebase') return 'Rideterminazione del costo al 1/1/2025';
+      if (w !== 'rw') return 'Per valorizzare un\'operazione';
       return n.day.endsWith('-12-31') ? 'Quadro RW: valore a fine anno' : n.day.endsWith('-01-01') ? 'Quadro RW: valore a inizio anno' : 'Quadro RW: valore quando l\'hai acquistata o venduta';
     };
     const nRW = need.filter((n) => why.get(`${n.symbol}|${n.day}`) === 'rw').length;
+    const nRebase = need.filter((n) => why.get(`${n.symbol}|${n.day}`) === 'rebase').length;
+    const nOp = need.length - nRW - nRebase;
     const rows = need.map((n) => {
       const key = `${n.symbol}|${n.day}`;
       const sug = res.engine.prices.nearest(n.symbol, n.day);
       const input = h('input', { type: 'text', 'aria-label': `Prezzo ${n.symbol} ${n.day}`, placeholder: '€ per 1 ' + n.symbol, id: `p_${key}`, style: 'width:140px' });
       inputs.set(key, input);
-      return h('tr', null, h('td', null, n.symbol), h('td', null, dmy(n.day)), h('td', { class: 'small' }, reason(n)),
-        h('td', { class: 'muted small' }, sug ? h('span', null, `${money(sug.price)} (${dmy(sug.day)}, ${sug.daysApart} gg ${sug.daysApart === 1 ? 'prima/dopo' : 'di distanza'}) `, h('button', { class: 'btn quiet', onclick: () => { input.value = sug.price.toDecimalPlaces(8).toString(); } }, 'Usa')) : 'nessun prezzo noto'),
+      const far = sug && sug.daysApart > 7;
+      return h('tr', null, h('td', null, h('strong', null, n.symbol), h('div', { class: 'muted small' }, reason(n))), h('td', null, dmy(n.day)),
+        h('td', { class: 'muted small' }, sug ? h('span', null, `${money(sug.price)} (${dmy(sug.day)}, ${sug.daysApart} ${sug.daysApart === 1 ? 'giorno' : 'giorni'} ${sug.daysApart === 1 ? 'prima o dopo' : 'di distanza'}) `, far ? h('span', { class: 'pill warn' }, 'lontano: approssimato') : null, ' ', h('button', { class: 'btn quiet', onclick: () => { input.value = sug.price.toDecimalPlaces(8).toString(); } }, 'Usa')) : 'nessun prezzo noto'),
         h('td', null, input));
     });
     const saveAll = () => {
@@ -11239,13 +11317,13 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       h('div', { class: 'card' }, h('h2', null, need.length ? `Prezzi mancanti (${need.length})` : 'Nessun prezzo mancante'),
         need.length ? h('div', { class: 'stack', style: 'padding:0;gap:8px' },
           h('p', null, 'Per calcolare le tasse sulle vendite il programma usa gli importi in euro scritti nei tuoi file. Qui mancano invece alcuni prezzi in euro di una cripto in un certo giorno.'),
-          h('p', { class: 'muted' }, nRW ? `${nRW} di questi servono solo al prospetto RW (il quadro del monitoraggio): il valore in euro che le cripto che possiedi avevano il 1° gennaio e il 31 dicembre. ` : '', need.length - nRW ? `${need.length - nRW} servono a valorizzare singole operazioni. ` : '', 'Nella tabella, la colonna «Perché serve» dice a cosa serve ciascun prezzo.'),
-          h('p', { class: 'muted' }, 'Il modo più veloce: premi «Scarica i prezzi in automatico». Funziona dal link pubblicato o dal programma scaricato sul computer, non dentro claude.ai. Se qualche prezzo non arriva, scrivilo a mano (prezzo in euro di 1 unità alla chiusura del giorno) oppure premi «Usa» sul suggerimento: è il prezzo di un\'operazione vicina, quindi meno preciso. Per l\'oro scrivi il prezzo di 1 grammo.')) : h('p', { class: 'muted' }, 'Il programma usa già i prezzi che ricava dalle tue operazioni dello stesso giorno.'),
+          h('p', { class: 'muted' }, nRW ? `${nRW} ${nRW === 1 ? 'serve' : 'servono'} al prospetto RW (il quadro del monitoraggio, e di conseguenza all'imposta sul valore delle cripto): il valore in euro che le cripto che possiedi avevano il 1° gennaio e il 31 dicembre. ` : '', nRebase ? `${nRebase} ${nRebase === 1 ? 'serve' : 'servono'} alla rideterminazione del costo al 1° gennaio 2025. ` : '', nOp ? `${nOp} ${nOp === 1 ? 'serve' : 'servono'} a valorizzare singole operazioni. ` : '', 'Sotto ogni asset trovi a cosa serve quel prezzo.'),
+          h('p', { class: 'muted' }, 'Il modo più veloce: premi «Scarica i prezzi in automatico». Funziona dal link pubblicato o dal programma scaricato sul computer, non dentro claude.ai. Se qualche prezzo non arriva, scrivilo a mano (prezzo in euro di 1 unità alla chiusura del giorno). Il suggerimento con «Usa» è il prezzo di un\'altra operazione e può essere di mesi prima o dopo: serve solo come approssimazione, controlla i giorni indicati. Per l\'oro scrivi il prezzo di 1 grammo.')) : h('p', { class: 'muted' }, 'Il programma usa già i prezzi che ricava dalle tue operazioni dello stesso giorno.'),
         need.length ? [h('div', { class: 'row' },
             h('button', { class: 'btn primary', disabled: !!ui.busy, onclick: auto }, ui.busy || 'Scarica i prezzi in automatico'),
             h('button', { class: 'btn', onclick: saveAll }, 'Salva i prezzi scritti a mano'),
             h('span', { class: 'muted small' }, 'Il download automatico (CryptoCompare) invia solo simbolo e data.')),
-          h('div', { class: 'tbl-wrap' }, h('table', null, h('thead', null, h('tr', null, ['Asset', 'Data', 'Perché serve', 'Suggerimento', 'Prezzo in €'].map((x) => h('th', null, x)))), h('tbody', null, rows)))] : null),
+          h('div', { class: 'tbl-wrap' }, h('table', null, h('thead', null, h('tr', null, ['Asset', 'Data', 'Suggerimento', 'Prezzo in €'].map((x) => h('th', null, x)))), h('tbody', null, rows)))] : null),
       have.length ? h('div', { class: 'card' }, h('h3', null, `Prezzi inseriti (${have.length})`),
         h('div', { class: 'tbl-wrap' }, h('table', null, h('thead', null, h('tr', null, ['Asset', 'Data', 'Prezzo €', ''].map((x) => h('th', null, x)))),
           h('tbody', null, have.map(([k, v]) => { const [s, d] = k.split('|'); return h('tr', null, h('td', null, s), h('td', null, dmy(d)), h('td', { class: 'num' }, v), h('td', null, h('button', { class: 'btn quiet danger', onclick: () => { delete state.prices[k]; changed(); } }, 'Elimina'))); }))))) : null);

@@ -17,8 +17,9 @@ test('analyze: risultato, raggruppamento problemi, duplicati tra file sovrappost
   eq(r.y.crypto.gains, 200); eq(r.y.crypto.income, '0.5');
   assert.equal(r.engine.issues.filter((i) => i.code === 'duplicates').length, 1);
   assert.equal(r.groups.unknown.size, 1);
-  assert.ok(r.groups.prices.size >= 1); // mancano i prezzi 1/1 e 31/12 per il prospetto RW
-  assert.ok(r.groups.blockCount >= 2);
+  assert.ok(r.engine.issues.some((i) => i.code === 'rw_estimated')); // i prezzi 1/1 e 31/12 per il prospetto RW sono stimati con quelli noti: non bloccano
+  assert.equal(r.groups.prices.size, 0);
+  assert.ok(r.groups.blockCount >= 1);
 });
 
 test('analyze: risoluzioni, prezzi inseriti e operazioni manuali', () => {

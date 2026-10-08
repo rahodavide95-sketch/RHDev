@@ -302,10 +302,23 @@
       p.h2('Operazioni inserite a mano');
       p.table(['Data', 'Operazione', 'Conto', 'Asset', 'Quantità', 'Valore (€)'], state.manual.map((m) => [dmy(m.data.slice(0, 10)), m.tipo.replace(/_/g, ' '), m.conto, m.asset, m.quantita, m.valore_eur]), { num: [4, 5], fontSize: 8 });
     }
+    const src = state.priceSrc || {};
     const pr = Object.entries(state.prices || {});
-    if (pr.length) {
+    const dl = pr.filter(([k]) => src[k]), man = pr.filter(([k]) => !src[k]);
+    const prow = ([k, v]) => { const [s, d] = k.split('|'); return [s, dmy(d), String(v).replace('.', ','), src[k] || '']; };
+    if (dl.length) {
+      p.h2('Prezzi scaricati automaticamente');
+      p.para('Chiusura giornaliera (UTC) in euro, da servizi pubblici: Binance, Kraken o CryptoCompare. Verificali se servono per cifre importanti.', { color: MUTED, size: 8.5 });
+      p.table(['Asset', 'Data', 'Prezzo (€ per unità)', 'Fonte'], dl.map(prow), { num: [2], fontSize: 8 });
+    }
+    if (man.length) {
       p.h2('Prezzi inseriti manualmente');
-      p.table(['Asset', 'Data', 'Prezzo (€ per unità)'], pr.map(([k, v]) => { const [s, d] = k.split('|'); return [s, dmy(d), String(v).replace('.', ',')]; }), { num: [2], fontSize: 8 });
+      p.table(['Asset', 'Data', 'Prezzo (€ per unità)'], man.map((x) => prow(x).slice(0, 3)), { num: [2], fontSize: 8 });
+    }
+    if (res.groups.estimates && res.groups.estimates.length) {
+      p.h2('Valori del quadro RW stimati');
+      p.para('Per questi valori non c\'era il prezzo esatto del giorno: ho usato il prezzo noto più vicino. Non cambiano le imposte sulle vendite, ma cambiano il valore indicato nel quadro RW e l\'imposta sul valore (IVCA).', { color: MUTED, size: 8.5 });
+      p.table(['Stima'], res.groups.estimates.map((i) => [i.message]), { fontSize: 8 });
     }
     const rs = Object.entries(state.resolutions || {});
     if (rs.length) {

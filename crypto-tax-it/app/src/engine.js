@@ -154,7 +154,7 @@
       const res = this.opts.resolutions[uid];
       if (short.gt(0) && res && res.action === 'cover_cost') {
         const when = res.acquired ? new Date(res.acquired + 'T00:00:00Z') : new Date(e.ts.getTime() - 1000);
-        pool.add({ id: `L${String(++this._seq).padStart(6, '0')}`, asset: e.asset, ts: when, qty: short, unitCost: D(res.cost_eur).div(short), origin: 'manuale', documented: true, rebased: false });
+        pool.add({ id: `L${String(++this._seq).padStart(6, '0')}`, asset: e.asset, ts: when, qty: short, unitCost: D(res.cost_eur).div(short), origin: 'manuale', documented: !res.undocumented, rebased: false });
         const more = pool.consume(short);
         uses = uses.concat(more.uses);
         short = more.short;

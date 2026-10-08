@@ -189,3 +189,15 @@ test('conversione senza valore in euro: con "aggiornamento" non si chiede un pre
   r = CT.analyze({ files: conversionFiles(noVal), resolutions: { [k]: { action: 'swap' } }, settings: { year: 2025 } });
   assert.ok(r.engine.issues.some((i) => i.code === 'missing_value'), 'un realizzo senza valore non e\' un realizzo da zero');
 });
+
+test('"non ho altri file: costo 0": il mancante si calcola a costo zero e resta segnato come non documentato', () => {
+  const rows = [SELL_POL.replace('Sold POL', 'Sold POL').replace('POL', 'ETH'), ];
+  const f = () => conversionFiles(rows);
+  const first = CT.analyze({ files: f(), settings: { year: 2025 } });
+  assert.equal(first.groups.history.length, 1);
+  const res = {}; for (const i of first.groups.history) res[i.uid] = { action: 'cover_cost', cost_eur: '0', undocumented: true };
+  const r = CT.analyze({ files: f(), resolutions: res, settings: { year: 2025 } });
+  assert.equal(r.groups.history.length, 0);
+  assert.equal(String(r.y.crypto.gains), '80');      // tutto l'incasso e' guadagno
+  assert.ok(r.engine.disposals.some((d) => d.uses.some((u) => u.documented === false)), 'costo segnato come non documentato');
+});

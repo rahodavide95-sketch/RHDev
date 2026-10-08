@@ -698,8 +698,9 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
           h('button', { class: 'btn primary', disabled: !!ui.busy, onclick: () => autoPrices(false) }, ui.busy || 'Scarica i prezzi in automatico'),
           h('button', { class: 'btn', onclick: () => { ui.tab = 'prices'; render(); } }, 'Vedi e inserisci a mano')),
         h('p', { class: 'small muted' }, ui.busy ? 'Sto scaricando i prezzi…'
-          : ui.priceFail ? `Non sono riuscito a scaricarne ${ui.priceFail}: il download non funziona dentro claude.ai. Apri il link pubblicato oppure scrivili a mano.`
-            : 'Provo a scaricarli da solo. Funziona dal link pubblicato o dal programma scaricato sul computer, non dentro claude.ai.')));
+          : ui.priceFail ? (insideClaude() ? `Non sono riuscito a scaricarne ${ui.priceFail}: dentro claude.ai il download non è possibile. Apri il link pubblicato.`
+            : `Non sono riuscito a scaricarne ${ui.priceFail}. ${(ui.priceWhy || []).join(' · ')}. Premi di nuovo «Scarica i prezzi in automatico» tra qualche minuto, oppure scrivili a mano.`)
+            : 'Provo a scaricarli da solo (Binance, Kraken o CryptoCompare). Dentro claude.ai non è possibile: apri il link pubblicato.')));
     }
     for (const i of g.notes.filter((x) => x.level === 'block')) out.push(issueCard('bad', i.message, null));
     if (g.outOfScope.length) {
@@ -847,13 +848,12 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
   }
 
   // ------------------------------------------------------------------ pannello: Prezzi
+  const insideClaude = () => !!(typeof window !== 'undefined' && window.claude && window.claude.use);
+  /** Prezzo in euro alla chiusura del giorno: prova piu' servizi pubblici (vedi pricefeed.js). */
   async function fetchPrice(sym, day) {
-    const ts = Math.floor(Date.parse(day + 'T23:59:59Z') / 1000);
-    const r = await fetch(`https://min-api.cryptocompare.com/data/v2/histoday?fsym=${encodeURIComponent(sym)}&tsym=EUR&limit=1&toTs=${ts}`);
-    const j = await r.json();
-    const row = j && j.Data && j.Data.Data && j.Data.Data.find((x) => new Date(x.time * 1000).toISOString().slice(0, 10) === day);
-    if (!row || !row.close) throw new Error('prezzo non disponibile');
-    return String(row.close);
+    const r = await CT.pricefeed.dailyEur(sym, day);
+    ui.priceSource = r.source;
+    return r.price;
   }
   /** Perche' serve ogni prezzo mancante: 'rw' (quadro RW), 'rebase' (rideterminazione) o 'op' (valorizzare un'operazione). */
   function priceReasons(res) {
@@ -875,14 +875,16 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     if (!need.length) return;
     ui.busy = 'Scarico i prezzi…'; render();
     let ok = 0, ko = 0;
-    for (let i = 0; i < need.length; i += 4) {
-      await Promise.all(need.slice(i, i + 4).map(async (n) => {
+    const why = new Map();
+    for (let i = 0; i < need.length; i += 3) {
+      await Promise.all(need.slice(i, i + 3).map(async (n) => {
         const k = `${n.symbol}|${n.day}`; priceTried.add(k);
-        if (CT.classify(n.symbol) !== 'crypto') { ko++; return; }
-        try { state.prices[k] = await fetchPrice(n.symbol, n.day); ok++; } catch (e) { ko++; }
+        if (CT.classify(n.symbol) !== 'crypto') { ko++; why.set('oro', 'i metalli non si scaricano: scrivi il prezzo di 1 grammo'); return; }
+        try { state.prices[k] = await fetchPrice(n.symbol, n.day); ok++; }
+        catch (e) { ko++; for (const d of e.details || [e.message]) why.set(d.split(':')[0], d); }
       }));
     }
-    ui.busy = ''; ui.priceFail = ko; changed();
+    ui.busy = ''; ui.priceFail = ko; ui.priceWhy = [...why.values()].slice(0, 4); changed();
     if (!quiet || ok) toast(`${ok} ${ok === 1 ? 'prezzo scaricato' : 'prezzi scaricati'}${ko ? `, ${ko} da inserire a mano` : ''}`);
   }
   /** Appena mancano dei prezzi li chiede da solo, una volta sola per ciascuno: l'utente non deve fare niente. */
@@ -936,7 +938,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
         need.length ? [h('div', { class: 'row' },
             h('button', { class: 'btn primary', disabled: !!ui.busy, onclick: auto }, ui.busy || 'Scarica i prezzi in automatico'),
             h('button', { class: 'btn', onclick: saveAll }, 'Salva i prezzi scritti a mano'),
-            h('span', { class: 'muted small' }, 'Il download automatico (CryptoCompare) invia solo simbolo e data.')),
+            h('span', { class: 'muted small' }, 'Il download automatico (Binance, Kraken o CryptoCompare) invia solo simbolo e data.')),
           h('div', { class: 'tbl-wrap' }, h('table', null, h('thead', null, h('tr', null, ['Asset', 'Data', 'Suggerimento', 'Prezzo in €'].map((x) => h('th', null, x)))), h('tbody', null, rows)))] : null),
       have.length ? h('div', { class: 'card' }, h('h3', null, `Prezzi inseriti (${have.length})`),
         h('div', { class: 'tbl-wrap' }, h('table', null, h('thead', null, h('tr', null, ['Asset', 'Data', 'Prezzo €', ''].map((x) => h('th', null, x)))),

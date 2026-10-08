@@ -10,6 +10,7 @@
   const NEW_REGIME_DAY = '2023-01-01'; // dal 2023 le permute cripto-cripto sono realizzi imponibili
   const WALLET = 'Wallet personale';
   const it = (day) => day.split('-').reverse().join('/'); // 2025-03-07 -> 07/03/2025 (solo nei messaggi)
+  const nq = (x) => CT.fq(D(x).toDecimalPlaces(6)).replace('.', ','); // quantita' leggibile: virgola, al massimo 6 decimali
 
   // ------------------------------------------------------------ prezzi
   class PriceBook {
@@ -154,7 +155,10 @@
       const res = this.opts.resolutions[uid];
       if (short.gt(0) && res && res.action === 'cover_cost') {
         const when = res.acquired ? new Date(res.acquired + 'T00:00:00Z') : new Date(e.ts.getTime() - 1000);
-        pool.add({ id: `L${String(++this._seq).padStart(6, '0')}`, asset: e.asset, ts: when, qty: short, unitCost: D(res.cost_eur).div(short), origin: 'manuale', documented: !res.undocumented, rebased: false });
+        // se il costo e' stato indicato per una quantita' diversa da quella che manca adesso (nel frattempo e' stato caricato un file piu' vecchio) lo si riparte
+        const total = D(res.cost_eur);
+        const cost = res.qty && !D(res.qty).isZero() && !D(res.qty).eq(short) ? total.times(short).div(D(res.qty)) : total;
+        pool.add({ id: `L${String(++this._seq).padStart(6, '0')}`, asset: e.asset, ts: when, qty: short, unitCost: cost.div(short), origin: 'manuale', documented: !res.undocumented, rebased: false });
         const more = pool.consume(short);
         uses = uses.concat(more.uses);
         short = more.short;
@@ -170,7 +174,7 @@
         ({ uses, short } = this.coverMissing(pool, Object.assign({}, e, { asset }), uid, uses, short));
         if (short.gt(0)) {
           this.issue('block', 'missing_history', uid,
-            `Vendita/uso di ${CT.fq(qty)} ${asset} del ${it(taxDate(e.ts))}, ma dai file risultano solo ${CT.fq(qty.minus(short))} disponibili: mancano ${CT.fq(short)}.`,
+            `Vendita/uso di ${nq(qty)} ${asset} del ${it(taxDate(e.ts))}, ma dai file risultano solo ${nq(qty.minus(short))} disponibili: mancano ${nq(short)}.`,
             { asset, qty: short, day: taxDate(e.ts), account: e.account });
           uses.push({ lotId: 'MANCANTE', ts: e.ts, day: taxDate(e.ts), qty: short, cost: ZERO, documented: false, rebased: false, origin: '' });
         }
@@ -294,7 +298,7 @@
         const convChoice = e.conv ? (this.opts.resolutions[convKey] || {}).action : null;
         if (e.conv && !preRegime && convChoice !== 'migration' && convChoice !== 'swap') {
           this.issue('block', 'conversion_pending', convKey,
-            `Conversione di saldo del ${it(taxDate(e.ts))}: ${CT.fq(e.qty)} ${e.asset} → ${CT.fq(e.counterQty)} ${e.counterAsset}`,
+            `Conversione di saldo del ${it(taxDate(e.ts))}: ${nq(e.qty)} ${e.asset} → ${nq(e.counterQty)} ${e.counterAsset}`,
             { asset: e.asset, counter: e.counterAsset, qty: e.qty, counterQty: e.counterQty, day: taxDate(e.ts), account: e.account });
         }
         const carry = preRegime || convChoice === 'migration';   // nessun realizzo: il costo passa al nuovo asset
@@ -314,8 +318,8 @@
           let { uses, short } = pool.consume(e.qty);
           ({ uses, short } = this.coverMissing(pool, e, e.uid, uses, short));
           let cost = uses.reduce((t, u) => t.plus(u.cost), ZERO);
-          if (short.gt(0)) this.issue('block', 'missing_history', e.uid, `Permuta di ${CT.fq(e.qty)} ${e.asset} del ${it(taxDate(e.ts))}: mancano ${CT.fq(short)} negli acquisti caricati.`, { asset: e.asset, qty: short, day: taxDate(e.ts), account: e.account });
-          this.acquire(e, e.counterAsset, e.counterQty, cost, short.isZero());
+          if (short.gt(0)) this.issue('block', 'missing_history', e.uid, `Permuta di ${nq(e.qty)} ${e.asset} del ${it(taxDate(e.ts))}: mancano ${nq(short)} negli acquisti caricati.`, { asset: e.asset, qty: short, day: taxDate(e.ts), account: e.account });
+          this.acquire(e, e.counterAsset, e.counterQty, cost, short.isZero() && uses.every((u) => u.documented !== false));
         } else {
           this.dispose(e, e.uid, e.asset, e.qty, v.minus(fee), fee, 'swap', src, e.note);
           this.acquire(e, e.counterAsset, e.counterQty, v);
@@ -361,7 +365,7 @@
       this.move(e, wallet, e.asset, e.qty, this.hint(e));
       if (res.action === 'self_custody') this.issue('info', 'resolved_self_custody', e.uid, `Uscita verso ${wallet}: nessuna vendita`);
       else this.issue('block', 'transfer_out_unmatched', e.uid,
-        `Il ${it(taxDate(e.ts))} sono usciti ${CT.fq(e.qty)} ${e.asset} da ${e.account}, ma non risultano arrivati su un altro tuo conto.`,
+        `Il ${it(taxDate(e.ts))} sono usciti ${nq(e.qty)} ${e.asset} da ${e.account}, ma non risultano arrivati su un altro tuo conto.`,
         { asset: e.asset, qty: e.qty, day: taxDate(e.ts), account: e.account });
     }
 
@@ -385,7 +389,7 @@
       this.acquire(e, e.asset, e.qty, ZERO, false);
       this.move(e, e.account, e.asset, e.qty, this.hint(e));
       this.issue('block', 'transfer_in_unmatched', e.uid,
-        `Il ${it(taxDate(e.ts))} sono arrivati ${CT.fq(e.qty)} ${e.asset} su ${e.account} da un'origine che non conosco.`,
+        `Il ${it(taxDate(e.ts))} sono arrivati ${nq(e.qty)} ${e.asset} su ${e.account} da un'origine che non conosco.`,
         { asset: e.asset, qty: e.qty, day: taxDate(e.ts), account: e.account });
     }
   }

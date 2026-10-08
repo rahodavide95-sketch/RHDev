@@ -226,9 +226,17 @@ test('RW: acquistato e venduto nello stesso anno', () => {
   assert.equal(r.days, 10); eq(r.valueInitial, 100); eq(r.valueFinal, 130); eq(r.qtyEnd, 0);
 });
 
-test('RW: manca il prezzo del 31/12 -> blocca; oro senza IVCA', () => {
+test('RW: manca il prezzo del 31/12 -> stima col prezzo noto piu\' vicino (non blocca); oro senza IVCA', () => {
   const { engine } = run([ev(Kind.BUY, T(2025, 3, 1), 'XAU', 10, { value: 500, assetHint: 'Metal', account: 'bp' })]);
   const r = CT.computeRW(engine, 2025, CT.tax.RULES[2025])[0];
-  assert.ok(codes(engine, 'block').includes('missing_price')); assert.ok(engine.missingPrices.has('XAU|2025-12-31'));
+  assert.ok(!codes(engine, 'block').includes('missing_price'));
+  assert.ok(codes(engine, 'warn').includes('rw_estimated')); assert.ok(engine.missingPrices.has('XAU|2025-12-31'));
+  assert.equal(r.estimated, true); eq(r.valueFinal, 500);          // 10 g x 50 euro/g del giorno dell'acquisto
   eq(r.ivca, 0);
+});
+
+test('RW: senza nessun prezzo noto per quell\'asset il valore non si inventa: blocca e chiede', () => {
+  const { engine } = run([ev(Kind.TRANSFER_IN, T(2025, 3, 1), 'ADA', 100, { account: 'ex' })]);
+  CT.computeRW(engine, 2025, CT.tax.RULES[2025]);
+  assert.ok(codes(engine, 'block').includes('missing_price')); assert.ok(engine.missingPrices.has('ADA|2025-12-31'));
 });

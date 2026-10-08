@@ -53,7 +53,12 @@
     for (const e of manualToEvents(manual)) { if (!seen.has(e.uid)) { seen.add(e.uid); events.push(e); } }
 
     const pb = new CT.PriceBook();
-    for (const [k, v] of Object.entries(prices)) { const [sym, day] = k.split('|'); if (v !== '' && v !== null) pb.setManual(sym, day, v); }
+    for (const [k, v] of Object.entries(prices)) {
+      const [sym, day] = k.split('|');
+      const n = Number(String(v).replace(',', '.'));
+      if (!sym || !/^\d{4}-\d{2}-\d{2}$/.test(day || '') || v === '' || v === null || !Number.isFinite(n) || n <= 0) continue;   // valori non validi: come se non ci fossero
+      pb.setManual(sym, day, String(v).replace(',', '.'));
+    }
     const engine = new CT.Engine({ rebase2025: !!settings.rebase2025, resolutions, prices: pb }).run(events);
     if (duplicates) engine.issue('info', 'duplicates', '', `${duplicates} ${duplicates === 1 ? 'riga presente' : 'righe presenti'} in più file (periodi sovrapposti) ${duplicates === 1 ? 'è stata contata' : 'sono state contate'} una sola volta.`);
     apiIssues(engine, parsed, resolutions);
@@ -61,7 +66,11 @@
     const years = CT.tax.computeYears(engine, { toYear: year, useCarry: settings.useCarry !== false });
     const y = years[year];
     const rw = CT.computeRW(engine, year, y.rule);
-    return { year, parsed, events, engine, years, y, rw, groups: groupIssues(engine), balances: balancesAt(engine, `${year}-12-31`) };
+    const groups = groupIssues(engine);
+    // ipotesi: ogni scelta dell'utente e le stime del quadro RW; servono per dire "pronto con ipotesi" invece di "tutto a posto"
+    groups.assumptionCount = Object.keys(resolutions || {}).length + (groups.estimates.length ? 1 : 0);
+    const dataYears = [...new Set(events.filter((e) => e.ts && e.kind !== Kind.INFO).map((e) => CT.yearOf(taxDate(e.ts))))].sort();
+    return { year, parsed, events, engine, years, y, rw, groups, dataYears, balances: balancesAt(engine, `${year}-12-31`) };
   }
 
   /**
@@ -111,7 +120,7 @@
       }
       if (res === 'ack') continue;
       const n = g.clusters.length;
-      const ex = g.clusters.slice(0, 3).map((cl) => { const e = cl[0]; return `${KIND[e.kind] || e.kind} ${CT.fq(e.qty)} ${e.asset} del ${dmy(e.ts)}`; });
+      const ex = g.clusters.slice(0, 3).map((cl) => { const e = cl[0]; return `${KIND[e.kind] || e.kind} ${CT.fq(CT.D(e.qty).toDecimalPlaces(6)).replace('.', ',')} ${e.asset} del ${dmy(e.ts)}`; });
       const names = g.files.map((f) => `«${f.name}»`).join(', ');
       issues.push({ key: g.key, message: `${n} ${n === 1 ? 'operazione compare' : 'operazioni compaiono'} in più file (${names}) con data (entro 5 minuti), asset e quantità uguali (${ex.join('; ')}${n > 3 ? '…' : ''}).`,
         data: { files: g.files.map((f) => f.id), names: g.files.map((f) => f.name), count: n, examples: ex } });
@@ -159,7 +168,7 @@
 
   /** Raggruppa i problemi per la schermata "Da controllare". */
   function groupIssues(engine) {
-    const g = { transferOut: [], transferIn: [], history: [], unknown: new Map(), prices: new Map(), outOfScope: [], notes: [], apiIncomplete: [], overlap: [], nearDup: [], conversions: [], blockCount: 0 };
+    const g = { transferOut: [], transferIn: [], history: [], unknown: new Map(), prices: new Map(), outOfScope: [], notes: [], apiIncomplete: [], overlap: [], nearDup: [], conversions: [], estimates: [], blockCount: 0 };
     const seenPrice = new Set();
     for (const i of engine.issues) {
       if (i.level === 'block') {
@@ -179,9 +188,10 @@
           if (!seenPrice.has(k)) { seenPrice.add(k); g.prices.set(k, i); }
         } else g.notes.push(i);
       } else if (i.code === 'out_of_scope') g.outOfScope.push(i);
+      else if (i.code === 'rw_estimated') g.estimates.push(i);
       else g.notes.push(i);
     }
-    g.blockCount = g.transferOut.length + g.transferIn.length + g.history.length + g.apiIncomplete.length + g.overlap.length + g.nearDup.length + g.conversions.length +
+    g.blockCount = g.transferOut.length + g.transferIn.length + (g.history.length ? 1 : 0) + (g.apiIncomplete.length ? 1 : 0) + g.overlap.length + g.nearDup.length + (g.conversions.length ? 1 : 0) +
       [...g.unknown.values()].length + (g.prices.size ? 1 : 0) + g.notes.filter((i) => i.level === 'block').length;
     return g;
   }

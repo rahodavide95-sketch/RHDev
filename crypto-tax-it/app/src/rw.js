@@ -41,13 +41,25 @@
       }
       // valore di un ingresso/uscita: importo dell'operazione se noto, altrimenti prezzo di mercato del giorno
       const notes = [];
+      let estimated = false;
+      // senza il prezzo esatto del giorno si usa quello noto piu' vicino (dalle operazioni dell'utente) e il valore e' segnato "stimato":
+      // il prospetto RW non cambia le plusvalenze, quindi non blocca il risultato. Se non c'e' nessun prezzo noto si chiede.
+      const priced = (day, q, label) => {
+        const near = engine.prices.nearest(asset, day);
+        if (!near) { need(engine, asset, day, account, notes, label); return null; }
+        estimated = true;
+        const d2 = (x) => x.split('-').reverse().join('/');
+        engine.missingPrices.set(`${asset.toUpperCase()}|${day}`, { symbol: asset.toUpperCase(), day });
+        engine.issue('warn', 'rw_estimated', '', `Quadro RW: valore di ${asset} del ${d2(day)} stimato con il prezzo del ${d2(near.day)} (${near.daysApart} ${near.daysApart === 1 ? 'giorno' : 'giorni'} di distanza)`, { symbol: asset.toUpperCase(), day, forRW: true, from: near.day, daysApart: near.daysApart });
+        notes.push(`stimato con il prezzo del ${d2(near.day)}`);
+        return q.times(near.price);
+      };
       const valueAt = (pt) => {
         if (!pt) return null;
         if (pt.eur !== null && pt.eur !== undefined) return pt.eur;
         const p = engine.prices.get(asset, pt.day);
         if (p) return p.price.times(pt.qty);
-        need(engine, asset, pt.day, account, notes, `prezzo del ${pt.day.split('-').reverse().join('/')}`);
-        return null;
+        return priced(pt.day, pt.qty, `prezzo del ${pt.day.split('-').reverse().join('/')}`);
       };
       if (curStart !== null) intervals.push([curStart, end]);
       const qtyStart = moves.filter((m) => m.day < start).reduce((s, m) => s.plus(m.delta), ZERO);
@@ -59,18 +71,18 @@
       if (qtyStart.gt(DUST)) {
         const p = engine.prices.get(asset, start);
         if (p) v0 = qtyStart.times(p.price);
-        else { v0 = null; need(engine, asset, start, account, notes, 'prezzo al 1/1'); }
+        else v0 = priced(start, qtyStart, 'prezzo al 1/1');
       } else v0 = valueAt(firstIn);
       if (qtyEnd.gt(DUST)) {
         const p = engine.prices.get(asset, end);
         if (p) v1 = qtyEnd.times(p.price);
-        else { v1 = null; need(engine, asset, end, account, notes, 'prezzo al 31/12'); }
+        else v1 = priced(end, qtyEnd, 'prezzo al 31/12');
       } else v1 = valueAt(lastOut);
       let ivca = ZERO;
       if (cls === 'crypto' && v1 !== null && v1 !== undefined) ivca = rule.ivcaRate.times(v1).times(days).div(365);
       if (cls === 'metal') notes.push('metallo: IVCA/IVAFE non calcolate (verificare con il commercialista)');
       if (account === CT.WALLET || account.startsWith('Wallet')) notes.push('wallet personale: verificare obbligo e codice RW');
-      rows.push({ account, asset, cls, qtyStart, qtyEnd, days, valueInitial: v0, valueFinal: v1, ivca, notes });
+      rows.push({ account, asset, cls, qtyStart, qtyEnd, days, valueInitial: v0, valueFinal: v1, ivca, notes, estimated });
     }
     return rows;
   }

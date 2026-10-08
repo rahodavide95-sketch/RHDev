@@ -32,7 +32,7 @@
   const uid = () => Math.random().toString(36).slice(2, 9);
 
   // ------------------------------------------------------------------ stato e salvataggio
-  const state = { files: [], manual: [], resolutions: {}, prices: {}, settings: { year: 2025, rebase2025: false, useCarry: true }, taxpayer: { name: '', cf: '' }, custodians: {}, platforms: [], example: false };
+  const state = { files: [], manual: [], resolutions: {}, prices: {}, priceSrc: {}, settings: { year: 2025, rebase2025: false, useCarry: true }, taxpayer: { name: '', cf: '' }, custodians: {}, platforms: [], example: false };
   const ui = { tab: 'files', res: null, error: null, detail: 'cessioni', filter: '', confirmReset: false, toast: '', busy: '', ver: 0, pdf: null, pdfBusy: false, platform: null, method: 'file', confirmRemove: null, manualChoices: false, priceFail: 0 };
 
   function idb() {
@@ -67,9 +67,17 @@
   function recompute() {
     try { ui.res = CT.analyze(state); ui.error = null; } catch (e) { console.error(e); ui.res = null; ui.error = e; }
   }
+  /** Se nei file non ci sono operazioni dell'anno selezionato, passa all'ultimo anno che ne ha (e lo dice). Una scelta esplicita dell'utente non si tocca. */
+  function autoYear() {
+    const res = ui.res;
+    if (!res || state.settings.yearChosen || !res.dataYears.length || res.dataYears.includes(res.year)) return;
+    const ok = res.dataYears.filter((y) => CT.tax.YEARS.includes(y));
+    if (!ok.length) return;
+    state.settings.year = Math.max(...ok); ui.yearNote = true; recompute();
+  }
   function changed(nextTab) {
     ui.ver++; ui.pdf = null;
-    recompute(); save();
+    recompute(); autoYear(); save();
     if (nextTab) ui.tab = nextTab;
     render();
     maybeAutoPrices();
@@ -77,7 +85,7 @@
   function toast(msg) {
     ui.toast = msg; render();
     clearTimeout(toast.t);
-    toast.t = setTimeout(() => { ui.toast = ''; const el = document.querySelector('.toast'); if (el) el.remove(); }, 3500);
+    toast.t = setTimeout(() => { ui.toast = ''; const el = document.querySelector('.toast'); if (el) el.remove(); }, 6000);
   }
   function resolve(uidKey, resolution, msg) { state.resolutions[uidKey] = resolution; changed(); toast(msg || 'Fatto'); }
 
@@ -161,7 +169,11 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     addFileText('ESEMPIO-bitpanda.csv', EXAMPLE_BP, 'bitpanda');
     state.example = true;
     ui.platform = null;
-    changed('checks');
+    changed('result');
+  }
+  function exitExample() {
+    state.files = []; state.manual = []; state.resolutions = {}; state.prices = {}; state.platforms = []; state.example = false; ui.platform = null; ui.picker = false;
+    changed('files');
   }
 
   function platformStats(k) {
@@ -200,8 +212,8 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     const free = Object.keys(P).filter((k) => !addedKeys.includes(k));
     if (!addedKeys.length) {
       nodes.push(h('div', { class: 'card' },
-        h('h2', null, 'Scegli la piattaforma da aggiungere'),
-        h('p', { class: 'muted' }, 'Scegli una piattaforma dall\'elenco, poi decidi se aggiungerla con i file o con le API. Dopo la prima potrai aggiungerne altre: i trasferimenti tra le tue piattaforme vengono riconosciuti da soli.'),
+        h('h2', null, 'Da dove vengono le tue cripto?'),
+        h('p', { class: 'muted' }, 'Tocca la piattaforma che usi, poi carica i suoi file. Alla fine ti dico quanto devi pagare e preparo i PDF per il commercialista.'),
         !state.files.length ? h('div', { class: 'row' }, h('button', { class: 'btn', onclick: loadExample }, 'Prima vedi un esempio')) : null));
       nodes.push(pickerCard(free, false));
     } else {
@@ -212,27 +224,29 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       nodes.push(h('ul', { class: 'plist' }, addedKeys.map(platformBlock)));
       if (free.length) nodes.push(ui.picker ? pickerCard(free, true) : h('div', null, h('button', { class: 'btn', onclick: () => { ui.picker = true; render(); } }, '+ Aggiungi un\'altra piattaforma o wallet')));
     }
-    nodes.push(optionsCard());
-    nodes.push(h('div', { class: 'row' },
+    nodes.push(h('details', { class: 'card' }, h('summary', null, 'Opzioni e cancellazione dei dati'), h('div', { class: 'stack', style: 'padding:8px 0;gap:14px' }, optionsCard(), resetBlock())));
+    return h('div', { class: 'stack' }, nodes);
+  }
+
+  function resetBlock() {
+    return h('div', { class: 'row' },
       ui.confirmReset
         ? [h('span', { class: 'small' }, 'Cancellare tutte le piattaforme, i file, le scelte e i prezzi?'),
           h('button', { class: 'btn danger', onclick: () => { state.files = []; state.manual = []; state.resolutions = {}; state.prices = {}; state.platforms = []; state.example = false; ui.confirmReset = false; ui.platform = null; ui.picker = false; changed('files'); toast('Dati cancellati'); } }, 'Sì, cancella tutto'),
           h('button', { class: 'btn', onclick: () => { ui.confirmReset = false; render(); } }, 'Annulla')]
-        : h('button', { class: 'btn quiet danger', onclick: () => { ui.confirmReset = true; render(); } }, 'Cancella tutti i dati salvati')));
-    return h('div', { class: 'stack' }, nodes);
+        : h('button', { class: 'btn quiet danger', onclick: () => { ui.confirmReset = true; render(); } }, 'Cancella tutti i dati salvati'));
   }
 
   /** Elenco compatto di scelta: una riga con icona per ogni piattaforma non ancora aggiunta. Scegliere una riga la aggiunge. */
   function pickerCard(keys, closable) {
     return h('div', { class: 'card' },
       h('div', { class: 'row between' },
-        h('h2', null, closable ? 'Quale vuoi aggiungere?' : 'Piattaforme e wallet'),
+        h('h2', null, closable ? 'Quale vuoi aggiungere?' : 'Tocca il nome'),
         closable ? h('button', { class: 'btn quiet', onclick: () => { ui.picker = false; render(); } }, 'Chiudi') : null),
       h('ul', { class: 'plist pick' }, keys.map((k) => h('li', null,
         h('button', { class: 'pickrow', 'aria-label': `Aggiungi ${P[k].name}`, onclick: () => openPlatform(k) },
           platIcon(k),
-          h('span', { class: 'ptxt' }, h('span', { class: 'pname' }, P[k].name), h('span', { class: 'muted small' }, P[k].blurb),
-            h('span', { class: 'chips' }, h('span', { class: `pill ${P[k].native ? 'good' : 'idle'}` }, P[k].native ? 'File' : 'File (modello)'), apiBadge(k))),
+          h('span', { class: 'ptxt' }, h('span', { class: 'pname' }, P[k].name), h('span', { class: 'muted small' }, P[k].blurb)),
           h('span', { class: 'chev', 'aria-hidden': 'true' }, '›'))))));
   }
 
@@ -255,11 +269,11 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       h('div', { class: 'pact' }, h('button', { class: 'btn', 'aria-label': `Apri ${p.name}`, onclick: () => openPlatform(k) }, st.files.length ? 'Apri' : 'Aggiungi dati')));
   }
 
-  function openPlatform(k) {
+  function openPlatform(k, method) {
     ensurePlatform(k);
-    ui.platform = k; ui.picker = false;
+    ui.platform = k; ui.picker = false; ui.tab = 'files';
     // se l'API non c'e', l'unica strada e' il file: si seleziona da solo; altrimenti la scelta resta all'utente
-    ui.method = CT.api && CT.api.forPlatform && CT.api.forPlatform(k) ? null : 'file';
+    ui.method = method || (CT.api && CT.api.forPlatform && CT.api.forPlatform(k) ? null : 'file');
     save(); render(); window.scrollTo(0, 0);
   }
 
@@ -296,7 +310,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       h('div', null, h('button', { class: 'btn quiet', onclick: goPlatforms }, '← Tutte le piattaforme')),
       h('div', { class: 'card' },
         h('div', { class: 'row between' }, h('div', { class: 'row' }, platIcon(k), h('div', null, h('h2', null, p.name), h('p', { class: 'muted small' }, p.blurb))), remove),
-        h('h3', null, 'Come vuoi aggiungere i dati?'), methodChoice(k)),
+        CT.api && CT.api.forPlatform && CT.api.forPlatform(k) && p.api.status !== 'none' ? [h('h3', null, 'Come vuoi aggiungere i dati?'), methodChoice(k)] : null),
       ui.method === 'api' ? apiPanel(k) : ui.method === 'file' ? filePanel(k, st) : existingData(k, st));
   }
 
@@ -313,11 +327,11 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
         h('div', { class: 'row' }, platIcon(k),
           h('div', null, h('h2', { id: 'askTitle' }, `${p.name}: dati aggiunti`),
             h('p', { class: 'muted small' }, `${st.rows} ${st.rows === 1 ? 'riga letta' : 'righe lette'}${st.unknown ? ` · ${st.unknown} da controllare` : ''}${st.errors ? ` · ${st.errors} con errori` : ''}`))),
-        h('p', null, 'Vuoi aggiungere un altro wallet o un\'altra piattaforma?'),
+        h('p', null, 'Hai finito di caricare, o devi aggiungere altri file o un\'altra piattaforma?'),
         added.length > 1 ? h('div', { class: 'chips' }, added.map((x) => h('span', { class: 'row', style: 'gap:6px' }, platIcon(x, true), h('span', { class: 'small' }, P[x].name)))) : null,
         h('div', { class: 'btns' },
-          h('button', { class: 'btn primary', onclick: () => { close(); goAdd(); } }, 'Sì, aggiungi un\'altra piattaforma o wallet'),
-          h('button', { class: 'btn', onclick: () => { close(); ui.platform = null; ui.tab = blk ? 'checks' : 'result'; render(); window.scrollTo(0, 0); } }, 'No, avanti: controlla i dati'),
+          h('button', { class: 'btn primary', onclick: () => { close(); ui.platform = null; ui.tab = 'checks'; render(); window.scrollTo(0, 0); } }, 'Ho finito: avanti'),
+          h('button', { class: 'btn', onclick: () => { close(); goAdd(); } }, 'No, devo aggiungerne altri'),
           h('button', { class: 'btn quiet', onclick: () => { close(); render(); } }, `Resto su ${p.name}`))));
   }
 
@@ -415,24 +429,24 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
   function filePanel(k, st) {
     const p = P[k];
     const nodes = [];
-    if (p.kinds.length > 1) {
-      nodes.push(h('div', { class: 'card' }, h('h3', null, 'File che servono'),
-        h('ul', { class: 'clean' }, p.kinds.map((kd) => { const n = st.files.filter((f) => f.type === kd.type).length; return h('li', null, n ? '✓ ' : '○ ', kd.label, n ? ` · ${n} caricato${n === 1 ? '' : 'i'}` : ' · mancante'); }))));
-    }
-    nodes.push(h('div', { class: 'card' }, h('h3', null, 'Come ottenere i file'),
-      h('ol', { class: 'steps' }, p.steps.map((x) => h('li', null, x))),
-      !p.native ? h('div', { class: 'row' }, h('button', { class: 'btn', onclick: () => saveFile('modello-universale.csv', '﻿' + CT.importers.GENERIC_TEMPLATE, 'text/csv') }, 'Scarica il modello universale')) : null));
-
+    // prima il pulsante per scegliere i file, poi (ripiegate) le istruzioni per scaricarli
     const inputId = `fileInput_${k}`;
     const input = h('input', { type: 'file', id: inputId, multiple: true, accept: '.csv,.txt,.zip', class: 'sr', onchange: (e) => { addFiles(e.target.files, k); e.target.value = ''; } });
     const drop = h('label', { class: 'drop', for: inputId },
-      h('strong', null, `Trascina qui i file di ${p.name}`),
-      h('span', { class: 'muted' }, 'CSV oppure .zip. Puoi caricarne più d\'uno, anche di periodi diversi.'),
+      h('strong', null, `Scegli i file di ${p.name}`),
+      h('span', { class: 'muted' }, p.kinds.length > 1 ? `Servono: ${p.kinds.map((kd) => kd.label).join(' e ')}. CSV oppure .zip, anche di periodi diversi.` : 'CSV oppure .zip. Puoi caricarne più d\'uno, anche di periodi diversi.'),
       h('span', { class: 'btn primary' }, 'Scegli i file'), input);
     drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('over'); });
     drop.addEventListener('dragleave', () => drop.classList.remove('over'));
     drop.addEventListener('drop', (e) => { e.preventDefault(); drop.classList.remove('over'); if (e.dataTransfer && e.dataTransfer.files.length) addFiles(e.dataTransfer.files, k); });
     nodes.push(drop);
+    nodes.push(h('details', { class: 'card', open: !st.files.length }, h('summary', null, 'Come scarico i file?'),
+      h('ol', { class: 'steps' }, p.steps.map((x) => h('li', null, x))),
+      !p.native ? h('div', { class: 'row' }, h('button', { class: 'btn', onclick: () => saveFile('modello-universale.csv', '﻿' + CT.importers.GENERIC_TEMPLATE, 'text/csv') }, 'Scarica il modello universale')) : null));
+    if (p.kinds.length > 1) {
+      nodes.push(h('div', { class: 'card' }, h('h3', null, 'File che servono'),
+        h('ul', { class: 'clean' }, p.kinds.map((kd) => { const n = st.files.filter((f) => f.type === kd.type).length; return h('li', null, n ? '✓ ' : '○ ', kd.label, n ? ` · ${n} caricato${n === 1 ? '' : 'i'}` : ' · mancante'); }))));
+    }
     nodes.push(h('p', { class: 'muted small' }, 'I file restano nel tuo browser e non vengono inviati a nessuno.'));
 
     if (st.files.length) {
@@ -538,17 +552,19 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     const out = [];
     for (const i of res.groups.nearDup) {
       const d = i.data;
-      out.push({ kind: 'dup', uid: i.uid, action: 'dup_skip', text: `${d.count === 1 ? 'Un\'operazione compare' : d.count + ' operazioni compaiono'} in più file (${d.names.join(', ')}): sono le stesse, le conto una volta sola.` });
+      out.push({ kind: 'dup', uid: i.uid, action: 'dup_skip',
+        text: `${d.count === 1 ? 'Un\'operazione è scritta' : d.count + ' operazioni sono scritte'} due volte nei tuoi file (${d.names.join(' e ')}). Esempi: ${d.examples.join('; ')}. Sono le stesse: le conto una volta sola.` });
     }
     for (const i of res.groups.conversions) {
-      const same = i.data.qty.minus(i.data.counterQty).abs().lte(i.data.qty.times('0.001'));
+      const dt = i.data;
+      if (CT.STABLE.has(dt.asset) && CT.STABLE.has(dt.counter)) continue;   // tra due stablecoin non c'e' una risposta ovvia: resta la domanda
+      const same = dt.qty.minus(dt.counterQty).abs().lte(dt.qty.times('0.001'));
       out.push({ kind: 'conv', uid: i.uid, action: same ? 'migration' : 'swap',
-        text: same ? `${i.message}: stessa quantità, è un cambio di nome o una migrazione del token, non una vendita (nessuna tassa, il costo di acquisto passa al nuovo token).`
-          : `${i.message}: quantità diverse, è una vera conversione, quindi una vendita imponibile.` });
+        text: same ? `Il ${dmy(dt.day)} Crypto.com ha cambiato ${qty(dt.qty)} ${dt.asset} in ${qty(dt.counterQty)} ${dt.counter}: stessa quantità, di solito è un cambio di nome o una migrazione. Non è una vendita e non si paga niente.`
+          : `Il ${dmy(dt.day)} hai cambiato ${qty(dt.qty)} ${dt.asset} in ${qty(dt.counterQty)} ${dt.counter}: quantità diverse, per il fisco è una vendita (si paga la tassa sul guadagno).` });
     }
     return out;
   }
-
   /** Pulsante grande per il passo successivo: chi usa il programma deve sempre sapere cosa fare adesso. */
   function nextBar(label, tab, primary, back) {
     return h('div', { class: 'row', style: 'margin-top:8px' },
@@ -561,7 +577,11 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     if (!res) return noData();
     const g = res.groups;
     const out = [];
-    if (!g.blockCount) out.push(h('div', { class: 'card tone-good' }, h('h2', null, 'Tutto a posto'), h('p', { class: 'muted' }, 'Non ci sono punti da risolvere. Controlla comunque i saldi finali nella scheda Dettaglio e confrontali con quelli che vedi nelle piattaforme.')));
+    if (!g.blockCount && g.assumptionCount) out.push(h('div', { class: 'card tone-warn' }, h('h2', null, g.assumptionCount === 1 ? 'Quasi pronto: c\'è 1 ipotesi' : `Quasi pronto: ci sono ${g.assumptionCount} ipotesi`),
+      h('p', { class: 'muted' }, 'Non resta niente da sistemare, ma il risultato si basa su scelte che hai fatto tu o su stime del programma (le trovi qui sotto, e nei PDF). Falle vedere al commercialista.'),
+      h('button', { class: 'btn quiet', onclick: () => { ui.tab = 'detail'; ui.detail = 'giacenze'; render(); window.scrollTo(0, 0); } }, 'Confronta le quantità con quelle dell\'app')));
+    else if (!g.blockCount) out.push(h('div', { class: 'card tone-good' }, h('h2', null, 'Tutto a posto'), h('p', { class: 'muted' }, 'Non ci sono punti da risolvere. Se hai un attimo, confronta le quantità che risultano a fine anno con quelle che vedi nell\'app della piattaforma.'),
+      h('button', { class: 'btn quiet', onclick: () => { ui.tab = 'detail'; ui.detail = 'giacenze'; render(); window.scrollTo(0, 0); } }, 'Vedi le quantità')));
     else out.push(h('div', { class: 'card tone-warn' }, h('h2', null, g.blockCount === 1 ? '1 cosa da controllare' : `${g.blockCount} cose da controllare`), h('p', { class: 'muted' }, 'Finché non le sistemi, il Risultato è una bozza. Qui sotto trovi solo quello che il programma non può sapere da solo.')));
 
     // scelte consigliate: per i punti in cui la risposta piu' probabile e' chiara le propongo tutte insieme, accettabili con un clic
@@ -576,9 +596,12 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
           h('button', { class: 'btn quiet', onclick: () => { ui.manualChoices = true; render(); } }, 'Preferisco decidere io'))));
     }
     // prima le domande che cambiano il conteggio delle operazioni: le schede che ne dipendono (storico mancante, trasferimenti) vengono dopo
-    if (g.nearDup.length && (ui.manualChoices || !rec.some((r) => r.kind === 'dup'))) {
-      const applyAll = (action, msg) => { g.nearDup.forEach((i) => { state.resolutions[i.uid] = { action }; }); changed(); toast(msg); };
-      for (const i of g.nearDup) {
+    const recUids = new Set(rec.map((r) => r.uid));
+    const nearDupShow = g.nearDup.filter((i) => ui.manualChoices || !recUids.has(i.uid));
+    const convShow = g.conversions.filter((i) => ui.manualChoices || !recUids.has(i.uid));
+    if (nearDupShow.length) {
+      const applyAll = (action, msg) => { nearDupShow.forEach((i) => { state.resolutions[i.uid] = { action }; }); changed(); toast(msg); };
+      for (const i of nearDupShow) {
         const d = i.data;
         out.push(issueCard('bad', `Sembra la stessa operazione in più file (${d.count})`,
           `In ${d.names.map((x) => `«${x}»`).join(' e in ')} ${d.count === 1 ? 'c\'è un\'operazione' : 'ci sono ' + d.count + ' operazioni'} con la stessa data (entro 5 minuti), lo stesso asset e la stessa quantità. Di solito sono le stesse operazioni esportate due volte (per esempio l'export «contanti» e quello «criptovaluta»): se le contassi due volte, acquisti e vendite risulterebbero doppi.`,
@@ -587,15 +610,15 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
             h('button', { class: 'btn primary', onclick: () => resolve(i.uid, { action: 'dup_skip' }, 'Contate una volta sola') }, 'Sono le stesse: contale una volta'),
             h('button', { class: 'btn', onclick: () => resolve(i.uid, { action: 'ack' }, 'Annotato: sono operazioni diverse') }, 'Sono diverse: tienile tutte'))));
       }
-      if (g.nearDup.length > 1) out.push(h('div', { class: 'row' },
-        h('button', { class: 'btn', onclick: () => applyAll('dup_skip', 'Contate una volta sola') }, `Sono le stesse in tutti i casi (${g.nearDup.length})`),
+      if (nearDupShow.length > 1) out.push(h('div', { class: 'row' },
+        h('button', { class: 'btn', onclick: () => applyAll('dup_skip', 'Contate una volta sola') }, `Sono le stesse in tutti i casi (${nearDupShow.length})`),
         h('button', { class: 'btn', onclick: () => applyAll('ack', 'Annotato: sono operazioni diverse') }, 'Sono sempre diverse')));
     }
-    if (g.conversions.length && (ui.manualChoices || !rec.some((r) => r.kind === 'conv'))) {
-      const setAll = (action, msg) => { g.conversions.forEach((i) => { state.resolutions[i.uid] = { action }; }); changed(); toast(msg); };
+    if (convShow.length) {
+      const setAll = (action, msg) => { convShow.forEach((i) => { state.resolutions[i.uid] = { action }; }); changed(); toast(msg); };
       const WHAT = 'Crypto.com ha convertito da solo questo saldo in un altro token (per esempio quando un token cambia nome o viene aggiornato). Se è un aggiornamento 1 a 1 dello stesso token non è una vendita: nessuna tassa e il costo di acquisto passa al nuovo token. Se lo consideri uno scambio tra cripto diverse, è una vendita imponibile.';
-      out.push(issueCard('bad', g.conversions.length === 1 ? 'Conversione di saldo da classificare' : `${g.conversions.length} conversioni di saldo da classificare`, WHAT,
-        h('ul', { class: 'clean', style: 'display:grid;gap:12px' }, g.conversions.map((i) => {
+      out.push(issueCard('bad', convShow.length === 1 ? 'Conversione di saldo da classificare' : `${convShow.length} conversioni di saldo da classificare`, WHAT,
+        h('ul', { class: 'clean', style: 'display:grid;gap:12px' }, convShow.map((i) => {
           // stesse quantita' = di solito cambio di nome o migrazione 1 a 1; quantita' diverse = di solito una vera conversione
           const same = i.data.qty.minus(i.data.counterQty).abs().lte(i.data.qty.times('0.001'));
           return h('li', { class: 'row between' },
@@ -604,7 +627,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
               h('button', { class: `btn${same ? ' primary' : ''}`, onclick: () => resolve(i.uid, { action: 'migration' }, 'Trattata come aggiornamento del token') }, 'Aggiornamento del token'),
               h('button', { class: `btn${same ? '' : ' primary'}`, onclick: () => resolve(i.uid, { action: 'swap' }, 'Trattata come scambio imponibile') }, 'Scambio imponibile')));
         })),
-        g.conversions.length > 1 ? h('div', { class: 'row' },
+        convShow.length > 1 ? h('div', { class: 'row' },
           h('button', { class: 'btn', onclick: () => setAll('migration', 'Trattate come aggiornamento del token') }, 'Tutte: aggiornamento del token'),
           h('button', { class: 'btn', onclick: () => setAll('swap', 'Trattate come scambi imponibili') }, 'Tutte: scambio imponibile')) : null));
     }
@@ -634,19 +657,21 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     if (g.history.length) {
       const items = g.history;
       const one = items.length === 1;
+      const assets = [...new Set(items.map((i) => i.data.asset))];
+      const platOf = (i) => Object.keys(P).find((k) => P[k].account && P[k].account === i.data.account) || 'other';
       const costFields = items.map((i) => {
-        const cost = field(`Quanto hai speso in tutto per ${qty(i.data.qty)} ${i.data.asset}? (€)`, { placeholder: 'es. 400', id: `h_${i.uid}` });
+        const cost = field(`Quanto hai speso in tutto per ${qty(i.data.qty)} ${i.data.asset}? (in euro)`, { placeholder: 'es. 400', id: `h_${i.uid}`, inputmode: 'decimal' });
         const when = field('Data di acquisto (facoltativa)', { type: 'date', id: `hd_${i.uid}` });
         return h('div', null, h('div', { class: 'fields' }, cost.el, when.el),
-          h('button', { class: 'btn', onclick: () => { const v = needNumber(cost.input.value, 'il costo'); if (v) resolve(i.uid, { action: 'cover_cost', cost_eur: v, acquired: when.input.value || undefined }, 'Costo salvato'); } }, 'Salva questo costo'));
+          h('button', { class: 'btn', onclick: () => { const v = needNumber(cost.input.value, 'il costo'); if (v) resolve(i.uid, { action: 'cover_cost', cost_eur: v, qty: i.data.qty.toString(), acquired: when.input.value || undefined }, 'Costo salvato'); } }, 'Salva questo costo'));
       });
-      out.push(issueCard('bad', one ? `Non trovo l'acquisto di ${qty(items[0].data.qty)} ${items[0].data.asset}` : `Non trovo gli acquisti di ${items.length} operazioni`,
-        'Nei file caricati manca l\'acquisto di quello che hai venduto o convertito. Di solito manca un file più vecchio (dall\'apertura del conto): aggiungilo e il problema sparisce da solo.',
+      out.push(issueCard('bad', one ? `Non trovo quando hai comprato ${assets[0]}` : `Non trovo quando hai comprato ${assets.length <= 3 ? assets.join(', ') : assets.length + ' monete'}`,
+        'Nei file che hai caricato manca l\'acquisto. Di solito significa che manca un file più vecchio, dall\'apertura del conto: se ce l\'hai caricalo e questo punto sparisce da solo.',
         h('ul', { class: 'clean muted small' }, items.map((i) => h('li', null, `${dmy(i.data.day)} · ${i.data.account} · ${qty(i.data.qty)} ${i.data.asset}`))),
         h('div', { class: 'row' },
-          h('button', { class: 'btn primary', onclick: goAdd }, 'Aggiungi i file più vecchi'),
-          h('button', { class: 'btn', onclick: () => { items.forEach((i) => { state.resolutions[i.uid] = { action: 'cover_cost', cost_eur: '0', undocumented: true }; }); changed(); toast('Calcolato con costo 0'); } }, 'Non ho altri file: usa costo 0')),
-        h('p', { class: 'small muted' }, 'Con «costo 0» tutto l\'incasso conta come guadagno, quindi paghi più tasse del dovuto: va bene solo se non hai davvero nessun documento. Se ricordi quanto hai speso, scrivilo qui sotto.'),
+          h('button', { class: 'btn primary', onclick: () => openPlatform(platOf(items[0]), 'file') }, 'Ho altri file'),
+          h('button', { class: 'btn', onclick: () => { items.forEach((i) => { state.resolutions[i.uid] = { action: 'cover_cost', cost_eur: '0', qty: i.data.qty.toString(), undocumented: true }; }); changed(); toast('Calcolato con costo 0'); } }, 'Non ho documenti: vai avanti con costo 0')),
+        h('p', { class: 'small muted' }, 'Se non puoi dimostrare quanto hai speso, il costo conta come zero e tutto l\'incasso è guadagno: pagheresti più tasse del dovuto. Se hai una ricevuta o un estratto conto, scrivi qui sotto la cifra: le tasse scendono. Il commercialista può confermare.'),
         h('details', null, h('summary', null, 'Conosco il costo: lo scrivo io'), h('div', { class: 'stack', style: 'padding:8px 0;gap:14px' }, costFields))));
     }
     for (const i of g.overlap) {
@@ -684,23 +709,27 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
           h('button', { class: 'btn', onclick: () => { u.items.forEach((i) => { state.resolutions[i.uid] = { action: 'ignore' }; }); changed(); toast('Righe ignorate'); } }, /conversione di saldo/.test(u.key) ? `Ignora comunque (${u.items.length})` : `Ignora tutte (${u.items.length})`),
           h('button', { class: 'btn', onclick: () => copyText(R.diagnostics(res, state.files), 'Diagnostica') }, 'Copia diagnostica'))));
     }
-    if (g.prices.size || [...res.engine.missingPrices.keys()].length) {
+    if (g.prices.size || res.engine.missingPrices.size) {
       const n = res.engine.missingPrices.size;
       const why = priceReasons(res);
       const kinds = [...res.engine.missingPrices.keys()].map((k) => why.get(k) || 'op');
       const onlyRW = kinds.length > 0 && kinds.every((x) => x === 'rw');
-      const title = onlyRW ? (n === 1 ? 'Manca 1 valore di fine anno per il quadro RW' : `Mancano ${n} valori di fine anno per il quadro RW`) : (n === 1 ? 'Manca 1 prezzo in euro' : `Mancano ${n} prezzi in euro`);
-      const text = onlyRW
-        ? 'Il file contiene già il valore in euro di ogni operazione e il programma lo usa. Quello che manca sono i prezzi del 31 dicembre (e del 1° gennaio) delle cripto che possiedi: non stanno in nessuna riga perché quel giorno non è successo niente. Servono solo al prospetto RW e all\'imposta sul valore; non cambiano le plusvalenze né l\'imposta sostitutiva.'
-        : 'Servono soprattutto al prospetto del monitoraggio (RW: valore delle cripto al 1° gennaio e al 31 dicembre) e a valorizzare qualche operazione che nel file non ha un valore in euro.';
-      out.push(issueCard('bad', title, text,
-        h('div', { class: 'row' },
-          h('button', { class: 'btn primary', disabled: !!ui.busy, onclick: () => autoPrices(false) }, ui.busy || 'Scarica i prezzi in automatico'),
-          h('button', { class: 'btn', onclick: () => { ui.tab = 'prices'; render(); } }, 'Vedi e inserisci a mano')),
-        h('p', { class: 'small muted' }, ui.busy ? 'Sto scaricando i prezzi…'
-          : ui.priceFail ? (insideClaude() ? `Non sono riuscito a scaricarne ${ui.priceFail}: dentro claude.ai il download non è possibile. Apri il link pubblicato.`
-            : `Non sono riuscito a scaricarne ${ui.priceFail}. ${(ui.priceWhy || []).join(' · ')}. Premi di nuovo «Scarica i prezzi in automatico» tra qualche minuto, oppure scrivili a mano.`)
-            : 'Provo a scaricarli da solo (Binance, Kraken o CryptoCompare). Dentro claude.ai non è possibile: apri il link pubblicato.')));
+      const blocking = g.prices.size > 0;
+      const status = h('p', { class: 'small muted' }, ui.busy ? 'Sto scaricando i prezzi…'
+        : ui.priceFail ? (insideClaude() ? `Non sono riuscito a scaricarne ${ui.priceFail}: dentro claude.ai il download non è possibile. Apri il link pubblicato.`
+          : `Non sono riuscito a scaricarne ${ui.priceFail}. ${(ui.priceWhy || []).join(' · ')}. Riprova tra qualche minuto, oppure scrivili a mano.`)
+          : 'Provo a scaricarli da solo (Binance, Kraken o CryptoCompare). Dentro claude.ai non è possibile: apri il link pubblicato.');
+      const btns = h('div', { class: 'row' },
+        h('button', { class: 'btn primary', disabled: !!ui.busy, onclick: () => autoPrices(false) }, ui.busy || (blocking ? 'Scarica i prezzi in automatico' : 'Riprova a scaricare i prezzi esatti')),
+        h('button', { class: 'btn', onclick: () => { ui.tab = 'prices'; render(); window.scrollTo(0, 0); } }, 'Vedi e inserisci a mano'));
+      if (blocking) {
+        out.push(issueCard('bad', onlyRW ? (n === 1 ? 'Manca 1 valore di fine anno per il quadro RW' : `Mancano ${n} valori di fine anno per il quadro RW`) : (n === 1 ? 'Manca 1 prezzo in euro' : `Mancano ${n} prezzi in euro`),
+          onlyRW ? 'Il file contiene già il valore in euro di ogni operazione e il programma lo usa. Quello che manca sono i prezzi del 31 dicembre (e del 1° gennaio) delle cripto che possiedi: non stanno in nessuna riga perché quel giorno non è successo niente. Servono solo al prospetto RW e all\'imposta sul valore; non cambiano le plusvalenze né l\'imposta sostitutiva.'
+            : 'Servono soprattutto al prospetto del monitoraggio (RW: valore delle cripto al 1° gennaio e al 31 dicembre) e a valorizzare qualche operazione che nel file non ha un valore in euro.', btns, status));
+      } else {
+        out.push(issueCard('warn', n === 1 ? 'Ho stimato 1 prezzo di fine anno' : `Ho stimato ${n} prezzi di fine anno`,
+          'Per il quadro RW servono i prezzi del 31 dicembre (e del 1° gennaio) delle cripto che possiedi. Non li ho trovati nei tuoi file e non sono riuscito a scaricarli, quindi ho usato il prezzo più vicino che conosco e l\'ho segnato «stimato» (anche nei PDF). Non cambia le tasse sulle vendite: cambia solo il valore indicato nel quadro RW e la piccola imposta sul valore (IVCA).', btns, status));
+      }
     }
     for (const i of g.notes.filter((x) => x.level === 'block')) out.push(issueCard('bad', i.message, null));
     if (g.outOfScope.length) {
@@ -729,7 +758,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       const what = e ? `${dmy(CT.taxDate(e.ts))} · ${e.account} · ${CT.fq(e.qty)} ${e.asset}${key.startsWith('conv:') ? ' → ' + CT.fq(e.counterQty) + ' ' + e.counterAsset : ''}` : key;
       return `${what}: ${act}`;
     };
-    return h('details', { class: 'card' }, h('summary', null, `Decisioni prese (${decided.length})`),
+    return h('details', { class: 'card', open: !res.groups.blockCount }, h('summary', null, `Decisioni prese (${decided.length})`),
       h('p', { class: 'muted small' }, 'Le scelte che hai fatto finora. Se ti sei sbagliato annullala: il punto tornerà tra le cose da controllare.'),
       h('ul', { class: 'clean', style: 'display:grid;gap:8px' }, decided.map((d) => h('li', { class: 'row between' },
         h('span', { class: 'small' }, label(d)),
@@ -765,33 +794,46 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     const { y, groups: g } = res;
     const blk = g.blockCount;
     const nodes = [];
-    nodes.push(h('div', { class: `card hero tone-${blk ? 'warn' : 'good'}` },
-      h('span', { class: 'lbl' }, `Imposta sostitutiva stimata · anno ${res.year}`),
+    // se nei file non ci sono operazioni dell'anno scelto lo dico chiaro, invece di mostrare uno zero che sembra "non devi pagare niente"
+    if (res.dataYears.length && !res.dataYears.includes(res.year)) {
+      const ys = res.dataYears.filter((x) => CT.tax.YEARS.includes(x));
+      nodes.push(h('div', { class: 'card tone-warn' }, h('h3', null, `Per il ${res.year} non trovo operazioni nei tuoi file`),
+        h('p', { class: 'muted' }, `Le operazioni dei tuoi file vanno dal ${res.dataYears[0]} al ${res.dataYears[res.dataYears.length - 1]}. Il 0,00 € qui sotto vale solo per il ${res.year}.`),
+        h('div', { class: 'row' }, ys.map((yy) => h('button', { class: 'btn primary', onclick: () => { state.settings.year = yy; state.settings.yearChosen = true; ui.yearNote = false; changed(); } }, `Vedi il ${yy}`)))));
+    } else if (ui.yearNote) {
+      nodes.push(h('p', { class: 'small muted' }, `Ho scelto il ${res.year} perché è l'ultimo anno dei tuoi file. Puoi cambiarlo dal menu in alto.`));
+    }
+    const rwTotal0 = res.rw.reduce((t, r) => t.plus(r.ivca), CT.ZERO);
+    nodes.push(h('div', { class: `card hero tone-${blk || g.assumptionCount ? 'warn' : 'good'}` },
+      h('span', { class: 'lbl' }, `Imposta da pagare sulle cripto e sull'oro · anno ${res.year} (stima)`),
       h('div', { class: 'big' }, money(y.totalTax)),
       h('div', { class: 'row' },
-        blk ? h('button', { class: 'pill warn', onclick: () => { ui.tab = 'checks'; render(); } }, `Bozza: ${blk} da controllare →`) : h('span', { class: 'pill good' }, 'Nessun punto da risolvere'),
+        blk ? h('button', { class: 'pill warn', onclick: () => { ui.tab = 'checks'; render(); } }, `Bozza: ${blk} da controllare →`)
+          : g.assumptionCount ? h('button', { class: 'pill warn', onclick: () => { ui.tab = 'checks'; render(); } }, 'Pronto, con ipotesi →') : h('span', { class: 'pill good' }, 'Nessun punto da risolvere'),
         state.example ? h('span', { class: 'example' }, 'DATI DI ESEMPIO') : null),
-      h('p', { class: 'muted small' }, `Cripto ${money(y.crypto.tax)} · Oro e metalli ${money(y.metals.tax)}. ${y.rule.note}`)));
-    nodes.push(h('div', { class: 'grid2' }, basketCard(y.crypto), basketCard(y.metals)));
+      h('p', { class: 'muted small' }, `Cripto ${money(y.crypto.tax)} · Oro e metalli ${money(y.metals.tax)}.${rwTotal0.gt(0) ? ` In più, a parte: circa ${money(rwTotal0)} di imposta sul valore delle cripto (IVCA).` : ''}`)));
+    nodes.push(nextBar('Avanti: scarica i PDF', 'export', true));
+    const more = [];
+    more.push(h('div', { class: 'grid2' }, basketCard(y.crypto), basketCard(y.metals)));
 
     // RW
     const rwTotal = res.rw.reduce((s, r) => s.plus(r.ivca), CT.ZERO);
-    nodes.push(h('div', { class: 'card' }, h('h2', null, 'Monitoraggio (quadro RW) e imposta sul valore delle cripto'),
+    more.push(h('div', { class: 'card' }, h('h2', null, 'Monitoraggio (quadro RW) e imposta sul valore delle cripto'),
       h('p', { class: 'muted small' }, 'Cripto e oro custoditi presso piattaforme estere o wallet personali. Bozza di lavoro: i codici e i righi vanno presi dalle istruzioni del modello.'),
       res.rw.length ? h('div', { class: 'tbl-wrap' }, h('table', null,
         h('thead', null, h('tr', null, h('th', null, 'Dove'), h('th', null, 'Asset'), h('th', { class: 'num' }, 'Giorni'), h('th', { class: 'num' }, 'Valore iniziale'), h('th', { class: 'num' }, 'Valore finale'), h('th', { class: 'num' }, 'IVCA 0,2%'))),
-        h('tbody', null, res.rw.map((r) => h('tr', null, h('td', null, r.account), h('td', null, r.asset), h('td', { class: 'num' }, r.days), h('td', { class: 'num' }, money(r.valueInitial)), h('td', { class: 'num' }, money(r.valueFinal)), h('td', { class: 'num' }, r.cls === 'metal' ? '—' : money(r.ivca))))),
+        h('tbody', null, res.rw.map((r) => h('tr', null, h('td', null, r.account), h('td', null, r.asset), h('td', { class: 'num' }, r.days), h('td', { class: 'num' }, money(r.valueInitial), r.estimated ? h('div', { class: 'small muted' }, 'stimato') : null), h('td', { class: 'num' }, money(r.valueFinal), r.estimated ? h('div', { class: 'small muted' }, 'stimato') : null), h('td', { class: 'num' }, r.cls === 'metal' ? '—' : money(r.ivca))))),
         h('tfoot', null, h('tr', { class: 'total' }, h('td', { colspan: 5 }, 'IVCA indicativa totale'), h('td', { class: 'num' }, money(rwTotal)))))) : h('p', { class: 'muted' }, 'Nessuna cripto o oro detenuti in questo anno.')));
 
     // storico anni
     const yrs = Object.values(res.years).sort((a, b) => b.year - a.year);
-    nodes.push(h('div', { class: 'card' }, h('h2', null, 'Anni a confronto'),
+    more.push(h('div', { class: 'card' }, h('h2', null, 'Anni a confronto'),
       h('div', { class: 'tbl-wrap' }, h('table', null,
         h('thead', null, h('tr', null, h('th', null, 'Anno'), h('th', { class: 'num' }, 'Saldo cripto'), h('th', { class: 'num' }, 'Saldo oro'), h('th', { class: 'num' }, 'Imposta'))),
         h('tbody', null, yrs.map((r) => h('tr', null, h('td', null, r.year), h('td', { class: 'num' }, money(r.crypto.net.plus(r.crypto.income))), h('td', { class: 'num' }, money(r.metals.net)), h('td', { class: 'num' }, money(r.totalTax))))))),
       h('p', { class: 'muted small' }, 'Gli anni precedenti al 2023 seguivano regole diverse e non sono inclusi.')));
 
-    nodes.push(h('details', { class: 'card' }, h('summary', null, 'Come sono stati fatti i calcoli'),
+    more.push(h('details', { class: 'card' }, h('summary', null, 'Come sono stati fatti i calcoli'),
       h('ul', { class: 'clean muted small' },
         h('li', null, 'Costo di acquisto: metodo LIFO (si vendono prima gli ultimi acquistati), un unico conto virtuale per ogni asset su tutte le piattaforme.'),
         h('li', null, 'Gli scambi tra crypto, il passaggio a stablecoin e i pagamenti in crypto sono vendite imponibili al valore del giorno (dal 2023). Prima del 2023 non lo erano e il costo si trasferisce.'),
@@ -799,8 +841,8 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
         h('li', null, 'Le perdite sulle cripto compensano solo guadagni su cripto; l\'oro ha un conteggio separato.'),
         h('li', null, 'Le date contano secondo l\'orario italiano. Gli importi del quadro sono arrotondati all\'euro.'),
         h('li', null, `Regole ${res.year}: ${y.rule.status}. Aliquote e franchigie provengono da fonti secondarie: falle confermare da un professionista prima di firmare la dichiarazione.`))));
-    nodes.push(h('div', { class: 'row' }, nextBar('Avanti: scarica i PDF', 'export', true),
-      h('button', { class: 'btn quiet', onclick: () => { ui.tab = 'detail'; render(); window.scrollTo(0, 0); } }, 'Vedi tutte le operazioni')));
+    nodes.push(h('details', { class: 'card' }, h('summary', null, 'Dettagli per il commercialista (quadri RT e RW, anni a confronto, come sono fatti i calcoli)'), h('div', { class: 'stack', style: 'padding:8px 0;gap:14px' }, more)));
+    nodes.push(h('div', { class: 'row' }, h('button', { class: 'btn quiet', onclick: () => { ui.tab = 'detail'; render(); window.scrollTo(0, 0); } }, 'Vedi tutte le operazioni')));
     return h('div', { class: 'stack' }, nodes);
   }
 
@@ -849,17 +891,23 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
 
   // ------------------------------------------------------------------ pannello: Prezzi
   const insideClaude = () => !!(typeof window !== 'undefined' && window.claude && window.claude.use);
-  /** Prezzo in euro alla chiusura del giorno: prova piu' servizi pubblici (vedi pricefeed.js). */
+  /** Prezzo in euro alla chiusura del giorno: prova piu' servizi pubblici (vedi pricefeed.js). Un valore non credibile si scarta. */
   async function fetchPrice(sym, day) {
     const r = await CT.pricefeed.dailyEur(sym, day);
-    ui.priceSource = r.source;
-    return r.price;
+    const n = Number(r.price);
+    if (!Number.isFinite(n) || n <= 0) { const e = new Error('prezzo non valido'); e.details = [`${r.source}: prezzo non valido`]; throw e; }
+    const near = ui.res && ui.res.engine.prices.nearest(sym, day);
+    if (near) {
+      const ref = Number(near.price.toString());
+      if (ref > 0 && (n / ref > 20 || n / ref < 1 / 20)) { const e = new Error('prezzo non credibile'); e.details = [`${r.source}: ${sym} a ${n} € non è credibile (nei tuoi file valeva circa ${ref.toPrecision(3)} €)`]; throw e; }
+    }
+    return r;
   }
   /** Perche' serve ogni prezzo mancante: 'rw' (quadro RW), 'rebase' (rideterminazione) o 'op' (valorizzare un'operazione). */
   function priceReasons(res) {
     const why = new Map();
     for (const i of res.engine.issues) {
-      if ((i.code !== 'missing_price' && i.code !== 'missing_value') || !i.data) continue;
+      if ((i.code !== 'missing_price' && i.code !== 'missing_value' && i.code !== 'rw_estimated') || !i.data) continue;
       const k = `${i.data.symbol}|${i.data.day}`;
       if (why.get(k) === 'op') continue;
       why.set(k, i.data.forRW ? 'rw' : i.data.forRebase ? 'rebase' : 'op');
@@ -880,7 +928,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       await Promise.all(need.slice(i, i + 3).map(async (n) => {
         const k = `${n.symbol}|${n.day}`; priceTried.add(k);
         if (CT.classify(n.symbol) !== 'crypto') { ko++; why.set('oro', 'i metalli non si scaricano: scrivi il prezzo di 1 grammo'); return; }
-        try { state.prices[k] = await fetchPrice(n.symbol, n.day); ok++; }
+        try { const r = await fetchPrice(n.symbol, n.day); if (!state.prices[k]) { state.prices[k] = r.price; (state.priceSrc = state.priceSrc || {})[k] = r.source; } ok++; }
         catch (e) { ko++; for (const d of e.details || [e.message]) why.set(d.split(':')[0], d); }
       }));
     }
@@ -922,7 +970,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     });
     const saveAll = () => {
       let n = 0;
-      for (const [k, input] of inputs) { const v = input.value.trim().replace(',', '.'); if (v && !Number.isNaN(Number(v)) && Number(v) > 0) { state.prices[k] = v; n++; } }
+      for (const [k, input] of inputs) { const v = input.value.trim().replace(',', '.'); if (v && !Number.isNaN(Number(v)) && Number(v) > 0) { state.prices[k] = v; if (state.priceSrc) delete state.priceSrc[k]; n++; } }
       if (!n) { toast('Scrivi almeno un prezzo valido'); return; }
       changed(); toast(`${n} prezzi salvati`);
     };
@@ -942,7 +990,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
           h('div', { class: 'tbl-wrap' }, h('table', null, h('thead', null, h('tr', null, ['Asset', 'Data', 'Suggerimento', 'Prezzo in €'].map((x) => h('th', null, x)))), h('tbody', null, rows)))] : null),
       have.length ? h('div', { class: 'card' }, h('h3', null, `Prezzi inseriti (${have.length})`),
         h('div', { class: 'tbl-wrap' }, h('table', null, h('thead', null, h('tr', null, ['Asset', 'Data', 'Prezzo €', ''].map((x) => h('th', null, x)))),
-          h('tbody', null, have.map(([k, v]) => { const [s, d] = k.split('|'); return h('tr', null, h('td', null, s), h('td', null, dmy(d)), h('td', { class: 'num' }, v), h('td', null, h('button', { class: 'btn quiet danger', onclick: () => { delete state.prices[k]; changed(); } }, 'Elimina'))); }))))) : null);
+          h('tbody', null, have.map(([k, v]) => { const [s, d] = k.split('|'); return h('tr', null, h('td', null, s), h('td', null, dmy(d)), h('td', { class: 'num' }, v), h('td', null, h('button', { class: 'btn quiet danger', onclick: () => { delete state.prices[k]; if (state.priceSrc) delete state.priceSrc[k]; changed(); } }, 'Elimina'))); }))))) : null);
   }
 
   // ------------------------------------------------------------------ pannello: Esporta
@@ -1003,7 +1051,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     const out = await makePdfs();
     if (!out) return;
     const f = which === 'full' ? out.full : which === 'zip' ? out.zip : out.parts.find((x) => x.name === which);
-    if (f) saveFile(f.name, f.data, which === 'zip' ? 'application/zip' : 'application/pdf');
+    if (f) { await saveFile(f.name, f.data, which === 'zip' ? 'application/zip' : 'application/pdf'); ui.pdfDone = f.name; render(); }
   }
   function pdfCard(res) {
     const tp = state.taxpayer = state.taxpayer || { name: '', cf: '' };
@@ -1019,26 +1067,33 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       return h('div', { class: 'fields' }, n.el, k.el);
     });
     const blk = res.groups.blockCount;
+    const asm = res.groups.assumptionCount;
     const busy = ui.pdfBusy;
-    return h('div', { class: `card tone-${blk ? 'warn' : 'good'}` },
-      h('h2', null, `Documenti per la dichiarazione · ${res.year}`),
-      h('p', { class: 'muted' }, 'PDF pronti per te o per il commercialista: prospetti per i quadri RT e RW, riepilogo delle imposte e allegati che documentano ogni calcolo.'),
-      h('p', { class: 'small muted' }, 'Attenzione: l\'Agenzia delle Entrate non ha un modulo ufficiale per questi dati e non vuole allegati. I dati si dichiarano nel Modello Redditi PF; questi documenti servono a compilarlo e a dimostrare i calcoli in caso di controllo. Non sono moduli ufficiali.'),
-      blk ? h('p', { class: 'pill warn block' }, `Ci sono ${blk} punti da controllare: ogni pagina avrà la filigrana BOZZA.`) : h('p', { class: 'pill good block' }, 'Nessun punto aperto: i PDF non avranno la filigrana BOZZA.'),
-      h('h3', null, 'Dati del contribuente (facoltativi)'),
-      h('div', { class: 'fields' }, name.el, cf.el),
-      accounts.length ? [h('h3', null, 'Custodi per il quadro RW'), h('p', { class: 'small muted' }, 'Per ogni piattaforma o wallet servono la denominazione della società che custodisce i fondi e lo Stato. Se non li indichi, nel prospetto resta "(da indicare)".'), cust] : null,
+    return h('div', { class: `card tone-${blk || asm ? 'warn' : 'good'}` },
+      h('h2', null, blk ? `I PDF per il ${res.year} sono una bozza` : `I tuoi PDF per il ${res.year}`),
+      h('p', { class: 'muted' }, 'Non vanno mandati all\'Agenzia delle Entrate: li dai al tuo commercialista, che li usa per compilare la dichiarazione (Modello Redditi PF) e per dimostrare i calcoli in caso di controllo. Non sono moduli ufficiali.'),
+      blk ? h('p', { class: 'pill warn block' }, `Ci sono ancora ${blk} ${blk === 1 ? 'punto' : 'punti'} da sistemare: ogni pagina avrà la filigrana BOZZA.`)
+        : asm ? h('p', { class: 'pill warn block' }, `Pronti, con ${asm} ${asm === 1 ? 'ipotesi' : 'ipotesi'} elencate nell'Allegato E: falle vedere al commercialista.`)
+          : h('p', { class: 'pill good block' }, 'Nessun punto aperto: i PDF non hanno la filigrana BOZZA.'),
       h('div', { class: 'row' },
-        h('button', { class: 'btn primary', disabled: busy, onclick: () => downloadPdf('full') }, busy ? 'Sto preparando i PDF…' : 'Scarica il fascicolo completo (PDF)'),
-        h('button', { class: 'btn', disabled: busy, onclick: () => downloadPdf('zip') }, 'Scarica tutti i PDF separati (.zip)')),
-      h('details', null, h('summary', null, 'Scarica un singolo documento'),
-        h('div', null, CT.pdf.SECTIONS.map((sec) => h('div', { class: 'row between', style: 'padding:8px 0;border-top:1px solid var(--line)' },
-          h('span', null, sec.title), h('button', { class: 'btn', disabled: busy, onclick: () => downloadPdf(`${res.year}-${sec.file}.pdf`) }, 'Scarica'))))));
+        h('button', { class: 'btn primary', style: 'min-height:52px;font-size:17px', disabled: busy, onclick: () => downloadPdf('full') }, busy ? 'Sto preparando i PDF…' : 'Scarica il PDF per il commercialista')),
+      ui.pdfDone ? h('p', { class: 'small', style: 'margin-top:8px' }, `Fatto: «${ui.pdfDone}» è nella cartella Download del tuo computer (o dove salvi i file dal telefono). Mandalo al tuo commercialista.`) : null,
+      res.dataYears.filter((x) => x !== res.year && CT.tax.YEARS.includes(x)).length ? h('p', { class: 'small muted' }, `Hai operazioni anche nel ${res.dataYears.filter((x) => x !== res.year && CT.tax.YEARS.includes(x)).join(' e nel ')}: per averne i PDF cambia l'anno dal menu in alto.`) : null,
+      h('details', null, h('summary', null, 'Facoltativo: nome, codice fiscale e società che custodisce le cripto'),
+        h('div', { class: 'stack', style: 'padding:8px 0;gap:12px' },
+          h('p', { class: 'small muted' }, 'Se non li scrivi nel PDF resta "(da indicare)" e li aggiunge il commercialista.'),
+          h('div', { class: 'fields' }, name.el, cf.el),
+          accounts.length ? [h('h3', null, 'Dove sono custodite (quadro RW)'), h('p', { class: 'small muted' }, 'Per ogni piattaforma o wallet: il nome della società che custodisce i fondi (lo trovi nei termini e condizioni) e lo Stato.'), cust] : null)),
+      h('details', null, h('summary', null, 'Altri formati: PDF separati e singoli documenti'),
+        h('div', { class: 'stack', style: 'padding:8px 0;gap:8px' },
+          h('div', { class: 'row' }, h('button', { class: 'btn', disabled: busy, onclick: () => downloadPdf('zip') }, 'Scarica tutti i PDF separati (.zip)')),
+          CT.pdf.SECTIONS.map((sec) => h('div', { class: 'row between', style: 'padding:8px 0;border-top:1px solid var(--line)' },
+            h('span', null, sec.title), h('button', { class: 'btn', disabled: busy, onclick: () => downloadPdf(`${res.year}-${sec.file}.pdf`) }, 'Scarica'))))));
   }
 
   function noData() {
-    return h('div', { class: 'stack' }, h('div', { class: 'card empty' }, h('h2', null, 'Prima scegli le piattaforme'), h('p', { class: 'muted' }, ui.error ? `Errore: ${ui.error.message}` : 'Qui comparirà il risultato appena aggiungi una piattaforma e i suoi file.'),
-      h('button', { class: 'btn primary', onclick: goPlatforms }, 'Scegli le piattaforme')));
+    return h('div', { class: 'stack' }, h('div', { class: 'card empty' }, h('h2', null, 'Prima carica i tuoi file'), h('p', { class: 'muted' }, ui.error ? `Errore: ${ui.error.message}` : 'Appena aggiungi i file di una piattaforma ti dico quanto devi pagare e preparo i PDF per il commercialista.'),
+      h('button', { class: 'btn primary', onclick: goPlatforms }, 'Scegli i file')));
   }
 
   // ------------------------------------------------------------------ cornice
@@ -1050,19 +1105,24 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     const res = ui.res;
     const blk = res ? res.groups.blockCount : 0;
     const hasData = state.files.length || state.manual.length;
+    const asm = res ? res.groups.assumptionCount : 0;
     const status = !hasData ? h('span', { class: 'pill idle' }, 'Nessun dato')
-      : blk ? h('button', { class: 'pill warn', onclick: () => { ui.tab = 'checks'; render(); } }, `Bozza · ${blk} da controllare`) : h('span', { class: 'pill good' }, 'Pronto');
-    const yearSel = h('select', { id: 'yearSel', 'aria-label': 'Anno d\'imposta', onchange: (e) => { state.settings.year = +e.target.value; changed(); } },
+      : blk ? h('button', { class: 'pill warn', onclick: () => { ui.tab = 'checks'; render(); } }, `Bozza · ${blk} da controllare`)
+        : asm ? h('button', { class: 'pill warn', onclick: () => { ui.tab = 'checks'; render(); } }, 'Pronto, con ipotesi') : h('span', { class: 'pill good' }, 'Pronto');
+    const yearSel = h('select', { id: 'yearSel', 'aria-label': 'Anno d\'imposta', onchange: (e) => { state.settings.year = +e.target.value; state.settings.yearChosen = true; ui.yearNote = false; changed(); } },
       CT.tax.YEARS.map((y) => h('option', { value: y, selected: state.settings.year === y }, y)));
     const nav = h('nav', { class: 'nav', role: 'tablist' }, TABS.map(([k, t], i) => h('button', { class: 'tab', role: 'tab', 'aria-selected': (PARENT[ui.tab] || ui.tab) === k ? 'true' : 'false', onclick: () => { ui.tab = k; if (k === 'files') ui.platform = null; render(); window.scrollTo(0, 0); } },
       h('span', { class: 'n' }, i + 1), t,
       k === 'checks' && blk ? h('span', { class: 'badge' }, blk) : null)));
-    const panel = { files: () => (ui.platform ? panelPlatform(ui.platform) : panelPlatforms()), checks: panelChecks, result: panelResult, detail: panelDetail, prices: panelPrices, export: panelExport }[ui.tab]();
+    const panel = ui.tab !== 'files' && !hasData ? noData() : { files: () => (ui.platform ? panelPlatform(ui.platform) : panelPlatforms()), checks: panelChecks, result: panelResult, detail: panelDetail, prices: panelPrices, export: panelExport }[ui.tab]();
     const scrollY = window.scrollY;
     root.replaceChildren(...[
       h('header', { class: 'top' }, h('div', { class: 'wrap' },
         h('div', { class: 'top-in' }, h('div', null, h('div', { class: 'brand-name' }, 'Dichiarazione Crypto'), h('div', { class: 'brand-sub' }, 'Cripto e oro · redditi diversi · quadri RT e RW')),
           h('div', { class: 'top-ctl' }, h('label', { class: 'lbl', for: 'yearSel' }, 'Anno d\'imposta'), yearSel, status)), nav)),
+      state.example ? h('div', { class: 'wrap' }, h('div', { class: 'card tone-warn row between', style: 'margin-top:12px' },
+        h('span', null, h('strong', null, 'ESEMPIO con dati inventati. '), 'Non sono i tuoi numeri.'),
+        h('button', { class: 'btn primary', onclick: exitExample }, 'Usa i miei file'))) : null,
       h('main', { class: 'wrap', id: 'main' }, panel),
       ui.toast ? h('div', { class: 'toast', role: 'status' }, ui.toast) : null, askMoreModal()].filter(Boolean));
     window.scrollTo(0, scrollY);
@@ -1073,7 +1133,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
   async function start() {
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && ui.askMore) { ui.askMore = null; render(); } });
     await load();
-    recompute();
+    recompute(); autoYear();
     if (state.files.length && ui.res) ui.tab = ui.res.groups.blockCount ? 'checks' : 'result';
     render();
     maybeAutoPrices();

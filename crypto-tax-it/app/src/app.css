@@ -153,7 +153,7 @@ tr.sub td { background: var(--surface-2); font-size: 13px; }
 .chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 details > summary { cursor: pointer; font-weight: 500; }
 details[open] > summary { margin-bottom: 8px; }
-.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; z-index: 50; max-width: calc(100% - 32px); box-shadow: 0 6px 24px rgb(0 0 0 / .25); }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); top: calc(12px + env(safe-area-inset-top, 0px)); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; z-index: 50; max-width: calc(100% - 32px); box-shadow: 0 6px 24px rgb(0 0 0 / .25); }
 .example { background: var(--warn-soft); color: var(--warn); border-radius: 6px; padding: 2px 8px; font-size: 12px; font-weight: 600; }
 ul.clean { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
 .empty { display: grid; gap: 10px; justify-items: start; }
@@ -163,3 +163,22 @@ ul.clean { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
   th, td { padding: 7px 9px; }
 }
 @media (prefers-reduced-motion: no-preference) { .btn, .tab, .chip { transition: background .12s, color .12s, border-color .12s; } }
+
+/* telefono: intestazione compatta, pulsanti e campi comodi da toccare, testo non troppo piccolo */
+@media (max-width: 600px) {
+  .brand-sub, .top-ctl .lbl { display: none; }
+  .top-in { padding-block: 8px; gap: 4px 10px; flex-wrap: nowrap; }
+  .brand-name { font-size: 15px; line-height: 1.2; }
+  .top-ctl { flex-wrap: nowrap; gap: 6px; }
+  .top-ctl select { min-height: 38px; padding: 4px 6px; }
+  .top-ctl .pill { font-size: 12px; padding: 3px 9px; white-space: normal; text-align: left; line-height: 1.2; }
+  .nav { display: grid; grid-template-columns: repeat(4, 1fr); overflow: visible; gap: 0; }
+  .tab { justify-content: center; padding: 10px 2px; gap: 5px; }
+  .tab .n { display: none; }
+  .toast { top: auto; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); pointer-events: none; }
+  .btn, button.chip { min-height: 46px; }
+  select, input[type=text], input[type=number], input[type=date], input[type=password] { min-height: 46px; font-size: 16px; }
+  summary { min-height: 46px; display: list-item; padding-block: 10px; }
+  .small { font-size: 14px; }
+  .row > .btn.primary { flex: 1 1 100%; }
+}

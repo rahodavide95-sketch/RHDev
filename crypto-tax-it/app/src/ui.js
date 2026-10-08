@@ -560,11 +560,15 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       const setAll = (action, msg) => { g.conversions.forEach((i) => { state.resolutions[i.uid] = { action }; }); changed(); toast(msg); };
       const WHAT = 'Crypto.com ha convertito da solo questo saldo in un altro token (per esempio quando un token cambia nome o viene aggiornato). Se è un aggiornamento 1 a 1 dello stesso token non è una vendita: nessuna tassa e il costo di acquisto passa al nuovo token. Se lo consideri uno scambio tra cripto diverse, è una vendita imponibile.';
       out.push(issueCard('bad', g.conversions.length === 1 ? 'Conversione di saldo da classificare' : `${g.conversions.length} conversioni di saldo da classificare`, WHAT,
-        h('ul', { class: 'clean', style: 'display:grid;gap:10px' }, g.conversions.map((i) => h('li', { class: 'row between' },
-          h('span', null, i.message),
-          h('span', { class: 'row' },
-            h('button', { class: 'btn primary', onclick: () => resolve(i.uid, { action: 'migration' }, 'Trattata come aggiornamento del token') }, 'Aggiornamento del token'),
-            h('button', { class: 'btn', onclick: () => resolve(i.uid, { action: 'swap' }, 'Trattata come scambio imponibile') }, 'Scambio imponibile'))))),
+        h('ul', { class: 'clean', style: 'display:grid;gap:12px' }, g.conversions.map((i) => {
+          // stesse quantita' = di solito cambio di nome o migrazione 1 a 1; quantita' diverse = di solito una vera conversione
+          const same = i.data.qty.minus(i.data.counterQty).abs().lte(i.data.qty.times('0.001'));
+          return h('li', { class: 'row between' },
+            h('span', null, i.message, h('div', { class: 'small muted' }, same ? 'Le quantità sono uguali: di solito è un cambio di nome o una migrazione del token.' : 'Le quantità sono diverse: di solito è una vera conversione in un altro asset, quindi una vendita.')),
+            h('span', { class: 'row' },
+              h('button', { class: `btn${same ? ' primary' : ''}`, onclick: () => resolve(i.uid, { action: 'migration' }, 'Trattata come aggiornamento del token') }, 'Aggiornamento del token'),
+              h('button', { class: `btn${same ? '' : ' primary'}`, onclick: () => resolve(i.uid, { action: 'swap' }, 'Trattata come scambio imponibile') }, 'Scambio imponibile')));
+        })),
         g.conversions.length > 1 ? h('div', { class: 'row' },
           h('button', { class: 'btn', onclick: () => setAll('migration', 'Trattate come aggiornamento del token') }, 'Tutte: aggiornamento del token'),
           h('button', { class: 'btn', onclick: () => setAll('swap', 'Trattate come scambi imponibili') }, 'Tutte: scambio imponibile')) : null));
@@ -639,8 +643,18 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     }
     if (g.prices.size || [...res.engine.missingPrices.keys()].length) {
       const n = res.engine.missingPrices.size;
-      out.push(issueCard('bad', n === 1 ? 'Manca 1 prezzo in euro' : `Mancano ${n} prezzi in euro`, 'Servono soprattutto al prospetto del monitoraggio (RW: valore delle cripto al 1° gennaio e al 31 dicembre) e a valorizzare qualche operazione. Di solito basta premere «Scarica i prezzi in automatico».',
-        h('div', { class: 'row' }, h('button', { class: 'btn primary', onclick: () => { ui.tab = 'prices'; render(); } }, 'Inserisci i prezzi'))));
+      const why = priceReasons(res);
+      const kinds = [...res.engine.missingPrices.keys()].map((k) => why.get(k) || 'op');
+      const onlyRW = kinds.length > 0 && kinds.every((x) => x === 'rw');
+      const title = onlyRW ? (n === 1 ? 'Manca 1 valore di fine anno per il quadro RW' : `Mancano ${n} valori di fine anno per il quadro RW`) : (n === 1 ? 'Manca 1 prezzo in euro' : `Mancano ${n} prezzi in euro`);
+      const text = onlyRW
+        ? 'Il file contiene già il valore in euro di ogni operazione e il programma lo usa. Quello che manca sono i prezzi del 31 dicembre (e del 1° gennaio) delle cripto che possiedi: non stanno in nessuna riga perché quel giorno non è successo niente. Servono solo al prospetto RW e all\'imposta sul valore; non cambiano le plusvalenze né l\'imposta sostitutiva.'
+        : 'Servono soprattutto al prospetto del monitoraggio (RW: valore delle cripto al 1° gennaio e al 31 dicembre) e a valorizzare qualche operazione che nel file non ha un valore in euro.';
+      out.push(issueCard('bad', title, text,
+        h('div', { class: 'row' },
+          h('button', { class: 'btn primary', disabled: !!ui.busy, onclick: autoPrices }, ui.busy || 'Scarica i prezzi in automatico'),
+          h('button', { class: 'btn', onclick: () => { ui.tab = 'prices'; render(); } }, 'Vedi e inserisci a mano')),
+        h('p', { class: 'small muted' }, 'Il download automatico funziona dal link pubblicato o dal programma scaricato sul computer, non dentro claude.ai.')));
     }
     for (const i of g.notes.filter((x) => x.level === 'block')) out.push(issueCard('bad', i.message, null));
     if (g.outOfScope.length) {
@@ -793,12 +807,8 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     if (!row || !row.close) throw new Error('prezzo non disponibile');
     return String(row.close);
   }
-  function panelPrices() {
-    const res = ui.res;
-    if (!res) return noData();
-    const need = [...res.engine.missingPrices.values()].sort((a, b) => (a.symbol + a.day < b.symbol + b.day ? -1 : 1));
-    const inputs = new Map();
-    // perche' serve ogni prezzo: dal quadro RW (valore a inizio/fine anno) oppure per valorizzare un'operazione in euro
+  /** Perche' serve ogni prezzo mancante: 'rw' (quadro RW), 'rebase' (rideterminazione) o 'op' (valorizzare un'operazione). */
+  function priceReasons(res) {
     const why = new Map();
     for (const i of res.engine.issues) {
       if ((i.code !== 'missing_price' && i.code !== 'missing_value') || !i.data) continue;
@@ -806,6 +816,28 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       if (why.get(k) === 'op') continue;
       why.set(k, i.data.forRW ? 'rw' : i.data.forRebase ? 'rebase' : 'op');
     }
+    return why;
+  }
+  /** Scarica i prezzi mancanti (CryptoCompare: invia solo simbolo e data). Non funziona dentro claude.ai. */
+  async function autoPrices() {
+    const res = ui.res;
+    if (!res) return;
+    const need = [...res.engine.missingPrices.values()];
+    ui.busy = 'Scarico i prezzi…'; render();
+    let ok = 0, ko = 0;
+    for (const n of need) {
+      if (CT.classify(n.symbol) !== 'crypto') { ko++; continue; }
+      try { state.prices[`${n.symbol}|${n.day}`] = await fetchPrice(n.symbol, n.day); ok++; } catch (e) { ko++; }
+    }
+    ui.busy = ''; changed(); toast(`${ok} ${ok === 1 ? 'prezzo scaricato' : 'prezzi scaricati'}${ko ? `, ${ko} da inserire a mano (il download non funziona dentro claude.ai: usa il link pubblicato)` : ''}`);
+  }
+  function panelPrices() {
+    const res = ui.res;
+    if (!res) return noData();
+    const need = [...res.engine.missingPrices.values()].sort((a, b) => (a.symbol + a.day < b.symbol + b.day ? -1 : 1));
+    const inputs = new Map();
+    // perche' serve ogni prezzo: dal quadro RW (valore a inizio/fine anno), dalla rideterminazione o per valorizzare un'operazione in euro
+    const why = priceReasons(res);
     const reason = (n) => {
       const w = why.get(`${n.symbol}|${n.day}`);
       if (w === 'rebase') return 'Rideterminazione del costo al 1/1/2025';
@@ -831,15 +863,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       if (!n) { toast('Scrivi almeno un prezzo valido'); return; }
       changed(); toast(`${n} prezzi salvati`);
     };
-    const auto = async () => {
-      ui.busy = 'Scarico i prezzi…'; render();
-      let ok = 0, ko = 0;
-      for (const n of need) {
-        if (CT.classify(n.symbol) !== 'crypto') { ko++; continue; }
-        try { state.prices[`${n.symbol}|${n.day}`] = await fetchPrice(n.symbol, n.day); ok++; } catch (e) { ko++; }
-      }
-      ui.busy = ''; changed(); toast(`${ok} prezzi scaricati${ko ? `, ${ko} da inserire a mano` : ''}`);
-    };
+    const auto = autoPrices;
     const have = Object.entries(state.prices);
     return h('div', { class: 'stack' },
       h('div', { class: 'card' }, h('h2', null, need.length ? `Prezzi mancanti (${need.length})` : 'Nessun prezzo mancante'),

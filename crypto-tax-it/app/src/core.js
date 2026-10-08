@@ -51,7 +51,7 @@
       uid: '', ts: null, account: '', kind: Kind.INFO, asset: '', qty: ZERO, assetHint: null,
       counterAsset: '', counterQty: ZERO, value: null, valueCcy: 'EUR',
       feeAsset: '', feeQty: ZERO, feeValue: null, feeValueCcy: 'EUR',
-      incomeType: '', ref: '', note: '', src: '', raw: null, unkKey: '',
+      incomeType: '', ref: '', note: '', src: '', raw: null, unkKey: '', dupKey: '',
     }, o);
   }
 

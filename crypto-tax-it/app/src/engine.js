@@ -149,19 +149,25 @@
       this.pool(asset).add({ id: `L${String(++this._seq).padStart(6, '0')}`, asset, ts: ts || e.ts, qty, unitCost: cost.div(qty), origin: e.uid, documented, rebased: false });
     }
 
+    /** Se l'utente ha indicato a che costo ha preso la quantita' mancante, la aggiunge come lotto e consuma di nuovo. */
+    coverMissing(pool, e, uid, uses, short) {
+      const res = this.opts.resolutions[uid];
+      if (short.gt(0) && res && res.action === 'cover_cost') {
+        const when = res.acquired ? new Date(res.acquired + 'T00:00:00Z') : new Date(e.ts.getTime() - 1000);
+        pool.add({ id: `L${String(++this._seq).padStart(6, '0')}`, asset: e.asset, ts: when, qty: short, unitCost: D(res.cost_eur).div(short), origin: 'manuale', documented: true, rebased: false });
+        const more = pool.consume(short);
+        uses = uses.concat(more.uses);
+        short = more.short;
+        this.issue('info', 'resolved_cover_cost', uid, `Costo del mancante impostato manualmente: ${res.cost_eur} €`);
+      }
+      return { uses, short };
+    }
+
     dispose(e, uid, asset, qty, proceeds, fee, kind, source, note) {
       const pool = this.pool(asset);
       let { uses, short } = pool.consume(qty);
       if (short.gt(0)) {
-        const res = this.opts.resolutions[uid];
-        if (res && res.action === 'cover_cost') {
-          const when = res.acquired ? new Date(res.acquired + 'T00:00:00Z') : new Date(e.ts.getTime() - 1000);
-          pool.add({ id: `L${String(++this._seq).padStart(6, '0')}`, asset, ts: when, qty: short, unitCost: D(res.cost_eur).div(short), origin: 'manuale', documented: true, rebased: false });
-          const more = pool.consume(short);
-          uses = uses.concat(more.uses);
-          short = more.short;
-          this.issue('info', 'resolved_cover_cost', uid, `Costo del mancante impostato manualmente: ${res.cost_eur} €`);
-        }
+        ({ uses, short } = this.coverMissing(pool, Object.assign({}, e, { asset }), uid, uses, short));
         if (short.gt(0)) {
           this.issue('block', 'missing_history', uid,
             `Vendita/uso di ${CT.fq(qty)} ${asset} del ${it(taxDate(e.ts))}, ma dai file risultano solo ${CT.fq(qty.minus(short))} disponibili: mancano ${CT.fq(short)}.`,
@@ -238,7 +244,7 @@
         const p = this.prices.get(asset, REBASE_DAY);
         if (!p) {
           this.missingPrices.set(`${asset.toUpperCase()}|${REBASE_DAY}`, { symbol: asset.toUpperCase(), day: REBASE_DAY });
-          this.issue('block', 'missing_price', '', `Per la rideterminazione serve il prezzo di ${asset} al 1/1/2025`, { symbol: asset.toUpperCase(), day: REBASE_DAY });
+          this.issue('block', 'missing_price', '', `Per la rideterminazione serve il prezzo di ${asset} al 1/1/2025`, { symbol: asset.toUpperCase(), day: REBASE_DAY, forRebase: true });
           continue;
         }
         for (const lot of pool.lots) { lot.unitCost = p.price; lot.rebased = true; lot.documented = true; }
@@ -281,15 +287,33 @@
         this.feeDisposal(e, fee);
       } else if (k === Kind.SWAP) {
         if (!e.counterAsset || classify(e.counterAsset) === 'fiat') { this.issue('block', 'unrecognized_row', e.uid, 'Permuta senza asset di destinazione valido'); return; }
-        const { v, src } = this.valueEur(e); const fee = this.feeEur(e);
+        // conversione di saldo (cambio di nome o migrazione di un token): dal 2023 serve una scelta dell'utente.
+        // La scelta e' salvata con una chiave propria ("conv:"+uid) per non sovrapporsi al costo del mancante (stesso uid).
+        const preRegime = taxDate(e.ts) < NEW_REGIME_DAY;
+        const convKey = 'conv:' + e.uid;
+        const convChoice = e.conv ? (this.opts.resolutions[convKey] || {}).action : null;
+        if (e.conv && !preRegime && convChoice !== 'migration' && convChoice !== 'swap') {
+          this.issue('block', 'conversion_pending', convKey,
+            `Conversione di saldo del ${it(taxDate(e.ts))}: ${CT.fq(e.qty)} ${e.asset} → ${CT.fq(e.counterQty)} ${e.counterAsset}`,
+            { asset: e.asset, counter: e.counterAsset, qty: e.qty, counterQty: e.counterQty, day: taxDate(e.ts), account: e.account });
+        }
+        const carry = preRegime || convChoice === 'migration';   // nessun realizzo: il costo passa al nuovo asset
+        let v, src;
+        if (e.conv && carry) {
+          // senza realizzo il valore in euro non serve al calcolo (solo, se c'e', al prospetto RW): non si chiede un prezzo
+          v = e.value !== null && e.value !== undefined && e.valueCcy === 'EUR' && e.value.gt(0) ? e.value : null; src = 'dal file';
+        } else ({ v, src } = this.valueEur(e));
+        const fee = this.feeEur(e);
         if (STABLE.has(e.asset) && STABLE.has(e.counterAsset)) {
           this.issue('info', 'stable_swap', e.uid, `Scambio tra stablecoin ${e.asset}→${e.counterAsset}: trattato come permuta imponibile (scelta prudenziale).`);
         }
         this.move(e, e.account, e.asset, e.qty.neg(), v);
-        if (taxDate(e.ts) < NEW_REGIME_DAY) {
-          // Prima del 2023 la permuta cripto-cripto non era un realizzo: il costo si trasferisce al nuovo asset.
-          const { uses, short } = this.pool(e.asset).consume(e.qty);
-          let cost = uses.reduce((s, u) => s.plus(u.cost), ZERO);
+        if (carry) {
+          // Prima del 2023 la permuta cripto-cripto non era un realizzo (e una migrazione di token non lo e'): il costo si trasferisce al nuovo asset.
+          const pool = this.pool(e.asset);
+          let { uses, short } = pool.consume(e.qty);
+          ({ uses, short } = this.coverMissing(pool, e, e.uid, uses, short));
+          let cost = uses.reduce((t, u) => t.plus(u.cost), ZERO);
           if (short.gt(0)) this.issue('block', 'missing_history', e.uid, `Permuta di ${CT.fq(e.qty)} ${e.asset} del ${it(taxDate(e.ts))}: mancano ${CT.fq(short)} negli acquisti caricati.`, { asset: e.asset, qty: short, day: taxDate(e.ts), account: e.account });
           this.acquire(e, e.counterAsset, e.counterQty, cost, short.isZero());
         } else {

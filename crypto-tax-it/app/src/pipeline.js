@@ -36,26 +36,87 @@
     const seen = new Set();
     let duplicates = 0;
     const all = files.filter((f) => !f.disabled).map(parseFile);
+    const fileOf = new Map();
     for (const p of all) {
       parsed.push(p);
       if (!p.ok) continue;
       for (const e of p.result.events) {
-        if (seen.has(e.uid)) { duplicates++; continue; }
-        seen.add(e.uid);
+        const k = e.dupKey || e.uid;
+        if (seen.has(k) || seen.has(e.uid)) { duplicates++; continue; }
+        seen.add(k); seen.add(e.uid);
         events.push(e);
+        fileOf.set(e, p.file);
       }
     }
+    const near = nearDuplicates(events, fileOf, resolutions);
+    if (near.skip.size) { for (let i = events.length - 1; i >= 0; i--) if (near.skip.has(events[i])) { events.splice(i, 1); duplicates++; } }
     for (const e of manualToEvents(manual)) { if (!seen.has(e.uid)) { seen.add(e.uid); events.push(e); } }
 
     const pb = new CT.PriceBook();
     for (const [k, v] of Object.entries(prices)) { const [sym, day] = k.split('|'); if (v !== '' && v !== null) pb.setManual(sym, day, v); }
     const engine = new CT.Engine({ rebase2025: !!settings.rebase2025, resolutions, prices: pb }).run(events);
-    if (duplicates) engine.issue('info', 'duplicates', '', `${duplicates} righe presenti in più file (periodi sovrapposti) sono state contate una sola volta.`);
+    if (duplicates) engine.issue('info', 'duplicates', '', `${duplicates} ${duplicates === 1 ? 'riga presente' : 'righe presenti'} in più file (periodi sovrapposti) ${duplicates === 1 ? 'è stata contata' : 'sono state contate'} una sola volta.`);
     apiIssues(engine, parsed, resolutions);
+    for (const g of near.issues) engine.issue('block', 'possible_duplicate', g.key, g.message, g.data);
     const years = CT.tax.computeYears(engine, { toYear: year, useCarry: settings.useCarry !== false });
     const y = years[year];
     const rw = CT.computeRW(engine, year, y.rule);
     return { year, parsed, events, engine, years, y, rw, groups: groupIssues(engine), balances: balancesAt(engine, `${year}-12-31`) };
+  }
+
+  /**
+   * Operazioni che sembrano la stessa ma arrivano da file diversi con righe non identiche (esempio: i due export dell'App Crypto.com).
+   * Stesso conto, stesso tipo, stesso asset, stesse quantita', orario entro 5 minuti (a catena). Non si decide da soli: si chiede.
+   * Un "grappolo" puo' toccare piu' di due file: se si risponde 'dup_skip' si tiene l'operazione del file che ne ha di piu'
+   * (a parita' il primo) e si scartano le altre. 'ack' = sono operazioni diverse.
+   */
+  function nearDuplicates(events, fileOf, resolutions) {
+    const WATCH = new Set([Kind.BUY, Kind.SELL, Kind.SWAP, Kind.INCOME, Kind.SPEND, Kind.TRANSFER_IN, Kind.TRANSFER_OUT]);
+    const order = new Map(); [...new Set([...fileOf.values()])].forEach((f, i) => order.set(f.id, i));
+    const buckets = new Map();
+    for (const e of events) {
+      const f = fileOf.get(e);
+      if (!f || !WATCH.has(e.kind) || !e.ts) continue;
+      const key = [e.account, e.kind, e.asset, e.qty.toFixed(), e.counterAsset, e.counterQty.toFixed()].join('|');
+      if (!buckets.has(key)) buckets.set(key, []);
+      buckets.get(key).push(e);
+    }
+    const groups = new Map();   // insieme di file -> grappoli
+    for (const list of buckets.values()) {
+      if (list.length < 2) continue;
+      list.sort((x, y) => x.ts - y.ts);
+      for (let i = 0; i < list.length;) {
+        let j = i + 1;
+        while (j < list.length && list[j].ts - list[j - 1].ts <= 300000) j++;
+        const cl = list.slice(i, j); i = j;
+        const files = [...new Set(cl.map((e) => fileOf.get(e).id))].sort((a, b) => order.get(a) - order.get(b));
+        if (files.length < 2) continue;
+        const key = 'neardup:' + files.join('|');
+        if (!groups.has(key)) groups.set(key, { key, files: files.map((id) => [...fileOf.values()].find((f) => f.id === id)), clusters: [] });
+        groups.get(key).clusters.push(cl);
+      }
+    }
+    const skip = new Set(), issues = [];
+    const dmy = (ts) => CT.taxDate(ts).split('-').reverse().join('/');
+    const KIND = { buy: 'acquisto', sell: 'vendita', swap: 'scambio', income: 'provento', spend: 'spesa', transfer_in: 'ingresso', transfer_out: 'uscita' };
+    for (const g of groups.values()) {
+      const res = resolutions[g.key] && resolutions[g.key].action;
+      if (res === 'dup_skip') {
+        for (const cl of g.clusters) {
+          const per = new Map(); cl.forEach((e) => { const id = fileOf.get(e).id; per.set(id, (per.get(id) || 0) + 1); });
+          const keep = [...per].sort((a, b) => b[1] - a[1] || order.get(a[0]) - order.get(b[0]))[0][0];
+          cl.forEach((e) => { if (fileOf.get(e).id !== keep) skip.add(e); });
+        }
+        continue;
+      }
+      if (res === 'ack') continue;
+      const n = g.clusters.length;
+      const ex = g.clusters.slice(0, 3).map((cl) => { const e = cl[0]; return `${KIND[e.kind] || e.kind} ${CT.fq(e.qty)} ${e.asset} del ${dmy(e.ts)}`; });
+      const names = g.files.map((f) => `«${f.name}»`).join(', ');
+      issues.push({ key: g.key, message: `${n} ${n === 1 ? 'operazione compare' : 'operazioni compaiono'} in più file (${names}) con data (entro 5 minuti), asset e quantità uguali (${ex.join('; ')}${n > 3 ? '…' : ''}).`,
+        data: { files: g.files.map((f) => f.id), names: g.files.map((f) => f.name), count: n, examples: ex } });
+    }
+    return { skip, issues };
   }
 
   /** Problemi propri dei dati da API: copertura incompleta e fonti sovrapposte (API + file). */
@@ -98,7 +159,7 @@
 
   /** Raggruppa i problemi per la schermata "Da controllare". */
   function groupIssues(engine) {
-    const g = { transferOut: [], transferIn: [], history: [], unknown: new Map(), prices: new Map(), outOfScope: [], notes: [], apiIncomplete: [], overlap: [], blockCount: 0 };
+    const g = { transferOut: [], transferIn: [], history: [], unknown: new Map(), prices: new Map(), outOfScope: [], notes: [], apiIncomplete: [], overlap: [], nearDup: [], conversions: [], blockCount: 0 };
     const seenPrice = new Set();
     for (const i of engine.issues) {
       if (i.level === 'block') {
@@ -107,6 +168,8 @@
         else if (i.code === 'missing_history') g.history.push(i);
         else if (i.code === 'api_incomplete') g.apiIncomplete.push(i);
         else if (i.code === 'source_overlap') g.overlap.push(i);
+        else if (i.code === 'possible_duplicate') g.nearDup.push(i);
+        else if (i.code === 'conversion_pending') g.conversions.push(i);
         else if (i.code === 'unrecognized_row') {
           const k = i.data.key || 'Riga non riconosciuta';
           if (!g.unknown.has(k)) g.unknown.set(k, { key: k, items: [] });
@@ -118,7 +181,7 @@
       } else if (i.code === 'out_of_scope') g.outOfScope.push(i);
       else g.notes.push(i);
     }
-    g.blockCount = g.transferOut.length + g.transferIn.length + g.history.length + g.apiIncomplete.length + g.overlap.length +
+    g.blockCount = g.transferOut.length + g.transferIn.length + g.history.length + g.apiIncomplete.length + g.overlap.length + g.nearDup.length + g.conversions.length +
       [...g.unknown.values()].length + (g.prices.size ? 1 : 0) + g.notes.filter((i) => i.level === 'block').length;
     return g;
   }

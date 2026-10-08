@@ -43,6 +43,7 @@
       steps: [
         'Apri l\'app Crypto.com e vai in Contabilità → Cronologia transazioni.',
         'Scegli Esporta (CSV) e seleziona tutto il periodo, dall\'apertura del conto a oggi.',
+        'L\'app crea due file per periodo: «contanti» (conto in euro) e «criptovaluta». Caricali entrambi: molte operazioni compaiono in tutti e due e vengono contate una volta sola; se ti chiede conferma su qualcuna, rispondi dopo aver guardato le date.',
         'Se l\'app ti fa scegliere un intervallo, fai più esportazioni e carica tutti i file: le righe presenti in più file vengono contate una volta sola.',
         'Trascina qui i file scaricati.',
       ],

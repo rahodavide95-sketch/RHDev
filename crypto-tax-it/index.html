@@ -7694,6 +7694,135 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
 
 </script>
 <script data-app>
+/* Prezzi storici in euro scaricati da servizi pubblici (nessuna chiave): chiusura giornaliera (UTC) di una cripto.
+   Si prova in ordine: Binance (dati pubblici), Kraken, CryptoCompare. Il primo che risponde con un prezzo valido vince.
+   Se nessuno risponde si lancia un errore che dice, per ogni servizio, perche' non ha funzionato: niente prezzi inventati.
+
+   FONTI (formati verificati sulla documentazione ufficiale; la raggiungibilita' dal browser, cioe' CORS, NON e' verificabile da qui):
+   - Binance: https://github.com/binance/binance-spot-api-docs rest-api.md "Kline/Candlestick data" e faqs/market_data_only.md
+     GET https://data-api.binance.vision/api/v3/klines?symbol=BTCEUR&interval=1d&startTime=<ms>&endTime=<ms>&limit=1
+     -> [[openTime, "open", "high", "low", "close", "volume", closeTime, ...]]; simbolo inesistente: HTTP 400 {"code":-1121,"msg":"Invalid symbol."}
+   - Kraken: GET https://api.kraken.com/0/public/OHLC?pair=XBTEUR&interval=1440&since=<s>
+     -> {"error":[],"result":{"<coppia>":[[time,"open","high","low","close","vwap","volume",count],...],"last":<s>}}; errore: {"error":["EQuery:Unknown asset pair"]}
+   - CryptoCompare: GET https://min-api.cryptocompare.com/data/v2/histoday?fsym=BTC&tsym=EUR&limit=1&toTs=<s>
+     -> {"Response":"Success","Data":{"Data":[{"time":<s>,"close":<n>,...}]}}; errore: {"Response":"Error","Message":"..."} */
+(function () {
+  'use strict';
+  const CT = (globalThis.CT = globalThis.CT || {});
+  const DAY = 86400000;
+
+  // nomi diversi tra Crypto.com e le borse (solo per i giorni dal 2023 in poi, gli unici per cui servono prezzi)
+  const BINANCE_ALIAS = { LUNA2: 'LUNA', LUNA: 'LUNC' };
+  const KRAKEN_ALIAS = { BTC: 'XBT', DOGE: 'XDG' };
+
+  class NoQuote extends Error {}   // il servizio funziona ma non quota questa coppia in quel giorno
+
+  /** GET JSON con tempo massimo; gli errori hanno un motivo breve e comprensibile. */
+  async function getJson(fetchImpl, url, ms) {
+    const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timer = ctl ? setTimeout(() => ctl.abort(), ms || 10000) : null;
+    let res;
+    try { res = await fetchImpl(url, ctl ? { signal: ctl.signal } : {}); }
+    catch (e) { throw new Error(e && e.name === 'AbortError' ? 'nessuna risposta (tempo scaduto)' : 'collegamento bloccato dal browser o assente'); }
+    finally { if (timer) clearTimeout(timer); }
+    let body = null;
+    try { body = await res.json(); } catch (e) { body = null; }
+    return { status: res.status, ok: res.ok, body };
+  }
+
+  const num = (x) => { const n = Number(x); return Number.isFinite(n) && n > 0 ? String(x) : null; };
+
+  // ---------------------------------------------------------------- Binance
+  async function binanceClose(fetchImpl, base, symbol, day) {
+    const t0 = Date.parse(day + 'T00:00:00Z');
+    const url = `${base}/api/v3/klines?symbol=${encodeURIComponent(symbol)}&interval=1d&startTime=${t0}&endTime=${t0 + DAY - 1}&limit=1`;
+    const r = await getJson(fetchImpl, url);
+    if (r.status === 400 && r.body && r.body.code === -1121) throw new NoQuote('coppia non quotata');
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    if (!Array.isArray(r.body)) throw new Error('risposta non valida');
+    const row = r.body.find((k) => Array.isArray(k) && k[0] === t0);
+    if (!row) throw new NoQuote('nessuna quotazione quel giorno');
+    const c = num(row[4]);
+    if (!c) throw new Error('prezzo non valido');
+    return c;
+  }
+  async function viaBinance(fetchImpl, sym, day) {
+    const S = BINANCE_ALIAS[sym] || sym;
+    const D = CT.D;
+    let lastErr = null;
+    for (const base of ['https://data-api.binance.vision', 'https://api.binance.com']) {
+      try {
+        if (S === 'USDT') return D(1).div(D(await binanceClose(fetchImpl, base, 'EURUSDT', day))).toSignificantDigits(10).toString();
+        try { return String(await binanceClose(fetchImpl, base, `${S}EUR`, day)); } catch (e) { if (!(e instanceof NoQuote)) throw e; }
+        const usd = await binanceClose(fetchImpl, base, `${S}USDT`, day);
+        const eur = await binanceClose(fetchImpl, base, 'EURUSDT', day);
+        return D(usd).div(D(eur)).toSignificantDigits(10).toString();
+      } catch (e) { lastErr = e; if (e instanceof NoQuote) throw e; }   // stesso risultato dall'altro indirizzo: inutile riprovare
+    }
+    throw lastErr || new Error('nessuna risposta');
+  }
+
+  // ---------------------------------------------------------------- Kraken
+  async function viaKraken(fetchImpl, sym, day) {
+    const t0 = Math.floor(Date.parse(day + 'T00:00:00Z') / 1000);
+    const pair = `${KRAKEN_ALIAS[sym] || sym}EUR`;
+    const r = await getJson(fetchImpl, `https://api.kraken.com/0/public/OHLC?pair=${encodeURIComponent(pair)}&interval=1440&since=${t0 - 1}`);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const b = r.body;
+    if (!b || typeof b !== 'object') throw new Error('risposta non valida');
+    if (Array.isArray(b.error) && b.error.length) throw new NoQuote(String(b.error[0]));
+    const key = b.result && Object.keys(b.result).find((k) => k !== 'last');
+    const row = key && b.result[key].find((k) => Array.isArray(k) && k[0] === t0);
+    if (!row) throw new NoQuote('nessuna quotazione quel giorno');
+    const c = num(row[4]);
+    if (!c) throw new Error('prezzo non valido');
+    return c;
+  }
+
+  // ---------------------------------------------------------------- CryptoCompare
+  async function viaCryptoCompare(fetchImpl, sym, day) {
+    const to = Math.floor(Date.parse(day + 'T23:59:59Z') / 1000);
+    const r = await getJson(fetchImpl, `https://min-api.cryptocompare.com/data/v2/histoday?fsym=${encodeURIComponent(sym)}&tsym=EUR&limit=1&toTs=${to}`);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const b = r.body;
+    if (!b || typeof b !== 'object') throw new Error('risposta non valida');
+    if (b.Response === 'Error') throw new Error(String(b.Message || 'errore').slice(0, 60));
+    const rows = b.Data && b.Data.Data;
+    const row = Array.isArray(rows) && rows.find((x) => x && new Date(x.time * 1000).toISOString().slice(0, 10) === day);
+    const c = row && num(row.close);
+    if (!c) throw new NoQuote('nessuna quotazione quel giorno');
+    return c;
+  }
+
+  const SOURCES = [['Binance', viaBinance], ['Kraken', viaKraken], ['CryptoCompare', viaCryptoCompare]];
+
+  /**
+   * Prezzo in euro di 1 `sym` alla chiusura (UTC) del giorno `day` (AAAA-MM-GG). Ritorna { price: stringa, source }.
+   * Se nessuna fonte risponde lancia un Error il cui `details` elenca il motivo di ciascuna.
+   */
+  async function dailyEur(sym, day, fetchImpl) {
+    const f = fetchImpl || ((u, i) => globalThis.fetch(u, i));
+    const s = String(sym).toUpperCase();
+    if (!/^[A-Z0-9]{2,12}$/.test(s) || !/^\d{4}-\d{2}-\d{2}$/.test(day)) throw new Error('simbolo o data non validi');
+    const details = [];
+    for (const [name, fn] of SOURCES) {
+      try {
+        const p = await fn(f, s, day);
+        if (num(p)) return { price: String(p), source: name };
+        details.push(`${name}: prezzo non valido`);
+      } catch (e) { details.push(`${name}: ${e.message}`); }
+    }
+    const err = new Error('prezzo non disponibile');
+    err.details = details;
+    throw err;
+  }
+
+  CT.pricefeed = { dailyEur, _sources: { viaBinance, viaKraken, viaCryptoCompare } };
+  if (typeof module !== 'undefined') module.exports = CT.pricefeed;
+})();
+
+</script>
+<script data-app>
 /* Base comune dei collegamenti API: errori, firma HMAC, richieste con ripetizioni, attese.
    Regole di progetto:
    - le chiavi non compaiono MAI in errori, log, avvisi o dati scaricati;
@@ -11170,8 +11299,9 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
           h('button', { class: 'btn primary', disabled: !!ui.busy, onclick: () => autoPrices(false) }, ui.busy || 'Scarica i prezzi in automatico'),
           h('button', { class: 'btn', onclick: () => { ui.tab = 'prices'; render(); } }, 'Vedi e inserisci a mano')),
         h('p', { class: 'small muted' }, ui.busy ? 'Sto scaricando i prezzi…'
-          : ui.priceFail ? `Non sono riuscito a scaricarne ${ui.priceFail}: il download non funziona dentro claude.ai. Apri il link pubblicato oppure scrivili a mano.`
-            : 'Provo a scaricarli da solo. Funziona dal link pubblicato o dal programma scaricato sul computer, non dentro claude.ai.')));
+          : ui.priceFail ? (insideClaude() ? `Non sono riuscito a scaricarne ${ui.priceFail}: dentro claude.ai il download non è possibile. Apri il link pubblicato.`
+            : `Non sono riuscito a scaricarne ${ui.priceFail}. ${(ui.priceWhy || []).join(' · ')}. Premi di nuovo «Scarica i prezzi in automatico» tra qualche minuto, oppure scrivili a mano.`)
+            : 'Provo a scaricarli da solo (Binance, Kraken o CryptoCompare). Dentro claude.ai non è possibile: apri il link pubblicato.')));
     }
     for (const i of g.notes.filter((x) => x.level === 'block')) out.push(issueCard('bad', i.message, null));
     if (g.outOfScope.length) {
@@ -11319,13 +11449,12 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
   }
 
   // ------------------------------------------------------------------ pannello: Prezzi
+  const insideClaude = () => !!(typeof window !== 'undefined' && window.claude && window.claude.use);
+  /** Prezzo in euro alla chiusura del giorno: prova piu' servizi pubblici (vedi pricefeed.js). */
   async function fetchPrice(sym, day) {
-    const ts = Math.floor(Date.parse(day + 'T23:59:59Z') / 1000);
-    const r = await fetch(`https://min-api.cryptocompare.com/data/v2/histoday?fsym=${encodeURIComponent(sym)}&tsym=EUR&limit=1&toTs=${ts}`);
-    const j = await r.json();
-    const row = j && j.Data && j.Data.Data && j.Data.Data.find((x) => new Date(x.time * 1000).toISOString().slice(0, 10) === day);
-    if (!row || !row.close) throw new Error('prezzo non disponibile');
-    return String(row.close);
+    const r = await CT.pricefeed.dailyEur(sym, day);
+    ui.priceSource = r.source;
+    return r.price;
   }
   /** Perche' serve ogni prezzo mancante: 'rw' (quadro RW), 'rebase' (rideterminazione) o 'op' (valorizzare un'operazione). */
   function priceReasons(res) {
@@ -11347,14 +11476,16 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     if (!need.length) return;
     ui.busy = 'Scarico i prezzi…'; render();
     let ok = 0, ko = 0;
-    for (let i = 0; i < need.length; i += 4) {
-      await Promise.all(need.slice(i, i + 4).map(async (n) => {
+    const why = new Map();
+    for (let i = 0; i < need.length; i += 3) {
+      await Promise.all(need.slice(i, i + 3).map(async (n) => {
         const k = `${n.symbol}|${n.day}`; priceTried.add(k);
-        if (CT.classify(n.symbol) !== 'crypto') { ko++; return; }
-        try { state.prices[k] = await fetchPrice(n.symbol, n.day); ok++; } catch (e) { ko++; }
+        if (CT.classify(n.symbol) !== 'crypto') { ko++; why.set('oro', 'i metalli non si scaricano: scrivi il prezzo di 1 grammo'); return; }
+        try { state.prices[k] = await fetchPrice(n.symbol, n.day); ok++; }
+        catch (e) { ko++; for (const d of e.details || [e.message]) why.set(d.split(':')[0], d); }
       }));
     }
-    ui.busy = ''; ui.priceFail = ko; changed();
+    ui.busy = ''; ui.priceFail = ko; ui.priceWhy = [...why.values()].slice(0, 4); changed();
     if (!quiet || ok) toast(`${ok} ${ok === 1 ? 'prezzo scaricato' : 'prezzi scaricati'}${ko ? `, ${ko} da inserire a mano` : ''}`);
   }
   /** Appena mancano dei prezzi li chiede da solo, una volta sola per ciascuno: l'utente non deve fare niente. */
@@ -11408,7 +11539,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
         need.length ? [h('div', { class: 'row' },
             h('button', { class: 'btn primary', disabled: !!ui.busy, onclick: auto }, ui.busy || 'Scarica i prezzi in automatico'),
             h('button', { class: 'btn', onclick: saveAll }, 'Salva i prezzi scritti a mano'),
-            h('span', { class: 'muted small' }, 'Il download automatico (CryptoCompare) invia solo simbolo e data.')),
+            h('span', { class: 'muted small' }, 'Il download automatico (Binance, Kraken o CryptoCompare) invia solo simbolo e data.')),
           h('div', { class: 'tbl-wrap' }, h('table', null, h('thead', null, h('tr', null, ['Asset', 'Data', 'Suggerimento', 'Prezzo in €'].map((x) => h('th', null, x)))), h('tbody', null, rows)))] : null),
       have.length ? h('div', { class: 'card' }, h('h3', null, `Prezzi inseriti (${have.length})`),
         h('div', { class: 'tbl-wrap' }, h('table', null, h('thead', null, h('tr', null, ['Asset', 'Data', 'Prezzo €', ''].map((x) => h('th', null, x)))),

@@ -7,7 +7,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const src = (f) => fs.readFileSync(path.join(__dirname, 'src', f), 'utf8');
 
-const SCRIPTS = ['vendor/decimal.js', 'vendor/jspdf.umd.min.js', 'vendor/jspdf.plugin.autotable.min.js', 'core.js', 'csv.js', 'importers.js', 'engine.js', 'tax.js', 'rw.js', 'zip.js', 'pipeline.js', 'report.js', 'pdf.js', 'platforms.js', 'api/common.js', 'api/cryptocom_exchange.js', 'api/bitpanda.js', 'api/binance.js', 'api/index.js', 'ui.js']
+const SCRIPTS = ['vendor/decimal.js', 'vendor/jspdf.umd.min.js', 'vendor/jspdf.plugin.autotable.min.js', 'core.js', 'csv.js', 'importers.js', 'engine.js', 'tax.js', 'rw.js', 'zip.js', 'pipeline.js', 'report.js', 'pdf.js', 'platforms.js', 'pricefeed.js', 'api/common.js', 'api/cryptocom_exchange.js', 'api/bitpanda.js', 'api/binance.js', 'api/index.js', 'ui.js']
   .filter((f) => fs.existsSync(path.join(__dirname, 'src', f)));   // un collegamento non ancora presente viene saltato
 const scripts = SCRIPTS.map((f) => {
   const code = src(f).replace(/<\/script/gi, '<\\/script'); // '<\/' e' equivalente a '</' dentro stringhe e regex JS

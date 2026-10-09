@@ -1111,6 +1111,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       fx.rows.length ? null : h('p', { class: 'muted' }, 'Non risultano cripto o oro detenuti in questo anno: i moduli sono vuoti.'),
       forms.map(item),
       ui.fxDone ? h('p', { class: 'small', style: 'margin-top:8px' }, `Fatto: «${ui.fxDone}» è nella cartella Download del tuo computer (o dove salvi i file dal telefono). Mandalo al tuo commercialista.`) : null,
+      fx.rows.length ? h('p', { class: 'small muted' }, `Una riga per ogni piattaforma: ${fx.rows.length} ${fx.rows.length === 1 ? 'riga' : 'righe'} in tutto (cinque righe per modulo). Dentro ogni riga ci sono sommate tutte le cripto di quella piattaforma.`) : null,
       h('p', { class: 'small muted' }, 'La casella «Acconti versati» è lasciata da compilare al commercialista: il programma non sa se hai già pagato qualcosa. Il codice 21 indica le cripto-attività; per l\'oro il codice va verificato.'),
       h('details', null, h('summary', null, 'Facoltativo: codice fiscale e società che custodisce le cripto'),
         h('div', { class: 'stack', style: 'padding:8px 0;gap:12px' },

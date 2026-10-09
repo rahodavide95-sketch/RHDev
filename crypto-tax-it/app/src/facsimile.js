@@ -20,7 +20,7 @@
     right: { 1: 163.5, 3: 249.0, 5: 336.0, 6: 377.26, 7: 454.75, 8: 550.0, 10: 240.0, 33: 473.5, 34: 549.25 },
     labelBase1: [210.5, 319.2, 415.1, 511.0, 607.0], labelBase2: [225.5, 334.2, 430.1, 526.0, 622.0], labelBase3: [240.5, 349.2, 445.1, 541.0, 637.0], labelX: 7.5,
     cf: { x0: 250.9, step: 14.4, base: 68.6, size: 11 }, mod: { right: 565.0, base: 115.9, size: 18.75 },
-    tot: { base: 764.2, right: { 1: 182.5, 5: 469.75 }, ph: { x: 371.25, y1: 759.4, y2: 765.4 } },
+    tot: { base: 764.2, right: { 1: 182.5, 4: 397.9, 5: 469.75, 6: 541.6 }, ph: { x: 371.25, y1: 759.4, y2: 765.4 } },
     banner: { x: 40, y: 26 },
   };
   const W = {
@@ -29,7 +29,7 @@
     right: { 1: 90.0, 3: 198.75, 5: 311.26, 6: 371.25, 7: 456.25, 8: 550.75, 10: 187.5 },
     labelCenter: [225.3, 314.5, 386.5, 458.5, 530.5], labelX1: 10.3, labelX2: 21.5, labelX3: 32.7,
     cf: { x0: 345.1, step: 9.775, base: 24.6, size: 9 }, mod: { right: 565.0, base: 25.8, size: 12.75 },
-    ph: { x: 322.2, y1: 699.4, y2: 706.0 },
+    ph: { x: 322.2, y1: 699.4, y2: 706.0 }, adv: { right: 359.8, base: 706.0 },
     banner: { x: 40, y: 10 },
   };
 
@@ -90,7 +90,7 @@
     if (draft) ops.push(txt('BOZZA: ci sono ancora punti da controllare nel programma. Non usare questi dati per la dichiarazione.', G.banner.x, G.banner.y, 8, { color: '#b00020', bold: true }));
   }
 
-  function rwPage(list, n, first, totals, cf, draft) {
+  function rwPage(list, n, first, totals, cf, draft, adv) {
     const ops = []; header(ops, RW, n, cf, draft);
     const put = (col, s, base) => ops.push(txt(s, RW.right[col], base, RW.size, { align: 'right' }));
     list.forEach((r, i) => {
@@ -105,15 +105,24 @@
       if (r.label3) ops.push(txt(cut(r.label3, 20), RW.labelX, RW.labelBase3[i], RW.labelSize, red));
     });
     if (first) {
-      ops.push(txt(sep(totals.toFixed(0)), RW.tot.right[1], RW.tot.base, RW.size, { align: 'right' }));
-      ops.push(txt(sep(totals.toFixed(0)), RW.tot.right[5], RW.tot.base, RW.size, { align: 'right' }));
-      const red = { align: 'center', color: '#c00000', bold: true };
-      ops.push(txt('INSERIRE ACCONTI', RW.tot.ph.x, RW.tot.ph.y1, 5.6, red), txt('VERSATI', RW.tot.ph.x, RW.tot.ph.y2, 5.6, red));
+      const T = RW.tot;
+      ops.push(txt(sep(totals.toFixed(0)), T.right[1], T.base, RW.size, { align: 'right' }));
+      if (adv === null) {
+        // gli acconti versati non si possono ricavare dai file: casella lasciata al commercialista (oppure scritta dall'utente)
+        ops.push(txt(sep(totals.toFixed(0)), T.right[5], T.base, RW.size, { align: 'right' }));
+        const red = { align: 'center', color: '#c00000', bold: true };
+        ops.push(txt('INSERIRE ACCONTI', T.ph.x, T.ph.y1, 5.6, red), txt('VERSATI', T.ph.x, T.ph.y2, 5.6, red));
+      } else {
+        const due = totals.minus(adv);
+        ops.push(txt(sep(adv.toFixed(0)), T.right[4], T.base, RW.size, { align: 'right' }));
+        ops.push(txt(sep((due.gt(0) ? due : ZERO).toFixed(0)), T.right[5], T.base, RW.size, { align: 'right' }));
+        if (due.lt(0)) ops.push(txt(sep(due.neg().toFixed(0)), T.right[6], T.base, RW.size, { align: 'right' }));
+      }
     }
     return { tpl: RW.tpl, ops };
   }
 
-  function wPage(list, n, first, cf, draft) {
+  function wPage(list, n, first, cf, draft, adv) {
     const ops = []; header(ops, W, n, cf, draft);
     const put = (col, s, base) => ops.push(txt(s, W.right[col], base, W.size, { align: 'right' }));
     list.forEach((r, i) => {
@@ -128,10 +137,21 @@
       if (r.label3) ops.push(txt(cut(r.label3, lim), W.labelX3, W.labelCenter[i], W.labelSize, red));
     });
     if (first) {
-      const red = { align: 'center', color: '#c00000', bold: true };
-      ops.push(txt('INSERIRE ACCONTI', W.ph.x, W.ph.y1, 5.6, red), txt('VERSATI', W.ph.x, W.ph.y2, 5.6, red));
+      if (adv === null) {
+        const red = { align: 'center', color: '#c00000', bold: true };
+        ops.push(txt('INSERIRE ACCONTI', W.ph.x, W.ph.y1, 5.6, red), txt('VERSATI', W.ph.x, W.ph.y2, 5.6, red));
+      } else ops.push(txt(sep(adv.toFixed(0)), W.adv.right, W.adv.base, W.size, { align: 'right' }));
     }
     return { tpl: W.tpl, ops };
+  }
+
+  /** Acconti versati scritti dall'utente (euro, anche con la virgola): null se non indicati o non validi. */
+  function advance(state) {
+    const raw = state && state.taxpayer && state.taxpayer.advance;
+    if (raw === undefined || raw === null || String(raw).trim() === '') return null;
+    const t = String(raw).trim().replace(/\./g, '').replace(',', '.');
+    if (!/^\d+(\.\d+)?$/.test(t)) return null;
+    return CT.roundEuro(D(t));
   }
 
   /** Pagine dei due moduli. Ritorna { available, reason, rw: [pagine], w: [pagine], rows, total } */
@@ -140,13 +160,14 @@
     const list = rows(res, state);
     const cf = state && state.taxpayer && state.taxpayer.cf;
     const draft = res.groups.blockCount > 0;
+    const adv = advance(state);
     const total = list.reduce((s, r) => s.plus(r.icDue || ZERO), ZERO);
     const chunks = [];
     for (let i = 0; i < Math.max(list.length, 1); i += 5) chunks.push(list.slice(i, i + 5));
     return {
       available: true, rows: list, total,
-      rw: chunks.map((c, i) => rwPage(c, i + 1, i === 0, total, cf, draft)),
-      w: chunks.map((c, i) => wPage(c, i + 1, i === 0, cf, draft)),
+      rw: chunks.map((c, i) => rwPage(c, i + 1, i === 0, total, cf, draft, adv)),
+      w: chunks.map((c, i) => wPage(c, i + 1, i === 0, cf, draft, adv)),
     };
   }
 

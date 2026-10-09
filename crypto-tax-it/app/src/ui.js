@@ -1092,7 +1092,8 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       const k = field('Stato', { id: `cu_s_${a}`, value: c.country, placeholder: 'es. Malta', oninput: (e) => { c.country = e.target.value; touch(); }, onchange: () => { if (onChange) onChange(); } });
       return h('div', { class: 'fields' }, n.el, k.el);
     });
-    return { name, cf, accounts, cust };
+    const adv = field('Acconti già versati per l\'imposta sulle cripto (€)', { id: 'tp_adv', value: tp.advance || '', inputmode: 'decimal', placeholder: 'es. 0 oppure 12 (lascia vuoto se non lo sai)', oninput: (e) => { tp.advance = e.target.value; touch(); }, onchange: () => { if (onChange) onChange(); } });
+    return { name, cf, adv, accounts, cust };
   }
 
   // ------------------------------------------------------------------ moduli fac-simile (anteprima e download)
@@ -1136,11 +1137,11 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       forms.map(item),
       ui.fxDone ? h('p', { class: 'small', style: 'margin-top:8px' }, `Fatto: «${ui.fxDone}» è nella cartella Download del tuo computer (o dove salvi i file dal telefono). Mandalo al tuo commercialista.`) : null,
       fx.rows.length ? h('p', { class: 'small muted' }, `Una riga per ogni piattaforma: ${fx.rows.length} ${fx.rows.length === 1 ? 'riga' : 'righe'} in tutto (cinque righe per modulo). Dentro ogni riga ci sono sommate tutte le cripto di quella piattaforma.`) : null,
-      h('p', { class: 'small muted' }, 'La casella «Acconti versati» è lasciata da compilare al commercialista: il programma non sa se hai già pagato qualcosa. Il codice 21 indica le cripto-attività; per l\'oro il codice va verificato.'),
+      h('p', { class: 'small muted' }, 'Tutte le caselle sono compilate dai calcoli del programma. Fa eccezione «Acconti versati»: dai file non si può sapere se hai già pagato qualcosa, quindi resta da compilare (puoi scriverlo tu qui sotto, in «Facoltativo»). Il codice 21 indica le cripto-attività; per l\'oro il codice va verificato.'),
       h('details', null, h('summary', null, 'Facoltativo: codice fiscale e società che custodisce le cripto'),
         h('div', { class: 'stack', style: 'padding:8px 0;gap:12px' },
           h('p', { class: 'small muted' }, 'Il codice fiscale viene scritto negli appositi riquadri del modulo. La società che custodisce le cripto compare accanto alla riga, per aiutare il commercialista.'),
-          tf.cf.el, tf.accounts.length ? [h('h3', null, 'Dove sono custodite'), tf.cust] : null)));
+          tf.cf.el, tf.adv.el, tf.accounts.length ? [h('h3', null, 'Dove sono custodite'), tf.cust] : null)));
   }
 
   function pdfCard(res) {

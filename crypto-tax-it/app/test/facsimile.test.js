@@ -115,3 +115,36 @@ test('una sola riga per piattaforma: cripto con giorni diversi si sommano, giorn
   const gold = FX.build(res([row('Bitpanda', 'XAU', 365, 10, 20, '0', { cls: 'metal' }), row('Bitpanda', 'BTC', 365, 10, 20, '0.04')]), {});
   assert.equal(gold.rows.length, 2);
 });
+
+test('acconti versati: vuoti = segnaposto rosso; indicati = scritti in RW8/W8 con imposta a debito o a credito', () => {
+  const st = (advance) => ({ custodians: {}, taxpayer: { advance } });
+  const T = FX._geo.RW.tot;
+  for (const bad of [undefined, '', '  ', 'abc', '-3']) {
+    const o = FX.build(REF, st(bad));
+    assert.ok(texts(o.rw[0]).includes('INSERIRE ACCONTI') && texts(o.w[0]).includes('INSERIRE ACCONTI'), String(bad));
+  }
+  // totale 17, acconti 5 -> RW8: totale 17, acconti 5, a debito 12, nessun credito; W8: acconti 5
+  const o = FX.build(REF, st('5'));
+  const rw = o.rw[0], w = o.w[0];
+  assert.ok(!texts(rw).includes('INSERIRE ACCONTI') && !texts(w).includes('INSERIRE ACCONTI'));
+  const base = rw.ops.filter((x) => Math.abs(x.y - T.base) < 1e-9);
+  const at4 = (page, col) => page.ops.find((x) => Math.abs(x.y - T.base) < 1e-9 && Math.abs(x.x - T.right[col]) < 1e-9);
+  assert.equal(at4(rw, 1).s, '17'); assert.equal(at4(rw, 4).s, '5'); assert.equal(at4(rw, 5).s, '12'); assert.equal(at4(rw, 6), undefined);
+  assert.equal(base.length, 3);
+  assert.ok(w.ops.some((x) => x.s === '5' && Math.abs(x.x - FX._geo.W.adv.right) < 1e-9));
+  // acconti maggiori del dovuto (virgola e punti accettati): a debito 0, a credito 3
+  const c = FX.build(REF, st('20,4')).rw[0];
+  assert.equal(at4(c, 4).s, '20'); assert.equal(at4(c, 5).s, '0'); assert.equal(at4(c, 6).s, '3');
+  // 0 euro di acconti e' un'indicazione valida (non il segnaposto)
+  const z = FX.build(REF, st('0')).rw[0];
+  assert.equal(at4(z, 4).s, '0'); assert.equal(at4(z, 5).s, '17');
+  assert.equal(FX.toPdf(o.rw, 'RW').byteLength > 1000, true);
+});
+
+test('nessuna riga: i moduli restano vuoti (solo numero del modulo, totali a 0 e segnaposto), senza valori del riferimento', () => {
+  const o = FX.build(res([]), { custodians: {}, taxpayer: {} });
+  assert.equal(o.rows.length, 0);
+  assert.deepEqual(texts(o.rw[0]).sort(), ['0', '0', '1', 'INSERIRE ACCONTI', 'VERSATI']);   // RW8: totale e imposta a debito 0; numero del modulo 1
+  assert.deepEqual(texts(o.w[0]).sort(), ['1', 'INSERIRE ACCONTI', 'VERSATI']);
+  for (const v of ['6.787', '8.338', '365', '247', '100,00', '21', 'CRYPTOCOM_APP']) assert.ok(!texts(o.rw[0]).includes(v) && !texts(o.w[0]).includes(v), v);
+});

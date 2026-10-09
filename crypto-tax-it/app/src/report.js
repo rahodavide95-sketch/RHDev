@@ -9,6 +9,28 @@
   const dmy = (day) => (day ? day.split('-').reverse().join('/') : '');
   const KIND_IT = { sell: 'Vendita', swap: 'Permuta', spend: 'Pagamento', fee: 'Commissione', transfer_fee: 'Commissione di rete' };
   const CLS_IT = { crypto: 'Cripto', metal: 'Oro/metalli' };
+  // da dove arriva l'imposta dell'anno, in parole semplici: operazioni che realizzano un guadagno/perdita (cessioni) e proventi ricevuti
+  const SELL_IT = { sell: 'Vendite in euro', swap: 'Scambi tra due cripto (anche conversioni di piccoli importi)', spend: 'Pagamenti fatti con le cripto (carta, acquisti)', fee: 'Commissioni pagate in cripto', transfer_fee: 'Commissioni di rete pagate in cripto' };
+  const GAIN_IT = { interest: 'Interessi (Earn e simili)', staking: 'Staking', cashback: 'Cashback e rimborsi della carta', referral: 'Bonus per inviti', airdrop: 'Airdrop', other: 'Altri premi e accrediti' };
+  function taxSources(res) {
+    const rows = [];
+    const by = new Map();
+    for (const d of res.engine.disposals) {
+      if (d.year !== res.year) continue;
+      const k = 'd:' + d.kind;
+      if (!by.has(k)) { const r = { key: k, group: 'sell', kind: d.kind, label: SELL_IT[d.kind] || d.kind, count: 0, amount: CT.ZERO }; by.set(k, r); rows.push(r); }
+      const r = by.get(k); r.count++; r.amount = r.amount.plus(d.gain);
+    }
+    for (const i of res.engine.incomes) {
+      if (i.year !== res.year) continue;
+      const k = 'i:' + i.type;
+      if (!by.has(k)) { const r = { key: k, group: 'income', kind: i.type, label: GAIN_IT[i.type] || i.type, count: 0, amount: CT.ZERO }; by.set(k, r); rows.push(r); }
+      const r = by.get(k); r.count++; r.amount = r.amount.plus(i.value);
+    }
+    const order = ['d:sell', 'd:swap', 'd:spend', 'd:fee', 'd:transfer_fee', 'i:interest', 'i:staking', 'i:cashback', 'i:referral', 'i:airdrop', 'i:other'];
+    rows.sort((a, b) => (order.indexOf(a.key) + 99 * (order.indexOf(a.key) < 0)) - (order.indexOf(b.key) + 99 * (order.indexOf(b.key) < 0)));
+    return { rows, hasSales: by.has('d:sell'), hasCashback: by.has('i:cashback') };
+  }
   const INC_IT = { interest: 'Interessi', staking: 'Staking', cashback: 'Cashback', referral: 'Referral', airdrop: 'Airdrop', other: 'Altro' };
 
   function csv(headers, rows) {
@@ -111,6 +133,6 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
   }
 
   CT.report = { csv, num, qnum, dmy, disposalsRows, DISPOSAL_HEAD, lotsRows, LOTS_HEAD, incomesRows, INCOME_HEAD, rwRows, RW_HEAD,
-    issuesRows, ISSUE_HEAD, balancesRows, BAL_HEAD, basketLines, summaryText, reportHtml, diagnostics, KIND_IT, CLS_IT, INC_IT };
+    issuesRows, ISSUE_HEAD, balancesRows, BAL_HEAD, basketLines, summaryText, reportHtml, diagnostics, KIND_IT, CLS_IT, INC_IT, taxSources };
   if (typeof module !== 'undefined') module.exports = CT.report;
 })();

@@ -788,6 +788,28 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       b.nDisposals === 0 && b.income.isZero() ? h('p', { class: 'muted' }, 'Nessuna operazione imponibile in questo anno.') : kvTable(rows));
   }
 
+  /** «Da dove arriva l'imposta»: elenca cosa ha contato il programma (vendite, scambi, pagamenti, premi), cosi' si capisce anche senza aver venduto. */
+  function sourcesCard(res) {
+    const sx = R.taxSources(res);
+    if (!sx.rows.length) return null;
+    const signed = (r) => (r.group === 'income' ? money(r.amount) : `${r.amount.gte(0) ? '+' : '−'} ${money(r.amount.abs())}`);
+    const rows = sx.rows.map((r) => h('tr', null,
+      h('td', null, r.label, h('div', { class: 'small muted' }, r.group === 'income' ? 'tassato per intero' : 'guadagno (+) o perdita (−)')),
+      h('td', { class: 'num' }, r.count), h('td', { class: 'num' }, signed(r))));
+    const intro = sx.hasSales ? `Questo è tutto quello che il programma ha contato nel ${res.year}.`
+      : `Nel ${res.year} non risultano vendite in euro. Ma il fisco tassa anche altre cose: ecco quali ha trovato il programma nei tuoi file.`;
+    return h('div', { class: 'card' },
+      h('h2', null, `Da dove arriva l'imposta del ${res.year}`),
+      h('p', { class: 'muted' }, intro),
+      h('div', { class: 'tbl-wrap' }, h('table', null,
+        h('thead', null, h('tr', null, h('th', null, 'Che cosa'), h('th', { class: 'num' }, 'Quante'), h('th', { class: 'num' }, 'Importo'))),
+        h('tbody', null, rows))),
+      sx.hasCashback ? h('p', { class: 'small' }, 'Il cashback della carta lo conto come un guadagno (scelta prudenziale). Se il tuo commercialista lo considera uno sconto sulla spesa, l\'imposta scende: chiedigli come vuole trattarlo.') : null,
+      h('div', { class: 'row' },
+        h('button', { class: 'btn quiet', onclick: () => { ui.detail = 'cessioni'; ui.tab = 'detail'; render(); window.scrollTo(0, 0); } }, 'Vedi vendite e scambi'),
+        h('button', { class: 'btn quiet', onclick: () => { ui.detail = 'proventi'; ui.tab = 'detail'; render(); window.scrollTo(0, 0); } }, 'Vedi premi e interessi')));
+  }
+
   function panelResult() {
     const res = ui.res;
     if (!res) return noData();
@@ -813,6 +835,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
         state.example ? h('span', { class: 'example' }, 'DATI DI ESEMPIO') : null),
       h('p', { class: 'muted small' }, `Sono le imposte sui guadagni: cripto ${money(y.crypto.tax)} · oro e metalli ${money(y.metals.tax)}.`),
       rwTotal0.gt(0) ? h('p', { class: 'muted small' }, `Poi c'è un'altra imposta, separata: lo 0,2% all'anno sul valore delle cripto che possiedi, anche se non hai guadagnato niente (si chiama IVCA). Per te circa ${money(rwTotal0)}. In tutto, con questa, circa ${money(y.totalTax.plus(rwTotal0))}.`) : null));
+    nodes.push(sourcesCard(res));
     nodes.push(nextBar('Avanti: scarica i PDF', 'export', true));
     const more = [];
     more.push(h('div', { class: 'grid2' }, basketCard(y.crypto), basketCard(y.metals)));
@@ -900,7 +923,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     const near = ui.res && ui.res.engine.prices.nearest(sym, day);
     if (near) {
       const ref = Number(near.price.toString());
-      if (ref > 0 && (n / ref > 20 || n / ref < 1 / 20)) { const e = new Error('prezzo non credibile'); e.details = [`${r.source}: ${sym} a ${n} € non è credibile (nei tuoi file valeva circa ${ref.toPrecision(3)} €)`]; throw e; }
+      if (!CT.pricefeed.plausible(n, ref, near.daysApart)) { const e = new Error('prezzo non credibile'); e.details = [`${r.source}: ${sym} a ${n} € non è credibile (nei tuoi file, ${near.daysApart} giorni prima o dopo, valeva circa ${ref.toPrecision(3)} €)`]; throw e; }
     }
     return r;
   }
@@ -930,10 +953,10 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
         const k = `${n.symbol}|${n.day}`; priceTried.add(k);
         if (CT.classify(n.symbol) !== 'crypto') { ko++; why.set('oro', 'i metalli non si scaricano: scrivi il prezzo di 1 grammo'); return; }
         try { const r = await fetchPrice(n.symbol, n.day); if (!state.prices[k]) { state.prices[k] = r.price; (state.priceSrc = state.priceSrc || {})[k] = r.source; } ok++; }
-        catch (e) { ko++; for (const d of e.details || [e.message]) why.set(d.split(':')[0], d); }
+        catch (e) { ko++; for (const d of e.details || [e.message]) why.set(`${d.split(':')[0]}|${n.symbol}`, d); }
       }));
     }
-    ui.busy = ''; ui.priceFail = ko; ui.priceWhy = [...why.values()].slice(0, 4); changed();
+    ui.busy = ''; ui.priceFail = ko; ui.priceWhy = [...why.values()].slice(0, 6); changed();
     if (!quiet || ok) toast(`${ok} ${ok === 1 ? 'prezzo scaricato' : 'prezzi scaricati'}${ko ? `, ${ko} da inserire a mano` : ''}`);
   }
   /** Appena mancano dei prezzi li chiede da solo, una volta sola per ciascuno: l'utente non deve fare niente. */

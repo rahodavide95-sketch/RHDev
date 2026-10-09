@@ -7074,6 +7074,28 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
   const dmy = (day) => (day ? day.split('-').reverse().join('/') : '');
   const KIND_IT = { sell: 'Vendita', swap: 'Permuta', spend: 'Pagamento', fee: 'Commissione', transfer_fee: 'Commissione di rete' };
   const CLS_IT = { crypto: 'Cripto', metal: 'Oro/metalli' };
+  // da dove arriva l'imposta dell'anno, in parole semplici: operazioni che realizzano un guadagno/perdita (cessioni) e proventi ricevuti
+  const SELL_IT = { sell: 'Vendite in euro', swap: 'Scambi tra due cripto (anche conversioni di piccoli importi)', spend: 'Pagamenti fatti con le cripto (carta, acquisti)', fee: 'Commissioni pagate in cripto', transfer_fee: 'Commissioni di rete pagate in cripto' };
+  const GAIN_IT = { interest: 'Interessi (Earn e simili)', staking: 'Staking', cashback: 'Cashback e rimborsi della carta', referral: 'Bonus per inviti', airdrop: 'Airdrop', other: 'Altri premi e accrediti' };
+  function taxSources(res) {
+    const rows = [];
+    const by = new Map();
+    for (const d of res.engine.disposals) {
+      if (d.year !== res.year) continue;
+      const k = 'd:' + d.kind;
+      if (!by.has(k)) { const r = { key: k, group: 'sell', kind: d.kind, label: SELL_IT[d.kind] || d.kind, count: 0, amount: CT.ZERO }; by.set(k, r); rows.push(r); }
+      const r = by.get(k); r.count++; r.amount = r.amount.plus(d.gain);
+    }
+    for (const i of res.engine.incomes) {
+      if (i.year !== res.year) continue;
+      const k = 'i:' + i.type;
+      if (!by.has(k)) { const r = { key: k, group: 'income', kind: i.type, label: GAIN_IT[i.type] || i.type, count: 0, amount: CT.ZERO }; by.set(k, r); rows.push(r); }
+      const r = by.get(k); r.count++; r.amount = r.amount.plus(i.value);
+    }
+    const order = ['d:sell', 'd:swap', 'd:spend', 'd:fee', 'd:transfer_fee', 'i:interest', 'i:staking', 'i:cashback', 'i:referral', 'i:airdrop', 'i:other'];
+    rows.sort((a, b) => (order.indexOf(a.key) + 99 * (order.indexOf(a.key) < 0)) - (order.indexOf(b.key) + 99 * (order.indexOf(b.key) < 0)));
+    return { rows, hasSales: by.has('d:sell'), hasCashback: by.has('i:cashback') };
+  }
   const INC_IT = { interest: 'Interessi', staking: 'Staking', cashback: 'Cashback', referral: 'Referral', airdrop: 'Airdrop', other: 'Altro' };
 
   function csv(headers, rows) {
@@ -7176,7 +7198,7 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
   }
 
   CT.report = { csv, num, qnum, dmy, disposalsRows, DISPOSAL_HEAD, lotsRows, LOTS_HEAD, incomesRows, INCOME_HEAD, rwRows, RW_HEAD,
-    issuesRows, ISSUE_HEAD, balancesRows, BAL_HEAD, basketLines, summaryText, reportHtml, diagnostics, KIND_IT, CLS_IT, INC_IT };
+    issuesRows, ISSUE_HEAD, balancesRows, BAL_HEAD, basketLines, summaryText, reportHtml, diagnostics, KIND_IT, CLS_IT, INC_IT, taxSources };
   if (typeof module !== 'undefined') module.exports = CT.report;
 })();
 
@@ -7858,7 +7880,7 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
   async function dailyEur(sym, day, fetchImpl) {
     const f = fetchImpl || ((u, i) => globalThis.fetch(u, i));
     const s = String(sym).toUpperCase();
-    if (!/^[A-Z0-9]{2,12}$/.test(s) || !/^\d{4}-\d{2}-\d{2}$/.test(day)) throw new Error('simbolo o data non validi');
+    if (!/^[A-Z0-9]{1,12}$/.test(s) || !/^\d{4}-\d{2}-\d{2}$/.test(day)) throw new Error(`${s}: simbolo o data non validi`);   // anche 1 lettera: es. S (Sonic)
     const details = [];
     for (const [name, fn] of SOURCES) {
       try {
@@ -7872,7 +7894,20 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
     throw err;
   }
 
-  CT.pricefeed = { dailyEur, _sources: { viaBinance, viaKraken, viaCryptoCompare } };
+  /**
+   * Controllo contro errori grossolani (per esempio un'altra moneta con lo stesso nome): il prezzo scaricato si confronta con un prezzo noto dai file
+   * dell'utente `daysApart` giorni prima o dopo. Entro 30 giorni ammetto un cambio fino a 20 volte; poi la tolleranza cresce con la distanza,
+   * perche' una cripto puo' valere anche 100 volte meno dopo qualche anno (es. GALA: 0,48 € nel 2021, 0,005 € nel 2025).
+   */
+  function plausible(price, ref, daysApart) {
+    const p = Number(price), r = Number(ref);
+    if (!(p > 0)) return false;
+    if (!(r > 0)) return true;
+    const lim = 20 * Math.max(1, (Number(daysApart) || 0) / 30);
+    return p / r <= lim && p / r >= 1 / lim;
+  }
+
+  CT.pricefeed = { dailyEur, plausible, _sources: { viaBinance, viaKraken, viaCryptoCompare } };
   if (typeof module !== 'undefined') module.exports = CT.pricefeed;
 })();
 
@@ -11652,6 +11687,28 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       b.nDisposals === 0 && b.income.isZero() ? h('p', { class: 'muted' }, 'Nessuna operazione imponibile in questo anno.') : kvTable(rows));
   }
 
+  /** «Da dove arriva l'imposta»: elenca cosa ha contato il programma (vendite, scambi, pagamenti, premi), cosi' si capisce anche senza aver venduto. */
+  function sourcesCard(res) {
+    const sx = R.taxSources(res);
+    if (!sx.rows.length) return null;
+    const signed = (r) => (r.group === 'income' ? money(r.amount) : `${r.amount.gte(0) ? '+' : '−'} ${money(r.amount.abs())}`);
+    const rows = sx.rows.map((r) => h('tr', null,
+      h('td', null, r.label, h('div', { class: 'small muted' }, r.group === 'income' ? 'tassato per intero' : 'guadagno (+) o perdita (−)')),
+      h('td', { class: 'num' }, r.count), h('td', { class: 'num' }, signed(r))));
+    const intro = sx.hasSales ? `Questo è tutto quello che il programma ha contato nel ${res.year}.`
+      : `Nel ${res.year} non risultano vendite in euro. Ma il fisco tassa anche altre cose: ecco quali ha trovato il programma nei tuoi file.`;
+    return h('div', { class: 'card' },
+      h('h2', null, `Da dove arriva l'imposta del ${res.year}`),
+      h('p', { class: 'muted' }, intro),
+      h('div', { class: 'tbl-wrap' }, h('table', null,
+        h('thead', null, h('tr', null, h('th', null, 'Che cosa'), h('th', { class: 'num' }, 'Quante'), h('th', { class: 'num' }, 'Importo'))),
+        h('tbody', null, rows))),
+      sx.hasCashback ? h('p', { class: 'small' }, 'Il cashback della carta lo conto come un guadagno (scelta prudenziale). Se il tuo commercialista lo considera uno sconto sulla spesa, l\'imposta scende: chiedigli come vuole trattarlo.') : null,
+      h('div', { class: 'row' },
+        h('button', { class: 'btn quiet', onclick: () => { ui.detail = 'cessioni'; ui.tab = 'detail'; render(); window.scrollTo(0, 0); } }, 'Vedi vendite e scambi'),
+        h('button', { class: 'btn quiet', onclick: () => { ui.detail = 'proventi'; ui.tab = 'detail'; render(); window.scrollTo(0, 0); } }, 'Vedi premi e interessi')));
+  }
+
   function panelResult() {
     const res = ui.res;
     if (!res) return noData();
@@ -11677,6 +11734,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
         state.example ? h('span', { class: 'example' }, 'DATI DI ESEMPIO') : null),
       h('p', { class: 'muted small' }, `Sono le imposte sui guadagni: cripto ${money(y.crypto.tax)} · oro e metalli ${money(y.metals.tax)}.`),
       rwTotal0.gt(0) ? h('p', { class: 'muted small' }, `Poi c'è un'altra imposta, separata: lo 0,2% all'anno sul valore delle cripto che possiedi, anche se non hai guadagnato niente (si chiama IVCA). Per te circa ${money(rwTotal0)}. In tutto, con questa, circa ${money(y.totalTax.plus(rwTotal0))}.`) : null));
+    nodes.push(sourcesCard(res));
     nodes.push(nextBar('Avanti: scarica i PDF', 'export', true));
     const more = [];
     more.push(h('div', { class: 'grid2' }, basketCard(y.crypto), basketCard(y.metals)));
@@ -11764,7 +11822,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     const near = ui.res && ui.res.engine.prices.nearest(sym, day);
     if (near) {
       const ref = Number(near.price.toString());
-      if (ref > 0 && (n / ref > 20 || n / ref < 1 / 20)) { const e = new Error('prezzo non credibile'); e.details = [`${r.source}: ${sym} a ${n} € non è credibile (nei tuoi file valeva circa ${ref.toPrecision(3)} €)`]; throw e; }
+      if (!CT.pricefeed.plausible(n, ref, near.daysApart)) { const e = new Error('prezzo non credibile'); e.details = [`${r.source}: ${sym} a ${n} € non è credibile (nei tuoi file, ${near.daysApart} giorni prima o dopo, valeva circa ${ref.toPrecision(3)} €)`]; throw e; }
     }
     return r;
   }
@@ -11794,10 +11852,10 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
         const k = `${n.symbol}|${n.day}`; priceTried.add(k);
         if (CT.classify(n.symbol) !== 'crypto') { ko++; why.set('oro', 'i metalli non si scaricano: scrivi il prezzo di 1 grammo'); return; }
         try { const r = await fetchPrice(n.symbol, n.day); if (!state.prices[k]) { state.prices[k] = r.price; (state.priceSrc = state.priceSrc || {})[k] = r.source; } ok++; }
-        catch (e) { ko++; for (const d of e.details || [e.message]) why.set(d.split(':')[0], d); }
+        catch (e) { ko++; for (const d of e.details || [e.message]) why.set(`${d.split(':')[0]}|${n.symbol}`, d); }
       }));
     }
-    ui.busy = ''; ui.priceFail = ko; ui.priceWhy = [...why.values()].slice(0, 4); changed();
+    ui.busy = ''; ui.priceFail = ko; ui.priceWhy = [...why.values()].slice(0, 6); changed();
     if (!quiet || ok) toast(`${ok} ${ok === 1 ? 'prezzo scaricato' : 'prezzi scaricati'}${ko ? `, ${ko} da inserire a mano` : ''}`);
   }
   /** Appena mancano dei prezzi li chiede da solo, una volta sola per ciascuno: l'utente non deve fare niente. */

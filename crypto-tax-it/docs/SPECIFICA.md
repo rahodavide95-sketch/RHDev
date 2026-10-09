@@ -102,3 +102,7 @@ fonti consultate erano discordanti: vanno presi dalle istruzioni del modello.
 2. Confronto dei saldi finali con quelli mostrati dalle piattaforme.
 3. Revisione di un commercialista su regole, scelte interpretative e righi del modello.
 4. Eventuale servizio di appoggio per le API e per i prezzi storici.
+
+## Spiegazione dell'imposta e controllo dei prezzi scaricati
+- Nel risultato la scheda «Da dove arriva l'imposta» elenca, per l'anno scelto, vendite in euro, scambi tra cripto, pagamenti, commissioni (guadagno o perdita) e premi (interessi, staking, cashback, bonus: tassati per intero al valore alla ricezione). Se non ci sono vendite lo dice: l'imposta può venire da scambi e premi anche senza vendere. Funzione `taxSources` in `app/src/report.js`.
+- Un prezzo scaricato si scarta solo se è assurdo rispetto a un prezzo noto dai file dell'utente (`pricefeed.plausible`): fino a 20 volte entro 30 giorni, con tolleranza crescente con la distanza. Simboli di una sola lettera (es. S, Sonic) sono ammessi.

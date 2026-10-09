@@ -56,3 +56,18 @@ test('risposte strane: prezzo zero, giorno sbagliato, testo non JSON', async () 
   await assert.rejects(() => PF.dailyEur('BTC', DAY, net([['symbol=BTCEUR', json(200, kl(0))], ['symbol=BTCUSDT', json(200, kl(0))], ['kraken', json(200, { error: [], result: { X: [[T0 / 1000 - 86400, '1', '1', '1', '9', '1', '1', 1]] } })], ['cryptocompare', { status: 200, ok: true, json: async () => { throw new Error('no json'); } }]])));
   await assert.rejects(() => PF.dailyEur('BTC!', DAY, net([])), /non validi/);
 });
+
+test('simbolo di una sola lettera (S, Sonic) ammesso; caratteri strani no, con il nome nel messaggio', async () => {
+  const f = net([['symbol=SEUR', json(200, kl(0.31))]]);
+  assert.deepEqual(await PF.dailyEur('S', DAY, f), { price: '0.31', source: 'Binance' });
+  await assert.rejects(() => PF.dailyEur('A/B', DAY, net([])), /A\/B: simbolo o data non validi/);
+});
+
+test('plausibile: GALA da 0,48 € (2021) a 0,00497 € (2025) e\' vero, un salto di 100 volte in pochi giorni no', () => {
+  assert.equal(PF.plausible(0.00497, 0.48, 1500), true);
+  assert.equal(PF.plausible(0.00497, 0.48, 3), false);
+  assert.equal(PF.plausible(48, 0.48, 3), false);
+  assert.equal(PF.plausible(0.5, 0.48, 3), true);
+  assert.equal(PF.plausible(0, 0.48, 3), false);
+  assert.equal(PF.plausible(1, 0, 0), true);
+});

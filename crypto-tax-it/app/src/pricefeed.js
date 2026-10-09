@@ -107,7 +107,7 @@
   async function dailyEur(sym, day, fetchImpl) {
     const f = fetchImpl || ((u, i) => globalThis.fetch(u, i));
     const s = String(sym).toUpperCase();
-    if (!/^[A-Z0-9]{2,12}$/.test(s) || !/^\d{4}-\d{2}-\d{2}$/.test(day)) throw new Error('simbolo o data non validi');
+    if (!/^[A-Z0-9]{1,12}$/.test(s) || !/^\d{4}-\d{2}-\d{2}$/.test(day)) throw new Error(`${s}: simbolo o data non validi`);   // anche 1 lettera: es. S (Sonic)
     const details = [];
     for (const [name, fn] of SOURCES) {
       try {
@@ -121,6 +121,19 @@
     throw err;
   }
 
-  CT.pricefeed = { dailyEur, _sources: { viaBinance, viaKraken, viaCryptoCompare } };
+  /**
+   * Controllo contro errori grossolani (per esempio un'altra moneta con lo stesso nome): il prezzo scaricato si confronta con un prezzo noto dai file
+   * dell'utente `daysApart` giorni prima o dopo. Entro 30 giorni ammetto un cambio fino a 20 volte; poi la tolleranza cresce con la distanza,
+   * perche' una cripto puo' valere anche 100 volte meno dopo qualche anno (es. GALA: 0,48 € nel 2021, 0,005 € nel 2025).
+   */
+  function plausible(price, ref, daysApart) {
+    const p = Number(price), r = Number(ref);
+    if (!(p > 0)) return false;
+    if (!(r > 0)) return true;
+    const lim = 20 * Math.max(1, (Number(daysApart) || 0) / 30);
+    return p / r <= lim && p / r >= 1 / lim;
+  }
+
+  CT.pricefeed = { dailyEur, plausible, _sources: { viaBinance, viaKraken, viaCryptoCompare } };
   if (typeof module !== 'undefined') module.exports = CT.pricefeed;
 })();

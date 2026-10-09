@@ -7,12 +7,17 @@ const fs = require('node:fs');
 const path = require('node:path');
 const src = (f) => fs.readFileSync(path.join(__dirname, 'src', f), 'utf8');
 
-const SCRIPTS = ['vendor/decimal.js', 'vendor/jspdf.umd.min.js', 'vendor/jspdf.plugin.autotable.min.js', 'core.js', 'csv.js', 'importers.js', 'engine.js', 'tax.js', 'rw.js', 'zip.js', 'pipeline.js', 'report.js', 'pdf.js', 'platforms.js', 'pricefeed.js', 'api/common.js', 'api/cryptocom_exchange.js', 'api/bitpanda.js', 'api/binance.js', 'api/index.js', 'ui.js']
+const SCRIPTS = ['vendor/decimal.js', 'vendor/jspdf.umd.min.js', 'vendor/jspdf.plugin.autotable.min.js', 'core.js', 'csv.js', 'importers.js', 'engine.js', 'tax.js', 'rw.js', 'zip.js', 'pipeline.js', 'report.js', 'pdf.js', 'platforms.js', 'pricefeed.js', 'facsimile.js', 'api/common.js', 'api/cryptocom_exchange.js', 'api/bitpanda.js', 'api/binance.js', 'api/index.js', 'ui.js']
   .filter((f) => fs.existsSync(path.join(__dirname, 'src', f)));   // un collegamento non ancora presente viene saltato
-const scripts = SCRIPTS.map((f) => {
+const scriptTags = SCRIPTS.map((f) => {
   const code = src(f).replace(/<\/script/gi, '<\\/script'); // '<\/' e' equivalente a '</' dentro stringhe e regex JS
   return `<script data-app>\n${code}\n</script>`;
-}).join('\n');
+});
+// sfondi dei moduli fac-simile (immagini JPEG) incorporati come dati: serve un unico file anche offline e dentro claude.ai
+const jpg = (f) => 'data:image/jpeg;base64,' + fs.readFileSync(path.join(__dirname, 'src', 'assets', f)).toString('base64');
+const assetTag = `<script data-app>\n(globalThis.CT = globalThis.CT || {}).fxAssets = { rw: '${jpg('fx-rw.jpg')}', w: '${jpg('fx-w.jpg')}' };\n</script>`;
+scriptTags.splice(SCRIPTS.indexOf('facsimile.js') + 1, 0, assetTag);
+const scripts = scriptTags.join('\n');
 
 const fragment = src('index.src.html').replace('/*@@CSS@@*/', () => src('app.css')).replace('/*@@SCRIPTS@@*/', () => scripts);
 

@@ -62,6 +62,10 @@ Ogni pagina ha intestazione, piè di pagina con la dicitura "non è un modulo uf
 irrisolti ogni pagina porta la filigrana BOZZA. I righi esatti dei quadri e i codici tributo non sono riportati perché le
 fonti consultate erano discordanti: vanno presi dalle istruzioni del modello.
 
+## Moduli fac-simile (Quadro RW / Quadro W)
+
+`app/src/facsimile.js` scrive i valori sopra l'immagine del modulo dell'Agenzia delle Entrate (`app/src/assets/fx-rw.jpg`, `fx-w.jpg`, ricavate da due fac-simile di riferimento forniti dall'utente) e produce anteprima (canvas) e PDF (jsPDF) dalle stesse operazioni di disegno. Coordinate misurate sui riferimenti. Righe: una per conto e numero di giorni di detenzione (cripto: titolo 1, codice 21, quota 100,00, criterio 1 = valore di mercato; valori in euro interi; IC = 0,2% × valore finale × giorni/365, arrotondata per riga e sommata in RW8). Disponibile solo per il periodo d'imposta 2025. Non ancora presenti: quadro RT e quadro T (plusvalenze); la compilazione dei righi per l'oro (codice da verificare). I campi «Acconti versati» restano al commercialista.
+
 ## Cosa NON è incluso (ancora)
 
 - **API degli exchange: sperimentali, mai provate con un account reale.** Esistono i collegamenti per Crypto.com Exchange, Bitpanda

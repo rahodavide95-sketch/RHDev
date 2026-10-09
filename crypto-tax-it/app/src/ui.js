@@ -1002,6 +1002,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       h('div', null, h('strong', null, title), h('div', { class: 'muted small' }, desc)),
       h('div', { class: 'row' }, h('button', { class: 'btn primary', onclick: () => saveFile(name, build(), mime) }, 'Salva'), h('button', { class: 'btn', onclick: () => copyText(build().replace(/^﻿/, ''), title) }, 'Copia')));
     return h('div', { class: 'stack' },
+      fxCard(res),
       pdfCard(res),
       h('div', { class: 'card' }, h('h2', null, `Altri formati · ${y}`),
         h('p', { class: 'muted small' }, 'I file CSV si aprono con Excel (separatore ; e virgola decimale).'),
@@ -1053,40 +1054,88 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     const f = which === 'full' ? out.full : which === 'zip' ? out.zip : out.parts.find((x) => x.name === which);
     if (f) { await saveFile(f.name, f.data, which === 'zip' ? 'application/zip' : 'application/pdf'); ui.pdfDone = f.name; render(); }
   }
-  function pdfCard(res) {
+  /** Campi facoltativi usati sia nei moduli fac-simile sia nei PDF con i calcoli: codice fiscale e societa' che custodisce le cripto. */
+  function taxpayerFields(res, onChange) {
     const tp = state.taxpayer = state.taxpayer || { name: '', cf: '' };
     state.custodians = state.custodians || {};
     const touch = () => { ui.ver++; ui.pdf = null; save(); };
     const name = field('Cognome e nome', { id: 'tp_name', value: tp.name, placeholder: 'es. Rossi Mario', oninput: (e) => { tp.name = e.target.value; touch(); } });
-    const cf = field('Codice fiscale', { id: 'tp_cf', value: tp.cf, maxlength: '16', placeholder: 'es. RSSMRA80A01H501U', oninput: (e) => { e.target.value = e.target.value.toUpperCase(); tp.cf = e.target.value; touch(); } });
+    const cf = field('Codice fiscale', { id: 'tp_cf', value: tp.cf, maxlength: '16', placeholder: 'es. RSSMRA80A01H501U', oninput: (e) => { e.target.value = e.target.value.toUpperCase(); tp.cf = e.target.value; touch(); }, onchange: () => { if (onChange) onChange(); } });
     const accounts = [...new Set(res.rw.map((r) => r.account))];
     const cust = accounts.map((a) => {
       const c = state.custodians[a] = state.custodians[a] || { name: '', country: '' };
-      const n = field(`${a}: società che custodisce i fondi`, { id: `cu_n_${a}`, value: c.name, placeholder: 'dai termini e condizioni della piattaforma', oninput: (e) => { c.name = e.target.value; touch(); } });
-      const k = field('Stato', { id: `cu_s_${a}`, value: c.country, placeholder: 'es. Malta', oninput: (e) => { c.country = e.target.value; touch(); } });
+      const n = field(`${a}: società che custodisce i fondi`, { id: `cu_n_${a}`, value: c.name, placeholder: 'dai termini e condizioni della piattaforma', oninput: (e) => { c.name = e.target.value; touch(); }, onchange: () => { if (onChange) onChange(); } });
+      const k = field('Stato', { id: `cu_s_${a}`, value: c.country, placeholder: 'es. Malta', oninput: (e) => { c.country = e.target.value; touch(); }, onchange: () => { if (onChange) onChange(); } });
       return h('div', { class: 'fields' }, n.el, k.el);
     });
+    return { name, cf, accounts, cust };
+  }
+
+  // ------------------------------------------------------------------ moduli fac-simile (anteprima e download)
+  function fxCard(res) {
+    const fx = CT.facsimile.build(res, state);
+    if (!fx.available) return h('div', { class: 'card' }, h('h2', null, 'Moduli per il commercialista'), h('p', { class: 'muted' }, fx.reason));
+    const blk = res.groups.blockCount, asm = res.groups.assumptionCount;
+    const forms = [
+      { key: 'rw', title: `Quadro RW · Redditi PF 2026`, sub: 'Monitoraggio degli investimenti all\'estero e imposta sulle cripto-attività (IC)', pages: fx.rw, file: `${res.year}-Quadro-RW-facsimile.pdf` },
+      { key: 'w', title: `Quadro W · Modello 730/2026`, sub: 'Investimenti e attività estere (stesso contenuto, per chi presenta il 730)', pages: fx.w, file: `${res.year}-Quadro-W-facsimile.pdf` },
+    ];
+    const download = async (f) => {
+      try {
+        const buf = CT.facsimile.toPdf(f.pages, f.title);
+        await saveFile(f.file, new Uint8Array(buf), 'application/pdf'); ui.fxDone = f.file; render();
+      } catch (e) { console.error(e); toast('Non riesco a creare il PDF: ' + e.message); }
+    };
+    const tf = taxpayerFields(res, () => render());
+    const item = (f) => {
+      const open = ui.fxOpen === f.key;
+      const cards = [h('div', { class: 'row between' },
+        h('div', null, h('strong', null, f.title), h('div', { class: 'muted small' }, f.sub)),
+        h('div', { class: 'row' },
+          h('button', { class: 'btn', onclick: () => { ui.fxOpen = open ? null : f.key; render(); } }, open ? 'Chiudi anteprima' : 'Anteprima'),
+          h('button', { class: 'btn primary', onclick: () => download(f) }, 'Scarica PDF')))];
+      if (open) {
+        cards.push(h('div', { class: 'fxprev' }, f.pages.map((pg, i) => {
+          const cv = h('canvas', { class: 'fxcv', role: 'img', 'aria-label': `${f.title}, modulo ${i + 1} di ${f.pages.length}` });
+          setTimeout(() => CT.facsimile.renderCanvas(pg, cv, 1100).catch((e) => console.error(e)), 0);
+          return h('div', null, f.pages.length > 1 ? h('div', { class: 'small muted' }, `Modulo n. ${i + 1} di ${f.pages.length}`) : null, cv);
+        })));
+      }
+      return h('div', { class: 'fxitem' }, cards);
+    };
+    return h('div', { class: `card tone-${blk || asm ? 'warn' : 'good'}` },
+      h('h2', null, `I tuoi moduli per il ${res.year}`),
+      h('p', { class: 'muted' }, 'Sono i moduli dell\'Agenzia delle Entrate (fac-simile) già compilati con i tuoi calcoli. Li dai al commercialista, che li ricopia nel suo programma: non si inviano così come sono.'),
+      blk ? h('p', { class: 'pill warn block' }, `Ci sono ancora ${blk} ${blk === 1 ? 'punto' : 'punti'} da sistemare: i moduli portano la scritta BOZZA.`)
+        : asm ? h('p', { class: 'pill warn block' }, `Pronti, con ${asm} ${asm === 1 ? 'ipotesi' : 'ipotesi'} (le trovi nei PDF con i calcoli): falle vedere al commercialista.`) : null,
+      fx.rows.length ? null : h('p', { class: 'muted' }, 'Non risultano cripto o oro detenuti in questo anno: i moduli sono vuoti.'),
+      forms.map(item),
+      ui.fxDone ? h('p', { class: 'small', style: 'margin-top:8px' }, `Fatto: «${ui.fxDone}» è nella cartella Download del tuo computer (o dove salvi i file dal telefono). Mandalo al tuo commercialista.`) : null,
+      h('p', { class: 'small muted' }, 'La casella «Acconti versati» è lasciata da compilare al commercialista: il programma non sa se hai già pagato qualcosa. Il codice 21 indica le cripto-attività; per l\'oro il codice va verificato.'),
+      h('details', null, h('summary', null, 'Facoltativo: codice fiscale e società che custodisce le cripto'),
+        h('div', { class: 'stack', style: 'padding:8px 0;gap:12px' },
+          h('p', { class: 'small muted' }, 'Il codice fiscale viene scritto negli appositi riquadri del modulo. La società che custodisce le cripto compare accanto alla riga, per aiutare il commercialista.'),
+          tf.cf.el, tf.accounts.length ? [h('h3', null, 'Dove sono custodite'), tf.cust] : null)));
+  }
+
+  function pdfCard(res) {
+    const tf = taxpayerFields(res);
     const blk = res.groups.blockCount;
     const asm = res.groups.assumptionCount;
     const busy = ui.pdfBusy;
-    return h('div', { class: `card tone-${blk || asm ? 'warn' : 'good'}` },
-      h('h2', null, blk ? `I PDF per il ${res.year} sono una bozza` : `I tuoi PDF per il ${res.year}`),
-      h('p', { class: 'muted' }, 'Non vanno mandati all\'Agenzia delle Entrate: li dai al tuo commercialista, che li usa per compilare la dichiarazione (Modello Redditi PF) e per dimostrare i calcoli in caso di controllo. Non sono moduli ufficiali.'),
+    return h('div', { class: 'card' },
+      h('h2', null, `PDF con tutti i calcoli · ${res.year}`),
+      h('p', { class: 'muted' }, 'Riepilogo delle imposte, elenco delle vendite con il costo di acquisto, proventi, saldi, fonti dei dati e scelte fatte. Servono al commercialista per capire e verificare i numeri dei moduli, e a te in caso di controllo.'),
       blk ? h('p', { class: 'pill warn block' }, `Ci sono ancora ${blk} ${blk === 1 ? 'punto' : 'punti'} da sistemare: ogni pagina avrà la filigrana BOZZA.`)
-        : asm ? h('p', { class: 'pill warn block' }, `Pronti, con ${asm} ${asm === 1 ? 'ipotesi' : 'ipotesi'} elencate nell'Allegato E: falle vedere al commercialista.`)
-          : h('p', { class: 'pill good block' }, 'Nessun punto aperto: i PDF non hanno la filigrana BOZZA.'),
+        : asm ? h('p', { class: 'pill warn block' }, `Con ${asm} ${asm === 1 ? 'ipotesi' : 'ipotesi'} elencate nell'Allegato E.`) : null,
       h('div', { class: 'row' },
-        h('button', { class: 'btn primary', style: 'min-height:52px;font-size:17px', disabled: busy, onclick: () => downloadPdf('full') }, busy ? 'Sto preparando i PDF…' : 'Scarica il PDF per il commercialista')),
-      ui.pdfDone ? h('p', { class: 'small', style: 'margin-top:8px' }, `Fatto: «${ui.pdfDone}» è nella cartella Download del tuo computer (o dove salvi i file dal telefono). Mandalo al tuo commercialista.`) : null,
+        h('button', { class: 'btn', disabled: busy, onclick: () => downloadPdf('full') }, busy ? 'Sto preparando i PDF…' : 'Scarica il PDF con i calcoli'),
+        h('button', { class: 'btn', disabled: busy, onclick: () => downloadPdf('zip') }, 'Scarica i PDF separati (.zip)')),
+      ui.pdfDone ? h('p', { class: 'small', style: 'margin-top:8px' }, `Fatto: «${ui.pdfDone}» è nella cartella Download.`) : null,
       res.dataYears.filter((x) => x !== res.year && CT.tax.YEARS.includes(x)).length ? h('p', { class: 'small muted' }, `Hai operazioni anche nel ${res.dataYears.filter((x) => x !== res.year && CT.tax.YEARS.includes(x)).join(' e nel ')}: per averne i PDF cambia l'anno dal menu in alto.`) : null,
-      h('details', null, h('summary', null, 'Facoltativo: nome, codice fiscale e società che custodisce le cripto'),
+      h('details', null, h('summary', null, 'Facoltativo: il tuo nome sul PDF, e singoli documenti'),
         h('div', { class: 'stack', style: 'padding:8px 0;gap:12px' },
-          h('p', { class: 'small muted' }, 'Se non li scrivi nel PDF resta "(da indicare)" e li aggiunge il commercialista.'),
-          h('div', { class: 'fields' }, name.el, cf.el),
-          accounts.length ? [h('h3', null, 'Dove sono custodite (quadro RW)'), h('p', { class: 'small muted' }, 'Per ogni piattaforma o wallet: il nome della società che custodisce i fondi (lo trovi nei termini e condizioni) e lo Stato.'), cust] : null)),
-      h('details', null, h('summary', null, 'Altri formati: PDF separati e singoli documenti'),
-        h('div', { class: 'stack', style: 'padding:8px 0;gap:8px' },
-          h('div', { class: 'row' }, h('button', { class: 'btn', disabled: busy, onclick: () => downloadPdf('zip') }, 'Scarica tutti i PDF separati (.zip)')),
+          tf.name.el,
           CT.pdf.SECTIONS.map((sec) => h('div', { class: 'row between', style: 'padding:8px 0;border-top:1px solid var(--line)' },
             h('span', null, sec.title), h('button', { class: 'btn', disabled: busy, onclick: () => downloadPdf(`${res.year}-${sec.file}.pdf`) }, 'Scarica'))))));
   }

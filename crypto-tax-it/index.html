@@ -11677,13 +11677,14 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     }
     const rwTotal0 = res.rw.reduce((t, r) => t.plus(r.ivca), CT.ZERO);
     nodes.push(h('div', { class: `card hero tone-${blk || g.assumptionCount ? 'warn' : 'good'}` },
-      h('span', { class: 'lbl' }, `Imposta da pagare sulle cripto e sull'oro · anno ${res.year} (stima)`),
+      h('span', { class: 'lbl' }, `Imposta sui guadagni da cripto e oro · anno ${res.year} (stima)`),
       h('div', { class: 'big' }, money(y.totalTax)),
       h('div', { class: 'row' },
         blk ? h('button', { class: 'pill warn', onclick: () => { ui.tab = 'checks'; render(); } }, `Bozza: ${blk} da controllare →`)
           : g.assumptionCount ? h('button', { class: 'pill warn', onclick: () => { ui.tab = 'checks'; render(); } }, 'Pronto, con ipotesi →') : h('span', { class: 'pill good' }, 'Nessun punto da risolvere'),
         state.example ? h('span', { class: 'example' }, 'DATI DI ESEMPIO') : null),
-      h('p', { class: 'muted small' }, `Cripto ${money(y.crypto.tax)} · Oro e metalli ${money(y.metals.tax)}.${rwTotal0.gt(0) ? ` In più, a parte: circa ${money(rwTotal0)} di imposta sul valore delle cripto (IVCA).` : ''}`)));
+      h('p', { class: 'muted small' }, `Sono le imposte sui guadagni: cripto ${money(y.crypto.tax)} · oro e metalli ${money(y.metals.tax)}.`),
+      rwTotal0.gt(0) ? h('p', { class: 'muted small' }, `Poi c'è un'altra imposta, separata: lo 0,2% all'anno sul valore delle cripto che possiedi, anche se non hai guadagnato niente (si chiama IVCA). Per te circa ${money(rwTotal0)}. In tutto, con questa, circa ${money(y.totalTax.plus(rwTotal0))}.`) : null));
     nodes.push(nextBar('Avanti: scarica i PDF', 'export', true));
     const more = [];
     more.push(h('div', { class: 'grid2' }, basketCard(y.crypto), basketCard(y.metals)));

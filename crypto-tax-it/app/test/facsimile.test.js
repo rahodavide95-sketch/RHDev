@@ -94,3 +94,24 @@ test('stesse operazioni di disegno => PDF valido a una pagina per modulo', () =>
   const two = Buffer.from(FX.toPdf(FX.build(res(Array.from({ length: 6 }, (_, i) => row('P' + i, 'BTC', 365, 1, 2, '0'))), {}).rw, 'x'));
   assert.match(two.toString('latin1'), /\/Count 2/);
 });
+
+test('una sola riga per piattaforma: cripto con giorni diversi si sommano, giorni = media pesata sul valore finale', () => {
+  const r = res([
+    row('CRYPTOCOM_APP', 'BTC', 365, 1000, 3000, '6'),      // 3000 x 365/365 x 0,2% = 6
+    row('CRYPTOCOM_APP', 'ETH', 100, 0, 1000, '0.5479'),    // 1000 x 100/365 x 0,2%
+    row('CRYPTOCOM_APP', 'SOL', 365, 200, 0, '0'),
+    row('CRYPTOCOM_EXCHANGE', 'ADA', 200, 50, 100, '0.1')]);
+  const out = FX.build(r, { custodians: {}, taxpayer: {} });
+  assert.equal(out.rows.length, 2);                                      // due piattaforme, due righe (non quattro)
+  const app = out.rows.find((x) => x.account === 'CRYPTOCOM_APP');
+  assert.equal(app.vf.toString(), '4000'); assert.equal(app.vi.toString(), '1200');
+  assert.equal(app.mixedDays, true);
+  assert.equal(app.days, 299);                                           // (3000x365 + 1000x100) / 4000 = 298,75
+  assert.equal(app.icDue.toString(), '7');                               // IC = somma attivita' per attivita'
+  assert.ok(/GIORNI MEDI/.test(app.label3));
+  const ex = out.rows.find((x) => x.account === 'CRYPTOCOM_EXCHANGE');
+  assert.equal(ex.days, 200); assert.equal(ex.mixedDays, false); assert.ok(!/GIORNI MEDI/.test(ex.label3));
+  // stessa piattaforma con cripto e oro: due righe (codici diversi)
+  const gold = FX.build(res([row('Bitpanda', 'XAU', 365, 10, 20, '0', { cls: 'metal' }), row('Bitpanda', 'BTC', 365, 10, 20, '0.04')]), {});
+  assert.equal(gold.rows.length, 2);
+});

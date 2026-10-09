@@ -42,18 +42,29 @@
 
   /** Righe del quadro: una per piattaforma (conto) e numero di giorni di detenzione, come nel fac-simile di riferimento. */
   function rows(res, state) {
+    // una riga per piattaforma (e per tipo: cripto / oro hanno codici diversi); dentro la riga si sommano le attivita'
     const g = new Map();
     for (const r of res.rw) {
       if (r.cls !== 'crypto' && r.cls !== 'metal') continue;
-      const key = [r.account, r.cls, r.days].join('|');
-      if (!g.has(key)) g.set(key, { account: r.account, cls: r.cls, days: r.days, vi: ZERO, vf: ZERO, ic: ZERO, estimated: false, incomplete: false });
+      const key = [r.account, r.cls].join('|');
+      if (!g.has(key)) g.set(key, { account: r.account, cls: r.cls, parts: [], vi: ZERO, vf: ZERO, ic: ZERO, estimated: false, incomplete: false });
       const x = g.get(key);
+      x.parts.push({ days: r.days, vf: r.valueFinal || ZERO });
       if (r.valueInitial === null || r.valueInitial === undefined || r.valueFinal === null || r.valueFinal === undefined) x.incomplete = true;
       x.vi = x.vi.plus(r.valueInitial || ZERO); x.vf = x.vf.plus(r.valueFinal || ZERO);
       x.ic = x.ic.plus(r.cls === 'crypto' ? r.ivca || ZERO : ZERO);
       if (r.estimated) x.estimated = true;
     }
-    const list = [...g.values()].sort((a, b) => (a.account + a.cls < b.account + b.cls ? -1 : a.account + a.cls > b.account + b.cls ? 1 : b.days - a.days));
+    const list = [...g.values()].sort((a, b) => (a.account + a.cls < b.account + b.cls ? -1 : a.account + a.cls > b.account + b.cls ? 1 : 0));
+    // giorni di detenzione: se tutte le attivita' della piattaforma hanno gli stessi giorni, quelli; altrimenti la media pesata sul valore finale
+    // (cosi' valore finale x giorni/365 x 0,2% resta uguale all'imposta calcolata attivita' per attivita')
+    for (const x of list) {
+      const days = [...new Set(x.parts.map((p) => p.days))];
+      x.mixedDays = days.length > 1;
+      if (!x.mixedDays) x.days = days[0];
+      else if (x.vf.gt(0)) x.days = Math.round(x.parts.reduce((a, p) => a.plus(p.vf.times(p.days)), ZERO).div(x.vf).toNumber());
+      else x.days = Math.max(...days);
+    }
     const cu = (state && state.custodians) || {};
     for (const x of list) {
       x.icDue = x.cls === 'crypto' ? CT.roundEuro(x.ic) : null;
@@ -63,6 +74,7 @@
       const flags = [];
       if (x.cls === 'metal') flags.push('ORO: VERIFICA CODICE');
       if (x.incomplete) flags.push('DA COMPLETARE'); else if (x.estimated) flags.push('VALORI STIMATI');
+      if (x.mixedDays) flags.push('GIORNI MEDI');
       x.label3 = flags.join(' - ');                                                              // in rosso
     }
     return list;

@@ -20,7 +20,7 @@ const opts = {
 };
 
 const files = ['label-finance/core.js', 'label-finance/app.js', 'label-finance/sync.js', 'label-finance/i18n.js',
-  'label-finance/signature.js', 'label-finance/tables.js', 'label-finance/firma.js', 'label-finance/artista.js', 'label-finance/landing.js'];
+  'label-finance/signature.js', 'label-finance/tables.js', 'label-finance/safety.js', 'label-finance/firma.js', 'label-finance/artista.js', 'label-finance/landing.js'];
 let done = 0;
 for (const f of files) {
   if (!fs.existsSync(f)) { console.warn('skip (manca):', f); continue; }

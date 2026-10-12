@@ -9,6 +9,9 @@
   const CFG_KEY = 'labelfinance.supabase';
   const $ = (id)=>document.getElementById(id);
   let client=null, user=null, pushTimer=null, pulling=false;
+  // di chi sono i dati aperti: il proprio account o, con l'accesso team, quello del titolare
+  let workspace=null;
+  const wsId=()=> (workspace && workspace.owner) || (user && user.id) || null;
 
   const EYE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
   const EYE_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.9 4.24A9.1 9.1 0 0 1 12 4c6.5 0 10 7 10 7a18 18 0 0 1-2.16 3.19M6.6 6.6A18 18 0 0 0 2 12s3.5 7 10 7a9.1 9.1 0 0 0 4.3-1.06"/><path d="m3 3 18 18"/></svg>';
@@ -389,6 +392,25 @@
       if(error){ let d=null; try{ d=await error.context?.json?.(); }catch{} return d || { error:error.message||'cat_error' }; }
       return data;
     }catch(e){ return { error:e.message||'cat_error' }; }
+  };
+  /* ---------- Versioni salvate nel cloud (vedi app_state_versions in schema.sql) ---------- */
+  window.LF_listVersions = async function(){
+    if(!client||!user) return null;
+    try{ const { data, error } = await client.from('app_state_versions').select('id,created_at,reason')
+        .eq('user_id', wsId()).order('created_at', { ascending:false }).limit(30);
+      if(error) return { error:error.message||'db_error' }; return data||[];
+    }catch(e){ return { error:e.message||'db_error' }; }
+  };
+  window.LF_getVersion = async function(id){
+    if(!client||!user) return { error:'offline' };
+    try{ const { data, error } = await client.from('app_state_versions').select('data').eq('id', id).eq('user_id', wsId()).maybeSingle();
+      if(error||!data) return { error:(error&&error.message)||'not_found' }; return data.data;
+    }catch(e){ return { error:e.message||'db_error' }; }
+  };
+  // copia "adesso" nel cloud prima di un'operazione pericolosa (se il database la supporta)
+  window.LF_snapshotNow = async function(){
+    if(!client||!user) return;
+    try{ await Promise.race([ client.rpc('lf_snapshot_now', { p_owner: wsId() }), new Promise(r=>setTimeout(r, 4000)) ]); }catch(e){}
   };
   /* ---------- Firma remota dei contratti ---------- */
   // token dei link (firma, portale): 128 bit casuali, impossibili da indovinare

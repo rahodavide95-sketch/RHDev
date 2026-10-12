@@ -1685,3 +1685,21 @@ body.col-resizing,body.col-resizing *{cursor:col-resize!important;user-select:no
 .ai-help-list{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:5px;font-size:.84rem;line-height:1.4;color:var(--text)}
 .ai-help-list b{font-weight:700}
 .ai-help-ok{align-self:flex-end;padding:6px 12px;font-size:.84rem}
+
+/* ============================================================================
+   CESTINO E VERSIONI (safety.js) + finestre delle nuove funzioni
+   ============================================================================ */
+.sx-body{padding:18px 22px 22px;display:flex;flex-direction:column;gap:12px}
+.sx-h{font-size:.95rem;margin-top:6px}
+.trash-list{list-style:none;display:flex;flex-direction:column;gap:6px;max-height:min(52vh,460px);overflow:auto;margin:0;padding:0}
+.trash-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px}
+.trash-main{display:flex;flex-direction:column;gap:2px;min-width:0}
+.trash-main b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trash-acts{display:flex;align-items:center;gap:6px;flex:none}
+.trash-acts .btn-sm{padding:6px 12px;font-size:.84rem}
+.trash-n{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:var(--accent);color:var(--on-accent,#fff);font-size:.72rem;font-weight:700;margin-left:4px}
+.trash-n[hidden]{display:none}
+.toast--undo{display:flex;align-items:center;gap:14px;padding:10px 12px 10px 18px}
+.toast--undo[hidden]{display:none}
+.ut-btn{background:none;border:none;color:var(--accent);font:inherit;font-weight:700;cursor:pointer;padding:4px 6px;border-radius:6px}
+.ut-btn:hover{background:color-mix(in srgb,var(--accent) 14%,transparent)}

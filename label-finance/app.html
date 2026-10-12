@@ -1108,6 +1108,14 @@
             <button class="btn btn-sm" id="import-json" data-i18n="set.restore">⤴ Ripristina backup</button>
             <input type="file" id="json-input" accept=".json" hidden>
           </div>
+          <div class="set-row set-safety">
+            <div class="set-row-txt"><b data-i18n="trash.title_safety">Cestino e versioni</b>
+              <span class="muted small" data-i18n="trash.safety_hint">Ciò che elimini resta nel cestino 30 giorni. Le versioni salvate ti riportano a com'erano i dati prima.</span></div>
+            <div class="row-inline wrap">
+              <button class="btn btn-sm" id="trash-open" type="button"><span data-i18n="trash.open">🗑 Cestino</span> <span class="trash-n" hidden></span></button>
+              <button class="btn btn-sm" id="ver-open" type="button" data-i18n="ver.open">🕘 Versioni salvate</button>
+            </div>
+          </div>
           <div class="set-row set-danger">
             <div class="set-row-txt"><b data-i18n="set.danger">Zona pericolosa</b>
               <span class="muted small" data-i18n="set.wipe_hint">Elimina tutti i movimenti, le release e le impostazioni. Non si può annullare: esporta prima un backup.</span></div>
@@ -1934,6 +1942,31 @@
     </div>
   </div>
 
+  <!-- Cestino -->
+  <div class="modal" id="trash-modal" hidden>
+    <div class="modal-card" role="dialog" aria-labelledby="trash-title">
+      <div class="modal-head"><h2 id="trash-title" data-i18n="trash.title">Cestino</h2><button class="modal-x" id="trash-close" aria-label="Chiudi">✕</button></div>
+      <div class="sx-body">
+        <p class="muted small" data-i18n="trash.hint">Gli elementi eliminati restano qui per 30 giorni: puoi ripristinarli quando vuoi.</p>
+        <div id="trash-body"></div>
+        <div class="modal-foot"><span class="spacer"></span><button class="btn btn-danger btn-sm" id="trash-empty" type="button" data-i18n="trash.empty">Svuota cestino</button></div>
+      </div>
+    </div>
+  </div>
+  <!-- Versioni salvate -->
+  <div class="modal" id="ver-modal" hidden>
+    <div class="modal-card" role="dialog" aria-labelledby="ver-title">
+      <div class="modal-head"><h2 id="ver-title" data-i18n="ver.title">Versioni salvate</h2><button class="modal-x" id="ver-close" aria-label="Chiudi">✕</button></div>
+      <div class="sx-body">
+        <p class="muted small" data-i18n="ver.hint">Ripristinando una versione, i dati tornano com'erano in quel momento. La situazione attuale viene salvata prima, così puoi sempre tornare indietro.</p>
+        <h3 class="sx-h" data-i18n="ver.cloud_title">Nel cloud</h3>
+        <div id="ver-cloud"></div>
+        <h3 class="sx-h" data-i18n="ver.local_title">Su questo dispositivo</h3>
+        <div id="ver-local"></div>
+      </div>
+    </div>
+  </div>
+
   <div class="bulk-bar" id="bulk-bar" hidden>
     <span class="bulk-info"><b id="bulk-count">0</b> <span data-i18n="bulk.selected">selezionati</span></span>
     <button class="btn btn-ghost" id="bulk-cancel" data-i18n="common.cancel">Annulla</button>
@@ -2300,6 +2333,7 @@
   <script src="signature.js?v=96"></script>
   <script src="app.js?v=99"></script>
   <script src="tables.js?v=98"></script>
+  <script src="safety.js?v=1"></script>
   <script src="i18n.js?v=98"></script>
   <script src="vendor/supabase.min.js?v=95"></script>
   <script src="sync.js?v=96"></script>

@@ -3,7 +3,7 @@
    non devono essere ripetute qui. Cambia CACHE quando vuoi forzare una pulizia. */
 const CACHE='lf-cache-v191';
 const CORE=['./','index.html','app.html','artista.html','firma.html','style.css','core.js','app.js','config.js','i18n.js','sync.js',
-  'theme-boot.js','landing.js','pwa-redirect.js','signature.js','tables.js','firma.js','artista.js','vendor/supabase.min.js','html2pdf.bundle.min.js',
+  'theme-boot.js','landing.js','pwa-redirect.js','signature.js','tables.js','safety.js','firma.js','artista.js','vendor/supabase.min.js','html2pdf.bundle.min.js',
   'manifest.webmanifest','icon.png','pwa-192.png','pwa-512.png'];
 self.addEventListener('install',e=>{ e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).catch(()=>{}).then(()=>self.skipWaiting())); });
 self.addEventListener('activate',e=>{ e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())); });

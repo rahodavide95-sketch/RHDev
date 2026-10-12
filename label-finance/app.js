@@ -139,10 +139,11 @@ const lfReady=window.LFStore.get('account').then(rec=>{
 function wipeLocalData(){
   clearTimeout(idbTimer);          // niente scritture in ritardo dei dati appena cancellati
   ACCOUNT=defaultAccount(); DB=activeLabel();
-  try{ localStorage.removeItem(STORE_KEY); localStorage.removeItem(STORE_TS); }catch(e){}
+  try{ localStorage.removeItem(STORE_KEY); localStorage.removeItem(STORE_TS); localStorage.removeItem('labelfinance.snapTs'); }catch(e){}
   window.LFStore.del('account').catch(()=>{});
+  window.LFStore.del('snaps').catch(()=>{});   // anche le versioni salvate sul dispositivo (computer condivisi)
 }
-function save(){ saveLocal(); if(window.LF_push) window.LF_push(); if(typeof notifScan==='function') notifScan(); }
+function save(){ saveLocal(); if(window.LF_push) window.LF_push(); if(typeof notifScan==='function') notifScan(); if(typeof safetyOnSave==='function') safetyOnSave(); }
 /* API per il modulo di sincronizzazione cloud (sync.js) — sincronizza tutto l'account */
 window.LF = {
   ready: lfReady,
@@ -1664,8 +1665,8 @@ $('#rel-form').addEventListener('click', e=>{ const t=e.target;
 $('#rel-form').addEventListener('input', e=>{ if(e.target.classList.contains('split-pct') && e.target.closest('#r-splits')) refreshSplitTotal(); });
 $('#r-delete').onclick=()=>{
   const id=$('#r-id').value;
-  DB.releases=releases().filter(r=>r.id!==id); save();
-  $('#rel-modal').hidden=true; renderReleases(); renderRoyalties(); toast(tt('t.rel_deleted'));
+  const tid=trashRemove('releases',[id]); save();
+  $('#rel-modal').hidden=true; renderReleases(); renderRoyalties(); undoToast(tt('t.rel_deleted'), tid);
 };
 $('#rel-form').onsubmit=e=>{
   e.preventDefault();
@@ -2213,7 +2214,7 @@ function renderPayouts(){
 }
 document.addEventListener('click',e=>{ const b=e.target.closest('.po-del'); if(!b) return;
   if(!confirm(tt('pay.del_confirm'))) return;
-  DB.payouts=(DB.payouts||[]).filter(p=>p.id!==b.dataset.id); save(); renderRoyalties(); });
+  const tid=trashRemove('payouts',[b.dataset.id]); save(); renderRoyalties(); undoToast(tt('trash.deleted'), tid); });
 $('#pay-list')?.addEventListener('click', e=>{
   const m=e.target.closest('[data-pay-mark]'); if(m){ recordPayout(m.dataset.payMark); return; }
   const b=e.target.closest('[data-pay-artist]'); if(!b) return;
@@ -2255,7 +2256,7 @@ function addRecoup(){
 }
 $('#recoup-add')?.addEventListener('click', addRecoup);
 document.addEventListener('click',e=>{ const b=e.target.closest('.rc-del'); if(!b) return;
-  DB.recoup=(DB.recoup||[]).filter(r=>r.id!==b.dataset.id); save(); renderRecoup(); });
+  const tid=trashRemove('recoup',[b.dataset.id]); save(); renderRecoup(); undoToast(tt('trash.deleted'), tid); });
 
 let royDetail=null;   // {name, data} dell'artista mostrato
 function showRoyaltyDetail(name,data){
@@ -2415,8 +2416,8 @@ $('#tx-modal-close').onclick=$('#f-cancel').onclick=()=>$('#tx-modal').hidden=tr
 $('#tx-modal').onclick=e=>{ if(e.target.id==='tx-modal') $('#tx-modal').hidden=true; };
 $('#f-delete').onclick=()=>{
   const id=$('#f-id').value;
-  DB.transactions=DB.transactions.filter(t=>t.id!==id); save();
-  $('#tx-modal').hidden=true; renderTx(); toast(tt('t.tx_deleted'));
+  const tid=trashRemove('transactions',[id]); save();
+  $('#tx-modal').hidden=true; renderTx(); undoToast(tt('t.tx_deleted'), tid);
 };
 /* intelligenza: rileva un importo fuori scala rispetto allo storico dello stesso tipo */
 function txAmountAnomaly(net, kind){
@@ -2793,13 +2794,16 @@ $('#export-csv').onclick=()=>{
 $('#import-json').onclick=()=>$('#json-input').click();
 $('#json-input').onchange=e=>{
   const f=e.target.files[0]; if(!f) return; const r=new FileReader();
-  r.onload=()=>{ try{ const d=JSON.parse(r.result); if(!d.transactions && !d.labels) throw 0;
+  r.onload=async ()=>{ try{ const d=JSON.parse(r.result); if(!d.transactions && !d.labels) throw 0;
+    if(typeof snapTake==='function') await snapTake('before_backup');
     ACCOUNT=migrateAccount(d); DB=activeLabel(); save(); reloadViews(); rebuildAccountMenu();
     toast(tt('t.backup_restored')); goto('dashboard'); }
     catch{ toast(tt('t.file_invalid')); } };
   r.readAsText(f);
 };
-$('#wipe').onclick=()=>{ if(confirm(tt('confirm.wipe_all'))){
+$('#wipe').onclick=async ()=>{ if(confirm(tt('confirm.wipe_all'))){
+  if(typeof snapTake==='function') await snapTake('before_wipe');
+  if(window.LF_snapshotNow) try{ await window.LF_snapshotNow(); }catch(e){}
   ACCOUNT=defaultAccount(); DB=activeLabel(); save(); reloadViews(); rebuildAccountMenu();
   toast(tt('t.data_wiped')); goto('dashboard'); } };
 
@@ -3632,7 +3636,7 @@ function saveArtist(){
 }
 function deleteArtist(id){ const a=artistById(id); if(!a) return;
   if(!confirm(tt('art.del_confirm').replace('{name}',a.name))) return;
-  DB.artists=DB.artists.filter(x=>x.id!==id); save(); renderArtists(); toast(tt('art.deleted')); }
+  const tid=trashRemove('artists',[id]); save(); renderArtists(); undoToast(tt('art.deleted'), tid); }
 
 /* ---------- Contratti (Authorization to Release) ---------- */
 let currentContract=null; let conLogoData='';
@@ -3961,7 +3965,7 @@ function deleteContract(id){ const c=DB.contracts.find(x=>x.id===id); if(!c) ret
   if(!confirm(tt('con.del_confirm'))) return;
   // elimina anche la copia nel cloud: il link di firma smette di funzionare e il contratto non ricompare
   tombstoneContract(c.token);
-  DB.contracts=DB.contracts.filter(x=>x.id!==id); save(); renderContracts();
+  const tid=trashRemove('contracts',[id]); save(); renderContracts(); undoToast(tt('trash.deleted'), tid);
   flushContractTombstones(); }
 function conStatusPill(s){
   if(s==='signed') return `<span class="pill pill-ok">${tt('con.st_signed')}</span>`;
@@ -4122,7 +4126,7 @@ function addTask(){
   ensureNotifyPermission();
 }
 function toggleTask(id){ const t=(DB.tasks||[]).find(x=>x.id===id); if(!t) return; t.done=!t.done; save(); renderTasks(); }
-function deleteTask(id){ DB.tasks=(DB.tasks||[]).filter(x=>x.id!==id); save(); renderTasks(); }
+function deleteTask(id){ const tid=trashRemove('tasks',[id]); save(); renderTasks(); undoToast(tt('trash.deleted'), tid); }
 
 /* ---------- Avvisi task: suoneria + notifica ---------- */
 let lfAudioCtx=null;
@@ -4317,7 +4321,7 @@ function sellMerch(id){
 }
 function deleteMerch(id){ const m=merchById(id); if(!m) return;
   if(!confirm(tt('mch.del_confirm').replace('{name}',m.name))) return;
-  DB.merch=DB.merch.filter(x=>x.id!==id); save(); renderMerch(); }
+  const tid=trashRemove('merch',[id]); save(); renderMerch(); undoToast(tt('trash.deleted'), tid); }
 
 /* ============================================================================
    PIANIFICAZIONE · EVENTI · SUPPORT DJ  (liste ordinabili + calendario)
@@ -4474,12 +4478,14 @@ function bulkToggleAll(sec,on){ document.querySelectorAll(`[data-sel^="${sec}|"]
   bulkBar(sec); }
 function bulkDeleteSel(){ const bar=$('#bulk-bar'); const sec=bar&&bar.dataset.sec; const set=bulkSel[sec]; if(!set||!set.size) return;
   if(!confirm(tt('bulk.del_q').replace('{n}',set.size))) return;
-  const arr=secArr(sec); if(arr) DB[arr]=(DB[arr]||[]).filter(x=>!set.has(x.id));
-  set.clear(); save(); bulkRerender(sec); bulkBar(sec); }
+  const arr=secArr(sec); const n=set.size; let tid=null;
+  if(arr) tid=trashRemove(sec, [...set], tt('trash.k_'+sec)+' · '+n+' '+tt('trash.items'));
+  set.clear(); save(); bulkRerender(sec); bulkBar(sec); undoToast(tt('trash.deleted_n').replace('{n}',n), tid); }
 function bulkClearAll(sec){ const arr=secArr(sec); const len=(DB[arr]||[]).length;
   if(!len){ toast(tt('bulk.empty_already')); return; }
   if(!confirm(tt('bulk.clear_q').replace('{n}',len))) return;
-  DB[arr]=[]; bulkSel[sec]&&bulkSel[sec].clear(); save(); bulkRerender(sec); bulkBar(sec); }
+  const tid=trashRemove(sec, (DB[arr]||[]).map(x=>x&&x.id), tt('trash.k_'+sec)+' · '+len+' '+tt('trash.items'));
+  DB[arr]=[]; bulkSel[sec]&&bulkSel[sec].clear(); save(); bulkRerender(sec); bulkBar(sec); undoToast(tt('trash.deleted_n').replace('{n}',len), tid); }
 document.addEventListener('change', e=>{
   const one=e.target.closest('[data-sel]'); if(one){ const p=one.dataset.sel.split('|'); const sec=p[0], id=p.slice(1).join('|');
     (bulkSel[sec]||=new Set()); one.checked?bulkSel[sec].add(id):bulkSel[sec].delete(id); bulkBar(sec); return; }
@@ -4620,7 +4626,7 @@ function savePlanning(){
   if(editingPlnId){ const p=plnById(editingPlnId); if(p) Object.assign(p,data); } else DB.planning.push(Object.assign({id:newId()},data));
   save(); $('#pln-form').hidden=true; editingPlnId=null; renderPlanning(); toast(tt('common.saved')); }
 function deletePlanning(id){ const p=plnById(id); if(!p) return; if(!confirm(tt('common.del_q'))) return;
-  DB.planning=DB.planning.filter(x=>x.id!==id); save(); renderPlanning(); }
+  const tid=trashRemove('planning',[id]); save(); renderPlanning(); undoToast(tt('trash.deleted'), tid); }
 
 /* ---- Eventi ---- */
 let evtSort={col:'date',dir:1}, editingEvtId=null;
@@ -4656,7 +4662,7 @@ function saveEvent(){
   if(editingEvtId){ const e=evtById(editingEvtId); if(e) Object.assign(e,data); } else DB.events.push(Object.assign({id:newId()},data));
   save(); $('#evt-form').hidden=true; editingEvtId=null; renderEvents(); toast(tt('common.saved')); }
 function deleteEvent(id){ const e=evtById(id); if(!e) return; if(!confirm(tt('common.del_q'))) return;
-  DB.events=DB.events.filter(x=>x.id!==id); save(); renderEvents(); }
+  const tid=trashRemove('events',[id]); save(); renderEvents(); undoToast(tt('trash.deleted'), tid); }
 
 /* ---- Support DJ ---- */
 let supSort={col:'date',dir:-1}, editingSupId=null;
@@ -4685,7 +4691,7 @@ function saveSupport(){
   if(editingSupId){ const s=supById(editingSupId); if(s) Object.assign(s,data); } else DB.supports.push(Object.assign({id:newId()},data));
   save(); $('#sup-form').hidden=true; editingSupId=null; renderSupports(); toast(tt('common.saved')); }
 function deleteSupport(id){ const s=supById(id); if(!s) return; if(!confirm(tt('common.del_q'))) return;
-  DB.supports=DB.supports.filter(x=>x.id!==id); save(); renderSupports(); }
+  const tid=trashRemove('supports',[id]); save(); renderSupports(); undoToast(tt('trash.deleted'), tid); }
 
 /* ---- Esportazioni ---- */
 registerExport('planning', ()=>({ title:tt('pln.title'), headers:[tt('pln.f_date'),tt('pln.f_kind'),tt('pln.f_title').replace(' *',''),tt('pln.f_artist'),tt('pln.f_status'),tt('pln.f_platform'),tt('pln.f_note')],

@@ -1674,3 +1674,14 @@ body.col-resizing,body.col-resizing *{cursor:col-resize!important;user-select:no
 .table-wrap.is-wide::-webkit-scrollbar-thumb,.dbl.is-wide::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--muted-2) 70%,transparent);border-radius:8px;border:2px solid transparent;background-clip:padding-box}
 .table-wrap.is-wide::-webkit-scrollbar-track,.dbl.is-wide::-webkit-scrollbar-track{background:color-mix(in srgb,var(--line) 45%,transparent);border-radius:8px}
 @supports not selector(::-webkit-scrollbar){ .table-wrap.is-wide,.dbl.is-wide{scrollbar-width:thin;scrollbar-color:var(--muted-2) transparent} }
+
+/* Istruzioni d'uso dentro il popover del bot AI */
+.ai-pop-btns{position:relative;z-index:1;display:flex;gap:6px}
+.ai-pop-info{font-weight:800;font-style:italic;font-family:Georgia,serif}
+.ai-pop-info.is-open{background:#fff;color:#6d28d9}
+.ai-help{padding:12px 16px 14px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--accent) 7%,var(--panel));display:flex;flex-direction:column;gap:8px;flex:none}
+.ai-help[hidden]{display:none}
+.ai-help-t{font-size:.92rem}
+.ai-help-list{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:5px;font-size:.84rem;line-height:1.4;color:var(--text)}
+.ai-help-list b{font-weight:700}
+.ai-help-ok{align-self:flex-end;padding:6px 12px;font-size:.84rem}

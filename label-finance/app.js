@@ -3009,9 +3009,16 @@ function aiPopBody(){
   body.querySelectorAll('.ai-chip').forEach(b=>b.addEventListener('click',()=>{ const p=body._prompts[+b.dataset.aiq]; runAiQuestion(p.q,p.label); }));
 }
 function aiShowPrompts(e){ if(e&&e.stopPropagation) e.stopPropagation(); aiPopBody(); }   // torna sempre al menu del bot
-function openAiPop(){ const pop=$('#ai-pop'); if(!pop) return; aiPopBody(); pop.hidden=false; placeAiPop(); document.body.classList.add('ai-open');
+/* istruzioni d'uso del bot: pulsante "i" nel popover; alla prima apertura si mostrano da sole */
+const AI_HELP_LS='labelfinance.aiHelpSeen';
+function setAiHelp(open){ const h=$('#ai-help'), b=$('#ai-help-btn'); if(!h) return;
+  h.hidden=!open; if(b){ b.classList.toggle('is-open',open); b.setAttribute('aria-expanded',open?'true':'false'); }
+  if(!open){ try{ localStorage.setItem(AI_HELP_LS,'1'); }catch(e){} } }
+function aiHelpSeen(){ try{ return !!localStorage.getItem(AI_HELP_LS); }catch(e){ return true; } }
+function openAiPop(){ const pop=$('#ai-pop'); if(!pop) return; aiPopBody(); setAiHelp(!aiHelpSeen()); pop.hidden=false; placeAiPop(); document.body.classList.add('ai-open');
   const f=$('#ai-fab'); if(f){ f.setAttribute('aria-expanded','true'); f.classList.add('is-open'); } }
-function closeAiPop(){ const pop=$('#ai-pop'); if(!pop) return; pop.hidden=true; document.body.classList.remove('ai-open');
+function closeAiPop(){ const pop=$('#ai-pop'); if(!pop) return; if(!pop.hidden && $('#ai-help') && !$('#ai-help').hidden) setAiHelp(false);
+  pop.hidden=true; document.body.classList.remove('ai-open');
   const f=$('#ai-fab'); if(f){ f.setAttribute('aria-expanded','false'); f.classList.remove('is-open'); } }
 function toggleAiPop(){ const pop=$('#ai-pop'); if(pop) (pop.hidden?openAiPop():closeAiPop()); }
 
@@ -4978,6 +4985,8 @@ function initFeatures(){
   initAiFabDrag();
   $('#ai-fab')?.addEventListener('click',toggleAiPop);
   $('#ai-pop-x')?.addEventListener('click',closeAiPop);
+  $('#ai-help-btn')?.addEventListener('click',()=>{ const h=$('#ai-help'); setAiHelp(!!(h&&h.hidden)); });
+  $('#ai-help-ok')?.addEventListener('click',()=>setAiHelp(false));
   document.addEventListener('keydown',e=>{ if(e.key==='Escape' && $('#ai-pop') && !$('#ai-pop').hidden) closeAiPop(); });
   // chiudi cliccando fuori dal popover
   document.addEventListener('click',e=>{ const pop=$('#ai-pop'); if(!pop||pop.hidden) return;

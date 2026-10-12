@@ -1632,6 +1632,7 @@ $('#art-dup-x')?.addEventListener('click', ()=>{ artDupDismissed=artDupSig(dupli
 
 function openRelease(id){
   const r = id ? releases().find(x=>x.id===id) : null;
+  if(typeof renderRelExtra==='function') try{ renderRelExtra(r); }catch(e){}
   artistDatalist();
   $('#rel-modal-title').textContent = r ? tt('rel.modal.edit') : tt('rel.modal.new');
   $('#r-id').value=r?.id||'';
@@ -1714,9 +1715,13 @@ $('#rel-form').onsubmit=e=>{
     }
   }
   // in modifica restano i campi che il modulo non mostra (checklist di uscita, ecc.)
-  if(id){ const i=releases().findIndex(r=>r.id===id); DB.releases[i]=Object.assign({}, prevRel, rec); }
+  let saved=rec;
+  if(id){ const i=releases().findIndex(r=>r.id===id); saved=DB.releases[i]=Object.assign({}, prevRel, rec); }
   else releases().push(rec);
-  save(); $('#rel-modal').hidden=true; renderReleases(); renderRoyalties(); toast(tt('t.rel_saved'));
+  // checklist di uscita: creata da sola per le uscite future, spostata se cambia la data
+  const ckMade=(typeof ckAfterSave==='function') ? ckAfterSave(saved) : 0;
+  save(); $('#rel-modal').hidden=true; renderReleases(); renderRoyalties(); if(ckMade && typeof renderTasks==='function') renderTasks();
+  toast(ckMade ? tt('ck.created_auto').replace('{n}', ckMade) : tt('t.rel_saved'));
 };
 
 /* ============================================================================
@@ -4798,7 +4803,10 @@ function notifScan(){
   const ridx=relIdx(); (DB.transactions||[]).forEach(t=>{ const p=(t.product||'').trim(); if(!p) return; if(!releaseForTx(t, ridx)) unlinked.add(p); });
   const ukeys=new Set([...unlinked].map(p=>p.toLowerCase()));
   NOTIFS.list=NOTIFS.list.filter(n=> n.type!=='unlinked' || ukeys.has((n.ref||'').toLowerCase()));   // risolti via
-  NOTIFS.dismissed=(NOTIFS.dismissed||[]).filter(k=>ukeys.has(k));
+  // le notifiche eliminate restano eliminate: si ripuliscono solo i prodotti ora collegati
+  // (prima venivano cancellati anche gli altri tipi e le notifiche eliminate ricomparivano)
+  const KEEP_DISMISSED=/^(enrich|task|miss|unsigned|owed|close|fx):/;
+  NOTIFS.dismissed=(NOTIFS.dismissed||[]).filter(k=>KEEP_DISMISSED.test(k) || ukeys.has(k)).slice(-400);
   unlinked.forEach(p=>{ const lk=p.toLowerCase(), key='unlinked:'+lk;
     if((NOTIFS.dismissed||[]).includes(lk)) return;
     if(NOTIFS.list.some(n=>n.key===key)) return;
@@ -4843,9 +4851,12 @@ function notifScan(){
     });
     NOTIFS._recoupInit=true;
   }catch(e){} }
+  // avvisi intelligenti (insights.js): report mancanti, contratti, saldi, periodo, cambi
+  if(typeof smartScan==='function') try{ smartScan(); }catch(e){}
   notifSave(); renderNotifs();
 }
 function notifText(n){
+  if(n.type==='smart' && typeof smartText==='function') return smartText(n);
   const T=(k,fb)=>{ const v=tt(k); return (v&&v!==k)?v:fb; };   // fallback se i18n non aggiornata (cache)
   if(n.type==='unlinked') return {
     title: T('notif.unlinked_t','Prodotto non collegato'),
@@ -4898,12 +4909,13 @@ function notifOpen(it){
     return;
   }
   if(it.relId){ goto('releases'); openRelease(it.relId); return; }   // notifiche legate a una release
+  if(it.type==='smart' && typeof smartOpen==='function'){ smartOpen(it); return; }
   if(it.view){ goto(it.view); }                                       // tipi futuri (task, contratti…)
 }
 function notifDismiss(it){ if(!it) return;
   if(it.type==='unlinked') NOTIFS.dismissed=[...new Set([...(NOTIFS.dismissed||[]),(it.ref||'').toLowerCase()])];
   else if(it.type==='enrich') NOTIFS.dismissed=[...new Set([...(NOTIFS.dismissed||[]),'enrich:'+(it.count||0)])];
-  else if(it.type==='task') NOTIFS.dismissed=[...new Set([...(NOTIFS.dismissed||[]), it.key])]; }
+  else if(it.type==='task' || it.type==='smart') NOTIFS.dismissed=[...new Set([...(NOTIFS.dismissed||[]), it.key])]; }
 function notifDelete(id){ const it=NOTIFS.list.find(x=>x.id===id); notifDismiss(it);
   NOTIFS.list=NOTIFS.list.filter(x=>x.id!==id); notifSave(); renderNotifs(); }
 function notifReadAll(){ NOTIFS.list.forEach(n=>n.read=true); notifSave(); renderNotifs(); }

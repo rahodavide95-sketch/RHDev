@@ -1540,3 +1540,4 @@ body.gate-signup #gate-signin{opacity:.5}
 .pending-card h2{margin:6px 0 10px}
 .pending-card p{margin:0 0 18px}
 body.pending-locked{overflow:hidden}
+body.recovery-mode{overflow:hidden}

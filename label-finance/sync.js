@@ -61,9 +61,11 @@
     // così iOS/Android non classificano il form come "registrazione" e propongono
     // "Salva password" / l'autofill invece della "password sicura".
     ['gate-name','gate-surname','gate-label'].forEach(id=>{ const el=$(id); if(el) el.disabled = !signup; });
-    gateStatus('');
+    gateStatus(linkMsg||'', !!linkMsg);   // l'avviso sul link della mail resta finché l'utente non agisce
   }
+  let linkMsg=null;   // avviso "link scaduto" arrivato dalla mail
   async function gateSignIn(){
+    linkMsg=null;
     if(!client){ gateStatus('Servizio non disponibile, usa "Continua senza account".',true); return; }
     gateStatus('Accesso in corso…');
     const email=$('gate-email').value.trim(), pw=$('gate-pw').value;
@@ -72,6 +74,7 @@
     else storeCred(email, pw);
   }
   async function gateSignUp(){
+    linkMsg=null;
     if(!client){ gateStatus('Servizio non disponibile, usa "Continua senza account".',true); return; }
     const name=$('gate-name').value.trim(), surname=$('gate-surname')?$('gate-surname').value.trim():'', label=$('gate-label').value.trim();
     if(!name||!label){ gateStatus('Inserisci nome e nome label.',true); return; }
@@ -88,6 +91,7 @@
     else gateStatus('Account creato. Controlla l\'email per confermare, poi premi Accedi.');
   }
   async function gateForgot(){
+    linkMsg=null;
     if(!client){ gateStatus('Servizio non disponibile.',true); return; }
     const email=$('gate-email').value.trim();
     if(!email){ gateStatus('Inserisci la tua email, poi premi "Password dimenticata?".',true); return; }
@@ -474,12 +478,29 @@
     set('Ti abbiamo inviato un link di conferma a '+ne+' (controlla anche la posta attuale). Il cambio sarà effettivo solo dopo aver cliccato il link.',true);
   }
 
-  /* ---------- Recupero password: porta l'utente al cambio password ---------- */
-  function onRecovery(){
-    showGate(false);
-    try{ window.LF.goto('settings'); }catch{}
-    const box=$('pw-change-box'); if(box){ box.open=true; box.scrollIntoView({behavior:'smooth',block:'center'}); }
-    const st=$('pw-status'); if(st){ st.textContent='Imposta qui la tua nuova password.'; st.style.color='var(--accent)'; }
+  /* ---------- Recupero password: schermata dedicata "imposta nuova password" ---------- */
+  function showRecovery(show){
+    const el=$('recovery-screen'); if(el) el.hidden=!show;
+    document.body.classList.toggle('recovery-mode', !!show);
+    if(show){
+      if($('rec-username')) $('rec-username').value=(user&&user.email)||'';
+      if($('rec-status')) $('rec-status').textContent='';
+    }
+  }
+  function onRecovery(){ showGate(false); showPending(false); showRecovery(true); }
+  async function changeRecoveryPassword(){
+    const st=$('rec-status'); const set=(m,ok)=>{ if(st){ st.textContent=m; st.style.color = ok?'var(--in)':'var(--out)'; } };
+    if(!client || !user){ set('Link non valido o scaduto. Richiedi un nuovo reset dalla schermata di accesso.',false); return; }
+    const p1=$('rec-pw').value, p2=$('rec-pw2').value;
+    if(p1.length<6){ set('La password deve avere almeno 6 caratteri.',false); return; }
+    if(p1!==p2){ set('Le due password non coincidono.',false); return; }
+    set('Salvataggio…',true);
+    const { error } = await client.auth.updateUser({ password:p1 });
+    if(error){ set(authMsg(error.message),false); return; }
+    storeCred(user.email, p1);
+    $('rec-pw').value=''; $('rec-pw2').value='';
+    set('Password aggiornata ✓ Accesso in corso…',true);
+    setTimeout(()=>{ showRecovery(false); onAuth(); }, 900);
   }
 
   /* ---------- Occhio mostra/nascondi (tutti i campi password) ---------- */
@@ -518,6 +539,7 @@
     $('sync-pull')?.addEventListener('click', ()=>{ setStatus('Aggiorno…'); pull(); });
     $('account-save')?.addEventListener('click', saveAccount);
     $('pw-form')?.addEventListener('submit', e=>{ e.preventDefault(); changePassword(); });
+    $('rec-form')?.addEventListener('submit', e=>{ e.preventDefault(); changeRecoveryPassword(); });
     $('email-save')?.addEventListener('click', changeEmail);
   }
 
@@ -525,6 +547,18 @@
   // modalità iniziale: registrazione se si arriva dalla landing con app.html?signup (o #signup), altrimenti login
   setGateMode(/(?:[?&]signup\b)|#signup/i.test((location.search||'')+(location.hash||'')) ? 'signup' : 'login');
   showGate(!!getCfg());     // se configurato, mostra il login subito (in attesa della sessione)
+  // link della mail scaduto o già usato (reset password / conferma): Supabase torna qui con
+  // #error_code=… → spiega cosa fare invece di lasciare la schermata di accesso muta
+  (function(){
+    const h=new URLSearchParams((location.hash||'').replace(/^#/,''));
+    const code=h.get('error_code')||h.get('error'); if(!code) return;
+    const expired=/expired|otp_expired|access_denied/i.test(code+' '+(h.get('error_description')||''));
+    linkMsg = expired
+      ? 'Il link è scaduto o è già stato usato. Inserisci la tua email e premi "Password dimenticata?" per riceverne uno nuovo.'
+      : 'Link non valido: '+(h.get('error_description')||code);
+    gateStatus(linkMsg, true);
+    try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
+  })();
   initClient();
   renderUI();
 })();

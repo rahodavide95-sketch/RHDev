@@ -1737,3 +1737,26 @@ body.col-resizing,body.col-resizing *{cursor:col-resize!important;user-select:no
 .pl-stats>div{background:var(--panel)}
 .ck-box .btn-sm{align-self:flex-start}
 @media(max-width:760px){ .rel-extra{grid-template-columns:1fr} .pl-stats{grid-template-columns:1fr 1fr} }
+
+/* Ricerca globale (Ctrl+K) */
+.gs-btn{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 10px 0 12px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--muted);font:inherit;font-size:.86rem;cursor:pointer;margin-right:6px}
+.gs-btn:hover{border-color:var(--accent);color:var(--text)}
+.gs-btn svg{width:17px;height:17px;flex:none}
+.gs-kbd{font:600 .7rem/1 system-ui,sans-serif;padding:3px 6px;border-radius:6px;border:1px solid var(--line);background:var(--panel-2);color:var(--muted)}
+.gs-modal{align-items:flex-start;padding-top:min(12vh,110px)}
+.gs-card{width:min(640px,100%);max-height:min(72vh,620px);display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:0 24px 64px rgba(0,0,0,.35);overflow:hidden}
+.gs-head{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.gs-head svg{width:20px;height:20px;color:var(--muted);flex:none}
+.gs-head input{flex:1;min-width:0;border:none;outline:none;background:transparent;color:var(--text);font:inherit;font-size:1.02rem;padding:6px 2px}
+.gs-head input::-webkit-search-cancel-button{display:none}
+.gs-list{overflow:auto;padding:6px}
+.gs-group{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted-2);padding:10px 10px 4px}
+.gs-item{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:8px 10px;border:none;border-radius:10px;background:none;color:var(--text);font:inherit;cursor:pointer}
+.gs-item.is-sel,.gs-item:hover{background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.gs-ico{width:22px;text-align:center;flex:none}
+.gs-txt{display:flex;flex-direction:column;min-width:0}
+.gs-txt b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gs-txt .small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gs-empty{padding:18px;color:var(--muted);text-align:center}
+.gs-foot{padding:8px 14px;border-top:1px solid var(--line)}
+@media(max-width:760px){ .gs-btn-txt,.gs-btn .gs-kbd{display:none} .gs-btn{width:38px;justify-content:center;padding:0} .gs-modal{padding-top:8px} .gs-foot{display:none} }

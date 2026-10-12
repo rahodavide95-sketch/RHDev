@@ -491,6 +491,8 @@ body.dash-edit .dw-width{display:inline-flex;gap:2px;position:absolute;top:8px;l
 /* firma */
 .sign-body{padding:4px 2px}
 .sign-canvas{width:100%;height:180px;background:#fff;border:1px solid var(--line);border-radius:10px;touch-action:none;cursor:crosshair;margin:6px 0 4px}
+.sign-upload-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:2px 0 8px}
+.sign-body .modal-foot{flex-wrap:wrap;gap:8px}
 
 /* ===== Task ===== */
 .tsk-add{margin-bottom:18px}

@@ -3906,24 +3906,22 @@ function openSignPad(){
   if(!currentContract){ toast(tt('con.gen_first')); return; }
   $('#sign-place').value=''; $('#sign-name').value=(DB.profile&&DB.profile.name)||currentContract.label||labelName();
   $('#sign-modal').hidden=false;
-  const cv=$('#sign-canvas'); const ctx=cv.getContext('2d');
-  const rect=cv.getBoundingClientRect(); cv.width=rect.width*2; cv.height=180*2; ctx.scale(2,2);
-  ctx.lineWidth=2.2; ctx.lineCap='round'; ctx.strokeStyle='#111';
-  let drawing=false, last=null, has=false;
-  const pos=e=>{ const r=cv.getBoundingClientRect(); const t=e.touches?e.touches[0]:e; return {x:t.clientX-r.left, y:t.clientY-r.top}; };
-  const start=e=>{ drawing=true; last=pos(e); e.preventDefault(); };
-  const move=e=>{ if(!drawing) return; const p=pos(e); ctx.beginPath(); ctx.moveTo(last.x,last.y); ctx.lineTo(p.x,p.y); ctx.stroke(); last=p; has=true; e.preventDefault(); };
-  const end=()=>{ drawing=false; };
-  sigPad={cv,ctx,clear:()=>{ ctx.clearRect(0,0,cv.width,cv.height); has=false; }, isEmpty:()=>!has};
-  cv.onmousedown=start; cv.onmousemove=move; window.onmouseup=end;
-  cv.ontouchstart=start; cv.ontouchmove=move; cv.ontouchend=end;
+  // firma disegnata al momento oppure caricata da file (signature.js)
+  sigPad=LFSignature.attach($('#sign-canvas'));
+  const m=$('#sign-file-msg'); if(m) m.textContent='';
+}
+async function loadSignFile(file){
+  const m=$('#sign-file-msg'); if(!file||!sigPad) return;
+  try{ await sigPad.loadFile(file); if(m){ m.style.color=''; m.textContent=tt('con.sign_file_ok'); } }
+  catch(e){ if(m){ m.style.color='var(--out)';
+    m.textContent=tt(e.message==='too_big'?'con.sign_file_big':e.message==='empty_image'?'con.sign_file_empty':'con.sign_file_bad'); } }
 }
 function closeSignPad(){ $('#sign-modal').hidden=true; sigPad=null; }
 function confirmSign(){
   if(!sigPad || sigPad.isEmpty()){ toast(tt('con.sign_empty')); return; }
   const now=new Date();
   // firma dell'ETICHETTA (obbligatoria prima dell'invio all'artista)
-  currentContract.labelSign={ dataUrl:sigPad.cv.toDataURL('image/png'),
+  currentContract.labelSign={ dataUrl:sigPad.png(),
     name:$('#sign-name').value.trim()||currentContract.label||labelName(),
     place:$('#sign-place').value.trim(),
     date:isoD(now), time:now.toTimeString().slice(0,5) };
@@ -4837,9 +4835,15 @@ function initFeatures(){
     toast(tt('con.link_copied')); });
   // Firma
   $('#sign-close')?.addEventListener('click',closeSignPad);
-  $('#sign-clear')?.addEventListener('click',()=>{ if(sigPad) sigPad.clear(); });
+  $('#sign-clear')?.addEventListener('click',()=>{ if(sigPad) sigPad.clear(); const m=$('#sign-file-msg'); if(m) m.textContent=''; });
+  $('#sign-upload')?.addEventListener('click',()=>$('#sign-file').click());
+  $('#sign-file')?.addEventListener('change',e=>{ const f=e.target.files[0]; e.target.value=''; loadSignFile(f); });
   $('#sign-confirm')?.addEventListener('click',confirmSign);
-  $('#sign-modal')?.addEventListener('click',e=>{ if(e.target.id==='sign-modal') closeSignPad(); });
+  // chiudi cliccando sullo sfondo, ma non se il clic nasce da un tratto di firma finito fuori dal riquadro
+  let signDownOnBackdrop=false;
+  $('#sign-modal')?.addEventListener('mousedown',e=>{ signDownOnBackdrop=(e.target.id==='sign-modal'); });
+  $('#sign-modal')?.addEventListener('touchstart',e=>{ signDownOnBackdrop=(e.target.id==='sign-modal'); }, {passive:true});
+  $('#sign-modal')?.addEventListener('click',e=>{ if(e.target.id==='sign-modal' && signDownOnBackdrop) closeSignPad(); signDownOnBackdrop=false; });
   // Assistente AI (bolla flottante)
   $('#ai-fab')?.addEventListener('click',toggleAiPop);
   $('#ai-pop-x')?.addEventListener('click',closeAiPop);

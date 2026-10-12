@@ -94,28 +94,23 @@
   $('sg-cancel').onclick=()=>{ $('accept-panel').classList.add('hidden'); $('actions').classList.remove('hidden'); };
   $('rj-cancel').onclick=()=>{ $('reject-panel').classList.add('hidden'); $('actions').classList.remove('hidden'); };
 
-  // signature pad
+  // riquadro firma: disegnata al momento oppure caricata da file (signature.js)
   let pad=null;
-  function setupPad(){
-    const cv=$('sg-canvas'); const ctx=cv.getContext('2d');
-    const r=cv.getBoundingClientRect(); cv.width=r.width*2; cv.height=180*2; ctx.scale(2,2);
-    ctx.lineWidth=2.2; ctx.lineCap='round'; ctx.strokeStyle='#111';
-    let drawing=false,last=null,has=false;
-    const pos=e=>{const b=cv.getBoundingClientRect();const t=e.touches?e.touches[0]:e;return{x:t.clientX-b.left,y:t.clientY-b.top};};
-    const start=e=>{drawing=true;last=pos(e);e.preventDefault();};
-    const move=e=>{if(!drawing)return;const p=pos(e);ctx.beginPath();ctx.moveTo(last.x,last.y);ctx.lineTo(p.x,p.y);ctx.stroke();last=p;has=true;e.preventDefault();};
-    const end=()=>{drawing=false;};
-    cv.onmousedown=start;cv.onmousemove=move;window.onmouseup=end;
-    cv.ontouchstart=start;cv.ontouchmove=move;cv.ontouchend=end;
-    // png(): firma ridotta a max 900px di larghezza (il server accetta immagini fino a ~300 KB)
-    const png=()=>{ const w=Math.min(900,cv.width), h=Math.round(cv.height*w/cv.width); const o=document.createElement('canvas'); o.width=w; o.height=h;
-      o.getContext('2d').drawImage(cv,0,0,w,h); return o.toDataURL('image/png'); };
-    pad={cv,png,clear:()=>{ctx.clearRect(0,0,cv.width,cv.height);has=false;},empty:()=>!has};
-  }
-  $('sg-clear').onclick=()=>{ if(pad) pad.clear(); };
+  function setupPad(){ pad=LFSignature.attach($('sg-canvas')); $('sg-file-msg').textContent=''; }
+  $('sg-clear').onclick=()=>{ if(pad) pad.clear(); $('sg-file-msg').textContent=''; };
+  $('sg-upload').onclick=()=>$('sg-file').click();
+  $('sg-file').onchange=async e=>{
+    const f=e.target.files[0]; e.target.value=''; if(!f||!pad) return;
+    const msg=$('sg-file-msg');
+    try{ await pad.loadFile(f); msg.style.color=''; msg.textContent='Firma caricata ✓ Controlla l\'anteprima, poi conferma.'; }
+    catch(err){ msg.style.color='#e11d48';
+      msg.textContent = err.message==='too_big' ? 'Immagine troppo grande (massimo 15 MB).'
+        : err.message==='empty_image' ? 'Nell\'immagine non si vede una firma: prova con una foto più nitida su sfondo chiaro.'
+        : 'File non valido: scegli un\'immagine (PNG o JPG).'; }
+  };
 
   $('sg-confirm').onclick=async()=>{
-    if(!pad||pad.empty()){ alert('Disegna la firma prima di confermare.'); return; }
+    if(!pad||pad.isEmpty()){ alert('Disegna o carica la firma prima di confermare.'); return; }
     const now=new Date();
     // data e ora indicative: quelle valide le registra il server al momento della firma
     const sig={ dataUrl:pad.png(), name:($('sg-name').value.trim()||contract.fullName||'').slice(0,120),

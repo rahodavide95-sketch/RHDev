@@ -88,9 +88,12 @@
           <label>Nome e cognome<input id="sg-name" type="text"></label>
           <label>Luogo<input id="sg-place" type="text" placeholder="Es. Milano"></label>
         </div>
-        <p class="muted" style="margin:12px 0 0">Disegna la firma qui sotto:</p>
+        <p class="muted" style="margin:12px 0 0">Disegna la firma qui sotto, oppure carica un'immagine della tua firma:</p>
         <canvas id="sg-canvas"></canvas>
+        <input type="file" id="sg-file" accept="image/*" hidden>
+        <p class="muted small" id="sg-file-msg" style="margin:6px 0 0"></p>
         <div class="btns">
+          <button class="btn btn-ghost" id="sg-upload">📁 Carica firma da file</button>
           <button class="btn btn-ghost" id="sg-clear">Cancella</button>
           <button class="btn btn-ghost" id="sg-cancel">Indietro</button>
           <button class="btn btn-accept" id="sg-confirm">✓ Conferma e firma</button>
@@ -117,7 +120,8 @@
 
   <script src="vendor/supabase.min.js?v=95"></script>
   <script src="config.js?v=95"></script>
-  <script src="core.js?v=95"></script>
-  <script src="firma.js?v=95"></script>
+  <script src="core.js?v=96"></script>
+  <script src="signature.js?v=96"></script>
+  <script src="firma.js?v=96"></script>
 </body>
 </html>

@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=95">
+  <link rel="stylesheet" href="style.css?v=96">
 </head>
 <body class="gated">
 
@@ -1949,8 +1949,13 @@
           <label class="fld"><span data-i18n="con.sign_name">Nome firmatario</span><input class="input" id="sign-name"></label>
           <label class="fld"><span data-i18n="con.sign_place">Luogo</span><input class="input" id="sign-place" data-i18n-ph="con.sign_place_ph" placeholder="Es. Milano"></label>
         </div>
-        <span class="fld-lbl" data-i18n="con.sign_draw">Firma qui sotto</span>
+        <span class="fld-lbl" data-i18n="con.sign_draw_or_upload">Disegna la firma qui sotto, oppure carica un'immagine</span>
         <canvas id="sign-canvas" class="sign-canvas"></canvas>
+        <input type="file" id="sign-file" accept="image/*" hidden>
+        <div class="sign-upload-row">
+          <button type="button" class="btn btn-ghost btn-sm" id="sign-upload" data-i18n="con.sign_upload">📁 Carica firma da file</button>
+          <span class="muted small" id="sign-file-msg"></span>
+        </div>
         <div class="modal-foot">
           <button type="button" class="btn btn-ghost" id="sign-clear" data-i18n="con.sign_clear">Cancella</button>
           <span class="spacer"></span>
@@ -2237,8 +2242,9 @@
 
   <script src="html2pdf.bundle.min.js?v=95"></script>
   <script src="config.js?v=95"></script>
-  <script src="core.js?v=95"></script>
-  <script src="app.js?v=95"></script>
+  <script src="core.js?v=96"></script>
+  <script src="signature.js?v=96"></script>
+  <script src="app.js?v=96"></script>
   <script src="i18n.js?v=95"></script>
   <script src="vendor/supabase.min.js?v=95"></script>
   <script src="sync.js?v=95"></script>

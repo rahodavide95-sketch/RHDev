@@ -25,6 +25,7 @@ label-finance/
 ├── app.js              ← interfaccia e logica dell'app
 ├── sync.js             ← login + sincronizzazione cloud (Supabase)
 ├── firma.html/.js      ← pagina pubblica di firma contratto
+├── signature.js        ← riquadro firma (disegnata o caricata da file)
 ├── artista.html/.js    ← portale artista (statement in sola lettura)
 ├── vendor/             ← librerie esterne con versione fissa (supabase-js)
 ├── style.css           ← interfaccia

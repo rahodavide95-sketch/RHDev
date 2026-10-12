@@ -114,8 +114,9 @@
       if($('sync-key')) $('sync-key').value = cfg?.key||'';
     }
     $('sync-auth').hidden = !configured || !!user;
-    $('sync-account').hidden = !user;
-    if(user) $('sync-account-label').textContent = '☁ Connesso come '+user.email;
+    // profilo e dati di accesso: solo con un account collegato
+    document.querySelectorAll('[data-when-user]').forEach(el=>{ el.hidden = !user; });
+    if(user) $('sync-account-label').textContent = user.email;
   }
   function fillAccount(){
     const md = (user && user.user_metadata) || {};

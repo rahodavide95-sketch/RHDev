@@ -201,3 +201,36 @@ test('mergeAccounts: elemento eliminato in cloud e modificato qui resta', () => 
   const remote = { labels: [{ id: 'L1', tasks: [] }] };
   assert.equal(C.mergeAccounts(base, local, remote).labels[0].tasks[0].title, 'y');
 });
+
+test('rateFor: media mensile BCE del mese del movimento, poi tasso manuale', () => {
+  const label = { rates: { EUR: 1, USD: 0.9 }, fx: { auto: true, months: { USD: { '2026-01': 0.95, '2026-03': 0.92 } } } };
+  close(C.rateFor(label, 'USD', '2026-01-15'), 0.95, 'mese presente');
+  close(C.rateFor(label, 'USD', '2026-02-10'), 0.95, 'mese mancante: il precedente più vicino');
+  close(C.rateFor(label, 'USD', '2026-05-01'), 0.92, 'mese in corso non ancora pubblicato');
+  close(C.rateFor(label, 'USD', '2025-06-01'), 0.95, 'prima dei dati: il primo mese disponibile');
+  close(C.rateFor(label, 'EUR', '2026-01-01'), 1);
+  close(C.rateFor(label, 'GBP', '2026-01-01'), 1, 'valuta senza tasso: invariata');
+  close(C.rateFor(Object.assign({}, label, { fx: { auto: false, months: label.fx.months } }), 'USD', '2026-01-15'), 0.9, 'automatici spenti: tasso manuale');
+  close(C.txEur(label, { net: 10, currency: 'usd', date: '2026-03-02' }), 9.2);
+});
+
+test('monthlyAverages: dalla serie giornaliera alle medie del mese', () => {
+  const m = C.monthlyAverages({ '2026-01-02': { EUR: 0.9 }, '2026-01-05': { EUR: 1.0 }, '2026-02-01': { EUR: 0.8 }, '2026-02-02': { EUR: null } });
+  assert.deepEqual(Object.keys(m).sort(), ['2026-01', '2026-02']);
+  close(m['2026-01'], 0.95); close(m['2026-02'], 0.8);
+});
+
+test('periodo chiuso: le righe arrivate in ritardo vanno nel periodo successivo', () => {
+  const label = { rates: { EUR: 1 }, releases: [{ catalog: 'C1', title: 'T', splits: [{ name: 'Ann', pct: 50 }] }],
+    transactions: [
+      { kind: 'income', date: '2026-02-10', catalog: 'C1', net: 100, currency: 'EUR' },
+      { kind: 'income', date: '2026-03-05', acct: '2026-04-01', catalog: 'C1', net: 40, currency: 'EUR' },   // arrivata dopo la chiusura del Q1
+    ], payouts: [], recoup: [] };
+  const q1 = C.computeStatement(label, 'Ann', '2026-01-01', '2026-03-31');
+  const q2 = C.computeStatement(label, 'Ann', '2026-04-01', '2026-06-30');
+  close(q1.total, 50, 'Q1 invariato');
+  close(q2.total, 20, 'la riga in ritardo finisce nel Q2');
+  assert.equal(q2.lines[0].late, true); assert.equal(q2.lines[0].date, '2026-03-05', 'resta la data di vendita');
+  close(C.computeRoyalties(label, { from: '2026-01-01', to: '2026-03-31' }).byArtist.ann.total, 50);
+  close(C.royaltyTotals(label, { until: '2026-03-31' }).ann.total, 50);
+});

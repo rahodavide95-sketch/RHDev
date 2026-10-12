@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://api.web3forms.com https://api.emailjs.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://api.web3forms.com https://api.emailjs.com https://api.frankfurter.app https://api.frankfurter.dev; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Label Finance — Gestionale Etichetta</title>
   <link rel="icon" href="icon.png?v=3" type="image/png">
@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=100">
+  <link rel="stylesheet" href="style.css?v=101">
 </head>
 <body class="gated">
 
@@ -211,6 +211,8 @@
 
   <!-- ======= MAIN ======= -->
   <main class="main">
+    <div class="ws-banner" id="ws-banner" hidden><span id="ws-banner-txt"></span>
+      <button class="btn btn-sm" type="button" data-ws="" data-i18n="team.back">Torna al mio account</button></div>
     <header class="topbar">
       <div class="topbar-left">
         <button class="drawer-toggle" id="drawer-toggle" aria-label="Menu" title="Menu">
@@ -219,6 +221,10 @@
         <span class="topbar-section" id="topbar-section">Dashboard</span>
       </div>
       <div class="topbar-right">
+        <button class="gs-btn" id="gs-btn" type="button" aria-label="Cerca" data-i18n-title="gs.btn_title" title="Cerca in tutta l'app">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <span class="gs-btn-txt" data-i18n="gs.btn">Cerca</span><kbd class="gs-kbd" id="gs-kbd">Ctrl K</kbd>
+        </button>
         <button class="icon-btn notif-btn" id="notif-btn" title="Notifiche" aria-label="Notifiche">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
           <span class="notif-badge" id="notif-badge" hidden>0</span>
@@ -579,6 +585,7 @@
           <button class="btn" id="catimp-open" data-i18n="cimp.btn">⤒ Importa catalogo</button>
           <button class="btn" id="dup-find" data-i18n="dup.find" title="Trova e unisci duplicati">⧉ Trova duplicati</button>
           <button class="btn" id="rel-credits" title="Applica Mastered/Distributed by in blocco" data-i18n="rcred.btn">✎ Crediti</button>
+          <button class="btn" id="rel-pl-btn" type="button" data-i18n="pl.btn" title="Entrate, quota artisti, spese e margine di ogni release">💶 Conto economico</button>
           <button class="btn btn-clear" data-clear="releases" data-i18n="bulk.clear">Svuota</button>
           <button class="btn btn-cols2" data-colcfg="releases" title="Personalizza colonne">⚙</button>
           <button class="btn btn-primary" id="btn-add-release" data-i18n="rel.new">+ Nuova release</button>
@@ -791,6 +798,27 @@
         <div class="pay-list" id="pay-list"></div>
       </div>
 
+      <div class="panel" id="per-panel">
+        <div class="panel-head"><h2 data-i18n="per.title">Chiusura periodo e statement</h2>
+          <span class="muted small" id="per-lock"></span></div>
+        <p class="muted small" data-i18n="per.hint">A fine trimestre o semestre: scarica tutti gli statement, manda a ogni artista il link del suo portale e chiudi il periodo. Le vendite di un periodo chiuso che arrivano dopo finiscono nello statement successivo, così i numeri già inviati non cambiano.</p>
+        <div class="row-inline wrap per-controls">
+          <select id="per-range" class="select" aria-label="Periodo"></select>
+          <input type="date" id="per-from" class="input input--date" hidden aria-label="Dal">
+          <input type="date" id="per-to" class="input input--date" hidden aria-label="Al">
+        </div>
+        <p class="per-note small" id="per-note" hidden></p>
+        <div class="table-wrap"><table class="data-table" id="per-table"></table></div>
+        <div class="row-inline wrap per-acts">
+          <button class="btn btn-sm" id="per-zip" type="button" data-i18n="per.zip">📄 Tutti gli statement (ZIP)</button>
+          <button class="btn btn-sm" id="per-links" type="button" data-i18n="per.links">🔗 Crea i link portale mancanti</button>
+          <button class="btn btn-sm" id="per-copy" type="button" data-i18n="per.copy">📋 Copia riepilogo e link</button>
+          <span class="spacer"></span>
+          <button class="btn btn-primary btn-sm" id="per-close" type="button" data-i18n="per.close">🔒 Chiudi il periodo</button>
+        </div>
+        <details class="per-history" id="per-history" hidden><summary data-i18n="per.history">Periodi chiusi</summary><div id="per-history-list"></div></details>
+      </div>
+
       <div class="panel" id="payouts-panel">
         <div class="panel-head"><h2 data-i18n="pay.history_title">Pagamenti agli artisti</h2>
           <span class="muted small" data-i18n="pay.history_sub">Ogni pagamento registrato scala il saldo da pagare e compare nello statement.</span></div>
@@ -970,6 +998,8 @@
                 <label><span data-i18n="set.name">Nome</span> <input id="account-name" class="input" type="text" autocomplete="given-name"></label>
                 <label><span data-i18n="set.surname">Cognome</span> <input id="account-surname" class="input" type="text" autocomplete="family-name"></label>
                 <label class="span-2"><span data-i18n="set.label">Nome label</span> <input id="account-label" class="input" type="text" autocomplete="organization"></label>
+                <label class="span-2"><span data-i18n="wh.doc_header">Dati dell'etichetta sui documenti</span>
+                  <textarea id="doc-header" class="input" rows="3" data-i18n-ph="wh.doc_header_ph" placeholder="Ragione sociale, indirizzo, P.IVA / codice fiscale"></textarea></label>
               </div>
               <div><button class="btn btn-primary btn-sm" id="account-save" data-i18n="set.save_profile">Salva profilo</button></div>
             </div>
@@ -1059,6 +1089,13 @@
           </div>
         </div>
 
+        <!-- Team: accesso di collaboratori all'etichetta (piano Agency) -->
+        <div class="panel set-card" id="team-card" data-when-user hidden>
+          <div class="panel-head"><h2 data-i18n="team.title">Team</h2><span class="pro-badge">Agency</span></div>
+          <p class="muted small" data-i18n="team.hint">Invita collaboratori (per esempio il commercialista o un socio) a vedere o modificare la tua etichetta. Accedono con il loro account, usando l'email che scrivi qui.</p>
+          <div class="team-box" id="team-box"></div>
+        </div>
+
         <!-- Preferenze: tema, lingua, tutorial -->
         <div class="panel set-card">
           <div class="panel-head"><h2 data-i18n="set.prefs">Preferenze</h2></div>
@@ -1089,7 +1126,17 @@
         <!-- Valute -->
         <div class="panel set-card">
           <div class="panel-head"><h2 data-i18n="set.rates">Tassi di cambio → EUR</h2></div>
-          <p class="muted small" data-i18n="set.rates_hint">Usati per convertire le valute in euro nei totali.</p>
+          <div class="set-row fx-row">
+            <div class="set-row-txt"><b data-i18n="fx.auto_t">Cambi automatici BCE</b>
+              <span class="muted small" data-i18n="fx.auto_hint">Ogni movimento in valuta viene convertito con il cambio medio del suo mese (Banca Centrale Europea).</span></div>
+            <label class="check-inline"><input type="checkbox" id="fx-auto"> <span data-i18n="fx.on">Attivi</span></label>
+          </div>
+          <div class="fx-info" id="fx-box" hidden>
+            <div class="row-inline wrap"><button class="btn btn-sm" id="fx-refresh" type="button" data-i18n="fx.refresh">↻ Aggiorna cambi</button>
+              <span class="muted small" id="fx-info"></span></div>
+            <details class="fx-months"><summary data-i18n="fx.show_months">Mostra i cambi mensili</summary><div id="fx-table"></div></details>
+          </div>
+          <p class="muted small" id="fx-rates-hint">Usati per convertire le valute in euro nei totali.</p>
           <div class="rates-grid" id="rates-grid"></div>
           <div class="set-add-rate">
             <input id="rate-cur" class="input" placeholder="USD" maxlength="3" aria-label="Valuta">
@@ -1107,6 +1154,19 @@
             <button class="btn btn-sm" id="export-csv" data-i18n="set.export_csv">⤓ Esporta movimenti (.csv)</button>
             <button class="btn btn-sm" id="import-json" data-i18n="set.restore">⤴ Ripristina backup</button>
             <input type="file" id="json-input" accept=".json" hidden>
+          </div>
+          <div class="set-row">
+            <div class="set-row-txt"><b data-i18n="pack.title">Pacchetto per il commercialista</b>
+              <span class="muted small" data-i18n="pack.hint">Un anno in un file ZIP: movimenti, riepilogo per categoria, pagamenti agli artisti con ritenute e tutte le ricevute.</span></div>
+            <button class="btn btn-sm" id="pack-open" type="button" data-i18n="pack.open">📦 Prepara il pacchetto</button>
+          </div>
+          <div class="set-row set-safety">
+            <div class="set-row-txt"><b data-i18n="trash.title_safety">Cestino e versioni</b>
+              <span class="muted small" data-i18n="trash.safety_hint">Ciò che elimini resta nel cestino 30 giorni. Le versioni salvate ti riportano a com'erano i dati prima.</span></div>
+            <div class="row-inline wrap">
+              <button class="btn btn-sm" id="trash-open" type="button"><span data-i18n="trash.open">🗑 Cestino</span> <span class="trash-n" hidden></span></button>
+              <button class="btn btn-sm" id="ver-open" type="button" data-i18n="ver.open">🕘 Versioni salvate</button>
+            </div>
           </div>
           <div class="set-row set-danger">
             <div class="set-row-txt"><b data-i18n="set.danger">Zona pericolosa</b>
@@ -1209,6 +1269,16 @@
               <label class="fld"><span data-i18n="art.iban">IBAN</span><input class="input" id="art-iban"></label>
               <label class="fld"><span data-i18n="art.split">Split predefinito %</span><input class="input" id="art-split" type="number" min="0" max="100" step="1"></label>
               <label class="fld fld--full"><span data-i18n="art.address">Indirizzo</span><input class="input" id="art-address"></label>
+              <label class="fld"><span data-i18n="wh.tax_id">Codice fiscale / P.IVA</span><input class="input" id="art-taxid" autocomplete="off"></label>
+              <label class="fld"><span data-i18n="wh.regime">Regime fiscale (pagamenti)</span>
+                <select class="select" id="art-regime">
+                  <option value="" data-i18n="wh.r_none">Non impostato (nessuna ritenuta)</option>
+                  <option value="occasional" data-i18n="wh.r_occasional">Prestazione occasionale · ritenuta 20%</option>
+                  <option value="copyright" data-i18n="wh.r_copyright">Diritti d'autore · ritenuta 20% sul 75%</option>
+                  <option value="copyright35" data-i18n="wh.r_copyright35">Diritti d'autore, under 35 · ritenuta 20% sul 60%</option>
+                  <option value="vat" data-i18n="wh.r_vat">Con Partita IVA (fattura) · nessuna ritenuta qui</option>
+                  <option value="foreign" data-i18n="wh.r_foreign">Residente all'estero · nessuna ritenuta</option>
+                </select></label>
               <label class="fld fld--full"><span data-i18n="art.note">Note</span><input class="input" id="art-note"></label>
             </div>
             <div class="row-inline wrap">
@@ -1558,7 +1628,7 @@
             <li data-i18n="pf.agency1">Tutto del piano Company</li>
             <li data-i18n="pf.agency2">Etichette illimitate</li>
             <li data-i18n="pf.agency4">Funzionalità su misura, su richiesta</li>
-            <li data-i18n-html="pf.agency3">Accesso team <em>(prossimamente)</em></li>
+            <li data-i18n-html="pf.agency3">Accesso team (sola lettura o modifica)</li>
             <li data-i18n="pf.agency5">Onboarding dedicato</li>
           </ul>
           <button class="btn plan-btn" data-plan="agency" disabled data-i18n="off.soon">Presto disponibile</button>
@@ -1819,6 +1889,7 @@
         <span class="acct-plan" id="account-plan" data-i18n="acct.plan">Piano Starter</span>
       </div>
     </div>
+    <div class="acct-ws-box" id="account-menu-ws" hidden></div>
     <div class="acct-labels" id="account-menu-labels"></div>
     <button class="acct-item acct-add" id="acct-add"><span data-i18n="acct.add">＋ Aggiungi etichetta</span><span class="pro-badge">PRO</span></button>
     <div class="acct-divider"></div>
@@ -1870,6 +1941,12 @@
         <label><span data-i18n="f.csshare">Collection society share</span> <input type="number" id="f-csshare" class="input" step="0.01"></label>
         <label><span data-i18n="f.currency">Valuta</span> <input type="text" id="f-currency" class="input" value="EUR" maxlength="3"></label>
         <label class="span-2"><span data-i18n="f.note">Nota</span> <input type="text" id="f-note" class="input"></label>
+        <div class="span-2 att-box">
+          <div class="att-head"><span class="fld-lbl" data-i18n="att.title">Ricevute e documenti</span>
+            <button type="button" class="btn btn-sm" id="f-att-add" data-i18n="att.add">📎 Allega foto o PDF</button>
+            <input type="file" id="f-att-input" accept="image/*,application/pdf" multiple hidden></div>
+          <div class="att-list" id="f-att-list"></div>
+        </div>
         <div class="span-2 f-cat-hint" id="f-cat-hint" hidden></div>
         <div class="span-2 f-recur" id="f-recur-box" hidden>
           <label class="check-inline"><input type="checkbox" id="f-recurring"> <span data-i18n="f.recurring">Spesa ricorrente (si ripete da sola)</span></label>
@@ -1930,6 +2007,72 @@
           <div class="art-disco-list" id="art-disco-list"></div>
           <p class="muted small" id="as-none" data-i18n="art.sheet_none" hidden>Nessuna release trovata per questo artista.</p>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cestino -->
+  <div class="modal" id="trash-modal" hidden>
+    <div class="modal-card" role="dialog" aria-labelledby="trash-title">
+      <div class="modal-head"><h2 id="trash-title" data-i18n="trash.title">Cestino</h2><button class="modal-x" id="trash-close" aria-label="Chiudi">✕</button></div>
+      <div class="sx-body">
+        <p class="muted small" data-i18n="trash.hint">Gli elementi eliminati restano qui per 30 giorni: puoi ripristinarli quando vuoi.</p>
+        <div id="trash-body"></div>
+        <div class="modal-foot"><span class="spacer"></span><button class="btn btn-danger btn-sm" id="trash-empty" type="button" data-i18n="trash.empty">Svuota cestino</button></div>
+      </div>
+    </div>
+  </div>
+  <!-- Versioni salvate -->
+  <div class="modal" id="ver-modal" hidden>
+    <div class="modal-card" role="dialog" aria-labelledby="ver-title">
+      <div class="modal-head"><h2 id="ver-title" data-i18n="ver.title">Versioni salvate</h2><button class="modal-x" id="ver-close" aria-label="Chiudi">✕</button></div>
+      <div class="sx-body">
+        <p class="muted small" data-i18n="ver.hint">Ripristinando una versione, i dati tornano com'erano in quel momento. La situazione attuale viene salvata prima, così puoi sempre tornare indietro.</p>
+        <h3 class="sx-h" data-i18n="ver.cloud_title">Nel cloud</h3>
+        <div id="ver-cloud"></div>
+        <h3 class="sx-h" data-i18n="ver.local_title">Su questo dispositivo</h3>
+        <div id="ver-local"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Conto economico per release -->
+  <div class="modal" id="pl-modal" hidden>
+    <div class="modal-card modal-card--wide" role="dialog" aria-labelledby="pl-title">
+      <div class="modal-head"><h2 id="pl-title" data-i18n="pl.modal_title">Conto economico per release</h2><button class="modal-x" id="pl-close" aria-label="Chiudi">✕</button></div>
+      <div class="sx-body">
+        <p class="muted small" data-i18n="pl.modal_hint">Entrate delle vendite, quota che spetta agli artisti, spese collegate alla release e margine che resta all'etichetta. Per collegare una spesa, scrivi il catalogo della release nel movimento di uscita.</p>
+        <div id="pl-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ricerca globale (Ctrl+K) -->
+  <div class="modal gs-modal" id="gs-modal" hidden>
+    <div class="gs-card" role="dialog" aria-label="Cerca">
+      <div class="gs-head">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="gs-input" type="search" autocomplete="off" spellcheck="false" data-i18n-ph="gs.ph" placeholder="Cerca artisti, release, contratti, movimenti…" aria-label="Cerca">
+        <kbd class="gs-kbd">Esc</kbd>
+      </div>
+      <div class="gs-list" id="gs-list" role="listbox"></div>
+      <div class="gs-foot muted small" data-i18n="gs.foot">↑↓ per scegliere · Invio per aprire · Esc per chiudere</div>
+    </div>
+  </div>
+
+  <!-- Anteprima ricevuta (foto) -->
+  <div class="modal att-view" id="att-view" hidden>
+    <div class="modal-card att-view-card"><div class="modal-head"><h2 id="att-view-name"></h2><button class="modal-x" id="att-view-close" aria-label="Chiudi">✕</button></div>
+      <div class="att-view-body"><img id="att-view-img" alt=""></div></div>
+  </div>
+  <!-- Pacchetto per il commercialista -->
+  <div class="modal" id="pack-modal" hidden>
+    <div class="modal-card modal-card--sm" role="dialog" aria-labelledby="pack-title">
+      <div class="modal-head"><h2 id="pack-title" data-i18n="pack.title">Pacchetto per il commercialista</h2><button class="modal-x" id="pack-close" aria-label="Chiudi">✕</button></div>
+      <div class="sx-body">
+        <p class="muted small" data-i18n="pack.modal_hint">Scegli l'anno: scarichi uno ZIP con i movimenti (CSV per Excel), il riepilogo, i pagamenti agli artisti con le ritenute e la cartella delle ricevute.</p>
+        <label class="fld"><span data-i18n="pack.year">Anno</span><select class="select" id="pack-year"></select></label>
+        <div class="modal-foot"><span class="spacer"></span><button class="btn btn-primary btn-sm" id="pack-go" type="button" data-i18n="pack.go">⤓ Scarica lo ZIP</button></div>
       </div>
     </div>
   </div>
@@ -2143,6 +2286,7 @@
     <div class="modal-card">
       <div class="modal-head"><h2 id="rel-modal-title" data-i18n="rel.modal.new">Nuova release</h2>
         <button class="modal-x" id="rel-modal-close">✕</button></div>
+      <div class="rel-extra" id="rel-extra" hidden></div>
       <form id="rel-form" style="padding:22px">
         <input type="hidden" id="r-id">
         <div class="form-grid">
@@ -2296,12 +2440,18 @@
 
   <script src="html2pdf.bundle.min.js?v=95"></script>
   <script src="config.js?v=95"></script>
-  <script src="core.js?v=96"></script>
+  <script src="core.js?v=97"></script>
   <script src="signature.js?v=96"></script>
-  <script src="app.js?v=99"></script>
-  <script src="tables.js?v=98"></script>
-  <script src="i18n.js?v=98"></script>
+  <script src="app.js?v=100"></script>
+  <script src="tables.js?v=99"></script>
+  <script src="safety.js?v=1"></script>
+  <script src="money.js?v=1"></script>
+  <script src="insights.js?v=1"></script>
+  <script src="search.js?v=1"></script>
+  <script src="files.js?v=1"></script>
+  <script src="team.js?v=1"></script>
+  <script src="i18n.js?v=99"></script>
   <script src="vendor/supabase.min.js?v=95"></script>
-  <script src="sync.js?v=96"></script>
+  <script src="sync.js?v=97"></script>
 </body>
 </html>

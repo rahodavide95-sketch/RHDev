@@ -9,6 +9,11 @@
   const CFG_KEY = 'labelfinance.supabase';
   const $ = (id)=>document.getElementById(id);
   let client=null, user=null, pushTimer=null, pulling=false;
+  // di chi sono i dati aperti: il proprio account o, con l'accesso team, quello del titolare
+  let workspace=null, memberships=[];
+  const wsId=()=> (workspace && workspace.owner) || (user && user.id) || null;
+  const isViewer=()=> !!(workspace && workspace.role==='viewer');
+  const WS_KEY='labelfinance.ws.';
 
   const EYE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
   const EYE_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.9 4.24A9.1 9.1 0 0 1 12 4c6.5 0 10 7 10 7a18 18 0 0 1-2.16 3.19M6.6 6.6A18 18 0 0 0 2 12s3.5 7 10 7a9.1 9.1 0 0 0 4.3-1.06"/><path d="m3 3 18 18"/></svg>';
@@ -168,17 +173,20 @@
       showGate(false);
       setStatus('Connesso — sincronizzo…'); gateStatus('');
       try{ await (window.LF.ready||Promise.resolve()); }catch(e){}
+      // accesso team: etichette di altri titolari a cui questo account è stato invitato
+      await loadMemberships(); restoreWorkspace();
       // i dati di questo dispositivo appartengono all'ultimo account che li ha sincronizzati:
       // se entra un account diverso, si riparte puliti (niente dati di un'altra etichetta)
-      if(meta.owner && meta.owner!==user.id){ await resetLocal(); }
+      if(meta.owner && meta.owner!==wsId()){ await resetLocal(); }
       window.LF_push = schedulePush;
       await pull({ initial:true });
       fillAccount();
       watchContracts();
       watchState();
-      refreshPlan();
+      if(!workspace) refreshPlan();          // il piano di un'etichetta altrui lo decide il titolare
+      renderWsUI();
     } else {
-      authedUserId=null;
+      authedUserId=null; workspace=null; memberships=[]; window.LF_readOnly=false; renderWsUI();
       showPending(false);
       window.LF_push = null;
       if(getCfg()){ showGate(true); setStatus('Accedi per sincronizzare'); }
@@ -193,8 +201,8 @@
     if(!client||!user) return;
     try{ if(contractChannel) client.removeChannel(contractChannel); }catch(e){}
     try{
-      contractChannel = client.channel('contracts-'+user.id)
-        .on('postgres_changes', { event:'*', schema:'public', table:'contracts', filter:'owner_id=eq.'+user.id },
+      contractChannel = client.channel('contracts-'+wsId())
+        .on('postgres_changes', { event:'*', schema:'public', table:'contracts', filter:'owner_id=eq.'+wsId() },
           ()=>{ try{ window.dispatchEvent(new CustomEvent('lf-contracts-changed')); }catch(e){} })
         .subscribe();
     }catch(e){}
@@ -227,10 +235,14 @@
     if(!user||!client) return;
     lastPull=Date.now();
     const seq0=editSeq, ts0=meta.remoteTs;
-    const { data, error } = await client.from('app_state').select('data,updated_at').eq('user_id', user.id).maybeSingle();
+    const { data, error } = await client.from('app_state').select('data,updated_at').eq('user_id', wsId()).maybeSingle();
     if(error){ setStatus('Errore lettura cloud: '+error.message); return; }
     // modifiche o salvataggi avvenuti durante il download: questa copia è già vecchia, riprova dopo
     if(editSeq!==seq0 || meta.remoteTs!==ts0 || pushing){ schedulePull(); return; }
+    if((!data || !data.data) && workspace){
+      // etichetta di un titolare che non ha ancora salvato nulla nel cloud: niente da mostrare
+      meta.owner=wsId(); meta.remoteTs=null; meta.dirty=false; saveMeta(); setStatus(tt0('team.owner_empty','L\'etichetta del titolare è ancora vuota.')); return;
+    }
     if(!data || !data.data){
       // cloud vuoto (account nuovo): carica i dati locali, ma chiedi se non si sa di chi sono
       if(opt.initial && !meta.owner && window.LF.localSize()>0){
@@ -241,30 +253,32 @@
       await push();
       return;
     }
-    if(data.updated_at===meta.remoteTs && !meta.dirty){ meta.owner=user.id; saveMeta(); setStatus('Sincronizzato ✓ '+now()); return; }
+    if(data.updated_at===meta.remoteTs && !meta.dirty){ meta.owner=wsId(); saveMeta(); setStatus('Sincronizzato ✓ '+now()); return; }
     if(!meta.dirty){
       applyMerged(data.data);
     } else {
       let base=await getBase();
-      if(!base && opt.initial && !meta.owner && window.LF.localSize()>0){
+      if(!base && opt.initial && !meta.owner && !workspace && window.LF.localSize()>0){
         const msg=(window.t?window.t('sync.merge_local'):'Su questo dispositivo ci sono {n} elementi non ancora nel tuo account. Vuoi unirli ai dati del cloud?').replace('{n}', window.LF.localSize());
         if(!confirm(msg)){ applyMerged(data.data); meta.dirty=false; base=undefined; }
       }
       if(meta.dirty) applyMerged(LFCore.mergeAccounts(base, window.LF.data(), data.data));
     }
-    meta.owner=user.id; meta.remoteTs=data.updated_at; saveMeta();
+    meta.owner=wsId(); meta.remoteTs=data.updated_at; saveMeta();
     await setBase(data.data);
     if(meta.dirty) await push();
     else setStatus('Sincronizzato ✓ '+now());
   }
   function schedulePush(){
+    if(isViewer()) return;                        // sola lettura: niente salvataggi nel cloud
     editSeq++;
     if(!meta.dirty){ meta.dirty=true; saveMeta(); }
     if(pulling) return;                           // la pull in corso salverà alla fine
     clearTimeout(pushTimer); pushTimer=setTimeout(push, 700);
   }
   async function push(){
-    if(!user||!client) return;
+    if(!user||!client||isViewer()) return;
+    if(workspace && !meta.remoteTs) return;       // un membro del team non può creare i dati del titolare
     if(pushing){ pushAgain=true; return; }
     pushing=true;
     try{
@@ -274,11 +288,11 @@
         const ts=new Date().toISOString();
         const body={ data:JSON.parse(snapshot), updated_at:ts };
         const res = meta.remoteTs
-          ? await client.from('app_state').update(body).eq('user_id', user.id).eq('updated_at', meta.remoteTs).select('updated_at')
+          ? await client.from('app_state').update(body).eq('user_id', wsId()).eq('updated_at', meta.remoteTs).select('updated_at')
           : await client.from('app_state').insert(Object.assign({ user_id:user.id }, body)).select('updated_at');
         if(res.error && res.error.code!=='23505'){ setStatus('Errore salvataggio: '+res.error.message); return; }
         if(!res.error && res.data && res.data.length){
-          meta.owner=user.id; meta.remoteTs=res.data[0].updated_at; meta.dirty=(editSeq!==seq); saveMeta();
+          meta.owner=wsId(); meta.remoteTs=res.data[0].updated_at; meta.dirty=(editSeq!==seq); saveMeta();
           await setBase(snapshot);
           setStatus('Sincronizzato ✓ '+now());
           if(meta.dirty) pushAgain=true;
@@ -286,7 +300,7 @@
         }
         // un altro dispositivo ha salvato nel frattempo: scarica, unisci, riprova
         setStatus('Unisco le modifiche di un altro dispositivo…');
-        const cur=await client.from('app_state').select('data,updated_at').eq('user_id', user.id).maybeSingle();
+        const cur=await client.from('app_state').select('data,updated_at').eq('user_id', wsId()).maybeSingle();
         if(cur.error){ setStatus('Errore lettura cloud: '+cur.error.message); return; }
         if(!cur.data){ meta.remoteTs=null; continue; }
         const base=await getBase();
@@ -307,8 +321,8 @@
     if(!client||!user) return;
     try{ if(stateChannel) client.removeChannel(stateChannel); }catch(e){}
     try{
-      stateChannel = client.channel('state-'+user.id)
-        .on('postgres_changes', { event:'UPDATE', schema:'public', table:'app_state', filter:'user_id=eq.'+user.id },
+      stateChannel = client.channel('state-'+wsId())
+        .on('postgres_changes', { event:'UPDATE', schema:'public', table:'app_state', filter:'user_id=eq.'+wsId() },
           (p)=>{ const ts=p && p.new && p.new.updated_at; if(!ts || ts!==meta.remoteTs) schedulePull(); })
         .subscribe();
     }catch(e){}
@@ -365,6 +379,7 @@
       }
     }
     try{ await client.auth.signOut(); }catch(e){}
+    workspace=null; memberships=[]; window.LF_readOnly=false; renderWsUI();
     await resetLocal();
     // credenziali personali salvate su questo dispositivo
     try{ ['labelfinance.aikey','labelfinance.emailjs'].forEach(k=>localStorage.removeItem(k)); }catch(e){}
@@ -390,6 +405,132 @@
       return data;
     }catch(e){ return { error:e.message||'cat_error' }; }
   };
+  /* ---------- Accesso team (vedi team_members in schema.sql) ----------
+     Il titolare invita un'email come viewer (sola lettura) o editor (modifica).
+     Chi entra con quell'email può aprire l'etichetta del titolare dal menu account:
+     i dati letti e scritti diventano quelli del titolare (wsId). */
+  const tt0=(k,fb)=>{ const v=window.t?window.t(k):''; return (v&&v!==k)?v:fb; };
+  async function loadMemberships(){
+    memberships=[];
+    if(!client||!user||!user.email) return;
+    try{ const { data, error } = await client.from('team_members').select('owner_id,role,owner_email,owner_label')
+        .eq('email', String(user.email).toLowerCase()).neq('owner_id', user.id);
+      if(!error && data) memberships=data;
+    }catch(e){}
+  }
+  function restoreWorkspace(){
+    let id=''; try{ id=localStorage.getItem(WS_KEY+user.id)||''; }catch(e){}
+    const m=memberships.find(x=>x.owner_id===id);
+    workspace = m ? { owner:m.owner_id, role:m.role, label:m.owner_label||'', email:m.owner_email||'' } : null;
+    window.LF_readOnly = isViewer();
+  }
+  async function switchWorkspace(ownerId){
+    if(!user) return;
+    const m=ownerId ? memberships.find(x=>x.owner_id===ownerId) : null;
+    if((m?m.owner_id:null)===(workspace?workspace.owner:null)) return;
+    if(meta.dirty && !isViewer()){ clearTimeout(pushTimer); await Promise.race([ push(), new Promise(r=>setTimeout(r, 6000)) ]); }
+    try{ localStorage.setItem(WS_KEY+user.id, m?m.owner_id:''); }catch(e){}
+    workspace = m ? { owner:m.owner_id, role:m.role, label:m.owner_label||'', email:m.owner_email||'' } : null;
+    window.LF_readOnly = isViewer();
+    await resetLocal();                            // si riparte puliti: i dati sono di un'altra etichetta
+    setStatus('Cambio etichetta…');
+    watchContracts(); watchState();
+    await pull({ initial:true });
+    renderWsUI();
+    if(typeof window.goto==='function') try{ window.goto('dashboard'); }catch(e){}
+  }
+  window.LF_switchWorkspace = switchWorkspace;
+  window.LF_workspace = ()=> workspace ? Object.assign({}, workspace) : null;
+  window.LF_memberships = ()=> memberships.slice();
+  // sola lettura: le modifiche fatte sul dispositivo tornano com'erano nel cloud
+  window.LF_revert = async function(){ const base=await getBase(); if(base){ applyMerged(base); meta.dirty=false; saveMeta(); } };
+  function renderWsUI(){
+    const b=$('ws-banner');
+    if(b){
+      b.hidden=!workspace;
+      if(workspace){
+        const who=workspace.label||workspace.email||'—';
+        $('ws-banner-txt').textContent=tt0(workspace.role==='viewer'?'team.banner_viewer':'team.banner_editor', 'Stai lavorando sull\'etichetta di {who}').replace('{who}', who);
+      }
+    }
+    document.body.classList.toggle('ws-readonly', isViewer());
+    const box=$('account-menu-ws');
+    if(box){
+      if(!memberships.length){ box.hidden=true; box.innerHTML=''; }
+      else {
+        const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        const row=(id,name,sub,on)=>`<button class="acct-item acct-ws${on?' is-active':''}" data-ws="${esc(id)}"><span>${esc(name)}</span><span class="muted small">${esc(sub)}</span>${on?'<span class="acct-check">✓</span>':''}</button>`;
+        box.innerHTML=`<div class="acct-ws-h">${esc(tt0('team.workspaces','Etichette a cui hai accesso'))}</div>`
+          +row('', tt0('team.my_account','Il mio account'), user?user.email:'', !workspace)
+          +memberships.map(m=>row(m.owner_id, m.owner_label||m.owner_email||'—', tt0(m.role==='viewer'?'team.role_viewer':'team.role_editor', m.role), workspace && workspace.owner===m.owner_id)).join('');
+        box.hidden=false;
+      }
+    }
+    if(typeof window.renderTeam==='function') try{ window.renderTeam(); }catch(e){}
+  }
+  window.LF_renderWsUI = renderWsUI;
+  /* gestione del team (titolare) */
+  window.LF_teamList = async function(){
+    if(!client||!user) return null;
+    try{ const { data, error } = await client.from('team_members').select('email,role,created_at').eq('owner_id', user.id).order('created_at');
+      if(error) return { error:error.message||'db_error' }; return data||[];
+    }catch(e){ return { error:e.message||'db_error' }; }
+  };
+  window.LF_teamInvite = async function(email, role, ownerLabel){
+    if(!client||!user) return { error:'offline' };
+    email=String(email||'').trim().toLowerCase();
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { error:'email' };
+    if(email===String(user.email||'').toLowerCase()) return { error:'self' };
+    try{ const { error } = await client.from('team_members').upsert({ owner_id:user.id, email, role:role==='editor'?'editor':'viewer', owner_email:user.email, owner_label:ownerLabel||'' }, { onConflict:'owner_id,email' });
+      if(error) return { error:error.message||'db_error' }; return { ok:true };
+    }catch(e){ return { error:e.message||'db_error' }; }
+  };
+  window.LF_teamRemove = async function(email){
+    if(!client||!user) return { error:'offline' };
+    try{ const { error } = await client.from('team_members').delete().eq('owner_id', user.id).eq('email', String(email).toLowerCase());
+      if(error) return { error:error.message||'db_error' }; return { ok:true };
+    }catch(e){ return { error:e.message||'db_error' }; }
+  };
+  window.LF_isSignedIn = ()=> !!(client && user);
+  document.addEventListener('click', e=>{ const b=e.target.closest('[data-ws]'); if(!b) return;
+    const m=$('account-menu'); if(m) m.hidden=true; switchWorkspace(b.dataset.ws||null); });
+  window.addEventListener('langchange', ()=>renderWsUI());
+
+  /* ---------- Versioni salvate nel cloud (vedi app_state_versions in schema.sql) ---------- */
+  window.LF_listVersions = async function(){
+    if(!client||!user) return null;
+    try{ const { data, error } = await client.from('app_state_versions').select('id,created_at,reason')
+        .eq('user_id', wsId()).order('created_at', { ascending:false }).limit(30);
+      if(error) return { error:error.message||'db_error' }; return data||[];
+    }catch(e){ return { error:e.message||'db_error' }; }
+  };
+  window.LF_getVersion = async function(id){
+    if(!client||!user) return { error:'offline' };
+    try{ const { data, error } = await client.from('app_state_versions').select('data').eq('id', id).eq('user_id', wsId()).maybeSingle();
+      if(error||!data) return { error:(error&&error.message)||'not_found' }; return data.data;
+    }catch(e){ return { error:e.message||'db_error' }; }
+  };
+  // copia "adesso" nel cloud prima di un'operazione pericolosa (se il database la supporta)
+  window.LF_snapshotNow = async function(){
+    if(!client||!user) return;
+    try{ await Promise.race([ client.rpc('lf_snapshot_now', { p_owner: wsId() }), new Promise(r=>setTimeout(r, 4000)) ]); }catch(e){}
+  };
+  /* ---------- Allegati (ricevute) su Supabase Storage: cartella privata dell'etichetta ---------- */
+  window.LF_uploadReceipt = async function(name, blob, type){
+    if(!client||!user||(workspace && workspace.role==='viewer')) return null;
+    const path=wsId()+'/'+name;
+    try{ const { error } = await client.storage.from('receipts').upload(path, blob, { contentType:type||'application/octet-stream', upsert:true });
+      if(error) return null; return { path };
+    }catch(e){ return null; }
+  };
+  window.LF_downloadReceipt = async function(path){
+    if(!client||!user||!path) return null;
+    try{ const { data, error } = await client.storage.from('receipts').download(path); return error?null:data; }catch(e){ return null; }
+  };
+  window.LF_deleteReceipt = async function(path){
+    if(!client||!user||!path) return;
+    try{ await client.storage.from('receipts').remove([path]); }catch(e){}
+  };
   /* ---------- Firma remota dei contratti ---------- */
   // token dei link (firma, portale): 128 bit casuali, impossibili da indovinare
   function randToken(){ try{ return crypto.randomUUID().replace(/-/g,''); }catch(e){
@@ -402,7 +543,7 @@
     if(contract.status==='signed') return { error:'already_signed' };
     const token = contract.token || randToken();
     // nuovo invio: azzera firma e motivo di rifiuto di un eventuale invio precedente
-    const row = { token, owner_id:user.id, label:contract.label||'', artist_email:contract.email||'',
+    const row = { token, owner_id:wsId(), label:contract.label||'', artist_email:contract.email||'',
       data:contract, status:'sent', signature:null, reject_reason:null, updated_at:new Date().toISOString() };
     try{
       const { error } = await client.from('contracts').upsert(row, { onConflict:'token' });
@@ -417,7 +558,7 @@
     if(!user) return { error:'unauthorized' };
     const token = randToken();
     try{
-      const { error } = await client.from('artist_shares').insert({ token, owner_id:user.id, label_id:labelId, artist_name:name });
+      const { error } = await client.from('artist_shares').insert({ token, owner_id:wsId(), label_id:labelId, artist_name:name });
       if(error) return { error:error.message||'db_error' };
       return { token, link: window.LF_artistPortalLink(token) };
     }catch(e){ return { error:e.message||'db_error' }; }
@@ -432,7 +573,7 @@
   window.LF_deleteContract = async function(token){
     if(!client||!user) return { error:'offline' };
     if(!token) return { ok:true };
-    try{ const { error } = await client.from('contracts').delete().eq('token', token).eq('owner_id', user.id);
+    try{ const { error } = await client.from('contracts').delete().eq('token', token).eq('owner_id', wsId());
       if(error) return { error:error.message||'db_error' }; return { ok:true };
     }catch(e){ return { error:e.message||'db_error' }; }
   };
@@ -440,7 +581,7 @@
   window.LF_refreshContractStatuses = async function(){
     if(!client||!user) return null;
     try{
-      const { data, error } = await client.from('contracts').select('*').eq('owner_id', user.id);
+      const { data, error } = await client.from('contracts').select('*').eq('owner_id', wsId());
       if(error) return null; return data||[];
     }catch(e){ return null; }
   };

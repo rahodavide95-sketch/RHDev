@@ -147,6 +147,43 @@
     const r=(rates||{})[String(cur||'EUR').toUpperCase()];
     return (Number(n)||0) * (r==null ? 1 : (Number(r)||0));
   };
+  /* Cambio verso l'euro alla data di un movimento. Con i cambi automatici attivi
+     (label.fx.auto) si usa la media mensile BCE del mese del movimento; se quel mese
+     non c'è ancora (es. mese in corso) il mese disponibile più vicino prima di lui.
+     Altrimenti, o per valute senza dati BCE, il tasso fisso scritto a mano (label.rates). */
+  const fxSorted=new WeakMap();
+  C.rateFor = (label, cur, date) => {
+    cur=String(cur||'EUR').toUpperCase(); if(cur==='EUR') return 1;
+    const fx=label && label.fx, tbl=fx && fx.auto && fx.months && fx.months[cur];
+    if(tbl && typeof tbl==='object'){
+      const m=String(date||'').slice(0,7);
+      if(m && tbl[m]!=null) return Number(tbl[m])||0;
+      let keys=fxSorted.get(tbl); if(!keys || keys.length!==Object.keys(tbl).length){ keys=Object.keys(tbl).sort(); fxSorted.set(tbl, keys); }
+      if(keys.length){
+        let best=keys[0];
+        if(m) for(const k of keys){ if(k<=m) best=k; else break; }
+        return Number(tbl[best])||0;
+      }
+    }
+    const r=((label && label.rates)||{})[cur];
+    return r==null ? 1 : (Number(r)||0);
+  };
+  C.eurAt = (label, n, cur, date) => (Number(n)||0) * C.rateFor(label, cur, date);
+  C.txEur = (label, t) => C.eurAt(label, t && t.net, t && t.currency, t && t.date);
+  // medie mensili da una serie giornaliera {"2026-01-02":{"EUR":0.95}, …} → {"2026-01":0.951, …}
+  C.monthlyAverages = (daily, to) => {
+    to=to||'EUR'; const acc={};
+    for(const d of Object.keys(daily||{})){
+      const v=Number(daily[d] && daily[d][to]); if(!(v>0)) continue;
+      const m=d.slice(0,7); const a=acc[m]||(acc[m]={s:0,n:0}); a.s+=v; a.n++;
+    }
+    const out={}; for(const m of Object.keys(acc)) out[m]=Math.round(acc[m].s/acc[m].n*1e6)/1e6;
+    return out;
+  };
+  /* Data contabile di un movimento: le righe arrivate dopo la chiusura di un periodo
+     (vendite di mesi già chiusi) hanno t.acct = primo giorno aperto, così finiscono
+     nel prossimo statement e i numeri già inviati agli artisti non cambiano. */
+  C.acctDate = t => (t && (t.acct || t.date)) || '';
   C.inRange = (d, from, to) => { d=d||''; return (!from || d>=from) && (!to || d<=to); };
 
   /* ---------- Collegamento movimento → release (indice: niente ricerche lineari) ---------- */
@@ -197,8 +234,8 @@
     opt=opt||{}; const idx=opt.idx||C.relIndex(label.releases);
     const byArtist={}; let labelTotal=0;
     for(const t of incomeOf(label)){
-      if(!C.inRange(t.date, opt.from, opt.to)) continue;
-      const eur=C.toEur(label.rates, t.net, t.currency);
+      if(!C.inRange(C.acctDate(t), opt.from, opt.to)) continue;
+      const eur=C.txEur(label, t);
       const m=C.splitsForTx(idx, t);
       const sh=m ? sharesOf(m.splits) : [];
       if(!sh.length){ labelTotal+=eur; continue; }
@@ -217,11 +254,11 @@
   C.royaltyTotals = function(label, opt){
     opt=opt||{}; const idx=opt.idx||C.relIndex(label.releases); const out={};
     for(const t of incomeOf(label)){
-      const d=t.date||'';
+      const d=C.acctDate(t);
       if(opt.until && d>opt.until) continue;
       if(opt.before && !(d<opt.before)) continue;
       const m=C.splitsForTx(idx, t); if(!m) continue;
-      const eur=C.toEur(label.rates, t.net, t.currency);
+      const eur=C.txEur(label, t);
       for(const s of sharesOf(m.splits)){ const a=out[s.key]||(out[s.key]={name:s.name, total:0}); a.total+=eur*s.pct/100; }
     }
     return out;
@@ -265,11 +302,12 @@
     from=from||null; to=to||null;
     const key=C.artKey(name); const lines=[]; let total=0;
     for(const t of incomeOf(label)){
-      const d=t.date||''; if(!C.inRange(d, from, to)) continue;
+      if(!C.inRange(C.acctDate(t), from, to)) continue;
       const m=C.splitsForTx(idx, t); if(!m) continue;
       const sp=sharesOf(m.splits).find(s=>s.key===key); if(!sp) continue;
-      const eur=C.toEur(label.rates, t.net, t.currency), share=eur*sp.pct/100; total+=share;
-      lines.push({ date:d, product:t.product||(m.rel&&m.rel.title)||'', catalog:(m.rel&&m.rel.catalog)||t.catalog||'', gross:eur, pct:sp.pct, share });
+      const eur=C.txEur(label, t), share=eur*sp.pct/100; total+=share;
+      // late = vendita di un periodo già chiuso, arrivata dopo la chiusura
+      lines.push({ date:t.date||'', late:!!t.acct, product:t.product||(m.rel&&m.rel.title)||'', catalog:(m.rel&&m.rel.catalog)||t.catalog||'', gross:eur, pct:sp.pct, share });
     }
     lines.sort((a,b)=>String(a.date).localeCompare(String(b.date)));
     const lifeEnd=((C.royaltyTotals(label, {idx, until:to})[key])||{total:0}).total;     // fino alla fine del periodo, non oltre

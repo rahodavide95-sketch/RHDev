@@ -28,9 +28,17 @@ Serve solo un'impostazione, **una volta sola**: dare a GitHub una "chiave" per
 pubblicare sul tuo progetto Supabase.
 
 1. **Crea la chiave su Supabase**
-   Apri https://supabase.com/dashboard/account/tokens → **Generate new token** →
-   nome a piacere (es. `github`) → **Generate** → **copia** il token (inizia con `sbp_`).
-   ⚠️ È come una password: non condividerlo e non incollarlo nel codice.
+   Apri https://supabase.com/dashboard/account/tokens → **Generate new token**:
+   - nome a piacere (es. `github-label-finance`);
+   - **accesso**: solo il progetto di Label Finance (`ztjlqorvnulgfvbtvavm`);
+   - **permessi**: **Edge Functions → lettura e scrittura** (read-write) e
+     **Projects → lettura** (read). Non serve altro;
+   - scadenza: la più lunga disponibile (max 1 anno; alla scadenza ne crei una nuova
+     e aggiorni il secret al punto 2).
+
+   Poi **Generate** e **copia** il token (inizia con `sbp_`). I permessi di un token
+   non si possono modificare: se hai sbagliato, eliminalo e creane un altro.
+   ⚠️ È come una password: non condividerlo e non incollarlo nel codice o in chat.
 2. **Incollala su GitHub**
    Apri il repository su GitHub → **Settings** → **Secrets and variables** →
    **Actions** → **New repository secret**:
@@ -45,6 +53,11 @@ pubblicare sul tuo progetto Supabase.
 Da quel momento, ogni volta che una modifica alle funzioni entra in `main`, la
 pubblicazione parte da sola. (Se il secret manca, il workflow si salta con un
 avviso e non pubblica nulla.)
+
+Se il workflow fallisce con un errore **403** e la parola `missing_permissions`,
+al token manca un permesso: il log elenca quale. Crea un nuovo token con quel
+permesso in più e aggiorna il secret (Settings → Secrets and variables → Actions →
+`SUPABASE_ACCESS_TOKEN` → Update).
 
 <details><summary>In alternativa, dal tuo computer (per chi usa il terminale)</summary>
 

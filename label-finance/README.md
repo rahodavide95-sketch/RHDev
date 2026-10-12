@@ -18,19 +18,39 @@ così si pubblica su Vercel impostando la Root Directory su `label-finance`.
 
 ```
 label-finance/
-├── index.html          ← APP MVP (sito da deployare)
-├── app.js              ← logica: store locale, import CSV, dashboard
-├── sync.js             ← sincronizzazione cloud opzionale (Supabase)
+├── index.html          ← sito pubblico (landing) + landing.js
+├── app.html            ← l'app
+├── core.js             ← calcoli puri e testati: importi/date CSV, royalty,
+│                         recoupment, pagamenti, statement, unione dati sync
+├── app.js              ← interfaccia e logica dell'app
+├── sync.js             ← login + sincronizzazione cloud (Supabase)
+├── firma.html/.js      ← pagina pubblica di firma contratto
+├── artista.html/.js    ← portale artista (statement in sola lettura)
+├── vendor/             ← librerie esterne con versione fissa (supabase-js)
 ├── style.css           ← interfaccia
-├── vercel.json         ← config deploy
-├── README.md           ← questo file (mappa del progetto)
+├── vercel.json         ← config deploy + intestazioni di sicurezza
+├── test/               ← test automatici (npm test)
+├── supabase/
+│   ├── schema.sql      ← TUTTO il database (sicuro da rieseguire)
+│   └── functions/      ← Edge Functions (AI, portale artista, Stripe, catalogo)
 ├── docs/               ← documentazione
+│   ├── AGGIORNAMENTO.md ← cosa fare su Supabase dopo l'ultimo aggiornamento
 │   ├── PROGETTO.md      ← documento di progetto completo (LEGGI QUESTO)
 │   ├── SICUREZZA-PRIVACY.md  ← sicurezza dati e GDPR
 │   └── SYNC-SETUP.md   ← guida sincronizzazione cloud (PC + telefono)
 └── data/
     └── samples/         ← esempi di CSV (Bandcamp, distributore) per i test
 ```
+
+## Test
+
+```bash
+cd label-finance
+npm test
+```
+I test girano con il fuso orario italiano (`TZ=Europe/Rome`): coprono importi in
+formato europeo/americano, date senza slittamenti, royalty, recoupment, pagamenti,
+statement, deduplica dell'import e unione dei dati tra dispositivi.
 
 ## Deploy su Vercel
 

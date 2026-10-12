@@ -5,7 +5,7 @@
 > Stripe (soldi finti) e solo alla fine passeremo a quella reale.
 
 Il codice già pronto in questo repo:
-- `supabase/subscriptions.sql` — la tabella del piano di ogni utente
+- `supabase/schema.sql` — contiene la tabella `subscriptions` con il piano di ogni utente
 - `supabase/functions/create-checkout/` — apre la pagina di pagamento
 - `supabase/functions/stripe-webhook/` — riceve la conferma e attiva il piano
 - `supabase/functions/create-portal/` — il cliente gestisce/disdice l'abbonamento
@@ -29,7 +29,7 @@ Per ogni prodotto creato, apri il prezzo e **copia il Price ID** (inizia con
 
 ## Passo 3 — Crea la tabella nel database
 1. Apri la Dashboard **Supabase** → il tuo progetto → **SQL Editor** → **New query**.
-2. Apri il file `supabase/subscriptions.sql`, copia **tutto** il contenuto, incollalo e premi **Run**.
+2. Apri il file `supabase/schema.sql`, copia **tutto** il contenuto, incollalo e premi **Run** (è sicuro rieseguirlo).
 3. Deve dire "Success". (Hai creato la tabella che tiene il piano di ogni cliente.)
 
 ## Passo 4 — Imposta le "chiavi segrete" su Supabase
@@ -57,10 +57,15 @@ dall'editor di funzioni nel pannello Supabase). Risultato: 3 funzioni online
 4. Salva, poi **copia il "Signing secret"** (`whsec_...`) e aggiungilo ai Secrets
    di Supabase come `STRIPE_WEBHOOK_SECRET`.
 
-## Passo 7 — Collego i pulsanti nell'app (lo faccio io)
-Quando il backend è pronto, modifico io l'app: i pulsanti "Abbonati" dei piani
-apriranno la pagina Stripe, e il piano verrà letto dalla tabella `subscriptions`
-(non più scelto dall'utente). Aggiungo anche un pulsante "Gestisci abbonamento".
+## Passo 7 — Accendi i pagamenti nell'app
+I pulsanti sono già collegati. In `config.js` metti **`payments: true`** e pubblica.
+Da quel momento:
+- "Attiva" su un piano apre la pagina di pagamento Stripe;
+- il piano dell'utente viene letto dalla tabella `subscriptions` (non più scelto nel browser);
+- sul piano attivo compare **"Gestisci abbonamento"** (portale clienti Stripe: cambio piano, disdetta, fatture).
+
+Ricorda anche l'assistente AI: al lancio imposta il secret `AI_ALLOW_APPROVED=false`
+così l'AI resta solo per gli abbonati (in beta la usano anche gli utenti approvati).
 
 ## Passo 8 — Prova con una carta di test
 Stripe fornisce la carta di prova **4242 4242 4242 4242**, data futura, CVC

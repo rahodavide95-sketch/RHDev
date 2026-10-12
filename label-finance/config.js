@@ -23,5 +23,10 @@ window.LF_CONFIG = {
   // Registrazione con approvazione: se true, i nuovi iscritti restano "in attesa"
   // finché non li approvi tu da Supabase. Attivalo SOLO dopo aver eseguito
   // supabase/approval.sql e aver approvato te stesso (vedi note nel file SQL).
-  requireApproval: true
+  requireApproval: true,
+
+  // Pagamenti con Stripe. Lascia false durante la beta (i piani si scelgono liberamente;
+  // l'assistente AI è comunque controllato dal server). Mettilo a true SOLO dopo aver
+  // completato docs/STRIPE-SETUP.md: da quel momento il piano lo decide l'abbonamento.
+  payments: false
 };

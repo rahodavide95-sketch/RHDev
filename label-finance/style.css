@@ -1447,13 +1447,19 @@ body.gate-signup #gate-signin{opacity:.5}
 .art-dup-names b{font-weight:700}
 .pay-total{font-weight:700;font-size:.92rem}
 .pay-list{display:flex;flex-direction:column;gap:6px}
-.pay-row{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--panel-2);border:1px solid var(--line);border-radius:9px;padding:9px 12px;cursor:pointer;font:inherit;color:var(--text);transition:.12s}
-.pay-row:hover{border-color:var(--accent)}
+.pay-row{display:flex;align-items:center;gap:8px;width:100%}
+.pay-main{display:flex;align-items:center;gap:10px;flex:1;min-width:0;text-align:left;background:var(--panel-2);border:1px solid var(--line);border-radius:9px;padding:9px 12px;cursor:pointer;font:inherit;color:var(--text);transition:.12s}
+.pay-main:hover{border-color:var(--accent)}
+.pay-mark{flex:none;white-space:nowrap}
+.pay-paid{white-space:nowrap}
+.rc-payout{background:color-mix(in srgb,var(--in) 18%,transparent);color:var(--in)}
+.po-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:2px 7px;border-radius:6px;flex:none}
+.po-del:hover{color:var(--out)}
 .pay-name{font-weight:600}
 .pay-flag{font-size:.7rem;font-weight:600;padding:2px 7px;border-radius:20px;background:color-mix(in srgb,var(--out) 16%,transparent);color:var(--out);border:1px solid color-mix(in srgb,var(--out) 30%,var(--line));white-space:nowrap}
 .pay-amt{font-weight:700;flex:none}
 .pay-go{font-size:.78rem;color:var(--muted);flex:none}
-@media(max-width:560px){ .pay-row{flex-wrap:wrap;gap:4px 8px} .pay-go{flex:1 1 100%} }
+@media(max-width:560px){ .pay-main{flex-wrap:wrap;gap:4px 8px} .pay-go{flex:1 1 100%} .pay-row{align-items:stretch} }
 .f-cat-hint{display:flex;align-items:center;gap:8px;margin-top:-4px}
 .f-cat-badge{font-size:.78rem;font-weight:700;padding:3px 10px;border-radius:20px;background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 32%,var(--line))}
 @media(max-width:560px){ .rel-gap-item{flex-wrap:wrap;gap:4px 8px} .rel-gap-ttl{flex:1 1 100%;order:3} .art-dup-item{flex-wrap:wrap} }

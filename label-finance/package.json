@@ -2,7 +2,8 @@
   "name": "label-finance",
   "private": true,
   "scripts": {
-    "build": "node build-vercel.mjs"
+    "build": "node build-vercel.mjs",
+    "test": "TZ=Europe/Rome node --test test/*.test.js"
   },
   "dependencies": {
     "javascript-obfuscator": "^4.1.1"

@@ -19,27 +19,12 @@ codice: solo copiare e incollare.
 ## Passo 2 — Crea la tabella dei dati
 
 1. Nel menu a sinistra: **SQL Editor** → **New query**.
-2. Incolla **tutto** questo e premi **Run**:
+2. Apri il file `supabase/schema.sql`, incolla **tutto** e premi **Run**
+   (è sicuro rieseguirlo quando il file viene aggiornato).
 
-```sql
-create table if not exists public.app_state (
-  user_id uuid primary key references auth.users(id) on delete cascade,
-  data jsonb,
-  updated_at timestamptz default now()
-);
-
-alter table public.app_state enable row level security;
-
-create policy "own select" on public.app_state
-  for select using (auth.uid() = user_id);
-create policy "own insert" on public.app_state
-  for insert with check (auth.uid() = user_id);
-create policy "own update" on public.app_state
-  for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
-```
-
-> Cosa fa: crea una tabella dove ogni utente ha **una sola riga** con i propri dati,
-> e attiva regole di sicurezza (RLS) per cui **ognuno vede solo i propri** dati.
+> Cosa fa: crea la tabella dove ogni utente ha **una sola riga** con i propri dati,
+> con regole di sicurezza (RLS) per cui **ognuno vede solo i propri** dati, più le
+> tabelle di contratti, portale artista, approvazione e abbonamenti.
 
 ## Passo 3 — (consigliato) Login senza conferma email
 
@@ -83,10 +68,16 @@ confermare prima di poter accedere.)
 
 - **Offline-first**: l'app funziona anche senza rete; appena torni online e sei
   connesso, risincronizza.
-- **Ultimo salvataggio vince**: se modifichi sullo stesso conto da due dispositivi
-  nello stesso momento, l'ultimo salvataggio sovrascrive. All'apertura di un
-  dispositivo viene scaricata prima la versione dal cloud (pulsante **"Aggiorna ora"**
-  per forzare).
+- **Modifiche da più dispositivi**: ogni salvataggio controlla che nel cloud ci sia
+  ancora la versione conosciuta. Se un altro dispositivo ha salvato nel frattempo,
+  le due versioni vengono **unite** (movimento per movimento, release per release)
+  invece di sovrascriversi. Se lo stesso elemento è stato cambiato su entrambi,
+  vince il dispositivo che sta salvando. Gli altri dispositivi aperti si aggiornano
+  da soli (o quando torni sulla scheda; pulsante **"Aggiorna ora"** per forzare).
+- **Logout**: all'uscita le ultime modifiche vengono salvate e i dati vengono
+  cancellati da quel dispositivo (su un computer condiviso nessuno li vede dopo).
+- **Molti dati**: se il browser esaurisce lo spazio rapido (~5 MB), l'app usa da
+  sola un archivio più capiente (IndexedDB) sullo stesso dispositivo.
 - **Backup**: l'export `.json` resta sempre disponibile come copia di sicurezza.
 - **Privacy**: i dati stanno nel **tuo** progetto Supabase (server UE), accessibili
   solo dal tuo account. Vedi anche `SICUREZZA-PRIVACY.md`.

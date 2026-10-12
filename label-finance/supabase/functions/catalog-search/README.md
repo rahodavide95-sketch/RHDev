@@ -12,8 +12,11 @@ Più chiavi imposti, maggiore è la copertura. Senza chiavi funziona comunque (s
 
 ## Deploy (una volta)
 ```bash
-supabase functions deploy catalog-search --no-verify-jwt
+supabase functions deploy catalog-search
 ```
+La funzione risponde **solo agli utenti con login**: usa i tuoi token e può
+lavorare per minuti, aperta a tutti sarebbe un proxy gratuito. Ogni richiesta
+accetta al massimo 3 etichette per fonte.
 
 ## Segreti (facoltativi, per più copertura)
 Dashboard Supabase → Edge Functions → Secrets, oppure:

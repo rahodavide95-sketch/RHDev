@@ -66,6 +66,9 @@ function ensureLabelShape(l){
   l.artists=l.artists||[]; l.tasks=l.tasks||[]; l.contracts=l.contracts||[]; l.merch=l.merch||[];
   l.planning=l.planning||[]; l.events=l.events||[]; l.supports=l.supports||[]; l.recurring=l.recurring||[];
   l.payouts=l.payouts||[];
+  // cambi automatici BCE: attivi di serie per le etichette nuove (vuote); per quelle già
+  // in uso si attivano dalle Impostazioni (gli importi in valuta cambierebbero da soli)
+  l.fx=l.fx||{ auto:!l.transactions.length, months:{}, updatedAt:null };
   // release legacy senza tipo: deducilo (così le tracce degli EP si vedono come righe)
   l.releases.forEach(r=>{ if(r && !r.type) r.type=((r.tracks||[]).length>1)?'EP':'SINGLE'; });
   l.name=l.name||(l.profile&&l.profile.label)||'Etichetta';
@@ -212,7 +215,8 @@ function fmtMoney(n,cur='EUR'){
   const v = Number(n)||0;
   return new Intl.NumberFormat('it-IT',{style:'currency',currency:cur}).format(v);
 }
-function toEur(n,cur){ return LFCore.toEur(DB.rates, n, cur); }
+// in euro: con i cambi automatici BCE si usa la media del mese del movimento (date)
+function toEur(n,cur,date){ return LFCore.eurAt(DB, n, cur, date); }
 
 // Importi e date dei CSV: logica in core.js (testata), qui solo gli alias usati dall'app.
 // parseAmount(raw, dec): dec = separatore decimale del file ('.' | ',') se noto.
@@ -623,7 +627,7 @@ function periodRange(){
   return Object.assign({from:f,to:today}, prevPeriod(f,today));
 }
 const inRange=(t,from,to)=>{ const d=t.date||''; if(from&&d<from) return false; if(to&&d>to) return false; return true; };
-function sumKPI(txs){ let inc=0,exp=0; txs.forEach(t=>{ const v=toEur(t.net,t.currency); if(t.kind==='income') inc+=v; else exp+=Math.abs(v); }); return {inc,exp,net:inc-exp}; }
+function sumKPI(txs){ let inc=0,exp=0; txs.forEach(t=>{ const v=toEur(t.net,t.currency,t.date); if(t.kind==='income') inc+=v; else exp+=Math.abs(v); }); return {inc,exp,net:inc-exp}; }
 function deltaTag(cur,prev,goodUp){
   if(prev==null) return '';
   if(Math.abs(prev)<0.005) return '';
@@ -638,7 +642,7 @@ function seasonality(){
   const byMonth={}; const periods=new Set();
   (DB.transactions||[]).forEach(t=>{ const d=t.date; if(!d||d.length<7) return;
     const mm=+d.slice(5,7); if(!mm) return;
-    const v=(t.kind==='income'?1:-1)*Math.abs(toEur(t.net,t.currency));
+    const v=(t.kind==='income'?1:-1)*Math.abs(toEur(t.net,t.currency,t.date));
     (byMonth[mm]??={sum:0,years:new Set()}); byMonth[mm].sum+=v; byMonth[mm].years.add(d.slice(0,4));
     periods.add(d.slice(0,7)); });
   if(periods.size<10) return null;                       // servono abbastanza dati
@@ -662,7 +666,7 @@ function renderInsights(txs, cur, prev){
     const d=cur.net-prev.net, base=Math.abs(prev.net)||1, pct=Math.round(Math.abs(d)/base*100);
     if(pct>=1) out.push({ico:d>=0?'📈':'📉', cls:d>=0?'in':'out', t:tt(d>=0?'ins.margin_up':'ins.margin_down').replace('{p}',pct)});
   }
-  const plat={}; txs.forEach(t=>{ if(t.kind==='income'){ const k=t.platform||'—'; plat[k]=(plat[k]||0)+toEur(t.net,t.currency); } });
+  const plat={}; txs.forEach(t=>{ if(t.kind==='income'){ const k=t.platform||'—'; plat[k]=(plat[k]||0)+toEur(t.net,t.currency,t.date); } });
   const topP=Object.entries(plat).sort((a,b)=>b[1]-a[1])[0];
   if(topP && topP[1]>0) out.push({ico:'🏆', cls:'', go:'transactions', t:tt('ins.top_platform').replace('{name}',topP[0]).replace('{amt}',fmtMoney(topP[1]))});
   const low=(DB.merch||[]).filter(m=>m.stock!=null && +m.stock<=5).length;
@@ -710,7 +714,7 @@ function renderDashboard(){
 
   // monthly chart
   const months={};
-  txs.forEach(t=>{ const k=monthKey(t.date)||'—'; (months[k]??={in:0,out:0}); const v=toEur(t.net,t.currency);
+  txs.forEach(t=>{ const k=monthKey(t.date)||'—'; (months[k]??={in:0,out:0}); const v=toEur(t.net,t.currency,t.date);
     if(t.kind==='income') months[k].in+=v; else months[k].out+=Math.abs(v); });
   const keys=Object.keys(months).sort().slice(-12);
   const max=Math.max(1,...keys.map(k=>Math.max(months[k].in,months[k].out)));
@@ -827,7 +831,7 @@ function computeGroup(cfg){
   const sort=dashSort[sel]||(dashSort[sel]={col:'net',dir:-1});
   const flt=(dashFilter[sel]||'').toLowerCase();
   const g={};
-  dashTxs.forEach(t=>{ const k=(t[key]||'—'); (g[k]??={in:0,out:0}); const v=toEur(t.net,t.currency);
+  dashTxs.forEach(t=>{ const k=(t[key]||'—'); (g[k]??={in:0,out:0}); const v=toEur(t.net,t.currency,t.date);
     if(t.kind==='income') g[k].in+=v; else g[k].out+=Math.abs(v); });
   let rows=Object.entries(g).map(([k,v])=>({k,...v,net:v.in-v.out}));
   if(flt) rows=rows.filter(r=>r.k.toLowerCase().includes(flt));
@@ -1087,7 +1091,7 @@ function visibleCols(){ ensureCols(); return DB.txOrder.filter(c=>!DB.txHidden.i
 const NUM_COLS=['qty','gross','shipping','taxes','payProcFees','fees','csShare','net'];
 let txSort={ col:'date', dir:-1 };   // -1 = decrescente
 function txSortKey(c,t){
-  if(c==='eur') return (t.kind==='income'?1:-1)*toEur(t.net,t.currency);
+  if(c==='eur') return (t.kind==='income'?1:-1)*toEur(t.net,t.currency,t.date);
   if(c==='kind') return t.kind||'';
   if(NUM_COLS.includes(c)) return +t[c]||0;
   if(c==='date'||c==='dateTo') return t[c]||'';
@@ -1699,7 +1703,18 @@ $('#rel-form').onsubmit=e=>{
   // intelligenza: memorizza lo split per artista (riusato nelle release future)
   (splits||[]).forEach(s=>{ const nm=(s.name||'').trim(); if(!nm||!(+s.pct))return;
     const a=(DB.artists||[]).find(x=>normArt(x.name)===normArt(nm)); if(a) a.split=+s.pct; });
-  if(id){ const i=releases().findIndex(r=>r.id===id); DB.releases[i]=rec; }
+  const prevRel=id?releases().find(r=>r.id===id):null;
+  // quote cambiate su una release con vendite in un periodo già chiuso: avvisa (cambierebbero statement inviati)
+  if(prevRel && typeof perLockDate==='function' && perLockDate()){
+    const sig=r=>JSON.stringify([(r.splits||[]).map(x=>[x.name,+x.pct]), (r.tracks||[]).map(t=>[t.title,t.isrc,(t.splits||[]).map(x=>[x.name,+x.pct])])]);
+    if(sig(prevRel)!==sig(rec)){
+      const idx=LFCore.relIndex([prevRel]);
+      const hit=(DB.transactions||[]).some(t=>perIsClosedTx(t) && LFCore.releaseForTx(idx,t));
+      if(hit && !confirm(tt('per.split_closed_q'))) return;
+    }
+  }
+  // in modifica restano i campi che il modulo non mostra (checklist di uscita, ecc.)
+  if(id){ const i=releases().findIndex(r=>r.id===id); DB.releases[i]=Object.assign({}, prevRel, rec); }
   else releases().push(rec);
   save(); $('#rel-modal').hidden=true; renderReleases(); renderRoyalties(); toast(tt('t.rel_saved'));
 };
@@ -2130,6 +2145,7 @@ function computeRecoup(){
     .sort((a,b)=>b.unrecouped-a.unrecouped || b.royalties-a.royalties);
 }
 function renderRoyalties(){
+  if(typeof renderPeriods==='function') try{ renderPeriods(); }catch(e){}
   const hasRel=releases().length>0;
   $('#roy-empty').hidden = hasRel;
   renderRecoup();
@@ -2286,7 +2302,7 @@ function statementHTML(st){
   const period=(!st.range.from&&!st.range.to)?tt('stmt.allperiods')
     :((st.range.from?fmtDate(st.range.from):'—')+' – '+(st.range.to?fmtDate(st.range.to):fmtDate(isoD(new Date()))));
   const rows=st.lines.length?st.lines.map(l=>`<tr>
-     <td>${fmtDate(l.date)}</td><td>${esc(l.product)||'—'}</td><td>${esc(l.catalog)}</td>
+     <td>${fmtDate(l.date)}${l.late?' *':''}</td><td>${esc(l.product)||'—'}</td><td>${esc(l.catalog)}</td>
      <td class="r">${fmtMoney(l.gross)}</td><td class="r">${l.pct}%</td><td class="r b">${fmtMoney(l.share)}</td></tr>`).join('')
    :`<tr><td colspan="6" class="mut">${tt('stmt.nolines')}</td></tr>`;
   const recoup=st.recoupable>0?`<table class="stmt-sum"><tbody>
@@ -2307,6 +2323,7 @@ function statementHTML(st){
       <tr><td>${tt('stmt.paid_period')}</td><td class="r">${fmtMoney(st.paidInPeriod)}</td></tr>
       <tr><td>${tt('stmt.paid_total')}</td><td class="r">${fmtMoney(st.paidToDate)}</td></tr>
       <tr><td><b>${tt('stmt.balance')}</b></td><td class="r"><b>${fmtMoney(st.balance)}</b></td></tr></tbody></table>`:''}
+   ${st.lines.some(l=>l.late)?`<p class="stmt-note">* ${tt('per.late_note')}</p>`:''}
    <p class="stmt-note">${tt('stmt.note')}</p>
    <p class="stmt-foot">${tt('stmt.gen')} Label Finance · ${esc(labelName())} · ${fmtDate(isoD(new Date()))}</p>`;
 }
@@ -2416,6 +2433,8 @@ $('#tx-modal-close').onclick=$('#f-cancel').onclick=()=>$('#tx-modal').hidden=tr
 $('#tx-modal').onclick=e=>{ if(e.target.id==='tx-modal') $('#tx-modal').hidden=true; };
 $('#f-delete').onclick=()=>{
   const id=$('#f-id').value;
+  const cur=DB.transactions.find(t=>t.id===id);
+  if(cur && typeof perIsClosedTx==='function' && perIsClosedTx(cur) && !confirm(tt('per.edit_closed_q'))) return;
   const tid=trashRemove('transactions',[id]); save();
   $('#tx-modal').hidden=true; renderTx(); undoToast(tt('t.tx_deleted'), tid);
 };
@@ -2446,7 +2465,11 @@ $('#tx-form').onsubmit=e=>{
   };
   if(!id){ const an=txAmountAnomaly(rec.net, rec.kind);
     if(an && !confirm(tt('tx.anomaly_confirm').replace('{v}',fmtMoney(an.v)).replace('{m}',fmtMoney(an.med)))) return; }
-  if(id){ const i=DB.transactions.findIndex(t=>t.id===id); DB.transactions[i]=rec; }
+  const prev=id?DB.transactions.find(t=>t.id===id):null;
+  if(prev && typeof perIsClosedTx==='function' && (perIsClosedTx(prev) || perIsClosedTx(Object.assign({},prev,rec))) && !confirm(tt('per.edit_closed_q'))) return;
+  if(!id && typeof markLateLines==='function' && markLateLines([rec])) toast(tt('per.late_one'));
+  // in modifica restano i campi che il modulo non mostra (allegati, data contabile, import…)
+  if(id){ const i=DB.transactions.findIndex(t=>t.id===id); DB.transactions[i]=Object.assign({}, prev, rec); }
   else DB.transactions.push(rec);
   // uscita ricorrente: crea la regola che si ripeterà da sola
   if(!id && rec.kind==='expense' && $('#f-recurring')?.checked){
@@ -2731,6 +2754,8 @@ $('#import-confirm').onclick=()=>{
   }
   let skipped=0;
   if(dedup){ recs=dd.kept; skipped=dd.skipped; }
+  // vendite di periodi già chiusi: vanno nel prossimo statement (i numeri inviati non cambiano)
+  const late=(typeof markLateLines==='function') ? markLateLines(recs) : 0;
   if(recs.length){
     const batchId=newId(); recs.forEach(r=>{ r._imp=batchId; });
     DB.transactions.push(...recs);
@@ -2738,7 +2763,8 @@ $('#import-confirm').onclick=()=>{
   }
   save();
   $('#import-config').hidden=true; $('#file-input').value='';
-  toast(`${recs.length} ${tt('t.imported')}${skipped?` · ${skipped} ${tt('t.dupes_skipped')}`:''}`); goto('transactions'); updateImpUndo();
+  toast(`${recs.length} ${tt('t.imported')}${skipped?` · ${skipped} ${tt('t.dupes_skipped')}`:''}${late?` · ${tt('per.late_imported').replace('{n}',late)}`:''}`); goto('transactions'); updateImpUndo();
+  if(typeof fxMaybeRefresh==='function') fxMaybeRefresh();   // nuove valute → cambi BCE
 };
 function updateImpUndo(){ const b=$('#imp-undo'); if(!b) return; const li=DB&&DB.lastImport;
   if(li && li.count){ const n=$('#imp-undo-n'); if(n) n.textContent=li.count; b.hidden=false; } else b.hidden=true; }
@@ -2779,6 +2805,8 @@ function renderSettings(){
       ${c==='EUR'?'':`<button data-del="${esc(c)}">✕</button>`}</div>`).join('');
   $$('#rates-grid input').forEach(i=>i.onchange=()=>{ DB.rates[i.dataset.cur]=parseFloat(i.value)||0; save(); });
   $$('#rates-grid button[data-del]').forEach(b=>b.onclick=()=>{ delete DB.rates[b.dataset.del]; save(); renderSettings(); });
+  if(typeof renderFx==='function') renderFx();
+  if(typeof renderTrashCount==='function') renderTrashCount();
 }
 $('#add-rate').onclick=()=>{
   const c=$('#rate-cur').value.trim().toUpperCase().slice(0,3), v=parseFloat($('#rate-val').value);
@@ -2843,14 +2871,14 @@ if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator
 function buildAiSummary(){
   const txs=DB.transactions||[];
   const inc=txs.filter(t=>t.kind==='income'), exp=txs.filter(t=>t.kind==='expense');
-  const sum=a=>a.reduce((s,t)=>s+toEur(t.net,t.currency),0);
+  const sum=a=>a.reduce((s,t)=>s+toEur(t.net,t.currency,t.date),0);
   const income=sum(inc), expense=Math.abs(sum(exp)), net=income-expense;
   // trend ultimi 6 mesi (netto)
   const byMonth={};
-  txs.forEach(t=>{ const m=(t.date||'').slice(0,7); if(!m) return; const v=toEur(t.net,t.currency)*(t.kind==='income'?1:-1); byMonth[m]=(byMonth[m]||0)+v; });
+  txs.forEach(t=>{ const m=(t.date||'').slice(0,7); if(!m) return; const v=toEur(t.net,t.currency,t.date)*(t.kind==='income'?1:-1); byMonth[m]=(byMonth[m]||0)+v; });
   const months=Object.keys(byMonth).sort().slice(-6).map(m=>({mese:m, netto:+byMonth[m].toFixed(2)}));
   // top piattaforme per netto
-  const plat={}; txs.forEach(t=>{ const k=t.platform||'—'; plat[k]=(plat[k]||0)+toEur(t.net,t.currency)*(t.kind==='income'?1:-1); });
+  const plat={}; txs.forEach(t=>{ const k=t.platform||'—'; plat[k]=(plat[k]||0)+toEur(t.net,t.currency,t.date)*(t.kind==='income'?1:-1); });
   const piattaforme=Object.entries(plat).map(([k,v])=>({nome:k, netto:+v.toFixed(2)})).sort((a,b)=>b.netto-a.netto).slice(0,5);
   // artisti per royalty (a vita) + recoupment
   const artisti=Object.values(LFCore.royaltyTotals(DB)).map(v=>({nome:v.name, royalty:+v.total.toFixed(2)})).sort((a,b)=>b.royalty-a.royalty).slice(0,5);
@@ -3311,7 +3339,7 @@ function renderExtraWidgets(txs){
   const tb=$('#top-body');
   if(tb){
     const g={};
-    txs.forEach(t=>{ const k=t.artist||'—'; const v=toEur(t.net,t.currency); g[k]=(g[k]||0)+(t.kind==='income'?v:-Math.abs(v)); });
+    txs.forEach(t=>{ const k=t.artist||'—'; const v=toEur(t.net,t.currency,t.date); g[k]=(g[k]||0)+(t.kind==='income'?v:-Math.abs(v)); });
     const rows=Object.entries(g).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).slice(0,6);
     const max=Math.max(1,...rows.map(r=>r[1]));
     tb.innerHTML = rows.length ? rows.map(([k,v])=>`
@@ -3325,7 +3353,7 @@ function renderExtraWidgets(txs){
   if(rb){
     const recent=[...txs].sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).slice(0,7);
     rb.innerHTML = recent.length ? recent.map(t=>{
-      const v=toEur(t.net,t.currency); const inc=t.kind==='income';
+      const v=toEur(t.net,t.currency,t.date); const inc=t.kind==='income';
       const label=t.artist||t.product||t.platform||t.catalog||'—';
       return `<div class="recent-row"><span class="recent-date">${fmtDate(t.date||'')}</span>
         <span class="recent-label">${esc(label)}</span>
@@ -3392,7 +3420,7 @@ function renderExtraWidgets(txs){
   const fb=$('#forecast-body');
   if(fb){
     const months={};
-    txs.forEach(t=>{ const k=monthKey(t.date); if(!k) return; const v=toEur(t.net,t.currency);
+    txs.forEach(t=>{ const k=monthKey(t.date); if(!k) return; const v=toEur(t.net,t.currency,t.date);
       months[k]=(months[k]||0)+(t.kind==='income'?v:-Math.abs(v)); });
     const keys=Object.keys(months).sort().slice(-6);
     if(!keys.length){ fb.innerHTML=`<p class="muted">${tt('dash.forecast_empty')}</p>`; }
@@ -3407,7 +3435,7 @@ function renderExtraWidgets(txs){
         const ra=rec.reduce((s,k)=>s+months[k],0)/rec.length, oa=old.reduce((s,k)=>s+months[k],0)/old.length;
         const dir = ra>oa+Math.abs(oa)*0.05 ? 'up' : ra<oa-Math.abs(oa)*0.05 ? 'down' : 'flat';
         exp.push({warn:dir==='down', t:tt('fc.trend_'+dir)}); }
-      const plat={}; txs.forEach(t=>{ if(t.kind==='income'){const k=t.platform||'—'; plat[k]=(plat[k]||0)+toEur(t.net,t.currency);} });
+      const plat={}; txs.forEach(t=>{ if(t.kind==='income'){const k=t.platform||'—'; plat[k]=(plat[k]||0)+toEur(t.net,t.currency,t.date);} });
       const topP=Object.entries(plat).sort((a,b)=>b[1]-a[1])[0];
       if(topP&&topP[1]>0) exp.push({warn:false, t:tt('fc.driver').replace('{name}',topP[0])});
       if(avg<0 || (proj.length && proj[proj.length-1].cum<0)) exp.push({warn:true, t:tt('fc.risk')});
@@ -3420,7 +3448,7 @@ function renderExtraWidgets(txs){
     }
   }
   // ===== Nuovi widget selezionabili =====
-  const _eur=t=>toEur(t.net,t.currency), _inc=t=>t.kind==='income';
+  const _eur=t=>toEur(t.net,t.currency,t.date), _inc=t=>t.kind==='income';
   const mgb=$('#margin-body');
   if(mgb){ let inc=0,exp=0; txs.forEach(t=>{ const v=_eur(t); if(_inc(t)) inc+=v; else exp+=Math.abs(v); });
     const net=inc-exp, mar=inc?net/inc*100:0;
@@ -4200,7 +4228,7 @@ function merchHealth(){
 function merchPriceIssues(){
   const g={};
   (DB.transactions||[]).forEach(t=>{ if(t.kind!=='income' || (t.type||'')!=='merch') return;
-    const qty=Math.abs(+t.qty||0)||1; const net=Math.abs(toEur(t.net,t.currency)); if(net<=0) return;
+    const qty=Math.abs(+t.qty||0)||1; const net=Math.abs(toEur(t.net,t.currency,t.date)); if(net<=0) return;
     const k=normArt(t.product||t.catalog||''); if(!k) return;
     (g[k]??={name:(t.product||t.catalog||'—'), units:[]}).units.push(net/qty); });
   const out=[];

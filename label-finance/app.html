@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://api.web3forms.com https://api.emailjs.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://api.web3forms.com https://api.emailjs.com https://api.frankfurter.app https://api.frankfurter.dev; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Label Finance — Gestionale Etichetta</title>
   <link rel="icon" href="icon.png?v=3" type="image/png">
@@ -791,6 +791,27 @@
         <div class="pay-list" id="pay-list"></div>
       </div>
 
+      <div class="panel" id="per-panel">
+        <div class="panel-head"><h2 data-i18n="per.title">Chiusura periodo e statement</h2>
+          <span class="muted small" id="per-lock"></span></div>
+        <p class="muted small" data-i18n="per.hint">A fine trimestre o semestre: scarica tutti gli statement, manda a ogni artista il link del suo portale e chiudi il periodo. Le vendite di un periodo chiuso che arrivano dopo finiscono nello statement successivo, così i numeri già inviati non cambiano.</p>
+        <div class="row-inline wrap per-controls">
+          <select id="per-range" class="select" aria-label="Periodo"></select>
+          <input type="date" id="per-from" class="input input--date" hidden aria-label="Dal">
+          <input type="date" id="per-to" class="input input--date" hidden aria-label="Al">
+        </div>
+        <p class="per-note small" id="per-note" hidden></p>
+        <div class="table-wrap"><table class="data-table" id="per-table"></table></div>
+        <div class="row-inline wrap per-acts">
+          <button class="btn btn-sm" id="per-zip" type="button" data-i18n="per.zip">📄 Tutti gli statement (ZIP)</button>
+          <button class="btn btn-sm" id="per-links" type="button" data-i18n="per.links">🔗 Crea i link portale mancanti</button>
+          <button class="btn btn-sm" id="per-copy" type="button" data-i18n="per.copy">📋 Copia riepilogo e link</button>
+          <span class="spacer"></span>
+          <button class="btn btn-primary btn-sm" id="per-close" type="button" data-i18n="per.close">🔒 Chiudi il periodo</button>
+        </div>
+        <details class="per-history" id="per-history" hidden><summary data-i18n="per.history">Periodi chiusi</summary><div id="per-history-list"></div></details>
+      </div>
+
       <div class="panel" id="payouts-panel">
         <div class="panel-head"><h2 data-i18n="pay.history_title">Pagamenti agli artisti</h2>
           <span class="muted small" data-i18n="pay.history_sub">Ogni pagamento registrato scala il saldo da pagare e compare nello statement.</span></div>
@@ -1089,7 +1110,17 @@
         <!-- Valute -->
         <div class="panel set-card">
           <div class="panel-head"><h2 data-i18n="set.rates">Tassi di cambio → EUR</h2></div>
-          <p class="muted small" data-i18n="set.rates_hint">Usati per convertire le valute in euro nei totali.</p>
+          <div class="set-row fx-row">
+            <div class="set-row-txt"><b data-i18n="fx.auto_t">Cambi automatici BCE</b>
+              <span class="muted small" data-i18n="fx.auto_hint">Ogni movimento in valuta viene convertito con il cambio medio del suo mese (Banca Centrale Europea).</span></div>
+            <label class="check-inline"><input type="checkbox" id="fx-auto"> <span data-i18n="fx.on">Attivi</span></label>
+          </div>
+          <div class="fx-info" id="fx-box" hidden>
+            <div class="row-inline wrap"><button class="btn btn-sm" id="fx-refresh" type="button" data-i18n="fx.refresh">↻ Aggiorna cambi</button>
+              <span class="muted small" id="fx-info"></span></div>
+            <details class="fx-months"><summary data-i18n="fx.show_months">Mostra i cambi mensili</summary><div id="fx-table"></div></details>
+          </div>
+          <p class="muted small" id="fx-rates-hint">Usati per convertire le valute in euro nei totali.</p>
           <div class="rates-grid" id="rates-grid"></div>
           <div class="set-add-rate">
             <input id="rate-cur" class="input" placeholder="USD" maxlength="3" aria-label="Valuta">
@@ -2334,6 +2365,7 @@
   <script src="app.js?v=99"></script>
   <script src="tables.js?v=98"></script>
   <script src="safety.js?v=1"></script>
+  <script src="money.js?v=1"></script>
   <script src="i18n.js?v=98"></script>
   <script src="vendor/supabase.min.js?v=95"></script>
   <script src="sync.js?v=96"></script>

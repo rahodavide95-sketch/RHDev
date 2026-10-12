@@ -1703,3 +1703,25 @@ body.col-resizing,body.col-resizing *{cursor:col-resize!important;user-select:no
 .toast--undo[hidden]{display:none}
 .ut-btn{background:none;border:none;color:var(--accent);font:inherit;font-weight:700;cursor:pointer;padding:4px 6px;border-radius:6px}
 .ut-btn:hover{background:color-mix(in srgb,var(--accent) 14%,transparent)}
+/* pulsanti piccoli nelle nuove sezioni (.btn definito dopo annullava .btn-sm) */
+#per-panel .btn-sm,.fx-info .btn-sm,.sx-body .btn-sm,.pl-box .btn-sm,.ck-box .btn-sm,.wh-box .btn-sm,.team-box .btn-sm,.att-box .btn-sm{padding:7px 13px;font-size:.86rem}
+
+/* Chiusura periodo */
+#per-panel{display:flex;flex-direction:column;gap:12px}
+#per-panel>.panel-head{margin-bottom:0}
+#per-panel p.muted{margin:0}
+.per-note{margin:0;padding:8px 12px;border-radius:10px;background:color-mix(in srgb,var(--warn,#f59e0b) 12%,transparent);border:1px solid color-mix(in srgb,var(--warn,#f59e0b) 35%,var(--line))}
+.per-note[hidden]{display:none}
+.per-row-act{display:flex;gap:5px;justify-content:flex-end;white-space:nowrap}
+.per-row-act a.icon-btn-sm{text-decoration:none}
+.per-tot td{border-top:1px solid var(--line)}
+.per-history>summary{cursor:pointer;font-weight:600;font-size:.9rem}
+.per-history[hidden]{display:none}
+#per-history-list{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.per-h-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px}
+/* Cambi BCE */
+.fx-info{display:flex;flex-direction:column;gap:8px}
+.fx-info[hidden]{display:none}
+.fx-months>summary{cursor:pointer;font-size:.86rem;color:var(--muted)}
+.fx-tbl{font-size:.82rem}
+.per-controls .select{width:auto;min-width:240px;max-width:100%}

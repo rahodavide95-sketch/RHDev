@@ -1396,6 +1396,12 @@ body.gate-signup #gate-signin{opacity:.5}
 .lang-select{font:inherit;font-size:.82rem;font-weight:600;color:var(--text);background:var(--panel-2);border:1px solid var(--line);border-radius:9px;padding:6px 26px 6px 10px;cursor:pointer;-webkit-appearance:none;appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 14px) center,calc(100% - 9px) center;background-size:5px 5px,5px 5px;background-repeat:no-repeat}
 .lang-select:hover{border-color:var(--accent)}
 .gate-lang .lang-select,.lang-pill .lang-select{background-color:transparent}
+/* Tema e lingua: stessa altezza dove compaiono affiancati (accesso, barra laterale)
+   e negli elenchi Impostazioni / "Altro" su mobile */
+.gate-theme button,.theme-switch button{display:inline-flex;align-items:center;justify-content:center;height:28px;padding-top:0;padding-bottom:0}
+.gate-lang .lang-select,.lang-pill .lang-select,.theme-switch .lang-select{height:28px;padding-top:0;padding-bottom:0;line-height:normal}
+.theme-switch--lg button,.theme-switch--lg .lang-select{height:32px}
+.lang-pill{padding:3px}
 
 /* ============================================================================
    MOBILE (telefoni ≤760px): liste .dbl e tabelle .data-table--cards diventano

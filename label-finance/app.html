@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=97">
+  <link rel="stylesheet" href="style.css?v=98">
 </head>
 <body class="gated">
 
@@ -951,10 +951,35 @@
         <p><b>Aspetto:</b> tema chiaro/scuro/di sistema. <b>Tassi di cambio:</b> se vendi in valute diverse, qui imposti la conversione verso la tua valuta principale. <b>Backup:</b> esporti o reimporti tutti i dati come file, utile prima di un cambio dispositivo o come copia di sicurezza.</p>
       </div>
 
-      <div class="panel">
-        <div class="panel-head"><h2 data-i18n="set.sync">☁ Sincronizzazione cloud</h2>
-          <span class="muted small" id="sync-status" data-i18n="set.sync_unconf">Non configurata</span></div>
-        <div class="panel-body">
+      <div class="set-grid">
+        <!-- Profilo (solo con account) -->
+        <div class="panel set-card" id="sync-account" data-when-user hidden>
+          <div class="panel-head"><h2 data-i18n="set.profile">Profilo</h2></div>
+          <div class="set-profile">
+            <div class="avatar-col">
+              <div class="avatar-prev" id="avatar-prev" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.5 3.6-6 8-6s8 2.5 8 6"/></svg>
+                <img id="avatar-prev-img" alt="" hidden>
+              </div>
+              <button class="btn btn-ghost btn-sm" id="avatar-btn" type="button" data-i18n="set.photo" title="JPG/PNG" data-i18n-title="set.photo_hint">Carica foto</button>
+              <button class="btn btn-ghost btn-sm set-danger-txt" id="avatar-clear" type="button" hidden data-i18n="set.photo_rm">Rimuovi</button>
+              <input type="file" id="avatar-input" accept="image/*" hidden>
+            </div>
+            <div class="set-fields">
+              <div class="form-grid">
+                <label><span data-i18n="set.name">Nome</span> <input id="account-name" class="input" type="text" autocomplete="given-name"></label>
+                <label><span data-i18n="set.surname">Cognome</span> <input id="account-surname" class="input" type="text" autocomplete="family-name"></label>
+                <label class="span-2"><span data-i18n="set.label">Nome label</span> <input id="account-label" class="input" type="text" autocomplete="organization"></label>
+              </div>
+              <div><button class="btn btn-primary btn-sm" id="account-save" data-i18n="set.save_profile">Salva profilo</button></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Account e sincronizzazione -->
+        <div class="panel set-card">
+          <div class="panel-head"><h2 data-i18n="set.account">Account e sincronizzazione</h2>
+            <span class="muted small" id="sync-status" data-i18n="set.sync_unconf">Non configurata</span></div>
           <p class="muted small" data-i18n-html="set.sync_hint">Collega un progetto Supabase (gratuito) per vedere gli stessi dati su PC e telefono. La guida è in <code>docs/SYNC-SETUP.md</code>.</p>
 
           <details id="sync-config-box">
@@ -969,7 +994,7 @@
           </details>
 
           <div id="sync-auth" hidden>
-            <div class="form-grid" style="margin-top:6px">
+            <div class="form-grid">
               <label><span data-i18n="set.email_lbl">Email</span> <input id="sync-email" class="input" type="email" autocomplete="username"></label>
               <label><span data-i18n="set.pw_lbl">Password</span>
                 <span class="input-eye">
@@ -984,153 +1009,144 @@
             </div>
           </div>
 
-          <div id="sync-account" hidden>
-            <span class="badge-local" id="sync-account-label" style="color:var(--net)"></span>
-            <div class="avatar-row">
-              <div class="avatar-prev" id="avatar-prev" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.5 3.6-6 8-6s8 2.5 8 6"/></svg>
-                <img id="avatar-prev-img" alt="" hidden>
-              </div>
-              <div class="avatar-actions">
-                <button class="btn" id="avatar-btn" type="button" data-i18n="set.photo">Carica foto</button>
-                <button class="btn btn-danger" id="avatar-clear" type="button" hidden data-i18n="set.photo_rm">Rimuovi</button>
-                <input type="file" id="avatar-input" accept="image/*" hidden>
-                <span class="muted small" data-i18n="set.photo_hint">JPG/PNG, ritagliata e ridotta in automatico.</span>
-              </div>
-            </div>
-            <div class="form-grid" style="margin-top:12px">
-              <label><span data-i18n="set.name">Nome</span> <input id="account-name" class="input" type="text"></label>
-              <label><span data-i18n="set.surname">Cognome</span> <input id="account-surname" class="input" type="text"></label>
-              <label class="span-2"><span data-i18n="set.label">Nome label</span> <input id="account-label" class="input" type="text"></label>
-            </div>
-            <div class="row-inline wrap" style="margin-top:12px">
-              <button class="btn btn-primary" id="account-save" data-i18n="set.save_profile">Salva profilo</button>
-              <button class="btn" id="sync-pull" data-i18n="set.refresh">Aggiorna ora</button>
-              <button class="btn btn-danger" id="sync-signout" data-i18n="common.signout">Esci</button>
+          <div class="set-rows" data-when-user hidden>
+            <div class="set-row">
+              <div class="set-row-txt"><span class="muted small" data-i18n="set.signed_in_as">Connesso come</span>
+                <b class="set-email" id="sync-account-label"></b></div>
+              <button class="btn btn-sm" id="sync-pull" data-i18n="set.refresh">Aggiorna ora</button>
             </div>
 
-            <details class="pw-change" id="pw-change-box" style="margin-top:16px">
+            <details class="set-disclosure" id="pw-change-box">
               <summary data-i18n="set.change_pw">Cambia password</summary>
               <form id="pw-form" autocomplete="on">
                 <!-- username nascosto: aiuta iOS/Android ad associare e AGGIORNARE la password salvata -->
                 <input type="text" id="pw-username" name="username" autocomplete="username" hidden>
-                <div class="form-grid" style="margin-top:12px">
-                  <label class="span-2"><span data-i18n="set.pw_new">Nuova password</span>
+                <div class="form-grid">
+                  <label><span data-i18n="set.pw_new">Nuova password</span>
                     <span class="input-eye">
                       <input id="pw-new" name="new-password" class="input" type="password" autocomplete="new-password" data-i18n-ph="set.pw_new_ph" placeholder="Almeno 6 caratteri">
                       <button type="button" class="eye-btn" aria-label="Mostra password"></button>
                     </span>
                   </label>
-                  <label class="span-2"><span data-i18n="set.pw_conf">Conferma nuova password</span>
+                  <label><span data-i18n="set.pw_conf">Conferma nuova password</span>
                     <span class="input-eye">
                       <input id="pw-new2" name="new-password-confirm" class="input" type="password" autocomplete="new-password" data-i18n-ph="set.pw_conf_ph" placeholder="Ripeti la password">
                       <button type="button" class="eye-btn" aria-label="Mostra password"></button>
                     </span>
                   </label>
-                  <div class="span-2"><button class="btn btn-primary" id="pw-save" type="submit" data-i18n="set.update_pw">Aggiorna password</button></div>
+                  <div class="span-2"><button class="btn btn-primary btn-sm" id="pw-save" type="submit" data-i18n="set.update_pw">Aggiorna password</button></div>
                 </div>
                 <p class="muted small" id="pw-status"></p>
               </form>
             </details>
 
-            <details class="pw-change" id="email-change-box" style="margin-top:12px">
+            <details class="set-disclosure" id="email-change-box">
               <summary data-i18n="set.change_email">Cambia email</summary>
-              <div class="form-grid" style="margin-top:12px">
-                <label class="span-2"><span data-i18n="set.email_current">Email attuale</span>
+              <div class="form-grid">
+                <label><span data-i18n="set.email_current">Email attuale</span>
                   <input id="email-current" class="input" type="email" disabled autocomplete="off"></label>
-                <label class="span-2"><span data-i18n="set.email_new">Nuova email</span>
+                <label><span data-i18n="set.email_new">Nuova email</span>
                   <input id="email-new" class="input" type="email" autocomplete="email" data-i18n-ph="set.email_new_ph" placeholder="nuova@email.com"></label>
-                <div class="span-2"><button class="btn btn-primary" id="email-save" data-i18n="set.update_email">Cambia email</button></div>
+                <div class="span-2"><button class="btn btn-primary btn-sm" id="email-save" data-i18n="set.update_email">Cambia email</button></div>
               </div>
               <p class="muted small" id="email-status"></p>
               <p class="muted small" data-i18n="set.email_hint">Per sicurezza riceverai un link di conferma: il cambio diventa effettivo solo dopo aver cliccato il link nell'email.</p>
             </details>
+
+            <div class="set-row set-row--end">
+              <button class="btn btn-danger btn-sm" id="sync-signout" data-i18n="common.signout">Esci</button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="panel">
-        <div class="panel-head"><h2 data-i18n="set.appearance">Aspetto</h2>
-          <span class="muted small" data-i18n="set.system_hint">"Sistema" segue le impostazioni del tuo dispositivo.</span></div>
-        <div class="theme-switch theme-switch--lg" role="group" aria-label="Tema">
-          <button data-theme-opt="system" data-i18n="theme.system">◐ Sistema</button>
-          <button data-theme-opt="light" data-i18n="theme.light">☀ Chiaro</button>
-          <button data-theme-opt="dark" data-i18n="theme.dark">☾ Scuro</button>
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-head"><h2 data-i18n="set.language">Lingua</h2></div>
-        <div class="theme-switch theme-switch--lg" role="group" aria-label="Lingua">
-          <select class="lang-select" data-lang-select aria-label="Lingua / Language"><option value="it">🇮🇹 IT</option><option value="en">🇬🇧 EN</option><option value="es">🇪🇸 ES</option><option value="fr">🇫🇷 FR</option><option value="de">🇩🇪 DE</option><option value="pt">🇵🇹 PT</option><option value="nl">🇳🇱 NL</option></select>
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-head"><h2 data-i18n="set.tutorial">Tutorial guidato</h2>
-          <span class="muted small" data-i18n="set.tutorial_hint">Rivedi il giro guidato della piattaforma quando vuoi.</span></div>
-        <div class="panel-body">
-          <button class="btn btn-primary" id="tour-restart" data-i18n="tour.restart">↻ Rivedi il tutorial</button>
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-head"><h2 data-i18n="set.rates">Tassi di cambio → EUR</h2>
-          <span class="muted small" data-i18n="set.rates_hint">Usati per convertire le valute in euro nei totali.</span></div>
-        <div class="rates-grid" id="rates-grid"></div>
-        <div class="panel-foot">
-          <div class="row-inline">
-            <input id="rate-cur" class="input" placeholder="USD" maxlength="3">
-            <input id="rate-val" class="input" placeholder="0.92" type="number" step="0.0001">
-            <button class="btn" id="add-rate" data-i18n="set.add_currency">Aggiungi valuta</button>
+        <!-- Preferenze: tema, lingua, tutorial -->
+        <div class="panel set-card">
+          <div class="panel-head"><h2 data-i18n="set.prefs">Preferenze</h2></div>
+          <div class="set-rows">
+            <div class="set-row">
+              <div class="set-row-txt"><b data-i18n="set.appearance">Aspetto</b>
+                <span class="muted small" data-i18n="set.system_hint">"Sistema" segue le impostazioni del tuo dispositivo.</span></div>
+              <div class="theme-switch theme-switch--lg" role="group" aria-label="Tema">
+                <button data-theme-opt="system" data-i18n="theme.system">◐ Sistema</button>
+                <button data-theme-opt="light" data-i18n="theme.light">☀ Chiaro</button>
+                <button data-theme-opt="dark" data-i18n="theme.dark">☾ Scuro</button>
+              </div>
+            </div>
+            <div class="set-row">
+              <div class="set-row-txt"><b data-i18n="set.language">Lingua</b></div>
+              <div class="theme-switch theme-switch--lg" role="group" aria-label="Lingua">
+                <select class="lang-select" data-lang-select aria-label="Lingua / Language"><option value="it">🇮🇹 IT</option><option value="en">🇬🇧 EN</option><option value="es">🇪🇸 ES</option><option value="fr">🇫🇷 FR</option><option value="de">🇩🇪 DE</option><option value="pt">🇵🇹 PT</option><option value="nl">🇳🇱 NL</option></select>
+              </div>
+            </div>
+            <div class="set-row">
+              <div class="set-row-txt"><b data-i18n="set.tutorial">Tutorial guidato</b>
+                <span class="muted small" data-i18n="set.tutorial_hint">Rivedi il giro guidato della piattaforma quando vuoi.</span></div>
+              <button class="btn btn-sm" id="tour-restart" data-i18n="tour.restart">↻ Rivedi il tutorial</button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="panel dev-only" id="set-ai-panel" hidden>
-        <div class="panel-head"><h2 data-i18n="set.ai">Assistente AI</h2>
-          <span class="muted small" data-i18n="set.ai_sub">Configurazione della chiave per i consigli AI.</span></div>
-        <div class="panel-body">
-          <p class="muted small" data-i18n="set.ai_info">Modalità consigliata: la chiave resta sul server (Edge Function). In alternativa, per usarlo subito, puoi inserire qui la tua chiave Anthropic: resterà salvata <b>solo in questo browser</b> e le richieste partiranno direttamente dal tuo dispositivo.</p>
-          <div class="row-inline wrap" style="margin-top:10px">
-            <input id="ai-key" class="input" type="password" placeholder="sk-ant-..." autocomplete="off" style="flex:1;min-width:220px">
-            <button class="btn btn-primary" id="ai-key-save" data-i18n="set.ai_save">Salva chiave</button>
-            <button class="btn btn-ghost" id="ai-key-clear" data-i18n="set.ai_clear">Rimuovi</button>
+        <!-- Valute -->
+        <div class="panel set-card">
+          <div class="panel-head"><h2 data-i18n="set.rates">Tassi di cambio → EUR</h2></div>
+          <p class="muted small" data-i18n="set.rates_hint">Usati per convertire le valute in euro nei totali.</p>
+          <div class="rates-grid" id="rates-grid"></div>
+          <div class="set-add-rate">
+            <input id="rate-cur" class="input" placeholder="USD" maxlength="3" aria-label="Valuta">
+            <input id="rate-val" class="input" placeholder="0.92" type="number" step="0.0001" aria-label="Tasso">
+            <button class="btn btn-sm" id="add-rate" data-i18n="set.add_currency">Aggiungi valuta</button>
           </div>
-          <p class="ai-key-status muted small" id="ai-key-status"></p>
         </div>
-      </div>
 
-      <div class="panel dev-only" id="set-email-panel" hidden>
-        <div class="panel-head"><h2 data-i18n="set.email">Email automatica contratti</h2>
-          <span class="muted small" data-i18n="set.email_sub">Invio automatico del contratto all'artista (via EmailJS).</span></div>
-        <div class="panel-body">
-          <p class="muted small" data-i18n="set.email_info">Con EmailJS l'email parte automaticamente dall'indirizzo della tua etichetta, senza server. Crea un account gratuito su emailjs.com, collega la tua email, crea un template e incolla qui i 3 codici. Restano salvati solo in questo browser.</p>
-          <div class="form-grid" style="margin-top:10px">
-            <label class="fld"><span data-i18n="set.email_service">Service ID</span><input class="input" id="ej-service" autocomplete="off"></label>
-            <label class="fld"><span data-i18n="set.email_template">Template ID</span><input class="input" id="ej-template" autocomplete="off"></label>
-            <label class="fld"><span data-i18n="set.email_key">Public Key</span><input class="input" id="ej-key" autocomplete="off"></label>
-          </div>
-          <div class="row-inline wrap" style="margin-top:10px">
-            <button class="btn btn-primary" id="ej-save" data-i18n="set.email_save">Salva</button>
-            <button class="btn btn-ghost" id="ej-clear" data-i18n="set.email_clear">Rimuovi</button>
-            <button class="btn btn-ghost" id="ej-template-btn" data-i18n="set.email_tpl">Mostra template email</button>
-          </div>
-          <p class="muted small" id="ej-status"></p>
-          <pre class="ej-template-box" id="ej-template-box" hidden></pre>
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-head"><h2 data-i18n="set.backup">Backup & dati</h2></div>
-        <div class="panel-body">
+        <!-- Backup -->
+        <div class="panel set-card set-card--wide">
+          <div class="panel-head"><h2 data-i18n="set.backup">Backup & dati</h2></div>
           <p class="muted small" data-i18n="set.backup_hint">I dati sono salvati solo su questo dispositivo/browser. Esporta un backup regolarmente.</p>
           <div class="row-inline wrap">
-            <button class="btn" id="export-json" data-i18n="set.export_json">⤓ Esporta backup (.json)</button>
-            <button class="btn" id="export-csv" data-i18n="set.export_csv">⤓ Esporta movimenti (.csv)</button>
-            <button class="btn" id="import-json" data-i18n="set.restore">⤴ Ripristina backup</button>
+            <button class="btn btn-sm" id="export-json" data-i18n="set.export_json">⤓ Esporta backup (.json)</button>
+            <button class="btn btn-sm" id="export-csv" data-i18n="set.export_csv">⤓ Esporta movimenti (.csv)</button>
+            <button class="btn btn-sm" id="import-json" data-i18n="set.restore">⤴ Ripristina backup</button>
             <input type="file" id="json-input" accept=".json" hidden>
-            <button class="btn btn-danger" id="wipe" data-i18n="set.wipe">Cancella tutti i dati</button>
+          </div>
+          <div class="set-row set-danger">
+            <div class="set-row-txt"><b data-i18n="set.danger">Zona pericolosa</b>
+              <span class="muted small" data-i18n="set.wipe_hint">Elimina tutti i movimenti, le release e le impostazioni. Non si può annullare: esporta prima un backup.</span></div>
+            <button class="btn btn-danger btn-sm" id="wipe" data-i18n="set.wipe">Cancella tutti i dati</button>
+          </div>
+        </div>
+
+        <!-- Solo versione test (devSettings) -->
+        <div class="panel set-card dev-only" id="set-ai-panel" hidden>
+          <div class="panel-head"><h2 data-i18n="set.ai">Assistente AI</h2>
+            <span class="muted small" data-i18n="set.ai_sub">Configurazione della chiave per i consigli AI.</span></div>
+          <div class="panel-body">
+            <p class="muted small" data-i18n="set.ai_info">Modalità consigliata: la chiave resta sul server (Edge Function). In alternativa, per usarlo subito, puoi inserire qui la tua chiave Anthropic: resterà salvata <b>solo in questo browser</b> e le richieste partiranno direttamente dal tuo dispositivo.</p>
+            <div class="row-inline wrap">
+              <input id="ai-key" class="input" type="password" placeholder="sk-ant-..." autocomplete="off" style="flex:1;min-width:200px">
+              <button class="btn btn-primary btn-sm" id="ai-key-save" data-i18n="set.ai_save">Salva chiave</button>
+              <button class="btn btn-ghost btn-sm" id="ai-key-clear" data-i18n="set.ai_clear">Rimuovi</button>
+            </div>
+            <p class="ai-key-status muted small" id="ai-key-status"></p>
+          </div>
+        </div>
+
+        <div class="panel set-card dev-only" id="set-email-panel" hidden>
+          <div class="panel-head"><h2 data-i18n="set.email">Email automatica contratti</h2>
+            <span class="muted small" data-i18n="set.email_sub">Invio automatico del contratto all'artista (via EmailJS).</span></div>
+          <div class="panel-body">
+            <p class="muted small" data-i18n="set.email_info">Con EmailJS l'email parte automaticamente dall'indirizzo della tua etichetta, senza server. Crea un account gratuito su emailjs.com, collega la tua email, crea un template e incolla qui i 3 codici. Restano salvati solo in questo browser.</p>
+            <div class="form-grid">
+              <label class="fld"><span data-i18n="set.email_service">Service ID</span><input class="input" id="ej-service" autocomplete="off"></label>
+              <label class="fld"><span data-i18n="set.email_template">Template ID</span><input class="input" id="ej-template" autocomplete="off"></label>
+              <label class="fld span-2"><span data-i18n="set.email_key">Public Key</span><input class="input" id="ej-key" autocomplete="off"></label>
+            </div>
+            <div class="row-inline wrap">
+              <button class="btn btn-primary btn-sm" id="ej-save" data-i18n="set.email_save">Salva</button>
+              <button class="btn btn-ghost btn-sm" id="ej-clear" data-i18n="set.email_clear">Rimuovi</button>
+              <button class="btn btn-ghost btn-sm" id="ej-template-btn" data-i18n="set.email_tpl">Mostra template email</button>
+            </div>
+            <p class="muted small" id="ej-status"></p>
+            <pre class="ej-template-box" id="ej-template-box" hidden></pre>
           </div>
         </div>
       </div>
@@ -2244,9 +2260,9 @@
   <script src="config.js?v=95"></script>
   <script src="core.js?v=96"></script>
   <script src="signature.js?v=96"></script>
-  <script src="app.js?v=96"></script>
-  <script src="i18n.js?v=95"></script>
+  <script src="app.js?v=97"></script>
+  <script src="i18n.js?v=96"></script>
   <script src="vendor/supabase.min.js?v=95"></script>
-  <script src="sync.js?v=95"></script>
+  <script src="sync.js?v=96"></script>
 </body>
 </html>

@@ -4826,6 +4826,7 @@ function initFeatures(){
     if(!cfg.service||!cfg.template||!cfg.key){ toast(tt('set.email_need')); return; }
     try{ localStorage.setItem(EJ_LS,JSON.stringify(cfg)); }catch(e){} ejStat(); toast(tt('set.email_saved')); });
   $('#ej-clear')?.addEventListener('click',()=>{ try{ localStorage.removeItem(EJ_LS); }catch(e){} ['ej-service','ej-template','ej-key'].forEach(id=>{const e=$('#'+id); if(e)e.value='';}); ejStat(); toast(tt('set.email_removed')); });
+  window.addEventListener('langchange',()=>{ aiStat(); ejStat(); });   // i testi arrivano dopo le traduzioni
   $('#ej-template-btn')?.addEventListener('click',()=>{ const b=$('#ej-template-box'); if(!b) return; b.hidden=!b.hidden; if(!b.dataset.set){ b.textContent=EJ_TEMPLATE; b.dataset.set='1'; } });
   // Condivisione link firma
   $('#share-close')?.addEventListener('click',()=>{ $('#share-modal').hidden=true; });

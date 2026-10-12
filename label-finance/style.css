@@ -1549,3 +1549,78 @@ body.gate-signup #gate-signin{opacity:.5}
 .pending-card p{margin:0 0 18px}
 body.pending-locked{overflow:hidden}
 body.recovery-mode{overflow:hidden}
+
+/* ============================================================================
+   IMPOSTAZIONI — schede affiancate (2 colonne su schermi larghi, 1 su stretti),
+   righe "descrizione · comando" e campi corti invece di input a tutta larghezza
+   ============================================================================ */
+#view-settings{container-type:inline-size}
+.set-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;max-width:1180px}
+.set-grid>[hidden]{display:none!important}
+.set-grid>.panel{margin-bottom:0;display:flex;flex-direction:column;gap:14px}
+.set-grid>.panel>.panel-head{margin-bottom:0}
+.set-grid p.muted{margin:0}
+.set-card--wide{grid-column:1/-1}
+.set-grid .btn-sm{padding:7px 13px;font-size:.86rem}   /* .btn (definito dopo) annullava .btn-sm */
+/* senza account la scheda Profilo sparisce: Backup torna a mezza larghezza accanto a Valute */
+.set-grid:has(#sync-account[hidden]) .set-card--wide{grid-column:auto}
+@container (max-width:860px){ .set-grid{grid-template-columns:minmax(0,1fr)} .set-card--wide{grid-column:auto} }
+@media(max-width:760px){ .set-grid{grid-template-columns:minmax(0,1fr);gap:14px} .set-card--wide{grid-column:auto} }
+
+/* righe: testo a sinistra, comando a destra (va sotto se non c'è spazio) */
+.set-rows{display:flex;flex-direction:column}
+.set-rows>*+*{border-top:1px solid var(--line);margin-top:12px;padding-top:12px}
+.set-row{display:flex;align-items:center;justify-content:space-between;gap:10px 16px;flex-wrap:wrap}
+.set-row--end{justify-content:flex-end}
+.set-row-txt{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 200px}
+.set-row-txt b{font-weight:600;font-size:.92rem;color:var(--text)}
+.set-row .theme-switch{margin:0}
+.set-row-txt .small{line-height:1.4}
+.set-email{overflow-wrap:anywhere}
+
+/* sezioni apribili (cambia password / email) */
+.set-disclosure>summary{cursor:pointer;font-weight:600;font-size:.92rem;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.set-disclosure>summary::-webkit-details-marker{display:none}
+.set-disclosure>summary::after{content:'›';font-size:1.25rem;line-height:1;color:var(--muted-2);transform:rotate(90deg);transition:transform .15s}
+.set-disclosure[open]>summary::after{transform:rotate(-90deg)}
+.set-disclosure>summary:hover{color:var(--accent)}
+.set-disclosure form,.set-disclosure>.form-grid{margin-top:12px}
+.set-disclosure .form-grid{gap:10px 12px}
+.set-disclosure p.small{margin:8px 0 0}
+
+/* profilo: foto a sinistra, campi a destra */
+.set-profile{display:flex;gap:18px;align-items:flex-start}
+.avatar-col{display:flex;flex-direction:column;align-items:center;gap:6px;flex:none;width:104px}
+.avatar-col .btn{width:100%;white-space:normal;line-height:1.2;padding-left:6px;padding-right:6px}
+.set-fields{flex:1;min-width:0;display:flex;flex-direction:column;gap:12px}
+.set-fields .form-grid{gap:10px 12px}
+.set-danger-txt{color:var(--out)}
+
+/* valute */
+.rate-chip strong{font-family:'Syne',system-ui,sans-serif}
+.set-add-rate{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.set-add-rate .input{padding:7px 10px;flex:none}
+.set-add-rate #rate-cur{width:84px;text-transform:uppercase}
+.set-add-rate #rate-val{width:110px}
+
+/* zona pericolosa (cancella tutto) separata dai backup */
+.set-danger{padding:12px 14px;border:1px solid color-mix(in srgb,var(--out) 30%,var(--line));border-radius:12px;background:color-mix(in srgb,var(--out) 5%,transparent)}
+.set-danger .set-row-txt b{color:var(--out)}
+
+@media(max-width:560px){
+  /* telefono: foto e pulsanti in riga, poi i campi (nome e cognome affiancati) */
+  .set-profile{flex-direction:column;gap:14px}
+  .avatar-col{flex-direction:row;width:auto;gap:10px}
+  .avatar-col .btn{width:auto;white-space:nowrap}
+  .avatar-col .avatar-prev{width:60px;height:60px}
+  .set-fields{width:100%}
+  .set-fields .form-grid{grid-template-columns:1fr 1fr}
+  .set-fields .form-grid .span-2{grid-column:1/-1}
+  .rates-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .rate-chip{min-width:0;padding:7px 8px}
+  .rate-chip input{flex:1;min-width:0;width:auto}
+  .set-add-rate .input{flex:1 1 0;min-width:0;width:auto!important}
+  .set-add-rate .btn{flex:1 1 100%}
+  .set-row .theme-switch--lg:has([data-theme-opt]){width:100%}
+  .set-row .theme-switch--lg [data-theme-opt]{flex:1}
+}

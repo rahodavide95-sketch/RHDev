@@ -317,3 +317,90 @@ function makeZip(files){
   end.setUint32(12,csize,true); end.setUint32(16,offset,true);
   return new Blob([...parts, ...central, end.buffer], { type:'application/zip' });
 }
+
+/* ============================================================================
+   3. RITENUTA D'ACCONTO E RICEVUTA DI PAGAMENTO
+   Il regime fiscale si sceglie nella scheda dell'artista (rubrica):
+   · prestazione occasionale → ritenuta 20% sul compenso
+   · diritti d'autore → 20% sul 75% (deduzione forfettaria del 25%)
+   · diritti d'autore, under 35 → 20% sul 60%
+   · Partita IVA / estero / non impostato → nessuna ritenuta calcolata qui
+   Il pagamento registrato resta il lordo (scala il saldo dell'artista); si
+   salvano ritenuta e netto bonificato, e si crea il promemoria per l'F24.
+   ============================================================================ */
+const WH_RATE=0.20, WH_BASE={ occasional:1, copyright:0.75, copyright35:0.60 }, WH_STAMP_MIN=77.47;
+const r2=n=>Math.round((+n||0)*100)/100;
+function whFor(name){
+  const a=(typeof findArtist==='function')?findArtist(name):null;
+  return (a && WH_BASE[a.taxRegime]!=null) ? { regime:a.taxRegime, base:WH_BASE[a.taxRegime], rate:WH_RATE, artist:a } : null;
+}
+function whCalc(gross, w){ const wh=r2(gross*w.base*w.rate); return { withholding:wh, net:r2(gross-wh) }; }
+/* chiamata da recordPayout: false = l'utente ha annullato */
+function whApplyToPayout(po){
+  const w=whFor(po.artist); if(!w) return true;
+  const c=whCalc(po.amount, w);
+  const msg=tt('wh.confirm').replace('{name}', po.artist).replace('{gross}', fmtMoney(po.amount)).replace('{rule}', tt('wh.rule_'+w.regime))
+    .replace('{wh}', fmtMoney(c.withholding)).replace('{net}', fmtMoney(c.net));
+  if(!confirm(msg)) return false;
+  Object.assign(po, { withholding:c.withholding, net:c.net, regime:w.regime, base:w.base, rate:w.rate });
+  // promemoria: la ritenuta si versa con l'F24 entro il 16 del mese successivo
+  const d=LFCore.parseYmd(po.date)||new Date(), due=LFCore.ymd(new Date(d.getFullYear(), d.getMonth()+1, 16));
+  DB.tasks=DB.tasks||[];
+  DB.tasks.push({ id:newId(), title:tt('wh.task').replace('{amt}', fmtMoney(c.withholding)).replace('{name}', po.artist), type:'payment', due, time:'', remind:1440, done:false, autoKey:'f24:'+po.id });
+  return true;
+}
+// numero progressivo della ricevuta nell'anno (in ordine di data)
+function receiptNumber(po){
+  const y=(po.date||'').slice(0,4);
+  const same=(DB.payouts||[]).filter(p=>(p.date||'').slice(0,4)===y).sort((a,b)=>String(a.date).localeCompare(String(b.date))||String(a.id).localeCompare(String(b.id)));
+  return (same.findIndex(p=>p.id===po.id)+1)+'/'+y;
+}
+function receiptHTML(po){
+  const a=(typeof findArtist==='function')?findArtist(po.artist):null;
+  const logo=LFCore.safeImgSrc((DB.profile&&DB.profile.logo)||'');
+  const head=(DB.profile&&DB.profile.docHeader)||'';
+  const gross=+po.amount||0, wh=+po.withholding||0, net=po.net!=null?+po.net:gross;
+  const stamp=!wh || po.regime==='vat' || po.regime==='foreign' ? false : gross>WH_STAMP_MIN;
+  const line=(l,v,b)=>`<tr><td>${b?'<b>':''}${esc(l)}${b?'</b>':''}</td><td class="r">${b?'<b>':''}${v}${b?'</b>':''}</td></tr>`;
+  return `<div class="stmt-lh">${logo?`<img class="stmt-lh-logo" src="${esc(logo)}" alt="">`:''}<div class="stmt-lh-name">${esc(labelName())}</div></div>
+   ${head?`<p class="rcpt-head">${esc(head).replace(/\n/g,'<br>')}</p>`:''}
+   <h1 class="stmt-h1">${esc(tt('wh.r_title'))} <span class="rcpt-n">${esc(tt('wh.r_number'))} ${esc(receiptNumber(po))}</span></h1>
+   <div class="stmt-meta">
+     <div><span>${esc(tt('wh.r_payee'))}:</span> <b>${esc((a&&a.legal)||po.artist)}</b>${a&&a.legal&&a.legal!==po.artist?` (${esc(po.artist)})`:''}</div>
+     ${a&&a.address?`<div><span>${esc(tt('art.address'))}:</span> <b>${esc(a.address)}</b></div>`:''}
+     ${a&&a.taxId?`<div><span>${esc(tt('wh.tax_id'))}:</span> <b>${esc(a.taxId)}</b></div>`:''}
+     <div><span>${esc(tt('wh.r_date'))}:</span> <b>${esc(fmtDate(po.date||''))}</b></div>
+   </div>
+   <p class="rcpt-text">${esc(tt('wh.r_text').replace('{payee}', (a&&a.legal)||po.artist).replace('{label}', labelName()))}</p>
+   <table class="stmt-sum rcpt-tbl"><tbody>
+     ${line(tt('wh.r_gross'), fmtMoney(gross))}
+     ${wh?line(tt('wh.r_base').replace('{p}', Math.round((po.base||1)*100)), fmtMoney(r2(gross*(po.base||1)))):''}
+     ${wh?line(tt('wh.r_wh').replace('{p}', Math.round((po.rate||WH_RATE)*100)), '− '+fmtMoney(wh)):''}
+     ${line(tt('wh.r_net'), fmtMoney(net), true)}
+   </tbody></table>
+   ${stamp?`<p class="stmt-note">${esc(tt('wh.r_stamp'))}</p>`:''}
+   ${po.regime==='vat'?`<p class="stmt-note">${esc(tt('wh.r_vat_note'))}</p>`:''}
+   <div class="rcpt-sign"><div><span>${esc(tt('wh.r_place'))}</span><i></i></div><div><span>${esc(tt('wh.r_sign'))}</span><i></i></div></div>
+   <p class="stmt-foot">${esc(tt('wh.r_foot'))}</p>`;
+}
+async function downloadReceipt(id){
+  const po=(DB.payouts||[]).find(p=>p.id===id); if(!po) return;
+  const host=document.createElement('div');
+  host.style.cssText='position:fixed;left:-9999px;top:0;width:800px;background:#fff';
+  host.innerHTML=`<div class="stmt-pdf rcpt-pdf">${receiptHTML(po)}</div>`;
+  document.body.appendChild(host);
+  const fname=`${tt('wh.r_file')} ${safeName(po.artist)} ${po.date||''}.pdf`;
+  try{
+    if(typeof html2pdf==='undefined'){ toast(tt('per.pdf_unavailable')); return; }
+    toast(tt('stmt.wait'));
+    const blob=await html2pdf().set({ margin:[10,10,10,10], image:{type:'jpeg',quality:0.95},
+      html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff',windowWidth:840}, jsPDF:{unit:'mm',format:'a4',orientation:'portrait'} }).from(host.firstElementChild).outputPdf('blob');
+    downloadBlob(fname, blob);
+  }catch(e){ toast(tt('per.zip_fail')); }
+  finally{ host.remove(); }
+}
+(function wireWithholding(){
+  document.addEventListener('click',e=>{ const b=e.target.closest('.po-rcpt'); if(b) downloadReceipt(b.dataset.id); });
+  const dh=document.getElementById('doc-header');
+  if(dh) dh.addEventListener('change',()=>{ DB.profile=DB.profile||{}; DB.profile.docHeader=dh.value.trim(); save(); toast(tt('common.saved')); });
+})();

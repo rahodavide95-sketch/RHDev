@@ -2223,14 +2223,17 @@ function recordPayout(key){
   const amount=Math.round(parseAmount(raw, uiDec())*100)/100;
   if(!(amount>0)){ toast(tt('pay.mark_invalid')); return; }
   DB.payouts=DB.payouts||[];
-  DB.payouts.push({ id:uid(), artist:r.name, amount, date:todayISO(), note:'' });
+  const po={ id:uid(), artist:r.name, amount, date:todayISO(), note:'' };
+  // ritenuta d'acconto (money.js): calcolo, conferma del netto e promemoria F24
+  if(typeof whApplyToPayout==='function' && !whApplyToPayout(po)) return;
+  DB.payouts.push(po);
   save(); renderRoyalties(); toast(tt('pay.marked').replace('{name}',r.name).replace('{amt}',fmtMoney(amount)));
 }
 function renderPayouts(){
   const el=$('#payout-entries'); if(!el) return;
   const list=(DB.payouts||[]).slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   el.innerHTML = list.length
-    ? `<ul class="recoup-list">`+list.map(p=>`<li><span class="rc-kind rc-payout">${esc(tt('pay.paid'))}</span><b class="rc-art">${esc(p.artist)}</b><span class="muted small">${fmtDate(p.date||'')}</span><span class="rc-amt">${fmtMoney(p.amount)}</span><span class="muted small rc-note">${esc(p.note||'')}</span><button class="po-del" data-id="${esc(p.id)}" title="${esc(tt('common.delete'))}" aria-label="${esc(tt('common.delete'))}">✕</button></li>`).join('')+`</ul>`
+    ? `<ul class="recoup-list">`+list.map(p=>`<li><span class="rc-kind rc-payout">${esc(tt('pay.paid'))}</span><b class="rc-art">${esc(p.artist)}</b><span class="muted small">${fmtDate(p.date||'')}</span><span class="rc-amt">${fmtMoney(p.amount)}</span><span class="muted small rc-note">${p.withholding?esc(tt('wh.line').replace('{wh}',fmtMoney(p.withholding)).replace('{net}',fmtMoney(p.net))):''}${esc(p.note||'')}</span><button class="po-rcpt" data-id="${esc(p.id)}" title="${esc(tt('wh.receipt'))}" aria-label="${esc(tt('wh.receipt'))}">🧾</button><button class="po-del" data-id="${esc(p.id)}" title="${esc(tt('common.delete'))}" aria-label="${esc(tt('common.delete'))}">✕</button></li>`).join('')+`</ul>`
     : `<p class="muted small">${esc(tt('pay.history_empty'))}</p>`;
 }
 document.addEventListener('click',e=>{ const b=e.target.closest('.po-del'); if(!b) return;
@@ -2812,6 +2815,7 @@ function renderSettings(){
   $$('#rates-grid button[data-del]').forEach(b=>b.onclick=()=>{ delete DB.rates[b.dataset.del]; save(); renderSettings(); });
   if(typeof renderFx==='function') renderFx();
   if(typeof renderTrashCount==='function') renderTrashCount();
+  const dh=$('#doc-header'); if(dh && document.activeElement!==dh) dh.value=(DB.profile&&DB.profile.docHeader)||'';
 }
 $('#add-rate').onclick=()=>{
   const c=$('#rate-cur').value.trim().toUpperCase().slice(0,3), v=parseFloat($('#rate-val').value);
@@ -3654,6 +3658,7 @@ function openArtistForm(id){
   $('#art-email').value=a?a.email||'':''; $('#art-phone').value=a?a.phone||'':'';
   $('#art-iban').value=a?a.iban||'':''; $('#art-split').value=a?(a.split||''):'';
   $('#art-address').value=a?a.address||'':''; $('#art-note').value=a?a.note||'':'';
+  if($('#art-taxid')) $('#art-taxid').value=a?a.taxId||'':''; if($('#art-regime')) $('#art-regime').value=a?a.taxRegime||'':'';
   setArtistPhoto(a?a.photo:'');
   $('#art-form').hidden=false; $('#art-form').scrollIntoView({behavior:'smooth',block:'start'});
 }
@@ -3662,7 +3667,8 @@ function saveArtist(){
   const data={ name, legal:$('#art-legal').value.trim(), email:$('#art-email').value.trim(),
     phone:$('#art-phone').value.trim(), iban:$('#art-iban').value.trim(),
     split:Number($('#art-split').value)||0, address:$('#art-address').value.trim(),
-    note:$('#art-note').value.trim(), photo:artistPhotoData };
+    note:$('#art-note').value.trim(), photo:artistPhotoData,
+    taxId:($('#art-taxid')?$('#art-taxid').value.trim():''), taxRegime:($('#art-regime')?$('#art-regime').value:'') };
   if(editingArtistId){ const a=artistById(editingArtistId); if(a) Object.assign(a,data); }
   else { DB.artists.push(Object.assign({id:newId()}, data)); }
   save(); $('#art-form').hidden=true; editingArtistId=null; renderArtists(); toast(tt('art.saved'));

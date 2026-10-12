@@ -996,6 +996,8 @@
                 <label><span data-i18n="set.name">Nome</span> <input id="account-name" class="input" type="text" autocomplete="given-name"></label>
                 <label><span data-i18n="set.surname">Cognome</span> <input id="account-surname" class="input" type="text" autocomplete="family-name"></label>
                 <label class="span-2"><span data-i18n="set.label">Nome label</span> <input id="account-label" class="input" type="text" autocomplete="organization"></label>
+                <label class="span-2"><span data-i18n="wh.doc_header">Dati dell'etichetta sui documenti</span>
+                  <textarea id="doc-header" class="input" rows="3" data-i18n-ph="wh.doc_header_ph" placeholder="Ragione sociale, indirizzo, P.IVA / codice fiscale"></textarea></label>
               </div>
               <div><button class="btn btn-primary btn-sm" id="account-save" data-i18n="set.save_profile">Salva profilo</button></div>
             </div>
@@ -1253,6 +1255,16 @@
               <label class="fld"><span data-i18n="art.iban">IBAN</span><input class="input" id="art-iban"></label>
               <label class="fld"><span data-i18n="art.split">Split predefinito %</span><input class="input" id="art-split" type="number" min="0" max="100" step="1"></label>
               <label class="fld fld--full"><span data-i18n="art.address">Indirizzo</span><input class="input" id="art-address"></label>
+              <label class="fld"><span data-i18n="wh.tax_id">Codice fiscale / P.IVA</span><input class="input" id="art-taxid" autocomplete="off"></label>
+              <label class="fld"><span data-i18n="wh.regime">Regime fiscale (pagamenti)</span>
+                <select class="select" id="art-regime">
+                  <option value="" data-i18n="wh.r_none">Non impostato (nessuna ritenuta)</option>
+                  <option value="occasional" data-i18n="wh.r_occasional">Prestazione occasionale · ritenuta 20%</option>
+                  <option value="copyright" data-i18n="wh.r_copyright">Diritti d'autore · ritenuta 20% sul 75%</option>
+                  <option value="copyright35" data-i18n="wh.r_copyright35">Diritti d'autore, under 35 · ritenuta 20% sul 60%</option>
+                  <option value="vat" data-i18n="wh.r_vat">Con Partita IVA (fattura) · nessuna ritenuta qui</option>
+                  <option value="foreign" data-i18n="wh.r_foreign">Residente all'estero · nessuna ritenuta</option>
+                </select></label>
               <label class="fld fld--full"><span data-i18n="art.note">Note</span><input class="input" id="art-note"></label>
             </div>
             <div class="row-inline wrap">

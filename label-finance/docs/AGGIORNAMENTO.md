@@ -1,3 +1,28 @@
+# Nuove funzioni (ottobre 2026) — cosa fare online
+
+Una sola cosa da fare, ~1 minuto: **rieseguire lo schema del database**.
+Dashboard Supabase → **SQL Editor** → **New query** → incolla tutto
+`supabase/schema.sql` → **Run**. È sicuro rieseguirlo (crea solo ciò che manca).
+
+Aggiunge:
+- **Versioni salvate nel cloud** (`app_state_versions`): il database conserva la
+  versione precedente dei dati (al massimo una all'ora, per 30 giorni) per il
+  ripristino da Impostazioni → Backup & dati → Versioni salvate.
+- **Accesso team** (`team_members`): il titolare invita collaboratori in sola lettura
+  o con modifica (piano Agency). Le regole di accesso stanno nel database e valgono
+  solo per email confermate.
+- **Ricevute allegate** (Storage, bucket privato `receipts`): foto/PDF dei movimenti,
+  visibili da tutti i dispositivi dell'etichetta e dal team.
+
+Le Edge Functions si ripubblicano da sole (il portale artista usa i nuovi calcoli:
+cambi BCE per mese e vendite arrivate dopo la chiusura di un periodo).
+
+Il resto è già nell'app: cestino, chiusura periodo e statement a tutti, avvisi
+intelligenti, conto economico per release, cambi BCE automatici, ricerca (Ctrl+K),
+ritenuta d'acconto con ricevuta, pacchetto per il commercialista, checklist di uscita.
+
+---
+
 # Aggiornamento sicurezza e calcoli (ottobre 2026) — cosa fare online
 
 Il codice dell'app si aggiorna da solo con la pubblicazione (GitHub Pages / Vercel).

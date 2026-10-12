@@ -1624,3 +1624,53 @@ body.recovery-mode{overflow:hidden}
   .set-row .theme-switch--lg:has([data-theme-opt]){width:100%}
   .set-row .theme-switch--lg [data-theme-opt]{flex:1}
 }
+
+/* Bolla AI spostabile: niente scroll della pagina mentre la trascini col dito */
+.ai-fab{touch-action:none}
+.ai-fab.is-dragging{animation:none;transition:none;cursor:grabbing;transform:scale(1.08);box-shadow:0 18px 40px rgba(124,58,237,.6)}
+
+/* Pulsanti Salva/Annulla staccati dai campi sopra (artisti, merch, contratti, …) */
+.form-grid+.row-inline,.con-split-box+.row-inline{margin-top:18px}
+
+/* ============================================================================
+   COLONNE REGOLABILI (tables.js): bordo trascinabile nelle intestazioni,
+   doppio clic per adattare; tabelle larghe scorrono di lato nel loro riquadro
+   ============================================================================ */
+.col-rs-host{position:relative}
+.col-rs{position:absolute;top:0;right:0;bottom:0;width:9px;cursor:col-resize;z-index:2;touch-action:none}
+.col-rs::after{content:'';position:absolute;top:22%;bottom:22%;right:3px;width:2px;border-radius:2px;background:var(--line);opacity:0;transition:opacity .12s}
+thead tr:hover .col-rs::after,.dbl-head:hover .col-rs::after{opacity:1}
+.col-rs:hover::after,.col-resizing .col-rs::after{opacity:1;background:var(--accent)}
+body.col-resizing,body.col-resizing *{cursor:col-resize!important;user-select:none!important}
+.data-table.cols-fixed{table-layout:fixed}
+.data-table.cols-fixed th,.data-table.cols-fixed td{overflow:hidden;text-overflow:ellipsis}
+/* tabella o elenco più largo dello spazio: scorrimento laterale con intestazione fissa */
+.table-wrap.is-wide{overflow:auto;max-height:calc(100dvh - 150px);overscroll-behavior-x:contain}
+.table-wrap.is-wide .data-table thead th{top:0}
+.dbl.is-wide{overflow:auto;max-height:calc(100dvh - 150px);overscroll-behavior-x:contain}
+.dbl.is-wide>.dbl-head{top:0}
+@media(max-width:760px){ .col-rs{display:none} }
+
+/* Scheda artista (clic sul nome di un artista in qualsiasi sezione) */
+.art-sheet-card{width:min(560px,100%)}
+.as-id{display:flex;align-items:center;gap:12px;min-width:0}
+.as-id .art-av{width:48px;height:48px;flex:none}
+.as-id-txt{min-width:0}
+.as-id-txt h2{font-size:1.15rem;overflow-wrap:anywhere}
+.as-body{padding:18px 22px 22px;display:flex;flex-direction:column;gap:14px}
+.as-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.as-stats>div{display:flex;flex-direction:column;gap:2px;padding:10px 12px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;min-width:0}
+.as-stats b{font-size:1rem;font-variant-numeric:tabular-nums}
+.as-stats b.neg{color:var(--out)}
+.as-acts{display:flex;flex-wrap:wrap;gap:8px}
+.as-acts .btn-sm{padding:7px 13px;font-size:.86rem}
+.as-body .art-disco{margin-top:0;padding-top:12px}
+.as-body .art-disco-list{max-height:min(46vh,420px);overflow:auto}
+.art-card--click{cursor:pointer}
+.art-card--click:hover{border-color:var(--accent)}
+@media(max-width:560px){ .as-stats{grid-template-columns:1fr 1fr} .as-stats>div:last-child{grid-column:1/-1} }
+/* barra di scorrimento sempre visibile nelle tabelle larghe (su Mac di solito è nascosta) */
+.table-wrap.is-wide::-webkit-scrollbar,.dbl.is-wide::-webkit-scrollbar{height:11px;width:11px}
+.table-wrap.is-wide::-webkit-scrollbar-thumb,.dbl.is-wide::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--muted-2) 70%,transparent);border-radius:8px;border:2px solid transparent;background-clip:padding-box}
+.table-wrap.is-wide::-webkit-scrollbar-track,.dbl.is-wide::-webkit-scrollbar-track{background:color-mix(in srgb,var(--line) 45%,transparent);border-radius:8px}
+@supports not selector(::-webkit-scrollbar){ .table-wrap.is-wide,.dbl.is-wide{scrollbar-width:thin;scrollbar-color:var(--muted-2) transparent} }

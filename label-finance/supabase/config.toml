@@ -1,0 +1,11 @@
+# Configurazione minima per la CLI di Supabase (pubblicazione delle Edge Functions).
+# La usa anche il deploy automatico da GitHub (.github/workflows/deploy-supabase-functions.yml).
+project_id = "ztjlqorvnulgfvbtvavm"
+
+# Funzioni raggiungibili senza login: il portale artista (link condiviso) e il
+# webhook di Stripe (Stripe non manda il token di Supabase). Le altre richiedono il login.
+[functions.artist-statement]
+verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false

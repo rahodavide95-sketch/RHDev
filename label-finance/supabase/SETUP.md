@@ -15,14 +15,14 @@ supabase link --project-ref ztjlqorvnulgfvbtvavm
 
 ### B. Deploya la funzione (dalla cartella del progetto, dove c'è /supabase)
 ```bash
-supabase functions deploy catalog-search --no-verify-jwt
+supabase functions deploy catalog-search
 ```
+(Funziona solo per utenti con login: non serve più `--no-verify-jwt`.)
 Fatto: la ricerca funziona già con **MusicBrainz** (gratis, senza chiavi).
 
 > In alternativa senza CLI: Dashboard → Edge Functions → Create function →
 > nome `catalog-search` → incolla il contenuto di
-> `supabase/functions/catalog-search/index.ts` → Deploy. Poi disattiva
-> "Verify JWT" nelle impostazioni della funzione.
+> `supabase/functions/catalog-search/index.ts` → Deploy.
 
 ---
 
@@ -44,7 +44,7 @@ supabase secrets set SPOTIFY_CLIENT_ID=xxxx SPOTIFY_CLIENT_SECRET=yyyy
 ```
 
 > I secret restano solo sul server. Dopo averli impostati, ridai un
-> `supabase functions deploy catalog-search --no-verify-jwt` se la funzione era
+> `supabase functions deploy catalog-search` se la funzione era
 > già attiva (per ricaricare l'ambiente).
 
 ---
@@ -54,9 +54,11 @@ Apri l'app → **Discografia → ⤒ Importa catalogo → Cerca la tua etichetta
 scrivi un nome noto (es. *Anjunabeats*) → devono comparire i candidati e,
 importando, le release + artisti.
 
-## Promemoria altri setup già fatti
-- **Firma contratti:** esegui una volta `supabase/contracts.sql` nel SQL Editor.
-- **Assistente AI:** Edge Function `ai-advisor` con la chiave Anthropic come secret.
+## Promemoria altri setup
+- **Database:** esegui `supabase/schema.sql` nel SQL Editor (contiene tutto ed è sicuro rieseguirlo).
+- **Assistente AI:** Edge Function `ai-advisor` con la chiave Anthropic come secret
+  (`ANTHROPIC_API_KEY`). Facoltativi: `AI_DAILY_LIMIT` (default 30 richieste al giorno
+  per utente) e `AI_ALLOW_APPROVED=false` al lancio, per riservare l'AI agli abbonati.
 
 ---
 
@@ -64,12 +66,14 @@ importando, le release + artisti.
 
 Per attivare i link del portale artista:
 
-1. **SQL** — Dashboard Supabase → SQL Editor → incolla e lancia `supabase/artist-portal.sql`
-   (crea la tabella `artist_shares` con RLS).
+1. **SQL** — Dashboard Supabase → SQL Editor → incolla e lancia `supabase/schema.sql`
+   (crea anche la tabella `artist_shares` con RLS).
 2. **Edge Function** — dal terminale, nella cartella del progetto:
    ```
    supabase functions deploy artist-statement --no-verify-jwt
    ```
+   La funzione usa `supabase/functions/_shared/lfcore.js` (gli stessi calcoli dell'app):
+   va deployata con la CLI, che include la cartella `_shared`.
    La funzione usa `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` (già presenti di default
    nelle Edge Functions: non devi configurarli a mano).
 

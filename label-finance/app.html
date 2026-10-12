@@ -2,6 +2,7 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://api.web3forms.com https://api.emailjs.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Label Finance — Gestionale Etichetta</title>
   <link rel="icon" href="icon.png?v=3" type="image/png">
@@ -12,16 +13,11 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Label Finance">
-  <script>
-    /* applica il tema prima del render per evitare lo sfarfallio */
-    (function(){try{var p=localStorage.getItem('labelfinance.theme')||'system';
-      var d=p==='dark'||(p==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);
-      document.documentElement.setAttribute('data-theme',d?'dark':'light');}catch(e){}})();
-  </script>
+  <script src="theme-boot.js?v=95"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=89">
+  <link rel="stylesheet" href="style.css?v=96">
 </head>
 <body class="gated">
 
@@ -75,7 +71,7 @@
   <!-- ======= SIDEBAR ======= -->
   <aside class="sidebar">
     <div class="sidebar-top">
-      <a class="brand" href="#" onclick="return false">
+      <a class="brand" href="#">
         <img src="icon.png?v=3" alt="Label Finance" class="brand-logo">
         <span class="brand-text">
           <span class="brand-name">Label<span class="lf-fin">Finance</span></span>
@@ -793,6 +789,12 @@
           <span class="pay-total" id="pay-total"></span>
         </div>
         <div class="pay-list" id="pay-list"></div>
+      </div>
+
+      <div class="panel" id="payouts-panel">
+        <div class="panel-head"><h2 data-i18n="pay.history_title">Pagamenti agli artisti</h2>
+          <span class="muted small" data-i18n="pay.history_sub">Ogni pagamento registrato scala il saldo da pagare e compare nello statement.</span></div>
+        <div id="payout-entries"><p class="muted small" data-i18n="pay.history_empty">Nessun pagamento registrato. Usa «✓ Pagato» accanto a un artista quando gli versi le royalty.</p></div>
       </div>
 
       <div class="panel" id="recoup-panel">
@@ -1947,8 +1949,13 @@
           <label class="fld"><span data-i18n="con.sign_name">Nome firmatario</span><input class="input" id="sign-name"></label>
           <label class="fld"><span data-i18n="con.sign_place">Luogo</span><input class="input" id="sign-place" data-i18n-ph="con.sign_place_ph" placeholder="Es. Milano"></label>
         </div>
-        <span class="fld-lbl" data-i18n="con.sign_draw">Firma qui sotto</span>
+        <span class="fld-lbl" data-i18n="con.sign_draw_or_upload">Disegna la firma qui sotto, oppure carica un'immagine</span>
         <canvas id="sign-canvas" class="sign-canvas"></canvas>
+        <input type="file" id="sign-file" accept="image/*" hidden>
+        <div class="sign-upload-row">
+          <button type="button" class="btn btn-ghost btn-sm" id="sign-upload" data-i18n="con.sign_upload">📁 Carica firma da file</button>
+          <span class="muted small" id="sign-file-msg"></span>
+        </div>
         <div class="modal-foot">
           <button type="button" class="btn btn-ghost" id="sign-clear" data-i18n="con.sign_clear">Cancella</button>
           <span class="spacer"></span>
@@ -2233,11 +2240,13 @@
   <!-- Area di stampa per lo statement royalty (visibile solo in stampa) -->
   <div id="print-area" aria-hidden="true"></div>
 
-  <script src="html2pdf.bundle.min.js?v=87"></script>
-  <script src="app.js?v=89"></script>
-  <script src="config.js?v=87"></script>
-  <script src="i18n.js?v=89"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="sync.js?v=89"></script>
+  <script src="html2pdf.bundle.min.js?v=95"></script>
+  <script src="config.js?v=95"></script>
+  <script src="core.js?v=96"></script>
+  <script src="signature.js?v=96"></script>
+  <script src="app.js?v=96"></script>
+  <script src="i18n.js?v=95"></script>
+  <script src="vendor/supabase.min.js?v=95"></script>
+  <script src="sync.js?v=95"></script>
 </body>
 </html>

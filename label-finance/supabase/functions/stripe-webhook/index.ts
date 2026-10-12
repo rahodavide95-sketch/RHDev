@@ -58,13 +58,22 @@ async function setPlanFromSubscription(subId: string, fallbackUser?: string) {
   }
   if (!userId) return;
 
+  // Evento di un abbonamento vecchio (es. disdetta del precedente dopo un cambio piano):
+  // non deve azzerare l'abbonamento attivo registrato.
+  const { data: cur } = await admin
+    .from("subscriptions")
+    .select("stripe_subscription_id,status")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (!active && cur?.stripe_subscription_id && cur.stripe_subscription_id !== subscription.id && ACTIVE.has(cur.status)) return;
+
   await admin.from("subscriptions").upsert({
     user_id: userId,
     plan,
     status: subscription.status,
     stripe_customer_id: customerId,
     stripe_subscription_id: subscription.id,
-    current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+    current_period_end: subscription.current_period_end ? new Date(subscription.current_period_end * 1000).toISOString() : null,
     updated_at: new Date().toISOString(),
   });
 }
@@ -78,7 +87,8 @@ Deno.serve(async (req) => {
   try {
     event = await stripe.webhooks.constructEventAsync(raw, sig, WEBHOOK_SECRET);
   } catch (err) {
-    return new Response(`bad_signature: ${err}`, { status: 400 });
+    console.error("stripe-webhook: firma non valida", err);
+    return new Response("bad_signature", { status: 400 });
   }
 
   try {
@@ -102,7 +112,8 @@ Deno.serve(async (req) => {
       }
     }
   } catch (err) {
-    return new Response(`handler_error: ${err}`, { status: 500 });
+    console.error("stripe-webhook: errore", err);
+    return new Response("handler_error", { status: 500 });
   }
 
   return new Response(JSON.stringify({ received: true }), {

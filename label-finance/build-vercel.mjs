@@ -10,7 +10,7 @@ const OUT = 'dist';
 // Cartelle/file da NON pubblicare (backend, documentazione interna, file di build).
 const EXCLUDE = new Set([
   'node_modules', 'dist', 'supabase', 'docs', 'README.md',
-  'build-vercel.mjs', 'package.json', 'package-lock.json', 'vercel.json',
+  'build-vercel.mjs', 'package.json', 'package-lock.json', 'vercel.json', 'test',
 ]);
 
 rmSync(OUT, { recursive: true, force: true });
@@ -30,7 +30,7 @@ const opts = {
   selfDefending: false, debugProtection: false,
 };
 let n = 0;
-for (const f of ['app.js', 'sync.js', 'i18n.js']) {
+for (const f of ['core.js', 'signature.js', 'app.js', 'sync.js', 'i18n.js', 'firma.js', 'artista.js', 'landing.js']) {
   const p = `${OUT}/${f}`;
   if (!existsSync(p)) { console.warn('manca:', p); continue; }
   const code = readFileSync(p, 'utf8');

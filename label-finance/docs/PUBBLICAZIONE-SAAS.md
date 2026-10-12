@@ -14,22 +14,22 @@
 | **Frontend** (l'app) | PWA in HTML/JS puro | ✅ Funziona. Pubblicato via **GitHub Pages** (workflow `deploy-pages.yml`, deploy automatico a ogni push su `main`). C'è anche un `vercel.json` se preferisci Vercel. |
 | **Login & dati cloud** | **Supabase** (Auth + Postgres + RLS) | ✅ Configurato in `config.js` (URL + chiave anon pubblica). Ogni utente vede solo i propri dati grazie a RLS. |
 | **Sincronizzazione** | `sync.js` | ✅ I dati dell'app vengono salvati su Supabase per utente. |
-| **Contratti / firma remota** | tabella `contracts` + funzioni RPC (`supabase/contracts.sql`) | ✅ |
+| **Contratti / firma remota** | tabella `contracts` + funzioni RPC (`supabase/schema.sql`) | ✅ Firma validata dal server, contratti firmati non modificabili. |
 | **Portale artista** | tabella `artist_shares` + Edge Function `artist-statement` | ✅ |
 | **Assistente AI** | Edge Function `ai-advisor` (chiave Anthropic lato server) | ✅ Attivo. La chiave resta sul server (secret). |
-| **Pagamenti / abbonamenti** | — | ❌ **Non esiste.** Il piano è scelto dall'utente nell'app e basta. |
+| **Pagamenti / abbonamenti** | Stripe + tabella `subscriptions` + Edge Functions | 🟡 Codice pronto e collegato ai pulsanti: si accende con `payments: true` in `config.js` dopo `docs/STRIPE-SETUP.md`. |
 
-### ⚠️ Il problema numero 1 da risolvere prima di vendere
+### Chi decide il piano
 
-Oggi il piano (`free` / `biglabel` / `studio` / `agency`) è **salvato dentro i
-dati dell'utente** e impostato dall'app stessa (`ACCOUNT.plan = ...`). Significa
-che **un cliente furbo può sbloccarsi da solo tutti i piani** modificando i
-propri dati nel browser. Anche l'AI lato server legge questo valore, quindi è
-aggirabile.
-
-Per vendere davvero serve che **il piano lo decida il pagamento, non l'utente**:
-una tabella `subscriptions` scritta **solo** da Stripe (webhook), che l'utente
-non può modificare. Vedi sezione 3.
+- **Assistente AI (costo reale):** lo decide **solo il server**. La funzione
+  `ai-advisor` legge la tabella `subscriptions` (scritta solo dal webhook Stripe)
+  e, in beta, lascia passare anche gli utenti approvati (`profiles.approved`).
+  Il piano salvato nei dati dell'app non conta più. C'è anche un limite di
+  richieste al giorno per utente (`AI_DAILY_LIMIT`, default 30).
+- **Funzioni dell'app (Excel, dashboard, …):** in beta il piano si sceglie
+  liberamente. Con `payments: true` il piano arriva dalla tabella `subscriptions`
+  e i pulsanti aprono Stripe.
+- **Al lancio:** `payments: true` in `config.js` e secret `AI_ALLOW_APPROVED=false`.
 
 ---
 
@@ -40,10 +40,9 @@ progetto **dedicato alla produzione** (così test e dati reali non si mescolano)
 
 1. **Crea il progetto di produzione** su supabase.com → scegli **regione UE**
    (es. Frankfurt) per stare comodi col GDPR.
-2. **Esegui gli script SQL** (Dashboard → SQL Editor → incolla → Run):
-   - `supabase/contracts.sql` (contratti + firma remota)
-   - `supabase/artist-portal.sql` (portale artista)
-   - lo schema della tabella di sync degli utenti (quella usata da `sync.js`).
+2. **Esegui lo script SQL** (Dashboard → SQL Editor → incolla → Run):
+   `supabase/schema.sql` — contiene tutto (dati, approvazione, contratti, portale
+   artista, abbonamenti, limiti AI) ed è sicuro rieseguirlo.
 3. **Verifica la RLS** su **ogni** tabella: deve esserci una policy
    `auth.uid() = owner_id`. Senza RLS, un utente potrebbe leggere i dati di un
    altro. Questa è la verifica di sicurezza più importante.
@@ -56,15 +55,13 @@ progetto **dedicato alla produzione** (così test e dati reali non si mescolano)
 5. **Imposta i secret** (mai nel codice!):
    ```bash
    supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
-   # opzionale: supabase secrets set ANTHROPIC_MODEL=claude-opus-4-8
+   # opzionali: ANTHROPIC_MODEL=claude-opus-5-5 · AI_DAILY_LIMIT=30 · AI_ALLOW_APPROVED=false (al lancio)
    ```
 6. **Aggiorna `config.js`** con URL e chiave **anon** del progetto di
    produzione. (La chiave anon è pubblica per natura: è protetta dalla RLS, va
    bene lasciarla nel codice.)
-7. ⚠️ **Ho appena corretto** un disallineamento: la Edge Function `ai-advisor`
-   abilitava l'AI solo a `studio`/`agency`, escludendo il nuovo piano
-   **Big Label**. Ora include `biglabel`. **Devi rideployarla** (`supabase
-   functions deploy ai-advisor`) perché la correzione abbia effetto online.
+7. Dopo ogni aggiornamento delle funzioni, **rideployale** (vedi
+   `docs/AGGIORNAMENTO.md` per l'elenco dei comandi).
 
 ---
 

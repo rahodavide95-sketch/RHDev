@@ -16,11 +16,12 @@ const CANON = [
   ['shipping','Spedizione'], ['taxes','Tasse'],
   ['payProcFees','Commissioni processore pagamento'], ['fees','Commissioni'],
   ['csShare','Collection society share'], ['net','Netto'], ['currency','Valuta'],
+  ['territory','Paese/Territorio'],
 ];
 
 /* ---------- Store ---------- */
 const DEFAULT_TX_ORDER = ['date','kind','platform','catalog','product','artist','qty','net',
-  'dateTo','type','isrc','upc','gross','shipping','taxes','payProcFees','fees','csShare','currency','note'];
+  'dateTo','type','isrc','upc','territory','gross','shipping','taxes','payProcFees','fees','csShare','currency','note'];
 const DEFAULT_TX_VISIBLE = ['date','kind','platform','catalog','product','artist','qty','net'];
 /* Account = piu' etichette; DB punta all'etichetta attiva. */
 const DASH_BASE = ['kpi','chart','g_release','g_artist','g_platform','g_type'];
@@ -49,9 +50,10 @@ function requireFeature(feat){
 const newId = ()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const defaultRates = ()=>({ EUR:1, USD:0.92, GBP:1.17, CHF:1.04 });
 function defaultLabel(name='La mia etichetta'){
-  return { id:newId(), name, transactions:[], releases:[], profile:{name:'',label:name},
+  // ensureLabelShape: un'etichetta nuova ha subito tutte le liste (contratti, artisti, pagamenti…)
+  return ensureLabelShape({ id:newId(), name, transactions:[], releases:[], profile:{name:'',label:name},
     rates:defaultRates(), mappings:{}, recoup:[],
-    txOrder:DEFAULT_TX_ORDER.slice(), txHidden:DEFAULT_TX_ORDER.filter(c=>!DEFAULT_TX_VISIBLE.includes(c)) };
+    txOrder:DEFAULT_TX_ORDER.slice(), txHidden:DEFAULT_TX_ORDER.filter(c=>!DEFAULT_TX_VISIBLE.includes(c)) });
 }
 function ensureLabelShape(l){
   l.id=l.id||newId();
@@ -63,6 +65,7 @@ function ensureLabelShape(l){
   l.txHidden=l.txHidden||DEFAULT_TX_ORDER.filter(c=>!DEFAULT_TX_VISIBLE.includes(c));
   l.artists=l.artists||[]; l.tasks=l.tasks||[]; l.contracts=l.contracts||[]; l.merch=l.merch||[];
   l.planning=l.planning||[]; l.events=l.events||[]; l.supports=l.supports||[]; l.recurring=l.recurring||[];
+  l.payouts=l.payouts||[];
   // release legacy senza tipo: deducilo (così le tracce degli EP si vedono come righe)
   l.releases.forEach(r=>{ if(r && !r.type) r.type=((r.tracks||[]).length>1)?'EP':'SINGLE'; });
   l.name=l.name||(l.profile&&l.profile.label)||'Etichetta';
@@ -85,17 +88,75 @@ function migrateAccount(raw){
   }
   return defaultAccount();
 }
-function loadAccount(){ try{ return migrateAccount(JSON.parse(localStorage.getItem(STORE_KEY))); }catch{ return defaultAccount(); } }
+/* ---------- Archivio locale ----------
+   localStorage è veloce ma ha un limite di ~5 MB: con molti movimenti si riempie.
+   Ogni salvataggio va anche in IndexedDB (nessun limite pratico); se localStorage è
+   pieno, all'avvio i dati vengono ripresi da IndexedDB. */
+const IDB_NAME='labelfinance', IDB_STORE='kv';
+let idbConn=null;
+function idbOpen(){ if(idbConn) return idbConn;
+  idbConn=new Promise((res,rej)=>{ try{ const r=indexedDB.open(IDB_NAME,1);
+    r.onupgradeneeded=()=>r.result.createObjectStore(IDB_STORE); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }catch(e){ rej(e); } });
+  idbConn.catch(()=>{ idbConn=null; }); return idbConn; }
+function idbReq(mode, fn){ return idbOpen().then(db=>new Promise((res,rej)=>{ const tx=db.transaction(IDB_STORE,mode); const q=fn(tx.objectStore(IDB_STORE));
+  tx.oncomplete=()=>res(q&&q.result); tx.onerror=()=>rej(tx.error); tx.onabort=()=>rej(tx.error); })); }
+window.LFStore={
+  get:k=>idbReq('readonly', st=>st.get(k)),
+  set:(k,v)=>idbReq('readwrite', st=>st.put(v,k)),
+  del:k=>idbReq('readwrite', st=>st.delete(k)),
+};
+const STORE_TS=STORE_KEY+'.ts';
+function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+const LS_HAD_DATA=!!lsGet(STORE_KEY);
+function loadAccount(){ try{ return migrateAccount(JSON.parse(lsGet(STORE_KEY))); }catch{ return defaultAccount(); } }
 let ACCOUNT = loadAccount();
 function activeLabel(){ return ACCOUNT.labels.find(l=>l.id===ACCOUNT.activeLabel) || ACCOUNT.labels[0]; }
 let DB = activeLabel();
 function planLimit(){ return PLAN_LIMITS[ACCOUNT.plan] ?? 1; }
-function saveLocal(){ localStorage.setItem(STORE_KEY, JSON.stringify(ACCOUNT)); }
+let idbTimer=null, storageWarned=false;
+function saveLocal(){
+  const json=JSON.stringify(ACCOUNT), ts=Date.now();
+  let lsOk=true;
+  try{ localStorage.setItem(STORE_KEY, json); localStorage.setItem(STORE_TS, String(ts)); }
+  catch(e){   // spazio esaurito: la copia valida resta in IndexedDB
+    lsOk=false;
+    try{ localStorage.removeItem(STORE_KEY); localStorage.setItem(STORE_TS, String(ts)); }catch(_){}
+    if(!storageWarned){ storageWarned=true; setTimeout(()=>toast(tt('t.storage_big')), 50); }
+  }
+  clearTimeout(idbTimer);
+  const write=()=>window.LFStore.set('account', {ts, json}).catch(()=>{ if(!lsOk) toast(tt('t.storage_fail')); });
+  if(lsOk) idbTimer=setTimeout(write, 400); else write();
+}
+// all'avvio: se la copia in IndexedDB è più recente (localStorage pieno), usa quella
+const lfReady=window.LFStore.get('account').then(rec=>{
+  if(!rec || !rec.json) return;
+  const lsTs=+(lsGet(STORE_TS)||0);
+  if(LS_HAD_DATA && !(rec.ts>lsTs)) return;
+  ACCOUNT=migrateAccount(JSON.parse(rec.json)); DB=activeLabel();
+  if(typeof reloadViews==='function') try{ reloadViews(); rebuildAccountMenu(); }catch(e){}
+}).catch(()=>{});
+// cancella i dati di questo dispositivo (logout / cambio account)
+function wipeLocalData(){
+  clearTimeout(idbTimer);          // niente scritture in ritardo dei dati appena cancellati
+  ACCOUNT=defaultAccount(); DB=activeLabel();
+  try{ localStorage.removeItem(STORE_KEY); localStorage.removeItem(STORE_TS); }catch(e){}
+  window.LFStore.del('account').catch(()=>{});
+}
 function save(){ saveLocal(); if(window.LF_push) window.LF_push(); if(typeof notifScan==='function') notifScan(); }
 /* API per il modulo di sincronizzazione cloud (sync.js) — sincronizza tutto l'account */
 window.LF = {
+  ready: lfReady,
   data(){ return ACCOUNT; },
-  applyCloud(d){ ACCOUNT = migrateAccount(d); DB = activeLabel(); saveLocal(); reloadViews(); if(typeof rebuildAccountMenu==='function') rebuildAccountMenu(); },
+  applyCloud(d){ ACCOUNT = migrateAccount(d); DB = activeLabel(); saveLocal(); reloadViews(); if(typeof rebuildAccountMenu==='function') rebuildAccountMenu();
+    // spese ricorrenti scadute nel frattempo (la versione del cloud può essere indietro)
+    if(typeof processRecurring==='function') try{ processRecurring(); }catch(e){} },
+  // quanti dati ci sono su questo dispositivo (per chiedere conferma prima di unirli a un account)
+  localSize(){ return (ACCOUNT.labels||[]).reduce((n,l)=>n+(l.transactions||[]).length+(l.releases||[]).length+(l.artists||[]).length+(l.contracts||[]).length,0); },
+  wipeLocal(){ wipeLocalData();
+    try{ localStorage.removeItem('labelfinance.notifs'); NOTIFS={list:[],dismissed:[]}; if(typeof renderNotifs==='function') renderNotifs(); }catch(e){}
+    reloadViews(); if(typeof rebuildAccountMenu==='function') rebuildAccountMenu(); },
+  // piano deciso dal server (abbonamento Stripe): sovrascrive quello locale
+  setServerPlan(plan){ if(!PLAN_LIMITS[plan] || ACCOUNT.plan===plan) return; ACCOUNT.plan=plan; saveLocal(); if(typeof renderOffers==='function') renderOffers(); if(typeof rebuildAccountMenu==='function') rebuildAccountMenu(); },
   profile(){ return DB.profile || (DB.profile={name:'',label:''}); },
   setProfile(p){ DB.profile = Object.assign(this.profile(), p||{}); if(p&&p.label) DB.name=p.label; save();
     if(typeof updateIdentity==='function') updateIdentity(); if(typeof rebuildAccountMenu==='function') rebuildAccountMenu(); },
@@ -139,53 +200,26 @@ const $$ = (s,r=document)=>[...r.querySelectorAll(s)];
 const tt = (k)=> (window.t ? window.t(k) : k);
 const COL_I18N={date:'col.date',dateTo:'col.dateTo',platform:'col.platform',type:'col.type',catalog:'col.catalog',
   product:'col.product',artist:'col.artist',qty:'col.qty',gross:'col.gross',shipping:'col.shipping',taxes:'col.taxes',
-  payProcFees:'col.payProcFees',fees:'col.fees',csShare:'col.csShare',net:'col.net',currency:'col.currency',note:'col.note'};
+  payProcFees:'col.payProcFees',fees:'col.fees',csShare:'col.csShare',net:'col.net',currency:'col.currency',note:'col.note',territory:'col.territory'};
 function colLabel(c){ return (COL_I18N[c]&&window.t) ? window.t(COL_I18N[c]) : (TX_COLS[c]?TX_COLS[c].label:c); }
 const uid = ()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
-const esc = s => String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// immagine sicura da inserire in src="…": solo data URL di immagini o file locali (le firme arrivano da fuori!)
+const imgSrc = s => esc(LFCore.safeImgSrc(s));
 
 function fmtMoney(n,cur='EUR'){
   const v = Number(n)||0;
   return new Intl.NumberFormat('it-IT',{style:'currency',currency:cur}).format(v);
 }
-function toEur(n,cur){ const r = DB.rates[(cur||'EUR').toUpperCase()] ?? 1; return (Number(n)||0)*r; }
+function toEur(n,cur){ return LFCore.toEur(DB.rates, n, cur); }
 
-// Parse importi: gestisce "1.234,56", "1,234.56", "€8,70", "$8.70", "-3"
-function parseAmount(raw){
-  if(raw==null) return 0;
-  if(typeof raw==='number') return raw;
-  let s = String(raw).trim().replace(/[^\d.,\-]/g,'');
-  if(!s) return 0;
-  const lastComma = s.lastIndexOf(','), lastDot = s.lastIndexOf('.');
-  if(lastComma>-1 && lastDot>-1){
-    if(lastComma>lastDot){ s = s.replace(/\./g,'').replace(',','.'); }   // 1.234,56
-    else { s = s.replace(/,/g,''); }                                     // 1,234.56
-  } else if(lastComma>-1){
-    // solo virgola: decimale se 1-2 cifre dopo, altrimenti separatore migliaia
-    s = (/,\d{1,2}$/.test(s)) ? s.replace(/\./g,'').replace(',','.') : s.replace(/,/g,'');
-  }
-  const n = parseFloat(s); return isNaN(n)?0:n;
-}
-
-// Parse date in ISO. fmt: auto|dmy|mdy|ymd
-function parseDate(raw,fmt='auto'){
-  if(!raw) return '';
-  const s = String(raw).trim();
-  let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);            // ISO
-  if(m) return `${m[1]}-${pad(m[2])}-${pad(m[3])}`;
-  m = s.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})/);  // x/x/x
-  if(m){
-    let a=+m[1], b=+m[2], y=+m[3]; if(y<100) y+=2000;
-    let day,mon;
-    if(fmt==='mdy'){ mon=a; day=b; }
-    else if(fmt==='ymd'){ /* unlikely here */ day=b; mon=a; }
-    else if(fmt==='dmy'){ day=a; mon=b; }
-    else { if(a>12){day=a;mon=b;} else if(b>12){mon=a;day=b;} else {day=a;mon=b;} } // auto, default DMY
-    if(mon>12){ [day,mon]=[mon,day]; }
-    return `${y}-${pad(mon)}-${pad(day)}`;
-  }
-  const d = new Date(s); return isNaN(d)?'':d.toISOString().slice(0,10);
-}
+// Importi e date dei CSV: logica in core.js (testata), qui solo gli alias usati dall'app.
+// parseAmount(raw, dec): dec = separatore decimale del file ('.' | ',') se noto.
+const parseAmount = (raw, dec) => LFCore.parseAmount(raw, dec);
+// parseDate(raw, fmt): fmt = auto | dmy | mdy | ymd. Restituisce YYYY-MM-DD in ora locale.
+const parseDate = (raw, fmt) => LFCore.parseDate(raw, fmt);
+// separatore decimale per gli importi scritti a mano: virgola, tranne in inglese ("1.500" in italiano = 1500)
+const uiDec = () => (window.LFI18N && window.LFI18N.lang==='en') ? '.' : ',';
 const pad = n => String(n).padStart(2,'0');
 const monthKey = iso => (iso||'').slice(0,7);
 
@@ -238,6 +272,7 @@ const HINTS = {
   csShare:['collection society','society share','collecting society','cmo','pro share','mechanical'],
   dateTo:['date to','transaction date to','to date'],
   currency:['currency code','currency','valuta','curr','ccy','cur'],
+  territory:['country of sale','sales country','country code','country','territory','territorio','paese','nazione','region'],
 };
 const colNorm = s => String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
 function autoMap(headers){
@@ -424,11 +459,36 @@ function addLabelFlow(){
   ACCOUNT.labels.push(l); ACCOUNT.activeLabel=l.id; DB=activeLabel(); save(); reloadViews(); rebuildAccountMenu();
   toast(tt('t.label_added')); goto('dashboard');
 }
+const paymentsOn=()=>!!(window.LF_CONFIG && window.LF_CONFIG.payments);
 function setPlan(plan){
   if(!PLAN_LIMITS[plan]) return;
+  if(paymentsOn()){
+    // pagamenti attivi: il piano lo decide Stripe (tabella subscriptions), mai il browser
+    if(plan===ACCOUNT.plan || plan==='free'){
+      if(!window.LF_billingPortal){ toast(tt('bill.offline')); return; }
+      toast(tt('bill.opening'));
+      window.LF_billingPortal().then(r=>{ if(r&&r.url) location.href=r.url; else toast(tt('bill.fail')+(r&&r.error?` (${r.error})`:'')); });
+      return;
+    }
+    if(!window.LF_checkout){ toast(tt('bill.offline')); return; }
+    toast(tt('bill.opening'));
+    window.LF_checkout(plan).then(r=>{
+      if(r&&r.url){ location.href=r.url; return; }
+      if(r&&r.error==='already_subscribed' && window.LF_billingPortal){   // cambio piano: dal portale Stripe
+        window.LF_billingPortal().then(p=>{ if(p&&p.url) location.href=p.url; else toast(tt('bill.fail')); }); return; }
+      toast(tt('bill.fail')+(r&&r.error?` (${r.error})`:'')); });
+    return;
+  }
+  // fase beta (pagamenti non attivi): il piano si sceglie liberamente. Le funzioni a costo
+  // (assistente AI) restano comunque controllate dal server.
   ACCOUNT.plan=plan; save(); renderOffers(); rebuildAccountMenu();
   toast(tt('t.plan_activated')+((PLAN_INFO[plan]||{}).name||plan));
 }
+// ritorno da Stripe Checkout
+(function(){ try{ const q=new URLSearchParams(location.search); const st=q.get('checkout'); if(!st) return;
+  setTimeout(()=>toast(st==='success'?tt('bill.success'):tt('bill.cancel')), 900);
+  q.delete('checkout'); const qs=q.toString(); history.replaceState(null,'',location.pathname+(qs?'?'+qs:'')+location.hash);
+}catch(e){} })();
 let billing='monthly';
 const fmtEur=n=> '€'+(Number.isInteger(n)? n : n.toFixed(2).replace('.',','));
 function renderOffers(){
@@ -443,7 +503,10 @@ function renderOffers(){
       if(btn){ btn.textContent=tt('off.soon'); btn.disabled=true; }
       return;
     }
-    if(btn){ btn.textContent=active?tt('off.current'):tt('off.activate'); btn.disabled=active; }
+    if(btn){
+      if(active && paymentsOn() && c.dataset.plan!=='free'){ btn.textContent=tt('bill.manage'); btn.disabled=false; }
+      else { btn.textContent=active?tt('off.current'):tt('off.activate'); btn.disabled=active; }
+    }
     const m=+c.dataset.monthly||0;
     if(priceEl){
       if(billing==='annual'){
@@ -524,7 +587,7 @@ function toggleNav(force){
   localStorage.setItem(NAV_KEY, c?'1':'0'); applyNavCollapsed();
 }
 $('#nav-collapse').onclick=()=>toggleNav();
-document.querySelector('.brand').addEventListener('click',()=>{ if(document.body.classList.contains('nav-collapsed')) toggleNav(false); });
+document.querySelector('.brand').addEventListener('click',e=>{ e.preventDefault(); if(document.body.classList.contains('nav-collapsed')) toggleNav(false); });
 applyNavCollapsed();
 
 function toast(msg){
@@ -535,26 +598,27 @@ function toast(msg){
 /* ============================================================================
    DASHBOARD
    ============================================================================ */
-const isoD=d=>d.toISOString().slice(0,10);
+// data in ora LOCALE (toISOString usa UTC e in Italia sposta il giorno indietro)
+const isoD=d=>LFCore.ymd(d);
+// giorni tra due date ISO (calcolo su date di calendario: niente errori al cambio dell'ora legale)
+const daysBetween=(a,b)=>Math.round((Date.UTC(+b.slice(0,4),+b.slice(5,7)-1,+b.slice(8,10))-Date.UTC(+a.slice(0,4),+a.slice(5,7)-1,+a.slice(8,10)))/86400000);
+// periodo precedente della stessa durata, che finisce il giorno prima di "from"
+function prevPeriod(from, to){ const len=Math.max(0,daysBetween(from,to)); const pt=LFCore.addDays(from,-1); return {prevFrom:LFCore.addDays(pt,-len), prevTo:pt}; }
 function periodRange(){
   const p=$('#dash-period').value;
   const now=new Date(), today=isoD(now);
   if(p==='all') return {from:null,to:null,prevFrom:null,prevTo:null};
   if(p==='custom'){
     const f=$('#dash-from').value||null, t=$('#dash-to').value||today;
-    let pf=null,pt=null;
-    if(f){ const d1=new Date(f+'T00:00:00'), d2=new Date(t+'T00:00:00');
-      const len=Math.max(0,d2-d1), ptD=new Date(d1.getTime()-86400000);
-      pt=isoD(ptD); pf=isoD(new Date(ptD.getTime()-len)); }
-    return {from:f,to:t,prevFrom:pf,prevTo:pt};
+    return Object.assign({from:f,to:t,prevFrom:null,prevTo:null}, f?prevPeriod(f,t):{});
   }
   let from;
   if(p==='ytd') from=new Date(now.getFullYear(),0,1);
   else if(p==='12m') from=new Date(now.getFullYear(),now.getMonth()-11,1);
   else if(p==='6m') from=new Date(now.getFullYear(),now.getMonth()-5,1);
   else from=new Date(now.getFullYear(),now.getMonth()-2,1);
-  const len=now-from, ptD=new Date(from.getTime()-86400000);
-  return {from:isoD(from),to:today,prevFrom:isoD(new Date(ptD.getTime()-len)),prevTo:isoD(ptD)};
+  const f=isoD(from);
+  return Object.assign({from:f,to:today}, prevPeriod(f,today));
 }
 const inRange=(t,from,to)=>{ const d=t.date||''; if(from&&d<from) return false; if(to&&d>to) return false; return true; };
 function sumKPI(txs){ let inc=0,exp=0; txs.forEach(t=>{ const v=toEur(t.net,t.currency); if(t.kind==='income') inc+=v; else exp+=Math.abs(v); }); return {inc,exp,net:inc-exp}; }
@@ -866,7 +930,7 @@ registerExport('releases', ()=>{
 });
 registerExport('royalty', ()=>{
   const {byArtist,labelTotal}=computeRoyalties();
-  const rows=Object.entries(byArtist).map(([n,v])=>[n, +v.total.toFixed(2)]).sort((a,b)=>b[1]-a[1]);
+  const rows=Object.values(byArtist).map(v=>[v.name, +v.total.toFixed(2)]).sort((a,b)=>b[1]-a[1]);
   rows.push(['Label (quota residua)', +labelTotal.toFixed(2)]);
   return {title:'Royalty — '+(DB.name||''), headers:['Artista','Royalty (€)'], rows};
 });
@@ -887,8 +951,8 @@ $('#btn-print').onclick=()=>{ document.body.classList.add('printing'); window.pr
 function loadDemo(){
   if(DB.transactions.length && !confirm(tt('confirm.load_demo'))) return;
   const now=new Date();
-  const D=(mAgo,day)=>new Date(now.getFullYear(),now.getMonth()-mAgo,day).toISOString().slice(0,10);
-  const Dp=n=>{ const d=new Date(now); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
+  const D=(mAgo,day)=>isoD(new Date(now.getFullYear(),now.getMonth()-mAgo,day));
+  const Dp=n=>LFCore.addDays(isoD(now), n);
   const yOf=ds=>{ try{ return new Date(ds+'T00:00:00').getFullYear(); }catch(e){ return now.getFullYear(); } };
   DB.artists=DB.artists||[]; DB.merch=DB.merch||[]; DB.planning=DB.planning||[];
   DB.events=DB.events||[]; DB.supports=DB.supports||[]; DB.recoup=DB.recoup||[]; DB.tasks=DB.tasks||[];
@@ -1006,6 +1070,7 @@ const TX_COLS = {
   artist:  {label:'Artista',     cell:t=>esc(t.artist)},
   isrc:    {label:'ISRC',        cell:t=>esc(t.isrc)},
   upc:     {label:'UPC',         cell:t=>esc(t.upc||t.code)},
+  territory:{label:'Paese',      cell:t=>esc(t.territory)},
   qty:     {label:'Q.tà', num:1, cell:t=>t.qty||''},
   gross:   {label:'Lordo', num:1,cell:t=>moneyCell(t.gross,t)},
   shipping:{label:'Spedizione', num:1, cell:t=>moneyCell(t.shipping,t)},
@@ -1048,7 +1113,7 @@ function applyTxFilters(){
   if(plat) rows=rows.filter(t=>t.platform===plat);
   if(from) rows=rows.filter(t=>(t.date||'')>=from);
   if(to)   rows=rows.filter(t=>(t.date||'')<=to);
-  if(q) rows=rows.filter(t=>[t.product,t.artist,t.catalog,t.platform,t.isrc,t.upc,t.code,t.note].join(' ').toLowerCase().includes(q));
+  if(q) rows=rows.filter(t=>[t.product,t.artist,t.catalog,t.platform,t.isrc,t.upc,t.code,t.territory,t.note].join(' ').toLowerCase().includes(q));
   const k=txSort.col;
   rows.sort((a,b)=>{ const va=txSortKey(k,a), vb=txSortKey(k,b);
     const r=(typeof va==='number')?(va-vb):String(va).localeCompare(String(vb)); return r*txSort.dir; });
@@ -1180,7 +1245,9 @@ function releaseByUPC(upc){ const u=(''+(upc||'')).replace(/\D/g,''); if(!u) ret
 function releaseByISRC(isrc){ const i=(isrc||'').trim().toLowerCase(); if(!i) return null;
   return releases().find(r=>(r.tracks||[]).some(x=>(x.isrc||'').trim().toLowerCase()===i)) || null; }
 // release collegata a un movimento: per catalogo, UPC, ISRC di traccia, o nome prodotto = titolo release
-function releaseForTx(t){ return releaseByCatalog(t.catalog) || releaseByUPC(t.upc||t.code) || releaseByISRC(t.isrc) || releaseByTitle(t.product) || null; }
+function releaseForTx(t, idx){ return idx ? LFCore.releaseForTx(idx, t) : (releaseByCatalog(t.catalog) || releaseByUPC(t.upc||t.code) || releaseByISRC(t.isrc) || releaseByTitle(t.product) || null); }
+// indice delle release (catalogo/UPC/ISRC/titolo) per i cicli su tutti i movimenti
+function relIdx(){ return LFCore.relIndex(releases()); }
 let relSort={col:'catalog',dir:1};
 function sortReleases(arr){
   const k=relSort.col, d=relSort.dir;
@@ -1343,8 +1410,8 @@ function catalogInsights(){
   const enr=(typeof txEnrichments==='function')?txEnrichments():[];
   const byField={}, rels=new Set();
   enr.forEach(e=>{ byField[e.field]=(byField[e.field]||0)+1; rels.add(e.relId); });
-  const unlinked=new Set();
-  (DB.transactions||[]).forEach(t=>{ const p=(t.product||'').trim(); if(p && !releaseForTx(t)) unlinked.add(p.toLowerCase()); });
+  const unlinked=new Set(); const idx=relIdx();
+  (DB.transactions||[]).forEach(t=>{ const p=(t.product||'').trim(); if(p && !releaseForTx(t, idx)) unlinked.add(p.toLowerCase()); });
   return { enrTotal:enr.length, enrRels:rels.size, byField, unlinked:unlinked.size };
 }
 let relEnrichDismissed='';
@@ -1369,11 +1436,11 @@ $('#rel-enrich-import')?.addEventListener('click', ()=>{ const o=$('#catimp-open
 $('#rel-enrich-x')?.addEventListener('click', ()=>{ relEnrichDismissed=relEnrichSig(catalogInsights()); const b=$('#rel-enrich-banner'); if(b) b.hidden=true; });
 /* crea release direttamente dai movimenti non ancora a catalogo (riusa la pipeline import) */
 function unlinkedTxItems(){
-  const groups=new Map();
+  const groups=new Map(); const idx=relIdx();
   (DB.transactions||[]).forEach(t=>{
     const product=(t.product||'').trim(), catalog=(t.catalog||'').trim(), upc=(t.upc||t.code||'').trim(), isrc=(t.isrc||'').trim(), artist=(t.artist||'').trim();
     if(!product && !catalog && !upc) return;
-    if(releaseForTx(t)) return;                 // già a catalogo
+    if(releaseForTx(t, idx)) return;                 // già a catalogo
     const key=(catalog||upc||product).toLowerCase();   // catalogo prima: unisce tutte le righe della stessa release
     let g=groups.get(key); if(!g){ g={catalog,upc,date:t.date||'',artist:'',tracks:[],albumTitles:[],_a:new Set(),_tt:new Set()}; groups.set(key,g); }
     if(!g.catalog&&catalog) g.catalog=catalog; if(!g.upc&&upc) g.upc=upc; if(!g.date&&t.date) g.date=t.date;
@@ -1653,12 +1720,7 @@ function autoMapCat(headers){
   fields.forEach(f=>{ if(map[f]==null) map[f]=-1; });
   return map;
 }
-function normDate(s){ s=String(s||'').trim(); if(!s) return '';
-  let m=s.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/); if(m) return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
-  m=s.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})/); if(m){ let a=+m[1],b=+m[2],day,mon;
-    if(a>12){day=a;mon=b;} else if(b>12){day=b;mon=a;} else {day=a;mon=b;} return `${m[3]}-${String(mon).padStart(2,'0')}-${String(day).padStart(2,'0')}`; }
-  const d=new Date(s); if(!isNaN(d.getTime())) return d.toISOString().slice(0,10); return '';
-}
+function normDate(s){ return LFCore.parseDate(s); }
 function catImpMap(){ const m={}; ['catalog','title','artist','date','upc','isrc'].forEach(f=>{ const sel=$('#catimp-'+f); m[f]=sel?(+sel.value):-1; }); return m; }
 // dedupe + creazione (condivisa da import CSV e ricerca online). items: {title,artist,date,upc,catalog,isrcs[]}
 /* ---------- Motore di disambiguazione (similarità % + unione) ---------- */
@@ -1810,6 +1872,7 @@ async function catOnlineSearch(){
   if(!window.LF_catalogSearch){ box.innerHTML=`<p class="ai-err">${tt('cimp.offline')}</p>`; return; }
   box.innerHTML=`<p class="muted small">${tt('cimp.searching')}</p>`;
   const res=await window.LF_catalogSearch({action:'search', query:q});
+  if(res&&res.error==='login_required'){ box.innerHTML=`<p class="ai-err">${esc(tt('cimp.login'))}</p>`; return; }
   if(!res||res.error){ box.innerHTML=`<p class="ai-err">${tt('cimp.search_fail')}${res&&res.error?` (${esc(String(res.error))})`:''}</p>`; return; }
   catCandidates=res.candidates||[]; catSpotify=false;   // Spotify disattivato dall'import (riattivabile)
   let html='';
@@ -1986,8 +2049,9 @@ function txEnrichments(){
     {f:'catalog',label:()=>tt('col.catalog'),get:t=>(t.catalog||'').trim()},
     {f:'artist', label:()=>tt('r.artist'),   get:t=>(t.artist||'').trim()},
   ];
+  const idx=relIdx();
   (DB.transactions||[]).forEach(t=>{
-    const rel=releaseForTx(t); if(!rel) return;
+    const rel=releaseForTx(t, idx); if(!rel) return;
     fields.forEach(fd=>{ const v=fd.get(t); if(!v) return;
       if((''+(rel[fd.f]||'')).trim()) return;                 // campo già compilato → non toccare
       const key=rel.id+'|'+fd.f; if(seen.has(key)) return; seen.add(key);
@@ -2048,64 +2112,17 @@ function computeRange(sel, fromEl, toEl){
   else from=new Date(now.getFullYear(),now.getMonth()-2,1);
   return {from:isoD(from), to:today};
 }
-function royaltyPeriod(txs){
-  const r=computeRange($('#roy-period'), $('#roy-from'), $('#roy-to'));
-  if(!r.from && !r.to) return txs;
-  return txs.filter(t=>inRange(t,r.from,r.to));
-}
-// trova release + quote applicabili a una transazione (traccia per ISRC, poi release)
-function splitsForTx(t){
-  const iso=(t.isrc||'').trim().toLowerCase();
-  const rel=releaseByCatalog(t.catalog) || releaseByUPC(t.upc||t.code) || releaseByISRC(t.isrc) || releaseByTitle(t.product);
-  if(rel){
-    if(iso && rel.tracks){ const tr=rel.tracks.find(x=>(x.isrc||'').trim().toLowerCase()===iso && x.splits&&x.splits.length);
-      if(tr) return {rel, splits:tr.splits}; }
-    return {rel, splits:rel.splits||[]};
-  }
-  if(iso){ for(const r of releases()){ const tr=(r.tracks||[]).find(x=>(x.isrc||'').trim().toLowerCase()===iso && x.splits&&x.splits.length);
-    if(tr) return {rel:r, splits:tr.splits}; } }
-  return null;
-}
-// calcola { artist -> {total, byRelease:{catalog->amount}} } e label total
-function computeRoyalties(){
-  const txs=royaltyPeriod(DB.transactions.filter(t=>t.kind==='income'));
-  const byArtist={}; let labelTotal=0;
-  txs.forEach(t=>{
-    const eur=toEur(t.net,t.currency);
-    const m=splitsForTx(t);
-    if(!m||!m.splits||!m.splits.length){ labelTotal+=eur; return; }
-    let assigned=0;
-    m.splits.forEach(s=>{
-      const share=eur*(+s.pct||0)/100; assigned+=share;
-      const a=(byArtist[s.name] ??= {total:0, byRelease:{}});
-      a.total+=share; a.byRelease[m.rel.catalog]=(a.byRelease[m.rel.catalog]||0)+share;
-    });
-    labelTotal += eur-assigned;
-  });
-  return { byArtist, labelTotal };
-}
-// royalty per artista su una lista di transazioni (senza filtro periodo) — per il recoupment
-function royaltyTotalsByArtist(txs){
-  const byArtist={};
-  txs.forEach(t=>{ const eur=toEur(t.net,t.currency); const m=splitsForTx(t);
-    if(!m||!m.splits||!m.splits.length) return;
-    m.splits.forEach(s=>{ const share=eur*(+s.pct||0)/100; (byArtist[s.name]??={total:0}).total+=share; });
-  });
-  return byArtist;
-}
-// recoupment: saldo recuperabile vs royalty maturate (lifetime) per artista
+// royalty, recoupment, pagamenti e statement: calcoli in core.js (testati).
+// Gli artisti sono raggruppati per chiave (nome senza differenze di maiuscole/spazi).
+function royaltyRange(){ return computeRange($('#roy-period'), $('#roy-from'), $('#roy-to')); }
+// { byArtist: {chiave: {key,name,total,byRelease}}, labelTotal } nel periodo selezionato
+function computeRoyalties(){ const r=royaltyRange(); return LFCore.computeRoyalties(DB, {from:r.from, to:r.to}); }
+// situazione ad oggi di ogni artista (royalty, recoupment, già pagato, saldo)
+function artistBalances(){ return LFCore.artistBalances(DB); }
+// solo gli artisti con un recoupment registrato (tabella recoupment, avvisi)
 function computeRecoup(){
-  const life=royaltyTotalsByArtist(DB.transactions.filter(t=>t.kind==='income'));
-  const acc={};
-  (DB.recoup||[]).forEach(r=>{ const a=(acc[r.artist]??={advance:0,cost:0});
-    if(r.kind==='advance') a.advance+=(+r.amount||0); else a.cost+=(+r.amount||0); });
-  return Object.keys(acc).map(name=>{
-    const recoupable=(acc[name].advance||0)+(acc[name].cost||0);
-    const roy=(life[name]&&life[name].total)||0;
-    return { name, advance:acc[name].advance||0, cost:acc[name].cost||0, recoupable,
-      royalties:roy, recouped:Math.min(roy,recoupable),
-      unrecouped:Math.max(0,recoupable-roy), payable:Math.max(0,roy-recoupable) };
-  }).sort((a,b)=>b.unrecouped-a.unrecouped || b.royalties-a.royalties);
+  return artistBalances().filter(r=>r.recoupable>0)
+    .sort((a,b)=>b.unrecouped-a.unrecouped || b.royalties-a.royalties);
 }
 function renderRoyalties(){
   const hasRel=releases().length>0;
@@ -2113,7 +2130,7 @@ function renderRoyalties(){
   renderRecoup();
   renderPayCenter();
   const { byArtist, labelTotal } = computeRoyalties();
-  const rows=Object.entries(byArtist).map(([name,v])=>({name,...v})).sort((a,b)=>b.total-a.total);
+  const rows=Object.values(byArtist).sort((a,b)=>b.total-a.total);
   const tbl=$('#table-roy-artist'), cardsBox=$('#roy-cards'), wrap=$('#roy-table-wrap');
   if(!hasRel){ tbl.innerHTML=''; if(cardsBox) cardsBox.innerHTML=''; $('#roy-detail-panel').hidden=true; mountPager(tbl,'roy',{total:0}); return; }
   const info=paginate(rows,'roy'); const pr=info.slice;
@@ -2124,62 +2141,82 @@ function renderRoyalties(){
     cardsBox.innerHTML = pr.map(r=>{
       const top=Object.entries(r.byRelease||{}).sort((a,b)=>b[1]-a[1]).slice(0,3)
         .map(([c,a])=>`<div class="royc-line"><span>${relCatLink(c)}</span><b>${fmtMoney(a)}</b></div>`).join('');
-      return `<div class="roy-card" data-artist="${esc(r.name)}">
+      return `<div class="roy-card" data-artist="${esc(r.key)}">
         <div class="royc-head"><span class="royc-name">${artNameLink(r.name)}</span><span class="royc-tot pos">${fmtMoney(r.total)}</span></div>
         ${top?`<div class="royc-body">${top}</div>`:''}</div>`;
     }).join('') + (isLast?`<div class="roy-card roy-card--label"><div class="royc-head"><span class="royc-name">${tt('roy.label_residual')}</span><span class="royc-tot">${fmtMoney(labelTotal)}</span></div></div>`:'');
-    cardsBox.querySelectorAll('.roy-card[data-artist]').forEach(c=>c.onclick=e=>{ if(e.target.closest('[data-rel-open],[data-art-open]')) return; showRoyaltyDetail(c.dataset.artist,byArtist[c.dataset.artist]); });
+    cardsBox.querySelectorAll('.roy-card[data-artist]').forEach(c=>c.onclick=e=>{ if(e.target.closest('[data-rel-open],[data-art-open]')) return; const a=byArtist[c.dataset.artist]; if(a) showRoyaltyDetail(a.name,a); });
     clearPagerAfter(tbl); mountPager(cardsBox,'roy',info);
   } else {
     if(wrap) wrap.hidden=false; if(cardsBox){ cardsBox.hidden=true; cardsBox.innerHTML=''; }
     clearPagerAfter(cardsBox);
     tbl.innerHTML=`<thead><tr><th>${tt('roy.h.artist')}</th><th class="num">${tt('roy.h.amount')}</th></tr></thead>
-      <tbody>${pr.map(r=>`<tr data-artist="${esc(r.name)}" style="cursor:pointer">
+      <tbody>${pr.map(r=>`<tr data-artist="${esc(r.key)}" style="cursor:pointer">
         <td data-label="Artista">${artNameLink(r.name)}</td><td class="num pos" data-label="Royalty (€)">${fmtMoney(r.total)}</td></tr>`).join('')}
         ${isLast?`<tr><td data-label=""><strong>${tt('roy.label_residual')}</strong></td><td class="num" data-label="${tt('roy.h.amount')}"><strong>${fmtMoney(labelTotal)}</strong></td></tr>`:''}
         ${rows.length?'':`<tr><td colspan="2" class="muted">${tt('empty.noroy')}</td></tr>`}</tbody>`;
-    $$('#table-roy-artist tbody tr[data-artist]').forEach(tr=>tr.onclick=e=>{ if(e.target.closest('[data-art-open]')) return; showRoyaltyDetail(tr.dataset.artist,byArtist[tr.dataset.artist]); });
+    $$('#table-roy-artist tbody tr[data-artist]').forEach(tr=>tr.onclick=e=>{ if(e.target.closest('[data-art-open]')) return; const a=byArtist[tr.dataset.artist]; if(a) showRoyaltyDetail(a.name,a); });
     mountPager(tbl,'roy',info);
   }
   syncVMButtons();
 }
-/* ---- Centro pagamenti artisti: chi è pronto da pagare (royalty − recoupment) ---- */
+/* ---- Centro pagamenti artisti: saldo = royalty − recoupment − pagamenti già registrati ---- */
 function artistPayables(){
-  const life=royaltyTotalsByArtist(DB.transactions.filter(t=>t.kind==='income'));
-  const rec={};
-  (DB.recoup||[]).forEach(r=>{ const k=normArt(r.artist); rec[k]=(rec[k]||0)+(+r.amount||0); });
-  const out=[];
-  Object.keys(life).forEach(name=>{
-    const roy=(life[name]&&life[name].total)||0; if(roy<=0) return;
-    const recoupable=rec[normArt(name)]||0;
-    const payable=roy-recoupable;
-    if(payable<=0.005) return;
-    const art=(DB.artists||[]).find(a=>normArt(a.name)===normArt(name));
-    out.push({name, payable, royalties:roy, recoupable, iban:art?(art.iban||''):'', inRoster:!!art});
-  });
-  return out.sort((a,b)=>b.payable-a.payable);
+  return artistBalances().filter(r=>r.payable>0.005).map(r=>{
+    const art=(DB.artists||[]).find(a=>LFCore.artKey(a.name)===r.key);
+    return Object.assign({}, r, { iban:art?(art.iban||''):'', inRoster:!!art });
+  }).sort((a,b)=>b.payable-a.payable);
 }
 function renderPayCenter(){
   const panel=$('#pay-center'); if(!panel) return;
   const rows=artistPayables();
+  renderPayouts();
   if(!rows.length){ panel.hidden=true; return; }
   const total=rows.reduce((s,r)=>s+r.payable,0);
   const tot=$('#pay-total'); if(tot) tot.textContent=tt('pay.total').replace('{n}',rows.length).replace('{amt}',fmtMoney(total));
   $('#pay-list').innerHTML=rows.map(r=>`
-    <button class="pay-row" data-pay-artist="${esc(r.name)}" type="button">
-      <span class="pay-name">${esc(r.name)}</span>
-      ${!r.iban?`<span class="pay-flag" title="${tt('pay.no_iban')}">⚠ ${tt('pay.no_iban')}</span>`:''}
-      <span class="spacer"></span>
-      <span class="pay-amt pos">${fmtMoney(r.payable)}</span>
-      <span class="pay-go">${tt('pay.statement')} →</span>
-    </button>`).join('');
+    <div class="pay-row">
+      <button class="pay-main" data-pay-artist="${esc(r.key)}" type="button">
+        <span class="pay-name">${esc(r.name)}</span>
+        ${!r.iban?`<span class="pay-flag" title="${esc(tt('pay.no_iban'))}">⚠ ${esc(tt('pay.no_iban'))}</span>`:''}
+        ${r.paid>0?`<span class="pay-paid muted small">${esc(tt('pay.paid_so_far').replace('{amt}',fmtMoney(r.paid)))}</span>`:''}
+        <span class="spacer"></span>
+        <span class="pay-amt pos">${fmtMoney(r.payable)}</span>
+        <span class="pay-go">${esc(tt('pay.statement'))} →</span>
+      </button>
+      <button class="btn btn-sm pay-mark" data-pay-mark="${esc(r.key)}" type="button" title="${esc(tt('pay.mark_title'))}">✓ ${esc(tt('pay.mark'))}</button>
+    </div>`).join('');
   panel.hidden=false;
 }
+/* registra un pagamento fatto a un artista (scala il saldo da pagare) */
+function recordPayout(key){
+  const r=artistBalances().find(x=>x.key===key); if(!r) return;
+  const def=(Math.round(r.payable*100)/100).toFixed(2).replace('.',uiDec());
+  const raw=prompt(tt('pay.mark_amount').replace('{name}',r.name).replace('{amt}',fmtMoney(r.payable)), def);
+  if(raw===null) return;
+  const amount=Math.round(parseAmount(raw, uiDec())*100)/100;
+  if(!(amount>0)){ toast(tt('pay.mark_invalid')); return; }
+  DB.payouts=DB.payouts||[];
+  DB.payouts.push({ id:uid(), artist:r.name, amount, date:todayISO(), note:'' });
+  save(); renderRoyalties(); toast(tt('pay.marked').replace('{name}',r.name).replace('{amt}',fmtMoney(amount)));
+}
+function renderPayouts(){
+  const el=$('#payout-entries'); if(!el) return;
+  const list=(DB.payouts||[]).slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  el.innerHTML = list.length
+    ? `<ul class="recoup-list">`+list.map(p=>`<li><span class="rc-kind rc-payout">${esc(tt('pay.paid'))}</span><b class="rc-art">${esc(p.artist)}</b><span class="muted small">${fmtDate(p.date||'')}</span><span class="rc-amt">${fmtMoney(p.amount)}</span><span class="muted small rc-note">${esc(p.note||'')}</span><button class="po-del" data-id="${esc(p.id)}" title="${esc(tt('common.delete'))}" aria-label="${esc(tt('common.delete'))}">✕</button></li>`).join('')+`</ul>`
+    : `<p class="muted small">${esc(tt('pay.history_empty'))}</p>`;
+}
+document.addEventListener('click',e=>{ const b=e.target.closest('.po-del'); if(!b) return;
+  if(!confirm(tt('pay.del_confirm'))) return;
+  DB.payouts=(DB.payouts||[]).filter(p=>p.id!==b.dataset.id); save(); renderRoyalties(); });
 $('#pay-list')?.addEventListener('click', e=>{
+  const m=e.target.closest('[data-pay-mark]'); if(m){ recordPayout(m.dataset.payMark); return; }
   const b=e.target.closest('[data-pay-artist]'); if(!b) return;
-  const name=b.dataset.payArtist;
   const { byArtist } = computeRoyalties();
-  if(byArtist&&byArtist[name]){ showRoyaltyDetail(name, byArtist[name]); $('#roy-detail-panel')?.scrollIntoView({behavior:'smooth'}); }
+  const a=byArtist&&byArtist[b.dataset.payArtist];
+  if(a){ showRoyaltyDetail(a.name, a); $('#roy-detail-panel')?.scrollIntoView({behavior:'smooth'}); }
+  else toast(tt('pay.no_period'));
 });
 function renderRecoup(){
   const allRows=computeRecoup();
@@ -2223,7 +2260,7 @@ function showRoyaltyDetail(name,data){
   $('#roy-detail-title').textContent=tt('roy.detail')+' — '+name;
   const rows=Object.entries(data.byRelease).map(([cat,amt])=>({cat,amt})).sort((a,b)=>b.amt-a.amt);
   $('#table-roy-detail').innerHTML=`<thead><tr><th>${tt('roy.h.release')}</th><th class="num">${tt('roy.h.amount')}</th></tr></thead>
-    <tbody>${rows.map(r=>{ const rel=releaseByCatalog(r.cat); const t=rel&&rel.title?` — ${esc(rel.title)}`:'';
+    <tbody>${rows.map(r=>{ const rel=releaseByCatalog(r.cat)||releaseByTitle(r.cat); const t=rel&&rel.title&&rel.title!==r.cat?` — ${esc(rel.title)}`:'';
       return `<tr><td data-label="Release">${rel?`<span class="lf-link" data-rel-open="${rel.id}">${esc(r.cat)}${t}</span>`:esc(r.cat)+t}</td><td class="num pos" data-label="Royalty (€)">${fmtMoney(r.amt)}</td></tr>`; }).join('')}
       <tr><td data-label=""><strong>${tt('roy.total')}</strong></td><td class="num pos" data-label="${tt('roy.h.amount')}"><strong>${fmtMoney(data.total)}</strong></td></tr></tbody>`;
   $('#roy-detail-panel').hidden=false;
@@ -2236,24 +2273,11 @@ $('#roy-from').onchange=$('#roy-to').onchange=renderRoyalties;
 syncRoyDates();
 /* ---------- Statement royalty professionale per artista ---------- */
 function artistStatement(name){
-  const range=computeRange($('#roy-period'), $('#roy-from'), $('#roy-to'));
-  const inP = t => (!range.from && !range.to) ? true : inRange(t,range.from,range.to);
-  const income=(DB.transactions||[]).filter(t=>t.kind==='income');
-  const lc=(name||'').trim().toLowerCase();
-  const lines=[]; let total=0;
-  income.filter(inP).forEach(t=>{ const m=splitsForTx(t); if(!m||!m.splits) return;
-    const sp=m.splits.find(s=>(s.name||'').trim().toLowerCase()===lc); if(!sp) return;
-    const eur=toEur(t.net,t.currency); const pct=+sp.pct||0; const share=eur*pct/100; total+=share;
-    lines.push({date:t.date||'', product:(t.product||(m.rel&&m.rel.title)||''), catalog:(m.rel&&m.rel.catalog)||t.catalog||'', gross:eur, pct, share}); });
-  lines.sort((a,b)=>String(a.date).localeCompare(String(b.date)));
-  const recoupable=(DB.recoup||[]).filter(r=>(r.artist||'').trim().toLowerCase()===lc).reduce((s,r)=>s+(+r.amount||0),0);
-  const lifeRoy=(royaltyTotalsByArtist(income)[name]||{total:0}).total;
-  const beforeRoy=range.from?(royaltyTotalsByArtist(income.filter(t=>String(t.date||'')<range.from))[name]||{total:0}).total:0;
-  const netPay=Math.max(0, Math.max(0,lifeRoy-recoupable)-Math.max(0,beforeRoy-recoupable));
-  return { name, range, lines, total, recoupable, recouped:Math.min(lifeRoy,recoupable), residual:Math.max(0,recoupable-lifeRoy), netPay };
+  const range=royaltyRange();
+  return Object.assign(LFCore.computeStatement(DB, name, range.from, range.to), {range});
 }
 function statementHTML(st){
-  const logo=(DB.profile&&DB.profile.logo)||'';
+  const logo=LFCore.safeImgSrc((DB.profile&&DB.profile.logo)||'');
   const period=(!st.range.from&&!st.range.to)?tt('stmt.allperiods')
     :((st.range.from?fmtDate(st.range.from):'—')+' – '+(st.range.to?fmtDate(st.range.to):fmtDate(isoD(new Date()))));
   const rows=st.lines.length?st.lines.map(l=>`<tr>
@@ -2264,7 +2288,7 @@ function statementHTML(st){
       <tr><td>${tt('stmt.recoupable')}</td><td class="r">${fmtMoney(st.recoupable)}</td></tr>
       <tr><td>${tt('stmt.recouped')}</td><td class="r">${fmtMoney(st.recouped)}</td></tr>
       <tr><td>${tt('stmt.residual')}</td><td class="r">${fmtMoney(st.residual)}</td></tr></tbody></table>`:'';
-  return `<div class="stmt-lh">${logo?`<img class="stmt-lh-logo" src="${logo}">`:''}<div class="stmt-lh-name">${esc(labelName())}</div></div>
+  return `<div class="stmt-lh">${logo?`<img class="stmt-lh-logo" src="${esc(logo)}" alt="">`:''}<div class="stmt-lh-name">${esc(labelName())}</div></div>
    <h1 class="stmt-h1">${tt('stmt.title')}</h1>
    <div class="stmt-meta"><div><span>${tt('stmt.artist')}:</span> <b>${esc(st.name)}</b></div>
      <div><span>${tt('stmt.period')}:</span> <b>${period}</b></div>
@@ -2274,6 +2298,10 @@ function statementHTML(st){
      <tbody>${rows}</tbody><tfoot><tr><td colspan="5">${tt('stmt.total')}</td><td class="r">${fmtMoney(st.total)}</td></tr></tfoot></table>
    ${recoup}
    <div class="stmt-net"><span>${tt('stmt.net')}</span><b>${fmtMoney(st.netPay)}</b></div>
+   ${(st.paidToDate>0||st.paidInPeriod>0)?`<table class="stmt-sum"><tbody>
+      <tr><td>${tt('stmt.paid_period')}</td><td class="r">${fmtMoney(st.paidInPeriod)}</td></tr>
+      <tr><td>${tt('stmt.paid_total')}</td><td class="r">${fmtMoney(st.paidToDate)}</td></tr>
+      <tr><td><b>${tt('stmt.balance')}</b></td><td class="r"><b>${fmtMoney(st.balance)}</b></td></tr></tbody></table>`:''}
    <p class="stmt-note">${tt('stmt.note')}</p>
    <p class="stmt-foot">${tt('stmt.gen')} Label Finance · ${esc(labelName())} · ${fmtDate(isoD(new Date()))}</p>`;
 }
@@ -2328,7 +2356,7 @@ function openTx(id){
   $('#tx-modal-title').textContent = t ? tt('tx.modal.edit') : (curKind==='expense'?tt('tx.modal.new_exp'):tt('tx.modal.new_inc'));
   const k = t ? t.kind : curKind;
   $('#f-id').value=t?.id||''; $('#f-kind').value=k;
-  $('#f-date').value=t?.date||new Date().toISOString().slice(0,10);
+  $('#f-date').value=t?.date||isoD(new Date());
   $('#f-dateto').value=t?.dateTo||'';
   $('#f-platform').value=t?.platform||''; $('#f-type').value=t?.type||(k==='expense'?'expense':'digital');
   $('#f-catalog').value=t?.catalog||''; $('#f-product').value=t?.product||'';
@@ -2404,10 +2432,11 @@ $('#tx-form').onsubmit=e=>{
     catalog:$('#f-catalog').value.trim(), product:$('#f-product').value.trim(),
     artist:$('#f-artist').value.trim(),
     isrc:$('#f-isrc').value.trim(), upc:$('#f-upc').value.trim(),
-    qty:Number($('#f-qty').value)||0, gross:parseAmount($('#f-gross').value),
-    shipping:parseAmount($('#f-shipping').value), taxes:parseAmount($('#f-taxes').value),
-    payProcFees:parseAmount($('#f-payprocfees').value), fees:parseAmount($('#f-fees').value),
-    net:parseAmount($('#f-net').value), csShare:parseAmount($('#f-csshare').value),
+    // i campi type="number" danno sempre il punto come separatore decimale
+    qty:Number($('#f-qty').value)||0, gross:parseAmount($('#f-gross').value, '.'),
+    shipping:parseAmount($('#f-shipping').value, '.'), taxes:parseAmount($('#f-taxes').value, '.'),
+    payProcFees:parseAmount($('#f-payprocfees').value, '.'), fees:parseAmount($('#f-fees').value, '.'),
+    net:parseAmount($('#f-net').value, '.'), csShare:parseAmount($('#f-csshare').value, '.'),
     currency:($('#f-currency').value||'EUR').toUpperCase().slice(0,3), note:$('#f-note').value.trim(),
   };
   if(!id){ const an=txAmountAnomaly(rec.net, rec.kind);
@@ -2419,27 +2448,30 @@ $('#tx-form').onsubmit=e=>{
     const tpl={...rec}; delete tpl.id; delete tpl.date; delete tpl.dateTo; delete tpl._recur;
     const freq=$('#f-recur-freq')?.value||'monthly';
     DB.recurring=DB.recurring||[];
-    DB.recurring.push({ id:newId(), active:true, freq, tpl, anchor:rec.date, nextDate:recurAddPeriod(rec.date, freq) });
+    DB.recurring.push({ id:newId(), active:true, freq, tpl, anchor:rec.date, nextDate:recurAddPeriod(rec.date, freq, recurAnchorDay({anchor:rec.date})) });
   }
   save(); $('#tx-modal').hidden=true; renderTx(); toast(tt('t.saved'));
 };
 
 /* ---- Uscite ricorrenti (es. abbonamenti): si aggiungono da sole alla data del pagamento ---- */
-function recurAddPeriod(dateStr, freq){
-  const d=new Date((dateStr||'')+'T00:00:00'); if(isNaN(+d)) return dateStr;
-  if(freq==='weekly') d.setDate(d.getDate()+7);
-  else if(freq==='yearly') d.setFullYear(d.getFullYear()+1);
-  else d.setMonth(d.getMonth()+1);
-  return d.toISOString().slice(0,10);
-}
+// prossima scadenza: tiene il giorno del primo pagamento (31 → 28/29 a febbraio → 31 a marzo)
+function recurAnchorDay(r){ return +(String((r&&r.anchor)||(r&&r.nextDate)||'').slice(8,10))||undefined; }
+function recurAddPeriod(dateStr, freq, anchorDay){ return LFCore.addPeriod(dateStr, freq, anchorDay); }
 function processRecurring(){
   const today=todayISO(); let added=0;
-  (DB.recurring||[]).forEach(r=>{
-    if(!r.active || !r.tpl) return; let guard=0;
-    while(r.nextDate && r.nextDate<=today && guard<400){
-      DB.transactions.push(Object.assign({}, r.tpl, { id:uid(), kind:'expense', date:r.nextDate, _recur:r.id }));
-      added++; guard++; r.nextDate=recurAddPeriod(r.nextDate, r.freq);
-    }
+  (ACCOUNT.labels||[]).forEach(lab=>{
+    (lab.recurring||[]).forEach(r=>{
+      if(!r.active || !r.tpl) return; let guard=0;
+      while(r.nextDate && r.nextDate<=today && guard<400){
+        // id fisso per regola+data: se due dispositivi generano la stessa spesa, l'unione la tiene una volta sola
+        const id='rc_'+r.id+'_'+r.nextDate;
+        if(!(lab.transactions||[]).some(t=>t.id===id)){
+          (lab.transactions=lab.transactions||[]).push(Object.assign({}, r.tpl, { id, kind:'expense', date:r.nextDate, _recur:r.id }));
+          added++;
+        }
+        guard++; r.nextDate=recurAddPeriod(r.nextDate, r.freq, recurAnchorDay(r));
+      }
+    });
   });
   if(added){
     save();
@@ -2542,36 +2574,36 @@ const DISTRO_PRESETS={
     date:['date'], type:['item type'], artist:['artist'], product:['item name'],
     catalog:['catalog number','catalog'], upc:['upc'], qty:['quantity'],
     gross:['item total','sub total','item price'], fees:['transaction fee'],
-    net:['net amount'], currency:['currency'] } },
+    net:['net amount'], currency:['currency'], territory:['country'] } },
   distrokid:{ name:'DistroKid', platform:'DistroKid', datefmt:'ymd', fields:{
     date:['reporting date','sale month','sale date'], platform:['store'], type:['type'],
     product:['title','song'], artist:['artist'], isrc:['isrc'], upc:['upc'],
-    qty:['quantity'], net:['earnings'], currency:['currency'] } },
+    qty:['quantity'], net:['earnings'], currency:['currency'], territory:['country','territory'] } },
   believe:{ name:'Believe', platform:'Believe', datefmt:'dmy', fields:{
     date:['sales period','period','date'], platform:['platform','dsp','store'],
     product:['track title','release title','title'], artist:['artist name','artist'],
     isrc:['isrc'], upc:['upc','ean'], qty:['quantity','units','net qty'],
-    net:['net revenue','net income','royalty','net'], currency:['currency'] } },
+    net:['net revenue','net income','royalty','net'], currency:['currency'], territory:['country','territory'] } },
   symphonic:{ name:'Symphonic', platform:'Symphonic', datefmt:'ymd', fields:{
     date:['sale date','date','period'], platform:['store','dsp','retailer'],
     product:['title','track'], artist:['artist'], isrc:['isrc'], upc:['upc'],
-    qty:['quantity','units'], net:['net','earnings','revenue'], currency:['currency'] } },
+    qty:['quantity','units'], net:['net','earnings','revenue'], currency:['currency'], territory:['country','territory'] } },
   tunecore:{ name:'TuneCore', platform:'TuneCore', datefmt:'ymd', fields:{
     date:['sales period','reporting','date','period'], platform:['store','retailer','dsp'],
     product:['song title','album title','title','song'], artist:['artist'], isrc:['isrc'], upc:['upc'],
-    qty:['units sold','units','quantity','plays','streams'], net:['your earnings','earnings','net'], currency:['currency'] } },
+    qty:['units sold','units','quantity','plays','streams'], net:['your earnings','earnings','net'], currency:['currency'], territory:['country','territory'] } },
   ditto:{ name:'Ditto Music', platform:'Ditto', datefmt:'ymd', fields:{
     date:['period','date','sale month'], platform:['store','shop','dsp'],
     product:['track','release','title'], artist:['artist'], isrc:['isrc'], upc:['upc','barcode'],
-    qty:['quantity','units','streams'], net:['revenue','royalties','earnings','net'], currency:['currency'] } },
+    qty:['quantity','units','streams'], net:['revenue','royalties','earnings','net'], currency:['currency'], territory:['country','territory'] } },
   cdbaby:{ name:'CD Baby', platform:'CD Baby', datefmt:'ymd', fields:{
     date:['report date','sale date','date','period'], platform:['partner','store','dsp'],
     product:['track','album','title'], artist:['artist'], isrc:['isrc'], upc:['upc'],
-    qty:['quantity','units','plays'], net:['payable','earnings','net','your share'], currency:['currency'] } },
+    qty:['quantity','units','plays'], net:['payable','earnings','net','your share'], currency:['currency'], territory:['country','territory'] } },
   labelengine:{ name:'Label Engine', platform:'Label Engine', datefmt:'ymd', fields:{
     date:['sales period','date','period','month'], platform:['store','retailer','dsp','shop'],
     product:['track title','release title','title','track'], artist:['artist'], isrc:['isrc'], upc:['upc','catalog'],
-    qty:['quantity','units','qty'], net:['net','royalty','earnings','revenue'], currency:['currency'] } },
+    qty:['quantity','units','qty'], net:['net','royalty','earnings','revenue'], currency:['currency'], territory:['country','territory'] } },
 };
 function detectDistro(){
   let best=null, bestScore=2;
@@ -2608,34 +2640,44 @@ function buildMapFields(initial={}){
 function currentMap(){
   const m={}; $$('.map-sel').forEach(s=>{ if(s.value!=='') m[s.dataset.field]=+s.value; }); return m;
 }
-function rowToRec(cols,map){
-  const kind=$('#map-kind').value, fmt=$('#map-datefmt').value;
+/* formato del file deciso una volta su tutte le righe: separatore decimale e giorno/mese */
+const AMOUNT_FIELDS=['gross','shipping','taxes','payProcFees','fees','csShare','net','qty'];
+function importContext(map){
+  const vals=[]; AMOUNT_FIELDS.forEach(f=>{ if(map[f]!=null) importRows.forEach(r=>vals.push(r[map[f]])); });
+  const dates=[]; ['date','dateTo'].forEach(f=>{ if(map[f]!=null) importRows.forEach(r=>dates.push(r[map[f]])); });
+  const sel=$('#map-datefmt').value;
+  return { dec:LFCore.detectDecimalSep(vals), datefmt: sel==='auto' ? LFCore.detectDateFormat(dates) : sel };
+}
+function rowToRec(cols,map,ctx){
+  ctx=ctx||importContext(map);
+  const kind=$('#map-kind').value, fmt=ctx.datefmt, dec=ctx.dec;
   const defCur=($('#map-currency').value||'EUR').toUpperCase().slice(0,3);
-  const get=f=> map[f]!=null ? (cols[map[f]]??'') : '';
-  const gross=parseAmount(get('gross')), fees=parseAmount(get('fees'));
-  let net = map.net!=null ? parseAmount(get('net')) : (gross-fees);
+  const get=f=> map[f]!=null ? String(cols[map[f]]??'') : '';
+  const amt=f=>parseAmount(get(f), dec);
+  const gross=amt('gross'), fees=amt('fees');
+  let net = map.net!=null ? amt('net') : (gross-fees);
   if(kind==='expense') net=Math.abs(net);
   return {
     id:uid(), kind, date:parseDate(get('date'),fmt), dateTo:parseDate(get('dateTo'),fmt),
     platform:($('#map-platform').value.trim()||get('platform')).trim(),
     type:get('type').trim()||(kind==='expense'?'expense':'digital'),
     catalog:get('catalog').trim(), product:get('product').trim(), artist:get('artist').trim(),
-    isrc:get('isrc').trim(), upc:get('upc').trim(),
-    qty:Number(parseAmount(get('qty')))||(map.qty!=null?0:1),
-    gross, shipping:parseAmount(get('shipping')), taxes:parseAmount(get('taxes')),
-    payProcFees:parseAmount(get('payProcFees')), fees, net, csShare:parseAmount(get('csShare')),
-    currency:(get('currency')||defCur).toUpperCase().slice(0,3), note:'',
+    isrc:get('isrc').trim(), upc:get('upc').trim(), territory:get('territory').trim().toUpperCase(),
+    qty:Number(amt('qty'))||(map.qty!=null?0:1),
+    gross, shipping:amt('shipping'), taxes:amt('taxes'),
+    payProcFees:amt('payProcFees'), fees, net, csShare:amt('csShare'),
+    currency:(get('currency')||defCur).trim().toUpperCase().slice(0,3), note:'',
   };
 }
+function importRecs(map){ const ctx=importContext(map); return importRows.map(r=>rowToRec(r,map,ctx)); }
 /* controlli intelligenti pre-import: segnala anomalie prima di salvare */
-function importChecks(map){
-  const recs=importRows.map(r=>rowToRec(r,map));
+function importChecks(map, recs){
+  recs=recs||importRecs(map);
   const noDate=recs.filter(r=>!r.date).length;
   const noNet=recs.filter(r=>!(+r.net)).length;
   const seen=new Set(); let dupIn=0;
   recs.forEach(r=>{ const s=txSig(r); if(seen.has(s)) dupIn++; else seen.add(s); });
-  const existing=new Set(DB.transactions.map(txSig));
-  const dupEx=recs.filter(r=>existing.has(txSig(r))).length;
+  const dupEx=LFCore.dedupAgainst(DB.transactions, recs).skipped;
   const curs=[...new Set(recs.map(r=>r.currency).filter(Boolean))];
   const nets=recs.map(r=>Math.abs(+r.net)).filter(v=>v>0).sort((a,b)=>a-b);
   let outliers=0;
@@ -2644,16 +2686,16 @@ function importChecks(map){
   if(outliers) w.push({lvl:'warn', t:tt('imp.chk_outlier').replace('{n}',outliers)});
   if(noDate) w.push({lvl:'warn', t:tt('imp.chk_nodate').replace('{n}',noDate)});
   if(noNet) w.push({lvl:'warn', t:tt('imp.chk_nonet').replace('{n}',noNet)});
-  if(dupIn) w.push({lvl:'warn', t:tt('imp.chk_dupin').replace('{n}',dupIn)});
+  if(dupIn) w.push({lvl:'info', t:tt('imp.chk_dupin_kept').replace('{n}',dupIn)});
   if(dupEx) w.push({lvl:'info', t:tt('imp.chk_dupex').replace('{n}',dupEx)});
   if(curs.length>1) w.push({lvl:'info', t:tt('imp.chk_curmix').replace('{c}',curs.join(', '))});
   return w;
 }
 function renderPreview(){
   const map=currentMap();
-  const recs=importRows.slice(0,8).map(r=>rowToRec(r,map));
+  const all=importRecs(map), recs=all.slice(0,8);
   const cb=$('#preview-checks');
-  if(cb){ const w=importChecks(map);
+  if(cb){ const w=importChecks(map, all);
     cb.innerHTML=w.map(x=>`<div class="imp-chk imp-chk--${x.lvl}"><span>${x.lvl==='warn'?'⚠':'ℹ'}</span> ${esc(x.t)}</div>`).join('');
     cb.hidden=!w.length;
   }
@@ -2666,16 +2708,16 @@ function renderPreview(){
      <td class="num">${fmtMoney(t.net,t.currency)}</td><td>${esc(t.currency)}</td></tr>`).join('')}</tbody>`;
 }
 $('#import-cancel').onclick=()=>{ $('#import-config').hidden=true; $('#file-input').value=''; };
-const txSig=t=>[t.kind,t.date,t.platform,(t.catalog||'').toLowerCase(),(t.product||'').toLowerCase(),
-  t.isrc,t.upc,Math.round((+t.net||0)*100),t.qty].join('|');
+const txSig=t=>LFCore.txSig(t);
 $('#import-confirm').onclick=()=>{
   const map=currentMap();
   if(map.net==null && map.gross==null){ toast(tt('t.map_min')); return; }
-  let recs=importRows.map(r=>rowToRec(r,map));
+  let recs=importRecs(map);
   const total=recs.length;
-  // quante righe risultano già presenti tra i movimenti esistenti?
-  const existing=new Set(DB.transactions.map(txSig));
-  let dupExisting=0; recs.forEach(r=>{ if(existing.has(txSig(r))) dupExisting++; });
+  // righe già presenti tra i movimenti esistenti (righe uguali nello stesso file NON sono duplicati:
+  // i report dei distributori ripetono la stessa traccia per paesi diversi)
+  const dd=LFCore.dedupAgainst(DB.transactions, recs);
+  const dupExisting=dd.skipped;
   const dedup=$('#import-dedup').checked;
   // avviso pre-import se gran parte del file sembra già importato
   if(dupExisting>0 && dupExisting/total>=0.5){
@@ -2683,10 +2725,7 @@ $('#import-confirm').onclick=()=>{
     if(!confirm(msg)) return;
   }
   let skipped=0;
-  if(dedup){
-    const seen=new Set(existing);
-    recs=recs.filter(r=>{ const s=txSig(r); if(seen.has(s)){ skipped++; return false; } seen.add(s); return true; });
-  }
+  if(dedup){ recs=dd.kept; skipped=dd.skipped; }
   if(recs.length){
     const batchId=newId(); recs.forEach(r=>{ r._imp=batchId; });
     DB.transactions.push(...recs);
@@ -2806,8 +2845,8 @@ function buildAiSummary(){
   const plat={}; txs.forEach(t=>{ const k=t.platform||'—'; plat[k]=(plat[k]||0)+toEur(t.net,t.currency)*(t.kind==='income'?1:-1); });
   const piattaforme=Object.entries(plat).map(([k,v])=>({nome:k, netto:+v.toFixed(2)})).sort((a,b)=>b.netto-a.netto).slice(0,5);
   // artisti per royalty (a vita) + recoupment
-  const life=royaltyTotalsByArtist(inc);
-  const artisti=Object.entries(life).map(([k,v])=>({nome:k, royalty:+v.total.toFixed(2)})).sort((a,b)=>b.royalty-a.royalty).slice(0,5);
+  const artisti=Object.values(LFCore.royaltyTotals(DB)).map(v=>({nome:v.name, royalty:+v.total.toFixed(2)})).sort((a,b)=>b.royalty-a.royalty).slice(0,5);
+  const daPagare=artistPayables().slice(0,8).map(r=>({artista:r.name, saldo:+r.payable.toFixed(2), giaPagato:+r.paid.toFixed(2)}));
   const recoup=computeRecoup().filter(r=>r.unrecouped>0).map(r=>({artista:r.name, nonRecuperato:+r.unrecouped.toFixed(2)}));
   // merch
   const merch=(DB.merch||[]).map(m=>({nome:m.name, tipo:m.type, prezzo:+m.price||0, venduti:+m.sold||0,
@@ -2817,7 +2856,7 @@ function buildAiSummary(){
     valuta:'EUR',
     totali:{ entrate:+income.toFixed(2), uscite:+expense.toFixed(2), margineNetto:+net.toFixed(2),
       marginePct: income? +((net/income)*100).toFixed(1):0, movimenti:txs.length },
-    trendUltimi6Mesi:months, perPiattaforma:piattaforme, topArtistiRoyalty:artisti, nonRecouped:recoup,
+    trendUltimi6Mesi:months, perPiattaforma:piattaforme, topArtistiRoyalty:artisti, nonRecouped:recoup, saldiDaPagare:daPagare,
     merch: merch.length?merch:undefined
   };
 }
@@ -2825,7 +2864,7 @@ let aiBusy=false, aiLastResult=null;
 function aiEntitled(){ return can('ai') || !!aiLocalKey(); }
 /* giorni mancanti a una data ISO */
 function daysTo(ds){ if(!ds) return null; try{ const d=new Date(ds+'T00:00:00'), n=new Date(); n.setHours(0,0,0,0); return Math.round((d-n)/86400000); }catch(e){ return null; } }
-function todayISO(){ return new Date().toISOString().slice(0,10); }
+function todayISO(){ return LFCore.today(); }
 /* traduzioni etichette chip AI (es/fr/de/pt/nl); fallback all'inglese */
 const AI_LBL={es:{'Who to pay & how much':'A quién pagar y cuánto','Most profitable artists':'Artistas más rentables','Who hasn\'t recouped':'Quién no ha recuperado','Releases missing data':'Lanzamientos sin datos','Top-earning releases':'Lanzamientos más rentables','Where am I losing margin?':'¿Dónde pierdo margen?','Unlinked products':'Productos sin vincular','What to push':'Qué impulsar','Stock to reorder':'Stock por reponer','Optimize the release plan':'Optimizar el plan de lanzamientos','Launch strategy':'Estrategia de lanzamiento','Where to push promo':'Dónde impulsar la promo','Top supporting DJs':'DJs con más apoyo','Payouts summary':'Resumen de pagos','Open recoupments':'Recoupments abiertos','Contracts to close':'Contratos por cerrar','What to put in a contract':'Qué incluir en un contrato','Today\'s priorities':'Prioridades de hoy','What am I neglecting':'Qué estoy descuidando','Analyze the situation':'Analizar la situación','Artists to recoup':'Artistas por recuperar','How is merch doing?':'¿Cómo va el merch?','Next months forecast':'Previsión del próximo mes'},fr:{'Who to pay & how much':'Qui payer et combien','Most profitable artists':'Artistes les plus rentables','Who hasn\'t recouped':'Qui n\'a pas recoupé','Releases missing data':'Sorties sans données','Top-earning releases':'Sorties les plus rentables','Where am I losing margin?':'Où je perds de la marge ?','Unlinked products':'Produits non liés','What to push':'Quoi pousser','Stock to reorder':'Stock à recommander','Optimize the release plan':'Optimiser le plan de sorties','Launch strategy':'Stratégie de lancement','Where to push promo':'Où pousser la promo','Top supporting DJs':'DJs qui soutiennent le plus','Payouts summary':'Résumé des paiements','Open recoupments':'Recoupments ouverts','Contracts to close':'Contrats à conclure','What to put in a contract':'Quoi mettre dans un contrat','Today\'s priorities':'Priorités du jour','What am I neglecting':'Qu\'est-ce que je néglige','Analyze the situation':'Analyser la situation','Artists to recoup':'Artistes à recouper','How is merch doing?':'Comment va le merch ?','Next months forecast':'Prévisions du mois prochain'},de:{'Who to pay & how much':'Wen bezahlen & wie viel','Most profitable artists':'Profitabelste Künstler','Who hasn\'t recouped':'Wer hat nicht recoupt','Releases missing data':'Releases ohne Daten','Top-earning releases':'Umsatzstärkste Releases','Where am I losing margin?':'Wo verliere ich Marge?','Unlinked products':'Nicht verknüpfte Produkte','What to push':'Was pushen','Stock to reorder':'Bestand nachbestellen','Optimize the release plan':'Release-Plan optimieren','Launch strategy':'Launch-Strategie','Where to push promo':'Wo Promo pushen','Top supporting DJs':'Top unterstützende DJs','Payouts summary':'Auszahlungsübersicht','Open recoupments':'Offene Recoupments','Contracts to close':'Verträge abschließen','What to put in a contract':'Was in einen Vertrag gehört','Today\'s priorities':'Prioritäten heute','What am I neglecting':'Was vernachlässige ich','Analyze the situation':'Lage analysieren','Artists to recoup':'Künstler zum Recoupen','How is merch doing?':'Wie läuft das Merch?','Next months forecast':'Prognose nächster Monat'},pt:{'Who to pay & how much':'Quem pagar e quanto','Most profitable artists':'Artistas mais rentáveis','Who hasn\'t recouped':'Quem não recuperou','Releases missing data':'Lançamentos sem dados','Top-earning releases':'Lançamentos mais rentáveis','Where am I losing margin?':'Onde estou perdendo margem?','Unlinked products':'Produtos não vinculados','What to push':'O que impulsionar','Stock to reorder':'Estoque a repor','Optimize the release plan':'Otimizar o plano de lançamentos','Launch strategy':'Estratégia de lançamento','Where to push promo':'Onde impulsionar a promo','Top supporting DJs':'DJs com mais apoio','Payouts summary':'Resumo de pagamentos','Open recoupments':'Recoupments em aberto','Contracts to close':'Contratos a fechar','What to put in a contract':'O que incluir num contrato','Today\'s priorities':'Prioridades de hoje','What am I neglecting':'O que estou negligenciando','Analyze the situation':'Analisar a situação','Artists to recoup':'Artistas a recuperar','How is merch doing?':'Como vai o merch?','Next months forecast':'Previsão do próximo mês'},nl:{'Who to pay & how much':'Wie betalen & hoeveel','Most profitable artists':'Meest winstgevende artiesten','Who hasn\'t recouped':'Wie heeft niet gerecoupt','Releases missing data':'Releases zonder data','Top-earning releases':'Best verdienende releases','Where am I losing margin?':'Waar verlies ik marge?','Unlinked products':'Niet-gekoppelde producten','What to push':'Wat pushen','Stock to reorder':'Voorraad bijbestellen','Optimize the release plan':'Releaseplan optimaliseren','Launch strategy':'Lanceerstrategie','Where to push promo':'Waar promo pushen','Top supporting DJs':'Best steunende DJs','Payouts summary':'Overzicht uitbetalingen','Open recoupments':'Open recoupments','Contracts to close':'Contracten af te sluiten','What to put in a contract':'Wat in een contract zetten','Today\'s priorities':'Prioriteiten van vandaag','What am I neglecting':'Wat verwaarloos ik','Analyze the situation':'Situatie analyseren','Artists to recoup':'Artiesten om te recoupen','How is merch doing?':'Hoe gaat de merch?','Next months forecast':'Prognose volgende maand'}};
 /* "pensiero" + prompt specifici della sezione in cui ci si trova quando si apre il bot */
@@ -2856,7 +2895,7 @@ function sectionInsight(view, it){
       break; }
     case 'transactions':{
       const txs=DB.transactions||[]; const unl=new Set();
-      txs.forEach(t=>{ const p=(t.product||'').trim(); if(p&&!releaseForTx(t)) unl.add(p.toLowerCase()); });
+      const ridx=relIdx(); txs.forEach(t=>{ const p=(t.product||'').trim(); if(p&&!releaseForTx(t, ridx)) unl.add(p.toLowerCase()); });
       thought = it?`Sei nei Movimenti: ${txs.length} registrati.`:`You're in Transactions: ${txs.length} recorded.`;
       if(unl.size) thought += it?` ${unl.size} prodotti non collegati a release.`:` ${unl.size} products not linked to a release.`;
       prompts=[
@@ -2972,6 +3011,7 @@ function closeAiPop(){ const pop=$('#ai-pop'); if(!pop) return; pop.hidden=true;
   const f=$('#ai-fab'); if(f){ f.setAttribute('aria-expanded','false'); f.classList.remove('is-open'); } }
 function toggleAiPop(){ const pop=$('#ai-pop'); if(pop) (pop.hidden?openAiPop():closeAiPop()); }
 const AI_KEY_LS='labelfinance.aikey';
+const AI_MODEL='claude-opus-5-5';
 function aiLocalKey(){ try{ return localStorage.getItem(AI_KEY_LS)||''; }catch(e){ return ''; } }
 async function aiAdviseDirect(payload){
   const key=aiLocalKey(); if(!key) return { error:'no_key' };
@@ -2981,9 +3021,13 @@ async function aiAdviseDirect(payload){
   const q=(payload.question||'').trim();
   const userContent=(q?(q+'\n\n'):'')+'Dati dell\'etichetta (JSON):\n```json\n'+JSON.stringify(payload.summary||{},null,2)+'\n```';
   try{
+    // Chiamata diretta dal browser con la chiave personale dell'utente (niente SDK: l'app non ha bundler).
+    // fallbacks "default": se il modello rifiuta, l'API riprova da sola sul modello consigliato.
     const r=await fetch('https://api.anthropic.com/v1/messages',{ method:'POST',
-      headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({ model:'claude-opus-4-8', max_tokens:1500, system, messages:[{role:'user',content:userContent}] }) });
+      headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01',
+        'anthropic-beta':'server-side-fallback-2026-07-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({ model:AI_MODEL, max_tokens:16000, output_config:{effort:'medium'}, fallbacks:'default',
+        system, messages:[{role:'user',content:userContent}] }) });
     if(!r.ok){ let d=''; try{ d=await r.text(); }catch{} return { error:`ai_http_${r.status}`, detail:d.slice(0,400) }; }
     const data=await r.json();
     if(data&&data.stop_reason==='refusal') return { error:'refused' };
@@ -3016,7 +3060,7 @@ async function runAiQuestion(question, label){
     $('#ai-back2')?.addEventListener('click', aiShowPrompts);
   } else {
     const map={ upgrade_required:tt('ai.err_plan'), unauthorized:tt('ai.err_auth'), offline:tt('ai.err_offline'),
-      ai_not_configured:tt('ai.err_config'), refused:tt('ai.err_refused') };
+      ai_not_configured:tt('ai.err_config'), refused:tt('ai.err_refused'), daily_limit:tt('ai.err_limit'), payload_too_large:tt('ai.err_big') };
     const code=res&&res.error, known=code&&map[code];
     let html=`<p class="ai-err">${known||tt('ai.err_generic')}${(code&&!known)?` <span class="muted small">(${esc(String(code))})</span>`:''}</p>`;
     if(res&&res.detail) html+=`<p class="muted small" style="white-space:pre-wrap;margin-top:6px">${esc(String(res.detail).slice(0,300))}</p>`;
@@ -3324,7 +3368,7 @@ function renderExtraWidgets(txs){
         <span class="top-bar top-bar--neg"><i style="width:${Math.round(v/max*100)}%"></i></span><span class="top-val neg">${fmtMoney(v)}</span></div>`).join('')
       : `<p class="muted">${tt('dash.exp_none')}</p>`; }
   const pyb=$('#payable-body');
-  if(pyb){ const rc=computeRecoup(); const pay=rc.filter(r=>r.payable>0).sort((a,b)=>b.payable-a.payable);
+  if(pyb){ const pay=artistPayables();
     const tot=pay.reduce((s,r)=>s+r.payable,0);
     pyb.innerHTML=`<div class="wstat wstat--big"><span>${tt('dash.pay_tot')}</span><b class="pos">${fmtMoney(tot)}</b></div>`
       + (pay.length ? pay.slice(0,6).map(r=>`<div class="recent-row"><span class="recent-label">${esc(r.name)}</span><span class="recent-amt pos">${fmtMoney(r.payable)}</span></div>`).join('')
@@ -3409,7 +3453,7 @@ function renderArtists(){
   $('#artists-empty').hidden = (DB.artists||[]).length>0;
   const info=paginate(all,'artists'); const list=info.slice;
   const mode=getVM('artists','cards');
-  const av=a=>`<div class="art-av">${a.photo?`<img src="${a.photo}" alt="">`:`<span>${esc(initials(a.name))}</span>`}</div>`;
+  const av=a=>`<div class="art-av">${imgSrc(a.photo)?`<img src="${imgSrc(a.photo)}" alt="">`:`<span>${esc(initials(a.name))}</span>`}</div>`;
   const acts=a=>`<div class="art-actions">
         <button class="icon-btn-sm" data-art-edit="${a.id}" title="${tt('common.edit')}">✎</button>
         <button class="icon-btn-sm" data-art-del="${a.id}" title="${tt('common.delete')}">🗑</button></div>`;
@@ -3439,7 +3483,7 @@ function renderArtists(){
   updateArtDupPanel();
 }
 function setArtistPhoto(d){ artistPhotoData=d||''; const ph=$('#art-photo');
-  if(ph) ph.innerHTML = artistPhotoData?`<img src="${artistPhotoData}" alt="">`:`<span>${tt('art.photo')}</span>`; }
+  if(ph) ph.innerHTML = imgSrc(artistPhotoData)?`<img src="${imgSrc(artistPhotoData)}" alt="">`:`<span>${tt('art.photo')}</span>`; }
 /* tutte le release in cui compare un artista (come artista, in traccia o negli split) */
 function artistReleases(name){
   const nn=normArt(name); if(!nn) return [];
@@ -3492,7 +3536,7 @@ function deleteArtist(id){ const a=artistById(id); if(!a) return;
 let currentContract=null; let conLogoData='';
 function labelName(){ return (DB.profile&&DB.profile.label)||DB.name||'Label'; }
 function setConLogo(d){ conLogoData=d||''; const box=$('#con-logo-prev');
-  if(box) box.innerHTML = conLogoData?`<img src="${conLogoData}" alt="logo">`:`<span data-i18n="con.logo">Logo etichetta</span>`; }
+  if(box) box.innerHTML = imgSrc(conLogoData)?`<img src="${imgSrc(conLogoData)}" alt="logo">`:`<span data-i18n="con.logo">Logo etichetta</span>`; }
 function conArtistPickOptions(){
   const sel=$('#con-artist-pick'); if(!sel) return;
   const opts=(DB.artists||[]).map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');
@@ -3548,10 +3592,33 @@ function collectContract(){
     signed:(currentContract&&currentContract.signed)||null
   });
 }
+// i termini che una firma approva: se cambiano, le firme non valgono più
+function contractTermsSig(c){ c=c||{}; return LFCore.stableStringify({ titles:c.titles||'', artistNames:c.artistNames||'', writtenBy:c.writtenBy||'',
+  fullName:c.fullName||'', projectName:c.projectName||'', artistPct:+c.artistPct, date:c.date||'', label:c.label||'' }); }
+// contratti eliminati: il token resta qui finché la riga nel cloud non è stata cancellata davvero
+function tombstoneContract(token){ if(!token) return; DB.contractTombstones=DB.contractTombstones||[];
+  if(!DB.contractTombstones.some(x=>x.id===token)) DB.contractTombstones.push({ id:token, ts:Date.now() }); }
+async function flushContractTombstones(){
+  if(!window.LF_deleteContract || !(DB.contractTombstones||[]).length) return;
+  let changed=false;
+  for(const t of DB.contractTombstones.slice()){
+    const r=await window.LF_deleteContract(t.id);
+    if(r && r.ok){ DB.contractTombstones=DB.contractTombstones.filter(x=>x.id!==t.id); changed=true; }
+  }
+  if(changed) save();
+}
 function generateContract(){
-  const c=collectContract();
+  let c=collectContract();
   if(!c.titles){ toast(tt('con.need_titles')); return; }
   if(!c.fullName){ toast(tt('con.need_fullname')); return; }
+  const prev=currentContract;
+  if(prev && (prev.labelSign || prev.artistSign || prev.status==='signed') && contractTermsSig(prev)!==contractTermsSig(c)){
+    // contratto già firmato e termini cambiati: serve un nuovo giro di firme (e un nuovo link)
+    if(!confirm(tt('con.resign_confirm'))) return;
+    tombstoneContract(prev.token);
+    c=Object.assign({}, c, { labelSign:null, artistSign:null, signed:null, status:'draft', token:undefined, rejectReason:'', sentAt:null });
+    flushContractTombstones();
+  }
   // ricorda il logo dell'etichetta per i prossimi contratti
   if(conLogoData && window.LF) window.LF.setProfile({ logo:conLogoData });
   currentContract=c;
@@ -3565,14 +3632,14 @@ function numWord(n){ const w={0:'zero',10:'ten',20:'twenty',25:'twenty-five',30:
   return w[n]||String(n); }
 function contractLetterhead(c){
   const lf=`<div class="cd-lf"><img src="icon.png?v=3" alt="Label Finance" class="cd-lf-ico"><span class="cd-lf-name">Label<span class="lf-fin">Finance</span></span></div>`;
-  const lbl=(c.logo)
-    ? `<div class="cd-label-logo"><img src="${c.logo}" alt="${esc(c.label)}"></div>`
+  const lbl=imgSrc(c.logo)
+    ? `<div class="cd-label-logo"><img src="${imgSrc(c.logo)}" alt="${esc(c.label)}"></div>`
     : `<div class="cd-label-logo cd-label-logo--text">${esc(c.label)}</div>`;
   return `<div class="cd-letterhead">${lf}${lbl}</div>`;
 }
 function cdSigCell(sig, role){
-  if(sig) return `<div class="cd-sgn"><span class="cd-sgn-role">${role}</span>
-    <img class="cd-sig-img" src="${sig.dataUrl}" alt="signature">
+  if(sig && imgSrc(sig.dataUrl)) return `<div class="cd-sgn"><span class="cd-sgn-role">${role}</span>
+    <img class="cd-sig-img" src="${imgSrc(sig.dataUrl)}" alt="signature">
     <div class="cd-sig-meta"><b>${esc(sig.name||'')}</b><br>${fmtDate(sig.date||'')}${sig.time?(' '+esc(sig.time)):''}${sig.place?(' · '+esc(sig.place)):''}</div></div>`;
   return `<div class="cd-sgn"><span class="cd-sgn-role">${role}</span><div class="cd-sgn-blank"><span>Date / Signature</span><hr></div></div>`;
 }
@@ -3731,10 +3798,13 @@ async function manualRefreshContracts(){
 }
 async function refreshContractStatuses(){
   if(!window.LF_refreshContractStatuses) return null;
+  flushContractTombstones();
   const rows=await window.LF_refreshContractStatuses(); if(!rows) return null;
   let changed=false;
   DB.contracts = DB.contracts||[];
+  const dead=new Set((DB.contractTombstones||[]).map(x=>x.id));
   rows.forEach(r=>{
+    if(dead.has(r.token)) return;                 // eliminato da qui: non va ripristinato
     let c=DB.contracts.find(x=>x.token===r.token);
     if(!c && r.data){
       // Contratto presente nel cloud ma assente in locale (es. creato su un altro
@@ -3746,6 +3816,7 @@ async function refreshContractStatuses(){
     if(!c) return;
     if(r.status && r.status!==c.status){ c.status=r.status; changed=true; }
     if(r.signature && !c.artistSign){ c.artistSign=r.signature; changed=true; }   // firma artista
+    if(r.signed_at && c.signedAt!==r.signed_at){ c.signedAt=r.signed_at; changed=true; }   // ora della firma registrata dal server
     if(r.reject_reason && c.rejectReason!==r.reject_reason){ c.rejectReason=r.reject_reason; changed=true; }
   });
   if(changed){ save(); renderContracts();
@@ -3786,7 +3857,10 @@ function openContract(id){ const c=DB.contracts.find(x=>x.id===id); if(!c) retur
   $('#con-preview').scrollIntoView({behavior:'smooth',block:'start'}); }
 function deleteContract(id){ const c=DB.contracts.find(x=>x.id===id); if(!c) return;
   if(!confirm(tt('con.del_confirm'))) return;
-  DB.contracts=DB.contracts.filter(x=>x.id!==id); save(); renderContracts(); }
+  // elimina anche la copia nel cloud: il link di firma smette di funzionare e il contratto non ricompare
+  tombstoneContract(c.token);
+  DB.contracts=DB.contracts.filter(x=>x.id!==id); save(); renderContracts();
+  flushContractTombstones(); }
 function conStatusPill(s){
   if(s==='signed') return `<span class="pill pill-ok">${tt('con.st_signed')}</span>`;
   if(s==='rejected') return `<span class="pill pill-bad">${tt('con.st_rejected')}</span>`;
@@ -3832,24 +3906,22 @@ function openSignPad(){
   if(!currentContract){ toast(tt('con.gen_first')); return; }
   $('#sign-place').value=''; $('#sign-name').value=(DB.profile&&DB.profile.name)||currentContract.label||labelName();
   $('#sign-modal').hidden=false;
-  const cv=$('#sign-canvas'); const ctx=cv.getContext('2d');
-  const rect=cv.getBoundingClientRect(); cv.width=rect.width*2; cv.height=180*2; ctx.scale(2,2);
-  ctx.lineWidth=2.2; ctx.lineCap='round'; ctx.strokeStyle='#111';
-  let drawing=false, last=null, has=false;
-  const pos=e=>{ const r=cv.getBoundingClientRect(); const t=e.touches?e.touches[0]:e; return {x:t.clientX-r.left, y:t.clientY-r.top}; };
-  const start=e=>{ drawing=true; last=pos(e); e.preventDefault(); };
-  const move=e=>{ if(!drawing) return; const p=pos(e); ctx.beginPath(); ctx.moveTo(last.x,last.y); ctx.lineTo(p.x,p.y); ctx.stroke(); last=p; has=true; e.preventDefault(); };
-  const end=()=>{ drawing=false; };
-  sigPad={cv,ctx,clear:()=>{ ctx.clearRect(0,0,cv.width,cv.height); has=false; }, isEmpty:()=>!has};
-  cv.onmousedown=start; cv.onmousemove=move; window.onmouseup=end;
-  cv.ontouchstart=start; cv.ontouchmove=move; cv.ontouchend=end;
+  // firma disegnata al momento oppure caricata da file (signature.js)
+  sigPad=LFSignature.attach($('#sign-canvas'));
+  const m=$('#sign-file-msg'); if(m) m.textContent='';
+}
+async function loadSignFile(file){
+  const m=$('#sign-file-msg'); if(!file||!sigPad) return;
+  try{ await sigPad.loadFile(file); if(m){ m.style.color=''; m.textContent=tt('con.sign_file_ok'); } }
+  catch(e){ if(m){ m.style.color='var(--out)';
+    m.textContent=tt(e.message==='too_big'?'con.sign_file_big':e.message==='empty_image'?'con.sign_file_empty':'con.sign_file_bad'); } }
 }
 function closeSignPad(){ $('#sign-modal').hidden=true; sigPad=null; }
 function confirmSign(){
   if(!sigPad || sigPad.isEmpty()){ toast(tt('con.sign_empty')); return; }
   const now=new Date();
   // firma dell'ETICHETTA (obbligatoria prima dell'invio all'artista)
-  currentContract.labelSign={ dataUrl:sigPad.cv.toDataURL('image/png'),
+  currentContract.labelSign={ dataUrl:sigPad.png(),
     name:$('#sign-name').value.trim()||currentContract.label||labelName(),
     place:$('#sign-place').value.trim(),
     date:isoD(now), time:now.toTimeString().slice(0,5) };
@@ -3869,12 +3941,12 @@ function updateConSendBtn(){
 /* ---------- Task ---------- */
 function tskKey(t){ return (t.due||'9999-99-99')+'T'+(t.time||'99:99'); }
 /* ---- Task suggeriti automaticamente in base ai dati (pagamenti, contratti, scorte) ---- */
-function isoPlus(n){ const d=new Date(); d.setDate(d.getDate()+(n||0)); return d.toISOString().slice(0,10); }
+function isoPlus(n){ return LFCore.addDays(LFCore.today(), n||0); }
 function suggestedTasks(){
   const existing=new Set((DB.tasks||[]).filter(t=>!t.done).map(t=>t.autoKey).filter(Boolean));
   const sug=[];
   if(typeof computeRecoup==='function'){ try{
-    computeRecoup().filter(r=>r.payable>0.5).forEach(r=>{ const k='pay:'+normArt(r.name); if(existing.has(k))return;
+    artistPayables().filter(r=>r.payable>0.5).forEach(r=>{ const k='pay:'+normArt(r.name); if(existing.has(k))return;
       sug.push({key:k, type:'payment', due:isoPlus(7), title:tt('sug.pay').replace('{name}',r.name).replace('{amt}',fmtMoney(r.payable))}); });
   }catch(e){} }
   (DB.contracts||[]).filter(c=>c.status==='sent').forEach(c=>{ const who=(c.artistNames||c.artist||'').trim();
@@ -4564,7 +4636,7 @@ function notifIcon(it){ const v=it.view||(it.type==='unlinked'?'releases':it.typ
 function notifScan(){
   if(typeof DB==='undefined'||!DB) return;
   const unlinked=new Set();
-  (DB.transactions||[]).forEach(t=>{ const p=(t.product||'').trim(); if(!p) return; if(!releaseForTx(t)) unlinked.add(p); });
+  const ridx=relIdx(); (DB.transactions||[]).forEach(t=>{ const p=(t.product||'').trim(); if(!p) return; if(!releaseForTx(t, ridx)) unlinked.add(p); });
   const ukeys=new Set([...unlinked].map(p=>p.toLowerCase()));
   NOTIFS.list=NOTIFS.list.filter(n=> n.type!=='unlinked' || ukeys.has((n.ref||'').toLowerCase()));   // risolti via
   NOTIFS.dismissed=(NOTIFS.dismissed||[]).filter(k=>ukeys.has(k));
@@ -4763,9 +4835,15 @@ function initFeatures(){
     toast(tt('con.link_copied')); });
   // Firma
   $('#sign-close')?.addEventListener('click',closeSignPad);
-  $('#sign-clear')?.addEventListener('click',()=>{ if(sigPad) sigPad.clear(); });
+  $('#sign-clear')?.addEventListener('click',()=>{ if(sigPad) sigPad.clear(); const m=$('#sign-file-msg'); if(m) m.textContent=''; });
+  $('#sign-upload')?.addEventListener('click',()=>$('#sign-file').click());
+  $('#sign-file')?.addEventListener('change',e=>{ const f=e.target.files[0]; e.target.value=''; loadSignFile(f); });
   $('#sign-confirm')?.addEventListener('click',confirmSign);
-  $('#sign-modal')?.addEventListener('click',e=>{ if(e.target.id==='sign-modal') closeSignPad(); });
+  // chiudi cliccando sullo sfondo, ma non se il clic nasce da un tratto di firma finito fuori dal riquadro
+  let signDownOnBackdrop=false;
+  $('#sign-modal')?.addEventListener('mousedown',e=>{ signDownOnBackdrop=(e.target.id==='sign-modal'); });
+  $('#sign-modal')?.addEventListener('touchstart',e=>{ signDownOnBackdrop=(e.target.id==='sign-modal'); }, {passive:true});
+  $('#sign-modal')?.addEventListener('click',e=>{ if(e.target.id==='sign-modal' && signDownOnBackdrop) closeSignPad(); signDownOnBackdrop=false; });
   // Assistente AI (bolla flottante)
   $('#ai-fab')?.addEventListener('click',toggleAiPop);
   $('#ai-pop-x')?.addEventListener('click',closeAiPop);

@@ -3,8 +3,11 @@
 //   Fonti: MusicBrainz (sempre, no key) + Discogs (token) + Spotify (client creds)
 //   Segreti (Supabase → Edge Functions → Secrets), tutti FACOLTATIVI:
 //     DISCOGS_TOKEN, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET
-//   Deploy:  supabase functions deploy catalog-search --no-verify-jwt
+//   Deploy:  supabase functions deploy catalog-search
+//   Solo per utenti con login (la funzione usa i tuoi token Discogs/Spotify e
+//   lavora anche per minuti: aperta a tutti sarebbe un proxy gratuito).
 // ============================================================================
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -15,6 +18,11 @@ const json = (o: unknown, status = 200) =>
   new Response(JSON.stringify(o), { status, headers: { ...CORS, "Content-Type": "application/json" } });
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const norm = (s: string) => (s || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+const MAX_PICKS = 3;            // etichette per richiesta, per fonte
+const MAX_QUERY = 100;
+const DISCOGS_HDR = (token: string) => ({ "User-Agent": UA, "Authorization": `Discogs token=${token}` });
+const MB_ID_RE = /^[0-9a-f-]{36}$/i;
+const DC_ID_RE = /^\d{1,12}$/;
 
 // ----------------------------- MusicBrainz --------------------------------
 async function mbSearchLabels(q: string) {
@@ -48,7 +56,7 @@ async function mbFetch(id: string) {
   // non viene accettata, si scala automaticamente a un set più semplice.
   const incLevels = ["artist-credits+recordings+isrcs", "artist-credits+recordings", "artist-credits"];
   let inc = incLevels[0];
-  const mbUrl = (o: number) => `https://musicbrainz.org/ws/2/release?label=${id}&inc=${inc}&fmt=json&limit=100&offset=${o}`;
+  const mbUrl = (o: number) => `https://musicbrainz.org/ws/2/release?label=${encodeURIComponent(id)}&inc=${inc}&fmt=json&limit=100&offset=${o}`;
   for (let page = 0; page < 12; page++) {
     let r = await fetch(mbUrl(offset), { headers: { "User-Agent": UA } });
     if (!r.ok && page === 0) {
@@ -81,8 +89,8 @@ async function mbFetch(id: string) {
 
 // ------------------------------- Discogs ----------------------------------
 async function dcSearchLabels(q: string, token: string) {
-  const r = await fetch(`https://api.discogs.com/database/search?type=label&q=${encodeURIComponent(q)}&per_page=8&token=${token}`,
-    { headers: { "User-Agent": UA } });
+  const r = await fetch(`https://api.discogs.com/database/search?type=label&q=${encodeURIComponent(q)}&per_page=8`,
+    { headers: DISCOGS_HDR(token) });
   if (!r.ok) return { items: [], err: `HTTP ${r.status}` };
   const d = await r.json();
   return { items: (d.results || []).map((l: any) => ({ source: "discogs", id: String(l.id), name: l.title, detail: "Discogs" })), err: null as string | null };
@@ -90,7 +98,7 @@ async function dcSearchLabels(q: string, token: string) {
 // Tracklist di una singola release Discogs (Discogs non espone gli ISRC).
 async function dcRelease(rid: string, token: string) {
   try {
-    const r = await fetch(`https://api.discogs.com/releases/${rid}?token=${token}`, { headers: { "User-Agent": UA } });
+    const r = await fetch(`https://api.discogs.com/releases/${encodeURIComponent(rid)}`, { headers: DISCOGS_HDR(token) });
     if (!r.ok) return [];
     const d = await r.json();
     return (d.tracklist || [])
@@ -106,8 +114,8 @@ async function dcFetch(id: string, token: string) {
   const out: any[] = [];
   let deep = 0; const DEEP_MAX = 60;   // tetto di chiamate di dettaglio per restare entro i tempi
   for (let page = 1; page <= 10; page++) {
-    const r = await fetch(`https://api.discogs.com/labels/${id}/releases?per_page=100&page=${page}&token=${token}`,
-      { headers: { "User-Agent": UA } });
+    const r = await fetch(`https://api.discogs.com/labels/${encodeURIComponent(id)}/releases?per_page=100&page=${page}`,
+      { headers: DISCOGS_HDR(token) });
     if (!r.ok) break;
     const d = await r.json();
     const rels = d.releases || [];
@@ -210,6 +218,13 @@ function merge(lists: any[][]) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
+  if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
+  // solo utenti con login
+  const jwt = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
+  if (!jwt) return json({ error: "login_required" }, 401);
+  const admin = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
+  const { data: who, error: whoErr } = await admin.auth.getUser(jwt);
+  if (whoErr || !who?.user) return json({ error: "login_required" }, 401);
   try {
     const { action, query, picks } = await req.json();
     const DISCOGS = Deno.env.get("DISCOGS_TOKEN") || "";
@@ -217,7 +232,7 @@ Deno.serve(async (req) => {
     const SP_SECRET = Deno.env.get("SPOTIFY_CLIENT_SECRET") || "";
 
     if (action === "search") {
-      const q = (query || "").trim();
+      const q = String(query || "").trim().slice(0, MAX_QUERY);
       if (!q) return json({ candidates: [] });
       const [mb, dc] = await Promise.all([
         mbSearchLabels(q).catch((e) => ({ items: [], err: String(e?.message || e) })),
@@ -232,6 +247,9 @@ Deno.serve(async (req) => {
 
     if (action === "fetch") {
       const p = picks || {};
+      p.mb = (Array.isArray(p.mb) ? p.mb : []).filter((x: unknown) => typeof x === "string" && MB_ID_RE.test(x)).slice(0, MAX_PICKS);
+      p.discogs = (Array.isArray(p.discogs) ? p.discogs : []).map(String).filter((x: string) => DC_ID_RE.test(x)).slice(0, MAX_PICKS);
+      p.spotifyName = typeof p.spotifyName === "string" ? p.spotifyName.trim().slice(0, MAX_QUERY) : null;
       const out: any[] = [];
       const sources: any = { musicbrainz: { n: 0, err: null }, discogs: { n: 0, err: null }, spotify: { n: 0, err: null } };
       for (const id of (p.mb || [])) { try { const x = await mbFetch(id); out.push(...x); sources.musicbrainz.n += x.length; } catch (e) { sources.musicbrainz.err = String(e?.message || e); } }

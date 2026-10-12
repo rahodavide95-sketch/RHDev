@@ -61,9 +61,11 @@
     // così iOS/Android non classificano il form come "registrazione" e propongono
     // "Salva password" / l'autofill invece della "password sicura".
     ['gate-name','gate-surname','gate-label'].forEach(id=>{ const el=$(id); if(el) el.disabled = !signup; });
-    gateStatus('');
+    gateStatus(linkMsg||'', !!linkMsg);   // l'avviso sul link della mail resta finché l'utente non agisce
   }
+  let linkMsg=null;   // avviso "link scaduto" arrivato dalla mail
   async function gateSignIn(){
+    linkMsg=null;
     if(!client){ gateStatus('Servizio non disponibile, usa "Continua senza account".',true); return; }
     gateStatus('Accesso in corso…');
     const email=$('gate-email').value.trim(), pw=$('gate-pw').value;
@@ -72,6 +74,7 @@
     else storeCred(email, pw);
   }
   async function gateSignUp(){
+    linkMsg=null;
     if(!client){ gateStatus('Servizio non disponibile, usa "Continua senza account".',true); return; }
     const name=$('gate-name').value.trim(), surname=$('gate-surname')?$('gate-surname').value.trim():'', label=$('gate-label').value.trim();
     if(!name||!label){ gateStatus('Inserisci nome e nome label.',true); return; }
@@ -88,6 +91,7 @@
     else gateStatus('Account creato. Controlla l\'email per confermare, poi premi Accedi.');
   }
   async function gateForgot(){
+    linkMsg=null;
     if(!client){ gateStatus('Servizio non disponibile.',true); return; }
     const email=$('gate-email').value.trim();
     if(!email){ gateStatus('Inserisci la tua email, poi premi "Password dimenticata?".',true); return; }
@@ -138,30 +142,42 @@
 
   function showPending(show){ const el=$('pending-screen'); if(el) el.hidden=!show; document.body.classList.toggle('pending-locked', !!show); }
   async function isApproved(){
-    // Solo se richiesto in config. "Fail-open" se la tabella non c'è ancora
-    // o non c'è la riga, così non blocca prima del setup né il titolare.
+    // Solo se richiesto in config. Se la tabella profiles non esiste ancora, o il
+    // titolare non ha una riga (account creato prima dell'approvazione), non blocca.
+    // Qui è solo la schermata: il vero controllo è nel database (RLS su app_state,
+    // vedi supabase/schema.sql), quindi in caso di errore non si blocca nessuno.
     if(!(window.LF_CONFIG && window.LF_CONFIG.requireApproval)) return true;
     try{
       const { data, error } = await client.from('profiles').select('approved').eq('id', user.id).maybeSingle();
-      if(error) return true;           // tabella mancante / non configurata → non bloccare
-      if(!data) return true;           // nessuna riga → non bloccare (es. titolare pre-esistente)
+      if(error) return true;
+      if(!data) return true;
       return !!data.approved;
     }catch(e){ return true; }
   }
+  let authedUserId=null;
   async function onAuth(){
     renderUI();
     if(user){
+      if(user.id===authedUserId) return;            // rinnovo token ecc.: già sincronizzato
+      authedUserId=user.id;
       if(!(await isApproved())){
         showPending(true); showGate(false); setStatus('In attesa di approvazione'); window.LF_push=null; return;
       }
       showPending(false);
       showGate(false);
-      window.LF_push = schedulePush;
       setStatus('Connesso — sincronizzo…'); gateStatus('');
-      await pull();
+      try{ await (window.LF.ready||Promise.resolve()); }catch(e){}
+      // i dati di questo dispositivo appartengono all'ultimo account che li ha sincronizzati:
+      // se entra un account diverso, si riparte puliti (niente dati di un'altra etichetta)
+      if(meta.owner && meta.owner!==user.id){ await resetLocal(); }
+      window.LF_push = schedulePush;
+      await pull({ initial:true });
       fillAccount();
       watchContracts();
+      watchState();
+      refreshPlan();
     } else {
+      authedUserId=null;
       showPending(false);
       window.LF_push = null;
       if(getCfg()){ showGate(true); setStatus('Accedi per sincronizzare'); }
@@ -183,23 +199,146 @@
     }catch(e){}
   }
 
-  /* ---------- Sync ---------- */
-  async function pull(){
-    if(!user||!client) return;
-    pulling=true;
-    const { data, error } = await client.from('app_state').select('data').eq('user_id', user.id).maybeSingle();
-    pulling=false;
-    if(error){ setStatus('Errore lettura cloud: '+error.message); return; }
-    if(data && data.data){ window.LF.applyCloud(data.data); setStatus('Sincronizzato ✓ '+now()); }
-    else { await push(); }
+  /* ---------- Sync ----------
+     Il cloud tiene una riga per utente (app_state). Ogni salvataggio è condizionato:
+     va a buon fine solo se nel cloud c'è ancora la versione che questo dispositivo
+     conosce (updated_at). Se un altro dispositivo ha salvato nel frattempo, le due
+     versioni vengono UNITE (LFCore.mergeAccounts) invece di sovrascriversi.
+     meta (localStorage): owner = account a cui appartengono i dati locali,
+     remoteTs = versione cloud conosciuta, dirty = modifiche locali non ancora salvate.
+     La "base" (ultima versione sincronizzata) sta in IndexedDB. */
+  const META_KEY='labelfinance.syncmeta';
+  const loadMeta=()=>{ try{ return Object.assign({owner:null,remoteTs:null,dirty:false}, JSON.parse(localStorage.getItem(META_KEY))||{}); }catch(e){ return {owner:null,remoteTs:null,dirty:false}; } };
+  let meta=loadMeta();
+  const saveMeta=()=>{ try{ localStorage.setItem(META_KEY, JSON.stringify(meta)); }catch(e){} };
+  const store=()=>window.LFStore||{ get:()=>Promise.resolve(null), set:()=>Promise.resolve(), del:()=>Promise.resolve() };
+  async function getBase(){ try{ const b=await store().get('syncBase'); return b?JSON.parse(b):null; }catch(e){ return null; } }
+  async function setBase(json){ try{ await store().set('syncBase', typeof json==='string'?json:JSON.stringify(json)); }catch(e){} }
+  async function resetLocal(){
+    window.LF.wipeLocal();
+    meta={owner:null,remoteTs:null,dirty:false}; saveMeta();
+    try{ await store().del('syncBase'); }catch(e){}
   }
-  function schedulePush(){ if(pulling) return; clearTimeout(pushTimer); pushTimer=setTimeout(push, 700); }
+  let editSeq=0, pushing=false, pushAgain=false, lastPull=0;
+  function applyMerged(d){ pulling=true; try{ window.LF.applyCloud(d); } finally { pulling=false; } }
+  async function pull(opt){
+    opt=opt||{};
+    if(!user||!client) return;
+    lastPull=Date.now();
+    const seq0=editSeq, ts0=meta.remoteTs;
+    const { data, error } = await client.from('app_state').select('data,updated_at').eq('user_id', user.id).maybeSingle();
+    if(error){ setStatus('Errore lettura cloud: '+error.message); return; }
+    // modifiche o salvataggi avvenuti durante il download: questa copia è già vecchia, riprova dopo
+    if(editSeq!==seq0 || meta.remoteTs!==ts0 || pushing){ schedulePull(); return; }
+    if(!data || !data.data){
+      // cloud vuoto (account nuovo): carica i dati locali, ma chiedi se non si sa di chi sono
+      if(opt.initial && !meta.owner && window.LF.localSize()>0){
+        const msg=(window.t?window.t('sync.adopt_local'):'Su questo dispositivo ci sono {n} elementi non collegati a un account. Vuoi salvarli nel tuo account?').replace('{n}', window.LF.localSize());
+        if(!confirm(msg)) await resetLocal();
+      }
+      meta.owner=user.id; meta.remoteTs=null; meta.dirty=true; saveMeta();
+      await push();
+      return;
+    }
+    if(data.updated_at===meta.remoteTs && !meta.dirty){ meta.owner=user.id; saveMeta(); setStatus('Sincronizzato ✓ '+now()); return; }
+    if(!meta.dirty){
+      applyMerged(data.data);
+    } else {
+      let base=await getBase();
+      if(!base && opt.initial && !meta.owner && window.LF.localSize()>0){
+        const msg=(window.t?window.t('sync.merge_local'):'Su questo dispositivo ci sono {n} elementi non ancora nel tuo account. Vuoi unirli ai dati del cloud?').replace('{n}', window.LF.localSize());
+        if(!confirm(msg)){ applyMerged(data.data); meta.dirty=false; base=undefined; }
+      }
+      if(meta.dirty) applyMerged(LFCore.mergeAccounts(base, window.LF.data(), data.data));
+    }
+    meta.owner=user.id; meta.remoteTs=data.updated_at; saveMeta();
+    await setBase(data.data);
+    if(meta.dirty) await push();
+    else setStatus('Sincronizzato ✓ '+now());
+  }
+  function schedulePush(){
+    editSeq++;
+    if(!meta.dirty){ meta.dirty=true; saveMeta(); }
+    if(pulling) return;                           // la pull in corso salverà alla fine
+    clearTimeout(pushTimer); pushTimer=setTimeout(push, 700);
+  }
   async function push(){
     if(!user||!client) return;
-    const payload = { user_id:user.id, data:window.LF.data(), updated_at:new Date().toISOString() };
-    const { error } = await client.from('app_state').upsert(payload);
-    setStatus(error ? ('Errore salvataggio: '+error.message) : ('Sincronizzato ✓ '+now()));
+    if(pushing){ pushAgain=true; return; }
+    pushing=true;
+    try{
+      for(let attempt=0; attempt<4; attempt++){
+        const seq=editSeq;
+        const snapshot=JSON.stringify(window.LF.data());
+        const ts=new Date().toISOString();
+        const body={ data:JSON.parse(snapshot), updated_at:ts };
+        const res = meta.remoteTs
+          ? await client.from('app_state').update(body).eq('user_id', user.id).eq('updated_at', meta.remoteTs).select('updated_at')
+          : await client.from('app_state').insert(Object.assign({ user_id:user.id }, body)).select('updated_at');
+        if(res.error && res.error.code!=='23505'){ setStatus('Errore salvataggio: '+res.error.message); return; }
+        if(!res.error && res.data && res.data.length){
+          meta.owner=user.id; meta.remoteTs=res.data[0].updated_at; meta.dirty=(editSeq!==seq); saveMeta();
+          await setBase(snapshot);
+          setStatus('Sincronizzato ✓ '+now());
+          if(meta.dirty) pushAgain=true;
+          return;
+        }
+        // un altro dispositivo ha salvato nel frattempo: scarica, unisci, riprova
+        setStatus('Unisco le modifiche di un altro dispositivo…');
+        const cur=await client.from('app_state').select('data,updated_at').eq('user_id', user.id).maybeSingle();
+        if(cur.error){ setStatus('Errore lettura cloud: '+cur.error.message); return; }
+        if(!cur.data){ meta.remoteTs=null; continue; }
+        const base=await getBase();
+        applyMerged(LFCore.mergeAccounts(base, window.LF.data(), cur.data.data));
+        meta.remoteTs=cur.data.updated_at; saveMeta();
+        await setBase(cur.data.data);
+      }
+      setStatus('Salvataggio non riuscito: troppe modifiche contemporanee. Riprovo al prossimo salvataggio.');
+    } finally {
+      pushing=false;
+      if(pushAgain){ pushAgain=false; clearTimeout(pushTimer); pushTimer=setTimeout(push, 400); }
+    }
   }
+  /* aggiornamento automatico quando un altro dispositivo salva (realtime) o si torna sulla scheda */
+  let stateChannel=null, pullTimer=null;
+  function schedulePull(){ clearTimeout(pullTimer); pullTimer=setTimeout(()=>{ if(user && !pushing) pull(); }, 800); }
+  function watchState(){
+    if(!client||!user) return;
+    try{ if(stateChannel) client.removeChannel(stateChannel); }catch(e){}
+    try{
+      stateChannel = client.channel('state-'+user.id)
+        .on('postgres_changes', { event:'UPDATE', schema:'public', table:'app_state', filter:'user_id=eq.'+user.id },
+          (p)=>{ const ts=p && p.new && p.new.updated_at; if(!ts || ts!==meta.remoteTs) schedulePull(); })
+        .subscribe();
+    }catch(e){}
+  }
+  document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible' && user && Date.now()-lastPull>30000) schedulePull(); });
+  window.addEventListener('online', ()=>{ if(user){ if(meta.dirty) push(); else schedulePull(); } });
+
+  /* ---------- Piano dal server (abbonamento Stripe) ---------- */
+  async function refreshPlan(){
+    if(!client||!user||!(window.LF_CONFIG && window.LF_CONFIG.payments)) return;
+    try{
+      const { data, error } = await client.from('subscriptions').select('plan,status').eq('user_id', user.id).maybeSingle();
+      if(error) return;
+      const active=data && (data.status==='active' || data.status==='trialing');
+      window.LF.setServerPlan(active ? (data.plan||'free') : 'free');
+    }catch(e){}
+  }
+  window.LF_checkout = async function(plan){
+    if(!client||!user) return { error:'unauthorized' };
+    try{ const { data, error } = await client.functions.invoke('create-checkout', { body:{ plan } });
+      if(error){ let d=null; try{ d=await error.context?.json?.(); }catch{} return d || { error:error.message||'checkout_error' }; }
+      return data;
+    }catch(e){ return { error:e.message||'checkout_error' }; }
+  };
+  window.LF_billingPortal = async function(){
+    if(!client||!user) return { error:'unauthorized' };
+    try{ const { data, error } = await client.functions.invoke('create-portal', { body:{} });
+      if(error){ let d=null; try{ d=await error.context?.json?.(); }catch{} return d || { error:error.message||'portal_error' }; }
+      return data;
+    }catch(e){ return { error:e.message||'portal_error' }; }
+  };
 
   /* ---------- Auth (pannello impostazioni, fallback) ---------- */
   async function signIn(){
@@ -212,7 +351,23 @@
     const { error } = await client.auth.signUp({ email:$('sync-email').value.trim(), password:$('sync-pw').value });
     setStatus(error ? authMsg(error.message) : 'Registrato. Se serve, conferma l\'email e poi accedi.');
   }
-  async function signOut(){ if(client) await client.auth.signOut(); }
+  // Logout: salva le ultime modifiche, poi cancella i dati da questo dispositivo
+  // (su un computer condiviso il prossimo utente non deve vedere nulla).
+  async function signOut(){
+    if(!client) return;
+    if(meta.dirty){
+      clearTimeout(pushTimer);
+      if(user) await Promise.race([ push(), new Promise(r=>setTimeout(r, 6000)) ]);
+      if(meta.dirty){
+        const msg=window.t?window.t('sync.logout_unsaved'):'Alcune modifiche non sono ancora state salvate nel cloud e andranno perse. Uscire comunque?';
+        if(!confirm(msg)) return;
+      }
+    }
+    try{ await client.auth.signOut(); }catch(e){}
+    await resetLocal();
+    // credenziali personali salvate su questo dispositivo
+    try{ ['labelfinance.aikey','labelfinance.emailjs'].forEach(k=>localStorage.removeItem(k)); }catch(e){}
+  }
   window.LF_signOut = signOut;
   /* Assistente AI: invoca la Edge Function 'ai-advisor' (chiave server-side) */
   window.LF_aiAdvise = async function(payload){
@@ -227,6 +382,7 @@
   /* ---------- Ricerca catalogo etichetta (MusicBrainz/Discogs/Spotify) ---------- */
   window.LF_catalogSearch = async function(payload){
     if(!client) return { error:'offline' };
+    if(!user) return { error:'login_required' };
     try{
       const { data, error } = await client.functions.invoke('catalog-search', { body:payload });
       if(error){ let d=null; try{ d=await error.context?.json?.(); }catch{} return d || { error:error.message||'cat_error' }; }
@@ -234,15 +390,19 @@
     }catch(e){ return { error:e.message||'cat_error' }; }
   };
   /* ---------- Firma remota dei contratti ---------- */
-  function randToken(){ try{ return crypto.randomUUID().replace(/-/g,''); }catch(e){ return Date.now().toString(36)+Math.random().toString(36).slice(2,10); } }
+  // token dei link (firma, portale): 128 bit casuali, impossibili da indovinare
+  function randToken(){ try{ return crypto.randomUUID().replace(/-/g,''); }catch(e){
+    const b=new Uint8Array(16); crypto.getRandomValues(b); return [...b].map(x=>x.toString(16).padStart(2,'0')).join(''); } }
   window.LF_signLink = function(token){ try{ return new URL('firma.html?t='+encodeURIComponent(token), location.href).href; }catch(e){ return 'firma.html?t='+token; } };
   /* salva il contratto sul cloud e restituisce token + link di firma */
   window.LF_sendForSignature = async function(contract){
     if(!client) return { error:'offline' };
     if(!user) return { error:'unauthorized' };
+    if(contract.status==='signed') return { error:'already_signed' };
     const token = contract.token || randToken();
+    // nuovo invio: azzera firma e motivo di rifiuto di un eventuale invio precedente
     const row = { token, owner_id:user.id, label:contract.label||'', artist_email:contract.email||'',
-      data:contract, status:'sent', updated_at:new Date().toISOString() };
+      data:contract, status:'sent', signature:null, reject_reason:null, updated_at:new Date().toISOString() };
     try{
       const { error } = await client.from('contracts').upsert(row, { onConflict:'token' });
       if(error) return { error:error.message||'db_error' };
@@ -267,11 +427,19 @@
       if(error) return { error:error.message||'db_error' }; return { ok:true };
     }catch(e){ return { error:e.message||'db_error' }; }
   };
+  /* elimina un contratto dal cloud: il link di firma smette di funzionare */
+  window.LF_deleteContract = async function(token){
+    if(!client||!user) return { error:'offline' };
+    if(!token) return { ok:true };
+    try{ const { error } = await client.from('contracts').delete().eq('token', token).eq('owner_id', user.id);
+      if(error) return { error:error.message||'db_error' }; return { ok:true };
+    }catch(e){ return { error:e.message||'db_error' }; }
+  };
   /* legge lo stato firma/rifiuto dei contratti dell'utente */
   window.LF_refreshContractStatuses = async function(){
     if(!client||!user) return null;
     try{
-      const { data, error } = await client.from('contracts').select('token,status,signature,reject_reason,updated_at,data').eq('owner_id', user.id);
+      const { data, error } = await client.from('contracts').select('*').eq('owner_id', user.id);
       if(error) return null; return data||[];
     }catch(e){ return null; }
   };
@@ -379,6 +547,18 @@
   // modalità iniziale: registrazione se si arriva dalla landing con app.html?signup (o #signup), altrimenti login
   setGateMode(/(?:[?&]signup\b)|#signup/i.test((location.search||'')+(location.hash||'')) ? 'signup' : 'login');
   showGate(!!getCfg());     // se configurato, mostra il login subito (in attesa della sessione)
+  // link della mail scaduto o già usato (reset password / conferma): Supabase torna qui con
+  // #error_code=… → spiega cosa fare invece di lasciare la schermata di accesso muta
+  (function(){
+    const h=new URLSearchParams((location.hash||'').replace(/^#/,''));
+    const code=h.get('error_code')||h.get('error'); if(!code) return;
+    const expired=/expired|otp_expired|access_denied/i.test(code+' '+(h.get('error_description')||''));
+    linkMsg = expired
+      ? 'Il link è scaduto o è già stato usato. Inserisci la tua email e premi "Password dimenticata?" per riceverne uno nuovo.'
+      : 'Link non valido: '+(h.get('error_description')||code);
+    gateStatus(linkMsg, true);
+    try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
+  })();
   initClient();
   renderUI();
 })();

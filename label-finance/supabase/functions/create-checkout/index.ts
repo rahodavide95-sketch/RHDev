@@ -65,9 +65,11 @@ Deno.serve(async (req) => {
   // 3) Cliente Stripe: riusa quello salvato o creane uno nuovo
   const { data: sub } = await admin
     .from("subscriptions")
-    .select("stripe_customer_id")
+    .select("stripe_customer_id,status")
     .eq("user_id", userId)
     .maybeSingle();
+  // già abbonato: il cambio piano si fa dal portale clienti (niente doppio abbonamento)
+  if (sub && (sub.status === "active" || sub.status === "trialing")) return json({ error: "already_subscribed" }, 409);
 
   let customerId = sub?.stripe_customer_id ?? "";
   if (!customerId) {

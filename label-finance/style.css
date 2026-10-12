@@ -1785,3 +1785,20 @@ body.col-resizing,body.col-resizing *{cursor:col-resize!important;user-select:no
 .att-view-card{width:min(900px,100%)}
 .att-view-body{padding:12px;display:flex;justify-content:center;background:var(--panel-2)}
 .att-view-body img{max-width:100%;max-height:75vh;object-fit:contain;border-radius:8px}
+
+/* Accesso team */
+.ws-banner{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;padding:8px 16px;background:color-mix(in srgb,var(--accent) 16%,var(--panel));border-bottom:1px solid color-mix(in srgb,var(--accent) 35%,var(--line));font-size:.88rem;font-weight:600}
+.ws-banner[hidden]{display:none}
+.ws-banner .btn-sm{padding:5px 11px;font-size:.82rem}
+.acct-ws-box{display:flex;flex-direction:column;gap:2px;padding:4px 0 6px;border-bottom:1px solid var(--line);margin-bottom:6px}
+.acct-ws-box[hidden]{display:none}
+.acct-ws-h{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted-2);padding:4px 12px}
+.acct-ws{display:flex;align-items:center;gap:8px;text-align:left}
+.acct-ws>span:first-child{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acct-ws.is-active{color:var(--accent);font-weight:600}
+.team-box{display:flex;flex-direction:column;gap:8px}
+.team-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px}
+.team-row .select{width:auto;padding:5px 8px;font-size:.84rem}
+.team-invite{display:flex;gap:8px;flex-wrap:wrap}
+.team-invite .input{flex:1 1 200px;min-width:0}
+.team-invite .select{width:auto}

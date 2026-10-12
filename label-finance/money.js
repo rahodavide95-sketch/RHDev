@@ -60,6 +60,7 @@ async function fxRefresh(opt){
 }
 // all'avvio e dopo un import: se i cambi automatici sono attivi e i dati sono vecchi o mancano valute
 function fxMaybeRefresh(){
+  if(window.LF_readOnly) return;                  // sola lettura: i cambi li aggiorna il titolare
   const st=fxState(); if(!st.auto || fxBusy || (typeof navigator!=='undefined' && navigator.onLine===false)) return;
   const need=Object.keys(fxNeeded()), missing=need.some(c=>!(st.months&&st.months[c]) && !(st.failed||[]).includes(c));
   const stale=!st.updatedAt || (Date.now()-Date.parse(st.updatedAt))>FX_STALE;

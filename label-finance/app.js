@@ -147,14 +147,22 @@ function wipeLocalData(){
   window.LFStore.del('snaps').catch(()=>{});   // anche le versioni salvate sul dispositivo (computer condivisi)
   if(typeof attWipeLocal==='function') attWipeLocal();   // e le ricevute allegate
 }
-function save(){ saveLocal(); if(window.LF_push) window.LF_push(); if(typeof notifScan==='function') notifScan(); if(typeof safetyOnSave==='function') safetyOnSave(); }
+let roRevertT=null, roToastAt=0;
+function save(){ saveLocal();
+  // accesso team in sola lettura: niente salvataggi, le modifiche tornano com'erano
+  if(window.LF_readOnly){
+    if(Date.now()-roToastAt>4000 && (!navigator.userActivation || navigator.userActivation.isActive)){ roToastAt=Date.now(); toast(tt('team.readonly')); }
+    clearTimeout(roRevertT); roRevertT=setTimeout(()=>{ if(window.LF_revert) window.LF_revert(); }, 1200);
+    return;
+  }
+  if(window.LF_push) window.LF_push(); if(typeof notifScan==='function') notifScan(); if(typeof safetyOnSave==='function') safetyOnSave(); }
 /* API per il modulo di sincronizzazione cloud (sync.js) — sincronizza tutto l'account */
 window.LF = {
   ready: lfReady,
   data(){ return ACCOUNT; },
   applyCloud(d){ ACCOUNT = migrateAccount(d); DB = activeLabel(); saveLocal(); reloadViews(); if(typeof rebuildAccountMenu==='function') rebuildAccountMenu();
     // spese ricorrenti scadute nel frattempo (la versione del cloud può essere indietro)
-    if(typeof processRecurring==='function') try{ processRecurring(); }catch(e){} },
+    if(typeof processRecurring==='function' && !window.LF_readOnly) try{ processRecurring(); }catch(e){} },
   // quanti dati ci sono su questo dispositivo (per chiedere conferma prima di unirli a un account)
   localSize(){ return (ACCOUNT.labels||[]).reduce((n,l)=>n+(l.transactions||[]).length+(l.releases||[]).length+(l.artists||[]).length+(l.contracts||[]).length,0); },
   wipeLocal(){ wipeLocalData();
@@ -430,6 +438,7 @@ function initFAQ(){
 /* ===== Account: menu, etichette, piani ===== */
 const PLAN_INFO={ free:{name:'Starter'}, biglabel:{name:'Big Label'}, studio:{name:'Company'}, agency:{name:'Enterprise'} };
 function rebuildAccountMenu(){ if(typeof updateConsolidatedNav==='function') updateConsolidatedNav();
+  if(window.LF_renderWsUI) try{ window.LF_renderWsUI(); }catch(e){}   // etichette del team (sync.js)
   const m=$('#account-menu-labels'); if(!m) return;
   const multi=ACCOUNT.labels.length>1;
   m.innerHTML=ACCOUNT.labels.map(l=>`<div class="acct-label-row ${l.id===ACCOUNT.activeLabel?'is-active':''}">
@@ -2820,6 +2829,7 @@ function renderSettings(){
   if(typeof renderFx==='function') renderFx();
   if(typeof renderTrashCount==='function') renderTrashCount();
   const dh=$('#doc-header'); if(dh && document.activeElement!==dh) dh.value=(DB.profile&&DB.profile.docHeader)||'';
+  if(typeof renderTeam==='function') renderTeam();
 }
 $('#add-rate').onclick=()=>{
   const c=$('#rate-cur').value.trim().toUpperCase().slice(0,3), v=parseFloat($('#rate-val').value);

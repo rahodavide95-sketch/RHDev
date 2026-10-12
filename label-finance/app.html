@@ -211,6 +211,8 @@
 
   <!-- ======= MAIN ======= -->
   <main class="main">
+    <div class="ws-banner" id="ws-banner" hidden><span id="ws-banner-txt"></span>
+      <button class="btn btn-sm" type="button" data-ws="" data-i18n="team.back">Torna al mio account</button></div>
     <header class="topbar">
       <div class="topbar-left">
         <button class="drawer-toggle" id="drawer-toggle" aria-label="Menu" title="Menu">
@@ -1087,6 +1089,13 @@
           </div>
         </div>
 
+        <!-- Team: accesso di collaboratori all'etichetta (piano Agency) -->
+        <div class="panel set-card" id="team-card" data-when-user hidden>
+          <div class="panel-head"><h2 data-i18n="team.title">Team</h2><span class="pro-badge">Agency</span></div>
+          <p class="muted small" data-i18n="team.hint">Invita collaboratori (per esempio il commercialista o un socio) a vedere o modificare la tua etichetta. Accedono con il loro account, usando l'email che scrivi qui.</p>
+          <div class="team-box" id="team-box"></div>
+        </div>
+
         <!-- Preferenze: tema, lingua, tutorial -->
         <div class="panel set-card">
           <div class="panel-head"><h2 data-i18n="set.prefs">Preferenze</h2></div>
@@ -1619,7 +1628,7 @@
             <li data-i18n="pf.agency1">Tutto del piano Company</li>
             <li data-i18n="pf.agency2">Etichette illimitate</li>
             <li data-i18n="pf.agency4">Funzionalità su misura, su richiesta</li>
-            <li data-i18n-html="pf.agency3">Accesso team <em>(prossimamente)</em></li>
+            <li data-i18n-html="pf.agency3">Accesso team (sola lettura o modifica)</li>
             <li data-i18n="pf.agency5">Onboarding dedicato</li>
           </ul>
           <button class="btn plan-btn" data-plan="agency" disabled data-i18n="off.soon">Presto disponibile</button>
@@ -1880,6 +1889,7 @@
         <span class="acct-plan" id="account-plan" data-i18n="acct.plan">Piano Starter</span>
       </div>
     </div>
+    <div class="acct-ws-box" id="account-menu-ws" hidden></div>
     <div class="acct-labels" id="account-menu-labels"></div>
     <button class="acct-item acct-add" id="acct-add"><span data-i18n="acct.add">＋ Aggiungi etichetta</span><span class="pro-badge">PRO</span></button>
     <div class="acct-divider"></div>
@@ -2439,6 +2449,7 @@
   <script src="insights.js?v=1"></script>
   <script src="search.js?v=1"></script>
   <script src="files.js?v=1"></script>
+  <script src="team.js?v=1"></script>
   <script src="i18n.js?v=98"></script>
   <script src="vendor/supabase.min.js?v=95"></script>
   <script src="sync.js?v=96"></script>

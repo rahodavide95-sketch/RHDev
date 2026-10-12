@@ -1146,6 +1146,11 @@
             <button class="btn btn-sm" id="import-json" data-i18n="set.restore">⤴ Ripristina backup</button>
             <input type="file" id="json-input" accept=".json" hidden>
           </div>
+          <div class="set-row">
+            <div class="set-row-txt"><b data-i18n="pack.title">Pacchetto per il commercialista</b>
+              <span class="muted small" data-i18n="pack.hint">Un anno in un file ZIP: movimenti, riepilogo per categoria, pagamenti agli artisti con ritenute e tutte le ricevute.</span></div>
+            <button class="btn btn-sm" id="pack-open" type="button" data-i18n="pack.open">📦 Prepara il pacchetto</button>
+          </div>
           <div class="set-row set-safety">
             <div class="set-row-txt"><b data-i18n="trash.title_safety">Cestino e versioni</b>
               <span class="muted small" data-i18n="trash.safety_hint">Ciò che elimini resta nel cestino 30 giorni. Le versioni salvate ti riportano a com'erano i dati prima.</span></div>
@@ -1926,6 +1931,12 @@
         <label><span data-i18n="f.csshare">Collection society share</span> <input type="number" id="f-csshare" class="input" step="0.01"></label>
         <label><span data-i18n="f.currency">Valuta</span> <input type="text" id="f-currency" class="input" value="EUR" maxlength="3"></label>
         <label class="span-2"><span data-i18n="f.note">Nota</span> <input type="text" id="f-note" class="input"></label>
+        <div class="span-2 att-box">
+          <div class="att-head"><span class="fld-lbl" data-i18n="att.title">Ricevute e documenti</span>
+            <button type="button" class="btn btn-sm" id="f-att-add" data-i18n="att.add">📎 Allega foto o PDF</button>
+            <input type="file" id="f-att-input" accept="image/*,application/pdf" multiple hidden></div>
+          <div class="att-list" id="f-att-list"></div>
+        </div>
         <div class="span-2 f-cat-hint" id="f-cat-hint" hidden></div>
         <div class="span-2 f-recur" id="f-recur-box" hidden>
           <label class="check-inline"><input type="checkbox" id="f-recurring"> <span data-i18n="f.recurring">Spesa ricorrente (si ripete da sola)</span></label>
@@ -2036,6 +2047,23 @@
       </div>
       <div class="gs-list" id="gs-list" role="listbox"></div>
       <div class="gs-foot muted small" data-i18n="gs.foot">↑↓ per scegliere · Invio per aprire · Esc per chiudere</div>
+    </div>
+  </div>
+
+  <!-- Anteprima ricevuta (foto) -->
+  <div class="modal att-view" id="att-view" hidden>
+    <div class="modal-card att-view-card"><div class="modal-head"><h2 id="att-view-name"></h2><button class="modal-x" id="att-view-close" aria-label="Chiudi">✕</button></div>
+      <div class="att-view-body"><img id="att-view-img" alt=""></div></div>
+  </div>
+  <!-- Pacchetto per il commercialista -->
+  <div class="modal" id="pack-modal" hidden>
+    <div class="modal-card modal-card--sm" role="dialog" aria-labelledby="pack-title">
+      <div class="modal-head"><h2 id="pack-title" data-i18n="pack.title">Pacchetto per il commercialista</h2><button class="modal-x" id="pack-close" aria-label="Chiudi">✕</button></div>
+      <div class="sx-body">
+        <p class="muted small" data-i18n="pack.modal_hint">Scegli l'anno: scarichi uno ZIP con i movimenti (CSV per Excel), il riepilogo, i pagamenti agli artisti con le ritenute e la cartella delle ricevute.</p>
+        <label class="fld"><span data-i18n="pack.year">Anno</span><select class="select" id="pack-year"></select></label>
+        <div class="modal-foot"><span class="spacer"></span><button class="btn btn-primary btn-sm" id="pack-go" type="button" data-i18n="pack.go">⤓ Scarica lo ZIP</button></div>
+      </div>
     </div>
   </div>
 
@@ -2410,6 +2438,7 @@
   <script src="money.js?v=1"></script>
   <script src="insights.js?v=1"></script>
   <script src="search.js?v=1"></script>
+  <script src="files.js?v=1"></script>
   <script src="i18n.js?v=98"></script>
   <script src="vendor/supabase.min.js?v=95"></script>
   <script src="sync.js?v=96"></script>

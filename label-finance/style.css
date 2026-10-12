@@ -1770,3 +1770,18 @@ body.col-resizing,body.col-resizing *{cursor:col-resize!important;user-select:no
 .rcpt-sign i{display:block;border-bottom:1px solid #999}
 .po-rcpt{background:none;border:none;cursor:pointer;font-size:.95rem;padding:2px 6px;border-radius:6px;flex:none}
 .po-rcpt:hover{background:var(--panel-2)}
+
+/* Ricevute allegate ai movimenti */
+.att-box{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border:1px dashed var(--line);border-radius:12px}
+.att-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.att-list{display:flex;flex-wrap:wrap;gap:6px}
+.att-chip{display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:4px 6px 4px 10px;border-radius:999px;background:var(--panel-2);border:1px solid var(--line)}
+.att-open{background:none;border:none;color:var(--text);font:inherit;font-size:.86rem;cursor:pointer;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0}
+.att-open:hover{color:var(--accent)}
+.att-del{background:none;border:none;color:var(--muted);cursor:pointer;border-radius:50%;width:22px;height:22px}
+.att-del:hover{background:color-mix(in srgb,var(--out) 14%,transparent);color:var(--out)}
+.tx-clip{cursor:pointer;font-size:.85em;margin-left:4px;opacity:.85}
+.tx-clip:hover{opacity:1}
+.att-view-card{width:min(900px,100%)}
+.att-view-body{padding:12px;display:flex;justify-content:center;background:var(--panel-2)}
+.att-view-body img{max-width:100%;max-height:75vh;object-fit:contain;border-radius:8px}

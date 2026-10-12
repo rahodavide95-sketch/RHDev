@@ -30,7 +30,7 @@ const opts = {
   selfDefending: false, debugProtection: false,
 };
 let n = 0;
-for (const f of ['core.js', 'signature.js', 'app.js', 'tables.js', 'search.js', 'insights.js', 'money.js', 'safety.js', 'sync.js', 'i18n.js', 'firma.js', 'artista.js', 'landing.js']) {
+for (const f of ['core.js', 'signature.js', 'app.js', 'tables.js', 'files.js', 'search.js', 'insights.js', 'money.js', 'safety.js', 'sync.js', 'i18n.js', 'firma.js', 'artista.js', 'landing.js']) {
   const p = `${OUT}/${f}`;
   if (!existsSync(p)) { console.warn('manca:', p); continue; }
   const code = readFileSync(p, 'utf8');

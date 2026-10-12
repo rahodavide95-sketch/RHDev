@@ -145,6 +145,7 @@ function wipeLocalData(){
   try{ localStorage.removeItem(STORE_KEY); localStorage.removeItem(STORE_TS); localStorage.removeItem('labelfinance.snapTs'); }catch(e){}
   window.LFStore.del('account').catch(()=>{});
   window.LFStore.del('snaps').catch(()=>{});   // anche le versioni salvate sul dispositivo (computer condivisi)
+  if(typeof attWipeLocal==='function') attWipeLocal();   // e le ricevute allegate
 }
 function save(){ saveLocal(); if(window.LF_push) window.LF_push(); if(typeof notifScan==='function') notifScan(); if(typeof safetyOnSave==='function') safetyOnSave(); }
 /* API per il modulo di sincronizzazione cloud (sync.js) — sincronizza tutto l'account */
@@ -1070,7 +1071,8 @@ const TX_COLS = {
   platform:{label:'Piattaforma', cell:t=>esc(t.platform)},
   type:    {label:'Tipologia',   cell:t=>esc(t.type)},
   catalog: {label:'Catalogo',    cell:t=>{ const r=releaseForTx(t); return r&&t.catalog?`<span class="lf-link" data-rel-open="${r.id}">${esc(t.catalog)}</span>`:esc(t.catalog); }},
-  product: {label:'Prodotto',    cell:t=>{ const r=releaseForTx(t); return r?`<span class="lf-link" data-rel-open="${r.id}" title="${tt('tx.open_release')}">${esc(t.product||r.title||'')}</span>`:esc(t.product); }},
+  product: {label:'Prodotto',    cell:t=>{ const r=releaseForTx(t); const clip=(t.att&&t.att.length)?` <span class="tx-clip" data-tx-att="${t.id}" title="${esc(tt('att.open'))}">📎${t.att.length>1?t.att.length:''}</span>`:'';
+    return (r?`<span class="lf-link" data-rel-open="${r.id}" title="${tt('tx.open_release')}">${esc(t.product||r.title||'')}</span>`:esc(t.product))+clip; }},
   artist:  {label:'Artista',     cell:t=>artNameLink(t.artist)},
   isrc:    {label:'ISRC',        cell:t=>esc(t.isrc)},
   upc:     {label:'UPC',         cell:t=>esc(t.upc||t.code)},
@@ -2398,6 +2400,7 @@ function openTx(id){
   $('#f-net').value=t?.net??''; $('#f-csshare').value=t?.csShare??'';
   $('#f-currency').value=t?.currency||'EUR'; $('#f-note').value=t?.note||'';
   $('#f-delete').hidden=!t;
+  if(typeof attOnOpenTx==='function') attOnOpenTx();
   $('#tx-modal').hidden=false;
   updateExpCatHint();
   // ricorrenza: solo per nuove uscite
@@ -2476,6 +2479,7 @@ $('#tx-form').onsubmit=e=>{
   const prev=id?DB.transactions.find(t=>t.id===id):null;
   if(prev && typeof perIsClosedTx==='function' && (perIsClosedTx(prev) || perIsClosedTx(Object.assign({},prev,rec))) && !confirm(tt('per.edit_closed_q'))) return;
   if(!id && typeof markLateLines==='function' && markLateLines([rec])) toast(tt('per.late_one'));
+  if(typeof attOnTxSave==='function') attOnTxSave(rec, prev);   // ricevute allegate a un movimento nuovo
   // in modifica restano i campi che il modulo non mostra (allegati, data contabile, import…)
   if(id){ const i=DB.transactions.findIndex(t=>t.id===id); DB.transactions[i]=Object.assign({}, prev, rec); }
   else DB.transactions.push(rec);

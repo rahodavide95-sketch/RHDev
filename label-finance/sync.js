@@ -412,6 +412,22 @@
     if(!client||!user) return;
     try{ await Promise.race([ client.rpc('lf_snapshot_now', { p_owner: wsId() }), new Promise(r=>setTimeout(r, 4000)) ]); }catch(e){}
   };
+  /* ---------- Allegati (ricevute) su Supabase Storage: cartella privata dell'etichetta ---------- */
+  window.LF_uploadReceipt = async function(name, blob, type){
+    if(!client||!user||(workspace && workspace.role==='viewer')) return null;
+    const path=wsId()+'/'+name;
+    try{ const { error } = await client.storage.from('receipts').upload(path, blob, { contentType:type||'application/octet-stream', upsert:true });
+      if(error) return null; return { path };
+    }catch(e){ return null; }
+  };
+  window.LF_downloadReceipt = async function(path){
+    if(!client||!user||!path) return null;
+    try{ const { data, error } = await client.storage.from('receipts').download(path); return error?null:data; }catch(e){ return null; }
+  };
+  window.LF_deleteReceipt = async function(path){
+    if(!client||!user||!path) return;
+    try{ await client.storage.from('receipts').remove([path]); }catch(e){}
+  };
   /* ---------- Firma remota dei contratti ---------- */
   // token dei link (firma, portale): 128 bit casuali, impossibili da indovinare
   function randToken(){ try{ return crypto.randomUUID().replace(/-/g,''); }catch(e){

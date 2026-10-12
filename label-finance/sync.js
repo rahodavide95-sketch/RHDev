@@ -310,12 +310,29 @@
     set('Ti abbiamo inviato un link di conferma a '+ne+' (controlla anche la posta attuale). Il cambio sarà effettivo solo dopo aver cliccato il link.',true);
   }
 
-  /* ---------- Recupero password: porta l'utente al cambio password ---------- */
-  function onRecovery(){
-    showGate(false);
-    try{ window.LF.goto('settings'); }catch{}
-    const box=$('pw-change-box'); if(box){ box.open=true; box.scrollIntoView({behavior:'smooth',block:'center'}); }
-    const st=$('pw-status'); if(st){ st.textContent='Imposta qui la tua nuova password.'; st.style.color='var(--accent)'; }
+  /* ---------- Recupero password: schermata dedicata "imposta nuova password" ---------- */
+  function showRecovery(show){
+    const el=$('recovery-screen'); if(el) el.hidden=!show;
+    document.body.classList.toggle('recovery-mode', !!show);
+    if(show){
+      if($('rec-username')) $('rec-username').value=(user&&user.email)||'';
+      if($('rec-status')) $('rec-status').textContent='';
+    }
+  }
+  function onRecovery(){ showGate(false); showPending(false); showRecovery(true); }
+  async function changeRecoveryPassword(){
+    const st=$('rec-status'); const set=(m,ok)=>{ if(st){ st.textContent=m; st.style.color = ok?'var(--in)':'var(--out)'; } };
+    if(!client || !user){ set('Link non valido o scaduto. Richiedi un nuovo reset dalla schermata di accesso.',false); return; }
+    const p1=$('rec-pw').value, p2=$('rec-pw2').value;
+    if(p1.length<6){ set('La password deve avere almeno 6 caratteri.',false); return; }
+    if(p1!==p2){ set('Le due password non coincidono.',false); return; }
+    set('Salvataggio…',true);
+    const { error } = await client.auth.updateUser({ password:p1 });
+    if(error){ set(authMsg(error.message),false); return; }
+    storeCred(user.email, p1);
+    $('rec-pw').value=''; $('rec-pw2').value='';
+    set('Password aggiornata ✓ Accesso in corso…',true);
+    setTimeout(()=>{ showRecovery(false); onAuth(); }, 900);
   }
 
   /* ---------- Occhio mostra/nascondi (tutti i campi password) ---------- */
@@ -354,6 +371,7 @@
     $('sync-pull')?.addEventListener('click', ()=>{ setStatus('Aggiorno…'); pull(); });
     $('account-save')?.addEventListener('click', saveAccount);
     $('pw-form')?.addEventListener('submit', e=>{ e.preventDefault(); changePassword(); });
+    $('rec-form')?.addEventListener('submit', e=>{ e.preventDefault(); changeRecoveryPassword(); });
     $('email-save')?.addEventListener('click', changeEmail);
   }
 

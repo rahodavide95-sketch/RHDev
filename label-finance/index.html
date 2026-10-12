@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <!-- Chi usa la web-app installata (PWA) non deve vedere il sito: dritto al login -->
 <script>try{if(window.matchMedia('(display-mode: standalone)').matches||navigator.standalone){location.replace('app.html'+location.search+location.hash);}}catch(e){}</script>
+<!-- Link di reset password che atterra qui (redirect non in allowlist): inoltra all'app -->
+<script>try{if(/[#&?]type=recovery\b/.test(location.hash+location.search)){location.replace('app.html'+location.search+location.hash);}}catch(e){}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0a0b10">
 <title>Label Finance — Il gestionale all-in-one per etichette discografiche</title>

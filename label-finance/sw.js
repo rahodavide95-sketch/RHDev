@@ -1,7 +1,7 @@
 /* Service worker — offline-first leggero, network-first per evitare versioni vecchie.
    La copia offline si cerca prima esatta (stessa "?v=…", così HTML e JS restano della
    stessa versione) e solo se manca ignorando "?v=…". Cambia CACHE quando vuoi forzare una pulizia. */
-const CACHE='lf-cache-v200';
+const CACHE='lf-cache-v201';
 const CORE=['./','index.html','app.html','artista.html','firma.html','style.css','core.js','app.js','config.js','i18n.js','sync.js',
   'theme-boot.js','landing.js','pwa-redirect.js','signature.js','tables.js','team.js','files.js','search.js','insights.js','money.js','safety.js','firma.js','artista.js','vendor/supabase.min.js','html2pdf.bundle.min.js',
   'manifest.webmanifest','icon.png','pwa-192.png','pwa-512.png'];

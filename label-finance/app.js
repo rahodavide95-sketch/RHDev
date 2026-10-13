@@ -19,13 +19,18 @@ const CANON = [
   ['territory','Paese/Territorio'],
 ];
 // campi in più per i propri fogli Excel (spese): entrata/uscita per riga, categoria, note
-const CANON_EXTRA = [ ['kind','Entrata/Uscita'], ['amountIn','Entrate (colonna)'], ['amountOut','Uscite (colonna)'], ['category','Categoria spesa'], ['note','Note'], ['release','Release collegata'] ];
+const CANON_EXTRA = [ ['paid','Pagato'], ['kind','Entrata/Uscita'], ['amountIn','Entrate (colonna)'], ['amountOut','Uscite (colonna)'], ['category','Categoria spesa'], ['note','Note'], ['release','Release collegata'] ];
 const MAP_FIELDS = CANON.concat(CANON_EXTRA);
 
 /* ---------- Store ---------- */
 const DEFAULT_TX_ORDER = ['date','kind','platform','catalog','product','artist','qty','net',
   'dateTo','type','isrc','upc','territory','gross','shipping','taxes','payProcFees','fees','csShare','currency','note'];
 const DEFAULT_TX_VISIBLE = ['date','kind','platform','catalog','product','artist','qty','net'];
+// Movimenti divisi in schede: Entrate, Uscite, Tutti (scelta ricordata su questo dispositivo)
+const EXP_DEFAULT_ORDER = ['date','cat','platform','product','catalog','paid','net','currency','note'];
+let txTab=(()=>{ try{ const v=localStorage.getItem('lf.txTab'); return v==null ? 'income' : v; }catch(e){ return 'income'; } })();
+// un'uscita non pagata non conta nei totali (dashboard, grafici, conto economico) finché non la segni come pagata
+const txCounts=t=>!(t && t.kind==='expense' && t.paid===false);
 /* Account = piu' etichette; DB punta all'etichetta attiva. */
 const DASH_BASE = ['kpi','chart','g_release','g_artist','g_platform','g_type'];
 const DASH_EXTRAS = ['forecast','w_top','recent','merch','nextrel','nextevt','support','disco','margin','expenses','payable','unrec','mom','pending','lowstock','duetasks']; // libreria widget opzionali (nascosti di default)
@@ -191,7 +196,7 @@ function updateConsolidatedNav(){ const b=document.querySelector('[data-view="co
   if(currentView==='consolidated' && ((ACCOUNT&&ACCOUNT.labels)||[]).length<2) goto('dashboard'); }
 // stessi cambi della Dashboard di ogni etichetta (anche le medie mensili BCE)
 function labelKPI(l){ let inc=0,exp=0;
-  (l.transactions||[]).forEach(t=>{ const v=LFCore.txEur(l, t); if(t.kind==='income') inc+=v; else exp+=Math.abs(v); });
+  (l.transactions||[]).forEach(t=>{ if(!txCounts(t)) return; const v=LFCore.txEur(l, t); if(t.kind==='income') inc+=v; else exp+=Math.abs(v); });
   return {inc,exp,net:inc-exp}; }
 function renderConsolidated(){
   if(!$('#cons-table')) return;
@@ -214,8 +219,15 @@ function renderConsolidated(){
 function ensureCols(){
   DB.txOrder = DB.txOrder || DEFAULT_TX_ORDER.slice();
   DB.txHidden = DB.txHidden || [];
-  DEFAULT_TX_ORDER.forEach(c=>{ if(!DB.txOrder.includes(c)){ DB.txOrder.push(c); DB.txHidden.push(c); } });
+  DEFAULT_TX_ORDER.concat(['paid']).forEach(c=>{ if(!DB.txOrder.includes(c)){ DB.txOrder.push(c); DB.txHidden.push(c); } });
+  // colonne della scheda Uscite: le sue, più tutte le altre disponibili (nascoste)
+  if(!DB.txExpOrder){ DB.txExpOrder=EXP_DEFAULT_ORDER.slice(); DB.txExpHidden=[]; }
+  DB.txExpHidden=DB.txExpHidden||[];
+  Object.keys(TX_COLS).forEach(c=>{ if(c!=='kind' && !DB.txExpOrder.includes(c)){ DB.txExpOrder.push(c); DB.txExpHidden.push(c); } });
 }
+// configurazione colonne della scheda aperta
+function txColCfg(){ return txTab==='expense' ? { o:'txExpOrder', h:'txExpHidden' } : { o:'txOrder', h:'txHidden' }; }
+const txColAllowed=c=>!!TX_COLS[c] && !(txTab && c==='kind') && !(txTab==='income' && TX_COLS[c].exp);
 
 /* ---------- Utils ---------- */
 const $ = (s,r=document)=>r.querySelector(s);
@@ -224,8 +236,11 @@ const $$ = (s,r=document)=>[...r.querySelectorAll(s)];
 const tt = (k)=> (window.t ? window.t(k) : k);
 const COL_I18N={date:'col.date',dateTo:'col.dateTo',platform:'col.platform',type:'col.type',catalog:'col.catalog',
   product:'col.product',artist:'col.artist',qty:'col.qty',gross:'col.gross',shipping:'col.shipping',taxes:'col.taxes',
-  payProcFees:'col.payProcFees',fees:'col.fees',csShare:'col.csShare',net:'col.net',currency:'col.currency',note:'col.note',territory:'col.territory'};
-function colLabel(c){ return (COL_I18N[c]&&window.t) ? window.t(COL_I18N[c]) : (TX_COLS[c]?TX_COLS[c].label:c); }
+  payProcFees:'col.payProcFees',fees:'col.fees',csShare:'col.csShare',net:'col.net',currency:'col.currency',note:'col.note',territory:'col.territory',
+  cat:'col.cat',paid:'col.paid'};
+// nella scheda Uscite le colonne si chiamano come in una spesa (Fornitore, Descrizione, Importo…)
+const EXP_COL_I18N={date:'col.x_date',platform:'col.x_platform',product:'col.x_product',net:'col.x_net',catalog:'col.x_catalog'};
+function colLabel(c){ const k=(txTab==='expense' && EXP_COL_I18N[c]) || COL_I18N[c]; return (k&&window.t) ? window.t(k) : (TX_COLS[c]?TX_COLS[c].label:c); }
 const uid = ()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // immagine sicura da inserire in src="…": solo data URL di immagini o file locali (le firme arrivano da fuori!)
@@ -313,9 +328,10 @@ const HINTS = {
   amountIn:['entrate','entrata','avere','accrediti','accredito','incassi','ricavi','credit','credits','credit amount','deposit','deposits','paid in','money in','ingresos','haber','abono','credito','recettes','encaissements','einnahmen','haben','gutschrift','entradas','inkomsten','bij'],
   amountOut:['uscite','uscita','dare','addebiti','addebito','pagamenti','debit','debits','debit amount','withdrawal','withdrawals','paid out','money out','gastos','debe','cargo','debito','depenses','decaissements','ausgaben','soll','lastschrift','saidas','uitgaven','af'],
   release:['release','release collegata','progetto','project','uscita discografica'],
+  paid:['pagato','pagata','pagati','saldato','saldata','paid','is paid','pagado','pago','bezahlt','betaald','pago efetuado'],   // non "payee" (è il destinatario)
 };
 // colonne di servizio dei fogli personali: non si collegano da sole a nessun campo (si possono scegliere a mano)
-const MAP_SKIP=new Set(['data valuta','value date','valuta data','pagato','pagata','paid','metodo pagamento','metodo di pagamento','modalità pagamento','modalita pagamento','payment method','note pagamento','payment note','saldo','balance','progressivo','iban'].map(s=>String(s).toLowerCase().replace(/[^a-z0-9]+/g,'')));
+const MAP_SKIP=new Set(['data valuta','value date','valuta data','metodo pagamento','metodo di pagamento','modalità pagamento','modalita pagamento','payment method','note pagamento','payment note','saldo','balance','progressivo','iban'].map(s=>String(s).toLowerCase().replace(/[^a-z0-9]+/g,'')));
 const colNorm = s => String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'');
 function autoMap(headers){
   const map={}; const nh=headers.map(colNorm); const used=new Set(nh.map((h,i)=>MAP_SKIP.has(h)?i:-1).filter(i=>i>-1));
@@ -323,7 +339,7 @@ function autoMap(headers){
   // 1) intestazione == sinonimo, su tutti i campi (così "Categoria" non finisce in Catalogo); prima i campi dei fogli personali
   for(const [field] of CANON_EXTRA.concat(CANON)){ const hs=hintsOf(field); const i=nh.findIndex((h,j)=>!used.has(j) && hs.includes(h)); if(i>-1){ map[field]=i; used.add(i); } }
   // 2) sinonimo contenuto nell'intestazione (solo sinonimi di almeno 3 lettere)
-  const EXACT_ONLY=new Set(['count','cur','curr','ccy','cat','nome']);
+  const EXACT_ONLY=new Set(['count','cur','curr','ccy','cat','nome','paid','pago','paye','payee']);   // "paid to" di Bandcamp non è "Pagato"
   for(const [field] of MAP_FIELDS){ if(map[field]!=null) continue; const hs=hintsOf(field).filter(k=>!EXACT_ONLY.has(k) && k.length>=(field==='amountIn'||field==='amountOut'?6:3));
     const i=nh.findIndex((h,j)=>!used.has(j) && hs.some(k=>h.includes(k)) && !(field==='catalog' && h.includes('categ')));
     if(i>-1){ map[field]=i; used.add(i); } }
@@ -693,7 +709,7 @@ function deltaTag(cur,prev,goodUp){
 /* stagionalità: media netto per mese-calendario su più anni → mese migliore per pubblicare */
 function seasonality(){
   const byMonth={}; const periods=new Set();
-  (DB.transactions||[]).forEach(t=>{ const d=t.date; if(!d||d.length<7) return;
+  (DB.transactions||[]).forEach(t=>{ const d=t.date; if(!d||d.length<7 || !txCounts(t)) return;
     const mm=+d.slice(5,7); if(!mm) return;
     const v=(t.kind==='income'?1:-1)*Math.abs(toEur(t.net,t.currency,t.date));
     (byMonth[mm]??={sum:0,years:new Set()}); byMonth[mm].sum+=v; byMonth[mm].years.add(d.slice(0,4));
@@ -747,15 +763,19 @@ function renderDashboard(){
   $('#dash-empty').hidden = all.length>0;
   if(typeof updateDemoBanner==='function') updateDemoBanner();
   const range=periodRange();
-  const txs=all.filter(t=>inRange(t,range.from,range.to));
+  // le uscite non ancora pagate non entrano nei totali: si vedono a parte sotto "Uscite"
+  const txs=all.filter(t=>txCounts(t) && inRange(t,range.from,range.to));
   const cur=sumKPI(txs);
+  { const due=all.filter(t=>!txCounts(t) && inRange(t,range.from,range.to)), el=$('#kpi-expense-due');
+    if(el){ const sum=due.reduce((a,t)=>a+Math.abs(toEur(t.net,t.currency,t.date)),0);
+      el.hidden=!due.length; el.textContent=tt(due.length===1?'paid.kpi_due_one':'paid.kpi_due').replace('{n}',due.length).replace('{v}',fmtMoney(sum)); } }
   $('#kpi-income').textContent=fmtMoney(cur.inc);
   $('#kpi-expense').textContent=fmtMoney(cur.exp);
   $('#kpi-net').textContent=fmtMoney(cur.net);
   $('#kpi-net').style.color = cur.net>=0?'var(--in)':'var(--out)';
   if($('#kpi-count')) $('#kpi-count').textContent=txs.length;
   // variazione % vs periodo precedente
-  const prev = range.prevFrom ? sumKPI(all.filter(t=>inRange(t,range.prevFrom,range.prevTo))) : null;
+  const prev = range.prevFrom ? sumKPI(all.filter(t=>txCounts(t) && inRange(t,range.prevFrom,range.prevTo))) : null;
   $('#delta-income').innerHTML = prev?deltaTag(cur.inc,prev.inc,true):'';
   $('#delta-expense').innerHTML = prev?deltaTag(cur.exp,prev.exp,false):'';
   $('#delta-net').innerHTML = prev?deltaTag(cur.net,prev.net,true):'';
@@ -993,9 +1013,9 @@ $$('#export-menu button').forEach(b=>b.onclick=()=>{ $('#export-menu').hidden=tr
 // Movimenti: esporta le righe filtrate (come le vedi), con intestazioni che l'import riconosce
 registerExport('movimenti', ()=>{
   const cols=CANON, list=(currentView==='transactions' && txLastRows) ? txLastRows : DB.transactions;
-  const headers=[tt('imp.f_kind'),...cols.map(c=>mapLabel(c[0],c[1])),tt('imp.f_note')];
+  const headers=[tt('imp.f_kind'),...cols.map(c=>mapLabel(c[0],c[1])),tt('imp.f_note'),tt('col.paid')];
   const rows=list.map(t=>[tt(t.kind==='income'?'imp.k_income':'imp.k_expense'),...cols.map(c=>{
-    const v=t[c[0]]; return (typeof v==='number')?v:(v??''); }), t.note||'']);
+    const v=t[c[0]]; return (typeof v==='number')?v:(v??''); }), t.note||'', t.kind==='expense' ? tt(t.paid===false?'paid.no':'paid.yes') : '']);
   return {title:tt('tx.title')+' — '+(DB.name||''), headers, rows};
 });
 GROUP_TABLES.forEach(cfg=>registerExport('group:'+cfg.sel, ()=>{
@@ -1164,8 +1184,10 @@ const TX_COLS = {
   net:     {label:'Netto', num:1,cell:t=>{ const v=txSigned(t); return `<span class="${v>=0?'pos':'neg'}">${v<0?'−':''}${fmtMoney(Math.abs(v),t.currency||'EUR')}</span>`; }},
   currency:{label:'Valuta',      cell:t=>esc(t.currency)},
   note:    {label:'Nota',        cell:t=>esc(t.note)},
+  cat:     {label:'Categoria', exp:1, cell:t=>t.kind==='expense' ? esc(tt('ecat.'+expenseCategory(t))) : ''},
+  paid:    {label:'Pagato', exp:1, cell:t=>t.kind==='expense' ? `<label class="paid-tog" title="${esc(tt(t.paid===false?'paid.mark_paid':'paid.mark_unpaid'))}"><input type="checkbox" data-paid="${t.id}" ${t.paid===false?'':'checked'}><span>${esc(tt(t.paid===false?'paid.no':'paid.yes'))}</span></label>` : ''},
 };
-function visibleCols(){ ensureCols(); return DB.txOrder.filter(c=>!DB.txHidden.includes(c) && TX_COLS[c]); }
+function visibleCols(){ ensureCols(); const cfg=txColCfg(); return DB[cfg.o].filter(c=>!DB[cfg.h].includes(c) && txColAllowed(c)); }
 
 const NUM_COLS=['qty','gross','shipping','taxes','payProcFees','fees','csShare','net'];
 let txSort={ col:'date', dir:-1 };   // -1 = decrescente
@@ -1176,6 +1198,8 @@ function txSortKey(c,t){
   if(NUM_COLS.includes(c)) return +t[c]||0;
   if(c==='date'||c==='dateTo') return t[c]||'';
   if(c==='upc') return (t.upc||t.code||'').toLowerCase();
+  if(c==='cat') return t.kind==='expense' ? tt('ecat.'+expenseCategory(t)).toLowerCase() : '';
+  if(c==='paid') return t.kind==='expense' ? (t.paid===false?0:1) : 2;
   return (t[c]||'').toString().toLowerCase();
 }
 
@@ -1192,22 +1216,27 @@ let txLastRows=null, txFilterSig='';
 let txOnlyImp=null;
 function applyTxFilters(){
   const q=$('#tx-search').value.toLowerCase().trim();
-  const kind=$('#tx-filter-kind').value, plat=$('#tx-filter-platform').value;
+  const kind=txTab, plat=$('#tx-filter-platform').value;
   if(txOnlyImp && !(DB.lastImport && DB.lastImport.id===txOnlyImp)) txOnlyImp=null;
   const r=txOnlyImp ? {} : computeRange($('#tx-period'), $('#tx-from'), $('#tx-to'));
   const from=r.from, to=r.to;
   let rows=txOnlyImp ? DB.transactions.filter(t=>t._imp===txOnlyImp) : DB.transactions.slice();
-  if(kind) rows=rows.filter(t=>t.kind===kind);
   if(plat) rows=rows.filter(t=>t.platform===plat);
   if(from) rows=rows.filter(t=>(t.date||'')>=from);
   if(to)   rows=rows.filter(t=>(t.date||'')<=to);
   if(q) rows=rows.filter(t=>[t.product,t.artist,t.catalog,t.platform,t.isrc,t.upc,t.code,t.territory,t.note].join(' ').toLowerCase().includes(q));
+  // schede Entrate / Uscite / Tutti, con quante righe ha ciascuna (con gli stessi filtri)
+  { const ni=rows.filter(t=>t.kind==='income').length, ne=rows.length-ni;
+    const setN=(id,n)=>{ const e=$(id); if(e) e.textContent=n; }; setN('#tx-n-income',ni); setN('#tx-n-expense',ne); setN('#tx-n-all',rows.length);
+    $$('#tx-tabs [data-tx-tab]').forEach(b=>{ const on=b.dataset.txTab===txTab; b.classList.toggle('is-active',on); b.setAttribute('aria-selected',on?'true':'false'); });
+    const pl=$('#paid-log-btn'); if(pl) pl.hidden=txTab!=='expense'; }
+  if(kind) rows=rows.filter(t=>t.kind===kind);
   const k=txSort.col;
   // a parità: artista, traccia (prodotto), catalogo, data, piattaforma — in ordine alfabetico
   const txTies=['artist','product','catalog','date','platform'].filter(c=>c!==k).map(c=>t=>txSortKey(c,t));
   rows=tieSort(rows, t=>txSortKey(k,t), txSort.dir, txTies);
   txLastRows=rows;
-  const fsig=[q,kind,plat,from,to,txOnlyImp].join('|');
+  const fsig=[q,kind,plat,from,to,txOnlyImp,txTab].join('|');
   if(fsig!==txFilterSig){ txFilterSig=fsig; if(bulkSel.transactions && bulkSel.transactions.size){ bulkSel.transactions.clear(); bulkBar('transactions'); } }
   $('#tx-count-label').textContent=`${rows.length} ${tt(rows.length===1?'tx.movement':'tx.movements')}`;
   const ss=$('#tx-sort'); if(ss){ const v=txSort.col+':'+txSort.dir; if([...ss.options].some(o=>o.value===v)) ss.value=v; }
@@ -1218,7 +1247,7 @@ function applyTxFilters(){
     return `<th class="th-sort ${TX_COLS[c].num?'num':''}" data-col="${c}">${esc(colLabel(c))}${act}</th>`; }).join('');
   const selSet=(bulkSel.transactions||new Set());
   const body=pageRows.length
-    ? pageRows.map(t=>`<tr data-id="${t.id}"><td class="dbl-sel"><input type="checkbox" data-sel="transactions|${t.id}" ${selSet.has(t.id)?'checked':''}></td>${cols.map(c=>`<td class="${TX_COLS[c].num?'num':''}" data-label="${esc(colLabel(c))}">${TX_COLS[c].cell(t)}</td>`).join('')}</tr>`).join('')
+    ? pageRows.map(t=>`<tr data-id="${t.id}"${txCounts(t)?'':' class="is-unpaid"'}><td class="dbl-sel"><input type="checkbox" data-sel="transactions|${t.id}" ${selSet.has(t.id)?'checked':''}></td>${cols.map(c=>`<td class="${TX_COLS[c].num?'num':''}" data-label="${esc(colLabel(c))}">${TX_COLS[c].cell(t)}</td>`).join('')}</tr>`).join('')
     : `<tr><td colspan="${(cols.length||1)+1}" class="muted">${tt('empty.notx')}</td></tr>`;
   $('#table-tx').innerHTML=`<thead><tr>${head}</tr></thead><tbody>${body}</tbody>`;
   mountPager($('#table-tx'), 'tx', info);
@@ -1228,13 +1257,15 @@ function applyTxFilters(){
     applyTxFilters();
   });
   $$('#table-tx tbody tr[data-id]').forEach(tr=>tr.onclick=e=>{
-    if(e.target.closest('[data-rel-open]')||e.target.closest('.dbl-sel')) return;
+    if(e.target.closest('[data-rel-open]')||e.target.closest('.dbl-sel')||e.target.closest('.paid-tog')) return;
     openTx(tr.dataset.id);
   });
+  $$('#table-tx [data-paid]').forEach(cb=>cb.onchange=()=>setTxPaid(cb.dataset.paid, cb.checked, 'list'));
 }
 { let txSearchT=null;
   $('#tx-search').addEventListener('input',()=>{ clearTimeout(txSearchT); txSearchT=setTimeout(applyTxFilters,150); });
-  ['#tx-filter-kind','#tx-filter-platform'].forEach(s=>$(s).addEventListener('change',applyTxFilters));
+  $('#tx-filter-platform').addEventListener('change',applyTxFilters);
+  $('#tx-filter-kind').addEventListener('change',()=>setTxTab($('#tx-filter-kind').value));
   ['#tx-from','#tx-to'].forEach(s=>$(s).addEventListener('change',()=>{ if(txOnlyImp){ txOnlyImp=null; updateImpUndo(); } applyTxFilters(); })); }
 function syncTxDates(){ const cu=$('#tx-period').value==='custom'; $('#tx-from').hidden=!cu; $('#tx-to').hidden=!cu; }
 $('#tx-period').addEventListener('change',()=>{ syncTxDates(); if(txOnlyImp){ txOnlyImp=null; updateImpUndo(); } applyTxFilters(); });   // scegliere un periodo esce dalla vista "solo importati"
@@ -1259,11 +1290,12 @@ function enableColDrag(list, apply){ if(!list) return; let drag=null;
     if(after==null) list.appendChild(drag); else list.insertBefore(drag,after); };
 }
 function renderColsManager(){
-  ensureCols();
-  $('#cols-list').innerHTML = DB.txOrder.filter(c=>TX_COLS[c]).map(c=>`
+  ensureCols(); const cfg=txColCfg();
+  const ttl=$('#cols-modal .modal-head h2'); if(ttl) ttl.textContent=tt(txTab==='expense'?'cols.title_exp':txTab==='income'?'cols.title_inc':'cols.title');
+  $('#cols-list').innerHTML = DB[cfg.o].filter(txColAllowed).map(c=>`
     <li class="col-item" data-col="${c}">
       <span class="col-grip" title="Trascina per riordinare">⠿</span>
-      <label class="col-check"><input type="checkbox" ${DB.txHidden.includes(c)?'':'checked'} data-col-toggle="${c}">
+      <label class="col-check"><input type="checkbox" ${DB[cfg.h].includes(c)?'':'checked'} data-col-toggle="${c}">
         <span>${esc(colLabel(c))||'(IN/OUT)'}</span></label>
       <span class="col-moves">
         <button type="button" data-col-up="${c}" title="Sposta su">↑</button>
@@ -1272,18 +1304,20 @@ function renderColsManager(){
     </li>`).join('');
   $$('[data-col-toggle]').forEach(b=>b.onchange=()=>{
     const c=b.dataset.colToggle;
-    if(b.checked) DB.txHidden=DB.txHidden.filter(x=>x!==c);
-    else if(!DB.txHidden.includes(c)) DB.txHidden.push(c);
+    if(b.checked) DB[cfg.h]=DB[cfg.h].filter(x=>x!==c);
+    else if(!DB[cfg.h].includes(c)) DB[cfg.h].push(c);
     save(); applyTxFilters();
   });
   $$('[data-col-up]').forEach(b=>b.onclick=()=>moveCol(b.dataset.colUp,-1));
   $$('[data-col-down]').forEach(b=>b.onclick=()=>moveCol(b.dataset.colDown,1));
-  enableColDrag($('#cols-list'), order=>{ DB.txOrder=order; save(); applyTxFilters(); });
+  // le colonne che questa scheda non mostra (es. IN/OUT) restano in coda, senza cambiare se sono visibili
+  enableColDrag($('#cols-list'), order=>{ DB[cfg.o]=order.concat(DB[cfg.o].filter(c=>!order.includes(c))); save(); applyTxFilters(); });
 }
 function moveCol(c,dir){
   ensureCols();
-  const arr=DB.txOrder, i=arr.indexOf(c), j=i+dir;
-  if(i<0||j<0||j>=arr.length) return;
+  const arr=DB[txColCfg().o], vis=arr.filter(txColAllowed), k=vis.indexOf(c);
+  if(k<0 || k+dir<0 || k+dir>=vis.length) return;
+  const i=arr.indexOf(c), j=arr.indexOf(vis[k+dir]);
   [arr[i],arr[j]]=[arr[j],arr[i]]; save(); renderColsManager(); applyTxFilters();
 }
 $('#r-exclusive')?.addEventListener('change',e=>{ $('#r-excl-wrap').hidden = e.target.value!=='yes'; });
@@ -1314,10 +1348,14 @@ $('#btn-cols').onclick=()=>{ renderColsManager(); $('#cols-modal').hidden=false;
 $('#cols-close').onclick=$('#cols-done').onclick=()=>$('#cols-modal').hidden=true;
 $('#cols-modal').onclick=e=>{ if(e.target.id==='cols-modal') $('#cols-modal').hidden=true; };
 $('#cols-reset').onclick=()=>{
-  DB.txOrder=DEFAULT_TX_ORDER.slice();
-  DB.txHidden=DEFAULT_TX_ORDER.filter(c=>!DEFAULT_TX_VISIBLE.includes(c));
+  if(txTab==='expense'){ DB.txExpOrder=null; DB.txExpHidden=null; ensureCols(); }
+  else { DB.txOrder=DEFAULT_TX_ORDER.slice(); DB.txHidden=DEFAULT_TX_ORDER.filter(c=>!DEFAULT_TX_VISIBLE.includes(c)); }
   save(); renderColsManager(); applyTxFilters();
 };
+// schede Entrate / Uscite / Tutti
+function setTxTab(k){ txTab=k||''; try{ localStorage.setItem('lf.txTab', txTab); }catch(e){} const fk=$('#tx-filter-kind'); if(fk) fk.value=txTab;
+  pageGet('tx').page=1; applyTxFilters(); }
+$$('#tx-tabs [data-tx-tab]').forEach(b=>b.onclick=()=>setTxTab(b.dataset.txTab));
 
 /* ============================================================================
    RELEASE (anagrafica + quote royalty)
@@ -2545,6 +2583,14 @@ function openTx(id){
   $('#f-net').value=t?.net??''; $('#f-csshare').value=t?.csShare??'';
   $('#f-currency').value=t?.currency||'EUR'; $('#f-note').value=t?.note||'';
   $('#f-delete').hidden=!t;
+  // maschera dell'entrata o dell'uscita: campi, nomi e segnaposto adatti
+  const isExp=k==='expense';
+  $('#tx-modal').classList.toggle('tx-modal--exp', isExp);
+  $$('#tx-form [data-lbl-exp]').forEach(el=>{ el.textContent=tt(isExp ? el.dataset.lblExp : el.dataset.i18n); });
+  { const pi=$('#f-platform'); if(pi) pi.placeholder = isExp ? tt(pi.dataset.phExpKey) : (pi.dataset.phInc||''); }
+  fillExpCatSelect(t && EXP_CATS.includes(t.cat) ? t.cat : '');
+  if($('#f-paid')) $('#f-paid').checked = !(t && t.paid===false);
+  renderPaidLog(t);
   if(typeof attOnOpenTx==='function') attOnOpenTx();
   $('#tx-modal').hidden=false;
   updateExpCatHint();
@@ -2574,14 +2620,17 @@ function expenseCategory(t){
   for(const [cat,kws] of EXP_RULES){ if(kws.some(k=>hay.includes(k))) return cat; }
   return 'other';
 }
+// categoria dell'uscita: scelta a mano, oppure "Automatica" (dedotta da descrizione e fornitore)
+function fillExpCatSelect(val){ const sel=$('#f-cat'); if(!sel) return; const cur=val!=null ? val : sel.value;
+  const auto=expenseCategory({product:$('#f-product')?.value, note:$('#f-note')?.value, platform:$('#f-platform')?.value, type:$('#f-type')?.value});
+  sel.innerHTML=`<option value="">${esc(tt('f.cat_auto').replace('{c}', tt('ecat.'+auto)))}</option>`+EXP_CATS.map(c=>`<option value="${c}">${esc(tt('ecat.'+c))}</option>`).join('');
+  sel.value=cur||''; }
+// la categoria dedotta si vede (e si cambia) nel menu "Categoria" della maschera Uscita
 function updateExpCatHint(){
-  const el=$('#f-cat-hint'); if(!el) return;
-  if(($('#f-kind')?.value)!=='expense'){ el.hidden=true; return; }
-  const cat=expenseCategory({product:$('#f-product')?.value, note:$('#f-note')?.value, platform:$('#f-platform')?.value, type:$('#f-type')?.value});
-  el.innerHTML=`<span class="muted small">${tt('ecat.auto')}</span> <span class="f-cat-badge">${tt('ecat.'+cat)}</span>`;
-  el.hidden=false;
+  const el=$('#f-cat-hint'); if(el) el.hidden=true;
+  if($('#f-cat') && ($('#f-kind')?.value)==='expense' && !$('#f-cat').value) fillExpCatSelect('');
 }
-['#f-product','#f-note','#f-platform','#f-type'].forEach(s=>$(s)?.addEventListener('input',updateExpCatHint));
+['#f-type'].forEach(s=>$(s)?.addEventListener('input',updateExpCatHint));
 $('#f-type')?.addEventListener('change',updateExpCatHint);
 let curKind='income';
 $('#btn-add-income').onclick=()=>{curKind='income';openTx(null);};
@@ -2628,6 +2677,15 @@ $('#tx-form').onsubmit=e=>{
   if(rec.date && (rec.date.slice(0,4)<'2000' || rec.date.slice(0,4)>'2100')){ toast(tt('tx.date_invalid')); return; }
   if([rec.net,rec.gross,rec.fees].some(v=>Math.abs(+v||0)>1e9)){ toast(tt('tx.amount_invalid')); return; }
   if(rec.kind==='expense') rec.net=Math.abs(rec.net);
+  // uscita: categoria scelta e "Pagato" (ogni cambio resta nel registro)
+  let catChoice=null;
+  if(rec.kind==='expense'){ catChoice=($('#f-cat')||{}).value||'';
+    const paid=!!($('#f-paid') && $('#f-paid').checked), before=id ? DB.transactions.find(t=>t.id===id) : null;
+    const was=before ? before.paid!==false : null;
+    rec.paid=paid;
+    if(was===null) rec.paidLog=[paidEntry(paid, 'create')];
+    else if(was!==paid) rec.paidLog=(before.paidLog||[]).concat([paidEntry(paid, 'form', was)]);
+  }
   if(!id){ const an=txAmountAnomaly(rec.net, rec.kind);
     if(an && !confirm(tt('tx.anomaly_confirm').replace('{v}',fmtMoney(an.v)).replace('{m}',fmtMoney(an.med)))) return; }
   const prev=id?DB.transactions.find(t=>t.id===id):null;
@@ -2635,8 +2693,11 @@ $('#tx-form').onsubmit=e=>{
   if(!id && typeof markLateLines==='function' && markLateLines([rec])) toast(tt('per.late_one'));
   if(typeof attOnTxSave==='function') attOnTxSave(rec, prev);   // ricevute allegate a un movimento nuovo
   // in modifica restano i campi che il modulo non mostra (allegati, data contabile, import…)
-  if(id){ const i=DB.transactions.findIndex(t=>t.id===id); DB.transactions[i]=Object.assign({}, prev, rec); }
-  else DB.transactions.push(rec);
+  if(id){ const i=DB.transactions.findIndex(t=>t.id===id); DB.transactions[i]=Object.assign({}, prev, rec);
+    if(rec.kind==='expense'){ if(catChoice) DB.transactions[i].cat=catChoice; else delete DB.transactions[i].cat; } }
+  else { if(catChoice) rec.cat=catChoice; DB.transactions.push(rec); }
+  // il movimento salvato si vede: se la scheda aperta è l'altra, si passa alla sua
+  if(txTab && txTab!==rec.kind){ txTab=rec.kind; try{ localStorage.setItem('lf.txTab', txTab); }catch(e){} }
   // uscita ricorrente: crea la regola che si ripeterà da sola
   if(!id && rec.kind==='expense' && $('#f-recurring')?.checked){
     const tpl={...rec}; delete tpl.id; delete tpl.date; delete tpl.dateTo; delete tpl._recur; delete tpl.att;   // ogni mese la sua ricevuta
@@ -2646,6 +2707,43 @@ $('#tx-form').onsubmit=e=>{
   }
   save(); $('#tx-modal').hidden=true; renderTx(); toast(tt('t.saved'));
 };
+
+/* ---- "Pagato": le uscite non pagate non contano nei totali; ogni cambio resta registrato ---- */
+const whoAmI=()=>{ try{ return (window.LF_userEmail && window.LF_userEmail()) || ''; }catch(e){ return ''; } };
+function paidEntry(paid, via, was){ const e={ at:new Date().toISOString(), paid:!!paid, via }; if(was!=null) e.was=!!was; const w=whoAmI(); if(w) e.by=w; return e; }
+function setTxPaid(id, paid, via){
+  if(window.LF_readOnly){ toast(tt('team.readonly')); applyTxFilters(); return; }
+  const t=(DB.transactions||[]).find(x=>x.id===id); if(!t || t.kind!=='expense') return;
+  const was=t.paid!==false; if(was===!!paid) return;
+  t.paid=!!paid; t.paidLog=(t.paidLog||[]).concat([paidEntry(paid, via||'list', was)]);
+  save(); applyTxFilters(); if(currentView==='dashboard') renderDashboard();
+  toast(tt(paid?'paid.toast_paid':'paid.toast_unpaid').replace('{d}', t.product||t.platform||''));
+}
+const paidVia=v=>tt('paid.via_'+(v||'list'));
+const paidWhen=iso=>{ try{ return new Date(iso).toLocaleString(MONEY_LOCALE[(window.LFI18N&&LFI18N.lang)||'it']||'it-IT',{dateStyle:'short',timeStyle:'short'}); }catch(e){ return iso; } };
+function renderPaidLog(t){ const box=$('#f-paid-log'); if(!box) return;
+  const log=(t && t.paidLog)||[]; if(!log.length){ box.hidden=true; box.innerHTML=''; return; }
+  box.innerHTML=`<div class="paid-log-h">${esc(tt('paid.history'))}</div>`+log.slice().reverse().map(e=>`<div class="paid-log-row">
+    <span>${esc(paidWhen(e.at))}</span> · <b class="${e.paid?'pos':'neg'}">${esc(tt(e.paid?'paid.yes':'paid.no'))}</b>
+    <span class="muted">${e.was!=null?esc(tt('paid.was').replace('{s}', tt(e.was?'paid.yes':'paid.no')))+' · ':''}${esc(paidVia(e.via))}${e.by?' · '+esc(e.by):''}</span></div>`).join('');
+  box.hidden=false; }
+function renderPaidLogModal(){
+  const rows=[]; (DB.transactions||[]).forEach(t=>{ (t.paidLog||[]).forEach(e=>{ if(e.via!=='create' || e.paid===false) rows.push({t,e}); }); });
+  rows.sort((a,b)=>String(b.e.at).localeCompare(String(a.e.at)));
+  const th=`<thead><tr><th>${esc(tt('paid.h_when'))}</th><th>${esc(tt('col.x_product'))}</th><th class="num">${esc(tt('col.x_net'))}</th><th>${esc(tt('paid.h_change'))}</th><th>${esc(tt('paid.h_who'))}</th></tr></thead>`;
+  const body=rows.length ? rows.slice(0,500).map(({t,e})=>`<tr data-paidlog-open="${t.id}" style="cursor:pointer">
+    <td>${esc(paidWhen(e.at))}</td><td>${esc(t.product||t.platform||'—')}<div class="muted small">${esc(fmtDate(t.date))}</div></td>
+    <td class="num">${fmtMoney(t.net,t.currency||'EUR')}</td>
+    <td>${e.was!=null?`${esc(tt(e.was?'paid.yes':'paid.no'))} → `:''}<b class="${e.paid?'pos':'neg'}">${esc(tt(e.paid?'paid.yes':'paid.no'))}</b></td>
+    <td>${esc(e.by||tt('paid.by_device'))}<div class="muted small">${esc(paidVia(e.via))}</div></td></tr>`).join('')
+    : `<tr><td colspan="5" class="muted">${esc(tt('paid.log_empty'))}</td></tr>`;
+  $('#paidlog-table').innerHTML=th+`<tbody>${body}</tbody>`;
+  $$('#paidlog-table [data-paidlog-open]').forEach(tr=>tr.onclick=()=>{ $('#paidlog-modal').hidden=true; openTx(tr.dataset.paidlogOpen); });
+}
+$('#paid-log-btn')?.addEventListener('click',()=>{ renderPaidLogModal(); $('#paidlog-modal').hidden=false; });
+$('#paidlog-close')?.addEventListener('click',()=>{ $('#paidlog-modal').hidden=true; });
+$('#paidlog-modal')?.addEventListener('click',e=>{ if(e.target.id==='paidlog-modal') $('#paidlog-modal').hidden=true; });
+['#f-product','#f-note','#f-platform'].forEach(sl=>$(sl)?.addEventListener('input',()=>{ if($('#f-cat') && !$('#f-cat').value) fillExpCatSelect(''); }));
 
 /* ---- Uscite ricorrenti (es. abbonamenti): si aggiungono da sole alla data del pagamento ---- */
 // prossima scadenza: tiene il giorno del primo pagamento (31 → 28/29 a febbraio → 31 a marzo)
@@ -2859,7 +2957,7 @@ function refreshParse(fresh){
   const hr=hs ? (+hs.value||0) : 0;
   importHeaders=importAll[hr]||[]; importRows=importAll.slice(hr+1);
   const distro=detectDistro();
-  $('#map-distro').value=distro||'auto';
+  $('#map-distro').value=distro||'auto'; distroHint('auto');
   let map=smartMap(distro ? distroMap(distro) : autoMap(importHeaders));
   autoKindMode(map, distro);
   // stesso tipo di file già importato: le scelte confermate allora valgono anche adesso
@@ -2885,6 +2983,8 @@ function smartMap(map){
   const isNum=v=>/^[-+(]?\s*[€$£¥]?\s*-?\d[\d.,'\s]*\s*[€$£¥]?\)?$/.test(v) && !/^\d{12,13}$/.test(v);
   const isDate=v=>/^\d{4}-\d{2}-\d{2}/.test(v) || /^\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4}$/.test(v) || (/^\d{5}$/.test(v) && +v>30000 && +v<60000)
     || (v.length<=30 && /\d/.test(v) && /[a-zà-ü]{3}/i.test(v) && !!LFCore.parseDate(v) && /\b(19|20)\d{2}\b/.test(v));   // "29 nov 2025", "Mar 1, 2026" 
+  ['platform','product','artist','type'].forEach(f=>{ if(map[f]==null) return; const v=colSample(map[f]).slice(0,80);
+    if(v.length>=2 && share(v, x=>isNum(x) || isDate(x))>=0.8){ used.delete(map[f]); delete map[f]; } });
   const kindLike=i=>{ const v=colSample(i).slice(0,60); return v.length && v.filter(x=>kindFromText(x)!=null && x.length<=12).length/v.length>=0.9; };
   if(map.kind==null && map.type!=null && kindLike(map.type)){ map.kind=map.type; delete map.type; }
   const S={}; free.forEach(i=>{ S[i]=colSample(i); });
@@ -2944,40 +3044,46 @@ $('#map-kind')?.addEventListener('change',()=>{ buildMapFields(currentMap()); re
 
 /* ---------- Preset distributori (riconoscimento automatico colonne) ---------- */
 const DISTRO_PRESETS={
-  bandcamp:{ name:'Bandcamp', platform:'Bandcamp', datefmt:'mdy', sig:/itemtype|bandcamptransactionid|amountyoureceived|paidto/, fields:{
+  bandcamp:{ name:'Bandcamp', platform:'Bandcamp', datefmt:'mdy', content:/bandcamp\.com/i,
+    sig:['itemtype','itemname','paidto','bandcamptransactionid','paypaltransactionid','amountyoureceived','additionalfancontribution','itemurl','buyername','buyeremail','discountcode','sellertax','marketplacetax','feetype','itemtotal'], fields:{
     date:['date'], type:['item type'], artist:['artist'], product:['item name'],
     catalog:['catalog number','catalog'], upc:['upc'], qty:['quantity'],
     gross:['sub total','item total','item price'], fees:['transaction fee'], shipping:['shipping'], taxes:['tax'], isrc:['isrc'],
     net:['net amount'], currency:['currency'], territory:['country'] } },
-  distrokid:{ name:'DistroKid', platform:'DistroKid', datefmt:'ymd', sig:/salemonth|teampercentage|countryofsale/, fields:{
+  distrokid:{ name:'DistroKid', platform:'DistroKid', datefmt:'ymd', content:/distrokid/i,
+    sig:['salemonth','reportingdate','teampercentage','countryofsale','songalbum','songwriterroyaltieswithheld','earningsusd'], fields:{
     date:['sale month','sale date','reporting date'], platform:['store'], type:['type'],
     product:['title','song'], artist:['artist'], isrc:['isrc'], upc:['upc'],
     qty:['quantity'], net:['earnings'], currency:['currency'], territory:['country','territory'] } },
-  believe:{ name:'Believe', platform:'Believe', datefmt:'dmy', sig:/clientshare|clientpayment|releasecatalog/, fields:{
-    date:['sales period','period','date'], platform:['platform','dsp','store'],
-    product:['track title','release title','title'], artist:['artist name','artist'],
-    isrc:['isrc'], upc:['upc','ean'], qty:['quantity','units','net qty'],
-    net:['net revenue','net income','royalty','net'], currency:['currency'], territory:['country','territory'] } },
-  symphonic:{ name:'Symphonic', platform:'Symphonic', datefmt:'ymd', fields:{
+  // Believe Backstage: "Reporting Month;Sales Month;Platform;Country / Region;…;Client share rate;Net Revenue"
+  believe:{ name:'Believe', platform:'Believe', datefmt:'dmy', content:/believe/i,
+    sig:['reportingmonth','salesmonth','countryregion','releasecatalognb','releasecatalog','clientpaymentcurrency','mechanicalfee','clientsharerate','clientshare'], fields:{
+    date:['sales month','sales period','reporting month','period','date'], platform:['platform','dsp','store'],
+    product:['track title','release title','title'], artist:['artist name','artist'], catalog:['release catalog nb','catalog'],
+    isrc:['isrc'], upc:['upc','ean'], qty:['quantity','units','net qty'], gross:['gross revenue'],
+    net:['net revenue','net income','royalty','net'], currency:['client payment currency','currency'], territory:['country / region','country','territory'] } },
+  symphonic:{ name:'Symphonic', platform:'Symphonic', datefmt:'ymd', content:/symphonic/i,
+    sig:['digitalserviceprovider','reportingperiod','releasename','revenueusd','netrevenueusd','symphonic'], fields:{
     date:['sale date','date','period'], platform:['store','dsp','retailer'],
     product:['title','track'], artist:['artist'], isrc:['isrc'], upc:['upc'],
     qty:['quantity','units'], net:['net','earnings','revenue'], currency:['currency'], territory:['country','territory'] } },
-  tunecore:{ name:'TuneCore', platform:'TuneCore', datefmt:'ymd', sig:/tcsongid|unitssold|totalearned|netsalescurrency/, fields:{
+  tunecore:{ name:'TuneCore', platform:'TuneCore', datefmt:'ymd', content:/tunecore/i,
+    sig:['salesperiod','posteddate','storename','releasetype','tcsongid','optionalupc','optionalisrc','unitssold','perunitprice','netsales','netsalescurrency','totalearned'], fields:{
     date:['sales period','reporting','date','period'], platform:['store','retailer','dsp'],
     product:['song title','album title','title','song'], artist:['artist'], isrc:['isrc'], upc:['upc'],
     qty:['units sold','units','quantity','plays','streams'], net:['your earnings','earnings','net'], currency:['currency'], territory:['country','territory'] } },
-  ditto:{ name:'Ditto Music', platform:'Ditto', datefmt:'ymd', fields:{
+  ditto:{ name:'Ditto Music', platform:'Ditto', datefmt:'ymd', content:/ditto/i, sig:['statementperiod','earningsgbp','ditto'], fields:{
     date:['period','date','sale month'], platform:['store','shop','dsp'],
     product:['track','release','title'], artist:['artist'], isrc:['isrc'], upc:['upc','barcode'],
     qty:['quantity','units','streams'], net:['revenue','royalties','earnings','net'], currency:['currency'], territory:['country','territory'] } },
-  cdbaby:{ name:'CD Baby', platform:'CD Baby', datefmt:'ymd', fields:{
+  cdbaby:{ name:'CD Baby', platform:'CD Baby', datefmt:'ymd', content:/cd ?baby/i, sig:['partner','reportdate','payable','yourshare','albumname','trackname'], fields:{
     date:['report date','sale date','date','period'], platform:['partner','store','dsp'],
     product:['track','album','title'], artist:['artist'], isrc:['isrc'], upc:['upc'],
     qty:['quantity','units','plays'], net:['payable','earnings','net','your share'], currency:['currency'], territory:['country','territory'] } },
-  paypal:{ name:'PayPal', platform:'PayPal', sig:/fusoorario|timezone/, sign:true, fields:{   // negativo = pagamento fatto (uscita)
+  paypal:{ name:'PayPal', platform:'PayPal', need:/fusoorario|timezone/, sign:true, sig:['fusoorario','timezone','idtransazione','transactionid','tariffa','lordo','netto','gross','fee','net'], fields:{   // negativo = pagamento fatto (uscita)
     date:['data','date'], product:['nome','name'], type:['tipo','type'], gross:['lordo','gross'], fees:['tariffa','fee'],
     net:['netto','net'], currency:['valuta','currency'] } },
-  labelengine:{ name:'Label Engine', platform:'Label Engine', datefmt:'ymd', fields:{
+  labelengine:{ name:'Label Engine', platform:'Label Engine', datefmt:'ymd', content:/label ?engine/i, sig:['cataloguenumber','retailer','mixname','labelengine'], fields:{
     date:['sales period','date','period','month'], platform:['store','retailer','dsp','shop'],
     product:['track title','release title','title','track'], artist:['artist'], isrc:['isrc'], upc:['upc','catalog'],
     qty:['quantity','units','qty'], net:['net','royalty','earnings','revenue'], currency:['currency'], territory:['country','territory'] } },
@@ -2992,25 +3098,39 @@ function presetCol(subs, used){
 function presetMap(p){ const map={}, used=new Set();
   CANON.forEach(([f])=>{ const subs=p.fields[f]; if(!subs) return; const i=presetCol(subs, used); if(i>-1){ map[f]=i; used.add(i); } });
   return map; }
+// indizi che un file è il report di quel distributore: ogni colonna tipica 1 punto, il nome nel file o
+// nel contenuto (es. link bandcamp.com) 2 punti. Servono almeno 2 punti: un foglio qualsiasi con
+// "Date, Track, Streams, Revenue" non diventa il report di nessuno.
+function distroScore(key){
+  const p=DISTRO_PRESETS[key], nh=importHeaders.map(colNorm), fn=colNorm(importFileName);
+  if(p.need && !p.need.test(nh.join('|'))) return 0;
+  let s=0;
+  (p.sig||[]).forEach(t=>{ if(nh.some(h=>h===t || (t.length>=8 && h.includes(t)))) s++; });
+  if(fn.includes(colNorm(p.name)) || fn.includes(key)) s+=2;
+  if(p.content && importRows.slice(0,40).some(r=>(r||[]).some(c=>p.content.test(String(c||''))))) s+=2;
+  return s;
+}
 function detectDistro(){
-  let best=null, bestScore=2;
-  const hn=importHeaders.map(colNorm).join('|'), fn=colNorm(importFileName);
-  for(const key in DISTRO_PRESETS){ const p=DISTRO_PRESETS[key];
-    // solo se ci sono colonne tipiche di quel distributore o il suo nome è nel nome del file
-    if(!(p.sig && p.sig.test(hn)) && !fn.includes(colNorm(p.name)) && !fn.includes(key)) continue;
-    const m=presetMap(p);
+  let best=null, bestScore=0;
+  for(const key in DISTRO_PRESETS){
+    const sc=distroScore(key); if(sc<2) continue;
+    const m=presetMap(DISTRO_PRESETS[key]);
     if(m.date==null || (m.net==null && m.gross==null)) continue;   // un preset vale solo se trova data e importo
-    const s=Object.keys(m).length;
+    const s=sc*100+Object.keys(m).length;
     if(s>bestScore){ bestScore=s; best=key; } }
   return best;
 }
+// cosa è stato riconosciuto, scritto sotto la scelta del distributore
+function distroHint(mode){ const h=$('#map-distro-hint'); if(!h) return; const v=$('#map-distro').value, p=DISTRO_PRESETS[v];
+  h.textContent = p ? tt(mode==='manual' ? 'imp.distro_manual' : 'imp.distro_found').replace('{d}', p.name) : tt('imp.distro_none');
+  h.classList.toggle('pos', !!p && mode!=='manual'); }
 function distroMap(key){
   const p=DISTRO_PRESETS[key]; if(!p) return autoMap(importHeaders);
   if($('#map-platform')) $('#map-platform').value=p.platform||'';
   $('#map-datefmt').value=p.datefmt||'auto';   // PayPal non ha un formato fisso: non resta quello del distributore scelto prima
   // il preset decide le sue colonne; le altre restano quelle riconosciute in automatico
   const map=presetMap(p), used=new Set(Object.values(map)), auto=autoMap(importHeaders);
-  Object.entries(auto).forEach(([f,i])=>{ if(map[f]==null && !used.has(i)){ map[f]=i; used.add(i); } });
+  Object.entries(auto).forEach(([f,i])=>{ if(map[f]==null && !used.has(i) && !(f==='platform' && !p.fields.platform)){ map[f]=i; used.add(i); } });
   return map;
 }
 function applyDistro(key){ const map=smartMap(distroMap(key)); mapHidden={}; autoKindMode(map, key); buildMapFields(map); }
@@ -3020,7 +3140,8 @@ $('#map-distro')?.addEventListener('change',()=>{
     $('#map-platform').value=''; $('#map-datefmt').value='auto'; $('#map-kind').value='income';
     const d=detectDistro(); if(d){ $('#map-distro').value=d; applyDistro(d); }
     else { const map=smartMap(autoMap(importHeaders)); mapHidden={}; autoKindMode(map, null); buildMapFields(map); }
-  } else applyDistro(v);
+    distroHint('auto');
+  } else { applyDistro(v); distroHint('manual'); }
   renderPreview();
 });
 
@@ -3048,6 +3169,8 @@ const AMOUNT_FIELDS=['gross','shipping','taxes','payProcFees','fees','csShare','
 // Excel: data come numero di giorni ("45000") → AAAA-MM-GG
 const excelSerialDate=v=>{ const s=String(v||'').trim(); if(!/^\d{5}(\.\d+)?$/.test(s) || +s<20000 || +s>80000) return s;
   return new Date(Date.UTC(1899,11,30)+Math.floor(+s)*864e5).toISOString().slice(0,10); };
+// casella "Pagato" di Excel / Google Fogli: VERO, TRUE, Sì, X, ✓, 1 → pagato
+const paidFromText=v=>/^(true|vero|verdadero|vrai|wahr|waar|s[iìí]|yes|y|x|✓|✔|1|ok|pagat[oa]|paid|pagado|pay[eé]|bezahlt|betaald|sim|ja|oui)$/i.test(String(v||'').trim());
 // "Entrata/Uscita" scritto in tanti modi: income | expense | null (non riconosciuto)
 function kindFromText(v){ const s=String(v||'').trim().toLowerCase(); if(!s) return null;
   if(/^(u|o|-|af|out)$/.test(s) || /^(uscit|spes|expense|cost|debit|dare\b|addebit|gast|d[eé]pens|ausgab|sa[ií]d|uitgav|withdraw|outflow|lastschrift|soll\b)/.test(s)) return 'expense';
@@ -3114,6 +3237,8 @@ function rowToRec(cols,map,ctx){
   if(relTxt){ rec.release=relTxt; const r=releaseByCatalog(relTxt)||releaseByTitle(relTxt); if(r && !rec.catalog) rec.catalog=r.catalog||''; }
   if(rawCur && !normCur(rawCur,'')) rec._badCur=rawCur;
   if(noAmt) rec._noAmt=true;
+  // uscita con la colonna "Pagato" del foglio: FALSO / No / vuoto = non pagata (non conta nei totali)
+  if(kind==='expense' && map.paid!=null){ rec.paid=paidFromText(get('paid')); rec.paidLog=[{ at:new Date().toISOString(), paid:rec.paid, via:'import' }]; }
   return rec;
 }
 // righe senza una data valida (totali, righe vuote del foglio) non diventano movimenti
@@ -3176,6 +3301,7 @@ const PREVIEW_MONEY=new Set(['gross','shipping','taxes','payProcFees','fees','cs
 function previewCell(f, t){
   if(f==='date'||f==='dateTo') return t[f] ? esc(fmtDate(t[f])) : '<span class="muted">?</span>';
   if(f==='kind') return t.kind==='expense' ? `<span class="neg">${esc(tt('imp.k_expense'))}</span>` : `<span class="pos">${esc(tt('imp.k_income'))}</span>`;
+  if(f==='paid') return t.kind==='expense' ? `<span class="${t.paid===false?'neg':'pos'}">${esc(tt(t.paid===false?'paid.no':'paid.yes'))}</span>` : '';
   if(f==='net') return `<span class="${txSigned(t)<0?'neg':''}">${fmtMoney(t.net,t.currency)}</span>`;
   if(PREVIEW_MONEY.has(f)) return t[f] ? fmtMoney(t[f],t.currency) : '';
   if(f==='qty') return esc(t.qty);
@@ -3242,6 +3368,7 @@ $('#import-confirm').onclick=()=>{
   $('#import-config').hidden=true; $('#file-input').value=''; { const nf=$('#import-file'); if(nf) nf.hidden=true; }
   // in Movimenti si vedono subito le righe importate (spesso hanno date vecchie e finirebbero in fondo)
   txOnlyImp = recs.length ? DB.lastImport.id : null; pageGet('tx').page=1;
+  { const kinds=new Set(recs.map(r=>r.kind)); txTab = kinds.size===1 ? [...kinds][0] : ''; try{ localStorage.setItem('lf.txTab', txTab); }catch(e){} }   // scheda giusta (es. Uscite per un foglio spese)
   toast(`${recs.length} ${tt('t.imported')}${skipped?` · ${skipped} ${tt('t.dupes_skipped')}`:''}${late?` · ${tt('per.late_imported').replace('{n}',late)}`:''}`); goto('transactions'); updateImpUndo();
   if(typeof fxMaybeRefresh==='function') fxMaybeRefresh();   // nuove valute → cambi BCE
 };
@@ -3327,8 +3454,8 @@ $('#export-json').onclick=()=>{ download('label-finance-backup.json',JSON.string
   // le foto/PDF delle ricevute non stanno nel file (sono sul dispositivo e, con l'account, nel cloud)
   if((ACCOUNT.labels||[]).some(l=>(l.transactions||[]).some(t=>t&&t.att&&t.att.length))) toast(tt('t.backup_no_att')); };
 $('#export-csv').onclick=()=>{
-  const head=['kind',...CANON.map(c=>c[0]),'note'];
-  download('movimenti.csv', csvText([head].concat(DB.transactions.map(t=>head.map(h=>t[h]??'')))), 'text/csv');
+  const head=['kind',...CANON.map(c=>c[0]),'note','paid'];
+  download('movimenti.csv', csvText([head].concat(DB.transactions.map(t=>head.map(h=>h==='paid' ? (t.kind==='expense' ? (t.paid===false?'FALSE':'TRUE') : '') : (t[h]??''))))), 'text/csv');
 };
 $('#import-json').onclick=()=>$('#json-input').click();
 /* controllo del file di backup prima di sostituire i dati: struttura giusta, elenchi davvero elenchi */
@@ -3402,7 +3529,7 @@ if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator
    ASSISTENTE AI (Big Label e superiori) — riassunto dati + consigli via Edge Function
    ============================================================================ */
 function buildAiSummary(){
-  const txs=DB.transactions||[];
+  const txs=(DB.transactions||[]).filter(txCounts);
   const inc=txs.filter(t=>t.kind==='income'), exp=txs.filter(t=>t.kind==='expense');
   const sum=a=>a.reduce((s,t)=>s+toEur(t.net,t.currency,t.date),0);
   const income=sum(inc), expense=Math.abs(sum(exp)), net=income-expense;
@@ -4798,13 +4925,13 @@ function fireTaskAlert(t, kind){
   }
   showTaskPopup(title, body); // mostra sempre anche il popup in-app
 }
-function showTaskPopup(title, body){
+function showTaskPopup(title, body, view, onOpen){
   let wrap=$('#lf-alerts'); if(!wrap){ wrap=document.createElement('div'); wrap.id='lf-alerts'; wrap.className='lf-alerts'; document.body.appendChild(wrap); }
   const el=document.createElement('div'); el.className='lf-alert';
   el.innerHTML=`<div class="lf-alert-ic">🔔</div><div class="lf-alert-tx"><b>${esc(title)}</b><span>${esc(body)}</span></div>
     <button class="lf-alert-x" aria-label="Chiudi">✕</button>`;
   el.querySelector('.lf-alert-x').onclick=()=>el.remove();
-  el.querySelector('.lf-alert-tx').onclick=()=>{ goto('tasks'); el.remove(); };
+  el.querySelector('.lf-alert-tx').onclick=()=>{ goto(view||'tasks'); if(onOpen) onOpen(); el.remove(); };
   wrap.appendChild(el);
   setTimeout(()=>{ el.classList.add('out'); setTimeout(()=>el.remove(),400); }, 12000);
 }
@@ -5070,8 +5197,8 @@ const COLDEFS = {
     {key:'note',label:()=>tt('r.note'),grow:1.4,cell:r=>esc(r.note),cls:'muted small'},
   ],
   planning:[
-    {key:'date',label:()=>tt('pln.f_date'),w:122,cell:p=>fmtDate(p.date)},
-    {key:'kind',label:()=>tt('pln.f_kind'),w:98,cell:p=>tt(PLN_KIND[p.kind]||'pln.k_release')},
+    {key:'date',label:()=>tt('pln.f_date'),w:122,cell:p=>fmtDate(p.date)+plnWhenTag(p)},
+    {key:'kind',label:()=>tt('pln.f_kind'),w:110,cell:p=>`<span class="pln-kind pln-kind--${esc(p.kind||'release')}">${esc(tt(PLN_KIND[p.kind]||'pln.k_release'))}</span>`},
     {key:'title',label:()=>tt('pln.f_title').replace(' *',''),grow:1.6,cell:p=>`<b>${esc(p.title)}</b>`,cls:'dbl-strong'},
     {key:'artist',label:()=>tt('pln.f_artist'),grow:1,cell:p=>artNameLink(p.artist),cls:'muted small'},
     {key:'status',label:()=>tt('pln.f_status'),w:122,cell:p=>ctag(tt(PLN_STATUS[p.status]||'pln.s_idea'),PLN_STK[p.status]||'mut')},
@@ -5237,16 +5364,28 @@ if($('#colcfg-reset')) $('#colcfg-reset').onclick=()=>{ if(!colCfgSec) return; D
 
 /* ---- Calendario riutilizzabile ---- */
 let calState={planning:new Date(), events:new Date()};
+// festivi nazionali italiani (con Pasqua e Pasquetta, che cambiano ogni anno; San Francesco dal 2026)
+function easterDate(y){ const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),
+  h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,mm=Math.floor((a+11*h+22*l)/451),mon=Math.floor((h+l-7*mm+114)/31),day=((h+l-7*mm+114)%31)+1;
+  return new Date(Date.UTC(y,mon-1,day)); }
+const HOL_FIXED=[['01-01','capodanno'],['01-06','epifania'],['04-25','liberazione'],['05-01','lavoro'],['06-02','repubblica'],['08-15','ferragosto'],['11-01','ognissanti'],['12-08','immacolata'],['12-25','natale'],['12-26','stefano']];
+const holCache={};
+function itHolidays(y){ if(holCache[y]) return holCache[y]; const m={}; HOL_FIXED.forEach(([md,k])=>{ m[y+'-'+md]=k; });
+  if(y>=2026) m[y+'-10-04']='francesco';
+  const e=easterDate(y), iso=d=>d.toISOString().slice(0,10); m[iso(e)]='pasqua'; m[iso(new Date(e.getTime()+864e5))]='pasquetta';
+  return (holCache[y]=m); }
+const holidayOf=ds=>{ const k=itHolidays(+String(ds).slice(0,4))[ds]; return k ? tt('hol.'+k) : ''; };
 function renderCalendar(sec, items, chip, cont){
   const cur=calState[sec]; const y=cur.getFullYear(), m=cur.getMonth();
-  const dows=(window.LFI18N&&window.LFI18N.lang==='en')?['Mon','Tue','Wed','Thu','Fri','Sat','Sun']:['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
+  // giorni della settimana nella lingua scelta (1 gennaio 2024 era un lunedì)
+  const dows=[...Array(7)].map((_,i)=>{ const w=new Date(2024,0,1+i).toLocaleDateString(calLang(),{weekday:'short'}).replace('.',''); return w.charAt(0).toUpperCase()+w.slice(1); });
   const startDow=(new Date(y,m,1).getDay()+6)%7, days=new Date(y,m+1,0).getDate(), today=ymdStr(new Date());
   let cells='';
   for(let i=0;i<startDow;i++) cells+='<div class="cal-cell cal-out"></div>';
   for(let d=1;d<=days;d++){
     const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const its=items.filter(x=>x.date===ds);
-    cells+=`<div class="cal-cell${ds===today?' cal-today':''}" data-calday="${ds}"><span class="cal-d">${d}</span><div class="cal-items">${its.map(chip).join('')}</div></div>`;
+    const its=items.filter(x=>x.date===ds), hol=holidayOf(ds), sun=new Date(y,m,d).getDay()===0;
+    cells+=`<div class="cal-cell${ds===today?' cal-today':''}${hol?' cal-hol':''}${sun?' cal-sun':''}" data-calday="${ds}"${hol?` title="${esc(hol)}"`:''}><span class="cal-d">${d}</span>${hol?`<span class="cal-hol-name">${esc(hol)}</span>`:''}<div class="cal-items">${its.map(chip).join('')}</div></div>`;
   }
   const label=cur.toLocaleDateString(calLang(),{month:'long',year:'numeric'});
   cont.innerHTML=`<div class="cal-head">
@@ -5255,18 +5394,24 @@ function renderCalendar(sec, items, chip, cont){
       <button class="cal-nav" data-calnav="1" aria-label="next">›</button>
       <button class="cal-nav cal-today-btn" data-calnav="0">${tt('cal.today')}</button>
     </div>
-    <div class="cal">${dows.map(w=>`<div class="cal-dow">${w}</div>`).join('')}${cells}</div>`;
+    <div class="cal">${dows.map((w,i)=>`<div class="cal-dow${i===6?' cal-dow--sun':''}">${esc(w)}</div>`).join('')}${cells}</div>`;
 }
 function calMove(sec, delta){ if(delta===0) calState[sec]=new Date(); else calState[sec]=new Date(calState[sec].getFullYear(), calState[sec].getMonth()+delta, 1); }
 function clearPager(anchor){ const m=anchor&&anchor.nextElementSibling; if(m&&m.classList&&m.classList.contains('pager-mount')) m.innerHTML=''; }
 
 /* ---- Pianificazione ---- */
 let plnSort={col:'date',dir:1}, editingPlnId=null;
-const PLN_KIND={release:'pln.k_release',premiere:'pln.k_premiere'};
+const PLN_KIND={release:'pln.k_release',premiere:'pln.k_premiere',preorder:'pln.k_preorder',event:'pln.k_event',merch:'pln.k_merch',podcast:'pln.k_podcast',scouting:'pln.k_scouting'};
+// quanto manca a una voce pianificata: per segnalarla in elenco, calendario, menu e notifiche
+function plnDays(p){ if(!p || !p.date) return null; const a=new Date(p.date+'T00:00:00'), b=new Date(LFCore.today()+'T00:00:00'); return Math.round((a-b)/864e5); }
+function plnWhenTag(p){ const d=plnDays(p); if(d==null || d<0 || d>7 || p.status==='done') return '';
+  const txt=d===0?tt('pln.w_today'):d===1?tt('pln.w_tomorrow'):tt('pln.w_in').replace('{n}',d);
+  return `<span class="pln-when${d<=1?' pln-when--now':''}">${esc(txt)}</span>`; }
 const PLN_STATUS={idea:'pln.s_idea',planned:'pln.s_planned',confirmed:'pln.s_confirmed',done:'pln.s_done'};
 const PLN_STK={idea:'mut',planned:'warn',confirmed:'info',done:'ok'};
 function plnById(id){ return (DB.planning||[]).find(x=>x.id===id); }
-function plnChip(p){ return `<span class="cal-chip cal-k-${p.kind}" data-pln="${p.id}" title="${esc(p.title)}">${esc(p.title)}</span>`; }
+function plnChip(p){ const d=plnDays(p), soon=d!=null && d>=0 && d<=7 && p.status!=='done';
+  return `<span class="cal-chip cal-k-${p.kind}${soon?' cal-chip--soon':''}" data-pln="${p.id}" title="${esc(tt(PLN_KIND[p.kind]||'pln.k_release')+' · '+p.title)}">${esc(p.title)}</span>`; }
 function renderPlanning(){
   const listC=$('#planning-list'), calC=$('#planning-cal'); if(!listC) return;
   const pq=($('#pln-search')&&$('#pln-search').value||'').toLowerCase().trim();
@@ -5294,6 +5439,7 @@ function savePlanning(){
   const data={ title, kind:$('#pln-kind').value, artist:$('#pln-artist').value.trim(), date:$('#pln-date').value||'',
     status:$('#pln-status').value, platform:$('#pln-platform').value.trim(), note:$('#pln-note').value.trim() };
   if(editingPlnId){ const p=plnById(editingPlnId); if(p) Object.assign(p,data); } else DB.planning.push(Object.assign({id:newId()},data));
+  if(data.date && typeof ensureNotifyPermission==='function') ensureNotifyPermission();   // avvisi anche fuori dall'app
   save(); $('#pln-form').hidden=true; editingPlnId=null; renderPlanning(); toast(tt('common.saved')); }
 function deletePlanning(id){ const p=plnById(id); if(!p) return; if(!confirm(tt('common.del_q'))) return;
   const tid=trashRemove('planning',[id]); save(); renderPlanning(); undoToast(tt('trash.deleted'), tid); }
@@ -5437,6 +5583,7 @@ const SECTION_SVG={
   import:      svgIco('<path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M4 21h16"/>'),
   royalties:   svgIco('<path d="M19 5 5 19"/><circle cx="7.5" cy="7.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/>'),
   tasks:       svgIco('<rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V4.2a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1V5"/><path d="M8.5 13.2l2.3 2.3L16 10.3"/>'),
+  planning:    svgIco('<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/>'),
 };
 function notifIcon(it){ const v=it.view||(it.type==='unlinked'?'releases':it.type==='enrich'?'import':it.relId?'releases':'tasks'); return SECTION_SVG[v]||SECTION_SVG.tasks; }
 function notifScan(){
@@ -5449,7 +5596,7 @@ function notifScan(){
   NOTIFS.list=NOTIFS.list.filter(n=> n.type!=='unlinked' || ukeys.has((n.ref||'').toLowerCase()));   // risolti via
   // le notifiche eliminate restano eliminate: si ripuliscono solo i prodotti ora collegati
   // (prima venivano cancellati anche gli altri tipi e le notifiche eliminate ricomparivano)
-  const KEEP_DISMISSED=/^(enrich|task|miss|unsigned|owed|close|fx):/;
+  const KEEP_DISMISSED=/^(enrich|task|miss|unsigned|owed|close|fx|pln):/;
   NOTIFS.dismissed=(NOTIFS.dismissed||[]).filter(k=>KEEP_DISMISSED.test(k) || ukeys.has(k)).slice(-2000);
   unlinked.forEach(p=>{ const lk=p.toLowerCase(), key='unlinked:'+lk;
     if((NOTIFS.dismissed||[]).includes(lk)) return;
@@ -5495,10 +5642,57 @@ function notifScan(){
     });
     NOTIFS._recoupInit=true;
   }catch(e){} }
+  // pianificazione: ogni voce (di qualsiasi tipo) avvisa 7 giorni prima e il giorno stesso
+  try{ plnScan(); }catch(e){}
   // avvisi intelligenti (insights.js): report mancanti, contratti, saldi, periodo, cambi
   if(typeof smartScan==='function') try{ smartScan(); }catch(e){}
   notifSave(); renderNotifs();
 }
+/* ---- Pianificazione: notifica per ogni voce + segnalazione nel menu ---- */
+const PLN_SOON=7;
+function plnScan(){
+  if(typeof DB==='undefined' || !DB) return;
+  const fired=NOTIFS.plnFired||(NOTIFS.plnFired={});
+  const prevRead={}; NOTIFS.list.forEach(n=>{ if(n.type==='pln') prevRead[n.key]=n.read; });
+  NOTIFS.list=NOTIFS.list.filter(n=>n.type!=='pln');
+  let soonN=0; const fresh=[];
+  (DB.planning||[]).forEach(p=>{
+    const d=plnDays(p); if(d==null || d<0 || d>PLN_SOON || p.status==='done') return;
+    soonN++;
+    const phase=d===0 ? 'today' : 'soon', key='pln:'+p.id+':'+p.date+':'+phase;
+    if((NOTIFS.dismissed||[]).includes(key)) return;
+    if(!fired[key]){ fired[key]=Date.now(); if(!p.demo) fresh.push([p,d]); }
+    NOTIFS.list.unshift({ id:'pln_'+p.id+'_'+phase, key, type:'pln', plnId:p.id, view:'planning', title:p.title||'', kind:p.kind||'release', date:p.date, days:d, read:prevRead[key]||false, ts:fired[key] });
+  });
+  NOTIFS.list.sort((a,b)=>(b.ts||0)-(a.ts||0));
+  // chiavi vecchie (date passate da più di un mese) via
+  const old=isoPlus(-31); Object.keys(fired).forEach(k=>{ const dt=k.split(':')[2]||''; if(dt && dt<old) delete fired[k]; });
+  if(fresh.length) firePlnAlerts(fresh);
+  plnNavBadge(soonN);
+}
+function plnAlertText(p, d){ const when=d===0?tt('pln.w_today'):d===1?tt('pln.w_tomorrow'):tt('pln.w_in').replace('{n}',d);
+  return { title: tt(PLN_KIND[p.kind]||'pln.k_release')+' · '+when, body: (p.title||'')+(p.date?' — '+fmtDate(p.date):'')+(p.artist?' · '+p.artist:'') }; }
+function firePlnAlerts(list){
+  playChime();
+  const show=list.length>2 ? [[null, list.length]] : list;
+  show.forEach(([p,d])=>{
+    const tx = p ? plnAlertText(p, d) : { title: tt('pln.notif_many_t'), body: tt('pln.notif_many_b').replace('{n}', d) };
+    if('Notification' in window && Notification.permission==='granted'){
+      try{ const n=new Notification('Label Finance · '+tx.title, { body:tx.body, icon:'icon.png?v=3', tag:'lf-pln-'+(p?p.id:'many'), renotify:true });
+        n.onclick=()=>{ try{ window.focus(); }catch(e){} goto('planning'); if(p) openPlnForm(p.id); n.close(); }; }catch(e){}
+    }
+    showTaskPopup(tx.title, tx.body, 'planning', p ? ()=>openPlnForm(p.id) : null);
+  });
+}
+// numero sulla voce "Pianificazione" del menu: quante voci ci sono nei prossimi 7 giorni
+function plnNavBadge(n){
+  $$('.nav-item[data-view="planning"]').forEach(b=>{ let el=b.querySelector('.nav-badge');
+    if(!n){ if(el) el.remove(); return; }
+    if(!el){ el=document.createElement('span'); el.className='nav-badge'; b.appendChild(el); }
+    el.textContent=n>9?'9+':String(n); el.title=tt('pln.badge_t').replace('{n}',n); });
+}
+// la pagina resta aperta per giorni: si ricontrolla ogni 5 minuti (es. dopo mezzanotte arriva "Oggi")
+setInterval(()=>{ if(document.visibilityState==='visible' && typeof notifScan==='function') notifScan(); }, 300000);
 function notifText(n){
   if(n.type==='smart' && typeof smartText==='function') return smartText(n);
   const T=(k,fb)=>{ const v=tt(k); return (v&&v!==k)?v:fb; };   // fallback se i18n non aggiornata (cache)
@@ -5514,6 +5708,7 @@ function notifText(n){
   if(n.type==='recur') return {
     title: T('notif.recur_t','Movimento ricorrente aggiunto'),
     body: T('notif.recur_b','{n} movimento/i ricorrente/i è stato aggiunto automaticamente alla lista movimenti.').replace('{n}', n.count||0) };
+  if(n.type==='pln'){ const p=plnById(n.plnId)||n; return plnAlertText(Object.assign({}, p, { kind:n.kind, title:n.title, date:n.date }), plnDays({date:n.date})??n.days); }
   if(n.type==='task'){ const when=(n.due?fmtDate(n.due):'')+(n.time?(' '+n.time):'');
     return { title: n.title||T('notif.task_t','Promemoria'),
       body: (n.overdue?T('notif.task_over','Promemoria scaduto'):T('notif.task_due','Promemoria'))+(when?' · '+when:'') }; }
@@ -5554,12 +5749,13 @@ function notifOpen(it){
   }
   if(it.relId){ goto('releases'); openRelease(it.relId); return; }   // notifiche legate a una release
   if(it.type==='smart' && typeof smartOpen==='function'){ smartOpen(it); return; }
+  if(it.type==='pln'){ goto('planning'); if(plnById(it.plnId)) openPlnForm(it.plnId); return; }
   if(it.view){ goto(it.view); }                                       // tipi futuri (task, contratti…)
 }
 function notifDismiss(it){ if(!it) return;
   if(it.type==='unlinked') NOTIFS.dismissed=[...new Set([...(NOTIFS.dismissed||[]),(it.ref||'').toLowerCase()])];
   else if(it.type==='enrich') NOTIFS.dismissed=[...new Set([...(NOTIFS.dismissed||[]),'enrich:'+(it.count||0)])];
-  else if(it.type==='task' || it.type==='smart') NOTIFS.dismissed=[...new Set([...(NOTIFS.dismissed||[]), it.key])]; }
+  else if(it.type==='task' || it.type==='smart' || it.type==='pln') NOTIFS.dismissed=[...new Set([...(NOTIFS.dismissed||[]), it.key])]; }
 function notifDelete(id){ const it=NOTIFS.list.find(x=>x.id===id); notifDismiss(it);
   NOTIFS.list=NOTIFS.list.filter(x=>x.id!==id); notifSave(); renderNotifs(); }
 function notifReadAll(){ NOTIFS.list.forEach(n=>n.read=true); notifSave(); renderNotifs(); }

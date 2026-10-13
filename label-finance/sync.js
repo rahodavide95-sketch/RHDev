@@ -521,6 +521,7 @@
     }catch(e){ return { error:e.message||'db_error' }; }
   };
   window.LF_isSignedIn = ()=> !!(client && user);
+  window.LF_userEmail = ()=> (user && user.email) || '';   // per il registro "Pagato": chi ha fatto il cambio
   document.addEventListener('click', e=>{ const b=e.target.closest('[data-ws]'); if(!b) return;
     const m=$('account-menu'); if(m) m.hidden=true; switchWorkspace(b.dataset.ws||null); });
   window.addEventListener('langchange', ()=>renderWsUI());

@@ -100,7 +100,9 @@ async function attRemove(id){
   renderAtt(); if(t && typeof applyTxFilters==='function') applyTxFilters();
 }
 /* chiamate da app.js */
-function attOnOpenTx(){ attPending=[]; renderAtt(); }
+function attOnOpenTx(){ attDropPending(); renderAtt(); }
+// movimento nuovo chiuso senza salvare: le ricevute caricate non restano orfane sul dispositivo/cloud
+function attDropPending(){ attPending.forEach(a=>{ try{ attDelLocal(a.id); if(a.cloud && window.LF_deleteReceipt) window.LF_deleteReceipt(a.cloud); }catch(e){} }); attPending=[]; }
 function attOnTxSave(rec, prev){ if(!prev && attPending.length){ rec.att=(rec.att||[]).concat(attPending); } attPending=[]; }
 
 /* ============================================================================
@@ -111,12 +113,8 @@ function packYears(){
   (DB.payouts||[]).forEach(p=>{ const y=(p.date||'').slice(0,4); if(/^\d{4}$/.test(y)) ys.add(y); });
   return [...ys].sort().reverse();
 }
-function packCsv(rows){
-  const it=(window.LFI18N && LFI18N.lang)==='it' || !window.LFI18N, sep=it?';':',';   // Excel italiano: punto e virgola
-  const needQ=it?/[";\r\n]/:/[",\r\n]/;   // virgolette solo se servono (la virgola decimale non le richiede col ;)
-  const cell=v=>{ let s=v==null?'':String(v); if(typeof v==='number') s=it?v.toFixed(2).replace('.',','):v.toFixed(2); return needQ.test(s)?`"${s.replace(/"/g,'""')}"`:s; };
-  return '﻿'+rows.map(r=>r.map(cell).join(sep)).join('\r\n');
-}
+// stesso CSV degli altri export: ";" e virgola decimale nelle lingue europee, BOM, celle-formula protette
+function packCsv(rows){ return csvText(rows, { fixed2:true }); }
 async function buildAccountantPack(year){
   const txs=(DB.transactions||[]).filter(t=>(t.date||'').slice(0,4)===year).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
   const files=[], fileNames={};
@@ -137,7 +135,7 @@ async function buildAccountantPack(year){
     const eur=LFCore.txEur(DB, t), isInc=t.kind==='income', cat=isInc?'':tt('ecat.'+expenseCategory(t));
     if(isInc){ inc+=eur; byPlat[t.platform||'—']=(byPlat[t.platform||'—']||0)+eur; } else { exp+=Math.abs(eur); byCat[cat]=(byCat[cat]||0)+Math.abs(eur); }
     mov.push([t.date||'', tt(isInc?'pack.income':'pack.expense'), t.platform||'', cat, t.product||'', t.artist||'', t.catalog||'', (t.currency||'EUR').toUpperCase(),
-      isInc?Math.abs(+t.net||0):-Math.abs(+t.net||0), isInc?Math.abs(eur):-Math.abs(eur), t.note||'', (fileNames[t.id]||[]).join(' | ')]);
+      isInc?(+t.net||0):-Math.abs(+t.net||0), isInc?eur:-Math.abs(eur), t.note||'', (fileNames[t.id]||[]).join(' | ')]);   // entrate col loro segno (un rimborso resta negativo, come nei totali)
   });
   files.push({ name:`${tt('pack.f_movements')}_${year}.csv`, data:packCsv(mov) });
   // pagamenti agli artisti con ritenute

@@ -189,8 +189,9 @@ function reloadViews(){ renderDashboard(); renderTx(); renderReleases(); renderP
 /* ---- Vista consolidata multi-etichetta (Agency) ---- */
 function updateConsolidatedNav(){ const b=document.querySelector('[data-view="consolidated"]'); if(b) b.hidden=((ACCOUNT&&ACCOUNT.labels)||[]).length<2;
   if(currentView==='consolidated' && ((ACCOUNT&&ACCOUNT.labels)||[]).length<2) goto('dashboard'); }
-function labelKPI(l){ const rates=l.rates||{}; const rate=c=>rates[(c||'EUR').toUpperCase()]??1; let inc=0,exp=0;
-  (l.transactions||[]).forEach(t=>{ const v=(Number(t.net)||0)*rate(t.currency); if(t.kind==='income') inc+=v; else exp+=Math.abs(v); });
+// stessi cambi della Dashboard di ogni etichetta (anche le medie mensili BCE)
+function labelKPI(l){ let inc=0,exp=0;
+  (l.transactions||[]).forEach(t=>{ const v=LFCore.txEur(l, t); if(t.kind==='income') inc+=v; else exp+=Math.abs(v); });
   return {inc,exp,net:inc-exp}; }
 function renderConsolidated(){
   if(!$('#cons-table')) return;
@@ -235,10 +236,13 @@ const CUR_SYMBOLS={'€':'EUR','$':'USD','US$':'USD','USD$':'USD','£':'GBP','¥
 function normCur(raw, fallback){ const s=String(raw||'').trim(); if(!s) return fallback;
   const up=s.toUpperCase().replace(/\s+/g,''); if(CUR_SYMBOLS[up]||CUR_SYMBOLS[s]) return CUR_SYMBOLS[up]||CUR_SYMBOLS[s];
   return /^[A-Z]{3}$/.test(up) ? up : fallback; }
+// importi nel formato della lingua scelta (italiano: 1.234,50 €; inglese: €1,234.50…)
+const MONEY_LOCALE={ it:'it-IT', en:'en-GB', es:'es-ES', fr:'fr-FR', de:'de-DE', pt:'pt-PT', nl:'nl-NL' };
+const moneyFmts={};
 function fmtMoney(n,cur='EUR'){
-  const v = Number(n)||0;
-  try{ return new Intl.NumberFormat('it-IT',{style:'currency',currency:normCur(cur,'EUR')}).format(v); }
-  catch(e){ return new Intl.NumberFormat('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}).format(v)+' '+String(cur||''); }
+  const v = Number(n)||0, loc=MONEY_LOCALE[(window.LFI18N&&LFI18N.lang)||'it']||'it-IT', c=normCur(cur,'EUR');
+  try{ const k=loc+'|'+c; return (moneyFmts[k]||(moneyFmts[k]=new Intl.NumberFormat(loc,{style:'currency',currency:c}))).format(v); }
+  catch(e){ return new Intl.NumberFormat(loc,{minimumFractionDigits:2,maximumFractionDigits:2}).format(v)+' '+String(cur||''); }
 }
 // in euro: con i cambi automatici BCE si usa la media del mese del movimento (date)
 function toEur(n,cur,date){ return LFCore.eurAt(DB, n, cur, date); }
@@ -303,7 +307,7 @@ const HINTS = {
   dateTo:['date to','transaction date to','to date'],
   currency:['currency code','currency','valuta','curr','ccy','cur','moneda','divisa','devise','wahrung','moeda','munt'],
   territory:['country of sale','sales country','country code','country','territory','territorio','paese','nazione','region'],
-  kind:['tipo movimento','entrata/uscita','entrata uscita','in/out','movimento','kind','direction','dare/avere'],
+  kind:['tipo movimento','entrata/uscita','entrata uscita','in/out','movimento','kind','direction','dare/avere','income/expense','ingreso/gasto','recette/depense','einnahme/ausgabe','entrada/saida','inkomst/uitgave'],
   category:['categoria','category','categoria spesa','categoria spese','tipo spesa','tipo spese','voce di spesa','expense type','expense category','centro di costo','cost center','categoria gasto','categorie','categorie depense','kategorie','kostenart','categoria despesa','rubriek'],
   note:['note','notes','nota','memo','commento','commenti','comment','comments','notas','remarque','remarques','bemerkung','notiz','notizen','observacoes','opmerking','opmerkingen'],
   amountIn:['entrate','entrata','avere','accrediti','accredito','incassi','ricavi','credit','credits','credit amount','deposit','deposits','paid in','money in','ingresos','haber','abono','credito','recettes','encaissements','einnahmen','haben','gutschrift','entradas','inkomsten','bij'],
@@ -334,6 +338,7 @@ const PDF_W8=Math.floor((210-16)*96/25.4), PDF_W10=Math.floor((210-20)*96/25.4);
 const VIEW_TITLES={dashboard:'Dashboard',consolidated:'Consolidato',transactions:'Movimenti',releases:'Discografia',planning:'Pianificazione',events:'Eventi',supports:'Support DJ',royalties:'Royalty',artists:'Artisti',contracts:'Contratti',tasks:'Task',merch:'Merch',import:'Importa CSV',settings:'Impostazioni',about:'Chi siamo',offers:'Offerte & Piani',faq:'Aiuto & FAQ'};
 let currentView='dashboard';
 function goto(view){
+  if(view!==currentView){ Object.keys(bulkSel).forEach(k=>bulkSel[k].clear()); const bb=$('#bulk-bar'); if(bb){ bb.hidden=true; bb.dataset.sec=''; } }
   currentView=view;
   if(typeof closeDrawer==='function') closeDrawer();   // chiudi il cassetto menu su mobile
   $$('.nav-item').forEach(b=>b.classList.toggle('is-active',b.dataset.view===view));
@@ -701,9 +706,9 @@ function seasonality(){
 function monthName(mm){ try{ return new Date(2021,mm-1,1).toLocaleString(window.LFI18N?window.LFI18N.lang:'it',{month:'long'}); }catch(e){ return ''+mm; } }
 /* valute usate nei movimenti senza cambio impostato → conteggiate 1:1 (errato) */
 function fxIssues(){
-  const rates=DB.rates||{}; const bad={};
+  const rates=DB.rates||{}; const bad={}; const fx=DB.fx||{}, months=(fx.auto && fx.months)||{};
   (DB.transactions||[]).forEach(t=>{ const c=(t.currency||'EUR').toUpperCase(); if(c==='EUR') return;
-    if(rates[c]==null){ bad[c]=(bad[c]||0)+1; } });
+    if(rates[c]==null && !(months[c] && Object.keys(months[c]).length)){ bad[c]=(bad[c]||0)+1; } });   // coperte dai cambi BCE: nessun avviso
   return bad;
 }
 function renderInsights(txs, cur, prev){
@@ -756,20 +761,23 @@ function renderDashboard(){
   renderInsights(txs, cur, prev);
   const psel=$('#dash-period');
   $('#dash-range-label').textContent = psel.value==='custom'
-    ? ((range.from||'inizio')+' → '+(range.to||'oggi'))
+    ? ((range.from?fmtDate(range.from):tt('dash.from_start'))+' → '+(range.to?fmtDate(range.to):tt('dash.to_today')))
     : psel.selectedOptions[0].textContent;
 
   // monthly chart
   const months={};
-  txs.forEach(t=>{ const k=monthKey(t.date)||'—'; (months[k]??={in:0,out:0}); const v=toEur(t.net,t.currency,t.date);
+  txs.forEach(t=>{ const k=monthKey(t.date); if(!k) return; (months[k]??={in:0,out:0}); const v=toEur(t.net,t.currency,t.date);
     if(t.kind==='income') months[k].in+=v; else months[k].out+=Math.abs(v); });
-  const keys=Object.keys(months).sort().slice(-12);
+  // ultimi 12 mesi senza buchi: anche i mesi senza movimenti hanno la loro colonna (vuota)
+  const mk=Object.keys(months).sort(), keys=[];
+  if(mk.length){ let [y,m]=mk[mk.length-1].split('-').map(Number);
+    const first=mk[0]; for(let i=0;i<12;i++){ const k=y+'-'+String(m).padStart(2,'0'); if(k<first) break; keys.unshift(k); (months[k]??={in:0,out:0}); if(--m<1){ m=12; y--; } } }
   const max=Math.max(1,...keys.map(k=>Math.max(months[k].in,months[k].out)));
   $('#chart-monthly').innerHTML = keys.length? keys.map(k=>`
     <div class="bar-col">
       <div class="bars">
-        <div class="bar bar--in" style="height:${months[k].in/max*160}px" title="Entrate ${fmtMoney(months[k].in)}"></div>
-        <div class="bar bar--out" style="height:${months[k].out/max*160}px" title="Uscite ${fmtMoney(months[k].out)}"></div>
+        <div class="bar bar--in" style="height:${months[k].in/max*160}px" title="${esc(tt('g.income'))} ${fmtMoney(months[k].in)}"></div>
+        <div class="bar bar--out" style="height:${months[k].out/max*160}px" title="${esc(tt('g.expense'))} ${fmtMoney(months[k].out)}"></div>
       </div>
       <span class="bar-label">${k}</span>
     </div>`).join('') : `<p class="muted">${tt('empty.noperiod')}</p>`;
@@ -877,8 +885,17 @@ function computeGroup(cfg){
   const {sel,key}=cfg;
   const sort=dashSort[sel]||(dashSort[sel]={col:'net',dir:-1});
   const flt=(dashFilter[sel]||'').toLowerCase();
-  const g={};
-  dashTxs.forEach(t=>{ const k=(t[key]||'—'); (g[k]??={in:0,out:0}); const v=toEur(t.net,t.currency,t.date);
+  const g={}, spell={}, idx=key==='catalog'?relIdx():null;
+  // per release: la release trovata anche da UPC/ISRC/titolo (non solo dal campo catalogo);
+  // artisti e piattaforme scritti in modi diversi ("Raho"/"raho ") finiscono nella stessa riga
+  const norm=raw=>key==='artist' ? LFCore.artKey(raw) : colNorm(raw);
+  if(key!=='catalog') dashTxs.forEach(t=>{ const raw=String(t[key]||'').trim(); if(!raw) return; const n=norm(raw);
+    if(spell[n]===undefined){ const a=key==='artist'?findArtist(raw):null; spell[n]=a?a.name:raw; }
+    else if(spell[n]===spell[n].toLowerCase() && raw!==raw.toLowerCase() && !(key==='artist' && findArtist(raw))) spell[n]=raw; });   // meglio "Raho" di "raho"
+  const keyOf=t=>{
+    if(key==='catalog'){ const r=releaseForTx(t, idx); return r ? (r.catalog||r.title||'—') : (t.catalog||'—'); }
+    const raw=String(t[key]||'').trim(); return raw ? spell[norm(raw)] : '—'; };
+  dashTxs.forEach(t=>{ const k=keyOf(t); (g[k]??={in:0,out:0}); const v=toEur(t.net,t.currency,t.date);
     if(t.kind==='income') g[k].in+=v; else g[k].out+=Math.abs(v); });
   let rows=Object.entries(g).map(([k,v])=>({k,...v,net:v.in-v.out}));
   if(flt) rows=rows.filter(r=>r.k.toLowerCase().includes(flt));
@@ -925,7 +942,17 @@ const EXPORTERS={};
 const registerExport=(name,fn)=>{ EXPORTERS[name]=fn; };
 let curExport=null;
 const xmlEsc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-function csvOf(headers,rows){ return [headers,...rows].map(r=>r.map(csvCell).join(',')).join('\n'); }
+/* CSV per Excel: lingue con la virgola decimale → ";" e "12,50", inglese → "," e "12.50"; BOM UTF-8 (accenti
+   giusti); celle che inizierebbero una formula (=, +, -, @) protette con un apostrofo */
+function csvText(rows, opt){
+  const dc=((window.LFI18N&&LFI18N.lang)||'it')!=='en', sep=dc?';':',', needQ=dc?/[";\r\n]/:/[",\r\n]/, fix2=opt&&opt.fixed2;
+  const cell=v=>{ let s;
+    if(typeof v==='number' && isFinite(v)){ s=fix2 ? v.toFixed(2) : String(v); if(dc) s=s.replace('.',','); }
+    else { s=String(v??''); if(/^[=+\-@\t\r]/.test(s) && !/^[-+]?\d+([.,]\d+)?$/.test(s)) s="'"+s; }
+    return needQ.test(s) ? `"${s.replace(/"/g,'""')}"` : s; };
+  return '\uFEFF'+rows.map(r=>r.map(cell).join(sep)).join('\r\n');
+}
+function csvOf(headers,rows){ return csvText([headers,...rows]); }
 function xlsOf(headers,rows){
   return `<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"></head><body>`+
     `<table border="1"><thead><tr>${headers.map(h=>`<th>${xmlEsc(h)}</th>`).join('')}</tr></thead>`+
@@ -962,12 +989,13 @@ document.addEventListener('click',e=>{
 $$('#export-menu button').forEach(b=>b.onclick=()=>{ $('#export-menu').hidden=true; if(curExport) doExport(curExport,b.dataset.fmt); });
 
 /* dati esportabili per sezione */
+// Movimenti: esporta le righe filtrate (come le vedi), con intestazioni che l'import riconosce
 registerExport('movimenti', ()=>{
-  const cols=CANON;
-  const headers=['Tipo',...cols.map(c=>c[1]),'Nota'];
-  const rows=DB.transactions.map(t=>[t.kind==='income'?'Entrata':'Uscita',...cols.map(c=>{
+  const cols=CANON, list=(currentView==='transactions' && txLastRows) ? txLastRows : DB.transactions;
+  const headers=[tt('imp.f_kind'),...cols.map(c=>mapLabel(c[0],c[1])),tt('imp.f_note')];
+  const rows=list.map(t=>[tt(t.kind==='income'?'imp.k_income':'imp.k_expense'),...cols.map(c=>{
     const v=t[c[0]]; return (typeof v==='number')?v:(v??''); }), t.note||'']);
-  return {title:'Movimenti — '+(DB.name||''), headers, rows};
+  return {title:tt('tx.title')+' — '+(DB.name||''), headers, rows};
 });
 GROUP_TABLES.forEach(cfg=>registerExport('group:'+cfg.sel, ()=>{
   const rows=computeGroup(cfg).map(r=>[r.k, +r.in.toFixed(2), +r.out.toFixed(2), +r.net.toFixed(2)]);
@@ -1110,6 +1138,8 @@ $('#btn-onb-income')?.addEventListener('click', ()=>{ curKind='income'; openTx(n
    MOVIMENTI
    ============================================================================ */
 const moneyCell=(v,t)=> v?fmtMoney(v,t.currency||'EUR'):'';
+// importo con il segno vero: le uscite sono negative, un'entrata negativa (rimborso) resta negativa
+const txSigned=t=>t.kind==='income' ? (+t.net||0) : -Math.abs(+t.net||0);
 const TX_COLS = {
   date:    {label:'Data vendita',cell:t=>fmtDate(t.date)},
   dateTo:  {label:'Data vendita (a)', cell:t=>fmtDate(t.dateTo)},
@@ -1130,7 +1160,7 @@ const TX_COLS = {
   payProcFees:{label:'Comm. processore', num:1, cell:t=>moneyCell(t.payProcFees,t)},
   fees:    {label:'Commissioni', num:1, cell:t=>moneyCell(t.fees,t)},
   csShare: {label:'Coll. society', num:1, cell:t=>moneyCell(t.csShare,t)},
-  net:     {label:'Netto', num:1,cell:t=>{ const inc=t.kind==='income'; return `<span class="${inc?'pos':'neg'}">${inc?'':'−'}${fmtMoney(Math.abs(+t.net||0),t.currency||'EUR')}</span>`; }},
+  net:     {label:'Netto', num:1,cell:t=>{ const v=txSigned(t); return `<span class="${v>=0?'pos':'neg'}">${v<0?'−':''}${fmtMoney(Math.abs(v),t.currency||'EUR')}</span>`; }},
   currency:{label:'Valuta',      cell:t=>esc(t.currency)},
   note:    {label:'Nota',        cell:t=>esc(t.note)},
 };
@@ -1141,6 +1171,7 @@ let txSort={ col:'date', dir:-1 };   // -1 = decrescente
 function txSortKey(c,t){
   if(c==='eur') return (t.kind==='income'?1:-1)*toEur(t.net,t.currency,t.date);
   if(c==='kind') return t.kind||'';
+  if(c==='net') return txSigned(t);
   if(NUM_COLS.includes(c)) return +t[c]||0;
   if(c==='date'||c==='dateTo') return t[c]||'';
   if(c==='upc') return (t.upc||t.code||'').toLowerCase();
@@ -1155,6 +1186,7 @@ function renderTx(){
   applyTxFilters();
   if(typeof renderRecurPanel==='function') renderRecurPanel();
 }
+let txLastRows=null, txFilterSig='';
 function applyTxFilters(){
   const q=$('#tx-search').value.toLowerCase().trim();
   const kind=$('#tx-filter-kind').value, plat=$('#tx-filter-platform').value;
@@ -1170,7 +1202,10 @@ function applyTxFilters(){
   // a parità: artista, traccia (prodotto), catalogo, data, piattaforma — in ordine alfabetico
   const txTies=['artist','product','catalog','date','platform'].filter(c=>c!==k).map(c=>t=>txSortKey(c,t));
   rows=tieSort(rows, t=>txSortKey(k,t), txSort.dir, txTies);
-  $('#tx-count-label').textContent=`${rows.length} ${tt('tx.movements')}`;
+  txLastRows=rows;
+  const fsig=[q,kind,plat,from,to].join('|');
+  if(fsig!==txFilterSig){ txFilterSig=fsig; if(bulkSel.transactions && bulkSel.transactions.size){ bulkSel.transactions.clear(); bulkBar('transactions'); } }
+  $('#tx-count-label').textContent=`${rows.length} ${tt(rows.length===1?'tx.movement':'tx.movements')}`;
   const ss=$('#tx-sort'); if(ss){ const v=txSort.col+':'+txSort.dir; if([...ss.options].some(o=>o.value===v)) ss.value=v; }
   const info=paginate(rows,'tx'); const pageRows=info.slice;
   const cols=visibleCols();
@@ -1193,9 +1228,9 @@ function applyTxFilters(){
     openTx(tr.dataset.id);
   });
 }
-['#tx-search','#tx-filter-kind','#tx-filter-platform','#tx-from','#tx-to'].forEach(s=>{
-  $(s).addEventListener('input',applyTxFilters); $(s).addEventListener('change',applyTxFilters);
-});
+{ let txSearchT=null;
+  $('#tx-search').addEventListener('input',()=>{ clearTimeout(txSearchT); txSearchT=setTimeout(applyTxFilters,150); });
+  ['#tx-filter-kind','#tx-filter-platform','#tx-from','#tx-to'].forEach(s=>$(s).addEventListener('change',applyTxFilters)); }
 function syncTxDates(){ const cu=$('#tx-period').value==='custom'; $('#tx-from').hidden=!cu; $('#tx-to').hidden=!cu; }
 $('#tx-period').addEventListener('change',()=>{ syncTxDates(); applyTxFilters(); });
 syncTxDates();
@@ -2230,7 +2265,9 @@ function enrichApply(){
 function computeRange(sel, fromEl, toEl){
   const p=sel.value, now=new Date(), today=isoD(now);
   if(p==='all') return {from:null,to:null};
-  if(p==='custom') return {from:(fromEl&&fromEl.value)||null, to:(toEl&&toEl.value)||today};
+  if(p==='custom'){ let f=(fromEl&&fromEl.value)||null, t=(toEl&&toEl.value)||today;
+    if(f && t && f>t){ const x=f; f=t; t=x; }   // date al contrario: si scambiano invece di dare 0
+    return {from:f, to:t}; }
   let from;
   if(p==='ytd') from=new Date(now.getFullYear(),0,1);
   else if(p==='12m') from=new Date(now.getFullYear(),now.getMonth()-11,1);
@@ -2491,7 +2528,7 @@ function openTx(id){
   $('#tx-modal-title').textContent = t ? tt('tx.modal.edit') : (curKind==='expense'?tt('tx.modal.new_exp'):tt('tx.modal.new_inc'));
   const k = t ? t.kind : curKind;
   $('#f-id').value=t?.id||''; $('#f-kind').value=k;
-  $('#f-date').value=t?.date||isoD(new Date());
+  $('#f-date').value=t ? (t.date||'') : isoD(new Date());
   $('#f-dateto').value=t?.dateTo||'';
   $('#f-platform').value=t?.platform||''; $('#f-type').value=t?.type||(k==='expense'?'expense':'digital');
   $('#f-catalog').value=t?.catalog||''; $('#f-product').value=t?.product||'';
@@ -2544,8 +2581,9 @@ $('#f-type')?.addEventListener('change',updateExpCatHint);
 let curKind='income';
 $('#btn-add-income').onclick=()=>{curKind='income';openTx(null);};
 $('#btn-add-expense').onclick=()=>{curKind='expense';openTx(null);};
-$('#tx-modal-close').onclick=$('#f-cancel').onclick=()=>$('#tx-modal').hidden=true;
-$('#tx-modal').onclick=e=>{ if(e.target.id==='tx-modal') $('#tx-modal').hidden=true; };
+const txModalClose=()=>{ $('#tx-modal').hidden=true; if(!$('#f-id').value && typeof attDropPending==='function') attDropPending(); };
+$('#tx-modal-close').onclick=$('#f-cancel').onclick=txModalClose;
+$('#tx-modal').onclick=e=>{ if(e.target.id==='tx-modal') txModalClose(); };
 $('#f-delete').onclick=()=>{
   const id=$('#f-id').value;
   const cur=DB.transactions.find(t=>t.id===id);
@@ -2596,7 +2634,7 @@ $('#tx-form').onsubmit=e=>{
   else DB.transactions.push(rec);
   // uscita ricorrente: crea la regola che si ripeterà da sola
   if(!id && rec.kind==='expense' && $('#f-recurring')?.checked){
-    const tpl={...rec}; delete tpl.id; delete tpl.date; delete tpl.dateTo; delete tpl._recur;
+    const tpl={...rec}; delete tpl.id; delete tpl.date; delete tpl.dateTo; delete tpl._recur; delete tpl.att;   // ogni mese la sua ricevuta
     const freq=$('#f-recur-freq')?.value||'monthly';
     DB.recurring=DB.recurring||[];
     DB.recurring.push({ id:newId(), active:true, freq, tpl, anchor:rec.date, nextDate:recurAddPeriod(rec.date, freq, recurAnchorDay({anchor:rec.date})) });
@@ -2982,8 +3020,8 @@ const excelSerialDate=v=>{ const s=String(v||'').trim(); if(!/^\d{5}(\.\d+)?$/.t
   return new Date(Date.UTC(1899,11,30)+Math.floor(+s)*864e5).toISOString().slice(0,10); };
 // "Entrata/Uscita" scritto in tanti modi: income | expense | null (non riconosciuto)
 function kindFromText(v){ const s=String(v||'').trim().toLowerCase(); if(!s) return null;
-  if(/^(u|o|out|uscit|spes|expense|expenses|cost|costo|costi|debit|dare|addebit|-)/.test(s)) return 'expense';
-  if(/^(e|i|in|entrat|income|ricav|incass|revenue|credit|avere|accredit|vendit|sale|\+)/.test(s)) return 'income';
+  if(/^(u|o|-|af|out)$/.test(s) || /^(uscit|spes|expense|cost|debit|dare\b|addebit|gast|d[eé]pens|ausgab|sa[ií]d|uitgav|withdraw|outflow|lastschrift|soll\b)/.test(s)) return 'expense';
+  if(/^(e|i|\+|in|bij)$/.test(s) || /^(entrat|income|ricav|incass|revenue|credit|avere|accredit|vendit|sale\b|sales|ingres|recett|einnahm|entrad|inkomst|deposit|inflow|gutschrift|haben\b)/.test(s)) return 'income';
   return null; }
 // categoria del foglio → categoria dell'app (anche scritta nelle altre lingue o con parole chiave)
 function expCatFromText(v){ const s=String(v||'').trim().toLowerCase(); if(!s) return null;
@@ -3158,8 +3196,8 @@ $('#import-confirm').onclick=()=>{
 function updateImpUndo(){ const b=$('#imp-undo'); if(!b) return; const li=DB&&DB.lastImport;
   if(li && li.count){ const n=$('#imp-undo-n'); if(n) n.textContent=li.count; b.hidden=false; } else b.hidden=true; }
 function undoLastImport(){ const li=DB&&DB.lastImport; if(!li) return;
-  if(!confirm(tt('imp.undo_confirm').replace('{n}',li.count))) return;
   const ids=(DB.transactions||[]).filter(t=>t._imp===li.id).map(t=>t.id);
+  if(!confirm(tt('imp.undo_confirm').replace('{n}',li.count)+bulkClosedNote('transactions', ids))) return;
   const tid=trashRemove('transactions', ids, tt('trash.k_transactions')+' · '+ids.length+' '+tt('trash.items'));
   DB.lastImport=null; save(); renderTx(); updateImpUndo(); undoToast(tt('imp.undone'), tid); }
 $('#imp-undo-btn')?.addEventListener('click', undoLastImport);
@@ -3196,16 +3234,23 @@ function renderSettings(){
     <div class="rate-chip"><strong>${esc(c)}</strong>
       <input type="number" step="0.0001" value="${v}" data-cur="${esc(c)}">
       ${c==='EUR'?'':`<button data-del="${esc(c)}">✕</button>`}</div>`).join('');
-  $$('#rates-grid input').forEach(i=>i.onchange=()=>{ DB.rates[i.dataset.cur]=parseFloat(i.value)||0; save(); });
-  $$('#rates-grid button[data-del]').forEach(b=>b.onclick=()=>{ delete DB.rates[b.dataset.del]; save(); renderSettings(); });
+  // tasso vuoto, zero o negativo: non si salva (trasformerebbe in 0 € tutti i movimenti in quella valuta)
+  $$('#rates-grid input').forEach(i=>i.onchange=()=>{ const v=parseFloat(String(i.value).replace(',','.'));
+    if(!(v>0)){ toast(tt('t.rate_invalid')); i.value=DB.rates[i.dataset.cur]; return; }
+    DB.rates[i.dataset.cur]=v; save(); });
+  $$('#rates-grid button[data-del]').forEach(b=>b.onclick=()=>{ const c=b.dataset.del;
+    const n=(DB.transactions||[]).filter(t=>(t.currency||'EUR').toUpperCase()===c).length;
+    if(n && !confirm(tt('t.rate_del_q').replace('{c}', c).replace('{n}', n))) return;
+    delete DB.rates[c]; save(); renderSettings(); });
   if(typeof renderFx==='function') renderFx();
   if(typeof renderTrashCount==='function') renderTrashCount();
   const dh=$('#doc-header'); if(dh && document.activeElement!==dh) dh.value=(DB.profile&&DB.profile.docHeader)||'';
   if(typeof renderTeam==='function') renderTeam();
 }
 $('#add-rate').onclick=()=>{
-  const c=$('#rate-cur').value.trim().toUpperCase().slice(0,3), v=parseFloat($('#rate-val').value);
+  const c=normCur($('#rate-cur').value,''), v=parseFloat(String($('#rate-val').value).replace(',','.'));
   if(!c||!v){ toast(tt('t.rate_required')); return; }
+  if(!(v>0)){ toast(tt('t.rate_invalid')); return; }
   DB.rates[c]=v; save(); $('#rate-cur').value=$('#rate-val').value=''; renderSettings();
 };
 $('#export-json').onclick=()=>{ download('label-finance-backup.json',JSON.stringify(ACCOUNT,null,2),'application/json');
@@ -3213,8 +3258,7 @@ $('#export-json').onclick=()=>{ download('label-finance-backup.json',JSON.string
   if((ACCOUNT.labels||[]).some(l=>(l.transactions||[]).some(t=>t&&t.att&&t.att.length))) toast(tt('t.backup_no_att')); };
 $('#export-csv').onclick=()=>{
   const head=['kind',...CANON.map(c=>c[0]),'note'];
-  const lines=[head.join(',')].concat(DB.transactions.map(t=>head.map(h=>csvCell(t[h])).join(',')));
-  download('movimenti.csv',lines.join('\n'),'text/csv');
+  download('movimenti.csv', csvText([head].concat(DB.transactions.map(t=>head.map(h=>t[h]??'')))), 'text/csv');
 };
 $('#import-json').onclick=()=>$('#json-input').click();
 /* controllo del file di backup prima di sostituire i dati: struttura giusta, elenchi davvero elenchi */
@@ -3772,11 +3816,11 @@ function renderExtraWidgets(txs){
   if(rb){
     const recent=[...txs].sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).slice(0,7);
     rb.innerHTML = recent.length ? recent.map(t=>{
-      const v=toEur(t.net,t.currency,t.date); const inc=t.kind==='income';
+      const v=toEur(txSigned(t),t.currency,t.date);
       const label=t.artist||t.product||t.platform||t.catalog||'—';
       return `<div class="recent-row"><span class="recent-date">${fmtDate(t.date||'')}</span>
         <span class="recent-label">${esc(label)}</span>
-        <span class="recent-amt ${inc?'pos':'neg'}">${inc?'+':'−'}${fmtMoney(Math.abs(v))}</span></div>`;
+        <span class="recent-amt ${v>=0?'pos':'neg'}">${v>=0?'+':'−'}${fmtMoney(Math.abs(v))}</span></div>`;
     }).join('') : `<p class="muted">${tt('empty.noperiod')}</p>`;
   }
   // Merch più venduto (per unità)
@@ -4992,16 +5036,28 @@ function bulkBar(sec){ const bar=$('#bulk-bar'); if(!bar) return; const n=(bulkS
 function bulkToggleAll(sec,on){ document.querySelectorAll(`[data-sel^="${sec}|"]`).forEach(cb=>{ cb.checked=on;
     const id=cb.dataset.sel.split('|').slice(1).join('|'); (bulkSel[sec]||=new Set()); on?bulkSel[sec].add(id):bulkSel[sec].delete(id); });
   bulkBar(sec); }
+// righe di un periodo già chiuso tra quelle da eliminare: si dice nella conferma (gli statement inviati cambierebbero)
+function bulkClosedNote(sec, ids){ if(sec!=='transactions' || typeof perIsClosedTx!=='function') return '';
+  const set=new Set(ids); const n=(DB.transactions||[]).filter(t=>set.has(t.id) && perIsClosedTx(t)).length;
+  return n ? '\n\n'+tt('bulk.closed_note').replace('{n}', n) : ''; }
+// contratti eliminati in blocco: anche la copia nel cloud (il link di firma smette di funzionare)
+function bulkTombstone(sec, ids){ if(sec!=='contracts') return; const set=new Set(ids);
+  (DB.contracts||[]).forEach(c=>{ if(set.has(c.id) && c.token) tombstoneContract(c.token); }); }
 function bulkDeleteSel(){ const bar=$('#bulk-bar'); const sec=bar&&bar.dataset.sec; const set=bulkSel[sec]; if(!set||!set.size) return;
-  if(!confirm(tt('bulk.del_q').replace('{n}',set.size))) return;
+  if(!confirm(tt('bulk.del_q').replace('{n}',set.size)+bulkClosedNote(sec,[...set]))) return;
+  bulkTombstone(sec,[...set]);
   const arr=secArr(sec); const n=set.size; let tid=null;
   if(arr) tid=trashRemove(sec, [...set], tt('trash.k_'+sec)+' · '+n+' '+tt('trash.items'));
-  set.clear(); save(); bulkRerender(sec); bulkBar(sec); undoToast(tt('trash.deleted_n').replace('{n}',n), tid); }
+  set.clear(); save(); bulkRerender(sec); bulkBar(sec); undoToast(tt('trash.deleted_n').replace('{n}',n), tid);
+  if(sec==='contracts') flushContractTombstones(); }
 function bulkClearAll(sec){ const arr=secArr(sec); const len=(DB[arr]||[]).length;
   if(!len){ toast(tt('bulk.empty_already')); return; }
-  if(!confirm(tt('bulk.clear_q').replace('{n}',len))) return;
-  const tid=trashRemove(sec, (DB[arr]||[]).map(x=>x&&x.id), tt('trash.k_'+sec)+' · '+len+' '+tt('trash.items'));
-  DB[arr]=[]; bulkSel[sec]&&bulkSel[sec].clear(); save(); bulkRerender(sec); bulkBar(sec); undoToast(tt('trash.deleted_n').replace('{n}',len), tid); }
+  const allIds=(DB[arr]||[]).map(x=>x&&x.id);
+  if(!confirm(tt('bulk.clear_q').replace('{n}',len)+bulkClosedNote(sec,allIds))) return;
+  bulkTombstone(sec, allIds);
+  const tid=trashRemove(sec, allIds, tt('trash.k_'+sec)+' · '+len+' '+tt('trash.items'));
+  DB[arr]=[]; bulkSel[sec]&&bulkSel[sec].clear(); save(); bulkRerender(sec); bulkBar(sec); undoToast(tt('trash.deleted_n').replace('{n}',len), tid);
+  if(sec==='contracts') flushContractTombstones(); }
 document.addEventListener('change', e=>{
   const one=e.target.closest('[data-sel]'); if(one){ const p=one.dataset.sel.split('|'); const sec=p[0], id=p.slice(1).join('|');
     (bulkSel[sec]||=new Set()); one.checked?bulkSel[sec].add(id):bulkSel[sec].delete(id); bulkBar(sec); return; }

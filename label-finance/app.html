@@ -342,7 +342,7 @@
 
       <div class="panel">
         <div class="panel-head"><h2 data-i18n="dash.chart.title">Entrate vs Uscite per mese</h2><button class="card-i" type="button" aria-label="Info"><span class="ci-dot">i</span><span class="card-tip" data-i18n="ci.chart">Confronto mensile tra incassi e spese: individua i mesi migliori e i cali.</span></button>
-          <span class="legend"><span class="legend-dot legend-dot--in"></span>Entrate<span class="legend-dot legend-dot--out"></span>Uscite</span></div>
+          <span class="legend"><span class="legend-dot legend-dot--in"></span><span data-i18n="g.income">Entrate</span><span class="legend-dot legend-dot--out"></span><span data-i18n="g.expense">Uscite</span></span></div>
         <div class="chart" id="chart-monthly"></div>
       </div>
 
@@ -503,6 +503,7 @@
       <header class="view-head">
         <div><div class="title-row"><h1 data-i18n="tx.title">Movimenti</h1><button class="info-btn" data-info="transactions" title="Cos'è questa sezione?">i</button></div><p class="muted" id="tx-count-label">0 movimenti</p></div>
         <div class="head-actions">
+          <button class="btn btn-export" data-export="movimenti" data-i18n-title="common.export" title="Esporta"><span>⤓</span> <span data-i18n="common.export">Esporta</span></button>
           <button class="btn" data-goto="import" data-i18n="tx.import">⤒ Importa CSV</button>
           <button class="btn btn-expense" id="btn-add-expense" data-i18n="tx.add_expense">+ Uscita</button>
           <button class="btn btn-income" id="btn-add-income" data-i18n="tx.add_income">+ Entrata</button>

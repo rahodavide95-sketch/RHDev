@@ -146,6 +146,7 @@ function wipeLocalData(){
   window.LFStore.del('account').catch(()=>{});
   window.LFStore.del('snaps').catch(()=>{});   // anche le versioni salvate sul dispositivo (computer condivisi)
   if(typeof attWipeLocal==='function') attWipeLocal();   // e le ricevute allegate
+  try{ if(typeof teamCache!=='undefined') teamCache=null; }catch(e){}   // elenco del team dell'account precedente
 }
 let roRevertT=null, roToastAt=0;
 function save(){ saveLocal();
@@ -467,9 +468,16 @@ function deleteLabel(id){
   if(ACCOUNT.labels.length<=1){ toast(tt('t.label_min')); return; }
   const lab=ACCOUNT.labels.find(l=>l.id===id); if(!lab) return;
   if(!confirm(tt('confirm.del_label').replace('{name}', lab.name||''))) return;
+  deleteLabelGo(id, lab);
+}
+async function deleteLabelGo(id, lab){
+  if(typeof snapTake==='function') await snapTake('before_delete_label');   // si può tornare indietro da Versioni salvate
+  const tokens=(lab.contracts||[]).map(c=>c&&c.token).filter(Boolean);       // i link di firma dell'etichetta smettono di funzionare
   ACCOUNT.labels=ACCOUNT.labels.filter(l=>l.id!==id);
   if(ACCOUNT.activeLabel===id) ACCOUNT.activeLabel=ACCOUNT.labels[0].id;
-  DB=activeLabel(); save(); reloadViews(); rebuildAccountMenu(); toast(tt('t.label_deleted')); goto('dashboard');
+  DB=activeLabel(); tokens.forEach(tombstoneContract);
+  save(); reloadViews(); rebuildAccountMenu(); toast(tt('t.label_deleted')); goto('dashboard');
+  if(tokens.length) flushContractTombstones();
 }
 function closeAccountMenu(){ const e=$('#account-menu'); if(e) e.hidden=true; }
 function toggleAccountMenu(){ const e=$('#account-menu'); if(!e) return; if(e.hidden){ rebuildAccountMenu(); e.hidden=false; } else e.hidden=true; }
@@ -1868,6 +1876,11 @@ function itemToRelease(it){
     type, splits:relSplits, tracks };
 }
 function mergeRelInto(target, src){
+  // catalogo/UPC diversi della release che sparisce: restano come codici alternativi (le sue vendite non vanno perse)
+  const keepAlt=(f, list, norm)=>{ const v=(src[f]||'').trim(); if(v && target[f] && norm(v)!==norm(target[f])){ const l=target[list]=target[list]||[]; if(!l.some(x=>norm(x)===norm(v))) l.push(v); } };
+  keepAlt('catalog','altCatalogs',normCat); keepAlt('upc','altUpcs',normUPC);
+  (src.altCatalogs||[]).forEach(v=>{ const l=target.altCatalogs=target.altCatalogs||[]; if(!l.some(x=>normCat(x)===normCat(v))) l.push(v); });
+  (src.altUpcs||[]).forEach(v=>{ const l=target.altUpcs=target.altUpcs||[]; if(!l.some(x=>normUPC(x)===normUPC(v))) l.push(v); });
   ['catalog','title','artist','upc','orderDate','preorder','year','note','exclusive','exclusivePlatform'].forEach(f=>{ if(!target[f] && src[f]) target[f]=src[f]; });
   if((!target.splits||!target.splits.length) && src.splits&&src.splits.length) target.splits=src.splits;
   const seen=new Set((target.tracks||[]).map(t=>(t.isrc||'').toLowerCase()).filter(Boolean));
@@ -2080,15 +2093,18 @@ function openDupModal(){ if(!dupState) return;
   renderDupList(); $('#dup-modal').hidden=false; }
 function closeDupModal(){ $('#dup-modal').hidden=true; dupState=null; }
 function dupAutoMerge(){ if(!dupState) return;
-  dupState.conflicts.forEach(c=>{ if(c.score>=DUP_AUTO) c.decision='merge'; }); renderDupList(); }
+  // in automatico solo se non ci sono due cataloghi diversi (sarebbero due release vere, es. originale e remaster)
+  dupState.conflicts.forEach(c=>{ const a=normCat(c.target&&c.target.catalog), b=normCat(c.incoming&&c.incoming.catalog);
+    if(c.score>=DUP_AUTO && !(a && b && a!==b)) c.decision='merge'; }); renderDupList(); }
 function dupApply(){
   if(!dupState) return;
   if(dupState.mode==='existing'){
     const del=new Set(); let merged=0;
     dupState.conflicts.forEach(c=>{ if(c.decision==='merge' && !del.has(c.target.id) && !del.has(c.incoming.id)){ mergeRelInto(c.target,c.incoming); del.add(c.incoming.id); merged++; } });
-    if(del.size) DB.releases=releases().filter(r=>!del.has(r.id));
+    const tid=del.size ? trashRemove('releases', [...del]) : null;   // nel cestino: si può annullare
     save(); renderReleases(); renderRoyalties();
-    toast(tt('dup.applied').replace('{m}',merged).replace('{k}',dupState.conflicts.length-merged).replace('{s}',0));
+    const msg=tt('dup.applied').replace('{m}',merged).replace('{k}',dupState.conflicts.length-merged).replace('{s}',0);
+    if(tid) undoToast(msg, tid); else toast(msg);
   } else {
     const {conflicts,toAdd,newArtists}=dupState;
     toAdd.forEach(r=>releases().push(r));
@@ -2289,11 +2305,14 @@ function recordPayout(key){
   if(raw===null) return;
   const amount=Math.round(parseAmount(raw, uiDec())*100)/100;
   if(!(amount>0)){ toast(tt('pay.mark_invalid')); return; }
+  // più del saldo: la differenza diventa un credito che si scala dalle royalty future
+  if(amount>r.payable+0.005 && !confirm(tt('pay.over_q').replace('{amt}', fmtMoney(amount)).replace('{bal}', fmtMoney(r.payable)).replace('{diff}', fmtMoney(amount-r.payable)))) return;
   DB.payouts=DB.payouts||[];
   const po={ id:uid(), artist:r.name, amount, date:todayISO(), note:'' };
   // ritenuta d'acconto (money.js): calcolo, conferma del netto e promemoria F24
   if(typeof whApplyToPayout==='function' && !whApplyToPayout(po)) return;
   DB.payouts.push(po);
+  if(typeof ensureReceiptNumbers==='function') ensureReceiptNumbers((po.date||'').slice(0,4));
   save(); renderRoyalties(); toast(tt('pay.marked').replace('{name}',r.name).replace('{amt}',fmtMoney(amount)));
 }
 function renderPayouts(){
@@ -2397,7 +2416,8 @@ function statementHTML(st){
    ${(st.paidToDate>0||st.paidInPeriod>0)?`<table class="stmt-sum"><tbody>
       <tr><td>${tt('stmt.paid_period')}</td><td class="r">${fmtMoney(st.paidInPeriod)}</td></tr>
       <tr><td>${tt('stmt.paid_total')}</td><td class="r">${fmtMoney(st.paidToDate)}</td></tr>
-      <tr><td><b>${tt('stmt.balance')}</b></td><td class="r"><b>${fmtMoney(st.balance)}</b></td></tr></tbody></table>`:''}
+      <tr><td><b>${tt('stmt.balance')}</b></td><td class="r"><b>${fmtMoney(st.balance)}</b></td></tr>
+      ${st.overpaid>0.005?`<tr><td>${tt('stmt.overpaid')}</td><td class="r">${fmtMoney(st.overpaid)}</td></tr>`:''}</tbody></table>`:''}
    ${st.lines.some(l=>l.late)?`<p class="stmt-note">* ${tt('per.late_note')}</p>`:''}
    <p class="stmt-note">${tt('stmt.note')}</p>
    <p class="stmt-foot">${tt('stmt.gen')} Label Finance · ${esc(labelName())} · ${fmtDate(isoD(new Date()))}</p>`;
@@ -2892,27 +2912,51 @@ $('#add-rate').onclick=()=>{
   if(!c||!v){ toast(tt('t.rate_required')); return; }
   DB.rates[c]=v; save(); $('#rate-cur').value=$('#rate-val').value=''; renderSettings();
 };
-$('#export-json').onclick=()=>download('label-finance-backup.json',JSON.stringify(ACCOUNT,null,2),'application/json');
+$('#export-json').onclick=()=>{ download('label-finance-backup.json',JSON.stringify(ACCOUNT,null,2),'application/json');
+  // le foto/PDF delle ricevute non stanno nel file (sono sul dispositivo e, con l'account, nel cloud)
+  if((ACCOUNT.labels||[]).some(l=>(l.transactions||[]).some(t=>t&&t.att&&t.att.length))) toast(tt('t.backup_no_att')); };
 $('#export-csv').onclick=()=>{
   const head=['kind',...CANON.map(c=>c[0]),'note'];
   const lines=[head.join(',')].concat(DB.transactions.map(t=>head.map(h=>csvCell(t[h])).join(',')));
   download('movimenti.csv',lines.join('\n'),'text/csv');
 };
 $('#import-json').onclick=()=>$('#json-input').click();
+/* controllo del file di backup prima di sostituire i dati: struttura giusta, elenchi davvero elenchi */
+const BACKUP_LISTS=['transactions','releases','artists','tasks','contracts','merch','planning','events','supports','recurring','recoup','payouts'];
+const backupLabels=d=>Array.isArray(d.labels) ? d.labels : (d.transactions ? [d] : null);
+function backupLooksValid(d){
+  if(!d || typeof d!=='object' || Array.isArray(d)) return false;
+  const labs=backupLabels(d); if(!labs || !labs.length) return false;
+  return labs.every(l=>l && typeof l==='object' && !Array.isArray(l) && BACKUP_LISTS.every(k=>l[k]==null || Array.isArray(l[k])));
+}
+function cleanBackup(d){ backupLabels(d).forEach(l=>BACKUP_LISTS.forEach(k=>{ if(Array.isArray(l[k])) l[k]=l[k].filter(x=>x && typeof x==='object' && !Array.isArray(x)); })); return d; }
+function backupCount(d){ return (backupLabels(d)||[]).reduce((n,l)=>n+(l.transactions||[]).length+(l.releases||[]).length+(l.artists||[]).length+(l.contracts||[]).length,0); }
 $('#json-input').onchange=e=>{
   const f=e.target.files[0]; if(!f) return; const r=new FileReader();
-  r.onload=async ()=>{ try{ const d=JSON.parse(r.result); if(!d.transactions && !d.labels) throw 0;
+  r.onload=async ()=>{ let d; try{ d=JSON.parse(r.result); }catch{ d=null; }
+    e.target.value='';
+    if(!backupLooksValid(d)){ toast(tt('t.file_invalid')); return; }
+    cleanBackup(d);
+    const n=backupCount(d), cur=backupCount(ACCOUNT);
+    if(!confirm(tt('t.backup_q').replace('{n}', n).replace('{cur}', cur))) return;
     if(typeof snapTake==='function') await snapTake('before_backup');
-    ACCOUNT=migrateAccount(d); DB=activeLabel(); save(); reloadViews(); rebuildAccountMenu();
-    toast(tt('t.backup_restored')); goto('dashboard'); }
-    catch{ toast(tt('t.file_invalid')); } };
+    const prev=ACCOUNT;
+    try{ ACCOUNT=migrateAccount(d); DB=activeLabel(); reloadViews(); rebuildAccountMenu(); save();
+      toast(tt('t.backup_restored')); goto('dashboard'); }
+    catch(err){ ACCOUNT=prev; DB=activeLabel(); save(); reloadViews(); rebuildAccountMenu(); toast(tt('t.file_invalid')); } };
   r.readAsText(f);
 };
-$('#wipe').onclick=async ()=>{ if(confirm(tt('confirm.wipe_all'))){
+$('#wipe').onclick=async ()=>{
+  const cloud=!!(window.LF_isSignedIn && window.LF_isSignedIn());
+  if(confirm(tt(cloud?'confirm.wipe_all_cloud':'confirm.wipe_all'))){
   if(typeof snapTake==='function') await snapTake('before_wipe');
   if(window.LF_snapshotNow) try{ await window.LF_snapshotNow(); }catch(e){}
-  ACCOUNT=defaultAccount(); DB=activeLabel(); save(); reloadViews(); rebuildAccountMenu();
-  toast(tt('t.data_wiped')); goto('dashboard'); } };
+  // i contratti spariscono anche dal cloud (i link di firma smettono di funzionare), le ricevute dal dispositivo
+  const tokens=(ACCOUNT.labels||[]).flatMap(l=>(l.contracts||[]).map(c=>c&&c.token)).filter(Boolean);
+  if(typeof attWipeLocal==='function') attWipeLocal();
+  ACCOUNT=defaultAccount(); DB=activeLabel(); tokens.forEach(tombstoneContract); save(); reloadViews(); rebuildAccountMenu();
+  toast(tt('t.data_wiped')); goto('dashboard');
+  if(tokens.length) flushContractTombstones(); } };
 
 function csvCell(v){ const s=String(v??''); return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s; }
 function download(name,content,type){
@@ -3751,7 +3795,8 @@ function openArtistSheet(name){
   if(bal && (bal.royalties||bal.paid||bal.payable)){
     st.innerHTML=`<div><span class="muted small">${tt('art.sheet_earned')}</span><b>${fmtMoney(bal.royalties||0)}</b></div>`
       +`<div><span class="muted small">${tt('stmt.paid_total')}</span><b>${fmtMoney(bal.paid||0)}</b></div>`
-      +`<div><span class="muted small">${tt('stmt.balance')}</span><b class="${bal.payable>0.005?'neg':''}">${fmtMoney(bal.payable||0)}</b></div>`;
+      +`<div><span class="muted small">${tt('stmt.balance')}</span><b class="${bal.payable>0.005?'neg':''}">${fmtMoney(bal.payable||0)}</b></div>`
+      +(bal.overpaid>0.005?`<div><span class="muted small">${tt('stmt.overpaid')}</span><b>${fmtMoney(bal.overpaid)}</b></div>`:'');
     st.hidden=false; $('#as-royalty').hidden=false;
   } else { st.hidden=true; st.innerHTML=''; $('#as-royalty').hidden=true; }
   renderArtistDisco(shown);
@@ -3766,9 +3811,12 @@ function sheetReleases(){ const s=sheetArtist; if(!s) return; closeArtistSheet()
   if(opt){ sel.value=opt.value; renderReleases(); }
   else if($('#rel-search')){ $('#rel-search').value=s.name; renderReleases(); } }
 function sheetRoyalty(){ const s=sheetArtist; if(!s) return; closeArtistSheet(); goto('royalties');
-  const k=LFCore.artKey(s.name), sel=`[data-artist="${CSS.escape(k)}"]`;
-  const row=document.querySelector('#table-roy-artist tbody tr'+sel) || document.querySelector('#roy-cards .roy-card'+sel);
-  if(row){ row.click(); } }
+  // dettaglio direttamente dai calcoli: funziona anche se l'artista è in un'altra pagina della tabella
+  // o non ha vendite nel periodo scelto (allora si mostra tutto lo storico)
+  const k=LFCore.artKey(s.name);
+  const a=(computeRoyalties().byArtist||{})[k] || (LFCore.computeRoyalties(DB,{}).byArtist||{})[k];
+  if(a){ showRoyaltyDetail(a.name, a); $('#roy-detail-panel')?.scrollIntoView({behavior:'smooth'}); }
+  else toast(tt('pay.no_period')); }
 function openArtistForm(id){
   editingArtistId=id||null; const a=id?artistById(id):null;
   $('#art-form-title').textContent = a?tt('art.edit'):tt('art.new');

@@ -53,6 +53,9 @@ function trashRestore(id, quiet){
     const copy=JSON.parse(JSON.stringify(it));
     // contratto: il link di firma è stato cancellato insieme al contratto
     if(e.kind==='contracts'){ delete copy.token; if(copy.status==='sent'||copy.status==='rejected') copy.status='draft'; }
+    if(Array.isArray(copy._linkedTasks)){ DB.tasks=DB.tasks||[]; const th=new Set(DB.tasks.map(t=>t&&t.id));
+      copy._linkedTasks.forEach(t=>{ if(t && !th.has(t.id)) DB.tasks.push(t); }); }
+    delete copy._linkedTasks;
     arr.push(copy);
   });
   DB.trash=list.filter(x=>x.id!==id);
@@ -77,9 +80,14 @@ function undoToast(msg, trashId){
   t.hidden=false; clearTimeout(t._t); t._t=setTimeout(()=>{ t.hidden=true; }, 7000);
 }
 /* elimina dagli array gli elementi indicati passando dal cestino; restituisce l'id della voce */
+// attività create in automatico che vanno via (e tornano) insieme all'elemento:
+// checklist di uscita della release, promemoria F24 del pagamento (se non ancora fatto)
+const LINKED_TASKS={ releases: it=>t=>t && t.relId===it.id && t.ckStep!=null, payouts: it=>t=>t && t.autoKey==='f24:'+it.id && !t.done };
 function trashRemove(kind, ids, label){
   const k=TRASH_KINDS[kind]; if(!k) return null; const set=new Set(ids);
   const arr=DB[k.arr]||[]; const gone=arr.filter(x=>x&&set.has(x.id));
+  if(LINKED_TASKS[kind]) gone.forEach(it=>{ const pred=LINKED_TASKS[kind](it), lt=(DB.tasks||[]).filter(pred);
+    if(lt.length){ it._linkedTasks=lt; DB.tasks=DB.tasks.filter(t=>!pred(t)); } });
   const tid=trashPut(kind, gone, label);
   DB[k.arr]=arr.filter(x=>!(x&&set.has(x.id)));
   return tid;

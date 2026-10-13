@@ -193,6 +193,9 @@
       if(!r) continue;
       const c=norm(r.catalog); if(c && !byCat.has(c)) byCat.set(c, r);
       const u=upcKey(r.upc); if(u && !byUpc.has(u)) byUpc.set(u, r);
+      // codici di release unite in questa ("Trova duplicati"): le loro vendite restano collegate qui
+      for(const a of r.altCatalogs||[]){ const k=norm(a); if(k && !byCat.has(k)) byCat.set(k, r); }
+      for(const a of r.altUpcs||[]){ const k=upcKey(a); if(k && !byUpc.has(k)) byUpc.set(k, r); }
       const t=norm(r.title); if(t && !byTitle.has(t)) byTitle.set(t, r);
       for(const tr of r.tracks||[]){
         const i=norm(tr && tr.isrc); if(!i) continue;
@@ -230,6 +233,8 @@
   }
   const incomeOf = label => (label.transactions||[]).filter(t=>t && t.kind==='income');
   // { byArtist: {chiave: {name,total,byRelease:{catalogo:importo}}}, labelTotal }
+  // quota di una riga arrotondata al centesimo: le righe dello statement sommano esattamente al totale
+  C.cents = x => Math.round((+x||0)*100+(x>=0?1e-9:-1e-9))/100;
   C.computeRoyalties = function(label, opt){
     opt=opt||{}; const idx=opt.idx||C.relIndex(label.releases);
     const byArtist={}; let labelTotal=0;
@@ -242,7 +247,7 @@
       let assigned=0;
       const relKey=(m.rel && (m.rel.catalog || m.rel.title)) || '—';
       for(const s of sh){
-        const share=eur*s.pct/100; assigned+=share;
+        const share=C.cents(eur*s.pct/100); assigned+=share;
         const a=byArtist[s.key] || (byArtist[s.key]={key:s.key, name:s.name, total:0, byRelease:{}});
         a.total+=share; a.byRelease[relKey]=(a.byRelease[relKey]||0)+share;
       }
@@ -259,7 +264,7 @@
       if(opt.before && !(d<opt.before)) continue;
       const m=C.splitsForTx(idx, t); if(!m) continue;
       const eur=C.txEur(label, t);
-      for(const s of sharesOf(m.splits)){ const a=out[s.key]||(out[s.key]={name:s.name, total:0}); a.total+=eur*s.pct/100; }
+      for(const s of sharesOf(m.splits)){ const a=out[s.key]||(out[s.key]={name:s.name, total:0}); a.total+=C.cents(eur*s.pct/100); }
     }
     return out;
   };
@@ -305,7 +310,7 @@
       if(!C.inRange(C.acctDate(t), from, to)) continue;
       const m=C.splitsForTx(idx, t); if(!m) continue;
       const sp=sharesOf(m.splits).find(s=>s.key===key); if(!sp) continue;
-      const eur=C.txEur(label, t), share=eur*sp.pct/100; total+=share;
+      const eur=C.txEur(label, t), share=C.cents(eur*sp.pct/100); total+=share;
       // late = vendita di un periodo già chiuso, arrivata dopo la chiusura
       lines.push({ date:t.date||'', late:!!t.acct, product:t.product||(m.rel&&m.rel.title)||'', catalog:(m.rel&&m.rel.catalog)||t.catalog||'', gross:eur, pct:sp.pct, share });
     }

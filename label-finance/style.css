@@ -1960,16 +1960,12 @@ tr.is-unpaid td.num .neg,tr.is-unpaid td.num .pos{opacity:.55}
 /* Registro pagamenti su telefono: una scheda per cambio, niente scorrimento di lato */
 @media (max-width:760px){ #paidlog-table td:nth-child(2){min-width:0} #paidlog-table td:nth-child(1){white-space:normal} }
 
-/* + Entrata / + Uscita: pastello pieno, senza contorno; più luminosi al passaggio */
+/* + Entrata / + Uscita: stessi colori delle schede Entrate / Uscite (chiaro e scuro), senza contorno; più luminosi al passaggio */
 .btn.btn-income,.btn.btn-expense{border-color:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none;transition:background .15s,box-shadow .15s,transform .15s,filter .15s}
-.btn.btn-income{background:#c6f1d8;color:#14532d}
-.btn.btn-expense{background:#fcd0da;color:#881337}
-.btn.btn-income:hover{background:#b0f2cc;border-color:transparent;box-shadow:0 0 0 3px rgba(34,197,94,.16),0 6px 18px rgba(34,197,94,.28);filter:brightness(1.04)}
-.btn.btn-expense:hover{background:#ffbccb;border-color:transparent;box-shadow:0 0 0 3px rgba(244,63,94,.14),0 6px 18px rgba(244,63,94,.26);filter:brightness(1.04)}
-:root[data-theme="dark"] .btn.btn-income{background:#9ddfba;color:#0b2e1b}
-:root[data-theme="dark"] .btn.btn-expense{background:#f1a7b7;color:#3f0a17}
-:root[data-theme="dark"] .btn.btn-income:hover{background:#b9f3d3;box-shadow:0 0 0 3px rgba(134,239,172,.18),0 6px 20px rgba(74,222,128,.32)}
-:root[data-theme="dark"] .btn.btn-expense:hover{background:#ffc1ce;box-shadow:0 0 0 3px rgba(253,164,175,.18),0 6px 20px rgba(251,113,133,.32)}
+.btn.btn-income{background:var(--in);color:var(--on-in)}
+.btn.btn-expense{background:var(--out);color:#fff}
+.btn.btn-income:hover{background:var(--in);border-color:transparent;filter:brightness(1.12);box-shadow:0 0 0 3px color-mix(in srgb,var(--in) 22%,transparent),0 6px 18px color-mix(in srgb,var(--in) 40%,transparent)}
+.btn.btn-expense:hover{background:var(--out);border-color:transparent;filter:brightness(1.12);box-shadow:0 0 0 3px color-mix(in srgb,var(--out) 22%,transparent),0 6px 18px color-mix(in srgb,var(--out) 40%,transparent)}
 
 /* schermata di accesso senza bordi fissi (il campo attivo resta evidenziato) */
 .gate-card{border-color:transparent}
@@ -2001,4 +1997,50 @@ tr.is-unpaid td.num .neg,tr.is-unpaid td.num .pos{opacity:.55}
   #table-tx tbody td{height:41px;line-height:20px;vertical-align:middle}
   #table-tx tbody .pill,#table-tx tbody .paid-tog,#table-tx tbody .tx-clip{vertical-align:middle;line-height:16px}
   #table-tx tbody .paid-tog input{margin:0}
+}
+
+/* Movimenti: stessa impaginazione in Entrate, Uscite e Tutti. Colonne a larghezza fissa per tipo
+   (casella, data, importo… sempre nello stesso punto), le altre si dividono lo spazio che resta;
+   il testo troppo lungo finisce con "…" invece di allargare la tabella. Valori uguali a TX_COL_W in app.js. */
+@media(min-width:761px){
+  #table-tx{table-layout:fixed;width:100%}
+  #table-tx th,#table-tx td{overflow:hidden;text-overflow:ellipsis}
+  #table-tx th.dbl-sel{width:44px}
+  #table-tx th[data-col="date"],#table-tx th[data-col="dateTo"]{width:126px}
+  #table-tx th[data-col="kind"]{width:64px}
+  #table-tx th[data-col="catalog"]{width:116px}
+  #table-tx th[data-col="qty"],#table-tx th[data-col="paid"]{width:112px}
+  #table-tx th[data-col="territory"],#table-tx th[data-col="currency"]{width:80px}
+  #table-tx th[data-col="isrc"],#table-tx th[data-col="upc"]{width:130px}
+  #table-tx th[data-col="gross"],#table-tx th[data-col="shipping"],#table-tx th[data-col="taxes"],#table-tx th[data-col="payProcFees"],#table-tx th[data-col="fees"],#table-tx th[data-col="csShare"]{width:116px}
+  #table-tx th[data-col="net"]{width:124px}
+}
+/* portatili piccoli: colonne fisse più strette, così resta spazio per i testi (sempre uguali tra le schede);
+   "Pagato" mostra solo la casella (la scritta resta nel suggerimento), le spese da pagare hanno la casella rossa */
+@media(min-width:761px) and (max-width:1400px){
+  #table-tx th,#table-tx td{padding-left:8px;padding-right:8px}
+  #table-tx th.dbl-sel{width:36px}
+  #table-tx th[data-col="date"],#table-tx th[data-col="dateTo"]{width:100px}
+  #table-tx th[data-col="kind"]{width:48px}
+  #table-tx th[data-col="catalog"]{width:84px}
+  #table-tx th[data-col="qty"],#table-tx th[data-col="paid"]{width:64px}
+  #table-tx th[data-col="territory"],#table-tx th[data-col="currency"]{width:60px}
+  #table-tx th[data-col="isrc"],#table-tx th[data-col="upc"]{width:104px}
+  #table-tx th[data-col="gross"],#table-tx th[data-col="shipping"],#table-tx th[data-col="taxes"],#table-tx th[data-col="payProcFees"],#table-tx th[data-col="fees"],#table-tx th[data-col="csShare"]{width:92px}
+  #table-tx th[data-col="net"]{width:100px}
+  #table-tx .paid-tog>span{display:none}
+  #table-tx tr.is-unpaid .paid-tog input{outline:2px solid var(--out);outline-offset:1px}
+}
+/* la casella di selezione nelle tabelle resta una vera colonna (prima era "flex" e cambiava larghezza da sola) */
+@media(min-width:761px){
+  .data-table th.dbl-sel,.data-table td.dbl-sel{display:table-cell;width:44px;padding-left:0!important;padding-right:0!important;text-align:center;vertical-align:middle}
+  .data-table th.dbl-sel input,.data-table td.dbl-sel input{display:block;margin:0 auto}
+}
+/* entrata o uscita: riga colorata a sinistra (al posto della colonna IN/OUT), uguale in tutte le schede */
+#table-tx tbody tr.tx-in>td.dbl-sel{box-shadow:inset 3px 0 0 var(--in)}
+#table-tx tbody tr.tx-out>td.dbl-sel{box-shadow:inset 3px 0 0 var(--out)}
+@media(max-width:760px){
+  #table-tx tbody tr.tx-in{box-shadow:inset 3px 0 0 var(--in)}
+  #table-tx tbody tr.tx-out{box-shadow:inset 3px 0 0 var(--out)}
+  #table-tx tbody tr>td.dbl-sel{box-shadow:none}
 }

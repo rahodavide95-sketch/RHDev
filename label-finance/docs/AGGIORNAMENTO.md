@@ -1,3 +1,21 @@
+# Movimenti: Entrate, Uscite e Tutti impaginate allo stesso modo (ottobre 2026) — niente da fare online
+
+Nessuna modifica al database: basta la pubblicazione dell'app.
+
+- **Colonne a larghezza fissa**, uguali in tutte e tre le schede: casella, data, importo
+  e le altre colonne restano esattamente nello stesso punto cambiando scheda; il testo
+  troppo lungo finisce con "…" e si legge per intero passandoci sopra.
+- **Uscite nelle stesse posizioni delle Entrate**: Categoria↔Piattaforma, Release↔Catalogo,
+  Descrizione↔Prodotto, Fornitore↔Artista, Pagato↔Q.tà, Importo↔Netto (Valuta e Nota si
+  riattivano da "Colonne"). Chi aveva già cambiato le colonne delle Uscite le ritrova com'erano.
+- **IN/OUT** non è più una colonna in "Tutti": ogni riga ha una riga colorata a sinistra
+  (verde entrata, rossa uscita), anche sul telefono. Si può rimettere da "Colonne".
+- La data si chiama "Data" in tutte le schede; il Registro pagamenti resta sempre visibile.
+- La casella di selezione nelle tabelle ora è una colonna vera (prima cambiava larghezza da sola).
+- **+ Entrata / + Uscita** con gli stessi colori delle schede Entrate / Uscite.
+
+---
+
 # Login più compatto e righe di Movimenti uguali (ottobre 2026) — niente da fare online
 
 Nessuna modifica al database: basta la pubblicazione dell'app.

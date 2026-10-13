@@ -25,9 +25,13 @@ const MAP_FIELDS = CANON.concat(CANON_EXTRA);
 /* ---------- Store ---------- */
 const DEFAULT_TX_ORDER = ['date','kind','platform','catalog','product','artist','qty','net',
   'dateTo','type','isrc','upc','territory','gross','shipping','taxes','payProcFees','fees','csShare','currency','note'];
-const DEFAULT_TX_VISIBLE = ['date','kind','platform','catalog','product','artist','qty','net'];
+// IN/OUT non è più una colonna: lo dice la riga colorata a sinistra (così Entrate e Tutti hanno le stesse colonne)
+const DEFAULT_TX_VISIBLE = ['date','platform','catalog','product','artist','qty','net'];
 // Movimenti divisi in schede: Entrate, Uscite, Tutti (scelta ricordata su questo dispositivo)
-const EXP_DEFAULT_ORDER = ['date','cat','platform','product','catalog','paid','net','currency','note'];
+// stesse posizioni delle Entrate: Categoria↔Piattaforma, Release↔Catalogo, Descrizione↔Prodotto, Fornitore↔Artista, Pagato↔Q.tà, Importo↔Netto
+const EXP_DEFAULT_ORDER = ['date','cat','catalog','product','platform','paid','net','currency','note'];
+const EXP_DEFAULT_HIDDEN = ['currency','note'];
+const EXP_OLD_DEFAULT = ['date','cat','platform','product','catalog','paid','net','currency','note'];
 let txTab=(()=>{ try{ const v=localStorage.getItem('lf.txTab'); return v==null ? 'income' : v; }catch(e){ return 'income'; } })();
 // un'uscita non pagata non conta nei totali (dashboard, grafici, conto economico) finché non la segni come pagata
 const txCounts=t=>!(t && t.kind==='expense' && t.paid===false);
@@ -221,8 +225,18 @@ function ensureCols(){
   DB.txHidden = DB.txHidden || [];
   DEFAULT_TX_ORDER.concat(['paid']).forEach(c=>{ if(!DB.txOrder.includes(c)){ DB.txOrder.push(c); DB.txHidden.push(c); } });
   // colonne della scheda Uscite: le sue, più tutte le altre disponibili (nascoste)
-  if(!DB.txExpOrder){ DB.txExpOrder=EXP_DEFAULT_ORDER.slice(); DB.txExpHidden=[]; }
+  if(!DB.txExpOrder){ DB.txExpOrder=EXP_DEFAULT_ORDER.slice(); DB.txExpHidden=EXP_DEFAULT_HIDDEN.slice(); }
   DB.txExpHidden=DB.txExpHidden||[];
+  // una volta sola: le tre schede con la stessa impaginazione (solo se le colonne erano quelle di partenza)
+  if(DB.txLayoutV!==2){
+    if(!DB.txHidden.includes('kind')) DB.txHidden.push('kind');
+    const o=DB.txExpOrder, h=DB.txExpHidden;
+    if(EXP_OLD_DEFAULT.every((c,i)=>o[i]===c) && !EXP_OLD_DEFAULT.some(c=>h.includes(c))){
+      DB.txExpOrder=EXP_DEFAULT_ORDER.concat(o.slice(EXP_OLD_DEFAULT.length));
+      DB.txExpHidden=h.concat(EXP_DEFAULT_HIDDEN.filter(c=>!h.includes(c)));
+    }
+    DB.txLayoutV=2;
+  }
   Object.keys(TX_COLS).forEach(c=>{ if(c!=='kind' && !DB.txExpOrder.includes(c)){ DB.txExpOrder.push(c); DB.txExpHidden.push(c); } });
 }
 // configurazione colonne della scheda aperta
@@ -240,7 +254,8 @@ const COL_I18N={date:'col.date',dateTo:'col.dateTo',platform:'col.platform',type
   cat:'col.cat',paid:'col.paid'};
 // nella scheda Uscite le colonne si chiamano come in una spesa (Fornitore, Descrizione, Importo…)
 const EXP_COL_I18N={date:'col.x_date',platform:'col.x_platform',product:'col.x_product',net:'col.x_net',catalog:'col.x_catalog'};
-function colLabel(c){ const k=(txTab==='expense' && EXP_COL_I18N[c]) || COL_I18N[c]; return (k&&window.t) ? window.t(k) : (TX_COLS[c]?TX_COLS[c].label:c); }
+// la data si chiama "Data" in tutte le schede (stessa intestazione cambiando scheda)
+function colLabel(c){ const k=(c==='date' && 'col.x_date') || (txTab==='expense' && EXP_COL_I18N[c]) || COL_I18N[c]; return (k&&window.t) ? window.t(k) : (TX_COLS[c]?TX_COLS[c].label:c); }
 const uid = ()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // immagine sicura da inserire in src="…": solo data URL di immagini o file locali (le firme arrivano da fuori!)
@@ -1190,6 +1205,9 @@ const TX_COLS = {
 function visibleCols(){ ensureCols(); const cfg=txColCfg(); return DB[cfg.o].filter(c=>!DB[cfg.h].includes(c) && txColAllowed(c)); }
 
 const NUM_COLS=['qty','gross','shipping','taxes','payProcFees','fees','csShare','net'];
+// larghezza fissa da computer (le colonne senza numero si dividono lo spazio che resta); deve combaciare con style.css
+const TX_COL_W={date:126,dateTo:126,kind:64,catalog:116,qty:112,paid:112,territory:80,currency:80,isrc:130,upc:130,
+  gross:116,shipping:116,taxes:116,payProcFees:116,fees:116,csShare:116,net:124};
 let txSort={ col:'date', dir:-1 };   // -1 = decrescente
 function txSortKey(c,t){
   if(c==='eur') return (t.kind==='income'?1:-1)*toEur(t.net,t.currency,t.date);
@@ -1229,8 +1247,8 @@ function applyTxFilters(){
   { const ni=rows.filter(t=>t.kind==='income').length, ne=rows.length-ni;
     const setN=(id,n)=>{ const e=$(id); if(e) e.textContent=n; }; setN('#tx-n-income',ni); setN('#tx-n-expense',ne); setN('#tx-n-all',rows.length);
     $$('#tx-tabs [data-tx-tab]').forEach(b=>{ const on=b.dataset.txTab===txTab; b.classList.toggle('is-active',on); b.setAttribute('aria-selected',on?'true':'false'); });
-    // il pulsante occupa sempre il suo posto (solo invisibile fuori da Uscite): la barra non si sposta cambiando scheda
-    const pl=$('#paid-log-btn'); if(pl){ pl.hidden=false; pl.style.visibility = txTab==='expense' ? 'visible' : 'hidden'; } }
+    // Registro pagamenti sempre visibile: cambiando scheda non compare né sparisce niente
+    const pl=$('#paid-log-btn'); if(pl){ pl.hidden=false; pl.style.visibility=''; } }
   if(kind) rows=rows.filter(t=>t.kind===kind);
   const k=txSort.col;
   // a parità: artista, traccia (prodotto), catalogo, data, piattaforma — in ordine alfabetico
@@ -1248,9 +1266,11 @@ function applyTxFilters(){
     return `<th class="th-sort ${TX_COLS[c].num?'num':''}" data-col="${c}">${esc(colLabel(c))}${act}</th>`; }).join('');
   const selSet=(bulkSel.transactions||new Set());
   const body=pageRows.length
-    ? pageRows.map(t=>`<tr data-id="${t.id}"${txCounts(t)?'':' class="is-unpaid"'}><td class="dbl-sel"><input type="checkbox" data-sel="transactions|${t.id}" ${selSet.has(t.id)?'checked':''}></td>${cols.map(c=>`<td class="${TX_COLS[c].num?'num':''}" data-label="${esc(colLabel(c))}">${TX_COLS[c].cell(t)}</td>`).join('')}</tr>`).join('')
+    ? pageRows.map(t=>`<tr data-id="${t.id}" class="${t.kind==='income'?'tx-in':'tx-out'}${txCounts(t)?'':' is-unpaid'}"><td class="dbl-sel"><input type="checkbox" data-sel="transactions|${t.id}" ${selSet.has(t.id)?'checked':''}></td>${cols.map(c=>`<td class="${TX_COLS[c].num?'num':''}" data-label="${esc(colLabel(c))}">${TX_COLS[c].cell(t)}</td>`).join('')}</tr>`).join('')
     : `<tr><td colspan="${(cols.length||1)+1}" class="muted">${tt('empty.notx')}</td></tr>`;
-  $('#table-tx').innerHTML=`<thead><tr>${head}</tr></thead><tbody>${body}</tbody>`;
+  const tbl=$('#table-tx'); tbl.innerHTML=`<thead><tr>${head}</tr></thead><tbody>${body}</tbody>`;
+  // larghezze fisse per tipo di colonna (uguali in Entrate, Uscite e Tutti); solo se aggiungi altre colonne la tabella scorre di lato
+  tbl.style.minWidth=cols.length>7 ? (44+cols.reduce((s,c)=>s+(TX_COL_W[c]||150),0))+'px' : '';
   mountPager($('#table-tx'), 'tx', info);
   $$('#table-tx thead th[data-col]').forEach(th=>th.onclick=()=>{
     const c=th.dataset.col;
@@ -1263,6 +1283,9 @@ function applyTxFilters(){
   });
   $$('#table-tx [data-paid]').forEach(cb=>cb.onchange=()=>setTxPaid(cb.dataset.paid, cb.checked, 'list'));
 }
+// testo tagliato con "…" (colonne a larghezza fissa): passandoci sopra si legge per intero
+$('#table-tx').addEventListener('mouseover',e=>{ const c=e.target.closest('td,th'); if(!c || c.title || c.classList.contains('dbl-sel')) return;
+  if(c.scrollWidth>c.clientWidth+1) c.title=c.textContent.replace(/[▲▼]/g,'').trim(); });
 { let txSearchT=null;
   $('#tx-search').addEventListener('input',()=>{ clearTimeout(txSearchT); txSearchT=setTimeout(applyTxFilters,150); });
   $('#tx-filter-platform').addEventListener('change',applyTxFilters);
@@ -1349,7 +1372,7 @@ $('#btn-cols').onclick=()=>{ renderColsManager(); $('#cols-modal').hidden=false;
 $('#cols-close').onclick=$('#cols-done').onclick=()=>$('#cols-modal').hidden=true;
 $('#cols-modal').onclick=e=>{ if(e.target.id==='cols-modal') $('#cols-modal').hidden=true; };
 $('#cols-reset').onclick=()=>{
-  if(txTab==='expense'){ DB.txExpOrder=null; DB.txExpHidden=null; ensureCols(); }
+  if(txTab==='expense'){ DB.txExpOrder=EXP_DEFAULT_ORDER.slice(); DB.txExpHidden=EXP_DEFAULT_HIDDEN.slice(); ensureCols(); }
   else { DB.txOrder=DEFAULT_TX_ORDER.slice(); DB.txHidden=DEFAULT_TX_ORDER.filter(c=>!DEFAULT_TX_VISIBLE.includes(c)); }
   save(); renderColsManager(); applyTxFilters();
 };

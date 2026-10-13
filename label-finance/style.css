@@ -1,10 +1,10 @@
 :root, :root[data-theme="dark"]{
   color-scheme:dark;
-  --bg:#0c0d12; --panel:#15161d; --panel-2:#1b1d27; --line:#262833; --sidebar:#0a0b0f;
-  --text:#e9eaf0; --muted:#8b8e9e; --muted-2:#5c5f70;
+  --bg:#0b0c11; --panel:#181a24; --panel-2:#222533; --line:#353949; --sidebar:#090a0e;
+  --text:#f2f3f8; --muted:#a8acbe; --muted-2:#82879b;
   --in:#4ade80; --out:#fb7185; --net:#60a5fa; --accent:#a78bfa;
   --radius:14px; --shadow:0 10px 30px rgba(0,0,0,.35);
-  --glass-bg:rgba(20,21,30,.40); --glass-brd:rgba(255,255,255,.12); --glass-hi:rgba(255,255,255,.07);
+  --glass-bg:rgba(22,23,33,.74); --glass-brd:rgba(255,255,255,.16); --glass-hi:rgba(255,255,255,.08);
   --on-accent:#1b1430; --on-in:#06230f;
   --app-bg:radial-gradient(1200px 760px at 8% -8%, #271a45 0%, transparent 55%),
            radial-gradient(1000px 680px at 100% 4%, #1f1436 0%, transparent 52%),
@@ -12,11 +12,11 @@
 }
 :root[data-theme="light"]{
   color-scheme:light;
-  --bg:#f5f6fa; --panel:#ffffff; --panel-2:#eef0f6; --line:#e2e4ee; --sidebar:#ffffff;
-  --text:#191b22; --muted:#646879; --muted-2:#9aa0b2;
-  --in:#16a34a; --out:#e11d48; --net:#2563eb; --accent:#7c3aed;
-  --shadow:0 10px 30px rgba(20,22,40,.12);
-  --glass-bg:rgba(255,255,255,.48); --glass-brd:rgba(20,22,40,.10); --glass-hi:rgba(255,255,255,.7);
+  --bg:#eceef5; --panel:#ffffff; --panel-2:#e9ecf4; --line:#d0d5e2; --sidebar:#ffffff;
+  --text:#11131a; --muted:#4b5064; --muted-2:#686d82;
+  --in:#15803d; --out:#be123c; --net:#1d4ed8; --accent:#6d28d9;
+  --shadow:0 10px 30px rgba(20,22,40,.14);
+  --glass-bg:rgba(255,255,255,.88); --glass-brd:rgba(17,19,26,.14); --glass-hi:rgba(255,255,255,.9);
   --on-accent:#ffffff; --on-in:#ffffff;
   --app-bg:radial-gradient(1100px 760px at 8% -10%, #e9e2ff 0%, transparent 55%),
            radial-gradient(1000px 680px at 100% 4%, #e2ecff 0%, transparent 52%),
@@ -118,7 +118,8 @@ body.nav-collapsed{grid-template-columns:78px 1fr}
 .view.is-active{display:block}
 @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .view-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:24px;flex-wrap:wrap}
-.head-actions{display:flex;gap:10px;flex-wrap:nowrap;align-items:center}
+.head-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;align-items:center;min-width:0}
+.head-actions>.input,.head-actions>.select{min-width:160px;flex:1 1 180px;max-width:280px}
 
 /* ===== Topbar globale (vetro) ===== */
 .topbar{
@@ -927,7 +928,7 @@ body.dash-edit .dw-width{display:inline-flex;gap:2px;position:absolute;top:8px;l
 .modal-head{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid var(--line)}
 .modal-x{background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer}
 #tx-form{padding:22px}
-.modal-foot{display:flex;align-items:center;gap:10px;margin-top:8px}
+.modal-foot{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
 .modal-card--sm{width:min(460px,100%)}
 .cols-body{padding:20px}
 .cols-list{list-style:none;display:flex;flex-direction:column;gap:6px;margin:12px 0;max-height:56vh;overflow:auto}
@@ -1802,3 +1803,48 @@ body.col-resizing,body.col-resizing *{cursor:col-resize!important;user-select:no
 .team-invite{display:flex;gap:8px;flex-wrap:wrap}
 .team-invite .input{flex:1 1 200px;min-width:0}
 .team-invite .select{width:auto}
+
+/* ============================================================================
+   Grafica: barra laterale ridotta, badge BETA, contrasto, telefono e tablet
+   ============================================================================ */
+/* barra ridotta: il logo al centro (il nome nascosto non occupa più spazio) */
+.nav-collapsed .brand-text{display:none}
+.nav-collapsed .brand{flex:none;width:100%;justify-content:center;gap:0}
+/* BETA: carattere del testo (non quello largo del logo), compatto e ben leggibile */
+.beta-badge{font-family:'DM Sans',system-ui,sans-serif;font-size:.6rem;font-weight:700;letter-spacing:.05em;line-height:1.25;padding:1px 6px;border-radius:5px;background:#7c3aed;color:#fff}
+:root[data-theme="light"] .beta-badge{background:#6d28d9}
+/* contrasto: intestazioni di tabella, separatori, campi */
+.data-table th{color:var(--muted)}
+.data-table td{border-bottom-color:var(--line)}
+:root[data-theme="light"] .input,:root[data-theme="light"] .select{border-color:#c3c9d8}
+:root[data-theme="light"] .panel,:root[data-theme="light"] .kpi{border-color:rgba(17,19,26,.12)}
+.nav-group-h{color:var(--muted-2)}
+.rel-enrich .btn,.rel-gaps .btn{white-space:normal}
+/* bolla AI e messaggi non coprono i pulsanti dei moduli aperti */
+body:has(.modal:not([hidden])) .ai-fab{display:none}
+body:has(.modal:not([hidden])) .toast{top:calc(14px + env(safe-area-inset-top));bottom:auto}
+/* suggerimenti "i" dentro lo schermo su telefono e tablet */
+@media (max-width:1024px){
+  .card-tip{left:auto;right:0;width:min(240px,calc(100vw - 32px));max-width:none}
+}
+/* tabelle larghe su telefono: ombra che fa capire che si scorre di lato */
+@media (max-width:760px){
+  #per-panel .table-wrap,#recoup-panel .table-wrap,#pl-modal .table-wrap,#imp-preview .table-wrap{
+    background:linear-gradient(to right,var(--panel) 30%,rgba(0,0,0,0)),linear-gradient(to left,var(--panel) 30%,rgba(0,0,0,0)) 100% 0,
+      radial-gradient(farthest-side at 0 50%,rgba(0,0,0,.28),rgba(0,0,0,0)),radial-gradient(farthest-side at 100% 50%,rgba(0,0,0,.28),rgba(0,0,0,0)) 100% 0;
+    background-repeat:no-repeat;background-size:36px 100%,36px 100%,12px 100%,12px 100%;background-attachment:local,local,scroll,scroll}
+  /* titolo dei moduli non nascosto sotto la barra in alto */
+  [id$="-form"],.panel,#con-preview{scroll-margin-top:84px}
+}
+/* telefoni e tablet: bersagli da 40px e campi a 16px (iPhone non fa più lo zoom quando tocchi un campo) */
+@media (pointer:coarse){
+  .input,.select,textarea{font-size:16px}
+  .modal-x,.icon-btn-sm,.rc-del,.pager button,.pg-btn{min-width:40px;min-height:40px}
+  .info-btn,.card-i{min-width:32px;min-height:32px}
+  .vm-btn{min-height:36px;min-width:40px}
+  .tsk-check,.dbl-sel input,input[type="checkbox"]{min-width:22px;min-height:22px}
+}
+/* iscrizione su telefono: tema e lingua non coprono il logo */
+@media (max-width:600px){
+  .gate-card{margin-top:calc(52px + env(safe-area-inset-top))}
+}

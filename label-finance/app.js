@@ -46,7 +46,7 @@ function planCaps(){ return PLAN_CAPS[ACCOUNT.plan] || PLAN_CAPS.free; }
 function can(feat){ return !!planCaps()[feat]; }
 function requireFeature(feat){
   if(can(feat)) return true;
-  const planName=(PLAN_INFO[FEATURE_MIN[feat]]||{}).name||'Studio';
+  const planName=(PLAN_INFO[FEATURE_MIN[feat]]||{}).name||'Big Label';
   toast((window.t?window.t('gate.upgrade'):'Disponibile con il piano {plan}').replace('{plan}',planName));
   goto('offers'); return false;
 }
@@ -186,7 +186,7 @@ window.LF = {
   goto(v){ if(typeof goto==='function') goto(v); },
 };
 function reloadViews(){ renderDashboard(); renderTx(); renderReleases(); renderPlanning(); renderEvents(); renderSupports(); renderRoyalties(); renderArtists(); renderContracts(); renderTasks(); renderMerch(); renderOffers(); renderSettings(); }
-/* ---- Vista consolidata multi-etichetta (Agency) ---- */
+/* ---- Vista consolidata multi-etichetta (Company/Enterprise) ---- */
 function updateConsolidatedNav(){ const b=document.querySelector('[data-view="consolidated"]'); if(b) b.hidden=((ACCOUNT&&ACCOUNT.labels)||[]).length<2;
   if(currentView==='consolidated' && ((ACCOUNT&&ACCOUNT.labels)||[]).length<2) goto('dashboard'); }
 // stessi cambi della Dashboard di ogni etichetta (anche le medie mensili BCE)
@@ -567,9 +567,10 @@ function renderOffers(){
     }
     const m=+c.dataset.monthly||0;
     if(priceEl){
-      if(billing==='annual'){
-        priceEl.innerHTML=`${fmtEur(m*0.7)}<span>${tt('off.pm')}</span> <span class="plan-vat">${tt('off.vat')}</span> <s class="plan-old">${fmtEur(m)}</s>`;
-        if(noteEl) noteEl.textContent=`${tt('off.billed')} · ${fmtEur(m*12*0.7)}/${tt('off.year')} ${tt('off.instead')} ${fmtEur(m*12)}`;
+      if(billing==='annual'){   // −30% arrotondato all'euro, come nella pagina pubblica
+        const y=Math.round(m*0.7);
+        priceEl.innerHTML=`${fmtEur(y)}<span>${tt('off.pm')}</span> <span class="plan-vat">${tt('off.vat')}</span> <s class="plan-old">${fmtEur(m)}</s>`;
+        if(noteEl) noteEl.textContent=`${tt('off.billed')} · ${fmtEur(y*12)}/${tt('off.year')} ${tt('off.instead')} ${fmtEur(m*12)}`;
       } else {
         priceEl.innerHTML=`${fmtEur(m)}<span>${tt('off.pm')}</span> <span class="plan-vat">${tt('off.vat')}</span>`;
         if(noteEl) noteEl.textContent='';
@@ -3361,7 +3362,7 @@ if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator
 { const y=$('#copyright-year'); if(y) y.textContent=new Date().getFullYear(); }
 
 /* ============================================================================
-   ASSISTENTE AI (Studio/Agency) — riassunto dati + consigli via Edge Function
+   ASSISTENTE AI (Big Label e superiori) — riassunto dati + consigli via Edge Function
    ============================================================================ */
 function buildAiSummary(){
   const txs=DB.transactions||[];
@@ -3660,11 +3661,9 @@ async function runAiQuestion(question, label){
   }
 }
 function aiReadableData(s){
-  const it=(window.LFI18N?window.LFI18N.lang:'it')!=='en';
-  const L = it
-    ? {tot:'Totali',inc:'Entrate',exp:'Uscite',net:'Margine netto',mov:'movimenti',trend:'Andamento mensile (netto)',plat:'Per piattaforma',art:'Top artisti (royalty)',rec:'Da recuperare (recoupment)',merch:'Merch più venduto',units:'venduti'}
-    : {tot:'Totals',inc:'Income',exp:'Expenses',net:'Net margin',mov:'transactions',trend:'Monthly trend (net)',plat:'By platform',art:'Top artists (royalty)',rec:'To recoup',merch:'Best-selling merch',units:'sold'};
-  const money=n=>'€'+(Number(n)||0).toLocaleString(it?'it-IT':'en-US',{maximumFractionDigits:2});
+  // etichette nella lingua scelta (prima l'italiano usciva in spagnolo, francese, tedesco…)
+  const L={}; ['tot','inc','exp','net','mov','trend','plat','art','rec','merch','units'].forEach(k=>{ L[k]=tt('ai.d_'+k); });
+  const money=n=>fmtMoney(n);
   const t=s.totali||{}; const rows=[];
   rows.push(`<b>${L.tot}:</b> ${L.inc} ${money(t.entrate)} · ${L.exp} ${money(t.uscite)} · ${L.net} ${money(t.margineNetto)} (${t.marginePct||0}%) · ${t.movimenti||0} ${L.mov}`);
   if(s.trendUltimi6Mesi&&s.trendUltimi6Mesi.length) rows.push(`<b>${L.trend}:</b> ${s.trendUltimi6Mesi.map(m=>esc(m.mese)+' '+money(m.netto)).join(' · ')}`);
@@ -3676,7 +3675,7 @@ function aiReadableData(s){
 }
 function exportAiAnalysis(){
   if(!aiLastResult) return; const r=aiLastResult;
-  const fname='analisi-ai-'+isoD(new Date());
+  const fname=tt('ai.d_file')+'-'+isoD(new Date());
   if(typeof html2pdf==='undefined'){ // fallback testuale leggibile se la libreria PDF non c'è
     const plain=h=>String(h).replace(/<[^>]+>/g,'');
     const md=`${tt('ai.study_title')} — ${labelName()}\n${r.when.toLocaleString()}\n\n${tt('ai.q')}\n${r.question}\n\n${tt('ai.answer')}\n${r.text}\n\n${tt('ai.data')}\n${plain(aiReadableData(r.summary)).replace(/\s*\n\s*/g,'\n')}`;
@@ -3719,7 +3718,7 @@ function aiFormat(t){
 }
 
 /* ============================================================================
-   DASHBOARD PERSONALIZZABILE (Studio/Agency) — widget riordinabili / nascondibili
+   DASHBOARD PERSONALIZZABILE (Big Label e superiori) — widget riordinabili / nascondibili
    ============================================================================ */
 function dashLayout(){ const l=DB.dashLayout||(DB.dashLayout={order:DASH_DEFAULT_ORDER.slice(),hidden:DASH_EXTRAS.slice(),cols:2,widths:{}});
   l.order=l.order&&l.order.length?l.order:DASH_DEFAULT_ORDER.slice(); l.hidden=l.hidden||[]; l.cols=l.cols||2; l.widths=l.widths||{};
@@ -5732,7 +5731,8 @@ function endTour(){ const el=$('#tour'); if(el) el.hidden=true; document.body.st
   if($('#tour-never')?.checked){ try{ localStorage.setItem(TOUR_DONE_KEY,'1'); }catch(e){} }
   try{ sessionStorage.setItem('labelfinance.tourSeen','1'); }catch(e){}
 }
-function tourNext(){ if(tourIdx>=TOUR_STEPS.length-1){ endTour(); return; } tourIdx++; renderTour(); }
+// arrivati alla fine ("Fine"): il tour non riparte da solo nelle prossime aperture
+function tourNext(){ if(tourIdx>=TOUR_STEPS.length-1){ try{ localStorage.setItem(TOUR_DONE_KEY,'1'); }catch(e){} endTour(); return; } tourIdx++; renderTour(); }
 function tourPrev(){ if(tourIdx>0){ tourIdx--; renderTour(); } }
 $('#tour-next')?.addEventListener('click',tourNext);
 $('#tour-prev')?.addEventListener('click',tourPrev);
@@ -5769,3 +5769,29 @@ try{ updateNotifHint(); }catch(e){}
 window.addEventListener('lf-contracts-changed', ()=>{ if(typeof refreshContractStatuses==='function') refreshContractStatuses(); });
 setInterval(()=>{ if(document.visibilityState==='visible' && document.querySelector('#view-contracts.is-active') && typeof refreshContractStatuses==='function') refreshContractStatuses(); }, 10000);
 document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible' && document.querySelector('#view-contracts.is-active') && typeof refreshContractStatuses==='function') refreshContractStatuses(); });
+
+/* ============================================================================
+   Esc chiude la finestra aperta in cima (release, movimento, crediti, colonne, portale…),
+   con il suo pulsante di chiusura così le pulizie di ogni finestra restano le stesse.
+   Il tour si chiude anche lui con Esc.
+   ============================================================================ */
+// in cattura (prima degli altri gestori): se in cima c'è una finestra che chiude da sé con Esc
+// (scheda artista, cestino, versioni, conto economico, allegati, pacchetto, ricerca) lascia fare a lei,
+// così Esc non chiude anche la finestra sotto
+const ESC_SELF=['#art-sheet','#trash-modal','#ver-modal','#pl-modal','#pack-modal','#att-view','#gs-modal'];
+window.addEventListener('keydown', e=>{
+  if(e.key!=='Escape' || e.defaultPrevented) return;
+  const tour=$('#tour'); if(tour && !tour.hidden){ e.preventDefault(); endTour(); return; }
+  if(ESC_SELF.some(sel=>{ const x=$(sel); return x && !x.hidden; })) return;
+  if(($('#ai-pop') && !$('#ai-pop').hidden) || document.body.classList.contains('drawer-open') || ($('#mobile-more') && !$('#mobile-more').hidden)) return;
+  const open=[...document.querySelectorAll('.modal:not([hidden])')].filter(m=>getComputedStyle(m).display!=='none');
+  if(!open.length) return;
+  const z=m=>parseInt(getComputedStyle(m).zIndex,10)||0;
+  const m=open.reduce((top,x)=>z(x)>=z(top)?x:top);   // la più in alto (a parità, l'ultima nella pagina)
+  e.preventDefault();
+  const btn=m.querySelector('.modal-x, [id$="-close"], [id$="-cancel"], [data-close]');
+  if(btn) btn.click(); else m.hidden=true;
+}, true);
+// lingua cambiata: i menu a tendina costruiti dall'app si ricostruiscono nella nuova lingua
+window.addEventListener('langchange', ()=>{ ['#rel-artist-filter','#per-range'].forEach(sel=>{ const el=$(sel); if(el) delete el.dataset.sig; });
+  try{ if(typeof populateRelArtistFilter==='function') populateRelArtistFilter(); if(typeof renderPeriods==='function' && DB) renderPeriods(); }catch(err){} });

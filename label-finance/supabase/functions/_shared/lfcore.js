@@ -74,7 +74,11 @@
     }
     m = s.match(/^(\d{4})(\d{2})(\d{2})$/);                                 // 20240105
     if(m) return validYmd(+m[1], +m[2], +m[3]);
+    m = s.match(/^(\d{1,2})[-\/.](\d{4})$/);                                // 06/2026 · 6-2026 (mese/anno)
+    if(m) return validYmd(+m[2], +m[1], 1);
     const low = s.toLowerCase();
+    m = low.match(/^(?:q|t|qtr|quarter|trim(?:estre)?)\s*([1-4])[\s\-\/]*(\d{4})$|^(\d{4})[\s\-\/]*(?:q|t)([1-4])$/);   // Q1 2026 · 2026-Q1 · T1 2026: primo giorno del trimestre
+    if(m) return validYmd(+(m[2]||m[3]), (+(m[1]||m[4])-1)*3+1, 1);
     const words = low.match(/[a-zà-ü]+/g) || [];
     let mon = 0;
     for(const w of words){ if(MONTHS[w]){ mon=MONTHS[w]; break; } if(w.length>3 && MONTHS[w.slice(0,3)]){ mon=MONTHS[w.slice(0,3)]; break; } }

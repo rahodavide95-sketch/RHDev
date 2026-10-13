@@ -262,7 +262,7 @@ body.dash-edit .dw-width{display:inline-flex;gap:2px;position:absolute;top:8px;l
 .art-form-panel{margin-bottom:18px}
 .art-form-grid{display:flex;gap:20px;flex-wrap:wrap}
 .art-photo-col{display:flex;flex-direction:column;align-items:center;gap:8px}
-.art-photo{width:96px;height:96px;border-radius:50%;background:var(--panel-2);border:1px dashed var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--muted);font-size:.8rem}
+.art-photo{width:96px;height:96px;border-radius:50%;background:var(--panel-2);border:1px dashed var(--track);display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--muted);font-size:.8rem}
 .art-photo img{width:100%;height:100%;object-fit:cover}
 .art-fields{flex:1;min-width:260px}
 .art-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
@@ -289,7 +289,7 @@ body.dash-edit .dw-width{display:inline-flex;gap:2px;position:absolute;top:8px;l
 .con-logo-field{display:flex;flex-direction:column;gap:5px}
 .fld-lbl{font-size:.82rem;color:var(--muted)}
 .con-logo-row{display:flex;align-items:center;gap:12px}
-.con-logo-prev{width:96px;height:56px;border:1px dashed var(--line);border-radius:10px;background:var(--panel-2);
+.con-logo-prev{width:96px;height:56px;border:1px dashed var(--track);border-radius:10px;background:var(--panel-2);
   display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--muted);font-size:.72rem;text-align:center;padding:4px}
 .con-logo-prev img{max-width:100%;max-height:100%;object-fit:contain}
 .con-logo-btns{display:flex;flex-direction:column;gap:6px}
@@ -906,7 +906,7 @@ body.dash-edit .dw-width{display:inline-flex;gap:2px;position:absolute;top:8px;l
 .pill--in{color:var(--in);border-color:color-mix(in srgb,var(--in) 40%,var(--line))} .pill--out{color:var(--out);border-color:color-mix(in srgb,var(--out) 40%,var(--line))}
 
 /* ===== Import ===== */
-.import-drop{border:2px dashed var(--line);border-radius:12px;padding:40px;text-align:center;transition:.15s}
+.import-drop{border:2px dashed var(--track);border-radius:12px;padding:40px;text-align:center;transition:.15s}
 .import-drop.drag{border-color:var(--accent);background:var(--panel-2)}
 .import-drop p{margin:4px 0}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
@@ -1363,6 +1363,8 @@ body.gate-signup #gate-signin{opacity:.5}
 /* --- Annulla ultimo import (banner Movimenti) --- */
 .imp-undo{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:10px 14px;border-radius:10px;background:color-mix(in srgb,var(--accent) 10%,var(--panel));border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line))}
 .imp-undo-txt{font-size:.88rem}
+.imp-undo{flex-wrap:wrap}
+@media (max-width:600px){ .imp-undo-txt{flex:1 1 calc(100% - 50px)} .imp-undo .spacer{display:none} .imp-undo .btn{flex:1 1 auto;order:2} .imp-undo #imp-undo-x{order:1} }
 /* --- Nuovi widget dashboard --- */
 .wstat{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--sep)}
 .wstat:last-child{border-bottom:none}
@@ -1775,7 +1777,7 @@ body.col-resizing,body.col-resizing *{cursor:col-resize!important;user-select:no
 .po-rcpt:hover{background:var(--panel-2)}
 
 /* Ricevute allegate ai movimenti */
-.att-box{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border:1px dashed var(--line);border-radius:12px}
+.att-box{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border:1px dashed var(--track);border-radius:12px}
 .att-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .att-list{display:flex;flex-wrap:wrap;gap:6px}
 .att-chip{display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:4px 6px 4px 10px;border-radius:999px;background:var(--panel-2);border:1px solid var(--line)}
@@ -1869,3 +1871,6 @@ body:has(.modal:not([hidden])) .toast{top:calc(14px + env(safe-area-inset-top));
 :root[data-theme="dark"] .sign-canvas{border-color:var(--track)}
 /* schede delle tabelle su telefono: separate dallo sfondo */
 @media (max-width:760px){ :root[data-theme="dark"] .data-table--cards tr{background:var(--panel-2)} }
+/* import: tutto il riquadro apre la scelta del file; nome del file caricato ben visibile */
+.import-drop{cursor:pointer}
+.import-drop .imp-file{font-weight:600;color:var(--accent);margin-top:10px;word-break:break-all}

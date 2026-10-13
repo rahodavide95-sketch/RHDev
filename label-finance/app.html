@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=103">
+  <link rel="stylesheet" href="style.css?v=104">
 </head>
 <body class="gated">
 
@@ -513,6 +513,7 @@
       <div class="imp-undo" id="imp-undo" hidden>
         <span class="imp-undo-txt"><b id="imp-undo-n">0</b> <span data-i18n="imp.undo_txt">movimenti aggiunti con l'ultimo import</span></span>
         <span class="spacer"></span>
+        <button class="btn btn-clear" id="imp-undo-show" type="button">Mostra solo questi</button>
         <button class="btn btn-clear" id="imp-undo-btn" data-i18n="imp.undo_btn">↶ Annulla import</button>
         <button class="icon-btn-sm" id="imp-undo-x" title="Nascondi" data-i18n-title="common.hide">✕</button>
       </div>
@@ -885,6 +886,7 @@
         <div class="import-drop" id="import-drop">
           <input type="file" id="file-input" accept=".csv,.txt,.tsv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
           <p><strong data-i18n="imp.drop">Trascina qui il file CSV o Excel</strong> <span data-i18n="common.or">oppure</span> <button class="link" id="browse-btn" data-i18n="imp.browse">scegli un file</button></p>
+          <p class="imp-file" id="import-file" hidden></p>
           <p class="muted small" data-i18n="imp.drop_hint">Vengono lette le prime righe per riconoscere le colonne. Nulla viene caricato online.</p>
         </div>
       </div>
@@ -2484,9 +2486,9 @@
 
   <script src="html2pdf.bundle.min.js?v=95"></script>
   <script src="config.js?v=95"></script>
-  <script src="core.js?v=98"></script>
+  <script src="core.js?v=99"></script>
   <script src="signature.js?v=96"></script>
-  <script src="app.js?v=101"></script>
+  <script src="app.js?v=102"></script>
   <script src="tables.js?v=100"></script>
   <script src="safety.js?v=2"></script>
   <script src="money.js?v=2"></script>
@@ -2494,7 +2496,7 @@
   <script src="search.js?v=2"></script>
   <script src="files.js?v=2"></script>
   <script src="team.js?v=2"></script>
-  <script src="i18n.js?v=100"></script>
+  <script src="i18n.js?v=101"></script>
   <script src="vendor/supabase.min.js?v=95"></script>
   <script src="sync.js?v=98"></script>
 </body>

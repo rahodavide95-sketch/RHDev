@@ -1874,3 +1874,5 @@ body:has(.modal:not([hidden])) .toast{top:calc(14px + env(safe-area-inset-top));
 /* import: tutto il riquadro apre la scelta del file; nome del file caricato ben visibile */
 .import-drop{cursor:pointer}
 .import-drop .imp-file{font-weight:600;color:var(--accent);margin-top:10px;word-break:break-all}
+.distro-hint{display:block;margin-top:6px;line-height:1.35}
+.distro-hint.pos{color:var(--in)}

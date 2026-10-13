@@ -2859,7 +2859,7 @@ function refreshParse(fresh){
   const hr=hs ? (+hs.value||0) : 0;
   importHeaders=importAll[hr]||[]; importRows=importAll.slice(hr+1);
   const distro=detectDistro();
-  $('#map-distro').value=distro||'auto';
+  $('#map-distro').value=distro||'auto'; distroHint('auto');
   let map=smartMap(distro ? distroMap(distro) : autoMap(importHeaders));
   autoKindMode(map, distro);
   // stesso tipo di file già importato: le scelte confermate allora valgono anche adesso
@@ -2885,6 +2885,8 @@ function smartMap(map){
   const isNum=v=>/^[-+(]?\s*[€$£¥]?\s*-?\d[\d.,'\s]*\s*[€$£¥]?\)?$/.test(v) && !/^\d{12,13}$/.test(v);
   const isDate=v=>/^\d{4}-\d{2}-\d{2}/.test(v) || /^\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4}$/.test(v) || (/^\d{5}$/.test(v) && +v>30000 && +v<60000)
     || (v.length<=30 && /\d/.test(v) && /[a-zà-ü]{3}/i.test(v) && !!LFCore.parseDate(v) && /\b(19|20)\d{2}\b/.test(v));   // "29 nov 2025", "Mar 1, 2026" 
+  ['platform','product','artist','type'].forEach(f=>{ if(map[f]==null) return; const v=colSample(map[f]).slice(0,80);
+    if(v.length>=2 && share(v, x=>isNum(x) || isDate(x))>=0.8){ used.delete(map[f]); delete map[f]; } });
   const kindLike=i=>{ const v=colSample(i).slice(0,60); return v.length && v.filter(x=>kindFromText(x)!=null && x.length<=12).length/v.length>=0.9; };
   if(map.kind==null && map.type!=null && kindLike(map.type)){ map.kind=map.type; delete map.type; }
   const S={}; free.forEach(i=>{ S[i]=colSample(i); });
@@ -2944,40 +2946,46 @@ $('#map-kind')?.addEventListener('change',()=>{ buildMapFields(currentMap()); re
 
 /* ---------- Preset distributori (riconoscimento automatico colonne) ---------- */
 const DISTRO_PRESETS={
-  bandcamp:{ name:'Bandcamp', platform:'Bandcamp', datefmt:'mdy', sig:/itemtype|bandcamptransactionid|amountyoureceived|paidto/, fields:{
+  bandcamp:{ name:'Bandcamp', platform:'Bandcamp', datefmt:'mdy', content:/bandcamp\.com/i,
+    sig:['itemtype','itemname','paidto','bandcamptransactionid','paypaltransactionid','amountyoureceived','additionalfancontribution','itemurl','buyername','buyeremail','discountcode','sellertax','marketplacetax','feetype','itemtotal'], fields:{
     date:['date'], type:['item type'], artist:['artist'], product:['item name'],
     catalog:['catalog number','catalog'], upc:['upc'], qty:['quantity'],
     gross:['sub total','item total','item price'], fees:['transaction fee'], shipping:['shipping'], taxes:['tax'], isrc:['isrc'],
     net:['net amount'], currency:['currency'], territory:['country'] } },
-  distrokid:{ name:'DistroKid', platform:'DistroKid', datefmt:'ymd', sig:/salemonth|teampercentage|countryofsale/, fields:{
+  distrokid:{ name:'DistroKid', platform:'DistroKid', datefmt:'ymd', content:/distrokid/i,
+    sig:['salemonth','reportingdate','teampercentage','countryofsale','songalbum','songwriterroyaltieswithheld','earningsusd'], fields:{
     date:['sale month','sale date','reporting date'], platform:['store'], type:['type'],
     product:['title','song'], artist:['artist'], isrc:['isrc'], upc:['upc'],
     qty:['quantity'], net:['earnings'], currency:['currency'], territory:['country','territory'] } },
-  believe:{ name:'Believe', platform:'Believe', datefmt:'dmy', sig:/clientshare|clientpayment|releasecatalog/, fields:{
-    date:['sales period','period','date'], platform:['platform','dsp','store'],
-    product:['track title','release title','title'], artist:['artist name','artist'],
-    isrc:['isrc'], upc:['upc','ean'], qty:['quantity','units','net qty'],
-    net:['net revenue','net income','royalty','net'], currency:['currency'], territory:['country','territory'] } },
-  symphonic:{ name:'Symphonic', platform:'Symphonic', datefmt:'ymd', fields:{
+  // Believe Backstage: "Reporting Month;Sales Month;Platform;Country / Region;…;Client share rate;Net Revenue"
+  believe:{ name:'Believe', platform:'Believe', datefmt:'dmy', content:/believe/i,
+    sig:['reportingmonth','salesmonth','countryregion','releasecatalognb','releasecatalog','clientpaymentcurrency','mechanicalfee','clientsharerate','clientshare'], fields:{
+    date:['sales month','sales period','reporting month','period','date'], platform:['platform','dsp','store'],
+    product:['track title','release title','title'], artist:['artist name','artist'], catalog:['release catalog nb','catalog'],
+    isrc:['isrc'], upc:['upc','ean'], qty:['quantity','units','net qty'], gross:['gross revenue'],
+    net:['net revenue','net income','royalty','net'], currency:['client payment currency','currency'], territory:['country / region','country','territory'] } },
+  symphonic:{ name:'Symphonic', platform:'Symphonic', datefmt:'ymd', content:/symphonic/i,
+    sig:['digitalserviceprovider','reportingperiod','releasename','revenueusd','netrevenueusd','symphonic'], fields:{
     date:['sale date','date','period'], platform:['store','dsp','retailer'],
     product:['title','track'], artist:['artist'], isrc:['isrc'], upc:['upc'],
     qty:['quantity','units'], net:['net','earnings','revenue'], currency:['currency'], territory:['country','territory'] } },
-  tunecore:{ name:'TuneCore', platform:'TuneCore', datefmt:'ymd', sig:/tcsongid|unitssold|totalearned|netsalescurrency/, fields:{
+  tunecore:{ name:'TuneCore', platform:'TuneCore', datefmt:'ymd', content:/tunecore/i,
+    sig:['salesperiod','posteddate','storename','releasetype','tcsongid','optionalupc','optionalisrc','unitssold','perunitprice','netsales','netsalescurrency','totalearned'], fields:{
     date:['sales period','reporting','date','period'], platform:['store','retailer','dsp'],
     product:['song title','album title','title','song'], artist:['artist'], isrc:['isrc'], upc:['upc'],
     qty:['units sold','units','quantity','plays','streams'], net:['your earnings','earnings','net'], currency:['currency'], territory:['country','territory'] } },
-  ditto:{ name:'Ditto Music', platform:'Ditto', datefmt:'ymd', fields:{
+  ditto:{ name:'Ditto Music', platform:'Ditto', datefmt:'ymd', content:/ditto/i, sig:['statementperiod','earningsgbp','ditto'], fields:{
     date:['period','date','sale month'], platform:['store','shop','dsp'],
     product:['track','release','title'], artist:['artist'], isrc:['isrc'], upc:['upc','barcode'],
     qty:['quantity','units','streams'], net:['revenue','royalties','earnings','net'], currency:['currency'], territory:['country','territory'] } },
-  cdbaby:{ name:'CD Baby', platform:'CD Baby', datefmt:'ymd', fields:{
+  cdbaby:{ name:'CD Baby', platform:'CD Baby', datefmt:'ymd', content:/cd ?baby/i, sig:['partner','reportdate','payable','yourshare','albumname','trackname'], fields:{
     date:['report date','sale date','date','period'], platform:['partner','store','dsp'],
     product:['track','album','title'], artist:['artist'], isrc:['isrc'], upc:['upc'],
     qty:['quantity','units','plays'], net:['payable','earnings','net','your share'], currency:['currency'], territory:['country','territory'] } },
-  paypal:{ name:'PayPal', platform:'PayPal', sig:/fusoorario|timezone/, sign:true, fields:{   // negativo = pagamento fatto (uscita)
+  paypal:{ name:'PayPal', platform:'PayPal', need:/fusoorario|timezone/, sign:true, sig:['fusoorario','timezone','idtransazione','transactionid','tariffa','lordo','netto','gross','fee','net'], fields:{   // negativo = pagamento fatto (uscita)
     date:['data','date'], product:['nome','name'], type:['tipo','type'], gross:['lordo','gross'], fees:['tariffa','fee'],
     net:['netto','net'], currency:['valuta','currency'] } },
-  labelengine:{ name:'Label Engine', platform:'Label Engine', datefmt:'ymd', fields:{
+  labelengine:{ name:'Label Engine', platform:'Label Engine', datefmt:'ymd', content:/label ?engine/i, sig:['cataloguenumber','retailer','mixname','labelengine'], fields:{
     date:['sales period','date','period','month'], platform:['store','retailer','dsp','shop'],
     product:['track title','release title','title','track'], artist:['artist'], isrc:['isrc'], upc:['upc','catalog'],
     qty:['quantity','units','qty'], net:['net','royalty','earnings','revenue'], currency:['currency'], territory:['country','territory'] } },
@@ -2992,25 +3000,39 @@ function presetCol(subs, used){
 function presetMap(p){ const map={}, used=new Set();
   CANON.forEach(([f])=>{ const subs=p.fields[f]; if(!subs) return; const i=presetCol(subs, used); if(i>-1){ map[f]=i; used.add(i); } });
   return map; }
+// indizi che un file è il report di quel distributore: ogni colonna tipica 1 punto, il nome nel file o
+// nel contenuto (es. link bandcamp.com) 2 punti. Servono almeno 2 punti: un foglio qualsiasi con
+// "Date, Track, Streams, Revenue" non diventa il report di nessuno.
+function distroScore(key){
+  const p=DISTRO_PRESETS[key], nh=importHeaders.map(colNorm), fn=colNorm(importFileName);
+  if(p.need && !p.need.test(nh.join('|'))) return 0;
+  let s=0;
+  (p.sig||[]).forEach(t=>{ if(nh.some(h=>h===t || (t.length>=8 && h.includes(t)))) s++; });
+  if(fn.includes(colNorm(p.name)) || fn.includes(key)) s+=2;
+  if(p.content && importRows.slice(0,40).some(r=>(r||[]).some(c=>p.content.test(String(c||''))))) s+=2;
+  return s;
+}
 function detectDistro(){
-  let best=null, bestScore=2;
-  const hn=importHeaders.map(colNorm).join('|'), fn=colNorm(importFileName);
-  for(const key in DISTRO_PRESETS){ const p=DISTRO_PRESETS[key];
-    // solo se ci sono colonne tipiche di quel distributore o il suo nome è nel nome del file
-    if(!(p.sig && p.sig.test(hn)) && !fn.includes(colNorm(p.name)) && !fn.includes(key)) continue;
-    const m=presetMap(p);
+  let best=null, bestScore=0;
+  for(const key in DISTRO_PRESETS){
+    const sc=distroScore(key); if(sc<2) continue;
+    const m=presetMap(DISTRO_PRESETS[key]);
     if(m.date==null || (m.net==null && m.gross==null)) continue;   // un preset vale solo se trova data e importo
-    const s=Object.keys(m).length;
+    const s=sc*100+Object.keys(m).length;
     if(s>bestScore){ bestScore=s; best=key; } }
   return best;
 }
+// cosa è stato riconosciuto, scritto sotto la scelta del distributore
+function distroHint(mode){ const h=$('#map-distro-hint'); if(!h) return; const v=$('#map-distro').value, p=DISTRO_PRESETS[v];
+  h.textContent = p ? tt(mode==='manual' ? 'imp.distro_manual' : 'imp.distro_found').replace('{d}', p.name) : tt('imp.distro_none');
+  h.classList.toggle('pos', !!p && mode!=='manual'); }
 function distroMap(key){
   const p=DISTRO_PRESETS[key]; if(!p) return autoMap(importHeaders);
   if($('#map-platform')) $('#map-platform').value=p.platform||'';
   $('#map-datefmt').value=p.datefmt||'auto';   // PayPal non ha un formato fisso: non resta quello del distributore scelto prima
   // il preset decide le sue colonne; le altre restano quelle riconosciute in automatico
   const map=presetMap(p), used=new Set(Object.values(map)), auto=autoMap(importHeaders);
-  Object.entries(auto).forEach(([f,i])=>{ if(map[f]==null && !used.has(i)){ map[f]=i; used.add(i); } });
+  Object.entries(auto).forEach(([f,i])=>{ if(map[f]==null && !used.has(i) && !(f==='platform' && !p.fields.platform)){ map[f]=i; used.add(i); } });
   return map;
 }
 function applyDistro(key){ const map=smartMap(distroMap(key)); mapHidden={}; autoKindMode(map, key); buildMapFields(map); }
@@ -3020,7 +3042,8 @@ $('#map-distro')?.addEventListener('change',()=>{
     $('#map-platform').value=''; $('#map-datefmt').value='auto'; $('#map-kind').value='income';
     const d=detectDistro(); if(d){ $('#map-distro').value=d; applyDistro(d); }
     else { const map=smartMap(autoMap(importHeaders)); mapHidden={}; autoKindMode(map, null); buildMapFields(map); }
-  } else applyDistro(v);
+    distroHint('auto');
+  } else { applyDistro(v); distroHint('manual'); }
   renderPreview();
 });
 

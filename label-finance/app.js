@@ -176,7 +176,7 @@ window.LF = {
   // quanti dati ci sono su questo dispositivo (per chiedere conferma prima di unirli a un account)
   localSize(){ return (ACCOUNT.labels||[]).reduce((n,l)=>n+(l.transactions||[]).length+(l.releases||[]).length+(l.artists||[]).length+(l.contracts||[]).length,0); },
   wipeLocal(){ wipeLocalData();
-    try{ localStorage.removeItem('labelfinance.notifs'); NOTIFS={list:[],dismissed:[]}; if(typeof renderNotifs==='function') renderNotifs(); }catch(e){}
+    try{ Object.keys(localStorage).filter(k=>k.indexOf('labelfinance.notifs')===0).forEach(k=>localStorage.removeItem(k)); NOTIFS={list:[],dismissed:[]}; if(typeof renderNotifs==='function') renderNotifs(); }catch(e){}
     reloadViews(); if(typeof rebuildAccountMenu==='function') rebuildAccountMenu(); },
   // piano deciso dal server (abbonamento Stripe): sovrascrive quello locale
   setServerPlan(plan){ if(!PLAN_LIMITS[plan] || ACCOUNT.plan===plan) return; ACCOUNT.plan=plan; saveLocal(); if(typeof renderOffers==='function') renderOffers(); if(typeof rebuildAccountMenu==='function') rebuildAccountMenu(); },
@@ -495,7 +495,7 @@ function deleteLabel(id){
 }
 async function deleteLabelGo(id, lab){
   if(typeof snapTake==='function') await snapTake('before_delete_label');   // si può tornare indietro da Versioni salvate
-  const tokens=(lab.contracts||[]).map(c=>c&&c.token).filter(Boolean);       // i link di firma dell'etichetta smettono di funzionare
+  const tokens=(lab.contracts||[]).map(c=>c&&c.token).filter(t=>t && !(ACCOUNT.labels||[]).some(l=>l.id!==id && (l.contracts||[]).some(c=>c&&c.token===t)));   // i link di firma dell'etichetta smettono di funzionare
   ACCOUNT.labels=ACCOUNT.labels.filter(l=>l.id!==id);
   if(ACCOUNT.activeLabel===id) ACCOUNT.activeLabel=ACCOUNT.labels[0].id;
   DB=activeLabel(); tokens.forEach(tombstoneContract);
@@ -2806,7 +2806,7 @@ function readFile(file){
   const r=new FileReader();
   r.onload=async ()=>{
     const buf=r.result, u8=new Uint8Array(buf);
-    importSheets=null; window._rawCSV=''; importFileName=file.name.replace(/\.[^.]+$/,''); importCatMap={};
+    importSheets=null; window._rawCSV=''; importFileName=file.name.replace(/\.[^.]+$/,''); importCatMap={}; importShowAll=false;
     if(/\.xls$/i.test(file.name)){ toast(tt('imp.xls_old')); return; }
     if(u8[0]===0x50 && u8[1]===0x4b){   // "PK": file zip = Excel .xlsx
       try{ importSheets=(await xlsxRead(buf)).filter(s=>s.rows.length); }catch(e){ importSheets=null; }
@@ -3114,7 +3114,7 @@ function importChecks(map, recs){
   const w=[];
   if(outliers) w.push({lvl:'warn', t:tt('imp.chk_outlier').replace('{n}',outliers)});
   const found=Object.keys(map).length;
-  if(importRemembered) w.unshift({lvl:'info', t:tt('imp.remembered')});
+  if(importRemembered) w.unshift({lvl:'info', t:tt('imp.remembered'), act:'forget'});
   else if(found) w.unshift({lvl:'info', t:tt('imp.auto_found').replace('{n}', found).replace('{m}', importHeaders.filter(h=>String(h||'').trim()).length)});
   if(noDate) w.push({lvl:'warn', t:tt('imp.chk_nodate_skip').replace('{n}',noDate)});
   if(noAmt) w.push({lvl:'info', t:tt('imp.chk_noamt').replace('{n}',noAmt)});
@@ -3138,30 +3138,48 @@ function renderCatMap(map){
   grid.querySelectorAll('.imp-cat-sel').forEach(sel=>sel.onchange=()=>{ importCatMap[sel.dataset.catVal]=sel.value; renderPreview(); });
   box.hidden=false;
 }
+// anteprima con TUTTE le colonne collegate, già convertite come verranno salvate
+let importShowAll=false;
+const PREVIEW_MONEY=new Set(['gross','shipping','taxes','payProcFees','fees','csShare']);
+function previewCell(f, t){
+  if(f==='date'||f==='dateTo') return t[f] ? esc(fmtDate(t[f])) : '<span class="muted">?</span>';
+  if(f==='kind') return t.kind==='expense' ? `<span class="neg">${esc(tt('imp.k_expense'))}</span>` : `<span class="pos">${esc(tt('imp.k_income'))}</span>`;
+  if(f==='net') return `<span class="${txSigned(t)<0?'neg':''}">${fmtMoney(t.net,t.currency)}</span>`;
+  if(PREVIEW_MONEY.has(f)) return t[f] ? fmtMoney(t[f],t.currency) : '';
+  if(f==='qty') return esc(t.qty);
+  if(f==='category') return t.cat ? `${esc(tt('ecat.'+t.cat))}${t.type&&t.type!=='expense'?` <span class="muted small">(${esc(t.type)})</span>`:''}` : '';
+  if(f==='release'){ const r=t.release ? (releaseByCatalog(t.release)||releaseByTitle(t.release)) : null; return t.release ? esc(t.release)+(r?' <span class="pos" title="✓">✓</span>':'') : ''; }
+  return esc(t[f]??'');
+}
 function renderPreview(){
   const map=currentMap();
   renderCatMap(map);
-  const all=importRecs(map), recs=all.slice(0,8);
+  const all=importRecs(map), limit=importShowAll ? 1000 : 10, recs=all.slice(0,limit);
   const cb=$('#preview-checks');
   if(cb){ const w=importChecks(map, all);
-    cb.innerHTML=w.map(x=>`<div class="imp-chk imp-chk--${x.lvl}"><span>${x.lvl==='warn'?'⚠':'ℹ'}</span> ${esc(x.t)}</div>`).join('');
+    cb.innerHTML=w.map(x=>`<div class="imp-chk imp-chk--${x.lvl}"><span>${x.lvl==='warn'?'⚠':'ℹ'}</span> ${esc(x.t)}${x.act==='forget'?` <button class="link" type="button" data-imp-forget>${esc(tt('imp.forget'))}</button>`:''}</div>`).join('');
     cb.hidden=!w.length;
   }
-  $('#preview-count').textContent=tt('imp.preview_count').replace('{rows}',all.length).replace('{m}',Math.min(8,all.length));
-  $('#preview-table').innerHTML=`<thead><tr>
-    <th>${tt('imp.h_date')}</th><th>${tt('imp.h_kind')}</th><th>${tt('imp.h_platform')}</th><th>${tt('imp.h_catalog')}</th><th>${tt('imp.h_product')}</th><th>${tt('imp.h_artist')}</th><th class="num">${tt('imp.h_qty')}</th><th class="num">${tt('imp.h_net')}</th><th>${tt('imp.h_cur')}</th></tr></thead>
-   <tbody>${recs.map(t=>`<tr>
-     <td>${t.date?fmtDate(t.date):'<span class=muted>?</span>'}</td>
-     <td>${t.kind==='expense'?`<span class="neg">${esc(tt('imp.k_expense'))}</span>${t.cat?` <span class="muted small">${esc(tt('ecat.'+t.cat))}</span>`:''}`:esc(tt('imp.k_income'))}</td>
-     <td>${esc(t.platform)}</td><td>${esc(t.catalog)}</td>
-     <td>${esc(t.product)}</td><td>${esc(t.artist)}</td><td class="num">${t.qty}</td>
-     <td class="num">${fmtMoney(t.net,t.currency)}</td><td>${esc(t.currency)}</td></tr>`).join('')}</tbody>`;
+  $('#preview-count').textContent=tt('imp.preview_count').replace('{rows}',all.length).replace('{m}',recs.length);
+  // colonne: data, tipo, poi ogni campo collegato nell'ordine dei campi, importo e valuta sempre
+  const skip=new Set(['date','kind','net','currency','amountIn','amountOut','type']);
+  const cols=['date','kind'].concat(MAP_FIELDS.map(([f])=>f).filter(f=>map[f]!=null && !skip.has(f)), ['net','currency']);
+  if(map.type!=null && !cols.includes('category')) cols.splice(2,0,'type');
+  const label=f=>f==='kind' ? tt('imp.h_kind') : f==='net' ? mapLabel('net', tt('imp.h_net')) : mapLabel(f, (MAP_FIELDS.find(x=>x[0]===f)||[])[1]||f);
+  const numC=f=>f==='net'||f==='qty'||PREVIEW_MONEY.has(f);
+  $('#preview-table').innerHTML=`<thead><tr>${cols.map(f=>`<th class="${numC(f)?'num':''}">${esc(label(f))}</th>`).join('')}</tr></thead>
+   <tbody>${recs.map(t=>`<tr>${cols.map(f=>`<td class="${numC(f)?'num':''}">${previewCell(f,t)}</td>`).join('')}</tr>`).join('')}</tbody>`;
+  const more=$('#preview-more');
+  if(more){ more.hidden=all.length<=10; more.textContent=importShowAll ? tt('imp.show_less') : tt('imp.show_all').replace('{n}', all.length>1000?'1000+':all.length); }
 }
+$('#preview-more')?.addEventListener('click',()=>{ importShowAll=!importShowAll; renderPreview(); });
+$('#preview-checks')?.addEventListener('click',e=>{ if(!e.target.closest('[data-imp-forget]')) return;
+  if(DB.autoMaps) delete DB.autoMaps[importSig()]; save(); refreshParse(true); toast(tt('imp.forgotten')); });
 $('#import-cancel').onclick=()=>{ $('#import-config').hidden=true; $('#file-input').value=''; };
 const txSig=t=>LFCore.txSig(t);
 $('#import-confirm').onclick=()=>{
   const map=currentMap();
-  if(map.net==null && map.gross==null){ toast(tt('t.map_min')); return; }
+  if(map.net==null && map.gross==null && map.amountIn==null && map.amountOut==null){ toast(tt('t.map_min')); return; }
   let recs=importRecs(map);
   recs.forEach(r=>{ delete r._badCur; delete r._noAmt; });
   const total=recs.length;
@@ -3208,16 +3226,30 @@ function snapshotPreset(){
   return { delim:$('#map-delim').value, kind:$('#map-kind').value, datefmt:$('#map-datefmt').value,
     currency:$('#map-currency').value, platform:$('#map-platform').value, header:($('#map-header')||{}).value||'0', map:currentMap() };
 }
-function populatePresets(){
-  const sel=$('#map-preset');
-  sel.innerHTML=`<option value="">${esc(tt('imp.preset_new'))}</option>`+Object.keys(DB.mappings).map(n=>`<option>${esc(n)}</option>`).join('');
+function populatePresets(keep){
+  const sel=$('#map-preset'), cur=keep!=null ? keep : sel.value;
+  sel.innerHTML=`<option value="">${esc(tt('imp.preset_new'))}</option>`+Object.keys(DB.mappings).sort((a,b)=>a.localeCompare(b)).map(n=>`<option>${esc(n)}</option>`).join('');
+  if(cur && DB.mappings[cur]) sel.value=cur;
+  presetBtns();
 }
+function presetBtns(){ const on=!!(DB.mappings||{})[$('#map-preset').value]; ['#preset-rename','#preset-del'].forEach(s=>{ const b=$(s); if(b) b.disabled=!on; }); }
+// salvare con il nome di un preset esistente lo modifica (dopo conferma)
 $('#save-preset').onclick=()=>{
   const name=$('#map-preset-name').value.trim(); if(!name){ toast(tt('t.preset_name')); return; }
-  DB.mappings[name]=snapshotPreset(); save(); populatePresets(); $('#map-preset').value=name; toast(tt('t.preset_saved'));
+  if(DB.mappings[name] && !confirm(tt('imp.preset_overwrite').replace('{name}', name))) return;
+  DB.mappings[name]=snapshotPreset(); save(); populatePresets(name); toast(tt('t.preset_saved'));
 };
+$('#preset-rename')?.addEventListener('click',()=>{ const old=$('#map-preset').value; if(!DB.mappings[old]) return;
+  const nn=(prompt(tt('imp.preset_rename_q'), old)||'').trim(); if(!nn || nn===old) return;
+  if(DB.mappings[nn] && !confirm(tt('imp.preset_overwrite').replace('{name}', nn))) return;
+  DB.mappings[nn]=DB.mappings[old]; delete DB.mappings[old]; save(); populatePresets(nn); $('#map-preset-name').value=nn; toast(tt('t.preset_saved')); });
+$('#preset-del')?.addEventListener('click',()=>{ const name=$('#map-preset').value; if(!DB.mappings[name]) return;
+  if(!confirm(tt('imp.preset_del_q').replace('{name}', name))) return;
+  delete DB.mappings[name]; save(); populatePresets(''); toast(tt('imp.preset_deleted')); });
 $('#map-preset').onchange=()=>{
+  presetBtns();
   const p=DB.mappings[$('#map-preset').value]; if(!p) return;
+  $('#map-preset-name').value=$('#map-preset').value;
   $('#map-delim').value=p.delim; $('#map-datefmt').value=p.datefmt;
   $('#map-currency').value=p.currency;
   refreshParse(false);
@@ -4202,7 +4234,7 @@ function deleteArtist(id){ const a=artistById(id); if(!a) return;
 let currentContract=null; let conLogoData='';
 function labelName(){ return (DB.profile&&DB.profile.label)||DB.name||'Label'; }
 function setConLogo(d){ conLogoData=d||''; const box=$('#con-logo-prev');
-  if(box) box.innerHTML = imgSrc(conLogoData)?`<img src="${imgSrc(conLogoData)}" alt="logo">`:`<span data-i18n="con.logo">Logo etichetta</span>`; }
+  if(box) box.innerHTML = imgSrc(conLogoData)?`<img src="${imgSrc(conLogoData)}" alt="logo">`:`<span>${esc(tt('con.logo'))}</span>`; }
 function conArtistPickOptions(){
   const sel=$('#con-artist-pick'); if(!sel) return;
   const opts=(DB.artists||[]).map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');
@@ -4210,11 +4242,9 @@ function conArtistPickOptions(){
 }
 function conFillFromArtist(id){
   const a=artistById(id); if(!a) return;
-  if(a.legal) $('#con-fullname').value=a.legal;
-  $('#con-project').value=a.name||'';
-  if(!$('#con-artist-names').value) $('#con-artist-names').value=a.name||'';
-  if(a.email) $('#con-email').value=a.email;
-  if(a.split){ $('#con-artist-pct').value=a.split; }
+  // l'artista scelto sostituisce i dati di quello di prima (anche quelli che lui non ha)
+  $('#con-fullname').value=a.legal||''; $('#con-project').value=a.name||''; $('#con-artist-names').value=a.name||'';
+  $('#con-email').value=a.email||''; $('#con-artist-pct').value=+a.split>0 ? a.split : 50;
   updateSplitBar();
 }
 function updateSplitBar(){
@@ -4253,7 +4283,7 @@ function collectContract(){
     titles:$('#con-titles').value.trim(), artistNames:$('#con-artist-names').value.trim(),
     writtenBy:$('#con-written').value.trim(), fullName:$('#con-fullname').value.trim(),
     projectName:$('#con-project').value.trim(), email:$('#con-email').value.trim(),
-    artistPct:p, label:labelName(), logo:conLogoData||'',
+    artistPct:p, label:labelName(), logo:conLogoData||'', labelId:(currentContract&&currentContract.labelId)||DB.id,
     status:(currentContract&&currentContract.status)||'draft',
     signed:(currentContract&&currentContract.signed)||null
   });
@@ -4274,13 +4304,15 @@ async function flushContractTombstones(){
   if(changed) save();
 }
 function generateContract(){
+  if(String($('#con-artist-pct').value).trim()===''){ toast(tt('con.need_pct')); return; }
   let c=collectContract();
   if(!c.titles){ toast(tt('con.need_titles')); return; }
   if(!c.fullName){ toast(tt('con.need_fullname')); return; }
   const prev=currentContract;
   if(prev && (prev.labelSign || prev.artistSign || prev.status==='signed') && contractTermsSig(prev)!==contractTermsSig(c)){
-    // contratto già firmato e termini cambiati: serve un nuovo giro di firme (e un nuovo link)
-    if(!confirm(tt('con.resign_confirm'))) return;
+    // termini cambiati dopo la firma o l'invio: serve un nuovo giro di firme (e un nuovo link)
+    const artistSigned=!!(prev.artistSign || prev.status==='signed');
+    if(!confirm(tt(artistSigned ? 'con.resign_confirm' : (prev.token ? 'con.resend_confirm' : 'con.relabel_confirm')))) return;
     tombstoneContract(prev.token);
     c=Object.assign({}, c, { labelSign:null, artistSign:null, signed:null, status:'draft', token:undefined, rejectReason:'', sentAt:null });
     flushContractTombstones();
@@ -4288,6 +4320,7 @@ function generateContract(){
   // ricorda il logo dell'etichetta per i prossimi contratti
   if(conLogoData && window.LF) window.LF.setProfile({ logo:conLogoData });
   currentContract=c;
+  saveCurrentContract(); renderContracts();   // bozza salvata subito: non si perde cambiando sezione
   $('#contract-doc').innerHTML=buildContractDoc(c);
   $('#con-form').hidden=true; $('#con-preview').hidden=false;
   updateConSendBtn();
@@ -4355,6 +4388,7 @@ function buildContractDoc(c){
     <p><b>Artist / Project Name:</b> ${esc(c.projectName)||'—'}</p>
     <h4>Signature</h4>
     <p>I confirm that I have read, understood, and accepted the terms of this Release Authorization.</p>
+    <p><b>Date of this agreement:</b> ${c.date?fmtDate(c.date):'—'}</p>
     ${sig}
   </div>`;
 }
@@ -4389,8 +4423,9 @@ async function sendContract(){
       openShareModal(r.link, c);
       return;
     }
-    // se manca il backend firma (tabella non creata), fallback su email
-    toast((r&&r.error)?(`${tt('con.send_fail')} (${r.error})`):tt('con.send_fail'));
+    // errore del server: il contratto resta aperto (niente email senza link); solo senza cloud si ripiega sull'email
+    if(r && r.error==='already_signed'){ toast(tt('con.already_signed')); return; }
+    if(!(r && (r.error==='offline' || r.error==='unauthorized'))){ toast(tt('con.send_fail')); return; }
   }
   // fallback: apre l'email con il testo del contratto
   if(c.status==='draft'||!c.status){ c.status='sent'; c.sentAt=Date.now(); saveCurrentContract(); renderContracts(); }
@@ -4462,6 +4497,8 @@ async function manualRefreshContracts(){
   }catch(e){ toast(tt('con.refresh_fail')); }
   finally{ if(btn){ btn.disabled=false; btn.classList.remove('spin'); } }
 }
+// il link di firma è usato anche da un'altra etichetta dello stesso account?
+function contractTokenElsewhere(token){ return !!token && (ACCOUNT.labels||[]).some(l=>l && l.id!==DB.id && (l.contracts||[]).some(c=>c && c.token===token)); }
 async function refreshContractStatuses(){
   if(!window.LF_refreshContractStatuses) return null;
   flushContractTombstones();
@@ -4472,10 +4509,11 @@ async function refreshContractStatuses(){
   rows.forEach(r=>{
     if(dead.has(r.token)) return;                 // eliminato da qui: non va ripristinato
     let c=DB.contracts.find(x=>x.token===r.token);
+    if(!c && r.data && ((r.data.labelId && r.data.labelId!==DB.id) || contractTokenElsewhere(r.token))) return;   // è di un'altra etichetta
     if(!c && r.data){
       // Contratto presente nel cloud ma assente in locale (es. creato su un altro
       // dispositivo): lo ripristino dai dati salvati al momento dell'invio.
-      c={...r.data, token:r.token};
+      c={...r.data, token:r.token, labelId:DB.id};
       if(!c.id || DB.contracts.some(x=>x.id===c.id)) c.id=uid();
       DB.contracts.push(c); changed=true;
     }
@@ -4496,8 +4534,10 @@ async function refreshContractStatuses(){
 }
 function printContract(){
   if(!currentContract) return;
-  document.body.classList.add('printing-contract');
-  const done=()=>{ document.body.classList.remove('printing-contract'); window.removeEventListener('afterprint',done); };
+  const pa=$('#print-area'), doc=$('#contract-doc'); if(!pa || !doc) return;
+  pa.innerHTML=`<div class="contract-doc">${doc.innerHTML}</div>`;
+  document.body.classList.add('print-statement','printing-contract');
+  const done=()=>{ document.body.classList.remove('print-statement','printing-contract'); window.removeEventListener('afterprint',done); };
   window.addEventListener('afterprint',done); window.print(); setTimeout(done,1500);
 }
 function downloadContractPDF(){
@@ -4524,7 +4564,7 @@ function openContract(id){ const c=DB.contracts.find(x=>x.id===id); if(!c) retur
 function deleteContract(id){ const c=DB.contracts.find(x=>x.id===id); if(!c) return;
   if(!confirm(tt('con.del_confirm'))) return;
   // elimina anche la copia nel cloud: il link di firma smette di funzionare e il contratto non ricompare
-  tombstoneContract(c.token);
+  if(!contractTokenElsewhere(c.token)) tombstoneContract(c.token);
   const tid=trashRemove('contracts',[id]); save(); renderContracts(); undoToast(tt('trash.deleted'), tid);
   flushContractTombstones(); }
 function conStatusPill(s){
@@ -4553,7 +4593,8 @@ function renderContracts(){
   $('#contracts-empty').hidden=(DB.contracts||[]).length>0;
   if(!all.length){ tb.innerHTML=''; mountPager(tb,'contracts',{total:0}); return; }
   const info=paginate(all,'contracts'); const list=info.slice;
-  const head=`<thead><tr><th>${tt('con.titles')}</th><th>${tt('con.fullname')}</th><th>${tt('con.split_short')}</th><th>${tt('con.date')}</th><th>${tt('con.status')}</th><th></th></tr></thead>`;
+  const nost=k=>tt(k).replace(/\s*\*\s*$/,'');
+  const head=`<thead><tr><th>${nost('con.titles')}</th><th>${nost('con.fullname')}</th><th>${tt('con.split_short')}</th><th>${tt('con.date')}</th><th>${tt('con.status')}</th><th></th></tr></thead>`;
   const rows=list.map(c=>{
     const who=(c.projectName||c.fullName||c.artistNames)?artNameLink(c.projectName||c.fullName||c.artistNames):'—';
     const reason = c.status==='rejected'&&c.rejectReason ? `<div class="con-reason">“${esc(c.rejectReason)}”</div>` : '';
@@ -4584,6 +4625,7 @@ async function loadSignFile(file){
 }
 function closeSignPad(){ $('#sign-modal').hidden=true; sigPad=null; }
 function confirmSign(){
+  if(conFullySigned(currentContract)){ toast(tt('con.already_signed')); closeSignPad(); return; }
   if(!sigPad || sigPad.isEmpty()){ toast(tt('con.sign_empty')); return; }
   const now=new Date();
   // firma dell'ETICHETTA (obbligatoria prima dell'invio all'artista)
@@ -4597,11 +4639,14 @@ function confirmSign(){
   updateConSendBtn();
   closeSignPad(); toast(tt('con.signed_label_ok'));
 }
+function conFullySigned(c){ return !!(c && c.status==='signed' && (c.artistSign||c.signed) && c.labelSign); }
 function updateConSendBtn(){
   const b=$('#con-send'); if(!b) return;
-  const ok=!!(currentContract && currentContract.labelSign);
+  const done=conFullySigned(currentContract);
+  const ok=!!(currentContract && currentContract.labelSign) && !done;
   b.disabled=!ok; b.classList.toggle('is-disabled',!ok);
-  b.title = ok ? '' : tt('con.need_label_sign');
+  b.title = done ? tt('con.already_signed') : (ok ? '' : tt('con.need_label_sign'));
+  ['#con-sign','#con-back'].forEach(sel=>{ const x=$(sel); if(x){ x.disabled=done; x.classList.toggle('is-disabled',done); x.title=done?tt('con.already_signed'):''; } });
 }
 
 /* ---------- Task ---------- */
@@ -4615,7 +4660,7 @@ function suggestedTasks(){
     artistPayables().filter(r=>r.payable>0.5).forEach(r=>{ const k='pay:'+normArt(r.name); if(existing.has(k))return;
       sug.push({key:k, type:'payment', due:isoPlus(7), title:tt('sug.pay').replace('{name}',r.name).replace('{amt}',fmtMoney(r.payable))}); });
   }catch(e){} }
-  (DB.contracts||[]).filter(c=>c.status==='sent').forEach(c=>{ const who=(c.artistNames||c.artist||'').trim();
+  (DB.contracts||[]).filter(c=>c.status==='sent').forEach(c=>{ const who=(c.artistNames||c.projectName||c.fullName||c.titles||'').trim();
     const k='contract:'+(c.id||normArt(who)); if(existing.has(k))return;
     sug.push({key:k, type:'contract', due:isoPlus(3), title:tt('sug.contract').replace('{name}',who||'—')}); });
   (DB.merch||[]).filter(m=>m.stock!=null && +m.stock<=5).forEach(m=>{ const k='reorder:'+normArt(m.name||''); if(existing.has(k))return;
@@ -4626,7 +4671,7 @@ function addSuggestedTask(s){ if(!s)return; DB.tasks.push({ id:newId(), title:s.
 function updateTaskSuggest(){
   const b=$('#task-suggest'); if(!b) return;
   const sug=suggestedTasks(); b._sug=sug;
-  if(!sug.length){ b.hidden=true; return; }
+  if(!sug.length || uiDismissGet('sug')===sug.map(s=>s.key).sort().join('|')){ b.hidden=true; return; }
   const ttl=$('.task-suggest-title',b); if(ttl) ttl.textContent=tt('sug.title').replace('{n}',sug.length);
   $('#task-suggest-list').innerHTML=sug.map((s,i)=>`
     <div class="rel-gap-item" style="cursor:default">
@@ -4639,7 +4684,7 @@ $('#task-suggest-list')?.addEventListener('click', e=>{ const btn=e.target.close
   const b=$('#task-suggest'); const s=(b._sug||[])[+btn.dataset.sugAdd]; if(s){ addSuggestedTask(s); save(); renderTasks(); toast(tt('sug.added')); } });
 $('#task-suggest-all')?.addEventListener('click', ()=>{ const b=$('#task-suggest'); const sug=b._sug||suggestedTasks(); if(!sug.length)return;
   sug.forEach(addSuggestedTask); save(); renderTasks(); toast(tt('sug.added')); });
-$('#task-suggest-x')?.addEventListener('click', ()=>{ const b=$('#task-suggest'); if(b) b.hidden=true; });
+$('#task-suggest-x')?.addEventListener('click', ()=>{ const b=$('#task-suggest'); if(b){ uiDismissSet('sug', (b._sug||[]).map(s=>s.key).sort().join('|')); b.hidden=true; } });
 
 function renderTasks(){
   const cont=$('#tasks-list'); if(!cont) return;
@@ -4742,7 +4787,8 @@ const MERCH_TYPES={tshirt:'mch.t_tshirt',vinyl:'mch.t_vinyl',cd:'mch.t_cd',hoodi
 const MERCH_ICON={tshirt:'👕',vinyl:'🎵',cd:'💿',hoodie:'🧥',poster:'🖼️',other:'📦'};
 let editingMerchId=null;
 function merchById(id){ return (DB.merch||[]).find(m=>m.id===id); }
-function merchRevenue(m){ return (+m.price||0)*(+m.sold||0); }
+// incasso registrato al momento di ogni vendita (cambiare il prezzo dopo non riscrive le vendite passate)
+function merchRevenue(m){ return m.revenue!=null ? +m.revenue||0 : (+m.price||0)*(+m.sold||0); }
 function merchMargin(m){ return ((+m.price||0)-(+m.cost||0))*(+m.sold||0); }
 /* salute margini: articoli in perdita o con markup troppo basso + prezzo minimo consigliato */
 function merchHealth(){
@@ -4770,12 +4816,16 @@ function merchPriceIssues(){
     if(med>0 && (max-min)/med>0.35) out.push({name:o.name, min, max, n:u.length}); });
   return out.sort((a,b)=>(b.max-b.min)-(a.max-a.min));
 }
+// riquadri chiusi con ✕ (suggerimenti, salute merch): restano chiusi anche dopo un ricaricamento, finché non cambia il contenuto
+const uiDismissKey=()=>'labelfinance.dismiss.'+((DB&&DB.id)||'');
+function uiDismissGet(k){ try{ return (JSON.parse(localStorage.getItem(uiDismissKey())||'{}')||{})[k]||''; }catch(e){ return ''; } }
+function uiDismissSet(k,v){ try{ const o=JSON.parse(localStorage.getItem(uiDismissKey())||'{}')||{}; o[k]=v; localStorage.setItem(uiDismissKey(), JSON.stringify(o)); }catch(e){} }
 let merchHealthDismissed='';
 function updateMerchHealth(){
   const b=$('#merch-health'); if(!b) return;
   const list=merchHealth(); const price=merchPriceIssues();
   const sig=list.map(x=>x.m.id+x.lvl).join(',')+'|'+price.map(p=>p.name+p.n).join(',');
-  if((!list.length && !price.length) || sig===merchHealthDismissed){ b.hidden=true; return; }
+  if((!list.length && !price.length) || sig===merchHealthDismissed || sig===uiDismissGet('mh')){ b.hidden=true; return; }
   const ttl=$('.merch-health-title',b); if(ttl) ttl.textContent=tt('mh.title').replace('{n}',list.length+price.length);
   $('#merch-health-list').innerHTML=list.map(x=>`
     <button class="rel-gap-item" data-mch-edit="${x.m.id}" type="button">
@@ -4790,7 +4840,7 @@ function updateMerchHealth(){
     </div>`).join('');
   b.hidden=false;
 }
-$('#merch-health-x')?.addEventListener('click', ()=>{ const list=merchHealth(), price=merchPriceIssues(); merchHealthDismissed=list.map(x=>x.m.id+x.lvl).join(',')+'|'+price.map(p=>p.name+p.n).join(','); const b=$('#merch-health'); if(b) b.hidden=true; });
+$('#merch-health-x')?.addEventListener('click', ()=>{ const list=merchHealth(), price=merchPriceIssues(); merchHealthDismissed=list.map(x=>x.m.id+x.lvl).join(',')+'|'+price.map(p=>p.name+p.n).join(','); uiDismissSet('mh', merchHealthDismissed); const b=$('#merch-health'); if(b) b.hidden=true; });
 let merchSort={col:'sold',dir:-1};   // di default: più venduti
 function sortMerch(arr){
   const k=merchSort.col, d=merchSort.dir;
@@ -4864,20 +4914,28 @@ function openMerchForm(id){
 }
 function saveMerch(){
   const name=$('#mch-name').value.trim(); if(!name){ toast(tt('mch.need_name')); return; }
-  const price=+$('#mch-price').value; if(!price&&price!==0){ toast(tt('mch.need_price')); return; }
-  const data={ name, type:$('#mch-type').value, price:price||0, cost:+$('#mch-cost').value||0,
-    stock:$('#mch-stock').value===''?null:(+$('#mch-stock').value||0), sold:+$('#mch-sold').value||0 };
-  if(editingMerchId){ const m=merchById(editingMerchId); if(m) Object.assign(m,data); }
+  const num=id=>parseFloat(String($(id).value).replace(',','.'));
+  if(String($('#mch-price').value).trim()===''){ toast(tt('mch.need_price')); return; }
+  const price=num('#mch-price'), cost=num('#mch-cost')||0, sold=Math.floor(num('#mch-sold')||0);
+  const stock=$('#mch-stock').value===''?null:Math.floor(num('#mch-stock')||0);
+  if(!(price>=0) || cost<0 || sold<0 || (stock!=null && stock<0)){ toast(tt('mch.negative')); return; }
+  const data={ name, type:$('#mch-type').value, price, cost, stock, sold };
+  if(editingMerchId){ const m=merchById(editingMerchId);
+    if(m){ if(m.revenue==null) m.revenue=(+m.price||0)*(+m.sold||0);   // fissa l'incasso già fatto col prezzo di allora
+      m.revenue+=(sold-(+m.sold||0))*price; Object.assign(m,data); } }
   else DB.merch.push(Object.assign({id:newId()},data));
   save(); $('#mch-form').hidden=true; editingMerchId=null; renderMerch(); toast(tt('mch.saved'));
 }
 function sellMerch(id){
   const m=merchById(id); if(!m) return;
   const qtyStr=prompt(tt('mch.sell_qty'),'1'); if(qtyStr===null) return;
-  const qty=Math.max(1,Math.floor(+qtyStr||0)); if(!qty) return;
-  m.sold=(+m.sold||0)+qty;
-  if(m.stock!=null) m.stock=Math.max(0,(+m.stock||0)-qty);
-  save(); renderMerch(); toast(tt('mch.sold_ok').replace('{n}',qty));
+  const qty=String(qtyStr).trim(); if(!/^\d+$/.test(qty) || +qty<1){ toast(tt('mch.qty_invalid')); return; }
+  const n=+qty;
+  if(m.stock!=null && n>(+m.stock||0) && !confirm(tt('mch.over_stock').replace('{n}', n).replace('{s}', +m.stock||0))) return;
+  if(m.revenue==null) m.revenue=(+m.price||0)*(+m.sold||0);
+  m.revenue+=n*(+m.price||0); m.sold=(+m.sold||0)+n;
+  if(m.stock!=null) m.stock=Math.max(0,(+m.stock||0)-n);
+  save(); renderMerch(); toast(tt('mch.sold_ok').replace('{n}',n));
 }
 function deleteMerch(id){ const m=merchById(id); if(!m) return;
   if(!confirm(tt('mch.del_confirm').replace('{name}',m.name))) return;
@@ -4886,7 +4944,7 @@ function deleteMerch(id){ const m=merchById(id); if(!m) return;
 /* ============================================================================
    PIANIFICAZIONE · EVENTI · SUPPORT DJ  (liste ordinabili + calendario)
    ============================================================================ */
-function calLang(){ return (window.LFI18N&&window.LFI18N.lang==='en')?'en-US':'it-IT'; }
+function calLang(){ return MONEY_LOCALE[(window.LFI18N&&window.LFI18N.lang)||'it']||'it-IT'; }   // mesi e giorni nella lingua scelta
 function ymdStr(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 /* ---------- Ordinamento con spareggio ----------
    Confronto "naturale": maiuscole e accenti ignorati, numeri nel testo in ordine
@@ -4949,7 +5007,11 @@ function colVal(sec, key){ const def=(COLDEFS[sec]||[]).find(c=>c.key===key);
 function colTies(sec, primary){ const keys=[...(TIE_KEYS[sec]||[]), ...(COLDEFS[sec]||[]).map(c=>c.key)];
   return [...new Set(keys)].filter(k=>k!==primary).map(k=>colVal(sec,k)); }
 function colSort(sec, arr, st){ if(!st||!st.col) return arr.slice();
-  return tieSort(arr, colVal(sec,st.col), st.dir, colTies(sec,st.col)); }
+  const out=tieSort(arr, colVal(sec,st.col), st.dir, colTies(sec,st.col));
+  // eventi e pianificazione per data crescente: prima i prossimi (da oggi in avanti), poi quelli passati (più recenti prima)
+  if((sec==='events'||sec==='planning') && st.col==='date' && st.dir===1){ const today=LFCore.today();
+    return out.filter(x=>(x.date||'')>=today).concat(out.filter(x=>(x.date||'')<today).reverse()); }
+  return out; }
 const rowActs=(pfx,id)=>`<button class="icon-btn-sm" data-${pfx}-edit="${id}" title="${tt('common.edit')}">✎</button><button class="icon-btn-sm" data-${pfx}-del="${id}" title="${tt('common.delete')}">🗑</button>`;
 const ctag=(label,k)=>`<span class="ctag ctag-${k}">${esc(label)}</span>`;
 const fmtDate=ds=>{ if(!ds) return ''; const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(ds); if(m) return m[3]+'/'+m[2]+'/'+m[1]; try{ const d=new Date(ds); return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear(); }catch(e){ return ds; } };
@@ -5042,7 +5104,7 @@ function bulkClosedNote(sec, ids){ if(sec!=='transactions' || typeof perIsClosed
   return n ? '\n\n'+tt('bulk.closed_note').replace('{n}', n) : ''; }
 // contratti eliminati in blocco: anche la copia nel cloud (il link di firma smette di funzionare)
 function bulkTombstone(sec, ids){ if(sec!=='contracts') return; const set=new Set(ids);
-  (DB.contracts||[]).forEach(c=>{ if(set.has(c.id) && c.token) tombstoneContract(c.token); }); }
+  (DB.contracts||[]).forEach(c=>{ if(set.has(c.id) && c.token && !contractTokenElsewhere(c.token)) tombstoneContract(c.token); }); }
 function bulkDeleteSel(){ const bar=$('#bulk-bar'); const sec=bar&&bar.dataset.sec; const set=bulkSel[sec]; if(!set||!set.size) return;
   if(!confirm(tt('bulk.del_q').replace('{n}',set.size)+bulkClosedNote(sec,[...set]))) return;
   bulkTombstone(sec,[...set]);
@@ -5188,7 +5250,7 @@ function renderPlanning(){
 function openPlnForm(id){ editingPlnId=id||null; const p=id?plnById(id):null;
   $('#pln-form-title').textContent = p?tt('common.edit'):tt('pln.new');
   $('#pln-title').value=p?p.title||'':''; $('#pln-kind').value=p?p.kind||'release':'release';
-  $('#pln-artist').value=p?p.artist||'':''; $('#pln-date').value=p?p.date||'':( $('#pln-date').value||'');
+  $('#pln-artist').value=p?p.artist||'':''; $('#pln-date').value=p?p.date||'':'';   // nuovo: niente data del precedente
   $('#pln-status').value=p?p.status||'idea':'idea'; $('#pln-platform').value=p?p.platform||'':''; $('#pln-note').value=p?p.note||'':'';
   $('#pln-form').hidden=false; $('#pln-form').scrollIntoView({behavior:'smooth',block:'start'}); }
 function savePlanning(){
@@ -5224,7 +5286,7 @@ function renderEvents(){
 function openEvtForm(id){ editingEvtId=id||null; const e=id?evtById(id):null;
   $('#evt-form-title').textContent = e?tt('common.edit'):tt('evt.new');
   $('#evt-title').value=e?e.title||'':''; $('#evt-kind').value=e?e.kind||'showcase':'showcase';
-  $('#evt-date').value=e?e.date||'':( $('#evt-date').value||''); $('#evt-time').value=e?e.time||'':'';
+  $('#evt-date').value=e?e.date||'':''; $('#evt-time').value=e?e.time||'':'';   // nuovo: niente data del precedente
   $('#evt-venue').value=e?e.venue||'':''; $('#evt-city').value=e?e.city||'':''; $('#evt-country').value=e?e.country||'':''; $('#evt-note').value=e?e.note||'':'';
   $('#evt-form').hidden=false; $('#evt-form').scrollIntoView({behavior:'smooth',block:'start'}); }
 function saveEvent(){
@@ -5324,9 +5386,14 @@ function wireAgenda(){
 /* ============================================================================
    NOTIFICHE  (tendina in alto a destra)
    ============================================================================ */
+// avvisi separati per etichetta: chiuderne uno in un'etichetta non lo fa ricomparire passando a un'altra,
+// e i recuperi degli anticipi di un'etichetta non creano avvisi o task nell'altra
 const NOTIF_KEY='labelfinance.notifs';
-let NOTIFS=(function(){ try{ const n=JSON.parse(localStorage.getItem(NOTIF_KEY)); if(n&&Array.isArray(n.list)) return {list:n.list, dismissed:n.dismissed||[]}; }catch(e){} return {list:[],dismissed:[]}; })();
-function notifSave(){ try{ localStorage.setItem(NOTIF_KEY, JSON.stringify(NOTIFS)); }catch(e){} }
+const notifKey=()=>NOTIF_KEY+'.'+((typeof DB!=='undefined' && DB && DB.id)||'');
+function notifLoad(){ try{ const n=JSON.parse(localStorage.getItem(notifKey())||localStorage.getItem(NOTIF_KEY));
+  if(n&&Array.isArray(n.list)) return {list:n.list, dismissed:n.dismissed||[], recoupSeen:n.recoupSeen||{}}; }catch(e){} return {list:[],dismissed:[]}; }
+let NOTIFS=notifLoad(), notifFor=(typeof DB!=='undefined' && DB && DB.id)||'';
+function notifSave(){ try{ localStorage.setItem(notifKey(), JSON.stringify(NOTIFS)); }catch(e){} }
 function svgIco(inner){ return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`; }
 const SECTION_SVG={
   releases:    svgIco('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/>'),
@@ -5338,14 +5405,16 @@ const SECTION_SVG={
 function notifIcon(it){ const v=it.view||(it.type==='unlinked'?'releases':it.type==='enrich'?'import':it.relId?'releases':'tasks'); return SECTION_SVG[v]||SECTION_SVG.tasks; }
 function notifScan(){
   if(typeof DB==='undefined'||!DB) return;
+  if(notifFor!==DB.id){ NOTIFS=notifLoad(); notifFor=DB.id; }   // etichetta cambiata: i suoi avvisi
   const unlinked=new Set();
-  const ridx=relIdx(); (DB.transactions||[]).forEach(t=>{ const p=(t.product||'').trim(); if(!p) return; if(!releaseForTx(t, ridx)) unlinked.add(p); });
+  // solo le vendite: una spesa con descrizione ("Mastering", "Distribuzione") non è un prodotto da collegare
+  const ridx=relIdx(); (DB.transactions||[]).forEach(t=>{ if(t.kind==='expense') return; const p=(t.product||'').trim(); if(!p) return; if(!releaseForTx(t, ridx)) unlinked.add(p); });
   const ukeys=new Set([...unlinked].map(p=>p.toLowerCase()));
   NOTIFS.list=NOTIFS.list.filter(n=> n.type!=='unlinked' || ukeys.has((n.ref||'').toLowerCase()));   // risolti via
   // le notifiche eliminate restano eliminate: si ripuliscono solo i prodotti ora collegati
   // (prima venivano cancellati anche gli altri tipi e le notifiche eliminate ricomparivano)
   const KEEP_DISMISSED=/^(enrich|task|miss|unsigned|owed|close|fx):/;
-  NOTIFS.dismissed=(NOTIFS.dismissed||[]).filter(k=>KEEP_DISMISSED.test(k) || ukeys.has(k)).slice(-400);
+  NOTIFS.dismissed=(NOTIFS.dismissed||[]).filter(k=>KEEP_DISMISSED.test(k) || ukeys.has(k)).slice(-2000);
   unlinked.forEach(p=>{ const lk=p.toLowerCase(), key='unlinked:'+lk;
     if((NOTIFS.dismissed||[]).includes(lk)) return;
     if(NOTIFS.list.some(n=>n.key===key)) return;

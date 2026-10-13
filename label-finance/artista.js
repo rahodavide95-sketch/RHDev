@@ -11,7 +11,8 @@
   const EUR=n=>new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR'}).format(+n||0);
   const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const fmtD=d=>{ const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(d||''); return m ? m[3]+'/'+m[2]+'/'+m[1] : esc(d||''); };
-  function show(id){ ['loading','error','content'].forEach(x=>$(x).classList.toggle('hidden',x!==id)); }
+  function show(id){ ['loading','error','neterr','content'].forEach(x=>{ const el=$(x); if(el) el.classList.toggle('hidden',x!==id); }); }
+  let lastN=12;
   // ultimi n mesi interi, in ora locale
   function period(n){
     if(!n) return {from:null,to:null,label:'Tutti i periodi'};
@@ -19,15 +20,19 @@
     return { from:LFCore.ymd(new Date(now.getFullYear(), now.getMonth()-(n-1), 1)), to:LFCore.today(), label:'Ultimi '+n+' mesi' };
   }
   async function load(n){
-    const p=period(n);
-    if(!token||!sb){ show('error'); return; }
+    const p=period(n); lastN=n;
+    if(!token){ show('error'); return; }
+    if(!sb){ show('neterr'); return; }
     show('loading');
     try{
       const { data, error } = await sb.functions.invoke('artist-statement',{ body:{ token, from:p.from, to:p.to } });
-      if(error||!data||data.error||!data.ok){ show('error'); return; }
+      // link sbagliato o revocato ≠ problema di rete/server (in quel caso si può riprovare)
+      if(error){ const st=error.context && error.context.status; show(st && st>=400 && st<500 ? 'error' : 'neterr'); return; }
+      if(!data||data.error||!data.ok){ show('error'); return; }
       render(data, p);
-    }catch(e){ show('error'); }
+    }catch(e){ show('neterr'); }
   }
+  document.addEventListener('click', e=>{ if(e.target && e.target.id==='retry') load(lastN); });
   function render(d, p){
     const L=d.label||{}; const labelName=L.name||'Label';
     $('lh-name').textContent=labelName; $('f-label').textContent=labelName;
@@ -39,9 +44,10 @@
     $('m-period').textContent=p.label;
     const rows=s.lines||[];
     $('rows').innerHTML = rows.length ? rows.map(l=>`<tr>
-       <td>${fmtD(l.date)}</td><td>${esc(l.product)||'—'}</td><td>${esc(l.catalog)}</td>
+       <td>${fmtD(l.date)}${l.late?' *':''}</td><td>${esc(l.product)||'—'}</td><td class="c-cat">${esc(l.catalog)}</td>
        <td class="r">${EUR(l.gross)}</td><td class="r">${esc(+l.pct||0)}%</td><td class="r b pos">${EUR(l.share)}</td></tr>`).join('')
        : `<tr><td colspan="6" class="mut">Nessuna royalty nel periodo selezionato.</td></tr>`;
+    { const ln=$('late-note'); if(ln) ln.classList.toggle('hidden', !rows.some(l=>l.late)); }
     $('t-total').textContent=EUR(s.total);
     if(s.recoupable>0){ $('recoup').classList.remove('hidden');
       $('r-recoupable').textContent=EUR(s.recoupable); $('r-recouped').textContent=EUR(s.recouped); $('r-residual').textContent=EUR(s.residual);

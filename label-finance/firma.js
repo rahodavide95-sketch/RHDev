@@ -73,11 +73,17 @@
   function finish(title,text){ $('actions').classList.add('hidden'); $('accept-panel').classList.add('hidden'); $('reject-panel').classList.add('hidden');
     $('done-title').textContent=title; $('done-text').textContent=text; $('done-panel').classList.remove('hidden'); window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'}); }
 
+  // problema di rete o del server: messaggio diverso da "link non valido" e pulsante per riprovare
+  function netError(){ $('error-title').textContent='Connessione non riuscita'; $('error-text').textContent='Non riesco a caricare il contratto in questo momento. Controlla la connessione e riprova.';
+    $('retry').classList.remove('hidden'); show('error'); }
   async function load(){
-    if(!token||!sb){ show('error'); return; }
+    if(!token){ show('error'); return; }
+    if(!sb){ netError(); return; }
+    $('retry').classList.add('hidden'); $('error-title').textContent='Link non valido';
     try{
       const { data, error } = await sb.rpc('get_contract_for_signing',{ p_token:token });
-      if(error||!data||!data.length){ $('error-text').textContent='Contratto non trovato o link non valido.'; show('error'); return; }
+      if(error){ netError(); return; }
+      if(!data||!data.length){ $('error-text').textContent='Contratto non trovato o link non valido.'; show('error'); return; }
       const row=data[0]; contract=row.data||{}; current={status:row.status, signature:row.signature, reason:row.reject_reason};
       if(row.signature) contract.artistSign=row.signature;
       $('doc').innerHTML=buildDoc(contract);
@@ -85,8 +91,9 @@
       show('content');
       if(row.status==='signed'){ finish('Contratto già firmato ✓','Questo contratto risulta già firmato'+(row.signed_at?(' il '+new Date(row.signed_at).toLocaleString('it-IT')):'')+'. Grazie!'); }
       else if(row.status==='rejected'){ finish('Modifiche richieste','Hai richiesto una modifica. L\'etichetta aggiornerà il contratto e te lo reinvierà.'); }
-    }catch(e){ show('error'); }
+    }catch(e){ netError(); }
   }
+  document.addEventListener('click', e=>{ if(e.target && e.target.id==='retry'){ show('loading'); load(); } });
 
   // navigazione pannelli
   $('go-accept').onclick=()=>{ $('actions').classList.add('hidden'); $('accept-panel').classList.remove('hidden'); setupPad(); };

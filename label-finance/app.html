@@ -909,6 +909,10 @@
             </label>
             <label><span data-i18n="imp.load_preset">Carica preset salvato</span>
               <select id="map-preset" class="select"><option value="" data-i18n="imp.none">— nessuno —</option></select>
+              <span class="row-inline preset-acts" style="gap:6px;margin-top:6px">
+                <button class="btn btn-sm" type="button" id="preset-rename" disabled data-i18n="imp.preset_rename">✎ Rinomina</button>
+                <button class="btn btn-sm" type="button" id="preset-del" disabled data-i18n="imp.preset_del">🗑 Elimina</button>
+              </span>
             </label>
             <label id="map-sheet-wrap" hidden><span data-i18n="imp.sheet">Foglio Excel</span>
               <select id="map-sheet" class="select"></select>
@@ -968,6 +972,7 @@
             <span class="muted small" id="preview-count"></span></div>
           <div class="imp-checks" id="preview-checks" hidden></div>
           <div class="table-wrap"><table class="data-table" id="preview-table"></table></div>
+          <div style="padding:8px 0"><button class="btn btn-sm" type="button" id="preview-more" hidden></button></div>
           <div class="panel-foot" style="flex-wrap:wrap;gap:10px">
             <label class="check-inline" data-i18n-title="imp.dedup_hint" title="Non importa righe già presenti (stessa data, prodotto, importo…)">
               <input type="checkbox" id="import-dedup" checked> <span data-i18n="imp.dedup">Salta doppioni</span>

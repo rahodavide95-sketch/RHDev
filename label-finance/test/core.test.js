@@ -243,3 +243,12 @@ test('sync: stesso movimento cambiato su due dispositivi in campi diversi → re
   assert.deepEqual(m.transactions, [{ id: 'a', net: 10, note: 'qui' }]);
   assert.deepEqual(m.trash.map(x => x.id).sort(), ['t1', 't2'], 'il cestino si unisce, non si sovrascrive');
 });
+
+test('parseDate: mese/anno e trimestri dei report (06/2026, Q1 2026, 2026-Q3)', () => {
+  assert.equal(C.parseDate('06/2026'), '2026-06-01');
+  assert.equal(C.parseDate('6-2026'), '2026-06-01');
+  assert.equal(C.parseDate('Q1 2026'), '2026-01-01');
+  assert.equal(C.parseDate('2026-Q3'), '2026-07-01');
+  assert.equal(C.parseDate('T4 2025'), '2025-10-01');
+  assert.equal(C.parseDate('15/01/2026'), '2026-01-15', 'le date complete non cambiano');
+});

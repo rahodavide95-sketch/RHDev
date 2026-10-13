@@ -1188,12 +1188,15 @@ function renderTx(){
   if(typeof renderRecurPanel==='function') renderRecurPanel();
 }
 let txLastRows=null, txFilterSig='';
+// dopo un import si vedono solo le righe appena importate (anche se hanno date vecchie), finché non si sceglie "Mostra tutti"
+let txOnlyImp=null;
 function applyTxFilters(){
   const q=$('#tx-search').value.toLowerCase().trim();
   const kind=$('#tx-filter-kind').value, plat=$('#tx-filter-platform').value;
-  const r=computeRange($('#tx-period'), $('#tx-from'), $('#tx-to'));
+  if(txOnlyImp && !(DB.lastImport && DB.lastImport.id===txOnlyImp)) txOnlyImp=null;
+  const r=txOnlyImp ? {} : computeRange($('#tx-period'), $('#tx-from'), $('#tx-to'));
   const from=r.from, to=r.to;
-  let rows=DB.transactions.slice();
+  let rows=txOnlyImp ? DB.transactions.filter(t=>t._imp===txOnlyImp) : DB.transactions.slice();
   if(kind) rows=rows.filter(t=>t.kind===kind);
   if(plat) rows=rows.filter(t=>t.platform===plat);
   if(from) rows=rows.filter(t=>(t.date||'')>=from);
@@ -1204,7 +1207,7 @@ function applyTxFilters(){
   const txTies=['artist','product','catalog','date','platform'].filter(c=>c!==k).map(c=>t=>txSortKey(c,t));
   rows=tieSort(rows, t=>txSortKey(k,t), txSort.dir, txTies);
   txLastRows=rows;
-  const fsig=[q,kind,plat,from,to].join('|');
+  const fsig=[q,kind,plat,from,to,txOnlyImp].join('|');
   if(fsig!==txFilterSig){ txFilterSig=fsig; if(bulkSel.transactions && bulkSel.transactions.size){ bulkSel.transactions.clear(); bulkBar('transactions'); } }
   $('#tx-count-label').textContent=`${rows.length} ${tt(rows.length===1?'tx.movement':'tx.movements')}`;
   const ss=$('#tx-sort'); if(ss){ const v=txSort.col+':'+txSort.dir; if([...ss.options].some(o=>o.value===v)) ss.value=v; }
@@ -1231,9 +1234,10 @@ function applyTxFilters(){
 }
 { let txSearchT=null;
   $('#tx-search').addEventListener('input',()=>{ clearTimeout(txSearchT); txSearchT=setTimeout(applyTxFilters,150); });
-  ['#tx-filter-kind','#tx-filter-platform','#tx-from','#tx-to'].forEach(s=>$(s).addEventListener('change',applyTxFilters)); }
+  ['#tx-filter-kind','#tx-filter-platform'].forEach(s=>$(s).addEventListener('change',applyTxFilters));
+  ['#tx-from','#tx-to'].forEach(s=>$(s).addEventListener('change',()=>{ if(txOnlyImp){ txOnlyImp=null; updateImpUndo(); } applyTxFilters(); })); }
 function syncTxDates(){ const cu=$('#tx-period').value==='custom'; $('#tx-from').hidden=!cu; $('#tx-to').hidden=!cu; }
-$('#tx-period').addEventListener('change',()=>{ syncTxDates(); applyTxFilters(); });
+$('#tx-period').addEventListener('change',()=>{ syncTxDates(); if(txOnlyImp){ txOnlyImp=null; updateImpUndo(); } applyTxFilters(); });   // scegliere un periodo esce dalla vista "solo importati"
 syncTxDates();
 /* Ordinamento da mobile per i Movimenti (intestazioni nascoste a schede) */
 const txSortSel=$('#tx-sort');
@@ -2735,7 +2739,8 @@ $('#contact-form')?.addEventListener('submit', async e=>{
    ============================================================================ */
 let importRows=[], importHeaders=[];
 const drop=$('#import-drop');
-$('#browse-btn').onclick=()=>$('#file-input').click();
+$('#browse-btn').onclick=e=>{ e.stopPropagation(); $('#file-input').click(); };
+drop.addEventListener('click',e=>{ if(!e.target.closest('button,a,input')) $('#file-input').click(); });
 $('#file-input').onchange=e=>{ if(e.target.files[0]) readFile(e.target.files[0]); };
 ['dragover','dragenter'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('drag');}));
 ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('drag');}));
@@ -2775,19 +2780,22 @@ async function xlsxRead(buf){
     const rid=sh.getAttribute('r:id')||sh.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id');
     const doc=xml(await read(relTarget(rid))); const rows=[];
     kids(doc,'row').forEach(r=>{ const out=[];
-      kids(r,'c').forEach(c=>{ const i=colIdx(c.getAttribute('r')), t=c.getAttribute('t'), v=(c.getElementsByTagName('v')[0]||{}).textContent;
+      kids(r,'c').forEach(c=>{ const ref=c.getAttribute('r'), i=ref ? colIdx(ref) : out.length, t=c.getAttribute('t'), v=(c.getElementsByTagName('v')[0]||{}).textContent;
         let val='';
         if(t==='s') val=shared[+v]||''; else if(t==='inlineStr') val=kids(c,'t').map(x=>x.textContent).join('');
         else if(t==='b') val=v==='1'?'TRUE':'FALSE'; else if(t==='str'||t==='e') val=v||'';
         else if(v!=null && v!==''){ val = dateStyle[+(c.getAttribute('s')||0)] ? toISO(v) : String(Math.round(+v*1e9)/1e9); }
         if(i>=0){ while(out.length<i) out.push(''); out[i]=val; } });
-      if(out.some(x=>String(x).trim()!=='')) rows.push(out.map(x=>String(x))); });
+      if(out.some(x=>String(x).trim()!=='')){ const row=out.map(x=>String(x)); row._r=+r.getAttribute('r')||0; rows.push(row); } });   // _r: numero di riga in Excel
     sheets.push({ name:sh.getAttribute('name')||('Sheet '+(sheets.length+1)), rows });
   }
   return sheets;
 }
 // testo del CSV: UTF-8, altrimenti Windows-1252 (CSV salvati da Excel in italiano)
-function decodeText(buf){ try{ return new TextDecoder('utf-8',{fatal:true}).decode(buf); }catch(e){ return new TextDecoder('windows-1252').decode(buf); } }
+function decodeText(buf){ const u8=new Uint8Array(buf);
+  if(u8[0]===0xFF && u8[1]===0xFE) return new TextDecoder('utf-16le').decode(buf);   // "Testo Unicode" di Excel
+  if(u8[0]===0xFE && u8[1]===0xFF) return new TextDecoder('utf-16be').decode(buf);
+  try{ return new TextDecoder('utf-8',{fatal:true}).decode(buf); }catch(e){ return new TextDecoder('windows-1252').decode(buf); } }
 let importSheets=null, importAll=[], importFileName='', importCatMap={}, importRemembered=false;
 // firma delle colonne: lo stesso tipo di file (stesse intestazioni) riusa le scelte confermate l'ultima volta
 const importSig=()=>importHeaders.map(colNorm).join('|');
@@ -2807,38 +2815,46 @@ function readFile(file){
   const r=new FileReader();
   r.onload=async ()=>{
     const buf=r.result, u8=new Uint8Array(buf);
-    importSheets=null; window._rawCSV=''; importFileName=file.name.replace(/\.[^.]+$/,''); importCatMap={}; importShowAll=false;
+    $('#file-input').value='';   // lo stesso file si può riscegliere (es. dopo averlo corretto in Excel)
+    importSheets=null; window._rawCSV=''; importFileName=file.name.replace(/\.[^.]+$/,''); importCatMap={}; importShowAll=false; mapHidden={};
     if(/\.xls$/i.test(file.name)){ toast(tt('imp.xls_old')); return; }
     if(u8[0]===0x50 && u8[1]===0x4b){   // "PK": file zip = Excel .xlsx
       try{ importSheets=(await xlsxRead(buf)).filter(s=>s.rows.length); }catch(e){ importSheets=null; }
       if(!importSheets || !importSheets.length){ toast(tt('imp.xlsx_fail')); return; }
-    } else window._rawCSV=decodeText(buf);
+    } else {
+      // PDF, immagini, .numbers…: non è testo (byte zero all'inizio) → messaggio chiaro invece di colonne senza senso
+      if(u8.subarray(0, 4096).some(b=>b===0) && !(u8[0]===0xFF && u8[1]===0xFE) && !(u8[0]===0xFE && u8[1]===0xFF)){ toast(tt('imp.bad_file')); return; }
+      window._rawCSV=decodeText(buf);
+    }
     // ogni file riparte dalle impostazioni automatiche (non quelle del file precedente)
-    $('#map-kind').value='income'; $('#map-datefmt').value='auto'; $('#map-platform').value=''; $('#map-delim').value='auto';
+    $('#map-kind').value='income'; $('#map-datefmt').value='auto'; $('#map-platform').value=''; $('#map-delim').value='auto'; $('#map-currency').value='EUR';
     if($('#map-preset')) $('#map-preset').value='';
     const sw=$('#map-sheet-wrap'), ss=$('#map-sheet');
     if(sw && ss){ sw.hidden=!(importSheets && importSheets.length>1);
       ss.innerHTML=(importSheets||[]).map((x,i)=>`<option value="${i}">${esc(x.name)}</option>`).join(''); }
     const dw=$('#map-delim'); if(dw) dw.closest('label').hidden=!!importSheets;
     refreshParse(true); $('#import-config').hidden=false;
-    populatePresets(); $('#map-preset-name').value=file.name.replace(/\.[^.]+$/,''); };
+    populatePresets(); $('#map-preset-name').value=file.name.replace(/\.[^.]+$/,'');
+    const nf=$('#import-file'); if(nf){ const n=importRows.length; nf.textContent='📄 '+file.name+' · '+tt(n===1?'imp.file_rows_one':'imp.file_rows').replace('{n}', n); nf.hidden=false; } };
   r.readAsArrayBuffer(file);
 }
-// riga d'intestazione: la prima (tra le prime 15) con almeno 2 nomi di colonna riconosciuti
+// riga d'intestazione: la prima (tra le prime 30) con almeno 2 nomi di colonna riconosciuti
 function detectHeaderRow(rows){
   const all=Object.values(HINTS).flat().map(colNorm).filter(k=>k.length>=3);
   let best=0, bestScore=1;
-  rows.slice(0,15).forEach((r,i)=>{ const sc=r.filter(c=>{ const h=colNorm(c); return h && h.length<40 && all.some(k=>h===k || (k.length>=4 && h.includes(k))); }).length;
+  rows.slice(0,30).forEach((r,i)=>{ const sc=r.filter(c=>{ const h=colNorm(c); return h && h.length<40 && all.some(k=>h===k || (k.length>=4 && h.includes(k))); }).length;
     if(sc>bestScore){ best=i; bestScore=sc; } });
   return best;
 }
 function refreshParse(fresh){
-  if(fresh && $('#map-kind')) $('#map-kind').value='income';
+  // altro foglio / separatore / file: si riparte dal riconoscimento (niente piattaforma o formato data del foglio di prima)
+  if(fresh && $('#map-kind')){ $('#map-kind').value='income'; $('#map-platform').value=''; $('#map-datefmt').value='auto'; }
+  mapHidden={};
   importAll = importSheets ? ((importSheets[+($('#map-sheet')||{}).value||0]||importSheets[0]).rows) : parseCSV(window._rawCSV||'', $('#map-delim').value);
   const hs=$('#map-header');
   if(hs){ if(fresh || !hs.options.length || hs.dataset.n!==String(importAll.length)){
       const h=detectHeaderRow(importAll); hs.dataset.n=String(importAll.length);
-      hs.innerHTML=importAll.slice(0,15).map((r,i)=>`<option value="${i}">${esc(tt('imp.header_row').replace('{n}', i+1))} — ${esc(r.filter(Boolean).slice(0,3).join(' · ').slice(0,60))}</option>`).join('');
+      hs.innerHTML=importAll.slice(0,30).map((r,i)=>`<option value="${i}">${esc(tt('imp.header_row').replace('{n}', r._r||i+1))} — ${esc(r.filter(Boolean).slice(0,3).join(' · ').slice(0,60))}</option>`).join('');
       hs.value=String(h); } }
   const hr=hs ? (+hs.value||0) : 0;
   importHeaders=importAll[hr]||[]; importRows=importAll.slice(hr+1);
@@ -2921,21 +2937,23 @@ function autoKindMode(map, distro){
 $('#map-delim').onchange=()=>refreshParse(true);
 $('#map-header')?.addEventListener('change',()=>refreshParse(false));
 $('#map-sheet')?.addEventListener('change',()=>refreshParse(true));
-['#map-kind','#map-datefmt','#map-currency','#map-platform'].forEach(s=>$(s).addEventListener('input',renderPreview));
+let previewTimer=null; const previewSoon=()=>{ clearTimeout(previewTimer); previewTimer=setTimeout(renderPreview, 250); };
+['#map-datefmt'].forEach(s=>$(s).addEventListener('input',renderPreview));
+['#map-currency','#map-platform'].forEach(s=>$(s).addEventListener('input',previewSoon));
 $('#map-kind')?.addEventListener('change',()=>{ buildMapFields(currentMap()); renderPreview(); });
 
 /* ---------- Preset distributori (riconoscimento automatico colonne) ---------- */
 const DISTRO_PRESETS={
-  bandcamp:{ name:'Bandcamp', platform:'Bandcamp', datefmt:'mdy', fields:{
+  bandcamp:{ name:'Bandcamp', platform:'Bandcamp', datefmt:'mdy', sig:/itemtype|bandcamptransactionid|amountyoureceived|paidto/, fields:{
     date:['date'], type:['item type'], artist:['artist'], product:['item name'],
     catalog:['catalog number','catalog'], upc:['upc'], qty:['quantity'],
     gross:['sub total','item total','item price'], fees:['transaction fee'], shipping:['shipping'], taxes:['tax'], isrc:['isrc'],
     net:['net amount'], currency:['currency'], territory:['country'] } },
-  distrokid:{ name:'DistroKid', platform:'DistroKid', datefmt:'ymd', fields:{
+  distrokid:{ name:'DistroKid', platform:'DistroKid', datefmt:'ymd', sig:/salemonth|teampercentage|countryofsale/, fields:{
     date:['sale month','sale date','reporting date'], platform:['store'], type:['type'],
     product:['title','song'], artist:['artist'], isrc:['isrc'], upc:['upc'],
     qty:['quantity'], net:['earnings'], currency:['currency'], territory:['country','territory'] } },
-  believe:{ name:'Believe', platform:'Believe', datefmt:'dmy', fields:{
+  believe:{ name:'Believe', platform:'Believe', datefmt:'dmy', sig:/clientshare|clientpayment|releasecatalog/, fields:{
     date:['sales period','period','date'], platform:['platform','dsp','store'],
     product:['track title','release title','title'], artist:['artist name','artist'],
     isrc:['isrc'], upc:['upc','ean'], qty:['quantity','units','net qty'],
@@ -2944,7 +2962,7 @@ const DISTRO_PRESETS={
     date:['sale date','date','period'], platform:['store','dsp','retailer'],
     product:['title','track'], artist:['artist'], isrc:['isrc'], upc:['upc'],
     qty:['quantity','units'], net:['net','earnings','revenue'], currency:['currency'], territory:['country','territory'] } },
-  tunecore:{ name:'TuneCore', platform:'TuneCore', datefmt:'ymd', fields:{
+  tunecore:{ name:'TuneCore', platform:'TuneCore', datefmt:'ymd', sig:/tcsongid|unitssold|totalearned|netsalescurrency/, fields:{
     date:['sales period','reporting','date','period'], platform:['store','retailer','dsp'],
     product:['song title','album title','title','song'], artist:['artist'], isrc:['isrc'], upc:['upc'],
     qty:['units sold','units','quantity','plays','streams'], net:['your earnings','earnings','net'], currency:['currency'], territory:['country','territory'] } },
@@ -2956,7 +2974,7 @@ const DISTRO_PRESETS={
     date:['report date','sale date','date','period'], platform:['partner','store','dsp'],
     product:['track','album','title'], artist:['artist'], isrc:['isrc'], upc:['upc'],
     qty:['quantity','units','plays'], net:['payable','earnings','net','your share'], currency:['currency'], territory:['country','territory'] } },
-  paypal:{ name:'PayPal', platform:'PayPal', need:/fusoorario|timezone/, sign:true, fields:{   // negativo = pagamento fatto (uscita)
+  paypal:{ name:'PayPal', platform:'PayPal', sig:/fusoorario|timezone/, sign:true, fields:{   // negativo = pagamento fatto (uscita)
     date:['data','date'], product:['nome','name'], type:['tipo','type'], gross:['lordo','gross'], fees:['tariffa','fee'],
     net:['netto','net'], currency:['valuta','currency'] } },
   labelengine:{ name:'Label Engine', platform:'Label Engine', datefmt:'ymd', fields:{
@@ -2976,8 +2994,11 @@ function presetMap(p){ const map={}, used=new Set();
   return map; }
 function detectDistro(){
   let best=null, bestScore=2;
-  const hn=importHeaders.map(colNorm).join('|');
-  for(const key in DISTRO_PRESETS){ const p=DISTRO_PRESETS[key]; if(p.need && !p.need.test(hn)) continue; const m=presetMap(p);
+  const hn=importHeaders.map(colNorm).join('|'), fn=colNorm(importFileName);
+  for(const key in DISTRO_PRESETS){ const p=DISTRO_PRESETS[key];
+    // solo se ci sono colonne tipiche di quel distributore o il suo nome è nel nome del file
+    if(!(p.sig && p.sig.test(hn)) && !fn.includes(colNorm(p.name)) && !fn.includes(key)) continue;
+    const m=presetMap(p);
     if(m.date==null || (m.net==null && m.gross==null)) continue;   // un preset vale solo se trova data e importo
     const s=Object.keys(m).length;
     if(s>bestScore){ bestScore=s; best=key; } }
@@ -2986,24 +3007,32 @@ function detectDistro(){
 function distroMap(key){
   const p=DISTRO_PRESETS[key]; if(!p) return autoMap(importHeaders);
   if($('#map-platform')) $('#map-platform').value=p.platform||'';
-  if(p.datefmt) $('#map-datefmt').value=p.datefmt;
+  $('#map-datefmt').value=p.datefmt||'auto';   // PayPal non ha un formato fisso: non resta quello del distributore scelto prima
   // il preset decide le sue colonne; le altre restano quelle riconosciute in automatico
   const map=presetMap(p), used=new Set(Object.values(map)), auto=autoMap(importHeaders);
   Object.entries(auto).forEach(([f,i])=>{ if(map[f]==null && !used.has(i)){ map[f]=i; used.add(i); } });
   return map;
 }
-function applyDistro(key){ buildMapFields(smartMap(distroMap(key))); }
+function applyDistro(key){ const map=smartMap(distroMap(key)); mapHidden={}; autoKindMode(map, key); buildMapFields(map); }
 $('#map-distro')?.addEventListener('change',()=>{
   const v=$('#map-distro').value;
-  if(v==='auto') buildMapFields(smartMap(autoMap(importHeaders))); else applyDistro(v);
+  if(v==='auto'){   // di nuovo "Rilevamento automatico": via piattaforma e formato data del distributore scelto prima
+    $('#map-platform').value=''; $('#map-datefmt').value='auto'; $('#map-kind').value='income';
+    const d=detectDistro(); if(d){ $('#map-distro').value=d; applyDistro(d); }
+    else { const map=smartMap(autoMap(importHeaders)); mapHidden={}; autoKindMode(map, null); buildMapFields(map); }
+  } else applyDistro(v);
   renderPreview();
 });
 
 function mapLabel(f, def){ const exp=$('#map-kind') && $('#map-kind').value==='expense';
   const k=(exp && ['product','platform','net','catalog'].includes(f)) ? 'imp.fx_'+f : 'imp.f_'+f; const v=tt(k); return v&&v!==k ? v : def; }
+let mapHidden={};
 function buildMapFields(initial={}){
   const mode=$('#map-kind') ? $('#map-kind').value : 'income';
-  $('#map-fields').innerHTML = MAP_FIELDS.filter(([f])=>(f!=='kind' || mode==='col') && ((f!=='amountIn' && f!=='amountOut') || mode==='inout')).map(([f,label])=>`
+  const shown=f=>(f!=='kind' || mode==='col') && ((f!=='amountIn' && f!=='amountOut') || mode==='inout');
+  initial=Object.assign({}, initial);
+  MAP_FIELDS.forEach(([f])=>{ if(!shown(f)){ if(initial[f]!=null) mapHidden[f]=initial[f]; } else if(initial[f]==null && mapHidden[f]!=null) initial[f]=mapHidden[f]; });
+  $('#map-fields').innerHTML = MAP_FIELDS.filter(([f])=>shown(f)).map(([f,label])=>`
     <div class="map-row"><span>${esc(mapLabel(f,label))}</span>
       <select class="select map-sel" data-field="${f}">
         <option value="">${esc(tt('imp.ignore'))}</option>
@@ -3100,6 +3129,7 @@ function importRecs(map){ return rawRecs(map).filter(r=>r.date && !r._noAmt).map
 function importNoDate(map){ return rawRecs(map).filter(r=>!r.date).length; }
 function importNoAmt(map){ return rawRecs(map).filter(r=>r.date && r._noAmt).length; }
 /* controlli intelligenti pre-import: segnala anomalie prima di salvare */
+const ttn=(k,n)=>tt(n===1 && tt(k+'_one')!==k+'_one' ? k+'_one' : k).replace('{n}', n);
 function importChecks(map, recs){
   recs=recs||importRecs(map);
   const noDate=importNoDate(map), noAmt=importNoAmt(map);
@@ -3113,16 +3143,17 @@ function importChecks(map, recs){
   let outliers=0;
   if(nets.length>=5){ const med=nets[Math.floor(nets.length/2)]; if(med>0) outliers=nets.filter(v=>v>med*25).length; }
   const w=[];
-  if(outliers) w.push({lvl:'warn', t:tt('imp.chk_outlier').replace('{n}',outliers)});
+  if(outliers) w.push({lvl:'warn', t:ttn('imp.chk_outlier',outliers)});
   const found=Object.keys(map).length;
   if(importRemembered) w.unshift({lvl:'info', t:tt('imp.remembered'), act:'forget'});
   else if(found) w.unshift({lvl:'info', t:tt('imp.auto_found').replace('{n}', found).replace('{m}', importHeaders.filter(h=>String(h||'').trim()).length)});
-  if(noDate) w.push({lvl:'warn', t:tt('imp.chk_nodate_skip').replace('{n}',noDate)});
-  if(noAmt) w.push({lvl:'info', t:tt('imp.chk_noamt').replace('{n}',noAmt)});
-  if(badCur) w.push({lvl:'warn', t:tt('imp.chk_badcur').replace('{n}',badCur).replace('{c}', normCur($('#map-currency').value,'EUR')||'EUR')});
-  if(noNet) w.push({lvl:'warn', t:tt('imp.chk_nonet').replace('{n}',noNet)});
-  if(dupIn) w.push({lvl:'info', t:tt('imp.chk_dupin_kept').replace('{n}',dupIn)});
-  if(dupEx) w.push({lvl:'info', t:tt('imp.chk_dupex').replace('{n}',dupEx)});
+  // poche righe senza data (totali, righe dell'anno) sono normali: avviso solo se sono tante
+  if(noDate) w.push({lvl:(noDate>3 && noDate>(recs.length+noDate)*0.1) ? 'warn' : 'info', t:ttn('imp.chk_nodate_skip',noDate)});
+  if(noAmt) w.push({lvl:'info', t:ttn('imp.chk_noamt',noAmt)});
+  if(badCur) w.push({lvl:'warn', t:ttn('imp.chk_badcur',badCur).replace('{c}', normCur($('#map-currency').value,'EUR')||'EUR')});
+  if(noNet) w.push({lvl:'warn', t:ttn('imp.chk_nonet',noNet)});
+  if(dupIn) w.push({lvl:'info', t:ttn('imp.chk_dupin_kept',dupIn)});
+  if(dupEx) w.push({lvl:'info', t:ttn('imp.chk_dupex',dupEx)});
   if(curs.length>1) w.push({lvl:'info', t:tt('imp.chk_curmix').replace('{c}',curs.join(', '))});
   return w;
 }
@@ -3161,11 +3192,11 @@ function renderPreview(){
     cb.innerHTML=w.map(x=>`<div class="imp-chk imp-chk--${x.lvl}"><span>${x.lvl==='warn'?'⚠':'ℹ'}</span> ${esc(x.t)}${x.act==='forget'?` <button class="link" type="button" data-imp-forget>${esc(tt('imp.forget'))}</button>`:''}</div>`).join('');
     cb.hidden=!w.length;
   }
-  $('#preview-count').textContent=tt('imp.preview_count').replace('{rows}',all.length).replace('{m}',recs.length);
-  // colonne: data, tipo, poi ogni campo collegato nell'ordine dei campi, importo e valuta sempre
+  $('#preview-count').textContent=tt(all.length===1?'imp.preview_count_one':'imp.preview_count').replace('{rows}',all.length).replace('{m}',recs.length);
+  // colonne: data, tipo, importo e valuta subito (si vedono senza scorrere), poi ogni campo collegato
   const skip=new Set(['date','kind','net','currency','amountIn','amountOut','type']);
-  const cols=['date','kind'].concat(MAP_FIELDS.map(([f])=>f).filter(f=>map[f]!=null && !skip.has(f)), ['net','currency']);
-  if(map.type!=null && !cols.includes('category')) cols.splice(2,0,'type');
+  const cols=['date','kind','net','currency'].concat(MAP_FIELDS.map(([f])=>f).filter(f=>map[f]!=null && !skip.has(f)));
+  if(map.type!=null && !cols.includes('category')) cols.splice(4,0,'type');
   const label=f=>f==='kind' ? tt('imp.h_kind') : f==='net' ? mapLabel('net', tt('imp.h_net')) : mapLabel(f, (MAP_FIELDS.find(x=>x[0]===f)||[])[1]||f);
   const numC=f=>f==='net'||f==='qty'||PREVIEW_MONEY.has(f);
   $('#preview-table').innerHTML=`<thead><tr>${cols.map(f=>`<th class="${numC(f)?'num':''}">${esc(label(f))}</th>`).join('')}</tr></thead>
@@ -3176,7 +3207,7 @@ function renderPreview(){
 $('#preview-more')?.addEventListener('click',()=>{ importShowAll=!importShowAll; renderPreview(); });
 $('#preview-checks')?.addEventListener('click',e=>{ if(!e.target.closest('[data-imp-forget]')) return;
   if(DB.autoMaps) delete DB.autoMaps[importSig()]; save(); refreshParse(true); toast(tt('imp.forgotten')); });
-$('#import-cancel').onclick=()=>{ $('#import-config').hidden=true; $('#file-input').value=''; };
+$('#import-cancel').onclick=()=>{ $('#import-config').hidden=true; $('#file-input').value=''; const nf=$('#import-file'); if(nf) nf.hidden=true; };
 const txSig=t=>LFCore.txSig(t);
 $('#import-confirm').onclick=()=>{
   const map=currentMap();
@@ -3208,19 +3239,24 @@ $('#import-confirm').onclick=()=>{
     DB.lastImport={ id:batchId, count:recs.length, ts:Date.now() };
   }
   save();
-  $('#import-config').hidden=true; $('#file-input').value='';
+  $('#import-config').hidden=true; $('#file-input').value=''; { const nf=$('#import-file'); if(nf) nf.hidden=true; }
+  // in Movimenti si vedono subito le righe importate (spesso hanno date vecchie e finirebbero in fondo)
+  txOnlyImp = recs.length ? DB.lastImport.id : null; pageGet('tx').page=1;
   toast(`${recs.length} ${tt('t.imported')}${skipped?` · ${skipped} ${tt('t.dupes_skipped')}`:''}${late?` · ${tt('per.late_imported').replace('{n}',late)}`:''}`); goto('transactions'); updateImpUndo();
   if(typeof fxMaybeRefresh==='function') fxMaybeRefresh();   // nuove valute → cambi BCE
 };
 function updateImpUndo(){ const b=$('#imp-undo'); if(!b) return; const li=DB&&DB.lastImport;
-  if(li && li.count){ const n=$('#imp-undo-n'); if(n) n.textContent=li.count; b.hidden=false; } else b.hidden=true; }
+  if(li && li.count){ const n=$('#imp-undo-n'); if(n) n.textContent=li.count; b.hidden=false;
+    const sh=$('#imp-undo-show'); if(sh) sh.textContent=tt(txOnlyImp===li.id ? 'imp.show_all_tx' : 'imp.show_imp'); } else b.hidden=true; }
 function undoLastImport(){ const li=DB&&DB.lastImport; if(!li) return;
   const ids=(DB.transactions||[]).filter(t=>t._imp===li.id).map(t=>t.id);
   if(!confirm(tt('imp.undo_confirm').replace('{n}',li.count)+bulkClosedNote('transactions', ids))) return;
   const tid=trashRemove('transactions', ids, tt('trash.k_transactions')+' · '+ids.length+' '+tt('trash.items'));
-  DB.lastImport=null; save(); renderTx(); updateImpUndo(); undoToast(tt('imp.undone'), tid); }
+  DB.lastImport=null; txOnlyImp=null; save(); renderTx(); updateImpUndo(); undoToast(tt('imp.undone'), tid); }
 $('#imp-undo-btn')?.addEventListener('click', undoLastImport);
-$('#imp-undo-x')?.addEventListener('click', ()=>{ if(DB) DB.lastImport=null; save(); updateImpUndo(); });
+$('#imp-undo-x')?.addEventListener('click', ()=>{ if(DB) DB.lastImport=null; txOnlyImp=null; save(); renderTx(); });
+$('#imp-undo-show')?.addEventListener('click', ()=>{ const li=DB&&DB.lastImport; if(!li) return;
+  txOnlyImp = txOnlyImp===li.id ? null : li.id; pageGet('tx').page=1; renderTx(); });
 
 /* ---------- Preset di mappatura ---------- */
 function snapshotPreset(){
@@ -3251,12 +3287,13 @@ $('#map-preset').onchange=()=>{
   presetBtns();
   const p=DB.mappings[$('#map-preset').value]; if(!p) return;
   $('#map-preset-name').value=$('#map-preset').value;
-  $('#map-delim').value=p.delim; $('#map-datefmt').value=p.datefmt;
-  $('#map-currency').value=p.currency;
+  $('#map-delim').value=p.delim||'auto';
   refreshParse(false);
   if(p.header!=null && $('#map-header') && [...$('#map-header').options].some(o=>o.value===String(p.header))){ $('#map-header').value=String(p.header); refreshParse(false); }
+  // le scelte del preset dopo il riconoscimento (che altrimenti rimette formato data, valuta e piattaforma del distributore)
   $('#map-kind').value=p.kind||'income'; $('#map-platform').value=p.platform||'';
-  buildMapFields(p.map); renderPreview();
+  $('#map-datefmt').value=p.datefmt||'auto'; $('#map-currency').value=p.currency||'EUR';
+  mapHidden={}; buildMapFields(p.map); renderPreview();
 };
 
 /* ============================================================================

@@ -37,7 +37,20 @@
   const MONTHS = { jan:1,january:1,gen:1,gennaio:1, feb:2,february:2,febbraio:2, mar:3,march:3,marzo:3,
     apr:4,april:4,aprile:4, may:5,mag:5,maggio:5, jun:6,june:6,giu:6,giugno:6, jul:7,july:7,lug:7,luglio:7,
     aug:8,august:8,ago:8,agosto:8, sep:9,sept:9,september:9,set:9,settembre:9, oct:10,october:10,ott:10,ottobre:10,
-    nov:11,november:11,novembre:11, dec:12,december:12,dic:12,dicembre:12 };
+    nov:11,november:11,novembre:11, dec:12,december:12,dic:12,dicembre:12,
+    // francese, tedesco, spagnolo, portoghese, olandese (fogli e banche degli altri paesi)
+    janv:1,janvier:1,ene:1,enero:1,januar:1,'jän':1,'jänner':1,janeiro:1,januari:1,
+    'fév':2,'févr':2,'février':2,fev:2,fevrier:2,febrero:2,februar:2,fevereiro:2,februari:2,
+    mars:3,'mär':3,'märz':3,maerz:3,'março':3,marco:3,mrt:3,maart:3,
+    avr:4,avril:4,abr:4,abril:4,
+    mai:5,mayo:5,maio:5,mei:5,
+    juin:6,junio:6,juni:6,junho:6,
+    juil:7,juillet:7,julio:7,juli:7,julho:7,
+    'août':8,aout:8,augustus:8,
+    septembre:9,septiembre:9,setiembre:9,setembro:9,
+    okt:10,oktober:10,octobre:10,octubre:10,out:10,outubro:10,
+    noviembre:11,novembro:11,
+    'déc':12,'décembre':12,decembre:12,dez:12,dezember:12,diciembre:12,dezembro:12 };
   function validYmd(y, m, d){
     if(!(y>=1900 && y<=2200) || !(m>=1 && m<=12) || !(d>=1 && d<=C.daysInMonth(y, m-1))) return '';
     return y+'-'+pad2(m)+'-'+pad2(d);
@@ -206,8 +219,9 @@
     return {byCat, byUpc, byIsrc, byTitle, trackSplits};
   };
   C.releaseForTx = function(idx, t){
-    const c=norm(t.catalog), u=upcKey(t.upc||t.code), i=norm(t.isrc), p=norm(t.product);
-    return (c && idx.byCat.get(c)) || (u && idx.byUpc.get(u)) || (i && idx.byIsrc.get(i)) || (p && idx.byTitle.get(p)) || null;
+    const c=norm(t.catalog), u=upcKey(t.upc||t.code), i=norm(t.isrc), p=norm(t.product), r=norm(t.release);   // release: colonna "Release" dei fogli spese
+    return (c && idx.byCat.get(c)) || (u && idx.byUpc.get(u)) || (i && idx.byIsrc.get(i)) || (p && idx.byTitle.get(p))
+      || (r && (idx.byTitle.get(r) || idx.byCat.get(r))) || null;
   };
   // Release e quote applicabili: prima la traccia (ISRC) con quote proprie, poi la release.
   C.splitsForTx = function(idx, t){

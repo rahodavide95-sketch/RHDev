@@ -18,6 +18,9 @@ const CANON = [
   ['csShare','Collection society share'], ['net','Netto'], ['currency','Valuta'],
   ['territory','Paese/Territorio'],
 ];
+// campi in più per i propri fogli Excel (spese): entrata/uscita per riga, categoria, note
+const CANON_EXTRA = [ ['kind','Entrata/Uscita'], ['amountIn','Entrate (colonna)'], ['amountOut','Uscite (colonna)'], ['category','Categoria spesa'], ['note','Note'], ['release','Release collegata'] ];
+const MAP_FIELDS = CANON.concat(CANON_EXTRA);
 
 /* ---------- Store ---------- */
 const DEFAULT_TX_ORDER = ['date','kind','platform','catalog','product','artist','qty','net',
@@ -227,9 +230,15 @@ const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>
 // immagine sicura da inserire in src="…": solo data URL di immagini o file locali (le firme arrivano da fuori!)
 const imgSrc = s => esc(LFCore.safeImgSrc(s));
 
+const CUR_SYMBOLS={'€':'EUR','$':'USD','US$':'USD','USD$':'USD','£':'GBP','¥':'JPY','A$':'AUD','AU$':'AUD','C$':'CAD','CA$':'CAD','R$':'BRL','₹':'INR','₩':'KRW','zł':'PLN','FR':'CHF','SFR':'CHF','EURO':'EUR','EUROS':'EUR'};
+// valuta scritta in tanti modi → codice di 3 lettere (es. "€" → EUR); vuoto o non valido → fallback
+function normCur(raw, fallback){ const s=String(raw||'').trim(); if(!s) return fallback;
+  const up=s.toUpperCase().replace(/\s+/g,''); if(CUR_SYMBOLS[up]||CUR_SYMBOLS[s]) return CUR_SYMBOLS[up]||CUR_SYMBOLS[s];
+  return /^[A-Z]{3}$/.test(up) ? up : fallback; }
 function fmtMoney(n,cur='EUR'){
   const v = Number(n)||0;
-  return new Intl.NumberFormat('it-IT',{style:'currency',currency:cur}).format(v);
+  try{ return new Intl.NumberFormat('it-IT',{style:'currency',currency:normCur(cur,'EUR')}).format(v); }
+  catch(e){ return new Intl.NumberFormat('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}).format(v)+' '+String(cur||''); }
 }
 // in euro: con i cambi automatici BCE si usa la media del mese del movimento (date)
 function toEur(n,cur,date){ return LFCore.eurAt(DB, n, cur, date); }
@@ -275,11 +284,11 @@ function parseCSV(text, delim='auto'){
 
 /* ---------- Auto-mapping euristico ---------- */
 const HINTS = {
-  date:['date','data','sold','time','timestamp','giorno','sale month','sales period','reporting date','reporting','period','month','accounting','transaction date','order date','street date','sale date'],
-  platform:['platform','store','piattaforma','retailer','shop','source','channel','dsp','outlet','service','marketplace','partner','vendor'],
+  date:['date','data','fecha','datum','datas','sold','time','timestamp','giorno','data operazione','data contabile','booking date','transaction date','fecha operacion','date operation','buchungstag','buchungsdatum','transactiedatum','sale month','sales period','reporting date','reporting','period','month','accounting','transaction date','order date','street date','sale date'],
+  platform:['platform','store','piattaforma','retailer','shop','source','channel','dsp','outlet','service','marketplace','partner','vendor','fornitore','supplier','beneficiario','payee','negozio','merchant','azienda','società','societa','ditta','company','proveedor','fournisseur','beneficiaire','lieferant','empfanger','zahlungsempfanger','fornecedor','leverancier','tegenpartij','counterparty','vendor name','beguenstigter'],
   type:['type','tipo','format','formato','item type','product type','sale type'],
   catalog:['catalog number','catalogue number','catalog','cat no','catalogue','catalogo','catno','cat#','cat'],
-  product:['item name','track title','song title','album title','release title','product title','item','product','title','titolo','prodotto','track','release','name','album','song','recording','content'],
+  product:['item name','track title','song title','album title','release title','product title','item','product','title','titolo','prodotto','track','release','name','album','song','recording','content','descrizione','description','voce','causale','dettaglio','details','oggetto','nome','concepto','descripcion','libelle','designation','beschreibung','verwendungszweck','buchungstext','omschrijving','descricao','memo description','narrative','particulars'],
   artist:['artist name','primary artist','display artist','album artist','main artist','artist','artista','band','performer'],
   isrc:['isrc'],
   upc:['upc','ean','barcode','upc/ean'],
@@ -288,23 +297,32 @@ const HINTS = {
   shipping:['shipping','spedizione'],
   taxes:['tax','vat','iva','imposta'],
   payProcFees:['payment processor','processor fee','processor','paypal fee','stripe fee'],
-  fees:['transaction fee','fee','fees','commission','commissioni','charge'],
-  net:['net revenue','net income','net payable','net amount','your earnings','amount payable','earnings','royalties','royalty','royalt','payout','payable','net','netto'],
+  fees:['transaction fee','fee','fees','commission','commissioni','charge','tariffa','tarifa','frais','gebuhr','gebuhren','kosten','comissao'],
+  net:['net revenue','net income','net payable','net amount','your earnings','amount payable','earnings','royalties','royalty','royalt','payout','payable','net','netto','importo','totale','total','spesa','costo','cost','importe','monto','montant','betrag','valor','bedrag','amount eur','amount (eur)'],
   csShare:['collection society','society share','collecting society','cmo','pro share','mechanical'],
   dateTo:['date to','transaction date to','to date'],
-  currency:['currency code','currency','valuta','curr','ccy','cur'],
+  currency:['currency code','currency','valuta','curr','ccy','cur','moneda','divisa','devise','wahrung','moeda','munt'],
   territory:['country of sale','sales country','country code','country','territory','territorio','paese','nazione','region'],
+  kind:['tipo movimento','entrata/uscita','entrata uscita','in/out','movimento','kind','direction','dare/avere'],
+  category:['categoria','category','categoria spesa','categoria spese','tipo spesa','tipo spese','voce di spesa','expense type','expense category','centro di costo','cost center','categoria gasto','categorie','categorie depense','kategorie','kostenart','categoria despesa','rubriek'],
+  note:['note','notes','nota','memo','commento','commenti','comment','comments','notas','remarque','remarques','bemerkung','notiz','notizen','observacoes','opmerking','opmerkingen'],
+  amountIn:['entrate','entrata','avere','accrediti','accredito','incassi','ricavi','credit','credits','credit amount','deposit','deposits','paid in','money in','ingresos','haber','abono','credito','recettes','encaissements','einnahmen','haben','gutschrift','entradas','inkomsten','bij'],
+  amountOut:['uscite','uscita','dare','addebiti','addebito','pagamenti','debit','debits','debit amount','withdrawal','withdrawals','paid out','money out','gastos','debe','cargo','debito','depenses','decaissements','ausgaben','soll','lastschrift','saidas','uitgaven','af'],
+  release:['release','release collegata','progetto','project','uscita discografica'],
 };
-const colNorm = s => String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
+// colonne di servizio dei fogli personali: non si collegano da sole a nessun campo (si possono scegliere a mano)
+const MAP_SKIP=new Set(['data valuta','value date','valuta data','pagato','pagata','paid','metodo pagamento','metodo di pagamento','modalità pagamento','modalita pagamento','payment method','note pagamento','payment note','saldo','balance','progressivo','iban'].map(s=>String(s).toLowerCase().replace(/[^a-z0-9]+/g,'')));
+const colNorm = s => String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'');
 function autoMap(headers){
-  const map={}; const used=new Set(); const nh=headers.map(colNorm);
-  for(const [field] of CANON){
-    const hints=(HINTS[field]||[]).map(colNorm).filter(Boolean);
-    let best=-1;
-    nh.forEach((h,i)=>{ if(used.has(i)||best>-1) return; if(hints.includes(h)) best=i; });          // 1) intestazione == sinonimo
-    if(best===-1) nh.forEach((h,i)=>{ if(used.has(i)||best>-1) return; if(hints.some(k=>h.includes(k))) best=i; });  // 2) sinonimo contenuto
-    if(best>-1){ map[field]=best; used.add(best); }
-  }
+  const map={}; const nh=headers.map(colNorm); const used=new Set(nh.map((h,i)=>MAP_SKIP.has(h)?i:-1).filter(i=>i>-1));
+  const hintsOf=f=>(HINTS[f]||[]).map(colNorm).filter(Boolean);
+  // 1) intestazione == sinonimo, su tutti i campi (così "Categoria" non finisce in Catalogo); prima i campi dei fogli personali
+  for(const [field] of CANON_EXTRA.concat(CANON)){ const hs=hintsOf(field); const i=nh.findIndex((h,j)=>!used.has(j) && hs.includes(h)); if(i>-1){ map[field]=i; used.add(i); } }
+  // 2) sinonimo contenuto nell'intestazione (solo sinonimi di almeno 3 lettere)
+  const EXACT_ONLY=new Set(['count','cur','curr','ccy','cat','nome']);
+  for(const [field] of MAP_FIELDS){ if(map[field]!=null) continue; const hs=hintsOf(field).filter(k=>!EXACT_ONLY.has(k) && k.length>=(field==='amountIn'||field==='amountOut'?6:3));
+    const i=nh.findIndex((h,j)=>!used.has(j) && hs.some(k=>h.includes(k)) && !(field==='catalog' && h.includes('categ')));
+    if(i>-1){ map[field]=i; used.add(i); } }
   return map;
 }
 
@@ -2508,6 +2526,7 @@ const EXP_RULES=[
   ['travel',['travel','viaggio','hotel','flight','volo','treno','train','fuel','benzina','trasfert','taxi','rental','noleggio','soggiorno']],
 ];
 function expenseCategory(t){
+  if(t && t.cat && EXP_CATS.includes(t.cat)) return t.cat;   // categoria presa dal foglio importato
   if(t&&t.type==='merch') return 'manufacturing';
   const hay=(' '+((t&&t.product)||'')+' '+((t&&t.note)||'')+' '+((t&&t.platform)||'')+' '+((t&&t.type)||'')+' ').toLowerCase();
   for(const [cat,kws] of EXP_RULES){ if(kws.some(k=>hay.includes(k))) return cat; }
@@ -2559,6 +2578,13 @@ $('#tx-form').onsubmit=e=>{
     net:parseAmount($('#f-net').value, '.'), csShare:parseAmount($('#f-csshare').value, '.'),
     currency:($('#f-currency').value||'EUR').toUpperCase().slice(0,3), note:$('#f-note').value.trim(),
   };
+  // controlli: valuta vera (anche "€" o "$"), anno a 4 cifre, importi plausibili, spese sempre positive
+  const cur=normCur($('#f-currency').value||'EUR','');
+  if(!cur){ toast(tt('tx.cur_invalid')); return; }
+  rec.currency=cur;
+  if(rec.date && (rec.date.slice(0,4)<'2000' || rec.date.slice(0,4)>'2100')){ toast(tt('tx.date_invalid')); return; }
+  if([rec.net,rec.gross,rec.fees].some(v=>Math.abs(+v||0)>1e9)){ toast(tt('tx.amount_invalid')); return; }
+  if(rec.kind==='expense') rec.net=Math.abs(rec.net);
   if(!id){ const an=txAmountAnomaly(rec.net, rec.kind);
     if(an && !confirm(tt('tx.anomaly_confirm').replace('{v}',fmtMoney(an.v)).replace('{m}',fmtMoney(an.med)))) return; }
   const prev=id?DB.transactions.find(t=>t.id===id):null;
@@ -2676,32 +2702,177 @@ $('#file-input').onchange=e=>{ if(e.target.files[0]) readFile(e.target.files[0])
 ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('drag');}));
 drop.addEventListener('drop',e=>{ const f=e.dataTransfer.files[0]; if(f) readFile(f); });
 
+/* ---------- Excel .xlsx senza librerie: zip (DecompressionStream) + XML del foglio ---------- */
+async function xlsxRead(buf){
+  const u8=new Uint8Array(buf), dv=new DataView(buf), dec=new TextDecoder();
+  let eocd=-1; for(let i=u8.length-22; i>=Math.max(0,u8.length-65557); i--){ if(dv.getUint32(i,true)===0x06054b50){ eocd=i; break; } }
+  if(eocd<0) throw new Error('zip');
+  const files=new Map(); let p=dv.getUint32(eocd+16,true);
+  for(let k=0, n=dv.getUint16(eocd+10,true); k<n && dv.getUint32(p,true)===0x02014b50; k++){
+    const nl=dv.getUint16(p+28,true), xl=dv.getUint16(p+30,true), cl=dv.getUint16(p+32,true);
+    files.set(dec.decode(u8.subarray(p+46,p+46+nl)), { method:dv.getUint16(p+10,true), size:dv.getUint32(p+20,true), at:dv.getUint32(p+42,true) });
+    p+=46+nl+xl+cl;
+  }
+  const read=async name=>{ const e=files.get(name); if(!e) return '';
+    const st=e.at+30+dv.getUint16(e.at+26,true)+dv.getUint16(e.at+28,true), data=u8.subarray(st, st+e.size);
+    if(e.method===0) return dec.decode(data);
+    return await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text(); };
+  const xml=t=>new DOMParser().parseFromString(t||'<x/>','application/xml');
+  const kids=(el,tag)=>[...el.getElementsByTagName(tag)];
+  const wb=xml(await read('xl/workbook.xml')), rels=xml(await read('xl/_rels/workbook.xml.rels'));
+  const d1904=kids(wb,'workbookPr').some(e=>/^(1|true)$/.test(e.getAttribute('date1904')||''));
+  const shared=kids(xml(await read('xl/sharedStrings.xml')),'si').map(si=>kids(si,'t').map(t=>t.textContent).join(''));
+  // stili con formato data (giorni seriali → AAAA-MM-GG)
+  const st=xml(await read('xl/styles.xml')), custom={};
+  kids(st,'numFmt').forEach(f=>{ custom[f.getAttribute('numFmtId')]=f.getAttribute('formatCode')||''; });
+  const isDateFmt=id=>{ id=+id; if((id>=14&&id<=22)||(id>=27&&id<=36)||(id>=45&&id<=47)||(id>=50&&id<=58)) return true;
+    const c=(custom[id]||'').replace(/"[^"]*"|\[[^\]]*\]|\\./g,''); return /[dy]/i.test(c) || /m{3,}/i.test(c); };
+  const xfs=kids(st,'cellXfs')[0]; const dateStyle=xfs ? kids(xfs,'xf').map(x=>isDateFmt(x.getAttribute('numFmtId'))) : [];
+  const toISO=n=>{ const ms=(d1904?Date.UTC(1904,0,1):Date.UTC(1899,11,30))+Math.floor(+n)*864e5; return new Date(ms).toISOString().slice(0,10); };
+  const colIdx=ref=>{ const m=/^([A-Z]+)/.exec(ref||''); let n=0; if(m) for(const ch of m[1]) n=n*26+ch.charCodeAt(0)-64; return n-1; };
+  const relTarget=id=>{ const r=kids(rels,'Relationship').find(x=>x.getAttribute('Id')===id); const t=r?r.getAttribute('Target'):''; return t.startsWith('/')?t.slice(1):'xl/'+t.replace(/^\.\//,''); };
+  const sheets=[];
+  for(const sh of kids(wb,'sheet')){
+    const rid=sh.getAttribute('r:id')||sh.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id');
+    const doc=xml(await read(relTarget(rid))); const rows=[];
+    kids(doc,'row').forEach(r=>{ const out=[];
+      kids(r,'c').forEach(c=>{ const i=colIdx(c.getAttribute('r')), t=c.getAttribute('t'), v=(c.getElementsByTagName('v')[0]||{}).textContent;
+        let val='';
+        if(t==='s') val=shared[+v]||''; else if(t==='inlineStr') val=kids(c,'t').map(x=>x.textContent).join('');
+        else if(t==='b') val=v==='1'?'TRUE':'FALSE'; else if(t==='str'||t==='e') val=v||'';
+        else if(v!=null && v!==''){ val = dateStyle[+(c.getAttribute('s')||0)] ? toISO(v) : String(Math.round(+v*1e9)/1e9); }
+        if(i>=0){ while(out.length<i) out.push(''); out[i]=val; } });
+      if(out.some(x=>String(x).trim()!=='')) rows.push(out.map(x=>String(x))); });
+    sheets.push({ name:sh.getAttribute('name')||('Sheet '+(sheets.length+1)), rows });
+  }
+  return sheets;
+}
+// testo del CSV: UTF-8, altrimenti Windows-1252 (CSV salvati da Excel in italiano)
+function decodeText(buf){ try{ return new TextDecoder('utf-8',{fatal:true}).decode(buf); }catch(e){ return new TextDecoder('windows-1252').decode(buf); } }
+let importSheets=null, importAll=[], importFileName='';
 function readFile(file){
   const r=new FileReader();
-  r.onload=()=>{ window._rawCSV=r.result; refreshParse(); $('#import-config').hidden=false;
+  r.onload=async ()=>{
+    const buf=r.result, u8=new Uint8Array(buf);
+    importSheets=null; window._rawCSV=''; importFileName=file.name.replace(/\.[^.]+$/,'');
+    if(/\.xls$/i.test(file.name)){ toast(tt('imp.xls_old')); return; }
+    if(u8[0]===0x50 && u8[1]===0x4b){   // "PK": file zip = Excel .xlsx
+      try{ importSheets=(await xlsxRead(buf)).filter(s=>s.rows.length); }catch(e){ importSheets=null; }
+      if(!importSheets || !importSheets.length){ toast(tt('imp.xlsx_fail')); return; }
+    } else window._rawCSV=decodeText(buf);
+    // ogni file riparte dalle impostazioni automatiche (non quelle del file precedente)
+    $('#map-kind').value='income'; $('#map-datefmt').value='auto'; $('#map-platform').value=''; $('#map-delim').value='auto';
+    if($('#map-preset')) $('#map-preset').value='';
+    const sw=$('#map-sheet-wrap'), ss=$('#map-sheet');
+    if(sw && ss){ sw.hidden=!(importSheets && importSheets.length>1);
+      ss.innerHTML=(importSheets||[]).map((x,i)=>`<option value="${i}">${esc(x.name)}</option>`).join(''); }
+    const dw=$('#map-delim'); if(dw) dw.closest('label').hidden=!!importSheets;
+    refreshParse(true); $('#import-config').hidden=false;
     populatePresets(); $('#map-preset-name').value=file.name.replace(/\.[^.]+$/,''); };
-  r.readAsText(file);
+  r.readAsArrayBuffer(file);
 }
-function refreshParse(){
-  const rows=parseCSV(window._rawCSV||'', $('#map-delim').value);
-  importHeaders=rows[0]||[]; importRows=rows.slice(1);
+// riga d'intestazione: la prima (tra le prime 15) con almeno 2 nomi di colonna riconosciuti
+function detectHeaderRow(rows){
+  const all=Object.values(HINTS).flat().map(colNorm).filter(k=>k.length>=3);
+  let best=0, bestScore=1;
+  rows.slice(0,15).forEach((r,i)=>{ const sc=r.filter(c=>{ const h=colNorm(c); return h && h.length<40 && all.some(k=>h===k || (k.length>=4 && h.includes(k))); }).length;
+    if(sc>bestScore){ best=i; bestScore=sc; } });
+  return best;
+}
+function refreshParse(fresh){
+  if(fresh && $('#map-kind')) $('#map-kind').value='income';
+  importAll = importSheets ? ((importSheets[+($('#map-sheet')||{}).value||0]||importSheets[0]).rows) : parseCSV(window._rawCSV||'', $('#map-delim').value);
+  const hs=$('#map-header');
+  if(hs){ if(fresh || !hs.options.length || hs.dataset.n!==String(importAll.length)){
+      const h=detectHeaderRow(importAll); hs.dataset.n=String(importAll.length);
+      hs.innerHTML=importAll.slice(0,15).map((r,i)=>`<option value="${i}">${esc(tt('imp.header_row').replace('{n}', i+1))} — ${esc(r.filter(Boolean).slice(0,3).join(' · ').slice(0,60))}</option>`).join('');
+      hs.value=String(h); } }
+  const hr=hs ? (+hs.value||0) : 0;
+  importHeaders=importAll[hr]||[]; importRows=importAll.slice(hr+1);
   const distro=detectDistro();
-  if(distro){ $('#map-distro').value=distro; applyDistro(distro); }
-  else { $('#map-distro').value='auto'; buildMapFields(autoMap(importHeaders)); }
+  $('#map-distro').value=distro||'auto';
+  const map=smartMap(distro ? distroMap(distro) : autoMap(importHeaders));
+  autoKindMode(map, distro);
+  buildMapFields(map);
   renderPreview();
 }
-$('#map-delim').onchange=refreshParse;
+/* ---------- Riconoscimento dal contenuto: guarda i valori, non solo i nomi delle colonne ----------
+   Completa le colonne rimaste senza campo: date, importi, valute, ISRC, UPC, paesi, Entrata/Uscita,
+   categorie di spesa, descrizione. Prudente: assegna solo quando quasi tutti i valori tornano. */
+function colSample(i){ return importRows.slice(0,300).map(r=>String((r||[])[i]??'').trim()).filter(Boolean); }
+function smartMap(map){
+  map=Object.assign({}, map); const used=new Set(Object.values(map));
+  importHeaders.forEach((h,i)=>{ if(MAP_SKIP.has(colNorm(h))) used.add(i); });   // colonne di servizio (Pagato, Metodo pagamento…)
+  const n=importHeaders.length, free=[...Array(n).keys()].filter(i=>!used.has(i));
+  const share=(vals,test)=>vals.length ? vals.filter(test).length/vals.length : 0;
+  const take=(f,i)=>{ if(map[f]==null && i!=null && i>-1 && !used.has(i)){ map[f]=i; used.add(i); } };
+  const isNum=v=>/^[-+(]?\s*[€$£¥]?\s*-?\d[\d.,'\s]*\s*[€$£¥]?\)?$/.test(v) && !/^\d{12,13}$/.test(v);
+  const isDate=v=>/^\d{4}-\d{2}-\d{2}/.test(v) || /^\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4}$/.test(v) || (/^\d{5}$/.test(v) && +v>30000 && +v<60000)
+    || (v.length<=30 && /\d/.test(v) && /[a-zà-ü]{3}/i.test(v) && !!LFCore.parseDate(v) && /\b(19|20)\d{2}\b/.test(v));   // "29 nov 2025", "Mar 1, 2026" 
+  const kindLike=i=>{ const v=colSample(i).slice(0,60); return v.length && v.filter(x=>kindFromText(x)!=null && x.length<=12).length/v.length>=0.9; };
+  if(map.kind==null && map.type!=null && kindLike(map.type)){ map.kind=map.type; delete map.type; }
+  const S={}; free.forEach(i=>{ S[i]=colSample(i); });
+  const pick=(test, min=0.85)=>free.find(i=>!used.has(i) && S[i].length && share(S[i],test)>=min);
+  take('date', pick(isDate));
+  take('isrc', pick(v=>ISRC_RE.test(v.replace(/[-\s]/g,''))));
+  take('upc', pick(v=>/^\d{12,13}$/.test(v.replace(/\s/g,''))));
+  take('currency', pick(v=>v.length<=4 && !!normCur(v,'')));
+  take('territory', pick(v=>/^[A-Z]{2}$/.test(v), 0.9));
+  take('kind', pick(v=>kindFromText(v)!=null && v.length<=12, 0.9));
+  // importo: la colonna numerica con più decimali (a parità, la più a destra)
+  if(map.net==null && map.gross==null && map.amountIn==null && map.amountOut==null){
+    const nums=free.filter(i=>!used.has(i) && S[i].length && share(S[i],isNum)>=0.85);
+    const dec=i=>share(S[i], v=>/[.,]\d{1,2}\)?\s*[€$£¥]?$/.test(v));
+    nums.sort((a,b)=>dec(b)-dec(a) || b-a);
+    take('net', nums[0]);
+  }
+  // categoria: testo con pochi valori diversi che somigliano a categorie di spesa
+  { const c=free.find(i=>{ if(used.has(i)) return false; const v=S[i]; if(v.length<3) return false; const d=new Set(v.map(x=>x.toLowerCase()));
+      return d.size<=Math.max(3, v.length*0.4) && d.size<=40 && share([...d], x=>!!expCatFromText(x))>=0.5; });
+    take('category', c); }
+  // "Prodotto" che contiene sempre lo stesso valore (es. "Current" di Revolut): meglio una colonna di testo più varia
+  if(map.product!=null){ const pv=colSample(map.product); const d=new Set(pv).size;
+    if(pv.length>=4 && d<=2){ const alt=free.find(i=>!used.has(i) && S[i].length && new Set(S[i]).size>=Math.max(3,d*3) && share(S[i], v=>!isNum(v) && !isDate(v))>=0.8);
+      if(alt!=null){ used.delete(map.product); delete map.product; } } }
+  // descrizione: la colonna di testo più varia e più lunga
+  if(map.product==null){
+    const txt=free.filter(i=>!used.has(i) && S[i].length && share(S[i], v=>!isNum(v) && !isDate(v))>=0.8);
+    const score=i=>100*new Set(S[i]).size/Math.max(1,S[i].length) + S[i].reduce((a,v)=>a+v.length,0)/Math.max(1,S[i].length);
+    txt.sort((a,b)=>score(b)-score(a)); take('product', txt[0]);
+  }
+  return map;
+}
+// entrata/uscita decise da sole: colonna "Entrata/Uscita" → riga per riga; foglio di spese → uscite;
+// importi sia positivi sia negativi in un foglio non di distributore → dal segno
+function autoKindMode(map, distro){
+  const sel=$('#map-kind'); if(!sel) return;
+  if(map.amountIn!=null || map.amountOut!=null){ sel.value='inout'; return; }   // due colonne: Entrate / Uscite (Dare / Avere)
+  if(map.kind!=null){ const vals=colSample(map.kind).slice(0,60);
+    if(vals.length && vals.filter(v=>kindFromText(v)!=null).length/vals.length>=0.9){ sel.value='col'; return; } }
+  if(distro && !(DISTRO_PRESETS[distro]||{}).sign) return;   // report dei distributori: un negativo è un rimborso, resta entrata
+  const amtCol=map.net!=null ? map.net : map.gross;
+  const vals=amtCol!=null ? colSample(amtCol).map(v=>parseAmount(v, LFCore.detectDecimalSep(colSample(amtCol)))).filter(v=>v) : [];
+  const neg=vals.filter(v=>v<0).length, pos=vals.length-neg;
+  const hay=colNorm(importHeaders.join(' ')+' '+(($('#map-sheet')&&$('#map-sheet').selectedOptions[0]||{}).textContent||'')+' '+importFileName);
+  const expWords=/spes|uscit|expense|cost|acquist|fattur|ricevut|purchase|outgo/.test(hay);
+  if(vals.length && neg && pos && neg/vals.length>=0.1) sel.value='sign';
+  else if(map.category!=null || expWords || (vals.length && neg===vals.length)) sel.value='expense';
+}
+$('#map-delim').onchange=()=>refreshParse(true);
+$('#map-header')?.addEventListener('change',()=>refreshParse(false));
+$('#map-sheet')?.addEventListener('change',()=>refreshParse(true));
 ['#map-kind','#map-datefmt','#map-currency','#map-platform'].forEach(s=>$(s).addEventListener('input',renderPreview));
+$('#map-kind')?.addEventListener('change',()=>{ buildMapFields(currentMap()); renderPreview(); });
 
 /* ---------- Preset distributori (riconoscimento automatico colonne) ---------- */
 const DISTRO_PRESETS={
   bandcamp:{ name:'Bandcamp', platform:'Bandcamp', datefmt:'mdy', fields:{
     date:['date'], type:['item type'], artist:['artist'], product:['item name'],
     catalog:['catalog number','catalog'], upc:['upc'], qty:['quantity'],
-    gross:['item total','sub total','item price'], fees:['transaction fee'],
+    gross:['sub total','item total','item price'], fees:['transaction fee'], shipping:['shipping'], taxes:['tax'], isrc:['isrc'],
     net:['net amount'], currency:['currency'], territory:['country'] } },
   distrokid:{ name:'DistroKid', platform:'DistroKid', datefmt:'ymd', fields:{
-    date:['reporting date','sale month','sale date'], platform:['store'], type:['type'],
+    date:['sale month','sale date','reporting date'], platform:['store'], type:['type'],
     product:['title','song'], artist:['artist'], isrc:['isrc'], upc:['upc'],
     qty:['quantity'], net:['earnings'], currency:['currency'], territory:['country','territory'] } },
   believe:{ name:'Believe', platform:'Believe', datefmt:'dmy', fields:{
@@ -2725,39 +2896,57 @@ const DISTRO_PRESETS={
     date:['report date','sale date','date','period'], platform:['partner','store','dsp'],
     product:['track','album','title'], artist:['artist'], isrc:['isrc'], upc:['upc'],
     qty:['quantity','units','plays'], net:['payable','earnings','net','your share'], currency:['currency'], territory:['country','territory'] } },
+  paypal:{ name:'PayPal', platform:'PayPal', need:/fusoorario|timezone/, sign:true, fields:{   // negativo = pagamento fatto (uscita)
+    date:['data','date'], product:['nome','name'], type:['tipo','type'], gross:['lordo','gross'], fees:['tariffa','fee'],
+    net:['netto','net'], currency:['valuta','currency'] } },
   labelengine:{ name:'Label Engine', platform:'Label Engine', datefmt:'ymd', fields:{
     date:['sales period','date','period','month'], platform:['store','retailer','dsp','shop'],
     product:['track title','release title','title','track'], artist:['artist'], isrc:['isrc'], upc:['upc','catalog'],
     qty:['quantity','units','qty'], net:['net','royalty','earnings','revenue'], currency:['currency'], territory:['country','territory'] } },
 };
+// colonna del preset: prima il sinonimo più importante, prima l'intestazione identica e poi quella che lo contiene
+function presetCol(subs, used){
+  const hl=importHeaders.map(h=>String(h||'').toLowerCase().trim());
+  for(const s of subs){ const i=hl.findIndex((h,j)=>!used.has(j) && h===s); if(i>-1) return i; }
+  for(const s of subs){ const i=hl.findIndex((h,j)=>!used.has(j) && h.includes(s)); if(i>-1) return i; }
+  return -1;
+}
+function presetMap(p){ const map={}, used=new Set();
+  CANON.forEach(([f])=>{ const subs=p.fields[f]; if(!subs) return; const i=presetCol(subs, used); if(i>-1){ map[f]=i; used.add(i); } });
+  return map; }
 function detectDistro(){
   let best=null, bestScore=2;
-  for(const key in DISTRO_PRESETS){ const p=DISTRO_PRESETS[key]; let s=0;
-    for(const f in p.fields){ if(importHeaders.some(h=>p.fields[f].some(x=>h.toLowerCase().includes(x)))) s++; }
+  const hn=importHeaders.map(colNorm).join('|');
+  for(const key in DISTRO_PRESETS){ const p=DISTRO_PRESETS[key]; if(p.need && !p.need.test(hn)) continue; const m=presetMap(p);
+    if(m.date==null || (m.net==null && m.gross==null)) continue;   // un preset vale solo se trova data e importo
+    const s=Object.keys(m).length;
     if(s>bestScore){ bestScore=s; best=key; } }
   return best;
 }
-function applyDistro(key){
-  const p=DISTRO_PRESETS[key]; if(!p){ buildMapFields(autoMap(importHeaders)); return; }
+function distroMap(key){
+  const p=DISTRO_PRESETS[key]; if(!p) return autoMap(importHeaders);
   if($('#map-platform')) $('#map-platform').value=p.platform||'';
   if(p.datefmt) $('#map-datefmt').value=p.datefmt;
-  const map={}, used=new Set();
-  CANON.forEach(([f])=>{ const subs=p.fields[f]; if(!subs) return;
-    importHeaders.forEach((h,i)=>{ if(used.has(i)) return;
-      if(map[f]==null && subs.some(s=>h.toLowerCase().includes(s))){ map[f]=i; used.add(i); } }); });
-  buildMapFields(map);
+  // il preset decide le sue colonne; le altre restano quelle riconosciute in automatico
+  const map=presetMap(p), used=new Set(Object.values(map)), auto=autoMap(importHeaders);
+  Object.entries(auto).forEach(([f,i])=>{ if(map[f]==null && !used.has(i)){ map[f]=i; used.add(i); } });
+  return map;
 }
+function applyDistro(key){ buildMapFields(smartMap(distroMap(key))); }
 $('#map-distro')?.addEventListener('change',()=>{
   const v=$('#map-distro').value;
-  if(v==='auto') buildMapFields(autoMap(importHeaders)); else applyDistro(v);
+  if(v==='auto') buildMapFields(smartMap(autoMap(importHeaders))); else applyDistro(v);
   renderPreview();
 });
 
+function mapLabel(f, def){ const exp=$('#map-kind') && $('#map-kind').value==='expense';
+  const k=(exp && ['product','platform','net','catalog'].includes(f)) ? 'imp.fx_'+f : 'imp.f_'+f; const v=tt(k); return v&&v!==k ? v : def; }
 function buildMapFields(initial={}){
-  $('#map-fields').innerHTML = CANON.map(([f,label])=>`
-    <div class="map-row"><span>${label}</span>
+  const mode=$('#map-kind') ? $('#map-kind').value : 'income';
+  $('#map-fields').innerHTML = MAP_FIELDS.filter(([f])=>(f!=='kind' || mode==='col') && ((f!=='amountIn' && f!=='amountOut') || mode==='inout')).map(([f,label])=>`
+    <div class="map-row"><span>${esc(mapLabel(f,label))}</span>
       <select class="select map-sel" data-field="${f}">
-        <option value="">— ignora —</option>
+        <option value="">${esc(tt('imp.ignore'))}</option>
         ${importHeaders.map((h,i)=>`<option value="${i}" ${initial[f]===i?'selected':''}>${esc(h)||'col '+(i+1)}</option>`).join('')}
       </select></div>`).join('');
   $$('.map-sel').forEach(s=>s.onchange=renderPreview);
@@ -2767,38 +2956,86 @@ function currentMap(){
 }
 /* formato del file deciso una volta su tutte le righe: separatore decimale e giorno/mese */
 const AMOUNT_FIELDS=['gross','shipping','taxes','payProcFees','fees','csShare','net','qty'];
+// Excel: data come numero di giorni ("45000") → AAAA-MM-GG
+const excelSerialDate=v=>{ const s=String(v||'').trim(); if(!/^\d{5}(\.\d+)?$/.test(s) || +s<20000 || +s>80000) return s;
+  return new Date(Date.UTC(1899,11,30)+Math.floor(+s)*864e5).toISOString().slice(0,10); };
+// "Entrata/Uscita" scritto in tanti modi: income | expense | null (non riconosciuto)
+function kindFromText(v){ const s=String(v||'').trim().toLowerCase(); if(!s) return null;
+  if(/^(u|o|out|uscit|spes|expense|expenses|cost|costo|costi|debit|dare|addebit|-)/.test(s)) return 'expense';
+  if(/^(e|i|in|entrat|income|ricav|incass|revenue|credit|avere|accredit|vendit|sale|\+)/.test(s)) return 'income';
+  return null; }
+// categoria del foglio → categoria dell'app (anche scritta nelle altre lingue o con parole chiave)
+function expCatFromText(v){ const s=String(v||'').trim().toLowerCase(); if(!s) return null;
+  // nome identico, altrimenti il nome più lungo contenuto ("Produzione fisica" batte "Produzione"), poi le parole chiave
+  let best=null, bestLen=0;
+  for(const c of EXP_CATS){ if(s===c) return c; const names=(window.LFI18N&&LFI18N.tAll)?LFI18N.tAll('ecat.'+c):[tt('ecat.'+c)];
+    for(let n of names){ n=String(n||'').toLowerCase(); if(!n) continue; if(s===n) return c;
+      const parts=[n, ...n.split(/\s*[&\/]\s*/)].filter(x=>x.length>=4);
+      parts.forEach(x=>{ if(s.includes(x) && x.length>bestLen){ best=c; bestLen=x.length; } }); } }
+  if(best) return best;
+  const hay=' '+s+' '; for(const [c,kws] of EXP_RULES){ if(kws.some(k=>hay.includes(k))) return c; }
+  return null; }
 function importContext(map){
   const vals=[]; AMOUNT_FIELDS.forEach(f=>{ if(map[f]!=null) importRows.forEach(r=>vals.push(r[map[f]])); });
-  const dates=[]; ['date','dateTo'].forEach(f=>{ if(map[f]!=null) importRows.forEach(r=>dates.push(r[map[f]])); });
+  const dates=[]; ['date','dateTo'].forEach(f=>{ if(map[f]!=null) importRows.forEach(r=>dates.push(excelSerialDate(r[map[f]]))); });
   const sel=$('#map-datefmt').value;
-  return { dec:LFCore.detectDecimalSep(vals), datefmt: sel==='auto' ? LFCore.detectDateFormat(dates) : sel };
+  // valuta scritta nell'intestazione dell'importo, es. "Earnings (USD)"
+  const hc=[map.net,map.gross].filter(i=>i!=null).map(i=>String(importHeaders[i]||'')).join(' ');
+  const hm=/\(([A-Za-z]{3})\)|\b(EUR|USD|GBP|JPY|CHF|CAD|AUD|SEK|NOK|DKK|BRL|MXN|PLN)\b|([€$£¥])/.exec(hc);
+  const hdrCur=hm ? normCur(hm[1]||hm[2]||hm[3], '') : '';
+  return { dec:LFCore.detectDecimalSep(vals), datefmt: sel==='auto' ? LFCore.detectDateFormat(dates) : sel, hdrCur };
 }
 function rowToRec(cols,map,ctx){
   ctx=ctx||importContext(map);
-  const kind=$('#map-kind').value, fmt=ctx.datefmt, dec=ctx.dec;
-  const defCur=($('#map-currency').value||'EUR').toUpperCase().slice(0,3);
+  const mode=$('#map-kind').value, fmt=ctx.datefmt, dec=ctx.dec;
+  const defCur=normCur($('#map-currency').value,'EUR')||'EUR';
   const get=f=> map[f]!=null ? String(cols[map[f]]??'') : '';
   const amt=f=>parseAmount(get(f), dec);
   const gross=amt('gross'), fees=amt('fees');
-  let net = map.net!=null ? amt('net') : (gross-fees);
+  const netCell=map.net!=null ? get('net').trim() : '';
+  let net = netCell!=='' ? amt('net') : (gross-fees);
+  let noAmt = netCell==='' && (map.gross==null || get('gross').trim()==='');   // riga senza importo (es. prova gratuita, riga dell'anno)
+  // entrata o uscita: per tutto il file, da una colonna, dal segno (negativo = uscita) o da due colonne Entrate/Uscite
+  let kind = mode==='expense' ? 'expense' : 'income';
+  if(mode==='col') kind=kindFromText(get('kind')) || (net<0?'expense':'income');
+  else if(mode==='sign') kind = net<0 ? 'expense' : 'income';
+  else if(mode==='inout'){ const o=amt('amountOut'), i=amt('amountIn');
+    if(o){ kind='expense'; net=Math.abs(o); } else { kind=(i<0?'expense':'income'); net=i; }
+    noAmt = !o && !i; }
   if(kind==='expense') net=Math.abs(net);
-  return {
-    id:uid(), kind, date:parseDate(get('date'),fmt), dateTo:parseDate(get('dateTo'),fmt),
-    platform:($('#map-platform').value.trim()||get('platform')).trim(),
-    type:get('type').trim()||(kind==='expense'?'expense':'digital'),
+  const catTxt=get('category').trim(), cat=kind==='expense' ? expCatFromText(catTxt) : null;
+  const rawCur=get('currency').trim(), cur=normCur(rawCur, '') || ctx.hdrCur || defCur;
+  const dRaw=get('date').trim(), relTxt=get('release').trim();
+  const rec={
+    id:uid(), kind, date:/^\d{4}$/.test(dRaw) ? '' : parseDate(excelSerialDate(dRaw),fmt),   // "2025" da solo = riga di gruppo, non una data
+    dateTo:parseDate(excelSerialDate(get('dateTo')),fmt),
+    platform:(get('platform').trim()||$('#map-platform').value.trim()),   // la colonna del file vince; quello scritto a mano solo se manca
+    type:get('type').trim()||(kind==='expense'?(catTxt||'expense'):'digital'),
     catalog:get('catalog').trim(), product:get('product').trim(), artist:get('artist').trim(),
     isrc:get('isrc').trim(), upc:get('upc').trim(), territory:get('territory').trim().toUpperCase(),
     qty:Number(amt('qty'))||(map.qty!=null?0:1),
     gross, shipping:amt('shipping'), taxes:amt('taxes'),
     payProcFees:amt('payProcFees'), fees, net, csShare:amt('csShare'),
-    currency:(get('currency')||defCur).trim().toUpperCase().slice(0,3), note:'',
+    currency:cur, note:get('note').trim(),
   };
+  if(cat) rec.cat=cat;
+  // spesa senza descrizione: si usa la nota, altrimenti categoria e fornitore
+  if(kind==='expense' && !rec.product) rec.product=rec.note || [catTxt, rec.platform].filter(Boolean).join(' · ');
+  // release collegata (colonna "Release"): conta nel conto economico di quella release, anche se la crei dopo
+  if(relTxt){ rec.release=relTxt; const r=releaseByCatalog(relTxt)||releaseByTitle(relTxt); if(r && !rec.catalog) rec.catalog=r.catalog||''; }
+  if(rawCur && !normCur(rawCur,'')) rec._badCur=rawCur;
+  if(noAmt) rec._noAmt=true;
+  return rec;
 }
-function importRecs(map){ const ctx=importContext(map); return importRows.map(r=>rowToRec(r,map,ctx)); }
+// righe senza una data valida (totali, righe vuote del foglio) non diventano movimenti
+function importRecs(map){ const ctx=importContext(map); return importRows.map(r=>rowToRec(r,map,ctx)).filter(r=>r.date && !r._noAmt); }
+function importNoDate(map){ const ctx=importContext(map); return importRows.filter(r=>!rowToRec(r,map,ctx).date).length; }
+function importNoAmt(map){ const ctx=importContext(map); return importRows.map(r=>rowToRec(r,map,ctx)).filter(r=>r.date && r._noAmt).length; }
 /* controlli intelligenti pre-import: segnala anomalie prima di salvare */
 function importChecks(map, recs){
   recs=recs||importRecs(map);
-  const noDate=recs.filter(r=>!r.date).length;
+  const noDate=importNoDate(map), noAmt=importNoAmt(map);
+  const badCur=recs.filter(r=>r._badCur).length;
   const noNet=recs.filter(r=>!(+r.net)).length;
   const seen=new Set(); let dupIn=0;
   recs.forEach(r=>{ const s=txSig(r); if(seen.has(s)) dupIn++; else seen.add(s); });
@@ -2809,7 +3046,11 @@ function importChecks(map, recs){
   if(nets.length>=5){ const med=nets[Math.floor(nets.length/2)]; if(med>0) outliers=nets.filter(v=>v>med*25).length; }
   const w=[];
   if(outliers) w.push({lvl:'warn', t:tt('imp.chk_outlier').replace('{n}',outliers)});
-  if(noDate) w.push({lvl:'warn', t:tt('imp.chk_nodate').replace('{n}',noDate)});
+  const found=Object.keys(map).length;
+  if(found) w.unshift({lvl:'info', t:tt('imp.auto_found').replace('{n}', found).replace('{m}', importHeaders.filter(h=>String(h||'').trim()).length)});
+  if(noDate) w.push({lvl:'warn', t:tt('imp.chk_nodate_skip').replace('{n}',noDate)});
+  if(noAmt) w.push({lvl:'info', t:tt('imp.chk_noamt').replace('{n}',noAmt)});
+  if(badCur) w.push({lvl:'warn', t:tt('imp.chk_badcur').replace('{n}',badCur).replace('{c}', normCur($('#map-currency').value,'EUR')||'EUR')});
   if(noNet) w.push({lvl:'warn', t:tt('imp.chk_nonet').replace('{n}',noNet)});
   if(dupIn) w.push({lvl:'info', t:tt('imp.chk_dupin_kept').replace('{n}',dupIn)});
   if(dupEx) w.push({lvl:'info', t:tt('imp.chk_dupex').replace('{n}',dupEx)});
@@ -2824,11 +3065,13 @@ function renderPreview(){
     cb.innerHTML=w.map(x=>`<div class="imp-chk imp-chk--${x.lvl}"><span>${x.lvl==='warn'?'⚠':'ℹ'}</span> ${esc(x.t)}</div>`).join('');
     cb.hidden=!w.length;
   }
-  $('#preview-count').textContent=tt('imp.preview_count').replace('{rows}',importRows.length).replace('{m}',Math.min(8,importRows.length));
+  $('#preview-count').textContent=tt('imp.preview_count').replace('{rows}',all.length).replace('{m}',Math.min(8,all.length));
   $('#preview-table').innerHTML=`<thead><tr>
-    <th>${tt('imp.h_date')}</th><th>${tt('imp.h_platform')}</th><th>${tt('imp.h_catalog')}</th><th>${tt('imp.h_product')}</th><th>${tt('imp.h_artist')}</th><th class="num">${tt('imp.h_qty')}</th><th class="num">${tt('imp.h_net')}</th><th>${tt('imp.h_cur')}</th></tr></thead>
+    <th>${tt('imp.h_date')}</th><th>${tt('imp.h_kind')}</th><th>${tt('imp.h_platform')}</th><th>${tt('imp.h_catalog')}</th><th>${tt('imp.h_product')}</th><th>${tt('imp.h_artist')}</th><th class="num">${tt('imp.h_qty')}</th><th class="num">${tt('imp.h_net')}</th><th>${tt('imp.h_cur')}</th></tr></thead>
    <tbody>${recs.map(t=>`<tr>
-     <td>${t.date?fmtDate(t.date):'<span class=muted>?</span>'}</td><td>${esc(t.platform)}</td><td>${esc(t.catalog)}</td>
+     <td>${t.date?fmtDate(t.date):'<span class=muted>?</span>'}</td>
+     <td>${t.kind==='expense'?`<span class="neg">${esc(tt('imp.k_expense'))}</span>${t.cat?` <span class="muted small">${esc(tt('ecat.'+t.cat))}</span>`:''}`:esc(tt('imp.k_income'))}</td>
+     <td>${esc(t.platform)}</td><td>${esc(t.catalog)}</td>
      <td>${esc(t.product)}</td><td>${esc(t.artist)}</td><td class="num">${t.qty}</td>
      <td class="num">${fmtMoney(t.net,t.currency)}</td><td>${esc(t.currency)}</td></tr>`).join('')}</tbody>`;
 }
@@ -2838,7 +3081,9 @@ $('#import-confirm').onclick=()=>{
   const map=currentMap();
   if(map.net==null && map.gross==null){ toast(tt('t.map_min')); return; }
   let recs=importRecs(map);
+  recs.forEach(r=>{ delete r._badCur; delete r._noAmt; });
   const total=recs.length;
+  if(!total){ toast(tt('imp.nothing')); return; }
   // righe già presenti tra i movimenti esistenti (righe uguali nello stesso file NON sono duplicati:
   // i report dei distributori ripetono la stessa traccia per paesi diversi)
   const dd=LFCore.dedupAgainst(DB.transactions, recs);
@@ -2875,11 +3120,11 @@ $('#imp-undo-x')?.addEventListener('click', ()=>{ if(DB) DB.lastImport=null; sav
 /* ---------- Preset di mappatura ---------- */
 function snapshotPreset(){
   return { delim:$('#map-delim').value, kind:$('#map-kind').value, datefmt:$('#map-datefmt').value,
-    currency:$('#map-currency').value, platform:$('#map-platform').value, map:currentMap() };
+    currency:$('#map-currency').value, platform:$('#map-platform').value, header:($('#map-header')||{}).value||'0', map:currentMap() };
 }
 function populatePresets(){
   const sel=$('#map-preset');
-  sel.innerHTML='<option value="">— nuovo —</option>'+Object.keys(DB.mappings).map(n=>`<option>${esc(n)}</option>`).join('');
+  sel.innerHTML=`<option value="">${esc(tt('imp.preset_new'))}</option>`+Object.keys(DB.mappings).map(n=>`<option>${esc(n)}</option>`).join('');
 }
 $('#save-preset').onclick=()=>{
   const name=$('#map-preset-name').value.trim(); if(!name){ toast(tt('t.preset_name')); return; }
@@ -2887,9 +3132,12 @@ $('#save-preset').onclick=()=>{
 };
 $('#map-preset').onchange=()=>{
   const p=DB.mappings[$('#map-preset').value]; if(!p) return;
-  $('#map-delim').value=p.delim; $('#map-kind').value=p.kind; $('#map-datefmt').value=p.datefmt;
-  $('#map-currency').value=p.currency; $('#map-platform').value=p.platform;
-  refreshParse(); buildMapFields(p.map); renderPreview();
+  $('#map-delim').value=p.delim; $('#map-datefmt').value=p.datefmt;
+  $('#map-currency').value=p.currency;
+  refreshParse(false);
+  if(p.header!=null && $('#map-header') && [...$('#map-header').options].some(o=>o.value===String(p.header))){ $('#map-header').value=String(p.header); refreshParse(false); }
+  $('#map-kind').value=p.kind||'income'; $('#map-platform').value=p.platform||'';
+  buildMapFields(p.map); renderPreview();
 };
 
 /* ============================================================================

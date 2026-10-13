@@ -882,8 +882,8 @@
 
       <div class="panel">
         <div class="import-drop" id="import-drop">
-          <input type="file" id="file-input" accept=".csv,.txt,text/csv" hidden>
-          <p><strong data-i18n="imp.drop">Trascina qui il CSV</strong> <span data-i18n="common.or">oppure</span> <button class="link" id="browse-btn" data-i18n="imp.browse">scegli un file</button></p>
+          <input type="file" id="file-input" accept=".csv,.txt,.tsv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
+          <p><strong data-i18n="imp.drop">Trascina qui il file CSV o Excel</strong> <span data-i18n="common.or">oppure</span> <button class="link" id="browse-btn" data-i18n="imp.browse">scegli un file</button></p>
           <p class="muted small" data-i18n="imp.drop_hint">Vengono lette le prime righe per riconoscere le colonne. Nulla viene caricato online.</p>
         </div>
       </div>
@@ -903,15 +903,25 @@
                 <option value="ditto">Ditto Music</option>
                 <option value="cdbaby">CD Baby</option>
                 <option value="labelengine">Label Engine</option>
+                <option value="paypal">PayPal</option>
               </select>
             </label>
             <label><span data-i18n="imp.load_preset">Carica preset salvato</span>
               <select id="map-preset" class="select"><option value="" data-i18n="imp.none">— nessuno —</option></select>
             </label>
+            <label id="map-sheet-wrap" hidden><span data-i18n="imp.sheet">Foglio Excel</span>
+              <select id="map-sheet" class="select"></select>
+            </label>
+            <label><span data-i18n="imp.header">Riga con i nomi delle colonne</span>
+              <select id="map-header" class="select"></select>
+            </label>
             <label><span data-i18n="imp.kind">Tipo movimento</span>
               <select id="map-kind" class="select">
                 <option value="income" data-i18n="imp.kind_income">Entrata (vendite)</option>
                 <option value="expense" data-i18n="imp.kind_expense">Uscita (spese)</option>
+                <option value="col" data-i18n="imp.kind_col">Da una colonna del file (Entrata/Uscita)</option>
+                <option value="sign" data-i18n="imp.kind_sign">Dal segno: importi negativi = uscite</option>
+                <option value="inout" data-i18n="imp.kind_inout">Due colonne: Entrate e Uscite (Dare/Avere)</option>
               </select>
             </label>
             <label><span data-i18n="imp.delim">Separatore</span>
@@ -935,7 +945,7 @@
             </label>
             <label><span data-i18n="imp.platform_manual">Piattaforma (scrivila a mano)</span>
               <input id="map-platform" class="input" placeholder="es. Bandcamp">
-              <span class="muted small" data-i18n="imp.platform_hint">Usata per tutte le righe se nel CSV non c'è una colonna "Piattaforma".</span>
+              <span class="muted small" data-i18n="imp.platform_hint">Usata solo per le righe senza una colonna "Piattaforma" nel file.</span>
             </label>
           </div>
         </div>
@@ -1922,7 +1932,7 @@
       <form id="tx-form" class="form-grid">
         <input type="hidden" id="f-id">
         <input type="hidden" id="f-kind">
-        <label><span data-i18n="f.date">Data vendita</span> <input type="date" id="f-date" class="input" required></label>
+        <label><span data-i18n="f.date">Data vendita</span> <input type="date" id="f-date" class="input" required min="2000-01-01" max="2100-12-31"></label>
         <label><span data-i18n="f.dateTo">Data vendita (a)</span> <input type="date" id="f-dateto" class="input"></label>
         <label><span data-i18n="f.platform">Piattaforma</span> <input type="text" id="f-platform" class="input" placeholder="Bandcamp, DistroKid…"></label>
         <label><span data-i18n="f.type">Tipologia</span>

@@ -1,3 +1,19 @@
+# Discografia: artisti dentro le compilation (ottobre 2026) — niente da fare online
+
+Nessuna modifica al database: basta la pubblicazione dell'app.
+
+- Gli artisti delle **compilation (Various Artists)** ora si trovano anche quando le tracce
+  non hanno l'artista scritto (compilation create a mano con titolo e ISRC): l'app lo ricava
+  dai movimenti di vendita con lo stesso ISRC (o stesso catalogo e titolo) e dal titolo
+  "Artista - Titolo".
+- Nella discografia di un artista una compilation mostra **solo le sue tracce**, mai la VA
+  intera, anche se il suo nome è sulla release o nelle sue quote.
+- In Discografia il filtro per artista elenca anche gli artisti delle compilation; in vista
+  elenco, filtrando un artista, di una compilation si vedono solo le sue tracce, e ogni
+  traccia mostra il suo artista (non più "Various Artists").
+
+---
+
 # Movimenti: Entrate, Uscite e Tutti impaginate allo stesso modo (ottobre 2026) — niente da fare online
 
 Nessuna modifica al database: basta la pubblicazione dell'app.

@@ -161,7 +161,7 @@ function wipeLocalData(){
   try{ if(typeof teamCache!=='undefined') teamCache=null; }catch(e){}   // elenco del team dell'account precedente
 }
 let roRevertT=null, roToastAt=0;
-function save(){ saveLocal();
+function save(){ window.LF_dataRev=(window.LF_dataRev||0)+1; saveLocal();   // LF_dataRev: i dati sono cambiati (cache che dipendono dai movimenti)
   // accesso team in sola lettura: niente salvataggi, le modifiche tornano com'erano
   if(window.LF_readOnly){
     if(Date.now()-roToastAt>4000 && (!navigator.userActivation || navigator.userActivation.isActive)){ roToastAt=Date.now(); toast(tt('team.readonly')); }
@@ -1414,14 +1414,16 @@ function sortReleases(arr){
   });
 }
 const TRACK_SORT_COLS=['title','artist','isrc','mastered','distributed','type','split'];
-function expandReleases(list){
+function expandReleases(list, nn){
   const out=[];
   list.forEach(r=>{ out.push(r);
-    const t=(r.type||'').toUpperCase();
-    if((t==='EP'||t==='VA') && Array.isArray(r.tracks)){
-      let rows=r.tracks.map(tr=>({ _track:true, id:r.id, catalog:'', title:tr.title||'',
-        artist:(tr.artist||(tr.splits&&tr.splits[0]&&tr.splits[0].name)||r.artist||''),
-        type:(t==='VA'?'VA - Track':'EP - Track'), isrc:tr.isrc||'', masteredBy:(tr.masteredBy||r.masteredBy||''), distributedBy:(tr.distributedBy||r.distributedBy||''),
+    const t=(r.type||'').toUpperCase(), va=isVARelease(r);
+    if((t==='EP'||t==='VA'||va) && Array.isArray(r.tracks)){
+      // filtrando per artista, di una compilation si vedono solo le sue tracce
+      const trs=(va && nn) ? r.tracks.filter(tr=>trackHasArtist(r,tr,nn)) : r.tracks;
+      let rows=trs.map(tr=>({ _track:true, id:r.id, catalog:'', title:tr.title||'',
+        artist:(trackArtistNames(r,tr).join(', ')||(va?'':r.artist)||''),
+        type:(va?'VA - Track':'EP - Track'), isrc:tr.isrc||'', masteredBy:(tr.masteredBy||r.masteredBy||''), distributedBy:(tr.distributedBy||r.distributedBy||''),
         orderDate:'', preorder:'', year:'', upc:'', splits:(tr.splits&&tr.splits.length?tr.splits:r.splits), exclusive:false, note:'' }));
       // ordinando per una colonna "di traccia" anche le tracce si ordinano; altrimenti resta la tracklist
       if(TRACK_SORT_COLS.includes(relSort.col)) rows=colSort('releases', rows, relSort);
@@ -1429,20 +1431,62 @@ function expandReleases(list){
     } });
   return out;
 }
-/* una release "contiene" un artista se compare come artista, in una traccia o negli split */
+/* ---------- chi suona una traccia ----------
+   Dall'artista e dalle quote della traccia; se mancano (tipico delle compilation create a mano con solo
+   titolo e ISRC) dai movimenti di vendita con lo stesso ISRC (o stesso catalogo e titolo), e infine dal
+   titolo "Artista - Titolo" se il nome è un artista conosciuto. */
+const isVAName=n=>/^(various artists?|v\.?\s?a\.?|aa\.?\s?vv\.?|compilation)$/i.test((n||'').toString().trim());
+const normIsrcKey=s=>(s||'').toString().replace(/[^a-z0-9]/gi,'').toUpperCase();
+let trkArtCache=null;
+function trackArtistIndex(){
+  const txs=DB.transactions||[], rev=window.LF_dataRev||0, arts=DB.artists||[];
+  if(trkArtCache && trkArtCache.ref===txs && trkArtCache.rev===rev && trkArtCache.len===txs.length && trkArtCache.arts===arts) return trkArtCache;
+  const byIsrc=new Map(), byCatTitle=new Map(), known=new Map();
+  const put=(m,k,raw)=>{ if(!k) return; splitArtistNames(raw).forEach(n=>{ const nk=normArt(n); if(!nk || isVAName(n)) return;
+    let s=m.get(k); if(!s){ s=new Map(); m.set(k,s); } if(!s.has(nk)) s.set(nk,n.trim()); }); };
+  txs.forEach(t=>{ if(t.kind==='expense' || !t.artist) return;
+    put(byIsrc, normIsrcKey(t.isrc), t.artist);
+    if(t.catalog && t.product) put(byCatTitle, normCat(t.catalog)+'|'+normArt(t.product), t.artist);
+    splitArtistNames(t.artist).forEach(n=>{ const k=normArt(n); if(k && !isVAName(n) && !known.has(k)) known.set(k,n.trim()); }); });
+  arts.forEach(a=>{ const k=normArt(a.name); if(k) known.set(k,a.name); });
+  return (trkArtCache={ ref:txs, rev, len:txs.length, arts, byIsrc, byCatTitle, known });
+}
+function trackArtistNames(r, t){
+  const out=new Map();
+  const add=raw=>splitArtistNames(raw).forEach(n=>{ const k=normArt(n); if(k && !isVAName(n) && !out.has(k)) out.set(k,n.trim()); });
+  add(t.artist); (t.splits||[]).forEach(s=>add(s.name));
+  if(!out.size){
+    const ix=trackArtistIndex();
+    const fromTx=(t.isrc && ix.byIsrc.get(normIsrcKey(t.isrc))) || (r.catalog && t.title && ix.byCatTitle.get(normCat(r.catalog)+'|'+normArt(t.title)));
+    if(fromTx) fromTx.forEach((v,k)=>out.set(k,v));
+    if(!out.size){ const m=(t.title||'').match(/^(.+?)\s+[-–—]\s+\S/);
+      if(m) splitArtistNames(m[1]).forEach(n=>{ const k=normArt(n); if(ix.known.has(k)) out.set(k, ix.known.get(k)); }); }
+  }
+  return [...out.values()];
+}
+const trackHasArtist=(r,t,nn)=>trackArtistNames(r,t).some(n=>normArt(n)===nn);
+/* compilation: tipo VA, artista "Various Artists", oppure senza artista con tracce di artisti diversi */
+function isVARelease(r){
+  if(String(r.type||'').toUpperCase()==='VA' || isVAName(r.artist)) return true;
+  if((r.artist||'').trim()) return false;
+  const s=new Set(); (r.tracks||[]).forEach(t=>{ const n=trackArtistNames(r,t)[0]; if(n) s.add(normArt(n)); });
+  return s.size>1;
+}
+/* una release "contiene" un artista se compare come artista, in una traccia o negli split;
+   in una compilation conta solo se ha almeno una traccia (non basta il nome sulla release) */
 function releaseHasArtist(r, nn){
   if(!nn) return false;
+  const inTracks=(r.tracks||[]).some(t=>trackHasArtist(r,t,nn));
+  if(isVARelease(r)) return inTracks;
   const has=raw=>splitArtistNames(raw).some(x=>normArt(x)===nn);
-  return has(r.artist) || (r.tracks||[]).some(t=>has(t.artist)) ||
-    (r.splits||[]).some(s=>normArt(s.name)===nn) ||
-    (r.tracks||[]).some(t=>(t.splits||[]).some(s=>normArt(s.name)===nn));
+  return inTracks || has(r.artist) || (r.splits||[]).some(s=>normArt(s.name)===nn);
 }
 function populateRelArtistFilter(){
   const sel=$('#rel-artist-filter'); if(!sel) return;
   const names=new Map();
   const add=raw=>splitArtistNames(raw).forEach(n=>{ const k=normArt(n); if(k && !names.has(k)) names.set(k, n.trim()); });
-  releases().forEach(r=>{ add(r.artist); (r.tracks||[]).forEach(t=>add(t.artist));
-    (r.splits||[]).forEach(s=>{ const k=normArt(s.name); if(k && !names.has(k)) names.set(k,(s.name||'').trim()); }); });
+  releases().forEach(r=>{ if(!isVARelease(r)) add(r.artist); (r.tracks||[]).forEach(t=>trackArtistNames(r,t).forEach(add));
+    if(!isVARelease(r)) (r.splits||[]).forEach(s=>{ const k=normArt(s.name); if(k && !names.has(k)) names.set(k,(s.name||'').trim()); }); });
   const skip=new Set(['various artists','label']);
   const list=[...names.values()].filter(n=>!skip.has(normArt(n))).sort((a,b)=>a.localeCompare(b));
   const sig=list.join('|');
@@ -1470,7 +1514,7 @@ function renderReleases(){
     cont.className='dbl';
     const cols=colsFor('releases');
     const sel=selOpt('releases');
-    cont.innerHTML = dbHead(cols,relSort,{sel})+dbRows(expandReleases(list),cols,{rowCls:it=>'dbl-click'+(it._track?' rel-track-row':''),sel});
+    cont.innerHTML = dbHead(cols,relSort,{sel})+dbRows(expandReleases(list, af?normArt(af):''),cols,{rowCls:it=>'dbl-click'+(it._track?' rel-track-row':''),sel});
     cont.querySelectorAll('.dbl-row[data-id]').forEach(c=>c.onclick=e=>{ if(e.target.closest('[data-sort]')||e.target.closest('.dbl-sel')||e.target.closest('[data-art-open]')||e.target.closest('[data-rel-open]')) return; openRelease(c.dataset.id); });
     cont.querySelectorAll('[data-sort]').forEach(h=>h.onclick=e=>{ e.stopPropagation(); const k=h.dataset.sort;
       if(relSort.col===k) relSort.dir*=-1; else relSort={col:k,dir:1}; renderReleases(); });
@@ -4297,13 +4341,7 @@ function setArtistPhoto(d){ artistPhotoData=d||''; const ph=$('#art-photo');
 /* tutte le release in cui compare un artista (come artista, in traccia o negli split) */
 function artistReleases(name){
   const nn=normArt(name); if(!nn) return [];
-  const has=raw=>splitArtistNames(raw).some(x=>normArt(x)===nn);
-  return releases().filter(r=>
-    has(r.artist) ||
-    (r.tracks||[]).some(t=>has(t.artist)) ||
-    (r.splits||[]).some(s=>normArt(s.name)===nn) ||
-    (r.tracks||[]).some(t=>(t.splits||[]).some(s=>normArt(s.name)===nn))
-  );
+  return releases().filter(r=>releaseHasArtist(r,nn));
 }
 /* voci della discografia di un artista: la release intera se è sua (artista o quote della release),
    altrimenti solo le sue tracce — in una compilation VA si vede la traccia, non tutta la VA */
@@ -4312,11 +4350,11 @@ function artistDiscoItems(name){
   const has=raw=>splitArtistNames(raw).some(x=>normArt(x)===nn);
   const out=[];
   tieSort(artistReleases(name), r=>+r.year||'', -1, [r=>r.catalog||'', r=>r.title||'']).forEach(r=>{   // più recenti prima
-    const va=String(r.type||'').toUpperCase()==='VA' || /^various artists?$|^v\.?a\.?$/i.test((r.artist||'').trim());
-    const tracks=(r.tracks||[]).filter(t=>has(t.artist) || (t.splits||[]).some(x=>normArt(x.name)===nn));
+    const tracks=(r.tracks||[]).filter(t=>trackHasArtist(r,t,nn));
+    // compilation: solo le sue tracce, mai la VA intera (anche se il suo nome è sulla release o nelle quote)
+    if(isVARelease(r)){ tracks.forEach(t=>out.push({ r, t })); return; }
     const own=has(r.artist) || (r.splits||[]).some(x=>normArt(x.name)===nn);
-    if(tracks.length && (va || !own)) tracks.forEach(t=>out.push({ r, t }));
-    else out.push({ r });
+    if(own || !tracks.length) out.push({ r }); else tracks.forEach(t=>out.push({ r, t }));
   });
   return out;
 }

@@ -1,3 +1,14 @@
+# Login più compatto e righe di Movimenti uguali (ottobre 2026) — niente da fare online
+
+Nessuna modifica al database: basta la pubblicazione dell'app.
+
+- **Login**: niente più spazio vuoto sotto Accedi / Registrati (la riga dei messaggi
+  compare solo quando c'è un messaggio).
+- **Movimenti**: tutte le righe alte uguali in Entrate, Uscite e Tutti (prima la
+  pillola IN/OUT, la casella "Pagato" o la 📎 degli allegati allungavano alcune righe).
+
+---
+
 # Ritocchi grafici e Impostazioni riordinate (ottobre 2026) — niente da fare online
 
 Nessuna modifica al database: basta la pubblicazione dell'app.

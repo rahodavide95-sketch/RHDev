@@ -1919,3 +1919,7 @@ tr.is-unpaid td.num .neg,tr.is-unpaid td.num .pos{opacity:.55}
 .nav-item{position:relative}
 .nav-badge{margin-left:auto;min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:var(--out);color:#fff;font-size:.7rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center;line-height:1}
 .nav-collapsed .nav-badge{position:absolute;top:2px;right:4px;min-width:16px;height:16px;font-size:.6rem;padding:0 4px;margin:0}
+/* calendario: scelta del Paese dei festivi */
+.cal-hol-pick{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-size:.8rem;color:var(--muted)}
+.cal-hol-pick .select{min-height:34px;padding:5px 30px 5px 10px;font-size:.82rem;width:auto;max-width:220px}
+@media (max-width:600px){ .cal-head{flex-wrap:wrap} .cal-hol-pick{margin-left:0;width:100%} .cal-hol-pick .select{flex:1;max-width:none} }

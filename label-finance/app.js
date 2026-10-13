@@ -5364,17 +5364,100 @@ if($('#colcfg-reset')) $('#colcfg-reset').onclick=()=>{ if(!colCfgSec) return; D
 
 /* ---- Calendario riutilizzabile ---- */
 let calState={planning:new Date(), events:new Date()};
-// festivi nazionali italiani (con Pasqua e Pasquetta, che cambiano ogni anno; San Francesco dal 2026)
+/* ---- Festivi nel calendario: quelli del Paese di chi usa l'app (non sempre l'Italia) ----
+   Paese: scelto nel calendario (vale per l'etichetta), altrimenti dal fuso orario del dispositivo
+   (dice dove sei meglio della lingua: un italiano ad Amsterdam ha il browser in italiano),
+   poi dalla lingua del browser. Solo festivi nazionali; quelli mobili calcolati ogni anno. */
+const HOL_COUNTRIES=['IT','NL','BE','DE','AT','CH','FR','ES','PT','GB','IE','US'];
 function easterDate(y){ const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),
   h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,mm=Math.floor((a+11*h+22*l)/451),mon=Math.floor((h+l-7*mm+114)/31),day=((h+l-7*mm+114)%31)+1;
   return new Date(Date.UTC(y,mon-1,day)); }
-const HOL_FIXED=[['01-01','capodanno'],['01-06','epifania'],['04-25','liberazione'],['05-01','lavoro'],['06-02','repubblica'],['08-15','ferragosto'],['11-01','ognissanti'],['12-08','immacolata'],['12-25','natale'],['12-26','stefano']];
+const hD=(y,m,d)=>new Date(Date.UTC(y,m-1,d)), hAdd=(dt,n)=>new Date(dt.getTime()+n*864e5);
+// n-esimo giorno della settimana del mese (n<0 = l'ultimo); dow 0 = domenica
+function nthDow(y,m,dow,n){ if(n>0){ const f=hD(y,m,1); return hD(y,m,1+((dow-f.getUTCDay()+7)%7)+(n-1)*7); }
+  const last=new Date(Date.UTC(y,m,0)); return hD(y,m,last.getUTCDate()-((last.getUTCDay()-dow+7)%7)); }
+const hLang=(a,b)=>((window.LFI18N&&LFI18N.lang)==='fr' ? b : a);   // Belgio e Svizzera: francese se l'app è in francese
+const HOL_RULES={
+  IT:y=>{ const e=easterDate(y), T=k=>tt('hol.'+k);
+    const r=[[hD(y,1,1),T('capodanno')],[hD(y,1,6),T('epifania')],[e,T('pasqua')],[hAdd(e,1),T('pasquetta')],[hD(y,4,25),T('liberazione')],[hD(y,5,1),T('lavoro')],
+      [hD(y,6,2),T('repubblica')],[hD(y,8,15),T('ferragosto')],[hD(y,11,1),T('ognissanti')],[hD(y,12,8),T('immacolata')],[hD(y,12,25),T('natale')],[hD(y,12,26),T('stefano')]];
+    if(y>=2026) r.push([hD(y,10,4),T('francesco')]); return r; },
+  NL:y=>{ const e=easterDate(y), kd=hD(y,4,27);
+    return [[hD(y,1,1),'Nieuwjaarsdag'],[e,'Eerste paasdag'],[hAdd(e,1),'Tweede paasdag'],[kd.getUTCDay()===0?hD(y,4,26):kd,'Koningsdag'],[hD(y,5,5),'Bevrijdingsdag'],
+      [hAdd(e,39),'Hemelvaartsdag'],[hAdd(e,49),'Eerste pinksterdag'],[hAdd(e,50),'Tweede pinksterdag'],[hD(y,12,25),'Eerste kerstdag'],[hD(y,12,26),'Tweede kerstdag']]; },
+  BE:y=>{ const e=easterDate(y);
+    return [[hD(y,1,1),hLang('Nieuwjaar','Nouvel An')],[e,hLang('Pasen','Pâques')],[hAdd(e,1),hLang('Paasmaandag','Lundi de Pâques')],[hD(y,5,1),hLang('Dag van de Arbeid','Fête du Travail')],
+      [hAdd(e,39),hLang('O.L.H. Hemelvaart','Ascension')],[hAdd(e,49),hLang('Pinksteren','Pentecôte')],[hAdd(e,50),hLang('Pinkstermaandag','Lundi de Pentecôte')],[hD(y,7,21),hLang('Nationale feestdag','Fête nationale')],
+      [hD(y,8,15),hLang('O.L.V. Hemelvaart','Assomption')],[hD(y,11,1),hLang('Allerheiligen','Toussaint')],[hD(y,11,11),hLang('Wapenstilstand','Armistice')],[hD(y,12,25),hLang('Kerstmis','Noël')]]; },
+  DE:y=>{ const e=easterDate(y);
+    return [[hD(y,1,1),'Neujahr'],[hAdd(e,-2),'Karfreitag'],[hAdd(e,1),'Ostermontag'],[hD(y,5,1),'Tag der Arbeit'],[hAdd(e,39),'Christi Himmelfahrt'],[hAdd(e,50),'Pfingstmontag'],
+      [hD(y,10,3),'Tag der Deutschen Einheit'],[hD(y,12,25),'1. Weihnachtstag'],[hD(y,12,26),'2. Weihnachtstag']]; },
+  AT:y=>{ const e=easterDate(y);
+    return [[hD(y,1,1),'Neujahr'],[hD(y,1,6),'Heilige Drei Könige'],[hAdd(e,1),'Ostermontag'],[hD(y,5,1),'Staatsfeiertag'],[hAdd(e,39),'Christi Himmelfahrt'],[hAdd(e,50),'Pfingstmontag'],
+      [hAdd(e,60),'Fronleichnam'],[hD(y,8,15),'Mariä Himmelfahrt'],[hD(y,10,26),'Nationalfeiertag'],[hD(y,11,1),'Allerheiligen'],[hD(y,12,8),'Mariä Empfängnis'],[hD(y,12,25),'Christtag'],[hD(y,12,26),'Stefanitag']]; },
+  CH:y=>{ const e=easterDate(y);
+    return [[hD(y,1,1),hLang('Neujahr','Nouvel An')],[hAdd(e,-2),hLang('Karfreitag','Vendredi saint')],[hAdd(e,1),hLang('Ostermontag','Lundi de Pâques')],[hAdd(e,39),hLang('Auffahrt','Ascension')],
+      [hAdd(e,50),hLang('Pfingstmontag','Lundi de Pentecôte')],[hD(y,8,1),hLang('Bundesfeier','Fête nationale')],[hD(y,12,25),hLang('Weihnachten','Noël')],[hD(y,12,26),hLang('Stephanstag','Saint-Étienne')]]; },
+  FR:y=>{ const e=easterDate(y);
+    return [[hD(y,1,1),"Jour de l'An"],[hAdd(e,1),'Lundi de Pâques'],[hD(y,5,1),'Fête du Travail'],[hD(y,5,8),'Victoire 1945'],[hAdd(e,39),'Ascension'],[hAdd(e,50),'Lundi de Pentecôte'],
+      [hD(y,7,14),'Fête nationale'],[hD(y,8,15),'Assomption'],[hD(y,11,1),'Toussaint'],[hD(y,11,11),'Armistice 1918'],[hD(y,12,25),'Noël']]; },
+  ES:y=>{ const e=easterDate(y);
+    return [[hD(y,1,1),'Año Nuevo'],[hD(y,1,6),'Epifanía del Señor'],[hAdd(e,-2),'Viernes Santo'],[hD(y,5,1),'Fiesta del Trabajo'],[hD(y,8,15),'Asunción de la Virgen'],
+      [hD(y,10,12),'Fiesta Nacional de España'],[hD(y,11,1),'Todos los Santos'],[hD(y,12,6),'Día de la Constitución'],[hD(y,12,8),'Inmaculada Concepción'],[hD(y,12,25),'Navidad']]; },
+  PT:y=>{ const e=easterDate(y);
+    return [[hD(y,1,1),'Ano Novo'],[hAdd(e,-2),'Sexta-feira Santa'],[e,'Páscoa'],[hD(y,4,25),'Dia da Liberdade'],[hD(y,5,1),'Dia do Trabalhador'],[hAdd(e,60),'Corpo de Deus'],
+      [hD(y,6,10),'Dia de Portugal'],[hD(y,8,15),'Assunção de Nossa Senhora'],[hD(y,10,5),'Implantação da República'],[hD(y,11,1),'Todos os Santos'],
+      [hD(y,12,1),'Restauração da Independência'],[hD(y,12,8),'Imaculada Conceição'],[hD(y,12,25),'Natal']]; },
+  GB:y=>{ const e=easterDate(y), r=[[hD(y,1,1),"New Year's Day"],[hAdd(e,-2),'Good Friday'],[hAdd(e,1),'Easter Monday'],[nthDow(y,5,1,1),'Early May bank holiday'],
+      [nthDow(y,5,1,-1),'Spring bank holiday'],[nthDow(y,8,1,-1),'Summer bank holiday'],[hD(y,12,25),'Christmas Day'],[hD(y,12,26),'Boxing Day']];
+    // festivi di sabato o domenica: il lunedì (o martedì) dopo è festa
+    const ny=hD(y,1,1).getUTCDay(); if(ny===6) r.push([hD(y,1,3),"New Year's Day (substitute day)"]); if(ny===0) r.push([hD(y,1,2),"New Year's Day (substitute day)"]);
+    const xd=hD(y,12,25).getUTCDay();
+    if(xd===6){ r.push([hD(y,12,27),'Christmas Day (substitute day)'],[hD(y,12,28),'Boxing Day (substitute day)']); }
+    else if(xd===0){ r.push([hD(y,12,27),'Christmas Day (substitute day)']); }
+    else if(xd===5){ r.push([hD(y,12,28),'Boxing Day (substitute day)']); }
+    return r; },
+  IE:y=>{ const e=easterDate(y), r=[[hD(y,1,1),"New Year's Day"],[hD(y,3,17),"St Patrick's Day"],[hAdd(e,1),'Easter Monday'],[nthDow(y,5,1,1),'May Bank Holiday'],
+      [nthDow(y,6,1,1),'June Bank Holiday'],[nthDow(y,8,1,1),'August Bank Holiday'],[nthDow(y,10,1,-1),'October Bank Holiday'],[hD(y,12,25),'Christmas Day'],[hD(y,12,26),"St Stephen's Day"]];
+    if(y>=2023){ const f1=hD(y,2,1); r.push([f1.getUTCDay()===5 ? f1 : nthDow(y,2,1,1), "St Brigid's Day"]); }
+    return r; },
+  US:y=>{ const r=[[hD(y,1,1),"New Year's Day"],[nthDow(y,1,1,3),'Martin Luther King Jr. Day'],[nthDow(y,2,1,3),"Presidents' Day"],[nthDow(y,5,1,-1),'Memorial Day'],
+      [hD(y,7,4),'Independence Day'],[nthDow(y,9,1,1),'Labor Day'],[nthDow(y,10,1,2),'Columbus Day'],[hD(y,11,11),'Veterans Day'],[nthDow(y,11,4,4),'Thanksgiving'],[hD(y,12,25),'Christmas Day']];
+    if(y>=2021) r.push([hD(y,6,19),'Juneteenth']);
+    // festivo fisso di sabato → venerdì libero; di domenica → lunedì
+    r.slice().forEach(([d,n])=>{ const w=d.getUTCDay(); if(/Martin|Presidents|Memorial|Labor|Columbus|Thanksgiving/.test(n)) return;
+      if(w===6) r.push([hAdd(d,-1), n+' (observed)']); else if(w===0) r.push([hAdd(d,1), n+' (observed)']); });
+    return r; },
+};
+const TZ_COUNTRY={'Europe/Rome':'IT','Europe/Vatican':'IT','Europe/San_Marino':'IT','Europe/Amsterdam':'NL','Europe/Brussels':'BE','Europe/Berlin':'DE','Europe/Busingen':'DE',
+  'Europe/Vienna':'AT','Europe/Zurich':'CH','Europe/Paris':'FR','Europe/Madrid':'ES','Atlantic/Canary':'ES','Africa/Ceuta':'ES','Europe/Lisbon':'PT','Atlantic/Madeira':'PT',
+  'Atlantic/Azores':'PT','Europe/London':'GB','Europe/Belfast':'GB','Europe/Dublin':'IE','Pacific/Honolulu':'US'};
+function holDetect(){
+  try{ const tz=Intl.DateTimeFormat().resolvedOptions().timeZone||'';
+    if(TZ_COUNTRY[tz]) return TZ_COUNTRY[tz];
+    if(/^America\/(New_York|Chicago|Denver|Los_Angeles|Phoenix|Anchorage|Detroit|Boise|Juneau|Sitka|Nome|Adak|Metlakatla|Yakutat|Menominee|Indiana|Kentucky|North_Dakota)/.test(tz)) return 'US'; }catch(e){}
+  const langs=(navigator.languages && navigator.languages.length) ? navigator.languages : [navigator.language||''];
+  for(const l of langs){ const m=/^[a-z]{2,3}-([A-Z]{2})\b/.exec(l||''); if(m && HOL_COUNTRIES.includes(m[1])) return m[1]; }
+  return ({it:'IT',nl:'NL',de:'DE',fr:'FR',es:'ES',pt:'PT'})[(window.LFI18N&&LFI18N.lang)||'it']||'';
+}
+// Paese dei festivi: scelta salvata per l'etichetta ("auto" = riconosciuto, "none" = nessuno)
+function holCountry(){ const v=(typeof DB!=='undefined' && DB && DB.profile && DB.profile.holCountry)||'auto'; return v==='auto' ? holDetect() : (v==='none' ? '' : (HOL_RULES[v] ? v : '')); }
 const holCache={};
-function itHolidays(y){ if(holCache[y]) return holCache[y]; const m={}; HOL_FIXED.forEach(([md,k])=>{ m[y+'-'+md]=k; });
-  if(y>=2026) m[y+'-10-04']='francesco';
-  const e=easterDate(y), iso=d=>d.toISOString().slice(0,10); m[iso(e)]='pasqua'; m[iso(new Date(e.getTime()+864e5))]='pasquetta';
-  return (holCache[y]=m); }
-const holidayOf=ds=>{ const k=itHolidays(+String(ds).slice(0,4))[ds]; return k ? tt('hol.'+k) : ''; };
+function holidaysFor(country, y){ const k=country+':'+y+':'+((window.LFI18N&&LFI18N.lang)||''); if(holCache[k]) return holCache[k];
+  const m={}; if(HOL_RULES[country]) HOL_RULES[country](y).forEach(([d,n])=>{ const iso=d.toISOString().slice(0,10); m[iso]=m[iso] ? m[iso]+' · '+n : n; });
+  return (holCache[k]=m); }
+const holidayOf=ds=>{ const c=holCountry(); return c ? (holidaysFor(c, +String(ds).slice(0,4))[ds]||'') : ''; };
+const regionName=c=>{ try{ return new Intl.DisplayNames([(window.LFI18N&&LFI18N.lang)||'it'],{type:'region'}).of(c); }catch(e){ return c; } };
+// menu "Festivi" nell'intestazione del calendario
+function holSelectHTML(){ const v=(DB.profile&&DB.profile.holCountry)||'auto', det=holDetect();
+  const opts=[['auto', tt('hol.auto').replace('{c}', det ? regionName(det) : tt('hol.none'))]]
+    .concat(HOL_COUNTRIES.map(c=>[c, regionName(c)]).sort((a,b)=>a[1].localeCompare(b[1])), [['none', tt('hol.none')]]);
+  return `<label class="cal-hol-pick" title="${esc(tt('hol.pick_t'))}"><span>${esc(tt('hol.pick'))}</span>
+    <select class="select cal-hol-sel" data-hol-sel>${opts.map(([k,l])=>`<option value="${k}"${k===v?' selected':''}>${esc(l)}</option>`).join('')}</select></label>`; }
+document.addEventListener('change',e=>{ const sel=e.target.closest && e.target.closest('[data-hol-sel]'); if(!sel || !DB) return;
+  if(window.LF_readOnly){ toast(tt('team.readonly')); return; }
+  (DB.profile||(DB.profile={})).holCountry=sel.value; save();
+  if(typeof renderPlanning==='function') renderPlanning(); if(typeof renderEvents==='function') renderEvents(); });
 function renderCalendar(sec, items, chip, cont){
   const cur=calState[sec]; const y=cur.getFullYear(), m=cur.getMonth();
   // giorni della settimana nella lingua scelta (1 gennaio 2024 era un lunedì)
@@ -5393,6 +5476,7 @@ function renderCalendar(sec, items, chip, cont){
       <span class="cal-title">${label.charAt(0).toUpperCase()+label.slice(1)}</span>
       <button class="cal-nav" data-calnav="1" aria-label="next">›</button>
       <button class="cal-nav cal-today-btn" data-calnav="0">${tt('cal.today')}</button>
+      ${holSelectHTML()}
     </div>
     <div class="cal">${dows.map((w,i)=>`<div class="cal-dow${i===6?' cal-dow--sun':''}">${esc(w)}</div>`).join('')}${cells}</div>`;
 }

@@ -1,3 +1,23 @@
+# Movimenti, "Pagato", pianificazione e distributori (ottobre 2026) — niente da fare online
+
+Nessuna modifica al database: basta la pubblicazione dell'app.
+
+- **Movimenti** divisi in schede Entrate / Uscite / Tutti, con maschere separate
+  (l'uscita ha solo i campi di una spesa: categoria, fornitore, descrizione, importo…).
+- **Pagato** sulle uscite: una spesa da pagare resta nell'elenco ma non conta nei
+  totali finché non la segni come pagata; in dashboard si vede quanto c'è da pagare.
+  Ogni cambio resta nel **Registro pagamenti** (quando, chi, da dove). La colonna
+  PAGATO dei fogli Excel/Google viene letta all'import.
+- **Pianificazione**: nuovi tipi (pre-order, evento, merch, podcast, artist scouting);
+  calendario con domeniche e festivi italiani in rosso; ogni voce avvisa 7 giorni prima
+  e il giorno stesso (centro notifiche, avviso a comparsa, notifica di sistema se
+  permessa) ed è segnalata nel menu e nell'elenco.
+- **Import**: riconoscimento automatico dei report dei distributori rifatto (Believe
+  ora funziona, Bandcamp con la piattaforma giusta) e una riga dice cosa è stato
+  riconosciuto.
+
+---
+
 # Correzioni dal giro di controllo (ottobre 2026) — niente da fare online
 
 Nessuna modifica al database: basta la pubblicazione dell'app (se Vercel segnala il

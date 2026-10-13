@@ -328,7 +328,7 @@ const HINTS = {
   amountIn:['entrate','entrata','avere','accrediti','accredito','incassi','ricavi','credit','credits','credit amount','deposit','deposits','paid in','money in','ingresos','haber','abono','credito','recettes','encaissements','einnahmen','haben','gutschrift','entradas','inkomsten','bij'],
   amountOut:['uscite','uscita','dare','addebiti','addebito','pagamenti','debit','debits','debit amount','withdrawal','withdrawals','paid out','money out','gastos','debe','cargo','debito','depenses','decaissements','ausgaben','soll','lastschrift','saidas','uitgaven','af'],
   release:['release','release collegata','progetto','project','uscita discografica'],
-  paid:['pagato','pagata','pagati','saldato','saldata','paid','is paid','pagado','pago','paye','payee','bezahlt','betaald','pago efetuado'],
+  paid:['pagato','pagata','pagati','saldato','saldata','paid','is paid','pagado','pago','bezahlt','betaald','pago efetuado'],   // non "payee" (è il destinatario)
 };
 // colonne di servizio dei fogli personali: non si collegano da sole a nessun campo (si possono scegliere a mano)
 const MAP_SKIP=new Set(['data valuta','value date','valuta data','metodo pagamento','metodo di pagamento','modalità pagamento','modalita pagamento','payment method','note pagamento','payment note','saldo','balance','progressivo','iban'].map(s=>String(s).toLowerCase().replace(/[^a-z0-9]+/g,'')));
@@ -4925,13 +4925,13 @@ function fireTaskAlert(t, kind){
   }
   showTaskPopup(title, body); // mostra sempre anche il popup in-app
 }
-function showTaskPopup(title, body){
+function showTaskPopup(title, body, view, onOpen){
   let wrap=$('#lf-alerts'); if(!wrap){ wrap=document.createElement('div'); wrap.id='lf-alerts'; wrap.className='lf-alerts'; document.body.appendChild(wrap); }
   const el=document.createElement('div'); el.className='lf-alert';
   el.innerHTML=`<div class="lf-alert-ic">🔔</div><div class="lf-alert-tx"><b>${esc(title)}</b><span>${esc(body)}</span></div>
     <button class="lf-alert-x" aria-label="Chiudi">✕</button>`;
   el.querySelector('.lf-alert-x').onclick=()=>el.remove();
-  el.querySelector('.lf-alert-tx').onclick=()=>{ goto('tasks'); el.remove(); };
+  el.querySelector('.lf-alert-tx').onclick=()=>{ goto(view||'tasks'); if(onOpen) onOpen(); el.remove(); };
   wrap.appendChild(el);
   setTimeout(()=>{ el.classList.add('out'); setTimeout(()=>el.remove(),400); }, 12000);
 }
@@ -5197,8 +5197,8 @@ const COLDEFS = {
     {key:'note',label:()=>tt('r.note'),grow:1.4,cell:r=>esc(r.note),cls:'muted small'},
   ],
   planning:[
-    {key:'date',label:()=>tt('pln.f_date'),w:122,cell:p=>fmtDate(p.date)},
-    {key:'kind',label:()=>tt('pln.f_kind'),w:98,cell:p=>tt(PLN_KIND[p.kind]||'pln.k_release')},
+    {key:'date',label:()=>tt('pln.f_date'),w:122,cell:p=>fmtDate(p.date)+plnWhenTag(p)},
+    {key:'kind',label:()=>tt('pln.f_kind'),w:110,cell:p=>`<span class="pln-kind pln-kind--${esc(p.kind||'release')}">${esc(tt(PLN_KIND[p.kind]||'pln.k_release'))}</span>`},
     {key:'title',label:()=>tt('pln.f_title').replace(' *',''),grow:1.6,cell:p=>`<b>${esc(p.title)}</b>`,cls:'dbl-strong'},
     {key:'artist',label:()=>tt('pln.f_artist'),grow:1,cell:p=>artNameLink(p.artist),cls:'muted small'},
     {key:'status',label:()=>tt('pln.f_status'),w:122,cell:p=>ctag(tt(PLN_STATUS[p.status]||'pln.s_idea'),PLN_STK[p.status]||'mut')},
@@ -5364,16 +5364,28 @@ if($('#colcfg-reset')) $('#colcfg-reset').onclick=()=>{ if(!colCfgSec) return; D
 
 /* ---- Calendario riutilizzabile ---- */
 let calState={planning:new Date(), events:new Date()};
+// festivi nazionali italiani (con Pasqua e Pasquetta, che cambiano ogni anno; San Francesco dal 2026)
+function easterDate(y){ const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),
+  h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,mm=Math.floor((a+11*h+22*l)/451),mon=Math.floor((h+l-7*mm+114)/31),day=((h+l-7*mm+114)%31)+1;
+  return new Date(Date.UTC(y,mon-1,day)); }
+const HOL_FIXED=[['01-01','capodanno'],['01-06','epifania'],['04-25','liberazione'],['05-01','lavoro'],['06-02','repubblica'],['08-15','ferragosto'],['11-01','ognissanti'],['12-08','immacolata'],['12-25','natale'],['12-26','stefano']];
+const holCache={};
+function itHolidays(y){ if(holCache[y]) return holCache[y]; const m={}; HOL_FIXED.forEach(([md,k])=>{ m[y+'-'+md]=k; });
+  if(y>=2026) m[y+'-10-04']='francesco';
+  const e=easterDate(y), iso=d=>d.toISOString().slice(0,10); m[iso(e)]='pasqua'; m[iso(new Date(e.getTime()+864e5))]='pasquetta';
+  return (holCache[y]=m); }
+const holidayOf=ds=>{ const k=itHolidays(+String(ds).slice(0,4))[ds]; return k ? tt('hol.'+k) : ''; };
 function renderCalendar(sec, items, chip, cont){
   const cur=calState[sec]; const y=cur.getFullYear(), m=cur.getMonth();
-  const dows=(window.LFI18N&&window.LFI18N.lang==='en')?['Mon','Tue','Wed','Thu','Fri','Sat','Sun']:['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
+  // giorni della settimana nella lingua scelta (1 gennaio 2024 era un lunedì)
+  const dows=[...Array(7)].map((_,i)=>{ const w=new Date(2024,0,1+i).toLocaleDateString(calLang(),{weekday:'short'}).replace('.',''); return w.charAt(0).toUpperCase()+w.slice(1); });
   const startDow=(new Date(y,m,1).getDay()+6)%7, days=new Date(y,m+1,0).getDate(), today=ymdStr(new Date());
   let cells='';
   for(let i=0;i<startDow;i++) cells+='<div class="cal-cell cal-out"></div>';
   for(let d=1;d<=days;d++){
     const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const its=items.filter(x=>x.date===ds);
-    cells+=`<div class="cal-cell${ds===today?' cal-today':''}" data-calday="${ds}"><span class="cal-d">${d}</span><div class="cal-items">${its.map(chip).join('')}</div></div>`;
+    const its=items.filter(x=>x.date===ds), hol=holidayOf(ds), sun=new Date(y,m,d).getDay()===0;
+    cells+=`<div class="cal-cell${ds===today?' cal-today':''}${hol?' cal-hol':''}${sun?' cal-sun':''}" data-calday="${ds}"${hol?` title="${esc(hol)}"`:''}><span class="cal-d">${d}</span>${hol?`<span class="cal-hol-name">${esc(hol)}</span>`:''}<div class="cal-items">${its.map(chip).join('')}</div></div>`;
   }
   const label=cur.toLocaleDateString(calLang(),{month:'long',year:'numeric'});
   cont.innerHTML=`<div class="cal-head">
@@ -5382,18 +5394,24 @@ function renderCalendar(sec, items, chip, cont){
       <button class="cal-nav" data-calnav="1" aria-label="next">›</button>
       <button class="cal-nav cal-today-btn" data-calnav="0">${tt('cal.today')}</button>
     </div>
-    <div class="cal">${dows.map(w=>`<div class="cal-dow">${w}</div>`).join('')}${cells}</div>`;
+    <div class="cal">${dows.map((w,i)=>`<div class="cal-dow${i===6?' cal-dow--sun':''}">${esc(w)}</div>`).join('')}${cells}</div>`;
 }
 function calMove(sec, delta){ if(delta===0) calState[sec]=new Date(); else calState[sec]=new Date(calState[sec].getFullYear(), calState[sec].getMonth()+delta, 1); }
 function clearPager(anchor){ const m=anchor&&anchor.nextElementSibling; if(m&&m.classList&&m.classList.contains('pager-mount')) m.innerHTML=''; }
 
 /* ---- Pianificazione ---- */
 let plnSort={col:'date',dir:1}, editingPlnId=null;
-const PLN_KIND={release:'pln.k_release',premiere:'pln.k_premiere'};
+const PLN_KIND={release:'pln.k_release',premiere:'pln.k_premiere',preorder:'pln.k_preorder',event:'pln.k_event',merch:'pln.k_merch',podcast:'pln.k_podcast',scouting:'pln.k_scouting'};
+// quanto manca a una voce pianificata: per segnalarla in elenco, calendario, menu e notifiche
+function plnDays(p){ if(!p || !p.date) return null; const a=new Date(p.date+'T00:00:00'), b=new Date(LFCore.today()+'T00:00:00'); return Math.round((a-b)/864e5); }
+function plnWhenTag(p){ const d=plnDays(p); if(d==null || d<0 || d>7 || p.status==='done') return '';
+  const txt=d===0?tt('pln.w_today'):d===1?tt('pln.w_tomorrow'):tt('pln.w_in').replace('{n}',d);
+  return `<span class="pln-when${d<=1?' pln-when--now':''}">${esc(txt)}</span>`; }
 const PLN_STATUS={idea:'pln.s_idea',planned:'pln.s_planned',confirmed:'pln.s_confirmed',done:'pln.s_done'};
 const PLN_STK={idea:'mut',planned:'warn',confirmed:'info',done:'ok'};
 function plnById(id){ return (DB.planning||[]).find(x=>x.id===id); }
-function plnChip(p){ return `<span class="cal-chip cal-k-${p.kind}" data-pln="${p.id}" title="${esc(p.title)}">${esc(p.title)}</span>`; }
+function plnChip(p){ const d=plnDays(p), soon=d!=null && d>=0 && d<=7 && p.status!=='done';
+  return `<span class="cal-chip cal-k-${p.kind}${soon?' cal-chip--soon':''}" data-pln="${p.id}" title="${esc(tt(PLN_KIND[p.kind]||'pln.k_release')+' · '+p.title)}">${esc(p.title)}</span>`; }
 function renderPlanning(){
   const listC=$('#planning-list'), calC=$('#planning-cal'); if(!listC) return;
   const pq=($('#pln-search')&&$('#pln-search').value||'').toLowerCase().trim();
@@ -5421,6 +5439,7 @@ function savePlanning(){
   const data={ title, kind:$('#pln-kind').value, artist:$('#pln-artist').value.trim(), date:$('#pln-date').value||'',
     status:$('#pln-status').value, platform:$('#pln-platform').value.trim(), note:$('#pln-note').value.trim() };
   if(editingPlnId){ const p=plnById(editingPlnId); if(p) Object.assign(p,data); } else DB.planning.push(Object.assign({id:newId()},data));
+  if(data.date && typeof ensureNotifyPermission==='function') ensureNotifyPermission();   // avvisi anche fuori dall'app
   save(); $('#pln-form').hidden=true; editingPlnId=null; renderPlanning(); toast(tt('common.saved')); }
 function deletePlanning(id){ const p=plnById(id); if(!p) return; if(!confirm(tt('common.del_q'))) return;
   const tid=trashRemove('planning',[id]); save(); renderPlanning(); undoToast(tt('trash.deleted'), tid); }
@@ -5564,6 +5583,7 @@ const SECTION_SVG={
   import:      svgIco('<path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M4 21h16"/>'),
   royalties:   svgIco('<path d="M19 5 5 19"/><circle cx="7.5" cy="7.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/>'),
   tasks:       svgIco('<rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V4.2a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1V5"/><path d="M8.5 13.2l2.3 2.3L16 10.3"/>'),
+  planning:    svgIco('<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/>'),
 };
 function notifIcon(it){ const v=it.view||(it.type==='unlinked'?'releases':it.type==='enrich'?'import':it.relId?'releases':'tasks'); return SECTION_SVG[v]||SECTION_SVG.tasks; }
 function notifScan(){
@@ -5576,7 +5596,7 @@ function notifScan(){
   NOTIFS.list=NOTIFS.list.filter(n=> n.type!=='unlinked' || ukeys.has((n.ref||'').toLowerCase()));   // risolti via
   // le notifiche eliminate restano eliminate: si ripuliscono solo i prodotti ora collegati
   // (prima venivano cancellati anche gli altri tipi e le notifiche eliminate ricomparivano)
-  const KEEP_DISMISSED=/^(enrich|task|miss|unsigned|owed|close|fx):/;
+  const KEEP_DISMISSED=/^(enrich|task|miss|unsigned|owed|close|fx|pln):/;
   NOTIFS.dismissed=(NOTIFS.dismissed||[]).filter(k=>KEEP_DISMISSED.test(k) || ukeys.has(k)).slice(-2000);
   unlinked.forEach(p=>{ const lk=p.toLowerCase(), key='unlinked:'+lk;
     if((NOTIFS.dismissed||[]).includes(lk)) return;
@@ -5622,10 +5642,57 @@ function notifScan(){
     });
     NOTIFS._recoupInit=true;
   }catch(e){} }
+  // pianificazione: ogni voce (di qualsiasi tipo) avvisa 7 giorni prima e il giorno stesso
+  try{ plnScan(); }catch(e){}
   // avvisi intelligenti (insights.js): report mancanti, contratti, saldi, periodo, cambi
   if(typeof smartScan==='function') try{ smartScan(); }catch(e){}
   notifSave(); renderNotifs();
 }
+/* ---- Pianificazione: notifica per ogni voce + segnalazione nel menu ---- */
+const PLN_SOON=7;
+function plnScan(){
+  if(typeof DB==='undefined' || !DB) return;
+  const fired=NOTIFS.plnFired||(NOTIFS.plnFired={});
+  const prevRead={}; NOTIFS.list.forEach(n=>{ if(n.type==='pln') prevRead[n.key]=n.read; });
+  NOTIFS.list=NOTIFS.list.filter(n=>n.type!=='pln');
+  let soonN=0; const fresh=[];
+  (DB.planning||[]).forEach(p=>{
+    const d=plnDays(p); if(d==null || d<0 || d>PLN_SOON || p.status==='done') return;
+    soonN++;
+    const phase=d===0 ? 'today' : 'soon', key='pln:'+p.id+':'+p.date+':'+phase;
+    if((NOTIFS.dismissed||[]).includes(key)) return;
+    if(!fired[key]){ fired[key]=Date.now(); if(!p.demo) fresh.push([p,d]); }
+    NOTIFS.list.unshift({ id:'pln_'+p.id+'_'+phase, key, type:'pln', plnId:p.id, view:'planning', title:p.title||'', kind:p.kind||'release', date:p.date, days:d, read:prevRead[key]||false, ts:fired[key] });
+  });
+  NOTIFS.list.sort((a,b)=>(b.ts||0)-(a.ts||0));
+  // chiavi vecchie (date passate da più di un mese) via
+  const old=isoPlus(-31); Object.keys(fired).forEach(k=>{ const dt=k.split(':')[2]||''; if(dt && dt<old) delete fired[k]; });
+  if(fresh.length) firePlnAlerts(fresh);
+  plnNavBadge(soonN);
+}
+function plnAlertText(p, d){ const when=d===0?tt('pln.w_today'):d===1?tt('pln.w_tomorrow'):tt('pln.w_in').replace('{n}',d);
+  return { title: tt(PLN_KIND[p.kind]||'pln.k_release')+' · '+when, body: (p.title||'')+(p.date?' — '+fmtDate(p.date):'')+(p.artist?' · '+p.artist:'') }; }
+function firePlnAlerts(list){
+  playChime();
+  const show=list.length>2 ? [[null, list.length]] : list;
+  show.forEach(([p,d])=>{
+    const tx = p ? plnAlertText(p, d) : { title: tt('pln.notif_many_t'), body: tt('pln.notif_many_b').replace('{n}', d) };
+    if('Notification' in window && Notification.permission==='granted'){
+      try{ const n=new Notification('Label Finance · '+tx.title, { body:tx.body, icon:'icon.png?v=3', tag:'lf-pln-'+(p?p.id:'many'), renotify:true });
+        n.onclick=()=>{ try{ window.focus(); }catch(e){} goto('planning'); if(p) openPlnForm(p.id); n.close(); }; }catch(e){}
+    }
+    showTaskPopup(tx.title, tx.body, 'planning', p ? ()=>openPlnForm(p.id) : null);
+  });
+}
+// numero sulla voce "Pianificazione" del menu: quante voci ci sono nei prossimi 7 giorni
+function plnNavBadge(n){
+  $$('.nav-item[data-view="planning"]').forEach(b=>{ let el=b.querySelector('.nav-badge');
+    if(!n){ if(el) el.remove(); return; }
+    if(!el){ el=document.createElement('span'); el.className='nav-badge'; b.appendChild(el); }
+    el.textContent=n>9?'9+':String(n); el.title=tt('pln.badge_t').replace('{n}',n); });
+}
+// la pagina resta aperta per giorni: si ricontrolla ogni 5 minuti (es. dopo mezzanotte arriva "Oggi")
+setInterval(()=>{ if(document.visibilityState==='visible' && typeof notifScan==='function') notifScan(); }, 300000);
 function notifText(n){
   if(n.type==='smart' && typeof smartText==='function') return smartText(n);
   const T=(k,fb)=>{ const v=tt(k); return (v&&v!==k)?v:fb; };   // fallback se i18n non aggiornata (cache)
@@ -5641,6 +5708,7 @@ function notifText(n){
   if(n.type==='recur') return {
     title: T('notif.recur_t','Movimento ricorrente aggiunto'),
     body: T('notif.recur_b','{n} movimento/i ricorrente/i è stato aggiunto automaticamente alla lista movimenti.').replace('{n}', n.count||0) };
+  if(n.type==='pln'){ const p=plnById(n.plnId)||n; return plnAlertText(Object.assign({}, p, { kind:n.kind, title:n.title, date:n.date }), plnDays({date:n.date})??n.days); }
   if(n.type==='task'){ const when=(n.due?fmtDate(n.due):'')+(n.time?(' '+n.time):'');
     return { title: n.title||T('notif.task_t','Promemoria'),
       body: (n.overdue?T('notif.task_over','Promemoria scaduto'):T('notif.task_due','Promemoria'))+(when?' · '+when:'') }; }
@@ -5681,12 +5749,13 @@ function notifOpen(it){
   }
   if(it.relId){ goto('releases'); openRelease(it.relId); return; }   // notifiche legate a una release
   if(it.type==='smart' && typeof smartOpen==='function'){ smartOpen(it); return; }
+  if(it.type==='pln'){ goto('planning'); if(plnById(it.plnId)) openPlnForm(it.plnId); return; }
   if(it.view){ goto(it.view); }                                       // tipi futuri (task, contratti…)
 }
 function notifDismiss(it){ if(!it) return;
   if(it.type==='unlinked') NOTIFS.dismissed=[...new Set([...(NOTIFS.dismissed||[]),(it.ref||'').toLowerCase()])];
   else if(it.type==='enrich') NOTIFS.dismissed=[...new Set([...(NOTIFS.dismissed||[]),'enrich:'+(it.count||0)])];
-  else if(it.type==='task' || it.type==='smart') NOTIFS.dismissed=[...new Set([...(NOTIFS.dismissed||[]), it.key])]; }
+  else if(it.type==='task' || it.type==='smart' || it.type==='pln') NOTIFS.dismissed=[...new Set([...(NOTIFS.dismissed||[]), it.key])]; }
 function notifDelete(id){ const it=NOTIFS.list.find(x=>x.id===id); notifDismiss(it);
   NOTIFS.list=NOTIFS.list.filter(x=>x.id!==id); notifSave(); renderNotifs(); }
 function notifReadAll(){ NOTIFS.list.forEach(n=>n.read=true); notifSave(); renderNotifs(); }

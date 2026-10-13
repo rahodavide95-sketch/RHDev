@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=104">
+  <link rel="stylesheet" href="style.css?v=105">
 </head>
 <body class="gated">
 
@@ -640,7 +640,7 @@
     <section class="view" id="view-planning">
       <header class="view-head">
         <div><div class="title-row"><h1 data-i18n="pln.title">Pianificazione</h1><button class="info-btn" data-info="planning" title="Cos'è questa sezione?" data-i18n-title="tip.info">i</button></div>
-          <p class="muted" data-i18n="pln.subtitle">Programma release e premiere: simulazione dell'anno e calendario effettivo.</p></div>
+          <p class="muted" data-i18n="pln.subtitle">Programma release, premiere, pre-order, eventi, merch, podcast e scouting: ogni voce ti avvisa 7 giorni prima e il giorno stesso.</p></div>
         <div class="head-actions">
           <input class="input" id="pln-search" data-i18n-ph="common.search" placeholder="Cerca…">
           <div class="vm-toggle" data-vm-sec="planning" data-vm-def="list">
@@ -661,7 +661,15 @@
         <div class="form-grid">
           <label class="fld fld--full"><span data-i18n="pln.f_title">Titolo *</span><input class="input" id="pln-title"></label>
           <label class="fld"><span data-i18n="pln.f_kind">Tipo</span>
-            <select class="select" id="pln-kind"><option value="release" data-i18n="pln.k_release">Release</option><option value="premiere" data-i18n="pln.k_premiere">Premiere</option></select></label>
+            <select class="select" id="pln-kind">
+              <option value="release" data-i18n="pln.k_release">Release</option>
+              <option value="premiere" data-i18n="pln.k_premiere">Premiere</option>
+              <option value="preorder" data-i18n="pln.k_preorder">Pre-order</option>
+              <option value="event" data-i18n="pln.k_event">Evento</option>
+              <option value="merch" data-i18n="pln.k_merch">Merch</option>
+              <option value="podcast" data-i18n="pln.k_podcast">Podcast</option>
+              <option value="scouting" data-i18n="pln.k_scouting">Artist scouting</option>
+            </select></label>
           <label class="fld"><span data-i18n="pln.f_artist">Artista</span><input class="input" id="pln-artist"></label>
           <label class="fld"><span data-i18n="pln.f_date">Data</span><input class="input" id="pln-date" type="date"></label>
           <label class="fld"><span data-i18n="pln.f_status">Stato</span>
@@ -2518,16 +2526,16 @@
   <script src="config.js?v=95"></script>
   <script src="core.js?v=99"></script>
   <script src="signature.js?v=96"></script>
-  <script src="app.js?v=102"></script>
+  <script src="app.js?v=103"></script>
   <script src="tables.js?v=100"></script>
   <script src="safety.js?v=2"></script>
   <script src="money.js?v=2"></script>
-  <script src="insights.js?v=2"></script>
+  <script src="insights.js?v=3"></script>
   <script src="search.js?v=2"></script>
-  <script src="files.js?v=2"></script>
+  <script src="files.js?v=3"></script>
   <script src="team.js?v=2"></script>
-  <script src="i18n.js?v=101"></script>
+  <script src="i18n.js?v=102"></script>
   <script src="vendor/supabase.min.js?v=95"></script>
-  <script src="sync.js?v=98"></script>
+  <script src="sync.js?v=99"></script>
 </body>
 </html>

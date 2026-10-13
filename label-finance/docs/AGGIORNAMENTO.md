@@ -1,3 +1,18 @@
+# Ritocchi grafici e Impostazioni riordinate (ottobre 2026) — niente da fare online
+
+Nessuna modifica al database: basta la pubblicazione dell'app.
+
+- **Impostazioni** su due colonne ordinate: a sinistra Profilo e Account, a destra
+  Preferenze, Team e Tassi di cambio; Backup sotto a tutta larghezza. I tassi fissi
+  sono in una sezione apribile (si apre da sola se spegni i cambi BCE).
+- **Movimenti**: la barra delle schede non si sposta più passando a Uscite; il
+  Registro pagamenti si apre in una finestra più grande.
+- **+ Entrata / + Uscita** in colori pastello pieni, senza bordo, più luminosi al passaggio.
+- **Login** senza bordo.
+- **Calendario**: ogni evento ha in prima riga il tipo di attività in maiuscolo.
+
+---
+
 # Movimenti, "Pagato", pianificazione e distributori (ottobre 2026) — niente da fare online
 
 Nessuna modifica al database: basta la pubblicazione dell'app.

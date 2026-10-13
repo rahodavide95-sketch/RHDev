@@ -1229,7 +1229,8 @@ function applyTxFilters(){
   { const ni=rows.filter(t=>t.kind==='income').length, ne=rows.length-ni;
     const setN=(id,n)=>{ const e=$(id); if(e) e.textContent=n; }; setN('#tx-n-income',ni); setN('#tx-n-expense',ne); setN('#tx-n-all',rows.length);
     $$('#tx-tabs [data-tx-tab]').forEach(b=>{ const on=b.dataset.txTab===txTab; b.classList.toggle('is-active',on); b.setAttribute('aria-selected',on?'true':'false'); });
-    const pl=$('#paid-log-btn'); if(pl) pl.hidden=txTab!=='expense'; }
+    // il pulsante occupa sempre il suo posto (solo invisibile fuori da Uscite): la barra non si sposta cambiando scheda
+    const pl=$('#paid-log-btn'); if(pl){ pl.hidden=false; pl.style.visibility = txTab==='expense' ? 'visible' : 'hidden'; } }
   if(kind) rows=rows.filter(t=>t.kind===kind);
   const k=txSort.col;
   // a parità: artista, traccia (prodotto), catalogo, data, piattaforma — in ordine alfabetico
@@ -2731,11 +2732,12 @@ function renderPaidLogModal(){
   const rows=[]; (DB.transactions||[]).forEach(t=>{ (t.paidLog||[]).forEach(e=>{ if(e.via!=='create' || e.paid===false) rows.push({t,e}); }); });
   rows.sort((a,b)=>String(b.e.at).localeCompare(String(a.e.at)));
   const th=`<thead><tr><th>${esc(tt('paid.h_when'))}</th><th>${esc(tt('col.x_product'))}</th><th class="num">${esc(tt('col.x_net'))}</th><th>${esc(tt('paid.h_change'))}</th><th>${esc(tt('paid.h_who'))}</th></tr></thead>`;
+  const L=k=>esc(tt(k));   // etichette per le schede su telefono
   const body=rows.length ? rows.slice(0,500).map(({t,e})=>`<tr data-paidlog-open="${t.id}" style="cursor:pointer">
-    <td>${esc(paidWhen(e.at))}</td><td>${esc(t.product||t.platform||'—')}<div class="muted small">${esc(fmtDate(t.date))}</div></td>
-    <td class="num">${fmtMoney(t.net,t.currency||'EUR')}</td>
-    <td>${e.was!=null?`${esc(tt(e.was?'paid.yes':'paid.no'))} → `:''}<b class="${e.paid?'pos':'neg'}">${esc(tt(e.paid?'paid.yes':'paid.no'))}</b></td>
-    <td>${esc(e.by||tt('paid.by_device'))}<div class="muted small">${esc(paidVia(e.via))}</div></td></tr>`).join('')
+    <td data-label="${L('paid.h_when')}">${esc(paidWhen(e.at))}</td><td data-label="${L('col.x_product')}">${esc(t.product||t.platform||'—')}<div class="muted small">${esc(fmtDate(t.date))}</div></td>
+    <td class="num" data-label="${L('col.x_net')}">${fmtMoney(t.net,t.currency||'EUR')}</td>
+    <td data-label="${L('paid.h_change')}"><span>${e.was!=null?`${esc(tt(e.was?'paid.yes':'paid.no'))} → `:''}<b class="${e.paid?'pos':'neg'}">${esc(tt(e.paid?'paid.yes':'paid.no'))}</b></span></td>
+    <td data-label="${L('paid.h_who')}">${esc(e.by||tt('paid.by_device'))}<div class="muted small">${esc(paidVia(e.via))}</div></td></tr>`).join('')
     : `<tr><td colspan="5" class="muted">${esc(tt('paid.log_empty'))}</td></tr>`;
   $('#paidlog-table').innerHTML=th+`<tbody>${body}</tbody>`;
   $$('#paidlog-table [data-paidlog-open]').forEach(tr=>tr.onclick=()=>{ $('#paidlog-modal').hidden=true; openTx(tr.dataset.paidlogOpen); });
@@ -5495,7 +5497,8 @@ const PLN_STATUS={idea:'pln.s_idea',planned:'pln.s_planned',confirmed:'pln.s_con
 const PLN_STK={idea:'mut',planned:'warn',confirmed:'info',done:'ok'};
 function plnById(id){ return (DB.planning||[]).find(x=>x.id===id); }
 function plnChip(p){ const d=plnDays(p), soon=d!=null && d>=0 && d<=7 && p.status!=='done';
-  return `<span class="cal-chip cal-k-${p.kind}${soon?' cal-chip--soon':''}" data-pln="${p.id}" title="${esc(tt(PLN_KIND[p.kind]||'pln.k_release')+' · '+p.title)}">${esc(p.title)}</span>`; }
+  const k=tt(PLN_KIND[p.kind]||'pln.k_release');
+  return `<span class="cal-chip cal-k-${p.kind}${soon?' cal-chip--soon':''}" data-pln="${p.id}" title="${esc(k+' · '+p.title)}"><span class="cal-chip-k">${esc(k)}</span><span class="cal-chip-t">${esc(p.title)}</span></span>`; }
 function renderPlanning(){
   const listC=$('#planning-list'), calC=$('#planning-cal'); if(!listC) return;
   const pq=($('#pln-search')&&$('#pln-search').value||'').toLowerCase().trim();
@@ -5532,7 +5535,9 @@ function deletePlanning(id){ const p=plnById(id); if(!p) return; if(!confirm(tt(
 let evtSort={col:'date',dir:1}, editingEvtId=null;
 const EVT_KIND={showcase:'evt.k_showcase',radio:'evt.k_radio',live:'evt.k_live',club:'evt.k_club',festival:'evt.k_festival',other:'evt.k_other'};
 function evtById(id){ return (DB.events||[]).find(x=>x.id===id); }
-function evtChip(e){ return `<span class="cal-chip cal-k-${e.kind}" data-evt="${e.id}" title="${esc(e.title)}">${e.time?('<b>'+esc(e.time)+'</b> '):''}${esc(e.title)}</span>`; }
+// nel calendario: prima riga il tipo di attività (in maiuscolo), poi orario e titolo
+function evtChip(e){ const k=tt(EVT_KIND[e.kind]||'evt.k_other');
+  return `<span class="cal-chip cal-k-${e.kind}" data-evt="${e.id}" title="${esc(k+' · '+e.title)}"><span class="cal-chip-k">${esc(k)}</span><span class="cal-chip-t">${e.time?('<b>'+esc(e.time)+'</b> '):''}${esc(e.title)}</span></span>`; }
 function renderEvents(){
   const listC=$('#events-list'), calC=$('#events-cal'); if(!listC) return;
   const eq=($('#evt-search')&&$('#evt-search').value||'').toLowerCase().trim();

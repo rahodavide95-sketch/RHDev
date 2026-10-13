@@ -71,6 +71,8 @@ function renderFx(){
   const st=fxState(); cb.checked=!!st.auto;
   const box=document.getElementById('fx-box'); if(box) box.hidden=!st.auto;
   const hint=document.getElementById('fx-rates-hint'); if(hint) hint.textContent=tt(st.auto?'fx.manual_fallback':'set.rates_hint');
+  // tassi fissi aperti solo senza cambi BCE; cambia solo quando cambia l'opzione (non richiude se l'utente li ha aperti)
+  const fixed=document.getElementById('fx-fixed'); if(fixed && fixed.dataset.auto!==String(!!st.auto)){ fixed.open=!st.auto; fixed.dataset.auto=String(!!st.auto); }
   const info=document.getElementById('fx-info'), btn=document.getElementById('fx-refresh');
   if(btn){ btn.disabled=fxBusy; btn.textContent=tt(fxBusy?'fx.loading':'fx.refresh'); }
   const curs=Object.keys(st.months||{}).sort();

@@ -1067,7 +1067,8 @@ body.gate-signup .gate-login-only{display:none}
 .btn-accent2:hover{filter:brightness(1.07);background:var(--in);border-color:var(--in);color:var(--on-in)}
 body:not(.gate-signup) #gate-signup{opacity:.5}
 body.gate-signup #gate-signin{opacity:.5}
-.gate-status{text-align:center;font-size:.85rem;color:rgba(255,255,255,.75);margin-top:14px;min-height:18px}
+.gate-status{text-align:center;font-size:.85rem;color:rgba(255,255,255,.75);margin-top:14px}
+.gate-status:empty{display:none}   /* senza messaggio non lascia vuoto sotto Accedi / Registrati */
 .gate-status.err{color:#ff9db0}
 .gate-offline{display:block;text-align:center;margin-top:12px;color:rgba(255,255,255,.65);font-size:.82rem;cursor:pointer;text-decoration:underline}
 .gate-offline:hover{color:#fff}
@@ -1993,3 +1994,11 @@ tr.is-unpaid td.num .neg,tr.is-unpaid td.num .pos{opacity:.55}
 :root[data-theme] .gate .input:hover:not(:focus){border-color:rgba(167,139,250,.45)}
 :root[data-theme] .gate .input:focus{border-color:var(--accent)}
 :root[data-theme] .gate-theme,:root[data-theme] .gate-lang,:root[data-theme] .gate-lang .lang-select{border-color:transparent}
+
+/* Movimenti: righe tutte alte uguali in Entrate, Uscite e Tutti (prima la pillola IN/OUT,
+   la casella "Pagato" o la 📎 degli allegati allungavano alcune righe). Sul telefono restano schede. */
+@media(min-width:761px){
+  #table-tx tbody td{height:41px;line-height:20px;vertical-align:middle}
+  #table-tx tbody .pill,#table-tx tbody .paid-tog,#table-tx tbody .tx-clip{vertical-align:middle;line-height:16px}
+  #table-tx tbody .paid-tog input{margin:0}
+}

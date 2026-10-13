@@ -234,3 +234,12 @@ test('periodo chiuso: le righe arrivate in ritardo vanno nel periodo successivo'
   close(C.computeRoyalties(label, { from: '2026-01-01', to: '2026-03-31' }).byArtist.ann.total, 50);
   close(C.royaltyTotals(label, { until: '2026-03-31' }).ann.total, 50);
 });
+
+test('sync: stesso movimento cambiato su due dispositivi in campi diversi → restano entrambe le modifiche', () => {
+  const base = { activeLabel: 'L', labels: [{ id: 'L', transactions: [{ id: 'a', net: 5, note: 'orig' }], trash: [] }] };
+  const cloud = { activeLabel: 'L', labels: [{ id: 'L', transactions: [{ id: 'a', net: 10, note: 'orig' }], trash: [{ id: 't1' }] }] };
+  const here = { activeLabel: 'L', labels: [{ id: 'L', transactions: [{ id: 'a', net: 5, note: 'qui' }], trash: [{ id: 't2' }] }] };
+  const m = C.mergeAccounts(base, here, cloud).labels[0];
+  assert.deepEqual(m.transactions, [{ id: 'a', net: 10, note: 'qui' }]);
+  assert.deepEqual(m.trash.map(x => x.id).sort(), ['t1', 't2'], 'il cestino si unisce, non si sovrascrive');
+});

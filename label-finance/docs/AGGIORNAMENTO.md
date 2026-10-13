@@ -1,3 +1,27 @@
+# Correzioni dal giro di controllo (ottobre 2026) — niente da fare online
+
+Nessuna modifica al database: basta la pubblicazione dell'app (se Vercel segnala il
+limite giornaliero, rilancia "Redeploy" il giorno dopo).
+
+Cosa cambia per chi usa l'app:
+- **Import CSV/Excel intelligente**: legge anche file .xlsx e fogli Google esportati,
+  riconosce da solo colonne, date, importi, entrate/uscite e categorie (anche estratti
+  conto, PayPal, Revolut, N26, Wise), impara le tue mappature e categorie, anteprima
+  con tutti i campi scelti, preset modificabili ed eliminabili.
+- **Quote artisti**: alla prima release chiede se usare 50% per tutti o scriverle a mano;
+  quota % modificabile in blocco per più artisti.
+- **Login** ricordato su web e dispositivi; apertura più affidabile.
+- **Discografia artista**: in una compilation (VA) mostra solo la sua traccia.
+- Decine di correzioni su pagamenti, periodi chiusi, contratti, portale artista,
+  sincronizzazione, esportazioni, dashboard e testi in 7 lingue.
+- **Grafica**: più contrasto in tema chiaro e scuro, logo centrato con menu ridotto,
+  scritta BETA leggibile, tooltip tradotti, Esc chiude le finestre.
+- **Prezzi e piani**: nomi dei piani corretti ovunque (Starter, Big Label, Company,
+  Enterprise) e prezzi annuali uguali tra sito e app; tolta la promessa di una
+  "prova di 14 giorni" che non esiste.
+
+---
+
 # Nuove funzioni (ottobre 2026) — cosa fare online
 
 Una sola cosa da fare, ~1 minuto: **rieseguire lo schema del database**.
@@ -9,7 +33,7 @@ Aggiunge:
   versione precedente dei dati (al massimo una all'ora, per 30 giorni) per il
   ripristino da Impostazioni → Backup & dati → Versioni salvate.
 - **Accesso team** (`team_members`): il titolare invita collaboratori in sola lettura
-  o con modifica (piano Agency). Le regole di accesso stanno nel database e valgono
+  o con modifica (piano Enterprise). Le regole di accesso stanno nel database e valgono
   solo per email confermate.
 - **Ricevute allegate** (Storage, bucket privato `receipts`): foto/PDF dei movimenti,
   visibili da tutti i dispositivi dell'etichetta e dal team.

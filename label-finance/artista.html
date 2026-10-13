@@ -29,6 +29,9 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 .periods button{font:inherit;font-weight:600;font-size:.85rem;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:9px;padding:7px 13px;cursor:pointer;transition:.15s}
 .periods button.on{background:var(--violet2);color:#fff;border-color:transparent}
 table{width:100%;border-collapse:collapse;font-size:.86rem}
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px}
+@media (max-width:560px){ .c-cat{display:none} .body{padding:18px 14px} td,th{padding-left:6px;padding-right:6px} }
+.state button{font:inherit;font-weight:600;margin-left:8px;padding:6px 12px;border-radius:9px;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--text);cursor:pointer}
 th{text-align:left;color:var(--muted);font-weight:600;font-size:.68rem;text-transform:uppercase;letter-spacing:.04em;padding:0 10px 9px;border-bottom:1px solid var(--line)}
 td{padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.05)}
 th.r,td.r{text-align:right;font-variant-numeric:tabular-nums}
@@ -53,6 +56,7 @@ tfoot td{border-top:2px solid var(--line);font-weight:700;font-size:.95rem;paddi
 <div class="wrap">
   <div id="loading" class="state">Carico lo statement…</div>
   <div id="error" class="state hidden">Link non valido o revocato.</div>
+  <div id="neterr" class="state hidden">Non riesco a caricare lo statement in questo momento (connessione o server). <button type="button" id="retry">Riprova</button></div>
   <div id="content" class="card hidden">
     <div class="lh">
       <img id="lh-logo" alt="" class="hidden">
@@ -72,11 +76,12 @@ tfoot td{border-top:2px solid var(--line);font-weight:700;font-size:.95rem;paddi
         <button data-n="3">Ultimi 3 mesi</button>
         <button class="btn-print" id="btn-print" style="margin-left:auto">⤓ Stampa / PDF</button>
       </div>
-      <table>
-        <thead><tr><th>Data</th><th>Prodotto / Release</th><th>Catalogo</th><th class="r">Lordo</th><th class="r">Quota</th><th class="r">Royalty</th></tr></thead>
+      <div class="tscroll"><table>
+        <thead><tr><th>Data</th><th>Prodotto / Release</th><th class="c-cat">Catalogo</th><th class="r">Lordo</th><th class="r">Quota</th><th class="r">Royalty</th></tr></thead>
         <tbody id="rows"></tbody>
-        <tfoot><tr><td colspan="5">Totale royalty del periodo</td><td class="r" id="t-total">—</td></tr></tfoot>
-      </table>
+        <tfoot><tr><td colspan="5" id="t-total-lbl">Totale royalty del periodo</td><td class="r" id="t-total">—</td></tr></tfoot>
+      </table></div>
+      <p class="mut hidden" id="late-note" style="font-size:.8rem;margin-top:8px">* Vendita di un periodo già chiuso, arrivata dopo la chiusura: conta in questo statement.</p>
       <div class="sum hidden" id="recoup">
         <div><span>Anticipi/costi recuperabili</span><b id="r-recoupable"></b></div>
         <div><span>Recuperato finora</span><b id="r-recouped"></b></div>
@@ -91,14 +96,14 @@ tfoot td{border-top:2px solid var(--line);font-weight:700;font-size:.95rem;paddi
     </div>
     <div class="foot">
       <span>Documento generato da <b>Label Finance</b> per <span id="f-label"></span></span>
-      <span>Solo lettura · i dati si aggiornano in tempo reale</span>
+      <span>Solo lettura · dati aggiornati all'apertura della pagina</span>
     </div>
   </div>
 </div>
 
 <script src="vendor/supabase.min.js?v=95"></script>
 <script src="config.js?v=95"></script>
-<script src="core.js?v=97"></script>
-<script src="artista.js?v=95"></script>
+<script src="core.js?v=98"></script>
+<script src="artista.js?v=96"></script>
 </body>
 </html>

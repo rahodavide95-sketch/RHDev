@@ -37,7 +37,20 @@
   const MONTHS = { jan:1,january:1,gen:1,gennaio:1, feb:2,february:2,febbraio:2, mar:3,march:3,marzo:3,
     apr:4,april:4,aprile:4, may:5,mag:5,maggio:5, jun:6,june:6,giu:6,giugno:6, jul:7,july:7,lug:7,luglio:7,
     aug:8,august:8,ago:8,agosto:8, sep:9,sept:9,september:9,set:9,settembre:9, oct:10,october:10,ott:10,ottobre:10,
-    nov:11,november:11,novembre:11, dec:12,december:12,dic:12,dicembre:12 };
+    nov:11,november:11,novembre:11, dec:12,december:12,dic:12,dicembre:12,
+    // francese, tedesco, spagnolo, portoghese, olandese (fogli e banche degli altri paesi)
+    janv:1,janvier:1,ene:1,enero:1,januar:1,'jän':1,'jänner':1,janeiro:1,januari:1,
+    'fév':2,'févr':2,'février':2,fev:2,fevrier:2,febrero:2,februar:2,fevereiro:2,februari:2,
+    mars:3,'mär':3,'märz':3,maerz:3,'março':3,marco:3,mrt:3,maart:3,
+    avr:4,avril:4,abr:4,abril:4,
+    mai:5,mayo:5,maio:5,mei:5,
+    juin:6,junio:6,juni:6,junho:6,
+    juil:7,juillet:7,julio:7,juli:7,julho:7,
+    'août':8,aout:8,augustus:8,
+    septembre:9,septiembre:9,setiembre:9,setembro:9,
+    okt:10,oktober:10,octobre:10,octubre:10,out:10,outubro:10,
+    noviembre:11,novembro:11,
+    'déc':12,'décembre':12,decembre:12,dez:12,dezember:12,diciembre:12,dezembro:12 };
   function validYmd(y, m, d){
     if(!(y>=1900 && y<=2200) || !(m>=1 && m<=12) || !(d>=1 && d<=C.daysInMonth(y, m-1))) return '';
     return y+'-'+pad2(m)+'-'+pad2(d);
@@ -193,6 +206,9 @@
       if(!r) continue;
       const c=norm(r.catalog); if(c && !byCat.has(c)) byCat.set(c, r);
       const u=upcKey(r.upc); if(u && !byUpc.has(u)) byUpc.set(u, r);
+      // codici di release unite in questa ("Trova duplicati"): le loro vendite restano collegate qui
+      for(const a of r.altCatalogs||[]){ const k=norm(a); if(k && !byCat.has(k)) byCat.set(k, r); }
+      for(const a of r.altUpcs||[]){ const k=upcKey(a); if(k && !byUpc.has(k)) byUpc.set(k, r); }
       const t=norm(r.title); if(t && !byTitle.has(t)) byTitle.set(t, r);
       for(const tr of r.tracks||[]){
         const i=norm(tr && tr.isrc); if(!i) continue;
@@ -203,8 +219,9 @@
     return {byCat, byUpc, byIsrc, byTitle, trackSplits};
   };
   C.releaseForTx = function(idx, t){
-    const c=norm(t.catalog), u=upcKey(t.upc||t.code), i=norm(t.isrc), p=norm(t.product);
-    return (c && idx.byCat.get(c)) || (u && idx.byUpc.get(u)) || (i && idx.byIsrc.get(i)) || (p && idx.byTitle.get(p)) || null;
+    const c=norm(t.catalog), u=upcKey(t.upc||t.code), i=norm(t.isrc), p=norm(t.product), r=norm(t.release);   // release: colonna "Release" dei fogli spese
+    return (c && idx.byCat.get(c)) || (u && idx.byUpc.get(u)) || (i && idx.byIsrc.get(i)) || (p && idx.byTitle.get(p))
+      || (r && (idx.byTitle.get(r) || idx.byCat.get(r))) || null;
   };
   // Release e quote applicabili: prima la traccia (ISRC) con quote proprie, poi la release.
   C.splitsForTx = function(idx, t){
@@ -230,6 +247,8 @@
   }
   const incomeOf = label => (label.transactions||[]).filter(t=>t && t.kind==='income');
   // { byArtist: {chiave: {name,total,byRelease:{catalogo:importo}}}, labelTotal }
+  // quota di una riga arrotondata al centesimo: le righe dello statement sommano esattamente al totale
+  C.cents = x => Math.round((+x||0)*100+(x>=0?1e-9:-1e-9))/100;
   C.computeRoyalties = function(label, opt){
     opt=opt||{}; const idx=opt.idx||C.relIndex(label.releases);
     const byArtist={}; let labelTotal=0;
@@ -242,7 +261,7 @@
       let assigned=0;
       const relKey=(m.rel && (m.rel.catalog || m.rel.title)) || '—';
       for(const s of sh){
-        const share=eur*s.pct/100; assigned+=share;
+        const share=C.cents(eur*s.pct/100); assigned+=share;
         const a=byArtist[s.key] || (byArtist[s.key]={key:s.key, name:s.name, total:0, byRelease:{}});
         a.total+=share; a.byRelease[relKey]=(a.byRelease[relKey]||0)+share;
       }
@@ -259,7 +278,7 @@
       if(opt.before && !(d<opt.before)) continue;
       const m=C.splitsForTx(idx, t); if(!m) continue;
       const eur=C.txEur(label, t);
-      for(const s of sharesOf(m.splits)){ const a=out[s.key]||(out[s.key]={name:s.name, total:0}); a.total+=eur*s.pct/100; }
+      for(const s of sharesOf(m.splits)){ const a=out[s.key]||(out[s.key]={name:s.name, total:0}); a.total+=C.cents(eur*s.pct/100); }
     }
     return out;
   };
@@ -305,7 +324,7 @@
       if(!C.inRange(C.acctDate(t), from, to)) continue;
       const m=C.splitsForTx(idx, t); if(!m) continue;
       const sp=sharesOf(m.splits).find(s=>s.key===key); if(!sp) continue;
-      const eur=C.txEur(label, t), share=eur*sp.pct/100; total+=share;
+      const eur=C.txEur(label, t), share=C.cents(eur*sp.pct/100); total+=share;
       // late = vendita di un periodo già chiuso, arrivata dopo la chiusura
       lines.push({ date:t.date||'', late:!!t.acct, product:t.product||(m.rel&&m.rel.title)||'', catalog:(m.rel&&m.rel.catalog)||t.catalog||'', gross:eur, pct:sp.pct, share });
     }
@@ -345,9 +364,10 @@
 
   /* ---------- Unione dei dati tra dispositivi (sync) ---------- */
   // Unione a tre vie: base = ultima versione sincronizzata, local = questo dispositivo,
-  // remote = cloud. Gli elenchi con "id" si uniscono elemento per elemento; se lo
-  // stesso elemento è cambiato da entrambe le parti vince questo dispositivo.
-  const ID_ARRAYS=new Set(['transactions','releases','artists','tasks','contracts','merch','planning','events','supports','recurring','recoup','payouts','contractTombstones']);
+  // remote = cloud. Gli elenchi con "id" si uniscono elemento per elemento e, dentro
+  // lo stesso elemento, campo per campo (importo cambiato qui, nota cambiata altrove:
+  // restano entrambi); se lo stesso campo è cambiato da entrambe le parti vince questo dispositivo.
+  const ID_ARRAYS=new Set(['transactions','releases','artists','tasks','contracts','merch','planning','events','supports','recurring','recoup','payouts','contractTombstones','trash']);
   function stable(v){
     if(v===undefined) return 'u';
     if(v===null || typeof v!=='object') return JSON.stringify(v);
@@ -384,7 +404,7 @@
     for(const k of new Set([...Object.keys(r), ...Object.keys(l)])){
       const bv=b[k], lv=l[k], rv=r[k];
       let v;
-      if(ID_ARRAYS.has(k) && (Array.isArray(lv) || Array.isArray(rv))) v=mergeById(bv, lv||[], rv||[]);
+      if(ID_ARRAYS.has(k) && (Array.isArray(lv) || Array.isArray(rv))) v=mergeById(bv, lv||[], rv||[], mergeObj);
       else if(isPlain(lv) && isPlain(rv)) v=mergeObj(bv, lv, rv);
       else v=pickVal(bv, lv, rv);
       if(v!==undefined) out[k]=v;

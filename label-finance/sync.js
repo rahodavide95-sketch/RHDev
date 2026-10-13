@@ -25,16 +25,18 @@
   const getCfg = ()=>{ const b=bakedCfg(); if(b) return b;
     try{ return JSON.parse(localStorage.getItem(CFG_KEY)); }catch{ return null; } };
   const setStatus = (msg)=>{ const e=$('sync-status'); if(e) e.textContent=msg; };
-  const now = ()=> new Date().toLocaleTimeString('it-IT');
+  const now = ()=> new Date().toLocaleTimeString((window.LFI18N&&window.LFI18N.lang)||undefined);
+  const tt0=(k,fb)=>{ const v=window.t?window.t(k):''; return (v&&v!==k)?v:fb; };
 
   function authMsg(m){
-    if(/Email not confirmed/i.test(m)) return 'Email non confermata: controlla la posta (o disattiva la conferma su Supabase), poi accedi.';
-    if(/Invalid login credentials/i.test(m)) return 'Email o password non corretti.';
-    if(/already registered|already.*registered|User already/i.test(m)) return 'Email già registrata: prova ad accedere.';
-    if(/already.*(in use|exists|been used)|email_exists|email address.*registered/i.test(m)) return 'Questa email è già usata da un altro account. Scegline un\'altra.';
-    if(/invalid.*email|email.*invalid|unable to validate email/i.test(m)) return 'Indirizzo email non valido.';
-    if(/for security purposes|rate limit|too many/i.test(m)) return 'Troppi tentativi ravvicinati: riprova tra qualche minuto.';
-    if(/at least 6|password.*6/i.test(m)) return 'La password deve avere almeno 6 caratteri.';
+    if(/Email not confirmed/i.test(m)) return tt0('sync.e_unconfirmed','Email non confermata: apri il link che ti abbiamo mandato, poi accedi.');
+    if(/Invalid login credentials/i.test(m)) return tt0('sync.e_invalid','Email o password non corretti.');
+    if(/already registered|already.*registered|User already/i.test(m)) return tt0('sync.e_registered','Email già registrata: prova ad accedere.');
+    if(/already.*(in use|exists|been used)|email_exists|email address.*registered/i.test(m)) return tt0('sync.e_in_use','Questa email è già usata da un altro account. Scegline un\'altra.');
+    if(/invalid.*email|email.*invalid|unable to validate email/i.test(m)) return tt0('sync.e_email','Indirizzo email non valido.');
+    if(/for security purposes|rate limit|too many/i.test(m)) return tt0('sync.e_rate','Troppi tentativi ravvicinati: riprova tra qualche minuto.');
+    if(/at least 6|password.*6/i.test(m)) return tt0('sync.e_pw6','La password deve avere almeno 6 caratteri.');
+    if(/fetch|network|Load failed/i.test(m)) return tt0('sync.g_unavailable','Servizio non raggiungibile: controlla la connessione e riprova.');
     return m;
   }
   // Salva/aggiorna la credenziale nel gestore password (Chromium/Android).
@@ -47,8 +49,11 @@
     }catch(e){}
   }
 
+  const LAST_EMAIL='labelfinance.lastEmail';
+  function rememberEmail(e){ try{ if(e) localStorage.setItem(LAST_EMAIL, e); }catch(_){} }
+  function prefillEmail(){ const el=$('gate-email'); if(!el || el.value) return; try{ const e=localStorage.getItem(LAST_EMAIL); if(e) el.value=e; }catch(_){} }
   /* ---------- Pagina di login (gate) ---------- */
-  function showGate(show){ document.body.classList.toggle('gated', show);
+  function showGate(show){ document.body.classList.toggle('gated', show); if(show) prefillEmail();
     if(!show){ try{ window.LF_maybeStartTour && window.LF_maybeStartTour(); }catch(e){} } }
   function gateStatus(msg,err){ const e=$('gate-status'); if(!e) return; e.textContent=msg||''; e.classList.toggle('err',!!err); }
   function setGateMode(mode){
@@ -71,39 +76,39 @@
   let linkMsg=null;   // avviso "link scaduto" arrivato dalla mail
   async function gateSignIn(){
     linkMsg=null;
-    if(!client){ gateStatus('Servizio non disponibile, usa "Continua senza account".',true); return; }
-    gateStatus('Accesso in corso…');
+    if(!client){ gateStatus(tt0('sync.g_unavailable','Servizio non raggiungibile: controlla la connessione e riprova.'),true); return; }
+    gateStatus(tt0('sync.g_signing','Accesso in corso…'));
     const email=$('gate-email').value.trim(), pw=$('gate-pw').value;
     const { error } = await client.auth.signInWithPassword({ email, password:pw });
     if(error) gateStatus(authMsg(error.message),true);
-    else storeCred(email, pw);
+    else { storeCred(email, pw); rememberEmail(email); }
   }
   async function gateSignUp(){
     linkMsg=null;
-    if(!client){ gateStatus('Servizio non disponibile, usa "Continua senza account".',true); return; }
+    if(!client){ gateStatus(tt0('sync.g_unavailable','Servizio non raggiungibile: controlla la connessione e riprova.'),true); return; }
     const name=$('gate-name').value.trim(), surname=$('gate-surname')?$('gate-surname').value.trim():'', label=$('gate-label').value.trim();
-    if(!name||!label){ gateStatus('Inserisci nome e nome label.',true); return; }
-    gateStatus('Registrazione in corso…');
+    if(!name||!label){ gateStatus(tt0('sync.g_need_name','Inserisci nome e nome label.'),true); return; }
+    gateStatus(tt0('sync.g_signing_up','Registrazione in corso…'));
     const email=$('gate-email').value.trim(), pw=$('gate-pw').value;
     const { data, error } = await client.auth.signUp({
       email, password:pw,
       options:{ data:{ full_name:name, last_name:surname, label_name:label } }
     });
     if(error){ gateStatus(authMsg(error.message),true); return; }
-    storeCred(email, pw);
+    storeCred(email, pw); rememberEmail(email);
     window.LF.setProfile({ name, surname, label });
-    if(data.session) gateStatus('Account creato ✓');                       // login immediato → onAuth nasconde il gate
-    else gateStatus('Account creato. Controlla l\'email per confermare, poi premi Accedi.');
+    if(data.session) gateStatus(tt0('sync.g_created','Account creato ✓'));                       // login immediato → onAuth nasconde il gate
+    else gateStatus(tt0('sync.g_check_mail','Account creato. Controlla l\'email per confermare, poi premi Accedi.'));
   }
   async function gateForgot(){
     linkMsg=null;
-    if(!client){ gateStatus('Servizio non disponibile.',true); return; }
+    if(!client){ gateStatus(tt0('sync.g_unavailable','Servizio non raggiungibile: controlla la connessione e riprova.'),true); return; }
     const email=$('gate-email').value.trim();
-    if(!email){ gateStatus('Inserisci la tua email, poi premi "Password dimenticata?".',true); return; }
-    gateStatus('Invio email di reset…');
+    if(!email){ gateStatus(tt0('sync.g_need_email','Inserisci la tua email, poi premi "Password dimenticata?".'),true); return; }
+    gateStatus(tt0('sync.g_sending_reset','Invio email di reset…'));
     const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo: location.href.split('#')[0] });
     if(error) gateStatus(authMsg(error.message),true);
-    else gateStatus('Ti abbiamo inviato un\'email per reimpostare la password. Apri il link, poi imposta la nuova password.');
+    else gateStatus(tt0('sync.g_reset_sent','Ti abbiamo inviato un\'email per reimpostare la password. Apri il link, poi imposta la nuova password.'));
   }
 
   /* ---------- UI impostazioni ---------- */
@@ -136,11 +141,11 @@
   /* ---------- Client ---------- */
   function initClient(){
     const cfg=getCfg();
-    if(!cfg||!cfg.url||!cfg.key){ setStatus('Non configurata'); renderUI(); return; }
-    if(!window.supabase){ setStatus('Libreria cloud non caricata (sei offline?)'); gateStatus('Servizio non raggiungibile. Usa "Continua senza account".',true); return; }
+    if(!cfg||!cfg.url||!cfg.key){ setStatus(tt0('sync.s_not_configured','Non configurata')); renderUI(); return; }
+    if(!window.supabase){ setStatus(tt0('sync.s_lib','Libreria cloud non caricata (sei offline?)')); gateStatus(tt0('sync.g_unavailable','Servizio non raggiungibile: controlla la connessione e riprova.'),true); return; }
     try{ client = window.supabase.createClient(cfg.url, cfg.key); }
-    catch(e){ setStatus('Configurazione non valida'); return; }
-    setStatus('In attesa di accesso…');
+    catch(e){ setStatus(tt0('sync.s_bad_cfg','Configurazione non valida')); return; }
+    setStatus(tt0('sync.s_waiting','In attesa di accesso…'));
     client.auth.onAuthStateChange((evt, session)=>{ user = session?.user || null; onAuth();
       if(evt==='PASSWORD_RECOVERY') onRecovery(); });
     client.auth.getSession().then(({data})=>{ user = data.session?.user || null; onAuth(); });
@@ -161,20 +166,38 @@
     }catch(e){ return true; }
   }
   let authedUserId=null;
+  // i dati locali sono di questo account (o di nessuno)? allora si possono mostrare subito
+  const wsGuess = uid => { try{ return localStorage.getItem(WS_KEY+uid)||uid; }catch(e){ return uid; } };
+  const localIsMine = uid => !meta.owner || meta.owner===uid || meta.owner===wsGuess(uid);
+  // sessione già salvata su questo dispositivo (Supabase la tiene in localStorage)
+  function storedSessionUser(){
+    try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i)||'';
+        if(!/^sb-.+-auth-token$/.test(k)) continue;
+        const v=JSON.parse(localStorage.getItem(k)||'null'), ses=v&&(v.currentSession||v);
+        if(ses && ses.refresh_token && ses.user && ses.user.id) return ses.user.id; } }catch(e){}
+    return null; }
+  // modifiche fatte prima che la sincronizzazione sia pronta: segnate da salvare, partono dopo la pull
+  function markDirty(){ if(isViewer()) return; editSeq++; if(!meta.dirty){ meta.dirty=true; saveMeta(); } }
   async function onAuth(){
     renderUI();
     if(user){
       if(user.id===authedUserId) return;            // rinnovo token ecc.: già sincronizzato
-      authedUserId=user.id;
-      if(!(await isApproved())){
-        showPending(true); showGate(false); setStatus('In attesa di approvazione'); window.LF_push=null; return;
+      authedUserId=user.id; const uid0=user.id;
+      const alive=()=>user && user.id===uid0;
+      // stesso account dei dati locali: niente schermata di accesso in attesa della rete
+      if(localIsMine(uid0)){ showPending(false); showGate(false); window.LF_push=markDirty; }
+      const approved=await Promise.race([ isApproved(), new Promise(r=>setTimeout(()=>r(true), 4000)) ]);
+      if(!alive()) return;
+      if(!approved){
+        showPending(true); showGate(false); setStatus(tt0('sync.s_pending','In attesa di approvazione')); window.LF_push=null; return;
       }
       showPending(false);
       showGate(false);
-      setStatus('Connesso — sincronizzo…'); gateStatus('');
+      setStatus(tt0('sync.s_connected','Connesso — sincronizzo…')); gateStatus('');
       try{ await (window.LF.ready||Promise.resolve()); }catch(e){}
       // accesso team: etichette di altri titolari a cui questo account è stato invitato
-      await loadMemberships(); restoreWorkspace();
+      await Promise.race([ loadMemberships(), new Promise(r=>setTimeout(r, 6000)) ]); if(!alive()) return;
+      restoreWorkspace();
       // i dati di questo dispositivo appartengono all'ultimo account che li ha sincronizzati:
       // se entra un account diverso, si riparte puliti (niente dati di un'altra etichetta)
       if(meta.owner && meta.owner!==wsId()){ await resetLocal(); }
@@ -189,8 +212,8 @@
       authedUserId=null; workspace=null; memberships=[]; window.LF_readOnly=false; renderWsUI();
       showPending(false);
       window.LF_push = null;
-      if(getCfg()){ showGate(true); setStatus('Accedi per sincronizzare'); }
-      else { showGate(false); setStatus('Non configurata'); }
+      if(getCfg()){ showGate(true); setStatus(tt0('sync.s_login','Accedi per sincronizzare')); }
+      else { showGate(false); setStatus(tt0('sync.s_not_configured','Non configurata')); }
     }
   }
   $('pending-logout')?.addEventListener('click', async ()=>{ try{ await client.auth.signOut(); }catch(e){} showPending(false); });
@@ -221,11 +244,12 @@
   let meta=loadMeta();
   const saveMeta=()=>{ try{ localStorage.setItem(META_KEY, JSON.stringify(meta)); }catch(e){} };
   const store=()=>window.LFStore||{ get:()=>Promise.resolve(null), set:()=>Promise.resolve(), del:()=>Promise.resolve() };
-  async function getBase(){ try{ const b=await store().get('syncBase'); return b?JSON.parse(b):null; }catch(e){ return null; } }
-  async function setBase(json){ try{ await store().set('syncBase', typeof json==='string'?json:JSON.stringify(json)); }catch(e){} }
+  let baseMem=null;   // copia in memoria: senza IndexedDB l'unione a tre vie funziona lo stesso (finché la pagina è aperta)
+  async function getBase(){ try{ const b=await store().get('syncBase'); if(b) return JSON.parse(b); }catch(e){} return baseMem?JSON.parse(baseMem):null; }
+  async function setBase(json){ baseMem=typeof json==='string'?json:JSON.stringify(json); try{ await store().set('syncBase', baseMem); }catch(e){} }
   async function resetLocal(){
     window.LF.wipeLocal();
-    meta={owner:null,remoteTs:null,dirty:false}; saveMeta();
+    meta={owner:null,remoteTs:null,dirty:false}; saveMeta(); baseMem=null;
     try{ await store().del('syncBase'); }catch(e){}
   }
   let editSeq=0, pushing=false, pushAgain=false, lastPull=0;
@@ -234,14 +258,15 @@
     opt=opt||{};
     if(!user||!client) return;
     lastPull=Date.now();
-    const seq0=editSeq, ts0=meta.remoteTs;
+    const seq0=editSeq, ts0=meta.remoteTs, u0=user.id, w0=wsId();
     const { data, error } = await client.from('app_state').select('data,updated_at').eq('user_id', wsId()).maybeSingle();
-    if(error){ setStatus('Errore lettura cloud: '+error.message); return; }
+    if(!user || user.id!==u0 || wsId()!==w0) return;     // uscito o cambiato etichetta durante il download
+    if(error){ setStatus(tt0('sync.s_read_err','Errore lettura cloud: {e}').replace('{e}', error.message)); return; }
     // modifiche o salvataggi avvenuti durante il download: questa copia è già vecchia, riprova dopo
     if(editSeq!==seq0 || meta.remoteTs!==ts0 || pushing){ schedulePull(); return; }
     if((!data || !data.data) && workspace){
       // etichetta di un titolare che non ha ancora salvato nulla nel cloud: niente da mostrare
-      meta.owner=wsId(); meta.remoteTs=null; meta.dirty=false; saveMeta(); setStatus(tt0('team.owner_empty','L\'etichetta del titolare è ancora vuota.')); return;
+      meta.owner=wsId(); meta.remoteTs=null; meta.dirty=false; saveMeta(); setStatus(tt0('team.owner_empty','L\'etichetta del titolare è ancora vuota.')); window.LF_push=schedulePush; return;
     }
     if(!data || !data.data){
       // cloud vuoto (account nuovo): carica i dati locali, ma chiedi se non si sa di chi sono
@@ -253,22 +278,25 @@
       await push();
       return;
     }
-    if(data.updated_at===meta.remoteTs && !meta.dirty){ meta.owner=wsId(); saveMeta(); setStatus('Sincronizzato ✓ '+now()); return; }
-    if(!meta.dirty){
-      applyMerged(data.data);
-    } else {
-      let base=await getBase();
-      if(!base && opt.initial && !meta.owner && !workspace && window.LF.localSize()>0){
-        const msg=(window.t?window.t('sync.merge_local'):'Su questo dispositivo ci sono {n} elementi non ancora nel tuo account. Vuoi unirli ai dati del cloud?').replace('{n}', window.LF.localSize());
-        if(!confirm(msg)){ applyMerged(data.data); meta.dirty=false; base=undefined; }
-      }
-      if(meta.dirty) applyMerged(LFCore.mergeAccounts(base, window.LF.data(), data.data));
+    if(data.updated_at===meta.remoteTs && !meta.dirty){ meta.owner=wsId(); saveMeta(); setStatus(tt0('sync.s_synced','Sincronizzato ✓ {t}').replace('{t}', now())); return; }
+    // dati creati su questo dispositivo prima di accedere (di nessun account): si chiede se unirli
+    let base=await getBase();
+    if(!base && opt.initial && !meta.owner && !workspace && window.LF.localSize()>0){
+      const msg=(window.t?window.t('sync.merge_local'):'Su questo dispositivo ci sono {n} elementi non ancora nel tuo account. Vuoi unirli ai dati del cloud?').replace('{n}', window.LF.localSize());
+      meta.dirty=confirm(msg);
     }
+    if(!user || user.id!==u0 || wsId()!==w0) return;
+    if(!meta.dirty) applyMerged(data.data);
+    else applyMerged(LFCore.mergeAccounts(base, window.LF.data(), data.data));
     meta.owner=wsId(); meta.remoteTs=data.updated_at; saveMeta();
     await setBase(data.data);
     if(meta.dirty) await push();
-    else setStatus('Sincronizzato ✓ '+now());
+    else setStatus(tt0('sync.s_synced','Sincronizzato ✓ {t}').replace('{t}', now()));
   }
+  // salvataggio fallito (rete, server): si riprova da soli, sempre più di rado, finché resta qualcosa da salvare
+  let retryMs=0, retryTimer=null;
+  function scheduleRetry(){ clearTimeout(retryTimer); retryMs=Math.min(60000, retryMs?retryMs*2:3000);
+    retryTimer=setTimeout(()=>{ if(user && meta.dirty && !pushing) push(); }, retryMs); }
   function schedulePush(){
     if(isViewer()) return;                        // sola lettura: niente salvataggi nel cloud
     editSeq++;
@@ -280,7 +308,7 @@
     if(!user||!client||isViewer()) return;
     if(workspace && !meta.remoteTs) return;       // un membro del team non può creare i dati del titolare
     if(pushing){ pushAgain=true; return; }
-    pushing=true;
+    pushing=true; const u0=user.id, w0=wsId(); const alive=()=>user && user.id===u0 && wsId()===w0;
     try{
       for(let attempt=0; attempt<4; attempt++){
         const seq=editSeq;
@@ -290,25 +318,27 @@
         const res = meta.remoteTs
           ? await client.from('app_state').update(body).eq('user_id', wsId()).eq('updated_at', meta.remoteTs).select('updated_at')
           : await client.from('app_state').insert(Object.assign({ user_id:user.id }, body)).select('updated_at');
-        if(res.error && res.error.code!=='23505'){ setStatus('Errore salvataggio: '+res.error.message); return; }
+        if(!alive()) return;
+        if(res.error && res.error.code!=='23505'){ setStatus(tt0('sync.s_save_err','Errore salvataggio: {e} — riprovo tra poco.').replace('{e}', res.error.message)); scheduleRetry(); return; }
         if(!res.error && res.data && res.data.length){
           meta.owner=wsId(); meta.remoteTs=res.data[0].updated_at; meta.dirty=(editSeq!==seq); saveMeta();
-          await setBase(snapshot);
-          setStatus('Sincronizzato ✓ '+now());
+          await setBase(snapshot); retryMs=0;
+          setStatus(tt0('sync.s_synced','Sincronizzato ✓ {t}').replace('{t}', now()));
           if(meta.dirty) pushAgain=true;
           return;
         }
         // un altro dispositivo ha salvato nel frattempo: scarica, unisci, riprova
-        setStatus('Unisco le modifiche di un altro dispositivo…');
+        setStatus(tt0('sync.s_merging','Unisco le modifiche di un altro dispositivo…'));
         const cur=await client.from('app_state').select('data,updated_at').eq('user_id', wsId()).maybeSingle();
-        if(cur.error){ setStatus('Errore lettura cloud: '+cur.error.message); return; }
+        if(!alive()) return;
+        if(cur.error){ setStatus(tt0('sync.s_read_err','Errore lettura cloud: {e}').replace('{e}', cur.error.message)); scheduleRetry(); return; }
         if(!cur.data){ meta.remoteTs=null; continue; }
         const base=await getBase();
         applyMerged(LFCore.mergeAccounts(base, window.LF.data(), cur.data.data));
         meta.remoteTs=cur.data.updated_at; saveMeta();
         await setBase(cur.data.data);
       }
-      setStatus('Salvataggio non riuscito: troppe modifiche contemporanee. Riprovo al prossimo salvataggio.');
+      setStatus(tt0('sync.s_too_many','Salvataggio non riuscito: troppe modifiche contemporanee. Riprovo tra poco.')); scheduleRetry();
     } finally {
       pushing=false;
       if(pushAgain){ pushAgain=false; clearTimeout(pushTimer); pushTimer=setTimeout(push, 400); }
@@ -364,7 +394,7 @@
   async function signUp(){
     if(!client) return;
     const { error } = await client.auth.signUp({ email:$('sync-email').value.trim(), password:$('sync-pw').value });
-    setStatus(error ? authMsg(error.message) : 'Registrato. Se serve, conferma l\'email e poi accedi.');
+    setStatus(error ? authMsg(error.message) : tt0('sync.s_registered','Registrato. Se serve, conferma l\'email e poi accedi.'));
   }
   // Logout: salva le ultime modifiche, poi cancella i dati da questo dispositivo
   // (su un computer condiviso il prossimo utente non deve vedere nulla).
@@ -409,7 +439,6 @@
      Il titolare invita un'email come viewer (sola lettura) o editor (modifica).
      Chi entra con quell'email può aprire l'etichetta del titolare dal menu account:
      i dati letti e scritti diventano quelli del titolare (wsId). */
-  const tt0=(k,fb)=>{ const v=window.t?window.t(k):''; return (v&&v!==k)?v:fb; };
   async function loadMemberships(){
     memberships=[];
     if(!client||!user||!user.email) return;
@@ -433,7 +462,7 @@
     workspace = m ? { owner:m.owner_id, role:m.role, label:m.owner_label||'', email:m.owner_email||'' } : null;
     window.LF_readOnly = isViewer();
     await resetLocal();                            // si riparte puliti: i dati sono di un'altra etichetta
-    setStatus('Cambio etichetta…');
+    setStatus(tt0('sync.s_switching','Cambio etichetta…'));
     watchContracts(); watchState();
     await pull({ initial:true });
     renderWsUI();
@@ -590,34 +619,34 @@
     window.LF.setProfile({ name, surname, label });
     if(client && user){
       const { error } = await client.auth.updateUser({ data:{ full_name:name, last_name:surname, label_name:label } });
-      setStatus(error ? ('Errore profilo: '+error.message) : 'Profilo salvato ✓');
-    } else setStatus('Profilo salvato (locale)');
+      setStatus(error ? tt0('sync.s_profile_err','Errore profilo: {e}').replace('{e}', error.message) : tt0('sync.s_profile_ok','Profilo salvato ✓'));
+    } else setStatus(tt0('sync.s_profile_local','Profilo salvato (locale)'));
   }
   async function changePassword(){
     const st=$('pw-status'); const set=(m,ok)=>{ if(st){ st.textContent=m; st.style.color = ok?'var(--in)':'var(--out)'; } };
-    if(!client || !user){ set('Devi essere connesso per cambiare password.',false); return; }
+    if(!client || !user){ set(tt0('sync.p_need_login','Devi essere connesso per cambiare password.'),false); return; }
     const p1=$('pw-new').value, p2=$('pw-new2').value;
-    if(p1.length<6){ set('La password deve avere almeno 6 caratteri.',false); return; }
-    if(p1!==p2){ set('Le due password non coincidono.',false); return; }
-    set('Aggiornamento…',true);
+    if(p1.length<6){ set(tt0('sync.e_pw6','La password deve avere almeno 6 caratteri.'),false); return; }
+    if(p1!==p2){ set(tt0('sync.p_mismatch','Le due password non coincidono.'),false); return; }
+    set(tt0('sync.p_updating','Aggiornamento…'),true);
     const { error } = await client.auth.updateUser({ password:p1 });
     if(error){ set(authMsg(error.message),false); return; }
     $('pw-new').value=''; $('pw-new2').value='';
-    set('Password aggiornata ✓',true);
+    set(tt0('sync.p_done','Password aggiornata ✓'),true);
     storeCred(user.email, p1);
   }
   async function changeEmail(){
     const st=$('email-status'); const set=(m,ok)=>{ if(st){ st.textContent=m; st.style.color = ok?'var(--in)':'var(--out)'; } };
-    if(!client || !user){ set('Devi essere connesso per cambiare email.',false); return; }
+    if(!client || !user){ set(tt0('sync.m_need_login','Devi essere connesso per cambiare email.'),false); return; }
     const ne=($('email-new').value||'').trim();
-    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(ne)){ set('Inserisci un indirizzo email valido.',false); return; }
-    if(ne.toLowerCase()===(user.email||'').toLowerCase()){ set('La nuova email è uguale a quella attuale.',false); return; }
-    set('Invio del link di conferma…',true);
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(ne)){ set(tt0('sync.m_invalid','Inserisci un indirizzo email valido.'),false); return; }
+    if(ne.toLowerCase()===(user.email||'').toLowerCase()){ set(tt0('sync.m_same','La nuova email è uguale a quella attuale.'),false); return; }
+    set(tt0('sync.m_sending','Invio del link di conferma…'),true);
     const redirect = location.href.split('#')[0];
     const { error } = await client.auth.updateUser({ email:ne }, { emailRedirectTo: redirect });
     if(error){ set(authMsg(error.message),false); return; }
     $('email-new').value='';
-    set('Ti abbiamo inviato un link di conferma a '+ne+' (controlla anche la posta attuale). Il cambio sarà effettivo solo dopo aver cliccato il link.',true);
+    set(tt0('sync.m_sent','Ti abbiamo inviato un link di conferma a {e} (controlla anche la posta attuale). Il cambio sarà effettivo solo dopo aver cliccato il link.').replace('{e}', ne),true);
   }
 
   /* ---------- Recupero password: schermata dedicata "imposta nuova password" ---------- */
@@ -632,16 +661,16 @@
   function onRecovery(){ showGate(false); showPending(false); showRecovery(true); }
   async function changeRecoveryPassword(){
     const st=$('rec-status'); const set=(m,ok)=>{ if(st){ st.textContent=m; st.style.color = ok?'var(--in)':'var(--out)'; } };
-    if(!client || !user){ set('Link non valido o scaduto. Richiedi un nuovo reset dalla schermata di accesso.',false); return; }
+    if(!client || !user){ set(tt0('sync.r_invalid','Link non valido o scaduto. Richiedi un nuovo reset dalla schermata di accesso.'),false); return; }
     const p1=$('rec-pw').value, p2=$('rec-pw2').value;
-    if(p1.length<6){ set('La password deve avere almeno 6 caratteri.',false); return; }
-    if(p1!==p2){ set('Le due password non coincidono.',false); return; }
-    set('Salvataggio…',true);
+    if(p1.length<6){ set(tt0('sync.e_pw6','La password deve avere almeno 6 caratteri.'),false); return; }
+    if(p1!==p2){ set(tt0('sync.p_mismatch','Le due password non coincidono.'),false); return; }
+    set(tt0('sync.r_saving','Salvataggio…'),true);
     const { error } = await client.auth.updateUser({ password:p1 });
     if(error){ set(authMsg(error.message),false); return; }
     storeCred(user.email, p1);
     $('rec-pw').value=''; $('rec-pw2').value='';
-    set('Password aggiornata ✓ Accesso in corso…',true);
+    set(tt0('sync.r_done','Password aggiornata ✓ Accesso in corso…'),true);
     setTimeout(()=>{ showRecovery(false); onAuth(); }, 900);
   }
 
@@ -651,7 +680,7 @@
       const wrap=eye.closest('.input-eye'); const pw=wrap&&wrap.querySelector('input'); if(!pw) return;
       eye.innerHTML=EYE;
       eye.onclick=()=>{ const show=pw.type==='password'; pw.type=show?'text':'password';
-        eye.innerHTML=show?EYE_OFF:EYE; eye.setAttribute('aria-label',show?'Nascondi password':'Mostra password'); pw.focus(); };
+        eye.innerHTML=show?EYE_OFF:EYE; eye.setAttribute('aria-label',show?tt0('sync.eye_hide','Nascondi password'):tt0('sync.eye_show','Mostra password')); pw.focus(); };
     });
   }
 
@@ -671,14 +700,14 @@
     // impostazioni
     $('sync-save-config')?.addEventListener('click', ()=>{
       const url=$('sync-url').value.trim().replace(/\/$/,''), key=$('sync-key').value.trim();
-      if(!url||!key){ setStatus('Inserisci URL e chiave'); return; }
+      if(!url||!key){ setStatus(tt0('sync.s_need_url','Inserisci URL e chiave')); return; }
       localStorage.setItem(CFG_KEY, JSON.stringify({url,key}));
-      setStatus('Connessione salvata'); initClient(); showGate(true);
+      setStatus(tt0('sync.s_conn_saved','Connessione salvata')); initClient(); showGate(true);
     });
     $('sync-signin')?.addEventListener('click', signIn);
     $('sync-signup')?.addEventListener('click', signUp);
     $('sync-signout')?.addEventListener('click', signOut);
-    $('sync-pull')?.addEventListener('click', ()=>{ setStatus('Aggiorno…'); pull(); });
+    $('sync-pull')?.addEventListener('click', ()=>{ setStatus(tt0('sync.s_updating','Aggiorno…')); pull(); });
     $('account-save')?.addEventListener('click', saveAccount);
     $('pw-form')?.addEventListener('submit', e=>{ e.preventDefault(); changePassword(); });
     $('rec-form')?.addEventListener('submit', e=>{ e.preventDefault(); changeRecoveryPassword(); });
@@ -688,7 +717,9 @@
   wire(); wireEyes();
   // modalità iniziale: registrazione se si arriva dalla landing con app.html?signup (o #signup), altrimenti login
   setGateMode(/(?:[?&]signup\b)|#signup/i.test((location.search||'')+(location.hash||'')) ? 'signup' : 'login');
-  showGate(!!getCfg());     // se configurato, mostra il login subito (in attesa della sessione)
+  // se configurato, mostra il login subito — tranne quando su questo dispositivo c'è già la sessione
+  // dello stesso account dei dati locali: allora l'app si apre subito e la sessione si verifica in background
+  { const su=storedSessionUser(); showGate(!!getCfg() && !(su && localIsMine(su))); }
   // link della mail scaduto o già usato (reset password / conferma): Supabase torna qui con
   // #error_code=… → spiega cosa fare invece di lasciare la schermata di accesso muta
   (function(){
@@ -696,9 +727,9 @@
     const code=h.get('error_code')||h.get('error'); if(!code) return;
     const expired=/expired|otp_expired|access_denied/i.test(code+' '+(h.get('error_description')||''));
     linkMsg = expired
-      ? 'Il link è scaduto o è già stato usato. Inserisci la tua email e premi "Password dimenticata?" per riceverne uno nuovo.'
-      : 'Link non valido: '+(h.get('error_description')||code);
-    gateStatus(linkMsg, true);
+      ? tt0('sync.link_expired','Il link è scaduto o è già stato usato. Inserisci la tua email e premi "Password dimenticata?" per riceverne uno nuovo.')
+      : tt0('sync.link_invalid','Link non valido: {d}').replace('{d}', h.get('error_description')||code);
+    showGate(true); gateStatus(linkMsg, true);
     try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
   })();
   initClient();

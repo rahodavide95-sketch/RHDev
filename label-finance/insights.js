@@ -110,7 +110,7 @@ function releasePL(rel, idx){
     if(t.kind==='income'){
       out.revenue+=eur; mo.rev+=eur;
       const sp=LFCore.splitsForTx(idx, t); const pct=sp?(sp.splits||[]).reduce((s,x)=>s+(+x.pct||0),0):0;
-      const a=eur*Math.min(100,pct)/100; out.artists+=a; mo.art+=a;
+      const a=LFCore.cents(eur*pct/100); out.artists+=a; mo.art+=a;   // stesse quote delle royalty (anche se una release supera il 100%)
       if(t.date){ if(!out.firstSale || t.date<out.firstSale) out.firstSale=t.date; if(!out.lastSale || t.date>out.lastSale) out.lastSale=t.date; }
     } else { const c=Math.abs(eur); out.costs+=c; mo.cost+=c; }
   });
@@ -158,7 +158,7 @@ function renderPLModal(){
     +list.map(p=>{ const st=plStatus(p); return `<tr><td><span class="lf-link" data-rel-open="${esc(p.rel.id)}"><b>${esc(p.rel.catalog||'')}</b> ${esc(p.rel.title||'')}</span></td>
       <td class="num">${fmtMoney(p.revenue)}</td><td class="num">${fmtMoney(p.artists)}</td><td class="num">${fmtMoney(p.costs)}</td>
       <td class="num ${p.margin<0?'neg':'pos'}"><b>${fmtMoney(p.margin)}</b></td><td><span class="ctag ctag-${st.cls}">${esc(st.txt)}</span></td></tr>`; }).join('')
-    +`<tr class="per-tot"><td><b>${esc(tt('stmt.total'))}</b></td><td class="num"><b>${fmtMoney(tot('revenue'))}</b></td><td class="num"><b>${fmtMoney(tot('artists'))}</b></td><td class="num"><b>${fmtMoney(tot('costs'))}</b></td><td class="num"><b>${fmtMoney(tot('margin'))}</b></td><td></td></tr></tbody></table></div>`;
+    +`<tr class="per-tot"><td><b>${esc(tt('pl.total'))}</b></td><td class="num"><b>${fmtMoney(tot('revenue'))}</b></td><td class="num"><b>${fmtMoney(tot('artists'))}</b></td><td class="num"><b>${fmtMoney(tot('costs'))}</b></td><td class="num"><b>${fmtMoney(tot('margin'))}</b></td><td></td></tr></tbody></table></div>`;
 }
 function openPLModal(){ const m=document.getElementById('pl-modal'); if(!m) return; renderPLModal(); m.hidden=false; }
 
@@ -171,20 +171,23 @@ const CK_STEPS=[ [-42,'ck.s_master'], [-35,'ck.s_codes'], [-28,'ck.s_deliver'], 
   [-7,'ck.s_press'], [0,'ck.s_release'], [7,'ck.s_results'], [30,'ck.s_reports'] ];
 function ckTasks(rel){ return (DB.tasks||[]).filter(t=>t.relId===rel.id && t.ckStep!=null); }
 function ckTitle(rel, i){ return tt(CK_STEPS[i][1])+' — '+[rel.catalog, rel.title].filter(Boolean).join(' · '); }
-/* crea o aggiorna la checklist; restituisce quante attività ha creato */
-function ckSync(rel, create){
+/* crea o aggiorna la checklist; restituisce quante attività ha creato.
+   create=false: sposta solo le attività rimaste (quelle eliminate dall'utente non tornano);
+   skipPast: in automatico non crea passi già scaduti */
+function ckSync(rel, create, skipPast){
   if(!rel || !rel.orderDate) return 0;
   DB.tasks=DB.tasks||[];
-  const have=ckTasks(rel); let made=0;
+  const have=ckTasks(rel); let made=0; const today=LFCore.ymd(new Date());
   if(!have.length && !create) return 0;
   CK_STEPS.forEach(([off], i)=>{
     const due=LFCore.addDays(rel.orderDate, off);
     const t=have.find(x=>x.ckStep===i);
-    if(t){ if(!t.done){ t.due=due; t.title=ckTitle(rel, i); } return; }
+    if(t){ if(!t.done){ if(t.due!==due){ t.due=due; delete t.notifiedDue; delete t.notifiedPre; } t.title=ckTitle(rel, i); } return; }
+    if(!create || (skipPast && due<today)) return;
     DB.tasks.push({ id:'ck_'+rel.id+'_'+i, title:ckTitle(rel, i), type:'other', due, time:'', remind:i>=2&&i<=6?1440:0, done:false, relId:rel.id, ckStep:i });
     made++;
   });
-  rel.checklist=true;
+  if(create){ rel.checklist=true; delete rel.checklistOff; }
   return made;
 }
 function ckProgress(rel){ const ts=ckTasks(rel); return { done:ts.filter(t=>t.done).length, total:ts.length, next:ts.filter(t=>!t.done).sort((a,b)=>String(a.due).localeCompare(String(b.due)))[0]||null }; }
@@ -202,7 +205,8 @@ function ckAfterSave(rel){
   if(!rel || !rel.orderDate) return 0;
   const today=LFCore.ymd(new Date());
   if(ckTasks(rel).length){ ckSync(rel, false); return 0; }
-  if(rel.orderDate>=today && !rel.checklistOff) return ckSync(rel, true);
+  if(rel.checklist){ rel.checklistOff=true; return 0; }   // creata in passato e poi tolta dall'utente: non si ricrea da sola
+  if(rel.orderDate>=today && !rel.checklistOff) return ckSync(rel, true, true);
   return 0;
 }
 

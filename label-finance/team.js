@@ -1,5 +1,5 @@
 /* ============================================================================
-   team.js — scheda "Team" nelle Impostazioni (piano Agency)
+   team.js — scheda "Team" nelle Impostazioni (piano Enterprise)
    Il titolare invita un'email come "sola lettura" o "può modificare"; la persona
    invitata, entrando con quell'email, trova l'etichetta nel menu account.
    Le regole di accesso stanno nel database (team_members + lf_role in schema.sql);

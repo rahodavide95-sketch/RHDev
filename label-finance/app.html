@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=101">
+  <link rel="stylesheet" href="style.css?v=102">
 </head>
 <body class="gated">
 
@@ -32,9 +32,9 @@
     <div class="gate-eq" id="gate-eq" aria-hidden="true"></div>
     <div class="gate-controls">
       <div class="gate-theme" role="group" aria-label="Tema / Theme">
-        <button type="button" data-theme-opt="system" title="Sistema">◐</button>
-        <button type="button" data-theme-opt="light" title="Chiaro">☀</button>
-        <button type="button" data-theme-opt="dark" title="Scuro">☾</button>
+        <button type="button" data-theme-opt="system" title="Sistema" data-i18n-title="tip.th_system">◐</button>
+        <button type="button" data-theme-opt="light" title="Chiaro" data-i18n-title="tip.th_light">☀</button>
+        <button type="button" data-theme-opt="dark" title="Scuro" data-i18n-title="tip.th_dark">☾</button>
       </div>
       <div class="gate-lang" role="group" aria-label="Lingua / Language">
         <select class="lang-select" data-lang-select aria-label="Lingua / Language"><option value="it">🇮🇹 IT</option><option value="en">🇬🇧 EN</option><option value="es">🇪🇸 ES</option><option value="fr">🇫🇷 FR</option><option value="de">🇩🇪 DE</option><option value="pt">🇵🇹 PT</option><option value="nl">🇳🇱 NL</option></select>
@@ -53,7 +53,7 @@
         <div class="gate-field gate-signup-only"><label for="gate-label" data-i18n="gate.label">Nome label</label>
           <input id="gate-label" name="organization" class="input" type="text" autocomplete="organization" data-i18n-ph="gate.label_ph" placeholder="Nome dell'etichetta"></div>
         <div class="gate-field"><label for="gate-email" data-i18n="gate.email">Email</label>
-          <input id="gate-email" name="username" class="input" type="email" autocomplete="username" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="email@esempio.com"></div>
+          <input id="gate-email" name="username" class="input" type="email" autocomplete="username" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="email@esempio.com" data-i18n-ph="ph.email"></div>
         <div class="gate-field"><label for="gate-pw" data-i18n="gate.password">Password</label>
           <span class="input-eye"><input id="gate-pw" name="password" class="input" type="password" autocomplete="current-password" placeholder="••••••••">
             <button type="button" class="eye-btn" aria-label="Mostra password"></button></span></div>
@@ -78,15 +78,15 @@
           <span class="beta-badge" id="beta-badge" hidden>BETA</span>
         </span>
       </a>
-      <button class="nav-collapse" id="nav-collapse" title="Riduci / espandi menu" aria-label="Riduci o espandi menu">
+      <button class="nav-collapse" id="nav-collapse" title="Riduci / espandi menu" data-i18n-title="tip.collapse" data-i18n-aria="tip.collapse" aria-label="Riduci o espandi menu">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><line x1="9.5" y1="4" x2="9.5" y2="20"/></svg>
       </button>
     </div>
     <nav class="nav">
-      <button class="nav-item is-active" data-view="dashboard" title="Dashboard">
+      <button class="nav-item is-active" data-view="dashboard" title="Dashboard" data-i18n-title="nav.dashboard">
         <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span><span class="nav-label" data-i18n="nav.dashboard">Dashboard</span></button>
 
-      <button class="nav-item nav-multi" data-view="consolidated" title="Consolidato" hidden>
+      <button class="nav-item nav-multi" data-view="consolidated" title="Consolidato" data-i18n-title="nav.consolidated" hidden>
         <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg></span><span class="nav-label" data-i18n="nav.consolidated">Consolidato</span></button>
 
       <div class="nav-group" data-group="catalog">
@@ -94,13 +94,13 @@
           <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/></svg></span>
           <span class="nav-label" data-i18n="nav.grp_catalog">Musica & Catalogo</span><span class="nav-chev">▾</span></button>
         <div class="nav-group-items">
-          <button class="nav-item" data-view="releases" title="Discografia">
+          <button class="nav-item" data-view="releases" title="Discografia" data-i18n-title="nav.releases">
             <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/></svg></span><span class="nav-label" data-i18n="nav.releases">Discografia</span></button>
-          <button class="nav-item" data-view="planning" title="Pianificazione">
+          <button class="nav-item" data-view="planning" title="Pianificazione" data-i18n-title="nav.planning">
             <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M8 2.5v4M16 2.5v4"/><path d="M7.5 13h3v3h-3z"/></svg></span><span class="nav-label" data-i18n="nav.planning">Pianificazione</span></button>
-          <button class="nav-item" data-view="events" title="Eventi">
+          <button class="nav-item" data-view="events" title="Eventi" data-i18n-title="nav.events">
             <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.4 5 5.6.8-4 4 1 5.6L12 21l-5 2.4 1-5.6-4-4 5.6-.8z"/></svg></span><span class="nav-label" data-i18n="nav.events">Eventi</span></button>
-          <button class="nav-item" data-view="supports" title="Support DJ">
+          <button class="nav-item" data-view="supports" title="Support DJ" data-i18n-title="nav.supports">
             <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3.5 9h17M3.5 15h17M12 3a14 14 0 0 0 0 18M12 3a14 14 0 0 1 0 18"/></svg></span><span class="nav-label" data-i18n="nav.supports">Support DJ</span></button>
         </div>
       </div>
@@ -110,11 +110,11 @@
           <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v15"/><path d="M4 7l3-3 3 3"/><path d="M17 20V5"/><path d="M14 17l3 3 3-3"/></svg></span>
           <span class="nav-label" data-i18n="nav.grp_finance">Finanze</span><span class="nav-chev">▾</span></button>
         <div class="nav-group-items">
-          <button class="nav-item" data-view="transactions" title="Movimenti">
+          <button class="nav-item" data-view="transactions" title="Movimenti" data-i18n-title="nav.transactions">
             <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v15"/><path d="M4 7l3-3 3 3"/><path d="M17 20V5"/><path d="M14 17l3 3 3-3"/></svg></span><span class="nav-label" data-i18n="nav.transactions">Movimenti</span></button>
-          <button class="nav-item" data-view="royalties" title="Royalty">
+          <button class="nav-item" data-view="royalties" title="Royalty" data-i18n-title="nav.royalties">
             <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 5 5 19"/><circle cx="7.5" cy="7.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/></svg></span><span class="nav-label" data-i18n="nav.royalties">Royalty</span></button>
-          <button class="nav-item" data-view="import" title="Importa CSV">
+          <button class="nav-item" data-view="import" title="Importa CSV" data-i18n-title="nav.import">
             <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M4 21h16"/></svg></span><span class="nav-label" data-i18n="nav.import">Importa CSV</span></button>
         </div>
       </div>
@@ -124,34 +124,34 @@
           <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span>
           <span class="nav-label" data-i18n="nav.grp_manage">Gestione</span><span class="nav-chev">▾</span></button>
         <div class="nav-group-items">
-          <button class="nav-item" data-view="artists" title="Artisti">
+          <button class="nav-item" data-view="artists" title="Artisti" data-i18n-title="nav.artists">
             <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><path d="M16 5.2a3 3 0 0 1 0 5.6"/><path d="M18 19c0-2.2-1-3.8-2.6-4.6"/></svg></span><span class="nav-label" data-i18n="nav.artists">Artisti</span></button>
-          <button class="nav-item" data-view="contracts" title="Contratti">
+          <button class="nav-item" data-view="contracts" title="Contratti" data-i18n-title="nav.contracts">
             <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 12h6"/><path d="M9 16h6"/></svg></span><span class="nav-label" data-i18n="nav.contracts">Contratti</span></button>
-          <button class="nav-item" data-view="merch" title="Merch">
+          <button class="nav-item" data-view="merch" title="Merch" data-i18n-title="nav.merch">
             <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 5 6.5V20h14V6.5L15 4"/><path d="M9 4a3 3 0 0 0 6 0"/></svg></span><span class="nav-label" data-i18n="nav.merch">Merch</span></button>
-          <button class="nav-item" data-view="tasks" title="Task">
+          <button class="nav-item" data-view="tasks" title="Task" data-i18n-title="nav.tasks">
             <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V4.2a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1V5"/><path d="M8.5 13.2l2.3 2.3L16 10.3"/></svg></span><span class="nav-label" data-i18n="nav.tasks">Task</span></button>
         </div>
       </div>
 
-      <button class="nav-item" data-view="settings" title="Impostazioni">
+      <button class="nav-item" data-view="settings" title="Impostazioni" data-i18n-title="nav.settings">
         <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5v5M5 14v5M12 3v6M12 13v8M19 7v3M19 14v3"/><circle cx="5" cy="12" r="2"/><circle cx="12" cy="11" r="2"/><circle cx="19" cy="12" r="2"/></svg></span><span class="nav-label" data-i18n="nav.settings">Impostazioni</span></button>
 
       <div class="nav-sep"></div>
-      <button class="nav-item" data-view="faq" title="Aiuto & FAQ">
+      <button class="nav-item" data-view="faq" title="Aiuto & FAQ" data-i18n-title="nav.faq">
         <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.2 9.3a2.8 2.8 0 0 1 5.4 1c0 1.9-2.6 2.2-2.6 4"/><path d="M12 17.4v.1"/></svg></span><span class="nav-label" data-i18n="nav.faq">Aiuto & FAQ</span></button>
-      <button class="nav-item nav-item--about" data-view="about" title="Chi siamo">
+      <button class="nav-item nav-item--about" data-view="about" title="Chi siamo" data-i18n-title="nav.about">
         <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6v.1"/></svg></span><span class="nav-label" data-i18n="nav.about">Chi siamo</span></button>
-      <button class="nav-more-btn" id="nav-more" type="button" aria-label="Altro" title="Altro">
+      <button class="nav-more-btn" id="nav-more" type="button" aria-label="Altro" title="Altro" data-i18n-title="nav.more" data-i18n-aria="nav.more">
         <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></span><span class="nav-label" data-i18n="nav.more">Altro</span></button>
     </nav>
     <div class="sidebar-foot">
       <div class="foot-controls">
         <div class="theme-switch" role="group" aria-label="Tema">
-          <button data-theme-opt="system" title="Sistema" aria-label="Tema di sistema">◐</button>
-          <button data-theme-opt="light" title="Chiaro" aria-label="Tema chiaro">☀</button>
-          <button data-theme-opt="dark" title="Scuro" aria-label="Tema scuro">☾</button>
+          <button data-theme-opt="system" title="Sistema" data-i18n-title="tip.th_system" aria-label="Tema di sistema">◐</button>
+          <button data-theme-opt="light" title="Chiaro" data-i18n-title="tip.th_light" aria-label="Tema chiaro">☀</button>
+          <button data-theme-opt="dark" title="Scuro" data-i18n-title="tip.th_dark" aria-label="Tema scuro">☾</button>
         </div>
         <div class="lang-pill" role="group" aria-label="Lingua / Language">
           <select class="lang-select" data-lang-select aria-label="Lingua / Language"><option value="it">🇮🇹 IT</option><option value="en">🇬🇧 EN</option><option value="es">🇪🇸 ES</option><option value="fr">🇫🇷 FR</option><option value="de">🇩🇪 DE</option><option value="pt">🇵🇹 PT</option><option value="nl">🇳🇱 NL</option></select>
@@ -169,27 +169,27 @@
     <div class="msheet-card" role="dialog" aria-label="Altro">
       <div class="msheet-handle"></div>
       <div class="msheet-grid">
-        <button class="nav-item" data-view="planning" title="Pianificazione">
+        <button class="nav-item" data-view="planning" title="Pianificazione" data-i18n-title="nav.planning">
           <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M8 2.5v4M16 2.5v4"/><path d="M7.5 13h3v3h-3z"/></svg></span><span class="nav-label" data-i18n="nav.planning">Pianificazione</span></button>
-        <button class="nav-item" data-view="events" title="Eventi">
+        <button class="nav-item" data-view="events" title="Eventi" data-i18n-title="nav.events">
           <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.4 5 5.6.8-4 4 1 5.6L12 21l-5 2.4 1-5.6-4-4 5.6-.8z"/></svg></span><span class="nav-label" data-i18n="nav.events">Eventi</span></button>
-        <button class="nav-item" data-view="supports" title="Support DJ">
+        <button class="nav-item" data-view="supports" title="Support DJ" data-i18n-title="nav.supports">
           <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3.5 9h17M3.5 15h17M12 3a14 14 0 0 0 0 18M12 3a14 14 0 0 1 0 18"/></svg></span><span class="nav-label" data-i18n="nav.supports">Support DJ</span></button>
-        <button class="nav-item" data-view="artists" title="Artisti">
+        <button class="nav-item" data-view="artists" title="Artisti" data-i18n-title="nav.artists">
           <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><path d="M16 5.2a3 3 0 0 1 0 5.6"/><path d="M18 19c0-2.2-1-3.8-2.6-4.6"/></svg></span><span class="nav-label" data-i18n="nav.artists">Artisti</span></button>
-        <button class="nav-item" data-view="contracts" title="Contratti">
+        <button class="nav-item" data-view="contracts" title="Contratti" data-i18n-title="nav.contracts">
           <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 12h6"/><path d="M9 16h6"/></svg></span><span class="nav-label" data-i18n="nav.contracts">Contratti</span></button>
-        <button class="nav-item" data-view="tasks" title="Task">
+        <button class="nav-item" data-view="tasks" title="Task" data-i18n-title="nav.tasks">
           <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V4.2a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1V5"/><path d="M8.5 13.2l2.3 2.3L16 10.3"/></svg></span><span class="nav-label" data-i18n="nav.tasks">Task</span></button>
-        <button class="nav-item" data-view="merch" title="Merch">
+        <button class="nav-item" data-view="merch" title="Merch" data-i18n-title="nav.merch">
           <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 5 6.5V20h14V6.5L15 4"/><path d="M9 4a3 3 0 0 0 6 0"/></svg></span><span class="nav-label" data-i18n="nav.merch">Merch</span></button>
-        <button class="nav-item" data-view="import" title="Importa CSV">
+        <button class="nav-item" data-view="import" title="Importa CSV" data-i18n-title="nav.import">
           <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M4 21h16"/></svg></span><span class="nav-label" data-i18n="nav.import">Importa CSV</span></button>
-        <button class="nav-item" data-view="settings" title="Impostazioni">
+        <button class="nav-item" data-view="settings" title="Impostazioni" data-i18n-title="nav.settings">
           <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5v5M5 14v5M12 3v6M12 13v8M19 7v3M19 14v3"/><circle cx="5" cy="12" r="2"/><circle cx="12" cy="11" r="2"/><circle cx="19" cy="12" r="2"/></svg></span><span class="nav-label" data-i18n="nav.settings">Impostazioni</span></button>
-        <button class="nav-item" data-view="faq" title="Aiuto & FAQ">
+        <button class="nav-item" data-view="faq" title="Aiuto & FAQ" data-i18n-title="nav.faq">
           <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.2 9.3a2.8 2.8 0 0 1 5.4 1c0 1.9-2.6 2.2-2.6 4"/><path d="M12 17.4v.1"/></svg></span><span class="nav-label" data-i18n="nav.faq">Aiuto & FAQ</span></button>
-        <button class="nav-item" data-view="about" title="Chi siamo">
+        <button class="nav-item" data-view="about" title="Chi siamo" data-i18n-title="nav.about">
           <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6v.1"/></svg></span><span class="nav-label" data-i18n="nav.about">Chi siamo</span></button>
       </div>
       <div class="msheet-theme">
@@ -215,7 +215,7 @@
       <button class="btn btn-sm" type="button" data-ws="" data-i18n="team.back">Torna al mio account</button></div>
     <header class="topbar">
       <div class="topbar-left">
-        <button class="drawer-toggle" id="drawer-toggle" aria-label="Menu" title="Menu">
+        <button class="drawer-toggle" id="drawer-toggle" aria-label="Menu" title="Menu" data-i18n-title="tip.menu" data-i18n-aria="tip.menu">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
         </button>
         <span class="topbar-section" id="topbar-section">Dashboard</span>
@@ -225,13 +225,13 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
           <span class="gs-btn-txt" data-i18n="gs.btn">Cerca</span><kbd class="gs-kbd" id="gs-kbd">Ctrl K</kbd>
         </button>
-        <button class="icon-btn notif-btn" id="notif-btn" title="Notifiche" aria-label="Notifiche">
+        <button class="icon-btn notif-btn" id="notif-btn" title="Notifiche" data-i18n-title="notif.title" data-i18n-aria="notif.title" aria-label="Notifiche">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
           <span class="notif-badge" id="notif-badge" hidden>0</span>
         </button>
         <span class="topbar-div" aria-hidden="true"></span>
         <span class="topbar-label" id="topbar-label"></span>
-        <button class="icon-btn" id="btn-account" title="Account" aria-label="Account">
+        <button class="icon-btn" id="btn-account" title="Account" data-i18n-title="tip.account" data-i18n-aria="tip.account" aria-label="Account">
           <svg id="acct-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.5 3.6-6 8-6s8 2.5 8 6"/></svg>
           <img id="acct-avatar-top" class="avatar-img" alt="" hidden>
         </button>
@@ -253,7 +253,7 @@
     <section class="view is-active" id="view-dashboard">
       <header class="view-head">
         <div>
-          <div class="title-row"><h1 id="greeting">Dashboard</h1><button class="info-btn" data-info="dashboard" title="Cos'è questa sezione?">i</button></div>
+          <div class="title-row"><h1 id="greeting">Dashboard</h1><button class="info-btn" data-info="dashboard" title="Cos'è questa sezione?" data-i18n-title="tip.info">i</button></div>
           <p class="muted" id="dash-range-label" data-i18n="common.all_periods">Tutti i periodi</p>
         </div>
         <div class="head-actions">
@@ -265,10 +265,10 @@
             <option value="3m" data-i18n="common.period.3m">Ultimi 3 mesi</option>
             <option value="custom" data-i18n="common.period.custom">Personalizzato…</option>
           </select>
-          <input type="date" id="dash-from" class="input input--date" title="Dalla data" hidden>
-          <input type="date" id="dash-to" class="input input--date" title="Alla data" hidden>
+          <input type="date" id="dash-from" class="input input--date" title="Dalla data" data-i18n-title="tip.from" hidden>
+          <input type="date" id="dash-to" class="input input--date" title="Alla data" data-i18n-title="tip.to" hidden>
           <button class="btn" id="btn-dash-edit" data-i18n="dash.customize" hidden>⚙ Personalizza</button>
-          <button class="btn btn-pdf" id="btn-print" title="Stampa o salva in PDF">⤓ Report PDF</button>
+          <button class="btn btn-pdf" id="btn-print" title="Stampa o salva in PDF" data-i18n-title="tip.print">⤓ Report PDF</button>
         </div>
       </header>
 
@@ -342,7 +342,7 @@
 
       <div class="panel">
         <div class="panel-head"><h2 data-i18n="dash.chart.title">Entrate vs Uscite per mese</h2><button class="card-i" type="button" aria-label="Info"><span class="ci-dot">i</span><span class="card-tip" data-i18n="ci.chart">Confronto mensile tra incassi e spese: individua i mesi migliori e i cali.</span></button>
-          <span class="legend"><span class="legend-dot legend-dot--in"></span>Entrate<span class="legend-dot legend-dot--out"></span>Uscite</span></div>
+          <span class="legend"><span class="legend-dot legend-dot--in"></span><span data-i18n="g.income">Entrate</span><span class="legend-dot legend-dot--out"></span><span data-i18n="g.expense">Uscite</span></span></div>
         <div class="chart" id="chart-monthly"></div>
       </div>
 
@@ -350,7 +350,7 @@
         <div class="panel">
           <div class="panel-head"><h2 data-i18n="dash.byrelease">Per release / catalogo</h2><button class="card-i" type="button" aria-label="Info"><span class="ci-dot">i</span><span class="card-tip" data-i18n="ci.byrelease">Quanto rende ogni release/catalogo: entrate, uscite e margine.</span></button>
             <input class="input card-filter" data-table="#table-release" data-i18n-ph="common.search" placeholder="Cerca…">
-            <select class="select card-sort sort-mobile" data-table="#table-release" title="Ordina">
+            <select class="select card-sort sort-mobile" data-table="#table-release" title="Ordina" data-i18n-title="tip.sort">
               <option value="net:-1" data-i18n="sort.net_desc">Ordina: Margine ↓</option>
               <option value="net:1" data-i18n="sort.net_asc">Ordina: Margine ↑</option>
               <option value="in:-1" data-i18n="sort.in_desc">Ordina: Entrate ↓</option>
@@ -363,7 +363,7 @@
         <div class="panel">
           <div class="panel-head"><h2 data-i18n="dash.byartist">Per artista</h2><button class="card-i" type="button" aria-label="Info"><span class="ci-dot">i</span><span class="card-tip" data-i18n="ci.byartist">Risultato economico aggregato per ciascun artista del roster.</span></button>
             <input class="input card-filter" data-table="#table-artist" data-i18n-ph="common.search" placeholder="Cerca…">
-            <select class="select card-sort sort-mobile" data-table="#table-artist" title="Ordina">
+            <select class="select card-sort sort-mobile" data-table="#table-artist" title="Ordina" data-i18n-title="tip.sort">
               <option value="net:-1" data-i18n="sort.net_desc">Ordina: Margine ↓</option>
               <option value="net:1" data-i18n="sort.net_asc">Ordina: Margine ↑</option>
               <option value="in:-1" data-i18n="sort.in_desc">Ordina: Entrate ↓</option>
@@ -376,7 +376,7 @@
         <div class="panel">
           <div class="panel-head"><h2 data-i18n="dash.byplatform">Per piattaforma</h2><button class="card-i" type="button" aria-label="Info"><span class="ci-dot">i</span><span class="card-tip" data-i18n="ci.byplatform">Da quali piattaforme arrivano gli incassi (Spotify, Bandcamp…).</span></button>
             <input class="input card-filter" data-table="#table-platform" data-i18n-ph="common.search" placeholder="Cerca…">
-            <select class="select card-sort sort-mobile" data-table="#table-platform" title="Ordina">
+            <select class="select card-sort sort-mobile" data-table="#table-platform" title="Ordina" data-i18n-title="tip.sort">
               <option value="net:-1" data-i18n="sort.net_desc">Ordina: Margine ↓</option>
               <option value="net:1" data-i18n="sort.net_asc">Ordina: Margine ↑</option>
               <option value="in:-1" data-i18n="sort.in_desc">Ordina: Entrate ↓</option>
@@ -389,7 +389,7 @@
         <div class="panel">
           <div class="panel-head"><h2 data-i18n="dash.bytype">Per tipologia</h2><button class="card-i" type="button" aria-label="Info"><span class="ci-dot">i</span><span class="card-tip" data-i18n="ci.bytype">Ripartizione dei movimenti per tipologia (digitale, fisico, spese…).</span></button>
             <input class="input card-filter" data-table="#table-type" data-i18n-ph="common.search" placeholder="Cerca…">
-            <select class="select card-sort sort-mobile" data-table="#table-type" title="Ordina">
+            <select class="select card-sort sort-mobile" data-table="#table-type" title="Ordina" data-i18n-title="tip.sort">
               <option value="net:-1" data-i18n="sort.net_desc">Ordina: Margine ↓</option>
               <option value="net:1" data-i18n="sort.net_asc">Ordina: Margine ↑</option>
               <option value="in:-1" data-i18n="sort.in_desc">Ordina: Entrate ↓</option>
@@ -478,7 +478,7 @@
     <!-- ====== CONSOLIDATO (multi-etichetta) ====== -->
     <section class="view" id="view-consolidated">
       <header class="view-head">
-        <div><div class="title-row"><h1 data-i18n="cons.title">Consolidato</h1><button class="info-btn" data-info="consolidated" title="Cos'è questa sezione?">i</button></div>
+        <div><div class="title-row"><h1 data-i18n="cons.title">Consolidato</h1><button class="info-btn" data-info="consolidated" title="Cos'è questa sezione?" data-i18n-title="tip.info">i</button></div>
           <p class="muted" data-i18n="cons.sub">Tutte le tue etichette in un colpo d'occhio</p></div>
       </header>
       <div class="info-panel" id="info-consolidated" data-i18n-html="info.consolidated" hidden>
@@ -501,9 +501,10 @@
     <!-- ====== TRANSACTIONS ====== -->
     <section class="view" id="view-transactions">
       <header class="view-head">
-        <div><div class="title-row"><h1 data-i18n="tx.title">Movimenti</h1><button class="info-btn" data-info="transactions" title="Cos'è questa sezione?">i</button></div><p class="muted" id="tx-count-label">0 movimenti</p></div>
+        <div><div class="title-row"><h1 data-i18n="tx.title">Movimenti</h1><button class="info-btn" data-info="transactions" title="Cos'è questa sezione?" data-i18n-title="tip.info">i</button></div><p class="muted" id="tx-count-label">0 movimenti</p></div>
         <div class="head-actions">
-          <button class="btn" data-goto="import" data-i18n="tx.import">⤒ Importa CSV</button>
+          <button class="btn btn-export" data-export="movimenti" data-i18n-title="common.export" title="Esporta"><span>⤓</span> <span data-i18n="common.export">Esporta</span></button>
+          <button class="btn" data-goto="import" data-i18n="tx.import">⤒ Importa CSV/Excel</button>
           <button class="btn btn-expense" id="btn-add-expense" data-i18n="tx.add_expense">+ Uscita</button>
           <button class="btn btn-income" id="btn-add-income" data-i18n="tx.add_income">+ Entrata</button>
         </div>
@@ -513,7 +514,7 @@
         <span class="imp-undo-txt"><b id="imp-undo-n">0</b> <span data-i18n="imp.undo_txt">movimenti aggiunti con l'ultimo import</span></span>
         <span class="spacer"></span>
         <button class="btn btn-clear" id="imp-undo-btn" data-i18n="imp.undo_btn">↶ Annulla import</button>
-        <button class="icon-btn-sm" id="imp-undo-x" title="Nascondi">✕</button>
+        <button class="icon-btn-sm" id="imp-undo-x" title="Nascondi" data-i18n-title="common.hide">✕</button>
       </div>
 
       <div class="info-panel" id="info-transactions" data-i18n-html="info.transactions" hidden>
@@ -528,7 +529,7 @@
           <span class="rel-enrich-ico">🔁</span>
           <b class="rel-gaps-title"></b>
           <span class="spacer"></span>
-          <button class="icon-btn-sm" id="recur-x" title="Nascondi">✕</button>
+          <button class="icon-btn-sm" id="recur-x" title="Nascondi" data-i18n-title="common.hide">✕</button>
         </div>
         <div class="rel-gaps-list" id="recur-list"></div>
       </div>
@@ -549,9 +550,9 @@
           <option value="3m" data-i18n="common.period.3m">Ultimi 3 mesi</option>
           <option value="custom" data-i18n="common.period.custom">Personalizzato…</option>
         </select>
-        <input type="date" id="tx-from" class="input input--date" title="Dalla data" hidden>
-        <input type="date" id="tx-to" class="input input--date" title="Alla data" hidden>
-        <select id="tx-sort" class="select sort-mobile" title="Ordina">
+        <input type="date" id="tx-from" class="input input--date" title="Dalla data" data-i18n-title="tip.from" hidden>
+        <input type="date" id="tx-to" class="input input--date" title="Alla data" data-i18n-title="tip.to" hidden>
+        <select id="tx-sort" class="select sort-mobile" title="Ordina" data-i18n-title="tip.sort">
           <option value="date:-1" data-i18n="sort.date_desc">Ordina: Data ↓ (recenti)</option>
           <option value="date:1" data-i18n="sort.date_asc">Ordina: Data ↑ (vecchi)</option>
           <option value="eur:-1" data-i18n="sort.amount_desc">Ordina: Importo ↓</option>
@@ -562,7 +563,7 @@
         </select>
         <div class="toolbar-actions">
           <button class="btn btn-clear" data-clear="transactions" data-i18n="bulk.clear">Svuota</button>
-          <button class="btn" id="btn-cols" title="Personalizza colonne" data-i18n="tx.cols">⚙ Colonne</button>
+          <button class="btn" id="btn-cols" title="Personalizza colonne" data-i18n-title="tip.cols" data-i18n="tx.cols">⚙ Colonne</button>
         </div>
       </div>
 
@@ -574,20 +575,20 @@
     <!-- ====== RELEASES ====== -->
     <section class="view" id="view-releases">
       <header class="view-head">
-        <div><div class="title-row"><h1 data-i18n="rel.title">Release</h1><button class="info-btn" data-info="releases" title="Cos'è questa sezione?">i</button></div><p class="muted" id="rel-count-label">0 release</p></div>
+        <div><div class="title-row"><h1 data-i18n="rel.title">Release</h1><button class="info-btn" data-info="releases" title="Cos'è questa sezione?" data-i18n-title="tip.info">i</button></div><p class="muted" id="rel-count-label">0 release</p></div>
         <div class="head-actions">
           <input class="input" id="rel-search" data-i18n-ph="common.search" placeholder="Cerca…">
           <select class="select" id="rel-artist-filter"><option value="" data-i18n="rel.all_artists">Tutti gli artisti</option></select>
           <div class="vm-toggle" data-vm-sec="releases" data-vm-def="cards">
-            <button class="vm-btn" data-vm="cards" title="Cards">▦</button>
-            <button class="vm-btn" data-vm="list" title="Elenco">☰</button>
+            <button class="vm-btn" data-vm="cards" title="Cards" data-i18n-title="tip.vm_cards">▦</button>
+            <button class="vm-btn" data-vm="list" title="Elenco" data-i18n-title="tip.vm_list">☰</button>
           </div>
           <button class="btn" id="catimp-open" data-i18n="cimp.btn">⤒ Importa catalogo</button>
-          <button class="btn" id="dup-find" data-i18n="dup.find" title="Trova e unisci duplicati">⧉ Trova duplicati</button>
-          <button class="btn" id="rel-credits" title="Applica Mastered/Distributed by in blocco" data-i18n="rcred.btn">✎ Crediti</button>
-          <button class="btn" id="rel-pl-btn" type="button" data-i18n="pl.btn" title="Entrate, quota artisti, spese e margine di ogni release">💶 Conto economico</button>
+          <button class="btn" id="dup-find" data-i18n="dup.find" title="Trova e unisci duplicati" data-i18n-title="tip.dup">⧉ Trova duplicati</button>
+          <button class="btn" id="rel-credits" title="Applica Mastered/Distributed by in blocco" data-i18n-title="tip.rcred" data-i18n="rcred.btn">✎ Crediti</button>
+          <button class="btn" id="rel-pl-btn" type="button" data-i18n="pl.btn" title="Entrate, quota artisti, spese e margine di ogni release" data-i18n-title="tip.pl">💶 Conto economico</button>
           <button class="btn btn-clear" data-clear="releases" data-i18n="bulk.clear">Svuota</button>
-          <button class="btn btn-cols2" data-colcfg="releases" title="Personalizza colonne">⚙</button>
+          <button class="btn btn-cols2" data-colcfg="releases" title="Personalizza colonne" data-i18n-title="tip.cols">⚙</button>
           <button class="btn btn-primary" id="btn-add-release" data-i18n="rel.new">+ Nuova release</button>
         </div>
       </header>
@@ -599,7 +600,7 @@
         <button class="btn btn-primary" id="rel-enrich-create" hidden data-i18n="rel.enrich_create">✨ Crea release dai movimenti</button>
         <button class="btn" id="rel-enrich-import" hidden data-i18n="cimp.btn">⤒ Importa catalogo</button>
         <button class="btn btn-primary" id="rel-enrich-open" hidden data-i18n="rel.enrich_btn">Rivedi e arricchisci</button>
-        <button class="icon-btn-sm" id="rel-enrich-x" title="Nascondi">✕</button>
+        <button class="icon-btn-sm" id="rel-enrich-x" title="Nascondi" data-i18n-title="common.hide">✕</button>
       </div>
 
       <div class="rel-gaps" id="rel-gaps" hidden>
@@ -607,7 +608,7 @@
           <span class="rel-enrich-ico">🛠️</span>
           <b class="rel-gaps-title"></b>
           <span class="spacer"></span>
-          <button class="icon-btn-sm" id="rel-gaps-x" title="Nascondi">✕</button>
+          <button class="icon-btn-sm" id="rel-gaps-x" title="Nascondi" data-i18n-title="common.hide">✕</button>
         </div>
         <div class="rel-gaps-list" id="rel-gaps-list"></div>
       </div>
@@ -627,16 +628,16 @@
     <!-- ====== PIANIFICAZIONE ====== -->
     <section class="view" id="view-planning">
       <header class="view-head">
-        <div><div class="title-row"><h1 data-i18n="pln.title">Pianificazione</h1><button class="info-btn" data-info="planning" title="Cos'è questa sezione?">i</button></div>
+        <div><div class="title-row"><h1 data-i18n="pln.title">Pianificazione</h1><button class="info-btn" data-info="planning" title="Cos'è questa sezione?" data-i18n-title="tip.info">i</button></div>
           <p class="muted" data-i18n="pln.subtitle">Programma release e premiere: simulazione dell'anno e calendario effettivo.</p></div>
         <div class="head-actions">
           <input class="input" id="pln-search" data-i18n-ph="common.search" placeholder="Cerca…">
           <div class="vm-toggle" data-vm-sec="planning" data-vm-def="list">
-            <button class="vm-btn" data-vm="list" title="Elenco">☰</button>
-            <button class="vm-btn" data-vm="cal" title="Calendario">▦</button>
+            <button class="vm-btn" data-vm="list" title="Elenco" data-i18n-title="tip.vm_list">☰</button>
+            <button class="vm-btn" data-vm="cal" title="Calendario" data-i18n-title="tip.vm_cal">▦</button>
           </div>
           <button class="btn btn-clear" data-clear="planning" data-i18n="bulk.clear">Svuota</button>
-          <button class="btn btn-cols2" data-colcfg="planning" title="Personalizza colonne">⚙</button>
+          <button class="btn btn-cols2" data-colcfg="planning" title="Personalizza colonne" data-i18n-title="tip.cols">⚙</button>
           <button class="btn btn-primary" id="pln-new" data-i18n="pln.new">＋ Nuova voce</button>
         </div>
       </header>
@@ -672,16 +673,16 @@
     <!-- ====== EVENTI ====== -->
     <section class="view" id="view-events">
       <header class="view-head">
-        <div><div class="title-row"><h1 data-i18n="evt.title">Eventi</h1><button class="info-btn" data-info="events" title="Cos'è questa sezione?">i</button></div>
+        <div><div class="title-row"><h1 data-i18n="evt.title">Eventi</h1><button class="info-btn" data-info="events" title="Cos'è questa sezione?" data-i18n-title="tip.info">i</button></div>
           <p class="muted" data-i18n="evt.subtitle">Showcase, eventi in radio, live e date: tutte le info in un posto.</p></div>
         <div class="head-actions">
           <input class="input" id="evt-search" data-i18n-ph="common.search" placeholder="Cerca…">
           <div class="vm-toggle" data-vm-sec="events" data-vm-def="list">
-            <button class="vm-btn" data-vm="list" title="Elenco">☰</button>
-            <button class="vm-btn" data-vm="cal" title="Calendario">▦</button>
+            <button class="vm-btn" data-vm="list" title="Elenco" data-i18n-title="tip.vm_list">☰</button>
+            <button class="vm-btn" data-vm="cal" title="Calendario" data-i18n-title="tip.vm_cal">▦</button>
           </div>
           <button class="btn btn-clear" data-clear="events" data-i18n="bulk.clear">Svuota</button>
-          <button class="btn btn-cols2" data-colcfg="events" title="Personalizza colonne">⚙</button>
+          <button class="btn btn-cols2" data-colcfg="events" title="Personalizza colonne" data-i18n-title="tip.cols">⚙</button>
           <button class="btn btn-export" data-export="events" data-i18n-title="common.export" title="Esporta"><span>⤓</span> <span data-i18n="common.export">Esporta</span></button>
           <button class="btn btn-primary" id="evt-new" data-i18n="evt.new">＋ Nuovo evento</button>
         </div>
@@ -720,12 +721,12 @@
     <!-- ====== SUPPORT DJ ====== -->
     <section class="view" id="view-supports">
       <header class="view-head">
-        <div><div class="title-row"><h1 data-i18n="sup.title">Support DJ</h1><button class="info-btn" data-info="supports" title="Cos'è questa sezione?">i</button></div>
+        <div><div class="title-row"><h1 data-i18n="sup.title">Support DJ</h1><button class="info-btn" data-info="supports" title="Cos'è questa sezione?" data-i18n-title="tip.info">i</button></div>
           <p class="muted" data-i18n="sup.subtitle">Dove e da chi vengono suonati i tuoi brani nel mondo.</p></div>
         <div class="head-actions">
           <input class="input" id="sup-search" data-i18n-ph="common.search" placeholder="Cerca…">
           <button class="btn btn-clear" data-clear="supports" data-i18n="bulk.clear">Svuota</button>
-          <button class="btn btn-cols2" data-colcfg="supports" title="Personalizza colonne">⚙</button>
+          <button class="btn btn-cols2" data-colcfg="supports" title="Personalizza colonne" data-i18n-title="tip.cols">⚙</button>
           <button class="btn btn-export" data-export="supports" data-i18n-title="common.export" title="Esporta"><span>⤓</span> <span data-i18n="common.export">Esporta</span></button>
           <button class="btn btn-primary" id="sup-new" data-i18n="sup.new">＋ Nuovo support</button>
         </div>
@@ -754,7 +755,7 @@
     <!-- ====== ROYALTIES ====== -->
     <section class="view" id="view-royalties">
       <header class="view-head">
-        <div><div class="title-row"><h1 data-i18n="roy.title">Royalty</h1><button class="info-btn" data-info="royalties" title="Cos'è questa sezione?">i</button></div><p class="muted" data-i18n="roy.subtitle">Quanto spetta a ogni artista, calcolato sul netto delle entrate.</p></div>
+        <div><div class="title-row"><h1 data-i18n="roy.title">Royalty</h1><button class="info-btn" data-info="royalties" title="Cos'è questa sezione?" data-i18n-title="tip.info">i</button></div><p class="muted" data-i18n="roy.subtitle">Quanto spetta a ogni artista, calcolato sul netto delle entrate.</p></div>
         <div class="head-actions">
           <select id="roy-period" class="select">
             <option value="all" data-i18n="common.all_periods">Tutti i periodi</option>
@@ -764,11 +765,11 @@
             <option value="3m" data-i18n="common.period.3m">Ultimi 3 mesi</option>
             <option value="custom" data-i18n="common.period.custom">Personalizzato…</option>
           </select>
-          <input type="date" id="roy-from" class="input input--date" title="Dalla data" hidden>
-          <input type="date" id="roy-to" class="input input--date" title="Alla data" hidden>
+          <input type="date" id="roy-from" class="input input--date" title="Dalla data" data-i18n-title="tip.from" hidden>
+          <input type="date" id="roy-to" class="input input--date" title="Alla data" data-i18n-title="tip.to" hidden>
           <div class="vm-toggle" data-vm-sec="royalties" data-vm-def="list">
-            <button class="vm-btn" data-vm="cards" title="Cards">▦</button>
-            <button class="vm-btn" data-vm="list" title="Elenco">☰</button>
+            <button class="vm-btn" data-vm="cards" title="Cards" data-i18n-title="tip.vm_cards">▦</button>
+            <button class="vm-btn" data-vm="list" title="Elenco" data-i18n-title="tip.vm_list">☰</button>
           </div>
           <button class="btn btn-export" data-export="royalty" data-i18n-title="common.export" title="Esporta CSV/Excel/PDF"><span>⤓</span> <span data-i18n="common.export">Esporta</span></button>
         </div>
@@ -827,7 +828,7 @@
 
       <div class="panel" id="recoup-panel">
         <div class="panel-head"><h2 data-i18n="recoup.title">Recoupment &amp; anticipi</h2>
-          <button class="info-btn" data-info="recoup" title="Cos'è?">i</button>
+          <button class="info-btn" data-info="recoup" title="Cos'è?" data-i18n-title="tip.info_short">i</button>
           <span class="muted small" data-i18n="recoup.sub">Anticipi e costi recuperabili dalle royalty maturate (saldo a vita).</span></div>
 
         <div class="info-panel" id="info-recoup" data-i18n-html="info.recoup" hidden>
@@ -845,7 +846,7 @@
             <option value="cost" data-i18n="recoup.cost">Costo recuperabile</option>
           </select>
           <input type="number" id="recoup-amount" class="input" step="0.01" placeholder="€">
-          <input type="date" id="recoup-date" class="input input--date" title="Data">
+          <input type="date" id="recoup-date" class="input input--date" title="Data" data-i18n-title="tip.date">
           <input type="text" id="recoup-note" class="input" data-i18n-ph="recoup.note" placeholder="Nota">
           <button class="btn btn-primary" id="recoup-add" data-i18n="recoup.add">+ Aggiungi</button>
         </div>
@@ -857,8 +858,8 @@
       <div class="panel" id="roy-detail-panel" hidden>
         <div class="panel-head"><h2 id="roy-detail-title" data-i18n="roy.detail">Dettaglio</h2>
           <span class="spacer" style="flex:1"></span>
-          <button class="btn btn-pdf" id="roy-detail-pdf" title="Rendiconto PDF da inviare all'artista">⤓ Statement PDF</button>
-          <button class="btn" id="roy-detail-portal" data-i18n="portal.btn" title="Link portale artista (sola lettura)">🔗 Portale artista</button>
+          <button class="btn btn-pdf" id="roy-detail-pdf" title="Rendiconto PDF da inviare all'artista" data-i18n-title="tip.stmt_pdf">⤓ Statement PDF</button>
+          <button class="btn" id="roy-detail-portal" data-i18n="portal.btn" title="Link portale artista (sola lettura)" data-i18n-title="tip.portal">🔗 Portale artista</button>
           <button class="btn" id="roy-detail-close" data-i18n="common.close">Chiudi</button></div>
         <div class="table-wrap"><table class="data-table data-table--cards" id="table-roy-detail"></table></div>
       </div>
@@ -870,7 +871,7 @@
 
     <!-- ====== IMPORT ====== -->
     <section class="view" id="view-import">
-      <header class="view-head"><div><div class="title-row"><h1 data-i18n="imp.title">Importa CSV</h1><button class="info-btn" data-info="import" title="Cos'è questa sezione?">i</button></div>
+      <header class="view-head"><div><div class="title-row"><h1 data-i18n="imp.title">Importa CSV</h1><button class="info-btn" data-info="import" title="Cos'è questa sezione?" data-i18n-title="tip.info">i</button></div>
         <p class="muted" data-i18n="imp.subtitle">Carica un file da Bandcamp, dal distributore o da qualsiasi piattaforma. Mappi le colonne una volta.</p></div></header>
 
       <div class="info-panel" id="info-import" data-i18n-html="info.import" hidden>
@@ -882,8 +883,8 @@
 
       <div class="panel">
         <div class="import-drop" id="import-drop">
-          <input type="file" id="file-input" accept=".csv,.txt,text/csv" hidden>
-          <p><strong data-i18n="imp.drop">Trascina qui il CSV</strong> <span data-i18n="common.or">oppure</span> <button class="link" id="browse-btn" data-i18n="imp.browse">scegli un file</button></p>
+          <input type="file" id="file-input" accept=".csv,.txt,.tsv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
+          <p><strong data-i18n="imp.drop">Trascina qui il file CSV o Excel</strong> <span data-i18n="common.or">oppure</span> <button class="link" id="browse-btn" data-i18n="imp.browse">scegli un file</button></p>
           <p class="muted small" data-i18n="imp.drop_hint">Vengono lette le prime righe per riconoscere le colonne. Nulla viene caricato online.</p>
         </div>
       </div>
@@ -903,15 +904,29 @@
                 <option value="ditto">Ditto Music</option>
                 <option value="cdbaby">CD Baby</option>
                 <option value="labelengine">Label Engine</option>
+                <option value="paypal">PayPal</option>
               </select>
             </label>
             <label><span data-i18n="imp.load_preset">Carica preset salvato</span>
               <select id="map-preset" class="select"><option value="" data-i18n="imp.none">— nessuno —</option></select>
+              <span class="row-inline preset-acts" style="gap:6px;margin-top:6px">
+                <button class="btn btn-sm" type="button" id="preset-rename" disabled data-i18n="imp.preset_rename">✎ Rinomina</button>
+                <button class="btn btn-sm" type="button" id="preset-del" disabled data-i18n="imp.preset_del">🗑 Elimina</button>
+              </span>
+            </label>
+            <label id="map-sheet-wrap" hidden><span data-i18n="imp.sheet">Foglio Excel</span>
+              <select id="map-sheet" class="select"></select>
+            </label>
+            <label><span data-i18n="imp.header">Riga con i nomi delle colonne</span>
+              <select id="map-header" class="select"></select>
             </label>
             <label><span data-i18n="imp.kind">Tipo movimento</span>
               <select id="map-kind" class="select">
                 <option value="income" data-i18n="imp.kind_income">Entrata (vendite)</option>
                 <option value="expense" data-i18n="imp.kind_expense">Uscita (spese)</option>
+                <option value="col" data-i18n="imp.kind_col">Da una colonna del file (Entrata/Uscita)</option>
+                <option value="sign" data-i18n="imp.kind_sign">Dal segno: importi negativi = uscite</option>
+                <option value="inout" data-i18n="imp.kind_inout">Due colonne: Entrate e Uscite (Dare/Avere)</option>
               </select>
             </label>
             <label><span data-i18n="imp.delim">Separatore</span>
@@ -934,8 +949,8 @@
               <input id="map-currency" class="input" placeholder="EUR" value="EUR">
             </label>
             <label><span data-i18n="imp.platform_manual">Piattaforma (scrivila a mano)</span>
-              <input id="map-platform" class="input" placeholder="es. Bandcamp">
-              <span class="muted small" data-i18n="imp.platform_hint">Usata per tutte le righe se nel CSV non c'è una colonna "Piattaforma".</span>
+              <input id="map-platform" class="input" placeholder="es. Bandcamp" data-i18n-ph="ph.platform">
+              <span class="muted small" data-i18n="imp.platform_hint">Usata solo per le righe senza una colonna "Piattaforma" nel file.</span>
             </label>
           </div>
         </div>
@@ -946,11 +961,18 @@
           <div class="map-grid" id="map-fields"></div>
         </div>
 
+        <div class="panel" id="imp-cat-panel" hidden>
+          <div class="panel-head"><h2 data-i18n="imp.cat_title">Categorie delle spese</h2>
+            <span class="muted small" data-i18n="imp.cat_hint">Le categorie del tuo file, con quella dell'app già proposta. Correggi solo quelle sbagliate: me le ricordo per le prossime volte.</span></div>
+          <div class="map-grid" id="imp-cat-map"></div>
+        </div>
+
         <div class="panel">
           <div class="panel-head"><h2 data-i18n="imp.s3_title">3 · Anteprima</h2>
             <span class="muted small" id="preview-count"></span></div>
           <div class="imp-checks" id="preview-checks" hidden></div>
           <div class="table-wrap"><table class="data-table" id="preview-table"></table></div>
+          <div style="padding:8px 0"><button class="btn btn-sm" type="button" id="preview-more" hidden></button></div>
           <div class="panel-foot" style="flex-wrap:wrap;gap:10px">
             <label class="check-inline" data-i18n-title="imp.dedup_hint" title="Non importa righe già presenti (stessa data, prodotto, importo…)">
               <input type="checkbox" id="import-dedup" checked> <span data-i18n="imp.dedup">Salta doppioni</span>
@@ -969,7 +991,7 @@
 
     <!-- ====== SETTINGS ====== -->
     <section class="view" id="view-settings">
-      <header class="view-head"><div><div class="title-row"><h1 data-i18n="set.title">Impostazioni</h1><button class="info-btn" data-info="settings" title="Cos'è questa sezione?">i</button></div>
+      <header class="view-head"><div><div class="title-row"><h1 data-i18n="set.title">Impostazioni</h1><button class="info-btn" data-info="settings" title="Cos'è questa sezione?" data-i18n-title="tip.info">i</button></div>
         <p class="muted" data-i18n="set.subtitle">Sincronizzazione, aspetto, tassi di cambio, backup e gestione dati.</p></div></header>
 
       <div class="info-panel" id="info-settings" data-i18n-html="info.settings" hidden>
@@ -1029,7 +1051,7 @@
               <label><span data-i18n="set.pw_lbl">Password</span>
                 <span class="input-eye">
                   <input id="sync-pw" class="input" type="password" autocomplete="current-password">
-                  <button type="button" class="eye-btn" id="sync-pw-eye" aria-label="Mostra password" title="Mostra/nascondi password"></button>
+                  <button type="button" class="eye-btn" id="sync-pw-eye" aria-label="Mostra password" title="Mostra/nascondi password" data-i18n-title="tip.pw_eye"></button>
                 </span>
               </label>
               <div class="span-2 row-inline wrap">
@@ -1089,9 +1111,9 @@
           </div>
         </div>
 
-        <!-- Team: accesso di collaboratori all'etichetta (piano Agency) -->
+        <!-- Team: accesso di collaboratori all'etichetta (piano Enterprise) -->
         <div class="panel set-card" id="team-card" data-when-user hidden>
-          <div class="panel-head"><h2 data-i18n="team.title">Team</h2><span class="pro-badge">Agency</span></div>
+          <div class="panel-head"><h2 data-i18n="team.title">Team</h2><span class="pro-badge">Enterprise</span></div>
           <p class="muted small" data-i18n="team.hint">Invita collaboratori (per esempio il commercialista o un socio) a vedere o modificare la tua etichetta. Accedono con il loro account, usando l'email che scrivi qui.</p>
           <div class="team-box" id="team-box"></div>
         </div>
@@ -1215,16 +1237,16 @@
     <!-- ====== ARTISTI (RUBRICA) ====== -->
     <section class="view" id="view-artists">
       <header class="view-head">
-        <div><div class="title-row"><h1 data-i18n="art.title">Artisti</h1><button class="info-btn" data-info="artists" title="Cos'è questa sezione?">i</button></div>
+        <div><div class="title-row"><h1 data-i18n="art.title">Artisti</h1><button class="info-btn" data-info="artists" title="Cos'è questa sezione?" data-i18n-title="tip.info">i</button></div>
           <p class="muted" data-i18n="art.subtitle">La rubrica del tuo roster: contatti, foto e dati per contratti e pagamenti.</p></div>
         <div class="head-actions">
           <input class="input" id="art-search" data-i18n-ph="art.search" placeholder="Cerca artista…">
           <div class="vm-toggle" data-vm-sec="artists" data-vm-def="cards">
-            <button class="vm-btn" data-vm="cards" title="Cards">▦</button>
-            <button class="vm-btn" data-vm="list" title="Elenco">☰</button>
+            <button class="vm-btn" data-vm="cards" title="Cards" data-i18n-title="tip.vm_cards">▦</button>
+            <button class="vm-btn" data-vm="list" title="Elenco" data-i18n-title="tip.vm_list">☰</button>
           </div>
           <button class="btn btn-clear" data-clear="artists" data-i18n="bulk.clear">Svuota</button>
-          <button class="btn btn-cols2" data-colcfg="artists" title="Personalizza colonne">⚙</button>
+          <button class="btn btn-cols2" data-colcfg="artists" title="Personalizza colonne" data-i18n-title="tip.cols">⚙</button>
           <button class="btn btn-primary" id="art-new" data-i18n="art.new">＋ Nuovo artista</button>
         </div>
       </header>
@@ -1239,7 +1261,16 @@
         <span class="rel-enrich-txt"></span>
         <span class="spacer"></span>
         <button class="btn btn-primary" id="art-enrich-add" data-i18n="art.enrich_add">＋ Aggiungi artisti</button>
-        <button class="icon-btn-sm" id="art-enrich-x" title="Nascondi">✕</button>
+        <button class="icon-btn-sm" id="art-enrich-x" title="Nascondi" data-i18n-title="common.hide">✕</button>
+      </div>
+
+      <div class="rel-enrich" id="art-split-banner" hidden>
+        <span class="rel-enrich-ico">％</span>
+        <span class="rel-enrich-txt"></span>
+        <span class="spacer"></span>
+        <button class="btn btn-primary" id="art-split-all" data-i18n="art.split_all">50% a tutti</button>
+        <button class="btn" id="art-split-manual" data-i18n="art.split_manual">Le scrivo io</button>
+        <button class="icon-btn-sm" id="art-split-x" title="Nascondi" data-i18n-title="common.hide" aria-label="Nascondi">✕</button>
       </div>
 
       <div class="rel-gaps" id="art-dup" hidden>
@@ -1247,7 +1278,7 @@
           <span class="rel-enrich-ico">👥</span>
           <b class="rel-gaps-title"></b>
           <span class="spacer"></span>
-          <button class="icon-btn-sm" id="art-dup-x" title="Nascondi">✕</button>
+          <button class="icon-btn-sm" id="art-dup-x" title="Nascondi" data-i18n-title="common.hide">✕</button>
         </div>
         <div class="rel-gaps-list" id="art-dup-list"></div>
       </div>
@@ -1298,7 +1329,7 @@
     <!-- ====== CONTRATTI ====== -->
     <section class="view" id="view-contracts">
       <header class="view-head">
-        <div><div class="title-row"><h1 data-i18n="con.title">Contratti</h1><button class="info-btn" data-info="contracts" title="Cos'è questa sezione?">i</button></div>
+        <div><div class="title-row"><h1 data-i18n="con.title">Contratti</h1><button class="info-btn" data-info="contracts" title="Cos'è questa sezione?" data-i18n-title="tip.info">i</button></div>
           <p class="muted" data-i18n="con.subtitle">Genera un contratto standard di split, pronto da inviare via email agli artisti.</p></div>
         <div class="head-actions">
           <input class="input" id="con-search" data-i18n-ph="common.search" placeholder="Cerca…">
@@ -1333,7 +1364,7 @@
         </div>
         <div class="con-section-lbl" data-i18n="con.sec_track">Track(s) Information</div>
         <div class="form-grid">
-          <label class="fld fld--full"><span data-i18n="con.titles">Title(s) *</span><input class="input" id="con-titles" placeholder="Es. Midnight, Echoes"></label>
+          <label class="fld fld--full"><span data-i18n="con.titles">Title(s) *</span><input class="input" id="con-titles" placeholder="Es. Midnight, Echoes" data-i18n-ph="ph.titles"></label>
           <label class="fld"><span data-i18n="con.artist_names">Artist Name(s)</span><input class="input" id="con-artist-names"></label>
           <label class="fld"><span data-i18n="con.written">Written by</span><input class="input" id="con-written"></label>
         </div>
@@ -1382,7 +1413,7 @@
     <!-- ====== TASK & PROMEMORIA ====== -->
     <section class="view" id="view-tasks">
       <header class="view-head">
-        <div><div class="title-row"><h1 data-i18n="tsk.title">Task</h1><button class="info-btn" data-info="tasks" title="Cos'è questa sezione?">i</button></div>
+        <div><div class="title-row"><h1 data-i18n="tsk.title">Task</h1><button class="info-btn" data-info="tasks" title="Cos'è questa sezione?" data-i18n-title="tip.info">i</button></div>
           <p class="muted" data-i18n="tsk.subtitle">Promemoria per pagamenti, invio contratti e scadenze dell'etichetta.</p></div>
         <div class="head-actions">
           <input class="input" id="tsk-search" data-i18n-ph="common.search" placeholder="Cerca…">
@@ -1401,7 +1432,7 @@
           <b class="task-suggest-title"></b>
           <span class="spacer"></span>
           <button class="btn btn-sm btn-primary" id="task-suggest-all" data-i18n="sug.add_all">Aggiungi tutti</button>
-          <button class="icon-btn-sm" id="task-suggest-x" title="Nascondi">✕</button>
+          <button class="icon-btn-sm" id="task-suggest-x" title="Nascondi" data-i18n-title="common.hide">✕</button>
         </div>
         <div class="rel-gaps-list" id="task-suggest-list"></div>
       </div>
@@ -1438,16 +1469,16 @@
     <!-- ====== MERCH ====== -->
     <section class="view" id="view-merch">
       <header class="view-head">
-        <div><div class="title-row"><h1 data-i18n="mch.title">Merch</h1><button class="info-btn" data-info="merch" title="Cos'è questa sezione?">i</button></div>
+        <div><div class="title-row"><h1 data-i18n="mch.title">Merch</h1><button class="info-btn" data-info="merch" title="Cos'è questa sezione?" data-i18n-title="tip.info">i</button></div>
           <p class="muted" data-i18n="mch.subtitle">Catalogo merchandising, vendite, ricavi e magazzino.</p></div>
         <div class="head-actions">
           <input class="input" id="mch-search" data-i18n-ph="mch.search" placeholder="Cerca articolo…">
           <div class="vm-toggle" data-vm-sec="merch" data-vm-def="cards">
-            <button class="vm-btn" data-vm="cards" title="Cards">▦</button>
-            <button class="vm-btn" data-vm="list" title="Elenco">☰</button>
+            <button class="vm-btn" data-vm="cards" title="Cards" data-i18n-title="tip.vm_cards">▦</button>
+            <button class="vm-btn" data-vm="list" title="Elenco" data-i18n-title="tip.vm_list">☰</button>
           </div>
           <button class="btn btn-clear" data-clear="merch" data-i18n="bulk.clear">Svuota</button>
-          <button class="btn btn-cols2" data-colcfg="merch" title="Personalizza colonne">⚙</button>
+          <button class="btn btn-cols2" data-colcfg="merch" title="Personalizza colonne" data-i18n-title="tip.cols">⚙</button>
           <button class="btn btn-export" data-export="merch" data-i18n-title="common.export" title="Esporta CSV/Excel/PDF"><span>⤓</span> <span data-i18n="common.export">Esporta</span></button>
           <button class="btn btn-primary" id="mch-new" data-i18n="mch.new">＋ Nuovo articolo</button>
         </div>
@@ -1465,7 +1496,7 @@
           <span class="rel-enrich-ico">💸</span>
           <b class="merch-health-title"></b>
           <span class="spacer"></span>
-          <button class="icon-btn-sm" id="merch-health-x" title="Nascondi">✕</button>
+          <button class="icon-btn-sm" id="merch-health-x" title="Nascondi" data-i18n-title="common.hide">✕</button>
         </div>
         <div class="rel-gaps-list" id="merch-health-list"></div>
       </div>
@@ -1555,18 +1586,19 @@
 
     <!-- ====== OFFERTE & PIANI ====== -->
     <section class="view" id="view-offers">
-      <header class="view-head"><div><div class="title-row"><h1 data-i18n="off.title">Offerte &amp; Piani</h1><button class="info-btn" data-info="offers" title="Cos'è questa sezione?">i</button></div>
+      <header class="view-head"><div><div class="title-row"><h1 data-i18n="off.title">Offerte &amp; Piani</h1><button class="info-btn" data-info="offers" title="Cos'è questa sezione?" data-i18n-title="tip.info">i</button></div>
         <p class="muted" data-i18n="off.subtitle">Gestisci più etichette da un unico account. Scegli il piano adatto al tuo roster.</p></div></header>
 
       <div class="info-panel" id="info-offers" data-i18n-html="info.offers" hidden>
         <h4>Come funzionano i piani</h4>
         <p>Il piano determina quante <b>etichette</b> puoi gestire dallo stesso account e quali funzioni avanzate hai a disposizione. Puoi cambiarlo quando vuoi: i tuoi dati restano sempre tuoi.</p>
         <ul>
-          <li><b>Starter</b> — per chi avvia la propria etichetta: una etichetta, contabilità, royalty, import CSV e report.</li>
-          <li><b>Studio</b> — più etichette e strumenti per chi gestisce un roster.</li>
-          <li><b>Agency</b> — per chi amministra molte etichette/clienti, con i limiti più alti.</li>
+          <li><b>Starter</b> — per chi avvia la propria etichetta: una etichetta, contabilità, royalty, import CSV/Excel e report.</li>
+          <li><b>Big Label</b> — una etichetta con tutto: assistente AI, dashboard personalizzabile, export e documenti col tuo brand.</li>
+          <li><b>Company</b> — tutto di Big Label, fino a 3 etichette.</li>
+          <li><b>Enterprise</b> — etichette illimitate, accesso team, automazioni e registro attività (in arrivo).</li>
         </ul>
-        <p>Con il selettore <b>Mensile / Annuale</b> confronti i prezzi: il piano annuale costa meno (la rata mensile equivalente è più bassa, fino al 30% di risparmio).</p>
+        <p>Con il selettore <b>Mensile / Annuale</b> confronti i prezzi: il piano annuale costa circa il 30% in meno.</p>
       </div>
 
       <div class="billing-toggle" id="billing-toggle">
@@ -1913,7 +1945,7 @@
       <form id="tx-form" class="form-grid">
         <input type="hidden" id="f-id">
         <input type="hidden" id="f-kind">
-        <label><span data-i18n="f.date">Data vendita</span> <input type="date" id="f-date" class="input" required></label>
+        <label><span data-i18n="f.date">Data vendita</span> <input type="date" id="f-date" class="input" required min="2000-01-01" max="2100-12-31"></label>
         <label><span data-i18n="f.dateTo">Data vendita (a)</span> <input type="date" id="f-dateto" class="input"></label>
         <label><span data-i18n="f.platform">Piattaforma</span> <input type="text" id="f-platform" class="input" placeholder="Bandcamp, DistroKid…"></label>
         <label><span data-i18n="f.type">Tipologia</span>
@@ -2081,6 +2113,7 @@
     <span class="bulk-info"><b id="bulk-count">0</b> <span data-i18n="bulk.selected">selezionati</span></span>
     <button class="btn btn-ghost" id="bulk-cancel" data-i18n="common.cancel">Annulla</button>
     <button class="btn" id="bulk-credits" hidden data-i18n="rcred.btn">✎ Crediti</button>
+    <button class="btn" id="bulk-split" hidden data-i18n="art.bulk_split">％ Quota</button>
     <button class="btn btn-danger" id="bulk-del"><span data-i18n="bulk.del">🗑 Elimina</span></button>
   </div>
 
@@ -2266,6 +2299,17 @@
   </div>
 
   <!-- ======= MODAL: release ======= -->
+  <div class="modal" id="splitmode-modal" hidden>
+    <div class="modal-card modal-card--sm">
+      <div class="modal-head"><h2 data-i18n="sm.title">Quote degli artisti</h2><button class="modal-x" id="sm-close" aria-label="Chiudi">✕</button></div>
+      <div style="padding:20px">
+        <p data-i18n="sm.text">Le nuove release hanno bisogno delle quote degli artisti. Come vuoi impostarle?</p>
+        <p class="muted small" style="margin-top:8px" data-i18n="sm.hint">Con il 50% usiamo la quota predefinita di ogni artista (50% se non ce l'ha; con più artisti il 50% si divide). Se le scrivi tu, le release restano da completare in Discografia.</p>
+        <div class="modal-foot" style="margin-top:16px;flex-wrap:wrap;gap:8px"><button class="btn" id="sm-manual" data-i18n="sm.manual">Le scrivo io</button><span class="spacer"></span><button class="btn btn-primary" id="sm-default" data-i18n="sm.default">50% (o la quota dell'artista)</button></div>
+      </div>
+    </div>
+  </div>
+
   <div class="modal" id="portal-modal" hidden>
     <div class="modal-card modal-card--sm">
       <div class="modal-head"><h2 data-i18n="portal.title">Portale artista</h2><button class="modal-x" id="portal-close">✕</button></div>
@@ -2440,18 +2484,18 @@
 
   <script src="html2pdf.bundle.min.js?v=95"></script>
   <script src="config.js?v=95"></script>
-  <script src="core.js?v=97"></script>
+  <script src="core.js?v=98"></script>
   <script src="signature.js?v=96"></script>
-  <script src="app.js?v=100"></script>
-  <script src="tables.js?v=99"></script>
-  <script src="safety.js?v=1"></script>
-  <script src="money.js?v=1"></script>
-  <script src="insights.js?v=1"></script>
-  <script src="search.js?v=1"></script>
-  <script src="files.js?v=1"></script>
-  <script src="team.js?v=1"></script>
-  <script src="i18n.js?v=99"></script>
+  <script src="app.js?v=101"></script>
+  <script src="tables.js?v=100"></script>
+  <script src="safety.js?v=2"></script>
+  <script src="money.js?v=2"></script>
+  <script src="insights.js?v=2"></script>
+  <script src="search.js?v=2"></script>
+  <script src="files.js?v=2"></script>
+  <script src="team.js?v=2"></script>
+  <script src="i18n.js?v=100"></script>
   <script src="vendor/supabase.min.js?v=95"></script>
-  <script src="sync.js?v=97"></script>
+  <script src="sync.js?v=98"></script>
 </body>
 </html>

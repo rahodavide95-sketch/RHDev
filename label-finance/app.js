@@ -18,6 +18,9 @@ const CANON = [
   ['csShare','Collection society share'], ['net','Netto'], ['currency','Valuta'],
   ['territory','Paese/Territorio'],
 ];
+// campi in più per i propri fogli Excel (spese): entrata/uscita per riga, categoria, note
+const CANON_EXTRA = [ ['kind','Entrata/Uscita'], ['amountIn','Entrate (colonna)'], ['amountOut','Uscite (colonna)'], ['category','Categoria spesa'], ['note','Note'], ['release','Release collegata'] ];
+const MAP_FIELDS = CANON.concat(CANON_EXTRA);
 
 /* ---------- Store ---------- */
 const DEFAULT_TX_ORDER = ['date','kind','platform','catalog','product','artist','qty','net',
@@ -43,7 +46,7 @@ function planCaps(){ return PLAN_CAPS[ACCOUNT.plan] || PLAN_CAPS.free; }
 function can(feat){ return !!planCaps()[feat]; }
 function requireFeature(feat){
   if(can(feat)) return true;
-  const planName=(PLAN_INFO[FEATURE_MIN[feat]]||{}).name||'Studio';
+  const planName=(PLAN_INFO[FEATURE_MIN[feat]]||{}).name||'Big Label';
   toast((window.t?window.t('gate.upgrade'):'Disponibile con il piano {plan}').replace('{plan}',planName));
   goto('offers'); return false;
 }
@@ -146,6 +149,7 @@ function wipeLocalData(){
   window.LFStore.del('account').catch(()=>{});
   window.LFStore.del('snaps').catch(()=>{});   // anche le versioni salvate sul dispositivo (computer condivisi)
   if(typeof attWipeLocal==='function') attWipeLocal();   // e le ricevute allegate
+  try{ if(typeof teamCache!=='undefined') teamCache=null; }catch(e){}   // elenco del team dell'account precedente
 }
 let roRevertT=null, roToastAt=0;
 function save(){ saveLocal();
@@ -160,13 +164,19 @@ function save(){ saveLocal();
 window.LF = {
   ready: lfReady,
   data(){ return ACCOUNT; },
-  applyCloud(d){ ACCOUNT = migrateAccount(d); DB = activeLabel(); saveLocal(); reloadViews(); if(typeof rebuildAccountMenu==='function') rebuildAccountMenu();
+  applyCloud(d){
+    // l'etichetta aperta su QUESTO dispositivo resta quella (se esiste ancora): un altro dispositivo
+    // che cambia etichetta non deve spostare sotto i piedi un modulo aperto qui
+    const keep=ACCOUNT && ACCOUNT.activeLabel;
+    ACCOUNT = migrateAccount(d);
+    if(keep && keep!==ACCOUNT.activeLabel && (ACCOUNT.labels||[]).some(l=>l && l.id===keep)) ACCOUNT.activeLabel=keep;
+    DB = activeLabel(); saveLocal(); reloadViews(); if(typeof rebuildAccountMenu==='function') rebuildAccountMenu();
     // spese ricorrenti scadute nel frattempo (la versione del cloud può essere indietro)
     if(typeof processRecurring==='function' && !window.LF_readOnly) try{ processRecurring(); }catch(e){} },
   // quanti dati ci sono su questo dispositivo (per chiedere conferma prima di unirli a un account)
   localSize(){ return (ACCOUNT.labels||[]).reduce((n,l)=>n+(l.transactions||[]).length+(l.releases||[]).length+(l.artists||[]).length+(l.contracts||[]).length,0); },
   wipeLocal(){ wipeLocalData();
-    try{ localStorage.removeItem('labelfinance.notifs'); NOTIFS={list:[],dismissed:[]}; if(typeof renderNotifs==='function') renderNotifs(); }catch(e){}
+    try{ Object.keys(localStorage).filter(k=>k.indexOf('labelfinance.notifs')===0).forEach(k=>localStorage.removeItem(k)); NOTIFS={list:[],dismissed:[]}; if(typeof renderNotifs==='function') renderNotifs(); }catch(e){}
     reloadViews(); if(typeof rebuildAccountMenu==='function') rebuildAccountMenu(); },
   // piano deciso dal server (abbonamento Stripe): sovrascrive quello locale
   setServerPlan(plan){ if(!PLAN_LIMITS[plan] || ACCOUNT.plan===plan) return; ACCOUNT.plan=plan; saveLocal(); if(typeof renderOffers==='function') renderOffers(); if(typeof rebuildAccountMenu==='function') rebuildAccountMenu(); },
@@ -176,11 +186,12 @@ window.LF = {
   goto(v){ if(typeof goto==='function') goto(v); },
 };
 function reloadViews(){ renderDashboard(); renderTx(); renderReleases(); renderPlanning(); renderEvents(); renderSupports(); renderRoyalties(); renderArtists(); renderContracts(); renderTasks(); renderMerch(); renderOffers(); renderSettings(); }
-/* ---- Vista consolidata multi-etichetta (Agency) ---- */
+/* ---- Vista consolidata multi-etichetta (Company/Enterprise) ---- */
 function updateConsolidatedNav(){ const b=document.querySelector('[data-view="consolidated"]'); if(b) b.hidden=((ACCOUNT&&ACCOUNT.labels)||[]).length<2;
   if(currentView==='consolidated' && ((ACCOUNT&&ACCOUNT.labels)||[]).length<2) goto('dashboard'); }
-function labelKPI(l){ const rates=l.rates||{}; const rate=c=>rates[(c||'EUR').toUpperCase()]??1; let inc=0,exp=0;
-  (l.transactions||[]).forEach(t=>{ const v=(Number(t.net)||0)*rate(t.currency); if(t.kind==='income') inc+=v; else exp+=Math.abs(v); });
+// stessi cambi della Dashboard di ogni etichetta (anche le medie mensili BCE)
+function labelKPI(l){ let inc=0,exp=0;
+  (l.transactions||[]).forEach(t=>{ const v=LFCore.txEur(l, t); if(t.kind==='income') inc+=v; else exp+=Math.abs(v); });
   return {inc,exp,net:inc-exp}; }
 function renderConsolidated(){
   if(!$('#cons-table')) return;
@@ -220,9 +231,18 @@ const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>
 // immagine sicura da inserire in src="…": solo data URL di immagini o file locali (le firme arrivano da fuori!)
 const imgSrc = s => esc(LFCore.safeImgSrc(s));
 
+const CUR_SYMBOLS={'€':'EUR','$':'USD','US$':'USD','USD$':'USD','£':'GBP','¥':'JPY','A$':'AUD','AU$':'AUD','C$':'CAD','CA$':'CAD','R$':'BRL','₹':'INR','₩':'KRW','zł':'PLN','FR':'CHF','SFR':'CHF','EURO':'EUR','EUROS':'EUR'};
+// valuta scritta in tanti modi → codice di 3 lettere (es. "€" → EUR); vuoto o non valido → fallback
+function normCur(raw, fallback){ const s=String(raw||'').trim(); if(!s) return fallback;
+  const up=s.toUpperCase().replace(/\s+/g,''); if(CUR_SYMBOLS[up]||CUR_SYMBOLS[s]) return CUR_SYMBOLS[up]||CUR_SYMBOLS[s];
+  return /^[A-Z]{3}$/.test(up) ? up : fallback; }
+// importi nel formato della lingua scelta (italiano: 1.234,50 €; inglese: €1,234.50…)
+const MONEY_LOCALE={ it:'it-IT', en:'en-GB', es:'es-ES', fr:'fr-FR', de:'de-DE', pt:'pt-PT', nl:'nl-NL' };
+const moneyFmts={};
 function fmtMoney(n,cur='EUR'){
-  const v = Number(n)||0;
-  return new Intl.NumberFormat('it-IT',{style:'currency',currency:cur}).format(v);
+  const v = Number(n)||0, loc=MONEY_LOCALE[(window.LFI18N&&LFI18N.lang)||'it']||'it-IT', c=normCur(cur,'EUR');
+  try{ const k=loc+'|'+c; return (moneyFmts[k]||(moneyFmts[k]=new Intl.NumberFormat(loc,{style:'currency',currency:c}))).format(v); }
+  catch(e){ return new Intl.NumberFormat(loc,{minimumFractionDigits:2,maximumFractionDigits:2}).format(v)+' '+String(cur||''); }
 }
 // in euro: con i cambi automatici BCE si usa la media del mese del movimento (date)
 function toEur(n,cur,date){ return LFCore.eurAt(DB, n, cur, date); }
@@ -268,11 +288,11 @@ function parseCSV(text, delim='auto'){
 
 /* ---------- Auto-mapping euristico ---------- */
 const HINTS = {
-  date:['date','data','sold','time','timestamp','giorno','sale month','sales period','reporting date','reporting','period','month','accounting','transaction date','order date','street date','sale date'],
-  platform:['platform','store','piattaforma','retailer','shop','source','channel','dsp','outlet','service','marketplace','partner','vendor'],
+  date:['date','data','fecha','datum','datas','sold','time','timestamp','giorno','data operazione','data contabile','booking date','transaction date','fecha operacion','date operation','buchungstag','buchungsdatum','transactiedatum','sale month','sales period','reporting date','reporting','period','month','accounting','transaction date','order date','street date','sale date'],
+  platform:['platform','store','piattaforma','retailer','shop','source','channel','dsp','outlet','service','marketplace','partner','vendor','fornitore','supplier','beneficiario','payee','negozio','merchant','azienda','società','societa','ditta','company','proveedor','fournisseur','beneficiaire','lieferant','empfanger','zahlungsempfanger','fornecedor','leverancier','tegenpartij','counterparty','vendor name','beguenstigter'],
   type:['type','tipo','format','formato','item type','product type','sale type'],
   catalog:['catalog number','catalogue number','catalog','cat no','catalogue','catalogo','catno','cat#','cat'],
-  product:['item name','track title','song title','album title','release title','product title','item','product','title','titolo','prodotto','track','release','name','album','song','recording','content'],
+  product:['item name','track title','song title','album title','release title','product title','item','product','title','titolo','prodotto','track','release','name','album','song','recording','content','descrizione','description','voce','causale','dettaglio','details','oggetto','nome','concepto','descripcion','libelle','designation','beschreibung','verwendungszweck','buchungstext','omschrijving','descricao','memo description','narrative','particulars'],
   artist:['artist name','primary artist','display artist','album artist','main artist','artist','artista','band','performer'],
   isrc:['isrc'],
   upc:['upc','ean','barcode','upc/ean'],
@@ -281,32 +301,44 @@ const HINTS = {
   shipping:['shipping','spedizione'],
   taxes:['tax','vat','iva','imposta'],
   payProcFees:['payment processor','processor fee','processor','paypal fee','stripe fee'],
-  fees:['transaction fee','fee','fees','commission','commissioni','charge'],
-  net:['net revenue','net income','net payable','net amount','your earnings','amount payable','earnings','royalties','royalty','royalt','payout','payable','net','netto'],
+  fees:['transaction fee','fee','fees','commission','commissioni','charge','tariffa','tarifa','frais','gebuhr','gebuhren','kosten','comissao'],
+  net:['net revenue','net income','net payable','net amount','your earnings','amount payable','earnings','royalties','royalty','royalt','payout','payable','net','netto','importo','totale','total','spesa','costo','cost','importe','monto','montant','betrag','valor','bedrag','amount eur','amount (eur)'],
   csShare:['collection society','society share','collecting society','cmo','pro share','mechanical'],
   dateTo:['date to','transaction date to','to date'],
-  currency:['currency code','currency','valuta','curr','ccy','cur'],
+  currency:['currency code','currency','valuta','curr','ccy','cur','moneda','divisa','devise','wahrung','moeda','munt'],
   territory:['country of sale','sales country','country code','country','territory','territorio','paese','nazione','region'],
+  kind:['tipo movimento','entrata/uscita','entrata uscita','in/out','movimento','kind','direction','dare/avere','income/expense','ingreso/gasto','recette/depense','einnahme/ausgabe','entrada/saida','inkomst/uitgave'],
+  category:['categoria','category','categoria spesa','categoria spese','tipo spesa','tipo spese','voce di spesa','expense type','expense category','centro di costo','cost center','categoria gasto','categorie','categorie depense','kategorie','kostenart','categoria despesa','rubriek'],
+  note:['note','notes','nota','memo','commento','commenti','comment','comments','notas','remarque','remarques','bemerkung','notiz','notizen','observacoes','opmerking','opmerkingen'],
+  amountIn:['entrate','entrata','avere','accrediti','accredito','incassi','ricavi','credit','credits','credit amount','deposit','deposits','paid in','money in','ingresos','haber','abono','credito','recettes','encaissements','einnahmen','haben','gutschrift','entradas','inkomsten','bij'],
+  amountOut:['uscite','uscita','dare','addebiti','addebito','pagamenti','debit','debits','debit amount','withdrawal','withdrawals','paid out','money out','gastos','debe','cargo','debito','depenses','decaissements','ausgaben','soll','lastschrift','saidas','uitgaven','af'],
+  release:['release','release collegata','progetto','project','uscita discografica'],
 };
-const colNorm = s => String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
+// colonne di servizio dei fogli personali: non si collegano da sole a nessun campo (si possono scegliere a mano)
+const MAP_SKIP=new Set(['data valuta','value date','valuta data','pagato','pagata','paid','metodo pagamento','metodo di pagamento','modalità pagamento','modalita pagamento','payment method','note pagamento','payment note','saldo','balance','progressivo','iban'].map(s=>String(s).toLowerCase().replace(/[^a-z0-9]+/g,'')));
+const colNorm = s => String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'');
 function autoMap(headers){
-  const map={}; const used=new Set(); const nh=headers.map(colNorm);
-  for(const [field] of CANON){
-    const hints=(HINTS[field]||[]).map(colNorm).filter(Boolean);
-    let best=-1;
-    nh.forEach((h,i)=>{ if(used.has(i)||best>-1) return; if(hints.includes(h)) best=i; });          // 1) intestazione == sinonimo
-    if(best===-1) nh.forEach((h,i)=>{ if(used.has(i)||best>-1) return; if(hints.some(k=>h.includes(k))) best=i; });  // 2) sinonimo contenuto
-    if(best>-1){ map[field]=best; used.add(best); }
-  }
+  const map={}; const nh=headers.map(colNorm); const used=new Set(nh.map((h,i)=>MAP_SKIP.has(h)?i:-1).filter(i=>i>-1));
+  const hintsOf=f=>(HINTS[f]||[]).map(colNorm).filter(Boolean);
+  // 1) intestazione == sinonimo, su tutti i campi (così "Categoria" non finisce in Catalogo); prima i campi dei fogli personali
+  for(const [field] of CANON_EXTRA.concat(CANON)){ const hs=hintsOf(field); const i=nh.findIndex((h,j)=>!used.has(j) && hs.includes(h)); if(i>-1){ map[field]=i; used.add(i); } }
+  // 2) sinonimo contenuto nell'intestazione (solo sinonimi di almeno 3 lettere)
+  const EXACT_ONLY=new Set(['count','cur','curr','ccy','cat','nome']);
+  for(const [field] of MAP_FIELDS){ if(map[field]!=null) continue; const hs=hintsOf(field).filter(k=>!EXACT_ONLY.has(k) && k.length>=(field==='amountIn'||field==='amountOut'?6:3));
+    const i=nh.findIndex((h,j)=>!used.has(j) && hs.some(k=>h.includes(k)) && !(field==='catalog' && h.includes('categ')));
+    if(i>-1){ map[field]=i; used.add(i); } }
   return map;
 }
 
 /* ============================================================================
    NAVIGAZIONE
    ============================================================================ */
+/* larghezza utile di un A4 (210 mm) a 96 dpi meno i margini di html2pdf: oltre, il PDF taglia la colonna di destra */
+const PDF_W8=Math.floor((210-16)*96/25.4), PDF_W10=Math.floor((210-20)*96/25.4);
 const VIEW_TITLES={dashboard:'Dashboard',consolidated:'Consolidato',transactions:'Movimenti',releases:'Discografia',planning:'Pianificazione',events:'Eventi',supports:'Support DJ',royalties:'Royalty',artists:'Artisti',contracts:'Contratti',tasks:'Task',merch:'Merch',import:'Importa CSV',settings:'Impostazioni',about:'Chi siamo',offers:'Offerte & Piani',faq:'Aiuto & FAQ'};
 let currentView='dashboard';
 function goto(view){
+  if(view!==currentView){ Object.keys(bulkSel).forEach(k=>bulkSel[k].clear()); const bb=$('#bulk-bar'); if(bb){ bb.hidden=true; bb.dataset.sec=''; } }
   currentView=view;
   if(typeof closeDrawer==='function') closeDrawer();   // chiudi il cassetto menu su mobile
   $$('.nav-item').forEach(b=>b.classList.toggle('is-active',b.dataset.view===view));
@@ -345,8 +377,11 @@ const ART_NOLINK=new Set(['various artists','various','va','v.a.','label','—',
 // ogni nome di artista è cliccabile (anche se non è ancora in rubrica): apre la scheda artista
 function artLink1(raw){ const name=(raw||'').trim(); if(!name || ART_NOLINK.has(name.toLowerCase())) return esc(raw||'');
   return `<span class="lf-link" data-art-open="${esc(name)}" title="${esc(tt('art.sheet_open'))}">${esc(name)}</span>`; }
+// separatori tra artisti: "/" e "x" solo con spazi intorno (AC/DC e Max restano interi)
+const ART_SEP='\\s*(?:,|;|&|\\s\\/\\s|\\sx\\s|\\bfeat\\.?(?=\\s)|\\bft\\.?(?=\\s)|\\bfeaturing\\b)\\s*';
+const ART_SPLIT_RE=new RegExp(ART_SEP,'i'), ART_SPLIT_CAP=new RegExp('('+ART_SEP+')','i');
 function artNameLink(name){ name=(name||'').toString(); if(!name.trim()) return esc(name);
-  const parts=name.split(/(\s*,\s*|\s*&\s*|\s*;\s*|\s*\/\s*|\s+feat\.?\s+|\s+ft\.?\s+)/i);
+  const parts=name.split(ART_SPLIT_CAP);
   return parts.map((p,i)=> i%2===1 ? esc(p) : artLink1(p)).join(''); }
 
 /* nome sezione nella topbar: visibile solo quando il titolo sotto è scrollato via */
@@ -456,9 +491,16 @@ function deleteLabel(id){
   if(ACCOUNT.labels.length<=1){ toast(tt('t.label_min')); return; }
   const lab=ACCOUNT.labels.find(l=>l.id===id); if(!lab) return;
   if(!confirm(tt('confirm.del_label').replace('{name}', lab.name||''))) return;
+  deleteLabelGo(id, lab);
+}
+async function deleteLabelGo(id, lab){
+  if(typeof snapTake==='function') await snapTake('before_delete_label');   // si può tornare indietro da Versioni salvate
+  const tokens=(lab.contracts||[]).map(c=>c&&c.token).filter(t=>t && !(ACCOUNT.labels||[]).some(l=>l.id!==id && (l.contracts||[]).some(c=>c&&c.token===t)));   // i link di firma dell'etichetta smettono di funzionare
   ACCOUNT.labels=ACCOUNT.labels.filter(l=>l.id!==id);
   if(ACCOUNT.activeLabel===id) ACCOUNT.activeLabel=ACCOUNT.labels[0].id;
-  DB=activeLabel(); save(); reloadViews(); rebuildAccountMenu(); toast(tt('t.label_deleted')); goto('dashboard');
+  DB=activeLabel(); tokens.forEach(tombstoneContract);
+  save(); reloadViews(); rebuildAccountMenu(); toast(tt('t.label_deleted')); goto('dashboard');
+  if(tokens.length) flushContractTombstones();
 }
 function closeAccountMenu(){ const e=$('#account-menu'); if(e) e.hidden=true; }
 function toggleAccountMenu(){ const e=$('#account-menu'); if(!e) return; if(e.hidden){ rebuildAccountMenu(); e.hidden=false; } else e.hidden=true; }
@@ -525,9 +567,10 @@ function renderOffers(){
     }
     const m=+c.dataset.monthly||0;
     if(priceEl){
-      if(billing==='annual'){
-        priceEl.innerHTML=`${fmtEur(m*0.7)}<span>${tt('off.pm')}</span> <span class="plan-vat">${tt('off.vat')}</span> <s class="plan-old">${fmtEur(m)}</s>`;
-        if(noteEl) noteEl.textContent=`${tt('off.billed')} · ${fmtEur(m*12*0.7)}/${tt('off.year')} ${tt('off.instead')} ${fmtEur(m*12)}`;
+      if(billing==='annual'){   // −30% arrotondato all'euro, come nella pagina pubblica
+        const y=Math.round(m*0.7);
+        priceEl.innerHTML=`${fmtEur(y)}<span>${tt('off.pm')}</span> <span class="plan-vat">${tt('off.vat')}</span> <s class="plan-old">${fmtEur(m)}</s>`;
+        if(noteEl) noteEl.textContent=`${tt('off.billed')} · ${fmtEur(y*12)}/${tt('off.year')} ${tt('off.instead')} ${fmtEur(m*12)}`;
       } else {
         priceEl.innerHTML=`${fmtEur(m)}<span>${tt('off.pm')}</span> <span class="plan-vat">${tt('off.vat')}</span>`;
         if(noteEl) noteEl.textContent='';
@@ -664,9 +707,9 @@ function seasonality(){
 function monthName(mm){ try{ return new Date(2021,mm-1,1).toLocaleString(window.LFI18N?window.LFI18N.lang:'it',{month:'long'}); }catch(e){ return ''+mm; } }
 /* valute usate nei movimenti senza cambio impostato → conteggiate 1:1 (errato) */
 function fxIssues(){
-  const rates=DB.rates||{}; const bad={};
+  const rates=DB.rates||{}; const bad={}; const fx=DB.fx||{}, months=(fx.auto && fx.months)||{};
   (DB.transactions||[]).forEach(t=>{ const c=(t.currency||'EUR').toUpperCase(); if(c==='EUR') return;
-    if(rates[c]==null){ bad[c]=(bad[c]||0)+1; } });
+    if(rates[c]==null && !(months[c] && Object.keys(months[c]).length)){ bad[c]=(bad[c]||0)+1; } });   // coperte dai cambi BCE: nessun avviso
   return bad;
 }
 function renderInsights(txs, cur, prev){
@@ -719,20 +762,23 @@ function renderDashboard(){
   renderInsights(txs, cur, prev);
   const psel=$('#dash-period');
   $('#dash-range-label').textContent = psel.value==='custom'
-    ? ((range.from||'inizio')+' → '+(range.to||'oggi'))
+    ? ((range.from?fmtDate(range.from):tt('dash.from_start'))+' → '+(range.to?fmtDate(range.to):tt('dash.to_today')))
     : psel.selectedOptions[0].textContent;
 
   // monthly chart
   const months={};
-  txs.forEach(t=>{ const k=monthKey(t.date)||'—'; (months[k]??={in:0,out:0}); const v=toEur(t.net,t.currency,t.date);
+  txs.forEach(t=>{ const k=monthKey(t.date); if(!k) return; (months[k]??={in:0,out:0}); const v=toEur(t.net,t.currency,t.date);
     if(t.kind==='income') months[k].in+=v; else months[k].out+=Math.abs(v); });
-  const keys=Object.keys(months).sort().slice(-12);
+  // ultimi 12 mesi senza buchi: anche i mesi senza movimenti hanno la loro colonna (vuota)
+  const mk=Object.keys(months).sort(), keys=[];
+  if(mk.length){ let [y,m]=mk[mk.length-1].split('-').map(Number);
+    const first=mk[0]; for(let i=0;i<12;i++){ const k=y+'-'+String(m).padStart(2,'0'); if(k<first) break; keys.unshift(k); (months[k]??={in:0,out:0}); if(--m<1){ m=12; y--; } } }
   const max=Math.max(1,...keys.map(k=>Math.max(months[k].in,months[k].out)));
   $('#chart-monthly').innerHTML = keys.length? keys.map(k=>`
     <div class="bar-col">
       <div class="bars">
-        <div class="bar bar--in" style="height:${months[k].in/max*160}px" title="Entrate ${fmtMoney(months[k].in)}"></div>
-        <div class="bar bar--out" style="height:${months[k].out/max*160}px" title="Uscite ${fmtMoney(months[k].out)}"></div>
+        <div class="bar bar--in" style="height:${months[k].in/max*160}px" title="${esc(tt('g.income'))} ${fmtMoney(months[k].in)}"></div>
+        <div class="bar bar--out" style="height:${months[k].out/max*160}px" title="${esc(tt('g.expense'))} ${fmtMoney(months[k].out)}"></div>
       </div>
       <span class="bar-label">${k}</span>
     </div>`).join('') : `<p class="muted">${tt('empty.noperiod')}</p>`;
@@ -840,8 +886,17 @@ function computeGroup(cfg){
   const {sel,key}=cfg;
   const sort=dashSort[sel]||(dashSort[sel]={col:'net',dir:-1});
   const flt=(dashFilter[sel]||'').toLowerCase();
-  const g={};
-  dashTxs.forEach(t=>{ const k=(t[key]||'—'); (g[k]??={in:0,out:0}); const v=toEur(t.net,t.currency,t.date);
+  const g={}, spell={}, idx=key==='catalog'?relIdx():null;
+  // per release: la release trovata anche da UPC/ISRC/titolo (non solo dal campo catalogo);
+  // artisti e piattaforme scritti in modi diversi ("Raho"/"raho ") finiscono nella stessa riga
+  const norm=raw=>key==='artist' ? LFCore.artKey(raw) : colNorm(raw);
+  if(key!=='catalog') dashTxs.forEach(t=>{ const raw=String(t[key]||'').trim(); if(!raw) return; const n=norm(raw);
+    if(spell[n]===undefined){ const a=key==='artist'?findArtist(raw):null; spell[n]=a?a.name:raw; }
+    else if(spell[n]===spell[n].toLowerCase() && raw!==raw.toLowerCase() && !(key==='artist' && findArtist(raw))) spell[n]=raw; });   // meglio "Raho" di "raho"
+  const keyOf=t=>{
+    if(key==='catalog'){ const r=releaseForTx(t, idx); return r ? (r.catalog||r.title||'—') : (t.catalog||'—'); }
+    const raw=String(t[key]||'').trim(); return raw ? spell[norm(raw)] : '—'; };
+  dashTxs.forEach(t=>{ const k=keyOf(t); (g[k]??={in:0,out:0}); const v=toEur(t.net,t.currency,t.date);
     if(t.kind==='income') g[k].in+=v; else g[k].out+=Math.abs(v); });
   let rows=Object.entries(g).map(([k,v])=>({k,...v,net:v.in-v.out}));
   if(flt) rows=rows.filter(r=>r.k.toLowerCase().includes(flt));
@@ -888,7 +943,17 @@ const EXPORTERS={};
 const registerExport=(name,fn)=>{ EXPORTERS[name]=fn; };
 let curExport=null;
 const xmlEsc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-function csvOf(headers,rows){ return [headers,...rows].map(r=>r.map(csvCell).join(',')).join('\n'); }
+/* CSV per Excel: lingue con la virgola decimale → ";" e "12,50", inglese → "," e "12.50"; BOM UTF-8 (accenti
+   giusti); celle che inizierebbero una formula (=, +, -, @) protette con un apostrofo */
+function csvText(rows, opt){
+  const dc=((window.LFI18N&&LFI18N.lang)||'it')!=='en', sep=dc?';':',', needQ=dc?/[";\r\n]/:/[",\r\n]/, fix2=opt&&opt.fixed2;
+  const cell=v=>{ let s;
+    if(typeof v==='number' && isFinite(v)){ s=fix2 ? v.toFixed(2) : String(v); if(dc) s=s.replace('.',','); }
+    else { s=String(v??''); if(/^[=+\-@\t\r]/.test(s) && !/^[-+]?\d+([.,]\d+)?$/.test(s)) s="'"+s; }
+    return needQ.test(s) ? `"${s.replace(/"/g,'""')}"` : s; };
+  return '\uFEFF'+rows.map(r=>r.map(cell).join(sep)).join('\r\n');
+}
+function csvOf(headers,rows){ return csvText([headers,...rows]); }
 function xlsOf(headers,rows){
   return `<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"></head><body>`+
     `<table border="1"><thead><tr>${headers.map(h=>`<th>${xmlEsc(h)}</th>`).join('')}</tr></thead>`+
@@ -925,21 +990,22 @@ document.addEventListener('click',e=>{
 $$('#export-menu button').forEach(b=>b.onclick=()=>{ $('#export-menu').hidden=true; if(curExport) doExport(curExport,b.dataset.fmt); });
 
 /* dati esportabili per sezione */
+// Movimenti: esporta le righe filtrate (come le vedi), con intestazioni che l'import riconosce
 registerExport('movimenti', ()=>{
-  const cols=CANON;
-  const headers=['Tipo',...cols.map(c=>c[1]),'Nota'];
-  const rows=DB.transactions.map(t=>[t.kind==='income'?'Entrata':'Uscita',...cols.map(c=>{
+  const cols=CANON, list=(currentView==='transactions' && txLastRows) ? txLastRows : DB.transactions;
+  const headers=[tt('imp.f_kind'),...cols.map(c=>mapLabel(c[0],c[1])),tt('imp.f_note')];
+  const rows=list.map(t=>[tt(t.kind==='income'?'imp.k_income':'imp.k_expense'),...cols.map(c=>{
     const v=t[c[0]]; return (typeof v==='number')?v:(v??''); }), t.note||'']);
-  return {title:'Movimenti — '+(DB.name||''), headers, rows};
+  return {title:tt('tx.title')+' — '+(DB.name||''), headers, rows};
 });
 GROUP_TABLES.forEach(cfg=>registerExport('group:'+cfg.sel, ()=>{
   const rows=computeGroup(cfg).map(r=>[r.k, +r.in.toFixed(2), +r.out.toFixed(2), +r.net.toFixed(2)]);
   return {title:cfg.label, headers:[cfg.label,'Entrate (€)','Uscite (€)','Margine (€)'], rows};
 }));
 registerExport('releases', ()=>{
-  const rows=releases().map(r=>{ const tot=(r.splits||[]).reduce((s,x)=>s+(+x.pct||0),0);
-    const splits=(r.splits||[]).map(s=>`${s.name} ${(+s.pct||0)}%`).join(' · ');
-    return [r.catalog, r.title||'', r.year||'', splits, Math.max(0,100-tot)+'%']; });
+  const rows=releases().map(r=>{ const tot=splitTot(r.splits);
+    const splits=(r.splits||[]).map(s=>`${s.name} ${pctR(s.pct)}%`).join(' · ');
+    return [r.catalog, r.title||'', r.year||'', splits, pctR(Math.max(0,100-tot))+'%']; });
   return {title:'Release', headers:['Catalogo','Titolo','Anno','Quote artisti','Quota label'], rows};
 });
 registerExport('royalty', ()=>{
@@ -1073,6 +1139,8 @@ $('#btn-onb-income')?.addEventListener('click', ()=>{ curKind='income'; openTx(n
    MOVIMENTI
    ============================================================================ */
 const moneyCell=(v,t)=> v?fmtMoney(v,t.currency||'EUR'):'';
+// importo con il segno vero: le uscite sono negative, un'entrata negativa (rimborso) resta negativa
+const txSigned=t=>t.kind==='income' ? (+t.net||0) : -Math.abs(+t.net||0);
 const TX_COLS = {
   date:    {label:'Data vendita',cell:t=>fmtDate(t.date)},
   dateTo:  {label:'Data vendita (a)', cell:t=>fmtDate(t.dateTo)},
@@ -1093,7 +1161,7 @@ const TX_COLS = {
   payProcFees:{label:'Comm. processore', num:1, cell:t=>moneyCell(t.payProcFees,t)},
   fees:    {label:'Commissioni', num:1, cell:t=>moneyCell(t.fees,t)},
   csShare: {label:'Coll. society', num:1, cell:t=>moneyCell(t.csShare,t)},
-  net:     {label:'Netto', num:1,cell:t=>{ const inc=t.kind==='income'; return `<span class="${inc?'pos':'neg'}">${inc?'':'−'}${fmtMoney(Math.abs(+t.net||0),t.currency||'EUR')}</span>`; }},
+  net:     {label:'Netto', num:1,cell:t=>{ const v=txSigned(t); return `<span class="${v>=0?'pos':'neg'}">${v<0?'−':''}${fmtMoney(Math.abs(v),t.currency||'EUR')}</span>`; }},
   currency:{label:'Valuta',      cell:t=>esc(t.currency)},
   note:    {label:'Nota',        cell:t=>esc(t.note)},
 };
@@ -1104,6 +1172,7 @@ let txSort={ col:'date', dir:-1 };   // -1 = decrescente
 function txSortKey(c,t){
   if(c==='eur') return (t.kind==='income'?1:-1)*toEur(t.net,t.currency,t.date);
   if(c==='kind') return t.kind||'';
+  if(c==='net') return txSigned(t);
   if(NUM_COLS.includes(c)) return +t[c]||0;
   if(c==='date'||c==='dateTo') return t[c]||'';
   if(c==='upc') return (t.upc||t.code||'').toLowerCase();
@@ -1118,6 +1187,7 @@ function renderTx(){
   applyTxFilters();
   if(typeof renderRecurPanel==='function') renderRecurPanel();
 }
+let txLastRows=null, txFilterSig='';
 function applyTxFilters(){
   const q=$('#tx-search').value.toLowerCase().trim();
   const kind=$('#tx-filter-kind').value, plat=$('#tx-filter-platform').value;
@@ -1133,7 +1203,10 @@ function applyTxFilters(){
   // a parità: artista, traccia (prodotto), catalogo, data, piattaforma — in ordine alfabetico
   const txTies=['artist','product','catalog','date','platform'].filter(c=>c!==k).map(c=>t=>txSortKey(c,t));
   rows=tieSort(rows, t=>txSortKey(k,t), txSort.dir, txTies);
-  $('#tx-count-label').textContent=`${rows.length} ${tt('tx.movements')}`;
+  txLastRows=rows;
+  const fsig=[q,kind,plat,from,to].join('|');
+  if(fsig!==txFilterSig){ txFilterSig=fsig; if(bulkSel.transactions && bulkSel.transactions.size){ bulkSel.transactions.clear(); bulkBar('transactions'); } }
+  $('#tx-count-label').textContent=`${rows.length} ${tt(rows.length===1?'tx.movement':'tx.movements')}`;
   const ss=$('#tx-sort'); if(ss){ const v=txSort.col+':'+txSort.dir; if([...ss.options].some(o=>o.value===v)) ss.value=v; }
   const info=paginate(rows,'tx'); const pageRows=info.slice;
   const cols=visibleCols();
@@ -1156,9 +1229,9 @@ function applyTxFilters(){
     openTx(tr.dataset.id);
   });
 }
-['#tx-search','#tx-filter-kind','#tx-filter-platform','#tx-from','#tx-to'].forEach(s=>{
-  $(s).addEventListener('input',applyTxFilters); $(s).addEventListener('change',applyTxFilters);
-});
+{ let txSearchT=null;
+  $('#tx-search').addEventListener('input',()=>{ clearTimeout(txSearchT); txSearchT=setTimeout(applyTxFilters,150); });
+  ['#tx-filter-kind','#tx-filter-platform','#tx-from','#tx-to'].forEach(s=>$(s).addEventListener('change',applyTxFilters)); }
 function syncTxDates(){ const cu=$('#tx-period').value==='custom'; $('#tx-from').hidden=!cu; $('#tx-to').hidden=!cu; }
 $('#tx-period').addEventListener('change',()=>{ syncTxDates(); applyTxFilters(); });
 syncTxDates();
@@ -1247,6 +1320,7 @@ $('#cols-reset').onclick=()=>{
    release = { id, catalog, title, year, splits:[{name, pct}] }
    ============================================================================ */
 function releases(){ return DB.releases || (DB.releases=[]); }
+const normCat=c=>String(c||'').trim().toLowerCase(), normUPC=u=>String(u||'').replace(/\D/g,'');
 function releaseByCatalog(cat){
   if(!cat) return null;
   const c=cat.trim().toLowerCase();
@@ -1339,7 +1413,7 @@ function renderReleases(){
   {
     cont.className='releases-cards';
     cont.innerHTML = list.map(r=>{
-      const tot=(r.splits||[]).reduce((s,x)=>s+(+x.pct||0),0); const label=Math.max(0,100-tot);
+      const tot=splitTot(r.splits); const label=pctR(Math.max(0,100-tot));
       const chips=(r.splits||[]).map(s=>`<span class="split-chip">${esc(s.name)} <b>${(+s.pct||0)}%</b></span>`).join('')
         + `<span class="split-chip split-chip--label">Label <b>${label}%</b></span>`;
       return `<div class="release-card" data-id="${r.id}">
@@ -1361,11 +1435,13 @@ function renderReleases(){
 }
 
 /* ---------- Modal release ---------- */
+const pctR=x=>Math.round((+x||0)*100)/100;
+const splitTot=list=>pctR((list||[]).reduce((s,x)=>s+(+x.pct||0),0));
 function splitRowHTML(name='',pct=''){
   return `<div class="split-row">
-    <input class="input split-name" list="artist-list" placeholder="Nome artista" value="${esc(name)}">
+    <input class="input split-name" list="artist-list" placeholder="${esc(tt('rel.split_name_ph'))}" value="${esc(name)}">
     <input class="input split-pct" type="number" min="0" max="100" step="0.01" placeholder="%" value="${pct===''?'':esc(pct)}">
-    <button type="button" class="btn split-del" title="Rimuovi">✕</button>
+    <button type="button" class="btn split-del" title="${esc(tt('common.remove'))}" aria-label="${esc(tt('common.remove'))}">✕</button>
   </div>`;
 }
 function artistDatalist(){
@@ -1377,9 +1453,9 @@ function artistDatalist(){
   dl.innerHTML=[...names].sort().map(n=>`<option value="${esc(n)}">`).join('');
 }
 function refreshSplitTotal(){
-  let tot=0; $$('#r-splits .split-pct').forEach(i=>tot+=(+i.value||0));
+  let tot=0; $$('#r-splits .split-pct').forEach(i=>tot+=(+i.value||0)); tot=pctR(tot);
   const el=$('#r-split-total');
-  el.textContent = `Totale artisti ${tot}% · Label ${Math.max(0,100-tot)}%` + (tot>100?' ⚠ supera 100%':'');
+  el.textContent = tt('rel.split_total').replace('{a}', tot).replace('{l}', pctR(Math.max(0,100-tot))) + (tot>100?' ⚠ '+tt('rel.split_over_short'):'');
   el.style.color = tot>100 ? 'var(--out)' : 'var(--muted)';
 }
 /* ---- Riordino tracce via drag (solo dalla maniglia) ---- */
@@ -1398,12 +1474,12 @@ function trackBlockHTML(t={}){
   const splits=(t.splits&&t.splits.length)?t.splits:[{name:'',pct:''}];
   const relV=id=>($('#'+id)&&$('#'+id).value.trim())||'';
   const ph=(label,def)=>def?(label+' · default: '+def):label;
-  return `<div class="track-block">
+  return `<div class="track-block" data-tid="${esc(t.id||'')}" data-tartist="${esc(t.artist||'')}">
     <div class="track-head">
-      <span class="track-grip" title="Trascina per riordinare">⠿</span>
-      <input class="input track-title" placeholder="Titolo traccia" value="${esc(t.title||'')}">
+      <span class="track-grip" title="${esc(tt('rel.drag'))}">⠿</span>
+      <input class="input track-title" placeholder="${esc(tt('rel.track_title_ph'))}" value="${esc(t.title||'')}">
       <input class="input track-isrc" placeholder="ISRC" value="${esc(t.isrc||'')}">
-      <button type="button" class="btn track-del" title="Rimuovi traccia">✕</button>
+      <button type="button" class="btn track-del" title="${esc(tt('rel.track_remove'))}" aria-label="${esc(tt('rel.track_remove'))}">✕</button>
     </div>
     <div class="track-credits">
       <input class="input track-written"     placeholder="${esc(ph('Written by',relV('r-written')))}"        value="${esc(t.writtenBy||'')}">
@@ -1413,7 +1489,7 @@ function trackBlockHTML(t={}){
       <input class="input track-distributed" placeholder="${esc(ph('Distributed by',relV('r-distributed')))}" value="${esc(t.distributedBy||'')}">
     </div>
     <div class="track-splits">${splits.map(s=>splitRowHTML(s.name,s.pct)).join('')}</div>
-    <button type="button" class="btn btn-mini track-add-split">+ artista</button>
+    <button type="button" class="btn btn-mini track-add-split">${esc(tt('rel.add_artist'))}</button>
   </div>`;
 }
 function collectSplits(container){
@@ -1431,7 +1507,7 @@ function catalogInsights(){
   const byField={}, rels=new Set();
   enr.forEach(e=>{ byField[e.field]=(byField[e.field]||0)+1; rels.add(e.relId); });
   const unlinked=new Set(); const idx=relIdx();
-  (DB.transactions||[]).forEach(t=>{ const p=(t.product||'').trim(); if(p && !releaseForTx(t, idx)) unlinked.add(p.toLowerCase()); });
+  (DB.transactions||[]).forEach(t=>{ const p=(t.product||'').trim(); if(p && t.kind!=='expense' && !releaseForTx(t, idx)) unlinked.add(p.toLowerCase()); });
   return { enrTotal:enr.length, enrRels:rels.size, byField, unlinked:unlinked.size };
 }
 let relEnrichDismissed='';
@@ -1458,6 +1534,7 @@ $('#rel-enrich-x')?.addEventListener('click', ()=>{ relEnrichDismissed=relEnrich
 function unlinkedTxItems(){
   const groups=new Map(); const idx=relIdx();
   (DB.transactions||[]).forEach(t=>{
+    if(t.kind==='expense') return;                  // le spese (mastering, distribuzione…) non sono release
     const product=(t.product||'').trim(), catalog=(t.catalog||'').trim(), upc=(t.upc||t.code||'').trim(), isrc=(t.isrc||'').trim(), artist=(t.artist||'').trim();
     if(!product && !catalog && !upc) return;
     if(releaseForTx(t, idx)) return;                 // già a catalogo
@@ -1481,9 +1558,11 @@ function createReleasesFromTx(){
   const items=unlinkedTxItems();
   if(!items.length){ toast(tt('rel.enrich_none')); return; }
   if(!confirm(tt('rel.enrich_create_confirm').replace('{n}',items.length))) return;
-  const r=importReleasesData(items, true);
-  updateRelEnrichBanner();
-  if(r && r.direct) toast(tt('rel.enrich_created').replace('{n}', r.relNew||items.length));
+  askSplitMode(()=>{
+    const r=importReleasesData(items, true);
+    updateRelEnrichBanner();
+    if(r && r.direct) toast(tt('rel.enrich_created').replace('{n}', r.relNew||items.length));
+  });
 }
 $('#rel-enrich-create')?.addEventListener('click', createReleasesFromTx);
 
@@ -1529,9 +1608,9 @@ function updateRelGapsPanel(){
 $('#rel-gaps-x')?.addEventListener('click', ()=>{ relGapsDismissed=relGapsSig(releaseGaps()); const b=$('#rel-gaps'); if(b) b.hidden=true; });
 
 /* ---- Avviso intelligente in Artisti: artisti trovati nei movimenti ma non in rubrica ---- */
-function splitArtistNames(s){
-  return (s||'').toString().split(/,|&|;|\/|\bfeat\.?\b|\bft\.?\b|\bfeaturing\b/i).map(x=>x.trim()).filter(Boolean);
-}
+function splitArtistNames(s){ return (s||'').toString().split(ART_SPLIT_RE).map(x=>x.trim()).filter(Boolean); }
+// applica fn a ogni nome lasciando intatti i separatori originali ("A feat. B" resta "A feat. B")
+function mapArtistNames(raw, fn){ return String(raw||'').split(ART_SPLIT_CAP).map((p,i)=>(i%2||!p.trim())? p : fn(p.trim())).join(''); }
 function unlinkedArtists(){
   const have=new Set((DB.artists||[]).map(a=>normArt(a.name)).filter(Boolean));
   const skip=new Set(['various artists','various artist','va','aa vv','aavv','various','label','unknown','n a']);
@@ -1598,23 +1677,36 @@ function duplicateArtists(){
   }
   return pairs;
 }
-function mergeArtists(keepName, dropName){
-  const nd=normArt(dropName); if(!nd) return;
-  const fix=raw=>{
-    if(!raw) return raw;
-    const parts=splitArtistNames(raw); if(!parts.length) return raw;
-    let changed=false;
-    const out=parts.map(p=>{ if(normArt(p)===nd){ changed=true; return keepName; } return p; });
-    return changed ? out.join(', ') : raw;
-  };
+/* porta un nome d'artista ovunque compaia: movimenti, release (anche tracce e quote), pagamenti,
+   recoupment, contratti e link del portale. Ritorna quanti elementi ha cambiato. */
+function renameArtistRefs(oldName, newName, dry){
+  const nd=normArt(oldName); newName=(newName||'').trim(); if(!nd || !newName) return 0;
+  let n=0;
+  const fix=raw=>{ if(!raw) return raw; let ch=false;
+    const out=mapArtistNames(raw, p=>{ if(normArt(p)===nd && p!==newName){ ch=true; return newName; } return p; });
+    if(ch) n++; return (ch && !dry) ? out : raw; };
+  const one=v=>{ if(v && normArt(v)===nd && v!==newName){ n++; return dry ? v : newName; } return v; };
   (DB.transactions||[]).forEach(t=>{ t.artist=fix(t.artist); });
   (DB.releases||[]).forEach(r=>{
     r.artist=fix(r.artist);
-    (r.splits||[]).forEach(s=>{ if(normArt(s.name)===nd) s.name=keepName; });
-    (r.tracks||[]).forEach(tr=>{ tr.artist=fix(tr.artist); (tr.splits||[]).forEach(s=>{ if(normArt(s.name)===nd) s.name=keepName; }); });
+    (r.splits||[]).forEach(s=>{ s.name=one(s.name); });
+    (r.tracks||[]).forEach(tr=>{ tr.artist=fix(tr.artist); (tr.splits||[]).forEach(s=>{ s.name=one(s.name); }); });
   });
+  (DB.payouts||[]).forEach(p=>{ p.artist=one(p.artist); });
+  (DB.recoup||[]).forEach(r=>{ r.artist=one(r.artist); });
+  (DB.contracts||[]).forEach(c=>{ c.artistNames=fix(c.artistNames); c.projectName=one(c.projectName); });
+  const sh=labelShares(), ok=(oldName||'').trim().toLowerCase(), nk=newName.toLowerCase();
+  if(sh[ok] && ok!==nk && !dry){ if(!sh[nk]) sh[nk]=sh[ok]; delete sh[ok]; n++; }
+  return n;
+}
+function mergeArtists(keepName, dropName){
+  const nd=normArt(dropName); if(!nd) return;
+  renameArtistRefs(dropName, keepName);
+  // la scheda che resta prende i dati che le mancavano (IBAN, regime fiscale, email…)
+  const keep=(DB.artists||[]).find(a=>a.name===keepName), drop=(DB.artists||[]).find(a=>normArt(a.name)===nd && a.name!==keepName);
+  if(keep && drop) ['legal','email','phone','iban','address','note','photo','taxId','taxRegime','split'].forEach(f=>{ if(!keep[f] && drop[f]) keep[f]=drop[f]; });
   DB.artists=(DB.artists||[]).filter(a=>!(normArt(a.name)===nd && a.name!==keepName));
-  save(); renderArtists();
+  save(); renderArtists(); renderReleases(); renderRoyalties();
   toast(tt('art.dup_merged').replace('{name}',keepName));
 }
 let artDupDismissed=''; let _artDupPairs=[];
@@ -1695,7 +1787,11 @@ $('#rel-form').onsubmit=e=>{
     const tsplits=collectSplits(tb.querySelector('.track-splits'));
     const gv=cls=>{ const el=tb.querySelector('.'+cls); return el?el.value.trim():''; };
     const tWrit=gv('track-written'), tProd=gv('track-produced'), tMix=gv('track-mixed'), tMast=gv('track-mastered'), tDist=gv('track-distributed');
-    if(title||isrc||tsplits.length||tWrit||tProd||tMix||tMast||tDist) tracks.push({id:uid(), title, isrc, writtenBy:tWrit, producedBy:tProd, mixedBy:tMix, masteredBy:tMast, distributedBy:tDist, splits:tsplits});
+    if(title||isrc||tsplits.length||tWrit||tProd||tMix||tMast||tDist){
+      const tr={id:tb.dataset.tid||uid(), title, isrc, writtenBy:tWrit, producedBy:tProd, mixedBy:tMix, masteredBy:tMast, distributedBy:tDist, splits:tsplits};
+      if(tb.dataset.tartist) tr.artist=tb.dataset.tartist;
+      tracks.push(tr);
+    }
   });
   const orderDate=$('#r-order').value||'';
   const rec={ id:id||uid(), catalog:$('#r-catalog').value.trim(), title:$('#r-title').value.trim(),
@@ -1707,14 +1803,17 @@ $('#rel-form').onsubmit=e=>{
     type:$('#r-type').value||'SINGLE', distributedBy:$('#r-distributed').value.trim() };
   if(!rec.catalog){ toast(tt('t.cat_required')); return; }
   if(!rec.orderDate){ toast(tt('r.order_required')); return; }
-  // intelligenza: in creazione, avvisa se catalogo/UPC esiste già
-  if(!id){
-    const dup = releaseByCatalog(rec.catalog) || (rec.upc && releaseByUPC(rec.upc));
-    if(dup && !confirm(tt('rel.dup_confirm').replace('{cat}', dup.catalog||dup.title||'—'))) return;
-  }
+  const over=[splits, ...tracks.map(t=>t.splits)].find(l=>splitTot(l)>100);
+  if(over){ toast(tt('rel.split_over_block').replace('{n}', splitTot(over))); return; }
+  // intelligenza: avvisa se catalogo/UPC esiste già in un'altra release (anche in modifica)
+  { const cat=normCat(rec.catalog), upc=normUPC(rec.upc);
+    const dup = releases().find(r=>r.id!==id && ((cat && normCat(r.catalog)===cat) || (upc && normUPC(r.upc)===upc)));
+    const was = id && releases().find(r=>r.id===id);
+    const changed = !was || normCat(was.catalog)!==cat || normUPC(was.upc)!==upc;
+    if(dup && changed && !confirm(tt('rel.dup_confirm').replace('{cat}', dup.catalog||dup.title||'—'))) return; }
   // intelligenza: memorizza lo split per artista (riusato nelle release future)
   (splits||[]).forEach(s=>{ const nm=(s.name||'').trim(); if(!nm||!(+s.pct))return;
-    const a=(DB.artists||[]).find(x=>normArt(x.name)===normArt(nm)); if(a) a.split=+s.pct; });
+    const a=(DB.artists||[]).find(x=>normArt(x.name)===normArt(nm)); if(a && !(+a.split>0)) a.split=+s.pct; });
   const prevRel=id?releases().find(r=>r.id===id):null;
   // quote cambiate su una release con vendite in un periodo già chiuso: avvisa (cambierebbero statement inviati)
   if(prevRel && typeof perLockDate==='function' && perLockDate()){
@@ -1772,7 +1871,8 @@ function normTitle(s){ return (s||'').toString().toLowerCase()
   .replace(/\([^)]*\b(remaster(ed)?|deluxe|edition|version|mono|stereo|expanded|bonus|reissue|anniversary|original)\b[^)]*\)/g,'')
   .replace(/\[[^\]]*\]/g,'')
   .replace(/[^a-z0-9]+/g,' ').trim(); }
-function normArt(s){ return (s||'').toString().toLowerCase().replace(/\b(feat|ft|featuring)\.?\b.*$/,'').replace(/[^a-z0-9]+/g,' ').trim(); }
+function normArt(s){ return (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()
+  .replace(/\b(feat|ft|featuring)\.?\b.*$/,'').replace(/[^\p{L}\p{N}]+/gu,' ').trim(); }
 function relYear(r){ return (''+(r.year||r.orderDate||r.date||r.preorder||'')).slice(0,4); }
 function relMatch(a,b){
   const dig=s=>(s||'').toString().replace(/\D/g,'');
@@ -1793,10 +1893,27 @@ function relMatch(a,b){
   if(arBoth&&arS>=0.8) reasons.push('artist');
   return {score:Math.min(100,Math.max(0,score)), reasons};
 }
+/* quote proposte per una release nuova: "manual" → vuote (da scrivere a mano);
+   altrimenti la quota predefinita di ogni artista nominato, o il 50% diviso tra gli artisti */
+let relSplitMode='default';
+function relSplitsFor(raw){
+  if(relSplitMode==='manual') return [];
+  const names=splitArtistNames(raw).filter(n=>!/^various artists?$|^v\.?a\.?$/i.test(n)); if(!names.length) return [];
+  const defs=names.map(n=>{ const a=findArtist(n); return a && +a.split>0 ? +a.split : 0; });
+  if(defs.every(d=>d>0) && defs.reduce((x,y)=>x+y,0)<=100) return names.map((n,i)=>({name:n, pct:defs[i]}));
+  return names.map(n=>({name:n, pct:pctR(50/names.length)}));
+}
+function askSplitMode(run){
+  const m=$('#splitmode-modal'); if(!m){ run(); return; }
+  const done=mode=>{ m.hidden=true; if(!mode) return; relSplitMode=mode; try{ run(); } finally { relSplitMode='default'; } };
+  $('#sm-default').onclick=()=>done('default'); $('#sm-manual').onclick=()=>done('manual');
+  $('#sm-close').onclick=()=>done(null); m.onclick=e=>{ if(e.target===m) done(null); };
+  m.hidden=false;
+}
 function itemToRelease(it){
   const title=(it.title||'').trim(), artist=(it.artist||'').trim(), upc=(it.upc||'').trim(), catalog=(it.catalog||'').trim();
   const date=normDate(it.date||'');
-  const half = nm => nm ? [{name:nm, pct:50}] : [];   // default 50% artista / 50% label (resto)
+  const half = relSplitsFor;   // quote come scelto in "Quote degli artisti" (predefinite/50% oppure vuote)
   let tracks=[]; const seen=new Set();
   if(Array.isArray(it.tracks) && it.tracks.length){
     it.tracks.forEach(t=>{ const code=(t.isrc||'').trim(), k=code.toLowerCase();
@@ -1807,12 +1924,17 @@ function itemToRelease(it){
     tracks=(it.isrcs||[]).filter(Boolean).map(code=>({id:uid(), title:'', isrc:code, splits:half(artist)}));
   }
   const type = it.isVA ? 'VA' : (tracks.length>1 ? 'EP' : 'SINGLE');
-  const relSplits = (artist && !/^various artists?$/i.test(artist)) ? half(artist) : [];
+  const relSplits = (artist && !/^various artists?$/i.test(artist)) ? half(artist) : [];   // VA: quote solo per traccia
   return { id:uid(), catalog, title, artist, upc, orderDate:date, preorder:'', note:'',
     year:date?new Date(date+'T00:00:00').getFullYear():'',
     type, splits:relSplits, tracks };
 }
 function mergeRelInto(target, src){
+  // catalogo/UPC diversi della release che sparisce: restano come codici alternativi (le sue vendite non vanno perse)
+  const keepAlt=(f, list, norm)=>{ const v=(src[f]||'').trim(); if(v && target[f] && norm(v)!==norm(target[f])){ const l=target[list]=target[list]||[]; if(!l.some(x=>norm(x)===norm(v))) l.push(v); } };
+  keepAlt('catalog','altCatalogs',normCat); keepAlt('upc','altUpcs',normUPC);
+  (src.altCatalogs||[]).forEach(v=>{ const l=target.altCatalogs=target.altCatalogs||[]; if(!l.some(x=>normCat(x)===normCat(v))) l.push(v); });
+  (src.altUpcs||[]).forEach(v=>{ const l=target.altUpcs=target.altUpcs||[]; if(!l.some(x=>normUPC(x)===normUPC(v))) l.push(v); });
   ['catalog','title','artist','upc','orderDate','preorder','year','note','exclusive','exclusivePlatform'].forEach(f=>{ if(!target[f] && src[f]) target[f]=src[f]; });
   if((!target.splits||!target.splits.length) && src.splits&&src.splits.length) target.splits=src.splits;
   const seen=new Set((target.tracks||[]).map(t=>(t.isrc||'').toLowerCase()).filter(Boolean));
@@ -1821,10 +1943,10 @@ function mergeRelInto(target, src){
   if((target.tracks||[]).length>1 && (!target.type || target.type==='SINGLE')) target.type='EP';
 }
 function collectNewArtists(items){
-  const exist=new Set((DB.artists||[]).map(a=>(a.name||'').toLowerCase()));
+  const exist=new Set((DB.artists||[]).map(a=>normArt(a.name)));
   const seen=new Set(), out=[];
-  const add=raw=>{ (raw? (''+raw).split(/,|&|;| feat\.?| ft\.?| x /i):[]).map(s=>s.trim()).filter(Boolean)
-    .forEach(nm=>{ if(/^various artists?$|^v\.?a\.?$/i.test(nm)) return; const lk=nm.toLowerCase(); if(exist.has(lk)||seen.has(lk)) return; seen.add(lk); out.push({id:newId(), name:nm, split:''}); }); };
+  const add=raw=>{ splitArtistNames(raw)
+    .forEach(nm=>{ if(/^various artists?$|^v\.?a\.?$/i.test(nm)) return; const lk=normArt(nm); if(!lk||exist.has(lk)||seen.has(lk)) return; seen.add(lk); out.push({id:newId(), name:nm, split:''}); }); };
   items.forEach(it=>{ add(it.artist); (it.tracks||[]).forEach(t=>add(t.artist)); });
   return out;
 }
@@ -1936,8 +2058,6 @@ async function catOnlineImport(){
   const res=await window.LF_catalogSearch({action:'fetch', picks});
   if(btn){ btn.disabled=false; btn.textContent=tt('cimp.fetch'); }
   if(!res||res.error||!res.releases){ toast(tt('cimp.search_fail')+(res&&res.error?` (${res.error})`:'')); return; }
-  const r=importReleasesData(res.releases, true);
-  if(!r.review) toast(tt('cimp.done').replace('{rel}',r.relNew).replace('{art}',r.artNew).replace('{dup}',r.relDup));
   let hadErr=false, diag='';
   if(res.sources){ const s=res.sources; const p=[];
     if(picks.mb.length) p.push('MusicBrainz: '+(s.musicbrainz.err?('⚠ '+esc(s.musicbrainz.err)):s.musicbrainz.n));
@@ -1946,7 +2066,10 @@ async function catOnlineImport(){
     diag=p.join('<br>'); hadErr=!!(s.musicbrainz.err||s.discogs.err||s.spotify.err);
   }
   if(hadErr){ const box=$('#catimp-results'); if(box) box.insertAdjacentHTML('beforeend', `<p class="ai-err" style="margin-top:10px">${diag}</p>`); }
-  else if(!r.review) $('#catimp-modal').hidden=true;
+  if(!res.releases.length) return;
+  askSplitMode(()=>{ const r=importReleasesData(res.releases, true);
+    if(!r.review) toast(tt('cimp.done').replace('{rel}',r.relNew).replace('{art}',r.artNew).replace('{dup}',r.relDup));
+    if(!hadErr && !r.review) $('#catimp-modal').hidden=true; });
 }
 function catImpRenderMaps(){
   const opts=(sel)=>['<option value="-1">—</option>'].concat(catImpHeaders.map((h,i)=>`<option value="${i}" ${i===sel?'selected':''}>${esc(h||('Col '+(i+1)))}</option>`)).join('');
@@ -1978,9 +2101,9 @@ function catImpLoad(file){ const rd=new FileReader();
   if(drop){ ['dragover','dragenter'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('drag');}));
     ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('drag');}));
     drop.addEventListener('drop',e=>{ const f=e.dataTransfer.files[0]; if(f) catImpLoad(f); }); }
-  if($('#catimp-do')) $('#catimp-do').onclick=()=>{ const r=catImpCompute(true);
+  if($('#catimp-do')) $('#catimp-do').onclick=()=>askSplitMode(()=>{ const r=catImpCompute(true);
     $('#catimp-modal').hidden=true;
-    if(!r.review) toast(tt('cimp.done').replace('{rel}',r.relNew).replace('{art}',r.artNew).replace('{dup}',r.relDup)); };
+    if(!r.review) toast(tt('cimp.done').replace('{rel}',r.relNew).replace('{art}',r.artNew).replace('{dup}',r.relDup)); });
 })();
 
 /* ============================================================================
@@ -2024,15 +2147,18 @@ function openDupModal(){ if(!dupState) return;
   renderDupList(); $('#dup-modal').hidden=false; }
 function closeDupModal(){ $('#dup-modal').hidden=true; dupState=null; }
 function dupAutoMerge(){ if(!dupState) return;
-  dupState.conflicts.forEach(c=>{ if(c.score>=DUP_AUTO) c.decision='merge'; }); renderDupList(); }
+  // in automatico solo se non ci sono due cataloghi diversi (sarebbero due release vere, es. originale e remaster)
+  dupState.conflicts.forEach(c=>{ const a=normCat(c.target&&c.target.catalog), b=normCat(c.incoming&&c.incoming.catalog);
+    if(c.score>=DUP_AUTO && !(a && b && a!==b)) c.decision='merge'; }); renderDupList(); }
 function dupApply(){
   if(!dupState) return;
   if(dupState.mode==='existing'){
     const del=new Set(); let merged=0;
     dupState.conflicts.forEach(c=>{ if(c.decision==='merge' && !del.has(c.target.id) && !del.has(c.incoming.id)){ mergeRelInto(c.target,c.incoming); del.add(c.incoming.id); merged++; } });
-    if(del.size) DB.releases=releases().filter(r=>!del.has(r.id));
+    const tid=del.size ? trashRemove('releases', [...del]) : null;   // nel cestino: si può annullare
     save(); renderReleases(); renderRoyalties();
-    toast(tt('dup.applied').replace('{m}',merged).replace('{k}',dupState.conflicts.length-merged).replace('{s}',0));
+    const msg=tt('dup.applied').replace('{m}',merged).replace('{k}',dupState.conflicts.length-merged).replace('{s}',0);
+    if(tid) undoToast(msg, tid); else toast(msg);
   } else {
     const {conflicts,toAdd,newArtists}=dupState;
     toAdd.forEach(r=>releases().push(r));
@@ -2140,7 +2266,9 @@ function enrichApply(){
 function computeRange(sel, fromEl, toEl){
   const p=sel.value, now=new Date(), today=isoD(now);
   if(p==='all') return {from:null,to:null};
-  if(p==='custom') return {from:(fromEl&&fromEl.value)||null, to:(toEl&&toEl.value)||today};
+  if(p==='custom'){ let f=(fromEl&&fromEl.value)||null, t=(toEl&&toEl.value)||today;
+    if(f && t && f>t){ const x=f; f=t; t=x; }   // date al contrario: si scambiano invece di dare 0
+    return {from:f, to:t}; }
   let from;
   if(p==='ytd') from=new Date(now.getFullYear(),0,1);
   else if(p==='12m') from=new Date(now.getFullYear(),now.getMonth()-11,1);
@@ -2233,11 +2361,14 @@ function recordPayout(key){
   if(raw===null) return;
   const amount=Math.round(parseAmount(raw, uiDec())*100)/100;
   if(!(amount>0)){ toast(tt('pay.mark_invalid')); return; }
+  // più del saldo: la differenza diventa un credito che si scala dalle royalty future
+  if(amount>r.payable+0.005 && !confirm(tt('pay.over_q').replace('{amt}', fmtMoney(amount)).replace('{bal}', fmtMoney(r.payable)).replace('{diff}', fmtMoney(amount-r.payable)))) return;
   DB.payouts=DB.payouts||[];
   const po={ id:uid(), artist:r.name, amount, date:todayISO(), note:'' };
   // ritenuta d'acconto (money.js): calcolo, conferma del netto e promemoria F24
   if(typeof whApplyToPayout==='function' && !whApplyToPayout(po)) return;
   DB.payouts.push(po);
+  if(typeof ensureReceiptNumbers==='function') ensureReceiptNumbers((po.date||'').slice(0,4));
   save(); renderRoyalties(); toast(tt('pay.marked').replace('{name}',r.name).replace('{amt}',fmtMoney(amount)));
 }
 function renderPayouts(){
@@ -2341,7 +2472,8 @@ function statementHTML(st){
    ${(st.paidToDate>0||st.paidInPeriod>0)?`<table class="stmt-sum"><tbody>
       <tr><td>${tt('stmt.paid_period')}</td><td class="r">${fmtMoney(st.paidInPeriod)}</td></tr>
       <tr><td>${tt('stmt.paid_total')}</td><td class="r">${fmtMoney(st.paidToDate)}</td></tr>
-      <tr><td><b>${tt('stmt.balance')}</b></td><td class="r"><b>${fmtMoney(st.balance)}</b></td></tr></tbody></table>`:''}
+      <tr><td><b>${tt('stmt.balance')}</b></td><td class="r"><b>${fmtMoney(st.balance)}</b></td></tr>
+      ${st.overpaid>0.005?`<tr><td>${tt('stmt.overpaid')}</td><td class="r">${fmtMoney(st.overpaid)}</td></tr>`:''}</tbody></table>`:''}
    ${st.lines.some(l=>l.late)?`<p class="stmt-note">* ${tt('per.late_note')}</p>`:''}
    <p class="stmt-note">${tt('stmt.note')}</p>
    <p class="stmt-foot">${tt('stmt.gen')} Label Finance · ${esc(labelName())} · ${fmtDate(isoD(new Date()))}</p>`;
@@ -2353,7 +2485,7 @@ $('#roy-detail-pdf').onclick=()=>{
   const fname=`${safe(labelName())||'Label'} – Statement ${safe(st.name)}`;
   const host=document.createElement('div');
   host.style.cssText='position:fixed;left:-9999px;top:0;width:800px;background:#fff';
-  host.innerHTML=`<div class="stmt-pdf">${statementHTML(st)}</div>`;
+  host.innerHTML=`<div class="stmt-pdf" style="width:${PDF_W8}px">${statementHTML(st)}</div>`;
   document.body.appendChild(host);
   if(typeof html2pdf==='undefined'){
     $('#print-area').innerHTML=host.firstElementChild.outerHTML; host.remove();
@@ -2397,7 +2529,7 @@ function openTx(id){
   $('#tx-modal-title').textContent = t ? tt('tx.modal.edit') : (curKind==='expense'?tt('tx.modal.new_exp'):tt('tx.modal.new_inc'));
   const k = t ? t.kind : curKind;
   $('#f-id').value=t?.id||''; $('#f-kind').value=k;
-  $('#f-date').value=t?.date||isoD(new Date());
+  $('#f-date').value=t ? (t.date||'') : isoD(new Date());
   $('#f-dateto').value=t?.dateTo||'';
   $('#f-platform').value=t?.platform||''; $('#f-type').value=t?.type||(k==='expense'?'expense':'digital');
   $('#f-catalog').value=t?.catalog||''; $('#f-product').value=t?.product||'';
@@ -2422,16 +2554,17 @@ function openTx(id){
 const EXP_CATS=['production','promo','distribution','artwork','manufacturing','shipping','software','fees','travel','other'];
 const EXP_RULES=[
   ['production',['master','mastering','mix','mixing','record','recording','studio','registrazion','produzion','beat','vocal','tracking','session','sound design']],
-  ['promo',['adv','ads','advert','promo','marketing','playlist',' pr ','pubblicit','influencer','sponsor','campaign','campagn','facebook','google ads','tiktok ad','meta ads','spotify ad']],
+  ['promo',['adv','ads','advert','promo','marketing','playlist',' pr ','pubblicit','influencer','sponsor','campaign','campagn','facebook','google ads','tiktok ad','meta ads','spotify ad','ufficio stampa','press office','pr agency','plugging','plugger','radio promo','blog','magazine','boost','instagram','youtube ads','submithub','groover']],
   ['distribution',['distrokid','distribut','distribuz','tunecore','cd baby','cdbaby','believe','label engine','aggregat','symphonic','ditto','spinnup']],
-  ['artwork',['artwork','cover','design','grafic','foto','photo','video','videoclip','visual','logo','render','3d']],
+  ['artwork',['artwork','cover','design','grafic','foto','photo','video','videoclip','visual','logo','render','3d','riprese','montaggio','shooting','fotograf','illustra']],
   ['manufacturing',['vinyl','vinile','pressing','press','stampa','duplicat','manifattur','test pressing','lacquer','cd duplica']],
   ['shipping',['shipping','spedizion','courier','corriere','postage','affranc','dhl','ups','fedex','poste','tracking number']],
-  ['software',['software','plugin','subscription','abbonament','saas','licens','licenz','canva','adobe','splice','app store','membership']],
-  ['fees',['fee','commission','commissione','bank','banca','paypal','stripe','wise','process','tassa',' iva',' vat','withhold','ritenut','bonifico','imposta']],
-  ['travel',['travel','viaggio','hotel','flight','volo','treno','train','fuel','benzina','trasfert','taxi','rental','noleggio','soggiorno']],
+  ['software',['software','plugin','subscription','abbonament','saas','licens','licenz','canva','adobe','splice','app store','membership','dropbox','google workspace','notion','hosting','dominio','domain','website','sito web','wix','squarespace','shopify']],
+  ['fees',['fee','commission','commissione','bank','banca','paypal','stripe','wise','process','tassa',' iva',' vat','withhold','ritenut','bonifico','imposta','siae','soundreef','gema','sacem','sgae','canone conto','canone']],
+  ['travel',['travel','viaggio','hotel','flight','volo','treno','train','fuel','benzina','trasfert','taxi','rental','noleggio','soggiorno','aereo','ryanair','easyjet','airbnb','pedaggio','toll','parcheggio','parking','autostrada','uber','furgone']],
 ];
 function expenseCategory(t){
+  if(t && t.cat && EXP_CATS.includes(t.cat)) return t.cat;   // categoria presa dal foglio importato
   if(t&&t.type==='merch') return 'manufacturing';
   const hay=(' '+((t&&t.product)||'')+' '+((t&&t.note)||'')+' '+((t&&t.platform)||'')+' '+((t&&t.type)||'')+' ').toLowerCase();
   for(const [cat,kws] of EXP_RULES){ if(kws.some(k=>hay.includes(k))) return cat; }
@@ -2449,8 +2582,9 @@ $('#f-type')?.addEventListener('change',updateExpCatHint);
 let curKind='income';
 $('#btn-add-income').onclick=()=>{curKind='income';openTx(null);};
 $('#btn-add-expense').onclick=()=>{curKind='expense';openTx(null);};
-$('#tx-modal-close').onclick=$('#f-cancel').onclick=()=>$('#tx-modal').hidden=true;
-$('#tx-modal').onclick=e=>{ if(e.target.id==='tx-modal') $('#tx-modal').hidden=true; };
+const txModalClose=()=>{ $('#tx-modal').hidden=true; if(!$('#f-id').value && typeof attDropPending==='function') attDropPending(); };
+$('#tx-modal-close').onclick=$('#f-cancel').onclick=txModalClose;
+$('#tx-modal').onclick=e=>{ if(e.target.id==='tx-modal') txModalClose(); };
 $('#f-delete').onclick=()=>{
   const id=$('#f-id').value;
   const cur=DB.transactions.find(t=>t.id===id);
@@ -2483,6 +2617,13 @@ $('#tx-form').onsubmit=e=>{
     net:parseAmount($('#f-net').value, '.'), csShare:parseAmount($('#f-csshare').value, '.'),
     currency:($('#f-currency').value||'EUR').toUpperCase().slice(0,3), note:$('#f-note').value.trim(),
   };
+  // controlli: valuta vera (anche "€" o "$"), anno a 4 cifre, importi plausibili, spese sempre positive
+  const cur=normCur($('#f-currency').value||'EUR','');
+  if(!cur){ toast(tt('tx.cur_invalid')); return; }
+  rec.currency=cur;
+  if(rec.date && (rec.date.slice(0,4)<'2000' || rec.date.slice(0,4)>'2100')){ toast(tt('tx.date_invalid')); return; }
+  if([rec.net,rec.gross,rec.fees].some(v=>Math.abs(+v||0)>1e9)){ toast(tt('tx.amount_invalid')); return; }
+  if(rec.kind==='expense') rec.net=Math.abs(rec.net);
   if(!id){ const an=txAmountAnomaly(rec.net, rec.kind);
     if(an && !confirm(tt('tx.anomaly_confirm').replace('{v}',fmtMoney(an.v)).replace('{m}',fmtMoney(an.med)))) return; }
   const prev=id?DB.transactions.find(t=>t.id===id):null;
@@ -2494,7 +2635,7 @@ $('#tx-form').onsubmit=e=>{
   else DB.transactions.push(rec);
   // uscita ricorrente: crea la regola che si ripeterà da sola
   if(!id && rec.kind==='expense' && $('#f-recurring')?.checked){
-    const tpl={...rec}; delete tpl.id; delete tpl.date; delete tpl.dateTo; delete tpl._recur;
+    const tpl={...rec}; delete tpl.id; delete tpl.date; delete tpl.dateTo; delete tpl._recur; delete tpl.att;   // ogni mese la sua ricevuta
     const freq=$('#f-recur-freq')?.value||'monthly';
     DB.recurring=DB.recurring||[];
     DB.recurring.push({ id:newId(), active:true, freq, tpl, anchor:rec.date, nextDate:recurAddPeriod(rec.date, freq, recurAnchorDay({anchor:rec.date})) });
@@ -2600,32 +2741,198 @@ $('#file-input').onchange=e=>{ if(e.target.files[0]) readFile(e.target.files[0])
 ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('drag');}));
 drop.addEventListener('drop',e=>{ const f=e.dataTransfer.files[0]; if(f) readFile(f); });
 
+/* ---------- Excel .xlsx senza librerie: zip (DecompressionStream) + XML del foglio ---------- */
+async function xlsxRead(buf){
+  const u8=new Uint8Array(buf), dv=new DataView(buf), dec=new TextDecoder();
+  let eocd=-1; for(let i=u8.length-22; i>=Math.max(0,u8.length-65557); i--){ if(dv.getUint32(i,true)===0x06054b50){ eocd=i; break; } }
+  if(eocd<0) throw new Error('zip');
+  const files=new Map(); let p=dv.getUint32(eocd+16,true);
+  for(let k=0, n=dv.getUint16(eocd+10,true); k<n && dv.getUint32(p,true)===0x02014b50; k++){
+    const nl=dv.getUint16(p+28,true), xl=dv.getUint16(p+30,true), cl=dv.getUint16(p+32,true);
+    files.set(dec.decode(u8.subarray(p+46,p+46+nl)), { method:dv.getUint16(p+10,true), size:dv.getUint32(p+20,true), at:dv.getUint32(p+42,true) });
+    p+=46+nl+xl+cl;
+  }
+  const read=async name=>{ const e=files.get(name); if(!e) return '';
+    const st=e.at+30+dv.getUint16(e.at+26,true)+dv.getUint16(e.at+28,true), data=u8.subarray(st, st+e.size);
+    if(e.method===0) return dec.decode(data);
+    return await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text(); };
+  const xml=t=>new DOMParser().parseFromString(t||'<x/>','application/xml');
+  const kids=(el,tag)=>[...el.getElementsByTagName(tag)];
+  const wb=xml(await read('xl/workbook.xml')), rels=xml(await read('xl/_rels/workbook.xml.rels'));
+  const d1904=kids(wb,'workbookPr').some(e=>/^(1|true)$/.test(e.getAttribute('date1904')||''));
+  const shared=kids(xml(await read('xl/sharedStrings.xml')),'si').map(si=>kids(si,'t').map(t=>t.textContent).join(''));
+  // stili con formato data (giorni seriali → AAAA-MM-GG)
+  const st=xml(await read('xl/styles.xml')), custom={};
+  kids(st,'numFmt').forEach(f=>{ custom[f.getAttribute('numFmtId')]=f.getAttribute('formatCode')||''; });
+  const isDateFmt=id=>{ id=+id; if((id>=14&&id<=22)||(id>=27&&id<=36)||(id>=45&&id<=47)||(id>=50&&id<=58)) return true;
+    const c=(custom[id]||'').replace(/"[^"]*"|\[[^\]]*\]|\\./g,''); return /[dy]/i.test(c) || /m{3,}/i.test(c); };
+  const xfs=kids(st,'cellXfs')[0]; const dateStyle=xfs ? kids(xfs,'xf').map(x=>isDateFmt(x.getAttribute('numFmtId'))) : [];
+  const toISO=n=>{ const ms=(d1904?Date.UTC(1904,0,1):Date.UTC(1899,11,30))+Math.floor(+n)*864e5; return new Date(ms).toISOString().slice(0,10); };
+  const colIdx=ref=>{ const m=/^([A-Z]+)/.exec(ref||''); let n=0; if(m) for(const ch of m[1]) n=n*26+ch.charCodeAt(0)-64; return n-1; };
+  const relTarget=id=>{ const r=kids(rels,'Relationship').find(x=>x.getAttribute('Id')===id); const t=r?r.getAttribute('Target'):''; return t.startsWith('/')?t.slice(1):'xl/'+t.replace(/^\.\//,''); };
+  const sheets=[];
+  for(const sh of kids(wb,'sheet')){
+    const rid=sh.getAttribute('r:id')||sh.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id');
+    const doc=xml(await read(relTarget(rid))); const rows=[];
+    kids(doc,'row').forEach(r=>{ const out=[];
+      kids(r,'c').forEach(c=>{ const i=colIdx(c.getAttribute('r')), t=c.getAttribute('t'), v=(c.getElementsByTagName('v')[0]||{}).textContent;
+        let val='';
+        if(t==='s') val=shared[+v]||''; else if(t==='inlineStr') val=kids(c,'t').map(x=>x.textContent).join('');
+        else if(t==='b') val=v==='1'?'TRUE':'FALSE'; else if(t==='str'||t==='e') val=v||'';
+        else if(v!=null && v!==''){ val = dateStyle[+(c.getAttribute('s')||0)] ? toISO(v) : String(Math.round(+v*1e9)/1e9); }
+        if(i>=0){ while(out.length<i) out.push(''); out[i]=val; } });
+      if(out.some(x=>String(x).trim()!=='')) rows.push(out.map(x=>String(x))); });
+    sheets.push({ name:sh.getAttribute('name')||('Sheet '+(sheets.length+1)), rows });
+  }
+  return sheets;
+}
+// testo del CSV: UTF-8, altrimenti Windows-1252 (CSV salvati da Excel in italiano)
+function decodeText(buf){ try{ return new TextDecoder('utf-8',{fatal:true}).decode(buf); }catch(e){ return new TextDecoder('windows-1252').decode(buf); } }
+let importSheets=null, importAll=[], importFileName='', importCatMap={}, importRemembered=false;
+// firma delle colonne: lo stesso tipo di file (stesse intestazioni) riusa le scelte confermate l'ultima volta
+const importSig=()=>importHeaders.map(colNorm).join('|');
+// categoria di un valore del foglio: scelta in questo import, poi imparata nei precedenti, poi riconosciuta
+function catForImport(txt){ const k=String(txt||'').trim().toLowerCase(); if(!k) return null;
+  return importCatMap[k] || (DB.catMap||{})[k] || expCatFromText(k); }
+/* piattaforme scritte in modi diversi ("SPOTIFY", "Spotify AB") → un solo nome */
+const KNOWN_PLATFORMS=['Spotify','Apple Music','iTunes','Amazon Music','Amazon','YouTube Music','YouTube','Deezer','Tidal','Bandcamp','Beatport','Traxsource','SoundCloud','TikTok','Instagram','Facebook','Meta','Napster','Pandora','Anghami','Boomplay','Juno Download','Qobuz','Shazam','Snapchat','Twitch','Audiomack','JioSaavn','iHeartRadio','SiriusXM','Discogs','PayPal','Stripe','DistroKid','TuneCore','CD Baby','Believe','Symphonic','Ditto','Label Engine','Revolut','N26','Wise'];
+const PLAT_RE=KNOWN_PLATFORMS.map(p=>[p, new RegExp('^'+p.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?![a-z])','i')]);
+let platKnown=null, platMemo=new Map();
+function canonPlatform(s){ s=String(s||'').trim(); if(!s) return s; if(platMemo.has(s)) return platMemo.get(s); const r=canonPlatform0(s); platMemo.set(s, r); return r; }
+function canonPlatform0(s){ const k=colNorm(s);
+  if(!platKnown){ platKnown=new Map(); (DB.transactions||[]).forEach(t=>{ if(t.platform){ const n=colNorm(t.platform); if(!platKnown.has(n)) platKnown.set(n, t.platform); } }); }
+  for(const [p,re] of PLAT_RE){ if(colNorm(p)===k || re.test(s)) return p; }
+  return platKnown.get(k) || s; }
 function readFile(file){
   const r=new FileReader();
-  r.onload=()=>{ window._rawCSV=r.result; refreshParse(); $('#import-config').hidden=false;
+  r.onload=async ()=>{
+    const buf=r.result, u8=new Uint8Array(buf);
+    importSheets=null; window._rawCSV=''; importFileName=file.name.replace(/\.[^.]+$/,''); importCatMap={}; importShowAll=false;
+    if(/\.xls$/i.test(file.name)){ toast(tt('imp.xls_old')); return; }
+    if(u8[0]===0x50 && u8[1]===0x4b){   // "PK": file zip = Excel .xlsx
+      try{ importSheets=(await xlsxRead(buf)).filter(s=>s.rows.length); }catch(e){ importSheets=null; }
+      if(!importSheets || !importSheets.length){ toast(tt('imp.xlsx_fail')); return; }
+    } else window._rawCSV=decodeText(buf);
+    // ogni file riparte dalle impostazioni automatiche (non quelle del file precedente)
+    $('#map-kind').value='income'; $('#map-datefmt').value='auto'; $('#map-platform').value=''; $('#map-delim').value='auto';
+    if($('#map-preset')) $('#map-preset').value='';
+    const sw=$('#map-sheet-wrap'), ss=$('#map-sheet');
+    if(sw && ss){ sw.hidden=!(importSheets && importSheets.length>1);
+      ss.innerHTML=(importSheets||[]).map((x,i)=>`<option value="${i}">${esc(x.name)}</option>`).join(''); }
+    const dw=$('#map-delim'); if(dw) dw.closest('label').hidden=!!importSheets;
+    refreshParse(true); $('#import-config').hidden=false;
     populatePresets(); $('#map-preset-name').value=file.name.replace(/\.[^.]+$/,''); };
-  r.readAsText(file);
+  r.readAsArrayBuffer(file);
 }
-function refreshParse(){
-  const rows=parseCSV(window._rawCSV||'', $('#map-delim').value);
-  importHeaders=rows[0]||[]; importRows=rows.slice(1);
+// riga d'intestazione: la prima (tra le prime 15) con almeno 2 nomi di colonna riconosciuti
+function detectHeaderRow(rows){
+  const all=Object.values(HINTS).flat().map(colNorm).filter(k=>k.length>=3);
+  let best=0, bestScore=1;
+  rows.slice(0,15).forEach((r,i)=>{ const sc=r.filter(c=>{ const h=colNorm(c); return h && h.length<40 && all.some(k=>h===k || (k.length>=4 && h.includes(k))); }).length;
+    if(sc>bestScore){ best=i; bestScore=sc; } });
+  return best;
+}
+function refreshParse(fresh){
+  if(fresh && $('#map-kind')) $('#map-kind').value='income';
+  importAll = importSheets ? ((importSheets[+($('#map-sheet')||{}).value||0]||importSheets[0]).rows) : parseCSV(window._rawCSV||'', $('#map-delim').value);
+  const hs=$('#map-header');
+  if(hs){ if(fresh || !hs.options.length || hs.dataset.n!==String(importAll.length)){
+      const h=detectHeaderRow(importAll); hs.dataset.n=String(importAll.length);
+      hs.innerHTML=importAll.slice(0,15).map((r,i)=>`<option value="${i}">${esc(tt('imp.header_row').replace('{n}', i+1))} — ${esc(r.filter(Boolean).slice(0,3).join(' · ').slice(0,60))}</option>`).join('');
+      hs.value=String(h); } }
+  const hr=hs ? (+hs.value||0) : 0;
+  importHeaders=importAll[hr]||[]; importRows=importAll.slice(hr+1);
   const distro=detectDistro();
-  if(distro){ $('#map-distro').value=distro; applyDistro(distro); }
-  else { $('#map-distro').value='auto'; buildMapFields(autoMap(importHeaders)); }
+  $('#map-distro').value=distro||'auto';
+  let map=smartMap(distro ? distroMap(distro) : autoMap(importHeaders));
+  autoKindMode(map, distro);
+  // stesso tipo di file già importato: le scelte confermate allora valgono anche adesso
+  const mem=(DB.autoMaps||{})[importSig()]; importRemembered=false;
+  if(mem && mem.map && Object.values(mem.map).every(i=>i<importHeaders.length)){
+    map=Object.assign({}, mem.map); importRemembered=true;
+    if(mem.kind) $('#map-kind').value=mem.kind; if(mem.datefmt) $('#map-datefmt').value=mem.datefmt;
+    $('#map-platform').value=mem.platform||''; if(mem.currency) $('#map-currency').value=mem.currency;
+  }
+  buildMapFields(map);
   renderPreview();
 }
-$('#map-delim').onchange=refreshParse;
+/* ---------- Riconoscimento dal contenuto: guarda i valori, non solo i nomi delle colonne ----------
+   Completa le colonne rimaste senza campo: date, importi, valute, ISRC, UPC, paesi, Entrata/Uscita,
+   categorie di spesa, descrizione. Prudente: assegna solo quando quasi tutti i valori tornano. */
+function colSample(i){ return importRows.slice(0,300).map(r=>String((r||[])[i]??'').trim()).filter(Boolean); }
+function smartMap(map){
+  map=Object.assign({}, map); const used=new Set(Object.values(map));
+  importHeaders.forEach((h,i)=>{ if(MAP_SKIP.has(colNorm(h))) used.add(i); });   // colonne di servizio (Pagato, Metodo pagamento…)
+  const n=importHeaders.length, free=[...Array(n).keys()].filter(i=>!used.has(i));
+  const share=(vals,test)=>vals.length ? vals.filter(test).length/vals.length : 0;
+  const take=(f,i)=>{ if(map[f]==null && i!=null && i>-1 && !used.has(i)){ map[f]=i; used.add(i); } };
+  const isNum=v=>/^[-+(]?\s*[€$£¥]?\s*-?\d[\d.,'\s]*\s*[€$£¥]?\)?$/.test(v) && !/^\d{12,13}$/.test(v);
+  const isDate=v=>/^\d{4}-\d{2}-\d{2}/.test(v) || /^\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4}$/.test(v) || (/^\d{5}$/.test(v) && +v>30000 && +v<60000)
+    || (v.length<=30 && /\d/.test(v) && /[a-zà-ü]{3}/i.test(v) && !!LFCore.parseDate(v) && /\b(19|20)\d{2}\b/.test(v));   // "29 nov 2025", "Mar 1, 2026" 
+  const kindLike=i=>{ const v=colSample(i).slice(0,60); return v.length && v.filter(x=>kindFromText(x)!=null && x.length<=12).length/v.length>=0.9; };
+  if(map.kind==null && map.type!=null && kindLike(map.type)){ map.kind=map.type; delete map.type; }
+  const S={}; free.forEach(i=>{ S[i]=colSample(i); });
+  const pick=(test, min=0.85)=>free.find(i=>!used.has(i) && S[i].length && share(S[i],test)>=min);
+  take('date', pick(isDate));
+  take('isrc', pick(v=>ISRC_RE.test(v.replace(/[-\s]/g,''))));
+  take('upc', pick(v=>/^\d{12,13}$/.test(v.replace(/\s/g,''))));
+  take('currency', pick(v=>v.length<=4 && !!normCur(v,'')));
+  take('territory', pick(v=>/^[A-Z]{2}$/.test(v), 0.9));
+  take('kind', pick(v=>kindFromText(v)!=null && v.length<=12, 0.9));
+  // importo: la colonna numerica con più decimali (a parità, la più a destra)
+  if(map.net==null && map.gross==null && map.amountIn==null && map.amountOut==null){
+    const nums=free.filter(i=>!used.has(i) && S[i].length && share(S[i],isNum)>=0.85);
+    const dec=i=>share(S[i], v=>/[.,]\d{1,2}\)?\s*[€$£¥]?$/.test(v));
+    nums.sort((a,b)=>dec(b)-dec(a) || b-a);
+    take('net', nums[0]);
+  }
+  // categoria: testo con pochi valori diversi che somigliano a categorie di spesa
+  { const c=free.find(i=>{ if(used.has(i)) return false; const v=S[i]; if(v.length<3) return false; const d=new Set(v.map(x=>x.toLowerCase()));
+      return d.size<=Math.max(3, v.length*0.4) && d.size<=40 && share([...d], x=>!!expCatFromText(x))>=0.5; });
+    take('category', c); }
+  // "Prodotto" che contiene sempre lo stesso valore (es. "Current" di Revolut): meglio una colonna di testo più varia
+  if(map.product!=null){ const pv=colSample(map.product); const d=new Set(pv).size;
+    if(pv.length>=4 && d<=2){ const alt=free.find(i=>!used.has(i) && S[i].length && new Set(S[i]).size>=Math.max(3,d*3) && share(S[i], v=>!isNum(v) && !isDate(v))>=0.8);
+      if(alt!=null){ used.delete(map.product); delete map.product; } } }
+  // descrizione: la colonna di testo più varia e più lunga
+  if(map.product==null){
+    const txt=free.filter(i=>!used.has(i) && S[i].length && share(S[i], v=>!isNum(v) && !isDate(v))>=0.8);
+    const score=i=>100*new Set(S[i]).size/Math.max(1,S[i].length) + S[i].reduce((a,v)=>a+v.length,0)/Math.max(1,S[i].length);
+    txt.sort((a,b)=>score(b)-score(a)); take('product', txt[0]);
+  }
+  return map;
+}
+// entrata/uscita decise da sole: colonna "Entrata/Uscita" → riga per riga; foglio di spese → uscite;
+// importi sia positivi sia negativi in un foglio non di distributore → dal segno
+function autoKindMode(map, distro){
+  const sel=$('#map-kind'); if(!sel) return;
+  if(map.amountIn!=null || map.amountOut!=null){ sel.value='inout'; return; }   // due colonne: Entrate / Uscite (Dare / Avere)
+  if(map.kind!=null){ const vals=colSample(map.kind).slice(0,60);
+    if(vals.length && vals.filter(v=>kindFromText(v)!=null).length/vals.length>=0.9){ sel.value='col'; return; } }
+  if(distro && !(DISTRO_PRESETS[distro]||{}).sign) return;   // report dei distributori: un negativo è un rimborso, resta entrata
+  const amtCol=map.net!=null ? map.net : map.gross;
+  const vals=amtCol!=null ? colSample(amtCol).map(v=>parseAmount(v, LFCore.detectDecimalSep(colSample(amtCol)))).filter(v=>v) : [];
+  const neg=vals.filter(v=>v<0).length, pos=vals.length-neg;
+  const hay=colNorm(importHeaders.join(' ')+' '+(($('#map-sheet')&&$('#map-sheet').selectedOptions[0]||{}).textContent||'')+' '+importFileName);
+  const expWords=/spes|uscit|expense|cost|acquist|fattur|ricevut|purchase|outgo/.test(hay);
+  if(vals.length && neg && pos && neg/vals.length>=0.1) sel.value='sign';
+  else if(map.category!=null || expWords || (vals.length && neg===vals.length)) sel.value='expense';
+}
+$('#map-delim').onchange=()=>refreshParse(true);
+$('#map-header')?.addEventListener('change',()=>refreshParse(false));
+$('#map-sheet')?.addEventListener('change',()=>refreshParse(true));
 ['#map-kind','#map-datefmt','#map-currency','#map-platform'].forEach(s=>$(s).addEventListener('input',renderPreview));
+$('#map-kind')?.addEventListener('change',()=>{ buildMapFields(currentMap()); renderPreview(); });
 
 /* ---------- Preset distributori (riconoscimento automatico colonne) ---------- */
 const DISTRO_PRESETS={
   bandcamp:{ name:'Bandcamp', platform:'Bandcamp', datefmt:'mdy', fields:{
     date:['date'], type:['item type'], artist:['artist'], product:['item name'],
     catalog:['catalog number','catalog'], upc:['upc'], qty:['quantity'],
-    gross:['item total','sub total','item price'], fees:['transaction fee'],
+    gross:['sub total','item total','item price'], fees:['transaction fee'], shipping:['shipping'], taxes:['tax'], isrc:['isrc'],
     net:['net amount'], currency:['currency'], territory:['country'] } },
   distrokid:{ name:'DistroKid', platform:'DistroKid', datefmt:'ymd', fields:{
-    date:['reporting date','sale month','sale date'], platform:['store'], type:['type'],
+    date:['sale month','sale date','reporting date'], platform:['store'], type:['type'],
     product:['title','song'], artist:['artist'], isrc:['isrc'], upc:['upc'],
     qty:['quantity'], net:['earnings'], currency:['currency'], territory:['country','territory'] } },
   believe:{ name:'Believe', platform:'Believe', datefmt:'dmy', fields:{
@@ -2649,39 +2956,57 @@ const DISTRO_PRESETS={
     date:['report date','sale date','date','period'], platform:['partner','store','dsp'],
     product:['track','album','title'], artist:['artist'], isrc:['isrc'], upc:['upc'],
     qty:['quantity','units','plays'], net:['payable','earnings','net','your share'], currency:['currency'], territory:['country','territory'] } },
+  paypal:{ name:'PayPal', platform:'PayPal', need:/fusoorario|timezone/, sign:true, fields:{   // negativo = pagamento fatto (uscita)
+    date:['data','date'], product:['nome','name'], type:['tipo','type'], gross:['lordo','gross'], fees:['tariffa','fee'],
+    net:['netto','net'], currency:['valuta','currency'] } },
   labelengine:{ name:'Label Engine', platform:'Label Engine', datefmt:'ymd', fields:{
     date:['sales period','date','period','month'], platform:['store','retailer','dsp','shop'],
     product:['track title','release title','title','track'], artist:['artist'], isrc:['isrc'], upc:['upc','catalog'],
     qty:['quantity','units','qty'], net:['net','royalty','earnings','revenue'], currency:['currency'], territory:['country','territory'] } },
 };
+// colonna del preset: prima il sinonimo più importante, prima l'intestazione identica e poi quella che lo contiene
+function presetCol(subs, used){
+  const hl=importHeaders.map(h=>String(h||'').toLowerCase().trim());
+  for(const s of subs){ const i=hl.findIndex((h,j)=>!used.has(j) && h===s); if(i>-1) return i; }
+  for(const s of subs){ const i=hl.findIndex((h,j)=>!used.has(j) && h.includes(s)); if(i>-1) return i; }
+  return -1;
+}
+function presetMap(p){ const map={}, used=new Set();
+  CANON.forEach(([f])=>{ const subs=p.fields[f]; if(!subs) return; const i=presetCol(subs, used); if(i>-1){ map[f]=i; used.add(i); } });
+  return map; }
 function detectDistro(){
   let best=null, bestScore=2;
-  for(const key in DISTRO_PRESETS){ const p=DISTRO_PRESETS[key]; let s=0;
-    for(const f in p.fields){ if(importHeaders.some(h=>p.fields[f].some(x=>h.toLowerCase().includes(x)))) s++; }
+  const hn=importHeaders.map(colNorm).join('|');
+  for(const key in DISTRO_PRESETS){ const p=DISTRO_PRESETS[key]; if(p.need && !p.need.test(hn)) continue; const m=presetMap(p);
+    if(m.date==null || (m.net==null && m.gross==null)) continue;   // un preset vale solo se trova data e importo
+    const s=Object.keys(m).length;
     if(s>bestScore){ bestScore=s; best=key; } }
   return best;
 }
-function applyDistro(key){
-  const p=DISTRO_PRESETS[key]; if(!p){ buildMapFields(autoMap(importHeaders)); return; }
+function distroMap(key){
+  const p=DISTRO_PRESETS[key]; if(!p) return autoMap(importHeaders);
   if($('#map-platform')) $('#map-platform').value=p.platform||'';
   if(p.datefmt) $('#map-datefmt').value=p.datefmt;
-  const map={}, used=new Set();
-  CANON.forEach(([f])=>{ const subs=p.fields[f]; if(!subs) return;
-    importHeaders.forEach((h,i)=>{ if(used.has(i)) return;
-      if(map[f]==null && subs.some(s=>h.toLowerCase().includes(s))){ map[f]=i; used.add(i); } }); });
-  buildMapFields(map);
+  // il preset decide le sue colonne; le altre restano quelle riconosciute in automatico
+  const map=presetMap(p), used=new Set(Object.values(map)), auto=autoMap(importHeaders);
+  Object.entries(auto).forEach(([f,i])=>{ if(map[f]==null && !used.has(i)){ map[f]=i; used.add(i); } });
+  return map;
 }
+function applyDistro(key){ buildMapFields(smartMap(distroMap(key))); }
 $('#map-distro')?.addEventListener('change',()=>{
   const v=$('#map-distro').value;
-  if(v==='auto') buildMapFields(autoMap(importHeaders)); else applyDistro(v);
+  if(v==='auto') buildMapFields(smartMap(autoMap(importHeaders))); else applyDistro(v);
   renderPreview();
 });
 
+function mapLabel(f, def){ const exp=$('#map-kind') && $('#map-kind').value==='expense';
+  const k=(exp && ['product','platform','net','catalog'].includes(f)) ? 'imp.fx_'+f : 'imp.f_'+f; const v=tt(k); return v&&v!==k ? v : def; }
 function buildMapFields(initial={}){
-  $('#map-fields').innerHTML = CANON.map(([f,label])=>`
-    <div class="map-row"><span>${label}</span>
+  const mode=$('#map-kind') ? $('#map-kind').value : 'income';
+  $('#map-fields').innerHTML = MAP_FIELDS.filter(([f])=>(f!=='kind' || mode==='col') && ((f!=='amountIn' && f!=='amountOut') || mode==='inout')).map(([f,label])=>`
+    <div class="map-row"><span>${esc(mapLabel(f,label))}</span>
       <select class="select map-sel" data-field="${f}">
-        <option value="">— ignora —</option>
+        <option value="">${esc(tt('imp.ignore'))}</option>
         ${importHeaders.map((h,i)=>`<option value="${i}" ${initial[f]===i?'selected':''}>${esc(h)||'col '+(i+1)}</option>`).join('')}
       </select></div>`).join('');
   $$('.map-sel').forEach(s=>s.onchange=renderPreview);
@@ -2691,38 +3016,94 @@ function currentMap(){
 }
 /* formato del file deciso una volta su tutte le righe: separatore decimale e giorno/mese */
 const AMOUNT_FIELDS=['gross','shipping','taxes','payProcFees','fees','csShare','net','qty'];
+// Excel: data come numero di giorni ("45000") → AAAA-MM-GG
+const excelSerialDate=v=>{ const s=String(v||'').trim(); if(!/^\d{5}(\.\d+)?$/.test(s) || +s<20000 || +s>80000) return s;
+  return new Date(Date.UTC(1899,11,30)+Math.floor(+s)*864e5).toISOString().slice(0,10); };
+// "Entrata/Uscita" scritto in tanti modi: income | expense | null (non riconosciuto)
+function kindFromText(v){ const s=String(v||'').trim().toLowerCase(); if(!s) return null;
+  if(/^(u|o|-|af|out)$/.test(s) || /^(uscit|spes|expense|cost|debit|dare\b|addebit|gast|d[eé]pens|ausgab|sa[ií]d|uitgav|withdraw|outflow|lastschrift|soll\b)/.test(s)) return 'expense';
+  if(/^(e|i|\+|in|bij)$/.test(s) || /^(entrat|income|ricav|incass|revenue|credit|avere|accredit|vendit|sale\b|sales|ingres|recett|einnahm|entrad|inkomst|deposit|inflow|gutschrift|haben\b)/.test(s)) return 'income';
+  return null; }
+// categoria del foglio → categoria dell'app (anche scritta nelle altre lingue o con parole chiave)
+function expCatFromText(v){ const s=String(v||'').trim().toLowerCase(); if(!s) return null;
+  // nome identico, altrimenti il nome più lungo contenuto ("Produzione fisica" batte "Produzione"), poi le parole chiave
+  let best=null, bestLen=0;
+  for(const c of EXP_CATS){ if(s===c) return c; const names=(window.LFI18N&&LFI18N.tAll)?LFI18N.tAll('ecat.'+c):[tt('ecat.'+c)];
+    for(let n of names){ n=String(n||'').toLowerCase(); if(!n) continue; if(s===n) return c;
+      const parts=[n, ...n.split(/\s*[&\/]\s*/)].filter(x=>x.length>=4);
+      parts.forEach(x=>{ if(s.includes(x) && x.length>bestLen){ best=c; bestLen=x.length; } }); } }
+  if(best) return best;
+  const hay=' '+s+' '; for(const [c,kws] of EXP_RULES){ if(kws.some(k=>hay.includes(k))) return c; }
+  return null; }
 function importContext(map){
   const vals=[]; AMOUNT_FIELDS.forEach(f=>{ if(map[f]!=null) importRows.forEach(r=>vals.push(r[map[f]])); });
-  const dates=[]; ['date','dateTo'].forEach(f=>{ if(map[f]!=null) importRows.forEach(r=>dates.push(r[map[f]])); });
+  const dates=[]; ['date','dateTo'].forEach(f=>{ if(map[f]!=null) importRows.forEach(r=>dates.push(excelSerialDate(r[map[f]]))); });
   const sel=$('#map-datefmt').value;
-  return { dec:LFCore.detectDecimalSep(vals), datefmt: sel==='auto' ? LFCore.detectDateFormat(dates) : sel };
+  // valuta scritta nell'intestazione dell'importo, es. "Earnings (USD)"
+  const hc=[map.net,map.gross].filter(i=>i!=null).map(i=>String(importHeaders[i]||'')).join(' ');
+  const hm=/\(([A-Za-z]{3})\)|\b(EUR|USD|GBP|JPY|CHF|CAD|AUD|SEK|NOK|DKK|BRL|MXN|PLN)\b|([€$£¥])/.exec(hc);
+  const hdrCur=hm ? normCur(hm[1]||hm[2]||hm[3], '') : '';
+  return { dec:LFCore.detectDecimalSep(vals), datefmt: sel==='auto' ? LFCore.detectDateFormat(dates) : sel, hdrCur };
 }
 function rowToRec(cols,map,ctx){
   ctx=ctx||importContext(map);
-  const kind=$('#map-kind').value, fmt=ctx.datefmt, dec=ctx.dec;
-  const defCur=($('#map-currency').value||'EUR').toUpperCase().slice(0,3);
+  const mode=$('#map-kind').value, fmt=ctx.datefmt, dec=ctx.dec;
+  const defCur=normCur($('#map-currency').value,'EUR')||'EUR';
   const get=f=> map[f]!=null ? String(cols[map[f]]??'') : '';
   const amt=f=>parseAmount(get(f), dec);
   const gross=amt('gross'), fees=amt('fees');
-  let net = map.net!=null ? amt('net') : (gross-fees);
+  const netCell=map.net!=null ? get('net').trim() : '';
+  let net = netCell!=='' ? amt('net') : (gross-fees);
+  let noAmt = netCell==='' && (map.gross==null || get('gross').trim()==='');   // riga senza importo (es. prova gratuita, riga dell'anno)
+  // entrata o uscita: per tutto il file, da una colonna, dal segno (negativo = uscita) o da due colonne Entrate/Uscite
+  let kind = mode==='expense' ? 'expense' : 'income';
+  if(mode==='col') kind=kindFromText(get('kind')) || (net<0?'expense':'income');
+  else if(mode==='sign') kind = net<0 ? 'expense' : 'income';
+  else if(mode==='inout'){ const o=amt('amountOut'), i=amt('amountIn');
+    if(o){ kind='expense'; net=Math.abs(o); } else { kind=(i<0?'expense':'income'); net=i; }
+    noAmt = !o && !i; }
   if(kind==='expense') net=Math.abs(net);
-  return {
-    id:uid(), kind, date:parseDate(get('date'),fmt), dateTo:parseDate(get('dateTo'),fmt),
-    platform:($('#map-platform').value.trim()||get('platform')).trim(),
-    type:get('type').trim()||(kind==='expense'?'expense':'digital'),
+  const catTxt=get('category').trim(), cat=kind==='expense' ? catForImport(catTxt) : null;
+  const rawCur=get('currency').trim(), cur=normCur(rawCur, '') || ctx.hdrCur || defCur;
+  const dRaw=get('date').trim(), relTxt=get('release').trim();
+  const rec={
+    id:uid(), kind, date:/^\d{4}$/.test(dRaw) ? '' : parseDate(excelSerialDate(dRaw),fmt),   // "2025" da solo = riga di gruppo, non una data
+    dateTo:parseDate(excelSerialDate(get('dateTo')),fmt),
+    platform:canonPlatform(get('platform').trim()||$('#map-platform').value.trim()),   // la colonna del file vince; quello scritto a mano solo se manca
+    type:get('type').trim()||(kind==='expense'?(catTxt||'expense'):'digital'),
     catalog:get('catalog').trim(), product:get('product').trim(), artist:get('artist').trim(),
     isrc:get('isrc').trim(), upc:get('upc').trim(), territory:get('territory').trim().toUpperCase(),
     qty:Number(amt('qty'))||(map.qty!=null?0:1),
     gross, shipping:amt('shipping'), taxes:amt('taxes'),
     payProcFees:amt('payProcFees'), fees, net, csShare:amt('csShare'),
-    currency:(get('currency')||defCur).trim().toUpperCase().slice(0,3), note:'',
+    currency:cur, note:get('note').trim(),
   };
+  if(cat) rec.cat=cat;
+  // spesa senza descrizione: si usa la nota, altrimenti categoria e fornitore
+  if(kind==='expense' && !rec.product) rec.product=rec.note || [catTxt, rec.platform].filter(Boolean).join(' · ');
+  // release collegata (colonna "Release"): conta nel conto economico di quella release, anche se la crei dopo
+  if(relTxt){ rec.release=relTxt; const r=releaseByCatalog(relTxt)||releaseByTitle(relTxt); if(r && !rec.catalog) rec.catalog=r.catalog||''; }
+  if(rawCur && !normCur(rawCur,'')) rec._badCur=rawCur;
+  if(noAmt) rec._noAmt=true;
+  return rec;
 }
-function importRecs(map){ const ctx=importContext(map); return importRows.map(r=>rowToRec(r,map,ctx)); }
+// righe senza una data valida (totali, righe vuote del foglio) non diventano movimenti
+// tutte le righe convertite una volta sola per ogni combinazione di scelte (file grandi: niente calcoli ripetuti)
+let _recCache=null;
+function rawRecs(map){
+  const key=JSON.stringify([map, $('#map-kind').value, $('#map-datefmt').value, $('#map-currency').value, $('#map-platform').value, importCatMap, importHeaders, importRows.length, importRows[0], importRows[importRows.length-1]]);
+  if(_recCache && _recCache.key===key) return _recCache.recs;
+  platKnown=null; platMemo=new Map(); const ctx=importContext(map);
+  const recs=importRows.map(r=>rowToRec(r,map,ctx)); _recCache={ key, recs }; return recs;
+}
+function importRecs(map){ return rawRecs(map).filter(r=>r.date && !r._noAmt).map(r=>Object.assign({}, r, { id:uid() })); }
+function importNoDate(map){ return rawRecs(map).filter(r=>!r.date).length; }
+function importNoAmt(map){ return rawRecs(map).filter(r=>r.date && r._noAmt).length; }
 /* controlli intelligenti pre-import: segnala anomalie prima di salvare */
 function importChecks(map, recs){
   recs=recs||importRecs(map);
-  const noDate=recs.filter(r=>!r.date).length;
+  const noDate=importNoDate(map), noAmt=importNoAmt(map);
+  const badCur=recs.filter(r=>r._badCur).length;
   const noNet=recs.filter(r=>!(+r.net)).length;
   const seen=new Set(); let dupIn=0;
   recs.forEach(r=>{ const s=txSig(r); if(seen.has(s)) dupIn++; else seen.add(s); });
@@ -2733,36 +3114,77 @@ function importChecks(map, recs){
   if(nets.length>=5){ const med=nets[Math.floor(nets.length/2)]; if(med>0) outliers=nets.filter(v=>v>med*25).length; }
   const w=[];
   if(outliers) w.push({lvl:'warn', t:tt('imp.chk_outlier').replace('{n}',outliers)});
-  if(noDate) w.push({lvl:'warn', t:tt('imp.chk_nodate').replace('{n}',noDate)});
+  const found=Object.keys(map).length;
+  if(importRemembered) w.unshift({lvl:'info', t:tt('imp.remembered'), act:'forget'});
+  else if(found) w.unshift({lvl:'info', t:tt('imp.auto_found').replace('{n}', found).replace('{m}', importHeaders.filter(h=>String(h||'').trim()).length)});
+  if(noDate) w.push({lvl:'warn', t:tt('imp.chk_nodate_skip').replace('{n}',noDate)});
+  if(noAmt) w.push({lvl:'info', t:tt('imp.chk_noamt').replace('{n}',noAmt)});
+  if(badCur) w.push({lvl:'warn', t:tt('imp.chk_badcur').replace('{n}',badCur).replace('{c}', normCur($('#map-currency').value,'EUR')||'EUR')});
   if(noNet) w.push({lvl:'warn', t:tt('imp.chk_nonet').replace('{n}',noNet)});
   if(dupIn) w.push({lvl:'info', t:tt('imp.chk_dupin_kept').replace('{n}',dupIn)});
   if(dupEx) w.push({lvl:'info', t:tt('imp.chk_dupex').replace('{n}',dupEx)});
   if(curs.length>1) w.push({lvl:'info', t:tt('imp.chk_curmix').replace('{c}',curs.join(', '))});
   return w;
 }
+function renderCatMap(map){
+  const box=$('#imp-cat-panel'), grid=$('#imp-cat-map'); if(!box||!grid) return;
+  if(map.category==null){ box.hidden=true; return; }
+  const cnt=new Map(), all=rawRecs(map);
+  importRows.forEach((r,i)=>{ const rec=all[i]; if(!rec || rec.kind!=='expense' || !rec.date) return; const v=String((r||[])[map.category]??'').trim(); if(!v) return;
+    const k=v.toLowerCase(); const e=cnt.get(k)||{ v, n:0 }; e.n++; cnt.set(k,e); });
+  if(!cnt.size){ box.hidden=true; return; }
+  const opts=c=>EXP_CATS.map(x=>`<option value="${x}"${x===c?' selected':''}>${esc(tt('ecat.'+x))}</option>`).join('');
+  grid.innerHTML=[...cnt.entries()].sort((a,b)=>b[1].n-a[1].n).slice(0,80).map(([k,e])=>`<div class="map-row"><span>${esc(e.v)} <span class="muted small">× ${e.n}</span></span>
+    <select class="select imp-cat-sel" data-cat-val="${esc(k)}">${opts(catForImport(k)||'other')}</select></div>`).join('');
+  grid.querySelectorAll('.imp-cat-sel').forEach(sel=>sel.onchange=()=>{ importCatMap[sel.dataset.catVal]=sel.value; renderPreview(); });
+  box.hidden=false;
+}
+// anteprima con TUTTE le colonne collegate, già convertite come verranno salvate
+let importShowAll=false;
+const PREVIEW_MONEY=new Set(['gross','shipping','taxes','payProcFees','fees','csShare']);
+function previewCell(f, t){
+  if(f==='date'||f==='dateTo') return t[f] ? esc(fmtDate(t[f])) : '<span class="muted">?</span>';
+  if(f==='kind') return t.kind==='expense' ? `<span class="neg">${esc(tt('imp.k_expense'))}</span>` : `<span class="pos">${esc(tt('imp.k_income'))}</span>`;
+  if(f==='net') return `<span class="${txSigned(t)<0?'neg':''}">${fmtMoney(t.net,t.currency)}</span>`;
+  if(PREVIEW_MONEY.has(f)) return t[f] ? fmtMoney(t[f],t.currency) : '';
+  if(f==='qty') return esc(t.qty);
+  if(f==='category') return t.cat ? `${esc(tt('ecat.'+t.cat))}${t.type&&t.type!=='expense'?` <span class="muted small">(${esc(t.type)})</span>`:''}` : '';
+  if(f==='release'){ const r=t.release ? (releaseByCatalog(t.release)||releaseByTitle(t.release)) : null; return t.release ? esc(t.release)+(r?' <span class="pos" title="✓">✓</span>':'') : ''; }
+  return esc(t[f]??'');
+}
 function renderPreview(){
   const map=currentMap();
-  const all=importRecs(map), recs=all.slice(0,8);
+  renderCatMap(map);
+  const all=importRecs(map), limit=importShowAll ? 1000 : 10, recs=all.slice(0,limit);
   const cb=$('#preview-checks');
   if(cb){ const w=importChecks(map, all);
-    cb.innerHTML=w.map(x=>`<div class="imp-chk imp-chk--${x.lvl}"><span>${x.lvl==='warn'?'⚠':'ℹ'}</span> ${esc(x.t)}</div>`).join('');
+    cb.innerHTML=w.map(x=>`<div class="imp-chk imp-chk--${x.lvl}"><span>${x.lvl==='warn'?'⚠':'ℹ'}</span> ${esc(x.t)}${x.act==='forget'?` <button class="link" type="button" data-imp-forget>${esc(tt('imp.forget'))}</button>`:''}</div>`).join('');
     cb.hidden=!w.length;
   }
-  $('#preview-count').textContent=tt('imp.preview_count').replace('{rows}',importRows.length).replace('{m}',Math.min(8,importRows.length));
-  $('#preview-table').innerHTML=`<thead><tr>
-    <th>${tt('imp.h_date')}</th><th>${tt('imp.h_platform')}</th><th>${tt('imp.h_catalog')}</th><th>${tt('imp.h_product')}</th><th>${tt('imp.h_artist')}</th><th class="num">${tt('imp.h_qty')}</th><th class="num">${tt('imp.h_net')}</th><th>${tt('imp.h_cur')}</th></tr></thead>
-   <tbody>${recs.map(t=>`<tr>
-     <td>${t.date?fmtDate(t.date):'<span class=muted>?</span>'}</td><td>${esc(t.platform)}</td><td>${esc(t.catalog)}</td>
-     <td>${esc(t.product)}</td><td>${esc(t.artist)}</td><td class="num">${t.qty}</td>
-     <td class="num">${fmtMoney(t.net,t.currency)}</td><td>${esc(t.currency)}</td></tr>`).join('')}</tbody>`;
+  $('#preview-count').textContent=tt('imp.preview_count').replace('{rows}',all.length).replace('{m}',recs.length);
+  // colonne: data, tipo, poi ogni campo collegato nell'ordine dei campi, importo e valuta sempre
+  const skip=new Set(['date','kind','net','currency','amountIn','amountOut','type']);
+  const cols=['date','kind'].concat(MAP_FIELDS.map(([f])=>f).filter(f=>map[f]!=null && !skip.has(f)), ['net','currency']);
+  if(map.type!=null && !cols.includes('category')) cols.splice(2,0,'type');
+  const label=f=>f==='kind' ? tt('imp.h_kind') : f==='net' ? mapLabel('net', tt('imp.h_net')) : mapLabel(f, (MAP_FIELDS.find(x=>x[0]===f)||[])[1]||f);
+  const numC=f=>f==='net'||f==='qty'||PREVIEW_MONEY.has(f);
+  $('#preview-table').innerHTML=`<thead><tr>${cols.map(f=>`<th class="${numC(f)?'num':''}">${esc(label(f))}</th>`).join('')}</tr></thead>
+   <tbody>${recs.map(t=>`<tr>${cols.map(f=>`<td class="${numC(f)?'num':''}">${previewCell(f,t)}</td>`).join('')}</tr>`).join('')}</tbody>`;
+  const more=$('#preview-more');
+  if(more){ more.hidden=all.length<=10; more.textContent=importShowAll ? tt('imp.show_less') : tt('imp.show_all').replace('{n}', all.length>1000?'1000+':all.length); }
 }
+$('#preview-more')?.addEventListener('click',()=>{ importShowAll=!importShowAll; renderPreview(); });
+$('#preview-checks')?.addEventListener('click',e=>{ if(!e.target.closest('[data-imp-forget]')) return;
+  if(DB.autoMaps) delete DB.autoMaps[importSig()]; save(); refreshParse(true); toast(tt('imp.forgotten')); });
 $('#import-cancel').onclick=()=>{ $('#import-config').hidden=true; $('#file-input').value=''; };
 const txSig=t=>LFCore.txSig(t);
 $('#import-confirm').onclick=()=>{
   const map=currentMap();
-  if(map.net==null && map.gross==null){ toast(tt('t.map_min')); return; }
+  if(map.net==null && map.gross==null && map.amountIn==null && map.amountOut==null){ toast(tt('t.map_min')); return; }
   let recs=importRecs(map);
+  recs.forEach(r=>{ delete r._badCur; delete r._noAmt; });
   const total=recs.length;
+  if(!total){ toast(tt('imp.nothing')); return; }
   // righe già presenti tra i movimenti esistenti (righe uguali nello stesso file NON sono duplicati:
   // i report dei distributori ripetono la stessa traccia per paesi diversi)
   const dd=LFCore.dedupAgainst(DB.transactions, recs);
@@ -2777,6 +3199,9 @@ $('#import-confirm').onclick=()=>{
   if(dedup){ recs=dd.kept; skipped=dd.skipped; }
   // vendite di periodi già chiusi: vanno nel prossimo statement (i numeri inviati non cambiano)
   const late=(typeof markLateLines==='function') ? markLateLines(recs) : 0;
+  // la prossima volta: stesse colonne → stesse scelte; stesse categorie → stessa categoria dell'app
+  DB.autoMaps=DB.autoMaps||{}; DB.autoMaps[importSig()]=snapshotPreset();
+  if(map.category!=null){ DB.catMap=DB.catMap||{}; $$('#imp-cat-map .imp-cat-sel').forEach(sel=>{ DB.catMap[sel.dataset.catVal]=sel.value; }); }
   if(recs.length){
     const batchId=newId(); recs.forEach(r=>{ r._imp=batchId; });
     DB.transactions.push(...recs);
@@ -2790,30 +3215,48 @@ $('#import-confirm').onclick=()=>{
 function updateImpUndo(){ const b=$('#imp-undo'); if(!b) return; const li=DB&&DB.lastImport;
   if(li && li.count){ const n=$('#imp-undo-n'); if(n) n.textContent=li.count; b.hidden=false; } else b.hidden=true; }
 function undoLastImport(){ const li=DB&&DB.lastImport; if(!li) return;
-  if(!confirm(tt('imp.undo_confirm').replace('{n}',li.count))) return;
-  DB.transactions=(DB.transactions||[]).filter(t=>t._imp!==li.id);
-  DB.lastImport=null; save(); renderTx(); updateImpUndo(); toast(tt('imp.undone')); }
+  const ids=(DB.transactions||[]).filter(t=>t._imp===li.id).map(t=>t.id);
+  if(!confirm(tt('imp.undo_confirm').replace('{n}',li.count)+bulkClosedNote('transactions', ids))) return;
+  const tid=trashRemove('transactions', ids, tt('trash.k_transactions')+' · '+ids.length+' '+tt('trash.items'));
+  DB.lastImport=null; save(); renderTx(); updateImpUndo(); undoToast(tt('imp.undone'), tid); }
 $('#imp-undo-btn')?.addEventListener('click', undoLastImport);
 $('#imp-undo-x')?.addEventListener('click', ()=>{ if(DB) DB.lastImport=null; save(); updateImpUndo(); });
 
 /* ---------- Preset di mappatura ---------- */
 function snapshotPreset(){
   return { delim:$('#map-delim').value, kind:$('#map-kind').value, datefmt:$('#map-datefmt').value,
-    currency:$('#map-currency').value, platform:$('#map-platform').value, map:currentMap() };
+    currency:$('#map-currency').value, platform:$('#map-platform').value, header:($('#map-header')||{}).value||'0', map:currentMap() };
 }
-function populatePresets(){
-  const sel=$('#map-preset');
-  sel.innerHTML='<option value="">— nuovo —</option>'+Object.keys(DB.mappings).map(n=>`<option>${esc(n)}</option>`).join('');
+function populatePresets(keep){
+  const sel=$('#map-preset'), cur=keep!=null ? keep : sel.value;
+  sel.innerHTML=`<option value="">${esc(tt('imp.preset_new'))}</option>`+Object.keys(DB.mappings).sort((a,b)=>a.localeCompare(b)).map(n=>`<option>${esc(n)}</option>`).join('');
+  if(cur && DB.mappings[cur]) sel.value=cur;
+  presetBtns();
 }
+function presetBtns(){ const on=!!(DB.mappings||{})[$('#map-preset').value]; ['#preset-rename','#preset-del'].forEach(s=>{ const b=$(s); if(b) b.disabled=!on; }); }
+// salvare con il nome di un preset esistente lo modifica (dopo conferma)
 $('#save-preset').onclick=()=>{
   const name=$('#map-preset-name').value.trim(); if(!name){ toast(tt('t.preset_name')); return; }
-  DB.mappings[name]=snapshotPreset(); save(); populatePresets(); $('#map-preset').value=name; toast(tt('t.preset_saved'));
+  if(DB.mappings[name] && !confirm(tt('imp.preset_overwrite').replace('{name}', name))) return;
+  DB.mappings[name]=snapshotPreset(); save(); populatePresets(name); toast(tt('t.preset_saved'));
 };
+$('#preset-rename')?.addEventListener('click',()=>{ const old=$('#map-preset').value; if(!DB.mappings[old]) return;
+  const nn=(prompt(tt('imp.preset_rename_q'), old)||'').trim(); if(!nn || nn===old) return;
+  if(DB.mappings[nn] && !confirm(tt('imp.preset_overwrite').replace('{name}', nn))) return;
+  DB.mappings[nn]=DB.mappings[old]; delete DB.mappings[old]; save(); populatePresets(nn); $('#map-preset-name').value=nn; toast(tt('t.preset_saved')); });
+$('#preset-del')?.addEventListener('click',()=>{ const name=$('#map-preset').value; if(!DB.mappings[name]) return;
+  if(!confirm(tt('imp.preset_del_q').replace('{name}', name))) return;
+  delete DB.mappings[name]; save(); populatePresets(''); toast(tt('imp.preset_deleted')); });
 $('#map-preset').onchange=()=>{
+  presetBtns();
   const p=DB.mappings[$('#map-preset').value]; if(!p) return;
-  $('#map-delim').value=p.delim; $('#map-kind').value=p.kind; $('#map-datefmt').value=p.datefmt;
-  $('#map-currency').value=p.currency; $('#map-platform').value=p.platform;
-  refreshParse(); buildMapFields(p.map); renderPreview();
+  $('#map-preset-name').value=$('#map-preset').value;
+  $('#map-delim').value=p.delim; $('#map-datefmt').value=p.datefmt;
+  $('#map-currency').value=p.currency;
+  refreshParse(false);
+  if(p.header!=null && $('#map-header') && [...$('#map-header').options].some(o=>o.value===String(p.header))){ $('#map-header').value=String(p.header); refreshParse(false); }
+  $('#map-kind').value=p.kind||'income'; $('#map-platform').value=p.platform||'';
+  buildMapFields(p.map); renderPreview();
 };
 
 /* ============================================================================
@@ -2824,39 +3267,69 @@ function renderSettings(){
     <div class="rate-chip"><strong>${esc(c)}</strong>
       <input type="number" step="0.0001" value="${v}" data-cur="${esc(c)}">
       ${c==='EUR'?'':`<button data-del="${esc(c)}">✕</button>`}</div>`).join('');
-  $$('#rates-grid input').forEach(i=>i.onchange=()=>{ DB.rates[i.dataset.cur]=parseFloat(i.value)||0; save(); });
-  $$('#rates-grid button[data-del]').forEach(b=>b.onclick=()=>{ delete DB.rates[b.dataset.del]; save(); renderSettings(); });
+  // tasso vuoto, zero o negativo: non si salva (trasformerebbe in 0 € tutti i movimenti in quella valuta)
+  $$('#rates-grid input').forEach(i=>i.onchange=()=>{ const v=parseFloat(String(i.value).replace(',','.'));
+    if(!(v>0)){ toast(tt('t.rate_invalid')); i.value=DB.rates[i.dataset.cur]; return; }
+    DB.rates[i.dataset.cur]=v; save(); });
+  $$('#rates-grid button[data-del]').forEach(b=>b.onclick=()=>{ const c=b.dataset.del;
+    const n=(DB.transactions||[]).filter(t=>(t.currency||'EUR').toUpperCase()===c).length;
+    if(n && !confirm(tt('t.rate_del_q').replace('{c}', c).replace('{n}', n))) return;
+    delete DB.rates[c]; save(); renderSettings(); });
   if(typeof renderFx==='function') renderFx();
   if(typeof renderTrashCount==='function') renderTrashCount();
   const dh=$('#doc-header'); if(dh && document.activeElement!==dh) dh.value=(DB.profile&&DB.profile.docHeader)||'';
   if(typeof renderTeam==='function') renderTeam();
 }
 $('#add-rate').onclick=()=>{
-  const c=$('#rate-cur').value.trim().toUpperCase().slice(0,3), v=parseFloat($('#rate-val').value);
+  const c=normCur($('#rate-cur').value,''), v=parseFloat(String($('#rate-val').value).replace(',','.'));
   if(!c||!v){ toast(tt('t.rate_required')); return; }
+  if(!(v>0)){ toast(tt('t.rate_invalid')); return; }
   DB.rates[c]=v; save(); $('#rate-cur').value=$('#rate-val').value=''; renderSettings();
 };
-$('#export-json').onclick=()=>download('label-finance-backup.json',JSON.stringify(ACCOUNT,null,2),'application/json');
+$('#export-json').onclick=()=>{ download('label-finance-backup.json',JSON.stringify(ACCOUNT,null,2),'application/json');
+  // le foto/PDF delle ricevute non stanno nel file (sono sul dispositivo e, con l'account, nel cloud)
+  if((ACCOUNT.labels||[]).some(l=>(l.transactions||[]).some(t=>t&&t.att&&t.att.length))) toast(tt('t.backup_no_att')); };
 $('#export-csv').onclick=()=>{
   const head=['kind',...CANON.map(c=>c[0]),'note'];
-  const lines=[head.join(',')].concat(DB.transactions.map(t=>head.map(h=>csvCell(t[h])).join(',')));
-  download('movimenti.csv',lines.join('\n'),'text/csv');
+  download('movimenti.csv', csvText([head].concat(DB.transactions.map(t=>head.map(h=>t[h]??'')))), 'text/csv');
 };
 $('#import-json').onclick=()=>$('#json-input').click();
+/* controllo del file di backup prima di sostituire i dati: struttura giusta, elenchi davvero elenchi */
+const BACKUP_LISTS=['transactions','releases','artists','tasks','contracts','merch','planning','events','supports','recurring','recoup','payouts'];
+const backupLabels=d=>Array.isArray(d.labels) ? d.labels : (d.transactions ? [d] : null);
+function backupLooksValid(d){
+  if(!d || typeof d!=='object' || Array.isArray(d)) return false;
+  const labs=backupLabels(d); if(!labs || !labs.length) return false;
+  return labs.every(l=>l && typeof l==='object' && !Array.isArray(l) && BACKUP_LISTS.every(k=>l[k]==null || Array.isArray(l[k])));
+}
+function cleanBackup(d){ backupLabels(d).forEach(l=>BACKUP_LISTS.forEach(k=>{ if(Array.isArray(l[k])) l[k]=l[k].filter(x=>x && typeof x==='object' && !Array.isArray(x)); })); return d; }
+function backupCount(d){ return (backupLabels(d)||[]).reduce((n,l)=>n+(l.transactions||[]).length+(l.releases||[]).length+(l.artists||[]).length+(l.contracts||[]).length,0); }
 $('#json-input').onchange=e=>{
   const f=e.target.files[0]; if(!f) return; const r=new FileReader();
-  r.onload=async ()=>{ try{ const d=JSON.parse(r.result); if(!d.transactions && !d.labels) throw 0;
+  r.onload=async ()=>{ let d; try{ d=JSON.parse(r.result); }catch{ d=null; }
+    e.target.value='';
+    if(!backupLooksValid(d)){ toast(tt('t.file_invalid')); return; }
+    cleanBackup(d);
+    const n=backupCount(d), cur=backupCount(ACCOUNT);
+    if(!confirm(tt('t.backup_q').replace('{n}', n).replace('{cur}', cur))) return;
     if(typeof snapTake==='function') await snapTake('before_backup');
-    ACCOUNT=migrateAccount(d); DB=activeLabel(); save(); reloadViews(); rebuildAccountMenu();
-    toast(tt('t.backup_restored')); goto('dashboard'); }
-    catch{ toast(tt('t.file_invalid')); } };
+    const prev=ACCOUNT;
+    try{ ACCOUNT=migrateAccount(d); DB=activeLabel(); reloadViews(); rebuildAccountMenu(); save();
+      toast(tt('t.backup_restored')); goto('dashboard'); }
+    catch(err){ ACCOUNT=prev; DB=activeLabel(); save(); reloadViews(); rebuildAccountMenu(); toast(tt('t.file_invalid')); } };
   r.readAsText(f);
 };
-$('#wipe').onclick=async ()=>{ if(confirm(tt('confirm.wipe_all'))){
+$('#wipe').onclick=async ()=>{
+  const cloud=!!(window.LF_isSignedIn && window.LF_isSignedIn());
+  if(confirm(tt(cloud?'confirm.wipe_all_cloud':'confirm.wipe_all'))){
   if(typeof snapTake==='function') await snapTake('before_wipe');
   if(window.LF_snapshotNow) try{ await window.LF_snapshotNow(); }catch(e){}
-  ACCOUNT=defaultAccount(); DB=activeLabel(); save(); reloadViews(); rebuildAccountMenu();
-  toast(tt('t.data_wiped')); goto('dashboard'); } };
+  // i contratti spariscono anche dal cloud (i link di firma smettono di funzionare), le ricevute dal dispositivo
+  const tokens=(ACCOUNT.labels||[]).flatMap(l=>(l.contracts||[]).map(c=>c&&c.token)).filter(Boolean);
+  if(typeof attWipeLocal==='function') attWipeLocal();
+  ACCOUNT=defaultAccount(); DB=activeLabel(); tokens.forEach(tombstoneContract); save(); reloadViews(); rebuildAccountMenu();
+  toast(tt('t.data_wiped')); goto('dashboard');
+  if(tokens.length) flushContractTombstones(); } };
 
 function csvCell(v){ const s=String(v??''); return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s; }
 function download(name,content,type){
@@ -2889,7 +3362,7 @@ if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator
 { const y=$('#copyright-year'); if(y) y.textContent=new Date().getFullYear(); }
 
 /* ============================================================================
-   ASSISTENTE AI (Studio/Agency) — riassunto dati + consigli via Edge Function
+   ASSISTENTE AI (Big Label e superiori) — riassunto dati + consigli via Edge Function
    ============================================================================ */
 function buildAiSummary(){
   const txs=DB.transactions||[];
@@ -3188,11 +3661,9 @@ async function runAiQuestion(question, label){
   }
 }
 function aiReadableData(s){
-  const it=(window.LFI18N?window.LFI18N.lang:'it')!=='en';
-  const L = it
-    ? {tot:'Totali',inc:'Entrate',exp:'Uscite',net:'Margine netto',mov:'movimenti',trend:'Andamento mensile (netto)',plat:'Per piattaforma',art:'Top artisti (royalty)',rec:'Da recuperare (recoupment)',merch:'Merch più venduto',units:'venduti'}
-    : {tot:'Totals',inc:'Income',exp:'Expenses',net:'Net margin',mov:'transactions',trend:'Monthly trend (net)',plat:'By platform',art:'Top artists (royalty)',rec:'To recoup',merch:'Best-selling merch',units:'sold'};
-  const money=n=>'€'+(Number(n)||0).toLocaleString(it?'it-IT':'en-US',{maximumFractionDigits:2});
+  // etichette nella lingua scelta (prima l'italiano usciva in spagnolo, francese, tedesco…)
+  const L={}; ['tot','inc','exp','net','mov','trend','plat','art','rec','merch','units'].forEach(k=>{ L[k]=tt('ai.d_'+k); });
+  const money=n=>fmtMoney(n);
   const t=s.totali||{}; const rows=[];
   rows.push(`<b>${L.tot}:</b> ${L.inc} ${money(t.entrate)} · ${L.exp} ${money(t.uscite)} · ${L.net} ${money(t.margineNetto)} (${t.marginePct||0}%) · ${t.movimenti||0} ${L.mov}`);
   if(s.trendUltimi6Mesi&&s.trendUltimi6Mesi.length) rows.push(`<b>${L.trend}:</b> ${s.trendUltimi6Mesi.map(m=>esc(m.mese)+' '+money(m.netto)).join(' · ')}`);
@@ -3204,7 +3675,7 @@ function aiReadableData(s){
 }
 function exportAiAnalysis(){
   if(!aiLastResult) return; const r=aiLastResult;
-  const fname='analisi-ai-'+isoD(new Date());
+  const fname=tt('ai.d_file')+'-'+isoD(new Date());
   if(typeof html2pdf==='undefined'){ // fallback testuale leggibile se la libreria PDF non c'è
     const plain=h=>String(h).replace(/<[^>]+>/g,'');
     const md=`${tt('ai.study_title')} — ${labelName()}\n${r.when.toLocaleString()}\n\n${tt('ai.q')}\n${r.question}\n\n${tt('ai.answer')}\n${r.text}\n\n${tt('ai.data')}\n${plain(aiReadableData(r.summary)).replace(/\s*\n\s*/g,'\n')}`;
@@ -3247,7 +3718,7 @@ function aiFormat(t){
 }
 
 /* ============================================================================
-   DASHBOARD PERSONALIZZABILE (Studio/Agency) — widget riordinabili / nascondibili
+   DASHBOARD PERSONALIZZABILE (Big Label e superiori) — widget riordinabili / nascondibili
    ============================================================================ */
 function dashLayout(){ const l=DB.dashLayout||(DB.dashLayout={order:DASH_DEFAULT_ORDER.slice(),hidden:DASH_EXTRAS.slice(),cols:2,widths:{}});
   l.order=l.order&&l.order.length?l.order:DASH_DEFAULT_ORDER.slice(); l.hidden=l.hidden||[]; l.cols=l.cols||2; l.widths=l.widths||{};
@@ -3376,11 +3847,11 @@ function renderExtraWidgets(txs){
   if(rb){
     const recent=[...txs].sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).slice(0,7);
     rb.innerHTML = recent.length ? recent.map(t=>{
-      const v=toEur(t.net,t.currency,t.date); const inc=t.kind==='income';
+      const v=toEur(txSigned(t),t.currency,t.date);
       const label=t.artist||t.product||t.platform||t.catalog||'—';
       return `<div class="recent-row"><span class="recent-date">${fmtDate(t.date||'')}</span>
         <span class="recent-label">${esc(label)}</span>
-        <span class="recent-amt ${inc?'pos':'neg'}">${inc?'+':'−'}${fmtMoney(Math.abs(v))}</span></div>`;
+        <span class="recent-amt ${v>=0?'pos':'neg'}">${v>=0?'+':'−'}${fmtMoney(Math.abs(v))}</span></div>`;
     }).join('') : `<p class="muted">${tt('empty.noperiod')}</p>`;
   }
   // Merch più venduto (per unità)
@@ -3598,8 +4069,40 @@ function renderArtists(){
   mountPager(grid,'artists',info);
   syncVMButtons();
   updateArtEnrichBanner();
+  updateArtSplitBanner();
   updateArtDupPanel();
 }
+/* ---- Quote predefinite: chiede se mettere il 50% a chi non ce l'ha o scriverle a mano ---- */
+const ART_SPLIT_ASK='labelfinance.artSplitAsk.';
+function artNoSplit(){ return (DB.artists||[]).filter(a=>!(+a.split>0)); }
+function updateArtSplitBanner(){ const b=$('#art-split-banner'); if(!b) return; const miss=artNoSplit();
+  let dis=-1; try{ const v=localStorage.getItem(ART_SPLIT_ASK+(DB.id||'')); if(v!=null) dis=+v; }catch(e){}
+  if(!miss.length || miss.length<=dis){ b.hidden=true; return; }
+  b.querySelector('.rel-enrich-txt').textContent=tt('art.split_missing').replace('{n}', miss.length); b.hidden=false; }
+function artSplitDismiss(){ try{ localStorage.setItem(ART_SPLIT_ASK+(DB.id||''), String(artNoSplit().length)); }catch(e){} const b=$('#art-split-banner'); if(b) b.hidden=true; }
+$('#art-split-all')?.addEventListener('click',()=>{ const miss=artNoSplit(); if(!miss.length) return;
+  miss.forEach(a=>{ a.split=50; }); save(); renderArtists(); toast(tt('art.split_all_done').replace('{n}', miss.length)); });
+$('#art-split-manual')?.addEventListener('click',()=>{ const miss=artNoSplit(); artSplitDismiss();
+  bulkSel.artists=new Set(miss.map(a=>a.id)); setVM('artists','list'); bulkBar('artists'); toast(tt('art.split_manual_hint')); });
+$('#art-split-x')?.addEventListener('click', artSplitDismiss);
+/* ---- Quota % per gli artisti selezionati (ed eventualmente nelle loro release) ---- */
+$('#bulk-split')?.addEventListener('click',()=>{ const set=bulkSel.artists; if(!set||!set.size) return;
+  const raw=prompt(tt('art.bulk_split_q').replace('{n}', set.size), '50'); if(raw==null) return;
+  const v=parseFloat(String(raw).replace(',','.')); if(!(v>=0 && v<=100)){ toast(tt('art.split_invalid')); return; }
+  const arts=(DB.artists||[]).filter(a=>set.has(a.id)); arts.forEach(a=>{ a.split=pctR(v); });
+  const keys=new Set(arts.map(a=>normArt(a.name)));
+  const hits=releases().filter(r=>(r.splits||[]).some(x=>keys.has(normArt(x.name)) && pctR(x.pct)!==pctR(v)));
+  let upd=0, skip=0;
+  if(hits.length && confirm(tt('art.bulk_split_rel_q').replace('{n}', hits.length))){
+    const closed=typeof perIsClosedTx==='function' && (DB.transactions||[]).some(t=>perIsClosedTx(t) && LFCore.releaseForTx(LFCore.relIndex(hits), t));
+    if(!closed || confirm(tt('per.split_closed_q'))) hits.forEach(r=>{
+      const next=(r.splits||[]).map(x=>keys.has(normArt(x.name)) ? Object.assign({}, x, {pct:pctR(v)}) : x);
+      if(splitTot(next)>100){ skip++; return; } r.splits=next; upd++; });
+  }
+  set.clear(); save(); renderArtists(); bulkBar('artists'); renderReleases(); renderRoyalties();
+  toast([tt('art.bulk_split_done').replace('{n}', arts.length).replace('{p}', pctR(v)),
+    upd ? tt('art.bulk_split_rel_done').replace('{n}', upd) : '', skip ? tt('art.bulk_split_skip').replace('{n}', skip) : ''].filter(Boolean).join(' · '));
+});
 function setArtistPhoto(d){ artistPhotoData=d||''; const ph=$('#art-photo');
   if(ph) ph.innerHTML = imgSrc(artistPhotoData)?`<img src="${imgSrc(artistPhotoData)}" alt="">`:`<span>${tt('art.photo')}</span>`; }
 /* tutte le release in cui compare un artista (come artista, in traccia o negli split) */
@@ -3613,16 +4116,32 @@ function artistReleases(name){
     (r.tracks||[]).some(t=>(t.splits||[]).some(s=>normArt(s.name)===nn))
   );
 }
+/* voci della discografia di un artista: la release intera se è sua (artista o quote della release),
+   altrimenti solo le sue tracce — in una compilation VA si vede la traccia, non tutta la VA */
+function artistDiscoItems(name){
+  const nn=normArt(name); if(!nn) return [];
+  const has=raw=>splitArtistNames(raw).some(x=>normArt(x)===nn);
+  const out=[];
+  tieSort(artistReleases(name), r=>+r.year||'', -1, [r=>r.catalog||'', r=>r.title||'']).forEach(r=>{   // più recenti prima
+    const va=String(r.type||'').toUpperCase()==='VA' || /^various artists?$|^v\.?a\.?$/i.test((r.artist||'').trim());
+    const tracks=(r.tracks||[]).filter(t=>has(t.artist) || (t.splits||[]).some(x=>normArt(x.name)===nn));
+    const own=has(r.artist) || (r.splits||[]).some(x=>normArt(x.name)===nn);
+    if(tracks.length && (va || !own)) tracks.forEach(t=>out.push({ r, t }));
+    else out.push({ r });
+  });
+  return out;
+}
 function renderArtistDisco(name){
   const box=$('#art-discography'), list=$('#art-disco-list'); if(!box||!list) return;
-  const rels=tieSort(artistReleases(name), r=>+r.year||'', -1, [r=>r.catalog||'', r=>r.title||'']);   // più recenti prima
-  const cnt=$('#art-disco-count'); if(cnt) cnt.textContent=rels.length?`(${rels.length})`:'';
-  const none=$('#as-none'); if(none) none.hidden=rels.length>0;
-  list.innerHTML=rels.map(r=>`
+  const items=artistDiscoItems(name);
+  const cnt=$('#art-disco-count'); if(cnt) cnt.textContent=items.length?`(${items.length})`:'';
+  const none=$('#as-none'); if(none) none.hidden=items.length>0;
+  list.innerHTML=items.map(({r,t})=>`
     <button class="art-disco-item" data-rel-open="${r.id}" type="button">
       <span class="art-disco-cat">${esc(r.catalog||'—')}</span>
-      <span class="art-disco-ttl">${esc(r.title||'')}</span>
-      <span class="art-disco-meta">${esc(r.type||'')}${r.year?` · ${esc(r.year)}`:''}</span>
+      <span class="art-disco-ttl">${esc(t ? (t.title||t.isrc||'—') : (r.title||''))}</span>
+      <span class="art-disco-meta">${t ? esc(tt('art.disco_in').replace('{rel}', r.title||r.catalog||'—'))+(r.year?` · ${esc(r.year)}`:'')
+        : `${esc(r.type||'')}${r.year?` · ${esc(r.year)}`:''}`}</span>
     </button>`).join('');
   box.hidden=false;
 }
@@ -3647,7 +4166,8 @@ function openArtistSheet(name){
   if(bal && (bal.royalties||bal.paid||bal.payable)){
     st.innerHTML=`<div><span class="muted small">${tt('art.sheet_earned')}</span><b>${fmtMoney(bal.royalties||0)}</b></div>`
       +`<div><span class="muted small">${tt('stmt.paid_total')}</span><b>${fmtMoney(bal.paid||0)}</b></div>`
-      +`<div><span class="muted small">${tt('stmt.balance')}</span><b class="${bal.payable>0.005?'neg':''}">${fmtMoney(bal.payable||0)}</b></div>`;
+      +`<div><span class="muted small">${tt('stmt.balance')}</span><b class="${bal.payable>0.005?'neg':''}">${fmtMoney(bal.payable||0)}</b></div>`
+      +(bal.overpaid>0.005?`<div><span class="muted small">${tt('stmt.overpaid')}</span><b>${fmtMoney(bal.overpaid)}</b></div>`:'');
     st.hidden=false; $('#as-royalty').hidden=false;
   } else { st.hidden=true; st.innerHTML=''; $('#as-royalty').hidden=true; }
   renderArtistDisco(shown);
@@ -3662,9 +4182,12 @@ function sheetReleases(){ const s=sheetArtist; if(!s) return; closeArtistSheet()
   if(opt){ sel.value=opt.value; renderReleases(); }
   else if($('#rel-search')){ $('#rel-search').value=s.name; renderReleases(); } }
 function sheetRoyalty(){ const s=sheetArtist; if(!s) return; closeArtistSheet(); goto('royalties');
-  const k=LFCore.artKey(s.name), sel=`[data-artist="${CSS.escape(k)}"]`;
-  const row=document.querySelector('#table-roy-artist tbody tr'+sel) || document.querySelector('#roy-cards .roy-card'+sel);
-  if(row){ row.click(); } }
+  // dettaglio direttamente dai calcoli: funziona anche se l'artista è in un'altra pagina della tabella
+  // o non ha vendite nel periodo scelto (allora si mostra tutto lo storico)
+  const k=LFCore.artKey(s.name);
+  const a=(computeRoyalties().byArtist||{})[k] || (LFCore.computeRoyalties(DB,{}).byArtist||{})[k];
+  if(a){ showRoyaltyDetail(a.name, a); $('#roy-detail-panel')?.scrollIntoView({behavior:'smooth'}); }
+  else toast(tt('pay.no_period')); }
 function openArtistForm(id){
   editingArtistId=id||null; const a=id?artistById(id):null;
   $('#art-form-title').textContent = a?tt('art.edit'):tt('art.new');
@@ -3678,14 +4201,29 @@ function openArtistForm(id){
 }
 function saveArtist(){
   const name=$('#art-name').value.trim(); if(!name){ toast(tt('art.need_name')); return; }
-  const data={ name, legal:$('#art-legal').value.trim(), email:$('#art-email').value.trim(),
-    phone:$('#art-phone').value.trim(), iban:$('#art-iban').value.trim(),
-    split:Number($('#art-split').value)||0, address:$('#art-address').value.trim(),
+  const rawSplit=String($('#art-split').value||'').replace(',','.').trim(), split=rawSplit===''?0:+rawSplit;
+  if(!(split>=0 && split<=100)){ toast(tt('art.split_invalid')); return; }
+  const email=$('#art-email').value.trim();
+  if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ toast(tt('art.email_invalid')); return; }
+  const iban=$('#art-iban').value.trim();
+  if(iban && !/^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/i.test(iban.replace(/\s+/g,'')) && !confirm(tt('art.iban_q'))) return;
+  const same=(DB.artists||[]).find(a=>a.id!==editingArtistId && normArt(a.name)===normArt(name));
+  if(same){ toast(tt('art.name_exists').replace('{name}', same.name)); return; }
+  const data={ name, legal:$('#art-legal').value.trim(), email,
+    phone:$('#art-phone').value.trim(), iban,
+    split:pctR(split), address:$('#art-address').value.trim(),
     note:$('#art-note').value.trim(), photo:artistPhotoData,
     taxId:($('#art-taxid')?$('#art-taxid').value.trim():''), taxRegime:($('#art-regime')?$('#art-regime').value:'') };
-  if(editingArtistId){ const a=artistById(editingArtistId); if(a) Object.assign(a,data); }
+  if(editingArtistId){ const a=artistById(editingArtistId);
+    if(a && a.name && a.name!==name){
+      // rinomina: il nuovo nome segue in movimenti, release, pagamenti, contratti (saldi e ritenuta restano giusti)
+      const n=renameArtistRefs(a.name, name, true);
+      if(n && !confirm(tt('art.rename_q').replace('{old}', a.name).replace('{new}', name).replace('{n}', n))) return;
+      if(n) renameArtistRefs(a.name, name);
+    }
+    if(a) Object.assign(a,data); }
   else { DB.artists.push(Object.assign({id:newId()}, data)); }
-  save(); $('#art-form').hidden=true; editingArtistId=null; renderArtists(); toast(tt('art.saved'));
+  save(); $('#art-form').hidden=true; editingArtistId=null; renderArtists(); renderReleases(); renderRoyalties(); toast(tt('art.saved'));
 }
 function deleteArtist(id){ const a=artistById(id); if(!a) return;
   if(!confirm(tt('art.del_confirm').replace('{name}',a.name))) return;
@@ -3695,7 +4233,7 @@ function deleteArtist(id){ const a=artistById(id); if(!a) return;
 let currentContract=null; let conLogoData='';
 function labelName(){ return (DB.profile&&DB.profile.label)||DB.name||'Label'; }
 function setConLogo(d){ conLogoData=d||''; const box=$('#con-logo-prev');
-  if(box) box.innerHTML = imgSrc(conLogoData)?`<img src="${imgSrc(conLogoData)}" alt="logo">`:`<span data-i18n="con.logo">Logo etichetta</span>`; }
+  if(box) box.innerHTML = imgSrc(conLogoData)?`<img src="${imgSrc(conLogoData)}" alt="logo">`:`<span>${esc(tt('con.logo'))}</span>`; }
 function conArtistPickOptions(){
   const sel=$('#con-artist-pick'); if(!sel) return;
   const opts=(DB.artists||[]).map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');
@@ -3703,11 +4241,9 @@ function conArtistPickOptions(){
 }
 function conFillFromArtist(id){
   const a=artistById(id); if(!a) return;
-  if(a.legal) $('#con-fullname').value=a.legal;
-  $('#con-project').value=a.name||'';
-  if(!$('#con-artist-names').value) $('#con-artist-names').value=a.name||'';
-  if(a.email) $('#con-email').value=a.email;
-  if(a.split){ $('#con-artist-pct').value=a.split; }
+  // l'artista scelto sostituisce i dati di quello di prima (anche quelli che lui non ha)
+  $('#con-fullname').value=a.legal||''; $('#con-project').value=a.name||''; $('#con-artist-names').value=a.name||'';
+  $('#con-email').value=a.email||''; $('#con-artist-pct').value=+a.split>0 ? a.split : 50;
   updateSplitBar();
 }
 function updateSplitBar(){
@@ -3746,7 +4282,7 @@ function collectContract(){
     titles:$('#con-titles').value.trim(), artistNames:$('#con-artist-names').value.trim(),
     writtenBy:$('#con-written').value.trim(), fullName:$('#con-fullname').value.trim(),
     projectName:$('#con-project').value.trim(), email:$('#con-email').value.trim(),
-    artistPct:p, label:labelName(), logo:conLogoData||'',
+    artistPct:p, label:labelName(), logo:conLogoData||'', labelId:(currentContract&&currentContract.labelId)||DB.id,
     status:(currentContract&&currentContract.status)||'draft',
     signed:(currentContract&&currentContract.signed)||null
   });
@@ -3767,13 +4303,15 @@ async function flushContractTombstones(){
   if(changed) save();
 }
 function generateContract(){
+  if(String($('#con-artist-pct').value).trim()===''){ toast(tt('con.need_pct')); return; }
   let c=collectContract();
   if(!c.titles){ toast(tt('con.need_titles')); return; }
   if(!c.fullName){ toast(tt('con.need_fullname')); return; }
   const prev=currentContract;
   if(prev && (prev.labelSign || prev.artistSign || prev.status==='signed') && contractTermsSig(prev)!==contractTermsSig(c)){
-    // contratto già firmato e termini cambiati: serve un nuovo giro di firme (e un nuovo link)
-    if(!confirm(tt('con.resign_confirm'))) return;
+    // termini cambiati dopo la firma o l'invio: serve un nuovo giro di firme (e un nuovo link)
+    const artistSigned=!!(prev.artistSign || prev.status==='signed');
+    if(!confirm(tt(artistSigned ? 'con.resign_confirm' : (prev.token ? 'con.resend_confirm' : 'con.relabel_confirm')))) return;
     tombstoneContract(prev.token);
     c=Object.assign({}, c, { labelSign:null, artistSign:null, signed:null, status:'draft', token:undefined, rejectReason:'', sentAt:null });
     flushContractTombstones();
@@ -3781,6 +4319,7 @@ function generateContract(){
   // ricorda il logo dell'etichetta per i prossimi contratti
   if(conLogoData && window.LF) window.LF.setProfile({ logo:conLogoData });
   currentContract=c;
+  saveCurrentContract(); renderContracts();   // bozza salvata subito: non si perde cambiando sezione
   $('#contract-doc').innerHTML=buildContractDoc(c);
   $('#con-form').hidden=true; $('#con-preview').hidden=false;
   updateConSendBtn();
@@ -3848,6 +4387,7 @@ function buildContractDoc(c){
     <p><b>Artist / Project Name:</b> ${esc(c.projectName)||'—'}</p>
     <h4>Signature</h4>
     <p>I confirm that I have read, understood, and accepted the terms of this Release Authorization.</p>
+    <p><b>Date of this agreement:</b> ${c.date?fmtDate(c.date):'—'}</p>
     ${sig}
   </div>`;
 }
@@ -3882,8 +4422,9 @@ async function sendContract(){
       openShareModal(r.link, c);
       return;
     }
-    // se manca il backend firma (tabella non creata), fallback su email
-    toast((r&&r.error)?(`${tt('con.send_fail')} (${r.error})`):tt('con.send_fail'));
+    // errore del server: il contratto resta aperto (niente email senza link); solo senza cloud si ripiega sull'email
+    if(r && r.error==='already_signed'){ toast(tt('con.already_signed')); return; }
+    if(!(r && (r.error==='offline' || r.error==='unauthorized'))){ toast(tt('con.send_fail')); return; }
   }
   // fallback: apre l'email con il testo del contratto
   if(c.status==='draft'||!c.status){ c.status='sent'; c.sentAt=Date.now(); saveCurrentContract(); renderContracts(); }
@@ -3955,6 +4496,8 @@ async function manualRefreshContracts(){
   }catch(e){ toast(tt('con.refresh_fail')); }
   finally{ if(btn){ btn.disabled=false; btn.classList.remove('spin'); } }
 }
+// il link di firma è usato anche da un'altra etichetta dello stesso account?
+function contractTokenElsewhere(token){ return !!token && (ACCOUNT.labels||[]).some(l=>l && l.id!==DB.id && (l.contracts||[]).some(c=>c && c.token===token)); }
 async function refreshContractStatuses(){
   if(!window.LF_refreshContractStatuses) return null;
   flushContractTombstones();
@@ -3965,10 +4508,11 @@ async function refreshContractStatuses(){
   rows.forEach(r=>{
     if(dead.has(r.token)) return;                 // eliminato da qui: non va ripristinato
     let c=DB.contracts.find(x=>x.token===r.token);
+    if(!c && r.data && ((r.data.labelId && r.data.labelId!==DB.id) || contractTokenElsewhere(r.token))) return;   // è di un'altra etichetta
     if(!c && r.data){
       // Contratto presente nel cloud ma assente in locale (es. creato su un altro
       // dispositivo): lo ripristino dai dati salvati al momento dell'invio.
-      c={...r.data, token:r.token};
+      c={...r.data, token:r.token, labelId:DB.id};
       if(!c.id || DB.contracts.some(x=>x.id===c.id)) c.id=uid();
       DB.contracts.push(c); changed=true;
     }
@@ -3989,8 +4533,10 @@ async function refreshContractStatuses(){
 }
 function printContract(){
   if(!currentContract) return;
-  document.body.classList.add('printing-contract');
-  const done=()=>{ document.body.classList.remove('printing-contract'); window.removeEventListener('afterprint',done); };
+  const pa=$('#print-area'), doc=$('#contract-doc'); if(!pa || !doc) return;
+  pa.innerHTML=`<div class="contract-doc">${doc.innerHTML}</div>`;
+  document.body.classList.add('print-statement','printing-contract');
+  const done=()=>{ document.body.classList.remove('print-statement','printing-contract'); window.removeEventListener('afterprint',done); };
   window.addEventListener('afterprint',done); window.print(); setTimeout(done,1500);
 }
 function downloadContractPDF(){
@@ -4017,7 +4563,7 @@ function openContract(id){ const c=DB.contracts.find(x=>x.id===id); if(!c) retur
 function deleteContract(id){ const c=DB.contracts.find(x=>x.id===id); if(!c) return;
   if(!confirm(tt('con.del_confirm'))) return;
   // elimina anche la copia nel cloud: il link di firma smette di funzionare e il contratto non ricompare
-  tombstoneContract(c.token);
+  if(!contractTokenElsewhere(c.token)) tombstoneContract(c.token);
   const tid=trashRemove('contracts',[id]); save(); renderContracts(); undoToast(tt('trash.deleted'), tid);
   flushContractTombstones(); }
 function conStatusPill(s){
@@ -4046,7 +4592,8 @@ function renderContracts(){
   $('#contracts-empty').hidden=(DB.contracts||[]).length>0;
   if(!all.length){ tb.innerHTML=''; mountPager(tb,'contracts',{total:0}); return; }
   const info=paginate(all,'contracts'); const list=info.slice;
-  const head=`<thead><tr><th>${tt('con.titles')}</th><th>${tt('con.fullname')}</th><th>${tt('con.split_short')}</th><th>${tt('con.date')}</th><th>${tt('con.status')}</th><th></th></tr></thead>`;
+  const nost=k=>tt(k).replace(/\s*\*\s*$/,'');
+  const head=`<thead><tr><th>${nost('con.titles')}</th><th>${nost('con.fullname')}</th><th>${tt('con.split_short')}</th><th>${tt('con.date')}</th><th>${tt('con.status')}</th><th></th></tr></thead>`;
   const rows=list.map(c=>{
     const who=(c.projectName||c.fullName||c.artistNames)?artNameLink(c.projectName||c.fullName||c.artistNames):'—';
     const reason = c.status==='rejected'&&c.rejectReason ? `<div class="con-reason">“${esc(c.rejectReason)}”</div>` : '';
@@ -4077,6 +4624,7 @@ async function loadSignFile(file){
 }
 function closeSignPad(){ $('#sign-modal').hidden=true; sigPad=null; }
 function confirmSign(){
+  if(conFullySigned(currentContract)){ toast(tt('con.already_signed')); closeSignPad(); return; }
   if(!sigPad || sigPad.isEmpty()){ toast(tt('con.sign_empty')); return; }
   const now=new Date();
   // firma dell'ETICHETTA (obbligatoria prima dell'invio all'artista)
@@ -4090,11 +4638,14 @@ function confirmSign(){
   updateConSendBtn();
   closeSignPad(); toast(tt('con.signed_label_ok'));
 }
+function conFullySigned(c){ return !!(c && c.status==='signed' && (c.artistSign||c.signed) && c.labelSign); }
 function updateConSendBtn(){
   const b=$('#con-send'); if(!b) return;
-  const ok=!!(currentContract && currentContract.labelSign);
+  const done=conFullySigned(currentContract);
+  const ok=!!(currentContract && currentContract.labelSign) && !done;
   b.disabled=!ok; b.classList.toggle('is-disabled',!ok);
-  b.title = ok ? '' : tt('con.need_label_sign');
+  b.title = done ? tt('con.already_signed') : (ok ? '' : tt('con.need_label_sign'));
+  ['#con-sign','#con-back'].forEach(sel=>{ const x=$(sel); if(x){ x.disabled=done; x.classList.toggle('is-disabled',done); x.title=done?tt('con.already_signed'):''; } });
 }
 
 /* ---------- Task ---------- */
@@ -4108,7 +4659,7 @@ function suggestedTasks(){
     artistPayables().filter(r=>r.payable>0.5).forEach(r=>{ const k='pay:'+normArt(r.name); if(existing.has(k))return;
       sug.push({key:k, type:'payment', due:isoPlus(7), title:tt('sug.pay').replace('{name}',r.name).replace('{amt}',fmtMoney(r.payable))}); });
   }catch(e){} }
-  (DB.contracts||[]).filter(c=>c.status==='sent').forEach(c=>{ const who=(c.artistNames||c.artist||'').trim();
+  (DB.contracts||[]).filter(c=>c.status==='sent').forEach(c=>{ const who=(c.artistNames||c.projectName||c.fullName||c.titles||'').trim();
     const k='contract:'+(c.id||normArt(who)); if(existing.has(k))return;
     sug.push({key:k, type:'contract', due:isoPlus(3), title:tt('sug.contract').replace('{name}',who||'—')}); });
   (DB.merch||[]).filter(m=>m.stock!=null && +m.stock<=5).forEach(m=>{ const k='reorder:'+normArt(m.name||''); if(existing.has(k))return;
@@ -4119,7 +4670,7 @@ function addSuggestedTask(s){ if(!s)return; DB.tasks.push({ id:newId(), title:s.
 function updateTaskSuggest(){
   const b=$('#task-suggest'); if(!b) return;
   const sug=suggestedTasks(); b._sug=sug;
-  if(!sug.length){ b.hidden=true; return; }
+  if(!sug.length || uiDismissGet('sug')===sug.map(s=>s.key).sort().join('|')){ b.hidden=true; return; }
   const ttl=$('.task-suggest-title',b); if(ttl) ttl.textContent=tt('sug.title').replace('{n}',sug.length);
   $('#task-suggest-list').innerHTML=sug.map((s,i)=>`
     <div class="rel-gap-item" style="cursor:default">
@@ -4132,7 +4683,7 @@ $('#task-suggest-list')?.addEventListener('click', e=>{ const btn=e.target.close
   const b=$('#task-suggest'); const s=(b._sug||[])[+btn.dataset.sugAdd]; if(s){ addSuggestedTask(s); save(); renderTasks(); toast(tt('sug.added')); } });
 $('#task-suggest-all')?.addEventListener('click', ()=>{ const b=$('#task-suggest'); const sug=b._sug||suggestedTasks(); if(!sug.length)return;
   sug.forEach(addSuggestedTask); save(); renderTasks(); toast(tt('sug.added')); });
-$('#task-suggest-x')?.addEventListener('click', ()=>{ const b=$('#task-suggest'); if(b) b.hidden=true; });
+$('#task-suggest-x')?.addEventListener('click', ()=>{ const b=$('#task-suggest'); if(b){ uiDismissSet('sug', (b._sug||[]).map(s=>s.key).sort().join('|')); b.hidden=true; } });
 
 function renderTasks(){
   const cont=$('#tasks-list'); if(!cont) return;
@@ -4235,7 +4786,8 @@ const MERCH_TYPES={tshirt:'mch.t_tshirt',vinyl:'mch.t_vinyl',cd:'mch.t_cd',hoodi
 const MERCH_ICON={tshirt:'👕',vinyl:'🎵',cd:'💿',hoodie:'🧥',poster:'🖼️',other:'📦'};
 let editingMerchId=null;
 function merchById(id){ return (DB.merch||[]).find(m=>m.id===id); }
-function merchRevenue(m){ return (+m.price||0)*(+m.sold||0); }
+// incasso registrato al momento di ogni vendita (cambiare il prezzo dopo non riscrive le vendite passate)
+function merchRevenue(m){ return m.revenue!=null ? +m.revenue||0 : (+m.price||0)*(+m.sold||0); }
 function merchMargin(m){ return ((+m.price||0)-(+m.cost||0))*(+m.sold||0); }
 /* salute margini: articoli in perdita o con markup troppo basso + prezzo minimo consigliato */
 function merchHealth(){
@@ -4263,12 +4815,16 @@ function merchPriceIssues(){
     if(med>0 && (max-min)/med>0.35) out.push({name:o.name, min, max, n:u.length}); });
   return out.sort((a,b)=>(b.max-b.min)-(a.max-a.min));
 }
+// riquadri chiusi con ✕ (suggerimenti, salute merch): restano chiusi anche dopo un ricaricamento, finché non cambia il contenuto
+const uiDismissKey=()=>'labelfinance.dismiss.'+((DB&&DB.id)||'');
+function uiDismissGet(k){ try{ return (JSON.parse(localStorage.getItem(uiDismissKey())||'{}')||{})[k]||''; }catch(e){ return ''; } }
+function uiDismissSet(k,v){ try{ const o=JSON.parse(localStorage.getItem(uiDismissKey())||'{}')||{}; o[k]=v; localStorage.setItem(uiDismissKey(), JSON.stringify(o)); }catch(e){} }
 let merchHealthDismissed='';
 function updateMerchHealth(){
   const b=$('#merch-health'); if(!b) return;
   const list=merchHealth(); const price=merchPriceIssues();
   const sig=list.map(x=>x.m.id+x.lvl).join(',')+'|'+price.map(p=>p.name+p.n).join(',');
-  if((!list.length && !price.length) || sig===merchHealthDismissed){ b.hidden=true; return; }
+  if((!list.length && !price.length) || sig===merchHealthDismissed || sig===uiDismissGet('mh')){ b.hidden=true; return; }
   const ttl=$('.merch-health-title',b); if(ttl) ttl.textContent=tt('mh.title').replace('{n}',list.length+price.length);
   $('#merch-health-list').innerHTML=list.map(x=>`
     <button class="rel-gap-item" data-mch-edit="${x.m.id}" type="button">
@@ -4283,7 +4839,7 @@ function updateMerchHealth(){
     </div>`).join('');
   b.hidden=false;
 }
-$('#merch-health-x')?.addEventListener('click', ()=>{ const list=merchHealth(), price=merchPriceIssues(); merchHealthDismissed=list.map(x=>x.m.id+x.lvl).join(',')+'|'+price.map(p=>p.name+p.n).join(','); const b=$('#merch-health'); if(b) b.hidden=true; });
+$('#merch-health-x')?.addEventListener('click', ()=>{ const list=merchHealth(), price=merchPriceIssues(); merchHealthDismissed=list.map(x=>x.m.id+x.lvl).join(',')+'|'+price.map(p=>p.name+p.n).join(','); uiDismissSet('mh', merchHealthDismissed); const b=$('#merch-health'); if(b) b.hidden=true; });
 let merchSort={col:'sold',dir:-1};   // di default: più venduti
 function sortMerch(arr){
   const k=merchSort.col, d=merchSort.dir;
@@ -4357,20 +4913,28 @@ function openMerchForm(id){
 }
 function saveMerch(){
   const name=$('#mch-name').value.trim(); if(!name){ toast(tt('mch.need_name')); return; }
-  const price=+$('#mch-price').value; if(!price&&price!==0){ toast(tt('mch.need_price')); return; }
-  const data={ name, type:$('#mch-type').value, price:price||0, cost:+$('#mch-cost').value||0,
-    stock:$('#mch-stock').value===''?null:(+$('#mch-stock').value||0), sold:+$('#mch-sold').value||0 };
-  if(editingMerchId){ const m=merchById(editingMerchId); if(m) Object.assign(m,data); }
+  const num=id=>parseFloat(String($(id).value).replace(',','.'));
+  if(String($('#mch-price').value).trim()===''){ toast(tt('mch.need_price')); return; }
+  const price=num('#mch-price'), cost=num('#mch-cost')||0, sold=Math.floor(num('#mch-sold')||0);
+  const stock=$('#mch-stock').value===''?null:Math.floor(num('#mch-stock')||0);
+  if(!(price>=0) || cost<0 || sold<0 || (stock!=null && stock<0)){ toast(tt('mch.negative')); return; }
+  const data={ name, type:$('#mch-type').value, price, cost, stock, sold };
+  if(editingMerchId){ const m=merchById(editingMerchId);
+    if(m){ if(m.revenue==null) m.revenue=(+m.price||0)*(+m.sold||0);   // fissa l'incasso già fatto col prezzo di allora
+      m.revenue+=(sold-(+m.sold||0))*price; Object.assign(m,data); } }
   else DB.merch.push(Object.assign({id:newId()},data));
   save(); $('#mch-form').hidden=true; editingMerchId=null; renderMerch(); toast(tt('mch.saved'));
 }
 function sellMerch(id){
   const m=merchById(id); if(!m) return;
   const qtyStr=prompt(tt('mch.sell_qty'),'1'); if(qtyStr===null) return;
-  const qty=Math.max(1,Math.floor(+qtyStr||0)); if(!qty) return;
-  m.sold=(+m.sold||0)+qty;
-  if(m.stock!=null) m.stock=Math.max(0,(+m.stock||0)-qty);
-  save(); renderMerch(); toast(tt('mch.sold_ok').replace('{n}',qty));
+  const qty=String(qtyStr).trim(); if(!/^\d+$/.test(qty) || +qty<1){ toast(tt('mch.qty_invalid')); return; }
+  const n=+qty;
+  if(m.stock!=null && n>(+m.stock||0) && !confirm(tt('mch.over_stock').replace('{n}', n).replace('{s}', +m.stock||0))) return;
+  if(m.revenue==null) m.revenue=(+m.price||0)*(+m.sold||0);
+  m.revenue+=n*(+m.price||0); m.sold=(+m.sold||0)+n;
+  if(m.stock!=null) m.stock=Math.max(0,(+m.stock||0)-n);
+  save(); renderMerch(); toast(tt('mch.sold_ok').replace('{n}',n));
 }
 function deleteMerch(id){ const m=merchById(id); if(!m) return;
   if(!confirm(tt('mch.del_confirm').replace('{name}',m.name))) return;
@@ -4379,7 +4943,7 @@ function deleteMerch(id){ const m=merchById(id); if(!m) return;
 /* ============================================================================
    PIANIFICAZIONE · EVENTI · SUPPORT DJ  (liste ordinabili + calendario)
    ============================================================================ */
-function calLang(){ return (window.LFI18N&&window.LFI18N.lang==='en')?'en-US':'it-IT'; }
+function calLang(){ return MONEY_LOCALE[(window.LFI18N&&window.LFI18N.lang)||'it']||'it-IT'; }   // mesi e giorni nella lingua scelta
 function ymdStr(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 /* ---------- Ordinamento con spareggio ----------
    Confronto "naturale": maiuscole e accenti ignorati, numeri nel testo in ordine
@@ -4421,8 +4985,8 @@ function dbRows(items, cols, opt){ opt=opt||{}; const sw=opt.sel?34:0; const t=d
     +(opt.actions?`<span class="dbl-act">${opt.actions(it)}</span>`:'')+`</div>`).join('');
 }
 /* registro colonne per sezione + configurazione (mostra/nascondi/ordina) */
-function relSplitText(r){ const tot=(r.splits||[]).reduce((s,x)=>s+(+x.pct||0),0); const lbl=Math.max(0,100-tot);
-  return (r.splits||[]).map(s=>esc(s.name)+' '+(+s.pct||0)+'%').join(' · ')+(lbl?` · Label ${lbl}%`:''); }
+function relSplitText(r){ const lbl=pctR(Math.max(0,100-splitTot(r.splits)));
+  return (r.splits||[]).map(s=>esc(s.name)+' '+pctR(s.pct)+'%').join(' · ')+(lbl?` · Label ${lbl}%`:''); }
 function colCfg(sec){ DB.colCfg=DB.colCfg||{}; const all=(COLDEFS[sec]||[]).map(c=>c.key);
   let cfg=DB.colCfg[sec]; if(!cfg||!Array.isArray(cfg.order)) cfg=DB.colCfg[sec]={order:all.slice(),hidden:[]};
   all.forEach((k,idx)=>{ if(cfg.order.includes(k)) return;
@@ -4442,7 +5006,11 @@ function colVal(sec, key){ const def=(COLDEFS[sec]||[]).find(c=>c.key===key);
 function colTies(sec, primary){ const keys=[...(TIE_KEYS[sec]||[]), ...(COLDEFS[sec]||[]).map(c=>c.key)];
   return [...new Set(keys)].filter(k=>k!==primary).map(k=>colVal(sec,k)); }
 function colSort(sec, arr, st){ if(!st||!st.col) return arr.slice();
-  return tieSort(arr, colVal(sec,st.col), st.dir, colTies(sec,st.col)); }
+  const out=tieSort(arr, colVal(sec,st.col), st.dir, colTies(sec,st.col));
+  // eventi e pianificazione per data crescente: prima i prossimi (da oggi in avanti), poi quelli passati (più recenti prima)
+  if((sec==='events'||sec==='planning') && st.col==='date' && st.dir===1){ const today=LFCore.today();
+    return out.filter(x=>(x.date||'')>=today).concat(out.filter(x=>(x.date||'')<today).reverse()); }
+  return out; }
 const rowActs=(pfx,id)=>`<button class="icon-btn-sm" data-${pfx}-edit="${id}" title="${tt('common.edit')}">✎</button><button class="icon-btn-sm" data-${pfx}-del="${id}" title="${tt('common.delete')}">🗑</button>`;
 const ctag=(label,k)=>`<span class="ctag ctag-${k}">${esc(label)}</span>`;
 const fmtDate=ds=>{ if(!ds) return ''; const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(ds); if(m) return m[3]+'/'+m[2]+'/'+m[1]; try{ const d=new Date(ds); return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear(); }catch(e){ return ds; } };
@@ -4525,20 +5093,32 @@ function bulkRerender(sec){
 }
 function bulkBar(sec){ const bar=$('#bulk-bar'); if(!bar) return; const n=(bulkSel[sec]||new Set()).size;
   if(!n){ bar.hidden=true; bar.dataset.sec=''; return; }
-  bar.dataset.sec=sec; const c=$('#bulk-count'); if(c) c.textContent=n; const bc=$('#bulk-credits'); if(bc) bc.hidden=(sec!=='releases'); bar.hidden=false; }
+  bar.dataset.sec=sec; const c=$('#bulk-count'); if(c) c.textContent=n; const bc=$('#bulk-credits'); if(bc) bc.hidden=(sec!=='releases'); const bs=$('#bulk-split'); if(bs) bs.hidden=(sec!=='artists'); bar.hidden=false; }
 function bulkToggleAll(sec,on){ document.querySelectorAll(`[data-sel^="${sec}|"]`).forEach(cb=>{ cb.checked=on;
     const id=cb.dataset.sel.split('|').slice(1).join('|'); (bulkSel[sec]||=new Set()); on?bulkSel[sec].add(id):bulkSel[sec].delete(id); });
   bulkBar(sec); }
+// righe di un periodo già chiuso tra quelle da eliminare: si dice nella conferma (gli statement inviati cambierebbero)
+function bulkClosedNote(sec, ids){ if(sec!=='transactions' || typeof perIsClosedTx!=='function') return '';
+  const set=new Set(ids); const n=(DB.transactions||[]).filter(t=>set.has(t.id) && perIsClosedTx(t)).length;
+  return n ? '\n\n'+tt('bulk.closed_note').replace('{n}', n) : ''; }
+// contratti eliminati in blocco: anche la copia nel cloud (il link di firma smette di funzionare)
+function bulkTombstone(sec, ids){ if(sec!=='contracts') return; const set=new Set(ids);
+  (DB.contracts||[]).forEach(c=>{ if(set.has(c.id) && c.token && !contractTokenElsewhere(c.token)) tombstoneContract(c.token); }); }
 function bulkDeleteSel(){ const bar=$('#bulk-bar'); const sec=bar&&bar.dataset.sec; const set=bulkSel[sec]; if(!set||!set.size) return;
-  if(!confirm(tt('bulk.del_q').replace('{n}',set.size))) return;
+  if(!confirm(tt('bulk.del_q').replace('{n}',set.size)+bulkClosedNote(sec,[...set]))) return;
+  bulkTombstone(sec,[...set]);
   const arr=secArr(sec); const n=set.size; let tid=null;
   if(arr) tid=trashRemove(sec, [...set], tt('trash.k_'+sec)+' · '+n+' '+tt('trash.items'));
-  set.clear(); save(); bulkRerender(sec); bulkBar(sec); undoToast(tt('trash.deleted_n').replace('{n}',n), tid); }
+  set.clear(); save(); bulkRerender(sec); bulkBar(sec); undoToast(tt('trash.deleted_n').replace('{n}',n), tid);
+  if(sec==='contracts') flushContractTombstones(); }
 function bulkClearAll(sec){ const arr=secArr(sec); const len=(DB[arr]||[]).length;
   if(!len){ toast(tt('bulk.empty_already')); return; }
-  if(!confirm(tt('bulk.clear_q').replace('{n}',len))) return;
-  const tid=trashRemove(sec, (DB[arr]||[]).map(x=>x&&x.id), tt('trash.k_'+sec)+' · '+len+' '+tt('trash.items'));
-  DB[arr]=[]; bulkSel[sec]&&bulkSel[sec].clear(); save(); bulkRerender(sec); bulkBar(sec); undoToast(tt('trash.deleted_n').replace('{n}',len), tid); }
+  const allIds=(DB[arr]||[]).map(x=>x&&x.id);
+  if(!confirm(tt('bulk.clear_q').replace('{n}',len)+bulkClosedNote(sec,allIds))) return;
+  bulkTombstone(sec, allIds);
+  const tid=trashRemove(sec, allIds, tt('trash.k_'+sec)+' · '+len+' '+tt('trash.items'));
+  DB[arr]=[]; bulkSel[sec]&&bulkSel[sec].clear(); save(); bulkRerender(sec); bulkBar(sec); undoToast(tt('trash.deleted_n').replace('{n}',len), tid);
+  if(sec==='contracts') flushContractTombstones(); }
 document.addEventListener('change', e=>{
   const one=e.target.closest('[data-sel]'); if(one){ const p=one.dataset.sel.split('|'); const sec=p[0], id=p.slice(1).join('|');
     (bulkSel[sec]||=new Set()); one.checked?bulkSel[sec].add(id):bulkSel[sec].delete(id); bulkBar(sec); return; }
@@ -4669,7 +5249,7 @@ function renderPlanning(){
 function openPlnForm(id){ editingPlnId=id||null; const p=id?plnById(id):null;
   $('#pln-form-title').textContent = p?tt('common.edit'):tt('pln.new');
   $('#pln-title').value=p?p.title||'':''; $('#pln-kind').value=p?p.kind||'release':'release';
-  $('#pln-artist').value=p?p.artist||'':''; $('#pln-date').value=p?p.date||'':( $('#pln-date').value||'');
+  $('#pln-artist').value=p?p.artist||'':''; $('#pln-date').value=p?p.date||'':'';   // nuovo: niente data del precedente
   $('#pln-status').value=p?p.status||'idea':'idea'; $('#pln-platform').value=p?p.platform||'':''; $('#pln-note').value=p?p.note||'':'';
   $('#pln-form').hidden=false; $('#pln-form').scrollIntoView({behavior:'smooth',block:'start'}); }
 function savePlanning(){
@@ -4705,7 +5285,7 @@ function renderEvents(){
 function openEvtForm(id){ editingEvtId=id||null; const e=id?evtById(id):null;
   $('#evt-form-title').textContent = e?tt('common.edit'):tt('evt.new');
   $('#evt-title').value=e?e.title||'':''; $('#evt-kind').value=e?e.kind||'showcase':'showcase';
-  $('#evt-date').value=e?e.date||'':( $('#evt-date').value||''); $('#evt-time').value=e?e.time||'':'';
+  $('#evt-date').value=e?e.date||'':''; $('#evt-time').value=e?e.time||'':'';   // nuovo: niente data del precedente
   $('#evt-venue').value=e?e.venue||'':''; $('#evt-city').value=e?e.city||'':''; $('#evt-country').value=e?e.country||'':''; $('#evt-note').value=e?e.note||'':'';
   $('#evt-form').hidden=false; $('#evt-form').scrollIntoView({behavior:'smooth',block:'start'}); }
 function saveEvent(){
@@ -4805,9 +5385,14 @@ function wireAgenda(){
 /* ============================================================================
    NOTIFICHE  (tendina in alto a destra)
    ============================================================================ */
+// avvisi separati per etichetta: chiuderne uno in un'etichetta non lo fa ricomparire passando a un'altra,
+// e i recuperi degli anticipi di un'etichetta non creano avvisi o task nell'altra
 const NOTIF_KEY='labelfinance.notifs';
-let NOTIFS=(function(){ try{ const n=JSON.parse(localStorage.getItem(NOTIF_KEY)); if(n&&Array.isArray(n.list)) return {list:n.list, dismissed:n.dismissed||[]}; }catch(e){} return {list:[],dismissed:[]}; })();
-function notifSave(){ try{ localStorage.setItem(NOTIF_KEY, JSON.stringify(NOTIFS)); }catch(e){} }
+const notifKey=()=>NOTIF_KEY+'.'+((typeof DB!=='undefined' && DB && DB.id)||'');
+function notifLoad(){ try{ const n=JSON.parse(localStorage.getItem(notifKey())||localStorage.getItem(NOTIF_KEY));
+  if(n&&Array.isArray(n.list)) return {list:n.list, dismissed:n.dismissed||[], recoupSeen:n.recoupSeen||{}}; }catch(e){} return {list:[],dismissed:[]}; }
+let NOTIFS=notifLoad(), notifFor=(typeof DB!=='undefined' && DB && DB.id)||'';
+function notifSave(){ try{ localStorage.setItem(notifKey(), JSON.stringify(NOTIFS)); }catch(e){} }
 function svgIco(inner){ return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`; }
 const SECTION_SVG={
   releases:    svgIco('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/>'),
@@ -4819,14 +5404,16 @@ const SECTION_SVG={
 function notifIcon(it){ const v=it.view||(it.type==='unlinked'?'releases':it.type==='enrich'?'import':it.relId?'releases':'tasks'); return SECTION_SVG[v]||SECTION_SVG.tasks; }
 function notifScan(){
   if(typeof DB==='undefined'||!DB) return;
+  if(notifFor!==DB.id){ NOTIFS=notifLoad(); notifFor=DB.id; }   // etichetta cambiata: i suoi avvisi
   const unlinked=new Set();
-  const ridx=relIdx(); (DB.transactions||[]).forEach(t=>{ const p=(t.product||'').trim(); if(!p) return; if(!releaseForTx(t, ridx)) unlinked.add(p); });
+  // solo le vendite: una spesa con descrizione ("Mastering", "Distribuzione") non è un prodotto da collegare
+  const ridx=relIdx(); (DB.transactions||[]).forEach(t=>{ if(t.kind==='expense') return; const p=(t.product||'').trim(); if(!p) return; if(!releaseForTx(t, ridx)) unlinked.add(p); });
   const ukeys=new Set([...unlinked].map(p=>p.toLowerCase()));
   NOTIFS.list=NOTIFS.list.filter(n=> n.type!=='unlinked' || ukeys.has((n.ref||'').toLowerCase()));   // risolti via
   // le notifiche eliminate restano eliminate: si ripuliscono solo i prodotti ora collegati
   // (prima venivano cancellati anche gli altri tipi e le notifiche eliminate ricomparivano)
   const KEEP_DISMISSED=/^(enrich|task|miss|unsigned|owed|close|fx):/;
-  NOTIFS.dismissed=(NOTIFS.dismissed||[]).filter(k=>KEEP_DISMISSED.test(k) || ukeys.has(k)).slice(-400);
+  NOTIFS.dismissed=(NOTIFS.dismissed||[]).filter(k=>KEEP_DISMISSED.test(k) || ukeys.has(k)).slice(-2000);
   unlinked.forEach(p=>{ const lk=p.toLowerCase(), key='unlinked:'+lk;
     if((NOTIFS.dismissed||[]).includes(lk)) return;
     if(NOTIFS.list.some(n=>n.key===key)) return;
@@ -5144,7 +5731,8 @@ function endTour(){ const el=$('#tour'); if(el) el.hidden=true; document.body.st
   if($('#tour-never')?.checked){ try{ localStorage.setItem(TOUR_DONE_KEY,'1'); }catch(e){} }
   try{ sessionStorage.setItem('labelfinance.tourSeen','1'); }catch(e){}
 }
-function tourNext(){ if(tourIdx>=TOUR_STEPS.length-1){ endTour(); return; } tourIdx++; renderTour(); }
+// arrivati alla fine ("Fine"): il tour non riparte da solo nelle prossime aperture
+function tourNext(){ if(tourIdx>=TOUR_STEPS.length-1){ try{ localStorage.setItem(TOUR_DONE_KEY,'1'); }catch(e){} endTour(); return; } tourIdx++; renderTour(); }
 function tourPrev(){ if(tourIdx>0){ tourIdx--; renderTour(); } }
 $('#tour-next')?.addEventListener('click',tourNext);
 $('#tour-prev')?.addEventListener('click',tourPrev);
@@ -5181,3 +5769,29 @@ try{ updateNotifHint(); }catch(e){}
 window.addEventListener('lf-contracts-changed', ()=>{ if(typeof refreshContractStatuses==='function') refreshContractStatuses(); });
 setInterval(()=>{ if(document.visibilityState==='visible' && document.querySelector('#view-contracts.is-active') && typeof refreshContractStatuses==='function') refreshContractStatuses(); }, 10000);
 document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible' && document.querySelector('#view-contracts.is-active') && typeof refreshContractStatuses==='function') refreshContractStatuses(); });
+
+/* ============================================================================
+   Esc chiude la finestra aperta in cima (release, movimento, crediti, colonne, portale…),
+   con il suo pulsante di chiusura così le pulizie di ogni finestra restano le stesse.
+   Il tour si chiude anche lui con Esc.
+   ============================================================================ */
+// in cattura (prima degli altri gestori): se in cima c'è una finestra che chiude da sé con Esc
+// (scheda artista, cestino, versioni, conto economico, allegati, pacchetto, ricerca) lascia fare a lei,
+// così Esc non chiude anche la finestra sotto
+const ESC_SELF=['#art-sheet','#trash-modal','#ver-modal','#pl-modal','#pack-modal','#att-view','#gs-modal'];
+window.addEventListener('keydown', e=>{
+  if(e.key!=='Escape' || e.defaultPrevented) return;
+  const tour=$('#tour'); if(tour && !tour.hidden){ e.preventDefault(); endTour(); return; }
+  if(ESC_SELF.some(sel=>{ const x=$(sel); return x && !x.hidden; })) return;
+  if(($('#ai-pop') && !$('#ai-pop').hidden) || document.body.classList.contains('drawer-open') || ($('#mobile-more') && !$('#mobile-more').hidden)) return;
+  const open=[...document.querySelectorAll('.modal:not([hidden])')].filter(m=>getComputedStyle(m).display!=='none');
+  if(!open.length) return;
+  const z=m=>parseInt(getComputedStyle(m).zIndex,10)||0;
+  const m=open.reduce((top,x)=>z(x)>=z(top)?x:top);   // la più in alto (a parità, l'ultima nella pagina)
+  e.preventDefault();
+  const btn=m.querySelector('.modal-x, [id$="-close"], [id$="-cancel"], [data-close]');
+  if(btn) btn.click(); else m.hidden=true;
+}, true);
+// lingua cambiata: i menu a tendina costruiti dall'app si ricostruiscono nella nuova lingua
+window.addEventListener('langchange', ()=>{ ['#rel-artist-filter','#per-range'].forEach(sel=>{ const el=$(sel); if(el) delete el.dataset.sig; });
+  try{ if(typeof populateRelArtistFilter==='function') populateRelArtistFilter(); if(typeof renderPeriods==='function' && DB) renderPeriods(); }catch(err){} });

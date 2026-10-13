@@ -113,12 +113,16 @@ function renderFx(){
    ============================================================================ */
 function perState(){ const p=DB.periods||(DB.periods={}); p.closed=p.closed||[]; return p; }
 function perLockDate(){ return perState().closed.reduce((m,c)=>(c.to>m?c.to:m), ''); }
-function perIsClosedTx(t){ const lock=perLockDate(); return !!(lock && t && t.kind==='income' && LFCore.acctDate(t)<=lock); }
+// periodo chiuso che contiene la data (conta l'intervallo, non solo l'ultima chiusura:
+// chiudere il Q3 non chiude il Q1 mai chiuso)
+function perClosedAt(d){ return d ? perState().closed.find(c=>c && d>=c.from && d<=c.to) || null : null; }
+function perIsClosedTx(t){ return !!(t && t.kind==='income' && perClosedAt(LFCore.acctDate(t))); }
+// primo giorno aperto dopo un periodo chiuso (salta i periodi chiusi uno dopo l'altro)
+function perNextOpen(d){ let c=perClosedAt(d), n=d, guard=0; while(c && guard++<200){ n=LFCore.addDays(c.to,1); c=perClosedAt(n); } return n; }
 /* righe nuove con data in un periodo chiuso → nel primo giorno aperto; restituisce quante */
 function markLateLines(recs){
-  const lock=perLockDate(); if(!lock) return 0;
-  const next=LFCore.addDays(lock,1); let n=0;
-  (recs||[]).forEach(r=>{ if(r && r.kind==='income' && r.date && r.date<=lock && !r.acct){ r.acct=next; n++; } });
+  if(!perState().closed.length) return 0; let n=0;
+  (recs||[]).forEach(r=>{ if(r && r.kind==='income' && r.date && !r.acct && perClosedAt(r.date)){ r.acct=perNextOpen(r.date); n++; } });
   return n;
 }
 // trimestri/semestri/anni come intervalli di date
@@ -213,7 +217,7 @@ function renderPeriodHistory(){
 async function perStatementBlob(st){
   const host=document.createElement('div');
   host.style.cssText='position:fixed;left:-9999px;top:0;width:800px;background:#fff';
-  host.innerHTML=`<div class="stmt-pdf">${statementHTML(st)}</div>`;
+  host.innerHTML=`<div class="stmt-pdf" style="width:${PDF_W8}px">${statementHTML(st)}</div>`;
   document.body.appendChild(host);
   try{
     return await html2pdf().set({ margin:[8,8,8,8], image:{type:'jpeg',quality:0.95},
@@ -338,7 +342,8 @@ function whFor(name){
 function whCalc(gross, w){ const wh=r2(gross*w.base*w.rate); return { withholding:wh, net:r2(gross-wh) }; }
 /* chiamata da recordPayout: false = l'utente ha annullato */
 function whApplyToPayout(po){
-  const w=whFor(po.artist); if(!w) return true;
+  const w=whFor(po.artist);
+  if(!w){ const a=(typeof findArtist==='function')?findArtist(po.artist):null; if(a && a.taxRegime) po.regime=a.taxRegime; return true; }   // P.IVA / estero: nota sulla ricevuta
   const c=whCalc(po.amount, w);
   const msg=tt('wh.confirm').replace('{name}', po.artist).replace('{gross}', fmtMoney(po.amount)).replace('{rule}', tt('wh.rule_'+w.regime))
     .replace('{wh}', fmtMoney(c.withholding)).replace('{net}', fmtMoney(c.net));
@@ -350,11 +355,21 @@ function whApplyToPayout(po){
   DB.tasks.push({ id:newId(), title:tt('wh.task').replace('{amt}', fmtMoney(c.withholding)).replace('{name}', po.artist), type:'payment', due, time:'', remind:1440, done:false, autoKey:'f24:'+po.id });
   return true;
 }
-// numero progressivo della ricevuta nell'anno (in ordine di data)
+// numero progressivo della ricevuta nell'anno: assegnato una volta e salvato sul pagamento,
+// così non cambia se un altro pagamento viene eliminato (e un numero già usato non torna)
+function ensureReceiptNumbers(y){
+  const same=(DB.payouts||[]).filter(p=>p && (p.date||'').slice(0,4)===y);
+  let max=Math.max(0, ...same.map(p=>+p.rcpt||0), +((DB.rcptMax||{})[y]||0));
+  let changed=false;
+  same.filter(p=>!(+p.rcpt>0)).sort((a,b)=>String(a.date).localeCompare(String(b.date))||String(a.id).localeCompare(String(b.id)))
+    .forEach(p=>{ p.rcpt=++max; changed=true; });
+  (DB.rcptMax=DB.rcptMax||{})[y]=max;
+  return changed;
+}
 function receiptNumber(po){
   const y=(po.date||'').slice(0,4);
-  const same=(DB.payouts||[]).filter(p=>(p.date||'').slice(0,4)===y).sort((a,b)=>String(a.date).localeCompare(String(b.date))||String(a.id).localeCompare(String(b.id)));
-  return (same.findIndex(p=>p.id===po.id)+1)+'/'+y;
+  if(!(+po.rcpt>0) && ensureReceiptNumbers(y)) save();
+  return (po.rcpt||'?')+'/'+y;
 }
 function receiptHTML(po){
   const a=(typeof findArtist==='function')?findArtist(po.artist):null;
@@ -388,7 +403,7 @@ async function downloadReceipt(id){
   const po=(DB.payouts||[]).find(p=>p.id===id); if(!po) return;
   const host=document.createElement('div');
   host.style.cssText='position:fixed;left:-9999px;top:0;width:800px;background:#fff';
-  host.innerHTML=`<div class="stmt-pdf rcpt-pdf">${receiptHTML(po)}</div>`;
+  host.innerHTML=`<div class="stmt-pdf rcpt-pdf" style="width:${PDF_W10}px">${receiptHTML(po)}</div>`;
   document.body.appendChild(host);
   const fname=`${tt('wh.r_file')} ${safeName(po.artist)} ${po.date||''}.pdf`;
   try{

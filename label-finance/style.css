@@ -121,7 +121,20 @@ body.nav-collapsed{grid-template-columns:78px 1fr}
 @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .view-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:24px;flex-wrap:wrap}
 .head-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;align-items:center;min-width:0}
-.head-actions>.input,.head-actions>.select{min-width:160px;flex:1 1 180px;max-width:280px}
+.head-actions>.input,.head-actions>.select{min-width:0;flex:0 1 auto;width:auto;max-width:280px}
+/* tutto su una riga: menu della misura del testo, ricerca a larghezza fissa (prima si allargavano dopo il calcolo e mandavano a capo i pulsanti) */
+.head-actions>.input:not(.input--date){width:220px}
+/* stessa altezza per menu, date e pulsanti in alto a destra */
+.head-actions>.select,.head-actions>.input,.head-actions>.btn{height:41px;min-height:41px}
+.ha-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+/* Dashboard sul telefono: periodo, ⚙ e PDF su una riga; le date del periodo personalizzato vanno sotto */
+@media(max-width:600px){
+  #view-dashboard .head-actions{flex-direction:row;flex-wrap:wrap;justify-content:flex-start}
+  #view-dashboard .head-actions>.select{flex:1 1 0;min-width:140px;max-width:none}
+  #view-dashboard .head-actions>.input--date{order:5;flex:1 1 calc(50% - 5px);min-width:0;max-width:none}
+  #btn-dash-edit{width:41px;padding:0}
+  #btn-dash-edit .ha-txt,#btn-print .ha-long{display:none}
+}
 
 /* ===== Topbar globale (vetro) ===== */
 .topbar{

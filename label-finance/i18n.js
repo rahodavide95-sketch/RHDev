@@ -2835,6 +2835,15 @@
   Object.assign(DICT.pt, {"fx.fixed_title": "Taxas fixas"});
   Object.assign(DICT.nl, {"fx.fixed_title": "Vaste koersen"});
 
+  /* pulsante Personalizza della dashboard (senza icona) */
+  Object.assign(DICT.it, {"dash.customize_t": "Personalizza"});
+  Object.assign(DICT.en, {"dash.customize_t": "Customize"});
+  Object.assign(DICT.es, {"dash.customize_t": "Personalizar"});
+  Object.assign(DICT.fr, {"dash.customize_t": "Personnaliser"});
+  Object.assign(DICT.de, {"dash.customize_t": "Anpassen"});
+  Object.assign(DICT.pt, {"dash.customize_t": "Personalizar"});
+  Object.assign(DICT.nl, {"dash.customize_t": "Aanpassen"});
+
   // lingua salvata (condivisa con la pagina pubblica) oppure quella del browser, se è una delle 7
   let lang = (function(){ let s=null; try{ s=localStorage.getItem(KEY); }catch(e){}
     if(s && DICT[s]) return s;

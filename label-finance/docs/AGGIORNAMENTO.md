@@ -8,6 +8,8 @@ Nessuna modifica al database: basta la pubblicazione dell'app.
 - **Movimenti**: la barra delle schede non si sposta più passando a Uscite; il
   Registro pagamenti si apre in una finestra più grande.
 - **+ Entrata / + Uscita** in colori pastello pieni, senza bordo, più luminosi al passaggio.
+- **Dashboard**: periodo, Personalizza e Report PDF su una riga sola, tutti alti uguali
+  (sul telefono ⚙ e "PDF" compatti; le date del periodo personalizzato vanno sotto).
 - **Login** senza bordo.
 - **Calendario**: ogni evento ha in prima riga il tipo di attività in maiuscolo.
 

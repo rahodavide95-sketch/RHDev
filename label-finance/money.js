@@ -213,7 +213,7 @@ function renderPeriodHistory(){
 async function perStatementBlob(st){
   const host=document.createElement('div');
   host.style.cssText='position:fixed;left:-9999px;top:0;width:800px;background:#fff';
-  host.innerHTML=`<div class="stmt-pdf">${statementHTML(st)}</div>`;
+  host.innerHTML=`<div class="stmt-pdf" style="width:${PDF_W8}px">${statementHTML(st)}</div>`;
   document.body.appendChild(host);
   try{
     return await html2pdf().set({ margin:[8,8,8,8], image:{type:'jpeg',quality:0.95},
@@ -388,7 +388,7 @@ async function downloadReceipt(id){
   const po=(DB.payouts||[]).find(p=>p.id===id); if(!po) return;
   const host=document.createElement('div');
   host.style.cssText='position:fixed;left:-9999px;top:0;width:800px;background:#fff';
-  host.innerHTML=`<div class="stmt-pdf rcpt-pdf">${receiptHTML(po)}</div>`;
+  host.innerHTML=`<div class="stmt-pdf rcpt-pdf" style="width:${PDF_W10}px">${receiptHTML(po)}</div>`;
   document.body.appendChild(host);
   const fname=`${tt('wh.r_file')} ${safeName(po.artist)} ${po.date||''}.pdf`;
   try{

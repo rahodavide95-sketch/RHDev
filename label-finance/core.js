@@ -345,9 +345,10 @@
 
   /* ---------- Unione dei dati tra dispositivi (sync) ---------- */
   // Unione a tre vie: base = ultima versione sincronizzata, local = questo dispositivo,
-  // remote = cloud. Gli elenchi con "id" si uniscono elemento per elemento; se lo
-  // stesso elemento è cambiato da entrambe le parti vince questo dispositivo.
-  const ID_ARRAYS=new Set(['transactions','releases','artists','tasks','contracts','merch','planning','events','supports','recurring','recoup','payouts','contractTombstones']);
+  // remote = cloud. Gli elenchi con "id" si uniscono elemento per elemento e, dentro
+  // lo stesso elemento, campo per campo (importo cambiato qui, nota cambiata altrove:
+  // restano entrambi); se lo stesso campo è cambiato da entrambe le parti vince questo dispositivo.
+  const ID_ARRAYS=new Set(['transactions','releases','artists','tasks','contracts','merch','planning','events','supports','recurring','recoup','payouts','contractTombstones','trash']);
   function stable(v){
     if(v===undefined) return 'u';
     if(v===null || typeof v!=='object') return JSON.stringify(v);
@@ -384,7 +385,7 @@
     for(const k of new Set([...Object.keys(r), ...Object.keys(l)])){
       const bv=b[k], lv=l[k], rv=r[k];
       let v;
-      if(ID_ARRAYS.has(k) && (Array.isArray(lv) || Array.isArray(rv))) v=mergeById(bv, lv||[], rv||[]);
+      if(ID_ARRAYS.has(k) && (Array.isArray(lv) || Array.isArray(rv))) v=mergeById(bv, lv||[], rv||[], mergeObj);
       else if(isPlain(lv) && isPlain(rv)) v=mergeObj(bv, lv, rv);
       else v=pickVal(bv, lv, rv);
       if(v!==undefined) out[k]=v;

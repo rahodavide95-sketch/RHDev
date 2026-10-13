@@ -1,6 +1,6 @@
 /* Service worker — offline-first leggero, network-first per evitare versioni vecchie.
-   La copia offline si cerca ignorando "?v=…", così le versioni dei file nelle pagine
-   non devono essere ripetute qui. Cambia CACHE quando vuoi forzare una pulizia. */
+   La copia offline si cerca prima esatta (stessa "?v=…", così HTML e JS restano della
+   stessa versione) e solo se manca ignorando "?v=…". Cambia CACHE quando vuoi forzare una pulizia. */
 const CACHE='lf-cache-v192';
 const CORE=['./','index.html','app.html','artista.html','firma.html','style.css','core.js','app.js','config.js','i18n.js','sync.js',
   'theme-boot.js','landing.js','pwa-redirect.js','signature.js','tables.js','team.js','files.js','search.js','insights.js','money.js','safety.js','firma.js','artista.js','vendor/supabase.min.js','html2pdf.bundle.min.js',
@@ -14,6 +14,7 @@ self.addEventListener('fetch',e=>{
   if(url.origin!==location.origin) return;            // Supabase/font: lascia passare
   e.respondWith(
     fetch(req).then(res=>{ if(res.ok){ const copy=res.clone(); caches.open(CACHE).then(c=>c.put(req,copy)); } return res; })
-              .catch(()=>caches.match(req,{ignoreSearch:true}))
+              // offline: prima la copia esatta (stessa ?v=), poi una qualsiasi dello stesso file
+              .catch(()=>caches.match(req).then(r=>r||caches.match(req,{ignoreSearch:true})))
   );
 });

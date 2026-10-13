@@ -160,7 +160,13 @@ function save(){ saveLocal();
 window.LF = {
   ready: lfReady,
   data(){ return ACCOUNT; },
-  applyCloud(d){ ACCOUNT = migrateAccount(d); DB = activeLabel(); saveLocal(); reloadViews(); if(typeof rebuildAccountMenu==='function') rebuildAccountMenu();
+  applyCloud(d){
+    // l'etichetta aperta su QUESTO dispositivo resta quella (se esiste ancora): un altro dispositivo
+    // che cambia etichetta non deve spostare sotto i piedi un modulo aperto qui
+    const keep=ACCOUNT && ACCOUNT.activeLabel;
+    ACCOUNT = migrateAccount(d);
+    if(keep && keep!==ACCOUNT.activeLabel && (ACCOUNT.labels||[]).some(l=>l && l.id===keep)) ACCOUNT.activeLabel=keep;
+    DB = activeLabel(); saveLocal(); reloadViews(); if(typeof rebuildAccountMenu==='function') rebuildAccountMenu();
     // spese ricorrenti scadute nel frattempo (la versione del cloud può essere indietro)
     if(typeof processRecurring==='function' && !window.LF_readOnly) try{ processRecurring(); }catch(e){} },
   // quanti dati ci sono su questo dispositivo (per chiedere conferma prima di unirli a un account)
@@ -304,6 +310,8 @@ function autoMap(headers){
 /* ============================================================================
    NAVIGAZIONE
    ============================================================================ */
+/* larghezza utile di un A4 (210 mm) a 96 dpi meno i margini di html2pdf: oltre, il PDF taglia la colonna di destra */
+const PDF_W8=Math.floor((210-16)*96/25.4), PDF_W10=Math.floor((210-20)*96/25.4);
 const VIEW_TITLES={dashboard:'Dashboard',consolidated:'Consolidato',transactions:'Movimenti',releases:'Discografia',planning:'Pianificazione',events:'Eventi',supports:'Support DJ',royalties:'Royalty',artists:'Artisti',contracts:'Contratti',tasks:'Task',merch:'Merch',import:'Importa CSV',settings:'Impostazioni',about:'Chi siamo',offers:'Offerte & Piani',faq:'Aiuto & FAQ'};
 let currentView='dashboard';
 function goto(view){
@@ -345,8 +353,11 @@ const ART_NOLINK=new Set(['various artists','various','va','v.a.','label','—',
 // ogni nome di artista è cliccabile (anche se non è ancora in rubrica): apre la scheda artista
 function artLink1(raw){ const name=(raw||'').trim(); if(!name || ART_NOLINK.has(name.toLowerCase())) return esc(raw||'');
   return `<span class="lf-link" data-art-open="${esc(name)}" title="${esc(tt('art.sheet_open'))}">${esc(name)}</span>`; }
+// separatori tra artisti: "/" e "x" solo con spazi intorno (AC/DC e Max restano interi)
+const ART_SEP='\\s*(?:,|;|&|\\s\\/\\s|\\sx\\s|\\bfeat\\.?(?=\\s)|\\bft\\.?(?=\\s)|\\bfeaturing\\b)\\s*';
+const ART_SPLIT_RE=new RegExp(ART_SEP,'i'), ART_SPLIT_CAP=new RegExp('('+ART_SEP+')','i');
 function artNameLink(name){ name=(name||'').toString(); if(!name.trim()) return esc(name);
-  const parts=name.split(/(\s*,\s*|\s*&\s*|\s*;\s*|\s*\/\s*|\s+feat\.?\s+|\s+ft\.?\s+)/i);
+  const parts=name.split(ART_SPLIT_CAP);
   return parts.map((p,i)=> i%2===1 ? esc(p) : artLink1(p)).join(''); }
 
 /* nome sezione nella topbar: visibile solo quando il titolo sotto è scrollato via */
@@ -937,9 +948,9 @@ GROUP_TABLES.forEach(cfg=>registerExport('group:'+cfg.sel, ()=>{
   return {title:cfg.label, headers:[cfg.label,'Entrate (€)','Uscite (€)','Margine (€)'], rows};
 }));
 registerExport('releases', ()=>{
-  const rows=releases().map(r=>{ const tot=(r.splits||[]).reduce((s,x)=>s+(+x.pct||0),0);
-    const splits=(r.splits||[]).map(s=>`${s.name} ${(+s.pct||0)}%`).join(' · ');
-    return [r.catalog, r.title||'', r.year||'', splits, Math.max(0,100-tot)+'%']; });
+  const rows=releases().map(r=>{ const tot=splitTot(r.splits);
+    const splits=(r.splits||[]).map(s=>`${s.name} ${pctR(s.pct)}%`).join(' · ');
+    return [r.catalog, r.title||'', r.year||'', splits, pctR(Math.max(0,100-tot))+'%']; });
   return {title:'Release', headers:['Catalogo','Titolo','Anno','Quote artisti','Quota label'], rows};
 });
 registerExport('royalty', ()=>{
@@ -1247,6 +1258,7 @@ $('#cols-reset').onclick=()=>{
    release = { id, catalog, title, year, splits:[{name, pct}] }
    ============================================================================ */
 function releases(){ return DB.releases || (DB.releases=[]); }
+const normCat=c=>String(c||'').trim().toLowerCase(), normUPC=u=>String(u||'').replace(/\D/g,'');
 function releaseByCatalog(cat){
   if(!cat) return null;
   const c=cat.trim().toLowerCase();
@@ -1339,7 +1351,7 @@ function renderReleases(){
   {
     cont.className='releases-cards';
     cont.innerHTML = list.map(r=>{
-      const tot=(r.splits||[]).reduce((s,x)=>s+(+x.pct||0),0); const label=Math.max(0,100-tot);
+      const tot=splitTot(r.splits); const label=pctR(Math.max(0,100-tot));
       const chips=(r.splits||[]).map(s=>`<span class="split-chip">${esc(s.name)} <b>${(+s.pct||0)}%</b></span>`).join('')
         + `<span class="split-chip split-chip--label">Label <b>${label}%</b></span>`;
       return `<div class="release-card" data-id="${r.id}">
@@ -1361,11 +1373,13 @@ function renderReleases(){
 }
 
 /* ---------- Modal release ---------- */
+const pctR=x=>Math.round((+x||0)*100)/100;
+const splitTot=list=>pctR((list||[]).reduce((s,x)=>s+(+x.pct||0),0));
 function splitRowHTML(name='',pct=''){
   return `<div class="split-row">
-    <input class="input split-name" list="artist-list" placeholder="Nome artista" value="${esc(name)}">
+    <input class="input split-name" list="artist-list" placeholder="${esc(tt('rel.split_name_ph'))}" value="${esc(name)}">
     <input class="input split-pct" type="number" min="0" max="100" step="0.01" placeholder="%" value="${pct===''?'':esc(pct)}">
-    <button type="button" class="btn split-del" title="Rimuovi">✕</button>
+    <button type="button" class="btn split-del" title="${esc(tt('common.remove'))}" aria-label="${esc(tt('common.remove'))}">✕</button>
   </div>`;
 }
 function artistDatalist(){
@@ -1377,9 +1391,9 @@ function artistDatalist(){
   dl.innerHTML=[...names].sort().map(n=>`<option value="${esc(n)}">`).join('');
 }
 function refreshSplitTotal(){
-  let tot=0; $$('#r-splits .split-pct').forEach(i=>tot+=(+i.value||0));
+  let tot=0; $$('#r-splits .split-pct').forEach(i=>tot+=(+i.value||0)); tot=pctR(tot);
   const el=$('#r-split-total');
-  el.textContent = `Totale artisti ${tot}% · Label ${Math.max(0,100-tot)}%` + (tot>100?' ⚠ supera 100%':'');
+  el.textContent = tt('rel.split_total').replace('{a}', tot).replace('{l}', pctR(Math.max(0,100-tot))) + (tot>100?' ⚠ '+tt('rel.split_over_short'):'');
   el.style.color = tot>100 ? 'var(--out)' : 'var(--muted)';
 }
 /* ---- Riordino tracce via drag (solo dalla maniglia) ---- */
@@ -1398,12 +1412,12 @@ function trackBlockHTML(t={}){
   const splits=(t.splits&&t.splits.length)?t.splits:[{name:'',pct:''}];
   const relV=id=>($('#'+id)&&$('#'+id).value.trim())||'';
   const ph=(label,def)=>def?(label+' · default: '+def):label;
-  return `<div class="track-block">
+  return `<div class="track-block" data-tid="${esc(t.id||'')}" data-tartist="${esc(t.artist||'')}">
     <div class="track-head">
-      <span class="track-grip" title="Trascina per riordinare">⠿</span>
-      <input class="input track-title" placeholder="Titolo traccia" value="${esc(t.title||'')}">
+      <span class="track-grip" title="${esc(tt('rel.drag'))}">⠿</span>
+      <input class="input track-title" placeholder="${esc(tt('rel.track_title_ph'))}" value="${esc(t.title||'')}">
       <input class="input track-isrc" placeholder="ISRC" value="${esc(t.isrc||'')}">
-      <button type="button" class="btn track-del" title="Rimuovi traccia">✕</button>
+      <button type="button" class="btn track-del" title="${esc(tt('rel.track_remove'))}" aria-label="${esc(tt('rel.track_remove'))}">✕</button>
     </div>
     <div class="track-credits">
       <input class="input track-written"     placeholder="${esc(ph('Written by',relV('r-written')))}"        value="${esc(t.writtenBy||'')}">
@@ -1413,7 +1427,7 @@ function trackBlockHTML(t={}){
       <input class="input track-distributed" placeholder="${esc(ph('Distributed by',relV('r-distributed')))}" value="${esc(t.distributedBy||'')}">
     </div>
     <div class="track-splits">${splits.map(s=>splitRowHTML(s.name,s.pct)).join('')}</div>
-    <button type="button" class="btn btn-mini track-add-split">+ artista</button>
+    <button type="button" class="btn btn-mini track-add-split">${esc(tt('rel.add_artist'))}</button>
   </div>`;
 }
 function collectSplits(container){
@@ -1431,7 +1445,7 @@ function catalogInsights(){
   const byField={}, rels=new Set();
   enr.forEach(e=>{ byField[e.field]=(byField[e.field]||0)+1; rels.add(e.relId); });
   const unlinked=new Set(); const idx=relIdx();
-  (DB.transactions||[]).forEach(t=>{ const p=(t.product||'').trim(); if(p && !releaseForTx(t, idx)) unlinked.add(p.toLowerCase()); });
+  (DB.transactions||[]).forEach(t=>{ const p=(t.product||'').trim(); if(p && t.kind!=='expense' && !releaseForTx(t, idx)) unlinked.add(p.toLowerCase()); });
   return { enrTotal:enr.length, enrRels:rels.size, byField, unlinked:unlinked.size };
 }
 let relEnrichDismissed='';
@@ -1458,6 +1472,7 @@ $('#rel-enrich-x')?.addEventListener('click', ()=>{ relEnrichDismissed=relEnrich
 function unlinkedTxItems(){
   const groups=new Map(); const idx=relIdx();
   (DB.transactions||[]).forEach(t=>{
+    if(t.kind==='expense') return;                  // le spese (mastering, distribuzione…) non sono release
     const product=(t.product||'').trim(), catalog=(t.catalog||'').trim(), upc=(t.upc||t.code||'').trim(), isrc=(t.isrc||'').trim(), artist=(t.artist||'').trim();
     if(!product && !catalog && !upc) return;
     if(releaseForTx(t, idx)) return;                 // già a catalogo
@@ -1481,9 +1496,11 @@ function createReleasesFromTx(){
   const items=unlinkedTxItems();
   if(!items.length){ toast(tt('rel.enrich_none')); return; }
   if(!confirm(tt('rel.enrich_create_confirm').replace('{n}',items.length))) return;
-  const r=importReleasesData(items, true);
-  updateRelEnrichBanner();
-  if(r && r.direct) toast(tt('rel.enrich_created').replace('{n}', r.relNew||items.length));
+  askSplitMode(()=>{
+    const r=importReleasesData(items, true);
+    updateRelEnrichBanner();
+    if(r && r.direct) toast(tt('rel.enrich_created').replace('{n}', r.relNew||items.length));
+  });
 }
 $('#rel-enrich-create')?.addEventListener('click', createReleasesFromTx);
 
@@ -1529,9 +1546,9 @@ function updateRelGapsPanel(){
 $('#rel-gaps-x')?.addEventListener('click', ()=>{ relGapsDismissed=relGapsSig(releaseGaps()); const b=$('#rel-gaps'); if(b) b.hidden=true; });
 
 /* ---- Avviso intelligente in Artisti: artisti trovati nei movimenti ma non in rubrica ---- */
-function splitArtistNames(s){
-  return (s||'').toString().split(/,|&|;|\/|\bfeat\.?\b|\bft\.?\b|\bfeaturing\b/i).map(x=>x.trim()).filter(Boolean);
-}
+function splitArtistNames(s){ return (s||'').toString().split(ART_SPLIT_RE).map(x=>x.trim()).filter(Boolean); }
+// applica fn a ogni nome lasciando intatti i separatori originali ("A feat. B" resta "A feat. B")
+function mapArtistNames(raw, fn){ return String(raw||'').split(ART_SPLIT_CAP).map((p,i)=>(i%2||!p.trim())? p : fn(p.trim())).join(''); }
 function unlinkedArtists(){
   const have=new Set((DB.artists||[]).map(a=>normArt(a.name)).filter(Boolean));
   const skip=new Set(['various artists','various artist','va','aa vv','aavv','various','label','unknown','n a']);
@@ -1598,23 +1615,36 @@ function duplicateArtists(){
   }
   return pairs;
 }
-function mergeArtists(keepName, dropName){
-  const nd=normArt(dropName); if(!nd) return;
-  const fix=raw=>{
-    if(!raw) return raw;
-    const parts=splitArtistNames(raw); if(!parts.length) return raw;
-    let changed=false;
-    const out=parts.map(p=>{ if(normArt(p)===nd){ changed=true; return keepName; } return p; });
-    return changed ? out.join(', ') : raw;
-  };
+/* porta un nome d'artista ovunque compaia: movimenti, release (anche tracce e quote), pagamenti,
+   recoupment, contratti e link del portale. Ritorna quanti elementi ha cambiato. */
+function renameArtistRefs(oldName, newName, dry){
+  const nd=normArt(oldName); newName=(newName||'').trim(); if(!nd || !newName) return 0;
+  let n=0;
+  const fix=raw=>{ if(!raw) return raw; let ch=false;
+    const out=mapArtistNames(raw, p=>{ if(normArt(p)===nd && p!==newName){ ch=true; return newName; } return p; });
+    if(ch) n++; return (ch && !dry) ? out : raw; };
+  const one=v=>{ if(v && normArt(v)===nd && v!==newName){ n++; return dry ? v : newName; } return v; };
   (DB.transactions||[]).forEach(t=>{ t.artist=fix(t.artist); });
   (DB.releases||[]).forEach(r=>{
     r.artist=fix(r.artist);
-    (r.splits||[]).forEach(s=>{ if(normArt(s.name)===nd) s.name=keepName; });
-    (r.tracks||[]).forEach(tr=>{ tr.artist=fix(tr.artist); (tr.splits||[]).forEach(s=>{ if(normArt(s.name)===nd) s.name=keepName; }); });
+    (r.splits||[]).forEach(s=>{ s.name=one(s.name); });
+    (r.tracks||[]).forEach(tr=>{ tr.artist=fix(tr.artist); (tr.splits||[]).forEach(s=>{ s.name=one(s.name); }); });
   });
+  (DB.payouts||[]).forEach(p=>{ p.artist=one(p.artist); });
+  (DB.recoup||[]).forEach(r=>{ r.artist=one(r.artist); });
+  (DB.contracts||[]).forEach(c=>{ c.artistNames=fix(c.artistNames); c.projectName=one(c.projectName); });
+  const sh=labelShares(), ok=(oldName||'').trim().toLowerCase(), nk=newName.toLowerCase();
+  if(sh[ok] && ok!==nk && !dry){ if(!sh[nk]) sh[nk]=sh[ok]; delete sh[ok]; n++; }
+  return n;
+}
+function mergeArtists(keepName, dropName){
+  const nd=normArt(dropName); if(!nd) return;
+  renameArtistRefs(dropName, keepName);
+  // la scheda che resta prende i dati che le mancavano (IBAN, regime fiscale, email…)
+  const keep=(DB.artists||[]).find(a=>a.name===keepName), drop=(DB.artists||[]).find(a=>normArt(a.name)===nd && a.name!==keepName);
+  if(keep && drop) ['legal','email','phone','iban','address','note','photo','taxId','taxRegime','split'].forEach(f=>{ if(!keep[f] && drop[f]) keep[f]=drop[f]; });
   DB.artists=(DB.artists||[]).filter(a=>!(normArt(a.name)===nd && a.name!==keepName));
-  save(); renderArtists();
+  save(); renderArtists(); renderReleases(); renderRoyalties();
   toast(tt('art.dup_merged').replace('{name}',keepName));
 }
 let artDupDismissed=''; let _artDupPairs=[];
@@ -1695,7 +1725,11 @@ $('#rel-form').onsubmit=e=>{
     const tsplits=collectSplits(tb.querySelector('.track-splits'));
     const gv=cls=>{ const el=tb.querySelector('.'+cls); return el?el.value.trim():''; };
     const tWrit=gv('track-written'), tProd=gv('track-produced'), tMix=gv('track-mixed'), tMast=gv('track-mastered'), tDist=gv('track-distributed');
-    if(title||isrc||tsplits.length||tWrit||tProd||tMix||tMast||tDist) tracks.push({id:uid(), title, isrc, writtenBy:tWrit, producedBy:tProd, mixedBy:tMix, masteredBy:tMast, distributedBy:tDist, splits:tsplits});
+    if(title||isrc||tsplits.length||tWrit||tProd||tMix||tMast||tDist){
+      const tr={id:tb.dataset.tid||uid(), title, isrc, writtenBy:tWrit, producedBy:tProd, mixedBy:tMix, masteredBy:tMast, distributedBy:tDist, splits:tsplits};
+      if(tb.dataset.tartist) tr.artist=tb.dataset.tartist;
+      tracks.push(tr);
+    }
   });
   const orderDate=$('#r-order').value||'';
   const rec={ id:id||uid(), catalog:$('#r-catalog').value.trim(), title:$('#r-title').value.trim(),
@@ -1707,14 +1741,17 @@ $('#rel-form').onsubmit=e=>{
     type:$('#r-type').value||'SINGLE', distributedBy:$('#r-distributed').value.trim() };
   if(!rec.catalog){ toast(tt('t.cat_required')); return; }
   if(!rec.orderDate){ toast(tt('r.order_required')); return; }
-  // intelligenza: in creazione, avvisa se catalogo/UPC esiste già
-  if(!id){
-    const dup = releaseByCatalog(rec.catalog) || (rec.upc && releaseByUPC(rec.upc));
-    if(dup && !confirm(tt('rel.dup_confirm').replace('{cat}', dup.catalog||dup.title||'—'))) return;
-  }
+  const over=[splits, ...tracks.map(t=>t.splits)].find(l=>splitTot(l)>100);
+  if(over){ toast(tt('rel.split_over_block').replace('{n}', splitTot(over))); return; }
+  // intelligenza: avvisa se catalogo/UPC esiste già in un'altra release (anche in modifica)
+  { const cat=normCat(rec.catalog), upc=normUPC(rec.upc);
+    const dup = releases().find(r=>r.id!==id && ((cat && normCat(r.catalog)===cat) || (upc && normUPC(r.upc)===upc)));
+    const was = id && releases().find(r=>r.id===id);
+    const changed = !was || normCat(was.catalog)!==cat || normUPC(was.upc)!==upc;
+    if(dup && changed && !confirm(tt('rel.dup_confirm').replace('{cat}', dup.catalog||dup.title||'—'))) return; }
   // intelligenza: memorizza lo split per artista (riusato nelle release future)
   (splits||[]).forEach(s=>{ const nm=(s.name||'').trim(); if(!nm||!(+s.pct))return;
-    const a=(DB.artists||[]).find(x=>normArt(x.name)===normArt(nm)); if(a) a.split=+s.pct; });
+    const a=(DB.artists||[]).find(x=>normArt(x.name)===normArt(nm)); if(a && !(+a.split>0)) a.split=+s.pct; });
   const prevRel=id?releases().find(r=>r.id===id):null;
   // quote cambiate su una release con vendite in un periodo già chiuso: avvisa (cambierebbero statement inviati)
   if(prevRel && typeof perLockDate==='function' && perLockDate()){
@@ -1772,7 +1809,8 @@ function normTitle(s){ return (s||'').toString().toLowerCase()
   .replace(/\([^)]*\b(remaster(ed)?|deluxe|edition|version|mono|stereo|expanded|bonus|reissue|anniversary|original)\b[^)]*\)/g,'')
   .replace(/\[[^\]]*\]/g,'')
   .replace(/[^a-z0-9]+/g,' ').trim(); }
-function normArt(s){ return (s||'').toString().toLowerCase().replace(/\b(feat|ft|featuring)\.?\b.*$/,'').replace(/[^a-z0-9]+/g,' ').trim(); }
+function normArt(s){ return (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()
+  .replace(/\b(feat|ft|featuring)\.?\b.*$/,'').replace(/[^\p{L}\p{N}]+/gu,' ').trim(); }
 function relYear(r){ return (''+(r.year||r.orderDate||r.date||r.preorder||'')).slice(0,4); }
 function relMatch(a,b){
   const dig=s=>(s||'').toString().replace(/\D/g,'');
@@ -1793,10 +1831,27 @@ function relMatch(a,b){
   if(arBoth&&arS>=0.8) reasons.push('artist');
   return {score:Math.min(100,Math.max(0,score)), reasons};
 }
+/* quote proposte per una release nuova: "manual" → vuote (da scrivere a mano);
+   altrimenti la quota predefinita di ogni artista nominato, o il 50% diviso tra gli artisti */
+let relSplitMode='default';
+function relSplitsFor(raw){
+  if(relSplitMode==='manual') return [];
+  const names=splitArtistNames(raw).filter(n=>!/^various artists?$|^v\.?a\.?$/i.test(n)); if(!names.length) return [];
+  const defs=names.map(n=>{ const a=findArtist(n); return a && +a.split>0 ? +a.split : 0; });
+  if(defs.every(d=>d>0) && defs.reduce((x,y)=>x+y,0)<=100) return names.map((n,i)=>({name:n, pct:defs[i]}));
+  return names.map(n=>({name:n, pct:pctR(50/names.length)}));
+}
+function askSplitMode(run){
+  const m=$('#splitmode-modal'); if(!m){ run(); return; }
+  const done=mode=>{ m.hidden=true; if(!mode) return; relSplitMode=mode; try{ run(); } finally { relSplitMode='default'; } };
+  $('#sm-default').onclick=()=>done('default'); $('#sm-manual').onclick=()=>done('manual');
+  $('#sm-close').onclick=()=>done(null); m.onclick=e=>{ if(e.target===m) done(null); };
+  m.hidden=false;
+}
 function itemToRelease(it){
   const title=(it.title||'').trim(), artist=(it.artist||'').trim(), upc=(it.upc||'').trim(), catalog=(it.catalog||'').trim();
   const date=normDate(it.date||'');
-  const half = nm => nm ? [{name:nm, pct:50}] : [];   // default 50% artista / 50% label (resto)
+  const half = relSplitsFor;   // quote come scelto in "Quote degli artisti" (predefinite/50% oppure vuote)
   let tracks=[]; const seen=new Set();
   if(Array.isArray(it.tracks) && it.tracks.length){
     it.tracks.forEach(t=>{ const code=(t.isrc||'').trim(), k=code.toLowerCase();
@@ -1807,7 +1862,7 @@ function itemToRelease(it){
     tracks=(it.isrcs||[]).filter(Boolean).map(code=>({id:uid(), title:'', isrc:code, splits:half(artist)}));
   }
   const type = it.isVA ? 'VA' : (tracks.length>1 ? 'EP' : 'SINGLE');
-  const relSplits = (artist && !/^various artists?$/i.test(artist)) ? half(artist) : [];
+  const relSplits = (artist && !/^various artists?$/i.test(artist)) ? half(artist) : [];   // VA: quote solo per traccia
   return { id:uid(), catalog, title, artist, upc, orderDate:date, preorder:'', note:'',
     year:date?new Date(date+'T00:00:00').getFullYear():'',
     type, splits:relSplits, tracks };
@@ -1821,10 +1876,10 @@ function mergeRelInto(target, src){
   if((target.tracks||[]).length>1 && (!target.type || target.type==='SINGLE')) target.type='EP';
 }
 function collectNewArtists(items){
-  const exist=new Set((DB.artists||[]).map(a=>(a.name||'').toLowerCase()));
+  const exist=new Set((DB.artists||[]).map(a=>normArt(a.name)));
   const seen=new Set(), out=[];
-  const add=raw=>{ (raw? (''+raw).split(/,|&|;| feat\.?| ft\.?| x /i):[]).map(s=>s.trim()).filter(Boolean)
-    .forEach(nm=>{ if(/^various artists?$|^v\.?a\.?$/i.test(nm)) return; const lk=nm.toLowerCase(); if(exist.has(lk)||seen.has(lk)) return; seen.add(lk); out.push({id:newId(), name:nm, split:''}); }); };
+  const add=raw=>{ splitArtistNames(raw)
+    .forEach(nm=>{ if(/^various artists?$|^v\.?a\.?$/i.test(nm)) return; const lk=normArt(nm); if(!lk||exist.has(lk)||seen.has(lk)) return; seen.add(lk); out.push({id:newId(), name:nm, split:''}); }); };
   items.forEach(it=>{ add(it.artist); (it.tracks||[]).forEach(t=>add(t.artist)); });
   return out;
 }
@@ -1936,8 +1991,6 @@ async function catOnlineImport(){
   const res=await window.LF_catalogSearch({action:'fetch', picks});
   if(btn){ btn.disabled=false; btn.textContent=tt('cimp.fetch'); }
   if(!res||res.error||!res.releases){ toast(tt('cimp.search_fail')+(res&&res.error?` (${res.error})`:'')); return; }
-  const r=importReleasesData(res.releases, true);
-  if(!r.review) toast(tt('cimp.done').replace('{rel}',r.relNew).replace('{art}',r.artNew).replace('{dup}',r.relDup));
   let hadErr=false, diag='';
   if(res.sources){ const s=res.sources; const p=[];
     if(picks.mb.length) p.push('MusicBrainz: '+(s.musicbrainz.err?('⚠ '+esc(s.musicbrainz.err)):s.musicbrainz.n));
@@ -1946,7 +1999,10 @@ async function catOnlineImport(){
     diag=p.join('<br>'); hadErr=!!(s.musicbrainz.err||s.discogs.err||s.spotify.err);
   }
   if(hadErr){ const box=$('#catimp-results'); if(box) box.insertAdjacentHTML('beforeend', `<p class="ai-err" style="margin-top:10px">${diag}</p>`); }
-  else if(!r.review) $('#catimp-modal').hidden=true;
+  if(!res.releases.length) return;
+  askSplitMode(()=>{ const r=importReleasesData(res.releases, true);
+    if(!r.review) toast(tt('cimp.done').replace('{rel}',r.relNew).replace('{art}',r.artNew).replace('{dup}',r.relDup));
+    if(!hadErr && !r.review) $('#catimp-modal').hidden=true; });
 }
 function catImpRenderMaps(){
   const opts=(sel)=>['<option value="-1">—</option>'].concat(catImpHeaders.map((h,i)=>`<option value="${i}" ${i===sel?'selected':''}>${esc(h||('Col '+(i+1)))}</option>`)).join('');
@@ -1978,9 +2034,9 @@ function catImpLoad(file){ const rd=new FileReader();
   if(drop){ ['dragover','dragenter'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('drag');}));
     ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('drag');}));
     drop.addEventListener('drop',e=>{ const f=e.dataTransfer.files[0]; if(f) catImpLoad(f); }); }
-  if($('#catimp-do')) $('#catimp-do').onclick=()=>{ const r=catImpCompute(true);
+  if($('#catimp-do')) $('#catimp-do').onclick=()=>askSplitMode(()=>{ const r=catImpCompute(true);
     $('#catimp-modal').hidden=true;
-    if(!r.review) toast(tt('cimp.done').replace('{rel}',r.relNew).replace('{art}',r.artNew).replace('{dup}',r.relDup)); };
+    if(!r.review) toast(tt('cimp.done').replace('{rel}',r.relNew).replace('{art}',r.artNew).replace('{dup}',r.relDup)); });
 })();
 
 /* ============================================================================
@@ -2353,7 +2409,7 @@ $('#roy-detail-pdf').onclick=()=>{
   const fname=`${safe(labelName())||'Label'} – Statement ${safe(st.name)}`;
   const host=document.createElement('div');
   host.style.cssText='position:fixed;left:-9999px;top:0;width:800px;background:#fff';
-  host.innerHTML=`<div class="stmt-pdf">${statementHTML(st)}</div>`;
+  host.innerHTML=`<div class="stmt-pdf" style="width:${PDF_W8}px">${statementHTML(st)}</div>`;
   document.body.appendChild(host);
   if(typeof html2pdf==='undefined'){
     $('#print-area').innerHTML=host.firstElementChild.outerHTML; host.remove();
@@ -3598,8 +3654,40 @@ function renderArtists(){
   mountPager(grid,'artists',info);
   syncVMButtons();
   updateArtEnrichBanner();
+  updateArtSplitBanner();
   updateArtDupPanel();
 }
+/* ---- Quote predefinite: chiede se mettere il 50% a chi non ce l'ha o scriverle a mano ---- */
+const ART_SPLIT_ASK='labelfinance.artSplitAsk.';
+function artNoSplit(){ return (DB.artists||[]).filter(a=>!(+a.split>0)); }
+function updateArtSplitBanner(){ const b=$('#art-split-banner'); if(!b) return; const miss=artNoSplit();
+  let dis=-1; try{ const v=localStorage.getItem(ART_SPLIT_ASK+(DB.id||'')); if(v!=null) dis=+v; }catch(e){}
+  if(!miss.length || miss.length<=dis){ b.hidden=true; return; }
+  b.querySelector('.rel-enrich-txt').textContent=tt('art.split_missing').replace('{n}', miss.length); b.hidden=false; }
+function artSplitDismiss(){ try{ localStorage.setItem(ART_SPLIT_ASK+(DB.id||''), String(artNoSplit().length)); }catch(e){} const b=$('#art-split-banner'); if(b) b.hidden=true; }
+$('#art-split-all')?.addEventListener('click',()=>{ const miss=artNoSplit(); if(!miss.length) return;
+  miss.forEach(a=>{ a.split=50; }); save(); renderArtists(); toast(tt('art.split_all_done').replace('{n}', miss.length)); });
+$('#art-split-manual')?.addEventListener('click',()=>{ const miss=artNoSplit(); artSplitDismiss();
+  bulkSel.artists=new Set(miss.map(a=>a.id)); setVM('artists','list'); bulkBar('artists'); toast(tt('art.split_manual_hint')); });
+$('#art-split-x')?.addEventListener('click', artSplitDismiss);
+/* ---- Quota % per gli artisti selezionati (ed eventualmente nelle loro release) ---- */
+$('#bulk-split')?.addEventListener('click',()=>{ const set=bulkSel.artists; if(!set||!set.size) return;
+  const raw=prompt(tt('art.bulk_split_q').replace('{n}', set.size), '50'); if(raw==null) return;
+  const v=parseFloat(String(raw).replace(',','.')); if(!(v>=0 && v<=100)){ toast(tt('art.split_invalid')); return; }
+  const arts=(DB.artists||[]).filter(a=>set.has(a.id)); arts.forEach(a=>{ a.split=pctR(v); });
+  const keys=new Set(arts.map(a=>normArt(a.name)));
+  const hits=releases().filter(r=>(r.splits||[]).some(x=>keys.has(normArt(x.name)) && pctR(x.pct)!==pctR(v)));
+  let upd=0, skip=0;
+  if(hits.length && confirm(tt('art.bulk_split_rel_q').replace('{n}', hits.length))){
+    const closed=typeof perIsClosedTx==='function' && (DB.transactions||[]).some(t=>perIsClosedTx(t) && LFCore.releaseForTx(LFCore.relIndex(hits), t));
+    if(!closed || confirm(tt('per.split_closed_q'))) hits.forEach(r=>{
+      const next=(r.splits||[]).map(x=>keys.has(normArt(x.name)) ? Object.assign({}, x, {pct:pctR(v)}) : x);
+      if(splitTot(next)>100){ skip++; return; } r.splits=next; upd++; });
+  }
+  set.clear(); save(); renderArtists(); bulkBar('artists'); renderReleases(); renderRoyalties();
+  toast([tt('art.bulk_split_done').replace('{n}', arts.length).replace('{p}', pctR(v)),
+    upd ? tt('art.bulk_split_rel_done').replace('{n}', upd) : '', skip ? tt('art.bulk_split_skip').replace('{n}', skip) : ''].filter(Boolean).join(' · '));
+});
 function setArtistPhoto(d){ artistPhotoData=d||''; const ph=$('#art-photo');
   if(ph) ph.innerHTML = imgSrc(artistPhotoData)?`<img src="${imgSrc(artistPhotoData)}" alt="">`:`<span>${tt('art.photo')}</span>`; }
 /* tutte le release in cui compare un artista (come artista, in traccia o negli split) */
@@ -3613,16 +3701,32 @@ function artistReleases(name){
     (r.tracks||[]).some(t=>(t.splits||[]).some(s=>normArt(s.name)===nn))
   );
 }
+/* voci della discografia di un artista: la release intera se è sua (artista o quote della release),
+   altrimenti solo le sue tracce — in una compilation VA si vede la traccia, non tutta la VA */
+function artistDiscoItems(name){
+  const nn=normArt(name); if(!nn) return [];
+  const has=raw=>splitArtistNames(raw).some(x=>normArt(x)===nn);
+  const out=[];
+  tieSort(artistReleases(name), r=>+r.year||'', -1, [r=>r.catalog||'', r=>r.title||'']).forEach(r=>{   // più recenti prima
+    const va=String(r.type||'').toUpperCase()==='VA' || /^various artists?$|^v\.?a\.?$/i.test((r.artist||'').trim());
+    const tracks=(r.tracks||[]).filter(t=>has(t.artist) || (t.splits||[]).some(x=>normArt(x.name)===nn));
+    const own=has(r.artist) || (r.splits||[]).some(x=>normArt(x.name)===nn);
+    if(tracks.length && (va || !own)) tracks.forEach(t=>out.push({ r, t }));
+    else out.push({ r });
+  });
+  return out;
+}
 function renderArtistDisco(name){
   const box=$('#art-discography'), list=$('#art-disco-list'); if(!box||!list) return;
-  const rels=tieSort(artistReleases(name), r=>+r.year||'', -1, [r=>r.catalog||'', r=>r.title||'']);   // più recenti prima
-  const cnt=$('#art-disco-count'); if(cnt) cnt.textContent=rels.length?`(${rels.length})`:'';
-  const none=$('#as-none'); if(none) none.hidden=rels.length>0;
-  list.innerHTML=rels.map(r=>`
+  const items=artistDiscoItems(name);
+  const cnt=$('#art-disco-count'); if(cnt) cnt.textContent=items.length?`(${items.length})`:'';
+  const none=$('#as-none'); if(none) none.hidden=items.length>0;
+  list.innerHTML=items.map(({r,t})=>`
     <button class="art-disco-item" data-rel-open="${r.id}" type="button">
       <span class="art-disco-cat">${esc(r.catalog||'—')}</span>
-      <span class="art-disco-ttl">${esc(r.title||'')}</span>
-      <span class="art-disco-meta">${esc(r.type||'')}${r.year?` · ${esc(r.year)}`:''}</span>
+      <span class="art-disco-ttl">${esc(t ? (t.title||t.isrc||'—') : (r.title||''))}</span>
+      <span class="art-disco-meta">${t ? esc(tt('art.disco_in').replace('{rel}', r.title||r.catalog||'—'))+(r.year?` · ${esc(r.year)}`:'')
+        : `${esc(r.type||'')}${r.year?` · ${esc(r.year)}`:''}`}</span>
     </button>`).join('');
   box.hidden=false;
 }
@@ -3678,14 +3782,29 @@ function openArtistForm(id){
 }
 function saveArtist(){
   const name=$('#art-name').value.trim(); if(!name){ toast(tt('art.need_name')); return; }
-  const data={ name, legal:$('#art-legal').value.trim(), email:$('#art-email').value.trim(),
-    phone:$('#art-phone').value.trim(), iban:$('#art-iban').value.trim(),
-    split:Number($('#art-split').value)||0, address:$('#art-address').value.trim(),
+  const rawSplit=String($('#art-split').value||'').replace(',','.').trim(), split=rawSplit===''?0:+rawSplit;
+  if(!(split>=0 && split<=100)){ toast(tt('art.split_invalid')); return; }
+  const email=$('#art-email').value.trim();
+  if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ toast(tt('art.email_invalid')); return; }
+  const iban=$('#art-iban').value.trim();
+  if(iban && !/^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/i.test(iban.replace(/\s+/g,'')) && !confirm(tt('art.iban_q'))) return;
+  const same=(DB.artists||[]).find(a=>a.id!==editingArtistId && normArt(a.name)===normArt(name));
+  if(same){ toast(tt('art.name_exists').replace('{name}', same.name)); return; }
+  const data={ name, legal:$('#art-legal').value.trim(), email,
+    phone:$('#art-phone').value.trim(), iban,
+    split:pctR(split), address:$('#art-address').value.trim(),
     note:$('#art-note').value.trim(), photo:artistPhotoData,
     taxId:($('#art-taxid')?$('#art-taxid').value.trim():''), taxRegime:($('#art-regime')?$('#art-regime').value:'') };
-  if(editingArtistId){ const a=artistById(editingArtistId); if(a) Object.assign(a,data); }
+  if(editingArtistId){ const a=artistById(editingArtistId);
+    if(a && a.name && a.name!==name){
+      // rinomina: il nuovo nome segue in movimenti, release, pagamenti, contratti (saldi e ritenuta restano giusti)
+      const n=renameArtistRefs(a.name, name, true);
+      if(n && !confirm(tt('art.rename_q').replace('{old}', a.name).replace('{new}', name).replace('{n}', n))) return;
+      if(n) renameArtistRefs(a.name, name);
+    }
+    if(a) Object.assign(a,data); }
   else { DB.artists.push(Object.assign({id:newId()}, data)); }
-  save(); $('#art-form').hidden=true; editingArtistId=null; renderArtists(); toast(tt('art.saved'));
+  save(); $('#art-form').hidden=true; editingArtistId=null; renderArtists(); renderReleases(); renderRoyalties(); toast(tt('art.saved'));
 }
 function deleteArtist(id){ const a=artistById(id); if(!a) return;
   if(!confirm(tt('art.del_confirm').replace('{name}',a.name))) return;
@@ -4421,8 +4540,8 @@ function dbRows(items, cols, opt){ opt=opt||{}; const sw=opt.sel?34:0; const t=d
     +(opt.actions?`<span class="dbl-act">${opt.actions(it)}</span>`:'')+`</div>`).join('');
 }
 /* registro colonne per sezione + configurazione (mostra/nascondi/ordina) */
-function relSplitText(r){ const tot=(r.splits||[]).reduce((s,x)=>s+(+x.pct||0),0); const lbl=Math.max(0,100-tot);
-  return (r.splits||[]).map(s=>esc(s.name)+' '+(+s.pct||0)+'%').join(' · ')+(lbl?` · Label ${lbl}%`:''); }
+function relSplitText(r){ const lbl=pctR(Math.max(0,100-splitTot(r.splits)));
+  return (r.splits||[]).map(s=>esc(s.name)+' '+pctR(s.pct)+'%').join(' · ')+(lbl?` · Label ${lbl}%`:''); }
 function colCfg(sec){ DB.colCfg=DB.colCfg||{}; const all=(COLDEFS[sec]||[]).map(c=>c.key);
   let cfg=DB.colCfg[sec]; if(!cfg||!Array.isArray(cfg.order)) cfg=DB.colCfg[sec]={order:all.slice(),hidden:[]};
   all.forEach((k,idx)=>{ if(cfg.order.includes(k)) return;
@@ -4525,7 +4644,7 @@ function bulkRerender(sec){
 }
 function bulkBar(sec){ const bar=$('#bulk-bar'); if(!bar) return; const n=(bulkSel[sec]||new Set()).size;
   if(!n){ bar.hidden=true; bar.dataset.sec=''; return; }
-  bar.dataset.sec=sec; const c=$('#bulk-count'); if(c) c.textContent=n; const bc=$('#bulk-credits'); if(bc) bc.hidden=(sec!=='releases'); bar.hidden=false; }
+  bar.dataset.sec=sec; const c=$('#bulk-count'); if(c) c.textContent=n; const bc=$('#bulk-credits'); if(bc) bc.hidden=(sec!=='releases'); const bs=$('#bulk-split'); if(bs) bs.hidden=(sec!=='artists'); bar.hidden=false; }
 function bulkToggleAll(sec,on){ document.querySelectorAll(`[data-sel^="${sec}|"]`).forEach(cb=>{ cb.checked=on;
     const id=cb.dataset.sel.split('|').slice(1).join('|'); (bulkSel[sec]||=new Set()); on?bulkSel[sec].add(id):bulkSel[sec].delete(id); });
   bulkBar(sec); }

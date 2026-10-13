@@ -327,6 +327,7 @@
           <span class="kpi-label" data-i18n="dash.kpi.expense">Uscite</span>
           <span class="kpi-value" id="kpi-expense">€0,00</span>
           <span class="kpi-delta" id="delta-expense"></span>
+          <span class="kpi-due" id="kpi-expense-due" hidden></span>
         </div>
         <div class="kpi kpi--net">
           <span class="kpi-label" data-i18n="dash.kpi.net">Margine netto</span>
@@ -535,9 +536,18 @@
         <div class="rel-gaps-list" id="recur-list"></div>
       </div>
 
+      <div class="tx-tabs-row">
+        <div class="seg tx-tabs" id="tx-tabs" role="tablist">
+          <button type="button" class="seg-btn" role="tab" data-tx-tab="income"><span data-i18n="tx.tab_income">Entrate</span> <span class="tx-tab-n" id="tx-n-income"></span></button>
+          <button type="button" class="seg-btn" role="tab" data-tx-tab="expense"><span data-i18n="tx.tab_expense">Uscite</span> <span class="tx-tab-n" id="tx-n-expense"></span></button>
+          <button type="button" class="seg-btn" role="tab" data-tx-tab=""><span data-i18n="tx.tab_all">Tutti</span> <span class="tx-tab-n" id="tx-n-all"></span></button>
+        </div>
+        <button type="button" class="btn btn-sm" id="paid-log-btn" hidden data-i18n="paid.log_btn">🕘 Registro pagamenti</button>
+      </div>
+
       <div class="toolbar">
         <input type="search" id="tx-search" class="input" data-i18n-ph="tx.search" placeholder="Cerca prodotto, artista, catalogo…">
-        <select id="tx-filter-kind" class="select">
+        <select id="tx-filter-kind" class="select" hidden>
           <option value="" data-i18n="tx.all_kinds">Tutti i tipi</option>
           <option value="income" data-i18n="tx.only_income">Solo entrate</option>
           <option value="expense" data-i18n="tx.only_expense">Solo uscite</option>
@@ -1948,10 +1958,13 @@
       <form id="tx-form" class="form-grid">
         <input type="hidden" id="f-id">
         <input type="hidden" id="f-kind">
-        <label><span data-i18n="f.date">Data vendita</span> <input type="date" id="f-date" class="input" required min="2000-01-01" max="2100-12-31"></label>
-        <label><span data-i18n="f.dateTo">Data vendita (a)</span> <input type="date" id="f-dateto" class="input"></label>
-        <label><span data-i18n="f.platform">Piattaforma</span> <input type="text" id="f-platform" class="input" placeholder="Bandcamp, DistroKid…"></label>
-        <label><span data-i18n="f.type">Tipologia</span>
+        <label><span data-i18n="f.date" data-lbl-exp="f.x_date">Data vendita</span> <input type="date" id="f-date" class="input" required min="2000-01-01" max="2100-12-31"></label>
+        <label class="exp-only"><span data-i18n="f.x_cat">Categoria</span>
+          <select id="f-cat" class="select"></select>
+        </label>
+        <label class="inc-only"><span data-i18n="f.dateTo">Data vendita (a)</span> <input type="date" id="f-dateto" class="input"></label>
+        <label><span data-i18n="f.platform" data-lbl-exp="f.x_platform">Piattaforma</span> <input type="text" id="f-platform" class="input" placeholder="Bandcamp, DistroKid…" data-ph-inc="Bandcamp, DistroKid…" data-ph-exp-key="f.x_platform_ph"></label>
+        <label class="inc-only"><span data-i18n="f.type">Tipologia</span>
           <select id="f-type" class="select">
             <option value="digital" data-i18n="ty.digital">Digitale</option>
             <option value="physical" data-i18n="ty.physical">Fisico</option>
@@ -1961,20 +1974,25 @@
             <option value="other" data-i18n="ty.other">Altro</option>
           </select>
         </label>
-        <label><span data-i18n="f.catalog">Catalogo</span> <input type="text" id="f-catalog" class="input" placeholder="SC003"></label>
-        <label><span data-i18n="f.product">Prodotto / Titolo</span> <input type="text" id="f-product" class="input"></label>
-        <label><span data-i18n="f.artist">Artista</span> <input type="text" id="f-artist" class="input"></label>
-        <label><span data-i18n="f.isrc">ISRC</span> <input type="text" id="f-isrc" class="input" placeholder="ITXXX2600123"></label>
-        <label><span data-i18n="f.upc">UPC</span> <input type="text" id="f-upc" class="input" placeholder="8001234567890"></label>
-        <label><span data-i18n="f.qty">Quantità</span> <input type="number" id="f-qty" class="input" value="1" step="1"></label>
-        <label><span data-i18n="f.gross">Lordo</span> <input type="number" id="f-gross" class="input" step="0.01"></label>
-        <label><span data-i18n="f.shipping">Spedizione</span> <input type="number" id="f-shipping" class="input" step="0.01"></label>
-        <label><span data-i18n="f.taxes">Tasse</span> <input type="number" id="f-taxes" class="input" step="0.01"></label>
-        <label><span data-i18n="f.payproc">Commissioni processore pagamento</span> <input type="number" id="f-payprocfees" class="input" step="0.01"></label>
-        <label><span data-i18n="f.fees">Commissioni</span> <input type="number" id="f-fees" class="input" step="0.01"></label>
-        <label><span data-i18n="f.net">Netto</span> <input type="number" id="f-net" class="input" step="0.01" required></label>
-        <label><span data-i18n="f.csshare">Collection society share</span> <input type="number" id="f-csshare" class="input" step="0.01"></label>
+        <label><span data-i18n="f.catalog" data-lbl-exp="f.x_catalog">Catalogo</span> <input type="text" id="f-catalog" class="input" placeholder="SC003"></label>
+        <label><span data-i18n="f.product" data-lbl-exp="f.x_product">Prodotto / Titolo</span> <input type="text" id="f-product" class="input"></label>
+        <label class="inc-only"><span data-i18n="f.artist">Artista</span> <input type="text" id="f-artist" class="input"></label>
+        <label class="inc-only"><span data-i18n="f.isrc">ISRC</span> <input type="text" id="f-isrc" class="input" placeholder="ITXXX2600123"></label>
+        <label class="inc-only"><span data-i18n="f.upc">UPC</span> <input type="text" id="f-upc" class="input" placeholder="8001234567890"></label>
+        <label class="inc-only"><span data-i18n="f.qty">Quantità</span> <input type="number" id="f-qty" class="input" value="1" step="1"></label>
+        <label class="inc-only"><span data-i18n="f.gross">Lordo</span> <input type="number" id="f-gross" class="input" step="0.01"></label>
+        <label class="inc-only"><span data-i18n="f.shipping">Spedizione</span> <input type="number" id="f-shipping" class="input" step="0.01"></label>
+        <label class="inc-only"><span data-i18n="f.taxes">Tasse</span> <input type="number" id="f-taxes" class="input" step="0.01"></label>
+        <label class="inc-only"><span data-i18n="f.payproc">Commissioni processore pagamento</span> <input type="number" id="f-payprocfees" class="input" step="0.01"></label>
+        <label class="inc-only"><span data-i18n="f.fees">Commissioni</span> <input type="number" id="f-fees" class="input" step="0.01"></label>
+        <label><span data-i18n="f.net" data-lbl-exp="f.x_net">Netto</span> <input type="number" id="f-net" class="input" step="0.01" required></label>
+        <label class="inc-only"><span data-i18n="f.csshare">Collection society share</span> <input type="number" id="f-csshare" class="input" step="0.01"></label>
         <label><span data-i18n="f.currency">Valuta</span> <input type="text" id="f-currency" class="input" value="EUR" maxlength="3"></label>
+        <div class="span-2 exp-only f-paid-box">
+          <label class="check-inline"><input type="checkbox" id="f-paid" checked> <b data-i18n="f.paid">Pagato</b></label>
+          <span class="muted small" data-i18n="f.paid_hint">Un'uscita non pagata resta nell'elenco ma non conta nei totali finché non la segni come pagata. Ogni cambio viene registrato.</span>
+          <div class="paid-log" id="f-paid-log" hidden></div>
+        </div>
         <label class="span-2"><span data-i18n="f.note">Nota</span> <input type="text" id="f-note" class="input"></label>
         <div class="span-2 att-box">
           <div class="att-head"><span class="fld-lbl" data-i18n="att.title">Ricevute e documenti</span>
@@ -2002,6 +2020,17 @@
           <button type="submit" class="btn btn-primary" data-i18n="common.save">Salva</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- ======= MODAL: registro "Pagato" (chi ha cambiato cosa e quando) ======= -->
+  <div class="modal" id="paidlog-modal" hidden>
+    <div class="modal-card">
+      <div class="modal-head"><h2 data-i18n="paid.log_title">Registro pagamenti</h2><button class="modal-x" id="paidlog-close" aria-label="Chiudi">✕</button></div>
+      <div style="padding:16px 20px 20px">
+        <p class="muted small" data-i18n="paid.log_intro">Ogni volta che un'uscita viene segnata come pagata o non pagata resta scritto qui: quando, da chi e da dove. Così un clic sbagliato si scopre sempre.</p>
+        <div class="table-wrap"><table class="data-table" id="paidlog-table"></table></div>
+      </div>
     </div>
   </div>
 

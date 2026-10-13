@@ -129,13 +129,15 @@ async function buildAccountantPack(year){
   }
   const H=k=>tt('pack.h_'+k);
   // movimenti
-  const mov=[[H('date'),H('kind'),H('platform'),H('category'),H('description'),H('artist'),H('catalog'),H('currency'),H('amount'),H('amount_eur'),H('note'),H('receipts')]];
+  const mov=[[H('date'),H('kind'),H('platform'),H('category'),H('description'),H('artist'),H('catalog'),H('currency'),H('amount'),H('amount_eur'),tt('col.paid'),H('note'),H('receipts')]];
   let inc=0, exp=0; const byPlat={}, byCat={};
   txs.forEach(t=>{
     const eur=LFCore.txEur(DB, t), isInc=t.kind==='income', cat=isInc?'':tt('ecat.'+expenseCategory(t));
-    if(isInc){ inc+=eur; byPlat[t.platform||'—']=(byPlat[t.platform||'—']||0)+eur; } else { exp+=Math.abs(eur); byCat[cat]=(byCat[cat]||0)+Math.abs(eur); }
+    // uscite non pagate: nell'elenco (colonna "Pagato") ma non nei totali, come nell'app
+    const counts=isInc || t.paid!==false;
+    if(isInc){ inc+=eur; byPlat[t.platform||'—']=(byPlat[t.platform||'—']||0)+eur; } else if(counts){ exp+=Math.abs(eur); byCat[cat]=(byCat[cat]||0)+Math.abs(eur); }
     mov.push([t.date||'', tt(isInc?'pack.income':'pack.expense'), t.platform||'', cat, t.product||'', t.artist||'', t.catalog||'', (t.currency||'EUR').toUpperCase(),
-      isInc?(+t.net||0):-Math.abs(+t.net||0), isInc?eur:-Math.abs(eur), t.note||'', (fileNames[t.id]||[]).join(' | ')]);   // entrate col loro segno (un rimborso resta negativo, come nei totali)
+      isInc?(+t.net||0):-Math.abs(+t.net||0), isInc?eur:-Math.abs(eur), isInc?'':tt(counts?'paid.yes':'paid.no'), t.note||'', (fileNames[t.id]||[]).join(' | ')]);   // entrate col loro segno (un rimborso resta negativo, come nei totali)
   });
   files.push({ name:`${tt('pack.f_movements')}_${year}.csv`, data:packCsv(mov) });
   // pagamenti agli artisti con ritenute

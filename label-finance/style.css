@@ -1876,3 +1876,23 @@ body:has(.modal:not([hidden])) .toast{top:calc(14px + env(safe-area-inset-top));
 .import-drop .imp-file{font-weight:600;color:var(--accent);margin-top:10px;word-break:break-all}
 .distro-hint{display:block;margin-top:6px;line-height:1.35}
 .distro-hint.pos{color:var(--in)}
+/* Movimenti: schede Entrate / Uscite / Tutti */
+.tx-tabs-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.tx-tabs .seg-btn{display:inline-flex;align-items:center;gap:6px}
+.tx-tab-n{font-size:.78em;font-weight:700;opacity:.75}
+.tx-tabs .seg-btn[data-tx-tab="income"].is-active{background:var(--in);color:var(--on-in)}
+.tx-tabs .seg-btn[data-tx-tab="expense"].is-active{background:var(--out);color:#fff}
+/* maschera del movimento: solo i campi dell'entrata o dell'uscita */
+#tx-modal.tx-modal--exp .inc-only{display:none}
+#tx-modal:not(.tx-modal--exp) .exp-only{display:none}
+/* Pagato */
+.paid-tog{display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:.82rem;white-space:nowrap}
+.paid-tog input{width:18px;height:18px;accent-color:var(--in);cursor:pointer}
+tr.is-unpaid .paid-tog span{color:var(--out);font-weight:600}
+tr.is-unpaid td.num .neg,tr.is-unpaid td.num .pos{opacity:.55}
+.kpi-due{font-size:.78rem;color:var(--muted);font-weight:600}
+.f-paid-box{display:flex;flex-direction:column;gap:4px;padding:10px 12px;border-radius:10px;background:var(--panel-2)}
+.f-paid-box .check-inline{font-size:.95rem}
+.f-paid-box input[type="checkbox"]{width:18px;height:18px;accent-color:var(--in)}
+.paid-log{margin-top:6px;font-size:.8rem;display:flex;flex-direction:column;gap:3px}
+.paid-log-h{font-weight:700;font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}

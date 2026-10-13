@@ -104,6 +104,7 @@ function releasePL(rel, idx){
   idx=idx||LFCore.relIndex(DB.releases);
   const out={ rel, revenue:0, artists:0, costs:0, months:{}, firstSale:'', lastSale:'' };
   (DB.transactions||[]).forEach(t=>{
+    if(typeof txCounts==='function' && !txCounts(t)) return;   // spesa non ancora pagata: non conta
     const r=LFCore.releaseForTx(idx, t); if(r!==rel) return;
     const eur=LFCore.txEur(DB, t), m=monthKeyOf(t.date)||'—';
     const mo=out.months[m]||(out.months[m]={ rev:0, art:0, cost:0 });

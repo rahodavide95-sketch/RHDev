@@ -2826,6 +2826,24 @@
   Object.assign(DICT.pt, {"hol.pick": "Feriados", "hol.pick_t": "De que país marcar os feriados no calendário (vale para esta editora)", "hol.auto": "Automático · {c}", "hol.none": "Nenhum"});
   Object.assign(DICT.nl, {"hol.pick": "Feestdagen", "hol.pick_t": "Van welk land de feestdagen in de kalender worden gemarkeerd (geldt voor dit label)", "hol.auto": "Automatisch · {c}", "hol.none": "Geen"});
 
+  /* tassi fissi apribili nelle impostazioni */
+  Object.assign(DICT.it, {"fx.fixed_title": "Tassi fissi"});
+  Object.assign(DICT.en, {"fx.fixed_title": "Fixed rates"});
+  Object.assign(DICT.es, {"fx.fixed_title": "Tipos fijos"});
+  Object.assign(DICT.fr, {"fx.fixed_title": "Taux fixes"});
+  Object.assign(DICT.de, {"fx.fixed_title": "Feste Kurse"});
+  Object.assign(DICT.pt, {"fx.fixed_title": "Taxas fixas"});
+  Object.assign(DICT.nl, {"fx.fixed_title": "Vaste koersen"});
+
+  /* pulsante Personalizza della dashboard (senza icona) */
+  Object.assign(DICT.it, {"dash.customize_t": "Personalizza"});
+  Object.assign(DICT.en, {"dash.customize_t": "Customize"});
+  Object.assign(DICT.es, {"dash.customize_t": "Personalizar"});
+  Object.assign(DICT.fr, {"dash.customize_t": "Personnaliser"});
+  Object.assign(DICT.de, {"dash.customize_t": "Anpassen"});
+  Object.assign(DICT.pt, {"dash.customize_t": "Personalizar"});
+  Object.assign(DICT.nl, {"dash.customize_t": "Aanpassen"});
+
   // lingua salvata (condivisa con la pagina pubblica) oppure quella del browser, se è una delle 7
   let lang = (function(){ let s=null; try{ s=localStorage.getItem(KEY); }catch(e){}
     if(s && DICT[s]) return s;

@@ -14,6 +14,8 @@
   let store={};
   try{ store=JSON.parse(localStorage.getItem(LS)||'{}')||{}; }catch(e){ store={}; }
   const persist=()=>{ try{ localStorage.setItem(LS, JSON.stringify(store)); }catch(e){} };
+  // Movimenti ora ha colonne a larghezza fissa uguali in tutte le schede: le larghezze salvate col vecchio sistema si azzerano una volta
+  if(!store.__txV2){ delete store['table-tx']; store.__txV2=1; persist(); }
   const wide=()=>root.matchMedia('(min-width:761px)').matches;
 
   /* ---------- identità di tabelle e colonne ---------- */

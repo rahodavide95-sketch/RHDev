@@ -2817,6 +2817,15 @@
   Object.assign(DICT.pt, {"pln.subtitle": "Planeie lançamentos, estreias, pré-vendas, eventos, merch, podcasts e procura de artistas: cada entrada avisa 7 dias antes e no próprio dia.", "pln.empty": "Ainda nada planeado. Adicione a primeira entrada: lançamento, estreia, evento, podcast…"});
   Object.assign(DICT.nl, {"pln.subtitle": "Plan releases, premières, pre-orders, evenementen, merch, podcasts en scouting: elk item herinnert je 7 dagen vooraf en op de dag zelf.", "pln.empty": "Nog niets gepland. Voeg het eerste item toe: release, première, evenement, podcast…"});
 
+  /* festivi per Paese (hol2) */
+  Object.assign(DICT.it, {"hol.pick": "Festivi", "hol.pick_t": "Di quale Paese segnare i festivi nel calendario (vale per questa etichetta)", "hol.auto": "Automatico · {c}", "hol.none": "Nessuno"});
+  Object.assign(DICT.en, {"hol.pick": "Holidays", "hol.pick_t": "Which country's public holidays to mark in the calendar (applies to this label)", "hol.auto": "Automatic · {c}", "hol.none": "None"});
+  Object.assign(DICT.es, {"hol.pick": "Festivos", "hol.pick_t": "De qué país marcar los festivos en el calendario (vale para este sello)", "hol.auto": "Automático · {c}", "hol.none": "Ninguno"});
+  Object.assign(DICT.fr, {"hol.pick": "Jours fériés", "hol.pick_t": "De quel pays marquer les jours fériés dans le calendrier (s'applique à ce label)", "hol.auto": "Automatique · {c}", "hol.none": "Aucun"});
+  Object.assign(DICT.de, {"hol.pick": "Feiertage", "hol.pick_t": "Welches Landes Feiertage im Kalender markiert werden (gilt für dieses Label)", "hol.auto": "Automatisch · {c}", "hol.none": "Keine"});
+  Object.assign(DICT.pt, {"hol.pick": "Feriados", "hol.pick_t": "De que país marcar os feriados no calendário (vale para esta editora)", "hol.auto": "Automático · {c}", "hol.none": "Nenhum"});
+  Object.assign(DICT.nl, {"hol.pick": "Feestdagen", "hol.pick_t": "Van welk land de feestdagen in de kalender worden gemarkeerd (geldt voor dit label)", "hol.auto": "Automatisch · {c}", "hol.none": "Geen"});
+
   // lingua salvata (condivisa con la pagina pubblica) oppure quella del browser, se è una delle 7
   let lang = (function(){ let s=null; try{ s=localStorage.getItem(KEY); }catch(e){}
     if(s && DICT[s]) return s;

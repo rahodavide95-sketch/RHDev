@@ -2516,14 +2516,14 @@ function openTx(id){
 const EXP_CATS=['production','promo','distribution','artwork','manufacturing','shipping','software','fees','travel','other'];
 const EXP_RULES=[
   ['production',['master','mastering','mix','mixing','record','recording','studio','registrazion','produzion','beat','vocal','tracking','session','sound design']],
-  ['promo',['adv','ads','advert','promo','marketing','playlist',' pr ','pubblicit','influencer','sponsor','campaign','campagn','facebook','google ads','tiktok ad','meta ads','spotify ad']],
+  ['promo',['adv','ads','advert','promo','marketing','playlist',' pr ','pubblicit','influencer','sponsor','campaign','campagn','facebook','google ads','tiktok ad','meta ads','spotify ad','ufficio stampa','press office','pr agency','plugging','plugger','radio promo','blog','magazine','boost','instagram','youtube ads','submithub','groover']],
   ['distribution',['distrokid','distribut','distribuz','tunecore','cd baby','cdbaby','believe','label engine','aggregat','symphonic','ditto','spinnup']],
-  ['artwork',['artwork','cover','design','grafic','foto','photo','video','videoclip','visual','logo','render','3d']],
+  ['artwork',['artwork','cover','design','grafic','foto','photo','video','videoclip','visual','logo','render','3d','riprese','montaggio','shooting','fotograf','illustra']],
   ['manufacturing',['vinyl','vinile','pressing','press','stampa','duplicat','manifattur','test pressing','lacquer','cd duplica']],
   ['shipping',['shipping','spedizion','courier','corriere','postage','affranc','dhl','ups','fedex','poste','tracking number']],
-  ['software',['software','plugin','subscription','abbonament','saas','licens','licenz','canva','adobe','splice','app store','membership']],
-  ['fees',['fee','commission','commissione','bank','banca','paypal','stripe','wise','process','tassa',' iva',' vat','withhold','ritenut','bonifico','imposta']],
-  ['travel',['travel','viaggio','hotel','flight','volo','treno','train','fuel','benzina','trasfert','taxi','rental','noleggio','soggiorno']],
+  ['software',['software','plugin','subscription','abbonament','saas','licens','licenz','canva','adobe','splice','app store','membership','dropbox','google workspace','notion','hosting','dominio','domain','website','sito web','wix','squarespace','shopify']],
+  ['fees',['fee','commission','commissione','bank','banca','paypal','stripe','wise','process','tassa',' iva',' vat','withhold','ritenut','bonifico','imposta','siae','soundreef','gema','sacem','sgae','canone conto','canone']],
+  ['travel',['travel','viaggio','hotel','flight','volo','treno','train','fuel','benzina','trasfert','taxi','rental','noleggio','soggiorno','aereo','ryanair','easyjet','airbnb','pedaggio','toll','parcheggio','parking','autostrada','uber','furgone']],
 ];
 function expenseCategory(t){
   if(t && t.cat && EXP_CATS.includes(t.cat)) return t.cat;   // categoria presa dal foglio importato
@@ -2749,12 +2749,26 @@ async function xlsxRead(buf){
 }
 // testo del CSV: UTF-8, altrimenti Windows-1252 (CSV salvati da Excel in italiano)
 function decodeText(buf){ try{ return new TextDecoder('utf-8',{fatal:true}).decode(buf); }catch(e){ return new TextDecoder('windows-1252').decode(buf); } }
-let importSheets=null, importAll=[], importFileName='';
+let importSheets=null, importAll=[], importFileName='', importCatMap={}, importRemembered=false;
+// firma delle colonne: lo stesso tipo di file (stesse intestazioni) riusa le scelte confermate l'ultima volta
+const importSig=()=>importHeaders.map(colNorm).join('|');
+// categoria di un valore del foglio: scelta in questo import, poi imparata nei precedenti, poi riconosciuta
+function catForImport(txt){ const k=String(txt||'').trim().toLowerCase(); if(!k) return null;
+  return importCatMap[k] || (DB.catMap||{})[k] || expCatFromText(k); }
+/* piattaforme scritte in modi diversi ("SPOTIFY", "Spotify AB") → un solo nome */
+const KNOWN_PLATFORMS=['Spotify','Apple Music','iTunes','Amazon Music','Amazon','YouTube Music','YouTube','Deezer','Tidal','Bandcamp','Beatport','Traxsource','SoundCloud','TikTok','Instagram','Facebook','Meta','Napster','Pandora','Anghami','Boomplay','Juno Download','Qobuz','Shazam','Snapchat','Twitch','Audiomack','JioSaavn','iHeartRadio','SiriusXM','Discogs','PayPal','Stripe','DistroKid','TuneCore','CD Baby','Believe','Symphonic','Ditto','Label Engine','Revolut','N26','Wise'];
+const PLAT_RE=KNOWN_PLATFORMS.map(p=>[p, new RegExp('^'+p.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?![a-z])','i')]);
+let platKnown=null, platMemo=new Map();
+function canonPlatform(s){ s=String(s||'').trim(); if(!s) return s; if(platMemo.has(s)) return platMemo.get(s); const r=canonPlatform0(s); platMemo.set(s, r); return r; }
+function canonPlatform0(s){ const k=colNorm(s);
+  if(!platKnown){ platKnown=new Map(); (DB.transactions||[]).forEach(t=>{ if(t.platform){ const n=colNorm(t.platform); if(!platKnown.has(n)) platKnown.set(n, t.platform); } }); }
+  for(const [p,re] of PLAT_RE){ if(colNorm(p)===k || re.test(s)) return p; }
+  return platKnown.get(k) || s; }
 function readFile(file){
   const r=new FileReader();
   r.onload=async ()=>{
     const buf=r.result, u8=new Uint8Array(buf);
-    importSheets=null; window._rawCSV=''; importFileName=file.name.replace(/\.[^.]+$/,'');
+    importSheets=null; window._rawCSV=''; importFileName=file.name.replace(/\.[^.]+$/,''); importCatMap={};
     if(/\.xls$/i.test(file.name)){ toast(tt('imp.xls_old')); return; }
     if(u8[0]===0x50 && u8[1]===0x4b){   // "PK": file zip = Excel .xlsx
       try{ importSheets=(await xlsxRead(buf)).filter(s=>s.rows.length); }catch(e){ importSheets=null; }
@@ -2791,8 +2805,15 @@ function refreshParse(fresh){
   importHeaders=importAll[hr]||[]; importRows=importAll.slice(hr+1);
   const distro=detectDistro();
   $('#map-distro').value=distro||'auto';
-  const map=smartMap(distro ? distroMap(distro) : autoMap(importHeaders));
+  let map=smartMap(distro ? distroMap(distro) : autoMap(importHeaders));
   autoKindMode(map, distro);
+  // stesso tipo di file già importato: le scelte confermate allora valgono anche adesso
+  const mem=(DB.autoMaps||{})[importSig()]; importRemembered=false;
+  if(mem && mem.map && Object.values(mem.map).every(i=>i<importHeaders.length)){
+    map=Object.assign({}, mem.map); importRemembered=true;
+    if(mem.kind) $('#map-kind').value=mem.kind; if(mem.datefmt) $('#map-datefmt').value=mem.datefmt;
+    $('#map-platform').value=mem.platform||''; if(mem.currency) $('#map-currency').value=mem.currency;
+  }
   buildMapFields(map);
   renderPreview();
 }
@@ -3003,13 +3024,13 @@ function rowToRec(cols,map,ctx){
     if(o){ kind='expense'; net=Math.abs(o); } else { kind=(i<0?'expense':'income'); net=i; }
     noAmt = !o && !i; }
   if(kind==='expense') net=Math.abs(net);
-  const catTxt=get('category').trim(), cat=kind==='expense' ? expCatFromText(catTxt) : null;
+  const catTxt=get('category').trim(), cat=kind==='expense' ? catForImport(catTxt) : null;
   const rawCur=get('currency').trim(), cur=normCur(rawCur, '') || ctx.hdrCur || defCur;
   const dRaw=get('date').trim(), relTxt=get('release').trim();
   const rec={
     id:uid(), kind, date:/^\d{4}$/.test(dRaw) ? '' : parseDate(excelSerialDate(dRaw),fmt),   // "2025" da solo = riga di gruppo, non una data
     dateTo:parseDate(excelSerialDate(get('dateTo')),fmt),
-    platform:(get('platform').trim()||$('#map-platform').value.trim()),   // la colonna del file vince; quello scritto a mano solo se manca
+    platform:canonPlatform(get('platform').trim()||$('#map-platform').value.trim()),   // la colonna del file vince; quello scritto a mano solo se manca
     type:get('type').trim()||(kind==='expense'?(catTxt||'expense'):'digital'),
     catalog:get('catalog').trim(), product:get('product').trim(), artist:get('artist').trim(),
     isrc:get('isrc').trim(), upc:get('upc').trim(), territory:get('territory').trim().toUpperCase(),
@@ -3028,9 +3049,17 @@ function rowToRec(cols,map,ctx){
   return rec;
 }
 // righe senza una data valida (totali, righe vuote del foglio) non diventano movimenti
-function importRecs(map){ const ctx=importContext(map); return importRows.map(r=>rowToRec(r,map,ctx)).filter(r=>r.date && !r._noAmt); }
-function importNoDate(map){ const ctx=importContext(map); return importRows.filter(r=>!rowToRec(r,map,ctx).date).length; }
-function importNoAmt(map){ const ctx=importContext(map); return importRows.map(r=>rowToRec(r,map,ctx)).filter(r=>r.date && r._noAmt).length; }
+// tutte le righe convertite una volta sola per ogni combinazione di scelte (file grandi: niente calcoli ripetuti)
+let _recCache=null;
+function rawRecs(map){
+  const key=JSON.stringify([map, $('#map-kind').value, $('#map-datefmt').value, $('#map-currency').value, $('#map-platform').value, importCatMap, importHeaders, importRows.length, importRows[0], importRows[importRows.length-1]]);
+  if(_recCache && _recCache.key===key) return _recCache.recs;
+  platKnown=null; platMemo=new Map(); const ctx=importContext(map);
+  const recs=importRows.map(r=>rowToRec(r,map,ctx)); _recCache={ key, recs }; return recs;
+}
+function importRecs(map){ return rawRecs(map).filter(r=>r.date && !r._noAmt).map(r=>Object.assign({}, r, { id:uid() })); }
+function importNoDate(map){ return rawRecs(map).filter(r=>!r.date).length; }
+function importNoAmt(map){ return rawRecs(map).filter(r=>r.date && r._noAmt).length; }
 /* controlli intelligenti pre-import: segnala anomalie prima di salvare */
 function importChecks(map, recs){
   recs=recs||importRecs(map);
@@ -3047,7 +3076,8 @@ function importChecks(map, recs){
   const w=[];
   if(outliers) w.push({lvl:'warn', t:tt('imp.chk_outlier').replace('{n}',outliers)});
   const found=Object.keys(map).length;
-  if(found) w.unshift({lvl:'info', t:tt('imp.auto_found').replace('{n}', found).replace('{m}', importHeaders.filter(h=>String(h||'').trim()).length)});
+  if(importRemembered) w.unshift({lvl:'info', t:tt('imp.remembered')});
+  else if(found) w.unshift({lvl:'info', t:tt('imp.auto_found').replace('{n}', found).replace('{m}', importHeaders.filter(h=>String(h||'').trim()).length)});
   if(noDate) w.push({lvl:'warn', t:tt('imp.chk_nodate_skip').replace('{n}',noDate)});
   if(noAmt) w.push({lvl:'info', t:tt('imp.chk_noamt').replace('{n}',noAmt)});
   if(badCur) w.push({lvl:'warn', t:tt('imp.chk_badcur').replace('{n}',badCur).replace('{c}', normCur($('#map-currency').value,'EUR')||'EUR')});
@@ -3057,8 +3087,22 @@ function importChecks(map, recs){
   if(curs.length>1) w.push({lvl:'info', t:tt('imp.chk_curmix').replace('{c}',curs.join(', '))});
   return w;
 }
+function renderCatMap(map){
+  const box=$('#imp-cat-panel'), grid=$('#imp-cat-map'); if(!box||!grid) return;
+  if(map.category==null){ box.hidden=true; return; }
+  const cnt=new Map(), all=rawRecs(map);
+  importRows.forEach((r,i)=>{ const rec=all[i]; if(!rec || rec.kind!=='expense' || !rec.date) return; const v=String((r||[])[map.category]??'').trim(); if(!v) return;
+    const k=v.toLowerCase(); const e=cnt.get(k)||{ v, n:0 }; e.n++; cnt.set(k,e); });
+  if(!cnt.size){ box.hidden=true; return; }
+  const opts=c=>EXP_CATS.map(x=>`<option value="${x}"${x===c?' selected':''}>${esc(tt('ecat.'+x))}</option>`).join('');
+  grid.innerHTML=[...cnt.entries()].sort((a,b)=>b[1].n-a[1].n).slice(0,80).map(([k,e])=>`<div class="map-row"><span>${esc(e.v)} <span class="muted small">× ${e.n}</span></span>
+    <select class="select imp-cat-sel" data-cat-val="${esc(k)}">${opts(catForImport(k)||'other')}</select></div>`).join('');
+  grid.querySelectorAll('.imp-cat-sel').forEach(sel=>sel.onchange=()=>{ importCatMap[sel.dataset.catVal]=sel.value; renderPreview(); });
+  box.hidden=false;
+}
 function renderPreview(){
   const map=currentMap();
+  renderCatMap(map);
   const all=importRecs(map), recs=all.slice(0,8);
   const cb=$('#preview-checks');
   if(cb){ const w=importChecks(map, all);
@@ -3098,6 +3142,9 @@ $('#import-confirm').onclick=()=>{
   if(dedup){ recs=dd.kept; skipped=dd.skipped; }
   // vendite di periodi già chiusi: vanno nel prossimo statement (i numeri inviati non cambiano)
   const late=(typeof markLateLines==='function') ? markLateLines(recs) : 0;
+  // la prossima volta: stesse colonne → stesse scelte; stesse categorie → stessa categoria dell'app
+  DB.autoMaps=DB.autoMaps||{}; DB.autoMaps[importSig()]=snapshotPreset();
+  if(map.category!=null){ DB.catMap=DB.catMap||{}; $$('#imp-cat-map .imp-cat-sel').forEach(sel=>{ DB.catMap[sel.dataset.catVal]=sel.value; }); }
   if(recs.length){
     const batchId=newId(); recs.forEach(r=>{ r._imp=batchId; });
     DB.transactions.push(...recs);
@@ -3112,8 +3159,9 @@ function updateImpUndo(){ const b=$('#imp-undo'); if(!b) return; const li=DB&&DB
   if(li && li.count){ const n=$('#imp-undo-n'); if(n) n.textContent=li.count; b.hidden=false; } else b.hidden=true; }
 function undoLastImport(){ const li=DB&&DB.lastImport; if(!li) return;
   if(!confirm(tt('imp.undo_confirm').replace('{n}',li.count))) return;
-  DB.transactions=(DB.transactions||[]).filter(t=>t._imp!==li.id);
-  DB.lastImport=null; save(); renderTx(); updateImpUndo(); toast(tt('imp.undone')); }
+  const ids=(DB.transactions||[]).filter(t=>t._imp===li.id).map(t=>t.id);
+  const tid=trashRemove('transactions', ids, tt('trash.k_transactions')+' · '+ids.length+' '+tt('trash.items'));
+  DB.lastImport=null; save(); renderTx(); updateImpUndo(); undoToast(tt('imp.undone'), tid); }
 $('#imp-undo-btn')?.addEventListener('click', undoLastImport);
 $('#imp-undo-x')?.addEventListener('click', ()=>{ if(DB) DB.lastImport=null; save(); updateImpUndo(); });
 

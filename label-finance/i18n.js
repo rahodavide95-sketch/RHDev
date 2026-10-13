@@ -2726,6 +2726,15 @@
   Object.assign(DICT.pt, {"imp.kind_inout": "Duas colunas: Entradas e Saídas (Crédito/Débito)", "imp.f_amountIn": "Entradas (coluna)", "imp.f_amountOut": "Saídas (coluna)"});
   Object.assign(DICT.nl, {"imp.kind_inout": "Twee kolommen: Inkomsten en Uitgaven (Bij/Af)", "imp.f_amountIn": "Inkomsten (kolom)", "imp.f_amountOut": "Uitgaven (kolom)"});
 
+  /* import: memoria delle scelte e categorie */
+  Object.assign(DICT.it, {"imp.remembered": "✨ Hai già importato un file con queste colonne: ho usato le scelte dell'altra volta. Controlla l'anteprima.", "imp.cat_title": "Categorie delle spese", "imp.cat_hint": "Le categorie del tuo file, con quella dell'app già proposta. Correggi solo quelle sbagliate: me le ricordo per le prossime volte."});
+  Object.assign(DICT.en, {"imp.remembered": "✨ You've imported a file with these columns before: I used your previous choices. Check the preview.", "imp.cat_title": "Expense categories", "imp.cat_hint": "The categories in your file, with the app's category already suggested. Only fix the wrong ones: I'll remember them next time."});
+  Object.assign(DICT.es, {"imp.remembered": "✨ Ya importaste un archivo con estas columnas: he usado tus elecciones anteriores. Revisa la vista previa.", "imp.cat_title": "Categorías de gastos", "imp.cat_hint": "Las categorías de tu archivo, con la de la app ya propuesta. Corrige solo las que estén mal: las recordaré la próxima vez."});
+  Object.assign(DICT.fr, {"imp.remembered": "✨ Vous avez déjà importé un fichier avec ces colonnes : j'ai repris vos choix précédents. Vérifiez l'aperçu.", "imp.cat_title": "Catégories de dépenses", "imp.cat_hint": "Les catégories de votre fichier, avec celle de l'app déjà proposée. Corrigez seulement les mauvaises : je m'en souviendrai la prochaine fois."});
+  Object.assign(DICT.de, {"imp.remembered": "✨ Du hast schon eine Datei mit diesen Spalten importiert: Ich habe deine damaligen Einstellungen übernommen. Prüfe die Vorschau.", "imp.cat_title": "Ausgabenkategorien", "imp.cat_hint": "Die Kategorien aus deiner Datei, mit der vorgeschlagenen Kategorie der App. Korrigiere nur die falschen: Ich merke sie mir fürs nächste Mal."});
+  Object.assign(DICT.pt, {"imp.remembered": "✨ Já importaste um ficheiro com estas colunas: usei as tuas escolhas anteriores. Verifica a pré-visualização.", "imp.cat_title": "Categorias de despesas", "imp.cat_hint": "As categorias do teu ficheiro, com a da app já proposta. Corrige só as erradas: lembro-me delas da próxima vez."});
+  Object.assign(DICT.nl, {"imp.remembered": "✨ Je hebt al eens een bestand met deze kolommen geïmporteerd: ik heb je eerdere keuzes gebruikt. Controleer het voorbeeld.", "imp.cat_title": "Uitgavencategorieën", "imp.cat_hint": "De categorieën uit je bestand, met de categorie van de app al voorgesteld. Pas alleen de verkeerde aan: ik onthoud ze voor de volgende keer."});
+
   let lang = localStorage.getItem(KEY) ||
     ((navigator.language||'it').toLowerCase().startsWith('en') ? 'en' : 'it');
 

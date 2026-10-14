@@ -1,3 +1,19 @@
+# Contratti: niente più richieste di firmare di nuovo (ottobre 2026) — niente da fare online
+
+Nessuna modifica al database: basta la pubblicazione dell'app.
+
+- Dopo la tua firma il pulsante diventa **"✓ Firmato da te"** e non chiede più di firmare.
+- Dopo l'invio il contratto è **"In attesa dell'artista"** (prima restava "Pronto da inviare").
+- I contratti che l'artista ha firmato **prima che esistesse la firma dell'etichetta** risultano
+  conclusi ("Firmato dall'artista"): niente più "Firma" né "Modifica".
+- Cambiare il **nome della label nel profilo** non annulla più le firme dei contratti già fatti
+  (aprire "Modifica" e rigenerare senza cambiare niente non chiede di rifirmare).
+- Prima di **reinviare** un contratto l'app controlla se l'artista l'ha già firmato: il reinvio
+  avrebbe cancellato la sua firma.
+- Cambiare davvero i termini (titoli, quota, nomi…) dopo la firma chiede ancora di rifirmare, come deve.
+
+---
+
 # Impostazioni a schede (ottobre 2026) — niente da fare online
 
 Nessuna modifica al database: basta la pubblicazione dell'app.

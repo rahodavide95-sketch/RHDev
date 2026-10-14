@@ -8,6 +8,7 @@ Nessuna modifica al database: basta la pubblicazione dell'app.
   più pagina lunghissima né campi che occupano tutto lo schermo.
 - La scheda scelta resta ricordata; gli avvisi sui cambi aprono direttamente "Valute".
 - Sul telefono le schede vanno su due righe.
+- Schede e contenuto sono al centro della pagina.
 
 ---
 

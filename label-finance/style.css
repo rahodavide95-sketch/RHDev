@@ -1574,9 +1574,9 @@ body.recovery-mode{overflow:hidden}
    righe "descrizione · comando" e campi corti invece di input a tutta larghezza
    ============================================================================ */
 #view-settings{container-type:inline-size}
-.set-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:18px;max-width:780px}   /* una sezione alla volta (schede sopra) */
+.set-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:18px;max-width:780px;margin-left:auto;margin-right:auto}   /* una sezione alla volta, al centro */
 .set-off{display:none!important}
-.set-tabs{margin:0 0 18px;max-width:100%;overflow-x:auto;scrollbar-width:none}
+.set-tabs{display:flex;width:fit-content;margin:0 auto 18px;max-width:100%;overflow-x:auto;scrollbar-width:none}   /* schede al centro */
 .set-tabs::-webkit-scrollbar{display:none}
 .set-tabs .seg-btn{white-space:nowrap;padding:7px 16px}
 .set-tabs .seg-btn[hidden]{display:none}

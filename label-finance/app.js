@@ -1525,7 +1525,8 @@ function renderReleases(){
     cont.innerHTML = list.map(r=>{
       const tot=splitTot(r.splits); const label=pctR(Math.max(0,100-tot));
       const chips=(r.splits||[]).map(s=>`<span class="split-chip">${esc(s.name)} <b>${(+s.pct||0)}%</b></span>`).join('')
-        + `<span class="split-chip split-chip--label">Label <b>${label}%</b></span>`;
+        + `<span class="split-chip split-chip--label">Label <b>${label}%</b></span>`
+        + (r.royaltyMode && r.royaltyMode!=='release' ? `<span class="split-chip split-chip--mode" title="${esc(tt('rm.'+r.royaltyMode))}">${esc(tt('rm.chip_'+r.royaltyMode))}</span>` : '');
       return `<div class="release-card" data-id="${r.id}">
         <div class="release-card-head">
           <div><span class="release-cat">${esc(r.catalog)}</span>
@@ -1867,9 +1868,49 @@ function openRelease(id){
   $('#r-tracks').innerHTML = (r?.tracks||[]).map(t=>trackBlockHTML(t)).join('');
   enableTrackDrag($('#r-tracks'));
   refreshSplitTotal();
+  // distribuzione royalty: quella salvata; per una release nuova si propone in base al tipo (si cambia quando si vuole)
+  const rm=$('#r-roymode'); if(rm){ rm.value=(r && r.royaltyMode) || (!r && relTypeIsVA($('#r-type').value) ? 'tracks' : 'release'); rm.dataset.touched=r?'1':''; }
+  refreshRoyMode();
   $('#r-delete').hidden=!r;
   $('#rel-modal').hidden=false;
 }
+/* ---------- Distribuzione royalty nella scheda della release ---------- */
+const relTypeIsVA=v=>/^VA\b/i.test(String(v||'').trim());
+function refreshRoyMode(){
+  const rm=$('#r-roymode'); if(!rm) return;
+  const mode=rm.value||'release', perTrack=mode!=='release';
+  const hint=$('#r-roymode-hint'); if(hint) hint.textContent=tt('rm.h_'+mode);
+  const blocks=$$('#r-tracks .track-block');
+  const noSplits=blocks.filter(tb=>!collectSplits(tb.querySelector('.track-splits')).length).length;
+  let msg='', propose=false;
+  if(perTrack && !blocks.length) msg=tt('rm.no_tracks');
+  else if(perTrack && noSplits){ msg=tt('rm.missing').replace('{n}', noSplits); propose=true; }
+  else if(!perTrack && relTypeIsVA($('#r-type').value)){ msg=tt('rm.va_release'); propose=blocks.length>0 && noSplits>0; }
+  const w=$('#r-roymode-warn'); if(w) w.hidden=!msg;
+  const wt=$('#r-roymode-warn-txt'); if(wt) wt.textContent=msg;
+  const pb=$('#r-propose-splits'); if(pb) pb.hidden=!propose;
+}
+$('#r-roymode')?.addEventListener('change', e=>{ e.target.dataset.touched='1'; refreshRoyMode(); });
+$('#r-type')?.addEventListener('change', ()=>{ const rm=$('#r-roymode');
+  if(rm && !rm.dataset.touched && !$('#r-id').value) rm.value=relTypeIsVA($('#r-type').value)?'tracks':'release';
+  refreshRoyMode(); });
+$('#r-tracks')?.addEventListener('input', ()=>refreshRoyMode());
+// quote proposte traccia per traccia: gli artisti della traccia con la loro quota predefinita (divisa se sono più di uno)
+$('#r-propose-splits')?.addEventListener('click', ()=>{
+  const id=$('#r-id').value, saved=id ? releases().find(x=>x.id===id) : null;
+  const relLike={ catalog:$('#r-catalog').value.trim(), title:$('#r-title').value.trim(), tracks:[] };
+  let n=0;
+  $$('#r-tracks .track-block').forEach(tb=>{
+    const box=tb.querySelector('.track-splits'); if(collectSplits(box).length) return;
+    const st=saved && (saved.tracks||[]).find(t=>t.id && t.id===tb.dataset.tid);
+    const tr={ title:tb.querySelector('.track-title').value.trim(), isrc:tb.querySelector('.track-isrc').value.trim(), artist:tb.dataset.tartist||(st&&st.artist)||'', splits:[] };
+    const names=trackArtistNames(saved||relLike, tr); if(!names.length) return;
+    const pcts=relSplitsFor(names.join(', ')); if(!pcts.length) return;
+    box.innerHTML=pcts.map(s=>splitRowHTML(s.name, s.pct)).join(''); n++;
+  });
+  refreshRoyMode();
+  toast(n ? tt('rm.proposed').replace('{n}', n) : tt('rm.propose_none'));
+});
 $('#btn-add-release').onclick=()=>openRelease(null);
 $('#rel-modal-close').onclick=$('#r-cancel').onclick=()=>$('#rel-modal').hidden=true;
 $('#rel-modal').onclick=e=>{ if(e.target.id==='rel-modal') $('#rel-modal').hidden=true; };
@@ -1879,6 +1920,7 @@ $('#rel-form').addEventListener('click', e=>{ const t=e.target;
   if(t.classList.contains('split-del')){ t.closest('.split-row').remove(); refreshSplitTotal(); }
   else if(t.classList.contains('track-del')){ t.closest('.track-block').remove(); }
   else if(t.classList.contains('track-add-split')){ t.closest('.track-block').querySelector('.track-splits').insertAdjacentHTML('beforeend', splitRowHTML()); }
+  if(t.closest('.split-del,.track-del,.track-add-split,#r-add-track')) refreshRoyMode();
 });
 $('#rel-form').addEventListener('input', e=>{ if(e.target.classList.contains('split-pct') && e.target.closest('#r-splits')) refreshSplitTotal(); });
 $('#r-delete').onclick=()=>{
@@ -1910,7 +1952,8 @@ $('#rel-form').onsubmit=e=>{
     note:$('#r-note').value.trim(), exclusive:$('#r-exclusive').value==='yes', exclusivePlatform:$('#r-excl-plat').value.trim(),
     writtenBy:$('#r-written').value.trim(), producedBy:$('#r-produced').value.trim(), mixedBy:$('#r-mixed').value.trim(),
     masteredBy:$('#r-mastered').value.trim(), artworkBy:$('#r-artwork').value.trim(), publisher:$('#r-publisher').value.trim(),
-    type:$('#r-type').value||'SINGLE', distributedBy:$('#r-distributed').value.trim() };
+    type:$('#r-type').value||'SINGLE', distributedBy:$('#r-distributed').value.trim(),
+    royaltyMode:($('#r-roymode')&&$('#r-roymode').value)||'release' };
   if(!rec.catalog){ toast(tt('t.cat_required')); return; }
   if(!rec.orderDate){ toast(tt('r.order_required')); return; }
   const over=[splits, ...tracks.map(t=>t.splits)].find(l=>splitTot(l)>100);
@@ -1927,7 +1970,7 @@ $('#rel-form').onsubmit=e=>{
   const prevRel=id?releases().find(r=>r.id===id):null;
   // quote cambiate su una release con vendite in un periodo già chiuso: avvisa (cambierebbero statement inviati)
   if(prevRel && typeof perLockDate==='function' && perLockDate()){
-    const sig=r=>JSON.stringify([(r.splits||[]).map(x=>[x.name,+x.pct]), (r.tracks||[]).map(t=>[t.title,t.isrc,(t.splits||[]).map(x=>[x.name,+x.pct])])]);
+    const sig=r=>JSON.stringify([r.royaltyMode||'release', (r.splits||[]).map(x=>[x.name,+x.pct]), (r.tracks||[]).map(t=>[t.title,t.isrc,(t.splits||[]).map(x=>[x.name,+x.pct])])]);
     if(sig(prevRel)!==sig(rec)){
       const idx=LFCore.relIndex([prevRel]);
       const hit=(DB.transactions||[]).some(t=>perIsClosedTx(t) && LFCore.releaseForTx(idx,t));
@@ -2009,9 +2052,9 @@ let relSplitMode='default';
 function relSplitsFor(raw){
   if(relSplitMode==='manual') return [];
   const names=splitArtistNames(raw).filter(n=>!/^various artists?$|^v\.?a\.?$/i.test(n)); if(!names.length) return [];
-  const defs=names.map(n=>{ const a=findArtist(n); return a && +a.split>0 ? +a.split : 0; });
-  if(defs.every(d=>d>0) && defs.reduce((x,y)=>x+y,0)<=100) return names.map((n,i)=>({name:n, pct:defs[i]}));
-  return names.map(n=>({name:n, pct:pctR(50/names.length)}));
+  // più artisti sulla stessa traccia/release: la quota di ognuno (predefinita o 50%) si divide per quanti sono
+  const defs=names.map(n=>{ const a=findArtist(n); return a && +a.split>0 ? +a.split : 50; });
+  return names.map((n,i)=>({name:n, pct:pctR(defs[i]/names.length)}));
 }
 function askSplitMode(run){
   const m=$('#splitmode-modal'); if(!m){ run(); return; }

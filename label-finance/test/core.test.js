@@ -252,3 +252,69 @@ test('parseDate: mese/anno e trimestri dei report (06/2026, Q1 2026, 2026-Q3)', 
   assert.equal(C.parseDate('T4 2025'), '2025-10-01');
   assert.equal(C.parseDate('15/01/2026'), '2026-01-15', 'le date complete non cambiano');
 });
+
+/* ---------- Distribuzione royalty per release (royaltyMode) ---------- */
+function splitEp(mode) {
+  // split EP: 2 tracce di Ann, 2 di Bo (Bo + Cy insieme sulla 4: artisti doppi sulla stessa traccia)
+  return {
+    rates: { EUR: 1 },
+    releases: [{ id: 'r1', catalog: 'SE01', title: 'Split EP', artist: 'Ann & Bo', type: 'EP', royaltyMode: mode,
+      splits: [{ name: 'Ann', pct: 50 }],
+      tracks: [
+        { id: 't1', title: 'Uno', isrc: 'AAA000000001', splits: [{ name: 'Ann', pct: 50 }] },
+        { id: 't2', title: 'Due', isrc: 'AAA000000002', splits: [{ name: 'Ann', pct: 50 }] },
+        { id: 't3', title: 'Tre', isrc: 'AAA000000003', splits: [{ name: 'Bo', pct: 50 }] },
+        { id: 't4', title: 'Quattro', isrc: 'AAA000000004', splits: [{ name: 'Bo', pct: 25 }, { name: 'Cy', pct: 25 }] },
+      ] }],
+    transactions: [
+      { id: 'a', kind: 'income', date: '2026-02-10', catalog: 'SE01', product: 'Split EP', net: 100, currency: 'EUR' },          // album (vinile)
+      { id: 'b', kind: 'income', date: '2026-02-11', catalog: 'SE01', product: 'Tre', isrc: 'AAA000000003', net: 30, currency: 'EUR' },
+      { id: 'c', kind: 'income', date: '2026-02-12', catalog: 'SE01', product: 'Uno', isrc: 'AAA000000001', net: 10, currency: 'EUR' },
+      { id: 'd', kind: 'income', date: '2026-02-12', catalog: 'SE01', product: 'Quattro', net: 8, currency: 'EUR' },              // traccia senza ISRC, per titolo
+    ],
+  };
+}
+test('royaltyMode: senza modalità i conti restano come prima (album con le quote della release)', () => {
+  const r = C.computeRoyalties(splitEp(undefined)).byArtist;
+  close(r.ann.total, 50 + 5 + 4, 'album 50% Ann + traccia Uno 50% + "Quattro" senza ISRC = album 50% Ann');
+  close(r.bo.total, 15);
+  assert.equal(r.cy, undefined);
+  const same = C.computeRoyalties(splitEp('release')).byArtist;
+  close(same.ann.total, r.ann.total); close(same.bo.total, r.bo.total);
+});
+test('royaltyMode tracks: album diviso in parti uguali tra le tracce, artisti doppi sulla stessa traccia', () => {
+  const L = splitEp('tracks'); const { byArtist: r, labelTotal } = C.computeRoyalties(L);
+  // album 100 → 25 per traccia: Ann 50% su 2 tracce = 25; Bo 50% su t3 = 12,5 + 25% su t4 = 6,25; Cy 25% su t4 = 6,25
+  close(r.ann.total, 25 + 5, 'Ann: album + Uno');
+  close(r.bo.total, 12.5 + 6.25 + 15 + 2, 'Bo: album + Tre + Quattro (per titolo, 25%)');
+  close(r.cy.total, 6.25 + 2, 'Cy: album + Quattro');
+  close(labelTotal + r.ann.total + r.bo.total + r.cy.total, 148, 'niente si perde: etichetta + artisti = entrate');
+});
+test('royaltyMode tracks_sales: album in proporzione alle vendite delle tracce nello stesso mese', () => {
+  const L = splitEp('tracks_sales'); const r = C.computeRoyalties(L).byArtist;
+  // vendite tracce feb: Uno 10, Tre 30, Quattro 8 (tot 48) → album 100: Uno 20,833 · Tre 62,5 · Quattro 16,667
+  close(r.ann.total, C.cents(100 * 50 * (10 / 48) / 100) + 5);
+  close(r.bo.total, C.cents(100 * (50 * 30 / 48 + 25 * 8 / 48) / 100) + 15 + 2);
+  // mese senza vendite di tracce: parti uguali
+  L.transactions.push({ id: 'e', kind: 'income', date: '2026-05-01', catalog: 'SE01', product: 'Split EP', net: 40, currency: 'EUR' });
+  const r2 = C.computeRoyalties(L, { from: '2026-05-01', to: '2026-05-31' }).byArtist;
+  close(r2.ann.total, 10); close(r2.bo.total, 5 + 2.5); close(r2.cy.total, 2.5);
+});
+test('royaltyMode tracks_label: l\'album resta all\'etichetta, le tracce con le loro quote', () => {
+  const { byArtist: r, labelTotal } = C.computeRoyalties(splitEp('tracks_label'));
+  close(r.ann.total, 5); close(r.bo.total, 15 + 2); close(r.cy.total, 2);
+  close(labelTotal, 148 - 24);
+});
+test('royaltyMode: statement, totali e saldi usano la stessa divisione', () => {
+  const L = splitEp('tracks');
+  const st = C.computeStatement(L, 'Bo', '2026-02-01', '2026-02-28');
+  close(st.total, 12.5 + 6.25 + 15 + 2);
+  const album = st.lines.find(l => l.product === 'Split EP'); close(album.pct, 18.75, 'quota pesata sulla vendita dell\'album');
+  close(C.royaltyTotals(L).bo.total, st.total);
+  close(C.artistBalances(L).find(b => b.key === 'cy').royalties, 8.25);
+});
+test('royaltyMode tracks: traccia senza quote proprie usa quelle della release', () => {
+  const L = splitEp('tracks'); L.releases[0].tracks[1].splits = [];
+  const r = C.computeRoyalties(L).byArtist;
+  close(r.ann.total, 25 + 5, 'la traccia Due senza quote prende il 50% di Ann dalla release');
+});

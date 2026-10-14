@@ -2044,3 +2044,12 @@ tr.is-unpaid td.num .neg,tr.is-unpaid td.num .pos{opacity:.55}
   #table-tx tbody tr.tx-out{box-shadow:inset 3px 0 0 var(--out)}
   #table-tx tbody tr>td.dbl-sel{box-shadow:none}
 }
+
+/* Distribuzione royalty nella scheda della release */
+.rm-select{max-width:440px}
+.rm-hint{margin:6px 0 0;line-height:1.45}
+.rm-warn{display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;margin-top:10px;padding:10px 12px;border-radius:10px;
+  background:color-mix(in srgb,#f59e0b 14%,var(--panel));border:1px solid color-mix(in srgb,#f59e0b 40%,var(--line));font-size:.85rem;line-height:1.4}
+.rm-warn>span{flex:1 1 260px}
+.rm-warn[hidden],.rm-warn .btn[hidden]{display:none}
+.split-chip--mode{background:color-mix(in srgb,var(--accent) 14%,var(--panel));border-color:color-mix(in srgb,var(--accent) 40%,var(--line));color:var(--accent)}

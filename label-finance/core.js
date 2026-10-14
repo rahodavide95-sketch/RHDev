@@ -238,6 +238,58 @@
     return null;
   };
 
+  /* ---------- Distribuzione delle royalty di una release (scelta nella scheda della release) ----------
+     release      (predefinita) vendite di una traccia con le sue quote se le ha, altrimenti quelle della release;
+                  vendite dell'album con le quote della release
+     tracks       ogni traccia con le sue quote (o quelle della release se non ne ha);
+                  vendite dell'album divise in parti uguali tra le tracce
+     tracks_sales come tracks, ma l'album diviso in proporzione a quanto ha venduto ogni traccia nello stesso mese
+                  (parti uguali se nel mese le tracce non hanno vendite)
+     tracks_label ogni traccia con le sue quote; le vendite dell'album restano all'etichetta
+     Una vendita "dell'album" è collegata alla release ma non a una traccia (né per ISRC né per titolo). */
+  C.ROYALTY_MODES = ['release','tracks','tracks_sales','tracks_label'];
+  function trackOfTx(rel, t){
+    const iso=norm(t.isrc);
+    if(iso){ const tr=(rel.tracks||[]).find(x=>x && norm(x.isrc)===iso); if(tr) return tr; }
+    const p=norm(t.product);
+    if(p && p!==norm(rel.title)){ const tr=(rel.tracks||[]).find(x=>x && norm(x.title)===p); if(tr) return tr; }
+    return null;
+  }
+  const trackSplitsOr = (rel, tr) => (tr && tr.splits && tr.splits.length) ? tr.splits : (rel.splits||[]);
+  // peso di ogni traccia nelle vendite dell'album: vendite delle tracce nello stesso mese (in EUR)
+  function trackMonthWeights(idx, label, rel, month){
+    const cache=idx._tw||(idx._tw=new Map());
+    let m=cache.get(rel);
+    if(!m){
+      m=new Map(); const tracks=rel.tracks||[];
+      for(const t of incomeOf(label)){
+        if(C.releaseForTx(idx, t)!==rel) continue;
+        const tr=trackOfTx(rel, t); if(!tr) continue;
+        const i=tracks.indexOf(tr), mo=String(t.date||'').slice(0,7)||'*';
+        const row=m.get(mo)||(m.set(mo, tracks.map(()=>0)), m.get(mo));
+        row[i]+=Math.max(0, C.txEur(label, t));
+      }
+      cache.set(rel, m);
+    }
+    const row=m.get(String(month||'').slice(0,7)||'*');
+    return row && row.some(v=>v>0) ? row : null;
+  }
+  // parti di un movimento: [{rel, splits, w}] con w che somma a 1 (vuoto = nessuna release né quote)
+  C.portionsForTx = function(idx, t, label){
+    const rel=C.releaseForTx(idx, t);
+    const mode=rel && rel.royaltyMode;
+    if(!rel || !mode || mode==='release' || !(rel.tracks||[]).length){
+      const m=C.splitsForTx(idx, t); return m ? [{rel:m.rel, splits:m.splits, w:1}] : [];
+    }
+    const tr=trackOfTx(rel, t);
+    if(tr) return [{rel, splits:trackSplitsOr(rel, tr), w:1}];
+    if(mode==='tracks_label') return [{rel, splits:[], w:1}];
+    const tracks=rel.tracks;
+    const ws=(mode==='tracks_sales' && label && trackMonthWeights(idx, label, rel, t.date)) || tracks.map(()=>1);
+    const sum=ws.reduce((a,b)=>a+b, 0)||1;
+    return tracks.map((x,i)=>({rel, splits:trackSplitsOr(rel, x), w:ws[i]/sum})).filter(p=>p.w>0);
+  };
+
   /* ---------- Royalty ---------- */
   // Quote per artista di un movimento, raggruppate per chiave (se un nome compare due volte si sommano).
   function sharesOf(splits){
@@ -250,6 +302,15 @@
     return [...by.values()];
   }
   const incomeOf = label => (label.transactions||[]).filter(t=>t && t.kind==='income');
+  // quote effettive di un movimento per artista, sommando le parti (pct già pesata): {rel, shares:[{key,name,pct}]}
+  C.sharesForTx = function(idx, t, label){
+    const parts=C.portionsForTx(idx, t, label); if(!parts.length) return null;
+    const by=new Map();
+    for(const p of parts) for(const s of sharesOf(p.splits)){
+      const cur=by.get(s.key)||{key:s.key, name:s.name, pct:0}; cur.pct+=s.pct*p.w; by.set(s.key, cur);
+    }
+    return {rel:parts[0].rel, shares:[...by.values()]};
+  };
   // { byArtist: {chiave: {name,total,byRelease:{catalogo:importo}}}, labelTotal }
   // quota di una riga arrotondata al centesimo: le righe dello statement sommano esattamente al totale
   C.cents = x => Math.round((+x||0)*100+(x>=0?1e-9:-1e-9))/100;
@@ -259,8 +320,8 @@
     for(const t of incomeOf(label)){
       if(!C.inRange(C.acctDate(t), opt.from, opt.to)) continue;
       const eur=C.txEur(label, t);
-      const m=C.splitsForTx(idx, t);
-      const sh=m ? sharesOf(m.splits) : [];
+      const m=C.sharesForTx(idx, t, label);
+      const sh=m ? m.shares : [];
       if(!sh.length){ labelTotal+=eur; continue; }
       let assigned=0;
       const relKey=(m.rel && (m.rel.catalog || m.rel.title)) || '—';
@@ -280,9 +341,9 @@
       const d=C.acctDate(t);
       if(opt.until && d>opt.until) continue;
       if(opt.before && !(d<opt.before)) continue;
-      const m=C.splitsForTx(idx, t); if(!m) continue;
+      const m=C.sharesForTx(idx, t, label); if(!m) continue;
       const eur=C.txEur(label, t);
-      for(const s of sharesOf(m.splits)){ const a=out[s.key]||(out[s.key]={name:s.name, total:0}); a.total+=C.cents(eur*s.pct/100); }
+      for(const s of m.shares){ const a=out[s.key]||(out[s.key]={name:s.name, total:0}); a.total+=C.cents(eur*s.pct/100); }
     }
     return out;
   };
@@ -326,11 +387,11 @@
     const key=C.artKey(name); const lines=[]; let total=0;
     for(const t of incomeOf(label)){
       if(!C.inRange(C.acctDate(t), from, to)) continue;
-      const m=C.splitsForTx(idx, t); if(!m) continue;
-      const sp=sharesOf(m.splits).find(s=>s.key===key); if(!sp) continue;
+      const m=C.sharesForTx(idx, t, label); if(!m) continue;
+      const sp=m.shares.find(s=>s.key===key); if(!sp) continue;
       const eur=C.txEur(label, t), share=C.cents(eur*sp.pct/100); total+=share;
-      // late = vendita di un periodo già chiuso, arrivata dopo la chiusura
-      lines.push({ date:t.date||'', late:!!t.acct, product:t.product||(m.rel&&m.rel.title)||'', catalog:(m.rel&&m.rel.catalog)||t.catalog||'', gross:eur, pct:sp.pct, share });
+      // late = vendita di un periodo già chiuso, arrivata dopo la chiusura; pct pesata (album diviso tra le tracce) a 2 decimali
+      lines.push({ date:t.date||'', late:!!t.acct, product:t.product||(m.rel&&m.rel.title)||'', catalog:(m.rel&&m.rel.catalog)||t.catalog||'', gross:eur, pct:Math.round(sp.pct*100)/100, share });
     }
     lines.sort((a,b)=>String(a.date).localeCompare(String(b.date)));
     const lifeEnd=((C.royaltyTotals(label, {idx, until:to})[key])||{total:0}).total;     // fino alla fine del periodo, non oltre

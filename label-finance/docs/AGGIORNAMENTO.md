@@ -1,3 +1,16 @@
+# Impostazioni a schede (ottobre 2026) — niente da fare online
+
+Nessuna modifica al database: basta la pubblicazione dell'app.
+
+- Le **Impostazioni** sono divise in schede: **Account** (profilo, accesso e sincronizzazione),
+  **Preferenze** (tema, lingua, tutorial), **Valute** (cambi BCE e tassi fissi), **Team** (solo con
+  un account) e **Dati e backup**. Si vede una sezione alla volta, larga al massimo 780 px: niente
+  più pagina lunghissima né campi che occupano tutto lo schermo.
+- La scheda scelta resta ricordata; gli avvisi sui cambi aprono direttamente "Valute".
+- Sul telefono le schede vanno su due righe.
+
+---
+
 # Distribuzione royalty scelta per ogni release (ottobre 2026) — niente da fare online
 
 Nessuna modifica al database: basta la pubblicazione dell'app (la funzione del server per

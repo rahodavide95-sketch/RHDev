@@ -1574,14 +1574,19 @@ body.recovery-mode{overflow:hidden}
    righe "descrizione · comando" e campi corti invece di input a tutta larghezza
    ============================================================================ */
 #view-settings{container-type:inline-size}
-.set-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;max-width:1180px}
+.set-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:18px;max-width:780px}   /* una sezione alla volta (schede sopra) */
+.set-off{display:none!important}
+.set-tabs{margin:0 0 18px;max-width:100%;overflow-x:auto;scrollbar-width:none}
+.set-tabs::-webkit-scrollbar{display:none}
+.set-tabs .seg-btn{white-space:nowrap;padding:7px 16px}
+.set-tabs .seg-btn[hidden]{display:none}
 .set-grid [hidden]{display:none!important}
 .set-grid .set-card{margin-bottom:0;display:flex;flex-direction:column;gap:14px}
 .set-grid .set-card>.panel-head{margin-bottom:0}
 /* due colonne che si riempiono senza buchi: sinistra il tuo account, destra l'app */
-.set-col{display:flex;flex-direction:column;gap:18px;min-width:0}
+.set-col{display:contents}   /* le colonne non servono più: le schede si mettono in fila */
 .set-grid p.muted{margin:0}
-.set-card--wide{grid-column:1/-1}
+.set-card--wide{grid-column:auto}
 .set-grid .btn-sm{padding:7px 13px;font-size:.86rem}   /* .btn (definito dopo) annullava .btn-sm */
 /* schermo stretto: una colonna sola, le schede in fila nell'ordine della pagina */
 @container (max-width:860px){ .set-grid{grid-template-columns:minmax(0,1fr)} .set-card--wide{grid-column:auto} }
@@ -2053,3 +2058,8 @@ tr.is-unpaid td.num .neg,tr.is-unpaid td.num .pos{opacity:.55}
 .rm-warn>span{flex:1 1 260px}
 .rm-warn[hidden],.rm-warn .btn[hidden]{display:none}
 .split-chip--mode{background:color-mix(in srgb,var(--accent) 14%,var(--panel));border-color:color-mix(in srgb,var(--accent) 40%,var(--line));color:var(--accent)}
+/* telefono: le schede delle Impostazioni vanno su due righe invece di uscire dallo schermo */
+@media(max-width:600px){
+  .set-tabs{display:flex;flex-wrap:wrap;width:100%;overflow:visible}
+  .set-tabs .seg-btn{flex:1 1 30%;padding:7px 8px;text-align:center}
+}

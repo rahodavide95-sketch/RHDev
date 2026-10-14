@@ -369,6 +369,8 @@ const PDF_W8=Math.floor((210-16)*96/25.4), PDF_W10=Math.floor((210-20)*96/25.4);
 const VIEW_TITLES={dashboard:'Dashboard',consolidated:'Consolidato',transactions:'Movimenti',releases:'Discografia',planning:'Pianificazione',events:'Eventi',supports:'Support DJ',royalties:'Royalty',artists:'Artisti',contracts:'Contratti',tasks:'Task',merch:'Merch',import:'Importa CSV',settings:'Impostazioni',about:'Chi siamo',offers:'Offerte & Piani',faq:'Aiuto & FAQ'};
 let currentView='dashboard';
 function goto(view){
+  // "settings:money" = Impostazioni aperte sulla scheda Valute (dagli avvisi)
+  let sub=''; if(typeof view==='string' && view.includes(':')){ [view, sub]=view.split(':'); }
   if(view!==currentView){ Object.keys(bulkSel).forEach(k=>bulkSel[k].clear()); const bb=$('#bulk-bar'); if(bb){ bb.hidden=true; bb.dataset.sec=''; } }
   currentView=view;
   if(typeof closeDrawer==='function') closeDrawer();   // chiudi il cassetto menu su mobile
@@ -389,7 +391,7 @@ function goto(view){
   if(view==='tasks') renderTasks();
   if(view==='merch') renderMerch();
   if(view==='offers') renderOffers();
-  if(view==='settings') renderSettings();
+  if(view==='settings'){ renderSettings(); setSettingsTab(sub||null); }
   $('.main').scrollTop=0;
   updateTopbarSection();
   if(window.LFTables) LFTables.refresh();   // larghezze colonne e scorrimento laterale
@@ -762,7 +764,7 @@ function renderInsights(txs, cur, prev){
     if(u) out.push({ico:'🧾', cls:'', go:'royalties', t:tt('ins.unrecouped').replace('{n}',u)}); }catch(e){} }
   const fx=fxIssues(); const fxCur=Object.keys(fx);
   if(fxCur.length){ const n=fxCur.reduce((s,c)=>s+fx[c],0);
-    out.push({ico:'💱', cls:'out', go:'settings', t:tt('ins.fx').replace('{n}',n).replace('{cur}',fxCur.join(', '))}); }
+    out.push({ico:'💱', cls:'out', go:'settings:money', t:tt('ins.fx').replace('{n}',n).replace('{cur}',fxCur.join(', '))}); }
   const seas=seasonality();
   if(seas && seas.best.avg>0) out.push({ico:'📅', cls:'in', go:'planning', t:tt('ins.season').replace('{m}',monthName(seas.best.mm)).replace('{amt}',fmtMoney(seas.best.avg))});
   list.innerHTML=out.map(o=>`<button class="dash-insight ins--${o.cls||'n'}" ${o.go?`data-goto="${o.go}"`:''} type="button"><span class="dash-insight-i">${o.ico}</span><span>${esc(o.t)}</span></button>`).join('');
@@ -3538,6 +3540,24 @@ $('#map-preset').onchange=()=>{
 /* ============================================================================
    IMPOSTAZIONI — tassi & backup
    ============================================================================ */
+/* ---------- Impostazioni a schede ----------
+   Account (profilo, accesso e sincronizzazione) · Preferenze · Valute · Team · Dati e backup.
+   Si vede una sezione alla volta; la scheda scelta resta ricordata su questo dispositivo. */
+const SET_TABS=['account','prefs','money','team','data'];
+function setTabAvailable(k){ const cards=$$(`#view-settings [data-set-sec="${k}"]`); return cards.some(c=>!c.hidden); }
+function setSettingsTab(k){
+  let cur=k; if(!cur){ try{ cur=localStorage.getItem('lf.setTab')||''; }catch(e){ cur=''; } }
+  $$('#set-tabs [data-set-tab]').forEach(b=>{ const h=!setTabAvailable(b.dataset.setTab); if(b.hidden!==h) b.hidden=h; });
+  if(!SET_TABS.includes(cur) || !setTabAvailable(cur)) cur='account';
+  $$('#set-tabs [data-set-tab]').forEach(b=>{ const on=b.dataset.setTab===cur; b.classList.toggle('is-active',on); b.setAttribute('aria-selected',on?'true':'false'); });
+  $$('#view-settings [data-set-sec]').forEach(c=>c.classList.toggle('set-off', c.dataset.setSec!==cur));
+  if(k){ try{ localStorage.setItem('lf.setTab', cur); }catch(e){} }
+}
+$$('#set-tabs [data-set-tab]').forEach(b=>b.onclick=()=>setSettingsTab(b.dataset.setTab));
+// Profilo e Team compaiono solo con un account: le schede si aggiornano quando cambiano
+{ const v=$('#view-settings'); if(v && window.MutationObserver) new MutationObserver(recs=>{
+    if(currentView==='settings' && recs.some(r=>r.target.dataset && r.target.dataset.setSec)) setSettingsTab(null); })
+    .observe(v, { attributes:true, attributeFilter:['hidden'], subtree:true }); }
 function renderSettings(){
   $('#rates-grid').innerHTML=Object.entries(DB.rates).map(([c,v])=>`
     <div class="rate-chip"><strong>${esc(c)}</strong>
@@ -5778,7 +5798,7 @@ const SECTION_SVG={
   tasks:       svgIco('<rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V4.2a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1V5"/><path d="M8.5 13.2l2.3 2.3L16 10.3"/>'),
   planning:    svgIco('<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/>'),
 };
-function notifIcon(it){ const v=it.view||(it.type==='unlinked'?'releases':it.type==='enrich'?'import':it.relId?'releases':'tasks'); return SECTION_SVG[v]||SECTION_SVG.tasks; }
+function notifIcon(it){ const v=(it.view||'').split(':')[0]||(it.type==='unlinked'?'releases':it.type==='enrich'?'import':it.relId?'releases':'tasks'); return SECTION_SVG[v]||SECTION_SVG.tasks; }
 function notifScan(){
   if(typeof DB==='undefined'||!DB) return;
   if(notifFor!==DB.id){ NOTIFS=notifLoad(); notifFor=DB.id; }   // etichetta cambiata: i suoi avvisi

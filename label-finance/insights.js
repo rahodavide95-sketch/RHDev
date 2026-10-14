@@ -57,7 +57,7 @@ function smartAlerts(){
     }
   }
   // 5) movimenti in valuta ma cambi automatici BCE spenti
-  if(DB.fx && !DB.fx.auto && typeof fxNeeded==='function'){ const c=Object.keys(fxNeeded()); if(c.length) out.push({ key:'fx:'+c.join(','), kind:'fx', view:'settings', params:{ cur:c.join(', ') } }); }
+  if(DB.fx && !DB.fx.auto && typeof fxNeeded==='function'){ const c=Object.keys(fxNeeded()); if(c.length) out.push({ key:'fx:'+c.join(','), kind:'fx', view:'settings:money', params:{ cur:c.join(', ') } }); }
   return out;
 }
 /* sincronizza gli avvisi intelligenti con il centro notifiche (chiamata da notifScan) */

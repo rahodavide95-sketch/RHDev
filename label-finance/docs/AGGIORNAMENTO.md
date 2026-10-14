@@ -1,3 +1,27 @@
+# Distribuzione royalty scelta per ogni release (ottobre 2026) — niente da fare online
+
+Nessuna modifica al database: basta la pubblicazione dell'app (la funzione del server per
+gli statement del portale artista si ripubblica da sola con il resto).
+
+Nella scheda della release c'è **Distribuzione royalty**, da scegliere quando la registri:
+- **Quote della release** (come prima, è la scelta di tutte le release esistenti): ogni vendita usa
+  la Ripartizione predefinita; una traccia con quote proprie usa le sue.
+- **Per traccia · album diviso in parti uguali**: ogni traccia con le sue quote; le vendite
+  dell'album intero (vinile, CD, download completo) divise in parti uguali tra le tracce.
+  Per compilation (VA) e split EP; proposta in automatico quando il tipo è VA.
+- **Per traccia · album in base alle vendite delle tracce**: come sopra, ma l'album diviso in base a
+  quanto ha venduto ogni traccia nello stesso mese.
+- **Per traccia · album all'etichetta**: le vendite dell'album intero restano all'etichetta.
+
+Una vendita senza ISRC si collega alla traccia anche per titolo. Più artisti sulla stessa traccia
+hanno ciascuno la sua quota. Un avviso segnala le tracce senza quote e **Proponi quote per
+traccia** le compila con gli artisti della traccia (presi anche dalle vendite) e la loro quota
+predefinita, divisa se sulla traccia ci sono più artisti. Statement, saldi, conto economico e
+portale artista usano la modalità scelta. Cambiarla su una release con vendite in un periodo
+chiuso chiede conferma.
+
+---
+
 # Discografia: artisti dentro le compilation (ottobre 2026) — niente da fare online
 
 Nessuna modifica al database: basta la pubblicazione dell'app.

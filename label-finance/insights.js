@@ -110,7 +110,7 @@ function releasePL(rel, idx){
     const mo=out.months[m]||(out.months[m]={ rev:0, art:0, cost:0 });
     if(t.kind==='income'){
       out.revenue+=eur; mo.rev+=eur;
-      const sp=LFCore.splitsForTx(idx, t); const pct=sp?(sp.splits||[]).reduce((s,x)=>s+(+x.pct||0),0):0;
+      const sp=LFCore.sharesForTx(idx, t, DB); const pct=sp?sp.shares.reduce((s,x)=>s+(+x.pct||0),0):0;   // con la distribuzione scelta per la release
       const a=LFCore.cents(eur*pct/100); out.artists+=a; mo.art+=a;   // stesse quote delle royalty (anche se una release supera il 100%)
       if(t.date){ if(!out.firstSale || t.date<out.firstSale) out.firstSale=t.date; if(!out.lastSale || t.date>out.lastSale) out.lastSale=t.date; }
     } else { const c=Math.abs(eur); out.costs+=c; mo.cost+=c; }

@@ -2862,6 +2862,15 @@
   Object.assign(DICT.pt, {"st.account": "Conta", "st.prefs": "Preferências", "st.money": "Moedas", "st.team": "Equipa", "st.data": "Dados e cópia"});
   Object.assign(DICT.nl, {"st.account": "Account", "st.prefs": "Voorkeuren", "st.money": "Valuta", "st.team": "Team", "st.data": "Gegevens & back-up"});
 
+  /* contratti: firma già fatta */
+  Object.assign(DICT.it, {"con.sign_done": "✓ Firmato da te", "con.sign_done_t": "Hai già firmato come etichetta. Se cambi i termini con «Modifica», dovrai firmare di nuovo.", "con.tg_signed_artist": "✓ Firmato dall'artista"});
+  Object.assign(DICT.en, {"con.sign_done": "✓ Signed by you", "con.sign_done_t": "You have already signed as the label. If you change the terms with “Edit”, you will need to sign again.", "con.tg_signed_artist": "✓ Signed by the artist"});
+  Object.assign(DICT.es, {"con.sign_done": "✓ Firmado por ti", "con.sign_done_t": "Ya has firmado como sello. Si cambias los términos con «Editar», tendrás que firmar de nuevo.", "con.tg_signed_artist": "✓ Firmado por el artista"});
+  Object.assign(DICT.fr, {"con.sign_done": "✓ Signé par vous", "con.sign_done_t": "Vous avez déjà signé en tant que label. Si vous modifiez les termes avec « Modifier », vous devrez signer à nouveau.", "con.tg_signed_artist": "✓ Signé par l'artiste"});
+  Object.assign(DICT.de, {"con.sign_done": "✓ Von dir unterschrieben", "con.sign_done_t": "Du hast als Label bereits unterschrieben. Änderst du die Bedingungen mit „Bearbeiten“, musst du erneut unterschreiben.", "con.tg_signed_artist": "✓ Vom Künstler unterschrieben"});
+  Object.assign(DICT.pt, {"con.sign_done": "✓ Assinado por si", "con.sign_done_t": "Já assinou como editora. Se alterar os termos com «Editar», terá de assinar de novo.", "con.tg_signed_artist": "✓ Assinado pelo artista"});
+  Object.assign(DICT.nl, {"con.sign_done": "✓ Door jou ondertekend", "con.sign_done_t": "Je hebt al als label getekend. Wijzig je de voorwaarden met ‘Bewerken’, dan moet je opnieuw tekenen.", "con.tg_signed_artist": "✓ Door de artiest ondertekend"});
+
   // lingua salvata (condivisa con la pagina pubblica) oppure quella del browser, se è una delle 7
   let lang = (function(){ let s=null; try{ s=localStorage.getItem(KEY); }catch(e){}
     if(s && DICT[s]) return s;

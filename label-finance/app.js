@@ -4572,7 +4572,8 @@ function collectContract(){
     titles:$('#con-titles').value.trim(), artistNames:$('#con-artist-names').value.trim(),
     writtenBy:$('#con-written').value.trim(), fullName:$('#con-fullname').value.trim(),
     projectName:$('#con-project').value.trim(), email:$('#con-email').value.trim(),
-    artistPct:p, label:labelName(), logo:conLogoData||'', labelId:(currentContract&&currentContract.labelId)||DB.id,
+    // il nome dell'etichetta resta quello del contratto: cambiarlo nel profilo non annulla le firme
+    artistPct:p, label:(currentContract&&currentContract.label)||labelName(), logo:conLogoData||'', labelId:(currentContract&&currentContract.labelId)||DB.id,
     status:(currentContract&&currentContract.status)||'draft',
     signed:(currentContract&&currentContract.signed)||null
   });
@@ -4693,13 +4694,17 @@ function saveCurrentContract(){ if(!currentContract) return;
 async function sendContract(){
   if(!currentContract) return; const c=currentContract;
   if(!c.labelSign){ toast(tt('con.need_label_sign')); return; }   // firma etichetta obbligatoria
+  // già inviato: prima di reinviare guarda se l'artista ha firmato nel frattempo (il reinvio azzererebbe la sua firma)
+  if(c.token && window.LF_refreshContractStatuses){ try{ await refreshContractStatuses(); }catch(e){}
+    const fresh=(DB.contracts||[]).find(x=>x.id===c.id)||c;
+    if(conFullySigned(fresh)){ currentContract=fresh; $('#contract-doc').innerHTML=buildContractDoc(fresh); updateConSendBtn(); toast(tt('con.already_signed')); return; } }
   if(window.LF_sendForSignature){
     const sendBtn=$('#con-send'); if(sendBtn) sendBtn.disabled=true;
     toast(tt('con.sending'));
     const r=await window.LF_sendForSignature(c);
     if(sendBtn) sendBtn.disabled=false;
     if(r && r.link){
-      c.token=r.token; if(c.status==='draft'||!c.status) c.status='sent'; c.sentAt=Date.now();
+      c.token=r.token; if(c.status!=='signed') c.status='sent'; c.sentAt=Date.now();   // anche da "pronto" (firmato da te): ora è in attesa dell'artista
       saveCurrentContract(); renderContracts();
       // invio email automatico se EmailJS è configurato e c'è l'indirizzo
       if(ejReady() && c.email){
@@ -4865,7 +4870,7 @@ function conStatusPill(s){
 /* tag di stato: verdi se la situazione è risolta, rossi se ancora incompleta */
 function conTags(c){
   // firmato da entrambi = risolto
-  if(c.status==='signed' || (c.labelSign && c.artistSign)) return [{l:tt('con.tg_signed'),k:'ok'}];
+  if(c.status==='signed' || (c.labelSign && c.artistSign)) return [{l:tt(c.labelSign?'con.tg_signed':'con.tg_signed_artist'),k:'ok'}];
   const t=[];
   if(c.status==='rejected'){ t.push({l:tt('con.tg_rejected'),k:'bad'}); }
   else if(!c.labelSign){ t.push({l:tt('con.tg_need_label'),k:'bad'}); }
@@ -4928,14 +4933,19 @@ function confirmSign(){
   updateConSendBtn();
   closeSignPad(); toast(tt('con.signed_label_ok'));
 }
-function conFullySigned(c){ return !!(c && c.status==='signed' && (c.artistSign||c.signed) && c.labelSign); }
+// firmato dall'artista = concluso (i contratti di prima della firma dell'etichetta non ce l'hanno: non si chiede di rifirmarli)
+function conFullySigned(c){ return !!(c && c.status==='signed' && (c.artistSign||c.signed)); }
 function updateConSendBtn(){
   const b=$('#con-send'); if(!b) return;
   const done=conFullySigned(currentContract);
   const ok=!!(currentContract && currentContract.labelSign) && !done;
   b.disabled=!ok; b.classList.toggle('is-disabled',!ok);
   b.title = done ? tt('con.already_signed') : (ok ? '' : tt('con.need_label_sign'));
-  ['#con-sign','#con-back'].forEach(sel=>{ const x=$(sel); if(x){ x.disabled=done; x.classList.toggle('is-disabled',done); x.title=done?tt('con.already_signed'):''; } });
+  const back=$('#con-back'); if(back){ back.disabled=done; back.classList.toggle('is-disabled',done); back.title=done?tt('con.already_signed'):''; }
+  // hai già firmato come etichetta: il pulsante lo dice e non chiede di firmare di nuovo
+  const sg=$('#con-sign'), mine=!!(currentContract && currentContract.labelSign);
+  if(sg){ sg.disabled=done||mine; sg.classList.toggle('is-disabled',done||mine);
+    sg.textContent=tt(mine?'con.sign_done':'con.sign_now'); sg.title=done?tt('con.already_signed'):(mine?tt('con.sign_done_t'):''); }
 }
 
 /* ---------- Task ---------- */
@@ -6037,6 +6047,7 @@ function initFeatures(){
   $('#con-send')?.addEventListener('click',sendContract);
   $('#con-refresh')?.addEventListener('click',manualRefreshContracts);
   $('#con-sign')?.addEventListener('click',openSignPad);
+window.addEventListener('langchange', ()=>updateConSendBtn());   // testo del pulsante firma nella lingua scelta
   $('#con-artist-pick')?.addEventListener('change',e=>{ if(e.target.value) conFillFromArtist(e.target.value); });
   $('#con-artist-pct')?.addEventListener('input',updateSplitBar);
   $('#con-logo-btn')?.addEventListener('click',()=>$('#con-logo-input').click());

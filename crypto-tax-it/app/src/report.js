@@ -114,6 +114,59 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
 </body></html>`;
   }
 
+  /** Testo LEGGIMI del pacchetto per il commercialista: cosa pagare, numeri dei quadri, scelte di calcolo, punti aperti. */
+  function handoffText(res, state, plan, fxRows) {
+    const Y = res.year, y = res.y, tp = (state && state.taxpayer) || {};
+    const e = (x) => num(x) + ' €';
+    const L = [];
+    const hr = () => L.push('-'.repeat(78));
+    L.push(`CRIPTO E ORO - ANNO D'IMPOSTA ${Y} (modello Redditi PF ${Y + 1})`);
+    L.push(`Contribuente: ${tp.name || '(da indicare)'}${tp.cf ? ' - CF ' + tp.cf : ''}`);
+    L.push(`Preparato il ${dmy(plan ? plan.payDay : '')} con il programma "Dichiarazione Crypto" (calcolo automatico da verificare).`);
+    L.push(res.groups.blockCount ? `STATO: BOZZA - ${res.groups.blockCount} punti ancora aperti (elencati in fondo): i numeri possono cambiare.` : res.groups.assumptionCount ? `STATO: completo, con ${res.groups.assumptionCount} ipotesi o scelte dell'utente (Allegato E del PDF).` : 'STATO: completo, nessun punto aperto.');
+    hr();
+    if (plan) {
+      L.push('1. COSA PAGARE (modello F24, sezione Erario)');
+      if (!plan.items.length) L.push(`   Nessuna imposta da versare per il ${Y}.`);
+      for (const i of plan.items) {
+        L.push(`   - Codice ${i.code}${i.codeCheck ? ' (da confermare)' : ''} - ${i.title}`);
+        L.push(`     anno di riferimento ${i.advance ? Y + 1 : Y}, scadenza ${dmy(i.due)}: imposta ${e(i.amount)}${i.ravv ? ` + ${i.ravv.magg ? 'maggiorazione 0,40%' : 'sanzione e interessi (ravvedimento, stima)'} ${e(i.ravv.sanction.plus(i.ravv.interest))} = ${e(i.payAmount)}` : ''}`);
+        if (i.ravv && !i.ravv.magg) L.push(`     ${i.ravv.days} giorni di ritardo, ${i.ravv.label}; sanzione ${e(i.ravv.sanction)}, interessi ${e(i.ravv.interest)}`);
+      }
+      L.push(`   DA PAGARE ADESSO: ${e(plan.payNow)} (stima al ${dmy(plan.payDay)})`);
+      const later = plan.items.filter((i) => !plan.now.includes(i));
+      if (later.length) L.push(`   PIU' AVANTI: ${later.map((i) => `${e(i.amount)} entro il ${dmy(i.due)} (codice ${i.code})`).join('; ')}`);
+      L.push(`   Dichiarazione da inviare entro il ${dmy(plan.deadlines.filing)}.`);
+      hr();
+    }
+    L.push(`2. QUADRO RT - sezione V-A, cripto-attivita' (${y.crypto.law})`);
+    for (const [a, v] of basketLines(y.crypto).slice(1)) L.push(`   ${a}: ${v} €`);
+    if (y.crypto.lossNotCarried.gt(0)) L.push(`   Minusvalenza non riportabile (non superiore a 2.000 €): ${e(y.crypto.lossNotCarried)}`);
+    if (y.metals.nDisposals || y.metals.income.gt(0)) {
+      L.push('', `   QUADRO RT - sezione II, oro e metalli preziosi (${y.metals.law})`);
+      for (const [a, v] of basketLines(y.metals).slice(1)) L.push(`   ${a}: ${v} €`);
+    }
+    hr();
+    L.push('3. QUADRO RW - monitoraggio e imposta sul valore delle cripto-attivita\' (IC)');
+    if (fxRows && fxRows.length) {
+      fxRows.forEach((r, i) => {
+        L.push(`   Rigo ${i + 1}: ${r.account} (${r.cls === 'crypto' ? 'cripto' : 'oro/metalli'})${r.label2 ? ' - custode ' + r.label2.replace(/_/g, ' ') : ''}`);
+        L.push(`     col.1 titolo 1 | col.3 codice ${r.cls === 'crypto' ? '21' : 'DA VERIFICARE'} | col.5 quota 100 | col.6 criterio 1 | col.7 valore iniziale ${r.incomplete ? 'DA COMPLETARE' : CT.roundEuro(r.vi).toFixed(0)} | col.8 valore finale ${r.incomplete ? 'DA COMPLETARE' : CT.roundEuro(r.vf).toFixed(0)} | col.10 giorni ${r.days}${r.mixedDays ? ' (media pesata)' : ''}${r.cls === 'crypto' && !r.incomplete ? ` | col.33 IC ${CT.roundEuro(r.ic).toFixed(0)} | col.34 IC dovuta ${r.icDue.toFixed(0)}` : ''}`);
+      });
+      if (plan) L.push(`   RW8: col.1 totale ${plan.ivca.toFixed(0)}${plan.ivcaAdvance !== null ? ` | col.4 acconti ${plan.ivcaAdvance.toFixed(0)}` : ' | col.4 acconti versati: DA INDICARE (0 se nessuno)'}`);
+    } else L.push('   Nessuna cripto o oro detenuti nell\'anno.');
+    hr();
+    L.push('4. SCELTE DI CALCOLO APPLICATE');
+    const interp = CT.pdf && CT.pdf.interpretations ? CT.pdf.interpretations(state) : [];
+    for (const t of interp) L.push(`   - ${t}`);
+    L.push(`   Regole ${Y}: ${y.rule.note}`);
+    const open = res.engine.issues.filter((i) => i.level === 'block');
+    if (open.length) { hr(); L.push(`5. PUNTI ANCORA APERTI (${open.length})`); for (const i of open.slice(0, 60)) L.push(`   - ${i.message}`); if (open.length > 60) L.push(`   ... e altri ${open.length - 60} (Allegato E del PDF)`); }
+    hr();
+    L.push('Calcolo automatico: va verificato da un professionista prima della firma della dichiarazione.');
+    return L.join('\r\n') + '\r\n';
+  }
+
   /** Diagnostica: SOLO struttura dei file e conteggi, nessun importo. Da incollare a chi sviluppa l'app. */
   function diagnostics(res, files) {
     const L = ['DIAGNOSTICA (nessun importo)', ''];
@@ -134,6 +187,6 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
   }
 
   CT.report = { csv, num, qnum, dmy, disposalsRows, DISPOSAL_HEAD, lotsRows, LOTS_HEAD, incomesRows, INCOME_HEAD, rwRows, RW_HEAD,
-    issuesRows, ISSUE_HEAD, balancesRows, BAL_HEAD, basketLines, summaryText, reportHtml, diagnostics, KIND_IT, CLS_IT, INC_IT, taxSources };
+    issuesRows, ISSUE_HEAD, balancesRows, BAL_HEAD, basketLines, summaryText, reportHtml, diagnostics, handoffText, KIND_IT, CLS_IT, INC_IT, taxSources };
   if (typeof module !== 'undefined') module.exports = CT.report;
 })();

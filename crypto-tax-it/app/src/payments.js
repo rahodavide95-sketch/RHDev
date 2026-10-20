@@ -91,7 +91,7 @@
         const extra = o.amount.times('0.004').toDecimalPlaces(2);
         r = { days: daysBetween(o.due, payDay), label: `entro il ${dmy(dl.saldoMagg)} con la maggiorazione dello 0,40%`, sanction: extra, interest: ZERO, total: o.amount.plus(extra), magg: true };
       }
-      items.push(Object.assign({ late, ravv: r, payAmount: r ? r.total : o.amount }, o));
+      items.push(Object.assign({ group: 'inv', late, ravv: r, payAmount: r ? r.total : o.amount }, o));
     };
     if (y.crypto.tax.gt(0)) {
       add({ key: 'crypto', code: '1715', title: `Imposta sulle plusvalenze delle cripto (${(y.crypto.rate.times(100)).toFixed(0)}%)`,
@@ -121,8 +121,11 @@
       for (const a of acc) add(Object.assign(a, { advance: true, quadro: 'Quadro RW (acconto dell\'anno dopo)',
         why: `Acconto per l'IVCA del ${Y + 1}, calcolato sull'IVCA del ${Y} (metodo storico). Se nel ${Y + 1} hai venduto tutto o hai molte meno cripto, il commercialista può ridurlo (metodo previsionale).` }));
     }
+    // altri redditi inseriti a mano (musica, spese sanitarie): stima dell'IRPEF in piu', in una sezione a parte
+    const others = CT.others && state && state.others ? CT.others.compute(state.others) : null;
+    if (others) for (const it of CT.others.paymentItems(others, Y, dl)) add(Object.assign({ group: 'other' }, it));
     const sum = (list, k) => list.reduce((s, i) => s.plus(i[k]), ZERO);
-    const now = items.filter((i) => !(i.advance && !i.late && i.due > payDay));   // da pagare adesso (scadute o in scadenza)
+    const now = items.filter((i) => i.late || i.due <= dl.saldo);   // da pagare adesso: scadute o con la scadenza del saldo (30 giugno)
     const balance = items.filter((i) => !i.advance);
     const late = items.filter((i) => i.late);
     const draft = res.groups.blockCount > 0;
@@ -130,7 +133,8 @@
     const hasRT = y.crypto.nDisposals + y.metals.nDisposals > 0 || y.crypto.income.gt(0) || y.metals.income.gt(0) || y.crypto.carryUsed.length > 0 || y.metals.carryUsed.length > 0;
     const hasRW = res.rw.length > 0;
     return {
-      year: Y, payDay, deadlines: dl, items, now, draft, hasRT, hasRW, ivca, ivcaAdvance: adv, ivcaCredit: ivcaDue.lt(0) ? ivcaDue.neg() : ZERO,
+      year: Y, payDay, deadlines: dl, items, now, draft, hasRT, hasRW, ivca, ivcaAdvance: adv, ivcaCredit: ivcaDue.lt(0) ? ivcaDue.neg() : ZERO, others,
+      invNow: sum(now.filter((i) => i.group === 'inv'), 'payAmount'), otherNow: sum(now.filter((i) => i.group === 'other'), 'payAmount'),
       taxTotal: sum(balance, 'amount'),                          // imposte dell'anno (senza acconti dell'anno dopo e senza sanzioni)
       lateTotal: sum(late, 'payAmount'), lateExtra: late.reduce((s, i) => s.plus(i.ravv ? i.ravv.sanction.plus(i.ravv.interest) : ZERO), ZERO),
       payNow: sum(now, 'payAmount'),                             // da pagare adesso, con l'eventuale ravvedimento

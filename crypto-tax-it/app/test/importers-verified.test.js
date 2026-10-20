@@ -17,11 +17,15 @@ test('Crypto.com App: scambi con ordini limite, acquisti a valore nativo, dust c
     row('2025-01-05 10:00:00', 'Dust', 'CRO', '10', '', '', '2', 'dust_conversion_credited') +
     row('2025-01-06 10:00:00', 'Swap', 'CRO', '-100', 'ATOM', '3', '12', 'crypto_exchange');
   const r = I.TYPES.cryptocom_app.parse(csv, 'a.csv');
-  assert.deepEqual(r.events.map((e) => e.kind), [Kind.BUY, Kind.BUY, Kind.SELL, Kind.BUY, Kind.SELL, Kind.BUY, Kind.SWAP]);
+  // dust conversion: la riga in uscita e quella in entrata formano uno scambio SHIB -> CRO (la riga in entrata e' gia' contata)
+  assert.deepEqual(r.events.map((e) => e.kind), [Kind.BUY, Kind.BUY, Kind.SELL, Kind.BUY, Kind.SWAP, Kind.INFO, Kind.SWAP]);
   assert.equal(r.unknown.length, 0);
   eq(r.events[0].value, 500); assert.equal(r.events[0].asset, 'BTC');
-  assert.equal(r.events[4].asset, 'SHIB'); eq(r.events[4].value, 2);
-  assert.equal(r.events[5].asset, 'CRO'); eq(r.events[5].value, 2);
+  assert.equal(r.events[4].asset, 'SHIB'); eq(r.events[4].qty, 5000); eq(r.events[4].value, 2);
+  assert.equal(r.events[4].counterAsset, 'CRO'); eq(r.events[4].counterQty, 10);
+  // senza la riga in entrata non si indovina lo scambio: restano vendita e acquisto a valore nativo
+  const lone = I.TYPES.cryptocom_app.parse(H + row('2025-01-05 10:00:00', 'Dust', 'SHIB', '-5000', '', '', '2', 'dust_conversion_debited') + row('2025-01-07 10:00:00', 'Dust', 'CRO', '10', '', '', '2', 'dust_conversion_credited'), 'b.csv');
+  assert.deepEqual(lone.events.map((e) => e.kind), [Kind.SELL, Kind.BUY]);
 });
 
 test('Crypto.com App: proventi (interessi, staking, referral, cashback), spesa e blocchi interni', () => {

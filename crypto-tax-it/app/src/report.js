@@ -11,7 +11,7 @@
   const CLS_IT = { crypto: 'Cripto', metal: 'Oro/metalli' };
   // da dove arriva l'imposta dell'anno, in parole semplici: operazioni che realizzano un guadagno/perdita (cessioni) e proventi ricevuti
   const SELL_IT = { sell: 'Vendite in euro', swap: 'Scambi tra due cripto (anche conversioni di piccoli importi)', spend: 'Pagamenti fatti con le cripto (carta, acquisti)', fee: 'Commissioni pagate in cripto', transfer_fee: 'Commissioni di rete pagate in cripto' };
-  const GAIN_IT = { interest: 'Interessi (Earn e simili)', staking: 'Staking', cashback: 'Cashback e rimborsi della carta', referral: 'Bonus per inviti', airdrop: 'Airdrop', other: 'Altri premi e accrediti' };
+  const GAIN_IT = { interest: 'Interessi (Earn e simili)', staking: 'Staking', cashback: 'Cashback e rimborsi della carta', cashback_reverted: 'Cashback stornati (restituiti: riducono i premi)', referral: 'Bonus per inviti', airdrop: 'Airdrop', other: 'Altri premi e accrediti' };
   function taxSources(res) {
     const rows = [];
     const by = new Map();
@@ -27,11 +27,12 @@
       if (!by.has(k)) { const r = { key: k, group: 'income', kind: i.type, label: GAIN_IT[i.type] || i.type, count: 0, amount: CT.ZERO }; by.set(k, r); rows.push(r); }
       const r = by.get(k); r.count++; r.amount = r.amount.plus(i.value);
     }
-    const order = ['d:sell', 'd:swap', 'd:spend', 'd:fee', 'd:transfer_fee', 'i:interest', 'i:staking', 'i:cashback', 'i:referral', 'i:airdrop', 'i:other'];
+    const order = ['d:sell', 'd:swap', 'd:spend', 'd:fee', 'd:transfer_fee', 'i:interest', 'i:staking', 'i:cashback', 'i:cashback_reverted', 'i:referral', 'i:airdrop', 'i:other'];
     rows.sort((a, b) => (order.indexOf(a.key) + 99 * (order.indexOf(a.key) < 0)) - (order.indexOf(b.key) + 99 * (order.indexOf(b.key) < 0)));
-    return { rows, hasSales: by.has('d:sell'), hasCashback: by.has('i:cashback') };
+    const neutralSwaps = (res.engine.swapsCarried || []).filter((x) => x.year === res.year).length;
+    return { rows, hasSales: by.has('d:sell'), hasCashback: by.has('i:cashback'), neutralSwaps };
   }
-  const INC_IT = { interest: 'Interessi', staking: 'Staking', cashback: 'Cashback', referral: 'Referral', airdrop: 'Airdrop', other: 'Altro' };
+  const INC_IT = { interest: 'Interessi', staking: 'Staking', cashback: 'Cashback', cashback_reverted: 'Storno cashback', referral: 'Referral', airdrop: 'Airdrop', other: 'Altro' };
 
   function csv(headers, rows) {
     const esc = (v) => { const s = String(v ?? ''); return /[;"\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };

@@ -19,14 +19,23 @@
   const INK = [20, 32, 43], ACCENT = [23, 73, 107], MUTED = [93, 107, 122], ZEBRA = [244, 247, 250], WARN = [143, 84, 0], WARN_BG = [253, 240, 210], GOOD = [29, 122, 75], GOOD_BG = [223, 242, 232];
   const MX = 14, MTOP = 20, MBOT = 16;
 
-  const INTERPRETATIONS = [
-    'Costo di acquisto: metodo LIFO (si considerano ceduti per primi gli ultimi acquistati), con un unico conto virtuale per ogni asset su tutte le piattaforme (Circ. AdE 30/E del 27/10/2023, regime dichiarativo).',
-    'Dal 2023 sono cessioni imponibili, al valore normale del giorno: vendite in euro, scambi tra crypto, passaggi a stablecoin, pagamenti in crypto e commissioni pagate in crypto. Prima del 2023 le permute tra crypto non erano un realizzo e il costo si trasferisce al nuovo asset.',
-    'Proventi (staking, interessi, cashback, airdrop, referral): tassati al valore normale alla percezione; quel valore diventa il costo del lotto; non compensabili con le minusvalenze da cessione (scelta prudenziale).',
-    'Minusvalenze: quelle cripto compensano solo plusvalenze cripto; l\'oro e i metalli preziosi hanno un conteggio separato. Riporto in avanti per 4 anni, calcolato dai file caricati: vale solo se le minusvalenze sono state indicate nella dichiarazione dell\'anno di realizzo.',
-    'Data fiscale: data di calendario in Italia (fuso Europe/Rome). Importi arrotondati all\'euro solo sui totali di quadro.',
-    'Valori e prezzi: se un\'operazione non riporta il controvalore in euro si usa il prezzo del giorno ricavato dalle altre operazioni, oppure il prezzo inserito manualmente (elencato nell\'Allegato E).',
-  ];
+  const SWAP_CIRC30 = 'Permute dal 2023 (art. 67, c. 1, lett. c-sexies TUIR; Circ. AdE 30/E del 27/10/2023): lo scambio tra cripto-attività con eguali caratteristiche e funzioni (per esempio BTC contro ETH, o tra due stablecoin) non è un realizzo e il costo passa alla cripto ricevuta (Allegato B, scambi senza realizzo). Sono cessioni imponibili, al valore normale del giorno: vendite in euro, scambi tra cripto e stablecoin (trattate come e-money token), scambi con metalli, pagamenti e commissioni pagati in cripto. Prima del 2023 nessuna permuta tra cripto è un realizzo.';
+  const SWAP_ALL = 'Permute dal 2023: per scelta dell\'utente ogni scambio tra cripto (anche BTC contro ETH) è trattato come cessione imponibile al valore normale del giorno (lettura più severa della Circ. AdE 30/E/2023, che esclude gli scambi tra cripto con eguali caratteristiche e funzioni). Sono imponibili anche vendite in euro, passaggi a stablecoin, pagamenti e commissioni pagati in cripto. Prima del 2023 le permute tra cripto non erano un realizzo e il costo si trasferisce al nuovo asset.';
+  const interpretations = (state) => {
+    const st = (state && state.settings) || {};
+    const L = [
+      'Costo di acquisto: metodo LIFO (si considerano ceduti per primi gli ultimi acquistati), con un unico conto virtuale per ogni asset su tutte le piattaforme (Circ. AdE 30/E del 27/10/2023, regime dichiarativo).',
+      st.swapRule === 'all' ? SWAP_ALL : SWAP_CIRC30,
+      'Proventi (staking, interessi, cashback, airdrop, referral): tassati per intero al valore normale alla percezione; quel valore diventa il costo del lotto; non compensabili con le minusvalenze da cessione. Gli storni di cashback (restituiti alla piattaforma) riducono i proventi dell\'anno.',
+      'Minusvalenze: quelle cripto compensano solo plusvalenze cripto; l\'oro e i metalli preziosi hanno un conteggio separato. Riporto in avanti per 4 anni, calcolato dai file caricati: vale solo se le minusvalenze sono state indicate nella dichiarazione dell\'anno di realizzo. Per il 2023 e il 2024 la minusvalenza netta cripto si riporta solo se superiore a 2.000 € (art. 68, c. 9-bis TUIR nel testo allora vigente); dal 2025 senza soglia (L. 207/2024).',
+      'Franchigia 2023-2024: plusvalenze e proventi cripto non tassati se complessivamente inferiori a 2.000 € (da 2.000 € in su si tassa tutto). Abolita dal 2025.',
+      'Data fiscale: data di calendario in Italia (fuso Europe/Rome). Importi arrotondati all\'euro solo sui totali di quadro.',
+      'Valori e prezzi: se un\'operazione non riporta il controvalore in euro si usa il prezzo del giorno ricavato dalle altre operazioni, oppure il prezzo inserito manualmente o scaricato (elencati nell\'Allegato E).',
+    ];
+    if (st.rebase2025) L.push('Rideterminazione al 1/1/2025 (L. 207/2024): il valore a quella data sostituisce il costo delle cripto possedute; sui lotti rideterminati una perdita non è deducibile (art. 1, c. 29).');
+    return L;
+  };
+  const INTERPRETATIONS = interpretations(null);
 
   // ------------------------------------------------------------------ costruttore PDF
   class Pdf {
@@ -164,11 +173,13 @@
       if (b.income.gt(0)) rows.push(['Proventi (staking, interessi, premi) al valore normale', eur(b.income)]);
       for (const cu of b.carryUsed) rows.push([`Minusvalenza ${cu.year} utilizzata in compensazione`, `-${eur(cu.amount)}`]);
       if (b.thresholdExempt) rows.push(['Importo sotto la franchigia di 2.000 € (non imponibile)', eur(0)]);
+      if (b.nonDeductible.gt(0)) rows.push(['Di cui perdite su lotti rideterminati al 1/1/2025, non deducibili (già escluse)', eur(b.nonDeductible)]);
       rows.push(['Imponibile', eur(b.taxable)]);
       rows.push([`Aliquota${b.emtShare.gt(0) ? ' (parte al 26% su stablecoin in euro)' : ''}`, pct(b.rate)]);
       rows.push(['Imposta sostitutiva dovuta', eur(b.tax)]);
       const bold = [rows.length - 3, rows.length - 1];
       if (b.newLoss.gt(0)) rows.push([`Minusvalenza ${Y} da riportare nei 4 anni successivi (da indicare in dichiarazione)`, eur(b.newLoss)]);
+      if (b.lossNotCarried.gt(0)) rows.push([`Minusvalenza ${Y} non riportabile (non superiore a 2.000 €, art. 68, c. 9-bis TUIR)`, eur(b.lossNotCarried)]);
       for (const cu of b.carryUnused) rows.push([`Minusvalenza ${cu.year} ancora riportabile`, eur(cu.amount)]);
       for (const cu of b.carryExpired) rows.push([`Minusvalenza ${cu.year} non più utilizzabile (oltre 4 anni)`, eur(cu.amount)]);
       p.h2('Dati da riportare in dichiarazione');
@@ -179,7 +190,7 @@
       p.table(['Asset', 'Cessioni', 'Corrispettivi (€)', 'Costi (€)', 'Plus / minusvalenza (€)'], byAsset(ds).map(([a, v]) => [a, String(v.n), eur(v.proceeds), eur(v.cost), eur(v.gain)]), { num: [1, 2, 3, 4], foot: ['Totale', String(ds.length), eur(b.proceeds), eur(b.costs), eur(b.net)] });
       if (kind === 'metal') p.para('Attenzione: l\'oro dei prodotti digitali (es. Bitpanda Metals) è qui trattato come metallo prezioso (art. 67, c. 1, lett. c-ter). La qualificazione e l\'obbligo di monitoraggio RW per metalli custoditi all\'estero vanno confermati dal commercialista.', { color: WARN, bold: true, size: 9 });
       p.h2('Come sono stati fatti i calcoli');
-      p.bullets(INTERPRETATIONS, { size: 8.5 });
+      p.bullets(interpretations(c.state), { size: 8.5 });
       p.para(`Regole ${Y}: ${res.y.rule.note} Stato delle regole: ${res.y.rule.status}. Dettaglio operazione per operazione: Allegato A; lotti di acquisto: Allegato B.`, { size: 8.5, color: MUTED });
     };
   }
@@ -245,6 +256,14 @@
     for (const d of disp) for (const u of d.uses) rows.push([dmy(d.day), d.asset, qty(d.qty), dmy(u.day), qty(u.qty), eur(u.cost), u.documented ? 'sì' : 'NON documentato', u.rebased ? 'sì' : 'no', u.lotId]);
     if (!rows.length) p.para('Nessuna cessione nell\'anno.');
     else p.table(['Data cessione', 'Asset', 'Quantità ceduta', 'Data acquisto lotto', 'Quantità dal lotto', 'Costo del lotto (€)', 'Costo documentato', 'Rideterminato 1/1/2025', 'Lotto'], rows, { num: [2, 4, 5], fontSize: 7.5 });
+    const sw = (res.engine.swapsCarried || []).filter((x) => x.year <= res.year).sort((a, b) => a.ts - b.ts);
+    if (sw.length) {
+      p.h2('Scambi tra cripto senza realizzo (il costo passa alla cripto ricevuta)');
+      p.para('Scambi tra cripto-attività con eguali caratteristiche e funzioni (Circ. AdE 30/E/2023): non generano plus o minusvalenze. Il costo dei lotti ceduti, più l\'eventuale commissione, diventa il costo della cripto ricevuta; il valore in euro serve solo al quadro RW. Elenco di tutti gli anni caricati fino a quello della dichiarazione.', { color: MUTED, size: 9 });
+      p.table(['Data', 'Conto', 'Ceduto', 'Ricevuto', 'Costo trasferito (€)', 'Valore del giorno (€)', 'Costo documentato', 'Origine (file:riga)'],
+        sw.map((x) => [dmy(x.day), x.account, `${qty(x.qty)} ${x.asset}`, `${qty(x.counterQty)} ${x.counterAsset}`, eur(x.cost), x.value ? eur(x.value) : 'n.d.', x.documented ? 'sì' : 'NON documentato', x.src || '']),
+        { num: [4, 5], fontSize: 7.5 });
+    }
   }
 
   function attProventi(p, c) {
@@ -277,7 +296,8 @@
       if (r.action === 'dup_skip') return [what, 'Sono la stessa operazione: contata una volta sola'];
     }
     const A = { ignore: 'Riga ignorata', self_custody: `Trasferimento verso un proprio wallet (${r.wallet || 'Wallet personale'})`, from_self_custody: 'Ingresso da un proprio wallet', disposal: `Uscita trattata come vendita, valore ${r.value_eur} €`, set_cost: `Costo impostato: ${r.cost_eur} €${r.acquired ? ` (acquisto del ${dmy(r.acquired)})` : ''}`, cover_cost: `Costo del mancante impostato: ${r.cost_eur} €${r.undocumented ? ' (non documentato)' : ''}${r.acquired ? ` (acquisto del ${dmy(r.acquired)})` : ''}`, set_value: `Valore impostato: ${r.value_eur} €`, migration: 'Conversione di saldo trattata come aggiornamento del token (nessuna vendita, costo trasferito)', swap: 'Conversione di saldo trattata come scambio imponibile', dup_skip: 'Operazioni presenti in due file contate una volta sola', ack: 'Confermato dall\'utente' };
-    return [what, A[r.action] || r.action];
+    const done = A[r.action] || r.action;
+    return [what, c.res.engine.obsolete && c.res.engine.obsolete.has(uid) ? `${done} (scelta non più necessaria: con le regole applicate non è un realizzo)` : done];
   }
 
   function attFonti(p, c) {
@@ -330,7 +350,7 @@
     if (!iss.length) p.para('Nessuno.');
     else p.table(['Livello', 'Messaggio'], [...iss].sort((a, b) => ['block', 'warn', 'info'].indexOf(a.level) - ['block', 'warn', 'info'].indexOf(b.level)).map((i) => [i.level === 'block' ? 'DA RISOLVERE' : i.level === 'warn' ? 'Attenzione' : 'Nota', i.message]), { fontSize: 7.5, columnStyles: { 0: { cellWidth: 26 } } });
     p.h2('Scelte interpretative applicate');
-    p.bullets(INTERPRETATIONS, { size: 8.5 });
+    p.bullets(interpretations(state), { size: 8.5 });
     p.para(`Regole ${res.year}: ${res.y.rule.note} Stato: ${res.y.rule.status}. Fonti da verificare: L. 197/2022, L. 207/2024, L. 199/2025, Circolare AdE 30/E del 27/10/2023, istruzioni del modello Redditi PF.`, { size: 8.5, color: MUTED });
   }
 
@@ -397,6 +417,6 @@
     return { full: files[0], parts, zip: { name: `${Y}-dichiarazione-crypto-pdf.zip`, data: zip }, draft: baseMeta.draft };
   }
 
-  CT.pdf = { buildAll, safe, eur, SECTIONS, INTERPRETATIONS };
+  CT.pdf = { buildAll, safe, eur, SECTIONS, INTERPRETATIONS, interpretations };
   if (typeof module !== 'undefined') module.exports = CT.pdf;
 })();

@@ -21,17 +21,28 @@
   }
   const absN = (x) => (x === null ? null : x.abs());
 
-  function parseTs(s) {
+  // ora "di parete" in Italia -> istante UTC (gestisce l'ora legale)
+  const romeParts = new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Rome', hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  function romeOffset(ms) {
+    const p = {}; for (const x of romeParts.formatToParts(new Date(ms))) p[x.type] = +x.value;
+    return Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - Math.floor(ms / 1000) * 1000;
+  }
+  const fromRome = (wall) => new Date(wall - romeOffset(wall - romeOffset(wall)));
+
+  /** Data/ora dal file. Senza fuso indicato vale `naive`: 'utc' (export delle piattaforme) oppure 'rome' (file compilati a mano). */
+  function parseTs(s, naive) {
     let t = String(s).trim();
     if (!t) throw new FormatError('Data mancante');
     let m;
+    const local = (ms) => (naive === 'rome' ? fromRome(ms) : new Date(ms));
     if ((m = t.match(/^(\d{2})\/(\d{2})\/(\d{4})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?$/))) {
-      return new Date(Date.UTC(+m[3], +m[2] - 1, +m[1], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0)));
+      return local(Date.UTC(+m[3], +m[2] - 1, +m[1], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0)));
     }
     if ((m = t.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?)?(Z|[+-]\d{2}:?\d{2})?$/))) {
       const base = Date.UTC(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
+      if (!m[7]) return local(base);
       let off = 0;
-      if (m[7] && m[7] !== 'Z') {
+      if (m[7] !== 'Z') {
         const sign = m[7][0] === '-' ? -1 : 1;
         const hh = +m[7].slice(1, 3), mm = +m[7].replace(':', '').slice(3, 5);
         off = sign * (hh * 60 + mm) * 60000;
@@ -94,7 +105,9 @@
     nativeTrade: new Set(['crypto_purchase', 'trading.crypto_purchase.google_pay', 'dust_conversion_debited', 'dust_conversion_credited']),
     out: new Set(['crypto_withdrawal', 'crypto_to_exchange_transfer']),
     in: new Set(['exchange_to_crypto_transfer', 'crypto_deposit']),
-    spend: new Set(['crypto_payment', 'card_top_up', 'card_cashback_reverted', 'reimbursement_reverted']),
+    spend: new Set(['crypto_payment', 'card_top_up']),
+    // storno di un cashback/rimborso gia' accreditato (per esempio un acquisto con la carta poi rimborsato): le cripto tornano indietro
+    reversal: new Set(['card_cashback_reverted', 'reimbursement_reverted']),
     income: {
       crypto_earn_interest_paid: 'interest', crypto_earn_extra_interest_paid: 'interest', supercharger_reward_to_app_credited: 'interest',
       'finance.lockup.dpos_compound_interest.crypto_wallet': 'interest', 'finance.dpos.non_compound_interest.crypto_wallet': 'interest',
@@ -153,6 +166,31 @@
         for (const x of grp) if (x.row !== lead) convMember.add(x.row);
       }
     }
+    // "Dust conversion" (piccoli saldi di piu' cripto convertiti in CRO): righe in uscita (debited) e UNA valuta in entrata (credited) nello
+    // stesso istante. E' uno scambio tra cripto: ogni riga in uscita diventa una permuta verso CRO, con la quota di CRO ripartita sul valore
+    // in euro delle righe in uscita. Se il gruppo non torna (piu' valute in entrata, valori mancanti) restano vendita e acquisto separati.
+    const dustRows = [];
+    for (const row of rows) {
+      const k = (row['Transaction Kind'] || '').trim().toLowerCase();
+      if (k === 'dust_conversion_debited' || k === 'dust_conversion_credited') dustRows.push({ row, ts: parseTs(row['Timestamp (UTC)']), debit: k.endsWith('debited') });
+    }
+    dustRows.sort((x, y) => x.ts - y.ts);
+    const dustSwap = new Map(), dustCredit = new Set();
+    for (let i = 0; i < dustRows.length;) {
+      let j = i + 1;
+      while (j < dustRows.length && dustRows[j].ts - dustRows[j - 1].ts <= 5000) j++;
+      const grp = dustRows.slice(i, j); i = j;
+      const out = grp.filter((x) => x.debit), inn = grp.filter((x) => !x.debit);
+      const ccy = (x) => (x.row['Currency'] || '').trim().toUpperCase();
+      const amt = (x) => (parseNum(x.row['Amount']) || ZERO).abs();
+      const nat = (x) => absN(parseNum(x.row['Native Amount'])) || ZERO;
+      const target = [...new Set(inn.map(ccy))];
+      if (!out.length || target.length !== 1 || !target[0] || FIAT.has(target[0]) || out.some((x) => !ccy(x) || FIAT.has(ccy(x)) || ccy(x) === target[0] || amt(x).isZero() || nat(x).isZero())) continue;
+      const got = inn.reduce((t, x) => t.plus(amt(x)), ZERO), totNat = out.reduce((t, x) => t.plus(nat(x)), ZERO);
+      if (got.isZero()) continue;
+      for (const x of out) dustSwap.set(x.row, { asset: ccy(x), qty: amt(x), counter: target[0], counterQty: got.times(nat(x)).div(totNat), value: nat(x) });
+      for (const x of inn) dustCredit.add(x.row);
+    }
     for (const row of rows) {
       const uid = mkUid(row);
       const src = `${fileName}:${row.__line}`;
@@ -181,13 +219,18 @@
         else if (FIAT.has(toCur) && !FIAT.has(cur)) ev = mkEvent({ ...base, kind: Kind.SELL, asset: cur, qty: amt, value: toAmt, valueCcy: toCur });
         else if (toCur && !FIAT.has(cur) && !FIAT.has(toCur)) ev = mkEvent({ ...base, kind: Kind.SWAP, asset: cur, qty: amt, counterAsset: toCur, counterQty: toAmt, value: nAmt, valueCcy: nCcy });
         else ev = unresolved(base, `Crypto.com App · tipo "${kindRaw}" (valute ${cur}/${toCur || '-'})`, `Scambio con valute non interpretabili (${cur} → ${toCur || '-'})`);
-      } else if (APP.nativeTrade.has(kind)) {
+      } else if (dustSwap.has(row)) {
+        const x = dustSwap.get(row);
+        ev = mkEvent({ ...base, kind: Kind.SWAP, asset: x.asset, qty: x.qty, counterAsset: x.counter, counterQty: x.counterQty, value: x.value, valueCcy: nCcy });
+      } else if (dustCredit.has(row)) ev = mkEvent({ ...base, kind: Kind.INFO, note: 'CRO ricevuti dalla conversione dei piccoli saldi: contati con le righe in uscita' });
+      else if (APP.nativeTrade.has(kind)) {
         ev = rawAmt.gt(0)
           ? mkEvent({ ...base, kind: Kind.BUY, asset: cur, qty: amt, value: nAmt, valueCcy: nCcy })
           : mkEvent({ ...base, kind: Kind.SELL, asset: cur, qty: amt, value: nAmt, valueCcy: nCcy });
       } else if (APP.out.has(kind)) ev = mkEvent({ ...base, kind: Kind.TRANSFER_OUT, asset: cur, qty: amt, value: nAmt, valueCcy: nCcy });
       else if (APP.in.has(kind)) ev = mkEvent({ ...base, kind: Kind.TRANSFER_IN, asset: cur, qty: amt, value: nAmt, valueCcy: nCcy });
       else if (APP.spend.has(kind)) ev = mkEvent({ ...base, kind: Kind.SPEND, asset: cur, qty: amt, value: nAmt, valueCcy: nCcy });
+      else if (APP.reversal.has(kind)) ev = mkEvent({ ...base, kind: Kind.INCOME_REVERSAL, asset: cur, qty: amt, value: nAmt, valueCcy: nCcy, incomeType: 'cashback_reverted' });
       else if (kind in APP.income) {
         ev = rawAmt.gt(0)
           ? mkEvent({ ...base, kind: Kind.INCOME, asset: cur, qty: amt, value: nAmt, valueCcy: nCcy, incomeType: APP.income[kind] })
@@ -387,7 +430,12 @@
         const fiatMove = isFiatMove(parseNum(row['Amount Asset'])) || cls === 'fiat' || FIAT.has(asset);
         if (fiatMove) ev = mkEvent({ ...base, kind: typ === 'deposit' ? Kind.FIAT_IN : Kind.FIAT_OUT, asset: fiat, qty: fiatAmt || ZERO });
         else if (typ === 'deposit') ev = mkEvent({ ...base, kind: Kind.TRANSFER_IN, asset, qty });
-        else ev = mkEvent({ ...base, kind: Kind.TRANSFER_OUT, asset, qty: qty.plus(fee) });   // la commissione esce in aggiunta alla quantita' inviata
+        else {
+          // la commissione esce in aggiunta alla quantita' inviata, se e' nello stesso asset; in un altro asset (es. BEST) e' una cessione a parte
+          const feeAsset = (row['Fee asset'] || '').trim().toUpperCase();
+          const sameFee = !feeAsset || (METAL_ALIASES[feeAsset] || feeAsset) === asset;
+          ev = mkEvent({ ...base, kind: Kind.TRANSFER_OUT, asset, qty: sameFee ? qty.plus(fee) : qty, ...(fee.gt(0) && !sameFee ? { feeAsset, feeQty: fee } : {}) });
+        }
       } else ev = unresolved(base, `Bitpanda · tipo "${typ}" (${assetClass || 'classe n.d.'})`,
         `Tipo di transazione non riconosciuto: "${typ}" (In/Out="${dir}", classe="${assetClass}", ${asset} ${qty.toFixed()})`);
       events.push(ev);
@@ -414,7 +462,7 @@
     for (const row of rows) {
       const uid = mkUid(row);
       const src = `${fileName}:${row.__line}`;
-      const ts = parseTs(g(row, 'data'));
+      const ts = parseTs(g(row, 'data'), 'rome');   // il modello si compila con l'ora italiana
       const acc = g(row, 'conto').trim() || account || 'Altro conto';
       const tipo = norm(g(row, 'tipo'));
       const base = { uid, ts, account: acc, src, raw: row, note: g(row, 'nota') };

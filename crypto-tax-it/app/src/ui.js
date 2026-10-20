@@ -32,7 +32,7 @@
   const uid = () => Math.random().toString(36).slice(2, 9);
 
   // ------------------------------------------------------------------ stato e salvataggio
-  const state = { files: [], manual: [], resolutions: {}, prices: {}, priceSrc: {}, settings: { year: 2025, rebase2025: false, useCarry: true }, taxpayer: { name: '', cf: '' }, custodians: {}, platforms: [], example: false };
+  const state = { files: [], manual: [], resolutions: {}, prices: {}, priceSrc: {}, settings: { year: 2025, rebase2025: false, useCarry: true, swapRule: 'circ30' }, taxpayer: { name: '', cf: '' }, custodians: {}, platforms: [], example: false };
   const ui = { tab: 'files', res: null, error: null, detail: 'cessioni', filter: '', confirmReset: false, toast: '', busy: '', ver: 0, pdf: null, pdfBusy: false, platform: null, method: 'file', confirmRemove: null, manualChoices: false, priceFail: 0 };
 
   function idb() {
@@ -531,8 +531,12 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       h('input', { type: 'checkbox', id, checked: !!s[key], onchange: (e) => { s[key] = e.target.checked; changed(); } }),
       h('label', { for: id }, h('strong', null, title)), h('span', { class: 'hint muted small' }, hint));
     return h('div', { class: 'card' }, h('h2', null, 'Opzioni di calcolo'),
-      check('o_carry', 'useCarry', 'Riporta le minusvalenze degli anni precedenti', 'Le perdite che emergono dai tuoi file (dal 2023) riducono le tasse degli anni successivi, entro 4 anni. Calcolate in automatico: non serve sapere cosa hai dichiarato.'),
-      check('o_rebase', 'rebase2025', 'Ho rideterminato il costo al 1° gennaio 2025', 'Facoltativo e raro: pagando un\'imposta del 18% sul valore delle cripto possedute il 1/1/2025, quel valore diventa il nuovo costo di acquisto. Se non sai di cosa si tratta lascia spento: vuol dire che non l\'hai fatto.'));
+      check('o_carry', 'useCarry', 'Riporta le minusvalenze degli anni precedenti', 'Le perdite che emergono dai tuoi file (dal 2023) riducono le tasse degli anni successivi, entro 4 anni. Per legge valgono solo se le hai indicate nella dichiarazione dell\'anno in cui le hai avute (quadro RT): se quell\'anno non le avevi dichiarate, togli la spunta. Per il 2023 e il 2024 si riportano solo le perdite nette oltre 2.000 €.'),
+      h('div', { class: 'check' },
+        h('input', { type: 'checkbox', id: 'o_swapall', checked: s.swapRule === 'all', onchange: (e) => { s.swapRule = e.target.checked ? 'all' : 'circ30'; changed(); } }),
+        h('label', { for: 'o_swapall' }, h('strong', null, 'Tassa anche gli scambi tra cripto (es. BTC → ETH)')),
+        h('span', { class: 'hint muted small' }, 'Normalmente spento. Secondo l\'Agenzia delle Entrate (Circolare 30/E del 2023) lo scambio tra due cripto non è una vendita: non si paga niente e il costo passa alla cripto ricevuta. Si paga invece quando passi a euro, a stablecoin (USDC, USDT…) o paghi con le cripto. Accendilo solo se il tuo commercialista preferisce tassare ogni scambio.')),
+      check('o_rebase', 'rebase2025', 'Ho rideterminato il costo al 1° gennaio 2025', 'Facoltativo e raro: pagando un\'imposta del 18% (entro il 1° dicembre 2025) sul valore delle cripto possedute il 1/1/2025, quel valore diventa il nuovo costo di acquisto, ma una vendita in perdita di quelle cripto non dà una minusvalenza. Se non sai di cosa si tratta lascia spento: vuol dire che non l\'hai fatto.'));
   }
 
   // ------------------------------------------------------------------ pannello: Da controllare
@@ -756,7 +760,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       const base = key.replace(/^conv:/, '').replace(/#(fee|netfee)$/, '');
       const e = res.events.find((x) => x.uid === base);
       const what = e ? `${dmy(CT.taxDate(e.ts))} · ${e.account} · ${CT.fq(e.qty)} ${e.asset}${key.startsWith('conv:') ? ' → ' + CT.fq(e.counterQty) + ' ' + e.counterAsset : ''}` : key;
-      return `${what}: ${act}`;
+      return `${what}: ${act}${res.engine.obsolete.has(key) ? ' (non serve più: con le regole applicate non è una vendita)' : ''}`;
     };
     return h('details', { class: 'card', open: !res.groups.blockCount }, h('summary', null, `Decisioni prese (${decided.length})`),
       h('p', { class: 'muted small' }, 'Le scelte che hai fatto finora. Se ti sei sbagliato annullala: il punto tornerà tra le cose da controllare.'),
@@ -779,9 +783,11 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     if (b.income.gt(0)) rows.push({ label: 'Proventi (staking, interessi, premi…)', value: money(b.income) });
     for (const c of b.carryUsed) rows.push({ label: `Minusvalenza ${c.year} utilizzata`, value: `− ${money(c.amount)}` });
     if (b.thresholdExempt) rows.push({ label: 'Sotto la franchigia di 2.000 € (non tassato)', value: money(0) });
+    if (b.nonDeductible.gt(0)) rows.push({ label: 'Perdite su cripto rideterminate al 1/1/2025: non deducibili (già escluse)', value: money(b.nonDeductible) });
     rows.push({ label: 'Imponibile', value: money(b.taxable), cls: 'total' });
     rows.push({ label: `Imposta sostitutiva (${pct(b.rate)}${b.emtShare.gt(0) ? ', di cui parte al 26% su stablecoin in euro' : ''})`, value: money(b.tax), cls: 'total' });
-    if (b.newLoss.gt(0)) rows.push({ label: `Minusvalenza ${b.year} da riportare agli anni successivi`, value: money(b.newLoss) });
+    if (b.newLoss.gt(0)) rows.push({ label: `Minusvalenza ${b.year} da riportare agli anni successivi (va indicata in dichiarazione)`, value: money(b.newLoss) });
+    if (b.lossNotCarried.gt(0)) rows.push({ label: `Minusvalenza ${b.year} non riportabile (fino a 2.000 € nel 2023-2024 non si riporta)`, value: money(b.lossNotCarried) });
     for (const c of b.carryUnused) rows.push({ label: `Minusvalenza ${c.year} ancora disponibile`, value: money(c.amount) });
     for (const c of b.carryExpired) rows.push({ label: `Minusvalenza ${c.year} scaduta (oltre 4 anni)`, value: money(c.amount) });
     return h('div', { class: 'card' }, h('h2', null, b.name), h('p', { class: 'muted small' }, `${b.law} · ${b.nDisposals} cessioni nell'anno · quadro RT`),
@@ -791,7 +797,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
   /** «Da dove arriva l'imposta»: elenca cosa ha contato il programma (vendite, scambi, pagamenti, premi), cosi' si capisce anche senza aver venduto. */
   function sourcesCard(res) {
     const sx = R.taxSources(res);
-    if (!sx.rows.length) return null;
+    if (!sx.rows.length && !sx.neutralSwaps) return null;
     const signed = (r) => (r.group === 'income' ? money(r.amount) : `${r.amount.gte(0) ? '+' : '−'} ${money(r.amount.abs())}`);
     const rows = sx.rows.map((r) => h('tr', null,
       h('td', null, r.label, h('div', { class: 'small muted' }, r.group === 'income' ? 'tassato per intero' : 'guadagno (+) o perdita (−)')),
@@ -805,6 +811,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
         h('thead', null, h('tr', null, h('th', null, 'Che cosa'), h('th', { class: 'num' }, 'Quante'), h('th', { class: 'num' }, 'Importo'))),
         h('tbody', null, rows))),
       sx.hasCashback ? h('p', { class: 'small' }, 'Il cashback della carta lo conto come un guadagno (scelta prudenziale). Se il tuo commercialista lo considera uno sconto sulla spesa, l\'imposta scende: chiedigli come vuole trattarlo.') : null,
+      sx.neutralSwaps ? h('p', { class: 'small' }, `In più ${sx.neutralSwaps === 1 ? 'c\'è 1 scambio' : `ci sono ${sx.neutralSwaps} scambi`} tra crypto (es. BTC → ETH) che non ${sx.neutralSwaps === 1 ? 'è tassato' : 'sono tassati'}: per l'Agenzia delle Entrate non sono vendite, il costo passa alla crypto ricevuta.`) : null,
       h('div', { class: 'row' },
         h('button', { class: 'btn quiet', onclick: () => { ui.detail = 'cessioni'; ui.tab = 'detail'; render(); window.scrollTo(0, 0); } }, 'Vedi vendite e scambi'),
         h('button', { class: 'btn quiet', onclick: () => { ui.detail = 'proventi'; ui.tab = 'detail'; render(); window.scrollTo(0, 0); } }, 'Vedi premi e interessi')));
@@ -860,8 +867,10 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     more.push(h('details', { class: 'card' }, h('summary', null, 'Come sono stati fatti i calcoli'),
       h('ul', { class: 'clean muted small' },
         h('li', null, 'Costo di acquisto: metodo LIFO (si vendono prima gli ultimi acquistati), un unico conto virtuale per ogni asset su tutte le piattaforme.'),
-        h('li', null, 'Gli scambi tra crypto, il passaggio a stablecoin e i pagamenti in crypto sono vendite imponibili al valore del giorno (dal 2023). Prima del 2023 non lo erano e il costo si trasferisce.'),
-        h('li', null, 'Staking, interessi e premi sono tassati al valore del giorno in cui li ricevi e non si compensano con le perdite sulle vendite (scelta prudenziale).'),
+        state.settings.swapRule === 'all'
+          ? h('li', null, 'Hai scelto di tassare anche gli scambi tra crypto: ogni scambio, il passaggio a stablecoin e i pagamenti in crypto sono vendite imponibili al valore del giorno (dal 2023).')
+          : h('li', null, 'Lo scambio tra due crypto (es. BTC → ETH) non è una vendita: il costo passa alla crypto ricevuta (Circolare 30/E del 2023). Sono vendite imponibili al valore del giorno il passaggio a euro, a stablecoin (USDC, USDT…), i pagamenti e le commissioni pagate in crypto (dal 2023).'),
+        h('li', null, 'Staking, interessi e premi sono tassati per intero al valore del giorno in cui li ricevi e non si compensano con le perdite sulle vendite. Un cashback stornato riduce i premi.'),
         h('li', null, 'Le perdite sulle cripto compensano solo guadagni su cripto; l\'oro ha un conteggio separato.'),
         h('li', null, 'Le date contano secondo l\'orario italiano. Gli importi del quadro sono arrotondati all\'euro.'),
         h('li', null, `Regole ${res.year}: ${y.rule.status}. Aliquote e franchigie provengono da fonti secondarie: falle confermare da un professionista prima di firmare la dichiarazione.`))));

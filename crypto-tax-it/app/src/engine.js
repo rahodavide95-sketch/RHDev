@@ -7,8 +7,13 @@
   const { D, ZERO, Kind, classify, taxDate, STABLE, FIAT } = CT;
 
   const REBASE_DAY = '2025-01-01';
-  const NEW_REGIME_DAY = '2023-01-01'; // dal 2023 le permute cripto-cripto sono realizzi imponibili
+  const NEW_REGIME_DAY = '2023-01-01'; // dal 2023 regime delle cripto-attivita' (L. 197/2022)
   const WALLET = 'Wallet personale';
+  // Permute dal 2023 (art. 67, c. 1, lett. c-sexies TUIR e Circ. AdE 30/E del 27/10/2023, par. 3.1): non e' un realizzo la permuta tra
+  // cripto-attivita' con eguali caratteristiche e funzioni (es. BTC -> ETH); lo e' quella tra cripto e stablecoin (e-money token) o metalli.
+  //  - 'circ30' (predefinito): realizzo solo se cambia il gruppo (cripto / stablecoin / metallo); altrimenti il costo passa al nuovo asset
+  //  - 'all': ogni permuta e' un realizzo al valore normale (lettura piu' severa, per chi la preferisce)
+  const SWAP_RULES = ['circ30', 'all'];
   const it = (day) => day.split('-').reverse().join('/'); // 2025-03-07 -> 07/03/2025 (solo nei messaggi)
   const nq = (x) => CT.fq(D(x).toDecimalPlaces(6)).replace('.', ','); // quantita' leggibile: virgola, al massimo 6 decimali
 
@@ -55,8 +60,11 @@
     constructor(asset) { this.asset = asset; this.lots = []; }
     get balance() { return this.lots.reduce((s, l) => s.plus(l.qty), ZERO); }
     add(lot) {
-      this.lots.push(lot);
-      this.lots.sort((a, b) => a.ts - b.ts); // stabile: a pari data resta l'ordine di inserimento
+      // ordine per data; a pari data resta l'ordine di inserimento. Gli eventi arrivano gia' in ordine: di solito basta accodare
+      // (riordinare tutto a ogni lotto rallentava molto i file con migliaia di cashback e interessi).
+      let i = this.lots.length;
+      while (i > 0 && this.lots[i - 1].ts > lot.ts) i--;
+      this.lots.splice(i, 0, lot);
     }
     /** LIFO: ritorna { uses, short } */
     consume(qty) {
@@ -77,8 +85,12 @@
   // ------------------------------------------------------------ motore
   class Engine {
     constructor(opts) {
-      this.opts = Object.assign({ rebase2025: false, resolutions: {}, transferWindowH: 72, transferFeeTol: D('0.10'), prices: new PriceBook() }, opts || {});
+      this.opts = Object.assign({ rebase2025: false, swapRule: 'circ30', resolutions: {}, transferWindowH: 72, transferFeeTol: D('0.10'), prices: new PriceBook() }, opts || {});
+      if (!SWAP_RULES.includes(this.opts.swapRule)) this.opts.swapRule = 'circ30';
       this.prices = this.opts.prices;
+      this.neutralSwaps = { n: 0, eur: ZERO };   // permute senza realizzo dal 2023 (solo per il riepilogo)
+      this.swapsCarried = [];                    // le stesse, una per una (documentazione del costo trasferito)
+      this.obsolete = new Set();                 // scelte salvate che con le regole attuali non servono piu'
       this.pools = new Map();
       this.disposals = []; this.incomes = []; this.movements = []; this.issues = [];
       this.missingPrices = new Map(); // "SYM|day" -> {symbol, day}
@@ -141,6 +153,27 @@
       return p.price.times(e.feeQty);
     }
 
+    /** Controvalore EUR se ricavabile, senza segnalare nulla: per le operazioni che non realizzano (serve solo al prospetto RW). */
+    softValueEur(e) {
+      const day = taxDate(e.ts);
+      if (e.value !== null && e.value !== undefined && e.value.gt(0)) {
+        if (e.valueCcy === 'EUR') return e.value;
+        const fx = this.prices.get(e.valueCcy, day);
+        if (fx) return e.value.times(fx.price);
+      }
+      const p = e.asset ? this.prices.get(e.asset, day) : null;
+      if (p) return p.price.times(e.qty);
+      const q = e.counterAsset && !e.counterQty.isZero() ? this.prices.get(e.counterAsset, day) : null;
+      return q ? q.price.times(e.counterQty) : null;
+    }
+
+    /** Gruppo fiscale di un asset nelle permute: le stablecoin (e-money token) e i metalli non hanno le stesse funzioni delle altre cripto. */
+    swapGroup(asset) {
+      const c = this.cls(asset);
+      if (c !== 'crypto') return c;   // metallo, valuta o altro (azioni, ETF): mai "eguali caratteristiche" con una cripto
+      return STABLE.has(String(asset).toUpperCase()) ? 'stable' : 'crypto';
+    }
+
     /** Valore in EUR dichiarato dal file per un trasferimento (se c'e'): serve solo al prospetto RW. */
     hint(e) { return e.value !== null && e.value !== undefined && e.valueCcy === 'EUR' ? e.value : null; }
     move(e, account, asset, delta, eur) { this.movements.push({ ts: e.ts, day: taxDate(e.ts), account, asset, delta, eur: eur === undefined ? null : eur, uid: e.uid }); }
@@ -182,6 +215,12 @@
       const cost = uses.reduce((s, u) => s.plus(u.cost), ZERO);
       const d = { uid, ts: e.ts, day: taxDate(e.ts), year: CT.yearOf(taxDate(e.ts)), account: e.account, asset, cls: this.cls(asset, asset === e.asset ? e.assetHint : null),
         kind, qty, proceeds, fee, cost, gain: proceeds.minus(cost), uses, source, src: e.src, note: note || '' };
+      // Con il costo rideterminato al 1/1/2025 non si realizzano minusvalenze deducibili (L. 207/2024, art. 1, c. 29): lotto per lotto,
+      // a ciascuno la sua parte di corrispettivo; la perdita di un lotto rideterminato conta zero.
+      if (uses.some((u) => u.rebased) && qty.gt(0)) {
+        const tg = uses.reduce((s, u) => { const g = proceeds.times(u.qty).div(qty).minus(u.cost); return s.plus(u.rebased && g.lt(0) ? ZERO : g); }, ZERO);
+        if (!tg.eq(d.gain)) d.taxGain = tg;
+      }
       this.disposals.push(d);
       return d;
     }
@@ -211,7 +250,7 @@
       for (const e of events) {
         if (e.value === null || e.value === undefined || e.valueCcy !== 'EUR') continue;
         const day = taxDate(e.ts);
-        if ((e.kind === Kind.BUY || e.kind === Kind.SELL || e.kind === Kind.INCOME || e.kind === Kind.SPEND) && e.asset && e.qty.gt(0) && !FIAT.has(e.asset)) {
+        if ((e.kind === Kind.BUY || e.kind === Kind.SELL || e.kind === Kind.INCOME || e.kind === Kind.INCOME_REVERSAL || e.kind === Kind.SPEND) && e.asset && e.qty.gt(0) && !FIAT.has(e.asset)) {
           this.prices.addImplied(e.asset, day, e.value.div(e.qty));
         } else if (e.kind === Kind.SWAP) {
           if (e.qty.gt(0)) this.prices.addImplied(e.asset, day, e.value.div(e.qty));
@@ -267,6 +306,10 @@
         this.handle(e, pair);
       }
       if (this.opts.rebase2025 && !this._rebased) this.rebase();
+      if (this.neutralSwaps.n) {
+        const n = this.neutralSwaps.n;
+        this.issue('info', 'neutral_swaps', '', `${n} ${n === 1 ? 'scambio' : 'scambi'} tra cripto con eguali caratteristiche e funzioni (per esempio BTC → ETH) dal 2023: non ${n === 1 ? 'è un realizzo' : 'sono realizzi'} (Circ. AdE 30/E/2023), il costo passa alla cripto ricevuta.`, { count: n });
+      }
       return this;
     }
 
@@ -291,35 +334,44 @@
         this.feeDisposal(e, fee);
       } else if (k === Kind.SWAP) {
         if (!e.counterAsset || classify(e.counterAsset) === 'fiat') { this.issue('block', 'unrecognized_row', e.uid, 'Permuta senza asset di destinazione valido'); return; }
-        // conversione di saldo (cambio di nome o migrazione di un token): dal 2023 serve una scelta dell'utente.
-        // La scelta e' salvata con una chiave propria ("conv:"+uid) per non sovrapporsi al costo del mancante (stesso uid).
         const preRegime = taxDate(e.ts) < NEW_REGIME_DAY;
+        // stesso gruppo (cripto con cripto, stablecoin con stablecoin): con la regola della Circ. 30/E non e' un realizzo
+        const sameGroup = this.swapGroup(e.asset) === this.swapGroup(e.counterAsset);
+        const neutral = !preRegime && sameGroup && this.opts.swapRule === 'circ30';
+        // conversione di saldo (cambio di nome o migrazione di un token): se la regola non la rende gia' neutra serve una scelta dell'utente.
+        // La scelta e' salvata con una chiave propria ("conv:"+uid) per non sovrapporsi al costo del mancante (stesso uid).
         const convKey = 'conv:' + e.uid;
         const convChoice = e.conv ? (this.opts.resolutions[convKey] || {}).action : null;
-        if (e.conv && !preRegime && convChoice !== 'migration' && convChoice !== 'swap') {
+        if (e.conv && (preRegime || neutral) && convChoice) this.obsolete.add(convKey);   // risposta data in passato, ora non serve piu'
+        if (e.conv && !preRegime && !neutral && convChoice !== 'migration' && convChoice !== 'swap') {
           this.issue('block', 'conversion_pending', convKey,
             `Conversione di saldo del ${it(taxDate(e.ts))}: ${nq(e.qty)} ${e.asset} → ${nq(e.counterQty)} ${e.counterAsset}`,
             { asset: e.asset, counter: e.counterAsset, qty: e.qty, counterQty: e.counterQty, day: taxDate(e.ts), account: e.account });
         }
-        const carry = preRegime || convChoice === 'migration';   // nessun realizzo: il costo passa al nuovo asset
+        const carry = preRegime || neutral || (e.conv && convChoice === 'migration');   // nessun realizzo: il costo passa al nuovo asset
         let v, src;
-        if (e.conv && carry) {
-          // senza realizzo il valore in euro non serve al calcolo (solo, se c'e', al prospetto RW): non si chiede un prezzo
-          v = e.value !== null && e.value !== undefined && e.valueCcy === 'EUR' && e.value.gt(0) ? e.value : null; src = 'dal file';
-        } else ({ v, src } = this.valueEur(e));
+        // senza realizzo il valore in euro non serve al calcolo (solo, se c'e', al prospetto RW): non si chiede un prezzo
+        if (carry) { v = this.softValueEur(e); src = 'dal file'; } else ({ v, src } = this.valueEur(e));
         const fee = this.feeEur(e);
-        if (STABLE.has(e.asset) && STABLE.has(e.counterAsset)) {
+        if (!carry && STABLE.has(e.asset) && STABLE.has(e.counterAsset)) {
           this.issue('info', 'stable_swap', e.uid, `Scambio tra stablecoin ${e.asset}→${e.counterAsset}: trattato come permuta imponibile (scelta prudenziale).`);
         }
         this.move(e, e.account, e.asset, e.qty.neg(), v);
         if (carry) {
-          // Prima del 2023 la permuta cripto-cripto non era un realizzo (e una migrazione di token non lo e'): il costo si trasferisce al nuovo asset.
+          // Prima del 2023, e dal 2023 tra cripto con eguali caratteristiche e funzioni, la permuta non e' un realizzo (neppure una migrazione
+          // di token): il costo dei lotti ceduti, piu' l'eventuale commissione (onere accessorio), diventa il costo del nuovo asset.
           const pool = this.pool(e.asset);
           let { uses, short } = pool.consume(e.qty);
           ({ uses, short } = this.coverMissing(pool, e, e.uid, uses, short));
-          let cost = uses.reduce((t, u) => t.plus(u.cost), ZERO);
+          const cost = uses.reduce((t, u) => t.plus(u.cost), ZERO).plus(fee);
           if (short.gt(0)) this.issue('block', 'missing_history', e.uid, `Permuta di ${nq(e.qty)} ${e.asset} del ${it(taxDate(e.ts))}: mancano ${nq(short)} negli acquisti caricati.`, { asset: e.asset, qty: short, day: taxDate(e.ts), account: e.account });
           this.acquire(e, e.counterAsset, e.counterQty, cost, short.isZero() && uses.every((u) => u.documented !== false));
+          if (neutral) {
+            this.neutralSwaps.n++;
+            if (v) this.neutralSwaps.eur = this.neutralSwaps.eur.plus(v);
+            this.swapsCarried.push({ uid: e.uid, ts: e.ts, day: taxDate(e.ts), year: CT.yearOf(taxDate(e.ts)), account: e.account, asset: e.asset, qty: e.qty,
+              counterAsset: e.counterAsset, counterQty: e.counterQty, cost, value: v, documented: short.isZero() && uses.every((u) => u.documented !== false), src: e.src });
+          }
         } else {
           this.dispose(e, e.uid, e.asset, e.qty, v.minus(fee), fee, 'swap', src, e.note);
           this.acquire(e, e.counterAsset, e.counterQty, v);
@@ -331,11 +383,24 @@
         this.acquire(e, e.asset, e.qty, v);
         this.move(e, e.account, e.asset, e.qty, v);
         this.incomes.push({ uid: e.uid, ts: e.ts, day: taxDate(e.ts), year: CT.yearOf(taxDate(e.ts)), account: e.account, asset: e.asset, cls, qty: e.qty, value: v, type: e.incomeType || 'other', source: src, src: e.src });
+      } else if (k === Kind.INCOME_REVERSAL) {
+        // Storno di un premio gia' tassato (cashback della carta annullato per un rimborso): le cripto tornano alla piattaforma e il provento
+        // si riduce del loro valore allo storno. Non e' una cessione: nessuna plus/minusvalenza (prima era trattato come pagamento e il
+        // cashback restituito restava tassato per intero).
+        const { v, src } = this.valueEur(e);
+        const { short } = this.pool(e.asset).consume(e.qty);
+        if (short.gt(0)) this.issue('warn', 'reversal_short', e.uid, `Storno di ${nq(e.qty)} ${e.asset} del ${it(taxDate(e.ts))}: nei file ne risultano solo ${nq(e.qty.minus(short))}.`, { asset: e.asset });
+        this.move(e, e.account, e.asset, e.qty.neg(), v);
+        this.incomes.push({ uid: e.uid, ts: e.ts, day: taxDate(e.ts), year: CT.yearOf(taxDate(e.ts)), account: e.account, asset: e.asset, cls, qty: e.qty.neg(), value: v.neg(), type: e.incomeType || 'cashback_reverted', reversal: true, source: src, src: e.src });
       } else if (k === Kind.FEE) {
         const { v } = this.valueEur(e);
         this.move(e, e.account, e.asset, e.qty.neg(), v);
         this.dispose(e, e.uid, e.asset, e.qty, v, ZERO, 'fee', 'commissione');
-      } else if (k === Kind.TRANSFER_OUT) this.transferOut(e, pair.get(e.uid));
+      } else if (k === Kind.TRANSFER_OUT) {
+        // commissione del prelievo pagata in un altro asset (es. BEST su Bitpanda): e' una cessione di quell'asset
+        if (e.feeAsset && e.feeAsset !== e.asset && e.feeQty.gt(0)) this.feeDisposal(e, this.feeEur(e));
+        this.transferOut(e, pair.get(e.uid));
+      }
       else if (k === Kind.TRANSFER_IN) this.transferIn(e, pair.get(e.uid));
     }
 

@@ -12,9 +12,9 @@ Redditi PF dell'anno. Le regole per anno sono in `app/src/tax.js` (`RULES`).
 
 | Anno | Aliquota cripto | Franchigia | Note |
 |---|---|---|---|
-| 2023 | 26% | 2.000 € (sopra si tassa tutto) | permute cripto-cripto imponibili dal 2023 |
-| 2024 | 26% | 2.000 € | |
-| 2025 | 26% | nessuna | franchigia abolita |
+| 2023 | 26% | 2.000 € (da 2.000 in su si tassa tutto) | minusvalenza netta riportabile solo se > 2.000 € |
+| 2024 | 26% | 2.000 € | minusvalenza netta riportabile solo se > 2.000 € |
+| 2025 | 26% | nessuna | franchigia abolita, anche per il riporto delle minusvalenze (L. 207/2024, c. 25) |
 | 2026 | 33% | nessuna | 26% per stablecoin in euro conformi a MiCA (E-money token; lista indicativa in `core.js`) |
 
 Oro/metalli preziosi (art. 67 c.1 lett. c-ter TUIR): 26% tutti gli anni, paniere separato.
@@ -22,11 +22,13 @@ Oro/metalli preziosi (art. 67 c.1 lett. c-ter TUIR): 26% tutti gli anni, paniere
 | Tema | Regola implementata |
 |---|---|
 | Costo | LIFO, un pool per asset su tutti i conti (Circ. 30/E 2023) |
-| Eventi imponibili (dal 2023) | vendita in fiat, permuta cripto/cripto, cripto/stablecoin, pagamenti, commissioni pagate in cripto |
-| Prima del 2023 | la permuta cripto-cripto non è un realizzo: il costo si trasferisce al nuovo asset (scelta di progetto) |
+| Eventi imponibili (dal 2023) | vendita in fiat, permuta cripto/stablecoin (trattate come e-money token), cripto/metallo, pagamenti, commissioni pagate in cripto |
+| Permute senza realizzo | cripto/cripto con eguali caratteristiche e funzioni (es. BTC/ETH) e stablecoin/stablecoin (Circ. AdE 30/E/2023, par. 3.1): il costo, più la commissione, passa all'asset ricevuto. Opzione `swapRule: 'all'` per tassare ogni permuta |
+| Prima del 2023 | nessuna permuta cripto-cripto è un realizzo: il costo si trasferisce al nuovo asset |
 | Proventi | staking, interessi, cashback, airdrop: valore normale alla percezione = nuovo costo del lotto; non compensabili con minusvalenze da cessione (scelta prudenziale) |
-| Minusvalenze | cripto compensano solo cripto; oro separato; riporto automatico dai file per 4 anni (opzione) |
-| Rideterminazione 1/1/2025 | opzionale: costo = valore al 1/1/2025 (imposta sostitutiva 18% pagata a parte) |
+| Minusvalenze | cripto compensano solo cripto; oro separato; riporto automatico dai file per 4 anni (opzione; vale solo se indicate nella dichiarazione dell'anno); 2023-2024: riportabili solo se la minusvalenza netta supera 2.000 € |
+| Storni di cashback | riducono i proventi dell'anno (mai sotto zero), non sono cessioni |
+| Rideterminazione 1/1/2025 | opzionale: costo = valore al 1/1/2025 (imposta sostitutiva 18% pagata a parte); sui lotti rideterminati le perdite non sono deducibili (L. 207/2024, c. 29) |
 | IVCA | 0,2% x valore finale x giorni/365, indicativa, solo cripto |
 | Data fiscale | data di calendario in Italia (Europe/Rome) |
 | Arrotondamento | all'euro sui totali di quadro |

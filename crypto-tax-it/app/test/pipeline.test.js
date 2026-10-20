@@ -14,7 +14,9 @@ const files = (extra = []) => [{ id: 'a', name: 'app.csv', type: 'cryptocom_app'
 test('analyze: risultato, raggruppamento problemi, duplicati tra file sovrapposti', () => {
   const dup = { id: 'b', name: 'app2.csv', type: 'cryptocom_app', text: APP };
   const r = CT.analyze({ files: files([dup]), settings: { year: 2025 } });
-  eq(r.y.crypto.gains, 200); eq(r.y.crypto.income, '0.5');
+  eq(r.y.crypto.gains, 0); eq(r.y.crypto.income, '0.5');           // BTC -> ETH non e' un realizzo (Circ. 30/E)
+  eq(r.engine.pool('ETH').lots[0].unitCost, 5000);                  // l'ETH eredita il costo del BTC: 1000 / 0,2
+  eq(CT.analyze({ files: files([dup]), settings: { year: 2025, swapRule: 'all' } }).y.crypto.gains, 200);   // criterio "tutte imponibili"
   assert.equal(r.engine.issues.filter((i) => i.code === 'duplicates').length, 1);
   assert.equal(r.groups.unknown.size, 1);
   assert.ok(r.engine.issues.some((i) => i.code === 'rw_estimated')); // i prezzi 1/1 e 31/12 per il prospetto RW sono stimati con quelli noti: non bloccano
@@ -37,7 +39,7 @@ test('analyze: risoluzioni, prezzi inseriti e operazioni manuali', () => {
 });
 
 test('esportazioni: CSV italiano, riepilogo, report HTML e diagnostica senza importi', () => {
-  const r = CT.analyze({ files: files(), settings: { year: 2025 } });
+  const r = CT.analyze({ files: files(), settings: { year: 2025, swapRule: 'all' } });
   const csv = CT.report.csv(CT.report.DISPOSAL_HEAD, CT.report.disposalsRows(r));
   assert.ok(csv.startsWith('﻿Data;Conto;Asset'));
   assert.ok(csv.includes('200,00'));

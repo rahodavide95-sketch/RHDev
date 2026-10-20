@@ -7,15 +7,18 @@
   const D = (x) => (x instanceof Decimal ? x : new Decimal(x));
   const ZERO = new Decimal(0);
 
-  const FIAT = new Set(['EUR', 'USD', 'GBP', 'CHF', 'JPY', 'AUD', 'CAD', 'SEK', 'NOK', 'DKK', 'PLN', 'CZK', 'HUF', 'TRY', 'BRL']);
+  const FIAT = new Set(['EUR', 'USD', 'GBP', 'CHF', 'JPY', 'AUD', 'CAD', 'SEK', 'NOK', 'DKK', 'PLN', 'CZK', 'HUF', 'TRY', 'BRL', 'RON', 'BGN', 'NZD', 'SGD', 'HKD', 'ZAR', 'MXN', 'INR', 'KRW', 'ILS', 'AED']);
   const METAL_SYMBOLS = new Set(['XAU', 'XAG', 'XPT', 'XPD', 'GOLD', 'SILVER', 'PLATINUM', 'PALLADIUM']);
   const METAL_ALIASES = { GOLD: 'XAU', SILVER: 'XAG', PLATINUM: 'XPT', PALLADIUM: 'XPD' };
-  const STABLE = new Set(['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'EURC', 'EURT', 'PYUSD', 'FDUSD', 'USDD']);
+  // Stablecoin ancorate a una valuta: nelle permute sono trattate come e-money token (Circ. AdE 30/E/2023), quindi lo scambio con una
+  // cripto e' un realizzo. Lista indicativa: un token che manca viene trattato come cripto qualsiasi.
+  const STABLE = new Set(['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'EURC', 'EUROC', 'EURT', 'PYUSD', 'FDUSD', 'USDD', 'USDS', 'USDE', 'RLUSD', 'USD1', 'GUSD', 'LUSD', 'FRAX', 'USDG',
+    'EURCV', 'EURI', 'EURQ', 'EURR', 'EURE', 'AEUR']);
   // E-money token in euro conformi a MiCA: dal 2026 restano al 26% (lista indicativa, da verificare)
-  const EMT_EUR = new Set(['EURC', 'EURCV', 'EURI', 'EURQ', 'EURR']);
+  const EMT_EUR = new Set(['EURC', 'EUROC', 'EURCV', 'EURI', 'EURQ', 'EURR', 'EURE']);
 
   const Kind = Object.freeze({
-    BUY: 'buy', SELL: 'sell', SWAP: 'swap', INCOME: 'income', SPEND: 'spend',
+    BUY: 'buy', SELL: 'sell', SWAP: 'swap', INCOME: 'income', INCOME_REVERSAL: 'income_reversal', SPEND: 'spend',
     TRANSFER_OUT: 'transfer_out', TRANSFER_IN: 'transfer_in', FEE: 'fee',
     FIAT_IN: 'fiat_in', FIAT_OUT: 'fiat_out', INFO: 'info', UNRESOLVED: 'unresolved',
   });

@@ -73,17 +73,33 @@ const CONV_IN = '2024-09-04 12:00:00,Balance Conversion,POL,100,,,EUR,50,55,cryp
 const SELL_POL = '2025-03-01 10:00:00,Sold POL,POL,-100,EUR,80,EUR,80,88,crypto_viban_exchange,';
 let seq = 0;   // la cache di lettura e' per id e lunghezza: ogni prova usa un id nuovo
 const conversionFiles = (rows) => [file('conv' + (++seq), 'cripto.csv', rows)];
+// la domanda "aggiornamento o scambio?" esiste solo con il criterio "ogni permuta e' imponibile": con quello della Circ. 30/E
+// (predefinito) una conversione tra due cripto non e' mai un realizzo
+const ALL = { year: 2025, swapRule: 'all' };
+
+test('Circ. 30/E (predefinito): la conversione MATIC -> POL non e\' un realizzo e non serve chiedere', () => {
+  const r = CT.analyze({ files: conversionFiles([BUY_MATIC, CONV_OUT, CONV_IN, SELL_POL]), settings: { year: 2025 } });
+  assert.equal(r.groups.conversions.length, 0);
+  assert.equal(r.groups.blockCount, 0, JSON.stringify(r.engine.issues.filter((i) => i.level === 'block')));
+  assert.equal(String(r.years[2024].crypto.losses), '0');
+  assert.equal(String(r.y.crypto.gains.minus(r.y.crypto.losses)), '-20');   // 80 - 100 (costo dei MATIC)
+  // una scelta salvata in passato non conta piu' ed e' segnata come superata
+  const key = CT.analyze({ files: conversionFiles([BUY_MATIC, CONV_OUT, CONV_IN, SELL_POL]), settings: ALL }).groups.conversions[0].uid;
+  const old = CT.analyze({ files: conversionFiles([BUY_MATIC, CONV_OUT, CONV_IN, SELL_POL]), resolutions: { [key]: { action: 'swap' } }, settings: { year: 2025 } });
+  assert.equal(String(old.y.crypto.gains.minus(old.y.crypto.losses)), '-20');
+  assert.ok(old.engine.obsolete.has(key));
+});
 
 test('conversione di saldo: si chiede cosa sia, non si ignora', () => {
-  const r = CT.analyze({ files: conversionFiles([BUY_MATIC, CONV_OUT, CONV_IN, SELL_POL]), settings: { year: 2025 } });
+  const r = CT.analyze({ files: conversionFiles([BUY_MATIC, CONV_OUT, CONV_IN, SELL_POL]), settings: ALL });
   assert.equal(r.groups.conversions.length, 1);
   assert.match(r.groups.conversions[0].message, /MATIC.*POL/);
   assert.equal(r.groups.unknown.size, 0);
 });
 
 test('conversione come aggiornamento del token: nessuna vendita, il costo passa al nuovo token', () => {
-  const key = CT.analyze({ files: conversionFiles([BUY_MATIC, CONV_OUT, CONV_IN, SELL_POL]), settings: { year: 2025 } }).groups.conversions[0].uid;
-  const r = CT.analyze({ files: conversionFiles([BUY_MATIC, CONV_OUT, CONV_IN, SELL_POL]), resolutions: { [key]: { action: 'migration' } }, settings: { year: 2025 } });
+  const key = CT.analyze({ files: conversionFiles([BUY_MATIC, CONV_OUT, CONV_IN, SELL_POL]), settings: ALL }).groups.conversions[0].uid;
+  const r = CT.analyze({ files: conversionFiles([BUY_MATIC, CONV_OUT, CONV_IN, SELL_POL]), resolutions: { [key]: { action: 'migration' } }, settings: ALL });
   assert.equal(r.groups.conversions.length, 0);
   assert.equal(r.groups.history.length, 0);
   assert.equal(String(r.y.crypto.gains.minus(r.y.crypto.losses)), '-20');   // 80 incassati - 100 di costo (trasferito da MATIC)
@@ -93,8 +109,8 @@ test('conversione come aggiornamento del token: nessuna vendita, il costo passa 
 });
 
 test('conversione come scambio imponibile: la vendita avviene alla data della conversione', () => {
-  const key = CT.analyze({ files: conversionFiles([BUY_MATIC, CONV_OUT, CONV_IN, SELL_POL]), settings: { year: 2025 } }).groups.conversions[0].uid;
-  const r = CT.analyze({ files: conversionFiles([BUY_MATIC, CONV_OUT, CONV_IN, SELL_POL]), resolutions: { [key]: { action: 'swap' } }, settings: { year: 2025 } });
+  const key = CT.analyze({ files: conversionFiles([BUY_MATIC, CONV_OUT, CONV_IN, SELL_POL]), settings: ALL }).groups.conversions[0].uid;
+  const r = CT.analyze({ files: conversionFiles([BUY_MATIC, CONV_OUT, CONV_IN, SELL_POL]), resolutions: { [key]: { action: 'swap' } }, settings: ALL });
   assert.equal(r.groups.conversions.length, 0);
   assert.equal(String(r.years[2024].crypto.losses), '50');     // 50 incassati - 100 di costo
   assert.equal(String(r.y.crypto.gains), '30');                // POL costa 50, venduto a 80
@@ -111,11 +127,11 @@ test('conversione prima del 2023 o senza riga opposta', () => {
 
 test('conversione di saldo con righe a un secondo di distanza si abbina; due coppie vicine non si indovinano', () => {
   const near = [BUY_MATIC, CONV_OUT, CONV_IN.replace('12:00:00', '12:00:01'), SELL_POL];
-  const r = CT.analyze({ files: conversionFiles(near), settings: { year: 2025 } });
+  const r = CT.analyze({ files: conversionFiles(near), settings: ALL });
   assert.equal(r.groups.conversions.length, 1);
   assert.equal(r.groups.unknown.size, 0);
   const two = [BUY_MATIC, CONV_OUT, CONV_OUT.replace('MATIC,-100', 'ATOM,-3'), CONV_IN, CONV_IN.replace('POL,100', 'XYZ,3'), SELL_POL];
-  const r2 = CT.analyze({ files: conversionFiles(two), settings: { year: 2025 } });
+  const r2 = CT.analyze({ files: conversionFiles(two), settings: ALL });
   assert.equal(r2.groups.conversions.length, 0);
   assert.ok(r2.groups.unknown.size >= 1, 'abbinamento ambiguo: righe da controllare');
 });
@@ -154,7 +170,7 @@ test('due righe identiche in ciascuno di due file: se sono le stesse ne restano 
 test('conversione divisa in piu\' righe nello stesso istante: si sommano', () => {
   const rows = [BUY_MATIC, CONV_OUT.replace('-100', '-60').replace(',50,55', ',30,33'), CONV_OUT.replace('-100', '-40').replace(',50,55', ',20,22'),
     CONV_IN.replace('POL,100', 'POL,60').replace(',50,55', ',30,33'), CONV_IN.replace('POL,100', 'POL,40').replace(',50,55', ',20,22'), SELL_POL];
-  const r = CT.analyze({ files: conversionFiles(rows), settings: { year: 2025 } });
+  const r = CT.analyze({ files: conversionFiles(rows), settings: ALL });
   assert.equal(r.groups.unknown.size, 0);
   assert.equal(r.groups.conversions.length, 1);
   assert.match(r.groups.conversions[0].message, /100 MATIC → 100 POL/);
@@ -163,17 +179,17 @@ test('conversione divisa in piu\' righe nello stesso istante: si sommano', () =>
 test('conversione con storico mancante: scelta e costo del mancante non si sovrascrivono', () => {
   const rows = [CONV_OUT, CONV_IN, SELL_POL];   // nessun acquisto di MATIC nei file
   let res = {};
-  let r = CT.analyze({ files: conversionFiles(rows), resolutions: res, settings: { year: 2025 } });
+  let r = CT.analyze({ files: conversionFiles(rows), resolutions: res, settings: ALL });
   const convKey = r.groups.conversions[0].uid;
   assert.ok(convKey.startsWith('conv:'));
   assert.equal(r.groups.history.length, 1, 'finche\' non si sceglie, si tratta come scambio e manca il costo');
   res = { [convKey]: { action: 'migration' } };
-  r = CT.analyze({ files: conversionFiles(rows), resolutions: res, settings: { year: 2025 } });
+  r = CT.analyze({ files: conversionFiles(rows), resolutions: res, settings: ALL });
   assert.equal(r.groups.conversions.length, 0);
   assert.equal(r.groups.history.length, 1);
   const evUid = convKey.slice(5);
   res = { ...res, [evUid]: { action: 'cover_cost', cost_eur: '100' } };
-  r = CT.analyze({ files: conversionFiles(rows), resolutions: res, settings: { year: 2025 } });
+  r = CT.analyze({ files: conversionFiles(rows), resolutions: res, settings: ALL });
   assert.equal(r.groups.history.length, 0);
   assert.equal(r.groups.conversions.length, 0);
   assert.equal(String(r.y.crypto.gains.minus(r.y.crypto.losses)), '-20');
@@ -181,12 +197,12 @@ test('conversione con storico mancante: scelta e costo del mancante non si sovra
 
 test('conversione senza valore in euro: con "aggiornamento" non si chiede un prezzo, con "scambio" si', () => {
   const noVal = [BUY_MATIC, CONV_OUT.replace(',50,55,', ',0,0,'), CONV_IN.replace(',50,55,', ',0,0,'), SELL_POL];
-  let r = CT.analyze({ files: conversionFiles(noVal), settings: { year: 2025 } });
+  let r = CT.analyze({ files: conversionFiles(noVal), settings: ALL });
   const k = r.groups.conversions[0].uid;
-  r = CT.analyze({ files: conversionFiles(noVal), resolutions: { [k]: { action: 'migration' } }, settings: { year: 2025 } });
+  r = CT.analyze({ files: conversionFiles(noVal), resolutions: { [k]: { action: 'migration' } }, settings: ALL });
   assert.equal(r.engine.issues.filter((i) => i.code === 'missing_value').length, 0);
   assert.equal(String(r.y.crypto.gains.minus(r.y.crypto.losses)), '-20');
-  r = CT.analyze({ files: conversionFiles(noVal), resolutions: { [k]: { action: 'swap' } }, settings: { year: 2025 } });
+  r = CT.analyze({ files: conversionFiles(noVal), resolutions: { [k]: { action: 'swap' } }, settings: ALL });
   assert.ok(r.engine.issues.some((i) => i.code === 'missing_value'), 'un realizzo senza valore non e\' un realizzo da zero');
 });
 
@@ -200,4 +216,31 @@ test('"non ho altri file: costo 0": il mancante si calcola a costo zero e resta 
   assert.equal(r.groups.history.length, 0);
   assert.equal(String(r.y.crypto.gains), '80');      // tutto l'incasso e' guadagno
   assert.ok(r.engine.disposals.some((d) => d.uses.some((u) => u.documented === false)), 'costo segnato come non documentato');
+});
+
+test('Crypto.com App: storno del cashback (card_cashback_reverted) riduce i proventi invece di essere una vendita', () => {
+  const rows = ['2025-03-01 10:00:00,Card Cashback,CRO,100,,,EUR,10,11,referral_card_cashback,', '2025-03-20 10:00:00,Card Cashback Reversal,CRO,-100,,,EUR,8,9,card_cashback_reverted,'];
+  const r = CT.analyze({ files: [file('rev' + (++seq), 'c.csv', rows)], settings: { year: 2025 } });
+  assert.equal(r.groups.unknown.size, 0);
+  assert.equal(r.engine.disposals.length, 0);
+  assert.equal(String(r.y.crypto.income), '2');
+});
+
+test('Crypto.com App: conversione dei piccoli saldi in CRO = scambi tra cripto (non tassati con la Circ. 30/E), CRO con il costo dei saldi', () => {
+  const rows = [
+    '2025-01-10 10:00:00,Buy ADA,EUR,-10,ADA,20,EUR,10,11,viban_purchase,',
+    '2025-01-10 10:00:00,Buy DOT,EUR,-6,DOT,1,EUR,6,7,viban_purchase,',
+    '2025-05-01 08:00:00,Dust conversion,ADA,-20,,,EUR,3,3.3,dust_conversion_debited,',
+    '2025-05-01 08:00:00,Dust conversion,DOT,-1,,,EUR,1,1.1,dust_conversion_debited,',
+    '2025-05-01 08:00:01,Dust conversion,CRO,40,,,EUR,4,4.4,dust_conversion_credited,',
+    '2025-06-01 10:00:00,Sell CRO,CRO,-40,EUR,5,EUR,5,5.5,crypto_viban_exchange,',
+  ];
+  const parsed = CT.importers.TYPES.cryptocom_app.parse(HEAD + rows.join('\n') + '\n', 'c.csv');
+  const sw = parsed.events.filter((e) => e.kind === CT.Kind.SWAP);
+  assert.deepEqual(sw.map((e) => [e.asset, e.counterAsset, e.counterQty.toFixed()]), [['ADA', 'CRO', '30'], ['DOT', 'CRO', '10']]);   // 40 CRO ripartiti 3:1
+  assert.equal(parsed.events.filter((e) => e.kind === CT.Kind.INFO).length, 1);
+  const r = CT.analyze({ files: [file('dust' + (++seq), 'c.csv', rows)], settings: { year: 2025 } });
+  assert.deepEqual(r.engine.disposals.map((d) => [d.asset, d.gain.toString()]), [['CRO', '-11']]);   // 5 incassati - 16 (10 + 6)
+  const all = CT.analyze({ files: [file('dust' + (++seq), 'c.csv', rows)], settings: ALL });
+  assert.deepEqual(all.engine.disposals.map((d) => [d.asset, d.gain.toString()]), [['ADA', '-7'], ['DOT', '-5'], ['CRO', '1']]);
 });

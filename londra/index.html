@@ -8,7 +8,7 @@
 <meta name="description" content="Itinerario di Londra per 3 persone, 4–9 dicembre 2026: base a Camden, The Shard al tramonto, Sky Garden al mattino, Natale, trasporti, meteo live e budget.">
 <script>
   // tema salvato applicato prima del disegno (niente lampo di colore)
-  try { if (localStorage.getItem('ldn-theme') === 'light') document.documentElement.setAttribute('data-theme', 'light'); } catch (e) {}
+  try { var t = localStorage.getItem('ldn-theme'); if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
 </script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap');
@@ -36,6 +36,7 @@
     --northern: #e6e9ef;
     --northern-ink: #0d1017;
     --shadow: 0 2px 14px rgba(0,0,0,0.45);
+    color-scheme: dark;
 
     /* HERO */
     --h-sky0: #05070f; --h-sky1: #0a1024; --h-sky2: #141a3a; --h-sky3: #2a2046; --h-sky4: #4a2a3c;
@@ -69,6 +70,7 @@
     --northern: #111111;
     --northern-ink: #ffffff;
     --shadow: 0 2px 12px rgba(40,30,10,0.12);
+    color-scheme: light;
 
     /* HERO — crepuscolo d'inverno (le 15:53, tramonto) */
     --h-sky0: #5b6f9e; --h-sky1: #8a8fb8; --h-sky2: #c99bb0; --h-sky3: #f0b28f; --h-sky4: #ffd9a0;
@@ -84,6 +86,7 @@
   html { scroll-behavior: smooth; scroll-padding-top: 64px; }
   @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 
+  body::before { content: ''; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 1001; background: var(--surface); }
   body {
     background: var(--bg);
     color: var(--text);
@@ -239,7 +242,7 @@
     padding: 12px 20px;
     display: flex; gap: 8px; overflow-x: auto;
     border-bottom: 1px solid var(--divider);
-    position: sticky; top: 0; z-index: 1000;
+    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 1000;
     scrollbar-width: none;
   }
   .day-nav::-webkit-scrollbar { height: 0; }
@@ -256,7 +259,7 @@
   .day-pill.today { box-shadow: 0 0 0 2px var(--gold) inset; }
 
   .theme-fixed {
-    position: absolute; top: 10px; right: 10px; z-index: 50;
+    position: absolute; top: calc(10px + env(safe-area-inset-top, 0px)); right: calc(10px + env(safe-area-inset-right, 0px)); z-index: 50;
     width: 40px; height: 40px;
     display: flex; align-items: center; justify-content: center; line-height: 0;
     background: var(--card); border: 1px solid var(--divider); border-radius: 50%;
@@ -812,7 +815,7 @@
 <div class="tools-bar">
   <span class="tb-info">✓ fatto · ★ top · ? da valutare · 📝 nota — tutto salvato su questo dispositivo</span>
   <button class="tb-btn primary" id="tb-today" type="button">📍 Oggi</button>
-  <button class="tb-btn" id="tb-share" type="button">📤 Condividi valutazioni</button>
+  <a class="tb-btn" id="tb-share" href="https://wa.me/" target="_blank" rel="noopener" style="text-decoration:none">📤 Condividi valutazioni</a>
   <button class="tb-btn" id="tb-export" type="button">⬇ Esporta note</button>
   <button class="tb-btn" id="tb-reset" type="button">↺ Azzera</button>
 </div>
@@ -2316,7 +2319,7 @@
     <div class="eval-counts" id="eval-counts"></div>
     <div class="eval-list" id="eval-list"></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
-      <button class="tb-btn primary" id="ev-share" type="button">📤 Condividi (WhatsApp)</button>
+      <a class="tb-btn primary" id="ev-share" href="https://wa.me/" target="_blank" rel="noopener" style="text-decoration:none">📤 Condividi (WhatsApp)</a>
       <button class="tb-btn" id="ev-copy" type="button">📋 Copia testo</button>
     </div>
   </div>
@@ -2378,11 +2381,11 @@
   function mancano(n) { return n === 1 ? 'Manca <strong>1 giorno</strong>' : 'Mancano <strong>' + n + ' giorni</strong>'; }
 
   // ── tema ──
-  function isLight() { return document.documentElement.getAttribute('data-theme') === 'light'; }
+  function isLight() { return getComputedStyle(document.documentElement).getPropertyValue('--bg').trim().toLowerCase() === '#f4f1ea'; }
   function syncThemeColor() { var m = $('meta[name="theme-color"]'); if (m) m.setAttribute('content', isLight() ? '#f4f1ea' : '#0d1017'); }
   syncThemeColor();
   $('#theme-btn').addEventListener('click', function () {
-    if (isLight()) { document.documentElement.removeAttribute('data-theme'); try { localStorage.setItem('ldn-theme', 'dark'); } catch (e) {} }
+    if (isLight()) { document.documentElement.setAttribute('data-theme', 'dark'); try { localStorage.setItem('ldn-theme', 'dark'); } catch (e) {} }
     else { document.documentElement.setAttribute('data-theme', 'light'); try { localStorage.setItem('ldn-theme', 'light'); } catch (e) {} }
     syncThemeColor();
     document.dispatchEvent(new CustomEvent('ldn-theme'));
@@ -2501,7 +2504,7 @@
         renderNow(c.j.current, 'dato del ' + stamp);
         renderForecast(c.j.daily, stamp + ' (ultima lettura salvata)');
       } else {
-        $('#wx-now-desc').textContent = 'Meteo in diretta non raggiungibile (connessione assente?). Riprova più tardi.';
+        $('#wx-now-desc').textContent = 'Meteo in diretta non disponibile qui (connessione assente o anteprima). Sul sito si aggiorna da solo.';
         $('#ldn-now').textContent = 'offline';
         renderForecast(null);
         var n = daysToGo();
@@ -2684,6 +2687,7 @@
     group('? Da valutare', 'var(--purple)', lists.doubt);
     group('📝 Note', 'var(--sky)', lists.note);
     $('#eval-list').innerHTML = html || '<p class="eval-empty">Ancora niente: nell\'itinerario toccate ★ Top o ? Da valutare sulle tappe, poi tornate qui.</p>';
+    if (typeof updateShareLinks === 'function' && ITEMS.length) updateShareLinks();
   }
   renderEval();
 
@@ -2697,26 +2701,21 @@
     if (/^https?:/.test(location.href)) out += '\n' + location.href.split('#')[0];
     return out;
   }
-  function share() {
-    var text = shareText();
-    if (navigator.share && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
-      navigator.share({ title: 'Londra — valutazioni', text: text }).catch(function () {});
-    } else {
-      window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank', 'noopener');
-    }
+  function updateShareLinks() {
+    var href = 'https://wa.me/?text=' + encodeURIComponent(shareText());
+    ['#tb-share', '#ev-share'].forEach(function (sel) { var a = $(sel); if (a) a.setAttribute('href', href); });
   }
-  function copyText(text) {
+  function copyText(text, okMsg) {
     function fallback() {
       var ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
       document.body.appendChild(ta); ta.select();
-      try { document.execCommand('copy'); toast('Copiato negli appunti'); } catch (e) { toast('Copia non riuscita'); }
+      try { document.execCommand('copy'); toast(okMsg || 'Copiato negli appunti'); } catch (e) { toast('Copia non riuscita: seleziona il testo a mano'); }
       ta.remove();
     }
-    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function () { toast('Copiato negli appunti'); }, fallback);
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function () { toast(okMsg || 'Copiato negli appunti'); }, fallback);
     else fallback();
   }
-  $('#tb-share').addEventListener('click', share);
-  $('#ev-share').addEventListener('click', share);
+  updateShareLinks();
   $('#ev-copy').addEventListener('click', function () { copyText(shareText()); });
 
   $('#tb-export').addEventListener('click', function () {
@@ -2729,14 +2728,21 @@
       lines.push(flags + '  ' + it.time.trim() + ' — ' + it.title);
       if (s.note && s.note.trim()) lines.push('     📝 ' + s.note.trim().replace(/\n/g, '\n        '));
     });
+    copyText(lines.join('\n'), 'Note copiate negli appunti');
     var blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob); a.download = 'londra-note.txt';
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
   });
+  var resetArmed = 0;
   $('#tb-reset').addEventListener('click', function () {
-    if (!confirm('Azzerare spunte, valutazioni e note di questo dispositivo?')) return;
+    var b = $('#tb-reset');
+    if (Date.now() - resetArmed > 4000) {
+      resetArmed = Date.now(); b.textContent = '⚠ Tocca ancora per azzerare';
+      setTimeout(function () { if (Date.now() - resetArmed >= 4000) b.textContent = '↺ Azzera'; }, 4100);
+      return;
+    }
     state = {}; lsSet(STORE, state);
     try { localStorage.removeItem('ldn-book'); } catch (e) {}
     location.reload();
@@ -2751,7 +2757,7 @@
     }
     $('#tb-today').addEventListener('click', function () {
       var k = tripDayIndex();
-      if (k >= 0) { location.hash = '#g' + (k + 1); return; }
+      if (k >= 0) { var el = document.getElementById('g' + (k + 1)); if (el) el.scrollIntoView({ behavior: 'smooth' }); return; }
       var n = daysToGo();
       toast(n > 0 ? mancano(n).replace(/<\/?strong>/g, '') + ' alla partenza: dal 4 al 9 dicembre questo tasto vi porta al giorno giusto.' : 'Il viaggio è finito: bentornati!');
     });

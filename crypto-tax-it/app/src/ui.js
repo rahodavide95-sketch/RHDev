@@ -845,35 +845,14 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
 
   function othersResult(c, Y) {
     if (!c.any) return [];
-    const eu = (x) => money(x);
-    const rows = [];
-    if (c.altri.gt(0)) rows.push(['RC1 col. 3', 'Reddito di lavoro dipendente o pensione (col. 1: codice 2 lavoro dipendente, 3 pensione)', eu(c.altri)], ['RC6 col. 1', 'Giorni di lavoro dipendente', String(c.days)]);
-    if (c.ritCU) rows.push(['RC10 col. 1', 'Ritenute IRPEF della CU', eu(c.ritCU)]);
-    if (c.occ.length) rows.push(['RL15 col. 1', 'Compensi lordi da lavoro occasionale', eu(c.occLordo)], ['RL15 col. 2', 'Spese documentate e inerenti', eu(c.occSpese)], ['Ritenute sez. II-A', 'Ritenute subite sui compensi occasionali', eu(c.occRit)]);
-    if (c.dir.length) rows.push(['RL25', 'Proventi lordi da diritti d\'autore', eu(c.dirLordo)], ['Riepilogo sez. III', `Deduzione forfettaria ${c.dedRate.times(100).toFixed(0)}% (la calcola il software)`, eu(c.dirDed)], ['Ritenute sez. III', 'Ritenute subite sui diritti d\'autore', eu(c.dirRit)]);
-    if (c.sanTot.gt(0)) rows.push(['RP1', 'Spese sanitarie', eu(c.sanTot)]);
-    if (c.altreDetr.gt(0)) rows.push(['Quadro RP', 'Altre detrazioni (sezioni I e III)', eu(c.altreDetr)]);
-    if (c.ded.gt(0)) rows.push(['Quadro RP sez. II', 'Oneri deducibili', eu(c.ded)]);
-    const F = c.full, B = c.base;
-    const est = [
-      ['Reddito complessivo', eu(F.RC)],
-      c.ded.gt(0) ? ['Reddito imponibile (dopo gli oneri deducibili)', eu(F.imp)] : null,
-      ['IRPEF lorda (23% / 35% / 43%)', eu(F.lorda)],
-      F.detLav.gt(0) ? ['Detrazione per lavoro dipendente', `− ${eu(F.detLav)}`] : null,
-      F.detCuneo.gt(0) ? ['Ulteriore detrazione «taglio del cuneo»', `− ${eu(F.detCuneo)}`] : null,
-      F.detAut.gt(0) ? ['Detrazione per redditi di lavoro autonomo e occasionali', `− ${eu(F.detAut)}`] : null,
-      c.det19.gt(0) ? ['Detrazioni per spese (sanitarie e altre)', `− ${eu(c.det19)}`] : null,
-      ['IRPEF netta dell\'anno', eu(F.netta)],
-      c.mode === 'differenza' ? ['Già trattenuta in busta paga (IRPEF calcolata dal datore sul solo stipendio)', `− ${eu(B.netta)}`] : c.ritCU ? ['Ritenute IRPEF della CU', `− ${eu(c.ritCU)}`] : null,
-      c.ritenute.gt(0) ? ['Ritenute su serate e diritti d\'autore', `− ${eu(c.ritenute)}`] : null,
-      c.lostBonus.gt(0) ? ['Bonus in busta paga da restituire (somma esente del cuneo o trattamento integrativo)', `+ ${eu(c.lostBonus)}`] : null,
-      c.irpefDue.gt(0) ? ['IRPEF da versare (stima)', eu(c.irpefDue)] : ['IRPEF a credito (stima: rimborso o compensazione)', eu(c.irpefCredit)],
-      c.addiz.gt(0) ? ['Addizionali regionale e comunale sulla parte in più (stima)', eu(c.addiz)] : null,
-    ].filter(Boolean);
+    const eu = (x) => (typeof x === 'string' ? x : money(x));
+    const sg = (x) => (x.lt(0) ? `− ${money(x.neg())}` : money(x));
+    const rows = CT.others.where(c);
+    const est = CT.others.steps(c).map(([a, v]) => [a, sg(v)]);
     return [h('div', { class: 'card tone-good' },
       h('h2', null, 'Dove scriverlo nel modello Redditi PF ' + (Y + 1)),
       h('div', { class: 'tbl-wrap' }, h('table', null, h('thead', null, h('tr', null, h('th', null, 'Rigo'), h('th', null, 'Cosa'), h('th', { class: 'num' }, 'Importo'))),
-        h('tbody', null, rows.map(([a, b, v]) => h('tr', null, h('td', null, h('span', { class: 'code' }, a)), h('td', null, b), h('td', { class: 'num' }, v)))))),
+        h('tbody', null, rows.map(([a, b, v]) => h('tr', null, h('td', null, h('span', { class: 'code' }, a)), h('td', null, b), h('td', { class: 'num' }, eu(v))))))),
       h('h3', null, 'Quanto pagherai in più (stima)'),
       kvTable(est.map(([label, value], i) => ({ label, value, cls: i === est.length - 1 || /da versare|a credito/.test(label) ? 'total' : null }))),
       h('p', { class: 'small muted' }, `È una stima con le regole del 2025: l'IRPEF esatta dipende da tutti i tuoi redditi e detrazioni, dalle addizionali del tuo Comune e da cosa ha fatto il datore di lavoro a conguaglio. La calcola il software della dichiarazione (precompilata). Non sono considerati: familiari a carico, redditi di immobili, trattamento integrativo tra 15.000 e 28.000 €. Le voci da pagare (codici 4001, 3801, 3844 e acconti 4033/4034) compaiono anche nel Risultato, nella parte «Altri redditi».`),
@@ -949,7 +928,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
   function payCard(res) {
     const p = payPlan(res), Y = res.year, dl = p.deadlines;
     const blk = res.groups.blockCount, asm = res.groups.assumptionCount;
-    const later = p.items.filter((i) => !p.now.includes(i));
+    const later = p.items.filter((i) => !p.now.includes(i) && !i.credit);
     const laterSum = later.reduce((s, i) => s.plus(i.payAmount), CT.ZERO);
     const answer = p.payNow.gt(0) ? 'Sì, devi pagare circa' : laterSum.gt(0) ? 'Adesso no: c\'è solo un acconto più avanti' : 'No, non devi pagare niente';
     const GROUPS = [['inv', 'Investimenti: cripto, oro e altri'], ['other', 'Altri redditi: stipendio, musica, detrazioni (stima)']];
@@ -1004,7 +983,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     if (quadri.length) steps.push(h('li', null, h('strong', null, `Dichiarazione: modello Redditi PF ${Y + 1} entro il ${dmy(dl.filing)}. `), `Vanno compilati: ${quadri.join(', ')}. Il modo più semplice: la precompilata sul sito dell'Agenzia delle Entrate (con SPID), dove stipendio, CU e spese sanitarie ci sono già; aggiungi il resto con i numeri di questo programma. `, p.m730Passed ? `Il 730 si poteva presentare fino al ${dmy(dl.m730)}: adesso si usa il Redditi PF.` : 'Con il 730 si usano invece il quadro T e il quadro W.',
       p.filingLate ? h('div', { class: 'small', style: 'color:var(--bad)' }, `La scadenza del ${dmy(dl.filing)} è passata: entro 90 giorni si può ancora presentare (dichiarazione tardiva, sanzione ridotta). Chiedi subito al commercialista.`) : null));
     if (p.now.length) steps.push(h('li', null, h('strong', null, `Paga con l'F24${p.now.some((i) => i.late) ? ' appena puoi' : ` entro il ${dmy(dl.saldo)}`}: `), p.now.map((i) => `${money(i.payAmount)} (codice ${i.code})`).join(' + '), p.now.some((i) => i.late) ? '. Il commercialista aggiunge sanzione e interessi con i codici del ravvedimento.' : '.'));
-    const later = p.items.filter((i) => !p.now.includes(i));
+    const later = p.items.filter((i) => !p.now.includes(i) && !i.credit);
     for (const i of later) steps.push(h('li', null, h('strong', null, `Entro il ${dmy(i.due)}: `), `${i.title}, ${money(i.amount)} (codice ${i.code}).`));
     if (res.y.crypto.newLoss.gt(0)) steps.push(h('li', null, h('strong', null, 'Perdite: '), `nel ${Y} hai una minusvalenza di ${money(res.y.crypto.newLoss)}. Va scritta nel quadro RT: così potrai usarla per pagare meno tasse fino al ${Y + 4}.`));
     steps.push(h('li', null, h('strong', null, 'Conserva tutto: '), `export delle piattaforme, PDF e ricevute F24, almeno fino al 31/12/${Y + 6} (tempo entro cui l'Agenzia può controllare).`));
@@ -1023,6 +1002,11 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     ['F24', 'Il modulo per pagare le tasse (dalla banca, dalle Poste o online). Ogni imposta ha il suo codice tributo.'],
     ['Ravvedimento operoso', 'Il modo per pagare in ritardo spontaneamente: si aggiunge una sanzione ridotta (dal 3,125% se oltre 90 giorni) e gli interessi.'],
     ['Acconto', 'Un anticipo sulle tasse dell\'anno dopo. Per l\'IVCA si calcola su quella dell\'anno prima.'],
+    ['CU (Certificazione Unica)', 'Il riepilogo annuale che ti mandano datore di lavoro, SIAE, etichette o locali che ti pagano con ritenuta: dentro ci sono i redditi e le tasse già trattenute.'],
+    ['Prestazione occasionale', 'Un lavoro saltuario senza partita IVA (es. una serata da DJ): si dichiara nel quadro RL, rigo RL15.'],
+    ['Diritti d\'autore', 'Quello che incassi come autore di brani (SIAE, editori, etichette): si paga solo sul 75% (60% sotto i 35 anni). Quadro RL, rigo RL25.'],
+    ['Ritenuta d\'acconto', 'La parte (di solito il 20%) che chi ti paga trattiene e versa al fisco per te: in dichiarazione si toglie dalle tasse dovute.'],
+    ['Detrazione / deduzione', 'La detrazione si toglie dalle tasse (es. 19% delle spese mediche); la deduzione si toglie dal reddito prima di calcolare le tasse (es. fondo pensione).'],
   ];
   function glossaryCard() {
     return h('details', { class: 'card' }, h('summary', null, 'Parole difficili, spiegate in breve'),
@@ -1380,7 +1364,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
         files.push({ name: `export-originali/${name}`, data: enc(f.text) });
       }
       const zip = CT.zipStore(files);
-      await saveFile(`${Y}-cripto-per-il-commercialista.zip`, zip, 'application/zip');
+      await saveFile(`${Y}-dichiarazione-per-il-commercialista.zip`, zip, 'application/zip');
       ui.bundleDone = true;
     } catch (e) { console.error(e); toast('Non riesco a preparare il file: ' + e.message); }
     finally { ui.bundleBusy = false; render(); }
@@ -1394,6 +1378,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
         h('li', null, '📄 LEGGIMI: cosa pagare (codici F24, scadenze, ravvedimento) e i numeri da scrivere nei quadri RT e RW'),
         h('li', null, '📘 Il PDF con tutti i calcoli (vendite, costi, premi, saldi, fonti e scelte fatte)'),
         h('li', null, '📝 Il modulo del quadro RW già compilato (in rosso i campi da completare)'),
+        h('li', null, '💼 Stipendio, musica e spese della scheda «Altri redditi», con i righi e la stima dell\'IRPEF (nel LEGGIMI e nel PDF)'),
         h('li', null, '📊 Le tabelle per Excel e i file originali delle piattaforme che hai caricato')),
       blk ? h('p', { class: 'pill warn block' }, `Attenzione: ci sono ancora ${blk} ${blk === 1 ? 'punto' : 'punti'} da controllare. Puoi mandarlo lo stesso, ma è una bozza: meglio sistemarli prima (scheda Controlli).`) : null,
       h('div', { class: 'row' }, h('button', { class: 'btn primary', style: 'min-height:48px;font-size:16px', disabled: busy, onclick: () => downloadBundle(res) }, busy ? 'Sto preparando il file…' : 'Scarica tutto per il commercialista (.zip)')),

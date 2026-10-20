@@ -127,7 +127,7 @@
     p.doc.setFont('helvetica', 'bold').setFontSize(22).setTextColor(...INK);
     p.doc.text(safe('Fascicolo di supporto'), MX, p.y + 8); p.y += 11;
     p.doc.setFontSize(22).text(safe('alla dichiarazione dei redditi'), MX, p.y + 8); p.y += 14;
-    p.para(`Anno d'imposta ${Y} · Modello Redditi Persone Fisiche ${Y + 1} · Cripto-attività e oro/metalli preziosi`, { size: 11, color: MUTED, after: 4 });
+    p.para(`Anno d'imposta ${Y} · Modello Redditi Persone Fisiche ${Y + 1} · Investimenti (cripto-attività, oro e metalli) e altri redditi`, { size: 11, color: MUTED, after: 4 });
     const tp = state.taxpayer || {};
     p.table(['Contribuente', 'Codice fiscale'], [[tp.name || '(da compilare)', tp.cf || '(da compilare)']], { fontSize: 10 });
     if (meta.draft) p.box(`BOZZA: ci sono ${res.groups.blockCount} punti ancora da risolvere (vedi Allegato E). I numeri di questo fascicolo possono cambiare e non vanno usati per la dichiarazione.`, 'warn');
@@ -137,11 +137,13 @@
     if (pl) {
       p.h2('In breve: cosa pagare');
       const later = pl.items.filter((i) => !pl.now.includes(i));
-      const lines = pl.now.map((i) => [`${i.title}${i.late ? ' (scaduta: con ravvedimento, stima)' : ''}`, i.code, dmy(i.due), eur(i.payAmount)]);
+      const lines = pl.now.filter((i) => !i.credit).map((i) => [`${i.group === 'other' ? 'Altri redditi · ' : 'Investimenti · '}${i.title}${i.late ? ' (scaduta: con ravvedimento, stima)' : ''}`, i.code, dmy(i.due), eur(i.payAmount)]);
+      const cred = pl.items.find((i) => i.credit);
       if (lines.length) {
         p.table(['Cosa', 'Codice F24', 'Scadenza', 'Importo (€)'], lines, { num: [3], fontSize: 9, columnStyles: { 1: { cellWidth: 22 }, 2: { cellWidth: 24 }, 3: { cellWidth: 30 } }, foot: ['Da pagare adesso (F24, sezione Erario, anno di riferimento ' + Y + ')', '', '', eur(pl.payNow)] });
       } else p.box(pl.hasRW ? `Nessuna imposta da versare per il ${Y}. Va comunque compilato il quadro RW (monitoraggio delle cripto detenute).` : `Nessuna imposta da versare per il ${Y}.`, 'good');
-      if (later.length) p.para(`Più avanti: ${later.map((i) => `${i.title}, ${eur(i.amount)} € entro il ${dmy(i.due)} (codice ${i.code})`).join('; ')}.`, { size: 9 });
+      if (later.filter((i) => !i.credit).length) p.para(`Più avanti: ${later.filter((i) => !i.credit).map((i) => `${i.title}, ${eur(i.amount)} € entro il ${dmy(i.due)} (codice ${i.code})`).join('; ')}.`, { size: 9 });
+      if (cred) p.para(`${cred.title}: ${eur(cred.creditAmount)} €.`, { size: 9, color: GOOD, bold: true });
       if (pl.lateExtra.gt(0)) p.para(`La scadenza del ${dmy(pl.deadlines.saldo)} è passata: gli importi comprendono una stima di sanzione ridotta e interessi del ravvedimento operoso (${eur(pl.lateExtra)} €) calcolata al ${dmy(pl.payDay)}. Dettaglio nel documento 04.`, { size: 9, color: WARN, bold: true });
       p.para(`Dichiarazione: modello Redditi PF ${Y + 1} entro il ${dmy(pl.deadlines.filing)}${pl.hasRT || pl.hasRW ? `, con ${[pl.hasRT ? 'quadro RT' : null, pl.hasRW ? 'quadro RW' : null].filter(Boolean).join(' e ')}` : ''}.`, { size: 9 });
     }
@@ -249,11 +251,11 @@
     if (!pl.items.length) p.box(pl.hasRW ? 'Niente da versare. Il quadro RW va comunque compilato (monitoraggio).' : 'Niente da versare.', 'good');
     else {
       p.table(['Codice', 'Descrizione', 'Anno rif.', 'Scadenza', 'Imposta (€)', 'Sanzione e interessi (€)', 'Totale (€)'],
-        pl.items.map((i) => [i.code, i.title, String(i.advance ? Y + 1 : Y), dmy(i.due), eur(i.amount), i.ravv ? eur(i.ravv.sanction.plus(i.ravv.interest)) : '-', eur(i.payAmount)]),
+        pl.items.filter((i) => !i.credit).map((i) => [i.code, `${i.group === 'other' ? '[Altri redditi] ' : ''}${i.title}`, String(i.advance ? Y + 1 : Y), dmy(i.due), eur(i.amount), i.ravv ? eur(i.ravv.sanction.plus(i.ravv.interest)) : '-', eur(i.payAmount)]),
         { num: [4, 5, 6], fontSize: 8.5, foot: ['', 'Totale', '', '', eur(pl.items.reduce((s, i) => s.plus(i.amount), ZERO)), eur(pl.items.reduce((s, i) => s.plus(i.ravv ? i.ravv.sanction.plus(i.ravv.interest) : ZERO), ZERO)), eur(pl.grandTotal)] });
       p.para('Compilazione dell\'F24: sezione «Erario», colonna «importi a debito versati», un rigo per codice, «anno di riferimento» come in tabella (per gli acconti l\'anno a cui si riferiscono). L\'F24 si paga dall\'home banking, alla posta o in banca, oppure con i servizi online dell\'Agenzia delle Entrate.', { size: 9 });
     }
-    const late = pl.items.filter((i) => i.late);
+    const late = pl.items.filter((i) => i.late && i.ravv);
     if (late.length) {
       p.h2('Pagamento in ritardo: ravvedimento operoso (stima)');
       p.para(`Stima al ${dmy(pl.payDay)}. La sanzione per omesso versamento è il 25% (D.Lgs. 87/2024); con il ravvedimento si riduce in base al ritardo. Gli interessi si calcolano giorno per giorno al tasso legale (1,6% annuo dal 2026). Sanzione e interessi si versano con codici tributo propri, che indica il commercialista.`, { size: 9 });
@@ -267,6 +269,29 @@
       `Dichiarazione: modello Redditi PF ${Y + 1} da inviare entro il ${dmy(dl.filing)} (il 730 scadeva il ${dmy(dl.m730)}).`,
     ], { size: 9 });
     if (rwTot.gt(0) && !rwTot.eq(pl.ivca)) p.para(`Nota: l'IVCA calcolata attività per attività è ${eur(rwTot)} €; nel quadro RW si scrive arrotondata all'euro per ogni rigo (totale ${eur(pl.ivca)} €).`, { size: 8.5, color: MUTED });
+  }
+
+  /** Altri redditi e detrazioni inseriti a mano (stipendio, musica, spese): dove scriverli e stima dell'IRPEF. */
+  function othersSection(p, c) {
+    const oc = c.plan && c.plan.others;
+    const Y = c.res.year;
+    p.h1('Altri redditi e detrazioni');
+    if (!oc || !oc.any) { p.para('Nessun altro reddito o detrazione inserito nel programma (scheda «Altri redditi»).', { color: MUTED }); return; }
+    p.para(`Dati inseriti dall'utente per l'anno ${Y}: stipendio (Certificazione Unica), lavoro occasionale, diritti d'autore e royalties, spese. Righi del modello Redditi PF ${Y + 1}; la stima dell'IRPEF è indicativa (regole 2025): il calcolo esatto lo fa il software di compilazione.`, { color: MUTED, size: 9 });
+    p.h2('Dove scriverli');
+    p.table(['Rigo', 'Cosa', 'Importo (€)'], CT.others.where(oc).map(([a, b, v]) => [a, b, typeof v === 'string' ? v : eur(v)]), { num: [2], fontSize: 9, columnStyles: { 0: { cellWidth: 34 }, 2: { cellWidth: 30 } } });
+    if (oc.occ.length) { p.h2('Ricevute di lavoro occasionale'); p.table(['Chi ha pagato', 'Lordo (€)', 'Ritenuta (€)', 'Spese (€)'], oc.occ.map((r) => [r.chi || '-', eur(r.lordo), eur(r.rit), eur(r.spese)]), { num: [1, 2, 3], fontSize: 9 }); }
+    if (oc.dir.length) { p.h2(`Diritti d'autore e royalties (deduzione forfettaria ${oc.dedRate.times(100).toFixed(0)}%)`); p.table(['Da chi', 'Lordo (€)', 'Ritenuta (€)'], oc.dir.map((r) => [r.chi || '-', eur(r.lordo), eur(r.rit)]), { num: [1, 2], fontSize: 9 }); }
+    p.h2('Stima dell\'IRPEF');
+    const st = CT.others.steps(oc);
+    p.table(['Voce', 'Importo (€)'], st.map(([a, v]) => [a, v.lt(0) ? `-${eur(v.neg())}` : eur(v)]), { num: [1], boldRows: [st.length - 1], fontSize: 9, columnStyles: { 1: { cellWidth: 34 } } });
+    p.bullets([
+      'Lavoro occasionale: art. 67, c. 1, lett. l) TUIR, quadro RL rigo RL15 (Certificazione Unica con causale M).',
+      `Diritti d'autore: art. 53, c. 2, lett. b) TUIR, quadro RL sezione III rigo RL25, deduzione forfettaria del 25% (40% sotto i 35 anni); Certificazione Unica con causale B.`,
+      'Lavoro dipendente: quadro RC dai dati della Certificazione Unica. La stima confronta l\'IRPEF calcolata dal datore sul solo stipendio con quella complessiva: comprende la riduzione delle detrazioni e la restituzione dei bonus del «taglio del cuneo» quando il reddito supera le soglie.',
+      'Spese sanitarie: quadro RP rigo RP1, detrazione del 19% oltre 129,11 €, pagamento tracciabile salvo farmaci, dispositivi medici e strutture pubbliche o accreditate.',
+      'Non considerati: familiari a carico, redditi fondiari, crediti d\'imposta esteri, trattamento integrativo tra 15.000 e 28.000 €.',
+    ], { size: 8.5 });
   }
 
   function attCessioni(p, c) {
@@ -392,6 +417,7 @@
     { id: '02', file: '02-quadro-RT-oro-e-metalli', title: '02 · Prospetto quadro RT · Oro e metalli preziosi', orient: 'p', fn: rtSection('metal') },
     { id: '03', file: '03-quadro-RW', title: '03 · Prospetto quadro RW · Monitoraggio e IVCA', orient: 'l', fn: rwSection },
     { id: '04', file: '04-cosa-pagare-F24-e-scadenze', title: '04 · Cosa pagare: imposte, F24 e scadenze', orient: 'p', fn: paySection },
+    { id: '05', file: '05-altri-redditi-e-detrazioni', title: '05 · Altri redditi e detrazioni (stipendio, musica, spese)', orient: 'p', fn: othersSection },
     { id: 'A', file: 'A-elenco-cessioni', title: 'Allegato A · Elenco delle cessioni', orient: 'l', fn: attCessioni },
     { id: 'B', file: 'B-lotti-di-acquisto', title: 'Allegato B · Lotti di acquisto utilizzati', orient: 'l', fn: attBlotti },
     { id: 'C', file: 'C-proventi', title: 'Allegato C · Proventi', orient: 'l', fn: attProventi },

@@ -120,25 +120,27 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
     const e = (x) => num(x) + ' €';
     const L = [];
     const hr = () => L.push('-'.repeat(78));
-    L.push(`CRIPTO E ORO - ANNO D'IMPOSTA ${Y} (modello Redditi PF ${Y + 1})`);
+    L.push(`DICHIARAZIONE DEI REDDITI - ANNO D'IMPOSTA ${Y} (modello Redditi PF ${Y + 1}): investimenti e altri redditi`);
     L.push(`Contribuente: ${tp.name || '(da indicare)'}${tp.cf ? ' - CF ' + tp.cf : ''}`);
-    L.push(`Preparato il ${dmy(plan ? plan.payDay : '')} con il programma "Dichiarazione Crypto" (calcolo automatico da verificare).`);
+    L.push(`Preparato il ${dmy(plan ? plan.payDay : '')} con il programma "Dichiarazione Redditi" (calcolo automatico da verificare).`);
     L.push(res.groups.blockCount ? `STATO: BOZZA - ${res.groups.blockCount} punti ancora aperti (elencati in fondo): i numeri possono cambiare.` : res.groups.assumptionCount ? `STATO: completo, con ${res.groups.assumptionCount} ipotesi o scelte dell'utente (Allegato E del PDF).` : 'STATO: completo, nessun punto aperto.');
     hr();
     if (plan) {
       L.push('1. COSA PAGARE (modello F24, sezione Erario)');
       if (!plan.items.length) L.push(`   Nessuna imposta da versare per il ${Y}.`);
       for (const i of plan.items) {
+        if (i.credit) { L.push(`   - ${i.title}: ${e(i.creditAmount)}`); continue; }
         L.push(`   - Codice ${i.code}${i.codeCheck ? ' (da confermare)' : ''} - ${i.title}`);
         L.push(`     anno di riferimento ${i.advance ? Y + 1 : Y}, scadenza ${dmy(i.due)}: imposta ${e(i.amount)}${i.ravv ? ` + ${i.ravv.magg ? 'maggiorazione 0,40%' : 'sanzione e interessi (ravvedimento, stima)'} ${e(i.ravv.sanction.plus(i.ravv.interest))} = ${e(i.payAmount)}` : ''}`);
         if (i.ravv && !i.ravv.magg) L.push(`     ${i.ravv.days} giorni di ritardo, ${i.ravv.label}; sanzione ${e(i.ravv.sanction)}, interessi ${e(i.ravv.interest)}`);
       }
       L.push(`   DA PAGARE ADESSO: ${e(plan.payNow)} (stima al ${dmy(plan.payDay)})`);
-      const later = plan.items.filter((i) => !plan.now.includes(i));
+      const later = plan.items.filter((i) => !plan.now.includes(i) && !i.credit);
       if (later.length) L.push(`   PIU' AVANTI: ${later.map((i) => `${e(i.amount)} entro il ${dmy(i.due)} (codice ${i.code})`).join('; ')}`);
       L.push(`   Dichiarazione da inviare entro il ${dmy(plan.deadlines.filing)}.`);
       hr();
     }
+    L.push('INVESTIMENTI (cripto, oro, altri)');
     L.push(`2. QUADRO RT - sezione V-A, cripto-attivita' (${y.crypto.law})`);
     for (const [a, v] of basketLines(y.crypto).slice(1)) L.push(`   ${a}: ${v} €`);
     if (y.crypto.lossNotCarried.gt(0)) L.push(`   Minusvalenza non riportabile (non superiore a 2.000 €): ${e(y.crypto.lossNotCarried)}`);
@@ -156,12 +158,23 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
       if (plan) L.push(`   RW8: col.1 totale ${plan.ivca.toFixed(0)}${plan.ivcaAdvance !== null ? ` | col.4 acconti ${plan.ivcaAdvance.toFixed(0)}` : ' | col.4 acconti versati: DA INDICARE (0 se nessuno)'}`);
     } else L.push('   Nessuna cripto o oro detenuti nell\'anno.');
     hr();
-    L.push('4. SCELTE DI CALCOLO APPLICATE');
+    const oc = plan && plan.others && plan.others.any ? plan.others : null;
+    if (oc) {
+      L.push('4. ALTRI REDDITI E DETRAZIONI (inseriti a mano: stipendio, musica, spese) - dove scriverli');
+      for (const [rigo, cosa, v] of CT.others.where(oc)) L.push(`   ${rigo}: ${cosa} = ${typeof v === 'string' ? v : e(v)}`);
+      L.push('   Stima IRPEF (regole 2025):');
+      for (const [a, v] of CT.others.steps(oc)) L.push(`     ${a}: ${v.lt(0) ? '- ' + e(v.neg()) : e(v)}`);
+      if (oc.occ.length) for (const r of oc.occ) L.push(`   Ricevuta occasionale: ${r.chi || '(senza nome)'} - lordo ${e(r.lordo)}, ritenuta ${e(r.rit)}, spese ${e(r.spese)}`);
+      if (oc.dir.length) for (const r of oc.dir) L.push(`   Diritti d'autore/royalties: ${r.chi || '(senza nome)'} - lordo ${e(r.lordo)}, ritenuta ${e(r.rit)}`);
+      if (oc.dir.length) L.push(`   Deduzione forfettaria diritti d'autore: ${oc.dedRate.times(100).toFixed(0)}% (${oc.dedRate.gt('0.3') ? 'meno di 35 anni' : '35 anni o piu\''})`);
+      hr();
+    }
+    L.push(`${oc ? 5 : 4}. SCELTE DI CALCOLO APPLICATE (investimenti)`);
     const interp = CT.pdf && CT.pdf.interpretations ? CT.pdf.interpretations(state) : [];
     for (const t of interp) L.push(`   - ${t}`);
     L.push(`   Regole ${Y}: ${y.rule.note}`);
     const open = res.engine.issues.filter((i) => i.level === 'block');
-    if (open.length) { hr(); L.push(`5. PUNTI ANCORA APERTI (${open.length})`); for (const i of open.slice(0, 60)) L.push(`   - ${i.message}`); if (open.length > 60) L.push(`   ... e altri ${open.length - 60} (Allegato E del PDF)`); }
+    if (open.length) { hr(); L.push(`${oc ? 6 : 5}. PUNTI ANCORA APERTI (${open.length})`); for (const i of open.slice(0, 60)) L.push(`   - ${i.message}`); if (open.length > 60) L.push(`   ... e altri ${open.length - 60} (Allegato E del PDF)`); }
     hr();
     L.push('Calcolo automatico: va verificato da un professionista prima della firma della dichiarazione.');
     return L.join('\r\n') + '\r\n';

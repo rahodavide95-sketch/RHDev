@@ -120,3 +120,12 @@ test('piano: le stime della musica vanno in una sezione a parte (4001, 3801/3844
   eq(p.items[0].amount, '1559.09');
   eq(p.invNow, 0); eq(p.otherNow, '2282.73');   // 1.559,09 + 100 di addizionali + 623,64 di primo acconto (40%)
 });
+
+test('piano: IRPEF a credito (spese sanitarie) non e\' una voce da pagare, non scade e non ha ravvedimento', () => {
+  const r = res([]);
+  const p = P.plan(r, { others: { altri: '30000', san: '1129,11' } }, { payDay: '2026-10-21' });
+  const cred = p.items.find((i) => i.credit);
+  assert.ok(cred); eq(cred.creditAmount, 190);          // 19% di 1.000
+  assert.equal(cred.late, false); assert.equal(cred.ravv, null);
+  assert.equal(p.now.includes(cred), false); eq(p.payNow, 0);
+});

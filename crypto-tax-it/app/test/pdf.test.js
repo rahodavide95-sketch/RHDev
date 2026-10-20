@@ -8,6 +8,7 @@ const { CT, assert } = require('./helpers');
 require('../src/zip.js');
 require('../src/pipeline.js');
 require('../src/report.js');
+require('../src/others.js');
 require('../src/payments.js');
 
 // jsPDF e AutoTable (build per browser) caricati in un contesto con window/self come in una pagina web
@@ -105,4 +106,14 @@ test('PDF: grandi volumi (2.000 cessioni) in tempi ragionevoli', async () => {
   const ms = Date.now() - t0;
   assert.ok(out.full.data.length > 10000);
   assert.ok(ms < 30000, `troppo lento: ${ms} ms`);
+});
+
+test('PDF: con IRPEF a credito e altri redditi il fascicolo si crea (sezione 05)', async () => {
+  const s = state({ others: { altri: '30000', occ: [{ chi: 'Club', lordo: '2000', rit: '400' }], san: '2000' } });
+  const res = CT.analyze(s);
+  const out = await CT.pdf.buildAll(res, s);
+  assert.ok(out.full.data.length > 10000);
+  if (!hasPoppler) return;
+  const t = text(out.full.data);
+  for (const frag of ['Altri redditi e detrazioni', 'RL15 col. 1', 'RC1 col. 3', 'RP1']) assert.ok(t.includes(frag), `manca "${frag}"`);
 });

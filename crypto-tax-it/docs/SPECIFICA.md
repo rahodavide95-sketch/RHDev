@@ -125,3 +125,15 @@ Invio del Redditi PF 2026: 2 novembre 2026 (il 31/10 è sabato); il 730/2026 sca
 87/2024), dimezzata entro 90 giorni, ridotta a 1/10 entro 30 giorni, 1/9 entro 90, 1/8 entro la dichiarazione dell'anno della violazione,
 1/7 entro quella successiva, 1/6 oltre; interessi legali giorno per giorno (2% nel 2025, 1,6% dal 2026). Scadenze di sabato, domenica o
 festivo slittano al primo giorno lavorativo. I righi esatti del quadro RT non sono indicati: le fonti consultate non concordavano.
+
+## Altri redditi e detrazioni (`app/src/others.js`)
+Dati inseriti a mano (scheda «Altri redditi»): lavoro dipendente dalla CU (reddito, giorni, ritenute facoltative), lavoro autonomo
+occasionale (RL15, art. 67 c. 1 lett. l), diritti d'autore (RL25, art. 53 c. 2 lett. b, deduzione forfettaria 25% o 40% sotto i 35 anni),
+spese sanitarie (RP1, 19% oltre 129,11 €), altre detrazioni e oneri deducibili. Stima IRPEF 2025: scaglioni 23/35/43 (L. 207/2024);
+detrazione art. 13 c. 1 (1.955 fino a 15.000; 1.910 + 1.190 x (28.000 - R)/13.000; 1.910 x (50.000 - R)/22.000; +65 tra 25.000 e 35.000;
+in proporzione ai giorni); taglio del cuneo (somma esente 7,1/5,3/4,8% del reddito di lavoro se il reddito complessivo non supera 20.000;
+ulteriore detrazione 1.000 tra 20.000 e 32.000, decrescente fino a 40.000); trattamento integrativo 1.200 fino a 15.000; detrazione art. 13
+c. 5 per chi non ha lavoro dipendente. Con lo stipendio e senza le ritenute della CU la stima è la differenza tra l'IRPEF «solo stipendio»
+(quella che il datore ha trattenuto) e quella complessiva, compresi i bonus da restituire. Non considerati: familiari a carico, redditi
+fondiari, crediti esteri, trattamento integrativo tra 15.000 e 28.000. Addizionali: percentuale indicata dall'utente (2% se vuota) sulla
+parte di reddito in più. Acconto IRPEF dell'anno dopo con le regole ordinarie (oltre 51,65 €; 40% + 60% oltre 257,52 €).

@@ -126,6 +126,38 @@
     };
   }
 
+  /** Dove si scrive ogni voce nel modello Redditi PF: [rigo, cosa, importo (Decimal) o testo]. */
+  function where(c) {
+    const rows = [];
+    if (c.altri.gt(0)) rows.push(['RC1 col. 3', 'Reddito di lavoro dipendente o pensione (col. 1: codice 2 lavoro dipendente, 3 pensione)', c.altri], ['RC6 col. 1', 'Giorni di lavoro dipendente', String(c.days)]);
+    if (c.ritCU) rows.push(['RC10 col. 1', 'Ritenute IRPEF della CU', c.ritCU]);
+    if (c.occ.length) rows.push(['RL15 col. 1', 'Compensi lordi da lavoro occasionale', c.occLordo], ['RL15 col. 2', 'Spese documentate e inerenti', c.occSpese], ['Ritenute sez. II-A', 'Ritenute subite sui compensi occasionali', c.occRit]);
+    if (c.dir.length) rows.push(['RL25', 'Proventi lordi da diritti d\'autore', c.dirLordo], ['Riepilogo sez. III', `Deduzione forfettaria ${c.dedRate.times(100).toFixed(0)}% (la calcola il software)`, c.dirDed], ['Ritenute sez. III', 'Ritenute subite sui diritti d\'autore', c.dirRit]);
+    if (c.sanTot.gt(0)) rows.push(['RP1', 'Spese sanitarie', c.sanTot]);
+    if (c.altreDetr.gt(0)) rows.push(['Quadro RP', 'Altre detrazioni (sezioni I e III)', c.altreDetr]);
+    if (c.ded.gt(0)) rows.push(['Quadro RP sez. II', 'Oneri deducibili', c.ded]);
+    return rows;
+  }
+  /** Passaggi della stima: [voce, importo con segno]. */
+  function steps(c) {
+    const F = c.full, B = c.base, neg = (x) => x.neg();
+    return [
+      ['Reddito complessivo', F.RC],
+      c.ded.gt(0) ? ['Reddito imponibile (dopo gli oneri deducibili)', F.imp] : null,
+      ['IRPEF lorda (23% / 35% / 43%)', F.lorda],
+      F.detLav.gt(0) ? ['Detrazione per lavoro dipendente', neg(F.detLav)] : null,
+      F.detCuneo.gt(0) ? ['Ulteriore detrazione «taglio del cuneo»', neg(F.detCuneo)] : null,
+      F.detAut.gt(0) ? ['Detrazione per redditi di lavoro autonomo e occasionali', neg(F.detAut)] : null,
+      c.det19.gt(0) ? ['Detrazioni per spese (sanitarie e altre)', neg(c.det19)] : null,
+      ['IRPEF netta dell\'anno', F.netta],
+      c.mode === 'differenza' ? ['Già trattenuta in busta paga (IRPEF calcolata dal datore sul solo stipendio)', neg(B.netta)] : c.ritCU ? ['Ritenute IRPEF della CU', neg(c.ritCU)] : null,
+      c.ritenute.gt(0) ? ['Ritenute su serate e diritti d\'autore', neg(c.ritenute)] : null,
+      c.lostBonus.gt(0) ? ['Bonus in busta paga da restituire (somma esente del cuneo o trattamento integrativo)', c.lostBonus] : null,
+      c.irpefDue.gt(0) ? ['IRPEF da versare (stima)', c.irpefDue] : ['IRPEF a credito (stima: rimborso o compensazione)', c.irpefCredit],
+      c.addiz.gt(0) ? ['Addizionali regionale e comunale sulla parte in più (stima)', c.addiz] : null,
+    ].filter(Boolean);
+  }
+
   /** Voci da aggiungere al piano dei pagamenti (stime), per l'anno `Y`. */
   function paymentItems(c, Y, dl) {
     if (!c || !c.any) return [];
@@ -134,7 +166,7 @@
     if (c.irpefDue.gt(0)) items.push({ key: 'irpef', code: '4001', estimate: true, title: 'IRPEF a saldo (stima)',
       why: `${c.extra.gt(0) ? `IRPEF sui redditi extra (${c.extra.toFixed(0)} € netti tra DJ e diritti d'autore)` : 'IRPEF dell\'anno'}${c.lostBonus.gt(0) ? `, più ${c.lostBonus.toFixed(0)} € di bonus in busta paga da restituire perché il reddito sale oltre la soglia` : ''}, meno ritenute (${c.ritenute.toFixed(2)} €)${c.det19.gt(0) ? ` e detrazioni (${c.det19.toFixed(2)} €)` : ''}.`,
       quadro: 'Quadri RC, RL e RP, risultato nel quadro RN', amount: c.irpefDue, due: dl.saldo, note: est });
-    if (c.addiz.gt(0)) items.push({ key: 'addiz', code: '3801 / 3844', estimate: true, title: 'Addizionali regionale e comunale sui redditi della musica (stima)',
+    if (c.addiz.gt(0)) items.push({ key: 'addiz', code: '3801 / 3844', estimate: true, title: 'Addizionali regionale e comunale sulla parte di reddito in più (stima)',
       why: `Circa il ${c.addRate.times(100).toFixed(1).replace('.', ',')}% dei ${c.extra.toFixed(0)} € netti (dipende da Regione e Comune: 3801 regionale, 3844 comunale).`,
       quadro: 'Quadro RV', amount: c.addiz, due: dl.saldo, note: est });
     if (c.irpefCredit.gt(0)) items.push({ key: 'irpefcred', code: '—', estimate: true, credit: true, title: 'IRPEF a credito (stima): non si paga, ti viene restituita',
@@ -149,6 +181,6 @@
     return items;
   }
 
-  CT.others = { compute, paymentItems, irpef, detrAutonomo, detrLavoro, cuneoDetr, irpefParts, num };
+  CT.others = { compute, paymentItems, where, steps, irpef, detrAutonomo, detrLavoro, cuneoDetr, irpefParts, num };
   if (typeof module !== 'undefined') module.exports = CT.others;
 })();

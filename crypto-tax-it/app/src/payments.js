@@ -84,7 +84,7 @@
     const payDay = (opts && opts.payDay) || iso(Date.now());
     const items = [];
     const add = (o) => {
-      const late = payDay > o.due;
+      const late = !o.credit && payDay > o.due;   // un credito non scade e non ha ravvedimento
       let r = late ? ravvedimento(o.amount, o.due, payDay, dl) : null;
       // dal 1° al 30 luglio il saldo si paga con lo 0,40% in piu' (conviene rispetto al ravvedimento); dopo, ravvedimento dal 30 giugno
       if (late && o.due === dl.saldo && payDay <= dl.saldoMagg) {
@@ -125,7 +125,7 @@
     const others = CT.others && state && state.others ? CT.others.compute(state.others) : null;
     if (others) for (const it of CT.others.paymentItems(others, Y, dl)) add(Object.assign({ group: 'other' }, it));
     const sum = (list, k) => list.reduce((s, i) => s.plus(i[k]), ZERO);
-    const now = items.filter((i) => i.late || i.due <= dl.saldo);   // da pagare adesso: scadute o con la scadenza del saldo (30 giugno)
+    const now = items.filter((i) => !i.credit && (i.late || i.due <= dl.saldo));   // da pagare adesso: scadute o con la scadenza del saldo (30 giugno)
     const balance = items.filter((i) => !i.advance);
     const late = items.filter((i) => i.late);
     const draft = res.groups.blockCount > 0;

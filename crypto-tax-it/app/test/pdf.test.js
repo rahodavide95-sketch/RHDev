@@ -8,6 +8,7 @@ const { CT, assert } = require('./helpers');
 require('../src/zip.js');
 require('../src/pipeline.js');
 require('../src/report.js');
+require('../src/payments.js');
 
 // jsPDF e AutoTable (build per browser) caricati in un contesto con window/self come in una pagina web
 const dir = path.join(__dirname, '../src/vendor/');
@@ -89,6 +90,8 @@ test('PDF: senza problemi aperti non c e la filigrana e i totali tornano', async
   assert.equal(t.includes('BOZZA'), false);
   assert.ok(t.includes('104,00'), 'imposta totale 104,00');
   assert.ok(t.includes('Calcolo completato senza punti aperti'));
+  // cosa pagare: codici F24, scadenze dell'anno d'imposta 2025, quadri del modello
+  for (const frag of ['In breve: cosa pagare', 'Cosa pagare: imposte, F24 e scadenze', '1715', '30/06/2026', '02/11/2026', 'sezione V-A', 'Redditi PF 2026', 'sezione «Erario»']) assert.ok(t.includes(frag), `manca "${frag}" nel PDF`);
 });
 
 test('PDF: grandi volumi (2.000 cessioni) in tempi ragionevoli', async () => {

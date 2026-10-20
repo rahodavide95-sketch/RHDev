@@ -133,21 +133,33 @@
     if (meta.draft) p.box(`BOZZA: ci sono ${res.groups.blockCount} punti ancora da risolvere (vedi Allegato E). I numeri di questo fascicolo possono cambiare e non vanno usati per la dichiarazione.`, 'warn');
     else p.box('Calcolo completato senza punti aperti. Richiede comunque la revisione di un commercialista prima dell\'uso in dichiarazione.', 'good');
     const rwTot = res.rw.reduce((s, r) => s.plus(r.ivca), ZERO);
-    p.h2('Riepilogo');
+    const pl = c.plan;
+    if (pl) {
+      p.h2('In breve: cosa pagare');
+      const later = pl.items.filter((i) => !pl.now.includes(i));
+      const lines = pl.now.map((i) => [`${i.title}${i.late ? ' (scaduta: con ravvedimento, stima)' : ''}`, i.code, dmy(i.due), eur(i.payAmount)]);
+      if (lines.length) {
+        p.table(['Cosa', 'Codice F24', 'Scadenza', 'Importo (€)'], lines, { num: [3], fontSize: 9, columnStyles: { 1: { cellWidth: 22 }, 2: { cellWidth: 24 }, 3: { cellWidth: 30 } }, foot: ['Da pagare adesso (F24, sezione Erario, anno di riferimento ' + Y + ')', '', '', eur(pl.payNow)] });
+      } else p.box(pl.hasRW ? `Nessuna imposta da versare per il ${Y}. Va comunque compilato il quadro RW (monitoraggio delle cripto detenute).` : `Nessuna imposta da versare per il ${Y}.`, 'good');
+      if (later.length) p.para(`Più avanti: ${later.map((i) => `${i.title}, ${eur(i.amount)} € entro il ${dmy(i.due)} (codice ${i.code})`).join('; ')}.`, { size: 9 });
+      if (pl.lateExtra.gt(0)) p.para(`La scadenza del ${dmy(pl.deadlines.saldo)} è passata: gli importi comprendono una stima di sanzione ridotta e interessi del ravvedimento operoso (${eur(pl.lateExtra)} €) calcolata al ${dmy(pl.payDay)}. Dettaglio nel documento 04.`, { size: 9, color: WARN, bold: true });
+      p.para(`Dichiarazione: modello Redditi PF ${Y + 1} entro il ${dmy(pl.deadlines.filing)}${pl.hasRT || pl.hasRW ? `, con ${[pl.hasRT ? 'quadro RT' : null, pl.hasRW ? 'quadro RW' : null].filter(Boolean).join(' e ')}` : ''}.`, { size: 9 });
+    }
+    p.h2('Riepilogo delle imposte');
     p.table(['Voce', 'Importo (€)'], [
       ['Imposta sostitutiva su cripto-attività (quadro RT)', eur(y.crypto.tax)],
       ['Imposta sostitutiva su oro e metalli preziosi (quadro RT)', eur(y.metals.tax)],
       ['Totale imposta sostitutiva', eur(y.totalTax)],
-      ['Imposta sul valore delle cripto-attività, IVCA (quadro RW, indicativa)', eur(rwTot)],
+      ['Imposta sul valore delle cripto-attività, IVCA (quadro RW, somma dei righi arrotondati)', eur(c.plan ? c.plan.ivca : rwTot)],
       ['Minusvalenze cripto da riportare agli anni successivi', eur(y.crypto.newLoss)],
       ['Minusvalenze oro/metalli da riportare agli anni successivi', eur(y.metals.newLoss)],
     ], { num: [1], boldRows: [2], columnStyles: { 1: { cellWidth: 36 } }, fontSize: 9 });
     p.h2('A cosa servono questi documenti');
     p.para('L\'Agenzia delle Entrate non richiede né accetta allegati per i redditi da cripto-attività e metalli preziosi: i dati si dichiarano nel Modello Redditi Persone Fisiche (quadri RT e RW). Questi prospetti raccolgono i numeri da riportare nel modello e documentano come sono stati calcolati, per te o per il commercialista. Non sono moduli ufficiali e non vanno inviati.');
     p.bullets([
-      'Quadro RT: usa i prospetti 01 (cripto) e 02 (oro e metalli). I righi esatti cambiano ogni anno: vanno presi dalle istruzioni del modello.',
-      'Quadro RW: usa il prospetto 03. Servono anche la denominazione e lo Stato del custode di ogni piattaforma o wallet.',
-      'Versamenti: vedi il prospetto 04.',
+      'Quadro RT: prospetti 01 (cripto, sezione V-A) e 02 (oro e metalli, sezione II). I numeri dei righi vanno presi dalle istruzioni del modello.',
+      'Quadro RW: prospetto 03 e modulo fac-simile già compilato (scheda PDF del programma). In rosso, nel fac-simile, i campi da completare o verificare. Servono anche la denominazione e lo Stato del custode di ogni piattaforma o wallet.',
+      'Pagamenti: prospetto 04 (codici F24, scadenze, eventuale ravvedimento).',
       'Conserva gli allegati A-E e gli export originali delle piattaforme per tutto il periodo in cui l\'Agenzia può controllare (in genere fino al 31 dicembre del quinto anno successivo alla presentazione).',
     ], { size: 9 });
     p.h2('Indice');
@@ -161,7 +173,7 @@
       const Y = res.year;
       const ds = res.engine.disposals.filter((d) => d.year === Y && d.cls === kind);
       p.h1(`Prospetto quadro RT · ${b.name}`);
-      p.para(`${b.law}. Anno d'imposta ${Y}. Riferimento nel modello: quadro RT${kind === 'crypto' ? ', sezione dedicata alle cripto-attività' : ', plusvalenze su metalli preziosi'} (righi e colonne da verificare nelle istruzioni del modello Redditi PF ${Y + 1}).`, { color: MUTED, size: 9 });
+      p.para(`${b.law}. Anno d'imposta ${Y}. Riferimento nel modello Redditi PF ${Y + 1}: quadro RT, ${kind === 'crypto' ? 'sezione V-A (plusvalenze e proventi da cripto-attività); imposta con codice tributo 1715' : 'sezione II (plusvalenze assoggettate a imposta sostitutiva del 26%); imposta con codice tributo 1100 (da confermare)'}. I numeri dei righi e delle colonne vanno presi dalle istruzioni del modello.`, { color: MUTED, size: 9 });
       const rows = [
         ['Numero di cessioni imponibili nell\'anno', String(b.nDisposals)],
         ['Corrispettivi / valore di cessione (al netto delle commissioni)', eur(b.proceeds)],
@@ -216,25 +228,45 @@
   }
 
   function paySection(p, c) {
-    const { res } = c;
+    const { res, plan: pl } = c;
     const Y = res.year, y = res.y;
     const rwTot = res.rw.reduce((s, r) => s.plus(r.ivca), ZERO);
-    p.h1('Riepilogo imposte e versamenti');
-    p.para('Importi stimati dal programma. Scadenze e codici tributo vanno verificati nelle istruzioni del modello e con il commercialista.', { color: MUTED, size: 9 });
+    p.h1('Cosa pagare: imposte, F24 e scadenze');
+    p.para(`Importi calcolati dal programma per l'anno d'imposta ${Y}. Codici tributo e scadenze controllati in ottobre 2026 su più fonti: il commercialista li conferma e prepara l'F24.`, { color: MUTED, size: 9 });
+    if (!pl) return;
+    const dl = pl.deadlines;
+    p.h2('Le imposte dell\'anno');
     const rows = [
-      ['Imposta sostitutiva cripto-attività', eur(y.crypto.tax)],
-      ['Imposta sostitutiva oro e metalli preziosi', eur(y.metals.tax)],
-      ['Totale imposta sostitutiva', eur(y.totalTax)],
-      ['IVCA (imposta sul valore delle cripto-attività), indicativa', eur(rwTot)],
+      ['Imposta sostitutiva cripto-attività', 'RT sez. V-A', '1715', eur(y.crypto.tax)],
+      ['IVCA, imposta sul valore delle cripto-attività (IC)', 'RW, rigo RW8', '1727', eur(pl.ivca)],
     ];
-    if (c.state.settings.rebase2025 && Y >= 2025) rows.push(['Imposta sostitutiva 18% sulla rideterminazione del costo (se non già versata)', eur(c.res.engine.rebaseTotal.times('0.18'))]);
-    p.table(['Voce', 'Importo (€)'], rows, { num: [1], boldRows: [2], columnStyles: { 1: { cellWidth: 36 } }, fontSize: 9 });
-    p.h2('Scadenze ordinarie (indicative)');
+    if (y.metals.nDisposals || y.metals.tax.gt(0)) rows.splice(1, 0, ['Imposta sostitutiva oro e metalli preziosi', 'RT sez. II', '1100 (da confermare)', eur(y.metals.tax)]);
+    if (pl.ivcaAdvance !== null) rows.push(['Acconti IVCA già versati (indicati dall\'utente)', 'RW8 col. 4', '', `-${eur(pl.ivcaAdvance)}`]);
+    if (c.state.settings.rebase2025 && Y >= 2025) rows.push(['Imposta sostitutiva 18% sulla rideterminazione del costo (se non già versata entro l\'1/12/2025)', 'RT', '1717 (da confermare)', eur(c.res.engine.rebaseTotal.times('0.18'))]);
+    rows.push(['Totale imposte dell\'anno', '', '', eur(pl.taxTotal)]);
+    p.table(['Voce', 'Quadro', 'Codice F24', 'Importo (€)'], rows, { num: [3], boldRows: [rows.length - 1], fontSize: 9, columnStyles: { 1: { cellWidth: 26 }, 2: { cellWidth: 32 }, 3: { cellWidth: 28 } } });
+    p.h2('Da versare con l\'F24');
+    if (!pl.items.length) p.box(pl.hasRW ? 'Niente da versare. Il quadro RW va comunque compilato (monitoraggio).' : 'Niente da versare.', 'good');
+    else {
+      p.table(['Codice', 'Descrizione', 'Anno rif.', 'Scadenza', 'Imposta (€)', 'Sanzione e interessi (€)', 'Totale (€)'],
+        pl.items.map((i) => [i.code, i.title, String(i.advance ? Y + 1 : Y), dmy(i.due), eur(i.amount), i.ravv ? eur(i.ravv.sanction.plus(i.ravv.interest)) : '-', eur(i.payAmount)]),
+        { num: [4, 5, 6], fontSize: 8.5, foot: ['', 'Totale', '', '', eur(pl.items.reduce((s, i) => s.plus(i.amount), ZERO)), eur(pl.items.reduce((s, i) => s.plus(i.ravv ? i.ravv.sanction.plus(i.ravv.interest) : ZERO), ZERO)), eur(pl.grandTotal)] });
+      p.para('Compilazione dell\'F24: sezione «Erario», colonna «importi a debito versati», un rigo per codice, «anno di riferimento» come in tabella (per gli acconti l\'anno a cui si riferiscono). L\'F24 si paga dall\'home banking, alla posta o in banca, oppure con i servizi online dell\'Agenzia delle Entrate.', { size: 9 });
+    }
+    const late = pl.items.filter((i) => i.late);
+    if (late.length) {
+      p.h2('Pagamento in ritardo: ravvedimento operoso (stima)');
+      p.para(`Stima al ${dmy(pl.payDay)}. La sanzione per omesso versamento è il 25% (D.Lgs. 87/2024); con il ravvedimento si riduce in base al ritardo. Gli interessi si calcolano giorno per giorno al tasso legale (1,6% annuo dal 2026). Sanzione e interessi si versano con codici tributo propri, che indica il commercialista.`, { size: 9 });
+      p.table(['Codice', 'Giorni di ritardo', 'Riduzione applicata', 'Sanzione (€)', 'Interessi (€)'], late.map((i) => [i.code, String(i.ravv.days), i.ravv.label, eur(i.ravv.sanction), eur(i.ravv.interest)]), { num: [1, 3, 4], fontSize: 8.5 });
+      p.para('Se si paga più tardi gli importi crescono: rifare la stima con la data giusta (schermata Risultato) o farla calcolare al commercialista.', { size: 8.5, color: MUTED });
+    }
+    p.h2('Scadenze dell\'anno');
     p.bullets([
-      `Saldo delle imposte sui redditi: entro il 30 giugno ${Y + 1}, oppure entro il 30 luglio ${Y + 1} con la maggiorazione dello 0,40%.`,
-      'Se la scadenza è passata si può regolarizzare con il ravvedimento operoso (sanzioni ridotte): da calcolare con il commercialista.',
-      'Invio telematico del Modello Redditi PF: di norma entro il 31 ottobre (se cade di sabato o festivo, il giorno lavorativo successivo).',
+      `Saldo delle imposte ${Y} (codici 1715, 1100, 1727) e primo acconto IVCA ${Y + 1} (1728): entro il ${dmy(dl.saldo)}, oppure entro il ${dmy(dl.saldoMagg)} con la maggiorazione dello 0,40%. Il codice 1715 non si può rateizzare.`,
+      `Secondo acconto (o acconto unico) IVCA ${Y + 1} (1729): entro il ${dmy(dl.acconto2)}. Acconto calcolato sull'IVCA ${Y} (metodo storico, regole degli acconti IRPEF: non dovuto fino a 51,65 €, in un'unica rata fino a 257,52 €, altrimenti 40% e 60%); se nel ${Y + 1} le cripto detenute sono molto meno si può ridurre (metodo previsionale).`,
+      `Dichiarazione: modello Redditi PF ${Y + 1} da inviare entro il ${dmy(dl.filing)} (il 730 scadeva il ${dmy(dl.m730)}).`,
     ], { size: 9 });
+    if (rwTot.gt(0) && !rwTot.eq(pl.ivca)) p.para(`Nota: l'IVCA calcolata attività per attività è ${eur(rwTot)} €; nel quadro RW si scrive arrotondata all'euro per ogni rigo (totale ${eur(pl.ivca)} €).`, { size: 8.5, color: MUTED });
   }
 
   function attCessioni(p, c) {
@@ -359,7 +391,7 @@
     { id: '01', file: '01-quadro-RT-cripto', title: '01 · Prospetto quadro RT · Cripto-attività', orient: 'p', fn: rtSection('crypto') },
     { id: '02', file: '02-quadro-RT-oro-e-metalli', title: '02 · Prospetto quadro RT · Oro e metalli preziosi', orient: 'p', fn: rtSection('metal') },
     { id: '03', file: '03-quadro-RW', title: '03 · Prospetto quadro RW · Monitoraggio e IVCA', orient: 'l', fn: rwSection },
-    { id: '04', file: '04-imposte-e-versamenti', title: '04 · Riepilogo imposte e versamenti', orient: 'p', fn: paySection },
+    { id: '04', file: '04-cosa-pagare-F24-e-scadenze', title: '04 · Cosa pagare: imposte, F24 e scadenze', orient: 'p', fn: paySection },
     { id: 'A', file: 'A-elenco-cessioni', title: 'Allegato A · Elenco delle cessioni', orient: 'l', fn: attCessioni },
     { id: 'B', file: 'B-lotti-di-acquisto', title: 'Allegato B · Lotti di acquisto utilizzati', orient: 'l', fn: attBlotti },
     { id: 'C', file: 'C-proventi', title: 'Allegato C · Proventi', orient: 'l', fn: attProventi },
@@ -386,7 +418,8 @@
       year: Y, draft: res.groups.blockCount > 0, generated: new Date().toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' }),
       taxpayerLine: [tp.name, tp.cf ? `CF ${tp.cf}` : ''].filter(Boolean).join(' · '),
     };
-    const ctx0 = { res, state, hashes };
+    const plan = CT.payments ? CT.payments.plan(res, state, { payDay: (state && state.payDay) || undefined }) : null;
+    const ctx0 = { res, state, hashes, plan };
 
     const full = new Pdf(JS, { ...baseMeta, docTitle: `Fascicolo di supporto alla dichiarazione · Anno d'imposta ${Y}` });
     const ctx = { ...ctx0, meta: baseMeta };

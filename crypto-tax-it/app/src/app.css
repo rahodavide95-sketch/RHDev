@@ -187,3 +187,30 @@ ul.clean { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
 .fxitem { display: grid; gap: 10px; padding: 12px 0; border-top: 1px solid var(--line); }
 .fxprev { display: grid; gap: 12px; justify-items: center; }
 .fxcv { width: 100%; max-width: 640px; height: auto; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+
+/* cosa pagare */
+.paycard .answer { margin: 2px 0 0; font-size: clamp(20px, 4vw, 26px); }
+.paytbl td { vertical-align: top; }
+.paytbl td .small { line-height: 1.35; margin-top: 2px; }
+.paytbl tfoot td { font-weight: 600; }
+.code { font-family: var(--font-mono); font-weight: 600; font-size: 15px; background: var(--accent-soft); color: var(--accent); padding: 2px 8px; border-radius: 6px; }
+.gloss { display: grid; grid-template-columns: minmax(140px, 220px) 1fr; gap: 8px 16px; margin: 10px 0 0; }
+.gloss dt { font-weight: 600; }
+.gloss dd { margin: 0; color: var(--ink-2); }
+@media (max-width: 640px) { .gloss { grid-template-columns: 1fr; } .gloss dd { margin-bottom: 6px; } }
+.redkey { margin: 10px 0; padding: 10px 12px; border-radius: 8px; background: var(--bad-soft); font-size: 14px; line-height: 1.45; }
+.redtxt { color: #c00000; font-weight: 600; }
+:root[data-theme="dark"] .redtxt { color: var(--bad); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .redtxt { color: var(--bad); } }
+.pill.wrap { white-space: normal; text-align: left; }
+@media (max-width: 640px) {
+  .paytbl thead { display: none; }
+  .paytbl, .paytbl tbody, .paytbl tfoot, .paytbl tr, .paytbl td { display: block; width: 100%; }
+  .paytbl tbody tr { padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .paytbl td { border: 0; padding: 3px 12px; text-align: left; }
+  .paytbl td.num { text-align: left; }
+  .paytbl td[data-l]:not(:first-child)::before { content: attr(data-l) ': '; color: var(--ink-2); font-size: 13px; }
+  .paytbl td[data-l]:not(:first-child) { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; }
+  .paytbl tfoot tr { display: flex; justify-content: space-between; padding: 8px 12px; }
+  .paytbl tfoot td { padding: 0; width: auto; }
+}

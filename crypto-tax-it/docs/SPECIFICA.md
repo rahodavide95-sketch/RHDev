@@ -109,3 +109,19 @@ fonti consultate erano discordanti: vanno presi dalle istruzioni del modello.
 - Nel risultato la scheda «Da dove arriva l'imposta» elenca, per l'anno scelto, vendite in euro, scambi tra cripto, pagamenti, commissioni (guadagno o perdita) e premi (interessi, staking, cashback, bonus: tassati per intero al valore alla ricezione). Se non ci sono vendite lo dice: l'imposta può venire da scambi e premi anche senza vendere. Funzione `taxSources` in `app/src/report.js`.
 - Un prezzo scaricato si scarta solo se è assurdo rispetto a un prezzo noto dai file dell'utente (`pricefeed.plausible`): fino a 20 volte entro 30 giorni, con tolleranza crescente con la distanza. Simboli di una sola lettera (es. S, Sonic) sono ammessi.
 - Moduli fac-simile: gli sfondi (`fx-rw.jpg`, `fx-w.jpg`) sono i moduli ufficiali dei due riferimenti senza alcun valore (celle, etichette e numero del modulo vuoti); ogni valore scritto sopra viene dai calcoli. «Acconti versati» (RW8 col. 4, W8 col. 4) non si ricava dai file: resta il segnaposto rosso, oppure si scrive l'importo nel campo facoltativo, e allora RW8 riporta acconti, imposta a debito (col. 5) o a credito (col. 6).
+
+## Cosa pagare (anno d'imposta 2025, controllato in ottobre 2026)
+`app/src/payments.js` (`CT.payments.plan`) produce, per l'anno scelto, l'elenco dei versamenti con codice tributo, scadenza e stima del
+ravvedimento; lo usano la schermata Risultato («Cosa devi pagare», «Cosa fare adesso») e il PDF (copertina e documento 04).
+
+| Voce | Quadro | Codice F24 | Scadenza (anno 2025) |
+|---|---|---|---|
+| Imposta sostitutiva cripto (26%) | RT, sezione V-A | 1715 (Ris. 36/E/2023), non rateizzabile | 30/06/2026, o 30/07/2026 +0,40% |
+| Imposta sostitutiva oro e metalli (26%) | RT, sezione II | 1100 (da confermare) | come sopra |
+| IVCA 2 per mille, saldo | RW, rigo RW8 | 1727 | come sopra |
+| Acconto IVCA 2026 (metodo storico, regole IRPEF: oltre 51,65 €; 40% + 60% oltre 257,52 €) | RW | 1728 (30/06) e 1729 (30/11) | 30/06/2026 e 30/11/2026 |
+
+Invio del Redditi PF 2026: 2 novembre 2026 (il 31/10 è sabato); il 730/2026 scadeva il 30/09/2026. Ravvedimento: sanzione 25% (D.Lgs.
+87/2024), dimezzata entro 90 giorni, ridotta a 1/10 entro 30 giorni, 1/9 entro 90, 1/8 entro la dichiarazione dell'anno della violazione,
+1/7 entro quella successiva, 1/6 oltre; interessi legali giorno per giorno (2% nel 2025, 1,6% dal 2026). Scadenze di sabato, domenica o
+festivo slittano al primo giorno lavorativo. I righi esatti del quadro RT non sono indicati: le fonti consultate non concordavano.

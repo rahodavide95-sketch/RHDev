@@ -711,7 +711,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       const status = h('p', { class: 'small muted' }, ui.busy ? 'Sto scaricando i prezzi…'
         : ui.priceFail ? (insideClaude() ? `Non sono riuscito a scaricarne ${ui.priceFail}: dentro claude.ai il download non è possibile. Apri il link pubblicato.`
           : `Non sono riuscito a scaricarne ${ui.priceFail}. ${(ui.priceWhy || []).join(' · ')}. Riprova tra qualche minuto, oppure scrivili a mano.`)
-          : 'Li scarico da solo: cripto da Binance, Crypto.com, Kraken, Coinbase o CryptoCompare; oro e metalli dal prezzo ufficiale LBMA; valute dalla BCE. Dentro claude.ai non è possibile: apri il link pubblicato.');
+          : 'Li scarico da solo: cripto da Binance, Coinbase, Crypto.com, Kraken o CryptoCompare (per Bitpanda e Coinbase prima il loro listino); oro e metalli dal prezzo ufficiale LBMA; valute dalla BCE. Dentro claude.ai non è possibile: apri il link pubblicato.');
       const btns = h('div', { class: 'row' },
         h('button', { class: 'btn primary', disabled: !!ui.busy, onclick: () => autoPrices(false) }, ui.busy || (blocking ? 'Scarica i prezzi in automatico' : 'Riprova a scaricare i prezzi esatti')),
         h('button', { class: 'btn', onclick: () => { go('prices'); } }, 'Vedi e inserisci a mano'));
@@ -1404,10 +1404,13 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
   // ------------------------------------------------------------------ pannello: Prezzi
   const insideClaude = () => !!(typeof window !== 'undefined' && window.claude && window.claude.use);
   /** Prezzo in euro alla chiusura del giorno: prova piu' servizi pubblici (vedi pricefeed.js). Un valore non credibile si scarta. */
-  /** Asset custoditi su Bitpanda: per quelli il prezzo si prende prima dal listino Bitpanda, cosi' coincide con l'estratto conto. */
-  const onBitpanda = (sym) => !!(ui.res && ui.res.rw.some((r) => r.asset === sym && /bitpanda/i.test(r.account)));
+  /** Piattaforma che custodisce l'asset: il prezzo si prende prima dal suo listino (Bitpanda, Coinbase), cosi' coincide con i suoi estratti conto. */
+  const preferFor = (sym) => {
+    const accs = ui.res ? ui.res.rw.filter((r) => r.asset === sym).map((r) => r.account) : [];
+    return accs.some((a) => /bitpanda/i.test(a)) ? 'bitpanda' : accs.some((a) => /coinbase/i.test(a)) ? 'coinbase' : undefined;
+  };
   async function fetchPrice(sym, day) {
-    const r = await CT.pricefeed.fetchEur(sym, day, { prefer: onBitpanda(sym) ? 'bitpanda' : undefined });
+    const r = await CT.pricefeed.fetchEur(sym, day, { prefer: preferFor(sym) });
     const n = Number(r.price);
     if (!Number.isFinite(n) || n <= 0) { const e = new Error('prezzo non valido'); e.details = [`${r.source}: prezzo non valido`]; throw e; }
     // due fonti molto diverse: meglio non usare nessuna delle due senza un controllo

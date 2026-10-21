@@ -389,7 +389,7 @@
     const prow = ([k, v]) => { const [s, d] = k.split('|'); return [CT.pricefeed && CT.pricefeed.kindOf(s) === 'metal' ? `${s} (1 grammo)` : s, dmy(d), String(v).replace('.', ','), src[k] || '']; };
     if (dl.length) {
       p.h2('Prezzi scaricati automaticamente');
-      p.para('Asset custoditi su Bitpanda: prima il listino Bitpanda (chiusura del giorno, ora di Vienna), lo stesso dei suoi estratti conto. Cripto: chiusura giornaliera (UTC) in euro da Binance, Crypto.com Exchange, Kraken, Coinbase o CryptoCompare; oro e metalli preziosi: prezzo LBMA in euro per oncia troy diviso 31,1035 (euro per grammo) o, in alternativa, PAX Gold; valute: cambio di riferimento BCE. Per ciascuno è indicata la coppia o il listino usato e, quando disponibile, il confronto con una seconda fonte indipendente.', { color: MUTED, size: 8.5 });
+      p.para('Asset custoditi su Bitpanda o Coinbase: prima il listino della piattaforma (Bitpanda: chiusura del giorno, ora di Vienna; Coinbase: prezzo spot del giorno). Cripto: chiusura giornaliera (UTC) in euro da Binance, Coinbase, Crypto.com Exchange, Kraken, Coinbase o CryptoCompare; oro e metalli preziosi: prezzo LBMA in euro per oncia troy diviso 31,1035 (euro per grammo) o, in alternativa, PAX Gold; valute: cambio di riferimento BCE. Per ciascuno è indicata la coppia o il listino usato e, quando disponibile, il confronto con una seconda fonte indipendente.', { color: MUTED, size: 8.5 });
       p.table(['Asset', 'Data', 'Prezzo (€ per unità)', 'Fonte'], dl.map(prow), { num: [2], fontSize: 8 });
     }
     if (man.length) {

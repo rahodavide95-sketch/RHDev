@@ -518,21 +518,39 @@
     internal: new Set(['vault withdrawal', 'cash to savings', 'savings to cash', 'transfer', 'retail staking transfer', 'retail unstaking transfer']),
     migration: new Set(['asset migration', 'retail eth2 deprecation']),
   };
-  /** Importo Coinbase: "€1,234.56", "-$12.34", "(€12.34)", "1234.5". */
-  function cbNum(s) {
+  /**
+   * Importo Coinbase: "€1,234.56", "-$12.34", "(€12.34)", "1234.5", "2.5E-05" e, se il file e' stato riaperto e salvato con un foglio di
+   * calcolo italiano, "1.234,56 €" o "0,015". `dec` e' il separatore decimale del file (',' o '.'), dedotto da cbDecimal.
+   */
+  function cbNum(s, dec) {
     if (s === undefined || s === null) return null;
-    let t = String(s).trim();
+    const t = String(s).trim();
     if (!t || t === '-') return null;
-    const neg = /^\(.*\)$/.test(t) || /^-/.test(t.replace(/[^\d.,-]/g, ''));
-    t = t.replace(/[^\d.,]/g, '');
-    if (!t) return null;
-    if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(t)) t = t.replace(/,/g, '');
-    const v = parseNum(t);
-    return v === null ? null : neg ? v.neg() : v;
+    const m = /(\d[\d.,]*)([eE][-+]?\d+)?/.exec(t);
+    if (!m) return null;
+    const neg = /^\(.*\)$/.test(t) || t.slice(0, m.index).includes('-');
+    let n = m[1].replace(/[.,]$/, '');
+    const hasC = n.includes(','), hasP = n.includes('.');
+    if (hasC && hasP) n = n.lastIndexOf(',') > n.lastIndexOf('.') ? n.replace(/\./g, '').replace(',', '.') : n.replace(/,/g, '');
+    else if (hasC) n = dec === ',' || !/^\d{1,3}(,\d{3})+$/.test(n) ? n.replace(',', '.') : n.replace(/,/g, '');
+    else if (hasP && dec === ',' && /^\d{1,3}(\.\d{3})+$/.test(n)) n = n.replace(/\./g, '');
+    if (!/^\d+(\.\d+)?$/.test(n)) throw new FormatError(`Numero non interpretabile: "${s}"`);
+    const v = D(n + (m[2] || ''));
+    return neg ? v.neg() : v;
   }
-  const CB_TRADE = /^(?:Bought|Sold) ([\d,]*\.?\d+) (\w+) for [£€$]?([\d,]*\.?\d+) (\w+)(?: on (\w+-\w+))?/;
-  const CB_CONVERT = /^Converted ([\d,]*\.?\d+) (\w+) to ([\d,]*\.?\d+) (\w+)/;
-  const cbQty = (s) => D(String(s).replace(/,/g, ''));
+  /** Separatore decimale del file: ',' se gli importi sono scritti come "15,00" o "1.234,56", altrimenti '.'. */
+  function cbDecimal(rows, cols) {
+    let comma = 0, point = 0;
+    for (const r of rows) for (const c of cols) {
+      const v = String(r[c] || '').replace(/[^\d.,]/g, '');
+      if (/\d\.\d{3},\d+$/.test(v) || /^\d+,\d{1,2}$/.test(v) || /^0,\d+$/.test(v)) comma++;
+      else if (/\d,\d{3}\.\d+$/.test(v) || /^\d+\.\d{1,2}$/.test(v) || /^0\.\d+$/.test(v)) point++;
+    }
+    return comma > point ? ',' : '.';
+  }
+  const CB_TRADE = /^(?:Bought|Sold) ([\d.,]+(?:[eE][-+]?\d+)?) (\w+) for [£€$]?([\d.,]+(?:[eE][-+]?\d+)?) (\w+)(?: on (\w+-\w+))?/;
+  const CB_CONVERT = /^Converted ([\d.,]+(?:[eE][-+]?\d+)?) (\w+) to ([\d.,]+(?:[eE][-+]?\d+)?) (\w+)/;
+  const cbQty = (s, dec) => cbNum(s, dec);
 
   function parseCoinbase(text, fileName, account) {
     account = account || 'Coinbase';
@@ -541,6 +559,9 @@
     if (miss.length) throw new FormatError(`Coinbase: colonne mancanti ${miss.join(', ')}`);
     const v1 = headers.map((x) => /^(\w{3}) Subtotal$/.exec(x)).find(Boolean);   // formato piu' vecchio: valuta nel nome della colonna
     const col = (row, ...names) => { for (const n of names) if (row[n] !== undefined && row[n] !== '') return row[n]; return ''; };
+    const numCols = headers.filter((x) => /quantity|price at|subtotal|total|fees/i.test(x));
+    const dec = cbDecimal(rows, numCols);
+    const num = (x) => cbNum(x, dec);
     const mkUid = uidFactory(account);
     const events = [];
     const migr = [];
@@ -554,13 +575,13 @@
       const src = `${fileName}:${row.__line}`;
       const ts = parseTs(String(row['Timestamp']).trim().replace(/\s*UTC$/i, 'Z'));
       const asset = (row['Asset'] || '').trim().toUpperCase();
-      const qRaw = cbNum(row['Quantity Transacted']);
+      const qRaw = num(row['Quantity Transacted']);
       const qty = qRaw === null ? ZERO : qRaw.abs();
       const ccy = ((v1 && v1[1]) || col(row, 'Price Currency', 'Spot Price Currency') || 'EUR').toUpperCase();
-      const subtotal = absN(cbNum(col(row, 'Subtotal', `${ccy} Subtotal`)));
-      const total = absN(cbNum(col(row, 'Total (inclusive of fees and/or spread)', 'Total (inclusive of fees)', `${ccy} Total (inclusive of fees)`)));
-      const fees = absN(cbNum(col(row, 'Fees and/or Spread', 'Fees', `${ccy} Fees`)));
-      const price = absN(cbNum(col(row, 'Price at Transaction', 'Spot Price at Transaction', `${ccy} Spot Price at Transaction`)));
+      const subtotal = absN(num(col(row, 'Subtotal', `${ccy} Subtotal`)));
+      const total = absN(num(col(row, 'Total (inclusive of fees and/or spread)', 'Total (inclusive of fees)', `${ccy} Total (inclusive of fees)`)));
+      const fees = absN(num(col(row, 'Fees and/or Spread', 'Fees', `${ccy} Fees`)));
+      const price = absN(num(col(row, 'Price at Transaction', 'Spot Price at Transaction', `${ccy} Spot Price at Transaction`)));
       const notes = (row['Notes'] || '').trim();
       const isSell = CB.sell.has(typRaw.toLowerCase());
       // valore senza commissioni: negli acquisti il totale le comprende, nelle vendite e' gia' al netto
@@ -578,13 +599,13 @@
           ev = mkEvent({ ...base, kind: buy ? Kind.BUY : Kind.SELL, asset, qty, ...val(gross), ...fee });
         } else {
           // Advanced Trade contro un'altra cripto (es. ETH-BTC): e' una permuta; valore in euro dal file
-          const qAmt = cbQty(tm[3]);
+          const qAmt = cbQty(tm[3], '.');   // le note restano nel formato inglese di Coinbase anche se il file e' stato risalvato
           ev = buy ? mkEvent({ ...base, kind: Kind.SWAP, asset: quote, qty: qAmt, counterAsset: asset, counterQty: qty, ...val(whole) })
             : mkEvent({ ...base, kind: Kind.SWAP, asset, qty, counterAsset: quote, counterQty: qAmt, ...val(whole) });
         }
       } else if (typ === 'convert') {
         const m = CB_CONVERT.exec(notes);
-        ev = m ? mkEvent({ ...base, kind: Kind.SWAP, asset, qty, counterAsset: m[4].toUpperCase(), counterQty: cbQty(m[3]), ...val(gross) })
+        ev = m ? mkEvent({ ...base, kind: Kind.SWAP, asset, qty, counterAsset: m[4].toUpperCase(), counterQty: cbQty(m[3], '.'), ...val(gross) })
           : unresolved(base, 'Coinbase · Convert senza dettaglio', `Convert del ${String(row['Timestamp'])}: nelle note manca la cripto ricevuta ("${notes}")`);
       } else if (typ === 'send' || typ === 'retail mgx dex send' || CB.toPro.has(typ)) {
         ev = mkEvent({ ...base, kind: Kind.TRANSFER_OUT, asset, qty, note: CB.toPro.has(typ) ? 'Coinbase: verso Coinbase Pro / Advanced' : notes });

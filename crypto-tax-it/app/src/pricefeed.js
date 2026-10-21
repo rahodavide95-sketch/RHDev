@@ -16,6 +16,9 @@
      -> {"code":0,"result":{"data":[{"t":<ms>,"o":"..","h":"..","l":"..","c":"..","v":".."}]}}; coppia inesistente: code diverso da 0
    - Kraken: GET https://api.kraken.com/0/public/OHLC?pair=XBTEUR&interval=1440&since=<s>
      -> {"error":[],"result":{"<coppia>":[[time,"open","high","low","close",...]],"last":<s>}}; errore: {"error":["EQuery:Unknown asset pair"]}
+   - Coinbase (prezzo spot della piattaforma, documentato e senza chiave; accetta richieste dal browser, quindi funziona anche senza il
+     servizio di Vercel): GET https://api.coinbase.com/v2/prices/BTC-EUR/spot?date=AAAA-MM-GG
+     -> {"data":{"amount":"..","base":"BTC","currency":"EUR"}}; coppia inesistente: HTTP 404 {"errors":[...]}
    - Coinbase Exchange: GET https://api.exchange.coinbase.com/products/BTC-EUR/candles?granularity=86400&start=<ISO>&end=<ISO>
      -> [[time, low, high, open, close, volume]]; coppia inesistente: HTTP 404
    - CryptoCompare: GET https://min-api.cryptocompare.com/data/v2/histoday?fsym=BTC&tsym=EUR&limit=1&toTs=<s>
@@ -247,7 +250,19 @@
     throw new NoQuote('nessun prezzo giornaliero per quel giorno');
   }
 
-  const CRYPTO = [['Binance', viaBinance], ['Crypto.com Exchange', viaCryptoCom], ['Kraken', viaKraken], ['Coinbase', viaCoinbase], ['CryptoCompare', viaCryptoCompare]];
+  // ---------------------------------------------------------------- Coinbase (prezzo spot del giorno)
+  async function viaCoinbaseSpot(fetchImpl, sym, day) {
+    const r = await getJson(fetchImpl, `https://api.coinbase.com/v2/prices/${encodeURIComponent(sym)}-EUR/spot?date=${day}`);
+    if (r.status === 400 || r.status === 404) throw new NoQuote('coppia non quotata');
+    if (!r.ok || !r.body || !r.body.data) throw new Error(`HTTP ${r.status}`);
+    const d = r.body.data;
+    const c = num(d.amount);
+    if (!c || (d.currency && String(d.currency).toUpperCase() !== 'EUR')) throw new NoQuote('nessuna quotazione quel giorno');
+    return { price: c, detail: `Coinbase, prezzo spot ${sym}/EUR del ${dmy(day)}` };
+  }
+
+  // in ordine: prima chi accetta richieste dal browser (Binance, Coinbase), cosi' i prezzi arrivano anche senza il servizio di Vercel
+  const CRYPTO = [['Binance', viaBinance], ['Coinbase', viaCoinbaseSpot], ['Crypto.com Exchange', viaCryptoCom], ['Kraken', viaKraken], ['Coinbase Exchange', viaCoinbase], ['CryptoCompare', viaCryptoCompare]];
 
   // ---------------------------------------------------------------- metalli preziosi (euro per grammo)
   const lbmaCache = new Map();
@@ -294,11 +309,13 @@
   const FIAT_SOURCES = [['BCE', fiatSource('BCE', ecbEurPer)], ['Frankfurter (cambi BCE)', fiatSource('Frankfurter', frankfurterEurPer)]];
 
   const kindOf = (s) => (METALS[s] ? 'metal' : FIAT.has(s) ? 'fiat' : 'crypto');
-  /** Fonti in ordine; con prefer 'bitpanda' (asset custodito su Bitpanda) il listino Bitpanda viene prima, le altre fanno da controllo. */
+  /** Fonti in ordine; con prefer 'bitpanda' o 'coinbase' (asset custodito li') il prezzo della piattaforma viene prima, le altre fanno da controllo. */
   const sourcesFor = (s, prefer) => {
     if (FIAT.has(s)) return FIAT_SOURCES;
     const list = METALS[s] ? metalSources(s) : CRYPTO;
-    return prefer === 'bitpanda' ? [['Bitpanda', viaBitpanda]].concat(list) : list;
+    if (prefer === 'bitpanda') return [['Bitpanda', viaBitpanda]].concat(list);
+    if (prefer === 'coinbase' && !METALS[s]) return [['Coinbase', viaCoinbaseSpot]].concat(list.filter(([n]) => n !== 'Coinbase'));
+    return list;
   };
 
   /**
@@ -313,7 +330,7 @@
     const details = [];
     let first = null, extra = 0;
     for (const [name, fn] of sourcesFor(s, opts && opts.prefer)) {
-      if (first && (!opts || !opts.check || extra >= 2)) break;
+      if (first && (!opts || !opts.check || extra >= 3)) break;
       if (first) extra++;
       try {
         const r = await fn(f, s, day);
@@ -370,6 +387,6 @@
   }
 
   CT.pricefeed = { dailyEur, fetchEur, describe, plausible, kindOf, OZ, _reset: () => { fxCache.clear(); lbmaCache.clear(); bpAssets = null; serverMissing = false; },
-    _sources: { viaBitpanda, viaBinance, viaCryptoCom, viaKraken, viaCoinbase, viaCryptoCompare, viaLBMA, ecbEurPer, frankfurterEurPer } };
+    _sources: { viaBitpanda, viaCoinbaseSpot, viaBinance, viaCryptoCom, viaKraken, viaCoinbase, viaCryptoCompare, viaLBMA, ecbEurPer, frankfurterEurPer } };
   if (typeof module !== 'undefined') module.exports = CT.pricefeed;
 })();

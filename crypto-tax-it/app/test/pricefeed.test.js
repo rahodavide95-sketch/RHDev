@@ -52,7 +52,7 @@ test('Binance e Kraken senza quotazione: si passa a CryptoCompare', async () => 
 
 test('nessuna fonte risponde: errore con il motivo di ciascuna, senza inventare un prezzo', async () => {
   await assert.rejects(() => PF.dailyEur('BTC', DAY, net([['binance', 'down'], ['crypto.com', 'down'], ['kraken', json(429, {})], ['coinbase', json(500, {})], ['cryptocompare', json(200, { Response: 'Error', Message: 'rate limit' })]])),
-    (e) => e.details.length === 5 && /Binance: collegamento non riuscito/.test(e.details[0]) && /Kraken: HTTP 429/.test(e.details[2]) && /CryptoCompare: rate limit/.test(e.details[4]));
+    (e) => e.details.length === 6 && /Binance: collegamento non riuscito/.test(e.details[0]) && /^Coinbase: HTTP 500/.test(e.details[1]) && /Kraken: HTTP 429/.test(e.details[3]) && /CryptoCompare: rate limit/.test(e.details[5]));
 });
 
 test('risposte strane: prezzo zero, giorno sbagliato, testo non JSON', async () => {
@@ -96,7 +96,7 @@ test('Coinbase in dollari quando la BCE non risponde: cambio da Frankfurter (ste
   const f = net([['binance', 'down'], ['crypto.com', 'down'], ['kraken', 'down'], ['ADA-EUR', json(404, { message: 'NotFound' })],
     ['ADA-USD', json(200, [[t, 0.3, 0.4, 0.35, 0.47, 100]])], ['ecb.europa.eu', 'down'], ['frankfurter', json(200, { amount: 1, base: 'USD', date: '2025-12-31', rates: { EUR: 0.85 } })]]);
   const r = await PF.dailyEur('ADA', DAY, f);
-  assert.equal(r.source, 'Coinbase'); assert.equal(r.price, '0.3995'); assert.match(r.detail, /Frankfurter/);
+  assert.equal(r.source, 'Coinbase Exchange'); assert.equal(r.price, '0.3995'); assert.match(r.detail, /Frankfurter/);
 });
 
 test('oro (grammi): prezzo LBMA in euro per oncia diviso 31,1034768; il 31/12 senza asta PM vale la AM, poi il giorno prima', async () => {
@@ -180,4 +180,18 @@ test('Bitpanda: candele settimanali o asset assente non danno un prezzo inventat
   const absent = net([['api.bitpanda.com/v3/currencies', BP_CUR], ['symbol=SOLEUR', json(200, kl(150))]]);
   assert.equal((await PF.dailyEur('SOL', DAY, absent, { prefer: 'bitpanda' })).source, 'Binance');
   PF._reset();
+});
+
+test('Coinbase: prezzo spot del giorno (risponde anche dal browser); prima fonte per le cripto custodite su Coinbase', async () => {
+  PF._reset();
+  const spot = json(200, { data: { amount: '81234.56', base: 'BTC', currency: 'EUR' } });
+  const f = net([['api.coinbase.com/v2/prices/BTC-EUR/spot?date=2025-12-31', spot], ['symbol=BTCEUR', json(200, kl(81200))]]);
+  const pref = await PF.dailyEur('BTC', DAY, f, { check: true, prefer: 'coinbase' });
+  assert.equal(pref.source, 'Coinbase'); assert.equal(pref.price, '81234.56'); assert.equal(pref.detail, 'Coinbase, prezzo spot BTC/EUR del 31/12/2025');
+  assert.equal(pref.check.source, 'Binance'); assert.equal(pref.check.diffPct, 0.04);
+  // senza preferenza: Binance prima, Coinbase come controllo
+  const std = await PF.dailyEur('BTC', DAY, f, { check: true });
+  assert.equal(std.source, 'Binance'); assert.equal(std.check.source, 'Coinbase');
+  // Binance bloccato dal browser: arriva comunque da Coinbase
+  assert.equal((await PF.dailyEur('BTC', DAY, net([['binance', 'down'], ['api.coinbase.com/v2/prices/BTC-EUR', spot]]))).source, 'Coinbase');
 });

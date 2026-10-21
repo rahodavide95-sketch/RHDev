@@ -898,9 +898,110 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
         h('li', null, 'Il programma dell\'Agenzia calcola IRPEF, addizionali e acconti e prepara l\'F24.')));
   }
 
+  // ------------------------------------------------------------------ lettore della CU: il PDF si legge nel browser, non si invia e non si salva
+  const itMoney = (x) => (x === null || x === undefined || x === '' ? '' : Number(x).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+  async function readCU(files) {
+    if (!files.length) return;
+    ui.cuBusy = true; render();
+    const out = [];
+    for (const f of files) {
+      try { out.push({ name: f.name, r: await CT.cu.readPdf(await f.arrayBuffer()) }); }
+      catch (e) { out.push({ name: f.name, error: e && e.message ? e.message : 'file non leggibile' }); }
+    }
+    ui.cuBusy = false; ui.cuReview = cuModel(out); render();
+  }
+  /** Dati letti -> modello modificabile della schermata di controllo. */
+  function cuModel(out) {
+    const o = othersState();
+    const v = { files: out, items: [], dip: null, under35: null, warnings: [], keys: [], dipMode: 'set' };
+    for (const f of out) {
+      if (f.error) { v.warnings.push(`${f.name}: ${f.error}`); continue; }
+      const r = f.r;
+      if (r.year && r.year !== state.settings.year) v.warnings.push(`${f.name}: è la CU dei redditi ${r.year}, ma stai compilando il ${state.settings.year}.`);
+      v.warnings.push(...r.warnings.map((w) => `${f.name}: ${w}`));
+      for (const b of r.autonomo) {
+        v.items.push({ causale: b.causale || '?', kind: b.causale === 'B' ? 'dir' : b.causale === 'M' ? 'occ' : 'skip', chi: r.sostituto || 'CU', lordo: itMoney(b.lordo), rit: itMoney(b.ritenute || '0'), file: f.name });
+        const d = CT.cu.dedRate(b);
+        if (d) v.under35 = d === 0.40;
+      }
+      const p = r.dipendente;
+      if (Object.keys(p).length) {
+        const sum = (...k) => { const xs = k.map((x) => p[x]).filter((x) => x !== undefined); return xs.length ? itMoney(xs.reduce((s, x) => s + Number(x), 0)) : ''; };
+        const add = { altri: sum('p1', 'p2', 'p3'), giorni: p.p6 || p.p7 || '', ritCU: sum('p21'), addRegTr: sum('p22'), addComTr: sum('p26', 'p27') };
+        if (!v.dip) v.dip = add;
+        else for (const k of Object.keys(add)) v.dip[k] = k === 'giorni' ? String(Math.min(365, (Number(v.dip[k]) || 0) + (Number(add[k]) || 0)) || '') : itMoney(CT.others.num(v.dip[k]).plus(CT.others.num(add[k])).toString());
+      }
+      const key = JSON.stringify([r.year, r.sostituto, r.autonomo.map((b) => [b.causale, b.lordo, b.ritenute]), r.dipendente]);
+      if ((o.cuSeen || []).includes(key)) v.warnings.push(`${f.name}: questa CU risulta già inserita. Se confermi la conti due volte.`);
+      v.keys.push(key);
+    }
+    if (v.dip && (String(o.altri || '').trim() || String(o.ritCU || '').trim())) v.dipMode = 'add';
+    return v;
+  }
+  function applyCU() {
+    const v = ui.cuReview, o = othersState();
+    let n = 0;
+    for (const it of v.items) {
+      if (it.kind === 'dir') { o.dir.push({ id: uid(), chi: it.chi, lordo: it.lordo, rit: it.rit }); o.skip.musica = false; n++; }
+      else if (it.kind === 'occ') { o.occ.push({ id: uid(), chi: it.chi, lordo: it.lordo, rit: it.rit, spese: '' }); o.skip.musica = false; n++; }
+    }
+    if (v.under35 !== null && v.items.some((i) => i.kind === 'dir')) o.under35 = v.under35;
+    if (v.dip) {
+      for (const [k, val] of Object.entries(v.dip)) {
+        if (!String(val).trim()) continue;
+        if (v.dipMode === 'add' && String(o[k] || '').trim()) o[k] = k === 'giorni' ? String(Math.min(365, (parseInt(o[k], 10) || 0) + (parseInt(val, 10) || 0))) : itMoney(CT.others.num(o[k]).plus(CT.others.num(val)).toString());
+        else o[k] = val;
+      }
+      o.skip.lavoro = false; n++;
+    }
+    o.cuSeen = (o.cuSeen || []).concat(v.keys);
+    ui.cuReview = null; othersChanged();
+    toast(n ? 'Dati della CU inseriti: controllali nelle pagine Lavoro dipendente e Musica' : 'Niente da inserire');
+  }
+  function cuCard() {
+    return card('Hai la Certificazione Unica in PDF?', 'Il programma la legge e compila i campi da solo: stipendio e addizionali, diritti SIAE, serate. Il file resta sul tuo dispositivo: viene letto nel browser, non viene inviato a nessuno e non viene salvato.',
+      h('div', { class: 'row' },
+        h('label', { class: 'btn primary', for: 'cu-file' }, ui.cuBusy ? 'Sto leggendo…' : 'Leggi la CU (PDF)'),
+        h('input', { type: 'file', id: 'cu-file', class: 'sr', accept: 'application/pdf,.pdf', multiple: true, onchange: (e) => { const fs = [...e.target.files]; e.target.value = ''; readCU(fs); } }),
+        h('span', { class: 'muted small' }, 'Puoi sceglierne più di una. Prima di inserire i numeri ti faccio controllare tutto.')));
+  }
+  function cuReviewCard() {
+    const v = ui.cuReview;
+    if (!v) return null;
+    const Y = state.settings.year;
+    const inp = (obj, key, label, num) => h('input', { type: 'text', inputmode: num === false ? null : 'decimal', class: num === false ? null : 'num-in', value: obj[key] || '', 'aria-label': label, oninput: (e) => { obj[key] = e.target.value; } });
+    const WHERE_CU = { dir: 'Diritti d\'autore (rigo RL25)', occ: 'Serate e lavori occasionali (rigo RL15)', skip: 'Causale non gestita: non la inserisco' };
+    const nothing = !v.items.length && !v.dip;
+    return h('section', { class: 'card feature' },
+      h('h2', null, nothing ? 'Non ho trovato dati nella CU' : 'Controlla quello che ho letto dalla CU'),
+      h('p', { class: 'muted small' }, `File: ${v.files.map((f) => f.name).join(', ')}. Letto nel tuo browser: il PDF non è stato inviato a nessuno e non viene salvato. Correggi se serve, poi conferma.`),
+      v.warnings.length ? callout('warn', 'Da guardare', null, h('ul', { class: 'clean small' }, v.warnings.map((w) => h('li', null, w)))) : null,
+      v.items.length ? [h('h3', null, 'Lavoro autonomo e diritti d\'autore'),
+        h('div', { class: 'tbl-wrap' }, h('table', { class: 'edit' },
+          h('thead', null, h('tr', null, ['Causale', 'Dove va', 'Da chi', 'Lordo €', 'Ritenuta €'].map((x, i) => h('th', { class: i >= 3 ? 'num' : null }, x)))),
+          h('tbody', null, v.items.map((it) => h('tr', null, h('td', { 'data-l': 'Causale' }, h('span', { class: 'code' }, it.causale)), h('td', { 'data-l': 'Dove va' }, WHERE_CU[it.kind]),
+            h('td', { 'data-l': 'Da chi' }, inp(it, 'chi', 'Da chi', false)), h('td', { 'data-l': 'Lordo €' }, inp(it, 'lordo', 'Lordo')), h('td', { 'data-l': 'Ritenuta €' }, inp(it, 'rit', 'Ritenuta'))))))),
+        v.under35 === true ? h('p', { class: 'small' }, `La CU applica la riduzione del 40% ai diritti d'autore: vuol dire che nel ${Y} avevi meno di 35 anni. Lo segno nella pagina Musica.`) : null,
+        v.under35 === false ? h('p', { class: 'small' }, 'La CU applica la riduzione del 25% ai diritti d\'autore (35 anni o più).') : null] : null,
+      v.dip ? [h('h3', null, 'Lavoro dipendente o pensione'),
+        h('div', { class: 'fields' },
+          h('label', { class: 'field' }, h('span', null, 'Reddito (punti 1, 2 e 3)'), inp(v.dip, 'altri', 'Reddito')),
+          h('label', { class: 'field' }, h('span', null, 'Giorni (punto 6 o 7)'), inp(v.dip, 'giorni', 'Giorni')),
+          h('label', { class: 'field' }, h('span', null, 'Ritenute IRPEF (punto 21)'), inp(v.dip, 'ritCU', 'Ritenute IRPEF')),
+          h('label', { class: 'field' }, h('span', null, 'Addizionale regionale (punto 22)'), inp(v.dip, 'addRegTr', 'Addizionale regionale')),
+          h('label', { class: 'field' }, h('span', null, 'Addizionale comunale (punti 26 e 27)'), inp(v.dip, 'addComTr', 'Addizionale comunale'))),
+        v.dipMode === 'add' || String(othersState().altri || '').trim() ? h('div', { class: 'segmented' },
+          h('button', { 'aria-selected': String(v.dipMode === 'add'), onclick: () => { v.dipMode = 'add'; render(); } }, 'Somma (altro datore di lavoro)'),
+          h('button', { 'aria-selected': String(v.dipMode === 'set'), onclick: () => { v.dipMode = 'set'; render(); } }, 'Sostituisci quanto già scritto')) : null] : null,
+      h('div', { class: 'row' },
+        nothing ? null : h('button', { class: 'btn primary', onclick: applyCU }, 'Conferma e inserisci'),
+        h('button', { class: 'btn', onclick: () => { ui.cuReview = null; render(); } }, nothing ? 'Chiudi' : 'Annulla')));
+  }
+
   function pageLavoro() {
     const o = othersState(), c = CT.others.compute(o), Y = state.settings.year;
     return [
+      cuReviewCard(), ui.cuReview ? null : cuCard(),
       skipToggle(o, 'lavoro', `Nel ${Y} non ho avuto stipendio né pensione`, c.altri.gt(0)),
       o.skip.lavoro && !c.altri.gt(0) ? callout('good', 'Sezione completata', 'Hai indicato che non hai redditi da lavoro dipendente o pensione.') : [
         card('Dati della Certificazione Unica', `Il datore di lavoro (o l'INPS, per la pensione) ti manda la CU ${Y + 1} con i dati del ${Y}. Con più datori di lavoro somma redditi e ritenute di tutte le CU.`,
@@ -920,9 +1021,10 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     const o = othersState(), c = CT.others.compute(o), Y = state.settings.year;
     const filled = c.occ.length + c.dir.length > 0;
     return [
+      cuReviewCard(), ui.cuReview ? null : cuCard(),
       skipToggle(o, 'musica', `Nel ${Y} non ho avuto compensi da musica o lavori occasionali`, filled),
       o.skip.musica && !filled ? callout('good', 'Sezione completata', 'Hai indicato che non hai compensi occasionali né diritti d\'autore.') : [
-        card('Serate da DJ e lavori occasionali', 'Ricevute di «prestazione occasionale» senza partita IVA. Una riga per ricevuta o per Certificazione Unica: chi ti ha pagato, il lordo, la ritenuta del 20% e le spese documentate. Se il locale, l\'associazione o la società ti ha mandato la CU (causale M), copia il punto 4 nel lordo e il punto 9 nella ritenuta.',
+        card('Serate da DJ e lavori occasionali', 'Ricevute di «prestazione occasionale» senza partita IVA. Una riga per ricevuta o per Certificazione Unica: chi ti ha pagato, il lordo, la ritenuta del 20% e le spese documentate. Se il locale, l\'associazione o la società ti ha mandato la CU (causale M), copia «Ammontare lordo corrisposto» (punto 4) nel lordo e «Ritenute a titolo d\'acconto» (punto 9) nella ritenuta, oppure fai leggere il PDF qui sopra.',
           rowsEditor(o.occ, [{ key: 'chi', label: 'Chi ti ha pagato', ph: 'es. Locale XY' }, { key: 'lordo', label: 'Lordo € (CU punto 4)', num: true, ph: '500' }, { key: 'rit', label: 'Ritenuta € (CU punto 9)', num: true, ph: '100' }, { key: 'spese', label: 'Spese €', num: true, ph: '0' }], {}, '+ Aggiungi una ricevuta o una CU'),
           h('ul', { class: 'notes' },
             h('li', null, 'Se fai serate in modo continuativo e organizzato non è più «occasionale»: serve la partita IVA.'),
@@ -930,9 +1032,9 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
         card('Diritti d\'autore e royalties', `SIAE, editori musicali, etichette, distributori. La SIAE ti manda ogni anno la Certificazione Unica ${Y + 1} con i diritti del ${Y}: come per lo stipendio, aggiungi una riga per ogni CU e copia due numeri. Se sei l'autore (testi, musica, produzione firmata) si paga sul 75% del lordo, sul 60% se avevi meno di 35 anni: la riduzione la fa il programma.`,
           cuGuide([
             ['1', 'Causale: B = diritti d\'autore', 'questa tabella (con M va in quella delle serate)'],
-            ['4', 'Ammontare lordo corrisposto', 'colonna «Lordo»'],
-            ['7 e 8', 'Parte non tassata (25% o 40%) e imponibile', 'non servono: non copiarli'],
-            ['9', 'Ritenute a titolo d\'acconto', 'colonna «Ritenuta»'],
+            ['4', '«Ammontare lordo corrisposto»', 'colonna «Lordo»'],
+            ['7 e 8', '«Altre somme non soggette a ritenuta» (la parte non tassata, 25% o 40%) e «Imponibile»', 'non servono: non copiarli'],
+            ['9', '«Ritenute a titolo d\'acconto»', 'colonna «Ritenuta»'],
           ]),
           h('label', { class: 'toggle' }, h('input', { type: 'checkbox', checked: !!o.under35, onchange: (e) => { o.under35 = e.target.checked; othersTyped(); } }), h('span', null, `Nel ${Y} avevo meno di 35 anni (la parte esente sale dal 25% al 40%)`)),
           rowsEditor(o.dir, [{ key: 'chi', label: 'Da chi', ph: 'es. SIAE, etichetta' }, { key: 'lordo', label: 'Lordo € (CU punto 4)', num: true, ph: '1000' }, { key: 'rit', label: 'Ritenuta € (CU punto 9)', num: true, ph: '150' }], {}, '+ Aggiungi una CU o un pagamento'),
@@ -1418,7 +1520,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     const style = document.querySelector('style[data-app]');
     const scripts = [...document.querySelectorAll('script[data-app]')];
     if (!style || !scripts.length) return null;
-    return `<!doctype html>\n<html lang="it">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n<meta name="robots" content="noindex">\n<title>Dichiarazione Redditi</title>\n<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap">\n<style>\n${style.textContent}\n</style>\n</head>\n<body>\n<div id="app"></div>\n${scripts.map((x) => `<script>\n${x.textContent}\n</script>`).join('\n')}\n</body>\n</html>\n`;
+    return `<!doctype html>\n<html lang="it">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n<meta name="robots" content="noindex">\n<title>Dichiarazione Redditi</title>\n<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap">\n<style>\n${style.textContent}\n</style>\n</head>\n<body>\n<div id="app"></div>\n${scripts.map((x) => `<script${x.dataset.lazy ? ` type="text/plain" data-app data-lazy="${x.dataset.lazy}"` : ''}>\n${x.textContent.replace(/<\/script/gi, '<\\/script')}\n</script>`).join('\n')}\n</body>\n</html>\n`;
   }
 
   // ------------------------------------------------------------------ PDF

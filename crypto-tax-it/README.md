@@ -17,6 +17,10 @@ musica (prestazioni occasionali, diritti d'autore), spese e detrazioni e, soprat
 2. **Panoramica**: quanto pagare adesso e più avanti, quando inviare la dichiarazione, il prossimo passo da fare e
    l'avanzamento di ogni sezione.
 3. **Redditi**
+   - **Lettore della CU**: nelle pagine Lavoro dipendente e Musica il pulsante «Leggi la CU (PDF)» legge le Certificazioni
+     Uniche (stipendio, SIAE, locali) e propone i numeri in una schermata di controllo prima di inserirli. Il PDF viene
+     letto nel browser con pdf.js, non viene inviato a nessuno e non viene salvato. Se è una scansione senza testo, i numeri
+     vanno scritti a mano.
    - **Lavoro dipendente**: stipendio o pensione dalla Certificazione Unica (quadro RC: righi RC1, RC6, RC10) e
      addizionali già trattenute (CU punto 22 regionale, punti 26 e 27 comunale: righi RV3 e RV11).
    - **Musica (DJ e SIAE)**: serate e lavori occasionali (rigo RL15), diritti d'autore SIAE e royalties (rigo RL25,
@@ -83,5 +87,6 @@ node --test app/test/*.test.js  # test del motore, degli importatori, dell'anali
 ```
 
 Sorgenti in `app/src`: `core` (tipi, date), `csv`, `importers`, `engine` (lotti LIFO, permute, trasferimenti),
-`tax` (panieri, riporto perdite, franchigie per anno), `rw`, `zip` (lettura/scrittura), `pipeline`, `report`, `payments` (cosa pagare: codici F24, scadenze, ravvedimento), `others` (lavoro, musica, spese: righi e stima IRPEF), `pdf`, `facsimile`, `platforms` (catalogo piattaforme), `ui`.
-Librerie incluse in `app/src/vendor` (licenza MIT): `decimal.js` (calcoli esatti sui decimali), `jsPDF` e `jsPDF-AutoTable` (PDF).
+`tax` (panieri, riporto perdite, franchigie per anno), `rw`, `zip` (lettura/scrittura), `pipeline`, `report`, `payments` (cosa pagare: codici F24, scadenze, ravvedimento), `others` (lavoro, musica, spese: righi e stima IRPEF), `cu` (lettore delle Certificazioni Uniche), `pdf`, `facsimile`, `platforms` (catalogo piattaforme), `ui`.
+Librerie incluse in `app/src/vendor`: `decimal.js` (calcoli esatti sui decimali), `jsPDF` e `jsPDF-AutoTable` (PDF), licenza MIT;
+`pdf.js` 3.11.174 di Mozilla (lettura delle CU in PDF), licenza Apache-2.0, inserito nella pagina ma avviato solo quando si apre una CU.

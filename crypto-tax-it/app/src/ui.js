@@ -1302,10 +1302,14 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
   // ------------------------------------------------------------------ pannello: Prezzi
   const insideClaude = () => !!(typeof window !== 'undefined' && window.claude && window.claude.use);
   /** Prezzo in euro alla chiusura del giorno: prova piu' servizi pubblici (vedi pricefeed.js). Un valore non credibile si scarta. */
+  /** Asset custoditi su Bitpanda: per quelli il prezzo si prende prima dal listino Bitpanda, cosi' coincide con l'estratto conto. */
+  const onBitpanda = (sym) => !!(ui.res && ui.res.rw.some((r) => r.asset === sym && /bitpanda/i.test(r.account)));
   async function fetchPrice(sym, day) {
-    const r = await CT.pricefeed.fetchEur(sym, day);
+    const r = await CT.pricefeed.fetchEur(sym, day, { prefer: onBitpanda(sym) ? 'bitpanda' : undefined });
     const n = Number(r.price);
     if (!Number.isFinite(n) || n <= 0) { const e = new Error('prezzo non valido'); e.details = [`${r.source}: prezzo non valido`]; throw e; }
+    // due fonti molto diverse: meglio non usare nessuna delle due senza un controllo
+    if (r.check && r.check.diffPct > 25) { const e = new Error('fonti in disaccordo'); e.details = [`${sym}: ${r.source} dà ${n} €, ${r.check.source} ${r.check.price} € (differenza ${r.check.diffPct}%): scrivi il prezzo dell'estratto conto`]; throw e; }
     const near = ui.res && ui.res.engine.prices.nearest(sym, day);
     if (near) {
       const ref = Number(near.price.toString());

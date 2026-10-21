@@ -32,7 +32,8 @@ musica (prestazioni occasionali, diritti d'autore), spese e detrazioni e, soprat
      wallet personale) e carica i file (CSV o .zip, il tipo viene riconosciuto da solo) o collega le API.
    - **Da controllare**: il programma non indovina; ti chiede solo ciò che non può sapere (dove sono finite delle
      crypto uscite, a che costo hai preso quelle arrivate da fuori, righe sconosciute). I **prezzi** che mancano (per
-     esempio il valore al 31/12 per il quadro RW) li scarica da solo: cripto da Binance, Crypto.com Exchange, Kraken,
+     esempio il valore al 31/12 per il quadro RW) li scarica da solo. Per quello che è custodito su Bitpanda usa prima il
+     listino Bitpanda (lo stesso dei suoi estratti conto: il valore coincide con l'estratto conto al 31/12); poi cripto da Binance, Crypto.com Exchange, Kraken,
      Coinbase o CryptoCompare; oro e metalli dal prezzo LBMA in euro (diviso 31,1035 per avere il grammo, come li conta
      Bitpanda) o da PAX Gold; valute dal cambio BCE. Ogni prezzo ha la fonte scritta per esteso e il confronto con una
      seconda fonte; si può sempre sostituire con quello dell'estratto conto della piattaforma.

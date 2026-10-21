@@ -25,6 +25,13 @@ Il lavoro si salva da solo nel browser; si può anche salvare/riaprire come file
 
 **API (sperimentali):** Crypto.com Exchange, Bitpanda e Binance si possono collegare con una chiave di sola lettura (la chiave resta nel browser, non viene salvata e viene inviata solo alla piattaforma). I collegamenti sono costruiti sulla documentazione ufficiale e provati su risposte **simulate**, non con un account reale: dall'ambiente di sviluppo non si raggiungono i server delle piattaforme. Inoltre i browser possono bloccare le chiamate dirette (CORS) e dentro claude.ai la pagina non può collegarsi a siti esterni: in quel caso si usano i file. Ciò che l'API non scarica (Earn, staking, margine, azioni…) compare in **Da controllare** finché non aggiungi il file o confermi di non avere operazioni di quel tipo; se API e file coprono lo stesso periodo il programma ti fa scegliere una sola fonte. Crypto.com App non ha un'API pubblica. Dettagli e limiti in `docs/SPECIFICA.md`.
 
+## Pubblicazione su Vercel
+
+Su Vercel: **Add New → Project →** importa il repository `RHDev` **→** nella schermata «Configure Project», alla voce
+**Root Directory** premi **Edit** e scegli la cartella `crypto-tax-it` **→** Framework Preset: **Other**, nessun comando di build
+(la pagina `index.html` è già pronta) **→ Deploy**. Lo stesso repository può avere più progetti Vercel, uno per cartella.
+`vercel.json` fa sì che `index.html` non resti in cache dopo un aggiornamento.
+
 ## Attenzione: questo repository pubblica su GitHub Pages
 
 Il workflow `.github/workflows/deploy-pages.yml` pubblica **l'intera cartella radice** a ogni push su `main`.

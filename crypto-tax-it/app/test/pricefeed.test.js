@@ -148,3 +148,36 @@ test('pagina pubblicata: prima il servizio api/price; se manca (404 senza JSON) 
   assert.equal(seen.filter((u) => u.startsWith('api/price')).length, 1);
   PF._reset();
 });
+
+// ---- listino Bitpanda (stesso prezzo dei suoi estratti conto), prima fonte per cio' che e' custodito su Bitpanda
+const BP_CUR = json(200, { data: { type: 'currencies', attributes: { cryptocoins: [{ type: 'cryptocoin', id: '1', attributes: { symbol: 'BTC', pid: 'pid-btc' } }],
+  commodities: [{ type: 'commodity', id: '28', attributes: { symbol: 'XAU', pid: 'pid-xau' } }] } } });
+const candle = (iso, close) => ({ type: 'candle', attributes: { open: '1', high: '1', low: '1', close, time: { date_iso8601: iso, unix: String(Date.parse(iso) / 1000) } } });
+
+test('Bitpanda: oro custodito su Bitpanda, chiusura del 31/12 dal listino Bitpanda; LBMA fa da controllo', async () => {
+  PF._reset();
+  const f = net([['api.bitpanda.com/v3/currencies', BP_CUR],
+    ['api.bitpanda.com/v3/ohlc/pid-xau/EUR/', json(200, { data: [candle('2025-12-30T00:00:00+01:00', '117.9'), candle('2025-12-31T00:00:00+01:00', '118.20613'), candle('2026-01-01T00:00:00+01:00', '118.5')] })],
+    ['gold_pm.json', json(200, [{ d: '2025-12-30', v: [4300, 3200, 3668.2] }])], ['gold_am.json', json(200, [{ d: '2025-12-31', v: [4320, 3210, 3676.53] }])]]);
+  const r = await PF.dailyEur('XAU', DAY, f, { check: true, prefer: 'bitpanda' });
+  assert.equal(r.source, 'Bitpanda'); assert.equal(r.price, '118.20613');
+  assert.equal(PF.describe(r), 'Bitpanda, listino della piattaforma: chiusura del 31/12/2025 (ora di Vienna) · confermato da LBMA (differenza 0%)');
+  assert.equal(r.check.source, 'LBMA'); assert.equal(r.check.diffPct, 0);
+  // 6,64079339 g x 118,20613 = 784,98 €, come nell'estratto conto
+  assert.equal(CT.D('6.64079339').times(r.price).toDecimalPlaces(2).toString(), '784.98');
+  // senza prefer si parte da LBMA (oro non custodito su Bitpanda)
+  assert.equal((await PF.dailyEur('XAU', DAY, f)).source, 'LBMA');
+});
+
+test('Bitpanda: candele settimanali o asset assente non danno un prezzo inventato: si passa alle altre fonti', async () => {
+  PF._reset();
+  const weekly = net([['api.bitpanda.com/v3/currencies', BP_CUR],
+    ['api.bitpanda.com/v3/ohlc/', json(200, { data: [candle('2025-12-24T00:00:00+01:00', '110'), candle('2025-12-31T00:00:00+01:00', '118'), candle('2026-01-07T00:00:00+01:00', '120')] })],
+    ['symbol=BTCEUR', json(200, kl(80000))]]);
+  const r = await PF.dailyEur('BTC', DAY, weekly, { prefer: 'bitpanda' });
+  assert.equal(r.source, 'Binance');
+  PF._reset();
+  const absent = net([['api.bitpanda.com/v3/currencies', BP_CUR], ['symbol=SOLEUR', json(200, kl(150))]]);
+  assert.equal((await PF.dailyEur('SOL', DAY, absent, { prefer: 'bitpanda' })).source, 'Binance');
+  PF._reset();
+});

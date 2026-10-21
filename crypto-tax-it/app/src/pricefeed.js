@@ -22,6 +22,12 @@
      -> {"Response":"Success","Data":{"Data":[{"time":<s>,"close":<n>}]}}
    - LBMA: GET https://prices.lbma.org.uk/json/gold_pm.json (gold_am, silver, platinum_pm/_am, palladium_pm/_am)
      -> [{"d":"AAAA-MM-GG","v":[USD, GBP, EUR]}, ...] per oncia troy; nei giorni senza asta (festivi, 31/12 pomeriggio) si usa l'ultima prima.
+   - Bitpanda (listino della piattaforma, quello dei suoi estratti conto; usato per primo per cio' che e' custodito su Bitpanda):
+     GET https://api.bitpanda.com/v3/currencies -> {"data":{"attributes":{"commodities":[{"attributes":{"symbol":"XAU","pid":"..."}}],"cryptocoins":[...]}}}
+     GET https://api.bitpanda.com/v3/ohlc/<pid>/EUR/year (ultimo anno; "five-years" per date piu' vecchie)
+     -> {"data":[{"type":"candle","attributes":{"open":"..","high":"..","low":"..","close":"..","time":{"date_iso8601":"2025-12-31T00:00:00+01:00","unix":".."}}}]}
+     Percorsi presi da client open source (veeso/bitpanda-api-rs, matteoantoci/mcp-bitpanda): non e' un'API documentata da Bitpanda.
+     I metalli sono quotati in euro al grammo, come nel file delle transazioni.
    - BCE: GET https://data-api.ecb.europa.eu/service/data/EXR/D.USD.EUR.SP00.A?startPeriod=..&endPeriod=..&format=jsondata
      (SDMX-JSON: unita' di valuta per 1 euro); in alternativa Frankfurter (stessi cambi BCE): https://api.frankfurter.app/AAAA-MM-GG?from=USD&to=EUR */
 (function () {
@@ -205,6 +211,42 @@
     return { price: c, detail: `media di mercato ${sym}/EUR, chiusura del ${dmy(day)} (UTC)` };
   }
 
+  // ---------------------------------------------------------------- Bitpanda
+  let bpAssets = null;
+  async function bitpandaPid(fetchImpl, sym) {
+    if (!bpAssets) {
+      const r = await getJson(fetchImpl, 'https://api.bitpanda.com/v3/currencies', 15000);
+      const a = r.body && r.body.data && r.body.data.attributes;
+      if (!r.ok || !a || typeof a !== 'object') throw new Error(`HTTP ${r.status}`);
+      bpAssets = a;
+    }
+    for (const list of Object.values(bpAssets)) {
+      if (!Array.isArray(list)) continue;
+      const hit = list.find((x) => x && x.attributes && String(x.attributes.symbol).toUpperCase() === sym && x.attributes.pid);
+      if (hit) return hit.attributes.pid;
+    }
+    throw new NoQuote('asset non presente su Bitpanda');
+  }
+  async function viaBitpanda(fetchImpl, sym, day) {
+    const pid = await bitpandaPid(fetchImpl, sym);
+    const age = (Date.now() - Date.parse(day + 'T00:00:00Z')) / DAY;
+    for (const period of age < 355 ? ['year', 'five-years'] : ['five-years']) {
+      const r = await getJson(fetchImpl, `https://api.bitpanda.com/v3/ohlc/${encodeURIComponent(pid)}/EUR/${period}`, 15000);
+      if (!r.ok || !r.body || !Array.isArray(r.body.data)) throw new Error(`HTTP ${r.status}`);
+      const rows = r.body.data.map((x) => x && x.attributes).filter((a) => a && a.time && typeof a.time.date_iso8601 === 'string')
+        .map((a) => ({ d: a.time.date_iso8601.slice(0, 10), t: Number(a.time.unix) * 1000 || Date.parse(a.time.date_iso8601), close: a.close }))
+        .sort((a, b) => a.t - b.t);
+      const i = rows.findIndex((x) => x.d === day);   // candela del giorno (data nell'ora di Vienna): la chiusura e' la fine di quel giorno
+      if (i < 0) continue;
+      const gap = rows[i + 1] ? rows[i + 1].t - rows[i].t : rows[i - 1] ? rows[i].t - rows[i - 1].t : Infinity;
+      if (gap > 26 * 3600000) continue;               // candele settimanali: non danno il prezzo di quel giorno
+      const c = num(rows[i].close);
+      if (!c) throw new Error('prezzo non valido');
+      return { price: c, detail: `Bitpanda, listino della piattaforma: chiusura del ${dmy(day)} (ora di Vienna)` };
+    }
+    throw new NoQuote('nessun prezzo giornaliero per quel giorno');
+  }
+
   const CRYPTO = [['Binance', viaBinance], ['Crypto.com Exchange', viaCryptoCom], ['Kraken', viaKraken], ['Coinbase', viaCoinbase], ['CryptoCompare', viaCryptoCompare]];
 
   // ---------------------------------------------------------------- metalli preziosi (euro per grammo)
@@ -252,7 +294,12 @@
   const FIAT_SOURCES = [['BCE', fiatSource('BCE', ecbEurPer)], ['Frankfurter (cambi BCE)', fiatSource('Frankfurter', frankfurterEurPer)]];
 
   const kindOf = (s) => (METALS[s] ? 'metal' : FIAT.has(s) ? 'fiat' : 'crypto');
-  const sourcesFor = (s) => (METALS[s] ? metalSources(s) : FIAT.has(s) ? FIAT_SOURCES : CRYPTO);
+  /** Fonti in ordine; con prefer 'bitpanda' (asset custodito su Bitpanda) il listino Bitpanda viene prima, le altre fanno da controllo. */
+  const sourcesFor = (s, prefer) => {
+    if (FIAT.has(s)) return FIAT_SOURCES;
+    const list = METALS[s] ? metalSources(s) : CRYPTO;
+    return prefer === 'bitpanda' ? [['Bitpanda', viaBitpanda]].concat(list) : list;
+  };
 
   /**
    * Prezzo in euro di 1 `sym` (per i metalli: di 1 grammo) nel giorno `day` (AAAA-MM-GG). Ritorna { price: stringa, source, detail }.
@@ -265,7 +312,7 @@
     if (!/^[A-Z0-9]{1,12}$/.test(s) || !/^\d{4}-\d{2}-\d{2}$/.test(day)) throw new Error(`${s}: simbolo o data non validi`);   // anche 1 lettera: es. S (Sonic)
     const details = [];
     let first = null, extra = 0;
-    for (const [name, fn] of sourcesFor(s)) {
+    for (const [name, fn] of sourcesFor(s, opts && opts.prefer)) {
       if (first && (!opts || !opts.check || extra >= 2)) break;
       if (first) extra++;
       try {
@@ -301,12 +348,12 @@
     const base = o.base === undefined ? (typeof location !== 'undefined' && /^https?:$/.test(location.protocol) ? 'api/price' : null) : o.base;
     if (base && !serverMissing) {
       let r = null;
-      try { r = await getJson(f, `${base}?sym=${encodeURIComponent(sym)}&day=${encodeURIComponent(day)}`, 30000); } catch (e) { r = null; }
+      try { r = await getJson(f, `${base}?sym=${encodeURIComponent(sym)}&day=${encodeURIComponent(day)}${o.prefer ? `&prefer=${encodeURIComponent(o.prefer)}` : ''}`, 30000); } catch (e) { r = null; }
       if (r && r.ok && r.body && num(r.body.price)) return Object.assign(r.body, { via: 'server' });
       if (r && r.body && Array.isArray(r.body.details)) { const err = new Error(r.body.error || 'prezzo non disponibile'); err.details = r.body.details; throw err; }
       serverMissing = true;   // pagina senza servizio (GitHub Pages, file locale): si chiede direttamente alle fonti
     }
-    return dailyEur(sym, day, f, { check: true });
+    return dailyEur(sym, day, f, { check: true, prefer: o.prefer });
   }
 
   /**
@@ -322,7 +369,7 @@
     return p / r <= lim && p / r >= 1 / lim;
   }
 
-  CT.pricefeed = { dailyEur, fetchEur, describe, plausible, kindOf, OZ, _reset: () => { fxCache.clear(); lbmaCache.clear(); serverMissing = false; },
-    _sources: { viaBinance, viaCryptoCom, viaKraken, viaCoinbase, viaCryptoCompare, viaLBMA, ecbEurPer, frankfurterEurPer } };
+  CT.pricefeed = { dailyEur, fetchEur, describe, plausible, kindOf, OZ, _reset: () => { fxCache.clear(); lbmaCache.clear(); bpAssets = null; serverMissing = false; },
+    _sources: { viaBitpanda, viaBinance, viaCryptoCom, viaKraken, viaCoinbase, viaCryptoCompare, viaLBMA, ecbEurPer, frankfurterEurPer } };
   if (typeof module !== 'undefined') module.exports = CT.pricefeed;
 })();

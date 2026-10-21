@@ -6333,12 +6333,130 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
     '2025-05-01 12:00;permuta;Il mio wallet;ETH;1;2500;BTC;0.04;;;;;esempio\n' +
     '2025-06-01 12:00;provento;Il mio wallet;ADA;50;25;;;;;;staking;esempio\n';
 
+  // ---------------------------------------------------------------- Coinbase
+  // Export "Transaction history" (Rapporti -> Cronologia delle transazioni), nelle versioni note. Fatti sul formato verificati sul parser
+  // open source BittyTax (solo come riferimento, nessun codice copiato):
+  //  - attuale: ID, Timestamp, Transaction Type, Asset, Quantity Transacted, Price Currency, Price at Transaction, Subtotal,
+  //    Total (inclusive of fees and/or spread), Fees and/or Spread, Notes. Importi con simbolo ("€1,234.56"), quantita' negative in uscita,
+  //    data "2025-01-15 10:23:45 UTC", righe iniziali ("Transactions", "User,...").
+  //  - precedenti: senza ID; "Spot Price Currency" / "Spot Price at Transaction"; "Total (inclusive of fees)" e "Fees";
+  //    la piu' vecchia con la valuta nel nome delle colonne ("EUR Subtotal", "EUR Fees"...).
+  //  - Notes: "Bought 0.01 BTC for €250.00 EUR", con Advanced Trade "... on ETH-BTC at 0.05 BTC/ETH"; "Converted 0.5 ETH to 0.025 BTC".
+  const CB = {
+    buy: new Set(['buy', 'advanced trade buy', 'advance trade buy', 'credit']),
+    sell: new Set(['sell', 'advanced trade sell', 'advance trade sell', 'retail simple dust']),
+    staking: new Set(['rewards income', 'reward income', 'inflation reward', 'staking income']),
+    earn: new Set(['coinbase earn', 'learning reward']),
+    spend: new Set(['donation', 'admin debit', 'subscription', 'card spend']),
+    toPro: new Set(['exchange deposit', 'pro deposit', 'prime deposit']),
+    fromPro: new Set(['exchange withdrawal', 'pro withdrawal']),
+    internal: new Set(['vault withdrawal', 'cash to savings', 'savings to cash', 'transfer', 'retail staking transfer', 'retail unstaking transfer']),
+    migration: new Set(['asset migration', 'retail eth2 deprecation']),
+  };
+  /** Importo Coinbase: "€1,234.56", "-$12.34", "(€12.34)", "1234.5". */
+  function cbNum(s) {
+    if (s === undefined || s === null) return null;
+    let t = String(s).trim();
+    if (!t || t === '-') return null;
+    const neg = /^\(.*\)$/.test(t) || /^-/.test(t.replace(/[^\d.,-]/g, ''));
+    t = t.replace(/[^\d.,]/g, '');
+    if (!t) return null;
+    if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(t)) t = t.replace(/,/g, '');
+    const v = parseNum(t);
+    return v === null ? null : neg ? v.neg() : v;
+  }
+  const CB_TRADE = /^(?:Bought|Sold) ([\d,]*\.?\d+) (\w+) for [£€$]?([\d,]*\.?\d+) (\w+)(?: on (\w+-\w+))?/;
+  const CB_CONVERT = /^Converted ([\d,]*\.?\d+) (\w+) to ([\d,]*\.?\d+) (\w+)/;
+  const cbQty = (s) => D(String(s).replace(/,/g, ''));
+
+  function parseCoinbase(text, fileName, account) {
+    account = account || 'Coinbase';
+    const { headers, rows } = readTable(text, 'Transaction Type');
+    const miss = ['Timestamp', 'Transaction Type', 'Asset', 'Quantity Transacted'].filter((x) => !headers.includes(x));
+    if (miss.length) throw new FormatError(`Coinbase: colonne mancanti ${miss.join(', ')}`);
+    const v1 = headers.map((x) => /^(\w{3}) Subtotal$/.exec(x)).find(Boolean);   // formato piu' vecchio: valuta nel nome della colonna
+    const col = (row, ...names) => { for (const n of names) if (row[n] !== undefined && row[n] !== '') return row[n]; return ''; };
+    const mkUid = uidFactory(account);
+    const events = [];
+    const migr = [];
+    let dataRows = 0;
+    for (const row of rows) {
+      const typRaw = (row['Transaction Type'] || '').trim();
+      if (!typRaw || typRaw === 'Transaction Type') continue;
+      dataRows++;
+      const typ = typRaw.toLowerCase();
+      const uid = mkUid(row);
+      const src = `${fileName}:${row.__line}`;
+      const ts = parseTs(String(row['Timestamp']).trim().replace(/\s*UTC$/i, 'Z'));
+      const asset = (row['Asset'] || '').trim().toUpperCase();
+      const qRaw = cbNum(row['Quantity Transacted']);
+      const qty = qRaw === null ? ZERO : qRaw.abs();
+      const ccy = ((v1 && v1[1]) || col(row, 'Price Currency', 'Spot Price Currency') || 'EUR').toUpperCase();
+      const subtotal = absN(cbNum(col(row, 'Subtotal', `${ccy} Subtotal`)));
+      const total = absN(cbNum(col(row, 'Total (inclusive of fees and/or spread)', 'Total (inclusive of fees)', `${ccy} Total (inclusive of fees)`)));
+      const fees = absN(cbNum(col(row, 'Fees and/or Spread', 'Fees', `${ccy} Fees`)));
+      const price = absN(cbNum(col(row, 'Price at Transaction', 'Spot Price at Transaction', `${ccy} Spot Price at Transaction`)));
+      const notes = (row['Notes'] || '').trim();
+      const isSell = CB.sell.has(typRaw.toLowerCase());
+      // valore senza commissioni: negli acquisti il totale le comprende, nelle vendite e' gia' al netto
+      const gross = subtotal || (total && fees ? (isSell ? total.plus(fees) : total.minus(fees)) : total) || (price ? price.times(qty) : null);
+      const whole = total || subtotal || (price ? price.times(qty) : null);                                       // valore complessivo
+      const base = { uid, ts, account, ref: row['ID'] || '', src, raw: row, note: notes };
+      const val = (v) => (v ? { value: v, valueCcy: ccy } : {});
+      const fee = fees && fees.gt(0) ? { feeAsset: ccy, feeQty: fees } : {};
+      let ev;
+      const tm = CB_TRADE.exec(notes);
+      if (CB.buy.has(typ) || CB.sell.has(typ)) {
+        const buy = CB.buy.has(typ);
+        const quote = tm ? tm[4].toUpperCase() : ccy;
+        if (FIAT.has(quote) || classify(quote) === 'fiat') {
+          ev = mkEvent({ ...base, kind: buy ? Kind.BUY : Kind.SELL, asset, qty, ...val(gross), ...fee });
+        } else {
+          // Advanced Trade contro un'altra cripto (es. ETH-BTC): e' una permuta; valore in euro dal file
+          const qAmt = cbQty(tm[3]);
+          ev = buy ? mkEvent({ ...base, kind: Kind.SWAP, asset: quote, qty: qAmt, counterAsset: asset, counterQty: qty, ...val(whole) })
+            : mkEvent({ ...base, kind: Kind.SWAP, asset, qty, counterAsset: quote, counterQty: qAmt, ...val(whole) });
+        }
+      } else if (typ === 'convert') {
+        const m = CB_CONVERT.exec(notes);
+        ev = m ? mkEvent({ ...base, kind: Kind.SWAP, asset, qty, counterAsset: m[4].toUpperCase(), counterQty: cbQty(m[3]), ...val(gross) })
+          : unresolved(base, 'Coinbase · Convert senza dettaglio', `Convert del ${String(row['Timestamp'])}: nelle note manca la cripto ricevuta ("${notes}")`);
+      } else if (typ === 'send' || typ === 'retail mgx dex send' || CB.toPro.has(typ)) {
+        ev = mkEvent({ ...base, kind: Kind.TRANSFER_OUT, asset, qty, note: CB.toPro.has(typ) ? 'Coinbase: verso Coinbase Pro / Advanced' : notes });
+      } else if (typ === 'receive' || CB.fromPro.has(typ)) {
+        if (/coinbase referral/i.test(notes)) ev = mkEvent({ ...base, kind: Kind.INCOME, asset, qty, incomeType: 'referral', ...val(whole) });
+        else if (/coinbase (earn|rewards)/i.test(notes)) ev = mkEvent({ ...base, kind: Kind.INCOME, asset, qty, incomeType: 'reward', ...val(whole) });
+        else ev = mkEvent({ ...base, kind: Kind.TRANSFER_IN, asset, qty, ...val(whole), note: CB.fromPro.has(typ) ? 'Coinbase: da Coinbase Pro / Advanced' : notes });
+      } else if (CB.staking.has(typ)) ev = mkEvent({ ...base, kind: Kind.INCOME, asset, qty, incomeType: 'staking', ...val(whole) });
+      else if (CB.earn.has(typ)) ev = mkEvent({ ...base, kind: Kind.INCOME, asset, qty, incomeType: 'reward', ...val(whole) });
+      else if (typ === 'interest payout') ev = mkEvent({ ...base, kind: Kind.INCOME, asset, qty, incomeType: 'interest', ...val(whole) });
+      else if (typ === 'subscription rebate' || typ === 'subscription rebates (24 hours)') ev = mkEvent({ ...base, kind: Kind.INCOME, asset, qty, incomeType: 'cashback', ...val(whole) });
+      else if (CB.spend.has(typ)) ev = mkEvent({ ...base, kind: Kind.SPEND, asset, qty, ...val(whole) });
+      else if (typ === 'deposit' || typ === 'withdrawal') {
+        if (FIAT.has(asset)) ev = mkEvent({ ...base, kind: typ === 'deposit' ? Kind.FIAT_IN : Kind.FIAT_OUT, asset, qty });
+        else ev = mkEvent({ ...base, kind: typ === 'deposit' ? Kind.TRANSFER_IN : Kind.TRANSFER_OUT, asset, qty });
+      } else if (CB.internal.has(typ)) ev = mkEvent({ ...base, kind: Kind.INFO, note: `Movimento interno a Coinbase (${typRaw}): nessun effetto fiscale` });
+      else if (CB.migration.has(typ)) { migr.push({ base, asset, qty, out: qRaw !== null && qRaw.lt(0), whole, ccy, typRaw }); continue; }
+      else ev = unresolved(base, `Coinbase · tipo "${typRaw}"`, `Tipo di transazione non riconosciuto: "${typRaw}" (${asset} ${qty.toFixed()}${notes ? `, note: ${notes}` : ''})`);
+      events.push(ev);
+    }
+    // migrazioni di token (es. ETH2 -> ETH): una riga in uscita e una in entrata nello stesso momento diventano una conversione di saldo
+    const used = new Set();
+    for (const o of migr.filter((m) => m.out)) {
+      const i = migr.find((m) => !m.out && !used.has(m) && Math.abs(m.base.ts - o.base.ts) <= 60000);
+      if (i) { used.add(i); used.add(o); events.push(mkEvent({ ...o.base, kind: Kind.SWAP, asset: o.asset, qty: o.qty, counterAsset: i.asset, counterQty: i.qty, conv: true, ...(o.whole ? { value: o.whole, valueCcy: o.ccy } : {}) })); }
+    }
+    for (const m of migr.filter((x) => !used.has(x))) events.push(unresolved(m.base, `Coinbase · ${m.typRaw}`, `${m.typRaw}: ${m.out ? 'uscita' : 'entrata'} di ${m.qty.toFixed()} ${m.asset} senza la riga corrispondente`));
+    return finish('Coinbase', dataRows, events);
+  }
+
   // ---------------------------------------------------------------- riconoscimento automatico
   const TYPES = {
     cryptocom_app: { label: 'Crypto.com App', parse: parseCryptocomApp },
     cryptocom_exchange_trades: { label: 'Crypto.com Exchange · operazioni (trade)', parse: parseExchangeTrades },
     cryptocom_exchange_transfers: { label: 'Crypto.com Exchange · depositi/prelievi', parse: parseExchangeTransfers },
     bitpanda: { label: 'Bitpanda', parse: parseBitpanda },
+    coinbase: { label: 'Coinbase · cronologia transazioni', parse: parseCoinbase },
     generic: { label: 'Modello universale (altre piattaforme / wallet)', parse: parseGeneric },
   };
 
@@ -6346,6 +6464,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
     const t = String(text).replace(/^﻿/, '');
     if (/transaction id/i.test(t) && /asset class/i.test(t)) return 'bitpanda';
     if (/amount fiat/i.test(t) && /amount asset/i.test(t) && /created at/i.test(t)) return 'bitpanda';
+    if (/transaction type/i.test(t) && /quantity transacted/i.test(t)) return 'coinbase';
     let tbl;
     try { tbl = readTable(t); } catch (e) { return null; }
     const H = tbl.headers.map((h) => h.toLowerCase());
@@ -8563,17 +8682,20 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
       hue: 196,
       icon: ['M3 9.5L12 4l9 5.5', 'M5.5 11v7', 'M10 11v7', 'M14 11v7', 'M18.5 11v7', 'M3.5 20.5h17'],
       name: 'Coinbase',
-      blurb: 'Acquisti, vendite, convert e rendite su Coinbase.',
+      blurb: 'Acquisti, vendite, convert, staking e premi su Coinbase.',
       account: 'Coinbase',
-      native: false,
-      types: ['generic'],
-      kinds: [{ type: 'generic', label: 'Modello universale compilato' }],
+      native: true,
+      types: ['coinbase', 'generic'],
+      kinds: [{ type: 'coinbase', label: 'Cronologia delle transazioni (CSV)' }, { type: 'generic', label: 'Modello universale compilato' }],
       steps: [
-        'Il formato nativo dei file Coinbase non è ancora validato, quindi per ora si usa il modello universale.',
-        ...UNIVERSAL_STEPS,
-        'Se vuoi caricare direttamente l\'export di Coinbase (Rapporti → Cronologia transazioni): provalo qui. Se non viene riconosciuto premi «Copia diagnostica» e mandala a chi sviluppa l\'app: il formato verrà aggiunto.',
+        'Accedi a Coinbase dal sito coinbase.com e apri il profilo → «Rendiconti» o «Documenti» (Statements / Reports).',
+        'Scegli «Cronologia delle transazioni» (Transaction history), tutti gli asset e tutto il periodo dall\'apertura del conto, formato CSV.',
+        'Trascina qui il file: le righe di testo all\'inizio vengono ignorate da sole. Vanno bene anche gli export degli anni passati, con le colonne vecchie.',
       ],
-      limits: ['Il formato nativo di Coinbase non è ancora supportato.'],
+      limits: [
+        'I trasferimenti verso Coinbase Pro o Advanced con un export separato vengono chiesti come trasferimenti, finché non carichi anche quel file.',
+        'Le note delle operazioni servono per i Convert e gli scambi tra cripto: se non si leggono, la riga resta da controllare.',
+      ],
       api: API_PLANNED('Coinbase'),
     },
     other: {
@@ -8592,7 +8714,7 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
     },
   };
 
-  const TYPE_TO_PLATFORM = { cryptocom_app: 'cryptocom_app', cryptocom_exchange_trades: 'cryptocom_exchange', cryptocom_exchange_transfers: 'cryptocom_exchange', bitpanda: 'bitpanda', generic: 'other' };
+  const TYPE_TO_PLATFORM = { cryptocom_app: 'cryptocom_app', cryptocom_exchange_trades: 'cryptocom_exchange', cryptocom_exchange_transfers: 'cryptocom_exchange', bitpanda: 'bitpanda', coinbase: 'coinbase', generic: 'other' };
   CT.PLATFORMS = PLATFORMS;
   CT.platformOfType = (t) => {
     if (TYPE_TO_PLATFORM[t]) return TYPE_TO_PLATFORM[t];

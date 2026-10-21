@@ -17,17 +17,25 @@ musica (prestazioni occasionali, diritti d'autore), spese e detrazioni e, soprat
 2. **Panoramica**: quanto pagare adesso e più avanti, quando inviare la dichiarazione, il prossimo passo da fare e
    l'avanzamento di ogni sezione.
 3. **Redditi**
-   - **Lavoro dipendente**: stipendio o pensione dalla Certificazione Unica (quadro RC: righi RC1, RC6, RC10).
+   - **Lavoro dipendente**: stipendio o pensione dalla Certificazione Unica (quadro RC: righi RC1, RC6, RC10) e
+     addizionali già trattenute (CU punto 22 regionale, punti 26 e 27 comunale: righi RV3 e RV11).
    - **Musica (DJ e SIAE)**: serate e lavori occasionali (rigo RL15), diritti d'autore SIAE e royalties (rigo RL25,
-     deduzione forfettaria 25% o 40% sotto i 35 anni).
+     deduzione forfettaria 25% o 40% sotto i 35 anni). Per ogni CU si copiano il punto 4 (lordo) e il punto 9 (ritenuta).
    - **Spese e detrazioni**: spese sanitarie (19% oltre 129,11 €, rigo RP1), altre detrazioni e oneri deducibili.
-   Ogni pagina mostra dove si scrive ogni importo e la stima dell'IRPEF 2025 (scaglioni, detrazioni da lavoro,
-   taglio del cuneo): le voci da pagare (4001, 3801/3844, acconti 4033/4034) entrano in «Cosa pagare».
+   - **IRPEF e addizionali**: stima dell'IRPEF 2025 su tutti i redditi (scaglioni, detrazioni da lavoro, taglio del
+     cuneo) e addizionali regionale e comunale: l'importo dovuto si può scrivere a mano (righi RV2 e RV10), altrimenti
+     si stima con l'aliquota della CU. Le voci da pagare (4001, 3801, 3844, 3843, acconti 4033/4034) entrano in «Cosa
+     pagare»; fino a 12 € per tributo non si versa.
+   Ogni pagina mostra dove si scrive ogni importo.
 4. **Investimenti** (tutto in un'unica sezione)
    - **Piattaforme e file**: scegli la piattaforma (Crypto.com App o Exchange, Bitpanda, Binance, Coinbase, altra o
      wallet personale) e carica i file (CSV o .zip, il tipo viene riconosciuto da solo) o collega le API.
    - **Da controllare**: il programma non indovina; ti chiede solo ciò che non può sapere (dove sono finite delle
-     crypto uscite, a che costo hai preso quelle arrivate da fuori, righe sconosciute, prezzi mancanti).
+     crypto uscite, a che costo hai preso quelle arrivate da fuori, righe sconosciute). I **prezzi** che mancano (per
+     esempio il valore al 31/12 per il quadro RW) li scarica da solo: cripto da Binance, Crypto.com Exchange, Kraken,
+     Coinbase o CryptoCompare; oro e metalli dal prezzo LBMA in euro (diviso 31,1035 per avere il grammo, come li conta
+     Bitpanda) o da PAX Gold; valute dal cambio BCE. Ogni prezzo ha la fonte scritta per esteso e il confronto con una
+     seconda fonte; si può sempre sostituire con quello dell'estratto conto della piattaforma.
    - **Calcolo imposte**: riepilogo, quadro RT (cripto sez. V-A, oro sez. II), quadro RW con IVCA, elenco delle
      operazioni, azioni/ETF/conti (dove vanno), confronto tra anni e metodo di calcolo.
 5. **Chiusura**
@@ -56,7 +64,9 @@ Il lavoro si salva da solo nel browser; si può anche salvare/riaprire come file
 Su Vercel: **Add New → Project →** importa il repository `RHDev` **→** nella schermata «Configure Project», alla voce
 **Root Directory** premi **Edit** e scegli la cartella `crypto-tax-it` **→** Framework Preset: **Other**, nessun comando di build
 (la pagina `index.html` è già pronta) **→ Deploy**. Lo stesso repository può avere più progetti Vercel, uno per cartella.
-`vercel.json` fa sì che `index.html` non resti in cache dopo un aggiornamento.
+`vercel.json` fa sì che `index.html` non resti in cache dopo un aggiornamento. La cartella `api/` contiene la funzione
+`/api/price` che Vercel pubblica da sola: scarica i prezzi storici dal server (dal browser le borse spesso bloccano le
+richieste) e riceve solo simbolo e data. Su GitHub Pages non c'è e la pagina chiede i prezzi direttamente alle fonti.
 
 ## Attenzione: questo repository pubblica su GitHub Pages
 

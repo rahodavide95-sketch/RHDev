@@ -384,7 +384,9 @@
   // ---------------------------------------------------------------- Bitpanda
   // Due varianti di file (verificate sulla struttura di parser open source collaudati, usati solo come riferimento):
   //  - recente: Transaction ID, Timestamp, Transaction Type, In/Out, Amount Fiat, Fiat, Amount Asset, Asset, Asset market price,
-  //    Asset market price currency, Asset class, Product ID, Fee, Fee asset, Spread, Spread Currency, Tax Fiat
+  //    Asset market price currency, Asset class, Product ID, Fee, Fee asset, Fee percent, Spread, Spread Currency, Tax Fiat.
+  //    Verificato su un export reale (ottobre 2026): separatore ";", tre righe iniziali (Disclaimer, Account opened at, Venue), valori
+  //    mancanti scritti "-", oro come Asset "Gold" con classe "Metal" e quantita' in grammi, tipi deposit / buy / transfer.
   //  - precedente: ID, Type, In/Out, Amount Fiat, Fee, Fiat, Amount Asset, Asset, Status, Created at (si contano solo le "finished")
   // Il file puo' avere righe di testo prima dell'intestazione, titoli di sezione e intestazioni ripetute tra una tabella e l'altra.
   const isFiatMove = (amtAsset) => amtAsset === null || amtAsset.isZero();
@@ -436,6 +438,12 @@
           const sameFee = !feeAsset || (METAL_ALIASES[feeAsset] || feeAsset) === asset;
           ev = mkEvent({ ...base, kind: Kind.TRANSFER_OUT, asset, qty: sameFee ? qty.plus(fee) : qty, ...(fee.gt(0) && !sameFee ? { feeAsset, feeQty: fee } : {}) });
         }
+      } else if (typ === 'transfer' && (dir === 'incoming' || dir === 'outgoing')) {
+        // Bitpanda chiama «transfer» sia gli spostamenti tra i suoi prodotti e wallet sia bonus, cashback e regali: in entrata non c'e'
+        // un prezzo pagato, quindi il programma chiede da dove arriva (il valore in euro all'arrivo e' nel file e si propone come costo)
+        if (isFiatMove(parseNum(row['Amount Asset'])) || cls === 'fiat' || FIAT.has(asset)) ev = mkEvent({ ...base, kind: dir === 'incoming' ? Kind.FIAT_IN : Kind.FIAT_OUT, asset: fiat, qty: fiatAmt || ZERO });
+        else if (dir === 'outgoing') ev = mkEvent({ ...base, kind: Kind.TRANSFER_OUT, asset, qty });
+        else ev = mkEvent({ ...base, kind: Kind.TRANSFER_IN, asset, qty, note: 'Bitpanda «transfer»', ...(fiatAmt && fiatAmt.gt(0) ? { value: fiatAmt, valueCcy: fiat } : {}) });
       } else ev = unresolved(base, `Bitpanda · tipo "${typ}" (${assetClass || 'classe n.d.'})`,
         `Tipo di transazione non riconosciuto: "${typ}" (In/Out="${dir}", classe="${assetClass}", ${asset} ${qty.toFixed()})`);
       events.push(ev);

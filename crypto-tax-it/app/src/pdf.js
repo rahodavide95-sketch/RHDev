@@ -285,11 +285,15 @@
     p.h2('Stima dell\'IRPEF');
     const st = CT.others.steps(oc);
     p.table(['Voce', 'Importo (€)'], st.map(([a, v]) => [a, v.lt(0) ? `-${eur(v.neg())}` : eur(v)]), { num: [1], boldRows: [st.length - 1], fontSize: 9, columnStyles: { 1: { cellWidth: 34 } } });
+    p.h2('Addizionali regionale e comunale');
+    const ad = CT.others.addizSteps(oc);
+    p.table(['Voce', 'Importo (€)'], ad.map(([a, v]) => [a, v.lt(0) ? `-${eur(v.neg())}` : eur(v)]), { num: [1], boldRows: ad.map(([a], i) => (/da versare|a credito/.test(a) ? i : -1)).filter((i) => i >= 0), fontSize: 9, columnStyles: { 1: { cellWidth: 34 } } });
     p.bullets([
       'Lavoro occasionale: art. 67, c. 1, lett. l) TUIR, quadro RL rigo RL15 (Certificazione Unica con causale M).',
       `Diritti d'autore: art. 53, c. 2, lett. b) TUIR, quadro RL sezione III rigo RL25, deduzione forfettaria del 25% (40% sotto i 35 anni); Certificazione Unica con causale B.`,
       'Lavoro dipendente: quadro RC dai dati della Certificazione Unica. La stima confronta l\'IRPEF calcolata dal datore sul solo stipendio con quella complessiva: comprende la riduzione delle detrazioni e la restituzione dei bonus del «taglio del cuneo» quando il reddito supera le soglie.',
       'Spese sanitarie: quadro RP rigo RP1, detrazione del 19% oltre 129,11 €, pagamento tracciabile salvo farmaci, dispositivi medici e strutture pubbliche o accreditate.',
+      'Addizionali: quadro RV. Trattenute in busta paga: CU punto 22 (regionale, rigo RV3) e punti 26 e 27 (comunale, rigo RV11). Se l\'utente non ha scritto l\'importo dovuto, è stimato con l\'aliquota media risultante dalla CU (trattenuta / reddito) o con un\'aliquota media. Fino a 12 € per tributo non si versa né si rimborsa.',
       'Non considerati: familiari a carico, redditi fondiari, crediti d\'imposta esteri, trattamento integrativo tra 15.000 e 28.000 €.',
     ], { size: 8.5 });
   }
@@ -382,10 +386,10 @@
     const src = state.priceSrc || {};
     const pr = Object.entries(state.prices || {});
     const dl = pr.filter(([k]) => src[k]), man = pr.filter(([k]) => !src[k]);
-    const prow = ([k, v]) => { const [s, d] = k.split('|'); return [s, dmy(d), String(v).replace('.', ','), src[k] || '']; };
+    const prow = ([k, v]) => { const [s, d] = k.split('|'); return [CT.pricefeed && CT.pricefeed.kindOf(s) === 'metal' ? `${s} (1 grammo)` : s, dmy(d), String(v).replace('.', ','), src[k] || '']; };
     if (dl.length) {
       p.h2('Prezzi scaricati automaticamente');
-      p.para('Chiusura giornaliera (UTC) in euro, da servizi pubblici: Binance, Kraken o CryptoCompare. Verificali se servono per cifre importanti.', { color: MUTED, size: 8.5 });
+      p.para('Cripto: chiusura giornaliera (UTC) in euro da Binance, Crypto.com Exchange, Kraken, Coinbase o CryptoCompare; oro e metalli preziosi: prezzo LBMA in euro per oncia troy diviso 31,1035 (euro per grammo) o, in alternativa, PAX Gold; valute: cambio di riferimento BCE. Per ciascuno è indicata la coppia o il listino usato e, quando disponibile, il confronto con una seconda fonte indipendente.', { color: MUTED, size: 8.5 });
       p.table(['Asset', 'Data', 'Prezzo (€ per unità)', 'Fonte'], dl.map(prow), { num: [2], fontSize: 8 });
     }
     if (man.length) {

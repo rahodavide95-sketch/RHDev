@@ -2,6 +2,7 @@
 // sui fatti del formato). I valori sono inventati.
 const { test } = require('node:test');
 const { CT, Kind, run, eq, blocking, codes, assert } = require('./helpers');
+require('../src/pipeline.js');
 const I = CT.importers;
 
 const H = 'Timestamp (UTC),Transaction Description,Currency,Amount,To Currency,To Amount,Native Currency,Native Amount,Native Amount (in USD),Transaction Kind,Transaction Hash\n';
@@ -110,4 +111,29 @@ test('Crypto.com Exchange: colonne con nomi diversi vengono riconosciute per par
   assert.equal(r.events[0].kind, Kind.BUY);
   eq(r.events[0].value, 1000); eq(r.events[0].feeQty, '1.5'); assert.equal(r.events[0].feeAsset, 'EUR');
   assert.equal(I.detectType(csv), 'cryptocom_exchange_trades');
+});
+
+// Struttura copiata da un export reale di Bitpanda (ottobre 2026); identificativi e importi inventati.
+const BP_REAL = 'Disclaimer: All data is without guarantee, errors and changes are reserved.;;;;;;;;;;;;;;;;;\n' +
+  'Account opened at: 2021-01-01T10:00:00+01:00;;;;;;;;;;;;;;;;;\n' +
+  'Venue: Bitpanda;;;;;;;;;;;;;;;;;\n' +
+  'Transaction ID;Timestamp;Transaction Type;In/Out;Amount Fiat;Fiat;Amount Asset;Asset;Asset market price;Asset market price currency;Asset class;Product ID;Fee;Fee asset;Fee percent;Spread;Spread Currency;Tax Fiat\n' +
+  'Fa1;2025-03-10T18:50:06+01:00;deposit;incoming;100.00;EUR;-;EUR;-;-;Fiat;-;0.00000000;EUR;-;-;-;0.00\n' +
+  'Ta1;2025-03-10T18:50:28+01:00;buy;outgoing;100.00;EUR;1.10000000;Gold;90.91;EUR;Metal;28;-;-;-;-;-;0.00\n' +
+  '0b1c2d3e-0000-4000-8000-000000000001;2025-04-08T17:15:47+02:00;transfer;incoming;10.00;EUR;0.10000000;Gold;100.00;EUR;Metal;28;-;-;-;-;-;-\n';
+
+test('Bitpanda reale: ";", righe iniziali, oro "Gold" in grammi, «transfer» in entrata con il valore all\'arrivo', () => {
+  assert.equal(I.detectType(BP_REAL), 'bitpanda');
+  const r = I.TYPES.bitpanda.parse(BP_REAL, 'bitpanda-trades.csv');
+  assert.deepEqual(r.events.map((e) => e.kind), [Kind.FIAT_IN, Kind.BUY, Kind.TRANSFER_IN]);
+  const [, buy, tr] = r.events;
+  assert.equal(buy.asset, 'XAU'); eq(buy.qty, '1.1'); eq(buy.value, 100);
+  assert.equal(tr.asset, 'XAU'); eq(tr.qty, '0.1'); eq(tr.value, 10); assert.equal(r.unknown.length, 0);
+  // nell'analisi il «transfer» chiede l'origine e porta il valore all'arrivo; con quel costo il punto si chiude
+  const a = CT.analyze({ files: [{ id: 'b', name: 'bp.csv', type: 'bitpanda', text: BP_REAL }], settings: { year: 2025 } });
+  const q = a.engine.issues.find((i) => i.code === 'transfer_in_unmatched');
+  eq(q.data.value, 10); assert.match(q.data.note, /Bitpanda/);
+  const ok = CT.analyze({ files: [{ id: 'b', name: 'bp.csv', type: 'bitpanda', text: BP_REAL }], resolutions: { [q.uid]: { action: 'set_cost', cost_eur: '10.00' } }, settings: { year: 2025 } });
+  assert.equal(ok.engine.issues.some((i) => i.code === 'transfer_in_unmatched'), false);
+  eq(ok.engine.pool('XAU').lots.reduce((s, l) => s.plus(l.qty), CT.D(0)), '1.2');
 });

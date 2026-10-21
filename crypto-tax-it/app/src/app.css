@@ -38,6 +38,7 @@ p { margin: 0; }
 a { color: var(--accent); }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .muted { color: var(--ink-2); }
+.warn-text { color: var(--warn); font-weight: 600; }
 .small { font-size: 13px; }
 .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 .good-txt { color: var(--good); }
@@ -342,3 +343,4 @@ button.pickrow .chev { font-size: 26px; line-height: 1; color: var(--ink-2); }
 th.num { font-family: var(--font-sans); }
 .card.feature { border-color: var(--accent-line); background: linear-gradient(180deg, var(--accent-soft), var(--surface) 70%); }
 .btn.big { min-height: 50px; padding: 10px 22px; font-size: 16px; }
+[data-live] { display: grid; gap: 12px; }

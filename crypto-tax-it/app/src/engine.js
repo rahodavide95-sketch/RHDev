@@ -250,7 +250,7 @@
       for (const e of events) {
         if (e.value === null || e.value === undefined || e.valueCcy !== 'EUR') continue;
         const day = taxDate(e.ts);
-        if ((e.kind === Kind.BUY || e.kind === Kind.SELL || e.kind === Kind.INCOME || e.kind === Kind.INCOME_REVERSAL || e.kind === Kind.SPEND) && e.asset && e.qty.gt(0) && !FIAT.has(e.asset)) {
+        if ((e.kind === Kind.BUY || e.kind === Kind.SELL || e.kind === Kind.INCOME || e.kind === Kind.INCOME_REVERSAL || e.kind === Kind.SPEND || e.kind === Kind.TRANSFER_IN) && e.asset && e.qty.gt(0) && !FIAT.has(e.asset)) {
           this.prices.addImplied(e.asset, day, e.value.div(e.qty));
         } else if (e.kind === Kind.SWAP) {
           if (e.qty.gt(0)) this.prices.addImplied(e.asset, day, e.value.div(e.qty));
@@ -455,7 +455,7 @@
       this.move(e, e.account, e.asset, e.qty, this.hint(e));
       this.issue('block', 'transfer_in_unmatched', e.uid,
         `Il ${it(taxDate(e.ts))} sono arrivati ${nq(e.qty)} ${e.asset} su ${e.account} da un'origine che non conosco.`,
-        { asset: e.asset, qty: e.qty, day: taxDate(e.ts), account: e.account });
+        { asset: e.asset, qty: e.qty, day: taxDate(e.ts), account: e.account, note: e.note || '', value: e.value !== null && e.valueCcy === 'EUR' ? e.value : null });
     }
   }
 

@@ -164,6 +164,8 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
       for (const [rigo, cosa, v] of CT.others.where(oc)) L.push(`   ${rigo}: ${cosa} = ${typeof v === 'string' ? v : e(v)}`);
       L.push('   Stima IRPEF (regole 2025):');
       for (const [a, v] of CT.others.steps(oc)) L.push(`     ${a}: ${v.lt(0) ? '- ' + e(v.neg()) : e(v)}`);
+      L.push('   Addizionali regionale e comunale (quadro RV):');
+      for (const [a, v] of CT.others.addizSteps(oc)) L.push(`     ${a}: ${v.lt(0) ? '- ' + e(v.neg()) : e(v)}`);
       if (oc.occ.length) for (const r of oc.occ) L.push(`   Ricevuta occasionale: ${r.chi || '(senza nome)'} - lordo ${e(r.lordo)}, ritenuta ${e(r.rit)}, spese ${e(r.spese)}`);
       if (oc.dir.length) for (const r of oc.dir) L.push(`   Diritti d'autore/royalties: ${r.chi || '(senza nome)'} - lordo ${e(r.lordo)}, ritenuta ${e(r.rit)}`);
       if (oc.dir.length) L.push(`   Deduzione forfettaria diritti d'autore: ${oc.dedRate.times(100).toFixed(0)}% (${oc.dedRate.gt('0.3') ? 'meno di 35 anni' : '35 anni o piu\''})`);

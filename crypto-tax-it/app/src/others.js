@@ -20,7 +20,13 @@
      detrazione di 1.000 euro tra 20.000 e 32.000, decrescente fino a 40.000. Trattamento integrativo di 1.200 euro fino a 15.000 euro.
      Il datore di lavoro le applica in busta paga guardando solo lo stipendio: se altri redditi fanno salire il reddito complessivo,
      in dichiarazione una parte si restituisce. Per questo la stima confronta l'IRPEF "solo stipendio" con quella "stipendio + altri redditi".
-   - F24: 4001 IRPEF saldo, 4033 e 4034 acconti IRPEF, 3801 addizionale regionale, 3844 addizionale comunale (saldo). */
+   - Addizionali (quadro RV): si calcolano sul reddito imponibile con l'aliquota della Regione (RV2) e del Comune (RV10). Quelle
+     trattenute dal datore di lavoro sono nella CU: punto 22 la regionale (rigo RV3), punti 26 e 27 la comunale del 2025 (rigo RV11).
+     Acconto dell'addizionale comunale per l'anno dopo: 30%. L'utente puo' scrivere l'importo dovuto; se manca si stima con
+     l'aliquota media della sua CU (trattenuta / reddito) o, senza CU, con un'aliquota media.
+   - Fino a 12 euro per ciascun tributo non si versa e non si rimborsa (art. 1, c. 137, L. 266/2005).
+   - F24: 4001 IRPEF saldo, 4033 e 4034 acconti IRPEF, 3801 addizionale regionale, 3844 addizionale comunale (saldo), 3843 acconto
+     addizionale comunale. */
 (function () {
   'use strict';
   const CT = (globalThis.CT = globalThis.CT || {});
@@ -37,6 +43,11 @@
   const itf = new Intl.NumberFormat('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const eur = (x) => `${itf.format(Number(D(x).toFixed(2)))} €`;
   const cents = (x) => x.toDecimalPlaces(2);
+  const pct = (r) => `${r.times(100).toDecimalPlaces(2).toString().replace('.', ',')}%`;
+  const opt = (v) => (String(v === undefined || v === null ? '' : v).trim() === '' ? null : num(v));
+  // aliquote medie usate solo se l'utente non scrive l'importo e non ha la CU dello stipendio (variano per Regione e Comune)
+  const DEF_RATE = { reg: D('0.015'), com: D('0.008') };
+  const MIN_VERS = D(12);
 
   function irpef(R) {
     let t = ZERO;
@@ -112,19 +123,31 @@
       mode = 'completo';   // senza stipendio, o con le ritenute della CU: si confronta l'imposta con tutte le ritenute
       diff = full.netta.minus(ritCU || ZERO).minus(ritenute).plus(base.somma.minus(full.somma)).plus(base.trattInt.minus(full.trattInt));
     }
-    const addRate = o.addiz === undefined || String(o.addiz).trim() === '' ? D('0.02') : num(o.addiz).div(100);
-    // addizionali sulla parte di reddito in piu' (quelle sullo stipendio le trattiene il datore); non dovute se l'IRPEF e' zero
-    const addiz = full.netta.isZero() ? ZERO : max0(full.imp.minus(base.imp)).times(addRate);
+    // addizionali: dovuta (scritta dall'utente o stimata) meno quella trattenuta in busta paga; non dovute se l'IRPEF e' zero
+    const addOne = (kind, man, trat) => {
+      const src = man !== null ? 'man' : trat !== null && altri.gt(0) && base.imp.gt(0) ? 'cu' : 'def';
+      const rate = src === 'man' ? (full.imp.gt(0) ? man.div(full.imp) : ZERO) : src === 'cu' ? trat.div(base.imp) : DEF_RATE[kind];
+      const dovuta = src === 'man' ? man : full.netta.isZero() ? ZERO : full.imp.times(rate);
+      // senza la CU si suppone, come per l'IRPEF, che il datore abbia trattenuto il giusto sullo stipendio
+      const guess = trat === null && altri.gt(0) && !base.netta.isZero();
+      const tratt = trat !== null ? trat : guess ? base.imp.times(rate) : ZERO;
+      return { man, trat, src, rate, guess, dovuta: cents(dovuta), tratt: cents(tratt), saldo: cents(dovuta).minus(cents(tratt)) };
+    };
+    const reg = addOne('reg', opt(o.addRegMan), opt(o.addRegTr));
+    const com = addOne('com', opt(o.addComMan), opt(o.addComTr));
+    // acconto dell'addizionale comunale per l'anno dopo (30%): quello sullo stipendio lo trattiene il datore (CU punto 29)
+    com.acconto = full.netta.isZero() ? ZERO : cents(max0(full.imp.minus(altri.gt(0) ? base.imp : ZERO)).times(com.rate).times('0.3'));
+    const addiz = max0(reg.saldo).plus(max0(com.saldo));
     const accBase = max0(full.netta.minus(base.netta).minus(ritenute));   // base dell'acconto IRPEF (imposta in piu' dell'anno)
     const r2 = (x) => cents(x);
     return {
-      any: occ.length + dir.length > 0 || sanTot.gt(0) || altri.gt(0) || ded.gt(0) || altreDetr.gt(0),
+      any: occ.length + dir.length > 0 || sanTot.gt(0) || altri.gt(0) || ded.gt(0) || altreDetr.gt(0) || reg.man !== null || com.man !== null,
       occ, dir, occLordo, occSpese, occRit, occNet, dirLordo, dirRit, dirDed, dirNet, dedRate, extra, altri, days, ritCU, ded, altreDetr, mode,
       sanTot, detrSan: r2(detrSan), det19: r2(det19), ritenute,
       base: Object.fromEntries(Object.entries(base).map(([k, v]) => [k, r2(v)])), full: Object.fromEntries(Object.entries(full).map(([k, v]) => [k, r2(v)])),
       lordaExtra: r2(full.lorda.minus(base.lorda)), detrAut: r2(full.detAut), netta: r2(full.netta),
       lostBonus: r2(base.somma.minus(full.somma).plus(base.trattInt.minus(full.trattInt))),
-      addiz: r2(addiz), addRate, accBase: r2(accBase), irpefDue: r2(max0(diff)), irpefCredit: r2(max0(diff.neg())),
+      addiz: r2(addiz), reg, com, accBase: r2(accBase), irpefDue: r2(max0(diff)), irpefCredit: r2(max0(diff.neg())),
     };
   }
 
@@ -138,6 +161,10 @@
     if (c.sanTot.gt(0)) rows.push(['RP1', 'Spese sanitarie', c.sanTot]);
     if (c.altreDetr.gt(0)) rows.push(['Quadro RP', 'Altre detrazioni (sezioni I e III)', c.altreDetr]);
     if (c.ded.gt(0)) rows.push(['Quadro RP sez. II', 'Oneri deducibili', c.ded]);
+    if (c.reg.man !== null) rows.push(['RV2', 'Addizionale regionale dovuta', c.reg.man]);
+    if (c.reg.trat !== null) rows.push(['RV3', 'Addizionale regionale trattenuta dal datore di lavoro (CU punto 22)', c.reg.trat]);
+    if (c.com.man !== null) rows.push(['RV10', 'Addizionale comunale dovuta', c.com.man]);
+    if (c.com.trat !== null) rows.push(['RV11', 'Addizionale comunale trattenuta dal datore di lavoro (CU punti 26 e 27)', c.com.trat]);
     return rows;
   }
   /** Passaggi della stima: [voce, importo con segno]. */
@@ -155,9 +182,23 @@
       c.mode === 'differenza' ? ['Già trattenuta in busta paga (IRPEF calcolata dal datore sul solo stipendio)', neg(B.netta)] : c.ritCU ? ['Ritenute IRPEF della CU', neg(c.ritCU)] : null,
       c.ritenute.gt(0) ? ['Ritenute su serate e diritti d\'autore', neg(c.ritenute)] : null,
       c.lostBonus.gt(0) ? ['Bonus in busta paga da restituire (somma esente del cuneo o trattamento integrativo)', c.lostBonus] : null,
-      c.irpefDue.gt(0) ? ['IRPEF da versare (stima)', c.irpefDue] : ['IRPEF a credito (stima: rimborso o compensazione)', c.irpefCredit],
-      c.addiz.gt(0) ? ['Addizionali regionale e comunale sulla parte in più (stima)', c.addiz] : null,
+      c.irpefDue.gt(0) ? [`IRPEF da versare (stima)${c.irpefDue.lte(MIN_VERS) ? ': fino a 12 € non si versa' : ''}`, c.irpefDue]
+        : [`IRPEF a credito (stima${c.irpefCredit.gt(0) && c.irpefCredit.lte(MIN_VERS) ? ': fino a 12 € non si rimborsa' : ': rimborso o compensazione'})`, c.irpefCredit],
     ].filter(Boolean);
+  }
+  /** Passaggi delle addizionali regionale e comunale: [voce, importo con segno]. */
+  function addizSteps(c) {
+    const out = [];
+    for (const [a, name, pts] of [[c.reg, 'regionale', 'punto 22'], [c.com, 'comunale', 'punti 26 e 27']]) {
+      const how = a.src === 'man' ? 'scritta da te' : a.src === 'cu' ? `stima con l'aliquota della tua CU: ${pct(a.rate)}` : `stima con un'aliquota media: ${pct(a.rate)}`;
+      out.push([`Addizionale ${name} dovuta (${how})`, a.dovuta]);
+      if (a.tratt.gt(0)) out.push([a.guess ? `Già trattenuta in busta paga (stima: scrivi la CU, ${pts})` : `Già trattenuta in busta paga (CU, ${pts})`, a.tratt.neg()]);
+      const s = a.saldo;
+      out.push(s.lt(0) ? [`Addizionale ${name} a credito${s.neg().lte(MIN_VERS) ? ': fino a 12 € non si rimborsa' : ''}`, s.neg()]
+        : [`Addizionale ${name} da versare${s.gt(0) && s.lte(MIN_VERS) ? ': fino a 12 € non si versa' : ''}`, s]);
+    }
+    if (c.com.acconto.gt(0)) out.push([`Acconto addizionale comunale dell'anno dopo (30%)${c.com.acconto.lte(MIN_VERS) ? ': fino a 12 € non si versa' : ''}`, c.com.acconto]);
+    return out;
   }
 
   /** Voci da aggiungere al piano dei pagamenti (stime), per l'anno `Y`. */
@@ -165,13 +206,17 @@
     if (!c || !c.any) return [];
     const items = [];
     const est = 'Stima: l\'importo esatto lo calcola il software della dichiarazione (precompilata o commercialista).';
-    if (c.irpefDue.gt(0)) items.push({ key: 'irpef', code: '4001', estimate: true, title: 'IRPEF a saldo (stima)',
+    if (c.irpefDue.gt(MIN_VERS)) items.push({ key: 'irpef', code: '4001', estimate: true, title: 'IRPEF a saldo (stima)',
       why: `${c.extra.gt(0) ? `IRPEF sui redditi extra (${eur(c.extra)} netti tra DJ e diritti d'autore)` : 'IRPEF dell\'anno'}${c.lostBonus.gt(0) ? `, più ${eur(c.lostBonus)} di bonus in busta paga da restituire perché il reddito sale oltre la soglia` : ''}, meno ritenute (${eur(c.ritenute)})${c.det19.gt(0) ? ` e detrazioni (${eur(c.det19)})` : ''}.`,
       quadro: 'Quadri RC, RL e RP, risultato nel quadro RN', amount: c.irpefDue, due: dl.saldo, note: est });
-    if (c.addiz.gt(0)) items.push({ key: 'addiz', code: '3801 / 3844', estimate: true, title: 'Addizionali regionale e comunale sulla parte di reddito in più (stima)',
-      why: `Circa il ${c.addRate.times(100).toFixed(1).replace('.', ',')}% dei ${eur(c.extra)} netti (dipende da Regione e Comune: 3801 regionale, 3844 comunale).`,
-      quadro: 'Quadro RV', amount: c.addiz, due: dl.saldo, note: est });
-    if (c.irpefCredit.gt(0)) items.push({ key: 'irpefcred', code: '—', estimate: true, credit: true, title: 'IRPEF a credito (stima): non si paga, ti viene restituita',
+    const why = (a) => `${a.src === 'man' ? `Dovuta ${eur(a.dovuta)} (importo scritto da te)` : `Dovuta circa ${eur(a.dovuta)} (${pct(a.rate)} di ${eur(c.full.imp)} di reddito imponibile)`}${a.tratt.gt(0) ? `, meno ${eur(a.tratt)} già trattenuti in busta paga${a.guess ? ' (stima: scrivi i dati della CU)' : ''}` : ''}.`;
+    if (c.reg.saldo.gt(MIN_VERS)) items.push({ key: 'addreg', code: '3801', estimate: c.reg.src !== 'man', title: `Addizionale regionale all'IRPEF · saldo${c.reg.src !== 'man' ? ' (stima)' : ''}`,
+      why: why(c.reg), quadro: 'Quadro RV, righi RV2-RV4', amount: c.reg.saldo, due: dl.saldo, note: c.reg.src !== 'man' ? est : '' });
+    if (c.com.saldo.gt(MIN_VERS)) items.push({ key: 'addcom', code: '3844', estimate: c.com.src !== 'man', title: `Addizionale comunale all'IRPEF · saldo${c.com.src !== 'man' ? ' (stima)' : ''}`,
+      why: why(c.com), quadro: 'Quadro RV, righi RV10-RV12', amount: c.com.saldo, due: dl.saldo, note: c.com.src !== 'man' ? est : '' });
+    if (c.com.acconto.gt(MIN_VERS)) items.push({ key: 'addcomacc', code: '3843', estimate: true, advance: true, title: `Acconto addizionale comunale ${Y + 1} (30%, stima)`,
+      why: `30% dell'addizionale comunale sulla parte di reddito su cui il datore di lavoro non l'ha trattenuta.`, quadro: 'Quadro RV, rigo RV17', amount: c.com.acconto, due: dl.saldo, note: est });
+    if (c.irpefCredit.gt(MIN_VERS)) items.push({ key: 'irpefcred', code: '—', estimate: true, credit: true, title: 'IRPEF a credito (stima): non si paga, ti viene restituita',
       why: 'Le ritenute e le detrazioni superano l\'imposta: il credito si chiede a rimborso o si usa in compensazione nell\'F24.', quadro: 'Quadro RX', amount: ZERO, creditAmount: c.irpefCredit, due: dl.saldo });
     // acconto IRPEF dell'anno dopo: 100% dell'imposta a debito (metodo storico), niente fino a 51,65 €, una rata fino a 257,52 €
     if (c.accBase.gt('51.65')) {
@@ -183,6 +228,6 @@
     return items;
   }
 
-  CT.others = { compute, paymentItems, where, steps, irpef, detrAutonomo, detrLavoro, cuneoDetr, irpefParts, num };
+  CT.others = { compute, paymentItems, where, steps, addizSteps, irpef, detrAutonomo, detrLavoro, cuneoDetr, irpefParts, num };
   if (typeof module !== 'undefined') module.exports = CT.others;
 })();

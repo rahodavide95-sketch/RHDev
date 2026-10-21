@@ -636,11 +636,14 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     for (const i of g.transferIn) {
       const cost = field('Costo totale pagato (€)', { placeholder: 'es. 800', id: `c_${i.uid}` });
       const when = field('Data di acquisto (facoltativa)', { type: 'date', id: `d_${i.uid}` });
+      const v = i.data.value;
       out.push(issueCard('bad', `${qty(i.data.qty)} ${i.data.asset} arrivati su ${i.data.account} il ${dmy(i.data.day)}`,
-        'Non so da dove vengono. Per calcolare l\'eventuale guadagno mi serve quanto li avevi pagati.',
+        /Bitpanda/.test(i.data.note || '') ? `Bitpanda la chiama «transfer»: può essere uno spostamento tra i suoi prodotti, un bonus, un cashback o un regalo.${v ? ` Valore all'arrivo secondo il file: ${money(v)}.` : ''} Se è un premio della piattaforma usa il valore all'arrivo come costo.`
+          : `Non so da dove vengono. Per calcolare l'eventuale guadagno mi serve quanto li avevi pagati.${v ? ` Valore all'arrivo secondo il file: ${money(v)}.` : ''}`,
         h('div', { class: 'fields' }, cost.el, when.el),
         h('div', { class: 'row' },
-          h('button', { class: 'btn primary', onclick: () => { const v = needNumber(cost.input.value, 'il costo'); if (v) resolve(i.uid, { action: 'set_cost', cost_eur: v, acquired: when.input.value || undefined }, 'Costo salvato'); } }, 'Salva il costo'),
+          v ? h('button', { class: 'btn primary', onclick: () => resolve(i.uid, { action: 'set_cost', cost_eur: v.toFixed(2) }, 'Costo = valore all\'arrivo') }, `Costo = valore all'arrivo (${money(v)})`) : null,
+          h('button', { class: v ? 'btn' : 'btn primary', onclick: () => { const c = needNumber(cost.input.value, 'il costo'); if (c) resolve(i.uid, { action: 'set_cost', cost_eur: c, acquired: when.input.value || undefined }, 'Costo salvato'); } }, 'Salva il costo scritto'),
           h('button', { class: 'btn', onclick: () => resolve(i.uid, { action: 'from_self_custody' }, 'Registrato come ritorno da un tuo wallet') }, 'Arrivano da un mio wallet'),
           h('button', { class: 'btn quiet', onclick: () => resolve(i.uid, { action: 'set_cost', cost_eur: '0' }, 'Costo zero registrato') }, 'Costo zero (regalo, premio…)'))));
     }
@@ -708,7 +711,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       const status = h('p', { class: 'small muted' }, ui.busy ? 'Sto scaricando i prezzi…'
         : ui.priceFail ? (insideClaude() ? `Non sono riuscito a scaricarne ${ui.priceFail}: dentro claude.ai il download non è possibile. Apri il link pubblicato.`
           : `Non sono riuscito a scaricarne ${ui.priceFail}. ${(ui.priceWhy || []).join(' · ')}. Riprova tra qualche minuto, oppure scrivili a mano.`)
-          : 'Provo a scaricarli da solo (Binance, Kraken o CryptoCompare). Dentro claude.ai non è possibile: apri il link pubblicato.');
+          : 'Li scarico da solo: cripto da Binance, Crypto.com, Kraken, Coinbase o CryptoCompare; oro e metalli dal prezzo ufficiale LBMA; valute dalla BCE. Dentro claude.ai non è possibile: apri il link pubblicato.');
       const btns = h('div', { class: 'row' },
         h('button', { class: 'btn primary', disabled: !!ui.busy, onclick: () => autoPrices(false) }, ui.busy || (blocking ? 'Scarica i prezzi in automatico' : 'Riprova a scaricare i prezzi esatti')),
         h('button', { class: 'btn', onclick: () => { go('prices'); } }, 'Vedi e inserisci a mano'));
@@ -718,7 +721,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
             : 'Servono soprattutto al prospetto del monitoraggio (RW: valore delle cripto al 1° gennaio e al 31 dicembre) e a valorizzare qualche operazione che nel file non ha un valore in euro.', btns, status));
       } else {
         out.push(issueCard('warn', n === 1 ? 'Ho stimato 1 prezzo di fine anno' : `Ho stimato ${n} prezzi di fine anno`,
-          'Per il quadro RW servono i prezzi del 31 dicembre (e del 1° gennaio) delle cripto che possiedi. Non li ho trovati nei tuoi file e non sono riuscito a scaricarli, quindi ho usato il prezzo più vicino che conosco e l\'ho segnato «stimato» (anche nei PDF). Non cambia le tasse sulle vendite: cambia solo il valore indicato nel quadro RW e la piccola imposta sul valore (IVCA).', btns, status));
+          'Per il quadro RW servono i prezzi del 31 dicembre (e del 1° gennaio) di quello che possiedi. Non li ho trovati nei tuoi file e non sono ancora riuscito a scaricarli, quindi per ora ho usato il prezzo più vicino che conosco (anche di mesi prima) e l\'ho segnato «stimato». Se hai l\'estratto conto al 31/12 della piattaforma, il prezzo scritto lì è quello giusto: inseriscilo nella pagina dei prezzi. Non cambia le tasse sulle vendite: cambia il valore del quadro RW e la piccola imposta sul valore (IVCA).', btns, status));
       }
     }
     for (const i of g.notes.filter((x) => x.level === 'block')) out.push(issueCard('bad', i.message, null));
@@ -830,6 +833,11 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       h('tbody', null, rows.map(([a, b, v]) => h('tr', null, codes ? h('td', null, a ? h('span', { class: 'code' }, a) : null) : null, h('td', null, b), h('td', { class: 'num' }, typeof v === 'string' ? v : money(v)))))));
   };
 
+  /** Come copiare una Certificazione Unica: [punto, cosa c'e' scritto, dove va]. */
+  const cuGuide = (rows) => h('div', { class: 'tbl-wrap' }, h('table', { class: 'where' },
+    h('thead', null, h('tr', null, h('th', null, 'Punto CU'), h('th', null, 'Cosa c\'è scritto'), h('th', null, 'Dove va'))),
+    h('tbody', null, rows.map(([a, b, d]) => h('tr', null, h('td', null, h('span', { class: 'code' }, a)), h('td', null, b), h('td', null, d))))));
+
   // ------------------------------------------------------------------ redditi (stipendio, musica, spese): dati inseriti a mano
   function othersState() {
     const o = state.others = state.others || {};
@@ -845,15 +853,21 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     const c = CT.others.compute(othersState());
     for (const box of document.querySelectorAll('[data-live]')) box.replaceChildren(...liveBox(box.dataset.live, c));
   };
-  const WHERE = { lavoro: /^RC/, musica: /^(RL|Ritenute sez|Riepilogo sez)/, spese: /^(RP|Quadro RP)/ };
+  const WHERE = { lavoro: /^(RC|RV3$|RV11$)/, musica: /^(RL|Ritenute sez|Riepilogo sez)/, spese: /^(RP|Quadro RP)/, addiz: /^RV/ };
+  const stepsTable = (st) => kvTable(st.map(([label, v]) => ({ label, value: v.lt(0) ? `− ${money(v.neg())}` : money(v), cls: /da versare|a credito/.test(label) ? 'total' : null })));
   function estimateNodes(c) {
-    if (!c.any) return [h('p', { class: 'muted small' }, 'Inserisci stipendio, compensi o spese: qui compare la stima dell\'IRPEF da versare o a credito.')];
-    const st = CT.others.steps(c);
-    return [kvTable(st.map(([label, v]) => ({ label, value: v.lt(0) ? `− ${money(v.neg())}` : money(v), cls: /da versare|a credito/.test(label) ? 'total' : null }))),
-      h('p', { class: 'small muted' }, 'Stima con le regole del 2025: l\'importo esatto lo calcola il software della dichiarazione (precompilata o commercialista). Non sono considerati familiari a carico, immobili e trattamento integrativo tra 15.000 e 28.000 €.')];
+    if (!c.any) return [h('p', { class: 'muted small' }, 'Inserisci stipendio, compensi o spese nelle pagine precedenti: qui compare la stima dell\'IRPEF da versare o a credito.')];
+    return [stepsTable(CT.others.steps(c)),
+      h('p', { class: 'small muted' }, 'Stima con le regole del 2025: l\'importo esatto lo calcola il software della dichiarazione (precompilata o commercialista). Non sono considerati familiari a carico, immobili e trattamento integrativo tra 15.000 e 28.000 €. Fino a 12 € per ciascuna imposta non si versa e non si rimborsa.')];
+  }
+  function addizNodes(c) {
+    if (!c.any) return [h('p', { class: 'muted small' }, 'Inserisci i redditi nelle pagine precedenti: qui compare il calcolo delle addizionali.')];
+    const rv = CT.others.where(c).filter(([r]) => WHERE.addiz.test(r));
+    return [stepsTable(CT.others.addizSteps(c)), rv.length ? [h('h3', null, 'Dove si scrive (quadro RV)'), whereTable(rv)] : null];
   }
   function liveBox(kind, c) {
     if (kind === 'estimate') return estimateNodes(c);
+    if (kind === 'addiz') return addizNodes(c);
     const rows = CT.others.where(c).filter(([r]) => WHERE[kind].test(r));
     return rows.length ? [whereTable(rows)] : [h('p', { class: 'muted small' }, 'Compila i campi qui sopra: qui compare in quale rigo del modello va ogni numero.')];
   }
@@ -893,7 +907,9 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
           h('div', { class: 'fields' },
             numField(o, 'altri', 'Reddito di lavoro dipendente o pensione (€)', 'es. 28000', 'CU, punto 1 (indeterminato) o 2 (determinato); pensione punto 3'),
             numField(o, 'giorni', 'Giorni di lavoro', '365', 'CU, punto 6 o 7'),
-            numField(o, 'ritCU', 'Ritenute IRPEF (€), facoltativo', 'es. 4200', 'CU, punto 21: se vuoto si considera giusto quanto trattenuto in busta paga'))),
+            numField(o, 'ritCU', 'Ritenute IRPEF (€), facoltativo', 'es. 4200', 'CU, punto 21: se vuoto si considera giusto quanto trattenuto in busta paga'),
+            numField(o, 'addRegTr', 'Addizionale regionale trattenuta (€)', 'es. 420', 'CU, punto 22'),
+            numField(o, 'addComTr', 'Addizionale comunale trattenuta (€)', 'es. 160', 'CU, punti 26 e 27 (acconto e saldo): somma i due'))),
         card('Dove si scrive', 'Quadro RC del modello Redditi PF. Nella precompilata questi dati ci sono già.', live('lavoro')),
       ],
       precompilataTip(),
@@ -906,16 +922,22 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     return [
       skipToggle(o, 'musica', `Nel ${Y} non ho avuto compensi da musica o lavori occasionali`, filled),
       o.skip.musica && !filled ? callout('good', 'Sezione completata', 'Hai indicato che non hai compensi occasionali né diritti d\'autore.') : [
-        card('Serate da DJ e lavori occasionali', 'Ricevute di «prestazione occasionale» senza partita IVA. Per ognuna: chi ti ha pagato, il lordo, la ritenuta del 20% (se ti ha pagato un locale, un\'associazione o una società: la trovi nella CU, causale M) e le spese documentate per quella serata.',
-          rowsEditor(o.occ, [{ key: 'chi', label: 'Chi ti ha pagato', ph: 'es. Locale XY' }, { key: 'lordo', label: 'Compenso lordo €', num: true, ph: '500' }, { key: 'rit', label: 'Ritenuta €', num: true, ph: '100' }, { key: 'spese', label: 'Spese €', num: true, ph: '0' }], {}, '+ Aggiungi una ricevuta'),
+        card('Serate da DJ e lavori occasionali', 'Ricevute di «prestazione occasionale» senza partita IVA. Una riga per ricevuta o per Certificazione Unica: chi ti ha pagato, il lordo, la ritenuta del 20% e le spese documentate. Se il locale, l\'associazione o la società ti ha mandato la CU (causale M), copia il punto 4 nel lordo e il punto 9 nella ritenuta.',
+          rowsEditor(o.occ, [{ key: 'chi', label: 'Chi ti ha pagato', ph: 'es. Locale XY' }, { key: 'lordo', label: 'Lordo € (CU punto 4)', num: true, ph: '500' }, { key: 'rit', label: 'Ritenuta € (CU punto 9)', num: true, ph: '100' }, { key: 'spese', label: 'Spese €', num: true, ph: '0' }], {}, '+ Aggiungi una ricevuta o una CU'),
           h('ul', { class: 'notes' },
             h('li', null, 'Se fai serate in modo continuativo e organizzato non è più «occasionale»: serve la partita IVA.'),
             h('li', null, 'Oltre 5.000 € di compensi l\'anno scatta l\'iscrizione alla Gestione separata INPS (i contributi li versa in parte il committente).'))),
-        card('Diritti d\'autore e royalties', 'SIAE, editori musicali, etichette, distributori. Scrivi lordo e ritenuta (dalla CU, causale B). Se sei l\'autore (testi, musica, produzione firmata) si paga sul 75% del lordo, sul 60% se avevi meno di 35 anni.',
+        card('Diritti d\'autore e royalties', `SIAE, editori musicali, etichette, distributori. La SIAE ti manda ogni anno la Certificazione Unica ${Y + 1} con i diritti del ${Y}: come per lo stipendio, aggiungi una riga per ogni CU e copia due numeri. Se sei l'autore (testi, musica, produzione firmata) si paga sul 75% del lordo, sul 60% se avevi meno di 35 anni: la riduzione la fa il programma.`,
+          cuGuide([
+            ['1', 'Causale: B = diritti d\'autore', 'questa tabella (con M va in quella delle serate)'],
+            ['4', 'Ammontare lordo corrisposto', 'colonna «Lordo»'],
+            ['7 e 8', 'Parte non tassata (25% o 40%) e imponibile', 'non servono: non copiarli'],
+            ['9', 'Ritenute a titolo d\'acconto', 'colonna «Ritenuta»'],
+          ]),
           h('label', { class: 'toggle' }, h('input', { type: 'checkbox', checked: !!o.under35, onchange: (e) => { o.under35 = e.target.checked; othersTyped(); } }), h('span', null, `Nel ${Y} avevo meno di 35 anni (la parte esente sale dal 25% al 40%)`)),
-          rowsEditor(o.dir, [{ key: 'chi', label: 'Da chi', ph: 'es. SIAE, etichetta' }, { key: 'lordo', label: 'Lordo €', num: true, ph: '1000' }, { key: 'rit', label: 'Ritenuta €', num: true, ph: '150' }], {}, '+ Aggiungi un pagamento'),
+          rowsEditor(o.dir, [{ key: 'chi', label: 'Da chi', ph: 'es. SIAE, etichetta' }, { key: 'lordo', label: 'Lordo € (CU punto 4)', num: true, ph: '1000' }, { key: 'rit', label: 'Ritenuta € (CU punto 9)', num: true, ph: '150' }], {}, '+ Aggiungi una CU o un pagamento'),
           h('ul', { class: 'notes' },
-            h('li', null, 'Royalties come interprete (non autore): guarda la causale della CU. B = diritti d\'autore (rigo RL25), M = lavoro occasionale (rigo RL15). Senza CU fai confermare al commercialista.'),
+            h('li', null, 'Più CU dalla SIAE (per esempio una per ogni mandato o anno)? Una riga per ciascuna. Royalties come interprete (non autore): guarda la causale della CU. B = diritti d\'autore (rigo RL25), M = lavoro occasionale (rigo RL15). Senza CU fai confermare al commercialista.'),
             h('li', null, 'Pagamenti dall\'estero (DistroKid, YouTube, Bandcamp…): niente ritenuta italiana, si dichiara il lordo in euro. Per tasse trattenute all\'estero chiedi il credito d\'imposta (quadro CE); un conto PayPal estero va nel quadro RW.'))),
         card('Dove si scrive', 'Quadro RL: serate al rigo RL15, diritti d\'autore al rigo RL25. Riduzione forfettaria e ritenute vanno nei righi di riepilogo, li calcola il software.', live('musica')),
       ],
@@ -936,9 +958,20 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
             numField(o, 'deducibili', 'Oneri deducibili (€ da togliere dal reddito)', 'es. 1500', 'Quadro RP, sezione II'))),
       ],
       card('Dove si scrive', 'Quadro RP del modello Redditi PF.', live('spese')),
-      card('Risultato dei tuoi redditi: IRPEF (stima)', 'Tiene conto di stipendio, musica e spese inseriti nelle tre pagine «Redditi».',
-        h('div', { class: 'fields' }, numField(o, 'addiz', 'Addizionali regionale + comunale (%)', '2', 'Dipendono da Regione e Comune: in genere tra 1,5% e 4%')),
-        live('estimate')),
+    ];
+  }
+
+  function pageIrpef() {
+    const o = othersState(), c = CT.others.compute(o), Y = state.settings.year;
+    const noCU = c.altri.gt(0) && (c.reg.trat === null || c.com.trat === null);
+    return [
+      card('IRPEF su tutti i redditi (stima)', 'Stipendio, musica e spese delle pagine precedenti messi insieme, con le regole del 2025.', live('estimate')),
+      card('Addizionali regionale e comunale', `Sono una percentuale del reddito decisa dalla tua Regione e dal tuo Comune. Se conosci quanto devi per il ${Y} (nella precompilata ai righi RV2 e RV10, oppure dal commercialista) scrivilo qui e il programma usa il tuo numero. Se lasci vuoto lo stimo ${c.altri.gt(0) ? 'con le aliquote che risultano dalla tua CU' : 'con un\'aliquota media'}.`,
+        h('div', { class: 'fields' },
+          numField(o, 'addRegMan', `Addizionale regionale dovuta ${Y} (€)`, 'vuoto = stima', 'Precompilata, rigo RV2'),
+          numField(o, 'addComMan', `Addizionale comunale dovuta ${Y} (€)`, 'vuoto = stima', 'Precompilata, rigo RV10')),
+        noCU ? callout('info', 'Hai la CU dello stipendio?', 'Scrivi anche le addizionali già trattenute in busta paga (punti 22, 26 e 27) nella pagina «Lavoro dipendente». Senza, il programma suppone che il datore di lavoro abbia trattenuto il giusto.', linkBtn('Lavoro dipendente', 'lavoro')) : null,
+        live('addiz')),
     ];
   }
 
@@ -1048,6 +1081,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       lavoro: c.altri.gt(0) ? 'done' : o.skip.lavoro ? 'skip' : 'todo',
       musica: c.occ.length + c.dir.length ? 'done' : o.skip.musica ? 'skip' : 'todo',
       spese: c.sanTot.gt(0) || c.altreDetr.gt(0) || c.ded.gt(0) ? 'done' : o.skip.spese ? 'skip' : 'todo',
+      irpef: c.any ? 'done' : 'na',
       files: has ? 'done' : 'todo',
       checks: !has ? 'na' : res && res.groups.blockCount ? 'warn' : 'done',
       invest: has ? 'done' : 'na',
@@ -1087,7 +1121,8 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
             { label: 'Musica (netto)', value: c.extra.gt(0) ? money(c.extra) : '—' },
             { label: 'Detrazioni per spese', value: c.det19.gt(0) ? money(c.det19) : '—' },
             { label: c.irpefCredit.gt(0) ? 'IRPEF a credito (stima)' : 'IRPEF da versare (stima)', value: money(c.irpefCredit.gt(0) ? c.irpefCredit : c.irpefDue), cls: 'total' },
-          ]), linkBtn('Apri i redditi', 'lavoro')),
+            c.addiz.gt(0) ? { label: 'Addizionali da versare (stima)', value: money(c.addiz) } : null,
+          ].filter(Boolean)), linkBtn('Vedi il calcolo', 'irpef')),
         h('section', { class: 'card tile' }, h('div', { class: 'tile-head' }, h('h2', null, 'Investimenti'), statusPill([st.files, st.checks])),
           has ? kvTable([
             { label: 'Imposta su cripto (26%)', value: money(res.y.crypto.tax) },
@@ -1144,7 +1179,8 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
         h('thead', null, h('tr', null, h('th', null, 'Dove'), h('th', null, 'Asset'), h('th', { class: 'num' }, 'Giorni'), h('th', { class: 'num' }, 'Valore iniziale'), h('th', { class: 'num' }, 'Valore finale'), h('th', { class: 'num' }, 'IVCA 0,2%'))),
         h('tbody', null, res.rw.map((r) => h('tr', null, h('td', null, r.account), h('td', null, r.asset), h('td', { class: 'num' }, r.days), h('td', { class: 'num' }, money(r.valueInitial), r.estimated ? h('div', { class: 'small muted' }, 'stimato') : null), h('td', { class: 'num' }, money(r.valueFinal), r.estimated ? h('div', { class: 'small muted' }, 'stimato') : null), h('td', { class: 'num' }, r.cls === 'metal' ? '—' : money(r.ivca))))),
         h('tfoot', null, h('tr', { class: 'total' }, h('td', { colspan: 5 }, 'IVCA totale'), h('td', { class: 'num' }, money(rwTotal)))))) : h('p', { class: 'muted' }, 'Nessuna cripto o oro detenuti in questo anno.'),
-      h('p', { class: 'small muted' }, 'Il modulo del quadro RW già compilato (con in rosso i campi da completare) si scarica dalla pagina Documenti.'));
+      h('p', { class: 'small muted' }, 'I valori a inizio e fine anno usano i prezzi del 1° gennaio e del 31 dicembre, scaricati con la fonte indicata o scritti da te (per esempio dall\'estratto conto della piattaforma). Il modulo del quadro RW già compilato si scarica dalla pagina Documenti.'),
+      h('div', { class: 'row' }, linkBtn('Prezzi usati e fonti', 'prices')));
   }
   function yearsCard(res) {
     const yrs = Object.values(res.years).sort((a, b) => b.year - a.year);
@@ -1207,9 +1243,10 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     } else if (has) for (const r of res.rw) rwRows.push(['RW', `${r.account} · ${r.asset} · ${r.days} giorni`, `${money(r.valueInitial)} → ${money(r.valueFinal)}`]);
     return [
       callout('info', 'Come usare questa pagina', `Qui c'è ogni numero da scrivere nel modello Redditi PF ${Y + 1}, nell'ordine dei quadri. Apri la dichiarazione precompilata (o mandala al commercialista) e copia riga per riga.`),
-      quadroCard('RC', 'Redditi di lavoro dipendente', 'Nella precompilata ci sono già dalla Certificazione Unica.', where.filter(([r]) => WHERE.lavoro.test(r))),
+      quadroCard('RC', 'Redditi di lavoro dipendente', 'Nella precompilata ci sono già dalla Certificazione Unica.', where.filter(([r]) => /^RC/.test(r))),
       quadroCard('RL', 'Altri redditi: lavoro occasionale e diritti d\'autore', 'Serate da DJ al rigo RL15, diritti d\'autore al rigo RL25.', where.filter(([r]) => WHERE.musica.test(r))),
       quadroCard('RP', 'Oneri e spese', 'Spese sanitarie al rigo RP1; altre detrazioni e oneri deducibili nelle sezioni del quadro.', where.filter(([r]) => WHERE.spese.test(r))),
+      where.some(([r]) => WHERE.addiz.test(r)) ? quadroCard('RV', 'Addizionali regionale e comunale', 'Nella precompilata quelle trattenute in busta paga ci sono già dalla CU; il dovuto lo calcola il software.', where.filter(([r]) => WHERE.addiz.test(r))) : null,
       has ? quadroCard('RT', 'Cripto-attività · sezione V-A', 'Plusvalenze e proventi da cripto. Imposta con codice F24 1715. I numeri dei righi sono nelle istruzioni del modello.', basketRows(res.y.crypto)) : null,
       has && (res.y.metals.nDisposals || res.y.metals.income.gt(0)) ? quadroCard('RT', 'Oro e metalli preziosi · sezione II', 'Imposta con codice F24 1100 (da confermare).', basketRows(res.y.metals)) : null,
       has ? quadroCard('RW', 'Investimenti all\'estero e imposta sul valore', 'Una riga per piattaforma. Il modulo già compilato è nella pagina Documenti.', rwRows) : null,
@@ -1266,7 +1303,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
   const insideClaude = () => !!(typeof window !== 'undefined' && window.claude && window.claude.use);
   /** Prezzo in euro alla chiusura del giorno: prova piu' servizi pubblici (vedi pricefeed.js). Un valore non credibile si scarta. */
   async function fetchPrice(sym, day) {
-    const r = await CT.pricefeed.dailyEur(sym, day);
+    const r = await CT.pricefeed.fetchEur(sym, day);
     const n = Number(r.price);
     if (!Number.isFinite(n) || n <= 0) { const e = new Error('prezzo non valido'); e.details = [`${r.source}: prezzo non valido`]; throw e; }
     const near = ui.res && ui.res.engine.prices.nearest(sym, day);
@@ -1300,8 +1337,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     for (let i = 0; i < need.length; i += 3) {
       await Promise.all(need.slice(i, i + 3).map(async (n) => {
         const k = `${n.symbol}|${n.day}`; priceTried.add(k);
-        if (CT.classify(n.symbol) !== 'crypto') { ko++; why.set('oro', 'i metalli non si scaricano: scrivi il prezzo di 1 grammo'); return; }
-        try { const r = await fetchPrice(n.symbol, n.day); if (!state.prices[k]) { state.prices[k] = r.price; (state.priceSrc = state.priceSrc || {})[k] = r.source; } ok++; }
+        try { const r = await fetchPrice(n.symbol, n.day); if (!state.prices[k]) { state.prices[k] = r.price; (state.priceSrc = state.priceSrc || {})[k] = CT.pricefeed.describe(r); } ok++; }
         catch (e) { ko++; for (const d of e.details || [e.message]) why.set(`${d.split(':')[0]}|${n.symbol}`, d); }
       }));
     }
@@ -1312,7 +1348,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
   function maybeAutoPrices() {
     const res = ui.res;
     if (!res || ui.busy || typeof fetch !== 'function') return;
-    const todo = [...res.engine.missingPrices.values()].filter((n) => CT.classify(n.symbol) === 'crypto' && !state.prices[`${n.symbol}|${n.day}`] && !priceTried.has(`${n.symbol}|${n.day}`));
+    const todo = [...res.engine.missingPrices.values()].filter((n) => !state.prices[`${n.symbol}|${n.day}`] && !priceTried.has(`${n.symbol}|${n.day}`));
     if (todo.length) autoPrices(true);
   }
   function panelPrices() {
@@ -1355,15 +1391,21 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
         need.length ? h('div', { class: 'stack', style: 'padding:0;gap:8px' },
           h('p', null, 'Per calcolare le tasse sulle vendite il programma usa gli importi in euro scritti nei tuoi file. Qui mancano invece alcuni prezzi in euro di una cripto in un certo giorno.'),
           h('p', { class: 'muted' }, nRW ? `${nRW} ${nRW === 1 ? 'serve' : 'servono'} al prospetto RW (il quadro del monitoraggio, e di conseguenza all'imposta sul valore delle cripto): il valore in euro che le cripto che possiedi avevano il 1° gennaio e il 31 dicembre. ` : '', nRebase ? `${nRebase} ${nRebase === 1 ? 'serve' : 'servono'} alla rideterminazione del costo al 1° gennaio 2025. ` : '', nOp ? `${nOp} ${nOp === 1 ? 'serve' : 'servono'} a valorizzare singole operazioni. ` : '', 'Sotto ogni asset trovi a cosa serve quel prezzo.'),
-          h('p', { class: 'muted' }, 'Il modo più veloce: premi «Scarica i prezzi in automatico». Funziona dal link pubblicato o dal programma scaricato sul computer, non dentro claude.ai. Se qualche prezzo non arriva, scrivilo a mano (prezzo in euro di 1 unità alla chiusura del giorno). Il suggerimento con «Usa» è il prezzo di un\'altra operazione e può essere di mesi prima o dopo: serve solo come approssimazione, controlla i giorni indicati. Per l\'oro scrivi il prezzo di 1 grammo.')) : h('p', { class: 'muted' }, 'Il programma usa già i prezzi che ricava dalle tue operazioni dello stesso giorno.'),
+          h('p', { class: 'muted' }, 'Il programma li scarica da solo appena apri la pagina pubblicata (su Vercel passa dal proprio server, così le borse non bloccano la richiesta). Ogni prezzo arriva con la fonte e, quando possibile, con il confronto con una seconda fonte: li trovi qui sotto e nel PDF, così il commercialista può verificarli. Solo se un prezzo non arriva da nessuna fonte scrivilo a mano (euro per 1 unità alla chiusura del giorno; per oro e metalli euro per 1 grammo).')) : h('p', { class: 'muted' }, 'Il programma usa già i prezzi che ricava dalle tue operazioni dello stesso giorno.'),
         need.length ? [h('div', { class: 'row' },
             h('button', { class: 'btn primary', disabled: !!ui.busy, onclick: auto }, ui.busy || 'Scarica i prezzi in automatico'),
             h('button', { class: 'btn', onclick: saveAll }, 'Salva i prezzi scritti a mano'),
-            h('span', { class: 'muted small' }, 'Il download automatico (Binance, Kraken o CryptoCompare) invia solo simbolo e data.')),
+            h('span', { class: 'muted small' }, 'Il download invia solo simbolo e data, nessun dato personale.')),
+          ui.priceFail ? h('p', { class: 'small muted' }, `Non arrivati: ${ui.priceFail}. ${(ui.priceWhy || []).join(' · ')}`) : null,
           h('div', { class: 'tbl-wrap' }, h('table', null, h('thead', null, h('tr', null, ['Asset', 'Data', 'Suggerimento', 'Prezzo in €'].map((x) => h('th', null, x)))), h('tbody', null, rows)))] : null),
-      have.length ? h('div', { class: 'card' }, h('h3', null, `Prezzi inseriti (${have.length})`),
-        h('div', { class: 'tbl-wrap' }, h('table', null, h('thead', null, h('tr', null, ['Asset', 'Data', 'Prezzo €', ''].map((x) => h('th', null, x)))),
-          h('tbody', null, have.map(([k, v]) => { const [s, d] = k.split('|'); return h('tr', null, h('td', null, s), h('td', null, dmy(d)), h('td', { class: 'num' }, v), h('td', null, h('button', { class: 'btn quiet danger', onclick: () => { delete state.prices[k]; if (state.priceSrc) delete state.priceSrc[k]; changed(); } }, 'Elimina'))); }))))) : null);
+      have.length ? h('div', { class: 'card' }, h('h3', null, `Prezzi usati (${have.length})`),
+        h('p', { class: 'muted small' }, 'Per ogni prezzo scaricato c\'è la fonte esatta (borsa, coppia, giorno) e il confronto con una seconda fonte: chiunque può ricontrollarlo. Se una riga dice ATTENZIONE le due fonti non coincidono: verifica o correggi.'),
+        h('p', { class: 'muted small' }, 'Hai l\'estratto conto della piattaforma al 31/12 (per esempio Bitpanda: colonna «Prezzo»)? Per il quadro RW è il documento migliore: scrivi quel prezzo nella casella e il programma usa il tuo.'),
+        h('div', { class: 'tbl-wrap' }, h('table', null, h('thead', null, h('tr', null, ['Asset', 'Data', 'Prezzo €', 'Fonte', ''].map((x) => h('th', null, x)))),
+          h('tbody', null, have.map(([k, v]) => { const [s, d] = k.split('|'); const src = (state.priceSrc || {})[k]; return h('tr', null, h('td', null, h('strong', null, s), CT.pricefeed.kindOf(s) === 'metal' ? h('div', { class: 'muted small' }, 'per grammo') : null), h('td', null, dmy(d)), h('td', null, h('input', { type: 'text', inputmode: 'decimal', class: 'num-in', style: 'width:120px', 'aria-label': `Prezzo ${s} ${dmy(d)}`, value: String(v).replace('.', ','),
+              onchange: (e) => { const t = e.target.value.trim().replace(/\s/g, '').replace(',', '.'); if (!(Number(t) > 0)) { toast('Scrivi un prezzo valido'); return; } if (t === String(v)) return; state.prices[k] = t; if (state.priceSrc) delete state.priceSrc[k]; changed(); toast('Prezzo salvato: ora vale il tuo'); } })),
+            h('td', { class: 'small' }, src ? h('span', { class: /ATTENZIONE/.test(src) ? 'warn-text' : 'muted' }, src) : h('span', { class: 'muted' }, 'scritto a mano')),
+            h('td', null, h('button', { class: 'btn quiet danger', onclick: () => { delete state.prices[k]; if (state.priceSrc) delete state.priceSrc[k]; changed(); } }, 'Elimina'))); }))))) : null);
   }
 
   // ------------------------------------------------------------------ versione per il computer
@@ -1583,6 +1625,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     lavoro: ['M3 8h18v12H3z', 'M8 8V5h8v3', 'M3 13h18'],
     musica: ['M9 18V5l12-2v13', 'M9 18a3 3 0 1 1-6 0a3 3 0 1 1 6 0', 'M21 16a3 3 0 1 1-6 0a3 3 0 1 1 6 0'],
     spese: ['M6 3h12v18l-3-2-3 2-3-2-3 2z', 'M9 8h6', 'M9 12h6'],
+    irpef: ['M6 3h12v18H6z', 'M9 7h6v3H9z', 'M9 14v.5', 'M12 14v.5', 'M15 14v.5', 'M9 17v.5', 'M12 17v.5', 'M15 17v.5'],
     files: ['M3 7h6l2 2h10v10H3z'],
     checks: ['M12 3l10 18H2z', 'M12 10v4', 'M12 17v.5'],
     invest: ['M4 20V10', 'M10 20V4', 'M16 20v-7', 'M3 20h18'],
@@ -1597,7 +1640,8 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     { group: 'Redditi' },
     { key: 'lavoro', label: 'Lavoro dipendente', lead: () => 'Stipendio o pensione: i dati della Certificazione Unica (CU).' },
     { key: 'musica', label: 'Musica (DJ e SIAE)', lead: () => 'Serate da DJ con prestazione occasionale, diritti d\'autore SIAE e royalties.' },
-    { key: 'spese', label: 'Spese e detrazioni', lead: () => 'Spese mediche e altre spese che riducono le tasse, con la stima dell\'IRPEF.' },
+    { key: 'spese', label: 'Spese e detrazioni', lead: () => 'Spese mediche e altre spese che riducono le tasse.' },
+    { key: 'irpef', label: 'IRPEF e addizionali', lead: () => 'Il calcolo su tutti i redditi e le addizionali regionale e comunale, che puoi scrivere tu.' },
     { group: 'Investimenti' },
     { key: 'files', label: 'Piattaforme e file', lead: () => 'Cripto, oro e altri investimenti: carica i file di Crypto.com, Bitpanda, Binance o di un wallet.' },
     { key: 'checks', label: 'Da controllare', lead: () => 'Quello che il programma non può sapere da solo: rispondi e il calcolo diventa definitivo.' },
@@ -1658,6 +1702,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       case 'lavoro': return pageLavoro();
       case 'musica': return pageMusica();
       case 'spese': return pageSpese();
+      case 'irpef': return pageIrpef();
       case 'files': return [ui.platform ? panelPlatform(ui.platform) : panelPlatforms()];
       case 'checks': return state.files.length + state.manual.length ? [panelChecks()] : [emptyState('Niente da controllare', 'I controlli riguardano i file degli investimenti: caricali e qui compare quello che il programma non sa da solo.', 'Carica i file', 'files')];
       case 'prices': return [panelPrices()];

@@ -17,7 +17,8 @@ test('catalogo piattaforme: ogni tipo di file esiste e ha un parser', () => {
 
 test('ogni tipo di file appartiene a una piattaforma e le piattaforme native hanno un account', () => {
   for (const t of Object.keys(CT.importers.TYPES)) assert.ok(CT.platformOfType(t), `tipo ${t} senza piattaforma`);
-  for (const k of ['cryptocom_app', 'cryptocom_exchange', 'bitpanda']) assert.equal(CT.PLATFORMS[k].native, true);
+  for (const k of ['cryptocom_app', 'cryptocom_exchange', 'bitpanda', 'coinbase']) assert.equal(CT.PLATFORMS[k].native, true);
+  assert.equal(CT.platformOfType('coinbase'), 'coinbase');
   assert.equal(CT.PLATFORMS.cryptocom_app.api.status, 'none');
 });
 

@@ -137,3 +137,64 @@ test('Bitpanda reale: ";", righe iniziali, oro "Gold" in grammi, «transfer» in
   assert.equal(ok.engine.issues.some((i) => i.code === 'transfer_in_unmatched'), false);
   eq(ok.engine.pool('XAU').lots.reduce((s, l) => s.plus(l.qty), CT.D(0)), '1.2');
 });
+
+// Coinbase "Transaction history": formato attuale (ID, importi con simbolo, quantita' negative, data "UTC") e formati precedenti.
+// Struttura dal parser open source BittyTax (solo riferimento sui fatti del formato); valori inventati.
+const CB_NEW = 'Transactions\nUser,Mario Rossi,00000000-0000-0000-0000-000000000000\n' +
+  'ID,Timestamp,Transaction Type,Asset,Quantity Transacted,Price Currency,Price at Transaction,Subtotal,Total (inclusive of fees and/or spread),Fees and/or Spread,Notes\n' +
+  'a1,2025-01-10 10:00:00 UTC,Buy,BTC,0.02,EUR,"€50,000.00","€1,000.00","€1,015.00",€15.00,Bought 0.02 BTC for €1015.00 EUR\n' +
+  'a2,2025-02-10 10:00:00 UTC,Convert,BTC,-0.01,EUR,"€60,000.00",€594.00,€600.00,€6.00,Converted 0.01 BTC to 0.25 ETH\n' +
+  'a3,2025-03-10 10:00:00 UTC,Sell,ETH,-0.05,EUR,"€3,000.00",€150.00,€148.00,€2.00,Sold 0.05 ETH for €148.00 EUR\n' +
+  'a4,2025-04-10 10:00:00 UTC,Staking Income,ETH,0.001,EUR,"€2,500.00",€2.50,€2.50,€0.00,\n' +
+  'a5,2025-05-10 10:00:00 UTC,Advanced Trade Sell,ETH,-0.1,EUR,"€2,600.00",€260.00,€259.00,€1.00,Sold 0.1 ETH for 0.0042 BTC on ETH-BTC at 0.042 BTC/ETH\n' +
+  'a6,2025-06-10 10:00:00 UTC,Send,BTC,-0.005,EUR,"€55,000.00",€275.00,€275.00,€0.00,To: bc1qexample\n' +
+  'a7,2025-06-11 10:00:00 UTC,Deposit,EUR,500,EUR,€1.00,€500.00,€500.00,€0.00,\n' +
+  'a8,2025-06-12 10:00:00 UTC,Retail Staking Transfer,ETH,-0.05,EUR,"€2,600.00",€130.00,€130.00,€0.00,\n' +
+  'a9,2025-06-13 10:00:00 UTC,Receive,BTC,0.0001,EUR,"€55,000.00",€5.50,€5.50,€0.00,Received 0.0001 BTC from Coinbase Referral\n' +
+  'b1,2025-07-01 09:00:00 UTC,Asset Migration,ETH2,-0.2,EUR,"€2,000.00",€400.00,€400.00,€0.00,\n' +
+  'b2,2025-07-01 09:00:00 UTC,Asset Migration,ETH,0.2,EUR,"€2,000.00",€400.00,€400.00,€0.00,\n' +
+  'b3,2025-07-02 09:00:00 UTC,Mystery Thing,ADA,5,EUR,€0.50,€2.50,€2.50,€0.00,\n';
+
+test('Coinbase attuale: righe iniziali, importi «€1,234.56», quantita\' negative, Buy/Convert/Sell/Staking/Advanced/Send/Deposit', () => {
+  assert.equal(I.detectType(CB_NEW), 'coinbase');
+  const r = I.TYPES.coinbase.parse(CB_NEW, 'coinbase.csv');
+  const ev = r.events;
+  const k = ev.map((e) => e.kind);
+  assert.deepEqual(k, [Kind.BUY, Kind.SWAP, Kind.SELL, Kind.INCOME, Kind.SWAP, Kind.TRANSFER_OUT, Kind.FIAT_IN, Kind.INFO, Kind.INCOME, Kind.UNRESOLVED, Kind.SWAP]);
+  const [buy, conv, sell, stake, adv, send, dep, , ref, unk, mig] = ev;
+  assert.equal(buy.asset, 'BTC'); eq(buy.qty, '0.02'); eq(buy.value, 1000); eq(buy.feeQty, 15); assert.equal(buy.feeAsset, 'EUR');
+  assert.equal(buy.ts.toISOString(), '2025-01-10T10:00:00.000Z');
+  assert.equal(conv.asset, 'BTC'); eq(conv.qty, '0.01'); assert.equal(conv.counterAsset, 'ETH'); eq(conv.counterQty, '0.25'); eq(conv.value, 594);
+  eq(sell.qty, '0.05'); eq(sell.value, 150); eq(sell.feeQty, 2);
+  assert.equal(stake.incomeType, 'staking'); eq(stake.value, '2.5');
+  assert.equal(adv.asset, 'ETH'); assert.equal(adv.counterAsset, 'BTC'); eq(adv.counterQty, '0.0042'); eq(adv.value, 259);
+  eq(send.qty, '0.005'); eq(dep.qty, 500); assert.equal(dep.asset, 'EUR');
+  assert.equal(ref.incomeType, 'referral');
+  assert.match(unk.note, /Mystery Thing/); assert.equal(r.unknown.length, 1);
+  assert.equal(mig.asset, 'ETH2'); assert.equal(mig.counterAsset, 'ETH'); assert.equal(mig.conv, true);
+});
+
+test('Coinbase: analisi completa (costo con commissione, permuta neutra BTC->ETH, vendita con commissione)', () => {
+  const csv = 'Timestamp,Transaction Type,Asset,Quantity Transacted,Price Currency,Price at Transaction,Subtotal,Total (inclusive of fees and/or spread),Fees and/or Spread,Notes\n' +
+    '2025-01-10T10:00:00Z,Buy,BTC,0.02,EUR,"€50,000.00","€1,000.00","€1,015.00",€15.00,Bought 0.02 BTC for €1015.00 EUR\n' +
+    '2025-02-10T10:00:00Z,Convert,BTC,-0.02,EUR,"€60,000.00","€1,188.00","€1,200.00",€12.00,Converted 0.02 BTC to 0.5 ETH\n' +
+    '2025-03-10T10:00:00Z,Sell,ETH,-0.5,EUR,"€3,000.00","€1,500.00","€1,490.00",€10.00,Sold 0.5 ETH for €1490.00 EUR\n';
+  const a = CT.analyze({ files: [{ id: 'c', name: 'cb.csv', type: 'coinbase', text: csv }], settings: { year: 2025 } });
+  // costo 1.015 (con commissione) passa all'ETH (Circ. 30/E); vendita: 1.500 - 10 = 1.490; guadagno 475
+  eq(a.y.crypto.gains, 475); assert.equal(a.groups.blockCount, 0);
+});
+
+test('Coinbase formati precedenti: "Spot Price", "Total (inclusive of fees)", "Fees" e la valuta nel nome delle colonne', () => {
+  const v2 = 'You can use this transaction report to inform your likely tax obligations.\n\nTransactions\nUser,x,y\n' +
+    'Timestamp,Transaction Type,Asset,Quantity Transacted,Spot Price Currency,Spot Price at Transaction,Subtotal,Total (inclusive of fees),Fees,Notes\n' +
+    '2023-05-01T08:00:00Z,Buy,ADA,100,EUR,0.35,35.00,36.50,1.50,Bought 100.0000 ADA for €36.50 EUR\n' +
+    '2023-06-01T08:00:00Z,Coinbase Earn,XLM,10,EUR,0.08,0.80,0.80,0.00,Received 10 XLM from Coinbase Earn\n';
+  const r2 = I.TYPES.coinbase.parse(v2, 'old.csv');
+  assert.deepEqual(r2.events.map((e) => e.kind), [Kind.BUY, Kind.INCOME]);
+  eq(r2.events[0].value, 35); eq(r2.events[0].feeQty, '1.5'); eq(r2.events[1].value, '0.8');
+  const v1 = 'Timestamp,Transaction Type,Asset,Quantity Transacted,USD Spot Price at Transaction,USD Subtotal,USD Total (inclusive of fees),USD Fees,Notes\n' +
+    '2023-01-05T08:00:00Z,Sell,BTC,0.01,17000,170.00,167.50,2.50,Sold 0.0100 BTC for $167.50 USD\n';
+  assert.equal(I.detectType(v1), 'coinbase');
+  const s1 = I.TYPES.coinbase.parse(v1, 'v1.csv').events[0];
+  assert.equal(s1.kind, Kind.SELL); eq(s1.value, 170); assert.equal(s1.valueCcy, 'USD'); assert.equal(s1.feeAsset, 'USD'); eq(s1.feeQty, '2.5');
+});

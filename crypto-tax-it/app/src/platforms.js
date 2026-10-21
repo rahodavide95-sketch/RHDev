@@ -119,17 +119,20 @@
       hue: 196,
       icon: ['M3 9.5L12 4l9 5.5', 'M5.5 11v7', 'M10 11v7', 'M14 11v7', 'M18.5 11v7', 'M3.5 20.5h17'],
       name: 'Coinbase',
-      blurb: 'Acquisti, vendite, convert e rendite su Coinbase.',
+      blurb: 'Acquisti, vendite, convert, staking e premi su Coinbase.',
       account: 'Coinbase',
-      native: false,
-      types: ['generic'],
-      kinds: [{ type: 'generic', label: 'Modello universale compilato' }],
+      native: true,
+      types: ['coinbase', 'generic'],
+      kinds: [{ type: 'coinbase', label: 'Cronologia delle transazioni (CSV)' }, { type: 'generic', label: 'Modello universale compilato' }],
       steps: [
-        'Il formato nativo dei file Coinbase non è ancora validato, quindi per ora si usa il modello universale.',
-        ...UNIVERSAL_STEPS,
-        'Se vuoi caricare direttamente l\'export di Coinbase (Rapporti → Cronologia transazioni): provalo qui. Se non viene riconosciuto premi «Copia diagnostica» e mandala a chi sviluppa l\'app: il formato verrà aggiunto.',
+        'Accedi a Coinbase dal sito coinbase.com e apri il profilo → «Rendiconti» o «Documenti» (Statements / Reports).',
+        'Scegli «Cronologia delle transazioni» (Transaction history), tutti gli asset e tutto il periodo dall\'apertura del conto, formato CSV.',
+        'Trascina qui il file: le righe di testo all\'inizio vengono ignorate da sole. Vanno bene anche gli export degli anni passati, con le colonne vecchie.',
       ],
-      limits: ['Il formato nativo di Coinbase non è ancora supportato.'],
+      limits: [
+        'I trasferimenti verso Coinbase Pro o Advanced con un export separato vengono chiesti come trasferimenti, finché non carichi anche quel file.',
+        'Le note delle operazioni servono per i Convert e gli scambi tra cripto: se non si leggono, la riga resta da controllare.',
+      ],
       api: API_PLANNED('Coinbase'),
     },
     other: {
@@ -148,7 +151,7 @@
     },
   };
 
-  const TYPE_TO_PLATFORM = { cryptocom_app: 'cryptocom_app', cryptocom_exchange_trades: 'cryptocom_exchange', cryptocom_exchange_transfers: 'cryptocom_exchange', bitpanda: 'bitpanda', generic: 'other' };
+  const TYPE_TO_PLATFORM = { cryptocom_app: 'cryptocom_app', cryptocom_exchange_trades: 'cryptocom_exchange', cryptocom_exchange_transfers: 'cryptocom_exchange', bitpanda: 'bitpanda', coinbase: 'coinbase', generic: 'other' };
   CT.PLATFORMS = PLATFORMS;
   CT.platformOfType = (t) => {
     if (TYPE_TO_PLATFORM[t]) return TYPE_TO_PLATFORM[t];

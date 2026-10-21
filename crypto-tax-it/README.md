@@ -33,7 +33,9 @@ musica (prestazioni occasionali, diritti d'autore), spese e detrazioni e, soprat
    Ogni pagina mostra dove si scrive ogni importo.
 4. **Investimenti** (tutto in un'unica sezione)
    - **Piattaforme e file**: scegli la piattaforma (Crypto.com App o Exchange, Bitpanda, Binance, Coinbase, altra o
-     wallet personale) e carica i file (CSV o .zip, il tipo viene riconosciuto da solo) o collega le API.
+     wallet personale) e carica i file (CSV o .zip, il tipo viene riconosciuto da solo) o collega le API. Si leggono
+     direttamente gli export di Crypto.com, Bitpanda e Coinbase («Cronologia delle transazioni», anche nei formati
+     degli anni passati); per le altre piattaforme c'è il modello universale.
    - **Da controllare**: il programma non indovina; ti chiede solo ciò che non può sapere (dove sono finite delle
      crypto uscite, a che costo hai preso quelle arrivate da fuori, righe sconosciute). I **prezzi** che mancano (per
      esempio il valore al 31/12 per il quadro RW) li scarica da solo. Per quello che è custodito su Bitpanda usa prima il

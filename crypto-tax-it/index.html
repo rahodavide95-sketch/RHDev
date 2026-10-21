@@ -199,6 +199,50 @@ ul.clean { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
 .fxprev { display: grid; gap: 12px; justify-items: center; }
 .fxcv { width: 100%; max-width: 640px; height: auto; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
 
+/* cosa pagare */
+.paycard .answer { margin: 2px 0 0; font-size: clamp(20px, 4vw, 26px); }
+.paytbl td { vertical-align: top; }
+.paytbl td .small { line-height: 1.35; margin-top: 2px; }
+.paytbl tfoot td { font-weight: 600; }
+.code { font-family: var(--font-mono); font-weight: 600; font-size: 15px; background: var(--accent-soft); color: var(--accent); padding: 2px 8px; border-radius: 6px; }
+.gloss { display: grid; grid-template-columns: minmax(140px, 220px) 1fr; gap: 8px 16px; margin: 10px 0 0; }
+.gloss dt { font-weight: 600; }
+.gloss dd { margin: 0; color: var(--ink-2); }
+@media (max-width: 640px) { .gloss { grid-template-columns: 1fr; } .gloss dd { margin-bottom: 6px; } }
+.redkey { margin: 10px 0; padding: 10px 12px; border-radius: 8px; background: var(--bad-soft); font-size: 14px; line-height: 1.45; }
+.redtxt { color: #c00000; font-weight: 600; }
+:root[data-theme="dark"] .redtxt { color: var(--bad); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .redtxt { color: var(--bad); } }
+.pill.wrap { white-space: normal; text-align: left; }
+@media (max-width: 640px) {
+  .paytbl thead { display: none; }
+  .paytbl, .paytbl tbody, .paytbl tfoot, .paytbl tr, .paytbl td { display: block; width: 100%; }
+  .paytbl tbody tr { padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .paytbl td { border: 0; padding: 3px 12px; text-align: left; }
+  .paytbl td.num { text-align: left; }
+  .paytbl td[data-l]:not(:first-child)::before { content: attr(data-l) ': '; color: var(--ink-2); font-size: 13px; }
+  .paytbl td[data-l]:not(:first-child) { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; }
+  .paytbl tfoot tr { display: flex; justify-content: space-between; padding: 8px 12px; }
+  .paytbl tfoot td { padding: 0; width: auto; }
+}
+.paytbl tr.grp td { background: var(--surface-2); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-2); }
+@media (max-width: 640px) { .paytbl tr.grp { padding: 0; } .paytbl tr.grp td { padding: 6px 12px; } }
+table.edit input { font: inherit; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); }
+@media (max-width: 640px) {
+  table.edit thead { display: none; }
+  table.edit, table.edit tbody, table.edit tr, table.edit td { display: block; width: 100%; }
+  table.edit tr { padding: 8px 0; border-bottom: 1px solid var(--line); }
+  table.edit td { border: 0; padding: 3px 0; }
+  table.edit td[data-l]::before { content: attr(data-l); display: block; font-size: 12px; color: var(--ink-2); }
+  table.edit input { width: 100% !important; }
+}
+details.tip { margin-top: 10px; padding: 10px 12px; border-radius: 8px; background: var(--accent-soft); }
+details.tip summary { font-weight: 600; cursor: pointer; }
+details.tip .steps { margin-top: 8px; }
+.sect { margin: 18px 0 -4px; padding: 0 2px; }
+.sect h2 { font-size: 20px; margin: 0; padding-bottom: 4px; border-bottom: 2px solid var(--accent); display: inline-block; }
+.sect p { margin: 6px 0 0; }
+
 </style>
 <div id="app"><p style="padding:24px;font-family:system-ui,sans-serif">Caricamento…</p></div>
 <noscript><p style="padding:24px">Per usare questa pagina serve JavaScript attivo.</p></noscript>
@@ -5554,15 +5598,18 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
   const D = (x) => (x instanceof Decimal ? x : new Decimal(x));
   const ZERO = new Decimal(0);
 
-  const FIAT = new Set(['EUR', 'USD', 'GBP', 'CHF', 'JPY', 'AUD', 'CAD', 'SEK', 'NOK', 'DKK', 'PLN', 'CZK', 'HUF', 'TRY', 'BRL']);
+  const FIAT = new Set(['EUR', 'USD', 'GBP', 'CHF', 'JPY', 'AUD', 'CAD', 'SEK', 'NOK', 'DKK', 'PLN', 'CZK', 'HUF', 'TRY', 'BRL', 'RON', 'BGN', 'NZD', 'SGD', 'HKD', 'ZAR', 'MXN', 'INR', 'KRW', 'ILS', 'AED']);
   const METAL_SYMBOLS = new Set(['XAU', 'XAG', 'XPT', 'XPD', 'GOLD', 'SILVER', 'PLATINUM', 'PALLADIUM']);
   const METAL_ALIASES = { GOLD: 'XAU', SILVER: 'XAG', PLATINUM: 'XPT', PALLADIUM: 'XPD' };
-  const STABLE = new Set(['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'EURC', 'EURT', 'PYUSD', 'FDUSD', 'USDD']);
+  // Stablecoin ancorate a una valuta: nelle permute sono trattate come e-money token (Circ. AdE 30/E/2023), quindi lo scambio con una
+  // cripto e' un realizzo. Lista indicativa: un token che manca viene trattato come cripto qualsiasi.
+  const STABLE = new Set(['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'EURC', 'EUROC', 'EURT', 'PYUSD', 'FDUSD', 'USDD', 'USDS', 'USDE', 'RLUSD', 'USD1', 'GUSD', 'LUSD', 'FRAX', 'USDG',
+    'EURCV', 'EURI', 'EURQ', 'EURR', 'EURE', 'AEUR']);
   // E-money token in euro conformi a MiCA: dal 2026 restano al 26% (lista indicativa, da verificare)
-  const EMT_EUR = new Set(['EURC', 'EURCV', 'EURI', 'EURQ', 'EURR']);
+  const EMT_EUR = new Set(['EURC', 'EUROC', 'EURCV', 'EURI', 'EURQ', 'EURR', 'EURE']);
 
   const Kind = Object.freeze({
-    BUY: 'buy', SELL: 'sell', SWAP: 'swap', INCOME: 'income', SPEND: 'spend',
+    BUY: 'buy', SELL: 'sell', SWAP: 'swap', INCOME: 'income', INCOME_REVERSAL: 'income_reversal', SPEND: 'spend',
     TRANSFER_OUT: 'transfer_out', TRANSFER_IN: 'transfer_in', FEE: 'fee',
     FIAT_IN: 'fiat_in', FIAT_OUT: 'fiat_out', INFO: 'info', UNRESOLVED: 'unresolved',
   });
@@ -5704,17 +5751,28 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
   }
   const absN = (x) => (x === null ? null : x.abs());
 
-  function parseTs(s) {
+  // ora "di parete" in Italia -> istante UTC (gestisce l'ora legale)
+  const romeParts = new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Rome', hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  function romeOffset(ms) {
+    const p = {}; for (const x of romeParts.formatToParts(new Date(ms))) p[x.type] = +x.value;
+    return Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - Math.floor(ms / 1000) * 1000;
+  }
+  const fromRome = (wall) => new Date(wall - romeOffset(wall - romeOffset(wall)));
+
+  /** Data/ora dal file. Senza fuso indicato vale `naive`: 'utc' (export delle piattaforme) oppure 'rome' (file compilati a mano). */
+  function parseTs(s, naive) {
     let t = String(s).trim();
     if (!t) throw new FormatError('Data mancante');
     let m;
+    const local = (ms) => (naive === 'rome' ? fromRome(ms) : new Date(ms));
     if ((m = t.match(/^(\d{2})\/(\d{2})\/(\d{4})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?$/))) {
-      return new Date(Date.UTC(+m[3], +m[2] - 1, +m[1], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0)));
+      return local(Date.UTC(+m[3], +m[2] - 1, +m[1], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0)));
     }
     if ((m = t.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?)?(Z|[+-]\d{2}:?\d{2})?$/))) {
       const base = Date.UTC(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
+      if (!m[7]) return local(base);
       let off = 0;
-      if (m[7] && m[7] !== 'Z') {
+      if (m[7] !== 'Z') {
         const sign = m[7][0] === '-' ? -1 : 1;
         const hh = +m[7].slice(1, 3), mm = +m[7].replace(':', '').slice(3, 5);
         off = sign * (hh * 60 + mm) * 60000;
@@ -5777,7 +5835,9 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
     nativeTrade: new Set(['crypto_purchase', 'trading.crypto_purchase.google_pay', 'dust_conversion_debited', 'dust_conversion_credited']),
     out: new Set(['crypto_withdrawal', 'crypto_to_exchange_transfer']),
     in: new Set(['exchange_to_crypto_transfer', 'crypto_deposit']),
-    spend: new Set(['crypto_payment', 'card_top_up', 'card_cashback_reverted', 'reimbursement_reverted']),
+    spend: new Set(['crypto_payment', 'card_top_up']),
+    // storno di un cashback/rimborso gia' accreditato (per esempio un acquisto con la carta poi rimborsato): le cripto tornano indietro
+    reversal: new Set(['card_cashback_reverted', 'reimbursement_reverted']),
     income: {
       crypto_earn_interest_paid: 'interest', crypto_earn_extra_interest_paid: 'interest', supercharger_reward_to_app_credited: 'interest',
       'finance.lockup.dpos_compound_interest.crypto_wallet': 'interest', 'finance.dpos.non_compound_interest.crypto_wallet': 'interest',
@@ -5836,6 +5896,31 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
         for (const x of grp) if (x.row !== lead) convMember.add(x.row);
       }
     }
+    // "Dust conversion" (piccoli saldi di piu' cripto convertiti in CRO): righe in uscita (debited) e UNA valuta in entrata (credited) nello
+    // stesso istante. E' uno scambio tra cripto: ogni riga in uscita diventa una permuta verso CRO, con la quota di CRO ripartita sul valore
+    // in euro delle righe in uscita. Se il gruppo non torna (piu' valute in entrata, valori mancanti) restano vendita e acquisto separati.
+    const dustRows = [];
+    for (const row of rows) {
+      const k = (row['Transaction Kind'] || '').trim().toLowerCase();
+      if (k === 'dust_conversion_debited' || k === 'dust_conversion_credited') dustRows.push({ row, ts: parseTs(row['Timestamp (UTC)']), debit: k.endsWith('debited') });
+    }
+    dustRows.sort((x, y) => x.ts - y.ts);
+    const dustSwap = new Map(), dustCredit = new Set();
+    for (let i = 0; i < dustRows.length;) {
+      let j = i + 1;
+      while (j < dustRows.length && dustRows[j].ts - dustRows[j - 1].ts <= 5000) j++;
+      const grp = dustRows.slice(i, j); i = j;
+      const out = grp.filter((x) => x.debit), inn = grp.filter((x) => !x.debit);
+      const ccy = (x) => (x.row['Currency'] || '').trim().toUpperCase();
+      const amt = (x) => (parseNum(x.row['Amount']) || ZERO).abs();
+      const nat = (x) => absN(parseNum(x.row['Native Amount'])) || ZERO;
+      const target = [...new Set(inn.map(ccy))];
+      if (!out.length || target.length !== 1 || !target[0] || FIAT.has(target[0]) || out.some((x) => !ccy(x) || FIAT.has(ccy(x)) || ccy(x) === target[0] || amt(x).isZero() || nat(x).isZero())) continue;
+      const got = inn.reduce((t, x) => t.plus(amt(x)), ZERO), totNat = out.reduce((t, x) => t.plus(nat(x)), ZERO);
+      if (got.isZero()) continue;
+      for (const x of out) dustSwap.set(x.row, { asset: ccy(x), qty: amt(x), counter: target[0], counterQty: got.times(nat(x)).div(totNat), value: nat(x) });
+      for (const x of inn) dustCredit.add(x.row);
+    }
     for (const row of rows) {
       const uid = mkUid(row);
       const src = `${fileName}:${row.__line}`;
@@ -5864,13 +5949,18 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
         else if (FIAT.has(toCur) && !FIAT.has(cur)) ev = mkEvent({ ...base, kind: Kind.SELL, asset: cur, qty: amt, value: toAmt, valueCcy: toCur });
         else if (toCur && !FIAT.has(cur) && !FIAT.has(toCur)) ev = mkEvent({ ...base, kind: Kind.SWAP, asset: cur, qty: amt, counterAsset: toCur, counterQty: toAmt, value: nAmt, valueCcy: nCcy });
         else ev = unresolved(base, `Crypto.com App · tipo "${kindRaw}" (valute ${cur}/${toCur || '-'})`, `Scambio con valute non interpretabili (${cur} → ${toCur || '-'})`);
-      } else if (APP.nativeTrade.has(kind)) {
+      } else if (dustSwap.has(row)) {
+        const x = dustSwap.get(row);
+        ev = mkEvent({ ...base, kind: Kind.SWAP, asset: x.asset, qty: x.qty, counterAsset: x.counter, counterQty: x.counterQty, value: x.value, valueCcy: nCcy });
+      } else if (dustCredit.has(row)) ev = mkEvent({ ...base, kind: Kind.INFO, note: 'CRO ricevuti dalla conversione dei piccoli saldi: contati con le righe in uscita' });
+      else if (APP.nativeTrade.has(kind)) {
         ev = rawAmt.gt(0)
           ? mkEvent({ ...base, kind: Kind.BUY, asset: cur, qty: amt, value: nAmt, valueCcy: nCcy })
           : mkEvent({ ...base, kind: Kind.SELL, asset: cur, qty: amt, value: nAmt, valueCcy: nCcy });
       } else if (APP.out.has(kind)) ev = mkEvent({ ...base, kind: Kind.TRANSFER_OUT, asset: cur, qty: amt, value: nAmt, valueCcy: nCcy });
       else if (APP.in.has(kind)) ev = mkEvent({ ...base, kind: Kind.TRANSFER_IN, asset: cur, qty: amt, value: nAmt, valueCcy: nCcy });
       else if (APP.spend.has(kind)) ev = mkEvent({ ...base, kind: Kind.SPEND, asset: cur, qty: amt, value: nAmt, valueCcy: nCcy });
+      else if (APP.reversal.has(kind)) ev = mkEvent({ ...base, kind: Kind.INCOME_REVERSAL, asset: cur, qty: amt, value: nAmt, valueCcy: nCcy, incomeType: 'cashback_reverted' });
       else if (kind in APP.income) {
         ev = rawAmt.gt(0)
           ? mkEvent({ ...base, kind: Kind.INCOME, asset: cur, qty: amt, value: nAmt, valueCcy: nCcy, incomeType: APP.income[kind] })
@@ -6070,7 +6160,12 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
         const fiatMove = isFiatMove(parseNum(row['Amount Asset'])) || cls === 'fiat' || FIAT.has(asset);
         if (fiatMove) ev = mkEvent({ ...base, kind: typ === 'deposit' ? Kind.FIAT_IN : Kind.FIAT_OUT, asset: fiat, qty: fiatAmt || ZERO });
         else if (typ === 'deposit') ev = mkEvent({ ...base, kind: Kind.TRANSFER_IN, asset, qty });
-        else ev = mkEvent({ ...base, kind: Kind.TRANSFER_OUT, asset, qty: qty.plus(fee) });   // la commissione esce in aggiunta alla quantita' inviata
+        else {
+          // la commissione esce in aggiunta alla quantita' inviata, se e' nello stesso asset; in un altro asset (es. BEST) e' una cessione a parte
+          const feeAsset = (row['Fee asset'] || '').trim().toUpperCase();
+          const sameFee = !feeAsset || (METAL_ALIASES[feeAsset] || feeAsset) === asset;
+          ev = mkEvent({ ...base, kind: Kind.TRANSFER_OUT, asset, qty: sameFee ? qty.plus(fee) : qty, ...(fee.gt(0) && !sameFee ? { feeAsset, feeQty: fee } : {}) });
+        }
       } else ev = unresolved(base, `Bitpanda · tipo "${typ}" (${assetClass || 'classe n.d.'})`,
         `Tipo di transazione non riconosciuto: "${typ}" (In/Out="${dir}", classe="${assetClass}", ${asset} ${qty.toFixed()})`);
       events.push(ev);
@@ -6097,7 +6192,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
     for (const row of rows) {
       const uid = mkUid(row);
       const src = `${fileName}:${row.__line}`;
-      const ts = parseTs(g(row, 'data'));
+      const ts = parseTs(g(row, 'data'), 'rome');   // il modello si compila con l'ora italiana
       const acc = g(row, 'conto').trim() || account || 'Altro conto';
       const tipo = norm(g(row, 'tipo'));
       const base = { uid, ts, account: acc, src, raw: row, note: g(row, 'nota') };
@@ -6181,8 +6276,13 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
   const { D, ZERO, Kind, classify, taxDate, STABLE, FIAT } = CT;
 
   const REBASE_DAY = '2025-01-01';
-  const NEW_REGIME_DAY = '2023-01-01'; // dal 2023 le permute cripto-cripto sono realizzi imponibili
+  const NEW_REGIME_DAY = '2023-01-01'; // dal 2023 regime delle cripto-attivita' (L. 197/2022)
   const WALLET = 'Wallet personale';
+  // Permute dal 2023 (art. 67, c. 1, lett. c-sexies TUIR e Circ. AdE 30/E del 27/10/2023, par. 3.1): non e' un realizzo la permuta tra
+  // cripto-attivita' con eguali caratteristiche e funzioni (es. BTC -> ETH); lo e' quella tra cripto e stablecoin (e-money token) o metalli.
+  //  - 'circ30' (predefinito): realizzo solo se cambia il gruppo (cripto / stablecoin / metallo); altrimenti il costo passa al nuovo asset
+  //  - 'all': ogni permuta e' un realizzo al valore normale (lettura piu' severa, per chi la preferisce)
+  const SWAP_RULES = ['circ30', 'all'];
   const it = (day) => day.split('-').reverse().join('/'); // 2025-03-07 -> 07/03/2025 (solo nei messaggi)
   const nq = (x) => CT.fq(D(x).toDecimalPlaces(6)).replace('.', ','); // quantita' leggibile: virgola, al massimo 6 decimali
 
@@ -6229,8 +6329,11 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
     constructor(asset) { this.asset = asset; this.lots = []; }
     get balance() { return this.lots.reduce((s, l) => s.plus(l.qty), ZERO); }
     add(lot) {
-      this.lots.push(lot);
-      this.lots.sort((a, b) => a.ts - b.ts); // stabile: a pari data resta l'ordine di inserimento
+      // ordine per data; a pari data resta l'ordine di inserimento. Gli eventi arrivano gia' in ordine: di solito basta accodare
+      // (riordinare tutto a ogni lotto rallentava molto i file con migliaia di cashback e interessi).
+      let i = this.lots.length;
+      while (i > 0 && this.lots[i - 1].ts > lot.ts) i--;
+      this.lots.splice(i, 0, lot);
     }
     /** LIFO: ritorna { uses, short } */
     consume(qty) {
@@ -6251,8 +6354,12 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
   // ------------------------------------------------------------ motore
   class Engine {
     constructor(opts) {
-      this.opts = Object.assign({ rebase2025: false, resolutions: {}, transferWindowH: 72, transferFeeTol: D('0.10'), prices: new PriceBook() }, opts || {});
+      this.opts = Object.assign({ rebase2025: false, swapRule: 'circ30', resolutions: {}, transferWindowH: 72, transferFeeTol: D('0.10'), prices: new PriceBook() }, opts || {});
+      if (!SWAP_RULES.includes(this.opts.swapRule)) this.opts.swapRule = 'circ30';
       this.prices = this.opts.prices;
+      this.neutralSwaps = { n: 0, eur: ZERO };   // permute senza realizzo dal 2023 (solo per il riepilogo)
+      this.swapsCarried = [];                    // le stesse, una per una (documentazione del costo trasferito)
+      this.obsolete = new Set();                 // scelte salvate che con le regole attuali non servono piu'
       this.pools = new Map();
       this.disposals = []; this.incomes = []; this.movements = []; this.issues = [];
       this.missingPrices = new Map(); // "SYM|day" -> {symbol, day}
@@ -6315,6 +6422,27 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
       return p.price.times(e.feeQty);
     }
 
+    /** Controvalore EUR se ricavabile, senza segnalare nulla: per le operazioni che non realizzano (serve solo al prospetto RW). */
+    softValueEur(e) {
+      const day = taxDate(e.ts);
+      if (e.value !== null && e.value !== undefined && e.value.gt(0)) {
+        if (e.valueCcy === 'EUR') return e.value;
+        const fx = this.prices.get(e.valueCcy, day);
+        if (fx) return e.value.times(fx.price);
+      }
+      const p = e.asset ? this.prices.get(e.asset, day) : null;
+      if (p) return p.price.times(e.qty);
+      const q = e.counterAsset && !e.counterQty.isZero() ? this.prices.get(e.counterAsset, day) : null;
+      return q ? q.price.times(e.counterQty) : null;
+    }
+
+    /** Gruppo fiscale di un asset nelle permute: le stablecoin (e-money token) e i metalli non hanno le stesse funzioni delle altre cripto. */
+    swapGroup(asset) {
+      const c = this.cls(asset);
+      if (c !== 'crypto') return c;   // metallo, valuta o altro (azioni, ETF): mai "eguali caratteristiche" con una cripto
+      return STABLE.has(String(asset).toUpperCase()) ? 'stable' : 'crypto';
+    }
+
     /** Valore in EUR dichiarato dal file per un trasferimento (se c'e'): serve solo al prospetto RW. */
     hint(e) { return e.value !== null && e.value !== undefined && e.valueCcy === 'EUR' ? e.value : null; }
     move(e, account, asset, delta, eur) { this.movements.push({ ts: e.ts, day: taxDate(e.ts), account, asset, delta, eur: eur === undefined ? null : eur, uid: e.uid }); }
@@ -6356,6 +6484,12 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
       const cost = uses.reduce((s, u) => s.plus(u.cost), ZERO);
       const d = { uid, ts: e.ts, day: taxDate(e.ts), year: CT.yearOf(taxDate(e.ts)), account: e.account, asset, cls: this.cls(asset, asset === e.asset ? e.assetHint : null),
         kind, qty, proceeds, fee, cost, gain: proceeds.minus(cost), uses, source, src: e.src, note: note || '' };
+      // Con il costo rideterminato al 1/1/2025 non si realizzano minusvalenze deducibili (L. 207/2024, art. 1, c. 29): lotto per lotto,
+      // a ciascuno la sua parte di corrispettivo; la perdita di un lotto rideterminato conta zero.
+      if (uses.some((u) => u.rebased) && qty.gt(0)) {
+        const tg = uses.reduce((s, u) => { const g = proceeds.times(u.qty).div(qty).minus(u.cost); return s.plus(u.rebased && g.lt(0) ? ZERO : g); }, ZERO);
+        if (!tg.eq(d.gain)) d.taxGain = tg;
+      }
       this.disposals.push(d);
       return d;
     }
@@ -6385,7 +6519,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
       for (const e of events) {
         if (e.value === null || e.value === undefined || e.valueCcy !== 'EUR') continue;
         const day = taxDate(e.ts);
-        if ((e.kind === Kind.BUY || e.kind === Kind.SELL || e.kind === Kind.INCOME || e.kind === Kind.SPEND) && e.asset && e.qty.gt(0) && !FIAT.has(e.asset)) {
+        if ((e.kind === Kind.BUY || e.kind === Kind.SELL || e.kind === Kind.INCOME || e.kind === Kind.INCOME_REVERSAL || e.kind === Kind.SPEND) && e.asset && e.qty.gt(0) && !FIAT.has(e.asset)) {
           this.prices.addImplied(e.asset, day, e.value.div(e.qty));
         } else if (e.kind === Kind.SWAP) {
           if (e.qty.gt(0)) this.prices.addImplied(e.asset, day, e.value.div(e.qty));
@@ -6441,6 +6575,10 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
         this.handle(e, pair);
       }
       if (this.opts.rebase2025 && !this._rebased) this.rebase();
+      if (this.neutralSwaps.n) {
+        const n = this.neutralSwaps.n;
+        this.issue('info', 'neutral_swaps', '', `${n} ${n === 1 ? 'scambio' : 'scambi'} tra cripto con eguali caratteristiche e funzioni (per esempio BTC → ETH) dal 2023: non ${n === 1 ? 'è un realizzo' : 'sono realizzi'} (Circ. AdE 30/E/2023), il costo passa alla cripto ricevuta.`, { count: n });
+      }
       return this;
     }
 
@@ -6465,35 +6603,44 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
         this.feeDisposal(e, fee);
       } else if (k === Kind.SWAP) {
         if (!e.counterAsset || classify(e.counterAsset) === 'fiat') { this.issue('block', 'unrecognized_row', e.uid, 'Permuta senza asset di destinazione valido'); return; }
-        // conversione di saldo (cambio di nome o migrazione di un token): dal 2023 serve una scelta dell'utente.
-        // La scelta e' salvata con una chiave propria ("conv:"+uid) per non sovrapporsi al costo del mancante (stesso uid).
         const preRegime = taxDate(e.ts) < NEW_REGIME_DAY;
+        // stesso gruppo (cripto con cripto, stablecoin con stablecoin): con la regola della Circ. 30/E non e' un realizzo
+        const sameGroup = this.swapGroup(e.asset) === this.swapGroup(e.counterAsset);
+        const neutral = !preRegime && sameGroup && this.opts.swapRule === 'circ30';
+        // conversione di saldo (cambio di nome o migrazione di un token): se la regola non la rende gia' neutra serve una scelta dell'utente.
+        // La scelta e' salvata con una chiave propria ("conv:"+uid) per non sovrapporsi al costo del mancante (stesso uid).
         const convKey = 'conv:' + e.uid;
         const convChoice = e.conv ? (this.opts.resolutions[convKey] || {}).action : null;
-        if (e.conv && !preRegime && convChoice !== 'migration' && convChoice !== 'swap') {
+        if (e.conv && (preRegime || neutral) && convChoice) this.obsolete.add(convKey);   // risposta data in passato, ora non serve piu'
+        if (e.conv && !preRegime && !neutral && convChoice !== 'migration' && convChoice !== 'swap') {
           this.issue('block', 'conversion_pending', convKey,
             `Conversione di saldo del ${it(taxDate(e.ts))}: ${nq(e.qty)} ${e.asset} → ${nq(e.counterQty)} ${e.counterAsset}`,
             { asset: e.asset, counter: e.counterAsset, qty: e.qty, counterQty: e.counterQty, day: taxDate(e.ts), account: e.account });
         }
-        const carry = preRegime || convChoice === 'migration';   // nessun realizzo: il costo passa al nuovo asset
+        const carry = preRegime || neutral || (e.conv && convChoice === 'migration');   // nessun realizzo: il costo passa al nuovo asset
         let v, src;
-        if (e.conv && carry) {
-          // senza realizzo il valore in euro non serve al calcolo (solo, se c'e', al prospetto RW): non si chiede un prezzo
-          v = e.value !== null && e.value !== undefined && e.valueCcy === 'EUR' && e.value.gt(0) ? e.value : null; src = 'dal file';
-        } else ({ v, src } = this.valueEur(e));
+        // senza realizzo il valore in euro non serve al calcolo (solo, se c'e', al prospetto RW): non si chiede un prezzo
+        if (carry) { v = this.softValueEur(e); src = 'dal file'; } else ({ v, src } = this.valueEur(e));
         const fee = this.feeEur(e);
-        if (STABLE.has(e.asset) && STABLE.has(e.counterAsset)) {
+        if (!carry && STABLE.has(e.asset) && STABLE.has(e.counterAsset)) {
           this.issue('info', 'stable_swap', e.uid, `Scambio tra stablecoin ${e.asset}→${e.counterAsset}: trattato come permuta imponibile (scelta prudenziale).`);
         }
         this.move(e, e.account, e.asset, e.qty.neg(), v);
         if (carry) {
-          // Prima del 2023 la permuta cripto-cripto non era un realizzo (e una migrazione di token non lo e'): il costo si trasferisce al nuovo asset.
+          // Prima del 2023, e dal 2023 tra cripto con eguali caratteristiche e funzioni, la permuta non e' un realizzo (neppure una migrazione
+          // di token): il costo dei lotti ceduti, piu' l'eventuale commissione (onere accessorio), diventa il costo del nuovo asset.
           const pool = this.pool(e.asset);
           let { uses, short } = pool.consume(e.qty);
           ({ uses, short } = this.coverMissing(pool, e, e.uid, uses, short));
-          let cost = uses.reduce((t, u) => t.plus(u.cost), ZERO);
+          const cost = uses.reduce((t, u) => t.plus(u.cost), ZERO).plus(fee);
           if (short.gt(0)) this.issue('block', 'missing_history', e.uid, `Permuta di ${nq(e.qty)} ${e.asset} del ${it(taxDate(e.ts))}: mancano ${nq(short)} negli acquisti caricati.`, { asset: e.asset, qty: short, day: taxDate(e.ts), account: e.account });
           this.acquire(e, e.counterAsset, e.counterQty, cost, short.isZero() && uses.every((u) => u.documented !== false));
+          if (neutral) {
+            this.neutralSwaps.n++;
+            if (v) this.neutralSwaps.eur = this.neutralSwaps.eur.plus(v);
+            this.swapsCarried.push({ uid: e.uid, ts: e.ts, day: taxDate(e.ts), year: CT.yearOf(taxDate(e.ts)), account: e.account, asset: e.asset, qty: e.qty,
+              counterAsset: e.counterAsset, counterQty: e.counterQty, cost, value: v, documented: short.isZero() && uses.every((u) => u.documented !== false), src: e.src });
+          }
         } else {
           this.dispose(e, e.uid, e.asset, e.qty, v.minus(fee), fee, 'swap', src, e.note);
           this.acquire(e, e.counterAsset, e.counterQty, v);
@@ -6505,11 +6652,24 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
         this.acquire(e, e.asset, e.qty, v);
         this.move(e, e.account, e.asset, e.qty, v);
         this.incomes.push({ uid: e.uid, ts: e.ts, day: taxDate(e.ts), year: CT.yearOf(taxDate(e.ts)), account: e.account, asset: e.asset, cls, qty: e.qty, value: v, type: e.incomeType || 'other', source: src, src: e.src });
+      } else if (k === Kind.INCOME_REVERSAL) {
+        // Storno di un premio gia' tassato (cashback della carta annullato per un rimborso): le cripto tornano alla piattaforma e il provento
+        // si riduce del loro valore allo storno. Non e' una cessione: nessuna plus/minusvalenza (prima era trattato come pagamento e il
+        // cashback restituito restava tassato per intero).
+        const { v, src } = this.valueEur(e);
+        const { short } = this.pool(e.asset).consume(e.qty);
+        if (short.gt(0)) this.issue('warn', 'reversal_short', e.uid, `Storno di ${nq(e.qty)} ${e.asset} del ${it(taxDate(e.ts))}: nei file ne risultano solo ${nq(e.qty.minus(short))}.`, { asset: e.asset });
+        this.move(e, e.account, e.asset, e.qty.neg(), v);
+        this.incomes.push({ uid: e.uid, ts: e.ts, day: taxDate(e.ts), year: CT.yearOf(taxDate(e.ts)), account: e.account, asset: e.asset, cls, qty: e.qty.neg(), value: v.neg(), type: e.incomeType || 'cashback_reverted', reversal: true, source: src, src: e.src });
       } else if (k === Kind.FEE) {
         const { v } = this.valueEur(e);
         this.move(e, e.account, e.asset, e.qty.neg(), v);
         this.dispose(e, e.uid, e.asset, e.qty, v, ZERO, 'fee', 'commissione');
-      } else if (k === Kind.TRANSFER_OUT) this.transferOut(e, pair.get(e.uid));
+      } else if (k === Kind.TRANSFER_OUT) {
+        // commissione del prelievo pagata in un altro asset (es. BEST su Bitpanda): e' una cessione di quell'asset
+        if (e.feeAsset && e.feeAsset !== e.asset && e.feeQty.gt(0)) this.feeDisposal(e, this.feeEur(e));
+        this.transferOut(e, pair.get(e.uid));
+      }
       else if (k === Kind.TRANSFER_IN) this.transferIn(e, pair.get(e.uid));
     }
 
@@ -6581,12 +6741,15 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
   const CT = (globalThis.CT = globalThis.CT || {});
   const { D, ZERO, roundEuro, EMT_EUR } = CT;
 
+  // threshold: franchigia (art. 67, c. 1, lett. c-sexies: imponibili le plusvalenze e i proventi "non inferiori complessivamente a 2.000 euro").
+  // lossMin: nel 2023-2024 la minusvalenza netta cripto si riporta solo se "superiore a 2.000 euro" (art. 68, c. 9-bis TUIR, testo in vigore
+  // fino al 2024); dal 2025 la soglia non c'e' piu' (L. 207/2024, art. 1, c. 25, lett. b).
   const BASE = { metalsRate: D('0.26'), ivcaRate: D('0.002'), lossYears: 4, status: 'da verificare' };
   const RULES = {
-    2023: { ...BASE, year: 2023, cryptoRate: D('0.26'), threshold: D(2000), emtRate: null, note: 'Franchigia 2.000 € sulle plusvalenze cripto (se il totale supera 2.000 € si tassa tutto).' },
-    2024: { ...BASE, year: 2024, cryptoRate: D('0.26'), threshold: D(2000), emtRate: null, note: 'Franchigia 2.000 € sulle plusvalenze cripto (se il totale supera 2.000 € si tassa tutto).' },
-    2025: { ...BASE, year: 2025, cryptoRate: D('0.26'), threshold: null, emtRate: null, note: 'Aliquota 26%, nessuna franchigia (abolita dal 2025).' },
-    2026: { ...BASE, year: 2026, cryptoRate: D('0.33'), threshold: null, emtRate: D('0.26'), note: 'Aliquota 33%; 26% per le stablecoin in euro conformi a MiCA (E-money token).' },
+    2023: { ...BASE, year: 2023, cryptoRate: D('0.26'), threshold: D(2000), lossMin: D(2000), emtRate: null, note: 'Franchigia 2.000 € sulle plusvalenze cripto (da 2.000 € in su si tassa tutto); minusvalenza netta riportabile solo se superiore a 2.000 €.' },
+    2024: { ...BASE, year: 2024, cryptoRate: D('0.26'), threshold: D(2000), lossMin: D(2000), emtRate: null, note: 'Franchigia 2.000 € sulle plusvalenze cripto (da 2.000 € in su si tassa tutto); minusvalenza netta riportabile solo se superiore a 2.000 €.' },
+    2025: { ...BASE, year: 2025, cryptoRate: D('0.26'), threshold: null, lossMin: null, emtRate: null, note: 'Aliquota 26%, nessuna franchigia (abolita dal 2025, anche per il riporto delle minusvalenze).' },
+    2026: { ...BASE, year: 2026, cryptoRate: D('0.33'), threshold: null, lossMin: null, emtRate: D('0.26'), note: 'Aliquota 33%; 26% per le stablecoin in euro conformi a MiCA (E-money token).' },
   };
   const YEARS = Object.keys(RULES).map(Number);
 
@@ -6597,20 +6760,24 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
       law: isCrypto ? 'art. 67, c. 1, lett. c-sexies TUIR' : 'art. 67, c. 1, lett. c-ter TUIR',
       rate: isCrypto ? rule.cryptoRate : rule.metalsRate,
       nDisposals: ds.length, proceeds: ZERO, costs: ZERO, gains: ZERO, losses: ZERO, net: ZERO, income: ZERO,
-      carryUsed: [], carryUnused: [], carryExpired: [], newLoss: ZERO, taxable: ZERO, tax: ZERO, thresholdExempt: false, emtShare: ZERO,
+      carryUsed: [], carryUnused: [], carryExpired: [], newLoss: ZERO, lossNotCarried: ZERO, taxable: ZERO, tax: ZERO, thresholdExempt: false, emtShare: ZERO, nonDeductible: ZERO,
     };
     for (const d of ds) {
       r.proceeds = r.proceeds.plus(d.proceeds); r.costs = r.costs.plus(d.cost);
-      if (d.gain.gt(0)) r.gains = r.gains.plus(d.gain); else r.losses = r.losses.minus(d.gain);
+      // taxGain: risultato fiscale, se diverso da corrispettivo - costo (perdita non deducibile su lotti rideterminati al 1/1/2025)
+      const g = d.taxGain !== undefined ? d.taxGain : d.gain;
+      if (g.gt(0)) r.gains = r.gains.plus(g); else r.losses = r.losses.minus(g);
+      if (d.taxGain !== undefined) r.nonDeductible = r.nonDeductible.plus(d.taxGain.minus(d.gain));
     }
     r.income = incs.reduce((s, i) => s.plus(i.value), ZERO);
+    if (r.income.lt(0)) r.income = ZERO;   // gli storni riducono i proventi dell'anno, mai sotto zero (non diventano una perdita)
     r.net = r.gains.minus(r.losses);
 
     const usable = carry.filter((c) => c.year >= year - rule.lossYears && c.year < year).sort((a, b) => a.year - b.year);
     r.carryExpired = carry.filter((c) => c.year < year - rule.lossYears);
 
     let cap = r.net.gt(0) ? roundEuro(r.net) : ZERO;
-    const exempt = isCrypto && rule.threshold && r.net.plus(r.income).lte(rule.threshold);
+    const exempt = isCrypto && rule.threshold && r.net.plus(r.income).lt(rule.threshold);   // "non inferiori a 2.000": esattamente 2.000 si tassa
     if (exempt && (r.net.gt(0) || r.income.gt(0))) {
       r.thresholdExempt = true; cap = ZERO; r.carryUnused = usable.map((c) => ({ ...c }));
       r.taxable = ZERO; r.tax = ZERO;
@@ -6623,14 +6790,18 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
       r.taxable = roundEuro(cap.plus(r.income));
       let tax = r.taxable.times(r.rate);
       if (isCrypto && rule.emtRate) {
-        const emtNet = ds.filter((d) => EMT_EUR.has(d.asset)).reduce((s, d) => s.plus(d.gain), ZERO);
+        const emtNet = ds.filter((d) => EMT_EUR.has(d.asset)).reduce((s, d) => s.plus(d.taxGain !== undefined ? d.taxGain : d.gain), ZERO);
         const share = emtNet.gt(0) ? (emtNet.lt(cap) ? emtNet : cap) : ZERO;
         r.emtShare = roundEuro(share);
         tax = r.taxable.minus(r.emtShare).times(r.rate).plus(r.emtShare.times(rule.emtRate));
       }
       r.tax = roundEuro(tax);
     }
-    if (r.net.lt(0)) r.newLoss = roundEuro(r.net.neg());
+    if (r.net.lt(0)) {
+      const loss = roundEuro(r.net.neg());
+      if (isCrypto && rule.lossMin && loss.lte(rule.lossMin)) r.lossNotCarried = loss;   // 2023-2024: fino a 2.000 € non si riporta
+      else r.newLoss = loss;
+    }
     return r;
   }
 
@@ -6916,7 +7087,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
       if (!sym || !/^\d{4}-\d{2}-\d{2}$/.test(day || '') || v === '' || v === null || !Number.isFinite(n) || n <= 0) continue;   // valori non validi: come se non ci fossero
       pb.setManual(sym, day, String(v).replace(',', '.'));
     }
-    const engine = new CT.Engine({ rebase2025: !!settings.rebase2025, resolutions, prices: pb }).run(events);
+    const engine = new CT.Engine({ rebase2025: !!settings.rebase2025, swapRule: settings.swapRule === 'all' ? 'all' : 'circ30', resolutions, prices: pb }).run(events);
     if (duplicates) engine.issue('info', 'duplicates', '', `${duplicates} ${duplicates === 1 ? 'riga presente' : 'righe presenti'} in più file (periodi sovrapposti) ${duplicates === 1 ? 'è stata contata' : 'sono state contate'} una sola volta.`);
     apiIssues(engine, parsed, resolutions);
     for (const g of near.issues) engine.issue('block', 'possible_duplicate', g.key, g.message, g.data);
@@ -6937,7 +7108,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
    * (a parita' il primo) e si scartano le altre. 'ack' = sono operazioni diverse.
    */
   function nearDuplicates(events, fileOf, resolutions) {
-    const WATCH = new Set([Kind.BUY, Kind.SELL, Kind.SWAP, Kind.INCOME, Kind.SPEND, Kind.TRANSFER_IN, Kind.TRANSFER_OUT]);
+    const WATCH = new Set([Kind.BUY, Kind.SELL, Kind.SWAP, Kind.INCOME, Kind.INCOME_REVERSAL, Kind.SPEND, Kind.TRANSFER_IN, Kind.TRANSFER_OUT]);
     const order = new Map(); [...new Set([...fileOf.values()])].forEach((f, i) => order.set(f.id, i));
     const buckets = new Map();
     for (const e of events) {
@@ -6964,7 +7135,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
     }
     const skip = new Set(), issues = [];
     const dmy = (ts) => CT.taxDate(ts).split('-').reverse().join('/');
-    const KIND = { buy: 'acquisto', sell: 'vendita', swap: 'scambio', income: 'provento', spend: 'spesa', transfer_in: 'ingresso', transfer_out: 'uscita' };
+    const KIND = { buy: 'acquisto', sell: 'vendita', swap: 'scambio', income: 'provento', income_reversal: 'storno di un provento', spend: 'spesa', transfer_in: 'ingresso', transfer_out: 'uscita' };
     for (const g of groups.values()) {
       const res = resolutions[g.key] && resolutions[g.key].action;
       if (res === 'dup_skip') {
@@ -7084,7 +7255,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
   const CLS_IT = { crypto: 'Cripto', metal: 'Oro/metalli' };
   // da dove arriva l'imposta dell'anno, in parole semplici: operazioni che realizzano un guadagno/perdita (cessioni) e proventi ricevuti
   const SELL_IT = { sell: 'Vendite in euro', swap: 'Scambi tra due cripto (anche conversioni di piccoli importi)', spend: 'Pagamenti fatti con le cripto (carta, acquisti)', fee: 'Commissioni pagate in cripto', transfer_fee: 'Commissioni di rete pagate in cripto' };
-  const GAIN_IT = { interest: 'Interessi (Earn e simili)', staking: 'Staking', cashback: 'Cashback e rimborsi della carta', referral: 'Bonus per inviti', airdrop: 'Airdrop', other: 'Altri premi e accrediti' };
+  const GAIN_IT = { interest: 'Interessi (Earn e simili)', staking: 'Staking', cashback: 'Cashback e rimborsi della carta', cashback_reverted: 'Cashback stornati (restituiti: riducono i premi)', referral: 'Bonus per inviti', airdrop: 'Airdrop', other: 'Altri premi e accrediti' };
   function taxSources(res) {
     const rows = [];
     const by = new Map();
@@ -7100,11 +7271,12 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
       if (!by.has(k)) { const r = { key: k, group: 'income', kind: i.type, label: GAIN_IT[i.type] || i.type, count: 0, amount: CT.ZERO }; by.set(k, r); rows.push(r); }
       const r = by.get(k); r.count++; r.amount = r.amount.plus(i.value);
     }
-    const order = ['d:sell', 'd:swap', 'd:spend', 'd:fee', 'd:transfer_fee', 'i:interest', 'i:staking', 'i:cashback', 'i:referral', 'i:airdrop', 'i:other'];
+    const order = ['d:sell', 'd:swap', 'd:spend', 'd:fee', 'd:transfer_fee', 'i:interest', 'i:staking', 'i:cashback', 'i:cashback_reverted', 'i:referral', 'i:airdrop', 'i:other'];
     rows.sort((a, b) => (order.indexOf(a.key) + 99 * (order.indexOf(a.key) < 0)) - (order.indexOf(b.key) + 99 * (order.indexOf(b.key) < 0)));
-    return { rows, hasSales: by.has('d:sell'), hasCashback: by.has('i:cashback') };
+    const neutralSwaps = (res.engine.swapsCarried || []).filter((x) => x.year === res.year).length;
+    return { rows, hasSales: by.has('d:sell'), hasCashback: by.has('i:cashback'), neutralSwaps };
   }
-  const INC_IT = { interest: 'Interessi', staking: 'Staking', cashback: 'Cashback', referral: 'Referral', airdrop: 'Airdrop', other: 'Altro' };
+  const INC_IT = { interest: 'Interessi', staking: 'Staking', cashback: 'Cashback', cashback_reverted: 'Storno cashback', referral: 'Referral', airdrop: 'Airdrop', other: 'Altro' };
 
   function csv(headers, rows) {
     const esc = (v) => { const s = String(v ?? ''); return /[;"\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
@@ -7186,6 +7358,72 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
 </body></html>`;
   }
 
+  /** Testo LEGGIMI del pacchetto per il commercialista: cosa pagare, numeri dei quadri, scelte di calcolo, punti aperti. */
+  function handoffText(res, state, plan, fxRows) {
+    const Y = res.year, y = res.y, tp = (state && state.taxpayer) || {};
+    const e = (x) => num(x) + ' €';
+    const L = [];
+    const hr = () => L.push('-'.repeat(78));
+    L.push(`DICHIARAZIONE DEI REDDITI - ANNO D'IMPOSTA ${Y} (modello Redditi PF ${Y + 1}): investimenti e altri redditi`);
+    L.push(`Contribuente: ${tp.name || '(da indicare)'}${tp.cf ? ' - CF ' + tp.cf : ''}`);
+    L.push(`Preparato il ${dmy(plan ? plan.payDay : '')} con il programma "Dichiarazione Redditi" (calcolo automatico da verificare).`);
+    L.push(res.groups.blockCount ? `STATO: BOZZA - ${res.groups.blockCount} punti ancora aperti (elencati in fondo): i numeri possono cambiare.` : res.groups.assumptionCount ? `STATO: completo, con ${res.groups.assumptionCount} ipotesi o scelte dell'utente (Allegato E del PDF).` : 'STATO: completo, nessun punto aperto.');
+    hr();
+    if (plan) {
+      L.push('1. COSA PAGARE (modello F24, sezione Erario)');
+      if (!plan.items.length) L.push(`   Nessuna imposta da versare per il ${Y}.`);
+      for (const i of plan.items) {
+        if (i.credit) { L.push(`   - ${i.title}: ${e(i.creditAmount)}`); continue; }
+        L.push(`   - Codice ${i.code}${i.codeCheck ? ' (da confermare)' : ''} - ${i.title}`);
+        L.push(`     anno di riferimento ${i.advance ? Y + 1 : Y}, scadenza ${dmy(i.due)}: imposta ${e(i.amount)}${i.ravv ? ` + ${i.ravv.magg ? 'maggiorazione 0,40%' : 'sanzione e interessi (ravvedimento, stima)'} ${e(i.ravv.sanction.plus(i.ravv.interest))} = ${e(i.payAmount)}` : ''}`);
+        if (i.ravv && !i.ravv.magg) L.push(`     ${i.ravv.days} giorni di ritardo, ${i.ravv.label}; sanzione ${e(i.ravv.sanction)}, interessi ${e(i.ravv.interest)}`);
+      }
+      L.push(`   DA PAGARE ADESSO: ${e(plan.payNow)} (stima al ${dmy(plan.payDay)})`);
+      const later = plan.items.filter((i) => !plan.now.includes(i) && !i.credit);
+      if (later.length) L.push(`   PIU' AVANTI: ${later.map((i) => `${e(i.amount)} entro il ${dmy(i.due)} (codice ${i.code})`).join('; ')}`);
+      L.push(`   Dichiarazione da inviare entro il ${dmy(plan.deadlines.filing)}.`);
+      hr();
+    }
+    L.push('INVESTIMENTI (cripto, oro, altri)');
+    L.push(`2. QUADRO RT - sezione V-A, cripto-attivita' (${y.crypto.law})`);
+    for (const [a, v] of basketLines(y.crypto).slice(1)) L.push(`   ${a}: ${v} €`);
+    if (y.crypto.lossNotCarried.gt(0)) L.push(`   Minusvalenza non riportabile (non superiore a 2.000 €): ${e(y.crypto.lossNotCarried)}`);
+    if (y.metals.nDisposals || y.metals.income.gt(0)) {
+      L.push('', `   QUADRO RT - sezione II, oro e metalli preziosi (${y.metals.law})`);
+      for (const [a, v] of basketLines(y.metals).slice(1)) L.push(`   ${a}: ${v} €`);
+    }
+    hr();
+    L.push('3. QUADRO RW - monitoraggio e imposta sul valore delle cripto-attivita\' (IC)');
+    if (fxRows && fxRows.length) {
+      fxRows.forEach((r, i) => {
+        L.push(`   Rigo ${i + 1}: ${r.account} (${r.cls === 'crypto' ? 'cripto' : 'oro/metalli'})${r.label2 ? ' - custode ' + r.label2.replace(/_/g, ' ') : ''}`);
+        L.push(`     col.1 titolo 1 | col.3 codice ${r.cls === 'crypto' ? '21' : 'DA VERIFICARE'} | col.5 quota 100 | col.6 criterio 1 | col.7 valore iniziale ${r.incomplete ? 'DA COMPLETARE' : CT.roundEuro(r.vi).toFixed(0)} | col.8 valore finale ${r.incomplete ? 'DA COMPLETARE' : CT.roundEuro(r.vf).toFixed(0)} | col.10 giorni ${r.days}${r.mixedDays ? ' (media pesata)' : ''}${r.cls === 'crypto' && !r.incomplete ? ` | col.33 IC ${CT.roundEuro(r.ic).toFixed(0)} | col.34 IC dovuta ${r.icDue.toFixed(0)}` : ''}`);
+      });
+      if (plan) L.push(`   RW8: col.1 totale ${plan.ivca.toFixed(0)}${plan.ivcaAdvance !== null ? ` | col.4 acconti ${plan.ivcaAdvance.toFixed(0)}` : ' | col.4 acconti versati: DA INDICARE (0 se nessuno)'}`);
+    } else L.push('   Nessuna cripto o oro detenuti nell\'anno.');
+    hr();
+    const oc = plan && plan.others && plan.others.any ? plan.others : null;
+    if (oc) {
+      L.push('4. ALTRI REDDITI E DETRAZIONI (inseriti a mano: stipendio, musica, spese) - dove scriverli');
+      for (const [rigo, cosa, v] of CT.others.where(oc)) L.push(`   ${rigo}: ${cosa} = ${typeof v === 'string' ? v : e(v)}`);
+      L.push('   Stima IRPEF (regole 2025):');
+      for (const [a, v] of CT.others.steps(oc)) L.push(`     ${a}: ${v.lt(0) ? '- ' + e(v.neg()) : e(v)}`);
+      if (oc.occ.length) for (const r of oc.occ) L.push(`   Ricevuta occasionale: ${r.chi || '(senza nome)'} - lordo ${e(r.lordo)}, ritenuta ${e(r.rit)}, spese ${e(r.spese)}`);
+      if (oc.dir.length) for (const r of oc.dir) L.push(`   Diritti d'autore/royalties: ${r.chi || '(senza nome)'} - lordo ${e(r.lordo)}, ritenuta ${e(r.rit)}`);
+      if (oc.dir.length) L.push(`   Deduzione forfettaria diritti d'autore: ${oc.dedRate.times(100).toFixed(0)}% (${oc.dedRate.gt('0.3') ? 'meno di 35 anni' : '35 anni o piu\''})`);
+      hr();
+    }
+    L.push(`${oc ? 5 : 4}. SCELTE DI CALCOLO APPLICATE (investimenti)`);
+    const interp = CT.pdf && CT.pdf.interpretations ? CT.pdf.interpretations(state) : [];
+    for (const t of interp) L.push(`   - ${t}`);
+    L.push(`   Regole ${Y}: ${y.rule.note}`);
+    const open = res.engine.issues.filter((i) => i.level === 'block');
+    if (open.length) { hr(); L.push(`${oc ? 6 : 5}. PUNTI ANCORA APERTI (${open.length})`); for (const i of open.slice(0, 60)) L.push(`   - ${i.message}`); if (open.length > 60) L.push(`   ... e altri ${open.length - 60} (Allegato E del PDF)`); }
+    hr();
+    L.push('Calcolo automatico: va verificato da un professionista prima della firma della dichiarazione.');
+    return L.join('\r\n') + '\r\n';
+  }
+
   /** Diagnostica: SOLO struttura dei file e conteggi, nessun importo. Da incollare a chi sviluppa l'app. */
   function diagnostics(res, files) {
     const L = ['DIAGNOSTICA (nessun importo)', ''];
@@ -7206,8 +7444,348 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
   }
 
   CT.report = { csv, num, qnum, dmy, disposalsRows, DISPOSAL_HEAD, lotsRows, LOTS_HEAD, incomesRows, INCOME_HEAD, rwRows, RW_HEAD,
-    issuesRows, ISSUE_HEAD, balancesRows, BAL_HEAD, basketLines, summaryText, reportHtml, diagnostics, KIND_IT, CLS_IT, INC_IT, taxSources };
+    issuesRows, ISSUE_HEAD, balancesRows, BAL_HEAD, basketLines, summaryText, reportHtml, diagnostics, handoffText, KIND_IT, CLS_IT, INC_IT, taxSources };
   if (typeof module !== 'undefined') module.exports = CT.report;
+})();
+
+</script>
+<script data-app>
+/* Altri redditi e detrazioni che non vengono dai file (musica, spese sanitarie): dove si scrivono nel modello Redditi PF e stima
+   dell'IRPEF in piu' da versare. E' una STIMA: l'IRPEF esatta dipende da tutti i redditi, dalle detrazioni e dalle addizionali del
+   proprio Comune e della propria Regione, e la calcola il software di compilazione (precompilata o commercialista).
+
+   REGOLE (anno d'imposta 2025, controllate in ottobre 2026 su piu' fonti):
+   - Lavoro autonomo occasionale (es. serate da DJ con ricevuta di prestazione occasionale): redditi diversi, art. 67, c. 1, lett. l) TUIR.
+     Quadro RL, rigo RL15: col. 1 compensi lordi, col. 2 spese documentate e inerenti. Ritenuta del 20% del committente a scomputo.
+     Nella Certificazione Unica: causale M.
+   - Diritti d'autore (SIAE, edizioni, royalties da autore o compositore): art. 53, c. 2, lett. b) TUIR. Quadro RL, sezione III, rigo RL25.
+     Deduzione forfettaria delle spese del 25% (40% se l'autore ha meno di 35 anni). Ritenuta del 20% sulla parte imponibile.
+     Nella Certificazione Unica: causale B.
+   - Spese sanitarie: quadro RP, rigo RP1. Detrazione del 19% sulla parte che supera 129,11 euro.
+   - IRPEF 2025: 23% fino a 28.000 euro, 35% fino a 50.000, 43% oltre (L. 207/2024). Se non ci sono redditi di lavoro dipendente o
+     pensione, spetta la detrazione per redditi di lavoro autonomo e diversi (art. 13, c. 5 TUIR): 1.265 euro fino a 5.500 euro di reddito,
+     poi decrescente fino a 55.000.
+   - Lavoro dipendente (quadro RC, dati della Certificazione Unica del datore di lavoro). Detrazione art. 13, c. 1 TUIR (2025): 1.955 euro
+     fino a 15.000 euro di reddito complessivo; 1.910 + 1.190 x (28.000 - R) / 13.000 fino a 28.000; 1.910 x (50.000 - R) / 22.000 fino
+     a 50.000; +65 euro tra 25.000 e 35.000; in proporzione ai giorni di lavoro. Taglio del cuneo (L. 207/2024, art. 1, c. 4-9): somma esente
+     del 7,1% / 5,3% / 4,8% del reddito di lavoro (fino a 8.500 / 15.000 / 20.000) se il reddito complessivo non supera 20.000; ulteriore
+     detrazione di 1.000 euro tra 20.000 e 32.000, decrescente fino a 40.000. Trattamento integrativo di 1.200 euro fino a 15.000 euro.
+     Il datore di lavoro le applica in busta paga guardando solo lo stipendio: se altri redditi fanno salire il reddito complessivo,
+     in dichiarazione una parte si restituisce. Per questo la stima confronta l'IRPEF "solo stipendio" con quella "stipendio + altri redditi".
+   - F24: 4001 IRPEF saldo, 4033 e 4034 acconti IRPEF, 3801 addizionale regionale, 3844 addizionale comunale (saldo). */
+(function () {
+  'use strict';
+  const CT = (globalThis.CT = globalThis.CT || {});
+  const { D, ZERO } = CT;
+
+  const num = (v) => {
+    const t = String(v === undefined || v === null ? '' : v).trim().replace(/\s/g, '').replace(/€/g, '');
+    if (!t) return ZERO;
+    // 1.234,56 · 1234,56 · 1234.56 · 2.000 (punto delle migliaia, come si scrive in Italia)
+    const c = t.includes(',') ? t.replace(/\./g, '').replace(',', '.') : /^\d{1,3}(\.\d{3})+$/.test(t) ? t.replace(/\./g, '') : t;
+    return /^-?\d+(\.\d+)?$/.test(c) ? D(c).abs() : ZERO;
+  };
+  const max0 = (x) => (x.gt(0) ? x : ZERO);
+  const cents = (x) => x.toDecimalPlaces(2);
+
+  function irpef(R) {
+    let t = ZERO;
+    const band = (from, to, rate) => { if (R.gt(from)) t = t.plus((to === null || R.lt(to) ? R : D(to)).minus(from).times(rate)); };
+    band(0, 28000, '0.23'); band(28000, 50000, '0.35'); band(50000, null, '0.43');
+    return t;
+  }
+  /** Detrazione per redditi di lavoro autonomo e diversi (art. 13, c. 5 TUIR), quando non ci sono lavoro dipendente o pensione. */
+  function detrAutonomo(R) {
+    if (R.lte(5500)) return D(1265);
+    if (R.lte(28000)) return D(500).plus(D(765).times(D(28000).minus(R)).div(22500));
+    if (R.lte(55000)) return D(500).times(D(55000).minus(R)).div(27000);
+    return ZERO;
+  }
+
+  function detrLavoro(R) {
+    let d = ZERO;
+    if (R.lte(15000)) d = D(1955);
+    else if (R.lte(28000)) d = D(1910).plus(D(1190).times(D(28000).minus(R)).div(13000));
+    else if (R.lte(50000)) d = D(1910).times(D(50000).minus(R)).div(22000);
+    if (R.gt(25000) && R.lte(35000)) d = d.plus(65);
+    return d;
+  }
+  function cuneoDetr(R) {
+    if (R.gt(20000) && R.lte(32000)) return D(1000);
+    if (R.gt(32000) && R.lte(40000)) return D(1000).times(D(40000).minus(R)).div(8000);
+    return ZERO;
+  }
+  const sommaPct = (lav) => (lav.lte(8500) ? D('0.071') : lav.lte(15000) ? D('0.053') : lav.lte(20000) ? D('0.048') : ZERO);
+
+  /** IRPEF dell'anno per un insieme di redditi. lav = reddito di lavoro dipendente, extra = altri redditi netti (musica), ded = oneri deducibili. */
+  function irpefParts({ lav, days, extra, ded, det19 }) {
+    const RC = lav.plus(extra);
+    const imp = max0(RC.minus(ded));
+    const lorda = irpef(imp);
+    const p = lav.gt(0) ? D(days).div(365) : ZERO;
+    const detLav = lav.gt(0) ? detrLavoro(RC).times(p) : ZERO;
+    const detAut = lav.isZero() && extra.gt(0) ? detrAutonomo(RC) : ZERO;          // non cumulabile con quella da lavoro dipendente
+    const detCuneo = lav.gt(0) ? cuneoDetr(RC).times(p) : ZERO;
+    const netta = max0(lorda.minus(detLav).minus(detAut).minus(detCuneo).minus(det19));
+    const somma = lav.gt(0) && RC.lte(20000) ? lav.times(sommaPct(lav)) : ZERO;    // non tassata, pagata in busta paga
+    const trattInt = lav.gt(0) && RC.lte(15000) && irpef(lav).gt(detrLavoro(RC).minus(75).times(p)) ? D(1200).times(p) : ZERO;
+    return { RC, imp, lorda, detLav, detAut, detCuneo, det19, netta, somma, trattInt };
+  }
+
+  function compute(o) {
+    o = o || {};
+    const occ = (o.occ || []).map((r) => ({ ...r, lordo: num(r.lordo), rit: num(r.rit), spese: num(r.spese) }));
+    const dir = (o.dir || []).map((r) => ({ ...r, lordo: num(r.lordo), rit: num(r.rit) }));
+    const sum = (l, k) => l.reduce((s, r) => s.plus(r[k]), ZERO);
+    const occLordo = sum(occ, 'lordo'), occSpese = sum(occ, 'spese'), occRit = sum(occ, 'rit');
+    const dirLordo = sum(dir, 'lordo'), dirRit = sum(dir, 'rit');
+    const dedRate = o.under35 ? D('0.40') : D('0.25');
+    const dirDed = dirLordo.times(dedRate);
+    const occNet = max0(occLordo.minus(occSpese)), dirNet = dirLordo.minus(dirDed);
+    const extra = occNet.plus(dirNet);
+    const altri = num(o.altri);                                   // reddito di lavoro dipendente o pensione (CU)
+    const days = Math.min(365, Math.max(0, parseInt(o.giorni, 10) || 365));
+    const ritCU = String(o.ritCU || '').trim() === '' ? null : num(o.ritCU);
+    const ded = num(o.deducibili), altreDetr = num(o.altreDetr);
+    const sanTot = num(o.san);
+    const detrSan = max0(sanTot.minus('129.11')).times('0.19');
+    const det19 = detrSan.plus(altreDetr);
+    const ritenute = occRit.plus(dirRit);
+    // con lo stipendio: "prima" = come l'ha calcolata il datore di lavoro (solo stipendio); "dopo" = in dichiarazione, con tutto
+    const base = irpefParts({ lav: altri, days, extra: ZERO, ded: ZERO, det19: ZERO });
+    const full = irpefParts({ lav: altri, days, extra, ded, det19 });
+    let diff, mode;
+    if (altri.gt(0) && ritCU === null) {
+      mode = 'differenza';
+      diff = full.netta.minus(base.netta).plus(base.somma.minus(full.somma)).plus(base.trattInt.minus(full.trattInt)).minus(ritenute);
+    } else {
+      mode = 'completo';   // senza stipendio, o con le ritenute della CU: si confronta l'imposta con tutte le ritenute
+      diff = full.netta.minus(ritCU || ZERO).minus(ritenute).plus(base.somma.minus(full.somma)).plus(base.trattInt.minus(full.trattInt));
+    }
+    const addRate = o.addiz === undefined || String(o.addiz).trim() === '' ? D('0.02') : num(o.addiz).div(100);
+    // addizionali sulla parte di reddito in piu' (quelle sullo stipendio le trattiene il datore); non dovute se l'IRPEF e' zero
+    const addiz = full.netta.isZero() ? ZERO : max0(full.imp.minus(base.imp)).times(addRate);
+    const accBase = max0(full.netta.minus(base.netta).minus(ritenute));   // base dell'acconto IRPEF (imposta in piu' dell'anno)
+    const r2 = (x) => cents(x);
+    return {
+      any: occ.length + dir.length > 0 || sanTot.gt(0) || altri.gt(0) || ded.gt(0) || altreDetr.gt(0),
+      occ, dir, occLordo, occSpese, occRit, occNet, dirLordo, dirRit, dirDed, dirNet, dedRate, extra, altri, days, ritCU, ded, altreDetr, mode,
+      sanTot, detrSan: r2(detrSan), det19: r2(det19), ritenute,
+      base: Object.fromEntries(Object.entries(base).map(([k, v]) => [k, r2(v)])), full: Object.fromEntries(Object.entries(full).map(([k, v]) => [k, r2(v)])),
+      lordaExtra: r2(full.lorda.minus(base.lorda)), detrAut: r2(full.detAut), netta: r2(full.netta),
+      lostBonus: r2(base.somma.minus(full.somma).plus(base.trattInt.minus(full.trattInt))),
+      addiz: r2(addiz), addRate, accBase: r2(accBase), irpefDue: r2(max0(diff)), irpefCredit: r2(max0(diff.neg())),
+    };
+  }
+
+  /** Dove si scrive ogni voce nel modello Redditi PF: [rigo, cosa, importo (Decimal) o testo]. */
+  function where(c) {
+    const rows = [];
+    if (c.altri.gt(0)) rows.push(['RC1 col. 3', 'Reddito di lavoro dipendente o pensione (col. 1: codice 2 lavoro dipendente, 3 pensione)', c.altri], ['RC6 col. 1', 'Giorni di lavoro dipendente', String(c.days)]);
+    if (c.ritCU) rows.push(['RC10 col. 1', 'Ritenute IRPEF della CU', c.ritCU]);
+    if (c.occ.length) rows.push(['RL15 col. 1', 'Compensi lordi da lavoro occasionale', c.occLordo], ['RL15 col. 2', 'Spese documentate e inerenti', c.occSpese], ['Ritenute sez. II-A', 'Ritenute subite sui compensi occasionali', c.occRit]);
+    if (c.dir.length) rows.push(['RL25', 'Proventi lordi da diritti d\'autore', c.dirLordo], ['Riepilogo sez. III', `Deduzione forfettaria ${c.dedRate.times(100).toFixed(0)}% (la calcola il software)`, c.dirDed], ['Ritenute sez. III', 'Ritenute subite sui diritti d\'autore', c.dirRit]);
+    if (c.sanTot.gt(0)) rows.push(['RP1', 'Spese sanitarie', c.sanTot]);
+    if (c.altreDetr.gt(0)) rows.push(['Quadro RP', 'Altre detrazioni (sezioni I e III)', c.altreDetr]);
+    if (c.ded.gt(0)) rows.push(['Quadro RP sez. II', 'Oneri deducibili', c.ded]);
+    return rows;
+  }
+  /** Passaggi della stima: [voce, importo con segno]. */
+  function steps(c) {
+    const F = c.full, B = c.base, neg = (x) => x.neg();
+    return [
+      ['Reddito complessivo', F.RC],
+      c.ded.gt(0) ? ['Reddito imponibile (dopo gli oneri deducibili)', F.imp] : null,
+      ['IRPEF lorda (23% / 35% / 43%)', F.lorda],
+      F.detLav.gt(0) ? ['Detrazione per lavoro dipendente', neg(F.detLav)] : null,
+      F.detCuneo.gt(0) ? ['Ulteriore detrazione «taglio del cuneo»', neg(F.detCuneo)] : null,
+      F.detAut.gt(0) ? ['Detrazione per redditi di lavoro autonomo e occasionali', neg(F.detAut)] : null,
+      c.det19.gt(0) ? ['Detrazioni per spese (sanitarie e altre)', neg(c.det19)] : null,
+      ['IRPEF netta dell\'anno', F.netta],
+      c.mode === 'differenza' ? ['Già trattenuta in busta paga (IRPEF calcolata dal datore sul solo stipendio)', neg(B.netta)] : c.ritCU ? ['Ritenute IRPEF della CU', neg(c.ritCU)] : null,
+      c.ritenute.gt(0) ? ['Ritenute su serate e diritti d\'autore', neg(c.ritenute)] : null,
+      c.lostBonus.gt(0) ? ['Bonus in busta paga da restituire (somma esente del cuneo o trattamento integrativo)', c.lostBonus] : null,
+      c.irpefDue.gt(0) ? ['IRPEF da versare (stima)', c.irpefDue] : ['IRPEF a credito (stima: rimborso o compensazione)', c.irpefCredit],
+      c.addiz.gt(0) ? ['Addizionali regionale e comunale sulla parte in più (stima)', c.addiz] : null,
+    ].filter(Boolean);
+  }
+
+  /** Voci da aggiungere al piano dei pagamenti (stime), per l'anno `Y`. */
+  function paymentItems(c, Y, dl) {
+    if (!c || !c.any) return [];
+    const items = [];
+    const est = 'Stima: l\'importo esatto lo calcola il software della dichiarazione (precompilata o commercialista).';
+    if (c.irpefDue.gt(0)) items.push({ key: 'irpef', code: '4001', estimate: true, title: 'IRPEF a saldo (stima)',
+      why: `${c.extra.gt(0) ? `IRPEF sui redditi extra (${c.extra.toFixed(0)} € netti tra DJ e diritti d'autore)` : 'IRPEF dell\'anno'}${c.lostBonus.gt(0) ? `, più ${c.lostBonus.toFixed(0)} € di bonus in busta paga da restituire perché il reddito sale oltre la soglia` : ''}, meno ritenute (${c.ritenute.toFixed(2)} €)${c.det19.gt(0) ? ` e detrazioni (${c.det19.toFixed(2)} €)` : ''}.`,
+      quadro: 'Quadri RC, RL e RP, risultato nel quadro RN', amount: c.irpefDue, due: dl.saldo, note: est });
+    if (c.addiz.gt(0)) items.push({ key: 'addiz', code: '3801 / 3844', estimate: true, title: 'Addizionali regionale e comunale sulla parte di reddito in più (stima)',
+      why: `Circa il ${c.addRate.times(100).toFixed(1).replace('.', ',')}% dei ${c.extra.toFixed(0)} € netti (dipende da Regione e Comune: 3801 regionale, 3844 comunale).`,
+      quadro: 'Quadro RV', amount: c.addiz, due: dl.saldo, note: est });
+    if (c.irpefCredit.gt(0)) items.push({ key: 'irpefcred', code: '—', estimate: true, credit: true, title: 'IRPEF a credito (stima): non si paga, ti viene restituita',
+      why: 'Le ritenute e le detrazioni superano l\'imposta: il credito si chiede a rimborso o si usa in compensazione nell\'F24.', quadro: 'Quadro RX', amount: ZERO, creditAmount: c.irpefCredit, due: dl.saldo });
+    // acconto IRPEF dell'anno dopo: 100% dell'imposta a debito (metodo storico), niente fino a 51,65 €, una rata fino a 257,52 €
+    if (c.accBase.gt('51.65')) {
+      const a = c.accBase;
+      const list = a.gt('257.52') ? [['4033', 'prima rata (40%)', a.times('0.4'), dl.saldo], ['4034', 'seconda rata (60%)', a.times('0.6'), dl.acconto2]] : [['4034', 'rata unica', a, dl.acconto2]];
+      for (const [code, what, amount, due] of list) items.push({ key: 'irpefacc' + code, code, estimate: true, advance: true, title: `Acconto IRPEF ${Y + 1} · ${what} (stima)`,
+        why: `Anticipo dell'IRPEF ${Y + 1}, calcolato su quella in più del ${Y}. Se nel ${Y + 1} guadagni molto meno con la musica il commercialista può ridurlo.`, quadro: 'Quadro RN', amount: amount.toDecimalPlaces(2), due });
+    }
+    return items;
+  }
+
+  CT.others = { compute, paymentItems, where, steps, irpef, detrAutonomo, detrLavoro, cuneoDetr, irpefParts, num };
+  if (typeof module !== 'undefined') module.exports = CT.others;
+})();
+
+</script>
+<script data-app>
+/* Cosa pagare per l'anno d'imposta: imposte, codici tributo F24, scadenze e, se la scadenza e' passata, stima del ravvedimento operoso.
+   Usato dalla schermata Risultato e dal PDF ("Cosa pagare e cosa fare").
+
+   FONTI (controllate in ottobre 2026 su piu' fonti, da confermare con il commercialista: il sito dell'Agenzia non era raggiungibile):
+   - 1715: imposta sostitutiva su plusvalenze e altri proventi da cripto-attivita', regime dichiarativo (Ris. AdE 36/E del 26/6/2023).
+     Non rateizzabile. Quadro RT, sezione V-A del modello Redditi PF 2026.
+   - 1727 saldo, 1728 acconto prima rata, 1729 acconto seconda rata: imposta sul valore delle cripto-attivita' (IVCA, 2 per mille)
+     (Ris. AdE 36/E/2023 e 10/E del 6/2/2024). Quadro RW, rigo RW8.
+   - 1100: imposta sostitutiva sulle plusvalenze dei redditi diversi di natura finanziaria (oro e metalli, quadro RT sezione II): da confermare.
+   - Saldo entro il 30 giugno dell'anno successivo (30 luglio con la maggiorazione dello 0,40%); invio del Redditi PF entro il 31 ottobre
+     (se festivo o sabato, il primo giorno lavorativo dopo: 2 novembre 2026); 730 entro il 30 settembre.
+   - Ravvedimento (art. 13 D.Lgs. 472/1997 e D.Lgs. 87/2024, violazioni dal 1/9/2024): sanzione per omesso versamento 25%, dimezzata entro
+     90 giorni; ridotta a 1/10 entro 30 giorni, 1/9 entro 90, 1/8 entro il termine della dichiarazione dell'anno della violazione,
+     1/7 entro quello dell'anno dopo, 1/6 oltre. Interessi al tasso legale giorno per giorno (2% nel 2025, 1,6% dal 2026). */
+(function () {
+  'use strict';
+  const CT = (globalThis.CT = globalThis.CT || {});
+  const { D, ZERO, roundEuro } = CT;
+
+  const LEGAL_RATE = { 2023: '0.05', 2024: '0.025', 2025: '0.02', 2026: '0.016' };
+  const rateOf = (y) => D(LEGAL_RATE[y] || LEGAL_RATE[Math.max(...Object.keys(LEGAL_RATE).map(Number))]);
+  const DAY = 86400000;
+  const ms = (day) => Date.parse(day + 'T00:00:00Z');
+  const iso = (t) => new Date(t).toISOString().slice(0, 10);
+  const dmy = (day) => (day ? day.split('-').reverse().join('/') : '');
+  // festivita' nazionali a data fissa (la Pasquetta non cade mai vicino alle scadenze fiscali usate qui)
+  const HOLIDAYS = new Set(['01-01', '01-06', '04-25', '05-01', '06-02', '08-15', '11-01', '12-08', '12-25', '12-26']);
+  /** Scadenza che cade di sabato, domenica o festivo: primo giorno lavorativo dopo (es. 31/10/2027 domenica -> 2/11/2027, perche' l'1/11 e' festivo). */
+  function workday(day) {
+    let t = ms(day);
+    while ([0, 6].includes(new Date(t).getUTCDay()) || HOLIDAYS.has(iso(t).slice(5))) t += DAY;
+    return iso(t);
+  }
+  function deadlines(Y) {
+    return {
+      saldo: workday(`${Y + 1}-06-30`), saldoMagg: workday(`${Y + 1}-07-30`), m730: workday(`${Y + 1}-09-30`),
+      filing: workday(`${Y + 1}-10-31`), acconto2: workday(`${Y + 1}-11-30`), filingNext: workday(`${Y + 2}-10-31`), filingNext2: workday(`${Y + 3}-10-31`),
+    };
+  }
+  const daysBetween = (a, b) => Math.round((ms(b) - ms(a)) / DAY);
+
+  /** Stima del ravvedimento per un importo non versato alla scadenza `due` e pagato il giorno `pay`. */
+  function ravvedimento(amount, due, pay, dl) {
+    const days = daysBetween(due, pay);
+    if (days <= 0 || !amount.gt(0)) return null;
+    let rate, label;
+    if (days <= 15) { rate = D('0.25').div(2).times(days).div(15).div(10); label = `${days} ${days === 1 ? 'giorno' : 'giorni'} di ritardo: 1/10 di 1/15 al giorno del 12,5%`; }
+    else if (days <= 30) { rate = D('0.25').div(2).div(10); label = 'entro 30 giorni: 1/10 del 12,5%'; }
+    else if (days <= 90) { rate = D('0.25').div(2).div(9); label = 'entro 90 giorni: 1/9 del 12,5%'; }
+    else if (pay <= dl.filingNext) { rate = D('0.25').div(8); label = `oltre 90 giorni, entro il ${dmy(dl.filingNext)}: 1/8 del 25%`; }
+    else if (pay <= dl.filingNext2) { rate = D('0.25').div(7); label = `entro il ${dmy(dl.filingNext2)}: 1/7 del 25%`; }
+    else { rate = D('0.25').div(6); label = 'oltre: 1/6 del 25%'; }
+    // interessi legali giorno per giorno, con il tasso di ciascun anno
+    let interest = ZERO;
+    for (let t = ms(due) + DAY; t <= ms(pay); t += DAY) interest = interest.plus(amount.times(rateOf(new Date(t).getUTCFullYear())).div(365));
+    const sanction = amount.times(rate).toDecimalPlaces(2);
+    interest = interest.toDecimalPlaces(2);
+    return { days, rate, label, sanction, interest, total: amount.plus(sanction).plus(interest) };
+  }
+
+  /** Acconti gia' versati per l'IVCA, scritti dall'utente (euro, anche con la virgola): null se non indicati o non validi. */
+  function advance(state) {
+    const raw = state && state.taxpayer && state.taxpayer.advance;
+    if (raw === undefined || raw === null || String(raw).trim() === '') return null;
+    const t = String(raw).trim().replace(/\./g, '').replace(',', '.');
+    if (!/^\d+(\.\d+)?$/.test(t)) return null;
+    return roundEuro(D(t));
+  }
+
+  /** IVCA dovuta: come nel quadro RW, una riga per piattaforma con l'imposta arrotondata all'euro, poi la somma (RW8 col. 1). */
+  function ivcaTotal(res) {
+    const by = new Map();
+    for (const r of res.rw) if (r.cls === 'crypto') by.set(r.account, (by.get(r.account) || ZERO).plus(r.ivca || ZERO));
+    return [...by.values()].reduce((s, x) => s.plus(roundEuro(x)), ZERO);
+  }
+
+  /**
+   * Piano dei pagamenti dell'anno `res.year`. `opts.payDay` (AAAA-MM-GG) = giorno in cui si pensa di pagare (per la stima del ravvedimento;
+   * di norma oggi). Importi in euro (Decimal).
+   */
+  function plan(res, state, opts) {
+    const Y = res.year, y = res.y;
+    const dl = deadlines(Y);
+    const payDay = (opts && opts.payDay) || iso(Date.now());
+    const items = [];
+    const add = (o) => {
+      const late = !o.credit && payDay > o.due;   // un credito non scade e non ha ravvedimento
+      let r = late ? ravvedimento(o.amount, o.due, payDay, dl) : null;
+      // dal 1° al 30 luglio il saldo si paga con lo 0,40% in piu' (conviene rispetto al ravvedimento); dopo, ravvedimento dal 30 giugno
+      if (late && o.due === dl.saldo && payDay <= dl.saldoMagg) {
+        const extra = o.amount.times('0.004').toDecimalPlaces(2);
+        r = { days: daysBetween(o.due, payDay), label: `entro il ${dmy(dl.saldoMagg)} con la maggiorazione dello 0,40%`, sanction: extra, interest: ZERO, total: o.amount.plus(extra), magg: true };
+      }
+      items.push(Object.assign({ group: 'inv', late, ravv: r, payAmount: r ? r.total : o.amount }, o));
+    };
+    if (y.crypto.tax.gt(0)) {
+      add({ key: 'crypto', code: '1715', title: `Imposta sulle plusvalenze delle cripto (${(y.crypto.rate.times(100)).toFixed(0)}%)`,
+        why: `Guadagni netti e premi del ${Y} sulle cripto: imponibile ${y.crypto.taxable.toFixed(0)} € × ${(y.crypto.rate.times(100)).toFixed(0)}%.`,
+        quadro: 'Quadro RT, sezione V-A (cripto-attività)', amount: y.crypto.tax, due: dl.saldo, note: 'In un\'unica soluzione: per questo codice non è prevista la rateazione.' });
+    }
+    if (y.metals.tax.gt(0)) {
+      add({ key: 'metals', code: '1100', codeCheck: true, title: 'Imposta sulle plusvalenze di oro e metalli preziosi (26%)',
+        why: `Guadagni netti del ${Y} su oro e metalli: imponibile ${y.metals.taxable.toFixed(0)} € × 26%.`,
+        quadro: 'Quadro RT, sezione II (plusvalenze al 26%)', amount: y.metals.tax, due: dl.saldo, note: 'Codice tributo da far confermare al commercialista.' });
+    }
+    const ivca = ivcaTotal(res);
+    const adv = advance(state);
+    const ivcaDue = adv === null ? ivca : ivca.minus(adv);
+    if (ivcaDue.gt(0)) {
+      add({ key: 'ivca', code: '1727', title: 'Imposta sul valore delle cripto (IVCA, 2 per mille) · saldo',
+        why: `0,2% del valore delle cripto che avevi, in proporzione ai giorni in cui le hai tenute nel ${Y}${adv !== null && adv.gt(0) ? `, meno ${adv.toFixed(0)} € di acconti già versati` : ''}.`,
+        quadro: 'Quadro RW, rigo RW8', amount: ivcaDue, due: dl.saldo, note: adv === null ? 'Se nel ' + Y + ' hai già versato acconti per questa imposta vanno tolti (scrivili nella scheda PDF, «Facoltativo»).' : '' });
+    }
+    // acconto IVCA per l'anno dopo (metodo storico, regole degli acconti IRPEF: niente sotto 51,65 €, una rata fino a 257,52 €, altrimenti 40% + 60%)
+    const acc = [];
+    if (ivca.gt(D('51.65'))) {
+      if (ivca.gt(D('257.52'))) {
+        acc.push({ key: 'acc1', code: '1728', title: `Acconto IVCA ${Y + 1} · prima rata (40%)`, amount: ivca.times('0.4').toDecimalPlaces(2), due: dl.saldo });
+        acc.push({ key: 'acc2', code: '1729', title: `Acconto IVCA ${Y + 1} · seconda rata (60%)`, amount: ivca.times('0.6').toDecimalPlaces(2), due: dl.acconto2 });
+      } else acc.push({ key: 'acc2', code: '1729', title: `Acconto IVCA ${Y + 1} · rata unica`, amount: ivca, due: dl.acconto2 });
+      for (const a of acc) add(Object.assign(a, { advance: true, quadro: 'Quadro RW (acconto dell\'anno dopo)',
+        why: `Acconto per l'IVCA del ${Y + 1}, calcolato sull'IVCA del ${Y} (metodo storico). Se nel ${Y + 1} hai venduto tutto o hai molte meno cripto, il commercialista può ridurlo (metodo previsionale).` }));
+    }
+    // altri redditi inseriti a mano (musica, spese sanitarie): stima dell'IRPEF in piu', in una sezione a parte
+    const others = CT.others && state && state.others ? CT.others.compute(state.others) : null;
+    if (others) for (const it of CT.others.paymentItems(others, Y, dl)) add(Object.assign({ group: 'other' }, it));
+    const sum = (list, k) => list.reduce((s, i) => s.plus(i[k]), ZERO);
+    const now = items.filter((i) => !i.credit && (i.late || i.due <= dl.saldo));   // da pagare adesso: scadute o con la scadenza del saldo (30 giugno)
+    const balance = items.filter((i) => !i.advance);
+    const late = items.filter((i) => i.late);
+    const draft = res.groups.blockCount > 0;
+    // obblighi di dichiarazione, anche se non c'e' niente da pagare
+    const hasRT = y.crypto.nDisposals + y.metals.nDisposals > 0 || y.crypto.income.gt(0) || y.metals.income.gt(0) || y.crypto.carryUsed.length > 0 || y.metals.carryUsed.length > 0;
+    const hasRW = res.rw.length > 0;
+    return {
+      year: Y, payDay, deadlines: dl, items, now, draft, hasRT, hasRW, ivca, ivcaAdvance: adv, ivcaCredit: ivcaDue.lt(0) ? ivcaDue.neg() : ZERO, others,
+      invNow: sum(now.filter((i) => i.group === 'inv'), 'payAmount'), otherNow: sum(now.filter((i) => i.group === 'other'), 'payAmount'),
+      taxTotal: sum(balance, 'amount'),                          // imposte dell'anno (senza acconti dell'anno dopo e senza sanzioni)
+      lateTotal: sum(late, 'payAmount'), lateExtra: late.reduce((s, i) => s.plus(i.ravv ? i.ravv.sanction.plus(i.ravv.interest) : ZERO), ZERO),
+      payNow: sum(now, 'payAmount'),                             // da pagare adesso, con l'eventuale ravvedimento
+      grandTotal: sum(items, 'payAmount'),
+      filingLate: payDay > dl.filing, m730Passed: payDay > dl.m730,
+    };
+  }
+
+  CT.payments = { plan, ravvedimento, deadlines, workday, advance, ivcaTotal, LEGAL_RATE };
+  if (typeof module !== 'undefined') module.exports = CT.payments;
 })();
 
 </script>
@@ -7233,14 +7811,23 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
   const INK = [20, 32, 43], ACCENT = [23, 73, 107], MUTED = [93, 107, 122], ZEBRA = [244, 247, 250], WARN = [143, 84, 0], WARN_BG = [253, 240, 210], GOOD = [29, 122, 75], GOOD_BG = [223, 242, 232];
   const MX = 14, MTOP = 20, MBOT = 16;
 
-  const INTERPRETATIONS = [
-    'Costo di acquisto: metodo LIFO (si considerano ceduti per primi gli ultimi acquistati), con un unico conto virtuale per ogni asset su tutte le piattaforme (Circ. AdE 30/E del 27/10/2023, regime dichiarativo).',
-    'Dal 2023 sono cessioni imponibili, al valore normale del giorno: vendite in euro, scambi tra crypto, passaggi a stablecoin, pagamenti in crypto e commissioni pagate in crypto. Prima del 2023 le permute tra crypto non erano un realizzo e il costo si trasferisce al nuovo asset.',
-    'Proventi (staking, interessi, cashback, airdrop, referral): tassati al valore normale alla percezione; quel valore diventa il costo del lotto; non compensabili con le minusvalenze da cessione (scelta prudenziale).',
-    'Minusvalenze: quelle cripto compensano solo plusvalenze cripto; l\'oro e i metalli preziosi hanno un conteggio separato. Riporto in avanti per 4 anni, calcolato dai file caricati: vale solo se le minusvalenze sono state indicate nella dichiarazione dell\'anno di realizzo.',
-    'Data fiscale: data di calendario in Italia (fuso Europe/Rome). Importi arrotondati all\'euro solo sui totali di quadro.',
-    'Valori e prezzi: se un\'operazione non riporta il controvalore in euro si usa il prezzo del giorno ricavato dalle altre operazioni, oppure il prezzo inserito manualmente (elencato nell\'Allegato E).',
-  ];
+  const SWAP_CIRC30 = 'Permute dal 2023 (art. 67, c. 1, lett. c-sexies TUIR; Circ. AdE 30/E del 27/10/2023): lo scambio tra cripto-attività con eguali caratteristiche e funzioni (per esempio BTC contro ETH, o tra due stablecoin) non è un realizzo e il costo passa alla cripto ricevuta (Allegato B, scambi senza realizzo). Sono cessioni imponibili, al valore normale del giorno: vendite in euro, scambi tra cripto e stablecoin (trattate come e-money token), scambi con metalli, pagamenti e commissioni pagati in cripto. Prima del 2023 nessuna permuta tra cripto è un realizzo.';
+  const SWAP_ALL = 'Permute dal 2023: per scelta dell\'utente ogni scambio tra cripto (anche BTC contro ETH) è trattato come cessione imponibile al valore normale del giorno (lettura più severa della Circ. AdE 30/E/2023, che esclude gli scambi tra cripto con eguali caratteristiche e funzioni). Sono imponibili anche vendite in euro, passaggi a stablecoin, pagamenti e commissioni pagati in cripto. Prima del 2023 le permute tra cripto non erano un realizzo e il costo si trasferisce al nuovo asset.';
+  const interpretations = (state) => {
+    const st = (state && state.settings) || {};
+    const L = [
+      'Costo di acquisto: metodo LIFO (si considerano ceduti per primi gli ultimi acquistati), con un unico conto virtuale per ogni asset su tutte le piattaforme (Circ. AdE 30/E del 27/10/2023, regime dichiarativo).',
+      st.swapRule === 'all' ? SWAP_ALL : SWAP_CIRC30,
+      'Proventi (staking, interessi, cashback, airdrop, referral): tassati per intero al valore normale alla percezione; quel valore diventa il costo del lotto; non compensabili con le minusvalenze da cessione. Gli storni di cashback (restituiti alla piattaforma) riducono i proventi dell\'anno.',
+      'Minusvalenze: quelle cripto compensano solo plusvalenze cripto; l\'oro e i metalli preziosi hanno un conteggio separato. Riporto in avanti per 4 anni, calcolato dai file caricati: vale solo se le minusvalenze sono state indicate nella dichiarazione dell\'anno di realizzo. Per il 2023 e il 2024 la minusvalenza netta cripto si riporta solo se superiore a 2.000 € (art. 68, c. 9-bis TUIR nel testo allora vigente); dal 2025 senza soglia (L. 207/2024).',
+      'Franchigia 2023-2024: plusvalenze e proventi cripto non tassati se complessivamente inferiori a 2.000 € (da 2.000 € in su si tassa tutto). Abolita dal 2025.',
+      'Data fiscale: data di calendario in Italia (fuso Europe/Rome). Importi arrotondati all\'euro solo sui totali di quadro.',
+      'Valori e prezzi: se un\'operazione non riporta il controvalore in euro si usa il prezzo del giorno ricavato dalle altre operazioni, oppure il prezzo inserito manualmente o scaricato (elencati nell\'Allegato E).',
+    ];
+    if (st.rebase2025) L.push('Rideterminazione al 1/1/2025 (L. 207/2024): il valore a quella data sostituisce il costo delle cripto possedute; sui lotti rideterminati una perdita non è deducibile (art. 1, c. 29).');
+    return L;
+  };
+  const INTERPRETATIONS = interpretations(null);
 
   // ------------------------------------------------------------------ costruttore PDF
   class Pdf {
@@ -7332,27 +7919,41 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
     p.doc.setFont('helvetica', 'bold').setFontSize(22).setTextColor(...INK);
     p.doc.text(safe('Fascicolo di supporto'), MX, p.y + 8); p.y += 11;
     p.doc.setFontSize(22).text(safe('alla dichiarazione dei redditi'), MX, p.y + 8); p.y += 14;
-    p.para(`Anno d'imposta ${Y} · Modello Redditi Persone Fisiche ${Y + 1} · Cripto-attività e oro/metalli preziosi`, { size: 11, color: MUTED, after: 4 });
+    p.para(`Anno d'imposta ${Y} · Modello Redditi Persone Fisiche ${Y + 1} · Investimenti (cripto-attività, oro e metalli) e altri redditi`, { size: 11, color: MUTED, after: 4 });
     const tp = state.taxpayer || {};
     p.table(['Contribuente', 'Codice fiscale'], [[tp.name || '(da compilare)', tp.cf || '(da compilare)']], { fontSize: 10 });
     if (meta.draft) p.box(`BOZZA: ci sono ${res.groups.blockCount} punti ancora da risolvere (vedi Allegato E). I numeri di questo fascicolo possono cambiare e non vanno usati per la dichiarazione.`, 'warn');
     else p.box('Calcolo completato senza punti aperti. Richiede comunque la revisione di un commercialista prima dell\'uso in dichiarazione.', 'good');
     const rwTot = res.rw.reduce((s, r) => s.plus(r.ivca), ZERO);
-    p.h2('Riepilogo');
+    const pl = c.plan;
+    if (pl) {
+      p.h2('In breve: cosa pagare');
+      const later = pl.items.filter((i) => !pl.now.includes(i));
+      const lines = pl.now.filter((i) => !i.credit).map((i) => [`${i.group === 'other' ? 'Altri redditi · ' : 'Investimenti · '}${i.title}${i.late ? ' (scaduta: con ravvedimento, stima)' : ''}`, i.code, dmy(i.due), eur(i.payAmount)]);
+      const cred = pl.items.find((i) => i.credit);
+      if (lines.length) {
+        p.table(['Cosa', 'Codice F24', 'Scadenza', 'Importo (€)'], lines, { num: [3], fontSize: 9, columnStyles: { 1: { cellWidth: 22 }, 2: { cellWidth: 24 }, 3: { cellWidth: 30 } }, foot: ['Da pagare adesso (F24, sezione Erario, anno di riferimento ' + Y + ')', '', '', eur(pl.payNow)] });
+      } else p.box(pl.hasRW ? `Nessuna imposta da versare per il ${Y}. Va comunque compilato il quadro RW (monitoraggio delle cripto detenute).` : `Nessuna imposta da versare per il ${Y}.`, 'good');
+      if (later.filter((i) => !i.credit).length) p.para(`Più avanti: ${later.filter((i) => !i.credit).map((i) => `${i.title}, ${eur(i.amount)} € entro il ${dmy(i.due)} (codice ${i.code})`).join('; ')}.`, { size: 9 });
+      if (cred) p.para(`${cred.title}: ${eur(cred.creditAmount)} €.`, { size: 9, color: GOOD, bold: true });
+      if (pl.lateExtra.gt(0)) p.para(`La scadenza del ${dmy(pl.deadlines.saldo)} è passata: gli importi comprendono una stima di sanzione ridotta e interessi del ravvedimento operoso (${eur(pl.lateExtra)} €) calcolata al ${dmy(pl.payDay)}. Dettaglio nel documento 04.`, { size: 9, color: WARN, bold: true });
+      p.para(`Dichiarazione: modello Redditi PF ${Y + 1} entro il ${dmy(pl.deadlines.filing)}${pl.hasRT || pl.hasRW ? `, con ${[pl.hasRT ? 'quadro RT' : null, pl.hasRW ? 'quadro RW' : null].filter(Boolean).join(' e ')}` : ''}.`, { size: 9 });
+    }
+    p.h2('Riepilogo delle imposte');
     p.table(['Voce', 'Importo (€)'], [
       ['Imposta sostitutiva su cripto-attività (quadro RT)', eur(y.crypto.tax)],
       ['Imposta sostitutiva su oro e metalli preziosi (quadro RT)', eur(y.metals.tax)],
       ['Totale imposta sostitutiva', eur(y.totalTax)],
-      ['Imposta sul valore delle cripto-attività, IVCA (quadro RW, indicativa)', eur(rwTot)],
+      ['Imposta sul valore delle cripto-attività, IVCA (quadro RW, somma dei righi arrotondati)', eur(c.plan ? c.plan.ivca : rwTot)],
       ['Minusvalenze cripto da riportare agli anni successivi', eur(y.crypto.newLoss)],
       ['Minusvalenze oro/metalli da riportare agli anni successivi', eur(y.metals.newLoss)],
     ], { num: [1], boldRows: [2], columnStyles: { 1: { cellWidth: 36 } }, fontSize: 9 });
     p.h2('A cosa servono questi documenti');
     p.para('L\'Agenzia delle Entrate non richiede né accetta allegati per i redditi da cripto-attività e metalli preziosi: i dati si dichiarano nel Modello Redditi Persone Fisiche (quadri RT e RW). Questi prospetti raccolgono i numeri da riportare nel modello e documentano come sono stati calcolati, per te o per il commercialista. Non sono moduli ufficiali e non vanno inviati.');
     p.bullets([
-      'Quadro RT: usa i prospetti 01 (cripto) e 02 (oro e metalli). I righi esatti cambiano ogni anno: vanno presi dalle istruzioni del modello.',
-      'Quadro RW: usa il prospetto 03. Servono anche la denominazione e lo Stato del custode di ogni piattaforma o wallet.',
-      'Versamenti: vedi il prospetto 04.',
+      'Quadro RT: prospetti 01 (cripto, sezione V-A) e 02 (oro e metalli, sezione II). I numeri dei righi vanno presi dalle istruzioni del modello.',
+      'Quadro RW: prospetto 03 e modulo fac-simile già compilato (scheda PDF del programma). In rosso, nel fac-simile, i campi da completare o verificare. Servono anche la denominazione e lo Stato del custode di ogni piattaforma o wallet.',
+      'Pagamenti: prospetto 04 (codici F24, scadenze, eventuale ravvedimento).',
       'Conserva gli allegati A-E e gli export originali delle piattaforme per tutto il periodo in cui l\'Agenzia può controllare (in genere fino al 31 dicembre del quinto anno successivo alla presentazione).',
     ], { size: 9 });
     p.h2('Indice');
@@ -7366,7 +7967,7 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
       const Y = res.year;
       const ds = res.engine.disposals.filter((d) => d.year === Y && d.cls === kind);
       p.h1(`Prospetto quadro RT · ${b.name}`);
-      p.para(`${b.law}. Anno d'imposta ${Y}. Riferimento nel modello: quadro RT${kind === 'crypto' ? ', sezione dedicata alle cripto-attività' : ', plusvalenze su metalli preziosi'} (righi e colonne da verificare nelle istruzioni del modello Redditi PF ${Y + 1}).`, { color: MUTED, size: 9 });
+      p.para(`${b.law}. Anno d'imposta ${Y}. Riferimento nel modello Redditi PF ${Y + 1}: quadro RT, ${kind === 'crypto' ? 'sezione V-A (plusvalenze e proventi da cripto-attività); imposta con codice tributo 1715' : 'sezione II (plusvalenze assoggettate a imposta sostitutiva del 26%); imposta con codice tributo 1100 (da confermare)'}. I numeri dei righi e delle colonne vanno presi dalle istruzioni del modello.`, { color: MUTED, size: 9 });
       const rows = [
         ['Numero di cessioni imponibili nell\'anno', String(b.nDisposals)],
         ['Corrispettivi / valore di cessione (al netto delle commissioni)', eur(b.proceeds)],
@@ -7378,11 +7979,13 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
       if (b.income.gt(0)) rows.push(['Proventi (staking, interessi, premi) al valore normale', eur(b.income)]);
       for (const cu of b.carryUsed) rows.push([`Minusvalenza ${cu.year} utilizzata in compensazione`, `-${eur(cu.amount)}`]);
       if (b.thresholdExempt) rows.push(['Importo sotto la franchigia di 2.000 € (non imponibile)', eur(0)]);
+      if (b.nonDeductible.gt(0)) rows.push(['Di cui perdite su lotti rideterminati al 1/1/2025, non deducibili (già escluse)', eur(b.nonDeductible)]);
       rows.push(['Imponibile', eur(b.taxable)]);
       rows.push([`Aliquota${b.emtShare.gt(0) ? ' (parte al 26% su stablecoin in euro)' : ''}`, pct(b.rate)]);
       rows.push(['Imposta sostitutiva dovuta', eur(b.tax)]);
       const bold = [rows.length - 3, rows.length - 1];
       if (b.newLoss.gt(0)) rows.push([`Minusvalenza ${Y} da riportare nei 4 anni successivi (da indicare in dichiarazione)`, eur(b.newLoss)]);
+      if (b.lossNotCarried.gt(0)) rows.push([`Minusvalenza ${Y} non riportabile (non superiore a 2.000 €, art. 68, c. 9-bis TUIR)`, eur(b.lossNotCarried)]);
       for (const cu of b.carryUnused) rows.push([`Minusvalenza ${cu.year} ancora riportabile`, eur(cu.amount)]);
       for (const cu of b.carryExpired) rows.push([`Minusvalenza ${cu.year} non più utilizzabile (oltre 4 anni)`, eur(cu.amount)]);
       p.h2('Dati da riportare in dichiarazione');
@@ -7393,7 +7996,7 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
       p.table(['Asset', 'Cessioni', 'Corrispettivi (€)', 'Costi (€)', 'Plus / minusvalenza (€)'], byAsset(ds).map(([a, v]) => [a, String(v.n), eur(v.proceeds), eur(v.cost), eur(v.gain)]), { num: [1, 2, 3, 4], foot: ['Totale', String(ds.length), eur(b.proceeds), eur(b.costs), eur(b.net)] });
       if (kind === 'metal') p.para('Attenzione: l\'oro dei prodotti digitali (es. Bitpanda Metals) è qui trattato come metallo prezioso (art. 67, c. 1, lett. c-ter). La qualificazione e l\'obbligo di monitoraggio RW per metalli custoditi all\'estero vanno confermati dal commercialista.', { color: WARN, bold: true, size: 9 });
       p.h2('Come sono stati fatti i calcoli');
-      p.bullets(INTERPRETATIONS, { size: 8.5 });
+      p.bullets(interpretations(c.state), { size: 8.5 });
       p.para(`Regole ${Y}: ${res.y.rule.note} Stato delle regole: ${res.y.rule.status}. Dettaglio operazione per operazione: Allegato A; lotti di acquisto: Allegato B.`, { size: 8.5, color: MUTED });
     };
   }
@@ -7419,25 +8022,68 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
   }
 
   function paySection(p, c) {
-    const { res } = c;
+    const { res, plan: pl } = c;
     const Y = res.year, y = res.y;
     const rwTot = res.rw.reduce((s, r) => s.plus(r.ivca), ZERO);
-    p.h1('Riepilogo imposte e versamenti');
-    p.para('Importi stimati dal programma. Scadenze e codici tributo vanno verificati nelle istruzioni del modello e con il commercialista.', { color: MUTED, size: 9 });
+    p.h1('Cosa pagare: imposte, F24 e scadenze');
+    p.para(`Importi calcolati dal programma per l'anno d'imposta ${Y}. Codici tributo e scadenze controllati in ottobre 2026 su più fonti: il commercialista li conferma e prepara l'F24.`, { color: MUTED, size: 9 });
+    if (!pl) return;
+    const dl = pl.deadlines;
+    p.h2('Le imposte dell\'anno');
     const rows = [
-      ['Imposta sostitutiva cripto-attività', eur(y.crypto.tax)],
-      ['Imposta sostitutiva oro e metalli preziosi', eur(y.metals.tax)],
-      ['Totale imposta sostitutiva', eur(y.totalTax)],
-      ['IVCA (imposta sul valore delle cripto-attività), indicativa', eur(rwTot)],
+      ['Imposta sostitutiva cripto-attività', 'RT sez. V-A', '1715', eur(y.crypto.tax)],
+      ['IVCA, imposta sul valore delle cripto-attività (IC)', 'RW, rigo RW8', '1727', eur(pl.ivca)],
     ];
-    if (c.state.settings.rebase2025 && Y >= 2025) rows.push(['Imposta sostitutiva 18% sulla rideterminazione del costo (se non già versata)', eur(c.res.engine.rebaseTotal.times('0.18'))]);
-    p.table(['Voce', 'Importo (€)'], rows, { num: [1], boldRows: [2], columnStyles: { 1: { cellWidth: 36 } }, fontSize: 9 });
-    p.h2('Scadenze ordinarie (indicative)');
+    if (y.metals.nDisposals || y.metals.tax.gt(0)) rows.splice(1, 0, ['Imposta sostitutiva oro e metalli preziosi', 'RT sez. II', '1100 (da confermare)', eur(y.metals.tax)]);
+    if (pl.ivcaAdvance !== null) rows.push(['Acconti IVCA già versati (indicati dall\'utente)', 'RW8 col. 4', '', `-${eur(pl.ivcaAdvance)}`]);
+    if (c.state.settings.rebase2025 && Y >= 2025) rows.push(['Imposta sostitutiva 18% sulla rideterminazione del costo (se non già versata entro l\'1/12/2025)', 'RT', '1717 (da confermare)', eur(c.res.engine.rebaseTotal.times('0.18'))]);
+    rows.push(['Totale imposte dell\'anno', '', '', eur(pl.taxTotal)]);
+    p.table(['Voce', 'Quadro', 'Codice F24', 'Importo (€)'], rows, { num: [3], boldRows: [rows.length - 1], fontSize: 9, columnStyles: { 1: { cellWidth: 26 }, 2: { cellWidth: 32 }, 3: { cellWidth: 28 } } });
+    p.h2('Da versare con l\'F24');
+    if (!pl.items.length) p.box(pl.hasRW ? 'Niente da versare. Il quadro RW va comunque compilato (monitoraggio).' : 'Niente da versare.', 'good');
+    else {
+      p.table(['Codice', 'Descrizione', 'Anno rif.', 'Scadenza', 'Imposta (€)', 'Sanzione e interessi (€)', 'Totale (€)'],
+        pl.items.filter((i) => !i.credit).map((i) => [i.code, `${i.group === 'other' ? '[Altri redditi] ' : ''}${i.title}`, String(i.advance ? Y + 1 : Y), dmy(i.due), eur(i.amount), i.ravv ? eur(i.ravv.sanction.plus(i.ravv.interest)) : '-', eur(i.payAmount)]),
+        { num: [4, 5, 6], fontSize: 8.5, foot: ['', 'Totale', '', '', eur(pl.items.reduce((s, i) => s.plus(i.amount), ZERO)), eur(pl.items.reduce((s, i) => s.plus(i.ravv ? i.ravv.sanction.plus(i.ravv.interest) : ZERO), ZERO)), eur(pl.grandTotal)] });
+      p.para('Compilazione dell\'F24: sezione «Erario», colonna «importi a debito versati», un rigo per codice, «anno di riferimento» come in tabella (per gli acconti l\'anno a cui si riferiscono). L\'F24 si paga dall\'home banking, alla posta o in banca, oppure con i servizi online dell\'Agenzia delle Entrate.', { size: 9 });
+    }
+    const late = pl.items.filter((i) => i.late && i.ravv);
+    if (late.length) {
+      p.h2('Pagamento in ritardo: ravvedimento operoso (stima)');
+      p.para(`Stima al ${dmy(pl.payDay)}. La sanzione per omesso versamento è il 25% (D.Lgs. 87/2024); con il ravvedimento si riduce in base al ritardo. Gli interessi si calcolano giorno per giorno al tasso legale (1,6% annuo dal 2026). Sanzione e interessi si versano con codici tributo propri, che indica il commercialista.`, { size: 9 });
+      p.table(['Codice', 'Giorni di ritardo', 'Riduzione applicata', 'Sanzione (€)', 'Interessi (€)'], late.map((i) => [i.code, String(i.ravv.days), i.ravv.label, eur(i.ravv.sanction), eur(i.ravv.interest)]), { num: [1, 3, 4], fontSize: 8.5 });
+      p.para('Se si paga più tardi gli importi crescono: rifare la stima con la data giusta (schermata Risultato) o farla calcolare al commercialista.', { size: 8.5, color: MUTED });
+    }
+    p.h2('Scadenze dell\'anno');
     p.bullets([
-      `Saldo delle imposte sui redditi: entro il 30 giugno ${Y + 1}, oppure entro il 30 luglio ${Y + 1} con la maggiorazione dello 0,40%.`,
-      'Se la scadenza è passata si può regolarizzare con il ravvedimento operoso (sanzioni ridotte): da calcolare con il commercialista.',
-      'Invio telematico del Modello Redditi PF: di norma entro il 31 ottobre (se cade di sabato o festivo, il giorno lavorativo successivo).',
+      `Saldo delle imposte ${Y} (codici 1715, 1100, 1727) e primo acconto IVCA ${Y + 1} (1728): entro il ${dmy(dl.saldo)}, oppure entro il ${dmy(dl.saldoMagg)} con la maggiorazione dello 0,40%. Il codice 1715 non si può rateizzare.`,
+      `Secondo acconto (o acconto unico) IVCA ${Y + 1} (1729): entro il ${dmy(dl.acconto2)}. Acconto calcolato sull'IVCA ${Y} (metodo storico, regole degli acconti IRPEF: non dovuto fino a 51,65 €, in un'unica rata fino a 257,52 €, altrimenti 40% e 60%); se nel ${Y + 1} le cripto detenute sono molto meno si può ridurre (metodo previsionale).`,
+      `Dichiarazione: modello Redditi PF ${Y + 1} da inviare entro il ${dmy(dl.filing)} (il 730 scadeva il ${dmy(dl.m730)}).`,
     ], { size: 9 });
+    if (rwTot.gt(0) && !rwTot.eq(pl.ivca)) p.para(`Nota: l'IVCA calcolata attività per attività è ${eur(rwTot)} €; nel quadro RW si scrive arrotondata all'euro per ogni rigo (totale ${eur(pl.ivca)} €).`, { size: 8.5, color: MUTED });
+  }
+
+  /** Altri redditi e detrazioni inseriti a mano (stipendio, musica, spese): dove scriverli e stima dell'IRPEF. */
+  function othersSection(p, c) {
+    const oc = c.plan && c.plan.others;
+    const Y = c.res.year;
+    p.h1('Altri redditi e detrazioni');
+    if (!oc || !oc.any) { p.para('Nessun altro reddito o detrazione inserito nel programma (scheda «Altri redditi»).', { color: MUTED }); return; }
+    p.para(`Dati inseriti dall'utente per l'anno ${Y}: stipendio (Certificazione Unica), lavoro occasionale, diritti d'autore e royalties, spese. Righi del modello Redditi PF ${Y + 1}; la stima dell'IRPEF è indicativa (regole 2025): il calcolo esatto lo fa il software di compilazione.`, { color: MUTED, size: 9 });
+    p.h2('Dove scriverli');
+    p.table(['Rigo', 'Cosa', 'Importo (€)'], CT.others.where(oc).map(([a, b, v]) => [a, b, typeof v === 'string' ? v : eur(v)]), { num: [2], fontSize: 9, columnStyles: { 0: { cellWidth: 34 }, 2: { cellWidth: 30 } } });
+    if (oc.occ.length) { p.h2('Ricevute di lavoro occasionale'); p.table(['Chi ha pagato', 'Lordo (€)', 'Ritenuta (€)', 'Spese (€)'], oc.occ.map((r) => [r.chi || '-', eur(r.lordo), eur(r.rit), eur(r.spese)]), { num: [1, 2, 3], fontSize: 9 }); }
+    if (oc.dir.length) { p.h2(`Diritti d'autore e royalties (deduzione forfettaria ${oc.dedRate.times(100).toFixed(0)}%)`); p.table(['Da chi', 'Lordo (€)', 'Ritenuta (€)'], oc.dir.map((r) => [r.chi || '-', eur(r.lordo), eur(r.rit)]), { num: [1, 2], fontSize: 9 }); }
+    p.h2('Stima dell\'IRPEF');
+    const st = CT.others.steps(oc);
+    p.table(['Voce', 'Importo (€)'], st.map(([a, v]) => [a, v.lt(0) ? `-${eur(v.neg())}` : eur(v)]), { num: [1], boldRows: [st.length - 1], fontSize: 9, columnStyles: { 1: { cellWidth: 34 } } });
+    p.bullets([
+      'Lavoro occasionale: art. 67, c. 1, lett. l) TUIR, quadro RL rigo RL15 (Certificazione Unica con causale M).',
+      `Diritti d'autore: art. 53, c. 2, lett. b) TUIR, quadro RL sezione III rigo RL25, deduzione forfettaria del 25% (40% sotto i 35 anni); Certificazione Unica con causale B.`,
+      'Lavoro dipendente: quadro RC dai dati della Certificazione Unica. La stima confronta l\'IRPEF calcolata dal datore sul solo stipendio con quella complessiva: comprende la riduzione delle detrazioni e la restituzione dei bonus del «taglio del cuneo» quando il reddito supera le soglie.',
+      'Spese sanitarie: quadro RP rigo RP1, detrazione del 19% oltre 129,11 €, pagamento tracciabile salvo farmaci, dispositivi medici e strutture pubbliche o accreditate.',
+      'Non considerati: familiari a carico, redditi fondiari, crediti d\'imposta esteri, trattamento integrativo tra 15.000 e 28.000 €.',
+    ], { size: 8.5 });
   }
 
   function attCessioni(p, c) {
@@ -7459,6 +8105,14 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
     for (const d of disp) for (const u of d.uses) rows.push([dmy(d.day), d.asset, qty(d.qty), dmy(u.day), qty(u.qty), eur(u.cost), u.documented ? 'sì' : 'NON documentato', u.rebased ? 'sì' : 'no', u.lotId]);
     if (!rows.length) p.para('Nessuna cessione nell\'anno.');
     else p.table(['Data cessione', 'Asset', 'Quantità ceduta', 'Data acquisto lotto', 'Quantità dal lotto', 'Costo del lotto (€)', 'Costo documentato', 'Rideterminato 1/1/2025', 'Lotto'], rows, { num: [2, 4, 5], fontSize: 7.5 });
+    const sw = (res.engine.swapsCarried || []).filter((x) => x.year <= res.year).sort((a, b) => a.ts - b.ts);
+    if (sw.length) {
+      p.h2('Scambi tra cripto senza realizzo (il costo passa alla cripto ricevuta)');
+      p.para('Scambi tra cripto-attività con eguali caratteristiche e funzioni (Circ. AdE 30/E/2023): non generano plus o minusvalenze. Il costo dei lotti ceduti, più l\'eventuale commissione, diventa il costo della cripto ricevuta; il valore in euro serve solo al quadro RW. Elenco di tutti gli anni caricati fino a quello della dichiarazione.', { color: MUTED, size: 9 });
+      p.table(['Data', 'Conto', 'Ceduto', 'Ricevuto', 'Costo trasferito (€)', 'Valore del giorno (€)', 'Costo documentato', 'Origine (file:riga)'],
+        sw.map((x) => [dmy(x.day), x.account, `${qty(x.qty)} ${x.asset}`, `${qty(x.counterQty)} ${x.counterAsset}`, eur(x.cost), x.value ? eur(x.value) : 'n.d.', x.documented ? 'sì' : 'NON documentato', x.src || '']),
+        { num: [4, 5], fontSize: 7.5 });
+    }
   }
 
   function attProventi(p, c) {
@@ -7491,7 +8145,8 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
       if (r.action === 'dup_skip') return [what, 'Sono la stessa operazione: contata una volta sola'];
     }
     const A = { ignore: 'Riga ignorata', self_custody: `Trasferimento verso un proprio wallet (${r.wallet || 'Wallet personale'})`, from_self_custody: 'Ingresso da un proprio wallet', disposal: `Uscita trattata come vendita, valore ${r.value_eur} €`, set_cost: `Costo impostato: ${r.cost_eur} €${r.acquired ? ` (acquisto del ${dmy(r.acquired)})` : ''}`, cover_cost: `Costo del mancante impostato: ${r.cost_eur} €${r.undocumented ? ' (non documentato)' : ''}${r.acquired ? ` (acquisto del ${dmy(r.acquired)})` : ''}`, set_value: `Valore impostato: ${r.value_eur} €`, migration: 'Conversione di saldo trattata come aggiornamento del token (nessuna vendita, costo trasferito)', swap: 'Conversione di saldo trattata come scambio imponibile', dup_skip: 'Operazioni presenti in due file contate una volta sola', ack: 'Confermato dall\'utente' };
-    return [what, A[r.action] || r.action];
+    const done = A[r.action] || r.action;
+    return [what, c.res.engine.obsolete && c.res.engine.obsolete.has(uid) ? `${done} (scelta non più necessaria: con le regole applicate non è un realizzo)` : done];
   }
 
   function attFonti(p, c) {
@@ -7544,7 +8199,7 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
     if (!iss.length) p.para('Nessuno.');
     else p.table(['Livello', 'Messaggio'], [...iss].sort((a, b) => ['block', 'warn', 'info'].indexOf(a.level) - ['block', 'warn', 'info'].indexOf(b.level)).map((i) => [i.level === 'block' ? 'DA RISOLVERE' : i.level === 'warn' ? 'Attenzione' : 'Nota', i.message]), { fontSize: 7.5, columnStyles: { 0: { cellWidth: 26 } } });
     p.h2('Scelte interpretative applicate');
-    p.bullets(INTERPRETATIONS, { size: 8.5 });
+    p.bullets(interpretations(state), { size: 8.5 });
     p.para(`Regole ${res.year}: ${res.y.rule.note} Stato: ${res.y.rule.status}. Fonti da verificare: L. 197/2022, L. 207/2024, L. 199/2025, Circolare AdE 30/E del 27/10/2023, istruzioni del modello Redditi PF.`, { size: 8.5, color: MUTED });
   }
 
@@ -7553,7 +8208,8 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
     { id: '01', file: '01-quadro-RT-cripto', title: '01 · Prospetto quadro RT · Cripto-attività', orient: 'p', fn: rtSection('crypto') },
     { id: '02', file: '02-quadro-RT-oro-e-metalli', title: '02 · Prospetto quadro RT · Oro e metalli preziosi', orient: 'p', fn: rtSection('metal') },
     { id: '03', file: '03-quadro-RW', title: '03 · Prospetto quadro RW · Monitoraggio e IVCA', orient: 'l', fn: rwSection },
-    { id: '04', file: '04-imposte-e-versamenti', title: '04 · Riepilogo imposte e versamenti', orient: 'p', fn: paySection },
+    { id: '04', file: '04-cosa-pagare-F24-e-scadenze', title: '04 · Cosa pagare: imposte, F24 e scadenze', orient: 'p', fn: paySection },
+    { id: '05', file: '05-altri-redditi-e-detrazioni', title: '05 · Altri redditi e detrazioni (stipendio, musica, spese)', orient: 'p', fn: othersSection },
     { id: 'A', file: 'A-elenco-cessioni', title: 'Allegato A · Elenco delle cessioni', orient: 'l', fn: attCessioni },
     { id: 'B', file: 'B-lotti-di-acquisto', title: 'Allegato B · Lotti di acquisto utilizzati', orient: 'l', fn: attBlotti },
     { id: 'C', file: 'C-proventi', title: 'Allegato C · Proventi', orient: 'l', fn: attProventi },
@@ -7580,7 +8236,8 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
       year: Y, draft: res.groups.blockCount > 0, generated: new Date().toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' }),
       taxpayerLine: [tp.name, tp.cf ? `CF ${tp.cf}` : ''].filter(Boolean).join(' · '),
     };
-    const ctx0 = { res, state, hashes };
+    const plan = CT.payments ? CT.payments.plan(res, state, { payDay: (state && state.payDay) || undefined }) : null;
+    const ctx0 = { res, state, hashes, plan };
 
     const full = new Pdf(JS, { ...baseMeta, docTitle: `Fascicolo di supporto alla dichiarazione · Anno d'imposta ${Y}` });
     const ctx = { ...ctx0, meta: baseMeta };
@@ -7611,7 +8268,7 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
     return { full: files[0], parts, zip: { name: `${Y}-dichiarazione-crypto-pdf.zip`, data: zip }, draft: baseMeta.draft };
   }
 
-  CT.pdf = { buildAll, safe, eur, SECTIONS, INTERPRETATIONS };
+  CT.pdf = { buildAll, safe, eur, SECTIONS, INTERPRETATIONS, interpretations };
   if (typeof module !== 'undefined') module.exports = CT.pdf;
 })();
 
@@ -7943,8 +8600,8 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
     right: { 1: 163.5, 3: 249.0, 5: 336.0, 6: 377.26, 7: 454.75, 8: 550.0, 10: 240.0, 33: 473.5, 34: 549.25 },
     labelBase1: [210.5, 319.2, 415.1, 511.0, 607.0], labelBase2: [225.5, 334.2, 430.1, 526.0, 622.0], labelBase3: [240.5, 349.2, 445.1, 541.0, 637.0], labelX: 7.5,
     cf: { x0: 250.9, step: 14.4, base: 68.6, size: 11 }, mod: { right: 565.0, base: 115.9, size: 18.75 },
-    tot: { base: 764.2, right: { 1: 182.5, 4: 397.9, 5: 469.75, 6: 541.6 }, ph: { x: 371.25, y1: 759.4, y2: 765.4 } },
-    banner: { x: 40, y: 26 },
+    tot: { base: 764.2, right: { 1: 182.5, 4: 397.9, 5: 469.75, 6: 541.6 }, ph: { x: 371.25, y1: 759.4, y2: 765.4 }, exc: [232.0, 304.0] },
+    banner: { x: 40, y: 26 }, legend: { x: 40, y: 800 }, cfMid: 366.1,
   };
   const W = {
     tpl: 'w', rowsPerPage: 5, size: 7.5, labelSize: 9,
@@ -7952,8 +8609,8 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
     right: { 1: 90.0, 3: 198.75, 5: 311.26, 6: 371.25, 7: 456.25, 8: 550.75, 10: 187.5 },
     labelCenter: [225.3, 314.5, 386.5, 458.5, 530.5], labelX1: 10.3, labelX2: 21.5, labelX3: 32.7,
     cf: { x0: 345.1, step: 9.775, base: 24.6, size: 9 }, mod: { right: 565.0, base: 25.8, size: 12.75 },
-    ph: { x: 322.2, y1: 699.4, y2: 706.0 }, adv: { right: 359.8, base: 706.0 },
-    banner: { x: 40, y: 10 },
+    ph: { x: 322.2, y1: 699.4, y2: 706.0 }, adv: { right: 359.8, base: 706.0 }, exc: [95.6, 211.3],
+    banner: { x: 40, y: 10 }, legend: { x: 40, y: 740 }, cfMid: 423.3,
   };
 
   // ---------------------------------------------------------------- dati
@@ -8006,22 +8663,31 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
   // ---------------------------------------------------------------- costruzione delle pagine
   const txt = (s, x, y, size, o) => Object.assign({ s: latin(s), x, y, size }, o || {});
 
+  const RED = '#c00000';
   function header(ops, G, n, cf, draft) {
     const code = String(cf || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 16);
     for (let i = 0; i < code.length; i++) ops.push(txt(code[i], G.cf.x0 + G.cf.step * (i + 0.5), G.cf.base, G.cf.size, { align: 'center' }));
+    // codice fiscale non indicato (o incompleto): campo da compilare, in rosso
+    if (code.length !== 16) ops.push(txt(code.length ? 'CODICE FISCALE INCOMPLETO' : 'INSERIRE IL CODICE FISCALE', G.cfMid, G.cf.base - 1, G.cf.size * 0.62, { align: 'center', color: RED, bold: true }));
     ops.push(txt(String(n), G.mod.right, G.mod.base, G.mod.size, { align: 'right' }));
     if (draft) ops.push(txt('BOZZA: ci sono ancora punti da controllare nel programma. Non usare questi dati per la dichiarazione.', G.banner.x, G.banner.y, 8, { color: '#b00020', bold: true }));
+    ops.push(txt('IN ROSSO: campi da compilare o da verificare prima di ricopiare il modulo nella dichiarazione. Il resto è calcolato dal programma.', G.legend.x, G.legend.y, 7.5, { color: RED, bold: true }));
   }
+  /** Scritta rossa centrata dentro una casella (due righe se serve). */
+  const redIn = (ops, x, y1, y2, a, b) => { ops.push(txt(a, x, b ? y1 : (y1 + y2) / 2 + 1, 5.6, { align: 'center', color: RED, bold: true })); if (b) ops.push(txt(b, x, y2, 5.6, { align: 'center', color: RED, bold: true })); };
 
   function rwPage(list, n, first, totals, cf, draft, adv) {
     const ops = []; header(ops, RW, n, cf, draft);
     const put = (col, s, base) => ops.push(txt(s, RW.right[col], base, RW.size, { align: 'right' }));
+    const redR = (col, s, base) => ops.push(txt(s, RW.right[col] - 14, base, 5.6, { align: 'right', color: RED, bold: true }));
     list.forEach((r, i) => {
-      if (r.cls === 'crypto') put(3, '21', RW.baseA[i]);
+      if (r.cls === 'crypto') put(3, '21', RW.baseA[i]); else ops.push(txt('VERIFICA', RW.right[3] - 17, RW.baseA[i], 6, { align: 'center', color: RED, bold: true }));
       put(1, '1', RW.baseA[i]); put(5, '100,00', RW.baseA[i]); put(6, '1', RW.baseA[i]);
       if (!r.incomplete) { put(7, eur(r.vi), RW.baseA[i]); put(8, eur(r.vf), RW.baseA[i]); }
+      else { redR(7, 'DA COMPLETARE (manca un prezzo)', RW.baseA[i]); redR(8, 'DA COMPLETARE (manca un prezzo)', RW.baseA[i]); }
       put(10, String(r.days), RW.baseB[i]);
       if (r.cls === 'crypto' && !r.incomplete) { put(33, eur(r.ic), RW.baseD[i]); put(34, sep(r.icDue.toFixed(0)), RW.baseD[i]); }
+      else if (r.cls === 'crypto') { redR(33, 'DA COMPLETARE', RW.baseD[i]); redR(34, 'DA COMPLETARE', RW.baseD[i]); }
       const grey = { color: '#7a7a7a', size: RW.labelSize }, red = { color: '#b00020', size: RW.labelSize };
       ops.push(txt(cut(r.label1, 16), RW.labelX, RW.labelBase1[i], RW.labelSize, grey));
       if (r.label2) ops.push(txt(cut(r.label2, 20), RW.labelX, RW.labelBase2[i], RW.labelSize, grey));
@@ -8030,11 +8696,12 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
     if (first) {
       const T = RW.tot;
       ops.push(txt(sep(totals.toFixed(0)), T.right[1], T.base, RW.size, { align: 'right' }));
+      // eccedenze della dichiarazione precedente o compensate in F24: solo se ci sono, il programma non le conosce
+      redIn(ops, T.exc[0], T.ph.y1, T.ph.y2, 'SOLO SE C\'È CREDITO', 'DELL\'ANNO PRIMA'); redIn(ops, T.exc[1], T.ph.y1, T.ph.y2, 'SOLO SE COMPENSATA', 'CON L\'F24');
       if (adv === null) {
         // gli acconti versati non si possono ricavare dai file: casella lasciata al commercialista (oppure scritta dall'utente)
         ops.push(txt(sep(totals.toFixed(0)), T.right[5], T.base, RW.size, { align: 'right' }));
-        const red = { align: 'center', color: '#c00000', bold: true };
-        ops.push(txt('INSERIRE ACCONTI', T.ph.x, T.ph.y1, 5.6, red), txt('VERSATI', T.ph.x, T.ph.y2, 5.6, red));
+        redIn(ops, T.ph.x, T.ph.y1, T.ph.y2, 'INSERIRE ACCONTI', 'VERSATI (O 0)');
       } else {
         const due = totals.minus(adv);
         ops.push(txt(sep(adv.toFixed(0)), T.right[4], T.base, RW.size, { align: 'right' }));
@@ -8048,10 +8715,12 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
   function wPage(list, n, first, cf, draft, adv) {
     const ops = []; header(ops, W, n, cf, draft);
     const put = (col, s, base) => ops.push(txt(s, W.right[col], base, W.size, { align: 'right' }));
+    const redR = (col, s, base) => ops.push(txt(s, W.right[col] - 14, base, 5.6, { align: 'right', color: RED, bold: true }));
     list.forEach((r, i) => {
-      if (r.cls === 'crypto') put(3, '21', W.baseA[i]);
+      if (r.cls === 'crypto') put(3, '21', W.baseA[i]); else ops.push(txt('VERIFICA', W.right[3] - 20, W.baseA[i], 6, { align: 'center', color: RED, bold: true }));
       put(1, '1', W.baseA[i]); put(5, '100,00', W.baseA[i]); put(6, '1', W.baseA[i]);
       if (!r.incomplete) { put(7, eur(r.vi), W.baseA[i]); put(8, eur(r.vf), W.baseA[i]); }
+      else { redR(7, 'DA COMPLETARE (manca un prezzo)', W.baseA[i]); redR(8, 'DA COMPLETARE (manca un prezzo)', W.baseA[i]); }
       put(10, String(r.days), W.baseB[i]);
       const grey = { color: '#7a7a7a', size: W.labelSize, rot: 90, align: 'center' }, red = Object.assign({}, grey, { color: '#b00020' });
       const lim = i === 0 ? 14 : 11;
@@ -8060,10 +8729,9 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
       if (r.label3) ops.push(txt(cut(r.label3, lim), W.labelX3, W.labelCenter[i], W.labelSize, red));
     });
     if (first) {
-      if (adv === null) {
-        const red = { align: 'center', color: '#c00000', bold: true };
-        ops.push(txt('INSERIRE ACCONTI', W.ph.x, W.ph.y1, 5.6, red), txt('VERSATI', W.ph.x, W.ph.y2, 5.6, red));
-      } else ops.push(txt(sep(adv.toFixed(0)), W.adv.right, W.adv.base, W.size, { align: 'right' }));
+      redIn(ops, W.exc[0], W.ph.y1, W.ph.y2, 'SOLO SE C\'È CREDITO', 'DELL\'ANNO PRIMA'); redIn(ops, W.exc[1], W.ph.y1, W.ph.y2, 'SOLO SE COMPENSATA', 'CON L\'F24');
+      if (adv === null) redIn(ops, W.ph.x, W.ph.y1, W.ph.y2, 'INSERIRE ACCONTI', 'VERSATI (O 0)');
+      else ops.push(txt(sep(adv.toFixed(0)), W.adv.right, W.adv.base, W.size, { align: 'right' }));
     }
     return { tpl: W.tpl, ops };
   }
@@ -10960,7 +11628,7 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
   const uid = () => Math.random().toString(36).slice(2, 9);
 
   // ------------------------------------------------------------------ stato e salvataggio
-  const state = { files: [], manual: [], resolutions: {}, prices: {}, priceSrc: {}, settings: { year: 2025, rebase2025: false, useCarry: true }, taxpayer: { name: '', cf: '' }, custodians: {}, platforms: [], example: false };
+  const state = { files: [], manual: [], resolutions: {}, prices: {}, priceSrc: {}, settings: { year: 2025, rebase2025: false, useCarry: true, swapRule: 'circ30' }, taxpayer: { name: '', cf: '' }, custodians: {}, platforms: [], example: false };
   const ui = { tab: 'files', res: null, error: null, detail: 'cessioni', filter: '', confirmReset: false, toast: '', busy: '', ver: 0, pdf: null, pdfBusy: false, platform: null, method: 'file', confirmRemove: null, manualChoices: false, priceFail: 0 };
 
   function idb() {
@@ -11459,8 +12127,12 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       h('input', { type: 'checkbox', id, checked: !!s[key], onchange: (e) => { s[key] = e.target.checked; changed(); } }),
       h('label', { for: id }, h('strong', null, title)), h('span', { class: 'hint muted small' }, hint));
     return h('div', { class: 'card' }, h('h2', null, 'Opzioni di calcolo'),
-      check('o_carry', 'useCarry', 'Riporta le minusvalenze degli anni precedenti', 'Le perdite che emergono dai tuoi file (dal 2023) riducono le tasse degli anni successivi, entro 4 anni. Calcolate in automatico: non serve sapere cosa hai dichiarato.'),
-      check('o_rebase', 'rebase2025', 'Ho rideterminato il costo al 1° gennaio 2025', 'Facoltativo e raro: pagando un\'imposta del 18% sul valore delle cripto possedute il 1/1/2025, quel valore diventa il nuovo costo di acquisto. Se non sai di cosa si tratta lascia spento: vuol dire che non l\'hai fatto.'));
+      check('o_carry', 'useCarry', 'Riporta le minusvalenze degli anni precedenti', 'Le perdite che emergono dai tuoi file (dal 2023) riducono le tasse degli anni successivi, entro 4 anni. Per legge valgono solo se le hai indicate nella dichiarazione dell\'anno in cui le hai avute (quadro RT): se quell\'anno non le avevi dichiarate, togli la spunta. Per il 2023 e il 2024 si riportano solo le perdite nette oltre 2.000 €.'),
+      h('div', { class: 'check' },
+        h('input', { type: 'checkbox', id: 'o_swapall', checked: s.swapRule === 'all', onchange: (e) => { s.swapRule = e.target.checked ? 'all' : 'circ30'; changed(); } }),
+        h('label', { for: 'o_swapall' }, h('strong', null, 'Tassa anche gli scambi tra cripto (es. BTC → ETH)')),
+        h('span', { class: 'hint muted small' }, 'Normalmente spento. Secondo l\'Agenzia delle Entrate (Circolare 30/E del 2023) lo scambio tra due cripto non è una vendita: non si paga niente e il costo passa alla cripto ricevuta. Si paga invece quando passi a euro, a stablecoin (USDC, USDT…) o paghi con le cripto. Accendilo solo se il tuo commercialista preferisce tassare ogni scambio.')),
+      check('o_rebase', 'rebase2025', 'Ho rideterminato il costo al 1° gennaio 2025', 'Facoltativo e raro: pagando un\'imposta del 18% (entro il 1° dicembre 2025) sul valore delle cripto possedute il 1/1/2025, quel valore diventa il nuovo costo di acquisto, ma una vendita in perdita di quelle cripto non dà una minusvalenza. Se non sai di cosa si tratta lascia spento: vuol dire che non l\'hai fatto.'));
   }
 
   // ------------------------------------------------------------------ pannello: Da controllare
@@ -11684,7 +12356,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       const base = key.replace(/^conv:/, '').replace(/#(fee|netfee)$/, '');
       const e = res.events.find((x) => x.uid === base);
       const what = e ? `${dmy(CT.taxDate(e.ts))} · ${e.account} · ${CT.fq(e.qty)} ${e.asset}${key.startsWith('conv:') ? ' → ' + CT.fq(e.counterQty) + ' ' + e.counterAsset : ''}` : key;
-      return `${what}: ${act}`;
+      return `${what}: ${act}${res.engine.obsolete.has(key) ? ' (non serve più: con le regole applicate non è una vendita)' : ''}`;
     };
     return h('details', { class: 'card', open: !res.groups.blockCount }, h('summary', null, `Decisioni prese (${decided.length})`),
       h('p', { class: 'muted small' }, 'Le scelte che hai fatto finora. Se ti sei sbagliato annullala: il punto tornerà tra le cose da controllare.'),
@@ -11707,9 +12379,11 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     if (b.income.gt(0)) rows.push({ label: 'Proventi (staking, interessi, premi…)', value: money(b.income) });
     for (const c of b.carryUsed) rows.push({ label: `Minusvalenza ${c.year} utilizzata`, value: `− ${money(c.amount)}` });
     if (b.thresholdExempt) rows.push({ label: 'Sotto la franchigia di 2.000 € (non tassato)', value: money(0) });
+    if (b.nonDeductible.gt(0)) rows.push({ label: 'Perdite su cripto rideterminate al 1/1/2025: non deducibili (già escluse)', value: money(b.nonDeductible) });
     rows.push({ label: 'Imponibile', value: money(b.taxable), cls: 'total' });
     rows.push({ label: `Imposta sostitutiva (${pct(b.rate)}${b.emtShare.gt(0) ? ', di cui parte al 26% su stablecoin in euro' : ''})`, value: money(b.tax), cls: 'total' });
-    if (b.newLoss.gt(0)) rows.push({ label: `Minusvalenza ${b.year} da riportare agli anni successivi`, value: money(b.newLoss) });
+    if (b.newLoss.gt(0)) rows.push({ label: `Minusvalenza ${b.year} da riportare agli anni successivi (va indicata in dichiarazione)`, value: money(b.newLoss) });
+    if (b.lossNotCarried.gt(0)) rows.push({ label: `Minusvalenza ${b.year} non riportabile (fino a 2.000 € nel 2023-2024 non si riporta)`, value: money(b.lossNotCarried) });
     for (const c of b.carryUnused) rows.push({ label: `Minusvalenza ${c.year} ancora disponibile`, value: money(c.amount) });
     for (const c of b.carryExpired) rows.push({ label: `Minusvalenza ${c.year} scaduta (oltre 4 anni)`, value: money(c.amount) });
     return h('div', { class: 'card' }, h('h2', null, b.name), h('p', { class: 'muted small' }, `${b.law} · ${b.nDisposals} cessioni nell'anno · quadro RT`),
@@ -11719,7 +12393,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
   /** «Da dove arriva l'imposta»: elenca cosa ha contato il programma (vendite, scambi, pagamenti, premi), cosi' si capisce anche senza aver venduto. */
   function sourcesCard(res) {
     const sx = R.taxSources(res);
-    if (!sx.rows.length) return null;
+    if (!sx.rows.length && !sx.neutralSwaps) return null;
     const signed = (r) => (r.group === 'income' ? money(r.amount) : `${r.amount.gte(0) ? '+' : '−'} ${money(r.amount.abs())}`);
     const rows = sx.rows.map((r) => h('tr', null,
       h('td', null, r.label, h('div', { class: 'small muted' }, r.group === 'income' ? 'tassato per intero' : 'guadagno (+) o perdita (−)')),
@@ -11733,9 +12407,206 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
         h('thead', null, h('tr', null, h('th', null, 'Che cosa'), h('th', { class: 'num' }, 'Quante'), h('th', { class: 'num' }, 'Importo'))),
         h('tbody', null, rows))),
       sx.hasCashback ? h('p', { class: 'small' }, 'Il cashback della carta lo conto come un guadagno (scelta prudenziale). Se il tuo commercialista lo considera uno sconto sulla spesa, l\'imposta scende: chiedigli come vuole trattarlo.') : null,
+      sx.neutralSwaps ? h('p', { class: 'small' }, `In più ${sx.neutralSwaps === 1 ? 'c\'è 1 scambio' : `ci sono ${sx.neutralSwaps} scambi`} tra crypto (es. BTC → ETH) che non ${sx.neutralSwaps === 1 ? 'è tassato' : 'sono tassati'}: per l'Agenzia delle Entrate non sono vendite, il costo passa alla crypto ricevuta.`) : null,
       h('div', { class: 'row' },
         h('button', { class: 'btn quiet', onclick: () => { ui.detail = 'cessioni'; ui.tab = 'detail'; render(); window.scrollTo(0, 0); } }, 'Vedi vendite e scambi'),
         h('button', { class: 'btn quiet', onclick: () => { ui.detail = 'proventi'; ui.tab = 'detail'; render(); window.scrollTo(0, 0); } }, 'Vedi premi e interessi')));
+  }
+
+  // ------------------------------------------------------------------ musica e spese sanitarie (redditi che non vengono dai file)
+  function othersState() {
+    const o = state.others = state.others || {};
+    if (!Array.isArray(o.occ)) o.occ = [];
+    if (!Array.isArray(o.dir)) o.dir = [];
+    return o;
+  }
+  const othersChanged = () => { ui.ver++; ui.pdf = null; save(); render(); };
+  /** Mentre si scrive: niente ridisegno della pagina (si perderebbe il campo attivo), solo il riquadro con i risultati. */
+  const othersTyped = () => {
+    ui.ver++; ui.pdf = null; save();
+    const box = document.getElementById('othersResult');
+    if (box) box.replaceChildren(...othersResult(CT.others.compute(othersState()), state.settings.year));
+  };
+
+  /** Tabella modificabile: una riga per ricevuta o certificazione. */
+  function rowsEditor(list, cols, emptyRow, addLabel) {
+    const body = list.map((r, idx) => h('tr', null,
+      cols.map((c) => h('td', { 'data-l': c.label }, h('input', { type: 'text', value: r[c.key] || '', placeholder: c.ph || '', inputmode: c.num ? 'decimal' : null, 'aria-label': c.label,
+        style: c.num ? 'width:110px;text-align:right' : 'min-width:140px', oninput: (e) => { r[c.key] = e.target.value; othersTyped(); } }))),
+      h('td', null, h('button', { class: 'btn quiet danger', onclick: () => { list.splice(idx, 1); othersChanged(); } }, 'Elimina'))));
+    return h('div', null,
+      list.length ? h('div', { class: 'tbl-wrap' }, h('table', { class: 'edit' }, h('thead', null, h('tr', null, cols.map((c) => h('th', { class: c.num ? 'num' : null }, c.label)), h('th', null, ''))), h('tbody', null, body))) : null,
+      h('div', { class: 'row', style: 'margin-top:8px' }, h('button', { class: 'btn', onclick: () => { list.push(Object.assign({ id: uid() }, emptyRow)); othersChanged(); } }, addLabel)));
+  }
+
+  function othersResult(c, Y) {
+    if (!c.any) return [];
+    const eu = (x) => (typeof x === 'string' ? x : money(x));
+    const sg = (x) => (x.lt(0) ? `− ${money(x.neg())}` : money(x));
+    const rows = CT.others.where(c);
+    const est = CT.others.steps(c).map(([a, v]) => [a, sg(v)]);
+    return [h('div', { class: 'card tone-good' },
+      h('h2', null, 'Dove scriverlo nel modello Redditi PF ' + (Y + 1)),
+      h('div', { class: 'tbl-wrap' }, h('table', null, h('thead', null, h('tr', null, h('th', null, 'Rigo'), h('th', null, 'Cosa'), h('th', { class: 'num' }, 'Importo'))),
+        h('tbody', null, rows.map(([a, b, v]) => h('tr', null, h('td', null, h('span', { class: 'code' }, a)), h('td', null, b), h('td', { class: 'num' }, eu(v))))))),
+      h('h3', null, 'Quanto pagherai in più (stima)'),
+      kvTable(est.map(([label, value], i) => ({ label, value, cls: i === est.length - 1 || /da versare|a credito/.test(label) ? 'total' : null }))),
+      h('p', { class: 'small muted' }, `È una stima con le regole del 2025: l'IRPEF esatta dipende da tutti i tuoi redditi e detrazioni, dalle addizionali del tuo Comune e da cosa ha fatto il datore di lavoro a conguaglio. La calcola il software della dichiarazione (precompilata). Non sono considerati: familiari a carico, redditi di immobili, trattamento integrativo tra 15.000 e 28.000 €. Le voci da pagare (codici 4001, 3801, 3844 e acconti 4033/4034) compaiono anche nel Risultato, nella parte «Altri redditi».`),
+      h('div', { class: 'row' }, h('button', { class: 'btn primary', onclick: () => { ui.tab = 'result'; render(); window.scrollTo(0, 0); } }, 'Vedi il totale da pagare')))];
+  }
+
+  function panelOthers() {
+    const o = othersState();
+    const c = CT.others.compute(o);
+    const Y = state.settings.year;
+    const eu = (x) => money(x);
+    const out = [];
+    out.push(h('div', { class: 'card' },
+      h('h2', null, `Altri redditi e detrazioni · ${Y}`),
+      h('p', null, 'Qui metti tutto quello che non sono investimenti: lo stipendio (dalla Certificazione Unica), le serate da DJ, le royalties delle etichette, i diritti d\'autore della SIAE, le spese mediche e le altre spese che fanno risparmiare. Ti dico in quale quadro e rigo del modello Redditi PF si scrive ogni cosa e quanta IRPEF pagherai in più o avrai a credito (stima). Gli investimenti (cripto, oro, Bitpanda, azioni, altri broker) sono tutti nella sezione «Investimenti».'),
+      h('details', { class: 'tip' }, h('summary', null, 'Il modo più semplice: la dichiarazione precompilata (consigliato)'),
+        h('ol', { class: 'steps' },
+          h('li', null, 'Entra nel sito dell\'Agenzia delle Entrate con SPID, CIE o CNS e apri la «Dichiarazione precompilata», modello Redditi PF.'),
+          h('li', null, 'Dentro trovi già le Certificazioni Uniche (CU) che ti hanno mandato SIAE, etichette italiane e locali che ti hanno pagato con ritenuta, e le spese sanitarie del Sistema Tessera Sanitaria. Controlla che ci siano tutte.'),
+          h('li', null, 'Aggiungi quello che manca: compensi senza CU (privati, pagamenti dall\'estero), le spese mediche non presenti, e i quadri RT e RW degli investimenti con i numeri di questo programma.'),
+          h('li', null, 'Il programma dell\'Agenzia calcola da solo IRPEF, addizionali e acconti e prepara l\'F24. Se hai dubbi, mandala al commercialista prima di inviarla.')))));
+
+    const fld = (label, key, ph, hint) => h('label', { class: 'field' }, h('span', null, label), h('input', { type: 'text', inputmode: 'decimal', value: o[key] || '', placeholder: ph || '', oninput: (e) => { o[key] = e.target.value; othersTyped(); } }), hint ? h('span', { class: 'small muted' }, hint) : null);
+    out.push(h('div', { class: 'card' },
+      h('h2', null, 'Stipendio o pensione (Certificazione Unica)'),
+      h('p', { class: 'muted' }, 'Se hai un lavoro dipendente, il datore ti dà la Certificazione Unica 2026 (CU) con i dati del 2025. Copia questi tre numeri. Se hai avuto più datori di lavoro somma i redditi e le ritenute di tutte le CU. Se non hai uno stipendio lascia vuoto.'),
+      h('div', { class: 'fields' },
+        fld('Reddito di lavoro dipendente o pensione (€)', 'altri', 'es. 28000', 'CU, punto 1 (tempo indeterminato) o punto 2 (determinato); pensione punto 3'),
+        fld('Giorni di lavoro', 'giorni', '365', 'CU, punto 6 o 7 (se tutto l\'anno: 365)'),
+        fld('Ritenute IRPEF (€), facoltativo', 'ritCU', 'es. 4200', 'CU, punto 21. Se lo lasci vuoto il programma considera che in busta paga sia già stato trattenuto il giusto')),
+      h('p', { class: 'small muted' }, 'Dove: quadro RC. Rigo RC1 (colonna 1 il codice 2 per lavoro dipendente, colonna 3 il reddito), giorni nel rigo RC6, ritenute nel rigo RC10 (IRPEF, addizionale regionale e comunale dalla CU). Nella precompilata li trovi già: controlla solo che ci siano tutte le CU.')));
+    out.push(h('div', { class: 'card' },
+      h('h2', null, 'Serate da DJ e altri lavori occasionali'),
+      h('p', { class: 'muted' }, 'Ricevute di «prestazione occasionale» (senza partita IVA). Per ognuna: chi ti ha pagato, il lordo scritto sulla ricevuta, la ritenuta del 20% trattenuta (se te l\'ha pagata un locale, un\'associazione o una società: la trovi nella CU, causale M) e le spese che puoi documentare e che riguardano proprio quella serata (trasporto, noleggio attrezzatura…).'),
+      rowsEditor(o.occ, [{ key: 'chi', label: 'Chi ti ha pagato', ph: 'es. Locale XY' }, { key: 'lordo', label: 'Compenso lordo €', num: true, ph: '500' }, { key: 'rit', label: 'Ritenuta €', num: true, ph: '100' }, { key: 'spese', label: 'Spese documentate €', num: true, ph: '0' }], {}, '+ Aggiungi una ricevuta'),
+      h('p', { class: 'small muted' }, 'Dove: quadro RL, rigo RL15 (colonna 1 i compensi, colonna 2 le spese); le ritenute nel rigo delle ritenute della stessa sezione. Se fai serate in modo continuativo e organizzato non è più «occasionale»: serve la partita IVA. Oltre 5.000 € di compensi l\'anno scatta anche l\'iscrizione alla Gestione separata INPS (i contributi li versa in parte il committente).')));
+
+    out.push(h('div', { class: 'card' },
+      h('h2', null, 'Diritti d\'autore e royalties'),
+      h('p', { class: 'muted' }, 'SIAE, editori musicali, etichette, distributori. Scrivi il lordo e la ritenuta (dalla CU, causale B). Se sei l\'autore (testi, musica, produzione firmata) è reddito da diritti d\'autore: si paga sul 75% del lordo, sul 60% se avevi meno di 35 anni.'),
+      h('div', { class: 'check' },
+        h('input', { type: 'checkbox', id: 'o_u35', checked: !!o.under35, onchange: (e) => { o.under35 = e.target.checked; othersTyped(); } }),
+        h('label', { for: 'o_u35' }, h('strong', null, 'Nel ' + Y + ' avevo meno di 35 anni')), h('span', { class: 'hint muted small' }, 'La parte esente sale dal 25% al 40%.')),
+      rowsEditor(o.dir, [{ key: 'chi', label: 'Da chi', ph: 'es. SIAE, etichetta, distributore' }, { key: 'lordo', label: 'Lordo €', num: true, ph: '1000' }, { key: 'rit', label: 'Ritenuta €', num: true, ph: '150' }], {}, '+ Aggiungi un pagamento'),
+      h('ul', { class: 'clean small muted', style: 'margin-top:8px;display:grid;gap:4px' },
+        h('li', null, 'Dove: quadro RL, sezione III, rigo RL25 (proventi lordi). La riduzione del 25% o 40% e le ritenute vanno nei righi di riepilogo della sezione: il software le calcola.'),
+        h('li', null, 'Royalties come interprete (non autore) dall\'etichetta: guarda la causale della CU. B = diritti d\'autore (rigo RL25), M = lavoro occasionale (rigo RL15, scheda sopra). Senza CU, fai confermare al commercialista.'),
+        h('li', null, 'Pagamenti dall\'estero (DistroKid, YouTube, Bandcamp…): niente ritenuta italiana, si dichiara il lordo in euro (cambio del giorno dell\'incasso). Se ti hanno trattenuto tasse estere, chiedi al commercialista il credito d\'imposta (quadro CE). Un conto PayPal o simile all\'estero va nel quadro RW.'))));
+
+    out.push(h('div', { class: 'card' },
+      h('h2', null, 'Spese sanitarie'),
+      h('p', { class: 'muted' }, 'Visite, esami, farmaci, dentista, occhiali, per te e per i familiari a carico. Il 19% di quello che supera 129,11 € si toglie dall\'IRPEF. Vale solo se hai pagato con carta, bancomat o bonifico, tranne farmaci, dispositivi medici e prestazioni di strutture pubbliche o convenzionate (lì va bene anche il contante).'),
+      h('div', { class: 'fields' },
+        h('label', { class: 'field' }, h('span', null, `Totale spese sanitarie ${Y} (€)`), h('input', { type: 'text', inputmode: 'decimal', value: o.san || '', placeholder: 'es. 850', oninput: (e) => { o.san = e.target.value; othersTyped(); } }))),
+      h('p', { class: 'small muted' }, 'Dove: quadro RP, rigo RP1. Nella precompilata le trovi già (dal Sistema Tessera Sanitaria): controlla e aggiungi quelle mancanti. Conserva scontrini e ricevute.')));
+
+    out.push(h('div', { class: 'card' },
+      h('h2', null, 'Altre spese che fanno risparmiare (facoltativo)'),
+      h('p', { class: 'muted' }, 'Se hai altre spese detraibili o deducibili scrivi qui il totale già calcolato. Le più comuni: interessi del mutuo per la prima casa, spese di istruzione e università, sport dei figli, spese veterinarie, assicurazioni vita (19%); ristrutturazioni e risparmio energetico (rate di bonus edilizi); contributi a fondi pensione o versamenti INPS volontari (deducibili).'),
+      h('div', { class: 'fields' },
+        fld('Altre detrazioni (€ da togliere dall\'IRPEF)', 'altreDetr', 'es. 380 (= 19% di 2.000)', 'Quadro RP: sezione I (19%), sezione III (bonus edilizi, rata dell\'anno)'),
+        fld('Oneri deducibili (€ da togliere dal reddito)', 'deducibili', 'es. 1500', 'Quadro RP, sezione II (es. rigo RP27 per la previdenza complementare)'),
+        fld('Addizionali regionale + comunale (%)', 'addiz', '2', 'Per la stima: dipende da Regione e Comune (in genere tra 1,5% e 4%)'))));
+
+    out.push(h('div', { id: 'othersResult' }, othersResult(c, Y)));
+    return h('div', { class: 'stack' }, out);
+  }
+
+  // ------------------------------------------------------------------ cosa pagare (risposta breve: se, quanto, cosa e quando)
+  const todayIso = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+  const payPlan = (res) => CT.payments.plan(res, state, { payDay: ui.payDay || todayIso() });
+
+  function payCard(res) {
+    const p = payPlan(res), Y = res.year, dl = p.deadlines;
+    const blk = res.groups.blockCount, asm = res.groups.assumptionCount;
+    const later = p.items.filter((i) => !p.now.includes(i) && !i.credit);
+    const laterSum = later.reduce((s, i) => s.plus(i.payAmount), CT.ZERO);
+    const answer = p.payNow.gt(0) ? 'Sì, devi pagare circa' : laterSum.gt(0) ? 'Adesso no: c\'è solo un acconto più avanti' : 'No, non devi pagare niente';
+    const GROUPS = [['inv', 'Investimenti: cripto, oro e altri'], ['other', 'Altri redditi: stipendio, musica, detrazioni (stima)']];
+    const line = (i) => i.credit
+      ? h('tr', { class: 'credit' }, h('td', { 'data-l': 'Cosa' }, h('strong', null, i.title), h('div', { class: 'small muted' }, i.why)), h('td', { 'data-l': 'Codice F24' }, '—'), h('td', { 'data-l': 'Quando' }, 'in dichiarazione'), h('td', { class: 'num', 'data-l': 'Importo' }, h('strong', { style: 'color:var(--good)' }, `credito ${money(i.creditAmount)}`)))
+      : null;
+    const rows = GROUPS.flatMap(([g, label]) => {
+      const list = p.items.filter((i) => (i.group || 'inv') === g);
+      if (!list.length) return [];
+      return [h('tr', { class: 'grp' }, h('td', { colspan: 4 }, label)), ...list.map((i) => line(i) || row(i))];
+    });
+    function row(i) { return h('tr', null,
+      h('td', { 'data-l': 'Cosa paghi' }, h('strong', null, i.title), h('div', { class: 'small muted' }, i.why), h('div', { class: 'small muted' }, `Dove: ${i.quadro}`), i.note ? h('div', { class: 'small muted' }, i.note) : null),
+      h('td', { 'data-l': 'Codice F24' }, h('span', { class: 'code' }, i.code), i.codeCheck ? h('div', { class: 'small muted' }, 'da confermare') : null),
+      h('td', { 'data-l': 'Scadenza' }, dmy(i.due), i.late ? h('div', null, h('span', { class: 'pill bad' }, 'scaduta')) : null),
+      h('td', { class: 'num', 'data-l': 'Importo' }, i.ravv
+        ? [h('div', { class: 'small muted' }, `imposta ${money(i.amount)}`), h('div', { class: 'small muted' }, `${i.ravv.magg ? 'maggiorazione' : 'sanzione e interessi'} ${money(i.ravv.sanction.plus(i.ravv.interest))}`), h('strong', null, money(i.payAmount))]
+        : h('strong', null, money(i.amount)))); }
+    const dateIn = h('input', { type: 'date', id: 'payDay', value: ui.payDay || todayIso(), onchange: (e) => { ui.payDay = e.target.value || null; render(); } });
+    return h('div', { class: `card hero paycard tone-${blk || asm ? 'warn' : 'good'}` },
+      h('span', { class: 'lbl' }, `Anno d'imposta ${Y} · dichiarazione ${Y + 1}`),
+      h('h2', { class: 'answer' }, answer),
+      h('div', { class: 'big' }, money(p.payNow)),
+      h('div', { class: 'row' },
+        blk ? h('button', { class: 'pill warn wrap', onclick: () => { ui.tab = 'checks'; render(); window.scrollTo(0, 0); } }, `Bozza: ${blk} ${blk === 1 ? 'punto' : 'punti'} da controllare, i numeri possono cambiare →`)
+          : asm ? h('button', { class: 'pill warn wrap', onclick: () => { ui.tab = 'checks'; render(); window.scrollTo(0, 0); } }, 'Pronto, con ipotesi da far vedere al commercialista →') : h('span', { class: 'pill good' }, 'Nessun punto da risolvere'),
+        state.example ? h('span', { class: 'example' }, 'DATI DI ESEMPIO') : null),
+      p.lateExtra.gt(0) ? h('p', null, `Di cui ${money(p.taxTotal)} di imposte del ${Y} e circa ${money(p.lateExtra)} in più perché la scadenza del ${dmy(dl.saldo)} è passata: si paga lo stesso, con il «ravvedimento operoso» (sanzione ridotta e interessi). È una stima al ${dmy(p.payDay)}: l'importo esatto lo calcola il commercialista.`)
+        : p.payNow.gt(0) ? h('p', null, `Sono le imposte del ${Y} sulle tue cripto${res.y.metals.tax.gt(0) ? ' e sull\'oro' : ''}.`) : null,
+      p.items.length ? h('div', { class: 'tbl-wrap' }, h('table', { class: 'paytbl' },
+        h('thead', null, h('tr', null, h('th', null, 'Cosa paghi'), h('th', null, 'Codice F24'), h('th', null, 'Scadenza'), h('th', { class: 'num' }, 'Importo'))),
+        h('tbody', null, rows),
+        h('tfoot', null,
+          h('tr', { class: 'total' }, h('td', { colspan: 3 }, 'Da pagare adesso'), h('td', { class: 'num' }, money(p.payNow))),
+          later.length ? h('tr', null, h('td', { colspan: 3 }, `Più avanti (entro il ${dmy(later[later.length - 1].due)})`), h('td', { class: 'num' }, money(laterSum))) : null)))
+        : h('p', { class: 'muted' }, p.hasRW ? `Non ci sono imposte da versare per il ${Y}. Il quadro RW va comunque compilato, perché nel ${Y} hai avuto cripto${res.rw.some((r) => r.cls === 'metal') ? ' o oro' : ''} (è solo una comunicazione).` : `Non risultano imposte né cripto detenute nel ${Y}.`),
+      p.items.length ? h('label', { class: 'field', style: 'max-width:320px' }, h('span', null, 'Quando pensi di pagare? (cambia la stima di sanzione e interessi)'), dateIn) : null,
+      p.items.length ? h('p', { class: 'small muted' }, `Si paga con il modello F24, sezione «Erario», indicando come anno di riferimento il ${Y}. Sanzione e interessi del ravvedimento hanno codici propri: li mette il commercialista. Ogni voce è spiegata nel PDF «Cosa pagare» da mandargli.`) : null);
+  }
+
+  function todoCard(res) {
+    const p = payPlan(res), Y = res.year, dl = p.deadlines, blk = res.groups.blockCount;
+    const oc = p.others && p.others.any ? p.others : null;
+    const quadri = [oc && oc.altri.gt(0) ? 'quadro RC (stipendio, dalla CU)' : null,
+      oc && (oc.occ.length || oc.dir.length) ? `quadro RL (${[oc.occ.length ? 'RL15 serate' : null, oc.dir.length ? 'RL25 diritti d\'autore' : null].filter(Boolean).join(', ')})` : null,
+      oc && (oc.sanTot.gt(0) || oc.altreDetr.gt(0) || oc.ded.gt(0)) ? 'quadro RP (spese sanitarie e altre detrazioni)' : null,
+      p.hasRT ? `quadro RT (${res.y.crypto.nDisposals || res.y.crypto.income.gt(0) ? 'sezione V-A per le cripto' : ''}${res.y.metals.nDisposals ? (res.y.crypto.nDisposals || res.y.crypto.income.gt(0) ? ', ' : '') + 'sezione II per l\'oro' : ''})` : null,
+      p.hasRW ? 'quadro RW (investimenti all\'estero e nei wallet, con l\'imposta sul valore)' : null].filter(Boolean);
+    const steps = [];
+    if (blk) steps.push(h('li', null, h('strong', null, `Sistema ${blk === 1 ? 'il punto' : `i ${blk} punti`} da controllare. `), 'Finché ci sono, i numeri sono una bozza.', ' ', h('button', { class: 'btn quiet', onclick: () => { ui.tab = 'checks'; render(); window.scrollTo(0, 0); } }, 'Vai ai controlli')));
+    steps.push(h('li', null, h('strong', null, 'Scarica i documenti e mandali al commercialista: '), 'il PDF con i calcoli (contiene anche «Cosa pagare»), i moduli fac-simile del quadro RW e gli export originali delle piattaforme.', ' ', h('button', { class: 'btn quiet', onclick: () => { ui.tab = 'export'; render(); window.scrollTo(0, 0); } }, 'Vai ai PDF')));
+    if (quadri.length) steps.push(h('li', null, h('strong', null, `Dichiarazione: modello Redditi PF ${Y + 1} entro il ${dmy(dl.filing)}. `), `Vanno compilati: ${quadri.join(', ')}. Il modo più semplice: la precompilata sul sito dell'Agenzia delle Entrate (con SPID), dove stipendio, CU e spese sanitarie ci sono già; aggiungi il resto con i numeri di questo programma. `, p.m730Passed ? `Il 730 si poteva presentare fino al ${dmy(dl.m730)}: adesso si usa il Redditi PF.` : 'Con il 730 si usano invece il quadro T e il quadro W.',
+      p.filingLate ? h('div', { class: 'small', style: 'color:var(--bad)' }, `La scadenza del ${dmy(dl.filing)} è passata: entro 90 giorni si può ancora presentare (dichiarazione tardiva, sanzione ridotta). Chiedi subito al commercialista.`) : null));
+    if (p.now.length) steps.push(h('li', null, h('strong', null, `Paga con l'F24${p.now.some((i) => i.late) ? ' appena puoi' : ` entro il ${dmy(dl.saldo)}`}: `), p.now.map((i) => `${money(i.payAmount)} (codice ${i.code})`).join(' + '), p.now.some((i) => i.late) ? '. Il commercialista aggiunge sanzione e interessi con i codici del ravvedimento.' : '.'));
+    const later = p.items.filter((i) => !p.now.includes(i) && !i.credit);
+    for (const i of later) steps.push(h('li', null, h('strong', null, `Entro il ${dmy(i.due)}: `), `${i.title}, ${money(i.amount)} (codice ${i.code}).`));
+    if (res.y.crypto.newLoss.gt(0)) steps.push(h('li', null, h('strong', null, 'Perdite: '), `nel ${Y} hai una minusvalenza di ${money(res.y.crypto.newLoss)}. Va scritta nel quadro RT: così potrai usarla per pagare meno tasse fino al ${Y + 4}.`));
+    steps.push(h('li', null, h('strong', null, 'Conserva tutto: '), `export delle piattaforme, PDF e ricevute F24, almeno fino al 31/12/${Y + 6} (tempo entro cui l'Agenzia può controllare).`));
+    return h('div', { class: 'card' }, h('h2', null, 'Cosa fare adesso, passo per passo'), h('ol', { class: 'steps' }, steps));
+  }
+
+  const GLOSSARY = [
+    ['Plusvalenza / minusvalenza', 'Il guadagno (o la perdita) quando vendi una cripto: incasso meno quello che l\'avevi pagata.'],
+    ['Imposta sostitutiva', 'La tassa sui guadagni delle cripto: 26% per il 2025 (33% dal 2026), separata dall\'IRPEF dello stipendio.'],
+    ['Proventi', 'Interessi, staking, cashback e premi in cripto: si pagano le tasse sul loro valore in euro del giorno in cui li ricevi.'],
+    ['Scambio tra cripto', 'Cambiare una cripto con un\'altra (es. BTC → ETH) per l\'Agenzia non è una vendita. Lo diventa quando passi a euro, a stablecoin (USDC, USDT…) o paghi con le cripto.'],
+    ['LIFO', 'Quando vendi, si considera venduto per primo l\'ultimo acquisto fatto (Last In, First Out): è il metodo indicato dall\'Agenzia.'],
+    ['Quadro RT', 'La parte della dichiarazione dove si scrivono guadagni e perdite: sezione V-A per le cripto, sezione II per l\'oro.'],
+    ['Quadro RW', 'La parte dove si comunica cosa avevi all\'estero o nei wallet (valore a inizio e fine anno, giorni). Si compila anche se non hai guadagnato niente.'],
+    ['IVCA (IC nel quadro RW)', 'Imposta sul valore delle cripto: 0,2% all\'anno del loro valore, anche senza vendere. Si paga con il codice 1727.'],
+    ['F24', 'Il modulo per pagare le tasse (dalla banca, dalle Poste o online). Ogni imposta ha il suo codice tributo.'],
+    ['Ravvedimento operoso', 'Il modo per pagare in ritardo spontaneamente: si aggiunge una sanzione ridotta (dal 3,125% se oltre 90 giorni) e gli interessi.'],
+    ['Acconto', 'Un anticipo sulle tasse dell\'anno dopo. Per l\'IVCA si calcola su quella dell\'anno prima.'],
+    ['CU (Certificazione Unica)', 'Il riepilogo annuale che ti mandano datore di lavoro, SIAE, etichette o locali che ti pagano con ritenuta: dentro ci sono i redditi e le tasse già trattenute.'],
+    ['Prestazione occasionale', 'Un lavoro saltuario senza partita IVA (es. una serata da DJ): si dichiara nel quadro RL, rigo RL15.'],
+    ['Diritti d\'autore', 'Quello che incassi come autore di brani (SIAE, editori, etichette): si paga solo sul 75% (60% sotto i 35 anni). Quadro RL, rigo RL25.'],
+    ['Ritenuta d\'acconto', 'La parte (di solito il 20%) che chi ti paga trattiene e versa al fisco per te: in dichiarazione si toglie dalle tasse dovute.'],
+    ['Detrazione / deduzione', 'La detrazione si toglie dalle tasse (es. 19% delle spese mediche); la deduzione si toglie dal reddito prima di calcolare le tasse (es. fondo pensione).'],
+  ];
+  function glossaryCard() {
+    return h('details', { class: 'card' }, h('summary', null, 'Parole difficili, spiegate in breve'),
+      h('dl', { class: 'gloss' }, GLOSSARY.map(([t, d]) => [h('dt', null, t), h('dd', null, d)])));
   }
 
   function panelResult() {
@@ -11753,18 +12624,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     } else if (ui.yearNote) {
       nodes.push(h('p', { class: 'small muted' }, `Ho scelto il ${res.year} perché è l'ultimo anno dei tuoi file. Puoi cambiarlo dal menu in alto.`));
     }
-    const rwTotal0 = res.rw.reduce((t, r) => t.plus(r.ivca), CT.ZERO);
-    nodes.push(h('div', { class: `card hero tone-${blk || g.assumptionCount ? 'warn' : 'good'}` },
-      h('span', { class: 'lbl' }, `Imposta sui guadagni da cripto e oro · anno ${res.year} (stima)`),
-      h('div', { class: 'big' }, money(y.totalTax)),
-      h('div', { class: 'row' },
-        blk ? h('button', { class: 'pill warn', onclick: () => { ui.tab = 'checks'; render(); } }, `Bozza: ${blk} da controllare →`)
-          : g.assumptionCount ? h('button', { class: 'pill warn', onclick: () => { ui.tab = 'checks'; render(); } }, 'Pronto, con ipotesi →') : h('span', { class: 'pill good' }, 'Nessun punto da risolvere'),
-        state.example ? h('span', { class: 'example' }, 'DATI DI ESEMPIO') : null),
-      h('p', { class: 'muted small' }, `Sono le imposte sui guadagni: cripto ${money(y.crypto.tax)} · oro e metalli ${money(y.metals.tax)}.`),
-      rwTotal0.gt(0) ? h('p', { class: 'muted small' }, `Poi c'è un'altra imposta, separata: lo 0,2% all'anno sul valore delle cripto che possiedi, anche se non hai guadagnato niente (si chiama IVCA). Per te circa ${money(rwTotal0)}. In tutto, con questa, circa ${money(y.totalTax.plus(rwTotal0))}.`) : null));
-    nodes.push(sourcesCard(res));
-    nodes.push(nextBar('Avanti: scarica i PDF', 'export', true));
+    nodes.push(payCard(res));
     const more = [];
     more.push(h('div', { class: 'grid2' }, basketCard(y.crypto), basketCard(y.metals)));
 
@@ -11788,14 +12648,63 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     more.push(h('details', { class: 'card' }, h('summary', null, 'Come sono stati fatti i calcoli'),
       h('ul', { class: 'clean muted small' },
         h('li', null, 'Costo di acquisto: metodo LIFO (si vendono prima gli ultimi acquistati), un unico conto virtuale per ogni asset su tutte le piattaforme.'),
-        h('li', null, 'Gli scambi tra crypto, il passaggio a stablecoin e i pagamenti in crypto sono vendite imponibili al valore del giorno (dal 2023). Prima del 2023 non lo erano e il costo si trasferisce.'),
-        h('li', null, 'Staking, interessi e premi sono tassati al valore del giorno in cui li ricevi e non si compensano con le perdite sulle vendite (scelta prudenziale).'),
+        state.settings.swapRule === 'all'
+          ? h('li', null, 'Hai scelto di tassare anche gli scambi tra crypto: ogni scambio, il passaggio a stablecoin e i pagamenti in crypto sono vendite imponibili al valore del giorno (dal 2023).')
+          : h('li', null, 'Lo scambio tra due crypto (es. BTC → ETH) non è una vendita: il costo passa alla crypto ricevuta (Circolare 30/E del 2023). Sono vendite imponibili al valore del giorno il passaggio a euro, a stablecoin (USDC, USDT…), i pagamenti e le commissioni pagate in crypto (dal 2023).'),
+        h('li', null, 'Staking, interessi e premi sono tassati per intero al valore del giorno in cui li ricevi e non si compensano con le perdite sulle vendite. Un cashback stornato riduce i premi.'),
         h('li', null, 'Le perdite sulle cripto compensano solo guadagni su cripto; l\'oro ha un conteggio separato.'),
         h('li', null, 'Le date contano secondo l\'orario italiano. Gli importi del quadro sono arrotondati all\'euro.'),
         h('li', null, `Regole ${res.year}: ${y.rule.status}. Aliquote e franchigie provengono da fonti secondarie: falle confermare da un professionista prima di firmare la dichiarazione.`))));
-    nodes.push(h('details', { class: 'card' }, h('summary', null, 'Dettagli per il commercialista (quadri RT e RW, anni a confronto, come sono fatti i calcoli)'), h('div', { class: 'stack', style: 'padding:8px 0;gap:14px' }, more)));
+    // ---- sezione unica: investimenti
+    nodes.push(sectionTitle('Investimenti', 'Cripto, oro, Bitpanda, azioni ed ETF, altri broker e conti all\'estero: quadri RT, RM e RW.'));
+    nodes.push(sourcesCard(res));
+    nodes.push(otherInvestmentsCard(res));
+    nodes.push(h('details', { class: 'card' }, h('summary', null, 'Dettagli per il commercialista: quadro RT, quadro RW, anni a confronto, come sono fatti i calcoli'), h('div', { class: 'stack', style: 'padding:8px 0;gap:14px' }, more)));
     nodes.push(h('div', { class: 'row' }, h('button', { class: 'btn quiet', onclick: () => { ui.tab = 'detail'; render(); window.scrollTo(0, 0); } }, 'Vedi tutte le operazioni')));
+    // ---- altri redditi
+    nodes.push(sectionTitle('Altri redditi e detrazioni', 'Stipendio, serate da DJ, royalties e diritti SIAE, spese sanitarie: quadri RC, RL, RP.'));
+    nodes.push(othersSummaryCard(res));
+    // ---- cosa fare
+    nodes.push(sectionTitle('Cosa fare adesso', null));
+    nodes.push(todoCard(res));
+    nodes.push(nextBar('Avanti: scarica i PDF per il commercialista', 'export', true));
+    nodes.push(glossaryCard());
     return h('div', { class: 'stack' }, nodes);
+  }
+
+  const sectionTitle = (t, sub) => h('div', { class: 'sect' }, h('h2', null, t), sub ? h('p', { class: 'muted small' }, sub) : null);
+
+  /** Investimenti che il programma non calcola (azioni, ETF, conti): cosa c'e' nei file e dove si dichiara. */
+  function otherInvestmentsCard(res) {
+    const oos = [...new Set(res.groups.outOfScope.map((i) => i.data && i.data.asset).filter(Boolean))];
+    return h('div', { class: `card${oos.length ? ' tone-warn' : ''}` },
+      h('h2', null, 'Azioni, ETF, conti e altri broker'),
+      oos.length ? h('p', null, h('strong', null, 'Nei tuoi file ci sono anche: '), oos.slice(0, 12).join(', '), oos.length > 12 ? '…' : '', '. Questi il programma non li calcola (sono azioni, ETF o valute): vanno dichiarati a parte, come spiegato qui sotto.')
+        : h('p', { class: 'muted' }, 'Cripto e oro sono già calcolati qui sopra. Se hai anche azioni, ETF o un conto presso broker o banche estere (per esempio Bitpanda Stocks, Trade Republic, Degiro, Revolut, Interactive Brokers), ecco dove si dichiarano.'),
+      h('ul', { class: 'clean', style: 'display:grid;gap:8px' },
+        h('li', null, h('strong', null, 'Broker italiano in «regime amministrato» '), '(Fineco, Directa, banche italiane…): non devi dichiarare niente, le tasse le paga la banca per te.'),
+        h('li', null, h('strong', null, 'Guadagni e perdite vendendo azioni, obbligazioni, certificati o derivati '), 'presso un broker estero: quadro RT, sezione II (26%, codice F24 1100). Le perdite si riportano per 4 anni, ma non compensano le cripto.'),
+        h('li', null, h('strong', null, 'ETF e fondi esteri: '), 'il guadagno quando vendi è un reddito di capitale (quadro RM, 26%), la perdita invece va nel quadro RT come minusvalenza. Per gli ETF serve sapere se sono «armonizzati» (quasi tutti gli ETF europei UCITS lo sono).'),
+        h('li', null, h('strong', null, 'Dividendi e interessi esteri: '), 'quadro RM (26% sul netto delle ritenute estere convenzionali); chiedi al commercialista per il recupero delle ritenute estere.'),
+        h('li', null, h('strong', null, 'Monitoraggio e IVAFE: '), 'conti, azioni ed ETF all\'estero vanno nel quadro RW, con l\'IVAFE dello 0,2% sul valore dei titoli e 34,20 € per ogni conto con giacenza media sopra 5.000 €. L\'oro fisico (es. Bitpanda Metals) va nel quadro RW senza IVAFE.'),
+        h('li', null, h('strong', null, 'Bitpanda: '), 'scarica dall\'app il «Report fiscale» o l\'export delle transazioni: cripto e metalli li legge questo programma; per azioni ed ETF (Bitpanda Stocks, in passato contratti derivati sui titoli) fai confermare il trattamento al commercialista.')),
+      h('p', { class: 'small muted' }, 'Le regole per azioni ed ETF sono quelle generali dei redditi finanziari: il programma non fa questi calcoli. Usa i report annuali dei broker.'));
+  }
+
+  function othersSummaryCard(res) {
+    const o = state.others;
+    const c = o ? CT.others.compute(o) : null;
+    if (!c || !c.any) return h('div', { class: 'card' }, h('p', null, 'Non hai inserito stipendio, serate da DJ, diritti d\'autore o spese sanitarie.'),
+      h('button', { class: 'btn primary', onclick: () => { ui.tab = 'others'; render(); window.scrollTo(0, 0); } }, 'Inseriscili adesso'));
+    return h('div', { class: 'card' },
+      kvTable([
+        c.altri.gt(0) ? { label: 'Stipendio o pensione (quadro RC)', value: money(c.altri) } : null,
+        c.occ.length ? { label: 'Serate e lavori occasionali, netto (quadro RL, rigo RL15)', value: money(c.occNet) } : null,
+        c.dir.length ? { label: `Diritti d'autore e royalties, netto della deduzione del ${c.dedRate.times(100).toFixed(0)}% (quadro RL, rigo RL25)`, value: money(c.dirNet) } : null,
+        c.sanTot.gt(0) ? { label: 'Spese sanitarie (quadro RP, rigo RP1): detrazione 19%', value: money(c.detrSan) } : null,
+        c.irpefDue.gt(0) ? { label: 'IRPEF da versare (stima)', value: money(c.irpefDue), cls: 'total' } : { label: 'IRPEF a credito (stima)', value: money(c.irpefCredit), cls: 'total' },
+      ].filter(Boolean)),
+      h('div', { class: 'row' }, h('button', { class: 'btn quiet', onclick: () => { ui.tab = 'others'; render(); window.scrollTo(0, 0); } }, 'Modifica o vedi dove scriverli')));
   }
 
   // ------------------------------------------------------------------ pannello: Dettaglio
@@ -11954,6 +12863,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       h('div', null, h('strong', null, title), h('div', { class: 'muted small' }, desc)),
       h('div', { class: 'row' }, h('button', { class: 'btn primary', onclick: () => saveFile(name, build(), mime) }, 'Salva'), h('button', { class: 'btn', onclick: () => copyText(build().replace(/^﻿/, ''), title) }, 'Copia')));
     return h('div', { class: 'stack' },
+      bundleCard(res),
       fxCard(res),
       pdfCard(res),
       h('div', { class: 'card' }, h('h2', null, `Altri formati · ${y}`),
@@ -12020,8 +12930,55 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       const k = field('Stato', { id: `cu_s_${a}`, value: c.country, placeholder: 'es. Malta', oninput: (e) => { c.country = e.target.value; touch(); }, onchange: () => { if (onChange) onChange(); } });
       return h('div', { class: 'fields' }, n.el, k.el);
     });
-    const adv = field('Acconti già versati per l\'imposta sulle cripto (€)', { id: 'tp_adv', value: tp.advance || '', inputmode: 'decimal', placeholder: 'es. 0 oppure 12 (lascia vuoto se non lo sai)', oninput: (e) => { tp.advance = e.target.value; touch(); }, onchange: () => { if (onChange) onChange(); } });
+    const adv = field('Acconti IVCA già versati per quest\'anno (€) · se non ne hai versati scrivi 0', { id: 'tp_adv', value: tp.advance || '', inputmode: 'decimal', placeholder: 'es. 0 oppure 12 (lascia vuoto se non lo sai)', oninput: (e) => { tp.advance = e.target.value; touch(); }, onchange: () => { if (onChange) onChange(); } });
     return { name, cf, adv, accounts, cust };
+  }
+
+  // ------------------------------------------------------------------ tutto per il commercialista, in un unico .zip
+  async function downloadBundle(res) {
+    const out = await makePdfs();
+    if (!out) return;
+    try {
+      ui.bundleBusy = true; render();
+      const Y = res.year, enc = (t) => new TextEncoder().encode(t);
+      const fx = CT.facsimile.build(res, state);
+      const files = [{ name: `${Y}-00-LEGGIMI-cosa-pagare-e-cosa-dichiarare.txt`, data: enc(R.handoffText(res, state, payPlan(res), fx.available ? fx.rows : null)) },
+        { name: out.full.name, data: out.full.data }];
+      if (fx.available) {
+        files.push({ name: `${Y}-Quadro-RW-facsimile.pdf`, data: new Uint8Array(CT.facsimile.toPdf(fx.rw, 'Quadro RW · Redditi PF 2026')) });
+        files.push({ name: `${Y}-Quadro-W-facsimile-solo-per-730.pdf`, data: new Uint8Array(CT.facsimile.toPdf(fx.w, 'Quadro W · Modello 730/2026')) });
+      }
+      for (const [n, head, rows] of [['cessioni', R.DISPOSAL_HEAD, R.disposalsRows(res)], ['lotti', R.LOTS_HEAD, R.lotsRows(res)], ['proventi', R.INCOME_HEAD, R.incomesRows(res)], ['rw', R.RW_HEAD, R.rwRows(res)], ['saldi-31-12', R.BAL_HEAD, R.balancesRows(res)]]) {
+        files.push({ name: `tabelle-excel/${Y}-${n}.csv`, data: enc(R.csv(head, rows)) });
+      }
+      const used = new Set();
+      for (const f of state.files) {
+        let name = String(f.name || 'file').replace(/[\\/:*?"<>|]/g, '_');
+        if (String(f.type).startsWith('api_')) name = name.replace(/\.json$/i, '') + '.json';
+        while (used.has(name)) name = '1-' + name;
+        used.add(name);
+        files.push({ name: `export-originali/${name}`, data: enc(f.text) });
+      }
+      const zip = CT.zipStore(files);
+      await saveFile(`${Y}-dichiarazione-per-il-commercialista.zip`, zip, 'application/zip');
+      ui.bundleDone = true;
+    } catch (e) { console.error(e); toast('Non riesco a preparare il file: ' + e.message); }
+    finally { ui.bundleBusy = false; render(); }
+  }
+  function bundleCard(res) {
+    const blk = res.groups.blockCount, busy = ui.bundleBusy || ui.pdfBusy;
+    return h('div', { class: `card tone-${blk ? 'warn' : 'good'}` },
+      h('h2', null, 'Tutto per il commercialista, in un solo file'),
+      h('p', null, 'Premi il pulsante e manda il file .zip al commercialista (per email o WhatsApp). Dentro c\'è tutto quello che gli serve:'),
+      h('ul', { class: 'clean', style: 'display:grid;gap:4px;margin:6px 0 10px' },
+        h('li', null, '📄 LEGGIMI: cosa pagare (codici F24, scadenze, ravvedimento) e i numeri da scrivere nei quadri RT e RW'),
+        h('li', null, '📘 Il PDF con tutti i calcoli (vendite, costi, premi, saldi, fonti e scelte fatte)'),
+        h('li', null, '📝 Il modulo del quadro RW già compilato (in rosso i campi da completare)'),
+        h('li', null, '💼 Stipendio, musica e spese della scheda «Altri redditi», con i righi e la stima dell\'IRPEF (nel LEGGIMI e nel PDF)'),
+        h('li', null, '📊 Le tabelle per Excel e i file originali delle piattaforme che hai caricato')),
+      blk ? h('p', { class: 'pill warn block' }, `Attenzione: ci sono ancora ${blk} ${blk === 1 ? 'punto' : 'punti'} da controllare. Puoi mandarlo lo stesso, ma è una bozza: meglio sistemarli prima (scheda Controlli).`) : null,
+      h('div', { class: 'row' }, h('button', { class: 'btn primary', style: 'min-height:48px;font-size:16px', disabled: busy, onclick: () => downloadBundle(res) }, busy ? 'Sto preparando il file…' : 'Scarica tutto per il commercialista (.zip)')),
+      ui.bundleDone ? h('p', { class: 'small', style: 'margin-top:8px' }, 'Fatto: il file è nella cartella Download. Prima di mandarlo, se puoi, completa codice fiscale e acconti qui sotto (campi in rosso).') : null);
   }
 
   // ------------------------------------------------------------------ moduli fac-simile (anteprima e download)
@@ -12031,7 +12988,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     const blk = res.groups.blockCount, asm = res.groups.assumptionCount;
     const forms = [
       { key: 'rw', title: `Quadro RW · Redditi PF 2026`, sub: 'Monitoraggio degli investimenti all\'estero e imposta sulle cripto-attività (IC)', pages: fx.rw, file: `${res.year}-Quadro-RW-facsimile.pdf` },
-      { key: 'w', title: `Quadro W · Modello 730/2026`, sub: 'Investimenti e attività estere (stesso contenuto, per chi presenta il 730)', pages: fx.w, file: `${res.year}-Quadro-W-facsimile.pdf` },
+      { key: 'w', title: `Quadro W · Modello 730/2026`, sub: `Stesso contenuto, solo per chi usa il 730 (scadeva il ${dmy(CT.payments.deadlines(res.year).m730)}: dopo quella data si usa il Redditi PF, cioè il quadro RW qui sopra)`, pages: fx.w, file: `${res.year}-Quadro-W-facsimile.pdf` },
     ];
     const download = async (f) => {
       try {
@@ -12065,8 +13022,9 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       forms.map(item),
       ui.fxDone ? h('p', { class: 'small', style: 'margin-top:8px' }, `Fatto: «${ui.fxDone}» è nella cartella Download del tuo computer (o dove salvi i file dal telefono). Mandalo al tuo commercialista.`) : null,
       fx.rows.length ? h('p', { class: 'small muted' }, `Una riga per ogni piattaforma: ${fx.rows.length} ${fx.rows.length === 1 ? 'riga' : 'righe'} in tutto (cinque righe per modulo). Dentro ogni riga ci sono sommate tutte le cripto di quella piattaforma.`) : null,
-      h('p', { class: 'small muted' }, 'Tutte le caselle sono compilate dai calcoli del programma. Fa eccezione «Acconti versati»: dai file non si può sapere se hai già pagato qualcosa, quindi resta da compilare (puoi scriverlo tu qui sotto, in «Facoltativo»). Il codice 21 indica le cripto-attività; per l\'oro il codice va verificato.'),
-      h('details', null, h('summary', null, 'Facoltativo: codice fiscale e società che custodisce le cripto'),
+      h('div', { class: 'redkey' }, h('strong', null, 'Cosa vuol dire il rosso. '), 'Le scritte in nero sono calcolate dal programma. Quelle in ',
+        h('span', { class: 'redtxt' }, 'rosso'), ' sono i campi da compilare o controllare: il codice fiscale (se non l\'hai scritto qui sotto), gli «Acconti versati» (dai file non si può sapere se hai già pagato qualcosa: se non hai pagato acconti scrivi 0), le eccedenze dell\'anno prima (solo se ne avevi), il codice dell\'oro e i valori a cui manca un prezzo. Il codice 21 indica le cripto-attività.'),
+      h('details', { open: !(state.taxpayer && state.taxpayer.cf) || null }, h('summary', null, 'Completa i campi in rosso: codice fiscale, acconti già versati, società che custodisce le cripto'),
         h('div', { class: 'stack', style: 'padding:8px 0;gap:12px' },
           h('p', { class: 'small muted' }, 'Il codice fiscale viene scritto negli appositi riquadri del modulo. La società che custodisce le cripto compare accanto alla riga, per aiutare il commercialista.'),
           tf.cf.el, tf.adv.el, tf.accounts.length ? [h('h3', null, 'Dove sono custodite'), tf.cust] : null)));
@@ -12095,15 +13053,23 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
   }
 
   function noData() {
-    return h('div', { class: 'stack' }, h('div', { class: 'card empty' }, h('h2', null, 'Prima carica i tuoi file'), h('p', { class: 'muted' }, ui.error ? `Errore: ${ui.error.message}` : 'Appena aggiungi i file di una piattaforma ti dico quanto devi pagare e preparo i PDF per il commercialista.'),
+    return h('div', { class: 'stack' }, h('div', { class: 'card empty' }, h('h2', null, 'Prima inserisci i tuoi dati'), h('p', { class: 'muted' }, ui.error ? `Errore: ${ui.error.message}` : 'Carica i file delle piattaforme di investimento (cripto, oro, Bitpanda) oppure inserisci stipendio, musica e spese nella scheda «Altri redditi»: poi ti dico quanto devi pagare e preparo i PDF per il commercialista.'),
       h('button', { class: 'btn primary', onclick: goPlatforms }, 'Scegli i file')));
   }
 
   // ------------------------------------------------------------------ cornice
   // quattro passi; "Dettaglio" e "Prezzi" restano raggiungibili da un link e si illuminano sotto il passo a cui appartengono
-  const TABS = [['files', 'File'], ['checks', 'Controlli'], ['result', 'Risultato'], ['export', 'PDF']];
+  const TABS = [['files', 'Investimenti'], ['checks', 'Controlli'], ['others', 'Altri redditi'], ['result', 'Risultato'], ['export', 'PDF']];
   const PARENT = { detail: 'result', prices: 'checks' };
+  let rendering = false, renderAgain = false;
   function render() {
+    // un ridisegno chiesto mentre ne e' in corso un altro (es. evento "change" quando un campo sparisce) si fa subito dopo
+    if (rendering) { renderAgain = true; return; }
+    rendering = true;
+    try { renderNow(); } finally { rendering = false; }
+    if (renderAgain) { renderAgain = false; setTimeout(render, 0); }
+  }
+  function renderNow() {
     const root = document.getElementById('app');
     const res = ui.res;
     const blk = res ? res.groups.blockCount : 0;
@@ -12117,11 +13083,12 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
     const nav = h('nav', { class: 'nav', role: 'tablist' }, TABS.map(([k, t], i) => h('button', { class: 'tab', role: 'tab', 'aria-selected': (PARENT[ui.tab] || ui.tab) === k ? 'true' : 'false', onclick: () => { ui.tab = k; if (k === 'files') ui.platform = null; render(); window.scrollTo(0, 0); } },
       h('span', { class: 'n' }, i + 1), t,
       k === 'checks' && blk ? h('span', { class: 'badge' }, blk) : null)));
-    const panel = ui.tab !== 'files' && !hasData ? noData() : { files: () => (ui.platform ? panelPlatform(ui.platform) : panelPlatforms()), checks: panelChecks, result: panelResult, detail: panelDetail, prices: panelPrices, export: panelExport }[ui.tab]();
+    const hasOthers = state.others && CT.others.compute(state.others).any;
+    const panel = ui.tab !== 'files' && ui.tab !== 'others' && !hasData && !hasOthers ? noData() : { files: () => (ui.platform ? panelPlatform(ui.platform) : panelPlatforms()), checks: panelChecks, others: panelOthers, result: panelResult, detail: panelDetail, prices: panelPrices, export: panelExport }[ui.tab]();
     const scrollY = window.scrollY;
     root.replaceChildren(...[
       h('header', { class: 'top' }, h('div', { class: 'wrap' },
-        h('div', { class: 'top-in' }, h('div', null, h('div', { class: 'brand-name' }, 'Dichiarazione Crypto'), h('div', { class: 'brand-sub' }, 'Cripto e oro · redditi diversi · quadri RT e RW')),
+        h('div', { class: 'top-in' }, h('div', null, h('div', { class: 'brand-name' }, 'Dichiarazione Redditi'), h('div', { class: 'brand-sub' }, 'Investimenti, stipendio, musica e detrazioni · Redditi PF')),
           h('div', { class: 'top-ctl' }, h('label', { class: 'lbl', for: 'yearSel' }, 'Anno d\'imposta'), yearSel, status)), nav)),
       state.example ? h('div', { class: 'wrap' }, h('div', { class: 'card tone-warn row between', style: 'margin-top:12px' },
         h('span', null, h('strong', null, 'ESEMPIO con dati inventati. '), 'Non sono i tuoi numeri.'),

@@ -59,7 +59,7 @@
       if (!sym || !/^\d{4}-\d{2}-\d{2}$/.test(day || '') || v === '' || v === null || !Number.isFinite(n) || n <= 0) continue;   // valori non validi: come se non ci fossero
       pb.setManual(sym, day, String(v).replace(',', '.'));
     }
-    const engine = new CT.Engine({ rebase2025: !!settings.rebase2025, resolutions, prices: pb }).run(events);
+    const engine = new CT.Engine({ rebase2025: !!settings.rebase2025, swapRule: settings.swapRule === 'all' ? 'all' : 'circ30', resolutions, prices: pb }).run(events);
     if (duplicates) engine.issue('info', 'duplicates', '', `${duplicates} ${duplicates === 1 ? 'riga presente' : 'righe presenti'} in più file (periodi sovrapposti) ${duplicates === 1 ? 'è stata contata' : 'sono state contate'} una sola volta.`);
     apiIssues(engine, parsed, resolutions);
     for (const g of near.issues) engine.issue('block', 'possible_duplicate', g.key, g.message, g.data);
@@ -80,7 +80,7 @@
    * (a parita' il primo) e si scartano le altre. 'ack' = sono operazioni diverse.
    */
   function nearDuplicates(events, fileOf, resolutions) {
-    const WATCH = new Set([Kind.BUY, Kind.SELL, Kind.SWAP, Kind.INCOME, Kind.SPEND, Kind.TRANSFER_IN, Kind.TRANSFER_OUT]);
+    const WATCH = new Set([Kind.BUY, Kind.SELL, Kind.SWAP, Kind.INCOME, Kind.INCOME_REVERSAL, Kind.SPEND, Kind.TRANSFER_IN, Kind.TRANSFER_OUT]);
     const order = new Map(); [...new Set([...fileOf.values()])].forEach((f, i) => order.set(f.id, i));
     const buckets = new Map();
     for (const e of events) {
@@ -107,7 +107,7 @@
     }
     const skip = new Set(), issues = [];
     const dmy = (ts) => CT.taxDate(ts).split('-').reverse().join('/');
-    const KIND = { buy: 'acquisto', sell: 'vendita', swap: 'scambio', income: 'provento', spend: 'spesa', transfer_in: 'ingresso', transfer_out: 'uscita' };
+    const KIND = { buy: 'acquisto', sell: 'vendita', swap: 'scambio', income: 'provento', income_reversal: 'storno di un provento', spend: 'spesa', transfer_in: 'ingresso', transfer_out: 'uscita' };
     for (const g of groups.values()) {
       const res = resolutions[g.key] && resolutions[g.key].action;
       if (res === 'dup_skip') {

@@ -20,8 +20,8 @@
     right: { 1: 163.5, 3: 249.0, 5: 336.0, 6: 377.26, 7: 454.75, 8: 550.0, 10: 240.0, 33: 473.5, 34: 549.25 },
     labelBase1: [210.5, 319.2, 415.1, 511.0, 607.0], labelBase2: [225.5, 334.2, 430.1, 526.0, 622.0], labelBase3: [240.5, 349.2, 445.1, 541.0, 637.0], labelX: 7.5,
     cf: { x0: 250.9, step: 14.4, base: 68.6, size: 11 }, mod: { right: 565.0, base: 115.9, size: 18.75 },
-    tot: { base: 764.2, right: { 1: 182.5, 4: 397.9, 5: 469.75, 6: 541.6 }, ph: { x: 371.25, y1: 759.4, y2: 765.4 } },
-    banner: { x: 40, y: 26 },
+    tot: { base: 764.2, right: { 1: 182.5, 4: 397.9, 5: 469.75, 6: 541.6 }, ph: { x: 371.25, y1: 759.4, y2: 765.4 }, exc: [232.0, 304.0] },
+    banner: { x: 40, y: 26 }, legend: { x: 40, y: 800 }, cfMid: 366.1,
   };
   const W = {
     tpl: 'w', rowsPerPage: 5, size: 7.5, labelSize: 9,
@@ -29,8 +29,8 @@
     right: { 1: 90.0, 3: 198.75, 5: 311.26, 6: 371.25, 7: 456.25, 8: 550.75, 10: 187.5 },
     labelCenter: [225.3, 314.5, 386.5, 458.5, 530.5], labelX1: 10.3, labelX2: 21.5, labelX3: 32.7,
     cf: { x0: 345.1, step: 9.775, base: 24.6, size: 9 }, mod: { right: 565.0, base: 25.8, size: 12.75 },
-    ph: { x: 322.2, y1: 699.4, y2: 706.0 }, adv: { right: 359.8, base: 706.0 },
-    banner: { x: 40, y: 10 },
+    ph: { x: 322.2, y1: 699.4, y2: 706.0 }, adv: { right: 359.8, base: 706.0 }, exc: [95.6, 211.3],
+    banner: { x: 40, y: 10 }, legend: { x: 40, y: 740 }, cfMid: 423.3,
   };
 
   // ---------------------------------------------------------------- dati
@@ -83,22 +83,31 @@
   // ---------------------------------------------------------------- costruzione delle pagine
   const txt = (s, x, y, size, o) => Object.assign({ s: latin(s), x, y, size }, o || {});
 
+  const RED = '#c00000';
   function header(ops, G, n, cf, draft) {
     const code = String(cf || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 16);
     for (let i = 0; i < code.length; i++) ops.push(txt(code[i], G.cf.x0 + G.cf.step * (i + 0.5), G.cf.base, G.cf.size, { align: 'center' }));
+    // codice fiscale non indicato (o incompleto): campo da compilare, in rosso
+    if (code.length !== 16) ops.push(txt(code.length ? 'CODICE FISCALE INCOMPLETO' : 'INSERIRE IL CODICE FISCALE', G.cfMid, G.cf.base - 1, G.cf.size * 0.62, { align: 'center', color: RED, bold: true }));
     ops.push(txt(String(n), G.mod.right, G.mod.base, G.mod.size, { align: 'right' }));
     if (draft) ops.push(txt('BOZZA: ci sono ancora punti da controllare nel programma. Non usare questi dati per la dichiarazione.', G.banner.x, G.banner.y, 8, { color: '#b00020', bold: true }));
+    ops.push(txt('IN ROSSO: campi da compilare o da verificare prima di ricopiare il modulo nella dichiarazione. Il resto è calcolato dal programma.', G.legend.x, G.legend.y, 7.5, { color: RED, bold: true }));
   }
+  /** Scritta rossa centrata dentro una casella (due righe se serve). */
+  const redIn = (ops, x, y1, y2, a, b) => { ops.push(txt(a, x, b ? y1 : (y1 + y2) / 2 + 1, 5.6, { align: 'center', color: RED, bold: true })); if (b) ops.push(txt(b, x, y2, 5.6, { align: 'center', color: RED, bold: true })); };
 
   function rwPage(list, n, first, totals, cf, draft, adv) {
     const ops = []; header(ops, RW, n, cf, draft);
     const put = (col, s, base) => ops.push(txt(s, RW.right[col], base, RW.size, { align: 'right' }));
+    const redR = (col, s, base) => ops.push(txt(s, RW.right[col] - 14, base, 5.6, { align: 'right', color: RED, bold: true }));
     list.forEach((r, i) => {
-      if (r.cls === 'crypto') put(3, '21', RW.baseA[i]);
+      if (r.cls === 'crypto') put(3, '21', RW.baseA[i]); else ops.push(txt('VERIFICA', RW.right[3] - 17, RW.baseA[i], 6, { align: 'center', color: RED, bold: true }));
       put(1, '1', RW.baseA[i]); put(5, '100,00', RW.baseA[i]); put(6, '1', RW.baseA[i]);
       if (!r.incomplete) { put(7, eur(r.vi), RW.baseA[i]); put(8, eur(r.vf), RW.baseA[i]); }
+      else { redR(7, 'DA COMPLETARE (manca un prezzo)', RW.baseA[i]); redR(8, 'DA COMPLETARE (manca un prezzo)', RW.baseA[i]); }
       put(10, String(r.days), RW.baseB[i]);
       if (r.cls === 'crypto' && !r.incomplete) { put(33, eur(r.ic), RW.baseD[i]); put(34, sep(r.icDue.toFixed(0)), RW.baseD[i]); }
+      else if (r.cls === 'crypto') { redR(33, 'DA COMPLETARE', RW.baseD[i]); redR(34, 'DA COMPLETARE', RW.baseD[i]); }
       const grey = { color: '#7a7a7a', size: RW.labelSize }, red = { color: '#b00020', size: RW.labelSize };
       ops.push(txt(cut(r.label1, 16), RW.labelX, RW.labelBase1[i], RW.labelSize, grey));
       if (r.label2) ops.push(txt(cut(r.label2, 20), RW.labelX, RW.labelBase2[i], RW.labelSize, grey));
@@ -107,11 +116,12 @@
     if (first) {
       const T = RW.tot;
       ops.push(txt(sep(totals.toFixed(0)), T.right[1], T.base, RW.size, { align: 'right' }));
+      // eccedenze della dichiarazione precedente o compensate in F24: solo se ci sono, il programma non le conosce
+      redIn(ops, T.exc[0], T.ph.y1, T.ph.y2, 'SOLO SE C\'È CREDITO', 'DELL\'ANNO PRIMA'); redIn(ops, T.exc[1], T.ph.y1, T.ph.y2, 'SOLO SE COMPENSATA', 'CON L\'F24');
       if (adv === null) {
         // gli acconti versati non si possono ricavare dai file: casella lasciata al commercialista (oppure scritta dall'utente)
         ops.push(txt(sep(totals.toFixed(0)), T.right[5], T.base, RW.size, { align: 'right' }));
-        const red = { align: 'center', color: '#c00000', bold: true };
-        ops.push(txt('INSERIRE ACCONTI', T.ph.x, T.ph.y1, 5.6, red), txt('VERSATI', T.ph.x, T.ph.y2, 5.6, red));
+        redIn(ops, T.ph.x, T.ph.y1, T.ph.y2, 'INSERIRE ACCONTI', 'VERSATI (O 0)');
       } else {
         const due = totals.minus(adv);
         ops.push(txt(sep(adv.toFixed(0)), T.right[4], T.base, RW.size, { align: 'right' }));
@@ -125,10 +135,12 @@
   function wPage(list, n, first, cf, draft, adv) {
     const ops = []; header(ops, W, n, cf, draft);
     const put = (col, s, base) => ops.push(txt(s, W.right[col], base, W.size, { align: 'right' }));
+    const redR = (col, s, base) => ops.push(txt(s, W.right[col] - 14, base, 5.6, { align: 'right', color: RED, bold: true }));
     list.forEach((r, i) => {
-      if (r.cls === 'crypto') put(3, '21', W.baseA[i]);
+      if (r.cls === 'crypto') put(3, '21', W.baseA[i]); else ops.push(txt('VERIFICA', W.right[3] - 20, W.baseA[i], 6, { align: 'center', color: RED, bold: true }));
       put(1, '1', W.baseA[i]); put(5, '100,00', W.baseA[i]); put(6, '1', W.baseA[i]);
       if (!r.incomplete) { put(7, eur(r.vi), W.baseA[i]); put(8, eur(r.vf), W.baseA[i]); }
+      else { redR(7, 'DA COMPLETARE (manca un prezzo)', W.baseA[i]); redR(8, 'DA COMPLETARE (manca un prezzo)', W.baseA[i]); }
       put(10, String(r.days), W.baseB[i]);
       const grey = { color: '#7a7a7a', size: W.labelSize, rot: 90, align: 'center' }, red = Object.assign({}, grey, { color: '#b00020' });
       const lim = i === 0 ? 14 : 11;
@@ -137,10 +149,9 @@
       if (r.label3) ops.push(txt(cut(r.label3, lim), W.labelX3, W.labelCenter[i], W.labelSize, red));
     });
     if (first) {
-      if (adv === null) {
-        const red = { align: 'center', color: '#c00000', bold: true };
-        ops.push(txt('INSERIRE ACCONTI', W.ph.x, W.ph.y1, 5.6, red), txt('VERSATI', W.ph.x, W.ph.y2, 5.6, red));
-      } else ops.push(txt(sep(adv.toFixed(0)), W.adv.right, W.adv.base, W.size, { align: 'right' }));
+      redIn(ops, W.exc[0], W.ph.y1, W.ph.y2, 'SOLO SE C\'È CREDITO', 'DELL\'ANNO PRIMA'); redIn(ops, W.exc[1], W.ph.y1, W.ph.y2, 'SOLO SE COMPENSATA', 'CON L\'F24');
+      if (adv === null) redIn(ops, W.ph.x, W.ph.y1, W.ph.y2, 'INSERIRE ACCONTI', 'VERSATI (O 0)');
+      else ops.push(txt(sep(adv.toFixed(0)), W.adv.right, W.adv.base, W.size, { align: 'right' }));
     }
     return { tpl: W.tpl, ops };
   }

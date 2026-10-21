@@ -144,7 +144,28 @@ test('acconti versati: vuoti = segnaposto rosso; indicati = scritti in RW8/W8 co
 test('nessuna riga: i moduli restano vuoti (solo numero del modulo, totali a 0 e segnaposto), senza valori del riferimento', () => {
   const o = FX.build(res([]), { custodians: {}, taxpayer: {} });
   assert.equal(o.rows.length, 0);
-  assert.deepEqual(texts(o.rw[0]).sort(), ['0', '0', '1', 'INSERIRE ACCONTI', 'VERSATI']);   // RW8: totale e imposta a debito 0; numero del modulo 1
-  assert.deepEqual(texts(o.w[0]).sort(), ['1', 'INSERIRE ACCONTI', 'VERSATI']);
+  const black = (pg) => pg.ops.filter((x) => !x.color).map((x) => x.s).sort();
+  const red = (pg) => pg.ops.filter((x) => x.color === '#c00000').map((x) => x.s);
+  assert.deepEqual(black(o.rw[0]), ['0', '0', '1']);   // RW8: totale e imposta a debito 0; numero del modulo 1
+  assert.deepEqual(black(o.w[0]), ['1']);
+  // in rosso i campi che il programma non puo' compilare: codice fiscale, acconti versati, eccedenze dell'anno prima
+  for (const pg of [o.rw[0], o.w[0]]) {
+    for (const t of ['INSERIRE IL CODICE FISCALE', 'INSERIRE ACCONTI', 'VERSATI (O 0)', 'SOLO SE C\'È CREDITO', 'SOLO SE COMPENSATA']) assert.ok(red(pg).includes(t), t);
+    assert.ok(red(pg).some((t) => /^IN ROSSO: campi da compilare/.test(t)), 'legenda');
+  }
   for (const v of ['6.787', '8.338', '365', '247', '100,00', '21', 'CRYPTOCOM_APP']) assert.ok(!texts(o.rw[0]).includes(v) && !texts(o.w[0]).includes(v), v);
+});
+
+test('campi in rosso: codice fiscale completo non segnalato; valori mancanti e codice dell\'oro da verificare', () => {
+  const FXr = FX.rows;
+  const fake = { year: 2025, groups: { blockCount: 0 }, rw: [
+    { account: 'Bitpanda', asset: 'XAU', cls: 'metal', days: 100, valueInitial: CT.D(500), valueFinal: CT.D(600), ivca: CT.ZERO, notes: [], estimated: false },
+    { account: 'Crypto.com App', asset: 'BTC', cls: 'crypto', days: 365, valueInitial: CT.D(1000), valueFinal: null, ivca: CT.ZERO, notes: [], estimated: false },
+  ] };
+  const o = FX.build(fake, { taxpayer: { cf: 'RSSMRA80A01H501U' }, custodians: {} });
+  const red = o.rw[0].ops.filter((x) => x.color === '#c00000').map((x) => x.s);
+  assert.ok(!red.some((t) => /CODICE FISCALE/.test(t)));
+  assert.ok(red.includes('VERIFICA'));
+  assert.ok(red.filter((t) => /^DA COMPLETARE/.test(t)).length >= 2);
+  assert.equal(typeof FXr, 'function');
 });

@@ -5,12 +5,15 @@
   const CT = (globalThis.CT = globalThis.CT || {});
   const { D, ZERO, roundEuro, EMT_EUR } = CT;
 
+  // threshold: franchigia (art. 67, c. 1, lett. c-sexies: imponibili le plusvalenze e i proventi "non inferiori complessivamente a 2.000 euro").
+  // lossMin: nel 2023-2024 la minusvalenza netta cripto si riporta solo se "superiore a 2.000 euro" (art. 68, c. 9-bis TUIR, testo in vigore
+  // fino al 2024); dal 2025 la soglia non c'e' piu' (L. 207/2024, art. 1, c. 25, lett. b).
   const BASE = { metalsRate: D('0.26'), ivcaRate: D('0.002'), lossYears: 4, status: 'da verificare' };
   const RULES = {
-    2023: { ...BASE, year: 2023, cryptoRate: D('0.26'), threshold: D(2000), emtRate: null, note: 'Franchigia 2.000 € sulle plusvalenze cripto (se il totale supera 2.000 € si tassa tutto).' },
-    2024: { ...BASE, year: 2024, cryptoRate: D('0.26'), threshold: D(2000), emtRate: null, note: 'Franchigia 2.000 € sulle plusvalenze cripto (se il totale supera 2.000 € si tassa tutto).' },
-    2025: { ...BASE, year: 2025, cryptoRate: D('0.26'), threshold: null, emtRate: null, note: 'Aliquota 26%, nessuna franchigia (abolita dal 2025).' },
-    2026: { ...BASE, year: 2026, cryptoRate: D('0.33'), threshold: null, emtRate: D('0.26'), note: 'Aliquota 33%; 26% per le stablecoin in euro conformi a MiCA (E-money token).' },
+    2023: { ...BASE, year: 2023, cryptoRate: D('0.26'), threshold: D(2000), lossMin: D(2000), emtRate: null, note: 'Franchigia 2.000 € sulle plusvalenze cripto (da 2.000 € in su si tassa tutto); minusvalenza netta riportabile solo se superiore a 2.000 €.' },
+    2024: { ...BASE, year: 2024, cryptoRate: D('0.26'), threshold: D(2000), lossMin: D(2000), emtRate: null, note: 'Franchigia 2.000 € sulle plusvalenze cripto (da 2.000 € in su si tassa tutto); minusvalenza netta riportabile solo se superiore a 2.000 €.' },
+    2025: { ...BASE, year: 2025, cryptoRate: D('0.26'), threshold: null, lossMin: null, emtRate: null, note: 'Aliquota 26%, nessuna franchigia (abolita dal 2025, anche per il riporto delle minusvalenze).' },
+    2026: { ...BASE, year: 2026, cryptoRate: D('0.33'), threshold: null, lossMin: null, emtRate: D('0.26'), note: 'Aliquota 33%; 26% per le stablecoin in euro conformi a MiCA (E-money token).' },
   };
   const YEARS = Object.keys(RULES).map(Number);
 
@@ -21,20 +24,24 @@
       law: isCrypto ? 'art. 67, c. 1, lett. c-sexies TUIR' : 'art. 67, c. 1, lett. c-ter TUIR',
       rate: isCrypto ? rule.cryptoRate : rule.metalsRate,
       nDisposals: ds.length, proceeds: ZERO, costs: ZERO, gains: ZERO, losses: ZERO, net: ZERO, income: ZERO,
-      carryUsed: [], carryUnused: [], carryExpired: [], newLoss: ZERO, taxable: ZERO, tax: ZERO, thresholdExempt: false, emtShare: ZERO,
+      carryUsed: [], carryUnused: [], carryExpired: [], newLoss: ZERO, lossNotCarried: ZERO, taxable: ZERO, tax: ZERO, thresholdExempt: false, emtShare: ZERO, nonDeductible: ZERO,
     };
     for (const d of ds) {
       r.proceeds = r.proceeds.plus(d.proceeds); r.costs = r.costs.plus(d.cost);
-      if (d.gain.gt(0)) r.gains = r.gains.plus(d.gain); else r.losses = r.losses.minus(d.gain);
+      // taxGain: risultato fiscale, se diverso da corrispettivo - costo (perdita non deducibile su lotti rideterminati al 1/1/2025)
+      const g = d.taxGain !== undefined ? d.taxGain : d.gain;
+      if (g.gt(0)) r.gains = r.gains.plus(g); else r.losses = r.losses.minus(g);
+      if (d.taxGain !== undefined) r.nonDeductible = r.nonDeductible.plus(d.taxGain.minus(d.gain));
     }
     r.income = incs.reduce((s, i) => s.plus(i.value), ZERO);
+    if (r.income.lt(0)) r.income = ZERO;   // gli storni riducono i proventi dell'anno, mai sotto zero (non diventano una perdita)
     r.net = r.gains.minus(r.losses);
 
     const usable = carry.filter((c) => c.year >= year - rule.lossYears && c.year < year).sort((a, b) => a.year - b.year);
     r.carryExpired = carry.filter((c) => c.year < year - rule.lossYears);
 
     let cap = r.net.gt(0) ? roundEuro(r.net) : ZERO;
-    const exempt = isCrypto && rule.threshold && r.net.plus(r.income).lte(rule.threshold);
+    const exempt = isCrypto && rule.threshold && r.net.plus(r.income).lt(rule.threshold);   // "non inferiori a 2.000": esattamente 2.000 si tassa
     if (exempt && (r.net.gt(0) || r.income.gt(0))) {
       r.thresholdExempt = true; cap = ZERO; r.carryUnused = usable.map((c) => ({ ...c }));
       r.taxable = ZERO; r.tax = ZERO;
@@ -47,14 +54,18 @@
       r.taxable = roundEuro(cap.plus(r.income));
       let tax = r.taxable.times(r.rate);
       if (isCrypto && rule.emtRate) {
-        const emtNet = ds.filter((d) => EMT_EUR.has(d.asset)).reduce((s, d) => s.plus(d.gain), ZERO);
+        const emtNet = ds.filter((d) => EMT_EUR.has(d.asset)).reduce((s, d) => s.plus(d.taxGain !== undefined ? d.taxGain : d.gain), ZERO);
         const share = emtNet.gt(0) ? (emtNet.lt(cap) ? emtNet : cap) : ZERO;
         r.emtShare = roundEuro(share);
         tax = r.taxable.minus(r.emtShare).times(r.rate).plus(r.emtShare.times(rule.emtRate));
       }
       r.tax = roundEuro(tax);
     }
-    if (r.net.lt(0)) r.newLoss = roundEuro(r.net.neg());
+    if (r.net.lt(0)) {
+      const loss = roundEuro(r.net.neg());
+      if (isCrypto && rule.lossMin && loss.lte(rule.lossMin)) r.lossNotCarried = loss;   // 2023-2024: fino a 2.000 € non si riporta
+      else r.newLoss = loss;
+    }
     return r;
   }
 

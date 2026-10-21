@@ -59,6 +59,8 @@ musica (prestazioni occasionali, diritti d'autore), spese e detrazioni e, soprat
      importi da scrivere, i consigli per la precompilata e le parole difficili spiegate.
 6. **Impostazioni**: regole di calcolo, salvataggio e apertura del progetto, programma da usare offline, dati di
    esempio e azzeramento.
+7. **Svuota tutto** (in fondo al menu, sempre visibile): cancella subito file, redditi, prezzi e dati personali, anche
+   dalla memoria del browser. Per 10 secondi compare «Annulla» per ripristinare.
 
 Il lavoro si salva da solo nel browser; si può anche salvare/riaprire come file di progetto.
 

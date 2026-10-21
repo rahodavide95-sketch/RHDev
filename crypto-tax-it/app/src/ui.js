@@ -34,6 +34,7 @@
   // ------------------------------------------------------------------ stato e salvataggio
   const state = { files: [], manual: [], resolutions: {}, prices: {}, priceSrc: {}, settings: { year: 2025, rebase2025: false, useCarry: true, swapRule: 'circ30' }, taxpayer: { name: '', cf: '' }, custodians: {}, platforms: [], example: false };
   const ui = { tab: 'overview', investTab: 'summary', navOpen: false, res: null, error: null, detail: 'cessioni', filter: '', confirmReset: false, toast: '', busy: '', ver: 0, pdf: null, pdfBusy: false, platform: null, method: 'file', confirmRemove: null, manualChoices: false, priceFail: 0 };
+  const INITIAL = JSON.stringify(state);   // stato di partenza, per il tasto «Svuota tutto»
 
   function idb() {
     return new Promise((res, rej) => {
@@ -46,6 +47,8 @@
   async function idbGet(k) { const db = await idb(); return new Promise((res, rej) => { const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); }); }
   async function idbSet(k, v) { const db = await idb(); return new Promise((res, rej) => { const t = db.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); t.oncomplete = () => res(); t.onerror = () => rej(t.error); }); }
   let saveTimer;
+  /** Salvataggio subito (dopo un azzeramento non si aspetta: chiudendo la pagina i dati non devono tornare). */
+  function saveNow() { clearTimeout(saveTimer); try { idbSet('state', JSON.parse(JSON.stringify(state))).catch(() => {}); } catch (e) { /* archiviazione non disponibile */ } }
   function save() {
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => { try { idbSet('state', JSON.parse(JSON.stringify(state))).catch(() => {}); } catch (e) { /* archiviazione non disponibile */ } }, 250);
@@ -82,10 +85,32 @@
     render();
     maybeAutoPrices();
   }
-  function toast(msg) {
-    ui.toast = msg; render();
+  /** Messaggio in basso; con `action` ({ label, fn }) ha un pulsante, per esempio «Annulla». */
+  function toast(msg, action) {
+    ui.toast = msg; ui.toastAction = action || null; render();
     clearTimeout(toast.t);
-    toast.t = setTimeout(() => { ui.toast = ''; const el = document.querySelector('.toast'); if (el) el.remove(); }, 6000);
+    toast.t = setTimeout(() => { ui.toast = ''; ui.toastAction = null; const el = document.querySelector('.toast'); if (el) el.remove(); }, action ? 10000 : 6000);
+  }
+
+  // ------------------------------------------------------------------ svuota tutto: subito, senza domande, con «Annulla» per 10 secondi
+  let undoSnap = null;
+  function resetAll() {
+    undoSnap = JSON.stringify(state);
+    for (const k of Object.keys(state)) delete state[k];
+    Object.assign(state, JSON.parse(INITIAL));
+    Object.assign(ui, { platform: null, picker: false, cuReview: null, confirmReset: false, priceFail: 0, priceWhy: [], askMore: null, navOpen: false, bundleDone: false, pdfDone: false, fxDone: false, yearNote: false, investTab: 'summary', filter: '' });
+    priceTried.clear();
+    changed('overview'); saveNow();
+    window.scrollTo(0, 0);
+    toast('Tutto svuotato: file, redditi, prezzi e dati personali.', { label: 'Annulla', fn: undoReset });
+  }
+  function undoReset() {
+    if (!undoSnap) return;
+    for (const k of Object.keys(state)) delete state[k];
+    Object.assign(state, JSON.parse(undoSnap));
+    undoSnap = null;
+    changed(); saveNow();
+    toast('Dati ripristinati');
   }
   function resolve(uidKey, resolution, msg) { state.resolutions[uidKey] = resolution; changed(); toast(msg || 'Fatto'); }
 
@@ -223,11 +248,8 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
 
   function resetBlock() {
     return h('div', { class: 'row' },
-      ui.confirmReset
-        ? [h('span', { class: 'small' }, 'Cancellare tutte le piattaforme, i file, le scelte e i prezzi?'),
-          h('button', { class: 'btn danger', onclick: () => { state.files = []; state.manual = []; state.resolutions = {}; state.prices = {}; state.platforms = []; state.example = false; ui.confirmReset = false; ui.platform = null; ui.picker = false; changed('overview'); toast('Dati cancellati'); } }, 'Sì, cancella tutto'),
-          h('button', { class: 'btn', onclick: () => { ui.confirmReset = false; render(); } }, 'Annulla')]
-        : h('button', { class: 'btn quiet danger', onclick: () => { ui.confirmReset = true; render(); } }, 'Cancella tutti i dati salvati'));
+      h('button', { class: 'btn danger', onclick: resetAll }, 'Svuota tutto'),
+      h('span', { class: 'muted small' }, 'Cancella subito file, redditi, prezzi e dati personali. Per 10 secondi puoi annullare.'));
   }
 
   /** Elenco compatto di scelta: una riga con icona per ogni piattaforma non ancora aggiunta. Scegliere una riga la aggiunge. */
@@ -1796,7 +1818,10 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
         h('div', null, h('div', { class: 'brand-name' }, 'Dichiarazione Redditi'), h('div', { class: 'brand-sub' }, `Redditi PF ${state.settings.year + 1}`))),
       h('div', { class: 'side-ctl' }, yearSelect('yearSel'), statusBadge(res)),
       h('nav', { class: 'nav' }, navList(res)),
-      h('p', { class: 'side-foot' }, 'I dati restano nel tuo browser: niente viene inviato.'));
+      h('div', { class: 'side-foot' },
+        h('button', { class: 'nav-item side-reset', onclick: resetAll, title: 'Cancella subito tutti i dati (si può annullare per 10 secondi)' },
+          h('span', { class: 'nav-ic' }, svgIcon(['M4 7h16', 'M9 7V4h6v3', 'M6 7l1 13h10l1-13', 'M10 11v6', 'M14 11v6'])), h('span', { class: 'nav-label' }, 'Svuota tutto')),
+        h('p', null, 'I dati restano nel tuo browser: niente viene inviato.')));
   }
   function pager(key) {
     const i = ORDER.indexOf(key);
@@ -1860,7 +1885,8 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
             h('header', { class: 'page-head' }, groupOf(key) ? h('div', { class: 'eyebrow' }, groupOf(key)) : null, h('h1', null, pg.label), h('p', { class: 'lead' }, pg.lead(Y))),
             ...content.flat(Infinity).filter(Boolean),
             pager(key)))),
-      ui.toast ? h('div', { class: 'toast', role: 'status' }, ui.toast) : null, askMoreModal()].filter(Boolean));
+      ui.toast ? h('div', { class: `toast${ui.toastAction ? ' has-action' : ''}`, role: 'status' }, h('span', null, ui.toast),
+        ui.toastAction ? h('button', { onclick: () => { const a = ui.toastAction; clearTimeout(toast.t); ui.toast = ''; ui.toastAction = null; a.fn(); } }, ui.toastAction.label) : null) : null, askMoreModal()].filter(Boolean));
     window.scrollTo(0, scrollY);
     const mf = root.querySelector('.modal .btn.primary');
     if (mf) mf.focus();

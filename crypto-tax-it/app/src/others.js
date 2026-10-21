@@ -34,6 +34,8 @@
     return /^-?\d+(\.\d+)?$/.test(c) ? D(c).abs() : ZERO;
   };
   const max0 = (x) => (x.gt(0) ? x : ZERO);
+  const itf = new Intl.NumberFormat('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const eur = (x) => `${itf.format(Number(D(x).toFixed(2)))} €`;
   const cents = (x) => x.toDecimalPlaces(2);
 
   function irpef(R) {
@@ -164,10 +166,10 @@
     const items = [];
     const est = 'Stima: l\'importo esatto lo calcola il software della dichiarazione (precompilata o commercialista).';
     if (c.irpefDue.gt(0)) items.push({ key: 'irpef', code: '4001', estimate: true, title: 'IRPEF a saldo (stima)',
-      why: `${c.extra.gt(0) ? `IRPEF sui redditi extra (${c.extra.toFixed(0)} € netti tra DJ e diritti d'autore)` : 'IRPEF dell\'anno'}${c.lostBonus.gt(0) ? `, più ${c.lostBonus.toFixed(0)} € di bonus in busta paga da restituire perché il reddito sale oltre la soglia` : ''}, meno ritenute (${c.ritenute.toFixed(2)} €)${c.det19.gt(0) ? ` e detrazioni (${c.det19.toFixed(2)} €)` : ''}.`,
+      why: `${c.extra.gt(0) ? `IRPEF sui redditi extra (${eur(c.extra)} netti tra DJ e diritti d'autore)` : 'IRPEF dell\'anno'}${c.lostBonus.gt(0) ? `, più ${eur(c.lostBonus)} di bonus in busta paga da restituire perché il reddito sale oltre la soglia` : ''}, meno ritenute (${eur(c.ritenute)})${c.det19.gt(0) ? ` e detrazioni (${eur(c.det19)})` : ''}.`,
       quadro: 'Quadri RC, RL e RP, risultato nel quadro RN', amount: c.irpefDue, due: dl.saldo, note: est });
     if (c.addiz.gt(0)) items.push({ key: 'addiz', code: '3801 / 3844', estimate: true, title: 'Addizionali regionale e comunale sulla parte di reddito in più (stima)',
-      why: `Circa il ${c.addRate.times(100).toFixed(1).replace('.', ',')}% dei ${c.extra.toFixed(0)} € netti (dipende da Regione e Comune: 3801 regionale, 3844 comunale).`,
+      why: `Circa il ${c.addRate.times(100).toFixed(1).replace('.', ',')}% dei ${eur(c.extra)} netti (dipende da Regione e Comune: 3801 regionale, 3844 comunale).`,
       quadro: 'Quadro RV', amount: c.addiz, due: dl.saldo, note: est });
     if (c.irpefCredit.gt(0)) items.push({ key: 'irpefcred', code: '—', estimate: true, credit: true, title: 'IRPEF a credito (stima): non si paga, ti viene restituita',
       why: 'Le ritenute e le detrazioni superano l\'imposta: il credito si chiede a rimborso o si usa in compensazione nell\'F24.', quadro: 'Quadro RX', amount: ZERO, creditAmount: c.irpefCredit, due: dl.saldo });

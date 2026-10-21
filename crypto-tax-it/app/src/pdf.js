@@ -160,7 +160,7 @@
     p.para('L\'Agenzia delle Entrate non richiede né accetta allegati per i redditi da cripto-attività e metalli preziosi: i dati si dichiarano nel Modello Redditi Persone Fisiche (quadri RT e RW). Questi prospetti raccolgono i numeri da riportare nel modello e documentano come sono stati calcolati, per te o per il commercialista. Non sono moduli ufficiali e non vanno inviati.');
     p.bullets([
       'Quadro RT: prospetti 01 (cripto, sezione V-A) e 02 (oro e metalli, sezione II). I numeri dei righi vanno presi dalle istruzioni del modello.',
-      'Quadro RW: prospetto 03 e modulo fac-simile già compilato (scheda PDF del programma). In rosso, nel fac-simile, i campi da completare o verificare. Servono anche la denominazione e lo Stato del custode di ogni piattaforma o wallet.',
+      'Quadro RW: prospetto 03 e modulo fac-simile già compilato (sezione «Documenti» del programma). In rosso, nel fac-simile, i campi da completare o verificare. Servono anche la denominazione e lo Stato del custode di ogni piattaforma o wallet.',
       'Pagamenti: prospetto 04 (codici F24, scadenze, eventuale ravvedimento).',
       'Conserva gli allegati A-E e gli export originali delle piattaforme per tutto il periodo in cui l\'Agenzia può controllare (in genere fino al 31 dicembre del quinto anno successivo alla presentazione).',
     ], { size: 9 });
@@ -225,7 +225,7 @@
       'Valore finale: quantità al 31 dicembre per il prezzo di quel giorno; se l\'asset è stato ceduto durante l\'anno, valore alla cessione.',
       'Giorni: giorni di calendario (Italia) in cui l\'asset è stato detenuto nell\'anno, anche solo in parte.',
       'IVCA indicativa: 0,2% × valore finale × giorni/365, solo per le cripto-attività. Per i metalli non è calcolata: verificare con il commercialista quali imposte e obblighi si applicano.',
-      'Custode e Stato: il programma non li conosce. Indicarli nella scheda Documenti (denominazione della società che custodisce i fondi, dai termini e condizioni della piattaforma).',
+      'Custode e Stato: il programma non li conosce. Indicarli nella sezione «Documenti» (denominazione della società che custodisce i fondi, dai termini e condizioni della piattaforma).',
     ], { size: 9 });
   }
 
@@ -260,7 +260,7 @@
       p.h2('Pagamento in ritardo: ravvedimento operoso (stima)');
       p.para(`Stima al ${dmy(pl.payDay)}. La sanzione per omesso versamento è il 25% (D.Lgs. 87/2024); con il ravvedimento si riduce in base al ritardo. Gli interessi si calcolano giorno per giorno al tasso legale (1,6% annuo dal 2026). Sanzione e interessi si versano con codici tributo propri, che indica il commercialista.`, { size: 9 });
       p.table(['Codice', 'Giorni di ritardo', 'Riduzione applicata', 'Sanzione (€)', 'Interessi (€)'], late.map((i) => [i.code, String(i.ravv.days), i.ravv.label, eur(i.ravv.sanction), eur(i.ravv.interest)]), { num: [1, 3, 4], fontSize: 8.5 });
-      p.para('Se si paga più tardi gli importi crescono: rifare la stima con la data giusta (schermata Risultato) o farla calcolare al commercialista.', { size: 8.5, color: MUTED });
+      p.para('Se si paga più tardi gli importi crescono: rifare la stima con la data giusta (sezione «Cosa pagare» del programma) o farla calcolare al commercialista.', { size: 8.5, color: MUTED });
     }
     p.h2('Scadenze dell\'anno');
     p.bullets([
@@ -276,7 +276,7 @@
     const oc = c.plan && c.plan.others;
     const Y = c.res.year;
     p.h1('Altri redditi e detrazioni');
-    if (!oc || !oc.any) { p.para('Nessun altro reddito o detrazione inserito nel programma (scheda «Altri redditi»).', { color: MUTED }); return; }
+    if (!oc || !oc.any) { p.para('Nessun altro reddito o detrazione inserito nel programma (sezioni «Lavoro dipendente», «Musica» e «Spese e detrazioni»).', { color: MUTED }); return; }
     p.para(`Dati inseriti dall'utente per l'anno ${Y}: stipendio (Certificazione Unica), lavoro occasionale, diritti d'autore e royalties, spese. Righi del modello Redditi PF ${Y + 1}; la stima dell'IRPEF è indicativa (regole 2025): il calcolo esatto lo fa il software di compilazione.`, { color: MUTED, size: 9 });
     p.h2('Dove scriverli');
     p.table(['Rigo', 'Cosa', 'Importo (€)'], CT.others.where(oc).map(([a, b, v]) => [a, b, typeof v === 'string' ? v : eur(v)]), { num: [2], fontSize: 9, columnStyles: { 0: { cellWidth: 34 }, 2: { cellWidth: 30 } } });

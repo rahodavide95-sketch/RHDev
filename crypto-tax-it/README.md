@@ -1,8 +1,9 @@
-# Dichiarazione Crypto
+# Dichiarazione Redditi
 
-Calcola plusvalenze, proventi, imposta sostitutiva e prospetto di monitoraggio (quadri RT e RW) per **cripto e oro**
-partendo dagli export di Crypto.com (App ed Exchange) e Bitpanda. Si sceglie l'anno (2023-2026), si caricano i file, si
-leggono i risultati. È un'unica pagina web: **nessuna installazione, nessun server, i dati restano nel browser**.
+Aiuta a preparare la dichiarazione dei redditi delle persone fisiche (Redditi PF / 730) in autonomia: lavoro dipendente,
+musica (prestazioni occasionali, diritti d'autore), spese e detrazioni e, soprattutto, **investimenti in cripto e oro**
+(quadri RT e RW, partendo dagli export di Crypto.com, Bitpanda e altri). Alla fine dice se, quanto e cosa pagare con l'F24.
+È un'unica pagina web: **nessuna installazione, nessun server, i dati restano nel browser**.
 
 > **Stato: prototipo da validare.** Il motore di calcolo è coperto da test con casi calcolati a mano, ma i
 > **formati degli export sono ricostruiti da fonti secondarie e non ancora verificati su file reali**, e le regole
@@ -11,17 +12,42 @@ leggono i risultati. È un'unica pagina web: **nessuna installazione, nessun ser
 
 ## Come si usa
 
-1. Apri `index.html` (doppio clic) oppure il link della pagina pubblicata.
-2. **Piattaforme**: scegli la piattaforma dall'elenco (Crypto.com App o Exchange, Bitpanda, Binance, Coinbase, altra o wallet personale), poi decidi se aggiungerla **con i file** (CSV o .zip: il tipo viene riconosciuto da solo; se un file è di un'altra piattaforma lo segnala e lo sposta) **o con le API** (chiave di sola lettura). Dopo il primo inserimento il programma ti chiede se vuoi aggiungere un altro wallet o un'altra piattaforma.
-3. **Da controllare**: il programma non indovina; ti chiede solo ciò che non può sapere (dove sono finite delle
-   crypto uscite, a che costo hai preso quelle arrivate da fuori, righe di tipo sconosciuto, prezzi mancanti).
-4. **Risultato**: la risposta subito: **se** devi pagare, **quanto** e **cosa**, voce per voce con codice tributo F24 (1715 imposta sulle plusvalenze cripto, 1727 IVCA, 1728/1729 acconti IVCA, 1100 oro da confermare), scadenza e, se la scadenza è passata, la stima del ravvedimento operoso (scegli il giorno in cui paghi). Poi i passi da fare, le parole difficili spiegate e, per il commercialista, quadro RT, prospetto RW e confronto tra anni.
-5. **Altri redditi** (scheda a parte, perché gli investimenti stanno tutti nella prima): stipendio o pensione dalla Certificazione Unica, serate da DJ e lavori occasionali, diritti d'autore SIAE e royalties, spese sanitarie, altre detrazioni e oneri deducibili. Per ognuno il rigo del modello Redditi PF (RC1/RC6/RC10, RL15, RL25, RP1, RP) e la stima dell'IRPEF a debito o a credito con le regole 2025 (scaglioni, detrazioni da lavoro, taglio del cuneo, deduzione forfettaria 25%/40% sotto i 35 anni, 19% sanitarie): le voci da pagare (4001, 3801/3844, acconti 4033/4034) entrano nel riepilogo dei pagamenti.
-6. **PDF**: i **moduli fac-simile** dell'Agenzia delle Entrate già compilati con i tuoi calcoli, con anteprima e download: **Quadro RW** (Redditi PF 2026, con l'imposta sulle cripto-attività) e **Quadro W** (Modello 730/2026), periodo d'imposta 2025. Sono le pagine del modello con la scritta FACSIMILE: il commercialista le usa per ricopiare i dati, non si inviano. **In rosso** i campi da compilare o verificare (codice fiscale se manca, acconti versati, eccedenze dell'anno prima, codice dell'oro, valori a cui manca un prezzo), con una legenda su ogni pagina. Una riga per piattaforma e numero di giorni di detenzione; codice 21 per le cripto-attività; l'oro è segnalato (codice da verificare); «Acconti versati» resta da compilare. Altri PDF con i calcoli:  fascicolo **PDF** per la dichiarazione (copertina e riepilogo, prospetti per i quadri RT cripto, RT oro e RW, imposte e versamenti, allegati A-E con elenco cessioni, lotti di acquisto, proventi, saldi, fonti dei dati con impronta SHA-256, decisioni prese e problemi). Si scarica completo oppure un PDF per documento (.zip). Se ci sono punti irrisolti ogni pagina porta la filigrana BOZZA. Inoltre CSV per Excel e salvataggio del progetto.
+1. Apri `index.html` (doppio clic) oppure il link della pagina pubblicata. A sinistra (sul telefono nel menu ☰) c'è
+   l'elenco delle sezioni, in ordine; in fondo a ogni pagina il pulsante porta alla successiva.
+2. **Panoramica**: quanto pagare adesso e più avanti, quando inviare la dichiarazione, il prossimo passo da fare e
+   l'avanzamento di ogni sezione.
+3. **Redditi**
+   - **Lavoro dipendente**: stipendio o pensione dalla Certificazione Unica (quadro RC: righi RC1, RC6, RC10).
+   - **Musica (DJ e SIAE)**: serate e lavori occasionali (rigo RL15), diritti d'autore SIAE e royalties (rigo RL25,
+     deduzione forfettaria 25% o 40% sotto i 35 anni).
+   - **Spese e detrazioni**: spese sanitarie (19% oltre 129,11 €, rigo RP1), altre detrazioni e oneri deducibili.
+   Ogni pagina mostra dove si scrive ogni importo e la stima dell'IRPEF 2025 (scaglioni, detrazioni da lavoro,
+   taglio del cuneo): le voci da pagare (4001, 3801/3844, acconti 4033/4034) entrano in «Cosa pagare».
+4. **Investimenti** (tutto in un'unica sezione)
+   - **Piattaforme e file**: scegli la piattaforma (Crypto.com App o Exchange, Bitpanda, Binance, Coinbase, altra o
+     wallet personale) e carica i file (CSV o .zip, il tipo viene riconosciuto da solo) o collega le API.
+   - **Da controllare**: il programma non indovina; ti chiede solo ciò che non può sapere (dove sono finite delle
+     crypto uscite, a che costo hai preso quelle arrivate da fuori, righe sconosciute, prezzi mancanti).
+   - **Calcolo imposte**: riepilogo, quadro RT (cripto sez. V-A, oro sez. II), quadro RW con IVCA, elenco delle
+     operazioni, azioni/ETF/conti (dove vanno), confronto tra anni e metodo di calcolo.
+5. **Chiusura**
+   - **Cosa pagare**: **se** devi pagare, **quanto** e **cosa**, voce per voce con codice tributo F24 (1715 cripto,
+     1727/1728/1729 IVCA, 1100 oro da confermare, 4001/4033/4034 IRPEF, 3801/3844 addizionali), scadenza e, se la
+     scadenza è passata, la stima del ravvedimento operoso nel giorno in cui paghi.
+   - **Documenti**: un solo pulsante scarica tutto per il commercialista (.zip con LEGGIMI, fascicolo PDF e moduli).
+     Qui si completano i dati per i moduli (nome, codice fiscale, acconti IVCA già versati, custodi). I **moduli
+     fac-simile** dell'Agenzia delle Entrate (Quadro RW di Redditi PF 2026 e Quadro W del 730/2026) arrivano già
+     compilati, con **in rosso** i campi da completare o verificare e una legenda su ogni pagina. Il fascicolo PDF
+     (copertina, prospetti RT/RW, imposte e versamenti, altri redditi, allegati con cessioni, lotti, proventi, saldi,
+     fonti con impronta SHA-256) porta la filigrana BOZZA finché restano punti da controllare. Inoltre CSV per Excel.
+   - **Guida alla compilazione**: un riquadro per ogni quadro (RC, RL, RP, RT, RW, RN/RV/F24) con i righi e gli
+     importi da scrivere, i consigli per la precompilata e le parole difficili spiegate.
+6. **Impostazioni**: regole di calcolo, salvataggio e apertura del progetto, programma da usare offline, dati di
+   esempio e azzeramento.
 
 Il lavoro si salva da solo nel browser; si può anche salvare/riaprire come file di progetto.
 
-**Fuori da claude.ai:** nella scheda Documenti il pulsante "Scarica il programma per il computer" salva un unico file .html che si apre con un doppio clic, anche senza internet.
+**Fuori da claude.ai:** in Impostazioni il pulsante "Scarica il programma (.html)" salva un unico file .html che si apre con un doppio clic, anche senza internet.
 
 **API (sperimentali):** Crypto.com Exchange, Bitpanda e Binance si possono collegare con una chiave di sola lettura (la chiave resta nel browser, non viene salvata e viene inviata solo alla piattaforma). I collegamenti sono costruiti sulla documentazione ufficiale e provati su risposte **simulate**, non con un account reale: dall'ambiente di sviluppo non si raggiungono i server delle piattaforme. Inoltre i browser possono bloccare le chiamate dirette (CORS) e dentro claude.ai la pagina non può collegarsi a siti esterni: in quel caso si usano i file. Ciò che l'API non scarica (Earn, staking, margine, azioni…) compare in **Da controllare** finché non aggiungi il file o confermi di non avere operazioni di quel tipo; se API e file coprono lo stesso periodo il programma ti fa scegliere una sola fonte. Crypto.com App non ha un'API pubblica. Dettagli e limiti in `docs/SPECIFICA.md`.
 
@@ -42,9 +68,9 @@ chiavi o report: il `.gitignore` di questa cartella li esclude, ma controlla sem
 
 ```bash
 node app/build.js          # ricostruisce index.html (pagina unica) e app/dist/artifact.html
-node --test app/test/      # test del motore, degli importatori, dell'analisi e dei PDF
+node --test app/test/*.test.js  # test del motore, degli importatori, dell'analisi e dei PDF
 ```
 
 Sorgenti in `app/src`: `core` (tipi, date), `csv`, `importers`, `engine` (lotti LIFO, permute, trasferimenti),
-`tax` (panieri, riporto perdite, franchigie per anno), `rw`, `zip` (lettura/scrittura), `pipeline`, `report`, `payments` (cosa pagare: codici F24, scadenze, ravvedimento), `pdf`, `platforms` (catalogo piattaforme), `ui`.
+`tax` (panieri, riporto perdite, franchigie per anno), `rw`, `zip` (lettura/scrittura), `pipeline`, `report`, `payments` (cosa pagare: codici F24, scadenze, ravvedimento), `others` (lavoro, musica, spese: righi e stima IRPEF), `pdf`, `facsimile`, `platforms` (catalogo piattaforme), `ui`.
 Librerie incluse in `app/src/vendor` (licenza MIT): `decimal.js` (calcoli esatti sui decimali), `jsPDF` e `jsPDF-AutoTable` (PDF).

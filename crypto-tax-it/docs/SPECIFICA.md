@@ -106,7 +106,7 @@ fonti consultate erano discordanti: vanno presi dalle istruzioni del modello.
 4. Eventuale servizio di appoggio per le API e per i prezzi storici.
 
 ## Spiegazione dell'imposta e controllo dei prezzi scaricati
-- Nel risultato la scheda «Da dove arriva l'imposta» elenca, per l'anno scelto, vendite in euro, scambi tra cripto, pagamenti, commissioni (guadagno o perdita) e premi (interessi, staking, cashback, bonus: tassati per intero al valore alla ricezione). Se non ci sono vendite lo dice: l'imposta può venire da scambi e premi anche senza vendere. Funzione `taxSources` in `app/src/report.js`.
+- In «Calcolo imposte → Riepilogo» il riquadro «Da dove arriva l'imposta» elenca, per l'anno scelto, vendite in euro, scambi tra cripto, pagamenti, commissioni (guadagno o perdita) e premi (interessi, staking, cashback, bonus: tassati per intero al valore alla ricezione). Se non ci sono vendite lo dice: l'imposta può venire da scambi e premi anche senza vendere. Funzione `taxSources` in `app/src/report.js`.
 - Un prezzo scaricato si scarta solo se è assurdo rispetto a un prezzo noto dai file dell'utente (`pricefeed.plausible`): fino a 20 volte entro 30 giorni, con tolleranza crescente con la distanza. Simboli di una sola lettera (es. S, Sonic) sono ammessi.
 - Moduli fac-simile: gli sfondi (`fx-rw.jpg`, `fx-w.jpg`) sono i moduli ufficiali dei due riferimenti senza alcun valore (celle, etichette e numero del modulo vuoti); ogni valore scritto sopra viene dai calcoli. «Acconti versati» (RW8 col. 4, W8 col. 4) non si ricava dai file: resta il segnaposto rosso, oppure si scrive l'importo nel campo facoltativo, e allora RW8 riporta acconti, imposta a debito (col. 5) o a credito (col. 6).
 
@@ -127,7 +127,7 @@ Invio del Redditi PF 2026: 2 novembre 2026 (il 31/10 è sabato); il 730/2026 sca
 festivo slittano al primo giorno lavorativo. I righi esatti del quadro RT non sono indicati: le fonti consultate non concordavano.
 
 ## Altri redditi e detrazioni (`app/src/others.js`)
-Dati inseriti a mano (scheda «Altri redditi»): lavoro dipendente dalla CU (reddito, giorni, ritenute facoltative), lavoro autonomo
+Dati inseriti a mano (sezioni «Lavoro dipendente», «Musica» e «Spese e detrazioni»): lavoro dipendente dalla CU (reddito, giorni, ritenute facoltative), lavoro autonomo
 occasionale (RL15, art. 67 c. 1 lett. l), diritti d'autore (RL25, art. 53 c. 2 lett. b, deduzione forfettaria 25% o 40% sotto i 35 anni),
 spese sanitarie (RP1, 19% oltre 129,11 €), altre detrazioni e oneri deducibili. Stima IRPEF 2025: scaglioni 23/35/43 (L. 207/2024);
 detrazione art. 13 c. 1 (1.955 fino a 15.000; 1.910 + 1.190 x (28.000 - R)/13.000; 1.910 x (50.000 - R)/22.000; +65 tra 25.000 e 35.000;

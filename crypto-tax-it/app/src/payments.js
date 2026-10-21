@@ -1,5 +1,5 @@
 /* Cosa pagare per l'anno d'imposta: imposte, codici tributo F24, scadenze e, se la scadenza e' passata, stima del ravvedimento operoso.
-   Usato dalla schermata Risultato e dal PDF ("Cosa pagare e cosa fare").
+   Usato dalla sezione «Cosa pagare» e dal PDF ("Cosa pagare e cosa fare").
 
    FONTI (controllate in ottobre 2026 su piu' fonti, da confermare con il commercialista: il sito dell'Agenzia non era raggiungibile):
    - 1715: imposta sostitutiva su plusvalenze e altri proventi da cripto-attivita', regime dichiarativo (Ris. AdE 36/E del 26/6/2023).
@@ -23,6 +23,8 @@
   const ms = (day) => Date.parse(day + 'T00:00:00Z');
   const iso = (t) => new Date(t).toISOString().slice(0, 10);
   const dmy = (day) => (day ? day.split('-').reverse().join('/') : '');
+  const itf = new Intl.NumberFormat('it-IT', { maximumFractionDigits: 2 });
+  const eur = (x) => `${itf.format(Number(D(x).toFixed(2)))} €`;
   // festivita' nazionali a data fissa (la Pasquetta non cade mai vicino alle scadenze fiscali usate qui)
   const HOLIDAYS = new Set(['01-01', '01-06', '04-25', '05-01', '06-02', '08-15', '11-01', '12-08', '12-25', '12-26']);
   /** Scadenza che cade di sabato, domenica o festivo: primo giorno lavorativo dopo (es. 31/10/2027 domenica -> 2/11/2027, perche' l'1/11 e' festivo). */
@@ -95,12 +97,12 @@
     };
     if (y.crypto.tax.gt(0)) {
       add({ key: 'crypto', code: '1715', title: `Imposta sulle plusvalenze delle cripto (${(y.crypto.rate.times(100)).toFixed(0)}%)`,
-        why: `Guadagni netti e premi del ${Y} sulle cripto: imponibile ${y.crypto.taxable.toFixed(0)} € × ${(y.crypto.rate.times(100)).toFixed(0)}%.`,
+        why: `Guadagni netti e premi del ${Y} sulle cripto: imponibile ${eur(y.crypto.taxable)} × ${(y.crypto.rate.times(100)).toFixed(0)}%.`,
         quadro: 'Quadro RT, sezione V-A (cripto-attività)', amount: y.crypto.tax, due: dl.saldo, note: 'In un\'unica soluzione: per questo codice non è prevista la rateazione.' });
     }
     if (y.metals.tax.gt(0)) {
       add({ key: 'metals', code: '1100', codeCheck: true, title: 'Imposta sulle plusvalenze di oro e metalli preziosi (26%)',
-        why: `Guadagni netti del ${Y} su oro e metalli: imponibile ${y.metals.taxable.toFixed(0)} € × 26%.`,
+        why: `Guadagni netti del ${Y} su oro e metalli: imponibile ${eur(y.metals.taxable)} × 26%.`,
         quadro: 'Quadro RT, sezione II (plusvalenze al 26%)', amount: y.metals.tax, due: dl.saldo, note: 'Codice tributo da far confermare al commercialista.' });
     }
     const ivca = ivcaTotal(res);
@@ -108,8 +110,8 @@
     const ivcaDue = adv === null ? ivca : ivca.minus(adv);
     if (ivcaDue.gt(0)) {
       add({ key: 'ivca', code: '1727', title: 'Imposta sul valore delle cripto (IVCA, 2 per mille) · saldo',
-        why: `0,2% del valore delle cripto che avevi, in proporzione ai giorni in cui le hai tenute nel ${Y}${adv !== null && adv.gt(0) ? `, meno ${adv.toFixed(0)} € di acconti già versati` : ''}.`,
-        quadro: 'Quadro RW, rigo RW8', amount: ivcaDue, due: dl.saldo, note: adv === null ? 'Se nel ' + Y + ' hai già versato acconti per questa imposta vanno tolti (scrivili nella scheda PDF, «Facoltativo»).' : '' });
+        why: `0,2% del valore delle cripto che avevi, in proporzione ai giorni in cui le hai tenute nel ${Y}${adv !== null && adv.gt(0) ? `, meno ${eur(adv)} di acconti già versati` : ''}.`,
+        quadro: 'Quadro RW, rigo RW8', amount: ivcaDue, due: dl.saldo, note: adv === null ? 'Se nel ' + Y + ' hai già versato acconti per questa imposta vanno tolti (scrivili in «Documenti», riquadro «Completa i dati per i moduli»).' : '' });
     }
     // acconto IVCA per l'anno dopo (metodo storico, regole degli acconti IRPEF: niente sotto 51,65 €, una rata fino a 257,52 €, altrimenti 40% + 60%)
     const acc = [];

@@ -198,3 +198,21 @@ test('Coinbase formati precedenti: "Spot Price", "Total (inclusive of fees)", "F
   const s1 = I.TYPES.coinbase.parse(v1, 'v1.csv').events[0];
   assert.equal(s1.kind, Kind.SELL); eq(s1.value, 170); assert.equal(s1.valueCcy, 'USD'); assert.equal(s1.feeAsset, 'USD'); eq(s1.feeQty, '2.5');
 });
+
+test('Coinbase risalvato con Excel in italiano: ";", decimali con la virgola, «1.234,56 €», numeri piccoli in formato esponenziale', () => {
+  const csv = 'ID;Timestamp;Transaction Type;Asset;Quantity Transacted;Price Currency;Price at Transaction;Subtotal;Total (inclusive of fees and/or spread);Fees and/or Spread;Notes\n' +
+    'a1;2025-01-10 10:00:00 UTC;Buy;BTC;0,015;EUR;50.000,00 €;750,00 €;761,25 €;11,25 €;Bought 0.015 BTC for €761.25 EUR\n' +
+    'a2;2025-02-10 10:00:00 UTC;Staking Income;ETH;2,5E-05;EUR;3.000,00 €;0,08 €;0,08 €;0,00 €;\n' +
+    'a3;2025-03-10 10:00:00 UTC;Convert;ETH;-1,5;EUR;3.000,00 €;4.455,00 €;4.500,00 €;45,00 €;Converted 1.5 ETH to 1,500 USDC\n';
+  const r = I.TYPES.coinbase.parse(csv, 'cb-excel.csv');
+  const [buy, stake, conv] = r.events;
+  eq(buy.qty, '0.015'); eq(buy.value, 750); eq(buy.feeQty, '11.25');
+  eq(stake.qty, '0.000025'); eq(stake.value, '0.08');
+  eq(conv.qty, '1.5'); eq(conv.counterQty, 1500); eq(conv.value, 4455);
+  // formato originale (punto decimale): "0.015" e "€1,015.00" restano giusti; un esponente non diventa un numero grande
+  const orig = 'Timestamp,Transaction Type,Asset,Quantity Transacted,Price Currency,Price at Transaction,Subtotal,Total (inclusive of fees and/or spread),Fees and/or Spread,Notes\n' +
+    '2025-01-10T10:00:00Z,Rewards Income,ETH,2.5E-05,EUR,"€3,000.00",€0.08,€0.08,€0.00,\n' +
+    '2025-01-11T10:00:00Z,Buy,BTC,0.015,EUR,"€50,000.00",€750.00,€761.25,€11.25,Bought 0.015 BTC for €761.25 EUR\n';
+  const o = I.TYPES.coinbase.parse(orig, 'cb.csv').events;
+  eq(o[0].qty, '0.000025'); eq(o[1].qty, '0.015'); eq(o[1].value, 750);
+});

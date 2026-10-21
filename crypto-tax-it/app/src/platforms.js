@@ -127,7 +127,7 @@
       steps: [
         'Accedi a Coinbase dal sito coinbase.com e apri il profilo → «Rendiconti» o «Documenti» (Statements / Reports).',
         'Scegli «Cronologia delle transazioni» (Transaction history), tutti gli asset e tutto il periodo dall\'apertura del conto, formato CSV.',
-        'Trascina qui il file: le righe di testo all\'inizio vengono ignorate da sole. Vanno bene anche gli export degli anni passati, con le colonne vecchie.',
+        'Trascina qui il file così com\'è, senza aprirlo e salvarlo con Excel (cambia numeri e date): le righe di testo all\'inizio vengono ignorate da sole. Vanno bene anche gli export degli anni passati.',
       ],
       limits: [
         'I trasferimenti verso Coinbase Pro o Advanced con un export separato vengono chiesti come trasferimenti, finché non carichi anche quel file.',

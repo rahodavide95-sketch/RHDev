@@ -6353,21 +6353,39 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
     internal: new Set(['vault withdrawal', 'cash to savings', 'savings to cash', 'transfer', 'retail staking transfer', 'retail unstaking transfer']),
     migration: new Set(['asset migration', 'retail eth2 deprecation']),
   };
-  /** Importo Coinbase: "€1,234.56", "-$12.34", "(€12.34)", "1234.5". */
-  function cbNum(s) {
+  /**
+   * Importo Coinbase: "€1,234.56", "-$12.34", "(€12.34)", "1234.5", "2.5E-05" e, se il file e' stato riaperto e salvato con un foglio di
+   * calcolo italiano, "1.234,56 €" o "0,015". `dec` e' il separatore decimale del file (',' o '.'), dedotto da cbDecimal.
+   */
+  function cbNum(s, dec) {
     if (s === undefined || s === null) return null;
-    let t = String(s).trim();
+    const t = String(s).trim();
     if (!t || t === '-') return null;
-    const neg = /^\(.*\)$/.test(t) || /^-/.test(t.replace(/[^\d.,-]/g, ''));
-    t = t.replace(/[^\d.,]/g, '');
-    if (!t) return null;
-    if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(t)) t = t.replace(/,/g, '');
-    const v = parseNum(t);
-    return v === null ? null : neg ? v.neg() : v;
+    const m = /(\d[\d.,]*)([eE][-+]?\d+)?/.exec(t);
+    if (!m) return null;
+    const neg = /^\(.*\)$/.test(t) || t.slice(0, m.index).includes('-');
+    let n = m[1].replace(/[.,]$/, '');
+    const hasC = n.includes(','), hasP = n.includes('.');
+    if (hasC && hasP) n = n.lastIndexOf(',') > n.lastIndexOf('.') ? n.replace(/\./g, '').replace(',', '.') : n.replace(/,/g, '');
+    else if (hasC) n = dec === ',' || !/^\d{1,3}(,\d{3})+$/.test(n) ? n.replace(',', '.') : n.replace(/,/g, '');
+    else if (hasP && dec === ',' && /^\d{1,3}(\.\d{3})+$/.test(n)) n = n.replace(/\./g, '');
+    if (!/^\d+(\.\d+)?$/.test(n)) throw new FormatError(`Numero non interpretabile: "${s}"`);
+    const v = D(n + (m[2] || ''));
+    return neg ? v.neg() : v;
   }
-  const CB_TRADE = /^(?:Bought|Sold) ([\d,]*\.?\d+) (\w+) for [£€$]?([\d,]*\.?\d+) (\w+)(?: on (\w+-\w+))?/;
-  const CB_CONVERT = /^Converted ([\d,]*\.?\d+) (\w+) to ([\d,]*\.?\d+) (\w+)/;
-  const cbQty = (s) => D(String(s).replace(/,/g, ''));
+  /** Separatore decimale del file: ',' se gli importi sono scritti come "15,00" o "1.234,56", altrimenti '.'. */
+  function cbDecimal(rows, cols) {
+    let comma = 0, point = 0;
+    for (const r of rows) for (const c of cols) {
+      const v = String(r[c] || '').replace(/[^\d.,]/g, '');
+      if (/\d\.\d{3},\d+$/.test(v) || /^\d+,\d{1,2}$/.test(v) || /^0,\d+$/.test(v)) comma++;
+      else if (/\d,\d{3}\.\d+$/.test(v) || /^\d+\.\d{1,2}$/.test(v) || /^0\.\d+$/.test(v)) point++;
+    }
+    return comma > point ? ',' : '.';
+  }
+  const CB_TRADE = /^(?:Bought|Sold) ([\d.,]+(?:[eE][-+]?\d+)?) (\w+) for [£€$]?([\d.,]+(?:[eE][-+]?\d+)?) (\w+)(?: on (\w+-\w+))?/;
+  const CB_CONVERT = /^Converted ([\d.,]+(?:[eE][-+]?\d+)?) (\w+) to ([\d.,]+(?:[eE][-+]?\d+)?) (\w+)/;
+  const cbQty = (s, dec) => cbNum(s, dec);
 
   function parseCoinbase(text, fileName, account) {
     account = account || 'Coinbase';
@@ -6376,6 +6394,9 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
     if (miss.length) throw new FormatError(`Coinbase: colonne mancanti ${miss.join(', ')}`);
     const v1 = headers.map((x) => /^(\w{3}) Subtotal$/.exec(x)).find(Boolean);   // formato piu' vecchio: valuta nel nome della colonna
     const col = (row, ...names) => { for (const n of names) if (row[n] !== undefined && row[n] !== '') return row[n]; return ''; };
+    const numCols = headers.filter((x) => /quantity|price at|subtotal|total|fees/i.test(x));
+    const dec = cbDecimal(rows, numCols);
+    const num = (x) => cbNum(x, dec);
     const mkUid = uidFactory(account);
     const events = [];
     const migr = [];
@@ -6389,13 +6410,13 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
       const src = `${fileName}:${row.__line}`;
       const ts = parseTs(String(row['Timestamp']).trim().replace(/\s*UTC$/i, 'Z'));
       const asset = (row['Asset'] || '').trim().toUpperCase();
-      const qRaw = cbNum(row['Quantity Transacted']);
+      const qRaw = num(row['Quantity Transacted']);
       const qty = qRaw === null ? ZERO : qRaw.abs();
       const ccy = ((v1 && v1[1]) || col(row, 'Price Currency', 'Spot Price Currency') || 'EUR').toUpperCase();
-      const subtotal = absN(cbNum(col(row, 'Subtotal', `${ccy} Subtotal`)));
-      const total = absN(cbNum(col(row, 'Total (inclusive of fees and/or spread)', 'Total (inclusive of fees)', `${ccy} Total (inclusive of fees)`)));
-      const fees = absN(cbNum(col(row, 'Fees and/or Spread', 'Fees', `${ccy} Fees`)));
-      const price = absN(cbNum(col(row, 'Price at Transaction', 'Spot Price at Transaction', `${ccy} Spot Price at Transaction`)));
+      const subtotal = absN(num(col(row, 'Subtotal', `${ccy} Subtotal`)));
+      const total = absN(num(col(row, 'Total (inclusive of fees and/or spread)', 'Total (inclusive of fees)', `${ccy} Total (inclusive of fees)`)));
+      const fees = absN(num(col(row, 'Fees and/or Spread', 'Fees', `${ccy} Fees`)));
+      const price = absN(num(col(row, 'Price at Transaction', 'Spot Price at Transaction', `${ccy} Spot Price at Transaction`)));
       const notes = (row['Notes'] || '').trim();
       const isSell = CB.sell.has(typRaw.toLowerCase());
       // valore senza commissioni: negli acquisti il totale le comprende, nelle vendite e' gia' al netto
@@ -6413,13 +6434,13 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
           ev = mkEvent({ ...base, kind: buy ? Kind.BUY : Kind.SELL, asset, qty, ...val(gross), ...fee });
         } else {
           // Advanced Trade contro un'altra cripto (es. ETH-BTC): e' una permuta; valore in euro dal file
-          const qAmt = cbQty(tm[3]);
+          const qAmt = cbQty(tm[3], '.');   // le note restano nel formato inglese di Coinbase anche se il file e' stato risalvato
           ev = buy ? mkEvent({ ...base, kind: Kind.SWAP, asset: quote, qty: qAmt, counterAsset: asset, counterQty: qty, ...val(whole) })
             : mkEvent({ ...base, kind: Kind.SWAP, asset, qty, counterAsset: quote, counterQty: qAmt, ...val(whole) });
         }
       } else if (typ === 'convert') {
         const m = CB_CONVERT.exec(notes);
-        ev = m ? mkEvent({ ...base, kind: Kind.SWAP, asset, qty, counterAsset: m[4].toUpperCase(), counterQty: cbQty(m[3]), ...val(gross) })
+        ev = m ? mkEvent({ ...base, kind: Kind.SWAP, asset, qty, counterAsset: m[4].toUpperCase(), counterQty: cbQty(m[3], '.'), ...val(gross) })
           : unresolved(base, 'Coinbase · Convert senza dettaglio', `Convert del ${String(row['Timestamp'])}: nelle note manca la cripto ricevuta ("${notes}")`);
       } else if (typ === 'send' || typ === 'retail mgx dex send' || CB.toPro.has(typ)) {
         ev = mkEvent({ ...base, kind: Kind.TRANSFER_OUT, asset, qty, note: CB.toPro.has(typ) ? 'Coinbase: verso Coinbase Pro / Advanced' : notes });
@@ -8464,7 +8485,7 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
     const prow = ([k, v]) => { const [s, d] = k.split('|'); return [CT.pricefeed && CT.pricefeed.kindOf(s) === 'metal' ? `${s} (1 grammo)` : s, dmy(d), String(v).replace('.', ','), src[k] || '']; };
     if (dl.length) {
       p.h2('Prezzi scaricati automaticamente');
-      p.para('Asset custoditi su Bitpanda: prima il listino Bitpanda (chiusura del giorno, ora di Vienna), lo stesso dei suoi estratti conto. Cripto: chiusura giornaliera (UTC) in euro da Binance, Crypto.com Exchange, Kraken, Coinbase o CryptoCompare; oro e metalli preziosi: prezzo LBMA in euro per oncia troy diviso 31,1035 (euro per grammo) o, in alternativa, PAX Gold; valute: cambio di riferimento BCE. Per ciascuno è indicata la coppia o il listino usato e, quando disponibile, il confronto con una seconda fonte indipendente.', { color: MUTED, size: 8.5 });
+      p.para('Asset custoditi su Bitpanda o Coinbase: prima il listino della piattaforma (Bitpanda: chiusura del giorno, ora di Vienna; Coinbase: prezzo spot del giorno). Cripto: chiusura giornaliera (UTC) in euro da Binance, Coinbase, Crypto.com Exchange, Kraken, Coinbase o CryptoCompare; oro e metalli preziosi: prezzo LBMA in euro per oncia troy diviso 31,1035 (euro per grammo) o, in alternativa, PAX Gold; valute: cambio di riferimento BCE. Per ciascuno è indicata la coppia o il listino usato e, quando disponibile, il confronto con una seconda fonte indipendente.', { color: MUTED, size: 8.5 });
       p.table(['Asset', 'Data', 'Prezzo (€ per unità)', 'Fonte'], dl.map(prow), { num: [2], fontSize: 8 });
     }
     if (man.length) {
@@ -8690,7 +8711,7 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
       steps: [
         'Accedi a Coinbase dal sito coinbase.com e apri il profilo → «Rendiconti» o «Documenti» (Statements / Reports).',
         'Scegli «Cronologia delle transazioni» (Transaction history), tutti gli asset e tutto il periodo dall\'apertura del conto, formato CSV.',
-        'Trascina qui il file: le righe di testo all\'inizio vengono ignorate da sole. Vanno bene anche gli export degli anni passati, con le colonne vecchie.',
+        'Trascina qui il file così com\'è, senza aprirlo e salvarlo con Excel (cambia numeri e date): le righe di testo all\'inizio vengono ignorate da sole. Vanno bene anche gli export degli anni passati.',
       ],
       limits: [
         'I trasferimenti verso Coinbase Pro o Advanced con un export separato vengono chiesti come trasferimenti, finché non carichi anche quel file.',
@@ -8744,6 +8765,9 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
      -> {"code":0,"result":{"data":[{"t":<ms>,"o":"..","h":"..","l":"..","c":"..","v":".."}]}}; coppia inesistente: code diverso da 0
    - Kraken: GET https://api.kraken.com/0/public/OHLC?pair=XBTEUR&interval=1440&since=<s>
      -> {"error":[],"result":{"<coppia>":[[time,"open","high","low","close",...]],"last":<s>}}; errore: {"error":["EQuery:Unknown asset pair"]}
+   - Coinbase (prezzo spot della piattaforma, documentato e senza chiave; accetta richieste dal browser, quindi funziona anche senza il
+     servizio di Vercel): GET https://api.coinbase.com/v2/prices/BTC-EUR/spot?date=AAAA-MM-GG
+     -> {"data":{"amount":"..","base":"BTC","currency":"EUR"}}; coppia inesistente: HTTP 404 {"errors":[...]}
    - Coinbase Exchange: GET https://api.exchange.coinbase.com/products/BTC-EUR/candles?granularity=86400&start=<ISO>&end=<ISO>
      -> [[time, low, high, open, close, volume]]; coppia inesistente: HTTP 404
    - CryptoCompare: GET https://min-api.cryptocompare.com/data/v2/histoday?fsym=BTC&tsym=EUR&limit=1&toTs=<s>
@@ -8975,7 +8999,19 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
     throw new NoQuote('nessun prezzo giornaliero per quel giorno');
   }
 
-  const CRYPTO = [['Binance', viaBinance], ['Crypto.com Exchange', viaCryptoCom], ['Kraken', viaKraken], ['Coinbase', viaCoinbase], ['CryptoCompare', viaCryptoCompare]];
+  // ---------------------------------------------------------------- Coinbase (prezzo spot del giorno)
+  async function viaCoinbaseSpot(fetchImpl, sym, day) {
+    const r = await getJson(fetchImpl, `https://api.coinbase.com/v2/prices/${encodeURIComponent(sym)}-EUR/spot?date=${day}`);
+    if (r.status === 400 || r.status === 404) throw new NoQuote('coppia non quotata');
+    if (!r.ok || !r.body || !r.body.data) throw new Error(`HTTP ${r.status}`);
+    const d = r.body.data;
+    const c = num(d.amount);
+    if (!c || (d.currency && String(d.currency).toUpperCase() !== 'EUR')) throw new NoQuote('nessuna quotazione quel giorno');
+    return { price: c, detail: `Coinbase, prezzo spot ${sym}/EUR del ${dmy(day)}` };
+  }
+
+  // in ordine: prima chi accetta richieste dal browser (Binance, Coinbase), cosi' i prezzi arrivano anche senza il servizio di Vercel
+  const CRYPTO = [['Binance', viaBinance], ['Coinbase', viaCoinbaseSpot], ['Crypto.com Exchange', viaCryptoCom], ['Kraken', viaKraken], ['Coinbase Exchange', viaCoinbase], ['CryptoCompare', viaCryptoCompare]];
 
   // ---------------------------------------------------------------- metalli preziosi (euro per grammo)
   const lbmaCache = new Map();
@@ -9022,11 +9058,13 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
   const FIAT_SOURCES = [['BCE', fiatSource('BCE', ecbEurPer)], ['Frankfurter (cambi BCE)', fiatSource('Frankfurter', frankfurterEurPer)]];
 
   const kindOf = (s) => (METALS[s] ? 'metal' : FIAT.has(s) ? 'fiat' : 'crypto');
-  /** Fonti in ordine; con prefer 'bitpanda' (asset custodito su Bitpanda) il listino Bitpanda viene prima, le altre fanno da controllo. */
+  /** Fonti in ordine; con prefer 'bitpanda' o 'coinbase' (asset custodito li') il prezzo della piattaforma viene prima, le altre fanno da controllo. */
   const sourcesFor = (s, prefer) => {
     if (FIAT.has(s)) return FIAT_SOURCES;
     const list = METALS[s] ? metalSources(s) : CRYPTO;
-    return prefer === 'bitpanda' ? [['Bitpanda', viaBitpanda]].concat(list) : list;
+    if (prefer === 'bitpanda') return [['Bitpanda', viaBitpanda]].concat(list);
+    if (prefer === 'coinbase' && !METALS[s]) return [['Coinbase', viaCoinbaseSpot]].concat(list.filter(([n]) => n !== 'Coinbase'));
+    return list;
   };
 
   /**
@@ -9041,7 +9079,7 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
     const details = [];
     let first = null, extra = 0;
     for (const [name, fn] of sourcesFor(s, opts && opts.prefer)) {
-      if (first && (!opts || !opts.check || extra >= 2)) break;
+      if (first && (!opts || !opts.check || extra >= 3)) break;
       if (first) extra++;
       try {
         const r = await fn(f, s, day);
@@ -9098,7 +9136,7 @@ ${table(['Custode', 'Asset', 'Giorni', 'Valore iniziale €', 'Valore finale €
   }
 
   CT.pricefeed = { dailyEur, fetchEur, describe, plausible, kindOf, OZ, _reset: () => { fxCache.clear(); lbmaCache.clear(); bpAssets = null; serverMissing = false; },
-    _sources: { viaBitpanda, viaBinance, viaCryptoCom, viaKraken, viaCoinbase, viaCryptoCompare, viaLBMA, ecbEurPer, frankfurterEurPer } };
+    _sources: { viaBitpanda, viaCoinbaseSpot, viaBinance, viaCryptoCom, viaKraken, viaCoinbase, viaCryptoCompare, viaLBMA, ecbEurPer, frankfurterEurPer } };
   if (typeof module !== 'undefined') module.exports = CT.pricefeed;
 })();
 
@@ -13040,7 +13078,7 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
       const status = h('p', { class: 'small muted' }, ui.busy ? 'Sto scaricando i prezzi…'
         : ui.priceFail ? (insideClaude() ? `Non sono riuscito a scaricarne ${ui.priceFail}: dentro claude.ai il download non è possibile. Apri il link pubblicato.`
           : `Non sono riuscito a scaricarne ${ui.priceFail}. ${(ui.priceWhy || []).join(' · ')}. Riprova tra qualche minuto, oppure scrivili a mano.`)
-          : 'Li scarico da solo: cripto da Binance, Crypto.com, Kraken, Coinbase o CryptoCompare; oro e metalli dal prezzo ufficiale LBMA; valute dalla BCE. Dentro claude.ai non è possibile: apri il link pubblicato.');
+          : 'Li scarico da solo: cripto da Binance, Coinbase, Crypto.com, Kraken o CryptoCompare (per Bitpanda e Coinbase prima il loro listino); oro e metalli dal prezzo ufficiale LBMA; valute dalla BCE. Dentro claude.ai non è possibile: apri il link pubblicato.');
       const btns = h('div', { class: 'row' },
         h('button', { class: 'btn primary', disabled: !!ui.busy, onclick: () => autoPrices(false) }, ui.busy || (blocking ? 'Scarica i prezzi in automatico' : 'Riprova a scaricare i prezzi esatti')),
         h('button', { class: 'btn', onclick: () => { go('prices'); } }, 'Vedi e inserisci a mano'));
@@ -13733,10 +13771,13 @@ E2,2025-03-05T09:05:00+01:00,sell,outgoing,350.00,EUR,5.0,XAU,70,EUR,Metal,,3.00
   // ------------------------------------------------------------------ pannello: Prezzi
   const insideClaude = () => !!(typeof window !== 'undefined' && window.claude && window.claude.use);
   /** Prezzo in euro alla chiusura del giorno: prova piu' servizi pubblici (vedi pricefeed.js). Un valore non credibile si scarta. */
-  /** Asset custoditi su Bitpanda: per quelli il prezzo si prende prima dal listino Bitpanda, cosi' coincide con l'estratto conto. */
-  const onBitpanda = (sym) => !!(ui.res && ui.res.rw.some((r) => r.asset === sym && /bitpanda/i.test(r.account)));
+  /** Piattaforma che custodisce l'asset: il prezzo si prende prima dal suo listino (Bitpanda, Coinbase), cosi' coincide con i suoi estratti conto. */
+  const preferFor = (sym) => {
+    const accs = ui.res ? ui.res.rw.filter((r) => r.asset === sym).map((r) => r.account) : [];
+    return accs.some((a) => /bitpanda/i.test(a)) ? 'bitpanda' : accs.some((a) => /coinbase/i.test(a)) ? 'coinbase' : undefined;
+  };
   async function fetchPrice(sym, day) {
-    const r = await CT.pricefeed.fetchEur(sym, day, { prefer: onBitpanda(sym) ? 'bitpanda' : undefined });
+    const r = await CT.pricefeed.fetchEur(sym, day, { prefer: preferFor(sym) });
     const n = Number(r.price);
     if (!Number.isFinite(n) || n <= 0) { const e = new Error('prezzo non valido'); e.details = [`${r.source}: prezzo non valido`]; throw e; }
     // due fonti molto diverse: meglio non usare nessuna delle due senza un controllo

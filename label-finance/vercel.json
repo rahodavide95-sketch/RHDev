@@ -1,4 +1,5 @@
 {
+  "git": { "deploymentEnabled": { "claude/*": false } },
   "buildCommand": "node build-vercel.mjs",
   "outputDirectory": "dist",
   "cleanUrls": true,

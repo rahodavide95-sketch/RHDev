@@ -332,6 +332,7 @@
     height: 520px; border-radius: 12px; border: 1px solid var(--divider); overflow: hidden;
     background: var(--card2); z-index: 1;
   }
+  #map.map-dark .base-tiles { filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.85) saturate(0.55); }
   .map-filters { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 12px; }
   .chip {
     background: var(--card); color: var(--text-sec); border: 1px solid var(--divider);
@@ -3025,13 +3026,13 @@
 
   var map = L.map(mapEl, { scrollWheelZoom: false }).setView([51.513, -0.13], 12);
   var tiles = null;
+  // sfondo OpenStreetMap (CARTO ora chiede una chiave), scurito via CSS nel tema scuro
   function setTiles() {
     if (tiles) map.removeLayer(tiles);
     var light = window.__ldnTheme && window.__ldnTheme();
-    tiles = L.tileLayer(light
-      ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
-      : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-      { maxZoom: 19, subdomains: 'abcd', attribution: '© OpenStreetMap · © CARTO' }).addTo(map);
+    mapEl.classList.toggle('map-dark', !light);
+    tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      { maxZoom: 19, className: 'base-tiles', attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>' }).addTo(map);
   }
   setTiles();
   document.addEventListener('ldn-theme', setTiles);

@@ -83,8 +83,14 @@ json.dump(routes, open(f'{OUT}/routes.json', 'w'), ensure_ascii=False, indent=1)
 if 'lat' in geo.get('apt', {}):
     a = geo['apt']
     q = f'[out:json][timeout:60];node(around:700,{a["lat"]},{a["lon"]})[highway=bus_stop]->.s;.s out body;rel(bn.s)[route=bus];out tags;'
+    j = None
+    for ep in ('https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter', 'https://overpass.private.coffee/api/interpreter'):
+        try:
+            j = json.loads(get(ep + '?data=' + urllib.parse.quote(q), timeout=90)); break
+        except Exception as e:
+            say('overpass err', ep, e)
     try:
-        j = json.loads(get('https://overpass-api.de/api/interpreter?data=' + urllib.parse.quote(q), timeout=90))
+        if j is None: raise RuntimeError('overpass non raggiungibile')
         json.dump(j, open(f'{OUT}/busstops.json', 'w'), ensure_ascii=False, indent=1)
         for el in j.get('elements', []):
             say('osm', el['type'], el.get('lat'), el.get('lon'), json.dumps(el.get('tags', {}), ensure_ascii=False)[:200])
@@ -112,13 +118,13 @@ def parse_simple(xml):
     for m in re.finditer(r'<BsWfs:Location>.*?<gml:pos>([^<]+)</gml:pos>.*?<BsWfs:Time>([^<]+)</BsWfs:Time>\s*<BsWfs:ParameterName>([^<]+)</BsWfs:ParameterName>\s*<BsWfs:ParameterValue>([^<]+)</BsWfs:ParameterValue>', xml, re.S):
         out.append((m.group(1).strip(), m.group(2), m.group(3), m.group(4)))
     return out
-STATIONS = {'rov_airport': 101920, 'rov_station': 101928, 'hel_kaisaniemi': 100971}
+STATIONS = {'rov_airport': 'place=Rovaniemi%20lentoasema', 'rov_station': 'fmisid=101928', 'hel_kaisaniemi': 'fmisid=100971'}
 clim = {'daily': {}, 'hourly': {}, 'pos': {}}
 for sk, fid in STATIONS.items():
     clim['daily'][sk] = {}; clim['hourly'][sk] = {}
     for y in range(1991, 2026):
         try:
-            u = WFS + 'fmi::observations::weather::daily::simple&fmisid=%d&starttime=%d-12-20T00:00:00Z&endtime=%d-01-03T00:00:00Z&parameters=tday,tmin,tmax,snow,rrday' % (fid, y, y + 1)
+            u = WFS + 'fmi::observations::weather::daily::simple&%s&starttime=%d-12-20T00:00:00Z&endtime=%d-01-03T00:00:00Z&parameters=tday,tmin,tmax,snow,rrday' % (fid, y, y + 1)
             rows = parse_simple(get(u))
             for pos, t, p, v in rows:
                 clim['pos'][sk] = pos
@@ -127,7 +133,7 @@ for sk, fid in STATIONS.items():
             say('fmi daily err', sk, y, e)
         for params in ('t2m,ws_10min', 'n_man'):
             try:
-                u = WFS + 'fmi::observations::weather::simple&fmisid=%d&starttime=%d-12-25T22:00:00Z&endtime=%d-12-31T22:00:00Z&timestep=60&parameters=%s' % (fid, y, y, params)
+                u = WFS + 'fmi::observations::weather::simple&%s&starttime=%d-12-25T22:00:00Z&endtime=%d-12-31T22:00:00Z&timestep=60&parameters=%s' % (fid, y, y, params)
                 rows = parse_simple(get(u))
                 for pos, t, p, v in rows:
                     clim['hourly'][sk].setdefault(t[:16], {})[p] = None if v == 'NaN' else float(v)

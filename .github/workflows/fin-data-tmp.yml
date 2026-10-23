@@ -1,4 +1,4 @@
-# TEMPORANEO: raccoglie dati per finlandia/ e li salva in ci-out/ su questo ramo. Da rimuovere prima del merge.
+# TEMPORANEO (giro 2): raccoglie dati per finlandia/ e li salva in ci-out/ su questo ramo. Da rimuovere prima del merge.
 name: Finlandia dati (temporaneo)
 on:
   push:
@@ -15,14 +15,11 @@ jobs:
       - run: pip install -q pypdf
       - name: Dati (geo, percorsi, bus, clima)
         run: python3 ci-tmp/fetch_data.py
-      - name: Screenshot del sito pubblicato
-        run: |
-          cd ci-tmp && npm init -y >/dev/null && npm i --no-audit --no-fund playwright-core@1.48.2 >/dev/null && cd ..
-          node ci-tmp/shot.mjs || true
       - name: Salva i risultati sul ramo
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -f ci-out
           git commit -m "ci: dati raccolti per finlandia (temporaneo)" || echo "niente da salvare"
+          git pull --rebase origin claude/sharp-pascal-md1r5s
           git push

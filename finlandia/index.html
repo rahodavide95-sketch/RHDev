@@ -770,6 +770,10 @@
   [data-theme="light"] .num-item .n { color: #fff; }
   .day-section + .day-section::after { content: '✦'; }
 
+  /* mappa: sfondo OpenStreetMap scurito nel tema scuro */
+  #map.map-dark .base-tiles { filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.85) saturate(0.55); }
+  #map.map-dark { background: #1b2232; }
+
   /* linee HSL / Rovaniemi */
   .ln.train { background: #8C4799; }
   .ln.metro { background: #FF6319; }
@@ -3298,21 +3302,22 @@
   syncApt();
 
   var map = L.map(mapEl, { scrollWheelZoom: false }).setView([63.3, 25.0], 5);
-  // sfondo: CARTO (chiaro/scuro); se le tessere non arrivano si passa a OpenStreetMap
-  var tiles = null, useOsm = false, tileErr = 0, tileOk = 0;
+  // sfondo: OpenStreetMap (senza chiave; CARTO ora la chiede), scurito via CSS nel tema scuro.
+  // Se le tessere OSM non arrivano si passa a quelle di Esri.
+  var SOURCES = [
+    ['https://tile.openstreetmap.org/{z}/{x}/{y}.png', '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'],
+    ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', '© Esri · © OpenStreetMap']
+  ];
+  var tiles = null, src = 0, tileErr = 0, tileOk = 0;
   function setTiles() {
     if (tiles) map.removeLayer(tiles);
-    var light = window.__finTheme && window.__finTheme();
-    tiles = useOsm
-      ? L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' })
-      : L.tileLayer(light
-        ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
-        : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-        { maxZoom: 19, subdomains: 'abcd', attribution: '© OpenStreetMap · © CARTO' });
+    mapEl.classList.toggle('map-dark', !(window.__finTheme && window.__finTheme()));
+    tileErr = 0; tileOk = 0;
+    tiles = L.tileLayer(SOURCES[src][0], { maxZoom: 19, attribution: SOURCES[src][1], className: 'base-tiles' });
     tiles.on('tileload', function () { tileOk++; });
     tiles.on('tileerror', function () {
       tileErr++;
-      if (!useOsm && tileErr >= 4 && tileOk === 0) { useOsm = true; setTiles(); }
+      if (src < SOURCES.length - 1 && tileErr >= 4 && tileOk === 0) { src++; setTiles(); }
     });
     tiles.addTo(map);
   }

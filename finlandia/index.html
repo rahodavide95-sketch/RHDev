@@ -725,6 +725,80 @@
     .day-nav, .legend, .tools-bar, .theme-fixed, .snow, #map, .map-filters, .tl-controls { display: none !important; }
     body { background: #fff; color: #111; }
   }
+  /* ───────── TEMPERATURE (dati storici FMI) ───────── */
+  :root {
+    --t-bar: #3CC8E0; --t-whisk: #7C879C; --t-rec-cold: #5598e7; --t-rec-warm: #eb6834;
+    --t-zero: #A8B3C7; --t-grid: #263147; --t-neutral: #383835;
+  }
+  [data-theme="light"] {
+    --t-bar: #0e8fa6; --t-whisk: #8a93a3; --t-rec-cold: #1c5cab; --t-rec-warm: #c9532f;
+    --t-zero: #6f7a8b; --t-grid: #d5dde7; --t-neutral: #f0efec;
+  }
+  .t-moments { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+  .t-tile { background: var(--card); border: 1px solid var(--divider); border-radius: 12px; padding: 13px 15px 14px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .t-tile .tt-when { font-family: 'Roboto Mono', monospace; font-size: 10.5px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); }
+  .t-tile .tt-name { font-size: 13.5px; font-weight: 600; color: var(--text); }
+  .t-tile .tt-val { font-family: 'Bebas Neue', sans-serif; font-size: 44px; line-height: 1; color: var(--text); letter-spacing: 1px; margin-top: 2px; }
+  .t-tile .tt-val small { font-size: 18px; color: var(--muted); margin-left: 2px; }
+  .t-tile .tt-sub { font-size: 12.3px; color: var(--text-sec); line-height: 1.5; }
+  .t-tile .tt-sub b { color: var(--text); font-weight: 600; }
+  .t-tile.booked { border-color: rgba(var(--acc-rgb),0.45); }
+
+  .t-range { background: var(--card); border: 1px solid var(--divider); border-radius: 12px; padding: 16px 14px 10px; }
+  .t-row { display: grid; grid-template-columns: 78px 1fr 84px; gap: 10px; align-items: center; padding: 7px 0; border-radius: 6px; outline: none; }
+  .t-row:hover, .t-row:focus-visible { background: var(--card2); }
+  .t-row:focus-visible { box-shadow: 0 0 0 2px var(--acc); }
+  .t-row .tr-lbl { font-family: 'Roboto Mono', monospace; font-size: 11px; color: var(--text-sec); line-height: 1.25; }
+  .t-row .tr-lbl span { display: block; font-size: 9.5px; color: var(--muted); }
+  .t-track { position: relative; height: 30px; }
+  .t-track .zero { position: absolute; top: -6px; bottom: -6px; width: 1px; background: var(--t-zero); opacity: 0.6; }
+  .t-track .gl { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--t-grid); }
+  .t-track .wh { position: absolute; top: 14px; height: 2px; background: var(--t-whisk); border-radius: 1px; }
+  .t-track .bar { position: absolute; top: 9px; height: 12px; background: var(--t-bar); border-radius: 4px; }
+  .t-track .rec { position: absolute; top: 10px; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%; box-shadow: 0 0 0 2px var(--card); }
+  .t-track .rec.cold { background: var(--t-rec-cold); }
+  .t-track .rec.warm { background: var(--t-rec-warm); }
+  .t-track .vl { position: absolute; top: -3px; font-family: 'Roboto Mono', monospace; font-size: 10.5px; color: var(--text); white-space: nowrap; transform: translateX(-50%); font-variant-numeric: tabular-nums; }
+  .t-track .vl.lo { transform: translateX(calc(-100% - 6px)); top: 8px; }
+  .t-track .vl.hi { transform: translateX(6px); top: 8px; }
+  .t-axis { display: grid; grid-template-columns: 78px 1fr 84px; gap: 10px; margin-top: 4px; }
+  .tr-val { font-family: 'Roboto Mono', monospace; font-size: 11px; color: var(--text); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .t-axis .tr-val { font-size: 9.5px; color: var(--muted); }
+  .t-axis .ax { position: relative; height: 16px; font-family: 'Roboto Mono', monospace; font-size: 9.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .t-axis .ax span { position: absolute; transform: translateX(-50%); }
+  .t-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 11.5px; color: var(--text-sec); margin-top: 10px; }
+  .t-legend i { display: inline-block; vertical-align: middle; margin-right: 6px; }
+  .t-legend .k-bar { width: 22px; height: 8px; border-radius: 3px; background: var(--t-bar); }
+  .t-legend .k-wh { width: 22px; height: 2px; background: var(--t-whisk); }
+  .t-legend .k-cold, .t-legend .k-warm { width: 9px; height: 9px; border-radius: 50%; }
+  .t-legend .k-cold { background: var(--t-rec-cold); } .t-legend .k-warm { background: var(--t-rec-warm); }
+
+  .t-tip { position: fixed; z-index: 3000; pointer-events: none; background: var(--card); border: 1px solid var(--divider); box-shadow: var(--shadow);
+    border-radius: 8px; padding: 9px 11px; font-size: 12px; color: var(--text-sec); line-height: 1.5; max-width: 260px; display: none; }
+  .t-tip b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .t-tip .th { font-family: 'Roboto Mono', monospace; font-size: 10.5px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
+
+  .t-heat-wrap { overflow-x: auto; border: 1px solid var(--divider); border-radius: 12px; background: var(--card); padding: 10px; }
+  .t-heat { border-collapse: separate; border-spacing: 2px; width: 100%; min-width: 420px; font-variant-numeric: tabular-nums; }
+  .t-heat th { font-family: 'Roboto Mono', monospace; font-size: 10px; letter-spacing: 0.6px; color: var(--muted); font-weight: 500; padding: 3px 4px; text-align: center; white-space: nowrap; }
+  .t-heat th.yr { text-align: right; padding-right: 8px; }
+  .t-heat td { text-align: center; font-family: 'Roboto Mono', monospace; font-size: 11.5px; padding: 6px 2px; border-radius: 4px; min-width: 44px; outline: none; }
+  .t-heat td:focus-visible { box-shadow: 0 0 0 2px var(--acc); }
+  .t-heat td.na { color: var(--muted); background: transparent; }
+  .t-heat tr.avg th, .t-heat tr.avg td { border-top: 1px solid var(--divider); }
+  .t-scale { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; margin-top: 10px; font-family: 'Roboto Mono', monospace; font-size: 10px; color: var(--muted); }
+  .t-scale span { display: inline-flex; align-items: center; justify-content: center; min-width: 40px; height: 20px; border-radius: 3px; padding: 0 4px; }
+  .t-tabs { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+  .t-note { font-size: 12.5px; color: var(--muted); margin-top: 10px; line-height: 1.6; }
+  .t-note strong { color: var(--text-sec); }
+  details.t-table { margin-top: 12px; }
+  details.t-table summary { cursor: pointer; font-size: 12.5px; color: var(--sky); }
+  @media (max-width: 700px) {
+    .t-row, .t-axis { grid-template-columns: 52px 1fr 70px; gap: 6px; }
+    .tr-val { font-size: 10px; }
+    .t-tile .tt-val { font-size: 38px; }
+  }
+
 
   /* ───────── AGGIUNTE FINLANDIA ───────── */
   .hero::after { background: linear-gradient(to bottom, rgba(3,6,15,0.25) 0%, rgba(3,6,15,0.05) 45%, rgba(3,6,15,0.30) 100%); }
@@ -924,6 +998,7 @@
   <a class="day-pill" href="#panoramica">📋 Panoramica</a>
   <a class="day-pill" href="#mappa">🗺️ Mappa</a>
   <a class="day-pill" href="#meteo">☁️ Meteo &amp; luce</a>
+  <a class="day-pill" href="#temperature">🌡️ Temperature</a>
   <a class="day-pill" href="#g1" data-day="2026-12-26">Sab 26 · Arrivo &amp; luci</a>
   <a class="day-pill" href="#g2" data-day="2026-12-27">Dom 27 · Suomenlinna &amp; treno</a>
   <a class="day-pill" href="#g3" data-day="2026-12-28">Lun 28 · Circolo Polare &amp; aurora</a>
@@ -978,7 +1053,7 @@
       <span class="ov-num">03</span>
       <div class="ov-day">Lunedì 28 dicembre · Rovaniemi</div>
       <div class="ov-title">Circolo Polare Artico e caccia all'aurora</div>
-      <div class="ov-list">Risveglio lungo il fiume Kemijoki · arrivo 10:59 · appartamento · Santa Claus Village con il bus 8 · la linea del Circolo Polare · la posta di Babbo Natale · aurora alle 20:00</div>
+      <div class="ov-list">Risveglio lungo il fiume Kemijoki · arrivo 10:59 · taxi per l'appartamento a Viirinkangas · Santa Claus Village · la linea del Circolo Polare · la posta di Babbo Natale · aurora alle 20:00</div>
       <span class="ov-tag">PRENOTATO · AURORA 20:00</span>
     </a>
     <a class="ov-card" href="#g4">
@@ -1020,7 +1095,7 @@
     </div>
     <div class="card accent-sky">
       <h3>🧳 4 · Le valigie nei giorni dei treni</h3>
-      <p><strong>27:</strong> deposito gratuito del Citybox (check-out alle 12), le riprendete la sera: è a una fermata di metro dalla stazione. <strong>30:</strong> armadietti prenotabili nella stazione di Rovaniemi (da 3,90 € per 3 ore, ci sono anche da 12 h), oppure chiedete un check-out tardivo all'appartamento.</p>
+      <p><strong>27:</strong> deposito gratuito del Citybox (check-out alle 12), le riprendete la sera: è a una fermata di metro dalla stazione. <strong>30:</strong> la stazione è a 2,7 km dall'appartamento: taxi la mattina e armadietti prenotabili (da 3,90 € per 3 ore, ci sono anche da 12 h), oppure chiedete un check-out tardivo.</p>
     </div>
     <div class="card accent-green">
       <h3>☀️ 5 · La mattina libera del 30</h3>
@@ -1033,7 +1108,7 @@
   </div>
 
   <div class="note-banner">
-    <span class="nb-title">🏠 Da completare insieme —</span> non ho trovato online un annuncio chiamato esattamente <strong>"Rovaniemi Apartment2"</strong>, quindi non ne conosco l'indirizzo. In <a href="#dettagli">Prenotazioni → I vostri dettagli</a> potete scrivere indirizzo dell'appartamento, punti di ritrovo delle escursioni, numeri di carrozza e cabina: compaiono da soli nelle tappe giuste dell'itinerario e l'appartamento viene messo sulla mappa.
+    <span class="nb-title">🏠 L'appartamento di Rovaniemi —</span> <strong>Viirinkankaantie 21-23, 3° piano</strong>, nel quartiere residenziale di Viirinkangas, a sud-ovest del centro. Ha il supermercato a 160 metri, ma stazione, centro e ristoranti sono a <strong>2,7–3 km</strong> (35–45 minuti a piedi, 4–6 in taxi) e il bus 8 per Santa Claus Village non ci passa. L'itinerario ora tiene conto di questo: taxi con le valigie, rientri serali e ritrovi delle escursioni. In <a href="#dettagli">Prenotazioni → I vostri dettagli</a> potete aggiungere orario del check-in, punti di ritrovo, carrozze e cabine.
   </div>
   <div class="note-banner" style="border-left-color:var(--purple)">
     <span class="nb-title" style="color:var(--purple)">⭐ Per valutare in due —</span> su ogni tappa potete segnare <strong>★ Top</strong>, <strong>? Da valutare</strong> o scrivere una <strong>nota</strong>. Da <a href="#valutazioni">Valutazioni</a> (o dal tasto 📤 in alto) mandate il riepilogo su WhatsApp.
@@ -1093,7 +1168,7 @@
     </div>
     <div class="wx-box">
       <div class="wx-lbl">Fine dicembre · medie</div>
-      <div class="wx-desc" style="margin-top:6px"><strong style="color:var(--text)">Helsinki:</strong> tra −5° e 0°, umido e ventoso dal mare, spesso grigio; può piovigginare o nevicare. <strong style="color:var(--text)">Rovaniemi:</strong> massime intorno a −6°, minime intorno a −12/−13°, ma con il cielo sereno si scende facilmente a <strong style="color:var(--text)">−20/−25°</strong> e in alcuni anni a −30°. Neve al suolo garantita.</div>
+      <div class="wx-desc" style="margin-top:6px"><strong style="color:var(--text)">Helsinki:</strong> minime intorno a −5°, massime intorno a 0°, umido e ventoso dal mare; negli ultimi anni spesso sopra zero, con pioggia e neve bagnata. <strong style="color:var(--text)">Rovaniemi:</strong> minime intorno a −13°, massime intorno a −6°; 1 notte su 5 scende sotto <strong style="color:var(--text)">−20°</strong>, record −32,9° (2002). Neve al suolo quasi certa.</div>
     </div>
   </div>
 
@@ -1108,13 +1183,7 @@
   </div>
   <p class="wx-status" id="wx-status">Per ora queste sono <strong>medie di fine dicembre</strong>: le previsioni vere arrivano più vicino alla partenza.</p>
 
-  <div class="kicker">Gli stessi giorni negli anni passati</div>
-  <div class="table-scroll">
-    <table class="wx-hist" id="wx-hist">
-      <thead><tr><th>Anno</th><th>Helsinki 26–27 · max / min</th><th>Rovaniemi 28–30 · max / min</th><th>Rovaniemi · la notte più fredda</th></tr></thead>
-      <tbody><tr><td colspan="4" style="color:var(--muted)">Carico i dati storici…</td></tr></tbody>
-    </table>
-  </div>
+  <p class="wx-status" style="margin-top:6px">📈 Com'è andata negli stessi giorni degli ultimi 30 anni, giorno per giorno e nei momenti delle escursioni: sezione <a href="#temperature">Temperature</a>.</p>
 
   <div class="kicker">Quanta luce c'è (e perché gli orari delle escursioni sono giusti)</div>
   <div class="card" style="padding-top:22px">
@@ -1125,6 +1194,50 @@
   </div>
 </div>
 </section>
+
+
+<!-- ══════════════════════════════════════════════════
+     TEMPERATURE: COSA DICONO GLI ULTIMI 30 ANNI
+     ══════════════════════════════════════════════════ -->
+<section class="sec alt" id="temperature">
+<div class="sec-inner">
+  <div class="sec-title">🌡️ TEMPERATURE <span>DEGLI ANNI PASSATI</span></div>
+  <div class="sec-sub" id="t-sub">Osservazioni reali delle stazioni dell'Istituto meteorologico finlandese (FMI) negli stessi giorni del vostro viaggio, anno per anno. Sono dati già misurati, quindi si vedono sempre, anche senza connessione.</div>
+
+  <div class="kicker">Nei momenti che contano</div>
+  <div class="t-moments" id="t-moments"></div>
+  <p class="t-note" id="t-moments-note"></p>
+
+  <div class="kicker">Giorno per giorno: tipico, normale e record</div>
+  <div class="t-range" id="t-range" role="group" aria-label="Temperature tipiche e record per ogni giorno del viaggio"></div>
+  <div class="t-legend">
+    <span><i class="k-bar"></i>minima e massima medie</span>
+    <span><i class="k-wh"></i>9 giorni su 10 restano qui dentro</span>
+    <span><i class="k-cold"></i>record di freddo</span>
+    <span><i class="k-warm"></i>record di caldo</span>
+  </div>
+  <details class="t-table"><summary>Mostra i numeri in tabella</summary>
+    <div class="table-scroll" style="margin-top:8px"><table class="tbl" id="t-table"></table></div>
+  </details>
+
+  <div class="kicker">Anno per anno</div>
+  <div class="t-tabs" role="tablist" aria-label="Valore mostrato">
+    <button class="chip on" type="button" data-heat="mn" role="tab" aria-selected="true">Minime (notte)</button>
+    <button class="chip" type="button" data-heat="mx" role="tab" aria-selected="false">Massime (giorno)</button>
+  </div>
+  <div class="t-heat-wrap"><table class="t-heat" id="t-heat"></table></div>
+  <div class="t-scale" id="t-scale"></div>
+  <p class="t-note" id="t-heat-note"></p>
+
+  <div class="kicker">Come leggerle</div>
+  <div class="grid">
+    <div class="card accent-sky"><h3>📍 Da dove vengono</h3><p id="t-src">—</p></div>
+    <div class="card accent-gold"><h3>🌬️ La temperatura percepita</h3><p>Con il vento il freddo si sente di più: a −15° con 15 km/h di vento sembrano circa −23°. In motoslitta il "vento" lo fate voi: a 40 km/h e −15° la pelle scoperta sente circa −28°. Per questo vi danno passamontagna e casco.</p></div>
+    <div class="card accent-purple"><h3>🏞️ Città e boschi</h3><p>Nelle notti serene e senza vento l'aria fredda scende nelle valli: lungo i fiumi e fuori città, dove si va a cercare l'aurora, fa spesso 3–8 gradi in meno che in centro. Con il cielo coperto le differenze quasi spariscono.</p></div>
+  </div>
+</div>
+</section>
+<div class="t-tip" id="t-tip" role="tooltip"></div>
 
 <div class="container">
 
@@ -1177,7 +1290,7 @@
       <div class="tl-time">~17:15</div>
       <div class="tl-title">Metro Rautatientori → Hakaniemi, una fermata <span class="badge b-move">METRO · 2 MIN</span></div>
       <div class="tl-body">
-        Scesi dal treno seguite i cartelli <span class="ln metro">M</span> <strong>Metro</strong>: si scende nel sottopassaggio della stazione fino a <strong>Rautatientori</strong>. Va bene <strong>qualsiasi metro verso est</strong> (Vuosaari o Mellunmäki): Hakaniemi è la prima fermata. Usciti in superficie, il Citybox (<strong>Siltasaarenkatu 13</strong>) è a 3–4 minuti a piedi. Il biglietto ABC vale anche qui.
+        Scesi dal treno seguite i cartelli <span class="ln metro">M</span> <strong>Metro</strong>: si scende nel sottopassaggio della stazione fino a <strong>Rautatientori</strong>. Va bene <strong>qualsiasi metro verso est</strong> (Vuosaari o Mellunmäki): Hakaniemi è la prima fermata. Usciti in superficie, il Citybox (<strong>Siltasaarenkatu 13</strong>) è a 5 minuti a piedi verso nord, lungo la stessa via. Il biglietto ABC vale anche qui.
       </div>
       <div class="alt-box">
         <strong>↔ A piedi</strong>
@@ -1452,41 +1565,47 @@
       </div>
     </div>
 
-    <div class="tl-item move" data-place="Rovaniemi railway station" data-ll="66.4982,25.7105">
+    <div class="tl-item move" data-place="Rovaniemi railway station" data-ll="66.4980,25.7050">
       <div class="tl-time">10:59</div>
-      <div class="tl-title">Arrivo alla stazione di Rovaniemi <span class="badge b-move">SPOSTAMENTO</span></div>
+      <div class="tl-title">Arrivo alla stazione e taxi per l'appartamento <span class="badge b-move">TAXI · 4 MIN</span></div>
       <div class="tl-body">
-        Stazione piccola (<strong>Ratakatu 3</strong>), sala d'attesa aperta 05:00–21:30, con armadietti per i bagagli prenotabili (da 3,90 € per 3 ore). Il centro è a <strong>~1,5 km</strong> (20 minuti a piedi su marciapiedi innevati: con le valigie a rotelle è una fatica). All'uscita ci sono i <span class="ln taxi">TAXI</span> (Taksi Rovaniemi): fino al centro ~12–18 €, ed è la scelta giusta con i bagagli.
+        Stazione piccola (<strong>Ratakatu 3</strong>), sala d'attesa aperta 05:00–21:30, con armadietti per i bagagli prenotabili (da 3,90 € per 3 ore). L'appartamento è a Viirinkangas, il quartiere residenziale dell'università a sud-ovest del centro: <strong>2,7 km di strada</strong>, cioè 4 minuti in auto o 35 minuti a piedi. Con le valigie su neve e ghiaccio prendete il <span class="ln taxi">TAXI</span> all'uscita della stazione (Taksi Rovaniemi, ~12–15 €).
       </div>
     </div>
 
     <div class="tl-item hotel" data-apt="1">
-      <div class="tl-time">11:20</div>
-      <div class="tl-title">Rovaniemi Apartment2: valigie e spesa <span class="badge b-hotel">ALLOGGIO</span></div>
+      <div class="tl-time">11:15</div>
+      <div class="tl-title">Appartamento a Viirinkangas: valigie e spesa <span class="badge b-hotel">ALLOGGIO</span></div>
       <div class="tl-body">
-        Indirizzo: <span class="fill" data-fill="aptAddr" data-empty="da inserire in Prenotazioni → I vostri dettagli"></span>. Check-in / chiavi: <span class="fill" data-fill="aptCheckin" data-empty="orario e modalità da inserire"></span>.
-        <br>Gli appartamenti di solito si consegnano dalle 15–16 con codice o cassetta delle chiavi. <strong>Chiedete prima</strong> se potete lasciare le valigie in anticipo; altrimenti le lasciate negli armadietti della stazione e tornate dopo. Fate la <strong>spesa per tre giorni</strong>: acqua, colazioni, frutta, qualcosa da portare in escursione (una barretta in tasca col freddo fa la differenza). Supermercati: K-Citymarket, Prisma, S-Market, Lidl.
+        Indirizzo: <span class="fill" data-fill="aptAddr" data-empty="Viirinkankaantie 21-23, 3° piano"></span>, 96300 Rovaniemi. Check-in / chiavi: <span class="fill" data-fill="aptCheckin" data-empty="orario e modalità da inserire"></span>.
+        <br>Gli appartamenti di solito si consegnano dalle 15–16 con codice o cassetta delle chiavi. <strong>Chiedete prima</strong> se potete lasciare le valigie verso le 11:15; se no lasciatele negli armadietti della stazione prima di salire sul taxi. Il <strong>K-Market Viirinkangas</strong> è a <strong>160 metri</strong> (Viirinkankaantie 19): spesa per tre giorni, acqua, colazioni e qualcosa da tenere in tasca durante le escursioni. Un pranzo veloce in casa vi fa risparmiare tempo e soldi.
+        <br><strong>Le distanze da casa:</strong> stazione 2,7 km · centro e Lordi Square 2,9 km · Nili 3 km · Arktikum 3,3 km (40–45 minuti a piedi, 5–6 in taxi) · fermata "University" del bus 8 a 1,4 km (19 minuti a piedi) · Santa Claus Village 10,8 km (13 minuti in auto).
       </div>
     </div>
 
     <div class="tl-item food">
-      <div class="tl-time">12:15</div>
-      <div class="tl-title">Pranzo: il "lounas" dei giorni feriali <span class="badge b-food">CIBO</span></div>
+      <div class="tl-time">12:00</div>
+      <div class="tl-title">Pranzo veloce in casa (o lounas in centro) <span class="badge b-food">CIBO</span></div>
       <div class="tl-body">
-        Dal lunedì al venerdì, 10:30–14:00 circa, quasi tutti i ristoranti fanno il <strong>lounas</strong>: buffet con zuppa, piatto caldo, insalate, pane e caffè a <strong>12–15 €</strong>. È il pasto più conveniente della Finlandia: cercate la lavagna con scritto "Lounas" all'ingresso. In alternativa nel centro: <strong>Roka</strong> (bistrot, panino con la renna) o <strong>Café &amp; Bar 21</strong> (waffle e caffè).
+        Con il supermercato sotto casa, il modo più semplice è un pranzo veloce in appartamento. Se preferite uscire: dal lunedì al venerdì, 10:30–14:00 circa, quasi tutti i ristoranti fanno il <strong>lounas</strong>, buffet con zuppa, piatto caldo, insalate, pane e caffè a <strong>12–15 €</strong>. In centro: <strong>Roka</strong> (bistrot, panino con la renna) o <strong>Café &amp; Bar 21</strong> (waffle e caffè).
       </div>
     </div>
 
-    <div class="tl-item move" data-place="Santa Claus Village, Rovaniemi" data-ll="66.5436,25.8473">
-      <div class="tl-time">13:15</div>
-      <div class="tl-title">Bus <span class="ln linkkari">8</span> per Santa Claus Village <span class="badge b-move">BUS · 25 MIN</span></div>
+    <div class="tl-item move" data-place="Santa Claus Village, Rovaniemi" data-ll="66.5433,25.8458">
+      <div class="tl-time">12:45</div>
+      <div class="tl-title">Verso Santa Claus Village <span class="badge b-move">TAXI 13' · O BUS 8</span></div>
       <div class="tl-body">
-        Linea <strong>8 di Linkkari</strong> (l'azienda dei bus di Rovaniemi) dal centro e dalla stazione fino alla fermata "Santa Claus Village / Napapiiri", <strong>circa ogni 30 minuti</strong> (orari invernali in vigore dal 12 agosto 2026: PDF su visitrovaniemi.fi). Biglietto <strong>3,60 € in contanti</strong> all'autista, oppure 3,30 € nell'app <strong>Waltti</strong> (c'è anche il giornaliero 24 ore). Taxi: 25–32 €.
+        Da Viirinkangas il modo più comodo è il <span class="ln taxi">TAXI</span> diretto: 10,8 km, 13 minuti, ~25–32 € (Taksi Rovaniemi ha tariffe fisse per il villaggio). Con i mezzi: il bus <span class="ln linkkari">8</span> non passa da Viirinkangas, quindi si va prima in centro (taxi 5 minuti, oppure a piedi 40) e da lì si prende l'8 alla fermata <strong>Ruokasenkatu</strong>: oggi parte alle 12:45 e alle 13:50, 30 minuti fino al Circolo Polare. Biglietto <strong>3,60 €</strong> all'autista (contanti o carta contactless) oppure 3,30 € nell'app <strong>Waltti</strong>, che ha anche il giornaliero da 9 €.
+      </div>
+      <div class="how-box">
+        <strong>🚌 Orari del bus 8, lunedì–venerdì (validi dal 12/8/2026 al 6/6/2027)</strong>
+        Dalla stazione: 10:25 · 11:10 · 11:55 · 12:40 · 13:45 · 14:30 · 15:15 · 16:00 · 16:45 · 17:30 · 18:15 · 19:00 (dal centro, Ruokasenkatu, 5 minuti dopo).
+        <br>Dal Circolo Polare verso la città: 13:15 · 14:20 · 15:05 · 15:50 · 16:35 · 17:20 · 18:05 · 18:50 · <strong>19:35 l'ultima</strong>. Fermate al ritorno: centro (+30 min), <strong>University</strong> (+38 min, la più vicina a casa) e stazione (+51 min).
       </div>
     </div>
 
-    <div class="tl-item arctic" data-place="Santa Claus Village, Rovaniemi" data-ll="66.5436,25.8473">
-      <div class="tl-time">13:45–17:30</div>
+    <div class="tl-item arctic" data-place="Santa Claus Village, Rovaniemi" data-ll="66.5433,25.8458">
+      <div class="tl-time">13:00–17:00</div>
       <div class="tl-title">Santa Claus Village e la linea del Circolo Polare Artico <span class="badge b-arctic">ARTICO</span> <span class="badge b-free">INGRESSO GRATIS</span></div>
       <div class="tl-body">
         Il villaggio è aperto tutti i giorni e l'ingresso è libero. Cosa fare:
@@ -1502,7 +1621,7 @@
     </div>
 
     <div class="tl-item food" data-place="Santa's Salmon Place, Santa Claus Village, Rovaniemi" data-ll="66.5430,25.8460">
-      <div class="tl-time">17:30</div>
+      <div class="tl-time">17:00</div>
       <div class="tl-title">Cena presto: salmone cotto sul fuoco in una kota <span class="badge b-food">CIBO</span></div>
       <div class="tl-body">
         <strong>Santa's Salmon Place</strong>, dentro il villaggio: una capanna lappone (kota) con il fuoco al centro dove il salmone viene cotto lentamente su assi di legno ("loimulohi"). Piccolo e molto richiesto: arrivate presto. Alternativa: <strong>Kotahovi</strong>, sempre nel villaggio, famoso per la renna. Mangiate qualcosa di caldo e sostanzioso: stasera starete fuori per ore.
@@ -1510,10 +1629,10 @@
     </div>
 
     <div class="tl-item move">
-      <div class="tl-time">18:30</div>
-      <div class="tl-title">Bus <span class="ln linkkari">8</span> per il centro e preparazione <span class="badge b-move">BUS · 25 MIN</span></div>
+      <div class="tl-time">18:05</div>
+      <div class="tl-title">Rientro a casa e preparazione <span class="badge b-move">BUS 8 + 19' A PIEDI · O TAXI 13'</span></div>
       <div class="tl-body">
-        Le ultime corse dal villaggio sono intorno alle 20: non tardate. In appartamento: <strong>strati</strong> (vedi <a href="#freddo">Freddo</a>), batterie cariche, termos di tè caldo, bagno prima di uscire.
+        Prendete il bus <span class="ln linkkari">8</span> delle <strong>18:05</strong> dal Circolo Polare, scendete alla fermata <strong>University</strong> (alle 18:43) e da lì sono 1,4 km, 19 minuti a piedi. Con il taxi (13 minuti) potete restare al villaggio fino alle 18:45. In appartamento: <strong>strati</strong> (vedi <a href="#freddo">Freddo</a>), batterie cariche, termos di tè caldo, bagno prima di uscire.
       </div>
     </div>
 
@@ -1522,6 +1641,7 @@
       <div class="tl-title">CACCIA ALL'AURORA BOREALE <span class="badge b-booked">PRENOTATO</span> <span class="badge b-arctic">ARTICO</span></div>
       <div class="tl-body">
         Operatore e ritrovo: <span class="fill" data-fill="auroraOp" data-empty="da inserire in Prenotazioni"></span>.
+        <br><strong>Il ritrovo:</strong> molti operatori passano a prendere negli hotel del centro. Chiedete se vengono fino a Viirinkankaantie 21; se il ritrovo è in centro, prenotate un taxi per le 19:40 (5 minuti, ~12–15 €). Chiedete anche se al ritorno vi lasciano a casa.
         <br>Come funziona di solito: vi prendono in minibus e la guida sceglie dove andare guardando le <strong>previsioni delle nuvole</strong>, anche a 50–100 km dalla città, lontano dalle luci. Si aspetta intorno a un <strong>fuoco</strong> con succo di bacche caldo e salsicce alla griglia; spesso la guida fa le foto con la reflex e ve le manda. Durata <strong>3–4 ore</strong>, rientro verso mezzanotte–l'una.
         <br>Stasera la luna (al 75%) sorge alle <strong>21:55</strong>: le prime due ore il cielo è scurissimo, poi la neve si illumina e i paesaggi in foto vengono bellissimi.
       </div>
@@ -1533,7 +1653,7 @@
 
     <div class="alt-box">
       <strong>🚆 Se arrivate con il P265 (alle 07:20)</strong>
-      Fuori è notte fino alle 9:30 e l'appartamento non è pronto: valigie negli armadietti della stazione, colazione in un caffè del centro, poi <strong>Arktikum</strong> all'apertura (10:00; vedete il <a href="#g4">G4</a>: verificate se il lunedì le mostre sono aperte) e Santa Claus Village dopo pranzo. Riposino in appartamento nel tardo pomeriggio: stasera fate tardi.
+      Fuori è notte fino alle 9:30 e l'appartamento non è pronto: valigie negli armadietti della stazione (o, se ve lo concedono, subito in appartamento con un taxi), colazione in un caffè del centro, poi <strong>Arktikum</strong> all'apertura (10:00; vedete il <a href="#g4">G4</a>: verificate se il lunedì le mostre sono aperte) e Santa Claus Village dopo pranzo. Riposino in appartamento nel tardo pomeriggio: stasera fate tardi.
     </div>
 
   </div>
@@ -1573,6 +1693,7 @@
       <div class="tl-title">Ritrovo / pick-up e vestizione <span class="badge b-move">SPOSTAMENTO</span></div>
       <div class="tl-body">
         Operatore e ritrovo: <span class="fill" data-fill="snowOp" data-empty="da inserire in Prenotazioni"></span>.
+        <br>Se il ritrovo è in centro e non passano da Viirinkangas, prenotate la sera prima un taxi per le 09:15 (5 minuti, ~12–15 €).
         <br>Sotto: strato termico + pile. Vi danno <strong>tuta imbottita, stivali, guantoni, passamontagna e casco</strong> (verificate quando prenotate). Portate la <strong>patente</strong> e un documento.
       </div>
       <div class="warn-box">
@@ -1606,7 +1727,7 @@
       </div>
     </div>
 
-    <div class="tl-item sight" data-place="Arktikum, Pohjoisranta 4, Rovaniemi" data-ll="66.5076,25.7290">
+    <div class="tl-item sight" data-place="Arktikum, Pohjoisranta 4, Rovaniemi" data-ll="66.5075,25.7260">
       <div class="tl-time">14:30–17:30</div>
       <div class="tl-title">Arktikum, il museo dell'Artico <span class="badge b-sight">VISITA</span> <span class="badge b-must">IMPERDIBILE</span></div>
       <div class="tl-body">
@@ -1623,7 +1744,7 @@
       </div>
     </div>
 
-    <div class="tl-item sight" data-place="Jätkänkynttilä bridge, Rovaniemi" data-ll="66.4986,25.7420">
+    <div class="tl-item sight" data-place="Jätkänkynttilä bridge, Rovaniemi" data-ll="66.5031,25.7412">
       <div class="tl-time">17:45–19:00</div>
       <div class="tl-title">Lungofiume, ponte Jätkänkynttilä e Lordi Square <span class="badge b-sight">VISITA</span> <span class="badge b-free">GRATIS</span></div>
       <div class="tl-body">
@@ -1631,7 +1752,7 @@
       </div>
     </div>
 
-    <div class="tl-item food" data-place="Restaurant Nili, Valtakatu 20, Rovaniemi" data-ll="66.5021,25.7262">
+    <div class="tl-item food" data-place="Restaurant Nili, Valtakatu 20, Rovaniemi" data-ll="66.5019,25.7347">
       <div class="tl-time">19:30</div>
       <div class="tl-title">Cena lappone — Nili <span class="badge b-food">CIBO</span> <span class="badge b-book">PRENOTA</span></div>
       <div class="tl-body">
@@ -1641,13 +1762,17 @@
         <strong>↔ Alternative</strong>
         <strong>Roka</strong> (più informale e economico), oppure i ristoranti degli hotel del centro, che a fine dicembre sono quasi sempre aperti.
       </div>
+      <div class="how-box">
+        <strong>🏠 Il ritorno a casa</strong>
+        Da Nili a Viirinkankaantie sono 3 km: taxi 5 minuti (~12–15 €) oppure 40 minuti a piedi sui marciapiedi illuminati. Dopo le 20 i bus urbani si diradano.
+      </div>
     </div>
 
     <div class="tl-item arctic">
       <div class="tl-time">21:30</div>
       <div class="tl-title">Facoltativo: aurora fai-da-te (se il cielo è sereno) <span class="badge b-arctic">ARTICO</span> <span class="badge b-opt">FACOLTATIVO</span></div>
       <div class="tl-body">
-        Guardate la sezione <a href="#aurora">Aurora</a>: se le nuvole sono poche e il Kp è almeno 2, uscite. Punti bui raggiungibili: la <strong>riva dell'Ounasjoki dietro l'Arktikum</strong> (10 minuti a piedi, rivolti a nord, lontano dai lampioni), le pendici di <strong>Ounasvaara</strong> (taxi ~12–15 €), o il lago <strong>Norvajärvi</strong> (~20 km a nord, solo in taxi: fatevi dare un numero per il ritorno). Non camminate sul ghiaccio del fiume fuori dalle piste segnate.
+        Guardate la sezione <a href="#aurora">Aurora</a>: se le nuvole sono poche e il Kp è almeno 2, uscite. Punti bui raggiungibili: la <strong>riva del Kemijoki vicino a casa</strong>, a Viirinkangas, lontano dai lampioni; la <strong>riva dell'Ounasjoki dietro l'Arktikum</strong> (rivolti a nord); le pendici di <strong>Ounasvaara</strong> (taxi ~12–15 €), o il lago <strong>Norvajärvi</strong> (~20 km a nord, solo in taxi: fatevi dare un numero per il ritorno). Non camminate sul ghiaccio del fiume fuori dalle piste segnate.
       </div>
       <div class="alt-box">
         <strong>↔ Se è coperto</strong>
@@ -1683,7 +1808,7 @@
       <div class="tl-time">09:00</div>
       <div class="tl-title">Check-out e valigie in deposito <span class="badge b-hotel">ALLOGGIO</span></div>
       <div class="tl-body">
-        Prima chiedete all'appartamento un <strong>check-out tardivo</strong> (anche fino alle 13 vi risolve la giornata) o se potete lasciare le valigie lì fino al pomeriggio. Se no: taxi (5–10 minuti) fino alla stazione e armadietti.
+        Prima chiedete all'appartamento un <strong>check-out tardivo</strong> (anche fino alle 13 vi risolve la giornata) o se potete lasciare le valigie lì fino al pomeriggio. Se no: taxi (4 minuti, 2,7 km, ~12–15 €) fino alla stazione e armadietti. Dalla stazione il centro è a 15–20 minuti a piedi e il Korundi a 8.
       </div>
       <div class="how-box">
         <strong>🔐 Armadietti della stazione di Rovaniemi</strong>
@@ -1691,7 +1816,7 @@
       </div>
     </div>
 
-    <div class="tl-item sight" data-place="Ounasvaara, Rovaniemi" data-ll="66.4945,25.7860">
+    <div class="tl-item sight" data-place="Ounasvaara, Rovaniemi" data-ll="66.5025,25.8021">
       <div class="tl-time">10:00–12:15 · opzione A</div>
       <div class="tl-title">Ounasvaara, la collina sopra la città <span class="badge b-sight">ALL'APERTO</span> <span class="badge b-free">GRATIS</span></div>
       <div class="tl-body">
@@ -1699,7 +1824,7 @@
       </div>
     </div>
 
-    <div class="tl-item arctic" data-place="SantaPark Arctic World, Rovaniemi" data-ll="66.5250,25.8445">
+    <div class="tl-item arctic" data-place="SantaPark Arctic World, Rovaniemi" data-ll="66.5392,25.7972">
       <div class="tl-time">10:00–12:15 · opzione B</div>
       <div class="tl-title">SantaPark, il parco a tema dentro una caverna <span class="badge b-arctic">AL CALDO</span> <span class="badge b-opt">42–62 €</span></div>
       <div class="tl-body">
@@ -1707,7 +1832,7 @@
       </div>
     </div>
 
-    <div class="tl-item sight" data-place="Korundi House of Culture, Rovaniemi" data-ll="66.4991,25.7165">
+    <div class="tl-item sight" data-place="Korundi House of Culture, Rovaniemi" data-ll="66.5010,25.7182">
       <div class="tl-time">10:00–12:15 · opzione C</div>
       <div class="tl-title">Korundi e negozi di artigianato <span class="badge b-sight">AL CALDO</span></div>
       <div class="tl-body">
@@ -1727,7 +1852,7 @@
       <div class="tl-time">13:15–13:45</div>
       <div class="tl-title">Ritrovo / pick-up per le renne <span class="badge b-move">SPOSTAMENTO</span></div>
       <div class="tl-body">
-        Operatore e ritrovo: <span class="fill" data-fill="reinOp" data-empty="da inserire in Prenotazioni"></span>. Chiedete se il ritorno può lasciarvi <strong>in centro o alla stazione</strong>: vi semplifica la serata.
+        Operatore e ritrovo: <span class="fill" data-fill="reinOp" data-empty="da inserire in Prenotazioni"></span>. Avendo già lasciato l'appartamento, chiedete di essere presi e riportati <strong>in centro o alla stazione</strong>: vi semplifica la serata.
       </div>
     </div>
 
@@ -1745,7 +1870,7 @@
       </div>
     </div>
 
-    <div class="tl-item food" data-place="Restaurant Nili, Valtakatu 20, Rovaniemi" data-ll="66.5021,25.7262">
+    <div class="tl-item food" data-place="Restaurant Nili, Valtakatu 20, Rovaniemi" data-ll="66.5019,25.7347">
       <div class="tl-time">17:45</div>
       <div class="tl-title">Ultima cena lappone <span class="badge b-food">CIBO</span> <span class="badge b-book">PRENOTA</span></div>
       <div class="tl-body">
@@ -1761,15 +1886,15 @@
       </div>
     </div>
 
-    <div class="tl-item move" data-place="Rovaniemi railway station" data-ll="66.4982,25.7105">
+    <div class="tl-item move" data-place="Rovaniemi railway station" data-ll="66.4980,25.7050">
       <div class="tl-time">20:15</div>
-      <div class="tl-title">Valigie e stazione <span class="badge b-move">TAXI · 5–10 MIN</span></div>
+      <div class="tl-title">Valigie e stazione <span class="badge b-move">A PIEDI 20' · O TAXI</span></div>
       <div class="tl-body">
-        La sera del 30 i taxi sono richiestissimi: <strong>prenotatelo nel pomeriggio</strong> (per telefono o app). Ritirate le valigie dagli armadietti e alle <strong>20:35</strong> siete sul binario.
+        Dal centro (Nili) alla stazione sono 1,5 km, 20 minuti a piedi. Se le valigie sono rimaste in appartamento, prenotate il taxi <strong>nel pomeriggio</strong>: la sera del 30 sono richiestissimi, e il giro è casa → stazione, 4 minuti. Ritirate le valigie dagli armadietti e alle <strong>20:35</strong> siete sul binario.
       </div>
     </div>
 
-    <div class="tl-item train booked" data-place="Rovaniemi railway station" data-ll="66.4982,25.7105">
+    <div class="tl-item train booked" data-place="Rovaniemi railway station" data-ll="66.4980,25.7050">
       <div class="tl-time">21:00 → 09:15 (+1)</div>
       <div class="tl-title">Treno notturno P274 Rovaniemi → Helsinki <span class="badge b-train">TRENO NOTTURNO · 12 H 15</span></div>
       <div class="tl-body">
@@ -2057,7 +2182,7 @@
       <span class="book-txt"><span class="b-name">Citybox Helsinki</span> — notte 26→27<span class="b-meta">Siltasaarenkatu 13 · check-in self-service dalle 15, check-out entro le 12, deposito bagagli gratuito.</span></span>
       <span class="book-when">26/12</span></label>
     <label class="book-item"><input type="checkbox" data-book="apt" data-default="1">
-      <span class="book-txt"><span class="b-name">Rovaniemi Apartment2</span> — notti 28→30<span class="b-meta">Indirizzo e orari: vedete "I vostri dettagli" qui sotto.</span></span>
+      <span class="book-txt"><span class="b-name">Rovaniemi Apartment2</span> — notti 28→30<span class="b-meta">Viirinkankaantie 21-23, 3° piano, 96300 Rovaniemi (Viirinkangas). Stazione e centro a 2,7–3 km.</span></span>
       <span class="book-when">28/12</span></label>
     <label class="book-item"><input type="checkbox" data-book="aurora" data-default="1">
       <span class="book-txt"><span class="b-name">Caccia all'aurora boreale</span> — lunedì 28/12 ore 20:00</span>
@@ -2095,10 +2220,10 @@
   <div class="book-group">
     <div class="book-group-title soon">🟠 Prima di partire</div>
     <label class="book-item"><input type="checkbox" data-book="ask-apt">
-      <span class="book-txt"><span class="b-name">Scrivere all'appartamento</span><span class="b-meta">Indirizzo esatto e come si entra (codice, cassetta delle chiavi) · si possono lasciare le valigie il 28 verso le 11:30? · check-out tardivo il 30? · c'è la sauna? · lavatrice/asciugatrice per i vestiti termici?</span></span>
+      <span class="book-txt"><span class="b-name">Scrivere all'appartamento</span><span class="b-meta">Come si entra al 3° piano (codice, cassetta delle chiavi) · si possono lasciare le valigie il 28 verso le 11:15? · check-out tardivo il 30? · c'è la sauna? · lavatrice/asciugatrice per i vestiti termici?</span></span>
       <span class="book-when">NOV</span></label>
     <label class="book-item"><input type="checkbox" data-book="ask-ops">
-      <span class="book-txt"><span class="b-name">Scrivere ai tre operatori delle escursioni</span><span class="b-meta">Punto e ora esatti del ritrovo (o pick-up dall'appartamento) · tuta termica, stivali e guanti inclusi? · cosa succede con il cielo coperto o −35° · franchigia della motoslitta e come ridurla · il ritorno delle renne può lasciarvi in centro o in stazione?</span></span>
+      <span class="book-txt"><span class="b-name">Scrivere ai tre operatori delle escursioni</span><span class="b-meta">Passano a prendervi in Viirinkankaantie 21 o il ritrovo è in centro (e a che ora)? · tuta termica, stivali e guanti inclusi? · cosa succede con il cielo coperto o −35° · franchigia della motoslitta e come ridurla · il ritorno delle renne può lasciarvi in centro o in stazione?</span></span>
       <span class="book-when">NOV</span></label>
     <label class="book-item"><input type="checkbox" data-book="licence">
       <span class="book-txt"><span class="b-name">Patente (tessera fisica) nel portafoglio di chi guida la motoslitta</span></span>
@@ -2137,7 +2262,7 @@
   <div class="det-box">
     <p style="margin:0 0 12px;color:var(--text-sec);font-size:13px;line-height:1.6">Scrivete qui quello che trovate su biglietti e conferme: compare nelle tappe giuste dell'itinerario, entra nel testo che condividete su WhatsApp e l'indirizzo dell'appartamento viene messo sulla mappa. Resta salvato su questo dispositivo.</p>
     <div class="det-grid">
-      <div><label for="d-aptAddr">Indirizzo Rovaniemi Apartment2</label><input id="d-aptAddr" data-det="aptAddr" placeholder="es. Koskikatu 10 A 5, Rovaniemi" autocomplete="off"></div>
+      <div><label for="d-aptAddr">Indirizzo Rovaniemi Apartment2</label><input id="d-aptAddr" data-det="aptAddr" placeholder="Viirinkankaantie 21-23, 3° piano" autocomplete="off"></div>
       <div><label for="d-aptCheckin">Check-in / chiavi (28/12)</label><input id="d-aptCheckin" data-det="aptCheckin" placeholder="es. dalle 16 · codice via SMS" autocomplete="off"></div>
       <div><label for="d-aptCheckout">Check-out (30/12)</label><input id="d-aptCheckout" data-det="aptCheckout" placeholder="es. entro le 11" autocomplete="off"></div>
       <div><label for="d-auroraOp">Aurora 28/12 · operatore e ritrovo</label><input id="d-auroraOp" data-det="auroraOp" placeholder="es. Nome tour · pick-up 19:45 sotto casa" autocomplete="off"></div>
@@ -2213,11 +2338,14 @@
         <tr><td>Dom 27</td><td>Oodi → Löyly → Citybox</td><td><span class="ln taxi">TAXI</span> / Bolt</td><td>10 + 15 min</td><td>Löyly è fuori dal centro e la sera conta il tempo; in due costa quanto i mezzi.</td></tr>
         <tr><td>Dom 27</td><td>Citybox → stazione</td><td><span class="ln metro">M</span> 1 fermata</td><td>5 min</td><td>Con le valigie, direttamente sotto la stazione.</td></tr>
         <tr><td>27 → 28</td><td>Helsinki → Rovaniemi</td><td><span class="ln vr">VR</span> P273</td><td>11 h 46</td><td>Dormite mentre viaggiate: risparmiate una notte d'albergo e non perdete ore di luce.</td></tr>
-        <tr><td>Lun 28</td><td>Stazione → appartamento</td><td><span class="ln taxi">TAXI</span></td><td>5–10 min</td><td>1,5 km con le valigie su neve.</td></tr>
-        <tr><td>Lun 28</td><td>Centro ↔ Santa Claus Village</td><td><span class="ln linkkari">8</span> bus</td><td>25 min</td><td>8 km a nord, sul Circolo Polare; il bus è economico e frequente.</td></tr>
+        <tr><td>Lun 28</td><td>Stazione → appartamento</td><td><span class="ln taxi">TAXI</span></td><td>4 min</td><td>2,7 km con le valigie su neve (a piedi 35 minuti).</td></tr>
+        <tr><td>Lun 28</td><td>Appartamento → Santa Claus Village</td><td><span class="ln taxi">TAXI</span> o centro + <span class="ln linkkari">8</span></td><td>13–45 min</td><td>10,8 km. Il bus 8 non passa da Viirinkangas: in due il taxi diretto è la scelta più semplice.</td></tr>
+        <tr><td>Lun 28</td><td>Santa Claus Village → casa</td><td><span class="ln linkkari">8</span> fino a "University" + <span class="ln walk">19'</span></td><td>~60 min</td><td>Bus delle 18:05, poi 1,4 km a piedi. In taxi 13 minuti.</td></tr>
         <tr><td>Lun 28</td><td>Caccia all'aurora</td><td>minibus dell'operatore</td><td>3–4 h</td><td>Serve andare dove il cielo è sereno e buio, anche lontano.</td></tr>
-        <tr><td>Mar 29</td><td>Motoslitte · Arktikum · centro</td><td>pick-up + <span class="ln walk">a piedi</span></td><td>—</td><td>Arktikum, ponte e Lordi Square sono a 10–15 minuti a piedi dal centro.</td></tr>
-        <tr><td>Mer 30</td><td>Appartamento → stazione (valigie)</td><td><span class="ln taxi">TAXI</span></td><td>5–10 min</td><td>Armadietti fino alle 21.</td></tr>
+        <tr><td>Mar 29</td><td>Motoslitte · Arktikum · centro</td><td>pick-up + <span class="ln walk">a piedi</span></td><td>—</td><td>Arktikum, ponte e Lordi Square sono a 10–15 minuti a piedi l'uno dall'altro.</td></tr>
+        <tr><td>Mar 29</td><td>Centro (Nili) → casa</td><td><span class="ln taxi">TAXI</span> / <span class="ln walk">a piedi</span></td><td>5 / 40 min</td><td>3 km; la sera i bus urbani sono pochi.</td></tr>
+        <tr><td>Mer 30</td><td>Appartamento → stazione (valigie)</td><td><span class="ln taxi">TAXI</span></td><td>4 min</td><td>2,7 km. Armadietti aperti fino alle 21:30.</td></tr>
+        <tr><td>Mer 30</td><td>Centro → stazione</td><td><span class="ln walk">a piedi</span></td><td>20 min</td><td>1,5 km dopo cena, se le valigie sono già in stazione.</td></tr>
         <tr><td>Mer 30</td><td>Escursione renne</td><td>pick-up dell'operatore</td><td>2,5–3 h</td><td>Le fattorie sono fuori città.</td></tr>
         <tr><td>30 → 31</td><td>Rovaniemi → Helsinki</td><td><span class="ln vr">VR</span> P274</td><td>12 h 15</td><td>Arrivate in centro alle 09:15 con 6 ore di margine sul volo.</td></tr>
         <tr><td>Gio 31</td><td>Stazione → aeroporto</td><td><span class="ln train">I/P</span></td><td>30 min</td><td>Ogni 10 minuti; partite entro le 12:55.</td></tr>
@@ -2540,6 +2668,119 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+<script type="application/json" id="clima-data">{"axis":[-40,10],"days":[{"md":"12-26","lbl":"Sab 26","loc":"h","city":"Helsinki","mn":-4.8,"mx":0.5,"mnP10":-15.6,"mxP90":5.4,"recMin":[-24.4,1996],"recMax":[9.3,2011],"pLe20":4,"pLe25":0,"pLe30":0,"pThaw":61,"snow":2,"n":35,"y0":1991,"y1":2025},{"md":"12-27","lbl":"Dom 27","loc":"h","city":"Helsinki","mn":-4.6,"mx":0.4,"mnP10":-13.4,"mxP90":5.5,"recMin":[-18.7,1995],"recMax":[9.9,2011],"pLe20":2,"pLe25":0,"pLe30":0,"pThaw":61,"snow":2,"n":35,"y0":1991,"y1":2025},{"md":"12-28","lbl":"Lun 28","loc":"r","city":"Rovaniemi","mn":-13.1,"mx":-5.8,"mnP10":-22.4,"mxP90":1.5,"recMin":[-28.6,2002],"recMax":[6.1,2008],"pLe20":21,"pLe25":8,"pLe30":1,"pThaw":23,"snow":null,"n":29,"y0":1997,"y1":2025},{"md":"12-29","lbl":"Mar 29","loc":"r","city":"Rovaniemi","mn":-12.9,"mx":-5.5,"mnP10":-23.7,"mxP90":1.2,"recMin":[-32.9,2002],"recMax":[4.5,2008],"pLe20":21,"pLe25":10,"pLe30":3,"pThaw":23,"snow":null,"n":29,"y0":1997,"y1":2025},{"md":"12-30","lbl":"Mer 30","loc":"r","city":"Rovaniemi","mn":-12.7,"mx":-5.5,"mnP10":-24.9,"mxP90":1.1,"recMin":[-32.5,2002],"recMax":[2.4,2016],"pLe20":20,"pLe25":10,"pLe30":3,"pThaw":22,"snow":null,"n":29,"y0":1997,"y1":2025},{"md":"12-31","lbl":"Gio 31","loc":"h","city":"Helsinki","mn":-4.6,"mx":-0.1,"mnP10":-13.6,"mxP90":5.3,"recMin":[-23.5,2002],"recMax":[7.0,2016],"pLe20":3,"pLe25":0,"pLe30":0,"pThaw":63,"snow":3,"n":35,"y0":1991,"y1":2025}],"grid":{"years":[2011,2012,2013,2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024,2025],"mn":[[4.1,3.2,-13.3,-15.5,-5.8,-1.5],[-16.2,-1.3,-15.6,-24.6,-19.2,0.3],[4.2,3.2,0.1,2.2,0.2,1.4],[-12.7,-8.9,-25.0,-20.8,-8.2,1.0],[-3.1,-5.1,-18.8,-20.9,-6.6,-3.1],[2.3,0.2,-12.4,-5.7,-10.7,4.8],[-0.3,0.4,-19.2,-19.8,-1.9,1.0],[-0.9,-1.3,-6.1,-6.5,-18.9,-1.9],[0.3,-4.1,-21.6,-3.1,-1.4,-1.0],[-1.7,-2.6,-7.7,-3.5,-7.3,1.5],[-15.9,-13.8,-22.4,-8.9,-6.3,-1.5],[-7.5,-5.3,-12.5,-14.9,-7.1,2.7],[-6.0,-4.3,-12.7,-9.4,-13.7,-14.2],[5.1,0.1,-5.6,-0.4,-10.1,-1.9],[1.0,0.9,-10.3,-10.0,-20.5,-11.3]],"mx":[[9.3,9.9,-3.9,-5.3,-3.7,1.5],[-0.8,2.4,-7.7,-15.4,-1.4,2.5],[5.1,5.3,3.4,3.5,2.3,4.8],[-1.3,-2.7,-20.8,-7.9,-1.7,4.7],[6.3,-1.6,-11.9,-6.6,1.0,1.5],[6.9,3.9,-3.7,1.0,2.4,7.0],[4.9,4.9,-14.7,-1.9,0.9,3.1],[3.2,2.3,-4.2,0.0,-0.1,0.7],[1.8,0.4,-2.9,0.6,1.5,5.5],[0.7,1.9,-1.9,-1.8,-2.2,3.9],[-7.3,-9.7,-8.9,-4.5,-0.7,2.5],[-1.2,2.9,-6.2,-4.8,-3.6,5.1],[-2.3,0.3,-7.6,-7.9,-9.3,-5.5],[6.8,5.4,-0.1,1.1,0.1,0.3],[6.0,4.2,-0.9,-4.0,-6.4,-6.5]]},"moments":[{"id":"sera26","when":"Sab 26 · 18–22","name":"Prima passeggiata tra le luci","loc":"h","booked":false,"n":456,"med":-1,"p10":-9,"p90":4,"chill":-5,"cold":-18,"coldY":2001,"clear":null},{"id":"suomenlinna","when":"Dom 27 · 10–13","name":"Suomenlinna sul mare","loc":"h","booked":false,"n":474,"med":0,"p10":-10,"p90":5,"chill":-5,"cold":-23,"coldY":1996,"clear":null},{"id":"aurora","when":"Lun 28 · 20–24","name":"Caccia all'aurora","loc":"r","booked":true,"n":675,"med":-7,"p10":-19,"p90":0,"chill":-10,"cold":-32,"coldY":2002,"clear":23,"clearN":135,"clearMed":-12,"clearP10":-25},{"id":"moto","when":"Mar 29 · 10–13","name":"Motoslitte","loc":"r","booked":true,"n":540,"med":-7,"p10":-22,"p90":0,"chill":-9,"cold":-32,"coldY":2002,"clear":null,"ride":-17},{"id":"renne","when":"Mer 30 · 14–17","name":"Slitta con le renne","loc":"r","booked":true,"n":432,"med":-6,"p10":-20,"p90":0,"chill":-9,"cold":-32,"coldY":2002,"clear":null},{"id":"mattina31","when":"Gio 31 · 10–13","name":"Ultima mattina a Helsinki","loc":"h","booked":false,"n":356,"med":0,"p10":-11,"p90":5,"chill":-4,"cold":-23,"coldY":2002,"clear":null}],"yearsR":[1997,2025],"yearsH":[1991,2025],"pos":{"rov_station":"66.49832 25.70880","hel_kaisaniemi":"60.17523 24.94459"},"extra":{"clearMed":-12,"cloudyMed":-6,"clearP10":-25,"nClear":142,"nCloudy":473,"partly":27,"overcast":73},"coldestCell":[-25.0,2014,"Lun 28"],"warmestCell":[9.9,2011,"Dom 27"],"srcText":"<strong>Helsinki<\/strong>: stazione FMI di Kaisaniemi, nel parco accanto alla stazione centrale, 1991–2025. <strong>Rovaniemi<\/strong>: stazione FMI della stazione ferroviaria, a 1,6 km in linea d'aria dal vostro appartamento, 1997–2025 (valori orari dal 1999). Medie e \"9 giorni su 10\" usano i 5 giorni attorno a ogni data in tutti gli anni; i record sono del giorno esatto. Dati aperti dell'Istituto meteorologico finlandese (Ilmatieteen laitos, CC BY 4.0).","momentsNote":"A Rovaniemi a fine dicembre il sole quasi non sale: tra mezzogiorno e mezzanotte la temperatura cambia poco, per questo i tre momenti in Lapponia hanno valori simili. Conta di più il cielo: nelle sere serene (tra le 20 e le 24) il valore tipico è <strong>−12°<\/strong>, in quelle coperte <strong>−6°<\/strong>. Le serate serene sono poche (circa 1 su 4) e sono anche le più fredde: vestitevi pensando a −15/−25°.","heatNoteMn":"Ogni casella è la minima (di solito di notte) alla stazione della città in cui sarete quel giorno. A Rovaniemi la notte più fredda di questi 15 anni è stata quella del 28 dicembre 2014, con −25,0°. A Helsinki in 11 anni su 15 almeno una delle vostre tre giornate è rimasta sopra zero anche di notte: la neve in città non è garantita.","heatNoteMx":"Le massime: negli ultimi 15 anni a Helsinki si è saliti sopra zero in circa 8 giorni su 10, spesso con pioggia o neve bagnata e marciapiedi scivolosi. A Rovaniemi il giorno più freddo di questi 15 anni (28 dicembre 2014) non è andato oltre −20,8°."}</script>
+<script>
+(function () {
+  'use strict';
+  var el = document.getElementById('clima-data');
+  if (!el) return;
+  var C; try { C = JSON.parse(el.textContent); } catch (e) { return; }
+  function $(s) { return document.querySelector(s); }
+  function fmt(v, dec) { if (v === null || v === undefined || isNaN(v)) return '–'; var s = (dec ? v.toFixed(dec) : String(Math.round(v))).replace('.', ','); return (v > 0 && s !== '0' ? '+' : '') + s.replace('-', '−'); }
+  function deg(v, dec) { return fmt(v, dec) + '°'; }
+  var tip = $('#t-tip');
+  function showTip(html, x, y) {
+    tip.innerHTML = html; tip.style.display = 'block';
+    var r = tip.getBoundingClientRect(), W = window.innerWidth, H = window.innerHeight;
+    var left = Math.min(Math.max(8, x + 14), W - r.width - 8), top = y + 16;
+    if (top + r.height > H - 8) top = Math.max(8, y - r.height - 12);
+    tip.style.left = left + 'px'; tip.style.top = top + 'px';
+  }
+  function hideTip() { tip.style.display = 'none'; }
+  function bindTip(node, html) {
+    node.addEventListener('pointermove', function (e) { showTip(html, e.clientX, e.clientY); });
+    node.addEventListener('pointerleave', hideTip);
+    node.addEventListener('focus', function () { var r = node.getBoundingClientRect(); showTip(html, r.left + r.width / 2, r.bottom - 6); });
+    node.addEventListener('blur', hideTip);
+  }
+
+  // fonti e intestazione
+  if (C.srcText) $('#t-src').innerHTML = C.srcText;
+
+  // ── momenti chiave ──
+  $('#t-moments').innerHTML = C.moments.map(function (m) {
+    var sub = '9 volte su 10 tra <b>' + deg(m.p10) + '</b> e <b>' + deg(m.p90) + '</b>';
+    if (m.chill !== null && m.chill !== undefined && m.chill < m.med - 0.5) sub += '<br>col vento sembra <b>' + deg(m.chill) + '</b>';
+    if (m.cold !== null && m.cold !== undefined) sub += '<br>il più freddo: <b>' + deg(m.cold) + '</b> (' + m.coldY + ')';
+    if (m.ride !== undefined) sub += '<br>in corsa a 40 km/h sembra <b>' + deg(m.ride) + '</b>';
+    if (m.clearMed !== undefined) sub += '<br>con il cielo sereno, quello che serve: tipicamente <b>' + deg(m.clearMed) + '</b>, 1 volta su 10 sotto <b>' + deg(m.clearP10) + '</b>';
+    if (m.clear !== null && m.clear !== undefined) sub += '<br>sereno o quasi alle 21: <b>circa ' + Math.round(m.clear / 10) + ' sere su 10</b>';
+    return '<div class="t-tile' + (m.booked ? ' booked' : '') + '"><span class="tt-when">' + m.when + '</span><span class="tt-name">' + m.name + '</span>' +
+      '<span class="tt-val">' + deg(m.med) + '<small>tipico</small></span><span class="tt-sub">' + sub + '</span></div>';
+  }).join('');
+  if (C.momentsNote) $('#t-moments-note').innerHTML = C.momentsNote;
+
+  // ── righe giorno per giorno ──
+  var LO = C.axis[0], HI = C.axis[1];
+  function pct(v) { return ((Math.max(LO, Math.min(HI, v)) - LO) / (HI - LO) * 100).toFixed(2) + '%'; }
+  var rows = '', ticks = [];
+  for (var t = LO; t <= HI; t += 10) ticks.push(t);
+  C.days.forEach(function (d, i) {
+    var gl = ticks.map(function (t) { return t === 0 ? '<span class="zero" style="left:' + pct(0) + '"></span>' : '<span class="gl" style="left:' + pct(t) + '"></span>'; }).join('');
+    rows += '<div class="t-row" tabindex="0" data-i="' + i + '"><span class="tr-lbl">' + d.lbl + '<span>' + d.city + '</span></span><span class="t-track">' + gl +
+      '<span class="wh" style="left:' + pct(d.mnP10) + ';width:calc(' + pct(d.mxP90) + ' - ' + pct(d.mnP10) + ')"></span>' +
+      '<span class="bar" style="left:' + pct(d.mn) + ';width:calc(' + pct(d.mx) + ' - ' + pct(d.mn) + ')"></span>' +
+      '<span class="rec cold" style="left:' + pct(d.recMin[0]) + '"></span>' +
+      '<span class="rec warm" style="left:' + pct(d.recMax[0]) + '"></span>' +
+      '</span><span class="tr-val">' + deg(d.mn) + ' / ' + deg(d.mx) + '</span></div>';
+  });
+  rows += '<div class="t-axis"><span></span><span class="ax">' + ticks.map(function (t) { return '<span style="left:' + pct(t) + '">' + deg(t) + '</span>'; }).join('') + '</span><span class="tr-val" style="opacity:.8">min / max</span></div>';
+  $('#t-range').innerHTML = rows;
+  Array.prototype.forEach.call(document.querySelectorAll('#t-range .t-row'), function (row) {
+    var d = C.days[+row.getAttribute('data-i')];
+    bindTip(row, '<div class="th">' + d.lbl + ' · ' + d.city + '</div>' +
+      'Massima media <b>' + deg(d.mx, 1) + '</b> · minima media <b>' + deg(d.mn, 1) + '</b><br>' +
+      '9 giorni su 10: minima sopra <b>' + deg(d.mnP10) + '</b>, massima sotto <b>' + deg(d.mxP90) + '</b><br>' +
+      'Record: <b>' + deg(d.recMin[0], 1) + '</b> (' + d.recMin[1] + ') e <b>' + deg(d.recMax[0], 1) + '</b> (' + d.recMax[1] + ')<br>' +
+      'Notti sotto −20°: <b>' + d.pLe20 + '%</b> · sopra zero di giorno: <b>' + d.pThaw + '%</b><br>' +
+      '<span style="color:var(--muted)">' + d.n + ' anni di dati (' + d.y0 + '–' + d.y1 + ')</span>');
+  });
+  $('#t-table').innerHTML = '<thead><tr><th>Giorno</th><th>Max media</th><th>Min media</th><th>Min 1 anno su 10</th><th>Record freddo</th><th>Record caldo</th><th>Notti ≤ −20°</th><th>Neve al suolo</th></tr></thead><tbody>' +
+    C.days.map(function (d) {
+      return '<tr><td><strong>' + d.lbl + '</strong> · ' + d.city + '</td><td>' + deg(d.mx, 1) + '</td><td>' + deg(d.mn, 1) + '</td><td>' + deg(d.mnP10) + '</td><td>' + deg(d.recMin[0], 1) + ' (' + d.recMin[1] + ')</td><td>' + deg(d.recMax[0], 1) + ' (' + d.recMax[1] + ')</td><td>' + d.pLe20 + '%</td><td>' + (d.snow === null ? '–' : d.snow + ' cm') + '</td></tr>';
+    }).join('') + '</tbody>';
+
+  // ── griglia anno per anno (scala divergente: blu sotto zero, arancio sopra) ──
+  var BINS = [
+    [-99, -30, '#0d366b', '#fff'], [-30, -25, '#104281', '#fff'], [-25, -20, '#1c5cab', '#fff'], [-20, -15, '#2a78d6', '#fff'],
+    [-15, -10, '#5598e7', '#0b0b0b'], [-10, -5, '#86b6ef', '#0b0b0b'], [-5, 0, '#b7d3f6', '#0b0b0b'],
+    [0, 3, 'var(--t-neutral)', 'var(--text)'], [3, 99, '#f2a07a', '#0b0b0b']
+  ];
+  function bin(v) { for (var i = 0; i < BINS.length; i++) if (v >= BINS[i][0] && v < BINS[i][1]) return BINS[i]; return BINS[BINS.length - 1]; }
+  function heat(key) {
+    var html = '<thead><tr><th class="yr">Anno</th>' + C.days.map(function (d) { return '<th>' + d.lbl + '<br><span style="opacity:.75">' + d.city.slice(0, 3).toUpperCase() + '</span></th>'; }).join('') + '</tr></thead><tbody>';
+    C.grid.years.forEach(function (y, yi) {
+      html += '<tr><th class="yr">' + y + '</th>' + C.grid[key][yi].map(function (v, di) {
+        if (v === null) return '<td class="na">–</td>';
+        var b = bin(v);
+        return '<td tabindex="0" data-y="' + y + '" data-d="' + di + '" data-v="' + v + '" style="background:' + b[2] + ';color:' + b[3] + '">' + fmt(v) + '</td>';
+      }).join('') + '</tr>';
+    });
+    var avgRow = C.days.map(function (d) { return key === 'mn' ? d.mn : d.mx; });
+    html += '<tr class="avg"><th class="yr">Media</th>' + avgRow.map(function (v) { var b = bin(v); return '<td style="background:' + b[2] + ';color:' + b[3] + ';font-weight:600">' + fmt(v) + '</td>'; }).join('') + '</tr></tbody>';
+    $('#t-heat').innerHTML = html;
+    Array.prototype.forEach.call(document.querySelectorAll('#t-heat td[data-v]'), function (td) {
+      var d = C.days[+td.getAttribute('data-d')], v = +td.getAttribute('data-v');
+      bindTip(td, '<div class="th">' + d.lbl + ' ' + td.getAttribute('data-y') + ' · ' + d.city + '</div>' + (key === 'mn' ? 'Minima' : 'Massima') + ' <b>' + deg(v, 1) + '</b>');
+    });
+    $('#t-heat-note').innerHTML = key === 'mn' ? C.heatNoteMn : C.heatNoteMx;
+  }
+  $('#t-scale').innerHTML = BINS.map(function (b) {
+    var lbl = b[0] === -99 ? '< −30' : (b[1] === 99 ? '> +3' : (b[0] === 0 ? '0…+3' : fmt(b[0]) + '…' + fmt(b[1])));
+    return '<span style="background:' + b[2] + ';color:' + b[3] + '">' + lbl + '</span>';
+  }).join('');
+  var chips = document.querySelectorAll('[data-heat]');
+  Array.prototype.forEach.call(chips, function (c) {
+    c.addEventListener('click', function () {
+      Array.prototype.forEach.call(chips, function (x) { x.classList.toggle('on', x === c); x.setAttribute('aria-selected', x === c ? 'true' : 'false'); });
+      heat(c.getAttribute('data-heat'));
+    });
+  });
+  heat('mn');
+  window.addEventListener('scroll', hideTip, { passive: true });
+})();
+</script>
+
 <script>
 (function () {
   'use strict';
@@ -2734,44 +2975,6 @@
     });
   });
 
-  // stessi giorni negli anni passati (archivio Open-Meteo, una richiesta per città)
-  (function loadHistory() {
-    var tbody = $('#wx-hist tbody'), YEARS = [2021, 2022, 2023, 2024, 2025];
-    function avg(a) { return a.reduce(function (s, x) { return s + x; }, 0) / a.length; }
-    function render(rows) {
-      var html = '', aH = [], aL = [], rH = [], rL = [], rMin = [];
-      rows.forEach(function (r) {
-        aH.push(r.hMax); aL.push(r.hMin); rH.push(r.rMax); rL.push(r.rMin); rMin.push(r.rCold);
-        html += '<tr><td>' + r.y + '</td><td>' + r.hMax.toFixed(1) + '° / ' + r.hMin.toFixed(1) + '°</td><td>' + r.rMax.toFixed(1) + '° / ' + r.rMin.toFixed(1) + '°</td><td>' + r.rCold.toFixed(1) + '°</td></tr>';
-      });
-      html += '<tr><td><strong>Media</strong></td><td><strong>' + avg(aH).toFixed(1) + '° / ' + avg(aL).toFixed(1) + '°</strong></td><td><strong>' + avg(rH).toFixed(1) + '° / ' + avg(rL).toFixed(1) + '°</strong></td><td><strong>' + Math.min.apply(null, rMin).toFixed(1) + '° (la più fredda)</strong></td></tr>';
-      tbody.innerHTML = html;
-    }
-    var cached = lsGet('fin-wx-hist-v1', null);
-    if (cached && cached.length) { render(cached); return; }
-    function arch(l) {
-      return fetchJSON('https://archive-api.open-meteo.com/v1/archive?latitude=' + l.lat + '&longitude=' + l.lon +
-        '&start_date=' + YEARS[0] + '-12-26&end_date=' + YEARS[YEARS.length - 1] + '-12-31&daily=temperature_2m_max,temperature_2m_min&timezone=Europe%2FHelsinki', 15000);
-    }
-    Promise.all([arch(LOC.h), arch(LOC.r)]).then(function (res) {
-      function pick(j, y, d0, d1) {
-        var d = j.daily, mx = [], mn = [];
-        d.time.forEach(function (t, k) {
-          if (t >= y + '-12-' + d0 && t <= y + '-12-' + d1 && d.temperature_2m_max[k] !== null) { mx.push(d.temperature_2m_max[k]); mn.push(d.temperature_2m_min[k]); }
-        });
-        return { mx: mx, mn: mn };
-      }
-      var rows = YEARS.map(function (y) {
-        var h = pick(res[0], y, '26', '27'), r = pick(res[1], y, '28', '30');
-        if (!h.mx.length || !r.mx.length) throw new Error('dati mancanti');
-        return { y: y, hMax: avg(h.mx), hMin: avg(h.mn), rMax: avg(r.mx), rMin: avg(r.mn), rCold: Math.min.apply(null, r.mn) };
-      });
-      lsSet('fin-wx-hist-v1', rows); render(rows);
-    }).catch(function () {
-      tbody.innerHTML = '<tr><td colspan="4" style="color:var(--muted)">Dati storici non raggiungibili adesso. In media: Helsinki tra −5° e 0°, Rovaniemi tra −13° e −6°, con notti serene a −20/−25°.</td></tr>';
-    });
-  })();
-
   // luce del giorno: crepuscolo civile + sole (calcolati per il 2026)
   (function sunRows() {
     var SUN = [
@@ -2901,7 +3104,9 @@
   }
 
   // ── i vostri dettagli ──
+  var APT_ADDR = 'Viirinkankaantie 21-23, 3° piano';   // Rovaniemi Apartment2 (Viirinkangas)
   var DET_KEY = 'fin-details', det = lsGet(DET_KEY, {});
+  if (!det.aptAddr) det.aptAddr = APT_ADDR;
   function paintFills() {
     $$('.fill[data-fill]').forEach(function (el) {
       var k = el.getAttribute('data-fill'), v = (det[k] || '').trim();
@@ -2912,7 +3117,7 @@
   var geoTimer = null;
   function geocodeApt() {
     var a = (det.aptAddr || '').trim();
-    if (!a) { lsSet('fin-apt-ll', null); document.dispatchEvent(new CustomEvent('fin-apt')); return; }
+    if (!a || a === APT_ADDR) { lsSet('fin-apt-ll', null); document.dispatchEvent(new CustomEvent('fin-apt')); return; }
     var prev = lsGet('fin-apt-ll', null);
     if (prev && prev.q === a) return;
     var q = /rovaniemi/i.test(a) ? a : a + ', Rovaniemi';
@@ -2938,7 +3143,7 @@
     });
   });
   paintFills();
-  if (det.aptAddr) geocodeApt();
+  if (det.aptAddr && det.aptAddr !== APT_ADDR) geocodeApt();
 
   // ── itinerario interattivo: fatto / top / da valutare / nota ──
   var STORE = 'fin-items';
@@ -2969,7 +3174,7 @@
       var body = item.querySelector('.tl-body'); if (!body) return;
       var old = body.querySelector('.map-links'); if (old) old.remove();
       var a = (det.aptAddr || '').trim();
-      if (a) body.insertAdjacentHTML('beforeend', mapLinks(/rovaniemi/i.test(a) ? a : a + ', Rovaniemi'));
+      if (a) body.insertAdjacentHTML('beforeend', mapLinks(a === APT_ADDR ? 'Viirinkankaantie 21, 96300 Rovaniemi' : (/rovaniemi/i.test(a) ? a : a + ', Rovaniemi'), a === APT_ADDR ? '66.4845,25.6953' : null));
     });
   }
 
@@ -3238,24 +3443,25 @@
 
   // c: a=visita r=cibo h=alloggio x=artico sa=sauna t=stazione/aeroporto · z: h=Helsinki r=Rovaniemi
   // d=giorni · o=ordine nel giorno · k=chiave per inizio/fine percorso · nb=fuori dallo zoom del giorno
-  var APT_DEFAULT = [66.5025, 25.7275];
+  var APT_DEFAULT = [66.4845, 25.6953];   // Viirinkankaantie 21-23 (OpenStreetMap)
+  var APT_ADDR = 'Viirinkankaantie 21-23, 3° piano';
   var P = [
     // HELSINKI
     { k: 'AIR', n: 'Aeroporto di Helsinki-Vantaa (stazione sotto il terminal)', c: 't', z: 'h', d: [1, 6], t: 'G1 arrivo 16:00 · G6 volo 15:25', ll: [60.3172, 24.9633], nb: true },
-    { k: 'HKI', n: 'Stazione centrale di Helsinki', c: 't', z: 'h', d: [1, 2, 6], o: { 1: 2 }, t: 'Treni I/P, metro, treni notturni', ll: [60.1712, 24.9414] },
-    { k: 'CBX', n: 'Citybox Helsinki · Siltasaarenkatu 13', q: 'Citybox Helsinki, Siltasaarenkatu 13, Helsinki', c: 'h', z: 'h', d: [1, 2], t: 'Notte del 26 · deposito bagagli il 27', ll: [60.1786, 24.9495] },
-    { n: 'Pitkäsilta (il "ponte lungo")', c: 'a', z: 'h', d: [1], o: { 1: 1 }, t: 'G1 · passeggiata delle luci', ll: [60.1765, 24.9497] },
+    { k: 'HKI', n: 'Stazione centrale di Helsinki', c: 't', z: 'h', d: [1, 2, 6], o: { 1: 2 }, t: 'Treni I/P, metro, treni notturni', ll: [60.1715, 24.9406] },
+    { k: 'CBX', n: 'Citybox Helsinki · Siltasaarenkatu 13', q: 'Citybox Helsinki, Siltasaarenkatu 13, Helsinki', c: 'h', z: 'h', d: [1, 2], t: 'Notte del 26 · deposito bagagli il 27', ll: [60.1821, 24.9498] },
+    { n: 'Pitkäsilta (il "ponte lungo")', c: 'a', z: 'h', d: [1], o: { 1: 1 }, t: 'G1 · passeggiata delle luci', ll: [60.1764, 24.9502] },
     { n: 'Aleksanterinkatu, la via del Natale', c: 'a', z: 'h', d: [1], o: { 1: 3 }, t: 'G1 · luci e vetrine di Stockmann', ll: [60.1690, 24.9475] },
     { n: 'Piazza del Senato e Duomo', q: 'Senate Square, Helsinki', c: 'a', z: 'h', d: [1, 2], o: { 1: 4, 2: 6 }, t: 'G1 sera · G2 nell\'ultima luce', ll: [60.1697, 24.9522] },
     { n: 'Cattedrale Uspenski', q: 'Uspenski Cathedral, Helsinki', c: 'a', z: 'h', d: [1, 2], o: { 1: 5, 2: 5 }, t: 'G1 sera · G2 visita interna', ll: [60.1685, 24.9600] },
     { n: 'Kauppatori e molo per Suomenlinna', q: 'Kauppatori, Helsinki', c: 'a', z: 'h', d: [1, 2, 6], o: { 1: 6, 2: 1, 6: 3 }, t: 'Traghetto HSL 19', ll: [60.1675, 24.9527] },
-    { n: 'Savotta', q: 'Ravintola Savotta, Aleksanterinkatu 22, Helsinki', c: 'r', z: 'h', d: [1], o: { 1: 7 }, t: 'G1 · cena · prenotare', ll: [60.1697, 24.9516] },
+    { n: 'Savotta', q: 'Ravintola Savotta, Aleksanterinkatu 22, Helsinki', c: 'r', z: 'h', d: [1], o: { 1: 7 }, t: 'G1 · cena · prenotare', ll: [60.1690, 24.9523] },
     { n: 'Ateljee Bar (Hotel Torni, 14° piano)', q: 'Ateljee Bar, Yrjönkatu 26, Helsinki', c: 'r', z: 'h', d: [1], o: { 1: 8 }, t: 'G1 · facoltativo', ll: [60.1679, 24.9391] },
     { n: 'Sea Horse', q: 'Ravintola Sea Horse, Kapteeninkatu 11, Helsinki', c: 'r', z: 'h', d: [1], t: 'G1 · alternativa per cena', ll: [60.1604, 24.9475] },
     { n: 'Zetor', q: 'Zetor restaurant, Mannerheimintie 3, Helsinki', c: 'r', z: 'h', d: [1], t: 'G1 · alternativa per cena', ll: [60.1696, 24.9394] },
-    { n: 'Suomenlinna · molo principale', q: 'Suomenlinna main quay, Helsinki', c: 'a', z: 'h', d: [2], o: { 2: 2 }, t: 'G2 · 10:30', ll: [60.1478, 24.9885] },
-    { n: 'Suomenlinna · Porta del Re', q: "King's Gate, Suomenlinna", c: 'a', z: 'h', d: [2], o: { 2: 3 }, t: 'G2 · in fondo al percorso blu', ll: [60.1394, 24.9840] },
-    { n: 'Vanha Kauppahalli (mercato coperto)', q: 'Vanha Kauppahalli, Helsinki', c: 'r', z: 'h', d: [2, 6], o: { 2: 4, 6: 4 }, t: 'G2 pranzo · G6 souvenir', ll: [60.1668, 24.9536] },
+    { n: 'Suomenlinna · molo principale', q: 'Suomenlinna main quay, Helsinki', c: 'a', z: 'h', d: [2], o: { 2: 2 }, t: 'G2 · 10:30', ll: [60.1492, 24.9841] },
+    { n: 'Suomenlinna · Porta del Re', q: "King's Gate, Suomenlinna", c: 'a', z: 'h', d: [2], o: { 2: 3 }, t: 'G2 · in fondo al percorso blu', ll: [60.1401, 24.9900] },
+    { n: 'Vanha Kauppahalli (mercato coperto)', q: 'Vanha Kauppahalli, Helsinki', c: 'r', z: 'h', d: [2, 6], o: { 2: 4, 6: 4 }, t: 'G2 pranzo · G6 souvenir', ll: [60.1662, 24.9528] },
     { n: 'Kappeli', q: 'Kappeli, Eteläesplanadi 1, Helsinki', c: 'r', z: 'h', d: [2], t: 'G2 · alternativa per pranzo', ll: [60.1672, 24.9500] },
     { n: 'Esplanadi', q: 'Esplanadi Park, Helsinki', c: 'a', z: 'h', d: [2, 6], o: { 2: 7, 6: 2 }, t: 'G2 · G6', ll: [60.1677, 24.9465] },
     { n: 'Stockmann e Libreria Accademica (Aalto)', q: 'Academic Bookstore, Pohjoisesplanadi 39, Helsinki', c: 'a', z: 'h', d: [2], o: { 2: 8 }, t: 'G2 · design e Café Aalto', ll: [60.1683, 24.9425] },
@@ -3266,24 +3472,26 @@
     { n: 'Löyly', q: 'Löyly, Hernesaarenranta 4, Helsinki', c: 'sa', z: 'h', d: [2], o: { 2: 11 }, t: 'G2 · sauna 18–20 e cena', ll: [60.1525, 24.9296] },
     { n: 'Saaga', q: 'Saaga restaurant, Bulevardi 34, Helsinki', c: 'r', z: 'h', d: [2], t: 'G2 · alternativa lappone', ll: [60.1628, 24.9330] },
     { n: 'Allas Sea Pool', q: 'Allas Sea Pool, Helsinki', c: 'sa', z: 'h', d: [], t: 'Sauna e piscine sul porto', ll: [60.1673, 24.9572] },
-    { n: 'Kotiharjun sauna (1928)', q: 'Kotiharjun sauna, Harjutorinkatu 1, Helsinki', c: 'sa', z: 'h', d: [], t: 'Sauna pubblica a legna · Kallio', ll: [60.1855, 24.9553] },
+    { n: 'Kotiharjun sauna (1928)', q: 'Kotiharjun sauna, Harjutorinkatu 1, Helsinki', c: 'sa', z: 'h', d: [], t: 'Sauna pubblica a legna · Kallio', ll: [60.1865, 24.9573] },
     { n: 'Café Ekberg (dal 1852)', q: 'Café Ekberg, Bulevardi 9, Helsinki', c: 'r', z: 'h', d: [6], o: { 6: 1 }, t: 'G6 · colazione', ll: [60.1648, 24.9384] },
     { n: 'Fazer Café Kluuvikatu', q: 'Fazer Café Kluuvikatu 3, Helsinki', c: 'r', z: 'h', d: [6], t: 'G6 · alternativa', ll: [60.1690, 24.9467] },
     // ROVANIEMI
-    { k: 'ROI', n: 'Stazione di Rovaniemi (armadietti)', c: 't', z: 'r', d: [3, 5], o: { 5: 1 }, t: 'Arrivo 10:59 del 28 · partenza 21:00 del 30', ll: [66.4982, 25.7105] },
+    { k: 'ROI', n: 'Stazione di Rovaniemi (armadietti)', c: 't', z: 'r', d: [3, 5], o: { 5: 1 }, t: 'Arrivo 10:59 del 28 · partenza 21:00 del 30', ll: [66.4980, 25.7050] },
     { k: 'APT', n: 'Rovaniemi Apartment2', c: 'h', z: 'r', d: [3, 4, 5], t: 'Notti 28–30', ll: APT_DEFAULT },
-    { n: 'Santa Claus Village e linea del Circolo Polare', q: 'Santa Claus Village, Rovaniemi', c: 'x', z: 'r', d: [3], o: { 3: 1 }, t: 'G3 · bus 8 · ingresso libero', ll: [66.5436, 25.8473] },
-    { n: "Santa's Salmon Place", q: "Santa's Salmon Place, Rovaniemi", c: 'r', z: 'r', d: [3], o: { 3: 2 }, t: 'G3 · cena presto', ll: [66.5430, 25.8460] },
+    { n: 'Santa Claus Village e linea del Circolo Polare', q: 'Santa Claus Village, Rovaniemi', c: 'x', z: 'r', d: [3], o: { 3: 1 }, t: 'G3 · taxi o bus 8 · ingresso libero', ll: [66.5433, 25.8458] },
+    { n: "Santa's Salmon Place", q: "Santa's Salmon Place, Rovaniemi", c: 'r', z: 'r', d: [3], o: { 3: 2 }, t: 'G3 · cena presto', ll: [66.5427, 25.8466] },
+    { n: 'K-Market Viirinkangas', q: 'K-Market Viirinkangas, Viirinkankaantie 19, Rovaniemi', c: 'r', z: 'r', d: [3, 4, 5], t: 'Supermercato a 160 m dall\'appartamento', ll: [66.4852, 25.6968] },
+    { n: 'Fermata bus 8 "University"', q: 'Lapin yliopisto, Yliopistonkatu 8, Rovaniemi', c: 't', z: 'r', d: [3], t: 'Ritorno da Santa Claus Village · 19 min a piedi da casa', ll: [66.4857, 25.7181] },
     { n: 'Kotahovi', q: 'Lapland Restaurant Kotahovi, Rovaniemi', c: 'r', z: 'r', d: [3], t: 'G3 · alternativa', ll: [66.5441, 25.8494] },
-    { n: 'Arktikum', q: 'Arktikum, Pohjoisranta 4, Rovaniemi', c: 'a', z: 'r', d: [4], o: { 4: 1 }, t: 'G4 · 14:30 · 22 €', ll: [66.5076, 25.7290] },
-    { n: 'Pilke', q: 'Pilke Science Centre, Rovaniemi', c: 'a', z: 'r', d: [4], t: 'G4 · accanto all\'Arktikum', ll: [66.5071, 25.7312] },
-    { n: 'Riva dell\'Ounasjoki (punto buio per l\'aurora)', q: 'Arktikum, Rovaniemi', c: 'x', z: 'r', d: [4], t: 'G4 · aurora fai-da-te, verso nord', ll: [66.5096, 25.7268] },
-    { n: 'Ponte Jätkänkynttilä', q: 'Jätkänkynttilä bridge, Rovaniemi', c: 'a', z: 'r', d: [4], o: { 4: 2 }, t: 'G4 · la candela del boscaiolo', ll: [66.4986, 25.7420] },
-    { n: 'Lordi Square', q: "Lordi's Square, Rovaniemi", c: 'a', z: 'r', d: [4], o: { 4: 3 }, t: 'G4 · centro', ll: [66.5022, 25.7280] },
-    { n: 'Nili', q: 'Restaurant Nili, Valtakatu 20, Rovaniemi', c: 'r', z: 'r', d: [4, 5], o: { 4: 4, 5: 2 }, t: 'G4 o G5 · cena lappone · prenotare', ll: [66.5021, 25.7262] },
-    { n: 'Ounasvaara', q: 'Ounasvaara, Rovaniemi', c: 'x', z: 'r', d: [5], t: 'G5 · opzione A', ll: [66.4945, 25.7860] },
-    { n: 'SantaPark', q: 'SantaPark Arctic World, Rovaniemi', c: 'x', z: 'r', d: [5], t: 'G5 · opzione B', ll: [66.5250, 25.8445] },
-    { n: 'Korundi', q: 'Korundi House of Culture, Rovaniemi', c: 'a', z: 'r', d: [5], t: 'G5 · opzione C', ll: [66.4991, 25.7165] }
+    { n: 'Arktikum', q: 'Arktikum, Pohjoisranta 4, Rovaniemi', c: 'a', z: 'r', d: [4], o: { 4: 1 }, t: 'G4 · 14:30 · 22 €', ll: [66.5075, 25.7260] },
+    { n: 'Pilke', q: 'Pilke Science Centre, Rovaniemi', c: 'a', z: 'r', d: [4], t: 'G4 · accanto all\'Arktikum', ll: [66.5076, 25.7247] },
+    { n: 'Riva dell\'Ounasjoki (punto buio per l\'aurora)', q: 'Arktikum, Rovaniemi', c: 'x', z: 'r', d: [4], t: 'G4 · aurora fai-da-te, verso nord', ll: [66.5095, 25.7235] },
+    { n: 'Ponte Jätkänkynttilä', q: 'Jätkänkynttilä bridge, Rovaniemi', c: 'a', z: 'r', d: [4], o: { 4: 2 }, t: 'G4 · la candela del boscaiolo', ll: [66.5031, 25.7412] },
+    { n: 'Lordi Square', q: "Lordi's Square, Rovaniemi", c: 'a', z: 'r', d: [4], o: { 4: 3 }, t: 'G4 · centro', ll: [66.5025, 25.7305] },
+    { n: 'Nili', q: 'Restaurant Nili, Valtakatu 20, Rovaniemi', c: 'r', z: 'r', d: [4, 5], o: { 4: 4, 5: 2 }, t: 'G4 o G5 · cena lappone · prenotare', ll: [66.5019, 25.7347] },
+    { n: 'Ounasvaara', q: 'Ounasvaara, Rovaniemi', c: 'x', z: 'r', d: [5], t: 'G5 · opzione A', ll: [66.5025, 25.8021] },
+    { n: 'SantaPark', q: 'SantaPark Arctic World, Rovaniemi', c: 'x', z: 'r', d: [5], t: 'G5 · opzione B', ll: [66.5392, 25.7972] },
+    { n: 'Korundi', q: 'Korundi House of Culture, Rovaniemi', c: 'a', z: 'r', d: [5], t: 'G5 · opzione C', ll: [66.5010, 25.7182] }
   ];
   var DAY_ENDS = { 1: ['AIR', 'CBX'], 2: ['CBX', 'HKI'], 3: ['ROI', 'APT'], 4: ['APT', 'APT'], 5: ['APT', 'ROI'], 6: ['HKI', 'AIR'] };
   var VIA_START = { 1: 'CBX', 3: 'APT' }, VIA_END = { 2: 'CBX', 6: 'HKI' };
@@ -3296,8 +3504,8 @@
   function syncApt() {
     var apt = byKey('APT'), g = null, a = '';
     try { g = JSON.parse(localStorage.getItem('fin-apt-ll') || 'null'); a = (JSON.parse(localStorage.getItem('fin-details') || '{}').aptAddr || '').trim(); } catch (e) {}
-    if (g && g.ll && g.q === a) { apt.ll = g.ll; apt.n = 'Rovaniemi Apartment2'; apt.t = a + ' · notti 28–30'; apt.q = /rovaniemi/i.test(a) ? a : a + ', Rovaniemi'; }
-    else { apt.ll = APT_DEFAULT; apt.n = 'Rovaniemi Apartment2 (posizione indicativa)'; apt.t = 'Inserite l\'indirizzo in Prenotazioni → I vostri dettagli'; apt.q = a ? (/rovaniemi/i.test(a) ? a : a + ', Rovaniemi') : 'Rovaniemi city centre'; }
+    if (a && a !== APT_ADDR && g && g.ll && g.q === a) { apt.ll = g.ll; apt.n = 'Rovaniemi Apartment2'; apt.t = a + ' · notti 28–30'; apt.q = /rovaniemi/i.test(a) ? a : a + ', Rovaniemi'; }
+    else { apt.ll = APT_DEFAULT; apt.n = 'Rovaniemi Apartment2 · Viirinkankaantie 21-23'; apt.t = '3° piano · notti 28–30 · K-Market a 160 m'; apt.q = 'Viirinkankaantie 21, 96300 Rovaniemi'; }
   }
   syncApt();
 

@@ -95,7 +95,12 @@ if 'lat' in geo.get('apt', {}):
 for name, url in [('bus8', 'https://www.visitrovaniemi.fi/wp-content/uploads/BUS-8-2026-2027-WINTER-8-C.pdf')]:
     try:
         open(f'{OUT}/{name}.pdf', 'wb').write(get(url, raw=True))
-        subprocess.run(['pdftotext', '-layout', f'{OUT}/{name}.pdf', f'{OUT}/{name}.txt'], check=False)
+        try:
+            from pypdf import PdfReader
+            txt = '\n\n'.join((pg.extract_text(extraction_mode='layout') or '') for pg in PdfReader(f'{OUT}/{name}.pdf').pages)
+        except Exception as e2:
+            txt = 'estrazione fallita: %s' % e2
+        open(f'{OUT}/{name}.txt', 'w').write(txt)
         say('pdf ok', name, os.path.getsize(f'{OUT}/{name}.pdf'))
     except Exception as e:
         say('pdf err', name, e)

@@ -860,7 +860,7 @@
     .phrase span:nth-child(even) { margin-bottom: 6px; }
   }
 </style>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<link rel="stylesheet" href="vendor/leaflet.css">
 </head>
 <body>
 
@@ -3224,7 +3224,8 @@
 })();
 </script>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="vendor/leaflet.js"></script>
+<script>window.L || document.write('<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""><\/script>')</script>
 <script>
 (function () {
   'use strict';
@@ -3297,14 +3298,23 @@
   syncApt();
 
   var map = L.map(mapEl, { scrollWheelZoom: false }).setView([63.3, 25.0], 5);
-  var tiles = null;
+  // sfondo: CARTO (chiaro/scuro); se le tessere non arrivano si passa a OpenStreetMap
+  var tiles = null, useOsm = false, tileErr = 0, tileOk = 0;
   function setTiles() {
     if (tiles) map.removeLayer(tiles);
     var light = window.__finTheme && window.__finTheme();
-    tiles = L.tileLayer(light
-      ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
-      : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-      { maxZoom: 19, subdomains: 'abcd', attribution: '© OpenStreetMap · © CARTO' }).addTo(map);
+    tiles = useOsm
+      ? L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' })
+      : L.tileLayer(light
+        ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
+        : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        { maxZoom: 19, subdomains: 'abcd', attribution: '© OpenStreetMap · © CARTO' });
+    tiles.on('tileload', function () { tileOk++; });
+    tiles.on('tileerror', function () {
+      tileErr++;
+      if (!useOsm && tileErr >= 4 && tileOk === 0) { useOsm = true; setTiles(); }
+    });
+    tiles.addTo(map);
   }
   setTiles();
   document.addEventListener('fin-theme', setTiles);
@@ -3371,6 +3381,14 @@
   });
   document.addEventListener('fin-apt', function () { syncApt(); render(current); });
   render('all');
+  // se la pagina cambia impaginazione (font caricati, rotazione del telefono) la mappa ricalcola le dimensioni
+  function refit() { map.invalidateSize(); render(current); }
+  window.addEventListener('load', refit);
+  window.addEventListener('orientationchange', function () { setTimeout(refit, 300); });
+  if ('IntersectionObserver' in window) {
+    var seen = false;
+    new IntersectionObserver(function (es) { if (!seen && es[0].isIntersecting) { seen = true; refit(); } }).observe(mapEl);
+  }
 })();
 </script>
 </body>

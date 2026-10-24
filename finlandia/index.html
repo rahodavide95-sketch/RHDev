@@ -901,6 +901,21 @@
   .route-svg .tm { font: 500 10.5px 'Roboto Mono', monospace; fill: var(--acc); }
   .route-svg .nt { font: 400 10px 'Roboto Mono', monospace; fill: var(--muted); }
 
+  /* link di prenotazione */
+  .book-cta { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 14px; background: var(--card); border: 1px solid rgba(var(--acc-rgb),0.45); border-radius: 12px; padding: 16px 17px; }
+  .book-cta-main p { font-size: 13.5px; color: var(--text-sec); line-height: 1.6; }
+  .book-cta-main strong { color: var(--text); }
+  .book-btns { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; align-items: flex-start; }
+  .book-btns .tb-btn { font-size: 13px; padding: 8px 13px; }
+  .link-list { display: flex; flex-direction: column; }
+  .lk { display: flex; flex-direction: column; gap: 1px; padding: 8px 26px 8px 0; border-bottom: 1px solid var(--divider); text-decoration: none; position: relative; }
+  .lk:last-child { border-bottom: none; }
+  .lk::after { content: '↗'; position: absolute; right: 4px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 13px; }
+  .lk:hover .lk-t, .lk:focus-visible .lk-t { text-decoration: underline; }
+  .lk-t { color: var(--sky); font-size: 13.5px; font-weight: 600; }
+  .lk-s { color: var(--muted); font-size: 12px; }
+  @media (max-width: 700px) { .book-cta { grid-template-columns: 1fr; } }
+
   /* i vostri dettagli */
   .det-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px 14px; }
   .det-grid label { display: block; font-family: 'Roboto Mono', monospace; font-size: 10.5px; letter-spacing: 1.1px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
@@ -1013,6 +1028,7 @@
   <a class="day-pill" href="#mangiare">🍽️ Mangiare</a>
   <a class="day-pill" href="#sauna">🧖 Sauna</a>
   <a class="day-pill" href="#info">🧭 Info pratiche</a>
+  <a class="day-pill" href="#link">🔗 Link utili</a>
   <a class="day-pill" href="#app">📱 App</a>
   <a class="day-pill" href="#budget">💶 Budget</a>
   <a class="day-pill" href="#valutazioni">⭐ Valutazioni</a>
@@ -2108,14 +2124,36 @@
     </div>
   </div>
 
-  <div class="kicker">Come si prenota</div>
+  <div class="kicker" id="prenota-treno">Dove si prenota la cabina</div>
+  <div class="book-cta">
+    <div class="book-cta-main">
+      <p>La cabina si prenota <strong>solo da VR</strong>, le ferrovie finlandesi: sul sito o nell'app ufficiale. Si paga con una carta italiana e il biglietto arriva subito per email. Non serve passare da agenzie o rivenditori.</p>
+      <div class="book-btns">
+        <a class="tb-btn primary" href="https://www.vr.fi/en" target="_blank" rel="noopener" style="text-decoration:none">🚆 Prenota su vr.fi</a>
+        <a class="tb-btn" href="https://apps.apple.com/app/id1410647394" target="_blank" rel="noopener" style="text-decoration:none">📱 App VR Matkalla · iPhone</a>
+        <a class="tb-btn" href="https://play.google.com/store/apps/details?id=fi.vr.mobile.app" target="_blank" rel="noopener" style="text-decoration:none">📱 App VR Matkalla · Android</a>
+      </div>
+    </div>
+    <div class="link-list">
+      <a class="lk" href="https://www.vr.fi/en/night-trains" target="_blank" rel="noopener"><span class="lk-t">Treni notturni e cabine</span><span class="lk-s">vr.fi · tipi di cabina e tratte</span></a>
+      <a class="lk" href="https://www.vr.fi/en/night-trains/sleeper-cars" target="_blank" rel="noopener"><span class="lk-t">Le carrozze letto</span><span class="lk-s">vr.fi · com'è fatta la cabina, piani, servizi</span></a>
+      <a class="lk" href="https://www.vr.fi/en/santa-claus-express" target="_blank" rel="noopener"><span class="lk-t">Santa Claus Express</span><span class="lk-s">vr.fi · la pagina del treno Helsinki–Rovaniemi</span></a>
+      <a class="lk" href="https://www.vr.fi/en/train-tickets" target="_blank" rel="noopener"><span class="lk-t">Biglietti e prezzi</span><span class="lk-s">vr.fi · tariffe, extra, condizioni</span></a>
+      <a class="lk" href="https://www.vr.fi/en/timetables" target="_blank" rel="noopener"><span class="lk-t">Orari e treni in tempo reale</span><span class="lk-s">vr.fi · ritardi e binari</span></a>
+      <a class="lk" href="https://www.vr.fi/en/vr-matkalla-app" target="_blank" rel="noopener"><span class="lk-t">L'app VR Matkalla</span><span class="lk-s">vr.fi · cosa si può fare dall'app</span></a>
+      <a class="lk" href="https://www.vr.fi/en/customer-service" target="_blank" rel="noopener"><span class="lk-t">Assistenza VR</span><span class="lk-s">dall'estero +358 9 2319 2902 · 5–22 feriali, 7–22 weekend</span></a>
+    </div>
+  </div>
+
+  <div class="kicker">Come si prenota, passo per passo</div>
   <div class="num-list">
-    <div class="num-item"><span class="n">1</span><span class="t">Su <a href="https://www.vr.fi/en" target="_blank" rel="noopener">vr.fi</a> (in inglese) o nell'<strong>app VR</strong>: da <strong>Helsinki</strong> a <strong>Rovaniemi</strong>, data <strong>27.12.</strong>, 2 adulti. Attivate la vista con i <strong>prezzi delle cabine</strong> dei treni notturni.</span></div>
-    <div class="num-item"><span class="n">2</span><span class="t">Scegliete il treno (<strong>P273</strong>) e il tipo di cabina (<strong>piano superiore con doccia e WC</strong>). Il prezzo è per la cabina intera, per due.</span></div>
-    <div class="num-item"><span class="n">3</span><span class="t">Gli extra: la <strong>colazione in cabina</strong> si ordina in anticipo, se il vostro treno la offre. I posti auto non vi servono.</span></div>
-    <div class="num-item"><span class="n">4</span><span class="t">Pagate con carta. Il biglietto arriva per <strong>email in PDF</strong> (con QR) e compare nell'app VR: c'è scritto treno, <strong>carrozza ("vaunu")</strong> e <strong>cabina ("hytti" / "paikka")</strong>. Salvate il PDF sul telefono, così funziona anche senza rete.</span></div>
-    <div class="num-item"><span class="n">5</span><span class="t">Stessa cosa per il ritorno: <strong>Rovaniemi → Helsinki, 30.12., P274</strong>. Scrivete carrozza e cabina in <a href="#dettagli">I vostri dettagli</a>.</span></div>
-    <div class="num-item"><span class="n">6</span><span class="t"><strong>Se è esaurito:</strong> ricontrollate ogni giorno (le cabine cancellate tornano in vendita), provate l'altro treno della sera, o come ultima scelta il volo Helsinki–Rovaniemi (~1 h 20) o un treno diurno (~8 ore, posti a sedere). I biglietti per i treni notturni di Natale sono in vendita dalla primavera: a fine ottobre conviene muoversi subito.</span></div>
+    <div class="num-item"><span class="n">1</span><span class="t">Aprite <a href="https://www.vr.fi/en" target="_blank" rel="noopener">vr.fi/en</a> (o l'app VR Matkalla, in inglese). Nella ricerca: <strong>From</strong> Helsinki, <strong>To</strong> Rovaniemi, data <strong>27.12.2026</strong>, <strong>2 adulti</strong>. Andata e ritorno si possono prenotare separatamente: è più semplice da gestire.</span></div>
+    <div class="num-item"><span class="n">2</span><span class="t">Nei risultati spuntate <strong>"Show cabin prices"</strong> (mostra i prezzi delle cabine): così vedete i treni notturni con il prezzo della cabina. Scegliete il <strong>P273 delle 23:13</strong> (o il P265 delle 19:29).</span></div>
+    <div class="num-item"><span class="n">3</span><span class="t">Scegliete il tipo di cabina: quella con <strong>doccia e WC</strong> sta al <strong>piano superiore</strong>; quella con solo lavabo costa meno. Il prezzo è <strong>per la cabina intera</strong>, per voi due. Se il sito lo propone, potete scegliere la cabina sulla piantina della carrozza.</span></div>
+    <div class="num-item"><span class="n">4</span><span class="t">Extra facoltativi: la <strong>colazione in cabina</strong>, che si ordina in anticipo (di solito fino a qualche giorno prima della partenza). I posti per l'auto non vi servono.</span></div>
+    <div class="num-item"><span class="n">5</span><span class="t">Pagate con carta (o Apple/Google Pay). Il biglietto arriva per <strong>email in PDF</strong> con il QR e compare nell'app se avete fatto l'accesso: c'è scritto treno, <strong>carrozza ("vaunu")</strong> e <strong>cabina ("hytti" / "paikka")</strong>. Salvate il PDF sul telefono, così funziona anche senza rete.</span></div>
+    <div class="num-item"><span class="n">6</span><span class="t">Ripetete per il ritorno: <strong>Rovaniemi → Helsinki, 30.12.2026, P274 delle 21:00</strong>. Poi scrivete carrozza e cabina in <a href="#dettagli">I vostri dettagli</a>.</span></div>
+    <div class="num-item"><span class="n">7</span><span class="t"><strong>Se è esaurito:</strong> ricontrollate ogni giorno (le cabine cancellate tornano in vendita), provate l'altro treno della sera, oppure ripiegate su un treno diurno (~8 ore, posti a sedere) o sul volo Helsinki–Rovaniemi (~1 h 20). I treni notturni di Natale sono in vendita dalla primavera: a fine ottobre conviene prenotare subito.</span></div>
   </div>
 
   <div class="kicker">La sera della partenza, minuto per minuto</div>
@@ -2201,10 +2239,10 @@
   <div class="book-group">
     <div class="book-group-title urgent">🔴 Subito — si esauriscono</div>
     <label class="book-item"><input type="checkbox" data-book="train-out">
-      <span class="book-txt"><span class="b-name">Treno notturno Helsinki → Rovaniemi, 27/12</span><span class="b-meta">P273 delle 23:13 (consigliato) o P265 delle 19:29 · cabina al piano superiore con doccia. Su <a href="https://www.vr.fi/en" target="_blank" rel="noopener">vr.fi</a> o app VR. Fine dicembre è altissima stagione.</span></span>
+      <span class="book-txt"><span class="b-name">Treno notturno Helsinki → Rovaniemi, 27/12</span><span class="b-meta">P273 delle 23:13 (consigliato) o P265 delle 19:29 · cabina al piano superiore con doccia. Su <a href="https://www.vr.fi/en" target="_blank" rel="noopener">vr.fi</a> o app VR Matkalla: istruzioni e link in <a href="#prenota-treno">Dove si prenota la cabina</a>. Fine dicembre è altissima stagione.</span></span>
       <span class="book-when">ORA</span></label>
     <label class="book-item"><input type="checkbox" data-book="train-back">
-      <span class="book-txt"><span class="b-name">Treno notturno Rovaniemi → Helsinki, 30/12</span><span class="b-meta">P274 delle 21:00 · arrivo 09:15 del 31.</span></span>
+      <span class="book-txt"><span class="b-name">Treno notturno Rovaniemi → Helsinki, 30/12</span><span class="b-meta">P274 delle 21:00 · arrivo 09:15 del 31 · <a href="https://www.vr.fi/en" target="_blank" rel="noopener">vr.fi</a>.</span></span>
       <span class="book-when">ORA</span></label>
     <label class="book-item"><input type="checkbox" data-book="dinner-26">
       <span class="book-txt"><span class="b-name">Cena del 26 (festivo)</span><span class="b-meta">Savotta o un'alternativa: il 26 molti locali hanno orari ridotti.</span></span>
@@ -2573,6 +2611,56 @@
       <span>Sisään / Ulos</span><span>entrata / uscita</span>
       <span>Lounas</span><span>pranzo (a buffet nei giorni feriali)</span>
     </div>
+  </div>
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     LINK UTILI
+     ══════════════════════════════════════════════════ -->
+<section class="sec" id="link">
+<div class="sec-inner">
+  <div class="sec-title">🔗 LINK <span>UTILI</span></div>
+  <div class="sec-sub">I siti ufficiali per prenotare e controllare gli orari, tutti in un posto. Si aprono in una nuova scheda.</div>
+  <div class="grid">
+    <div class="card accent-purple"><h3>🚆 Treni notturni (VR)</h3><div class="link-list">
+      <a class="lk" href="https://www.vr.fi/en" target="_blank" rel="noopener"><span class="lk-t">Prenota su vr.fi</span><span class="lk-s">ricerca, cabine, pagamento</span></a>
+      <a class="lk" href="https://www.vr.fi/en/vr-matkalla-app" target="_blank" rel="noopener"><span class="lk-t">App VR Matkalla</span><span class="lk-s">biglietti, ritardi, cambi</span></a>
+      <a class="lk" href="https://www.vr.fi/en/night-trains" target="_blank" rel="noopener"><span class="lk-t">Treni notturni e cabine</span></a>
+      <a class="lk" href="https://www.vr.fi/en/timetables" target="_blank" rel="noopener"><span class="lk-t">Orari in tempo reale</span></a>
+      <a class="lk" href="https://www.vr.fi/en/customer-service" target="_blank" rel="noopener"><span class="lk-t">Assistenza VR</span><span class="lk-s">+358 9 2319 2902</span></a>
+    </div></div>
+    <div class="card accent-red"><h3>🚇 Mezzi a Helsinki (HSL)</h3><div class="link-list">
+      <a class="lk" href="https://www.hsl.fi/en" target="_blank" rel="noopener"><span class="lk-t">HSL</span><span class="lk-s">biglietti, app e percorsi</span></a>
+      <a class="lk" href="https://www.hsl.fi/en/travelling/visitors/airport-train" target="_blank" rel="noopener"><span class="lk-t">Treno per l'aeroporto</span><span class="lk-s">linee I e P, 30 minuti</span></a>
+    </div></div>
+    <div class="card accent-gold"><h3>🚌 Rovaniemi: bus, taxi, bagagli</h3><div class="link-list">
+      <a class="lk" href="https://www.visitrovaniemi.fi/wp-content/uploads/BUS-8-2026-2027-WINTER-8-C.pdf" target="_blank" rel="noopener"><span class="lk-t">Orari bus 8 (PDF)</span><span class="lk-s">Santa Claus Village · 12/8/2026–6/6/2027</span></a>
+      <a class="lk" href="https://waltti.fi/en/cities/rovaniemi/" target="_blank" rel="noopener"><span class="lk-t">Biglietti Waltti</span><span class="lk-s">app e biglietti dei bus Linkkari</span></a>
+      <a class="lk" href="https://apps.apple.com/app/id1467878273" target="_blank" rel="noopener"><span class="lk-t">App Waltti Mobile · iPhone</span><span class="lk-s">su Android cercate "Waltti Mobile"</span></a>
+      <a class="lk" href="https://linkkari.fi" target="_blank" rel="noopener"><span class="lk-t">Linkkari</span><span class="lk-s">tutte le linee urbane</span></a>
+      <a class="lk" href="https://visitrovaniemi.fi/transportation/taxi-rovaniemi" target="_blank" rel="noopener"><span class="lk-t">Taksi Rovaniemi</span><span class="lk-s">tel. +358 60 014 000, 24 ore</span></a>
+      <a class="lk" href="https://www.vr.fi/en/railway-stations-and-routes/rovaniemi" target="_blank" rel="noopener"><span class="lk-t">Stazione di Rovaniemi</span><span class="lk-s">armadietti per i bagagli</span></a>
+      <a class="lk" href="https://www.visitrovaniemi.fi/luggage-storage-rovaniemi/" target="_blank" rel="noopener"><span class="lk-t">Depositi bagagli in città</span><span class="lk-s">alternative agli armadietti</span></a>
+      <a class="lk" href="https://www.visitrovaniemi.fi/plan/getting-around/" target="_blank" rel="noopener"><span class="lk-t">Muoversi a Rovaniemi</span><span class="lk-s">Visit Rovaniemi</span></a>
+    </div></div>
+    <div class="card accent-green"><h3>🍽️ Da prenotare</h3><div class="link-list">
+      <a class="lk" href="https://www.loylyhelsinki.fi/en/info" target="_blank" rel="noopener"><span class="lk-t">Löyly</span><span class="lk-s">sauna (turno di 2 ore) e ristorante</span></a>
+      <a class="lk" href="https://ravintolasavotta.fi/en/etusivu-english/" target="_blank" rel="noopener"><span class="lk-t">Savotta</span><span class="lk-s">cena del 26</span></a>
+      <a class="lk" href="https://www.visitfinland.com/en/product/4a3518bd-3589-4db4-91cb-f81032c12b9e/restaurant-nili/" target="_blank" rel="noopener"><span class="lk-t">Nili</span><span class="lk-s">scheda Visit Finland con il link al sito</span></a>
+      <a class="lk" href="https://santapark.fi" target="_blank" rel="noopener"><span class="lk-t">SantaPark</span><span class="lk-s">biglietti a data, opzione B del 30</span></a>
+    </div></div>
+    <div class="card accent-sky"><h3>🕐 Orari da controllare</h3><div class="link-list">
+      <a class="lk" href="https://vanhakauppahalli.fi" target="_blank" rel="noopener"><span class="lk-t">Vanha Kauppahalli</span><span class="lk-s">mercato coperto, domenica 27</span></a>
+      <a class="lk" href="https://www.temppeliaukionkirkko.fi/en/index/nimi.html" target="_blank" rel="noopener"><span class="lk-t">Temppeliaukio</span><span class="lk-s">chiusure per eventi</span></a>
+      <a class="lk" href="https://www.allaspool.fi/en/" target="_blank" rel="noopener"><span class="lk-t">Allas Sea Pool</span><span class="lk-s">sauna sul porto</span></a>
+      <a class="lk" href="https://www.arktikum.fi/en/visit/exhibition-tickets.html" target="_blank" rel="noopener"><span class="lk-t">Arktikum</span><span class="lk-s">biglietti e orari</span></a>
+      <a class="lk" href="https://santaclausvillage.info/info-and-tips/opening-hours-and-dates/" target="_blank" rel="noopener"><span class="lk-t">Santa Claus Village</span><span class="lk-s">orari di dicembre</span></a>
+    </div></div>
+    <div class="card accent-pink" style="border-left-color:var(--pink)"><h3>🌌 Meteo e aurora</h3><div class="link-list">
+      <a class="lk" href="https://en.ilmatieteenlaitos.fi/auroras-and-space-weather" target="_blank" rel="noopener"><span class="lk-t">Aurora e spazio (FMI)</span><span class="lk-s">magnetometri e indice di attività</span></a>
+      <a class="lk" href="https://en.ilmatieteenlaitos.fi/" target="_blank" rel="noopener"><span class="lk-t">Meteo FMI</span><span class="lk-s">previsioni ufficiali finlandesi</span></a>
+    </div></div>
   </div>
 </div>
 </section>

@@ -1,0 +1,7 @@
+# Configurazione minima per la CLI di Supabase (pubblicazione della Edge Function di Orbita).
+# La usa anche il deploy automatico da GitHub (.github/workflows/deploy-orbita-functions.yml).
+project_id = "orbita"
+
+# L'invito richiede il login: Supabase controlla il token prima di eseguire la funzione.
+[functions.trip-invite]
+verify_jwt = true

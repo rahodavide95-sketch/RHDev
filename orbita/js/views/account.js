@@ -67,6 +67,14 @@ export function render(el, params) {
       <span class="switch"><input type="checkbox" data-act="counthome" ${p.countHome ? 'checked' : ''}><span></span></span></label>
   </div>`;
 
+  // --- aspetto ---
+  const look = p.look === 'minimal' ? 'minimal' : 'color';
+  html += `<div class="list-header">Aspetto</div><div class="list"><div class="look-grid" role="radiogroup" aria-label="Tema">
+    ${[['color', 'Colori'], ['minimal', 'Minimal']].map(([k, l]) => `<button class="look-opt" type="button" role="radio" data-look="${k}" aria-pressed="${look === k}" aria-checked="${look === k}">
+      <span class="look-swatch ${k}"></span>${l}<span class="look-check">${look === k ? icon('check') : ''}</span></button>`).join('')}
+  </div></div>
+  <p class="list-footer">Colori: blu notte e toni gioiello. Minimal: nero, grafite e avorio.</p>`;
+
   // --- account e cloud ---
   if (!configured) {
     html += `<div class="list-header">Account</div><div class="list">
@@ -113,6 +121,13 @@ export function render(el, params) {
 
 function bind(el) {
   el.onclick = async e => {
+    const lk = e.target.closest('[data-look]');
+    if (lk) {
+      const look = lk.dataset.look;
+      // ogni tema ha la sua colorazione del globo: la si cambia insieme (resta modificabile dai Livelli)
+      if (look !== store.get().profile.look) store.updateProfile({ look, colorMode: look === 'minimal' ? 'mono' : 'continent' });
+      return;
+    }
     const b = e.target.closest('[data-act]');
     if (!b || b.tagName === 'INPUT' || b.tagName === 'SELECT') return;
     const act = b.dataset.act;

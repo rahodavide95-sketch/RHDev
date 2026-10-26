@@ -6,7 +6,7 @@ import * as store from './store.js';
 import * as cloud from './cloud.js';
 import { loadBase, countries, CONTINENTS, CONTINENT_ORDER } from './geo.js';
 import { computeStats } from './stats.js';
-import { createGlobe } from './globe.js';
+import { createGlobe, LOOK_LEGEND } from './globe.js';
 import { $, $$, icon, esc, todayStr, toast, fmtInt, fmt1, orbitaMark, initials } from './util.js';
 import * as home from './views/home.js';
 import * as trips from './views/trips.js';
@@ -31,9 +31,25 @@ app.startRecap = startRecap;
 // ---------------------------------------------------------------------------
 // Statistiche + globo
 // ---------------------------------------------------------------------------
+// Tema (Colori / Minimal): cambia il foglio di stile del tema e la tavolozza del globo
+let currentLook = document.documentElement.getAttribute('data-look') === 'minimal' ? 'minimal' : 'color';
+function applyLook(look) {
+  if (look !== 'minimal') look = 'color';
+  try { localStorage.setItem('orbita:look', look); } catch { /* niente */ }
+  if (app.globe) app.globe.setLook(look);
+  if (look === currentLook) return;
+  currentLook = look;
+  const link = $('#look-css');
+  if (link) link.href = link.href.replace(/look-(color|minimal)\.css/, `look-${look}.css`);
+  document.documentElement.setAttribute('data-look', look);
+  $('meta[name="theme-color"]')?.setAttribute('content', look === 'minimal' ? '#060607' : '#070910');
+}
+app.applyLook = applyLook;
+
 function recompute() {
   app.today = todayStr();
   const st = store.get();
+  applyLook(st.profile.look);
   app.stats = computeStats({ trips: store.countedTrips(), marks: st.marks, profile: st.profile, countries, today: app.today });
   if (app.globe && !app.globe.recapActive()) app.globe.setData({ stats: app.stats, home: st.profile.home, colorMode: st.profile.colorMode });
   renderChrome();
@@ -244,10 +260,11 @@ function toggleLayers() {
 function renderLegend(mode) {
   const el = $('#legend');
   if (!el) return;
-  if (mode === 'mono') el.innerHTML = '<span><i style="background:#ECE6DB"></i>Visitato</span><span><i style="background:#323a64;box-shadow:inset 0 0 0 1px #F2C97D"></i>Desiderio</span>';
-  else if (mode === 'continent') el.innerHTML = CONTINENT_ORDER.map(k => `<span><i style="background:${CONTINENTS[k].color}"></i>${CONTINENTS[k].n}</span>`).join('');
-  else if (mode === 'visits') el.innerHTML = ['1', '2', '3', '4', '5+'].map((n, i) => `<span><i style="background:${['#5CC4D6', '#7B8CF2', '#A792F0', '#D88BC4', '#EE8296'][i]}"></i>${n}</span>`).join('');
-  else el.innerHTML = '<span><i style="background:#5CC4D6"></i>Prima visita più lontana</span><span><i style="background:#EFAE5F"></i>Più recente</span>';
+  const L = currentLook;
+  if (mode === 'mono') el.innerHTML = `<span><i style="background:#ECE6DB"></i>Visitato</span><span><i style="background:transparent;box-shadow:inset 0 0 0 1px ${L === 'minimal' ? '#ECE6DB' : '#F2C97D'}"></i>Desiderio</span>`;
+  else if (mode === 'continent') el.innerHTML = CONTINENT_ORDER.map(k => `<span><i style="background:${LOOK_LEGEND.cont(L, k)}"></i>${CONTINENTS[k].n}</span>`).join('');
+  else if (mode === 'visits') el.innerHTML = ['1', '2', '3', '4', '5+'].map((n, i) => `<span><i style="background:${LOOK_LEGEND.heat(L)[i]}"></i>${n}</span>`).join('');
+  else el.innerHTML = `<span><i style="background:${LOOK_LEGEND.year(L)[0]}"></i>Prima visita più lontana</span><span><i style="background:${LOOK_LEGEND.year(L)[1]}"></i>Più recente</span>`;
 }
 
 // ---------------------------------------------------------------------------
@@ -279,6 +296,7 @@ async function boot() {
       },
       onGlobe: coords => { if (app.pickOnGlobe) app.pickOnGlobe(coords); else app.globe.select(null); },
     });
+    app.globe.setLook(currentLook);
   } catch (e) {
     console.error(e);
     $('#globe').innerHTML = '<div class="fatal" style="padding-top:20vh"><h2>Globo non disponibile</h2><p class="secondary">Il tuo browser non supporta la grafica 3D (WebGL). Tutto il resto funziona.</p></div>';

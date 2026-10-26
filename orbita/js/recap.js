@@ -5,7 +5,7 @@
    ============================================================================ */
 import { app } from './ctx.js';
 import * as store from './store.js';
-import { countries, CONTINENTS, countryName } from './geo.js';
+import { countryName } from './geo.js';
 import { tripStatus } from './model.js';
 import { distKm } from './stats.js';
 import { $, esc, flag, fmtInt, fmtCompact, fmtRange, icon, toast, openModal, sleep, prefersReducedMotion } from './util.js';
@@ -157,7 +157,7 @@ export async function startRecap({ year, tripId } = {}) {
           g.recapPlace(s.lat, s.lng, `${flag(s.cc)} ${s.name}`, '#ffffff');
           if (newCountry) {
             seenC.add(s.cc);
-            g.recapCountry(s.cc, CONTINENTS[countries.get(s.cc)?.k]?.color);
+            g.recapCountry(s.cc);
             counts.countries++;
             bump(counts, 'countries');
             card(`<div class="e">${flag(s.cc)}</div><h3>${esc(countryName(s.cc))}</h3><p>Nuovo timbro sul passaporto · ${esc(s.name)}</p>`);

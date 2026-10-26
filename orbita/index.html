@@ -17,6 +17,8 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="preload" href="fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="css/look-color.css" id="look-css">
+  <script src="js/look-boot.js"></script>
   <script src="vendor/globe.gl.min.js" defer></script>
   <script type="module" src="js/app.js"></script>
 </head>
@@ -74,10 +76,10 @@
   <div class="toasts" id="toasts" aria-live="polite"></div>
   <div class="boot" id="boot">
     <svg class="boot-mark" viewBox="0 0 64 64" aria-hidden="true">
-      <defs><linearGradient id="bm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5CC4D6"/><stop offset=".5" stop-color="#7B8CF2"/><stop offset="1" stop-color="#A792F0"/></linearGradient></defs>
+      <defs><linearGradient id="bm" x1="0" y1="0" x2="1" y2="1"><stop class="m1" offset="0" stop-color="#5CC4D6"/><stop class="m2" offset=".5" stop-color="#7B8CF2"/><stop class="m3" offset="1" stop-color="#A792F0"/></linearGradient></defs>
       <circle cx="32" cy="32" r="13" fill="url(#bm)"/>
-      <ellipse cx="32" cy="32" rx="27" ry="9.5" fill="none" stroke="url(#bm)" stroke-width="2.2" transform="rotate(-24 32 32)"/>
-      <circle cx="54.5" cy="21.5" r="3.6" fill="#F2C97D"/>
+      <ellipse class="m-ring" cx="32" cy="32" rx="27" ry="9.5" fill="none" stroke="url(#bm)" stroke-width="2.2" transform="rotate(-24 32 32)"/>
+      <circle class="m-moon" cx="54.5" cy="21.5" r="3.6" fill="#F2C97D"/>
     </svg>
     <p>Orbita</p>
   </div>

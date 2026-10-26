@@ -97,6 +97,7 @@ export function sanitizeProfile(p) {
     nat: cc(p.nat),
     countHome: p.countHome !== false,
     colorMode: ['continent', 'mono', 'visits', 'year'].includes(p.colorMode) ? p.colorMode : 'continent',
+    look: p.look === 'minimal' ? 'minimal' : 'color',
     excludeShared: ids(p.excludeShared),
   };
 }

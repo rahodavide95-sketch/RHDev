@@ -2,13 +2,14 @@
    Codice e pagina: prima la rete (così arriva sempre l'ultima versione), cache se offline.
    Librerie, font e dati geografici: dalla cache, aggiornati in sottofondo.
    Le chiamate al cloud (Supabase) non passano mai dalla cache. */
-const VERSION = 'orbita-v3';
+const VERSION = 'orbita-v4';
 const CORE = [
   './', './index.html', './manifest.webmanifest', './css/app.css',
   './js/app.js', './js/ctx.js', './js/util.js', './js/geo.js', './js/globe.js', './js/model.js', './js/stats.js',
   './js/store.js', './js/cloud.js', './js/config.js', './js/recap.js', './js/demo.js',
   './js/views/common.js', './js/views/home.js', './js/views/trips.js', './js/views/editor.js', './js/views/passport.js',
   './js/views/account.js', './js/views/auth.js', './js/views/share.js', './js/views/country.js',
+  './css/look-color.css', './css/look-minimal.css', './js/look-boot.js',
   './vendor/globe.gl.min.js', './fonts/inter.woff2', './data/countries.json', './data/world.json',
   './icons/icon.svg', './icons/icon-192.png', './icons/apple-touch-icon.png',
 ];

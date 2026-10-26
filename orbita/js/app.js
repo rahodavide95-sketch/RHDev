@@ -226,7 +226,7 @@ function toggleLayers() {
     <div class="list">${sw('countries', 'Paesi visitati')}${sw('cities', 'Città')}${sw('flights', 'Voli')}${sw('wish', 'Lista dei desideri')}</div>
     <h4>Colora i paesi per</h4>
     <div class="seg" role="group" aria-label="Colori">
-      ${[['continent', 'Continente'], ['visits', 'Visite'], ['year', 'Anno']].map(([k, l]) => `<button type="button" data-mode="${k}" aria-pressed="${mode === k}">${l}</button>`).join('')}
+      ${[['mono', 'Unico'], ['continent', 'Continente'], ['visits', 'Visite'], ['year', 'Anno']].map(([k, l]) => `<button type="button" data-mode="${k}" aria-pressed="${mode === k}">${l}</button>`).join('')}
     </div>
     <div class="legend" id="legend"></div>`;
   renderLegend(mode);
@@ -244,9 +244,10 @@ function toggleLayers() {
 function renderLegend(mode) {
   const el = $('#legend');
   if (!el) return;
-  if (mode === 'continent') el.innerHTML = CONTINENT_ORDER.map(k => `<span><i style="background:${CONTINENTS[k].color}"></i>${CONTINENTS[k].n}</span>`).join('');
-  else if (mode === 'visits') el.innerHTML = ['1', '2', '3', '4', '5+'].map((n, i) => `<span><i style="background:${['#64D2FF', '#0A84FF', '#5E5CE6', '#BF5AF2', '#FF375F'][i]}"></i>${n}</span>`).join('');
-  else el.innerHTML = '<span><i style="background:#64D2FF"></i>Prima visita più lontana</span><span><i style="background:#FF9F0A"></i>Più recente</span>';
+  if (mode === 'mono') el.innerHTML = '<span><i style="background:#ECE6DB"></i>Visitato</span><span><i style="background:#2b2d33;box-shadow:inset 0 0 0 1px #ECE6DB"></i>Desiderio</span>';
+  else if (mode === 'continent') el.innerHTML = CONTINENT_ORDER.map(k => `<span><i style="background:${CONTINENTS[k].color}"></i>${CONTINENTS[k].n}</span>`).join('');
+  else if (mode === 'visits') el.innerHTML = ['1', '2', '3', '4', '5+'].map((n, i) => `<span><i style="background:${['#7d7a75', '#a29e97', '#c4bfb6', '#e0dad0', '#ffffff'][i]}"></i>${n}</span>`).join('');
+  else el.innerHTML = '<span><i style="background:#8FA0B5"></i>Prima visita più lontana</span><span><i style="background:#DCC6A2"></i>Più recente</span>';
 }
 
 // ---------------------------------------------------------------------------

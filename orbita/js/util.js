@@ -257,7 +257,7 @@ export function downloadFile(name, text, type = 'application/json') {
 
 // Logo di Orbita (pianeta con orbita e luna). id univoco per il gradiente.
 export function orbitaMark(id = 'om', cls = 'mark') {
-  return `<svg class="${cls}" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#64D2FF"/><stop offset=".5" stop-color="#5E5CE6"/><stop offset="1" stop-color="#BF5AF2"/></linearGradient></defs><circle cx="32" cy="32" r="14" fill="url(#${id})"/><ellipse cx="32" cy="32" rx="28" ry="10" fill="none" stroke="url(#${id})" stroke-width="4" transform="rotate(-24 32 32)"/><circle cx="55" cy="21" r="5" fill="#FFD60A"/></svg>`;
+  return `<svg class="${cls}" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#9d9da3"/></linearGradient></defs><circle cx="32" cy="32" r="13" fill="url(#${id})"/><ellipse cx="32" cy="32" rx="27" ry="9.5" fill="none" stroke="#ECE6DB" stroke-opacity=".85" stroke-width="2.4" transform="rotate(-24 32 32)"/><circle cx="54.5" cy="21.5" r="3.6" fill="#ECE6DB"/></svg>`;
 }
 
 export function initials(name, email) {

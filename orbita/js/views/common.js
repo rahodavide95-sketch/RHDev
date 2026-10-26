@@ -54,7 +54,7 @@ export function ring(pct, id = 'rg') {
   const r = 52, c = 2 * Math.PI * r;
   const off = c * (1 - Math.min(100, Math.max(0, pct)) / 100);
   return `<svg viewBox="0 0 120 120" aria-hidden="true">
-    <defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#64D2FF"/><stop offset=".5" stop-color="#5E5CE6"/><stop offset="1" stop-color="#BF5AF2"/></linearGradient></defs>
+    <defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#ECE6DB"/></linearGradient></defs>
     <circle class="bg" cx="60" cy="60" r="${r}"/>
     <circle class="fg" cx="60" cy="60" r="${r}" stroke="url(#${id})" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${c.toFixed(1)}" data-off="${off.toFixed(1)}"/>
   </svg>`;

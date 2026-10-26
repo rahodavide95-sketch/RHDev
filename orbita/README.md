@@ -3,14 +3,14 @@
 Web app (installabile come app su iPhone, Android e computer) per tenere il diario
 dei viaggi su un **globo 3D**, con un **passaporto del viaggiatore** che conta paesi,
 continenti, regioni, città, aeroporti e chilometri, un **Recap animato** e la
-**condivisione dei viaggi via email**. Stile Apple iOS 26/27 "Liquid Glass".
+**condivisione dei viaggi via email**. Stile Apple iOS 26/27 "Liquid Glass", sobrio: nero, grafite e avorio con un solo accento.
 
 ## Cosa fa (versione 1)
 
 - **Globo 3D** che si gira col dito, si avvicina con il pizzico o la rotella. I paesi
   visitati si alzano in rilievo e si colorano (per continente, per numero di visite o
   per anno). Ci sono anche i voli come archi animati, le città come punti luminosi, la
-  casa con un anello pulsante e la lista dei desideri in oro. Tocca un paese per la sua
+  casa con un anello pulsante e la lista dei desideri contornata. Tocca un paese per la sua
   scheda.
 - **Recap** a "storie": il globo parte spento e si accende viaggio dopo viaggio, con la
   camera che vola di tappa in tappa, gli archi dei voli che si disegnano e i contatori

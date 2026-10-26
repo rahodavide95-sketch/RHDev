@@ -5,7 +5,7 @@
    ============================================================================ */
 import { app } from './ctx.js';
 import * as store from './store.js';
-import { countries, CONTINENTS, countryName } from './geo.js';
+import { countryName } from './geo.js';
 import { tripStatus } from './model.js';
 import { distKm } from './stats.js';
 import { $, esc, flag, fmtInt, fmtCompact, fmtRange, icon, toast, openModal, sleep, prefersReducedMotion } from './util.js';
@@ -82,11 +82,12 @@ function card(html) {
 function confetti() {
   const box = document.createElement('div');
   box.className = 'confetti';
-  const colors = ['#0A84FF', '#5E5CE6', '#BF5AF2', '#FF375F', '#FF9F0A', '#FFD60A', '#30D158', '#64D2FF'];
-  for (let i = 0; i < 90; i++) {
+  const colors = ['#ffffff', '#ECE6DB', '#c9c9cf'];
+  for (let i = 0; i < 60; i++) {
     const p = document.createElement('i');
     p.style.left = Math.random() * 100 + 'vw';
     p.style.background = colors[i % colors.length];
+    p.style.color = colors[i % colors.length];
     p.style.setProperty('--dx', (Math.random() * 40 - 20) + 'vw');
     p.style.animationDuration = 2.4 + Math.random() * 2.2 + 's';
     p.style.animationDelay = Math.random() * 0.6 + 's';
@@ -153,10 +154,10 @@ export async function startRecap({ year, tripId } = {}) {
           g.flyTo(s.lat, s.lng, s.kind === 'country' ? 1.5 : 0.95, 1300 / run.speed);
           await wait(1100);
           const newCountry = s.cc && !seenC.has(s.cc);
-          g.recapPlace(s.lat, s.lng, `${flag(s.cc)} ${s.name}`, CONTINENTS[countries.get(s.cc)?.k]?.color || '#ffffff');
+          g.recapPlace(s.lat, s.lng, `${flag(s.cc)} ${s.name}`, '#ffffff');
           if (newCountry) {
             seenC.add(s.cc);
-            g.recapCountry(s.cc, CONTINENTS[countries.get(s.cc)?.k]?.color);
+            g.recapCountry(s.cc);
             counts.countries++;
             bump(counts, 'countries');
             card(`<div class="e">${flag(s.cc)}</div><h3>${esc(countryName(s.cc))}</h3><p>Nuovo timbro sul passaporto · ${esc(s.name)}</p>`);

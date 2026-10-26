@@ -296,6 +296,13 @@ async function boot() {
   setTimeout(() => $('#boot').classList.add('out'), 250);
   window.addEventListener('resize', () => { updateGlobeLayout(); setActiveTab(TAB_OF[app.route.name]); });
 
+  // anteprima pubblica (body data-autodemo="1"): alla prima visita mostra subito l'esempio
+  if (!user && document.body.dataset.autodemo === '1' && !store.ownTrips().length) {
+    let first = true;
+    try { first = !localStorage.getItem('orbita:demo-auto'); localStorage.setItem('orbita:demo-auto', '1'); } catch { /* niente */ }
+    if (first) import('./demo.js').then(d => d.loadDemo()).catch(() => {});
+  }
+
   if (user) {
     if (!(await checkMfaOnBoot())) {
       await offerGuestAdoption();

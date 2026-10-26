@@ -1,0 +1,19 @@
+{
+  "name": "Orbita · il tuo mondo in viaggio",
+  "short_name": "Orbita",
+  "description": "Il globo dei tuoi viaggi, il passaporto del viaggiatore e i ricordi da condividere.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#06071a",
+  "theme_color": "#06071a",
+  "lang": "it",
+  "categories": ["travel", "lifestyle"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

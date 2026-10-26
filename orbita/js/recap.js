@@ -5,7 +5,7 @@
    ============================================================================ */
 import { app } from './ctx.js';
 import * as store from './store.js';
-import { countryName } from './geo.js';
+import { countries, CONTINENTS, countryName } from './geo.js';
 import { tripStatus } from './model.js';
 import { distKm } from './stats.js';
 import { $, esc, flag, fmtInt, fmtCompact, fmtRange, icon, toast, openModal, sleep, prefersReducedMotion } from './util.js';
@@ -82,8 +82,8 @@ function card(html) {
 function confetti() {
   const box = document.createElement('div');
   box.className = 'confetti';
-  const colors = ['#ffffff', '#ECE6DB', '#c9c9cf'];
-  for (let i = 0; i < 60; i++) {
+  const colors = ['#7B8CF2', '#5CC4D6', '#A792F0', '#F2C97D', '#EE8296', '#ffffff'];
+  for (let i = 0; i < 70; i++) {
     const p = document.createElement('i');
     p.style.left = Math.random() * 100 + 'vw';
     p.style.background = colors[i % colors.length];
@@ -157,7 +157,7 @@ export async function startRecap({ year, tripId } = {}) {
           g.recapPlace(s.lat, s.lng, `${flag(s.cc)} ${s.name}`, '#ffffff');
           if (newCountry) {
             seenC.add(s.cc);
-            g.recapCountry(s.cc);
+            g.recapCountry(s.cc, CONTINENTS[countries.get(s.cc)?.k]?.color);
             counts.countries++;
             bump(counts, 'countries');
             card(`<div class="e">${flag(s.cc)}</div><h3>${esc(countryName(s.cc))}</h3><p>Nuovo timbro sul passaporto · ${esc(s.name)}</p>`);

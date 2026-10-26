@@ -2,7 +2,7 @@
    Codice e pagina: prima la rete (così arriva sempre l'ultima versione), cache se offline.
    Librerie, font e dati geografici: dalla cache, aggiornati in sottofondo.
    Le chiamate al cloud (Supabase) non passano mai dalla cache. */
-const VERSION = 'orbita-v2';
+const VERSION = 'orbita-v3';
 const CORE = [
   './', './index.html', './manifest.webmanifest', './css/app.css',
   './js/app.js', './js/ctx.js', './js/util.js', './js/geo.js', './js/globe.js', './js/model.js', './js/stats.js',

@@ -27,7 +27,7 @@ export function openCountry(cc) {
     const k = CONTINENTS[c.k];
     let html = `<div class="country-hero"><span class="fl">${flag(cc)}</span><h2>${esc(c.n)}</h2>
       <div class="row" style="justify-content:center;gap:6px;margin-top:8px">
-        <span class="pill">${esc(k.n)}</span>
+        <span class="pill" style="background:color-mix(in srgb, ${k.color} 18%, transparent);color:${k.color}">${esc(k.n)}</span>
         ${visited ? '<span class="pill green">✓ Visitato</span>' : wished ? '<span class="pill yellow">⭐ Desiderio</span>' : ''}
         ${!c.s ? '<span class="pill">Territorio</span>' : ''}
       </div></div>`;

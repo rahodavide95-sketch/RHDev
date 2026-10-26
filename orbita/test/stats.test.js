@@ -90,7 +90,7 @@ test('validazione: input malevolo o rotto viene ripulito', () => {
   const p = sanitizeProfile({ name: 'x'.repeat(500), nat: 'ita', colorMode: 'hack' });
   assert.equal(p.name.length, 80);
   assert.equal(p.nat, '');
-  assert.equal(p.colorMode, 'mono');
+  assert.equal(p.colorMode, 'continent');
   assert.deepEqual(sanitizeMarks({ visited: ['IT', 'IT', 'zz'], wish: ['IT', 'JP'] }), { visited: ['IT'], wish: ['JP'] });
 });
 

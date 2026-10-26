@@ -87,8 +87,8 @@ export function render(el) {
 
   // continenti
   html += `<div class="section"><div class="section-head"><h3>Continenti</h3></div><div class="list cont-bars">
-    ${CONTINENT_ORDER.filter(k => k !== 'AN').map(k => { const c = s.perContinent[k] || { visited: 0, total: 0 }; return `<div class="cont-bar"><div class="row between"><span>${esc(CONTINENTS[k].n)}</span><span class="secondary num">${c.visited} / ${c.total}</span></div><div class="track"><i data-w="${c.total ? Math.max(c.visited ? 3 : 0, c.visited / c.total * 100) : 0}%"></i></div></div>`; }).join('')}
-    <div class="cont-bar"><div class="row between"><span>Antartide</span><span class="secondary">${s.continents.has('AN') ? 'Conquistata!' : 'Ancora da raggiungere'}</span></div><div class="track"><i data-w="${s.continents.has('AN') ? 100 : 0}%"></i></div></div>
+    ${CONTINENT_ORDER.filter(k => k !== 'AN').map(k => { const c = s.perContinent[k] || { visited: 0, total: 0 }; return `<div class="cont-bar" style="--c:${CONTINENTS[k].color}"><div class="row between"><span>${esc(CONTINENTS[k].n)}</span><span class="secondary num">${c.visited} / ${c.total}</span></div><div class="track"><i data-w="${c.total ? Math.max(c.visited ? 3 : 0, c.visited / c.total * 100) : 0}%"></i></div></div>`; }).join('')}
+    <div class="cont-bar" style="--c:${CONTINENTS.AN.color}"><div class="row between"><span>Antartide</span><span class="secondary">${s.continents.has('AN') ? 'Conquistata!' : 'Ancora da raggiungere'}</span></div><div class="track"><i data-w="${s.continents.has('AN') ? 100 : 0}%"></i></div></div>
   </div></div>`;
 
   // timbri
@@ -98,7 +98,7 @@ export function render(el) {
     const v = s.visits.get(cc);
     const shape = ['', 'sq', 'tk'][h % 3];
     const rot = ((h >> 3) % 25) - 12;
-    const ink = ['#3b3f48', '#4a4339', '#2f3d4d'][(h >> 7) % 3];   // inchiostri scuri, quasi monocromi
+    const ink = `color-mix(in srgb, ${CONTINENTS[countries.get(cc).k].color} 72%, #1c2033)`;   // inchiostro del continente, scurito
     return `<div class="stamp ${shape}" style="--ink:${ink};--rot:${rot}deg;--i:${i}" title="${esc(countryName(cc))}"><span class="fl">${flag(cc)}</span><b>${esc(countryName(cc))}</b><small>${esc(stampDate(v.first) || (v.trips.size ? '' : 'VISITATO'))}</small></div>`;
   }).join('')}</div>` : `<p class="secondary" style="margin:0 4px">Il primo timbro arriva con il primo viaggio ✈️</p>`;
   html += `</div>`;

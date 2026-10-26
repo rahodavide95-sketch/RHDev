@@ -25,7 +25,7 @@ export function render(el) {
       <h1 class="large-title">${name ? esc(name) : 'Il tuo mondo'}</h1></div></div>`;
 
   if (hasDemo()) {
-    html += `<div class="list" style="margin-top:8px"><div class="list-row has-icon"><span class="app-ic">${icon('sparkle')}</span>
+    html += `<div class="list" style="margin-top:8px"><div class="list-row has-icon"><span class="app-ic" style="--c:var(--orange)">${icon('sparkle')}</span>
       <span class="grow"><b>Stai guardando un esempio</b><small>Quando vuoi, toglilo e inizia coi tuoi viaggi.</small></span>
       <button class="btn btn-sm" type="button" data-act="rm-demo">Rimuovi</button></div></div>`;
   }
@@ -56,7 +56,7 @@ export function render(el) {
       </div>
     </div>`;
 
-  html += `<div class="cont-strip" style="margin-top:12px">${CONTINENT_ORDER.map(k => { const pc = s.perContinent[k] || { visited: 0 }; return `<div class="cont ${s.continents.has(k) ? 'on' : ''}" title="${esc(CONTINENTS[k].n)}"><span class="e">${esc(CONTINENTS[k].short)}</span><small class="num">${k === 'AN' ? (s.continents.has('AN') ? '✓' : '–') : pc.visited}</small></div>`; }).join('')}</div>`;
+  html += `<div class="cont-strip" style="margin-top:12px">${CONTINENT_ORDER.map(k => { const pc = s.perContinent[k] || { visited: 0 }; return `<div class="cont ${s.continents.has(k) ? 'on' : ''}" style="--c:${CONTINENTS[k].color}" title="${esc(CONTINENTS[k].n)}"><span class="e">${esc(CONTINENTS[k].short)}</span><small class="num">${k === 'AN' ? (s.continents.has('AN') ? '✓' : '–') : pc.visited}</small></div>`; }).join('')}</div>`;
 
   if (s.ongoing) {
     html += `<div class="section"><div class="section-head"><h3>In viaggio ora</h3></div>${tripCard(s.ongoing)}</div>`;

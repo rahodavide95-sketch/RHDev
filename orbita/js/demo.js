@@ -9,23 +9,23 @@ import * as store from './store.js';
 import { uid } from './util.js';
 
 const DEMO = [
-  { title: 'Natale in Lapponia', emoji: '🎄', color: '#9FB3C8', start: '2025-12-26', end: '2025-12-31',
+  { title: 'Natale in Lapponia', emoji: '🎄', color: '#5CC4D6', start: '2025-12-26', end: '2025-12-31',
     stops: [['Helsinki, FI', 2], ['Rovaniemi, FI', 3]], flights: [['FCO', 'HEL', 'Finnair', 'AY1762'], ['HEL', 'RVN', 'Finnair', 'AY531'], ['RVN', 'HEL', 'Finnair', 'AY534'], ['HEL', 'FCO', 'Finnair', 'AY1761']] },
-  { title: 'Coast to coast USA', emoji: '🗽', color: '#CDB690', start: '2025-06-10', end: '2025-06-24',
+  { title: 'Coast to coast USA', emoji: '🗽', color: '#EFAE5F', start: '2025-06-10', end: '2025-06-24',
     stops: [['New York, US', 5], ['San Francisco, US', 4], ['Los Angeles, US', 4]], flights: [['FCO', 'JFK', 'ITA Airways', 'AZ608'], ['JFK', 'SFO', 'Delta', 'DL420'], ['LAX', 'FCO', 'ITA Airways', 'AZ621']] },
-  { title: 'Ciliegi in Giappone', emoji: '🌸', color: '#C9A9A2', start: '2024-04-02', end: '2024-04-14',
+  { title: 'Ciliegi in Giappone', emoji: '🌸', color: '#EE8296', start: '2024-04-02', end: '2024-04-14',
     stops: [['Tokyo, JP', 5], ['Kyoto, JP', 4], ['Osaka, JP', 3]], flights: [['FCO', 'HND', 'ITA Airways', 'AZ792'], ['KIX', 'FCO', 'ITA Airways', 'AZ795']] },
-  { title: 'Weekend a Londra', emoji: '🏙️', color: '#8E8E93', start: '2024-11-08', end: '2024-11-10',
+  { title: 'Weekend a Londra', emoji: '🏙️', color: '#7B8CF2', start: '2024-11-08', end: '2024-11-10',
     stops: [['Londra, GB', 2]], flights: [['FCO', 'LHR', 'British Airways', 'BA555'], ['LHR', 'FCO', 'British Airways', 'BA554']] },
-  { title: 'Lisbona e Porto', emoji: '🍷', color: '#B5AAC6', start: '2023-09-15', end: '2023-09-21',
+  { title: 'Lisbona e Porto', emoji: '🍷', color: '#A792F0', start: '2023-09-15', end: '2023-09-21',
     stops: [['Lisbona, PT', 3], ['Porto, PT', 3]], flights: [['FCO', 'LIS', 'TAP', 'TP839'], ['OPO', 'FCO', 'Ryanair', 'FR8357']] },
-  { title: 'Islanda on the road', emoji: '🌋', color: '#A8BB9F', start: '2023-07-20', end: '2023-07-28',
+  { title: 'Islanda on the road', emoji: '🌋', color: '#5DC48E', start: '2023-07-20', end: '2023-07-28',
     stops: [['Reykjavik, IS', 3], ['Vik, IS', 2], ['Akureyri, IS', 3]], flights: [['FCO', 'KEF', 'Icelandair', 'FI593'], ['KEF', 'FCO', 'Icelandair', 'FI592']] },
-  { title: 'Profumi del Marocco', emoji: '🕌', color: '#ECE6DB', start: '2022-03-10', end: '2022-03-16',
+  { title: 'Profumi del Marocco', emoji: '🕌', color: '#F2C97D', start: '2022-03-10', end: '2022-03-16',
     stops: [['Marrakech, MA', 4], ['Fes, MA', 2]], flights: [['FCO', 'RAK', 'Ryanair', 'FR4502'], ['FEZ', 'FCO', 'Ryanair', 'FR2851']] },
-  { title: 'Costiera amalfitana', emoji: '🏖️', color: '#A6BEC4', start: '2022-08-05', end: '2022-08-10',
+  { title: 'Costiera amalfitana', emoji: '🏖️', color: '#3B8BF6', start: '2022-08-05', end: '2022-08-10',
     stops: [['Napoli, IT', 1], ['Positano, IT', 2], ['Amalfi, IT', 2]], flights: [] },
-  { title: 'Patagonia', emoji: '🏔️', color: '#ECE6DB', start: '2027-02-01', end: '2027-02-18',
+  { title: 'Patagonia', emoji: '🏔️', color: '#5CC4D6', start: '2027-02-01', end: '2027-02-18',
     stops: [['Buenos Aires, AR', 4], ['El Calafate, AR', 5], ['Ushuaia, AR', 4]], flights: [['FCO', 'EZE', 'Aerolineas Argentinas', 'AR1141']] },
 ];
 

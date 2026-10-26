@@ -6,8 +6,8 @@
 
 export const LIMITS = { title: 120, notes: 4000, name: 120, stops: 300, flights: 300, airline: 60, num: 12, marks: 300 };
 export const EMOJIS = ['✈️', '🏖️', '🏔️', '🏙️', '🎒', '🚗', '🚆', '⛵', '🎄', '🍜', '🏛️', '🌋', '🏝️', '❄️', '🎡', '🗽', '🕌', '🏯', '🌴', '🍷', '🎿', '🐘', '🌸', '💼'];
-// toni sobri: il colore del viaggio è un dettaglio (un punto), non un'insegna
-export const COLORS = ['#ECE6DB', '#9FB3C8', '#A8BB9F', '#CDB690', '#C9A9A2', '#B5AAC6', '#A6BEC4', '#8E8E93'];
+// toni gioiello morbidi, in armonia con i colori dei continenti
+export const COLORS = ['#7B8CF2', '#5CC4D6', '#5DC48E', '#EFAE5F', '#EE8296', '#A792F0', '#3B8BF6', '#F2C97D'];
 
 const str = (v, max) => (typeof v === 'string' ? v : v == null ? '' : String(v)).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '').slice(0, max);
 const day = v => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : '');
@@ -96,7 +96,7 @@ export function sanitizeProfile(p) {
     home: sanitizeHome(p.home),
     nat: cc(p.nat),
     countHome: p.countHome !== false,
-    colorMode: ['mono', 'continent', 'visits', 'year'].includes(p.colorMode) ? p.colorMode : 'mono',
+    colorMode: ['continent', 'mono', 'visits', 'year'].includes(p.colorMode) ? p.colorMode : 'continent',
     excludeShared: ids(p.excludeShared),
   };
 }

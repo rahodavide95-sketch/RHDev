@@ -13,7 +13,7 @@ const listeners = new Set();
 
 function blank() {
   return {
-    v: 1,
+    v: 3,
     profile: sanitizeProfile({}),
     marks: { visited: [], wish: [] },
     trips: {},
@@ -41,6 +41,8 @@ function hydrate(raw) {
     last: sy.last || null,
   };
   if (typeof raw.createdAt === 'string') s.createdAt = raw.createdAt;
+  // v3: la "tinta unica" è stata per poco il predefinito di un'anteprima; si torna ai continenti
+  if ((raw.v || 1) < 3 && s.profile.colorMode === 'mono') s.profile.colorMode = 'continent';
   return s;
 }
 

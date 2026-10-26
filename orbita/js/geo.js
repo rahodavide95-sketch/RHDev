@@ -5,14 +5,15 @@
 import { norm, haversine } from './util.js';
 
 export const CONTINENTS = {
-  // colori di sistema Apple (modalità scura)
-  EU: { n: 'Europa', color: '#0A84FF', emoji: '🏰' },
-  AS: { n: 'Asia', color: '#FF375F', emoji: '🏯' },
-  AF: { n: 'Africa', color: '#FF9F0A', emoji: '🦁' },
-  NA: { n: 'Nord America', color: '#64D2FF', emoji: '🗽' },
-  SA: { n: 'Sud America', color: '#30D158', emoji: '🦜' },
-  OC: { n: 'Oceania', color: '#BF5AF2', emoji: '🦘' },
-  AN: { n: 'Antartide', color: '#E5E5EA', emoji: '🐧' },
+  // toni "gioiello": pieni ma morbidi, leggibili sul blu notte del globo
+  // muted: gli stessi continenti nel tema minimal
+  EU: { n: 'Europa', short: 'Eur', color: '#7B8CF2', muted: '#9FB3C8', emoji: '🏰' },
+  AS: { n: 'Asia', short: 'Asia', color: '#EE8296', muted: '#C9A9A2', emoji: '🏯' },
+  AF: { n: 'Africa', short: 'Afr', color: '#EFAE5F', muted: '#CDB690', emoji: '🦁' },
+  NA: { n: 'Nord America', short: 'N.Am', color: '#5CC4D6', muted: '#A6BEC4', emoji: '🗽' },
+  SA: { n: 'Sud America', short: 'S.Am', color: '#5DC48E', muted: '#A8BB9F', emoji: '🦜' },
+  OC: { n: 'Oceania', short: 'Oce', color: '#A792F0', muted: '#B5AAC6', emoji: '🦘' },
+  AN: { n: 'Antartide', short: 'Ant', color: '#D9E3EE', muted: '#E3E3E3', emoji: '🐧' },
 };
 export const CONTINENT_ORDER = ['EU', 'AS', 'AF', 'NA', 'SA', 'OC', 'AN'];
 

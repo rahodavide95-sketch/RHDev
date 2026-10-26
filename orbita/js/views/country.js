@@ -27,7 +27,7 @@ export function openCountry(cc) {
     const k = CONTINENTS[c.k];
     let html = `<div class="country-hero"><span class="fl">${flag(cc)}</span><h2>${esc(c.n)}</h2>
       <div class="row" style="justify-content:center;gap:6px;margin-top:8px">
-        <span class="pill" style="background:color-mix(in srgb, ${k.color} 22%, transparent);color:${k.color}">${k.emoji} ${esc(k.n)}</span>
+        <span class="pill" style="background:color-mix(in srgb, ${k.color} 18%, transparent);color:${k.color}">${esc(k.n)}</span>
         ${visited ? '<span class="pill green">✓ Visitato</span>' : wished ? '<span class="pill yellow">⭐ Desiderio</span>' : ''}
         ${!c.s ? '<span class="pill">Territorio</span>' : ''}
       </div></div>`;
@@ -42,7 +42,7 @@ export function openCountry(cc) {
       ${viaTrips || isHome
         ? `<button class="btn" type="button" disabled>${icon('check')}${isHome && !viaTrips ? 'Paese di casa' : 'Visitato'}</button>`
         : `<button class="btn ${marked ? 'btn-prominent' : ''}" type="button" data-act="visited">${icon('check')}${marked ? 'Visitato' : 'Ci sono stato'}</button>`}
-      <button class="btn ${wished ? 'btn-prominent' : ''}" type="button" data-act="wish" ${visited ? 'disabled' : ''} style="${wished ? '--blue:var(--orange)' : ''}">${icon('heart')}${wished ? 'Nei desideri' : 'Lo sogno'}</button>
+      <button class="btn ${wished ? 'btn-prominent' : ''}" type="button" data-act="wish" ${visited ? 'disabled' : ''}>${icon('heart')}${wished ? 'Nei desideri' : 'Lo sogno'}</button>
     </div>
     <button class="btn btn-block" type="button" data-act="trip" style="margin-top:10px">${icon('plus')}Nuovo viaggio in ${esc(c.n)}</button>`;
     if (trips.length) html += `<div class="list-header">I tuoi viaggi qui</div><div class="trip-list">${trips.map((t, i) => tripCard(t, i)).join('')}</div>`;

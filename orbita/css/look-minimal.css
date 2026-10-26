@@ -1,0 +1,88 @@
+/* ============================================================================
+   Orbita — tema MINIMAL
+   Nero profondo, vetro neutro, bianco e grigi; avorio per il mondo visitato.
+   ============================================================================ */
+:root { --blue: #0A84FF; --red: #FF453A; --green: #30D158; --orange: #FF9F0A; --yellow: #FFD60A; --accent: #0A84FF; --bg: #060607; }
+body { background: radial-gradient(120vmax 90vmax at 62% 42%, #121317 0%, #08080a 55%, var(--bg) 100%) fixed, var(--bg); }
+.aurora-text { color: var(--label); }
+.aurora { display: none; }
+.stars { opacity: .32; }
+.glass { background: linear-gradient(180deg, rgba(255, 255, 255, .10) 0%, rgba(255, 255, 255, .04) 100%); -webkit-backdrop-filter: blur(24px) saturate(120%); backdrop-filter: blur(24px) saturate(120%); }
+.tinted { background: var(--label); color: #0a0a0c; box-shadow: 0 10px 30px -12px rgba(0, 0, 0, .8); }
+.tinted::after { display: none; }
+.avatar-btn .av-ring { background: linear-gradient(160deg, #4a4b52, #24252a); color: var(--label); }
+.avatar-btn .sync { border: 2px solid #111113; background: #8e8e93; }
+.map-ctrls button[aria-pressed="true"] { color: var(--label); }
+.map-ctrls button[aria-pressed="false"] { color: var(--label3); }
+.layers-pop { background: rgba(30, 30, 34, .82); }
+.recap-ic { background: var(--label); color: #0a0a0c; }
+.tabbar-capsule a { color: var(--label2); }
+.tabbar-capsule a.active { color: var(--label); }
+.glass-sheet { background: linear-gradient(180deg, rgba(30, 30, 34, .74), rgba(16, 16, 19, .86)); -webkit-backdrop-filter: blur(40px) saturate(120%); backdrop-filter: blur(40px) saturate(120%); }
+.btn-prominent { background: var(--label); color: #0a0a0c; }
+.btn-aurora { background: var(--label); color: #0a0a0c; }
+.pill.blue, .pill.purple, .pill.pink { background: var(--fill2); color: var(--label); }
+.pill.green { background: rgba(10, 132, 255, .16); color: #6cb4ff; }
+.pill.yellow { background: rgba(236, 230, 219, .12); color: var(--ivory); }
+.app-ic { color: var(--label); background: var(--fill2); }
+.input:focus, .select:focus, .textarea:focus { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .35); }
+.ac-iata { color: var(--label); background: var(--fill2); }
+.widget.vivid { background: linear-gradient(160deg, rgba(255, 255, 255, .085), rgba(255, 255, 255, .035)); }
+.w-label .ic { color: var(--label3); }
+.ring circle { stroke-width: 8; }
+.cont.on { background: var(--fill2); }
+.cont.on .e::after { width: 4px; height: 4px; background: var(--ivory); }
+.countdown { background: var(--fill2); color: var(--label); }
+.countdown span { color: var(--label2); }
+.trip-card { background: var(--grouped); box-shadow: var(--hair); }
+.trip-emoji { background: var(--fill2); }
+.trip-emoji::after { content: ''; position: absolute; right: 6px; top: 6px; width: 6px; height: 6px; border-radius: 50%; background: var(--tc); opacity: .9; }
+.timeline::before { width: 1px; background: var(--sep); }
+.tl-item::before { background: var(--ivory); box-shadow: 0 0 0 4px #141416; }
+.tl-item.fl::before { background: #141416; box-shadow: inset 0 0 0 1.5px var(--label2), 0 0 0 4px #141416; }
+.emoji-row button[aria-pressed="true"] { background: var(--fill); box-shadow: inset 0 0 0 1.5px var(--label); }
+.modal { background: linear-gradient(180deg, rgba(38, 38, 42, .92), rgba(22, 22, 25, .96)); -webkit-backdrop-filter: blur(40px) saturate(120%); backdrop-filter: blur(40px) saturate(120%); }
+.auth-hero .orb { background: var(--fill2); box-shadow: var(--hair); }
+.big-avatar { color: var(--label); background: linear-gradient(160deg, #4a4b52, #202125); box-shadow: inset 0 1px 1px rgba(255, 255, 255, .18); }
+.share-row .av { background: var(--fill); color: var(--label); }
+.pass-front { background: linear-gradient(145deg, #2b2c31 0%, #17181b 55%, #0d0d0f 100%); }
+.pass-front::before { background: repeating-radial-gradient(circle at 115% 120%, rgba(255, 255, 255, .035) 0 1px, transparent 1px 7px); }
+.holo { mix-blend-mode: soft-light; opacity: .22; }
+.glare { background: radial-gradient(45% 55% at var(--mx) var(--my), rgba(255, 255, 255, .14), transparent 70%); }
+.pass-kind { color: var(--label3); }
+.pass-name small, .pass-big small { color: var(--label3); }
+.pass-name b { color: var(--ivory); }
+.pass-big b { color: var(--ivory); }
+.pass-flags { filter: saturate(.35) opacity(.85); }
+.pass-back { background: linear-gradient(160deg, #1f2023, #111113); }
+.level-card .e { font-size: 28px; filter: grayscale(1); opacity: .85; }
+.level-bar { height: 4px; border-radius: 4px; }
+.level-bar i { background: var(--ivory); }
+.stamps { background: #ECE8E1; }
+.stamp { border: 1.5px solid var(--ink); opacity: .82; }
+.stamp .fl { filter: grayscale(1) contrast(1.1); opacity: .8; }
+.badge.done .e { filter: grayscale(.2); background: var(--fill2); box-shadow: inset 0 0 0 1px rgba(236, 230, 219, .55); }
+.badge .bar i { background: var(--label2); }
+.cont-bar .track i { background: var(--ivory); }
+.years .yb i { max-width: 22px; border-radius: 6px; background: var(--ivory); opacity: .85; }
+@keyframes bump { 40% { transform: scale(1.25); color: var(--ivory); } }
+.recap-final .big { font: 200 72px/1 var(--rounded); color: var(--ivory); }
+.confetti i { width: 3px; height: 3px; }
+.toast::before { background: var(--label2); }
+.toast-ok::before { background: var(--ivory); }
+.gtip { background: rgba(30, 30, 34, .86); -webkit-backdrop-filter: blur(20px) saturate(120%); backdrop-filter: blur(20px) saturate(120%); }
+.gpin { color: var(--label); background: rgba(20, 20, 23, .78); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); box-shadow: inset 0 0 0 .5px rgba(255, 255, 255, .18); }
+.boot { background: #000; }
+.boot p { color: var(--label2); }
+
+/* colori impostati dal codice: nel tema minimal diventano neutri */
+.stamp { --ink: #3b3f48 !important; }
+.country-hero .pill { background: var(--fill2) !important; color: var(--label) !important; }
+.confetti i { background: #ECE6DB !important; color: #ECE6DB !important; }
+.mark .m1, .boot-mark .m1 { stop-color: #ffffff; }
+.mark .m2, .boot-mark .m2 { stop-color: #c9c9cf; }
+.mark .m3, .boot-mark .m3 { stop-color: #9d9da3; }
+.mark .m-ring, .boot-mark .m-ring { stroke: #ECE6DB; stroke-opacity: .85; }
+.mark .m-moon, .boot-mark .m-moon { fill: #ECE6DB; }
+.ring .r1 { stop-color: #ffffff; }
+.ring .r2, .ring .r3 { stop-color: #ECE6DB; }

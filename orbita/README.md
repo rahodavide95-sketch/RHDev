@@ -3,7 +3,7 @@
 Web app (installabile come app su iPhone, Android e computer) per tenere il diario
 dei viaggi su un **globo 3D**, con un **passaporto del viaggiatore** che conta paesi,
 continenti, regioni, città, aeroporti e chilometri, un **Recap animato** e la
-**condivisione dei viaggi via email**. Stile Apple iOS 26/27 "Liquid Glass".
+**condivisione dei viaggi via email**. Stile Apple iOS 26/27 "Liquid Glass", con due temi: **Colori** (blu notte, toni "gioiello" morbidi, dettagli oro) e **Minimal** (nero, grafite e avorio).
 
 ## Cosa fa (versione 1)
 
@@ -74,7 +74,8 @@ Dettagli in [`docs/SICUREZZA.md`](docs/SICUREZZA.md).
 ```
 orbita/
 ├── index.html            pagina unica (CSP, nessuno script in linea)
-├── css/app.css           stile Liquid Glass
+├── css/app.css           stile Liquid Glass: base comune
+├── css/look-*.css        i due temi (Colori, Minimal)
 ├── js/
 │   ├── app.js            avvio, navigazione, foglio a scatti, barra delle schede
 │   ├── globe.js          globo 3D (globe.gl / three.js)

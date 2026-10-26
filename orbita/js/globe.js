@@ -7,11 +7,31 @@
 import { countries, world, CONTINENTS } from './geo.js';
 import { esc, flag, haversine, prefersReducedMotion } from './util.js';
 
-const LAND = '#3a4290';
-const LAND_HOVER = '#5560b8';
-const STROKE = 'rgba(210,215,255,0.35)';
-const WISH = 'rgba(255,214,10,0.5)';
-const HEAT = ['#64D2FF', '#0A84FF', '#5E5CE6', '#BF5AF2', '#FF375F'];
+const IVORY = '#ECE6DB';
+// Tavolozze dei due temi (vedi css/look-*.css)
+const LOOKS = {
+  // blu notte e terra ardesia; i paesi visitati prendono il colore del continente
+  color: {
+    land: '#2a3154', landHover: '#3a4373', stroke: 'rgba(200,210,255,0.18)', side: 'rgba(10,14,32,0.6)',
+    wish: '#323a64', wishStroke: 'rgba(242,201,125,0.85)', wishPoint: '#F2C97D', home: '#F2C97D',
+    visitedStroke: 'rgba(255,255,255,0.45)', visitedSide: 0.35, visitedAlt: 0.022,
+    heat: ['#5CC4D6', '#7B8CF2', '#A792F0', '#D88BC4', '#EE8296'], year: ['#5CC4D6', '#EFAE5F'],
+    arcs: ['rgba(92,196,214,0.85)', 'rgba(167,146,240,0.9)'], recapArcs: ['rgba(92,196,214,1)', 'rgba(167,146,240,1)'], arcStroke: 0.34,
+    ocean: '#0a1022', emissive: '#0e1638', emissiveI: 0.4, shininess: 20, specular: '#3d55b8', atmosphere: '#8ea6ff', atmosphereAlt: 0.15,
+    cont: k => CONTINENTS[k]?.color,
+  },
+  // grafite per la terra, avorio per ciò che hai visitato
+  minimal: {
+    land: '#23252b', landHover: '#31343c', stroke: 'rgba(255,255,255,0.10)', side: 'rgba(8,9,11,0.6)',
+    wish: '#2b2d33', wishStroke: 'rgba(236,230,219,0.75)', wishPoint: '#8a867f', home: '#ffffff',
+    visitedStroke: 'rgba(255,255,255,0.35)', visitedSide: 0.28, visitedAlt: 0.018,
+    heat: ['#7d7a75', '#a29e97', '#c4bfb6', '#e0dad0', '#ffffff'], year: ['#8FA0B5', '#DCC6A2'],
+    arcs: ['rgba(255,255,255,0.12)', 'rgba(255,255,255,0.8)'], recapArcs: ['rgba(255,255,255,0.25)', 'rgba(255,255,255,1)'], arcStroke: 0.28,
+    ocean: '#08090b', emissive: '#0c0d11', emissiveI: 0.5, shininess: 12, specular: '#2a2d36', atmosphere: '#a9b4c8', atmosphereAlt: 0.13,
+    cont: k => CONTINENTS[k]?.muted,
+  },
+};
+export const LOOK_LEGEND = { heat: k => LOOKS[k].heat, year: k => LOOKS[k].year, cont: (look, k) => LOOKS[look].cont(k) };
 
 const hexToRgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
 const rgba = (h, a) => { const [r, g, b] = hexToRgb(h); return `rgba(${r},${g},${b},${a})`; };
@@ -30,19 +50,23 @@ export function createGlobe(el, handlers = {}) {
     layers: { countries: true, cities: true, flights: true, wish: true },
     hover: null, selected: null,
     recap: null,          // { visited:Set, colors:Map, arcs:[], points:[], rings:[], label }
+    look: 'color',
     autoRotate: !reduced, userPaused: false,
   };
 
   g.renderer().setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
-  g.backgroundColor('rgba(0,0,0,0)')
-    .showAtmosphere(true).atmosphereColor('#8fb4ff').atmosphereAltitude(0.18)
-    .showGraticules(false);
+  let P = LOOKS.color;
+  g.backgroundColor('rgba(0,0,0,0)').showAtmosphere(true).showGraticules(false);
   const mat = g.globeMaterial();
-  mat.color.set('#070a24');
-  mat.emissive.set('#0a1048');
-  mat.emissiveIntensity = 0.28;
-  mat.shininess = 30;
-  if (mat.specular) mat.specular.set('#5e7bff');
+  function paintGlobe() {
+    g.atmosphereColor(P.atmosphere).atmosphereAltitude(P.atmosphereAlt);
+    mat.color.set(P.ocean);
+    mat.emissive.set(P.emissive);
+    mat.emissiveIntensity = P.emissiveI;
+    mat.shininess = P.shininess;
+    if (mat.specular) mat.specular.set(P.specular);
+  }
+  paintGlobe();
 
   const controls = g.controls();
   controls.autoRotate = st.autoRotate;
@@ -63,21 +87,22 @@ export function createGlobe(el, handlers = {}) {
   // Colori dei paesi
   // ---------------------------------------------------------------------------
   function visitedColor(cc) {
-    if (st.recap) return st.recap.colors.get(cc) || CONTINENTS[countries.get(cc)?.k]?.color || '#5E5CE6';
+    if (st.recap) return st.recap.colors.get(cc) || (st.colorMode === 'mono' ? IVORY : P.cont(countries.get(cc)?.k)) || IVORY;
     const s = st.stats;
     const v = s && s.visits.get(cc);
     if (st.colorMode === 'visits') {
       const n = v ? v.trips.size : 0;
-      return HEAT[Math.min(HEAT.length - 1, Math.max(0, n - 1))];
+      return P.heat[Math.min(P.heat.length - 1, Math.max(0, n - 1))];
     }
     if (st.colorMode === 'year') {
       const years = s.years.map(y => +y.year);
       const y0 = Math.min(...years), y1 = Math.max(...years);
       const y = v && v.first ? +v.first.slice(0, 4) : null;
-      if (!y || !years.length) return '#5E5CE6';
-      return mix('#64D2FF', '#FF9F0A', y1 > y0 ? (y - y0) / (y1 - y0) : 1);
+      if (!y || !years.length) return IVORY;
+      return mix(P.year[0], P.year[1], y1 > y0 ? (y - y0) / (y1 - y0) : 1);
     }
-    return CONTINENTS[countries.get(cc)?.k]?.color || '#5E5CE6';
+    if (st.colorMode === 'mono') return IVORY;
+    return P.cont(countries.get(cc)?.k) || IVORY;
   }
   const isVisited = cc => (st.recap ? st.recap.visited.has(cc) : !!(st.stats && st.stats.visited.has(cc)));
   const isWish = cc => !st.recap && st.layers.wish && !!(st.stats && st.stats.wish.has(cc));
@@ -86,25 +111,25 @@ export function createGlobe(el, handlers = {}) {
     const cc = f.properties.c;
     const hov = st.hover === f || st.selected === cc;
     if (st.layers.countries && isVisited(cc)) return hov ? mix(visitedColor(cc), '#ffffff', 0.25) : visitedColor(cc);
-    if (isWish(cc)) return hov ? 'rgba(255,214,10,0.72)' : WISH;
-    return hov ? LAND_HOVER : LAND;
+    if (isWish(cc)) return hov ? P.landHover : P.wish;
+    return hov ? P.landHover : P.land;
   }
   function sideColor(f) {
     const cc = f.properties.c;
-    if (st.layers.countries && isVisited(cc)) return rgba(visitedColor(cc), 0.45);
-    return 'rgba(10,16,48,0.6)';
+    if (st.layers.countries && isVisited(cc)) return rgba(visitedColor(cc), P.visitedSide);
+    return P.side;
   }
   function strokeColor(f) {
     const cc = f.properties.c;
-    if (st.layers.countries && isVisited(cc)) return 'rgba(255,255,255,0.55)';
-    if (isWish(cc)) return 'rgba(255,214,10,0.9)';
-    return STROKE;
+    if (st.layers.countries && isVisited(cc)) return P.visitedStroke;
+    if (isWish(cc)) return P.wishStroke;
+    return P.stroke;
   }
   function altitude(f) {
     const cc = f.properties.c;
-    let a = st.layers.countries && isVisited(cc) ? 0.028 : 0.006;
-    if (st.selected === cc) a += 0.03;
-    else if (st.hover === f) a += 0.012;
+    let a = st.layers.countries && isVisited(cc) ? P.visitedAlt : 0.005;
+    if (st.selected === cc) a += 0.025;
+    else if (st.hover === f) a += 0.01;
     return a;
   }
   function label(f) {
@@ -145,11 +170,11 @@ export function createGlobe(el, handlers = {}) {
     if (st.recap) return st.recap.points;
     const s = st.stats;
     if (!s) return pts;
-    if (st.layers.cities) for (const c of s.cities) pts.push({ lat: c.lat, lng: c.lng, r: 0.16 + Math.min(0.2, c.count * 0.03), color: '#ffffff', alt: 0.035, tip: `${flag(c.cc)} ${c.name}`, sub: c.count > 1 ? `${c.count} visite` : 'Visitata' });
+    if (st.layers.cities) for (const c of s.cities) pts.push({ lat: c.lat, lng: c.lng, r: 0.1 + Math.min(0.12, c.count * 0.02), color: '#ffffff', alt: 0.024, tip: `${flag(c.cc)} ${c.name}`, sub: c.count > 1 ? `${c.count} visite` : 'Visitata' });
     for (const c of countries.values()) {
       if (c.g) continue;
       if (st.layers.countries && s.visited.has(c.c)) pts.push({ lat: c.lat, lng: c.lng, r: 0.45, color: visitedColor(c.c), alt: 0.03, tip: `${flag(c.c)} ${c.n}`, sub: 'Visitato', cc: c.c });
-      else if (isWish(c.c)) pts.push({ lat: c.lat, lng: c.lng, r: 0.4, color: '#FFD60A', alt: 0.02, tip: `${flag(c.c)} ${c.n}`, sub: '⭐ Desiderio', cc: c.c });
+      else if (isWish(c.c)) pts.push({ lat: c.lat, lng: c.lng, r: 0.35, color: P.wishPoint, alt: 0.015, tip: `${flag(c.c)} ${c.n}`, sub: '⭐ Desiderio', cc: c.c });
     }
     return pts;
   }
@@ -168,18 +193,18 @@ export function createGlobe(el, handlers = {}) {
     if (!st.layers.flights || !st.stats) return [];
     return st.stats.flights.map(f => ({
       a: f.fromLL, b: f.toLL,
-      colors: ['rgba(100,210,255,0.95)', 'rgba(191,90,242,0.95)'],
+      colors: P.arcs,
       tip: `✈️ ${f.from} → ${f.to}`, sub: `${Math.round(f.km).toLocaleString('it-IT')} km${f.date ? ' · ' + f.date.split('-').reverse().join('/') : ''}`,
     }));
   }
   g.arcStartLat(d => d.a[0]).arcStartLng(d => d.a[1]).arcEndLat(d => d.b[0]).arcEndLng(d => d.b[1])
     .arcColor('colors')
-    .arcAltitudeAutoScale(0.38)
-    .arcStroke(d => d.stroke || 0.45)
-    .arcDashLength(d => d.dash ?? 0.5)
-    .arcDashGap(d => d.gap ?? 0.18)
+    .arcAltitudeAutoScale(0.34)
+    .arcStroke(d => d.stroke || P.arcStroke)
+    .arcDashLength(d => d.dash ?? 0.6)
+    .arcDashGap(d => d.gap ?? 0.12)
     .arcDashInitialGap(d => d.initGap ?? 0)
-    .arcDashAnimateTime(d => (reduced ? 0 : d.anim ?? 3800))
+    .arcDashAnimateTime(d => (reduced ? 0 : d.anim ?? 6000))
     .arcsTransitionDuration(reduced ? 0 : 900)
     .arcLabel(d => `<div class="gtip"><b>${esc(d.tip)}</b><span>${esc(d.sub || '')}</span></div>`);
 
@@ -188,7 +213,7 @@ export function createGlobe(el, handlers = {}) {
   // ---------------------------------------------------------------------------
   function ringsData() {
     if (st.recap) return st.recap.rings;
-    return st.home ? [{ lat: st.home.lat, lng: st.home.lng, color: '#FFD60A', max: 3.2, speed: 1.6, period: 1600 }] : [];
+    return st.home ? [{ lat: st.home.lat, lng: st.home.lng, color: P.home, max: 2.6, speed: 1.2, period: 2000 }] : [];
   }
   g.ringLat('lat').ringLng('lng')
     .ringColor(d => t => rgba(d.color, Math.max(0, 1 - t)))
@@ -229,6 +254,12 @@ export function createGlobe(el, handlers = {}) {
     setLayers(layers) { st.layers = { ...st.layers, ...layers }; refreshAll(); },
     layers: () => ({ ...st.layers }),
     setColorMode(m) { st.colorMode = m; refreshPolygons(); g.pointsData(pointsData()); },
+    setLook(look) {
+      if (!LOOKS[look] || look === st.look) return;
+      st.look = look; P = LOOKS[look];
+      paintGlobe();
+      refreshAll();
+    },
     select(cc) { st.selected = cc || null; refreshPolygons(); },
     size(w, h) { g.width(w).height(h); },
     offset(x, y) { g.globeOffset([x, y]); },
@@ -282,29 +313,29 @@ export function createGlobe(el, handlers = {}) {
       controls.autoRotate = false;
       refreshAll();
     },
-    recapCountry(cc, color) {
+    recapCountry(cc) {
       if (!st.recap || !cc) return;
       st.recap.visited.add(cc);
-      if (color) st.recap.colors.set(cc, color);
+      const color = visitedColor(cc);
       refreshPolygons();
       const c = countries.get(cc);
-      if (c && !c.g) { st.recap.points.push({ lat: c.lat, lng: c.lng, r: 0.45, color: color || '#5E5CE6', alt: 0.03, tip: c.n }); g.pointsData([...st.recap.points]); }
+      if (c && !c.g) { st.recap.points.push({ lat: c.lat, lng: c.lng, r: 0.35, color: color || IVORY, alt: 0.02, tip: c.n }); g.pointsData([...st.recap.points]); }
     },
     recapArc(a, b, ms = 1600) {
       if (!st.recap) return;
-      st.recap.arcs.push({ a, b, colors: ['rgba(100,210,255,1)', 'rgba(191,90,242,1)'], stroke: 0.7, dash: 1, gap: 1, initGap: 1, anim: ms });
+      st.recap.arcs.push({ a, b, colors: P.recapArcs, stroke: 0.5, dash: 1, gap: 1, initGap: 1, anim: ms });
       g.arcsData([...st.recap.arcs]);
       // dopo il "disegno" l'arco resta pieno
       setTimeout(() => {
         if (!st.recap) return;
         const last = st.recap.arcs.find(x => x.a === a && x.b === b);
-        if (last) { last.dash = 0.5; last.gap = 0.18; last.initGap = 0; last.anim = 3800; last.stroke = 0.5; g.arcsData([...st.recap.arcs]); }
+        if (last) { last.dash = 0.6; last.gap = 0.12; last.initGap = 0; last.anim = 6000; last.stroke = P.arcStroke; g.arcsData([...st.recap.arcs]); }
       }, ms);
     },
     recapPlace(lat, lng, text, color = '#ffffff') {
       if (!st.recap) return;
-      st.recap.points.push({ lat, lng, r: 0.22, color: '#ffffff', alt: 0.035, tip: text });
-      st.recap.rings = [{ lat, lng, color, max: 4, speed: 2.4, period: 900 }];
+      st.recap.points.push({ lat, lng, r: 0.14, color: '#ffffff', alt: 0.024, tip: text });
+      st.recap.rings = [{ lat, lng, color, max: 3, speed: 1.8, period: 1100 }];
       st.recap.label = { lat, lng, text, kind: 'place' };
       g.pointsData([...st.recap.points]).ringsData(st.recap.rings).htmlElementsData([st.recap.label]);
     },

@@ -4,7 +4,7 @@
 import { app } from '../ctx.js';
 import * as store from '../store.js';
 import { CONTINENTS, CONTINENT_ORDER, countryName } from '../geo.js';
-import { esc, flag, fmtInt, fmt1, fmtCompact, fmtRange, daysBetween, icon, toast, confirmDialog } from '../util.js';
+import { esc, flag, fmtInt, fmt1, fmtCompact, fmtRange, daysBetween, icon, toast, confirmDialog, orbitaMark } from '../util.js';
 import { tripCard, widget, ring, animateIn } from './common.js';
 import { loadDemo, hasDemo, removeDemo } from '../demo.js';
 import { tripStatus } from '../model.js';
@@ -31,7 +31,7 @@ export function render(el) {
   }
 
   if (empty) {
-    html += `<div class="empty"><span class="big-emoji">🌍</span>
+    html += `<div class="empty"><span class="big-emoji">${orbitaMark('emp', 'mark big-mark')}</span>
       <h2 class="title2">Il tuo mondo ti aspetta</h2>
       <p class="secondary" style="margin-top:8px">Aggiungi i viaggi che hai fatto: il globo si accende paese dopo paese e il passaporto si riempie di timbri.</p>
       <div class="stack" style="margin-top:20px">
@@ -56,7 +56,7 @@ export function render(el) {
       </div>
     </div>`;
 
-  html += `<div class="cont-strip" style="margin-top:12px">${CONTINENT_ORDER.map(k => `<div class="cont ${s.continents.has(k) ? 'on' : ''}" style="--c:${CONTINENTS[k].color}" title="${esc(CONTINENTS[k].n)}"><span class="e">${CONTINENTS[k].emoji}</span><small>${esc(CONTINENTS[k].n.replace('Nord ', 'N. ').replace('Sud ', 'S. '))}</small></div>`).join('')}</div>`;
+  html += `<div class="cont-strip" style="margin-top:12px">${CONTINENT_ORDER.map(k => { const pc = s.perContinent[k] || { visited: 0 }; return `<div class="cont ${s.continents.has(k) ? 'on' : ''}" style="--c:${CONTINENTS[k].color}" title="${esc(CONTINENTS[k].n)}"><span class="e">${esc(CONTINENTS[k].short)}</span><small class="num">${k === 'AN' ? (s.continents.has('AN') ? '✓' : '–') : pc.visited}</small></div>`; }).join('')}</div>`;
 
   if (s.ongoing) {
     html += `<div class="section"><div class="section-head"><h3>In viaggio ora</h3></div>${tripCard(s.ongoing)}</div>`;

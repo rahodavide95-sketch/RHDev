@@ -75,7 +75,7 @@ export function render(el) {
   // numeri
   html += `<div class="section"><div class="section-head"><h3>I numeri</h3></div><div class="widgets">
     ${widget({ label: 'Paesi', value: fmtInt(s.sovereignCount), unit: `/${s.sovereignTotal}`, ic: 'globe', color: 'var(--blue)', vivid: true, i: 1, sub: `${fmt1(s.worldPct)}% del mondo` })}
-    ${widget({ label: 'Continenti', value: s.continents.size, unit: '/7', ic: 'map', color: 'var(--indigo)', i: 2, sub: [...s.continents].map(k => CONTINENTS[k].emoji).join(' ') })}
+    ${widget({ label: 'Continenti', value: s.continents.size, unit: '/7', ic: 'map', i: 2, sub: CONTINENT_ORDER.filter(k => s.continents.has(k)).map(k => CONTINENTS[k].short).join(' · ') })}
     ${widget({ label: 'Regioni e stati', value: fmtInt(s.regionCount), ic: 'pin', color: 'var(--orange)', i: 3, sub: [s.itRegions ? `${s.itRegions}/20 regioni italiane` : '', s.usStates ? `${s.usStates} stati USA` : ''].filter(Boolean).join(' · ') })}
     ${widget({ label: 'Città', value: fmtInt(s.cityCount), ic: 'home', color: 'var(--pink)', i: 4, sub: s.territoryCount ? `+ ${s.territoryCount} territori` : '' })}
     ${widget({ label: 'Km in volo', value: fmtCompact(s.km), ic: 'plane', color: 'var(--cyan)', vivid: true, wide: true, i: 5, sub: `${fmt1(s.earthLaps)} giri della Terra · ${fmt1(s.moonPct)}% della strada per la Luna` })}
@@ -87,8 +87,8 @@ export function render(el) {
 
   // continenti
   html += `<div class="section"><div class="section-head"><h3>Continenti</h3></div><div class="list cont-bars">
-    ${CONTINENT_ORDER.filter(k => k !== 'AN').map(k => { const c = s.perContinent[k] || { visited: 0, total: 0 }; return `<div class="cont-bar" style="--c:${CONTINENTS[k].color}"><div class="row between"><span>${CONTINENTS[k].emoji} ${esc(CONTINENTS[k].n)}</span><span class="secondary num">${c.visited} / ${c.total}</span></div><div class="track"><i data-w="${c.total ? Math.max(c.visited ? 3 : 0, c.visited / c.total * 100) : 0}%"></i></div></div>`; }).join('')}
-    <div class="cont-bar" style="--c:${CONTINENTS.AN.color}"><div class="row between"><span>${CONTINENTS.AN.emoji} Antartide</span><span class="secondary">${s.continents.has('AN') ? 'Conquistata!' : 'Ancora da raggiungere'}</span></div><div class="track"><i data-w="${s.continents.has('AN') ? 100 : 0}%"></i></div></div>
+    ${CONTINENT_ORDER.filter(k => k !== 'AN').map(k => { const c = s.perContinent[k] || { visited: 0, total: 0 }; return `<div class="cont-bar" style="--c:${CONTINENTS[k].color}"><div class="row between"><span>${esc(CONTINENTS[k].n)}</span><span class="secondary num">${c.visited} / ${c.total}</span></div><div class="track"><i data-w="${c.total ? Math.max(c.visited ? 3 : 0, c.visited / c.total * 100) : 0}%"></i></div></div>`; }).join('')}
+    <div class="cont-bar" style="--c:${CONTINENTS.AN.color}"><div class="row between"><span>Antartide</span><span class="secondary">${s.continents.has('AN') ? 'Conquistata!' : 'Ancora da raggiungere'}</span></div><div class="track"><i data-w="${s.continents.has('AN') ? 100 : 0}%"></i></div></div>
   </div></div>`;
 
   // timbri
@@ -98,8 +98,7 @@ export function render(el) {
     const v = s.visits.get(cc);
     const shape = ['', 'sq', 'tk'][h % 3];
     const rot = ((h >> 3) % 25) - 12;
-    const col = CONTINENTS[countries.get(cc).k].color;
-    const ink = col === '#E5E5EA' ? '#5a6a8a' : col === '#64D2FF' ? '#1689b8' : col === '#FFD60A' ? '#b38f00' : col;
+    const ink = `color-mix(in srgb, ${CONTINENTS[countries.get(cc).k].color} 72%, #1c2033)`;   // inchiostro del continente, scurito
     return `<div class="stamp ${shape}" style="--ink:${ink};--rot:${rot}deg;--i:${i}" title="${esc(countryName(cc))}"><span class="fl">${flag(cc)}</span><b>${esc(countryName(cc))}</b><small>${esc(stampDate(v.first) || (v.trips.size ? '' : 'VISITATO'))}</small></div>`;
   }).join('')}</div>` : `<p class="secondary" style="margin:0 4px">Il primo timbro arriva con il primo viaggio ✈️</p>`;
   html += `</div>`;

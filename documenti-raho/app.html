@@ -226,6 +226,8 @@ input.code{font-family:var(--mono);letter-spacing:.02em}
 .ag .ln{display:block}
 .ag .ln.bl{position:relative;padding-left:21pt}
 .ag .ln.bl::before{content:"●";position:absolute;left:0}
+.ag .ln.cb{position:relative;padding-left:21pt}
+.ag .ln.cb::before{content:"";position:absolute;left:0;top:2.6pt;width:8pt;height:8pt;box-sizing:border-box;border:1pt solid #111}
 .ag .ln.ind{padding-left:7.5pt}
 .ag .j{text-align:justify}
 .ag-band{flex:none;position:relative;height:36pt;background:#000}
@@ -369,7 +371,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   <div class="sigbox" role="dialog" aria-modal="true" aria-labelledby="edTitle">
     <h2 id="edTitle">Modifica il testo</h2>
     <textarea id="edText" spellcheck="true"></textarea>
-    <p class="hint">Per il grassetto metti le parole tra due asterischi: **così**. Se cambi una frase con numeri automatici (compenso, giorni), quei numeri non si aggiornano più da soli: «Testo originale» li rimette automatici.</p>
+    <p class="hint">Per il grassetto metti le parole tra due asterischi: **così**. Una riga che inizia con ☐ diventa una casella da spuntare. Se cambi una frase con numeri automatici (compenso, giorni), quei numeri non si aggiornano più da soli: «Testo originale» li rimette automatici.</p>
     <div class="sigactions">
       <button type="button" class="btn ghost" id="edOrig">Testo originale</button>
       <div class="row">
@@ -417,7 +419,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
       t:{depositPct:'50', depositDays:'7', balance:'cash', balanceDate:'', certDays:'30', transport:'Treno', from:'', to:'', persons:'1', bags:'1', pnrDays:'7', carAmount:'',
          nights:'1', room:'single', stars:'3', minutes:'15', meals:'', guests:'2', drinks:'', cdj:'4', mixer:'Pioneer DJM-V10', changeDays:'7',
          cancelDays:'30', refundDays:'14', fmMonths:'6', law:'Italian', foro:''},
-      en:{depositPct:'50', depositDays:'7', balance:'both', balanceDate:'', certDays:'30', persons:'1', outbound:'to be agreed', ret:'to be agreed', bags:'1', bagKg:'10', pnrDays:'7',
+      en:{depositPct:'50', depositDays:'7', balanceDate:'', certDays:'30', persons:'1', outbound:'to be agreed', ret:'to be agreed', bags:'1', bagKg:'10', pnrDays:'7',
           nights:'1', room:'single', stars:'3', hotel:'to be agreed', guests:'1 or more', drinks:'Gin and tonic water (separate bottles); Sugar-free energy drinks; Beer',
           cdj:'4', mixer:'any', changeDays:'7', cancelDays:'30', refundDays:'14', fmMonths:'6', proofDays:'7', law:'Italian', courts:'Italy'},
       c:{place:'', date:''}, edits:{},
@@ -631,6 +633,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
       line = line.replace(/\s+$/, '');
       var cls = 'ln';
       if (/^●\s*/.test(line)) { cls += ' bl'; line = line.replace(/^●\s*/, ''); }
+      else if (/^☐\s*/.test(line)) { cls += ' cb'; line = line.replace(/^☐\s*/, ''); }
       else if (/^- /.test(line)) cls += ' ind';
       var h = esc(line).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\[([^\]]*)\]/g, '<span class="ph">[$1]</span>');
       return '<span class="' + cls + '">' + (h || '&nbsp;') + '</span>';
@@ -645,7 +648,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
       if (n.nodeName === 'BR') { lines.push(cur); cur = ''; return; }
       if (n.classList.contains('ln')) {
         if (cur) lines.push(cur);
-        cur = n.classList.contains('bl') ? '● ' : ''; kids(n); lines.push(cur); cur = ''; return;
+        cur = n.classList.contains('bl') ? '● ' : n.classList.contains('cb') ? '☐ ' : ''; kids(n); lines.push(cur); cur = ''; return;
       }
       if (n.nodeName === 'B' || n.nodeName === 'STRONG') { cur += '**'; kids(n); cur += '**'; return; }
       if (n.nodeName === 'LI') { if (cur) lines.push(cur); cur = ''; kids(n); lines.push(cur); cur = ''; return; }
@@ -687,7 +690,6 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     var byPromoter = '     completed by the Promoter';
     var nights = numOr(E.nights);
     var drinks = String(E.drinks || '').split(';').map(function(d){ return d.trim(); }).filter(Boolean);
-    var mode = E.balance || 'both';
 
     page(1, ed('title', 'DJ Performance Agreement', 'ag-title') + ed('sub', 'Raho  ·  booking contract for performances abroad', 'ag-sub')
       + sec('01', 'PARTIES')
@@ -717,8 +719,8 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
           row('pay.deposit', 'Deposit', lines([pctTxt + '% (EUR ' + eur(dep) + ') by bank transfer within ' + v(E.depositDays, '7') + ' days of signing.',
             'The booking is confirmed only once the deposit is received.'])),
           row('pay.balance', 'Balance', ln(balPct + '% (EUR ' + eur(bal) + ')')
-            + (mode !== 'transfer' ? ln('In cash on the night, before the set', 'bl') : '')
-            + (mode !== 'cash' ? ln('By bank transfer by ' + (has(E.balanceDate) ? esc(itDate(E.balanceDate)) : 'date'), 'bl') : '')),
+            + ln('In cash on the night, before the set', 'cb')
+            + ln('By bank transfer by ' + (has(E.balanceDate) ? esc(itDate(E.balanceDate)) : 'date'), 'cb')),
           row('pay.currency', 'Currency and charges', 'All amounts in euro. Transfer and exchange fees are paid by the Promoter.')])
       + group('taxes', 'TAXES', '', 42.9, [
           row('tax.local', 'Local withholding tax', 'If the country of the event applies a withholding tax to this fee, the Promoter withholds it, pays it to the local tax authority and bears its cost in addition to the net fee.'),
@@ -985,8 +987,8 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
       F('fee.expenses','Rimborso spese € (facoltativo)',{num:1, ph:'0,00', docs:['bkr-est']}),
       F('fee.contractDate','Data del contratto (facoltativa)',{type:'date', docs:BKR})]},
     {t:'Pagamento', docs:['bkc-en'], f:[F('en.depositPct','Acconto %',{half:1, num:1}), F('en.depositDays','Giorni per l\'acconto',{half:1, num:1}),
-      F('en.balance','Saldo',{type:'select', half:1, opts:[['both','Contanti o bonifico (come nel contratto)'],['cash','Solo in contanti la sera'],['transfer','Solo con bonifico']]}),
-      F('en.balanceDate','Bonifico entro il',{type:'date', half:1}), F('en.certDays','Giorni per il certificato delle tasse estere',{num:1})]},
+      F('en.balanceDate','Saldo con bonifico entro il (facoltativo)',{type:'date', hint:'Contanti o bonifico lo sceglie il promoter, spuntando una casella nel contratto.'}),
+      F('en.certDays','Giorni per il certificato delle tasse estere',{num:1})]},
     {t:'Viaggio e alloggio', docs:['bkc-en'], f:[F('en.persons','Passeggeri',{half:1, num:1}), F('en.bags','Bagagli da stiva',{half:1, num:1}),
       F('en.outbound','Volo di andata',{half:1}), F('en.ret','Volo di ritorno',{half:1}), F('en.bagKg','Kg per bagaglio',{half:1, num:1}), F('en.pnrDays','Biglietti inviati giorni prima',{half:1, num:1}),
       F('en.nights','Notti',{half:1, num:1}), F('en.room','Camera',{type:'select', half:1, opts:[['single','Singola'],['double','Doppia']]}),
@@ -1027,7 +1029,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     if (fd.type === 'select') inner = '<select id="' + id + '" data-path="' + fd.p + '">' + fd.opts.map(function(o){ return '<option value="' + esc(o[0]) + '"' + (String(v) === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>';
     else inner = '<input type="' + (fd.type === 'date' ? 'date' : 'text') + '" id="' + id + '" data-path="' + fd.p + '"' + (fd.num ? ' class="num" inputmode="decimal"' : '')
       + (fd.ph ? ' placeholder="' + esc(fd.ph) + '"' : '') + ' value="' + esc(v) + '">';
-    return '<div class="f"><label for="' + id + '">' + esc(fd.l) + '</label>' + inner + '</div>';
+    return '<div class="f"><label for="' + id + '">' + esc(fd.l) + '</label>' + inner + (fd.hint ? '<p class="hint">' + esc(fd.hint) + '</p>' : '') + '</div>';
   }
   function renderFields(){
     var doc = state.doc, out = '';

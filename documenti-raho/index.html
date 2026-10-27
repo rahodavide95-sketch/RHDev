@@ -95,7 +95,8 @@ body.view-archive .form{display:none}
   .tabs{grid-template-columns:repeat(3,minmax(0,1fr));max-width:none;position:sticky;top:max(8px, env(safe-area-inset-top, 0px));z-index:5;box-shadow:0 0 0 8px var(--bg)}
   #tabPreview{display:block}
   .desk{grid-column:1;grid-row:1}
-  body.view-form .desk,body.view-archive .desk{display:none}
+  body.view-form .desk,body.view-archive .desk,body.view-settings .desk{display:none}
+  .menu{right:auto;left:0}
   body.view-preview .form{display:none}
   body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top, 0px);z-index:10;background:var(--bg)}
 }
@@ -125,11 +126,42 @@ details.card > .inner{display:flex;flex-direction:column;gap:14px;margin-top:14p
 .f label{font-size:12.5px;font-weight:500;color:var(--muted)}
 input[type="text"],input[type="password"],input[type="date"],select,#edText{font:16px var(--ui);color:var(--fg);background:var(--field);border:0;border-radius:11px;padding:10px 12px;min-height:44px;width:100%;box-sizing:border-box;-webkit-appearance:none;appearance:none;transition:background-color .15s,box-shadow .15s}
 input[type="text"]:hover,input[type="password"]:hover,input[type="date"]:hover,select:hover{background:var(--field-2)}
-.acct{appearance:none;-webkit-appearance:none;border:0;background:var(--panel);color:var(--fg);font:600 13px var(--ui);min-height:40px;padding:0 14px 0 12px;border-radius:999px;display:inline-flex;align-items:center;gap:8px;cursor:pointer}
-.acct i{width:8px;height:8px;border-radius:50%;background:var(--faint)}
-.acct.ok i{background:var(--ok)}
-.acct.warn i{background:var(--warn)}
-.acct.busy i{background:var(--ring);animation:pulse 1s ease-in-out infinite}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--faint);flex:none}
+.dot[data-state="ok"]{background:var(--ok)}
+.dot[data-state="warn"]{background:var(--warn)}
+.dot[data-state="busy"]{background:var(--ring);animation:pulse 1s ease-in-out infinite}
+.menu-wrap{position:relative}
+.menu-btn{background:var(--panel)}
+.menu{position:absolute;right:0;top:calc(100% + 8px);z-index:40;width:min(340px, calc(100vw - 32px));box-sizing:border-box;background:var(--panel);border-radius:20px;padding:8px;box-shadow:var(--lift);display:flex;flex-direction:column;gap:2px}
+.menu[hidden]{display:none}
+.mi{appearance:none;-webkit-appearance:none;border:0;background:transparent;color:var(--fg);text-align:left;font:inherit;padding:12px 14px;border-radius:14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.mi:hover{background:var(--field)}
+.mi span{display:flex;flex-direction:column;gap:2px}
+.mi b{font-weight:600;font-size:14.5px}
+.mi small{font-size:12.5px;color:var(--muted)}
+.mi-k{font:600 11.5px var(--ui);letter-spacing:.1em;text-transform:uppercase;color:var(--faint);padding:12px 14px 4px}
+.menu .themes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;padding:4px 6px 6px;background:transparent}
+.menu .themes button{width:auto;height:auto;border-radius:12px;padding:8px 2px;display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--muted);font:500 11.5px var(--ui)}
+.menu .themes button i{width:26px;height:26px}
+.menu .themes button[aria-checked="true"]{background:var(--accent);color:var(--accent-fg)}
+/* each topic is its own card, with air between them */
+#fields{display:flex;flex-direction:column;gap:12px}
+#setPart{display:none}
+body.view-settings #setPart{display:flex;flex-direction:column;gap:12px}
+#setPart .card{scroll-margin-top:16px}
+@media (max-width:940px){#setPart .card{scroll-margin-top:76px}}
+body.view-settings #docCard,body.view-settings #fields{display:none}
+.setbar{display:flex;align-items:center;gap:12px}
+.setbar .btn.ghost{background:var(--panel)}
+.sub{display:flex;flex-direction:column;gap:12px}
+.sub + .sub{margin-top:12px}
+.fold{border-radius:14px;background:var(--bg)}
+.fold > summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:14px 16px;font-weight:600;font-size:14.5px;border-radius:14px}
+.fold > summary::-webkit-details-marker{display:none}
+.fold > summary::after{content:"";width:7px;height:7px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg) translate(-2px,-2px);transition:transform .2s}
+.fold[open] > summary::after{transform:rotate(-135deg) translate(-2px,-2px)}
+.fold > .inner{display:flex;flex-direction:column;gap:12px;padding:0 16px 16px}
+.fold input[type="text"],.fold input[type="date"],.fold select{background:var(--panel)}
 @keyframes pulse{50%{opacity:.3}}
 .acct-body{display:flex;flex-direction:column;gap:14px}
 .acct-body p{margin:0}
@@ -169,10 +201,10 @@ input.code{font-family:var(--mono);letter-spacing:.02em}
 .reopen p{margin:0;flex:1 1 220px;font-size:13.5px;line-height:1.45}
 .reopen .btn.ghost{background:var(--accent-fg);color:var(--accent)}
 
-/* archive: colour and icon say the kind of document at a glance (booking orange, royalties violet, contracts blue) */
-:root{--bk:#b4500b;--bk-bg:#ffe8d1;--roy:#6a2bd6;--roy-bg:#ece5ff;--ctr:#1f55d6;--ctr-bg:#dde8ff}
-:root[data-theme="dark"],:root[data-theme="navy"]{--bk:#ffb26b;--bk-bg:rgba(255,146,48,.17);--roy:#c6b3ff;--roy-bg:rgba(160,128,255,.18);--ctr:#9cc0ff;--ctr-bg:rgba(90,150,255,.18)}
-@media (prefers-color-scheme: dark){:root:not([data-theme]),:root[data-theme="auto"]{--bk:#ffb26b;--bk-bg:rgba(255,146,48,.17);--roy:#c6b3ff;--roy-bg:rgba(160,128,255,.18);--ctr:#9cc0ff;--ctr-bg:rgba(90,150,255,.18)}}
+/* archive: a solid tile in a sober colour says the kind of document at a glance (booking black, royalties brown, contracts blue) */
+:root{--bk:#141414;--bk-fg:#ffffff;--roy:#6e4a2c;--roy-fg:#fbf4ea;--ctr:#1f3f73;--ctr-fg:#ffffff}
+:root[data-theme="dark"],:root[data-theme="navy"]{--bk:#f2f2f0;--bk-fg:#111111;--roy:#c39a6f;--roy-fg:#1d140b;--ctr:#93b4ea;--ctr-fg:#0b1730}
+@media (prefers-color-scheme: dark){:root:not([data-theme]),:root[data-theme="auto"]{--bk:#f2f2f0;--bk-fg:#111111;--roy:#c39a6f;--roy-fg:#1d140b;--ctr:#93b4ea;--ctr-fg:#0b1730}}
 .archive{flex-direction:column;gap:12px;min-width:0}
 .archive > *{flex:none}
 .arch-next{gap:8px}
@@ -190,9 +222,10 @@ input.code{font-family:var(--mono);letter-spacing:.02em}
 .arch-item.open{box-shadow:0 0 0 2px var(--accent)}
 .arch-ico{grid-area:ico;align-self:start;width:44px;height:44px;border-radius:13px;display:grid;place-items:center}
 .arch-ico svg{width:22px;height:22px}
-.arch-ico.bk,.arch-tag.bk{background:var(--bk-bg);color:var(--bk)}
-.arch-ico.roy,.arch-tag.roy{background:var(--roy-bg);color:var(--roy)}
-.arch-ico.ctr,.arch-tag.ctr{background:var(--ctr-bg);color:var(--ctr)}
+.arch-ico.bk{background:var(--bk);color:var(--bk-fg)}
+.arch-ico.roy{background:var(--roy);color:var(--roy-fg)}
+.arch-ico.ctr{background:var(--ctr);color:var(--ctr-fg)}
+.arch-tag{background:var(--field);color:var(--muted)}
 .arch-main{grid-area:main;min-width:0}
 .arch-t{font-weight:600;font-size:14.5px;display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px}
 .arch-tag{font-size:11.5px;font-weight:600;padding:3px 8px;border-radius:999px;white-space:nowrap}
@@ -388,13 +421,21 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     <div class="brand"><h1>RAHO</h1><span>Documenti</span></div>
     <div class="actions">
       <span class="status" id="status" role="status"></span>
-      <button type="button" class="acct" id="acctBtn"><i aria-hidden="true"></i><span id="acctLabel">Accedi</span></button>
-      <div class="themes" role="radiogroup" aria-label="Tema">
-        <button type="button" role="radio" data-theme-pick="auto" title="Automatico (come il telefono o il computer)" aria-label="Tema automatico"><i style="--a:#f3f3f1;--b:#0c0c0d"></i></button>
-        <button type="button" role="radio" data-theme-pick="light" title="Chiaro" aria-label="Tema chiaro"><i style="--a:#ffffff;--b:#e4e4e0"></i></button>
-        <button type="button" role="radio" data-theme-pick="sand" title="Sabbia" aria-label="Tema sabbia"><i style="--a:#faf7f1;--b:#c9b9a2"></i></button>
-        <button type="button" role="radio" data-theme-pick="dark" title="Scuro" aria-label="Tema scuro"><i style="--a:#2c2c2f;--b:#0c0c0d"></i></button>
-        <button type="button" role="radio" data-theme-pick="navy" title="Notte" aria-label="Tema notte"><i style="--a:#22304f;--b:#0a0f1d"></i></button>
+      <div class="menu-wrap">
+        <button type="button" class="btn ghost menu-btn" id="menuBtn" aria-expanded="false" aria-controls="menu"><i class="dot" id="menuDot" aria-hidden="true"></i>Menu</button>
+        <div class="menu" id="menu" hidden>
+          <button type="button" class="mi" id="acctBtn"><span><b>Account</b><small id="acctLabel">Accedi</small></span><i class="dot" id="acctDot" aria-hidden="true"></i></button>
+          <button type="button" class="mi" data-go="me"><span><b>I miei dati e conti</b><small>Nome, codice fiscale, IBAN</small></span></button>
+          <button type="button" class="mi" data-go="rubrica"><span><b>Rubrica e backup</b><small>Etichette, committenti, file di backup</small></span></button>
+          <div class="mi-k">Tema</div>
+          <div class="themes" role="radiogroup" aria-label="Tema">
+            <button type="button" role="radio" data-theme-pick="auto" aria-label="Tema automatico"><i style="--a:#f3f3f1;--b:#0c0c0d"></i><span>Auto</span></button>
+            <button type="button" role="radio" data-theme-pick="light" aria-label="Tema chiaro"><i style="--a:#ffffff;--b:#e4e4e0"></i><span>Chiaro</span></button>
+            <button type="button" role="radio" data-theme-pick="sand" aria-label="Tema sabbia"><i style="--a:#faf7f1;--b:#c9b9a2"></i><span>Sabbia</span></button>
+            <button type="button" role="radio" data-theme-pick="dark" aria-label="Tema scuro"><i style="--a:#2c2c2f;--b:#0c0c0d"></i><span>Scuro</span></button>
+            <button type="button" role="radio" data-theme-pick="navy" aria-label="Tema notte"><i style="--a:#22304f;--b:#0a0f1d"></i><span>Notte</span></button>
+          </div>
+        </div>
       </div>
       <button class="btn" id="exportBtn" type="button">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 2v8M4.5 6.5 8 10l3.5-3.5M3 13h10"/></svg>
@@ -411,7 +452,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
 
   <div class="work">
     <form class="form" id="form" autocomplete="off">
-      <section class="card">
+      <section class="card" id="docCard">
         <h2>Documento</h2>
         <h3>Booking</h3>
         <div class="seg" role="radiogroup" aria-label="Documenti booking">
@@ -425,10 +466,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
           <input type="radio" name="doc" id="doc-roy-est" value="roy-est"><label for="doc-roy-est">Label estera</label>
           <input type="radio" name="doc" id="doc-roy-it" value="roy-it"><label for="doc-roy-it">Label italiana</label>
         </div>
-      </section>
-
-      <section class="card">
-        <h2>Logo e firma</h2>
+        <h3>Logo</h3>
         <div class="seg three" role="radiogroup" aria-label="Logo">
           <input type="radio" name="logo" id="logo-raho" value="raho"><label for="logo-raho">RAHO</label>
           <input type="radio" name="logo" id="logo-rhbkng" value="rhbkng"><label for="logo-rhbkng">RH[BKNG]</label>
@@ -439,15 +477,10 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
           <span class="hint" id="logoHint">PNG o JPG, meglio con sfondo trasparente.</span>
           <input type="file" id="logoFile" accept="image/*" hidden>
         </div>
-        <label class="check" for="sigUse"><input type="checkbox" id="sigUse"><span>Aggiungi la mia firma</span></label>
-        <div class="row">
-          <button type="button" class="btn ghost" id="sigOpen">Disegna la firma</button>
-          <img class="sigthumb" id="sigThumb" alt="La tua firma" hidden>
-        </div>
-        <p class="hint">Con il dito, la Apple Pencil o il trackpad. Resta salvata in questo browser.</p>
       </section>
 
       <div id="fields"></div>
+      <div id="setPart"></div>
     </form>
 
     <section class="archive" id="archive" aria-label="Archivio"></section>
@@ -1108,61 +1141,62 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
       BKC = ['bkc-en','bkc-it'], BKR = ['bkr-est','bkr-it'], EST = ['bkr-est','bkc-en'], ITB = ['bkr-it','bkc-it'];
   function F(path, label, o){ o = o || {}; o.p = path; o.l = label; return o; }
   var SECTIONS = [
-    {t:'Ricevuta', docs:REC, pick:'acc', f:[F('number','Numero (automatico)',{half:1, auto:1}), F('date','Data',{type:'date', half:1})]},
-    {t:'Etichetta', docs:ROY, saved:'labels', from:'label', f:[F('label.name','Ragione sociale'), F('label.addr','Indirizzo'),
+    {t:'Ricevuta', g:'meta', docs:REC, pick:'acc', f:[F('number','Numero (automatico)',{half:1, auto:1}), F('date','Data',{type:'date', half:1})]},
+    {t:'Etichetta', g:'who', docs:ROY, saved:'labels', from:'label', f:[F('label.name','Ragione sociale'), F('label.addr','Indirizzo'),
       F('label.city','CAP e città',{half:1}), F('label.country','Paese',{half:1, docs:['roy-est']}), F('label.cf','Codice fiscale',{half:1, docs:['roy-it']}),
       F('label.vat','VAT / Tax ID',{docs:['roy-est']}), F('label.piva','Partita IVA',{docs:['roy-it']})]},
-    {t:'Royalties', docs:ROY, custom:'lines'},
-    {t:'Ritenuta', docs:['roy-it'], f:[F('rit','Applica la ritenuta d\'acconto del 20%',{type:'check', hint:'Togli la spunta solo se l\'etichetta è una ditta in regime forfettario.'})]},
-    {t:'Promoter ed evento', docs:['bkc-en'], note:'Nel contratto restano vuoti, con gli spazi da compilare: li scrive il promoter.'},
-    {t:'Committente', docs:['bkc-it','bkr-est','bkr-it'], saved:'clients', from:'client', f:[F('client.name','Ragione sociale'), F('client.rep','Legale rappresentante (nome, ruolo)',{docs:BKC}),
+    {t:'Royalties', g:'what', docs:ROY, custom:'lines'},
+    {t:'Ritenuta', g:'what', docs:['roy-it'], f:[F('rit','Applica la ritenuta d\'acconto del 20%',{type:'check', hint:'Togli la spunta solo se l\'etichetta è una ditta in regime forfettario.'})]},
+    {t:'Promoter ed evento', g:'who', docs:['bkc-en'], note:'Nel contratto restano vuoti, con gli spazi da compilare: li scrive il promoter.'},
+    {t:'Committente', g:'who', docs:['bkc-it','bkr-est','bkr-it'], saved:'clients', from:'client', f:[F('client.name','Ragione sociale'), F('client.rep','Legale rappresentante (nome, ruolo)',{docs:BKC}),
       F('client.addr','Indirizzo'), F('client.city','CAP e città',{half:1}), F('client.country','Paese',{half:1, docs:EST}),
       F('client.cf','Codice fiscale',{half:1, docs:ITB}), F('client.vat','VAT / Tax ID',{docs:EST}), F('client.piva','Partita IVA',{docs:ITB}),
       F('client.contact','Referente per la serata (nome, telefono)',{docs:BKC})]},
-    {t:'Evento', docs:['bkc-it','bkr-est','bkr-it'], f:[F('ev.name','Nome dell\'evento'), F('ev.venue','Locale',{half:1}), F('ev.date','Data',{type:'date', half:1}),
+    {t:'Evento', g:'what', docs:['bkc-it','bkr-est','bkr-it'], f:[F('ev.name','Nome dell\'evento'), F('ev.venue','Locale',{half:1}), F('ev.date','Data',{type:'date', half:1}),
       F('ev.address','Indirizzo del locale'), F('ev.start','Inizio set',{half:1, docs:BKC, ph:'01:00'}), F('ev.end','Fine set',{half:1, docs:BKC, ph:'03:00'}),
       F('ev.duration','Durata (minuti)',{half:1, docs:BKC}), F('ev.capacity','Capienza',{half:1, docs:BKC}),
       F('ev.doors','Apertura porte',{half:1, docs:BKC}), F('ev.check','Prova attrezzatura',{half:1, docs:BKC}),
       F('ev.billing','Line-up',{type:'select', docs:BKC, opts:[['headliner','Headliner'],['co-headliner','Co-headliner'],['support','Support']]}),
       F('ev.others','Altri artisti',{docs:BKC})]},
-    {t:'Compenso', docs:BK, f:[F('fee.amount','Compenso netto concordato €',{num:1, ph:'0,00'}),
+    {t:'Compenso', g:'what', docs:BK, f:[F('fee.amount','Compenso netto concordato €',{num:1, ph:'0,00'}),
       F('fee.rit','Il committente è sostituto d\'imposta (ritenuta 20%)',{type:'check', docs:['bkr-it'], hint:'Società, associazioni, enti: sì. Un privato: no.'}),
       F('fee.net','L\'importo è il netto: calcola il lordo',{type:'check', docs:['bkr-it']}),
       F('fee.expenses','Rimborso spese € (facoltativo)',{num:1, ph:'0,00', docs:['bkr-est']}),
       F('fee.contractDate','Data del contratto (facoltativa)',{type:'date', docs:BKR})]},
-    {t:'Pagamento', docs:['bkc-en'], f:[F('en.depositPct','Acconto %',{half:1, num:1}), F('en.depositDays','Giorni per l\'acconto',{half:1, num:1}),
+    {t:'Pagamento', g:'terms', docs:['bkc-en'], f:[F('en.depositPct','Acconto %',{half:1, num:1}), F('en.depositDays','Giorni per l\'acconto',{half:1, num:1}),
       F('en.balanceDate','Saldo con bonifico entro il (facoltativo)',{type:'date', hint:'Contanti o bonifico lo sceglie il promoter, spuntando una casella nel contratto.'}),
       F('en.certDays','Giorni per il certificato delle tasse estere',{num:1})]},
-    {t:'Viaggio e alloggio', docs:['bkc-en'], f:[F('en.persons','Passeggeri',{half:1, num:1}), F('en.bags','Bagagli da stiva',{half:1, num:1}),
+    {t:'Viaggio e alloggio', g:'terms', docs:['bkc-en'], f:[F('en.persons','Passeggeri',{half:1, num:1}), F('en.bags','Bagagli da stiva',{half:1, num:1}),
       F('en.outbound','Volo di andata',{half:1}), F('en.ret','Volo di ritorno',{half:1}), F('en.bagKg','Kg per bagaglio',{half:1, num:1}), F('en.pnrDays','Biglietti inviati giorni prima',{half:1, num:1}),
       F('en.nights','Notti',{half:1, num:1}), F('en.room','Camera',{type:'select', half:1, opts:[['single','Singola'],['double','Doppia']]}),
       F('en.stars','Stelle minime',{half:1, num:1}), F('en.hotel','Hotel',{half:1}), F('en.guests','Ospiti in lista',{half:1}),
       F('en.drinks','Bevande facoltative in consolle (separate da ;)')]},
-    {t:'Rider tecnico', docs:['bkc-en'], f:[F('en.cdj','CDJ-3000',{type:'select', half:1, opts:[['3','3'],['4','4']]}),
+    {t:'Rider tecnico', g:'terms', docs:['bkc-en'], f:[F('en.cdj','CDJ-3000',{type:'select', half:1, opts:[['3','3'],['4','4']]}),
       F('en.mixer','Mixer',{type:'select', half:1, opts:[['any','Uno dei tre (come nel contratto)'],['Allen & Heath Xone:92','Allen & Heath Xone:92'],['Allen & Heath Xone:96','Allen & Heath Xone:96'],['Pioneer DJM-V10','Pioneer DJM-V10'],['Pioneer DJM-A9','Pioneer DJM-A9']]}),
       F('en.changeDays','Modifiche concordate giorni prima',{num:1})]},
-    {t:'Cancellazione e legge', docs:['bkc-en'], f:[F('en.cancelDays','Preavviso di cancellazione (giorni)',{half:1, num:1}), F('en.refundDays','Restituzione acconto (giorni)',{half:1, num:1}),
+    {t:'Cancellazione e legge', g:'terms', docs:['bkc-en'], f:[F('en.cancelDays','Preavviso di cancellazione (giorni)',{half:1, num:1}), F('en.refundDays','Restituzione acconto (giorni)',{half:1, num:1}),
       F('en.fmMonths','Nuova data entro (mesi)',{half:1, num:1}), F('en.proofDays','Prova di forza maggiore entro (giorni)',{half:1, num:1}),
       F('en.law','Legge applicabile',{half:1, ph:'Italian'}), F('en.courts','Tribunali competenti',{half:1, ph:'Italy'})]},
-    {t:'Pagamento', docs:['bkc-it'], f:[F('t.depositPct','Acconto %',{half:1, num:1}), F('t.depositDays','Giorni per l\'acconto',{half:1, num:1}),
+    {t:'Pagamento', g:'terms', docs:['bkc-it'], f:[F('t.depositPct','Acconto %',{half:1, num:1}), F('t.depositDays','Giorni per l\'acconto',{half:1, num:1}),
       F('t.balance','Saldo',{type:'select', half:1, opts:[['cash','In contanti la sera'],['transfer','Con bonifico']]}), F('t.balanceDate','Bonifico entro il',{type:'date', half:1})]},
-    {t:'Viaggio e alloggio', docs:['bkc-it'], f:[F('t.transport','Mezzo',{ph:'Treno / volo'}),
+    {t:'Viaggio e alloggio', g:'terms', docs:['bkc-it'], f:[F('t.transport','Mezzo',{ph:'Treno / volo'}),
       F('t.from','Partenza',{half:1, ph:'Aeroporto / città'}), F('t.to','Arrivo',{half:1}), F('t.persons','Persone',{half:1, num:1}),
       F('t.pnrDays','Biglietti inviati giorni prima',{half:1, num:1}), F('t.carAmount','Rimborso auto propria € (facoltativo)',{num:1, docs:['bkc-it']}),
       F('t.nights','Notti',{half:1, num:1}), F('t.room','Camera',{type:'select', half:1, opts:[['single','Singola'],['double','Doppia']]}),
       F('t.stars','Stelle minime',{half:1, num:1}), F('t.minutes','Minuti dal locale',{half:1, num:1}),
       F('t.meals','Buono pasto € a persona',{half:1, num:1}), F('t.guests','Ospiti in lista',{half:1, num:1}), F('t.drinks','Altre bevande in consolle (facoltativo)')]},
-    {t:'Rider tecnico', docs:['bkc-it'], f:[F('t.cdj','CDJ-3000',{type:'select', half:1, opts:[['3','3'],['4','4']]}),
+    {t:'Rider tecnico', g:'terms', docs:['bkc-it'], f:[F('t.cdj','CDJ-3000',{type:'select', half:1, opts:[['3','3'],['4','4']]}),
       F('t.mixer','Mixer',{type:'select', half:1, opts:[['Pioneer DJM-V10','Pioneer DJM-V10'],['Pioneer DJM-A9','Pioneer DJM-A9'],['Allen & Heath Xone:96','Allen & Heath Xone:96']]}),
       F('t.changeDays','Modifiche concordate giorni prima',{num:1})]},
-    {t:'Cancellazione e legge', docs:['bkc-it'], f:[F('t.cancelDays','Preavviso di cancellazione (giorni)',{half:1, num:1}), F('t.refundDays','Restituzione acconto (giorni)',{half:1, num:1}),
+    {t:'Cancellazione e legge', g:'terms', docs:['bkc-it'], f:[F('t.cancelDays','Preavviso di cancellazione (giorni)',{half:1, num:1}), F('t.refundDays','Restituzione acconto (giorni)',{half:1, num:1}),
       F('t.fmMonths','Nuova data entro (mesi)',{half:1, num:1}), F('t.foro','Foro competente (città)',{half:1})]},
-    {t:'Firma del contratto', docs:BKC, f:[F('c.place','Luogo',{half:1}), F('c.date','Data',{type:'date', half:1})]},
-    {t:'Marca da bollo', docs:REC, f:[F('bolloId','Codice identificativo della marca (14 cifre)',{num:1})], bolloHint:1},
-    {t:'I tuoi dati', id:'me', docs:ALL, details:1, after:'accounts', hint:'Restano salvati solo in questo browser, così non li riscrivi ogni volta.',
+    {t:'La tua firma', g:'end', docs:ALL, custom:'sig'},
+    {t:'Luogo e data della firma', g:'end', docs:BKC, f:[F('c.place','Luogo',{half:1}), F('c.date','Data',{type:'date', half:1})]},
+    {t:'Marca da bollo', g:'end', docs:REC, f:[F('bolloId','Codice identificativo della marca (14 cifre)',{num:1})], bolloHint:1},
+    {t:'I tuoi dati e i conti', id:'me', g:'set', docs:ALL, after:'accounts', hint:'Li scrivi una volta: compaiono da soli nei documenti e, se hai fatto l\'accesso, sono uguali su tutti i tuoi dispositivi.',
       f:[F('me.name','Nome e cognome'), F('me.addr','Indirizzo'), F('me.city','CAP e città',{half:1}), F('me.cf','Codice fiscale',{half:1}),
       F('me.email','Email',{half:1}), F('me.bookingEmail','Email di booking',{half:1}), F('me.phone','Telefono',{half:1})]},
-    {t:'Rubrica e backup', id:'archive', docs:ALL, details:1, after:'archive'}
+    {t:'Rubrica e backup', id:'rubrica', g:'set', docs:ALL, after:'archive'}
   ];
 
   function fieldHtml(fd){
@@ -1176,38 +1210,67 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
       + (fd.ph ? ' placeholder="' + esc(fd.ph) + '"' : '') + ' value="' + esc(v) + '">';
     return '<div class="f"><label for="' + id + '">' + esc(fd.l) + '</label>' + inner + (fd.hint ? '<p class="hint">' + esc(fd.hint) + '</p>' : '') + '</div>';
   }
+  // the form is made of a few cards, one per topic; inside a card each section has its own small title
+  var GROUPS = [
+    {g:'meta', t:function(){ return 'Ricevuta'; }},
+    {g:'who', t:function(d){ return d.cat === 'roy' ? 'Etichetta' : state.doc === 'bkc-en' ? 'Promoter' : 'Committente'; }},
+    {g:'what', t:function(d){ return d.cat === 'roy' ? 'Royalties' : d.kind === 'receipt' ? 'Prestazione e compenso' : 'Evento e compenso'; }},
+    {g:'terms', t:function(){ return 'Condizioni del contratto'; }, fold:1},
+    {g:'end', t:function(d){ return d.kind === 'receipt' ? 'Firma e marca da bollo' : 'Firma'; }}
+  ];
+  function sectionBody(sec){
+    var doc = state.doc, body = '';
+    if (sec.saved) {
+      var names = Object.keys(state.saved[sec.saved] || {}).sort(function(a,b){ return a.localeCompare(b); });
+      if (names.length) body += '<div class="f"><label for="saved-' + sec.saved + '">' + (sec.saved === 'labels' ? 'Etichette già usate' : 'Committenti già usati') + '</label><select id="saved-' + sec.saved + '" data-saved="' + sec.saved + '" data-from="' + sec.from + '"><option value="">Scegli…</option>'
+        + names.map(function(nm){ return '<option>' + esc(nm) + '</option>'; }).join('') + '</select></div>';
+    }
+    if (sec.note) body += '<p class="hint">' + sec.note + '</p>';
+    if (sec.custom === 'lines') body += '<div class="lines" id="lines">' + linesHtml() + '</div><button class="btn ghost" type="button" id="addLine" style="align-self:flex-start">Aggiungi release</button>';
+    if (sec.custom === 'sig') body += sigBlockHtml();
+    var fs = (sec.f || []).filter(function(fd){ return !fd.docs || fd.docs.indexOf(doc) !== -1; }), buf = [];
+    var flush = function(){ if (buf.length) { body += buf.length > 1 ? '<div class="grid2">' + buf.join('') + '</div>' : buf[0]; buf = []; } };
+    fs.forEach(function(fd){ if (fd.half) { buf.push(fieldHtml(fd)); if (buf.length === 2) flush(); } else { flush(); body += fieldHtml(fd); } });
+    flush();
+    if (sec.saved) body += '<button type="button" class="btn ghost" data-save="' + sec.saved + '" data-from="' + sec.from + '" style="align-self:flex-start">'
+      + (sec.saved === 'labels' ? 'Salva questa etichetta' : 'Salva questo committente') + '</button>';
+    if (sec.pick === 'acc') body += accPickHtml();
+    if (sec.after === 'accounts') body += accountsHtml();
+    if (sec.after === 'archive') body += archiveHtml();
+    if (sec.bolloHint) body += '<p class="hint" id="bolloHint"></p>';
+    return body;
+  }
+  function sigBlockHtml(){
+    var on = !!state.sig.use;
+    return '<label class="check" for="sigUse"><input type="checkbox" id="sigUse"' + (on ? ' checked' : '') + '><span>Aggiungi la mia firma</span></label>'
+      + (on ? '<div class="row"><button type="button" class="btn ghost" id="sigOpen">' + (state.sig.img ? 'Rifai la firma' : 'Disegna la firma') + '</button>'
+        + (state.sig.img ? '<img class="sigthumb" id="sigThumb" alt="La tua firma" src="' + state.sig.img + '">' : '') + '</div>'
+        + '<p class="hint">Con il dito, la Apple Pencil o il trackpad. Resta salvata.</p>' : '');
+  }
   function renderFields(){
-    var doc = state.doc, out = '', v = viewed();
+    var doc = state.doc, d = D(), out = '', v = viewed();
     if (v) out += '<section class="card reopen"><p><b>Stai riaprendo ' + esc(docTitle(v.doc).toLowerCase()) + (v.number ? ' ' + esc(v.number) : '') + '.</b> Se la scarichi di nuovo, nell\'archivio viene aggiornata con lo stesso numero.</p>'
       + '<button type="button" class="btn ghost" id="newDoc">Nuovo documento</button></section>';
-    SECTIONS.forEach(function(sec){
-      if (sec.docs.indexOf(doc) === -1) return;
-      var body = '';
-      if (sec.saved) {
-        var names = Object.keys(state.saved[sec.saved] || {}).sort(function(a,b){ return a.localeCompare(b); });
-        if (names.length) body += '<div class="f"><label for="saved-' + sec.saved + '">' + (sec.saved === 'labels' ? 'Etichette già usate' : 'Committenti già usati') + '</label><select id="saved-' + sec.saved + '" data-saved="' + sec.saved + '" data-from="' + sec.from + '"><option value="">Scegli…</option>'
-          + names.map(function(nm){ return '<option>' + esc(nm) + '</option>'; }).join('') + '</select></div>';
-      }
-      if (sec.note) body += '<p class="hint">' + sec.note + '</p>';
-      if (sec.custom === 'lines') body += '<div class="lines" id="lines">' + linesHtml() + '</div><button class="btn ghost" type="button" id="addLine" style="align-self:flex-start">Aggiungi release</button>';
-      var fs = (sec.f || []).filter(function(fd){ return !fd.docs || fd.docs.indexOf(doc) !== -1; }), buf = [];
-      var flush = function(){ if (buf.length) { body += buf.length > 1 ? '<div class="grid2">' + buf.join('') + '</div>' : buf[0]; buf = []; } };
-      fs.forEach(function(fd){ if (fd.half) { buf.push(fieldHtml(fd)); if (buf.length === 2) flush(); } else { flush(); body += fieldHtml(fd); } });
-      flush();
-      if (sec.saved) body += '<button type="button" class="btn ghost" data-save="' + sec.saved + '" data-from="' + sec.from + '" style="align-self:flex-start">'
-        + (sec.saved === 'labels' ? 'Salva questa etichetta' : 'Salva questo committente') + '</button>';
-      if (sec.pick === 'acc') body += accPickHtml();
-      if (sec.after === 'accounts') body += accountsHtml();
-      if (sec.after === 'archive') body += archiveHtml();
-      if (sec.bolloHint) body += '<p class="hint" id="bolloHint"></p>';
-      if (sec.details) {
-        var open = sec.id in openCards ? openCards[sec.id] : sec.id === 'me' && !has(state.me.name);
-        out += '<details class="card" data-card="' + sec.id + '"' + (open ? ' open' : '') + '><summary>' + sec.t + '</summary><div class="inner">'
-          + (sec.hint ? '<p class="hint">' + sec.hint + '</p>' : '') + body + '</div></details>';
-      }
-      else out += '<section class="card"><h2>' + sec.t + '</h2>' + body + '</section>';
+    GROUPS.forEach(function(gr){
+      var secs = SECTIONS.filter(function(sec){ return sec.g === gr.g && sec.docs.indexOf(doc) !== -1; });
+      if (!secs.length) return;
+      var title = secs.length === 1 && !gr.fold ? secs[0].t : gr.t(d), body = '';
+      secs.forEach(function(sec){
+        var inner = sectionBody(sec), key = 'sub-' + sec.t;
+        if (gr.fold) body += '<details class="fold" data-card="' + esc(key) + '"' + (openCards[key] ? ' open' : '') + '><summary>' + sec.t + '</summary><div class="inner">' + inner + '</div></details>';
+        else if (secs.length > 1) body += '<div class="sub"><h3>' + sec.t + '</h3>' + inner + '</div>';
+        else body += inner;
+      });
+      out += '<section class="card"><h2>' + title + '</h2>' + (gr.fold ? '<p class="hint">Sono già compilate con i valori del contratto: aprile solo per cambiare qualcosa.</p>' : '') + body + '</section>';
     });
     document.getElementById('fields').innerHTML = out;
+    // menu › I miei dati: personal data, accounts, address book and backup
+    var set = '<div class="setbar"><button type="button" class="btn ghost" id="setBack">← Documenti</button></div>';
+    SECTIONS.forEach(function(sec){
+      if (sec.g !== 'set') return;
+      set += '<section class="card" id="set-' + sec.id + '"><h2>' + sec.t + '</h2>' + (sec.hint ? '<p class="hint">' + sec.hint + '</p>' : '') + sectionBody(sec) + '</section>';
+    });
+    document.getElementById('setPart').innerHTML = set;
     bolloHint();
   }
   function linesHtml(){
@@ -1223,7 +1286,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     }).join('');
   }
   function accPickHtml(){
-    if (!state.accounts.length) return '<p class="hint">Per l\'IBAN sulla ricevuta aggiungi un conto in «I tuoi dati», in fondo alla pagina.</p>';
+    if (!state.accounts.length) return '<p class="hint">Per l\'IBAN sulla ricevuta aggiungi un conto da Menu › I miei dati.</p>';
     if (state.accounts.length === 1) return '';
     var cur = account().id;
     return '<div class="f"><label for="f-acc">Conto per il pagamento</label><select id="f-acc" data-path="acc">'
@@ -1267,9 +1330,6 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     document.getElementById('logo-' + mode).checked = true;
     document.getElementById('logoImgRow').hidden = mode !== 'img';
     document.getElementById('logoHint').textContent = state.logoImg ? 'Logo caricato. Puoi sostituirlo quando vuoi.' : 'PNG o JPG, meglio con sfondo trasparente.';
-    document.getElementById('sigUse').checked = !!state.sig.use;
-    var th = document.getElementById('sigThumb'); th.hidden = !state.sig.img; if (state.sig.img) th.src = state.sig.img;
-    document.getElementById('sigOpen').textContent = state.sig.img ? 'Rifai la firma' : 'Disegna la firma';
   }
 
   // ---------- status ----------
@@ -1290,7 +1350,10 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     if (REC.indexOf(d) !== -1) { var t = d.indexOf('roy') === 0 ? royaltyTotals() : bookingTotals(); if ((t.lordo > BOLLO_SOGLIA || !t.any) && !has(state.bolloId)) list.push('marca da bollo'); }
     return list;
   }
-  function refreshStatus(){ var m = missing(); if (m.length) setStatus('Da completare: ' + m.join(', '), 'bad'); else setStatus('Pronto da scaricare', 'ok'); }
+  function refreshStatus(){
+    var m = missing(), mine = m.some(function(x){ return /^(nome|codice fiscale|IBAN|email di booking)$/.test(x); });
+    if (m.length) setStatus('Da completare: ' + m.join(', ') + (mine ? ' (i tuoi dati sono nel Menu)' : ''), 'bad'); else setStatus('Pronto da scaricare', 'ok');
+  }
   function update(){ persist(); renderPreview(); bolloHint(); refreshStatus(); refreshEditBar(); if (view === 'archive') renderArchive(); }
 
   // ---------- events ----------
@@ -1311,7 +1374,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     var el = e.target;
     if (el.name === 'doc') { state.doc = el.value; if (viewed() && viewed().doc !== state.doc) state.viewing = ''; syncTop(); renderFields(); update(); }
     else if (el.name === 'logo') { state.logo[D().cat] = el.value; syncTop(); update(); if (el.value === 'img' && !state.logoImg) document.getElementById('logoFile').click(); }
-    else if (el.id === 'sigUse') { state.sig.use = el.checked; update(); if (el.checked && !state.sig.img) openPad(); }
+    else if (el.id === 'sigUse') { state.sig.use = el.checked; renderFields(); update(); if (el.checked && !state.sig.img) openPad(); }
     else if (el.type === 'checkbox' && el.dataset.path) { set(el.dataset.path, el.checked); update(); }
     else if (el.dataset.saved && el.value) {
       var s = state.saved[el.dataset.saved][el.value];
@@ -1324,6 +1387,8 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   form.addEventListener('click', function(e){
     var t = e.target, r = t.closest('[data-remove]');
     if (r) { state.lines.splice(+r.dataset.remove, 1); renderFields(); update(); return; }
+    if (t.id === 'sigOpen') { openPad(); return; }
+    if (t.id === 'setBack') { setView('form'); return; }
     if (t.id === 'newDoc') { state.viewing = ''; renderFields(); update(); return; }
     if (t.id === 'addLine') { state.lines.push(emptyLine()); renderFields(); update(); var inp = document.getElementById('line' + (state.lines.length - 1) + '-title'); if (inp) inp.focus(); return; }
     var ra = t.closest('[data-acc-remove]');
@@ -1419,7 +1484,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   function setView(v){
     if (v === 'preview' && wide.matches) v = 'form';
     if (view) scrollAt[view] = window.scrollY;
-    ['form', 'preview', 'archive'].forEach(function(n){ document.body.classList.toggle('view-' + n, v === n); });
+    ['form', 'preview', 'archive', 'settings'].forEach(function(n){ document.body.classList.toggle('view-' + n, v === n); });
     tabForm.setAttribute('aria-pressed', v === 'form'); tabPrev.setAttribute('aria-pressed', v === 'preview'); tabArch.setAttribute('aria-pressed', v === 'archive');
     if (v === 'preview') renderPreview();
     if (v === 'archive') renderArchive();
@@ -1536,7 +1601,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     inked = false;
   }
   function openPad(){ pad.hidden = false; sizeCanvas(); document.getElementById('sigSave').focus(); }
-  function closePad(){ pad.hidden = true; document.getElementById('sigOpen').focus(); }
+  function closePad(){ pad.hidden = true; var so = document.getElementById('sigOpen'); if (so) so.focus(); }
   function pos(e){ var r = cv.getBoundingClientRect(); return {x:e.clientX - r.left, y:e.clientY - r.top, p:e.pressure && e.pointerType === 'pen' ? e.pressure : 0.5}; }
   cv.addEventListener('pointerdown', function(e){ e.preventDefault(); drawing = true; pts = [pos(e)]; try { cv.setPointerCapture(e.pointerId); } catch (x) {}
     var p = pts[0]; ctx.beginPath(); ctx.fillStyle = '#111111'; ctx.arc(p.x, p.y, 1.2, 0, Math.PI * 2); ctx.fill(); inked = true; });
@@ -1557,7 +1622,6 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   document.getElementById('sigClear').addEventListener('click', function(){ ctx.clearRect(0, 0, cv.width, cv.height); inked = false; });
   document.getElementById('sigCancel').addEventListener('click', closePad);
   pad.addEventListener('keydown', function(e){ if (e.key === 'Escape') closePad(); });
-  document.getElementById('sigOpen').addEventListener('click', openPad);
   document.getElementById('sigSave').addEventListener('click', function(){
     if (!inked) { closePad(); return; }
     var w = cv.width, h = cv.height, data = ctx.getImageData(0, 0, w, h).data, minX = w, minY = h, maxX = -1, maxY = -1;
@@ -1567,7 +1631,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     var out = document.createElement('canvas'); out.width = cw; out.height = ch;
     out.getContext('2d').drawImage(cv, Math.max(0, minX - padPx), Math.max(0, minY - padPx), cw, ch, 0, 0, cw, ch);
     state.sig.img = out.toDataURL('image/png'); state.sig.use = true;
-    closePad(); syncTop(); update();
+    renderFields(); closePad(); update();
   });
 
   // ---------- changing the text on the sheet ----------
@@ -1817,7 +1881,8 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   }
   async function signIn(email, password, create){
     if (create) {
-      var d = await api('/auth/v1/signup', {method:'POST', auth:false, body:{email:email, password:password}});
+      var back = /^https?:/.test(location.protocol) ? '?redirect_to=' + encodeURIComponent(location.origin + location.pathname) : '';
+      var d = await api('/auth/v1/signup' + back, {method:'POST', auth:false, body:{email:email, password:password}});
       if (!d || !d.access_token) return 'confirm';
       setSession(d);
     } else setSession(await api('/auth/v1/token?grant_type=password', {method:'POST', auth:false, body:{email:email, password:password}}));
@@ -1843,7 +1908,8 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     else if (syncBusy) { label = 'Sincronizzo…'; cls = 'busy'; }
     else if (syncErr) { label = 'Non sincronizzato'; cls = 'warn'; }
     else { label = 'Sincronizzato'; cls = 'ok'; }
-    acctBtn.className = 'acct' + (cls ? ' ' + cls : ''); document.getElementById('acctLabel').textContent = label;
+    document.getElementById('acctLabel').textContent = label;
+    document.getElementById('acctDot').dataset.state = cls; document.getElementById('menuDot').dataset.state = cls;
     var a = document.activeElement;
     if (!acctpad.hidden && !(a && a.nodeName === 'INPUT' && acctpad.contains(a))) renderAccount();
   }
@@ -1876,7 +1942,20 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     }
     var first = acctBody.querySelector('input'); if (first) first.focus();
   }
-  acctBtn.addEventListener('click', openAccount);
+  acctBtn.addEventListener('click', function(){ closeMenu(); openAccount(); });
+
+  // ---------- menu: account, my data, address book, theme ----------
+  var menuBtn = document.getElementById('menuBtn'), menuEl = document.getElementById('menu');
+  function closeMenu(){ menuEl.hidden = true; menuBtn.setAttribute('aria-expanded', 'false'); }
+  menuBtn.addEventListener('click', function(e){ e.stopPropagation(); var open = menuEl.hidden; menuEl.hidden = !open; menuBtn.setAttribute('aria-expanded', open); });
+  document.addEventListener('click', function(e){ if (!menuEl.hidden && !e.target.closest('.menu-wrap')) closeMenu(); });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && !menuEl.hidden) { closeMenu(); menuBtn.focus(); } });
+  menuEl.addEventListener('click', function(e){
+    var go = e.target.closest('[data-go]'); if (!go) return;
+    closeMenu(); setView('settings');
+    var card = document.getElementById('set-' + go.dataset.go);
+    if (card) setTimeout(function(){ card.scrollIntoView({block:'start', behavior:'smooth'}); }, 30);
+  });
   document.getElementById('acctClose').addEventListener('click', function(){ acctpad.hidden = true; });
   acctpad.addEventListener('keydown', function(e){
     if (e.key === 'Escape') acctpad.hidden = true;
@@ -1908,6 +1987,17 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     refreshAccount();
   });
 
+  // back from the confirmation email: Supabase adds #access_token=… or #error=… to the address
+  function confirmLanding(){
+    var hsh = location.hash.replace(/^#/, ''); if (!/(^|&)(access_token|error|error_description)=/.test(hsh)) return;
+    var q = {}; hsh.split('&').forEach(function(kv){ var i = kv.indexOf('='); if (i > 0) q[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1).replace(/\+/g, ' ')); });
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+    openAccount().then(function(){
+      renderAccount(q.error || q.error_description ? 'Il link dell\'email non è più valido (' + (q.error_description || q.error) + '). Prova ad accedere: se l\'email risulta da confermare, crea di nuovo l\'account.'
+        : 'Email confermata. Ora accedi con la tua email e la password che hai scelto.');
+      var first = acctBody.querySelector('#acPw'); if (first) first.focus();
+    });
+  }
   async function startSync(){
     if (!sync.uid || !window.crypto || !crypto.subtle) { refreshAccount(); return; }
     var k = await recallKey();
@@ -1938,7 +2028,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   // ---------- start ----------
   applyTheme();
   syncTop(); renderFields(); update();
-  startSync();
+  startSync(); if (syncPhase === 'out') confirmLanding();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(renderPreview);
 })();
 </script>

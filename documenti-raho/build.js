@@ -1,13 +1,17 @@
 /* Genera index.html (pagina completa per GitHub Pages, iPhone e iPad)
-   a partire da app.html (il sorgente, che è anche l'artifact su claude.ai).
+   a partire da app.html (il sorgente).
    Uso:  node documenti-raho/build.js  */
 const fs = require('fs');
 const path = require('path');
 
 const dir = __dirname;
-const logo = 'data:image/png;base64,' + fs.readFileSync(path.join(dir, 'logo-rhbkng.png')).toString('base64');
-const app = fs.readFileSync(path.join(dir, 'app.html'), 'utf8').replace("var RHBKNG_LOGO = 'logo-rhbkng.png';", "var RHBKNG_LOGO = '" + logo + "';");
-if (!app.includes(logo)) throw new Error('logo RH[BKNG] non inserito: controlla la riga RHBKNG_LOGO in app.html');
+// i loghi (var X = 'logo-....png/webp') diventano immagini incorporate, byte per byte
+let found = 0;
+const app = fs.readFileSync(path.join(dir, 'app.html'), 'utf8').replace(/= '(logo-[a-z0-9-]+\.(png|webp))';/g, (m, file, ext) => {
+  found++;
+  return "= 'data:image/" + ext + ";base64," + fs.readFileSync(path.join(dir, file)).toString('base64') + "';";
+});
+if (found !== 2) throw new Error('loghi inseriti: ' + found + ' invece di 2, controlla RHBKNG_LOGO e RHBKNG_CONTRACT in app.html');
 
 const head = `<!doctype html>
 <html lang="it">

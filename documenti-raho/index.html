@@ -17,120 +17,189 @@ img{max-width:100%}
 <!-- File generato da build.js: modifica app.html, non questo file. -->
 <title>Documenti Raho</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=Arimo:wght@400&amp;family=Montserrat:wght@600&amp;display=swap">
+<script>try { var t = (JSON.parse(localStorage.getItem('raho-documenti-v1') || '{}').ui || {}).theme; if (t && t !== 'auto') document.documentElement.dataset.theme = t; } catch (e) {}</script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Arimo:wght@400&amp;family=Montserrat:wght@600&amp;display=swap">
 <style>
-/* Layout: two-pane workbench — the form on the left, the live A4 pages on a desk to the right; on phones the two become tabs */
+/* Layout: two-pane workbench — the form on the left, the live A4 pages on a desk to the right; on phones the two become tabs.
+   No outlines: surfaces are told apart by colour. Five themes (data-theme on <html>); the documents stay paper-white in all of them. */
 :root{
-  --bg:#efefec; --panel:#ffffff; --fg:#171717; --muted:#5d5d59; --line:#d6d6d1; --field:#fbfbfa;
-  --focus:#171717; --btn:#171717; --btn-fg:#ffffff; --desk:#e2e2dd; --warn:#7a4300; --warn-bg:#fff1dc; --ok:#1d5c34; --scrim:rgba(0,0,0,.45);
-  /* the documents are paper: same values in both themes */
+  --bg:#f3f3f1; --panel:#ffffff; --field:#efefec; --field-2:#e6e6e2; --fg:#0b0b0b; --muted:#5f5f5a; --faint:#8d8d87;
+  --accent:#0b0b0b; --accent-fg:#ffffff; --ring:#2f6bff; --desk:#e4e4e0; --warn:#8a4b00; --warn-bg:#ffeed4; --ok:#14663a; --scrim:rgba(10,10,10,.5);
+  --lift:0 1px 2px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.08);
+  /* the documents are paper: same values in every theme */
   --paper:#ffffff; --ink:#111111; --ink-2:#555555; --ink-3:#333333; --rule:#b5b5b5; --rule-soft:#dddddd; --ph:#7a7a7a; --dash:#767676;
-  --ui:'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  --ui:'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --mono:'IBM Plex Mono', ui-monospace, Menlo, monospace;
   --doc:'Inter', 'Helvetica Neue', Arial, sans-serif;
   --logo:'Arimo', Arial, Helvetica, sans-serif;
+  color-scheme:light;
 }
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    --bg:#121212; --panel:#1b1b1a; --fg:#ececea; --muted:#a8a8a3; --line:#323230; --field:#161615;
-    --focus:#ececea; --btn:#ececea; --btn-fg:#121212; --desk:#0a0a0a; --warn:#ffd08f; --warn-bg:#352611; --ok:#8fd6a6; --scrim:rgba(0,0,0,.65);
-    color-scheme:dark;
-  }
+:root[data-theme="sand"]{
+  --bg:#ebe5da; --panel:#faf7f1; --field:#ebe4d8; --field-2:#e1d8ca; --fg:#1c1713; --muted:#6b6054; --faint:#958a7c;
+  --accent:#1c1713; --accent-fg:#faf7f1; --ring:#b4532a; --desk:#ded5c7; --warn:#8a4300; --warn-bg:#f8e3c4; --ok:#2f6331;
 }
 :root[data-theme="dark"]{
-  --bg:#121212; --panel:#1b1b1a; --fg:#ececea; --muted:#a8a8a3; --line:#323230; --field:#161615;
-  --focus:#ececea; --btn:#ececea; --btn-fg:#121212; --desk:#0a0a0a; --warn:#ffd08f; --warn-bg:#352611; --ok:#8fd6a6; --scrim:rgba(0,0,0,.65);
-  color-scheme:dark;
+  --bg:#0c0c0d; --panel:#171718; --field:#222224; --field-2:#2c2c2f; --fg:#f5f5f3; --muted:#a6a6a2; --faint:#76767a;
+  --accent:#f5f5f3; --accent-fg:#0c0c0d; --ring:#7ea4ff; --desk:#050505; --warn:#ffc978; --warn-bg:#3b2a0f; --ok:#82d6a3; --scrim:rgba(0,0,0,.72);
+  --lift:0 1px 2px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.5); color-scheme:dark;
 }
-body{background:var(--bg);color:var(--fg);font-family:var(--ui);font-size:14px;line-height:1.4;-webkit-text-size-adjust:100%}
-.app{max-width:1480px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));display:flex;flex-direction:column;gap:16px}
+:root[data-theme="navy"]{
+  --bg:#0a0f1d; --panel:#111a2f; --field:#1a2440; --field-2:#22304f; --fg:#eef1fb; --muted:#9ca7c6; --faint:#6e79a0;
+  --accent:#e8ecff; --accent-fg:#0a0f1d; --ring:#8fb0ff; --desk:#060a14; --warn:#ffcf86; --warn-bg:#33290f; --ok:#86d9ad; --scrim:rgba(2,5,14,.72);
+  --lift:0 1px 2px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.5); color-scheme:dark;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme]),:root[data-theme="auto"]{
+    --bg:#0c0c0d; --panel:#171718; --field:#222224; --field-2:#2c2c2f; --fg:#f5f5f3; --muted:#a6a6a2; --faint:#76767a;
+    --accent:#f5f5f3; --accent-fg:#0c0c0d; --ring:#7ea4ff; --desk:#050505; --warn:#ffc978; --warn-bg:#3b2a0f; --ok:#82d6a3; --scrim:rgba(0,0,0,.72);
+    --lift:0 1px 2px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.5); color-scheme:dark;
+  }
+}
+body{background:var(--bg);color:var(--fg);font-family:var(--ui);font-size:14px;line-height:1.45;-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
+.app{max-width:1480px;margin:0 auto;padding-block:22px 48px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));display:flex;flex-direction:column;gap:18px}
 
 .top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 20px}
-.brand{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
-.brand h1{margin:0;font-family:var(--logo);font-weight:400;font-size:28px;letter-spacing:.04em;line-height:1}
-.brand span{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-.status{font-size:13px;color:var(--muted)}
+.brand{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.brand h1{margin:0;font-family:var(--logo);font-weight:400;font-size:30px;letter-spacing:.04em;line-height:1}
+.brand span{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.actions{display:flex;align-items:center;gap:10px 16px;flex-wrap:wrap}
+.status{font-size:13px;font-weight:500;color:var(--muted)}
 .status.ok{color:var(--ok)}
 .status.bad{color:var(--warn)}
-.btn{appearance:none;-webkit-appearance:none;border:1px solid var(--btn);background:var(--btn);color:var(--btn-fg);font:600 14px/1 var(--ui);padding:0 18px;border-radius:6px;cursor:pointer;min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:8px}
-.btn:disabled{opacity:.5;cursor:default}
-.btn.ghost{background:transparent;color:var(--fg);border-color:var(--line);font-weight:500}
+.themes{display:flex;gap:2px;padding:3px;border-radius:999px;background:var(--panel)}
+.themes button{appearance:none;-webkit-appearance:none;border:0;background:transparent;width:34px;height:34px;border-radius:50%;padding:0;display:grid;place-items:center;cursor:pointer}
+.themes button i{display:block;width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,var(--a) 50%,var(--b) 50%);box-shadow:inset 0 0 0 1px rgba(128,128,128,.35)}
+.themes button[aria-checked="true"]{background:var(--accent)}
+.btn{appearance:none;-webkit-appearance:none;border:0;background:var(--accent);color:var(--accent-fg);font:600 14px/1 var(--ui);padding:0 20px;border-radius:12px;cursor:pointer;min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:opacity .15s,background-color .15s}
+.btn:hover{opacity:.88}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.ghost{background:var(--field);color:var(--fg);font-weight:500}
+.btn.ghost:hover{opacity:1;background:var(--field-2)}
 .btn svg{width:16px;height:16px}
 
-.tabs{display:none}
+.tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;padding:4px;border-radius:14px;background:var(--panel);width:100%;max-width:460px;box-sizing:border-box}
+.tabs button{appearance:none;-webkit-appearance:none;border:0;background:transparent;color:var(--muted);font:600 14px var(--ui);min-height:40px;border-radius:10px;cursor:pointer;transition:background-color .15s,color .15s}
+.tabs button:hover{color:var(--fg)}
+.tabs button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
+#tabPreview{display:none}
+.archive{display:none}
+body.view-archive .archive{display:flex}
+body.view-archive .form{display:none}
+.form,.archive{grid-column:1;grid-row:1}
+@media (min-width:941px){.desk{grid-column:2;grid-row:1}}
 @media (max-width:940px){
-  .tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));position:sticky;top:env(safe-area-inset-top, 0px);z-index:5;background:var(--bg);padding-block:6px}
-  .tabs button{appearance:none;-webkit-appearance:none;border:1px solid var(--line);background:var(--panel);color:var(--fg);font:500 14px var(--ui);min-height:44px;cursor:pointer}
-  .tabs button:first-child{border-radius:6px 0 0 6px}
-  .tabs button:last-child{border-radius:0 6px 6px 0;border-left:0}
-  .tabs button[aria-pressed="true"]{background:var(--btn);color:var(--btn-fg);border-color:var(--btn)}
-  body.view-form .desk{display:none}
+  .tabs{grid-template-columns:repeat(3,minmax(0,1fr));max-width:none;position:sticky;top:max(8px, env(safe-area-inset-top, 0px));z-index:5;box-shadow:0 0 0 8px var(--bg)}
+  #tabPreview{display:block}
+  .desk{grid-column:1;grid-row:1}
+  body.view-form .desk,body.view-archive .desk{display:none}
   body.view-preview .form{display:none}
   body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top, 0px);z-index:10;background:var(--bg)}
 }
 
-.work{display:grid;grid-template-columns:minmax(0,440px) minmax(0,1fr);gap:20px;align-items:start}
+.work{display:grid;grid-template-columns:minmax(0,460px) minmax(0,1fr);gap:22px;align-items:start}
 @media (max-width:940px){.work{grid-template-columns:minmax(0,1fr)}}
 /* side by side, the form and the sheets scroll on their own */
 @media (min-width:941px){
-  .app{height:100vh;height:100dvh;box-sizing:border-box;padding-bottom:20px}
+  .app{height:100vh;height:100dvh;box-sizing:border-box;padding-bottom:22px}
   .work{flex:1;min-height:0;align-items:stretch;grid-template-rows:minmax(0,1fr)}
-  .form,.desk{min-height:0;overflow-y:auto;overscroll-behavior:contain}
-  .form{padding:2px 6px 24px 2px}
+  .form,.desk,.archive{min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--field-2) transparent}
+  .form,.archive{padding:3px 8px 24px 3px}
 }
 
-.form{display:flex;flex-direction:column;gap:14px;min-width:0}
-.card{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
-.card h2,.card summary{margin:0;font:500 12px/1.2 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.card h3{margin:4px 0 0;font:500 12px var(--ui);color:var(--muted)}
-details.card summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;min-height:28px}
+.form{display:flex;flex-direction:column;gap:12px;min-width:0}
+.card{background:var(--panel);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.card h2,.card summary{margin:0;font:600 15px/1.25 var(--ui);letter-spacing:-.01em;color:var(--fg)}
+.card h3{margin:4px 0 -4px;font:600 11.5px var(--ui);letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+details.card summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;min-height:28px;border-radius:8px}
 details.card summary::-webkit-details-marker{display:none}
-details.card summary::after{content:"+";font-size:16px;letter-spacing:0}
-details[open].card summary::after{content:"–"}
-details.card > .inner{display:flex;flex-direction:column;gap:12px;margin-top:12px}
-.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+details.card summary::after{content:"";width:8px;height:8px;margin-right:6px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg) translate(-2px,-2px);transition:transform .2s}
+details[open].card summary::after{transform:rotate(-135deg) translate(-2px,-2px)}
+details.card > .inner{display:flex;flex-direction:column;gap:14px;margin-top:14px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 @media (max-width:440px){.grid2{grid-template-columns:minmax(0,1fr)}}
-.f{display:flex;flex-direction:column;gap:5px;min-width:0}
-.f label{font-size:12.5px;color:var(--muted)}
-input[type="text"],input[type="date"],select{font:16px var(--ui);color:var(--fg);background:var(--field);border:1px solid var(--line);border-radius:5px;padding:8px 10px;min-height:42px;width:100%;box-sizing:border-box;-webkit-appearance:none;appearance:none}
-select{background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%;background-size:5px 5px;background-repeat:no-repeat;padding-right:30px}
-input[type="date"]{min-height:42px;display:block}
-input.num{font-family:var(--mono);text-align:right;font-variant-numeric:tabular-nums}
-input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
-.seg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.f{display:flex;flex-direction:column;gap:6px;min-width:0}
+.f label{font-size:12.5px;font-weight:500;color:var(--muted)}
+input[type="text"],input[type="date"],select,#edText{font:16px var(--ui);color:var(--fg);background:var(--field);border:0;border-radius:11px;padding:10px 12px;min-height:44px;width:100%;box-sizing:border-box;-webkit-appearance:none;appearance:none;transition:background-color .15s,box-shadow .15s}
+input[type="text"]:hover,input[type="date"]:hover,select:hover{background:var(--field-2)}
+input::placeholder{color:var(--faint);opacity:1}
+select{background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 17px) 50%,calc(100% - 12px) 50%;background-size:5px 5px;background-repeat:no-repeat;padding-right:32px}
+input[type="date"]{display:block}
+input.num{font-variant-numeric:tabular-nums;text-align:right}
+input:focus-visible,select:focus-visible,#edText:focus-visible{outline:none;box-shadow:0 0 0 2px var(--ring);background:var(--panel)}
+button:focus-visible,summary:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+.seg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;padding:4px;border-radius:14px;background:var(--field)}
 .seg.three{grid-template-columns:repeat(3,minmax(0,1fr))}
 .seg input{position:absolute;opacity:0;pointer-events:none}
-.seg label{padding:8px;text-align:center;cursor:pointer;font-weight:500;font-size:13.5px;min-height:44px;display:flex;align-items:center;justify-content:center;color:var(--fg);border:1px solid var(--line);border-radius:6px;background:var(--field)}
-.seg input:checked + label{background:var(--btn);color:var(--btn-fg);border-color:var(--btn)}
-.seg input:focus-visible + label{outline:2px solid var(--focus);outline-offset:2px}
-.check{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;cursor:pointer}
-.check input{width:20px;height:20px;margin:0;accent-color:var(--btn);flex:none}
-.hint{font-size:12.5px;color:var(--muted);line-height:1.45;margin:0}
+.seg label{padding:8px;text-align:center;cursor:pointer;font-weight:500;font-size:13.5px;min-height:42px;display:flex;align-items:center;justify-content:center;color:var(--muted);border-radius:10px;transition:background-color .15s,color .15s}
+.seg label:hover{color:var(--fg)}
+.seg input:checked + label{background:var(--accent);color:var(--accent-fg);font-weight:600}
+.seg input:focus-visible + label{outline:2px solid var(--ring);outline-offset:1px}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:14px;cursor:pointer}
+.check input{width:20px;height:20px;margin:0;accent-color:var(--accent);flex:none}
+.hint{font-size:12.5px;color:var(--muted);line-height:1.5;margin:0}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-.sigthumb{height:40px;max-width:160px;background:#ffffff;border:1px solid var(--line);border-radius:4px;padding:2px 6px}
+.sigthumb{height:40px;max-width:160px;background:#ffffff;border-radius:8px;padding:3px 8px}
 .lines{display:flex;flex-direction:column;gap:10px}
-.line{border:1px dashed var(--line);border-radius:6px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.line{background:var(--bg);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.line input[type="text"],.line select{background:var(--panel)}
 .line-head{display:flex;justify-content:space-between;align-items:center}
-.line-head span{font:500 12px var(--mono);color:var(--muted)}
-.x{background:none;border:0;color:var(--muted);font:500 13px var(--ui);cursor:pointer;padding:6px 8px;min-height:36px;border-radius:4px}
-.x:hover{color:var(--fg)}
-.warn{background:var(--warn-bg);color:var(--warn);padding:10px 12px;border-radius:6px;font-size:13px;line-height:1.45}
+.line-head span{font:600 12px var(--ui);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.x{background:none;border:0;color:var(--muted);font:500 13px var(--ui);cursor:pointer;padding:6px 10px;min-height:36px;border-radius:9px}
+.x:hover{color:var(--fg);background:var(--field)}
+.warn{background:var(--warn-bg);color:var(--warn);padding:12px 14px;border-radius:12px;font-size:13px;font-weight:500;line-height:1.45}
 input.code{font-family:var(--mono);letter-spacing:.02em}
-.saved-list{display:flex;flex-direction:column}
-.saved-item{display:flex;justify-content:space-between;align-items:center;gap:10px;border-bottom:1px solid var(--line);font-size:13.5px;overflow-wrap:anywhere}
-.x.danger{color:var(--warn);align-self:flex-start;padding-left:0}
+.saved-list{display:flex;flex-direction:column;gap:4px}
+.saved-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:4px 4px 4px 12px;border-radius:10px;background:var(--field);font-size:14px;overflow-wrap:anywhere}
+.x.danger{color:var(--warn);align-self:flex-start}
+.f input.ro{background:transparent;padding-left:0;font-weight:600;cursor:default}
+.reopen{background:var(--accent);color:var(--accent-fg);flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.reopen p{margin:0;flex:1 1 220px;font-size:13.5px;line-height:1.45}
+.reopen .btn.ghost{background:var(--accent-fg);color:var(--accent)}
 
-.desk{background:var(--desk);border-radius:10px;padding:28px;min-width:0;display:flex;flex-direction:column;gap:22px}
-@media (max-width:940px){.desk{padding:12px;gap:12px}}
+/* archive: colour and icon say the kind of document at a glance (booking orange, royalties violet, contracts blue) */
+:root{--bk:#b4500b;--bk-bg:#ffe8d1;--roy:#6a2bd6;--roy-bg:#ece5ff;--ctr:#1f55d6;--ctr-bg:#dde8ff}
+:root[data-theme="dark"],:root[data-theme="navy"]{--bk:#ffb26b;--bk-bg:rgba(255,146,48,.17);--roy:#c6b3ff;--roy-bg:rgba(160,128,255,.18);--ctr:#9cc0ff;--ctr-bg:rgba(90,150,255,.18)}
+@media (prefers-color-scheme: dark){:root:not([data-theme]),:root[data-theme="auto"]{--bk:#ffb26b;--bk-bg:rgba(255,146,48,.17);--roy:#c6b3ff;--roy-bg:rgba(160,128,255,.18);--ctr:#9cc0ff;--ctr-bg:rgba(90,150,255,.18)}}
+.archive{flex-direction:column;gap:12px;min-width:0}
+.archive > *{flex:none}
+.arch-next{gap:8px}
+.arch-k{font:600 11.5px var(--ui);letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+.arch-n{font:600 44px/1 var(--ui);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.arch-start summary{cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);list-style:none}
+.arch-start summary::-webkit-details-marker{display:none}
+.arch-start[open] summary{margin-bottom:10px}
+.arch-filters{display:flex;gap:4px;padding:4px;border-radius:14px;background:var(--panel);overflow-x:auto}
+.arch-filters button{appearance:none;-webkit-appearance:none;border:0;background:transparent;color:var(--muted);font:600 13px var(--ui);min-height:36px;padding:0 12px;border-radius:10px;cursor:pointer;white-space:nowrap}
+.arch-filters button span{font-weight:500;opacity:.7;margin-left:2px}
+.arch-filters button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
+.arch-year{font:600 12px var(--ui);letter-spacing:.1em;color:var(--faint);margin:6px 4px -2px}
+.arch-item{display:grid;grid-template-columns:44px minmax(0,1fr) auto;grid-template-areas:"ico main num" "ico act act";gap:4px 14px;align-items:center;background:var(--panel);border-radius:18px;padding:14px 16px}
+.arch-item.open{box-shadow:0 0 0 2px var(--accent)}
+.arch-ico{grid-area:ico;align-self:start;width:44px;height:44px;border-radius:13px;display:grid;place-items:center}
+.arch-ico svg{width:22px;height:22px}
+.arch-ico.bk,.arch-tag.bk{background:var(--bk-bg);color:var(--bk)}
+.arch-ico.roy,.arch-tag.roy{background:var(--roy-bg);color:var(--roy)}
+.arch-ico.ctr,.arch-tag.ctr{background:var(--ctr-bg);color:var(--ctr)}
+.arch-main{grid-area:main;min-width:0}
+.arch-t{font-weight:600;font-size:14.5px;display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px}
+.arch-tag{font-size:11.5px;font-weight:600;padding:3px 8px;border-radius:999px;white-space:nowrap}
+.arch-s{margin-top:3px;font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+.arch-r{grid-area:num;text-align:right;align-self:start}
+.arch-num{font:600 20px/1.1 var(--ui);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.arch-amt{margin-top:3px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.arch-act{grid-area:act;display:flex;gap:6px;align-items:center;margin-top:6px}
+.arch-act .btn{min-height:36px;padding:0 16px;border-radius:10px;font-size:13px}
+
+.desk{background:var(--desk);border-radius:22px;padding:28px;min-width:0;display:flex;flex-direction:column;gap:22px}
+@media (max-width:940px){.desk{padding:12px;gap:12px;border-radius:18px}}
 .sheet{position:relative;margin:0 auto;overflow:hidden;flex:none}
-.pscale{position:absolute;top:0;left:0;width:794px;height:1123px;transform-origin:top left;box-shadow:0 1px 2px rgba(0,0,0,.10),0 10px 32px rgba(0,0,0,.14)}
+.pscale{position:absolute;top:0;left:0;width:794px;height:1123px;transform-origin:top left;box-shadow:0 1px 2px rgba(0,0,0,.10),0 12px 36px rgba(0,0,0,.16)}
 
-/* signature pad */
+/* dialogs: signature pad and text editor */
 .sigpad{position:fixed;inset:0;z-index:50;background:var(--scrim);display:flex;align-items:center;justify-content:center;padding:max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px))}
-.sigbox{background:var(--panel);border-radius:10px;padding:16px;width:min(640px,100%);display:flex;flex-direction:column;gap:12px}
-.sigbox h2{margin:0;font:500 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-#sigCanvas{width:100%;height:220px;background:#ffffff;border:1px solid var(--line);border-radius:6px;touch-action:none;cursor:crosshair;display:block}
+.sigbox{background:var(--panel);border-radius:22px;padding:22px;width:min(640px,100%);box-sizing:border-box;display:flex;flex-direction:column;gap:14px;box-shadow:var(--lift)}
+.sigbox h2{margin:0;font:600 17px var(--ui);letter-spacing:-.01em;color:var(--fg)}
+#sigCanvas{width:100%;height:220px;background:#ffffff;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.14);touch-action:none;cursor:crosshair;display:block}
 .sigactions{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 
 /* ---------- documents (A4 at 96 dpi) ---------- */
@@ -290,11 +359,12 @@ input.code{font-family:var(--mono);letter-spacing:.02em}
 
 /* editing the text on the sheet */
 .edbar{display:flex;align-items:center;gap:8px 14px;flex-wrap:wrap}
-#editToggle[aria-pressed="true"]{background:var(--btn);color:var(--btn-fg);border-color:var(--btn)}
+.edbar .btn.ghost{background:var(--panel)}
+#editToggle[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
 body.editing .paper .ed{cursor:pointer}
 body.editing .paper .ed:hover{outline:1.5px dashed #2563eb;outline-offset:1px}
 body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
-#edText{width:100%;box-sizing:border-box;min-height:200px;font:16px/1.45 var(--ui);color:var(--fg);background:var(--field);border:1px solid var(--line);border-radius:6px;padding:10px;resize:vertical}
+#edText{min-height:200px;line-height:1.5;resize:vertical}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -305,6 +375,13 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     <div class="brand"><h1>RAHO</h1><span>Documenti</span></div>
     <div class="actions">
       <span class="status" id="status" role="status"></span>
+      <div class="themes" role="radiogroup" aria-label="Tema">
+        <button type="button" role="radio" data-theme-pick="auto" title="Automatico (come il telefono o il computer)" aria-label="Tema automatico"><i style="--a:#f3f3f1;--b:#0c0c0d"></i></button>
+        <button type="button" role="radio" data-theme-pick="light" title="Chiaro" aria-label="Tema chiaro"><i style="--a:#ffffff;--b:#e4e4e0"></i></button>
+        <button type="button" role="radio" data-theme-pick="sand" title="Sabbia" aria-label="Tema sabbia"><i style="--a:#faf7f1;--b:#c9b9a2"></i></button>
+        <button type="button" role="radio" data-theme-pick="dark" title="Scuro" aria-label="Tema scuro"><i style="--a:#2c2c2f;--b:#0c0c0d"></i></button>
+        <button type="button" role="radio" data-theme-pick="navy" title="Notte" aria-label="Tema notte"><i style="--a:#22304f;--b:#0a0f1d"></i></button>
+      </div>
       <button class="btn" id="exportBtn" type="button">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 2v8M4.5 6.5 8 10l3.5-3.5M3 13h10"/></svg>
         Scarica PDF
@@ -315,6 +392,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   <div class="tabs" role="group" aria-label="Vista">
     <button type="button" id="tabForm" aria-pressed="true">Compila</button>
     <button type="button" id="tabPreview" aria-pressed="false">Anteprima</button>
+    <button type="button" id="tabArchive" aria-pressed="false">Archivio</button>
   </div>
 
   <div class="work">
@@ -357,6 +435,8 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
 
       <div id="fields"></div>
     </form>
+
+    <section class="archive" id="archive" aria-label="Archivio"></section>
 
     <div class="desk" id="desk" aria-label="Anteprima">
       <div class="edbar">
@@ -425,7 +505,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   function defaults(){
     return {
       doc:'bkc-en', logo:{bk:'rhbkng', roy:'raho'}, logoImg:'', sig:{use:false, img:''},
-      number:'1/' + new Date().getFullYear(), date: todayISO(), bolloId:'',
+      date: todayISO(), bolloId:'', history:[], viewing:'', seqStart:{},
       me:{name:'', addr:'', city:'', cf:'', email:'', bookingEmail:'', phone:''},
       accounts:[], acc:'',
       label:{name:'', addr:'', city:'', country:'', vat:'', piva:'', cf:''},
@@ -439,7 +519,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
       en:{depositPct:'50', depositDays:'7', balanceDate:'', certDays:'30', persons:'1', outbound:'to be agreed', ret:'to be agreed', bags:'1', bagKg:'10', pnrDays:'7',
           nights:'1', room:'single', stars:'3', hotel:'to be agreed', guests:'1 or more', drinks:'Gin and tonic water (separate bottles); Sugar-free energy drinks; Beer',
           cdj:'4', mixer:'any', changeDays:'7', cancelDays:'30', refundDays:'14', fmMonths:'6', proofDays:'7', law:'Italian', courts:'Italy'},
-      c:{place:'', date:''}, edits:{},
+      c:{place:'', date:''}, edits:{}, ui:{theme:'auto'},
       saved:{labels:{}, clients:{}}
     };
   }
@@ -459,6 +539,10 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     var s = merge(defaults(), o), me = (o && o.me) || {};
     // merge() keeps only the keys defaults() has, so the saved labels and clients are copied as they are
     ['labels', 'clients'].forEach(function(k){ var v = o && o.saved && o.saved[k]; if (v && typeof v === 'object' && !Array.isArray(v)) s.saved[k] = v; });
+    if (o && o.seqStart && typeof o.seqStart === 'object' && !Array.isArray(o.seqStart)) s.seqStart = o.seqStart;
+    // before the archive the tool kept the next number in "number": it becomes the starting point of that year
+    else { var m = /^(\d+)\/(\d{4})$/.exec(String(o && o.number || '').trim()); if (m && +m[1] > 1) s.seqStart[m[2]] = +m[1] - 1; }
+    if (s.viewing && !s.history.some(function(h){ return h.id === s.viewing; })) s.viewing = '';
     if (o && o.edits && typeof o.edits === 'object') Object.keys(o.edits).forEach(function(d){ if (DOCS[d] && o.edits[d] && typeof o.edits[d] === 'object') s.edits[d] = o.edits[d]; });
     if (!s.accounts.length && has(me.iban)) s.accounts = [{id:newId(), label:'', holder:'', iban:me.iban, bic:me.bic || ''}];
     s.accounts = s.accounts.filter(function(a){ return a && typeof a === 'object'; });
@@ -474,8 +558,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
       var old = localStorage.getItem(OLD_KEY);
       if (old) {
         var o = JSON.parse(old);
-        state = load({me:o.me, label:o.label});
-        if (o.number) state.number = o.number;
+        state = load({me:o.me, label:o.label, number:o.number});
         if (o.saved && typeof o.saved === 'object') Object.keys(o.saved).forEach(function(k){ state.saved.labels[k] = o.saved[k]; });
       }
     }
@@ -502,6 +585,22 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   function get(path){ return path.split('.').reduce(function(o,k){ return o == null ? '' : o[k]; }, state); }
   function set(path, v){ var ks = path.split('.'), o = state; for (var i = 0; i < ks.length - 1; i++) o = o[ks[i]]; o[ks[ks.length-1]] = v; }
   function D(){ return DOCS[state.doc]; }
+  // receipt numbers: one series for all receipts (booking and royalties), from 1 every year, decided by the tool
+  function yearOf(iso){ var m = /^(\d{4})-/.exec(iso || ''); return m ? +m[1] : new Date().getFullYear(); }
+  function lastNumber(year){
+    var last = +(state.seqStart[year] || 0) || 0;
+    state.history.forEach(function(h){ var m = /^(\d+)\/(\d{4})$/.exec(h.number || ''); if (m && +m[2] === year) last = Math.max(last, +m[1]); });
+    return last;
+  }
+  function nextNumber(year){ return (lastNumber(year) + 1) + '/' + year; }
+  function viewed(){ return state.viewing ? state.history.filter(function(h){ return h.id === state.viewing; })[0] || null : null; }
+  // the document on screen is an archived one: reopened from the archive, or identical to the last download
+  function archivedTwin(){
+    var v = viewed(); if (v) return v;
+    var last = state.history[state.history.length - 1];
+    return last && last.doc === state.doc && JSON.stringify(last.snap) === JSON.stringify(snapshot()) ? last : null;
+  }
+  function currentNumber(){ var v = archivedTwin(); return v && v.number ? v.number : nextNumber(yearOf(state.date)); }
   function account(){ return state.accounts.filter(function(a){ return a.id === state.acc; })[0] || state.accounts[0] || {}; }
   function accName(a, i){ return has(a.label) ? String(a.label).trim() : has(a.iban) ? 'IBAN …' + String(a.iban).replace(/\s/g, '').slice(-4) : 'Conto ' + (i + 1); }
 
@@ -515,7 +614,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
 
   // ---------- receipts ----------
   function receiptPage(o){
-    var est = o.est, M = state.me, num = val(state.number, '1/2026');
+    var est = o.est, M = state.me, num = esc(currentNumber());
     var h = '<header class="p-head"><div class="p-headl">' + logoHtml()
       + '<div class="lbl">' + o.sub + '</div></div>'
       + '<div class="p-headr"><div class="lbl">' + (est ? 'Ricevuta n. / Receipt no.' : 'Ricevuta n.') + '</div>'
@@ -981,7 +1080,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
       BKC = ['bkc-en','bkc-it'], BKR = ['bkr-est','bkr-it'], EST = ['bkr-est','bkc-en'], ITB = ['bkr-it','bkc-it'];
   function F(path, label, o){ o = o || {}; o.p = path; o.l = label; return o; }
   var SECTIONS = [
-    {t:'Ricevuta', docs:REC, pick:'acc', f:[F('number','Numero',{ph:'1/2026', half:1}), F('date','Data',{type:'date', half:1})]},
+    {t:'Ricevuta', docs:REC, pick:'acc', f:[F('number','Numero (automatico)',{half:1, auto:1}), F('date','Data',{type:'date', half:1})]},
     {t:'Etichetta', docs:ROY, saved:'labels', from:'label', f:[F('label.name','Ragione sociale'), F('label.addr','Indirizzo'),
       F('label.city','CAP e città',{half:1}), F('label.country','Paese',{half:1, docs:['roy-est']}), F('label.cf','Codice fiscale',{half:1, docs:['roy-it']}),
       F('label.vat','VAT / Tax ID',{docs:['roy-est']}), F('label.piva','Partita IVA',{docs:['roy-it']})]},
@@ -1035,11 +1134,12 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     {t:'I tuoi dati', id:'me', docs:ALL, details:1, after:'accounts', hint:'Restano salvati solo in questo browser, così non li riscrivi ogni volta.',
       f:[F('me.name','Nome e cognome'), F('me.addr','Indirizzo'), F('me.city','CAP e città',{half:1}), F('me.cf','Codice fiscale',{half:1}),
       F('me.email','Email',{half:1}), F('me.bookingEmail','Email di booking',{half:1}), F('me.phone','Telefono',{half:1})]},
-    {t:'Archivio e backup', id:'archive', docs:ALL, details:1, after:'archive'}
+    {t:'Rubrica e backup', id:'archive', docs:ALL, details:1, after:'archive'}
   ];
 
   function fieldHtml(fd){
-    var id = 'f-' + fd.p.replace(/\./g, '-'), v = get(fd.p);
+    var id = 'f-' + fd.p.replace(/\./g, '-'), v = fd.auto ? currentNumber() : get(fd.p);
+    if (fd.auto) return '<div class="f"><label for="' + id + '">' + esc(fd.l) + '</label><input type="text" id="' + id + '" class="ro" readonly value="' + esc(v) + '"></div>';
     if (fd.type === 'check') return '<div><label class="check" for="' + id + '"><input type="checkbox" id="' + id + '" data-path="' + fd.p + '"' + (v ? ' checked' : '') + '><span>' + esc(fd.l) + '</span></label>'
       + (fd.hint ? '<p class="hint" style="margin:6px 0 0 30px">' + esc(fd.hint) + '</p>' : '') + '</div>';
     var inner;
@@ -1049,7 +1149,9 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     return '<div class="f"><label for="' + id + '">' + esc(fd.l) + '</label>' + inner + (fd.hint ? '<p class="hint">' + esc(fd.hint) + '</p>' : '') + '</div>';
   }
   function renderFields(){
-    var doc = state.doc, out = '';
+    var doc = state.doc, out = '', v = viewed();
+    if (v) out += '<section class="card reopen"><p><b>Stai riaprendo ' + esc(docTitle(v.doc).toLowerCase()) + (v.number ? ' ' + esc(v.number) : '') + '.</b> Se la scarichi di nuovo, nell\'archivio viene aggiornata con lo stesso numero.</p>'
+      + '<button type="button" class="btn ghost" id="newDoc">Nuovo documento</button></section>';
     SECTIONS.forEach(function(sec){
       if (sec.docs.indexOf(doc) === -1) return;
       var body = '';
@@ -1161,7 +1263,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     return list;
   }
   function refreshStatus(){ var m = missing(); if (m.length) setStatus('Da completare: ' + m.join(', '), 'bad'); else setStatus('Pronto da scaricare', 'ok'); }
-  function update(){ persist(); renderPreview(); bolloHint(); refreshStatus(); refreshEditBar(); }
+  function update(){ persist(); renderPreview(); bolloHint(); refreshStatus(); refreshEditBar(); if (view === 'archive') renderArchive(); }
 
   // ---------- events ----------
   var form = document.getElementById('form');
@@ -1179,7 +1281,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   form.addEventListener('toggle', function(e){ var c = e.target.dataset && e.target.dataset.card; if (c) openCards[c] = e.target.open; }, true);
   form.addEventListener('change', function(e){
     var el = e.target;
-    if (el.name === 'doc') { state.doc = el.value; syncTop(); renderFields(); update(); }
+    if (el.name === 'doc') { state.doc = el.value; if (viewed() && viewed().doc !== state.doc) state.viewing = ''; syncTop(); renderFields(); update(); }
     else if (el.name === 'logo') { state.logo[D().cat] = el.value; syncTop(); update(); if (el.value === 'img' && !state.logoImg) document.getElementById('logoFile').click(); }
     else if (el.id === 'sigUse') { state.sig.use = el.checked; update(); if (el.checked && !state.sig.img) openPad(); }
     else if (el.type === 'checkbox' && el.dataset.path) { set(el.dataset.path, el.checked); update(); }
@@ -1194,6 +1296,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   form.addEventListener('click', function(e){
     var t = e.target, r = t.closest('[data-remove]');
     if (r) { state.lines.splice(+r.dataset.remove, 1); renderFields(); update(); return; }
+    if (t.id === 'newDoc') { state.viewing = ''; renderFields(); update(); return; }
     if (t.id === 'addLine') { state.lines.push(emptyLine()); renderFields(); update(); var inp = document.getElementById('line' + (state.lines.length - 1) + '-title'); if (inp) inp.focus(); return; }
     var ra = t.closest('[data-acc-remove]');
     if (ra) {
@@ -1221,7 +1324,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     if (t.id === 'importPick') { document.getElementById('importFile').click(); return; }
     if (t.id === 'clearAll') {
       if (Date.now() - clearArmed < 6000) {
-        clearArmed = 0; state = defaults(); openCards = {}; persist(); syncTop(); renderFields(); update();
+        clearArmed = 0; state = defaults(); openCards = {}; persist(); applyTheme(); syncTop(); renderFields(); update();
         setStatus('Dati cancellati da questo browser.', 'ok');
       } else {
         clearArmed = Date.now(); t.textContent = 'Sicuro? Tocca di nuovo per cancellare tutto';
@@ -1254,7 +1357,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
       try {
         var o = JSON.parse(reader.result), s = o && o.state && typeof o.state === 'object' ? o.state : o;
         if (!s || typeof s !== 'object' || !s.me) throw new Error('not a backup');
-        state = load(s); openCards = {}; persist(); syncTop(); renderFields(); update();
+        state = load(s); openCards = {}; persist(); applyTheme(); syncTop(); renderFields(); update();
         setStatus('Backup caricato: i tuoi dati sono di nuovo qui.', 'ok');
       } catch (err) { setStatus('Questo file non è un backup di Documenti Raho.', 'bad'); }
     };
@@ -1282,20 +1385,116 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   });
 
   // tabs (phones)
-  var tabForm = document.getElementById('tabForm'), tabPrev = document.getElementById('tabPreview');
-  // each tab keeps its own scroll position
-  var view = '', scrollAt = {};
+  var tabForm = document.getElementById('tabForm'), tabPrev = document.getElementById('tabPreview'), tabArch = document.getElementById('tabArchive');
+  // each tab keeps its own scroll position; side by side the preview is always visible, so there are only Compila and Archivio
+  var view = '', scrollAt = {}, wide = window.matchMedia('(min-width:941px)');
   function setView(v){
+    if (v === 'preview' && wide.matches) v = 'form';
     if (view) scrollAt[view] = window.scrollY;
-    document.body.classList.toggle('view-form', v === 'form'); document.body.classList.toggle('view-preview', v === 'preview');
-    tabForm.setAttribute('aria-pressed', v === 'form'); tabPrev.setAttribute('aria-pressed', v === 'preview');
+    ['form', 'preview', 'archive'].forEach(function(n){ document.body.classList.toggle('view-' + n, v === n); });
+    tabForm.setAttribute('aria-pressed', v === 'form'); tabPrev.setAttribute('aria-pressed', v === 'preview'); tabArch.setAttribute('aria-pressed', v === 'archive');
     if (v === 'preview') renderPreview();
+    if (v === 'archive') renderArchive();
     if (view && view !== v) window.scrollTo(0, scrollAt[v] || 0);
     view = v;
+    if (v === 'form') fit();
   }
   tabForm.addEventListener('click', function(){ setView('form'); });
   tabPrev.addEventListener('click', function(){ setView('preview'); });
+  tabArch.addEventListener('click', function(){ setView('archive'); });
+  if (wide.addEventListener) wide.addEventListener('change', function(){ if (view === 'preview' && wide.matches) setView('form'); });
   setView('form');
+
+  // ---------- archive ----------
+  // every PDF downloaded is listed here; receipts carry their number, contracts don't
+  var KIND = {
+    'bkr-est': {cls:'bk', t:'Ricevuta booking', tag:'Estera'}, 'bkr-it': {cls:'bk', t:'Ricevuta booking', tag:'Italiana'},
+    'roy-est': {cls:'roy', t:'Ricevuta royalties', tag:'Label estera'}, 'roy-it': {cls:'roy', t:'Ricevuta royalties', tag:'Label italiana'},
+    'bkc-en': {cls:'ctr', t:'Contratto booking', tag:'Inglese · estero'}, 'bkc-it': {cls:'ctr', t:'Contratto booking', tag:'Italiano · Italia'}
+  };
+  var ICONS = {
+    bk: '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/>',
+    roy: '<path d="M9 18V6l10-2v12"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="16" r="2"/>',
+    ctr: '<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h5M10 16h3"/>'
+  };
+  function docTitle(doc){ return (KIND[doc] || {}).t || 'Documento'; }
+  var SNAP = ['doc', 'date', 'label', 'lines', 'rit', 'client', 'ev', 'fee', 'bolloId', 'acc', 'en', 't', 'c'];
+  function clone(o){ return JSON.parse(JSON.stringify(o)); }
+  function snapshot(){ var s = {}; SNAP.forEach(function(k){ s[k] = clone(state[k]); }); s.logo = state.logo[D().cat]; return s; }
+  function archiveSave(file){
+    var d = D(), rec = d.kind === 'receipt', t = rec ? (d.cat === 'roy' ? royaltyTotals() : bookingTotals()) : null;
+    var entry = {doc:state.doc, number: rec ? currentNumber() : '', date: rec ? state.date : (state.c.date || todayISO()),
+      who: String((d.cat === 'roy' ? state.label.name : state.doc === 'bkc-en' ? '' : state.client.name) || '').trim(),
+      amount: rec ? (state.doc === 'roy-est' ? t.lordo : state.doc === 'roy-it' ? t.netto : t.total) : parseAmount(state.fee.amount),
+      file:file, snap:snapshot(), at:new Date().toISOString()};
+    // the same document again (reopened from the archive, or downloaded twice without changes) keeps its place and number
+    var same = archivedTwin();
+    if (same && same.doc === state.doc) {
+      entry.id = same.id; entry.created = same.created; if (same.number) entry.number = same.number;
+      state.history[state.history.indexOf(same)] = entry;
+      return {entry:entry, updated:true};
+    }
+    entry.id = newId(); entry.created = entry.at; state.history.push(entry); state.viewing = '';
+    return {entry:entry, updated:false};
+  }
+  function reopen(id){
+    var h = state.history.filter(function(x){ return x.id === id; })[0]; if (!h) return;
+    var defs = defaults();
+    SNAP.forEach(function(k){ if (!(k in h.snap)) return; var v = clone(h.snap[k]); state[k] = v && typeof v === 'object' && !Array.isArray(v) ? merge(defs[k], v) : v; });
+    if (h.snap.logo) state.logo[DOCS[h.doc].cat] = h.snap.logo;
+    state.viewing = h.id;
+    syncTop(); renderFields(); update(); setView(wide.matches ? 'form' : 'preview');
+  }
+  var archFilter = 'all', delArmed = {id:'', at:0};
+  function renderArchive(){
+    var el = document.getElementById('archive'), y = new Date().getFullYear();
+    var groups = {all:'Tutti', bk:'Booking', roy:'Royalties', ctr:'Contratti'};
+    var list = state.history.slice().reverse().filter(function(h){ return archFilter === 'all' || (KIND[h.doc] || {}).cls === archFilter; });
+    var count = function(c){ return state.history.filter(function(h){ return c === 'all' || (KIND[h.doc] || {}).cls === c; }).length; };
+    var out = '<section class="card arch-next"><div class="arch-k">Prossima ricevuta</div><div class="arch-n">' + esc(nextNumber(y)) + '</div>'
+      + '<p class="hint">Il numero lo decide lo strumento: una sola serie per tutte le ricevute, booking e royalties, che ricomincia da 1 ogni anno.</p>'
+      + '<details class="arch-start"' + (state.seqStart[y] ? ' open' : '') + '><summary>Hai già fatto ricevute fuori da qui?</summary>'
+      + '<div class="f"><label for="seqStart">Ultimo numero già usato nel ' + y + ' fuori da questo strumento</label>'
+      + '<input type="text" id="seqStart" class="num" inputmode="numeric" placeholder="0" value="' + esc(state.seqStart[y] || '') + '"></div></details></section>';
+    out += '<div class="arch-filters" role="group" aria-label="Filtra">' + Object.keys(groups).map(function(g){
+      return '<button type="button" data-filter="' + g + '" aria-pressed="' + (archFilter === g) + '">' + groups[g] + ' <span>' + count(g) + '</span></button>';
+    }).join('') + '</div>';
+    if (!list.length) out += '<div class="card arch-empty"><p class="hint">' + (state.history.length ? 'Nessun documento di questo tipo.' : 'Qui compariranno i documenti che scarichi in PDF, con il loro numero.') + '</p></div>';
+    var lastYear = null;
+    list.forEach(function(h){
+      var k = KIND[h.doc] || {cls:'ctr', t:'Documento', tag:''}, yr = String(h.date || h.created || '').slice(0, 4);
+      if (yr !== lastYear) { out += '<div class="arch-year">' + esc(yr) + '</div>'; lastYear = yr; }
+      var arm = delArmed.id === h.id && Date.now() - delArmed.at < 6000;
+      out += '<article class="arch-item' + (h.id === state.viewing ? ' open' : '') + '">'
+        + '<div class="arch-ico ' + k.cls + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICONS[k.cls] + '</svg></div>'
+        + '<div class="arch-main"><div class="arch-t">' + k.t + ' <span class="arch-tag ' + k.cls + '">' + k.tag + '</span></div>'
+        + '<div class="arch-s">' + [h.who ? esc(h.who) : (h.doc === 'bkc-en' ? 'Promoter da compilare' : ''), itDate(h.date)].filter(Boolean).join(' · ') + '</div></div>'
+        + '<div class="arch-r">' + (h.number ? '<div class="arch-num">' + esc(h.number) + '</div>' : '') + (h.amount != null ? '<div class="arch-amt">' + money(h.amount) + '</div>' : '') + '</div>'
+        + '<div class="arch-act"><button type="button" class="btn ghost" data-open="' + esc(h.id) + '">Apri</button>'
+        + '<button type="button" class="x danger" data-del="' + esc(h.id) + '">' + (arm ? 'Sicuro? Tocca di nuovo' : 'Elimina') + '</button></div></article>';
+    });
+    el.innerHTML = out;
+  }
+  var archEl = document.getElementById('archive');
+  archEl.addEventListener('click', function(e){
+    var t = e.target.closest('button'); if (!t) return;
+    if (t.dataset.filter) { archFilter = t.dataset.filter; renderArchive(); return; }
+    if (t.dataset.open) { reopen(t.dataset.open); return; }
+    if (t.dataset.del) {
+      if (delArmed.id === t.dataset.del && Date.now() - delArmed.at < 6000) {
+        state.history = state.history.filter(function(h){ return h.id !== t.dataset.del; });
+        if (state.viewing === t.dataset.del) state.viewing = '';
+        delArmed = {id:'', at:0}; persist(); renderFields(); update(); renderArchive();
+      } else { delArmed = {id:t.dataset.del, at:Date.now()}; renderArchive(); setTimeout(function(){ if (view === 'archive') renderArchive(); }, 6100); }
+    }
+  });
+  archEl.addEventListener('input', function(e){
+    if (e.target.id !== 'seqStart') return;
+    var y = new Date().getFullYear(), n = parseInt(String(e.target.value).replace(/\D/g, ''), 10);
+    if (n > 0) state.seqStart[y] = n; else delete state.seqStart[y];
+    persist(); renderFields(); renderPreview(); refreshStatus();
+    archEl.querySelector('.arch-n').textContent = nextNumber(y);
+  });
 
   // ---------- signature pad ----------
   var pad = document.getElementById('sigpad'), cv = document.getElementById('sigCanvas'), ctx = cv.getContext('2d');
@@ -1387,18 +1586,14 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     var d = D(), en = state.doc === 'bkc-en', c = d.cat === 'roy' ? state.label.name : en ? '' : state.client.name;
     c = String(c || '').replace(/[^\p{L}\p{N} ._-]/gu, '').replace(/\s+/g, ' ').trim();
     if (d.kind === 'contract') return (en ? 'Raho Contract' : 'Raho Contratto') + (c ? ' ' + c : '') + (en ? (has(state.c.date) ? ' ' + state.c.date : '') : has(state.ev.date) ? ' ' + state.ev.date : '') + '.pdf';
-    return 'Ricevuta ' + String(state.number || '').replace(/[\/\\]/g, '-') + (c ? ' ' + c : '') + '.pdf';
-  }
-  function bumpNumber(){
-    var m = /^(\d+)\/(\d{4})$/.exec((state.number || '').trim()), y = new Date().getFullYear();
-    if (m) state.number = (+m[2] === y ? (+m[1] + 1) : 1) + '/' + y;
+    return 'Ricevuta ' + currentNumber().replace(/[\/\\]/g, '-') + (c ? ' ' + c : '') + '.pdf';
   }
   btn.addEventListener('click', async function(){
     if (!window.html2canvas || !window.jspdf) { setStatus('Il generatore di PDF non si è caricato. Ricarica la pagina.', 'bad'); return; }
     btn.disabled = true; setStatus('Preparo il PDF…');
-    var wasPreview = document.body.classList.contains('view-preview');
+    var before = view;
     try {
-      if (!wasPreview && window.matchMedia('(max-width:940px)').matches) setView('preview');
+      if (before !== 'preview' && window.matchMedia('(max-width:940px)').matches) setView('preview');
       if (document.fonts && document.fonts.ready) await document.fonts.ready;
       var touch = navigator.maxTouchPoints > 1, scale = touch ? 2 : 3;
       var papers = Array.prototype.slice.call(pagesEl.querySelectorAll('.paper'));
@@ -1417,14 +1612,15 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
       if (dl) await dl.save({filename: name, data: pdf.output('blob')});
       else if (inClaude) { setStatus('Il download non è disponibile in questa vista. Apri la pagina su claude.ai.', 'bad'); return; }
       else pdf.save(name);
+      var res = archiveSave(name);
       if (d.kind === 'receipt') {
         var key = d.cat === 'roy' ? 'labels' : 'clients', obj = d.cat === 'roy' ? state.label : state.client;
         if (has(obj.name)) state.saved[key][obj.name.trim()] = JSON.parse(JSON.stringify(obj));
-        var prev = state.number; bumpNumber();
-        setStatus('Salvata la ricevuta ' + prev + '. Il prossimo numero è ' + state.number + '.', 'ok');
+        setStatus(res.updated ? 'Ricevuta ' + res.entry.number + ' aggiornata nell\'archivio.'
+          : 'Ricevuta ' + res.entry.number + ' salvata nell\'archivio. La prossima sarà la ' + nextNumber(yearOf(state.date)) + '.', 'ok');
       } else {
-        if (has(state.client.name)) state.saved.clients[state.client.name.trim()] = JSON.parse(JSON.stringify(state.client));
-        setStatus('Contratto salvato.', 'ok');
+        if (state.doc !== 'bkc-en' && has(state.client.name)) state.saved.clients[state.client.name.trim()] = JSON.parse(JSON.stringify(state.client));
+        setStatus(res.updated ? 'Contratto aggiornato nell\'archivio.' : 'Contratto salvato nell\'archivio.', 'ok');
       }
       persist(); renderFields(); renderPreview();
     } catch (err) {
@@ -1434,11 +1630,28 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
       else setStatus('Non sono riuscito a creare il PDF' + (err && err.message ? ': ' + err.message : '.'), 'bad');
     } finally {
       btn.disabled = false;
-      if (!wasPreview && window.matchMedia('(max-width:940px)').matches) setView('form');
+      if (view !== before) setView(before);
     }
   });
 
+  // ---------- themes ----------
+  var THEMES = ['auto', 'light', 'sand', 'dark', 'navy'];
+  function applyTheme(){
+    var t = THEMES.indexOf(state.ui.theme) === -1 ? 'auto' : state.ui.theme, root = document.documentElement;
+    if (t === 'auto') delete root.dataset.theme; else root.dataset.theme = t;
+    document.querySelectorAll('[data-theme-pick]').forEach(function(b){ b.setAttribute('aria-checked', b.dataset.themePick === t); });
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (!meta) { meta = document.createElement('meta'); meta.name = 'theme-color'; document.head.appendChild(meta); }
+    meta.content = getComputedStyle(root).getPropertyValue('--bg').trim();
+  }
+  document.querySelector('.themes').addEventListener('click', function(e){
+    var b = e.target.closest('[data-theme-pick]'); if (!b) return;
+    state.ui.theme = b.dataset.themePick; persist(); applyTheme();
+  });
+  if (window.matchMedia) { var mq = window.matchMedia('(prefers-color-scheme: dark)'); if (mq.addEventListener) mq.addEventListener('change', applyTheme); }
+
   // ---------- start ----------
+  applyTheme();
   syncTop(); renderFields(); update();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(renderPreview);
 })();

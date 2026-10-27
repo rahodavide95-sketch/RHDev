@@ -25,11 +25,19 @@ Non mettere mai dati personali di D (nome, codice fiscale, IBAN, firma) nel codi
 | `roy-est` | Ricevuta royalties per label estera, bilingue IT/EN | Nessuna ritenuta |
 | `roy-it` | Ricevuta royalties per label italiana | Ritenuta 20%, si toglie se la label è in regime forfettario |
 
-Funzioni: scelta logo (RAHO, RH[BKNG], oppure immagine caricata), firma disegnata con dito / Apple Pencil / trackpad (facoltativa), numerazione automatica delle ricevute (1/2026, 2/2026…), etichette e committenti salvati, PDF A4 (html2canvas + jsPDF, una pagina immagine per foglio).
+Funzioni: scelta logo (RAHO, RH[BKNG], oppure immagine caricata), firma disegnata con dito / Apple Pencil / trackpad (facoltativa), etichette e committenti salvati, PDF A4 (html2canvas + jsPDF, una pagina immagine per foglio).
+Archivio (scheda "Archivio"): ogni PDF scaricato finisce in `state.history` (`{id, doc, number, date, who, amount, file, snap, created, at}`; `snap` = i dati del documento, senza anagrafica, firma e testi modificati). Icona e colore dicono subito il tipo: booking arancione (ricevuta), royalties viola (nota musicale), contratti blu. "Apri" ricarica il documento (`state.viewing`): riscaricandolo l'archivio lo aggiorna con lo stesso numero. Anche un documento identico all'ultimo scaricato tiene il suo numero (`archivedTwin()`).
+Numerazione ricevute: la decide lo strumento (richiesta di D), campo in sola lettura. Una sola serie per tutte le ricevute, da 1 ogni anno (anno della data della ricevuta): ultimo numero dell'archivio o `state.seqStart[anno]` (ultimo numero usato fuori dallo strumento, impostabile nell'archivio) + 1. Il vecchio campo `number` diventa `seqStart` al primo avvio.
 Dati di D ("I tuoi dati"): anagrafica e più conti (`state.accounts` = `{id, label, holder, iban, bic}`, scelto con `state.acc` nella sezione Ricevuta). Il vecchio `me.iban` diventa da solo il primo conto (`load()`).
-"Archivio e backup": elenco etichette/committenti salvati con Elimina, backup in un file JSON (Scarica / Carica) per passare i dati tra dispositivi o tra sito e claude.ai, "Cancella tutti i dati" con doppio tocco.
+"Rubrica e backup": elenco etichette/committenti salvati con Elimina, backup in un file JSON (Scarica / Carica) per passare i dati tra dispositivi o tra sito e claude.ai, "Cancella tutti i dati" con doppio tocco.
 Attenzione: `merge()` tiene solo le chiavi presenti in `defaults()`, quindi `load()` copia a parte `saved.labels` e `saved.clients` (prima andavano persi a ogni riapertura).
-Su telefono la pagina ha due schede: Compila / Anteprima, ognuna con la sua posizione di scorrimento. Da 941 px in su modulo e fogli scorrono separati (due colonne a tutta altezza).
+Su telefono la pagina ha tre schede: Compila / Anteprima / Archivio, ognuna con la sua posizione di scorrimento. Da 941 px in su ci sono solo Compila / Archivio e l'anteprima è sempre a destra; le colonne scorrono separate.
+
+## Interfaccia dello strumento (rifatta su richiesta di D: "contrasti più netti, niente contorni, pulito, moderno ed elegante, + temi")
+
+- Niente bordi: le superfici si distinguono per colore (sfondo, schede `--panel`, campi `--field`). Selezioni in tinta piena (`--accent`). Carattere Inter.
+- 5 temi in alto a destra: Automatico (segue il sistema), Chiaro, Sabbia, Scuro, Notte. `state.ui.theme`, applicato con `data-theme` su `<html>` (anche prima del primo disegno, script in cima ad `app.html`).
+- I documenti restano bianchi in tutti i temi: i loro colori (`--paper`, `--ink`…) non cambiano.
 
 ## Design (approvato da D: non cambiarlo senza che lo chieda)
 

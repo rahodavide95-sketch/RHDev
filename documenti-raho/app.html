@@ -399,6 +399,9 @@ input[type="range"]{width:100%;margin:0;height:28px;accent-color:var(--accent);c
 .p-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:40px}
 .p-col{display:flex;flex-direction:column;gap:8px;min-width:0}
 .p-name{font-size:14px;font-weight:600}
+.p-who .p-name{margin-bottom:3px}
+.p-contact{display:flex;align-items:baseline;gap:14px;padding-top:12px;margin-top:-6px;background:linear-gradient(var(--rule-soft),var(--rule-soft)) 0 0/100% 1px no-repeat;font-size:12.5px;color:var(--ink-3)}
+.p-contact .lbl{font-size:11px}
 .p-addr{font-size:12.5px;line-height:1.5;overflow-wrap:anywhere}
 .p-small{font-size:11px;color:var(--ink-2)}
 .p-subj{display:flex;flex-direction:column;gap:8px}
@@ -913,12 +916,12 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
       + '<div class="p-date">' + (est ? 'Data / Date: ' : 'Data: ') + val(itDate(state.date), 'GG/MM/AAAA') + '</div></div></header>';
     var meLines = [ val(M.addr, 'Via, numero'),
       val(zipCity(M), 'CAP Città') + (est ? ', Italia / Italy' : ''),
-      (est ? 'C.F. / Tax code: ' : 'C.F.: ') + val(M.cf, 'CODICE FISCALE'), val(M.email, 'email') ];
+      (est ? 'C.F. / Tax code: ' : 'C.F.: ') + val(M.cf, 'CODICE FISCALE') ];
     h += '<section class="p-two"><div class="p-col"><div class="lbl rule">' + (est ? 'Emittente / Issuer' : 'Emittente') + '</div>'
-      + '<div class="p-name">' + val(M.name, 'Nome Cognome') + '</div><div class="p-addr">' + meLines.join('<br>') + '</div>'
+      + '<div class="p-who"><div class="p-name">' + val(M.name, 'Nome Cognome') + '</div><div class="p-addr">' + meLines.join('<br>') + '</div></div>'
       + ed('status', est ? 'Privato senza P.IVA · Not VAT-registered' : 'Persona fisica senza partita IVA', 'p-small') + '</div>'
       + '<div class="p-col"><div class="lbl rule">' + (est ? 'Destinatario / Bill to' : 'Destinatario') + '</div>'
-      + '<div class="p-name">' + o.toName + '</div><div class="p-addr">' + o.toLines.join('<br>') + '</div></div></section>';
+      + '<div class="p-who"><div class="p-name">' + o.toName + '</div><div class="p-addr">' + o.toLines.join('<br>') + '</div></div></div></section>';
     h += '<section class="p-subj"><div class="lbl">' + (est ? 'Oggetto / Description' : 'Oggetto') + '</div>' + ed('subject', o.subject, 's') + '</section>';
     h += '<section class="p-items"><table class="p-tab"><thead><tr><th>' + o.cols[0] + '</th><th>' + o.cols[1] + '</th><th>' + o.cols[2] + '</th></tr></thead><tbody>'
       + o.rows + '</tbody></table><div class="p-total"><div class="k">' + o.totalLabel + '</div><div class="v">' + o.totalValue + '</div></div></section>';
@@ -934,7 +937,8 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     // the signature space is there only when "Aggiungi la mia firma" is ticked
     h += '<footer class="p-foot' + (o.bollo ? '' : ' nobollo') + '">'
       + (o.bollo ? '<div class="p-bollo"><div class="p-box">Marca da bollo<b>€ 2,00</b></div><div class="mono" style="font-size:12px;color:var(--ink-2)">ID ' + val(state.bolloId, '14 cifre') + '</div></div>' : '')
-      + (state.sig.use ? '<div class="p-sign"><div class="ln">' + sigHtml() + '</div><div class="lbl">' + (est ? 'Firma / Signature' : 'Firma') + '</div></div>' : '') + '</footer>';
+      + (state.sig.use ? '<div class="p-sign"><div class="ln">' + sigHtml() + '</div><div class="lbl">' + (est ? 'Firma / Signature' : 'Firma') + '</div></div>' : '') + '</footer>'
+      + (has(M.email) ? '<div class="p-contact"><span class="lbl">' + (est ? 'Contatti / Contact' : 'Contatti') + '</span><span>' + esc(String(M.email).trim()) + '</span></div>' : '');
     return {html:h, cls: est ? '' : 'tight'};
   }
 

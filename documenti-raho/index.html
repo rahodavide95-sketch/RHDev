@@ -422,7 +422,8 @@ input[type="range"]{width:100%;margin:0;height:28px;accent-color:var(--accent);c
 .p-col > .lbl.rule{margin-bottom:2px}
 .p-name{font-size:14px;font-weight:600}
 .p-who .p-name{margin-bottom:3px}
-.p-contact{display:flex;align-items:baseline;gap:14px;padding-top:12px;margin-top:-6px;background:linear-gradient(var(--rule-soft),var(--rule-soft)) 0 0/100% 1px no-repeat;font-size:12.5px;color:var(--ink-3)}
+.p-right{display:flex;flex-direction:column;align-items:flex-end;gap:18px}
+.p-contact{display:flex;align-items:baseline;justify-content:flex-end;gap:12px;font-size:12.5px;color:var(--ink-3)}
 .p-contact .lbl{font-size:11px}
 .p-addr{font-size:12.5px;line-height:1.5;overflow-wrap:anywhere}
 .p-small{font-size:11px;color:var(--ink-2)}
@@ -941,11 +942,12 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     h += '<section class="p-two pay"><div class="p-col notes"><div class="lbl rule">' + W.notes + '</div>'
       + o.notes.map(function(n){ return ed('note.' + n[0], esc(n[1]), 'p-note'); }).join('') + '</div>'
       + '<div class="p-col notes"><div class="lbl rule">' + W.pay + '</div><div class="p-pay">' + pay + '</div></div></section>';
-    // the signature space is there only when "Aggiungi la mia firma" is ticked
+    // bottom left the stamp; bottom right the signature (only when "Aggiungi la mia firma" is ticked) and the contact email
+    var right = (state.sig.use ? '<div class="p-sign"><div class="ln">' + sigHtml() + '</div><div class="lbl">' + W.sign + '</div></div>' : '')
+      + (has(M.email) ? '<div class="p-contact"><span class="lbl">' + W.contact + '</span><span>' + esc(String(M.email).trim()) + '</span></div>' : '');
     h += '<footer class="p-foot' + (o.bollo ? '' : ' nobollo') + '">'
       + (o.bollo ? '<div class="p-bollo"><div class="p-box">' + W.stamp + '<b>€ 2' + (en ? '.' : ',') + '00</b></div><div class="mono p-stampid">ID ' + val(state.bolloId, W.digits) + '</div></div>' : '')
-      + (state.sig.use ? '<div class="p-sign"><div class="ln">' + sigHtml() + '</div><div class="lbl">' + W.sign + '</div></div>' : '') + '</footer>'
-      + (has(M.email) ? '<div class="p-contact"><span class="lbl">' + W.contact + '</span><span>' + esc(String(M.email).trim()) + '</span></div>' : '');
+      + (right ? '<div class="p-right">' + right + '</div>' : '') + '</footer>';
     return {html:h, cls:'receipt'};
   }
 

@@ -57,4 +57,4 @@ Su telefono la pagina ha due schede: Compila / Anteprima, ognuna con la sua posi
 ## Contesto
 
 - Il testo dei contratti viene dalla chat "Contratto per suonare in Germania" (ottobre 2026), versione con una sezione per pagina.
-- Logo RH[BKNG]: per ora è testo; D può caricare il file immagine dal tool. D vuole che esca da solo come nel contratto per la Germania: lì era un'immagine ritagliata nell'intestazione di ogni pagina di un file Word (fatto nella chat "Contratto per suonare in Germania"). Il file del logo non è ancora nel repo: quando arriva va messo come logo predefinito di RH[BKNG].
+- Logo RH[BKNG]: `logo-rhbkng.png`, il logo che ha mandato D, bianco su nero, solo ritagliato (margine nero = 30% dell'altezza della scritta). D ha chiesto di lasciarlo così com'è: NON invertirlo né cambiarne i colori. Esce da solo quando si sceglie RH[BKNG], in alto su ogni pagina come nel contratto per la Germania (che era un Word con il logo nell'intestazione). `build.js` lo inserisce in `index.html` come immagine incorporata (`RHBKNG_LOGO`), così funziona anche offline.

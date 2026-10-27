@@ -5,7 +5,9 @@ const fs = require('fs');
 const path = require('path');
 
 const dir = __dirname;
-const app = fs.readFileSync(path.join(dir, 'app.html'), 'utf8');
+const logo = 'data:image/png;base64,' + fs.readFileSync(path.join(dir, 'logo-rhbkng.png')).toString('base64');
+const app = fs.readFileSync(path.join(dir, 'app.html'), 'utf8').replace("var RHBKNG_LOGO = 'logo-rhbkng.png';", "var RHBKNG_LOGO = '" + logo + "';");
+if (!app.includes(logo)) throw new Error('logo RH[BKNG] non inserito: controlla la riga RHBKNG_LOGO in app.html');
 
 const head = `<!doctype html>
 <html lang="it">

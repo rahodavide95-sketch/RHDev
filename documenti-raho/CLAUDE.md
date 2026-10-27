@@ -18,7 +18,7 @@ Non mettere mai dati personali di D (nome, codice fiscale, IBAN, firma) nel codi
 
 | id | Documento | Note |
 | --- | --- | --- |
-| `bkc-en` | Contratto booking in inglese (DJ Performance Agreement), 6 pagine | Date all'estero |
+| `bkc-en` | Contratto booking in inglese: il contratto UFFICIALE di D, 9 pagine, identico al suo PDF "Raho_DJ_Performance_Agreement_EN_Abroad -- VUOTO" (Google Docs) | Date all'estero. Promoter ed evento restano vuoti: li compila il promoter |
 | `bkc-it` | Contratto booking in italiano (Contratto di prestazione artistica), 6 pagine | Date in Italia |
 | `bkr-est` | Ricevuta booking per committente estero, bilingue IT/EN | Nessuna ritenuta italiana |
 | `bkr-it` | Ricevuta booking per committente italiano | Ritenuta 20% se sostituto d'imposta; calcolo lordo dal netto |
@@ -40,6 +40,8 @@ Su telefono la pagina ha due schede: Compila / Anteprima, ognuna con la sua posi
 - Note fiscali e pagamento affiancati; in fondo riquadro tratteggiato per la marca da bollo e riga firma.
 - Oggetto delle ricevute royalties: solo "Royalties".
 - Contratti: una sezione per pagina (richiesta esplicita di D), piè di pagina con sigle e numero di pagina.
+- Contratto EN (`contractEN()`, CSS `.ag`): copia del PDF ufficiale misurata in pt (Montserrat SemiBold per titoli ed etichette, Arial/Arimo per il testo, fascia nera con il logo, filo nero da 3 pt in fondo). È stato verificato sovrapponendolo al PDF ufficiale: scarto massimo 1–2 px a 96 dpi. Non cambiare misure o testi senza che D lo chieda. I numeri d'esempio dell'originale (EUR 500, 50%, giorni) si adattano ai dati del modulo (`state.en`). Rispetto all'originale sono corretti due refusi: "included. Late" e "courts of Italy have".
+- I filetti del contratto EN sono sfondi `linear-gradient`, non bordi: i browser arrotondano i bordi a pixel interi e le righe si accorciavano.
 - Emittente e destinatario delle ricevute più piccoli (nome 14 px, righe 12,5 px) e senza la riga "in arte / aka Raho": richiesta di D.
 - Ogni documento deve stare in un foglio per pagina, senza togliere dati (richiesta di D). `fitPaper()`: prima la classe `fit` (spaziature più strette), poi, se non basta, riduce tutto il foglio in scala (la scala più grande che entra, margini invariati). L'avviso giallo compare solo se la scala scende sotto 0,7 (es. molte release).
 - Importi: "1.500" vale 1500 (punto delle migliaia); in uscita sempre con il punto, es. € 1.500,00.
@@ -57,4 +59,7 @@ Su telefono la pagina ha due schede: Compila / Anteprima, ognuna con la sua posi
 ## Contesto
 
 - Il testo dei contratti viene dalla chat "Contratto per suonare in Germania" (ottobre 2026), versione con una sezione per pagina.
-- Logo RH[BKNG]: `logo-rhbkng.png`, il logo che ha mandato D, bianco su nero, solo ritagliato (margine nero = 30% dell'altezza della scritta). D ha chiesto di lasciarlo così com'è: NON invertirlo né cambiarne i colori. Esce da solo quando si sceglie RH[BKNG], in alto su ogni pagina come nel contratto per la Germania (che era un Word con il logo nell'intestazione). `build.js` lo inserisce in `index.html` come immagine incorporata (`RHBKNG_LOGO`), così funziona anche offline.
+- Logo RH[BKNG] di ricevute e contratto IT: `logo-rhbkng.webp`, il file mandato da D, identico byte per byte. D ha chiesto esplicitamente: niente ritagli, niente modifiche, nulla che non decida lui. Solo la dimensione a schermo (altezza 90 px nelle ricevute) è una scelta nostra, da confermare con D.
+- Logo nella fascia del contratto EN: `logo-rhbkng-contract.png`, estratto dal PDF ufficiale di D (88,5 × 31,5 pt).
+- `build.js` incorpora i loghi in `index.html` (righe `var ... = 'logo-....png/webp'`), così la pagina funziona anche offline.
+- Testo modificabile: ogni blocco creato con `ed(chiave, html)` si può riscrivere dal foglio ("Modifica il testo"). Le modifiche stanno in `state.edits[documento][chiave]` come testo semplice (`**grassetto**`, `[spazio da compilare]`, righe "● " e "- "). Non rinominare le chiavi: D perderebbe le sue modifiche.

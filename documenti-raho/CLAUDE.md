@@ -5,8 +5,9 @@ L'utente si chiama D, scrive in italiano, non è uno sviluppatore: spiega le cos
 
 ## File
 
-- `app.html`: il sorgente. È anche la pagina pubblicata come artifact su claude.ai (https://claude.ai/artifact/FxSBhSkci1cyJsvGFR8YYS, capability `downloads`).
-  È un frammento HTML: niente `<!doctype>`, `<html>`, `<head>`, `<body>` (li aggiunge l'Artifact tool).
+- `app.html`: il sorgente. È un frammento HTML: niente `<!doctype>`, `<html>`, `<head>`, `<body>` (li aggiunge `build.js`).
+  D usa SOLO il sito GitHub Pages: non aggiornare e non nominare la vecchia copia su claude.ai (artifact FxSBhSkci1cyJsvGFR8YYS), lo confonde.
+  Le modifiche vanno online solo quando arrivano su `main` (il workflow pubblica da lì).
 - `build.js`: genera `index.html`, la versione completa servita da GitHub Pages (usabile da PC, iPhone e iPad senza claude.ai).
 - `index.html`: generato. Non modificarlo a mano. Dopo ogni modifica ad `app.html` esegui `node documenti-raho/build.js`.
 

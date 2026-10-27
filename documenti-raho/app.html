@@ -174,6 +174,9 @@ input.code{font-family:var(--mono);letter-spacing:.02em}
 .c-top{display:flex;justify-content:space-between;align-items:center;gap:20px;padding-bottom:14px;border-bottom:1px solid var(--ink)}
 .c-top .p-logo{font-size:22px}
 .c-top .p-logoimg{height:24px}
+/* RH[BKNG]: D's logo as it is, white on black */
+.p-logoimg.rh{height:56px;max-width:none}
+.c-top .p-logoimg.rh{height:30px}
 .c-intro{font-size:14px;line-height:1.55;margin:0}
 .c-sec{display:flex;flex-direction:column;gap:16px}
 .c-h{font-size:22px;font-weight:600;line-height:1.2;margin:0;text-wrap:balance}
@@ -303,6 +306,7 @@ input.code{font-family:var(--mono);letter-spacing:.02em}
   var KEY = 'raho-documenti-v1';
   var OLD_KEY = 'raho-ricevute-v1';
   var BOLLO_SOGLIA = 77.47;
+  var RHBKNG_LOGO = 'logo-rhbkng.png'; // build.js puts the image itself here, so index.html works offline too
   var fmtIT = new Intl.NumberFormat('it-IT', {minimumFractionDigits:2, maximumFractionDigits:2, useGrouping:'always'});
   var fmtEN = new Intl.NumberFormat('en-GB', {minimumFractionDigits:2, maximumFractionDigits:2});
 
@@ -399,7 +403,8 @@ input.code{font-family:var(--mono);letter-spacing:.02em}
   function logoHtml(){
     var mode = state.logo[D().cat];
     if (mode === 'img' && state.logoImg) return '<img class="p-logoimg" src="' + state.logoImg + '" alt="Logo">';
-    return '<div class="p-logo">' + (mode === 'rhbkng' ? 'RH[BKNG]' : 'RAHO') + '</div>';
+    if (mode === 'rhbkng') return '<img class="p-logoimg rh" src="' + RHBKNG_LOGO + '" alt="RH[BKNG]">';
+    return '<div class="p-logo">RAHO</div>';
   }
   function sigHtml(){ return state.sig.use && state.sig.img ? '<img class="sigimg" src="' + state.sig.img + '" alt="">' : ''; }
 

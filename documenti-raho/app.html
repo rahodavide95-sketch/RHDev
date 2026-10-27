@@ -1365,9 +1365,9 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   var downloadsP = inClaude ? window.claude.use('downloads') : Promise.resolve(null);
   var btn = document.getElementById('exportBtn');
   function fileName(){
-    var d = D(), c = d.cat === 'roy' ? state.label.name : state.client.name;
+    var d = D(), en = state.doc === 'bkc-en', c = d.cat === 'roy' ? state.label.name : en ? '' : state.client.name;
     c = String(c || '').replace(/[^\p{L}\p{N} ._-]/gu, '').replace(/\s+/g, ' ').trim();
-    if (d.kind === 'contract') return (d.lang === 'en' ? 'Raho Contract' : 'Raho Contratto') + (c ? ' ' + c : '') + (has(state.ev.date) ? ' ' + state.ev.date : '') + '.pdf';
+    if (d.kind === 'contract') return (en ? 'Raho Contract' : 'Raho Contratto') + (c ? ' ' + c : '') + (en ? (has(state.c.date) ? ' ' + state.c.date : '') : has(state.ev.date) ? ' ' + state.ev.date : '') + '.pdf';
     return 'Ricevuta ' + String(state.number || '').replace(/[\/\\]/g, '-') + (c ? ' ' + c : '') + '.pdf';
   }
   function bumpNumber(){

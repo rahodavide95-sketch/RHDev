@@ -25,7 +25,10 @@ Non mettere mai dati personali di D (nome, codice fiscale, IBAN, firma) nel codi
 | `roy-it` | Ricevuta royalties per label italiana | Ritenuta 20%, si toglie se la label è in regime forfettario |
 
 Funzioni: scelta logo (RAHO, RH[BKNG], oppure immagine caricata), firma disegnata con dito / Apple Pencil / trackpad (facoltativa), numerazione automatica delle ricevute (1/2026, 2/2026…), etichette e committenti salvati, PDF A4 (html2canvas + jsPDF, una pagina immagine per foglio).
-Su telefono la pagina ha due schede: Compila / Anteprima.
+Dati di D ("I tuoi dati"): anagrafica e più conti (`state.accounts` = `{id, label, holder, iban, bic}`, scelto con `state.acc` nella sezione Ricevuta). Il vecchio `me.iban` diventa da solo il primo conto (`load()`).
+"Archivio e backup": elenco etichette/committenti salvati con Elimina, backup in un file JSON (Scarica / Carica) per passare i dati tra dispositivi o tra sito e claude.ai, "Cancella tutti i dati" con doppio tocco.
+Attenzione: `merge()` tiene solo le chiavi presenti in `defaults()`, quindi `load()` copia a parte `saved.labels` e `saved.clients` (prima andavano persi a ogni riapertura).
+Su telefono la pagina ha due schede: Compila / Anteprima, ognuna con la sua posizione di scorrimento. Da 941 px in su modulo e fogli scorrono separati (due colonne a tutta altezza).
 
 ## Design (approvato da D: non cambiarlo senza che lo chieda)
 
@@ -36,7 +39,8 @@ Su telefono la pagina ha due schede: Compila / Anteprima.
 - Note fiscali e pagamento affiancati; in fondo riquadro tratteggiato per la marca da bollo e riga firma.
 - Oggetto delle ricevute royalties: solo "Royalties".
 - Contratti: una sezione per pagina (richiesta esplicita di D), piè di pagina con sigle e numero di pagina.
-- Se una pagina non entra nel foglio, l'anteprima le aggiunge la classe `fit` (spaziature più strette, stesso design); l'avviso giallo compare solo se non basta. Succede di solito alla ricevuta booking estera con data del contratto e rimborso spese.
+- Emittente e destinatario delle ricevute più piccoli (nome 14 px, righe 12,5 px) e senza la riga "in arte / aka Raho": richiesta di D.
+- Ogni documento deve stare in un foglio per pagina, senza togliere dati (richiesta di D). `fitPaper()`: prima la classe `fit` (spaziature più strette), poi, se non basta, riduce tutto il foglio in scala (la scala più grande che entra, margini invariati). L'avviso giallo compare solo se la scala scende sotto 0,7 (es. molte release).
 - Importi: "1.500" vale 1500 (punto delle migliaia); in uscita sempre con il punto, es. € 1.500,00.
 
 ## Regole fiscali usate (D non è commercialista: in caso di dubbi va consigliato di sentirne uno)
@@ -52,4 +56,4 @@ Su telefono la pagina ha due schede: Compila / Anteprima.
 ## Contesto
 
 - Il testo dei contratti viene dalla chat "Contratto per suonare in Germania" (ottobre 2026), versione con una sezione per pagina.
-- Logo RH[BKNG]: per ora è testo; D può caricare il file immagine dal tool.
+- Logo RH[BKNG]: per ora è testo; D può caricare il file immagine dal tool. D vuole che esca da solo come nel contratto per la Germania: lì era un'immagine ritagliata nell'intestazione di ogni pagina di un file Word (fatto nella chat "Contratto per suonare in Germania"). Il file del logo non è ancora nel repo: quando arriva va messo come logo predefinito di RH[BKNG].

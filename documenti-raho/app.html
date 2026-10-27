@@ -55,6 +55,13 @@ body{background:var(--bg);color:var(--fg);font-family:var(--ui);font-size:14px;l
 
 .work{display:grid;grid-template-columns:minmax(0,440px) minmax(0,1fr);gap:20px;align-items:start}
 @media (max-width:940px){.work{grid-template-columns:minmax(0,1fr)}}
+/* side by side, the form and the sheets scroll on their own */
+@media (min-width:941px){
+  .app{height:100vh;height:100dvh;box-sizing:border-box;padding-bottom:20px}
+  .work{flex:1;min-height:0;align-items:stretch;grid-template-rows:minmax(0,1fr)}
+  .form,.desk{min-height:0;overflow-y:auto;overscroll-behavior:contain}
+  .form{padding:2px 6px 24px 2px}
+}
 
 .form{display:flex;flex-direction:column;gap:14px;min-width:0}
 .card{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
@@ -92,6 +99,10 @@ input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visi
 .x{background:none;border:0;color:var(--muted);font:500 13px var(--ui);cursor:pointer;padding:6px 8px;min-height:36px;border-radius:4px}
 .x:hover{color:var(--fg)}
 .warn{background:var(--warn-bg);color:var(--warn);padding:10px 12px;border-radius:6px;font-size:13px;line-height:1.45}
+input.code{font-family:var(--mono);letter-spacing:.02em}
+.saved-list{display:flex;flex-direction:column}
+.saved-item{display:flex;justify-content:space-between;align-items:center;gap:10px;border-bottom:1px solid var(--line);font-size:13.5px;overflow-wrap:anywhere}
+.x.danger{color:var(--warn);align-self:flex-start;padding-left:0}
 
 .desk{background:var(--desk);border-radius:10px;padding:28px;min-width:0;display:flex;flex-direction:column;gap:22px}
 @media (max-width:940px){.desk{padding:12px;gap:12px}}
@@ -124,9 +135,9 @@ input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visi
 .p-date{font-family:var(--mono);font-size:13px}
 .p-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:40px}
 .p-col{display:flex;flex-direction:column;gap:8px;min-width:0}
-.p-name{font-size:16px;font-weight:600}
-.p-addr{font-size:14px;line-height:1.55;overflow-wrap:anywhere}
-.p-small{font-size:12px;color:var(--ink-2)}
+.p-name{font-size:14px;font-weight:600}
+.p-addr{font-size:12.5px;line-height:1.5;overflow-wrap:anywhere}
+.p-small{font-size:11px;color:var(--ink-2)}
 .p-subj{display:flex;flex-direction:column;gap:8px}
 .p-subj .s{font-size:15px}
 .p-items{display:flex;flex-direction:column}
@@ -197,7 +208,7 @@ input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visi
 .paper.fit .p-col{gap:6px}
 .paper.fit .p-col.notes{gap:7px}
 .paper.fit .p-note{line-height:1.42}
-.paper.fit .p-tab td{padding:10px 0 12px}
+.paper.fit .p-tab td{padding:9px 0 10px}
 .paper.fit .p-tab tr.sum td{padding:8px 0 0}
 .paper.fit .p-tab tr.sum.first td{padding-top:10px}
 .paper.fit .p-tab tr.sum.last td{padding-bottom:10px}
@@ -310,7 +321,8 @@ input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visi
     return {
       doc:'bkc-en', logo:{bk:'rhbkng', roy:'raho'}, logoImg:'', sig:{use:false, img:''},
       number:'1/' + new Date().getFullYear(), date: todayISO(), bolloId:'',
-      me:{name:'', addr:'', city:'', cf:'', email:'', bookingEmail:'', iban:'', bic:''},
+      me:{name:'', addr:'', city:'', cf:'', email:'', bookingEmail:''},
+      accounts:[], acc:'',
       label:{name:'', addr:'', city:'', country:'', vat:'', piva:'', cf:''},
       lines:[emptyLine()], rit:true,
       client:{name:'', rep:'', addr:'', city:'', country:'', vat:'', piva:'', cf:'', contact:''},
@@ -333,20 +345,31 @@ input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visi
     });
     return d;
   }
+  function newId(){ return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+  // the IBAN used to live in "me": it becomes the first saved account
+  function load(o){
+    var s = merge(defaults(), o), me = (o && o.me) || {};
+    // merge() keeps only the keys defaults() has, so the saved labels and clients are copied as they are
+    ['labels', 'clients'].forEach(function(k){ var v = o && o.saved && o.saved[k]; if (v && typeof v === 'object' && !Array.isArray(v)) s.saved[k] = v; });
+    if (!s.accounts.length && has(me.iban)) s.accounts = [{id:newId(), label:'', holder:'', iban:me.iban, bic:me.bic || ''}];
+    s.accounts = s.accounts.filter(function(a){ return a && typeof a === 'object'; });
+    s.accounts.forEach(function(a){ if (!a.id) a.id = newId(); });
+    if (!DOCS[s.doc]) s.doc = 'bkc-en';
+    return s;
+  }
   var state = defaults();
   try {
     var raw = localStorage.getItem(KEY);
-    if (raw) state = merge(defaults(), JSON.parse(raw));
+    if (raw) state = load(JSON.parse(raw));
     else {
       var old = localStorage.getItem(OLD_KEY);
       if (old) {
         var o = JSON.parse(old);
-        state.me = merge(state.me, o.me); state.label = merge(state.label, o.label);
+        state = load({me:o.me, label:o.label});
         if (o.number) state.number = o.number;
         if (o.saved && typeof o.saved === 'object') Object.keys(o.saved).forEach(function(k){ state.saved.labels[k] = o.saved[k]; });
       }
     }
-    if (!DOCS[state.doc]) state.doc = 'bkc-en';
   } catch (e) {}
   function persist(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
 
@@ -370,6 +393,8 @@ input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visi
   function get(path){ return path.split('.').reduce(function(o,k){ return o == null ? '' : o[k]; }, state); }
   function set(path, v){ var ks = path.split('.'), o = state; for (var i = 0; i < ks.length - 1; i++) o = o[ks[i]]; o[ks[ks.length-1]] = v; }
   function D(){ return DOCS[state.doc]; }
+  function account(){ return state.accounts.filter(function(a){ return a.id === state.acc; })[0] || state.accounts[0] || {}; }
+  function accName(a, i){ return has(a.label) ? String(a.label).trim() : has(a.iban) ? 'IBAN …' + String(a.iban).replace(/\s/g, '').slice(-4) : 'Conto ' + (i + 1); }
 
   function logoHtml(){
     var mode = state.logo[D().cat];
@@ -386,7 +411,7 @@ input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visi
       + '<div class="p-headr"><div class="lbl">' + (est ? 'Ricevuta n. / Receipt no.' : 'Ricevuta n.') + '</div>'
       + '<div class="p-num">' + num + '</div>'
       + '<div class="p-date">' + (est ? 'Data / Date: ' : 'Data: ') + val(itDate(state.date), 'GG/MM/AAAA') + '</div></div></header>';
-    var meLines = [ est ? 'in arte / aka Raho' : 'in arte Raho', val(M.addr, 'Via, numero'),
+    var meLines = [ val(M.addr, 'Via, numero'),
       val(M.city, 'CAP Città') + (est ? ', Italia / Italy' : ''),
       (est ? 'C.F. / Tax code: ' : 'C.F.: ') + val(M.cf, 'CODICE FISCALE'), val(M.email, 'email') ];
     h += '<section class="p-two"><div class="p-col"><div class="lbl rule">' + (est ? 'Emittente / Issuer' : 'Emittente') + '</div>'
@@ -398,9 +423,10 @@ input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visi
     h += '<section class="p-items"><table class="p-tab"><thead><tr><th>' + o.cols[0] + '</th><th>' + o.cols[1] + '</th><th>' + o.cols[2] + '</th></tr></thead><tbody>'
       + o.rows + '</tbody></table><div class="p-total"><div class="k">' + o.totalLabel + '</div><div class="v">' + o.totalValue + '</div></div></section>';
     var causale = 'Ricevuta n. ' + num + (est ? ' / Receipt no. ' + num : '');
-    var pay = '<div class="k">Intestatario</div><div>' + val(M.name, 'Nome Cognome') + '</div>'
-      + '<div class="k">IBAN</div><div class="m">' + val(M.iban, 'IT00 X000 0000 0000 0000 0000 000') + '</div>'
-      + (est ? '<div class="k">BIC / SWIFT</div><div class="m">' + val(M.bic, 'XXXXITXX') + '</div>' : '')
+    var A = account();
+    var pay = '<div class="k">Intestatario</div><div>' + val(has(A.holder) ? A.holder : M.name, 'Nome Cognome') + '</div>'
+      + '<div class="k">IBAN</div><div class="m">' + val(A.iban, 'IT00 X000 0000 0000 0000 0000 000') + '</div>'
+      + (est ? '<div class="k">BIC / SWIFT</div><div class="m">' + val(A.bic, 'XXXXITXX') + '</div>' : '')
       + '<div class="k">Causale</div><div>' + causale + '</div>';
     h += '<section class="p-two"><div class="p-col notes"><div class="lbl rule">' + (est ? 'Note fiscali / Tax notes' : 'Note fiscali') + '</div>'
       + o.notes.map(function(n){ return '<div class="p-note">' + esc(n) + '</div>'; }).join('') + '</div>'
@@ -673,17 +699,31 @@ input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visi
       return '<div class="sheet"><div class="pscale"><div class="paper ' + (p.cls || '') + '">' + p.html + '</div></div></div>';
     }).join('');
     fit();
-    var over = [];
-    pagesEl.querySelectorAll('.paper').forEach(function(el, i){
-      if (el.scrollHeight > el.clientHeight + 1) el.classList.add('fit');
-      if (el.scrollHeight > el.clientHeight + 1) over.push(i + 1);
-    });
-    var w = document.getElementById('overflowWarn'), d = D();
-    w.hidden = !over.length;
-    if (over.length) w.textContent = d.kind === 'contract'
-      ? 'Il testo non entra a pagina ' + over.join(', ') + ': accorcia i campi più lunghi.'
-      : d.cat === 'roy' ? 'La ricevuta non entra in una pagina: dividi le release in due ricevute o accorcia i testi.'
-      : 'La ricevuta non entra in una pagina: accorcia i testi più lunghi (committente, evento, locale).';
+    var k = 1;
+    pagesEl.querySelectorAll('.paper').forEach(function(el){ k = Math.min(k, fitPaper(el)); });
+    var w = document.getElementById('overflowWarn');
+    w.hidden = k >= 0.7;
+    w.textContent = 'Ci sono molti dati: per farli stare in un foglio il testo è più piccolo del solito. Controlla che si legga bene.';
+  }
+  // a page that doesn't fit first gets tighter spacing, then is scaled down as a whole, keeping the same margins
+  var PAD = [56, 64, 48];
+  function fitPaper(el){
+    var fits = function(){ return el.scrollHeight <= el.clientHeight + 1; };
+    if (fits()) return 1;
+    el.classList.add('fit');
+    if (fits()) return 1;
+    var scale = function(k){
+      el.style.width = 794 / k + 'px'; el.style.height = 1123 / k + 'px';
+      el.style.padding = PAD.map(function(p){ return p / k + 'px'; }).join(' ');
+      el.style.transform = 'scale(' + k + ')'; el.style.transformOrigin = '0 0';
+      return fits();
+    };
+    // the largest scale that fits: first guess, then halve the interval
+    var lo = 0.3, hi = 1, k = 1123 / el.scrollHeight;
+    if (scale(k)) lo = k; else hi = k;
+    for (var i = 0; i < 8; i++) { k = (lo + hi) / 2; if (scale(k)) lo = k; else hi = k; }
+    scale(lo);
+    return lo;
   }
   function fit(){
     var desk = document.getElementById('desk');
@@ -702,7 +742,7 @@ input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visi
       BKC = ['bkc-en','bkc-it'], BKR = ['bkr-est','bkr-it'], EST = ['bkr-est','bkc-en'], ITB = ['bkr-it','bkc-it'];
   function F(path, label, o){ o = o || {}; o.p = path; o.l = label; return o; }
   var SECTIONS = [
-    {t:'Ricevuta', docs:REC, f:[F('number','Numero',{ph:'1/2026', half:1}), F('date','Data',{type:'date', half:1})]},
+    {t:'Ricevuta', docs:REC, pick:'acc', f:[F('number','Numero',{ph:'1/2026', half:1}), F('date','Data',{type:'date', half:1})]},
     {t:'Etichetta', docs:ROY, saved:'labels', from:'label', f:[F('label.name','Ragione sociale'), F('label.addr','Indirizzo'),
       F('label.city','CAP e città',{half:1}), F('label.country','Paese',{half:1, docs:['roy-est']}), F('label.cf','Codice fiscale',{half:1, docs:['roy-it']}),
       F('label.vat','VAT / Tax ID',{docs:['roy-est']}), F('label.piva','Partita IVA',{docs:['roy-it']})]},
@@ -739,9 +779,10 @@ input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visi
       F('t.fmMonths','Nuova data entro (mesi)',{half:1, num:1}), F('t.law','Legge applicabile',{half:1, docs:['bkc-en'], ph:'Italian'}), F('t.foro','Foro competente (città)',{half:1, docs:['bkc-it']})]},
     {t:'Firma del contratto', docs:BKC, f:[F('c.place','Luogo',{half:1}), F('c.date','Data',{type:'date', half:1})]},
     {t:'Marca da bollo', docs:REC, f:[F('bolloId','Codice identificativo della marca (14 cifre)',{num:1})], bolloHint:1},
-    {t:'I tuoi dati', docs:ALL, details:1, f:[F('me.name','Nome e cognome'), F('me.addr','Indirizzo',{docs:REC}),
-      F('me.city','CAP e città',{half:1, docs:REC}), F('me.cf','Codice fiscale',{half:1}), F('me.email','Email',{docs:REC}),
-      F('me.bookingEmail','Email di booking',{docs:BKC}), F('me.iban','IBAN',{docs:REC}), F('me.bic','BIC / SWIFT',{docs:['roy-est','bkr-est']})]}
+    {t:'I tuoi dati', id:'me', docs:ALL, details:1, after:'accounts', hint:'Restano salvati solo in questo browser, così non li riscrivi ogni volta.',
+      f:[F('me.name','Nome e cognome'), F('me.addr','Indirizzo'), F('me.city','CAP e città',{half:1}), F('me.cf','Codice fiscale',{half:1}),
+      F('me.email','Email',{half:1}), F('me.bookingEmail','Email di booking',{half:1})]},
+    {t:'Archivio e backup', id:'archive', docs:ALL, details:1, after:'archive'}
   ];
 
   function fieldHtml(fd){
@@ -769,8 +810,17 @@ input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visi
       var flush = function(){ if (buf.length) { body += buf.length > 1 ? '<div class="grid2">' + buf.join('') + '</div>' : buf[0]; buf = []; } };
       fs.forEach(function(fd){ if (fd.half) { buf.push(fieldHtml(fd)); if (buf.length === 2) flush(); } else { flush(); body += fieldHtml(fd); } });
       flush();
+      if (sec.saved) body += '<button type="button" class="btn ghost" data-save="' + sec.saved + '" data-from="' + sec.from + '" style="align-self:flex-start">'
+        + (sec.saved === 'labels' ? 'Salva questa etichetta' : 'Salva questo committente') + '</button>';
+      if (sec.pick === 'acc') body += accPickHtml();
+      if (sec.after === 'accounts') body += accountsHtml();
+      if (sec.after === 'archive') body += archiveHtml();
       if (sec.bolloHint) body += '<p class="hint" id="bolloHint"></p>';
-      if (sec.details) out += '<details class="card" id="meCard"' + (state.me.name ? '' : ' open') + '><summary>' + sec.t + '</summary><div class="inner"><p class="hint">Restano salvati in questo browser, così non li riscrivi ogni volta.</p>' + body + '</div></details>';
+      if (sec.details) {
+        var open = sec.id in openCards ? openCards[sec.id] : sec.id === 'me' && !has(state.me.name);
+        out += '<details class="card" data-card="' + sec.id + '"' + (open ? ' open' : '') + '><summary>' + sec.t + '</summary><div class="inner">'
+          + (sec.hint ? '<p class="hint">' + sec.hint + '</p>' : '') + body + '</div></details>';
+      }
       else out += '<section class="card"><h2>' + sec.t + '</h2>' + body + '</section>';
     });
     document.getElementById('fields').innerHTML = out;
@@ -787,6 +837,38 @@ input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visi
         + '<div class="grid2"><div class="f"><label for="' + p + 'period">Periodo</label><input type="text" id="' + p + 'period" data-line="' + i + '" data-key="period" placeholder="01/01/26 – 30/06/26" value="' + esc(l.period) + '"></div>'
         + '<div class="f"><label for="' + p + 'amount">Importo lordo €</label><input type="text" class="num" inputmode="decimal" id="' + p + 'amount" data-line="' + i + '" data-key="amount" placeholder="0,00" value="' + esc(l.amount) + '"></div></div></div>';
     }).join('');
+  }
+  function accPickHtml(){
+    if (!state.accounts.length) return '<p class="hint">Per l\'IBAN sulla ricevuta aggiungi un conto in «I tuoi dati», in fondo alla pagina.</p>';
+    if (state.accounts.length === 1) return '';
+    var cur = account().id;
+    return '<div class="f"><label for="f-acc">Conto per il pagamento</label><select id="f-acc" data-path="acc">'
+      + state.accounts.map(function(a, i){ return '<option value="' + esc(a.id) + '"' + (a.id === cur ? ' selected' : '') + '>' + esc(accName(a, i)) + '</option>'; }).join('') + '</select></div>';
+  }
+  function accountsHtml(){
+    return '<h3>Conti per i pagamenti</h3>' + (state.accounts.length ? '<div class="lines">' + state.accounts.map(function(a, i){
+      var p = 'acc' + i + '-';
+      var fld = function(k, label, ph, code){ return '<div class="f"><label for="' + p + k + '">' + label + '</label><input type="text" id="' + p + k + '" data-acc="' + i + '" data-key="' + k + '"'
+        + (code ? ' class="code" autocapitalize="characters" spellcheck="false"' : '') + (ph ? ' placeholder="' + esc(ph) + '"' : '') + ' value="' + esc(a[k]) + '"></div>'; };
+      return '<div class="line"><div class="line-head"><span>Conto ' + (i + 1) + '</span><button type="button" class="x" data-acc-remove="' + i + '">Rimuovi</button></div>'
+        + '<div class="grid2">' + fld('label', 'Nome del conto', 'Es. Revolut') + fld('holder', 'Intestatario', 'Come il tuo nome') + '</div>'
+        + fld('iban', 'IBAN', '', 1) + fld('bic', 'BIC / SWIFT (per l\'estero)', '', 1) + '</div>';
+    }).join('') + '</div>' : '<p class="hint">Nessun conto salvato.</p>')
+      + '<button class="btn ghost" type="button" id="addAcc" style="align-self:flex-start">Aggiungi conto</button>';
+  }
+  function archiveHtml(){
+    var list = function(key, title, empty){
+      var names = Object.keys(state.saved[key] || {}).sort(function(a,b){ return a.localeCompare(b); });
+      return '<h3>' + title + '</h3>' + (names.length ? '<div class="saved-list">' + names.map(function(nm){
+        return '<div class="saved-item"><span>' + esc(nm) + '</span><button type="button" class="x" data-unsave="' + key + '" data-name="' + esc(nm) + '">Elimina</button></div>';
+      }).join('') + '</div>' : '<p class="hint">' + empty + '</p>');
+    };
+    return list('labels', 'Etichette salvate', 'Nessuna. Si salvano da sole quando scarichi una ricevuta, o con «Salva questa etichetta».')
+      + list('clients', 'Committenti salvati', 'Nessuno. Si salvano da soli quando scarichi un documento, o con «Salva questo committente».')
+      + '<h3>Backup</h3><p class="hint">Un file con tutti i tuoi dati (anche conti, firma e logo): conservalo e caricalo su un altro telefono, computer o browser.</p>'
+      + '<div class="row"><button type="button" class="btn ghost" id="exportData">Scarica backup</button><button type="button" class="btn ghost" id="importPick">Carica backup</button>'
+      + '<input type="file" id="importFile" accept="application/json,.json" hidden></div>'
+      + '<button type="button" class="x danger" id="clearAll">Cancella tutti i dati da questo browser</button>';
   }
   function bolloHint(){
     var el = document.getElementById('bolloHint'); if (!el) return;
@@ -812,7 +894,7 @@ input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visi
   function missing(){
     var d = state.doc, M = state.me, list = [];
     if (!has(M.name)) list.push('nome'); if (!has(M.cf)) list.push('codice fiscale');
-    if (REC.indexOf(d) !== -1 && !has(M.iban)) list.push('IBAN');
+    if (REC.indexOf(d) !== -1 && !has(account().iban)) list.push('IBAN');
     if (BKC.indexOf(d) !== -1 && !has(M.bookingEmail)) list.push('email di booking');
     if (d.indexOf('roy') === 0) {
       if (!has(state.label.name)) list.push('etichetta');
@@ -834,9 +916,13 @@ input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visi
     var el = e.target;
     if (el.dataset.path) set(el.dataset.path, el.type === 'checkbox' ? el.checked : el.value);
     else if (el.dataset.line != null) state.lines[+el.dataset.line][el.dataset.key] = el.value;
+    else if (el.dataset.acc != null) state.accounts[+el.dataset.acc][el.dataset.key] = el.value;
     else return;
     update();
   });
+  // details cards (I tuoi dati, Archivio) stay open or closed across re-renders
+  var openCards = {};
+  form.addEventListener('toggle', function(e){ var c = e.target.dataset && e.target.dataset.card; if (c) openCards[c] = e.target.open; }, true);
   form.addEventListener('change', function(e){
     var el = e.target;
     if (el.name === 'doc') { state.doc = el.value; syncTop(); renderFields(); update(); }
@@ -848,12 +934,78 @@ input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visi
       if (s) state[el.dataset.from] = merge(defaults()[el.dataset.from], s);
       renderFields(); update();
     }
+    else if (el.id === 'importFile' && el.files && el.files[0]) { importData(el.files[0]); el.value = ''; }
   });
+  var clearArmed = 0;
   form.addEventListener('click', function(e){
-    var r = e.target.closest('[data-remove]');
+    var t = e.target, r = t.closest('[data-remove]');
     if (r) { state.lines.splice(+r.dataset.remove, 1); renderFields(); update(); return; }
-    if (e.target.id === 'addLine') { state.lines.push(emptyLine()); renderFields(); update(); var inp = document.getElementById('line' + (state.lines.length - 1) + '-title'); if (inp) inp.focus(); }
+    if (t.id === 'addLine') { state.lines.push(emptyLine()); renderFields(); update(); var inp = document.getElementById('line' + (state.lines.length - 1) + '-title'); if (inp) inp.focus(); return; }
+    var ra = t.closest('[data-acc-remove]');
+    if (ra) {
+      var gone = state.accounts.splice(+ra.dataset.accRemove, 1)[0];
+      if (gone && gone.id === state.acc) state.acc = '';
+      renderFields(); update(); return;
+    }
+    if (t.id === 'addAcc') {
+      var a = {id:newId(), label:'', holder:'', iban:'', bic:''};
+      state.accounts.push(a); if (!state.acc) state.acc = a.id;
+      renderFields(); update();
+      var first = document.getElementById('acc' + (state.accounts.length - 1) + '-label'); if (first) first.focus();
+      return;
+    }
+    var sv = t.closest('[data-save]');
+    if (sv) {
+      var obj = state[sv.dataset.from];
+      if (!has(obj.name)) { setStatus('Scrivi prima la ragione sociale.', 'bad'); return; }
+      state.saved[sv.dataset.save][obj.name.trim()] = JSON.parse(JSON.stringify(obj));
+      persist(); renderFields(); setStatus('Salvato: ' + obj.name.trim() + '.', 'ok'); return;
+    }
+    var un = t.closest('[data-unsave]');
+    if (un) { delete state.saved[un.dataset.unsave][un.dataset.name]; persist(); renderFields(); return; }
+    if (t.id === 'exportData') { exportData(); return; }
+    if (t.id === 'importPick') { document.getElementById('importFile').click(); return; }
+    if (t.id === 'clearAll') {
+      if (Date.now() - clearArmed < 6000) {
+        clearArmed = 0; state = defaults(); openCards = {}; persist(); syncTop(); renderFields(); update();
+        setStatus('Dati cancellati da questo browser.', 'ok');
+      } else {
+        clearArmed = Date.now(); t.textContent = 'Sicuro? Tocca di nuovo per cancellare tutto';
+        setTimeout(function(){ if (t.isConnected && Date.now() - clearArmed >= 6000) t.textContent = 'Cancella tutti i dati da questo browser'; }, 6100);
+      }
+    }
   });
+
+  // backup: one JSON file with everything, to move the data to another device or browser
+  async function exportData(){
+    var name = 'Documenti Raho backup ' + todayISO() + '.json';
+    var blob = new Blob([JSON.stringify({app:'documenti-raho', version:1, state:state}, null, 2)], {type:'application/json'});
+    try {
+      var dl = await downloadsP;
+      if (dl) await dl.save({filename:name, data:blob});
+      else if (inClaude) { setStatus('Il download non è disponibile in questa vista. Apri la pagina su claude.ai.', 'bad'); return; }
+      else {
+        var url = URL.createObjectURL(blob), link = document.createElement('a');
+        link.href = url; link.download = name; document.body.appendChild(link); link.click();
+        setTimeout(function(){ URL.revokeObjectURL(url); link.remove(); }, 1000);
+      }
+      setStatus('Backup scaricato. Tienilo al sicuro: contiene IBAN e codice fiscale.', 'ok');
+    } catch (err) {
+      setStatus(err && err.code === 'declined' ? 'Download annullato.' : 'Non sono riuscito a creare il backup.', 'bad');
+    }
+  }
+  function importData(file){
+    var reader = new FileReader();
+    reader.onload = function(){
+      try {
+        var o = JSON.parse(reader.result), s = o && o.state && typeof o.state === 'object' ? o.state : o;
+        if (!s || typeof s !== 'object' || !s.me) throw new Error('not a backup');
+        state = load(s); openCards = {}; persist(); syncTop(); renderFields(); update();
+        setStatus('Backup caricato: i tuoi dati sono di nuovo qui.', 'ok');
+      } catch (err) { setStatus('Questo file non è un backup di Documenti Raho.', 'bad'); }
+    };
+    reader.readAsText(file);
+  }
 
   // logo upload
   document.getElementById('logoPick').addEventListener('click', function(){ document.getElementById('logoFile').click(); });
@@ -877,8 +1029,16 @@ input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visi
 
   // tabs (phones)
   var tabForm = document.getElementById('tabForm'), tabPrev = document.getElementById('tabPreview');
-  function setView(v){ document.body.classList.toggle('view-form', v === 'form'); document.body.classList.toggle('view-preview', v === 'preview');
-    tabForm.setAttribute('aria-pressed', v === 'form'); tabPrev.setAttribute('aria-pressed', v === 'preview'); if (v === 'preview') { renderPreview(); window.scrollTo(0, 0); } }
+  // each tab keeps its own scroll position
+  var view = '', scrollAt = {};
+  function setView(v){
+    if (view) scrollAt[view] = window.scrollY;
+    document.body.classList.toggle('view-form', v === 'form'); document.body.classList.toggle('view-preview', v === 'preview');
+    tabForm.setAttribute('aria-pressed', v === 'form'); tabPrev.setAttribute('aria-pressed', v === 'preview');
+    if (v === 'preview') renderPreview();
+    if (view && view !== v) window.scrollTo(0, scrollAt[v] || 0);
+    view = v;
+  }
   tabForm.addEventListener('click', function(){ setView('form'); });
   tabPrev.addEventListener('click', function(){ setView('preview'); });
   setView('form');

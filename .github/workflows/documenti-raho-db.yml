@@ -46,3 +46,33 @@ jobs:
             --data @/tmp/body.json)
           echo "Risposta $code"; head -c 2000 /tmp/out.json; echo
           if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then exit 1; fi
+
+      # Il link nell'email di conferma deve riportare a Documenti Raho e non al sito di Label Finance:
+      # aggiunge l'indirizzo dello strumento agli indirizzi di ritorno consentiti, senza togliere quelli
+      # che ci sono già e senza cambiare il Site URL di Label Finance.
+      - name: Consenti il ritorno a Documenti Raho dopo la conferma email
+        if: steps.token.outputs.skip != '1'
+        env:
+          APP_URL: https://rahodavide95-sketch.github.io/RHDev/documenti-raho/
+        run: |
+          code=$(curl -sS -o /tmp/auth.json -w '%{http_code}' \
+            "https://api.supabase.com/v1/projects/$PROJECT_REF/config/auth" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN")
+          if [ "$code" != 200 ]; then
+            echo "::warning::Impostazioni di accesso non lette ($code): aggiungi a mano $APP_URL e ${APP_URL}** in Supabase › Authentication › URL Configuration › Redirect URLs."
+            exit 0
+          fi
+          jq --arg a "$APP_URL" --arg b "${APP_URL}**" '
+            ((.uri_allow_list // "") | split(",") | map(gsub("^\\s+|\\s+$"; "")) | map(select(length > 0))) as $l
+            | {add: (([$a, $b] - $l) | length), body: {uri_allow_list: ($l + ([$a, $b] - $l) | join(","))}}' /tmp/auth.json > /tmp/plan.json
+          echo "Indirizzi di ritorno già presenti: $(jq -r '(.uri_allow_list // "") | split(",") | map(select(length > 0)) | length' /tmp/auth.json)"
+          if [ "$(jq '.add' /tmp/plan.json)" = 0 ]; then echo "Documenti Raho è già tra gli indirizzi consentiti."; exit 0; fi
+          jq '.body' /tmp/plan.json > /tmp/patch.json
+          code=$(curl -sS -o /tmp/out.json -w '%{http_code}' -X PATCH \
+            "https://api.supabase.com/v1/projects/$PROJECT_REF/config/auth" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data @/tmp/patch.json)
+          echo "Risposta $code"
+          if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then head -c 500 /tmp/out.json; echo; exit 1; fi
+          echo "Aggiunti $(jq '.add' /tmp/plan.json) indirizzi; ora sono $(jq -r '(.uri_allow_list // "") | split(",") | length' /tmp/out.json)."

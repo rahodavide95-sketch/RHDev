@@ -36,6 +36,8 @@ Su telefono la pagina ha due schede: Compila / Anteprima.
 - Note fiscali e pagamento affiancati; in fondo riquadro tratteggiato per la marca da bollo e riga firma.
 - Oggetto delle ricevute royalties: solo "Royalties".
 - Contratti: una sezione per pagina (richiesta esplicita di D), piè di pagina con sigle e numero di pagina.
+- Se una pagina non entra nel foglio, l'anteprima le aggiunge la classe `fit` (spaziature più strette, stesso design); l'avviso giallo compare solo se non basta. Succede di solito alla ricevuta booking estera con data del contratto e rimborso spese.
+- Importi: "1.500" vale 1500 (punto delle migliaia); in uscita sempre con il punto, es. € 1.500,00.
 
 ## Regole fiscali usate (D non è commercialista: in caso di dubbi va consigliato di sentirne uno)
 

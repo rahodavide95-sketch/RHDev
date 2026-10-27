@@ -166,6 +166,7 @@ input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visi
 .p-pay{display:grid;grid-template-columns:92px minmax(0,1fr);row-gap:8px;column-gap:12px;font-size:13px;line-height:1.4}
 .p-pay .k{font-family:var(--mono);font-size:12px;color:var(--ink-2)}
 .p-pay .m{font-family:var(--mono);overflow-wrap:anywhere}
+.p-col.notes{gap:10px}
 .p-foot{margin-top:auto;display:flex;justify-content:space-between;align-items:flex-end}
 .p-foot.nobollo{justify-content:flex-end}
 .p-bollo{display:flex;flex-direction:column;gap:8px}
@@ -206,6 +207,18 @@ input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visi
 .c-sig .area{height:76px;border-bottom:1px solid var(--ink);display:flex;align-items:flex-end;justify-content:center}
 .c-sig .area .sigimg{max-height:72px}
 .c-foot{margin-top:auto;display:flex;justify-content:space-between;align-items:center;gap:16px;padding-top:12px;border-top:1px solid var(--rule);font-family:var(--mono);font-size:12px;color:var(--ink-2)}
+
+/* fit: a page that would spill off the sheet gets tighter spacing, same design */
+.paper.fit{gap:16px}
+.paper.fit .p-head{padding-bottom:14px}
+.paper.fit .p-col{gap:6px}
+.paper.fit .p-col.notes{gap:7px}
+.paper.fit .p-note{line-height:1.42}
+.paper.fit .p-tab td{padding:10px 0 12px}
+.paper.fit .p-tab tr.sum td{padding:8px 0 0}
+.paper.fit .p-tab tr.sum.first td{padding-top:10px}
+.paper.fit .p-tab tr.sum.last td{padding-bottom:10px}
+.paper.fit .p-total{padding-top:10px}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -296,7 +309,7 @@ input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visi
   var KEY = 'raho-documenti-v1';
   var OLD_KEY = 'raho-ricevute-v1';
   var BOLLO_SOGLIA = 77.47;
-  var fmtIT = new Intl.NumberFormat('it-IT', {minimumFractionDigits:2, maximumFractionDigits:2});
+  var fmtIT = new Intl.NumberFormat('it-IT', {minimumFractionDigits:2, maximumFractionDigits:2, useGrouping:'always'});
   var fmtEN = new Intl.NumberFormat('en-GB', {minimumFractionDigits:2, maximumFractionDigits:2});
 
   var DOCS = {
@@ -361,7 +374,10 @@ input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visi
   function parseAmount(s){
     s = String(s || '').replace(/[€\s]/g, '').replace(/EUR/i, '');
     if (!s) return null;
-    if (s.indexOf(',') !== -1) s = s.replace(/\./g, '').replace(',', '.');
+    var c = s.lastIndexOf(','), d = s.lastIndexOf('.');
+    if (c > d) s = s.replace(/\./g, '').replace(',', '.');         // 1.500,50 · 1500,50
+    else if (c !== -1) s = s.replace(/,/g, '');                    // 1,500.50
+    else if (/^[1-9]\d{0,2}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, ''); // 1.500 = millecinquecento
     var n = Number(s);
     return isFinite(n) ? Math.round(n * 100) / 100 : null;
   }
@@ -403,9 +419,9 @@ input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visi
       + '<div class="k">IBAN</div><div class="m">' + val(M.iban, 'IT00 X000 0000 0000 0000 0000 000') + '</div>'
       + (est ? '<div class="k">BIC / SWIFT</div><div class="m">' + val(M.bic, 'XXXXITXX') + '</div>' : '')
       + '<div class="k">Causale</div><div>' + causale + '</div>';
-    h += '<section class="p-two"><div class="p-col" style="gap:10px"><div class="lbl rule">' + (est ? 'Note fiscali / Tax notes' : 'Note fiscali') + '</div>'
+    h += '<section class="p-two"><div class="p-col notes"><div class="lbl rule">' + (est ? 'Note fiscali / Tax notes' : 'Note fiscali') + '</div>'
       + o.notes.map(function(n){ return '<div class="p-note">' + esc(n) + '</div>'; }).join('') + '</div>'
-      + '<div class="p-col" style="gap:10px"><div class="lbl rule">' + (est ? 'Pagamento / Payment' : 'Pagamento') + '</div><div class="p-pay">' + pay + '</div></div></section>';
+      + '<div class="p-col notes"><div class="lbl rule">' + (est ? 'Pagamento / Payment' : 'Pagamento') + '</div><div class="p-pay">' + pay + '</div></div></section>';
     h += '<footer class="p-foot' + (o.bollo ? '' : ' nobollo') + '">'
       + (o.bollo ? '<div class="p-bollo"><div class="p-box">Marca da bollo<b>€ 2,00</b></div><div class="mono" style="font-size:12px;color:var(--ink-2)">ID ' + val(state.bolloId, '14 cifre') + '</div></div>' : '')
       + '<div class="p-sign"><div class="ln">' + sigHtml() + '</div><div class="lbl">' + (est ? 'Firma / Signature' : 'Firma') + '</div></div></footer>';
@@ -675,12 +691,16 @@ input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visi
     }).join('');
     fit();
     var over = [];
-    pagesEl.querySelectorAll('.paper').forEach(function(el, i){ if (el.scrollHeight > el.clientHeight + 1) over.push(i + 1); });
-    var w = document.getElementById('overflowWarn');
+    pagesEl.querySelectorAll('.paper').forEach(function(el, i){
+      if (el.scrollHeight > el.clientHeight + 1) el.classList.add('fit');
+      if (el.scrollHeight > el.clientHeight + 1) over.push(i + 1);
+    });
+    var w = document.getElementById('overflowWarn'), d = D();
     w.hidden = !over.length;
-    if (over.length) w.textContent = D().kind === 'contract'
+    if (over.length) w.textContent = d.kind === 'contract'
       ? 'Il testo non entra a pagina ' + over.join(', ') + ': accorcia i campi più lunghi.'
-      : 'La ricevuta non entra in una pagina: dividi le release in due ricevute o accorcia i testi.';
+      : d.cat === 'roy' ? 'La ricevuta non entra in una pagina: dividi le release in due ricevute o accorcia i testi.'
+      : 'La ricevuta non entra in una pagina: accorcia i testi più lunghi (committente, evento, locale).';
   }
   function fit(){
     var desk = document.getElementById('desk');
@@ -931,7 +951,7 @@ input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visi
   var btn = document.getElementById('exportBtn');
   function fileName(){
     var d = D(), c = d.cat === 'roy' ? state.label.name : state.client.name;
-    c = String(c || '').replace(/[^\p{L}\p{N} ._-]/gu, '').trim();
+    c = String(c || '').replace(/[^\p{L}\p{N} ._-]/gu, '').replace(/\s+/g, ' ').trim();
     if (d.kind === 'contract') return (d.lang === 'en' ? 'Raho Contract' : 'Raho Contratto') + (c ? ' ' + c : '') + (has(state.ev.date) ? ' ' + state.ev.date : '') + '.pdf';
     return 'Ricevuta ' + String(state.number || '').replace(/[\/\\]/g, '-') + (c ? ' ' + c : '') + '.pdf';
   }

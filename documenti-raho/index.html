@@ -43,7 +43,7 @@ img{max-width:100%}
   --accent:#1c1713; --accent-fg:#faf7f1; --ring:#b4532a; --desk:#ded5c7; --warn:#8a4300; --warn-bg:#f8e3c4; --ok:#2f6331; --ok-bg:#e0e8d5; --soft:0 1px 2px rgba(60,40,20,.05),0 10px 30px rgba(60,40,20,.06);
 }
 :root[data-theme="dark"]{
-  --bg:#0c0c0d; --panel:#171718; --field:#222224; --field-2:#2c2c2f; --fg:#f5f5f3; --muted:#a6a6a2; --faint:#76767a;
+  --bg:#0c0c0d; --panel:#212124; --field:#333337; --field-2:#404045; --fg:#f5f5f3; --muted:#c0c0bb; --faint:#96969c;
   --accent:#f5f5f3; --accent-fg:#0c0c0d; --ring:#7ea4ff; --desk:#050505; --warn:#ffc978; --warn-bg:#3b2a0f; --ok:#82d6a3; --ok-bg:#132a1d; --soft:none; --scrim:rgba(0,0,0,.72);
   --lift:0 1px 2px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.5); color-scheme:dark;
 }
@@ -54,7 +54,7 @@ img{max-width:100%}
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme]),:root[data-theme="auto"]{
-    --bg:#0c0c0d; --panel:#171718; --field:#222224; --field-2:#2c2c2f; --fg:#f5f5f3; --muted:#a6a6a2; --faint:#76767a;
+    --bg:#0c0c0d; --panel:#212124; --field:#333337; --field-2:#404045; --fg:#f5f5f3; --muted:#c0c0bb; --faint:#96969c;
     --accent:#f5f5f3; --accent-fg:#0c0c0d; --ring:#7ea4ff; --desk:#050505; --warn:#ffc978; --warn-bg:#3b2a0f; --ok:#82d6a3; --ok-bg:#132a1d; --soft:none; --scrim:rgba(0,0,0,.72);
     --lift:0 1px 2px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.5); color-scheme:dark;
   }
@@ -96,7 +96,7 @@ body.view-archive .form{display:none}
   .tabs{grid-template-columns:repeat(3,minmax(0,1fr));max-width:none;position:sticky;top:max(8px, env(safe-area-inset-top, 0px));z-index:5;box-shadow:0 0 0 8px var(--bg)}
   #tabPreview{display:block}
   .desk{grid-column:1;grid-row:1}
-  body.view-form .desk,body.view-archive .desk,body.view-settings .desk{display:none}
+  body.view-form .desk,body.view-archive .desk{display:none}
   .top .status{order:3;width:100%;max-width:none;box-sizing:border-box;border-radius:16px;align-items:flex-start}
   .status::before{margin-top:6px}
   .status span{white-space:normal}
@@ -194,18 +194,8 @@ html.menu-open,html.menu-open body{overflow:hidden}
   .mgrab,.mhead{display:none}
 }
 @media (prefers-reduced-motion: reduce){.msheet,.mscrim{transition:none!important}}
-.pagehead{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:2px 0 4px}
-.back{appearance:none;-webkit-appearance:none;border:0;background:none;color:var(--muted);font:600 14px var(--ui);display:inline-flex;align-items:center;gap:4px;padding:8px 12px 8px 4px;margin-left:-4px;border-radius:12px;cursor:pointer}
-.back:hover{color:var(--fg);background:var(--panel)}
-.back svg{width:18px;height:18px}
-.pagehead h2{margin:0;font:600 28px/1.15 var(--ui);letter-spacing:-.025em}
 /* each topic is its own card, with air between them */
 #fields{display:flex;flex-direction:column;gap:12px}
-#setPart{display:none}
-body.view-settings #setPart{display:flex;flex-direction:column;gap:12px}
-#setPart .card{scroll-margin-top:16px}
-@media (max-width:940px){#setPart .card{scroll-margin-top:76px}}
-body.view-settings #docCard,body.view-settings #fields{display:none}
 .sub{display:flex;flex-direction:column;gap:12px}
 .sub + .sub{margin-top:12px}
 .fold{border-radius:18px;background:var(--bg)}
@@ -330,11 +320,85 @@ input.code{font-family:var(--mono);letter-spacing:.02em}
 .pscale{position:absolute;top:0;left:0;width:794px;height:1123px;transform-origin:top left;box-shadow:0 1px 2px rgba(0,0,0,.10),0 12px 36px rgba(0,0,0,.16)}
 
 /* dialogs: signature pad and text editor */
-.sigpad{position:fixed;inset:0;z-index:50;background:var(--scrim);display:flex;align-items:center;justify-content:center;padding:max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px))}
+.sigpad{position:fixed;inset:0;z-index:50;background:var(--scrim);-webkit-backdrop-filter:blur(14px) saturate(1.2);backdrop-filter:blur(14px) saturate(1.2);display:flex;align-items:center;justify-content:center;padding:max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px))}
 .sigbox{background:var(--panel);border-radius:22px;padding:22px;width:min(640px,100%);box-sizing:border-box;display:flex;flex-direction:column;gap:14px;box-shadow:var(--lift)}
 .sigbox h2{margin:0;font:600 17px var(--ui);letter-spacing:-.01em;color:var(--fg)}
 #sigCanvas{width:100%;height:220px;background:#ffffff;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.14);touch-action:none;cursor:crosshair;display:block}
 .sigactions{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+#logopad .sigbox{max-height:100%;overflow-y:auto}
+html.modal-open,html.modal-open body{overflow:hidden}
+/* Dati e rubrica: a window with its own little menu; every page has back and X, edits are kept with Salva */
+.databox:focus{outline:none}
+.databox{position:relative;width:min(620px,100%);height:min(660px,100%);max-height:100%;padding:0;gap:0;overflow:hidden}
+.dhead{display:flex;align-items:center;gap:8px;min-height:36px;padding:12px 12px 0}
+.dhead .mclose{margin-left:auto;flex:none}
+.databox .dtitle{margin:0;padding:4px 20px 12px;font:600 26px/1.15 var(--ui);letter-spacing:-.025em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dback{max-width:calc(100% - 50px);appearance:none;-webkit-appearance:none;border:0;background:none;color:var(--fg);font:600 14.5px var(--ui);display:inline-flex;align-items:center;gap:2px;padding:8px 12px 8px 4px;border-radius:999px;cursor:pointer;min-width:0}
+.dback:hover{background:var(--field)}
+.dback svg{width:20px;height:20px;flex:none}
+.dback span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.dbody{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:6px 20px 22px;display:flex;flex-direction:column;gap:14px}
+.dbody h3{margin:8px 4px -4px;font:600 13px var(--ui);color:var(--muted)}
+.dbig{margin:2px 4px 0;font:600 26px/1.15 var(--ui);letter-spacing:-.025em}
+.dfoot{display:flex;flex-direction:column;gap:10px;padding:12px 20px 16px;background:var(--panel);box-shadow:0 -10px 24px -14px rgba(0,0,0,.22)}
+.dfoot[hidden]{display:none}
+.drow{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.drow .row{margin-left:auto}
+.dleave{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 10px 10px 16px;border-radius:18px;background:var(--warn-bg);color:var(--warn);font-weight:600;font-size:13.5px}
+.dleave[hidden],.drow[hidden]{display:none}
+.dstate{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:500;color:var(--muted)}
+.dstate:empty{display:none}
+.dstate::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.dstate.bad{color:var(--warn)}
+.dstate.ok{color:var(--ok)}
+.dtoast{position:absolute;left:50%;bottom:92px;transform:translateX(-50%);z-index:3;display:inline-flex;align-items:center;gap:8px;padding:11px 18px 11px 15px;border-radius:999px;font:600 14px var(--ui);white-space:nowrap;box-shadow:var(--lift);background:var(--accent);color:var(--accent-fg);animation:toastin .22s ease-out}
+.dtoast[hidden]{display:none}
+.dtoast.ok::before,.dtoast.bad::before{content:"";width:8px;height:8px;border-radius:50%}
+.dtoast.ok::before{background:#3ccf7a}
+.dtoast.bad::before{background:#ffb347}
+@keyframes toastin{from{opacity:0;transform:translate(-50%,8px)}to{opacity:1;transform:translate(-50%,0)}}
+.dempty{margin:0;padding:16px;border-radius:18px;background:var(--field);font-size:13.5px;color:var(--muted);line-height:1.5}
+.dbody .mgroup{gap:2px}
+.dbody .mrow{padding:12px 14px}
+.dbody .mtx small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.dbody .mic.soft{background:var(--panel);color:var(--fg)}
+.dbody .x.danger{align-self:flex-start}
+@media (max-width:520px){
+  .databox{height:100%}
+  .dhead{padding:10px 10px 0}
+  .databox .dtitle{padding:2px 16px 10px;font-size:24px}
+  .dbody{padding:4px 16px 18px}
+  .dfoot{padding:12px 16px 14px}
+}
+}
+.lkcrop{display:flex;flex-direction:column;gap:10px}
+.lkcrop[hidden]{display:none}
+.lkstage-wrap{display:flex;justify-content:center;align-items:center;padding:20px;border-radius:18px;background:repeating-conic-gradient(var(--field) 0 25%, var(--field-2) 0 50%) 50% / 18px 18px}
+.lkstage{position:relative;line-height:0;touch-action:none;-webkit-user-select:none;user-select:none;cursor:crosshair}
+.lkstage img{display:block;max-width:100%;max-height:220px;width:auto;height:auto;pointer-events:none;-webkit-user-drag:none}
+.lkshade{position:absolute;background:rgba(0,0,0,.55);pointer-events:none}
+.lkbox{position:absolute;outline:2px solid #ffffff;box-shadow:0 0 0 3px rgba(0,0,0,.25);cursor:move}
+.lkbox i{position:absolute;width:30px;height:30px;margin:-15px 0 0 -15px;display:grid;place-items:center}
+.lkbox i::after{content:"";width:13px;height:13px;border-radius:50%;background:#ffffff;box-shadow:0 0 0 1px rgba(0,0,0,.3),0 1px 4px rgba(0,0,0,.35)}
+.lkbox i[data-h="nw"]{left:0;top:0;cursor:nwse-resize}
+.lkbox i[data-h="n"]{left:50%;top:0;cursor:ns-resize}
+.lkbox i[data-h="ne"]{left:100%;top:0;cursor:nesw-resize}
+.lkbox i[data-h="e"]{left:100%;top:50%;cursor:ew-resize}
+.lkbox i[data-h="se"]{left:100%;top:100%;cursor:nwse-resize}
+.lkbox i[data-h="s"]{left:50%;top:100%;cursor:ns-resize}
+.lkbox i[data-h="sw"]{left:0;top:100%;cursor:nesw-resize}
+.lkbox i[data-h="w"]{left:0;top:50%;cursor:ew-resize}
+.lksize{display:flex;justify-content:space-between}
+.lksize b{color:var(--fg);font-variant-numeric:tabular-nums}
+input[type="range"]{width:100%;margin:0;height:28px;accent-color:var(--accent);cursor:pointer}
+.lkprev{position:relative;display:flex;align-items:flex-end;justify-content:space-between;gap:16px;min-height:56px;padding:20px 22px 24px;border-radius:18px;background:#ffffff;color:#111111;overflow:hidden}
+.lkprev::after{content:"";position:absolute;left:22px;right:22px;bottom:14px;height:2px;background:#111111}
+.lk-clip{display:block;overflow:hidden;flex:none}
+.lk-clip img{display:block;max-width:none}
+.lk-raho{font-family:var(--logo);letter-spacing:.04em;line-height:1;white-space:nowrap}
+.lk-num{font:500 8px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:#555555;text-align:right;flex:none}
+.lk-num b{display:block;margin-top:3px;font:600 19px var(--ui);letter-spacing:-.02em;color:#111111;text-transform:none}
 
 /* ---------- documents (A4 at 96 dpi) ---------- */
 .paper{width:794px;height:1123px;box-sizing:border-box;padding:56px 64px 48px;display:flex;flex-direction:column;gap:26px;background:var(--paper);color:var(--ink);font-family:var(--doc);font-size:14px;line-height:1.3;overflow:hidden}
@@ -347,8 +411,8 @@ input.code{font-family:var(--mono);letter-spacing:.02em}
 .paper b{font-weight:600}
 .p-head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;padding-bottom:20px;border-bottom:3px solid var(--ink)}
 .p-headl{display:flex;flex-direction:column;gap:10px;flex:none}
-.p-logo{font-family:var(--logo);font-size:40px;font-weight:400;letter-spacing:.04em;line-height:1;white-space:nowrap}
-.p-logoimg{display:block;height:44px;width:auto;max-width:280px;object-fit:contain;object-position:left bottom}
+.p-logo{font-family:var(--logo);font-size:calc(40px * var(--lk, 1));font-weight:400;letter-spacing:.04em;line-height:1;white-space:nowrap}
+.p-logoimg{display:block;height:calc(44px * var(--lk, 1));width:auto;max-width:calc(280px * var(--lk, 1));object-fit:contain;object-position:left bottom}
 .p-headr{display:flex;flex-direction:column;align-items:flex-end;gap:6px;text-align:right;min-width:0}
 .p-num{font-size:30px;font-weight:600;line-height:1}
 .p-title{font-size:22px;font-weight:600;line-height:1.15;text-wrap:balance}
@@ -380,6 +444,8 @@ input.code{font-family:var(--mono);letter-spacing:.02em}
 .p-pay{display:grid;grid-template-columns:92px minmax(0,1fr);row-gap:8px;column-gap:12px;font-size:13px;line-height:1.4}
 .p-pay .k{font-family:var(--mono);font-size:12px;color:var(--ink-2)}
 .p-pay .m{font-family:var(--mono);overflow-wrap:anywhere}
+.p-pay .iban{font-size:12px;white-space:nowrap;overflow-wrap:normal;letter-spacing:-.01em}
+.p-two.pay{grid-template-columns:minmax(0,1fr) minmax(0,1.25fr)}
 .p-col.notes{gap:10px}
 .p-foot{margin-top:auto;display:flex;justify-content:space-between;align-items:flex-end}
 .p-foot.nobollo{justify-content:flex-end}
@@ -392,11 +458,11 @@ input.code{font-family:var(--mono);letter-spacing:.02em}
 
 /* contracts */
 .c-top{display:flex;justify-content:space-between;align-items:center;gap:20px;padding-bottom:14px;border-bottom:1px solid var(--ink)}
-.c-top .p-logo{font-size:22px}
-.c-top .p-logoimg{height:24px}
+.c-top .p-logo{font-size:calc(22px * var(--lk, 1))}
+.c-top .p-logoimg{height:calc(24px * var(--lk, 1))}
 /* RH[BKNG]: D's logo as it is, white on black */
-.p-logoimg.rh{height:90px;max-width:none}
-.c-top .p-logoimg.rh{height:44px}
+.p-logoimg.rh{height:calc(90px * var(--lk, 1));max-width:none}
+.c-top .p-logoimg.rh{height:calc(44px * var(--lk, 1))}
 .c-intro{font-size:14px;line-height:1.55;margin:0}
 .c-sec{display:flex;flex-direction:column;gap:16px}
 .c-h{font-size:22px;font-weight:600;line-height:1.2;margin:0;text-wrap:balance}
@@ -545,10 +611,13 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
           <span class="hint" id="logoHint">PNG o JPG, meglio con sfondo trasparente.</span>
           <input type="file" id="logoFile" accept="image/*" hidden>
         </div>
+        <div class="row" id="logoAdjRow">
+          <button type="button" class="btn ghost" id="logoAdjust"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg>Regola il logo</button>
+          <span class="hint" id="logoAdjInfo"></span>
+        </div>
       </section>
 
       <div id="fields"></div>
-      <div id="setPart"></div>
     </form>
 
     <section class="archive" id="archive" aria-label="Archivio"></section>
@@ -595,17 +664,51 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     <div class="mhead"><h2 id="menuTitle">Menu</h2><button type="button" class="mclose" data-mclose aria-label="Chiudi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
     <button type="button" class="macct" id="acctBtn"><span class="mav" id="acctAv" aria-hidden="true"></span><span class="mtx"><b id="acctName">Account</b><small><i class="dot" id="acctDot" aria-hidden="true"></i><span id="acctLabel">Accedi</span></small></span><svg class="mchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
     <div class="mgroup">
-      <button type="button" class="mrow" data-go="me"><span class="mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="11" r="2"/><path d="M6 16c.6-1.3 1.7-2 3-2s2.4.7 3 2M15 10h3.5M15 13.5h2.5"/></svg></span><span class="mtx"><b>I miei dati e conti</b><small>Nome, codice fiscale, IBAN</small></span><svg class="mchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
-      <button type="button" class="mrow" data-go="rubrica"><span class="mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5h12.5v14H6.5A1.75 1.75 0 0 0 4.75 19.25V5.25A1.75 1.75 0 0 1 6.5 3.5"/><path d="M4.75 19.25A1.75 1.75 0 0 0 6.5 21h12v-3.5M9 8h6"/></svg></span><span class="mtx"><b>Rubrica e backup</b><small>Etichette, committenti, backup</small></span><svg class="mchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
+      <button type="button" class="mrow" data-go="me"><span class="mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="11" r="2"/><path d="M6 16c.6-1.3 1.7-2 3-2s2.4.7 3 2M15 10h3.5M15 13.5h2.5"/></svg></span><span class="mtx"><b>I tuoi dati</b><small>Nome, codice fiscale, contatti</small></span><svg class="mchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
+      <button type="button" class="mrow" data-go="conti"><span class="mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M2.5 10h19M6.5 15h4"/></svg></span><span class="mtx"><b>Conti di pagamento</b><small>IBAN per le ricevute</small></span><svg class="mchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
+      <button type="button" class="mrow" data-go="rubrica"><span class="mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5h12.5v14H6.5A1.75 1.75 0 0 0 4.75 19.25V5.25A1.75 1.75 0 0 1 6.5 3.5"/><path d="M4.75 19.25A1.75 1.75 0 0 0 6.5 21h12v-3.5M9 8h6"/></svg></span><span class="mtx"><b>Rubrica clienti</b><small>Committenti ed etichette</small></span><svg class="mchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
+      <button type="button" class="mrow" data-go="backup"><span class="mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7.5 10.5 12 15l4.5-4.5"/><path d="M4 15.5V19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3.5"/></svg></span><span class="mtx"><b>Backup</b><small>Scarica o carica i tuoi dati</small></span><svg class="mchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
     </div>
     <div class="mk">Aspetto</div>
     <div class="themes" role="radiogroup" aria-label="Tema">
-      <button type="button" role="radio" data-theme-pick="auto" aria-label="Tema automatico, come il sistema"><span class="tp"><span class="tp" style="--b:#f3f3f1;--p:#ffffff;--a:#0b0b0b;--f:#e6e6e2"><i class="p"><i class="a"></i><i class="l"></i><i class="l"></i></i></span><span class="tp" style="--b:#0c0c0d;--p:#1d1d1f;--a:#f5f5f3;--f:#2c2c2f"><i class="p"><i class="a"></i><i class="l"></i><i class="l"></i></i></span></span>Auto</button>
+      <button type="button" role="radio" data-theme-pick="auto" aria-label="Tema automatico, come il sistema"><span class="tp"><span class="tp" style="--b:#f3f3f1;--p:#ffffff;--a:#0b0b0b;--f:#e6e6e2"><i class="p"><i class="a"></i><i class="l"></i><i class="l"></i></i></span><span class="tp" style="--b:#0c0c0d;--p:#212124;--a:#f5f5f3;--f:#404045"><i class="p"><i class="a"></i><i class="l"></i><i class="l"></i></i></span></span>Auto</button>
       <button type="button" role="radio" data-theme-pick="light" aria-label="Tema chiaro"><span class="tp" style="--b:#f3f3f1;--p:#ffffff;--a:#0b0b0b;--f:#e6e6e2"><i class="p"><i class="a"></i><i class="l"></i><i class="l"></i></i></span>Chiaro</button>
       <button type="button" role="radio" data-theme-pick="sand" aria-label="Tema sabbia"><span class="tp" style="--b:#ebe5da;--p:#faf7f1;--a:#1c1713;--f:#e1d8ca"><i class="p"><i class="a"></i><i class="l"></i><i class="l"></i></i></span>Sabbia</button>
-      <button type="button" role="radio" data-theme-pick="dark" aria-label="Tema scuro"><span class="tp" style="--b:#0c0c0d;--p:#1d1d1f;--a:#f5f5f3;--f:#2c2c2f"><i class="p"><i class="a"></i><i class="l"></i><i class="l"></i></i></span>Scuro</button>
+      <button type="button" role="radio" data-theme-pick="dark" aria-label="Tema scuro"><span class="tp" style="--b:#0c0c0d;--p:#212124;--a:#f5f5f3;--f:#404045"><i class="p"><i class="a"></i><i class="l"></i><i class="l"></i></i></span>Scuro</button>
       <button type="button" role="radio" data-theme-pick="navy" aria-label="Tema notte"><span class="tp" style="--b:#0a0f1d;--p:#16203a;--a:#e8ecff;--f:#22304f"><i class="p"><i class="a"></i><i class="l"></i><i class="l"></i></i></span>Notte</button>
     </div>
+  </div>
+</div>
+
+<div class="sigpad" id="datapad" hidden>
+  <div class="sigbox databox" role="dialog" aria-modal="true" aria-labelledby="dataTitle" tabindex="-1">
+    <div class="dhead">
+      <button type="button" class="dback" id="dataBack" aria-label="Indietro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg><span id="dataBackLabel">Indietro</span></button>
+      <button type="button" class="mclose" id="dataX" aria-label="Chiudi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+    <h2 class="dtitle" id="dataTitle">Dati e rubrica</h2>
+    <div class="dbody" id="dataBody"></div>
+    <div class="dfoot" id="dataFoot">
+      <div class="dleave" id="dataLeave" hidden><span>Hai modifiche non salvate.</span><div class="row"><button type="button" class="btn ghost" id="dataDiscard">Non salvare</button><button type="button" class="btn" id="dataSaveLeave">Salva</button></div></div>
+      <div class="drow" id="dataRow"><span class="dleft" id="dataLeft"></span><div class="row"><span class="dstate" id="dataState"></span><button type="button" class="btn" id="dataSave">Salva</button></div></div>
+    </div>
+    <div class="dtoast" id="dataToast" role="status" aria-live="polite" hidden></div>
+  </div>
+</div>
+
+<div class="sigpad" id="logopad" hidden>
+  <div class="sigbox" role="dialog" aria-modal="true" aria-labelledby="lkTitle">
+    <div class="sigactions" style="align-items:center"><h2 id="lkTitle">Regola il logo</h2><button type="button" class="x" id="lkReset">Torna all'originale</button></div>
+    <div class="lkcrop" id="lkCropWrap">
+      <p class="hint">Trascina gli angoli o i lati per ritagliare, dentro il riquadro per spostarlo. Fuori dal riquadro ne disegni uno nuovo.</p>
+      <div class="lkstage-wrap"><div class="lkstage" id="lkStage"><img id="lkImg" alt="Il logo da ritagliare" draggable="false">
+        <i class="lkshade"></i><i class="lkshade"></i><i class="lkshade"></i><i class="lkshade"></i>
+        <div class="lkbox" id="lkBox"><i data-h="nw"></i><i data-h="n"></i><i data-h="ne"></i><i data-h="e"></i><i data-h="se"></i><i data-h="s"></i><i data-h="sw"></i><i data-h="w"></i></div>
+      </div></div>
+    </div>
+    <div class="f"><label for="lkSize" class="lksize">Dimensione nel documento <b id="lkSizeVal">100%</b></label><input type="range" id="lkSize" min="40" max="200" step="5"></div>
+    <div class="lkprev" aria-hidden="true"><span class="lk-clip" id="lkClip"><img id="lkPrevImg" alt=""></span><span class="lk-raho" id="lkRaho">RAHO</span><span class="lk-num">Ricevuta n.<b>1/2026</b></span></div>
+    <div class="sigactions"><span class="hint">Così appare in cima alle ricevute.</span><div class="row"><button type="button" class="btn ghost" id="lkCancel">Annulla</button><button type="button" class="btn" id="lkSave">Salva</button></div></div>
   </div>
 </div>
 
@@ -657,6 +760,8 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   function defaults(){
     return {
       doc:'bkc-en', logo:{bk:'rhbkng', roy:'raho'}, logoImg:'', sig:{use:false, img:''},
+      // size (percent of the usual one) and crop (fractions of the image) chosen by D for each logo; untouched = as in the file
+      logoAdj:{raho:{size:100}, rhbkng:{size:100, crop:null}, img:{size:100, crop:null}},
       date: todayISO(), bolloId:'', history:[], gone:[], viewing:'', seqStart:{}, mt:0,
       me:{name:'', addr:'', city:'', cf:'', email:'', bookingEmail:'', phone:''},
       accounts:[], acc:'',
@@ -685,6 +790,11 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     });
     return d;
   }
+  function goodCrop(c){
+    if (!c || typeof c !== 'object') return false;
+    var ok = ['x', 'y', 'w', 'h'].every(function(k){ return typeof c[k] === 'number' && c[k] >= 0 && c[k] <= 1; });
+    return ok && c.w >= 0.02 && c.h >= 0.02 && c.x + c.w <= 1.0001 && c.y + c.h <= 1.0001;
+  }
   function newId(){ return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
   // the IBAN used to live in "me": it becomes the first saved account
   function load(o){
@@ -700,6 +810,11 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     s.accounts = s.accounts.filter(function(a){ return a && typeof a === 'object'; });
     s.accounts.forEach(function(a){ if (!a.id) a.id = newId(); });
     if (!DOCS[s.doc]) s.doc = 'bkc-en';
+    Object.keys(s.logoAdj).forEach(function(m){
+      var a = s.logoAdj[m], v = +a.size;
+      a.size = v >= 40 && v <= 200 ? v : 100;
+      if ('crop' in a && !goodCrop(a.crop)) a.crop = null;
+    });
     return s;
   }
   var state = defaults();
@@ -761,14 +876,41 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   }
   function currentNumber(){ var v = archivedTwin(); return v && v.number ? v.number : nextNumber(yearOf(state.date)); }
   function account(){ return state.accounts.filter(function(a){ return a.id === state.acc; })[0] || state.accounts[0] || {}; }
+  function ibanGroups(v){ return String(v).replace(/\s+/g, '').toUpperCase().replace(/(.{4})(?=.)/g, '$1 '); }
   function accName(a, i){ return has(a.label) ? String(a.label).trim() : has(a.iban) ? 'IBAN …' + String(a.iban).replace(/\s/g, '').slice(-4) : 'Conto ' + (i + 1); }
 
   function logoHtml(){
-    var mode = state.logo[D().cat];
-    if (mode === 'img' && state.logoImg) return '<img class="p-logoimg" src="' + state.logoImg + '" alt="Logo">';
-    if (mode === 'rhbkng') return '<img class="p-logoimg rh" src="' + RHBKNG_LOGO + '" alt="RH[BKNG]">';
-    return '<div class="p-logo">RAHO</div>';
+    var mode = state.logo[D().cat], k = state.logoAdj[mode === 'img' && !state.logoImg ? 'raho' : mode].size / 100;
+    var st = k !== 1 ? ' style="--lk:' + k + '"' : '';
+    if (mode === 'img' && state.logoImg) return '<img class="p-logoimg"' + st + ' src="' + logoSrc('img') + '" alt="Logo">';
+    if (mode === 'rhbkng') return '<img class="p-logoimg rh"' + st + ' src="' + logoSrc('rhbkng') + '" alt="RH[BKNG]">';
+    return '<div class="p-logo"' + st + '>RAHO</div>';
   }
+  // a cropped logo is cut on a canvas once and kept; until it is ready the whole logo is drawn
+  var cropped = {}, cropJobs = {};
+  function logoFile(mode){ return mode === 'img' ? state.logoImg : RHBKNG_LOGO; }
+  function logoSrc(mode){
+    var src = logoFile(mode), c = state.logoAdj[mode].crop;
+    if (!c) return src;
+    var key = [mode, src.length, src.slice(-32), c.x, c.y, c.w, c.h].join('|');
+    if (cropped[key]) return cropped[key];
+    if (!cropJobs[key]) cropJobs[key] = cutImage(src, c).then(function(url){ cropped[key] = url; renderPreview(); }, function(){ cropped[key] = src; });
+    return src;
+  }
+  function cutImage(src, c){
+    return new Promise(function(done, fail){
+      var im = new Image();
+      im.onload = function(){
+        var sx = Math.round(c.x * im.naturalWidth), sy = Math.round(c.y * im.naturalHeight);
+        var sw = Math.max(1, Math.round(c.w * im.naturalWidth)), sh = Math.max(1, Math.round(c.h * im.naturalHeight));
+        var cv = document.createElement('canvas'); cv.width = sw; cv.height = sh;
+        cv.getContext('2d').drawImage(im, sx, sy, sw, sh, 0, 0, sw, sh);
+        try { done(cv.toDataURL('image/png')); } catch (e) { fail(e); }
+      };
+      im.onerror = fail; im.src = src;
+    });
+  }
+  function logosReady(){ return Promise.all(Object.keys(cropJobs).map(function(k){ return cropJobs[k]; })); }
   function sigHtml(){ return state.sig.use && state.sig.img ? '<img class="sigimg" src="' + state.sig.img + '" alt="">' : ''; }
 
   // ---------- receipts ----------
@@ -793,10 +935,10 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     var causale = 'Ricevuta n. ' + num + (est ? ' / Receipt no. ' + num : '');
     var A = account();
     var pay = '<div class="k">Intestatario</div><div>' + val(has(A.holder) ? A.holder : M.name, 'Nome Cognome') + '</div>'
-      + '<div class="k">IBAN</div><div class="m">' + val(A.iban, 'IT00 X000 0000 0000 0000 0000 000') + '</div>'
+      + '<div class="k">IBAN</div><div class="m iban">' + val(has(A.iban) ? ibanGroups(A.iban) : '', 'IT00 X000 0000 0000 0000 0000 000') + '</div>'
       + (est ? '<div class="k">BIC / SWIFT</div><div class="m">' + val(A.bic, 'XXXXITXX') + '</div>' : '')
       + '<div class="k">Causale</div><div>' + causale + '</div>';
-    h += '<section class="p-two"><div class="p-col notes"><div class="lbl rule">' + (est ? 'Note fiscali / Tax notes' : 'Note fiscali') + '</div>'
+    h += '<section class="p-two pay"><div class="p-col notes"><div class="lbl rule">' + (est ? 'Note fiscali / Tax notes' : 'Note fiscali') + '</div>'
       + o.notes.map(function(n){ return ed('note.' + n[0], esc(n[1]), 'p-note'); }).join('') + '</div>'
       + '<div class="p-col notes"><div class="lbl rule">' + (est ? 'Pagamento / Payment' : 'Pagamento') + '</div><div class="p-pay">' + pay + '</div></div></section>';
     // the signature space is there only when "Aggiungi la mia firma" is ticked
@@ -1197,6 +1339,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
       return '<div class="sheet"><div class="pscale"><div class="paper ' + (p.cls || '') + '">' + p.html + '</div></div></div>';
     }).join('');
     fit();
+    pagesEl.querySelectorAll('.p-pay .iban').forEach(function(el){ var fs = 12; while (el.scrollWidth > el.clientWidth + 0.5 && fs > 8.5) { fs -= 0.5; el.style.fontSize = fs + 'px'; } });
     var k = 1;
     pagesEl.querySelectorAll('.paper').forEach(function(el){ k = Math.min(k, fitPaper(el)); });
     var w = document.getElementById('overflowWarn');
@@ -1340,10 +1483,6 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     {t:'La tua firma', g:'end', docs:ALL, custom:'sig'},
     {t:'Luogo e data della firma', g:'end', docs:BKC, f:[F('c.place','Luogo',{half:1}), F('c.date','Data',{type:'date', half:1})]},
     {t:'Marca da bollo', g:'end', docs:REC, f:[F('bolloId','Codice identificativo della marca (14 cifre)',{num:1})], bolloHint:1},
-    {t:'I tuoi dati e i conti', id:'me', g:'set', docs:ALL, after:'accounts', hint:'Li scrivi una volta: compaiono da soli nei documenti e, se hai fatto l\'accesso, sono uguali su tutti i tuoi dispositivi.',
-      f:[F('me.name','Nome e cognome'), F('me.addr','Indirizzo'), F('me.city','CAP e città',{half:1}), F('me.cf','Codice fiscale',{half:1}),
-      F('me.email','Email',{half:1}), F('me.bookingEmail','Email di booking',{half:1}), F('me.phone','Telefono',{half:1})]},
-    {t:'Rubrica e backup', id:'rubrica', g:'set', docs:ALL, after:'archive'}
   ];
 
   function fieldHtml(fd){
@@ -1382,8 +1521,6 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     if (sec.saved) body += '<button type="button" class="btn ghost" data-save="' + sec.saved + '" data-from="' + sec.from + '" style="align-self:flex-start">'
       + (sec.saved === 'labels' ? 'Salva questa etichetta' : 'Salva questo committente') + '</button>';
     if (sec.pick === 'acc') body += accPickHtml();
-    if (sec.after === 'accounts') body += accountsHtml();
-    if (sec.after === 'archive') body += archiveHtml();
     if (sec.bolloHint) body += '<p class="hint" id="bolloHint"></p>';
     return body;
   }
@@ -1411,13 +1548,6 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
       out += '<section class="card"><h2><span class="step">' + (++step) + '</span>' + title + '</h2>' + (gr.fold ? '<p class="hint">Sono già compilate con i valori del contratto: aprile solo per cambiare qualcosa.</p>' : '') + body + '</section>';
     });
     document.getElementById('fields').innerHTML = out;
-    // menu › I miei dati: personal data, accounts, address book and backup
-    var set = '<div class="pagehead"><button type="button" class="back" id="setBack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>Documenti</button><h2>Dati e rubrica</h2></div>';
-    SECTIONS.forEach(function(sec){
-      if (sec.g !== 'set') return;
-      set += '<section class="card" id="set-' + sec.id + '"><h2>' + sec.t + '</h2>' + (sec.hint ? '<p class="hint">' + sec.hint + '</p>' : '') + sectionBody(sec) + '</section>';
-    });
-    document.getElementById('setPart').innerHTML = set;
     bolloHint();
   }
   function linesHtml(){
@@ -1433,36 +1563,11 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     }).join('');
   }
   function accPickHtml(){
-    if (!state.accounts.length) return '<p class="hint">Per l\'IBAN sulla ricevuta aggiungi un conto da Menu › I miei dati.</p>';
+    if (!state.accounts.length) return '<div class="row"><span class="hint">Per l\'IBAN sulla ricevuta serve un conto.</span><button type="button" class="btn ghost" data-open-data="conto-new">Aggiungi un conto</button></div>';
     if (state.accounts.length === 1) return '';
     var cur = account().id;
     return '<div class="f"><label for="f-acc">Conto per il pagamento</label><select id="f-acc" data-path="acc">'
       + state.accounts.map(function(a, i){ return '<option value="' + esc(a.id) + '"' + (a.id === cur ? ' selected' : '') + '>' + esc(accName(a, i)) + '</option>'; }).join('') + '</select></div>';
-  }
-  function accountsHtml(){
-    return '<h3>Conti per i pagamenti</h3>' + (state.accounts.length ? '<div class="lines">' + state.accounts.map(function(a, i){
-      var p = 'acc' + i + '-';
-      var fld = function(k, label, ph, code){ return '<div class="f"><label for="' + p + k + '">' + label + '</label><input type="text" id="' + p + k + '" data-acc="' + i + '" data-key="' + k + '"'
-        + (code ? ' class="code" autocapitalize="characters" spellcheck="false"' : '') + (ph ? ' placeholder="' + esc(ph) + '"' : '') + ' value="' + esc(a[k]) + '"></div>'; };
-      return '<div class="line"><div class="line-head"><span>Conto ' + (i + 1) + '</span><button type="button" class="x" data-acc-remove="' + i + '">Rimuovi</button></div>'
-        + '<div class="grid2">' + fld('label', 'Nome del conto', 'Es. Revolut') + fld('holder', 'Intestatario', 'Come il tuo nome') + '</div>'
-        + fld('iban', 'IBAN', '', 1) + fld('bic', 'BIC / SWIFT (per l\'estero)', '', 1) + '</div>';
-    }).join('') + '</div>' : '<p class="hint">Nessun conto salvato.</p>')
-      + '<button class="btn ghost" type="button" id="addAcc" style="align-self:flex-start">Aggiungi conto</button>';
-  }
-  function archiveHtml(){
-    var list = function(key, title, empty){
-      var names = Object.keys(state.saved[key] || {}).sort(function(a,b){ return a.localeCompare(b); });
-      return '<h3>' + title + '</h3>' + (names.length ? '<div class="saved-list">' + names.map(function(nm){
-        return '<div class="saved-item"><span>' + esc(nm) + '</span><button type="button" class="x" data-unsave="' + key + '" data-name="' + esc(nm) + '">Elimina</button></div>';
-      }).join('') + '</div>' : '<p class="hint">' + empty + '</p>');
-    };
-    return list('labels', 'Etichette salvate', 'Nessuna. Si salvano da sole quando scarichi una ricevuta, o con «Salva questa etichetta».')
-      + list('clients', 'Committenti salvati', 'Nessuno. Si salvano da soli quando scarichi un documento, o con «Salva questo committente».')
-      + '<h3>Backup</h3><p class="hint">Un file con tutti i tuoi dati (anche conti, firma e logo): conservalo e caricalo su un altro telefono, computer o browser.</p>'
-      + '<div class="row"><button type="button" class="btn ghost" id="exportData">Scarica backup</button><button type="button" class="btn ghost" id="importPick">Carica backup</button>'
-      + '<input type="file" id="importFile" accept="application/json,.json" hidden></div>'
-      + '<button type="button" class="x danger" id="clearAll">Cancella tutti i dati da questo browser</button>';
   }
   function bolloHint(){
     var el = document.getElementById('bolloHint'); if (!el) return;
@@ -1477,6 +1582,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     document.getElementById('logo-' + mode).checked = true;
     document.getElementById('logoImgRow').hidden = mode !== 'img';
     document.getElementById('logoHint').textContent = state.logoImg ? 'Logo caricato. Puoi sostituirlo quando vuoi.' : 'PNG o JPG, meglio con sfondo trasparente.';
+    logoAdjInfo();
   }
 
   // ---------- status ----------
@@ -1510,7 +1616,6 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     var el = e.target;
     if (el.dataset.path) set(el.dataset.path, el.type === 'checkbox' ? el.checked : el.value);
     else if (el.dataset.line != null) state.lines[+el.dataset.line][el.dataset.key] = el.value;
-    else if (el.dataset.acc != null) state.accounts[+el.dataset.acc][el.dataset.key] = el.value;
     else return;
     update();
   });
@@ -1528,29 +1633,14 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
       if (s) state[el.dataset.from] = merge(defaults()[el.dataset.from], s);
       renderFields(); update();
     }
-    else if (el.id === 'importFile' && el.files && el.files[0]) { importData(el.files[0]); el.value = ''; }
   });
-  var clearArmed = 0;
   form.addEventListener('click', function(e){
     var t = e.target, r = t.closest('[data-remove]');
     if (r) { state.lines.splice(+r.dataset.remove, 1); renderFields(); update(); return; }
     if (t.id === 'sigOpen') { openPad(); return; }
-    if (t.id === 'setBack') { setView('form'); return; }
+    var od = t.closest('[data-open-data]'); if (od) { openData(od.dataset.openData); return; }
     if (t.id === 'newDoc') { state.viewing = ''; renderFields(); update(); return; }
     if (t.id === 'addLine') { state.lines.push(emptyLine()); renderFields(); update(); var inp = document.getElementById('line' + (state.lines.length - 1) + '-title'); if (inp) inp.focus(); return; }
-    var ra = t.closest('[data-acc-remove]');
-    if (ra) {
-      var gone = state.accounts.splice(+ra.dataset.accRemove, 1)[0];
-      if (gone && gone.id === state.acc) state.acc = '';
-      renderFields(); update(); return;
-    }
-    if (t.id === 'addAcc') {
-      var a = {id:newId(), label:'', holder:'', iban:'', bic:''};
-      state.accounts.push(a); if (!state.acc) state.acc = a.id;
-      renderFields(); update();
-      var first = document.getElementById('acc' + (state.accounts.length - 1) + '-label'); if (first) first.focus();
-      return;
-    }
     var sv = t.closest('[data-save]');
     if (sv) {
       var obj = state[sv.dataset.from];
@@ -1558,19 +1648,237 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
       state.saved[sv.dataset.save][obj.name.trim()] = JSON.parse(JSON.stringify(obj));
       persist(); renderFields(); setStatus('Salvato: ' + obj.name.trim() + '.', 'ok'); return;
     }
-    var un = t.closest('[data-unsave]');
-    if (un) { delete state.saved[un.dataset.unsave][un.dataset.name]; persist(); renderFields(); return; }
+  });
+
+  // ---------- Dati e rubrica: a window with a little menu ----------
+  // root › I tuoi dati / Conti di pagamento › conto / Rubrica clienti › committente o etichetta / Backup.
+  // A page with fields works on a copy: Salva keeps it; leaving with changes asks, and a message says whether it was saved.
+  var datapad = document.getElementById('datapad'), dataBody = document.getElementById('dataBody');
+  var nav = [], toastT = 0, armed = {};
+  var IC = {
+    me: '<rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="11" r="2"/><path d="M6 16c.6-1.3 1.7-2 3-2s2.4.7 3 2M15 10h3.5M15 13.5h2.5"/>',
+    conti: '<rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M2.5 10h19M6.5 15h4"/>',
+    rubrica: '<path d="M6 3.5h12.5v14H6.5A1.75 1.75 0 0 0 4.75 19.25V5.25A1.75 1.75 0 0 1 6.5 3.5"/><path d="M4.75 19.25A1.75 1.75 0 0 0 6.5 21h12v-3.5M9 8h6"/>',
+    backup: '<path d="M12 3v12M7.5 10.5 12 15l4.5-4.5"/><path d="M4 15.5V19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3.5"/>'
+  };
+  var RUB = {
+    clients: {one:'committente', title:'Committenti', add:'Aggiungi committente', icon:'<path d="M6 3.5h12.5v14H6.5A1.75 1.75 0 0 0 4.75 19.25V5.25A1.75 1.75 0 0 1 6.5 3.5"/><path d="M4.75 19.25A1.75 1.75 0 0 0 6.5 21h12v-3.5M9 8h6"/>',
+      f:[['name','Ragione sociale'], ['rep','Legale rappresentante (nome, ruolo)'], ['addr','Indirizzo'], ['city','CAP e città',1], ['country','Paese',1], ['cf','Codice fiscale',1], ['piva','Partita IVA',1], ['vat','VAT / Tax ID'], ['contact','Referente per la serata (nome, telefono)']]},
+    labels: {one:'etichetta', title:'Etichette', add:'Aggiungi etichetta', icon:'<path d="M9 18V6l10-2v12"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="16" r="2"/>',
+      f:[['name','Ragione sociale'], ['addr','Indirizzo'], ['city','CAP e città',1], ['country','Paese',1], ['cf','Codice fiscale',1], ['piva','Partita IVA',1], ['vat','VAT / Tax ID']]}
+  };
+  var ME_F = [['name','Nome e cognome'], ['addr','Indirizzo'], ['city','CAP e città',1], ['cf','Codice fiscale',1], ['email','Email',1], ['bookingEmail','Email di booking',1], ['phone','Telefono',1]];
+  var ACC_F = [['label','Nome del conto',1,'Es. Revolut'], ['holder','Intestatario',1,'Come il tuo nome'], ['iban','IBAN',0,'',1], ['bic','BIC / SWIFT (per l\'estero)',0,'',1]];
+  var ICON = function(d, soft){ return '<span class="mic' + (soft ? ' soft' : '') + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg></span>'; };
+  var CHEV = '<svg class="mchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
+  function row(go, icon, title, sub, soft){ return '<button type="button" class="mrow" data-nav="' + go + '">' + ICON(icon, soft) + '<span class="mtx"><b>' + title + '</b><small>' + sub + '</small></span>' + CHEV + '</button>'; }
+  function count(n, one, many){ return n === 1 ? '1 ' + one : n + ' ' + many; }
+  function fieldsHtml(F, draft){
+    var cells = F.map(function(f){
+      var id = 'pf-' + f[0];
+      return {half:f[2], h:'<div class="f"><label for="' + id + '">' + esc(f[1]) + '</label><input type="text" id="' + id + '" data-k="' + f[0] + '"' + (f[4] || f[0] === 'cf' ? ' class="code" autocapitalize="characters" spellcheck="false"' : '')
+        + (f[3] ? ' placeholder="' + esc(f[3]) + '"' : '') + ' value="' + esc(draft[f[0]]) + '"></div>'};
+    });
+    var out = '', buf = [];
+    cells.forEach(function(c){ if (c.half) { buf.push(c.h); if (buf.length === 2) { out += '<div class="grid2">' + buf.join('') + '</div>'; buf = []; } } else { if (buf.length) { out += buf[0]; buf = []; } out += c.h; } });
+    return out + (buf.length ? buf[0] : '');
+  }
+  // ---- pages ----
+  function page(){ return nav[nav.length - 1]; }
+  function dirty(){ var pg = page(); return !!(pg && pg.draft && JSON.stringify(pg.draft) !== pg.base); }
+  function makePage(id, arg){
+    var pg = {id:id, arg:arg};
+    if (id === 'me') { pg.draft = merge(defaults().me, clone(state.me)); }
+    if (id === 'conto') {
+      var a = arg ? state.accounts.filter(function(x){ return x.id === arg; })[0] : null;
+      pg.isNew = !a; pg.draft = a ? clone(a) : {id:newId(), label:'', holder:'', iban:'', bic:''};
+    }
+    if (id === 'voce') {
+      var e = arg.name != null ? state.saved[arg.kind][arg.name] : null;
+      pg.isNew = !e; pg.draft = merge(defaults()[arg.kind === 'labels' ? 'label' : 'client'], e ? clone(e) : {});
+    }
+    if (pg.draft) pg.base = JSON.stringify(pg.draft);
+    return pg;
+  }
+  function titleOf(pg){
+    if (pg.id === 'root') return 'Dati e rubrica';
+    if (pg.id === 'me') return 'I tuoi dati';
+    if (pg.id === 'conti') return 'Conti di pagamento';
+    if (pg.id === 'rubrica') return 'Rubrica clienti';
+    if (pg.id === 'backup') return 'Backup';
+    if (pg.id === 'conto') return pg.isNew ? 'Nuovo conto' : accName(pg.draft, 0);
+    if (pg.id === 'voce') return has(pg.draft.name) ? String(pg.draft.name).trim() : 'Nuov' + (pg.arg.kind === 'labels' ? 'a etichetta' : 'o committente');
+  }
+  function showPage(focusFirst){
+    var pg = page(), h = '';
+    document.getElementById('dataTitle').textContent = titleOf(pg);
+    var back = document.getElementById('dataBack'); back.hidden = nav.length < 2;
+    if (nav.length > 1) document.getElementById('dataBackLabel').textContent = titleOf(nav[nav.length - 2]);
+    if (pg.id === 'root') {
+      var nAcc = state.accounts.length, nC = Object.keys(state.saved.clients).length, nL = Object.keys(state.saved.labels).length;
+      h = '<div class="mgroup">'
+        + row('me', IC.me, 'I tuoi dati', has(state.me.name) ? esc(state.me.name) + (has(state.me.cf) ? ' · ' + esc(state.me.cf) : '') : 'Nome, codice fiscale, contatti')
+        + row('conti', IC.conti, 'Conti di pagamento', nAcc ? count(nAcc, 'conto', 'conti') : 'Nessun conto: aggiungi il tuo IBAN')
+        + row('rubrica', IC.rubrica, 'Rubrica clienti', count(nC, 'committente', 'committenti') + ' · ' + count(nL, 'etichetta', 'etichette'))
+        + row('backup', IC.backup, 'Backup', 'Scarica o carica i tuoi dati') + '</div>';
+    } else if (pg.id === 'me') {
+      h = '<p class="hint">Li scrivi una volta: compaiono da soli nei documenti e, se hai fatto l\'accesso, sono uguali su tutti i tuoi dispositivi.</p>' + fieldsHtml(ME_F, pg.draft);
+    } else if (pg.id === 'conti') {
+      h = '<p class="hint">I conti su cui farti pagare: nella ricevuta scegli quale usare.</p>'
+        + (state.accounts.length ? '<div class="mgroup">' + state.accounts.map(function(a, i){
+          var ib = String(a.iban || '').replace(/\s+/g, '').toUpperCase();
+          return row('conto:' + a.id, IC.conti, esc(accName(a, i)), ib ? 'IBAN ' + esc(ib.slice(0, 4)) + ' ···· ' + esc(ib.slice(-4)) : 'IBAN da scrivere', 1);
+        }).join('') + '</div>' : '<p class="dempty">Nessun conto salvato.</p>')
+        + '<button class="btn ghost" type="button" id="addAcc" style="align-self:flex-start">Aggiungi conto</button>'
+        + (state.accounts.length ? '<button type="button" class="x danger" data-wipe="conti">Cancella tutti i conti</button>' : '');
+    } else if (pg.id === 'rubrica') {
+      h = '<p class="hint">Tutti i dati dei tuoi clienti: li scegli nel modulo e compaiono da soli nei documenti.</p>';
+      ['clients', 'labels'].forEach(function(k){
+        var R = RUB[k], names = Object.keys(state.saved[k]).sort(function(a, b){ return a.localeCompare(b); });
+        h += '<h3>' + R.title + '</h3>' + (names.length ? '<div class="mgroup">' + names.map(function(n){
+          var e = state.saved[k][n], sub = [e.city, e.country].filter(has).map(esc).join(' · ') || 'Tocca per vedere e modificare';
+          return row('voce:' + k + ':' + encodeURIComponent(n), R.icon, esc(n), sub, 1);
+        }).join('') + '</div>' : '<p class="dempty">Nessun' + (k === 'labels' ? 'a etichetta' : ' committente') + ' salvat' + (k === 'labels' ? 'a' : 'o') + '.</p>')
+          + '<button type="button" class="btn ghost" data-add="' + k + '" style="align-self:flex-start">' + R.add + '</button>';
+      });
+      if (Object.keys(state.saved.clients).length + Object.keys(state.saved.labels).length) h += '<button type="button" class="x danger" data-wipe="rubrica">Svuota la rubrica</button>';
+    } else if (pg.id === 'conto') {
+      h = fieldsHtml(ACC_F, pg.draft);
+    } else if (pg.id === 'voce') {
+      h = fieldsHtml(RUB[pg.arg.kind].f, pg.draft);
+    } else if (pg.id === 'backup') {
+      h = '<p class="hint">Un file con tutti i tuoi dati salvati (anche conti, rubrica, archivio, firma e logo): conservalo e caricalo su un altro telefono, computer o browser.</p>'
+        + '<div class="row"><button type="button" class="btn ghost" id="exportData">Scarica backup</button><button type="button" class="btn ghost" id="importPick">Carica backup</button>'
+        + '<input type="file" id="importFile" accept="application/json,.json" hidden></div>'
+        + '<h3>Questo browser</h3><p class="hint">Toglie da questo browser tutto: dati, conti, rubrica, archivio, firma e logo. Il backup e i dati online restano.</p>'
+        + '<button type="button" class="x danger" id="clearAll">Cancella tutti i dati da questo browser</button>';
+    }
+    dataBody.innerHTML = h; dataBody.scrollTop = 0;
+    // footer only where there is something to save
+    var foot = document.getElementById('dataFoot'); foot.hidden = !pg.draft;
+    document.getElementById('dataLeave').hidden = true; document.getElementById('dataRow').hidden = false;
+    var left = '';
+    if (pg.id === 'me') left = '<button type="button" class="x danger" data-arm="clearme">Cancella tutto</button>';
+    if ((pg.id === 'conto' || pg.id === 'voce') && !pg.isNew) left = '<button type="button" class="x danger" data-arm="delete">Elimina</button>';
+    document.getElementById('dataLeft').innerHTML = left;
+    armed = {}; refreshDirty();
+    var f = focusFirst && wide.matches && dataBody.querySelector('input');
+    if (f) f.focus({preventScroll: true}); else if (!datapad.contains(document.activeElement)) datapad.querySelector('.databox').focus({preventScroll: true});
+  }
+  function refreshDirty(){
+    var st = document.getElementById('dataState'), pg = page();
+    if (!pg || !pg.draft) return;
+    if (dirty()) { st.textContent = 'Non salvato'; st.className = 'dstate bad'; }
+    else if (pg.saved) { st.textContent = 'Salvato'; st.className = 'dstate ok'; }
+    else { st.textContent = ''; st.className = 'dstate'; }
+  }
+  function toast(msg, kind){
+    var t = document.getElementById('dataToast');
+    t.textContent = msg; t.className = 'dtoast' + (kind ? ' ' + kind : ''); t.hidden = false;
+    t.style.animation = 'none'; t.getBoundingClientRect(); t.style.animation = '';
+    clearTimeout(toastT); toastT = setTimeout(function(){ t.hidden = true; }, 2600);
+  }
+  // writes the page back into the data; false if something is missing
+  function savePage(){
+    var pg = page(), d = pg.draft;
+    if (pg.id === 'me') state.me = merge(defaults().me, clone(d));
+    if (pg.id === 'conto') {
+      var i = state.accounts.map(function(a){ return a.id; }).indexOf(d.id);
+      if (i === -1) { state.accounts.push(clone(d)); if (!state.acc) state.acc = d.id; } else state.accounts[i] = clone(d);
+      pg.isNew = false;
+    }
+    if (pg.id === 'voce') {
+      var n = String(d.name || '').trim(), k = pg.arg.kind;
+      if (!n) { toast('Scrivi la ragione sociale', 'bad'); var f = document.getElementById('pf-name'); if (f) f.focus(); return false; }
+      d.name = n;
+      if (pg.arg.name != null && pg.arg.name !== n) delete state.saved[k][pg.arg.name];
+      state.saved[k][n] = clone(d); pg.arg = {kind:k, name:n}; pg.isNew = false;
+    }
+    pg.base = JSON.stringify(d); pg.saved = true;
+    persist(); renderFields(); update();
+    return true;
+  }
+  // back, X, Esc: with unsaved changes ask first, then say what happened
+  var pending = null;
+  function leave(then){
+    if (!dirty()) { then(); return; }
+    pending = then;
+    document.getElementById('dataLeave').hidden = false; document.getElementById('dataRow').hidden = true;
+    document.getElementById('dataSaveLeave').focus();
+  }
+  function goBack(){ leave(function(){ nav.pop(); showPage(); }); }
+  function closeData(){
+    leave(function(){ datapad.hidden = true; nav = []; document.documentElement.classList.remove('modal-open'); document.getElementById('dataToast').hidden = true; });
+  }
+  function go(target){
+    var m = String(target).split(':');
+    if (m[0] === 'conto') nav.push(makePage('conto', m[1] || null));
+    else if (m[0] === 'voce') nav.push(makePage('voce', {kind:m[1], name: m[2] != null ? decodeURIComponent(m[2]) : null}));
+    else nav.push(makePage(m[0]));
+    showPage(true);
+  }
+  function openData(target){
+    nav = [makePage('root')];
+    if (target === 'conto-new') { nav.push(makePage('conti')); nav.push(makePage('conto', null)); }
+    else if (target && target !== 'root') nav.push(makePage(target));
+    datapad.hidden = false; document.documentElement.classList.add('modal-open');
+    showPage(true);
+    if (!wide.matches) document.getElementById('dataX').focus({preventScroll: true});
+  }
+  function reloadData(){ if (datapad.hidden) return; nav = nav.map(function(pg){ return pg.draft ? pg : makePage(pg.id, pg.arg); }); showPage(); }
+  dataBody.addEventListener('input', function(e){
+    var el = e.target, pg = page();
+    if (!pg.draft || !el.dataset.k) return;
+    pg.draft[el.dataset.k] = el.value; pg.saved = false;
+    if (pg.id === 'conto' || pg.id === 'voce') document.getElementById('dataTitle').textContent = titleOf(pg);
+    refreshDirty();
+  });
+  dataBody.addEventListener('change', function(e){ var el = e.target; if (el.id === 'importFile' && el.files && el.files[0]) { importData(el.files[0]); el.value = ''; } });
+  datapad.addEventListener('click', function(e){
+    var t = e.target;
+    if (t === datapad || t.closest('#dataX')) { closeData(); return; }
+    if (t.closest('#dataBack')) { goBack(); return; }
+    var nv = t.closest('[data-nav]'); if (nv) { go(nv.dataset.nav); return; }
+    if (t.closest('#dataSave')) { if (savePage()) { toast('Salvato', 'ok'); showPage(); } return; }
+    if (t.closest('#dataSaveLeave')) { if (savePage()) { toast('Salvato', 'ok'); var f = pending; pending = null; if (f) f(); } return; }
+    if (t.closest('#dataDiscard')) { var pg = page(); pg.draft = JSON.parse(pg.base); toast('Modifiche non salvate', 'bad'); var g = pending; pending = null; if (g) g(); return; }
+    if (t.id === 'addAcc') { go('conto'); return; }
+    var add = t.closest('[data-add]'); if (add) { go('voce:' + add.dataset.add); return; }
+    var arm = t.closest('[data-arm]'), wipe = t.closest('[data-wipe]'), key = arm ? arm.dataset.arm : wipe ? 'wipe-' + wipe.dataset.wipe : '';
+    if (key) {
+      var el = arm || wipe;
+      if (!(Date.now() - (armed[key] || 0) < 6000)) {   // two taps for anything that deletes
+        armed[key] = Date.now(); el.dataset.label = el.dataset.label || el.textContent; el.textContent = 'Sicuro? Tocca di nuovo';
+        setTimeout(function(){ if (el.isConnected && Date.now() - (armed[key] || 0) >= 6000) el.textContent = el.dataset.label; }, 6100);
+        return;
+      }
+      armed = {}; var cur = page();
+      if (key === 'clearme') { cur.draft = defaults().me; cur.saved = false; showPage(); toast('Campi svuotati: premi Salva per confermare', 'bad'); return; }
+      if (key === 'delete') {
+        if (cur.id === 'conto') { state.accounts = state.accounts.filter(function(a){ return a.id !== cur.draft.id; }); if (state.acc === cur.draft.id) state.acc = state.accounts[0] ? state.accounts[0].id : ''; }
+        if (cur.id === 'voce' && cur.arg.name != null) delete state.saved[cur.arg.kind][cur.arg.name];
+        persist(); renderFields(); update(); nav.pop(); showPage(); toast('Eliminato', 'ok'); return;
+      }
+      if (key === 'wipe-conti') { state.accounts = []; state.acc = ''; }
+      if (key === 'wipe-rubrica') { state.saved.clients = {}; state.saved.labels = {}; }
+      persist(); renderFields(); update(); showPage(); toast(key === 'wipe-conti' ? 'Conti cancellati' : 'Rubrica svuotata', 'ok'); return;
+    }
     if (t.id === 'exportData') { exportData(); return; }
     if (t.id === 'importPick') { document.getElementById('importFile').click(); return; }
     if (t.id === 'clearAll') {
-      if (Date.now() - clearArmed < 6000) {
-        clearArmed = 0; state = defaults(); openCards = {}; persist(); applyTheme(); syncTop(); renderFields(); update();
-        setStatus('Dati cancellati da questo browser.', 'ok');
+      if (Date.now() - (armed.all || 0) < 6000) {
+        armed = {}; state = defaults(); openCards = {}; persist(); applyTheme(); syncTop(); renderFields(); update(); showPage();
+        toast('Dati cancellati da questo browser', 'ok');
       } else {
-        clearArmed = Date.now(); t.textContent = 'Sicuro? Tocca di nuovo per cancellare tutto';
-        setTimeout(function(){ if (t.isConnected && Date.now() - clearArmed >= 6000) t.textContent = 'Cancella tutti i dati da questo browser'; }, 6100);
+        armed.all = Date.now(); t.textContent = 'Sicuro? Tocca di nuovo per cancellare tutto';
+        setTimeout(function(){ if (t.isConnected && Date.now() - (armed.all || 0) >= 6000) t.textContent = 'Cancella tutti i dati da questo browser'; }, 6100);
       }
     }
+  });
+  document.addEventListener('keydown', function(e){
+    if (datapad.hidden || !logopad.hidden || !acctpad.hidden) return;
+    if (e.key === 'Escape') { e.preventDefault(); closeData(); }
+    if (e.key === 'Enter' && e.target.dataset && e.target.dataset.k) { e.preventDefault(); document.getElementById('dataSave').click(); }
   });
 
   // backup: one JSON file with everything, to move the data to another device or browser
@@ -1597,7 +1905,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
       try {
         var o = JSON.parse(reader.result), s = o && o.state && typeof o.state === 'object' ? o.state : o;
         if (!s || typeof s !== 'object' || !s.me) throw new Error('not a backup');
-        state = load(s); openCards = {}; persist(); applyTheme(); syncTop(); renderFields(); update();
+        state = load(s); openCards = {}; persist(); applyTheme(); syncTop(); renderFields(); update(); reloadData();
         setStatus('Backup caricato: i tuoi dati sono di nuovo qui.', 'ok');
       } catch (err) { setStatus('Questo file non è un backup di Documenti Raho.', 'bad'); }
     };
@@ -1615,7 +1923,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
         var h = Math.min(img.height, 300), w = Math.round(img.width * h / img.height);
         var c = document.createElement('canvas'); c.width = w; c.height = h;
         c.getContext('2d').drawImage(img, 0, 0, w, h);
-        state.logoImg = c.toDataURL('image/png'); state.logo[D().cat] = 'img';
+        state.logoImg = c.toDataURL('image/png'); state.logo[D().cat] = 'img'; state.logoAdj.img = {size:100, crop:null};
         syncTop(); update();
       };
       img.src = reader.result;
@@ -1624,6 +1932,87 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     e.target.value = '';
   });
 
+  // ---------- logo: size and crop decided by D ----------
+  var logopad = document.getElementById('logopad'), lkImg = document.getElementById('lkImg'), lkStage = document.getElementById('lkStage');
+  var lkSize = document.getElementById('lkSize'), lk = {mode:'raho', size:100, crop:null}, lkDrag = null;
+  var FULL = {x:0, y:0, w:1, h:1};
+  function logoAdjInfo(){
+    var mode = state.logo[D().cat], a = state.logoAdj[mode];
+    document.getElementById('logoAdjRow').hidden = mode === 'img' && !state.logoImg;
+    var parts = []; if (a.size !== 100) parts.push('dimensione ' + a.size + '%'); if (a.crop) parts.push('ritagliato');
+    document.getElementById('logoAdjInfo').textContent = parts.length ? parts.join(' · ').replace(/^./, function(c){ return c.toUpperCase(); }) : 'Come nel file originale.';
+    document.getElementById('logoAdjust').lastChild.textContent = mode === 'raho' ? 'Regola la dimensione' : 'Regola il logo';
+  }
+  function lkDraw(){
+    var c = lk.crop || FULL, pc = function(v){ return (v * 100) + '%'; };
+    var box = document.getElementById('lkBox').style;
+    box.left = pc(c.x); box.top = pc(c.y); box.width = pc(c.w); box.height = pc(c.h);
+    var sh = lkStage.querySelectorAll('.lkshade');
+    sh[0].style.cssText = 'left:0;top:0;right:0;height:' + pc(c.y);
+    sh[1].style.cssText = 'left:0;bottom:0;right:0;top:' + pc(c.y + c.h);
+    sh[2].style.cssText = 'left:0;top:' + pc(c.y) + ';width:' + pc(c.x) + ';height:' + pc(c.h);
+    sh[3].style.cssText = 'right:0;top:' + pc(c.y) + ';left:' + pc(c.x + c.w) + ';height:' + pc(c.h);
+    document.getElementById('lkSizeVal').textContent = lk.size + '%';
+    // the little receipt header, at 60% of the real size
+    var k = lk.size / 100 * 0.6, clip = document.getElementById('lkClip'), raho = document.getElementById('lkRaho');
+    clip.hidden = lk.mode === 'raho'; raho.hidden = lk.mode !== 'raho';
+    if (lk.mode === 'raho') { raho.style.fontSize = (40 * k) + 'px'; return; }
+    var nw = lkImg.naturalWidth || 1, nh = lkImg.naturalHeight || 1, h = (lk.mode === 'rhbkng' ? 90 : 44) * k, w = h * (nw * c.w) / (nh * c.h);
+    if (lk.mode === 'img' && w > 280 * k) { h = h * 280 * k / w; w = 280 * k; }
+    clip.style.width = w + 'px'; clip.style.height = h + 'px';
+    var pi = document.getElementById('lkPrevImg').style;
+    pi.width = (w / c.w) + 'px'; pi.height = (h / c.h) + 'px'; pi.marginLeft = (-c.x * w / c.w) + 'px'; pi.marginTop = (-c.y * h / c.h) + 'px';
+  }
+  function openLogoPad(){
+    var mode = state.logo[D().cat]; if (mode === 'img' && !state.logoImg) return;
+    var a = state.logoAdj[mode];
+    lk = {mode: mode, size: a.size, crop: a.crop ? clone(a.crop) : null};
+    document.getElementById('lkTitle').textContent = mode === 'raho' ? 'Dimensione del logo' : 'Regola il logo';
+    document.getElementById('lkCropWrap').hidden = mode === 'raho';
+    lkSize.value = lk.size;
+    if (mode !== 'raho') { lkImg.src = logoFile(mode); document.getElementById('lkPrevImg').src = lkImg.src; }
+    logopad.hidden = false; lkDraw();
+    (mode === 'raho' ? lkSize : document.getElementById('lkSave')).focus();
+  }
+  function closeLogoPad(){ logopad.hidden = true; lkDrag = null; document.getElementById('logoAdjust').focus(); }
+  lkImg.addEventListener('load', lkDraw);
+  document.getElementById('logoAdjust').addEventListener('click', openLogoPad);
+  lkSize.addEventListener('input', function(){ lk.size = +lkSize.value; lkDraw(); });
+  document.getElementById('lkReset').addEventListener('click', function(){ lk.size = 100; lk.crop = null; lkSize.value = 100; lkDraw(); });
+  document.getElementById('lkCancel').addEventListener('click', closeLogoPad);
+  logopad.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeLogoPad(); });
+  document.getElementById('lkSave').addEventListener('click', function(){
+    var c = lk.crop, a = state.logoAdj[lk.mode];
+    // a crop that keeps (almost) everything is no crop
+    if (c && c.x < 0.002 && c.y < 0.002 && c.w > 0.996 && c.h > 0.996) c = null;
+    a.size = lk.size;
+    if (lk.mode !== 'raho') a.crop = c ? {x:+c.x.toFixed(4), y:+c.y.toFixed(4), w:+c.w.toFixed(4), h:+c.h.toFixed(4)} : null;
+    closeLogoPad(); logoAdjInfo(); update();
+  });
+  lkStage.addEventListener('pointerdown', function(e){
+    var r = lkStage.getBoundingClientRect(), hd = e.target.closest('[data-h]'), c = lk.crop || FULL;
+    var px = Math.min(Math.max((e.clientX - r.left) / r.width, 0), 1), py = Math.min(Math.max((e.clientY - r.top) / r.height, 0), 1);
+    e.preventDefault(); lkStage.setPointerCapture(e.pointerId);
+    if (hd) lkDrag = {h: hd.dataset.h, c0: clone(c)};
+    else if (e.target.closest('#lkBox')) lkDrag = {h: 'move', c0: clone(c)};
+    else lkDrag = {h: 'se', c0: {x: px, y: py, w: 0, h: 0}};   // outside the frame: draw a new one from here
+    lkDrag.x0 = e.clientX; lkDrag.y0 = e.clientY; lkDrag.W = r.width; lkDrag.H = r.height;
+  });
+  lkStage.addEventListener('pointermove', function(e){
+    if (!lkDrag) return;
+    var d = lkDrag, c = clone(d.c0), dx = (e.clientX - d.x0) / d.W, dy = (e.clientY - d.y0) / d.H, M = 0.04;
+    var lim = function(v, a, b){ return Math.min(Math.max(v, a), b); };
+    if (d.h === 'move') { c.x = lim(c.x + dx, 0, 1 - c.w); c.y = lim(c.y + dy, 0, 1 - c.h); }
+    else {
+      if (/w/.test(d.h)) { var nx = lim(c.x + dx, 0, c.x + c.w - M); c.w += c.x - nx; c.x = nx; }
+      if (/e/.test(d.h)) c.w = lim(c.w + dx, M, 1 - c.x);
+      if (/n/.test(d.h)) { var ny = lim(c.y + dy, 0, c.y + c.h - M); c.h += c.y - ny; c.y = ny; }
+      if (/s/.test(d.h)) c.h = lim(c.h + dy, M, 1 - c.y);
+    }
+    lk.crop = c; lkDraw();
+  });
+  ['pointerup', 'pointercancel'].forEach(function(t){ lkStage.addEventListener(t, function(){ lkDrag = null; }); });
+
   // tabs (phones)
   var tabForm = document.getElementById('tabForm'), tabPrev = document.getElementById('tabPreview'), tabArch = document.getElementById('tabArchive');
   // each tab keeps its own scroll position; side by side the preview is always visible, so there are only Compila and Archivio
@@ -1631,7 +2020,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   function setView(v){
     if (v === 'preview' && wide.matches) v = 'form';
     if (view) scrollAt[view] = window.scrollY;
-    ['form', 'preview', 'archive', 'settings'].forEach(function(n){ document.body.classList.toggle('view-' + n, v === n); });
+    ['form', 'preview', 'archive'].forEach(function(n){ document.body.classList.toggle('view-' + n, v === n); });
     tabForm.setAttribute('aria-pressed', v === 'form'); tabPrev.setAttribute('aria-pressed', v === 'preview'); tabArch.setAttribute('aria-pressed', v === 'archive');
     if (v === 'preview') renderPreview();
     if (v === 'archive') renderArchive();
@@ -1837,6 +2226,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     try {
       if (before !== 'preview' && window.matchMedia('(max-width:940px)').matches) setView('preview');
       if (document.fonts && document.fonts.ready) await document.fonts.ready;
+      if (Object.keys(cropJobs).length) { await logosReady(); renderPreview(); }
       var touch = navigator.maxTouchPoints > 1, scale = touch ? 2 : 3;
       var papers = Array.prototype.slice.call(pagesEl.querySelectorAll('.paper'));
       var pdf = new window.jspdf.jsPDF({unit:'mm', format:'a4', orientation:'portrait', compress:true});
@@ -2127,9 +2517,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   menuEl.addEventListener('click', function(e){
     if (e.target.closest('[data-mclose]')) { closeMenu(true); return; }
     var go = e.target.closest('[data-go]'); if (!go) return;
-    closeMenu(); setView('settings');
-    var card = document.getElementById('set-' + go.dataset.go);
-    if (card) setTimeout(function(){ card.scrollIntoView({block:'start', behavior:'smooth'}); }, 30);
+    closeMenu(); openData(go.dataset.go);
   });
   document.addEventListener('keydown', function(e){
     if (!menuEl.classList.contains('open')) return;

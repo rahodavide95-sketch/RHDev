@@ -203,6 +203,7 @@ button:focus-visible,summary:focus-visible{outline:2px solid var(--ring);outline
 @media (max-width:400px){.seg label{padding:8px 4px;font-size:13px;letter-spacing:-.01em}}
 @media (max-width:360px){.card{padding:16px}.seg label{padding:8px 2px;font-size:12.5px}}
 .seg input:focus-visible + label{outline:2px solid var(--ring);outline-offset:1px}
+#logoRule{margin-top:-6px}
 /* choosing the document: a tile per document, icon in the colour of its kind (as in the archive) */
 .tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .tiles input{position:absolute;opacity:0;pointer-events:none}
@@ -558,6 +559,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
           <input type="radio" name="logo" id="logo-rhbkng" value="rhbkng"><label for="logo-rhbkng">RH[BKNG]</label>
           <input type="radio" name="logo" id="logo-img" value="img"><label for="logo-img">Immagine</label>
         </div>
+        <p class="hint" id="logoRule"></p>
         <div class="row" id="logoImgRow" hidden>
           <button type="button" class="btn ghost" id="logoPick">Carica il logo</button>
           <span class="hint" id="logoHint">PNG o JPG, meglio con sfondo trasparente.</span>
@@ -1611,6 +1613,9 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
       document.getElementById('logo-' + m).disabled = !on; document.querySelector('label[for="logo-' + m + '"]').hidden = !on;
     });
     document.getElementById('logo-' + mode).checked = true;
+    document.getElementById('logoRule').textContent = D().cat === 'roy'
+      ? 'Le ricevute royalties hanno il logo RAHO (o una tua immagine). RH[BKNG] è nei contratti e nelle ricevute DJ.'
+      : 'Contratti e ricevute DJ hanno il logo RH[BKNG] (o una tua immagine). RAHO è nelle ricevute royalties.';
     document.getElementById('logoImgRow').hidden = mode !== 'img';
     document.getElementById('logoHint').textContent = state.logoImg ? 'Logo caricato. Puoi sostituirlo quando vuoi.' : 'PNG o JPG, meglio con sfondo trasparente.';
     logoAdjInfo();

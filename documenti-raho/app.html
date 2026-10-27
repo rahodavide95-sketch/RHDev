@@ -102,8 +102,17 @@ details.card > .inner{display:flex;flex-direction:column;gap:14px;margin-top:14p
 @media (max-width:440px){.grid2{grid-template-columns:minmax(0,1fr)}}
 .f{display:flex;flex-direction:column;gap:6px;min-width:0}
 .f label{font-size:12.5px;font-weight:500;color:var(--muted)}
-input[type="text"],input[type="date"],select,#edText{font:16px var(--ui);color:var(--fg);background:var(--field);border:0;border-radius:11px;padding:10px 12px;min-height:44px;width:100%;box-sizing:border-box;-webkit-appearance:none;appearance:none;transition:background-color .15s,box-shadow .15s}
-input[type="text"]:hover,input[type="date"]:hover,select:hover{background:var(--field-2)}
+input[type="text"],input[type="password"],input[type="date"],select,#edText{font:16px var(--ui);color:var(--fg);background:var(--field);border:0;border-radius:11px;padding:10px 12px;min-height:44px;width:100%;box-sizing:border-box;-webkit-appearance:none;appearance:none;transition:background-color .15s,box-shadow .15s}
+input[type="text"]:hover,input[type="password"]:hover,input[type="date"]:hover,select:hover{background:var(--field-2)}
+.acct{appearance:none;-webkit-appearance:none;border:0;background:var(--panel);color:var(--fg);font:600 13px var(--ui);min-height:40px;padding:0 14px 0 12px;border-radius:999px;display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+.acct i{width:8px;height:8px;border-radius:50%;background:var(--faint)}
+.acct.ok i{background:var(--ok)}
+.acct.warn i{background:var(--warn)}
+.acct.busy i{background:var(--ring);animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.3}}
+.acct-body{display:flex;flex-direction:column;gap:14px}
+.acct-body p{margin:0}
+.acct-body p.warn{margin:0}
 input::placeholder{color:var(--faint);opacity:1}
 select{background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 17px) 50%,calc(100% - 12px) 50%;background-size:5px 5px;background-repeat:no-repeat;padding-right:32px}
 input[type="date"]{display:block}
@@ -358,6 +367,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     <div class="brand"><h1>RAHO</h1><span>Documenti</span></div>
     <div class="actions">
       <span class="status" id="status" role="status"></span>
+      <button type="button" class="acct" id="acctBtn"><i aria-hidden="true"></i><span id="acctLabel">Accedi</span></button>
       <div class="themes" role="radiogroup" aria-label="Tema">
         <button type="button" role="radio" data-theme-pick="auto" title="Automatico (come il telefono o il computer)" aria-label="Tema automatico"><i style="--a:#f3f3f1;--b:#0c0c0d"></i></button>
         <button type="button" role="radio" data-theme-pick="light" title="Chiaro" aria-label="Tema chiaro"><i style="--a:#ffffff;--b:#e4e4e0"></i></button>
@@ -447,6 +457,13 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   </div>
 </div>
 
+<div class="sigpad" id="acctpad" hidden>
+  <div class="sigbox" role="dialog" aria-modal="true" aria-labelledby="acctTitle">
+    <div class="sigactions" style="align-items:center"><h2 id="acctTitle">Account e sincronizzazione</h2><button type="button" class="x" id="acctClose">Chiudi</button></div>
+    <div id="acctBody" class="acct-body"></div>
+  </div>
+</div>
+
 <div class="sigpad" id="edpad" hidden>
   <div class="sigbox" role="dialog" aria-modal="true" aria-labelledby="edTitle">
     <h2 id="edTitle">Modifica il testo</h2>
@@ -488,7 +505,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   function defaults(){
     return {
       doc:'bkc-en', logo:{bk:'rhbkng', roy:'raho'}, logoImg:'', sig:{use:false, img:''},
-      date: todayISO(), bolloId:'', history:[], viewing:'', seqStart:{},
+      date: todayISO(), bolloId:'', history:[], gone:[], viewing:'', seqStart:{}, mt:0,
       me:{name:'', addr:'', city:'', cf:'', email:'', bookingEmail:'', phone:''},
       accounts:[], acc:'',
       label:{name:'', addr:'', city:'', country:'', vat:'', piva:'', cf:''},
@@ -546,7 +563,14 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
       }
     }
   } catch (e) {}
-  function persist(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+  var lastSaved = '';
+  function stateJson(){ var mt = state.mt; state.mt = 0; var j = JSON.stringify(syncable(state)); state.mt = mt; return j; }
+  function persist(){
+    var j = stateJson();
+    if (j !== lastSaved) { if (lastSaved) state.mt = Date.now(); lastSaved = j; }
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+    schedulePush();
+  }
 
   // ---------- helpers ----------
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
@@ -1466,6 +1490,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     if (t.dataset.del) {
       if (delArmed.id === t.dataset.del && Date.now() - delArmed.at < 6000) {
         state.history = state.history.filter(function(h){ return h.id !== t.dataset.del; });
+        state.gone.push(t.dataset.del);
         if (state.viewing === t.dataset.del) state.viewing = '';
         delArmed = {id:'', at:0}; persist(); renderFields(); update(); renderArchive();
       } else { delArmed = {id:t.dataset.del, at:Date.now()}; renderArchive(); setTimeout(function(){ if (view === 'archive') renderArchive(); }, 6100); }
@@ -1617,6 +1642,262 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     }
   });
 
+  // ---------- account and sync (end-to-end encrypted) ----------
+  // One account only (D's). Everything except theme and the open view goes to Supabase (Label Finance project,
+  // tables documenti_raho_*), encrypted here first with AES-GCM and a key made from D's password (PBKDF2):
+  // the server only ever holds unreadable text. See documenti-raho/supabase/schema.sql.
+  var SB = {url:'https://ztjlqorvnulgfvbtvavm.supabase.co',
+    key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp0amxxb3J2bnVsZ2Z2YnR2YXZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2OTgwMDIsImV4cCI6MjA5NzI3NDAwMn0._6gEbzCCnejpyh36Lpqe0_fj27UaonCkn2a7NastDMA'};
+  var SYNC_KEY = 'raho-documenti-sync', ITER = 600000;
+  var sync = {email:'', uid:'', access:'', refresh:'', exp:0, version:0, hash:'', at:''};
+  try { var rawSync = JSON.parse(localStorage.getItem(SYNC_KEY) || 'null'); if (rawSync && typeof rawSync === 'object') sync = merge(sync, rawSync); } catch (e) {}
+  var syncKey = null, syncSalt = null, syncPhase = sync.uid ? 'locked' : 'out', syncBusy = false, syncErr = '', pushTimer = null, hasOwner = null;
+  function saveSync(){ try { localStorage.setItem(SYNC_KEY, JSON.stringify(sync)); } catch (e) {} }
+
+  var b64 = function(bytes){ var s = '', a = new Uint8Array(bytes); for (var i = 0; i < a.length; i += 0x8000) s += String.fromCharCode.apply(null, a.subarray(i, i + 0x8000)); return btoa(s); };
+  var unb64 = function(s){ var bin = atob(s), a = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i); return a; };
+  function hashOf(str){ var h = 2166136261; for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36) + '.' + str.length; }
+  async function deriveKey(password, salt){
+    var base = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey({name:'PBKDF2', salt:salt, iterations:ITER, hash:'SHA-256'}, base, {name:'AES-GCM', length:256}, false, ['encrypt', 'decrypt']);
+  }
+  async function seal(obj){
+    var iv = crypto.getRandomValues(new Uint8Array(12));
+    var ct = await crypto.subtle.encrypt({name:'AES-GCM', iv:iv}, syncKey, new TextEncoder().encode(JSON.stringify(obj)));
+    return JSON.stringify({v:1, kdf:'PBKDF2-SHA256', iter:ITER, salt:b64(syncSalt), iv:b64(iv), ct:b64(ct)});
+  }
+  async function open(data, key){
+    var p = JSON.parse(data);
+    var pt = await crypto.subtle.decrypt({name:'AES-GCM', iv:unb64(p.iv)}, key, unb64(p.ct));
+    return JSON.parse(new TextDecoder().decode(pt));
+  }
+  // the key stays on this device (IndexedDB, not exportable), so the password is asked only once per device
+  function keyStore(mode, fn){
+    return new Promise(function(res){
+      try {
+        var rq = indexedDB.open('raho-documenti', 1);
+        rq.onupgradeneeded = function(){ rq.result.createObjectStore('keys'); };
+        rq.onsuccess = function(){ try { var tx = rq.result.transaction('keys', mode), st = tx.objectStore('keys'), r = fn(st); tx.oncomplete = function(){ res(r && r.result); }; tx.onerror = function(){ res(null); }; } catch (e) { res(null); } };
+        rq.onerror = function(){ res(null); };
+      } catch (e) { res(null); }
+    });
+  }
+  function rememberKey(){ return keyStore('readwrite', function(st){ return st.put({key:syncKey, salt:syncSalt}, sync.uid); }); }
+  function forgetKey(uid){ return keyStore('readwrite', function(st){ return st.delete(uid); }); }
+  function recallKey(){ return keyStore('readonly', function(st){ return st.get(sync.uid); }); }
+
+  async function api(path, o){
+    o = o || {};
+    var h = {apikey:SB.key, 'Content-Type':'application/json'};
+    if (o.auth !== false) { await freshToken(); h.Authorization = 'Bearer ' + (sync.access || SB.key); }
+    if (o.prefer) h.Prefer = o.prefer;
+    var r = await fetch(SB.url + path, {method:o.method || 'GET', headers:h, body:o.body ? JSON.stringify(o.body) : undefined});
+    var txt = await r.text(), data = null;
+    try { data = txt ? JSON.parse(txt) : null; } catch (e) {}
+    if (!r.ok) { var err = new Error((data && (data.msg || data.message || data.error_description || data.error)) || ('Errore ' + r.status)); err.status = r.status; err.code = data && (data.error_code || data.code); throw err; }
+    return data;
+  }
+  function setSession(d){
+    sync.access = d.access_token; sync.refresh = d.refresh_token; sync.exp = Date.now() + (d.expires_in || 3600) * 1000;
+    if (d.user) { sync.uid = d.user.id; sync.email = d.user.email || sync.email; }
+    saveSync();
+  }
+  async function freshToken(){
+    if (!sync.refresh || sync.exp - Date.now() > 60000) return;
+    var d = await api('/auth/v1/token?grant_type=refresh_token', {method:'POST', auth:false, body:{refresh_token:sync.refresh}});
+    setSession(d);
+  }
+
+  function syncable(s){ var o = clone(s); delete o.ui; delete o.viewing; return o; }
+  // two versions changed on two devices: the newer one wins for the form, lists are joined (deleted documents stay deleted)
+  function mergeStates(a, b){
+    var base = (a.mt || 0) >= (b.mt || 0) ? a : b, other = base === a ? b : a, out = clone(base), gone = {};
+    (a.gone || []).concat(b.gone || []).forEach(function(id){ gone[id] = 1; });
+    out.gone = Object.keys(gone);
+    var hist = {};
+    (other.history || []).concat(base.history || []).forEach(function(h){ var cur = hist[h.id]; if (!cur || String(h.at || '') >= String(cur.at || '')) hist[h.id] = h; });
+    out.history = Object.keys(hist).map(function(k){ return hist[k]; }).filter(function(h){ return !gone[h.id]; })
+      .sort(function(x, y){ return String(x.created || '').localeCompare(String(y.created || '')); });
+    out.saved = out.saved || {};
+    ['labels', 'clients'].forEach(function(k){ out.saved[k] = Object.assign({}, (other.saved || {})[k] || {}, (base.saved || {})[k] || {}); });
+    var ids = {}; out.accounts = (base.accounts || []).concat(other.accounts || []).filter(function(x){ if (!x || ids[x.id]) return false; ids[x.id] = 1; return true; });
+    out.edits = {};
+    [other.edits || {}, base.edits || {}].forEach(function(e){ Object.keys(e).forEach(function(d){ out.edits[d] = Object.assign(out.edits[d] || {}, e[d]); }); });
+    out.seqStart = Object.assign({}, other.seqStart || {}, base.seqStart || {});
+    Object.keys(other.seqStart || {}).forEach(function(y){ out.seqStart[y] = Math.max(+other.seqStart[y] || 0, +out.seqStart[y] || 0); });
+    return out;
+  }
+  function typing(){ var a = document.activeElement; return a && /^(INPUT|SELECT|TEXTAREA)$/.test(a.nodeName) && !!a.closest('#form, #archive, #edpad'); }
+  function adopt(s){
+    var ui = state.ui, viewing = state.viewing;
+    state = load(s); state.ui = ui; state.viewing = state.history.some(function(h){ return h.id === viewing; }) ? viewing : '';
+    lastSaved = stateJson(); try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+    syncTop(); renderFields(); update();
+  }
+
+  function setSyncStatus(err){ syncErr = err || ''; refreshAccount(); }
+  async function pull(force){
+    if (syncPhase !== 'ready' || syncBusy) return;
+    if (!force && typing()) return;
+    syncBusy = true; refreshAccount();
+    try {
+      var rows = await api('/rest/v1/documenti_raho?select=version&user_id=eq.' + sync.uid);
+      var v = rows && rows[0] ? +rows[0].version : 0;
+      if (v && v !== sync.version) {
+        var full = await api('/rest/v1/documenti_raho?select=data,version&user_id=eq.' + sync.uid);
+        var cloud = await open(full[0].data, syncKey), local = syncable(state);
+        var changedHere = hashOf(JSON.stringify(local)) !== sync.hash;
+        var next = changedHere ? mergeStates(local, cloud) : cloud;
+        sync.version = +full[0].version; sync.hash = hashOf(JSON.stringify(syncable(load(cloud)))); saveSync();
+        adopt(next);
+      }
+      sync.at = new Date().toISOString(); saveSync(); setSyncStatus('');
+    } catch (e) { setSyncStatus(e.status === 401 ? 'Sessione scaduta: accedi di nuovo.' : 'Non riesco a sincronizzare: ' + (navigator.onLine === false ? 'sei offline.' : e.message)); }
+    finally { syncBusy = false; refreshAccount(); }
+    if (hashOf(JSON.stringify(syncable(state))) !== sync.hash) schedulePush(0);
+  }
+  async function push(){
+    if (syncPhase !== 'ready') return;
+    if (syncBusy) { schedulePush(800); return; }
+    var payload = syncable(state), h = hashOf(JSON.stringify(payload));
+    if (h === sync.hash && sync.version) return;
+    syncBusy = true; refreshAccount();
+    try {
+      var data = await seal(payload), rows;
+      if (!sync.version) rows = await api('/rest/v1/documenti_raho', {method:'POST', prefer:'return=representation', body:{user_id:sync.uid, data:data, version:1}});
+      else rows = await api('/rest/v1/documenti_raho?user_id=eq.' + sync.uid + '&version=eq.' + sync.version, {method:'PATCH', prefer:'return=representation',
+        body:{data:data, version:sync.version + 1, updated_at:new Date().toISOString()}});
+      if (!rows || !rows.length) { syncBusy = false; sync.version = -1; await pull(true); return; }   // someone else saved first: join and retry
+      sync.version = +rows[0].version; sync.hash = h; sync.at = new Date().toISOString(); saveSync(); setSyncStatus('');
+    } catch (e) {
+      if (e.status === 409) { syncBusy = false; sync.version = -1; await pull(true); return; }
+      setSyncStatus(navigator.onLine === false ? 'Sei offline: sincronizzo appena torni online.' : 'Non riesco a salvare online: ' + e.message);
+    } finally { syncBusy = false; refreshAccount(); }
+  }
+  function schedulePush(ms){ if (syncPhase !== 'ready') return; clearTimeout(pushTimer); pushTimer = setTimeout(push, ms == null ? 1200 : ms); }
+
+  // after login: the password opens the encrypted data (or creates it the first time)
+  async function unlock(password){
+    var rows = await api('/rest/v1/documenti_raho?select=data,version&user_id=eq.' + sync.uid);
+    if (rows && rows[0]) {
+      var p = JSON.parse(rows[0].data), salt = unb64(p.salt), key = await deriveKey(password, salt), cloud;
+      try { cloud = await open(rows[0].data, key); } catch (e) { return false; }
+      syncKey = key; syncSalt = salt; await rememberKey();
+      sync.version = +rows[0].version; sync.hash = hashOf(JSON.stringify(syncable(load(cloud)))); saveSync();
+      syncPhase = 'ready';
+      var local = syncable(state);
+      adopt(state.history.length || hashOf(JSON.stringify(local)) !== hashOf(JSON.stringify(syncable(defaults()))) ? mergeStates(local, cloud) : cloud);
+    } else {
+      syncSalt = crypto.getRandomValues(new Uint8Array(16)); syncKey = await deriveKey(password, syncSalt); await rememberKey();
+      sync.version = 0; sync.hash = ''; saveSync(); syncPhase = 'ready';
+    }
+    schedulePush(0);
+    return true;
+  }
+  async function signIn(email, password, create){
+    if (create) {
+      var d = await api('/auth/v1/signup', {method:'POST', auth:false, body:{email:email, password:password}});
+      if (!d || !d.access_token) return 'confirm';
+      setSession(d);
+    } else setSession(await api('/auth/v1/token?grant_type=password', {method:'POST', auth:false, body:{email:email, password:password}}));
+    var mine = await api('/rest/v1/rpc/documenti_raho_claim', {method:'POST', body:{}});
+    if (mine !== true) { await signOut(true); return 'denied'; }
+    hasOwner = true;
+    return (await unlock(password)) ? 'ok' : 'locked';
+  }
+  async function signOut(quiet){
+    try { if (sync.access) await api('/auth/v1/logout', {method:'POST'}); } catch (e) {}
+    var uid = sync.uid;
+    sync = {email:'', uid:'', access:'', refresh:'', exp:0, version:0, hash:'', at:''}; saveSync();
+    syncKey = null; syncSalt = null; syncPhase = 'out'; if (uid) await forgetKey(uid);
+    if (!quiet) setSyncStatus('');
+  }
+
+  // ---------- account dialog ----------
+  var acctBtn = document.getElementById('acctBtn'), acctpad = document.getElementById('acctpad'), acctBody = document.getElementById('acctBody');
+  function refreshAccount(){
+    var label, cls;
+    if (syncPhase === 'out') { label = 'Accedi'; cls = ''; }
+    else if (syncPhase === 'locked') { label = 'Sblocca'; cls = 'warn'; }
+    else if (syncBusy) { label = 'Sincronizzo…'; cls = 'busy'; }
+    else if (syncErr) { label = 'Non sincronizzato'; cls = 'warn'; }
+    else { label = 'Sincronizzato'; cls = 'ok'; }
+    acctBtn.className = 'acct' + (cls ? ' ' + cls : ''); document.getElementById('acctLabel').textContent = label;
+    var a = document.activeElement;
+    if (!acctpad.hidden && !(a && a.nodeName === 'INPUT' && acctpad.contains(a))) renderAccount();
+  }
+  var acctMsg = '';
+  function renderAccount(msg){
+    if (arguments.length) acctMsg = msg || '';   // a message stays until the next action
+    var h = '';
+    if (syncPhase === 'out') {
+      h = '<p class="hint">Accedi per avere gli stessi documenti, dati e archivio su telefono e computer. Prima di partire tutto viene cifrato su questo dispositivo con la tua password: online c\'è solo testo illeggibile, nemmeno chi gestisce il server può leggerlo.</p>'
+        + '<div class="f"><label for="acEmail">Email</label><input type="text" id="acEmail" inputmode="email" autocomplete="username" autocapitalize="off" spellcheck="false" value="' + esc(sync.email) + '"></div>'
+        + '<div class="f"><label for="acPw">Password</label><input type="password" id="acPw" autocomplete="current-password"></div>'
+        + '<p class="hint">Se dimentichi la password, i dati online non si possono recuperare: quelli su questo dispositivo restano, e conviene tenere anche un backup.</p>'
+        + '<div class="sigactions"><span></span><div class="row">' + (hasOwner === false ? '<button type="button" class="btn ghost" id="acCreate">Crea il mio account</button>' : '') + '<button type="button" class="btn" id="acLogin">Accedi</button></div></div>';
+    } else if (syncPhase === 'locked') {
+      h = '<p class="hint">Sei connesso come <b>' + esc(sync.email) + '</b>. Per aprire i dati cifrati su questo dispositivo scrivi la password che usavi quando hai attivato la sincronizzazione.</p>'
+        + '<div class="f"><label for="acKey">Password</label><input type="password" id="acKey" autocomplete="current-password"></div>'
+        + '<div class="sigactions"><button type="button" class="x" id="acOut">Esci</button><button type="button" class="btn" id="acUnlock">Sblocca</button></div>';
+    } else {
+      h = '<p><b>' + esc(sync.email) + '</b></p><p class="hint">' + (syncErr ? esc(syncErr) : 'Tutto sincronizzato' + (sync.at ? ' alle ' + new Date(sync.at).toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'}) : '') + '. I dati online sono cifrati con la tua password.') + '</p>'
+        + '<div class="sigactions"><button type="button" class="x" id="acOut">Esci da questo dispositivo</button><button type="button" class="btn ghost" id="acNow">Sincronizza ora</button></div>';
+    }
+    if (acctMsg) h = '<p class="warn">' + esc(acctMsg) + '</p>' + h;
+    acctBody.innerHTML = h;
+  }
+  async function openAccount(){
+    acctpad.hidden = false; renderAccount('');
+    if (syncPhase === 'out' && hasOwner === null) {
+      try { hasOwner = !!(await api('/rest/v1/rpc/documenti_raho_has_owner', {method:'POST', auth:false, body:{}})); } catch (e) { hasOwner = true; }
+      if (!acctpad.hidden && syncPhase === 'out') renderAccount();
+    }
+    var first = acctBody.querySelector('input'); if (first) first.focus();
+  }
+  acctBtn.addEventListener('click', openAccount);
+  document.getElementById('acctClose').addEventListener('click', function(){ acctpad.hidden = true; });
+  acctpad.addEventListener('keydown', function(e){
+    if (e.key === 'Escape') acctpad.hidden = true;
+    if (e.key === 'Enter' && e.target.nodeName === 'INPUT') { var b = acctBody.querySelector('#acLogin, #acUnlock'); if (b) b.click(); }
+  });
+  acctBody.addEventListener('click', async function(e){
+    var b = e.target.closest('button'); if (!b || b.disabled) return;
+    var busy = function(t){ b.disabled = true; b.textContent = t; };
+    try {
+      if (b.id === 'acLogin' || b.id === 'acCreate') {
+        var email = document.getElementById('acEmail').value.trim(), pw = document.getElementById('acPw').value;
+        if (!email || !pw) { renderAccount('Scrivi email e password.'); return; }
+        if (b.id === 'acCreate' && pw.length < 10) { renderAccount('Scegli una password di almeno 10 caratteri: protegge anche i tuoi dati.'); return; }
+        busy(b.id === 'acLogin' ? 'Accedo…' : 'Creo l\'account…');
+        var r = await signIn(email, pw, b.id === 'acCreate');
+        if (r === 'confirm') renderAccount('Ti ho mandato un\'email: conferma l\'indirizzo e poi accedi qui.');
+        else if (r === 'denied') renderAccount('Questo strumento è già collegato a un altro account: con questo non si può sincronizzare.');
+        else if (r === 'locked') { syncPhase = 'locked'; renderAccount('La password non apre i dati già salvati online: se l\'hai cambiata, scrivi quella che usavi prima.'); }
+        else { renderAccount(''); acctpad.hidden = true; }
+      } else if (b.id === 'acUnlock') {
+        busy('Apro…');
+        var ok = await unlock(document.getElementById('acKey').value);
+        if (ok) { renderAccount(''); acctpad.hidden = true; } else renderAccount('Password sbagliata.');
+      } else if (b.id === 'acNow') { busy('Sincronizzo…'); await pull(true); await push(); renderAccount(); }
+      else if (b.id === 'acOut') { await signOut(); renderAccount(''); }
+    } catch (err) {
+      renderAccount(err.status === 400 && /invalid/i.test(err.message) ? 'Email o password sbagliate.' : navigator.onLine === false ? 'Sei offline.' : 'Errore: ' + err.message);
+    }
+    refreshAccount();
+  });
+
+  async function startSync(){
+    if (!sync.uid || !window.crypto || !crypto.subtle) { refreshAccount(); return; }
+    var k = await recallKey();
+    if (k && k.key) { syncKey = k.key; syncSalt = k.salt; syncPhase = 'ready'; refreshAccount(); await pull(true); }
+    else { syncPhase = 'locked'; refreshAccount(); }
+  }
+  document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'visible') pull(); else push(); });
+  window.addEventListener('online', function(){ pull(true); });
+  window.addEventListener('focusout', function(){ setTimeout(function(){ if (!typing()) pull(); }, 300); });
+  setInterval(function(){ if (document.visibilityState === 'visible') pull(); }, 30000);
+
   // ---------- themes ----------
   var THEMES = ['auto', 'light', 'sand', 'dark', 'navy'];
   function applyTheme(){
@@ -1636,6 +1917,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   // ---------- start ----------
   applyTheme();
   syncTop(); renderFields(); update();
+  startSync();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(renderPreview);
 })();
 </script>

@@ -157,6 +157,8 @@ button:focus-visible,summary:focus-visible{outline:2px solid var(--ring);outline
 .seg label{padding:8px;text-align:center;cursor:pointer;font-weight:500;font-size:13.5px;min-height:42px;display:flex;align-items:center;justify-content:center;color:var(--muted);border-radius:10px;transition:background-color .15s,color .15s}
 .seg label:hover{color:var(--fg)}
 .seg input:checked + label{background:var(--accent);color:var(--accent-fg);font-weight:600}
+@media (max-width:400px){.seg label{padding:8px 4px;font-size:13px;letter-spacing:-.01em}}
+@media (max-width:360px){.card{padding:16px}.seg label{padding:8px 2px;font-size:12.5px}}
 .seg input:focus-visible + label{outline:2px solid var(--ring);outline-offset:1px}
 .check{display:flex;gap:10px;align-items:flex-start;font-size:14px;cursor:pointer}
 .check input{width:20px;height:20px;margin:0;accent-color:var(--accent);flex:none}
@@ -435,10 +437,10 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
         <h2>Documento</h2>
         <h3>Booking</h3>
         <div class="seg" role="radiogroup" aria-label="Documenti booking">
-          <input type="radio" name="doc" id="doc-bkc-en" value="bkc-en"><label for="doc-bkc-en">Contratto EN</label>
-          <input type="radio" name="doc" id="doc-bkc-it" value="bkc-it"><label for="doc-bkc-it">Contratto IT</label>
-          <input type="radio" name="doc" id="doc-bkr-est" value="bkr-est"><label for="doc-bkr-est">Ricevuta estera</label>
-          <input type="radio" name="doc" id="doc-bkr-it" value="bkr-it"><label for="doc-bkr-it">Ricevuta italiana</label>
+          <input type="radio" name="doc" id="doc-bkc-en" value="bkc-en"><label for="doc-bkc-en">Contratto DJ EN</label>
+          <input type="radio" name="doc" id="doc-bkc-it" value="bkc-it"><label for="doc-bkc-it">Contratto DJ IT</label>
+          <input type="radio" name="doc" id="doc-bkr-est" value="bkr-est"><label for="doc-bkr-est">Ricevuta DJ estera</label>
+          <input type="radio" name="doc" id="doc-bkr-it" value="bkr-it"><label for="doc-bkr-it">Ricevuta DJ italiana</label>
         </div>
         <h3>Royalties</h3>
         <div class="seg" role="radiogroup" aria-label="Documenti royalties">

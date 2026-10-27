@@ -71,3 +71,14 @@ Su telefono la pagina ha tre schede: Compila / Anteprima / Archivio, ognuna con 
 - Logo nella fascia del contratto EN: `logo-rhbkng-contract.png`, estratto dal PDF ufficiale di D (88,5 × 31,5 pt).
 - `build.js` incorpora i loghi in `index.html` (righe `var ... = 'logo-....png/webp'`), così la pagina funziona anche offline.
 - Testo modificabile: ogni blocco creato con `ed(chiave, html)` si può riscrivere dal foglio ("Modifica il testo"). Le modifiche stanno in `state.edits[documento][chiave]` come testo semplice (`**grassetto**`, `[spazio da compilare]`, righe "● " e "- "). Non rinominare le chiavi: D perderebbe le sue modifiche.
+
+## Account e sincronizzazione (scelte di D)
+
+- Cifratura totale, un solo account (il suo), dati nel progetto Supabase di Label Finance (`ztjlqorvnulgfvbtvavm`) ma in oggetti separati con prefisso `documenti_raho`: non toccare nulla di Label Finance. In futuro si potrà spostare su un progetto separato.
+- Il browser cifra tutto lo stato (tranne tema e documento riaperto) con AES-GCM; la chiave nasce dalla password dell'account con PBKDF2-SHA256, 600.000 passaggi, sale casuale salvato accanto al testo cifrato. Sul server c'è solo `{v, kdf, iter, salt, iv, ct}`. La chiave resta sul dispositivo in IndexedDB (non esportabile), così la password si chiede una volta per dispositivo.
+- Password dimenticata = dati online persi (lo dice anche l'interfaccia). Se D cambia la password dell'account, su un nuovo dispositivo gli si chiede quella vecchia per sbloccare.
+- "Solo io": il primo account che accede dallo strumento diventa proprietario (`documenti_raho_claim()`); gli altri vengono rifiutati dalle regole RLS. Il pulsante "Crea il mio account" compare solo finché non c'è un proprietario.
+- Client senza librerie: `fetch` verso `/auth/v1` e `/rest/v1`. Una riga per utente con `version`: ogni salvataggio fa `PATCH ... version=eq.N`; se nel frattempo un altro dispositivo ha salvato, si scarica, si unisce (`mergeStates()`: per il modulo vince la modifica più recente `mt`, archivio/conti/rubrica/testi modificati si sommano, `gone` tiene i documenti eliminati) e si riprova.
+- Si sincronizza: dopo ogni modifica (1,2 s), all'apertura, tornando sulla pagina, quando torna la rete e ogni 30 s. Non si aggiorna il modulo mentre D sta scrivendo in un campo.
+- Database: `documenti-raho/supabase/schema.sql`, applicato dal workflow `.github/workflows/documenti-raho-db.yml` (secret `SUPABASE_ACCESS_TOKEN`, Management API). Se il workflow non può, si incolla il file nel SQL Editor di Supabase: si può rieseguire.
+- Dall'ambiente di sviluppo Supabase non è raggiungibile: i test usano un finto Supabase (Playwright `route`) con le stesse risposte.

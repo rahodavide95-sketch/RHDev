@@ -1,6 +1,6 @@
 {
-  "name": "Documenti Raho",
-  "short_name": "Documenti",
+  "name": "[RH] Documents",
+  "short_name": "[RH] Documents",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

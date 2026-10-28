@@ -1,4 +1,4 @@
-<title>Documenti Raho</title>
+<title>[RH] Documents</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <script>try { var t = (JSON.parse(localStorage.getItem('raho-documenti-v1') || '{}').ui || {}).theme; if (t && t !== 'auto') document.documentElement.dataset.theme = t; } catch (e) {}</script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Arimo:wght@400&amp;family=Montserrat:wght@600&amp;display=swap">
@@ -42,12 +42,14 @@ body{background:var(--bg);color:var(--fg);font-family:var(--ui);font-size:14px;l
 .app{max-width:1480px;margin:0 auto;padding-block:22px 48px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));display:flex;flex-direction:column;gap:18px}
 
 .top{display:flex;flex-wrap:wrap;align-items:center;gap:12px 14px}
-.top .brand{margin-right:auto}
+.top .brand{margin-right:auto;min-width:0}
 #exportBtn{flex:none}
-@media (max-width:480px){.brand span{display:none}}
-.brand{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
-.brand h1{margin:0;font-family:var(--logo);font-weight:400;font-size:30px;letter-spacing:.04em;line-height:1}
-.brand span{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+/* the tool's name, simply "[RH] Documents" (D) */
+.brand h1{margin:0;font-family:var(--logo);font-weight:400;font-size:28px;letter-spacing:.02em;line-height:1;white-space:nowrap}
+@media (max-width:480px){.brand h1{font-size:21px;letter-spacing:.01em}}
+@media (max-width:430px){#exportBtn .xl{display:none}#exportBtn{padding:0 18px}}   /* on phones the name and the buttons stay on one row */
+@media (max-width:370px){.brand h1{font-size:18px}}
+@media (max-width:340px){.brand h1{font-size:16px;letter-spacing:0}}
 .status{display:inline-flex;align-items:center;gap:9px;min-width:0;max-width:520px;font-size:13px;font-weight:500;color:var(--muted);background:var(--panel);padding:9px 15px 9px 13px;border-radius:999px}
 .status:empty{display:none}
 .status::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
@@ -83,20 +85,23 @@ body.view-archive .form{display:none}
   body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top, 0px);z-index:10;background:var(--bg)}
 }
 
-.work{display:grid;grid-template-columns:minmax(0,460px) minmax(0,1fr);gap:22px;align-items:start}
+.work{display:grid;grid-template-columns:minmax(0,480px) minmax(0,1fr);gap:28px;align-items:start}
 @media (max-width:940px){.work{grid-template-columns:minmax(0,1fr)}}
 /* side by side, the form and the sheets scroll on their own */
 @media (min-width:941px){
-  .app{height:100vh;height:100dvh;box-sizing:border-box;padding-bottom:22px}
+  /* the same air on both sides of the form (D): window edge | form | preview, scrollbar space on both sides too */
+  .app{height:100vh;height:100dvh;box-sizing:border-box;padding-bottom:22px;padding-left:max(28px, env(safe-area-inset-left, 0px));padding-right:max(28px, env(safe-area-inset-right, 0px))}
   .work{flex:1;min-height:0;align-items:stretch;grid-template-rows:minmax(0,1fr)}
   .form,.desk,.archive{min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--field-2) transparent}
-  .form,.archive{padding:3px 8px 24px 3px}
+  .form,.archive{padding:3px 3px 24px;scrollbar-gutter:stable both-edges}
+  .tabs{max-width:474px;margin-left:3px}
 }
 
 .form{display:flex;flex-direction:column;gap:12px;min-width:0}
 .card{background:var(--panel);border-radius:24px;padding:22px;display:flex;flex-direction:column;gap:16px;min-width:0;box-shadow:var(--soft)}
 .card h2,.card summary{margin:0;font:600 17px/1.25 var(--ui);letter-spacing:-.015em;color:var(--fg)}
 .card > h2{display:flex;align-items:center;gap:11px}
+@media (min-width:941px){.card{padding:24px 28px}}
 .card h3{margin:6px 0 -6px;font:600 13px var(--ui);color:var(--muted)}
 .step{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--accent);color:var(--accent-fg);font:600 13px/1 var(--ui);font-variant-numeric:tabular-nums;flex:none}
 details.card summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;min-height:28px;border-radius:8px}
@@ -224,7 +229,25 @@ button:focus-visible,summary:focus-visible{outline:2px solid var(--ring);outline
 .check input{width:20px;height:20px;margin:0;accent-color:var(--accent);flex:none}
 .hint{font-size:12.5px;color:var(--muted);line-height:1.5;margin:0}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-.sigthumb{height:40px;max-width:160px;background:#ffffff;border-radius:8px;padding:3px 8px}
+.mpick{display:flex;flex-wrap:wrap;gap:8px}
+.mchip{position:relative;cursor:pointer}
+.mchip input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+.mcard{display:flex;flex-direction:column;align-items:center;gap:6px;padding:6px 6px 7px;border-radius:18px;background:var(--field);transition:background-color .15s}
+.mchip:hover .mcard{background:var(--field-2)}
+.mchip input:checked + .mcard{background:var(--accent)}
+.mchip input:focus-visible + .mcard{outline:2px solid var(--ring);outline-offset:2px}
+.mname{font-size:12.5px;font-weight:500;color:var(--muted);max-width:124px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mchip input:checked + .mcard .mname{color:var(--accent-fg)}
+.mthumb{display:grid;place-items:center;width:124px;height:46px;box-sizing:border-box;padding:4px 8px;border-radius:13px;background:#ffffff;overflow:hidden;flex:none}
+.mthumb img{display:block;max-width:100%;max-height:38px;width:auto;height:auto}
+.initxt{font:600 18px/1 Montserrat, Arial, sans-serif;color:#111111;letter-spacing:.02em;white-space:nowrap}
+.dbody .mrow .mthumb{width:76px;height:40px;border-radius:12px}
+.dbody .mrow .mthumb img{max-height:32px}
+.dbody .mrow .initxt{font-size:15px}
+.sigprev{display:grid;place-items:center;height:132px;box-sizing:border-box;padding:14px;border-radius:18px;background:#ffffff;box-shadow:0 1px 3px rgba(0,0,0,.14);flex:none}
+.sigprev img{display:block;max-width:100%;max-height:104px;width:auto;height:auto}
+.sigprev .initxt{font-size:36px}
+.sigprev .ph{font:500 15px var(--ui);color:#9a9a9a}
 .lines{display:flex;flex-direction:column;gap:10px}
 .line{background:var(--bg);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:12px}
 .line input[type="text"],.line select{background:var(--panel)}
@@ -303,6 +326,8 @@ input.code{font-family:var(--mono);letter-spacing:.02em}
 .sigpad{position:fixed;inset:0;z-index:50;background:var(--scrim);-webkit-backdrop-filter:blur(14px) saturate(1.2);backdrop-filter:blur(14px) saturate(1.2);display:flex;align-items:center;justify-content:center;padding:max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px))}
 .sigbox{background:var(--panel);border-radius:22px;padding:22px;width:min(640px,100%);box-sizing:border-box;display:flex;flex-direction:column;gap:14px;box-shadow:var(--lift)}
 .sigbox h2{margin:0;font:600 17px var(--ui);letter-spacing:-.01em;color:var(--fg)}
+#sigpad{z-index:60}   /* above "Dati e rubrica", where signatures and initials are drawn too */
+#sigCanvas.ini{height:160px}
 #sigCanvas{width:100%;height:220px;background:#ffffff;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.14);touch-action:none;cursor:crosshair;display:block}
 .sigactions{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 #logopad .sigbox{max-height:100%;overflow-y:auto}
@@ -319,6 +344,7 @@ html.modal-open,html.modal-open body{overflow:hidden}
 .dback span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 .dbody{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:6px 20px 22px;display:flex;flex-direction:column;gap:14px}
+.dbody > *{flex:none}   /* long lists scroll instead of being squeezed and cut */
 .dbody h3{margin:8px 4px -4px;font:600 13px var(--ui);color:var(--muted)}
 .dbig{margin:2px 4px 0;font:600 26px/1.15 var(--ui);letter-spacing:-.025em}
 .dfoot{display:flex;flex-direction:column;gap:10px;padding:12px 20px 16px;background:var(--panel);box-shadow:0 -10px 24px -14px rgba(0,0,0,.22)}
@@ -511,6 +537,11 @@ input[type="range"]{width:100%;margin:0;height:28px;accent-color:var(--accent);c
 .ag-sig.one{grid-template-rows:66pt;margin-top:6pt}
 .ag-foot{margin-top:auto;display:flex;justify-content:space-between;align-items:baseline;padding-top:9.01pt;background:linear-gradient(#000,#000) 0 0/100% 3pt no-repeat;color:#7a7a7a}
 .ag-foot .ini{font-size:7.5pt;line-height:9pt;white-space:pre}
+/* D's initials on the artist's line: typed in the contract's font, or drawn and kept under the black rule */
+.ag-foot .inim{display:inline-block;position:relative;vertical-align:-2.1pt;height:0;box-sizing:border-box;border-bottom:.6pt solid #7a7a7a}
+.ag-foot .inim img{position:absolute;left:50%;bottom:.3pt;transform:translateX(-50%);width:auto;max-width:none}
+/* a border, not a thin gradient: html2canvas fails on gradients under 1 px (no PDF) */
+.ag-foot .inim.txt{height:auto;vertical-align:baseline;min-width:25pt;padding:0 2pt;margin-bottom:-.6pt;text-align:center;color:#111;font:600 8pt/9pt Montserrat, Arial, sans-serif;letter-spacing:.02em}
 .ag-foot .pg{font-size:7.5pt;line-height:9pt}
 
 /* editing the text on the sheet */
@@ -525,11 +556,11 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
 
 <div class="app">
   <header class="top">
-    <div class="brand"><h1>RAHO</h1><span>Documenti</span></div>
+    <div class="brand"><h1>[RH] Documents</h1></div>
     <span class="status" id="status" role="status"></span>
-    <button class="btn" id="exportBtn" type="button">
+    <button class="btn" id="exportBtn" type="button" aria-label="Scarica PDF">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 2v8M4.5 6.5 8 10l3.5-3.5M3 13h10"/></svg>
-        Scarica PDF
+        <span><span class="xl">Scarica </span>PDF</span>
       </button>
     <button type="button" class="menu-btn" id="menuBtn" aria-haspopup="dialog" aria-expanded="false" aria-controls="menu" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8.5h16M4 15.5h16"/></svg><i class="dot" id="menuDot" aria-hidden="true"></i></button>
   </header>
@@ -623,6 +654,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     <div class="mgroup">
       <button type="button" class="mrow" data-go="me"><span class="mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="11" r="2"/><path d="M6 16c.6-1.3 1.7-2 3-2s2.4.7 3 2M15 10h3.5M15 13.5h2.5"/></svg></span><span class="mtx"><b>I tuoi dati</b><small>Nome, codice fiscale, contatti</small></span><svg class="mchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
       <button type="button" class="mrow" data-go="conti"><span class="mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M2.5 10h19M6.5 15h4"/></svg></span><span class="mtx"><b>Conti di pagamento</b><small>IBAN per le ricevute</small></span><svg class="mchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
+      <button type="button" class="mrow" data-go="firme"><span class="mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 16.5c2.2 0 3.4-9.5 6-9.5 2.1 0-.6 9.5 1.6 9.5 1.6 0 2.4-4.5 4-4.5 1.3 0 1 3.5 2.7 3.5 1 0 1.7-.8 2.7-2"/><path d="M3.5 20.5h17"/></svg></span><span class="mtx"><b>Firme e sigle</b><small>Le tue firme e le sigle per i contratti</small></span><svg class="mchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
       <button type="button" class="mrow" data-go="rubrica"><span class="mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5h12.5v14H6.5A1.75 1.75 0 0 0 4.75 19.25V5.25A1.75 1.75 0 0 1 6.5 3.5"/><path d="M4.75 19.25A1.75 1.75 0 0 0 6.5 21h12v-3.5M9 8h6"/></svg></span><span class="mtx"><b>Rubrica clienti</b><small>Committenti ed etichette</small></span><svg class="mchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
       <button type="button" class="mrow" data-go="backup"><span class="mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7.5 10.5 12 15l4.5-4.5"/><path d="M4 15.5V19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3.5"/></svg></span><span class="mtx"><b>Backup</b><small>Scarica o carica i tuoi dati</small></span><svg class="mchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
     </div>
@@ -716,7 +748,9 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   function emptyLine(){ return {title:'', cat:'', stmt:'', period:'', amount:''}; }
   function defaults(){
     return {
-      doc:'bkc-en', logo:{bk:'rhbkng', roy:'raho'}, logoImg:'', sig:{use:false, img:''},
+      doc:'bkc-en', logo:{bk:'rhbkng', roy:'raho'}, logoImg:'',
+      // several saved signatures and initials (drawn, or initials typed); sel = the one used in the documents
+      sig:{use:false, sel:''}, sigs:[], ini:{use:false, sel:''}, inis:[],
       // size (percent of the usual one) and crop (fractions of the image) chosen by D for each logo; untouched = as in the file
       logoAdj:{raho:{size:100}, rhbkng:{size:100, crop:null}, img:{size:100, crop:null}},
       date: todayISO(), bolloId:'', history:[], gone:[], viewing:'', seqStart:{}, mt:0,
@@ -763,6 +797,17 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     return ok && c.w >= 0.02 && c.h >= 0.02 && c.x + c.w <= 1.0001 && c.y + c.h <= 1.0001;
   }
   function newId(){ return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+  function goodImg(v){ return typeof v === 'string' && /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+\/=]+$/.test(v); }
+  // a saved signature or initials: {id, name, img, w, h}; typed initials have text instead of img
+  function cleanMarks(list, ini){
+    return list.filter(function(x){ return x && typeof x === 'object' && typeof x.id === 'string' && x.id && (goodImg(x.img) || ini && has(x.text)); })
+      .map(function(x){
+        var m = {id:x.id, name:String(x.name || '').trim(), img:goodImg(x.img) ? x.img : ''};
+        if (ini) m.text = m.img ? '' : String(x.text).trim().slice(0, 12);
+        if (+x.w > 0 && +x.h > 0) { m.w = +x.w; m.h = +x.h; }
+        return m;
+      });
+  }
   // the IBAN used to live in "me": it becomes the first saved account
   function load(o){
     var s = merge(defaults(), o), me = (o && o.me) || {};
@@ -776,6 +821,10 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     if (!s.accounts.length && has(me.iban)) s.accounts = [{id:newId(), label:'', holder:'', iban:me.iban, bic:me.bic || ''}];
     s.accounts = s.accounts.filter(function(a){ return a && typeof a === 'object'; });
     s.accounts.forEach(function(a){ if (!a.id) a.id = newId(); });
+    // there used to be one signature (sig.img): it becomes the first saved one
+    s.sigs = cleanMarks(s.sigs, false); s.inis = cleanMarks(s.inis, true);
+    if (!s.sigs.length && o && o.sig && goodImg(o.sig.img)) s.sigs = [{id:'s0', name:'Firma 1', img:o.sig.img}];
+    [['sig', 'sigs'], ['ini', 'inis']].forEach(function(p){ var c = s[p[0]], L = s[p[1]]; if (!L.some(function(m){ return m.id === c.sel; })) c.sel = L[0] ? L[0].id : ''; });
     if (!DOCS[s.doc]) s.doc = 'bkc-en';
     [s.me, s.label, s.client].forEach(splitZip);
     if (!o || o.itv !== 2) delete s.edits['bkc-it'];   // the Italian contract was rewritten: old text edits don't match it
@@ -893,7 +942,15 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     });
   }
   function logosReady(){ return Promise.all(Object.keys(cropJobs).map(function(k){ return cropJobs[k]; })); }
-  function sigHtml(){ return state.sig.use && state.sig.img ? '<img class="sigimg" src="' + state.sig.img + '" alt="">' : ''; }
+  function markOf(k){ var L = state[k + 's'], sel = state[k].sel; return L.filter(function(m){ return m.id === sel; })[0] || L[0] || null; }
+  function sigHtml(){ var m = state.sig.use && markOf('sig'); return m ? '<img class="sigimg" src="' + m.img + '" alt="">' : ''; }
+  // the artist's initials on the line at the foot of every contract page: typed, or drawn (small, under the black rule)
+  function iniHtml(){
+    var m = state.ini.use && markOf('ini'); if (!m) return '';
+    if (!m.img) return '<span class="inim txt">' + esc(m.text) + '</span>';
+    var r = m.w && m.h ? m.w / m.h : 2, h = Math.min(12.5, 56 / r);
+    return '<span class="inim" style="width:' + r2(Math.max(25, h * r + 4)) + 'pt"><img src="' + m.img + '" alt="" style="height:' + r2(h) + 'pt"></span>';
+  }
 
   // ---------- receipts ----------
   // receipts abroad are in English only (D: "per l'estero tutto quanto deve essere sempre inglese"), amounts as 1,500.00
@@ -1081,7 +1138,8 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     k.ln = function(h, cls){ return '<span class="ln' + (cls ? ' ' + cls : '') + '">' + (h || '&nbsp;') + '</span>'; };
     k.lines = function(arr){ return arr.map(function(h){ return k.ln(h); }).join(''); };
     var band = '<header class="ag-band">' + agLogo() + '<span>' + bandText + '</span></header>';
-    var foot = function(i){ return '<footer class="ag-foot"><span class="ini">' + initials + '</span><span class="pg">' + pageWord + ' ' + i + ' / ' + total + '</span></footer>'; };
+    var mine = iniHtml(), ini = mine ? initials.replace('______', function(){ return mine; }) : initials;   // the promoter's blank stays
+    var foot = function(i){ return '<footer class="ag-foot"><span class="ini">' + ini + '</span><span class="pg">' + pageWord + ' ' + i + ' / ' + total + '</span></footer>'; };
     k.page = function(i, body){ k.pages.push({html: band + '<div class="ag-body">' + body + '</div>' + foot(i), cls:'ag'}); };
     k.sec = function(n, title){ return '<div class="ag-sec"><span class="n">' + n + '</span>' + ed('sec' + n, title, 'st') + '</div>'; };
     // gap: from the line above to the top of the title letters, as in the original
@@ -1523,6 +1581,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     {t:'Cancellazione e legge', g:'terms', docs:['bkc-it'], f:[F('t.cancelDays','Preavviso di cancellazione (giorni)',{half:1, num:1}), F('t.refundDays','Restituzione acconto (giorni)',{half:1, num:1}),
       F('t.fmMonths','Nuova data entro (mesi)',{half:1, num:1}), F('t.proofDays','Prova della forza maggiore (giorni)',{half:1, num:1}), F('t.foro','Foro competente (città)')]},
     {t:'La tua firma', g:'end', docs:ALL, custom:'sig'},
+    {t:'Le tue sigle', g:'end', docs:BKC, custom:'ini'},
     {t:'Luogo e data della firma', g:'end', docs:BKC, f:[F('c.place','Luogo',{half:1}), F('c.date','Data',{type:'date', half:1})]},
     {t:'Marca da bollo', g:'end', docs:REC, f:[F('bolloId','Codice identificativo della marca (14 cifre)',{num:1})], bolloHint:1},
   ];
@@ -1544,7 +1603,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     {g:'who', t:function(d){ return d.cat === 'roy' ? 'Etichetta' : state.doc === 'bkc-en' ? 'Promoter' : 'Committente'; }},
     {g:'what', t:function(d){ return d.cat === 'roy' ? 'Royalties' : d.kind === 'receipt' ? 'Prestazione e compenso' : 'Evento e compenso'; }},
     {g:'terms', t:function(){ return 'Condizioni del contratto'; }, fold:1},
-    {g:'end', t:function(d){ return d.kind === 'receipt' ? 'Firma e marca da bollo' : 'Firma'; }}
+    {g:'end', t:function(d){ return d.kind === 'receipt' ? 'Firma e marca da bollo' : 'Firma e sigle'; }}
   ];
   function sectionBody(sec){
     var doc = state.doc, body = '';
@@ -1556,6 +1615,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     if (sec.note && (!sec.noteDocs || sec.noteDocs.indexOf(doc) !== -1)) body += '<p class="hint">' + sec.note + '</p>';
     if (sec.custom === 'lines') body += '<div class="lines" id="lines">' + linesHtml() + '</div><button class="btn ghost" type="button" id="addLine" style="align-self:flex-start">Aggiungi release</button>';
     if (sec.custom === 'sig') body += sigBlockHtml();
+    if (sec.custom === 'ini') body += iniBlockHtml();
     var fs = (sec.f || []).filter(function(fd){ return !fd.docs || fd.docs.indexOf(doc) !== -1; }), buf = [];
     var flush = function(){ if (buf.length) { body += buf.length > 1 ? '<div class="grid2">' + buf.join('') + '</div>' : buf[0]; buf = []; } };
     fs.forEach(function(fd){ if (fd.half) { buf.push(fieldHtml(fd)); if (buf.length === 2) flush(); } else { flush(); body += fieldHtml(fd); } });
@@ -1566,12 +1626,37 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     if (sec.bolloHint) body += '<p class="hint" id="bolloHint"></p>';
     return body;
   }
+  // saved signatures and initials: a thumbnail (typed initials are written in the contract's font) and a name
+  function thumbHtml(m){ return m.img ? '<img src="' + m.img + '" alt="">' : '<span class="initxt">' + esc(m.text) + '</span>'; }
+  function markName(m, k, i){ return has(m.name) ? String(m.name).trim() : (k === 'ini' ? 'Sigle ' : 'Firma ') + (i + 1); }
+  function freshName(k){ var base = k === 'ini' ? 'Sigle ' : 'Firma ', L = state[k + 's'], n = L.length + 1; while (L.some(function(m){ return m.name === base + n; })) n++; return base + n; }
+  // initials from D's name, as a suggestion: "Mario Rossi" › "M.R."
+  function suggestIni(){ var w = String(state.me.name || '').trim().split(/\s+/).filter(Boolean); return w.length ? w.map(function(x){ return x.charAt(0).toUpperCase() + '.'; }).join('') : ''; }
+  function pickHtml(k){
+    var L = state[k + 's'], cur = markOf(k);
+    if (!L.length) return '';
+    return '<div class="mpick" role="radiogroup" aria-label="' + (k === 'ini' ? 'Sigle da usare' : 'Firma da usare') + '">' + L.map(function(m, i){
+      return '<label class="mchip"><input type="radio" name="' + k + 'Sel" value="' + esc(m.id) + '"' + (m === cur ? ' checked' : '') + '><span class="mcard"><span class="mthumb">' + thumbHtml(m) + '</span><span class="mname">' + esc(markName(m, k, i)) + '</span></span></label>';
+    }).join('') + '</div>';
+  }
   function sigBlockHtml(){
     var on = !!state.sig.use;
-    return '<label class="check" for="sigUse"><input type="checkbox" id="sigUse"' + (on ? ' checked' : '') + '><span>Aggiungi la mia firma</span></label>'
-      + (on ? '<div class="row"><button type="button" class="btn ghost" id="sigOpen">' + (state.sig.img ? 'Rifai la firma' : 'Disegna la firma') + '</button>'
-        + (state.sig.img ? '<img class="sigthumb" id="sigThumb" alt="La tua firma" src="' + state.sig.img + '">' : '') + '</div>'
-        + '<p class="hint">Con il dito, la Apple Pencil o il trackpad. Resta salvata.</p>' : '');
+    var h = '<label class="check" for="sigUse"><input type="checkbox" id="sigUse"' + (on ? ' checked' : '') + '><span>Aggiungi la mia firma</span></label>';
+    if (on) h += (state.sigs.length > 1 ? pickHtml('sig') : state.sigs.length ? '<div class="mpick one"><span class="mthumb">' + thumbHtml(state.sigs[0]) + '</span></div>' : '')
+      + '<div class="row"><button type="button" class="btn ghost" data-draw="sig">' + (state.sigs.length ? 'Nuova firma' : 'Disegna la firma') + '</button></div>'
+      + '<p class="hint">Con il dito, la Apple Pencil o il trackpad. Restano salvate: puoi averne più di una e scegliere quale usare.</p>';
+    if (state.sigs.length) h += '<button type="button" class="x" data-open-data="firme" style="align-self:flex-start">Gestisci firme e sigle</button>';
+    return h;
+  }
+  // contracts: the initials at the foot of every page, next to "Artist" / "Artista"
+  function iniBlockHtml(){
+    var on = !!state.ini.use, en = state.doc === 'bkc-en';
+    var h = '<label class="check" for="iniUse"><input type="checkbox" id="iniUse"' + (on ? ' checked' : '') + '><span>Metti le mie sigle in fondo a ogni pagina</span></label>';
+    if (on) h += pickHtml('ini')
+      + '<div class="row"><button type="button" class="btn ghost" data-open-data="sigla-new">Scrivi le sigle</button><button type="button" class="btn ghost" data-draw="ini">Disegna le sigle</button></div>'
+      + '<p class="hint">Vanno sulla riga accanto a «' + (en ? 'Artist' : 'Artista') + '»; quella del ' + (en ? 'promoter' : 'committente') + ' resta vuota per la sua sigla.</p>';
+    if (state.inis.length) h += '<button type="button" class="x" data-open-data="firme" style="align-self:flex-start">Gestisci firme e sigle</button>';
+    return h;
   }
   function renderFields(){
     var doc = state.doc, d = D(), out = '', v = viewed(), step = 1;
@@ -1675,7 +1760,9 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     var el = e.target;
     if (el.name === 'doc') { state.doc = el.value; if (viewed() && viewed().doc !== state.doc) state.viewing = ''; syncTop(); renderFields(); update(); }
     else if (el.name === 'logo') { state.logo[D().cat] = el.value; syncTop(); update(); if (el.value === 'img' && !state.logoImg) document.getElementById('logoFile').click(); }
-    else if (el.id === 'sigUse') { state.sig.use = el.checked; renderFields(); update(); if (el.checked && !state.sig.img) openPad(); }
+    else if (el.id === 'sigUse') { state.sig.use = el.checked; renderFields(); update(); if (el.checked && !state.sigs.length) drawNew('sig'); }
+    else if (el.id === 'iniUse') { state.ini.use = el.checked; renderFields(); update(); }
+    else if (el.name === 'sigSel' || el.name === 'iniSel') { state[el.name.slice(0, 3)].sel = el.value; update(); }
     else if (el.type === 'checkbox' && el.dataset.path) { set(el.dataset.path, el.checked); update(); }
     else if (el.dataset.saved && el.value) {
       var s = state.saved[el.dataset.saved][el.value];
@@ -1686,7 +1773,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   form.addEventListener('click', function(e){
     var t = e.target, r = t.closest('[data-remove]');
     if (r) { state.lines.splice(+r.dataset.remove, 1); renderFields(); update(); return; }
-    if (t.id === 'sigOpen') { openPad(); return; }
+    var dr = t.closest('[data-draw]'); if (dr) { drawNew(dr.dataset.draw); return; }
     var od = t.closest('[data-open-data]'); if (od) { openData(od.dataset.openData); return; }
     if (t.id === 'newDoc') { state.viewing = ''; renderFields(); update(); return; }
     if (t.id === 'addLine') { state.lines.push(emptyLine()); renderFields(); update(); var inp = document.getElementById('line' + (state.lines.length - 1) + '-title'); if (inp) inp.focus(); return; }
@@ -1708,7 +1795,8 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     me: '<rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="11" r="2"/><path d="M6 16c.6-1.3 1.7-2 3-2s2.4.7 3 2M15 10h3.5M15 13.5h2.5"/>',
     conti: '<rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M2.5 10h19M6.5 15h4"/>',
     rubrica: '<path d="M6 3.5h12.5v14H6.5A1.75 1.75 0 0 0 4.75 19.25V5.25A1.75 1.75 0 0 1 6.5 3.5"/><path d="M4.75 19.25A1.75 1.75 0 0 0 6.5 21h12v-3.5M9 8h6"/>',
-    backup: '<path d="M12 3v12M7.5 10.5 12 15l4.5-4.5"/><path d="M4 15.5V19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3.5"/>'
+    backup: '<path d="M12 3v12M7.5 10.5 12 15l4.5-4.5"/><path d="M4 15.5V19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3.5"/>',
+    firme: '<path d="M3.5 16.5c2.2 0 3.4-9.5 6-9.5 2.1 0-.6 9.5 1.6 9.5 1.6 0 2.4-4.5 4-4.5 1.3 0 1 3.5 2.7 3.5 1 0 1.7-.8 2.7-2"/><path d="M3.5 20.5h17"/>'
   };
   var RUB = {
     clients: {one:'committente', title:'Committenti', add:'Aggiungi committente', icon:'<path d="M6 3.5h12.5v14H6.5A1.75 1.75 0 0 0 4.75 19.25V5.25A1.75 1.75 0 0 1 6.5 3.5"/><path d="M4.75 19.25A1.75 1.75 0 0 0 6.5 21h12v-3.5M9 8h6"/>',
@@ -1746,7 +1834,13 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
       var e = arg.name != null ? state.saved[arg.kind][arg.name] : null;
       pg.isNew = !e; pg.draft = merge(defaults()[arg.kind === 'labels' ? 'label' : 'client'], e ? clone(e) : {});
     }
-    if (pg.draft) pg.base = JSON.stringify(pg.draft);
+    if (id === 'firma') {
+      var m = arg.id ? state[arg.kind + 's'].filter(function(x){ return x.id === arg.id; })[0] : null;
+      // a new one here is always typed initials (drawn ones are saved straight from the pad), with D's initials suggested
+      pg.isNew = !m; pg.draft = m ? clone(m) : {id:newId(), name:freshName('ini'), img:'', text:suggestIni()};
+    }
+    // suggested initials count as a change: they are not saved until Salva
+    if (pg.draft) pg.base = JSON.stringify(pg.isNew && pg.id === 'firma' ? Object.assign({}, pg.draft, {text:''}) : pg.draft);
     return pg;
   }
   function titleOf(pg){
@@ -1755,6 +1849,8 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     if (pg.id === 'conti') return 'Conti di pagamento';
     if (pg.id === 'rubrica') return 'Rubrica clienti';
     if (pg.id === 'backup') return 'Backup';
+    if (pg.id === 'firme') return 'Firme e sigle';
+    if (pg.id === 'firma') return pg.isNew ? 'Nuove sigle' : has(pg.draft.name) ? String(pg.draft.name).trim() : pg.arg.kind === 'ini' ? 'Sigle' : 'Firma';
     if (pg.id === 'conto') return pg.isNew ? 'Nuovo conto' : accName(pg.draft, 0);
     if (pg.id === 'voce') return has(pg.draft.name) ? String(pg.draft.name).trim() : 'Nuov' + (pg.arg.kind === 'labels' ? 'a etichetta' : 'o committente');
   }
@@ -1768,6 +1864,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
       h = '<div class="mgroup">'
         + row('me', IC.me, 'I tuoi dati', has(state.me.name) ? esc(state.me.name) + (has(state.me.cf) ? ' · ' + esc(state.me.cf) : '') : 'Nome, codice fiscale, contatti')
         + row('conti', IC.conti, 'Conti di pagamento', nAcc ? count(nAcc, 'conto', 'conti') : 'Nessun conto: aggiungi il tuo IBAN')
+        + row('firme', IC.firme, 'Firme e sigle', state.sigs.length + state.inis.length ? count(state.sigs.length, 'firma', 'firme') + ' · ' + count(state.inis.length, 'sigla', 'sigle') : 'Disegnale una volta, poi scegli quale usare')
         + row('rubrica', IC.rubrica, 'Rubrica clienti', count(nC, 'committente', 'committenti') + ' · ' + count(nL, 'etichetta', 'etichette'))
         + row('backup', IC.backup, 'Backup', 'Scarica o carica i tuoi dati') + '</div>';
     } else if (pg.id === 'me') {
@@ -1791,15 +1888,34 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
           + '<button type="button" class="btn ghost" data-add="' + k + '" style="align-self:flex-start">' + R.add + '</button>';
       });
       if (Object.keys(state.saved.clients).length + Object.keys(state.saved.labels).length) h += '<button type="button" class="x danger" data-wipe="rubrica">Svuota la rubrica</button>';
+    } else if (pg.id === 'firme') {
+      h = '<p class="hint">Disegnale con il dito, la Apple Pencil o il trackpad; le sigle puoi anche scriverle. Nel modulo scegli quale usare.</p>';
+      [['sig', 'Firme'], ['ini', 'Sigle per i contratti']].forEach(function(p){
+        var k = p[0], L = state[k + 's'], cur = markOf(k);
+        h += '<h3>' + p[1] + '</h3>' + (L.length ? '<div class="mgroup">' + L.map(function(m, i){
+          var sub = (m.img ? 'A penna' : 'Scritte') + (m === cur ? (state[k].use ? ' · in uso' : ' · scelta') : '');
+          return '<button type="button" class="mrow" data-nav="firma:' + k + ':' + esc(m.id) + '"><span class="mthumb">' + thumbHtml(m) + '</span><span class="mtx"><b>' + esc(markName(m, k, i)) + '</b><small>' + sub + '</small></span>' + CHEV + '</button>';
+        }).join('') + '</div>' : '<p class="dempty">' + (k === 'ini' ? 'Nessuna sigla salvata. Vanno in fondo a ogni pagina dei contratti.' : 'Nessuna firma salvata.') + '</p>')
+          + '<div class="row">' + (k === 'ini' ? '<button type="button" class="btn ghost" data-nav="firma:ini">Scrivi le sigle</button>' : '')
+          + '<button type="button" class="btn ghost" data-draw="' + k + '">' + (k === 'ini' ? 'Disegna le sigle' : 'Nuova firma') + '</button></div>';
+      });
+      if (state.sigs.length + state.inis.length) h += '<button type="button" class="x danger" data-wipe="firme">Cancella tutte le firme e sigle</button>';
+    } else if (pg.id === 'firma') {
+      var d = pg.draft, k = pg.arg.kind, typed = k === 'ini' && !d.img, cur = !pg.isNew && markOf(k), mine = cur && cur.id === d.id;
+      h = '<div class="sigprev" id="markPrev">' + markPrev(d) + '</div>'
+        + (k === 'ini' ? '<p class="hint">Escono in fondo a ogni pagina dei contratti, sulla riga dell\'artista.</p>' : '')
+        + fieldsHtml(typed ? [['text', 'Le tue sigle', 1, suggestIni() || 'Es. M.R.', 1], ['name', 'Nome', 1]] : [['name', 'Nome', 0, k === 'ini' ? 'Es. Sigle corte' : 'Es. Firma completa']], d)
+        + '<div class="row">' + (typed ? '' : '<button type="button" class="btn ghost" id="redraw">Rifai a penna</button>')
+        + (pg.isNew ? '' : mine && state[k].use ? '<span class="dstate ok">In uso nei documenti</span>' : '<button type="button" class="btn ghost" id="pickMark">Usa ' + (k === 'ini' ? 'queste' : 'questa') + ' nei documenti</button>') + '</div>';
     } else if (pg.id === 'conto') {
       h = fieldsHtml(ACC_F, pg.draft);
     } else if (pg.id === 'voce') {
       h = fieldsHtml(RUB[pg.arg.kind].f, pg.draft);
     } else if (pg.id === 'backup') {
-      h = '<p class="hint">Un file con tutti i tuoi dati salvati (anche conti, rubrica, archivio, firma e logo): conservalo e caricalo su un altro telefono, computer o browser.</p>'
+      h = '<p class="hint">Un file con tutti i tuoi dati salvati (anche conti, rubrica, archivio, firme, sigle e logo): conservalo e caricalo su un altro telefono, computer o browser.</p>'
         + '<div class="row"><button type="button" class="btn ghost" id="exportData">Scarica backup</button><button type="button" class="btn ghost" id="importPick">Carica backup</button>'
         + '<input type="file" id="importFile" accept="application/json,.json" hidden></div>'
-        + '<h3>Questo browser</h3><p class="hint">Toglie da questo browser tutto: dati, conti, rubrica, archivio, firma e logo. Il backup e i dati online restano.</p>'
+        + '<h3>Questo browser</h3><p class="hint">Toglie da questo browser tutto: dati, conti, rubrica, archivio, firme, sigle e logo. Il backup e i dati online restano.</p>'
         + '<button type="button" class="x danger" id="clearAll">Cancella tutti i dati da questo browser</button>';
     }
     dataBody.innerHTML = h; dataBody.scrollTop = 0;
@@ -1808,12 +1924,13 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     document.getElementById('dataLeave').hidden = true; document.getElementById('dataRow').hidden = false;
     var left = '';
     if (pg.id === 'me') left = '<button type="button" class="x danger" data-arm="clearme">Cancella tutto</button>';
-    if ((pg.id === 'conto' || pg.id === 'voce') && !pg.isNew) left = '<button type="button" class="x danger" data-arm="delete">Elimina</button>';
+    if ((pg.id === 'conto' || pg.id === 'voce' || pg.id === 'firma') && !pg.isNew) left = '<button type="button" class="x danger" data-arm="delete">Elimina</button>';
     document.getElementById('dataLeft').innerHTML = left;
     armed = {}; refreshDirty();
     var f = focusFirst && wide.matches && dataBody.querySelector('input');
     if (f) f.focus({preventScroll: true}); else if (!datapad.contains(document.activeElement)) datapad.querySelector('.databox').focus({preventScroll: true});
   }
+  function markPrev(d){ return d.img ? '<img src="' + d.img + '" alt="">' : has(d.text) ? '<span class="initxt">' + esc(String(d.text).trim()) + '</span>' : '<span class="ph">Le tue sigle</span>'; }
   function refreshDirty(){
     var st = document.getElementById('dataState'), pg = page();
     if (!pg || !pg.draft) return;
@@ -1843,6 +1960,17 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
       if (pg.arg.name != null && pg.arg.name !== n) delete state.saved[k][pg.arg.name];
       state.saved[k][n] = clone(d); pg.arg = {kind:k, name:n}; pg.isNew = false;
     }
+    if (pg.id === 'firma') {
+      var mk = pg.arg.kind, L = state[mk + 's'];
+      if (mk === 'ini' && !d.img) {
+        d.text = String(d.text || '').trim().slice(0, 12);
+        if (!d.text) { toast('Scrivi le sigle', 'bad'); var tf = document.getElementById('pf-text'); if (tf) tf.focus(); return false; }
+      }
+      d.name = String(d.name || '').trim() || freshName(mk);
+      var j = L.map(function(m){ return m.id; }).indexOf(d.id);
+      if (j === -1) { L.push(clone(d)); state[mk].sel = d.id; state[mk].use = true; } else L[j] = clone(d);
+      pg.arg = {kind:mk, id:d.id}; pg.isNew = false;
+    }
     pg.base = JSON.stringify(d); pg.saved = true;
     persist(); renderFields(); update();
     return true;
@@ -1863,12 +1991,14 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     var m = String(target).split(':');
     if (m[0] === 'conto') nav.push(makePage('conto', m[1] || null));
     else if (m[0] === 'voce') nav.push(makePage('voce', {kind:m[1], name: m[2] != null ? decodeURIComponent(m[2]) : null}));
+    else if (m[0] === 'firma') nav.push(makePage('firma', {kind:m[1], id:m[2] || null}));
     else nav.push(makePage(m[0]));
     showPage(true);
   }
   function openData(target){
     nav = [makePage('root')];
     if (target === 'conto-new') { nav.push(makePage('conti')); nav.push(makePage('conto', null)); }
+    else if (target === 'sigla-new') { nav.push(makePage('firme')); nav.push(makePage('firma', {kind:'ini', id:null})); }
     else if (target && target !== 'root') nav.push(makePage(target));
     datapad.hidden = false; document.documentElement.classList.add('modal-open');
     showPage(true);
@@ -1879,7 +2009,8 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     var el = e.target, pg = page();
     if (!pg.draft || !el.dataset.k) return;
     pg.draft[el.dataset.k] = el.value; pg.saved = false;
-    if (pg.id === 'conto' || pg.id === 'voce') document.getElementById('dataTitle').textContent = titleOf(pg);
+    if (pg.id === 'conto' || pg.id === 'voce' || pg.id === 'firma') document.getElementById('dataTitle').textContent = titleOf(pg);
+    if (pg.id === 'firma') document.getElementById('markPrev').innerHTML = markPrev(pg.draft);
     refreshDirty();
   });
   dataBody.addEventListener('change', function(e){ var el = e.target; if (el.id === 'importFile' && el.files && el.files[0]) { importData(el.files[0]); el.value = ''; } });
@@ -1892,6 +2023,16 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     if (t.closest('#dataSaveLeave')) { if (savePage()) { toast('Salvato', 'ok'); var f = pending; pending = null; if (f) f(); } return; }
     if (t.closest('#dataDiscard')) { var pg = page(); pg.draft = JSON.parse(pg.base); toast('Modifiche non salvate', 'bad'); var g = pending; pending = null; if (g) g(); return; }
     if (t.id === 'addAcc') { go('conto'); return; }
+    var dw = t.closest('[data-draw]'); if (dw) { drawNew(dw.dataset.draw); return; }
+    if (t.closest('#redraw')) {
+      var rp = page();
+      openPad({kind:rp.arg.kind, label:'Fatto', done:function(img, w, h){ rp.draft.img = img; rp.draft.w = w; rp.draft.h = h; rp.saved = false; showPage(); document.getElementById('dataSave').focus({preventScroll: true}); }});
+      return;
+    }
+    if (t.closest('#pickMark')) {
+      var pp = page(), pk = pp.arg.kind; state[pk].sel = pp.draft.id; state[pk].use = true;
+      persist(); renderFields(); update(); showPage(); toast(pk === 'ini' ? 'Ora usi queste sigle' : 'Ora usi questa firma', 'ok'); return;
+    }
     var add = t.closest('[data-add]'); if (add) { go('voce:' + add.dataset.add); return; }
     var arm = t.closest('[data-arm]'), wipe = t.closest('[data-wipe]'), key = arm ? arm.dataset.arm : wipe ? 'wipe-' + wipe.dataset.wipe : '';
     if (key) {
@@ -1906,11 +2047,19 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
       if (key === 'delete') {
         if (cur.id === 'conto') { state.accounts = state.accounts.filter(function(a){ return a.id !== cur.draft.id; }); if (state.acc === cur.draft.id) state.acc = state.accounts[0] ? state.accounts[0].id : ''; }
         if (cur.id === 'voce' && cur.arg.name != null) delete state.saved[cur.arg.kind][cur.arg.name];
+        if (cur.id === 'firma') {
+          var dk = cur.arg.kind; state[dk + 's'] = state[dk + 's'].filter(function(m){ return m.id !== cur.draft.id; }); state.gone.push(cur.draft.id);
+          if (state[dk].sel === cur.draft.id) state[dk].sel = state[dk + 's'][0] ? state[dk + 's'][0].id : '';
+        }
         persist(); renderFields(); update(); nav.pop(); showPage(); toast('Eliminato', 'ok'); return;
       }
       if (key === 'wipe-conti') { state.accounts = []; state.acc = ''; }
       if (key === 'wipe-rubrica') { state.saved.clients = {}; state.saved.labels = {}; }
-      persist(); renderFields(); update(); showPage(); toast(key === 'wipe-conti' ? 'Conti cancellati' : 'Rubrica svuotata', 'ok'); return;
+      if (key === 'wipe-firme') {
+        state.sigs.concat(state.inis).forEach(function(m){ state.gone.push(m.id); });
+        state.sigs = []; state.inis = []; state.sig = {use:false, sel:''}; state.ini = {use:false, sel:''};
+      }
+      persist(); renderFields(); update(); showPage(); toast({'wipe-conti':'Conti cancellati', 'wipe-rubrica':'Rubrica svuotata', 'wipe-firme':'Firme e sigle cancellate'}[key], 'ok'); return;
     }
     if (t.id === 'exportData') { exportData(); return; }
     if (t.id === 'importPick') { document.getElementById('importFile').click(); return; }
@@ -1925,14 +2074,14 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     }
   });
   document.addEventListener('keydown', function(e){
-    if (datapad.hidden || !logopad.hidden || !acctpad.hidden) return;
+    if (datapad.hidden || !logopad.hidden || !acctpad.hidden || !document.getElementById('sigpad').hidden) return;
     if (e.key === 'Escape') { e.preventDefault(); closeData(); }
     if (e.key === 'Enter' && e.target.dataset && e.target.dataset.k) { e.preventDefault(); document.getElementById('dataSave').click(); }
   });
 
   // backup: one JSON file with everything, to move the data to another device or browser
   async function exportData(){
-    var name = 'Documenti Raho backup ' + todayISO() + '.json';
+    var name = '[RH] Documents backup ' + todayISO() + '.json';
     var blob = new Blob([JSON.stringify({app:'documenti-raho', version:1, state:state}, null, 2)], {type:'application/json'});
     try {
       var dl = await downloadsP;
@@ -1956,7 +2105,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
         if (!s || typeof s !== 'object' || !s.me) throw new Error('not a backup');
         state = load(s); openCards = {}; persist(); applyTheme(); syncTop(); renderFields(); update(); reloadData();
         setStatus('Backup caricato: i tuoi dati sono di nuovo qui.', 'ok');
-      } catch (err) { setStatus('Questo file non è un backup di Documenti Raho.', 'bad'); }
+      } catch (err) { setStatus('Questo file non è un backup di [RH] Documents.', 'bad'); }
     };
     reader.readAsText(file);
   }
@@ -2185,11 +2334,30 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#111111';
     inked = false;
   }
-  function openPad(){ pad.hidden = false; sizeCanvas(); document.getElementById('sigSave').focus(); }
-  function closePad(){ pad.hidden = true; var so = document.getElementById('sigOpen'); if (so) so.focus(); }
+  // job: {kind:'sig' or 'ini', label, done(img, w, h)}; initials get a thicker pen, they end up very small in the contract
+  var padJob = null, padFrom = null;
+  function thick(){ return padJob && padJob.kind === 'ini'; }
+  function openPad(job){
+    padJob = job; padFrom = document.activeElement;
+    document.getElementById('sigTitle').textContent = thick() ? 'Disegna le tue sigle' : 'Firma qui';
+    document.getElementById('sigSave').textContent = job.label || (thick() ? 'Usa queste sigle' : 'Usa questa firma');
+    cv.classList.toggle('ini', thick()); pad.hidden = false; sizeCanvas(); document.getElementById('sigSave').focus();
+  }
+  function closePad(){ pad.hidden = true; padJob = null; if (padFrom && padFrom.isConnected) padFrom.focus({preventScroll: true}); padFrom = null; }
+  // a new signature or initials, drawn now, saved and chosen for the documents
+  function drawNew(k){
+    openPad({kind:k, done:function(img, w, h){
+      var m = {id:newId(), name:freshName(k), img:img, w:w, h:h};
+      if (k === 'ini') m.text = '';
+      state[k + 's'].push(m); state[k].sel = m.id; state[k].use = true;
+      renderFields(); update();
+      if (!datapad.hidden) { reloadData(); toast(k === 'ini' ? 'Sigle salvate' : 'Firma salvata', 'ok'); }
+      else { var b = document.querySelector('#form [data-draw="' + k + '"]'); if (b) b.focus({preventScroll: true}); }
+    }});
+  }
   function pos(e){ var r = cv.getBoundingClientRect(); return {x:e.clientX - r.left, y:e.clientY - r.top, p:e.pressure && e.pointerType === 'pen' ? e.pressure : 0.5}; }
   cv.addEventListener('pointerdown', function(e){ e.preventDefault(); drawing = true; pts = [pos(e)]; try { cv.setPointerCapture(e.pointerId); } catch (x) {}
-    var p = pts[0]; ctx.beginPath(); ctx.fillStyle = '#111111'; ctx.arc(p.x, p.y, 1.2, 0, Math.PI * 2); ctx.fill(); inked = true; });
+    var p = pts[0]; ctx.beginPath(); ctx.fillStyle = '#111111'; ctx.arc(p.x, p.y, thick() ? 2.6 : 1.2, 0, Math.PI * 2); ctx.fill(); inked = true; });
   cv.addEventListener('pointermove', function(e){
     if (!drawing) return; e.preventDefault();
     var evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
@@ -2198,7 +2366,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
       if (pts.length < 3) return;
       var a = pts[pts.length - 3], b = pts[pts.length - 2], c = p;
       var m1 = {x:(a.x + b.x) / 2, y:(a.y + b.y) / 2}, m2 = {x:(b.x + c.x) / 2, y:(b.y + c.y) / 2};
-      ctx.lineWidth = 1.4 + b.p * 2.2;
+      ctx.lineWidth = thick() ? 3.6 + b.p * 4.8 : 1.4 + b.p * 2.2;
       ctx.beginPath(); ctx.moveTo(m1.x, m1.y); ctx.quadraticCurveTo(b.x, b.y, m2.x, m2.y); ctx.stroke();
     });
     inked = true;
@@ -2206,7 +2374,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   ['pointerup','pointercancel','pointerleave'].forEach(function(t){ cv.addEventListener(t, function(){ drawing = false; pts = []; }); });
   document.getElementById('sigClear').addEventListener('click', function(){ ctx.clearRect(0, 0, cv.width, cv.height); inked = false; });
   document.getElementById('sigCancel').addEventListener('click', closePad);
-  pad.addEventListener('keydown', function(e){ if (e.key === 'Escape') closePad(); });
+  pad.addEventListener('keydown', function(e){ if (e.key === 'Escape') { e.stopPropagation(); closePad(); } });   // only the pad, not the window under it
   document.getElementById('sigSave').addEventListener('click', function(){
     if (!inked) { closePad(); return; }
     var w = cv.width, h = cv.height, data = ctx.getImageData(0, 0, w, h).data, minX = w, minY = h, maxX = -1, maxY = -1;
@@ -2215,8 +2383,8 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     var padPx = 6, cw = Math.min(w, maxX - minX + padPx * 2), ch = Math.min(h, maxY - minY + padPx * 2);
     var out = document.createElement('canvas'); out.width = cw; out.height = ch;
     out.getContext('2d').drawImage(cv, Math.max(0, minX - padPx), Math.max(0, minY - padPx), cw, ch, 0, 0, cw, ch);
-    state.sig.img = out.toDataURL('image/png'); state.sig.use = true;
-    renderFields(); closePad(); update();
+    var job = padJob, url = out.toDataURL('image/png');
+    closePad(); if (job && job.done) job.done(url, cw, ch);
   });
 
   // ---------- changing the text on the sheet ----------
@@ -2394,6 +2562,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     out.saved = out.saved || {};
     ['labels', 'clients'].forEach(function(k){ out.saved[k] = Object.assign({}, (other.saved || {})[k] || {}, (base.saved || {})[k] || {}); });
     var ids = {}; out.accounts = (base.accounts || []).concat(other.accounts || []).filter(function(x){ if (!x || ids[x.id]) return false; ids[x.id] = 1; return true; });
+    ['sigs', 'inis'].forEach(function(k){ var seen = {}; out[k] = (base[k] || []).concat(other[k] || []).filter(function(x){ if (!x || seen[x.id] || gone[x.id]) return false; seen[x.id] = 1; return true; }); });
     out.edits = {};
     [other.edits || {}, base.edits || {}].forEach(function(e){ Object.keys(e).forEach(function(d){ out.edits[d] = Object.assign(out.edits[d] || {}, e[d]); }); });
     out.seqStart = Object.assign({}, other.seqStart || {}, base.seqStart || {});

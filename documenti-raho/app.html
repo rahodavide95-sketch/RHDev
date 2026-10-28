@@ -387,8 +387,8 @@ input[type="range"]{width:100%;margin:0;height:28px;accent-color:var(--accent);c
 .paper .mono{font-family:var(--mono)}
 .paper .ph{color:var(--ph)}
 .paper b{font-weight:600}
-.p-head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;padding-bottom:calc(18px + var(--air, 0px) * .5);border-bottom:3px solid var(--ink)}
-.paper.receipt{gap:calc(18px + var(--air, 0px))}
+.p-head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;padding-bottom:16px;border-bottom:3px solid var(--ink)}
+.paper.receipt{gap:22px}
 .p-headl{display:flex;flex-direction:column;gap:10px;flex:none}
 .p-logo{font-family:var(--logo);font-size:calc(40px * var(--lk, 1));font-weight:400;letter-spacing:.04em;line-height:1;white-space:nowrap}
 .p-logoimg{display:block;height:calc(44px * var(--lk, 1));width:auto;max-width:calc(280px * var(--lk, 1));object-fit:contain;object-position:left bottom}
@@ -399,15 +399,15 @@ input[type="range"]{width:100%;margin:0;height:28px;accent-color:var(--accent);c
 .p-title{font-size:22px;font-weight:600;line-height:1.15;text-wrap:balance}
 .p-date{font-family:var(--mono);font-size:13px}
 .p-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:40px}
-.p-col{display:flex;flex-direction:column;gap:calc(8px + var(--air, 0px) * .25);min-width:0}
+.p-col{display:flex;flex-direction:column;gap:8px;min-width:0}
 .p-col > .lbl.rule{margin-bottom:2px}
 .p-name{font-size:14px;font-weight:600}
 .p-who .p-name{margin-bottom:3px}
-.p-contact{display:flex;align-items:baseline;justify-content:flex-end;gap:12px;padding-top:12px;margin-top:-6px;background:linear-gradient(var(--rule-soft),var(--rule-soft)) 0 0/100% 1px no-repeat;font-size:12.5px;color:var(--ink-3)}
+.p-contact{display:flex;align-items:baseline;justify-content:flex-end;gap:12px;padding-top:12px;margin-top:-10px;background:linear-gradient(var(--rule-soft),var(--rule-soft)) 0 0/100% 1px no-repeat;font-size:12.5px;color:var(--ink-3)}
 .p-contact .lbl{font-size:11px}
 .p-addr{font-size:12.5px;line-height:1.5;overflow-wrap:anywhere}
 .p-small{font-size:11px;color:var(--ink-2)}
-.p-subj{display:flex;flex-direction:column;gap:calc(8px + var(--air, 0px) * .25)}
+.p-subj{display:flex;flex-direction:column;gap:8px}
 .p-subj .s{font-size:15px}
 .p-items{display:flex;flex-direction:column}
 .p-tab{width:100%;border-collapse:collapse;font-size:14px}
@@ -416,27 +416,27 @@ input[type="range"]{width:100%;margin:0;height:28px;accent-color:var(--accent);c
 .p-tab td{padding:12px 0 13px;vertical-align:top}
 .p-tab td.amt{text-align:right;font-family:var(--mono);white-space:nowrap}
 .p-tab td.per{font-family:var(--mono);font-size:13px;padding-right:12px}
-.p-tab tr.rel td{padding:calc(12px + var(--air, 0px) * .3) 0 calc(13px + var(--air, 0px) * .3)}
+.p-tab tr.rel td{padding:12px 0 13px}
 .p-tab tr.rel + tr.rel td{border-top:1px solid var(--rule-soft)}
 .p-tab .t{font-weight:600}
 .p-tab .meta{font-family:var(--mono);font-size:12px;color:var(--ink-2);margin-top:4px}
 .p-tab tr.sum td{padding:8px 0 0}
 .p-tab tr.sum.first td{border-top:1px solid var(--rule);padding-top:11px}
 .p-tab tr.sum.last td{padding-bottom:12px}
-.p-total{display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding-top:calc(12px + var(--air, 0px) * .4);border-top:3px solid var(--ink)}
+.p-total{display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding-top:12px;border-top:3px solid var(--ink)}
 .p-total .k{font-family:var(--mono);font-size:13px;letter-spacing:.08em;text-transform:uppercase}
 .p-total .v{font-size:28px;font-weight:600;letter-spacing:-.01em;white-space:nowrap;font-variant-numeric:tabular-nums}
-.p-note{font-size:12px;line-height:1.45;color:var(--ink-3)}
-.p-pay{display:grid;grid-template-columns:max-content minmax(0,1fr);row-gap:calc(8px + var(--air, 0px) * .25);column-gap:14px;font-size:13px;line-height:1.4}
+.p-note{font-size:12px;line-height:1.4;color:var(--ink-3)}
+.p-pay{display:grid;grid-template-columns:max-content minmax(0,1fr);row-gap:8px;column-gap:14px;font-size:13px;line-height:1.4}
 .p-pay .k{font-family:var(--mono);font-size:12px;color:var(--ink-2)}
 .p-pay .m{font-family:var(--mono);overflow-wrap:anywhere}
 .p-pay .iban{font-size:12px;white-space:nowrap;overflow-wrap:normal;letter-spacing:-.01em}
 .p-two.pay{grid-template-columns:minmax(0,1fr) minmax(0,1.25fr)}
-.p-col.notes{gap:calc(8px + var(--air, 0px) * .25)}
+.p-col.notes{gap:8px}
 .p-foot{margin-top:auto;display:flex;justify-content:space-between;align-items:flex-end}
 .p-foot.nobollo{justify-content:flex-end}
 .p-bollo{display:flex;flex-direction:column;gap:8px}
-.p-box{width:116px;height:110px;box-sizing:border-box;border:1px dashed var(--dash);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;font-family:var(--mono);font-size:12px;color:var(--ink-2)}
+.p-box{width:116px;height:100px;box-sizing:border-box;border:1px dashed var(--dash);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;font-family:var(--mono);font-size:12px;color:var(--ink-2)}
 .p-box b{font-weight:400;font-size:14px;color:var(--ink)}
 .p-stampid{font-size:12px;color:var(--ink-2)}
 .p-sign{width:260px;display:flex;flex-direction:column;gap:8px}
@@ -1373,7 +1373,6 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     fit();
     pagesEl.querySelectorAll('.p-pay .iban').forEach(function(el){ var fs = 12; while (el.scrollWidth > el.clientWidth + 0.5 && fs > 8.5) { fs -= 0.5; el.style.fontSize = fs + 'px'; } });
     var k = 1;
-    pagesEl.querySelectorAll('.paper.receipt').forEach(airPaper);
     pagesEl.querySelectorAll('.paper').forEach(function(el){ k = Math.min(k, fitPaper(el)); });
     var w = document.getElementById('overflowWarn');
     w.hidden = k >= 0.7;
@@ -1402,21 +1401,6 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   // the sheets fill the width of the desk; zoom (pinch on the trackpad or the screen, or − / +) enlarges only them
   var desk = document.getElementById('desk'), zoomZ = 1, zoomBase = 1, ZMAX = 3, pinching = false;
   function sheetScale(){ return Math.min(zoomBase * zoomZ, Math.max(ZMAX, zoomBase)); }
-  // receipts with room to spare share it out between the sections, so the page breathes (D: "lascia più spazi");
-  // at least 28 px stay free above the stamp and the signature
-  function airPaper(el){
-    var foot = el.querySelector('.p-foot'), prev = foot && foot.previousElementSibling;
-    if (!prev || !el.offsetHeight) return;
-    var room = function(){ return foot.offsetTop - (prev.offsetTop + prev.offsetHeight) - parseFloat(getComputedStyle(el).rowGap); };
-    el.style.removeProperty('--air');
-    if (room() < 44) return;
-    var lo = 0, hi = 20;
-    for (var i = 0; i < 8; i++) {
-      var mid = (lo + hi) / 2; el.style.setProperty('--air', mid + 'px');
-      if (room() >= 28 && el.scrollHeight <= el.clientHeight) lo = mid; else hi = mid;
-    }
-    el.style.setProperty('--air', r2(lo) + 'px');
-  }
   function fit(){
     if (!desk.offsetParent) return;
     var cs = getComputedStyle(desk), w = desk.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);

@@ -450,7 +450,8 @@ input[type="range"]{width:100%;margin:0;height:28px;accent-color:var(--accent);c
 .p-col > .lbl.rule{margin-bottom:2px}
 .p-name{font-size:14px;font-weight:600}
 .p-who .p-name{margin-bottom:3px}
-.p-contact{display:flex;align-items:baseline;justify-content:flex-end;gap:12px;padding-top:12px;margin-top:-10px;background:linear-gradient(var(--rule-soft),var(--rule-soft)) 0 0/100% 1px no-repeat;font-size:11px;color:var(--ink-3)}
+/* 28 px between stamp / signature and this line (D: they were too close); the line goes 16 px into the bottom margin, so the content keeps its room */
+.p-contact{display:flex;align-items:baseline;justify-content:flex-end;gap:12px;padding-top:12px;margin-top:6px;margin-bottom:-16px;background:linear-gradient(var(--rule-soft),var(--rule-soft)) 0 0/100% 1px no-repeat;font-size:11px;color:var(--ink-3)}
 .p-contact .lbl{font-size:9.5px}
 .p-addr{font-size:12.5px;line-height:1.5;overflow-wrap:anywhere}
 .p-small{font-size:11px;color:var(--ink-2)}

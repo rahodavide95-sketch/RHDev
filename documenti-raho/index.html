@@ -27,7 +27,7 @@ img{max-width:100%}
 /* Layout: two-pane workbench — the form on the left, the live A4 pages on a desk to the right; on phones the two become tabs.
    No outlines: surfaces are told apart by colour. Five themes (data-theme on <html>); the documents stay paper-white in all of them. */
 :root{
-  --bg:#e6e6eb; --well:#f2f2f6; --panel:#ffffff; --field:#f0f0f4; --field-2:#e5e5ea; --fg:#0b0b0b; --muted:#5f5f5a; --faint:#8d8d87;
+  --sb:rgba(60,60,67,.34); --bg:#e6e6eb; --well:#f2f2f6; --panel:#ffffff; --field:#f0f0f4; --field-2:#e5e5ea; --fg:#0b0b0b; --muted:#5f5f5a; --faint:#8d8d87;
   --accent:#0b0b0b; --accent-fg:#ffffff; --ring:#2f6bff; --desk:#e4e4e0; --warn:#8a4b00; --warn-bg:#ffeed4; --ok:#14663a; --ok-bg:#e1f1e6; --soft:none; --scrim:rgba(10,10,10,.5);
   --lift:0 1px 2px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.08);
   /* frosted glass of the top bar (and of the bars over the sheets): see-through, blurred, a glossy light edge on top */
@@ -42,20 +42,20 @@ img{max-width:100%}
   color-scheme:light;
 }
 :root[data-theme="sand"]{
-  --bg:#e5dccd; --well:#ebe5da; --panel:#faf7f1; --field:#ebe4d8; --field-2:#e1d8ca; --fg:#1c1713; --muted:#6b6054; --faint:#958a7c;
+  --sb:rgba(70,50,30,.34); --bg:#e5dccd; --well:#ebe5da; --panel:#faf7f1; --field:#ebe4d8; --field-2:#e1d8ca; --fg:#1c1713; --muted:#6b6054; --faint:#958a7c;
   --glass:linear-gradient(180deg, rgba(250,247,241,.82), rgba(250,247,241,.62)); --glass-btn:rgba(120,96,64,.12);
   --glass-edge:inset 0 1px 0 rgba(255,253,248,.95), inset 0 0 0 1px rgba(255,253,248,.5), 0 1px 2px rgba(60,40,20,.07), 0 12px 32px rgba(60,40,20,.11);
   --accent:#1c1713; --accent-fg:#faf7f1; --ring:#b4532a; --desk:#ded5c7; --warn:#8a4300; --warn-bg:#f8e3c4; --ok:#2f6331; --ok-bg:#e0e8d5; --soft:none;
 }
 :root[data-theme="dark"]{
-  --bg:#0c0c0d; --well:#0c0c0d; --panel:#212124; --field:#333337; --field-2:#404045; --fg:#f5f5f3; --muted:#c0c0bb; --faint:#96969c;
+  --sb:rgba(235,235,245,.32); --bg:#0c0c0d; --well:#0c0c0d; --panel:#212124; --field:#333337; --field-2:#404045; --fg:#f5f5f3; --muted:#c0c0bb; --faint:#96969c;
   --accent:#f5f5f3; --accent-fg:#0c0c0d; --ring:#7ea4ff; --desk:#050505; --warn:#ffc978; --warn-bg:#3b2a0f; --ok:#82d6a3; --ok-bg:#132a1d; --soft:none; --scrim:rgba(0,0,0,.72);
   --lift:0 1px 2px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.5); color-scheme:dark;
   --glass:linear-gradient(180deg, rgba(62,62,66,.62), rgba(30,30,33,.56)); --glass-btn:rgba(255,255,255,.09);
   --glass-edge:inset 0 1px 0 rgba(255,255,255,.14), inset 0 0 0 1px rgba(255,255,255,.07), 0 12px 32px rgba(0,0,0,.55);
 }
 :root[data-theme="navy"]{
-  --bg:#0a0f1d; --well:#0a0f1d; --panel:#111a2f; --field:#1a2440; --field-2:#22304f; --fg:#eef1fb; --muted:#9ca7c6; --faint:#6e79a0;
+  --sb:rgba(225,232,255,.32); --bg:#0a0f1d; --well:#0a0f1d; --panel:#111a2f; --field:#1a2440; --field-2:#22304f; --fg:#eef1fb; --muted:#9ca7c6; --faint:#6e79a0;
   --accent:#e8ecff; --accent-fg:#0a0f1d; --ring:#8fb0ff; --desk:#060a14; --warn:#ffcf86; --warn-bg:#33290f; --ok:#86d9ad; --ok-bg:#10291f; --soft:none; --scrim:rgba(2,5,14,.72);
   --lift:0 1px 2px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.5); color-scheme:dark;
   --glass:linear-gradient(180deg, rgba(44,60,102,.62), rgba(17,26,47,.56)); --glass-btn:rgba(255,255,255,.09);
@@ -63,7 +63,7 @@ img{max-width:100%}
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme]),:root[data-theme="auto"]{
-    --bg:#0c0c0d; --well:#0c0c0d; --panel:#212124; --field:#333337; --field-2:#404045; --fg:#f5f5f3; --muted:#c0c0bb; --faint:#96969c;
+    --sb:rgba(235,235,245,.32); --bg:#0c0c0d; --well:#0c0c0d; --panel:#212124; --field:#333337; --field-2:#404045; --fg:#f5f5f3; --muted:#c0c0bb; --faint:#96969c;
     --accent:#f5f5f3; --accent-fg:#0c0c0d; --ring:#7ea4ff; --desk:#050505; --warn:#ffc978; --warn-bg:#3b2a0f; --ok:#82d6a3; --ok-bg:#132a1d; --soft:none; --scrim:rgba(0,0,0,.72);
     --lift:0 1px 2px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.5); color-scheme:dark;
     --glass:linear-gradient(180deg, rgba(62,62,66,.62), rgba(30,30,33,.56)); --glass-btn:rgba(255,255,255,.09);
@@ -137,11 +137,13 @@ body.view-archive .form{display:none}
 @media (max-width:940px){.work{grid-template-columns:minmax(0,1fr)}}
 /* side by side, the form and the sheets scroll on their own */
 @media (min-width:941px){
-  /* the same air on both sides of the form (D): window edge | form | preview, scrollbar space on both sides too */
+  /* the same air on both sides of the form (D): window edge | form | preview.
+     The column scrolls in a box 16 px wider on the right, in the gap before the sheets: the scrollbar runs there, next to
+     the cards and not over them (D), and the cards keep their size (--sbw = the scrollbar's own width where it takes room). */
   .app{height:100vh;height:100dvh;box-sizing:border-box;padding-top:0;padding-bottom:0;padding-left:max(28px, env(safe-area-inset-left, 0px));padding-right:max(28px, env(safe-area-inset-right, 0px))}
   .work{flex:1;min-height:0;align-items:stretch;grid-template-rows:minmax(0,1fr)}
-  .form,.desk,.archive{min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--field-2) transparent;scroll-padding-top:calc(var(--barB, 78px) + 14px)}
-  .form,.archive{padding:calc(var(--barB, 78px) + 14px) 3px 24px;scrollbar-gutter:stable both-edges}
+  .form,.desk,.archive{min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--sb) transparent;scroll-padding-top:calc(var(--barB, 78px) + 14px)}
+  .form,.archive{padding:calc(var(--barB, 78px) + 14px) calc(19px - var(--sbw, 0px)) 24px 3px;margin-right:-16px;scrollbar-gutter:stable}
   .top{top:14px;left:max(28px, calc((100vw - 1480px) / 2 + 28px));right:max(28px, calc((100vw - 1480px) / 2 + 28px));flex-wrap:nowrap;gap:12px;padding:10px 10px 10px 24px}
   .top .brand{margin-right:0;flex:none}
   .top .status{flex:0 1 auto}
@@ -1112,7 +1114,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     h += '<footer class="p-foot' + (o.bollo ? '' : ' nobollo') + '">'
       + (o.bollo ? '<div class="p-bollo"><div class="p-box">' + W.stamp + '<b>€ 2' + (en ? '.' : ',') + '00</b></div><div class="mono p-stampid">ID ' + val(state.bolloId, W.digits) + '</div></div>' : '')
       + (state.sig.use ? '<div class="p-sign"><div class="ln">' + sigHtml() + '</div><div class="lbl">' + W.sign + '</div></div>' : '') + '</footer>'
-      + (has(M.email) ? '<div class="p-contact"><span class="lbl">' + W.contact + '</span><span>' + esc(String(M.email).trim()) + '</span></div>' : '');
+      + (has(o.mail) ? '<div class="p-contact"><span class="lbl">' + W.contact + '</span><span>' + esc(String(o.mail).trim()) + '</span></div>' : '');
     return {html:h, cls:'receipt'};
   }
 
@@ -1168,7 +1170,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
         : ['norit', 'Nessuna ritenuta d\'acconto: committente in regime forfettario, non sostituto d\'imposta.']);
       if (bollo) notes.push(['bollo', 'Imposta di bollo da € 2,00 assolta sull\'originale.']);
     }
-    return receiptPage({ est:en, sub: en ? 'Royalty receipt' : 'Ricevuta royalties',
+    return receiptPage({ est:en, sub: en ? 'Royalty receipt' : 'Ricevuta royalties', mail: state.me.email,
       toName: val(L.name, en ? 'Label company name' : 'Ragione sociale etichetta'), toLines: toLines, subject: 'Royalties',
       cols: en ? ['Release', 'Period', 'Amount'] : ['Release', 'Periodo', 'Importo'],
       rows: rows, totalLabel: en ? 'Total due' : 'Netto da pagare', totalValue: amt(en ? t.lordo : t.netto),
@@ -1206,7 +1208,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
         : ['norit', 'Nessuna ritenuta d\'acconto: committente non sostituto d\'imposta.']);
       if (bollo) notes.push(['bollo', 'Imposta di bollo da € 2,00 assolta sull\'originale, a carico del committente.']);
     }
-    return receiptPage({ est:en, sub: en ? 'Performance receipt' : 'Ricevuta prestazione occasionale',
+    return receiptPage({ est:en, sub: en ? 'Performance receipt' : 'Ricevuta prestazione occasionale', mail: state.me.bookingEmail,
       toName: val(C.name, en ? 'Company name' : 'Ragione sociale'), toLines: toLines,
       subject: en ? 'DJ performance as Raho' : 'Esibizione DJ come Raho',
       cols: en ? ['Event', 'Date', 'Amount'] : ['Evento', 'Data', 'Importo'],
@@ -1658,7 +1660,9 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
       BKC = ['bkc-en','bkc-it'], BKR = ['bkr-est','bkr-it'], EST = ['bkr-est','bkc-en'], ITB = ['bkr-it','bkc-it'];
   function F(path, label, o){ o = o || {}; o.p = path; o.l = label; return o; }
   var SECTIONS = [
-    {t:'Ricevuta', g:'meta', docs:REC, pick:'acc', f:[F('number','Numero (automatico)',{half:1, auto:1}), F('date','Data',{type:'date', half:1})]},
+    {t:'Ricevuta', g:'meta', docs:REC, pick:'acc', f:[F('number','Numero (automatico)',{half:1, auto:1}), F('date','Data',{type:'date', half:1}),
+      F('me.email','Email in fondo (Info generali)',{docs:ROY, ph:'La tua email per le royalties', hint:'Vale per tutte le ricevute royalties. È la «Email» dei tuoi dati.'}),
+      F('me.bookingEmail','Email in fondo (Info generali)',{docs:BKR, ph:'La tua email di booking', hint:'Vale per le ricevute DJ e per i contratti. È la «Email di booking» dei tuoi dati.'})]},
     {t:'Etichetta', g:'who', docs:ROY, saved:'labels', from:'label', f:[F('label.name','Ragione sociale'), F('label.addr','Indirizzo'),
       F('label.zip','CAP',{half:1}), F('label.city','Città',{half:1}),
       F('label.prov','Provincia / regione',{half:1, docs:['roy-est']}), F('label.country','Stato',{half:1, docs:['roy-est']}),
@@ -1905,7 +1909,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     var d = state.doc, M = state.me, list = [];
     if (!has(M.name)) list.push('nome'); if (!has(M.cf)) list.push('codice fiscale');
     if (REC.indexOf(d) !== -1 && !has(account().iban)) list.push('IBAN');
-    if (BKC.indexOf(d) !== -1 && !has(M.bookingEmail)) list.push('email di booking');
+    if (BK.indexOf(d) !== -1 && !has(M.bookingEmail)) list.push('email di booking');
     if (d.indexOf('roy') === 0) {
       if (!has(state.label.name)) list.push('etichetta');
       if (state.lines.some(function(l){ return parseAmount(l.amount) == null; })) list.push('importi');
@@ -1986,7 +1990,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     labels: {one:'etichetta', title:'Etichette', add:'Aggiungi etichetta', icon:'<path d="M9 18V6l10-2v12"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="16" r="2"/>',
       f:[['name','Ragione sociale'], ['addr','Indirizzo'], ['zip','CAP',1], ['city','Città',1], ['prov','Provincia / regione',1], ['country','Stato',1], ['cf','Codice fiscale',1], ['piva','Partita IVA',1], ['vat','VAT / Tax ID',1]]}
   };
-  var ME_F = [['name','Nome e cognome'], ['addr','Indirizzo'], ['zip','CAP',1], ['city','Città',1], ['prov','Provincia (sigla)',1], ['cf','Codice fiscale',1], ['email','Email',1], ['bookingEmail','Email di booking',1], ['phone','Telefono',1]];
+  var ME_F = [['name','Nome e cognome'], ['addr','Indirizzo'], ['zip','CAP',1], ['city','Città',1], ['prov','Provincia (sigla)',1], ['cf','Codice fiscale',1], ['email','Email (ricevute royalties)',1], ['bookingEmail','Email di booking (contratti e ricevute DJ)',1], ['phone','Telefono',1]];
   var ACC_F = [['label','Nome del conto',1,'Es. Revolut'], ['holder','Intestatario',1,'Come il tuo nome'], ['iban','IBAN',0,'',1], ['bic','BIC / SWIFT (per l\'estero)',0,'',1]];
   var ICON = function(d, soft){ return '<span class="mic' + (soft ? ' soft' : '') + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg></span>'; };
   var CHEV = '<svg class="mchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
@@ -3247,10 +3251,16 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   var topBar = document.querySelector('.top');
   function barSize(){ document.documentElement.style.setProperty('--barB', Math.round(topBar.getBoundingClientRect().bottom) + 'px'); }
   if (window.ResizeObserver) new ResizeObserver(barSize).observe(topBar);
+  // the width the scrollbar of the form / archive column takes (0 with Mac and iPad overlay scrollbars): the cards keep their size
+  function sbWidth(){
+    var col = [form, document.getElementById('archive')].filter(function(e){ return e.offsetWidth; })[0];
+    if (col) document.documentElement.style.setProperty('--sbw', Math.max(0, col.offsetWidth - col.clientWidth) + 'px');
+  }
+  window.addEventListener('resize', sbWidth);
   window.addEventListener('resize', barSize);
 
   // ---------- start ----------
-  applyTheme(); barSize();
+  applyTheme(); barSize(); sbWidth();
   syncTop(); renderFields(); update();
   startSync(); if (syncPhase === 'out') confirmLanding();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(renderPreview);

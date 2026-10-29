@@ -27,11 +27,11 @@ img{max-width:100%}
 /* Layout: two-pane workbench — the form on the left, the live A4 pages on a desk to the right; on phones the two become tabs.
    No outlines: surfaces are told apart by colour. Five themes (data-theme on <html>); the documents stay paper-white in all of them. */
 :root{
-  --bg:#ffffff; --well:#f3f3f1; --panel:#ffffff; --field:#efefec; --field-2:#e6e6e2; --fg:#0b0b0b; --muted:#5f5f5a; --faint:#8d8d87;
-  --accent:#0b0b0b; --accent-fg:#ffffff; --ring:#2f6bff; --desk:#e4e4e0; --warn:#8a4b00; --warn-bg:#ffeed4; --ok:#14663a; --ok-bg:#e1f1e6; --soft:0 0 0 1px rgba(20,20,18,.07),0 1px 3px rgba(20,20,18,.06),0 14px 36px rgba(20,20,18,.10); --scrim:rgba(10,10,10,.5);
+  --bg:#e6e6eb; --well:#f2f2f6; --panel:#ffffff; --field:#f0f0f4; --field-2:#e5e5ea; --fg:#0b0b0b; --muted:#5f5f5a; --faint:#8d8d87;
+  --accent:#0b0b0b; --accent-fg:#ffffff; --ring:#2f6bff; --desk:#e4e4e0; --warn:#8a4b00; --warn-bg:#ffeed4; --ok:#14663a; --ok-bg:#e1f1e6; --soft:none; --scrim:rgba(10,10,10,.5);
   --lift:0 1px 2px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.08);
   /* frosted glass of the top bar (and of the bars over the sheets): see-through, blurred, a glossy light edge on top */
-  --glass:linear-gradient(180deg, rgba(255,255,255,.80), rgba(255,255,255,.60)); --glass-btn:rgba(118,118,108,.12);
+  --glass:linear-gradient(180deg, rgba(255,255,255,.80), rgba(255,255,255,.60)); --glass-btn:rgba(118,118,128,.12);
   --glass-edge:inset 0 1px 0 rgba(255,255,255,.95), inset 0 0 0 1px rgba(255,255,255,.55), 0 1px 2px rgba(20,20,18,.06), 0 12px 32px rgba(20,20,18,.10);
   /* the documents are paper: same values in every theme */
   --paper:#ffffff; --ink:#111111; --ink-2:#555555; --ink-3:#333333; --rule:#b5b5b5; --rule-soft:#dddddd; --ph:#7a7a7a; --dash:#767676;
@@ -42,10 +42,10 @@ img{max-width:100%}
   color-scheme:light;
 }
 :root[data-theme="sand"]{
-  --bg:#faf7f1; --well:#ebe5da; --panel:#faf7f1; --field:#ebe4d8; --field-2:#e1d8ca; --fg:#1c1713; --muted:#6b6054; --faint:#958a7c;
+  --bg:#e5dccd; --well:#ebe5da; --panel:#faf7f1; --field:#ebe4d8; --field-2:#e1d8ca; --fg:#1c1713; --muted:#6b6054; --faint:#958a7c;
   --glass:linear-gradient(180deg, rgba(250,247,241,.82), rgba(250,247,241,.62)); --glass-btn:rgba(120,96,64,.12);
   --glass-edge:inset 0 1px 0 rgba(255,253,248,.95), inset 0 0 0 1px rgba(255,253,248,.5), 0 1px 2px rgba(60,40,20,.07), 0 12px 32px rgba(60,40,20,.11);
-  --accent:#1c1713; --accent-fg:#faf7f1; --ring:#b4532a; --desk:#ded5c7; --warn:#8a4300; --warn-bg:#f8e3c4; --ok:#2f6331; --ok-bg:#e0e8d5; --soft:0 0 0 1px rgba(60,40,20,.08),0 1px 3px rgba(60,40,20,.07),0 14px 36px rgba(60,40,20,.11);
+  --accent:#1c1713; --accent-fg:#faf7f1; --ring:#b4532a; --desk:#ded5c7; --warn:#8a4300; --warn-bg:#f8e3c4; --ok:#2f6331; --ok-bg:#e0e8d5; --soft:none;
 }
 :root[data-theme="dark"]{
   --bg:#0c0c0d; --well:#0c0c0d; --panel:#212124; --field:#333337; --field-2:#404045; --fg:#f5f5f3; --muted:#c0c0bb; --faint:#96969c;
@@ -218,7 +218,7 @@ html.menu-open,html.menu-open body{overflow:hidden}
 .themes button{appearance:none;-webkit-appearance:none;border:0;background:none;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--muted);font:500 12px var(--ui);min-width:0}
 .themes button[aria-checked="true"]{color:var(--fg);font-weight:600}
 .tp{position:relative;display:block;width:100%;aspect-ratio:4/5;border-radius:14px;background:var(--b);overflow:hidden;box-shadow:inset 0 0 0 1px rgba(128,128,128,.2);transition:box-shadow .15s}
-.tp .p{position:absolute;left:14%;right:14%;top:16%;bottom:16%;border-radius:7px;background:var(--p);box-shadow:0 0 0 1px rgba(0,0,0,.06),0 2px 6px rgba(0,0,0,.10)}
+.tp .p{position:absolute;left:14%;right:14%;top:16%;bottom:16%;border-radius:7px;background:var(--p)}
 .tp .a,.tp .l{position:absolute;left:14%;border-radius:3px}
 .tp .a{top:14%;width:52%;height:15%;background:var(--a)}
 .tp .l{right:14%;height:12%;background:var(--f)}
@@ -780,9 +780,9 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     <p class="moff" id="offLine" hidden></p>
     <div class="mk">Aspetto</div>
     <div class="themes" role="radiogroup" aria-label="Tema">
-      <button type="button" role="radio" data-theme-pick="auto" aria-label="Tema automatico, come il sistema"><span class="tp"><span class="tp" style="--b:#ffffff;--p:#ffffff;--a:#0b0b0b;--f:#e6e6e2"><i class="p"><i class="a"></i><i class="l"></i><i class="l"></i></i></span><span class="tp" style="--b:#0c0c0d;--p:#212124;--a:#f5f5f3;--f:#404045"><i class="p"><i class="a"></i><i class="l"></i><i class="l"></i></i></span></span>Auto</button>
-      <button type="button" role="radio" data-theme-pick="light" aria-label="Tema chiaro"><span class="tp" style="--b:#ffffff;--p:#ffffff;--a:#0b0b0b;--f:#e6e6e2"><i class="p"><i class="a"></i><i class="l"></i><i class="l"></i></i></span>Chiaro</button>
-      <button type="button" role="radio" data-theme-pick="sand" aria-label="Tema sabbia"><span class="tp" style="--b:#faf7f1;--p:#faf7f1;--a:#1c1713;--f:#e1d8ca"><i class="p"><i class="a"></i><i class="l"></i><i class="l"></i></i></span>Sabbia</button>
+      <button type="button" role="radio" data-theme-pick="auto" aria-label="Tema automatico, come il sistema"><span class="tp"><span class="tp" style="--b:#e6e6eb;--p:#ffffff;--a:#0b0b0b;--f:#e5e5ea"><i class="p"><i class="a"></i><i class="l"></i><i class="l"></i></i></span><span class="tp" style="--b:#0c0c0d;--p:#212124;--a:#f5f5f3;--f:#404045"><i class="p"><i class="a"></i><i class="l"></i><i class="l"></i></i></span></span>Auto</button>
+      <button type="button" role="radio" data-theme-pick="light" aria-label="Tema chiaro"><span class="tp" style="--b:#e6e6eb;--p:#ffffff;--a:#0b0b0b;--f:#e5e5ea"><i class="p"><i class="a"></i><i class="l"></i><i class="l"></i></i></span>Chiaro</button>
+      <button type="button" role="radio" data-theme-pick="sand" aria-label="Tema sabbia"><span class="tp" style="--b:#e5dccd;--p:#faf7f1;--a:#1c1713;--f:#e1d8ca"><i class="p"><i class="a"></i><i class="l"></i><i class="l"></i></i></span>Sabbia</button>
       <button type="button" role="radio" data-theme-pick="dark" aria-label="Tema scuro"><span class="tp" style="--b:#0c0c0d;--p:#212124;--a:#f5f5f3;--f:#404045"><i class="p"><i class="a"></i><i class="l"></i><i class="l"></i></i></span>Scuro</button>
       <button type="button" role="radio" data-theme-pick="navy" aria-label="Tema notte"><span class="tp" style="--b:#0a0f1d;--p:#16203a;--a:#e8ecff;--f:#22304f"><i class="p"><i class="a"></i><i class="l"></i><i class="l"></i></i></span>Notte</button>
     </div>

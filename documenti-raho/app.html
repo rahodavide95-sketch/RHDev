@@ -63,6 +63,13 @@ body{background:var(--bg);color:var(--fg);font-family:var(--ui);font-size:14px;l
 .top .tabs{background:var(--glass-btn)}
 .top .menu-btn{background:var(--glass-btn)}
 .top .menu-btn .dot{box-shadow:none}
+/* pressed: the button sinks a little; open: it fills and its two lines turn into an X (D: "deve succedere qualcosa nell'icona") */
+.top .menu-btn{transition:background-color .2s,color .2s,transform .15s}
+.top .menu-btn:active{transform:scale(.88)}
+.top .menu-btn[aria-expanded="true"]{background:var(--accent);color:var(--accent-fg)}
+.menu-btn svg path{transform-box:view-box;transform-origin:12px 12px;transition:transform .32s cubic-bezier(.2,.85,.25,1)}
+.menu-btn[aria-expanded="true"] .mb1{transform:rotate(45deg) translateY(3.5px)}
+.menu-btn[aria-expanded="true"] .mb2{transform:rotate(-45deg) translateY(-3.5px)}
 .status.statusm{display:none}
 #exportBtn{flex:none}
 /* the tool's name, simply "[RH] Documents" (D) */
@@ -699,7 +706,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 2v8M4.5 6.5 8 10l3.5-3.5M3 13h10"/></svg>
         <span><span class="xl">Scarica </span>PDF</span>
       </button>
-    <button type="button" class="menu-btn" id="menuBtn" aria-haspopup="dialog" aria-expanded="false" aria-controls="menu" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8.5h16M4 15.5h16"/></svg><i class="dot" id="menuDot" aria-hidden="true"></i></button>
+    <button type="button" class="menu-btn" id="menuBtn" aria-haspopup="dialog" aria-expanded="false" aria-controls="menu" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="mb1" d="M4 8.5h16"/><path class="mb2" d="M4 15.5h16"/></svg><i class="dot" id="menuDot" aria-hidden="true"></i></button>
   </header>
 
   <div class="status statusm" id="statusM" aria-hidden="true"></div>
@@ -883,6 +890,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   var KEY = 'raho-documenti-v1';
   var OLD_KEY = 'raho-ricevute-v1';
   var BOLLO_SOGLIA = 77.47;
+  var LOGO_SIZE = 50;   // every logo starts at half its old size (D), in D's data, in new data and in the trial; 40–200% with "Regola il logo"
   // build.js puts the images themselves here, so index.html works offline too
   var RHBKNG_LOGO = 'logo-rhbkng.webp'; // D's file exactly as sent: no crop, no edits
   var RHBKNG_CONTRACT = 'logo-rhbkng-contract.png'; // the logo exactly as in the official EN contract
@@ -906,7 +914,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
       // several saved signatures and initials (drawn, or initials typed); sel = the one used in the documents
       sig:{use:false, sel:''}, sigs:[], ini:{use:false, sel:''}, inis:[],
       // size (percent of the usual one) and crop (fractions of the image) chosen by D for each logo; untouched = as in the file
-      logoAdj:{raho:{size:100}, rhbkng:{size:100, crop:null}, img:{size:100, crop:null}},
+      logoAdj:{raho:{size:LOGO_SIZE}, rhbkng:{size:LOGO_SIZE, crop:null}, img:{size:LOGO_SIZE, crop:null}}, lgv:2,
       date: todayISO(), bolloId:'', history:[], gone:[], viewing:'', seqStart:{}, mt:0,
       me:{name:'', addr:'', zip:'', city:'', prov:'', cf:'', email:'', bookingEmail:'', phone:''},
       accounts:[], acc:'',
@@ -990,9 +998,11 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     s.history.forEach(function(h){ if (h && h.snap) { splitZip(h.snap.label); splitZip(h.snap.client); } });
     Object.keys(s.logoAdj).forEach(function(m){
       var a = s.logoAdj[m], v = +a.size;
-      a.size = v >= 40 && v <= 200 ? v : 100;
+      a.size = v >= 40 && v <= 200 ? v : LOGO_SIZE;
+      if ((!o || o.lgv !== 2) && a.size === 100) a.size = LOGO_SIZE;   // the old starting size, never changed: the new one, once
       if ('crop' in a && !goodCrop(a.crop)) a.crop = null;
     });
+    s.lgv = 2;
     return s;
   }
   // Trying the tool (D: "far provare il tool a un amico"): sample data kept apart (DEMO_KEY), never synced; D's own data stay untouched.
@@ -1018,6 +1028,8 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
       }
     }
   } catch (e) {}
+  // trial data saved before the sample logo existed get it too, in "Immagine"
+  if (demo && !state.logoImg) state.logoImg = demoLogo();
   var lastSaved = '';
   function stateJson(){ var mt = state.mt; state.mt = 0; var j = JSON.stringify(syncable(state)); state.mt = mt; return j; }
   function persist(){
@@ -1054,7 +1066,24 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     return {doc:'bkc-it', me:me, client:club, ev:ev, fee:{amount:'2000'}, t:{depositPct:'30', depositDays:'10'}, c:{place:'Milano', date:at(-5)}, label:labIt,
       accounts:[{id:'demo-acc', label:'Conto di prova', holder:'Alex Demo', iban:'IT60X0542811101000000123456', bic:'BPMOIT22XXX'}], acc:'demo-acc',
       inis:[{id:'demo-ini', name:'Sigle 1', text:'A.D.', img:''}], ini:{use:true, sel:'demo-ini'}, bolloId:'01234567890123', history:history, saved:saved,
-      sigs:demoSig(), sig:{use:true, sel:'demo-sig'}};
+      sigs:demoSig(), sig:{use:true, sel:'demo-sig'}, logo:{bk:'img', roy:'img'}, logoImg:demoLogo()};
+  }
+  // the trial's logo, in "Immagine": "[RH] Documents" (D), white on a black badge like the app icon, so it shows on the white
+  // receipts and on the black band of the contracts. D's own logos stay in the choice too (D: "i miei lasciali ma mettine anche uno di prova").
+  var demoLogoImg = '';
+  function demoLogo(){
+    if (demoLogoImg) return demoLogoImg;
+    try {
+      var cv = document.createElement('canvas'), x = cv.getContext('2d'), font = '400 72px Arial, Helvetica, sans-serif', t = '[RH] Documents';
+      x.font = font; var w = Math.ceil(x.measureText(t).width) + 88;
+      cv.width = w; cv.height = 136; x = cv.getContext('2d');
+      x.fillStyle = '#0b0b0b'; x.beginPath();
+      if (x.roundRect) x.roundRect(0, 0, w, 136, 30); else x.rect(0, 0, w, 136);
+      x.fill();
+      x.fillStyle = '#fff'; x.font = font; x.textBaseline = 'middle'; x.fillText(t, 44, 71);
+      demoLogoImg = cv.toDataURL('image/png');
+    } catch (e) {}
+    return demoLogoImg;
   }
   function demoSig(){
     try {
@@ -1977,7 +2006,8 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
       ? 'Le ricevute royalties hanno il logo RAHO (o una tua immagine). RH[BKNG] è nei contratti e nelle ricevute DJ.'
       : 'Contratti e ricevute DJ hanno il logo RH[BKNG] (o una tua immagine). RAHO è nelle ricevute royalties.';
     document.getElementById('logoImgRow').hidden = mode !== 'img';
-    document.getElementById('logoHint').textContent = state.logoImg ? 'Logo caricato. Puoi sostituirlo quando vuoi.' : 'PNG o JPG, meglio con sfondo trasparente.';
+    document.getElementById('logoHint').textContent = demo && state.logoImg === demoLogo() ? 'Logo di prova: regolalo qui sotto o caricane uno tuo.'
+      : state.logoImg ? 'Logo caricato. Puoi sostituirlo quando vuoi.' : 'PNG o JPG, meglio con sfondo trasparente.';
     logoAdjInfo();
   }
 
@@ -2383,7 +2413,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
         var h = Math.min(img.height, 300), w = Math.round(img.width * h / img.height);
         var c = document.createElement('canvas'); c.width = w; c.height = h;
         c.getContext('2d').drawImage(img, 0, 0, w, h);
-        state.logoImg = c.toDataURL('image/png'); state.logo[D().cat] = 'img'; state.logoAdj.img = {size:100, crop:null};
+        state.logoImg = c.toDataURL('image/png'); state.logo[D().cat] = 'img'; state.logoAdj.img = {size:LOGO_SIZE, crop:null};
         syncTop(); update();
       };
       img.src = reader.result;
@@ -2394,12 +2424,12 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
 
   // ---------- logo: size and crop decided by D ----------
   var logopad = document.getElementById('logopad'), lkImg = document.getElementById('lkImg'), lkStage = document.getElementById('lkStage');
-  var lkSize = document.getElementById('lkSize'), lk = {mode:'raho', size:100, crop:null}, lkDrag = null;
+  var lkSize = document.getElementById('lkSize'), lk = {mode:'raho', size:LOGO_SIZE, crop:null}, lkDrag = null;
   var FULL = {x:0, y:0, w:1, h:1};
   function logoAdjInfo(){
     var mode = state.logo[D().cat], a = state.logoAdj[mode];
     document.getElementById('logoAdjRow').hidden = mode === 'img' && !state.logoImg;
-    var parts = []; if (a.size !== 100) parts.push('dimensione ' + a.size + '%'); if (a.crop) parts.push('ritagliato');
+    var parts = []; if (a.size !== LOGO_SIZE) parts.push('dimensione ' + a.size + '%'); if (a.crop) parts.push('ritagliato');
     document.getElementById('logoAdjInfo').textContent = parts.length ? parts.join(' · ').replace(/^./, function(c){ return c.toUpperCase(); }) : 'Come nel file originale.';
     document.getElementById('logoAdjust').lastChild.textContent = mode === 'raho' ? 'Regola la dimensione' : 'Regola il logo';
   }
@@ -2438,7 +2468,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   lkImg.addEventListener('load', lkDraw);
   document.getElementById('logoAdjust').addEventListener('click', openLogoPad);
   lkSize.addEventListener('input', function(){ lk.size = +lkSize.value; lkDraw(); });
-  document.getElementById('lkReset').addEventListener('click', function(){ lk.size = 100; lk.crop = null; lkSize.value = 100; lkDraw(); });
+  document.getElementById('lkReset').addEventListener('click', function(){ lk.size = LOGO_SIZE; lk.crop = null; lkSize.value = LOGO_SIZE; lkDraw(); });
   document.getElementById('lkCancel').addEventListener('click', closeLogoPad);
   logopad.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeLogoPad(); });
   document.getElementById('lkSave').addEventListener('click', function(){

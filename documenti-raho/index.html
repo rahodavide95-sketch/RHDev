@@ -270,6 +270,9 @@ html.menu-open,html.menu-open body{overflow:hidden}
 .acct-body p.warn{margin:0}
 .acwho{display:flex;align-items:center;gap:14px}
 .acwho .mav{background:var(--accent);color:var(--accent-fg)}
+.okmsg{margin:0;background:var(--ok-bg);color:var(--ok);padding:12px 14px;border-radius:12px;font-size:13px;font-weight:500;line-height:1.45}
+.acedit .btn{flex:1 1 180px}
+#acctpad .sigbox{max-height:100%;overflow-y:auto}
 .acwho .mtx small span,.macct .mtx small span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* the trial: a small tag next to the name of the tool, it opens the trial's window */
 .brand{display:flex;align-items:center;gap:10px}
@@ -707,6 +710,12 @@ input[type="range"]{width:100%;margin:0;height:28px;accent-color:var(--accent);c
 body.editing .paper .ed{cursor:pointer}
 body.editing .paper .ed:hover{outline:1.5px dashed #2563eb;outline-offset:1px}
 body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
+/* outside "Modifica il testo": every part of the sheet leads to its field; with a mouse, the part under it is lit softly */
+body:not(.editing) .paper [data-f],body:not(.editing) .paper .ed{cursor:pointer}
+@media (hover:hover){body:not(.editing) .paper [data-f]:hover,body:not(.editing) .paper .ed:not(:has([data-f]:hover)):hover{background:rgba(47,107,255,.08);box-shadow:0 0 0 3px rgba(47,107,255,.08);border-radius:3px}}
+/* the field reached from the sheet: a ring a little outside it, that fades */
+.flash-f{outline:3px solid transparent;outline-offset:6px;border-radius:16px;animation:flashf 1.6s ease-out}
+@keyframes flashf{0%,40%{outline-color:var(--ring)}100%{outline-color:transparent}}
 #edText{min-height:200px;line-height:1.5;resize:vertical}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}
 </style>
@@ -937,7 +946,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
       // size (percent of the usual one) and crop (fractions of the image) chosen by D for each logo; untouched = as in the file
       logoAdj:{raho:{size:LOGO_SIZE}, rhbkng:{size:LOGO_SIZE, crop:null}, img:{size:LOGO_SIZE, crop:null}}, lgv:2,
       date: todayISO(), bolloId:'', history:[], gone:[], viewing:'', seqStart:{}, mt:0,
-      me:{name:'', addr:'', zip:'', city:'', prov:'', cf:'', email:'', bookingEmail:'', phone:''},
+      me:{name:'', first:'', last:'', addr:'', zip:'', city:'', prov:'', cf:'', email:'', bookingEmail:'', phone:''},
       accounts:[], acc:'',
       label:{name:'', addr:'', zip:'', city:'', prov:'', country:'', vat:'', piva:'', cf:''},
       lines:[emptyLine()], rit:true,
@@ -992,6 +1001,15 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
         return m;
       });
   }
+  // name and surname are two fields (D: "devo poter modificare nome, cognome…"); me.name is the full name the documents use.
+  // A name written in one field (older data, or a device not yet updated) is split again: first word the name, the rest the surname.
+  function joinName(m){ return [m.first, m.last].map(function(x){ return String(x || '').trim(); }).filter(Boolean).join(' '); }
+  function nameParts(m){
+    var full = String(m.name || '').trim();
+    if (full === joinName(m)) return;
+    if (!full) { m.name = joinName(m); return; }
+    var w = full.split(/\s+/); m.first = w[0]; m.last = w.slice(1).join(' '); m.name = full;
+  }
   // the IBAN used to live in "me": it becomes the first saved account
   function load(o){
     var s = merge(defaults(), o), me = (o && o.me) || {};
@@ -1002,6 +1020,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     else { var m = /^(\d+)\/(\d{4})$/.exec(String(o && o.number || '').trim()); if (m && +m[1] > 1) s.seqStart[m[2]] = +m[1] - 1; }
     if (s.viewing && !s.history.some(function(h){ return h.id === s.viewing; })) s.viewing = '';
     if (o && o.edits && typeof o.edits === 'object') Object.keys(o.edits).forEach(function(d){ if (DOCS[d] && o.edits[d] && typeof o.edits[d] === 'object') s.edits[d] = o.edits[d]; });
+    nameParts(s.me);
     if (!s.accounts.length && has(me.iban)) s.accounts = [{id:newId(), label:'', holder:'', iban:me.iban, bic:me.bic || ''}];
     s.accounts = s.accounts.filter(function(a){ return a && typeof a === 'object'; });
     s.accounts.forEach(function(a){ if (!a.id) a.id = newId(); });
@@ -1122,6 +1141,8 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
   function has(v){ return String(v == null ? '' : v).trim() !== ''; }
   function val(v, ph){ return has(v) ? esc(String(v).trim()) : '<span class="ph">[' + esc(ph) + ']</span>'; }
+  // a part of the sheet that comes from a field: clicking it goes to that field (goField())
+  function at(target, html){ return '<span data-f="' + target + '">' + html + '</span>'; }
   function parseAmount(s){
     s = String(s || '').replace(/[€\s]/g, '').replace(/EUR/i, '');
     if (!s) return null;
@@ -1169,9 +1190,9 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   function logoHtml(){
     var mode = state.logo[D().cat], k = state.logoAdj[mode === 'img' && !state.logoImg ? 'raho' : mode].size / 100;
     var st = k !== 1 ? ' style="--lk:' + k + '"' : '';
-    if (mode === 'img' && state.logoImg) return '<img class="p-logoimg"' + st + ' src="' + logoSrc('img') + '" alt="Logo">';
-    if (mode === 'rhbkng') return '<img class="p-logoimg rh"' + st + ' src="' + logoSrc('rhbkng') + '" alt="RH[BKNG]">';
-    return '<div class="p-logo"' + st + '>RAHO</div>';
+    if (mode === 'img' && state.logoImg) return '<img class="p-logoimg" data-f="logo"' + st + ' src="' + logoSrc('img') + '" alt="Logo">';
+    if (mode === 'rhbkng') return '<img class="p-logoimg rh" data-f="logo"' + st + ' src="' + logoSrc('rhbkng') + '" alt="RH[BKNG]">';
+    return '<div class="p-logo" data-f="logo"' + st + '>RAHO</div>';
   }
   // a cropped logo is cut on a canvas once and kept; until it is ready the whole logo is drawn
   var cropped = {}, cropJobs = {};
@@ -1222,32 +1243,32 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   function receiptPage(o){
     var en = o.est, W = en ? RT.en : RT.it, M = state.me, num = esc(currentNumber());
     var h = '<header class="p-head"><div class="p-headl">' + logoHtml()
-      + '<div class="lbl">' + o.sub + '</div></div>'
+      + '<div class="lbl" data-f="doc">' + o.sub + '</div></div>'
       + '<div class="p-headr"><div class="lbl">' + W.no + '</div>'
-      + '<div class="p-num">' + num + '</div>'
-      + '<div class="p-date">' + W.date + val(itDate(state.date), W.datePh) + '</div></div></header>';
-    var meLines = [ val(M.addr, W.street), val(cityLine(M), W.city) + W.country, W.cf + val(M.cf, W.cfPh) ];
+      + '<div class="p-num" data-f="f:number">' + num + '</div>'
+      + '<div class="p-date" data-f="f:date">' + W.date + val(itDate(state.date), W.datePh) + '</div></div></header>';
+    var meLines = [ at('me:addr', val(M.addr, W.street)), at('me:city', val(cityLine(M), W.city)) + W.country, W.cf + at('me:cf', val(M.cf, W.cfPh)) ];
     h += '<section class="p-two"><div class="p-col"><div class="lbl rule">' + W.issuer + '</div>'
-      + '<div class="p-who"><div class="p-name">' + val(M.name, W.name) + '</div><div class="p-addr">' + meLines.join('<br>') + '</div></div>'
+      + '<div class="p-who"><div class="p-name" data-f="me:first">' + val(M.name, W.name) + '</div><div class="p-addr">' + meLines.join('<br>') + '</div></div>'
       + ed('status', W.status, 'p-small') + '</div>'
       + '<div class="p-col"><div class="lbl rule">' + W.billTo + '</div>'
-      + '<div class="p-who"><div class="p-name">' + o.toName + '</div><div class="p-addr">' + o.toLines.join('<br>') + '</div></div></div></section>';
+      + '<div class="p-who"><div class="p-name" data-f="' + o.to + 'name">' + o.toName + '</div><div class="p-addr">' + o.toLines.join('<br>') + '</div></div></div></section>';
     h += '<section class="p-subj"><div class="lbl">' + W.desc + '</div>' + ed('subject', o.subject, 's') + '</section>';
     h += '<section class="p-items"><table class="p-tab"><thead><tr><th>' + o.cols[0] + '</th><th>' + o.cols[1] + '</th><th>' + o.cols[2] + '</th></tr></thead><tbody>'
-      + o.rows + '</tbody></table><div class="p-total"><div class="k">' + o.totalLabel + '</div><div class="v">' + o.totalValue + '</div></div></section>';
+      + o.rows + '</tbody></table><div class="p-total"><div class="k">' + o.totalLabel + '</div><div class="v" data-f="' + o.totalF + '">' + o.totalValue + '</div></div></section>';
     var A = account();
     var pay = '<div class="k">' + W.holder + '</div><div>' + val(has(A.holder) ? A.holder : M.name, W.name) + '</div>'
       + '<div class="k">IBAN</div><div class="m iban">' + val(has(A.iban) ? ibanGroups(A.iban) : '', 'IT00 X000 0000 0000 0000 0000 000') + '</div>'
       + (en ? '<div class="k">BIC / SWIFT</div><div class="m">' + val(A.bic, 'XXXXITXX') + '</div>' : '')
-      + '<div class="k">' + W.ref + '</div><div>' + W.refNo + num + '</div>';
+      + '<div class="k">' + W.ref + '</div><div data-f="f:number">' + W.refNo + num + '</div>';
     h += '<section class="p-two pay"><div class="p-col notes"><div class="lbl rule">' + W.notes + '</div>'
       + o.notes.map(function(n){ return ed('note.' + n[0], esc(n[1]), 'p-note'); }).join('') + '</div>'
-      + '<div class="p-col notes"><div class="lbl rule">' + W.pay + '</div><div class="p-pay">' + pay + '</div></div></section>';
+      + '<div class="p-col notes"><div class="lbl rule">' + W.pay + '</div><div class="p-pay" data-f="acc">' + pay + '</div></div></section>';
     // the signature space is there only when "Aggiungi la mia firma" is ticked; the contact email goes under a thin line, on the right
     h += '<footer class="p-foot' + (o.bollo ? '' : ' nobollo') + '">'
-      + (o.bollo ? '<div class="p-bollo"><div class="p-box">' + W.stamp + '<b>€ 2' + (en ? '.' : ',') + '00</b></div><div class="mono p-stampid">ID ' + val(state.bolloId, W.digits) + '</div></div>' : '')
-      + (state.sig.use ? '<div class="p-sign"><div class="ln">' + sigHtml() + '</div><div class="lbl">' + W.sign + '</div></div>' : '') + '</footer>'
-      + (has(o.mail) ? '<div class="p-contact"><span class="lbl">' + W.contact + '</span><span>' + esc(String(o.mail).trim()) + '</span></div>' : '');
+      + (o.bollo ? '<div class="p-bollo" data-f="f:bolloId"><div class="p-box">' + W.stamp + '<b>€ 2' + (en ? '.' : ',') + '00</b></div><div class="mono p-stampid">ID ' + val(state.bolloId, W.digits) + '</div></div>' : '')
+      + (state.sig.use ? '<div class="p-sign" data-f="sig"><div class="ln">' + sigHtml() + '</div><div class="lbl">' + W.sign + '</div></div>' : '') + '</footer>'
+      + (has(o.mail) ? '<div class="p-contact" data-f="' + (D().cat === 'roy' ? 'f:me.email' : 'f:me.bookingEmail') + '"><span class="lbl">' + W.contact + '</span><span>' + esc(String(o.mail).trim()) + '</span></div>' : '');
     return {html:h, cls:'receipt'};
   }
 
@@ -1279,18 +1300,19 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     var en = state.doc === 'roy-est', L = state.label, t = royaltyTotals();
     var cur = function(n){ return rMoney(en, n); }, none = '<span class="ph">€ [0' + (en ? '.' : ',') + '00]</span>';
     var amt = function(n){ return t.any ? cur(n) : none; };
-    var toLines = [ val(L.addr, en ? 'Address' : 'Indirizzo'), val(cityLine(L, en), en ? 'Postcode City, Region' : 'CAP Città (Prov.)') ];
-    if (en) { toLines.push(val(L.country, 'Country')); toLines.push('VAT / Tax ID: ' + val(L.vat, 'number')); }
-    else { toLines.push('P.IVA: ' + val(L.piva, 'numero')); toLines.push('C.F.: ' + val(L.cf, 'numero')); }
-    var rows = state.lines.map(function(l){
-      var n = parseAmount(l.amount);
-      return '<tr class="rel"><td><div class="t">' + val(l.title, en ? 'Release title' : 'Titolo release') + '</div><div class="meta">Cat. ' + val(l.cat, 'XXX000') + ' · Statement ' + val(l.stmt, 'n.') + '</div></td>'
-        + '<td class="per">' + val(l.period, en ? 'DD/MM/YY – DD/MM/YY' : 'GG/MM/AA – GG/MM/AA') + '</td>'
-        + '<td class="amt">' + (n != null ? cur(n) : none) + '</td></tr>';
+    var to = function(k, h){ return at('f:label.' + k, h); };
+    var toLines = [ to('addr', val(L.addr, en ? 'Address' : 'Indirizzo')), to('city', val(cityLine(L, en), en ? 'Postcode City, Region' : 'CAP Città (Prov.)')) ];
+    if (en) { toLines.push(to('country', val(L.country, 'Country'))); toLines.push('VAT / Tax ID: ' + to('vat', val(L.vat, 'number'))); }
+    else { toLines.push('P.IVA: ' + to('piva', val(L.piva, 'numero'))); toLines.push('C.F.: ' + to('cf', val(L.cf, 'numero'))); }
+    var rows = state.lines.map(function(l, i){
+      var n = parseAmount(l.amount), ln = function(k, h){ return at('line:' + i + ':' + k, h); };
+      return '<tr class="rel"><td><div class="t">' + ln('title', val(l.title, en ? 'Release title' : 'Titolo release')) + '</div><div class="meta">Cat. ' + ln('cat', val(l.cat, 'XXX000')) + ' · Statement ' + ln('stmt', val(l.stmt, 'n.')) + '</div></td>'
+        + '<td class="per">' + ln('period', val(l.period, en ? 'DD/MM/YY – DD/MM/YY' : 'GG/MM/AA – GG/MM/AA')) + '</td>'
+        + '<td class="amt">' + ln('amount', n != null ? cur(n) : none) + '</td></tr>';
     }).join('');
     if (!en) {
-      rows += '<tr class="sum first' + (state.rit ? '' : ' last') + '"><td colspan="2">Compenso lordo</td><td class="amt">' + amt(t.lordo) + '</td></tr>';
-      if (state.rit) rows += '<tr class="sum last"><td colspan="2">Ritenuta d\'acconto 20%</td><td class="amt">– ' + amt(t.rit) + '</td></tr>';
+      rows += '<tr class="sum first' + (state.rit ? '' : ' last') + '"><td colspan="2">Compenso lordo</td><td class="amt">' + at('line:0:amount', amt(t.lordo)) + '</td></tr>';
+      if (state.rit) rows += '<tr class="sum last"><td colspan="2">' + at('f:rit', 'Ritenuta d\'acconto 20%') + '</td><td class="amt">– ' + at('f:rit', amt(t.rit)) + '</td></tr>';
     }
     var bollo = t.lordo > BOLLO_SOGLIA || !t.any, notes = [];
     if (en) {
@@ -1304,7 +1326,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
       if (bollo) notes.push(['bollo', 'Imposta di bollo da € 2,00 assolta sull\'originale.']);
     }
     return receiptPage({ est:en, sub: en ? 'Royalty receipt' : 'Ricevuta royalties', mail: state.me.email,
-      toName: val(L.name, en ? 'Label company name' : 'Ragione sociale etichetta'), toLines: toLines, subject: 'Royalties',
+      to:'f:label.', totalF:'line:0:amount', toName: val(L.name, en ? 'Label company name' : 'Ragione sociale etichetta'), toLines: toLines, subject: 'Royalties',
       cols: en ? ['Release', 'Period', 'Amount'] : ['Release', 'Periodo', 'Importo'],
       rows: rows, totalLabel: en ? 'Total due' : 'Netto da pagare', totalValue: amt(en ? t.lordo : t.netto),
       notes: notes, bollo: bollo });
@@ -1314,21 +1336,22 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     var en = state.doc === 'bkr-est', C = state.client, E = state.ev, F = state.fee, t = bookingTotals();
     var cur = function(n){ return rMoney(en, n); }, none = '<span class="ph">€ [0' + (en ? '.' : ',') + '00]</span>';
     var amt = function(n){ return t.any ? cur(n) : none; };
-    var toLines = [ val(C.addr, en ? 'Address' : 'Indirizzo'), val(cityLine(C, en), en ? 'Postcode City, Region' : 'CAP Città (Prov.)') ];
-    if (en) { toLines.push(val(C.country, 'Country')); toLines.push('VAT / Tax ID: ' + val(C.vat, 'number')); }
-    else { toLines.push('P.IVA: ' + val(C.piva, 'numero')); toLines.push('C.F.: ' + val(C.cf, 'numero')); }
-    var meta = val(E.venue, en ? 'Venue' : 'Locale') + (has(E.address) ? ', ' + esc(E.address) : '');
+    var to = function(k, h){ return at('f:client.' + k, h); };
+    var toLines = [ to('addr', val(C.addr, en ? 'Address' : 'Indirizzo')), to('city', val(cityLine(C, en), en ? 'Postcode City, Region' : 'CAP Città (Prov.)')) ];
+    if (en) { toLines.push(to('country', val(C.country, 'Country'))); toLines.push('VAT / Tax ID: ' + to('vat', val(C.vat, 'number'))); }
+    else { toLines.push('P.IVA: ' + to('piva', val(C.piva, 'numero'))); toLines.push('C.F.: ' + to('cf', val(C.cf, 'numero'))); }
+    var meta = at('f:ev.venue', val(E.venue, en ? 'Venue' : 'Locale')) + (has(E.address) ? ', ' + at('f:ev.address', esc(E.address)) : '');
     // deposit / balance: on the line of the contract date, short, so even the fullest receipt keeps its spacing
     var part = F.part && t.all != null ? (en ? (F.part === 'dep' ? 'deposit ' : 'balance ') + partPct(F) + '% of ' + cur(t.all) + ' net'
       : (F.part === 'dep' ? 'acconto ' : 'saldo ') + String(partPct(F)).replace('.', ',') + '% di ' + cur(t.all) + (F.net ? ' netti' : '')) : '';
-    if (has(F.contractDate)) meta += '<br>' + (en ? 'Agreement dated ' : 'Contratto del ') + esc(itDate(F.contractDate)) + (part ? ' · ' + part : '');
-    else if (part) meta += '<br>' + part.charAt(0).toUpperCase() + part.slice(1);
-    var rows = '<tr class="rel"><td><div class="t">' + val(E.name, en ? 'Event name' : 'Nome evento') + '</div><div class="meta">' + meta + '</div></td>'
-      + '<td class="per">' + val(itDate(E.date), en ? 'DD/MM/YYYY' : 'GG/MM/AAAA') + '</td><td class="amt">' + amt(t.lordo) + '</td></tr>';
-    if (en && t.ex) rows += '<tr class="sum first last"><td colspan="2">Expense reimbursement</td><td class="amt">' + cur(t.ex) + '</td></tr>';
+    if (has(F.contractDate)) meta += '<br>' + at('f:fee.contractDate', (en ? 'Agreement dated ' : 'Contratto del ') + esc(itDate(F.contractDate))) + (part ? ' · ' + at('f:fee.part', part) : '');
+    else if (part) meta += '<br>' + at('f:fee.part', part.charAt(0).toUpperCase() + part.slice(1));
+    var rows = '<tr class="rel"><td><div class="t">' + at('f:ev.name', val(E.name, en ? 'Event name' : 'Nome evento')) + '</div><div class="meta">' + meta + '</div></td>'
+      + '<td class="per">' + at('f:ev.date', val(itDate(E.date), en ? 'DD/MM/YYYY' : 'GG/MM/AAAA')) + '</td><td class="amt">' + at('f:fee.amount', amt(t.lordo)) + '</td></tr>';
+    if (en && t.ex) rows += '<tr class="sum first last"><td colspan="2">' + at('f:fee.expenses', 'Expense reimbursement') + '</td><td class="amt">' + at('f:fee.expenses', cur(t.ex)) + '</td></tr>';
     if (!en) {
-      rows += '<tr class="sum first' + (F.rit ? '' : ' last') + '"><td colspan="2">Compenso lordo</td><td class="amt">' + amt(t.lordo) + '</td></tr>';
-      if (F.rit) rows += '<tr class="sum last"><td colspan="2">Ritenuta d\'acconto 20%</td><td class="amt">– ' + amt(t.rit) + '</td></tr>';
+      rows += '<tr class="sum first' + (F.rit ? '' : ' last') + '"><td colspan="2">' + at('f:fee.amount', 'Compenso lordo') + '</td><td class="amt">' + at('f:fee.amount', amt(t.lordo)) + '</td></tr>';
+      if (F.rit) rows += '<tr class="sum last"><td colspan="2">' + at('f:fee.rit', 'Ritenuta d\'acconto 20%') + '</td><td class="amt">– ' + at('f:fee.rit', amt(t.rit)) + '</td></tr>';
     }
     var bollo = t.lordo > BOLLO_SOGLIA || !t.any, notes = [];
     if (en) {
@@ -1342,7 +1365,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
       if (bollo) notes.push(['bollo', 'Imposta di bollo da € 2,00 assolta sull\'originale, a carico del committente.']);
     }
     return receiptPage({ est:en, sub: en ? 'Performance receipt' : 'Ricevuta prestazione occasionale', mail: state.me.bookingEmail,
-      toName: val(C.name, en ? 'Company name' : 'Ragione sociale'), toLines: toLines,
+      to:'f:client.', totalF:'f:fee.amount', toName: val(C.name, en ? 'Company name' : 'Ragione sociale'), toLines: toLines,
       subject: en ? 'DJ performance as Raho' : 'Esibizione DJ come Raho',
       cols: en ? ['Event', 'Date', 'Amount'] : ['Evento', 'Data', 'Importo'],
       rows: rows, totalLabel: en ? 'Total due' : 'Netto da pagare', totalValue: amt(t.total),
@@ -1402,9 +1425,9 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     k.v = function(x, p){ return has(x) ? esc(String(x).trim()) : p == null ? '' : k.ph(p); };
     k.ln = function(h, cls){ return '<span class="ln' + (cls ? ' ' + cls : '') + '">' + (h || '&nbsp;') + '</span>'; };
     k.lines = function(arr){ return arr.map(function(h){ return k.ln(h); }).join(''); };
-    var band = '<header class="ag-band">' + agLogo() + '<span>' + bandText + '</span></header>';
+    var band = '<header class="ag-band" data-f="logo">' + agLogo() + '<span>' + bandText + '</span></header>';
     var mine = iniHtml(), ini = mine ? initials.replace('______', function(){ return mine; }) : initials;   // the promoter's blank stays
-    var foot = function(i){ return '<footer class="ag-foot"><span class="ini">' + ini + '</span><span class="pg">' + pageWord + ' ' + i + ' / ' + total + '</span></footer>'; };
+    var foot = function(i){ return '<footer class="ag-foot"><span class="ini" data-f="ini">' + ini + '</span><span class="pg">' + pageWord + ' ' + i + ' / ' + total + '</span></footer>'; };
     k.page = function(i, body){ k.pages.push({html: band + '<div class="ag-body">' + body + '</div>' + foot(i), cls:'ag'}); };
     k.sec = function(n, title){ return '<div class="ag-sec"><span class="n">' + n + '</span>' + ed('sec' + n, title, 'st') + '</div>'; };
     // gap: from the line above to the top of the title letters, as in the original
@@ -1461,7 +1484,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
           row('e.lineup', 'Other artists / Lineup', ph('Names, if known'), {h:43})]));
 
     page(3, sec('03', 'FEE AND PAYMENT')
-      + '<div class="ag-box ag-fee"><div class="nf">NET FEE</div><div class="amt"><span class="cur">EUR</span> ' + (net == null ? ph('amount') : eur(net)) + '</div>'
+      + '<div class="ag-box ag-fee"><div class="nf">NET FEE</div><div class="amt" data-f="f:fee.amount"><span class="cur">EUR</span> ' + (net == null ? ph('amount') : eur(net)) + '</div>'
       + ed('fee.note', 'The amount the Artist actually receives, after any tax.', 'cap') + '</div>'
       + group('payment', 'PAYMENT', '', 24.6, [
           row('pay.deposit', 'Deposit', lines([pctTxt + '% (EUR ' + eur(dep) + ') by bank transfer within ' + v(E.depositDays, '7') + ' days of signing.',
@@ -1544,10 +1567,10 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     page(9, sec('09', 'SIGNATURES')
       + ed('sig.intro', 'By signing, the Artist and the Promoter confirm they have read and accept all the terms of this Agreement. Each party keeps one signed copy.', 'ag-p')
       + '<div class="ag-sig"><div></div><div class="who">ARTIST</div><div></div><div class="who">PROMOTER</div>'
-      + '<div class="lb">Full Name</div><div class="ln2">' + v(M.name) + '</div><div></div><div class="ln2"></div>'
+      + '<div class="lb">Full Name</div><div class="ln2" data-f="me:first">' + v(M.name) + '</div><div></div><div class="ln2"></div>'
       + '<div class="lb">Role</div><div></div><div></div><div class="ln2"></div>'
-      + '<div class="lb tall">Signature</div><div class="ln2 tall">' + sigHtml() + '</div><div></div><div class="ln2 tall"></div>'
-      + '<div class="lb">Place and date</div><div class="ln2">' + place + '</div><div></div><div class="ln2"></div></div>');
+      + '<div class="lb tall">Signature</div><div class="ln2 tall" data-f="sig">' + sigHtml() + '</div><div></div><div class="ln2 tall"></div>'
+      + '<div class="lb">Place and date</div><div class="ln2" data-f="f:c.place">' + place + '</div><div></div><div class="ln2"></div></div>');
     return K.pages;
   }
 
@@ -1591,7 +1614,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
           row('e.lineup', 'Altri artisti', fill(E.others, 'Nomi, se noti'), {h:43})]));
 
     page(3, sec('03', 'COMPENSO E PAGAMENTO')
-      + '<div class="ag-box ag-fee"><div class="nf">COMPENSO NETTO</div><div class="amt"><span class="cur">EUR</span> ' + eur(net) + '</div>'
+      + '<div class="ag-box ag-fee"><div class="nf">COMPENSO NETTO</div><div class="amt" data-f="f:fee.amount"><span class="cur">EUR</span> ' + eur(net) + '</div>'
       + ed('fee.note', 'La somma che l\'Artista riceve effettivamente, al netto di ritenute e contributi.', 'cap') + '</div>'
       + group('payment', 'PAGAMENTO', '', 24.6, [
           row('pay.deposit', 'Acconto', lines([pctTxt + '% (EUR ' + eur(dep) + ') con bonifico entro ' + v(T.depositDays, '7') + ' giorni dalla firma.',
@@ -1674,10 +1697,10 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     page(9, sec('09', 'FIRME')
       + ed('sig.intro', 'Firmando, l\'Artista e il Committente dichiarano di aver letto e accettato tutte le condizioni di questo contratto. Ciascuna parte conserva una copia firmata.', 'ag-p')
       + '<div class="ag-sig"><div></div><div class="who">ARTISTA</div><div></div><div class="who">COMMITTENTE</div>'
-      + '<div class="lb">Nome e cognome</div><div class="ln2">' + v(M.name) + '</div><div></div><div class="ln2">' + v(C.rep) + '</div>'
+      + '<div class="lb">Nome e cognome</div><div class="ln2" data-f="me:first">' + v(M.name) + '</div><div></div><div class="ln2" data-f="f:client.rep">' + v(C.rep) + '</div>'
       + '<div class="lb">Ruolo</div><div></div><div></div><div class="ln2"></div>'
-      + '<div class="lb tall">Firma</div><div class="ln2 tall">' + sigHtml() + '</div><div></div><div class="ln2 tall"></div>'
-      + '<div class="lb">Luogo e data</div><div class="ln2">' + place + '</div><div></div><div class="ln2"></div></div>'
+      + '<div class="lb tall">Firma</div><div class="ln2 tall" data-f="sig">' + sigHtml() + '</div><div></div><div class="ln2 tall"></div>'
+      + '<div class="lb">Luogo e data</div><div class="ln2" data-f="f:c.place">' + place + '</div><div></div><div class="ln2"></div></div>'
       // Italian law: clauses that weigh on the Committente need a second, specific signature (Codice civile, artt. 1341 e 1342)
       + '<section class="ag-g ag-appr"><div class="ag-gh">' + ed('appr.t', 'APPROVAZIONE SPECIFICA', 'gt') + '</div>'
       + ed('appr', 'Ai sensi degli artt. 1341 e 1342 del Codice civile, il Committente approva specificamente le clausole delle sezioni 03 (compenso, ritenuta e contributi), 06 (cancellazione e forza maggiore) e 07 (legge applicabile e foro competente).', 'ag-p j') + '</section>'
@@ -2124,7 +2147,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     labels: {one:'etichetta', title:'Etichette', add:'Aggiungi etichetta', icon:'<path d="M9 18V6l10-2v12"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="16" r="2"/>',
       f:[['name','Ragione sociale'], ['addr','Indirizzo'], ['zip','CAP',1], ['city','Città',1], ['prov','Provincia / regione',1], ['country','Stato',1], ['cf','Codice fiscale',1], ['piva','Partita IVA',1], ['vat','VAT / Tax ID',1]]}
   };
-  var ME_F = [['name','Nome e cognome'], ['addr','Indirizzo'], ['zip','CAP',1], ['city','Città',1], ['prov','Provincia (sigla)',1], ['cf','Codice fiscale',1], ['email','Email (ricevute royalties)',1], ['bookingEmail','Email di booking (contratti e ricevute DJ)',1], ['phone','Telefono',1]];
+  var ME_F = [['first','Nome',1], ['last','Cognome',1], ['addr','Indirizzo'], ['zip','CAP',1], ['city','Città',1], ['prov','Provincia (sigla)',1], ['cf','Codice fiscale',1], ['email','Email (ricevute royalties)',1], ['bookingEmail','Email di booking (contratti e ricevute DJ)',1], ['phone','Telefono',1]];
   var ACC_F = [['label','Nome del conto',1,'Es. Revolut'], ['holder','Intestatario',1,'Come il tuo nome'], ['iban','IBAN',0,'',1], ['bic','BIC / SWIFT (per l\'estero)',0,'',1]];
   var ICON = function(d, soft){ return '<span class="mic' + (soft ? ' soft' : '') + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg></span>'; };
   var CHEV = '<svg class="mchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
@@ -2267,7 +2290,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   // writes the page back into the data; false if something is missing
   function savePage(){
     var pg = page(), d = pg.draft;
-    if (pg.id === 'me') state.me = merge(defaults().me, clone(d));
+    if (pg.id === 'me') { state.me = merge(defaults().me, clone(d)); state.me.name = joinName(state.me); }
     if (pg.id === 'conto') {
       var i = state.accounts.map(function(a){ return a.id; }).indexOf(d.id);
       if (i === -1) { state.accounts.push(clone(d)); if (!state.acc) state.acc = d.id; } else state.accounts[i] = clone(d);
@@ -2920,13 +2943,52 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     closePad(); if (job && job.done) job.done(url, cw, ch);
   });
 
+  // ---------- from the sheet to its field ----------
+  // contracts: the rows that come from the form (the others are fixed sentences: a click opens their text)
+  var KEYS_IT = {'a.name':'me:first', 'a.cf':'me:cf', 'a.booking':'me:bookingEmail', 'a.phone':'me:phone',
+    'p.company':'f:client.name', 'p.rep':'f:client.rep', 'p.addr':'f:client.addr', 'p.vat':'f:client.piva', 'p.contact':'f:client.contact',
+    'e.name':'f:ev.name', 'e.venue':'f:ev.venue', 'e.date':'f:ev.date', 'e.set':'f:ev.start', 'e.doors':'f:ev.doors', 'e.capacity':'f:ev.capacity',
+    'e.billing':'f:ev.billing', 'e.lineup':'f:ev.others', 'pay.deposit':'f:t.depositPct', 'pay.balance':'f:t.balanceDate',
+    'b.trip':'f:t.persons', 'b.car':'f:t.carAmount', 'b.hotel':'f:t.nights', 'h.guests':'f:t.guests', 'h.booth':'f:t.drinks',
+    'rider.intro':'f:t.changeDays', 'r.players':'f:t.cdj', 'r.mixer':'f:t.mixer', 'c.more':'f:t.cancelDays', 'c.less':'f:t.cancelDays',
+    'c.nofm':'f:t.refundDays', 'fm.effect':'f:t.fmMonths', 'fm.proof':'f:t.proofDays', 'o.law':'f:t.foro'};
+  var KEYS_EN = {'a.name':'me:first', 'a.cf':'me:cf', 'a.booking':'me:bookingEmail', 'a.phone':'me:phone',
+    'pay.deposit':'f:en.depositPct', 'pay.balance':'f:en.balanceDate', 'tax.cert':'f:en.certDays',
+    'b.flights':'f:en.persons', 'b.tickets':'f:en.pnrDays', 'b.hotel':'f:en.nights', 'h.guests':'f:en.guests', 'h.booth':'f:en.drinks',
+    'rider.intro':'f:en.changeDays', 'r.players':'f:en.cdj', 'r.mixer':'f:en.mixer', 'c.more':'f:en.cancelDays', 'c.less':'f:en.cancelDays',
+    'c.nofm':'f:en.refundDays', 'fm.effect':'f:en.fmMonths', 'fm.proof':'f:en.proofDays', 'o.law':'f:en.law'};
+  // f:path a field of the form · line:i:key a release · me:key "I tuoi dati" · acc the account in use · logo, doc, sig, ini their places in the form
+  function goField(t){
+    var m = /^me:(\w+)$/.exec(t);
+    if (m) { openData('me'); var pf = document.getElementById('pf-' + m[1]); if (pf) { pf.focus({preventScroll:true}); pf.scrollIntoView({block:'center'}); flash(pf.closest('.f')); } return true; }
+    if (t === 'acc') {
+      var a = account(); openData('conti');
+      if (a && a.id && state.accounts.some(function(x){ return x.id === a.id; })) {
+        nav.push(makePage('conto', a.id)); showPage(true);
+        var ib = document.getElementById('pf-iban'); if (ib) { ib.focus({preventScroll:true}); flash(ib.closest('.f')); }
+      }
+      return true;
+    }
+    var id = (m = /^f:(.+)$/.exec(t)) ? 'f-' + m[1].replace(/\./g, '-') : (m = /^line:(\d+):(\w+)$/.exec(t)) ? 'line' + m[1] + '-' + m[2]
+      : {logo:'logo-' + state.logo[D().cat], doc:'doc-' + state.doc, sig:'sigUse', ini:'iniUse'}[t];
+    var el = id && document.getElementById(id); if (!el) return false;
+    setView('form');
+    var fold = el.closest('details.fold'); if (fold && !fold.open) { fold.open = true; openCards[fold.dataset.card] = true; }
+    var box = el.closest('.f, .seg, .tiles, label.check, .line') || el;
+    box.scrollIntoView({block:'center'});
+    if (/^(INPUT|SELECT)$/.test(el.nodeName) && el.type !== 'radio' && !el.readOnly) el.focus({preventScroll:true});
+    flash(box);
+    return true;
+  }
+  function flash(el){ if (!el) return; el.classList.remove('flash-f'); void el.offsetWidth; el.classList.add('flash-f'); setTimeout(function(){ el.classList.remove('flash-f'); }, 1700); }
+
   // ---------- changing the text on the sheet ----------
   var editing = false, edKey = null, resetArmed = 0;
   var edpad = document.getElementById('edpad'), edText = document.getElementById('edText'), editReset = document.getElementById('editReset');
   function refreshEditBar(){
     var n = Object.keys(edited()).length, tog = document.getElementById('editToggle');
     tog.setAttribute('aria-pressed', editing); document.getElementById('editLabel').textContent = editing ? 'Fine modifiche' : 'Modifica il testo';
-    var info = editing ? 'Tocca una frase del foglio per cambiarla.' : n ? (n === 1 ? '1 testo modificato in questo documento' : n + ' testi modificati in questo documento') : '';
+    var info = editing ? 'Tocca una frase del foglio per cambiarla.' : n ? (n === 1 ? '1 testo modificato in questo documento' : n + ' testi modificati in questo documento') : 'Tocca il foglio per andare al campo da cambiare.';
     document.getElementById('editInfo').textContent = info;
     editReset.hidden = !n; if (!resetArmed) editReset.textContent = 'Torna a tutto il testo originale';
     document.getElementById('editLine').hidden = !info && !n;
@@ -2938,12 +3000,24 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   }
   function closeEd(){ edpad.hidden = true; edKey = null; }
   document.getElementById('editToggle').addEventListener('click', function(){ editing = !editing; document.body.classList.toggle('editing', editing); refreshEditBar(); });
-  pagesEl.addEventListener('click', function(e){
-    if (!editing) return;
-    var el = e.target.closest('.ed'); if (!el) return;
+  function openEd(el){
     edKey = el.dataset.k; edText.value = toText(el);
     document.getElementById('edOrig').hidden = edited()[edKey] == null;
     edpad.hidden = false; edText.focus();
+  }
+  // a click on the sheet (D: "se clicco ad esempio sull'intestazione, il tool deve andare nella scheda o nel campo di riferimento"):
+  // a part that comes from a field goes to that field; a sentence of the contract opens its text, to change it there.
+  // While "Modifica il testo" is on, every click opens the text, as before.
+  pagesEl.addEventListener('click', function(e){
+    if (window.getSelection && String(window.getSelection()).trim()) return;   // selecting text, not asking to go anywhere
+    var el = e.target.closest('.ed');
+    if (editing) { if (el) openEd(el); return; }
+    var f = e.target.closest('[data-f]');
+    if (f && goField(f.dataset.f)) return;
+    if (!el) return;
+    var key = el.dataset.k.replace(/\.k$/, ''), map = state.doc === 'bkc-it' ? KEYS_IT : state.doc === 'bkc-en' ? KEYS_EN : {};
+    if (map[key] && goField(map[key])) return;
+    openEd(el);
   });
   document.getElementById('edSave').addEventListener('click', function(){
     var txt = edText.value.replace(/\r/g, '').replace(/\s+$/, '');
@@ -3146,7 +3220,8 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
       var v = rows && rows[0] ? +rows[0].version : 0;
       if (v && v !== sync.version) {
         var full = await api('/rest/v1/documenti_raho?select=data,version&user_id=eq.' + sync.uid);
-        var cloud = await open(full[0].data, syncKey), local = syncable(state);
+        var cloud; try { cloud = await open(full[0].data, syncKey); } catch (e) { await relock(); return; }
+        var local = syncable(state);
         var changedHere = hashOf(JSON.stringify(local)) !== sync.hash;
         var next = changedHere ? mergeStates(local, cloud) : cloud;
         sync.version = +full[0].version; sync.hash = hashOf(JSON.stringify(syncable(load(cloud)))); saveSync();
@@ -3245,13 +3320,14 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     document.getElementById('acctOut').hidden = !canOut; acctBtn.classList.toggle('joined', canOut);
     if (canOut) outLabel();
     var a = document.activeElement;
-    if (!acctpad.hidden && !(a && a.nodeName === 'INPUT' && acctpad.contains(a))) renderAccount();
+    if (!acctpad.hidden && acctView === 'main' && !(a && a.nodeName === 'INPUT' && acctpad.contains(a))) renderAccount();
   }
-  var acctMsg = '';
-  function renderAccount(msg){
-    if (arguments.length) acctMsg = msg || '';   // a message stays until the next action
+  var acctMsg = '', acctOk = false, acctView = 'main';   // main, or the pages to change name and email ('edit') and the password ('pw')
+  function renderAccount(msg, ok){
+    if (arguments.length) { acctMsg = msg || ''; acctOk = !!ok; }   // a message stays until the next action
+    if (demo || syncPhase !== 'ready') acctView = 'main';
     var h = '';
-    document.getElementById('acctTitle').textContent = demo ? 'Modalità prova' : 'Account e sincronizzazione';
+    document.getElementById('acctTitle').textContent = demo ? 'Modalità prova' : {edit:'Nome ed email', pw:'Cambia password'}[acctView] || 'Account e sincronizzazione';
     if (demo) {
       h = '<p><b>Stai provando [RH] Documents</b></p><p class="hint">Nomi, clienti, importi e archivio sono inventati e restano solo su questo dispositivo: niente va online. Puoi provare tutto: compilare, scaricare i PDF, l\'archivio e gli incassi, la rubrica, firme e sigle.</p>'
         + '<div class="sigactions"><button type="button" class="x" id="acDemoReset">Rimetti i dati di esempio</button><button type="button" class="btn" id="acDemoOut">Esci dalla prova</button></div>';
@@ -3265,15 +3341,34 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
       h = whoHtml() + '<p class="hint">Per aprire i dati cifrati su questo dispositivo scrivi la password che usavi quando hai attivato la sincronizzazione.</p>'
         + '<div class="f"><label for="acKey">Password</label><input type="password" id="acKey" autocomplete="current-password"></div>'
         + '<div class="sigactions"><button type="button" class="x danger" id="acOut">Esci</button><button type="button" class="btn" id="acUnlock">Sblocca</button></div>';
+    } else if (acctView === 'edit') {
+      h = '<div class="grid2"><div class="f"><label for="acFirst">Nome</label><input type="text" id="acFirst" autocomplete="given-name" value="' + esc(state.me.first) + '"></div>'
+        + '<div class="f"><label for="acLast">Cognome</label><input type="text" id="acLast" autocomplete="family-name" value="' + esc(state.me.last) + '"></div></div>'
+        + '<div class="f"><label for="acMail">Email dell\'account</label><input type="text" id="acMail" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" value="' + esc(sync.email) + '"></div>'
+        + '<p class="hint">Nome e cognome sono quelli dei tuoi documenti (anche in «I tuoi dati»). Se cambi l\'email ti arriva un link per confermarla: finché non lo apri resta quella di adesso.</p>'
+        + '<div class="sigactions"><button type="button" class="x" id="acBack">Annulla</button><button type="button" class="btn" id="acSaveMe">Salva</button></div>';
+    } else if (acctView === 'pw') {
+      h = '<div class="f"><label for="acPwOld">Password attuale</label><input type="password" id="acPwOld" autocomplete="current-password"></div>'
+        + '<div class="grid2"><div class="f"><label for="acPwNew">Nuova password</label><input type="password" id="acPwNew" autocomplete="new-password"></div>'
+        + '<div class="f"><label for="acPwNew2">Ripeti la nuova</label><input type="password" id="acPwNew2" autocomplete="new-password"></div></div>'
+        + '<p class="hint">Almeno 10 caratteri. I tuoi dati online vengono cifrati di nuovo con la nuova password; sugli altri dispositivi ti verrà chiesta la nuova, una volta.</p>'
+        + '<div class="sigactions"><button type="button" class="x" id="acBack">Annulla</button><button type="button" class="btn" id="acPwGo">Cambia password</button></div>';
     } else {
-      h = whoHtml() + '<p class="hint">' + (syncErr ? esc(syncErr) : 'Tutto sincronizzato' + (sync.at ? ' alle ' + new Date(sync.at).toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'}) : '') + '. I dati online sono cifrati con la tua password.') + '</p>'
+      h = whoHtml() + '<div class="row acedit"><button type="button" class="btn ghost" id="acEdit">Modifica nome ed email</button><button type="button" class="btn ghost" id="acPwBtn">Cambia password</button></div>'
+        + '<p class="hint">' + (syncErr ? esc(syncErr) : 'Tutto sincronizzato' + (sync.at ? ' alle ' + new Date(sync.at).toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'}) : '') + '. I dati online sono cifrati con la tua password.') + '</p>'
         + '<div class="sigactions"><button type="button" class="x danger" id="acOut">Esci da questo dispositivo</button><button type="button" class="btn ghost" id="acNow">Sincronizza ora</button></div>';
     }
-    if (acctMsg) h = '<p class="warn">' + esc(acctMsg) + '</p>' + h;
+    if (acctMsg) h = '<p class="' + (acctOk ? 'okmsg' : 'warn') + '" id="acNote">' + esc(acctMsg) + '</p>' + h;
     acctBody.innerHTML = h;
   }
+  // a message on the change pages, without redrawing them (what is typed stays)
+  function acctNote(msg, ok){
+    var n = document.getElementById('acNote');
+    if (!n) { n = document.createElement('p'); n.id = 'acNote'; acctBody.insertBefore(n, acctBody.firstChild); }
+    n.className = ok ? 'okmsg' : 'warn'; n.textContent = msg;
+  }
   async function openAccount(){
-    acctpad.hidden = false; renderAccount('');
+    acctView = 'main'; acctpad.hidden = false; renderAccount('');
     if (!demo && syncPhase === 'out' && hasOwner === null) {
       try { hasOwner = !!(await api('/rest/v1/rpc/documenti_raho_has_owner', {method:'POST', auth:false, body:{}})); } catch (e) { hasOwner = true; }
       if (!acctpad.hidden && syncPhase === 'out') renderAccount();
@@ -3347,19 +3442,49 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   document.getElementById('acctClose').addEventListener('click', function(){ acctpad.hidden = true; });
   acctpad.addEventListener('keydown', function(e){
     if (e.key === 'Escape') acctpad.hidden = true;
-    if (e.key === 'Enter' && e.target.nodeName === 'INPUT') { var b = acctBody.querySelector('#acLogin, #acUnlock'); if (b) b.click(); }
+    if (e.key === 'Enter' && e.target.nodeName === 'INPUT') { var b = acctBody.querySelector('#acLogin, #acUnlock, #acSaveMe, #acPwGo'); if (b) b.click(); }
   });
   var SIGNIN_MSG = {confirm:'Ti ho mandato un\'email: conferma l\'indirizzo e poi accedi qui.',
     denied:'Questo strumento è già collegato a un altro account: con questo non si può sincronizzare.',
     locked:'La password non apre i dati già salvati online: se l\'hai cambiata, scrivi quella che usavi prima.'};
-  function signInErr(err){ return err.status === 400 && /invalid/i.test(err.message) ? 'Email o password sbagliate.' : navigator.onLine === false ? 'Sei offline.' : 'Errore: ' + err.message; }
+  function signInErr(err){
+    var known = {same_password:'La nuova password è uguale a quella di adesso.', weak_password:'Password troppo debole: allungala o aggiungi numeri e simboli.',
+      email_exists:'Questa email è già usata da un altro account.', over_email_send_rate_limit:'Troppe email in poco tempo: riprova tra qualche minuto.'};
+    return known[err.code] || (err.status === 400 && /invalid/i.test(err.message) ? 'Email o password sbagliate.' : navigator.onLine === false ? 'Sei offline.' : 'Errore: ' + err.message);
+  }
   // checks before asking the server; '' when fine
   function signInCheck(email, pw, create){ return !email || !pw ? 'Scrivi email e password.' : create && pw.length < 10 ? 'Scegli una password di almeno 10 caratteri: protegge anche i tuoi dati.' : ''; }
   acctBody.addEventListener('click', async function(e){
     var b = e.target.closest('button'); if (!b || b.disabled) return;
-    var busy = function(t){ b.disabled = true; b.textContent = t; };
+    var label = b.textContent, busy = function(t){ b.disabled = true; b.textContent = t; }, free = function(){ b.disabled = false; b.textContent = label; };
+    var val = function(id){ var el = document.getElementById(id); return el ? el.value : ''; };
     try {
-      if (b.id === 'acLogin' || b.id === 'acCreate') {
+      if (b.id === 'acEdit' || b.id === 'acPwBtn' || b.id === 'acBack') {
+        acctView = b.id === 'acEdit' ? 'edit' : b.id === 'acPwBtn' ? 'pw' : 'main'; renderAccount('');
+        var first = acctBody.querySelector('input'); if (first && wide.matches) first.focus();
+        return;
+      }
+      if (b.id === 'acSaveMe') {
+        var fi = val('acFirst').trim(), la = val('acLast').trim(), em = val('acMail').trim(), msg = 'Salvato.';
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { acctNote('Scrivi un\'email valida.'); return; }
+        state.me.first = fi; state.me.last = la; state.me.name = joinName(state.me); persist(); renderFields(); update();
+        if (em.toLowerCase() !== String(sync.email).toLowerCase()) {
+          busy('Salvo…');
+          var back = /^https?:/.test(location.protocol) ? '?redirect_to=' + encodeURIComponent(location.origin + location.pathname) : '';
+          await api('/auth/v1/user' + back, {method:'PUT', body:{email:em}});
+          msg = 'Salvato. Ti ho mandato un link a ' + em + ' (e forse uno anche all\'email di adesso): aprilo per confermare. Fino ad allora resta ' + sync.email + '.';
+        }
+        acctView = 'main'; renderAccount(msg, true);
+      } else if (b.id === 'acPwGo') {
+        var cur = val('acPwOld'), n1 = val('acPwNew'), n2 = val('acPwNew2');
+        if (!cur || !n1) { acctNote('Scrivi la password attuale e quella nuova.'); return; }
+        if (n1.length < 10) { acctNote('La nuova password deve avere almeno 10 caratteri.'); return; }
+        if (n1 !== n2) { acctNote('Le due nuove password non sono uguali.'); return; }
+        busy('Cambio la password…');
+        if (await changePassword(cur, n1) === 'wrong') { free(); acctNote('La password attuale è sbagliata.'); return; }
+        acctView = 'main';
+        renderAccount(syncErr ? 'Password cambiata. I dati online si cifrano con la nuova appena c\'è la rete.' : 'Password cambiata. Sugli altri dispositivi ti verrà chiesta la nuova.', true);
+      } else if (b.id === 'acLogin' || b.id === 'acCreate') {
         var email = document.getElementById('acEmail').value.trim(), pw = document.getElementById('acPw').value, bad = signInCheck(email, pw, b.id === 'acCreate');
         if (bad) { renderAccount(bad); return; }
         busy(b.id === 'acLogin' ? 'Accedo…' : 'Creo l\'account…');
@@ -3375,9 +3500,28 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
       else if (b.id === 'acOut') { await signOut(); renderAccount(''); acctpad.hidden = true; openGate(''); }
       else if (b.id === 'acDemoOut') endDemo(false);
       else if (b.id === 'acDemoReset') endDemo(true);
-    } catch (err) { renderAccount(signInErr(err)); }
+    } catch (err) { if (acctView !== 'main') { free(); acctNote(signInErr(err)); } else renderAccount(signInErr(err)); }
     refreshAccount();
   });
+  // new password: checked with the server, then the data online are encrypted again with a key made from it.
+  // The other devices keep the old key: their next download does not open, and they ask the new password (relock()).
+  async function changePassword(cur, next){
+    try { setSession(await api('/auth/v1/token?grant_type=password', {method:'POST', auth:false, body:{email:sync.email, password:cur}})); }
+    catch (e) { if (e.status === 400) return 'wrong'; throw e; }
+    await pull(true);
+    await api('/auth/v1/user', {method:'PUT', body:{password:next}});
+    syncSalt = crypto.getRandomValues(new Uint8Array(16)); syncKey = await deriveKey(next, syncSalt); await rememberKey();
+    sync.hash = ''; saveSync(); await push();
+    return 'ok';
+  }
+  async function relock(){
+    syncKey = null; syncSalt = null; syncPhase = 'locked'; await forgetKey(sync.uid); refreshAccount();
+    if (!demo && !inClaude) { acctpad.hidden = true; openGate('La password è stata cambiata su un altro dispositivo: scrivi quella nuova.'); }
+  }
+  // the email of the account, as the server has it now (it changes after the confirmation link)
+  function refreshUser(){
+    api('/auth/v1/user').then(function(u){ if (u && u.email && u.email !== sync.email) { sync.email = u.email; saveSync(); refreshAccount(); } }).catch(function(){});
+  }
 
   // ---------- trying the tool with sample data ----------
   function startDemo(){
@@ -3466,10 +3610,21 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
       : 'Email confermata. Ora accedi con la tua email e la password che hai scelto.');
     return true;
   }
+  // the links of an email change come back here with #message=… (first of two links), #…type=email_change (done) or #error=…
+  function emailLanding(){
+    var hsh = location.hash.replace(/^#/, ''); if (!/(^|&)(message|access_token|error|error_description)=/.test(hsh)) return false;
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+    var bad = /(^|&)error/.test(hsh), first = /(^|&)message=/.test(hsh);
+    openAccount().then(function(){
+      renderAccount(bad ? 'Il link non è più valido: prova di nuovo a cambiare l\'email.' : first ? 'Primo link confermato: apri anche quello arrivato all\'altro indirizzo.' : 'Email dell\'account cambiata.', !bad);
+    });
+    refreshUser();
+    return true;
+  }
   async function startSync(){
     if (demo || !sync.uid || !window.crypto || !crypto.subtle) { refreshAccount(); return; }
     var k = await recallKey();
-    if (k && k.key) { syncKey = k.key; syncSalt = k.salt; syncPhase = 'ready'; refreshAccount(); await pull(true); }
+    if (k && k.key) { syncKey = k.key; syncSalt = k.salt; syncPhase = 'ready'; refreshAccount(); refreshUser(); await pull(true); }
     else { syncPhase = 'locked'; refreshAccount(); }
   }
   document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'visible') pull(); else push(); });
@@ -3511,6 +3666,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   startSync().catch(function(){}).then(function(){
     if (demo || inClaude) return;
     if (syncPhase === 'out' && confirmLanding()) return;
+    if (syncPhase === 'ready' && emailLanding()) return;
     if (syncPhase === 'locked' || syncPhase === 'out' && !gateAway()) openGate('');
   });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(renderPreview);

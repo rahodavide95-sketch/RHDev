@@ -6,7 +6,10 @@ sua richiesta: "super completa, efficiente ma soprattutto AFFIDABILE, super sicu
 privacy, design degno dei migliori design moderni".
 Il nome è **"Analisi Finanziarie"**, quello di D: era stato rinominato di nostra iniziativa
 "[RH] Finance" e a D non è piaciuto ("chi ti ha detto di chiamarla così?"). Non inventare
-nomi, loghi con scritte o marchi: se serve, chiedi. L'icona è solo un grafico in salita.
+nomi, loghi con scritte o marchi: se serve, chiedi. Il logo è il **grafico a ciambella**
+(tre spicchi bianco, grigio e verde `#00e5a0` della vecchia app, su nero): D l'ha scelto tra
+6 proposte dopo aver bocciato il primo ("il logo fa cagare"). File: `icons/icon.svg` (anche
+nella barra laterale e nella schermata di accesso) e le PNG generate da lì.
 I nomi interni invisibili (`rh-finance` per IndexedDB, cache e formato della cassaforte)
 restano: cambiarli renderebbe illeggibili cassaforti e backup già creati.
 D scrive in italiano e non è uno sviluppatore: spiegagli le cose in modo semplice e fai tu

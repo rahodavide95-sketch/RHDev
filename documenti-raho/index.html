@@ -27,8 +27,8 @@ img{max-width:100%}
 /* Layout: two-pane workbench — the form on the left, the live A4 pages on a desk to the right; on phones the two become tabs.
    No outlines: surfaces are told apart by colour. Five themes (data-theme on <html>); the documents stay paper-white in all of them. */
 :root{
-  --bg:#f3f3f1; --panel:#ffffff; --field:#efefec; --field-2:#e6e6e2; --fg:#0b0b0b; --muted:#5f5f5a; --faint:#8d8d87;
-  --accent:#0b0b0b; --accent-fg:#ffffff; --ring:#2f6bff; --desk:#e4e4e0; --warn:#8a4b00; --warn-bg:#ffeed4; --ok:#14663a; --ok-bg:#e1f1e6; --soft:0 1px 2px rgba(20,20,18,.04),0 10px 30px rgba(20,20,18,.05); --scrim:rgba(10,10,10,.5);
+  --bg:#ffffff; --well:#f3f3f1; --panel:#ffffff; --field:#efefec; --field-2:#e6e6e2; --fg:#0b0b0b; --muted:#5f5f5a; --faint:#8d8d87;
+  --accent:#0b0b0b; --accent-fg:#ffffff; --ring:#2f6bff; --desk:#e4e4e0; --warn:#8a4b00; --warn-bg:#ffeed4; --ok:#14663a; --ok-bg:#e1f1e6; --soft:0 0 0 1px rgba(20,20,18,.07),0 1px 3px rgba(20,20,18,.06),0 14px 36px rgba(20,20,18,.10); --scrim:rgba(10,10,10,.5);
   --lift:0 1px 2px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.08);
   /* frosted glass of the top bar (and of the bars over the sheets): see-through, blurred, a glossy light edge on top */
   --glass:linear-gradient(180deg, rgba(255,255,255,.80), rgba(255,255,255,.60)); --glass-btn:rgba(118,118,108,.12);
@@ -42,20 +42,20 @@ img{max-width:100%}
   color-scheme:light;
 }
 :root[data-theme="sand"]{
-  --bg:#ebe5da; --panel:#faf7f1; --field:#ebe4d8; --field-2:#e1d8ca; --fg:#1c1713; --muted:#6b6054; --faint:#958a7c;
+  --bg:#faf7f1; --well:#ebe5da; --panel:#faf7f1; --field:#ebe4d8; --field-2:#e1d8ca; --fg:#1c1713; --muted:#6b6054; --faint:#958a7c;
   --glass:linear-gradient(180deg, rgba(250,247,241,.82), rgba(250,247,241,.62)); --glass-btn:rgba(120,96,64,.12);
   --glass-edge:inset 0 1px 0 rgba(255,253,248,.95), inset 0 0 0 1px rgba(255,253,248,.5), 0 1px 2px rgba(60,40,20,.07), 0 12px 32px rgba(60,40,20,.11);
-  --accent:#1c1713; --accent-fg:#faf7f1; --ring:#b4532a; --desk:#ded5c7; --warn:#8a4300; --warn-bg:#f8e3c4; --ok:#2f6331; --ok-bg:#e0e8d5; --soft:0 1px 2px rgba(60,40,20,.05),0 10px 30px rgba(60,40,20,.06);
+  --accent:#1c1713; --accent-fg:#faf7f1; --ring:#b4532a; --desk:#ded5c7; --warn:#8a4300; --warn-bg:#f8e3c4; --ok:#2f6331; --ok-bg:#e0e8d5; --soft:0 0 0 1px rgba(60,40,20,.08),0 1px 3px rgba(60,40,20,.07),0 14px 36px rgba(60,40,20,.11);
 }
 :root[data-theme="dark"]{
-  --bg:#0c0c0d; --panel:#212124; --field:#333337; --field-2:#404045; --fg:#f5f5f3; --muted:#c0c0bb; --faint:#96969c;
+  --bg:#0c0c0d; --well:#0c0c0d; --panel:#212124; --field:#333337; --field-2:#404045; --fg:#f5f5f3; --muted:#c0c0bb; --faint:#96969c;
   --accent:#f5f5f3; --accent-fg:#0c0c0d; --ring:#7ea4ff; --desk:#050505; --warn:#ffc978; --warn-bg:#3b2a0f; --ok:#82d6a3; --ok-bg:#132a1d; --soft:none; --scrim:rgba(0,0,0,.72);
   --lift:0 1px 2px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.5); color-scheme:dark;
   --glass:linear-gradient(180deg, rgba(62,62,66,.62), rgba(30,30,33,.56)); --glass-btn:rgba(255,255,255,.09);
   --glass-edge:inset 0 1px 0 rgba(255,255,255,.14), inset 0 0 0 1px rgba(255,255,255,.07), 0 12px 32px rgba(0,0,0,.55);
 }
 :root[data-theme="navy"]{
-  --bg:#0a0f1d; --panel:#111a2f; --field:#1a2440; --field-2:#22304f; --fg:#eef1fb; --muted:#9ca7c6; --faint:#6e79a0;
+  --bg:#0a0f1d; --well:#0a0f1d; --panel:#111a2f; --field:#1a2440; --field-2:#22304f; --fg:#eef1fb; --muted:#9ca7c6; --faint:#6e79a0;
   --accent:#e8ecff; --accent-fg:#0a0f1d; --ring:#8fb0ff; --desk:#060a14; --warn:#ffcf86; --warn-bg:#33290f; --ok:#86d9ad; --ok-bg:#10291f; --soft:none; --scrim:rgba(2,5,14,.72);
   --lift:0 1px 2px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.5); color-scheme:dark;
   --glass:linear-gradient(180deg, rgba(44,60,102,.62), rgba(17,26,47,.56)); --glass-btn:rgba(255,255,255,.09);
@@ -63,7 +63,7 @@ img{max-width:100%}
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme]),:root[data-theme="auto"]{
-    --bg:#0c0c0d; --panel:#212124; --field:#333337; --field-2:#404045; --fg:#f5f5f3; --muted:#c0c0bb; --faint:#96969c;
+    --bg:#0c0c0d; --well:#0c0c0d; --panel:#212124; --field:#333337; --field-2:#404045; --fg:#f5f5f3; --muted:#c0c0bb; --faint:#96969c;
     --accent:#f5f5f3; --accent-fg:#0c0c0d; --ring:#7ea4ff; --desk:#050505; --warn:#ffc978; --warn-bg:#3b2a0f; --ok:#82d6a3; --ok-bg:#132a1d; --soft:none; --scrim:rgba(0,0,0,.72);
     --lift:0 1px 2px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.5); color-scheme:dark;
     --glass:linear-gradient(180deg, rgba(62,62,66,.62), rgba(30,30,33,.56)); --glass-btn:rgba(255,255,255,.09);
@@ -218,7 +218,7 @@ html.menu-open,html.menu-open body{overflow:hidden}
 .themes button{appearance:none;-webkit-appearance:none;border:0;background:none;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--muted);font:500 12px var(--ui);min-width:0}
 .themes button[aria-checked="true"]{color:var(--fg);font-weight:600}
 .tp{position:relative;display:block;width:100%;aspect-ratio:4/5;border-radius:14px;background:var(--b);overflow:hidden;box-shadow:inset 0 0 0 1px rgba(128,128,128,.2);transition:box-shadow .15s}
-.tp .p{position:absolute;left:14%;right:14%;top:16%;bottom:16%;border-radius:7px;background:var(--p)}
+.tp .p{position:absolute;left:14%;right:14%;top:16%;bottom:16%;border-radius:7px;background:var(--p);box-shadow:0 0 0 1px rgba(0,0,0,.06),0 2px 6px rgba(0,0,0,.10)}
 .tp .a,.tp .l{position:absolute;left:14%;border-radius:3px}
 .tp .a{top:14%;width:52%;height:15%;background:var(--a)}
 .tp .l{right:14%;height:12%;background:var(--f)}
@@ -241,7 +241,7 @@ html.menu-open,html.menu-open body{overflow:hidden}
 #fields{display:flex;flex-direction:column;gap:12px}
 .sub{display:flex;flex-direction:column;gap:12px}
 .sub + .sub{margin-top:12px}
-.fold{border-radius:18px;background:var(--bg)}
+.fold{border-radius:18px;background:var(--well)}
 .fold > summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:15px 18px;font-weight:600;font-size:14.5px;border-radius:18px}
 .fold > summary::-webkit-details-marker{display:none}
 .fold > summary::after{content:"";width:7px;height:7px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg) translate(-2px,-2px);transition:transform .2s}
@@ -308,7 +308,7 @@ button:focus-visible,summary:focus-visible{outline:2px solid var(--ring);outline
 .sigprev .initxt{font-size:36px}
 .sigprev .ph{font:500 15px var(--ui);color:#9a9a9a}
 .lines{display:flex;flex-direction:column;gap:10px}
-.line{background:var(--bg);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.line{background:var(--well);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:12px}
 .line input[type="text"],.line select{background:var(--panel)}
 .line-head{display:flex;justify-content:space-between;align-items:center}
 .line-head span{font:600 12px var(--ui);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
@@ -336,12 +336,12 @@ input.code{font-family:var(--mono);letter-spacing:.02em}
 .arch-start summary{cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);list-style:none}
 .arch-start summary::-webkit-details-marker{display:none}
 .arch-start[open] summary{margin-bottom:10px}
-.arch-filters{display:flex;gap:4px;padding:4px;border-radius:14px;background:var(--panel);overflow-x:auto}
+.arch-filters{display:flex;gap:4px;padding:4px;border-radius:14px;background:var(--panel);overflow-x:auto;box-shadow:var(--soft)}
 .arch-filters button{appearance:none;-webkit-appearance:none;border:0;background:transparent;color:var(--muted);font:600 13px var(--ui);min-height:36px;padding:0 12px;border-radius:10px;cursor:pointer;white-space:nowrap}
 .arch-filters button span{font-weight:500;opacity:.7;margin-left:2px}
 .arch-filters button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
 .arch-year{font:600 12px var(--ui);letter-spacing:.1em;color:var(--faint);margin:6px 4px -2px}
-.arch-item{display:grid;grid-template-columns:44px minmax(0,1fr) auto;grid-template-areas:"ico main num" "ico pay pay" "ico act act";gap:4px 14px;align-items:center;background:var(--panel);border-radius:18px;padding:14px 16px}
+.arch-item{display:grid;grid-template-columns:44px minmax(0,1fr) auto;grid-template-areas:"ico main num" "ico pay pay" "ico act act";gap:4px 14px;align-items:center;background:var(--panel);border-radius:18px;padding:14px 16px;box-shadow:var(--soft)}
 .arch-item.open{box-shadow:0 0 0 2px var(--accent)}
 .arch-ico{grid-area:ico;align-self:start;width:44px;height:44px;border-radius:13px;display:grid;place-items:center}
 .arch-ico svg{width:22px;height:22px}
@@ -430,7 +430,7 @@ body.sharing .app{padding-bottom:96px}
 .zoom .zval{min-width:58px;padding:0 6px}
 #pages{flex:none;display:flex;flex-direction:column;gap:22px;overflow-x:auto;overflow-y:hidden;padding:14px;margin:-14px;scrollbar-width:thin}
 .sheet{position:relative;margin:0 auto;overflow:hidden;flex:none}
-.pscale{position:absolute;top:0;left:0;width:794px;height:1123px;transform-origin:top left;box-shadow:0 1px 2px rgba(0,0,0,.10),0 12px 36px rgba(0,0,0,.16)}
+.pscale{position:absolute;top:0;left:0;width:794px;height:1123px;transform-origin:top left;box-shadow:0 0 0 1px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.10),0 12px 36px rgba(0,0,0,.16)}
 
 /* dialogs: signature pad and text editor */
 .sigpad{position:fixed;inset:0;z-index:50;background:var(--scrim);-webkit-backdrop-filter:blur(14px) saturate(1.2);backdrop-filter:blur(14px) saturate(1.2);display:flex;align-items:center;justify-content:center;padding:max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px))}
@@ -780,9 +780,9 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     <p class="moff" id="offLine" hidden></p>
     <div class="mk">Aspetto</div>
     <div class="themes" role="radiogroup" aria-label="Tema">
-      <button type="button" role="radio" data-theme-pick="auto" aria-label="Tema automatico, come il sistema"><span class="tp"><span class="tp" style="--b:#f3f3f1;--p:#ffffff;--a:#0b0b0b;--f:#e6e6e2"><i class="p"><i class="a"></i><i class="l"></i><i class="l"></i></i></span><span class="tp" style="--b:#0c0c0d;--p:#212124;--a:#f5f5f3;--f:#404045"><i class="p"><i class="a"></i><i class="l"></i><i class="l"></i></i></span></span>Auto</button>
-      <button type="button" role="radio" data-theme-pick="light" aria-label="Tema chiaro"><span class="tp" style="--b:#f3f3f1;--p:#ffffff;--a:#0b0b0b;--f:#e6e6e2"><i class="p"><i class="a"></i><i class="l"></i><i class="l"></i></i></span>Chiaro</button>
-      <button type="button" role="radio" data-theme-pick="sand" aria-label="Tema sabbia"><span class="tp" style="--b:#ebe5da;--p:#faf7f1;--a:#1c1713;--f:#e1d8ca"><i class="p"><i class="a"></i><i class="l"></i><i class="l"></i></i></span>Sabbia</button>
+      <button type="button" role="radio" data-theme-pick="auto" aria-label="Tema automatico, come il sistema"><span class="tp"><span class="tp" style="--b:#ffffff;--p:#ffffff;--a:#0b0b0b;--f:#e6e6e2"><i class="p"><i class="a"></i><i class="l"></i><i class="l"></i></i></span><span class="tp" style="--b:#0c0c0d;--p:#212124;--a:#f5f5f3;--f:#404045"><i class="p"><i class="a"></i><i class="l"></i><i class="l"></i></i></span></span>Auto</button>
+      <button type="button" role="radio" data-theme-pick="light" aria-label="Tema chiaro"><span class="tp" style="--b:#ffffff;--p:#ffffff;--a:#0b0b0b;--f:#e6e6e2"><i class="p"><i class="a"></i><i class="l"></i><i class="l"></i></i></span>Chiaro</button>
+      <button type="button" role="radio" data-theme-pick="sand" aria-label="Tema sabbia"><span class="tp" style="--b:#faf7f1;--p:#faf7f1;--a:#1c1713;--f:#e1d8ca"><i class="p"><i class="a"></i><i class="l"></i><i class="l"></i></i></span>Sabbia</button>
       <button type="button" role="radio" data-theme-pick="dark" aria-label="Tema scuro"><span class="tp" style="--b:#0c0c0d;--p:#212124;--a:#f5f5f3;--f:#404045"><i class="p"><i class="a"></i><i class="l"></i><i class="l"></i></i></span>Scuro</button>
       <button type="button" role="radio" data-theme-pick="navy" aria-label="Tema notte"><span class="tp" style="--b:#0a0f1d;--p:#16203a;--a:#e8ecff;--f:#22304f"><i class="p"><i class="a"></i><i class="l"></i><i class="l"></i></i></span>Notte</button>
     </div>

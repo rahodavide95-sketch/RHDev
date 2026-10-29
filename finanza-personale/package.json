@@ -1,0 +1,8 @@
+{
+  "name": "rh-finance",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "TZ=Europe/Rome node --test test/*.test.js"
+  }
+}

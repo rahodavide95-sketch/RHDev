@@ -21,7 +21,7 @@ img{max-width:100%}
 <!-- File generato da build.js: modifica app.html, non questo file. -->
 <title>[RH] Documents</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<script>try { var t = (JSON.parse(localStorage.getItem('raho-documenti-v1') || '{}').ui || {}).theme; if (t && t !== 'auto') document.documentElement.dataset.theme = t; } catch (e) {}</script>
+<script>try { var t = (JSON.parse(localStorage.getItem(localStorage.getItem('raho-documenti-mode') === 'demo' ? 'raho-documenti-demo' : 'raho-documenti-v1') || '{}').ui || {}).theme; if (t && t !== 'auto') document.documentElement.dataset.theme = t; } catch (e) {}</script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Arimo:wght@400&amp;family=Montserrat:wght@600&amp;display=swap">
 <style>
 /* Layout: two-pane workbench — the form on the left, the live A4 pages on a desk to the right; on phones the two become tabs.
@@ -255,6 +255,32 @@ html.menu-open,html.menu-open body{overflow:hidden}
 .acct-body{display:flex;flex-direction:column;gap:14px}
 .acct-body p{margin:0}
 .acct-body p.warn{margin:0}
+.acwho{display:flex;align-items:center;gap:14px}
+.acwho .mav{background:var(--accent);color:var(--accent-fg)}
+.acwho .mtx small span,.macct .mtx small span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* the trial: a small tag next to the name of the tool, it opens the trial's window */
+.brand{display:flex;align-items:center;gap:10px}
+.demotag{appearance:none;-webkit-appearance:none;border:0;cursor:pointer;flex:none;font:600 11px/1 var(--ui);letter-spacing:.06em;text-transform:uppercase;padding:6px 9px;border-radius:999px;background:var(--warn-bg);color:var(--warn)}
+/* on phones under the name, so the name and the buttons stay on one row */
+@media (max-width:600px){.brand{flex-direction:column;align-items:flex-start;gap:2px}.demotag{padding:2px 7px;font-size:9.5px;letter-spacing:.08em}}
+/* the login screen: over the whole tool, blurred behind it, a glass card in the middle */
+.gate{position:fixed;inset:0;z-index:70;display:flex;overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box;background:var(--veil);
+  -webkit-backdrop-filter:blur(30px) saturate(1.6);backdrop-filter:blur(30px) saturate(1.6);
+  padding:max(20px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(20px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px))}
+.gate[hidden]{display:none}
+html.gated,html.gated body{overflow:hidden}
+.gbox{margin:auto;width:min(400px,100%);box-sizing:border-box;padding:34px 24px 18px;border-radius:30px;background:var(--glass);box-shadow:var(--glass-edge);
+  -webkit-backdrop-filter:blur(22px) saturate(1.8);backdrop-filter:blur(22px) saturate(1.8);display:flex;flex-direction:column;gap:6px}
+.gbrand{margin:0;text-align:center;font:400 34px/1 var(--logo);letter-spacing:.02em}
+.gsub{margin:6px 0 18px;text-align:center;color:var(--muted);font-size:13.5px}
+.gbody{display:flex;flex-direction:column;gap:14px}
+.gbody p{margin:0}
+.gbody .btn{width:100%}
+.gor{display:flex;align-items:center;gap:12px;color:var(--faint);font-size:12px;margin:2px 0}
+.gor::before,.gor::after{content:"";flex:1;height:1px;background:var(--field-2)}
+.gnote{text-align:center;margin-top:-6px!important}
+.gfoot{display:flex;justify-content:center;flex-wrap:wrap;gap:4px 8px;margin-top:-2px}
+@media (max-width:380px){.gbox{padding:28px 18px 14px}.gbrand{font-size:30px}}
 input::placeholder{color:var(--faint);opacity:1}
 select{background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 17px) 50%,calc(100% - 12px) 50%;background-size:5px 5px;background-repeat:no-repeat;padding-right:32px}
 input[type="date"]{display:block}
@@ -677,7 +703,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
 <div class="app">
   <div class="topveil" aria-hidden="true"></div>
   <header class="top">
-    <div class="brand"><h1>[RH] Documents</h1></div>
+    <div class="brand"><h1>[RH] Documents</h1><button type="button" class="demotag" id="demoTag" hidden aria-label="Modalità prova: dati di esempio">Prova</button></div>
     <div class="tabs" role="group" aria-label="Vista">
       <button type="button" id="tabForm" aria-pressed="true">Compila</button>
       <button type="button" id="tabPreview" aria-pressed="false">Anteprima</button>
@@ -840,6 +866,14 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   </div>
 </div>
 
+<div class="gate" id="gate" hidden>
+  <div class="gbox" role="dialog" aria-modal="true" aria-labelledby="gateTitle">
+    <h1 class="gbrand" id="gateTitle">[RH] Documents</h1>
+    <p class="gsub">Contratti e ricevute in PDF, archivio e incassi.</p>
+    <div class="gbody" id="gateBody"></div>
+  </div>
+</div>
+
 <div class="sigpad" id="edpad" hidden>
   <div class="sigbox" role="dialog" aria-modal="true" aria-labelledby="edTitle">
     <h2 id="edTitle">Modifica il testo</h2>
@@ -973,10 +1007,20 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     });
     return s;
   }
+  // Trying the tool (D: "far provare il tool a un amico"): sample data kept apart (DEMO_KEY), never synced; D's own data stay untouched.
+  var MODE_KEY = 'raho-documenti-mode', DEMO_KEY = 'raho-documenti-demo', GATE_KEY = 'raho-documenti-gate';
+  var demo = false, hadData = false;
+  try {
+    // the link to send to friends, …/documenti-raho/?prova, opens straight into the trial
+    if (/[?&]prova(=|&|$)/.test(location.search)) { localStorage.setItem(MODE_KEY, 'demo'); try { history.replaceState(null, '', location.pathname + location.hash); } catch (e) {} }
+    demo = localStorage.getItem(MODE_KEY) === 'demo'; hadData = !!localStorage.getItem(KEY);
+  } catch (e) {}
+  var STORE = demo ? DEMO_KEY : KEY;
   var state = defaults();
   try {
-    var raw = localStorage.getItem(KEY);
+    var raw = localStorage.getItem(STORE);
     if (raw) state = load(JSON.parse(raw));
+    else if (demo) state = load(demoState());
     else {
       var old = localStorage.getItem(OLD_KEY);
       if (old) {
@@ -991,8 +1035,49 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   function persist(){
     var j = stateJson();
     if (j !== lastSaved) { if (lastSaved) state.mt = Date.now(); lastSaved = j; }
-    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+    try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
     schedulePush();
+  }
+  // made-up data to try every part of the tool: a contract waiting for its deposit, receipts paid and not, address book, account, initials
+  function demoState(){
+    var t = todayISO(), at = function(d){ return addDays(t, d); };
+    var me = {name:'Alex Demo', addr:'Via dei Mille 12', zip:'20121', city:'Milano', prov:'MI', cf:'DMELXA90A01F205Q', email:'royalties@esempio.it', bookingEmail:'booking@esempio.it', phone:'+39 333 123 4567'};
+    var club = {name:'Club Esempio Srl', rep:'Mario Bianchi, legale rappresentante', addr:'Via Tortona 30', zip:'20144', city:'Milano', prov:'MI', country:'', vat:'', piva:'01234567890', cf:'01234567890', contact:'Luca, +39 340 000 0000'};
+    var gmbh = {name:'Example Club GmbH', rep:'', addr:'Friedrichstraße 100', zip:'10117', city:'Berlin', prov:'Berlin', country:'Germania', vat:'DE123456789', piva:'', cf:'', contact:''};
+    var labIt = {name:'Etichetta Esempio Srl', addr:'Via Roma 5', zip:'00184', city:'Roma', prov:'RM', country:'', vat:'', piva:'09876543210', cf:'09876543210'};
+    var labEst = {name:'Sample Records Ltd', addr:'1 Example Street', zip:'E1 6AN', city:'London', prov:'', country:'Regno Unito', vat:'GB123456789', piva:'', cf:''};
+    var ev = {name:'Closing Party', venue:'Club Esempio', address:'Via Tortona 30, Milano', date:at(25), start:'01:00', end:'03:00', duration:'120', doors:'23:00', check:'22:30', capacity:'800', billing:'headliner', others:'Altri due DJ'};
+    var past = [
+      {d:-170, doc:'bkr-it', who:club.name, amount:1200, paid:-160, snap:{client:club, ev:{name:'Notte Techno', venue:'Club Esempio', date:at(-171)}, fee:{amount:'1200', net:true, rit:true}}},
+      {d:-120, doc:'roy-est', who:labEst.name, amount:845.5, paid:-100, snap:{label:labEst, lines:[{title:'Night Drive', cat:'SR012', stmt:'Q1', period:'01/01 – 31/03', amount:'845,50'}]}},
+      {d:-40, doc:'bkr-est', who:gmbh.name, amount:1650, paid:0, snap:{client:gmbh, ev:{name:'Warehouse Session', venue:'Example Club', date:at(-41)}, fee:{amount:'1500', expenses:'150'}}},
+      {d:-20, doc:'roy-it', who:labIt.name, amount:400, paid:-5, snap:{label:labIt, lines:[{title:'Deep Signal', cat:'EE007', stmt:'S1', period:'01/01 – 30/06', amount:'500'}], rit:true}}
+    ];
+    var seq = {}, history = past.map(function(h, i){
+      var date = at(h.d), y = date.slice(0, 4); seq[y] = (seq[y] || 0) + 1;
+      var e = {id:'demo-' + i, doc:h.doc, number:seq[y] + '/' + y, date:date, who:h.who, amount:h.amount, file:'esempio.pdf', snap:Object.assign({doc:h.doc, date:date}, h.snap), created:date + 'T10:00:00.000Z', at:date + 'T10:00:00.000Z'};
+      if (h.paid) e.paid = at(h.paid);
+      return e;
+    });
+    history.push({id:'demo-ctr', doc:'bkc-it', number:'', date:at(-5), who:club.name, amount:2000, file:'esempio.pdf',
+      snap:{doc:'bkc-it', client:club, ev:ev, fee:{amount:'2000'}, t:{depositPct:'30', depositDays:'10'}, c:{place:'Milano', date:at(-5)}}, created:at(-5) + 'T10:00:00.000Z', at:at(-5) + 'T10:00:00.000Z'});
+    var saved = {clients:{}, labels:{}};
+    saved.clients[club.name] = club; saved.clients[gmbh.name] = gmbh; saved.labels[labIt.name] = labIt; saved.labels[labEst.name] = labEst;
+    return {doc:'bkc-it', me:me, client:club, ev:ev, fee:{amount:'2000'}, t:{depositPct:'30', depositDays:'10'}, c:{place:'Milano', date:at(-5)}, label:labIt,
+      accounts:[{id:'demo-acc', label:'Conto di prova', holder:'Alex Demo', iban:'IT60X0542811101000000123456', bic:'BPMOIT22XXX'}], acc:'demo-acc',
+      inis:[{id:'demo-ini', name:'Sigle 1', text:'A.D.', img:''}], ini:{use:true, sel:'demo-ini'}, bolloId:'01234567890123', history:history, saved:saved,
+      sigs:demoSig(), sig:{use:true, sel:'demo-sig'}};
+  }
+  function demoSig(){
+    try {
+      var cv = document.createElement('canvas'); cv.width = 360; cv.height = 120; var x = cv.getContext('2d');
+      x.strokeStyle = '#111'; x.lineWidth = 4; x.lineCap = 'round'; x.lineJoin = 'round';
+      x.beginPath(); x.moveTo(14, 92); x.bezierCurveTo(40, 20, 62, 8, 70, 34); x.bezierCurveTo(78, 60, 52, 96, 44, 78); x.bezierCurveTo(60, 60, 96, 58, 104, 82);
+      x.bezierCurveTo(118, 40, 130, 44, 136, 70); x.bezierCurveTo(146, 98, 160, 52, 176, 60); x.bezierCurveTo(190, 68, 196, 92, 214, 70);
+      x.bezierCurveTo(232, 46, 250, 88, 268, 64); x.bezierCurveTo(284, 44, 300, 84, 344, 50); x.stroke();
+      x.beginPath(); x.moveTo(30, 104); x.bezierCurveTo(120, 96, 230, 98, 330, 90); x.stroke();
+      return [{id:'demo-sig', name:'Firma 1', img:cv.toDataURL('image/png'), w:360, h:120}];
+    } catch (e) { return []; }
   }
 
   // ---------- helpers ----------
@@ -2927,7 +3012,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   var SYNC_KEY = 'raho-documenti-sync', ITER = 600000;
   var sync = {email:'', uid:'', access:'', refresh:'', exp:0, version:0, hash:'', at:''};
   try { var rawSync = JSON.parse(localStorage.getItem(SYNC_KEY) || 'null'); if (rawSync && typeof rawSync === 'object') sync = merge(sync, rawSync); } catch (e) {}
-  var syncKey = null, syncSalt = null, syncPhase = sync.uid ? 'locked' : 'out', syncBusy = false, syncErr = '', pushTimer = null, hasOwner = null;
+  var syncKey = null, syncSalt = null, syncPhase = sync.uid && !demo ? 'locked' : 'out', syncBusy = false, syncErr = '', pushTimer = null, hasOwner = null;
   function saveSync(){ try { localStorage.setItem(SYNC_KEY, JSON.stringify(sync)); } catch (e) {} }
 
   var b64 = function(bytes){ var s = '', a = new Uint8Array(bytes); for (var i = 0; i < a.length; i += 0x8000) s += String.fromCharCode.apply(null, a.subarray(i, i + 0x8000)); return btoa(s); };
@@ -3008,7 +3093,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   function adopt(s){
     var ui = state.ui, viewing = state.viewing;
     state = load(s); state.ui = ui; state.viewing = state.history.some(function(h){ return h.id === viewing; }) ? viewing : '';
-    lastSaved = stateJson(); try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+    lastSaved = stateJson(); try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
     syncTop(); renderFields(); update();
   }
 
@@ -3093,20 +3178,30 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
 
   // ---------- account dialog ----------
   var acctBtn = document.getElementById('acctBtn'), acctpad = document.getElementById('acctpad'), acctBody = document.getElementById('acctBody');
+  var CLOUD_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 18.5h10a4 4 0 0 0 .7-7.94A6 6 0 0 0 6.6 9.9a4.3 4.3 0 0 0 .9 8.6z"/></svg>';
+  var TRY_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 3.5h5M10.5 3.5v5.2L5.3 17.6A2 2 0 0 0 7 20.5h10a2 2 0 0 0 1.7-2.9l-5.2-8.9V3.5"/><path d="M7.6 14.5h8.8"/></svg>';
+  function myName(){ return String(state.me.name || '').trim(); }
+  // who is signed in, as in the Menu: initial, name, email
+  function whoHtml(){
+    var n = myName();
+    return '<div class="acwho"><span class="mav" aria-hidden="true">' + esc((n || sync.email).charAt(0).toUpperCase()) + '</span><span class="mtx"><b>' + esc(n || sync.email) + '</b>' + (n ? '<small><span>' + esc(sync.email) + '</span></small>' : '') + '</span></div>';
+  }
   function refreshAccount(){
     var label, cls;
-    if (syncPhase === 'out') { label = 'Accedi per sincronizzare'; cls = ''; }
+    if (demo) { label = 'Dati di esempio, solo qui'; cls = ''; }
+    else if (syncPhase === 'out') { label = 'Accedi per sincronizzare'; cls = ''; }
     else if (syncPhase === 'locked') { label = 'Sblocca'; cls = 'warn'; }
     else if (syncBusy) { label = 'Sincronizzo…'; cls = 'busy'; }
     else if (syncErr) { label = 'Non sincronizzato'; cls = 'warn'; }
     else { label = 'Sincronizzato'; cls = 'ok'; }
-    document.getElementById('acctLabel').textContent = label;
+    // D: the name too, where the email is (the status first, so a long email is the part cut short)
+    var signed = !demo && syncPhase !== 'out' && !!sync.email, n = myName();
+    document.getElementById('acctLabel').textContent = label + (signed && n ? ' · ' + sync.email : '');
     document.getElementById('acctDot').dataset.state = cls; document.getElementById('menuDot').dataset.state = cls;
-    var signed = syncPhase !== 'out' && !!sync.email;
-    document.getElementById('acctName').textContent = signed ? sync.email : 'Account';
-    acctBtn.classList.toggle('in', signed);
-    document.getElementById('acctAv').innerHTML = signed ? esc(sync.email.charAt(0).toUpperCase())
-      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 18.5h10a4 4 0 0 0 .7-7.94A6 6 0 0 0 6.6 9.9a4.3 4.3 0 0 0 .9 8.6z"/></svg>';
+    document.getElementById('acctName').textContent = demo ? 'Modalità prova' : signed ? n || sync.email : 'Account';
+    acctBtn.classList.toggle('in', signed || demo);
+    document.getElementById('acctAv').innerHTML = signed ? esc((n || sync.email).charAt(0).toUpperCase()) : demo ? TRY_SVG : CLOUD_SVG;
+    document.getElementById('demoTag').hidden = !demo;
     var a = document.activeElement;
     if (!acctpad.hidden && !(a && a.nodeName === 'INPUT' && acctpad.contains(a))) renderAccount();
   }
@@ -3114,18 +3209,22 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   function renderAccount(msg){
     if (arguments.length) acctMsg = msg || '';   // a message stays until the next action
     var h = '';
-    if (syncPhase === 'out') {
+    document.getElementById('acctTitle').textContent = demo ? 'Modalità prova' : 'Account e sincronizzazione';
+    if (demo) {
+      h = '<p><b>Stai provando [RH] Documents</b></p><p class="hint">Nomi, clienti, importi e archivio sono inventati e restano solo su questo dispositivo: niente va online. Puoi provare tutto: compilare, scaricare i PDF, l\'archivio e gli incassi, la rubrica, firme e sigle.</p>'
+        + '<div class="sigactions"><button type="button" class="x" id="acDemoReset">Rimetti i dati di esempio</button><button type="button" class="btn" id="acDemoOut">Esci dalla prova</button></div>';
+    } else if (syncPhase === 'out') {
       h = '<p class="hint">Accedi per avere gli stessi documenti, dati e archivio su telefono e computer. Prima di partire tutto viene cifrato su questo dispositivo con la tua password: online c\'è solo testo illeggibile, nemmeno chi gestisce il server può leggerlo.</p>'
         + '<div class="f"><label for="acEmail">Email</label><input type="text" id="acEmail" inputmode="email" autocomplete="username" autocapitalize="off" spellcheck="false" value="' + esc(sync.email) + '"></div>'
         + '<div class="f"><label for="acPw">Password</label><input type="password" id="acPw" autocomplete="current-password"></div>'
         + '<p class="hint">Se dimentichi la password, i dati online non si possono recuperare: quelli su questo dispositivo restano, e conviene tenere anche un backup.</p>'
         + '<div class="sigactions"><span></span><div class="row">' + (hasOwner === false ? '<button type="button" class="btn ghost" id="acCreate">Crea il mio account</button>' : '') + '<button type="button" class="btn" id="acLogin">Accedi</button></div></div>';
     } else if (syncPhase === 'locked') {
-      h = '<p class="hint">Sei connesso come <b>' + esc(sync.email) + '</b>. Per aprire i dati cifrati su questo dispositivo scrivi la password che usavi quando hai attivato la sincronizzazione.</p>'
+      h = whoHtml() + '<p class="hint">Per aprire i dati cifrati su questo dispositivo scrivi la password che usavi quando hai attivato la sincronizzazione.</p>'
         + '<div class="f"><label for="acKey">Password</label><input type="password" id="acKey" autocomplete="current-password"></div>'
         + '<div class="sigactions"><button type="button" class="x" id="acOut">Esci</button><button type="button" class="btn" id="acUnlock">Sblocca</button></div>';
     } else {
-      h = '<p><b>' + esc(sync.email) + '</b></p><p class="hint">' + (syncErr ? esc(syncErr) : 'Tutto sincronizzato' + (sync.at ? ' alle ' + new Date(sync.at).toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'}) : '') + '. I dati online sono cifrati con la tua password.') + '</p>'
+      h = whoHtml() + '<p class="hint">' + (syncErr ? esc(syncErr) : 'Tutto sincronizzato' + (sync.at ? ' alle ' + new Date(sync.at).toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'}) : '') + '. I dati online sono cifrati con la tua password.') + '</p>'
         + '<div class="sigactions"><button type="button" class="x" id="acOut">Esci da questo dispositivo</button><button type="button" class="btn ghost" id="acNow">Sincronizza ora</button></div>';
     }
     if (acctMsg) h = '<p class="warn">' + esc(acctMsg) + '</p>' + h;
@@ -3133,7 +3232,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   }
   async function openAccount(){
     acctpad.hidden = false; renderAccount('');
-    if (syncPhase === 'out' && hasOwner === null) {
+    if (!demo && syncPhase === 'out' && hasOwner === null) {
       try { hasOwner = !!(await api('/rest/v1/rpc/documenti_raho_has_owner', {method:'POST', auth:false, body:{}})); } catch (e) { hasOwner = true; }
       if (!acctpad.hidden && syncPhase === 'out') renderAccount();
     }
@@ -3152,7 +3251,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
       menuSheet.style.setProperty('--mr', Math.max(16, Math.round(window.innerWidth - r.right)) + 'px');
     }
     menuSheet.style.transform = ''; menuSheet.scrollTop = 0;
-    menuEl.hidden = false; menuBtn.setAttribute('aria-expanded', 'true'); offlineState();
+    menuEl.hidden = false; menuBtn.setAttribute('aria-expanded', 'true'); offlineState(); refreshAccount();
     document.documentElement.classList.add('menu-open');
     menuSheet.getBoundingClientRect();   // start the animation from the closed position
     menuEl.classList.add('open');
@@ -3193,45 +3292,125 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     if (e.key === 'Escape') acctpad.hidden = true;
     if (e.key === 'Enter' && e.target.nodeName === 'INPUT') { var b = acctBody.querySelector('#acLogin, #acUnlock'); if (b) b.click(); }
   });
+  var SIGNIN_MSG = {confirm:'Ti ho mandato un\'email: conferma l\'indirizzo e poi accedi qui.',
+    denied:'Questo strumento è già collegato a un altro account: con questo non si può sincronizzare.',
+    locked:'La password non apre i dati già salvati online: se l\'hai cambiata, scrivi quella che usavi prima.'};
+  function signInErr(err){ return err.status === 400 && /invalid/i.test(err.message) ? 'Email o password sbagliate.' : navigator.onLine === false ? 'Sei offline.' : 'Errore: ' + err.message; }
+  // checks before asking the server; '' when fine
+  function signInCheck(email, pw, create){ return !email || !pw ? 'Scrivi email e password.' : create && pw.length < 10 ? 'Scegli una password di almeno 10 caratteri: protegge anche i tuoi dati.' : ''; }
   acctBody.addEventListener('click', async function(e){
     var b = e.target.closest('button'); if (!b || b.disabled) return;
     var busy = function(t){ b.disabled = true; b.textContent = t; };
     try {
       if (b.id === 'acLogin' || b.id === 'acCreate') {
-        var email = document.getElementById('acEmail').value.trim(), pw = document.getElementById('acPw').value;
-        if (!email || !pw) { renderAccount('Scrivi email e password.'); return; }
-        if (b.id === 'acCreate' && pw.length < 10) { renderAccount('Scegli una password di almeno 10 caratteri: protegge anche i tuoi dati.'); return; }
+        var email = document.getElementById('acEmail').value.trim(), pw = document.getElementById('acPw').value, bad = signInCheck(email, pw, b.id === 'acCreate');
+        if (bad) { renderAccount(bad); return; }
         busy(b.id === 'acLogin' ? 'Accedo…' : 'Creo l\'account…');
         var r = await signIn(email, pw, b.id === 'acCreate');
-        if (r === 'confirm') renderAccount('Ti ho mandato un\'email: conferma l\'indirizzo e poi accedi qui.');
-        else if (r === 'denied') renderAccount('Questo strumento è già collegato a un altro account: con questo non si può sincronizzare.');
-        else if (r === 'locked') { syncPhase = 'locked'; renderAccount('La password non apre i dati già salvati online: se l\'hai cambiata, scrivi quella che usavi prima.'); }
-        else { renderAccount(''); acctpad.hidden = true; }
+        if (r === 'locked') syncPhase = 'locked';
+        if (r === 'ok') { renderAccount(''); acctpad.hidden = true; } else renderAccount(SIGNIN_MSG[r]);
       } else if (b.id === 'acUnlock') {
         busy('Apro…');
         var ok = await unlock(document.getElementById('acKey').value);
         if (ok) { renderAccount(''); acctpad.hidden = true; } else renderAccount('Password sbagliata.');
       } else if (b.id === 'acNow') { busy('Sincronizzo…'); await pull(true); await push(); renderAccount(); }
-      else if (b.id === 'acOut') { await signOut(); renderAccount(''); }
+      // after "Esci" the login screen: sign in again, or carry on without an account
+      else if (b.id === 'acOut') { await signOut(); renderAccount(''); acctpad.hidden = true; openGate(''); }
+      else if (b.id === 'acDemoOut') endDemo(false);
+      else if (b.id === 'acDemoReset') endDemo(true);
+    } catch (err) { renderAccount(signInErr(err)); }
+    refreshAccount();
+  });
+
+  // ---------- trying the tool with sample data ----------
+  function startDemo(){
+    try { localStorage.removeItem(DEMO_KEY); localStorage.setItem(MODE_KEY, 'demo'); } catch (e) { renderGate('Questo browser non permette di salvare dati: la prova non si può aprire.'); return; }
+    location.reload();
+  }
+  // out of the trial (the sample data go away), or the sample data afresh
+  function endDemo(again){
+    try { localStorage.removeItem(DEMO_KEY); if (!again) localStorage.removeItem(MODE_KEY); } catch (e) {}
+    location.reload();
+  }
+  document.getElementById('demoTag').addEventListener('click', openAccount);
+
+  // ---------- the login screen (D: "una schermata di login per chi deve accedere") ----------
+  // at the opening when nobody is signed in on this device (or the password is needed to open the data) and after "Esci".
+  // "Continua senza account" keeps it away on this device; the trial and the view inside Claude never show it.
+  var gate = document.getElementById('gate'), gateBody = document.getElementById('gateBody'), gateMsg = '';
+  function gateAway(){ try { return localStorage.getItem(GATE_KEY) === 'local'; } catch (e) { return false; } }
+  function renderGate(msg){
+    if (arguments.length) gateMsg = msg || '';
+    var h;
+    if (syncPhase === 'locked') {
+      h = whoHtml()
+        + '<div class="f"><label for="gKey">Password</label><input type="password" id="gKey" autocomplete="current-password"></div>'
+        + '<button type="button" class="btn" id="gUnlock">Apri i miei dati</button>'
+        + '<div class="gfoot"><button type="button" class="x" id="gOut">Esci</button><button type="button" class="x" id="gLater">Continua senza sincronizzare</button></div>';
+    } else {
+      h = '<div class="f"><label for="gEmail">Email</label><input type="text" id="gEmail" inputmode="email" autocomplete="username" autocapitalize="off" spellcheck="false"></div>'
+        + '<div class="f"><label for="gPw">Password</label><input type="password" id="gPw" autocomplete="current-password"></div>'
+        + '<button type="button" class="btn" id="gLogin">Accedi</button>'
+        + (hasOwner === false ? '<button type="button" class="btn ghost" id="gCreate">Crea il mio account</button>' : '')
+        + '<div class="gor">oppure</div>'
+        + '<button type="button" class="btn ghost" id="gDemo">Prova con dati di esempio</button>'
+        + '<p class="hint gnote">Dati inventati, solo su questo dispositivo: niente va online.</p>'
+        + '<div class="gfoot"><button type="button" class="x" id="gLocal">' + (hadData ? 'Continua con i dati di questo dispositivo' : 'Continua senza account') + '</button></div>';
+    }
+    gateBody.innerHTML = (gateMsg ? '<p class="warn">' + esc(gateMsg) + '</p>' : '') + h;
+  }
+  async function openGate(msg){
+    gate.hidden = false; document.documentElement.classList.add('gated'); renderGate(msg);
+    var first = gateBody.querySelector('input'); if (first && wide.matches) first.focus();   // on phones the keyboard would cover the screen
+    if (syncPhase === 'out' && hasOwner === null) {
+      try { hasOwner = !!(await api('/rest/v1/rpc/documenti_raho_has_owner', {method:'POST', auth:false, body:{}})); } catch (e) { hasOwner = true; }
+      // nobody owns the tool yet: the button to create the account, without touching what is being typed
+      var login = document.getElementById('gLogin');
+      if (hasOwner === false && login && !document.getElementById('gCreate')) login.insertAdjacentHTML('afterend', '<button type="button" class="btn ghost" id="gCreate">Crea il mio account</button>');
+    }
+  }
+  function closeGate(){ gate.hidden = true; document.documentElement.classList.remove('gated'); gateMsg = ''; }
+  gate.addEventListener('keydown', function(e){ if (e.key === 'Enter' && e.target.nodeName === 'INPUT') { var b = gateBody.querySelector('#gLogin, #gUnlock'); if (b) b.click(); } });
+  gateBody.addEventListener('click', async function(e){
+    var b = e.target.closest('button'); if (!b || b.disabled) return;
+    var busy = function(t){ b.disabled = true; b.textContent = t; };
+    try {
+      if (b.id === 'gLogin' || b.id === 'gCreate') {
+        var email = document.getElementById('gEmail').value.trim(), pw = document.getElementById('gPw').value, bad = signInCheck(email, pw, b.id === 'gCreate');
+        if (bad) { renderGate(bad); document.getElementById('gEmail').value = email; return; }
+        busy(b.id === 'gLogin' ? 'Accedo…' : 'Creo l\'account…');
+        var r = await signIn(email, pw, b.id === 'gCreate');
+        if (r === 'locked') syncPhase = 'locked';
+        if (r === 'ok') closeGate();
+        else {
+          renderGate(r === 'denied' ? SIGNIN_MSG.denied + ' Per provarlo usa i dati di esempio.' : SIGNIN_MSG[r]);
+          var em = document.getElementById('gEmail'); if (em) em.value = email;
+        }
+      } else if (b.id === 'gUnlock') {
+        busy('Apro…');
+        if (await unlock(document.getElementById('gKey').value)) closeGate(); else renderGate('Password sbagliata.');
+      } else if (b.id === 'gOut') { await signOut(); renderGate(''); }
+      else if (b.id === 'gLater') closeGate();
+      else if (b.id === 'gLocal') { try { localStorage.setItem(GATE_KEY, 'local'); } catch (err) {} closeGate(); }
+      else if (b.id === 'gDemo') startDemo();
     } catch (err) {
-      renderAccount(err.status === 400 && /invalid/i.test(err.message) ? 'Email o password sbagliate.' : navigator.onLine === false ? 'Sei offline.' : 'Errore: ' + err.message);
+      var keep = document.getElementById('gEmail'), kept = keep ? keep.value : '';
+      renderGate(signInErr(err)); keep = document.getElementById('gEmail'); if (keep) keep.value = kept;
     }
     refreshAccount();
   });
 
   // back from the confirmation email: Supabase adds #access_token=… or #error=… to the address
   function confirmLanding(){
-    var hsh = location.hash.replace(/^#/, ''); if (!/(^|&)(access_token|error|error_description)=/.test(hsh)) return;
+    var hsh = location.hash.replace(/^#/, ''); if (!/(^|&)(access_token|error|error_description)=/.test(hsh)) return false;
     var q = {}; hsh.split('&').forEach(function(kv){ var i = kv.indexOf('='); if (i > 0) q[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1).replace(/\+/g, ' ')); });
     try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
-    openAccount().then(function(){
-      renderAccount(q.error || q.error_description ? 'Il link dell\'email non è più valido (' + (q.error_description || q.error) + '). Prova ad accedere: se l\'email risulta da confermare, crea di nuovo l\'account.'
-        : 'Email confermata. Ora accedi con la tua email e la password che hai scelto.');
-      var first = acctBody.querySelector('#acPw'); if (first) first.focus();
-    });
+    openGate(q.error || q.error_description ? 'Il link dell\'email non è più valido (' + (q.error_description || q.error) + '). Prova ad accedere: se l\'email risulta da confermare, crea di nuovo l\'account.'
+      : 'Email confermata. Ora accedi con la tua email e la password che hai scelto.');
+    return true;
   }
   async function startSync(){
-    if (!sync.uid || !window.crypto || !crypto.subtle) { refreshAccount(); return; }
+    if (demo || !sync.uid || !window.crypto || !crypto.subtle) { refreshAccount(); return; }
     var k = await recallKey();
     if (k && k.key) { syncKey = k.key; syncSalt = k.salt; syncPhase = 'ready'; refreshAccount(); await pull(true); }
     else { syncPhase = 'locked'; refreshAccount(); }
@@ -3272,7 +3451,11 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   // ---------- start ----------
   applyTheme(); barSize(); sbWidth();
   syncTop(); renderFields(); update();
-  startSync(); if (syncPhase === 'out') confirmLanding();
+  startSync().catch(function(){}).then(function(){
+    if (demo || inClaude) return;
+    if (syncPhase === 'out' && confirmLanding()) return;
+    if (syncPhase === 'locked' || syncPhase === 'out' && !gateAway()) openGate('');
+  });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(renderPreview);
   // works offline too (sw.js): each opening with the network checks the kept copies, which other tools on this site may have cleared
   var canOffline = 'serviceWorker' in navigator && /^https?:$/.test(location.protocol) && !inClaude;

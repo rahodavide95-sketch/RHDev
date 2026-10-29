@@ -1662,7 +1662,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   var SECTIONS = [
     {t:'Ricevuta', g:'meta', docs:REC, pick:'acc', f:[F('number','Numero (automatico)',{half:1, auto:1}), F('date','Data',{type:'date', half:1}),
       F('me.email','Email in fondo (Info generali)',{docs:ROY, ph:'La tua email per le royalties', hint:'Vale per tutte le ricevute royalties. È la «Email» dei tuoi dati.'}),
-      F('me.bookingEmail','Email in fondo (Info generali)',{docs:BKR, ph:'La tua email di booking', hint:'Vale per le ricevute DJ e per i contratti. È la «Email di booking» dei tuoi dati.'})]},
+      F('me.bookingEmail','Email in fondo (Info generali)',{docs:BKR, ph:'La tua email di booking'})]},
     {t:'Etichetta', g:'who', docs:ROY, saved:'labels', from:'label', f:[F('label.name','Ragione sociale'), F('label.addr','Indirizzo'),
       F('label.zip','CAP',{half:1}), F('label.city','Città',{half:1}),
       F('label.prov','Provincia / regione',{half:1, docs:['roy-est']}), F('label.country','Stato',{half:1, docs:['roy-est']}),

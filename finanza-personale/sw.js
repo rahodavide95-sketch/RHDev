@@ -1,4 +1,4 @@
-/* [RH] Finance — funziona anche senza internet.
+/* Analisi Finanziarie — funziona anche senza internet.
    Pagina e codice: prima la rete (così arriva subito l'ultima versione), la copia se offline.
    Font e icone: dalla copia, aggiornati in sottofondo.
    Nessun dato personale passa di qui: i dati sono cifrati in IndexedDB, non nella cache.
@@ -13,7 +13,7 @@ const CORE = [
   './js/ui/dom.js', './js/ui/icons.js', './js/ui/components.js', './js/ui/charts.js', './js/ui/fmt.js', './js/ui/theme.js',
   './js/data/markets.js',
   './js/views/gate.js', './js/views/common.js', './js/views/editors.js', './js/views/dashboard.js', './js/views/transactions.js',
-  './js/views/importer.js', './js/views/accounts.js', './js/views/budget.js', './js/views/recurring.js', './js/views/goals.js',
+  './js/views/importer.js', './js/views/accounts.js', './js/views/networth.js', './js/views/budget.js', './js/views/recurring.js', './js/views/goals.js',
   './js/views/investments.js', './js/views/reports.js', './js/views/sims.js', './js/views/markets.js', './js/views/settings.js', './js/views/palette.js',
   './fonts/inter.woff2', './fonts/inter-ext.woff2',
   './icons/icon.svg', './icons/icon-192.png', './icons/apple-touch-icon.png', './icons/favicon-32.png',

@@ -1,4 +1,4 @@
-# [RH] Finance
+# Analisi Finanziarie
 
 Gestione completa della finanza personale, con le simulazioni finanziarie di prima
 (rifatte e corrette). Tutti i dati restano **cifrati sul tuo dispositivo**: nessun
@@ -21,6 +21,15 @@ Indirizzo: `https://rahodavide95-sketch.github.io/RHDev/finanza-personale/`
 - **Import dell'estratto conto** (CSV di qualsiasi banca): riconosce colonne, date e
   importi all'italiana, salta le righe di intestazione, suggerisce le categorie e
   **esclude i doppioni** se reimporti lo stesso file.
+- **Patrimonio**: l'andamento mese per mese di ogni cosa che hai (conti, investimenti,
+  casa, auto, fondo pensione) e dei debiti, in una tabella con i valori a fine mese e la
+  variazione di ogni mese; il confronto tra il 31 dicembre dell'anno prima e la fine
+  dell'anno (o oggi) per ogni conto, con la spiegazione della differenza: quanto hai
+  **risparmiato**, quanto vale ciò che hai **aggiunto** e quanto è dovuto a **variazioni
+  di valore** (mercati, casa e auto, debito che scende); il riepilogo anno per anno.
+  "Aggiorna i valori" ti fa scrivere in un colpo solo il valore reale di più conti a una
+  data (oggi o la fine del mese scorso), anche nel passato per ricostruire lo storico.
+  Esporta la tabella in CSV.
 - **Conti**: conto corrente, deposito, contanti, carte, investimenti, crypto, fondo
   pensione, casa, auto, crediti, mutui e prestiti (con piano d'ammortamento: il debito
   residuo scende da solo ogni mese). "Aggiorna saldo" allinea il conto all'estratto

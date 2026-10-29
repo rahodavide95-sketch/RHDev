@@ -1,6 +1,6 @@
 /* Dati di esempio per la modalità prova: inventati, con date relative a oggi. */
 
-import { defaults, uid, sanitize } from './core/model.js';
+import { defaults, uid, sanitize, position } from './core/model.js';
 import { today, addMonths, addDays, monthKey, toISO, parts, daysInMonth } from './core/dates.js';
 
 function rng(seed) {
@@ -14,7 +14,8 @@ export function demoState() {
   const between = (a, b) => Math.round(a + r() * (b - a));
   const s = defaults();
   const t0 = today();
-  const start = addMonths(t0, -7).slice(0, 8) + '01';
+  const MONTHS = 22;                                   // quasi due anni di storia
+  const start = addMonths(t0, -MONTHS).slice(0, 8) + '01';
   let created = 1;
   s.settings.name = 'Alex';
   s.settings.onboarded = true;
@@ -33,8 +34,10 @@ export function demoState() {
   acc('a-mut', 'Mutuo casa', 'mortgage', { institution: 'Banca Esempio', plan: { principal: 140000, tan: 3.1, months: 300, start: addMonths(t0, -38), type: 'francese' } });
   acc('a-casa', 'Casa', 'property', { emoji: '🏡' });
   open('a-cc', 420000); open('a-cd', 1200000); open('a-cash', 12000); open('a-card', 0); open('a-brk', 150000); open('a-btc', 0);
-  open('a-car', 1100000, addMonths(t0, -12));
+  open('a-car', 1250000);
+  s.valuations.push({ id: uid('v-'), account: 'a-car', date: addMonths(t0, -12), value: 1100000, created: 4, kind: 'adjust', note: 'Valutazione' });
   s.valuations.push({ id: uid('v-'), account: 'a-car', date: addMonths(t0, -1), value: 980000, created: 5, kind: 'adjust', note: 'Valutazione' });
+  s.valuations.push({ id: uid('v-'), account: 'a-casa', date: addMonths(t0, -10).slice(0, 8) + '28', value: 21800000, created: 6, kind: 'adjust', note: 'Stima agenzia' });
   open('a-casa', 21000000, addMonths(t0, -38));
 
   const tx = (date, kind, amount, account, category, payee, extra = {}) => {
@@ -114,16 +117,16 @@ export function demoState() {
     for (let k = 0; ; k++) {
       const d = addMonths(start, k).slice(0, 8) + '28';
       if (d > t0) break;
-      const price = (priceFrom + (priceTo - priceFrom) * (k / 7)) * (1 + (r() - 0.5) * 0.03);
+      const price = (priceFrom + (priceTo - priceFrom) * (k / MONTHS)) * (1 + (r() - 0.5) * 0.03);
       ops.push({ id: uid('o-'), date: d, type: 'buy', qty: Math.round(amount / price * 1000) / 1000, price: Math.round(price * 100) / 100, fee: 0, amount: 0, cash: true, note: 'PAC', created: created++ });
     }
     return ops;
   };
   s.holdings.push({ id: 'h-vwce', account: 'a-brk', symbol: 'VWCE.DE', isin: 'IE00BK5BQT80', name: 'Vanguard FTSE All-World', cls: 'etf_eq', currency: 'EUR', price: 142.36, priceDate: t0, priceAuto: true, created: created++, ops: [
-    { id: uid('o-'), date: addMonths(t0, -20), type: 'buy', qty: 60, price: 108.4, fee: 2.95, amount: 0, note: '', created: created++ },
-    ...buyMonthly('h-vwce', 128, 141, 200),
+    { id: uid('o-'), date: addMonths(t0, -21), type: 'buy', qty: 60, price: 108.4, fee: 2.95, amount: 0, note: '', created: created++ },
+    ...buyMonthly('h-vwce', 110, 141, 200),
   ] });
-  s.holdings.push({ id: 'h-agg', account: 'a-brk', symbol: 'AGGH.MI', isin: 'IE00BDBRDM35', name: 'iShares Core Global Aggregate Bond', cls: 'etf_bd', currency: 'EUR', price: 4.79, priceDate: t0, priceAuto: true, created: created++, ops: buyMonthly('h-agg', 4.7, 4.8, 100) });
+  s.holdings.push({ id: 'h-agg', account: 'a-brk', symbol: 'AGGH.MI', isin: 'IE00BDBRDM35', name: 'iShares Core Global Aggregate Bond', cls: 'etf_bd', currency: 'EUR', price: 4.79, priceDate: t0, priceAuto: true, created: created++, ops: buyMonthly('h-agg', 4.65, 4.8, 100) });
   s.holdings.push({ id: 'h-btp', account: 'a-brk', symbol: 'BTP-2030', isin: 'IT0005000000', name: 'BTP esempio 3,5% 2030', cls: 'gov', currency: 'EUR', price: 101.2, priceDate: t0, priceAuto: false, created: created++, ops: [
     { id: uid('o-'), date: addMonths(t0, -14), type: 'buy', qty: 50, price: 98.6, fee: 5, amount: 0, note: 'Nominale 5.000 €', created: created++ },
     { id: uid('o-'), date: addMonths(t0, -8), type: 'div', qty: 0, price: 0, fee: 0, amount: 76.56, note: 'Cedola netta', created: created++ },
@@ -150,5 +153,23 @@ export function demoState() {
   s.watchlist.push({ symbol: 'VWCE.DE', name: 'Vanguard FTSE All-World' }, { symbol: '^GSPC', name: 'S&P 500' }, { symbol: 'BTC-USD', name: 'Bitcoin' });
 
   // fotografie dei mesi passati (valore di mercato dei titoli), per uno storico realistico
-  return sanitize(s);
+  const P0 = { 'h-vwce': 106, 'h-agg': 4.6, 'h-btp': 97.5, 'h-aapl': 182, 'h-btc': 38000 };
+  const clean = sanitize(s);
+  for (let k = 0; ; k++) {
+    const m = monthKey(addMonths(start, k));
+    if (m >= monthKey(t0)) break;
+    const end = addMonths(start, k + 1).slice(0, 8) + '01';
+    const last = addDays(end, -1);
+    const byAcc = { 'a-brk': 0, 'a-btc': 0 };
+    for (const hd of clean.holdings) {
+      const qty = position(hd, last).qty;
+      if (!qty) continue;
+      const f = (k + 1) / MONTHS;
+      const price = (P0[hd.id] + (hd.price - P0[hd.id]) * f) * (1 + Math.sin(k * 1.7 + hd.price) * (hd.cls === 'crypto' ? 0.12 : 0.03));
+      const fx = hd.currency === 'USD' ? 1 / clean.fx.rates.USD : 1;
+      byAcc[hd.account] += Math.round(qty * price * fx * 100);
+    }
+    clean.snapshots[m] = { byAcc, at: 1 };
+  }
+  return clean;
 }

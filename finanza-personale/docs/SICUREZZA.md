@@ -1,4 +1,4 @@
-# Sicurezza e privacy di [RH] Finance
+# Sicurezza e privacy di Analisi Finanziarie
 
 ## Principi
 
@@ -76,7 +76,7 @@ apposita (spenta di base): i proxy potrebbero dedurre quali titoli possiedi.
 
 ## Backup
 
-- **Backup cifrato** (`RH-Finance-backup-AAAA-MM-GG.json`): è la cassaforte stessa;
+- **Backup cifrato** (`Analisi-Finanziarie-backup-AAAA-MM-GG.json`): è la cassaforte stessa;
   si apre con la password o il codice di recupero di quando è stato creato.
 - **Esporta JSON in chiaro**: solo per passare ad altri programmi, con avviso.
 - Ripristinare un backup sostituisce i dati (con "Annulla" subito dopo).

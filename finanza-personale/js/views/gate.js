@@ -95,7 +95,7 @@ function createScreen(ctx) {
     h('div.gate-step', 'Passo 1 di 2'),
     h('h2', 'Scegli la password'),
     h('p.muted', 'Apre l\'app e cifra i dati. Non esce mai dal dispositivo: nessuno può recuperarla per te, nemmeno noi.'),
-    h('input', { type: 'text', name: 'username', autocomplete: 'username', value: '[RH] Finance', hidden: true, readonly: true }),
+    h('input', { type: 'text', name: 'username', autocomplete: 'username', value: 'Analisi Finanziarie', hidden: true, readonly: true }),
     h('div.stack-sm', p1, strengthMeter(p1.input), p2),
     h('p.tip', icon('sparkle', 16), h('span', 'Consiglio: una frase di 4 o più parole che solo tu conosci, es. «ombrello viola corre al mare». È lunga ma facile da ricordare.')),
     err, btn);
@@ -113,8 +113,8 @@ function recoveryScreen(ctx) {
   } }, 'Entra nell\'app');
   ok.addEventListener('change', () => { go.disabled = !ok.checked; });
   const save = () => {
-    const text = `[RH] Finance — codice di recupero\n\n${G.code}\n\nServe solo se dimentichi la password. Conservalo offline (carta, cassaforte, password manager).\nCreato il ${new Date().toLocaleString('it-IT')}.\n`;
-    download(new Blob([text], { type: 'text/plain' }), 'RH-Finance-codice-di-recupero.txt');
+    const text = `Analisi Finanziarie — codice di recupero\n\n${G.code}\n\nServe solo se dimentichi la password. Conservalo offline (carta, cassaforte, password manager).\nCreato il ${new Date().toLocaleString('it-IT')}.\n`;
+    download(new Blob([text], { type: 'text/plain' }), 'Analisi-Finanziarie-codice-di-recupero.txt');
   };
   return h('div.gate', h('div.gate-card',
     h('div.gate-step', 'Passo 2 di 2'),
@@ -156,7 +156,7 @@ function lockScreen(ctx) {
     mark(),
     h('h2.center-text', 'Bentornato'),
     h('p.muted.center-text', ctx.S.lockReason || 'I tuoi dati sono cifrati. Inserisci la password per aprirli.'),
-    h('input', { type: 'text', name: 'username', autocomplete: 'username', value: '[RH] Finance', hidden: true, readonly: true }),
+    h('input', { type: 'text', name: 'username', autocomplete: 'username', value: 'Analisi Finanziarie', hidden: true, readonly: true }),
     pw, err, btn,
     h('div.gate-links',
       h('button.link', { type: 'button', onclick: () => forgotFlow(ctx) }, 'Password dimenticata?'),

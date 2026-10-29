@@ -1,6 +1,6 @@
 {
-  "name": "[RH] Finance",
-  "short_name": "[RH] Finance",
+  "name": "Analisi Finanziarie",
+  "short_name": "Analisi Finanziarie",
   "description": "Conti, spese, budget, scadenze, investimenti e simulazioni. I dati restano cifrati sul tuo dispositivo.",
   "lang": "it",
   "start_url": "./",

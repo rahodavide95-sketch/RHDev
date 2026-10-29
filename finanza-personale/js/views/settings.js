@@ -26,7 +26,7 @@ const setRow = (label, hint, ctl) => h('div.set-row', h('div.set-text', h('span.
 
 async function doBackup() {
   const blob = await session.backupBlob();
-  download(blob, `RH-Finance-backup-${today()}.json`);
+  download(blob, `Analisi-Finanziarie-backup-${today()}.json`);
   session.markBackup();
   toast('Backup cifrato scaricato. Tienilo in un posto sicuro (cloud, chiavetta).', { kind: 'ok' });
 }
@@ -94,7 +94,7 @@ async function newRecovery() {
   openSheet({
     title: 'Il tuo nuovo codice di recupero', size: 'sm',
     body: h('div.stack', h('p.muted', 'Salvalo fuori da questo dispositivo. È l\'unico modo per aprire i dati se dimentichi la password.'), h('div.code-box', code.split('-').map(g => h('span', g))),
-      h('div.row-2', h('button.btn.btn-soft', { type: 'button', onclick: () => download(new Blob([`[RH] Finance — codice di recupero\n\n${code}\n`], { type: 'text/plain' }), 'RH-Finance-codice-di-recupero.txt') }, icon('download', 18), 'Scarica'),
+      h('div.row-2', h('button.btn.btn-soft', { type: 'button', onclick: () => download(new Blob([`Analisi Finanziarie — codice di recupero\n\n${code}\n`], { type: 'text/plain' }), 'Analisi-Finanziarie-codice-di-recupero.txt') }, icon('download', 18), 'Scarica'),
         h('button.btn.btn-soft', { type: 'button', onclick: async () => { try { await navigator.clipboard.writeText(code); toast('Copiato', { kind: 'ok' }); } catch { /* */ } } }, icon('copy', 18), 'Copia'))),
   });
 }
@@ -103,7 +103,7 @@ function exportPlain(ctx) {
   confirmDialog({ title: 'Esportare i dati NON cifrati?', message: 'Il file conterrà tutti i tuoi dati leggibili da chiunque lo apra. Usalo solo per passare a un altro programma, e cancellalo subito dopo. Per i backup usa "Scarica backup cifrato".', confirm: 'Esporta in chiaro', danger: true }).then(ok => {
     if (!ok) return;
     const blob = new Blob([JSON.stringify({ format: 'rh-finance-plain', v: 1, exported: Date.now(), data: ctx.st }, null, 1)], { type: 'application/json' });
-    download(blob, `RH-Finance-dati-NON-cifrati-${today()}.json`);
+    download(blob, `Analisi-Finanziarie-dati-NON-cifrati-${today()}.json`);
   });
 }
 
@@ -218,7 +218,7 @@ export default {
           if (ok) { await session.wipeAll(); toast('Dati cancellati'); }
         } }, icon('trash', 18), 'Cancella'))),
       h('section.card.about',
-        h('div.brand-big', h('span.brand-mark', '[RH]'), h('span', 'Finance')),
+        h('div.brand-big', h('img.brand-ic', { src: 'icons/icon.svg', alt: '', width: 34, height: 34 }), h('span', 'Analisi Finanziarie')),
         h('p.muted', `Versione ${VERSION} · Funziona offline · Nessun server, nessun tracciamento, nessuna pubblicità.`),
         h('p.muted', 'Sviluppato con cura da Davide Raho · © 2026'),
         h('p.fine', 'I calcoli fiscali seguono le regole italiane per le persone fisiche (2026) e sono indicativi: per la dichiarazione dei redditi rivolgiti a un commercialista.')));

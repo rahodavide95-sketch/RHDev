@@ -5,6 +5,7 @@ import { openSheet } from '../ui/components.js';
 import { moneyText } from '../ui/fmt.js';
 import { txEditor, accountEditor, recurringEditor, goalEditor, holdingEditor } from './editors.js';
 import { openImporter } from './importer.js';
+import { checkInEditor } from './networth.js';
 import * as session from '../session.js';
 import { formatDate } from '../core/dates.js';
 import { parseAmount } from '../core/money.js';
@@ -14,7 +15,7 @@ const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ
 export function openPalette(ctx) {
   const { st, d, go } = ctx;
   const pages = [
-    ['Panoramica', '', 'home'], ['Movimenti', 'movimenti', 'list'], ['Conti', 'conti', 'wallet'], ['Investimenti', 'investimenti', 'trend'],
+    ['Panoramica', '', 'home'], ['Movimenti', 'movimenti', 'list'], ['Conti', 'conti', 'wallet'], ['Patrimonio', 'patrimonio', 'layers'], ['Investimenti', 'investimenti', 'trend'],
     ['Budget', 'budget', 'pie'], ['Scadenze', 'scadenze', 'calendar'], ['Obiettivi', 'obiettivi', 'target'], ['Analisi', 'analisi', 'chart'],
     ['Simulazioni', 'simulazioni', 'calc'], ['Mercati', 'mercati', 'globe'], ['Impostazioni', 'impostazioni', 'settings'],
     ['Simulazione PAC', 'simulazioni/pac', 'calc'], ['Simulazione mutuo', 'simulazioni/mutuo', 'calc'], ['Simulazione conto deposito', 'simulazioni/deposito', 'calc'], ['Indipendenza finanziaria', 'simulazioni/fire', 'calc'],
@@ -25,6 +26,7 @@ export function openPalette(ctx) {
     { t: 'Nuova entrata', s: 'Azione', ic: 'in', run: () => txEditor(ctx, null, { kind: 'income' }) },
     { t: 'Nuovo giroconto', s: 'Azione', ic: 'transfer', run: () => txEditor(ctx, null, { kind: 'transfer' }) },
     { t: 'Nuovo conto', s: 'Azione', ic: 'wallet', run: () => accountEditor(ctx) },
+    { t: 'Aggiorna i valori (casa, auto, fondi…)', s: 'Azione', ic: 'edit', run: () => checkInEditor(ctx) },
     { t: 'Nuova scadenza o abbonamento', s: 'Azione', ic: 'calendar', run: () => recurringEditor(ctx) },
     { t: 'Nuovo obiettivo', s: 'Azione', ic: 'target', run: () => goalEditor(ctx) },
     { t: 'Nuovo titolo', s: 'Azione', ic: 'trend', run: () => holdingEditor(ctx) },

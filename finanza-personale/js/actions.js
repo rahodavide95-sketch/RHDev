@@ -34,6 +34,22 @@ export function setOpening(accId, value, date) {
 export function adjustBalance(accId, value, date = today(), note = '') {
   commit(st => { st.valuations.push({ id: uid('v-'), account: accId, date, value, created: stamp(), kind: 'adjust', note }); });
 }
+/** "Aggiorna i valori": più conti insieme alla stessa data.
+    entries: [{ account, value }] per i conti normali (diventano punti fermi),
+    [{ account, snapshot, month }] per i conti con titoli (valore dei titoli a fine mese). */
+export function saveCheckIn(date, entries, note = 'Aggiornamento valori') {
+  commit(st => {
+    for (const e of entries) {
+      if (e.snapshot != null) {
+        const snap = st.snapshots[e.month] || (st.snapshots[e.month] = { byAcc: {}, at: 0 });
+        snap.byAcc[e.account] = e.snapshot;
+        snap.at = Date.now();
+      } else {
+        st.valuations.push({ id: uid('v-'), account: e.account, date, value: e.value, created: stamp(), kind: 'adjust', note });
+      }
+    }
+  });
+}
 export function deleteValuation(id) {
   commit(st => { st.valuations = st.valuations.filter(v => v.id !== id || v.kind === 'open'); }, { undo: 'Valore eliminato' });
 }

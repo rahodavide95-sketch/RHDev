@@ -459,31 +459,71 @@ export function derive(state, refDate = today()) {
   const balances = new Map();
   for (const a of state.accounts) balances.set(a.id, accountValue(a));
 
-  const included = state.accounts.filter(a => a.inNetWorth && !a.archived);
+  /* ─── Patrimonio, oggi e nel tempo ───
+     Contano i conti con "Conta nel patrimonio" (anche se archiviati: un conto chiuso deve
+     restare nello storico dei mesi in cui esisteva). Un conto esiste dal primo punto fermo,
+     movimento o operazione (mutui e prestiti: dall'inizio del piano); prima vale "—". */
+  const nwAccounts = state.accounts.filter(a => a.inNetWorth);
+  const startByAcc = new Map();
+  for (const a of state.accounts) {
+    let s = null;
+    const upd = d => { if (d && (!s || d < s)) s = d; };
+    if (hasPlan(a)) upd(a.plan.start);
+    else {
+      upd(ledger.cps.get(a.id)?.[0]?.date);
+      upd(ledger.byAcc.get(a.id)?.items[0]?.date);
+      for (const h of holdingsByAcc.get(a.id) || []) for (const o of h.ops) upd(o.date);
+    }
+    startByAcc.set(a.id, s);
+  }
   const groupTotals = { liquidity: 0, investments: 0, assets: 0, debt: 0 };
-  for (const a of included) groupTotals[ACCOUNT_TYPES[a.type].group] += toBase(balances.get(a.id), a.currency);
+  for (const a of nwAccounts) groupTotals[ACCOUNT_TYPES[a.type].group] += toBase(balances.get(a.id), a.currency);
   const assets = groupTotals.liquidity + groupTotals.investments + groupTotals.assets;
   const netWorth = assets + groupTotals.debt;
 
-  /** Patrimonio netto a fine mese per gli ultimi n mesi (i titoli: valore salvato quel mese, altrimenti costo). */
+  /** Valore del conto (valuta del conto) a fine giornata `date`; null se a quella data non esisteva ancora.
+      Per i titoli nei mesi passati: la fotografia salvata quel mese, altrimenti quantità di allora × prezzo attuale. */
+  function valueAt(acc, date) {
+    if (date >= refDate) return balances.get(acc.id);
+    const s = startByAcc.get(acc.id);
+    if (!s || date < s) return null;
+    let v = accountValue(acc, date);
+    if (hasHoldings(acc)) {
+      const m = monthKey(date);
+      const snap = state.snapshots[m]?.byAcc?.[acc.id];
+      if (snap != null && date === monthEnd(m)) v += snap - holdingsValue(acc, date);
+    }
+    return v;
+  }
+
+  /** Patrimonio a una data: totale, gruppi e conto per conto (valuta principale; null = non esisteva). */
+  function netWorthAt(date) {
+    const groups = { liquidity: 0, investments: 0, assets: 0, debt: 0 };
+    const byAcc = new Map();
+    let total = 0;
+    for (const a of nwAccounts) {
+      const v = valueAt(a, date);
+      if (v == null) { byAcc.set(a.id, null); continue; }
+      const b = toBase(v, a.currency);
+      byAcc.set(a.id, b);
+      groups[ACCOUNT_TYPES[a.type].group] += b;
+      total += b;
+    }
+    return { date, total, groups, byAcc, assets: groups.liquidity + groups.investments + groups.assets };
+  }
+
+  /** Fine del mese (o oggi, per il mese in corso; null per i mesi futuri). */
+  const monthClose = m => (monthStart(m) > refDate ? null : monthEnd(m) > refDate ? refDate : monthEnd(m));
+  /** Fine dell'anno (o oggi, per l'anno in corso). */
+  const yearClose = y => (`${y}-12-31` > refDate ? refDate : `${y}-12-31`);
+  /** Primo anno con dati. */
+  const firstDate = [...startByAcc.entries()].filter(([id, s]) => s && nwAccounts.some(a => a.id === id)).map(([, s]) => s).sort()[0] || refDate;
+
+  /** Patrimonio netto a fine mese per gli ultimi n mesi. */
   function netWorthHistory(n = 12) {
-    const months = lastMonths(n, monthKey(refDate));
-    return months.map(m => {
-      const end = m === monthKey(refDate) ? refDate : monthEnd(m);
-      let total = 0, liq = 0, inv = 0, debt = 0;
-      for (const a of included) {
-        let v;
-        if (end === refDate) v = balances.get(a.id);
-        else {
-          v = accountValue(a, end);
-          if (hasHoldings(a) && state.snapshots[m]?.byAcc?.[a.id] != null) v = v - holdingsValue(a, end) + state.snapshots[m].byAcc[a.id];
-        }
-        const b = toBase(v, a.currency);
-        total += b;
-        const g = ACCOUNT_TYPES[a.type].group;
-        if (g === 'liquidity') liq += b; else if (g === 'investments') inv += b; else if (g === 'debt') debt += b;
-      }
-      return { month: m, total, liq, inv, debt };
+    return lastMonths(n, monthKey(refDate)).map(m => {
+      const x = netWorthAt(monthClose(m));
+      return { month: m, total: x.total, liq: x.groups.liquidity, inv: x.groups.investments, assets: x.assets, other: x.groups.assets, debt: x.groups.debt };
     });
   }
 
@@ -598,6 +638,7 @@ export function derive(state, refDate = today()) {
   return {
     base, rates, ledger, accById, catById, holdingsByAcc, missingFx,
     balances, groupTotals, assets, netWorth, accountValue, holdingsValue, holdingsCash, toBase, txBase,
+    nwAccounts, startByAcc, valueAt, netWorthAt, monthClose, yearClose, firstDate,
     netWorthHistory, flows, monthlyFlows, budget, dueList, upcoming, fixedMonthly, recurringIncomeMonthly, goal, portfolio,
     refDate,
   };

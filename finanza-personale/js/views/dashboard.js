@@ -35,7 +35,7 @@ function netWorthCard(ctx) {
   return h('section.card.hero-card',
     h('div.hero-top',
       h('div',
-        h('div.hero-label', 'Patrimonio netto'),
+        h('a.hero-label.hero-link', { href: '#/patrimonio' }, 'Patrimonio netto', icon('chevR', 15)),
         h('div.hero-value', money(d.netWorth)),
         h('div.hero-delta',
           chgAbs ? money(chgAbs, d.base, { sign: true, tone: chgAbs >= 0 ? 'pos' : 'neg' }) : null,
@@ -44,7 +44,7 @@ function netWorthCard(ctx) {
       segmented([{ value: 6, label: '6M' }, { value: 12, label: '1A' }, { value: 24, label: '2A' }], range, v => { range = v; ctx.rerender(); }, { small: true, label: 'Periodo' })),
     chart,
     h('div.hero-groups', groups.map(([g, v]) => h('a.hero-chip', { href: '#/conti' }, h('span.hero-chip-l', GROUPS[g].label), money(v, d.base, { tone: v < 0 ? 'neg' : '' })))),
-    first != null && hist.length > 2 ? h('p.card-foot', `In ${hist.length - 1} mesi: `, money(d.netWorth - first, d.base, { sign: true, tone: d.netWorth >= first ? 'pos' : 'neg' })) : null);
+    h('p.card-foot', first != null && hist.length > 2 ? [`In ${hist.length - 1} mesi: `, money(d.netWorth - first, d.base, { sign: true, tone: d.netWorth >= first ? 'pos' : 'neg' }), ' · '] : null, h('a', { href: '#/patrimonio' }, 'Andamento di ogni conto e confronto con l\'anno scorso')));
 }
 
 function monthCard(ctx) {

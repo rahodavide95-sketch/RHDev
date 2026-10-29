@@ -17,14 +17,14 @@ let showArchived = false;
 
 function list(ctx) {
   const { st, d } = ctx;
-  const accs = st.accounts.filter(a => showArchived || !a.archived);
+  const accs = st.accounts.filter(a => showArchived || !a.archived || (a.inNetWorth && (d.balances.get(a.id) || 0) !== 0));
   if (!st.accounts.length) {
     return h('section.card', empty({ icon: 'wallet', title: 'Nessun conto', text: 'Aggiungi conto corrente, carte, conto deposito, investimenti, casa, auto, mutuo: tutto ciò che possiedi o devi.', action: h('button.btn.btn-primary', { type: 'button', onclick: () => accountEditor(ctx) }, icon('plus', 18), 'Aggiungi un conto') }));
   }
   const groups = Object.entries(GROUPS).sort((a, b) => a[1].order - b[1].order).map(([g, meta]) => {
     const items = accs.filter(a => ACCOUNT_TYPES[a.type].group === g).sort((a, b) => a.order - b.order || a.created - b.created);
     if (!items.length) return null;
-    const tot = items.filter(a => a.inNetWorth && !a.archived).reduce((s, a) => s + d.toBase(d.balances.get(a.id) || 0, a.currency), 0);
+    const tot = items.filter(a => a.inNetWorth).reduce((s, a) => s + d.toBase(d.balances.get(a.id) || 0, a.currency), 0);
     return card(meta.label, { action: money(tot, d.base, { tone: tot < 0 ? 'neg' : '', cls: 'card-total' }) }, h('div.rows', items.map(a => {
       const row = accountRow(ctx, a);
       if (a.archived) row.classList.add('archived');
@@ -37,7 +37,8 @@ function list(ctx) {
     h('section.card.nw-strip',
       h('div.stat.stat-wide', h('div.stat-label', 'Patrimonio netto'), h('div.stat-value.big', money(d.netWorth))),
       h('div.stat', h('div.stat-label', 'Attività'), h('div.stat-value', money(d.assets))),
-      h('div.stat', h('div.stat-label', 'Debiti'), h('div.stat-value', money(d.groupTotals.debt, d.base, { tone: d.groupTotals.debt < 0 ? 'neg' : '' })))),
+      h('div.stat', h('div.stat-label', 'Debiti'), h('div.stat-value', money(d.groupTotals.debt, d.base, { tone: d.groupTotals.debt < 0 ? 'neg' : '' }))),
+      h('a.btn.btn-soft.nw-link', { href: '#/patrimonio' }, icon('layers', 18), 'Andamento mese per mese')),
     h('div.acc-grid', groups),
     archivedN ? h('button.btn.btn-ghost', { type: 'button', onclick: () => { showArchived = !showArchived; ctx.rerender(); } }, icon('archive', 18), showArchived ? 'Nascondi archiviati' : `Mostra archiviati (${archivedN})`) : null);
 }

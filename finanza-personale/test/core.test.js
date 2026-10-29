@@ -308,3 +308,48 @@ test('ledger: tanti movimenti restano veloci', () => {
   const sumAll = c.transactions.reduce((a, t) => a + (t.kind === 'income' ? t.amount : -t.amount), 0);
   assert.equal(cashBalance(L, 'a1', '2026-10-29'), sumAll);
 });
+
+test('patrimonio nel tempo: da quando esiste ogni conto, archiviati nello storico, fotografie dei titoli', () => {
+  const s = defaults();
+  s.accounts.push({ id: 'cc', name: 'Corrente', type: 'checking', currency: 'EUR', inNetWorth: true, created: 1 });
+  s.accounts.push({ id: 'old', name: 'Deposito chiuso', type: 'savings', currency: 'EUR', inNetWorth: true, archived: true, created: 1 });
+  s.accounts.push({ id: 'car', name: 'Auto', type: 'vehicle', currency: 'EUR', inNetWorth: true, created: 1 });
+  s.accounts.push({ id: 'out', name: 'Fuori', type: 'checking', currency: 'EUR', inNetWorth: false, created: 1 });
+  s.accounts.push({ id: 'mut', name: 'Mutuo', type: 'mortgage', currency: 'EUR', inNetWorth: true, created: 1, plan: { principal: 12000, tan: 0, months: 12, start: '2026-01-31', type: 'francese' } });
+  s.accounts.push({ id: 'brk', name: 'Broker', type: 'broker', currency: 'EUR', inNetWorth: true, created: 1 });
+  s.valuations.push({ id: 'v1', account: 'cc', date: '2025-06-30', value: 100000, created: 1, kind: 'open' });
+  s.valuations.push({ id: 'v2', account: 'old', date: '2025-01-01', value: 500000, created: 1, kind: 'open' });
+  s.valuations.push({ id: 'v3', account: 'car', date: '2026-03-01', value: 1500000, created: 1, kind: 'open' });
+  s.valuations.push({ id: 'v4', account: 'car', date: '2026-09-30', value: 1300000, created: 2, kind: 'adjust' });
+  s.valuations.push({ id: 'v5', account: 'out', date: '2025-01-01', value: 999900, created: 1, kind: 'open' });
+  // il deposito si chiude a maggio 2026 girando tutto sul corrente
+  s.transactions.push({ id: 't1', date: '2026-05-10', kind: 'transfer', amount: 500000, amountTo: 500000, account: 'old', toAccount: 'cc', created: 5 });
+  s.holdings.push({ id: 'h', account: 'brk', symbol: 'X', name: 'X', cls: 'etf_eq', currency: 'EUR', price: 120, ops: [{ id: 'o', date: '2026-02-15', type: 'buy', qty: 10, price: 100, fee: 0, created: 1 }] });
+  s.snapshots['2026-06'] = { byAcc: { brk: 110000 }, at: 1 };
+  const c = sanitize(s);
+  const d = derive(c, '2026-10-29');
+  // oggi: il deposito chiuso vale 0, il conto fuori dal patrimonio non conta
+  assert.equal(d.netWorth, 600000 + 0 + 1300000 + 120000 - Math.round(loanResidual(c.accounts[4].plan, 8) * 100));
+  // fine 2025: corrente 1.000 + deposito 5.000; auto, mutuo e broker non esistevano ancora
+  const y25 = d.netWorthAt('2025-12-31');
+  assert.equal(y25.total, 600000);
+  assert.equal(y25.byAcc.get('car'), null);
+  assert.equal(y25.byAcc.get('mut'), null);
+  assert.equal(y25.byAcc.has('out'), false);
+  // prima del saldo iniziale il corrente non esiste
+  assert.equal(d.netWorthAt('2025-05-31').byAcc.get('cc'), null);
+  // l'auto vale 15.000 fino alla nuova valutazione, poi 13.000
+  assert.equal(d.netWorthAt('2026-08-31').byAcc.get('car'), 1500000);
+  assert.equal(d.netWorthAt('2026-09-30').byAcc.get('car'), 1300000);
+  // mutuo: a fine febbraio pagata 1 rata su 12 da 1.000
+  assert.equal(d.netWorthAt('2026-02-28').byAcc.get('mut'), -1100000);
+  // broker: a fine giugno la fotografia (1.100), a fine luglio quantità × prezzo attuale (1.200)
+  assert.equal(d.netWorthAt('2026-06-30').byAcc.get('brk'), 110000);
+  assert.equal(d.netWorthAt('2026-07-31').byAcc.get('brk'), 120000);
+  // chiusure di mese e di anno
+  assert.equal(d.monthClose('2026-10'), '2026-10-29');
+  assert.equal(d.monthClose('2026-11'), null);
+  assert.equal(d.yearClose(2025), '2025-12-31');
+  assert.equal(d.yearClose(2026), '2026-10-29');
+  assert.equal(d.firstDate, '2025-01-01');
+});

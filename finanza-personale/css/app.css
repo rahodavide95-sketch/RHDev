@@ -1,4 +1,4 @@
-/* [RH] Finance — design
+/* Analisi Finanziarie — design
    Superfici senza bordi né ombre, distinte dal colore; angoli 24 px; pulsanti a pillola;
    numeri grandi e nitidi; barre in vetro sfocato; tema chiaro, scuro e automatico. */
 
@@ -152,8 +152,6 @@ details > summary::-webkit-details-marker { display: none; }
   overflow-y: auto; scrollbar-width: none;
 }
 .brand { display: flex; align-items: baseline; gap: 8px; padding: 6px 12px 14px; font-size: 21px; letter-spacing: -0.03em; }
-.brand-mark { font-weight: 800; letter-spacing: -0.04em; }
-.brand-name { font-weight: 500; color: var(--ink-2); }
 .side-search {
   display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; margin: 0 0 8px;
   border-radius: 12px; background: var(--card); color: var(--ink-3); font-size: 14px; text-align: left;
@@ -909,3 +907,63 @@ img.gate-mark { background: none; }
 .mkt-row:hover { background: var(--hover); }
 .mkt-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 14px; padding: 10px; text-align: left; border-radius: 16px; }
 .mkt-row .mkt-star { margin-right: 6px; }
+
+/* ─── Patrimonio ─────────────────────────────────────────────────────── */
+.brand { align-items: center; gap: 10px; font-size: 17px; }
+.brand-ic { width: 30px; height: 30px; border-radius: 9px; flex: none; display: block; }
+.brand-name { color: var(--ink); font-weight: 480; letter-spacing: -0.02em; white-space: nowrap; }
+.brand-name b { font-weight: 720; }
+.brand-big { align-items: center; }
+.brand-big .brand-ic { width: 34px; height: 34px; border-radius: 10px; }
+.brand-big span { font-weight: 650 !important; color: var(--ink) !important; }
+.hero-link { display: inline-flex; align-items: center; gap: 2px; }
+.hero-link:hover { color: var(--ink); }
+.nw-link { grid-column: 1 / -1; justify-self: start; }
+.nw-hero { display: flex; gap: 24px; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; }
+.nw-hero-main { min-width: 0; }
+.nw-hero-side { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; max-width: 260px; text-align: right; }
+.nw-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.nw-chip { display: flex; flex-direction: column; gap: 2px; padding: 10px 14px; border-radius: 16px; background: var(--card-2); font-weight: 620; font-size: 15px; }
+.nw-chip > span:last-child { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.nw-year-bar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 6px; }
+.section-title { font-size: 20px; font-weight: 700; letter-spacing: -0.03em; }
+.nw-diff { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 24px; align-items: start; margin-bottom: 18px; }
+.nw-diff-value { font-size: clamp(30px, 4vw, 42px); font-weight: 690; letter-spacing: -0.04em; margin: 2px 0 4px; }
+.nw-why { background: var(--card-2); border-radius: var(--radius-md); padding: 6px 16px; }
+.bd-hint { display: block; font-size: 12px; color: var(--ink-3); font-weight: 450; margin-top: 1px; }
+.nw-table .grp td { font-weight: 650; background: var(--card-2); }
+.nw-table .grp td:first-child { border-radius: 10px 0 0 10px; }
+.nw-table .grp td:last-child { border-radius: 0 10px 10px 0; }
+.nw-table td.acc, .nw-table .acc { padding-left: 26px; }
+.nw-table tr.click td.sticky .acc { padding-left: 16px; display: inline-block; }
+.nw-table tfoot td { font-weight: 720; font-size: 15px; }
+.nw-table .pill { margin-left: 6px; }
+.nw-scroll { margin: 0 -22px; padding: 0 22px; }
+.nw-months { min-width: 100%; }
+.nw-months th, .nw-months td { white-space: nowrap; }
+.nw-months .sticky { position: sticky; left: 0; z-index: 1; background: var(--card); min-width: 170px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+.nw-months .grp .sticky { background: var(--card-2); }
+.nw-months .prev { color: var(--ink-3); }
+.nw-months .diff { box-shadow: inset 1px 0 0 var(--line); }
+.nw-months tfoot .total td { box-shadow: inset 0 2px 0 var(--ink); }
+.nw-months tfoot .moves td { font-weight: 560; font-size: 13px; }
+.checkin-list { display: flex; flex-direction: column; gap: 14px; }
+.checkin-group { display: flex; flex-direction: column; gap: 6px; }
+.checkin-row { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(120px, 190px); gap: 12px; align-items: center; padding: 4px 0; }
+.checkin-main { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.checkin-main .row-title, .checkin-main .row-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.checkin-ctl { display: flex; justify-content: flex-end; }
+.checkin-ctl .amount-wrap { width: 100%; }
+.checkin-ctl .amount-input { height: 42px; font-size: 15px; }
+@media (max-width: 760px) {
+  .nw-diff { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .nw-hero-side { align-items: stretch; max-width: none; text-align: left; width: 100%; }
+  .nw-scroll { margin: 0 -18px; padding: 0 18px; }
+  .nw-months .sticky { min-width: 130px; max-width: 150px; }
+  .checkin-row { grid-template-columns: auto minmax(0, 1fr); }
+  .checkin-ctl { grid-column: 2; }
+}
+@media (max-width: 760px) {
+  .nw-chips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .nw-chip:last-child:nth-child(odd) { grid-column: 1 / -1; }
+}

@@ -1,9 +1,14 @@
-# [RH] Finance (cartella `finanza-personale`)
+# Analisi Finanziarie (cartella `finanza-personale`)
 
 App di gestione della finanza personale di D (Davide Raho), nata dalla vecchia "Analisi
 Finanziarie" (simulazioni conto corrente / deposito / PAC + mercati), rifatta da zero su
 sua richiesta: "super completa, efficiente ma soprattutto AFFIDABILE, super sicura per la
 privacy, design degno dei migliori design moderni".
+Il nome è **"Analisi Finanziarie"**, quello di D: era stato rinominato di nostra iniziativa
+"[RH] Finance" e a D non è piaciuto ("chi ti ha detto di chiamarla così?"). Non inventare
+nomi, loghi con scritte o marchi: se serve, chiedi. L'icona è solo un grafico in salita.
+I nomi interni invisibili (`rh-finance` per IndexedDB, cache e formato della cassaforte)
+restano: cambiarli renderebbe illeggibili cassaforti e backup già creati.
 D scrive in italiano e non è uno sviluppatore: spiegagli le cose in modo semplice e fai tu
 le modifiche. Tutta l'interfaccia è in italiano.
 
@@ -38,6 +43,26 @@ Il repo è pubblico: mai dati personali di D nel codice.
   componenti (finestre dal basso su telefono / al centro su computer, avvisi, campi),
   grafici SVG fatti a mano (`charts.js`), icone (`icons.js`).
 - `css/app.css`: tutto il design. `sw.js`: offline.
+
+## Pagina Patrimonio (`views/networth.js`, richiesta di D)
+
+D: "una pagina per il networth, dove monitorare l'andamento mese dopo mese di ogni cosa
+che ho e alla fine dell'anno rispetto alla fine dell'anno precedente per capire la
+differenza". Contiene: patrimonio di oggi con la differenza dal 31/12 dell'anno prima, in
+12 mesi e il massimo; grafico a barre impilate per gruppo + linea del patrimonio; scelta
+dell'anno; confronto 31/12 anno prima → 31/12 (o oggi) per gruppo e conto, con la
+scomposizione Risparmiato (entrate − uscite dei conti del patrimonio) + Conti aggiunti
+(valore iniziale dei conti nati nell'anno) + Variazioni di valore (il resto); tabella mese
+per mese (colonna del 31/12 precedente, prima colonna fissa, si apre sugli ultimi mesi,
+CSV); anno per anno. "Aggiorna i valori" (`checkInEditor`, `actions.saveCheckIn`): più
+conti alla stessa data; conti normali → punto fermo `adjust`; conti con titoli solo a una
+fine mese passata → fotografia `snapshots[mese].byAcc` (valore dei titoli = totale meno
+liquidità); mutui con piano: non si scrivono.
+Calcoli in `derive()`: `valueAt(conto, data)` (null prima che il conto esista),
+`netWorthAt(data)`, `monthClose`, `yearClose`, `firstDate`. Un conto **archiviato** resta
+nel patrimonio (e nello storico) se ha "Conta nel patrimonio": un conto chiuso deve
+continuare a valere nei mesi in cui esisteva; nella pagina Conti un archiviato con saldo
+diverso da zero resta visibile.
 
 ## Modello dei saldi (importante)
 
@@ -77,7 +102,7 @@ netti, pulito ed elegante.
 
 ## Prove
 
-- `npm test`: 20 test (calcoli, cifratura, CSV, quotazioni con risposte finte).
+- `npm test`: 21 test (calcoli, cifratura, CSV, quotazioni con risposte finte).
 - Nel browser: `python3 -m http.server` nella cartella e Playwright (Chromium già
   installato). Da questo ambiente Yahoo/Binance/BCE non sono raggiungibili.
 - "Prova con dati di esempio" (`js/demo.js`): dati inventati, solo in memoria.

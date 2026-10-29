@@ -1,4 +1,4 @@
-/* [RH] Finance — avvio, navigazione, blocco automatico, ricerca rapida. */
+/* Analisi Finanziarie — avvio, navigazione, blocco automatico, ricerca rapida. */
 
 import { h, icon, $, clear } from './ui/dom.js';
 import { toast, openSheet, closeAllSheets, topSheet } from './ui/components.js';
@@ -12,6 +12,7 @@ import { applyTheme } from './ui/theme.js';
 import dashboard from './views/dashboard.js';
 import transactions from './views/transactions.js';
 import accounts from './views/accounts.js';
+import networth from './views/networth.js';
 import budget from './views/budget.js';
 import recurring from './views/recurring.js';
 import goals from './views/goals.js';
@@ -29,6 +30,7 @@ const NAV = [
   { group: 'Gestione' },
   { path: 'movimenti', view: transactions, label: 'Movimenti', icon: 'list' },
   { path: 'conti', view: accounts, label: 'Conti', icon: 'wallet' },
+  { path: 'patrimonio', view: networth, label: 'Patrimonio', icon: 'layers' },
   { path: 'investimenti', view: investments, label: 'Investimenti', icon: 'trend' },
   { group: 'Pianificazione' },
   { path: 'budget', view: budget, label: 'Budget', icon: 'pie' },
@@ -75,7 +77,7 @@ function buildShell() {
       ? h('div.side-group', n.group)
       : h('a.side-link', { href: '#/' + n.path, dataset: { path: n.path } }, icon(n.icon, 20), h('span', n.label))));
   const side = h('aside.side',
-    h('a.brand', { href: '#/', 'aria-label': '[RH] Finance, panoramica' }, h('span.brand-mark', '[RH]'), h('span.brand-name', 'Finance')),
+    h('a.brand', { href: '#/', 'aria-label': 'Analisi Finanziarie, panoramica' }, h('img.brand-ic', { src: 'icons/icon.svg', alt: '', width: 30, height: 30 }), h('span.brand-name', 'Analisi', h('b', ' Finanziarie'))),
     h('button.side-search', { type: 'button', onclick: () => openPalette(ctxBase()) }, icon('search', 18), h('span', 'Cerca o vai a…'), h('kbd', navigator.platform?.includes('Mac') ? '⌘K' : 'Ctrl K')),
     nav,
     h('div.side-foot',
@@ -180,7 +182,7 @@ function doRender() {
   }
   $('#top-title').textContent = title;
   $('#top-sub').textContent = sub;
-  document.title = (route.path ? title + ' · ' : '') + '[RH] Finance';
+  document.title = (route.path ? title + ' · ' : '') + 'Analisi Finanziarie';
   $('#top-actions').replaceChildren(
     ...actions,
     h('button.icon-btn.only-mobile', { type: 'button', 'aria-label': 'Cerca', onclick: () => openPalette(ctx) }, icon('search', 20)),

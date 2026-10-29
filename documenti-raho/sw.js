@@ -5,7 +5,7 @@
    Label Finance deletes every cache but its own when it updates: the IndexedDB copy survives that, puts the cache
    back without the network, and is what the page gets if the cache is gone. Each opening with the network also asks
    this worker to check both copies ("fill"). */
-var CACHE = 'rh-documents-v1';
+var CACHE = 'rh-documents-v1';   // the worker itself is checked by the browser at every opening; this name changes only to drop old copies
 var LIBS = [
   'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
@@ -96,7 +96,8 @@ function page(req){
     return new Promise(function(done){
       var sent = false, send = function(r){ if (!sent && r) { sent = true; done(r); } };
       var late = setTimeout(function(){ kept(c, PAGE).then(send); }, 4000);
-      fetch(req).then(function(r){
+      // always ask the site whether the page changed (the browser would keep it up to 10 minutes): updates show at once
+      fetch(req.url, {cache:'no-cache', credentials:'same-origin'}).then(function(r){
         clearTimeout(late);
         if (r.ok) save(c, PAGE, r);
         send(r);

@@ -6,6 +6,7 @@
 /* Layout: two-pane workbench — the form on the left, the live A4 pages on a desk to the right; on phones the two become tabs.
    No outlines: surfaces are told apart by colour. Five themes (data-theme on <html>); the documents stay paper-white in all of them. */
 :root{
+  --veil:color-mix(in srgb, var(--bg) 55%, transparent);
   --sb:rgba(60,60,67,.34); --bg:#e6e6eb; --well:#f2f2f6; --panel:#ffffff; --field:#f0f0f4; --field-2:#e5e5ea; --fg:#0b0b0b; --muted:#5f5f5a; --faint:#8d8d87;
   --accent:#0b0b0b; --accent-fg:#ffffff; --ring:#2f6bff; --desk:#e4e4e0; --warn:#8a4b00; --warn-bg:#ffeed4; --ok:#14663a; --ok-bg:#e1f1e6; --soft:none; --scrim:rgba(10,10,10,.5);
   --lift:0 1px 2px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.08);
@@ -391,10 +392,16 @@ body.sharing .app{padding-bottom:96px}
 .desk{padding:0 0 12px;min-width:0;display:flex;flex-direction:column;gap:22px;touch-action:pan-x pan-y}
 @media (min-width:941px){.desk{padding:calc(var(--barB, 78px) + 14px) 16px 28px}}
 /* the bar over the sheets stays in view while scrolling: change the text and zoom from anywhere */
-.deskbar{position:sticky;top:calc(var(--barB, 78px) + 10px);z-index:4;display:flex;flex-direction:column;gap:4px;padding:6px;border-radius:24px;background:var(--glass);-webkit-backdrop-filter:blur(22px) saturate(1.8);backdrop-filter:blur(22px) saturate(1.8);box-shadow:var(--glass-edge)}
-@media (max-width:940px){.deskbar{top:calc(var(--barB, 122px) + 8px)}}
+.deskbar{display:flex;flex-direction:column;gap:4px;padding:6px;border-radius:24px;background:var(--glass);box-shadow:var(--glass-edge)}
+/* What scrolls up is never seen sharp around the bars (D): a frosted veil across the whole top, down to just under the top bar,
+   and in the preview a second one around the sheets bar, so from that bar up everything is blurred. */
+.topveil{position:fixed;z-index:29;top:0;left:0;right:0;height:calc(var(--barB, 78px) + 14px);pointer-events:none;background:var(--veil);
+  -webkit-backdrop-filter:blur(20px) saturate(1.6);backdrop-filter:blur(20px) saturate(1.6);-webkit-mask-image:linear-gradient(#000 calc(100% - 10px), transparent);mask-image:linear-gradient(#000 calc(100% - 10px), transparent)}
+.deskhead{position:sticky;top:calc(var(--barB, 122px) + 14px);z-index:4}
+.deskhead::before{content:"";position:absolute;z-index:-1;left:-16px;right:-16px;top:-14px;bottom:-12px;pointer-events:none;background:var(--veil);
+  -webkit-backdrop-filter:blur(20px) saturate(1.6);backdrop-filter:blur(20px) saturate(1.6);-webkit-mask-image:linear-gradient(#000 calc(100% - 10px), transparent);mask-image:linear-gradient(#000 calc(100% - 10px), transparent)}
 /* on computers the sheets column scrolls by itself and sticky counts from inside its padding (which already clears the bar) */
-@media (min-width:941px){.deskbar{top:0}}
+@media (min-width:941px){.deskhead{top:0}}
 .deskbar .tool:not([aria-pressed="true"]),.deskbar .zoom{background:var(--glass-btn)}
 .deskrow{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .deskrow.sub{justify-content:flex-start;flex-wrap:wrap;gap:2px 10px;padding:2px 8px 4px 12px}
@@ -647,6 +654,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <div class="app">
+  <div class="topveil" aria-hidden="true"></div>
   <header class="top">
     <div class="brand"><h1>[RH] Documents</h1></div>
     <div class="tabs" role="group" aria-label="Vista">
@@ -704,18 +712,20 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     <section class="archive" id="archive" aria-label="Archivio"></section>
 
     <div class="desk" id="desk" aria-label="Anteprima">
-      <div class="deskbar">
-        <div class="deskrow">
-          <button type="button" class="tool" id="editToggle" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.83 2.83 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg><span id="editLabel">Modifica il testo</span></button>
-          <div class="zoom" role="group" aria-label="Zoom del foglio">
-            <button type="button" id="zoomOut" aria-label="Rimpicciolisci il foglio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 12h12"/></svg></button>
-            <button type="button" id="zoomFit" class="zval" title="Adatta alla larghezza">100%</button>
-            <button type="button" id="zoomIn" aria-label="Ingrandisci il foglio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 6v12M6 12h12"/></svg></button>
+      <div class="deskhead">
+        <div class="deskbar">
+          <div class="deskrow">
+            <button type="button" class="tool" id="editToggle" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.83 2.83 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg><span id="editLabel">Modifica il testo</span></button>
+            <div class="zoom" role="group" aria-label="Zoom del foglio">
+              <button type="button" id="zoomOut" aria-label="Rimpicciolisci il foglio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 12h12"/></svg></button>
+              <button type="button" id="zoomFit" class="zval" title="Adatta alla larghezza">100%</button>
+              <button type="button" id="zoomIn" aria-label="Ingrandisci il foglio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 6v12M6 12h12"/></svg></button>
+            </div>
           </div>
-        </div>
-        <div class="deskrow sub" id="editLine" hidden>
-          <span class="hint" id="editInfo"></span>
-          <button type="button" class="x" id="editReset" hidden>Torna a tutto il testo originale</button>
+          <div class="deskrow sub" id="editLine" hidden>
+            <span class="hint" id="editInfo"></span>
+            <button type="button" class="x" id="editReset" hidden>Torna a tutto il testo originale</button>
+          </div>
         </div>
       </div>
       <div class="warn" id="overflowWarn" hidden></div>

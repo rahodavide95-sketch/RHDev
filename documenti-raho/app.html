@@ -9,6 +9,9 @@
   --bg:#f3f3f1; --panel:#ffffff; --field:#efefec; --field-2:#e6e6e2; --fg:#0b0b0b; --muted:#5f5f5a; --faint:#8d8d87;
   --accent:#0b0b0b; --accent-fg:#ffffff; --ring:#2f6bff; --desk:#e4e4e0; --warn:#8a4b00; --warn-bg:#ffeed4; --ok:#14663a; --ok-bg:#e1f1e6; --soft:0 1px 2px rgba(20,20,18,.04),0 10px 30px rgba(20,20,18,.05); --scrim:rgba(10,10,10,.5);
   --lift:0 1px 2px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.08);
+  /* frosted glass of the top bar (and of the bars over the sheets): see-through, blurred, a glossy light edge on top */
+  --glass:linear-gradient(180deg, rgba(255,255,255,.80), rgba(255,255,255,.60)); --glass-btn:rgba(118,118,108,.12);
+  --glass-edge:inset 0 1px 0 rgba(255,255,255,.95), inset 0 0 0 1px rgba(255,255,255,.55), 0 1px 2px rgba(20,20,18,.06), 0 12px 32px rgba(20,20,18,.10);
   /* the documents are paper: same values in every theme */
   --paper:#ffffff; --ink:#111111; --ink-2:#555555; --ink-3:#333333; --rule:#b5b5b5; --rule-soft:#dddddd; --ph:#7a7a7a; --dash:#767676;
   --ui:'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -19,23 +22,31 @@
 }
 :root[data-theme="sand"]{
   --bg:#ebe5da; --panel:#faf7f1; --field:#ebe4d8; --field-2:#e1d8ca; --fg:#1c1713; --muted:#6b6054; --faint:#958a7c;
+  --glass:linear-gradient(180deg, rgba(250,247,241,.82), rgba(250,247,241,.62)); --glass-btn:rgba(120,96,64,.12);
+  --glass-edge:inset 0 1px 0 rgba(255,253,248,.95), inset 0 0 0 1px rgba(255,253,248,.5), 0 1px 2px rgba(60,40,20,.07), 0 12px 32px rgba(60,40,20,.11);
   --accent:#1c1713; --accent-fg:#faf7f1; --ring:#b4532a; --desk:#ded5c7; --warn:#8a4300; --warn-bg:#f8e3c4; --ok:#2f6331; --ok-bg:#e0e8d5; --soft:0 1px 2px rgba(60,40,20,.05),0 10px 30px rgba(60,40,20,.06);
 }
 :root[data-theme="dark"]{
   --bg:#0c0c0d; --panel:#212124; --field:#333337; --field-2:#404045; --fg:#f5f5f3; --muted:#c0c0bb; --faint:#96969c;
   --accent:#f5f5f3; --accent-fg:#0c0c0d; --ring:#7ea4ff; --desk:#050505; --warn:#ffc978; --warn-bg:#3b2a0f; --ok:#82d6a3; --ok-bg:#132a1d; --soft:none; --scrim:rgba(0,0,0,.72);
   --lift:0 1px 2px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.5); color-scheme:dark;
+  --glass:linear-gradient(180deg, rgba(62,62,66,.62), rgba(30,30,33,.56)); --glass-btn:rgba(255,255,255,.09);
+  --glass-edge:inset 0 1px 0 rgba(255,255,255,.14), inset 0 0 0 1px rgba(255,255,255,.07), 0 12px 32px rgba(0,0,0,.55);
 }
 :root[data-theme="navy"]{
   --bg:#0a0f1d; --panel:#111a2f; --field:#1a2440; --field-2:#22304f; --fg:#eef1fb; --muted:#9ca7c6; --faint:#6e79a0;
   --accent:#e8ecff; --accent-fg:#0a0f1d; --ring:#8fb0ff; --desk:#060a14; --warn:#ffcf86; --warn-bg:#33290f; --ok:#86d9ad; --ok-bg:#10291f; --soft:none; --scrim:rgba(2,5,14,.72);
   --lift:0 1px 2px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.5); color-scheme:dark;
+  --glass:linear-gradient(180deg, rgba(44,60,102,.62), rgba(17,26,47,.56)); --glass-btn:rgba(255,255,255,.09);
+  --glass-edge:inset 0 1px 0 rgba(255,255,255,.15), inset 0 0 0 1px rgba(255,255,255,.07), 0 12px 32px rgba(0,0,0,.55);
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme]),:root[data-theme="auto"]{
     --bg:#0c0c0d; --panel:#212124; --field:#333337; --field-2:#404045; --fg:#f5f5f3; --muted:#c0c0bb; --faint:#96969c;
     --accent:#f5f5f3; --accent-fg:#0c0c0d; --ring:#7ea4ff; --desk:#050505; --warn:#ffc978; --warn-bg:#3b2a0f; --ok:#82d6a3; --ok-bg:#132a1d; --soft:none; --scrim:rgba(0,0,0,.72);
     --lift:0 1px 2px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.5); color-scheme:dark;
+    --glass:linear-gradient(180deg, rgba(62,62,66,.62), rgba(30,30,33,.56)); --glass-btn:rgba(255,255,255,.09);
+  --glass-edge:inset 0 1px 0 rgba(255,255,255,.14), inset 0 0 0 1px rgba(255,255,255,.07), 0 12px 32px rgba(0,0,0,.55);
   }
 }
 body{background:var(--bg);color:var(--fg);font-family:var(--ui);font-size:14px;line-height:1.45;-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
@@ -43,6 +54,15 @@ body{background:var(--bg);color:var(--fg);font-family:var(--ui);font-size:14px;l
 
 .top{display:flex;flex-wrap:wrap;align-items:center;gap:12px 14px}
 .top .brand{margin-right:auto;min-width:0}
+/* the top bar: frosted, glossy glass like Apple's (D), always there; the content slides under it.
+   Its bottom edge is measured (--barB) so the content always starts below it, one row on computers or two on phones. */
+.top{position:fixed;z-index:30;top:max(10px, env(safe-area-inset-top, 0px));left:max(16px, env(safe-area-inset-left, 0px));right:max(16px, env(safe-area-inset-right, 0px));
+  gap:8px 10px;padding:8px 8px 8px 18px;border-radius:26px;background:var(--glass);
+  -webkit-backdrop-filter:blur(22px) saturate(1.8);backdrop-filter:blur(22px) saturate(1.8);box-shadow:var(--glass-edge)}
+.top .tabs{background:var(--glass-btn)}
+.top .menu-btn{background:var(--glass-btn)}
+.top .menu-btn .dot{box-shadow:none}
+.status.statusm{display:none}
 #exportBtn{flex:none}
 /* the tool's name, simply "[RH] Documents" (D) */
 .brand h1{margin:0;font-family:var(--logo);font-weight:400;font-size:28px;letter-spacing:.02em;line-height:1;white-space:nowrap}
@@ -50,6 +70,7 @@ body{background:var(--bg);color:var(--fg);font-family:var(--ui);font-size:14px;l
 @media (max-width:430px){#exportBtn .xl{display:none}#exportBtn{padding:0 18px}}   /* on phones the name and the buttons stay on one row */
 @media (max-width:370px){.brand h1{font-size:18px}}
 @media (max-width:340px){.brand h1{font-size:16px;letter-spacing:0}}
+@media (max-width:370px){.top{padding-left:12px;column-gap:6px}}
 .status{display:inline-flex;align-items:center;gap:9px;min-width:0;max-width:520px;font-size:13px;font-weight:500;color:var(--muted);background:var(--panel);padding:9px 15px 9px 13px;border-radius:999px}
 .status:empty{display:none}
 .status::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
@@ -74,13 +95,19 @@ body.view-archive .form{display:none}
 .form,.archive{grid-column:1;grid-row:1}
 @media (min-width:941px){.desk{grid-column:2;grid-row:1}}
 @media (max-width:940px){
-  .tabs{grid-template-columns:repeat(3,minmax(0,1fr));max-width:none;position:sticky;top:max(8px, env(safe-area-inset-top, 0px));z-index:5;box-shadow:0 0 0 8px var(--bg)}
+  .tabs{grid-template-columns:repeat(3,minmax(0,1fr));max-width:none}
+  .top .tabs{order:5;flex:1 0 100%}
+  .top .tabs button{min-height:38px}
   #tabPreview{display:block}
   .desk{grid-column:1;grid-row:1}
   body.view-form .desk,body.view-archive .desk{display:none}
-  .top .status{order:3;width:100%;max-width:none;box-sizing:border-box;border-radius:16px;align-items:flex-start}
-  .status::before{margin-top:6px}
-  .status span{white-space:normal}
+  .app{padding-top:calc(var(--barB, 122px) + 14px);gap:14px}
+  html{scroll-padding-top:calc(var(--barB, 122px) + 14px)}
+  /* the status stays in the bar for screen readers only; a copy goes under the bar, where it has room */
+  .top .status{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  .status.statusm:not(:empty){display:flex;width:100%;max-width:none;box-sizing:border-box;border-radius:16px;align-items:flex-start}
+  .statusm::before{margin-top:6px}
+  .statusm span{white-space:normal}
   body.view-preview .form{display:none}
   body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top, 0px);z-index:10;background:var(--bg)}
 }
@@ -90,11 +117,15 @@ body.view-archive .form{display:none}
 /* side by side, the form and the sheets scroll on their own */
 @media (min-width:941px){
   /* the same air on both sides of the form (D): window edge | form | preview, scrollbar space on both sides too */
-  .app{height:100vh;height:100dvh;box-sizing:border-box;padding-bottom:22px;padding-left:max(28px, env(safe-area-inset-left, 0px));padding-right:max(28px, env(safe-area-inset-right, 0px))}
+  .app{height:100vh;height:100dvh;box-sizing:border-box;padding-top:0;padding-bottom:0;padding-left:max(28px, env(safe-area-inset-left, 0px));padding-right:max(28px, env(safe-area-inset-right, 0px))}
   .work{flex:1;min-height:0;align-items:stretch;grid-template-rows:minmax(0,1fr)}
-  .form,.desk,.archive{min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--field-2) transparent}
-  .form,.archive{padding:3px 3px 24px;scrollbar-gutter:stable both-edges}
-  .tabs{max-width:474px;margin-left:3px}
+  .form,.desk,.archive{min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--field-2) transparent;scroll-padding-top:calc(var(--barB, 78px) + 14px)}
+  .form,.archive{padding:calc(var(--barB, 78px) + 14px) 3px 24px;scrollbar-gutter:stable both-edges}
+  .top{top:14px;left:max(28px, calc((100vw - 1480px) / 2 + 28px));right:max(28px, calc((100vw - 1480px) / 2 + 28px));flex-wrap:nowrap;gap:12px;padding:10px 10px 10px 24px}
+  .top .brand{margin-right:0;flex:none}
+  .top .status{flex:0 1 auto}
+  .top .tabs{width:auto;max-width:none;grid-template-columns:repeat(2, auto);margin:0 auto 0 14px;flex:none}
+  .top .tabs button{padding:0 22px}
 }
 
 .form{display:flex;flex-direction:column;gap:12px;min-width:0}
@@ -347,7 +378,7 @@ details.card.arch-sum > summary::after{grid-column:2;grid-row:1 / span 2}
 .fromctr span{flex:1 1 220px}
 .card.flash{box-shadow:0 0 0 2px var(--accent);transition:box-shadow .3s}
 /* after a PDF: send it on (phones, Safari on the Mac) */
-.sharebar{position:fixed;left:50%;bottom:max(16px, env(safe-area-inset-bottom, 0px));transform:translateX(-50%);z-index:40;display:flex;align-items:center;gap:10px;width:min(520px, calc(100% - 24px));box-sizing:border-box;padding:8px 8px 8px 16px;border-radius:999px;background:var(--panel);color:var(--fg);box-shadow:var(--lift);animation:toastin .22s ease-out}
+.sharebar{position:fixed;left:50%;bottom:max(16px, env(safe-area-inset-bottom, 0px));transform:translateX(-50%);z-index:40;display:flex;align-items:center;gap:10px;width:min(520px, calc(100% - 24px));box-sizing:border-box;padding:8px 8px 8px 16px;border-radius:999px;background:var(--glass);-webkit-backdrop-filter:blur(22px) saturate(1.8);backdrop-filter:blur(22px) saturate(1.8);color:var(--fg);box-shadow:var(--glass-edge);animation:toastin .22s ease-out}
 .sharebar > svg{width:20px;height:20px;flex:none;color:var(--muted)}
 .sb-name{flex:1;min-width:0;font-size:13.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sharebar .btn{min-height:40px;padding:0 18px}
@@ -355,11 +386,14 @@ details.card.arch-sum > summary::after{grid-column:2;grid-row:1 / span 2}
 body.sharing .app{padding-bottom:96px}
 @media (min-width:941px){body.sharing .form,body.sharing .archive{padding-bottom:96px}body.sharing .desk{padding-bottom:96px}}
 
-.desk{background:var(--desk);border-radius:28px;padding:16px 28px 28px;min-width:0;display:flex;flex-direction:column;gap:20px;touch-action:pan-x pan-y}
-@media (max-width:940px){.desk{padding:10px 12px 12px;gap:12px;border-radius:24px}}
+.desk{padding:0 0 12px;min-width:0;display:flex;flex-direction:column;gap:22px;touch-action:pan-x pan-y}
+@media (min-width:941px){.desk{padding:calc(var(--barB, 78px) + 14px) 16px 28px}}
 /* the bar over the sheets stays in view while scrolling: change the text and zoom from anywhere */
-.deskbar{position:sticky;top:12px;z-index:4;display:flex;flex-direction:column;gap:4px;padding:6px;border-radius:24px;background:var(--panel);background:color-mix(in srgb, var(--panel) 86%, transparent);-webkit-backdrop-filter:blur(18px) saturate(1.5);backdrop-filter:blur(18px) saturate(1.5);box-shadow:var(--lift)}
-@media (max-width:940px){.deskbar{top:calc(max(8px, env(safe-area-inset-top, 0px)) + 62px)}}
+.deskbar{position:sticky;top:calc(var(--barB, 78px) + 10px);z-index:4;display:flex;flex-direction:column;gap:4px;padding:6px;border-radius:24px;background:var(--glass);-webkit-backdrop-filter:blur(22px) saturate(1.8);backdrop-filter:blur(22px) saturate(1.8);box-shadow:var(--glass-edge)}
+@media (max-width:940px){.deskbar{top:calc(var(--barB, 122px) + 8px)}}
+/* on computers the sheets column scrolls by itself and sticky counts from inside its padding (which already clears the bar) */
+@media (min-width:941px){.deskbar{top:0}}
+.deskbar .tool:not([aria-pressed="true"]),.deskbar .zoom{background:var(--glass-btn)}
 .deskrow{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .deskrow.sub{justify-content:flex-start;flex-wrap:wrap;gap:2px 10px;padding:2px 8px 4px 12px}
 .deskrow[hidden]{display:none}
@@ -613,6 +647,11 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
 <div class="app">
   <header class="top">
     <div class="brand"><h1>[RH] Documents</h1></div>
+    <div class="tabs" role="group" aria-label="Vista">
+      <button type="button" id="tabForm" aria-pressed="true">Compila</button>
+      <button type="button" id="tabPreview" aria-pressed="false">Anteprima</button>
+      <button type="button" id="tabArchive" aria-pressed="false">Archivio<span class="tbadge" id="archBadge" hidden></span></button>
+    </div>
     <span class="status" id="status" role="status"></span>
     <button class="btn" id="exportBtn" type="button" aria-label="Scarica PDF">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 2v8M4.5 6.5 8 10l3.5-3.5M3 13h10"/></svg>
@@ -621,11 +660,7 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
     <button type="button" class="menu-btn" id="menuBtn" aria-haspopup="dialog" aria-expanded="false" aria-controls="menu" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8.5h16M4 15.5h16"/></svg><i class="dot" id="menuDot" aria-hidden="true"></i></button>
   </header>
 
-  <div class="tabs" role="group" aria-label="Vista">
-    <button type="button" id="tabForm" aria-pressed="true">Compila</button>
-    <button type="button" id="tabPreview" aria-pressed="false">Anteprima</button>
-    <button type="button" id="tabArchive" aria-pressed="false">Archivio<span class="tbadge" id="archBadge" hidden></span></button>
-  </div>
+  <div class="status statusm" id="statusM" aria-hidden="true"></div>
 
   <div class="work">
     <form class="form" id="form" autocomplete="off">
@@ -1840,7 +1875,11 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
 
   // ---------- status ----------
   var statusEl = document.getElementById('status');
-  function setStatus(text, kind){ statusEl.innerHTML = text ? '<span>' + esc(text) + '</span>' : ''; statusEl.title = text; statusEl.className = 'status' + (kind ? ' ' + kind : ''); }
+  var statusM = document.getElementById('statusM');
+  function setStatus(text, kind){
+    statusEl.innerHTML = statusM.innerHTML = text ? '<span>' + esc(text) + '</span>' : ''; statusEl.title = text;
+    statusEl.className = 'status' + (kind ? ' ' + kind : ''); statusM.className = 'status statusm' + (kind ? ' ' + kind : '');
+  }
   function missing(){
     var d = state.doc, M = state.me, list = [];
     if (!has(M.name)) list.push('nome'); if (!has(M.cf)) list.push('codice fiscale');
@@ -3183,8 +3222,14 @@ body.editing .paper .ed.edited{background:rgba(255,196,0,.22)}
   });
   if (window.matchMedia) { var mq = window.matchMedia('(prefers-color-scheme: dark)'); if (mq.addEventListener) mq.addEventListener('change', applyTheme); }
 
+  // the content starts under the glass bar, whatever its height (one row on computers, two on phones)
+  var topBar = document.querySelector('.top');
+  function barSize(){ document.documentElement.style.setProperty('--barB', Math.round(topBar.getBoundingClientRect().bottom) + 'px'); }
+  if (window.ResizeObserver) new ResizeObserver(barSize).observe(topBar);
+  window.addEventListener('resize', barSize);
+
   // ---------- start ----------
-  applyTheme();
+  applyTheme(); barSize();
   syncTop(); renderFields(); update();
   startSync(); if (syncPhase === 'out') confirmLanding();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(renderPreview);

@@ -289,9 +289,10 @@ export function planNetWorth(read, state, { includeOdd = false, holdings = state
     const currency = existing?.currency || currencyFor(a.type) || state.settings.currency;
     const odd = a.values.filter(v => v.odd);
     const future = a.values.filter(v => refDate && v.date > refDate).length;
-    const known = a.values.filter(v => existing && state.valuations.some(z => z.account === existing.id && z.date === v.date)).length;
-    const values = a.values.filter(v => (includeOdd || !v.odd) && !(refDate && v.date > refDate))
-      .filter(v => !(existing && state.valuations.some(z => z.account === existing.id && z.date === v.date)));
+    // già nell'app: il punto fermo del conto o il valore di fine mese del titolo
+    const has = v => (existing && state.valuations.some(z => z.account === existing.id && z.date === v.date)) || (holding?.id && state.snapshots?.[v.date.slice(0, 7)]?.byHd?.[holding.id] != null);
+    const known = a.values.filter(has).length;
+    const values = a.values.filter(v => (includeOdd || !v.odd) && !(refDate && v.date > refDate)).filter(v => !has(v));
     const gross = isGross(a, read.accounts);
     const zero = values.every(v => !v.value);
     const reason = invAcc ? 'è il totale del conto titoli: lo calcolo dai titoli' : gross ? 'lordo: conta solo il netto' : zero && values.length ? 'sempre a zero' : '';

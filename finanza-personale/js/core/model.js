@@ -476,6 +476,9 @@ export function buyHistory(h, refDate = today()) {
     "Commissioni bancarie", o descrizione con "bollo" (l'imposta di bollo sui titoli). */
 export const INVEST_COST_CATS = ['c-tasse', 'c-banca'];
 const isInvestCost = t => t.kind === 'expense' && (INVEST_COST_CATS.includes(t.category) || /bollo/i.test(t.payee));
+/** Costo degli investimenti pagato da un altro conto (es. il bollo dal conto corrente del broker). */
+export const INVEST_TAG = 'investimenti';
+const investTagged = t => t.kind === 'expense' && t.tags?.includes(INVEST_TAG);
 
 /** Soldi messi e tolti dagli investimenti, operazione per operazione, nella valuta principale (centesimi).
     Investito netto = acquisti con commissioni − vendite al netto di commissioni e imposta trattenuta,
@@ -510,9 +513,10 @@ export function investmentFlows(state, toBase, scope = '') {
   // l'imposta di bollo e le spese del conto: con le crypto se il conto ha solo crypto, altrimenti con i titoli
   const onlyCrypto = a => { const hs = state.holdings.filter(h => h.account === a.id); return hs.length > 0 && hs.every(h => h.cls === 'crypto'); };
   const accs = new Map(state.accounts.filter(a => hasHoldings(a) && (!scope || (scope === 'crypto') === onlyCrypto(a))).map(a => [a.id, a]));
+  const accAll = new Map(state.accounts.map(a => [a.id, a]));
   const costs = state.transactions
-    .filter(t => accs.has(t.account) && isInvestCost(t))
-    .map(t => ({ date: t.date, tx: t, amount: toBase(t.amount, accs.get(t.account).currency) }));
+    .filter(t => (accs.has(t.account) && isInvestCost(t)) || (scope !== 'crypto' && !accs.has(t.account) && investTagged(t)))
+    .map(t => ({ date: t.date, tx: t, amount: toBase(t.amount, (accAll.get(t.account) || accs.get(t.account))?.currency || state.settings.currency) }));
 
   const months = new Map();
   const years = new Map();
@@ -920,7 +924,7 @@ export function derive(state, refDate = today()) {
     for (const c of state.categories) if (c.kind === kind && !c.archived && empty) catRow(groupOf(c.group), c);
     const tot = row();
     for (const t of state.transactions) {
-      if (t.kind === 'transfer' || t.date.slice(0, 4) !== y) continue;
+      if (t.kind === 'transfer' || t.date.slice(0, 4) !== y || investTagged(t)) continue;
       const c = t.category ? catById.get(t.category) : null;
       // un movimento di segno opposto nella stessa categoria la riduce (es. un rimborso, uno storno)
       const sign = t.kind === kind ? 1 : c && c.kind === kind ? -1 : 0;

@@ -171,7 +171,7 @@ export async function openFileImport(ctx) {
         const dates = read.dates.filter(d => d <= refDate);
         const nVals = on.reduce((a, r) => a + r.values.length, 0);
         sec.push(h('div.imp-summary',
-          h('div.imp-big', on.length ? `${plural(on.length, ['conto', 'conti'])}, ${plural(nVals, ['valore', 'valori'])}` : 'Nessun conto scelto'),
+          h('div.imp-big', on.length ? [on.filter(r => !r.holding).length ? plural(on.filter(r => !r.holding).length, ['conto', 'conti']) : '', on.filter(r => r.holding).length ? plural(on.filter(r => r.holding).length, ['titolo', 'titoli']) : '', plural(nVals, ['valore', 'valori'])].filter(Boolean).join(', ') : 'Niente di nuovo'),
           dates.length ? h('p.muted', `Valori dal ${formatDate(dates[0], { year: true })} al ${formatDate(dates[dates.length - 1], { year: true })}: ognuno diventa il saldo del conto a quella data.`) : null,
           h('p.muted', 'Le righe di totale, guadagno, percentuale e l\'Asset Allocation sono calcoli del foglio: non le importo, le uso per il controllo.')));
         const bad = read.checks.filter(c => !c.ok);
@@ -268,7 +268,9 @@ export async function openFileImport(ctx) {
     const nTx = monthJobs.reduce((a, m) => a + m.plan.txs.length, 0);
     const nVals = nwRows.reduce((a, r) => a + r.values.length, 0);
     const pieces = [];
-    if (nwRows.length) pieces.push(plural(nwRows.length, ['conto', 'conti']));
+    const nwAcc = nwRows.filter(r => !r.holding).length, nwHd = nwRows.length - nwAcc;
+    if (nwAcc) pieces.push(plural(nwAcc, ['conto', 'conti']));
+    if (nwHd) pieces.push(plural(nwHd, ['titolo nel Net Worth', 'titoli nel Net Worth']));
     if (invest?.count) pieces.push(plural(invest.count, ['operazione', 'operazioni']));
     if (nTx) pieces.push(plural(nTx, ['movimento', 'movimenti']));
     job = pieces.length ? { nw: nwRows, invest: invest?.count ? invest : null, months: monthJobs.filter(m => m.plan.txs.length), text: pieces.join(', '), nVals, nTx } : null;

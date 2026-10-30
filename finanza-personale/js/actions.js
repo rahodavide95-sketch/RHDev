@@ -414,7 +414,7 @@ function applyInvestPlan(st, plan, cash, costAcc = new Map()) {
   for (const c of plan.costs) {
     const now = stamp();
     // l'imposta di bollo si paga dalla liquidità: dal conto corrente del broker, se c'è
-    st.transactions.push({ id: uid('t-'), date: c.date, kind: 'expense', amount: Math.round(c.amount * 100), account: costAcc.get(c.acc) || accId.get(c.acc), toAccount: null, amountTo: null, category: cat?.id || null, payee: c.payee || 'Imposta di bollo', note: c.note || '', tags: [], recurring: null, created: now, updated: now, importHash: '', flagged: false });
+    st.transactions.push({ id: uid('t-'), date: c.date, kind: 'expense', amount: Math.round(c.amount * 100), account: costAcc.get(c.acc) || accId.get(c.acc), toAccount: null, amountTo: null, category: cat?.id || null, payee: c.payee || 'Imposta di bollo', note: c.note || '', tags: costAcc.get(c.acc) ? ['investimenti'] : [], recurring: null, created: now, updated: now, importHash: '', flagged: false });
   }
 }
 export function importInvestments(plan, { cash = false } = {}) {

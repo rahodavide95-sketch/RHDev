@@ -1,6 +1,7 @@
 /* Pezzi comuni alle pagine: schede, righe dei movimenti e dei conti, riquadri con i numeri. */
 
 import { h, icon } from '../ui/dom.js';
+import { bankLogo } from '../data/banks.js';
 import { money, moneyText } from '../ui/fmt.js';
 import { ACCOUNT_TYPES, isLiability } from '../core/model.js';
 import { formatDay } from '../core/dates.js';
@@ -23,6 +24,11 @@ export function stat(label, value, extra) {
 
 export function avatar(emoji, tone) {
   return h('span.avatar', { class: tone ? 'av-' + tone : '' }, emoji || '•');
+}
+/** Avatar di un conto: il logo della sua banca se lo conosciamo, altrimenti la sua emoji. */
+export function accAvatar(a) {
+  const src = bankLogo(a.name, a.institution);
+  return src ? h('span.avatar.av-logo', h('img', { src, alt: '', width: 42, height: 42, loading: 'lazy' })) : avatar(a.emoji || ACCOUNT_TYPES[a.type].emoji);
 }
 
 export function txRow(ctx, t, { showAccount = true, showDate = false, selectable = false, selected = false, onSelect } = {}) {
@@ -57,7 +63,7 @@ export function accountRow(ctx, a, { onClick } = {}) {
   const v = ctx.d.balances.get(a.id) || 0;
   const t = ACCOUNT_TYPES[a.type];
   return h('a.row.acc-row', { href: '#/conti/' + a.id, onclick: onClick },
-    avatar(a.emoji || t.emoji),
+    accAvatar(a),
     h('span.row-main', h('span.row-title', a.name), h('span.row-sub', [t.label, a.institution].filter(Boolean).join(' · '))),
     h('span.row-end', money(v, a.currency, { tone: isLiability(a) || v < 0 ? 'neg' : '' }),
       a.currency !== ctx.d.base ? h('span.row-sub', moneyText(ctx.d.toBase(v, a.currency))) : null));

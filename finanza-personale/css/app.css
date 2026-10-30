@@ -338,6 +338,8 @@ button.row:hover, a.row:hover { background: var(--hover); }
 .tag { color: var(--brand); margin-right: 4px; }
 .avatar { width: 42px; height: 42px; flex: none; border-radius: 14px; background: var(--fill); display: grid; place-items: center; font-size: 20px; line-height: 1; font-weight: 700; letter-spacing: -0.03em; color: var(--ink-2); overflow: hidden; }
 .avatar.av-mute { font-size: 18px; }
+.avatar.av-logo { background: #fff; box-shadow: inset 0 0 0 1px var(--line); }
+.avatar.av-logo img { width: 100%; height: 100%; object-fit: contain; padding: 5px; }
 .sel-box { width: 22px; height: 22px; border-radius: 7px; flex: none; display: grid; place-items: center; background: var(--fill-2); color: var(--on-ink); }
 .sel-box.on { background: var(--brand); }
 .date-chip { width: 44px; height: 46px; flex: none; border-radius: 14px; background: var(--fill); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; color: var(--ink-3); text-transform: uppercase; letter-spacing: .02em; line-height: 1.05; }
@@ -1130,3 +1132,14 @@ img.gate-mark { background: none; }
 .sheet-table tr.sh-tot td { font-weight: 720; background: color-mix(in srgb, var(--chip) 12%, var(--card)); box-shadow: inset 0 1px 0 color-mix(in srgb, var(--chip) 45%, transparent); }
 .sheet-table tr.sh-tot td.sticky { color: color-mix(in srgb, var(--chip) 75%, var(--ink)); background: color-mix(in srgb, var(--chip) 12%, var(--card)); }
 .sheet-table tfoot td.sticky { background: var(--card); }
+.nw-sheet .nw-logo { width: 16px; height: 16px; border-radius: 4px; vertical-align: -3px; margin-right: 6px; background: #fff; }
+/* riquadri bloccati come in Excel: Categoria (e su computer anche Sottocategoria) restano ferme */
+.sheet-table.nw-months .sticky { min-width: 132px; max-width: 132px; width: 132px; white-space: normal; }
+@media (min-width: 760px) {
+  .sheet-table td.sh-sub, .sheet-table .sh-sub2 { position: sticky; left: 132px; z-index: 1; min-width: 170px; max-width: 170px; overflow: hidden; text-overflow: ellipsis; }
+  .sheet-table th.sh-sub2 { background: var(--thead-bg, var(--card)); }
+  .sheet-table tfoot .sh-sub2 { background: var(--card); }
+  .sheet-table td.sh-sub2:empty, .sheet-table td.sh-sub { box-shadow: inset -1px 0 0 var(--line); }
+}
+@media (max-width: 759px) { .sheet-table.nw-months .sticky { min-width: 100px; max-width: 100px; width: 100px; font-size: 12px; } }
+@media (min-width: 760px) { .sheet-table tfoot td.sh-sub2 { box-shadow: inset 0 2px 0 var(--ink); } }

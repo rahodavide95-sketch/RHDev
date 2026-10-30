@@ -5,7 +5,7 @@ import { h, icon } from '../ui/dom.js';
 import { lineChart } from '../ui/charts.js';
 import { empty, twoTap } from '../ui/components.js';
 import { money, moneyText, axisMoney, tipMoney, ui } from '../ui/fmt.js';
-import { card, accountRow, txGroups, avatar, linkBtn } from './common.js';
+import { card, accountRow, txGroups, avatar, accAvatar, linkBtn } from './common.js';
 import { accountEditor, adjustEditor, txEditor, holdingEditor, undoToast } from './editors.js';
 import { deleteValuation } from '../actions.js';
 import { ACCOUNT_TYPES, GROUPS, isLiability, hasHoldings, hasPlan, paidInstallments, position } from '../core/model.js';
@@ -74,7 +74,7 @@ function detail(ctx, id) {
   const inflow = txs.filter(x => (x.kind === 'income' && x.account === a.id) || (x.kind === 'transfer' && x.toAccount === a.id)).length;
   const node = h('div.stack',
     h('section.card.acc-hero',
-      h('div.acc-hero-top', avatar(a.emoji || t.emoji),
+      h('div.acc-hero-top', accAvatar(a),
         h('div', h('div.hero-label', [t.label, a.institution, a.currency !== d.base ? a.currency : ''].filter(Boolean).join(' · ')), h('div.hero-value', money(v, a.currency, { tone: v < 0 ? 'neg' : '' })),
           a.currency !== d.base ? h('div.muted', '≈ ', moneyText(d.toBase(v, a.currency))) : null)),
       hasPlan(a) ? null : lineChart({ labels: months.map(m => formatMonth(m, true)), tipLabels: months.map(m => formatMonth(m)), series: [{ name: 'Saldo', color: isLiability(a) ? 'var(--c8)' : 'var(--c1)', values: hist, area: true }], fmt: c => moneyText(Math.round(c), a.currency), fmtAxis: axisMoney, height: 170, zero: false, mask: ui.privacy }),

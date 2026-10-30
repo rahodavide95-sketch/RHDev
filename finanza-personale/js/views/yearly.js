@@ -70,12 +70,12 @@ export default {
           h('td.sh-note', l.note),
           cells(l.p, extra), ends(l.p)));
       });
-      if (V.subtot) sheetRows.push(h('tr.sh-tot', { style: { '--chip': col } }, h('td.sticky', { colSpan: 3 }, `Totale ${g.name}`), cells(g, null), ends(g)));
+      if (V.subtot) sheetRows.push(h('tr.sh-tot', { style: { '--chip': col } }, h('td.sticky', `Totale ${g.name}`), h('td.sh-sub2'), h('td'), cells(g, null), ends(g)));
     }
     const sheetTable = h('div.table-wrap.nw-scroll', h('table.table.nw-table.nw-months.year-table.sheet-table',
-      h('thead', h('tr', h('th.sticky', 'CATEGORIA'), h('th', 'SUB CATEGORIA'), h('th', 'NOTE'), months.map(m => h('th.num', { class: m >= curM ? 'future' : '' }, monthName(m + 1, true).toUpperCase())), h('th.num.diff', 'TOTALI'), h('th.num', 'MEDIA MENS.'))),
+      h('thead', h('tr', h('th.sticky', 'CATEGORIA'), h('th.sh-sub2', 'SUB CATEGORIA'), h('th', 'NOTE'), months.map(m => h('th.num', { class: m >= curM ? 'future' : '' }, monthName(m + 1, true).toUpperCase())), h('th.num.diff', 'TOTALI'), h('th.num', 'MEDIA MENS.'))),
       h('tbody', sheetRows),
-      h('tfoot', h('tr.total', h('td.sticky', { colSpan: 3 }, 'TOTALE'), months.map(m => h('td.num', { class: m >= curM ? 'future' : '' }, m >= curM && !T.byMonth[m] ? '' : t2(T.byMonth[m]) || '—')), ends(T)))));
+      h('tfoot', h('tr.total', h('td.sticky', 'TOTALE'), h('td.sh-sub2'), h('td'), months.map(m => h('td.num', { class: m >= curM ? 'future' : '' }, m >= curM && !T.byMonth[m] ? '' : t2(T.byMonth[m]) || '—')), ends(T)))));
 
     if (curM > 6) requestAnimationFrame(() => requestAnimationFrame(() => {
       const th = table.querySelectorAll('thead th')[Math.max(1, curM - 4)]; if (th) table.scrollLeft = th.offsetLeft - 150;
@@ -120,6 +120,10 @@ export default {
         },
         h('div.inv-filters', layouts, V.layout === 'tree' ? levels : h('label.chk', h('input', { type: 'checkbox', checked: V.subtot, onchange: e => { V.subtot = e.target.checked; ctx.rerender(); } }), 'Totale di ogni categoria'), h('label.chk', h('input', { type: 'checkbox', checked: V.empty, onchange: e => { V.empty = e.target.checked; ctx.rerender(); } }), 'Anche le categorie vuote')),
         hasData ? (V.layout === 'sheet' ? sheetTable : table) : empty({ icon: 'list', title: `Nessuna ${V.kind === 'income' ? 'entrata' : 'uscita'} nel ${V.year}`, text: 'Registra i movimenti con la loro categoria, o importa il tuo foglio Excel con le colonne GEN…DIC: qui li vedi mese per mese, come in un foglio.', action: h('div.row-btns', h('button.btn.btn-primary', { type: 'button', onclick: () => txEditor(ctx, null, { kind: V.kind }) }, icon('plus', 18), V.kind === 'income' ? 'Nuova entrata' : 'Nuova uscita'), h('button.btn.btn-soft', { type: 'button', onclick: () => openFileImport(ctx) }, icon('upload', 18), 'Importa da Excel')) })),
+        (() => {
+          const inv = V.kind === 'expense' ? st.transactions.filter(t => t.kind === 'expense' && t.tags?.includes('investimenti') && t.date.startsWith(String(V.year))).reduce((a, t) => a + d.txBase(t), 0) : 0;
+          return inv ? h('p.fine', icon('info', 14), h('span', `L'imposta di bollo e le altre spese degli investimenti (${moneyText(inv)} nel ${V.year}) non sono qui, come nel tuo foglio: le trovi in Investimenti › Anno per anno.`)) : null;
+        })(),
         h('p.fine', icon('info', 14), h('span', 'Categoria = gruppo, sottocategoria = categoria del movimento, voce = descrizione (es. "Groover", "SIAE"). Tocca un importo per vedere i movimenti, una sottocategoria per aprire le voci. Con "Categorie" le crei, rinomini, colori e riordini come vuoi.'))),
     };
   },

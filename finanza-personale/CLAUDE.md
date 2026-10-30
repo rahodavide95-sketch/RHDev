@@ -99,6 +99,38 @@ come esempio ("mi sembra molto interessante"), con la colonna di destra di riepi
   di default. Test: `test/invimport.test.js` con `test/fixtures/portafoglio-esempio.xlsx`
   (dati inventati).
 
+## Prezzi online (`js/market.js`)
+
+D: "non ci sono i prezzi aggiornati". Verificato il 30/10/2026 con un workflow temporaneo su
+un ramo (`curl` con `Origin` e poi il codice vero dell'app in Node): Yahoo risponde 429 e
+senza CORS, allorigins è giù, corsproxy vuole una chiave. **onvista.de** risponde con
+`access-control-allow-origin: *`, senza chiave, per ISIN:
+`/api/v1/instruments/query?searchValue=` (ricerca), `/instruments/{TIPO}/ISIN:{isin}/snapshot`
+(una quotazione per borsa e valuta) e `/instruments/{TIPO}/{entityValue}/eod_history?idNotation=…&range=M1|M3|M6|Y1|Y5|MAX&startDate=`
+(`chart_history` dà 403). `pickQuote()`: valuta del titolo, borse in ordine LSX (Trade
+Republic), GAT, GER, TRO, MIL…, niente borse ferme da una settimana. Crypto da Binance
+(CoinGecko di riserva), valute dalla BCE con storico (`fxQuote`, `EURUSD=X`).
+- Titoli: `isin` + `ovType` (FUND, STOCK, DERIVATIVE…), `priceSrc` (borsa). Senza ISIN
+  `linkSheet()` (Investimenti) cerca per nome (`findCandidates`: ricerche più corte, tipo
+  per classe, punteggio per nome e per prezzo dell'ultima operazione) e fa confermare.
+- `autoPrices()` da `app.js`: con il consenso, all'apertura e al massimo ogni 3 ore;
+  avviso "prezzi non aggiornati" in Portafoglio.
+- Mercati: elenchi in `data/markets.js` con `isin`/`ev`/`type` dove servono (indici,
+  materie prime: solo quelli che onvista ha davvero), altrimenti ricerca per nome col tipo
+  giusto; "Cerca online" su onvista.
+
+## Entrate e uscite (`views/yearly.js`) e categorie (`views/categories.js`)
+
+D, mandando il suo foglio delle entrate (CATEGORIA, SUB CATEGORIA, NOTE, GEN…DIC, TOTALI,
+MEDIA MENS.): "deve essere bravissimo… devo poter fare tutto ciò che voglio in completa
+libertà". Categoria del foglio = `group` della categoria dell'app, sottocategoria =
+categoria, voce = descrizione del movimento (`payee`). `d.yearTable(anno, tipo)`: gruppi →
+categorie → voci con importi per mese, totale; media = totale ÷ mesi trascorsi dell'anno.
+Ordine = ordine dell'array `categories` (riordinabile). Colori dei gruppi in
+`settings.groupColors` (`"income:Lavoro"` → 1…8, palette dei grafici). `categoryManager()`:
+gruppi su/giù, rinomina (se il nome esiste già si uniscono), colore, nuove sottocategorie;
+`categoryEditor` con "Nascondi" e "Elimina e sposta i movimenti in…" (unione).
+
 ## Account e sincronizzazione (richiesta di D: "perché non mi fai accedere con mail e password?")
 
 - Stesso schema collaudato di Documenti Raho (leggi `documenti-raho/CLAUDE.md`, "Account e
@@ -145,10 +177,9 @@ Titoli: costo medio ponderato.
 - CSP senza `unsafe-inline`: gli stili dinamici solo via `element.style` (CSSOM), mai
   attributi `style` in stringa; niente `innerHTML` con dati dell'utente (le icone sono
   costanti).
-- Dati di mercato solo dopo consenso (`settings.market.enabled`); i proxy pubblici
-  (allorigins, corsproxy) solo per la pagina Mercati, mai per i prezzi del portafoglio
-  se non esplicitamente attivato. Nuovi domini vanno aggiunti alla CSP in `index.html`
-  **e** in `vercel.json`.
+- Dati di mercato solo dopo consenso (`settings.market.enabled`), direttamente dal
+  dispositivo alle fonti (niente proxy). Nuovi domini vanno aggiunti alla CSP in
+  `index.html` **e** in `vercel.json`.
 - Label Finance, quando si aggiorna, cancella tutte le cache del sito tranne la sua:
   `sw.js` si ricompleta a ogni apertura (messaggio `refill`). La cache contiene solo
   codice, mai dati.
@@ -165,8 +196,9 @@ netti, pulito ed elegante.
 
 ## Prove
 
-- `npm test`: 36 test (calcoli, cifratura, unione dei dati, CSV, investimenti, import da Excel, quotazioni con risposte finte).
+- `npm test`: 38 test (calcoli, cifratura, unione dei dati, CSV, investimenti, import da Excel, quotazioni con risposte finte).
 - `bash test/rls/run.sh`: regole di sicurezza del database su Postgres.
 - Nel browser: `python3 -m http.server` nella cartella e Playwright (Chromium già
-  installato). Da questo ambiente Yahoo/Binance/BCE non sono raggiungibili.
+  installato). Da questo ambiente onvista/Binance/BCE non sono raggiungibili: per provarli
+  dal vivo serve un workflow temporaneo su un ramo (poi cancellato).
 - "Prova con dati di esempio" (`js/demo.js`): dati inventati, solo in memoria.

@@ -16,7 +16,8 @@ import networth from './views/networth.js';
 import budget from './views/budget.js';
 import recurring from './views/recurring.js';
 import goals from './views/goals.js';
-import investments from './views/investments.js';
+import investments, { autoPrices } from './views/investments.js';
+import yearly from './views/yearly.js';
 import reports from './views/reports.js';
 import sims from './views/sims.js';
 import markets from './views/markets.js';
@@ -29,6 +30,7 @@ const NAV = [
   { path: '', view: dashboard, label: 'Panoramica', icon: 'home' },
   { group: 'Gestione' },
   { path: 'movimenti', view: transactions, label: 'Movimenti', icon: 'list' },
+  { path: 'entrate-uscite', view: yearly, label: 'Entrate e uscite', icon: 'table' },
   { path: 'conti', view: accounts, label: 'Conti', icon: 'wallet' },
   { path: 'patrimonio', view: networth, label: 'Patrimonio', icon: 'layers' },
   { path: 'investimenti', view: investments, label: 'Investimenti', icon: 'trend' },
@@ -177,6 +179,7 @@ function doRender() {
   const r = parseRoute();
   const route = ROUTES.find(x => x.path === r.path) || ROUTES[0];
   const ctx = { ...ctxBase(), route: r };
+  autoPrices(ctx);    // prezzi dei titoli aggiornati da soli, se consentito (al massimo ogni 3 ore)
   // menu attivo
   shell.querySelectorAll('[data-path]').forEach(a => {
     const on = a.dataset.path === route.path || (a.dataset.path === 'menu' && !TABS.includes(route.path));

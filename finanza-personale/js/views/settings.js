@@ -14,11 +14,12 @@ import { passwordStrength, PBKDF2_ITER, WrongSecret } from '../core/crypto.js';
 import { CURRENCIES, formatNumber } from '../core/money.js';
 import { today, formatDate } from '../core/dates.js';
 import { ecbRates } from '../market.js';
+import { categoryManager } from './categories.js';
 import { askMarketConsent } from './investments.js';
 import { applyTheme } from '../ui/theme.js';
 
 
-const VERSION = '3.2.1';
+const VERSION = '3.3.0';
 
 function section(id, title, sub, ...body) {
   return h('section.card.set-card', { id: 'set-' + id }, h('div.card-head', h('div.card-titles', h('h2.card-title', title), sub ? h('p.card-sub', sub) : null)), ...body);
@@ -187,7 +188,7 @@ function categoriesCard(ctx) {
       h('button.btn.btn-soft.btn-sm', { type: 'button', onclick: () => categoryEditor(null, kind) }, icon('plus', 16), 'Nuova categoria'));
   };
   draw();
-  return section('cat', 'Categorie', 'Tocca per rinominare, cambiare icona o gruppo', segmented([{ value: 'expense', label: 'Uscite' }, { value: 'income', label: 'Entrate' }], kind, v => { kind = v; draw(); }, { small: true }), listEl);
+  return section('cat', 'Categorie', 'Categorie e sottocategorie, come vuoi tu', h('button.btn.btn-primary.btn-sm', { type: 'button', onclick: () => categoryManager(ctx, kind === 'income' ? 'income' : 'expense') }, icon('edit', 16), 'Gestisci categorie e colori'), segmented([{ value: 'expense', label: 'Uscite' }, { value: 'income', label: 'Entrate' }], kind, v => { kind = v; draw(); }, { small: true }), listEl);
 }
 
 function rulesCard(ctx) {
@@ -277,9 +278,7 @@ export default {
       rulesCard(ctx),
       fxCard(ctx),
       section('market', 'Dati di mercato online', 'Facoltativi. Si inviano solo simboli di titoli pubblici, mai i tuoi dati.',
-        toggle('Usa i dati di mercato', s.market.enabled, v => A.setSetting('market.enabled', v), { hint: 'Prezzi e grafici da Yahoo Finance, Binance, CoinGecko; cambi dalla BCE' }),
-        toggle('Proxy di riserva per la pagina Mercati', s.market.proxies, v => A.setSetting('market.proxies', v), { hint: 'Se Yahoo non risponde, passa da allorigins.win o corsproxy.io (vedono solo il simbolo richiesto)' }),
-        toggle('Proxy anche per i prezzi del portafoglio', s.market.portfolioProxies, v => A.setSetting('market.portfolioProxies', v), { hint: 'Spento per privacy: i proxy vedrebbero quali titoli hai' })),
+        toggle('Prezzi online', s.market.enabled, v => A.setSetting('market.enabled', v), { hint: 'Titoli da onvista.de per codice ISIN (LS Exchange, Tradegate, Xetra), crypto da Binance e CoinGecko, cambi dalla BCE. Si aggiornano da soli all\'apertura. Viene inviato solo il codice del titolo, mai quantità o importi.' })),
       section('danger', 'Zona pericolosa', null,
         setRow('Cancella tutto da questo dispositivo', 'Cassaforte, copie automatiche e impostazioni. Fai prima un backup!', h('button.btn.btn-danger', { type: 'button', disabled: demo, onclick: async () => {
           const ok = await promptDialog({ title: 'Cancellare tutto?', label: 'Scrivi CANCELLA per confermare', confirm: 'Cancella tutto', message: 'Senza un backup i dati sono persi per sempre.', validate: v => (v.trim().toUpperCase() === 'CANCELLA' ? '' : 'Scrivi CANCELLA') });

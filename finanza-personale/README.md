@@ -47,6 +47,13 @@ Indirizzo: `https://rahodavide95-sketch.github.io/RHDev/finanza-personale/`
     PAC"** (gli acquisti del mese in un colpo solo) e **imposta di bollo**.
   - *Anno per anno*: investito mese per mese (con totale e media), investito per tipo,
     categoria, titolo (con quote e prezzo medio) o conto, e rendite, tasse e costi.
+- **Prezzi aggiornati da soli** (con il consenso): per codice ISIN da onvista.de, con i
+  prezzi della LS Exchange (la borsa di Trade Republic) o di Tradegate/Xetra/Milano; si
+  aggiornano all'apertura e ogni 3 ore. I titoli senza ISIN si collegano in un passo: l'app
+  li cerca per nome e per prezzo dell'ultimo acquisto e fa confermare.
+- **Entrate e uscite** mese per mese, come in un foglio: categoria → sottocategoria → voce
+  (descrizione), una colonna per mese, totale e media mensile, CSV; tocca un importo per i
+  movimenti. **Categorie in libertà**: crea, rinomina, colora, riordina, nascondi, unisci.
 - **Import degli investimenti** da Excel (.xlsx) o CSV, una riga per operazione (come i
   fogli "wallet" dei PAC): colonne riconosciute da sole, righe delle imposte e vendite
   con quote negative capite, righe non capite elencate col numero, **controllo al
@@ -86,8 +93,8 @@ Indirizzo: `https://rahodavide95-sketch.github.io/RHDev/finanza-personale/`
 - Importi gestiti in **centesimi interi** (niente errori di arrotondamento).
 - Librerie esterne tolte: niente più Chart.js da CDN senza versione, niente font di
   Google (che rivelavano a Google ogni apertura). Grafici e caratteri sono nell'app.
-- Le quotazioni non passano più da proxy pubblici senza che tu lo sappia: si chiede il
-  consenso e i prezzi del portafoglio vanno solo direttamente alle fonti.
+- Le quotazioni non passano più da proxy pubblici: si chiede il consenso e i prezzi vanno
+  direttamente alla fonte (onvista.de per codice ISIN; crypto da Binance; cambi dalla BCE).
 
 ## Privacy e sicurezza in breve
 

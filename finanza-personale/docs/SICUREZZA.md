@@ -94,11 +94,16 @@ pubblicare la cartella su un dominio proprio (es. Vercel, già configurato in
 | --- | --- | --- |
 | Con l'account | Supabase (`ztjlqorvnulgfvbtvavm.supabase.co`) | email e password per l'accesso; la cassaforte cifrata |
 | Mai, senza consenso | — | — |
-| Pagina Mercati / "Aggiorna prezzi" / cambi (con consenso) | Yahoo Finance, Binance, CoinGecko, BCE (Frankfurter) | solo il simbolo del titolo (es. `VWCE.DE`) o la valuta base |
-| Solo pagina Mercati, se "proxy di riserva" è attivo | allorigins.win, corsproxy.io | l'indirizzo della quotazione pubblica richiesta |
+| Prezzi online (con consenso): portafoglio, pagina Mercati, ricerca di un titolo | onvista.de (`api.onvista.de`) | il codice ISIN del titolo (es. `IE00BFMXXD54`) o il testo cercato |
+| Crypto e cambi (con consenso) | Binance, CoinGecko, BCE (Frankfurter) | il simbolo della crypto (es. `BTC-USD`) o la coppia di valute |
 
-I prezzi del portafoglio vanno ai proxy solo se attivi esplicitamente l'opzione
-apposita (spenta di base): i proxy potrebbero dedurre quali titoli possiedi.
+Le richieste partono dal dispositivo direttamente verso queste fonti: nessun intermediario,
+niente cookie (`credentials: 'omit'`), niente indirizzo della pagina di provenienza
+(`no-referrer`). La fonte vede il codice richiesto e l'indirizzo internet, come per una
+qualsiasi pagina web: mai quantità, importi, conti o altri dati. Con i prezzi online spenti
+non esce nulla. Yahoo Finance e i proxy pubblici (allorigins, corsproxy) non si usano più:
+Yahoo blocca le richieste dai siti web (niente CORS) e i proxy erano fuori uso o a
+pagamento (verificato il 30/10/2026).
 
 ## Backup
 

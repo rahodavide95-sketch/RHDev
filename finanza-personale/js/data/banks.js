@@ -66,4 +66,4 @@ export function bankLogo(...names) {
 }
 
 /* loghi davvero presenti nella cartella (riempito da tools/fetch-logos.py) */
-export const LOGOS = new Set([]);
+export const LOGOS = new Set(['traderepublic', 'scalable', 'fineco', 'isybank', 'unicredit', 'buddybank', 'bper', 'bancobpm', 'mediolanum', 'ing', 'bbva', 'n26', 'revolut', 'hype', 'paypal', 'poste', 'satispay', 'credem', 'mps', 'creditagricole', 'widiba', 'illimity', 'bancaifis', 'directa', 'degiro', 'mediobanca', 'sella', 'popso', 'allianzbank', 'bancagenerali', 'amex', 'nexi', 'moneyfarm', 'ibkr', 'etoro', 'xtb', 'lightyear', 'wise', 'bunq', 'binance', 'coinbase', 'youngplatform', 'bitpanda', 'kraken', 'cryptocom']);

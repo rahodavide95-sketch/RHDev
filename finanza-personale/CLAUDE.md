@@ -215,6 +215,13 @@ resta, come nel foglio); filtro con totali rifatti; CSV. Colori: `groupColor()` 
 scelto o uno diverso per ogni macro nell'ordine (non più dal nome). L'import crea anche le
 voci ancora a zero (`planMonths().keys`) e, con "Solo le categorie del file", dà alle
 categorie già presenti i nomi del file. Test col file di prova che ha questa struttura.
+**Categorie uniche** (D: "perché due categorie lavoro? è solo 1"): import di versioni diverse
+avevano scritto "Lavoro" e "LAVORO". `catNorm()` (minuscole, senza accenti né simboli) = stessa
+macro / stessa voce. `yearTable` raggruppa con `catNorm`; `tidyPlan`/`applyTidy` (model) danno a
+ogni macro un solo nome (quello delle categorie con movimenti, a pari merito il maiuscolo) e
+fondono le voci doppie spostando movimenti, scadenze, regole e budget; `actions.tidyCategories()`
+gira all'apertura (con un avviso se ha unito qualcosa) e dentro ogni import del file. L'ordine
+delle macro guarda solo le categorie visibili (una "Altro" nascosta non porta ALTRO in alto).
 
 ## Account e sincronizzazione (richiesta di D: "perché non mi fai accedere con mail e password?")
 
@@ -308,7 +315,7 @@ netti, pulito ed elegante.
 
 ## Prove
 
-- `npm test`: 47 test (calcoli, cifratura, unione dei dati, CSV, investimenti, import da Excel di tutti i fogli, crypto, storia degli acquisti, quotazioni con risposte finte).
+- `npm test`: 48 test (calcoli, cifratura, unione dei dati, CSV, investimenti, import da Excel di tutti i fogli, crypto, storia degli acquisti, quotazioni con risposte finte).
 - `bash test/rls/run.sh`: regole di sicurezza del database su Postgres.
 - Nel browser: `python3 -m http.server` nella cartella e Playwright (Chromium già
   installato). Da questo ambiente onvista/Binance/BCE non sono raggiungibili: per provarli

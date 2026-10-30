@@ -5,7 +5,7 @@ import { toast, openSheet, closeAllSheets, topSheet, promptDialog } from './ui/c
 import { ui } from './ui/fmt.js';
 import * as session from './session.js';
 import { S, CLOUD_LABEL, cloudLine } from './session.js';
-import { runAutoPost } from './actions.js';
+import { runAutoPost, tidyCategories } from './actions.js';
 import { formatDate } from './core/dates.js';
 import { applyTheme } from './ui/theme.js';
 import { enhanceTables } from './ui/tables.js';
@@ -249,6 +249,7 @@ function afterOpen() {
   ui.privacy = !!S.state.settings.hideAmounts;
   ui.base = S.state.settings.currency;
   applyTheme(S.state.settings.theme, S.state.settings.look);
+  if (S.mode === 'open') { const n = tidyCategories(); if (n) toast('Categorie doppie unite (es. "Lavoro" e "LAVORO")', { kind: 'ok' }); }
   lastActivity = Date.now();
   if (S.mode === 'open') {
     const n = runAutoPost();

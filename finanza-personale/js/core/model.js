@@ -394,6 +394,48 @@ export function position(h, asOf) {
   return { qty, cost, avg: qty > 0 ? cost / qty : 0, value, unrealized: value - cost, unrealizedPct: cost > 0 ? (value - cost) / cost * 100 : 0, realized, dividends, fees, taxes, invested };
 }
 
+/** Storia degli acquisti di un titolo (nella sua valuta): quanto, quando, ogni quanto e a che prezzi.
+    Più acquisti nello stesso giorno contano come uno per la frequenza. */
+export function buyHistory(h, refDate = today()) {
+  const ops = [...h.ops].filter(o => o.date <= refDate).sort(byDate);
+  const buys = ops.filter(o => o.type === 'buy' && o.qty > 0);
+  const sells = ops.filter(o => o.type === 'sell' && o.qty > 0);
+  const cost = o => o.qty * o.price + o.fee;
+  const spent = buys.reduce((a, o) => a + cost(o), 0);
+  const received = sells.reduce((a, o) => a + o.qty * o.price - o.fee - (o.tax || 0), 0);
+  const fees = [...buys, ...sells].reduce((a, o) => a + o.fee, 0);
+  const days = [...new Set(buys.map(o => o.date))];
+  const gaps = days.slice(1).map((d, i) => diffDays(days[i], d)).sort((a, b) => a - b);
+  const median = gaps.length ? (gaps.length % 2 ? gaps[(gaps.length - 1) / 2] : (gaps[gaps.length / 2 - 1] + gaps[gaps.length / 2]) / 2) : null;
+  // regolare = come un PAC: almeno 3 intervalli e 7 su 10 vicini al solito
+  const regular = gaps.length >= 3 && gaps.filter(g => Math.abs(g - median) <= Math.max(5, median * 0.35)).length / gaps.length >= 0.7;
+  const first = days[0] || null, last = days[days.length - 1] || null;
+  let minP = null, maxP = null, biggest = null;
+  for (const o of buys) {
+    if (!minP || o.price < minP.price) minP = { price: o.price, date: o.date };
+    if (!maxP || o.price > maxP.price) maxP = { price: o.price, date: o.date };
+    if (!biggest || cost(o) > biggest.amount) biggest = { amount: cost(o), date: o.date };
+  }
+  const qtyBought = buys.reduce((a, o) => a + o.qty, 0);
+  const years = new Map();
+  for (const o of buys) {
+    const y = +o.date.slice(0, 4);
+    let Y = years.get(y);
+    if (!Y) years.set(y, (Y = { year: y, n: 0, days: new Set(), spent: 0, qty: 0, gross: 0, fees: 0 }));
+    Y.n++; Y.days.add(o.date); Y.spent += cost(o); Y.qty += o.qty; Y.gross += o.qty * o.price; Y.fees += o.fee;
+  }
+  const byYear = [...years.values()].sort((a, b) => a.year - b.year).map(Y => ({ year: Y.year, n: Y.days.size, spent: Y.spent, qty: Y.qty, fees: Y.fees, avgPrice: Y.qty ? Y.gross / Y.qty : 0 }));
+  const monthsWith = new Set(buys.map(o => o.date.slice(0, 7))).size;
+  const monthsSpan = first ? diffMonths(first, refDate) + 1 : 0;
+  return {
+    buys: days.length, sells: sells.length, spent, received, fees, feePct: spent ? fees / spent * 100 : 0,
+    first, last, sinceLast: last ? diffDays(last, refDate) : null, median, regular,
+    next: regular && last ? addDays(last, Math.round(median)) : null,
+    avgBuy: days.length ? spent / days.length : 0, biggest, minP, maxP, avgPaid: qtyBought ? buys.reduce((a, o) => a + o.qty * o.price, 0) / qtyBought : 0,
+    qtyBought, byYear, monthsWith, monthsSpan,
+  };
+}
+
 /** Movimenti che, sui conti investimenti, sono costi dell'investire: categorie "Tasse e imposte" e
     "Commissioni bancarie", o descrizione con "bollo" (l'imposta di bollo sui titoli). */
 export const INVEST_COST_CATS = ['c-tasse', 'c-banca'];
@@ -404,9 +446,11 @@ const isInvestCost = t => t.kind === 'expense' && (INVEST_COST_CATS.includes(t.c
     come la colonna "totale" di un foglio dei PAC. In più: commissioni, imposte, cedole, guadagni
     realizzati e le spese pagate dalla liquidità dei conti investimenti (imposta di bollo).
     Gli importi in altre valute usano il cambio attuale. */
-export function investmentFlows(state, toBase) {
+export function investmentFlows(state, toBase, scope = '') {
+  // scope: '' tutto, 'crypto' solo le crypto, 'titoli' tutto tranne le crypto
+  const inScope = h => !scope || (scope === 'crypto') === (h.cls === 'crypto');
   const rows = [];
-  for (const h of state.holdings) {
+  for (const h of state.holdings.filter(inScope)) {
     let qty = 0, cost = 0;
     const c = x => toBase(Math.round(x * 100), h.currency);
     for (const o of [...h.ops].sort(byDate)) {
@@ -427,7 +471,9 @@ export function investmentFlows(state, toBase) {
     }
   }
   rows.sort((a, b) => byDate(a.op, b.op));
-  const accs = new Map(state.accounts.filter(hasHoldings).map(a => [a.id, a]));
+  // l'imposta di bollo e le spese del conto: con le crypto se il conto ha solo crypto, altrimenti con i titoli
+  const onlyCrypto = a => { const hs = state.holdings.filter(h => h.account === a.id); return hs.length > 0 && hs.every(h => h.cls === 'crypto'); };
+  const accs = new Map(state.accounts.filter(a => hasHoldings(a) && (!scope || (scope === 'crypto') === onlyCrypto(a))).map(a => [a.id, a]));
   const costs = state.transactions
     .filter(t => accs.has(t.account) && isInvestCost(t))
     .map(t => ({ date: t.date, tx: t, amount: toBase(t.amount, accs.get(t.account).currency) }));
@@ -755,10 +801,12 @@ export function derive(state, refDate = today()) {
     for (const c of state.categories) if (c.kind === kind && !c.archived && empty) catRow(groupOf(c.group), c);
     const tot = row();
     for (const t of state.transactions) {
-      if (t.kind !== kind || t.date.slice(0, 4) !== y) continue;
+      if (t.kind === 'transfer' || t.date.slice(0, 4) !== y) continue;
       const c = t.category ? catById.get(t.category) : null;
-      if (c && c.kind !== kind) continue;
-      const m = +t.date.slice(5, 7) - 1, v = txBase(t);
+      // un movimento di segno opposto nella stessa categoria la riduce (es. un rimborso, uno storno)
+      const sign = t.kind === kind ? 1 : c && c.kind === kind ? -1 : 0;
+      if (!sign || (c && c.kind !== kind)) continue;
+      const m = +t.date.slice(5, 7) - 1, v = sign * txBase(t);
       const g = groupOf(c ? c.group : 'Senza categoria');
       const cr = catRow(g, c);
       const label = (t.payee || '').trim() || 'Senza descrizione';
@@ -779,8 +827,8 @@ export function derive(state, refDate = today()) {
   }
 
   /* Investito mese per mese e anno per anno, tasse e costi */
-  let investCache = null;
-  const invest = () => investCache || (investCache = investmentFlows(state, toBase));
+  const investCache = new Map();
+  const invest = (scope = '') => investCache.get(scope) || investCache.set(scope, investmentFlows(state, toBase, scope)).get(scope);
 
   return {
     base, rates, ledger, accById, catById, holdingsByAcc, missingFx,

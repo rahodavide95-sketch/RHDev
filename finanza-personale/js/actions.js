@@ -2,7 +2,9 @@
    così ogni modifica viene salvata cifrata e l'interfaccia si aggiorna. */
 
 import { S, commit } from './session.js';
-import { uid, stamp, hasPlan } from './core/model.js';
+import { uid, stamp, hasPlan, isLiability } from './core/model.js';
+import { catKey } from './core/sheets.js';
+import { normHead } from './core/invimport.js';
 import { today, addDays, occurrences } from './core/dates.js';
 
 const find = (arr, id) => arr.find(x => x.id === id);
@@ -370,35 +372,103 @@ export function importTransactions(list) {
 export const accountIsPlan = acc => hasPlan(acc);
 
 /** Importa investimenti già preparati da `planImport` (foglio Excel o CSV): una sola modifica, un solo "Annulla". */
+/** Operazioni del foglio "wallet" dentro lo stato (conti, titoli, operazioni, imposte). */
+function applyInvestPlan(st, plan, cash) {
+  const accId = new Map();
+  for (const a of plan.accounts) {
+    if (a.existingId) { accId.set(a, a.existingId); continue; }
+    const id = uid('a-'), created = stamp();
+    st.accounts.push({ id, name: a.name, type: a.type || 'broker', institution: '', currency: a.currency || st.settings.currency, emoji: '', color: '', archived: false, inNetWorth: true, notes: 'Creato importando un file', created, order: st.accounts.length, plan: null });
+    // il conto esiste dalla prima operazione del file
+    st.valuations.push({ id: uid('v-'), account: id, date: a.first || today(), value: 0, created, kind: 'open', note: 'Saldo iniziale' });
+    accId.set(a, id);
+  }
+  for (const x of plan.holdings) {
+    let hd = x.existing && find(st.holdings, x.existing.id);
+    if (!hd) {
+      hd = { id: uid('h-'), account: accId.get(x.acc), symbol: x.symbol || '', isin: x.isin || '', name: x.name, cls: x.cls, group: x.group || '', ter: x.ter || 0, currency: x.currency, price: 0, priceDate: null, priceAuto: true, created: stamp(), ops: [] };
+      st.holdings.push(hd);
+    } else {
+      if (!hd.group && x.group) hd.group = x.group;
+      if (!hd.ter && x.ter) hd.ter = x.ter;
+    }
+    for (const o of x.ops) {
+      hd.ops.push({ id: uid('o-'), date: o.date, type: o.kind, qty: o.qty, price: o.price, fee: o.fee, tax: o.kind === 'sell' ? o.tax : 0, amount: o.amount, cash, note: o.note || '', created: stamp() });
+      if ((o.kind === 'buy' || o.kind === 'sell') && (!hd.priceDate || o.date >= hd.priceDate)) { hd.price = o.price; hd.priceDate = o.date; }
+    }
+  }
+  const cat = st.categories.find(c => c.id === 'c-tasse') || st.categories.find(c => c.kind === 'expense' && /tass|impost/i.test(c.name));
+  for (const c of plan.costs) {
+    const now = stamp();
+    st.transactions.push({ id: uid('t-'), date: c.date, kind: 'expense', amount: Math.round(c.amount * 100), account: accId.get(c.acc), toAccount: null, amountTo: null, category: cat?.id || null, payee: c.payee || 'Imposta di bollo', note: c.note || '', tags: [], recurring: null, created: now, updated: now, importHash: '', flagged: false });
+  }
+}
 export function importInvestments(plan, { cash = false } = {}) {
+  commit(st => applyInvestPlan(st, plan, cash), { undo: 'Importazione degli investimenti' });
+}
+
+/** Tutto il file Excel insieme, con un solo "Annulla":
+    - `nw`: righe del foglio patrimonio (conti con i valori di fine mese);
+    - `invest`: il piano del foglio delle operazioni;
+    - `months`: fogli mese per mese, ognuno con il suo piano e il conto (`target`):
+      un conto esistente, una riga del patrimonio ("nw:<riga>") o "new" (un conto apposta, fuori dal patrimonio). */
+export function importWorkbook({ nw = [], invest = null, cash = false, months = [] }) {
   commit(st => {
-    const accId = new Map();
-    for (const a of plan.accounts) {
-      if (a.existingId) { accId.set(a, a.existingId); continue; }
-      const id = uid('a-'), created = stamp();
-      st.accounts.push({ id, name: a.name, type: 'broker', institution: '', currency: a.currency || st.settings.currency, emoji: '', color: '', archived: false, inNetWorth: true, notes: 'Creato importando un file', created, order: st.accounts.length, plan: null });
-      // il conto esiste dalla prima operazione del file
-      st.valuations.push({ id: uid('v-'), account: id, date: a.first || today(), value: 0, created, kind: 'open', note: 'Saldo iniziale' });
-      accId.set(a, id);
+    const nwId = new Map(), byName = new Map();
+    for (const r of nw) {
+      if (r.existing) { nwId.set(r.key, r.existing.id); continue; }
+      // lo stesso conto in più fogli del patrimonio (es. uno per anno) resta uno solo
+      const nk = normHead(r.name);
+      if (byName.has(nk)) { nwId.set(r.key, byName.get(nk)); continue; }
+      const id = uid('a-');
+      byName.set(nk, id);
+      st.accounts.push({ id, name: r.name.slice(0, 60), type: r.type, institution: '', currency: r.currency, emoji: '', color: '', archived: false, inNetWorth: true, notes: `Creato importando un file${r.section ? ` (sezione "${r.section.slice(0, 60)}")` : ''}`, created: stamp(), order: st.accounts.length, plan: null });
+      nwId.set(r.key, id);
     }
-    for (const x of plan.holdings) {
-      let hd = x.existing && find(st.holdings, x.existing.id);
-      if (!hd) {
-        hd = { id: uid('h-'), account: accId.get(x.acc), symbol: x.symbol || '', isin: x.isin || '', name: x.name, cls: x.cls, group: x.group || '', ter: x.ter || 0, currency: x.currency, price: 0, priceDate: null, priceAuto: true, created: stamp(), ops: [] };
-        st.holdings.push(hd);
-      } else {
-        if (!hd.group && x.group) hd.group = x.group;
-        if (!hd.ter && x.ter) hd.ter = x.ter;
+    if (invest) applyInvestPlan(st, invest, cash);
+    let fileAcc = null;
+    const accFor = target => {
+      if (target && target.startsWith('nw:') && nwId.has(target.slice(3))) return nwId.get(target.slice(3));
+      if (target && target !== 'new' && find(st.accounts, target)) return target;
+      if (!fileAcc) fileAcc = st.accounts.find(a => !a.archived && !a.inNetWorth && a.name === 'Entrate e uscite dal file')?.id || null;
+      if (!fileAcc) {
+        fileAcc = uid('a-');
+        st.accounts.push({ id: fileAcc, name: 'Entrate e uscite dal file', type: 'checking', institution: '', currency: st.settings.currency, emoji: '📊', color: '', archived: false, inNetWorth: false, notes: 'Creato importando un file: raccoglie le entrate e le uscite mese per mese. È fuori dal patrimonio, così i saldi dei conti non cambiano.', created: stamp(), order: st.accounts.length, plan: null });
       }
-      for (const o of x.ops) {
-        hd.ops.push({ id: uid('o-'), date: o.date, type: o.kind, qty: o.qty, price: o.price, fee: o.fee, tax: o.kind === 'sell' ? o.tax : 0, amount: o.amount, cash, note: o.note || '', created: stamp() });
-        if ((o.kind === 'buy' || o.kind === 'sell') && (!hd.priceDate || o.date >= hd.priceDate)) { hd.price = o.price; hd.priceDate = o.date; }
+      return fileAcc;
+    };
+    for (const m of months) {
+      const account = accFor(m.target);
+      const catId = new Map();
+      for (const t of m.plan.txs) {
+        let cat = t.catId;
+        if (!cat) {
+          cat = catId.get(t.catKey);
+          if (!cat) {
+            // anche un altro foglio dello stesso file può averla appena creata
+            const ex = st.categories.find(c => c.kind === m.kind && catKey(c.group, c.name) === t.catKey);
+            if (ex) cat = ex.id;
+            else { cat = uid('c-'); st.categories.push({ id: cat, name: t.name.slice(0, 50), emoji: '•', kind: m.kind, group: t.group.slice(0, 40) || 'Altro', archived: false }); }
+            catId.set(t.catKey, cat);
+          }
+        }
+        const now = stamp();
+        st.transactions.push({ id: uid('t-'), date: t.date, kind: t.kind, amount: t.amount, account, toAccount: null, amountTo: null, category: cat, payee: t.payee.slice(0, 120), note: m.note || '', tags: [], recurring: null, created: now, updated: now, importHash: '', flagged: false });
       }
     }
-    const cat = st.categories.find(c => c.id === 'c-tasse') || st.categories.find(c => c.kind === 'expense' && /tass|impost/i.test(c.name));
-    for (const c of plan.costs) {
-      const now = stamp();
-      st.transactions.push({ id: uid('t-'), date: c.date, kind: 'expense', amount: Math.round(c.amount * 100), account: accId.get(c.acc), toAccount: null, amountTo: null, category: cat?.id || null, payee: c.payee || 'Imposta di bollo', note: c.note || '', tags: [], recurring: null, created: now, updated: now, importHash: '', flagged: false });
+    // i valori del patrimonio dopo i movimenti: a fine giornata il conto vale quanto scritto nel foglio
+    const opened = new Set(), seen = new Set();
+    for (const r of nw) {
+      const account = nwId.get(r.key);
+      const liab = isLiability({ type: r.type });
+      for (const v of r.values) {
+        if (seen.has(account + v.date)) continue;
+        seen.add(account + v.date);
+        const cents = Math.round(v.value * 100);
+        const open = !r.existing && !opened.has(account);
+        opened.add(account);
+        st.valuations.push({ id: uid('v-'), account, date: v.date, value: liab ? -Math.abs(cents) : cents, created: stamp(), kind: open ? 'open' : 'adjust', note: open ? 'Saldo iniziale (dal file)' : 'Dal file' });
+      }
     }
-  }, { undo: 'Importazione degli investimenti' });
+  }, { undo: 'Importazione del file' });
 }

@@ -19,7 +19,7 @@ import { askMarketConsent } from './investments.js';
 import { applyTheme } from '../ui/theme.js';
 
 
-const VERSION = '3.3.0';
+const VERSION = '3.4.0';
 
 function section(id, title, sub, ...body) {
   return h('section.card.set-card', { id: 'set-' + id }, h('div.card-head', h('div.card-titles', h('h2.card-title', title), sub ? h('p.card-sub', sub) : null)), ...body);

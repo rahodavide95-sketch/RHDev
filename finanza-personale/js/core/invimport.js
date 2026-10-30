@@ -8,21 +8,22 @@ import { parseDateFlexible, isISODate } from './dates.js';
 import { ASSET_CLASSES } from './model.js';
 import { excelDate } from './xlsx.js';
 import { CURRENCIES } from './money.js';
+import { SEARCH_DB } from '../data/markets.js';
 
 /** Intestazione semplificata: minuscole, senza accenti, parentesi e simboli. */
 export const normHead = s => String(s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
-  .replace(/\(.*?\)/g, ' ').replace(/[€$%:.*#_]/g, ' ').replace(/\s+/g, ' ').trim();
+  .replace(/\(.*?\)/g, ' ').replace(/[€$%:.*#_'’`]/g, ' ').replace(/\s+/g, ' ').trim();
 
 export const FIELDS = [
   { key: 'date', label: 'Data', re: /^(data|date|giorno)( (di )?(acquisto|operazione|op|esecuzione|eseguito|valuta|trade|contabile))?$|^trade date$/ },
   { key: 'op', label: 'Operazione', re: /^(operazione|tipo operazione|tipo movimento|movimento|segno|side|transaction|transaction type|acquisto\/vendita|a\/v|buy\/sell|causale)$/ },
   { key: 'asset', label: 'Tipo di titolo', re: /^(asset|tipo|tipologia|tipo (titolo|strumento|asset)|asset class|asset type|classe|strumento finanziario)$/ },
-  { key: 'name', label: 'Titolo', re: /^(info|titolo|nome|nome titolo|strumento|prodotto|descrizione|security|name|etf|fondo|asset name|instrument)$/ },
+  { key: 'name', label: 'Titolo', re: /^(info|titolo|nome|nome titolo|strumento|prodotto|descrizione|security|name|etf|fondo|asset name|instrument|coin|coins|moneta|crypto|cripto|criptovaluta|token)$/ },
   { key: 'isin', label: 'ISIN', re: /^(isin|codice isin|isin code)$/ },
   { key: 'symbol', label: 'Simbolo', re: /^(simbolo|ticker|symbol)$/ },
   { key: 'group', label: 'Categoria', re: /^(categoria|category|gruppo|settore|tema)$/ },
   { key: 'qty', label: 'Quantità', re: /^(quote|quota|quantita|qty|qta|q ta|numero quote|n quote|nr quote|pezzi|shares|units|quantity)$/ },
-  { key: 'price', label: 'Prezzo', re: /^(costo quota|prezzo|prezzo (unitario|di acquisto|acquisto|eseguito|di esecuzione)|price|costo unitario|prezzo quota|valore quota)$/ },
+  { key: 'price', label: 'Prezzo', re: /^(costo quota|prezzo|prezzo (unitario|di acquisto|acquisto|eseguito|di esecuzione|medio)|price|costo unitario|prezzo quota|valore quota|valore|valore unitario|valore coin|cambio)$/ },
   { key: 'amount', label: 'Importo', re: /^(importo|controvalore|amount|investito|ammontare|importo lordo|lordo)$/ },
   { key: 'fee', label: 'Commissioni', re: /^(fee|fees|commissioni|commissione|costi|costo|spese|commission)$/ },
   { key: 'ter', label: 'TER', re: /^(ter|ongoing charges|spese correnti)$/ },
@@ -45,7 +46,9 @@ export function findHeader(rows) {
     });
     const ok = map.date != null && (map.qty != null || map.amount != null || map.total != null);
     const score = Object.keys(map).length;
-    if (ok && (!best || score > best.score)) best = { index: i, map, score };
+    // un foglio di crypto: la colonna del nome si chiama "coin", "crypto", "token"…
+    const crypto = map.name != null && /^(coins?|crypto|cripto|criptovaluta|token|moneta)$/.test(normHead(rows[i][map.name]));
+    if (ok && (!best || score > best.score)) best = { index: i, map, score, crypto };
   }
   return best;
 }
@@ -88,6 +91,23 @@ function cellTer(v) {
 }
 
 const ISIN_RE = /^[A-Z]{2}[A-Z0-9]{9}\d$/;
+
+const CRYPTO_NAMES = new Map();
+for (const x of SEARCH_DB) if (x.t === 'Crypto') {
+  CRYPTO_NAMES.set(normHead(x.n), x.s);
+  for (const part of x.n.split(/[/()]/)) if (part.trim()) CRYPTO_NAMES.set(normHead(part), x.s);
+}
+/** Simbolo della crypto per i prezzi ("BTC-USD") da "BTC", "btc", "Bitcoin", "BTC/EUR", "BTC-EUR"… */
+export function cryptoSymbol(text) {
+  const t = String(text ?? '').trim();
+  if (!t) return '';
+  const byName = CRYPTO_NAMES.get(normHead(t));
+  if (byName) return byName;
+  const u = t.toUpperCase().replace(/\s+/g, '');
+  const pair = /^([A-Z0-9]{2,10})[/-]?(EUR|USD|USDT|USDC)$/.exec(u);
+  if (pair && pair[1] !== 'USD' && pair[1] !== 'EUR') return pair[1] + '-USD';
+  return /^[A-Z0-9]{2,10}$/.test(u) && t.length <= 6 ? u + '-USD' : '';
+}
 
 /** Tipo di titolo dalle sigle dei fogli più diffusi (ETF-A, ETC, STOCK…) o dai nomi dell'app. */
 export function assetClass(text, name = '') {
@@ -150,11 +170,18 @@ export function readOperations(rows, header, { nums, date1904 = false } = {}) {
     if (!kind) { problems.push({ row, msg: 'non capisco se è un acquisto, una vendita o una cedola' }); continue; }
 
     let isin = text(r, 'isin').toUpperCase(), name = name0;
-    const symbol = text(r, 'symbol').toUpperCase();
+    let symbol = text(r, 'symbol').toUpperCase();
+    const isCoin = header.crypto || /crypto|cripto/i.test(asset);
+    if (isCoin && !isin) {
+      symbol = cryptoSymbol(symbol) || cryptoSymbol(name0) || symbol;
+      // il nome per esteso, se è una crypto conosciuta ("BTC" → "Bitcoin")
+      const known = SEARCH_DB.find(x => x.s === symbol && x.t === 'Crypto');
+      if (known && (!name0 || name0.toUpperCase() === name0)) name = known.n.split(' (')[0];
+    }
     if (!isin && ISIN_RE.test(name0.toUpperCase())) { isin = name0.toUpperCase(); name = group || isin; }
     if (!name) name = group || symbol || isin;
     if (!name) { problems.push({ row, msg: 'manca il nome del titolo' }); continue; }
-    const base = { row, kind, date, note: note.slice(0, 300), broker: broker.slice(0, 60), name, isin: ISIN_RE.test(isin) ? isin : '', symbol, group, asset, ter: cellTer(get(r, 'ter')), currency: text(r, 'currency').toUpperCase(), fileTotal: total };
+    const base = { row, kind, date, note: note.slice(0, 300), broker: broker.slice(0, 60), name, isin: ISIN_RE.test(isin) ? isin : '', symbol, group, asset: asset || (isCoin ? 'crypto' : ''), ter: cellTer(get(r, 'ter')), currency: text(r, 'currency').toUpperCase(), fileTotal: total };
 
     if (kind === 'buy' || kind === 'sell') {
       const q = Math.abs(qty || 0);
@@ -242,6 +269,8 @@ export function planImport(read, state, { account = null, defaultName = 'Investi
   for (const hd of holdings.values()) if (!hd.cls) hd.cls = 'other';
   const list = [...holdings.values()].filter(x => x.ops.length);
   const usedAcc = [...accounts.values()].filter(a => list.some(x => x.acc === a) || costs.some(c => c.acc === a));
+  // un conto nuovo con sole crypto è un wallet crypto, altrimenti un conto investimenti
+  for (const a of usedAcc) a.type = list.filter(x => x.acc === a).every(x => x.cls === 'crypto') && list.some(x => x.acc === a) ? 'crypto' : 'broker';
   return {
     accounts: usedAcc, holdings: list, costs, dups,
     count: list.reduce((a, x) => a + x.ops.length, 0) + costs.length,

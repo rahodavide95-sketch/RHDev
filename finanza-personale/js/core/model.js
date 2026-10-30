@@ -123,6 +123,7 @@ export function defaults() {
       market: { enabled: false, proxies: true, portfolioProxies: false },
       backupDays: 14,
       onboarded: false,
+      groupColors: {},
     },
     accounts: [],
     valuations: [],
@@ -222,6 +223,7 @@ function cleanHolding(h) {
     id: hid, account: acc, symbol: str(h.symbol, 24).toUpperCase(), isin: str(h.isin, 12).toUpperCase(), name: str(h.name, 80) || str(h.symbol, 24) || 'Titolo',
     cls: ASSET_CLASSES[h.cls] ? h.cls : 'other', currency: cur(h.currency), price: num(h.price, 0, 0, 1e12), priceDate: date(h.priceDate), priceAuto: bool(h.priceAuto, true),
     group: str(h.group, 40), ter: num(h.ter, 0, 0, 10), created: int(h.created, 0),
+    ovType: /^[A-Z_]{2,20}$/.test(h.ovType || '') ? h.ovType : '', priceSrc: str(h.priceSrc, 40),
     ops: arr(h.ops).map(o => {
       const oid = id(o?.id), d = date(o?.date), type = ['buy', 'sell', 'div', 'fee'].includes(o?.type) ? o.type : null;
       if (!oid || !d || !type) return null;
@@ -249,6 +251,9 @@ export function sanitize(raw) {
       market: { enabled: bool(set.market?.enabled), proxies: bool(set.market?.proxies, true), portfolioProxies: bool(set.market?.portfolioProxies) },
       backupDays: [0, 7, 14, 30].includes(set.backupDays) ? set.backupDays : 14,
       onboarded: bool(set.onboarded),
+      // colore di ogni gruppo di categorie ("income:Lavoro" → 1…8, la palette dei grafici)
+      groupColors: Object.fromEntries(Object.entries(set.groupColors && typeof set.groupColors === 'object' ? set.groupColors : {})
+        .filter(([k, v]) => typeof k === 'string' && k.length <= 60 && /^(income|expense):/.test(k) && Number.isInteger(v) && v >= 1 && v <= 8).slice(0, 300)),
     },
     accounts: arr(s.accounts).map(cleanAccount).filter(Boolean),
     valuations: arr(s.valuations).map(cleanValuation).filter(Boolean),
@@ -727,6 +732,52 @@ export function derive(state, refDate = today()) {
     };
   }
 
+  /* Entrate (o uscite) dell'anno come un foglio: categoria → sottocategoria → voce, per mese.
+     Categoria = gruppo, sottocategoria = categoria dell'app, voce = descrizione del movimento.
+     L'ordine è quello scelto dall'utente (ordine delle categorie). */
+  function yearTable(year, kind, { empty = false } = {}) {
+    const y = String(year);
+    const row = () => ({ total: 0, byMonth: Array(12).fill(0), n: 0 });
+    const add = (r, m, v) => { r.byMonth[m] += v; r.total += v; r.n++; };
+    const groups = new Map();
+    const groupOf = name => {
+      let g = groups.get(name);
+      if (!g) groups.set(name, (g = { name, ...row(), cats: new Map() }));
+      return g;
+    };
+    const catRow = (g, c) => {
+      const key = c ? c.id : '';
+      let r = g.cats.get(key);
+      if (!r) g.cats.set(key, (r = { id: key, name: c ? c.name : 'Senza categoria', emoji: c ? c.emoji : '•', ...row(), payees: new Map() }));
+      return r;
+    };
+    // prima le categorie nell'ordine scelto, così anche quelle senza movimenti restano al loro posto
+    for (const c of state.categories) if (c.kind === kind && !c.archived && empty) catRow(groupOf(c.group), c);
+    const tot = row();
+    for (const t of state.transactions) {
+      if (t.kind !== kind || t.date.slice(0, 4) !== y) continue;
+      const c = t.category ? catById.get(t.category) : null;
+      if (c && c.kind !== kind) continue;
+      const m = +t.date.slice(5, 7) - 1, v = txBase(t);
+      const g = groupOf(c ? c.group : 'Senza categoria');
+      const cr = catRow(g, c);
+      const label = (t.payee || '').trim() || 'Senza descrizione';
+      const pk = label.toLowerCase();
+      let p = cr.payees.get(pk);
+      if (!p) cr.payees.set(pk, (p = { name: label, ...row() }));
+      add(p, m, v); add(cr, m, v); add(g, m, v); add(tot, m, v);
+    }
+    const order = new Map(state.categories.map((c, i) => [c.id, i]));
+    const gOrder = name => { const i = state.categories.findIndex(c => c.kind === kind && c.group === name); return i < 0 ? 1e9 : i; };
+    const list = [...groups.values()].sort((a, b) => gOrder(a.name) - gOrder(b.name)).map(g => ({
+      ...g, cats: [...g.cats.values()].sort((a, b) => (order.get(a.id) ?? 1e9) - (order.get(b.id) ?? 1e9))
+        .map(c => ({ ...c, payees: [...c.payees.values()].sort((a, b) => b.total - a.total) })),
+    }));
+    const ry = +refDate.slice(0, 4);
+    const months = +y < ry ? 12 : +y === ry ? +refDate.slice(5, 7) : 0;   // mesi trascorsi, per la media
+    return { year: +y, kind, groups: list, ...tot, months };
+  }
+
   /* Investito mese per mese e anno per anno, tasse e costi */
   let investCache = null;
   const invest = () => investCache || (investCache = investmentFlows(state, toBase));
@@ -735,7 +786,7 @@ export function derive(state, refDate = today()) {
     base, rates, ledger, accById, catById, holdingsByAcc, missingFx,
     balances, groupTotals, assets, netWorth, accountValue, holdingsValue, holdingsCash, toBase, txBase,
     nwAccounts, startByAcc, valueAt, netWorthAt, monthClose, yearClose, firstDate,
-    netWorthHistory, flows, monthlyFlows, budget, dueList, upcoming, fixedMonthly, recurringIncomeMonthly, goal, portfolio, invest,
+    netWorthHistory, flows, monthlyFlows, budget, dueList, upcoming, fixedMonthly, recurringIncomeMonthly, goal, portfolio, invest, yearTable,
     refDate,
   };
 }

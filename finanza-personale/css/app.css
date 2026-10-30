@@ -1153,3 +1153,9 @@ table.resizing { user-select: none; cursor: col-resize; }
 .table-filter { display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 12px; border-radius: 12px; background: var(--field); min-width: 200px; flex: 0 1 280px; }
 .table-filter input { flex: 1; min-width: 0; border: 0; background: none; font: inherit; font-size: 14px; color: var(--ink); outline: none; }
 .table-filter .ic { color: var(--ink-3); }
+
+/* distintivi dei titoli: ETF, ETC, STOCK… e loghi delle crypto */
+.avatar.av-badge { background: var(--badge); color: #fff; font-size: 10.5px; font-weight: 800; letter-spacing: .03em; }
+.avatar.av-coin { background: transparent; box-shadow: none; }
+.avatar.av-coin img { padding: 2px; }
+.mini-badge { display: inline-grid; place-items: center; min-width: 30px; height: 16px; padding: 0 4px; border-radius: 4px; margin-right: 6px; vertical-align: 1px; background: var(--badge); color: #fff; font-size: 9px; font-weight: 800; letter-spacing: .03em; }

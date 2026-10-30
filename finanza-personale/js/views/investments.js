@@ -6,7 +6,7 @@ import { h, icon, download } from '../ui/dom.js';
 import { donut, SERIES, lineChart, barChart } from '../ui/charts.js';
 import { empty, toast, confirmDialog, selectInput, openSheet, textInput, field } from '../ui/components.js';
 import { money, moneyText, compactText, delta, tipMoney, axisMoney, ui } from '../ui/fmt.js';
-import { card, avatar, linkBtn, segTabs, stat } from './common.js';
+import { card, avatar, linkBtn, segTabs, stat, hdBadge } from './common.js';
 import { holdingEditor, opEditor, accountEditor, pacEditor, bolloEditor, pickHoldingOp, txEditor } from './editors.js';
 import { setPrices, setSetting, setFx, linkHoldings } from '../actions.js';
 import { ASSET_CLASSES, position, hasHoldings, buyHistory } from '../core/model.js';
@@ -172,7 +172,7 @@ function table(ctx, p) {
   const total = p.value || 1;
   const open = rows.filter(r => r.qty > 0), closed = rows.filter(r => r.qty <= 0);
   const line = r => h('a.row.hold-row', { href: '#/investimenti/' + r.holding.id },
-    avatar(r.holding.cls === 'crypto' ? '🪙' : r.holding.cls === 'gov' || r.holding.cls === 'bond' ? '🏛️' : r.holding.cls === 'gold' ? '🥇' : '📈'),
+    hdBadge(r.holding),
     h('span.row-main', h('span.row-title', r.holding.name),
       h('span.row-sub', [r.holding.symbol, `${formatNumber(r.qty, 6)} × ${formatNumber(r.holding.price, 4)} ${r.holding.currency}`, r.holding.priceDate && r.holding.priceDate < today() ? `prezzo del ${formatDate(r.holding.priceDate)}` : ''].filter(Boolean).join(' · '))),
     h('span.row-end', money(r.valueBase), h('span.row-sub', money(r.valueBase - r.costBase, d.base, { sign: true, tone: r.valueBase >= r.costBase ? 'pos' : 'neg' }), ' ', delta(r.unrealizedPct)), h('span.weight', h('i', { style: { width: Math.min(100, r.valueBase / total * 100) + '%' } }))));

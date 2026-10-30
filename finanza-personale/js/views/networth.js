@@ -5,7 +5,7 @@ import { h, icon, download } from '../ui/dom.js';
 import { barChart, legend } from '../ui/charts.js';
 import { openSheet, amountInput, dateInput, segmented, toast, empty, field, selectInput } from '../ui/components.js';
 import { money, moneyText, delta, axisMoney, tipMoney, ui } from '../ui/fmt.js';
-import { card, avatar, accAvatar, segTabs, filterBox } from './common.js';
+import { card, avatar, accAvatar, segTabs, filterBox, hdBadge } from './common.js';
 import { accountEditor } from './editors.js';
 import { openFileImport } from './invimport.js';
 import { bankLogo } from '../data/banks.js';
@@ -174,7 +174,7 @@ function sheetTable(ctx, Y) {
     for (const r of sec.rows) {
       const go = r.hd ? () => ctx.go('investimenti/' + r.hd.id) : r.acc ? () => ctx.go('conti/' + r.acc.id) : null;
       body.push(h('tr.nw-item.click', { onclick: go, style: { '--sec': col } },
-        h('td.sticky', h('span.nw-name', r.acc && !r.hd && bankLogo(r.acc.name, r.acc.institution) ? h('img.nw-logo', { src: bankLogo(r.acc.name, r.acc.institution), alt: '', width: 16, height: 16 }) : null, r.label), r.label !== r.name || r.hd ? h('span.nw-sub', r.hd ? r.name : r.sub) : h('span.nw-sub', r.sub)),
+        h('td.sticky', h('span.nw-name', r.hd ? hdBadge(r.hd, true) : r.acc && bankLogo(r.acc.name, r.acc.institution) ? h('img.nw-logo', { src: bankLogo(r.acc.name, r.acc.institution), alt: '', width: 16, height: 16 }) : null, r.label), h('span.nw-sub', r.hd && r.label !== r.name ? r.name : r.sub)),
         cells(r.values, t2)));
     }
     body.push(h('tr.nw-total', { style: { '--sec': col } }, h('td.sticky', 'Total'), cells(sec.total, t2)));

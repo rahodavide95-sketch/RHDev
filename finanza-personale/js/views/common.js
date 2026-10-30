@@ -2,6 +2,7 @@
 
 import { h, icon } from '../ui/dom.js';
 import { bankLogo } from '../data/banks.js';
+import { coinLogo } from '../data/coins.js';
 import { money, moneyText } from '../ui/fmt.js';
 import { ACCOUNT_TYPES, isLiability } from '../core/model.js';
 import { formatDay } from '../core/dates.js';
@@ -102,4 +103,16 @@ export function filterBox(id, value, onChange, placeholder = 'Filtra…') {
   inp.addEventListener('input', () => { clearTimeout(tm); tm = setTimeout(() => { refocus = id; onChange(inp.value.trim()); }, 220); });
   if (refocus === id) { refocus = null; requestAnimationFrame(() => { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }); }
   return h('label.table-filter', icon('search', 16), inp);
+}
+
+/* Distintivo dei titoli: per le crypto il loro logo, per gli altri la sigla del tipo (come chiede D) */
+const BADGE = { etf_eq: ['ETF', 1], etf_bd: ['ETF', 1], etf_mm: ['ETF', 1], gold: ['ETC', 4], stock: ['STOCK', 3], gov: ['BOND', 7], bond: ['BOND', 7], fund: ['FONDO', 2], other: ['•', 0] };
+export function hdBadge(hd, small = false) {
+  if (hd.cls === 'crypto') {
+    const src = coinLogo(hd.symbol);
+    if (src) return h(small ? 'img.nw-logo' : 'span.avatar.av-logo.av-coin', small ? { src, alt: '', width: 16, height: 16 } : {}, small ? null : h('img', { src, alt: '', width: 42, height: 42, loading: 'lazy' }));
+    return small ? h('span.mini-badge', { style: { '--badge': 'var(--c4)' } }, '₿') : avatar('🪙');
+  }
+  const [t, c] = BADGE[hd.cls] || BADGE.other;
+  return h(small ? 'span.mini-badge' : 'span.avatar.av-badge', { style: { '--badge': c ? `var(--c${c})` : 'var(--ink-3)' } }, t);
 }

@@ -17,32 +17,31 @@ jobs:
           const M = await import(process.env.GITHUB_WORKSPACE + '/finanza-personale/js/market.js');
           const D = await import(process.env.GITHUB_WORKSPACE + '/finanza-personale/js/data/markets.js');
           const fmt = n => (n == null ? '—' : Number(n).toFixed(4));
-          console.log('== Titoli del foglio di D (solo nome)');
-          const names = ['Vanguard S&P 500 UCITS ETF', 'iShares Core MSCI Emerging Markets IMI UCITS ETF', 'Xtrackers EUR High Yield Corporate Bond UCITS ETF', 'Invesco Physical Gold A', 'Xtrackers II EUR Overnight Rate Swap UCITS ETF', 'VanEck Space Innovators UCITS ETF', 'Rocket Lab'];
-          for (const n of names) {
-            try {
-              const c = await M.findCandidates({ name: n });
-              const best = c[0];
-              const q = await M.quote({ isin: best.isin, type: best.type, currency: 'EUR' }, '1M');
-              console.log(`${n} → ${best.name} ${best.isin} (${best.type}, punteggio ${best.score.toFixed(2)}; altri: ${c.slice(1, 3).map(x => x.isin).join(',')}) = ${fmt(q.price)} ${q.currency} ${q.venue}, ${q.closes.length} chiusure`);
-            } catch (e) { console.log(`${n} → ERRORE ${e.message}`); }
+          console.log('== Titoli del foglio di D (nome + ultimo prezzo)');
+          const hs = [['Vanguard S&P 500 UCITS ETF', 133.26], ['iShares Core MSCI Emerging Markets IMI UCITS ETF', 46.37], ['Invesco Physical Gold A', 376.22], ['Xtrackers II EUR Overnight Rate Swap UCITS ETF', 149.57], ['VanEck Space Innovators UCITS ETF', 86.58], ['Rocket Lab', 83.7], ['Xtrackers EUR High Yield Corporate Bond UCITS ETF', 23.77]];
+          for (const [n, p] of hs) {
+            try { const c = await M.findCandidates({ name: n, price: p, currency: 'EUR' }); console.log(`${n} (${p}) → ` + c.slice(0, 3).map(x => `${x.name} ${x.isin} ${x.price ?? '?'} [${x.score.toFixed(2)}]`).join(' | ')); }
+            catch (e) { console.log(n, 'ERRORE', e.message); }
           }
-          console.log('== Intervalli del grafico');
-          for (const r of ['1G', '1S', '1M', '3M', '6M', 'YTD', '1A', '5A', 'Max']) {
-            try { const q = await M.quote({ isin: 'IE00BFMXXD54', type: 'FUND', currency: 'EUR' }, r); console.log(r, q.closes.length, 'chiusure, dal', q.stamps[0] ? new Date(q.stamps[0] * 1000).toISOString().slice(0, 10) : '—', 'var', q.change?.toFixed(2)); } catch (e) { console.log(r, 'ERRORE', e.message); }
+          console.log('== Ricerche per indici, materie prime e titoli');
+          const qs = ['DAX', 'DAX 40', 'TecDAX', 'Nikkei 225', 'S&P/ASX 200', 'ASX 200', 'S&P/TSX', 'TSX', 'Jakarta Composite', 'IPC Mexico', 'Mexbol', 'Shanghai Composite', 'SSE Composite', 'NZX 50', 'VIX', 'Volatility', 'Russell 2000', 'Nikkei', 'BSE Sensex', 'Sensex', 'Nifty 50', 'KOSPI', 'Taiwan', 'TAIEX', 'Straits Times', 'Bovespa', 'Ibovespa', 'KLCI', 'FTSE Bursa', 'Dollar Index', 'US Dollar Index',
+            'Goldpreis', 'Gold', 'Silberpreis', 'Silber', 'Platinpreis', 'Palladiumpreis', 'Ölpreis Brent', 'Brent', 'WTI', 'Ölpreis WTI', 'Erdgas', 'Natural Gas', 'Kupferpreis', 'Kupfer', 'Aluminiumpreis', 'Weizen', 'Mais', 'Sojabohnen', 'Hafer', 'Kaffee', 'Zucker', 'Kakao', 'Baumwolle', 'Orangensaft', 'Lebendrind', 'Holz', 'Heizöl', 'Benzin',
+            'Telecom Italia', 'TIM', 'A2A', 'ERG', 'Schwab US Dividend', 'iShares 20+ Year Treasury', 'iShares 7-10 Year Treasury', 'iShares 1-3 Year Treasury', 'SPDR Bloomberg 1-3 Month T-Bill', 'iShares iBoxx Investment Grade', 'Vanguard Short-Term Inflation', 'iShares International Treasury', 'iShares Broad USD Investment Grade', 'Invesco Emerging Markets Sovereign', 'Vanguard Total International Bond', 'Vanguard Total Stock Market', 'iShares Core MSCI Emerging Markets ETF', 'Health Care Select Sector SPDR', 'Vanguard Dividend Appreciation', 'JPMorgan Equity Premium Income', 'Bitcoin'];
+          for (const q of qs) {
+            try { const r = await M.ovSearch(q, 6); console.log(`? ${q} → ` + r.map(x => `${x.type}:${x.name}:${x.isin || x.ev}`).join(' | ')); } catch (e) { console.log(`? ${q} → ERRORE ${e.message}`); }
           }
-          console.log('== Pagina Mercati');
+          console.log('== Cambi BCE');
+          for (const s of ['EURUSD=X', 'USDJPY=X', 'EURCHF=X']) { try { const q = await M.quote({ symbol: s }, '1M'); console.log(s, q.price, q.closes.length, q.change?.toFixed(2)); } catch (e) { console.log(s, 'ERRORE', e.message); } }
+          console.log('== Pagina Mercati (con ISIN dove c\'è)');
+          const by = new Map(D.SEARCH_DB.map(x => [x.s, x]));
           let ok = 0, ko = 0;
           for (const [cat, items] of Object.entries(D.MKT_CATEGORIES)) {
-            if (cat === 'Crypto') continue;
+            if (cat === 'Crypto' || cat === 'Materie Prime' || cat === 'Indici') continue;
             for (const it of items) {
-              try { const q = await M.quote({ ...it, category: cat }, '1M'); ok++; console.log(`ok  ${cat} | ${it.name} → ${q.name} = ${fmt(q.price)} ${q.currency || 'pt'} (${q.closes.length})`); }
-              catch (e) { ko++; console.log(`NO  ${cat} | ${it.name} (${it.symbol}) → ${e.message}`); }
+              try { const q = await M.quote({ ...it, isin: by.get(it.symbol)?.isin || undefined, category: cat, currency: /Azioni IT/.test(cat) ? 'EUR' : undefined }, '1M'); ok++; console.log(`ok  ${cat} | ${it.name} (${it.symbol}) → ${q.name} = ${fmt(q.price)} ${q.currency || 'pt'}`); }
+              catch (e) { ko++; console.log(`NO  ${cat} | ${it.name} (${it.symbol}, ${by.get(it.symbol)?.isin}) → ${e.message}`); }
             }
           }
-          console.log('== Ricerca locale con ISIN');
-          let wi = 0;
-          for (const x of D.SEARCH_DB.filter(x => x.isin).slice(0, 15)) { try { const q = await M.quote({ symbol: x.s, name: x.n, isin: x.isin }, '1M'); wi++; console.log('ok', x.n, x.isin, fmt(q.price), q.currency); } catch (e) { console.log('NO', x.n, x.isin, e.message); } }
-          console.log(`TOTALE Mercati: ${ok} ok, ${ko} non trovati`);
+          console.log(`TOTALE: ${ok} ok, ${ko} no`);
           JS
           node /tmp/live.mjs

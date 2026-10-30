@@ -1,6 +1,8 @@
 /* Pezzi comuni alle pagine: schede, righe dei movimenti e dei conti, riquadri con i numeri. */
 
 import { h, icon } from '../ui/dom.js';
+import { bankLogo } from '../data/banks.js';
+import { coinLogo } from '../data/coins.js';
 import { money, moneyText } from '../ui/fmt.js';
 import { ACCOUNT_TYPES, isLiability } from '../core/model.js';
 import { formatDay } from '../core/dates.js';
@@ -23,6 +25,11 @@ export function stat(label, value, extra) {
 
 export function avatar(emoji, tone) {
   return h('span.avatar', { class: tone ? 'av-' + tone : '' }, emoji || '•');
+}
+/** Avatar di un conto: il logo della sua banca se lo conosciamo, altrimenti la sua emoji. */
+export function accAvatar(a) {
+  const src = bankLogo(a.name, a.institution);
+  return src ? h('span.avatar.av-logo', h('img', { src, alt: '', width: 42, height: 42, loading: 'lazy' })) : avatar(a.emoji || ACCOUNT_TYPES[a.type].emoji);
 }
 
 export function txRow(ctx, t, { showAccount = true, showDate = false, selectable = false, selected = false, onSelect } = {}) {
@@ -57,7 +64,7 @@ export function accountRow(ctx, a, { onClick } = {}) {
   const v = ctx.d.balances.get(a.id) || 0;
   const t = ACCOUNT_TYPES[a.type];
   return h('a.row.acc-row', { href: '#/conti/' + a.id, onclick: onClick },
-    avatar(a.emoji || t.emoji),
+    accAvatar(a),
     h('span.row-main', h('span.row-title', a.name), h('span.row-sub', [t.label, a.institution].filter(Boolean).join(' · '))),
     h('span.row-end', money(v, a.currency, { tone: isLiability(a) || v < 0 ? 'neg' : '' }),
       a.currency !== ctx.d.base ? h('span.row-sub', moneyText(ctx.d.toBase(v, a.currency))) : null));
@@ -86,4 +93,26 @@ export function pageGrid(...cards) { return h('div.page-grid', cards); }
 
 export function segTabs(options, value, onChange) {
   return h('div.tabs', { role: 'tablist' }, options.map(o => h('button.tab-btn', { type: 'button', role: 'tab', 'aria-selected': String(o.value === value), onclick: () => onChange(o.value) }, o.label, o.count != null ? h('span.tab-count', o.count) : null)));
+}
+
+/** Casella per filtrare una tabella: aggiorna la pagina mentre scrivi e resta selezionata. */
+let refocus = null;
+export function filterBox(id, value, onChange, placeholder = 'Filtra…') {
+  const inp = h('input', { type: 'search', value: value || '', placeholder, 'aria-label': placeholder });
+  let tm;
+  inp.addEventListener('input', () => { clearTimeout(tm); tm = setTimeout(() => { refocus = id; onChange(inp.value.trim()); }, 220); });
+  if (refocus === id) { refocus = null; requestAnimationFrame(() => { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }); }
+  return h('label.table-filter', icon('search', 16), inp);
+}
+
+/* Distintivo dei titoli: per le crypto il loro logo, per gli altri la sigla del tipo (come chiede D) */
+const BADGE = { etf_eq: ['ETF', 1], etf_bd: ['ETF', 1], etf_mm: ['ETF', 1], gold: ['ETC', 4], stock: ['STOCK', 3], gov: ['BOND', 7], bond: ['BOND', 7], fund: ['FONDO', 2], other: ['•', 0] };
+export function hdBadge(hd, small = false) {
+  if (hd.cls === 'crypto') {
+    const src = coinLogo(hd.symbol);
+    if (src) return h(small ? 'img.nw-logo' : 'span.avatar.av-logo.av-coin', small ? { src, alt: '', width: 16, height: 16 } : {}, small ? null : h('img', { src, alt: '', width: 42, height: 42, loading: 'lazy' }));
+    return small ? h('span.mini-badge', { style: { '--badge': 'var(--c4)' } }, '₿') : avatar('🪙');
+  }
+  const [t, c] = BADGE[hd.cls] || BADGE.other;
+  return h(small ? 'span.mini-badge' : 'span.avatar.av-badge', { style: { '--badge': c ? `var(--c${c})` : 'var(--ink-3)' } }, t);
 }

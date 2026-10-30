@@ -3,12 +3,13 @@
 
 import { h, icon, download } from '../ui/dom.js';
 import { barChart, legend } from '../ui/charts.js';
-import { openSheet, amountInput, dateInput, segmented, toast, empty, field } from '../ui/components.js';
+import { openSheet, amountInput, dateInput, segmented, toast, empty, field, selectInput } from '../ui/components.js';
 import { money, moneyText, delta, axisMoney, tipMoney, ui } from '../ui/fmt.js';
-import { card, avatar, segTabs } from './common.js';
+import { card, avatar, accAvatar, segTabs, filterBox, hdBadge } from './common.js';
 import { accountEditor } from './editors.js';
 import { openFileImport } from './invimport.js';
-import { saveCheckIn } from '../actions.js';
+import { bankLogo } from '../data/banks.js';
+import { saveCheckIn, setSetting } from '../actions.js';
 import { ACCOUNT_TYPES, GROUPS, isLiability, hasHoldings, hasPlan } from '../core/model.js';
 import { monthKey, monthEnd, addMonthKey, lastMonths, formatMonth, formatDate, monthName, diffMonths, today, isISODate } from '../core/dates.js';
 import { formatPercent } from '../core/money.js';
@@ -16,6 +17,7 @@ import { toCSV, csvNumber } from '../core/csv.js';
 
 let year = null;
 let span = 24;
+let nwQ = '';
 
 const GROUP_ORDER = Object.entries(GROUPS).sort((a, b) => a[1].order - b[1].order).map(([k]) => k);
 const GROUP_COLOR = { liquidity: 'var(--c3)', investments: 'var(--c1)', assets: 'var(--c4)', debt: 'var(--c8)' };
@@ -58,7 +60,7 @@ export function checkInEditor(ctx, presetDate) {
           ctl = inp;
         }
         return h('div.checkin-row',
-          avatar(a.emoji || ACCOUNT_TYPES[a.type].emoji),
+          accAvatar(a),
           h('div.checkin-main', h('span.row-title', a.name), h('span.row-sub', hint || (cur == null ? 'non esisteva ancora a questa data' : `ora: ${moneyText(cur, a.currency)}`))),
           h('div.checkin-ctl', ctl));
       }));
@@ -148,52 +150,106 @@ function yearCompare(ctx, Y) {
 }
 
 /* ─── Tabella mese per mese dell'anno ─── */
-function monthTable(ctx, Y) {
+/* ─── Net Worth come il foglio di D: sezioni con le loro righe, Total, Gain/Loss e %;
+   in fondo il patrimonio netto e l'Asset Allocation ─── */
+const dmy = iso => `${iso.slice(8)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
+const t2 = v => (v == null ? '' : moneyText(v, ui.base));
+const sg = v => (v == null ? '' : moneyText(v, ui.base, { sign: true }));
+const pc = v => (v == null ? '' : formatPercent(v, 2, true));
+const tone = v => (v == null || !Math.round(v * 100) ? '' : v > 0 ? 'pos' : 'neg');
+
+function sheetTable(ctx, Y) {
   const { d } = ctx;
-  const cols = [{ label: `31 dic ${Y - 1}`, short: `dic ${String(Y - 1).slice(2)}`, x: d.netWorthAt(`${Y - 1}-12-31`) }];
-  for (let m = 1; m <= 12; m++) {
-    const k = `${Y}-${String(m).padStart(2, '0')}`;
-    const close = d.monthClose(k);
-    if (!close) break;
-    cols.push({ label: close === d.refDate ? `${monthName(m, true)} (oggi)` : monthName(m, true), key: k, x: d.netWorthAt(close) });
-  }
-  const groups = groupedAccounts(d, cols.map(c => c.x));
-  const last = cols[cols.length - 1].x, first = cols[0].x;
-  const head = h('tr', h('th.sticky', ''), cols.map((c, i) => h('th.num', { class: i === 0 ? 'prev' : '' }, c.label)), h('th.num.diff', 'Diff. anno'), h('th.num', '%'));
-  const rowOf = (label, get, cls, onclick) => {
-    const vals = cols.map(c => get(c.x));
-    const dd = (vals[vals.length - 1] ?? 0) - (vals[0] ?? 0);
-    const any = vals.some(v => v != null);
-    return h('tr', { class: cls, onclick },
-      h('td.sticky', label),
-      vals.map((v, i) => h('td.num', { class: i === 0 ? 'prev' : '' }, t0(v))),
-      h('td.num.diff', { class: !any ? '' : dd > 0 ? 'pos' : dd < 0 ? 'neg' : '' }, any ? t0(dd) : '—'),
-      h('td.num', vals[0] ? formatPercent(pctOf(vals[vals.length - 1] ?? 0, vals[0]), 1, true) : '—'));
-  };
-  const body = groups.flatMap(({ g, accounts }) => [
-    rowOf(h('span', h('span.dl-key', { style: { background: GROUP_COLOR[g] } }), GROUPS[g].label), x => x.groups[g], 'grp'),
-    ...accounts.map(acc => rowOf(h('span.acc', acc.name, acc.archived ? h('span.pill', 'chiuso') : null), x => x.byAcc.get(acc.id), 'click', () => ctx.go('conti/' + acc.id))),
-  ]);
-  const moves = cols.map((c, i) => (i === 0 ? null : c.x.total - cols[i - 1].x.total));
-  const exportCsv = () => {
-    const rows = [['', ...cols.map(c => c.label), 'Differenza anno']];
-    for (const { g, accounts } of groups) {
-      rows.push([GROUPS[g].label, ...cols.map(c => csvNumber(c.x.groups[g])), csvNumber(last.groups[g] - first.groups[g])]);
-      for (const acc of accounts) rows.push(['  ' + acc.name, ...cols.map(c => (c.x.byAcc.get(acc.id) == null ? '' : csvNumber(c.x.byAcc.get(acc.id)))), csvNumber((last.byAcc.get(acc.id) ?? 0) - (first.byAcc.get(acc.id) ?? 0))]);
+  const S0 = d.nwSheet(Y, nwQ);
+  const curY = Number(d.refDate.slice(0, 4));
+  const dates = [`${Y - 1}-12-31`, ...Array.from({ length: 12 }, (_, i) => monthEnd(`${Y}-${String(i + 1).padStart(2, '0')}`))];
+  const isToday = i => S0.cols[i] && S0.cols[i] === d.refDate && dates[i] !== d.refDate;
+  const head = h('tr', h('th.sticky', 'Net Worth'), dates.map((dt, i) => h('th.num', { class: [i === 0 ? 'prev' : '', S0.cols[i] ? '' : 'future'].join(' ') }, isToday(i) ? `${dmy(d.refDate)} (oggi)` : dmy(dt))));
+  const cells = (vals, fmt, cls) => vals.map((v, i) => h('td.num', { class: [cls ? cls(v) : '', i === 0 ? 'prev' : '', S0.cols[i] ? '' : 'future'].join(' ') }, fmt(v)));
+  const band = (label, color, extra) => h('tr.nw-band', { style: { '--sec': color } }, h('td.sticky', h('span', label), extra || null), dates.map(() => h('td')));
+  const body = [];
+  for (const sec of S0.sections) {
+    const col = `var(--c${sec.color})`;
+    body.push(band(sec.name, col));
+    for (const r of sec.rows) {
+      const go = r.hd ? () => ctx.go('investimenti/' + r.hd.id) : r.acc ? () => ctx.go('conti/' + r.acc.id) : null;
+      body.push(h('tr.nw-item.click', { onclick: go, style: { '--sec': col } },
+        h('td.sticky', h('span.nw-name', r.hd ? hdBadge(r.hd, true) : r.acc && bankLogo(r.acc.name, r.acc.institution) ? h('img.nw-logo', { src: bankLogo(r.acc.name, r.acc.institution), alt: '', width: 16, height: 16 }) : null, r.label), h('span.nw-sub', r.hd && r.label !== r.name ? r.name : r.sub)),
+        cells(r.values, t2)));
     }
-    rows.push(['Patrimonio netto', ...cols.map(c => csvNumber(c.x.total)), csvNumber(last.total - first.total)]);
-    download(new Blob([toCSV(rows)], { type: 'text/csv;charset=utf-8' }), `patrimonio-${Y}.csv`);
+    body.push(h('tr.nw-total', { style: { '--sec': col } }, h('td.sticky', 'Total'), cells(sec.total, t2)));
+    body.push(h('tr.nw-gain', h('td.sticky', 'Gain/Loss'), cells(sec.gain, sg, tone)));
+    body.push(h('tr.nw-pct', h('td.sticky', '%'), cells(sec.pct, pc, tone)));
+  }
+  body.push(band('Net Worth', 'var(--brand)'));
+  body.push(h('tr.nw-total.nw-grand', h('td.sticky', 'Total'), cells(S0.total, t2)));
+  body.push(h('tr.nw-gain', h('td.sticky', 'Gain/Loss'), cells(S0.gain, sg, tone)));
+  body.push(h('tr.nw-pct', h('td.sticky', '%'), cells(S0.pct, pc, tone)));
+  body.push(band('Asset Allocation', 'var(--ink-3)'));
+  for (const a of S0.alloc) body.push(h('tr.nw-alloc', h('td.sticky', h('span.dl-key', { style: { background: `var(--c${a.color})` } }), a.name), cells(a.pct, v => (v == null ? '' : formatPercent(v, 2)))));
+
+  const exportCsv = () => {
+    const rows = [['Net Worth', ...dates.map(dmy)]];
+    const line = (label, vals, f = csvNumber) => rows.push([label, ...vals.map(v => (v == null ? '' : f(v)))]);
+    for (const sec of S0.sections) {
+      rows.push([sec.name]);
+      for (const r of sec.rows) line(r.label, r.values);
+      line('Total', sec.total); line('Gain/Loss', sec.gain); line('%', sec.pct, v => v.toFixed(2).replace('.', ','));
+    }
+    rows.push(['Net Worth']); line('Total', S0.total); line('Gain/Loss', S0.gain); line('%', S0.pct, v => v.toFixed(2).replace('.', ','));
+    rows.push(['Asset Allocation']);
+    for (const a of S0.alloc) line(a.name, a.pct, v => v.toFixed(2).replace('.', ','));
+    download(new Blob([toCSV(rows)], { type: 'text/csv;charset=utf-8' }), `net-worth-${Y}.csv`);
     toast('Tabella esportata', { kind: 'ok' });
   };
-  const scroller = h('div.table-wrap.nw-scroll', h('table.table.nw-table.nw-months',
-    h('thead', head),
-    h('tbody', body),
-    h('tfoot',
-      rowOf('Patrimonio netto', x => x.total, 'total'),
-      h('tr.moves', h('td.sticky', 'Variazione del mese'), moves.map((v, i) => h('td.num', { class: v == null ? 'prev' : v > 0 ? 'pos' : v < 0 ? 'neg' : '' }, i === 0 ? '' : moneyText(v, ui.base, { decimals: 0, sign: true }))), h('td.num.diff', ''), h('td.num', '')))));
-  // si apre sugli ultimi mesi: i più vecchi si vedono scorrendo verso sinistra
-  requestAnimationFrame(() => requestAnimationFrame(() => { scroller.scrollLeft = scroller.scrollWidth; }));
-  return card(`Mese per mese nel ${Y}`, { sub: 'Valori a fine mese, nella valuta principale. Scorri per i mesi precedenti; tocca un conto per i dettagli.', action: h('button.btn.btn-sm.btn-ghost', { type: 'button', onclick: exportCsv }, icon('download', 16), 'CSV') }, scroller);
+  const scroller = h('div.table-wrap.nw-scroll', h('table.table.nw-table.nw-months.nw-sheet', { 'data-tid': 'nw' }, h('thead', head), h('tbody', body)));
+  // si apre sui mesi più recenti
+  if (Y === curY) requestAnimationFrame(() => requestAnimationFrame(() => { const th = scroller.querySelectorAll('thead th')[Math.max(1, Number(d.refDate.slice(5, 7)) - 3)]; if (th) scroller.scrollLeft = th.offsetLeft - 220; }));
+  return card(`Net Worth ${Y}`, {
+    sub: 'Valori a fine mese, sezione per sezione, con guadagno o perdita sul mese prima. Tocca una riga per i dettagli.',
+    action: h('div.card-acts', h('button.btn.btn-sm.btn-ghost', { type: 'button', onclick: () => organizeSheet(ctx, S0) }, icon('edit', 16), 'Organizza'), h('button.btn.btn-sm.btn-ghost', { type: 'button', onclick: exportCsv }, icon('download', 16), 'CSV')),
+  }, h('div.inv-filters', filterBox('nw', nwQ, v => { nwQ = v; ctx.rerender(); }, 'Filtra: conto, titolo o sezione')), scroller);
+}
+
+/** Sezioni e righe del Net Worth: rinomina, colori, ordine, sposta le righe da una sezione all'altra. */
+function organizeSheet(ctx, S0) {
+  // si parte da quello che si vede (anche le righe messe da sole nelle sezioni di base)
+  let secs = S0.sections.map(x => ({ name: x.name, color: x.color, items: x.rows.map(r => r.key) }));
+  const labelOf = new Map(S0.sections.flatMap(x => x.rows.map(r => [r.key, r.label])));
+  const labels = { ...(ctx.st.settings.nwLayout?.labels || {}) };
+  const list = h('div.catman');
+  const draw = () => {
+    list.replaceChildren(...secs.map((sec, si) => {
+      const name = h('input.input', { value: sec.name, maxlength: 60, 'aria-label': 'Nome della sezione', oninput: e => { sec.name = e.target.value; } });
+      return h('div.catman-group',
+        h('div.catman-head.nw-org-head',
+          name,
+          h('span.catman-tools',
+            h('div.swatches.sm', Array.from({ length: 8 }, (_, i) => h('button.swatch', { type: 'button', 'aria-label': `Colore ${i + 1}`, 'aria-pressed': String(sec.color === i + 1), style: { background: `var(--c${i + 1})` }, onclick: () => { sec.color = i + 1; draw(); } }))),
+            h('button.icon-btn.sm', { type: 'button', 'aria-label': 'Su', disabled: si === 0, onclick: () => { [secs[si - 1], secs[si]] = [secs[si], secs[si - 1]]; draw(); } }, icon('chevU', 16)),
+            h('button.icon-btn.sm', { type: 'button', 'aria-label': 'Giù', disabled: si === secs.length - 1, onclick: () => { [secs[si + 1], secs[si]] = [secs[si], secs[si + 1]]; draw(); } }, icon('chevD', 16)))),
+        h('div.rows', sec.items.map((k, ii) => h('div.row.catman-row',
+          h('span.row-main', h('span.row-title', labelOf.get(k) || k)),
+          h('span.catman-tools',
+            selectInput(secs.map((x, j) => ({ value: String(j), label: x.name || 'Sezione' })), String(si), v => { sec.items.splice(ii, 1); secs[+v].items.push(k); draw(); }),
+            h('button.icon-btn.sm', { type: 'button', 'aria-label': 'Su', disabled: ii === 0, onclick: () => { [sec.items[ii - 1], sec.items[ii]] = [sec.items[ii], sec.items[ii - 1]]; draw(); } }, icon('chevU', 16)),
+            h('button.icon-btn.sm', { type: 'button', 'aria-label': 'Giù', disabled: ii === sec.items.length - 1, onclick: () => { [sec.items[ii + 1], sec.items[ii]] = [sec.items[ii], sec.items[ii + 1]]; draw(); } }, icon('chevD', 16)))))),
+        sec.items.length ? null : h('p.field-hint', 'Sezione vuota: sparirà salvando.'));
+    }), h('button.btn.btn-soft.btn-block', { type: 'button', onclick: () => { secs.push({ name: 'Nuova sezione', color: 0, items: [] }); draw(); } }, icon('plus', 18), 'Nuova sezione'));
+  };
+  draw();
+  const save = () => {
+    const layout = { sections: secs.filter(x => x.items.length).map(x => ({ name: (x.name || 'Sezione').trim().slice(0, 60), color: x.color || 0, items: x.items })), labels };
+    setSetting('nwLayout', layout);
+    sh.close(true);
+    toast('Net Worth organizzato', { kind: 'ok' });
+  };
+  const sh = openSheet({
+    title: 'Organizza il Net Worth', subtitle: 'Sezioni, colori e ordine delle righe, come nel tuo foglio', size: 'md',
+    body: h('div.stack', list),
+    footer: [h('button.btn.btn-primary', { type: 'button', onclick: save }, 'Salva')],
+    onClose: () => ctx.rerender(),
+  });
 }
 
 /* ─── Anno per anno ─── */
@@ -268,7 +324,7 @@ export default {
     const yearTabs = segTabs(years.map(y => ({ value: y, label: String(y) })), year, v => { year = v; ctx.rerender(); });
     const node = h('div.stack', hero, chart,
       h('div.nw-year-bar', h('h2.section-title', 'Anno'), yearTabs),
-      yearCompare(ctx, year), monthTable(ctx, year),
+      sheetTable(ctx, year), yearCompare(ctx, year),
       years.length > 1 ? yearsCard(ctx, years) : null,
       h('p.fine', icon('info', 14), ' Ogni conto conta dal suo saldo iniziale (o dal primo movimento): per avere lo storico degli anni passati, metti la data giusta in "Modifica conto" o usa "Aggiorna i valori" con una data passata. I titoli nei mesi passati valgono la quantità di allora al prezzo di oggi, tranne i mesi in cui l\'app ha salvato il loro valore. Valute estere al cambio attuale.'));
     return {

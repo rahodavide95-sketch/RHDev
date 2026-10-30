@@ -63,6 +63,15 @@ Indirizzo: `https://rahodavide95-sketch.github.io/RHDev/finanza-personale/`
   centesimo**, valori strani (errori di battitura) esclusi, titoli del Net Worth già negli
   investimenti esclusi (niente doppi conteggi), doppioni esclusi se reimporti, un solo
   "Annulla".
+- **Net Worth come il tuo foglio**: sezioni (Cash - Liquidity, ETF, Stock, Crypto, WORK…)
+  con conti e singoli titoli, a fine mese, e per ogni sezione Total, Gain/Loss in euro e in %;
+  in fondo patrimonio netto e Asset Allocation. Si organizza a piacere, si filtra, CSV.
+- **Entrate e uscite "come il foglio"**: CATEGORIA, SUB CATEGORIA, NOTE, i 12 mesi, TOTALI e
+  MEDIA MENS., con le categorie colorate e ferme mentre scorri.
+- **Colori a scelta**: palette Excel (blu e grigio), Oceano, Smeraldo, Grafite, Viola o i
+  tuoi colori; righe alterne, tabelle compatte, colonne allargabili, barra laterale
+  comprimibile, pagina a tutta larghezza; loghi delle banche e delle crypto (salvati
+  nell'app, nessuna richiesta esterna).
 - **Storia di ogni titolo e crypto**: quanto hai speso, quando, ogni quanto compri
   (regolare come un PAC o no), acquisto medio e più grande, prezzo pagato più basso, più
   alto e medio, commissioni, anno per anno; in "Anno per anno" la tabella titolo per

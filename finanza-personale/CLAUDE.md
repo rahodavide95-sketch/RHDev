@@ -65,6 +65,18 @@ CSV); anno per anno. "Aggiorna i valori" (`checkInEditor`, `actions.saveCheckIn`
 conti alla stessa data; conti normali → punto fermo `adjust`; conti con titoli solo a una
 fine mese passata → fotografia `snapshots[mese].byAcc` (valore dei titoli = totale meno
 liquidità); mutui con piano: non si scrivono.
+**Net Worth come il foglio di D** (D: "lo voglio esattamente come il file excel, per ogni
+categoria ci deve essere il gain loss sia in numero sia in %"): `d.nwSheet(anno, filtro)` →
+colonne 31/12 dell'anno prima + fine di ogni mese (vuote nel futuro), sezioni con righe =
+conti senza titoli (`a:id`), **singoli titoli** (`h:id`) e liquidità dei conti titoli
+(`c:id`, solo se non zero); per sezione Total, Gain/Loss (sul mese prima) e %; in fondo Net
+Worth (Total, Gain/Loss, %) e Asset Allocation (quota di ogni sezione sugli attivi).
+L'ordine e i nomi delle sezioni stanno in `settings.nwLayout` ({sections:[{name,color,items}],
+labels}), scritto dall'import del foglio Net Worth o da "Organizza"; le righe non in elenco
+vanno nelle sezioni di base (Liquidità, ETF, Azioni, Obbligazioni, Fondi, Materie prime,
+Crypto, …). Valore di un titolo a fine mese: `snapshots[mese].byHd[id]` (dal foglio o dalla
+fotografia automatica, che ora salva anche per titolo), altrimenti la sua parte della
+fotografia del conto, altrimenti quantità di allora × prezzo attuale (`holdingValueAt`).
 Calcoli in `derive()`: `valueAt(conto, data)` (null prima che il conto esista),
 `netWorthAt(data)`, `monthClose`, `yearClose`, `firstDate`. Un conto **archiviato** resta
 nel patrimonio (e nello storico) se ha "Conta nel patrimonio": un conto chiuso deve
@@ -140,8 +152,23 @@ crypto). Un solo `importWorkbook()` in `actions.js` (un "Annulla").
   c'è "Netto", righe sempre a zero escluse, date future saltate, valori già presenti
   saltati. Ogni valore diventa un punto fermo ('open' il primo, poi 'adjust'), creato
   **dopo** i movimenti (a fine giornata vale il foglio); stesso nome in più fogli = un conto.
+- Correzioni dopo la prova di D col suo file vero ("tantissimi bug di calcolo e
+  riconoscimenti sbagliati"): le righe del Net Worth che sono titoli diventano i valori di
+  fine mese di quei titoli (`byHd`) e le loro righe nel layout, non conti; nella sezione della
+  liquidità (`isCashSection`) un nome di broker è il suo conto di liquidità: **Trade Republic →
+  conto corrente, Scalable Capital → conto deposito** (nome "Trade Republic – Conto corrente"
+  se esiste già il conto titoli, `institution` = broker); **TFR: conta solo il netto**
+  (`isGross`: "lordo" o la stessa voce senza "netto"; se lo si importa resta fuori dal
+  patrimonio); il controllo dei Total accetta anche la somma senza il lordo. Il bollo del
+  foglio delle operazioni va sul conto di liquidità del broker (se c'è nel Net Worth) con il
+  tag `investimenti`: conta nei costi degli investimenti e **non** nella tabella Uscite (come
+  nel foglio di D). Categorie: stessa solo se coincidono categoria **e** sottocategoria (prima
+  "MUSICA › ROYALTIES" finiva in "Lavoro › Royalties"); i nomi restano come nel file
+  (LAVORO, INT. BANCA, CC, CD); "Solo le categorie del file" nasconde quelle dell'app non
+  usate. Doppioni anche per bollo e valori dei titoli.
 - Test: `test/sheets.test.js` con `test/fixtures/file-completo-esempio.xlsx` (dati
-  inventati: Wallet, Crypto, Entrate 2026, Uscite 2026, Net Worth, Note).
+  inventati: Wallet, Crypto, Entrate 2026, Uscite 2026, Net Worth con Trade Republic e
+  Scalable nella liquidità, Note).
 
 ## Prezzi online (`js/market.js`)
 
@@ -174,6 +201,11 @@ Ordine = ordine dell'array `categories` (riordinabile). Colori dei gruppi in
 `settings.groupColors` (`"income:Lavoro"` → 1…8, palette dei grafici). `categoryManager()`:
 gruppi su/giù, rinomina (se il nome esiste già si uniscono), colore, nuove sottocategorie;
 `categoryEditor` con "Nascondi" e "Elimina e sposta i movimenti in…" (unione).
+Vista **"Come il foglio"** (predefinita, D: "deve essere tutto uguale all'excel, quell'impostazione
+grafica è super comoda"): colonne CATEGORIA | SUB CATEGORIA | NOTE | GEN…DIC | TOTALI | MEDIA
+MENS., categoria colorata e unita (rowspan) sulle sue righe, totale di ogni categoria, Categoria
+(e su computer Sottocategoria) ferme scorrendo; "A gruppi" è la vista di prima. Filtro per
+testo con i totali rifatti.
 
 ## Account e sincronizzazione (richiesta di D: "perché non mi fai accedere con mail e password?")
 
@@ -228,8 +260,35 @@ Titoli: costo medio ponderato.
   `sw.js` si ricompleta a ogni apertura (messaggio `refill`). La cache contiene solo
   codice, mai dati.
 
+## Cancellazione dei dati
+
+D: "la cancellazione dei dati non avviene, già provata due volte". Prima "Cancella tutto"
+svuotava solo il dispositivo e usciva dall'account: al nuovo accesso la cassaforte online
+tornava. Ora **"Cancella tutti i dati"** = `actions.resetData()` (dati come nuovi, restano
+password e preferenze) + `cloudSync()`: la versione vuota va online e gli altri dispositivi la
+seguono (unione a tre vie); "Annulla" subito dopo. **"Togli l'app da questo dispositivo"** =
+`wipeAll()` (solo locale; l'uscita dall'account non blocca più la cancellazione se la rete
+manca).
+
 ## Design
 
+Colori (`ui/theme.js`): palette **Excel** (predefinita: blu, intestazioni delle tabelle blu
+scuro, sfondo grigio, righe alterne), Viola, Oceano, Smeraldo, Grafite, o **"I tuoi colori"**
+(colore principale, intestazioni, sfondo con `input type=color`, anteprima mentre scegli);
+colori dei grafici (Vivaci, Excel/Office, Blu e verdi, Verdi e grigi, Pastello), righe alterne,
+tabelle compatte. Diventano variabili CSS sulla radice; copia delle sole variabili in
+localStorage `rhf-look` che `boot.js` applica prima del primo disegno. D: "usa più colori per
+intestazioni ecc, è tutto uguale e non si capisce niente": pulsanti principali, schede scelte
+e voce attiva col colore principale, barretta colorata nei titoli delle schede.
+Layout a **tutta larghezza** (D col monitor da 27": niente `max-width`), barra laterale
+**comprimibile** (pulsante in basso o tasto `[`, `html.side-mini`, `rhf-side`), finestre alte
+fino allo schermo (niente tetti a 46vh/900px), `sheet-lg` fino a 1280 px.
+Tabelle con `data-tid`: **colonne allargabili** trascinando il bordo dell'intestazione
+(`ui/tables.js`, larghezze in `rhf-tables`, doppio clic per tornare); `filterBox()` per filtrare.
+Loghi: banche (`data/banks.js`, `icons/banks/`) dalle icone ufficiali dei loro siti e crypto
+(`data/coins.js`, `icons/crypto/`) dalle immagini di CoinGecko, scaricati **una volta** da un
+workflow temporaneo (poi tolto) e salvati nell'app: nessuna richiesta a terzi durante l'uso.
+Titoli: distintivo ETF / ETC / STOCK / BOND / FONDO (D: "per gli etf basta un semplice logo").
 Superfici senza bordi né ombre (si distinguono per colore), schede con angoli 24 px,
 pulsanti a pillola, carattere Inter (in `fonts/`, niente Google Fonts), numeri grandi,
 barre in vetro sfocato. Su computer barra laterale; su telefono barra in basso a
@@ -240,7 +299,7 @@ netti, pulito ed elegante.
 
 ## Prove
 
-- `npm test`: 46 test (calcoli, cifratura, unione dei dati, CSV, investimenti, import da Excel di tutti i fogli, crypto, storia degli acquisti, quotazioni con risposte finte).
+- `npm test`: 47 test (calcoli, cifratura, unione dei dati, CSV, investimenti, import da Excel di tutti i fogli, crypto, storia degli acquisti, quotazioni con risposte finte).
 - `bash test/rls/run.sh`: regole di sicurezza del database su Postgres.
 - Nel browser: `python3 -m http.server` nella cartella e Playwright (Chromium già
   installato). Da questo ambiente onvista/Binance/BCE non sono raggiungibili: per provarli

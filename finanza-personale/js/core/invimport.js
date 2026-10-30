@@ -261,7 +261,8 @@ export function planImport(read, state, { account = null, defaultName = 'Investi
   const costs = [];
   for (const c of read.costs) {
     const acc = accFor(c.broker);
-    const dup = acc.existingId && state.transactions.some(t => t.account === acc.existingId && t.kind === 'expense' && t.date === c.date && t.amount === Math.round(c.amount * 100));
+    // già importata: sul conto del broker o, col tag "investimenti", sul suo conto di liquidità
+    const dup = state.transactions.some(t => t.kind === 'expense' && t.date === c.date && t.amount === Math.round(c.amount * 100) && ((acc.existingId && t.account === acc.existingId) || t.tags?.includes('investimenti')));
     if (dup) { dups++; continue; }
     costs.push({ ...c, acc });
     if (!acc.first || c.date < acc.first) acc.first = c.date;

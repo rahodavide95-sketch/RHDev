@@ -2,10 +2,11 @@
    così ogni modifica viene salvata cifrata e l'interfaccia si aggiorna. */
 
 import { S, commit } from './session.js';
-import { uid, stamp, hasPlan, isLiability } from './core/model.js';
+import { uid, stamp, hasPlan, isLiability, defaults } from './core/model.js';
+import { convert } from './core/money.js';
 import { catKey } from './core/sheets.js';
 import { normHead } from './core/invimport.js';
-import { today, addDays, occurrences } from './core/dates.js';
+import { today, addDays, occurrences, monthEnd as monthEndOf } from './core/dates.js';
 
 const find = (arr, id) => arr.find(x => x.id === id);
 
@@ -341,6 +342,17 @@ export function setSetting(path, value) {
     o[keys[keys.length - 1]] = value;
   });
 }
+/** Svuota i dati (conti, movimenti, investimenti, categorie…) tenendo password e preferenze.
+    Con l'account la versione vuota va anche online, e gli altri dispositivi la seguono. */
+export function resetData() {
+  commit(st => {
+    const fresh = defaults();
+    const fx = st.fx;
+    const keep = { currency: st.settings.currency, theme: st.settings.theme, look: st.settings.look, lockMinutes: st.settings.lockMinutes, hideAmounts: st.settings.hideAmounts, name: st.settings.name, market: st.settings.market, backupDays: st.settings.backupDays, onboarded: true };
+    for (const k of Object.keys(st)) if (k !== 'meta' && k !== 'v') delete st[k];
+    Object.assign(st, { ...fresh, meta: st.meta, fx, settings: { ...fresh.settings, ...keep } });
+  }, { undo: 'Dati cancellati', now: true });
+}
 /** Nuova valuta principale: i cambi vengono riportati alla nuova base. */
 export function setBaseCurrency(cur) {
   commit(st => {
@@ -373,7 +385,7 @@ export const accountIsPlan = acc => hasPlan(acc);
 
 /** Importa investimenti già preparati da `planImport` (foglio Excel o CSV): una sola modifica, un solo "Annulla". */
 /** Operazioni del foglio "wallet" dentro lo stato (conti, titoli, operazioni, imposte). */
-function applyInvestPlan(st, plan, cash) {
+function applyInvestPlan(st, plan, cash, costAcc = new Map()) {
   const accId = new Map();
   for (const a of plan.accounts) {
     if (a.existingId) { accId.set(a, a.existingId); continue; }
@@ -388,6 +400,7 @@ function applyInvestPlan(st, plan, cash) {
     if (!hd) {
       hd = { id: uid('h-'), account: accId.get(x.acc), symbol: x.symbol || '', isin: x.isin || '', name: x.name, cls: x.cls, group: x.group || '', ter: x.ter || 0, currency: x.currency, price: 0, priceDate: null, priceAuto: true, created: stamp(), ops: [] };
       st.holdings.push(hd);
+      x.createdId = hd.id;    // per i valori di fine mese dal foglio Net Worth dello stesso file
     } else {
       if (!hd.group && x.group) hd.group = x.group;
       if (!hd.ter && x.ter) hd.ter = x.ter;
@@ -400,7 +413,8 @@ function applyInvestPlan(st, plan, cash) {
   const cat = st.categories.find(c => c.id === 'c-tasse') || st.categories.find(c => c.kind === 'expense' && /tass|impost/i.test(c.name));
   for (const c of plan.costs) {
     const now = stamp();
-    st.transactions.push({ id: uid('t-'), date: c.date, kind: 'expense', amount: Math.round(c.amount * 100), account: accId.get(c.acc), toAccount: null, amountTo: null, category: cat?.id || null, payee: c.payee || 'Imposta di bollo', note: c.note || '', tags: [], recurring: null, created: now, updated: now, importHash: '', flagged: false });
+    // l'imposta di bollo si paga dalla liquidità: dal conto corrente del broker, se c'è
+    st.transactions.push({ id: uid('t-'), date: c.date, kind: 'expense', amount: Math.round(c.amount * 100), account: costAcc.get(c.acc) || accId.get(c.acc), toAccount: null, amountTo: null, category: cat?.id || null, payee: c.payee || 'Imposta di bollo', note: c.note || '', tags: costAcc.get(c.acc) ? ['investimenti'] : [], recurring: null, created: now, updated: now, importHash: '', flagged: false });
   }
 }
 export function importInvestments(plan, { cash = false } = {}) {
@@ -415,17 +429,24 @@ export function importInvestments(plan, { cash = false } = {}) {
 export function importWorkbook({ nw = [], invest = null, cash = false, months = [] }) {
   commit(st => {
     const nwId = new Map(), byName = new Map();
-    for (const r of nw) {
+    const accRows = nw.filter(r => !r.holding);
+    for (const r of accRows) {
       if (r.existing) { nwId.set(r.key, r.existing.id); continue; }
       // lo stesso conto in più fogli del patrimonio (es. uno per anno) resta uno solo
       const nk = normHead(r.name);
       if (byName.has(nk)) { nwId.set(r.key, byName.get(nk)); continue; }
       const id = uid('a-');
       byName.set(nk, id);
-      st.accounts.push({ id, name: r.name.slice(0, 60), type: r.type, institution: '', currency: r.currency, emoji: '', color: '', archived: false, inNetWorth: true, notes: `Creato importando un file${r.section ? ` (sezione "${r.section.slice(0, 60)}")` : ''}`, created: stamp(), order: st.accounts.length, plan: null });
+      st.accounts.push({ id, name: r.name.slice(0, 60), type: r.type, institution: (r.institution || '').slice(0, 60), currency: r.currency, emoji: '', color: '', archived: false, inNetWorth: !r.gross, notes: `Creato importando un file${r.section ? ` (sezione "${r.section.slice(0, 60)}")` : ''}${r.gross ? '. È il lordo: fuori dal patrimonio, conta il netto.' : ''}`, created: stamp(), order: st.accounts.length, plan: null });
       nwId.set(r.key, id);
     }
-    if (invest) applyInvestPlan(st, invest, cash);
+    // costi del broker (bollo) sul suo conto di liquidità dal Net Worth (es. Trade Republic – Conto corrente)
+    const costAcc = new Map();
+    if (invest) for (const a of invest.accounts) {
+      const r = accRows.find(x => x.cash && x.institution && normHead(x.institution) === normHead(a.name));
+      if (r && nwId.has(r.key)) costAcc.set(a, nwId.get(r.key));
+    }
+    if (invest) applyInvestPlan(st, invest, cash, costAcc);
     let fileAcc = null;
     const accFor = target => {
       if (target && target.startsWith('nw:') && nwId.has(target.slice(3))) return nwId.get(target.slice(3));
@@ -440,6 +461,12 @@ export function importWorkbook({ nw = [], invest = null, cash = false, months = 
     for (const m of months) {
       const account = accFor(m.target);
       const catId = new Map();
+      // come il foglio: le categorie dell'app che il file non usa e senza movimenti si nascondono
+      if (m.onlyFile) {
+        const used = new Set(st.transactions.filter(t => t.category).map(t => t.category));
+        const keys = new Set(m.plan.txs.map(t => t.catKey));
+        for (const c of st.categories) if (c.kind === m.kind && !used.has(c.id) && !keys.has(catKey(c.group, c.name)) && !m.plan.txs.some(t => t.catId === c.id)) c.archived = true;
+      }
       for (const t of m.plan.txs) {
         let cat = t.catId;
         if (!cat) {
@@ -447,7 +474,7 @@ export function importWorkbook({ nw = [], invest = null, cash = false, months = 
           if (!cat) {
             // anche un altro foglio dello stesso file può averla appena creata
             const ex = st.categories.find(c => c.kind === m.kind && catKey(c.group, c.name) === t.catKey);
-            if (ex) cat = ex.id;
+            if (ex) { cat = ex.id; ex.archived = false; }
             else { cat = uid('c-'); st.categories.push({ id: cat, name: t.name.slice(0, 50), emoji: '•', kind: m.kind, group: t.group.slice(0, 40) || 'Altro', archived: false }); }
             catId.set(t.catKey, cat);
           }
@@ -457,8 +484,35 @@ export function importWorkbook({ nw = [], invest = null, cash = false, months = 
       }
     }
     // i valori del patrimonio dopo i movimenti: a fine giornata il conto vale quanto scritto nel foglio
-    const opened = new Set(), seen = new Set();
+    // righe dei titoli: i valori di fine mese diventano la loro fotografia del mese
+    for (const r of nw.filter(x => x.holding)) {
+      const hid = r.holding.id && find(st.holdings, r.holding.id) ? r.holding.id : r.holding.createdId;
+      const hd = hid && find(st.holdings, hid);
+      if (!hd) continue;
+      for (const v of r.values) {
+        const m = v.date.slice(0, 7);
+        if (v.date !== monthEndOf(m)) continue;
+        const snap = st.snapshots[m] || (st.snapshots[m] = { byAcc: {}, byHd: {}, at: 0 });
+        snap.byHd = snap.byHd || {};
+        snap.byHd[hd.id] = convert(Math.round(v.value * 100), st.settings.currency, hd.currency, st.fx.rates);
+      }
+      r.hdId = hd.id;
+    }
+    // l'ordine del Net Worth come nel foglio: sezioni e righe
+    const lay = st.settings.nwLayout || (st.settings.nwLayout = { sections: [], labels: {} });
+    const inLayout = new Set(lay.sections.flatMap(x => x.items));
     for (const r of nw) {
+      const key = r.holding ? (r.hdId ? 'h:' + r.hdId : null) : (nwId.get(r.key) && !r.gross ? 'a:' + nwId.get(r.key) : null);
+      if (!key || inLayout.has(key)) continue;
+      const secName = (r.section || 'Altro').slice(0, 60);
+      let sec = lay.sections.find(x => normHead(x.name) === normHead(secName));
+      if (!sec) lay.sections.push(sec = { name: secName, color: 0, items: [] });
+      sec.items.push(key);
+      inLayout.add(key);
+      if (r.holding) lay.labels[key] = r.name.slice(0, 60);
+    }
+    const opened = new Set(), seen = new Set();
+    for (const r of accRows) {
       const account = nwId.get(r.key);
       const liab = isLiability({ type: r.type });
       for (const v of r.values) {

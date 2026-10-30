@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { readXlsx } from '../js/core/xlsx.js';
 import { readOperations, checkTotals, planImport, cryptoSymbol, findHeader } from '../js/core/invimport.js';
-import { detectSheet, sheetHints, readMonths, planMonths, readNetWorth, planNetWorth, accountTypeFor, currencyFor, niceName, matchHolding } from '../js/core/sheets.js';
+import { detectSheet, sheetHints, readMonths, planMonths, readNetWorth, planNetWorth, accountTypeFor, currencyFor, niceName, matchHolding, isGross } from '../js/core/sheets.js';
 import { defaults, sanitize, derive, buyHistory } from '../js/core/model.js';
 
 // file Excel con dati inventati (fatto con openpyxl): Wallet Summary, Crypto, Entrate 2026,
@@ -74,9 +74,9 @@ test('mese per mese: entrate con i totali delle categorie, uscite con un rimbors
   const again = planMonths(r, { ...st, transactions: p.txs.map((t, i) => ({ ...t, id: 't' + i, account: i % 2 ? 'a-x' : 'a-y' })) }, { year: 2026, kind: 'income', refDate: REF });
   assert.equal(again.txs.length, 0);
   assert.equal(again.dups, p.txs.length);
-  const dj = p.txs.filter(t => t.name === 'Dj');
+  const dj = p.txs.filter(t => t.name === 'DJ');
   assert.equal(dj.length, 7);
-  assert.ok(dj.every(t => t.payee === 'Serate' && t.group === 'Musica'));
+  assert.ok(dj.every(t => t.payee === 'Serate' && t.group === 'MUSICA'));
 
   const su = await sheet('Uscite 2026');
   const du = detectSheet(su);
@@ -88,7 +88,7 @@ test('mese per mese: entrate con i totali delle categorie, uscite con un rimbors
   assert.equal(refund.length, 1);
   assert.equal(refund[0].amount, 2500);
   // la categoria scritta solo nella prima riga vale anche per quelle sotto
-  assert.ok(pu.txs.filter(t => t.name === 'Bollette').every(t => t.group === 'Casa'));
+  assert.ok(pu.txs.filter(t => t.name === 'BOLLETTE').every(t => t.group === 'CASA'));
 });
 
 test('un rimborso nella stessa categoria riduce le uscite della tabella', () => {
@@ -102,7 +102,7 @@ test('un rimborso nella stessa categoria riduce le uscite della tabella', () => 
   assert.equal(derive(s2, REF).yearTable(2026, 'income').total, 0);
 });
 
-test('Net Worth: sezioni, totali saltati, valori strani, doppioni con gli investimenti', async () => {
+test('Net Worth: sezioni, totali saltati, valori strani, titoli, conti dei broker, TFR netto', async () => {
   const st = sanitize(defaults());
   const sh = await sheet('Net Worth');
   const det = detectSheet(sh);
@@ -112,9 +112,9 @@ test('Net Worth: sezioni, totali saltati, valori strani, doppioni con gli invest
   assert.equal(r.checks.length, 5);
   assert.ok(r.checks.every(c => c.ok));
   const names = r.accounts.map(a => a.name);
-  assert.deepEqual(names, ['Conto BancaX', 'Contanti', 'Conto USD', 'S&P 500', 'Emerging Markets', 'Gold', 'Xeon', 'Rocket Lab', 'Bitcoin', 'Ethereum', 'TFR Lordo', 'TFR Netto']);
+  assert.deepEqual(names, ['Conto BancaX', 'Trade Republic', 'Scalable Capital', 'Contanti', 'Conto USD', 'S&P 500', 'Emerging Markets', 'Gold', 'Xeon', 'Rocket Lab', 'Bitcoin', 'Ethereum', 'TFR Lordo', 'TFR Netto']);
   assert.ok(!names.some(n => /total|gain|%|^cash$|allocation/i.test(n)));
-  // titoli del foglio delle operazioni (come li prepara planImport): esclusi per non contarli due volte
+  // titoli del foglio delle operazioni (come li prepara planImport): le loro righe diventano i loro valori di fine mese
   const holdings = [
     { name: 'Vanguard S&P 500 UCITS ETF', group: 'Azioni USA (S&P 500)', symbol: '' },
     { name: 'iShares Core MSCI Emerging Markets IMI UCITS ETF', group: 'Azioni globali / emergenti', symbol: '' },
@@ -122,16 +122,24 @@ test('Net Worth: sezioni, totali saltati, valori strani, doppioni con gli invest
     { name: 'Rocket Lab', group: 'Rocket Lab', symbol: '' },
     { name: 'Bitcoin', group: '', symbol: 'BTC-USD' }, { name: 'Ethereum', group: '', symbol: 'ETH-USD' },
   ];
-  const p = planNetWorth(r, st, { refDate: REF, holdings, investNames: ['Trade Republic'] });
-  const on = p.rows.filter(x => x.on).map(x => x.name);
-  assert.deepEqual(on, ['Conto BancaX', 'Contanti', 'Conto USD', 'TFR Netto']);
-  const row = n => p.rows.find(x => x.name === n);
+  const p = planNetWorth(r, st, { refDate: REF, holdings, investNames: ['Trade Republic', 'Binance'] });
+  const row = n => p.rows.find(x => x.name === n || x.institution === n);
+  assert.deepEqual(p.rows.filter(x => x.on && !x.holding).map(x => x.name), ['Conto BancaX', 'Trade Republic – Conto corrente', 'Scalable Capital', 'Contanti', 'Conto USD', 'TFR Netto']);
+  assert.deepEqual(p.rows.filter(x => x.on && x.holding).map(x => x.name), ['S&P 500', 'Emerging Markets', 'Gold', 'Rocket Lab', 'Bitcoin', 'Ethereum']);
+  // Trade Republic e Scalable nella liquidità: il conto corrente e il conto deposito, non il conto titoli
+  assert.equal(row('Trade Republic').type, 'checking');
+  assert.equal(row('Trade Republic').institution, 'Trade Republic');
+  assert.equal(row('Scalable Capital').type, 'savings');
   assert.equal(row('Conto BancaX').type, 'checking');
   assert.equal(row('Contanti').type, 'cash');
   assert.equal(row('Conto USD').currency, 'USD');
   assert.equal(row('TFR Netto').type, 'receivable');
-  assert.match(row('TFR Lordo').reason, /netto/);
+  // il TFR lordo non si somma mai
+  assert.equal(row('TFR Lordo').gross, true);
+  assert.equal(row('TFR Lordo').on, false);
   assert.match(row('Xeon').reason, /zero/);
+  assert.equal(isGross({ name: 'TFR', section: 'WORK' }, [{ name: 'TFR', section: 'WORK' }, { name: 'TFR NETTO', section: 'WORK' }]), true);
+  assert.equal(isGross({ name: 'Stipendio', section: 'WORK' }, [{ name: 'Stipendio', section: 'WORK' }, { name: 'TFR NETTO', section: 'WORK' }]), false);
   // l'errore di battitura (500.000 € di contanti) è escluso; le date future pure
   assert.equal(row('Contanti').odd.length, 1);
   assert.equal(row('Contanti').values.length, 9);
@@ -139,6 +147,39 @@ test('Net Worth: sezioni, totali saltati, valori strani, doppioni con gli invest
   assert.equal(row('Conto BancaX').future, 3);
   const withOdd = planNetWorth(r, st, { refDate: REF, holdings, includeOdd: true });
   assert.equal(withOdd.rows.find(x => x.name === 'Contanti').values.length, 10);
+});
+
+test('Net Worth come il foglio: sezioni, Total, Gain/Loss e %, valori dei titoli a fine mese, Asset Allocation', () => {
+  const st = sanitize(defaults());
+  st.accounts.push(
+    { id: 'a-cc', name: 'Conto', type: 'checking', currency: 'EUR', inNetWorth: true },
+    { id: 'a-tr', name: 'Broker', type: 'broker', currency: 'EUR', inNetWorth: true },
+    { id: 'a-tl', name: 'TFR lordo', type: 'receivable', currency: 'EUR', inNetWorth: false });
+  st.valuations.push(
+    { id: 'v-1', account: 'a-cc', date: '2025-12-31', value: 100000, kind: 'open', created: 1 },
+    { id: 'v-2', account: 'a-cc', date: '2026-01-31', value: 110000, kind: 'adjust', created: 2 },
+    { id: 'v-3', account: 'a-tl', date: '2025-12-31', value: 999900, kind: 'open', created: 3 });
+  st.holdings.push({ id: 'h-1', account: 'a-tr', name: 'Vanguard S&P 500', cls: 'etf_eq', currency: 'EUR', price: 110, priceDate: '2026-02-10', ops: [{ id: 'o-1', date: '2025-12-15', type: 'buy', qty: 10, price: 100, fee: 0, created: 4 }] });
+  st.snapshots['2025-12'] = { byAcc: {}, byHd: { 'h-1': 98000 } };
+  st.snapshots['2026-01'] = { byAcc: {}, byHd: { 'h-1': 105000 } };
+  st.settings.nwLayout = { sections: [{ name: 'Cash - Liquidity', color: 3, items: ['a:a-cc'] }, { name: 'ETF', color: 1, items: ['h:h-1'] }], labels: { 'h:h-1': 'S&P 500' } };
+  const d = derive(sanitize(st), '2026-02-10');
+  const S0 = d.nwSheet(2026);
+  assert.deepEqual(S0.sections.map(x => x.name), ['Cash - Liquidity', 'ETF']);
+  const etf = S0.sections[1];
+  assert.equal(etf.rows[0].label, 'S&P 500');
+  assert.deepEqual(etf.total.slice(0, 3), [98000, 105000, 110000]);     // 31/12 e 31/01 dal foglio, febbraio = oggi (10 × 110)
+  assert.deepEqual(etf.gain.slice(0, 3), [null, 7000, 5000]);
+  assert.equal(Math.round(etf.pct[1] * 100) / 100, 7.14);
+  assert.deepEqual(S0.total.slice(0, 3), [198000, 215000, 220000]);
+  // il lordo fuori dal patrimonio non c'è
+  assert.ok(!S0.sections.some(x => x.rows.some(rr => rr.label === 'TFR lordo')));
+  // i mesi futuri restano vuoti
+  assert.equal(S0.total[5], null);
+  const alloc = S0.alloc.find(x => x.name === 'ETF').pct[1];
+  assert.equal(Math.round(alloc * 10) / 10, Math.round(105000 / 215000 * 1000) / 10);
+  // il patrimonio di fine gennaio usa gli stessi valori dei titoli
+  assert.equal(d.netWorthAt('2026-01-31').total, 215000);
 });
 
 test('tipi di conto, valute e nomi', () => {
@@ -150,7 +191,7 @@ test('tipi di conto, valute e nomi', () => {
   assert.equal(accountTypeFor('Debiti', '', 'Mutuo casa'), 'debt');
   assert.equal(currencyFor('Dollari'), 'USD');
   assert.equal(currencyFor('Euro'), null);
-  assert.equal(niceName('INT. BANCA'), 'Int. banca');
+  assert.equal(niceName('INT.  BANCA '), 'INT. BANCA');
   assert.equal(niceName('Groover'), 'Groover');
   assert.equal(matchHolding('S&P 500', [{ name: 'Vanguard S&P 500 UCITS ETF', group: '', symbol: '' }])?.name, 'Vanguard S&P 500 UCITS ETF');
   assert.equal(matchHolding('Conto BancaX', [{ name: 'Vanguard S&P 500 UCITS ETF', group: '', symbol: '' }]), null);

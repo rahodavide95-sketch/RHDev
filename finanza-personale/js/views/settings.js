@@ -8,7 +8,7 @@ import { categoryEditor, undoToast } from './editors.js';
 import { openImporter } from './importer.js';
 import * as A from '../actions.js';
 import * as session from '../session.js';
-import { S, cloudLine } from '../session.js';
+import { S, cloudLine, undoToken } from '../session.js';
 import { usage, persistStatus, requestPersist } from '../store.js';
 import { passwordStrength, PBKDF2_ITER, WrongSecret } from '../core/crypto.js';
 import { CURRENCIES, formatNumber } from '../core/money.js';
@@ -16,7 +16,7 @@ import { today, formatDate } from '../core/dates.js';
 import { ecbRates } from '../market.js';
 import { categoryManager } from './categories.js';
 import { askMarketConsent } from './investments.js';
-import { applyTheme } from '../ui/theme.js';
+import { applyTheme, PALETTES, CHARTS, resolveLook } from '../ui/theme.js';
 
 
 const VERSION = '3.4.0';
@@ -24,6 +24,47 @@ const VERSION = '3.4.0';
 function section(id, title, sub, ...body) {
   return h('section.card.set-card', { id: 'set-' + id }, h('div.card-head', h('div.card-titles', h('h2.card-title', title), sub ? h('p.card-sub', sub) : null)), ...body);
 }
+/* Colori: palette pronte o scelti uno per uno (con anteprima mentre li scegli). */
+function lookControls(ctx) {
+  const st = S.state, L = st.settings.look, R = resolveLook(L);
+  const set = patch => {
+    const look = { ...S.state.settings.look, ...patch };
+    A.setSetting('look', look);
+    applyTheme(S.state.settings.theme, look);
+    ctx.rerender();
+  };
+  const pick = k => {
+    // passando a "I tuoi colori" si parte da quelli che si vedono ora
+    if (k === 'custom' && L.palette !== 'custom') set({ palette: 'custom', brand: R.brand, head: R.head || L.head, bg: R.bg || L.bg });
+    else set({ palette: k });
+  };
+  const opts = [...Object.keys(PALETTES), 'custom'].map(k => {
+    const r = resolveLook(k === 'custom' ? { ...L, palette: 'custom' } : { palette: k, chart: 'auto' });
+    return h('button.look-opt', { type: 'button', class: L.palette === k ? 'on' : '', 'aria-pressed': String(L.palette === k), onclick: () => pick(k) },
+      h('span.look-prev', { style: { background: r.bg || '#f2f2f5' } },
+        h('i.lp-head', { style: { background: r.head || '#d6d6de' } }), h('i.lp-row'), h('i.lp-row'),
+        h('span.lp-dots', CHARTS[r.chart].light.slice(0, 4).map(c => h('i', { style: { background: c } }))),
+        h('b.lp-brand', { style: { background: r.brand } })),
+      h('span', k === 'custom' ? 'I tuoi colori' : PALETTES[k].label));
+  });
+  const colorField = (label, hint, key) => {
+    const inp = h('input', { type: 'color', value: L[key], 'aria-label': label });
+    inp.addEventListener('input', () => applyTheme(S.state.settings.theme, { ...S.state.settings.look, [key]: inp.value }));
+    inp.addEventListener('change', () => set({ [key]: inp.value }));
+    return h('label.color-field', inp, h('span', h('b', label), h('small', hint)));
+  };
+  return [
+    h('div.look-pick', opts),
+    L.palette === 'custom' ? h('div.look-custom',
+      colorField('Colore principale', 'Pulsanti, schede, link', 'brand'),
+      colorField('Intestazioni delle tabelle', 'Come la riga blu del tuo Excel', 'head'),
+      colorField('Sfondo', 'Con il tema chiaro', 'bg')) : null,
+    setRow('Colori dei grafici', 'Torte, barre e categorie', selectInput([{ value: 'auto', label: 'Come la palette' }, ...Object.entries(CHARTS).map(([k, c]) => ({ value: k, label: c.label }))], L.chart, v => set({ chart: v }))),
+    toggle('Righe alterne nelle tabelle', R.zebra, v => set({ zebra: v }), { hint: 'Una riga sì e una no leggermente più scura, come nei fogli' }),
+    toggle('Tabelle e liste compatte', R.density === 'compact', v => set({ density: v ? 'compact' : 'normal' }), { hint: 'Più righe sullo schermo' }),
+  ];
+}
+
 const setRow = (label, hint, ctl) => h('div.set-row', h('div.set-text', h('span.set-label', label), hint ? h('span.set-hint', hint) : null), ctl);
 
 async function doBackup() {
@@ -253,8 +294,10 @@ export default {
           toast(known ? 'Valuta cambiata, cambi ricalcolati' : 'Valuta cambiata: inserisci i cambi qui sotto');
         }))),
       section('look', 'Aspetto', null,
-        h('div.theme-pick', [['auto', 'Automatico', 'monitor'], ['light', 'Chiaro', 'sun'], ['dark', 'Scuro', 'moon']].map(([v, l, ic]) => h('button.theme-opt', { type: 'button', class: s.theme === v ? 'on' : '', onclick: () => { A.setSetting('theme', v); applyTheme(v); } },
+        h('div.theme-pick', [['auto', 'Automatico', 'monitor'], ['light', 'Chiaro', 'sun'], ['dark', 'Scuro', 'moon']].map(([v, l, ic]) => h('button.theme-opt', { type: 'button', class: s.theme === v ? 'on' : '', onclick: () => { A.setSetting('theme', v); applyTheme(v, S.state.settings.look); ctx.rerender(); } },
           h('span.theme-prev', { class: 'tp-' + v }, h('i'), h('i'), h('i')), h('span', icon(ic, 16), l)))),
+        h('h3.set-sub', 'Colori'),
+        ...lookControls(ctx),
         toggle('Nascondi gli importi all\'apertura', s.hideAmounts, v => A.setSetting('hideAmounts', v), { hint: 'Utile in pubblico. Si mostrano con l\'occhio in alto o il tasto H' })),
       section('security', 'Sicurezza', 'I dati sono cifrati con AES-256-GCM. La chiave nasce dalla tua password (PBKDF2-SHA256, ' + PBKDF2_ITER.toLocaleString('it-IT') + ' passaggi) e non lascia mai il dispositivo.',
         setRow('Blocco automatico', 'Dopo quanto tempo senza attività si chiude', selectInput([[1, '1 minuto'], [2, '2 minuti'], [5, '5 minuti'], [10, '10 minuti'], [15, '15 minuti'], [30, '30 minuti'], [60, '1 ora'], [0, 'Mai (sconsigliato)']].map(([v, l]) => ({ value: v, label: l })), s.lockMinutes, v => A.setSetting('lockMinutes', Number(v)))),
@@ -280,10 +323,21 @@ export default {
       section('market', 'Dati di mercato online', 'Facoltativi. Si inviano solo simboli di titoli pubblici, mai i tuoi dati.',
         toggle('Prezzi online', s.market.enabled, v => A.setSetting('market.enabled', v), { hint: 'Titoli da onvista.de per codice ISIN (LS Exchange, Tradegate, Xetra), crypto da Binance e CoinGecko, cambi dalla BCE. Si aggiornano da soli all\'apertura. Viene inviato solo il codice del titolo, mai quantità o importi.' })),
       section('danger', 'Zona pericolosa', null,
-        setRow('Cancella tutto da questo dispositivo', 'Cassaforte, copie automatiche e impostazioni. Fai prima un backup!', h('button.btn.btn-danger', { type: 'button', disabled: demo, onclick: async () => {
-          const ok = await promptDialog({ title: 'Cancellare tutto?', label: 'Scrivi CANCELLA per confermare', confirm: 'Cancella tutto', message: 'Senza un backup i dati sono persi per sempre.', validate: v => (v.trim().toUpperCase() === 'CANCELLA' ? '' : 'Scrivi CANCELLA') });
-          if (ok) { await session.wipeAll(); toast('Dati cancellati'); }
-        } }, icon('trash', 18), 'Cancella'))),
+        setRow('Cancella tutti i dati', S.cloud.linked ? 'Conti, movimenti, investimenti, categorie: qui e nel tuo account online (gli altri dispositivi si svuotano alla prossima sincronizzazione). Account, password e preferenze restano.' : 'Conti, movimenti, investimenti e categorie. Password e preferenze restano.', h('button.btn.btn-danger', { type: 'button', disabled: demo, onclick: async () => {
+          const ok = await promptDialog({ title: 'Cancellare tutti i dati?', label: 'Scrivi CANCELLA per confermare', confirm: 'Cancella tutto', message: S.cloud.linked ? 'Si cancellano qui e nell\'account online. Subito dopo puoi ancora annullare; più tardi solo un backup li riporta.' : 'Subito dopo puoi ancora annullare; più tardi solo un backup li riporta.', validate: v => (v.trim().toUpperCase() === 'CANCELLA' ? '' : 'Scrivi CANCELLA') });
+          if (!ok) return;
+          A.resetData();
+          const tk = undoToken();
+          if (S.cloud.linked) await session.cloudSync();
+          const left = S.cloud.linked && S.cloud.status !== 'ok' ? ' (online appena torna la connessione)' : '';
+          toast(`Dati cancellati${left}`, { kind: 'ok', action: { label: 'Annulla', fn: () => { if (session.undo(tk)) toast('Dati ripristinati'); } } });
+          ctx.go('');
+        } }, icon('trash', 18), 'Cancella')),
+        setRow('Togli l\'app da questo dispositivo', S.cloud.linked ? 'Cassaforte, copie automatiche e accesso solo da qui. I dati nell\'account online restano: per toglierli usa "Cancella tutti i dati".' : 'Cassaforte, copie automatiche e impostazioni. Fai prima un backup!', h('button.btn.btn-soft', { type: 'button', disabled: demo, onclick: async () => {
+          const ok = await promptDialog({ title: 'Togliere l\'app da questo dispositivo?', label: 'Scrivi CANCELLA per confermare', confirm: 'Togli', message: S.cloud.linked ? 'Qui non resterà niente. Con email e password ritrovi i dati online.' : 'Senza un backup i dati sono persi per sempre.', validate: v => (v.trim().toUpperCase() === 'CANCELLA' ? '' : 'Scrivi CANCELLA') });
+          if (!ok) return;
+          try { await session.wipeAll(); toast('Tolto da questo dispositivo'); } catch (e) { toast('Non ci sono riuscito: ' + (e?.message || e), { kind: 'err' }); }
+        } }, icon('logout', 18), 'Togli'))),
       h('section.card.about',
         h('div.brand-big', h('img.brand-ic', { src: 'icons/icon.svg', alt: '', width: 34, height: 34 }), h('span', 'Analisi Finanziarie')),
         h('p.muted', `Versione ${VERSION} · Funziona offline · Dati cifrati prima di partire · Nessun tracciamento, nessuna pubblicità.`),

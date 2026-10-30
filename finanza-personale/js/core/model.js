@@ -975,6 +975,8 @@ export function derive(state, refDate = today()) {
    Stessa macro categoria o stessa voce scritte in modi diversi ("Lavoro" e "LAVORO", "13esima"
    e "13ESIMA", "INT. BANCA" e "Int banca") sono la stessa cosa: si uniscono. Succede quando
    import diversi scrivono i nomi in modo diverso (D: "perché due categorie lavoro? è solo 1"). */
+const DEFAULT_IDS = new Set(DEFAULT_CATEGORIES.map(c => c.id));
+const STAT_RE = s => /liquidit|saldo|giacenz|patrimon|disponibilit|riporto|net ?worth/i.test(s) && /fine|inizi|precedente|\b(19|20)\d\d\b/i.test(s);
 export const catNorm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
 
 /** Cosa unire: nomi delle macro da allineare e categorie doppie da fondere (nessuna modifica qui). */
@@ -1008,7 +1010,12 @@ export function tidyPlan(state) {
     for (const c of list) if (c !== keep) merge.set(c.id, keep.id);
   }
   const renames = state.categories.filter(c => groupName.has(c.kind + '|' + catNorm(c.group)) && groupName.get(c.kind + '|' + catNorm(c.group)) !== c.group).length;
-  return { groupName, merge, count: renames + merge.size };
+  // statistiche importate come voci (D: "Liquidità a fine 2025 è solo una statistica"): si tolgono
+  // solo se i loro movimenti stanno tutti in conti fuori dal patrimonio (il conto dell'import)
+  const outNw = new Set(state.accounts.filter(a => !a.inNetWorth).map(a => a.id));
+  const stats = state.categories.filter(c => !DEFAULT_IDS.has(c.id) && STAT_RE(c.group + ' ' + c.name) &&
+    state.transactions.every(t => t.category !== c.id || outNw.has(t.account))).map(c => c.id);
+  return { groupName, merge, stats, count: renames + merge.size + stats.length };
 }
 
 /** Applica il piano a uno stato (dentro un commit). */
@@ -1022,6 +1029,11 @@ export function applyTidy(st, plan = tidyPlan(st)) {
       delete gc[`${c.kind}:${c.group}`];
       c.group = n;
     }
+  }
+  if (plan.stats?.length) {
+    const drop = new Set(plan.stats);
+    st.transactions = st.transactions.filter(t => !drop.has(t.category));
+    st.categories = st.categories.filter(c => !drop.has(c.id));
   }
   if (plan.merge.size) {
     const to = id => plan.merge.get(id) || id;

@@ -249,6 +249,7 @@ export async function openFileImport(ctx) {
         const bad = read.checks.filter(c => !c.ok), good = read.checks.filter(c => c.ok);
         if (good.length && !bad.length) sec.push(banner('ok', h('b', 'Controllo superato. '), `I totali di ${plural(good.length, ['categoria coincidono', 'categorie coincidono'])} con la somma delle sottocategorie.`));
         if (bad.length) sec.push(banner('warn', h('b', 'Da controllare. '), bad.map(c => c.file != null ? `riga ${c.row} (${c.group}): il totale del file è ${moneyText(cents(c.file))}, la somma dei mesi ${moneyText(cents(c.ours))}` : `riga ${c.row} (${c.group}): il totale non coincide con le sottocategorie`).slice(0, 8).join('; ') + '.'));
+        if (read.stats?.length) sec.push(h('p.field-hint', `Righe di riepilogo, non ${x.mkind === 'income' ? 'entrate' : 'uscite'}, saltate: ${read.stats.slice(0, 6).map(r => `«${r.label}»`).join(', ')}${read.stats.length > 6 ? '…' : ''}.`));
         if (plan.future) sec.push(h('p.field-hint', `${plural(plan.future, ['importo nei mesi futuri non importato', 'importi nei mesi futuri non importati'])} (previsioni).`));
         if (plan.dups) sec.push(h('p.field-hint', `${plural(plan.dups, ['movimento era', 'movimenti erano'])} già nell'app (stessa data, importo e descrizione): non li importo di nuovo.`));
         if (read.lines.length) {

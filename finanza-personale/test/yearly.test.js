@@ -75,3 +75,22 @@ test('categorie scritte in modi diversi diventano una sola (LAVORO e Lavoro)', a
   // già in ordine: niente da fare
   assert.equal(tidyPlan(s2).count, 0);
 });
+
+test('una statistica importata come entrata ("Liquidità a fine 2025") si toglie', async () => {
+  const { defaults, sanitize, tidyPlan, applyTidy } = await import('../js/core/model.js');
+  const st = sanitize(defaults());
+  st.accounts.push({ id: 'a-file', name: 'Entrate e uscite dal file', type: 'checking', currency: 'EUR', inNetWorth: false },
+    { id: 'a-cc', name: 'Conto', type: 'checking', currency: 'EUR', inNetWorth: true });
+  st.categories.push({ id: 'c-liq', name: 'LIQUIDITÀ A FINE 2025', emoji: '•', kind: 'income', group: 'LIQUIDITÀ A FINE 2025', archived: false },
+    { id: 'c-sal', name: 'Saldo iniziale', emoji: '•', kind: 'income', group: 'ALTRO', archived: false });
+  st.transactions.push({ id: 't1', date: '2026-01-31', kind: 'income', amount: 1523045, account: 'a-file', category: 'c-liq', payee: 'LIQUIDITÀ A FINE 2025', created: 1, updated: 1 },
+    // una categoria scelta dall'utente con movimenti veri su un conto del patrimonio resta
+    { id: 't2', date: '2026-01-10', kind: 'income', amount: 5000, account: 'a-cc', category: 'c-sal', payee: 'x', created: 2, updated: 2 });
+  const s2 = sanitize(st);
+  const plan = tidyPlan(s2);
+  assert.deepEqual(plan.stats, ['c-liq']);
+  applyTidy(s2, plan);
+  assert.ok(!s2.categories.some(c => c.id === 'c-liq'));
+  assert.ok(!s2.transactions.some(t => t.id === 't1'));
+  assert.ok(s2.categories.some(c => c.id === 'c-sal') && s2.transactions.some(t => t.id === 't2'));
+});

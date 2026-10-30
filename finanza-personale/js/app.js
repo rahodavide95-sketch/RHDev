@@ -249,7 +249,7 @@ function afterOpen() {
   ui.privacy = !!S.state.settings.hideAmounts;
   ui.base = S.state.settings.currency;
   applyTheme(S.state.settings.theme, S.state.settings.look);
-  if (S.mode === 'open') { const n = tidyCategories(); if (n) toast('Categorie doppie unite (es. "Lavoro" e "LAVORO")', { kind: 'ok' }); }
+  if (S.mode === 'open') { const n = tidyCategories(); if (n) toast('Categorie sistemate: doppioni uniti e statistiche (es. "Liquidità a fine 2025") tolte dalle entrate', { kind: 'ok' }); }
   lastActivity = Date.now();
   if (S.mode === 'open') {
     const n = runAutoPost();

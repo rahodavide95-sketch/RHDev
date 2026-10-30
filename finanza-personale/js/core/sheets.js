@@ -90,10 +90,13 @@ export function yearFromName(name) {
 
 /* ─── Foglio mese per mese ─── */
 
+/** Riga di statistica, non un'entrata o un'uscita: "Liquidità a fine 2025", "Saldo iniziale"… */
+export const isStatLabel = s => /liquidit|saldo|giacenz|patrimon|disponibilit|riporto|net ?worth|risparmi(o|ato) (totale|anno)/i.test(s || '') && /fine|inizi|iniziale|al |anno|precedente|\b(19|20)\d\d\b/i.test(s || '');
+
 export function readMonths(rows, info, { nums } = {}) {
   const { cols, map } = info;
-  const lines = [], skipped = [], checks = [];
-  let lastGroup = '';
+  const lines = [], skipped = [], checks = [], stats = [];
+  let lastGroup = '', ended = false;
   const raw = [];
   for (let i = info.index + 1; i < rows.length; i++) {
     const r = rows[i] || [];
@@ -101,7 +104,11 @@ export function readMonths(rows, info, { nums } = {}) {
     let group = text(r[map.group]);
     const sub = map.sub != null ? text(r[map.sub]) : '';
     const note = map.note != null ? text(r[map.note]) : '';
-    if (TOTAL_RE.test(group)) continue;                          // riga dei totali in fondo
+    const label = [group, sub, note].filter(Boolean).join(' ');
+    // la tabella finisce alla riga TOTALE: sotto ci sono riepiloghi e statistiche
+    if (/^(totale?|totali|totals?)$/i.test(group.replace(/[^a-z]/gi, ''))) { ended = true; continue; }
+    if (TOTAL_RE.test(group)) continue;                          // altre righe di totale
+    if (ended || isStatLabel(label)) { if (label && cols.some(c => c >= 0 && cellNumber(r[c], { money: true }))) stats.push({ row, label }); continue; }
     if (!group && (sub || note)) group = lastGroup;              // categoria scritta solo nella prima riga
     if (group) lastGroup = group;
     const values = cols.map(c => (c < 0 ? 0 : cellNumber(r[c], { money: true }) || 0));
@@ -122,7 +129,7 @@ export function readMonths(rows, info, { nums } = {}) {
     if (x.fileTotal != null && Math.abs(x.fileTotal - total) >= 0.01) checks.push({ row: x.row, group: x.group, ok: false, file: x.fileTotal, ours: total });
     lines.push({ ...x, total });
   }
-  return { lines, skipped, checks };
+  return { lines, skipped, checks, stats };
 }
 
 /* ─── Foglio Net Worth ─── */

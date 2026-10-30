@@ -222,6 +222,18 @@ ogni macro un solo nome (quello delle categorie con movimenti, a pari merito il 
 fondono le voci doppie spostando movimenti, scadenze, regole e budget; `actions.tidyCategories()`
 gira all'apertura (con un avviso se ha unito qualcosa) e dentro ogni import del file. L'ordine
 delle macro guarda solo le categorie visibili (una "Altro" nascosta non porta ALTRO in alto).
+**Statistiche non sono entrate** (D: "Liquidità a fine 2025 è solo una statistica"): `readMonths`
+salta le righe `isStatLabel` (liquidità/saldo/giacenza/patrimonio + fine/inizio/anno) e tutto
+ciò che sta sotto la riga TOTALE (`read.stats`, mostrate nell'anteprima); `tidyPlan().stats`
+toglie quelle già importate (categorie non dell'app con movimenti solo in conti fuori dal
+patrimonio).
+
+## Impostazioni (`views/settings.js`)
+
+D: "nelle impostazioni non si capisce niente, tutte le card stanno ognuna per fatti suoi" (era
+una griglia a tre colonne con altezze diverse). Ora menu delle sezioni a sinistra (fisso, evidenzia
+quella che si sta guardando; su telefono pulsanti in orizzontale) e sezioni una sotto l'altra;
+Categorie = riepilogo per macro categoria con le sue voci (tocca → gestione).
 
 ## Account e sincronizzazione (richiesta di D: "perché non mi fai accedere con mail e password?")
 
@@ -315,7 +327,7 @@ netti, pulito ed elegante.
 
 ## Prove
 
-- `npm test`: 48 test (calcoli, cifratura, unione dei dati, CSV, investimenti, import da Excel di tutti i fogli, crypto, storia degli acquisti, quotazioni con risposte finte).
+- `npm test`: 49 test (calcoli, cifratura, unione dei dati, CSV, investimenti, import da Excel di tutti i fogli, crypto, storia degli acquisti, quotazioni con risposte finte).
 - `bash test/rls/run.sh`: regole di sicurezza del database su Postgres.
 - Nel browser: `python3 -m http.server` nella cartella e Playwright (Chromium già
   installato). Da questo ambiente onvista/Binance/BCE non sono raggiungibili: per provarli

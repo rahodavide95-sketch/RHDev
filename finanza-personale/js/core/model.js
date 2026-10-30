@@ -913,8 +913,9 @@ export function derive(state, refDate = today()) {
     const add = (r, m, v) => { r.byMonth[m] += v; r.total += v; r.n++; };
     const groups = new Map();
     const groupOf = name => {
-      let g = groups.get(name);
-      if (!g) groups.set(name, (g = { name, ...row(), cats: new Map() }));
+      const k = catNorm(name) || name;
+      let g = groups.get(k);
+      if (!g) groups.set(k, (g = { name, ...row(), cats: new Map() }));
       return g;
     };
     const catRow = (g, c) => {
@@ -942,7 +943,12 @@ export function derive(state, refDate = today()) {
       add(p, m, v); add(cr, m, v); add(g, m, v); add(tot, m, v);
     }
     const order = new Map(state.categories.map((c, i) => [c.id, i]));
-    const gOrder = name => { const i = state.categories.findIndex(c => c.kind === kind && c.group === name); return i < 0 ? 1e9 : i; };
+    // ordine delle macro: quello delle categorie visibili (una "Altro" nascosta dell'app non sposta ALTRO in alto)
+    const gOrder = name => {
+      const i = state.categories.findIndex(c => c.kind === kind && !c.archived && catNorm(c.group) === catNorm(name));
+      const j = i < 0 ? state.categories.findIndex(c => c.kind === kind && catNorm(c.group) === catNorm(name)) : i;
+      return j < 0 ? 1e9 : j;
+    };
     const list = [...groups.values()].sort((a, b) => gOrder(a.name) - gOrder(b.name)).map(g => ({
       ...g, cats: [...g.cats.values()].sort((a, b) => (order.get(a.id) ?? 1e9) - (order.get(b.id) ?? 1e9))
         .map(c => ({ ...c, payees: [...c.payees.values()].sort((a, b) => b.total - a.total) })),
@@ -963,6 +969,85 @@ export function derive(state, refDate = today()) {
     netWorthHistory, nwSheet, nwItems, holdingValueAt, flows, monthlyFlows, budget, dueList, upcoming, fixedMonthly, recurringIncomeMonthly, goal, portfolio, invest, yearTable,
     refDate,
   };
+}
+
+/* ─── Categorie uniche ───
+   Stessa macro categoria o stessa voce scritte in modi diversi ("Lavoro" e "LAVORO", "13esima"
+   e "13ESIMA", "INT. BANCA" e "Int banca") sono la stessa cosa: si uniscono. Succede quando
+   import diversi scrivono i nomi in modo diverso (D: "perché due categorie lavoro? è solo 1"). */
+const DEFAULT_IDS = new Set(DEFAULT_CATEGORIES.map(c => c.id));
+const STAT_RE = s => /liquidit|saldo|giacenz|patrimon|disponibilit|riporto|net ?worth/i.test(s) && /fine|inizi|precedente|\b(19|20)\d\d\b/i.test(s);
+export const catNorm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
+
+/** Cosa unire: nomi delle macro da allineare e categorie doppie da fondere (nessuna modifica qui). */
+export function tidyPlan(state) {
+  const used = new Map();
+  for (const t of state.transactions) if (t.category) used.set(t.category, (used.get(t.category) || 0) + 1);
+  // per ogni macro (tipo + nome normalizzato) il nome più usato; a pari merito quello in maiuscolo, come nei fogli
+  const spell = new Map();
+  for (const c of state.categories) {
+    const k = c.kind + '|' + catNorm(c.group);
+    let m = spell.get(k);
+    if (!m) spell.set(k, (m = new Map()));
+    // conta soprattutto dove ci sono movimenti (i nomi dell'ultimo import), poco le categorie vuote dell'app
+    m.set(c.group, (m.get(c.group) || 0) + (used.get(c.id) ? 1 : c.archived ? 0.05 : 0.2));
+  }
+  const upper = x => (x.match(/[A-Z]/g) || []).length;
+  const groupName = new Map();
+  for (const [k, m] of spell) if (m.size > 1) groupName.set(k, [...m.entries()].sort((a, b) => b[1] - a[1] || upper(b[0]) - upper(a[0]))[0][0]);
+  // categorie doppie: si tiene quella visibile e più usata
+  const byKey = new Map();
+  for (const c of state.categories) {
+    const k = c.kind + '|' + catNorm(c.group) + '|' + catNorm(c.name);
+    const list = byKey.get(k) || [];
+    list.push(c);
+    byKey.set(k, list);
+  }
+  const merge = new Map();
+  for (const list of byKey.values()) {
+    if (list.length < 2) continue;
+    const keep = [...list].sort((a, b) => (a.archived - b.archived) || ((used.get(b.id) || 0) - (used.get(a.id) || 0)) || (upper(b.name) - upper(a.name)))[0];
+    for (const c of list) if (c !== keep) merge.set(c.id, keep.id);
+  }
+  const renames = state.categories.filter(c => groupName.has(c.kind + '|' + catNorm(c.group)) && groupName.get(c.kind + '|' + catNorm(c.group)) !== c.group).length;
+  // statistiche importate come voci (D: "Liquidità a fine 2025 è solo una statistica"): si tolgono
+  // solo se i loro movimenti stanno tutti in conti fuori dal patrimonio (il conto dell'import)
+  const outNw = new Set(state.accounts.filter(a => !a.inNetWorth).map(a => a.id));
+  const stats = state.categories.filter(c => !DEFAULT_IDS.has(c.id) && STAT_RE(c.group + ' ' + c.name) &&
+    state.transactions.every(t => t.category !== c.id || outNw.has(t.account))).map(c => c.id);
+  return { groupName, merge, stats, count: renames + merge.size + stats.length };
+}
+
+/** Applica il piano a uno stato (dentro un commit). */
+export function applyTidy(st, plan = tidyPlan(st)) {
+  if (!plan.count) return 0;
+  for (const c of st.categories) {
+    const n = plan.groupName.get(c.kind + '|' + catNorm(c.group));
+    if (n && n !== c.group) {
+      const gc = st.settings.groupColors || {};
+      if (gc[`${c.kind}:${c.group}`] && !gc[`${c.kind}:${n}`]) gc[`${c.kind}:${n}`] = gc[`${c.kind}:${c.group}`];
+      delete gc[`${c.kind}:${c.group}`];
+      c.group = n;
+    }
+  }
+  if (plan.stats?.length) {
+    const drop = new Set(plan.stats);
+    st.transactions = st.transactions.filter(t => !drop.has(t.category));
+    st.categories = st.categories.filter(c => !drop.has(c.id));
+  }
+  if (plan.merge.size) {
+    const to = id => plan.merge.get(id) || id;
+    for (const t of st.transactions) if (t.category) t.category = to(t.category);
+    for (const r of st.recurring) if (r.category) r.category = to(r.category);
+    for (const r of st.rules) if (r.category) r.category = to(r.category);
+    for (const [from, keep] of plan.merge) {
+      if (st.budgets[from]) { st.budgets[keep] = (st.budgets[keep] || 0) + st.budgets[from]; delete st.budgets[from]; }
+      const k = st.categories.find(c => c.id === keep);
+      if (k) k.archived = false;
+    }
+    st.categories = st.categories.filter(c => !plan.merge.has(c.id));
+  }
+  return plan.count;
 }
 
 /* ─── Categorizzazione automatica ─── */

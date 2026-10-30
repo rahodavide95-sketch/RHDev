@@ -71,6 +71,8 @@ test('mese per mese: entrate con i totali delle categorie, uscite con un rimbors
   const p = planMonths(r, st, { year: 2026, kind: 'income', refDate: REF });
   assert.equal(p.total, 2539485);                                    // la somma della riga TOTALE del file
   assert.equal(p.keys.length, 12);                                   // anche 13ESIMA, ancora a zero, diventa una categoria
+  // "LIQUIDITÀ A FINE 2025" (in cima) e il riepilogo sotto il TOTALE sono statistiche, non entrate
+  assert.deepEqual(r.stats.map(x => x.label), ['LIQUIDITÀ A FINE 2025', 'RISPARMIO MEDIO']);
   assert.equal(p.future, 0);
   assert.ok(p.txs.every(t => t.date <= REF && t.date.endsWith(t.date.slice(0, 7) === '2026-10' ? '30' : t.date.slice(8))));
   // importato di nuovo (in qualunque conto): niente doppioni

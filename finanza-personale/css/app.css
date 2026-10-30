@@ -760,7 +760,24 @@ input[type="date"].input::-webkit-date-and-time-value { text-align: left; }
 @media (max-width: 520px) { .mkt-spark { display: none; } }
 
 /* impostazioni */
-.settings { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 480px), 1fr)); gap: 16px; align-items: start; }
+/* impostazioni: menu delle sezioni a sinistra, sezioni una sotto l'altra (D: "le card stanno ognuna per fatti suoi") */
+.settings-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 28px; align-items: start; max-width: 1320px; }
+.set-nav { position: sticky; top: 104px; display: flex; flex-direction: column; gap: 2px; }
+.set-nav-link { text-align: left; padding: 9px 14px; border-radius: 12px; font-weight: 560; font-size: 14.5px; color: var(--ink-2); }
+.set-nav-link:hover { background: var(--hover); color: var(--ink); }
+.set-nav-link.on { background: var(--brand-soft); color: var(--brand); font-weight: 650; }
+.settings { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.settings > .set-card, .settings > .card { scroll-margin-top: 100px; }
+.set-cat-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.set-cat-row { min-height: 54px; }
+.set-cat-dot { width: 12px; height: 12px; border-radius: 4px; flex: none; }
+.set-cat-row .row-title { text-transform: none; }
+@media (max-width: 960px) {
+  .settings-layout { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .set-nav { position: static; flex-direction: row; overflow-x: auto; scrollbar-width: none; gap: 6px; padding-bottom: 2px; }
+  .set-nav::-webkit-scrollbar { display: none; }
+  .set-nav-link { white-space: nowrap; background: var(--card); padding: 8px 13px; font-size: 13.5px; }
+}
 .set-card { display: flex; flex-direction: column; gap: 14px; }
 .set-card .card-head { margin-bottom: 0; }
 .set-card.flash { animation: flash 1.6s ease; }

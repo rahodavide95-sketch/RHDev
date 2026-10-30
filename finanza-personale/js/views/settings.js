@@ -14,7 +14,7 @@ import { passwordStrength, PBKDF2_ITER, WrongSecret } from '../core/crypto.js';
 import { CURRENCIES, formatNumber } from '../core/money.js';
 import { today, formatDate } from '../core/dates.js';
 import { ecbRates } from '../market.js';
-import { categoryManager } from './categories.js';
+import { categoryManager, groupColor } from './categories.js';
 import { askMarketConsent } from './investments.js';
 import { applyTheme, PALETTES, CHARTS, resolveLook } from '../ui/theme.js';
 
@@ -219,17 +219,23 @@ function accountCard(ctx) {
 function categoriesCard(ctx) {
   const { st } = ctx;
   let kind = 'expense';
-  const listEl = h('div');
+  const listEl = h('div.rows.set-cats');
   const draw = () => {
-    const cats = st.categories.filter(c => c.kind === kind);
+    const cats = st.categories.filter(c => c.kind === kind && !c.archived);
     const groups = [...new Set(cats.map(c => c.group))];
-    const used = new Map();
-    for (const t of st.transactions) if (t.category) used.set(t.category, (used.get(t.category) || 0) + 1);
-    listEl.replaceChildren(...groups.map(g => h('div.cat-group', h('div.cat-group-t', g), h('div.cat-grid', cats.filter(c => c.group === g).map(c => h('button.cat-chip', { type: 'button', onclick: () => categoryEditor(c) }, h('span.cat-emoji', c.emoji), h('span', c.name), used.get(c.id) ? h('span.muted.small', String(used.get(c.id))) : null))))),
-      h('button.btn.btn-soft.btn-sm', { type: 'button', onclick: () => categoryEditor(null, kind) }, icon('plus', 16), 'Nuova categoria'));
+    listEl.replaceChildren(...groups.map(g => {
+      const items = cats.filter(c => c.group === g);
+      return h('button.row.set-cat-row', { type: 'button', onclick: () => categoryManager(ctx, kind) },
+        h('span.set-cat-dot', { style: { background: groupColor(st, kind, g) } }),
+        h('span.row-main', h('span.row-title', g), h('span.row-sub', items.map(c => c.name).join(' · '))),
+        h('span.pill', String(items.length)), icon('chevR', 16));
+    }));
   };
   draw();
-  return section('cat', 'Categorie', 'Categorie e sottocategorie, come vuoi tu', h('button.btn.btn-primary.btn-sm', { type: 'button', onclick: () => categoryManager(ctx, kind === 'income' ? 'income' : 'expense') }, icon('edit', 16), 'Gestisci categorie e colori'), segmented([{ value: 'expense', label: 'Uscite' }, { value: 'income', label: 'Entrate' }], kind, v => { kind = v; draw(); }, { small: true }), listEl);
+  return section('cat', 'Categorie', 'Macro categorie e le loro voci: tocca per crearle, rinominarle, colorarle e riordinarle',
+    h('div.set-cat-bar', segmented([{ value: 'expense', label: 'Uscite' }, { value: 'income', label: 'Entrate' }], kind, v => { kind = v; draw(); }, { small: true }),
+      h('button.btn.btn-primary.btn-sm', { type: 'button', onclick: () => categoryManager(ctx, kind) }, icon('edit', 16), 'Gestisci')),
+    listEl);
 }
 
 function rulesCard(ctx) {
@@ -345,6 +351,18 @@ export default {
         h('p.fine', 'I calcoli fiscali seguono le regole italiane per le persone fisiche (2026) e sono indicativi: per la dichiarazione dei redditi rivolgiti a un commercialista.')));
     if (q.backup) setTimeout(() => { const el = document.getElementById('set-backup'); if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); el.classList.add('flash'); } }, 80);
     void ui;
-    return { title: 'Impostazioni', node };
+    // a sinistra le sezioni (sempre visibili), a destra una sotto l'altra
+    const secs = [...node.querySelectorAll('section.set-card')].map(x => ({ id: x.id, title: x.querySelector('.card-title')?.textContent || '' }));
+    const links = secs.map(x => h('button.set-nav-link', { type: 'button', dataset: { to: x.id }, onclick: () => document.getElementById(x.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }, x.title));
+    const nav = h('nav.set-nav', { 'aria-label': 'Sezioni delle impostazioni' }, links);
+    const mark = () => {
+      if (!nav.isConnected) { removeEventListener('scroll', mark); return; }
+      let cur = secs[0]?.id;
+      for (const x of secs) { const el = document.getElementById(x.id); if (el && el.getBoundingClientRect().top < 140) cur = x.id; }
+      for (const l of links) l.classList.toggle('on', l.dataset.to === cur);
+    };
+    addEventListener('scroll', mark, { passive: true });
+    requestAnimationFrame(mark);
+    return { title: 'Impostazioni', node: h('div.settings-layout', nav, node) };
   },
 };

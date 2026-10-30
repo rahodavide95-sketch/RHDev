@@ -2,7 +2,7 @@
    così ogni modifica viene salvata cifrata e l'interfaccia si aggiorna. */
 
 import { S, commit } from './session.js';
-import { uid, stamp, hasPlan, isLiability, defaults } from './core/model.js';
+import { uid, stamp, hasPlan, isLiability, defaults, tidyPlan, applyTidy } from './core/model.js';
 import { convert } from './core/money.js';
 import { catKey } from './core/sheets.js';
 import { normHead } from './core/invimport.js';
@@ -342,6 +342,14 @@ export function setSetting(path, value) {
     o[keys[keys.length - 1]] = value;
   });
 }
+/** Unisce le categorie scritte in modi diversi (solo se serve: niente salvataggi a vuoto). */
+export function tidyCategories() {
+  if (!S.state || !tidyPlan(S.state).count) return 0;
+  let n = 0;
+  commit(st => { n = applyTidy(st); });
+  return n;
+}
+
 /** Svuota i dati (conti, movimenti, investimenti, categorie…) tenendo password e preferenze.
     Con l'account la versione vuota va anche online, e gli altri dispositivi la seguono. */
 export function resetData() {
@@ -522,6 +530,7 @@ export function importWorkbook({ nw = [], invest = null, cash = false, months = 
       inLayout.add(key);
       if (r.holding) lay.labels[key] = r.name.slice(0, 60);
     }
+    applyTidy(st);
     const opened = new Set(), seen = new Set();
     for (const r of accRows) {
       const account = nwId.get(r.key);

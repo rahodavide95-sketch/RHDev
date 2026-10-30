@@ -1,8 +1,10 @@
 # Analisi Finanziarie
 
 Gestione completa della finanza personale, con le simulazioni finanziarie di prima
-(rifatte e corrette). Tutti i dati restano **cifrati sul tuo dispositivo**: nessun
-server, nessun account, nessun tracciamento.
+(rifatte e corrette). Si accede con **email e password** (lo stesso account di
+[RH] Documents) e i dati sono sincronizzati tra telefono e computer, **cifrati nel
+browser** prima di partire: online c'è solo testo illeggibile. Si può usare anche senza
+account, solo su un dispositivo. Nessun tracciamento.
 
 Indirizzo: `https://rahodavide95-sketch.github.io/RHDev/finanza-personale/`
 (si aggiorna da solo dopo ogni modifica su `main`).
@@ -82,28 +84,35 @@ Dettagli in [`docs/SICUREZZA.md`](docs/SICUREZZA.md).
 
 - Dati cifrati con **AES-256-GCM**; la chiave nasce dalla password (PBKDF2-SHA256,
   600.000 passaggi) e non viene mai salvata: resta in memoria solo mentre l'app è aperta.
+- **Account e sincronizzazione**: online (Supabase, lo stesso progetto di [RH] Documents)
+  va solo la cassaforte già cifrata. Solo il tuo account può leggerla o scriverla, e
+  nessuno può cancellarla dall'app. Se cambi qualcosa su due dispositivi, le modifiche si
+  uniscono (non si sovrascrivono).
 - **Codice di recupero** (mostrato alla creazione) per aprire i dati se dimentichi la
   password. Senza password e senza codice nessuno può aprirli, nemmeno lo sviluppatore.
 - **Blocco automatico** dopo qualche minuto di inattività (scegli tu quanti), velo
   sfocato quando l'app va in secondo piano, "nascondi importi" per l'uso in pubblico.
 - **Backup cifrato** in un file (si apre solo con la tua password o il codice), più una
   copia automatica al giorno sul dispositivo per gli ultimi 7 giorni.
-- Nessuna connessione verso altri siti, salvo i dati di mercato che attivi tu (vengono
-  inviati solo i simboli dei titoli, mai importi o conti).
+- Nessuna connessione verso altri siti, salvo l'account (dati cifrati) e i dati di mercato
+  che attivi tu (vengono inviati solo i simboli dei titoli, mai importi o conti).
 
-**Importante**: i dati esistono solo sul dispositivo. Fai il backup cifrato ogni tanto
-(l'app te lo ricorda) e tienilo fuori dal telefono (iCloud Drive, chiavetta…). Su iPhone
-aggiungi l'app alla schermata Home: Safari può cancellare i dati dei siti non usati
-per qualche settimana, le app della schermata Home no.
+**Importante**: la password apre e cifra i dati. Se la dimentichi servono l'email (per
+sceglierne una nuova) **e il codice di recupero** (per riaprire i dati): conservalo.
+Senza account i dati esistono solo sul dispositivo: fai il backup cifrato ogni tanto.
+Su iPhone aggiungi l'app alla schermata Home: Safari può cancellare i dati dei siti non
+usati per qualche settimana, le app della schermata Home no.
 
 ## Come usarla
 
-1. Apri l'indirizzo e tocca **Crea la tua cassaforte**, scegli una password (meglio una
-   frase di 4 parole) e **salva il codice di recupero**.
+1. Apri l'indirizzo e tocca **Accedi con email e password** (lo stesso account di
+   [RH] Documents). La prima volta **salva il codice di recupero** che compare.
 2. Aggiungi i conti con il saldo di oggi, poi i movimenti o importa l'estratto conto.
-3. Su iPhone: Condividi → **Aggiungi alla schermata Home**.
-4. Per passare a un altro dispositivo: Impostazioni → Scarica backup → sull'altro
-   dispositivo "Ho un file di backup".
+3. Sugli altri dispositivi accedi con la stessa email e password: trovi tutto.
+4. Su iPhone: Condividi → **Aggiungi alla schermata Home**.
+
+Senza account: "Usa senza account, solo su questo dispositivo" (si collega dopo dalle
+Impostazioni).
 
 Vuoi solo guardarla? **Prova con dati di esempio**: dati inventati, solo in memoria.
 
@@ -114,7 +123,8 @@ Nessuna compilazione: HTML, CSS e moduli JavaScript.
 ```bash
 cd finanza-personale
 python3 -m http.server 8000   # poi apri http://localhost:8000
-npm test                      # test dei calcoli, della cifratura, del CSV e delle quotazioni
+npm test                      # test dei calcoli, della cifratura, dell'unione dei dati, del CSV e delle quotazioni
+bash test/rls/run.sh          # regole di sicurezza del database su un Postgres vero (serve PostgreSQL)
 ```
 
 Struttura:
@@ -122,7 +132,8 @@ Struttura:
 | Cartella | Contenuto |
 | --- | --- |
 | `js/core/` | Calcoli puri e testati: importi, date e ricorrenze, simulazioni, modello dei dati, cifratura, CSV |
-| `js/` | Avvio e navigazione (`app.js`), sessione e salvataggio (`session.js`), archivio IndexedDB (`store.js`), operazioni (`actions.js`), dati di mercato (`market.js`), dati di prova (`demo.js`) |
+| `js/` | Avvio e navigazione (`app.js`), sessione, salvataggio e sincronizzazione (`session.js`), account online (`cloud.js`), archivio IndexedDB (`store.js`), operazioni (`actions.js`), dati di mercato (`market.js`), dati di prova (`demo.js`) |
+| `supabase/schema.sql` | Tabelle e regole del database online (applicate dal workflow `finanza-personale-db.yml`) |
 | `js/ui/` | Componenti dell'interfaccia, grafici SVG, icone, formattazione |
 | `js/views/` | Le pagine dell'app e le finestre di inserimento |
 | `css/app.css` | Il design (temi chiaro e scuro) |

@@ -39,6 +39,7 @@ const reqP = r => new Promise((res, rej) => { r.onsuccess = () => res(r.result);
 export const get = key => tx('readonly', (os, done) => reqP(os.get(key)).then(done));
 export const keys = () => tx('readonly', (os, done) => reqP(os.getAllKeys()).then(done));
 export const del = key => tx('readwrite', os => { os.delete(key); });
+export const put = (key, value) => tx('readwrite', os => { os.put(value, key); });
 
 /** Salva la nuova cassaforte tenendo la precedente, tutto in un'unica transazione (o tutto o niente). */
 export function saveVault(vault, prev, dayKey) {
@@ -70,6 +71,12 @@ export async function autoCopies() {
     if (v) out.push({ key: k, day: k.slice(5), updated: v.updated, rev: v.rev, vault: v });
   }
   return out;
+}
+
+/** Toglie copia precedente e copie automatiche (servono quando cambia la chiave dei dati). */
+export async function clearCopies() {
+  const all = await keys();
+  await tx('readwrite', os => { for (const k of all) if (k === 'vault-prev' || (typeof k === 'string' && k.startsWith('auto-'))) os.delete(k); });
 }
 
 /** Cancella tutto ciò che questa app ha salvato su questo dispositivo. */

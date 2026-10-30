@@ -67,6 +67,34 @@ nel patrimonio (e nello storico) se ha "Conta nel patrimonio": un conto chiuso d
 continuare a valere nei mesi in cui esisteva; nella pagina Conti un archiviato con saldo
 diverso da zero resta visibile.
 
+## Account e sincronizzazione (richiesta di D: "perché non mi fai accedere con mail e password?")
+
+- Stesso schema collaudato di Documenti Raho (leggi `documenti-raho/CLAUDE.md`, "Account e
+  sincronizzazione"): progetto Supabase di Label Finance `ztjlqorvnulgfvbtvavm`, oggetti con
+  prefisso `finanza_personale`, un solo proprietario (`finanza_personale_claim()`), client
+  senza librerie (`js/cloud.js`: `/auth/v1`, `/rest/v1`). Stesso account di Documents.
+- Schema: `supabase/schema.sql` (niente DELETE per `authenticated`), applicato dal workflow
+  `.github/workflows/finanza-personale-db.yml` (secret `SUPABASE_ACCESS_TOKEN`), che aggiunge
+  anche l'indirizzo dell'app ai ritorni consentiti dopo le email. Test: `bash test/rls/run.sh`.
+- Online va la cassaforte intera (stessa di IndexedDB e dei backup), riga unica con `version`.
+  La password dell'account È la password della cassaforte. Diversamente da Documents la chiave
+  non si ricorda sul dispositivo: si chiede la password a ogni sblocco (origine condivisa).
+- `session.js`: `cloudSync()` (versione online → `pullMerge()` con unione a tre vie dalla
+  "base" = ultima versione comune salvata in IndexedDB `cloud-base` → `pushNow()` con PATCH
+  `version=eq.N`, se 0 righe si ricomincia). `pushKeys` forza l'invio quando cambiano solo le
+  chiavi (password/codice). `keysAt` nella cassaforte dice quali chiavi sono più recenti.
+  Si sincronizza: all'apertura, 1,5 s dopo ogni salvataggio, ogni 60 s, tornando sulla
+  pagina, quando torna la rete, prima del blocco (max 4 s).
+- Flussi: `loginNewDevice` (dispositivo nuovo), `linkAccount` (da Impostazioni: se ci sono
+  dati online si uniscono e valgono password e codice dell'account; se no la cassaforte locale
+  si richiude con la password dell'account), `unlockViaCloud`/`rekey` (password cambiata su
+  un altro dispositivo o da Documents), `loginWithOld`, `resetFromLink` (email "password
+  dimenticata" + codice di recupero), `relogin` (sessione scaduta), `unlinkAccount`.
+- Schermate in `views/gate.js` (accesso, nuovo account, password cambiata, nuova password dal
+  link; `handleAuthLanding()` legge `#access_token…` / `#error…` tornando dalle email).
+- Prove: finto Supabase con Playwright (`route`), più dispositivi insieme. Da qui Supabase non
+  è raggiungibile.
+
 ## Modello dei saldi (importante)
 
 Saldo di un conto = ultimo "punto fermo" (`valuations`: saldo iniziale `kind:'open'` o
@@ -105,7 +133,8 @@ netti, pulito ed elegante.
 
 ## Prove
 
-- `npm test`: 21 test (calcoli, cifratura, CSV, quotazioni con risposte finte).
+- `npm test`: 26 test (calcoli, cifratura, unione dei dati, CSV, quotazioni con risposte finte).
+- `bash test/rls/run.sh`: regole di sicurezza del database su Postgres.
 - Nel browser: `python3 -m http.server` nella cartella e Playwright (Chromium già
   installato). Da questo ambiente Yahoo/Binance/BCE non sono raggiungibili.
 - "Prova con dati di esempio" (`js/demo.js`): dati inventati, solo in memoria.

@@ -8,7 +8,7 @@ import { categoryEditor, undoToast } from './editors.js';
 import { openImporter } from './importer.js';
 import * as A from '../actions.js';
 import * as session from '../session.js';
-import { S } from '../session.js';
+import { S, cloudLine } from '../session.js';
 import { usage, persistStatus, requestPersist } from '../store.js';
 import { passwordStrength, PBKDF2_ITER, WrongSecret } from '../core/crypto.js';
 import { CURRENCIES, formatNumber } from '../core/money.js';
@@ -17,7 +17,8 @@ import { ecbRates } from '../market.js';
 import { askMarketConsent } from './investments.js';
 import { applyTheme } from '../ui/theme.js';
 
-const VERSION = '3.0.0';
+
+const VERSION = '3.1.0';
 
 function section(id, title, sub, ...body) {
   return h('section.card.set-card', { id: 'set-' + id }, h('div.card-head', h('div.card-titles', h('h2.card-title', title), sub ? h('p.card-sub', sub) : null)), ...body);
@@ -107,6 +108,72 @@ function exportPlain(ctx) {
   });
 }
 
+/* ─── Account e sincronizzazione ─── */
+function accountSheet(ctx, create) {
+  const em = textInput({ type: 'email', placeholder: 'Email', autocomplete: 'username', max: 120 });
+  const pw = textInput({ type: 'password', placeholder: create ? 'Password (almeno 10 caratteri)' : 'Password', autocomplete: create ? 'new-password' : 'current-password', max: 200 });
+  const pw2 = create ? textInput({ type: 'password', placeholder: 'Ripetila', autocomplete: 'new-password', max: 200 }) : null;
+  const err = h('p.field-err', { hidden: true, role: 'alert' });
+  const btn = h('button.btn.btn-primary', { type: 'button' }, create ? 'Crea e collega' : 'Accedi e collega');
+  const run = async (localPassword) => {
+    const email = em.value.trim(), password = pw.value;
+    let msg = '';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) msg = 'Scrivi un\'email valida.';
+    else if (!password) msg = 'Scrivi la password.';
+    else if (create && password.length < 10) msg = 'Usa almeno 10 caratteri.';
+    else if (create && passwordStrength(password).score < 2 && password.length < 14) msg = 'Password troppo facile da indovinare.';
+    else if (create && password !== pw2.value) msg = 'Le due password non sono uguali.';
+    if (msg) { err.textContent = msg; err.hidden = false; return; }
+    err.hidden = true; btn.disabled = true; btn.textContent = 'Collego…';
+    try {
+      const r = await session.linkAccount(email, password, { create, localPassword });
+      if (r.confirm) { s.close(true); toast(`Ti ho mandato un'email a ${email}: conferma e poi torna qui e premi "Accedi".`, { ms: 9000 }); return; }
+      if (r.needLocal) {
+        btn.disabled = false; btn.textContent = create ? 'Crea e collega' : 'Accedi e collega';
+        const lp = await promptDialog({ title: 'Password di questa app', label: 'Password attuale dell\'app', type: 'password', autocomplete: 'current-password', message: 'Da ora per aprire l\'app userai la password dell\'account: scrivi quella che usi adesso per confermare.', validate: async v => ((await session.verifyPassword(v)) ? '' : 'Password non corretta.') });
+        if (lp) return run(lp);
+        return;
+      }
+      if (r.needOld) {
+        btn.disabled = false; btn.textContent = 'Accedi e collega';
+        err.textContent = 'I dati online sono chiusi con una password diversa da quella dell\'account: accedi prima da un dispositivo che li apre.'; err.hidden = false;
+        return;
+      }
+      s.close(true);
+      toast(r.adopted ? 'Collegato: dati uniti a quelli online. Da ora valgono la password e il codice di recupero dell\'account.' : 'Collegato: i dati ora si sincronizzano, cifrati.', { kind: 'ok', ms: 8000 });
+    } catch (e) {
+      btn.disabled = false; btn.textContent = create ? 'Crea e collega' : 'Accedi e collega';
+      err.textContent = e?.message || String(e); err.hidden = false;
+    }
+  };
+  btn.addEventListener('click', () => run(null));
+  const s = openSheet({
+    title: create ? 'Crea un account' : 'Accedi con il tuo account', size: 'sm',
+    body: h('form.stack', { onsubmit: e => { e.preventDefault(); run(null); } },
+      h('p.muted', create ? 'Con l\'account i dati sono su tutti i tuoi dispositivi. Partono già cifrati con la password: online nessuno può leggerli.' : 'Lo stesso account di [RH] Documents. I dati di questo dispositivo si uniscono a quelli che hai già online.'),
+      field('Email', em), field('Password', pw), pw2 ? field('Ripeti la password', pw2) : null, err, h('button', { type: 'submit', hidden: true })),
+    footer: [btn],
+  });
+}
+
+function accountCard(ctx) {
+  const c = ctx.S.cloud;
+  if (ctx.S.mode === 'demo') return null;
+  if (!c.linked) {
+    return section('account', 'Account e sincronizzazione', 'Accedi per avere i dati su telefono e computer. Online arrivano già cifrati con la tua password: nessuno può leggerli.',
+      h('div.row-btns',
+        h('button.btn.btn-primary', { type: 'button', onclick: () => accountSheet(ctx, false) }, icon('refresh', 18), 'Accedi'),
+        h('button.btn.btn-soft', { type: 'button', onclick: () => accountSheet(ctx, true) }, 'Crea un account')),
+      h('p.set-hint', 'Senza account i dati restano solo su questo dispositivo: ricordati i backup.'));
+  }
+  return section('account', 'Account e sincronizzazione', 'I dati sono cifrati qui con la tua password e solo dopo salvati online.',
+    h('div.acct-row', h('span.acct-av', (c.email || '?').charAt(0).toUpperCase()), h('div.acct-main', h('b', c.email), h('span.set-hint', { id: 'cloud-status' }, cloudLine()))),
+    h('div.row-btns',
+      h('button.btn.btn-soft', { type: 'button', onclick: () => session.cloudSync().then(() => toast(ctx.S.cloud.status === 'ok' ? 'Tutto sincronizzato' : cloudLine())) }, icon('refresh', 18), 'Sincronizza ora'),
+      twoTap('Esci da questo dispositivo', async () => { await session.unlinkAccount(); toast('Account scollegato: i dati restano su questo dispositivo'); ctx.rerender(); }, { cls: 'btn btn-ghost', iconName: 'logout', confirmLabel: 'Tocca di nuovo per uscire' })),
+    h('p.set-hint', 'La password dell\'account è anche quella che apre e cifra i dati: cambiarla qui la cambia ovunque (anche in [RH] Documents).'));
+}
+
 function categoriesCard(ctx) {
   const { st } = ctx;
   let kind = 'expense';
@@ -176,6 +243,7 @@ export default {
 
     const node = h('div.settings',
       demo ? h('section.card.callout.span-all', icon('sparkle', 20), h('div', h('b', 'Stai usando la modalità prova.'), h('p.muted', 'Le modifiche qui non vengono salvate. Per usare l\'app davvero esci dalla prova e crea la tua cassaforte.'))) : null,
+      accountCard(ctx),
       section('profile', 'Profilo', null,
         setRow('Il tuo nome', 'Solo per il saluto nella panoramica', nameIn),
         setRow('Valuta principale', 'Totali e patrimonio sono in questa valuta', selectInput(Object.keys(CURRENCIES).map(c => ({ value: c, label: `${c} · ${CURRENCIES[c].name}` })), s.currency, v => {
@@ -219,7 +287,7 @@ export default {
         } }, icon('trash', 18), 'Cancella'))),
       h('section.card.about',
         h('div.brand-big', h('img.brand-ic', { src: 'icons/icon.svg', alt: '', width: 34, height: 34 }), h('span', 'Analisi Finanziarie')),
-        h('p.muted', `Versione ${VERSION} · Funziona offline · Nessun server, nessun tracciamento, nessuna pubblicità.`),
+        h('p.muted', `Versione ${VERSION} · Funziona offline · Dati cifrati prima di partire · Nessun tracciamento, nessuna pubblicità.`),
         h('p.muted', 'Sviluppato con cura da Davide Raho · © 2026'),
         h('p.fine', 'I calcoli fiscali seguono le regole italiane per le persone fisiche (2026) e sono indicativi: per la dichiarazione dei redditi rivolgiti a un commercialista.')));
     if (q.backup) setTimeout(() => { const el = document.getElementById('set-backup'); if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); el.classList.add('flash'); } }, 80);

@@ -126,7 +126,7 @@ export async function createVault(password, state, iter = PBKDF2_ITER) {
     kdf: { alg: 'PBKDF2-SHA256', iter, salt: b64(salt) },
     keys: { pw: await wrap(dekX, pwKek), rc: { ...(await wrap(dekX, rcKek)), salt: b64(rcSalt), iter: RC_ITER } },
     data: await sealData(dekX, state),
-    created: Date.now(), updated: Date.now(), rev: 1,
+    created: Date.now(), updated: Date.now(), rev: 1, keysAt: Date.now(),
   };
   // in memoria teniamo una copia non esportabile della chiave
   const dek = await unwrap(vault.keys.pw, pwKek, false);
@@ -160,7 +160,7 @@ export async function encryptState(vault, dek, state) {
 export async function rewrapPassword(vault, dekX, newPassword, iter = PBKDF2_ITER) {
   const salt = randomBytes(16);
   const kek = await kekFrom(normPw(newPassword), salt, iter);
-  return { ...vault, kdf: { alg: 'PBKDF2-SHA256', iter, salt: b64(salt) }, keys: { ...vault.keys, pw: await wrap(dekX, kek) }, updated: Date.now() };
+  return { ...vault, kdf: { alg: 'PBKDF2-SHA256', iter, salt: b64(salt) }, keys: { ...vault.keys, pw: await wrap(dekX, kek) }, updated: Date.now(), keysAt: Date.now() };
 }
 
 /** Nuovo codice di recupero (il vecchio smette di funzionare). */
@@ -168,7 +168,7 @@ export async function rewrapRecovery(vault, dekX) {
   const code = makeRecoveryCode();
   const salt = randomBytes(16);
   const kek = await kekFrom(normalizeRecoveryCode(code), salt, RC_ITER);
-  return { vault: { ...vault, keys: { ...vault.keys, rc: { ...(await wrap(dekX, kek)), salt: b64(salt), iter: RC_ITER } }, updated: Date.now() }, code };
+  return { vault: { ...vault, keys: { ...vault.keys, rc: { ...(await wrap(dekX, kek)), salt: b64(salt), iter: RC_ITER } }, updated: Date.now(), keysAt: Date.now() }, code };
 }
 
 /** Chiave non esportabile a partire da quella esportabile (dopo un cambio). */

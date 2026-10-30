@@ -2,13 +2,14 @@
 
 ## Principi
 
-1. **I dati non lasciano il dispositivo.** Non c'è un server: nessuno, nemmeno chi ha
-   scritto l'app, può leggerli o perderli per te.
+1. **I dati escono dal dispositivo solo cifrati.** Con l'account, online c'è solo la
+   cassaforte cifrata nel browser: chi gestisce il server vede testo illeggibile.
+   Senza account i dati non escono proprio.
 2. **Cifrati anche a riposo.** Sul dispositivo c'è solo testo cifrato; la chiave non è
    mai salvata.
 3. **Il minimo indispensabile verso la rete.** Niente librerie da CDN, niente font
-   esterni, niente analisi o pubblicità. Le sole richieste esterne sono le quotazioni
-   pubbliche, e solo se le attivi.
+   esterni, niente analisi o pubblicità. Le sole richieste esterne sono l'account (dati
+   già cifrati) e le quotazioni pubbliche, solo se le attivi.
 
 ## Cifratura
 
@@ -28,6 +29,30 @@ evitare il lampo bianco all'apertura.
 Robustezza della password: minimo 8 caratteri, con un misuratore che penalizza parole
 comuni e sequenze; sotto una certa soglia viene rifiutata se è corta. Dopo 5 tentativi
 sbagliati l'interfaccia fa aspettare (la vera protezione resta il costo di PBKDF2).
+
+## Account e sincronizzazione
+
+| Cosa | Come |
+| --- | --- |
+| Dove | Supabase, progetto di Label Finance (lo stesso di [RH] Documents, quindi lo stesso account), tabelle con il prefisso `finanza_personale` |
+| Cosa c'è online | una riga per l'account: la cassaforte cifrata (stesso formato del file di backup) e il numero di versione |
+| Chi la legge | solo il proprietario: il primo account che accede dall'app (`finanza_personale_claim()`); gli altri vengono rifiutati dalle regole del database (RLS) |
+| Cancellazione | non permessa dall'app (nemmeno al proprietario): un accesso rubato non può cancellare i dati |
+| Password | è anche la password che cifra i dati. Viaggia verso Supabase solo per l'accesso (HTTPS), come in [RH] Documents; i dati restano cifrati con una chiave PBKDF2 a 600.000 passaggi |
+| Due dispositivi | ogni salvataggio dice su quale versione si basa: se nel frattempo un altro dispositivo ha salvato, si scarica, si unisce elemento per elemento (unione a tre vie, `js/core/merge.js`) e si riprova; niente si sovrascrive di nascosto |
+| Senza rete | si continua a lavorare sul dispositivo; si sincronizza appena torna la rete |
+
+Le regole del database sono verificate da `test/rls/run.sh` su un Postgres vero
+(18 controlli: chi non ha fatto l'accesso, il proprietario, un estraneo, versioni
+superate, cancellazioni).
+
+Cambi di password:
+- cambiata dall'app: si cambia online e la cassaforte si richiude con la nuova; gli altri
+  dispositivi la accettano al prossimo sblocco;
+- cambiata altrove (es. da [RH] Documents): l'app chiede una volta la password di prima
+  (o il codice di recupero) e richiude i dati con quella nuova;
+- dimenticata: link via email per sceglierne una nuova + codice di recupero per riaprire
+  i dati. Senza codice di recupero i dati cifrati non si possono aprire.
 
 ## Durante l'uso
 
@@ -67,6 +92,7 @@ pubblicare la cartella su un dominio proprio (es. Vercel, già configurato in
 
 | Quando | Verso | Cosa viene inviato |
 | --- | --- | --- |
+| Con l'account | Supabase (`ztjlqorvnulgfvbtvavm.supabase.co`) | email e password per l'accesso; la cassaforte cifrata |
 | Mai, senza consenso | — | — |
 | Pagina Mercati / "Aggiorna prezzi" / cambi (con consenso) | Yahoo Finance, Binance, CoinGecko, BCE (Frankfurter) | solo il simbolo del titolo (es. `VWCE.DE`) o la valuta base |
 | Solo pagina Mercati, se "proxy di riserva" è attivo | allorigins.win, corsproxy.io | l'indirizzo della quotazione pubblica richiesta |
@@ -85,6 +111,9 @@ apposita (spenta di base): i proxy potrebbero dedurre quali titoli possiedi.
 
 - Password e codice dimenticati entrambi = dati persi (per scelta: nessuno ha una
   "chiave di riserva").
+- Il token di accesso all'account sta nell'archivio del browser, condiviso con le altre
+  app del sito su GitHub Pages: chi lo rubasse potrebbe scaricare la cassaforte, ma non
+  aprirla senza la password.
 - Safari su iPhone può cancellare i dati di un sito non usato per settimane: installa
   l'app nella schermata Home e fai backup regolari (l'app li ricorda).
 - Un dispositivo compromesso (malware, estensioni del browser con accesso alle pagine)

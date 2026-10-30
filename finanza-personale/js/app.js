@@ -1,10 +1,10 @@
 /* Analisi Finanziarie — avvio, navigazione, blocco automatico, ricerca rapida. */
 
 import { h, icon, $, clear } from './ui/dom.js';
-import { toast, openSheet, closeAllSheets, topSheet } from './ui/components.js';
+import { toast, openSheet, closeAllSheets, topSheet, promptDialog } from './ui/components.js';
 import { ui } from './ui/fmt.js';
 import * as session from './session.js';
-import { S } from './session.js';
+import { S, CLOUD_LABEL, cloudLine } from './session.js';
 import { runAutoPost } from './actions.js';
 import { formatDate } from './core/dates.js';
 import { applyTheme } from './ui/theme.js';
@@ -21,7 +21,7 @@ import reports from './views/reports.js';
 import sims from './views/sims.js';
 import markets from './views/markets.js';
 import settings from './views/settings.js';
-import { renderGate } from './views/gate.js';
+import { renderGate, handleAuthLanding } from './views/gate.js';
 import { openPalette } from './views/palette.js';
 import { txEditor } from './views/editors.js';
 
@@ -66,9 +66,13 @@ let shell = null;
 let currentPath = null;
 
 function saveDot() {
-  const st = S.saveStatus;
-  const label = S.mode === 'demo' ? 'Prova: non si salva' : st === 'error' ? 'Salvataggio non riuscito' : st === 'saving' || st === 'pending' ? 'Salvataggio…' : 'Salvato e cifrato';
-  return h('span.save-dot', { class: 'sd-' + (S.mode === 'demo' ? 'demo' : st), title: label, 'aria-label': label });
+  const st = S.saveStatus, c = S.cloud;
+  let cls, label;
+  if (S.mode === 'demo') { cls = 'demo'; label = 'Prova: non si salva'; }
+  else if (st === 'error') { cls = 'error'; label = 'Salvataggio non riuscito'; }
+  else if (c.linked && c.status !== 'off') { cls = c.status === 'ok' ? 'saved' : c.status === 'syncing' ? 'saving' : c.status === 'offline' ? 'offline' : 'error'; label = CLOUD_LABEL[c.status] || ''; }
+  else { cls = st; label = st === 'saving' || st === 'pending' ? 'Salvataggio…' : 'Salvato e cifrato su questo dispositivo'; }
+  return h('span.save-dot', { class: 'sd-' + cls, title: label, 'aria-label': label });
 }
 
 function buildShell() {
@@ -114,6 +118,15 @@ function openMenu() {
   });
 }
 
+async function reloginDialog() {
+  const ok = await promptDialog({
+    title: 'Accedi di nuovo', label: 'Password', type: 'password', autocomplete: 'current-password', confirm: 'Accedi',
+    message: `Account ${S.cloud.email}.`,
+    validate: async v => { try { await session.relogin(v); return ''; } catch (e) { return e?.message || String(e); } },
+  });
+  if (ok) toast('Di nuovo collegato', { kind: 'ok' });
+}
+
 export function togglePrivacy() {
   ui.privacy = !ui.privacy;
   toast(ui.privacy ? 'Importi nascosti' : 'Importi visibili');
@@ -128,6 +141,8 @@ function banners(ctx) {
   const out = [];
   if (S.mode === 'demo') out.push(h('div.banner.banner-demo.banner-slim', icon('sparkle', 18), h('span', h('b', 'Prova'), h('span.only-wide', ' con dati di esempio'), ': niente viene salvato.'), h('button.btn.btn-sm', { type: 'button', onclick: () => session.lock() }, 'Esci')));
   if (S.vaultWarning) out.push(h('div.banner.banner-warn', icon('alert', 18), h('span', S.vaultWarning), h('button.btn.btn-sm.btn-ghost', { type: 'button', onclick: () => { S.vaultWarning = ''; render(); } }, 'Ok')));
+  if (S.mode === 'open' && S.cloud.linked && S.cloud.status === 'login') out.push(h('div.banner.banner-warn', icon('refresh', 18), h('span', h('b', 'Sincronizzazione ferma: '), 'la sessione dell\'account è scaduta. I dati restano qui e si sincronizzano appena accedi.'), h('button.btn.btn-sm', { type: 'button', onclick: () => reloginDialog() }, 'Accedi')));
+  if (S.mode === 'open' && S.cloud.linked && S.cloud.status === 'error' && S.cloud.error) out.push(h('div.banner.banner-warn', icon('alert', 18), h('span', h('b', 'Non sincronizzato: '), S.cloud.error), h('button.btn.btn-sm', { type: 'button', onclick: () => session.cloudSync() }, 'Riprova')));
   if (S.saveStatus === 'error') out.push(h('div.banner.banner-err', icon('alert', 18), h('span', h('b', 'Non riesco a salvare: '), S.saveError, '. Riprovo da solo; intanto scarica un backup.'), h('button.btn.btn-sm', { type: 'button', onclick: () => go('impostazioni') }, 'Backup')));
   if (S.mode === 'open') {
     const st = ctx.st;
@@ -205,6 +220,15 @@ function updateSave() {
   const el = $('#side-save');
   if (el) el.replaceChildren(saveDot());
 }
+/** Stato della sincronizzazione: aggiorna solo il pallino, gli avvisi e la riga nelle Impostazioni (mai tutta la pagina). */
+function updateCloud() {
+  updateSave();
+  if (S.mode !== 'open' || !shell) return;
+  $('#banners')?.replaceChildren(...banners(ctxBase()));
+  const st = $('#cloud-status');
+  if (st) st.textContent = cloudLine();
+}
+
 
 /* ─── Dopo lo sblocco ─── */
 function afterOpen() {
@@ -230,6 +254,7 @@ session.on(what => {
     if (S.state) { ui.base = S.state.settings.currency; }
     render();
   } else if (what === 'save') updateSave();
+  else if (what === 'cloud') updateCloud();
 });
 
 addEventListener('hashchange', () => { if (topSheet()) closeAllSheets(); render(); });
@@ -288,5 +313,6 @@ if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol) && !/cla
 
 /* ─── Avvio ─── */
 applyTheme(document.documentElement.dataset.theme);
+handleAuthLanding();
 session.boot();
 render();

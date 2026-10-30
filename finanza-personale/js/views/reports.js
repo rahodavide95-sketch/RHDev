@@ -68,7 +68,7 @@ export default {
     if (rest) items.push({ label: 'Altre', value: rest, color: 'var(--c-other)' });
     const catCard = card('Dove vanno i soldi', { action: segTabs([{ value: 'cat', label: 'Categorie' }, { value: 'grp', label: 'Gruppi' }], catView, v => { catView = v; ctx.rerender(); }) },
       catRows.length ? h('div.donut-row', donut({ items, size: 180, thickness: 22, center: { value: moneyText(tot.expense), label: 'uscite' }, fmt: tipMoney, mask: ui.privacy }),
-        h('div.table-wrap', h('table.table.compact', h('thead', h('tr', h('th', catView === 'grp' ? 'Gruppo' : 'Categoria'), h('th.num', 'Totale'), h('th.num', 'Al mese'), h('th.num', 'Quota'), h('th.num', 'Vs prima'))),
+        h('div.table-wrap', h('table.table.compact.cat-table', h('thead', h('tr', h('th', catView === 'grp' ? 'Gruppo' : 'Categoria'), h('th.num', 'Totale'), h('th.num', 'Al mese'), h('th.num', 'Quota'), h('th.num', 'Vs prima'))),
           h('tbody', catRows.map(([k, v], i) => {
             const o = old.get(k) || 0;
             return h('tr', { class: catView === 'cat' && k !== '_exp' ? 'click' : '', onclick: catView === 'cat' && k !== '_exp' ? () => { trendCat = k; ctx.rerender(); } : null },

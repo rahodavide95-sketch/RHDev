@@ -23,6 +23,7 @@ export const ICONS = {
   x: '<path d="M6 6l12 12M18 6 6 18"/>',
   chevR: '<path d="m9.5 5.5 6.5 6.5-6.5 6.5"/>',
   chevL: '<path d="M14.5 5.5 8 12l6.5 6.5"/>',
+  sidebar: '<rect x="3.5" y="4.5" width="17" height="15" rx="3"/><path d="M9.5 4.5v15"/>',
   chevD: '<path d="m5.5 9.5 6.5 6.5 6.5-6.5"/>',
   chevU: '<path d="m5.5 14.5 6.5-6.5 6.5 6.5"/>',
   arrowUp: '<path d="M12 19V5M6 11l6-6 6 6"/>',

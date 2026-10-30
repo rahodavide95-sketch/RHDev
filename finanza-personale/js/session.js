@@ -392,7 +392,8 @@ export async function restoreAutoCopy(copy) {
 export async function wipeAll() {
   clearTimeout(saveTimer);
   stopSync();
-  if (S.cloud.linked) await cloud.signOut();
+  // anche se l'uscita dall'account non riesce (rete), il dispositivo si svuota lo stesso
+  if (S.cloud.linked) { try { await cloud.signOut(); } catch { /* sessione dimenticata comunque qui sotto */ } }
   S.cloud = { linked: false, email: '', status: 'off', at: 0, error: '' }; base = null; baseJson = '';
   dirty = false;
   await store.wipe();

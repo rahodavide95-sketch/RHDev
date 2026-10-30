@@ -275,12 +275,20 @@ export function barChart(spec) {
 export function donut(spec) {
   const size = spec.size || 180, th = spec.thickness || 22;
   const total = spec.items.reduce((a, b) => a + Math.max(0, b.value), 0);
-  const r = (size - th) / 2, cx = size / 2, cy = size / 2;
+  // spazio intorno per lo spicchio evidenziato, che si allarga senza essere tagliato dai bordi
+  const grow = 6, r = (size - th - grow) / 2, cx = size / 2, cy = size / 2;
   const svg = s('svg', { width: size, height: size, viewBox: `0 0 ${size} ${size}`, role: 'img', 'aria-label': spec.title || 'Composizione' });
   svg.append(s('circle', { cx, cy, r, fill: 'none', 'stroke-width': th, class: 'donut-track' }));
   const box = h('div.donut', { style: { width: size + 'px', height: size + 'px' } });
-  const cVal = h('div.donut-val', spec.center?.value ?? '');
-  const cLab = h('div.donut-lab', spec.center?.label ?? '');
+  const cVal = h('div.donut-val');
+  const cLab = h('div.donut-lab');
+  // il testo al centro resta dentro il buco anche con numeri grandi o nomi lunghi
+  const hole = 2 * r - th - 14;
+  const show = (val, lab) => {
+    cVal.textContent = val; cLab.textContent = lab;
+    cVal.style.fontSize = Math.max(11, Math.min(19, Math.floor(hole / Math.max(1, String(val).length * 0.6)))) + 'px';
+  };
+  show(spec.center?.value ?? '', spec.center?.label ?? '');
   if (total > 0) {
     let a0 = -Math.PI / 2;
     const gap = spec.items.filter(i => i.value > 0).length > 1 ? Math.min(0.06, 2.2 / r) : 0;
@@ -295,17 +303,16 @@ export function donut(spec) {
         : `M${cx + r * Math.cos(s0)},${cy + r * Math.sin(s0)}A${r},${r} 0 ${large} 1 ${cx + r * Math.cos(s1)},${cy + r * Math.sin(s1)}`;
       const p = s('path', { d, fill: 'none', 'stroke-width': th, class: 'donut-seg' }, { stroke: it.color });
       p.addEventListener('pointerenter', () => {
-        cVal.textContent = spec.mask ? '•••' : (spec.fmt || String)(it.value);
-        cLab.textContent = `${it.label} · ${(frac * 100).toFixed(frac < 0.1 ? 1 : 0).replace('.', ',')}%`;
-        p.classList.add('on');
+        show(spec.mask ? '•••' : (spec.fmt || String)(it.value), `${it.label} · ${(frac * 100).toFixed(frac < 0.1 ? 1 : 0).replace('.', ',')}%`);
+        p.setAttribute('stroke-width', th + grow);
       });
-      p.addEventListener('pointerleave', () => { cVal.textContent = spec.center?.value ?? ''; cLab.textContent = spec.center?.label ?? ''; p.classList.remove('on'); });
+      p.addEventListener('pointerleave', () => { show(spec.center?.value ?? '', spec.center?.label ?? ''); p.setAttribute('stroke-width', th); });
       if (spec.onPick) p.addEventListener('click', () => spec.onPick(it));
       svg.append(p);
       a0 = a1;
     }
   }
-  box.append(svg, h('div.donut-center', cVal, cLab));
+  box.append(svg, h('div.donut-center', { style: { padding: `${Math.round(th + grow / 2 + 8)}px` } }, cVal, cLab));
   return box;
 }
 

@@ -1,0 +1,24 @@
+# Temporaneo: scarica i loghi ufficiali delle banche per Analisi Finanziarie (poi si toglie).
+name: Analisi Finanziarie - loghi delle banche
+on:
+  push:
+    branches: [claude/finanza-temi-tabelle]
+    paths: ['.github/finanza-loghi.py', '.github/workflows/finanza-loghi.yml']
+permissions:
+  contents: write
+jobs:
+  loghi:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install pillow cairosvg requests
+      - run: python .github/finanza-loghi.py
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add finanza-personale/icons/banks finanza-personale/js/data/banks.js
+          git commit -m "Analisi Finanziarie: loghi delle banche (dai loro siti)" || echo "niente di nuovo"
+          git push

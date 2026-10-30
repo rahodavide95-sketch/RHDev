@@ -12,7 +12,7 @@ import { openFileImport } from './invimport.js';
 import { monthName, today } from '../core/dates.js';
 import { toCSV, csvNumber } from '../core/csv.js';
 
-const V = { kind: 'income', year: null, level: 'payee', empty: false, open: new Set() };
+const V = { kind: 'income', year: null, level: 'payee', empty: false, open: new Set(), layout: 'sheet', subtot: true };
 const t2 = v => (v ? moneyText(v, ui.base) : '');
 
 export default {
@@ -54,6 +54,33 @@ export default {
       }
     }
 
+    /* come il foglio di D: CATEGORIA | SUB CATEGORIA | NOTE | mesi | TOTALI | MEDIA MENS., celle unite e colorate */
+    const sheetRows = [];
+    for (const g of T.groups) {
+      const col = groupColor(st, V.kind, g.name);
+      const lines = g.cats.flatMap(c => {
+        const ps = c.payees.length ? c.payees : [{ name: '', total: c.total, byMonth: c.byMonth }];
+        return ps.map((p, pi) => ({ c, p, first: pi === 0, n: ps.length, note: p.name && p.name.toLowerCase() !== c.name.toLowerCase() ? p.name : '' }));
+      });
+      lines.forEach((l, li) => {
+        const extra = `${l.c.id ? `&cat=${l.c.id}` : ''}${l.note ? `&q=${encodeURIComponent(l.note)}` : ''}`;
+        sheetRows.push(h('tr.sh-row', { style: { '--chip': col } },
+          li === 0 ? h('td.sticky.sh-grp', { rowSpan: lines.length }, h('span', g.name)) : null,
+          l.first ? h('td.sh-sub', { rowSpan: l.n }, h('span.sub-chip', { style: { '--chip': col } }, l.c.emoji && l.c.emoji !== '•' ? l.c.emoji + ' ' : '', l.c.name)) : null,
+          h('td.sh-note', l.note),
+          cells(l.p, extra), ends(l.p)));
+      });
+      if (V.subtot) sheetRows.push(h('tr.sh-tot', { style: { '--chip': col } }, h('td.sticky', { colSpan: 3 }, `Totale ${g.name}`), cells(g, null), ends(g)));
+    }
+    const sheetTable = h('div.table-wrap.nw-scroll', h('table.table.nw-table.nw-months.year-table.sheet-table',
+      h('thead', h('tr', h('th.sticky', 'CATEGORIA'), h('th', 'SUB CATEGORIA'), h('th', 'NOTE'), months.map(m => h('th.num', { class: m >= curM ? 'future' : '' }, monthName(m + 1, true).toUpperCase())), h('th.num.diff', 'TOTALI'), h('th.num', 'MEDIA MENS.'))),
+      h('tbody', sheetRows),
+      h('tfoot', h('tr.total', h('td.sticky', { colSpan: 3 }, 'TOTALE'), months.map(m => h('td.num', { class: m >= curM ? 'future' : '' }, m >= curM && !T.byMonth[m] ? '' : t2(T.byMonth[m]) || '—')), ends(T)))));
+
+    if (curM > 6) requestAnimationFrame(() => requestAnimationFrame(() => {
+      const th = table.querySelectorAll('thead th')[Math.max(1, curM - 4)]; if (th) table.scrollLeft = th.offsetLeft - 150;
+      const th2 = sheetTable.querySelectorAll('thead th')[Math.max(3, curM - 2)]; if (th2 && sheetTable.scrollWidth > sheetTable.clientWidth + 40) sheetTable.scrollLeft = th2.offsetLeft - 160;
+    }));
     const exportCsv = () => {
       const rows = [['Categoria', 'Sottocategoria', 'Voce', ...months.map(m => monthName(m + 1, true)), 'Totale', 'Media mensile']];
       const line = (a, b, c, r) => [a, b, c, ...r.byMonth.map(v => (v ? csvNumber(v) : '')), csvNumber(r.total), T.months ? csvNumber(avg(r)) : ''];
@@ -71,11 +98,11 @@ export default {
       h('tbody', body),
       h('tfoot', h('tr.total', h('td.sticky', 'Totale'), months.map(m => h('td.num', { class: m >= curM ? 'future' : '' }, m >= curM && !T.byMonth[m] ? '' : t2(T.byMonth[m]) || '—')), ends(T)))));
     // si apre sui mesi più recenti
-    if (curM > 6) requestAnimationFrame(() => requestAnimationFrame(() => { const th = table.querySelectorAll('thead th')[Math.max(1, curM - 4)]; if (th) table.scrollLeft = th.offsetLeft - 150; }));
 
     const kinds = segTabs([{ value: 'income', label: 'Entrate' }, { value: 'expense', label: 'Uscite' }], V.kind, v => { V.kind = v; V.open.clear(); ctx.go('entrate-uscite?tipo=' + (v === 'income' ? 'entrate' : 'uscite')); });
     const yearTabs = segTabs(years.map(y => ({ value: y, label: String(y) })), V.year, v => { V.year = v; ctx.rerender(); });
     const levels = segTabs([{ value: 'group', label: 'Categorie' }, { value: 'cat', label: '+ Sottocategorie' }, { value: 'payee', label: '+ Voci' }], V.level, v => { V.level = v; ctx.rerender(); });
+    const layouts = segTabs([{ value: 'sheet', label: 'Come il foglio' }, { value: 'tree', label: 'A gruppi' }], V.layout, v => { V.layout = v; ctx.rerender(); });
 
     const hasData = T.groups.length > 0;
     return {
@@ -91,8 +118,8 @@ export default {
           sub: hasData ? `In totale ${moneyText(T.total)}${T.months ? `, in media ${moneyText(Math.round(T.total / T.months))} al mese` : ''}` : null,
           action: h('button.btn.btn-sm.btn-ghost', { type: 'button', onclick: exportCsv, disabled: !hasData }, icon('download', 16), 'CSV'),
         },
-        h('div.inv-filters', levels, h('label.chk', h('input', { type: 'checkbox', checked: V.empty, onchange: e => { V.empty = e.target.checked; ctx.rerender(); } }), 'Anche le categorie vuote')),
-        hasData ? table : empty({ icon: 'list', title: `Nessuna ${V.kind === 'income' ? 'entrata' : 'uscita'} nel ${V.year}`, text: 'Registra i movimenti con la loro categoria, o importa il tuo foglio Excel con le colonne GEN…DIC: qui li vedi mese per mese, come in un foglio.', action: h('div.row-btns', h('button.btn.btn-primary', { type: 'button', onclick: () => txEditor(ctx, null, { kind: V.kind }) }, icon('plus', 18), V.kind === 'income' ? 'Nuova entrata' : 'Nuova uscita'), h('button.btn.btn-soft', { type: 'button', onclick: () => openFileImport(ctx) }, icon('upload', 18), 'Importa da Excel')) })),
+        h('div.inv-filters', layouts, V.layout === 'tree' ? levels : h('label.chk', h('input', { type: 'checkbox', checked: V.subtot, onchange: e => { V.subtot = e.target.checked; ctx.rerender(); } }), 'Totale di ogni categoria'), h('label.chk', h('input', { type: 'checkbox', checked: V.empty, onchange: e => { V.empty = e.target.checked; ctx.rerender(); } }), 'Anche le categorie vuote')),
+        hasData ? (V.layout === 'sheet' ? sheetTable : table) : empty({ icon: 'list', title: `Nessuna ${V.kind === 'income' ? 'entrata' : 'uscita'} nel ${V.year}`, text: 'Registra i movimenti con la loro categoria, o importa il tuo foglio Excel con le colonne GEN…DIC: qui li vedi mese per mese, come in un foglio.', action: h('div.row-btns', h('button.btn.btn-primary', { type: 'button', onclick: () => txEditor(ctx, null, { kind: V.kind }) }, icon('plus', 18), V.kind === 'income' ? 'Nuova entrata' : 'Nuova uscita'), h('button.btn.btn-soft', { type: 'button', onclick: () => openFileImport(ctx) }, icon('upload', 18), 'Importa da Excel')) })),
         h('p.fine', icon('info', 14), h('span', 'Categoria = gruppo, sottocategoria = categoria del movimento, voce = descrizione (es. "Groover", "SIAE"). Tocca un importo per vedere i movimenti, una sottocategoria per aprire le voci. Con "Categorie" le crei, rinomini, colori e riordini come vuoi.'))),
     };
   },

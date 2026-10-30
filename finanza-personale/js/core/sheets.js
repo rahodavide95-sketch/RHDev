@@ -19,12 +19,10 @@ const monthOf = cell => {
 const text = v => (v == null ? '' : String(v).trim());
 const TOTAL_RE = /^(?:(?:totale?|totali|totals?|gain|loss|guadagno|perdita|var|variazione|differenza|delta)\b|%)/i;
 
-/** "LAVORO" → "Lavoro", "INT. BANCA" → "Int. banca"; i nomi scritti normalmente restano. */
+/** I nomi restano scritti come nel foglio (D vuole l'app "uguale all'Excel": LAVORO, INT. BANCA,
+    CC, CD…); si tolgono solo gli spazi di troppo. */
 export function niceName(s) {
-  const t = text(s);
-  if (!t || t !== t.toUpperCase() || !/[A-Z]/.test(t)) return t;
-  const l = t.toLowerCase();
-  return l.charAt(0).toUpperCase() + l.slice(1);
+  return text(s).replace(/\s+/g, ' ');
 }
 
 /* ─── Riconoscimento ─── */
@@ -187,7 +185,9 @@ export function readNetWorth(rows, info, { nums } = {}) {
   // controllo con le righe "Total" della sezione
   const checks = totals.map(t => {
     const own = accounts.filter(a => a.section === t.section);
-    const bad = t.values.filter(v => v.value != null && Math.abs(v.value - own.reduce((s, a) => s + (a.values.find(x => x.date === v.date)?.value || 0), 0)) >= 0.01);
+    const net = own.filter(a => !isGross(a, accounts));      // il totale del foglio può contare solo il netto
+    const sumOf = (list, date) => list.reduce((s, a) => s + (a.values.find(x => x.date === date)?.value || 0), 0);
+    const bad = t.values.filter(v => v.value != null && Math.abs(v.value - sumOf(own, v.date)) >= 0.01 && Math.abs(v.value - sumOf(net, v.date)) >= 0.01);
     return { row: t.row, section: t.section, ok: !bad.length, bad: bad.map(v => v.date) };
   });
   return { accounts, checks, skipped, dates: dates.map(d => d.date) };
@@ -223,7 +223,8 @@ const lastDay = (y, m) => new Date(y, m + 1, 0).getDate();
     (o a oggi per il mese in corso); i mesi futuri si saltano. */
 export function planMonths(read, state, { year, kind, refDate }) {
   const cats = state.categories.filter(c => c.kind === kind);
-  const find = (g, n) => cats.find(c => catKey(c.group, c.name) === catKey(g, n)) || cats.find(c => normHead(c.name) === normHead(n) && normHead(n) !== normHead(g));
+  // stessa categoria solo se coincidono categoria e sottocategoria: "MUSICA › ROYALTIES" non è "Lavoro › Royalties"
+  const find = (g, n) => cats.find(c => catKey(c.group, c.name) === catKey(g, n));
   const newCats = new Map();
   const txs = [];
   let dups = 0, future = 0;
@@ -250,23 +251,52 @@ export function planMonths(read, state, { year, kind, refDate }) {
 
 /** Conti e valori di fine mese dal foglio del patrimonio. `holdings` sono anche i titoli che
     arrivano dal foglio delle operazioni dello stesso file: le loro righe non si contano due volte. */
+/** TFR e simili: conta solo il netto. Lordo = "lordo" nel nome, o la stessa voce senza "netto"
+    ("TFR" accanto a "TFR netto") nella stessa sezione. */
+export function isGross(a, all) {
+  if (/nett/i.test(a.name)) return false;
+  const words = x => normHead(x).split(/[^a-z0-9]+/).filter(w => w && !/^(nett|lord)/.test(w));
+  const netRow = all.find(b => b !== a && b.section === a.section && /nett/i.test(b.name));
+  return !!netRow && (/lord/i.test(a.name) || (words(a.name).length > 0 && words(a.name).every(w => words(netRow.name).includes(w))));
+}
+
+/** Sezione della liquidità ("Cash - Liquidity", "Conti", "Liquidità") o riga con una valuta nel tipo. */
+export const isCashSection = (section, type = '') => /cash|liquid|contant|\bcont[io]\b|conti corrent|banc|deposit|risparm/.test(normHead(section)) || /^(euro|eur|dollari|dollaro|usd|sterline|gbp|franchi|chf)$/.test(normHead(type));
+/** Broker con un conto per la liquidità: Trade Republic ha il conto corrente, Scalable Capital il conto deposito. */
+const CASH_OF_BROKER = [[/scalable/, 'savings', 'Conto deposito'], [/trade ?republic/, 'checking', 'Conto corrente'], [/revolut|n26|bunq|wise/, 'checking', 'Conto corrente']];
+
+/** Conti e valori di fine mese dal foglio del patrimonio. `holdings` sono anche i titoli che
+    arrivano dal foglio delle operazioni dello stesso file: le loro righe diventano i valori di
+    fine mese di quei titoli (non conti a parte, così non si contano due volte). */
 export function planNetWorth(read, state, { includeOdd = false, holdings = state.holdings, investNames = [], refDate } = {}) {
-  const inv = new Set(investNames.map(normHead));
+  const inv = new Set([...investNames, ...state.accounts.filter(a => state.holdings.some(h => h.account === a.id)).map(a => a.name)].map(normHead));
   const rows = read.accounts.map(a => {
-    const holding = matchHolding(a.name, holdings);
-    const invAcc = inv.has(normHead(a.name));
-    const existing = state.accounts.find(x => normHead(x.name) === normHead(a.name)) || null;
-    const type = existing?.type || accountTypeFor(a.section, a.type, a.name);
+    const cash = isCashSection(a.section, a.type);
+    const n = normHead(a.name);
+    let type = accountTypeFor(a.section, a.type, a.name), name = a.name, institution = '';
+    let holding = null, invAcc = false;
+    if (cash) {
+      // nella liquidità un nome di broker è il suo conto di liquidità, non il conto dei titoli
+      const br = CASH_OF_BROKER.find(([re]) => re.test(n));
+      if (type !== 'cash') type = br ? br[1] : /deposit|risparm|vincol|\bcd\b/.test(n) ? 'savings' : 'checking';
+      if (inv.has(n) || br) { institution = a.name; if (inv.has(n)) name = `${a.name} – ${br ? br[2] : 'Conto corrente'}`; }
+    } else {
+      holding = matchHolding(a.name, holdings);
+      invAcc = !holding && inv.has(n);
+    }
+    const existing = holding ? null : state.accounts.find(x => !hasHoldingsType(x.type) && (normHead(x.name) === normHead(name) || normHead(x.name) === n)) || null;
+    if (existing) type = existing.type;
     const currency = existing?.currency || currencyFor(a.type) || state.settings.currency;
     const odd = a.values.filter(v => v.odd);
     const future = a.values.filter(v => refDate && v.date > refDate).length;
     const known = a.values.filter(v => existing && state.valuations.some(z => z.account === existing.id && z.date === v.date)).length;
     const values = a.values.filter(v => (includeOdd || !v.odd) && !(refDate && v.date > refDate))
       .filter(v => !(existing && state.valuations.some(z => z.account === existing.id && z.date === v.date)));
-    const twin = /lord/i.test(a.name) && read.accounts.some(b => b !== a && b.section === a.section && /nett/i.test(b.name));
+    const gross = isGross(a, read.accounts);
     const zero = values.every(v => !v.value);
-    const reason = holding ? `è già negli investimenti (${holding.name})` : invAcc ? 'è il conto dei titoli: il suo valore lo calcolo dai titoli' : twin ? 'c\'è anche la riga "netto": conto solo quella' : zero && values.length ? 'sempre a zero' : '';
-    return { ...a, key: String(a.row), holding, existing, type, currency, odd, future, known, values, reason, on: !reason && values.length > 0 };
+    const reason = invAcc ? 'è il totale del conto titoli: lo calcolo dai titoli' : gross ? 'lordo: conta solo il netto' : zero && values.length ? 'sempre a zero' : '';
+    return { ...a, name, institution, key: String(a.row), holding, existing, type, currency, odd, future, known, values, reason, gross, cash, on: !reason && values.length > 0 };
   });
   return { rows };
 }
+const hasHoldingsType = t => t === 'broker' || t === 'crypto';

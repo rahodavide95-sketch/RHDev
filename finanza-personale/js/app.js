@@ -77,6 +77,14 @@ function saveDot() {
   return h('span.save-dot', { class: 'sd-' + cls, title: label, 'aria-label': label });
 }
 
+/* barra laterale comprimibile (solo icone): la scelta resta su questo dispositivo */
+function toggleSide() {
+  const on = !document.documentElement.classList.contains('side-mini');
+  document.documentElement.classList.toggle('side-mini', on);
+  try { localStorage.setItem('rhf-side', on ? 'mini' : ''); } catch { /* navigazione privata */ }
+}
+try { if (localStorage.getItem('rhf-side') === 'mini') document.documentElement.classList.add('side-mini'); } catch { /* */ }
+
 function buildShell() {
   const nav = h('nav.side-nav', { 'aria-label': 'Sezioni' },
     NAV.map(n => n.group
@@ -91,6 +99,7 @@ function buildShell() {
       h('div.side-tools',
         h('button.icon-btn', { type: 'button', id: 'side-priv', onclick: togglePrivacy, 'aria-label': 'Nascondi gli importi' }, icon('eye', 20)),
         h('button.icon-btn', { type: 'button', onclick: () => session.lock(), 'aria-label': 'Blocca ora', title: 'Blocca ora (L)' }, icon('lock', 20)),
+        h('button.icon-btn.side-mini-btn', { type: 'button', onclick: toggleSide, 'aria-label': 'Comprimi o allarga la barra laterale', title: 'Comprimi la barra laterale ([)' }, icon('sidebar', 20)),
         h('span.side-save', { id: 'side-save' }, saveDot()))));
   const top = h('header.topbar',
     h('div.top-titles', h('h1.top-title', { id: 'top-title' }), h('p.top-sub', { id: 'top-sub' })),
@@ -237,7 +246,7 @@ function updateCloud() {
 function afterOpen() {
   ui.privacy = !!S.state.settings.hideAmounts;
   ui.base = S.state.settings.currency;
-  applyTheme(S.state.settings.theme);
+  applyTheme(S.state.settings.theme, S.state.settings.look);
   lastActivity = Date.now();
   if (S.mode === 'open') {
     const n = runAutoPost();
@@ -302,6 +311,7 @@ addEventListener('keydown', e => {
   else if (k === 'l') { e.preventDefault(); session.lock(); }
   else if (k === 'h') { e.preventDefault(); togglePrivacy(); }
   else if (k === '/') { e.preventDefault(); openPalette(ctxBase()); }
+  else if (k === '[') { e.preventDefault(); toggleSide(); }
 });
 
 /* ─── Offline: il service worker tiene una copia dell'app ─── */

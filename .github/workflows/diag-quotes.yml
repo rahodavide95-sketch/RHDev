@@ -8,18 +8,18 @@ jobs:
   diag:
     runs-on: ubuntu-latest
     steps:
-      - name: Yahoo, proxy e altre fonti
+      - name: Fonti europee per ISIN
         run: |
           O='https://rahodavide95-sketch.github.io'
           UA='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36'
-          chk() { echo "=== $1"; curl -sS -m 20 -D /tmp/h -o /tmp/b -H "Origin: $O" -A "$UA" "$2" -w 'HTTP %{http_code}\n' || true; grep -i '^access-control-allow-origin' /tmp/h || echo 'NESSUN access-control-allow-origin'; head -c 300 /tmp/b; echo; }
-          chk 'yahoo chart q1' 'https://query1.finance.yahoo.com/v8/finance/chart/VUAA.DE?range=5d&interval=1d'
-          chk 'yahoo chart q2' 'https://query2.finance.yahoo.com/v8/finance/chart/VUAA.DE?range=5d&interval=1d'
-          chk 'yahoo search ISIN' 'https://query2.finance.yahoo.com/v1/finance/search?q=IE00BFMXXD54&quotesCount=6&newsCount=0'
-          chk 'yahoo search nome' 'https://query1.finance.yahoo.com/v1/finance/search?q=Invesco%20Physical%20Gold&quotesCount=6&newsCount=0'
-          chk 'allorigins' 'https://api.allorigins.win/raw?url=https%3A%2F%2Fquery1.finance.yahoo.com%2Fv8%2Ffinance%2Fchart%2FVUAA.DE%3Frange%3D5d%26interval%3D1d'
-          chk 'corsproxy' 'https://corsproxy.io/?url=https%3A%2F%2Fquery1.finance.yahoo.com%2Fv8%2Ffinance%2Fchart%2FVUAA.DE%3Frange%3D5d%26interval%3D1d'
-          chk 'stooq' 'https://stooq.com/q/l/?s=vuaa.de&f=sd2t2ohlcv&h&e=csv'
-          chk 'frankfurter' 'https://api.frankfurter.dev/v1/latest?base=EUR'
-          chk 'binance' 'https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT'
-          echo "=== preflight yahoo"; curl -sS -m 20 -X OPTIONS -D - -o /dev/null -H "Origin: $O" -H 'Access-Control-Request-Method: GET' 'https://query1.finance.yahoo.com/v8/finance/chart/VUAA.DE' | grep -i 'HTTP/\|access-control' || true
+          chk() { echo; echo "=== $1"; curl -sS -m 15 -D /tmp/h -o /tmp/b -H "Origin: $O" -A "$UA" "$2" -w 'HTTP %{http_code}\n' || true; grep -i '^access-control-allow' /tmp/h || echo 'NESSUN access-control-allow-origin'; head -c ${3:-600} /tmp/b; echo; }
+          chk 'onvista search ISIN' 'https://api.onvista.de/api/v1/instruments/query?searchValue=IE00BFMXXD54&limit=3' 2500
+          chk 'onvista search nome' 'https://api.onvista.de/api/v1/instruments/query?searchValue=Invesco%20Physical%20Gold&limit=3' 1500
+          chk 'onvista snapshot FUND' 'https://api.onvista.de/api/v1/instruments/FUND/ISIN:IE00BFMXXD54/snapshot' 2500
+          chk 'onvista snapshot STOCK' 'https://api.onvista.de/api/v1/instruments/STOCK/ISIN:US7731211089/snapshot' 1500
+          chk 'onvista snapshot ETC' 'https://api.onvista.de/api/v1/instruments/DERIVATIVE/ISIN:IE00B579F325/snapshot' 800
+          chk 'tradegate' 'https://www.tradegate.de/refresh.php?isin=IE00BFMXXD54'
+          chk 'justetf' 'https://www.justetf.com/api/etfs/IE00BFMXXD54/quote?locale=it&currency=EUR&isin=IE00BFMXXD54'
+          chk 'ls-tc search' 'https://www.ls-tc.de/_rpc/json/.lstc/instrument/search/main?q=IE00BFMXXD54&localeId=2'
+          chk 'coingecko' 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=eur'
+          chk 'yahoo chart (UA curl)' 'https://query1.finance.yahoo.com/v8/finance/chart/VUAA.DE?range=5d&interval=1d'

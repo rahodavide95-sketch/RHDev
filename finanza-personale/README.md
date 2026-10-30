@@ -40,6 +40,17 @@ Indirizzo: `https://rahodavide95-sketch.github.io/RHDev/finanza-personale/`
   vendite, cedole/dividendi e costi; prezzo medio di carico (costo medio ponderato),
   guadagno, rendimento, allocazione, **tasse se vendi oggi** (26%, titoli di Stato
   12,5%, crypto 33%) e bollo stimato. Prezzi aggiornabili online (facoltativo).
+  Ogni titolo ha tipo, **categoria** (es. "Azioni USA", "Oro") e **TER**; le vendite
+  registrano l'**imposta trattenuta** (con la stima). Tre schede:
+  - *Portafoglio*: valore, guadagni, allocazione per tipo, categoria, conto o valuta.
+  - *Operazioni*: tutte le operazioni in un registro, con filtri, CSV, **"Registra il
+    PAC"** (gli acquisti del mese in un colpo solo) e **imposta di bollo**.
+  - *Anno per anno*: investito mese per mese (con totale e media), investito per tipo,
+    categoria, titolo (con quote e prezzo medio) o conto, e rendite, tasse e costi.
+- **Import degli investimenti** da Excel (.xlsx) o CSV, una riga per operazione (come i
+  fogli "wallet" dei PAC): colonne riconosciute da sole, righe delle imposte e vendite
+  con quote negative capite, righe non capite elencate col numero, **controllo al
+  centesimo** con la colonna "Totale" del file, doppioni esclusi, "Annulla".
 - **Budget** mensile per categoria, con la riga di "dove dovresti essere oggi" e le
   **proposte automatiche** dalla media degli ultimi mesi.
 - **Scadenze e abbonamenti**: stipendio, affitto, bollette, PAC… con calendario,
@@ -123,7 +134,7 @@ Nessuna compilazione: HTML, CSS e moduli JavaScript.
 ```bash
 cd finanza-personale
 python3 -m http.server 8000   # poi apri http://localhost:8000
-npm test                      # test dei calcoli, della cifratura, dell'unione dei dati, del CSV e delle quotazioni
+npm test                      # test dei calcoli, della cifratura, dell'unione dei dati, del CSV, degli import e delle quotazioni
 bash test/rls/run.sh          # regole di sicurezza del database su un Postgres vero (serve PostgreSQL)
 ```
 

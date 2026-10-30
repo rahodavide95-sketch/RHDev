@@ -212,7 +212,7 @@ export function saveHolding(hd) {
   let id = hd.id;
   commit(st => {
     const ex = id && find(st.holdings, id);
-    const clean = { account: hd.account, symbol: (hd.symbol || '').toUpperCase(), isin: (hd.isin || '').toUpperCase(), name: hd.name, cls: hd.cls, currency: hd.currency, price: hd.price ?? 0, priceDate: hd.priceDate || today(), priceAuto: hd.priceAuto !== false };
+    const clean = { account: hd.account, symbol: (hd.symbol || '').toUpperCase(), isin: (hd.isin || '').toUpperCase(), name: hd.name, cls: hd.cls, group: (hd.group || '').trim(), ter: hd.ter || 0, currency: hd.currency, price: hd.price ?? 0, priceDate: hd.priceDate || today(), priceAuto: hd.priceAuto !== false };
     if (ex) Object.assign(ex, clean);
     else { id = uid('h-'); st.holdings.push({ id, ...clean, created: stamp(), ops: hd.ops || [] }); }
   });
@@ -221,17 +221,25 @@ export function saveHolding(hd) {
 export function deleteHolding(id) {
   commit(st => { st.holdings = st.holdings.filter(x => x.id !== id); }, { undo: 'Titolo eliminato' });
 }
+function applyOp(hd, op) {
+  const ex = op.id && hd.ops.find(o => o.id === op.id);
+  const clean = { date: op.date, type: op.type, qty: op.qty || 0, price: op.price || 0, fee: op.fee || 0, tax: op.type === 'sell' ? op.tax || 0 : 0, amount: op.amount || 0, cash: !!op.cash, note: op.note || '' };
+  if (ex) Object.assign(ex, clean);
+  else hd.ops.push({ id: uid('o-'), ...clean, created: stamp() });
+  // il prezzo di un acquisto recente aggiorna il prezzo del titolo se non ce n'è uno più nuovo
+  if ((op.type === 'buy' || op.type === 'sell') && op.price > 0 && (!hd.price || !hd.priceDate || op.date >= hd.priceDate)) { hd.price = op.price; hd.priceDate = op.date; }
+}
 export function saveOp(holdingId, op) {
   commit(st => {
     const hd = find(st.holdings, holdingId);
-    if (!hd) return;
-    const ex = op.id && hd.ops.find(o => o.id === op.id);
-    const clean = { date: op.date, type: op.type, qty: op.qty || 0, price: op.price || 0, fee: op.fee || 0, amount: op.amount || 0, cash: !!op.cash, note: op.note || '' };
-    if (ex) Object.assign(ex, clean);
-    else hd.ops.push({ id: uid('o-'), ...clean, created: stamp() });
-    // il prezzo di un acquisto recente aggiorna il prezzo del titolo se non ce n'è uno più nuovo
-    if ((op.type === 'buy' || op.type === 'sell') && op.price > 0 && (!hd.price || !hd.priceDate || op.date >= hd.priceDate)) { hd.price = op.price; hd.priceDate = op.date; }
+    if (hd) applyOp(hd, op);
   });
+}
+/** Più acquisti insieme (il PAC del mese): una sola modifica, un solo "Annulla". */
+export function saveOps(list) {
+  commit(st => {
+    for (const { holding, op } of list) { const hd = find(st.holdings, holding); if (hd) applyOp(hd, op); }
+  }, { undo: 'PAC registrato' });
 }
 export function deleteOp(holdingId, opId) {
   commit(st => { const hd = find(st.holdings, holdingId); if (hd) hd.ops = hd.ops.filter(o => o.id !== opId); }, { undo: 'Operazione eliminata' });
@@ -309,3 +317,37 @@ export function importTransactions(list) {
 }
 
 export const accountIsPlan = acc => hasPlan(acc);
+
+/** Importa investimenti già preparati da `planImport` (foglio Excel o CSV): una sola modifica, un solo "Annulla". */
+export function importInvestments(plan, { cash = false } = {}) {
+  commit(st => {
+    const accId = new Map();
+    for (const a of plan.accounts) {
+      if (a.existingId) { accId.set(a, a.existingId); continue; }
+      const id = uid('a-'), created = stamp();
+      st.accounts.push({ id, name: a.name, type: 'broker', institution: '', currency: a.currency || st.settings.currency, emoji: '', color: '', archived: false, inNetWorth: true, notes: 'Creato importando un file', created, order: st.accounts.length, plan: null });
+      // il conto esiste dalla prima operazione del file
+      st.valuations.push({ id: uid('v-'), account: id, date: a.first || today(), value: 0, created, kind: 'open', note: 'Saldo iniziale' });
+      accId.set(a, id);
+    }
+    for (const x of plan.holdings) {
+      let hd = x.existing && find(st.holdings, x.existing.id);
+      if (!hd) {
+        hd = { id: uid('h-'), account: accId.get(x.acc), symbol: x.symbol || '', isin: x.isin || '', name: x.name, cls: x.cls, group: x.group || '', ter: x.ter || 0, currency: x.currency, price: 0, priceDate: null, priceAuto: true, created: stamp(), ops: [] };
+        st.holdings.push(hd);
+      } else {
+        if (!hd.group && x.group) hd.group = x.group;
+        if (!hd.ter && x.ter) hd.ter = x.ter;
+      }
+      for (const o of x.ops) {
+        hd.ops.push({ id: uid('o-'), date: o.date, type: o.kind, qty: o.qty, price: o.price, fee: o.fee, tax: o.kind === 'sell' ? o.tax : 0, amount: o.amount, cash, note: o.note || '', created: stamp() });
+        if ((o.kind === 'buy' || o.kind === 'sell') && (!hd.priceDate || o.date >= hd.priceDate)) { hd.price = o.price; hd.priceDate = o.date; }
+      }
+    }
+    const cat = st.categories.find(c => c.id === 'c-tasse') || st.categories.find(c => c.kind === 'expense' && /tass|impost/i.test(c.name));
+    for (const c of plan.costs) {
+      const now = stamp();
+      st.transactions.push({ id: uid('t-'), date: c.date, kind: 'expense', amount: Math.round(c.amount * 100), account: accId.get(c.acc), toAccount: null, amountTo: null, category: cat?.id || null, payee: c.payee || 'Imposta di bollo', note: c.note || '', tags: [], recurring: null, created: now, updated: now, importHash: '', flagged: false });
+    }
+  }, { undo: 'Importazione degli investimenti' });
+}

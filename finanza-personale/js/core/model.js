@@ -40,12 +40,13 @@ export const hasPlan = acc => !!ACCOUNT_TYPES[acc?.type]?.plan && !!acc.plan && 
 export const ASSET_CLASSES = {
   etf_eq: { label: 'ETF azionario', tax: 26 },
   etf_bd: { label: 'ETF obbligazionario', tax: 26 },
+  etf_mm: { label: 'ETF monetario', tax: 26 },
   stock:  { label: 'Azione', tax: 26 },
   gov:    { label: 'Titolo di Stato', tax: 12.5 },
   bond:   { label: 'Obbligazione', tax: 26 },
   fund:   { label: 'Fondo comune', tax: 26 },
   crypto: { label: 'Crypto', tax: 33 },
-  gold:   { label: 'Oro / materie prime', tax: 26 },
+  gold:   { label: 'Oro e materie prime (ETC)', tax: 26 },
   other:  { label: 'Altro', tax: 26 },
 };
 
@@ -220,11 +221,11 @@ function cleanHolding(h) {
   return {
     id: hid, account: acc, symbol: str(h.symbol, 24).toUpperCase(), isin: str(h.isin, 12).toUpperCase(), name: str(h.name, 80) || str(h.symbol, 24) || 'Titolo',
     cls: ASSET_CLASSES[h.cls] ? h.cls : 'other', currency: cur(h.currency), price: num(h.price, 0, 0, 1e12), priceDate: date(h.priceDate), priceAuto: bool(h.priceAuto, true),
-    created: int(h.created, 0),
+    group: str(h.group, 40), ter: num(h.ter, 0, 0, 10), created: int(h.created, 0),
     ops: arr(h.ops).map(o => {
       const oid = id(o?.id), d = date(o?.date), type = ['buy', 'sell', 'div', 'fee'].includes(o?.type) ? o.type : null;
       if (!oid || !d || !type) return null;
-      return { id: oid, date: d, type, qty: num(o.qty, 0, 0, 1e12), price: num(o.price, 0, 0, 1e12), fee: num(o.fee, 0, 0, 1e9), amount: num(o.amount, 0, -1e12, 1e12), cash: bool(o.cash), note: str(o.note, 300), created: int(o.created, 0) };
+      return { id: oid, date: d, type, qty: num(o.qty, 0, 0, 1e12), price: num(o.price, 0, 0, 1e12), fee: num(o.fee, 0, 0, 1e9), tax: o.type === 'sell' ? num(o.tax, 0, 0, 1e9) : 0, amount: num(o.amount, 0, -1e12, 1e12), cash: bool(o.cash), note: str(o.note, 300), created: int(o.created, 0) };
     }).filter(Boolean),
   };
 }
@@ -368,23 +369,112 @@ export function cashBalance(ledger, accId, asOf) {
 }
 
 /* ─── Investimenti: posizione col metodo del costo medio ponderato (come in Italia) ─── */
+const byDate = (a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.created - b.created);
 export function position(h, asOf) {
-  const ops = [...h.ops].filter(o => !asOf || o.date <= asOf)
-    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.created - b.created));
-  let qty = 0, cost = 0, realized = 0, dividends = 0, fees = 0, invested = 0;
+  const ops = [...h.ops].filter(o => !asOf || o.date <= asOf).sort(byDate);
+  let qty = 0, cost = 0, realized = 0, dividends = 0, fees = 0, taxes = 0, invested = 0;
   for (const o of ops) {
     if (o.type === 'buy') { qty += o.qty; cost += o.qty * o.price + o.fee; invested += o.qty * o.price + o.fee; fees += o.fee; }
     else if (o.type === 'sell') {
       const q = Math.min(o.qty, qty);
       const avg = qty > 0 ? cost / qty : 0;
-      realized += q * o.price - o.fee - avg * q;
-      cost -= avg * q; qty -= q; fees += o.fee;
+      // guadagno realizzato al netto di commissioni e dell'imposta trattenuta dal broker
+      realized += q * o.price - o.fee - (o.tax || 0) - avg * q;
+      cost -= avg * q; qty -= q; fees += o.fee; taxes += o.tax || 0;
       if (qty < 1e-12) { qty = 0; cost = 0; }
     } else if (o.type === 'div') dividends += o.amount;
     else if (o.type === 'fee') { fees += Math.abs(o.amount); realized -= Math.abs(o.amount); }
   }
   const value = qty * (h.price || 0);
-  return { qty, cost, avg: qty > 0 ? cost / qty : 0, value, unrealized: value - cost, unrealizedPct: cost > 0 ? (value - cost) / cost * 100 : 0, realized, dividends, fees, invested };
+  return { qty, cost, avg: qty > 0 ? cost / qty : 0, value, unrealized: value - cost, unrealizedPct: cost > 0 ? (value - cost) / cost * 100 : 0, realized, dividends, fees, taxes, invested };
+}
+
+/** Movimenti che, sui conti investimenti, sono costi dell'investire: categorie "Tasse e imposte" e
+    "Commissioni bancarie", o descrizione con "bollo" (l'imposta di bollo sui titoli). */
+export const INVEST_COST_CATS = ['c-tasse', 'c-banca'];
+const isInvestCost = t => t.kind === 'expense' && (INVEST_COST_CATS.includes(t.category) || /bollo/i.test(t.payee));
+
+/** Soldi messi e tolti dagli investimenti, operazione per operazione, nella valuta principale (centesimi).
+    Investito netto = acquisti con commissioni − vendite al netto di commissioni e imposta trattenuta,
+    come la colonna "totale" di un foglio dei PAC. In più: commissioni, imposte, cedole, guadagni
+    realizzati e le spese pagate dalla liquidità dei conti investimenti (imposta di bollo).
+    Gli importi in altre valute usano il cambio attuale. */
+export function investmentFlows(state, toBase) {
+  const rows = [];
+  for (const h of state.holdings) {
+    let qty = 0, cost = 0;
+    const c = x => toBase(Math.round(x * 100), h.currency);
+    for (const o of [...h.ops].sort(byDate)) {
+      const r = { date: o.date, holding: h, op: o, net: 0, qty: 0, fees: 0, taxes: 0, income: 0, realized: 0 };
+      if (o.type === 'buy') {
+        r.net = c(o.qty * o.price + o.fee); r.fees = c(o.fee); r.qty = o.qty;
+        qty += o.qty; cost += o.qty * o.price + o.fee;
+      } else if (o.type === 'sell') {
+        const q = Math.min(o.qty, qty), avg = qty > 0 ? cost / qty : 0;
+        const tax = o.tax || 0;
+        r.net = -c(o.qty * o.price - o.fee - tax); r.fees = c(o.fee); r.taxes = c(tax); r.qty = -o.qty;
+        r.realized = c(q * o.price - o.fee - tax - avg * q);
+        cost -= avg * q; qty -= q;
+        if (qty < 1e-12) { qty = 0; cost = 0; }
+      } else if (o.type === 'div') r.income = c(o.amount);
+      else if (o.type === 'fee') { r.fees = c(Math.abs(o.amount)); r.realized = -r.fees; }
+      rows.push(r);
+    }
+  }
+  rows.sort((a, b) => byDate(a.op, b.op));
+  const accs = new Map(state.accounts.filter(hasHoldings).map(a => [a.id, a]));
+  const costs = state.transactions
+    .filter(t => accs.has(t.account) && isInvestCost(t))
+    .map(t => ({ date: t.date, tx: t, amount: toBase(t.amount, accs.get(t.account).currency) }));
+
+  const months = new Map();
+  const years = new Map();
+  const yr = y => {
+    let v = years.get(y);
+    if (!v) years.set(y, (v = { net: 0, buys: 0, sells: 0, fees: 0, taxes: 0, income: 0, realized: 0, costs: 0, firstMonth: 12 }));
+    return v;
+  };
+  for (const r of rows) {
+    const m = r.date.slice(0, 7), y = +r.date.slice(0, 4), Y = yr(y);
+    if (r.op.type === 'buy' || r.op.type === 'sell') {
+      months.set(m, (months.get(m) || 0) + r.net);
+      Y.firstMonth = Math.min(Y.firstMonth, +m.slice(5));
+      if (r.net >= 0) Y.buys += r.net; else Y.sells -= r.net;
+    }
+    Y.net += r.net; Y.fees += r.fees; Y.taxes += r.taxes; Y.income += r.income; Y.realized += r.realized;
+  }
+  for (const k of costs) yr(+k.date.slice(0, 4)).costs += k.amount;
+  const yearList = [...years.keys()].sort((a, b) => a - b);
+  const total = rows.reduce((a, r) => a + r.net, 0);
+  const firstMonth = [...months.keys()].sort()[0] || null;
+
+  /** Investito netto per gruppo (tipo, categoria, titolo…) e per anno. */
+  function pivot(keyOf) {
+    const out = new Map();
+    for (const r of rows) {
+      if (r.op.type !== 'buy' && r.op.type !== 'sell') continue;
+      const k = keyOf(r.holding);
+      let g = out.get(k);
+      if (!g) out.set(k, (g = { key: k, total: 0, qty: 0, byYear: new Map(), qtyByYear: new Map() }));
+      const y = +r.date.slice(0, 4);
+      g.byYear.set(y, (g.byYear.get(y) || 0) + r.net);
+      g.qtyByYear.set(y, (g.qtyByYear.get(y) || 0) + r.qty);
+      g.total += r.net;
+      g.qty += r.qty;
+    }
+    return out;
+  }
+  /** Mesi su cui fare la media dell'anno: dal primo mese con operazioni (gennaio se si investiva già
+      prima) a dicembre, o al mese di riferimento per l'anno in corso. */
+  function monthsIn(y, refDate) {
+    const Y = years.get(y);
+    if (!Y) return 0;
+    const from = yearList[0] === y ? Y.firstMonth : 1;
+    const ry = +refDate.slice(0, 4), rm = +refDate.slice(5, 7);
+    const to = y === ry ? rm : y > ry ? 0 : 12;
+    return Math.max(1, to - from + 1);
+  }
+  return { rows, costs, months, years, yearList, total, firstMonth, pivot, monthsIn };
 }
 
 /** Rate già pagate di un piano alla data (la prima un mese dopo l'inizio). */
@@ -408,7 +498,7 @@ export function opsCash(h, asOf) {
   for (const o of h.ops) {
     if (!o.cash || (asOf && o.date > asOf)) continue;
     if (o.type === 'buy') c -= o.qty * o.price + o.fee;
-    else if (o.type === 'sell') c += o.qty * o.price - o.fee;
+    else if (o.type === 'sell') c += o.qty * o.price - o.fee - (o.tax || 0);
     else if (o.type === 'div') c += o.amount;
     else if (o.type === 'fee') c -= Math.abs(o.amount);
   }
@@ -620,6 +710,7 @@ export function derive(state, refDate = today()) {
         costBase: toBase(Math.round(p.cost * 100), h.currency),
         realizedBase: toBase(Math.round(p.realized * 100), h.currency),
         dividendsBase: toBase(Math.round(p.dividends * 100), h.currency),
+        terBase: toBase(Math.round(p.value * (h.ter || 0)), h.currency),   // costo annuo del fondo: valore × TER%
         taxRate: ASSET_CLASSES[h.cls]?.tax ?? 26,
       };
     }).filter(r => r.account && !r.account.archived);
@@ -632,14 +723,19 @@ export function derive(state, refDate = today()) {
       rows, value, cost, gain: value - cost, gainPct: cost > 0 ? (value - cost) / cost * 100 : 0,
       realized: rows.reduce((a, r) => a + r.realizedBase, 0), dividends: rows.reduce((a, r) => a + r.dividendsBase, 0),
       byClass, taxIfSold: Math.round(taxIfSold), bolloYear: Math.round(value * 0.002),
+      terYear: rows.reduce((a, r) => a + r.terBase, 0), hasTer: rows.some(r => r.qty > 0 && r.holding.ter > 0),
     };
   }
+
+  /* Investito mese per mese e anno per anno, tasse e costi */
+  let investCache = null;
+  const invest = () => investCache || (investCache = investmentFlows(state, toBase));
 
   return {
     base, rates, ledger, accById, catById, holdingsByAcc, missingFx,
     balances, groupTotals, assets, netWorth, accountValue, holdingsValue, holdingsCash, toBase, txBase,
     nwAccounts, startByAcc, valueAt, netWorthAt, monthClose, yearClose, firstDate,
-    netWorthHistory, flows, monthlyFlows, budget, dueList, upcoming, fixedMonthly, recurringIncomeMonthly, goal, portfolio,
+    netWorthHistory, flows, monthlyFlows, budget, dueList, upcoming, fixedMonthly, recurringIncomeMonthly, goal, portfolio, invest,
     refDate,
   };
 }

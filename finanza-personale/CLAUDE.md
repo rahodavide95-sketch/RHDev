@@ -36,6 +36,9 @@ Il repo è pubblico: mai dati personali di D nel codice.
     flussi, budget, scadenze, obiettivi, portafoglio).
   - `crypto.js`: cassaforte (AES-GCM, PBKDF2 600k, codice di recupero).
   - `csv.js`: lettura estratti conto, esportazione sicura per Excel.
+  - `xlsx.js`: lettura dei .xlsx senza librerie (zip con `DecompressionStream`, XML con
+    espressioni regolari; solo valori delle celle, limiti di dimensione).
+  - `invimport.js`: import degli investimenti (vedi sotto).
 - `js/session.js`: stato in memoria, `commit(fn, opts)` per ogni modifica (salva cifrato
   dopo 500 ms, serializzato), blocco, backup, "Annulla" (`undo(token)`), una scheda alla
   volta (BroadcastChannel). `js/store.js`: IndexedDB `rh-finance` (chiavi `vault`,
@@ -66,6 +69,35 @@ Calcoli in `derive()`: `valueAt(conto, data)` (null prima che il conto esista),
 nel patrimonio (e nello storico) se ha "Conta nel patrimonio": un conto chiuso deve
 continuare a valere nei mesi in cui esisteva; nella pagina Conti un archiviato con saldo
 diverso da zero resta visibile.
+
+## Investimenti (`views/investments.js`)
+
+Schede `#/investimenti` (Portafoglio), `?vista=operazioni`, `?vista=anni`; dettaglio
+`#/investimenti/<id>`. Nate da un Excel "Wallet Summary" di uno youtuber che D ha mandato
+come esempio ("mi sembra molto interessante"), con la colonna di destra di riepiloghi.
+- Titolo: `cls` (tipo, anche `etf_mm` ETF monetario), `group` (categoria libera), `ter` (%).
+  Operazione di vendita: `tax` (imposta trattenuta: riduce realizzato e liquidità).
+- `investmentFlows()` in `model.js` (`d.invest()`): investito netto = acquisti con
+  commissioni − vendite al netto di commissioni e imposta (come la colonna TOTALE del
+  foglio); per mese, per anno, `pivot(chiave)` per tipo/categoria/titolo/conto (anche le
+  quote per anno), commissioni, imposte, cedole, realizzato e costi del conto: movimenti di
+  spesa sui conti investimenti con categoria `c-tasse`/`c-banca` o "bollo" nella descrizione.
+  Media dell'anno: dal primo mese con operazioni (gennaio se si investiva già) a dicembre o
+  al mese corrente. Il prezzo medio comprende le commissioni (come per il fisco): per questo
+  i totali per categoria sono più alti di un foglio che somma solo l'importo (spiegato nella
+  pagina).
+- `pacEditor` (più acquisti alla stessa data, importi dall'ultimo acquisto, un "Annulla"),
+  `bolloEditor` (spesa "Imposta di bollo" sul conto investimenti), `opEditor` con due tra
+  quantità, prezzo e importo.
+- Import (`views/invimport.js` + `core/invimport.js`): .xlsx o CSV; intestazione cercata
+  nelle prime 40 righe (sinonimi italiani/inglesi in `FIELDS`, prima colonna da sinistra:
+  le tabelle di riepilogo a destra non disturbano); righe "TASSE"/bollo → spese del conto;
+  quote negative → vendite; righe senza numeri saltate; il prezzo è importo ÷ quote (così
+  l'importo del file resta esatto); controllo riga per riga con la colonna Totale (in
+  centesimi, accetta i due segni); doppioni (stessa data, tipo, quote e prezzo) esclusi;
+  conto per broker (nuovo se non c'è, aperto dalla prima operazione), liquidità non mossa
+  di default. Test: `test/invimport.test.js` con `test/fixtures/portafoglio-esempio.xlsx`
+  (dati inventati).
 
 ## Account e sincronizzazione (richiesta di D: "perché non mi fai accedere con mail e password?")
 
@@ -133,7 +165,7 @@ netti, pulito ed elegante.
 
 ## Prove
 
-- `npm test`: 26 test (calcoli, cifratura, unione dei dati, CSV, quotazioni con risposte finte).
+- `npm test`: 36 test (calcoli, cifratura, unione dei dati, CSV, investimenti, import da Excel, quotazioni con risposte finte).
 - `bash test/rls/run.sh`: regole di sicurezza del database su Postgres.
 - Nel browser: `python3 -m http.server` nella cartella e Playwright (Chromium già
   installato). Da questo ambiente Yahoo/Binance/BCE non sono raggiungibili.

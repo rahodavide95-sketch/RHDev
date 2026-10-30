@@ -4,16 +4,17 @@
 
 import { h, icon, download } from '../ui/dom.js';
 import { donut, SERIES, lineChart, barChart } from '../ui/charts.js';
-import { empty, toast, confirmDialog, selectInput } from '../ui/components.js';
+import { empty, toast, confirmDialog, selectInput, openSheet, textInput, field } from '../ui/components.js';
 import { money, moneyText, compactText, delta, tipMoney, axisMoney, ui } from '../ui/fmt.js';
 import { card, avatar, linkBtn, segTabs, stat } from './common.js';
 import { holdingEditor, opEditor, accountEditor, pacEditor, bolloEditor, pickHoldingOp, txEditor } from './editors.js';
-import { setPrices, setSetting, setFx } from '../actions.js';
+import { setPrices, setSetting, setFx, linkHoldings } from '../actions.js';
 import { ASSET_CLASSES, position, hasHoldings } from '../core/model.js';
 import { formatNumber, formatPercent } from '../core/money.js';
 import { formatDate, today, monthName, formatMonth, lastMonths, diffMonths } from '../core/dates.js';
 import { toCSV, csvNumber } from '../core/csv.js';
-import { refreshHoldings, quote, ecbRates } from '../market.js';
+import { refreshHoldings, quote, ecbRates, isIsin, isCrypto, findCandidates } from '../market.js';
+import { S } from '../session.js';
 import { openInvestImport } from './invimport.js';
 
 let groupBy = 'cls';
@@ -21,6 +22,7 @@ let pivotBy = 'cls';
 let pivotUnit = 'eur';
 let opsFilter = { hd: '', type: '' };
 let busy = false;
+let lastAuto = 0;
 
 const NO_GROUP = 'Senza categoria';
 const groupOf = hd => hd.group || NO_GROUP;
@@ -29,35 +31,105 @@ const qtyText = q => (ui.privacy ? '••••' : formatNumber(q, 6));
 export async function askMarketConsent(ctx) {
   if (ctx.st.settings.market.enabled) return true;
   const ok = await confirmDialog({
-    title: 'Usare i dati di mercato online?', icon: 'globe', confirm: 'Attiva',
+    title: 'Usare i prezzi online?', icon: 'globe', confirm: 'Attiva',
     message: h('div.stack-sm',
-      h('p', 'Per i prezzi aggiornati l\'app chiede le quotazioni pubbliche a Yahoo Finance, Binance e CoinGecko, e i cambi alla BCE.'),
-      h('p', h('b', 'Cosa viene inviato: '), 'solo i simboli dei titoli (es. "VWCE.DE"). Mai quantità, importi, conti o altri tuoi dati.'),
-      h('p.muted', 'Puoi disattivarli quando vuoi dalle Impostazioni. Senza, i prezzi li scrivi tu.')),
+      h('p', 'Per i prezzi aggiornati l\'app chiede le quotazioni pubbliche a onvista.de (borse tedesche: LS Exchange, la stessa di Trade Republic, Tradegate, Xetra), le crypto a Binance e i cambi alla BCE. Direttamente dal tuo dispositivo, senza passaggi intermedi.'),
+      h('p', h('b', 'Cosa viene inviato: '), 'solo i codici dei titoli (ISIN, es. IE00BFMXXD54) o i loro nomi. Mai quantità, importi, conti o altri tuoi dati.'),
+      h('p.muted', 'Puoi spegnerli quando vuoi dalle Impostazioni. Senza, i prezzi sono quelli delle tue operazioni o quelli che scrivi tu.')),
   });
   if (ok) setSetting('market.enabled', true);
   return ok;
 }
 
-export async function updatePrices(ctx) {
+const needsLink = hd => !isIsin(hd.isin) && !(hd.cls === 'crypto' && isCrypto(hd.symbol));
+const openHoldings = st => st.holdings.filter(x => x.priceAuto && position(x).qty > 0 && st.accounts.some(a => a.id === x.account && !a.archived));
+
+/** Trova l'ISIN dei titoli che non l'hanno (cercando per nome) e lo fa confermare. */
+export function linkSheet(ctx, list) {
+  return new Promise(resolve => {
+    const rows = list.map(hd => {
+      const sel = h('select.input.select', { 'aria-label': hd.name }, h('option', { value: '' }, 'Cerco…'));
+      const isinIn = textInput({ placeholder: 'oppure scrivi l\'ISIN', max: 12 });
+      const info = h('p.field-hint');
+      findCandidates({ name: hd.name, symbol: hd.symbol }).then(cands => {
+        sel.replaceChildren(h('option', { value: '' }, cands.length ? 'Non collegare' : 'Nessun titolo trovato'), ...cands.slice(0, 6).map(c => h('option', { value: c.isin + '|' + c.type }, `${c.name} · ${c.isin}`)));
+        if (cands[0] && cands[0].score >= 0.3) sel.value = cands[0].isin + '|' + cands[0].type;
+        info.textContent = cands.length ? 'Controlla che l\'ISIN sia quello che vedi nell\'app del broker.' : 'Scrivi l\'ISIN: lo trovi nell\'app del broker, nella scheda del titolo.';
+      }).catch(() => { sel.replaceChildren(h('option', { value: '' }, 'Ricerca non raggiungibile')); info.textContent = 'Scrivi l\'ISIN a mano.'; });
+      return { hd, sel, isinIn, node: h('div.subcard.stack-sm', h('div.subcard-t', hd.name), h('div.select-wrap', sel, icon('chevD', 16, 'select-chev')), isinIn, info) };
+    });
+    let done = false;
+    const finish = v => { if (!done) { done = true; resolve(v); } };
+    const save = () => {
+      const out = [];
+      for (const r of rows) {
+        const typed = r.isinIn.value.trim().toUpperCase();
+        if (isIsin(typed)) out.push({ id: r.hd.id, isin: typed, ovType: '' });
+        else if (r.sel.value) { const [isin, type] = r.sel.value.split('|'); out.push({ id: r.hd.id, isin, ovType: type }); }
+      }
+      if (out.length) linkHoldings(out);
+      s.close(true);
+      finish(out.length);
+    };
+    const s = openSheet({
+      title: 'Collega i titoli', subtitle: 'Per i prezzi aggiornati serve il codice ISIN',
+      body: h('div.stack', h('p.muted', 'Ho cercato i tuoi titoli per nome. Scegli quello giusto: da ora i prezzi arrivano per codice ISIN.'), ...rows.map(r => r.node)),
+      footer: [h('button.btn.btn-primary', { type: 'button', onclick: save }, 'Collega e aggiorna i prezzi')],
+      onClose: () => finish(0),
+    });
+  });
+}
+
+export async function updatePrices(ctx, { silent = false } = {}) {
   if (busy) return;
-  const hs = ctx.st.holdings.filter(x => x.priceAuto && x.symbol && position(x).qty > 0);
-  if (!hs.length) { toast('Nessun titolo con aggiornamento online: aggiungi il simbolo (ticker) ai titoli.'); return; }
-  if (!(await askMarketConsent(ctx))) return;
+  const open = openHoldings(ctx.st);
+  if (!open.length) { if (!silent) toast('Nessun titolo da aggiornare.'); return; }
+  if (!silent && !(await askMarketConsent(ctx))) return;
+  if (!silent) {
+    const missing = open.filter(needsLink);
+    if (missing.length) await linkSheet(ctx, missing);
+  }
+  const ready = openHoldings(S.state).filter(x => !needsLink(x));
+  if (!ready.length) { if (!silent) toast('Nessun titolo collegato: serve l\'ISIN.'); return; }
   busy = true;
+  lastAuto = Date.now();
   ctx.rerender();
   try {
-    let rates = ctx.st.fx.rates;
-    try { const r = await ecbRates(ctx.st.settings.currency); setFx(r.rates, r.date); rates = r.rates; } catch { /* usa i cambi salvati */ }
-    const { updated, failed } = await refreshHoldings(hs, rates, { proxies: ctx.st.settings.market.portfolioProxies });
+    let rates = S.state.fx.rates;
+    try { const r = await ecbRates(S.state.settings.currency); setFx(r.rates, r.date); rates = r.rates; } catch { /* usa i cambi salvati */ }
+    const { updated, failed } = await refreshHoldings(ready, rates);
     if (updated.length) setPrices(updated.map(u => ({ ...u, date: today() })));
-    if (failed.length && !updated.length) toast('Prezzi non raggiungibili ora. Riprova più tardi o scrivili a mano.', { kind: 'err' });
-    else if (failed.length) toast(`${updated.length} prezzi aggiornati, ${failed.length} non trovati: ${failed.map(f => f.symbol).join(', ')}`);
+    if (silent) { if (!updated.length && failed.length) console.warn('Prezzi non aggiornati'); }
+    else if (failed.length && !updated.length) toast('Prezzi non raggiungibili ora. Riprova più tardi o scrivili a mano.', { kind: 'err' });
+    else if (failed.length) toast(`${updated.length} prezzi aggiornati, non trovati: ${failed.map(f => f.name).join(', ')}`);
     else toast(`${updated.length} prezzi aggiornati`, { kind: 'ok' });
   } finally {
     busy = false;
     ctx.rerender();
   }
+}
+
+/** Aggiornamento automatico (con il consenso già dato): all'apertura e poi al massimo ogni 3 ore. */
+export function autoPrices(ctx) {
+  if (busy || S.mode !== 'open' || !ctx.st?.settings.market.enabled || Date.now() - lastAuto < 3 * 3600 * 1000) return;
+  if (!openHoldings(ctx.st).some(x => !needsLink(x))) return;
+  lastAuto = Date.now();
+  setTimeout(() => updatePrices(ctx, { silent: true }), 800);
+}
+
+/** Avviso quando i prezzi non sono di oggi. */
+function priceNotice(ctx) {
+  const open = openHoldings(ctx.st);
+  if (!open.length) return null;
+  const oldest = open.map(x => x.priceDate || '').sort()[0];
+  const missing = open.filter(needsLink);
+  const btn = label => h('button.btn.btn-sm.btn-primary', { type: 'button', disabled: busy, onclick: () => updatePrices(ctx) }, busy ? 'Aggiorno…' : label);
+  if (!ctx.st.settings.market.enabled) {
+    return h('div.banner.banner-warn', icon('alert', 18), h('span', h('b', 'Prezzi non aggiornati. '), `Sono quelli delle tue ultime operazioni${oldest ? ` (il più vecchio è del ${formatDate(oldest, { year: true })})` : ''}: il valore non è quello di oggi.`), btn('Aggiorna online'));
+  }
+  if (missing.length) return h('div.banner.banner-warn', icon('alert', 18), h('span', `${missing.length === 1 ? 'Un titolo non ha' : missing.length + ' titoli non hanno'} il codice ISIN: il prezzo non si aggiorna (${missing.map(x => x.name).slice(0, 3).join(', ')}${missing.length > 3 ? '…' : ''}).`), btn('Collega'));
+  if (oldest && oldest < today()) return h('div.banner', icon('info', 18), h('span', `Prezzi del ${formatDate(oldest, { year: true })}.`), btn('Aggiorna'));
+  return null;
 }
 
 function summary(ctx, p) {
@@ -129,17 +201,20 @@ const chartCache = new Map();
 
 function priceChart(ctx, hd) {
   const box = h('div.price-chart');
-  if (!ctx.st.settings.market.enabled || !hd.symbol) return null;
-  const key = hd.symbol + '|' + chartRange;
+  const crypto = hd.cls === 'crypto' && isCrypto(hd.symbol) && !hd.isin;
+  if (!ctx.st.settings.market.enabled || (!isIsin(hd.isin) && !crypto)) return null;
+  const item = crypto ? { symbol: hd.symbol } : { isin: hd.isin, type: hd.ovType, currency: hd.currency };
+  const key = (hd.isin || hd.symbol) + '|' + chartRange;
   const draw = q => {
-    if (!q?.closes?.length) { box.replaceChildren(h('p.muted', 'Grafico non disponibile per questo simbolo.')); return; }
+    if (!q?.closes?.length) { box.replaceChildren(h('p.muted', 'Grafico non disponibile per questo titolo.')); return; }
     const labels = q.stamps.map(t => new Date(t * 1000).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' }));
-    box.replaceChildren(lineChart({ labels, series: [{ name: hd.name, color: (q.change ?? 0) >= 0 ? 'var(--pos)' : 'var(--neg)', values: q.closes, area: true }], fmt: v => formatNumber(v, 2, 2) + ' ' + q.currency, fmtAxis: v => formatNumber(v, v >= 100 ? 0 : 2), height: 200, zero: false }));
+    box.replaceChildren(lineChart({ labels, series: [{ name: hd.name, color: (q.change ?? 0) >= 0 ? 'var(--pos)' : 'var(--neg)', values: q.closes, area: true }], fmt: v => formatNumber(v, 2, 2) + ' ' + q.currency, fmtAxis: v => formatNumber(v, v >= 100 ? 0 : 2), height: 200, zero: false }),
+      q.venue ? h('p.fine', `Prezzi di ${q.venue}`) : null);
   };
   if (chartCache.has(key)) draw(chartCache.get(key));
   else {
     box.append(h('div.skeleton', { style: { height: '200px' } }));
-    quote(hd.symbol, chartRange, { proxies: ctx.st.settings.market.portfolioProxies }).then(q => { chartCache.set(key, q); if (box.isConnected) draw(q); }).catch(() => { if (box.isConnected) box.replaceChildren(h('p.muted', 'Grafico non raggiungibile ora.')); });
+    quote(item, chartRange).then(q => { chartCache.set(key, q); if (box.isConnected) draw(q); }).catch(() => { if (box.isConnected) box.replaceChildren(h('p.muted', 'Grafico non raggiungibile ora.')); });
   }
   return card('Andamento', { action: segTabs(['1M', '6M', '1A', '5A'].map(x => ({ value: x, label: x })), chartRange, v => { chartRange = v; ctx.rerender(); }) }, box);
 }
@@ -162,7 +237,7 @@ function detail(ctx, id) {
       h('section.card.inv-hero',
         h('div.hero-label', `${acc?.name || ''} · ${formatNumber(p.qty, 6)} quote`),
         h('div.hero-value', m(p.value)),
-        h('div.hero-delta', money(Math.round((p.value - p.cost) * 100), c, { sign: true, tone: p.value >= p.cost ? 'pos' : 'neg' }), delta(p.unrealizedPct), h('span.muted', `prezzo ${formatNumber(hd.price, 4)} ${c}${hd.priceDate ? ' del ' + formatDate(hd.priceDate) : ''}`)),
+        h('div.hero-delta', money(Math.round((p.value - p.cost) * 100), c, { sign: true, tone: p.value >= p.cost ? 'pos' : 'neg' }), delta(p.unrealizedPct), h('span.muted', `prezzo ${formatNumber(hd.price, 4)} ${c}${hd.priceDate ? ' del ' + formatDate(hd.priceDate) : ''}${hd.priceSrc ? ' · ' + hd.priceSrc : ''}`)),
         h('div.stats-4',
           h('div.stat', h('div.stat-label', 'Prezzo medio di carico'), h('div.stat-value', formatNumber(p.avg, 4) + ' ' + c)),
           h('div.stat', h('div.stat-label', 'Costo'), h('div.stat-value', m(p.cost))),
@@ -408,7 +483,7 @@ export default {
     let body;
     if (vista === 'operazioni') body = opsView(ctx);
     else if (vista === 'anni') body = yearsView(ctx);
-    else body = h('div.stack', summary(ctx, p), h('div.two-col', table(ctx, p), allocation(ctx, p)),
+    else body = h('div.stack', priceNotice(ctx), summary(ctx, p), h('div.two-col', table(ctx, p), allocation(ctx, p)),
       h('p.fine', icon('info', 14), ' Tasse stimate con il costo medio ponderato: 26% (titoli di Stato 12,5%, crypto 33%). Non tiene conto di minusvalenze da compensare: per la dichiarazione senti il tuo commercialista.'));
     return {
       title: 'Investimenti', sub: st.settings.market.enabled ? 'Prezzi online attivi' : 'Prezzi inseriti a mano',

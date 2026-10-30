@@ -245,9 +245,21 @@ export function deleteOp(holdingId, opId) {
   commit(st => { const hd = find(st.holdings, holdingId); if (hd) hd.ops = hd.ops.filter(o => o.id !== opId); }, { undo: 'Operazione eliminata' });
 }
 export function setPrices(updates) {
-  // updates: [{id, price, date}]
+  // updates: [{id, price, date, ovType, src}]
   commit(st => {
-    for (const u of updates) { const hd = find(st.holdings, u.id); if (hd && u.price > 0) { hd.price = u.price; hd.priceDate = u.date || today(); } }
+    for (const u of updates) {
+      const hd = find(st.holdings, u.id);
+      if (!hd || !(u.price > 0)) continue;
+      hd.price = u.price; hd.priceDate = u.date || today();
+      if (u.ovType) hd.ovType = u.ovType;
+      if (u.src != null) hd.priceSrc = u.src;
+    }
+  });
+}
+/** Collega i titoli al loro codice ISIN (per i prezzi online). */
+export function linkHoldings(list) {
+  commit(st => {
+    for (const x of list) { const hd = find(st.holdings, x.id); if (hd) { hd.isin = x.isin; hd.ovType = x.ovType || ''; } }
   });
 }
 

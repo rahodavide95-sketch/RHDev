@@ -222,6 +222,7 @@ function cleanHolding(h) {
     id: hid, account: acc, symbol: str(h.symbol, 24).toUpperCase(), isin: str(h.isin, 12).toUpperCase(), name: str(h.name, 80) || str(h.symbol, 24) || 'Titolo',
     cls: ASSET_CLASSES[h.cls] ? h.cls : 'other', currency: cur(h.currency), price: num(h.price, 0, 0, 1e12), priceDate: date(h.priceDate), priceAuto: bool(h.priceAuto, true),
     group: str(h.group, 40), ter: num(h.ter, 0, 0, 10), created: int(h.created, 0),
+    ovType: /^[A-Z_]{2,20}$/.test(h.ovType || '') ? h.ovType : '', priceSrc: str(h.priceSrc, 40),
     ops: arr(h.ops).map(o => {
       const oid = id(o?.id), d = date(o?.date), type = ['buy', 'sell', 'div', 'fee'].includes(o?.type) ? o.type : null;
       if (!oid || !d || !type) return null;

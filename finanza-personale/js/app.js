@@ -16,7 +16,7 @@ import networth from './views/networth.js';
 import budget from './views/budget.js';
 import recurring from './views/recurring.js';
 import goals from './views/goals.js';
-import investments from './views/investments.js';
+import investments, { autoPrices } from './views/investments.js';
 import reports from './views/reports.js';
 import sims from './views/sims.js';
 import markets from './views/markets.js';
@@ -177,6 +177,7 @@ function doRender() {
   const r = parseRoute();
   const route = ROUTES.find(x => x.path === r.path) || ROUTES[0];
   const ctx = { ...ctxBase(), route: r };
+  autoPrices(ctx);    // prezzi dei titoli aggiornati da soli, se consentito (al massimo ogni 3 ore)
   // menu attivo
   shell.querySelectorAll('[data-path]').forEach(a => {
     const on = a.dataset.path === route.path || (a.dataset.path === 'menu' && !TABS.includes(route.path));

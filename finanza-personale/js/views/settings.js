@@ -277,9 +277,7 @@ export default {
       rulesCard(ctx),
       fxCard(ctx),
       section('market', 'Dati di mercato online', 'Facoltativi. Si inviano solo simboli di titoli pubblici, mai i tuoi dati.',
-        toggle('Usa i dati di mercato', s.market.enabled, v => A.setSetting('market.enabled', v), { hint: 'Prezzi e grafici da Yahoo Finance, Binance, CoinGecko; cambi dalla BCE' }),
-        toggle('Proxy di riserva per la pagina Mercati', s.market.proxies, v => A.setSetting('market.proxies', v), { hint: 'Se Yahoo non risponde, passa da allorigins.win o corsproxy.io (vedono solo il simbolo richiesto)' }),
-        toggle('Proxy anche per i prezzi del portafoglio', s.market.portfolioProxies, v => A.setSetting('market.portfolioProxies', v), { hint: 'Spento per privacy: i proxy vedrebbero quali titoli hai' })),
+        toggle('Prezzi online', s.market.enabled, v => A.setSetting('market.enabled', v), { hint: 'Titoli da onvista.de per codice ISIN (LS Exchange, Tradegate, Xetra), crypto da Binance e CoinGecko, cambi dalla BCE. Si aggiornano da soli all\'apertura. Viene inviato solo il codice del titolo, mai quantità o importi.' })),
       section('danger', 'Zona pericolosa', null,
         setRow('Cancella tutto da questo dispositivo', 'Cassaforte, copie automatiche e impostazioni. Fai prima un backup!', h('button.btn.btn-danger', { type: 'button', disabled: demo, onclick: async () => {
           const ok = await promptDialog({ title: 'Cancellare tutto?', label: 'Scrivi CANCELLA per confermare', confirm: 'Cancella tutto', message: 'Senza un backup i dati sono persi per sempre.', validate: v => (v.trim().toUpperCase() === 'CANCELLA' ? '' : 'Scrivi CANCELLA') });

@@ -1,0 +1,25 @@
+name: Prova quotazioni (temporanea)
+on:
+  push:
+    branches: [claude/diag-quotes]
+permissions:
+  contents: read
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Yahoo, proxy e altre fonti
+        run: |
+          O='https://rahodavide95-sketch.github.io'
+          UA='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36'
+          chk() { echo "=== $1"; curl -sS -m 20 -D /tmp/h -o /tmp/b -H "Origin: $O" -A "$UA" "$2" -w 'HTTP %{http_code}\n' || true; grep -i '^access-control-allow-origin' /tmp/h || echo 'NESSUN access-control-allow-origin'; head -c 300 /tmp/b; echo; }
+          chk 'yahoo chart q1' 'https://query1.finance.yahoo.com/v8/finance/chart/VUAA.DE?range=5d&interval=1d'
+          chk 'yahoo chart q2' 'https://query2.finance.yahoo.com/v8/finance/chart/VUAA.DE?range=5d&interval=1d'
+          chk 'yahoo search ISIN' 'https://query2.finance.yahoo.com/v1/finance/search?q=IE00BFMXXD54&quotesCount=6&newsCount=0'
+          chk 'yahoo search nome' 'https://query1.finance.yahoo.com/v1/finance/search?q=Invesco%20Physical%20Gold&quotesCount=6&newsCount=0'
+          chk 'allorigins' 'https://api.allorigins.win/raw?url=https%3A%2F%2Fquery1.finance.yahoo.com%2Fv8%2Ffinance%2Fchart%2FVUAA.DE%3Frange%3D5d%26interval%3D1d'
+          chk 'corsproxy' 'https://corsproxy.io/?url=https%3A%2F%2Fquery1.finance.yahoo.com%2Fv8%2Ffinance%2Fchart%2FVUAA.DE%3Frange%3D5d%26interval%3D1d'
+          chk 'stooq' 'https://stooq.com/q/l/?s=vuaa.de&f=sd2t2ohlcv&h&e=csv'
+          chk 'frankfurter' 'https://api.frankfurter.dev/v1/latest?base=EUR'
+          chk 'binance' 'https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT'
+          echo "=== preflight yahoo"; curl -sS -m 20 -X OPTIONS -D - -o /dev/null -H "Origin: $O" -H 'Access-Control-Request-Method: GET' 'https://query1.finance.yahoo.com/v8/finance/chart/VUAA.DE' | grep -i 'HTTP/\|access-control' || true

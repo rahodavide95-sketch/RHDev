@@ -248,7 +248,9 @@ export function planMonths(read, state, { year, kind, refDate }) {
     });
   }
   const keys = [...new Set(read.lines.map(l => catKey(niceName(l.group), niceName(l.sub || l.group))))];
-  return { txs, newCats: [...newCats.values()], keys, dups, future, total: txs.reduce((a, t) => a + (t.kind === kind ? t.amount : -t.amount), 0) };
+  // i nomi come scritti nel file, per ogni categoria (anche quelle che ci sono già)
+  const names = Object.fromEntries(read.lines.map(l => [catKey(niceName(l.group), niceName(l.sub || l.group)), { group: niceName(l.group), name: niceName(l.sub || l.group) }]));
+  return { txs, newCats: [...newCats.values()], keys, names, dups, future, total: txs.reduce((a, t) => a + (t.kind === kind ? t.amount : -t.amount), 0) };
 }
 
 /** Conti e valori di fine mese dal foglio del patrimonio. `holdings` sono anche i titoli che

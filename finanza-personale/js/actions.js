@@ -467,6 +467,11 @@ export function importWorkbook({ nw = [], invest = null, cash = false, months = 
       const catId = new Map();
       // come il foglio: le categorie dell'app che il file non usa e senza movimenti si nascondono
       if (m.onlyFile) {
+        // le categorie che ci sono già prendono i nomi del file (LAVORO › STIPENDIO), anche reimportando
+        for (const c of st.categories) {
+          const n = c.kind === m.kind && m.plan.names?.[catKey(c.group, c.name)];
+          if (n && (c.name !== n.name || c.group !== n.group)) { c.name = n.name.slice(0, 50); c.group = n.group.slice(0, 40); c.archived = false; }
+        }
         const used = new Set(st.transactions.filter(t => t.category).map(t => t.category));
         const keys = new Set([...(m.plan.keys || []), ...m.plan.txs.map(t => t.catKey)]);
         for (const c of st.categories) if (c.kind === m.kind && !used.has(c.id) && !keys.has(catKey(c.group, c.name)) && !m.plan.txs.some(t => t.catId === c.id)) c.archived = true;

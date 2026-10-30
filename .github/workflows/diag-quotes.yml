@@ -17,22 +17,13 @@ jobs:
           const M = await import(process.env.GITHUB_WORKSPACE + '/finanza-personale/js/market.js');
           const D = await import(process.env.GITHUB_WORKSPACE + '/finanza-personale/js/data/markets.js');
           const fmt = n => (n == null ? '—' : Number(n).toFixed(4));
-          console.log('== Titoli del foglio di D (nome + ultimo prezzo)');
-          const hs = [['Vanguard S&P 500 UCITS ETF', 133.26], ['iShares Core MSCI Emerging Markets IMI UCITS ETF', 46.37], ['Invesco Physical Gold A', 376.22], ['Xtrackers II EUR Overnight Rate Swap UCITS ETF', 149.57], ['VanEck Space Innovators UCITS ETF', 86.58], ['Rocket Lab', 83.7], ['Xtrackers EUR High Yield Corporate Bond UCITS ETF', 23.77]];
-          for (const [n, p] of hs) {
-            try { const c = await M.findCandidates({ name: n, price: p, currency: 'EUR', cls: /Gold/.test(n) ? 'gold' : /Rocket/.test(n) ? 'stock' : 'etf_eq' }); console.log(`${n} (${p}) → ` + c.slice(0, 3).map(x => `${x.name} ${x.isin} ${x.price ?? '?'} [${x.score.toFixed(2)}]`).join(' | ')); }
-            catch (e) { console.log(n, 'ERRORE', e.message); }
-          }
-          console.log('== Pagina Mercati (con ISIN dove c\'è)');
-          const by = new Map(D.SEARCH_DB.map(x => [x.s, x]));
-          let ok = 0, ko = 0;
-          for (const [cat, items] of Object.entries(D.MKT_CATEGORIES)) {
-            if (cat === 'Crypto') continue;
-            for (const it of items) {
-              try { const q = await M.quote({ ...it, isin: by.get(it.symbol)?.isin || undefined, category: cat, currency: /Azioni IT/.test(cat) ? 'EUR' : undefined }, '1M'); ok++; console.log(`ok  ${cat} | ${it.name} (${it.symbol}) → ${q.name} = ${fmt(q.price)} ${q.currency || 'pt'}`); }
-              catch (e) { ko++; console.log(`NO  ${cat} | ${it.name} (${it.symbol}, ${by.get(it.symbol)?.isin}) → ${e.message}`); }
+          const items = [...D.MKT_CATEGORIES['Indici'], ...D.MKT_CATEGORIES['Materie Prime']];
+          for (const it of items) {
+            for (const r of ['1M', '1A']) {
+              try { const q = await M.quote({ ...it, category: '' }, r); console.log(`ok ${r} ${it.name} → ${q.name} = ${q.price} ${q.currency || 'pt'} (${q.closes.length} chiusure, var ${q.change?.toFixed(2)})`); }
+              catch (e) { console.log(`NO ${r} ${it.name} → ${e.message}`); }
             }
           }
-          console.log(`TOTALE: ${ok} ok, ${ko} no`);
+          for (const n of ['Invesco Physical Gold ETC', 'Physical Gold', 'IE00B579F325', 'A1AA5X', '8PSG']) { const r = await M.ovSearch(n, 8); console.log('?', n, '→', r.map(x => x.name + ' ' + x.isin).join(' | ')); }
           JS
           node /tmp/live.mjs

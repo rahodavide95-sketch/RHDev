@@ -5,7 +5,7 @@
    Le richieste ad altri siti (quotazioni, cambi) non passano mai dalla cache.
    Attenzione: la cache è condivisa con le altre app del sito (alcune cancellano tutte le
    cache tranne la loro): per questo a ogni apertura la pagina chiede di ricompletarla ("refill"). */
-const VERSION = 'rh-finance-v3';
+const VERSION = 'rh-finance-v4';
 const CORE = [
   './', './index.html', './manifest.webmanifest', './css/app.css',
   './js/boot.js', './js/app.js', './js/session.js', './js/store.js', './js/cloud.js', './js/core/merge.js', './js/core/xlsx.js', './js/core/invimport.js', './js/actions.js', './js/market.js', './js/demo.js',

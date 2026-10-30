@@ -14,6 +14,7 @@ import { passwordStrength, PBKDF2_ITER, WrongSecret } from '../core/crypto.js';
 import { CURRENCIES, formatNumber } from '../core/money.js';
 import { today, formatDate } from '../core/dates.js';
 import { ecbRates } from '../market.js';
+import { categoryManager } from './categories.js';
 import { askMarketConsent } from './investments.js';
 import { applyTheme } from '../ui/theme.js';
 
@@ -187,7 +188,7 @@ function categoriesCard(ctx) {
       h('button.btn.btn-soft.btn-sm', { type: 'button', onclick: () => categoryEditor(null, kind) }, icon('plus', 16), 'Nuova categoria'));
   };
   draw();
-  return section('cat', 'Categorie', 'Tocca per rinominare, cambiare icona o gruppo', segmented([{ value: 'expense', label: 'Uscite' }, { value: 'income', label: 'Entrate' }], kind, v => { kind = v; draw(); }, { small: true }), listEl);
+  return section('cat', 'Categorie', 'Categorie e sottocategorie, come vuoi tu', h('button.btn.btn-primary.btn-sm', { type: 'button', onclick: () => categoryManager(ctx, kind === 'income' ? 'income' : 'expense') }, icon('edit', 16), 'Gestisci categorie e colori'), segmented([{ value: 'expense', label: 'Uscite' }, { value: 'income', label: 'Entrate' }], kind, v => { kind = v; draw(); }, { small: true }), listEl);
 }
 
 function rulesCard(ctx) {

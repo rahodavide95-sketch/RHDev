@@ -18,6 +18,9 @@ const RANGES = ['1G', '1S', '1M', '3M', '6M', 'YTD', '1A', '5A', 'Max'];
 const CLS = { Azione: 'stock', ETF: 'etf_eq', Crypto: 'crypto', Obbligazione: 'gov', 'Materia prima': 'gold' };
 
 const info = s => SEARCH_DB.find(x => x.s === s);
+// i preferiti salvano solo simbolo e nome: i codici per trovarli vengono dagli elenchi
+const KNOWN = new Map(Object.entries(MKT_CATEGORIES).flatMap(([cat, items]) => items.map(it => [it.symbol, { ...it, category: cat }])));
+const full = it => ({ ...(KNOWN.get(it.symbol) || {}), ...it, isin: it.isin || KNOWN.get(it.symbol)?.isin || info(it.symbol)?.isin || undefined });
 const fmtP = p => (p == null ? '—' : formatNumber(p, p >= 1000 ? 2 : p >= 1 ? 2 : 6, 2));
 const pctTone = p => (p == null ? '' : p > 0 ? 'pos' : p < 0 ? 'neg' : '');
 
@@ -36,7 +39,8 @@ function detailSheet(ctx, item) {
   const body = h('div');
   const load = () => {
     body.replaceChildren(h('div.skeleton', { style: { height: '220px' } }));
-    quote({ ...item, isin: item.isin || meta?.isin || undefined }, range).then(q => {
+    const f = full(item);
+    quote({ ...f, currency: /Azioni IT/.test(f.category || '') ? 'EUR' : undefined }, range).then(q => {
       const labels = q.stamps?.map(t => new Date(t * 1000).toLocaleDateString('it-IT', range === '1G' ? { hour: '2-digit', minute: '2-digit' } : { day: 'numeric', month: 'short', year: ['5A', 'Max', '1A'].includes(range) ? '2-digit' : undefined })) || [];
       body.replaceChildren(
         h('div.mkt-head', h('div.hero-value', fmtP(q.price), h('span.muted.small', ' ' + (q.currency || 'punti'))), q.change != null ? h('span.delta', { class: 'delta-' + pctTone(q.change) }, formatPercent(q.change, 2, true)) : null),
@@ -68,7 +72,9 @@ async function fill(ctx, items, rows, gen) {
       const k = i++;
       const it = items[k];
       try {
-        const q = await quote({ ...it, isin: it.isin || info(it.symbol)?.isin || undefined, category: M.cat === 'Preferiti' ? '' : M.cat, currency: /Azioni IT/.test(M.cat) ? 'EUR' : undefined }, M.range);
+        const f = full(it);
+        const cat = M.cat === 'Preferiti' ? f.category || '' : M.cat;
+        const q = await quote({ ...f, category: cat, currency: /Azioni IT/.test(cat) ? 'EUR' : undefined }, M.range);
         if (gen !== M.gen) return;
         const r = rows[k];
         r.querySelector('.mkt-price').textContent = fmtP(q.price) + (q.currency ? ' ' + q.currency : '');

@@ -137,23 +137,34 @@ function shorterQueries(name) {
   return [...new Set(out)].filter(q => q.length >= 3);
 }
 
+// tipi di strumento da cercare per ogni tipo di titolo dell'app
+const TYPES_BY_CLS = {
+  etf_eq: ['FUND'], etf_bd: ['FUND'], etf_mm: ['FUND'], fund: ['FUND'], stock: ['STOCK'],
+  gold: ['DERIVATIVE', 'FUND'], gov: ['BOND', 'FUND'], bond: ['BOND', 'FUND'], crypto: ['DERIVATIVE', 'FUND'],
+};
+
 /** Candidati per un titolo che non ha l'ISIN: i più simili per nome e, se si conosce il prezzo
     dell'ultima operazione, per prezzo (distingue ad accumulo e a distribuzione, valute diverse). */
-export async function findCandidates({ name, symbol, price, currency }, types = ['FUND', 'STOCK', 'DERIVATIVE', 'BOND']) {
+export async function findCandidates({ name, symbol, price, currency, cls }) {
+  const types = TYPES_BY_CLS[cls] || ['FUND', 'STOCK', 'DERIVATIVE', 'BOND'];
   const seen = new Map();
-  const queries = [...shorterQueries(name), symbol && !/[.=^-]/.test(symbol) ? symbol : null].filter(Boolean);
+  const base = shorterQueries(name);
+  const core = base[base.length - 1] || name;
+  const queries = [...base, symbol && !/[.=^-]/.test(symbol) ? symbol : null, types.includes('DERIVATIVE') ? core + ' ETC' : null, types.includes('FUND') ? core + ' ETF' : null].filter(Boolean);
   for (const q of queries) {
     try { for (const c of await ovSearch(q, 8)) if (types.includes(c.type) && c.isin && !seen.has(c.isin)) seen.set(c.isin, c); } catch { /* prova la prossima */ }
-    if (seen.size >= 3) break;
+    if (seen.size >= 4) break;
   }
   let list = [...seen.values()].map(c => ({ ...c, score: nameScore(name || symbol, c.name) + (symbol && c.symbol === symbol ? 0.5 : 0) })).sort((a, b) => b.score - a.score).slice(0, 6);
   if (price > 0) {
-    await Promise.all(list.slice(0, 5).map(async c => {
+    await Promise.all(list.map(async c => {
       try {
         const sn = await ovSnapshot(c.type, c.isin);
         const q = pickQuote(sn.quotes, currency);
-        if (q && (!currency || q.cur === currency)) { c.price = q.last; c.cur = q.cur; c.score -= Math.min(1, Math.abs(Math.log(q.last / price))) * 2; }
+        if (q && (!currency || q.cur === currency)) { c.price = q.last; c.cur = q.cur; }
       } catch { /* senza prezzo */ }
+      // prezzo lontano da quello pagato = probabilmente un altro strumento; senza prezzo nella valuta = poco probabile
+      c.score -= c.price ? Math.min(1, Math.abs(Math.log(c.price / price))) : 0.5;
     }));
     list = list.sort((a, b) => b.score - a.score);
   }
@@ -216,7 +227,8 @@ export function typesFor(symbol = '', category = '') {
 }
 
 /** Trova lo strumento su onvista: per ISIN se c'è, altrimenti per nome (o testo di ricerca). */
-export async function resolveInstrument({ isin: isin0, type, name, symbol, q, category }) {
+export async function resolveInstrument({ isin: isin0, type, ev, name, symbol, q, category }) {
+  if (ev && /^\d{1,15}$/.test(String(ev)) && TYPE_RE.test(type || '')) return { type, id: String(ev) };
   const isin = isin0 || (isIsin(symbol) ? symbol.toUpperCase() : '');
   if (isIsin(isin) && TYPE_RE.test(type || '')) return { type, id: isin.toUpperCase() };
   if (isIsin(isin)) {

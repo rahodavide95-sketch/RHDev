@@ -8,18 +8,20 @@ jobs:
   diag:
     runs-on: ubuntu-latest
     steps:
-      - name: Fonti europee per ISIN
+      - name: onvista in dettaglio
         run: |
-          O='https://rahodavide95-sketch.github.io'
           UA='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36'
-          chk() { echo; echo "=== $1"; curl -sS -m 15 -D /tmp/h -o /tmp/b -H "Origin: $O" -A "$UA" "$2" -w 'HTTP %{http_code}\n' || true; grep -i '^access-control-allow' /tmp/h || echo 'NESSUN access-control-allow-origin'; head -c ${3:-600} /tmp/b; echo; }
-          chk 'onvista search ISIN' 'https://api.onvista.de/api/v1/instruments/query?searchValue=IE00BFMXXD54&limit=3' 2500
-          chk 'onvista search nome' 'https://api.onvista.de/api/v1/instruments/query?searchValue=Invesco%20Physical%20Gold&limit=3' 1500
-          chk 'onvista snapshot FUND' 'https://api.onvista.de/api/v1/instruments/FUND/ISIN:IE00BFMXXD54/snapshot' 2500
-          chk 'onvista snapshot STOCK' 'https://api.onvista.de/api/v1/instruments/STOCK/ISIN:US7731211089/snapshot' 1500
-          chk 'onvista snapshot ETC' 'https://api.onvista.de/api/v1/instruments/DERIVATIVE/ISIN:IE00B579F325/snapshot' 800
-          chk 'tradegate' 'https://www.tradegate.de/refresh.php?isin=IE00BFMXXD54'
-          chk 'justetf' 'https://www.justetf.com/api/etfs/IE00BFMXXD54/quote?locale=it&currency=EUR&isin=IE00BFMXXD54'
-          chk 'ls-tc search' 'https://www.ls-tc.de/_rpc/json/.lstc/instrument/search/main?q=IE00BFMXXD54&localeId=2'
-          chk 'coingecko' 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=eur'
-          chk 'yahoo chart (UA curl)' 'https://query1.finance.yahoo.com/v8/finance/chart/VUAA.DE?range=5d&interval=1d'
+          A='https://api.onvista.de/api/v1'
+          g() { curl -sS -m 15 -A "$UA" -H 'Origin: https://rahodavide95-sketch.github.io' "$1"; }
+          for x in FUND:IE00BFMXXD54 STOCK:US7731211089 DERIVATIVE:IE00B579F325 FUND:LU0290358497 FUND:IE00BMFKG444; do
+            t=${x%%:*}; i=${x#*:}; echo "=== $x"
+            g "$A/instruments/$t/ISIN:$i/snapshot" > /tmp/s.json
+            jq -c '{type:.instrument.entityType, sub:.instrument.entitySubType, name:.instrument.name, ev:.instrument.entityValue, main:{m:.quote.market.codeExchange, n:.quote.market.name, c:.quote.isoCurrency, last:.quote.last, t:.quote.datetimeLast, idn:.quote.market.idNotation}}' /tmp/s.json
+            jq -c '[.quoteList.list[]? | {m:.market.codeExchange, n:.market.name, c:.isoCurrency, last:.last, t:.datetimeLast, idn:.market.idNotation}]' /tmp/s.json | head -c 1800; echo
+            ev=$(jq -r '.instrument.entityValue' /tmp/s.json); idn=$(jq -r '.quote.market.idNotation' /tmp/s.json)
+            echo "--- eod_history"; g "$A/instruments/$t/$ev/eod_history?idNotation=$idn&range=M1&startDate=2026-09-30" | head -c 700; echo
+            echo "--- chart_history"; g "$A/instruments/$t/$ev/chart_history?idNotation=$idn&resolution=1D&range=M1" | head -c 500; echo
+          done
+          for q in 'Vanguard%20S%26P%20500' 'Xtrackers%20EUR%20Overnight' 'VanEck%20Space%20Innovators' 'iShares%20Core%20MSCI%20EM%20IMI' 'VWCE' 'S%26P%20500' 'FTSE%20MIB' 'Bitcoin'; do
+            echo "=== cerca $q"; g "$A/instruments/query?searchValue=$q&limit=6" | jq -c '[.list[]? | {t:.entityType, s:.entitySubType, n:.name, i:.isin, sym:.symbol}]' | head -c 1500; echo
+          done

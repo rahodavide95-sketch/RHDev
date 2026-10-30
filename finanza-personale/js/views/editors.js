@@ -664,27 +664,36 @@ export function bolloEditor(ctx) {
 }
 
 /* ═══ Categoria ═════════════════════════════════════════════════════════ */
-export function categoryEditor(cat = null, kind = 'expense', onSaved) {
+export function categoryEditor(cat = null, kind = 'expense', onSaved, preset = {}) {
   const state = st();
   const isNew = !cat;
-  const name = textInput({ value: cat?.name || '', placeholder: 'Es. Corsi di musica', autofocus: true, max: 50 });
+  const k = cat?.kind || kind;
+  const name = textInput({ value: cat?.name || '', placeholder: k === 'income' ? 'Es. Stipendio, DJ, Produzione' : 'Es. Corsi di musica', autofocus: true, max: 50 });
   const emoji = emojiButton(cat?.emoji || '🏷️');
-  const groups = [...new Set(state.categories.filter(c => c.kind === (cat?.kind || kind)).map(c => c.group))];
-  const group = textInput({ value: cat?.group || '', placeholder: 'Es. Casa, Tempo libero', list: 'groups-dl', max: 40 });
+  const groups = [...new Set(state.categories.filter(c => c.kind === k).map(c => c.group))];
+  const group = textInput({ value: cat?.group || preset.group || '', placeholder: k === 'income' ? 'Es. Lavoro, Musica, Interessi' : 'Es. Casa, Tempo libero', list: 'groups-dl', max: 40 });
   const dl = h('datalist', { id: 'groups-dl' }, groups.map(g => h('option', { value: g })));
+  const hidden = toggle('Nascondi', !!cat?.archived, null, { hint: 'Non compare più quando scegli una categoria, ma i movimenti passati restano' });
+  const used = cat ? state.transactions.filter(t => t.category === cat.id).length : 0;
+  const others = state.categories.filter(c => c.kind === k && c.id !== cat?.id);
+  const moveSel = selectInput([{ value: '', label: 'Nessuna (restano senza categoria)' }, ...others.map(c => ({ value: c.id, label: `${c.emoji} ${c.name}`, group: c.group }))], '');
   const save = () => {
     if (!name.value.trim()) return;
-    const id = A.saveCategory({ id: cat?.id, name: name.value.trim(), emoji: emoji.value, kind: cat?.kind || kind, group: group.value.trim() || 'Altro' });
+    const id = A.saveCategory({ id: cat?.id, name: name.value.trim(), emoji: emoji.value, kind: k, group: group.value.trim() || 'Altro', archived: hidden.input.checked });
     s.close(true);
     onSaved?.(id);
   };
   const s = openSheet({
-    title: isNew ? 'Nuova categoria' : 'Modifica categoria', size: 'sm',
-    body: h('form.stack', { onsubmit: e => { e.preventDefault(); save(); } }, h('div.name-row', emoji, field('Nome', name, { wide: true })), field('Gruppo', group), dl, h('button', { type: 'submit', hidden: true })),
-    footer: [
-      !isNew ? twoTap('Elimina', () => { A.deleteCategory(cat.id); s.close(true); undoToast('Categoria eliminata: i movimenti restano senza categoria'); }, { iconName: 'trash' }) : null,
-      h('button.btn.btn-primary', { type: 'button', onclick: save }, 'Salva'),
-    ],
+    title: isNew ? (k === 'income' ? 'Nuova sottocategoria di entrata' : 'Nuova sottocategoria di uscita') : 'Modifica sottocategoria', size: 'sm',
+    body: h('form.stack', { onsubmit: e => { e.preventDefault(); save(); } }, h('div.name-row', emoji, field('Nome', name, { wide: true })),
+      field('Categoria (gruppo)', group, { hint: 'Scrivine una nuova o scegline una che hai già' }), dl,
+      !isNew ? hidden : null,
+      !isNew ? h('details.subcard', h('summary', 'Elimina o unisci'), h('div.stack-sm',
+        h('p.field-hint', used ? `${used} movimenti usano questa sottocategoria.` : 'Nessun movimento la usa.'),
+        used ? field('Sposta i movimenti in', moveSel, { hint: 'Così le due sottocategorie diventano una' }) : null,
+        twoTap(used ? 'Elimina e sposta' : 'Elimina', () => { const to = used ? selectValue(moveSel) || null : null; A.deleteCategory(cat.id, to); s.close(true); undoToast(to ? 'Sottocategorie unite' : 'Sottocategoria eliminata'); onSaved?.(null); }, { iconName: 'trash' }))) : null,
+      h('button', { type: 'submit', hidden: true })),
+    footer: [h('button.btn.btn-primary', { type: 'button', onclick: save }, 'Salva')],
   });
 }
 

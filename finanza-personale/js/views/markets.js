@@ -68,7 +68,7 @@ async function fill(ctx, items, rows, gen) {
       const k = i++;
       const it = items[k];
       try {
-        const q = await quote({ ...it, category: M.cat === 'Preferiti' ? '' : M.cat }, M.range);
+        const q = await quote({ ...it, isin: it.isin || info(it.symbol)?.isin || undefined, category: M.cat === 'Preferiti' ? '' : M.cat, currency: /Azioni IT/.test(M.cat) ? 'EUR' : undefined }, M.range);
         if (gen !== M.gen) return;
         const r = rows[k];
         r.querySelector('.mkt-price').textContent = fmtP(q.price) + (q.currency ? ' ' + q.currency : '');

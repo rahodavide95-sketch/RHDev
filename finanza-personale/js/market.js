@@ -114,22 +114,50 @@ export async function ovHistory(type, ev, idn, rangeKey = '1M') {
 }
 
 /* ─── Somiglianza tra nomi (per scegliere lo strumento giusto in una ricerca) ─── */
-const words = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/&/g, ' ').split(/[^a-z0-9]+/).filter(w => w && !['ucits', 'etf', 'the', 'inc', 'plc', 'acc', 'dis', 'usd', 'eur'].includes(w));
+const STOP = new Set(['ucits', 'etf', 'the', 'inc', 'plc', 'acc', 'dis', 'fund', 'shares', 'class']);
+const CUR_WORDS = new Set(['usd', 'eur', 'gbp', 'chf', 'jpy']);
+const words = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/&/g, ' ').split(/[^a-z0-9]+/).filter(w => w && !STOP.has(w));
 export function nameScore(a, b) {
   const A = new Set(words(a)), B = new Set(words(b));
   if (!A.size || !B.size) return 0;
   let common = 0;
   for (const w of A) if (B.has(w)) common++;
-  return common / (A.size + B.size - common);
+  // una valuta nel nome dell'altro strumento che il titolo non ha (es. "USD High Yield" invece di "EUR High Yield")
+  const aCur = [...A].filter(w => CUR_WORDS.has(w)), bCur = [...B].filter(w => CUR_WORDS.has(w) && !A.has(w));
+  return common / (A.size + B.size - common) - (aCur.length ? bCur.length * 0.15 : 0);
 }
 
-/** Candidati per un titolo che non ha l'ISIN: i più simili per nome, con il tipo giusto. */
-export async function findCandidates({ name, symbol }, types = ['FUND', 'STOCK', 'DERIVATIVE', 'BOND']) {
+/** Ricerche sempre più corte finché si trova qualcosa ("Invesco Physical Gold A" → "Invesco Physical Gold"). */
+function shorterQueries(name) {
+  const w = String(name || '').trim().split(/\s+/);
+  const out = [w.join(' ')];
+  if (w.length > 1 && w[w.length - 1].length <= 2) out.push(w.slice(0, -1).join(' '));
+  const core = w.filter(x => !/^(ucits|etf|acc|dis|a|c)$/i.test(x));
+  if (core.length >= 2) out.push(core.slice(0, 4).join(' '), core.slice(0, 3).join(' '), core.slice(0, 2).join(' '));
+  return [...new Set(out)].filter(q => q.length >= 3);
+}
+
+/** Candidati per un titolo che non ha l'ISIN: i più simili per nome e, se si conosce il prezzo
+    dell'ultima operazione, per prezzo (distingue ad accumulo e a distribuzione, valute diverse). */
+export async function findCandidates({ name, symbol, price, currency }, types = ['FUND', 'STOCK', 'DERIVATIVE', 'BOND']) {
   const seen = new Map();
-  for (const q of [name, symbol && !/[.=^-]/.test(symbol) ? symbol : null].filter(Boolean)) {
+  const queries = [...shorterQueries(name), symbol && !/[.=^-]/.test(symbol) ? symbol : null].filter(Boolean);
+  for (const q of queries) {
     try { for (const c of await ovSearch(q, 8)) if (types.includes(c.type) && c.isin && !seen.has(c.isin)) seen.set(c.isin, c); } catch { /* prova la prossima */ }
+    if (seen.size >= 3) break;
   }
-  return [...seen.values()].map(c => ({ ...c, score: nameScore(name || symbol, c.name) + (symbol && c.symbol === symbol ? 0.5 : 0) })).sort((a, b) => b.score - a.score);
+  let list = [...seen.values()].map(c => ({ ...c, score: nameScore(name || symbol, c.name) + (symbol && c.symbol === symbol ? 0.5 : 0) })).sort((a, b) => b.score - a.score).slice(0, 6);
+  if (price > 0) {
+    await Promise.all(list.slice(0, 5).map(async c => {
+      try {
+        const sn = await ovSnapshot(c.type, c.isin);
+        const q = pickQuote(sn.quotes, currency);
+        if (q && (!currency || q.cur === currency)) { c.price = q.last; c.cur = q.cur; c.score -= Math.min(1, Math.abs(Math.log(q.last / price))) * 2; }
+      } catch { /* senza prezzo */ }
+    }));
+    list = list.sort((a, b) => b.score - a.score);
+  }
+  return list;
 }
 
 /* ─── Crypto ─── */
@@ -203,10 +231,31 @@ export async function resolveInstrument({ isin: isin0, type, name, symbol, q, ca
   return { type: best.type, id: best.isin || best.ev };
 }
 
+/** Cambio tra due valute dalla BCE (Frankfurter), con lo storico giornaliero. "EURUSD=X" → EUR/USD. */
+export async function fxQuote(symbol, rangeKey = '1M') {
+  const m = /^([A-Z]{3})([A-Z]{3})=X$/.exec(symbol || '');
+  if (!m) throw new Error('Cambio non valido');
+  const [, from, to] = m;
+  const cfg = MKT_RANGES[rangeKey] || MKT_RANGES['1M'];
+  const now = new Date();
+  const days = rangeKey === 'YTD' ? Math.ceil((now - new Date(now.getFullYear(), 0, 1)) / 864e5) + 1 : Math.max(10, Math.min(cfg.days || 35, 9000));
+  const start = new Date(now - days * 864e5).toISOString().slice(0, 10);
+  return cached(`fx|${from}|${to}|${start}`, 30 * 60 * 1000, async () => {
+    const d = await getJSON(`https://api.frankfurter.dev/v1/${start}..?base=${from}&symbols=${to}`, 8000);
+    const pts = Object.entries(d?.rates && typeof d.rates === 'object' ? d.rates : {})
+      .filter(([k, v]) => /^\d{4}-\d{2}-\d{2}$/.test(k) && okNum(v?.[to])).sort((a, b) => (a[0] < b[0] ? -1 : 1));
+    if (!pts.length) throw new Error('Cambio non disponibile');
+    const closes = pts.map(p => p[1][to]), stamps = pts.map(p => Math.floor(Date.parse(p[0] + 'T12:00:00Z') / 1000));
+    const price = closes[closes.length - 1], first = rangeKey === '1G' && closes.length > 1 ? closes[closes.length - 2] : closes[0];
+    return { price, currency: to, closes, stamps, change: first ? (price - first) / first * 100 : null, venue: 'BCE', name: `${from} / ${to}` };
+  });
+}
+
 /** Prezzo, variazione e andamento. item: { symbol, name, isin, type, q, category, currency }. */
 export async function quote(item, rangeKey = '1M') {
   const it = typeof item === 'string' ? { symbol: item } : item;
   if (isCrypto(it.symbol) && !it.isin) return cryptoQuote(it.symbol, rangeKey);
+  if (/^[A-Z]{6}=X$/.test(it.symbol || '') && !it.isin) return fxQuote(it.symbol, rangeKey);
   const inst = await resolveInstrument(it);
   const snap = await ovSnapshot(inst.type, inst.id);
   const q = pickQuote(snap.quotes, it.currency);

@@ -268,7 +268,7 @@ export function saveCategory(c) {
   let id = c.id;
   commit(st => {
     const ex = id && find(st.categories, id);
-    if (ex) Object.assign(ex, { name: c.name, emoji: c.emoji, group: c.group || 'Altro' });
+    if (ex) Object.assign(ex, { name: c.name, emoji: c.emoji, group: c.group || 'Altro', ...(c.archived != null ? { archived: !!c.archived } : {}) });
     else { id = uid('c-'); st.categories.push({ id, name: c.name, emoji: c.emoji || '•', kind: c.kind, group: c.group || 'Altro', archived: false }); }
   });
   return id;
@@ -282,6 +282,45 @@ export function deleteCategory(id, moveTo = null) {
     delete st.budgets[id];
   }, { undo: 'Categoria eliminata' });
 }
+/** Rinomina un gruppo (la "categoria" dei fogli): tutte le sue sottocategorie lo seguono. */
+export function renameGroup(kind, from, to) {
+  const name = to.trim().slice(0, 40);
+  if (!name || name === from) return;
+  commit(st => {
+    for (const c of st.categories) if (c.kind === kind && c.group === from) c.group = name;
+    const gc = st.settings.groupColors;
+    if (gc[`${kind}:${from}`]) { gc[`${kind}:${name}`] = gc[`${kind}:${from}`]; delete gc[`${kind}:${from}`]; }
+  }, { undo: 'Gruppo rinominato' });
+}
+export function setGroupColor(kind, group, color) {
+  commit(st => { st.settings.groupColors[`${kind}:${group}`] = color; });
+}
+/** Sposta una categoria su o giù nel suo gruppo (dir = -1 / +1). */
+export function moveCategory(id, dir) {
+  commit(st => {
+    const c = find(st.categories, id);
+    if (!c) return;
+    const peers = st.categories.filter(x => x.kind === c.kind && x.group === c.group);
+    const j = peers.indexOf(c) + dir;
+    if (j < 0 || j >= peers.length) return;
+    const a = st.categories.indexOf(c), b = st.categories.indexOf(peers[j]);
+    [st.categories[a], st.categories[b]] = [st.categories[b], st.categories[a]];
+  }, { noCount: true });
+}
+/** Sposta un gruppo intero prima o dopo il gruppo vicino. */
+export function moveGroup(kind, group, dir) {
+  commit(st => {
+    const same = st.categories.filter(c => c.kind === kind);
+    const order = [...new Set(same.map(c => c.group))];
+    const i = order.indexOf(group), j = i + dir;
+    if (i < 0 || j < 0 || j >= order.length) return;
+    [order[i], order[j]] = [order[j], order[i]];
+    const others = st.categories.filter(c => c.kind !== kind);
+    st.categories = [...order.flatMap(g => same.filter(c => c.group === g)), ...others];
+  }, { noCount: true });
+}
+export function archiveCategory(id, v = true) { commit(st => { const c = find(st.categories, id); if (c) c.archived = v; }); }
+
 export function deleteRule(id) { commit(st => { st.rules = st.rules.filter(r => r.id !== id); }); }
 export function saveRule(r) {
   commit(st => {

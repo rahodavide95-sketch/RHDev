@@ -51,10 +51,10 @@ export function linkSheet(ctx, list) {
       const sel = h('select.input.select', { 'aria-label': hd.name }, h('option', { value: '' }, 'Cerco…'));
       const isinIn = textInput({ placeholder: 'oppure scrivi l\'ISIN', max: 12 });
       const info = h('p.field-hint');
-      findCandidates({ name: hd.name, symbol: hd.symbol }).then(cands => {
-        sel.replaceChildren(h('option', { value: '' }, cands.length ? 'Non collegare' : 'Nessun titolo trovato'), ...cands.slice(0, 6).map(c => h('option', { value: c.isin + '|' + c.type }, `${c.name} · ${c.isin}`)));
+      findCandidates({ name: hd.name, symbol: hd.symbol, price: hd.price, currency: hd.currency }).then(cands => {
+        sel.replaceChildren(h('option', { value: '' }, cands.length ? 'Non collegare' : 'Nessun titolo trovato'), ...cands.slice(0, 6).map(c => h('option', { value: c.isin + '|' + c.type }, `${c.name} · ${c.isin}${c.price ? ` · oggi ${formatNumber(c.price, 2, 2)} ${c.cur}` : ''}`)));
         if (cands[0] && cands[0].score >= 0.3) sel.value = cands[0].isin + '|' + cands[0].type;
-        info.textContent = cands.length ? 'Controlla che l\'ISIN sia quello che vedi nell\'app del broker.' : 'Scrivi l\'ISIN: lo trovi nell\'app del broker, nella scheda del titolo.';
+        info.textContent = cands.length ? `Il tuo ultimo prezzo era ${formatNumber(hd.price, 2, 2)} ${hd.currency}${hd.priceDate ? ' (' + formatDate(hd.priceDate, { year: true }) + ')' : ''}. Controlla che l'ISIN sia quello che vedi nell'app del broker.` : 'Scrivi l\'ISIN: lo trovi nell\'app del broker, nella scheda del titolo.';
       }).catch(() => { sel.replaceChildren(h('option', { value: '' }, 'Ricerca non raggiungibile')); info.textContent = 'Scrivi l\'ISIN a mano.'; });
       return { hd, sel, isinIn, node: h('div.subcard.stack-sm', h('div.subcard-t', hd.name), h('div.select-wrap', sel, icon('chevD', 16, 'select-chev')), isinIn, info) };
     });

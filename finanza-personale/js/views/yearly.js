@@ -1,42 +1,50 @@
-/* Entrate e uscite dell'anno come il foglio di D: categoria → sottocategoria → voce,
-   una colonna per mese, totale e media mensile. Tutto si sceglie e si organizza liberamente:
-   categorie e sottocategorie si creano, rinominano, colorano e spostano da qui. */
+/* Entrate e uscite dell'anno, come un bilancio: le macro categorie (es. LAVORO, MUSICA,
+   INT. BANCA, ALTRO) sono la somma delle loro sottocategorie (STIPENDIO, 13ESIMA, DJ, CC…).
+   In alto i numeri dell'anno, poi una scheda per macro categoria, il grafico mese per mese
+   e la tabella: riga della macro (somma) e sotto le sue sottocategorie, mesi, totale, media
+   e quota. Le note (voci) si vedono a richiesta. Categorie da "Categorie" (crea, rinomina,
+   colora, riordina). */
 
 import { h, icon, download } from '../ui/dom.js';
 import { toast, empty } from '../ui/components.js';
-import { moneyText, ui } from '../ui/fmt.js';
-import { card, segTabs, filterBox } from './common.js';
+import { money, moneyText, delta, tipMoney, axisMoney, ui } from '../ui/fmt.js';
+import { card, segTabs, filterBox, stat } from './common.js';
 import { categoryEditor, txEditor } from './editors.js';
 import { categoryManager, groupColor } from './categories.js';
 import { openFileImport } from './invimport.js';
+import { barChart, sparkline, legend } from '../ui/charts.js';
 import { monthName, today } from '../core/dates.js';
+import { formatPercent } from '../core/money.js';
 import { toCSV, csvNumber } from '../core/csv.js';
 
-const V = { kind: 'income', year: null, level: 'payee', empty: false, open: new Set(), layout: 'sheet', subtot: true, q: '' };
-const norm = x => String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-/** Solo le righe che contengono il testo (categoria, sottocategoria o voce), con i totali rifatti. */
-function filterTable(T, q) {
+const V = { kind: 'income', year: null, empty: true, notes: false, closed: new Set(), openNotes: new Set(), focus: '', q: '' };
+const norm = x => String(x || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+const zero = () => ({ total: 0, byMonth: Array(12).fill(0) });
+const add = (a, b) => { a.total += b.total; b.byMonth.forEach((v, i) => { a.byMonth[i] += v; }); return a; };
+
+/** Solo le righe che contengono il testo (macro, sottocategoria o nota), con i totali rifatti. */
+function filterTable(T, q, focus) {
   const n = norm(q);
-  if (!n) return T;
-  const row = () => ({ total: 0, byMonth: Array(12).fill(0) });
-  const add = (a, b) => { a.total += b.total; b.byMonth.forEach((v, i) => { a.byMonth[i] += v; }); return a; };
-  const tot = row();
-  const groups = T.groups.map(g => {
-    const gHit = norm(g.name).includes(n);
+  if (!n && !focus) return T;
+  const tot = zero();
+  const groups = T.groups.filter(g => !focus || g.name === focus).map(g => {
+    if (!n || norm(g.name).includes(n)) { add(tot, g); return g; }
     const cats = g.cats.map(c => {
-      const cHit = gHit || norm(c.name).includes(n);
-      const payees = cHit ? c.payees : c.payees.filter(p => norm(p.name).includes(n));
-      if (!cHit && !payees.length) return null;
-      return cHit ? c : { ...c, payees, ...payees.reduce(add, row()) };
+      if (norm(c.name).includes(n)) return c;
+      const payees = c.payees.filter(p => norm(p.name).includes(n));
+      return payees.length ? { ...c, payees, ...payees.reduce(add, zero()) } : null;
     }).filter(Boolean);
     if (!cats.length) return null;
-    const gg = { ...g, cats, ...cats.reduce(add, row()) };
+    const gg = { ...g, cats, ...cats.reduce(add, zero()) };
     add(tot, gg);
     return gg;
   }).filter(Boolean);
   return { ...T, groups, ...tot };
 }
-const t2 = v => (v ? moneyText(v, ui.base) : '');
+/** Macro senza sottocategorie vere (es. ALTRO): una riga sola. */
+const single = g => g.cats.length === 1 && norm(g.cats[0].name) === norm(g.name);
+/** Note diverse dal nome della sottocategoria (es. "Groover" sotto PRODUZIONE). */
+const notesOf = c => c.payees.filter(p => p.name && norm(p.name) !== norm(c.name) && p.name !== 'Senza descrizione');
 
 export default {
   render(ctx) {
@@ -48,88 +56,128 @@ export default {
     const cy = +today().slice(0, 4);
     if (!years.includes(cy)) years.push(cy);
     if (!V.year || !years.includes(V.year)) V.year = cy;
-    const T = filterTable(d.yearTable(V.year, V.kind, { empty: V.empty }), V.q);
+    const full = d.yearTable(V.year, V.kind, { empty: V.empty });
+    if (V.focus && !full.groups.some(g => g.name === V.focus)) V.focus = '';
+    const T = filterTable(full, V.q, V.focus);
     const label = V.kind === 'income' ? 'Entrate' : 'Uscite';
-    const avg = r => (T.months ? Math.round(r.total / T.months) : 0);
-    const curM = V.year === cy ? +today().slice(5, 7) : V.year < cy ? 12 : 0;
+    const one = V.kind === 'income' ? 'entrata' : 'uscita';
+    const curM = V.year === cy ? +today().slice(5, 7) : V.year < cy ? 12 : 0;   // mesi trascorsi
     const months = Array.from({ length: 12 }, (_, i) => i);
+    const avg = r => (T.months ? Math.round(r.total / T.months) : 0);
+    const share = r => (T.total ? r.total / T.total * 100 : 0);
+    const colOf = g => groupColor(st, V.kind, g.name);
+    const t2 = v => (v ? moneyText(v, ui.base) : '');
+    const goMonth = (m, extra) => ctx.go(`movimenti?mese=${V.year}-${String(m + 1).padStart(2, '0')}${extra}`);
 
-    const goMonth = (m, extra = '') => ctx.go(`movimenti?mese=${V.year}-${String(m + 1).padStart(2, '0')}${extra}`);
-    const cells = (r, extra) => months.map(m => h('td.num', {
-      class: [m >= curM ? 'future' : '', r.byMonth[m] ? 'click' : 'muted'].join(' '),
+    /* ── numeri dell'anno ── */
+    const prev = d.yearTable(V.year - 1, V.kind).total;
+    const passed = full.byMonth.slice(0, Math.max(1, curM));
+    const best = passed.reduce((b, v, i) => (v > b.v ? { v, i } : b), { v: 0, i: -1 });
+    const lastM = curM ? curM - 1 : 0;
+    const kpis = h('section.card.fin-kpis', h('div.stats-4',
+      stat(`${label} ${V.year}`, money(full.total), prev ? h('span', delta(prev ? (full.total - prev) / prev * 100 : 0, { invert: V.kind === 'expense' }), ` sul ${V.year - 1} (${moneyText(prev)})`) : `${full.months} mesi`),
+      stat('Media al mese', money(full.months ? Math.round(full.total / full.months) : 0), `su ${full.months || 0} ${full.months === 1 ? 'mese' : 'mesi'}`),
+      stat(V.kind === 'income' ? 'Mese migliore' : 'Mese più caro', best.i >= 0 ? money(best.v) : '—', best.i >= 0 ? monthName(best.i + 1) : ''),
+      stat(V.year === cy ? `${monthName(curM)} finora` : `${monthName(lastM + 1)}`, money(full.byMonth[lastM] || 0), full.months && full.total ? h('span', delta(((full.byMonth[lastM] || 0) / (full.total / full.months) - 1) * 100, { invert: V.kind === 'expense' }), ' rispetto alla media') : '')));
+
+    /* ── una scheda per macro categoria ── */
+    const cards = full.groups.length ? h('div.fin-cards', full.groups.map(g => {
+      const col = colOf(g), p = full.total ? g.total / full.total * 100 : 0;
+      const on = V.focus === g.name;
+      return h('button.fin-card', { type: 'button', class: on ? 'on' : V.focus ? 'dim' : '', style: { '--chip': col }, 'aria-pressed': String(on), onclick: () => { V.focus = on ? '' : g.name; ctx.rerender(); } },
+        h('span.fin-card-top', h('span.fin-card-name', g.name), h('span.fin-card-pct', formatPercent(p, 1))),
+        h('span.fin-card-val', money(g.total)),
+        h('span.fin-bar', h('i', { style: { width: Math.min(100, p) + '%' } })),
+        h('span.fin-card-sub', single(g) ? `media ${moneyText(full.months ? Math.round(g.total / full.months) : 0)} al mese` : `${g.cats.length} ${g.cats.length === 1 ? 'voce' : 'voci'} · media ${moneyText(full.months ? Math.round(g.total / full.months) : 0)} al mese`),
+        sparkline(g.byMonth.slice(0, Math.max(2, curM)), { color: col, width: 150, height: 30 }));
+    })) : null;
+
+    /* ── grafico: macro categorie impilate mese per mese ── */
+    const chartGroups = T.groups;
+    const chart = chartGroups.length ? card('Mese per mese', { sub: `${label} di ogni mese, divise per categoria` },
+      barChart({
+        labels: months.map(m => monthName(m + 1, true)), tipLabels: months.map(m => `${monthName(m + 1)} ${V.year}`),
+        series: chartGroups.map(g => ({ name: g.name, color: colOf(g), values: g.byMonth })),
+        stacked: true, fmt: tipMoney, fmtAxis: axisMoney, height: 230, mask: ui.privacy,
+      }),
+      legend(chartGroups.map(g => ({ label: g.name, color: colOf(g) })))) : null;
+
+    /* ── tabella: macro (somma) → sottocategorie → note ── */
+    const cells = (r, extra, strong) => months.map(m => h('td.num', {
+      class: [m >= curM ? 'future' : '', r.byMonth[m] ? (extra != null ? 'click' : '') : 'muted', strong ? 'b' : ''].join(' '),
       onclick: r.byMonth[m] && extra != null ? e => { e.stopPropagation(); goMonth(m, extra); } : null,
-    }, m >= curM && !r.byMonth[m] ? '' : t2(r.byMonth[m]) || '—'));
-    const ends = r => [h('td.num.diff', t2(r.total) || '—'), h('td.num', T.months && r.total ? moneyText(avg(r), ui.base) : '—')];
-
+    }, m >= curM && !r.byMonth[m] ? '' : t2(r.byMonth[m]) || '–'));
+    const ends = r => [h('td.num.fin-tot', t2(r.total) || '–'), h('td.num', T.months && r.total ? moneyText(avg(r), ui.base) : '–'), h('td.num.fin-pct', r.total && T.total ? formatPercent(share(r), 1) : '–')];
     const body = [];
     for (const g of T.groups) {
-      const col = groupColor(st, V.kind, g.name);
-      body.push(h('tr.grp', h('td.sticky', h('span.grp-chip', { style: { '--chip': col } }, g.name)), cells(g, null), ends(g)));
-      if (V.level === 'group') continue;
+      const col = colOf(g);
+      const isSingle = single(g);
+      const closed = V.closed.has(g.name);
+      const catId = isSingle ? g.cats[0].id : null;
+      body.push(h('tr.fin-macro', { style: { '--chip': col }, class: isSingle ? '' : 'click', onclick: isSingle ? null : () => { if (closed) V.closed.delete(g.name); else V.closed.add(g.name); ctx.rerender(); } },
+        h('td.sticky', h('span.fin-macro-name', isSingle ? h('span.fin-caret') : h('span.fin-caret', icon(closed ? 'chevR' : 'chevD', 14)), g.name)),
+        cells(g, catId ? `&cat=${catId}` : null, true), ends(g)));
+      const showNotes = c => V.notes || V.openNotes.has(c.id || c.name);
+      if (isSingle) {
+        const c = g.cats[0];
+        if (showNotes(c)) for (const p of notesOf(c)) body.push(h('tr.fin-note', h('td.sticky', h('span', p.name)), cells(p, `${c.id ? `&cat=${c.id}` : ''}&q=${encodeURIComponent(p.name)}`), ends(p)));
+        continue;
+      }
+      if (closed) continue;
       for (const c of g.cats) {
-        const key = g.name + '|' + c.id;
-        const hasP = V.level === 'payee' && c.payees.length > 0;
-        const isOpen = V.level === 'payee' && (V.open.has(key) || c.payees.length === 1);
-        body.push(h('tr.cat', { class: hasP ? 'click' : '', onclick: hasP && c.payees.length > 1 ? () => { if (V.open.has(key)) V.open.delete(key); else V.open.add(key); ctx.rerender(); } : null },
-          h('td.sticky', h('span.sub-chip', { style: { '--chip': col } }, c.emoji && c.emoji !== '•' ? c.emoji + ' ' : '', c.name), hasP && c.payees.length > 1 ? h('span.exp', icon(isOpen ? 'chevD' : 'chevR', 14)) : null),
+        const ns = notesOf(c);
+        const key = c.id || c.name;
+        body.push(h('tr.fin-sub', { style: { '--chip': col } },
+          h('td.sticky', h('span.fin-sub-name', c.name),
+            ns.length && !V.notes ? h('button.fin-notes-btn', { type: 'button', 'aria-label': 'Mostra le note', onclick: e => { e.stopPropagation(); if (V.openNotes.has(key)) V.openNotes.delete(key); else V.openNotes.add(key); ctx.rerender(); } }, `${ns.length} ${ns.length === 1 ? 'nota' : 'note'}`, icon(V.openNotes.has(key) ? 'chevD' : 'chevR', 12)) : null),
           cells(c, c.id ? `&cat=${c.id}` : ''), ends(c)));
-        if (isOpen) for (const p of c.payees) body.push(h('tr.pay', h('td.sticky', h('span.pay-name', p.name)), cells(p, `${c.id ? `&cat=${c.id}` : ''}&q=${encodeURIComponent(p.name)}`), ends(p)));
+        if (showNotes(c)) for (const p of ns) body.push(h('tr.fin-note', h('td.sticky', h('span', p.name)), cells(p, `${c.id ? `&cat=${c.id}` : ''}&q=${encodeURIComponent(p.name)}`), ends(p)));
       }
     }
-
-    /* come il foglio di D: CATEGORIA | SUB CATEGORIA | NOTE | mesi | TOTALI | MEDIA MENS., celle unite e colorate */
-    const sheetRows = [];
-    for (const g of T.groups) {
-      const col = groupColor(st, V.kind, g.name);
-      const lines = g.cats.flatMap(c => {
-        const ps = c.payees.length ? c.payees : [{ name: '', total: c.total, byMonth: c.byMonth }];
-        return ps.map((p, pi) => ({ c, p, first: pi === 0, n: ps.length, note: p.name && p.name.toLowerCase() !== c.name.toLowerCase() ? p.name : '' }));
-      });
-      lines.forEach((l, li) => {
-        const extra = `${l.c.id ? `&cat=${l.c.id}` : ''}${l.note ? `&q=${encodeURIComponent(l.note)}` : ''}`;
-        sheetRows.push(h('tr.sh-row', { style: { '--chip': col } },
-          li === 0 ? h('td.sticky.sh-grp', { rowSpan: lines.length }, h('span', g.name)) : null,
-          l.first ? h('td.sh-sub', { rowSpan: l.n }, h('span.sub-chip', { style: { '--chip': col } }, l.c.emoji && l.c.emoji !== '•' ? l.c.emoji + ' ' : '', l.c.name)) : null,
-          h('td.sh-note', l.note),
-          cells(l.p, extra), ends(l.p)));
-      });
-      if (V.subtot) sheetRows.push(h('tr.sh-tot', { style: { '--chip': col } }, h('td.sticky', `Totale ${g.name}`), h('td.sh-sub2'), h('td'), cells(g, null), ends(g)));
-    }
-    const sheetTable = h('div.table-wrap.nw-scroll', h('table.table.nw-table.nw-months.year-table.sheet-table', { 'data-tid': 'ent-sheet' },
-      h('thead', h('tr', h('th.sticky', 'CATEGORIA'), h('th.sh-sub2', 'SUB CATEGORIA'), h('th', 'NOTE'), months.map(m => h('th.num', { class: m >= curM ? 'future' : '' }, monthName(m + 1, true).toUpperCase())), h('th.num.diff', 'TOTALI'), h('th.num', 'MEDIA MENS.'))),
-      h('tbody', sheetRows),
-      h('tfoot', h('tr.total', h('td.sticky', 'TOTALE'), h('td.sh-sub2'), h('td'), months.map(m => h('td.num', { class: m >= curM ? 'future' : '' }, m >= curM && !T.byMonth[m] ? '' : t2(T.byMonth[m]) || '—')), ends(T)))));
-
+    const tableWrap = h('div.table-wrap.nw-scroll', h('table.table.nw-table.nw-months.fin-table', { 'data-tid': `fin-${V.kind}` },
+      h('thead', h('tr', h('th.sticky', 'Categoria'), months.map(m => h('th.num', { class: m >= curM ? 'future' : '' }, monthName(m + 1, true).toUpperCase())), h('th.num.fin-tot', 'Totale'), h('th.num', 'Media'), h('th.num', '%'))),
+      h('tbody', body),
+      h('tfoot', h('tr.fin-grand', h('td.sticky', V.focus || V.q ? `Totale (filtrato)` : `Totale ${label.toLowerCase()}`), cells(T, null, true), ends(T)))));
+    // su schermi stretti si apre sui mesi più recenti
     if (curM > 6) requestAnimationFrame(() => requestAnimationFrame(() => {
-      const th = table.querySelectorAll('thead th')[Math.max(1, curM - 4)]; if (th) table.scrollLeft = th.offsetLeft - 150;
-      const th2 = sheetTable.querySelectorAll('thead th')[Math.max(3, curM - 2)]; if (th2 && sheetTable.scrollWidth > sheetTable.clientWidth + 40) sheetTable.scrollLeft = th2.offsetLeft - 160;
+      if (tableWrap.scrollWidth <= tableWrap.clientWidth + 20) return;
+      const th = tableWrap.querySelectorAll('thead th')[Math.max(1, curM - 3)];
+      if (th) tableWrap.scrollLeft = th.offsetLeft - 190;
     }));
+
     const exportCsv = () => {
-      const rows = [['Categoria', 'Sottocategoria', 'Voce', ...months.map(m => monthName(m + 1, true)), 'Totale', 'Media mensile']];
-      const line = (a, b, c, r) => [a, b, c, ...r.byMonth.map(v => (v ? csvNumber(v) : '')), csvNumber(r.total), T.months ? csvNumber(avg(r)) : ''];
+      const rows = [['Categoria', 'Sottocategoria', 'Nota', ...months.map(m => monthName(m + 1, true)), 'Totale', 'Media mensile', '%']];
+      const line = (a, b, c, r) => [a, b, c, ...r.byMonth.map(v => (v ? csvNumber(v) : '')), csvNumber(r.total), T.months ? csvNumber(avg(r)) : '', T.total ? share(r).toFixed(1).replace('.', ',') : ''];
       for (const g of T.groups) {
         rows.push(line(g.name, '', '', g));
-        for (const c of g.cats) { rows.push(line(g.name, c.name, '', c)); for (const p of c.payees) rows.push(line(g.name, c.name, p.name, p)); }
+        if (!single(g)) for (const c of g.cats) { rows.push(line(g.name, c.name, '', c)); for (const p of notesOf(c)) rows.push(line(g.name, c.name, p.name, p)); }
       }
       rows.push(line('Totale', '', '', T));
       download(new Blob([toCSV(rows)], { type: 'text/csv;charset=utf-8' }), `${label.toLowerCase()}-${V.year}.csv`);
       toast('Tabella esportata', { kind: 'ok' });
     };
 
-    const table = h('div.table-wrap.nw-scroll', h('table.table.nw-table.nw-months.year-table', { 'data-tid': 'ent-tree' },
-      h('thead', h('tr', h('th.sticky', label), months.map(m => h('th.num', { class: m >= curM ? 'future' : '' }, monthName(m + 1, true).toUpperCase())), h('th.num.diff', 'Totale'), h('th.num', 'Media mese'))),
-      h('tbody', body),
-      h('tfoot', h('tr.total', h('td.sticky', 'Totale'), months.map(m => h('td.num', { class: m >= curM ? 'future' : '' }, m >= curM && !T.byMonth[m] ? '' : t2(T.byMonth[m]) || '—')), ends(T)))));
-    // si apre sui mesi più recenti
-
-    const kinds = segTabs([{ value: 'income', label: 'Entrate' }, { value: 'expense', label: 'Uscite' }], V.kind, v => { V.kind = v; V.open.clear(); ctx.go('entrate-uscite?tipo=' + (v === 'income' ? 'entrate' : 'uscite')); });
+    const kinds = segTabs([{ value: 'income', label: 'Entrate' }, { value: 'expense', label: 'Uscite' }], V.kind, v => { V.kind = v; V.closed.clear(); V.focus = ''; ctx.go('entrate-uscite?tipo=' + (v === 'income' ? 'entrate' : 'uscite')); });
     const yearTabs = segTabs(years.map(y => ({ value: y, label: String(y) })), V.year, v => { V.year = v; ctx.rerender(); });
-    const levels = segTabs([{ value: 'group', label: 'Categorie' }, { value: 'cat', label: '+ Sottocategorie' }, { value: 'payee', label: '+ Voci' }], V.level, v => { V.level = v; ctx.rerender(); });
-    const layouts = segTabs([{ value: 'sheet', label: 'Come il foglio' }, { value: 'tree', label: 'A gruppi' }], V.layout, v => { V.layout = v; ctx.rerender(); });
+    const anyClosed = T.groups.some(g => V.closed.has(g.name));
+    const hasData = full.groups.length > 0;
+    const invCosts = V.kind === 'expense' ? st.transactions.filter(t => t.kind === 'expense' && t.tags?.includes('investimenti') && t.date.startsWith(String(V.year))).reduce((a, t) => a + d.txBase(t), 0) : 0;
 
-    const hasData = T.groups.length > 0 || !!V.q;
+    const tableCard = card(V.focus ? `${label} ${V.year} · ${V.focus}` : `${label} ${V.year} per categoria`, {
+      sub: 'La riga colorata è la somma della categoria; sotto, le sue voci. Tocca un importo per vedere i movimenti.',
+      action: h('div.card-acts',
+        h('button.btn.btn-sm.btn-ghost', { type: 'button', onclick: () => { if (anyClosed) V.closed.clear(); else T.groups.forEach(g => V.closed.add(g.name)); ctx.rerender(); } }, icon(anyClosed ? 'chevD' : 'chevR', 16), anyClosed ? 'Apri tutto' : 'Chiudi tutto'),
+        h('button.btn.btn-sm.btn-ghost', { type: 'button', onclick: exportCsv }, icon('download', 16), 'CSV')),
+    },
+    h('div.inv-filters',
+      filterBox('ent', V.q, v => { V.q = v; ctx.rerender(); }, 'Filtra: categoria, voce o nota'),
+      V.focus ? h('button.btn.btn-sm.btn-soft', { type: 'button', onclick: () => { V.focus = ''; ctx.rerender(); } }, icon('x', 14), `Solo ${V.focus}`) : null,
+      h('label.chk', h('input', { type: 'checkbox', checked: V.notes, onchange: e => { V.notes = e.target.checked; ctx.rerender(); } }), 'Mostra tutte le note'),
+      h('label.chk', h('input', { type: 'checkbox', checked: V.empty, onchange: e => { V.empty = e.target.checked; ctx.rerender(); } }), 'Anche le voci senza importi')),
+    T.groups.length ? tableWrap : h('p.muted', 'Nessuna riga con questo filtro.'));
+
     return {
-      title: 'Entrate e uscite', sub: `${label} ${V.year}, mese per mese`,
+      title: 'Entrate e uscite', sub: `${label} ${V.year}`,
       actions: [
         h('button.btn.btn-soft', { type: 'button', onclick: () => openFileImport(ctx) }, icon('upload', 18), h('span', 'Importa')),
         h('button.btn.btn-soft', { type: 'button', onclick: () => categoryManager(ctx, V.kind) }, icon('edit', 18), h('span', 'Categorie')),
@@ -137,17 +185,9 @@ export default {
       ],
       node: h('div.stack',
         h('div.year-bar', kinds, yearTabs),
-        card(`${label} ${V.year}`, {
-          sub: hasData ? `In totale ${moneyText(T.total)}${T.months ? `, in media ${moneyText(Math.round(T.total / T.months))} al mese` : ''}` : null,
-          action: h('button.btn.btn-sm.btn-ghost', { type: 'button', onclick: exportCsv, disabled: !hasData }, icon('download', 16), 'CSV'),
-        },
-        h('div.inv-filters', layouts, filterBox('ent', V.q, v => { V.q = v; ctx.rerender(); }, 'Filtra: categoria, sottocategoria o voce'), V.layout === 'tree' ? levels : h('label.chk', h('input', { type: 'checkbox', checked: V.subtot, onchange: e => { V.subtot = e.target.checked; ctx.rerender(); } }), 'Totale di ogni categoria'), h('label.chk', h('input', { type: 'checkbox', checked: V.empty, onchange: e => { V.empty = e.target.checked; ctx.rerender(); } }), 'Anche le categorie vuote')),
-        hasData ? (V.layout === 'sheet' ? sheetTable : table) : empty({ icon: 'list', title: `Nessuna ${V.kind === 'income' ? 'entrata' : 'uscita'} nel ${V.year}`, text: 'Registra i movimenti con la loro categoria, o importa il tuo foglio Excel con le colonne GEN…DIC: qui li vedi mese per mese, come in un foglio.', action: h('div.row-btns', h('button.btn.btn-primary', { type: 'button', onclick: () => txEditor(ctx, null, { kind: V.kind }) }, icon('plus', 18), V.kind === 'income' ? 'Nuova entrata' : 'Nuova uscita'), h('button.btn.btn-soft', { type: 'button', onclick: () => openFileImport(ctx) }, icon('upload', 18), 'Importa da Excel')) })),
-        (() => {
-          const inv = V.kind === 'expense' ? st.transactions.filter(t => t.kind === 'expense' && t.tags?.includes('investimenti') && t.date.startsWith(String(V.year))).reduce((a, t) => a + d.txBase(t), 0) : 0;
-          return inv ? h('p.fine', icon('info', 14), h('span', `L'imposta di bollo e le altre spese degli investimenti (${moneyText(inv)} nel ${V.year}) non sono qui, come nel tuo foglio: le trovi in Investimenti › Anno per anno.`)) : null;
-        })(),
-        h('p.fine', icon('info', 14), h('span', 'Categoria = gruppo, sottocategoria = categoria del movimento, voce = descrizione (es. "Groover", "SIAE"). Tocca un importo per vedere i movimenti, una sottocategoria per aprire le voci. Con "Categorie" le crei, rinomini, colori e riordini come vuoi.'))),
+        hasData ? [kpis, cards, chart, tableCard] : h('section.card', empty({ icon: 'list', title: `Nessuna ${one} nel ${V.year}`, text: 'Registra i movimenti con la loro categoria, o importa il tuo foglio Excel con le colonne GEN…DIC: qui li vedi per categoria e mese per mese.', action: h('div.row-btns', h('button.btn.btn-primary', { type: 'button', onclick: () => txEditor(ctx, null, { kind: V.kind }) }, icon('plus', 18), V.kind === 'income' ? 'Nuova entrata' : 'Nuova uscita'), h('button.btn.btn-soft', { type: 'button', onclick: () => openFileImport(ctx) }, icon('upload', 18), 'Importa da Excel')) })),
+        invCosts ? h('p.fine', icon('info', 14), h('span', `L'imposta di bollo e le altre spese degli investimenti (${moneyText(invCosts)} nel ${V.year}) non sono qui, come nel tuo foglio: le trovi in Investimenti › Anno per anno.`)) : null,
+        h('p.fine', icon('info', 14), h('span', 'Tocca una scheda per vedere solo quella categoria. Con "Categorie" le crei, rinomini, colori e riordini come vuoi.'))),
     };
   },
 };

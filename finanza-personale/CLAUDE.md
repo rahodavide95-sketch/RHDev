@@ -201,11 +201,20 @@ Ordine = ordine dell'array `categories` (riordinabile). Colori dei gruppi in
 `settings.groupColors` (`"income:Lavoro"` → 1…8, palette dei grafici). `categoryManager()`:
 gruppi su/giù, rinomina (se il nome esiste già si uniscono), colore, nuove sottocategorie;
 `categoryEditor` con "Nascondi" e "Elimina e sposta i movimenti in…" (unione).
-Vista **"Come il foglio"** (predefinita, D: "deve essere tutto uguale all'excel, quell'impostazione
-grafica è super comoda"): colonne CATEGORIA | SUB CATEGORIA | NOTE | GEN…DIC | TOTALI | MEDIA
-MENS., categoria colorata e unita (rowspan) sulle sue righe, totale di ogni categoria, Categoria
-(e su computer Sottocategoria) ferme scorrendo; "A gruppi" è la vista di prima. Filtro per
-testo con i totali rifatti.
+Schema attuale (D, bocciando la vista a celle unite "come il foglio": "quello che sta adesso fa
+cagare… LAVORO è la macro categoria, indica la somma di tutto"): **come un bilancio**.
+Macro categoria = `group` (LAVORO, MUSICA, INT. BANCA, ALTRO), voci = categorie (STIPENDIO,
+13ESIMA, 14ESIMA, BUONI PASTO, WELFARE; ALTRO, DJ, PRODUZIONE, GRAFICHE; CC, CD). Pagina:
+numeri dell'anno (totale con confronto sull'anno prima, media, mese migliore, mese in corso
+sulla media) → una scheda colorata per macro (totale, quota, barra, media, andamento; tocca
+per vedere solo quella) → grafico a barre impilate per macro → tabella: riga della macro
+(somma, colorata, si apre e chiude) e sotto le voci rientrate, GEN…DIC, Totale, Media, %;
+macro senza voci vere (ALTRO) = una riga; note (`payee` diverse dal nome) a richiesta
+("1 nota ›" o "Mostra tutte le note"); "Anche le voci senza importi" acceso (13ESIMA a zero
+resta, come nel foglio); filtro con totali rifatti; CSV. Colori: `groupColor()` = colore
+scelto o uno diverso per ogni macro nell'ordine (non più dal nome). L'import crea anche le
+voci ancora a zero (`planMonths().keys`) e, con "Solo le categorie del file", dà alle
+categorie già presenti i nomi del file. Test col file di prova che ha questa struttura.
 
 ## Account e sincronizzazione (richiesta di D: "perché non mi fai accedere con mail e password?")
 

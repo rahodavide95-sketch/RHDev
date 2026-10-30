@@ -459,16 +459,22 @@ export function importWorkbook({ nw = [], invest = null, cash = false, months = 
       return fileAcc;
     };
     for (const m of months) {
+      // tutte le categorie del foglio, anche quelle ancora senza importi, nell'ordine del file
+      for (const c of m.plan.newCats) {
+        if (!st.categories.some(x => x.kind === m.kind && catKey(x.group, x.name) === c.key)) st.categories.push({ id: uid('c-'), name: c.name.slice(0, 50), emoji: '•', kind: m.kind, group: c.group.slice(0, 40) || 'Altro', archived: false });
+      }
       const account = accFor(m.target);
       const catId = new Map();
       // come il foglio: le categorie dell'app che il file non usa e senza movimenti si nascondono
       if (m.onlyFile) {
         const used = new Set(st.transactions.filter(t => t.category).map(t => t.category));
-        const keys = new Set(m.plan.txs.map(t => t.catKey));
+        const keys = new Set([...(m.plan.keys || []), ...m.plan.txs.map(t => t.catKey)]);
         for (const c of st.categories) if (c.kind === m.kind && !used.has(c.id) && !keys.has(catKey(c.group, c.name)) && !m.plan.txs.some(t => t.catId === c.id)) c.archived = true;
       }
       for (const t of m.plan.txs) {
         let cat = t.catId;
+        // come il foglio: la categoria già presente prende i nomi scritti nel file (LAVORO › STIPENDIO)
+        if (cat && m.onlyFile) { const c = find(st.categories, cat); if (c && (c.name !== t.name || c.group !== t.group)) { c.name = t.name.slice(0, 50); c.group = t.group.slice(0, 40); c.archived = false; } }
         if (!cat) {
           cat = catId.get(t.catKey);
           if (!cat) {

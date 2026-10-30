@@ -12,6 +12,10 @@ import { categoryEditor, undoToast } from './editors.js';
 export function groupColor(st, kind, group) {
   const n = st.settings.groupColors?.[`${kind}:${group}`];
   if (n) return `var(--c${n})`;
+  // senza un colore scelto: uno diverso per ogni categoria, nell'ordine in cui compaiono
+  const groups = [...new Set(st.categories.filter(c => c.kind === kind && !c.archived).map(c => c.group))];
+  const i = groups.indexOf(group);
+  if (i >= 0) return `var(--c${(i % 8) + 1})`;
   let x = 0;
   for (const ch of String(group)) x = (x * 31 + ch.charCodeAt(0)) >>> 0;
   return `var(--c${(x % 8) + 1})`;

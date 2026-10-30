@@ -7,7 +7,7 @@ import * as A from '../actions.js';
 import { S, undoToken, undo } from '../session.js';
 import { ACCOUNT_TYPES, GROUPS, ASSET_CLASSES, isLiability, hasHoldings, suggestCategory, position, uid, stamp } from '../core/model.js';
 import { CURRENCIES, formatMoney, formatNumber } from '../core/money.js';
-import { today, isISODate, describeRule, nextOccurrence, formatDate } from '../core/dates.js';
+import { today, isISODate, describeRule, nextOccurrence, formatDate, addDays } from '../core/dates.js';
 import { simLoan } from '../core/finance.js';
 
 const st = () => S.state;
@@ -440,6 +440,9 @@ export function holdingEditor(ctx, hd = null, preset = {}) {
   const curSel = selectInput(Object.keys(CURRENCIES).map(k => ({ value: k, label: k })), v.currency, val => { v.currency = val; });
   const price = numberInput({ value: hd?.price || '', placeholder: '0,00', suffix: '' });
   const priceAuto = toggle('Aggiorna il prezzo online', hd ? hd.priceAuto : true, null, { hint: 'Quando premi "Aggiorna prezzi", viene inviato solo il simbolo del titolo, mai le quantità' });
+  const group = textInput({ value: hd?.group || '', placeholder: 'Es. Azioni USA, Oro, Liquidità', list: 'inv-groups-dl', max: 40 });
+  const groupsDl = h('datalist', { id: 'inv-groups-dl' }, investGroups().map(g => h('option', { value: g })));
+  const ter = numberInput({ value: hd?.ter || '', placeholder: '0,00', suffix: '%' });
   // primo acquisto
   const qty = numberInput({ placeholder: 'Quantità' });
   const bprice = numberInput({ placeholder: 'Prezzo unitario' });
@@ -457,7 +460,7 @@ export function holdingEditor(ctx, hd = null, preset = {}) {
       const q = qty.getValue(), bp = bprice.getValue();
       if (q && bp) ops.push({ id: uid('o-'), date: isISODate(bdate.value) ? bdate.value : today(), type: 'buy', qty: q, price: bp, fee: fee.getValue() || 0, amount: 0, cash: payCash.input.checked, note: '', created: stamp() });
     }
-    const id = A.saveHolding({ id: hd?.id, account: v.account, name: nm, symbol: symbol.value.trim(), isin: isin.value.trim(), cls: v.cls, currency: v.currency, price: p || (ops[0]?.price ?? hd?.price ?? 0), priceDate: p ? today() : hd?.priceDate, priceAuto: priceAuto.input.checked, ops: isNew ? ops : undefined });
+    const id = A.saveHolding({ id: hd?.id, account: v.account, name: nm, symbol: symbol.value.trim(), isin: isin.value.trim(), cls: v.cls, group: group.value, ter: Math.max(0, Math.min(10, ter.getValue() || 0)), currency: v.currency, price: p || (ops[0]?.price ?? hd?.price ?? 0), priceDate: p ? today() : hd?.priceDate, priceAuto: priceAuto.input.checked, ops: isNew ? ops : undefined });
     toast(isNew ? 'Titolo aggiunto' : 'Titolo aggiornato', { kind: 'ok' });
     s.close(true);
     return id;
@@ -468,6 +471,7 @@ export function holdingEditor(ctx, hd = null, preset = {}) {
       field('Nome', name),
       h('div.grid-2', field('Simbolo (ticker)', symbol, { hint: 'Come su Yahoo Finance: VWCE.DE, ENI.MI, AAPL' }), field('ISIN', isin)),
       h('div.grid-2', field('Conto', accSel), field('Tipo', clsSel)),
+      h('div.grid-2', field('Categoria', group, { hint: 'Il tuo raggruppamento, per vedere quanto hai in ognuno' }), field('TER', ter, { hint: 'Costo annuo del fondo, nella sua scheda (es. 0,07%)' })), groupsDl,
       h('div.grid-2', field('Valuta del titolo', curSel), field('Prezzo attuale', price)),
       priceAuto, buyBox, err, h('button', { type: 'submit', hidden: true })),
     footer: [
@@ -477,51 +481,185 @@ export function holdingEditor(ctx, hd = null, preset = {}) {
   });
 }
 
+/** Numero da scrivere in un campo (senza separatori delle migliaia). */
+const numStr = (x, dec) => String(Math.round(x * 10 ** dec) / 10 ** dec).replace('.', ',');
+/** Importo "tondo" di un acquisto passato (2,61 × 114,96 = 300,04 → 300). */
+const roundish = x => (x >= 10 && Math.abs(x - Math.round(x)) / x < 0.005 ? Math.round(x) : Math.round(x * 100) / 100);
+
+/** Categorie già usate nei titoli, più qualche suggerimento. */
+function investGroups() {
+  const used = st().holdings.map(x => x.group).filter(Boolean);
+  return [...new Set([...used, 'Azioni mondo', 'Azioni USA (S&P 500)', 'Azioni Europa', 'Mercati emergenti', 'Obbligazioni', 'Titoli di Stato', 'Oro', 'Liquidità', 'Crypto', 'Tematici'])];
+}
+
 export function opEditor(ctx, hd, op = null, presetType = 'buy') {
   const isNew = !op;
   const v = { type: op?.type || presetType };
   const cur = hd.currency;
+  const sym = CURRENCIES[cur]?.symbol || cur;
   const qty = numberInput({ value: op?.qty || '', placeholder: '0', autofocus: isNew });
-  const price = numberInput({ value: op?.price || (isNew ? hd.price || '' : ''), placeholder: '0,00', suffix: CURRENCIES[cur]?.symbol || cur });
-  const fee = numberInput({ value: op?.fee || '', placeholder: '0', suffix: CURRENCIES[cur]?.symbol || cur });
-  const amount = numberInput({ value: op?.amount ? Math.abs(op.amount) : '', placeholder: '0,00', suffix: CURRENCIES[cur]?.symbol || cur });
+  const price = numberInput({ value: op?.price || (isNew ? hd.price || '' : ''), placeholder: '0,00', suffix: sym });
+  const gross = numberInput({ value: op?.qty && op?.price ? numStr(op.qty * op.price, 2) : '', placeholder: '0,00', suffix: sym });
+  const fee = numberInput({ value: op?.fee || '', placeholder: '0', suffix: sym });
+  const tax = numberInput({ value: op?.tax || '', placeholder: '0', suffix: sym });
+  const amount = numberInput({ value: op?.amount ? Math.abs(op.amount) : '', placeholder: '0,00', suffix: sym });
   const date = dateInput(op?.date || today());
-  const note = textInput({ value: op?.note || '', placeholder: 'Facoltativa', max: 200 });
+  const note = textInput({ value: op?.note || '', placeholder: 'Facoltativa, es. PAC', max: 200 });
   const cashBal = ctx.d.accountValue(st().accounts.find(a => a.id === hd.account)) - ctx.d.holdingsValue(st().accounts.find(a => a.id === hd.account));
   const cash = toggle('Muove la liquidità del conto', op ? op.cash : cashBal > 0, null, { hint: 'Acquisti e costi la tolgono, vendite e cedole la aggiungono' });
   const total = h('p.field-hint');
-  const qtyF = field('Quantità', qty), priceF = field('Prezzo unitario', price), feeF = field('Commissioni', fee), amtF = field('Importo netto', amount);
+  const taxHint = h('p.field-hint');
+  const useEst = h('button.link-btn', { type: 'button', hidden: true }, 'Usa la stima');
+  const qtyF = field('Quantità', qty), priceF = field('Prezzo unitario', price), grossF = field('Importo', gross), feeF = field('Commissioni', fee);
+  const taxF = h('div.field', h('label.field-label', { for: tax.input.id || (tax.input.id = 'tax-in') }, 'Imposta trattenuta'), tax, h('div.field-row', taxHint, useEst));
+  const amtF = field('Importo netto', amount);
+  let est = 0;
   const upd = () => {
     const tr = v.type === 'buy' || v.type === 'sell';
-    qtyF.hidden = !tr; priceF.hidden = !tr; feeF.hidden = !tr; amtF.hidden = tr;
+    qtyF.hidden = !tr; priceF.hidden = !tr; grossF.hidden = !tr; feeF.hidden = !tr; amtF.hidden = tr; taxF.hidden = v.type !== 'sell';
     amtF.querySelector('.field-label').textContent = v.type === 'div' ? 'Importo incassato (netto)' : 'Importo del costo';
-    const q = qty.getValue() || 0, p = price.getValue() || 0, f = fee.getValue() || 0;
-    total.textContent = tr && q && p ? `Totale ${v.type === 'buy' ? 'pagato' : 'incassato'}: ${formatNumber(v.type === 'buy' ? q * p + f : q * p - f, 2, 2)} ${cur}` : '';
+    const q = qty.getValue() || 0, p = price.getValue() || 0, f = fee.getValue() || 0, t = v.type === 'sell' ? tax.getValue() || 0 : 0;
+    total.textContent = tr && q && p ? `Totale ${v.type === 'buy' ? 'pagato' : 'incassato'}: ${formatNumber(v.type === 'buy' ? q * p + f : q * p - f - t, 2, 2)} ${cur}` : '';
+    // stima dell'imposta sulla plusvalenza (costo medio alla data, aliquota del tipo di titolo)
+    est = 0;
+    if (v.type === 'sell' && q && p) {
+      const before = position({ ...hd, ops: hd.ops.filter(o => o.id !== op?.id) }, isISODate(date.value) ? date.value : today());
+      const gain = Math.min(q, before.qty) * (p - before.avg) - f;
+      est = Math.max(0, gain) * (ASSET_CLASSES[hd.cls]?.tax ?? 26) / 100;
+      taxHint.textContent = gain > 0 ? `Stima ${String(ASSET_CLASSES[hd.cls]?.tax ?? 26).replace('.', ',')}% sul guadagno: ${formatNumber(est, 2, 2)} ${cur}` : 'Nessun guadagno: di solito niente imposta';
+    } else taxHint.textContent = 'Quella che il broker trattiene sul guadagno';
+    useEst.hidden = !(est > 0);
   };
-  [qty.input, price.input, fee.input].forEach(i => i.addEventListener('input', upd));
+  // due valori tra quantità, prezzo e importo bastano: il terzo si calcola
+  qty.input.addEventListener('input', () => { const q = qty.getValue(), p = price.getValue(); if (q && p) gross.input.value = numStr(q * p, 2); upd(); });
+  price.input.addEventListener('input', () => { const q = qty.getValue(), p = price.getValue(); if (q && p) gross.input.value = numStr(q * p, 2); upd(); });
+  gross.input.addEventListener('input', () => {
+    const g = gross.getValue(), p = price.getValue(), q = qty.getValue();
+    if (g && p) qty.input.value = numStr(g / p, 6);
+    else if (g && q) price.input.value = numStr(g / q, 6);
+    upd();
+  });
+  [fee.input, tax.input, date].forEach(i => i.addEventListener('input', upd));
+  useEst.addEventListener('click', () => { tax.input.value = numStr(est, 2); upd(); });
   const typeSeg = segmented([{ value: 'buy', label: 'Acquisto' }, { value: 'sell', label: 'Vendita' }, { value: 'div', label: 'Cedola / dividendo' }, { value: 'fee', label: 'Costo' }], v.type, val => { v.type = val; upd(); }, { small: true });
   upd();
   const err = h('p.field-err', { hidden: true });
   const save = () => {
     const tr = v.type === 'buy' || v.type === 'sell';
     const q = qty.getValue(), p = price.getValue(), a = amount.getValue();
-    if (tr && (!q || !p)) { err.textContent = 'Servono quantità e prezzo.'; err.hidden = false; return; }
+    if (tr && (!q || !p)) { err.textContent = 'Servono due tra quantità, prezzo e importo.'; err.hidden = false; return; }
     if (!tr && !a) { err.textContent = 'Serve l\'importo.'; err.hidden = false; return; }
-    if (v.type === 'sell' && !op) {
-      const owned = position(hd, isISODate(date.value) ? date.value : today()).qty;
+    if (v.type === 'sell') {
+      const owned = position({ ...hd, ops: hd.ops.filter(o => o.id !== op?.id) }, isISODate(date.value) ? date.value : today()).qty;
       if (q > owned + 1e-9) { err.textContent = `Alla data ne avevi solo ${formatNumber(owned, 6)}.`; err.hidden = false; return; }
     }
-    A.saveOp(hd.id, { id: op?.id, type: v.type, date: isISODate(date.value) ? date.value : today(), qty: tr ? q : 0, price: tr ? p : 0, fee: tr ? fee.getValue() || 0 : 0, amount: tr ? 0 : Math.abs(a), cash: cash.input.checked, note: note.value.trim() });
+    A.saveOp(hd.id, { id: op?.id, type: v.type, date: isISODate(date.value) ? date.value : today(), qty: tr ? q : 0, price: tr ? p : 0, fee: tr ? fee.getValue() || 0 : 0, tax: v.type === 'sell' ? Math.abs(tax.getValue() || 0) : 0, amount: tr ? 0 : Math.abs(a), cash: cash.input.checked, note: note.value.trim() });
     toast('Operazione salvata', { kind: 'ok' });
     s.close(true);
   };
   const s = openSheet({
     title: isNew ? 'Nuova operazione' : 'Modifica operazione', subtitle: hd.name,
-    body: h('form.stack', { onsubmit: e => { e.preventDefault(); save(); } }, typeSeg, h('div.grid-3', qtyF, priceF, feeF), amtF, total, h('div.grid-2', field('Data', date), field('Nota', note)), cash, err, h('button', { type: 'submit', hidden: true })),
+    body: h('form.stack', { onsubmit: e => { e.preventDefault(); save(); } }, typeSeg, h('div.grid-3', qtyF, priceF, grossF), h('div.grid-2', feeF, taxF), amtF, total, h('div.grid-2', field('Data', date), field('Nota', note)), cash, err, h('button', { type: 'submit', hidden: true })),
     footer: [
       !isNew ? twoTap('Elimina', () => { A.deleteOp(hd.id, op.id); s.close(true); undoToast('Operazione eliminata'); }, { iconName: 'trash' }) : null,
       h('button.btn.btn-primary', { type: 'button', onclick: save }, 'Salva'),
     ],
+  });
+}
+
+/** Sceglie il titolo e apre la nuova operazione. */
+export function pickHoldingOp(ctx) {
+  const list = st().holdings.filter(x => { const a = st().accounts.find(y => y.id === x.account); return a && !a.archived; })
+    .map(x => ({ hd: x, qty: position(x).qty })).sort((a, b) => (b.qty > 0) - (a.qty > 0) || a.hd.name.localeCompare(b.hd.name));
+  if (!list.length) { holdingEditor(ctx); return; }
+  if (list.length === 1) { opEditor(ctx, list[0].hd); return; }
+  const s = openSheet({
+    title: 'Nuova operazione', subtitle: 'Su quale titolo?', size: 'sm',
+    body: h('div.rows', list.map(({ hd, qty }) => h('button.row', { type: 'button', onclick: () => { s.close(true); opEditor(ctx, hd); } },
+      h('span.row-main', h('span.row-title', hd.name), h('span.row-sub', [hd.symbol, qty > 0 ? `${formatNumber(qty, 6)} quote` : 'posizione chiusa'].filter(Boolean).join(' · '))), icon('chevR', 18)))),
+  });
+}
+
+/* ═══ PAC del mese: più acquisti alla stessa data ═══════════════════════ */
+export function pacEditor(ctx) {
+  const state = st();
+  const lastBuy = hd => [...hd.ops].filter(o => o.type === 'buy').sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : b.created - a.created))[0];
+  const items = state.holdings.filter(x => { const a = state.accounts.find(y => y.id === x.account); return a && !a.archived && position(x).qty > 0; })
+    .map(hd => ({ hd, last: lastBuy(hd) }))
+    .sort((a, b) => (b.last?.date || '').localeCompare(a.last?.date || '') || a.hd.name.localeCompare(b.hd.name));
+  if (!items.length) { toast('Aggiungi prima i titoli che hai: il PAC li ricompra.'); holdingEditor(ctx); return; }
+  const date = dateInput(today());
+  const recent = items[0].last?.date;
+  const rows = items.map(({ hd, last }) => {
+    const sym = CURRENCIES[hd.currency]?.symbol || hd.currency;
+    // preselezionati i titoli comprati nell'ultimo PAC (entro 20 giorni dall'acquisto più recente)
+    const on = !!(last && recent && last.date >= addDays(recent, -20));
+    const chk = h('input', { type: 'checkbox', checked: on, 'aria-label': hd.name });
+    const amt = numberInput({ value: last ? numStr(roundish(last.qty * last.price), 2) : '', placeholder: '0,00', suffix: sym });
+    const price = numberInput({ value: hd.price ? numStr(hd.price, 6) : '', placeholder: '0,00', suffix: sym });
+    const fee = numberInput({ value: last?.fee ? numStr(last.fee, 2) : '', placeholder: '0', suffix: sym });
+    const out = h('p.field-hint');
+    const box = h('div.subcard.pac-item', { class: on ? '' : 'off' },
+      h('label.pac-head', chk, h('span.pac-name', hd.name), h('span.muted', hd.symbol || '')),
+      h('div.grid-3', field('Importo', amt), field('Prezzo', price), field('Commissioni', fee)), out);
+    const upd = () => {
+      const a = amt.getValue(), p = price.getValue();
+      out.textContent = a && p ? `≈ ${formatNumber(a / p, 6)} quote · totale ${formatNumber(a + (fee.getValue() || 0), 2, 2)} ${hd.currency}` : 'Scrivi importo e prezzo';
+      box.classList.toggle('off', !chk.checked);
+    };
+    [amt.input, price.input, fee.input, chk].forEach(i => i.addEventListener('input', upd));
+    chk.addEventListener('change', upd);
+    upd();
+    return { hd, last, chk, amt, price, fee, box };
+  });
+  const cashDefault = items.some(x => x.last?.cash);
+  const cash = toggle('Pagato con la liquidità del conto', cashDefault, null, { hint: 'Spento se i soldi arrivano da fuori (es. addebito dal conto corrente che registri a parte)' });
+  const note = textInput({ value: 'PAC', max: 200 });
+  const err = h('p.field-err', { hidden: true });
+  const save = () => {
+    const d = isISODate(date.value) ? date.value : today();
+    const sel = rows.filter(r => r.chk.checked);
+    if (!sel.length) { err.textContent = 'Scegli almeno un titolo.'; err.hidden = false; return; }
+    const bad = sel.find(r => !r.amt.getValue() || !r.price.getValue());
+    if (bad) { err.textContent = `Per ${bad.hd.name} servono importo e prezzo.`; err.hidden = false; return; }
+    A.saveOps(sel.map(r => ({ holding: r.hd.id, op: { type: 'buy', date: d, qty: Math.round(r.amt.getValue() / r.price.getValue() * 1e6) / 1e6, price: r.price.getValue(), fee: r.fee.getValue() || 0, amount: 0, cash: cash.input.checked, note: note.value.trim() } })));
+    s.close(true);
+    undoToast(sel.length === 1 ? 'Acquisto registrato' : `${sel.length} acquisti registrati`);
+  };
+  const s = openSheet({
+    title: 'Registra il PAC', subtitle: 'Più acquisti alla stessa data, in un colpo solo',
+    body: h('form.stack', { onsubmit: e => { e.preventDefault(); save(); } },
+      h('div.grid-2', field('Data', date), field('Nota', note)),
+      h('p.field-hint', 'Importi e commissioni sono quelli dell\'ultimo acquisto; il prezzo è l\'ultimo che conosco: correggilo con quello dell\'esecuzione.'),
+      ...rows.map(r => r.box), cash, err, h('button', { type: 'submit', hidden: true })),
+    footer: [h('button.btn.btn-primary', { type: 'button', onclick: save }, 'Registra')],
+  });
+}
+
+/* ═══ Imposta di bollo (e altre spese del conto titoli) ═════════════════ */
+export function bolloEditor(ctx) {
+  const state = st();
+  const accs = accountOptions({ filter: a => hasHoldings(a) });
+  if (!accs.length) { toast('Crea prima un conto investimenti.'); accountEditor(ctx, null, { type: 'broker' }); return; }
+  const v = { account: accs[0].value };
+  const accSel = selectInput(accs, v.account, val => { v.account = val; amt.setCurrency(state.accounts.find(a => a.id === val)?.currency || 'EUR'); });
+  const amt = amountInput({ currency: state.accounts.find(a => a.id === v.account)?.currency || 'EUR', autofocus: true });
+  const date = dateInput(today());
+  const period = textInput({ placeholder: 'Es. 01/07 – 30/09/2026', max: 60 });
+  const err = h('p.field-err', { hidden: true });
+  const cat = state.categories.find(c => c.id === 'c-tasse') || state.categories.find(c => c.kind === 'expense' && /tass|impost/i.test(c.name));
+  const save = () => {
+    const c = amt.getCents();
+    if (!c) { err.textContent = 'Serve l\'importo.'; err.hidden = false; return; }
+    A.saveTx({ kind: 'expense', date: isISODate(date.value) ? date.value : today(), amount: c, account: v.account, category: cat?.id || null, payee: 'Imposta di bollo', note: period.value.trim() });
+    s.close(true);
+    undoToast('Imposta di bollo registrata');
+  };
+  const s = openSheet({
+    title: 'Imposta di bollo', subtitle: 'Quella che il broker toglie dalla liquidità', size: 'sm',
+    body: h('form.stack', { onsubmit: e => { e.preventDefault(); save(); } }, field('Importo', amt), field('Conto', accSel), h('div.grid-2', field('Data', date), field('Periodo', period)),
+      h('p.field-hint', 'La tolgo dalla liquidità del conto, come fa il broker, e la conto in "Tasse e costi" degli investimenti.'), err, h('button', { type: 'submit', hidden: true })),
+    footer: [h('button.btn.btn-primary', { type: 'button', onclick: save }, 'Salva')],
   });
 }
 

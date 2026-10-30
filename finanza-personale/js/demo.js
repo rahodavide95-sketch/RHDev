@@ -122,23 +122,28 @@ export function demoState() {
     }
     return ops;
   };
-  s.holdings.push({ id: 'h-vwce', account: 'a-brk', symbol: 'VWCE.DE', isin: 'IE00BK5BQT80', name: 'Vanguard FTSE All-World', cls: 'etf_eq', currency: 'EUR', price: 142.36, priceDate: t0, priceAuto: true, created: created++, ops: [
+  s.holdings.push({ id: 'h-vwce', account: 'a-brk', symbol: 'VWCE.DE', isin: 'IE00BK5BQT80', name: 'Vanguard FTSE All-World', cls: 'etf_eq', group: 'Azioni mondo', ter: 0.22, currency: 'EUR', price: 142.36, priceDate: t0, priceAuto: true, created: created++, ops: [
     { id: uid('o-'), date: addMonths(t0, -21), type: 'buy', qty: 60, price: 108.4, fee: 2.95, amount: 0, note: '', created: created++ },
     ...buyMonthly('h-vwce', 110, 141, 200),
   ] });
-  s.holdings.push({ id: 'h-agg', account: 'a-brk', symbol: 'AGGH.MI', isin: 'IE00BDBRDM35', name: 'iShares Core Global Aggregate Bond', cls: 'etf_bd', currency: 'EUR', price: 4.79, priceDate: t0, priceAuto: true, created: created++, ops: buyMonthly('h-agg', 4.65, 4.8, 100) });
-  s.holdings.push({ id: 'h-btp', account: 'a-brk', symbol: 'BTP-2030', isin: 'IT0005000000', name: 'BTP esempio 3,5% 2030', cls: 'gov', currency: 'EUR', price: 101.2, priceDate: t0, priceAuto: false, created: created++, ops: [
+  s.holdings.push({ id: 'h-agg', account: 'a-brk', symbol: 'AGGH.MI', isin: 'IE00BDBRDM35', name: 'iShares Core Global Aggregate Bond', cls: 'etf_bd', group: 'Obbligazioni', ter: 0.1, currency: 'EUR', price: 4.79, priceDate: t0, priceAuto: true, created: created++, ops: buyMonthly('h-agg', 4.65, 4.8, 100) });
+  s.holdings.push({ id: 'h-btp', account: 'a-brk', symbol: 'BTP-2030', isin: 'IT0005000000', name: 'BTP esempio 3,5% 2030', cls: 'gov', group: 'Obbligazioni', currency: 'EUR', price: 101.2, priceDate: t0, priceAuto: false, created: created++, ops: [
     { id: uid('o-'), date: addMonths(t0, -14), type: 'buy', qty: 50, price: 98.6, fee: 5, amount: 0, note: 'Nominale 5.000 €', created: created++ },
     { id: uid('o-'), date: addMonths(t0, -8), type: 'div', qty: 0, price: 0, fee: 0, amount: 76.56, note: 'Cedola netta', created: created++ },
     { id: uid('o-'), date: addMonths(t0, -2), type: 'div', qty: 0, price: 0, fee: 0, amount: 76.56, note: 'Cedola netta', created: created++ },
   ] });
-  s.holdings.push({ id: 'h-aapl', account: 'a-brk', symbol: 'AAPL', isin: 'US0378331005', name: 'Apple', cls: 'stock', currency: 'USD', price: 241.5, priceDate: t0, priceAuto: true, created: created++, ops: [
+  s.holdings.push({ id: 'h-aapl', account: 'a-brk', symbol: 'AAPL', isin: 'US0378331005', name: 'Apple', cls: 'stock', group: 'Azioni USA', currency: 'USD', price: 241.5, priceDate: t0, priceAuto: true, created: created++, ops: [
     { id: uid('o-'), date: addMonths(t0, -11), type: 'buy', qty: 8, price: 189.3, fee: 4, amount: 0, note: '', created: created++ },
+    { id: uid('o-'), date: addMonths(t0, -3), type: 'sell', qty: 3, price: 230, fee: 4, tax: 30.32, amount: 0, cash: true, note: 'Ribilanciamento', created: created++ },
   ] });
-  s.holdings.push({ id: 'h-btc', account: 'a-btc', symbol: 'BTC-USD', isin: '', name: 'Bitcoin', cls: 'crypto', currency: 'EUR', price: 91500, priceDate: t0, priceAuto: true, created: created++, ops: [
+  s.holdings.push({ id: 'h-gold', account: 'a-brk', symbol: 'SGLD.MI', isin: 'IE00B579F325', name: 'Invesco Physical Gold', cls: 'gold', group: 'Oro', ter: 0.12, currency: 'EUR', price: 248.1, priceDate: t0, priceAuto: true, created: created++, ops: buyMonthly('h-gold', 196, 246, 50) });
+  s.holdings.push({ id: 'h-btc', account: 'a-btc', symbol: 'BTC-USD', isin: '', name: 'Bitcoin', cls: 'crypto', group: 'Crypto', currency: 'EUR', price: 91500, priceDate: t0, priceAuto: true, created: created++, ops: [
     { id: uid('o-'), date: addMonths(t0, -16), type: 'buy', qty: 0.035, price: 58200, fee: 3, amount: 0, note: '', created: created++ },
     { id: uid('o-'), date: addMonths(t0, -6), type: 'buy', qty: 0.012, price: 84300, fee: 2, amount: 0, note: '', created: created++ },
   ] });
+
+  // imposta di bollo sui titoli, ogni tre mesi dalla liquidità del broker
+  for (let k = 3; k <= MONTHS; k += 3) tx(addMonths(start, k).slice(0, 8) + '05', 'expense', 300 + k * 40, 'a-brk', 'c-tasse', 'Imposta di bollo', { note: 'Trimestre' });
 
   // budget
   Object.assign(s.budgets, { 'c-spesa': 32000, 'c-rist': 18000, 'c-carb': 16000, 'c-shop': 10000, 'c-svago': 8000, 'c-abbon': 4000, 'c-salute': 6000, 'c-trasp': 4000 });
@@ -153,7 +158,7 @@ export function demoState() {
   s.watchlist.push({ symbol: 'VWCE.DE', name: 'Vanguard FTSE All-World' }, { symbol: '^GSPC', name: 'S&P 500' }, { symbol: 'BTC-USD', name: 'Bitcoin' });
 
   // fotografie dei mesi passati (valore di mercato dei titoli), per uno storico realistico
-  const P0 = { 'h-vwce': 106, 'h-agg': 4.6, 'h-btp': 97.5, 'h-aapl': 182, 'h-btc': 38000 };
+  const P0 = { 'h-vwce': 106, 'h-agg': 4.6, 'h-btp': 97.5, 'h-aapl': 182, 'h-btc': 38000, 'h-gold': 190 };
   const clean = sanitize(s);
   for (let k = 0; ; k++) {
     const m = monthKey(addMonths(start, k));

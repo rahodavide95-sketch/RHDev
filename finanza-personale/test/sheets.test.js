@@ -64,10 +64,13 @@ test('mese per mese: entrate con i totali delle categorie, uscite con un rimbors
   const det = detectSheet(sh);
   assert.deepEqual(sheetHints(sh, det), { kind: 'income', year: 2026 });
   const r = readMonths(sh.rows, det, { nums: sh.nums });
-  assert.equal(r.lines.length, 5);                                   // le righe di categoria sono totali, non movimenti
+  // come il foglio di D: LAVORO (STIPENDIO, 13ESIMA, 14ESIMA, BUONI PASTO, WELFARE), MUSICA (ALTRO, DJ,
+  // PRODUZIONE, GRAFICHE), INT. BANCA (CC, CD), ALTRO da solo; le righe di macro sono totali, non movimenti
+  assert.deepEqual(r.lines.map(l => `${l.group}>${l.sub}`), ['LAVORO>STIPENDIO', 'LAVORO>13ESIMA', 'LAVORO>14ESIMA', 'LAVORO>BUONI PASTO', 'LAVORO>WELFARE', 'MUSICA>ALTRO', 'MUSICA>DJ', 'MUSICA>PRODUZIONE', 'MUSICA>GRAFICHE', 'INT. BANCA>CC', 'INT. BANCA>CD', 'ALTRO>']);
   assert.ok(r.checks.length === 3 && r.checks.every(c => c.ok));
   const p = planMonths(r, st, { year: 2026, kind: 'income', refDate: REF });
-  assert.equal(p.total, 2124805);                                    // la somma della riga TOTALE del file
+  assert.equal(p.total, 2539485);                                    // la somma della riga TOTALE del file
+  assert.equal(p.keys.length, 12);                                   // anche 13ESIMA, ancora a zero, diventa una categoria
   assert.equal(p.future, 0);
   assert.ok(p.txs.every(t => t.date <= REF && t.date.endsWith(t.date.slice(0, 7) === '2026-10' ? '30' : t.date.slice(8))));
   // importato di nuovo (in qualunque conto): niente doppioni

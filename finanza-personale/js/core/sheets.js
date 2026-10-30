@@ -105,7 +105,8 @@ export function readMonths(rows, info, { nums } = {}) {
     if (!group && (sub || note)) group = lastGroup;              // categoria scritta solo nella prima riga
     if (group) lastGroup = group;
     const values = cols.map(c => (c < 0 ? 0 : cellNumber(r[c], { money: true }) || 0));
-    if (!group || !values.some(v => v)) { if (group || sub || note) skipped.push(row); continue; }
+    // una voce ancora a zero (es. 13ESIMA prima di dicembre) resta: la categoria va creata lo stesso
+    if (!group || (!values.some(v => v) && !sub)) { if (group || sub || note) skipped.push(row); continue; }
     raw.push({ row, group, sub, note, values, fileTotal: map.total != null ? cellNumber(r[map.total], { money: true }) : null });
   }
   // una riga con la sola categoria, quando la categoria ha anche sottocategorie, è il suo totale
@@ -246,7 +247,8 @@ export function planMonths(read, state, { year, kind, refDate }) {
       txs.push({ row: l.row, date, kind: tk, amount, catKey: k, catId: cat?.id || null, payee, group, name });
     });
   }
-  return { txs, newCats: [...newCats.values()], dups, future, total: txs.reduce((a, t) => a + (t.kind === kind ? t.amount : -t.amount), 0) };
+  const keys = [...new Set(read.lines.map(l => catKey(niceName(l.group), niceName(l.sub || l.group))))];
+  return { txs, newCats: [...newCats.values()], keys, dups, future, total: txs.reduce((a, t) => a + (t.kind === kind ? t.amount : -t.amount), 0) };
 }
 
 /** Conti e valori di fine mese dal foglio del patrimonio. `holdings` sono anche i titoli che

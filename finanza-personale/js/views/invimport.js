@@ -13,7 +13,7 @@ import { moneyText } from '../ui/fmt.js';
 import { parseCSV } from '../core/csv.js';
 import { readXlsx, isZip } from '../core/xlsx.js';
 import { FIELDS, readOperations, checkTotals, planImport, opNet } from '../core/invimport.js';
-import { detectSheet, sheetHints, readMonths, planMonths, readNetWorth, planNetWorth } from '../core/sheets.js';
+import { detectSheet, sheetHints, readMonths, planMonths, readNetWorth, planNetWorth, catKey } from '../core/sheets.js';
 import { ASSET_CLASSES, ACCOUNT_TYPES, hasHoldings, hasPlan } from '../core/model.js';
 import { CURRENCIES } from '../core/money.js';
 import { formatDate, today } from '../core/dates.js';
@@ -273,7 +273,11 @@ export async function openFileImport(ctx) {
     if (nwHd) pieces.push(plural(nwHd, ['titolo nel Net Worth', 'titoli nel Net Worth']));
     if (invest?.count) pieces.push(plural(invest.count, ['operazione', 'operazioni']));
     if (nTx) pieces.push(plural(nTx, ['movimento', 'movimenti']));
-    job = pieces.length ? { nw: nwRows, invest: invest?.count ? invest : null, months: monthJobs.filter(m => m.plan.txs.length), text: pieces.join(', '), nVals, nTx } : null;
+    // anche solo categorie nuove (es. 13ESIMA ancora a zero) o nomi da riallineare al file
+    const catWork = m => m.plan.newCats.length + (m.onlyFile ? st.categories.filter(c => { const n = c.kind === m.kind && m.plan.names?.[catKey(c.group, c.name)]; return n && (c.name !== n.name || c.group !== n.group); }).length : 0);
+    const nCat = monthJobs.reduce((a, m) => a + catWork(m), 0);
+    if (nCat && !nTx) pieces.push(plural(nCat, ['categoria', 'categorie']));
+    job = pieces.length ? { nw: nwRows, invest: invest?.count ? invest : null, months: monthJobs.filter(m => m.plan.txs.length || catWork(m)), text: pieces.join(', '), nVals, nTx } : null;
     btn.disabled = !job;
     btn.textContent = job ? `Importa: ${job.text}` : 'Niente da importare';
     body.replaceChildren(...parts);

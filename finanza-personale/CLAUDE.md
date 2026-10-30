@@ -39,6 +39,7 @@ Il repo è pubblico: mai dati personali di D nel codice.
   - `xlsx.js`: lettura dei .xlsx senza librerie (zip con `DecompressionStream`, XML con
     espressioni regolari; solo valori delle celle, limiti di dimensione).
   - `invimport.js`: import degli investimenti (vedi sotto).
+  - `sheets.js`: fogli mese per mese e Net Worth dello stesso file (vedi sotto).
 - `js/session.js`: stato in memoria, `commit(fn, opts)` per ogni modifica (salva cifrato
   dopo 500 ms, serializzato), blocco, backup, "Annulla" (`undo(token)`), una scheda alla
   volta (BroadcastChannel). `js/store.js`: IndexedDB `rh-finance` (chiavi `vault`,
@@ -98,6 +99,49 @@ come esempio ("mi sembra molto interessante"), con la colonna di destra di riepi
   conto per broker (nuovo se non c'è, aperto dalla prima operazione), liquidità non mossa
   di default. Test: `test/invimport.test.js` con `test/fixtures/portafoglio-esempio.xlsx`
   (dati inventati).
+- Crypto (D: "stesso ragionamento per le crypto", foglio COIN | DATA ACQUISTO | QUANTITA' |
+  VALORE | IMPORTO | FEE | TOTALE | PIATTAFORMA | NOTE): `findHeader` segna `crypto` se la
+  colonna del nome si chiama coin/crypto/token; `cryptoSymbol()` porta "BTC", "Bitcoin",
+  "BTC/EUR" a `BTC-USD` (il simbolo dei prezzi Binance); classe `crypto`; un conto nuovo con
+  sole crypto è un "Wallet crypto". `normHead` toglie gli apostrofi (QUANTITA').
+- D: "tutte quelle statistiche per le crypto sono le stesse del wallet azionario, anzi lì
+  ce ne sono di più". Le crypto sono titoli come gli altri: hanno tutto. In più
+  `investmentFlows(state, toBase, scope)` con `scope` '' / 'titoli' / 'crypto' (il bollo va
+  con le crypto solo se il conto ha solo crypto) e `d.invest(scope)`; in "Anno per anno" i
+  pulsanti Tutto / Titoli (wallet) / Crypto. `buyHistory(h)` (model): speso, giorni di
+  acquisto, intervallo tipico (mediana) e "regolare" (≥3 intervalli, 7 su 10 vicini),
+  prossimo previsto, acquisto medio e più grande, prezzo min/max/medio, commissioni, anno
+  per anno → card "Storia degli acquisti" nel dettaglio e "Titolo per titolo" negli anni.
+
+## Import di tutto il file (`views/invimport.js` + `core/sheets.js`)
+
+D, con il foglio Net Worth: "se importo direttamente il file excel, il tool sarà in grado di
+distinguere tutto?". `detectSheet()`: operazioni se `findHeader` ha punteggio ≥ 4, poi
+mese per mese (≥ 10 mesi GEN…DIC in una riga), poi patrimonio (≥ 3 date crescenti in una
+riga), altrimenti non riconosciuto. Tutti i fogli di operazioni si leggono e si pianificano
+**insieme** (`planImport` su un `read` unito: stessi conti, niente doppioni tra wallet e
+crypto). Un solo `importWorkbook()` in `actions.js` (un "Annulla").
+- Mese per mese: `readMonths` (riga della sola categoria quando ci sono sottocategorie =
+  suo totale, solo per il controllo; categoria scritta solo nella prima riga vale per le
+  successive; TOTALE in fondo saltato), `sheetHints` (entrate/uscite e anno dal nome o dal
+  titolo), `planMonths`: un movimento per cella con data a fine mese (oggi nel mese in
+  corso, mesi futuri saltati), descrizione = nota o sottocategoria, categorie create con
+  `niceName` ("LAVORO" → "Lavoro"), importo negativo = movimento opposto nella stessa
+  categoria (`yearTable` lo sottrae: rimborsi), doppioni (data, importo, tipo,
+  descrizione) cercati in tutti i conti. Conto: uno apposta "Entrate e uscite dal file"
+  **fuori dal patrimonio** (default, i saldi non cambiano), un conto del Net Worth o un
+  conto esistente.
+- Net Worth: `readNetWorth` (sezioni = righe di solo testo; Total/Gain/Loss/% saltate,
+  Total usate per il controllo; sezione Asset Allocation saltata; valore "strano" =
+  > max(100.000, 50 × mediana della riga)), `planNetWorth`: tipo da sezione/tipo/nome
+  (`accountTypeFor`: "Euro"/"Dollari" sono la valuta, TFR = credito, "Mutuo casa" =
+  debito), valuta da Type, righe già negli investimenti (`matchHolding`, anche i titoli che
+  arrivano dallo stesso file) o col nome del conto dei titoli escluse, "Lordo" escluso se
+  c'è "Netto", righe sempre a zero escluse, date future saltate, valori già presenti
+  saltati. Ogni valore diventa un punto fermo ('open' il primo, poi 'adjust'), creato
+  **dopo** i movimenti (a fine giornata vale il foglio); stesso nome in più fogli = un conto.
+- Test: `test/sheets.test.js` con `test/fixtures/file-completo-esempio.xlsx` (dati
+  inventati: Wallet, Crypto, Entrate 2026, Uscite 2026, Net Worth, Note).
 
 ## Prezzi online (`js/market.js`)
 
@@ -196,7 +240,7 @@ netti, pulito ed elegante.
 
 ## Prove
 
-- `npm test`: 38 test (calcoli, cifratura, unione dei dati, CSV, investimenti, import da Excel, quotazioni con risposte finte).
+- `npm test`: 46 test (calcoli, cifratura, unione dei dati, CSV, investimenti, import da Excel di tutti i fogli, crypto, storia degli acquisti, quotazioni con risposte finte).
 - `bash test/rls/run.sh`: regole di sicurezza del database su Postgres.
 - Nel browser: `python3 -m http.server` nella cartella e Playwright (Chromium già
   installato). Da questo ambiente onvista/Binance/BCE non sono raggiungibili: per provarli

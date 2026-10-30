@@ -514,7 +514,7 @@ input[type="date"].input::-webkit-date-and-time-value { text-align: left; }
 .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .grid-2 > .field[hidden] + .field, .grid-2 > .field:only-child { grid-column: auto; }
-@media (max-width: 520px) { .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .grid-3 > .field-wide:nth-child(3n) { grid-column: 1 / -1; } }
 .name-row { display: flex; gap: 12px; align-items: flex-end; }
 .name-row .field { flex: 1; }
 .emoji-btn { width: 48px; height: 48px; flex: none; border-radius: var(--radius-sm); background: var(--field); font-size: 24px; display: grid; place-items: center; }
@@ -710,6 +710,17 @@ input[type="date"].input::-webkit-date-and-time-value { text-align: left; }
 .imp-summary { background: var(--card-2); border-radius: var(--radius-md); padding: 14px 16px; display: grid; gap: 4px; }
 .imp-big { font-size: 18px; font-weight: 700; }
 .import-preview { max-height: 46vh; overflow: auto; border-radius: 14px; background: var(--card-2); padding: 4px 8px; }
+.imp-sheet { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-width: 0; padding: 14px; border: 1px solid var(--line); border-radius: var(--radius-md); }
+.imp-sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.imp-sheet-head .chk { font-size: 15px; color: var(--ink); }
+.imp-section { font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-3); padding: 12px 6px 4px; }
+.imp-nw .row { padding: 8px 6px; }
+.imp-line { cursor: pointer; gap: 12px; }
+.imp-line > input { width: 18px; height: 18px; flex: none; accent-color: var(--brand); }
+.imp-nw-row.off .row-title, .imp-nw-row.off .row-end { opacity: .5; }
+.imp-row-opts { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 8px; padding: 0 6px 10px 36px; }
+.imp-row-opts .select { min-height: 36px; font-size: 13.5px; padding-top: 6px; padding-bottom: 6px; }
+.hist-table td:nth-child(4) { white-space: nowrap; }
 
 /* mercati */
 .mkt-row { gap: 14px; }

@@ -9,17 +9,18 @@ import { money, moneyText, compactText, delta, tipMoney, axisMoney, ui } from '.
 import { card, avatar, linkBtn, segTabs, stat } from './common.js';
 import { holdingEditor, opEditor, accountEditor, pacEditor, bolloEditor, pickHoldingOp, txEditor } from './editors.js';
 import { setPrices, setSetting, setFx, linkHoldings } from '../actions.js';
-import { ASSET_CLASSES, position, hasHoldings } from '../core/model.js';
-import { formatNumber, formatPercent } from '../core/money.js';
+import { ASSET_CLASSES, position, hasHoldings, buyHistory } from '../core/model.js';
+import { formatNumber, formatPercent, CURRENCIES } from '../core/money.js';
 import { formatDate, today, monthName, formatMonth, lastMonths, diffMonths } from '../core/dates.js';
 import { toCSV, csvNumber } from '../core/csv.js';
 import { refreshHoldings, quote, ecbRates, isIsin, isCrypto, findCandidates } from '../market.js';
 import { S } from '../session.js';
-import { openInvestImport } from './invimport.js';
+import { openFileImport } from './invimport.js';
 
 let groupBy = 'cls';
 let pivotBy = 'cls';
 let pivotUnit = 'eur';
+let scope = '';
 let opsFilter = { hd: '', type: '' };
 let busy = false;
 let lastAuto = 0;
@@ -219,6 +220,43 @@ function priceChart(ctx, hd) {
   return card('Andamento', { action: segTabs(['1M', '6M', '1A', '5A'].map(x => ({ value: x, label: x })), chartRange, v => { chartRange = v; ctx.rerender(); }) }, box);
 }
 
+/** "ogni mese", "circa ogni 2 settimane"… dall'intervallo tipico tra due acquisti. */
+export function cadence(median, regular) {
+  if (median == null) return 'un solo acquisto';
+  const t = median <= 1.5 ? 'ogni giorno' : median <= 10 ? 'ogni settimana' : median <= 20 ? 'ogni 2 settimane' : median <= 45 ? 'ogni mese'
+    : median <= 75 ? 'ogni 2 mesi' : median <= 120 ? 'ogni 3 mesi' : median <= 240 ? 'ogni 6 mesi' : 'una volta l\'anno o meno';
+  return regular ? t : 'circa ' + t;
+}
+const ago = n => (n === 0 ? 'oggi' : n === 1 ? 'ieri' : n < 60 ? `${n} giorni fa` : `${Math.round(n / 30.4)} mesi fa`);
+
+/** Quanto, quando, ogni quanto e a che prezzi hai comprato questo titolo. */
+function historyCard(hd, refDate) {
+  const H = buyHistory(hd, refDate);
+  if (!H.buys) return null;
+  const c = hd.currency;
+  const m = v => money(Math.round(v * 100), c);
+  const sym = CURRENCIES[c]?.symbol || c;
+  const px = v => (ui.privacy ? '••••' : `${formatNumber(v, v >= 1000 ? 0 : v >= 100 ? 2 : 4)} ${sym}`);
+  const yearRows = H.byYear.map(Y => h('tr',
+    h('td.sticky', String(Y.year)), h('td.num', String(Y.n)), h('td.num', moneyText(Math.round(Y.spent * 100), c)),
+    h('td.num', qtyText(Y.qty)), h('td.num', px(Y.avgPrice))));
+  return card('Storia degli acquisti', { sub: `${H.buys} ${H.buys === 1 ? 'acquisto' : 'acquisti'} dal ${formatDate(H.first, { year: true })}` },
+    h('div.stats-4',
+      stat('Speso in acquisti', m(H.spent), `commissioni comprese${H.sells ? ` · ${H.sells} ${H.sells === 1 ? 'vendita' : 'vendite'}, incassati ${moneyText(Math.round(H.received * 100), c)}` : ''}`),
+      stat('Ogni quanto', H.median == null ? '—' : cadence(H.median, H.regular), H.median == null ? '' : `${H.regular ? 'regolare, come un PAC' : 'non regolare'} · di solito ${Math.round(H.median)} giorni`),
+      stat('Acquisto medio', m(H.avgBuy), H.biggest ? `il più grande ${moneyText(Math.round(H.biggest.amount * 100), c)} il ${formatDate(H.biggest.date, { year: true })}` : ''),
+      stat('Prezzo pagato', H.minP && H.maxP && H.minP.price !== H.maxP.price ? `${px(H.minP.price)} – ${px(H.maxP.price)}` : px(H.avgPaid), `in media ${px(H.avgPaid)}${hd.price && H.avgPaid ? ` · oggi ${formatPercent((hd.price / H.avgPaid - 1) * 100, 1, true)}` : ''}`)),
+    h('p.inv-costs',
+      'Ultimo acquisto ', h('b', formatDate(H.last, { year: true })), ` (${ago(H.sinceLast)})`,
+      ` · comprato in ${H.monthsWith} ${H.monthsWith === 1 ? 'mese' : 'mesi'} su ${H.monthsSpan}`,
+      H.next && H.next >= refDate ? [' · il prossimo, se continui così, verso il ', h('b', formatDate(H.next))] : null,
+      H.fees ? [' · commissioni ', h('b', moneyText(Math.round(H.fees * 100), c)), ` (${formatPercent(H.feePct, 2)} di quanto speso)`] : null,
+      H.minP && H.maxP && H.minP.price !== H.maxP.price ? [' · prezzo più basso il ', formatDate(H.minP.date, { year: true }), ', più alto il ', formatDate(H.maxP.date, { year: true })] : null),
+    H.byYear.length ? h('div.table-wrap', h('table.table.nw-table.inv-table',
+      h('thead', h('tr', h('th.sticky', 'Anno'), h('th.num', 'Acquisti'), h('th.num', 'Speso'), h('th.num', 'Quote'), h('th.num', 'Prezzo medio'))),
+      h('tbody', yearRows))) : null);
+}
+
 function detail(ctx, id) {
   const { st, d } = ctx;
   const hd = st.holdings.find(x => x.id === id);
@@ -253,6 +291,7 @@ function detail(ctx, id) {
           h('button.btn.btn-soft', { type: 'button', onclick: () => opEditor(ctx, hd, null, 'sell') }, icon('minus', 18), 'Vendita'),
           h('button.btn.btn-soft', { type: 'button', onclick: () => opEditor(ctx, hd, null, 'div') }, icon('coins', 18), 'Cedola / dividendo'))),
       priceChart(ctx, hd),
+      historyCard(hd, d.refDate),
       card('Operazioni', { sub: `${ops.length}` }, ops.length ? h('div.rows', ops.map(o => h('button.row', { type: 'button', onclick: () => opEditor(ctx, hd, o) },
         h('span.date-chip', h('b', o.date.slice(8)), formatDate(o.date).split(' ')[1]),
         h('span.row-main', h('span.row-title', OP_LABEL[o.type], o.cash ? h('span.pill', 'liquidità') : null), h('span.row-sub', [opDetail(o, c), o.note, formatDate(o.date, { year: true })].filter(Boolean).join(' · '))),
@@ -317,7 +356,7 @@ function opsView(ctx) {
       h('button.btn.btn-primary', { type: 'button', onclick: () => pacEditor(ctx) }, icon('repeat', 18), 'Registra il PAC'),
       h('button.btn.btn-soft', { type: 'button', onclick: () => pickHoldingOp(ctx) }, icon('plus', 18), 'Operazione'),
       h('button.btn.btn-soft', { type: 'button', onclick: () => bolloEditor(ctx) }, icon('plus', 18), 'Imposta di bollo'),
-      h('button.btn.btn-soft', { type: 'button', onclick: () => openInvestImport(ctx) }, icon('upload', 18), 'Importa da Excel')),
+      h('button.btn.btn-soft', { type: 'button', onclick: () => openFileImport(ctx) }, icon('upload', 18), 'Importa da Excel')),
     card('Tutte le operazioni', { sub: `${items.length} ${items.length === 1 ? 'riga' : 'righe'}`, action: h('button.btn.btn-sm.btn-ghost', { type: 'button', onclick: exportCsv, disabled: !items.length }, icon('download', 16), 'CSV') },
       h('div.inv-filters', selectInput(hdOpts, opsFilter.hd, v => { opsFilter.hd = v; ctx.rerender(); }), segTabs(TYPE_TABS, t, v => { opsFilter.type = v; ctx.rerender(); })),
       items.length ? h('div.stack', [...byYear.entries()].map(([y, list]) => h('div.inv-year',
@@ -331,7 +370,10 @@ const PIVOTS = [{ value: 'cls', label: 'Tipo' }, { value: 'grp', label: 'Categor
 
 function yearsView(ctx) {
   const { st, d } = ctx;
-  const inv = d.invest();
+  const hasCrypto = st.holdings.some(x => x.cls === 'crypto' && x.ops.length), hasOther = st.holdings.some(x => x.cls !== 'crypto' && x.ops.length);
+  if (!(hasCrypto && hasOther)) scope = '';
+  const inScope = hd => !scope || (scope === 'crypto') === (hd.cls === 'crypto');
+  const inv = d.invest(scope);
   const p = d.portfolio();
   const years = inv.yearList;
   if (!years.length) return h('section.card', empty({ icon: 'trend', title: 'Ancora nessuna operazione', text: 'Registra acquisti e vendite (o il PAC del mese): qui vedi quanto investi ogni mese e ogni anno, dove e quanto ti costa.', action: h('button.btn.btn-primary', { type: 'button', onclick: () => pacEditor(ctx) }, icon('repeat', 18), 'Registra il PAC') }));
@@ -384,7 +426,7 @@ function yearsView(ctx) {
         h('tr.moves', h('td.sticky', 'Media al mese'), years.map(y => cell(Math.round(yNet(y) / inv.monthsIn(y, d.refDate)))))))));
 
   // per tipo / categoria / titolo / conto
-  const hasGroups = st.holdings.some(x => x.group);
+  const hasGroups = st.holdings.some(x => x.group && inScope(x));
   if (pivotBy === 'grp' && !hasGroups) pivotBy = 'cls';
   const keyOf = { cls: hd => hd.cls, grp: groupOf, hd: hd => hd.id, acc: hd => hd.account }[pivotBy];
   const labelOf = { cls: k => ASSET_CLASSES[k]?.label || k, grp: k => k, hd: k => st.holdings.find(x => x.id === k)?.name || 'Titolo', acc: k => d.accById.get(k)?.name || 'Conto' }[pivotBy];
@@ -447,7 +489,22 @@ function yearsView(ctx) {
     scrollTable(costTable),
     h('p.fine', icon('info', 14), h('span', 'L\'imposta di bollo la registri con "Imposta di bollo" (o come spesa del conto investimenti in "Tasse e imposte").', p.hasTer ? [' I fondi costano anche ', h('b', moneyText(p.terYear)), ' all\'anno di TER, già compreso nel prezzo.'] : null)));
 
-  return h('div.stack', hero, chart, monthsCard, pivotCard, costCard,
+  // titolo per titolo: quanto, quando e ogni quanto
+  const hist = st.holdings.filter(inScope).map(hd => ({ hd, H: buyHistory(hd, d.refDate) })).filter(x => x.H.buys)
+    .map(x => ({ ...x, spentBase: d.toBase(Math.round(x.H.spent * 100), x.hd.currency) })).sort((a, b) => b.spentBase - a.spentBase);
+  const histCard = hist.length ? card('Titolo per titolo', { sub: 'Quanto hai speso in ognuno, quando e ogni quanto compri' },
+    scrollTable(h('table.table.nw-table.nw-months.inv-table.hist-table',
+      h('thead', h('tr', h('th.sticky', 'Titolo'), h('th.num', 'Speso'), h('th.num', 'Acquisti'), h('th', 'Ogni quanto'), h('th.num', 'Acquisto medio'), h('th.num', 'Primo'), h('th.num', 'Ultimo'))),
+      h('tbody', hist.map(({ hd, H, spentBase }) => h('tr.click', { onclick: () => ctx.go('investimenti/' + hd.id) },
+        h('td.sticky', hd.name),
+        h('td.num', c2(spentBase)), h('td.num', String(H.buys)),
+        h('td', H.median == null ? '—' : cadence(H.median, H.regular)),
+        h('td.num', moneyText(d.toBase(Math.round(H.avgBuy * 100), hd.currency))),
+        h('td.num', formatDate(H.first, { year: true })), h('td.num', formatDate(H.last, { year: true }))))))),
+    h('p.fine', icon('info', 14), h('span', 'Speso = acquisti con commissioni (le vendite non si tolgono). "Ogni quanto" guarda l\'intervallo tipico tra due giorni di acquisto: "regolare" se 7 volte su 10 è quello. Tocca un titolo per vedere tutta la sua storia.'))) : null;
+
+  const scopeBar = hasCrypto && hasOther ? h('div.year-bar', segTabs([{ value: '', label: 'Tutto' }, { value: 'titoli', label: 'Titoli (wallet)' }, { value: 'crypto', label: 'Crypto' }], scope, v => { scope = v; ctx.rerender(); })) : null;
+  return h('div.stack', scopeBar, hero, chart, monthsCard, pivotCard, histCard, costCard,
     h('p.fine', icon('info', 14), ' Investito = acquisti con commissioni meno vendite al netto di commissioni e imposte. Titoli in altre valute al cambio attuale.'));
 }
 
@@ -458,7 +515,7 @@ function scrollTable(table) {
   return wrap;
 }
 
-const importBtn = ctx => h('button.btn.btn-soft', { type: 'button', onclick: () => openInvestImport(ctx) }, icon('upload', 18), 'Importa da Excel o CSV');
+const importBtn = ctx => h('button.btn.btn-soft', { type: 'button', onclick: () => openFileImport(ctx) }, icon('upload', 18), 'Importa da Excel o CSV');
 
 const VIEWS = [{ value: '', label: 'Portafoglio' }, { value: 'operazioni', label: 'Operazioni' }, { value: 'anni', label: 'Anno per anno' }];
 

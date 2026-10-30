@@ -54,10 +54,19 @@ Indirizzo: `https://rahodavide95-sketch.github.io/RHDev/finanza-personale/`
 - **Entrate e uscite** mese per mese, come in un foglio: categoria → sottocategoria → voce
   (descrizione), una colonna per mese, totale e media mensile, CSV; tocca un importo per i
   movimenti. **Categorie in libertà**: crea, rinomina, colora, riordina, nascondi, unisci.
-- **Import degli investimenti** da Excel (.xlsx) o CSV, una riga per operazione (come i
-  fogli "wallet" dei PAC): colonne riconosciute da sole, righe delle imposte e vendite
-  con quote negative capite, righe non capite elencate col numero, **controllo al
-  centesimo** con la colonna "Totale" del file, doppioni esclusi, "Annulla".
+- **Import di tutto il file Excel** (.xlsx, o CSV per un foglio alla volta): ogni foglio
+  si riconosce dalla sua intestazione, non dal nome. Fogli delle operazioni (wallet dei PAC
+  e **crypto**: COIN, QUANTITA', VALORE, PIATTAFORMA…), fogli **mese per mese** delle
+  entrate e delle uscite (CATEGORIA, SUB CATEGORIA, NOTE, GEN…DIC) e il foglio del
+  **patrimonio** (Net Worth, con le date di fine mese). Anteprima foglio per foglio,
+  righe di totale/guadagno/% e Asset Allocation saltate e usate per il **controllo al
+  centesimo**, valori strani (errori di battitura) esclusi, titoli del Net Worth già negli
+  investimenti esclusi (niente doppi conteggi), doppioni esclusi se reimporti, un solo
+  "Annulla".
+- **Storia di ogni titolo e crypto**: quanto hai speso, quando, ogni quanto compri
+  (regolare come un PAC o no), acquisto medio e più grande, prezzo pagato più basso, più
+  alto e medio, commissioni, anno per anno; in "Anno per anno" la tabella titolo per
+  titolo e il filtro **Tutto / Titoli / Crypto** per ogni statistica.
 - **Budget** mensile per categoria, con la riga di "dove dovresti essere oggi" e le
   **proposte automatiche** dalla media degli ultimi mesi.
 - **Scadenze e abbonamenti**: stipendio, affitto, bollette, PAC… con calendario,

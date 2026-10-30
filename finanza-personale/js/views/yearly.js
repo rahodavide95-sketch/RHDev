@@ -8,6 +8,7 @@ import { moneyText, ui } from '../ui/fmt.js';
 import { card, segTabs } from './common.js';
 import { categoryEditor, txEditor } from './editors.js';
 import { categoryManager, groupColor } from './categories.js';
+import { openFileImport } from './invimport.js';
 import { monthName, today } from '../core/dates.js';
 import { toCSV, csvNumber } from '../core/csv.js';
 
@@ -80,6 +81,7 @@ export default {
     return {
       title: 'Entrate e uscite', sub: `${label} ${V.year}, mese per mese`,
       actions: [
+        h('button.btn.btn-soft', { type: 'button', onclick: () => openFileImport(ctx) }, icon('upload', 18), h('span', 'Importa')),
         h('button.btn.btn-soft', { type: 'button', onclick: () => categoryManager(ctx, V.kind) }, icon('edit', 18), h('span', 'Categorie')),
         h('button.btn.btn-soft', { type: 'button', onclick: () => txEditor(ctx, null, { kind: V.kind }) }, icon('plus', 18), h('span', V.kind === 'income' ? 'Entrata' : 'Uscita')),
       ],
@@ -90,7 +92,7 @@ export default {
           action: h('button.btn.btn-sm.btn-ghost', { type: 'button', onclick: exportCsv, disabled: !hasData }, icon('download', 16), 'CSV'),
         },
         h('div.inv-filters', levels, h('label.chk', h('input', { type: 'checkbox', checked: V.empty, onchange: e => { V.empty = e.target.checked; ctx.rerender(); } }), 'Anche le categorie vuote')),
-        hasData ? table : empty({ icon: 'list', title: `Nessuna ${V.kind === 'income' ? 'entrata' : 'uscita'} nel ${V.year}`, text: 'Registra i movimenti con la loro categoria: qui li vedi mese per mese, come in un foglio.', action: h('button.btn.btn-primary', { type: 'button', onclick: () => txEditor(ctx, null, { kind: V.kind }) }, icon('plus', 18), V.kind === 'income' ? 'Nuova entrata' : 'Nuova uscita') })),
+        hasData ? table : empty({ icon: 'list', title: `Nessuna ${V.kind === 'income' ? 'entrata' : 'uscita'} nel ${V.year}`, text: 'Registra i movimenti con la loro categoria, o importa il tuo foglio Excel con le colonne GEN…DIC: qui li vedi mese per mese, come in un foglio.', action: h('div.row-btns', h('button.btn.btn-primary', { type: 'button', onclick: () => txEditor(ctx, null, { kind: V.kind }) }, icon('plus', 18), V.kind === 'income' ? 'Nuova entrata' : 'Nuova uscita'), h('button.btn.btn-soft', { type: 'button', onclick: () => openFileImport(ctx) }, icon('upload', 18), 'Importa da Excel')) })),
         h('p.fine', icon('info', 14), h('span', 'Categoria = gruppo, sottocategoria = categoria del movimento, voce = descrizione (es. "Groover", "SIAE"). Tocca un importo per vedere i movimenti, una sottocategoria per aprire le voci. Con "Categorie" le crei, rinomini, colori e riordini come vuoi.'))),
     };
   },

@@ -7,6 +7,7 @@ import { openSheet, amountInput, dateInput, segmented, toast, empty, field } fro
 import { money, moneyText, delta, axisMoney, tipMoney, ui } from '../ui/fmt.js';
 import { card, avatar, segTabs } from './common.js';
 import { accountEditor } from './editors.js';
+import { openFileImport } from './invimport.js';
 import { saveCheckIn } from '../actions.js';
 import { ACCOUNT_TYPES, GROUPS, isLiability, hasHoldings, hasPlan } from '../core/model.js';
 import { monthKey, monthEnd, addMonthKey, lastMonths, formatMonth, formatDate, monthName, diffMonths, today, isISODate } from '../core/dates.js';
@@ -224,7 +225,7 @@ export default {
     const { d } = ctx;
     const curY = Number(d.refDate.slice(0, 4));
     if (!d.nwAccounts.length) {
-      return { title: 'Patrimonio', node: h('section.card', empty({ icon: 'layers', title: 'Ancora niente da seguire', text: 'Aggiungi i conti, gli investimenti, la casa, l\'auto e i debiti: qui vedrai l\'andamento di ognuno mese dopo mese e il confronto tra un anno e l\'altro.', action: h('button.btn.btn-primary', { type: 'button', onclick: () => accountEditor(ctx) }, icon('plus', 18), 'Aggiungi un conto') })) };
+      return { title: 'Patrimonio', node: h('section.card', empty({ icon: 'layers', title: 'Ancora niente da seguire', text: 'Aggiungi i conti, gli investimenti, la casa, l\'auto e i debiti: qui vedrai l\'andamento di ognuno mese dopo mese e il confronto tra un anno e l\'altro.', action: h('div.row-btns', h('button.btn.btn-primary', { type: 'button', onclick: () => accountEditor(ctx) }, icon('plus', 18), 'Aggiungi un conto'), h('button.btn.btn-soft', { type: 'button', onclick: () => openFileImport(ctx) }, icon('upload', 18), 'Importa da Excel')) })) };
     }
     const firstY = Math.min(curY, Number(d.firstDate.slice(0, 4)));
     const years = [];
@@ -272,6 +273,7 @@ export default {
       h('p.fine', icon('info', 14), ' Ogni conto conta dal suo saldo iniziale (o dal primo movimento): per avere lo storico degli anni passati, metti la data giusta in "Modifica conto" o usa "Aggiorna i valori" con una data passata. I titoli nei mesi passati valgono la quantità di allora al prezzo di oggi, tranne i mesi in cui l\'app ha salvato il loro valore. Valute estere al cambio attuale.'));
     return {
       title: 'Patrimonio', sub: 'Tutto ciò che hai, mese dopo mese',
+      actions: [h('button.btn.btn-soft', { type: 'button', onclick: () => openFileImport(ctx) }, icon('upload', 18), h('span', 'Importa da Excel'))],
       node,
     };
   },

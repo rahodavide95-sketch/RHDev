@@ -93,3 +93,13 @@ export function pageGrid(...cards) { return h('div.page-grid', cards); }
 export function segTabs(options, value, onChange) {
   return h('div.tabs', { role: 'tablist' }, options.map(o => h('button.tab-btn', { type: 'button', role: 'tab', 'aria-selected': String(o.value === value), onclick: () => onChange(o.value) }, o.label, o.count != null ? h('span.tab-count', o.count) : null)));
 }
+
+/** Casella per filtrare una tabella: aggiorna la pagina mentre scrivi e resta selezionata. */
+let refocus = null;
+export function filterBox(id, value, onChange, placeholder = 'Filtra…') {
+  const inp = h('input', { type: 'search', value: value || '', placeholder, 'aria-label': placeholder });
+  let tm;
+  inp.addEventListener('input', () => { clearTimeout(tm); tm = setTimeout(() => { refocus = id; onChange(inp.value.trim()); }, 220); });
+  if (refocus === id) { refocus = null; requestAnimationFrame(() => { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }); }
+  return h('label.table-filter', icon('search', 16), inp);
+}

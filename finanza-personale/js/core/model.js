@@ -743,7 +743,7 @@ export function derive(state, refDate = today()) {
     }
     return out;
   }
-  function nwSheet(Y) {
+  function nwSheet(Y, q = '') {
     const cols = [`${Y - 1}-12-31`];
     for (let m = 1; m <= 12; m++) cols.push(monthClose(`${Y}-${String(m).padStart(2, '0')}`));
     const layout = state.settings.nwLayout || { sections: [], labels: {} };
@@ -763,6 +763,7 @@ export function derive(state, refDate = today()) {
       }
       sec.keys.push(it.key);
     }
+    const qn = norm(q || '');
     const sum = arr => (arr.every(v => v == null) ? null : arr.reduce((a, v) => a + (v || 0), 0));
     const gainOf = tot => tot.map((v, i) => (i === 0 || v == null || tot[i - 1] == null ? null : v - tot[i - 1]));
     const pctOf = tot => tot.map((v, i) => (i === 0 || v == null || !tot[i - 1] ? null : (v - tot[i - 1]) / Math.abs(tot[i - 1]) * 100));
@@ -771,7 +772,9 @@ export function derive(state, refDate = today()) {
         const it = byKey.get(k);
         const values = cols.map(c => (c ? it.at(c) : null));
         return { key: k, label: layout.labels[k] || it.label, name: it.label, sub: it.sub, values, acc: it.acc, hd: it.hd || null, cash: !!it.cash };
-      }).filter(r => r.values.some(v => v));
+      }).filter(r => r.values.some(v => v))
+        // filtro: per nome della riga, del titolo, del conto o della sezione
+        .filter(r => !qn || norm(x.name).includes(qn) || [r.label, r.name, r.sub].some(t => norm(t || '').includes(qn)));
       const total = cols.map((c, i) => sum(rows.map(r => r.values[i])));
       return { name: x.name, color: x.color || (si % 8) + 1, rows, total, gain: gainOf(total), pct: pctOf(total) };
     }).filter(x => x.rows.length);

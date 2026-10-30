@@ -419,7 +419,7 @@ function yearsView(ctx) {
     toast('Tabella esportata', { kind: 'ok' });
   };
   const monthsCard = card('Mese per mese', { sub: `In totale ${moneyText(inv.total)}, in media ${moneyText(Math.round(inv.total / monthsAll))} al mese`, action: h('button.btn.btn-sm.btn-ghost', { type: 'button', onclick: exportMonths }, icon('download', 16), 'CSV') },
-    scrollTable(h('table.table.nw-table.nw-months.inv-table',
+    scrollTable(h('table.table.nw-table.nw-months.inv-table', { 'data-tid': 'inv-months' },
       h('thead', head), h('tbody', body),
       h('tfoot',
         h('tr.total', h('td.sticky', 'Totale anno'), years.map(y => cell(yNet(y)))),
@@ -437,7 +437,7 @@ function yearsView(ctx) {
   const totAll = groups.reduce((a, g) => a + g.total, 0);
   const qcell = q => h('td.num', { class: q ? (q < 0 ? 'neg' : '') : 'muted' }, q ? qtyText(q) : '—');
   const pmc = x => (x && x.p.qty > 0 ? (ui.privacy ? '••••' : `${formatNumber(x.p.avg, 4)} ${x.hd.currency}`) : '—');
-  const pivotTable = h('table.table.nw-table.nw-months.inv-table',
+  const pivotTable = h('table.table.nw-table.nw-months.inv-table', { 'data-tid': 'inv-pivot' },
     h('thead', h('tr', h('th.sticky', ''), years.map(y => h('th.num', String(y))), h('th.num.diff', inQty ? 'Quote' : 'Totale'), isHd ? [inQty ? null : h('th.num', 'Quote'), h('th.num', 'Prezzo medio')] : h('th.num', 'Peso'))),
     h('tbody', groups.map(g => {
       const x = isHd ? posOf(g.key) : null;
@@ -478,7 +478,7 @@ function yearsView(ctx) {
   const totCost = Y => -(Y.fees + Y.taxes + Y.costs);
   const tone = v => (v > 0 ? 'pos' : v < 0 ? 'neg' : 'muted');
   const vcell = v => h('td.num', { class: tone(v) }, v ? moneyText(v, ui.base, { sign: true }) : '—');
-  const costTable = h('table.table.nw-table.nw-months.inv-table',
+  const costTable = h('table.table.nw-table.nw-months.inv-table', { 'data-tid': 'inv-costs' },
     h('thead', h('tr', h('th.sticky', ''), years.map(y => h('th.num', String(y))), h('th.num.diff', 'Totale'))),
     h('tbody', lines.map(([label, f]) => {
       const all = years.reduce((a, y) => a + sumY(y, f), 0);
@@ -493,7 +493,7 @@ function yearsView(ctx) {
   const hist = st.holdings.filter(inScope).map(hd => ({ hd, H: buyHistory(hd, d.refDate) })).filter(x => x.H.buys)
     .map(x => ({ ...x, spentBase: d.toBase(Math.round(x.H.spent * 100), x.hd.currency) })).sort((a, b) => b.spentBase - a.spentBase);
   const histCard = hist.length ? card('Titolo per titolo', { sub: 'Quanto hai speso in ognuno, quando e ogni quanto compri' },
-    scrollTable(h('table.table.nw-table.nw-months.inv-table.hist-table',
+    scrollTable(h('table.table.nw-table.nw-months.inv-table.hist-table', { 'data-tid': 'inv-hist' },
       h('thead', h('tr', h('th.sticky', 'Titolo'), h('th.num', 'Speso'), h('th.num', 'Acquisti'), h('th', 'Ogni quanto'), h('th.num', 'Acquisto medio'), h('th.num', 'Primo'), h('th.num', 'Ultimo'))),
       h('tbody', hist.map(({ hd, H, spentBase }) => h('tr.click', { onclick: () => ctx.go('investimenti/' + hd.id) },
         h('td.sticky', hd.name),

@@ -1,5 +1,5 @@
-# Temporaneo: scarica i loghi ufficiali delle banche per Analisi Finanziarie (poi si toglie).
-name: Analisi Finanziarie - loghi delle banche
+# Temporaneo: scarica i loghi ufficiali di banche e crypto per Analisi Finanziarie (poi si toglie).
+name: Analisi Finanziarie - loghi
 on:
   push:
     branches: [claude/finanza-temi-tabelle]
@@ -14,11 +14,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install pillow cairosvg requests
+      - run: pip install pillow requests
       - run: python .github/finanza-loghi.py
       - run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add finanza-personale/icons/banks finanza-personale/js/data/banks.js
-          git commit -m "Analisi Finanziarie: loghi delle banche (dai loro siti)" || echo "niente di nuovo"
+          git add finanza-personale/icons finanza-personale/js/data
+          git commit -m "Analisi Finanziarie: loghi delle crypto (CoinGecko) e altre banche" || echo "niente di nuovo"
           git push

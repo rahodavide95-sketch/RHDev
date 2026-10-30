@@ -5,10 +5,10 @@
 
 export const PALETTES = {
   viola:    { label: 'Viola', brand: '#4f46e5', head: '', bg: '', chart: 'vivid' },
-  excel:    { label: 'Excel', brand: '#1f4e79', head: '#1f3864', bg: '#eef0f4', chart: 'office', zebra: true },
-  oceano:   { label: 'Oceano', brand: '#1769aa', head: '#21405e', bg: '#edf1f5', chart: 'cool' },
-  smeraldo: { label: 'Smeraldo', brand: '#1d7a52', head: '#1f4e3d', bg: '#eef2ef', chart: 'green' },
-  grafite:  { label: 'Grafite', brand: '#3c4452', head: '#3a3f48', bg: '#efeff1', chart: 'office' },
+  excel:    { label: 'Excel', brand: '#1f4e79', head: '#1f3864', bg: '#eef0f4', chart: 'vivid', zebra: true },
+  oceano:   { label: 'Oceano', brand: '#1769aa', head: '#21405e', bg: '#edf1f5', chart: 'vivid' },
+  smeraldo: { label: 'Smeraldo', brand: '#1d7a52', head: '#1f4e3d', bg: '#eef2ef', chart: 'vivid' },
+  grafite:  { label: 'Grafite', brand: '#3c4452', head: '#3a3f48', bg: '#efeff1', chart: 'vivid' },
 };
 
 /* colori dei grafici (8 serie, nell'ordine) */

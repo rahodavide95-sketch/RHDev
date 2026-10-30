@@ -8,6 +8,7 @@ import { S, CLOUD_LABEL, cloudLine } from './session.js';
 import { runAutoPost } from './actions.js';
 import { formatDate } from './core/dates.js';
 import { applyTheme } from './ui/theme.js';
+import { enhanceTables } from './ui/tables.js';
 
 import dashboard from './views/dashboard.js';
 import transactions from './views/transactions.js';
@@ -218,6 +219,7 @@ function doRender() {
   $('#banners').replaceChildren(...banners(ctx));
   viewEl.replaceChildren(node);
   viewEl.dataset.route = route.path || 'home';
+  enhanceTables(viewEl);
   const priv = $('#side-priv');
   if (priv) { priv.replaceChildren(icon(ui.privacy ? 'eyeOff' : 'eye', 20)); priv.setAttribute('aria-label', ui.privacy ? 'Mostra gli importi' : 'Nascondi gli importi'); }
   updateSave();

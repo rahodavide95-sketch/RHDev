@@ -5,7 +5,7 @@ import { h, icon, download } from '../ui/dom.js';
 import { barChart, legend } from '../ui/charts.js';
 import { openSheet, amountInput, dateInput, segmented, toast, empty, field, selectInput } from '../ui/components.js';
 import { money, moneyText, delta, axisMoney, tipMoney, ui } from '../ui/fmt.js';
-import { card, avatar, accAvatar, segTabs } from './common.js';
+import { card, avatar, accAvatar, segTabs, filterBox } from './common.js';
 import { accountEditor } from './editors.js';
 import { openFileImport } from './invimport.js';
 import { bankLogo } from '../data/banks.js';
@@ -17,6 +17,7 @@ import { toCSV, csvNumber } from '../core/csv.js';
 
 let year = null;
 let span = 24;
+let nwQ = '';
 
 const GROUP_ORDER = Object.entries(GROUPS).sort((a, b) => a[1].order - b[1].order).map(([k]) => k);
 const GROUP_COLOR = { liquidity: 'var(--c3)', investments: 'var(--c1)', assets: 'var(--c4)', debt: 'var(--c8)' };
@@ -159,7 +160,7 @@ const tone = v => (v == null || !Math.round(v * 100) ? '' : v > 0 ? 'pos' : 'neg
 
 function sheetTable(ctx, Y) {
   const { d } = ctx;
-  const S0 = d.nwSheet(Y);
+  const S0 = d.nwSheet(Y, nwQ);
   const curY = Number(d.refDate.slice(0, 4));
   const dates = [`${Y - 1}-12-31`, ...Array.from({ length: 12 }, (_, i) => monthEnd(`${Y}-${String(i + 1).padStart(2, '0')}`))];
   const isToday = i => S0.cols[i] && S0.cols[i] === d.refDate && dates[i] !== d.refDate;
@@ -201,13 +202,13 @@ function sheetTable(ctx, Y) {
     download(new Blob([toCSV(rows)], { type: 'text/csv;charset=utf-8' }), `net-worth-${Y}.csv`);
     toast('Tabella esportata', { kind: 'ok' });
   };
-  const scroller = h('div.table-wrap.nw-scroll', h('table.table.nw-table.nw-months.nw-sheet', h('thead', head), h('tbody', body)));
+  const scroller = h('div.table-wrap.nw-scroll', h('table.table.nw-table.nw-months.nw-sheet', { 'data-tid': 'nw' }, h('thead', head), h('tbody', body)));
   // si apre sui mesi più recenti
   if (Y === curY) requestAnimationFrame(() => requestAnimationFrame(() => { const th = scroller.querySelectorAll('thead th')[Math.max(1, Number(d.refDate.slice(5, 7)) - 3)]; if (th) scroller.scrollLeft = th.offsetLeft - 220; }));
   return card(`Net Worth ${Y}`, {
     sub: 'Valori a fine mese, sezione per sezione, con guadagno o perdita sul mese prima. Tocca una riga per i dettagli.',
     action: h('div.card-acts', h('button.btn.btn-sm.btn-ghost', { type: 'button', onclick: () => organizeSheet(ctx, S0) }, icon('edit', 16), 'Organizza'), h('button.btn.btn-sm.btn-ghost', { type: 'button', onclick: exportCsv }, icon('download', 16), 'CSV')),
-  }, scroller);
+  }, h('div.inv-filters', filterBox('nw', nwQ, v => { nwQ = v; ctx.rerender(); }, 'Filtra: conto, titolo o sezione')), scroller);
 }
 
 /** Sezioni e righe del Net Worth: rinomina, colori, ordine, sposta le righe da una sezione all'altra. */

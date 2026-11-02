@@ -456,7 +456,11 @@ export function planNetWorth(read, state, { includeOdd = false, holdings = state
     const gross = isGross(a, read.accounts);
     const zero = !usable.some(v => v.value);
     const reason = invAcc ? 'è il totale del conto titoli: lo calcolo dai titoli' : gross ? 'lordo: conta solo il netto' : zero && usable.length ? 'sempre a zero' : '';
-    return { ...a, name, institution, cls, key: String(a.row), holding, existing, type, currency, odd, future, known, changed, values, reason, gross, cash, on: !reason && (values.length > 0 || changed.length > 0) };
+    // celle vuote dopo il primo valore (es. TFR scritto solo al 31/12): nel foglio quei mesi non lo contano
+    const past = read.dates.filter(dt => !refDate || dt <= refDate);
+    const firstAt = past.findIndex(dt => a.values.some(v => v.date === dt));
+    const sparse = firstAt >= 0 && past.slice(firstAt).some(dt => !a.values.some(v => v.date === dt));
+    return { ...a, name, institution, cls, sparse, key: String(a.row), holding, existing, type, currency, odd, future, known, changed, values, reason, gross, cash, on: !reason && (values.length > 0 || changed.length > 0) };
   });
   return { rows };
 }

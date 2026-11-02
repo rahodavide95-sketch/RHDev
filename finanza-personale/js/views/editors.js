@@ -171,6 +171,8 @@ export function accountEditor(ctx, acc = null, preset = {}) {
   const opening = amountInput({ value: open ? Math.abs(open.value) : null, currency: v.currency, allowNegative: true });
   const openDate = dateInput(open?.date || today());
   const inNW = toggle('Conta nel patrimonio', acc ? acc.inNetWorth : true);
+  // come il TFR nel foglio di D: scritto una volta l'anno, il totale lo conta solo in quelle fine mese
+  const sparse = toggle('Nel Net Worth solo nei mesi con un valore', acc?.nwSparse || false, null, { hint: 'Acceso: conta solo nelle fine mese in cui hai scritto un valore (es. il TFR aggiornato una volta l\'anno). Spento: resta l\'ultimo valore finché non ne scrivi uno nuovo' });
   const archived = toggle('Archiviato', acc?.archived || false, null, { hint: 'Nascosto dagli elenchi, i movimenti restano' });
   const notes = textArea({ value: acc?.notes || '', placeholder: 'Facoltative (non scrivere password o PIN)', rows: 2 });
   // piano di ammortamento per mutui e prestiti
@@ -225,7 +227,7 @@ export function accountEditor(ctx, acc = null, preset = {}) {
     }
     let val = opening.getCents() || 0;
     if (t.liability) val = -Math.abs(val);
-    const data = { name: nm, type: v.type, institution: inst.value.trim(), currency: v.currency, emoji: emoji.value, inNetWorth: inNW.input.checked, notes: notes.value.trim(), plan: planObj };
+    const data = { name: nm, type: v.type, institution: inst.value.trim(), currency: v.currency, emoji: emoji.value, inNetWorth: inNW.input.checked, nwSparse: sparse.input.checked, notes: notes.value.trim(), plan: planObj };
     if (isNew) {
       const id = A.addAccount(data, planObj ? 0 : val, isISODate(openDate.value) ? openDate.value : today());
       toast('Conto creato', { kind: 'ok' });
@@ -245,7 +247,7 @@ export function accountEditor(ctx, acc = null, preset = {}) {
       field('Banca o società', inst),
       h('div.grid-2', openField, isNew ? field('Alla data', openDate) : field('Data del saldo iniziale', openDate)),
       planBox,
-      inNW, !isNew ? archived : null,
+      inNW, sparse, !isNew ? archived : null,
       field('Note', notes), err,
       h('button', { type: 'submit', hidden: true })),
     footer: [

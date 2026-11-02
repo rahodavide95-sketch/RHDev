@@ -205,7 +205,8 @@ cagare… LAVORO è la macro categoria, indica la somma di tutto"): **come un bi
 Macro categoria = `group` (LAVORO, MUSICA, INT. BANCA, ALTRO), voci = categorie (STIPENDIO,
 13ESIMA, 14ESIMA, BUONI PASTO, WELFARE; ALTRO, DJ, PRODUZIONE, GRAFICHE; CC, CD). Pagina:
 numeri dell'anno (totale con confronto sull'anno prima, media, mese migliore, mese in corso
-sulla media) → una scheda colorata per macro (totale, quota, barra, media, andamento; tocca
+sulla media; il mese in corso conta per la media e nei numeri solo se ha già degli importi,
+altrimenti si usa l'ultimo mese completo) → una scheda colorata per macro (totale, quota, barra, media, andamento; tocca
 per vedere solo quella) → grafico a barre impilate per macro → tabella: riga della macro
 (somma, colorata, si apre e chiude) e sotto le voci rientrate, GEN…DIC, Totale, Media, %;
 macro senza voci vere (ALTRO) = una riga; note (`payee` diverse dal nome) a richiesta
@@ -307,6 +308,11 @@ tabelle compatte. Diventano variabili CSS sulla radice; copia delle sole variabi
 localStorage `rhf-look` che `boot.js` applica prima del primo disegno. D: "usa più colori per
 intestazioni ecc, è tutto uguale e non si capisce niente": pulsanti principali, schede scelte
 e voce attiva col colore principale, barretta colorata nei titoli delle schede.
+**Colori sobri** di base (D, dopo aver chiesto più colori: "non mi piacciono tutti quei colori"):
+`look.colorful` (falso di base) → `<html data-colors="few|many">` (anche in `index.html` e
+`boot.js`); in "few" schede, sezioni del Net Worth, righe delle macro categorie e distintivi sono
+neutri, con solo un pallino colorato per riconoscerli nei grafici; verde/rosso per guadagni e
+perdite; grafici a colori. Interruttore "Colori vivaci" in Impostazioni › Aspetto.
 Layout a **tutta larghezza** (D col monitor da 27": niente `max-width`), barra laterale
 **comprimibile** (pulsante in basso o tasto `[`, `html.side-mini`, `rhf-side`), finestre alte
 fino allo schermo (niente tetti a 46vh/900px), `sheet-lg` fino a 1280 px.

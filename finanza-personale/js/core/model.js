@@ -127,7 +127,7 @@ export function defaults() {
       // aspetto: palette (o colori scelti), colori dei grafici, righe alterne, tabelle compatte
       // Net Worth come il foglio di D: sezioni con i loro conti e titoli, nell'ordine scelto
       nwLayout: { sections: [], labels: {} },
-      look: { palette: 'excel', brand: '#1f4e79', head: '#1f3864', bg: '#eef0f4', chart: 'auto', zebra: null, density: 'normal' },
+      look: { palette: 'excel', brand: '#1f4e79', head: '#1f3864', bg: '#eef0f4', chart: 'auto', zebra: null, density: 'normal', colorful: false },
     },
     accounts: [],
     valuations: [],
@@ -183,6 +183,7 @@ function cleanLook(l, def) {
     chart: LOOK_CHARTS.includes(o.chart) ? o.chart : def.chart,
     zebra: o.zebra == null ? null : !!o.zebra,
     density: o.density === 'compact' ? 'compact' : 'normal',
+    colorful: o.colorful === true,     // D: "non mi piacciono tutti quei colori": sobrio di base
   };
 }
 
@@ -982,7 +983,10 @@ export function derive(state, refDate = today()) {
         .map(c => ({ ...c, payees: [...c.payees.values()].sort((a, b) => b.total - a.total) })),
     }));
     const ry = +refDate.slice(0, 4);
-    const months = +y < ry ? 12 : +y === ry ? +refDate.slice(5, 7) : 0;   // mesi trascorsi, per la media
+    // mesi trascorsi, per la media: quello in corso conta solo se ha già degli importi
+    // (il 2 novembre, con novembre ancora vuoto, la media è sui 10 mesi da gennaio a ottobre)
+    const curMonth = +refDate.slice(5, 7);
+    const months = +y < ry ? 12 : +y === ry ? (tot.byMonth[curMonth - 1] ? curMonth : curMonth - 1) : 0;
     return { year: +y, kind, groups: list, ...tot, months };
   }
 

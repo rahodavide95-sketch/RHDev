@@ -1225,3 +1225,35 @@ table.resizing { user-select: none; cursor: col-resize; }
 
 /* righe colorate (macro categorie): al passaggio del mouse un po' più scure, mai trasparenti */
 .fin-table tr.fin-macro.click:hover td { background: color-mix(in srgb, var(--chip) 19%, var(--card)); }
+
+/* ─── Colori sobri (predefinito; D: "non mi piacciono tutti quei colori") ───
+   Schede, sezioni, righe delle categorie e distintivi neutri; resta solo un pallino colorato
+   per riconoscere ogni categoria o sezione nei grafici. Verde e rosso per guadagni e perdite,
+   grafici a colori. Con "Colori vivaci" (data-colors="many") torna tutto colorato. */
+[data-colors="few"] .card-title::before { display: none; }
+[data-colors="few"] .fin-card { box-shadow: none; }
+[data-colors="few"] .fin-card.on { box-shadow: 0 0 0 2px var(--ink); }
+[data-colors="few"] .fin-card-name { color: var(--ink-2); display: inline-flex; align-items: center; gap: 7px; }
+[data-colors="few"] .fin-card-name::before { content: ''; width: 8px; height: 8px; border-radius: 2px; background: var(--chip); flex: none; }
+[data-colors="few"] .fin-card-pct { color: var(--ink-2); background: var(--fill); }
+[data-colors="few"] .fin-bar i { background: var(--ink-3); }
+[data-colors="few"] .fin-card .spark .line { stroke: var(--ink-3) !important; }
+[data-colors="few"] .fin-card .spark .area { fill: var(--ink-3) !important; }
+[data-colors="few"] .fin-table tr.fin-macro td { background: var(--card-2); box-shadow: inset 0 1px 0 var(--line); }
+[data-colors="few"] .fin-table tr.fin-macro td.sticky, [data-colors="few"] .fin-table tr.fin-macro td.fin-tot { box-shadow: inset 0 1px 0 var(--line); }
+[data-colors="few"] .fin-table tr.fin-macro.click:hover td { background: var(--fill); }
+[data-colors="few"] .fin-macro-name { color: var(--ink); }
+[data-colors="few"] .fin-macro-name::before { content: ''; width: 8px; height: 8px; border-radius: 2px; background: var(--chip); flex: none; }
+[data-colors="few"] .fin-caret { color: var(--ink-3); }
+[data-colors="few"] .fin-table tr.fin-sub td.sticky { box-shadow: inset 0 1px 0 var(--line); }
+[data-colors="few"] .fin-table tr.fin-note td.sticky { box-shadow: none; }
+[data-colors="few"] .nw-sheet tr.nw-band td { background: var(--card-2); }
+[data-colors="few"] .nw-sheet tr.nw-band td.sticky { background: var(--card-2); color: var(--ink); }
+[data-colors="few"] .nw-sheet tr.nw-band td.sticky span { display: inline-flex; align-items: center; gap: 7px; }
+[data-colors="few"] .nw-sheet tr.nw-band td.sticky span::before { content: ''; width: 8px; height: 8px; border-radius: 2px; background: var(--sec); }
+[data-colors="few"] .nw-sheet tr.nw-item td.sticky { box-shadow: inset 0 1px 0 var(--line); }
+[data-colors="few"] .nw-sheet tr.nw-total td { background: var(--card); box-shadow: inset 0 1.5px 0 var(--ink-3); }
+[data-colors="few"] .avatar.av-badge, [data-colors="few"] .mini-badge { background: var(--fill-2); color: var(--ink-2); }
+[data-colors="few"] .hero-groups .hero-chip { box-shadow: none; }
+[data-colors="few"] .sub-chip { color: var(--ink); background: var(--fill); }
+[data-colors="few"] .grp-chip { color: var(--ink); background: var(--fill-2); }

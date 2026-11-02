@@ -38,6 +38,7 @@ export function resolveLook(look = {}) {
     chart: look.chart && look.chart !== 'auto' && CHARTS[look.chart] ? look.chart : (p?.chart || 'vivid'),
     zebra: look.zebra == null ? !!p?.zebra : !!look.zebra,
     density: look.density === 'compact' ? 'compact' : 'normal',
+    colorful: look.colorful === true,
   };
 }
 
@@ -88,6 +89,7 @@ export function applyTheme(theme, look) {
   for (const [n, x] of Object.entries(vars)) root.style.setProperty(n, x);
   if (L.zebra) root.dataset.zebra = '1'; else delete root.dataset.zebra;
   root.dataset.density = L.density;
-  try { localStorage.setItem('rhf-look', JSON.stringify({ light: lookVars(look || {}, false), dark: lookVars(look || {}, true), zebra: L.zebra, density: L.density })); } catch { /* navigazione privata */ }
+  root.dataset.colors = L.colorful ? 'many' : 'few';
+  try { localStorage.setItem('rhf-look', JSON.stringify({ light: lookVars(look || {}, false), dark: lookVars(look || {}, true), zebra: L.zebra, density: L.density, colorful: L.colorful })); } catch { /* navigazione privata */ }
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#0a0a0c' : (vars['--bg'] || '#f2f2f5'));
 }

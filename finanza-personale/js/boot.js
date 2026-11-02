@@ -11,4 +11,5 @@
   for (var k in vars) if (/^--[a-z0-9-]+$/.test(k) && typeof vars[k] === 'string' && /^(#[0-9a-f]{6}|rgba\([0-9., ]+\))$/i.test(vars[k])) root.style.setProperty(k, vars[k]);
   if (look.zebra) root.setAttribute('data-zebra', '1');
   if (look.density === 'compact') root.setAttribute('data-density', 'compact');
+  root.setAttribute('data-colors', look.colorful ? 'many' : 'few');
 })();

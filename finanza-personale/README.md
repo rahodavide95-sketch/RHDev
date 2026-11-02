@@ -1,4 +1,4 @@
-# Analisi Finanziarie
+# [RH] Finance
 
 Gestione completa della finanza personale, con le simulazioni finanziarie di prima
 (rifatte e corrette). Si accede con **email e password** (lo stesso account di

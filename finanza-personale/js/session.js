@@ -331,7 +331,7 @@ export async function newRecoveryCode(current) {
 export async function backupBlob() {
   await flush();
   const v = await freshVault();
-  const file = { ...v, exported: Date.now(), app: 'Analisi Finanziarie' };
+  const file = { ...v, exported: Date.now(), app: '[RH] Finance' };
   return new Blob([JSON.stringify(file)], { type: 'application/json' });
 }
 export function markBackup() {

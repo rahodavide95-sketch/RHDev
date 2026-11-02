@@ -8,7 +8,9 @@
 import { h, icon, download } from '../ui/dom.js';
 import { toast, empty } from '../ui/components.js';
 import { money, moneyText, delta, tipMoney, axisMoney, ui } from '../ui/fmt.js';
-import { card, segTabs, filterBox, stat } from './common.js';
+import { card, segTabs, filterBox, stat, colorDot, softColor } from './common.js';
+import { setGroupColor } from '../actions.js';
+import { fitTable, watchFit, fitMoney } from '../ui/fit.js';
 import { categoryEditor, txEditor } from './editors.js';
 import { categoryManager, groupColor } from './categories.js';
 import { openFileImport } from './invimport.js';
@@ -21,6 +23,8 @@ const V = { kind: 'income', year: null, empty: true, notes: false, closed: new S
 const norm = x => String(x || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 const zero = () => ({ total: 0, byMonth: Array(12).fill(0) });
 const add = (a, b) => { a.total += b.total; b.byMonth.forEach((v, i) => { a.byMonth[i] += v; }); return a; };
+/** "var(--c3)" → 3, "#aabbcc" resta: il valore che salva il quadratino del colore. */
+const cval = c => { const m = /^var\(--c(\d)\)$/.exec(c); return m ? +m[1] : c; };
 
 /** Solo le righe che contengono il testo (macro, sottocategoria o nota), con i totali rifatti. */
 function filterTable(T, q, focus) {
@@ -66,7 +70,13 @@ export default {
     const avg = r => (T.months ? Math.round(r.total / T.months) : 0);
     const share = r => (T.total ? r.total / T.total * 100 : 0);
     const colOf = g => groupColor(st, V.kind, g.name);
-    const t2 = v => (v ? moneyText(v, ui.base) : '');
+    // la tabella entra tutta nello schermo, come il Net Worth (D: "cerca di far entrare tutto anche nelle entrate/uscite")
+    const maxAbs = Math.max(0, T.total, ...T.groups.flatMap(g => [g.total, ...g.byMonth.map(Math.abs)]));
+    const fit = fitTable({ maxAbs, maxPct: 100 });
+    watchFit('#/entrate-uscite', fit, () => fitTable({ maxAbs, maxPct: 100 }));
+    const fm = fitMoney(fit, moneyText, ui.base, ui.privacy);
+    // celle vuote vuote, come in Excel (prima c'era un trattino in ogni mese senza importi)
+    const t2 = v => (v ? fm(v) : '');
     const goMonth = (m, extra) => ctx.go(`movimenti?mese=${V.year}-${String(m + 1).padStart(2, '0')}${extra}`);
 
     /* ── numeri dell'anno ── */
@@ -76,40 +86,44 @@ export default {
     // l'ultimo mese da mostrare: quello in corso se ha già importi, altrimenti l'ultimo completo
     const lastM = V.year === cy && curM > 1 && !full.byMonth[curM - 1] ? curM - 2 : curM ? curM - 1 : 0;
     const lastIsNow = V.year === cy && lastM === curM - 1;
-    const kpis = h('section.card.fin-kpis', h('div.stats-4',
-      stat(`${label} ${V.year}`, money(full.total), prev ? h('span', delta(prev ? (full.total - prev) / prev * 100 : 0, { invert: V.kind === 'expense' }), ` sul ${V.year - 1} (${moneyText(prev)})`) : `${full.months} mesi`),
-      stat('Media al mese', money(full.months ? Math.round(full.total / full.months) : 0), `su ${full.months || 0} ${full.months === 1 ? 'mese' : 'mesi'}`),
-      stat(V.kind === 'income' ? 'Mese migliore' : 'Mese più caro', best.i >= 0 ? money(best.v) : '—', best.i >= 0 ? monthName(best.i + 1) : ''),
-      stat(lastIsNow ? `${monthName(curM)} finora` : `${monthName(lastM + 1)}`, money(full.byMonth[lastM] || 0), full.months && full.total ? h('span', delta(((full.byMonth[lastM] || 0) / (full.total / full.months) - 1) * 100, { invert: V.kind === 'expense' }), ' rispetto alla media') : '')));
-
-    /* ── una scheda per macro categoria ── */
-    const cards = full.groups.length ? h('div.fin-cards', full.groups.map(g => {
-      const col = colOf(g), p = full.total ? g.total / full.total * 100 : 0;
-      const on = V.focus === g.name;
-      return h('button.fin-card', { type: 'button', class: on ? 'on' : V.focus ? 'dim' : '', style: { '--chip': col }, 'aria-pressed': String(on), onclick: () => { V.focus = on ? '' : g.name; ctx.rerender(); } },
-        h('span.fin-card-top', h('span.fin-card-name', g.name), h('span.fin-card-pct', formatPercent(p, 1))),
-        h('span.fin-card-val', money(g.total)),
-        h('span.fin-bar', h('i', { style: { width: Math.min(100, p) + '%' } })),
-        h('span.fin-card-sub', single(g) ? `media ${moneyText(full.months ? Math.round(g.total / full.months) : 0)} al mese` : `${g.cats.length} ${g.cats.length === 1 ? 'voce' : 'voci'} · media ${moneyText(full.months ? Math.round(g.total / full.months) : 0)} al mese`),
-        sparkline(g.byMonth.slice(0, Math.max(2, curM)), { color: col, width: 150, height: 30 }));
-    })) : null;
-
-    /* ── grafico: macro categorie impilate mese per mese ── */
-    const chartGroups = T.groups;
-    const chart = chartGroups.length ? card('Mese per mese', { sub: `${label} di ogni mese, divise per categoria` },
-      barChart({
-        labels: months.map(m => monthName(m + 1, true)), tipLabels: months.map(m => `${monthName(m + 1)} ${V.year}`),
-        series: chartGroups.map(g => ({ name: g.name, color: colOf(g), values: g.byMonth })),
-        stacked: true, fmt: tipMoney, fmtAxis: axisMoney, height: 230, mask: ui.privacy,
-      }),
-      legend(chartGroups.map(g => ({ label: g.name, color: colOf(g) })))) : null;
+    /* ── una card sola (D: le schede non gli piacciono): il totale dell'anno, i numeri chiave,
+       il mese per mese diviso per macro categoria e accanto le macro con quota, totale e media ── */
+    const kpi = (l, v, x) => h('div.dk', h('span.dk-l', l), h('span.dk-v', v), x ? h('span.dk-x', x) : null);
+    const inv = V.kind === 'expense';
+    const pos = full.groups.reduce((a2, g) => a2 + Math.max(0, g.total), 0) || 1;
+    const summary = h('section.card.dash-card.fin-summary',
+      h('div.dash-head',
+        h('div', h('span.dash-label', `${label} ${V.year}`), h('div.dash-big', money(full.total))),
+        prev ? h('div.fin-vs', delta((full.total - prev) / prev * 100, { invert: inv }), h('span', ` sul ${V.year - 1}`), h('small', moneyText(prev))) : null),
+      h('div.dash-kpis',
+        kpi('Media al mese', money(full.months ? Math.round(full.total / full.months) : 0), `su ${full.months || 0} ${full.months === 1 ? 'mese' : 'mesi'}`),
+        kpi(V.kind === 'income' ? 'Mese migliore' : 'Mese più caro', best.i >= 0 ? money(best.v) : '—', best.i >= 0 ? monthName(best.i + 1) : ''),
+        kpi(lastIsNow ? `${monthName(curM)} finora` : `${monthName(lastM + 1)}`, money(full.byMonth[lastM] || 0), full.months && full.total ? h('span', delta(((full.byMonth[lastM] || 0) / (full.total / full.months) - 1) * 100, { invert: inv }), ' rispetto alla media') : '')),
+      h('div.dash-nw-body',
+        h('div.dash-chart', barChart({
+          labels: months.map(m => monthName(m + 1, true)), tipLabels: months.map(m => `${monthName(m + 1)} ${V.year}`),
+          series: T.groups.map(g => ({ name: g.name, color: softColor(colOf(g)), values: g.byMonth })),
+          stacked: true, fmt: tipMoney, fmtAxis: axisMoney, height: 250, mask: ui.privacy, title: `${label} di ogni mese, divise per categoria`,
+        })),
+        h('div.dash-secs',
+          h('div.alloc-bar.dash-alloc', full.groups.filter(g => g.total > 0).map(g => h('span', { style: { width: (g.total / pos * 100) + '%', background: softColor(colOf(g)) }, title: g.name }))),
+          h('div.dash-list', full.groups.map(g => {
+            const on = V.focus === g.name;
+            return h('div.dash-row.fin-sum-row', { class: on ? 'on' : V.focus ? 'dim' : '' },
+              colorDot(cval(colOf(g)), v => setGroupColor(V.kind, g.name, v), `Colore di ${g.name}`),
+              h('button.dash-n.dash-pick', { type: 'button', 'aria-pressed': String(on), title: on ? 'Mostra tutte' : 'Solo questa nella tabella', onclick: () => { V.focus = on ? '' : g.name; ctx.rerender(); } }, g.name),
+              h('span.dash-p', full.total ? formatPercent(g.total / full.total * 100, 1) : ''),
+              h('span.dash-v', money(g.total)),
+              h('span.dash-g', full.months ? `${moneyText(Math.round(g.total / full.months))} al mese` : ''));
+          })),
+          h('p.dash-cap', 'Tocca un nome per vedere solo quella categoria nella tabella, il quadratino per cambiarne il colore.'))));
 
     /* ── tabella: macro (somma) → sottocategorie → note ── */
     const cells = (r, extra, strong) => months.map(m => h('td.num', {
       class: [m >= curM ? 'future' : '', r.byMonth[m] ? (extra != null ? 'click' : '') : 'muted', strong ? 'b' : ''].join(' '),
       onclick: r.byMonth[m] && extra != null ? e => { e.stopPropagation(); goMonth(m, extra); } : null,
-    }, m >= curM && !r.byMonth[m] ? '' : t2(r.byMonth[m]) || '–'));
-    const ends = r => [h('td.num.fin-tot', t2(r.total) || '–'), h('td.num', T.months && r.total ? moneyText(avg(r), ui.base) : '–'), h('td.num.fin-pct', r.total && T.total ? formatPercent(share(r), 1) : '–')];
+    }, t2(r.byMonth[m])));
+    const ends = r => [h('td.num.fin-tot', t2(r.total)), h('td.num', T.months && r.total ? fm(avg(r)) : ''), h('td.num.fin-pct', r.total && T.total ? formatPercent(share(r), fit ? Math.min(1, fit.pdec) : 1) : '')];
     const body = [];
     for (const g of T.groups) {
       const col = colOf(g);
@@ -117,7 +131,7 @@ export default {
       const closed = V.closed.has(g.name);
       const catId = isSingle ? g.cats[0].id : null;
       body.push(h('tr.fin-macro', { style: { '--chip': col }, class: isSingle ? '' : 'click', onclick: isSingle ? null : () => { if (closed) V.closed.delete(g.name); else V.closed.add(g.name); ctx.rerender(); } },
-        h('td.sticky', h('span.fin-macro-name', isSingle ? h('span.fin-caret') : h('span.fin-caret', icon(closed ? 'chevR' : 'chevD', 14)), g.name)),
+        h('td.sticky', h('span.fin-macro-name', isSingle ? h('span.fin-caret') : h('span.fin-caret', icon(closed ? 'chevR' : 'chevD', 14)), colorDot(cval(col), v => setGroupColor(V.kind, g.name, v), `Colore di ${g.name}`), h('span.fin-macro-t', g.name))),
         cells(g, catId ? `&cat=${catId}` : null, true), ends(g)));
       const showNotes = c => V.notes || V.openNotes.has(c.id || c.name);
       if (isSingle) {
@@ -136,12 +150,14 @@ export default {
         if (showNotes(c)) for (const p of ns) body.push(h('tr.fin-note', h('td.sticky', h('span', p.name)), cells(p, `${c.id ? `&cat=${c.id}` : ''}&q=${encodeURIComponent(p.name)}`), ends(p)));
       }
     }
-    const tableWrap = h('div.table-wrap.nw-scroll', h('table.table.nw-table.nw-months.fin-table', { 'data-tid': `fin-${V.kind}` },
-      h('thead', h('tr', h('th.sticky', 'Categoria'), months.map(m => h('th.num', { class: m >= curM ? 'future' : '' }, monthName(m + 1, true).toUpperCase())), h('th.num.fin-tot', 'Totale'), h('th.num', 'Media'), h('th.num', '%'))),
+    const table = h('table.table.nw-table.nw-months.fin-table', { 'data-tid': fit ? `fin-${V.kind}-fit` : `fin-${V.kind}`, class: fit ? 'fit' : '' },
+      h('thead', h('tr', h('th.sticky', fit && !fit.euro ? 'Categoria (€)' : 'Categoria'), months.map(m => h('th.num', { class: m >= curM ? 'future' : '' }, monthName(m + 1, true).toUpperCase())), h('th.num.fin-tot', 'Totale'), h('th.num', 'Media'), h('th.num', '%'))),
       h('tbody', body),
-      h('tfoot', h('tr.fin-grand', h('td.sticky', V.focus || V.q ? `Totale (filtrato)` : `Totale ${label.toLowerCase()}`), cells(T, null, true), ends(T)))));
-    // su schermi stretti si apre sui mesi più recenti
-    if (curM > 6) requestAnimationFrame(() => requestAnimationFrame(() => {
+      h('tfoot', h('tr.fin-grand', h('td.sticky', V.focus || V.q ? `Totale (filtrato)` : `Totale ${label.toLowerCase()}`), cells(T, null, true), ends(T))));
+    if (fit) { table.style.setProperty('--nw-first', fit.first + 'px'); table.style.fontSize = fit.font + 'px'; }
+    const tableWrap = h('div.table-wrap.nw-scroll', table);
+    // su telefono (la tabella scorre) si apre sui mesi più recenti
+    if (!fit && curM > 6) requestAnimationFrame(() => requestAnimationFrame(() => {
       if (tableWrap.scrollWidth <= tableWrap.clientWidth + 20) return;
       const th = tableWrap.querySelectorAll('thead th')[Math.max(1, curM - 3)];
       if (th) tableWrap.scrollLeft = th.offsetLeft - 190;
@@ -166,7 +182,7 @@ export default {
     const invCosts = V.kind === 'expense' ? st.transactions.filter(t => t.kind === 'expense' && t.tags?.includes('investimenti') && t.date.startsWith(String(V.year))).reduce((a, t) => a + d.txBase(t), 0) : 0;
 
     const tableCard = card(V.focus ? `${label} ${V.year} · ${V.focus}` : `${label} ${V.year} per categoria`, {
-      sub: 'La riga colorata è la somma della categoria; sotto, le sue voci. Tocca un importo per vedere i movimenti.',
+      sub: 'La riga della categoria è la somma delle sue voci, sotto. Tocca un importo per vedere i movimenti.',
       action: h('div.card-acts',
         h('button.btn.btn-sm.btn-ghost', { type: 'button', onclick: () => { if (anyClosed) V.closed.clear(); else T.groups.forEach(g => V.closed.add(g.name)); ctx.rerender(); } }, icon(anyClosed ? 'chevD' : 'chevR', 16), anyClosed ? 'Apri tutto' : 'Chiudi tutto'),
         h('button.btn.btn-sm.btn-ghost', { type: 'button', onclick: exportCsv }, icon('download', 16), 'CSV')),
@@ -187,9 +203,9 @@ export default {
       ],
       node: h('div.stack',
         h('div.year-bar', kinds, yearTabs),
-        hasData ? [kpis, cards, chart, tableCard] : h('section.card', empty({ icon: 'list', title: `Nessuna ${one} nel ${V.year}`, text: 'Registra i movimenti con la loro categoria, o importa il tuo foglio Excel con le colonne GEN…DIC: qui li vedi per categoria e mese per mese.', action: h('div.row-btns', h('button.btn.btn-primary', { type: 'button', onclick: () => txEditor(ctx, null, { kind: V.kind }) }, icon('plus', 18), V.kind === 'income' ? 'Nuova entrata' : 'Nuova uscita'), h('button.btn.btn-soft', { type: 'button', onclick: () => openFileImport(ctx) }, icon('upload', 18), 'Importa da Excel')) })),
+        hasData ? [summary, tableCard] : h('section.card', empty({ icon: 'list', title: `Nessuna ${one} nel ${V.year}`, text: 'Registra i movimenti con la loro categoria, o importa il tuo foglio Excel con le colonne GEN…DIC: qui li vedi per categoria e mese per mese.', action: h('div.row-btns', h('button.btn.btn-primary', { type: 'button', onclick: () => txEditor(ctx, null, { kind: V.kind }) }, icon('plus', 18), V.kind === 'income' ? 'Nuova entrata' : 'Nuova uscita'), h('button.btn.btn-soft', { type: 'button', onclick: () => openFileImport(ctx) }, icon('upload', 18), 'Importa da Excel')) })),
         invCosts ? h('p.fine', icon('info', 14), h('span', `L'imposta di bollo e le altre spese degli investimenti (${moneyText(invCosts)} nel ${V.year}) non sono qui, come nel tuo foglio: le trovi in Investimenti › Anno per anno.`)) : null,
-        h('p.fine', icon('info', 14), h('span', 'Tocca una scheda per vedere solo quella categoria. Con "Categorie" le crei, rinomini, colori e riordini come vuoi.'))),
+        h('p.fine', icon('info', 14), h('span', 'Con "Categorie" le crei, rinomini, colori e riordini come vuoi; il colore lo cambi anche toccando il quadratino.'))),
     };
   },
 };

@@ -6,9 +6,9 @@ import { h, icon } from '../ui/dom.js';
 import { lineChart, barChart, legend } from '../ui/charts.js';
 import { progressBar, ring, empty, segmented, toast } from '../ui/components.js';
 import { money, moneyText, delta, axisMoney, tipMoney, ui } from '../ui/fmt.js';
-import { card, linkBtn, avatar, colorVar } from './common.js';
+import { card, linkBtn, avatar, colorVar, colorDot, setSectionColor } from './common.js';
 import { txEditor, accountEditor, recurringEditor, goalEditor } from './editors.js';
-import { postRecurring, skipRecurring } from '../actions.js';
+import { postRecurring, skipRecurring, setGroupColor } from '../actions.js';
 import { formatMonth, monthKey, formatDate, relDays, today, monthName, diffMonths, lastMonths } from '../core/dates.js';
 import { formatPercent } from '../core/money.js';
 import { groupColor } from './categories.js';
@@ -64,8 +64,8 @@ function netWorthCard(ctx) {
       h('div.dash-chart', chart),
       h('div.dash-secs',
         h('div.alloc-bar.dash-alloc', secs.filter(x => x.v > 0).map(x => h('span', { style: { width: (x.v / pos * 100) + '%', background: x.col }, title: x.s.name }))),
-        h('div.dash-list', secs.map(x => h('a.dash-row', { href: '#/patrimonio' },
-          h('span.dash-dot', { style: { background: x.col } }), h('span.dash-n', x.s.name),
+        h('div.dash-list', secs.map(x => h('div.dash-row', 
+          colorDot(x.s.color, c => setSectionColor(d, x.s.name, c), `Colore di ${x.s.name}`), h('span.dash-n', x.s.name),
           h('span.dash-p', x.v > 0 ? formatPercent(x.v / pos * 100, 0) : ''), x.s.total[L] == null ? h('span.dash-v.muted', '—') : h('span.dash-v', money(x.v, d.base, { tone: x.v < 0 ? 'neg' : '' }))))))));
 }
 
@@ -100,8 +100,9 @@ function flowsCard(ctx) {
     out.total ? legend([{ label: 'Entrate', color: 'var(--c3)' }, { label: 'Uscite', color: 'var(--c2)' }]) : null,
     macros.length ? h('div.dash-list.dash-macros', macros.map(g => {
       const col = soft(groupColor(st, 'income', g.name));
-      return h('a.dash-row.dash-macro', { href },
-        h('span.dash-dot', { style: { background: col } }), h('span.dash-n', g.name),
+      const raw = groupColor(st, 'income', g.name), m = /^var\(--c(\d)\)$/.exec(raw);
+      return h('div.dash-row.dash-macro',
+        colorDot(m ? +m[1] : raw, v => setGroupColor('income', g.name, v), `Colore di ${g.name}`), h('a.dash-n', { href }, g.name),
         h('span.dash-p', formatPercent(g.total / inc.total * 100, 0)), h('span.dash-v', money(g.total)),
         h('i.dash-bar', h('b', { style: { width: (g.total / macros[0].total * 100) + '%', background: col } })));
     })) : null);

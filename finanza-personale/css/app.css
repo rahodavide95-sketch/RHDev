@@ -815,13 +815,32 @@ input[type="date"].input::-webkit-date-and-time-value { text-align: left; }
 .look-prev .lp-brand { position: absolute; right: 8px; bottom: 8px; width: 16px; height: 16px; border-radius: 50%; }
 .look-prev .lp-dots { position: absolute; left: 8px; bottom: 9px; display: flex; gap: 3px; }
 .look-prev .lp-dots i { display: block; width: 8px; height: 8px; border-radius: 2px; }
-.look-custom { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
-.color-field { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 14px; background: var(--card-2); cursor: pointer; }
+.look-custom { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 10px; }
+.color-field { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 14px; background: var(--card-2); }
+.color-pick { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; cursor: pointer; }
+#set-colors .color-field { position: relative; padding: 10px; }
+#set-colors .color-field input[type="color"] { width: 36px; height: 36px; }
+#set-colors .color-field .icon-btn { position: absolute; top: 4px; right: 4px; }
 .color-field input[type="color"] { width: 42px; height: 42px; border: 0; padding: 0; border-radius: 12px; background: none; flex: none; cursor: pointer; }
 .color-field input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
 .color-field input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 10px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .12); }
 .color-field span { display: flex; flex-direction: column; gap: 2px; font-size: 14px; min-width: 0; }
 .color-field small { color: var(--ink-3); font-size: 12.5px; }
+/* gli 8 colori dei grafici: un quadrato per colore, tocca per la tavolozza completa */
+.series-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px 20px; flex-wrap: wrap; }
+.series-pick { display: flex; flex-wrap: wrap; gap: 8px; }
+.series-sw { position: relative; width: 42px; height: 42px; border-radius: 12px; cursor: pointer; display: grid; place-items: center; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .1); }
+.series-sw input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; border: 0; padding: 0; }
+.series-sw b { font-size: 12px; color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, .45); pointer-events: none; }
+.series-sw:focus-within { box-shadow: 0 0 0 3px var(--card), 0 0 0 5px var(--ring); }
+.series-from { display: flex; align-items: center; gap: 10px; }
+/* macro categorie e sezioni del Net Worth: nome e colori in fila */
+.set-colors { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 430px), 1fr)); gap: 6px 14px; }
+.set-color-row { display: flex; align-items: center; justify-content: space-between; gap: 6px 12px; flex-wrap: wrap; padding: 8px 12px; border-radius: 12px; background: var(--card-2); }
+.set-color-name { font-weight: 600; font-size: 14px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.set-color-row .swatches { gap: 6px; }
+.set-color-row .swatch { width: 26px; height: 26px; }
+.set-color-row .swatch[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--card-2), 0 0 0 4px var(--ink); }
 
 /* intestazioni colorate (palette Excel, Oceano… o colori scelti), righe alterne, densità */
 .table thead th { background: var(--thead-bg, transparent); color: var(--thead-ink, var(--ink-3)); }
@@ -1257,3 +1276,22 @@ table.resizing { user-select: none; cursor: col-resize; }
 [data-colors="few"] .hero-groups .hero-chip { box-shadow: none; }
 [data-colors="few"] .sub-chip { color: var(--ink); background: var(--fill); }
 [data-colors="few"] .grp-chip { color: var(--ink); background: var(--fill-2); }
+
+/* Net Worth che entra tutto nello schermo (su computer) */
+.nw-sheet.fit { table-layout: fixed; width: 100%; min-width: 0; }
+.nw-sheet.fit th, .nw-sheet.fit td { padding-left: 4px; padding-right: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nw-sheet.fit td.num, .nw-sheet.fit th.num { min-width: 0; }
+.nw-sheet.fit .sticky { width: var(--nw-first); min-width: var(--nw-first); max-width: var(--nw-first); padding-left: 10px; }
+.nw-sheet.fit tr.nw-item td.sticky { padding-left: 14px; }
+.nw-sheet.fit thead th { font-size: .86em; letter-spacing: 0; padding-left: 2px; padding-right: 5px; }
+.nw-sheet.fit thead th.nw-dcol { white-space: normal; line-height: 1.15; }
+.nw-sheet .nw-dcol { border-left: 1px solid var(--line); font-weight: 650; }
+.nw-sheet.fit .nw-sub { font-size: .85em; }
+/* in "adatta allo schermo" tutte le righe usano il carattere scelto per la tabella */
+.nw-sheet.fit tr.nw-grand td, .nw-sheet.fit tr.nw-alloc td { font-size: 1em; }
+.nw-sheet.fit tr.nw-gain td, .nw-sheet.fit tr.nw-pct td { font-size: .96em; }
+.nw-sheet.fit tr.nw-band td.sticky { font-size: .95em; }
+/* "qualsiasi colore": apre la tavolozza completa del sistema */
+.swatch-any { position: relative; display: inline-block; cursor: pointer; overflow: hidden; background: conic-gradient(#ff3b30, #ffcc00, #34c759, #00c7be, #007aff, #af52de, #ff2d55, #ff3b30); }
+.swatch-any input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; border: 0; padding: 0; }
+.swatches.sm .swatch-any { width: 18px; height: 18px; }

@@ -116,3 +116,6 @@ export function hdBadge(hd, small = false) {
   const [t, c] = BADGE[hd.cls] || BADGE.other;
   return h(small ? 'span.mini-badge' : 'span.avatar.av-badge', { style: { '--badge': c ? `var(--c${c})` : 'var(--ink-3)' } }, t);
 }
+
+/** Colore di una categoria o sezione: uno degli 8 della palette (1…8) o uno scelto liberamente (#rrggbb). */
+export const colorVar = c => (typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c) ? c : c ? `var(--c${c})` : 'var(--ink-3)');

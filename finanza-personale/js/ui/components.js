@@ -309,3 +309,29 @@ export function twoTap(label, onConfirm, { cls = 'btn btn-danger-soft', confirmL
   });
   return b;
 }
+
+/* ═══ Colore: gli 8 della palette o qualsiasi colore (tavolozza completa del sistema) ═══
+   `onChange` arriva mentre si sceglie; con { onDone } la scelta definitiva arriva a parte
+   (alla chiusura della tavolozza), per salvare una volta sola. */
+export function colorChoice(value, onChange, { onDone } = {}) {
+  let v = value || 0;
+  const hexOf = c => (typeof c === 'string' ? c : (getComputedStyle(document.documentElement).getPropertyValue(`--c${c || 1}`).trim() || '#888888'));
+  const wrap = h('div.swatches.color-choice');
+  const free = h('input', { type: 'color', value: /^#[0-9a-f]{6}$/i.test(hexOf(v)) ? hexOf(v) : '#888888', 'aria-label': 'Scegli qualsiasi colore' });
+  const any = h('label.swatch.swatch-any', { title: 'Qualsiasi colore' }, free);
+  const sync = () => {
+    wrap.querySelectorAll('button.swatch').forEach((x, j) => x.setAttribute('aria-pressed', String(v === j + 1)));
+    any.setAttribute('aria-pressed', String(typeof v === 'string'));
+    any.classList.toggle('picked', typeof v === 'string');
+    any.style.background = typeof v === 'string' ? v : '';
+  };
+  for (let i = 1; i <= 8; i++) {
+    wrap.append(h('button.swatch', { type: 'button', 'aria-label': `Colore ${i}`, style: { background: `var(--c${i})` }, onclick: () => { v = i; sync(); onChange?.(v); onDone?.(v); } }));
+  }
+  free.addEventListener('input', () => { v = free.value.toLowerCase(); sync(); onChange?.(v); });
+  free.addEventListener('change', () => { v = free.value.toLowerCase(); sync(); onDone?.(v); });
+  wrap.append(any);
+  sync();
+  wrap.getValue = () => v;
+  return wrap;
+}

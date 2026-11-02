@@ -127,7 +127,7 @@ export function defaults() {
       // aspetto: palette (o colori scelti), colori dei grafici, righe alterne, tabelle compatte
       // Net Worth come il foglio di D: sezioni con i loro conti e titoli, nell'ordine scelto
       nwLayout: { sections: [], labels: {} },
-      look: { palette: 'excel', brand: '#1f4e79', head: '#1f3864', bg: '#eef0f4', chart: 'auto', zebra: null, density: 'normal', colorful: false },
+      look: { palette: 'excel', brand: '#1f4e79', head: '#1f3864', bg: '#eef0f4', chart: 'auto', zebra: null, density: 'normal', colorful: false, series: null, pos: '', neg: '' },
     },
     accounts: [],
     valuations: [],
@@ -164,7 +164,8 @@ function cleanLayout(l) {
   const seen = new Set();
   const sections = (Array.isArray(o.sections) ? o.sections : []).slice(0, 40).map(x => ({
     name: str(x?.name, 60) || 'Sezione',
-    color: Number.isInteger(x?.color) && x.color >= 0 && x.color <= 8 ? x.color : 0,
+    // uno degli 8 colori della palette (1…8) o uno scelto liberamente (#rrggbb)
+    color: Number.isInteger(x?.color) && x.color >= 0 && x.color <= 8 ? x.color : typeof x?.color === 'string' && /^#[0-9a-f]{6}$/i.test(x.color) ? x.color.toLowerCase() : 0,
     items: (Array.isArray(x?.items) ? x.items : []).filter(k => typeof k === 'string' && NW_KEY.test(k) && !seen.has(k) && seen.add(k)).slice(0, 400),
   }));
   const labels = {};
@@ -179,11 +180,13 @@ function cleanLook(l, def) {
   const hex = (x, dflt) => (typeof x === 'string' && /^#[0-9a-f]{6}$/i.test(x) ? x.toLowerCase() : dflt);
   return {
     palette: LOOK_PALETTES.includes(o.palette) ? o.palette : def.palette,
-    brand: hex(o.brand, def.brand), head: hex(o.head, def.head), bg: hex(o.bg, def.bg),
+    brand: hex(o.brand, def.brand), head: o.head === '' ? '' : hex(o.head, def.head), bg: o.bg === '' ? '' : hex(o.bg, def.bg),
     chart: LOOK_CHARTS.includes(o.chart) ? o.chart : def.chart,
     zebra: o.zebra == null ? null : !!o.zebra,
     density: o.density === 'compact' ? 'compact' : 'normal',
     colorful: o.colorful === true,     // D: "non mi piacciono tutti quei colori": sobrio di base
+    series: Array.isArray(o.series) && o.series.length === 8 && o.series.every(x => typeof x === 'string' && /^#[0-9a-f]{6}$/i.test(x)) ? o.series.map(x => x.toLowerCase()) : null,
+    pos: hex(o.pos, ''), neg: hex(o.neg, ''),     // guadagni e perdite ('' = verde e rosso di base)
   };
 }
 
@@ -286,7 +289,7 @@ export function sanitize(raw) {
       onboarded: bool(set.onboarded),
       // colore di ogni gruppo di categorie ("income:Lavoro" → 1…8, la palette dei grafici)
       groupColors: Object.fromEntries(Object.entries(set.groupColors && typeof set.groupColors === 'object' ? set.groupColors : {})
-        .filter(([k, v]) => typeof k === 'string' && k.length <= 60 && /^(income|expense):/.test(k) && Number.isInteger(v) && v >= 1 && v <= 8).slice(0, 300)),
+        .filter(([k, v]) => typeof k === 'string' && k.length <= 60 && /^(income|expense):/.test(k) && ((Number.isInteger(v) && v >= 1 && v <= 8) || (typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v)))).slice(0, 300).map(([k, v]) => [k, typeof v === 'string' ? v.toLowerCase() : v])),
       look: cleanLook(set.look, d.settings.look),
       nwLayout: cleanLayout(set.nwLayout),
     },
@@ -773,6 +776,11 @@ export function derive(state, refDate = today()) {
     }
     return { secs, byKey, labels: layout.labels || {} };
   }
+  /** Le sezioni del Net Worth come si vedono (anche quelle di base), per cambiarne i colori. */
+  function nwGroups() {
+    const { secs, labels } = nwSections(nwItems());
+    return { sections: secs.map((x, si) => ({ name: x.name, color: x.color || 0, shown: x.color || (si % 8) + 1, items: x.keys })), labels };
+  }
   /** Fine mese (solo quelle passate: il valore effettivo è quello di fine mese). */
   const pastEnd = m => (monthEnd(m) <= refDate ? monthEnd(m) : null);
   function nwTable(cols, q = '') {
@@ -998,7 +1006,7 @@ export function derive(state, refDate = today()) {
     base, rates, ledger, accById, catById, holdingsByAcc, missingFx,
     balances, groupTotals, assets, netWorth, accountValue, holdingsValue, holdingsCash, toBase, txBase,
     nwAccounts, startByAcc, valueAt, netWorthAt, monthClose, yearClose, firstDate,
-    netWorthHistory, nwSheet, nwItems, nwMonthly, holdingValueAt, flows, monthlyFlows, budget, dueList, upcoming, fixedMonthly, recurringIncomeMonthly, goal, portfolio, invest, yearTable,
+    netWorthHistory, nwSheet, nwItems, nwGroups, nwMonthly, holdingValueAt, flows, monthlyFlows, budget, dueList, upcoming, fixedMonthly, recurringIncomeMonthly, goal, portfolio, invest, yearTable,
     refDate,
   };
 }

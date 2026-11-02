@@ -21,6 +21,7 @@ export const CHARTS = {
 };
 
 const HEX = /^#[0-9a-f]{6}$/i;
+const is8 = a => Array.isArray(a) && a.length === 8 && a.every(x => HEX.test(x));
 const rgb = hex => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
 const toHex = a => '#' + a.map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('');
 const mix = (a, b, t) => toHex(rgb(a).map((v, i) => v + (rgb(b)[i] - v) * t));
@@ -39,8 +40,19 @@ export function resolveLook(look = {}) {
     zebra: look.zebra == null ? !!p?.zebra : !!look.zebra,
     density: look.density === 'compact' ? 'compact' : 'normal',
     colorful: look.colorful === true,
+    series: is8(look.series) ? look.series : null,     // gli 8 colori scelti uno per uno
+    pos: HEX.test(look.pos) ? look.pos : '',
+    neg: HEX.test(look.neg) ? look.neg : '',
   };
 }
+
+/** Gli 8 colori dei grafici che si vedono ora (tema chiaro): scelti a mano o del gruppo scelto. */
+export function seriesOf(look) {
+  const L = resolveLook(look || {});
+  return L.series || CHARTS[L.chart].light;
+}
+/** Verde dei guadagni e rosso delle perdite di base (tema chiaro). */
+export const POS_NEG = { pos: '#0b8a45', neg: '#d92d3a' };
 
 /** Le variabili CSS per il tema chiaro o scuro (vuoto = quelle del foglio di stile). */
 export function lookVars(look, dark) {
@@ -63,15 +75,23 @@ export function lookVars(look, dark) {
     v['--glass'] = rgba(L.bg, 0.74);
     v['--card-2'] = mix(L.bg, '#ffffff', 0.55);
   }
-  if (L.chart !== 'vivid') {
-    const c = CHARTS[L.chart][dark ? 'dark' : 'light'];
+  // colori scelti a mano: uguali nei due temi, solo quelli molto scuri si schiariscono al buio
+  const c = L.series ? L.series.map(x => (dark && lum(x) < 0.1 ? mix(x, '#ffffff', 0.35) : x))
+    : L.chart !== 'vivid' ? CHARTS[L.chart][dark ? 'dark' : 'light'] : null;
+  if (c) {
     c.forEach((x, i) => { v[`--c${i + 1}`] = x; });
     v['--c1-soft'] = rgba(c[0], dark ? 0.18 : 0.14);
+  }
+  for (const k of ['pos', 'neg']) {
+    if (!L[k]) continue;
+    const x = dark && lum(L[k]) < 0.2 ? mix(L[k], '#ffffff', 0.3) : L[k];
+    v[`--${k}`] = x;
+    v[`--${k}-soft`] = rgba(x, dark ? 0.12 : 0.1);
   }
   return v;
 }
 
-const VAR_NAMES = ['--brand', '--brand-soft', '--ring', '--thead-bg', '--thead-ink', '--bg', '--glass', '--card-2', '--c1', '--c2', '--c3', '--c4', '--c5', '--c6', '--c7', '--c8', '--c1-soft'];
+const VAR_NAMES = ['--brand', '--brand-soft', '--ring', '--thead-bg', '--thead-ink', '--bg', '--glass', '--card-2', '--c1', '--c2', '--c3', '--c4', '--c5', '--c6', '--c7', '--c8', '--c1-soft', '--pos', '--pos-soft', '--neg', '--neg-soft'];
 
 let lastLook = null;
 /** Senza `look` (prima dello sblocco) restano i colori messi da boot.js. */

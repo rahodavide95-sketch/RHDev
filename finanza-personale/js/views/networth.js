@@ -7,16 +7,16 @@
 
 import { h, icon, download } from '../ui/dom.js';
 import { barChart, legend, sparkline } from '../ui/charts.js';
-import { openSheet, amountInput, toast, empty, selectInput } from '../ui/components.js';
+import { openSheet, amountInput, toast, empty, selectInput, colorChoice } from '../ui/components.js';
 import { money, moneyText, delta, axisMoney, tipMoney, ui } from '../ui/fmt.js';
-import { card, accAvatar, segTabs, filterBox, hdBadge } from './common.js';
+import { card, accAvatar, segTabs, filterBox, hdBadge, colorVar } from './common.js';
 import { accountEditor } from './editors.js';
 import { openFileImport } from './invimport.js';
 import { bankLogo } from '../data/banks.js';
 import { saveCheckIn, setSetting } from '../actions.js';
 import { isLiability, hasPlan, position } from '../core/model.js';
 import { monthKey, monthEnd, addMonthKey, formatMonth, formatDate, monthName } from '../core/dates.js';
-import { formatPercent } from '../core/money.js';
+import { formatPercent, formatNumber } from '../core/money.js';
 import { toCSV, csvNumber } from '../core/csv.js';
 
 let year = null;
@@ -27,60 +27,120 @@ const pctOf = (a, b) => (a != null && b ? (a - b) / Math.abs(b) * 100 : null);
 /* ─── Net Worth come il foglio di D: sezioni con le loro righe, Total, Gain/Loss e %;
    in fondo il patrimonio netto e l'Asset Allocation ─── */
 const dmy = iso => `${iso.slice(8)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
-const t2 = v => (v == null ? '' : moneyText(v, ui.base));
-const sg = v => (v == null ? '' : moneyText(v, ui.base, { sign: true }));
 const pc = v => (v == null ? '' : formatPercent(v, 2, true));
 const tone = v => (v == null || !Math.round(v * 100) ? '' : v > 0 ? 'pos' : 'neg');
+
+/* La tabella si adatta allo schermo (D: "far entrare tutto da dic 2025 alla differenza tra
+   2025-2026, anche senza comprimere la barra"): su computer 15 colonne uguali che riempiono la
+   pagina; carattere, decimali e simbolo € scelti in base allo spazio e al numero più lungo
+   (prima si tolgono i decimali, poi si rimpicciolisce, per ultimo si toglie il simbolo €,
+   che resta nell'intestazione). Su telefono la tabella scorre. */
+let fitMax = 0, fitPctMax = 0;
+const measure = (txt, px) => {
+  const c = measure.c || (measure.c = document.createElement('canvas').getContext('2d'));
+  c.font = `700 ${px}px Inter, system-ui, sans-serif`;
+  return c.measureText(txt).width;
+};
+function fitOf(maxAbs = fitMax, maxPct = fitPctMax) {
+  const W = (document.getElementById('view')?.clientWidth || innerWidth) - 50;
+  if (innerWidth < 760 || W < 820) return null;
+  const first = W > 1700 ? 240 : W > 1350 ? 200 : W > 1000 ? 170 : 150;
+  const per = (W - first) / 15 - 12;     // spazio per il testo (tolti i margini della cella)
+  // il numero più lungo scritto con zeri (cifre tutte larghe uguali)
+  const big = Math.floor(Math.abs(maxAbs) / 100) || 1;
+  const sample = (dec, euro) => '+' + formatNumber(Number('9'.repeat(String(big).length)), dec, dec).replace(/\d/g, '0') + (euro ? ' €' : '');
+  const pctSample = pd => '+' + '0'.repeat(String(Math.floor(Math.abs(maxPct)) || 1).length) + (pd ? ',' + '0'.repeat(pd) : '') + '%';
+  const tries = [[14, 2, true], [14, 0, true], [13, 0, true], [12, 0, true], [12, 0, false], [11.5, 0, false], [11, 0, false], [10.5, 0, false]];
+  const [font, dec, euro] = tries.find(([f, dd, e]) => measure(sample(dd, e), f) <= per) || tries[tries.length - 1];
+  const pdec = [2, 1, 0].find(pd => measure(pctSample(pd), font) <= per) ?? 0;
+  return { first, per: per + 12, dec, font, euro, pdec, short: measure('31/12/2025', font * 0.86) > per - 2 };
+}
+const fitSig = f => (f ? `${f.dec}|${f.font}|${f.first}|${f.euro}|${f.short}|${f.pdec}` : 'scroll');
+let fitKey = '';
+addEventListener('resize', () => {
+  clearTimeout(fitOf.t);
+  fitOf.t = setTimeout(() => {
+    if (fitSig(fitOf()) !== fitKey && location.hash.startsWith('#/patrimonio')) window.dispatchEvent(new CustomEvent('rhf-rerender'));
+  }, 200);
+});
 
 function sheetTable(ctx, Y) {
   const { d } = ctx;
   const S0 = d.nwSheet(Y, nwQ);
   const curY = Number(d.refDate.slice(0, 4));
+  const every = [...S0.sections.flatMap(x => [...x.rows.flatMap(r => r.values), ...x.total, ...x.gain]), ...S0.total, ...S0.gain];
+  fitMax = every.reduce((m, v) => Math.max(m, Math.abs(v || 0)), 0);
+  const lastI = vals => { for (let i = 12; i > 0; i--) if (vals[i] != null) return i; return -1; };
+  const yearPct = vals => { const i = lastI(vals); return i < 0 || !vals[0] ? 0 : (vals[i] - vals[0]) / Math.abs(vals[0]) * 100; };
+  fitPctMax = [...S0.sections.flatMap(x => [...x.pct, yearPct(x.total), ...x.rows.map(r => yearPct(r.values))]), ...S0.pct, yearPct(S0.total)]
+    .reduce((m, v) => Math.max(m, Math.abs(v || 0)), 0);
+  const fit = fitOf(fitMax, fitPctMax);
+  fitKey = fitSig(fit);
+  const dec = fit ? fit.dec : 2;
+  const noEuro = fit && !fit.euro;
+  const num = (v, sign) => (v == null ? '' : noEuro && !ui.privacy ? (sign && v > 0 ? '+' : '') + formatNumber(v / 100, dec, dec) : moneyText(v, ui.base, { sign, decimals: dec }));
+  const t2 = v => num(v, false);
+  const sg = v => num(v, true);
   const dates = [`${Y - 1}-12-31`, ...Array.from({ length: 12 }, (_, i) => monthEnd(`${Y}-${String(i + 1).padStart(2, '0')}`))];
-  const isToday = i => S0.cols[i] && S0.cols[i] === d.refDate && dates[i] !== d.refDate;
-  const head = h('tr', h('th.sticky', 'Net Worth'), dates.map((dt, i) => h('th.num', { class: [i === 0 ? 'prev' : '', S0.cols[i] ? '' : 'future'].join(' ') }, isToday(i) ? `${dmy(d.refDate)} (oggi)` : dmy(dt))));
+  // differenza dal 31/12 dell'anno prima all'ultima fine mese con un valore
+  const lastIdx = vals => { for (let i = 12; i > 0; i--) if (vals[i] != null) return i; return -1; };
+  const diffOf = vals => { const i = lastIdx(vals); return i < 0 || vals[0] == null ? null : vals[i] - vals[0]; };
+  const diffPct = vals => { const dv = diffOf(vals); return dv == null || !vals[0] ? null : dv / Math.abs(vals[0]) * 100; };
+  const head = h('tr', h('th.sticky', noEuro ? 'Net Worth (€)' : 'Net Worth'),
+    dates.map((dt, i) => h('th.num', { class: [i === 0 ? 'prev' : '', S0.cols[i] ? '' : 'future'].join(' ') }, fit && fit.short ? dmy(dt).slice(0, 6) + dt.slice(2, 4) : dmy(dt))),
+    h('th.num.nw-dcol', { title: `Differenza dal 31/12/${Y - 1} all'ultima fine mese` }, fit && fit.per < 105 ? `Diff. ${String(Y - 1).slice(2)}→${String(Y).slice(2)}` : `Diff. ${Y - 1}→${Y}`), h('th.num.nw-dpct', '%'));
+  const pcs = v => (v == null ? '' : formatPercent(v, fit ? fit.pdec : 2, true));
   const cells = (vals, fmt, cls) => vals.map((v, i) => h('td.num', { class: [cls ? cls(v) : '', i === 0 ? 'prev' : '', S0.cols[i] ? '' : 'future'].join(' ') }, fmt(v)));
-  const band = (label, color, extra) => h('tr.nw-band', { style: { '--sec': color } }, h('td.sticky', h('span', label), extra || null), dates.map(() => h('td')));
+  const diffs = vals => [h('td.num.nw-dcol', { class: tone(diffOf(vals)) }, sg(diffOf(vals))), h('td.num.nw-dpct', { class: tone(diffPct(vals)) }, pcs(diffPct(vals)))];
+  const noDiff = () => [h('td.num.nw-dcol'), h('td.num.nw-dpct')];
+  const band = (label, color) => h('tr.nw-band', { style: { '--sec': color } }, h('td.sticky', h('span', label)), dates.map(() => h('td')), noDiff());
   const body = [];
   for (const sec of S0.sections) {
-    const col = `var(--c${sec.color})`;
+    const col = colorVar(sec.color);
     body.push(band(sec.name, col));
     for (const r of sec.rows) {
       const go = r.hd ? () => ctx.go('investimenti/' + r.hd.id) : r.acc ? () => ctx.go('conti/' + r.acc.id) : null;
       body.push(h('tr.nw-item.click', { onclick: go, style: { '--sec': col } },
         h('td.sticky', h('span.nw-name', r.hd ? hdBadge(r.hd, true) : r.acc && bankLogo(r.acc.name, r.acc.institution) ? h('img.nw-logo', { src: bankLogo(r.acc.name, r.acc.institution), alt: '', width: 16, height: 16 }) : null, r.label), h('span.nw-sub', r.hd && r.label !== r.name ? r.name : r.sub)),
-        cells(r.values, t2)));
+        cells(r.values, t2), diffs(r.values)));
     }
-    body.push(h('tr.nw-total', { style: { '--sec': col } }, h('td.sticky', 'Total'), cells(sec.total, t2)));
-    body.push(h('tr.nw-gain', h('td.sticky', 'Gain/Loss'), cells(sec.gain, sg, tone)));
-    body.push(h('tr.nw-pct', h('td.sticky', '%'), cells(sec.pct, pc, tone)));
+    body.push(h('tr.nw-total', { style: { '--sec': col } }, h('td.sticky', 'Total'), cells(sec.total, t2), diffs(sec.total)));
+    body.push(h('tr.nw-gain', h('td.sticky', 'Gain/Loss'), cells(sec.gain, sg, tone), noDiff()));
+    body.push(h('tr.nw-pct', h('td.sticky', '%'), cells(sec.pct, pcs, tone), noDiff()));
   }
   body.push(band('Net Worth', 'var(--brand)'));
-  body.push(h('tr.nw-total.nw-grand', h('td.sticky', 'Total'), cells(S0.total, t2)));
-  body.push(h('tr.nw-gain', h('td.sticky', 'Gain/Loss'), cells(S0.gain, sg, tone)));
-  body.push(h('tr.nw-pct', h('td.sticky', '%'), cells(S0.pct, pc, tone)));
+  body.push(h('tr.nw-total.nw-grand', h('td.sticky', 'Total'), cells(S0.total, t2), diffs(S0.total)));
+  body.push(h('tr.nw-gain', h('td.sticky', 'Gain/Loss'), cells(S0.gain, sg, tone), noDiff()));
+  body.push(h('tr.nw-pct', h('td.sticky', '%'), cells(S0.pct, pcs, tone), noDiff()));
   body.push(band('Asset Allocation', 'var(--ink-3)'));
-  for (const a of S0.alloc) body.push(h('tr.nw-alloc', h('td.sticky', h('span.dl-key', { style: { background: `var(--c${a.color})` } }), a.name), cells(a.pct, v => (v == null ? '' : formatPercent(v, 2)))));
+  for (const a of S0.alloc) {
+    const dv = diffOf(a.pct);
+    body.push(h('tr.nw-alloc', h('td.sticky', h('span.dl-key', { style: { background: colorVar(a.color) } }), a.name), cells(a.pct, v => (v == null ? '' : formatPercent(v, fit ? Math.min(fit.pdec, 2) : 2))),
+      h('td.num.nw-dcol', { class: tone(dv) }, dv == null ? '' : `${dv > 0 ? '+' : ''}${formatPercent(dv, 1).replace('%', '')} pt`), h('td.num.nw-dpct')));
+  }
 
   const exportCsv = () => {
-    const rows = [['Net Worth', ...dates.map(dmy)]];
-    const line = (label, vals, f = csvNumber) => rows.push([label, ...vals.map(v => (v == null ? '' : f(v)))]);
+    const rows = [['Net Worth', ...dates.map(dmy), `Diff. ${Y - 1}-${Y}`, '%']];
+    const pct2 = v => v.toFixed(2).replace('.', ',');
+    const line = (label, vals, f = csvNumber, withDiff = true) => rows.push([label, ...vals.map(v => (v == null ? '' : f(v))), withDiff && diffOf(vals) != null ? csvNumber(diffOf(vals)) : '', withDiff && diffPct(vals) != null ? pct2(diffPct(vals)) : '']);
     for (const sec of S0.sections) {
       rows.push([sec.name]);
       for (const r of sec.rows) line(r.label, r.values);
-      line('Total', sec.total); line('Gain/Loss', sec.gain); line('%', sec.pct, v => v.toFixed(2).replace('.', ','));
+      line('Total', sec.total); line('Gain/Loss', sec.gain, csvNumber, false); line('%', sec.pct, pct2, false);
     }
-    rows.push(['Net Worth']); line('Total', S0.total); line('Gain/Loss', S0.gain); line('%', S0.pct, v => v.toFixed(2).replace('.', ','));
+    rows.push(['Net Worth']); line('Total', S0.total); line('Gain/Loss', S0.gain, csvNumber, false); line('%', S0.pct, pct2, false);
     rows.push(['Asset Allocation']);
-    for (const a of S0.alloc) line(a.name, a.pct, v => v.toFixed(2).replace('.', ','));
+    for (const a of S0.alloc) line(a.name, a.pct, pct2, false);
     download(new Blob([toCSV(rows)], { type: 'text/csv;charset=utf-8' }), `net-worth-${Y}.csv`);
     toast('Tabella esportata', { kind: 'ok' });
   };
-  const scroller = h('div.table-wrap.nw-scroll', h('table.table.nw-table.nw-months.nw-sheet', { 'data-tid': 'nw' }, h('thead', head), h('tbody', body)));
-  // si apre sui mesi più recenti
-  if (Y === curY) requestAnimationFrame(() => requestAnimationFrame(() => { const th = scroller.querySelectorAll('thead th')[Math.max(1, Number(d.refDate.slice(5, 7)) - 3)]; if (th) scroller.scrollLeft = th.offsetLeft - 220; }));
+  const table = h('table.table.nw-table.nw-months.nw-sheet', { 'data-tid': fit ? 'nw-fit' : 'nw', class: fit ? 'fit' : '' }, h('thead', head), h('tbody', body));
+  if (fit) { table.style.setProperty('--nw-first', fit.first + 'px'); table.style.fontSize = fit.font + 'px'; }
+  const scroller = h('div.table-wrap.nw-scroll', table);
+  // su telefono si apre sui mesi più recenti
+  if (!fit && Y === curY) requestAnimationFrame(() => requestAnimationFrame(() => { const th = scroller.querySelectorAll('thead th')[Math.max(1, Number(d.refDate.slice(5, 7)) - 3)]; if (th) scroller.scrollLeft = th.offsetLeft - 220; }));
   return card(`Net Worth ${Y}`, {
-    sub: 'Valori a fine mese, sezione per sezione, con guadagno o perdita sul mese prima. Tocca una riga per i dettagli.',
+    sub: 'Valori a fine mese, sezione per sezione, con guadagno o perdita sul mese prima e la differenza sull\'anno. Tocca una riga per i dettagli.',
     action: h('div.card-acts', h('button.btn.btn-sm.btn-ghost', { type: 'button', onclick: () => organizeSheet(ctx, S0) }, icon('edit', 16), 'Organizza'), h('button.btn.btn-sm.btn-ghost', { type: 'button', onclick: exportCsv }, icon('download', 16), 'CSV')),
   }, h('div.inv-filters', filterBox('nw', nwQ, v => { nwQ = v; ctx.rerender(); }, 'Filtra: conto, titolo o sezione')), scroller);
 }
@@ -99,7 +159,7 @@ function organizeSheet(ctx, S0) {
         h('div.catman-head.nw-org-head',
           name,
           h('span.catman-tools',
-            h('div.swatches.sm', Array.from({ length: 8 }, (_, i) => h('button.swatch', { type: 'button', 'aria-label': `Colore ${i + 1}`, 'aria-pressed': String(sec.color === i + 1), style: { background: `var(--c${i + 1})` }, onclick: () => { sec.color = i + 1; draw(); } }))),
+            (() => { const c = colorChoice(sec.color, v => { sec.color = v; }); c.classList.add('sm'); return c; })(),
             h('button.icon-btn.sm', { type: 'button', 'aria-label': 'Su', disabled: si === 0, onclick: () => { [secs[si - 1], secs[si]] = [secs[si], secs[si - 1]]; draw(); } }, icon('chevU', 16)),
             h('button.icon-btn.sm', { type: 'button', 'aria-label': 'Giù', disabled: si === secs.length - 1, onclick: () => { [secs[si + 1], secs[si]] = [secs[si], secs[si + 1]]; draw(); } }, icon('chevD', 16)))),
         h('div.rows', sec.items.map((k, ii) => h('div.row.catman-row',
@@ -252,7 +312,7 @@ export default {
     const pos = M.sections.reduce((a, x) => a + Math.max(0, x.total[L] || 0), 0);
     const cards = h('div.fin-cards', M.sections.map(sec => {
       const v = sec.total[L], g = sec.gain[L], p = sec.pct[L];
-      const col = `var(--c${sec.color})`;
+      const col = colorVar(sec.color);
       return h('div.fin-card.static', { style: { '--chip': col } },
         h('span.fin-card-top', h('span.fin-card-name', sec.name), h('span.fin-card-pct', formatPercent(pos && v ? v / pos * 100 : 0, 1))),
         h('span.fin-card-val', v == null ? '—' : money(v)),
@@ -267,12 +327,12 @@ export default {
     const chart = card('Andamento', { sub: 'A fine mese: le sezioni (barre) e il patrimonio (linea)', action: segTabs([{ value: 12, label: '12M' }, { value: 24, label: '24M' }, { value: 'all', label: 'Tutto' }], span, v => { span = v; ctx.rerender(); }) },
       barChart({
         labels: idx.map(i => formatMonth(monthKey(M.cols[i]), true)), tipLabels: idx.map(i => `Fine ${formatMonth(monthKey(M.cols[i]))}`),
-        series: M.sections.map(sec => ({ name: sec.name, color: `var(--c${sec.color})`, values: idx.map(i => sec.total[i] || 0) })),
+        series: M.sections.map(sec => ({ name: sec.name, color: colorVar(sec.color), values: idx.map(i => sec.total[i] || 0) })),
         stacked: true, line: { name: 'Patrimonio', color: 'var(--ink)', values: idx.map(i => M.total[i] || 0) },
         fmt: tipMoney, fmtAxis: axisMoney, height: 260, mask: ui.privacy,
         onPick: k => { const y = Number(M.cols[idx[k]].slice(0, 4)); if (years.includes(y)) { year = y; ctx.rerender(); } },
       }),
-      legend([...M.sections.map(sec => ({ label: sec.name, color: `var(--c${sec.color})` })), { label: 'Patrimonio', color: 'var(--ink)', line: true }]));
+      legend([...M.sections.map(sec => ({ label: sec.name, color: colorVar(sec.color) })), { label: 'Patrimonio', color: 'var(--ink)', line: true }]));
 
     const yearTabs = segTabs(years.map(y => ({ value: y, label: String(y) })), year, v => { year = v; ctx.rerender(); });
     return {

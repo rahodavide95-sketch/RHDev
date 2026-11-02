@@ -71,6 +71,16 @@ collegata a nient'altro." Quindi il patrimonio è **solo** il Net Worth, a fine 
 - Pagina: patrimonio all'ultima fine mese con variazione sul mese prima, dal 31/12 e massimo; una
   scheda per sezione (valore, variazione, quota, andamento); grafico a barre per sezione + linea;
   il foglio Net Worth dell'anno (filtro, Organizza, CSV, colonne allargabili); anno per anno.
+- Foglio Net Worth **tutto sullo schermo** (D: "far entrare tutto da dic 2025 alla differenza tra
+  2025-2026, anche senza comprimere la barra"): colonne 31/12 anno prima + 12 fine mese + **Diff.
+  anno prima→anno** (€, dal 31/12 all'ultima fine mese con un valore; in Asset Allocation in punti)
+  + **%**. Su computer (`fitOf()`, tabella `.fit`, `table-layout: fixed`) le 15 colonne riempiono la
+  pagina con la barra aperta; carattere, decimali e simbolo € scelti **misurando** con un canvas
+  il numero più lungo e la % più lunga (prima via i decimali, poi carattere più piccolo fino a
+  10,5 px, per ultimo via "€", che va nell'intestazione "Net Worth (€)"); date corte (31/12/25)
+  quando non entrano; ridisegno al cambio di larghezza (`rhf-rerender`). Su telefono scorre.
+  Provato a 1280, 1366, 1440, 1512, 1920 e 2560 px: nessuna cella tagliata. Classi delle colonne
+  `nw-dcol`/`nw-dpct` (`.nw-diff` è già usata dal confronto tra date).
 - "Aggiorna i valori" (`checkInEditor`, `saveCheckIn`): il Net Worth di una fine mese riga per
   riga come nel foglio (precompilato, "fine mese prima: …"); conti → punto fermo `adjust` (uno
   per data, il nuovo sostituisce), titoli → `nwHd`; per i titoli c'è solo come **suggerimento**
@@ -313,6 +323,20 @@ e voce attiva col colore principale, barretta colorata nei titoli delle schede.
 `boot.js`); in "few" schede, sezioni del Net Worth, righe delle macro categorie e distintivi sono
 neutri, con solo un pallino colorato per riconoscerli nei grafici; verde/rosso per guadagni e
 perdite; grafici a colori. Interruttore "Colori vivaci" in Impostazioni › Aspetto.
+**Colori organizzati e liberi** (D: "organizza meglio i colori e dammi la possibilità di modificarli
+come voglio con la palette dei colori completa"): Impostazioni › **Aspetto** = tema, palette pronte
+(un tocco cambia tutto, anche i colori dei grafici), stile (Colori vivaci, righe alterne,
+compatte); Impostazioni › **Colori** = ogni colore con `input type=color` (tavolozza completa):
+colore principale, intestazioni, sfondo (cambiarli passa a "I tuoi colori" partendo da quelli di
+ora), **guadagni** e **perdite** (`look.pos`/`look.neg`, '' = verde e rosso di base, `--pos`/`--neg`),
+gli **8 colori dei grafici** uno per uno (`look.series`, 8 hex che vincono su `look.chart`; "Parti
+da" rimette un gruppo pronto; al buio si schiariscono solo quelli molto scuri), il colore di ogni
+**macro categoria** (Entrate/Uscite) e di ogni **sezione del Net Worth** (`d.nwGroups()`; salvare
+scrive tutto `nwLayout` con le sezioni come si vedono). `colorChoice(valore, onChange, { onDone })`
+(`ui/components.js`): 8 cerchi della palette + cerchio arcobaleno per qualsiasi colore (hex);
+`onDone` salva una volta sola alla chiusura della tavolozza. Colori liberi salvati in minuscolo;
+`colorVar()` (common) dà `var(--cN)` o l'hex. "Tutti i colori come all'inizio" (due tocchi) rimette
+la palette Excel (non tocca categorie e sezioni).
 Layout a **tutta larghezza** (D col monitor da 27": niente `max-width`), barra laterale
 **comprimibile** (pulsante in basso o tasto `[`, `html.side-mini`, `rhf-side`), finestre alte
 fino allo schermo (niente tetti a 46vh/900px), `sheet-lg` fino a 1280 px.
@@ -332,7 +356,7 @@ netti, pulito ed elegante.
 
 ## Prove
 
-- `npm test`: 49 test (calcoli, cifratura, unione dei dati, CSV, investimenti, import da Excel di tutti i fogli, crypto, storia degli acquisti, quotazioni con risposte finte).
+- `npm test`: 51 test (calcoli, colori scelti, cifratura, unione dei dati, CSV, investimenti, import da Excel di tutti i fogli, crypto, storia degli acquisti, quotazioni con risposte finte).
 - `bash test/rls/run.sh`: regole di sicurezza del database su Postgres.
 - Nel browser: `python3 -m http.server` nella cartella e Playwright (Chromium già
   installato). Da questo ambiente onvista/Binance/BCE non sono raggiungibili: per provarli

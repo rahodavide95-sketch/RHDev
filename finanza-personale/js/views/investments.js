@@ -20,7 +20,7 @@ import { openFileImport } from './invimport.js';
 let groupBy = 'cls';
 let pivotBy = 'cls';
 let pivotUnit = 'eur';
-let scope = '';
+let scope = 'titoli';     // D: "i movimenti preferirei tenerli divisi per azionario e crypto"
 let opsFilter = { hd: '', type: '' };
 let busy = false;
 let lastAuto = 0;
@@ -304,8 +304,9 @@ const TYPE_TABS = [{ value: '', label: 'Tutte' }, { value: 'buy', label: 'Acquis
 
 function opsView(ctx) {
   const { st, d } = ctx;
-  const inv = d.invest();
-  if (opsFilter.hd && !st.holdings.some(x => x.id === opsFilter.hd)) opsFilter.hd = '';
+  const inv = d.invest(scope);
+  const inScope = hd => !scope || (scope === 'crypto') === (hd.cls === 'crypto');
+  if (opsFilter.hd && !st.holdings.some(x => x.id === opsFilter.hd && inScope(x))) opsFilter.hd = '';
   const t = opsFilter.type;
   const items = [];
   for (const r of inv.rows) {
@@ -318,7 +319,7 @@ function opsView(ctx) {
 
   const byYear = new Map();
   for (const it of items) { const y = it.date.slice(0, 4); if (!byYear.has(y)) byYear.set(y, []); byYear.get(y).push(it); }
-  const hdOpts = [{ value: '', label: 'Tutti i titoli' }, ...[...st.holdings].sort((a, b) => a.name.localeCompare(b.name)).map(x => ({ value: x.id, label: x.name }))];
+  const hdOpts = [{ value: '', label: scope === 'crypto' ? 'Tutte le crypto' : 'Tutti i titoli' }, ...[...st.holdings].filter(inScope).sort((a, b) => a.name.localeCompare(b.name)).map(x => ({ value: x.id, label: x.name }))];
   const line = it => {
     if (it.k) {
       const tx = it.k.tx;
@@ -370,11 +371,9 @@ const PIVOTS = [{ value: 'cls', label: 'Tipo' }, { value: 'grp', label: 'Categor
 
 function yearsView(ctx) {
   const { st, d } = ctx;
-  const hasCrypto = st.holdings.some(x => x.cls === 'crypto' && x.ops.length), hasOther = st.holdings.some(x => x.cls !== 'crypto' && x.ops.length);
-  if (!(hasCrypto && hasOther)) scope = '';
   const inScope = hd => !scope || (scope === 'crypto') === (hd.cls === 'crypto');
   const inv = d.invest(scope);
-  const p = d.portfolio();
+  const p = d.portfolio(scope);
   const years = inv.yearList;
   if (!years.length) return h('section.card', empty({ icon: 'trend', title: 'Ancora nessuna operazione', text: 'Registra acquisti e vendite (o il PAC del mese): qui vedi quanto investi ogni mese e ogni anno, dove e quanto ti costa.', action: h('button.btn.btn-primary', { type: 'button', onclick: () => pacEditor(ctx) }, icon('repeat', 18), 'Registra il PAC') }));
   const curY = +d.refDate.slice(0, 4), curM = d.refDate.slice(0, 7);
@@ -503,8 +502,7 @@ function yearsView(ctx) {
         h('td.num', formatDate(H.first, { year: true })), h('td.num', formatDate(H.last, { year: true }))))))),
     h('p.fine', icon('info', 14), h('span', 'Speso = acquisti con commissioni (le vendite non si tolgono). "Ogni quanto" guarda l\'intervallo tipico tra due giorni di acquisto: "regolare" se 7 volte su 10 è quello. Tocca un titolo per vedere tutta la sua storia.'))) : null;
 
-  const scopeBar = hasCrypto && hasOther ? h('div.year-bar', segTabs([{ value: '', label: 'Tutto' }, { value: 'titoli', label: 'Titoli (wallet)' }, { value: 'crypto', label: 'Crypto' }], scope, v => { scope = v; ctx.rerender(); })) : null;
-  return h('div.stack', scopeBar, hero, chart, monthsCard, pivotCard, histCard, costCard,
+  return h('div.stack', hero, chart, monthsCard, pivotCard, histCard, costCard,
     h('p.fine', icon('info', 14), ' Investito = acquisti con commissioni meno vendite al netto di commissioni e imposte. Titoli in altre valute al cambio attuale.'));
 }
 
@@ -524,7 +522,10 @@ export default {
     const { st, d } = ctx;
     if (ctx.route.params[0]) return detail(ctx, ctx.route.params[0]);
     const invAcc = st.accounts.filter(a => hasHoldings(a) && !a.archived);
-    const p = d.portfolio();
+    const hasCrypto = st.holdings.some(x => x.cls === 'crypto'), hasOther = st.holdings.some(x => x.cls !== 'crypto');
+    if (!hasCrypto && scope === 'crypto') scope = '';
+    if (!hasOther && scope === 'titoli') scope = hasCrypto ? 'crypto' : '';
+    const p = d.portfolio(scope);
     const vista = VIEWS.some(v => v.value === ctx.route.query.vista) ? ctx.route.query.vista : '';
     const actions = [
       h('button.btn.btn-soft', { type: 'button', disabled: busy, onclick: () => updatePrices(ctx), title: 'Aggiorna i prezzi online' }, icon('refresh', 18, busy ? 'spin' : ''), h('span', busy ? 'Aggiorno…' : 'Prezzi')),
@@ -536,7 +537,8 @@ export default {
     if (!st.holdings.length) {
       return { title: 'Investimenti', node: h('section.card', empty({ icon: 'trend', title: 'Nessun titolo', text: 'Aggiungi i titoli che hai: con quantità e prezzo di carico calcolo guadagni, tasse e allocazione.', action: h('div.row-btns', h('button.btn.btn-primary', { type: 'button', onclick: () => holdingEditor(ctx) }, icon('plus', 18), 'Aggiungi un titolo'), importBtn(ctx)) })), actions };
     }
-    const tabs = segTabs(VIEWS, vista, v => ctx.go('investimenti' + (v ? '?vista=' + v : '')));
+    const tabs = h('div.year-bar.inv-bar', segTabs(VIEWS, vista, v => ctx.go('investimenti' + (v ? '?vista=' + v : ''))),
+      hasCrypto && hasOther ? segTabs([{ value: 'titoli', label: 'Azionario' }, { value: 'crypto', label: 'Crypto' }, { value: '', label: 'Tutto' }], scope, v => { scope = v; ctx.rerender(); }) : null);
     let body;
     if (vista === 'operazioni') body = opsView(ctx);
     else if (vista === 'anni') body = yearsView(ctx);

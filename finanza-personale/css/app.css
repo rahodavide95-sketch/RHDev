@@ -1219,3 +1219,5 @@ table.resizing { user-select: none; cursor: col-resize; }
   .fin-table tr.fin-sub td.sticky { padding-left: 24px; }
   .fin-table tr.fin-note td.sticky { padding-left: 36px; }
 }
+.hero-groups .hero-chip { box-shadow: inset 3px 0 0 var(--chip, transparent); }
+.inv-bar { align-items: center; }

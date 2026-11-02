@@ -7,7 +7,7 @@ import { money, moneyText, delta, axisMoney, tipMoney, ui } from '../ui/fmt.js';
 import { card, linkBtn, txRow, avatar } from './common.js';
 import { txEditor, accountEditor, recurringEditor, goalEditor } from './editors.js';
 import { postRecurring, skipRecurring } from '../actions.js';
-import { formatMonth, monthKey, formatDate, relDays, monthStart, monthEnd, addMonthKey, today } from '../core/dates.js';
+import { formatMonth, monthKey, formatDate, relDays, monthStart, monthEnd, addMonthKey, today, monthName } from '../core/dates.js';
 import { formatPercent } from '../core/money.js';
 import { GROUPS, ASSET_CLASSES } from '../core/model.js';
 
@@ -19,32 +19,39 @@ function greeting(name) {
   return name ? `${g}, ${name}` : g;
 }
 
+/* Il patrimonio è il Net Worth di fine mese (come nella pagina Patrimonio), non la somma dei saldi. */
 function netWorthCard(ctx) {
   const { d } = ctx;
-  const hist = d.netWorthHistory(range);
-  const prev = hist.length > 1 ? hist[hist.length - 2].total : null;
-  const first = hist[0]?.total;
-  const chg = prev != null && prev !== 0 ? (d.netWorth - prev) / Math.abs(prev) * 100 : null;
-  const chgAbs = prev != null ? d.netWorth - prev : null;
-  const groups = Object.entries(d.groupTotals).filter(([, v]) => v !== 0);
+  const M = d.nwMonthly(Math.max(range, 13));
+  const L = M.last;
+  if (!M.sections.length || M.total[L] == null) {
+    return card('Patrimonio', { action: linkBtn('Apri', '#/patrimonio') },
+      h('p.muted', 'Importa il tuo foglio Net Worth o scrivi i valori di fine mese: qui vedrai il patrimonio effettivo di ogni fine mese.'));
+  }
+  const now = M.total[L], prev = L > 0 ? M.total[L - 1] : null;
+  const from = Math.max(0, L + 1 - range);
+  const idx = Array.from({ length: L + 1 - from }, (_, k) => from + k);
+  const first = M.total[idx[0]];
+  const lastDate = M.cols[L];
   const chart = lineChart({
-    labels: hist.map(x => formatMonth(x.month, true)), tipLabels: hist.map(x => formatMonth(x.month)),
-    series: [{ name: 'Patrimonio', color: 'var(--c1)', values: hist.map(x => x.total), area: true }],
-    fmt: tipMoney, fmtAxis: axisMoney, height: 200, zero: false, mask: ui.privacy, title: 'Patrimonio netto negli ultimi mesi',
+    labels: idx.map(i => formatMonth(M.cols[i].slice(0, 7), true)), tipLabels: idx.map(i => `Fine ${formatMonth(M.cols[i].slice(0, 7))}`),
+    series: [{ name: 'Patrimonio', color: 'var(--c1)', values: idx.map(i => M.total[i]), area: true }],
+    fmt: tipMoney, fmtAxis: axisMoney, height: 200, zero: false, mask: ui.privacy, title: 'Patrimonio a fine mese',
   });
+  const chgAbs = prev != null ? now - prev : null;
   return h('section.card.hero-card',
     h('div.hero-top',
       h('div',
-        h('a.hero-label.hero-link', { href: '#/patrimonio' }, 'Patrimonio netto', icon('chevR', 15)),
-        h('div.hero-value', money(d.netWorth)),
+        h('a.hero-label.hero-link', { href: '#/patrimonio' }, `Patrimonio a fine ${monthName(Number(lastDate.slice(5, 7)))} ${lastDate.slice(0, 4)}`, icon('chevR', 15)),
+        h('div.hero-value', money(now)),
         h('div.hero-delta',
           chgAbs ? money(chgAbs, d.base, { sign: true, tone: chgAbs >= 0 ? 'pos' : 'neg' }) : null,
-          chgAbs && chg != null ? delta(chg) : null,
-          chgAbs ? h('span.muted', 'dall\'ultimo mese') : null)),
+          chgAbs && prev ? delta(chgAbs / Math.abs(prev) * 100) : null,
+          chgAbs ? h('span.muted', 'sul mese prima') : null)),
       segmented([{ value: 6, label: '6M' }, { value: 12, label: '1A' }, { value: 24, label: '2A' }], range, v => { range = v; ctx.rerender(); }, { small: true, label: 'Periodo' })),
     chart,
-    h('div.hero-groups', groups.map(([g, v]) => h('a.hero-chip', { href: '#/conti' }, h('span.hero-chip-l', GROUPS[g].label), money(v, d.base, { tone: v < 0 ? 'neg' : '' })))),
-    h('p.card-foot', first != null && hist.length > 2 ? [`In ${hist.length - 1} mesi: `, money(d.netWorth - first, d.base, { sign: true, tone: d.netWorth >= first ? 'pos' : 'neg' }), ' · '] : null, h('a', { href: '#/patrimonio' }, 'Andamento di ogni conto e confronto con l\'anno scorso')));
+    h('div.hero-groups', M.sections.map(sec => h('a.hero-chip', { href: '#/patrimonio', style: { '--chip': `var(--c${sec.color})` } }, h('span.hero-chip-l', sec.name), money(sec.total[L] ?? 0, d.base, { tone: (sec.total[L] || 0) < 0 ? 'neg' : '' })))),
+    h('p.card-foot', first != null && idx.length > 2 ? [`In ${idx.length - 1} mesi: `, money(now - first, d.base, { sign: true, tone: now >= first ? 'pos' : 'neg' }), ' · '] : null, h('a', { href: '#/patrimonio' }, 'Il tuo Net Worth, sezione per sezione')));
 }
 
 function monthCard(ctx) {

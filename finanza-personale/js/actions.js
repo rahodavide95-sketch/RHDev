@@ -43,6 +43,17 @@ export function adjustBalance(accId, value, date = today(), note = '') {
 export function saveCheckIn(date, entries, note = 'Aggiornamento valori') {
   commit(st => {
     for (const e of entries) {
+      if (e.holding) {
+        const m = date.slice(0, 7);
+        const snap = st.snapshots[m] || (st.snapshots[m] = { byAcc: {}, byHd: {}, nwHd: {}, at: 0 });
+        snap.nwHd = snap.nwHd || {};
+        snap.nwHd[e.holding] = e.value;
+        continue;
+      }
+      if (e.account && e.value != null && !e.snapshot) {
+        // un solo valore per conto e data: quello nuovo sostituisce il precedente
+        st.valuations = st.valuations.filter(v => !(v.account === e.account && v.date === date && v.kind === 'adjust'));
+      }
       if (e.snapshot != null) {
         const snap = st.snapshots[e.month] || (st.snapshots[e.month] = { byAcc: {}, at: 0 });
         snap.byAcc[e.account] = e.snapshot;
@@ -511,9 +522,10 @@ export function importWorkbook({ nw = [], invest = null, cash = false, months = 
       for (const v of r.values) {
         const m = v.date.slice(0, 7);
         if (v.date !== monthEndOf(m)) continue;
-        const snap = st.snapshots[m] || (st.snapshots[m] = { byAcc: {}, byHd: {}, at: 0 });
-        snap.byHd = snap.byHd || {};
-        snap.byHd[hd.id] = convert(Math.round(v.value * 100), st.settings.currency, hd.currency, st.fx.rates);
+        // valore nel Net Worth (valuta principale, come nel foglio); gli Investimenti restano a sé
+        const snap = st.snapshots[m] || (st.snapshots[m] = { byAcc: {}, byHd: {}, nwHd: {}, at: 0 });
+        snap.nwHd = snap.nwHd || {};
+        snap.nwHd[hd.id] = Math.round(v.value * 100);
       }
       r.hdId = hd.id;
     }

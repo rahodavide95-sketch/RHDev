@@ -9,7 +9,7 @@ import { card, accountRow, txGroups, avatar, accAvatar, linkBtn, hdBadge } from 
 import { accountEditor, adjustEditor, txEditor, holdingEditor, undoToast } from './editors.js';
 import { deleteValuation } from '../actions.js';
 import { ACCOUNT_TYPES, GROUPS, isLiability, hasHoldings, hasPlan, paidInstallments, position } from '../core/model.js';
-import { formatMonth, formatDate, lastMonths, monthKey, monthEnd, addMonths } from '../core/dates.js';
+import { formatMonth, formatDate, lastMonths, monthKey, monthEnd, addMonths, monthName } from '../core/dates.js';
 import { simLoan } from '../core/finance.js';
 import { formatPercent } from '../core/money.js';
 
@@ -34,11 +34,17 @@ function list(ctx) {
   });
   const archivedN = st.accounts.filter(a => a.archived).length;
   return h('div.stack',
-    h('section.card.nw-strip',
-      h('div.stat.stat-wide', h('div.stat-label', 'Patrimonio netto'), h('div.stat-value.big', money(d.netWorth))),
-      h('div.stat', h('div.stat-label', 'Attività'), h('div.stat-value', money(d.assets))),
-      h('div.stat', h('div.stat-label', 'Debiti'), h('div.stat-value', money(d.groupTotals.debt, d.base, { tone: d.groupTotals.debt < 0 ? 'neg' : '' }))),
-      h('a.btn.btn-soft.nw-link', { href: '#/patrimonio' }, icon('layers', 18), 'Andamento mese per mese')),
+    // il patrimonio è quello del Net Worth a fine mese (come nella pagina Patrimonio), non la somma di questi saldi
+    (() => {
+      const M = d.nwMonthly(2);
+      const v = M.sections.length ? M.total[M.last] : null;
+      const dt = v != null ? M.cols[M.last] : null;
+      return h('section.card.nw-strip',
+        h('div.stat.stat-wide', h('div.stat-label', dt ? `Patrimonio a fine ${monthName(Number(dt.slice(5, 7)))} ${dt.slice(0, 4)}` : 'Patrimonio'), h('div.stat-value.big', v != null ? money(v) : '—')),
+        h('div.stat', h('div.stat-label', 'Liquidità oggi'), h('div.stat-value', money(d.groupTotals.liquidity))),
+        h('div.stat', h('div.stat-label', 'Debiti oggi'), h('div.stat-value', money(d.groupTotals.debt, d.base, { tone: d.groupTotals.debt < 0 ? 'neg' : '' }))),
+        h('a.btn.btn-soft.nw-link', { href: '#/patrimonio' }, icon('layers', 18), 'Net Worth mese per mese'));
+    })(),
     h('div.acc-grid', groups),
     archivedN ? h('button.btn.btn-ghost', { type: 'button', onclick: () => { showArchived = !showArchived; ctx.rerender(); } }, icon('archive', 18), showArchived ? 'Nascondi archiviati' : `Mostra archiviati (${archivedN})`) : null);
 }

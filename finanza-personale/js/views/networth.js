@@ -1,155 +1,29 @@
-/* Patrimonio: l'andamento di ogni cosa che possiedi (e dei debiti) mese dopo mese,
-   e il confronto tra la fine di un anno e la fine dell'anno prima. */
+/* Patrimonio = il riepilogo del Net Worth di D, con i valori effettivi di ogni fine mese.
+   D: "il patrimonio non è la somma di entrate, networth e wallet… nel patrimonio deve esserci
+   semplicemente il riassunto del networth e quindi quello effettivo è quello di ogni fine mese.
+   La sezione investimenti è a sé." Qui: patrimonio all'ultima fine mese, una scheda per sezione,
+   l'andamento, il foglio Net Worth dell'anno, anno per anno; "Aggiorna i valori" = il Net Worth
+   di fine mese, riga per riga. */
 
 import { h, icon, download } from '../ui/dom.js';
-import { barChart, legend } from '../ui/charts.js';
-import { openSheet, amountInput, dateInput, segmented, toast, empty, field, selectInput } from '../ui/components.js';
+import { barChart, legend, sparkline } from '../ui/charts.js';
+import { openSheet, amountInput, toast, empty, selectInput } from '../ui/components.js';
 import { money, moneyText, delta, axisMoney, tipMoney, ui } from '../ui/fmt.js';
-import { card, avatar, accAvatar, segTabs, filterBox, hdBadge } from './common.js';
+import { card, accAvatar, segTabs, filterBox, hdBadge } from './common.js';
 import { accountEditor } from './editors.js';
 import { openFileImport } from './invimport.js';
 import { bankLogo } from '../data/banks.js';
 import { saveCheckIn, setSetting } from '../actions.js';
-import { ACCOUNT_TYPES, GROUPS, isLiability, hasHoldings, hasPlan } from '../core/model.js';
-import { monthKey, monthEnd, addMonthKey, lastMonths, formatMonth, formatDate, monthName, diffMonths, today, isISODate } from '../core/dates.js';
+import { isLiability, hasPlan, position } from '../core/model.js';
+import { monthKey, monthEnd, addMonthKey, formatMonth, formatDate, monthName } from '../core/dates.js';
 import { formatPercent } from '../core/money.js';
 import { toCSV, csvNumber } from '../core/csv.js';
 
 let year = null;
-let span = 24;
+let span = 12;
 let nwQ = '';
-
-const GROUP_ORDER = Object.entries(GROUPS).sort((a, b) => a[1].order - b[1].order).map(([k]) => k);
-const GROUP_COLOR = { liquidity: 'var(--c3)', investments: 'var(--c1)', assets: 'var(--c4)', debt: 'var(--c8)' };
-const t0 = v => (v == null ? '—' : moneyText(v, ui.base, { decimals: 0 }));      // cifre intere nelle tabelle
 const pctOf = (a, b) => (a != null && b ? (a - b) / Math.abs(b) * 100 : null);
 
-/** Conti del patrimonio raggruppati, solo quelli che hanno almeno un valore nelle colonne. */
-function groupedAccounts(d, cols) {
-  return GROUP_ORDER.map(g => ({
-    g,
-    accounts: d.nwAccounts.filter(a => ACCOUNT_TYPES[a.type].group === g && cols.some(c => c && c.byAcc.get(a.id) != null))
-      .sort((a, b) => a.order - b.order || a.created - b.created),
-  })).filter(x => x.accounts.length);
-}
-
-/* ─── Aggiorna i valori (tanti conti insieme, a una data) ─── */
-export function checkInEditor(ctx, presetDate) {
-  const { d } = ctx;
-  const prevEnd = monthEnd(addMonthKey(monthKey(d.refDate), -1));
-  let date = presetDate || today();
-  const list = h('div.checkin-list');
-  const inputs = new Map();
-  const dateIn = dateInput(date);
-  const isMonthEnd = iso => iso === monthEnd(monthKey(iso)) && iso < d.refDate;
-  const draw = () => {
-    inputs.clear();
-    const accs = d.nwAccounts.filter(a => !a.archived);
-    list.replaceChildren(...GROUP_ORDER.map(g => {
-      const items = accs.filter(a => ACCOUNT_TYPES[a.type].group === g);
-      if (!items.length) return null;
-      return h('div.checkin-group', h('div.cat-group-t', GROUPS[g].label), items.map(a => {
-        const cur = d.valueAt(a, date);
-        const liab = isLiability(a);
-        let ctl, hint;
-        if (hasPlan(a)) { ctl = h('span.muted.small', 'segue il piano'); hint = 'Il debito residuo si calcola dal piano d\'ammortamento'; }
-        else if (hasHoldings(a) && (d.holdingsByAcc.get(a.id) || []).length && !isMonthEnd(date)) { ctl = h('a.small.link', { href: '#/investimenti' }, 'prezzi in Investimenti'); hint = 'I titoli si valutano con i prezzi: per un valore a mano scegli una fine mese passata'; }
-        else {
-          const inp = amountInput({ currency: a.currency, placeholder: cur == null ? 'valore' : (Math.abs(cur) / 100).toLocaleString('it-IT', { maximumFractionDigits: 0 }) });
-          inputs.set(a.id, { a, inp, liab });
-          ctl = inp;
-        }
-        return h('div.checkin-row',
-          accAvatar(a),
-          h('div.checkin-main', h('span.row-title', a.name), h('span.row-sub', hint || (cur == null ? 'non esisteva ancora a questa data' : `ora: ${moneyText(cur, a.currency)}`))),
-          h('div.checkin-ctl', ctl));
-      }));
-    }).filter(Boolean));
-  };
-  const quick = segmented([{ value: 'today', label: 'Oggi' }, { value: 'prev', label: `Fine ${monthName(Number(prevEnd.slice(5, 7)))}` }, { value: 'custom', label: 'Altra data' }],
-    date === prevEnd ? 'prev' : date === today() ? 'today' : 'custom', v => {
-      if (v === 'today') date = today(); else if (v === 'prev') date = prevEnd;
-      dateIn.value = date; dateWrap.hidden = v !== 'custom'; draw();
-    }, { small: true });
-  const dateWrap = field('Data', dateIn);
-  dateWrap.hidden = !(date !== today() && date !== prevEnd);
-  dateIn.addEventListener('change', () => { if (isISODate(dateIn.value)) { date = dateIn.value; draw(); } });
-  draw();
-  const save = () => {
-    const entries = [];
-    for (const { a, inp, liab } of inputs.values()) {
-      const c = inp.getCents();
-      if (c == null || inp.input.value.trim() === '') continue;
-      const val = liab ? -Math.abs(c) : c;
-      if (hasHoldings(a) && (d.holdingsByAcc.get(a.id) || []).length) {
-        // conto con titoli a fine mese passata: si salva il valore dei titoli (totale meno liquidità)
-        const cash = d.accountValue(a, date) - d.holdingsValue(a, date);
-        entries.push({ account: a.id, snapshot: val - cash, month: monthKey(date) });
-      } else entries.push({ account: a.id, value: val });
-    }
-    if (!entries.length) { toast('Scrivi almeno un valore'); return; }
-    saveCheckIn(date, entries);
-    toast(`${entries.length} ${entries.length === 1 ? 'valore aggiornato' : 'valori aggiornati'} al ${formatDate(date, { year: true })}`, { kind: 'ok' });
-    s.close(true);
-  };
-  const s = openSheet({
-    title: 'Aggiorna i valori', subtitle: 'Scrivi il valore reale solo di ciò che è cambiato', size: 'md',
-    body: h('div.stack', quick, dateWrap,
-      h('p.field-hint', 'Casa, auto, fondo pensione, conti che non segui movimento per movimento: un valore al mese basta per vedere l\'andamento. I movimenti dopo questa data si sommano al nuovo valore. I debiti si scrivono come numero positivo.'),
-      list),
-    footer: [h('button.btn.btn-primary', { type: 'button', onclick: save }, 'Salva i valori')],
-  });
-}
-
-/* ─── Confronto tra due fine anno ─── */
-function yearCompare(ctx, Y) {
-  const { d, st } = ctx;
-  const startDate = `${Y - 1}-12-31`, endDate = d.yearClose(Y);
-  const a = d.netWorthAt(startDate), b = d.netWorthAt(endDate);
-  const diff = b.total - a.total;
-  const nwIds = new Set(d.nwAccounts.map(x => x.id));
-  let savings = 0;
-  for (const t of st.transactions) {
-    if (t.kind === 'transfer' || t.date <= startDate || t.date > endDate || !nwIds.has(t.account)) continue;
-    savings += (t.kind === 'income' ? 1 : -1) * d.txBase(t);
-  }
-  // conti comparsi durante l'anno: il loro valore iniziale non è né risparmio né guadagno
-  let added = 0;
-  for (const acc of d.nwAccounts) {
-    const s = d.startByAcc.get(acc.id);
-    if (s && s > startDate && s <= endDate && a.byAcc.get(acc.id) == null) {
-      const v0 = d.valueAt(acc, s);
-      if (v0 != null) added += d.toBase(v0, acc.currency);
-    }
-  }
-  const other = diff - savings - added;
-  const groups = groupedAccounts(d, [a, b]);
-  const isCur = endDate === d.refDate;
-  return card(isCur ? `Quest'anno, dal 31 dicembre ${Y - 1} a oggi` : `Il ${Y}: dal 31 dicembre ${Y - 1} al 31 dicembre ${Y}`, { cls: 'nw-compare' },
-    h('div.nw-diff',
-      h('div', h('div.hero-label', 'Differenza'), h('div.nw-diff-value', money(diff, d.base, { sign: true, tone: diff >= 0 ? 'pos' : 'neg' })), a.total ? h('div', delta(pctOf(b.total, a.total)), h('span.muted', ` · da ${t0(a.total)} a ${t0(b.total)}`)) : null),
-      h('div.breakdown.nw-why',
-        h('div.bd-row', h('span', 'Risparmiato', h('span.bd-hint', 'entrate meno uscite')), money(savings, d.base, { sign: true, tone: savings >= 0 ? 'pos' : 'neg' })),
-        added ? h('div.bd-row', h('span', 'Conti aggiunti', h('span.bd-hint', 'il loro valore iniziale')), money(added, d.base, { sign: true })) : null,
-        h('div.bd-row', h('span', 'Variazioni di valore', h('span.bd-hint', 'mercati, casa e auto, quota capitale dei debiti, saldi corretti')), money(other, d.base, { sign: true, tone: other >= 0 ? 'pos' : 'neg' })),
-        h('div.bd-row.strong', h('span', 'Totale'), money(diff, d.base, { sign: true, tone: diff >= 0 ? 'pos' : 'neg' })))),
-    h('div.table-wrap', h('table.table.nw-table',
-      h('thead', h('tr', h('th', ''), h('th.num', `31 dic ${Y - 1}`), h('th.num', isCur ? 'Oggi' : `31 dic ${Y}`), h('th.num', 'Differenza'), h('th.num', '%'))),
-      h('tbody', groups.flatMap(({ g, accounts }) => {
-        const ga = a.groups[g], gb = b.groups[g];
-        return [
-          h('tr.grp', h('td', h('span.dl-key', { style: { background: GROUP_COLOR[g] } }), GROUPS[g].label), h('td.num', t0(ga)), h('td.num', t0(gb)), h('td.num', { class: gb - ga >= 0 ? 'pos' : 'neg' }, t0(gb - ga)), h('td.num', ga ? formatPercent(pctOf(gb, ga), 1, true) : '—')),
-          ...accounts.map(acc => {
-            const va = a.byAcc.get(acc.id), vb = b.byAcc.get(acc.id);
-            const dd = (vb ?? 0) - (va ?? 0);
-            return h('tr.click', { onclick: () => ctx.go('conti/' + acc.id) }, h('td.acc', acc.name, acc.archived ? h('span.pill', 'chiuso') : null), h('td.num', t0(va)), h('td.num', t0(vb)), h('td.num', { class: dd > 0 ? 'pos' : dd < 0 ? 'neg' : '' }, va == null && vb == null ? '—' : t0(dd)), h('td.num', va ? formatPercent(pctOf(vb ?? 0, va), 1, true) : va == null && vb != null ? 'nuovo' : '—'));
-          }),
-        ];
-      })),
-      h('tfoot', h('tr', h('td', 'Patrimonio netto'), h('td.num', t0(a.total)), h('td.num', t0(b.total)), h('td.num', { class: diff >= 0 ? 'pos' : 'neg' }, t0(diff)), h('td.num', a.total ? formatPercent(pctOf(b.total, a.total), 1, true) : '—'))))));
-}
-
-/* ─── Tabella mese per mese dell'anno ─── */
 /* ─── Net Worth come il foglio di D: sezioni con le loro righe, Total, Gain/Loss e %;
    in fondo il patrimonio netto e l'Asset Allocation ─── */
 const dmy = iso => `${iso.slice(8)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
@@ -252,85 +126,162 @@ function organizeSheet(ctx, S0) {
   });
 }
 
-/* ─── Anno per anno ─── */
+
+/* ─── Aggiorna i valori: il Net Worth di una fine mese, riga per riga come nel foglio ─── */
+export function checkInEditor(ctx, presetMonth) {
+  const { d } = ctx;
+  const lastEnd = monthKey(addMonthKey(monthKey(d.refDate), -1));
+  let m = presetMonth || lastEnd;
+  const body = h('div.stack');
+  const inputs = [];
+  const draw = () => {
+    inputs.length = 0;
+    const dt = monthEnd(m), prevDt = monthEnd(addMonthKey(m, -1));
+    const Y = Number(m.slice(0, 4));
+    const T = d.nwSheet(Y);
+    const P = d.nwSheet(Number(prevDt.slice(0, 4)));
+    const iCol = Number(m.slice(5, 7)), iPrev = prevDt.slice(0, 4) === m.slice(0, 4) ? iCol - 1 : 12;
+    const months = [];
+    for (let k = 0; k < 18; k++) months.push(addMonthKey(lastEnd, -k));
+    const sel = selectInput(months.map(x => ({ value: x, label: `Fine ${monthName(Number(x.slice(5, 7)))} ${x.slice(0, 4)}` })), m, v => { m = v; draw(); });
+    const sections = T.sections.length ? T.sections : P.sections;
+    const rowsOf = sec => sec.rows.map(r => {
+      const cur = T.sections.find(x => x.name === sec.name)?.rows.find(x => x.key === r.key)?.values[iCol] ?? null;
+      const prev = P.sections.find(x => x.name === sec.name)?.rows.find(x => x.key === r.key)?.values[iPrev] ?? null;
+      const acc = r.acc, hd = r.hd;
+      if (acc && hasPlan(acc)) return h('div.checkin-row', accAvatar(acc), h('div.checkin-main', h('span.row-title', r.label), h('span.row-sub', 'segue il piano d\'ammortamento')), h('div.checkin-ctl', h('span.muted.small', moneyText(cur ?? prev ?? 0))));
+      const liab = acc && isLiability(acc);
+      // i conti in un'altra valuta si scrivono nella loro valuta (il foglio è nella valuta principale)
+      const cur$ = acc ? acc.currency : d.base;
+      const rate = d.toBase(1000000, cur$) / 1000000 || 1;
+      const inAcc = v => (v == null ? null : Math.round(v / rate));
+      const inp = amountInput({ value: cur == null ? null : Math.abs(inAcc(cur)), currency: cur$, placeholder: prev == null ? 'valore' : (Math.abs(inAcc(prev)) / 100).toLocaleString('it-IT', { maximumFractionDigits: 2 }) });
+      inputs.push({ r, inp, liab, cur: inAcc(cur) });
+      // per un titolo, il valore che ha oggi negli Investimenti (solo come suggerimento: il Net Worth resta a sé)
+      const live = hd ? d.toBase(Math.round(position(hd).value * 100), hd.currency) : null;
+      return h('div.checkin-row',
+        hd ? hdBadge(hd) : acc ? accAvatar(acc) : null,
+        h('div.checkin-main', h('span.row-title', r.label),
+          h('span.row-sub', prev != null ? `fine mese prima: ${moneyText(prev)}` : 'nuovo', live ? [' · ', h('button.link.small', { type: 'button', onclick: () => { inp.input.value = (live / 100).toFixed(2).replace('.', ','); inp.input.dispatchEvent(new Event('input')); } }, `negli Investimenti oggi ${moneyText(live)}`)] : null)),
+        h('div.checkin-ctl', inp));
+    });
+    body.replaceChildren(
+      h('div.field', h('label.field-label', 'Mese'), sel),
+      h('p.field-hint', `Scrivi i valori al ${formatDate(dt, { year: true })}, come nel tuo foglio. Le righe vuote restano come sono. I debiti si scrivono come numero positivo.`),
+      sections.length ? h('div.checkin-list', sections.map(sec => h('div.checkin-group', h('div.cat-group-t', sec.name), rowsOf(sec)))) : h('p.muted', 'Nessuna riga: importa il tuo foglio Net Worth o aggiungi un conto.'));
+  };
+  draw();
+  const save = () => {
+    const dt = monthEnd(m);
+    const entries = [];
+    for (const { r, inp, liab, cur } of inputs) {
+      if (inp.input.value.trim() === '') continue;
+      const c = inp.getCents();
+      if (c == null) continue;
+      const val = liab ? -Math.abs(c) : c;
+      if (cur != null && val === cur) continue;
+      if (r.hd) entries.push({ holding: r.hd.id, value: val });
+      else if (r.acc) entries.push({ account: r.acc.id, value: val });
+    }
+    if (!entries.length) { toast('Nessun valore cambiato'); return; }
+    saveCheckIn(dt, entries);
+    toast(`${entries.length} ${entries.length === 1 ? 'valore aggiornato' : 'valori aggiornati'} al ${formatDate(dt, { year: true })}`, { kind: 'ok' });
+    s.close(true);
+  };
+  const s = openSheet({ title: 'Aggiorna il Net Worth', subtitle: 'I valori effettivi di fine mese, riga per riga', size: 'md', body, footer: [h('button.btn.btn-primary', { type: 'button', onclick: save }, 'Salva i valori')] });
+}
+
+/* ─── Anno per anno: il patrimonio a fine anno (31/12 del foglio) ─── */
 function yearsCard(ctx, years) {
-  const { d, st } = ctx;
-  const nwIds = new Set(d.nwAccounts.map(x => x.id));
+  const { d } = ctx;
   const rows = years.slice().sort().map(Y => {
-    const end = d.netWorthAt(d.yearClose(Y)).total;
-    const sx = d.netWorthAt(`${Y - 1}-12-31`);
-    const start = sx.total;
-    const first = [...sx.byAcc.values()].every(v => v == null);
-    let sav = 0;
-    for (const t of st.transactions) if (t.kind !== 'transfer' && t.date.startsWith(String(Y)) && t.date <= d.refDate && nwIds.has(t.account)) sav += (t.kind === 'income' ? 1 : -1) * d.txBase(t);
-    return { Y, end, start, diff: end - start, sav, first };
-  }).reverse();
-  return card('Anno per anno', { sub: 'Patrimonio a fine anno e differenza con l\'anno prima' },
+    const T = d.nwSheet(Y);
+    let li = 12;
+    while (li > 0 && T.total[li] == null) li--;
+    return { Y, end: T.total[li], endCol: T.cols[li], start: T.total[0] };
+  }).filter(r => r.end != null).reverse();
+  if (rows.length < 1) return null;
+  return card('Anno per anno', { sub: 'Patrimonio a fine anno (o all\'ultima fine mese) e differenza dal 31/12 prima' },
     h('div.table-wrap', h('table.table',
-      h('thead', h('tr', h('th', 'Anno'), h('th.num', 'Fine anno'), h('th.num', 'Differenza'), h('th.num', '%'), h('th.num', 'Di cui risparmiato'))),
+      h('thead', h('tr', h('th', 'Anno'), h('th.num', 'Patrimonio'), h('th.num', 'Differenza'), h('th.num', '%'))),
       h('tbody', rows.map(r => h('tr.click', { onclick: () => { year = r.Y; ctx.rerender(); } },
-        h('td', r.Y === Number(d.refDate.slice(0, 4)) ? `${r.Y} (a oggi)` : String(r.Y)),
-        h('td.num', t0(r.end)),
-        h('td.num', { class: r.first ? 'muted' : r.diff >= 0 ? 'pos' : 'neg' }, r.first ? 'primo anno' : moneyText(r.diff, ui.base, { decimals: 0, sign: true })),
-        h('td.num', !r.first && r.start ? formatPercent(pctOf(r.end, r.start), 1, true) : '—'),
-        h('td.num', moneyText(r.sav, ui.base, { decimals: 0, sign: true }))))))));
+        h('td', r.endCol && r.endCol.slice(5) !== '12-31' ? `${r.Y} (a fine ${monthName(Number(r.endCol.slice(5, 7)))})` : String(r.Y)),
+        h('td.num', moneyText(r.end)),
+        h('td.num', { class: r.start == null ? 'muted' : r.end - r.start >= 0 ? 'pos' : 'neg' }, r.start == null ? 'primo anno' : moneyText(r.end - r.start, ui.base, { sign: true })),
+        h('td.num', r.start ? formatPercent(pctOf(r.end, r.start), 2, true) : '—')))))));
 }
 
 export default {
   render(ctx) {
     const { d } = ctx;
     const curY = Number(d.refDate.slice(0, 4));
-    if (!d.nwAccounts.length) {
-      return { title: 'Patrimonio', node: h('section.card', empty({ icon: 'layers', title: 'Ancora niente da seguire', text: 'Aggiungi i conti, gli investimenti, la casa, l\'auto e i debiti: qui vedrai l\'andamento di ognuno mese dopo mese e il confronto tra un anno e l\'altro.', action: h('div.row-btns', h('button.btn.btn-primary', { type: 'button', onclick: () => accountEditor(ctx) }, icon('plus', 18), 'Aggiungi un conto'), h('button.btn.btn-soft', { type: 'button', onclick: () => openFileImport(ctx) }, icon('upload', 18), 'Importa da Excel')) })) };
+    const M = d.nwMonthly(120);
+    const hasData = M.sections.length > 0 && M.total[M.last] != null;
+    const actions = [
+      h('button.btn.btn-soft', { type: 'button', onclick: () => openFileImport(ctx) }, icon('upload', 18), h('span', 'Importa da Excel')),
+    ];
+    if (!hasData) {
+      return { title: 'Patrimonio', sub: 'Il tuo Net Worth, fine mese per fine mese', actions: [...actions, h('button.btn.btn-soft', { type: 'button', onclick: () => checkInEditor(ctx) }, icon('edit', 18), h('span', 'Aggiorna i valori'))],
+        node: h('section.card', empty({ icon: 'layers', title: 'Ancora nessun valore di fine mese', text: 'Importa il tuo foglio Net Worth (Excel) oppure aggiungi i conti e scrivi i loro valori a fine mese: qui vedrai il patrimonio effettivo di ogni fine mese, sezione per sezione.', action: h('div.row-btns', h('button.btn.btn-primary', { type: 'button', onclick: () => openFileImport(ctx) }, icon('upload', 18), 'Importa da Excel'), h('button.btn.btn-soft', { type: 'button', onclick: () => accountEditor(ctx) }, icon('plus', 18), 'Aggiungi un conto')) })) };
     }
-    const firstY = Math.min(curY, Number(d.firstDate.slice(0, 4)));
+    const L = M.last, lastDate = M.cols[L];
+    const now = M.total[L], prev = L > 0 ? M.total[L - 1] : null;
+    const decIdx = M.cols.indexOf(`${Number(lastDate.slice(0, 4)) - 1}-12-31`);
+    const dec = decIdx >= 0 ? M.total[decIdx] : null;
+    let peak = { v: -Infinity, i: -1 };
+    M.total.forEach((v, i) => { if (v != null && v > peak.v) peak = { v, i }; });
+    const firstY = Number((M.cols.find((c, i) => M.total[i] != null) || lastDate).slice(0, 4));
     const years = [];
-    for (let y = curY; y >= firstY; y--) years.push(y);
-    if (!year || !years.includes(year)) year = curY;
-
-    // grafico: composizione a fine mese
-    const totalMonths = Math.min(120, diffMonths(d.firstDate.slice(0, 7) + '-01', d.refDate) + 1);
-    const n = span === 'all' ? Math.max(2, totalMonths) : span;
-    const months = lastMonths(n, monthKey(d.refDate));
-    const pts = months.map(m => d.netWorthAt(d.monthClose(m)));
-    const prevYearEnd = d.netWorthAt(`${curY - 1}-12-31`).total;
-    const ago12 = d.netWorthAt(d.monthClose(addMonthKey(monthKey(d.refDate), -12))).total;
-    let peak = { v: -Infinity, m: '' };
-    pts.forEach((p, i) => { if (p.total > peak.v) peak = { v: p.total, m: months[i] }; });
-    const ytd = d.netWorth - prevYearEnd;
+    for (let y = curY; y >= Math.min(firstY, curY); y--) years.push(y);
+    if (!year || !years.includes(year)) year = Number(lastDate.slice(0, 4));
+    const mLabel = `${monthName(Number(lastDate.slice(5, 7)))} ${lastDate.slice(0, 4)}`;
 
     const hero = h('section.card.nw-hero',
       h('div.nw-hero-main',
-        h('div.hero-label', 'Patrimonio netto oggi'),
-        h('div.hero-value', money(d.netWorth)),
+        h('div.hero-label', `Patrimonio a fine ${mLabel}`),
+        h('div.hero-value', money(now)),
         h('div.nw-chips',
-          h('div.nw-chip', h('span.hero-chip-l', `Dal 31 dic ${curY - 1}`), h('span', money(ytd, d.base, { sign: true, tone: ytd >= 0 ? 'pos' : 'neg' }), ' ', prevYearEnd ? delta(pctOf(d.netWorth, prevYearEnd)) : null)),
-          h('div.nw-chip', h('span.hero-chip-l', 'In 12 mesi'), h('span', money(d.netWorth - ago12, d.base, { sign: true, tone: d.netWorth >= ago12 ? 'pos' : 'neg' }), ' ', ago12 ? delta(pctOf(d.netWorth, ago12)) : null)),
-          peak.m ? h('div.nw-chip', h('span.hero-chip-l', 'Il più alto'), h('span', money(peak.v), h('span.muted', ` · ${formatMonth(peak.m, true)}`))) : null)),
+          prev != null ? h('div.nw-chip', h('span.hero-chip-l', 'Sul mese prima'), h('span', money(now - prev, d.base, { sign: true, tone: now >= prev ? 'pos' : 'neg' }), ' ', delta(pctOf(now, prev)))) : null,
+          dec != null ? h('div.nw-chip', h('span.hero-chip-l', `Dal 31/12/${Number(lastDate.slice(0, 4)) - 1}`), h('span', money(now - dec, d.base, { sign: true, tone: now >= dec ? 'pos' : 'neg' }), ' ', delta(pctOf(now, dec)))) : null,
+          peak.i >= 0 ? h('div.nw-chip', h('span.hero-chip-l', 'Il più alto'), h('span', money(peak.v), h('span.muted', ` · ${formatMonth(monthKey(M.cols[peak.i]), true)}`))) : null)),
       h('div.nw-hero-side',
         h('button.btn.btn-primary', { type: 'button', onclick: () => checkInEditor(ctx) }, icon('edit', 18), 'Aggiorna i valori'),
-        h('p.field-hint', 'Per casa, auto, fondo pensione e conti che non segui movimento per movimento')));
+        h('p.field-hint', 'Il patrimonio è quello del tuo Net Worth a fine mese. Gli Investimenti restano a sé.')));
 
-    const chart = card('Andamento', { sub: 'A fine mese: cosa possiedi (barre) e patrimonio netto (linea)', action: segTabs([{ value: 12, label: '12M' }, { value: 24, label: '24M' }, { value: 'all', label: 'Tutto' }], span, v => { span = v; ctx.rerender(); }) },
+    // una scheda per sezione: valore a fine mese, variazione sul mese prima, quota
+    const pos = M.sections.reduce((a, x) => a + Math.max(0, x.total[L] || 0), 0);
+    const cards = h('div.fin-cards', M.sections.map(sec => {
+      const v = sec.total[L], g = sec.gain[L], p = sec.pct[L];
+      const col = `var(--c${sec.color})`;
+      return h('div.fin-card.static', { style: { '--chip': col } },
+        h('span.fin-card-top', h('span.fin-card-name', sec.name), h('span.fin-card-pct', formatPercent(pos && v ? v / pos * 100 : 0, 1))),
+        h('span.fin-card-val', v == null ? '—' : money(v)),
+        h('span.fin-card-sub', g == null ? 'sul mese prima: —' : h('span', 'sul mese prima ', h('b', { class: g >= 0 ? 'pos' : 'neg' }, moneyText(g, ui.base, { sign: true })), ' ', p == null ? '' : delta(p))),
+        sparkline(sec.total.slice(Math.max(0, L - 11), L + 1).map(x => x ?? 0), { color: col, width: 150, height: 30 }));
+    }));
+
+    // andamento a fine mese per sezione + patrimonio
+    const n = span === 'all' ? M.cols.length : Math.min(span, M.cols.length);
+    const from = Math.max(0, L + 1 - n);
+    const idx = Array.from({ length: L + 1 - from }, (_, k) => from + k);
+    const chart = card('Andamento', { sub: 'A fine mese: le sezioni (barre) e il patrimonio (linea)', action: segTabs([{ value: 12, label: '12M' }, { value: 24, label: '24M' }, { value: 'all', label: 'Tutto' }], span, v => { span = v; ctx.rerender(); }) },
       barChart({
-        labels: months.map(m => formatMonth(m, true)), tipLabels: months.map(m => formatMonth(m)),
-        series: GROUP_ORDER.map(g => ({ name: GROUPS[g].label, color: GROUP_COLOR[g], values: pts.map(p => p.groups[g]) })),
-        stacked: true, line: { name: 'Patrimonio netto', color: 'var(--ink)', values: pts.map(p => p.total) },
-        fmt: tipMoney, fmtAxis: axisMoney, height: 260, mask: ui.privacy, highlight: months.length - 1,
-        onPick: i => { const y = Number(months[i].slice(0, 4)); if (years.includes(y)) { year = y; ctx.rerender(); } },
+        labels: idx.map(i => formatMonth(monthKey(M.cols[i]), true)), tipLabels: idx.map(i => `Fine ${formatMonth(monthKey(M.cols[i]))}`),
+        series: M.sections.map(sec => ({ name: sec.name, color: `var(--c${sec.color})`, values: idx.map(i => sec.total[i] || 0) })),
+        stacked: true, line: { name: 'Patrimonio', color: 'var(--ink)', values: idx.map(i => M.total[i] || 0) },
+        fmt: tipMoney, fmtAxis: axisMoney, height: 260, mask: ui.privacy,
+        onPick: k => { const y = Number(M.cols[idx[k]].slice(0, 4)); if (years.includes(y)) { year = y; ctx.rerender(); } },
       }),
-      legend([...GROUP_ORDER.map(g => ({ label: GROUPS[g].label, color: GROUP_COLOR[g] })), { label: 'Patrimonio netto', color: 'var(--ink)', line: true }]));
+      legend([...M.sections.map(sec => ({ label: sec.name, color: `var(--c${sec.color})` })), { label: 'Patrimonio', color: 'var(--ink)', line: true }]));
 
     const yearTabs = segTabs(years.map(y => ({ value: y, label: String(y) })), year, v => { year = v; ctx.rerender(); });
-    const node = h('div.stack', hero, chart,
-      h('div.nw-year-bar', h('h2.section-title', 'Anno'), yearTabs),
-      sheetTable(ctx, year), yearCompare(ctx, year),
-      years.length > 1 ? yearsCard(ctx, years) : null,
-      h('p.fine', icon('info', 14), ' Ogni conto conta dal suo saldo iniziale (o dal primo movimento): per avere lo storico degli anni passati, metti la data giusta in "Modifica conto" o usa "Aggiorna i valori" con una data passata. I titoli nei mesi passati valgono la quantità di allora al prezzo di oggi, tranne i mesi in cui l\'app ha salvato il loro valore. Valute estere al cambio attuale.'));
     return {
-      title: 'Patrimonio', sub: 'Tutto ciò che hai, mese dopo mese',
-      actions: [h('button.btn.btn-soft', { type: 'button', onclick: () => openFileImport(ctx) }, icon('upload', 18), h('span', 'Importa da Excel'))],
-      node,
+      title: 'Patrimonio', sub: 'Il tuo Net Worth, fine mese per fine mese', actions,
+      node: h('div.stack', hero, cards, chart,
+        h('div.nw-year-bar', h('h2.section-title', 'Net Worth'), yearTabs),
+        sheetTable(ctx, year),
+        yearsCard(ctx, years),
+        h('p.fine', icon('info', 14), ' Il patrimonio è il tuo Net Worth: i valori effettivi di fine mese di conti, titoli, TFR netto… come nel foglio. I titoli valgono quanto scritto nel Net Worth (dal file o da "Aggiorna i valori"), non i prezzi degli Investimenti, che restano a sé. Le entrate e le uscite non si sommano: contano i valori di fine mese.')),
     };
   },
 };

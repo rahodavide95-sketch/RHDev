@@ -101,7 +101,7 @@ function sheetTable(ctx, Y) {
     for (const r of sec.rows) {
       const go = r.hd ? () => ctx.go('investimenti/' + r.hd.id) : r.acc ? () => ctx.go('conti/' + r.acc.id) : null;
       body.push(h('tr.nw-item.click', { onclick: go, style: { '--sec': col } },
-        h('td.sticky', h('span.nw-name', r.hd ? hdBadge(r.hd, true) : r.acc && bankLogo(r.acc.name, r.acc.institution) ? h('img.nw-logo', { src: bankLogo(r.acc.name, r.acc.institution), alt: '', width: 16, height: 16 }) : null, r.label), h('span.nw-sub', r.hd && r.label !== r.name ? r.name : r.sub)),
+        h('td.sticky', h('span.nw-name', r.hd ? hdBadge(r.hd, true) : r.acc && bankLogo(r.acc.name, r.acc.institution) ? h('img.nw-logo', { src: bankLogo(r.acc.name, r.acc.institution), alt: '', width: 16, height: 16 }) : r.acc?.cls ? hdBadge(r.acc, true) : null, r.label), h('span.nw-sub', r.hd && r.label !== r.name ? r.name : r.sub)),
         cells(r.values, t2), diffs(r.values)));
     }
     body.push(h('tr.nw-total', { style: { '--sec': col } }, h('td.sticky', 'Total'), cells(sec.total, t2), diffs(sec.total)));

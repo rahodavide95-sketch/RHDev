@@ -178,6 +178,39 @@ crypto). Un solo `importWorkbook()` in `actions.js` (un "Annulla").
 - Test: `test/sheets.test.js` con `test/fixtures/file-completo-esempio.xlsx` (dati
   inventati: Wallet, Crypto, Entrate 2026, Uscite 2026, Net Worth con Trade Republic e
   Scalable nella liquidità, Note).
+- **Provato con la struttura del file vero di D** (D ha mandato una copia con numeri di esempio, "per
+  vedere la struttura": i numeri non vanno usati né messi da nessuna parte; il file resta solo nello
+  scratchpad della sessione, mai nel repo). Fogli "📊 NW 2026" e "🤑 Entrate 2026". Correzioni:
+  - Due righe con lo stesso nome ("Contanti" Euro e "Contanti" Dollari) erano finite in un conto solo
+    (i valori in dollari sovrascrivevano quelli in euro): ora `planNetWorth` dà nomi distinti col
+    Type ("Contanti (Euro)", "Contanti (Dollari)") e `nameKey()` (come `normHead` ma tiene quello tra
+    parentesi) riconosce i conti; un vecchio "Contanti" nella stessa valuta diventa "Contanti (Euro)".
+  - Colonna Type → tipo di titolo (`positionClass`): "ETF:S" azionario, "ETF:M" monetario (anche nella
+    liquidità: resta in quella sezione), "ETC"/"XAU" oro e materie prime, "BTC+ALT" o sezione Crypto
+    crypto, un simbolo maiuscolo (es. "RKLB") o sezione Stock azione. Senza lo stesso titolo negli
+    Investimenti la riga è un **conto-posizione** (`account.cls`, tipo `broker`/`crypto`): distintivo
+    ETF/STOCK/ETC nel Net Worth e in Conti ("ETF azionario · nel Net Worth"), sezione da `HD_SECTION`;
+    negli Investimenti non c'è (D: "la sezione investimenti è a sé").
+  - Un conto del Net Worth già importato resta quello (anche se poi arriva un titolo con lo stesso
+    nome dal foglio del wallet): niente doppioni reimportando.
+- **Reimport mensile** (lo stesso file aggiornato ogni mese): Net Worth → valori uguali saltati,
+  valori **corretti nel file** aggiornati (`row.changed`: punto fermo / `nwHd` della stessa data).
+  Mese per mese → ogni cella ha un'impronta `importHash` = `cellHash(tipo, mese, categoria, voce)`
+  (`xl:` + 16 hex): importo cambiato = stesso movimento aggiornato, cella svuotata = movimento tolto
+  (solo quelli con l'impronta), mese in corso reimportato un altro giorno = stesso movimento (prima
+  la data di oggi faceva un doppione). I movimenti importati prima delle impronte si riconoscono da
+  mese + categoria + descrizione e ricevono l'impronta. Anteprima: "N valori cambiati: li aggiorno",
+  "importo tolto dal file", "Come schedo le righe" (macro › voce, descrizione, categoria nuova o già
+  nell'app, statistiche saltate).
+- **Controllo col foglio** dopo l'import (`reconcileNetWorth` + `fileCheck` in `views/invimport.js`):
+  il Net Worth dell'app (`d.nwTable(date del file)`) fine mese per fine mese accanto al totale del file
+  (riga Total dell'Asset Allocation, o somma dei Total delle sezioni) e il **perché** delle differenze,
+  raggruppato sui mesi: valore che nell'app resta nei mesi vuoti del foglio (es. TFR scritto solo al
+  31/12), riga in un'altra valuta (convertita nell'app, sommata così com'è nel foglio), riga
+  dell'Asset Allocation vuota o diversa dalla sua sezione (il totale del foglio non la conta). Si apre
+  solo se qualcosa non coincide e solo se l'import ha toccato il Net Worth; altrimenti l'avviso dice
+  "coincide in tutti i N mesi ✓". Test: `test/reimport.test.js` (struttura come quella di D, nomi e
+  numeri inventati).
 
 ## Prezzi online (`js/market.js`)
 
@@ -356,7 +389,7 @@ netti, pulito ed elegante.
 
 ## Prove
 
-- `npm test`: 51 test (calcoli, colori scelti, cifratura, unione dei dati, CSV, investimenti, import da Excel di tutti i fogli, crypto, storia degli acquisti, quotazioni con risposte finte).
+- `npm test`: 57 test (calcoli, colori scelti, reimport e controllo col foglio, cifratura, unione dei dati, CSV, investimenti, import da Excel di tutti i fogli, crypto, storia degli acquisti, quotazioni con risposte finte).
 - `bash test/rls/run.sh`: regole di sicurezza del database su Postgres.
 - Nel browser: `python3 -m http.server` nella cartella e Playwright (Chromium già
   installato). Da questo ambiente onvista/Binance/BCE non sono raggiungibili: per provarli

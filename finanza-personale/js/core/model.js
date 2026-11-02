@@ -195,6 +195,8 @@ function cleanAccount(a) {
   const type = ACCOUNT_TYPES[a.type] ? a.type : 'checking';
   const out = {
     id: aid, name: str(a.name, 60) || 'Conto', type, institution: str(a.institution, 60), currency: cur(a.currency),
+    // titolo tenuto solo nel Net Worth (riga "Indice | ETF:S" del foglio): il suo tipo, per il distintivo e la sezione
+    cls: ASSET_CLASSES[a.cls] ? a.cls : '',
     emoji: emoji(a.emoji), color: COLOR.test(a.color) ? a.color : '', archived: bool(a.archived), inNetWorth: bool(a.inNetWorth, true),
     notes: str(a.notes, 2000), created: int(a.created, 0), order: num(a.order, 0),
     plan: null,
@@ -748,7 +750,7 @@ export function derive(state, refDate = today()) {
       // con dei valori di fine mese (dal foglio o scritti a mano) il conto conta solo da quando ne ha uno:
       // niente ricostruzioni all'indietro da un movimento isolato
       const firstVal = ledger.cps.get(a.id)?.[0]?.date || null;
-      out.push({ key: 'a:' + a.id, label: a.name, sub: ACCOUNT_TYPES[a.type].label + (a.currency !== base ? ' · ' + a.currency : ''), section: ACC_SECTION[a.type] || 'Altro', acc: a,
+      out.push({ key: 'a:' + a.id, label: a.name, sub: (a.cls ? ASSET_CLASSES[a.cls].label : ACCOUNT_TYPES[a.type].label) + (a.currency !== base ? ' · ' + a.currency : ''), section: (a.cls && HD_SECTION[a.cls]) || ACC_SECTION[a.type] || 'Altro', acc: a,
         at: dt => { if (firstVal && dt < firstVal) return null; const v = valueAt(a, dt); return v == null ? null : toBase(v, a.currency); } });
     }
     for (const hd of state.holdings) {
@@ -1006,7 +1008,7 @@ export function derive(state, refDate = today()) {
     base, rates, ledger, accById, catById, holdingsByAcc, missingFx,
     balances, groupTotals, assets, netWorth, accountValue, holdingsValue, holdingsCash, toBase, txBase,
     nwAccounts, startByAcc, valueAt, netWorthAt, monthClose, yearClose, firstDate,
-    netWorthHistory, nwSheet, nwItems, nwGroups, nwMonthly, holdingValueAt, flows, monthlyFlows, budget, dueList, upcoming, fixedMonthly, recurringIncomeMonthly, goal, portfolio, invest, yearTable,
+    netWorthHistory, nwSheet, nwTable, nwItems, nwGroups, nwMonthly, holdingValueAt, flows, monthlyFlows, budget, dueList, upcoming, fixedMonthly, recurringIncomeMonthly, goal, portfolio, invest, yearTable,
     refDate,
   };
 }

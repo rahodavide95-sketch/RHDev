@@ -4,7 +4,7 @@ import { h, icon } from '../ui/dom.js';
 import { bankLogo } from '../data/banks.js';
 import { coinLogo } from '../data/coins.js';
 import { money, moneyText } from '../ui/fmt.js';
-import { ACCOUNT_TYPES, isLiability } from '../core/model.js';
+import { ACCOUNT_TYPES, ASSET_CLASSES, isLiability } from '../core/model.js';
 import { formatDay } from '../core/dates.js';
 import { txEditor } from './editors.js';
 
@@ -29,7 +29,8 @@ export function avatar(emoji, tone) {
 /** Avatar di un conto: il logo della sua banca se lo conosciamo, altrimenti la sua emoji. */
 export function accAvatar(a) {
   const src = bankLogo(a.name, a.institution);
-  return src ? h('span.avatar.av-logo', h('img', { src, alt: '', width: 42, height: 42, loading: 'lazy' })) : avatar(a.emoji || ACCOUNT_TYPES[a.type].emoji);
+  if (src) return h('span.avatar.av-logo', h('img', { src, alt: '', width: 42, height: 42, loading: 'lazy' }));
+  return a.cls && !a.emoji ? hdBadge({ cls: a.cls }) : avatar(a.emoji || ACCOUNT_TYPES[a.type].emoji);
 }
 
 export function txRow(ctx, t, { showAccount = true, showDate = false, selectable = false, selected = false, onSelect } = {}) {
@@ -65,7 +66,7 @@ export function accountRow(ctx, a, { onClick } = {}) {
   const t = ACCOUNT_TYPES[a.type];
   return h('a.row.acc-row', { href: '#/conti/' + a.id, onclick: onClick },
     accAvatar(a),
-    h('span.row-main', h('span.row-title', a.name), h('span.row-sub', [t.label, a.institution].filter(Boolean).join(' · '))),
+    h('span.row-main', h('span.row-title', a.name), h('span.row-sub', [a.cls ? `${ASSET_CLASSES[a.cls].label} · nel Net Worth` : t.label, a.institution].filter(Boolean).join(' · '))),
     h('span.row-end', money(v, a.currency, { tone: isLiability(a) || v < 0 ? 'neg' : '' }),
       a.currency !== ctx.d.base ? h('span.row-sub', moneyText(ctx.d.toBase(v, a.currency))) : null));
 }
@@ -106,7 +107,7 @@ export function filterBox(id, value, onChange, placeholder = 'Filtra…') {
 }
 
 /* Distintivo dei titoli: per le crypto il loro logo, per gli altri la sigla del tipo (come chiede D) */
-const BADGE = { etf_eq: ['ETF', 1], etf_bd: ['ETF', 1], etf_mm: ['ETF', 1], gold: ['ETC', 4], stock: ['STOCK', 3], gov: ['BOND', 7], bond: ['BOND', 7], fund: ['FONDO', 2], other: ['•', 0] };
+const BADGE = { etf_eq: ['ETF', 1], etf_bd: ['ETF', 1], etf_mm: ['ETF', 1], gold: ['ETC', 4], stock: ['STOCK', 3], gov: ['BOND', 7], bond: ['BOND', 7], fund: ['FONDO', 2], crypto: ['CRYPTO', 5], other: ['•', 0] };
 export function hdBadge(hd, small = false) {
   if (hd.cls === 'crypto') {
     const src = coinLogo(hd.symbol);

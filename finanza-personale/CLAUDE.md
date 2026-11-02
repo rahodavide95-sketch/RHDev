@@ -1,15 +1,18 @@
-# Analisi Finanziarie (cartella `finanza-personale`)
+# [RH] Finance (cartella `finanza-personale`)
 
 App di gestione della finanza personale di D (Davide Raho), nata dalla vecchia "Analisi
 Finanziarie" (simulazioni conto corrente / deposito / PAC + mercati), rifatta da zero su
 sua richiesta: "super completa, efficiente ma soprattutto AFFIDABILE, super sicura per la
 privacy, design degno dei migliori design moderni".
-Il nome è **"Analisi Finanziarie"**, quello di D: era stato rinominato di nostra iniziativa
-"[RH] Finance" e a D non è piaciuto ("chi ti ha detto di chiamarla così?"). Non inventare
-nomi, loghi con scritte o marchi: se serve, chiedi. Il logo è il **grafico a ciambella**
-(tre spicchi bianco, grigio e verde `#00e5a0` della vecchia app, su nero): D l'ha scelto tra
-6 proposte dopo aver bocciato il primo ("il logo fa cagare"). File: `icons/icon.svg` (anche
-nella barra laterale e nella schermata di accesso) e le PNG generate da lì.
+Il nome è **"[RH] Finance"**, chiesto da D il 2/11/2026 ("il nome del tool deve essere [RH] Finance,
+cambia i nomi e il logo"). Storia: era stata chiamata "[RH] Finance" di nostra iniziativa e a D non
+era piaciuto ("chi ti ha detto di chiamarla così?"), poi per un periodo "Analisi Finanziarie" col logo
+a ciambella; ora l'ha scelto lui. Logo e icone: lo stesso **"[RH]"** bianco su nero di [RH] Documents
+(i file `icon-192.png`, `icon-512.png`, `apple-touch-icon.png`, `favicon-32.png`, `favicon-64.png`
+copiati da `documenti-raho/`, composti con le lettere del logo RH[BKNG] di D; `icon-maskable-512.png`
+è la stessa 512: il segno sta già nella zona sicura). Nella barra laterale "[RH] **Finance**".
+File scaricati: `RH-Finance-backup-….json`, `RH-Finance-codice-di-recupero.txt`. Non inventare
+nomi, loghi con scritte o marchi: se serve, chiedi.
 I nomi interni invisibili (`rh-finance` per IndexedDB, cache e formato della cassaforte)
 restano: cambiarli renderebbe illeggibili cassaforti e backup già creati.
 D scrive in italiano e non è uno sviluppatore: spiegagli le cose in modo semplice e fai tu
@@ -90,6 +93,19 @@ collegata a nient'altro." Quindi il patrimonio è **solo** il Net Worth, a fine 
   categoria"): titolo sobrio (maiuscoletto, quadratino e riga sottile nel colore **smorzato** della
   sezione `--sec-m`), Total con una riga sopra, Gain/Loss e % piccoli, riga vuota `tr.nw-gap` tra
   una sezione e l'altra. Con "Colori vivaci" il titolo ha solo un fondo leggero.
+- In cima **una card sola** (D: "anche le cards in patrimonio non mi piacciono"; tolte le schede per
+  sezione): Net Worth a fine mese, sul mese prima / dal 31/12 / il più alto, barre per sezione (colori
+  smorzati `softColor`) con la linea del totale, e accanto le sezioni con quota, valore e variazione.
+- Tabelle-foglio **da leggere come in Excel** (D: "mi girano ancora gli occhi… su Excel è molto meglio
+  leggere"; "il networth è ancora molto confusionario"): una riga sola per voce (il tipo in `title`),
+  griglia leggera tra le colonne dei numeri, niente righe alterne (`.table.fit` escluso dallo zebra),
+  verde/rosso smorzati, Total senza fondo. Logica "entra nello schermo" condivisa in `ui/fit.js`
+  (`fitTable`, `watchFit`, `fitMoney`: senza decimali solo sopra 1.000 €, sotto restano i centesimi).
+- **Colore al volo** (D: "cambiare il colore delle varie categorie direttamente cliccando sul
+  quadratino"): `colorDot()` in `views/common.js` = quadratino-pulsante che apre la tavolozza lì accanto
+  (8 colori + arcobaleno); `setSectionColor(d, nome, colore)` per le sezioni del Net Worth,
+  `A.setGroupColor` per le macro categorie. C'è nelle sezioni (titoli della tabella, Asset Allocation,
+  card in cima), nelle macro categorie di Entrate e uscite (tabella e card) e nella Panoramica.
 - **Asset Allocation come il foglio di D** (D: "nelle varie celle ci sono le somme di tutto, le % sono
   solo nella prima colonna"): una riga per sezione con le sue somme mese per mese e la quota (%)
   dell'ultima fine mese accanto al nome; sotto Total (il Net Worth), Gain/Loss e %. Non c'è più una
@@ -282,6 +298,12 @@ resta, come nel foglio); filtro con totali rifatti; CSV. Colori: `groupColor()` 
 scelto o uno diverso per ogni macro nell'ordine (non più dal nome). L'import crea anche le
 voci ancora a zero (`planMonths().keys`) e, con "Solo le categorie del file", dà alle
 categorie già presenti i nomi del file. Test col file di prova che ha questa struttura.
+**Tutto sullo schermo e una card sola** (D: "cerca di far entrare tutto anche nelle entrate/uscite";
+le schede per macro non piacevano): in cima una card con totale dell'anno (e confronto sull'anno prima),
+media, mese migliore, ultimo mese, barre mese per mese per macro e accanto le macro (tocca il nome =
+solo quella nella tabella, tocca il quadratino = colore). La tabella usa `ui/fit.js` come il Net Worth
+(15 colonne: 12 mesi, Totale, Media, %), celle vuote vuote (niente più "–"), "Categoria (€)" quando il
+simbolo non c'entra. Provata a 1366–2560 px con la barra aperta e chiusa.
 **Categorie uniche** (D: "perché due categorie lavoro? è solo 1"): import di versioni diverse
 avevano scritto "Lavoro" e "LAVORO". `catNorm()` (minuscole, senza accenti né simboli) = stessa
 macro / stessa voce. `yearTable` raggruppa con `catNorm`; `tidyPlan`/`applyTidy` (model) danno a

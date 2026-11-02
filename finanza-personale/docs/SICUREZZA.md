@@ -1,4 +1,4 @@
-# Sicurezza e privacy di Analisi Finanziarie
+# Sicurezza e privacy di [RH] Finance
 
 ## Principi
 
@@ -107,7 +107,7 @@ pagamento (verificato il 30/10/2026).
 
 ## Backup
 
-- **Backup cifrato** (`Analisi-Finanziarie-backup-AAAA-MM-GG.json`): è la cassaforte stessa;
+- **Backup cifrato** (`RH-Finance-backup-AAAA-MM-GG.json`): è la cassaforte stessa;
   si apre con la password o il codice di recupero di quando è stato creato.
 - **Esporta JSON in chiaro**: solo per passare ad altri programmi, con avviso.
 - Ripristinare un backup sostituisce i dati (con "Annulla" subito dopo).

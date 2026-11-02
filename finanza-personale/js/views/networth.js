@@ -9,7 +9,7 @@ import { h, icon, download } from '../ui/dom.js';
 import { barChart, legend, sparkline } from '../ui/charts.js';
 import { openSheet, amountInput, toast, empty, selectInput, colorChoice } from '../ui/components.js';
 import { money, moneyText, delta, axisMoney, tipMoney, ui } from '../ui/fmt.js';
-import { card, accAvatar, segTabs, filterBox, hdBadge, colorVar } from './common.js';
+import { card, accAvatar, segTabs, filterBox, hdBadge, colorVar, colorDot, setSectionColor, softColor } from './common.js';
 import { accountEditor } from './editors.js';
 import { openFileImport } from './invimport.js';
 import { bankLogo } from '../data/banks.js';
@@ -18,6 +18,7 @@ import { isLiability, hasPlan, position } from '../core/model.js';
 import { monthKey, monthEnd, addMonthKey, formatMonth, formatDate, monthName } from '../core/dates.js';
 import { formatPercent, formatNumber } from '../core/money.js';
 import { toCSV, csvNumber } from '../core/csv.js';
+import { fitTable, watchFit, fitMoney } from '../ui/fit.js';
 
 let year = null;
 let span = 12;
@@ -30,57 +31,21 @@ const dmy = iso => `${iso.slice(8)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
 const pc = v => (v == null ? '' : formatPercent(v, 2, true));
 const tone = v => (v == null || !Math.round(v * 100) ? '' : v > 0 ? 'pos' : 'neg');
 
-/* La tabella si adatta allo schermo (D: "far entrare tutto da dic 2025 alla differenza tra
-   2025-2026, anche senza comprimere la barra"): su computer 15 colonne uguali che riempiono la
-   pagina; carattere, decimali e simbolo € scelti in base allo spazio e al numero più lungo
-   (prima si tolgono i decimali, poi si rimpicciolisce, per ultimo si toglie il simbolo €,
-   che resta nell'intestazione). Su telefono la tabella scorre. */
-let fitMax = 0, fitPctMax = 0;
-const measure = (txt, px) => {
-  const c = measure.c || (measure.c = document.createElement('canvas').getContext('2d'));
-  c.font = `700 ${px}px Inter, system-ui, sans-serif`;
-  return c.measureText(txt).width;
-};
-function fitOf(maxAbs = fitMax, maxPct = fitPctMax) {
-  const W = (document.getElementById('view')?.clientWidth || innerWidth) - 50;
-  if (innerWidth < 760 || W < 820) return null;
-  const first = W > 1700 ? 240 : W > 1350 ? 200 : W > 1000 ? 170 : 150;
-  const per = (W - first) / 15 - 12;     // spazio per il testo (tolti i margini della cella)
-  // il numero più lungo scritto con zeri (cifre tutte larghe uguali)
-  const big = Math.floor(Math.abs(maxAbs) / 100) || 1;
-  const sample = (dec, euro) => '+' + formatNumber(Number('9'.repeat(String(big).length)), dec, dec).replace(/\d/g, '0') + (euro ? ' €' : '');
-  const bigPct = Math.floor(Math.abs(maxPct)) || 1;
-  const pctSample = pd => '+' + formatNumber(Number('9'.repeat(String(bigPct).length)), pd, pd).replace(/\d/g, '0') + '%';
-  const tries = [[14, 2, true], [14, 0, true], [13, 0, true], [12, 0, true], [12, 0, false], [11.5, 0, false], [11, 0, false], [10.5, 0, false]];
-  // entrano sia l'importo più lungo sia la percentuale più lunga (anche "+6.400%")
-  const [font, dec, euro] = tries.find(([f, dd, e]) => measure(sample(dd, e), f) <= per && measure(pctSample(0), f) <= per) || tries[tries.length - 1];
-  const pdec = [2, 1, 0].find(pd => measure(pctSample(pd), font) <= per) ?? 0;
-  return { first, per: per + 12, dec, font, euro, pdec, short: measure('31/12/2025', font * 0.86) > per - 2 };
-}
-const fitSig = f => (f ? `${f.dec}|${f.font}|${f.first}|${f.euro}|${f.short}|${f.pdec}` : 'scroll');
-let fitKey = '';
-addEventListener('resize', () => {
-  clearTimeout(fitOf.t);
-  fitOf.t = setTimeout(() => {
-    if (fitSig(fitOf()) !== fitKey && location.hash.startsWith('#/patrimonio')) window.dispatchEvent(new CustomEvent('rhf-rerender'));
-  }, 200);
-});
-
 function sheetTable(ctx, Y) {
   const { d } = ctx;
   const S0 = d.nwSheet(Y, nwQ);
   const curY = Number(d.refDate.slice(0, 4));
   const every = [...S0.sections.flatMap(x => [...x.rows.flatMap(r => r.values), ...x.total, ...x.gain]), ...S0.total, ...S0.gain];
-  fitMax = every.reduce((m, v) => Math.max(m, Math.abs(v || 0)), 0);
+  const fitMax = every.reduce((m, v) => Math.max(m, Math.abs(v || 0)), 0);
   const lastI = vals => { for (let i = 12; i > 0; i--) if (vals[i] != null) return i; return -1; };
   const yearPct = vals => { const i = lastI(vals); return i < 0 || !vals[0] ? 0 : (vals[i] - vals[0]) / Math.abs(vals[0]) * 100; };
-  fitPctMax = [...S0.sections.flatMap(x => [...x.pct, yearPct(x.total), ...x.rows.map(r => yearPct(r.values))]), ...S0.pct, yearPct(S0.total)]
+  const fitPctMax = [...S0.sections.flatMap(x => [...x.pct, yearPct(x.total), ...x.rows.map(r => yearPct(r.values))]), ...S0.pct, yearPct(S0.total)]
     .reduce((m, v) => Math.max(m, Math.abs(v || 0)), 0);
-  const fit = fitOf(fitMax, fitPctMax);
-  fitKey = fitSig(fit);
+  const fit = fitTable({ maxAbs: fitMax, maxPct: fitPctMax });
+  watchFit('#/patrimonio', fit, () => fitTable({ maxAbs: fitMax, maxPct: fitPctMax }));
   const dec = fit ? fit.dec : 2;
   const noEuro = fit && !fit.euro;
-  const num = (v, sign) => (v == null ? '' : noEuro && !ui.privacy ? (sign && v > 0 ? '+' : '') + formatNumber(v / 100, dec, dec) : moneyText(v, ui.base, { sign, decimals: dec }));
+  const num = fitMoney(fit, moneyText, ui.base, ui.privacy);
   const t2 = v => num(v, false);
   const sg = v => num(v, true);
   const dates = [`${Y - 1}-12-31`, ...Array.from({ length: 12 }, (_, i) => monthEnd(`${Y}-${String(i + 1).padStart(2, '0')}`))];
@@ -95,18 +60,20 @@ function sheetTable(ctx, Y) {
   const cells = (vals, fmt, cls) => vals.map((v, i) => h('td.num', { class: [cls ? cls(v) : '', i === 0 ? 'prev' : '', S0.cols[i] ? '' : 'future'].join(' ') }, fmt(v)));
   const diffs = vals => [h('td.num.nw-dcol', { class: tone(diffOf(vals)) }, sg(diffOf(vals))), h('td.num.nw-dpct', { class: tone(diffPct(vals)) }, pcs(diffPct(vals)))];
   const noDiff = () => [h('td.num.nw-dcol'), h('td.num.nw-dpct')];
-  const band = (label, color) => h('tr.nw-band', { style: { '--sec': color } }, h('td.sticky', h('span', label)), dates.map(() => h('td')), noDiff());
+  const band = (label, color, raw) => h('tr.nw-band', { style: { '--sec': color } },
+    h('td.sticky', h('span', raw !== undefined ? colorDot(raw, c => setSectionColor(d, label, c), `Colore di ${label}`) : h('i.nw-band-dot'), label)), dates.map(() => h('td')), noDiff());
   // spazio tra una sezione e l'altra: si vede dove finisce un blocco e ne comincia un altro
   const gap = () => h('tr.nw-gap', { 'aria-hidden': 'true' }, h('td.sticky'), dates.map(() => h('td')), noDiff());
   const body = [];
   for (const sec of S0.sections) {
     const col = colorVar(sec.color);
     if (body.length) body.push(gap());
-    body.push(band(sec.name, col));
+    body.push(band(sec.name, col, sec.color));
     for (const r of sec.rows) {
       const go = r.hd ? () => ctx.go('investimenti/' + r.hd.id) : r.acc ? () => ctx.go('conti/' + r.acc.id) : null;
       body.push(h('tr.nw-item.click', { onclick: go, style: { '--sec': col } },
-        h('td.sticky', h('span.nw-name', r.hd ? hdBadge(r.hd, true) : r.acc && bankLogo(r.acc.name, r.acc.institution) ? h('img.nw-logo', { src: bankLogo(r.acc.name, r.acc.institution), alt: '', width: 16, height: 16 }) : r.acc?.cls ? hdBadge(r.acc, true) : null, r.label), h('span.nw-sub', r.hd && r.label !== r.name ? r.name : r.sub)),
+        // una riga sola come nel foglio: il tipo (conto corrente, ETF…) si legge passandoci sopra
+        h('td.sticky', { title: [r.label, r.hd && r.label !== r.name ? r.name : r.sub].filter(Boolean).join(' · ') }, h('span.nw-name', r.hd ? hdBadge(r.hd, true) : r.acc && bankLogo(r.acc.name, r.acc.institution) ? h('img.nw-logo', { src: bankLogo(r.acc.name, r.acc.institution), alt: '', width: 16, height: 16 }) : r.acc?.cls ? hdBadge(r.acc, true) : null, r.label)),
         cells(r.values, t2), diffs(r.values)));
     }
     body.push(h('tr.nw-total', { style: { '--sec': col } }, h('td.sticky', 'Total'), cells(sec.total, t2), diffs(sec.total)));
@@ -122,7 +89,7 @@ function sheetTable(ctx, Y) {
   for (const sec of S0.sections) {
     const sh = shareOf(sec.name);
     body.push(h('tr.nw-alloc', { style: { '--sec': colorVar(sec.color) } },
-      h('td.sticky', h('span.nw-al', h('span.dl-key', { style: { background: colorVar(sec.color) } }), h('span.nw-al-n', sec.name), h('b.nw-share', sh == null ? '' : formatPercent(sh, 1)))),
+      h('td.sticky', h('span.nw-al', colorDot(sec.color, c => setSectionColor(d, sec.name, c), `Colore di ${sec.name}`), h('span.nw-al-n', sec.name), h('b.nw-share', sh == null ? '' : formatPercent(sh, 1)))),
       cells(sec.total, t2), diffs(sec.total)));
   }
   body.push(h('tr.nw-total.nw-grand', h('td.sticky', 'Total'), cells(S0.total, t2), diffs(S0.total)));
@@ -306,48 +273,50 @@ export default {
     if (!year || !years.includes(year)) year = Number(lastDate.slice(0, 4));
     const mLabel = `${monthName(Number(lastDate.slice(5, 7)))} ${lastDate.slice(0, 4)}`;
 
-    const hero = h('section.card.nw-hero',
-      h('div.nw-hero-main',
-        h('div.hero-label', `Patrimonio a fine ${mLabel}`),
-        h('div.hero-value', money(now)),
-        h('div.nw-chips',
-          prev != null ? h('div.nw-chip', h('span.hero-chip-l', 'Sul mese prima'), h('span', money(now - prev, d.base, { sign: true, tone: now >= prev ? 'pos' : 'neg' }), ' ', delta(pctOf(now, prev)))) : null,
-          dec != null ? h('div.nw-chip', h('span.hero-chip-l', `Dal 31/12/${Number(lastDate.slice(0, 4)) - 1}`), h('span', money(now - dec, d.base, { sign: true, tone: now >= dec ? 'pos' : 'neg' }), ' ', delta(pctOf(now, dec)))) : null,
-          peak.i >= 0 ? h('div.nw-chip', h('span.hero-chip-l', 'Il più alto'), h('span', money(peak.v), h('span.muted', ` · ${formatMonth(monthKey(M.cols[peak.i]), true)}`))) : null)),
-      h('div.nw-hero-side',
-        h('button.btn.btn-primary', { type: 'button', onclick: () => checkInEditor(ctx) }, icon('edit', 18), 'Aggiorna i valori'),
-        h('p.field-hint', 'Il patrimonio è quello del tuo Net Worth a fine mese. Gli Investimenti restano a sé.')));
-
-    // una scheda per sezione: valore a fine mese, variazione sul mese prima, quota
-    const pos = M.sections.reduce((a, x) => a + Math.max(0, x.total[L] || 0), 0);
-    const cards = h('div.fin-cards', M.sections.map(sec => {
-      const v = sec.total[L], g = sec.gain[L], p = sec.pct[L];
-      const col = colorVar(sec.color);
-      return h('div.fin-card.static', { style: { '--chip': col } },
-        h('span.fin-card-top', h('span.fin-card-name', sec.name), h('span.fin-card-pct', formatPercent(pos && v ? v / pos * 100 : 0, 1))),
-        h('span.fin-card-val', v == null ? '—' : money(v)),
-        h('span.fin-card-sub', g == null ? 'sul mese prima: —' : h('span', 'sul mese prima ', h('b', { class: g >= 0 ? 'pos' : 'neg' }, moneyText(g, ui.base, { sign: true })), ' ', p == null ? '' : delta(p))),
-        sparkline(sec.total.slice(Math.max(0, L - 11), L + 1).map(x => x ?? 0), { color: col, width: 150, height: 30 }));
-    }));
-
-    // andamento a fine mese per sezione + patrimonio
+    // una card sola (D: "anche le cards in patrimonio non mi piacciono"): il numero, le variazioni,
+    // l'andamento per sezione e accanto le sezioni con valore, quota e variazione sul mese prima
+    const pos = M.sections.reduce((a, x) => a + Math.max(0, x.total[L] || 0), 0) || 1;
+    const kpi = (label, value, extra) => h('div.dk', h('span.dk-l', label), h('span.dk-v', value), extra ? h('span.dk-x', extra) : null);
     const n = span === 'all' ? M.cols.length : Math.min(span, M.cols.length);
     const from = Math.max(0, L + 1 - n);
     const idx = Array.from({ length: L + 1 - from }, (_, k) => from + k);
-    const chart = card('Andamento', { sub: 'A fine mese: le sezioni (barre) e il patrimonio (linea)', action: segTabs([{ value: 12, label: '12M' }, { value: 24, label: '24M' }, { value: 'all', label: 'Tutto' }], span, v => { span = v; ctx.rerender(); }) },
-      barChart({
-        labels: idx.map(i => formatMonth(monthKey(M.cols[i]), true)), tipLabels: idx.map(i => `Fine ${formatMonth(monthKey(M.cols[i]))}`),
-        series: M.sections.map(sec => ({ name: sec.name, color: colorVar(sec.color), values: idx.map(i => sec.total[i] || 0) })),
-        stacked: true, line: { name: 'Patrimonio', color: 'var(--ink)', values: idx.map(i => M.total[i] || 0) },
-        fmt: tipMoney, fmtAxis: axisMoney, height: 260, mask: ui.privacy,
-        onPick: k => { const y = Number(M.cols[idx[k]].slice(0, 4)); if (years.includes(y)) { year = y; ctx.rerender(); } },
-      }),
-      legend([...M.sections.map(sec => ({ label: sec.name, color: colorVar(sec.color) })), { label: 'Patrimonio', color: 'var(--ink)', line: true }]));
+    const chartEl = barChart({
+      labels: idx.map(i => formatMonth(monthKey(M.cols[i]), true)), tipLabels: idx.map(i => `Fine ${formatMonth(monthKey(M.cols[i]))}`),
+      series: M.sections.map(sec => ({ name: sec.name, color: softColor(colorVar(sec.color)), values: idx.map(i => sec.total[i] || 0) })),
+      stacked: true, line: { name: 'Net Worth', color: 'var(--ink)', values: idx.map(i => M.total[i] || 0) },
+      fmt: tipMoney, fmtAxis: axisMoney, height: 270, mask: ui.privacy, title: 'Net Worth a fine mese, per sezione',
+      onPick: k => { const y = Number(M.cols[idx[k]].slice(0, 4)); if (years.includes(y)) { year = y; ctx.rerender(); } },
+    });
+    const summary = h('section.card.dash-card.nw-summary',
+      h('div.dash-head',
+        h('div', h('span.dash-label', `Net Worth a fine ${mLabel}`), h('div.dash-big', money(now))),
+        h('button.btn.btn-primary', { type: 'button', onclick: () => checkInEditor(ctx) }, icon('edit', 18), h('span', 'Aggiorna i valori'))),
+      h('div.dash-kpis',
+        kpi('Sul mese prima', prev != null ? money(now - prev, d.base, { sign: true, tone: now >= prev ? 'pos' : 'neg' }) : '—', prev != null ? delta(pctOf(now, prev)) : null),
+        kpi(`Dal 31/12/${Number(lastDate.slice(0, 4)) - 1}`, dec != null ? money(now - dec, d.base, { sign: true, tone: now >= dec ? 'pos' : 'neg' }) : '—', dec != null ? delta(pctOf(now, dec)) : null),
+        kpi('Il più alto', peak.i >= 0 ? money(peak.v) : '—', peak.i >= 0 ? formatMonth(monthKey(M.cols[peak.i])) : null)),
+      h('div.dash-nw-body',
+        h('div.dash-chart',
+          h('div.nw-sum-tools', segTabs([{ value: 12, label: '12M' }, { value: 24, label: '24M' }, { value: 'all', label: 'Tutto' }], span, v => { span = v; ctx.rerender(); })),
+          chartEl),
+        h('div.dash-secs',
+          h('div.alloc-bar.dash-alloc', M.sections.filter(x => (x.total[L] || 0) > 0).map(x => h('span', { style: { width: ((x.total[L] || 0) / pos * 100) + '%', background: softColor(colorVar(x.color)) }, title: x.name }))),
+          h('div.dash-list', M.sections.map(sec => {
+            const v = sec.total[L], g = sec.gain[L];
+            return h('div.dash-row.nw-sum-row',
+              colorDot(sec.color, c => setSectionColor(d, sec.name, c), `Colore di ${sec.name}`),
+              h('span.dash-n', sec.name),
+              h('span.dash-p', v > 0 ? formatPercent(v / pos * 100, 0) : ''),
+              h('span.dash-v', v == null ? h('span.muted', '—') : money(v, d.base, { tone: v < 0 ? 'neg' : '' })),
+              h('span.dash-g', g ? money(g, d.base, { sign: true, tone: g >= 0 ? 'pos' : 'neg' }) : ''));
+          })),
+          h('p.dash-cap', 'Accanto al valore, la variazione sul mese prima. Tocca il quadratino per cambiare il colore della sezione.'))),
+      h('p.dash-foot', 'Il patrimonio è quello del tuo Net Worth a fine mese, come nel foglio. Gli Investimenti restano a sé.'));
 
     const yearTabs = segTabs(years.map(y => ({ value: y, label: String(y) })), year, v => { year = v; ctx.rerender(); });
     return {
       title: 'Patrimonio', sub: 'Il tuo Net Worth, fine mese per fine mese', actions,
-      node: h('div.stack', hero, cards, chart,
+      node: h('div.stack', summary,
         h('div.nw-year-bar', h('h2.section-title', 'Net Worth'), yearTabs),
         sheetTable(ctx, year),
         yearsCard(ctx, years),

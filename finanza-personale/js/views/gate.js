@@ -29,7 +29,7 @@ export function handleAuthLanding() {
   history.replaceState(null, '', location.pathname + location.search + '#/');
 }
 
-const mark = () => h('img.gate-mark', { src: 'icons/icon.svg', alt: '', width: 76, height: 76 });
+const mark = () => h('img.gate-mark', { src: 'icons/icon-192.png', alt: '', width: 76, height: 76 });
 
 function pwField(placeholder, autocomplete, autofocus) {
   const inp = h('input.input.pw-input', { type: 'password', placeholder, autocomplete, autofocus, spellcheck: 'false', autocapitalize: 'off' });
@@ -224,6 +224,7 @@ function welcome(ctx) {
   return h('div.gate',
     h('div.gate-hero',
       mark(),
+      h('div.gate-name', '[RH] ', h('b', 'Finance')),
       h('h1.gate-title', 'Tutte le tue finanze.', h('br'), h('span.gate-title-soft', 'Solo tue.')),
       h('p.gate-lead', 'Conti, spese, budget, scadenze, investimenti e simulazioni in un\'unica app, sul telefono e sul computer. I dati vengono cifrati qui, con la tua password, prima di partire: online nessuno può leggerli.'),
       h('ul.gate-points',
@@ -273,7 +274,7 @@ function createScreen(ctx) {
     h('div.gate-step', 'Senza account · passo 1 di 2'),
     h('h2', 'Scegli la password'),
     h('p.muted', 'Apre l\'app e cifra i dati, che restano solo su questo dispositivo. Potrai collegare un account più avanti dalle Impostazioni.'),
-    h('input', { type: 'text', name: 'username', autocomplete: 'username', value: 'Analisi Finanziarie', hidden: true, readonly: true }),
+    h('input', { type: 'text', name: 'username', autocomplete: 'username', value: '[RH] Finance', hidden: true, readonly: true }),
     h('div.stack-sm', p1, strengthMeter(p1.input), p2),
     h('p.tip', icon('sparkle', 16), h('span', 'Consiglio: una frase di 4 o più parole che solo tu conosci, es. «ombrello viola corre al mare». È lunga ma facile da ricordare.')),
     err, btn);
@@ -291,8 +292,8 @@ function recoveryScreen(ctx) {
   } }, 'Entra nell\'app');
   ok.addEventListener('change', () => { go.disabled = !ok.checked; });
   const save = () => {
-    const text = `Analisi Finanziarie — codice di recupero\n\n${G.code}\n\nServe solo se dimentichi la password. Conservalo offline (carta, cassaforte, password manager).\nCreato il ${new Date().toLocaleString('it-IT')}.\n`;
-    download(new Blob([text], { type: 'text/plain' }), 'Analisi-Finanziarie-codice-di-recupero.txt');
+    const text = `[RH] Finance — codice di recupero\n\n${G.code}\n\nServe solo se dimentichi la password. Conservalo offline (carta, cassaforte, password manager).\nCreato il ${new Date().toLocaleString('it-IT')}.\n`;
+    download(new Blob([text], { type: 'text/plain' }), 'RH-Finance-codice-di-recupero.txt');
   };
   return h('div.gate', h('div.gate-card',
     h('div.gate-step', 'Ultimo passo'),
@@ -336,7 +337,7 @@ function lockScreen(ctx) {
     h('h2.center-text', 'Bentornato'),
     ctx.S.cloud.linked ? h('p.gate-email', icon('refresh', 15), ctx.S.cloud.email) : null,
     h('p.muted.center-text', ctx.S.lockReason || 'I tuoi dati sono cifrati. Inserisci la password per aprirli.'),
-    h('input', { type: 'text', name: 'username', autocomplete: 'username', value: ctx.S.cloud.email || 'Analisi Finanziarie', hidden: true, readonly: true }),
+    h('input', { type: 'text', name: 'username', autocomplete: 'username', value: ctx.S.cloud.email || '[RH] Finance', hidden: true, readonly: true }),
     pw, err, btn,
     h('div.gate-links',
       h('button.link', { type: 'button', onclick: () => forgotFlow(ctx) }, 'Password dimenticata?'),

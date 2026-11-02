@@ -848,7 +848,7 @@ input[type="date"].input::-webkit-date-and-time-value { text-align: left; }
 .table thead th.future { color: color-mix(in srgb, var(--thead-ink, var(--ink-3)) 60%, transparent); }
 .table thead tr > th:first-child { border-radius: 8px 0 0 8px; }
 .table thead tr > th:last-child { border-radius: 0 8px 8px 0; }
-[data-zebra] .table tbody tr:not(.grp):not(.nw-band):not(.nw-total):not(.nw-gap):not(.sh-tot):not(.fin-macro):nth-child(even) > td:not(.sh-grp):not(.sh-sub) { background: color-mix(in srgb, var(--card) 95%, var(--ink)); }
+[data-zebra] .table:not(.fit) tbody tr:not(.grp):not(.nw-band):not(.nw-total):not(.nw-gap):not(.sh-tot):not(.fin-macro):nth-child(even) > td:not(.sh-grp):not(.sh-sub) { background: color-mix(in srgb, var(--card) 95%, var(--ink)); }
 [data-zebra] .table tbody tr.click:hover > td { background: color-mix(in srgb, var(--card) 90%, var(--ink)); }
 [data-density="compact"] .table td { padding-top: 6px; padding-bottom: 6px; }
 [data-density="compact"] .table th { padding-top: 6px; padding-bottom: 6px; }
@@ -1273,7 +1273,6 @@ table.resizing { user-select: none; cursor: col-resize; }
 [data-colors="few"] .fin-table tr.fin-macro td.sticky, [data-colors="few"] .fin-table tr.fin-macro td.fin-tot { box-shadow: inset 0 1px 0 var(--line); }
 [data-colors="few"] .fin-table tr.fin-macro.click:hover td { background: var(--fill); }
 [data-colors="few"] .fin-macro-name { color: var(--ink); }
-[data-colors="few"] .fin-macro-name::before { content: ''; width: 8px; height: 8px; border-radius: 2px; background: var(--chip); flex: none; }
 [data-colors="few"] .fin-caret { color: var(--ink-3); }
 [data-colors="few"] .fin-table tr.fin-sub td.sticky { box-shadow: inset 0 1px 0 var(--line); }
 [data-colors="few"] .fin-table tr.fin-note td.sticky { box-shadow: none; }
@@ -1331,7 +1330,7 @@ table.resizing { user-select: none; cursor: col-resize; }
 @media (max-width: 900px) { .dash-nw-body { grid-template-columns: minmax(0, 1fr); gap: 16px; } }
 .dash-alloc { height: 10px; margin: 0 0 6px; }
 .dash-list { display: flex; flex-direction: column; }
-.dash-row { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto auto; gap: 4px 12px; align-items: center; padding: 9px 2px; border-bottom: 1px solid var(--line); font-size: 14px; color: var(--ink); }
+.dash-row { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto auto; gap: 4px 12px; align-items: center; padding: 9px 2px; border-bottom: 1px solid var(--line); font-size: 14px; color: var(--ink); }
 .dash-row:last-child { border-bottom: 0; }
 .dash-row:hover .dash-n { text-decoration: underline; text-underline-offset: 3px; }
 .dash-dot { width: 10px; height: 10px; border-radius: 3px; }
@@ -1353,3 +1352,59 @@ table.resizing { user-select: none; cursor: col-resize; }
   .dash-card { padding: 18px; }
   .dash-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* quadratino del colore cliccabile e la sua tavolozza */
+.cdot { flex: none; width: 12px; height: 12px; padding: 0; border: 0; border-radius: 3.5px; background: color-mix(in srgb, var(--dot) 62%, var(--ink-3)); cursor: pointer; box-shadow: 0 0 0 0 transparent; transition: box-shadow .15s, transform .15s; }
+.cdot:hover, .cdot:focus-visible { box-shadow: 0 0 0 3px var(--card), 0 0 0 5px color-mix(in srgb, var(--dot) 50%, var(--line)); transform: scale(1.12); outline: none; }
+.color-pop { position: fixed; z-index: 200; padding: 12px 14px; border-radius: 16px; background: var(--sheet); box-shadow: var(--shadow-pop); display: flex; flex-direction: column; gap: 10px; }
+.color-pop-t { font-size: 13px; font-weight: 620; color: var(--ink-2); max-width: 330px; }
+.color-pop .swatches { gap: 8px; flex-wrap: nowrap; }
+.color-pop .swatch { width: 28px; height: 28px; }
+.color-pop .swatch[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--sheet), 0 0 0 4px var(--ink); }
+.nw-summary .dash-head .btn { flex: none; }
+.nw-sum-tools { display: flex; justify-content: flex-end; margin-bottom: 4px; }
+.nw-sum-row { grid-template-columns: 12px minmax(0, 1fr) auto auto 86px; }
+.dash-g { font-size: 12.5px; text-align: right; }
+.dash-foot { margin: 0; font-size: 12.5px; color: var(--ink-3); }
+
+/* ── Tabelle-foglio da leggere come in Excel (D: "mi girano ancora gli occhi se guardo tutto…
+   su Excel è molto meglio leggere"; "il networth è ancora molto confusionario"): una riga sola per
+   voce, celle vuote vuote, griglia leggera tra le colonne, niente righe alterne, verde e rosso
+   smorzati, totali senza fondo colorato. ── */
+.nw-sheet tr.nw-band td.sticky span::before { content: none; }
+.nw-band-dot { flex: none; display: inline-block; width: 12px; height: 12px; border-radius: 3.5px; background: var(--sec-m); }
+.table.fit td { padding-top: 7px; padding-bottom: 7px; }
+.table.fit td.num:not(.nw-dcol):not(.nw-dpct), .table.fit th.num:not(.nw-dcol):not(.nw-dpct) { border-left: 1px solid color-mix(in srgb, var(--line) 60%, transparent); }
+.table.fit thead th.num:not(.nw-dcol):not(.nw-dpct) { border-left-color: color-mix(in srgb, var(--thead-ink, var(--ink)) 14%, transparent); }
+.table.fit .pos { color: color-mix(in srgb, var(--pos) 80%, var(--ink-2)); }
+.table.fit .neg { color: color-mix(in srgb, var(--neg) 80%, var(--ink-2)); }
+.nw-sheet.fit tr.nw-gain td, .nw-sheet.fit tr.nw-pct td { font-weight: 500; }
+.nw-sheet.fit tr.nw-total td { background: var(--card); }
+.nw-sheet.fit .nw-name { font-weight: 520; }
+.nw-sheet.fit .nw-logo, .nw-sheet.fit .mini-badge { margin-right: 7px; }
+/* Entrate e uscite intere sullo schermo, come il Net Worth */
+.fin-table.fit { table-layout: fixed; width: 100%; min-width: 0; }
+.fin-table.fit th, .fin-table.fit td { padding-left: 4px; padding-right: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fin-table.fit .sticky { width: var(--nw-first); min-width: var(--nw-first); max-width: var(--nw-first); padding-left: 10px; }
+.fin-table.fit thead th { font-size: .86em; letter-spacing: 0; padding-left: 2px; padding-right: 5px; }
+.fin-table.fit tr.fin-sub td.sticky { padding-left: 34px; }
+.fin-table.fit tr.fin-note td.sticky { padding-left: 46px; }
+.fin-table.fit .fin-macro-name { font-size: 1em; letter-spacing: .02em; gap: 7px; max-width: 100%; }
+.fin-table.fit .fin-macro-t { overflow: hidden; text-overflow: ellipsis; }
+.fin-table.fit tr.fin-grand td { font-size: 1.04em; }
+.fin-table.fit .fin-pct { font-size: .95em; }
+.fin-table.fit .fin-notes-btn { margin-left: 5px; padding: 1px 6px; }
+.fin-table .fin-macro-name .cdot { margin-right: 1px; }
+/* card riassuntiva delle entrate/uscite */
+.fin-vs { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 13px; color: var(--ink-3); }
+.fin-vs small { font-size: 12px; }
+.fin-sum-row { grid-template-columns: 12px minmax(0, 1fr) auto auto 112px; }
+.fin-sum-row.dim { opacity: .45; }
+.fin-sum-row.on .dash-n { text-decoration: underline; text-underline-offset: 3px; }
+.dash-pick { padding: 0; border: 0; background: none; text-align: left; color: inherit; font: inherit; cursor: pointer; }
+.nw-sheet tr.nw-band td.nw-dcol { border-left-color: transparent; }
+/* icona [RH] (la stessa di [RH] Documents, D: "il nome del tool deve essere [RH] Finance, cambia i nomi e il logo") */
+.brand-ic, img.gate-mark { background: #000; object-fit: cover; }
+.brand-name { white-space: nowrap; }
+.gate-name { margin: -6px 0 2px; font-size: 19px; letter-spacing: -0.02em; color: var(--ink-2); text-align: center; }
+.gate-name b { color: var(--ink); font-weight: 700; }

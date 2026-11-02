@@ -1,4 +1,4 @@
-/* Analisi Finanziarie — avvio, navigazione, blocco automatico, ricerca rapida. */
+/* [RH] Finance — avvio, navigazione, blocco automatico, ricerca rapida. */
 
 import { h, icon, $, clear } from './ui/dom.js';
 import { toast, openSheet, closeAllSheets, topSheet, promptDialog } from './ui/components.js';
@@ -94,7 +94,7 @@ function buildShell() {
       ? h('div.side-group', n.group)
       : h('a.side-link', { href: '#/' + n.path, dataset: { path: n.path } }, icon(n.icon, 20), h('span', n.label))));
   const side = h('aside.side',
-    h('a.brand', { href: '#/', 'aria-label': 'Analisi Finanziarie, panoramica' }, h('img.brand-ic', { src: 'icons/icon.svg', alt: '', width: 30, height: 30 }), h('span.brand-name', 'Analisi', h('b', ' Finanziarie'))),
+    h('a.brand', { href: '#/', 'aria-label': '[RH] Finance, panoramica' }, h('img.brand-ic', { src: 'icons/icon-192.png', alt: '', width: 30, height: 30 }), h('span.brand-name', '[RH]', h('b', ' Finance'))),
     h('button.side-search', { type: 'button', onclick: () => openPalette(ctxBase()) }, icon('search', 18), h('span', 'Cerca o vai a…'), h('kbd', navigator.platform?.includes('Mac') ? '⌘K' : 'Ctrl K')),
     nav,
     h('div.side-foot',
@@ -212,7 +212,7 @@ function doRender() {
   }
   $('#top-title').textContent = title;
   $('#top-sub').textContent = sub;
-  document.title = (route.path ? title + ' · ' : '') + 'Analisi Finanziarie';
+  document.title = (route.path ? title + ' · ' : '') + '[RH] Finance';
   $('#top-actions').replaceChildren(
     ...actions,
     h('button.icon-btn.only-mobile', { type: 'button', 'aria-label': 'Cerca', onclick: () => openPalette(ctx) }, icon('search', 20)),

@@ -7,6 +7,8 @@ import { money, moneyText } from '../ui/fmt.js';
 import { ACCOUNT_TYPES, ASSET_CLASSES, isLiability } from '../core/model.js';
 import { formatDay } from '../core/dates.js';
 import { txEditor } from './editors.js';
+import { colorChoice } from '../ui/components.js';
+import { setSetting } from '../actions.js';
 
 export function card(title, opts = {}, ...body) {
   const head = title || opts.action || opts.sub
@@ -120,3 +122,38 @@ export function hdBadge(hd, small = false) {
 
 /** Colore di una categoria o sezione: uno degli 8 della palette (1…8) o uno scelto liberamente (#rrggbb). */
 export const colorVar = c => (typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c) ? c : c ? `var(--c${c})` : 'var(--ink-3)');
+
+/* ─── Colore al volo (D: "cambiare il colore delle varie categorie direttamente cliccando sul
+   quadratino senza andare nelle impostazioni"): il quadratino è un pulsante che apre la tavolozza
+   (gli 8 colori e il cerchio arcobaleno per qualsiasi colore) lì accanto. ─── */
+let openPop = null;
+function closePop() { if (openPop) { openPop.remove(); openPop = null; } }
+addEventListener('keydown', e => { if (e.key === 'Escape') closePop(); });
+addEventListener('pointerdown', e => { if (openPop && !openPop.contains(e.target) && !e.target.closest?.('.cdot')) closePop(); }, true);
+addEventListener('scroll', () => closePop(), { passive: true });
+/** Colore smorzato (D: "quei colori non farli così vivaci"): per pallini, barre e grafici a blocchi. */
+export const softColor = c => `color-mix(in srgb, ${c} 62%, var(--ink-3))`;
+/** `value`: 1…8 o "#rrggbb"; `onPick(v)` salva. */
+export function colorDot(value, onPick, label = 'Cambia colore') {
+  const b = h('button.cdot', { type: 'button', 'aria-label': label, title: label, style: { '--dot': colorVar(value) } });
+  b.addEventListener('click', e => {
+    e.preventDefault(); e.stopPropagation();
+    if (openPop?.dataset.for === label) { closePop(); return; }
+    closePop();
+    const pick = colorChoice(value, null, { onDone: v => { closePop(); onPick(v); } });
+    const pop = h('div.color-pop', { role: 'dialog', 'aria-label': label, dataset: { for: label } }, h('div.color-pop-t', label), pick);
+    document.body.append(pop);
+    const r = b.getBoundingClientRect(), pw = pop.offsetWidth, ph = pop.offsetHeight;
+    pop.style.left = Math.max(8, Math.min(innerWidth - pw - 8, r.left - 12)) + 'px';
+    pop.style.top = (r.bottom + ph + 12 > innerHeight ? Math.max(8, r.top - ph - 8) : r.bottom + 8) + 'px';
+    openPop = pop;
+    pop.querySelector('button.swatch[aria-pressed="true"], button.swatch')?.focus();
+  });
+  return b;
+}
+/** Il colore di una sezione del Net Worth, salvato nell'ordine del foglio come la vede D. */
+export function setSectionColor(d, name, color) {
+  const G = d.nwGroups();
+  const sections = G.sections.map(x => ({ name: x.name, color: x.name === name ? color : x.color, items: x.items })).filter(x => x.items.length);
+  setSetting('nwLayout', { sections, labels: { ...G.labels } });
+}

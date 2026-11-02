@@ -83,7 +83,9 @@ function toggleSide() {
   const on = !document.documentElement.classList.contains('side-mini');
   document.documentElement.classList.toggle('side-mini', on);
   try { localStorage.setItem('rhf-side', on ? 'mini' : ''); } catch { /* navigazione privata */ }
+  setTimeout(() => dispatchEvent(new Event('resize')), 250);     // le tabelle che si adattano alla larghezza
 }
+addEventListener('rhf-rerender', () => render());
 try { if (localStorage.getItem('rhf-side') === 'mini') document.documentElement.classList.add('side-mini'); } catch { /* */ }
 
 function buildShell() {

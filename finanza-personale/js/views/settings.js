@@ -1,7 +1,7 @@
 /* Impostazioni: profilo, aspetto, sicurezza, backup, categorie, regole, valute, mercati. */
 
 import { h, icon, download, pickFile, readText } from '../ui/dom.js';
-import { field, textInput, selectInput, toggle, toast, confirmDialog, promptDialog, openSheet, numberInput, segmented, twoTap } from '../ui/components.js';
+import { field, textInput, selectInput, toggle, toast, confirmDialog, promptDialog, openSheet, numberInput, segmented, twoTap, colorChoice } from '../ui/components.js';
 import { ui } from '../ui/fmt.js';
 import { card } from './common.js';
 import { categoryEditor, undoToast } from './editors.js';
@@ -16,7 +16,7 @@ import { today, formatDate } from '../core/dates.js';
 import { ecbRates } from '../market.js';
 import { categoryManager, groupColor } from './categories.js';
 import { askMarketConsent } from './investments.js';
-import { applyTheme, PALETTES, CHARTS, resolveLook } from '../ui/theme.js';
+import { applyTheme, PALETTES, CHARTS, resolveLook, seriesOf, POS_NEG } from '../ui/theme.js';
 
 
 const VERSION = '3.4.0';
@@ -24,46 +24,107 @@ const VERSION = '3.4.0';
 function section(id, title, sub, ...body) {
   return h('section.card.set-card', { id: 'set-' + id }, h('div.card-head', h('div.card-titles', h('h2.card-title', title), sub ? h('p.card-sub', sub) : null)), ...body);
 }
-/* Colori: palette pronte o scelti uno per uno (con anteprima mentre li scegli). */
+/* Colori. D: "organizza meglio i colori e dammi la possibilità di modificarli come voglio con la
+   palette dei colori completa". Aspetto = tema, palette pronte e stile; Colori = ogni colore
+   (app, grafici, macro categorie, sezioni del Net Worth) con la tavolozza completa. */
+const lookSet = ctx => patch => {
+  const look = { ...S.state.settings.look, ...patch };
+  A.setSetting('look', look);
+  applyTheme(S.state.settings.theme, look);
+  ctx.rerender();
+};
+const lookPreview = patch => applyTheme(S.state.settings.theme, { ...S.state.settings.look, ...patch });
+
 function lookControls(ctx) {
-  const st = S.state, L = st.settings.look, R = resolveLook(L);
-  const set = patch => {
-    const look = { ...S.state.settings.look, ...patch };
-    A.setSetting('look', look);
-    applyTheme(S.state.settings.theme, look);
-    ctx.rerender();
-  };
-  const pick = k => {
-    // passando a "I tuoi colori" si parte da quelli che si vedono ora
-    if (k === 'custom' && L.palette !== 'custom') set({ palette: 'custom', brand: R.brand, head: R.head || L.head, bg: R.bg || L.bg });
-    else set({ palette: k });
-  };
+  const L = S.state.settings.look, R = resolveLook(L), set = lookSet(ctx);
+  // una palette pronta cambia tutto insieme (anche i colori dei grafici); "I tuoi colori" parte da quelli di ora
+  const pick = k => (k === 'custom' ? set({ palette: 'custom', brand: R.brand, head: R.head, bg: R.bg }) : set({ palette: k, chart: 'auto', series: null }));
   const opts = [...Object.keys(PALETTES), 'custom'].map(k => {
-    const r = resolveLook(k === 'custom' ? { ...L, palette: 'custom' } : { palette: k, chart: 'auto' });
+    const look = k === 'custom' ? { ...L, palette: 'custom' } : { palette: k, chart: 'auto' };
+    const r = resolveLook(look);
     return h('button.look-opt', { type: 'button', class: L.palette === k ? 'on' : '', 'aria-pressed': String(L.palette === k), onclick: () => pick(k) },
       h('span.look-prev', { style: { background: r.bg || '#f2f2f5' } },
         h('i.lp-head', { style: { background: r.head || '#d6d6de' } }), h('i.lp-row'), h('i.lp-row'),
-        h('span.lp-dots', CHARTS[r.chart].light.slice(0, 4).map(c => h('i', { style: { background: c } }))),
+        h('span.lp-dots', seriesOf(look).slice(0, 4).map(c => h('i', { style: { background: c } }))),
         h('b.lp-brand', { style: { background: r.brand } })),
       h('span', k === 'custom' ? 'I tuoi colori' : PALETTES[k].label));
   });
-  const colorField = (label, hint, key) => {
-    const inp = h('input', { type: 'color', value: L[key], 'aria-label': label });
-    inp.addEventListener('input', () => applyTheme(S.state.settings.theme, { ...S.state.settings.look, [key]: inp.value }));
-    inp.addEventListener('change', () => set({ [key]: inp.value }));
-    return h('label.color-field', inp, h('span', h('b', label), h('small', hint)));
-  };
   return [
+    h('h3.set-sub', 'Palette pronte'),
+    h('p.set-hint', 'Un tocco cambia tutti i colori insieme. Poi puoi cambiarne uno qualsiasi in "Colori", qui sotto.'),
     h('div.look-pick', opts),
-    L.palette === 'custom' ? h('div.look-custom',
-      colorField('Colore principale', 'Pulsanti, schede, link', 'brand'),
-      colorField('Intestazioni delle tabelle', 'Come la riga blu del tuo Excel', 'head'),
-      colorField('Sfondo', 'Con il tema chiaro', 'bg')) : null,
-    setRow('Colori dei grafici', 'Torte, barre e categorie', selectInput([{ value: 'auto', label: 'Come la palette' }, ...Object.entries(CHARTS).map(([k, c]) => ({ value: k, label: c.label }))], L.chart, v => set({ chart: v }))),
-    toggle('Righe alterne nelle tabelle', R.zebra, v => set({ zebra: v }), { hint: 'Una riga sì e una no leggermente più scura, come nei fogli' }),
+    h('h3.set-sub', 'Stile'),
     toggle('Colori vivaci', R.colorful, v => set({ colorful: v }), { hint: 'Schede, sezioni e categorie colorate. Spento: tutto sobrio, con solo un pallino colorato (i grafici restano a colori)' }),
+    toggle('Righe alterne nelle tabelle', R.zebra, v => set({ zebra: v }), { hint: 'Una riga sì e una no leggermente più scura, come nei fogli' }),
     toggle('Tabelle e liste compatte', R.density === 'compact', v => set({ density: v ? 'compact' : 'normal' }), { hint: 'Più righe sullo schermo' }),
   ];
+}
+
+/** Un colore con la tavolozza completa: anteprima mentre lo scegli, salvato quando chiudi. */
+function colorField(label, hint, value, toPatch, { reset } = {}) {
+  const inp = h('input', { type: 'color', value, 'aria-label': label });
+  inp.addEventListener('input', () => lookPreview(toPatch(inp.value.toLowerCase())));
+  inp.addEventListener('change', () => reset.set(toPatch(inp.value.toLowerCase())));
+  return h('div.color-field', h('label.color-pick', inp, h('span', h('b', label), h('small', hint))),
+    reset.show ? h('button.icon-btn.sm', { type: 'button', 'aria-label': `${label}: torna come prima`, title: 'Torna al colore di base', onclick: reset.fn }, icon('refresh', 15)) : null);
+}
+
+let colorKind = 'income';
+function colorsCard(ctx) {
+  const st = S.state, L = st.settings.look, R = resolveLook(L), set = lookSet(ctx), d = ctx.d;
+  const custom = (key, v) => ({ palette: 'custom', brand: R.brand, head: R.head, bg: R.bg, [key]: v });
+  const app = h('div.look-custom',
+    colorField('Colore principale', 'Pulsanti, schede scelte, link', R.brand, v => custom('brand', v), { reset: { set } }),
+    colorField('Intestazioni delle tabelle', R.head ? 'Come la riga blu del tuo Excel' : 'Ora senza colore', R.head || '#ffffff', v => custom('head', v), { reset: { set } }),
+    colorField('Sfondo', 'Con il tema chiaro', R.bg || '#f2f2f5', v => custom('bg', v), { reset: { set } }),
+    colorField('Guadagni', 'Numeri in positivo', R.pos || POS_NEG.pos, v => ({ pos: v }), { reset: { set, show: !!R.pos, fn: () => set({ pos: '' }) } }),
+    colorField('Perdite', 'Numeri in negativo', R.neg || POS_NEG.neg, v => ({ neg: v }), { reset: { set, show: !!R.neg, fn: () => set({ neg: '' }) } }));
+
+  // gli 8 colori dei grafici, uno per uno
+  const ser = seriesOf(L);
+  const series = h('div.series-pick', ser.map((c, i) => {
+    const inp = h('input', { type: 'color', value: c, 'aria-label': `Colore ${i + 1} dei grafici` });
+    const sw = h('label.series-sw', { style: { background: c }, title: 'Cambia questo colore' }, inp, h('b', String(i + 1)));
+    const next = () => { const a = ser.slice(); a[i] = inp.value.toLowerCase(); return { series: a }; };
+    inp.addEventListener('input', () => { sw.style.background = inp.value; lookPreview(next()); });
+    inp.addEventListener('change', () => set(next()));
+    return sw;
+  }));
+  const chartNow = L.series ? 'mine' : L.chart === 'auto' ? R.chart : L.chart;
+  const chartSel = selectInput([...(L.series ? [{ value: 'mine', label: 'Scelti da te' }] : []), ...Object.entries(CHARTS).map(([k, c]) => ({ value: k, label: c.label }))], chartNow, v => { if (v !== 'mine') set({ series: null, chart: v }); });
+
+  // macro categorie (Entrate / Uscite) e sezioni del Net Worth: il colore di ognuna
+  const valueOf = col => { const m = /^var\(--c(\d)\)$/.exec(col); return m ? +m[1] : col; };
+  const catRows = h('div.set-colors');
+  const drawCats = () => {
+    const groups = [...new Set(st.categories.filter(c => c.kind === colorKind && !c.archived).map(c => c.group))];
+    catRows.replaceChildren(...(groups.length ? groups.map(g => h('div.set-color-row', h('span.set-color-name', g),
+      colorChoice(valueOf(groupColor(st, colorKind, g)), null, { onDone: v => A.setGroupColor(colorKind, g, v) }))) : [h('p.muted', 'Nessuna categoria.')]));
+  };
+  drawCats();
+  const G = d.nwGroups();
+  const nwColor = (i, v) => {
+    const sections = G.sections.map((x, j) => ({ name: x.name, color: j === i ? v : x.color, items: x.items })).filter(x => x.items.length);
+    A.setSetting('nwLayout', { sections, labels: { ...G.labels } });
+  };
+  const nwRows = h('div.set-colors', G.sections.filter(x => x.items.length).length ? G.sections.map((x, i) => (x.items.length ? h('div.set-color-row', h('span.set-color-name', x.name),
+    colorChoice(x.shown, null, { onDone: v => nwColor(i, v) })) : null)) : h('p.muted', 'Il Net Worth è ancora vuoto.'));
+
+  return section('colors', 'Colori', 'Ogni colore si può cambiare: tocca il cerchio arcobaleno per la tavolozza completa.',
+    h('h3.set-sub', 'Colori dell\'app'),
+    app,
+    h('h3.set-sub', 'Colori dei grafici'),
+    h('p.set-hint', 'Torte, barre e linee usano questi 8 colori nell\'ordine; anche le macro categorie e le sezioni senza un colore scelto. Tocca un colore per cambiarlo.'),
+    h('div.series-bar', series, h('label.series-from', h('span.set-hint', 'Parti da'), chartSel)),
+    h('h3.set-sub', 'Macro categorie'),
+    h('div.set-cat-bar', segmented([{ value: 'income', label: 'Entrate' }, { value: 'expense', label: 'Uscite' }], colorKind, v => { colorKind = v; drawCats(); }, { small: true })),
+    catRows,
+    h('h3.set-sub', 'Sezioni del Net Worth'),
+    nwRows,
+    h('div.row-btns', twoTap('Tutti i colori come all\'inizio', () => {
+      set({ palette: 'excel', brand: '#1f4e79', head: '#1f3864', bg: '#eef0f4', chart: 'auto', series: null, pos: '', neg: '' });
+      toast('Colori di base rimessi (quelli delle categorie e delle sezioni restano)', { kind: 'ok' });
+    }, { cls: 'btn btn-ghost btn-sm', iconName: 'refresh', confirmLabel: 'Tocca di nuovo per confermare' })));
 }
 
 const setRow = (label, hint, ctl) => h('div.set-row', h('div.set-text', h('span.set-label', label), hint ? h('span.set-hint', hint) : null), ctl);
@@ -303,9 +364,9 @@ export default {
       section('look', 'Aspetto', null,
         h('div.theme-pick', [['auto', 'Automatico', 'monitor'], ['light', 'Chiaro', 'sun'], ['dark', 'Scuro', 'moon']].map(([v, l, ic]) => h('button.theme-opt', { type: 'button', class: s.theme === v ? 'on' : '', onclick: () => { A.setSetting('theme', v); applyTheme(v, S.state.settings.look); ctx.rerender(); } },
           h('span.theme-prev', { class: 'tp-' + v }, h('i'), h('i'), h('i')), h('span', icon(ic, 16), l)))),
-        h('h3.set-sub', 'Colori'),
         ...lookControls(ctx),
         toggle('Nascondi gli importi all\'apertura', s.hideAmounts, v => A.setSetting('hideAmounts', v), { hint: 'Utile in pubblico. Si mostrano con l\'occhio in alto o il tasto H' })),
+      colorsCard(ctx),
       section('security', 'Sicurezza', 'I dati sono cifrati con AES-256-GCM. La chiave nasce dalla tua password (PBKDF2-SHA256, ' + PBKDF2_ITER.toLocaleString('it-IT') + ' passaggi) e non lascia mai il dispositivo.',
         setRow('Blocco automatico', 'Dopo quanto tempo senza attività si chiude', selectInput([[1, '1 minuto'], [2, '2 minuti'], [5, '5 minuti'], [10, '10 minuti'], [15, '15 minuti'], [30, '30 minuti'], [60, '1 ora'], [0, 'Mai (sconsigliato)']].map(([v, l]) => ({ value: v, label: l })), s.lockMinutes, v => A.setSetting('lockMinutes', Number(v)))),
         h('div.row-btns',

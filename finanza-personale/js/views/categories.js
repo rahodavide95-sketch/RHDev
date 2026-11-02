@@ -3,7 +3,7 @@
    colorano, riordinano, nascondono, uniscono ed eliminano. */
 
 import { h, icon } from '../ui/dom.js';
-import { openSheet, field, textInput, segmented, toast } from '../ui/components.js';
+import { openSheet, field, textInput, segmented, toast, colorChoice } from '../ui/components.js';
 import { S } from '../session.js';
 import * as A from '../actions.js';
 import { categoryEditor, undoToast } from './editors.js';
@@ -11,6 +11,7 @@ import { categoryEditor, undoToast } from './editors.js';
 /** Colore del gruppo: quello scelto, altrimenti uno fisso ricavato dal nome. */
 export function groupColor(st, kind, group) {
   const n = st.settings.groupColors?.[`${kind}:${group}`];
+  if (typeof n === 'string') return n;            // colore scelto liberamente
   if (n) return `var(--c${n})`;
   // senza un colore scelto: uno diverso per ogni categoria, nell'ordine in cui compaiono
   const groups = [...new Set(st.categories.filter(c => c.kind === kind && !c.archived).map(c => c.group))];
@@ -25,13 +26,7 @@ function groupEditor(kind, group, onDone) {
   const st = S.state;
   const name = textInput({ value: group, max: 40, autofocus: true });
   let color = st.settings.groupColors?.[`${kind}:${group}`] || 0;
-  const sw = h('div.swatches', Array.from({ length: 8 }, (_, i) => {
-    const b = h('button.swatch', { type: 'button', 'aria-label': `Colore ${i + 1}`, 'aria-pressed': String(color === i + 1), style: { background: `var(--c${i + 1})` }, onclick: () => {
-      color = i + 1;
-      sw.querySelectorAll('.swatch').forEach((x, j) => x.setAttribute('aria-pressed', String(j === i)));
-    } });
-    return b;
-  }));
+  const sw = colorChoice(color, v => { color = v; });
   const save = () => {
     const nm = name.value.trim();
     if (!nm) return;

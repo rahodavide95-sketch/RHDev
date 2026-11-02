@@ -2,9 +2,9 @@
    così ogni modifica viene salvata cifrata e l'interfaccia si aggiorna. */
 
 import { S, commit } from './session.js';
-import { uid, stamp, hasPlan, isLiability, defaults, tidyPlan, applyTidy } from './core/model.js';
+import { uid, stamp, hasPlan, isLiability, defaults, tidyPlan, applyTidy, ASSET_CLASSES } from './core/model.js';
 import { convert } from './core/money.js';
-import { catKey } from './core/sheets.js';
+import { catKey, nameKey } from './core/sheets.js';
 import { normHead } from './core/invimport.js';
 import { today, addDays, occurrences, monthEnd as monthEndOf } from './core/dates.js';
 
@@ -450,13 +450,19 @@ export function importWorkbook({ nw = [], invest = null, cash = false, months = 
     const nwId = new Map(), byName = new Map();
     const accRows = nw.filter(r => !r.holding);
     for (const r of accRows) {
-      if (r.existing) { nwId.set(r.key, r.existing.id); continue; }
+      if (r.existing) {
+        nwId.set(r.key, r.existing.id);
+        // un conto importato prima prende il tipo di titolo letto ora (ETF, ETC…), se non l'aveva
+        const ex = find(st.accounts, r.existing.id);
+        if (ex && r.cls && !ex.cls) ex.cls = r.cls;
+        continue;
+      }
       // lo stesso conto in più fogli del patrimonio (es. uno per anno) resta uno solo
-      const nk = normHead(r.name);
+      const nk = nameKey(r.name);
       if (byName.has(nk)) { nwId.set(r.key, byName.get(nk)); continue; }
       const id = uid('a-');
       byName.set(nk, id);
-      st.accounts.push({ id, name: r.name.slice(0, 60), type: r.type, institution: (r.institution || '').slice(0, 60), currency: r.currency, emoji: '', color: '', archived: false, inNetWorth: !r.gross, notes: `Creato importando un file${r.section ? ` (sezione "${r.section.slice(0, 60)}")` : ''}${r.gross ? '. È il lordo: fuori dal patrimonio, conta il netto.' : ''}`, created: stamp(), order: st.accounts.length, plan: null });
+      st.accounts.push({ id, name: r.name.slice(0, 60), type: r.type, cls: r.cls || '', institution: (r.institution || '').slice(0, 60), currency: r.currency, emoji: '', color: '', archived: false, inNetWorth: !r.gross, notes: `Creato importando un file${r.section ? ` (sezione "${r.section.slice(0, 60)}")` : ''}${r.cls ? `. Valore di fine mese di un titolo (${ASSET_CLASSES[r.cls]?.label || r.cls}), come nel tuo Net Worth: non è negli Investimenti.` : ''}${r.gross ? '. È il lordo: fuori dal patrimonio, conta il netto.' : ''}`, created: stamp(), order: st.accounts.length, plan: null });
       nwId.set(r.key, id);
     }
     // costi del broker (bollo) sul suo conto di liquidità dal Net Worth (es. Trade Republic – Conto corrente)
@@ -510,8 +516,18 @@ export function importWorkbook({ nw = [], invest = null, cash = false, months = 
           }
         }
         const now = stamp();
-        st.transactions.push({ id: uid('t-'), date: t.date, kind: t.kind, amount: t.amount, account, toAccount: null, amountTo: null, category: cat, payee: t.payee.slice(0, 120), note: m.note || '', tags: [], recurring: null, created: now, updated: now, importHash: '', flagged: false });
+        st.transactions.push({ id: uid('t-'), date: t.date, kind: t.kind, amount: t.amount, account, toAccount: null, amountTo: null, category: cat, payee: t.payee.slice(0, 120), note: m.note || '', tags: [], recurring: null, created: now, updated: now, importHash: t.hash || '', flagged: false });
       }
+      // reimportando il file aggiornato: importi cambiati nel file si aggiornano, celle svuotate si tolgono
+      for (const u of m.plan.updates || []) {
+        const t = find(st.transactions, u.id);
+        if (!t) continue;
+        t.importHash = u.hash;
+        if (u.same) continue;
+        t.amount = u.amount; t.kind = u.kind; t.date = u.date; t.updated = stamp();
+      }
+      const drop = new Set((m.plan.removes || []).map(x => x.id));
+      if (drop.size) st.transactions = st.transactions.filter(t => !drop.has(t.id));
     }
     // i valori del patrimonio dopo i movimenti: a fine giornata il conto vale quanto scritto nel foglio
     // righe dei titoli: i valori di fine mese diventano la loro fotografia del mese
@@ -519,7 +535,7 @@ export function importWorkbook({ nw = [], invest = null, cash = false, months = 
       const hid = r.holding.id && find(st.holdings, r.holding.id) ? r.holding.id : r.holding.createdId;
       const hd = hid && find(st.holdings, hid);
       if (!hd) continue;
-      for (const v of r.values) {
+      for (const v of [...r.values, ...(r.changed || [])]) {
         const m = v.date.slice(0, 7);
         if (v.date !== monthEndOf(m)) continue;
         // valore nel Net Worth (valuta principale, come nel foglio); gli Investimenti restano a sé
@@ -547,6 +563,12 @@ export function importWorkbook({ nw = [], invest = null, cash = false, months = 
     for (const r of accRows) {
       const account = nwId.get(r.key);
       const liab = isLiability({ type: r.type });
+      // valori corretti nel file dopo l'ultimo import: il punto fermo di quella data prende il valore nuovo
+      for (const v of r.changed || []) {
+        const z = st.valuations.find(y => y.account === account && y.date === v.date);
+        if (z) { const c = Math.round(v.value * 100); z.value = liab ? -Math.abs(c) : c; z.note = 'Dal file (aggiornato)'; }
+        seen.add(account + v.date);
+      }
       for (const v of r.values) {
         if (seen.has(account + v.date)) continue;
         seen.add(account + v.date);

@@ -13,10 +13,10 @@ import { moneyText } from '../ui/fmt.js';
 import { parseCSV } from '../core/csv.js';
 import { readXlsx, isZip } from '../core/xlsx.js';
 import { FIELDS, readOperations, checkTotals, planImport, opNet } from '../core/invimport.js';
-import { detectSheet, sheetHints, readMonths, planMonths, readNetWorth, planNetWorth, catKey } from '../core/sheets.js';
-import { ASSET_CLASSES, ACCOUNT_TYPES, hasHoldings, hasPlan } from '../core/model.js';
+import { detectSheet, sheetHints, readMonths, planMonths, readNetWorth, planNetWorth, catKey, nameKey, reconcileNetWorth, niceName } from '../core/sheets.js';
+import { ASSET_CLASSES, ACCOUNT_TYPES, hasHoldings, hasPlan, derive } from '../core/model.js';
 import { CURRENCIES } from '../core/money.js';
-import { formatDate, today } from '../core/dates.js';
+import { formatDate, today, monthName } from '../core/dates.js';
 import { importWorkbook } from '../actions.js';
 
 const KIND = { buy: ['acquisto', 'acquisti'], sell: ['vendita', 'vendite'], div: ['cedola', 'cedole'], fee: ['costo', 'costi'] };
@@ -166,12 +166,13 @@ export async function openFileImport(ctx) {
           const o = x.rows.get(key) || {};
           return { ...r, key, on: o.on ?? r.on, type: o.type || r.type, currency: o.currency || r.currency };
         });
-        const on = rows.filter(r => r.on && r.values.length);
+        const on = rows.filter(r => r.on && (r.values.length || r.changed.length));
+        x.check = { read, rows };
         nwRows.push(...on);
         const dates = read.dates.filter(d => d <= refDate);
         const nVals = on.reduce((a, r) => a + r.values.length, 0);
         sec.push(h('div.imp-summary',
-          h('div.imp-big', on.length ? [on.filter(r => !r.holding).length ? plural(on.filter(r => !r.holding).length, ['conto', 'conti']) : '', on.filter(r => r.holding).length ? plural(on.filter(r => r.holding).length, ['titolo', 'titoli']) : '', plural(nVals, ['valore', 'valori'])].filter(Boolean).join(', ') : 'Niente di nuovo'),
+          h('div.imp-big', on.length ? [on.filter(r => !r.holding && !r.existing).length ? plural(on.filter(r => !r.holding && !r.existing).length, ['riga nuova', 'righe nuove']) : '', on.filter(r => r.holding).length ? plural(on.filter(r => r.holding).length, ['titolo degli Investimenti', 'titoli degli Investimenti']) : '', nVals ? plural(nVals, ['valore', 'valori']) : '', on.some(r => r.changed.length) ? plural(on.reduce((a, r) => a + r.changed.length, 0), ['aggiornato', 'aggiornati']) : ''].filter(Boolean).join(', ') : 'Niente di nuovo'),
           dates.length ? h('p.muted', `Valori dal ${formatDate(dates[0], { year: true })} al ${formatDate(dates[dates.length - 1], { year: true })}: ognuno diventa il saldo del conto a quella data.`) : null,
           h('p.muted', 'Le righe di totale, guadagno, percentuale e l\'Asset Allocation sono calcoli del foglio: non le importo, le uso per il controllo.')));
         const bad = read.checks.filter(c => !c.ok);
@@ -185,8 +186,11 @@ export async function openFileImport(ctx) {
         }
         const future = rows.filter(r => r.on).reduce((a, r) => a + r.future, 0);
         if (future) sec.push(h('p.field-hint', `${plural(future, ['valore con data futura non importato', 'valori con data futura non importati'])}.`));
-        const known = rows.filter(r => r.existing).reduce((a, r) => a + r.known, 0);
-        if (known) sec.push(h('p.field-hint', `${plural(known, ['valore era', 'valori erano'])} già nell'app: non li importo di nuovo.`));
+        const known = rows.reduce((a, r) => a + r.known, 0);
+        if (known) sec.push(h('p.field-hint', `${plural(known, ['valore era', 'valori erano'])} già nell'app uguale: non li importo di nuovo.`));
+        const ch = rows.filter(r => r.on && r.changed.length);
+        if (ch.length) sec.push(banner('info', h('b', `${plural(ch.reduce((a, r) => a + r.changed.length, 0), ['valore cambiato', 'valori cambiati'])} nel file dall'ultima volta: li aggiorno. `),
+          ch.flatMap(r => r.changed.map(v => `${r.name} al ${formatDate(v.date, { year: true })}: ${moneyText(cents(v.was), r.currency)} → ${moneyText(cents(v.value), r.currency)}`)).slice(0, 8).join('; ') + (ch.reduce((a, r) => a + r.changed.length, 0) > 8 ? '…' : '.')));
         const typeOpts = Object.entries(ACCOUNT_TYPES).filter(([k]) => !ACCOUNT_TYPES[k].plan).map(([k, t]) => ({ value: k, label: t.label }));
         const curOpts = Object.keys(CURRENCIES).map(c => ({ value: c, label: c }));
         const set = (key, patch) => { x.rows.set(key, { ...(x.rows.get(key) || {}), ...patch }); draw(); };
@@ -194,21 +198,21 @@ export async function openFileImport(ctx) {
         const list = [];
         for (const r of rows) {
           if (r.section !== lastSection) { lastSection = r.section; if (r.section) list.push(h('div.imp-section', r.section)); }
-          const last = r.values[r.values.length - 1];
+          const last = r.values[r.values.length - 1] || r.changed[r.changed.length - 1];
           list.push(h('div.imp-nw-row', { class: r.on ? '' : 'off' },
             h('label.row.imp-line',
               h('input', { type: 'checkbox', checked: r.on, disabled: !r.values.length, onchange: e => set(r.key, { on: e.target.checked }) }),
-              h('span.row-main', h('span.row-title', r.name, r.existing ? h('span.pill', 'conto già presente') : null, r.holding ? h('span.pill', 'titolo') : null),
+              h('span.row-main', h('span.row-title', r.name, r.existing ? h('span.pill', 'già nell\'app') : null, r.holding ? h('span.pill', 'titolo degli Investimenti') : r.cls ? h('span.pill', 'titolo') : null),
                 h('span.row-sub', (r.holding
                   ? [`valori di fine mese di «${r.holding.name}»`, plural(r.values.length, ['valore', 'valori'])]
-                  : [ACCOUNT_TYPES[r.type]?.label, r.currency !== st.settings.currency ? r.currency : '', plural(r.values.length, ['valore', 'valori']), r.reason]).filter(Boolean).join(' · '))),
+                  : [r.cls ? ASSET_CLASSES[r.cls].label : ACCOUNT_TYPES[r.type]?.label, r.currency !== st.settings.currency ? r.currency : '', r.values.length ? plural(r.values.length, ['valore nuovo', 'valori nuovi']) : '', r.changed.length ? plural(r.changed.length, ['aggiornato', 'aggiornati']) : '', r.reason]).filter(Boolean).join(' · '))),
               h('span.row-end', last ? moneyText(cents(last.value), r.currency) : '—')),
             r.on && !r.existing && !r.holding ? h('div.imp-row-opts',
               selectInput(typeOpts, r.type, val => set(r.key, { type: val })),
               selectInput(curOpts, r.currency, val => set(r.key, { currency: val }))) : null));
         }
         sec.push(h('details.imp-cols', { open: true }, h('summary', `Righe del foglio: ${rows.length}`),
-          h('p.field-hint', 'Togli la spunta a quello che non vuoi importare; per i conti nuovi puoi cambiare il tipo e la valuta. Le righe dei titoli (ETF, azioni, crypto…) non diventano conti: i loro valori diventano il valore di fine mese di quel titolo, così nulla si conta due volte. Il TFR lordo resta fuori: conta il netto.'),
+          h('p.field-hint', 'Togli la spunta a quello che non vuoi importare; per le righe nuove puoi cambiare il tipo e la valuta. Le righe dei titoli (ETF, azioni, oro, crypto…) restano nel Net Worth col loro tipo (dalla colonna Type); se lo stesso titolo è anche negli Investimenti i valori vanno a quel titolo, così nulla si conta due volte. Due righe con lo stesso nome (es. Contanti in euro e in dollari) restano separate. Il TFR lordo resta fuori: conta il netto.'),
           h('div.import-preview.imp-nw', list)));
       }
       nwParts.push(h('section.imp-sheet', sec));
@@ -243,7 +247,7 @@ export async function openFileImport(ctx) {
           : x.target.startsWith('nw:') ? 'A ogni fine mese il conto vale comunque quanto scritto nel foglio del patrimonio.' : 'Attenzione: entrate e uscite cambiano il saldo di questo conto.'));
         const cats = plan.newCats.map(c => (c.group === c.name ? c.name : `${c.group} › ${c.name}`));
         sec.push(h('div.imp-summary',
-          h('div.imp-big', plan.txs.length ? `${plural(plan.txs.length, ['movimento', 'movimenti'])} · ${moneyText(plan.total)}` : 'Niente di nuovo da importare'),
+          h('div.imp-big', plan.txs.length ? `${plural(plan.txs.length, ['movimento', 'movimenti'])} · ${moneyText(plan.total)}` : plan.changed.length || plan.removes.length ? plural(plan.changed.length + plan.removes.filter(x => !x.merged).length, ['importo da aggiornare', 'importi da aggiornare']) : 'Niente di nuovo da importare'),
           h('p.muted', `${plural(read.lines.length, ['riga', 'righe'])}, un movimento per ogni mese con un importo, datato all'ultimo giorno del mese. La descrizione è la nota della riga, se c'è, altrimenti la sottocategoria.`),
           cats.length ? h('p.muted', `Categorie nuove (${cats.length}): ${cats.slice(0, 12).join(', ')}${cats.length > 12 ? '…' : ''}`) : h('p.muted', 'Tutte le categorie ci sono già.')));
         const bad = read.checks.filter(c => !c.ok), good = read.checks.filter(c => c.ok);
@@ -251,12 +255,24 @@ export async function openFileImport(ctx) {
         if (bad.length) sec.push(banner('warn', h('b', 'Da controllare. '), bad.map(c => c.file != null ? `riga ${c.row} (${c.group}): il totale del file è ${moneyText(cents(c.file))}, la somma dei mesi ${moneyText(cents(c.ours))}` : `riga ${c.row} (${c.group}): il totale non coincide con le sottocategorie`).slice(0, 8).join('; ') + '.'));
         if (read.stats?.length) sec.push(h('p.field-hint', `Righe di riepilogo, non ${x.mkind === 'income' ? 'entrate' : 'uscite'}, saltate: ${read.stats.slice(0, 6).map(r => `«${r.label}»`).join(', ')}${read.stats.length > 6 ? '…' : ''}.`));
         if (plan.future) sec.push(h('p.field-hint', `${plural(plan.future, ['importo nei mesi futuri non importato', 'importi nei mesi futuri non importati'])} (previsioni).`));
-        if (plan.dups) sec.push(h('p.field-hint', `${plural(plan.dups, ['movimento era', 'movimenti erano'])} già nell'app (stessa data, importo e descrizione): non li importo di nuovo.`));
+        if (plan.dups) sec.push(h('p.field-hint', `${plural(plan.dups, ['importo era', 'importi erano'])} già nell'app uguale: non li importo di nuovo.`));
+        const mon = ym => `${monthName(Number(ym.slice(5)), true)} ${ym.slice(0, 4)}`;
+        if (plan.changed.length) sec.push(banner('info', h('b', `${plural(plan.changed.length, ['importo cambiato', 'importi cambiati'])} nel file dall'ultima volta: li aggiorno (niente doppioni). `),
+          plan.changed.slice(0, 8).map(u => `${u.payee}, ${mon(u.ym)}: ${moneyText(u.was)} → ${moneyText(u.now)}`).join('; ') + (plan.changed.length > 8 ? '…' : '.')));
+        const gone = plan.removes.filter(x => !x.merged);
+        if (gone.length) sec.push(banner('warn', h('b', `${plural(gone.length, ['importo tolto', 'importi tolti'])} dal file: lo tolgo anche dall'app. `),
+          gone.slice(0, 8).map(u => `${u.payee}, ${mon(u.ym)} (${moneyText(u.was)})`).join('; ') + (gone.length > 8 ? '…' : '.')));
         if (read.lines.length) {
-          sec.push(h('details.imp-cols', h('summary', 'Vedi le righe'),
-            h('div.import-preview', h('div.rows', read.lines.map(l => h('div.row',
-              h('span.row-main', h('span.row-title', [l.group, l.sub].filter(Boolean).join(' › ')), h('span.row-sub', [l.note, `riga ${l.row}`].filter(Boolean).join(' · '))),
-              h('span.row-end', moneyText(cents(l.total)))))))));
+          // come viene schedata ogni riga: macro categoria › voce, la nota come descrizione, categoria nuova o già nell'app
+          const isNew = new Set(plan.newCats.map(c => c.key));
+          sec.push(h('details.imp-cols', h('summary', `Come schedo le ${plural(read.lines.length, ['riga', 'righe'])}`),
+            h('div.import-preview', h('div.rows', read.lines.map(l => {
+              const k = catKey(niceName(l.group), niceName(l.sub || l.group));
+              return h('div.row',
+                h('span.row-main', h('span.row-title', [l.group, l.sub].filter(Boolean).join(' › '), h('span.pill', isNew.has(k) ? 'categoria nuova' : 'già nell\'app')),
+                  h('span.row-sub', [l.note ? `descrizione «${l.note}»` : '', `riga ${l.row}`].filter(Boolean).join(' · '))),
+                h('span.row-end', moneyText(cents(l.total))));
+            }), (read.stats || []).map(r => h('div.row.off', h('span.row-main', h('span.row-title', r.label), h('span.row-sub', `riga ${r.row} · saltata: è una statistica, non ${x.mkind === 'income' ? 'un\'entrata' : 'un\'uscita'}`))))))));
         }
       }
       mParts.push(h('section.imp-sheet', sec));
@@ -268,9 +284,12 @@ export async function openFileImport(ctx) {
 
     const nTx = monthJobs.reduce((a, m) => a + m.plan.txs.length, 0);
     const nVals = nwRows.reduce((a, r) => a + r.values.length, 0);
+    const nUpd = monthJobs.reduce((a, m) => a + m.plan.changed.length + m.plan.removes.filter(x => !x.merged).length, 0) + nwRows.reduce((a, r) => a + r.changed.length, 0);
+    const relabel = monthJobs.some(m => m.plan.updates.length);
     const pieces = [];
-    const nwAcc = nwRows.filter(r => !r.holding).length, nwHd = nwRows.length - nwAcc;
-    if (nwAcc) pieces.push(plural(nwAcc, ['conto', 'conti']));
+    const nwAcc = nwRows.filter(r => !r.holding && !r.existing).length, nwHd = nwRows.filter(r => r.holding).length;
+    if (nwAcc) pieces.push(plural(nwAcc, ['riga del Net Worth', 'righe del Net Worth']));
+    else if (nVals) pieces.push(plural(nVals, ['valore', 'valori']));
     if (nwHd) pieces.push(plural(nwHd, ['titolo nel Net Worth', 'titoli nel Net Worth']));
     if (invest?.count) pieces.push(plural(invest.count, ['operazione', 'operazioni']));
     if (nTx) pieces.push(plural(nTx, ['movimento', 'movimenti']));
@@ -278,7 +297,10 @@ export async function openFileImport(ctx) {
     const catWork = m => m.plan.newCats.length + (m.onlyFile ? st.categories.filter(c => { const n = c.kind === m.kind && m.plan.names?.[catKey(c.group, c.name)]; return n && (c.name !== n.name || c.group !== n.group); }).length : 0);
     const nCat = monthJobs.reduce((a, m) => a + catWork(m), 0);
     if (nCat && !nTx) pieces.push(plural(nCat, ['categoria', 'categorie']));
-    job = pieces.length ? { nw: nwRows, invest: invest?.count ? invest : null, months: monthJobs.filter(m => m.plan.txs.length || catWork(m)), text: pieces.join(', '), nVals, nTx } : null;
+    if (nUpd) pieces.push(plural(nUpd, ['valore aggiornato', 'valori aggiornati']));
+    // anche solo l'impronta sulle celle importate prima (per riconoscerle le volte dopo): import silenzioso
+    const work = pieces.length || relabel;
+    job = work ? { nw: nwRows, invest: invest?.count ? invest : null, months: monthJobs.filter(m => m.plan.txs.length || catWork(m) || m.plan.updates.length || m.plan.removes.length), text: pieces.join(', ') || 'file già allineato', nVals, nTx } : null;
     btn.disabled = !job;
     btn.textContent = job ? `Importa: ${job.text}` : 'Niente da importare';
     body.replaceChildren(...parts);
@@ -288,12 +310,83 @@ export async function openFileImport(ctx) {
     if (!job) return;
     importWorkbook({ nw: job.nw, invest: job.invest, cash: v.cash, months: job.months });
     const tk = undoToken();
-    toast(`Importato: ${job.text}`, { kind: 'ok', action: { label: 'Annulla', fn: () => { if (undo(tk)) toast('Importazione annullata'); else toast('Non si può più annullare: nel frattempo hai fatto altre modifiche'); } } });
+    // controllo col foglio: il Net Worth dell'app mese per mese accanto al totale del file
+    const checks = job.nw.length ? sheets.filter(x => x.kind === 'networth' && x.on && x.check).map(x => ({ name: x.sh.name, ...fileCheck(x.check, refDate) })).filter(c => c.months.length) : [];
+    const allOk = checks.length && checks.every(c => c.months.length && c.ok === c.months.length);
+    toast(`Importato: ${job.text}${allOk ? ` · il Net Worth coincide col tuo foglio in tutti i ${checks.reduce((a, c) => a + c.months.length, 0)} mesi ✓` : ''}`, { kind: 'ok', action: { label: 'Annulla', fn: () => { if (undo(tk)) toast('Importazione annullata'); else toast('Non si può più annullare: nel frattempo hai fatto altre modifiche'); } } });
     s.close(true);
+    if (checks.some(c => c.ok < c.months.length)) setTimeout(() => showFileCheck(checks), 350);
     if (job.nw.length) ctx.go('patrimonio');
     else if (job.months.length) ctx.go('entrate-uscite?tipo=' + (job.months[0].kind === 'income' ? 'entrate' : 'uscite'));
     else ctx.go('investimenti?vista=anni');
   });
   draw();
   const s = openSheet({ title: 'Importa da Excel', subtitle: f.name, size: 'lg', body, footer: [btn] });
+}
+
+/* ─── Controllo dopo l'import: il Net Worth dell'app accanto a quello del foglio ─── */
+function fileCheck({ read, rows }, refDate) {
+  const d = derive(S.state);
+  const dates = read.dates.filter(x => x <= refDate);
+  const T = d.nwTable(dates);
+  const ix = new Map(dates.map((x, i) => [x, i]));
+  const byFileRow = new Map(rows.map(r => [r.row, r]));
+  const secByName = new Map(T.sections.map(x => [nameKey(x.name), x]));
+  const app = {
+    grand: date => T.total[ix.get(date)] ?? 0,
+    section: (name, date) => secByName.get(nameKey(name))?.total[ix.get(date)] ?? null,
+    row: (a, date) => {
+      const r = byFileRow.get(a.row);
+      if (!r || r.gross) return null;
+      const k = nameKey(r.name);
+      for (const x of T.sections) for (const y of x.rows) if (nameKey(y.name) === k || nameKey(y.label) === k) return y.values[ix.get(date)] ?? null;
+      return null;
+    },
+  };
+  return reconcileNetWorth(read, app, { refDate });
+}
+
+/** "gen–ott 2026", "dic 2025, gen–mar 2026": i mesi di fila uniti. */
+function monthsText(dates) {
+  const ks = [...new Set(dates.map(x => x.slice(0, 7)))].sort();
+  const out = [];
+  for (let i = 0; i < ks.length;) {
+    let j = i;
+    const next = k => { const [y, m] = k.split('-').map(Number); return m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`; };
+    while (j + 1 < ks.length && ks[j + 1] === next(ks[j])) j++;
+    const a = ks[i], b = ks[j], nm = k => monthName(Number(k.slice(5)), true);
+    out.push(i === j ? `${nm(a)} ${a.slice(0, 4)}` : a.slice(0, 4) === b.slice(0, 4) ? `${nm(a)}–${nm(b)} ${a.slice(0, 4)}` : `${nm(a)} ${a.slice(0, 4)}–${nm(b)} ${b.slice(0, 4)}`);
+    i = j + 1;
+  }
+  return out.join(', ');
+}
+
+function causeText(c) {
+  const when = monthsText(c.dates);
+  switch (c.kind) {
+    case 'carry': return [h('b', c.name), `: nel foglio è vuoto (${when}); nell'app resta l'ultimo valore scritto, ${moneyText(c.app)}, finché non ne metti uno nuovo.`];
+    case 'fx': return [h('b', c.name), ` è in ${c.currency}: l'app lo converte in euro col cambio, il foglio lo somma così com'è (${when}).`];
+    case 'allocEmpty': return ['Nella tua Asset Allocation la riga ', h('b', `«${c.name}»`), ` è vuota (${when}), ma la sezione ${c.section} ha dei valori: il totale del tuo foglio in quei mesi non la conta. L'app sì.`];
+    case 'alloc': return ['Nella tua Asset Allocation la riga ', h('b', `«${c.name}»`), ` non coincide con il totale della sezione ${c.section} (${when}).`];
+    case 'row': return [h('b', c.name), `: valore diverso da quello del foglio (${when}).`];
+    case 'section': return ['Sezione ', h('b', c.section), `: totale diverso da quello del foglio (${when}).`];
+    default: return [`Il totale del tuo foglio non è la somma delle sue sezioni (${when}).`];
+  }
+}
+
+function showFileCheck(checks) {
+  const body = h('div.stack', ...checks.flatMap(c => {
+    const bad = c.months.filter(m => m.diff);
+    return [
+      checks.length > 1 ? h('h3.set-sub', c.name) : null,
+      banner(bad.length ? 'warn' : 'ok', h('b', `Coincide in ${c.ok} ${c.ok === 1 ? 'mese' : 'mesi'} su ${c.months.length}. `), bad.length ? 'Qui sotto il perché delle differenze: i valori importati sono quelli del foglio.' : ''),
+      c.causes.length ? h('ul.check-causes', c.causes.map(x => h('li', ...causeText(x)))) : null,
+      h('div.table-wrap', h('table.table.check-table',
+        h('thead', h('tr', h('th', 'Fine mese'), h('th.num', 'Tuo foglio'), h('th.num', 'App'), h('th.num', 'Differenza'))),
+        h('tbody', c.months.map(m => h('tr', { class: m.diff ? 'diff' : '' },
+          h('td', formatDate(m.date, { year: true })), h('td.num', moneyText(m.file)), h('td.num', moneyText(m.app)),
+          h('td.num', { class: m.diff ? 'gap' : 'ok' }, m.diff ? moneyText(m.diff, undefined, { sign: true }) : '✓')))))),
+    ];
+  }));
+  openSheet({ title: 'Controllo col tuo foglio', subtitle: 'Il Net Worth dell\'app, fine mese per fine mese, accanto al totale del file', size: 'md', body });
 }

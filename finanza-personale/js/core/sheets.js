@@ -159,8 +159,8 @@ export function currencyFor(type) {
 
 export function readNetWorth(rows, info, { nums } = {}) {
   const { dates, typeCol, nameCol } = info;
-  const accounts = [], totals = [], skipped = [];
-  let section = '', skipSection = false;
+  const accounts = [], totals = [], skipped = [], alloc = [];
+  let section = '', skipSection = false, grand = null;
   for (let i = info.index + 1; i < rows.length; i++) {
     const r = rows[i] || [];
     const row = nums ? nums[i] : i + 1;
@@ -174,7 +174,12 @@ export function readNetWorth(rows, info, { nums } = {}) {
       skipSection = /allocation|allocazion|riepilog|summary|sintesi/i.test(name);
       continue;
     }
-    if (skipSection) continue;
+    if (skipSection) {
+      // nell'Asset Allocation: il totale è il Net Worth del foglio, le righe i totali per tipo (per il controllo)
+      if (/^tot/i.test(name || type) && has && !grand) grand = vals;
+      else if (name && has && !TOTAL_RE.test(name || type)) alloc.push({ row, name, values: vals });
+      continue;
+    }
     const label = name || type;
     if (TOTAL_RE.test(label)) {
       if (/^tot/i.test(label) && has) totals.push({ row, section, values: vals });
@@ -198,7 +203,7 @@ export function readNetWorth(rows, info, { nums } = {}) {
     const bad = t.values.filter(v => v.value != null && Math.abs(v.value - sumOf(own, v.date)) >= 0.01 && Math.abs(v.value - sumOf(net, v.date)) >= 0.01);
     return { row: t.row, section: t.section, ok: !bad.length, bad: bad.map(v => v.date) };
   });
-  return { accounts, checks, skipped, dates: dates.map(d => d.date) };
+  return { accounts, checks, skipped, dates: dates.map(d => d.date), grand, alloc, sectionTotals: totals };
 }
 
 /** Riga del patrimonio che corrisponde a un titolo già negli investimenti (per non contarlo due volte). */
@@ -229,39 +234,74 @@ const lastDay = (y, m) => new Date(y, m + 1, 0).getDate();
 
 /** Movimenti dal foglio mese per mese: uno per cella, all'ultimo giorno del mese
     (o a oggi per il mese in corso); i mesi futuri si saltano. */
+/** Nome di un conto per riconoscerlo: come normHead ma tiene quello tra parentesi
+    ("Contanti (Euro)" e "Contanti (Dollari)" sono due conti, "Oro (Piattaforma)" non è "Oro"). */
+export const nameKey = x => String(x ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  .replace(/[()€$%:.*#_'’`]/g, ' ').replace(/\s+/g, ' ').trim();
+
+/* Ogni cella del foglio (mese, categoria, voce) ha un'impronta salvata nel movimento (`importHash`):
+   reimportando lo stesso file aggiornato si riconosce la stessa cella anche se l'importo è cambiato. */
+const fnv = str => { let x = 0x811c9dc5; for (let i = 0; i < str.length; i++) { x ^= str.charCodeAt(i); x = Math.imul(x, 0x01000193) >>> 0; } return x.toString(16).padStart(8, '0'); };
+export const cellHash = (kind, ym, key, payee) => { const id = `${kind}|${ym}|${key}|${normHead(payee)}`; return 'xl:' + fnv(id) + fnv(id.split('').reverse().join('')); };
+
 export function planMonths(read, state, { year, kind, refDate }) {
   const cats = state.categories.filter(c => c.kind === kind);
   // stessa categoria solo se coincidono categoria e sottocategoria: "MUSICA › ROYALTIES" non è "Lavoro › Royalties"
   const find = (g, n) => cats.find(c => catKey(c.group, c.name) === catKey(g, n));
+  const other = kind === 'income' ? 'expense' : 'income';
   const newCats = new Map();
-  const txs = [];
-  let dups = 0, future = 0;
+  const cells = new Map();
+  let future = 0;
   for (const l of read.lines) {
     const group = niceName(l.group), name = niceName(l.sub || l.group);
     const cat = find(group, name);
     const k = catKey(group, name);
     if (!cat && !newCats.has(k)) newCats.set(k, { key: k, group, name });
     const payee = l.note || name;
-    l.values.forEach((v, m) => {
-      if (!v) return;
+    for (let m = 0; m < 12; m++) {
+      const v = l.values[m] || 0;
       let date = `${year}-${pad(m + 1)}-${pad(lastDay(year, m))}`;
       if (date.slice(0, 7) === refDate.slice(0, 7) && date > refDate) date = refDate;
-      if (date > refDate) { future++; return; }
-      const amount = Math.round(Math.abs(v) * 100);
-      const tk = v < 0 ? (kind === 'income' ? 'expense' : 'income') : kind;     // un importo negativo è il contrario (es. un rimborso)
+      if (date > refDate) { if (v) future++; continue; }
+      const ym = date.slice(0, 7), hash = cellHash(kind, ym, k, payee);
+      const c = cells.get(hash) || { hash, ym, date, value: 0, row: l.row, catKey: k, cat, payee, group, name };
+      c.value += v;          // due righe uguali nel foglio = una cella sola (la somma)
+      cells.set(hash, c);
+    }
+  }
+  const txs = [], updates = [], removes = [];
+  let dups = 0;
+  for (const c of cells.values()) {
+    const want = Math.round(c.value * 100);
+    const amount = Math.abs(want), tk = want < 0 ? other : kind;     // un importo negativo è il contrario (es. un rimborso)
+    let mine = state.transactions.filter(t => t.importHash === c.hash);
+    // importati prima delle impronte: stesso mese, categoria e descrizione
+    if (!mine.length && c.cat) mine = state.transactions.filter(t => !t.importHash && t.category === c.cat.id && t.date.slice(0, 7) === c.ym && (t.payee || '') === c.payee && (t.kind === kind || t.kind === other));
+    const net = mine.reduce((a, t) => a + (t.kind === kind ? t.amount : -t.amount), 0);
+    if (!mine.length) {
+      if (!want) continue;
       // già nell'app (in qualunque conto: anche se l'altra volta è finito in un altro conto non va contato due volte)
-      if (state.transactions.some(t => t.date === date && t.amount === amount && t.kind === tk && (t.payee || '') === payee)) { dups++; return; }
-      txs.push({ row: l.row, date, kind: tk, amount, catKey: k, catId: cat?.id || null, payee, group, name });
-    });
+      if (state.transactions.some(t => t.date === c.date && t.amount === amount && t.kind === tk && (t.payee || '') === c.payee)) { dups++; continue; }
+      txs.push({ row: c.row, date: c.date, kind: tk, amount, catKey: c.catKey, catId: c.cat?.id || null, payee: c.payee, group: c.group, name: c.name, hash: c.hash });
+    } else if (net === want) {
+      if (want) dups++;
+      // si segna l'impronta anche su quelli importati prima, per le volte dopo
+      for (const t of mine) if (t.importHash !== c.hash) updates.push({ id: t.id, same: true, hash: c.hash });
+    } else if (!want) {
+      // cella svuotata nel file: si tolgono solo i movimenti nati da quella cella
+      for (const t of mine) if (t.importHash === c.hash) removes.push({ id: t.id, ym: c.ym, payee: c.payee, was: t.amount });
+    } else {
+      updates.push({ id: mine[0].id, date: c.date, kind: tk, amount, hash: c.hash, ym: c.ym, payee: c.payee, was: net, now: want });
+      for (const t of mine.slice(1)) removes.push({ id: t.id, ym: c.ym, payee: c.payee, was: t.amount, merged: true });
+    }
   }
   const keys = [...new Set(read.lines.map(l => catKey(niceName(l.group), niceName(l.sub || l.group))))];
   // i nomi come scritti nel file, per ogni categoria (anche quelle che ci sono già)
   const names = Object.fromEntries(read.lines.map(l => [catKey(niceName(l.group), niceName(l.sub || l.group)), { group: niceName(l.group), name: niceName(l.sub || l.group) }]));
-  return { txs, newCats: [...newCats.values()], keys, names, dups, future, total: txs.reduce((a, t) => a + (t.kind === kind ? t.amount : -t.amount), 0) };
+  const changed = updates.filter(u => !u.same);
+  return { txs, updates, removes, changed, newCats: [...newCats.values()], keys, names, dups, future, total: txs.reduce((a, t) => a + (t.kind === kind ? t.amount : -t.amount), 0) };
 }
 
-/** Conti e valori di fine mese dal foglio del patrimonio. `holdings` sono anche i titoli che
-    arrivano dal foglio delle operazioni dello stesso file: le loro righe non si contano due volte. */
 /** TFR e simili: conta solo il netto. Lordo = "lordo" nel nome, o la stessa voce senza "netto"
     ("TFR" accanto a "TFR netto") nella stessa sezione. */
 export function isGross(a, all) {
@@ -269,6 +309,80 @@ export function isGross(a, all) {
   const words = x => normHead(x).split(/[^a-z0-9]+/).filter(w => w && !/^(nett|lord)/.test(w));
   const netRow = all.find(b => b !== a && b.section === a.section && /nett/i.test(b.name));
   return !!netRow && (/lord/i.test(a.name) || (words(a.name).length > 0 && words(a.name).every(w => words(netRow.name).includes(w))));
+}
+
+/** Controllo dopo l'import: il Net Worth dell'app mese per mese accanto a quello del foglio, e il
+    perché delle differenze. `app` = { grand(date), section(nome, date), row(nome, date) } in centesimi.
+    Cause, raggruppate sui mesi: una sezione che nell'app vale diverso (riga in un'altra valuta,
+    ultimo valore che resta nei mesi vuoti del foglio) o un totale del foglio che non è la somma delle
+    sue sezioni (una riga dell'Asset Allocation vuota o diversa dalla sezione). */
+export function reconcileNetWorth(read, app, { refDate } = {}) {
+  const c = v => (v == null ? null : Math.round(v * 100));
+  const at = (vals, date) => c(vals?.find(v => v.date === date)?.value);
+  // senza totali nel foglio (né Total delle sezioni né quello del Net Worth) non c'è niente da confrontare
+  if (!read.grand && !read.sectionTotals?.length) return { months: [], ok: 0, causes: [] };
+  const dates = read.dates.filter(d => !refDate || d <= refDate);
+  const secOf = name => {
+    const k = nameKey(name), w = normHead(name).split(' ')[0];
+    return read.sectionTotals.find(t => nameKey(t.section) === k)
+      || read.sectionTotals.find(t => read.accounts.some(a => a.section === t.section && nameKey(a.name) === k))
+      || read.sectionTotals.find(t => w && normHead(t.section).split(/[^a-z0-9]+/).includes(w));
+  };
+  const causes = new Map();
+  const add = (key, base, date) => { const x = causes.get(key) || { ...base, dates: [] }; x.dates.push(date); causes.set(key, x); };
+  const months = [];
+  for (const date of dates) {
+    const secs = read.sectionTotals.map(t => ({ section: t.section, file: at(t.values, date), app: app.section(t.section, date) }));
+    const sum = secs.reduce((a, x) => a + (x.file || 0), 0);
+    const file = read.grand ? at(read.grand, date) ?? sum : sum;
+    const mine = app.grand(date) || 0;
+    if (Math.abs(mine - file) < 1 && secs.every(x => Math.abs((x.app || 0) - (x.file || 0)) < 1)) { months.push({ date, file, app: mine, diff: 0 }); continue; }
+    for (const x of secs) {
+      if (Math.abs((x.app || 0) - (x.file || 0)) < 1) continue;
+      // il perché, riga per riga
+      let why = false;
+      for (const a of read.accounts.filter(y => y.section === x.section)) {
+        const f = at(a.values, date), m = app.row(a, date);
+        if (m == null || Math.abs((m || 0) - (f || 0)) < 1) continue;
+        why = true;
+        if (f == null) add(`carry|${a.row}`, { kind: 'carry', name: a.name, section: x.section, app: m }, date);
+        else if (currencyFor(a.type)) add(`fx|${a.row}`, { kind: 'fx', name: a.name, section: x.section, currency: currencyFor(a.type) }, date);
+        else add(`row|${a.row}`, { kind: 'row', name: a.name, section: x.section }, date);
+      }
+      if (!why) add(`sec|${x.section}`, { kind: 'section', section: x.section }, date);
+    }
+    if (read.grand && at(read.grand, date) != null && Math.abs(at(read.grand, date) - sum) >= 1) {
+      // il totale del foglio non è la somma delle sue sezioni: quale riga dell'Asset Allocation non torna
+      let why = false;
+      for (const a of read.alloc) {
+        const t = secOf(a.name);
+        if (!t) continue;
+        const v = at(a.values, date), s2 = at(t.values, date);
+        if (Math.abs((v || 0) - (s2 || 0)) < 1) continue;
+        why = true;
+        add(`alloc|${a.row}`, { kind: v == null ? 'allocEmpty' : 'alloc', name: a.name, section: t.section }, date);
+      }
+      if (!why) add('grand', { kind: 'grand' }, date);
+    }
+    months.push({ date, file, app: mine, diff: mine - file });
+  }
+  return { months, ok: months.filter(m => !m.diff).length, causes: [...causes.values()] };
+}
+
+/** Che cosa è una riga del Net Worth fuori dalla liquidità, dalla colonna Type e dalla sezione:
+    "ETF:S" → ETF azionario, "ETF:M" → ETF monetario, "ETC"/"XAU" → oro e materie prime,
+    "BTC+ALT" o sezione Crypto → crypto, un simbolo come "RKLB" o sezione Stock → azione.
+    '' = non è un titolo (conto, credito, bene…). */
+export function positionClass(section, type, name = '') {
+  const s = normHead(section), raw = String(type || '').trim(), t = raw.toLowerCase(), n = normHead(name);
+  if (/^etf/.test(t)) return /:\s*m\b|monet|money|overnight|\bmm\b/.test(t + ' ' + n) ? 'etf_mm' : /:\s*b\b|bond|obblig/.test(t) ? 'etf_bd' : 'etf_eq';
+  if (/^etc$|\bxau\b|\bxag\b|gold|\boro\b|silver|argento|commod/.test(t) || /materie|commod|metall/.test(s)) return 'gold';
+  if (/crypto|cripto/.test(s) || /\bbtc\b|\beth\b|crypto|cripto|\balt\b/.test(t)) return 'crypto';
+  if (/obblig|bond|titoli di stato|btp/.test(s + ' ' + t)) return /btp|stato|\bbot\b/.test(s + ' ' + t + ' ' + n) ? 'gov' : 'bond';
+  if (/\bfond/.test(s + ' ' + t) && !/pension/.test(s + ' ' + t + ' ' + n)) return 'fund';
+  if (/stock|azion|share|equity/.test(s) || (/^[A-Z]{1,5}$/.test(raw) && !/^(EUR|USD|GBP|CHF|ETF|ETC|CASH)$/.test(raw))) return 'stock';
+  if (/\betf\b/.test(s)) return 'etf_eq';
+  return '';
 }
 
 /** Sezione della liquidità ("Cash - Liquidity", "Conti", "Liquidità") o riga con una valuta nel tipo. */
@@ -281,34 +395,70 @@ const CASH_OF_BROKER = [[/scalable/, 'savings', 'Conto deposito'], [/trade ?repu
     fine mese di quei titoli (non conti a parte, così non si contano due volte). */
 export function planNetWorth(read, state, { includeOdd = false, holdings = state.holdings, investNames = [], refDate } = {}) {
   const inv = new Set([...investNames, ...state.accounts.filter(a => state.holdings.some(h => h.account === a.id)).map(a => a.name)].map(normHead));
+  // stesso nome in più righe ("Contanti" in euro e "Contanti" in dollari): conti diversi, col tipo nel nome
+  const count = new Map();
+  for (const a of read.accounts) count.set(normHead(a.name), (count.get(normHead(a.name)) || 0) + 1);
+  const nameOf = a => {
+    const k = normHead(a.name);
+    if (count.get(k) < 2) return a.name;
+    const types = read.accounts.filter(x => normHead(x.name) === k).map(x => normHead(x.type));
+    return a.type && new Set(types).size === types.length ? `${a.name} (${a.type})` : `${a.name} – riga ${a.row}`;
+  };
+  const claimed = new Set();
   const rows = read.accounts.map(a => {
     const cash = isCashSection(a.section, a.type);
     const n = normHead(a.name);
-    let type = accountTypeFor(a.section, a.type, a.name), name = a.name, institution = '';
+    let type = accountTypeFor(a.section, a.type, a.name), name = nameOf(a), institution = '', cls = '';
     let holding = null, invAcc = false;
+    // un conto dello stesso nome già nell'app (da un import di prima) resta quello: niente doppioni
+    // (anche "Contanti" di prima per "Contanti (Euro)", se la valuta è la stessa)
+    const curGuess = currencyFor(a.type) || state.settings.currency;
+    const findExisting = nm => state.accounts.find(x => !x.archived && !claimed.has(x.id) && !(hasHoldingsType(x.type) && state.holdings.some(hd => hd.account === x.id))
+      && (nameKey(x.name) === nameKey(nm) || (name !== a.name && nameKey(x.name) === nameKey(a.name) && x.currency === curGuess)));
     if (cash) {
-      // nella liquidità un nome di broker è il suo conto di liquidità, non il conto dei titoli
-      const br = CASH_OF_BROKER.find(([re]) => re.test(n));
-      if (type !== 'cash') type = br ? br[1] : /deposit|risparm|vincol|\bcd\b/.test(n) ? 'savings' : 'checking';
-      if (inv.has(n) || br) { institution = a.name; if (inv.has(n)) name = `${a.name} – ${br ? br[2] : 'Conto corrente'}`; }
+      if (/^etf/i.test(a.type)) {
+        // un ETF tenuto come liquidità ("ETF:M", un ETF monetario): resta nella liquidità, ma è un ETF
+        cls = positionClass(a.section, a.type, a.name) || 'etf_mm'; type = 'broker';
+      } else {
+        // nella liquidità un nome di broker è il suo conto di liquidità, non il conto dei titoli
+        const br = CASH_OF_BROKER.find(([re]) => re.test(n));
+        if (type !== 'cash') type = br ? br[1] : /deposit|risparm|vincol|\bcd\b/.test(n) ? 'savings' : 'checking';
+        if (inv.has(n) || br) { institution = a.name; if (inv.has(n)) name = `${a.name} – ${br ? br[2] : 'Conto corrente'}`; }
+      }
     } else {
-      holding = matchHolding(a.name, holdings);
-      invAcc = !holding && inv.has(n);
+      // già nel Net Worth dell'app da un import di prima: resta lì (non si sposta su un titolo)
+      const prev = findExisting(name);
+      holding = prev ? null : matchHolding(a.name, holdings);
+      invAcc = !holding && !prev && inv.has(n);
+      if (!holding) {
+        cls = positionClass(a.section, a.type, a.name);
+        if (cls) type = cls === 'crypto' ? 'crypto' : 'broker';
+      }
     }
-    const existing = holding ? null : state.accounts.find(x => !hasHoldingsType(x.type) && (normHead(x.name) === normHead(name) || normHead(x.name) === n)) || null;
-    if (existing) type = existing.type;
+    const existing = holding ? null : findExisting(name) || null;
+    if (existing) { type = existing.type; claimed.add(existing.id); }
     const currency = existing?.currency || currencyFor(a.type) || state.settings.currency;
     const odd = a.values.filter(v => v.odd);
     const future = a.values.filter(v => refDate && v.date > refDate).length;
-    // già nell'app: il punto fermo del conto o il valore di fine mese del titolo
-    const has = v => (existing && state.valuations.some(z => z.account === existing.id && z.date === v.date)) || (holding?.id && state.snapshots?.[v.date.slice(0, 7)]?.nwHd?.[holding.id] != null);
-    const known = a.values.filter(has).length;
-    const values = a.values.filter(v => (includeOdd || !v.odd) && !(refDate && v.date > refDate)).filter(v => !has(v));
+    // già nell'app: il punto fermo del conto o il valore di fine mese del titolo (in centesimi)
+    const liab = existing ? isLiab(existing.type) : false;
+    const nowOf = v => {
+      if (existing) { const z = state.valuations.find(y => y.account === existing.id && y.date === v.date); return z ? (liab ? Math.abs(z.value) : z.value) : null; }
+      if (holding?.id) return state.snapshots?.[v.date.slice(0, 7)]?.nwHd?.[holding.id] ?? null;
+      return null;
+    };
+    const usable = a.values.filter(v => (includeOdd || !v.odd) && !(refDate && v.date > refDate));
+    const same = v => { const x = nowOf(v); return x != null && x === Math.round((liab ? Math.abs(v.value) : v.value) * 100); };
+    const known = usable.filter(same).length;
+    // un valore corretto nel file dopo l'ultimo import si aggiorna
+    const changed = usable.filter(v => nowOf(v) != null && !same(v)).map(v => ({ ...v, was: nowOf(v) / 100 }));
+    const values = usable.filter(v => nowOf(v) == null);
     const gross = isGross(a, read.accounts);
-    const zero = values.every(v => !v.value);
-    const reason = invAcc ? 'è il totale del conto titoli: lo calcolo dai titoli' : gross ? 'lordo: conta solo il netto' : zero && values.length ? 'sempre a zero' : '';
-    return { ...a, name, institution, key: String(a.row), holding, existing, type, currency, odd, future, known, values, reason, gross, cash, on: !reason && values.length > 0 };
+    const zero = !usable.some(v => v.value);
+    const reason = invAcc ? 'è il totale del conto titoli: lo calcolo dai titoli' : gross ? 'lordo: conta solo il netto' : zero && usable.length ? 'sempre a zero' : '';
+    return { ...a, name, institution, cls, key: String(a.row), holding, existing, type, currency, odd, future, known, changed, values, reason, gross, cash, on: !reason && (values.length > 0 || changed.length > 0) };
   });
   return { rows };
 }
+const isLiab = t => ['card', 'mortgage', 'loan', 'debt'].includes(t);
 const hasHoldingsType = t => t === 'broker' || t === 'crypto';

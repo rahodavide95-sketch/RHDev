@@ -154,7 +154,7 @@ test('Net Worth: sezioni, totali saltati, valori strani, titoli, conti dei broke
   assert.equal(withOdd.rows.find(x => x.name === 'Contanti').values.length, 10);
 });
 
-test('Net Worth come il foglio: sezioni, Total, Gain/Loss e %, valori dei titoli a fine mese, Asset Allocation', () => {
+test('Patrimonio = Net Worth a fine mese: sezioni, Total, Gain/Loss e %, titoli solo dal Net Worth, Investimenti a sé', () => {
   const st = sanitize(defaults());
   st.accounts.push(
     { id: 'a-cc', name: 'Conto', type: 'checking', currency: 'EUR', inNetWorth: true },
@@ -164,27 +164,33 @@ test('Net Worth come il foglio: sezioni, Total, Gain/Loss e %, valori dei titoli
     { id: 'v-1', account: 'a-cc', date: '2025-12-31', value: 100000, kind: 'open', created: 1 },
     { id: 'v-2', account: 'a-cc', date: '2026-01-31', value: 110000, kind: 'adjust', created: 2 },
     { id: 'v-3', account: 'a-tl', date: '2025-12-31', value: 999900, kind: 'open', created: 3 });
-  st.holdings.push({ id: 'h-1', account: 'a-tr', name: 'Vanguard S&P 500', cls: 'etf_eq', currency: 'EUR', price: 110, priceDate: '2026-02-10', ops: [{ id: 'o-1', date: '2025-12-15', type: 'buy', qty: 10, price: 100, fee: 0, created: 4 }] });
-  st.snapshots['2025-12'] = { byAcc: {}, byHd: { 'h-1': 98000 } };
-  st.snapshots['2026-01'] = { byAcc: {}, byHd: { 'h-1': 105000 } };
+  // un movimento dopo l'ultimo valore di fine mese: il patrimonio resta quello di fine mese
+  st.transactions.push({ id: 't-1', date: '2026-02-05', kind: 'income', amount: 50000, account: 'a-cc', category: 'i-stip', payee: 'x', created: 5, updated: 5 });
+  st.holdings.push(
+    { id: 'h-1', account: 'a-tr', name: 'Vanguard S&P 500', cls: 'etf_eq', currency: 'EUR', price: 110, priceDate: '2026-02-10', ops: [{ id: 'o-1', date: '2025-12-15', type: 'buy', qty: 10, price: 100, fee: 0, created: 4 }] },
+    { id: 'h-2', account: 'a-tr', name: 'Solo negli Investimenti', cls: 'crypto', currency: 'EUR', price: 50, priceDate: '2026-02-10', ops: [{ id: 'o-2', date: '2025-12-15', type: 'buy', qty: 10, price: 50, fee: 0, created: 4 }] });
+  st.snapshots['2025-12'] = { byAcc: {}, byHd: { 'h-2': 50000 }, nwHd: { 'h-1': 98000 } };
+  st.snapshots['2026-01'] = { byAcc: {}, byHd: { 'h-2': 50000 }, nwHd: { 'h-1': 105000 } };
   st.settings.nwLayout = { sections: [{ name: 'Cash - Liquidity', color: 3, items: ['a:a-cc'] }, { name: 'ETF', color: 1, items: ['h:h-1'] }], labels: { 'h:h-1': 'S&P 500' } };
   const d = derive(sanitize(st), '2026-02-10');
   const S0 = d.nwSheet(2026);
   assert.deepEqual(S0.sections.map(x => x.name), ['Cash - Liquidity', 'ETF']);
   const etf = S0.sections[1];
   assert.equal(etf.rows[0].label, 'S&P 500');
-  assert.deepEqual(etf.total.slice(0, 3), [98000, 105000, 110000]);     // 31/12 e 31/01 dal foglio, febbraio = oggi (10 × 110)
-  assert.deepEqual(etf.gain.slice(0, 3), [null, 7000, 5000]);
+  assert.deepEqual(etf.total.slice(0, 3), [98000, 105000, null]);       // febbraio non è ancora finito: vuoto
+  assert.deepEqual(etf.gain.slice(0, 2), [null, 7000]);
   assert.equal(Math.round(etf.pct[1] * 100) / 100, 7.14);
-  assert.deepEqual(S0.total.slice(0, 3), [198000, 215000, 220000]);
+  assert.deepEqual(S0.total.slice(0, 3), [198000, 215000, null]);
+  // gli Investimenti non entrano: né il conto del broker, né il titolo senza valori nel Net Worth
+  assert.ok(!S0.sections.some(x => x.rows.some(r => r.name === 'Broker' || r.name === 'Solo negli Investimenti')));
   // il lordo fuori dal patrimonio non c'è
   assert.ok(!S0.sections.some(x => x.rows.some(rr => rr.label === 'TFR lordo')));
-  // i mesi futuri restano vuoti
-  assert.equal(S0.total[5], null);
   const alloc = S0.alloc.find(x => x.name === 'ETF').pct[1];
   assert.equal(Math.round(alloc * 10) / 10, Math.round(105000 / 215000 * 1000) / 10);
-  // il patrimonio di fine gennaio usa gli stessi valori dei titoli
-  assert.equal(d.netWorthAt('2026-01-31').total, 215000);
+  // riepilogo: l'ultima fine mese con valori è gennaio
+  const M = d.nwMonthly(12);
+  assert.equal(M.cols[M.last], '2026-01-31');
+  assert.equal(M.total[M.last], 215000);
 });
 
 test('tipi di conto, valute e nomi', () => {

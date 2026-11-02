@@ -51,37 +51,32 @@ Il repo è pubblico: mai dati personali di D nel codice.
   grafici SVG fatti a mano (`charts.js`), icone (`icons.js`).
 - `css/app.css`: tutto il design. `sw.js`: offline.
 
-## Pagina Patrimonio (`views/networth.js`, richiesta di D)
+## Pagina Patrimonio (`views/networth.js`) = il Net Worth di D
 
-D: "una pagina per il networth, dove monitorare l'andamento mese dopo mese di ogni cosa
-che ho e alla fine dell'anno rispetto alla fine dell'anno precedente per capire la
-differenza". Contiene: patrimonio di oggi con la differenza dal 31/12 dell'anno prima, in
-12 mesi e il massimo; grafico a barre impilate per gruppo + linea del patrimonio; scelta
-dell'anno; confronto 31/12 anno prima → 31/12 (o oggi) per gruppo e conto, con la
-scomposizione Risparmiato (entrate − uscite dei conti del patrimonio) + Conti aggiunti
-(valore iniziale dei conti nati nell'anno) + Variazioni di valore (il resto); tabella mese
-per mese (colonna del 31/12 precedente, prima colonna fissa, si apre sugli ultimi mesi,
-CSV); anno per anno. "Aggiorna i valori" (`checkInEditor`, `actions.saveCheckIn`): più
-conti alla stessa data; conti normali → punto fermo `adjust`; conti con titoli solo a una
-fine mese passata → fotografia `snapshots[mese].byAcc` (valore dei titoli = totale meno
-liquidità); mutui con piano: non si scrivono.
-**Net Worth come il foglio di D** (D: "lo voglio esattamente come il file excel, per ogni
-categoria ci deve essere il gain loss sia in numero sia in %"): `d.nwSheet(anno, filtro)` →
-colonne 31/12 dell'anno prima + fine di ogni mese (vuote nel futuro), sezioni con righe =
-conti senza titoli (`a:id`), **singoli titoli** (`h:id`) e liquidità dei conti titoli
-(`c:id`, solo se non zero); per sezione Total, Gain/Loss (sul mese prima) e %; in fondo Net
-Worth (Total, Gain/Loss, %) e Asset Allocation (quota di ogni sezione sugli attivi).
-L'ordine e i nomi delle sezioni stanno in `settings.nwLayout` ({sections:[{name,color,items}],
-labels}), scritto dall'import del foglio Net Worth o da "Organizza"; le righe non in elenco
-vanno nelle sezioni di base (Liquidità, ETF, Azioni, Obbligazioni, Fondi, Materie prime,
-Crypto, …). Valore di un titolo a fine mese: `snapshots[mese].byHd[id]` (dal foglio o dalla
-fotografia automatica, che ora salva anche per titolo), altrimenti la sua parte della
-fotografia del conto, altrimenti quantità di allora × prezzo attuale (`holdingValueAt`).
-Calcoli in `derive()`: `valueAt(conto, data)` (null prima che il conto esista),
-`netWorthAt(data)`, `monthClose`, `yearClose`, `firstDate`. Un conto **archiviato** resta
-nel patrimonio (e nello storico) se ha "Conta nel patrimonio": un conto chiuso deve
-continuare a valere nei mesi in cui esisteva; nella pagina Conti un archiviato con saldo
-diverso da zero resta visibile.
+D, dopo aver provato col suo file: "il patrimonio non è la somma di entrate, networth e wallet…
+deve essere intelligente. Nel patrimonio deve esserci semplicemente il riassunto del networth e
+quindi quello effettivo è quello di ogni fine mese. La sezione investimenti è a sé, non deve essere
+collegata a nient'altro." Quindi il patrimonio è **solo** il Net Worth, a fine mese:
+- Righe (`nwItems` in `derive`): conti del patrimonio senza titoli (`a:id`, valore = `valueAt` a
+  fine mese, e solo da quando hanno un primo punto fermo: niente ricostruzioni all'indietro) e
+  titoli con valori **scritti nel Net Worth** (`h:id`, `snapshots[mese].nwHd[id]` in valuta
+  principale, dal foglio importato o da "Aggiorna i valori"). Mai i prezzi degli Investimenti:
+  i conti titoli/crypto con titoli non entrano, né la loro liquidità; un titolo senza `nwHd` non c'è.
+  Conti fuori dal patrimonio (es. "Entrate e uscite dal file", TFR lordo) non entrano.
+- Colonne: solo fine mese **passate** (`pastEnd`): il mese in corso resta vuoto fino a fine mese.
+- `nwSections` (ordine e nomi da `settings.nwLayout`, scritto dall'import o da "Organizza", poi
+  sezioni di base per le righe nuove), `nwTable(cols)`, `nwSheet(anno, filtro)` (31/12 anno prima
+  + 12 fine mese: per sezione Total, Gain/Loss, %; Net Worth; Asset Allocation), `nwMonthly(n)`
+  (ultime fine mese, `last` = l'ultima con valori).
+- Pagina: patrimonio all'ultima fine mese con variazione sul mese prima, dal 31/12 e massimo; una
+  scheda per sezione (valore, variazione, quota, andamento); grafico a barre per sezione + linea;
+  il foglio Net Worth dell'anno (filtro, Organizza, CSV, colonne allargabili); anno per anno.
+- "Aggiorna i valori" (`checkInEditor`, `saveCheckIn`): il Net Worth di una fine mese riga per
+  riga come nel foglio (precompilato, "fine mese prima: …"); conti → punto fermo `adjust` (uno
+  per data, il nuovo sostituisce), titoli → `nwHd`; per i titoli c'è solo come **suggerimento**
+  il valore di oggi negli Investimenti (tocca per copiarlo).
+- La Panoramica usa lo stesso Net Worth di fine mese (`netWorthCard`). Le vecchie funzioni
+  `netWorthAt`/`netWorthHistory` (somma dei saldi) restano solo per altri calcoli.
 
 ## Investimenti (`views/investments.js`)
 
@@ -116,6 +111,10 @@ come esempio ("mi sembra molto interessante"), con la colonna di destra di riepi
   colonna del nome si chiama coin/crypto/token; `cryptoSymbol()` porta "BTC", "Bitcoin",
   "BTC/EUR" a `BTC-USD` (il simbolo dei prezzi Binance); classe `crypto`; un conto nuovo con
   sole crypto è un "Wallet crypto". `normHead` toglie gli apostrofi (QUANTITA').
+- D: "i movimenti preferirei tenerli divisi per azionario e crypto altrimenti non si capisce
+  niente": in alto il selettore **Azionario | Crypto | Tutto** (predefinito Azionario) vale per
+  Portafoglio (`d.portfolio(scope)`), Operazioni (`d.invest(scope)`) e Anno per anno. Gli
+  Investimenti sono a sé: non entrano nel Patrimonio.
 - D: "tutte quelle statistiche per le crypto sono le stesse del wallet azionario, anzi lì
   ce ne sono di più". Le crypto sono titoli come gli altri: hanno tutto. In più
   `investmentFlows(state, toBase, scope)` con `scope` '' / 'titoli' / 'crypto' (il bollo va
@@ -154,7 +153,7 @@ crypto). Un solo `importWorkbook()` in `actions.js` (un "Annulla").
   **dopo** i movimenti (a fine giornata vale il foglio); stesso nome in più fogli = un conto.
 - Correzioni dopo la prova di D col suo file vero ("tantissimi bug di calcolo e
   riconoscimenti sbagliati"): le righe del Net Worth che sono titoli diventano i valori di
-  fine mese di quei titoli (`byHd`) e le loro righe nel layout, non conti; nella sezione della
+  fine mese di quei titoli nel Net Worth (`nwHd`) e le loro righe nel layout, non conti; nella sezione della
   liquidità (`isCashSection`) un nome di broker è il suo conto di liquidità: **Trade Republic →
   conto corrente, Scalable Capital → conto deposito** (nome "Trade Republic – Conto corrente"
   se esiste già il conto titoli, `institution` = broker); **TFR: conta solo il netto**

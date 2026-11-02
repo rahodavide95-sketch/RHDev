@@ -314,7 +314,10 @@ export function sanitize(raw) {
       for (const [a, c] of Object.entries(v.byAcc)) if (id(a)) byAcc[a] = int(c);
       // valore di ogni titolo a fine mese (nella sua valuta), es. dal foglio Net Worth
       if (v.byHd && typeof v.byHd === 'object') for (const [a, c] of Object.entries(v.byHd)) if (id(a)) byHd[a] = int(c);
-      out.snapshots[k] = { byAcc, byHd, at: int(v.at, 0) };
+      // righe dei titoli nel Net Worth (valuta principale): solo dal foglio o da "Aggiorna i valori", mai dai prezzi
+      const nwHd = {};
+      if (v.nwHd && typeof v.nwHd === 'object') for (const [a, c] of Object.entries(v.nwHd)) if (id(a)) nwHd[a] = int(c);
+      out.snapshots[k] = { byAcc, byHd, nwHd, at: int(v.at, 0) };
     }
   }
   if (s.fx?.rates && typeof s.fx.rates === 'object') {
@@ -722,48 +725,59 @@ export function derive(state, refDate = today()) {
   /** Primo anno con dati. */
   const firstDate = [...startByAcc.entries()].filter(([id, s]) => s && nwAccounts.some(a => a.id === id)).map(([, s]) => s).sort()[0] || refDate;
 
-  /* ─── Net Worth come il foglio: sezioni → righe (conti e singoli titoli) per fine mese,
-     con Total, Gain/Loss e % per sezione e in totale, e Asset Allocation ─── */
+  /* ─── Net Worth come il foglio di D, ed è IL patrimonio: sezioni → righe con i valori effettivi
+     di fine mese. D: "nel patrimonio deve esserci semplicemente il riassunto del networth… la
+     sezione investimenti è a sé". Quindi: conti con i loro valori (punti fermi), titoli solo con i
+     valori scritti nel Net Worth (foglio o "Aggiorna i valori", `snapshots[mese].nwHd`), mai con i
+     prezzi degli Investimenti; i conti titoli e crypto degli Investimenti non entrano. ─── */
   const HD_SECTION = { etf_eq: 'ETF', etf_bd: 'ETF', etf_mm: 'ETF', stock: 'Azioni', gold: 'Materie prime', crypto: 'Crypto', gov: 'Obbligazioni', bond: 'Obbligazioni', fund: 'Fondi', other: 'Altri investimenti' };
   const ACC_SECTION = { checking: 'Liquidità', savings: 'Liquidità', cash: 'Liquidità', prepaid: 'Liquidità', card: 'Debiti', broker: 'Altri investimenti', crypto: 'Crypto', pension: 'Previdenza', receivable: 'Crediti', property: 'Beni', vehicle: 'Beni', asset: 'Beni', mortgage: 'Debiti', loan: 'Debiti', debt: 'Debiti' };
   const SECTION_ORDER = ['Liquidità', 'ETF', 'Azioni', 'Obbligazioni', 'Fondi', 'Materie prime', 'Crypto', 'Altri investimenti', 'Previdenza', 'Crediti', 'Beni', 'Debiti'];
-  /** Le righe possibili: conti senza titoli ("a:"), titoli ("h:") e liquidità dei conti con titoli ("c:"). */
+  const nwHdIds = new Set();
+  for (const sn of Object.values(state.snapshots)) for (const k of Object.keys(sn.nwHd || {})) nwHdIds.add(k);
+  /** Le righe del Net Worth: conti ("a:", senza i conti titoli/crypto degli Investimenti) e titoli
+      con valori scritti nel Net Worth ("h:"). */
   function nwItems() {
     const out = [];
     for (const a of nwAccounts) {
-      if (hasHoldings(a) && (holdingsByAcc.get(a.id) || []).length) {
-        for (const hd of holdingsByAcc.get(a.id)) out.push({ key: 'h:' + hd.id, label: hd.name, sub: a.name, section: HD_SECTION[hd.cls] || 'Altri investimenti', acc: a, hd,
-          at: dt => { if (valueAt(a, dt) == null) return null; const v = holdingValueAt(hd, dt); return v == null ? null : toBase(v, hd.currency); } });
-        out.push({ key: 'c:' + a.id, label: `${a.name} · liquidità`, sub: ACCOUNT_TYPES[a.type].label, section: 'Liquidità', acc: a, cash: true,
-          at: dt => (valueAt(a, dt) == null ? null : toBase(cashBalance(ledger, a.id, dt) + holdingsCash(a, dt), a.currency)) });
-      } else {
-        out.push({ key: 'a:' + a.id, label: a.name, sub: ACCOUNT_TYPES[a.type].label + (a.currency !== base ? ' · ' + a.currency : ''), section: ACC_SECTION[a.type] || 'Altro', acc: a,
-          at: dt => { const v = valueAt(a, dt); return v == null ? null : toBase(v, a.currency); } });
-      }
+      if (hasHoldings(a) && (holdingsByAcc.get(a.id) || []).length) continue;      // Investimenti: a sé
+      // con dei valori di fine mese (dal foglio o scritti a mano) il conto conta solo da quando ne ha uno:
+      // niente ricostruzioni all'indietro da un movimento isolato
+      const firstVal = ledger.cps.get(a.id)?.[0]?.date || null;
+      out.push({ key: 'a:' + a.id, label: a.name, sub: ACCOUNT_TYPES[a.type].label + (a.currency !== base ? ' · ' + a.currency : ''), section: ACC_SECTION[a.type] || 'Altro', acc: a,
+        at: dt => { if (firstVal && dt < firstVal) return null; const v = valueAt(a, dt); return v == null ? null : toBase(v, a.currency); } });
+    }
+    for (const hd of state.holdings) {
+      if (!nwHdIds.has(hd.id)) continue;
+      out.push({ key: 'h:' + hd.id, label: hd.name, sub: accById.get(hd.account)?.name || '', section: HD_SECTION[hd.cls] || 'Altri investimenti', hd,
+        at: dt => { const v = state.snapshots[monthKey(dt)]?.nwHd?.[hd.id]; return v == null || dt !== monthEnd(monthKey(dt)) ? null : v; } });
     }
     return out;
   }
-  function nwSheet(Y, q = '') {
-    const cols = [`${Y - 1}-12-31`];
-    for (let m = 1; m <= 12; m++) cols.push(monthClose(`${Y}-${String(m).padStart(2, '0')}`));
+  /** Sezioni nell'ordine del foglio (o di "Organizza"), poi quelle di base per le righe nuove. */
+  function nwSections(items) {
     const layout = state.settings.nwLayout || { sections: [], labels: {} };
-    const items = nwItems();
     const byKey = new Map(items.map(x => [x.key, x]));
     const secs = layout.sections.map(x => ({ name: x.name, color: x.color, keys: x.items.filter(k => byKey.has(k)), fromLayout: true }));
     const placed = new Set(secs.flatMap(x => x.keys));
-    const norm = x => x.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '');
     for (const it of items) {
       if (placed.has(it.key)) continue;
-      let sec = secs.find(x => norm(x.name) === norm(it.section));
+      let sec = secs.find(x => catNorm(x.name) === catNorm(it.section));
       if (!sec) {
         sec = { name: it.section, color: 0, keys: [] };
-        // le sezioni nuove nell'ordine solito, dopo quelle del foglio
         const at = secs.findIndex(x => !x.fromLayout && SECTION_ORDER.indexOf(x.name) > SECTION_ORDER.indexOf(it.section));
         if (at < 0) secs.push(sec); else secs.splice(at, 0, sec);
       }
       sec.keys.push(it.key);
     }
-    const qn = norm(q || '');
+    return { secs, byKey, labels: layout.labels || {} };
+  }
+  /** Fine mese (solo quelle passate: il valore effettivo è quello di fine mese). */
+  const pastEnd = m => (monthEnd(m) <= refDate ? monthEnd(m) : null);
+  function nwTable(cols, q = '') {
+    const items = nwItems();
+    const { secs, byKey, labels } = nwSections(items);
+    const qn = catNorm(q || '');
     const sum = arr => (arr.every(v => v == null) ? null : arr.reduce((a, v) => a + (v || 0), 0));
     const gainOf = tot => tot.map((v, i) => (i === 0 || v == null || tot[i - 1] == null ? null : v - tot[i - 1]));
     const pctOf = tot => tot.map((v, i) => (i === 0 || v == null || !tot[i - 1] ? null : (v - tot[i - 1]) / Math.abs(tot[i - 1]) * 100));
@@ -771,10 +785,9 @@ export function derive(state, refDate = today()) {
       const rows = x.keys.map(k => {
         const it = byKey.get(k);
         const values = cols.map(c => (c ? it.at(c) : null));
-        return { key: k, label: layout.labels[k] || it.label, name: it.label, sub: it.sub, values, acc: it.acc, hd: it.hd || null, cash: !!it.cash };
+        return { key: k, label: labels[k] || it.label, name: it.label, sub: it.sub, values, acc: it.acc || null, hd: it.hd || null };
       }).filter(r => r.values.some(v => v))
-        // filtro: per nome della riga, del titolo, del conto o della sezione
-        .filter(r => !qn || norm(x.name).includes(qn) || [r.label, r.name, r.sub].some(t => norm(t || '').includes(qn)));
+        .filter(r => !qn || catNorm(x.name).includes(qn) || [r.label, r.name, r.sub].some(t => catNorm(t || '').includes(qn)));
       const total = cols.map((c, i) => sum(rows.map(r => r.values[i])));
       return { name: x.name, color: x.color || (si % 8) + 1, rows, total, gain: gainOf(total), pct: pctOf(total) };
     }).filter(x => x.rows.length);
@@ -783,7 +796,21 @@ export function derive(state, refDate = today()) {
       const pos = sections.reduce((a, y) => a + Math.max(0, y.total[i] || 0), 0);
       return x.total[i] == null || !pos ? null : x.total[i] / pos * 100;
     }) }));
-    return { year: Y, cols, sections, total, gain: gainOf(total), pct: pctOf(total), alloc };
+    return { cols, sections, total, gain: gainOf(total), pct: pctOf(total), alloc };
+  }
+  /** Il foglio dell'anno: 31/12 dell'anno prima e le 12 fine mese (vuote quelle non ancora passate). */
+  function nwSheet(Y, q = '') {
+    const cols = [`${Y - 1}-12-31`];
+    for (let m = 1; m <= 12; m++) cols.push(pastEnd(`${Y}-${String(m).padStart(2, '0')}`));
+    return { year: Y, ...nwTable(cols, q) };
+  }
+  /** Ultime n fine mese (per il grafico e il riepilogo), fino all'ultima con dei valori. */
+  function nwMonthly(n = 24) {
+    const months = lastMonths(n + 1, monthKey(refDate)).filter(m => pastEnd(m));
+    const T = nwTable(months.map(pastEnd));
+    let last = T.total.length - 1;
+    while (last > 0 && T.total[last] == null) last--;
+    return { months, ...T, last };
   }
 
   /** Patrimonio netto a fine mese per gli ultimi n mesi. */
@@ -877,8 +904,9 @@ export function derive(state, refDate = today()) {
   }
 
   /* Portafoglio */
-  function portfolio() {
-    const rows = state.holdings.map(h => {
+  /** Portafoglio; scope '' tutto, 'titoli' (azionario: ETF, azioni, ETC…) o 'crypto'. */
+  function portfolio(scope = '') {
+    const rows = state.holdings.filter(h => !scope || (scope === 'crypto') === (h.cls === 'crypto')).map(h => {
       const p = position(h);
       const acc = accById.get(h.account);
       return {
@@ -966,7 +994,7 @@ export function derive(state, refDate = today()) {
     base, rates, ledger, accById, catById, holdingsByAcc, missingFx,
     balances, groupTotals, assets, netWorth, accountValue, holdingsValue, holdingsCash, toBase, txBase,
     nwAccounts, startByAcc, valueAt, netWorthAt, monthClose, yearClose, firstDate,
-    netWorthHistory, nwSheet, nwItems, holdingValueAt, flows, monthlyFlows, budget, dueList, upcoming, fixedMonthly, recurringIncomeMonthly, goal, portfolio, invest, yearTable,
+    netWorthHistory, nwSheet, nwItems, nwMonthly, holdingValueAt, flows, monthlyFlows, budget, dueList, upcoming, fixedMonthly, recurringIncomeMonthly, goal, portfolio, invest, yearTable,
     refDate,
   };
 }

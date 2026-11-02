@@ -25,7 +25,7 @@ let nwQ = '';
 const pctOf = (a, b) => (a != null && b ? (a - b) / Math.abs(b) * 100 : null);
 
 /* ─── Net Worth come il foglio di D: sezioni con le loro righe, Total, Gain/Loss e %;
-   in fondo il patrimonio netto e l'Asset Allocation ─── */
+   in fondo l'Asset Allocation (somme per sezione, quota nella prima colonna) e il Net Worth ─── */
 const dmy = iso => `${iso.slice(8)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
 const pc = v => (v == null ? '' : formatPercent(v, 2, true));
 const tone = v => (v == null || !Math.round(v * 100) ? '' : v > 0 ? 'pos' : 'neg');
@@ -49,9 +49,11 @@ function fitOf(maxAbs = fitMax, maxPct = fitPctMax) {
   // il numero più lungo scritto con zeri (cifre tutte larghe uguali)
   const big = Math.floor(Math.abs(maxAbs) / 100) || 1;
   const sample = (dec, euro) => '+' + formatNumber(Number('9'.repeat(String(big).length)), dec, dec).replace(/\d/g, '0') + (euro ? ' €' : '');
-  const pctSample = pd => '+' + '0'.repeat(String(Math.floor(Math.abs(maxPct)) || 1).length) + (pd ? ',' + '0'.repeat(pd) : '') + '%';
+  const bigPct = Math.floor(Math.abs(maxPct)) || 1;
+  const pctSample = pd => '+' + formatNumber(Number('9'.repeat(String(bigPct).length)), pd, pd).replace(/\d/g, '0') + '%';
   const tries = [[14, 2, true], [14, 0, true], [13, 0, true], [12, 0, true], [12, 0, false], [11.5, 0, false], [11, 0, false], [10.5, 0, false]];
-  const [font, dec, euro] = tries.find(([f, dd, e]) => measure(sample(dd, e), f) <= per) || tries[tries.length - 1];
+  // entrano sia l'importo più lungo sia la percentuale più lunga (anche "+6.400%")
+  const [font, dec, euro] = tries.find(([f, dd, e]) => measure(sample(dd, e), f) <= per && measure(pctSample(0), f) <= per) || tries[tries.length - 1];
   const pdec = [2, 1, 0].find(pd => measure(pctSample(pd), font) <= per) ?? 0;
   return { first, per: per + 12, dec, font, euro, pdec, short: measure('31/12/2025', font * 0.86) > per - 2 };
 }
@@ -94,9 +96,12 @@ function sheetTable(ctx, Y) {
   const diffs = vals => [h('td.num.nw-dcol', { class: tone(diffOf(vals)) }, sg(diffOf(vals))), h('td.num.nw-dpct', { class: tone(diffPct(vals)) }, pcs(diffPct(vals)))];
   const noDiff = () => [h('td.num.nw-dcol'), h('td.num.nw-dpct')];
   const band = (label, color) => h('tr.nw-band', { style: { '--sec': color } }, h('td.sticky', h('span', label)), dates.map(() => h('td')), noDiff());
+  // spazio tra una sezione e l'altra: si vede dove finisce un blocco e ne comincia un altro
+  const gap = () => h('tr.nw-gap', { 'aria-hidden': 'true' }, h('td.sticky'), dates.map(() => h('td')), noDiff());
   const body = [];
   for (const sec of S0.sections) {
     const col = colorVar(sec.color);
+    if (body.length) body.push(gap());
     body.push(band(sec.name, col));
     for (const r of sec.rows) {
       const go = r.hd ? () => ctx.go('investimenti/' + r.hd.id) : r.acc ? () => ctx.go('conti/' + r.acc.id) : null;
@@ -108,16 +113,21 @@ function sheetTable(ctx, Y) {
     body.push(h('tr.nw-gain', h('td.sticky', 'Gain/Loss'), cells(sec.gain, sg, tone), noDiff()));
     body.push(h('tr.nw-pct', h('td.sticky', '%'), cells(sec.pct, pcs, tone), noDiff()));
   }
-  body.push(band('Net Worth', 'var(--brand)'));
+  // Asset Allocation come nel foglio di D: per ogni sezione le sue somme mese per mese, la quota (%)
+  // solo nella prima colonna (quella dell'ultima fine mese); sotto il Net Worth: Total, Gain/Loss, %
+  // (D: "nelle varie celle ci sono le somme di tutto, le % sono solo nella prima colonna")
+  const endI = lastIdx(S0.total);
+  const shareOf = name => { const a = S0.alloc.find(x => x.name === name); return a && endI >= 0 ? a.pct[endI] : null; };
+  body.push(gap(), band('Asset Allocation', 'var(--ink-3)'));
+  for (const sec of S0.sections) {
+    const sh = shareOf(sec.name);
+    body.push(h('tr.nw-alloc', { style: { '--sec': colorVar(sec.color) } },
+      h('td.sticky', h('span.nw-al', h('span.dl-key', { style: { background: colorVar(sec.color) } }), h('span.nw-al-n', sec.name), h('b.nw-share', sh == null ? '' : formatPercent(sh, 1)))),
+      cells(sec.total, t2), diffs(sec.total)));
+  }
   body.push(h('tr.nw-total.nw-grand', h('td.sticky', 'Total'), cells(S0.total, t2), diffs(S0.total)));
   body.push(h('tr.nw-gain', h('td.sticky', 'Gain/Loss'), cells(S0.gain, sg, tone), noDiff()));
   body.push(h('tr.nw-pct', h('td.sticky', '%'), cells(S0.pct, pcs, tone), noDiff()));
-  body.push(band('Asset Allocation', 'var(--ink-3)'));
-  for (const a of S0.alloc) {
-    const dv = diffOf(a.pct);
-    body.push(h('tr.nw-alloc', h('td.sticky', h('span.dl-key', { style: { background: colorVar(a.color) } }), a.name), cells(a.pct, v => (v == null ? '' : formatPercent(v, fit ? Math.min(fit.pdec, 2) : 2))),
-      h('td.num.nw-dcol', { class: tone(dv) }, dv == null ? '' : `${dv > 0 ? '+' : ''}${formatPercent(dv, 1).replace('%', '')} pt`), h('td.num.nw-dpct')));
-  }
 
   const exportCsv = () => {
     const rows = [['Net Worth', ...dates.map(dmy), `Diff. ${Y - 1}-${Y}`, '%']];
@@ -128,9 +138,9 @@ function sheetTable(ctx, Y) {
       for (const r of sec.rows) line(r.label, r.values);
       line('Total', sec.total); line('Gain/Loss', sec.gain, csvNumber, false); line('%', sec.pct, pct2, false);
     }
-    rows.push(['Net Worth']); line('Total', S0.total); line('Gain/Loss', S0.gain, csvNumber, false); line('%', S0.pct, pct2, false);
-    rows.push(['Asset Allocation']);
-    for (const a of S0.alloc) line(a.name, a.pct, pct2, false);
+    rows.push(['Asset Allocation', '%']);
+    for (const sec of S0.sections) { const sh = shareOf(sec.name); line(`${sec.name}${sh == null ? '' : ` (${pct2(sh)}%)`}`, sec.total); }
+    line('Total', S0.total); line('Gain/Loss', S0.gain, csvNumber, false); line('%', S0.pct, pct2, false);
     download(new Blob([toCSV(rows)], { type: 'text/csv;charset=utf-8' }), `net-worth-${Y}.csv`);
     toast('Tabella esportata', { kind: 'ok' });
   };

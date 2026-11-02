@@ -66,6 +66,10 @@ test('Net Worth come quello di D: ogni riga al posto giusto', () => {
   assert.equal(by['TFR Netto'].on, true);
   assert.equal(by['TFR Netto'].type, 'receivable');
   assert.equal(by['Banca Uno'].cls, '');
+  // TFR scritto solo al 31/12: nel Net Worth conta solo lì (come il totale del foglio); i conti pieni no
+  assert.equal(by['TFR Netto'].sparse, true);
+  assert.equal(by['Banca Uno'].sparse, false);
+  assert.equal(by['Contanti (Dollari)'].sparse, false);      // vuoto solo prima del primo valore
 });
 
 test('tipo di titolo dalla colonna Type e dalla sezione', () => {
@@ -166,4 +170,20 @@ test('entrate importate prima delle impronte: riconosciute dal mese, non raddopp
   assert.ok(!p.txs.some(t => t.payee === 'STIPENDIO' && t.date >= '2026-02-01'));
   assert.deepEqual(p.updates.filter(u => u.same).map(u => u.id), ['old1']);
   assert.deepEqual(p.changed.map(u => [u.id, u.was, u.now]), [['old2', 170000, 185000]]);
+});
+
+test('conto "solo nei mesi con un valore": nel Net Worth vale solo dove è scritto', async () => {
+  const { derive } = await import('../js/core/model.js');
+  const st = sanitize({ ...defaults(),
+    accounts: [{ id: 'a-tfr', name: 'TFR Netto', type: 'receivable', currency: 'EUR', nwSparse: true }, { id: 'a-b', name: 'Banca', type: 'checking', currency: 'EUR' }],
+    valuations: [
+      { id: 'v1', account: 'a-tfr', date: '2025-12-31', value: 700000, kind: 'open', created: 1 },
+      { id: 'v2', account: 'a-b', date: '2025-12-31', value: 120000, kind: 'open', created: 1 },
+    ] });
+  assert.equal(st.accounts[0].nwSparse, true);
+  const S0 = derive(st, '2026-03-10').nwSheet(2026);
+  const row = name => S0.sections.flatMap(x => x.rows).find(r => r.name === name).values.slice(0, 3);
+  assert.deepEqual(row('TFR Netto'), [700000, null, null]);
+  assert.deepEqual(row('Banca'), [120000, 120000, 120000]);
+  assert.deepEqual(S0.total.slice(0, 3), [820000, 120000, 120000]);
 });

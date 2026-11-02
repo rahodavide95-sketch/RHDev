@@ -85,8 +85,32 @@ collegata a nient'altro." Quindi il patrimonio è **solo** il Net Worth, a fine 
   riga come nel foglio (precompilato, "fine mese prima: …"); conti → punto fermo `adjust` (uno
   per data, il nuovo sostituisce), titoli → `nwHd`; per i titoli c'è solo come **suggerimento**
   il valore di oggi negli Investimenti (tocca per copiarlo).
+- Sezioni come blocchi (D: "l'intestazione di ogni categoria non mi piace con quel colore e forma…
+  colori non così vivaci… la riga del gain loss più staccata per far vedere che si passa a una nuova
+  categoria"): titolo sobrio (maiuscoletto, quadratino e riga sottile nel colore **smorzato** della
+  sezione `--sec-m`), Total con una riga sopra, Gain/Loss e % piccoli, riga vuota `tr.nw-gap` tra
+  una sezione e l'altra. Con "Colori vivaci" il titolo ha solo un fondo leggero.
+- **Asset Allocation come il foglio di D** (D: "nelle varie celle ci sono le somme di tutto, le % sono
+  solo nella prima colonna"): una riga per sezione con le sue somme mese per mese e la quota (%)
+  dell'ultima fine mese accanto al nome; sotto Total (il Net Worth), Gain/Loss e %. Non c'è più una
+  sezione "Net Worth" a parte.
+- **Conti "solo nei mesi con un valore"** (`account.nwSparse`; D: per il TFR "no, come nel mio
+  foglio"): nel Net Worth valgono solo nelle fine mese con un punto fermo. L'import lo accende per le
+  righe con celle vuote dopo il primo valore (TFR scritto solo al 31/12); interruttore nel conto.
 - La Panoramica usa lo stesso Net Worth di fine mese (`netWorthCard`). Le vecchie funzioni
   `netWorthAt`/`netWorthHistory` (somma dei saldi) restano solo per altri calcoli.
+
+## Panoramica (`views/dashboard.js`)
+
+D: "le cards nella panoramica non mi piacciono… non le voglio così"; scelte sue: **poche card e
+grandi** con Net Worth, Entrate e uscite, Investimenti, Scadenze/budget/obiettivi. Griglia `.dash2`
+(due colonne, una su schermi stretti): Net Worth a tutta larghezza (numero grande, sul mese prima,
+dal 31/12, il più alto, grafico e sezioni con barra e quote), Entrate e uscite dell'anno (totale,
+media sui mesi trascorsi come la pagina, uscite e risparmio, barre mese per mese, macro categorie),
+Investimenti (investito in totale, valore se ci sono prezzi, nell'anno, media, Azionario/Crypto,
+investito ogni mese), una card con tre colonne Scadenze / Budget / Obiettivi. Colori smorzati
+(`soft()`); avvisi solo se chiedono di fare qualcosa (cambio mancante), in una riga sopra. Tolte
+"Questo mese" (a inizio mese era vuota), "Spese per categoria", "Ultimi movimenti", "Da sapere".
 
 ## Investimenti (`views/investments.js`)
 
@@ -389,7 +413,7 @@ netti, pulito ed elegante.
 
 ## Prove
 
-- `npm test`: 57 test (calcoli, colori scelti, reimport e controllo col foglio, cifratura, unione dei dati, CSV, investimenti, import da Excel di tutti i fogli, crypto, storia degli acquisti, quotazioni con risposte finte).
+- `npm test`: 58 test (calcoli, colori scelti, reimport e controllo col foglio, cifratura, unione dei dati, CSV, investimenti, import da Excel di tutti i fogli, crypto, storia degli acquisti, quotazioni con risposte finte).
 - `bash test/rls/run.sh`: regole di sicurezza del database su Postgres.
 - Nel browser: `python3 -m http.server` nella cartella e Playwright (Chromium già
   installato). Da questo ambiente onvista/Binance/BCE non sono raggiungibili: per provarli

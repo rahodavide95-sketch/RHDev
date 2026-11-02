@@ -15,7 +15,7 @@ export function addAccount(a, opening = 0, openingDate = today()) {
   const id = uid('a-');
   commit(st => {
     const created = stamp();
-    st.accounts.push({ id, name: a.name, type: a.type, institution: a.institution || '', currency: a.currency || st.settings.currency, emoji: a.emoji || '', color: '', archived: false, inNetWorth: a.inNetWorth !== false, notes: a.notes || '', created, order: st.accounts.length, plan: a.plan || null });
+    st.accounts.push({ id, name: a.name, type: a.type, institution: a.institution || '', currency: a.currency || st.settings.currency, emoji: a.emoji || '', color: '', archived: false, inNetWorth: a.inNetWorth !== false, nwSparse: !!a.nwSparse, notes: a.notes || '', created, order: st.accounts.length, plan: a.plan || null });
     if (!a.plan) st.valuations.push({ id: uid('v-'), account: id, date: openingDate, value: opening, created, kind: 'open', note: 'Saldo iniziale' });
   });
   return id;
@@ -455,6 +455,7 @@ export function importWorkbook({ nw = [], invest = null, cash = false, months = 
         // un conto importato prima prende il tipo di titolo letto ora (ETF, ETC…), se non l'aveva
         const ex = find(st.accounts, r.existing.id);
         if (ex && r.cls && !ex.cls) ex.cls = r.cls;
+        if (ex) ex.nwSparse = !!r.sparse;      // il foglio dice se conta anche nei mesi vuoti
         continue;
       }
       // lo stesso conto in più fogli del patrimonio (es. uno per anno) resta uno solo
@@ -462,7 +463,7 @@ export function importWorkbook({ nw = [], invest = null, cash = false, months = 
       if (byName.has(nk)) { nwId.set(r.key, byName.get(nk)); continue; }
       const id = uid('a-');
       byName.set(nk, id);
-      st.accounts.push({ id, name: r.name.slice(0, 60), type: r.type, cls: r.cls || '', institution: (r.institution || '').slice(0, 60), currency: r.currency, emoji: '', color: '', archived: false, inNetWorth: !r.gross, notes: `Creato importando un file${r.section ? ` (sezione "${r.section.slice(0, 60)}")` : ''}${r.cls ? `. Valore di fine mese di un titolo (${ASSET_CLASSES[r.cls]?.label || r.cls}), come nel tuo Net Worth: non è negli Investimenti.` : ''}${r.gross ? '. È il lordo: fuori dal patrimonio, conta il netto.' : ''}`, created: stamp(), order: st.accounts.length, plan: null });
+      st.accounts.push({ id, name: r.name.slice(0, 60), type: r.type, cls: r.cls || '', nwSparse: !!r.sparse, institution: (r.institution || '').slice(0, 60), currency: r.currency, emoji: '', color: '', archived: false, inNetWorth: !r.gross, notes: `Creato importando un file${r.section ? ` (sezione "${r.section.slice(0, 60)}")` : ''}${r.cls ? `. Valore di fine mese di un titolo (${ASSET_CLASSES[r.cls]?.label || r.cls}), come nel tuo Net Worth: non è negli Investimenti.` : ''}${r.gross ? '. È il lordo: fuori dal patrimonio, conta il netto.' : ''}`, created: stamp(), order: st.accounts.length, plan: null });
       nwId.set(r.key, id);
     }
     // costi del broker (bollo) sul suo conto di liquidità dal Net Worth (es. Trade Republic – Conto corrente)

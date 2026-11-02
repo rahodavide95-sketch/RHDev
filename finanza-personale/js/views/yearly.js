@@ -73,12 +73,14 @@ export default {
     const prev = d.yearTable(V.year - 1, V.kind).total;
     const passed = full.byMonth.slice(0, Math.max(1, curM));
     const best = passed.reduce((b, v, i) => (v > b.v ? { v, i } : b), { v: 0, i: -1 });
-    const lastM = curM ? curM - 1 : 0;
+    // l'ultimo mese da mostrare: quello in corso se ha già importi, altrimenti l'ultimo completo
+    const lastM = V.year === cy && curM > 1 && !full.byMonth[curM - 1] ? curM - 2 : curM ? curM - 1 : 0;
+    const lastIsNow = V.year === cy && lastM === curM - 1;
     const kpis = h('section.card.fin-kpis', h('div.stats-4',
       stat(`${label} ${V.year}`, money(full.total), prev ? h('span', delta(prev ? (full.total - prev) / prev * 100 : 0, { invert: V.kind === 'expense' }), ` sul ${V.year - 1} (${moneyText(prev)})`) : `${full.months} mesi`),
       stat('Media al mese', money(full.months ? Math.round(full.total / full.months) : 0), `su ${full.months || 0} ${full.months === 1 ? 'mese' : 'mesi'}`),
       stat(V.kind === 'income' ? 'Mese migliore' : 'Mese più caro', best.i >= 0 ? money(best.v) : '—', best.i >= 0 ? monthName(best.i + 1) : ''),
-      stat(V.year === cy ? `${monthName(curM)} finora` : `${monthName(lastM + 1)}`, money(full.byMonth[lastM] || 0), full.months && full.total ? h('span', delta(((full.byMonth[lastM] || 0) / (full.total / full.months) - 1) * 100, { invert: V.kind === 'expense' }), ' rispetto alla media') : '')));
+      stat(lastIsNow ? `${monthName(curM)} finora` : `${monthName(lastM + 1)}`, money(full.byMonth[lastM] || 0), full.months && full.total ? h('span', delta(((full.byMonth[lastM] || 0) / (full.total / full.months) - 1) * 100, { invert: V.kind === 'expense' }), ' rispetto alla media') : '')));
 
     /* ── una scheda per macro categoria ── */
     const cards = full.groups.length ? h('div.fin-cards', full.groups.map(g => {

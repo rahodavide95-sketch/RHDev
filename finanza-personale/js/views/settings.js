@@ -61,6 +61,7 @@ function lookControls(ctx) {
       colorField('Sfondo', 'Con il tema chiaro', 'bg')) : null,
     setRow('Colori dei grafici', 'Torte, barre e categorie', selectInput([{ value: 'auto', label: 'Come la palette' }, ...Object.entries(CHARTS).map(([k, c]) => ({ value: k, label: c.label }))], L.chart, v => set({ chart: v }))),
     toggle('Righe alterne nelle tabelle', R.zebra, v => set({ zebra: v }), { hint: 'Una riga sì e una no leggermente più scura, come nei fogli' }),
+    toggle('Colori vivaci', R.colorful, v => set({ colorful: v }), { hint: 'Schede, sezioni e categorie colorate. Spento: tutto sobrio, con solo un pallino colorato (i grafici restano a colori)' }),
     toggle('Tabelle e liste compatte', R.density === 'compact', v => set({ density: v ? 'compact' : 'normal' }), { hint: 'Più righe sullo schermo' }),
   ];
 }

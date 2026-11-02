@@ -36,7 +36,9 @@ test('entrate dell\'anno come il foglio: categoria → sottocategoria → voce, 
   assert.equal(musica.cats.some(c => c.id === 'prod'), false);              // senza movimenti non compare…
   assert.ok(d.yearTable(2026, 'income', { empty: true }).groups[0].cats.some(c => c.id === 'prod'));   // …se non si chiede
   assert.equal(T.total, 185000 * 2 + 65000 + 5000);
-  assert.equal(T.months, 4);                                                // gennaio–aprile per la media
+  assert.equal(T.months, 3);                                                // aprile è appena iniziato e ancora senza entrate: media su gennaio–marzo
+  const s3 = sanitize({ ...s, transactions: [...s.transactions, tx('9', '2026-04-02', 1000, 'dj', 'Raho')] });
+  assert.equal(derive(s3, '2026-04-15').yearTable(2026, 'income').months, 4);   // con un'entrata ad aprile conta anche aprile
   assert.equal(d.yearTable(2025, 'income').months, 12);
   assert.equal(d.yearTable(2026, 'expense').total, 4000);
 });

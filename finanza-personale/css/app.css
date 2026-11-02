@@ -657,7 +657,7 @@ input[type="date"].input::-webkit-date-and-time-value { text-align: left; }
 .inv-table td.muted { color: var(--ink-3); }
 .inv-donut { margin-bottom: 16px; }
 .inv-table tbody tr.click { cursor: pointer; }
-.inv-table tbody tr.click:hover td { background: var(--hover); }
+.inv-table tbody tr.click:hover td { background: color-mix(in srgb, var(--card) 93%, var(--ink)); }
 .pac-item { display: grid; gap: 10px; transition: opacity .15s; }
 .pac-item.off { opacity: .55; }
 .pac-item.off .grid-3, .pac-item.off .field-hint { display: none; }
@@ -724,7 +724,8 @@ input[type="date"].input::-webkit-date-and-time-value { text-align: left; }
 .table .nowrap { white-space: nowrap; }
 .table .desc { min-width: 180px; }
 .table tr.click { cursor: pointer; }
-.table tr.click:hover td { background: var(--hover); }
+/* sfondo coprente: la prima colonna resta ferma e sotto scorrono gli altri mesi, che altrimenti si vedrebbero attraverso */
+.table tr.click:hover td { background: color-mix(in srgb, var(--card) 93%, var(--ink)); }
 .table tfoot td { font-weight: 680; }
 .table tr.dup td { opacity: .55; }
 .table.compact td { padding: 8px 10px; }
@@ -1221,3 +1222,6 @@ table.resizing { user-select: none; cursor: col-resize; }
 }
 .hero-groups .hero-chip { box-shadow: inset 3px 0 0 var(--chip, transparent); }
 .inv-bar { align-items: center; }
+
+/* righe colorate (macro categorie): al passaggio del mouse un po' più scure, mai trasparenti */
+.fin-table tr.fin-macro.click:hover td { background: color-mix(in srgb, var(--chip) 19%, var(--card)); }

@@ -5,6 +5,7 @@ import { S, commit } from './session.js';
 import { uid, stamp, isLiability, defaults, tidyPlan, applyTidy, ASSET_CLASSES } from './core/model.js';
 
 import { catKey, nameKey } from './core/sheets.js';
+import { dedupePlan, applyDedupe } from './core/dedupe.js';
 import { normHead } from './core/invimport.js';
 import { today, addDays, occurrences, monthEnd as monthEndOf } from './core/dates.js';
 
@@ -551,6 +552,16 @@ export function tidyCategories() {
   let n = 0;
   commit(st => { n = applyTidy(st); }, { auto: true });
   return n;
+}
+
+/** Unisce i doppioni già presenti (D: "perché si è duplicata ogni cosa nel networth?"): stessi conti,
+    titoli, valori e movimenti arrivati due volte unendo due copie dei dati. Si può annullare. */
+export function fixDuplicates() {
+  if (!S.state) return null;
+  const plan = dedupePlan(S.state);
+  if (!plan.count) return null;
+  commit(st => { applyDedupe(st); }, { undo: 'Doppioni uniti' });
+  return plan;
 }
 
 /** Svuota i dati (conti, movimenti, investimenti, categorie…) tenendo password e preferenze.

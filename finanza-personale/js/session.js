@@ -5,6 +5,7 @@ import * as store from './store.js';
 import * as C from './core/crypto.js';
 import * as cloud from './cloud.js';
 import { merge3 } from './core/merge.js';
+import { applyDedupe } from './core/dedupe.js';
 import { sanitize, defaults, derive, snapshotMonth, uid, hasHoldings } from './core/model.js';
 import { today, monthKey } from './core/dates.js';
 
@@ -526,6 +527,8 @@ async function pullMerge() {
   // chiavi più recenti (es. password cambiata su un altro dispositivo)
   if ((rv.keysAt || 0) > (vault.keysAt || 0)) { vault = { ...vault, kdf: rv.kdf, keys: rv.keys, keysAt: rv.keysAt }; scheduleSave(0); }
   const merged = sanitize(merge3(baseState, S.state, remote));
+  // le stesse righe arrivate da tutte e due le parti con codici diversi (stesso Excel importato due volte): una sola
+  applyDedupe(merged);
   await setBase(row.version, rv, content(remote));
   if (content(merged) !== content(S.state)) {
     S.state = merged;
@@ -645,6 +648,7 @@ export async function linkAccount(email, password, { create = false, localPasswo
     catch (e) { if (e instanceof C.WrongSecret) return { needOld: true }; throw e; }
     const remote = sanitize(await C.decryptState(rv, key));
     const merged = sanitize(merge3(null, S.state, remote));
+    applyDedupe(merged);          // primo collegamento: le righe uguali di qui e di là diventano una
     const nv = await C.encryptState(rv, key, merged);
     await store.clearCopies();
     await store.saveVault(nv, null, null);

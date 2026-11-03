@@ -1,5 +1,5 @@
 /* Fioritura: funziona anche senza internet e prende da sola gli aggiornamenti */
-const VERSION = 'fioritura-v2';
+const VERSION = 'fioritura-v3';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
@@ -42,4 +42,15 @@ self.addEventListener('fetch', e => {
       })
     );
   }
+});
+
+// Toccando un avviso del telefono si torna su Fioritura (o si apre)
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      for (const c of list) if (c.url.includes('/fioritura/') && 'focus' in c) return c.focus();
+      return self.clients.openWindow('./');
+    })
+  );
 });

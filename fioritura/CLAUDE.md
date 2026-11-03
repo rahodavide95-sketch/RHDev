@@ -24,7 +24,17 @@ Al primo avvio il 3 novembre risulta già fatto: era già completato quando D ha
 - **Oggi**: saluto, giorni all'esame, la giornata di oggi (con "Pagina per pagina" facoltativo), giornate da recuperare, il giardino (un fiore per ogni giornata fatta, una riga per fase), domani, minuti di concentrazione, una frase gentile.
 - **Programma**: le 4 fasi con le giornate da spuntare. Toccando una giornata si apre il foglio con note, pagine, "Com'è andata?" e argomento critico veloce.
 - **Concentrati**: timer studio/pausa (25/40/50/60 + pausa 5/10/15), suoni di sottofondo generati con Web Audio (pioggia, onde, brusio: nessun file audio), respiro guidato di un minuto.
+- **Calendario** (D: "una sezione calendario dove potermi appuntare determinate cose, con promemoria e notifiche che mi arrivano nella sezione notifiche sopra vicino alla lettera del profilo"): mese con i giorni di studio (pallino del colore della fase) e i suoi impegni (pallini colorati), il giorno scelto con studio, esame e impegni, "Prossimi impegni". Scheda in mezzo alla barra (5 schede: Oggi, Programma, Calendario, Concentrati, Appunti; Programma ora ha l'icona dell'elenco). Gli impegni di oggi compaiono anche in Oggi ("Oggi in calendario").
 - **Appunti**: argomenti critici (con volume e pagina, si spuntano come "chiariti") e le note di tutte le giornate.
+
+## Calendario, promemoria e notifiche
+
+- `S.events`: `{ id, title, date, time ('' = tutto il giorno), rem, color 0-4, note, at, mt }`. `rem` = minuti prima dell'ora (-1 nessuno); per "tutto il giorno" l'ora di riferimento è le 9 (`REM_DAY`: quel giorno alle 9, il giorno prima alle 18, due giorni prima alle 9). Foglio `evSheet()` con bozza `evDraft`; Elimina con due tocchi (finisce in `gone`).
+- Le notifiche non si salvano: si calcolano dagli impegni (`notifications()`: promemoria già scattati negli ultimi 45 giorni, chiave `id@ora del promemoria`). Lette in `notifRead`, tolte con "Svuota" in `notifHide`: si sincronizzano. Un promemoria salvato quando la sua ora è già passata non suona.
+- Campanella (`.ib.bell`) in alto, prima della lettera del profilo, con il numero delle nuove (`paintBell()`). Aprendola si segnano come lette (in quel foglio restano evidenziate); toccandone una si va al calendario su quel giorno. Sotto: "In arrivo" e l'interruttore "Avvisi anche sul telefono".
+- `checkReminders()` ogni 15 s, all'apertura e tornando sulla pagina: un promemoria si annuncia una sola volta per dispositivo (`fioritura.announced`). Se è appena scattato: avviso a schermo, rintocco e, se attivi, avviso del telefono (`sysNotify()`, tramite il service worker; toccandolo si torna all'app, `notificationclick` in `sw.js`). Se è scattato mentre l'app era chiusa: "Hai N promemoria nella campanella".
+- Limite: senza un server di notifiche push gli avvisi del telefono arrivano solo mentre Fioritura è aperta; da chiusa si trovano nella campanella alla riapertura (lo dice l'interfaccia).
+- Sincronizzazione: `events` per `id` (vince `mt` più recente), `notifRead`/`notifHide` il più recente; `keep` conserva e rimanda le chiavi sconosciute arrivate da versioni più nuove dell'app.
 
 ## Colori (richiesta di D: "lilla, verde pastello, tutti colori tenui, anche gialletto, bianco, nero per la sera, azzurro pastello")
 

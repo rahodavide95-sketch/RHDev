@@ -5,7 +5,7 @@
    Le richieste ad altri siti (quotazioni, cambi) non passano mai dalla cache.
    Attenzione: la cache è condivisa con le altre app del sito (alcune cancellano tutte le
    cache tranne la loro): per questo a ogni apertura la pagina chiede di ricompletarla ("refill"). */
-const VERSION = 'rh-finance-v8';
+const VERSION = 'rh-finance-v9';
 const CORE = [
   './', './index.html', './manifest.webmanifest', './css/app.css',
   './js/boot.js', './js/app.js', './js/session.js', './js/store.js', './js/cloud.js', './js/core/merge.js', './js/core/xlsx.js', './js/core/invimport.js', './js/core/sheets.js', './js/actions.js', './js/market.js', './js/demo.js', './js/data/banks.js', './js/data/coins.js', './js/ui/tables.js', './js/ui/fit.js',
@@ -16,7 +16,7 @@ const CORE = [
   './js/views/importer.js', './js/views/invimport.js', './js/views/accounts.js', './js/views/networth.js', './js/views/budget.js', './js/views/recurring.js', './js/views/goals.js',
   './js/views/investments.js', './js/views/yearly.js', './js/views/categories.js', './js/views/reports.js', './js/views/sims.js', './js/views/markets.js', './js/views/settings.js', './js/views/palette.js',
   './fonts/inter.woff2', './fonts/inter-ext.woff2',
-  './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './icons/favicon-32.png', './icons/favicon-64.png',
+  './icons/icon-192.png', './icons/icon-512.png', './icons/mark-192.png', './icons/apple-touch-icon.png', './icons/favicon-32.png', './icons/favicon-64.png',
 ];
 
 const fill = () => caches.open(VERSION).then(async c => {

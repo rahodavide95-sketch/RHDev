@@ -53,9 +53,9 @@ function sheetTable(ctx, Y) {
   const lastIdx = vals => { for (let i = 12; i > 0; i--) if (vals[i] != null) return i; return -1; };
   const diffOf = vals => { const i = lastIdx(vals); return i < 0 || vals[0] == null ? null : vals[i] - vals[0]; };
   const diffPct = vals => { const dv = diffOf(vals); return dv == null || !vals[0] ? null : dv / Math.abs(vals[0]) * 100; };
-  const head = h('tr', h('th.sticky', noEuro ? 'Net Worth (€)' : 'Net Worth'),
-    dates.map((dt, i) => h('th.num', { class: [i === 0 ? 'prev' : '', S0.cols[i] ? '' : 'future'].join(' ') }, fit && fit.short ? dmy(dt).slice(0, 6) + dt.slice(2, 4) : dmy(dt))),
-    h('th.num.nw-dcol', { title: `Differenza dal 31/12/${Y - 1} all'ultima fine mese` }, fit && fit.per < 105 ? `Diff. ${String(Y - 1).slice(2)}→${String(Y).slice(2)}` : `Diff. ${Y - 1}→${Y}`), h('th.num.nw-dpct', '%'));
+  const head = h('tr', h('th.sticky', { dataset: { col: 'name' } }, noEuro ? 'Net Worth (€)' : 'Net Worth'),
+    dates.map((dt, i) => h('th.num', { dataset: { col: 'c' + i }, class: [i === 0 ? 'prev' : '', S0.cols[i] ? '' : 'future'].join(' ') }, fit && fit.short ? dmy(dt).slice(0, 6) + dt.slice(2, 4) : dmy(dt))),
+    h('th.num.nw-dcol', { dataset: { col: 'diff' }, title: `Differenza dal 31/12/${Y - 1} all'ultima fine mese` }, fit && fit.per < 105 ? `Diff. ${String(Y - 1).slice(2)}→${String(Y).slice(2)}` : `Diff. ${Y - 1}→${Y}`), h('th.num.nw-dpct', { dataset: { col: 'pct' } }, '%'));
   const pcs = v => (v == null ? '' : formatPercent(v, fit ? fit.pdec : 2, true));
   const cells = (vals, fmt, cls) => vals.map((v, i) => h('td.num', { class: [cls ? cls(v) : '', i === 0 ? 'prev' : '', S0.cols[i] ? '' : 'future'].join(' ') }, fmt(v)));
   const diffs = vals => [h('td.num.nw-dcol', { class: tone(diffOf(vals)) }, sg(diffOf(vals))), h('td.num.nw-dpct', { class: tone(diffPct(vals)) }, pcs(diffPct(vals)))];

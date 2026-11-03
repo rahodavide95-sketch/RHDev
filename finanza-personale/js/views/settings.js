@@ -407,7 +407,7 @@ export default {
           try { await session.wipeAll(); toast('Tolto da questo dispositivo'); } catch (e) { toast('Non ci sono riuscito: ' + (e?.message || e), { kind: 'err' }); }
         } }, icon('logout', 18), 'Togli'))),
       h('section.card.about',
-        h('div.brand-big', h('img.brand-ic', { src: 'icons/icon-192.png', alt: '', width: 34, height: 34 }), h('span', '[RH] Finance')),
+        h('div.brand-big', h('img.brand-ic', { src: 'icons/mark-192.png', alt: '', width: 34, height: 34 }), h('span', '[RH] Finance')),
         h('p.muted', `Versione ${VERSION} · Funziona offline · Dati cifrati prima di partire · Nessun tracciamento, nessuna pubblicità.`),
         h('p.muted', 'Sviluppato con cura da Davide Raho · © 2026'),
         h('p.fine', 'I calcoli fiscali seguono le regole italiane per le persone fisiche (2026) e sono indicativi: per la dichiarazione dei redditi rivolgiti a un commercialista.')));

@@ -1408,8 +1408,16 @@ table.resizing { user-select: none; cursor: col-resize; }
 /* icona [RH] (la stessa di [RH] Documents, D: "il nome del tool deve essere [RH] Finance, cambia i nomi e il logo") */
 .brand-ic, img.gate-mark { background: #000; object-fit: cover; }
 .brand-name { white-space: nowrap; }
-.gate-name { margin: -6px 0 2px; font-size: 19px; letter-spacing: -0.02em; color: var(--ink-2); text-align: center; }
-.gate-name b { color: var(--ink); font-weight: 700; }
 .inv-table tr.inv-cat td { background: color-mix(in srgb, var(--cat) 9%, var(--card)); }
 .inv-cat-n { display: inline-flex; align-items: center; gap: 8px; }
 .cat-sq { flex: none; display: inline-block; width: 12px; height: 12px; border-radius: 3.5px; background: color-mix(in srgb, var(--cat) 62%, var(--ink-3)); }
+/* logo [RH] Finance nella schermata di accesso: abbastanza grande da leggere "Finance" */
+img.gate-mark { width: 112px; height: 112px; border-radius: 28px; }
+.gate-card img.gate-mark { width: 88px; height: 88px; border-radius: 22px; }
+/* intestazioni delle tabelle al centro e rinominabili (D: "li voglio centrali… modificarli come voglio") */
+.table thead th, .table thead th.num, .table thead th.sticky { text-align: center; }
+.th-rename { cursor: pointer; }
+.th-rename:hover { text-decoration: underline; text-underline-offset: 3px; text-decoration-color: color-mix(in srgb, currentColor 50%, transparent); }
+.name-pop { position: fixed; z-index: 200; width: 280px; padding: 12px 14px; border-radius: 16px; background: var(--sheet); box-shadow: var(--shadow-pop); display: flex; flex-direction: column; gap: 10px; }
+.name-pop-t { font-size: 13px; font-weight: 620; color: var(--ink-2); }
+.name-pop-b { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }

@@ -306,6 +306,14 @@ export function renameGroup(kind, from, to) {
     if (gc[`${kind}:${from}`]) { gc[`${kind}:${name}`] = gc[`${kind}:${from}`]; delete gc[`${kind}:${from}`]; }
   }, { undo: 'Gruppo rinominato' });
 }
+/** Nome di una colonna scelto da D (vuoto = torna quello di partenza). */
+export function setColName(key, name) {
+  commit(st => {
+    const m = st.settings.colNames || (st.settings.colNames = {});
+    const v = String(name || '').trim().slice(0, 40);
+    if (v) m[key] = v; else delete m[key];
+  });
+}
 export function setGroupColor(kind, group, color) {
   commit(st => { st.settings.groupColors[`${kind}:${group}`] = color; });
 }

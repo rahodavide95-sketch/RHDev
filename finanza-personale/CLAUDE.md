@@ -7,10 +7,16 @@ privacy, design degno dei migliori design moderni".
 Il nome è **"[RH] Finance"**, chiesto da D il 2/11/2026 ("il nome del tool deve essere [RH] Finance,
 cambia i nomi e il logo"). Storia: era stata chiamata "[RH] Finance" di nostra iniziativa e a D non
 era piaciuto ("chi ti ha detto di chiamarla così?"), poi per un periodo "Analisi Finanziarie" col logo
-a ciambella; ora l'ha scelto lui. Logo e icone: lo stesso **"[RH]"** bianco su nero di [RH] Documents
-(i file `icon-192.png`, `icon-512.png`, `apple-touch-icon.png`, `favicon-32.png`, `favicon-64.png`
-copiati da `documenti-raho/`, composti con le lettere del logo RH[BKNG] di D; `icon-maskable-512.png`
-è la stessa 512: il segno sta già nella zona sicura). Nella barra laterale "[RH] **Finance**".
+a ciambella; ora l'ha scelto lui. **Logo** (D: "al logo devi aggiungere Finance sotto ad RH", poi "Finance deve
+stare più unito a RH ed RH più grande, Finance della stessa larghezza di RH"): il segno **"[RH]"** di
+[RH] Documents (preso pari pari da `documenti-raho/icon-512.png`, lettere del logo RH[BKNG] di D) e
+sotto, attaccato, **"Finance"** in Liberation Sans Regular (lo stesso disegno di Arimo, il carattere
+del nome di [RH] Documents) leggermente spaziato e largo esattamente come "[RH]"; bianco su nero.
+File: `icon-512.png`, `icon-192.png`, `apple-touch-icon.png` (180), `favicon-64.png` col logo intero;
+`icon-maskable-512.png` uguale ma un po' più piccolo (dentro la zona sicura del cerchio di Android);
+`favicon-32.png` e `mark-192.png` solo "[RH]" (a 30 px "Finance" non si leggerebbe): `mark-192.png`
+nella barra laterale e in Impostazioni, accanto alla scritta "[RH] **Finance**". Schermata di accesso:
+il logo intero a 112 px. Gli script che li hanno disegnati erano nello scratchpad della sessione.
 File scaricati: `RH-Finance-backup-….json`, `RH-Finance-codice-di-recupero.txt`. Non inventare
 nomi, loghi con scritte o marchi: se serve, chiedi.
 I nomi interni invisibili (`rh-finance` per IndexedDB, cache e formato della cassaforte)
@@ -425,6 +431,17 @@ la palette Excel (non tocca categorie e sezioni).
 Layout a **tutta larghezza** (D col monitor da 27": niente `max-width`), barra laterale
 **comprimibile** (pulsante in basso o tasto `[`, `html.side-mini`, `rhf-side`), finestre alte
 fino allo schermo (niente tetti a 46vh/900px), `sheet-lg` fino a 1280 px.
+**Intestazioni delle tabelle al centro e rinominabili** (D: "i nomi delle intestazioni delle tabelle li
+voglio centrali. ma anche qui, dammi la possibilità di modificarli come voglio"): tutte le `thead th`
+centrate; nelle tabelle con `data-tid` si tocca l'intestazione e si scrive il nome (riquadro
+`.name-pop` in `ui/tables.js`, "Torna a «…»" per il nome di partenza). Nomi in `settings.colNames`
+(`"tabella|colonna"`, sincronizzati), chiave della colonna = `data-col` (stabile: Net Worth `name`,
+`c0`…`c12`, `diff`, `pct`; Entrate e uscite `name`, `m0`…`m11`, `tot`, `avg`, `pct`, separati per
+entrate e uscite) o il testo di partenza; le tabelle "adattate" usano lo stesso nome (`-fit` tolto).
+I riquadri sopra la pagina (nome della colonna, colore) si chiudono scorrendo solo se l'elemento si è
+spostato di più di 60 px (prima il piccolo scorrimento del trackpad li chiudeva subito). Se nemmeno il
+carattere più piccolo basta (schermo stretto, numeri a 6 cifre), `fitTable` torna `null`: la tabella
+scorre di lato invece di tagliare le cifre; le date intere solo con 10 px di margine.
 Tabelle con `data-tid`: **colonne allargabili** trascinando il bordo dell'intestazione
 (`ui/tables.js`, larghezze in `rhf-tables`, doppio clic per tornare); `filterBox()` per filtrare.
 Loghi: banche (`data/banks.js`, `icons/banks/`) dalle icone ufficiali dei loro siti e crypto

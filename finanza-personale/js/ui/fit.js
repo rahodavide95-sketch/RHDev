@@ -26,9 +26,13 @@ export function fitTable({ cols = 15, maxAbs = 0, maxPct = 0 } = {}) {
   const sample = (dec, euro) => '+' + formatNumber(Number('9'.repeat(String(big).length)), dec, dec).replace(/\d/g, '0') + (euro ? ' €' : '');
   const bigPct = Math.floor(Math.abs(maxPct)) || 1;
   const pctSample = pd => '+' + formatNumber(Number('9'.repeat(String(bigPct).length)), pd, pd).replace(/\d/g, '0') + '%';
-  const [font, dec, euro] = TRIES.find(([f, dd, e]) => measure(sample(dd, e), f) <= per && measure(pctSample(0), f) <= per) || TRIES[TRIES.length - 1];
+  const pick = TRIES.find(([f, dd, e]) => measure(sample(dd, e), f) <= per && measure(pctSample(0), f) <= per);
+  // se nemmeno il carattere più piccolo basta (schermo stretto e numeri molto lunghi) la tabella
+  // scorre di lato invece di tagliare le cifre
+  if (!pick) return null;
+  const [font, dec, euro] = pick;
   const pdec = [2, 1, 0].find(pd => measure(pctSample(pd), font) <= per) ?? 0;
-  return { first, per: per + 12, dec, font, euro, pdec, short: measure('31/12/2025', font * 0.86) > per - 2 };
+  return { first, per: per + 12, dec, font, euro, pdec, short: measure('31/12/2025', font * 0.86) > per - 10 };    // con margine: le date intere solo se c'entrano larghe
 }
 export const fitSig = f => (f ? `${f.dec}|${f.font}|${f.first}|${f.euro}|${f.short}|${f.pdec}` : 'scroll');
 

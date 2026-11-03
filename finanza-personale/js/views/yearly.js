@@ -8,10 +8,10 @@
 import { h, icon, download } from '../ui/dom.js';
 import { toast, empty } from '../ui/components.js';
 import { money, moneyText, delta, tipMoney, axisMoney, ui } from '../ui/fmt.js';
-import { card, segTabs, filterBox, stat, colorDot, softColor } from './common.js';
-import { setGroupColor } from '../actions.js';
+import { card, segTabs, filterBox, stat, colorDot, softColor, editInCell, resumeEdit } from './common.js';
+import { setGroupColor, setFlowCell, placeCategory } from '../actions.js';
 import { fitTable, watchFit, fitMoney } from '../ui/fit.js';
-import { categoryEditor, txEditor } from './editors.js';
+import { categoryEditor, txEditor, undoToast } from './editors.js';
 import { categoryManager, groupColor } from './categories.js';
 import { openFileImport } from './invimport.js';
 import { barChart, sparkline, legend } from '../ui/charts.js';
@@ -45,6 +45,7 @@ function filterTable(T, q, focus) {
   }).filter(Boolean);
   return { ...T, groups, ...tot };
 }
+let dragEnded = 0;
 /** Macro senza sottocategorie vere (es. ALTRO): una riga sola. */
 const single = g => g.cats.length === 1 && norm(g.cats[0].name) === norm(g.name);
 /** Note diverse dal nome della sottocategoria (es. "Groover" sotto PRODUZIONE). */
@@ -127,10 +128,91 @@ export default {
           h('p.dash-cap', 'Tocca un nome per vedere solo quella categoria nella tabella, il quadratino per cambiarne il colore.'))));
 
     /* ── tabella: macro (somma) → sottocategorie → note ── */
-    const cells = (r, extra, strong) => months.map(m => h('td.num', {
-      class: [m >= curM ? 'future' : '', r.byMonth[m] ? (extra != null ? 'click' : '') : 'muted', strong ? 'b' : ''].join(' '),
-      onclick: r.byMonth[m] && extra != null ? e => { e.stopPropagation(); goMonth(m, extra); } : null,
-    }, t2(r.byMonth[m])));
+    // i movimenti di ogni cella (sottocategoria o nota, mese), per scrivere l'importo direttamente
+    // (D: "se clicco in una cella devo poter modificare da solo l'importo… ce ne sono diversi sbagliati")
+    const byCell = new Map();
+    const push = (k, t) => { const a = byCell.get(k); if (a) a.push(t); else byCell.set(k, [t]); };
+    for (const t of st.transactions) {
+      if (t.kind === 'transfer' || !t.date.startsWith(String(V.year)) || (t.kind === 'expense' && t.tags?.includes('investimenti'))) continue;
+      const c = t.category ? d.catById.get(t.category) : null;
+      if (c ? c.kind !== V.kind : t.kind !== V.kind) continue;
+      const m = +t.date.slice(5, 7) - 1, ck = t.category || '';
+      push(`${ck}|${m}`, t); push(`${ck}|${m}|${((t.payee || '').trim() || 'Senza descrizione').toLowerCase()}`, t);
+    }
+    // il conto per un movimento nuovo: quello usato di solito per quella sottocategoria, se no quello dei fogli importati
+    const accFor = catId => {
+      const last = st.transactions.filter(t => t.category === catId && t.kind === V.kind).sort((a, b) => (a.date < b.date ? 1 : -1))[0];
+      if (last) return last.account;
+      const any = st.transactions.filter(t => t.kind === V.kind).sort((a, b) => (a.date < b.date ? 1 : -1))[0];
+      return any?.account || st.accounts.find(a => !a.archived && a.type === 'checking')?.id || st.accounts[0]?.id || null;
+    };
+    const monthDate = m => { const ym = `${V.year}-${String(m + 1).padStart(2, '0')}`; const end = new Date(V.year, m + 1, 0).getDate(); const dt = `${ym}-${String(end).padStart(2, '0')}`; return dt > today() ? today() : dt; };
+    // una cella si scrive se dietro c'è al massimo un movimento, nella valuta principale e del verso giusto;
+    // con più movimenti si apre Movimenti di quel mese, per correggerli uno per uno
+    const editable = (cat, m, payee) => {
+      if (m >= curM && !(V.year === cy && m === curM - 1)) return null;
+      const list = byCell.get(payee == null ? `${cat?.id || ''}|${m}` : `${cat?.id || ''}|${m}|${payee.toLowerCase()}`) || [];
+      if (list.length > 1) return null;
+      const t = list[0];
+      if (t && (t.kind !== V.kind || (d.accById.get(t.account)?.currency || ui.base) !== ui.base)) return null;
+      return { t, cat, payee };
+    };
+    const cells = (r, extra, strong, ed) => months.map(m => {
+      const e = ed ? editable(ed.cat, m, ed.payee) : null;
+      const attrs = { class: [m >= curM ? 'future' : '', r.byMonth[m] ? (extra != null && !e ? 'click' : '') : 'muted', strong ? 'b' : '', e ? 'cell-edit' : ''].join(' ') };
+      if (e) {
+        Object.assign(attrs, { tabindex: '0', dataset: { k: ed.key, i: String(m) }, title: 'Tocca per scrivere l\'importo' });
+        const open = ev => { ev.stopPropagation(); editFlow(ev.currentTarget, e, m, r.byMonth[m] || 0, ed.label); };
+        attrs.onclick = open;
+        attrs.onkeydown = ev => { if (ev.key === 'Enter' || ev.key === 'F2') { ev.preventDefault(); open(ev); } };
+      } else if (r.byMonth[m] && extra != null) attrs.onclick = ev => { ev.stopPropagation(); goMonth(m, extra); };
+      return h('td.num', attrs, t2(r.byMonth[m]));
+    });
+    const editFlow = (td, e, m, cur, what) => editInCell(td, {
+      cur, label: `${what}, ${monthName(m + 1)} ${V.year}`,
+      save: c => {
+        if (c != null && c < 0) { toast('Scrivi l\'importo senza il meno', { kind: 'err' }); return false; }
+        if ((c || 0) === cur) return false;
+        const account = e.t ? e.t.account : accFor(e.cat?.id || null);
+        if (!e.t && !account) { toast('Aggiungi prima un conto', { kind: 'err' }); return false; }
+        setFlowCell({ txId: e.t?.id || null, kind: V.kind, category: e.cat?.id || null, payee: e.payee ?? e.cat?.name ?? '', date: monthDate(m), account }, c || 0);
+        undoToast(`${what}, ${monthName(m + 1)}: ${c ? moneyText(c) : 'tolto'}`);
+        return true;
+      },
+    });
+    // trascinare una sottocategoria: sopra o sotto un'altra, o sulla riga di una categoria (va in fondo a quella)
+    const startDrag = (ev, c) => {
+      if (ev.button !== 0 || !c.id) return;
+      if (ev.pointerType === 'touch' && !ev.target.closest('.nw-grip')) return;
+      const src = ev.currentTarget.closest('tr');
+      const x0 = ev.clientX, y0 = ev.clientY;
+      let on = false, mark = null, where = null;
+      const clear = () => { mark?.classList.remove('drop-before', 'drop-after'); mark = null; };
+      const move = e2 => {
+        if (!on) { if (Math.hypot(e2.clientX - x0, e2.clientY - y0) < 6) return; on = true; src.classList.add('nw-dragging'); document.body.classList.add('nw-drag-on'); }
+        e2.preventDefault();
+        if (e2.clientY < 70) scrollBy(0, -14); else if (e2.clientY > innerHeight - 50) scrollBy(0, 14);
+        const tr = document.elementFromPoint(e2.clientX, e2.clientY)?.closest('table.fin-table tbody tr');
+        clear(); where = null;
+        if (!tr || tr === src || !tr.dataset.group) return;
+        const rc = tr.getBoundingClientRect();
+        if (tr.classList.contains('fin-sub') && tr.dataset.cat) {
+          const up = e2.clientY < rc.top + rc.height / 2;
+          where = { group: tr.dataset.group, ...(up ? { before: tr.dataset.cat } : { after: tr.dataset.cat }) };
+          mark = tr; tr.classList.add(up ? 'drop-before' : 'drop-after');
+        } else if (tr.classList.contains('fin-macro')) { where = { group: tr.dataset.group }; mark = tr; tr.classList.add('drop-after'); }
+      };
+      const up = () => {
+        removeEventListener('pointermove', move); removeEventListener('pointerup', up); removeEventListener('pointercancel', up);
+        if (!on) return;
+        dragEnded = Date.now();
+        src.classList.remove('nw-dragging'); document.body.classList.remove('nw-drag-on'); clear();
+        if (!where) return;
+        placeCategory(c.id, where.group, where);
+        undoToast(src.dataset.group === where.group ? 'Sottocategoria spostata' : `${c.name} spostata in ${where.group}`);
+      };
+      addEventListener('pointermove', move, { passive: false }); addEventListener('pointerup', up); addEventListener('pointercancel', up);
+    };
     const ends = r => [h('td.num.fin-tot', t2(r.total)), h('td.num', T.months && r.total ? fm(avg(r)) : ''), h('td.num.fin-pct', !r.total || !T.total ? '' : r === T ? '100%' : formatPercent(share(r), fit ? Math.min(1, fit.pdec) : 1))];
     const body = [];
     for (const g of T.groups) {
@@ -138,24 +220,27 @@ export default {
       const isSingle = single(g);
       const closed = V.closed.has(g.name);
       const catId = isSingle ? g.cats[0].id : null;
-      body.push(h('tr.fin-macro', { style: { '--chip': col }, class: isSingle ? '' : 'click', onclick: isSingle ? null : () => { if (closed) V.closed.delete(g.name); else V.closed.add(g.name); ctx.rerender(); } },
+      const singleCat = isSingle ? d.catById.get(g.cats[0].id) || null : null;
+      body.push(h('tr.fin-macro', { style: { '--chip': col }, class: isSingle ? '' : 'click', dataset: { group: g.name }, onclick: isSingle ? null : () => { if (Date.now() - dragEnded < 300) return; if (closed) V.closed.delete(g.name); else V.closed.add(g.name); ctx.rerender(); } },
         h('td.sticky', h('span.fin-macro-name', isSingle ? h('span.fin-caret') : h('span.fin-caret', icon(closed ? 'chevR' : 'chevD', 14)), colorDot(cval(col), v => setGroupColor(V.kind, g.name, v), `Colore di ${g.name}`), h('span.fin-macro-t', g.name))),
-        cells(g, catId ? `&cat=${catId}` : null, true), ends(g)));
+        cells(g, catId ? `&cat=${catId}` : null, true, isSingle && (singleCat || !g.cats[0].id) ? { cat: singleCat, payee: null, key: 'c:' + (g.cats[0].id || '-'), label: g.name } : null), ends(g)));
       const showNotes = c => V.notes || V.openNotes.has(c.id || c.name);
       if (isSingle) {
         const c = g.cats[0];
-        if (showNotes(c)) for (const p of notesOf(c)) body.push(h('tr.fin-note', h('td.sticky', h('span', p.name)), cells(p, `${c.id ? `&cat=${c.id}` : ''}&q=${encodeURIComponent(p.name)}`), ends(p)));
+        if (showNotes(c)) for (const p of notesOf(c)) body.push(h('tr.fin-note', h('td.sticky', h('span', p.name)), cells(p, `${c.id ? `&cat=${c.id}` : ''}&q=${encodeURIComponent(p.name)}`, false, { cat: singleCat, payee: p.name, key: `n:${c.id || '-'}:${p.name}`, label: p.name }), ends(p)));
         continue;
       }
       if (closed) continue;
       for (const c of g.cats) {
         const ns = notesOf(c);
         const key = c.id || c.name;
-        body.push(h('tr.fin-sub', { style: { '--chip': col } },
-          h('td.sticky', h('span.fin-sub-name', c.name),
+        const cat = c.id ? d.catById.get(c.id) || null : null;
+        body.push(h('tr.fin-sub', { style: { '--chip': col }, dataset: { group: g.name, cat: c.id || '' } },
+          h('td.sticky', { class: c.id ? 'fin-drag-h' : '', title: c.id ? 'Trascina per spostarla in un\'altra categoria' : null, onpointerdown: c.id ? e => startDrag(e, c) : null },
+            c.id ? icon('grip', 14, 'nw-grip') : null, h('span.fin-sub-name', c.name),
             ns.length && !V.notes ? h('button.fin-notes-btn', { type: 'button', 'aria-label': 'Mostra le note', onclick: e => { e.stopPropagation(); if (V.openNotes.has(key)) V.openNotes.delete(key); else V.openNotes.add(key); ctx.rerender(); } }, `${ns.length} ${ns.length === 1 ? 'nota' : 'note'}`, icon(V.openNotes.has(key) ? 'chevD' : 'chevR', 12)) : null),
-          cells(c, c.id ? `&cat=${c.id}` : ''), ends(c)));
-        if (showNotes(c)) for (const p of ns) body.push(h('tr.fin-note', h('td.sticky', h('span', p.name)), cells(p, `${c.id ? `&cat=${c.id}` : ''}&q=${encodeURIComponent(p.name)}`), ends(p)));
+          cells(c, c.id ? `&cat=${c.id}` : '', false, { cat, payee: null, key: 'c:' + (c.id || '-'), label: c.name }), ends(c)));
+        if (showNotes(c)) for (const p of ns) body.push(h('tr.fin-note', h('td.sticky', h('span', p.name)), cells(p, `${c.id ? `&cat=${c.id}` : ''}&q=${encodeURIComponent(p.name)}`, false, { cat, payee: p.name, key: `n:${c.id || '-'}:${p.name}`, label: p.name }), ends(p)));
       }
     }
     const table = h('table.table.nw-table.nw-months.fin-table', { 'data-tid': fit ? `fin-${V.kind}-fit` : `fin-${V.kind}`, class: fit ? 'fit' : '' },
@@ -163,6 +248,7 @@ export default {
       h('tbody', body),
       h('tfoot', h('tr.fin-grand', h('td.sticky', V.focus || V.q ? `Totale (filtrato)` : `Totale ${label.toLowerCase()}`), cells(T, null, true), ends(T))));
     if (fit) { table.style.setProperty('--nw-first', fit.first + 'px'); table.style.fontSize = fit.font + 'px'; }
+    resumeEdit(table);
     const tableWrap = h('div.table-wrap.nw-scroll', table);
     // su telefono (la tabella scorre) si apre sui mesi più recenti
     if (!fit && curM > 6) requestAnimationFrame(() => requestAnimationFrame(() => {

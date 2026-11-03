@@ -7,8 +7,9 @@ import { money, moneyText } from '../ui/fmt.js';
 import { ACCOUNT_TYPES, ASSET_CLASSES, isLiability } from '../core/model.js';
 import { formatDay, formatMonth } from '../core/dates.js';
 import { cleanPeriod, isCustom } from '../core/period.js';
+import { parseAmount, formatNumber } from '../core/money.js';
 import { txEditor } from './editors.js';
-import { colorChoice, selectInput } from '../ui/components.js';
+import { colorChoice, selectInput, toast } from '../ui/components.js';
 import { setSetting } from '../actions.js';
 
 export function card(title, opts = {}, ...body) {
@@ -123,6 +124,61 @@ export function periodPicker({ value, range, months, onChange, presets = [12, 24
     custom && opts.length ? h('div.nw-range',
       h('label', h('span', 'Da'), selectInput(opts, from, v => onChange({ from: v, to }))),
       h('label', h('span', 'A'), selectInput(opts, to, v => onChange({ from, to: v })))) : null);
+}
+
+/* ─── Scrivere un importo direttamente nella cella (D: "se clicco in una cella devo poter modificare
+   da solo l'importo senza passare da altre cose") ───
+   Invio salva e scende alla riga sotto, Tab va a destra (Maiusc+Tab a sinistra), Esc annulla, cella
+   vuota = valore tolto. Le celle che si scrivono hanno la classe `cell-edit` e data-k (riga) e data-i
+   (colonna), così dopo il ridisegno si riprende dalla cella giusta (`resumeEdit`). */
+let nextEdit = null;
+const findCell = (root, k, i) => [...root.querySelectorAll('td.cell-edit')].find(x => x.dataset.k === k && x.dataset.i === i);
+export function editInCell(td, { cur, label, save }) {
+  if (td.classList.contains('editing')) return;
+  const old = [...td.childNodes];
+  const inp = h('input.cell-in', { type: 'text', inputmode: 'decimal', autocomplete: 'off', 'aria-label': label, value: cur == null || cur === 0 ? '' : formatNumber(cur / 100, 2, 2) });
+  td.replaceChildren(inp); td.classList.add('editing');
+  inp.focus(); inp.select();
+  const neighbour = dir => {
+    if (dir === 'down') {
+      for (let tr = td.parentElement.nextElementSibling; tr; tr = tr.nextElementSibling) {
+        const x = tr.querySelector(`td.cell-edit[data-i="${td.dataset.i}"]`);
+        if (x) return { k: x.dataset.k, i: x.dataset.i };
+      }
+      return null;
+    }
+    const cells = [...td.parentElement.querySelectorAll('td.cell-edit')];
+    const x = cells[cells.indexOf(td) + (dir === 'left' ? -1 : 1)];
+    return x ? { k: x.dataset.k, i: x.dataset.i } : null;
+  };
+  let done = false;
+  const restore = () => { td.replaceChildren(...old); td.classList.remove('editing'); };
+  const finish = (ok, dir) => {
+    if (done) return; done = true;
+    const go = dir ? neighbour(dir) : null;
+    if (!ok) { restore(); td.focus(); return; }
+    const txt = inp.value.trim();
+    const c = txt === '' ? null : parseAmount(txt);
+    if (txt !== '' && c == null) { restore(); toast('Non è un importo: scrivi per esempio 1234,56', { kind: 'err' }); return; }
+    const table = td.closest('table');
+    restore();
+    nextEdit = go;
+    // save() ridisegna la pagina se cambia qualcosa; se non cambia niente si passa subito alla cella dopo
+    if (save(c) === false && go) { nextEdit = null; findCell(table, go.k, go.i)?.click(); }
+  };
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); finish(true, 'down'); }
+    else if (e.key === 'Tab') { e.preventDefault(); finish(true, e.shiftKey ? 'left' : 'right'); }
+    else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); finish(false); }
+  });
+  inp.addEventListener('blur', () => finish(true));
+  inp.addEventListener('click', e => e.stopPropagation());
+}
+/** Dopo il ridisegno: riapre la cella dove si era arrivati con Invio o Tab. */
+export function resumeEdit(table) {
+  if (!nextEdit) return;
+  const want = nextEdit; nextEdit = null;
+  requestAnimationFrame(() => findCell(table, want.k, want.i)?.click());
 }
 
 /** Casella per filtrare una tabella: aggiorna la pagina mentre scrivi e resta selezionata. */

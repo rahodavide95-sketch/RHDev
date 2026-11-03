@@ -1,0 +1,2028 @@
+<!DOCTYPE html>
+<html lang="it" data-mode="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fioritura</title>
+<meta name="description" content="Il tuo programma di studio, giorno per giorno: spunta le giornate, concentrati con calma e guarda il tuo giardino fiorire.">
+<meta name="theme-color" content="#f7f1ec" id="themeColor">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Fioritura">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,300..600,100;1,9..144,300..500,100&family=DM+Sans:opsz,wght@9..40,400..600&display=swap" rel="stylesheet">
+<script>
+  /* Colori tenui: ogni tavolozza ha la sua versione di giorno (l) e di sera (d).
+     l = [sfondo, nuvola 1, nuvola 2, nuvola 3, colore, colore tenue, testo colorato, testo sul colore, alone, binario, fogli]
+     d = [sfondo, nuvola 1, nuvola 2, nuvola 3, colore, colore tenue, testo colorato, testo sul colore, fogli] */
+  window.FIO_PAL = {
+    cipria:   { name: 'Cipria',   l: ['#f7f1ec', '#f2d6cf', '#e3dbf1', '#dbe8da', '#a95f63', '#f5e3e0', '#93505a', '#ffffff', 'rgba(169,95,99,.38)', '#ede3de', '#fffaf7'], d: ['#131012', '#2e1d24', '#1f1b2c', '#18211c', '#e8a9a8', '#3b2a31', '#f2bdbb', '#2a1d22', '#1f1a1d'] },
+    lilla:    { name: 'Lilla',    l: ['#f4f1f9', '#e2d7f4', '#f2dcec', '#dde4f6', '#7d68a6', '#ebe5f6', '#66538f', '#ffffff', 'rgba(125,104,166,.36)', '#e6e1ef', '#fdfbff'], d: ['#121015', '#251d33', '#2a1b28', '#1a1e2e', '#c5b4e8', '#2f2842', '#d6c9f2', '#221b30', '#1d1a23'] },
+    salvia:   { name: 'Salvia',   l: ['#f1f5f0', '#d6e8d6', '#e8efd5', '#d3e6e5', '#557e63', '#dfece2', '#466f55', '#ffffff', 'rgba(85,126,99,.34)', '#e1e8e0', '#fbfdfa'], d: ['#0f1211', '#1a2a20', '#232a19', '#16262a', '#a8cfb4', '#22332a', '#bfe1ca', '#17251d', '#191e1b'] },
+    vaniglia: { name: 'Vaniglia', l: ['#fbf7ea', '#f7e8b8', '#f8ddcb', '#e9edcf', '#ebc96c', '#f8edc9', '#86681b', '#4a3a14', 'rgba(214,170,60,.35)', '#efe7cf', '#fffdf4', '#fffdf4'], d: ['#131210', '#2e2716', '#2d1f17', '#22261a', '#ecd38c', '#383020', '#f3e0a6', '#2b2410', '#1f1d18', '#1f1d18'] },
+    cielo:    { name: 'Cielo',    l: ['#eff4f9', '#d4e5f4', '#e0dcf3', '#d6efea', '#4f7aa0', '#dfeaf5', '#42698d', '#ffffff', 'rgba(79,122,160,.34)', '#e0e7ee', '#fbfdff'], d: ['#0f1114', '#172536', '#1f1c30', '#142826', '#a9c9e8', '#1f2d3c', '#c1d9f1', '#16222e', '#191d22'] },
+    pesca:    { name: 'Pesca',    l: ['#faf2ec', '#f8dac8', '#f6e4cf', '#f1d8de', '#a8644a', '#f8e4d8', '#94563c', '#ffffff', 'rgba(168,100,74,.35)', '#efe2d9', '#fffaf6'], d: ['#131010', '#301f17', '#2c2316', '#2c1a20', '#f0bb9e', '#3c2b23', '#f6cdb6', '#2b1d16', '#201b19'] },
+    neve:     { name: 'Neve',     l: ['#fafafa', '#f0eeee', '#eeeff3', '#f0f1ee', '#3f3a3d', '#efedee', '#3f3a3d', '#ffffff', 'rgba(40,35,38,.25)', '#ebe9ea', '#ffffff'], d: ['#0b0b0c', '#19181a', '#161619', '#171817', '#ecebeb', '#29282a', '#f0eeef', '#141314', '#1a1a1b'] }
+  };
+  /* Tema prima del primo disegno, così non lampeggia */
+  window.FIO_THEME = function (settings) {
+    var t = (settings && settings.theme) || 'auto', p = (settings && settings.pal) || 'cipria', h = new Date().getHours();
+    if (!window.FIO_PAL[p]) p = 'cipria';
+    var dark = t === 'dark' || (t === 'evening' && (h >= 19 || h < 7)) ||
+      (t === 'auto' && !!window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+    var el = document.documentElement;
+    el.setAttribute('data-mode', dark ? 'dark' : 'light');
+    el.setAttribute('data-pal', p);
+    return { dark: dark, bg: window.FIO_PAL[p][dark ? 'd' : 'l'][0] };
+  };
+  (function () {
+    var css = '';
+    Object.keys(window.FIO_PAL).forEach(function (k) {
+      var l = window.FIO_PAL[k].l, d = window.FIO_PAL[k].d;
+      css += ':root[data-mode="light"][data-pal="' + k + '"]{--bg:' + l[0] + ';--blob1:' + l[1] + ';--blob2:' + l[2] + ';--blob3:' + l[3] +
+        ';--accent:' + l[4] + ';--accent-soft:' + l[5] + ';--accent-text:' + l[6] + ';--accent-ink:' + l[7] + ';--accent-glow:' + l[8] + ';--track:' + l[9] + ';--card-solid:' + l[10] + '}\n';
+      css += ':root[data-mode="dark"][data-pal="' + k + '"]{--bg:' + d[0] + ';--blob1:' + d[1] + ';--blob2:' + d[2] + ';--blob3:' + d[3] +
+        ';--accent:' + d[4] + ';--accent-soft:' + d[5] + ';--accent-text:' + d[6] + ';--accent-ink:' + d[7] + ';--card-solid:' + d[8] + '}\n';
+    });
+    var st = document.createElement('style'); st.id = 'palcss'; st.textContent = css;
+    document.head.appendChild(st);
+    var s = null;
+    try { s = JSON.parse(localStorage.getItem('fioritura.v1') || 'null'); } catch (e) {}
+    window.FIO_THEME(s && s.settings);
+  })();
+</script>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  :root{
+    --bg:#f7f1ec;
+    --blob1:#f2d6cf; --blob2:#e3dbf1; --blob3:#dbe8da;
+    --card:rgba(255,251,248,.76);
+    --card-solid:#fffaf7;
+    --card-border:rgba(255,255,255,.75);
+    --ink:#3a2e33; --ink-2:#5c4c53; --muted:#8a7a80;
+    --line:rgba(58,46,51,.08); --line-2:rgba(58,46,51,.17);
+    --track:#ede3de;
+    --accent:#a95f63; --accent-ink:#fff; --accent-soft:#f5e3e0; --accent-text:#93505a;
+    --accent-glow:rgba(169,95,99,.38);
+    --c1:#e2a585; --c1s:#f8e8de;
+    --c2:#d8909a; --c2s:#f7e3e4;
+    --c3:#a898cd; --c3s:#ece7f6;
+    --c4:#8eb09b; --c4s:#e2eee6;
+    --gold:#f1cf94; --check-ink:#fff;
+    --shadow:0 1px 2px rgba(90,60,64,.04),0 14px 34px -16px rgba(120,70,76,.24);
+    --shadow-lg:0 26px 60px -22px rgba(80,40,50,.38);
+    --r:26px;
+    --serif:'Fraunces',ui-serif,Georgia,'Times New Roman',serif;
+    --sans:'DM Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    color-scheme:light;
+  }
+  :root[data-mode="dark"]{
+    --bg:#131012;
+    --blob1:#2e1d24; --blob2:#1f1b2c; --blob3:#18211c;
+    --card:rgba(32,28,32,.78);
+    --card-solid:#1f1b1f;
+    --card-border:rgba(255,255,255,.06);
+    --ink:#f4eae7; --ink-2:#ddcfd2; --muted:#a8979d;
+    --line:rgba(255,236,236,.08); --line-2:rgba(255,236,236,.17);
+    --track:#2f292d;
+    --accent:#e8a9a8; --accent-ink:#2a1d22; --accent-soft:#3b2a31; --accent-text:#f2bdbb;
+    --accent-glow:rgba(232,169,168,.25);
+    --c1:#ebb598; --c1s:#493630;
+    --c2:#e8a5ad; --c2s:#4a3139;
+    --c3:#bbabde; --c3s:#393251;
+    --c4:#a3c4ae; --c4s:#2e4036;
+    --gold:#e8c88c; --check-ink:#2a1d22;
+    --shadow:0 1px 2px rgba(0,0,0,.2),0 16px 36px -18px rgba(0,0,0,.6);
+    --shadow-lg:0 26px 60px -20px rgba(0,0,0,.7);
+    color-scheme:dark;
+  }
+  html{background:var(--bg)}
+  body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:16px;line-height:1.5;
+    -webkit-font-smoothing:antialiased;min-height:100vh;min-height:100dvh;overflow-x:hidden;transition:background .4s}
+  button,input,textarea,select{font:inherit;color:inherit}
+  button{cursor:pointer;background:none;border:0}
+  :focus{outline:none}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:12px}
+
+  /* Cielo morbido sullo sfondo */
+  .sky{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+  .sky i{position:absolute;border-radius:50%;animation:drift 40s ease-in-out infinite alternate;will-change:transform}
+  .sky i:nth-child(1){width:90vmax;height:90vmax;left:-38vmax;top:-42vmax;background:radial-gradient(closest-side,var(--blob1),transparent)}
+  .sky i:nth-child(2){width:80vmax;height:80vmax;right:-40vmax;top:8vh;background:radial-gradient(closest-side,var(--blob2),transparent);animation-duration:52s;animation-delay:-14s}
+  .sky i:nth-child(3){width:80vmax;height:80vmax;left:-20vmax;bottom:-46vmax;background:radial-gradient(closest-side,var(--blob3),transparent);animation-duration:60s;animation-delay:-26s}
+  @keyframes drift{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(7vmax,5vmax,0) scale(1.1)}}
+
+  #app{position:relative;z-index:1;max-width:580px;margin:0 auto;
+    padding:calc(env(safe-area-inset-top) + 14px) 16px calc(env(safe-area-inset-bottom) + 118px)}
+  #view{animation:enter .45s cubic-bezier(.2,.8,.2,1) both}
+  #view.swap{animation:none}
+  @keyframes enter{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  #view > * + *{margin-top:14px}
+
+  /* Testi */
+  .display{font-family:var(--serif);font-weight:400;font-variation-settings:"SOFT" 100;letter-spacing:-.015em;line-height:1.1}
+  .eyebrow{display:block;font-size:11.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);font-weight:500}
+  .h3{font-family:var(--serif);font-weight:400;font-size:21px;line-height:1.2;font-variation-settings:"SOFT" 100;letter-spacing:-.01em}
+  .muted{color:var(--muted)}
+  .small{font-size:13.5px;line-height:1.45}
+  .tiny{font-size:12px}
+  .row{display:flex;align-items:center;gap:10px}
+  .between{justify-content:space-between}
+  .wrap{flex-wrap:wrap}
+  .grow{flex:1;min-width:0}
+
+  /* Barra in alto */
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:4px 2px 6px}
+  .brand{display:flex;align-items:center;gap:9px;font-family:var(--serif);font-size:18px;font-variation-settings:"SOFT" 100;color:var(--ink-2)}
+  .brand svg{width:26px;height:26px}
+  .ib{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:var(--card);
+    border:1px solid var(--card-border);color:var(--ink-2);box-shadow:var(--shadow);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);transition:transform .15s}
+  .ib:active{transform:scale(.94)}
+  .ib svg{width:20px;height:20px}
+  .ib.flat{box-shadow:none;background:transparent;border-color:transparent}
+  .tb-r{display:flex;gap:8px}
+  .ib.acct{position:relative;font-family:var(--serif);font-size:18px;font-variation-settings:"SOFT" 100;color:var(--accent-text)}
+  .ib.acct.in{background:var(--accent-soft)}
+  .sdot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--line-2);flex:none}
+  .ib.acct .sdot{position:absolute;top:1px;right:1px;border:2px solid var(--bg);width:12px;height:12px}
+  .sdot[hidden]{display:none}
+  .sdot.ok{background:#7fb38f} .sdot.busy{background:var(--c3);animation:pulse 1.2s ease-in-out infinite} .sdot.warn{background:#e0a65a}
+  @keyframes pulse{50%{opacity:.35}}
+  .who{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:20px;background:var(--accent-soft)}
+  .who .av{width:46px;height:46px;border-radius:50%;flex:none;display:grid;place-items:center;background:var(--accent);color:var(--accent-ink);
+    font-family:var(--serif);font-size:22px;font-variation-settings:"SOFT" 100}
+  .who b{display:block;font-weight:600}
+  .who small{display:block;color:var(--ink-2);font-size:13.5px;overflow-wrap:anywhere}
+  .syncline{display:flex;align-items:center;gap:9px;font-size:14px;color:var(--ink-2)}
+  .msg{font-size:14px;line-height:1.45;padding:11px 14px;border-radius:14px;background:var(--accent-soft);color:var(--accent-text)}
+  .msg.bad{background:rgba(214,120,90,.14);color:#b0563f}
+  :root[data-mode="dark"] .msg.bad{color:#f0a58d}
+  .msg:empty{display:none}
+  .linkbtn{color:var(--accent-text);font-weight:500;font-size:14px;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--line-2)}
+  .pals{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 6px}
+  .sw{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-2);padding:4px 0}
+  .sw i{width:46px;height:46px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06),0 4px 12px -6px rgba(0,0,0,.3);transition:transform .2s;position:relative}
+  .sw[aria-pressed="true"] i{transform:scale(1.06);box-shadow:0 0 0 2px var(--card-solid),0 0 0 4px var(--accent)}
+  .sw[aria-pressed="true"]{color:var(--ink);font-weight:600}
+  .seg.four button{font-size:13px;padding:9px 4px}
+  .ib.sm{width:34px;height:34px}
+  .ib.sm svg{width:16px;height:16px}
+
+  .head{padding:6px 2px 4px}
+  .head h1{font-size:clamp(31px,8.4vw,40px);margin-top:6px}
+  .head p{margin-top:8px;color:var(--muted);font-size:15px;max-width:34em}
+
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .chip{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:999px;background:var(--card);
+    border:1px solid var(--card-border);font-size:13px;color:var(--ink-2);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+  .chip svg{width:15px;height:15px;color:var(--accent-text)}
+
+  /* Schede */
+  .card{position:relative;background:var(--card);border:1px solid var(--card-border);border-radius:var(--r);
+    box-shadow:var(--shadow);padding:20px;backdrop-filter:blur(20px) saturate(1.15);-webkit-backdrop-filter:blur(20px) saturate(1.15)}
+  button.card{display:block;width:100%;text-align:left}
+  .card > * + *{margin-top:12px}
+  .card .row + .row{margin-top:10px}
+
+  /* Colori delle fasi */
+  .p1{--pc:var(--c1);--ps:var(--c1s)} .p2{--pc:var(--c2);--ps:var(--c2s)}
+  .p3{--pc:var(--c3);--ps:var(--c3s)} .p4{--pc:var(--c4);--ps:var(--c4s)}
+  .pill{display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border-radius:999px;font-size:12.5px;font-weight:600;
+    background:var(--ps);color:var(--ink-2);white-space:nowrap}
+  .pill::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--pc)}
+
+  /* Pulsanti */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:52px;padding:0 24px;border-radius:999px;
+    font-weight:600;font-size:15.5px;background:var(--accent);color:var(--accent-ink);
+    box-shadow:0 12px 26px -12px var(--accent-glow);transition:transform .15s,background .25s,box-shadow .25s;text-align:center;line-height:1.2;white-space:nowrap}
+  .btn:active{transform:scale(.97)}
+  .btn svg{width:19px;height:19px}
+  .btn.soft{background:var(--accent-soft);color:var(--accent-text);box-shadow:none}
+  .btn.ghost{background:transparent;color:var(--muted);box-shadow:none;min-height:40px;padding:0 8px;gap:7px;font-weight:500;font-size:14.5px}
+  .btn.ghost svg{width:17px;height:17px}
+  .btn.line{background:transparent;color:var(--ink-2);box-shadow:none;border:1px solid var(--line-2)}
+  .btn.block{width:100%}
+  .btn.sm{min-height:42px;padding:0 18px;font-size:14.5px}
+  .btn.danger{color:#b4555a}
+  .btn[data-armed]{background:#b4555a;color:#fff}
+  .btns{display:flex;gap:10px;flex-wrap:wrap}
+  .btns > .btn{flex:1}
+
+  /* Spunta */
+  .check{flex:none;width:30px;height:30px;border-radius:50%;border:1.7px solid var(--line-2);display:grid;place-items:center;
+    background:transparent;transition:background .3s cubic-bezier(.3,1.5,.5,1),border-color .3s,transform .3s cubic-bezier(.3,1.6,.5,1)}
+  .check svg{width:15px;height:15px;opacity:0;transform:scale(.3);transition:all .3s cubic-bezier(.3,1.6,.5,1);color:var(--check-ink)}
+  .check.on{background:var(--pc,var(--accent));border-color:var(--pc,var(--accent))}
+  .check.on svg{opacity:1;transform:none}
+  .check:active{transform:scale(.88)}
+
+  /* Oggi */
+  .today{overflow:hidden;padding:22px 22px 20px}
+  .today .wm{position:absolute;right:-46px;top:-46px;width:190px;height:190px;color:var(--pc);opacity:.16;pointer-events:none;
+    animation:spin 90s linear infinite}
+  :root[data-mode="dark"] .today .wm{opacity:.08}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .today .big{font-size:clamp(30px,8.6vw,40px);line-height:1.08}
+  .today .big span{display:block}
+  .today .big small{display:block;font-size:.55em;color:var(--ink-2);margin-top:6px}
+  .today .meta{color:var(--muted);font-size:14.5px;margin-top:8px}
+  .done-msg{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:18px;background:var(--ps)}
+  .done-msg b{font-weight:600}
+  .moods .seg{margin-top:8px}
+
+  /* Pagina per pagina */
+  details.pages{border-top:1px solid var(--line);padding-top:12px}
+  details.pages summary{list-style:none;display:flex;align-items:center;justify-content:space-between;cursor:pointer;font-size:14px;color:var(--ink-2);font-weight:500}
+  details.pages summary::-webkit-details-marker{display:none}
+  details.pages summary .tw{display:flex;align-items:center;gap:8px;color:var(--muted);font-weight:500}
+  details.pages summary svg{width:16px;height:16px;transition:transform .25s}
+  details.pages[open] summary svg{transform:rotate(90deg)}
+  .pbar{height:5px;border-radius:3px;background:var(--track);overflow:hidden;margin-top:10px}
+  .pbar i{display:block;height:100%;border-radius:inherit;background:var(--pc,var(--accent));transition:width .4s}
+  .pgrid{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+  .pgrid .vol{width:100%;font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+  .pg{min-width:44px;height:36px;padding:0 6px;border-radius:12px;border:1px solid var(--line-2);font-size:13.5px;font-variant-numeric:tabular-nums;
+    color:var(--ink-2);transition:all .2s}
+  .pg.on{background:var(--pc,var(--accent));border-color:var(--pc,var(--accent));color:var(--check-ink)}
+  .pg:active{transform:scale(.92)}
+
+  /* Giardino */
+  .garden .grid{display:flex;flex-direction:column;gap:5px;margin-top:16px}
+  .grow-row{display:grid;grid-template-columns:24px repeat(14,minmax(0,1fr));gap:2px;align-items:center}
+  .grow-row .rn{font-family:var(--serif);font-size:12px;color:var(--muted);font-variation-settings:"SOFT" 100}
+  .f{display:block;aspect-ratio:1;border-radius:50%;padding:0}
+  .f svg{width:100%;height:100%;display:block;overflow:visible}
+  .f .petals{fill:var(--pc)}
+  .f .core{fill:var(--gold)}
+  .f .seed{fill:var(--line-2)}
+  .f .lost{fill:none;stroke:var(--pc);stroke-width:1.5}
+  .f .now{fill:var(--pc)}
+  .f .halo{fill:none;stroke:var(--pc);stroke-width:1.3;transform-origin:50% 50%;animation:halo 2.6s ease-out infinite}
+  @keyframes halo{0%{opacity:.9;transform:scale(.55)}100%{opacity:0;transform:scale(1.25)}}
+  .f g, .f circle{transform-box:view-box}
+  .f.bloom .petals{transform-origin:50% 50%;animation:bloom 1.1s cubic-bezier(.25,1.6,.45,1) both}
+  .f.bloom .core{transform-origin:50% 50%;animation:bloom .7s .25s cubic-bezier(.25,1.6,.45,1) both}
+  @keyframes bloom{from{transform:scale(0) rotate(-60deg);opacity:0}to{transform:none;opacity:1}}
+  .pct{font-size:40px;line-height:1;color:var(--accent-text)}
+  .pct small{font-size:.5em}
+
+  .bar{position:relative;height:9px;border-radius:6px;overflow:hidden;
+    background:linear-gradient(90deg,var(--c1),var(--c2) 38%,var(--c3) 68%,var(--c4))}
+  .bar i{position:absolute;top:0;bottom:0;right:0;background:var(--track);transition:left .6s cubic-bezier(.2,.8,.2,1)}
+
+  /* Elenco giornate */
+  .daylist{margin-top:6px}
+  .day{display:flex;align-items:center;gap:12px;padding:10px 4px;border-top:1px solid var(--line);position:relative}
+  .day:first-child{border-top:0}
+  .day .dayb{flex:1;min-width:0;display:flex;align-items:center;gap:12px;text-align:left;padding:2px 0}
+  .when{width:42px;flex:none;text-align:center}
+  .when b{display:block;font-family:var(--serif);font-weight:400;font-size:23px;line-height:1.05;font-variation-settings:"SOFT" 100}
+  .when span{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);line-height:1.3}
+  .what{flex:1;min-width:0}
+  .what .lbl{display:block;font-size:15px;font-weight:500;color:var(--ink)}
+  .what .sub{display:block;font-size:12.5px;color:var(--muted);margin-top:1px}
+  .what .sub em{font-style:normal;color:var(--accent-text)}
+  .day .chev{width:16px;height:16px;color:var(--muted);flex:none;opacity:.6}
+  .day.is-today{background:var(--ps);border-radius:18px;padding:10px 10px;margin:4px -6px;border-top-color:transparent}
+  .day.is-today + .day{border-top-color:transparent}
+  .day.is-done .lbl{color:var(--muted)}
+  .badge{font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--accent);color:var(--accent-ink);flex:none}
+  .nicon{width:15px;height:15px;color:var(--muted);flex:none}
+
+  .phase-h{display:flex;align-items:center;gap:14px;width:100%;text-align:left}
+  .phase-h .ph-n{width:44px;height:44px;border-radius:50%;flex:none;display:grid;place-items:center;background:var(--ps);
+    font-family:var(--serif);font-size:19px;color:var(--ink-2);font-variation-settings:"SOFT" 100}
+  .phase-h .ph-t{display:block;font-family:var(--serif);font-size:19px;line-height:1.2;font-variation-settings:"SOFT" 100;margin-top:3px}
+  .phase-h .eyebrow{font-size:10.5px}
+  .phase-h .ph-m{display:block;font-size:13px;color:var(--muted);margin-top:2px}
+  .phase-h .ph-c{font-size:13px;color:var(--ink-2);font-weight:600;font-variant-numeric:tabular-nums;flex:none}
+  .phase-h .chev{width:18px;height:18px;color:var(--muted);transition:transform .3s;flex:none}
+  .phase.open .phase-h .chev{transform:rotate(90deg)}
+  .mini{height:5px;border-radius:3px;background:var(--track);overflow:hidden}
+  .mini i{display:block;height:100%;background:var(--pc);border-radius:inherit}
+  .phase .body{display:none}
+  .phase.open .body{display:block}
+
+  .exam{display:flex;align-items:center;gap:16px}
+  .exam .when b{font-size:28px;color:var(--accent-text)}
+
+  .next{display:flex !important;align-items:center;gap:14px}
+  .next .what .lbl{font-size:16px}
+
+  .quote{text-align:center;padding:18px 18px 6px}
+  .quote svg{width:22px;height:22px;color:var(--accent-text);opacity:.7}
+  .quote blockquote{font-family:var(--serif);font-style:italic;font-size:20px;line-height:1.4;color:var(--ink-2);margin-top:8px;
+    font-variation-settings:"SOFT" 100;font-weight:350}
+
+  /* Segmenti e interruttori */
+  .seg{display:flex;padding:4px;border-radius:999px;background:var(--track);gap:2px}
+  .seg button,.seg label{flex:1;padding:9px 8px;border-radius:999px;font-size:14px;font-weight:500;color:var(--muted);text-align:center;
+    transition:all .2s;cursor:pointer;white-space:nowrap}
+  .seg [aria-pressed="true"],.seg input:checked + span{background:var(--card-solid);color:var(--ink);box-shadow:0 2px 10px rgba(60,30,40,.1)}
+  .seg label{padding:0;display:flex}
+  .seg label span{flex:1;padding:9px 8px;border-radius:999px;transition:all .2s}
+  .seg input{position:absolute;opacity:0;pointer-events:none}
+  .seg button:disabled{opacity:.45;cursor:default}
+  .switch{flex:none;width:48px;height:29px;border-radius:999px;background:var(--line-2);position:relative;transition:background .25s}
+  .switch::after{content:"";position:absolute;top:3px;left:3px;width:23px;height:23px;border-radius:50%;background:#fff;
+    box-shadow:0 2px 6px rgba(0,0,0,.18);transition:transform .25s cubic-bezier(.3,1.4,.5,1)}
+  .switch[aria-checked="true"]{background:var(--accent)}
+  .switch[aria-checked="true"]::after{transform:translateX(19px)}
+
+  .field{width:100%;border:1px solid var(--line-2);background:var(--card-solid);border-radius:16px;padding:13px 15px;font-size:16px;
+    color:var(--ink);transition:border-color .2s,box-shadow .2s;resize:vertical;line-height:1.45}
+  .field::placeholder{color:var(--muted);opacity:.85}
+  .field:focus{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+  .field:focus-visible{outline:none}
+  .lab{display:block;font-size:13px;font-weight:600;color:var(--ink-2);margin-bottom:7px}
+
+  /* Concentrazione */
+  .ring{position:relative;width:min(76vw,290px);aspect-ratio:1;margin:8px auto 0}
+  .ring::before{content:"";position:absolute;inset:6%;border-radius:50%;background:radial-gradient(closest-side,var(--accent-soft),transparent);
+    opacity:.0;transition:opacity .6s}
+  .ring.run::before{opacity:1;animation:breath 8s ease-in-out infinite}
+  .ring.brk{--accent:var(--c4);--accent-soft:var(--c4s)}
+  @keyframes breath{0%,100%{transform:scale(.92)}50%{transform:scale(1.06)}}
+  .ring svg{position:relative;width:100%;height:100%;transform:rotate(-90deg)}
+  .ring .trk{fill:none;stroke:var(--track);stroke-width:9}
+  .ring .arc{fill:none;stroke:var(--accent);stroke-width:9;stroke-linecap:round;transition:stroke-dashoffset .5s linear}
+  .ring-in{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+  .ring-in .time{font-family:var(--serif);font-size:clamp(50px,15vw,64px);line-height:1;font-variant-numeric:tabular-nums;font-variation-settings:"SOFT" 100;font-weight:350}
+  .ring-in .lab2{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:10px}
+  .controls{display:flex;align-items:center;justify-content:center;gap:18px;margin-top:6px}
+  .play{width:76px;height:76px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;
+    box-shadow:0 16px 30px -12px var(--accent-glow);transition:transform .15s}
+  .play:active{transform:scale(.94)}
+  .play svg{width:30px;height:30px}
+  .play.brk{background:var(--c4);box-shadow:0 16px 30px -12px rgba(110,150,125,.5);color:var(--check-ink)}
+  .sounds{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .snd{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 4px;border-radius:18px;border:1px solid var(--line);
+    font-size:12.5px;color:var(--ink-2);transition:all .2s}
+  .snd svg{width:22px;height:22px;color:var(--muted)}
+  .snd[aria-pressed="true"]{background:var(--accent-soft);border-color:transparent;color:var(--accent-text)}
+  .snd[aria-pressed="true"] svg{color:var(--accent-text)}
+  input[type=range]{width:100%;accent-color:var(--accent);height:28px}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+  .stats b{display:block;font-family:var(--serif);font-weight:400;font-size:24px;font-variation-settings:"SOFT" 100;line-height:1.1}
+  .stats span{font-size:12px;color:var(--muted)}
+  .breath-btn{display:flex !important;align-items:center;gap:14px}
+  .breath-btn .bi{width:46px;height:46px;border-radius:50%;flex:none;display:grid;place-items:center;background:var(--c3s);color:var(--ink-2)}
+  .breath-btn .bi svg{width:22px;height:22px}
+
+  /* Appunti */
+  .topic{display:flex;align-items:flex-start;gap:12px;padding:12px 2px;border-top:1px solid var(--line)}
+  .topic:first-child{border-top:0}
+  .topic .check{margin-top:1px}
+  .topic .tx{flex:1;min-width:0}
+  .topic .tx p{font-size:15.5px;white-space:pre-wrap;word-wrap:break-word}
+  .topic .tx .sub{font-size:12.5px;color:var(--muted)}
+  .topic.solved .tx p{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--line-2)}
+  .addrow{display:flex;gap:8px;align-items:stretch;flex-wrap:wrap}
+  .addrow .seg{flex:1 1 170px}
+  .addrow .pgin{flex:0 1 110px;padding:10px 14px}
+  .addrow .btn{flex:1 1 120px}
+  .empty{text-align:center;padding:26px 10px}
+  .empty svg{width:48px;height:48px;color:var(--pc,var(--accent-text));opacity:.6}
+  .empty p{margin-top:8px}
+  details.more summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-weight:500;color:var(--ink-2)}
+  details.more summary::-webkit-details-marker{display:none}
+  details.more summary svg{width:16px;height:16px;transition:transform .25s;color:var(--muted)}
+  details.more[open] summary svg{transform:rotate(90deg)}
+  .notecard{display:block;width:100%;text-align:left;padding:12px 2px;border-top:1px solid var(--line)}
+  .notecard:first-child{border-top:0}
+  .notecard p{font-size:14.5px;color:var(--ink-2);margin-top:3px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap}
+
+  /* Barra delle schede */
+  nav.tabs{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 12px);z-index:20;display:flex;gap:2px;
+    padding:6px;border-radius:999px;background:var(--card);border:1px solid var(--card-border);box-shadow:var(--shadow-lg);
+    backdrop-filter:blur(22px) saturate(1.2);-webkit-backdrop-filter:blur(22px) saturate(1.2);width:min(calc(100% - 24px),460px)}
+  .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px 7px;border-radius:999px;color:var(--muted);
+    font-size:11.5px;font-weight:500;position:relative;transition:background .25s,color .25s}
+  .tab svg{width:22px;height:22px}
+  .tab[aria-current="page"]{background:var(--accent-soft);color:var(--accent-text)}
+  .tab .dot{position:absolute;top:5px;left:calc(50% + 8px);min-width:8px;height:8px;border-radius:999px;background:var(--accent);display:none}
+  .tab .dot.show{display:block}
+  .tab .num{position:absolute;top:3px;left:calc(50% + 7px);font-size:10px;font-weight:700;min-width:17px;height:17px;padding:0 4px;border-radius:999px;
+    background:var(--accent);color:var(--accent-ink);display:none;place-items:center;line-height:17px;text-align:center}
+  .tab .num.show{display:block}
+
+  /* Foglio dal basso */
+  .backdrop{position:fixed;inset:0;z-index:40;background:rgba(40,24,30,.28);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);
+    opacity:0;transition:opacity .3s}
+  .backdrop.open{opacity:1}
+  .sheet{position:fixed;left:50%;bottom:0;z-index:41;width:min(100%,580px);max-height:92vh;max-height:92dvh;overflow:auto;overscroll-behavior:contain;
+    background:var(--card-solid);border-radius:30px 30px 0 0;box-shadow:var(--shadow-lg);
+    padding:10px 20px calc(env(safe-area-inset-bottom) + 26px);transform:translate(-50%,104%);transition:transform .42s cubic-bezier(.2,.9,.25,1)}
+  .sheet.open{transform:translate(-50%,0)}
+  .sheet .grab{width:42px;height:5px;border-radius:3px;background:var(--line-2);margin:0 auto 12px}
+  .sheet > * + *{margin-top:16px}
+  .sh-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .sh-head h2{font-size:28px;margin-top:5px}
+  .set-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-top:1px solid var(--line)}
+  .set-row b{font-weight:600;font-size:15px}
+  .set-row p{margin-top:2px}
+  .sec-t{font-family:var(--serif);font-size:19px;font-variation-settings:"SOFT" 100;padding-top:8px}
+  .foot{text-align:center;color:var(--muted);font-size:12.5px;font-family:var(--serif);font-style:italic;padding-top:6px}
+  .help{font-size:14px;color:var(--ink-2);line-height:1.55}
+  .help li{margin:6px 0 0 18px}
+  @media (min-width:700px){
+    .sheet{bottom:auto;top:50%;border-radius:30px;transform:translate(-50%,-46%) scale(.97);opacity:0;
+      transition:transform .35s cubic-bezier(.2,.9,.25,1),opacity .3s;max-height:86vh;padding-bottom:26px}
+    .sheet.open{transform:translate(-50%,-50%);opacity:1}
+    .sheet .grab{display:none}
+  }
+
+  .welcome{text-align:center}
+  .welcome .logo{width:84px;height:84px;margin:6px auto 0;display:block}
+  .welcome h2{font-size:34px;margin-top:10px}
+  .welcome ul{list-style:none;text-align:left;margin-top:18px;display:grid;gap:10px}
+  .welcome li{display:flex;gap:12px;align-items:flex-start;font-size:15px;color:var(--ink-2)}
+  .welcome li i{flex:none;width:10px;height:10px;border-radius:50%;margin-top:7px;background:var(--pc)}
+
+  /* Avvisi */
+  .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 96px);z-index:60;transform:translate(-50%,16px);opacity:0;
+    pointer-events:none;display:flex;align-items:center;gap:12px;width:max-content;max-width:calc(100vw - 32px);padding:12px 14px 12px 18px;border-radius:999px;
+    background:var(--ink);color:var(--bg);font-size:14.5px;box-shadow:var(--shadow-lg);transition:all .35s cubic-bezier(.2,.9,.25,1);border-radius:22px}
+  .toast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+  .toast button{color:var(--bg);font-weight:600;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.14);white-space:nowrap}
+  :root[data-mode="dark"] .toast button{background:rgba(0,0,0,.12)}
+
+  /* Petali che cadono */
+  .petal{position:fixed;top:-30px;z-index:70;pointer-events:none;border-radius:80% 0 80% 0;opacity:.9;
+    animation:fall 3s cubic-bezier(.45,.05,.55,.95) forwards}
+  @keyframes fall{0%{transform:translate(0,0) rotate(0)}100%{transform:translate(var(--dx),112vh) rotate(var(--rot));opacity:.15}}
+
+  /* Respiro */
+  .breathe{position:fixed;inset:0;z-index:80;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+    background:var(--bg);opacity:0;transition:opacity .5s;padding:24px;text-align:center}
+  .breathe.open{opacity:1}
+  .breathe .close{position:absolute;top:calc(env(safe-area-inset-top) + 16px);right:16px}
+  .bcirc{width:min(70vw,300px);aspect-ratio:1;display:grid;place-items:center;margin-bottom:26px}
+  .bcirc i{width:100%;height:100%;border-radius:50%;transform:scale(.5);
+    background:radial-gradient(circle at 35% 30%,var(--c2s),var(--c3) 70%);box-shadow:0 0 80px 10px var(--c3s)}
+  .bword{font-size:34px}
+  .bcount{color:var(--muted)}
+
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
+  }
+</style>
+</head>
+<body>
+<div class="sky" aria-hidden="true"><i></i><i></i><i></i></div>
+<div id="app"><main id="view" aria-live="polite"></main></div>
+
+<nav class="tabs" aria-label="Sezioni">
+  <button class="tab" data-a="tab" data-tab="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4"/></svg>Oggi</button>
+  <button class="tab" data-a="tab" data-tab="plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16.5" rx="3.5"/><path d="M8 2.8v3.4M16 2.8v3.4M3.5 9.8h17M8 14h.01M12 14h.01M16 14h.01M8 17.5h.01M12 17.5h.01"/></svg>Programma</button>
+  <button class="tab" data-a="tab" data-tab="focus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 9.5v4l2.6 1.8M9.5 2.5h5"/></svg>Concentrati<i class="dot"></i></button>
+  <button class="tab" data-a="tab" data-tab="notes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4.8A1.8 1.8 0 0 1 6.8 3H19v14.5H6.8A1.8 1.8 0 0 0 5 19.3z"/><path d="M5 19.3A1.8 1.8 0 0 0 6.8 21H19v-3.5M9 7.5h6M9 11h4"/></svg>Appunti<i class="num"></i></button>
+</nav>
+
+<div class="toast" id="toast" role="status"></div>
+<input type="file" id="importFile" accept="application/json,.json" hidden>
+<noscript><p style="padding:40px;text-align:center">Per usare Fioritura serve JavaScript attivo.</p></noscript>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ================= IL PROGRAMMA ================= */
+  var SUBJECT = 'Diritto processuale civile';
+  var EXAM = '2026-12-21';
+  var PHASES = [
+    { n: 1, title: 'Studio delle 40 pagine nuove', short: 'Pagine nuove', range: '3–8 novembre', note: '', days: [
+      ['2026-11-03', [[2, 111, 115]]],
+      ['2026-11-04', [[2, 116, 120]]],
+      ['2026-11-05', [[2, 121, 125]]],
+      ['2026-11-06', [[2, 126, 130]]],
+      ['2026-11-07', [[2, 131, 140]]],
+      ['2026-11-08', [[2, 141, 150]]]
+    ] },
+    { n: 2, title: 'Prima ripetizione', short: 'Prima ripetizione', range: '9–22 novembre', note: '200 pagine', days: [
+      ['2026-11-09', [[1, 1, 12]]],
+      ['2026-11-10', [[1, 13, 24]]],
+      ['2026-11-11', [[1, 25, 36]]],
+      ['2026-11-12', [[1, 37, 48]]],
+      ['2026-11-13', [[1, 49, 60]]],
+      ['2026-11-14', [[1, 61, 80]]],
+      ['2026-11-15', [[1, 81, 90], [2, 1, 10]]],
+      ['2026-11-16', [[2, 11, 22]]],
+      ['2026-11-17', [[2, 23, 34]]],
+      ['2026-11-18', [[2, 35, 46]]],
+      ['2026-11-19', [[2, 47, 58]]],
+      ['2026-11-20', [[2, 59, 70]]],
+      ['2026-11-21', [[2, 71, 90]]],
+      ['2026-11-22', [[2, 91, 110]]]
+    ] },
+    { n: 3, title: 'Seconda ripetizione', short: 'Seconda ripetizione', range: '23 novembre – 6 dicembre', note: '240 pagine', days: [
+      ['2026-11-23', [[1, 1, 12]]],
+      ['2026-11-24', [[1, 13, 24]]],
+      ['2026-11-25', [[1, 25, 36]]],
+      ['2026-11-26', [[1, 37, 48]]],
+      ['2026-11-27', [[1, 49, 60]]],
+      ['2026-11-28', [[1, 61, 90]]],
+      ['2026-11-29', [[2, 1, 30]]],
+      ['2026-11-30', [[2, 31, 42]]],
+      ['2026-12-01', [[2, 43, 54]]],
+      ['2026-12-02', [[2, 55, 66]]],
+      ['2026-12-03', [[2, 67, 78]]],
+      ['2026-12-04', [[2, 79, 90]]],
+      ['2026-12-05', [[2, 91, 120]]],
+      ['2026-12-06', [[2, 121, 150]]]
+    ] },
+    { n: 4, title: 'Terza ripetizione', short: 'Ripetizione orale', range: '7–20 dicembre', note: 'ripetizione orale', days: [
+      ['2026-12-07', [[1, 1, 15]]],
+      ['2026-12-08', [[1, 16, 30]]],
+      ['2026-12-09', [[1, 31, 45]]],
+      ['2026-12-10', [[1, 46, 60]]],
+      ['2026-12-11', [[1, 61, 75]]],
+      ['2026-12-12', [[1, 76, 90], [2, 1, 15]]],
+      ['2026-12-13', [[2, 16, 45]]],
+      ['2026-12-14', [[2, 46, 60]]],
+      ['2026-12-15', [[2, 61, 75]]],
+      ['2026-12-16', [[2, 76, 90]]],
+      ['2026-12-17', [[2, 91, 105]]],
+      ['2026-12-18', [[2, 106, 120]]],
+      ['2026-12-19', [[2, 121, 150]], { extra: 'simulazione orale' }],
+      ['2026-12-20', [], { critici: true }]
+    ] }
+  ];
+
+  var DAYS = [], DAY = {};
+  PHASES.forEach(function (p) {
+    p.list = [];
+    p.days.forEach(function (row) {
+      var o = row[2] || {};
+      var d = { iso: row[0], phase: p.n, segs: row[1], extra: o.extra || '', critici: !!o.critici };
+      d.idx = DAYS.length;
+      DAYS.push(d); DAY[d.iso] = d; p.list.push(d);
+    });
+  });
+  var TOTAL = DAYS.length; // 48
+
+  /* ================= FRASI ================= */
+  var QUOTES = [
+    'Un passo alla volta è comunque un passo avanti.',
+    'Non serve correre: serve esserci, anche oggi.',
+    'Ogni pagina letta è una pagina che già ti appartiene.',
+    'Le cose difficili diventano familiari, a forza di tornarci.',
+    'Concediti una pausa vera: anche riposare fa parte dello studio.',
+    'Ripetere non è rifare: è vedere meglio.',
+    'Sei più preparata di quanto pensi.',
+    'Una giornata storta non cancella quelle buone.',
+    'Respira. Il programma è fatto apposta per arrivare in tempo.',
+    'Piccole sessioni, tanti giorni: è così che si costruisce.',
+    'Oggi basta fare la parte di oggi.',
+    'Quello che capisci adesso, all’esame lo racconterai con calma.',
+    'Un bicchiere d’acqua, la finestra aperta, e si riparte.',
+    'Non devi sapere tutto oggi. Devi solo andare avanti.',
+    'La costanza è gentile: lavora anche quando non te ne accorgi.',
+    'Ogni ripetizione rende il terreno più solido.',
+    'Studiare bene è anche studiare serena.',
+    'Il tuo impegno si vede, anche quando tu non lo vedi.',
+    'Spiegalo ad alta voce: se lo sai dire, lo sai.',
+    'Chiudi il libro quando hai finito: il resto della giornata è tuo.',
+    'Anche i fiori più belli sbocciano un petalo alla volta.',
+    'Fidati del lavoro che hai già fatto.'
+  ];
+  var DONE_MSG = [
+    'Sei stata brava.',
+    'Anche oggi è sbocciato un fiore.',
+    'Ora goditi il resto della giornata.',
+    'Un altro passo verso il 21 dicembre.',
+    'Il tuo giardino cresce.',
+    'Adesso riposa un po’: te lo sei meritato.'
+  ];
+  var PHASE_DONE = {
+    1: 'Le pagine nuove sono tutte studiate. Da qui in poi si ripete, e ogni volta sarà più facile.',
+    2: 'Prima ripetizione completata: hai rivisto tutto il programma una volta intera.',
+    3: 'Seconda ripetizione completata. Ora tocca alla voce: si ripete a parole tue.',
+    4: 'Hai completato tutto il programma. Domani racconta quello che sai, con calma.'
+  };
+
+  /* ================= DATE ================= */
+  var WD = ['domenica', 'lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato'];
+  var WDS = ['dom', 'lun', 'mar', 'mer', 'gio', 'ven', 'sab'];
+  var MO = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
+  var MOS = ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic'];
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function isoOf(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function dateOf(iso) { var a = iso.split('-'); return new Date(+a[0], +a[1] - 1, +a[2]); }
+  function diffDays(a, b) { return Math.round((dateOf(b) - dateOf(a)) / 864e5); }
+  function fmtLong(iso) { var d = dateOf(iso); return WD[d.getDay()] + ' ' + d.getDate() + ' ' + MO[d.getMonth()]; }
+  function fmtShort(iso) { var d = dateOf(iso); return d.getDate() + ' ' + MOS[d.getMonth()]; }
+  function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+  var FAKE_TODAY = (function () { try { var q = new URLSearchParams(location.search).get('oggi'); return q && /^\d{4}-\d\d-\d\d$/.test(q) ? q : ''; } catch (e) { return ''; } })();
+  function today() { return FAKE_TODAY || isoOf(new Date()); }
+  function relDay(iso) {
+    var n = diffDays(today(), iso);
+    if (n === 0) return 'oggi';
+    if (n === 1) return 'domani';
+    if (n === -1) return 'ieri';
+    return n > 0 ? 'tra ' + n + ' giorni' : n * -1 + ' giorni fa';
+  }
+
+  /* ================= PICCOLI AIUTI ================= */
+  function $(s, r) { return (r || document).querySelector(s); }
+  function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  function hash(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); }
+  function plural(n, one, many) { return n === 1 ? one : many; }
+  function fmtMin(ms) {
+    var m = Math.round((ms || 0) / 60000);
+    if (m < 60) return m + ' min';
+    var h = Math.floor(m / 60), r = m % 60;
+    return h + ' h' + (r ? ' ' + pad(r) : '');
+  }
+  function mmss(ms) { var s = Math.ceil(ms / 1000); return pad(Math.floor(s / 60)) + ':' + pad(s % 60); }
+  var reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ================= ICONE ================= */
+  function ic(path, extra) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"' + (extra || '') + '>' + path + '</svg>'; }
+  var I = {
+    check: ic('<path d="M5 12.6l4.3 4.3L19 7.2"/>', ' stroke-width="2.4"'),
+    chev: ic('<path d="M9.5 6l6 6-6 6"/>'),
+    x: ic('<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>'),
+    sliders: ic('<path d="M4 7h9M18 7h2M4 17h3M12 17h8"/><circle cx="15.5" cy="7" r="2.3"/><circle cx="9.5" cy="17" r="2.3"/>'),
+    play: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8.5 5.6c0-.8.9-1.3 1.6-.9l9.2 5.7c.7.4.7 1.4 0 1.8l-9.2 5.7c-.7.4-1.6-.1-1.6-.9z"/></svg>',
+    pause: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6.5" y="5" width="4" height="14" rx="1.4"/><rect x="13.5" y="5" width="4" height="14" rx="1.4"/></svg>',
+    reset: ic('<path d="M4.5 12a7.5 7.5 0 1 0 2.3-5.4M4.5 4.5v4h4"/>'),
+    pen: ic('<path d="M4.5 19.5h4L19 9a2.1 2.1 0 0 0-3-3L5.5 16.5z"/>'),
+    breath: ic('<path d="M3 8.5h10.5a3 3 0 1 0-3-3M3 12.5h15a3 3 0 1 1-3 3M3 16.5h6"/>'),
+    mute: ic('<path d="M11 5.5L6.5 9H3.5v6h3l4.5 3.5z"/><path d="M21 9.5l-5 5M16 9.5l5 5"/>'),
+    rain: ic('<path d="M7 15.5a4 4 0 1 1 1-7.9 5.5 5.5 0 0 1 10.5 1.9 3.3 3.3 0 0 1-.5 6"/><path d="M8.5 18.5l-1 2M12.5 18.5l-1 2M16.5 18.5l-1 2"/>'),
+    waves: ic('<path d="M2.5 9c2.4-2 4.6-2 7 0s4.6 2 7 0 3.6-1.6 5-.6M2.5 15c2.4-2 4.6-2 7 0s4.6 2 7 0 3.6-1.6 5-.6"/>'),
+    moon: ic('<path d="M19.5 14.5A7.8 7.8 0 1 1 9.5 4.5a6.2 6.2 0 0 0 10 10z"/>'),
+    hourglass: ic('<path d="M6.5 3h11M6.5 21h11M7.5 3v3.5a4.5 4.5 0 0 0 9 0V3M7.5 21v-3.5a4.5 4.5 0 0 1 9 0V21"/>'),
+    sprout: ic('<path d="M12 21v-8M12 13c0-4 3-6.5 7-6.5 0 4-3 6.5-7 6.5zM12 15.5c0-3-2.4-5-5.5-5 0 3 2.4 5 5.5 5z"/>'),
+    leaf: ic('<path d="M5 19c0-8 5-13.5 14-14-.5 9-6 14-14 14zM5 19l7-7"/>'),
+    upload: ic('<path d="M12 15.5V4M7.5 8.5L12 4l4.5 4.5M4.5 15v3.5a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V15"/>'),
+    download: ic('<path d="M12 4v11.5M7.5 11L12 15.5l4.5-4.5M4.5 15v3.5a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V15"/>'),
+    trash: ic('<path d="M4.5 7h15M10 11v6M14 11v6M6.5 7l1 12a2 2 0 0 0 2 2h5a2 2 0 0 0 2-2l1-12M9.5 7V4.5h5V7"/>'),
+    cloud: ic('<path d="M7.5 18.5h10a4 4 0 0 0 .7-7.94A6 6 0 0 0 6.6 9.9a4.3 4.3 0 0 0 .9 8.6z"/>'),
+    sync: ic('<path d="M19.5 12a7.5 7.5 0 0 1-13 5.1M4.5 12a7.5 7.5 0 0 1 13-5.1M17.5 3.5v3.6h-3.6M6.5 20.5v-3.6h3.6"/>')
+  };
+  function flowerBig(cls) {
+    var p = '';
+    for (var i = 0; i < 8; i++) p += '<ellipse cx="50" cy="25" rx="13" ry="22" transform="rotate(' + i * 45 + ' 50 50)"/>';
+    return '<svg class="' + (cls || '') + '" viewBox="0 0 100 100" fill="currentColor" aria-hidden="true">' + p + '<circle cx="50" cy="50" r="10" style="fill:var(--gold)"/></svg>';
+  }
+  var LOGO = '<svg viewBox="0 0 48 48" aria-hidden="true"><g transform="translate(24 24)">' +
+    [0, 72, 144, 216, 288].map(function (a, i) { var c = ['var(--c2)', 'var(--c1)', 'var(--c4)', 'var(--c3)', 'var(--c2)'][i]; return '<ellipse cx="0" cy="-10.5" rx="6.6" ry="10" style="fill:' + c + '" opacity=".92" transform="rotate(' + a + ')"/>'; }).join('') +
+    '<circle r="4.6" style="fill:var(--gold)"/></g></svg>';
+  function flower(state) {
+    if (state === 'done') {
+      var p = '';
+      for (var i = 0; i < 5; i++) p += '<ellipse cx="12" cy="6.4" rx="3.7" ry="5.2" transform="rotate(' + i * 72 + ' 12 12)"/>';
+      return '<svg viewBox="0 0 24 24"><g class="petals">' + p + '</g><circle class="core" cx="12" cy="12" r="2.8"/></svg>';
+    }
+    if (state === 'today') return '<svg viewBox="0 0 24 24"><circle class="halo" cx="12" cy="12" r="9"/><circle class="now" cx="12" cy="12" r="4"/></svg>';
+    if (state === 'lost') return '<svg viewBox="0 0 24 24"><circle class="lost" cx="12" cy="12" r="3.6"/></svg>';
+    return '<svg viewBox="0 0 24 24"><circle class="seed" cx="12" cy="12" r="3.3"/></svg>';
+  }
+
+  /* ================= DATI ================= */
+  var KEY = 'fioritura.v1';
+  // un nome a caso per questo dispositivo (non si sincronizza): serve per sommare i minuti di più dispositivi
+  var DEV = (function () { var v = ''; try { v = localStorage.getItem('fioritura.dev') || ''; if (!v) { v = 'd' + Math.random().toString(36).slice(2, 10); localStorage.setItem('fioritura.dev', v); } } catch (e) { v = 'd0'; } return v; })();
+  function defaults() {
+    return {
+      v: 1,
+      // Ogni cosa ha la sua data di modifica: unendo due dispositivi vince la più recente.
+      done: {},      // giorno -> data della spunta (negativa = tolta)
+      pages: {}, pagesAt: {},   // giorno -> ["2-111", ...]
+      notes: {}, notesAt: {},   // giorno -> testo
+      mood: {}, moodAt: {},     // giorno -> leggera | normale | faticosa
+      focus: {},     // dispositivo -> giorno -> { ms, n } (ogni dispositivo conta i suoi minuti)
+      topics: [],    // argomenti critici { id, text, vol, page, day, at, solved, st }
+      gone: [],      // argomenti eliminati (per non farli tornare da un altro dispositivo)
+      timer: { mode: 'study', len: 25, endAt: 0, remain: 0, seg: 0 },
+      settings: { name: '', theme: 'auto', pal: 'cipria', sounds: true, wake: true, study: 25, brk: 5, volume: 0.5 },
+      settingsAt: 0,
+      welcomed: false,
+      open: {}
+    };
+  }
+  function load() {
+    var d = defaults(), s = null;
+    try { s = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { s = null; }
+    if (!s || s.v !== 1) {
+      // Il primo giorno (martedì 3 novembre) era già fatto quando il programma è arrivato qui.
+      // Data minima: qualunque spunta vera, anche da un altro dispositivo, conta di più.
+      d.done['2026-11-03'] = 1;
+      return d;
+    }
+    Object.keys(d).forEach(function (k) {
+      if (s[k] == null) return;
+      if (k === 'settings' || k === 'timer') d[k] = Object.assign(d[k], s[k]);
+      else d[k] = s[k];
+    });
+    // minuti di concentrazione salvati con la prima versione (giorno -> minuti): diventano di questo dispositivo
+    var old = {};
+    Object.keys(d.focus).forEach(function (k) { if (/^\d{4}-\d\d-\d\d$/.test(k)) { old[k] = d.focus[k]; delete d.focus[k]; } });
+    if (Object.keys(old).length) d.focus[DEV] = Object.assign(d.focus[DEV] || {}, old);
+    return d;
+  }
+  var S = load();
+  var UI = { tab: 'today', pagesOpen: false };
+  try { var t0 = localStorage.getItem('fioritura.tab'); if (t0) UI.tab = t0; } catch (e) {}
+  var saveFailed = false;
+  function save(quiet) {
+    try { localStorage.setItem(KEY, JSON.stringify(S)); saveFailed = false; }
+    catch (e) { if (!saveFailed) toast('Non riesco a salvare su questo dispositivo. Salva una copia dalle impostazioni.'); saveFailed = true; }
+    if (!quiet) schedulePush();
+  }
+  if (navigator.storage && navigator.storage.persist) { try { navigator.storage.persist(); } catch (e) {} }
+
+  function isDone(iso) { return (S.done[iso] || 0) > 0; }
+  function setDone(iso, v) { S.done[iso] = v ? Date.now() : -Date.now(); }
+  function doneCount() { return DAYS.filter(function (d) { return isDone(d.iso); }).length; }
+  function phaseDoneCount(p) { return p.list.filter(function (d) { return isDone(d.iso); }).length; }
+  function missedDays() { var t = today(); return DAYS.filter(function (d) { return d.iso < t && !isDone(d.iso); }); }
+  function currentPhase() {
+    var t = today();
+    var d = DAY[t] || DAYS.filter(function (x) { return x.iso > t; })[0];
+    return d ? d.phase : 4;
+  }
+  // spazi e trattino che non vanno a capo: "V2 · pp. 111–115" resta sempre su una riga
+  function segLabel(s) { return 'V' + s[0] + '\u00a0·\u00a0pp.\u00a0' + s[1] + '\u2060–\u2060' + s[2]; }
+  function dayLabel(d) {
+    if (d.critici) return 'Solo argomenti critici';
+    return d.segs.map(segLabel).join(' + ') + (d.extra ? ' + ' + d.extra : '');
+  }
+  function dayPages(d) { return d.segs.reduce(function (a, s) { return a + s[2] - s[1] + 1; }, 0); }
+  function pageKeys(d) { var k = []; d.segs.forEach(function (s) { for (var p = s[1]; p <= s[2]; p++) k.push(s[0] + '-' + p); }); return k; }
+  function pagesRead(d) { if (isDone(d.iso)) return dayPages(d); var set = S.pages[d.iso] || []; return pageKeys(d).filter(function (k) { return set.indexOf(k) >= 0; }).length; }
+  function focusOf(iso) {
+    var o = { ms: 0, n: 0 };
+    Object.keys(S.focus).forEach(function (dv) { var f = S.focus[dv] && S.focus[dv][iso]; if (f) { o.ms += f.ms || 0; o.n += f.n || 0; } });
+    return o;
+  }
+  function openTopics() { return S.topics.filter(function (t) { return !t.solved; }); }
+  function phaseOf(n) { return PHASES[n - 1]; }
+
+  /* ================= SUONI (generati, niente file) ================= */
+  var Sound = {
+    ctx: null, master: null, bufs: {}, cur: null,
+    ensure: function () {
+      try {
+        if (!this.ctx) {
+          var AC = window.AudioContext || window.webkitAudioContext;
+          if (!AC) return null;
+          this.ctx = new AC();
+          this.master = this.ctx.createGain();
+          this.master.connect(this.ctx.destination);
+        }
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        return this.ctx;
+      } catch (e) { return null; }
+    },
+    buffer: function (type) {
+      if (this.bufs[type]) return this.bufs[type];
+      var ctx = this.ctx, sr = ctx.sampleRate, len = sr * 12, b = ctx.createBuffer(2, len, sr);
+      for (var ch = 0; ch < 2; ch++) {
+        var d = b.getChannelData(ch), i, w;
+        if (type === 'pink') {
+          var b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+          for (i = 0; i < len; i++) {
+            w = Math.random() * 2 - 1;
+            b0 = .99886 * b0 + w * .0555179; b1 = .99332 * b1 + w * .0750759; b2 = .969 * b2 + w * .153852;
+            b3 = .8665 * b3 + w * .3104856; b4 = .55 * b4 + w * .5329522; b5 = -.7616 * b5 - w * .016898;
+            d[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + w * .5362) * .11; b6 = w * .115926;
+          }
+        } else {
+          var last = 0;
+          for (i = 0; i < len; i++) { w = Math.random() * 2 - 1; last = (last + .02 * w) / 1.02; d[i] = last * 3.5; }
+          var drift = d[len - 1] - d[0];
+          for (i = 0; i < len; i++) d[i] -= drift * i / (len - 1);
+        }
+      }
+      return (this.bufs[type] = b);
+    },
+    play: function (kind) {
+      this.stop();
+      if (!kind || kind === 'none') return;
+      var ctx = this.ensure(); if (!ctx) { toast('Questo browser non riesce a riprodurre i suoni.'); return; }
+      var out = ctx.createGain(); out.gain.value = 0; out.connect(this.master);
+      var src = ctx.createBufferSource(); src.loop = true;
+      var nodes = [src, out], level = 1, f1, f2, g, lfo, depth;
+      if (kind === 'rain') {
+        src.buffer = this.buffer('pink');
+        f1 = ctx.createBiquadFilter(); f1.type = 'highpass'; f1.frequency.value = 420;
+        f2 = ctx.createBiquadFilter(); f2.type = 'lowpass'; f2.frequency.value = 6200;
+        src.connect(f1); f1.connect(f2); f2.connect(out); nodes.push(f1, f2); level = .85;
+      } else if (kind === 'waves') {
+        src.buffer = this.buffer('brown');
+        f1 = ctx.createBiquadFilter(); f1.type = 'lowpass'; f1.frequency.value = 850;
+        g = ctx.createGain(); g.gain.value = .55;
+        lfo = ctx.createOscillator(); lfo.frequency.value = .085;
+        depth = ctx.createGain(); depth.gain.value = .45;
+        lfo.connect(depth); depth.connect(g.gain);
+        src.connect(f1); f1.connect(g); g.connect(out); lfo.start();
+        nodes.push(f1, g, lfo, depth); level = 1.15;
+      } else {
+        src.buffer = this.buffer('brown');
+        f1 = ctx.createBiquadFilter(); f1.type = 'lowpass'; f1.frequency.value = 430;
+        src.connect(f1); f1.connect(out); nodes.push(f1); level = 1.25;
+      }
+      src.start();
+      this.cur = { kind: kind, out: out, nodes: nodes, level: level };
+      this.volume();
+    },
+    volume: function () {
+      if (!this.cur) return;
+      var v = Math.pow(S.settings.volume, 1.6) * this.cur.level;
+      this.cur.out.gain.setTargetAtTime(v, this.ctx.currentTime, .5);
+    },
+    stop: function () {
+      if (!this.cur) return;
+      var c = this.cur, ctx = this.ctx; this.cur = null;
+      c.out.gain.setTargetAtTime(0, ctx.currentTime, .25);
+      setTimeout(function () { c.nodes.forEach(function (n) { try { if (n.stop) n.stop(); } catch (e) {} try { n.disconnect(); } catch (e) {} }); }, 1400);
+    },
+    chime: function (kind) {
+      if (!S.settings.sounds) return;
+      var ctx = this.ensure(); if (!ctx) return;
+      var t0 = ctx.currentTime + .03, master = this.master;
+      var notes = kind === 'done' ? [[659.25, 0], [987.77, .17]] : kind === 'phase' ? [[523.25, 0], [659.25, .16], [783.99, .32], [1046.5, .5]] : [[587.33, 0], [880, .24], [1174.66, .48]];
+      notes.forEach(function (n) {
+        [[1, .14], [2.01, .035], [3.02, .012]].forEach(function (h) {
+          var o = ctx.createOscillator(), gg = ctx.createGain();
+          o.type = 'sine'; o.frequency.value = n[0] * h[0];
+          gg.gain.setValueAtTime(0, t0 + n[1]);
+          gg.gain.linearRampToValueAtTime(h[1], t0 + n[1] + .015);
+          gg.gain.exponentialRampToValueAtTime(.0001, t0 + n[1] + 2.8);
+          o.connect(gg); gg.connect(master);
+          o.start(t0 + n[1]); o.stop(t0 + n[1] + 2.9);
+        });
+      });
+    }
+  };
+  function buzz(p) { try { if (navigator.vibrate) navigator.vibrate(p || 18); } catch (e) {} }
+
+  /* ================= TIMER ================= */
+  var lock = null;
+  function wake(on) {
+    try {
+      if (on && S.settings.wake && 'wakeLock' in navigator) {
+        if (!lock) navigator.wakeLock.request('screen').then(function (l) { lock = l; l.addEventListener('release', function () { lock = null; }); }).catch(function () {});
+      } else if (!on && lock) { lock.release(); lock = null; }
+    } catch (e) {}
+  }
+  function credit(ms, finished) {
+    if (S.timer.mode !== 'study') return;
+    var t = today(), mine = S.focus[DEV] = S.focus[DEV] || {}, f = mine[t] || { ms: 0, n: 0 };
+    f.ms += Math.max(0, ms || 0);
+    if (finished) f.n += 1;
+    mine[t] = f;
+  }
+  var Timer = {
+    status: function () { return S.timer.endAt ? 'run' : S.timer.remain ? 'pause' : 'idle'; },
+    total: function () { return S.timer.len * 60000; },
+    left: function () {
+      var t = S.timer;
+      if (t.endAt) return Math.max(0, t.endAt - Date.now());
+      if (t.remain) return t.remain;
+      return t.len * 60000;
+    },
+    start: function () {
+      var t = S.timer; if (t.endAt) return;
+      Sound.ensure();
+      var now = Date.now();
+      t.endAt = now + (t.remain || t.len * 60000); t.remain = 0; t.seg = now;
+      wake(true); save();
+    },
+    pause: function () {
+      var t = S.timer; if (!t.endAt) return;
+      var now = Math.min(Date.now(), t.endAt);
+      credit(now - t.seg);
+      t.remain = Math.max(1000, t.endAt - now); t.endAt = 0; t.seg = 0;
+      wake(false); save();
+    },
+    stop: function () {
+      var t = S.timer;
+      if (t.endAt) credit(Math.min(Date.now(), t.endAt) - t.seg);
+      t.endAt = 0; t.remain = 0; t.seg = 0;
+      t.len = t.mode === 'study' ? S.settings.study : S.settings.brk;
+      wake(false); save();
+    },
+    complete: function (quiet) {
+      var t = S.timer, wasStudy = t.mode === 'study';
+      credit(t.endAt - t.seg, true);
+      t.endAt = 0; t.remain = 0; t.seg = 0;
+      t.mode = wasStudy ? 'break' : 'study';
+      t.len = wasStudy ? S.settings.brk : S.settings.study;
+      wake(false); save();
+      if (!quiet) {
+        Sound.chime('timer'); buzz([60, 80, 60]);
+        toast(wasStudy ? 'Sessione finita. Ora una pausa: alzati, bevi un po’ d’acqua.' : 'Pausa finita. Quando vuoi, si riparte.');
+      }
+    }
+  };
+  if (S.timer.endAt && Date.now() >= S.timer.endAt) Timer.complete(true);
+
+  /* ================= VISTE ================= */
+  function initial() { return ((S.settings.name || '').trim() || acct.email || '?').charAt(0).toUpperCase(); }
+  function topbar() {
+    var inn = signedIn();
+    return '<div class="topbar"><div class="brand">' + LOGO + 'Fioritura</div><div class="tb-r">' +
+      (canSync ? '<button class="ib acct' + (inn ? ' in' : '') + '" data-a="account" aria-label="' + (inn ? 'Il tuo account' : 'Accedi o crea un account') + '">' +
+        (inn ? esc(initial()) : I.cloud) + '<i class="sdot" data-acct-dot hidden></i></button>' : '') +
+      '<button class="ib" data-a="settings" aria-label="Impostazioni">' + I.sliders + '</button></div></div>';
+  }
+  function checkBtn(iso, label) {
+    var on = isDone(iso);
+    return '<button class="check ' + (on ? 'on' : '') + '" data-a="toggleDay" data-iso="' + iso + '" aria-pressed="' + on + '" aria-label="' + esc(label) + '">' + I.check + '</button>';
+  }
+  function whenTile(iso) { var dd = dateOf(iso); return '<span class="when"><span>' + WDS[dd.getDay()] + '</span><b>' + dd.getDate() + '</b><span>' + MOS[dd.getMonth()] + '</span></span>'; }
+  function dayRow(d, opts) {
+    var t = today(), on = isDone(d.iso), isToday = d.iso === t, lost = !on && d.iso < t;
+    var dd = dateOf(d.iso), pages = dayPages(d), hasNote = (S.notes[d.iso] || '').trim();
+    var sub = d.critici ? 'Ripasso libero di ciò che hai segnato' : pages + ' pagine' + (d.extra ? ' · e ' + d.extra : '');
+    if (lost) sub += ' · <em>da recuperare</em>';
+    else if (!on && !isToday) { var pr = pagesRead(d); if (pr) sub += ' · ' + pr + ' lette'; }
+    return '<div class="day p' + d.phase + (isToday ? ' is-today' : '') + (on ? ' is-done' : '') + '">' +
+      checkBtn(d.iso, (on ? 'Togli la spunta a ' : 'Segna come fatta ') + fmtLong(d.iso)) +
+      '<button class="dayb" data-a="openDay" data-iso="' + d.iso + '">' +
+      whenTile(d.iso) +
+      '<span class="what"><span class="lbl">' + esc(dayLabel(d)) + '</span><span class="sub">' + sub + '</span></span>' +
+      (hasNote ? '<span class="nicon" aria-label="Ha una nota">' + I.pen + '</span>' : '') +
+      (isToday ? '<span class="badge">oggi</span>' : '') +
+      '<span class="chev">' + I.chev + '</span></button></div>';
+  }
+  function pagesBlock(d, open) {
+    if (d.critici) return '';
+    var keys = pageKeys(d), set = S.pages[d.iso] || [], all = isDone(d.iso);
+    var read = pagesRead(d), total = keys.length;
+    var html = '', lastVol = 0, multi = d.segs.length > 1;
+    keys.forEach(function (k) {
+      var v = +k.split('-')[0], p = k.split('-')[1];
+      if (multi && v !== lastVol) { html += '<span class="vol">Volume ' + v + '</span>'; lastVol = v; }
+      var on = all || set.indexOf(k) >= 0;
+      html += '<button class="pg ' + (on ? 'on' : '') + '" data-a="page" data-iso="' + d.iso + '" data-k="' + k + '" aria-pressed="' + on + '" aria-label="Pagina ' + p + '">' + p + '</button>';
+    });
+    return '<details class="pages"' + (open ? ' open' : '') + ' data-pages>' +
+      '<summary><span>Pagina per pagina</span><span class="tw">' + read + ' / ' + total + I.chev + '</span></summary>' +
+      '<div class="pbar"><i style="width:' + Math.round(read / total * 100) + '%"></i></div>' +
+      '<p class="tiny muted" style="margin-top:10px">Facoltativo: tocca le pagine man mano che le finisci.</p>' +
+      '<div class="pgrid">' + html + '</div></details>';
+  }
+  function moodBlock(iso) {
+    var m = S.mood[iso] || '';
+    var opts = [['leggera', 'Leggera'], ['normale', 'Normale'], ['faticosa', 'Faticosa']];
+    return '<div class="moods"><p class="small muted">Com’è andata?</p><div class="seg" role="group" aria-label="Com’è andata">' +
+      opts.map(function (o) { return '<button data-a="mood" data-iso="' + iso + '" data-v="' + o[0] + '" aria-pressed="' + (m === o[0]) + '">' + o[1] + '</button>'; }).join('') +
+      '</div></div>';
+  }
+  var justBloomed = null;
+  function garden() {
+    var t = today(), done = doneCount(), pct = Math.round(done / TOTAL * 100);
+    var rows = PHASES.map(function (p) {
+      return '<div class="grow-row p' + p.n + '"><span class="rn">' + ['I', 'II', 'III', 'IV'][p.n - 1] + '</span>' +
+        p.list.map(function (d) {
+          var st = isDone(d.iso) ? 'done' : d.iso === t ? 'today' : d.iso < t ? 'lost' : 'seed';
+          return '<button class="f' + (justBloomed === d.iso ? ' bloom' : '') + '" data-a="openDay" data-iso="' + d.iso + '" aria-label="' + cap(fmtLong(d.iso)) + (st === 'done' ? ', fatta' : '') + '">' + flower(st) + '</button>';
+        }).join('') + '</div>';
+    }).join('');
+    return '<section class="card garden"><div class="row between"><div><span class="eyebrow">Il tuo giardino</span>' +
+      '<h3 class="h3" style="margin-top:5px">' + done + ' di ' + TOTAL + ' giornate</h3></div>' +
+      '<div class="pct display">' + pct + '<small>%</small></div></div>' +
+      '<div class="grid">' + rows + '</div>' +
+      '<p class="tiny muted">Ogni giornata completata fa sbocciare un fiore. Una riga per fase.</p></section>';
+  }
+
+  function viewToday() {
+    var t = today(), d = DAY[t], name = (S.settings.name || '').trim(), h = new Date().getHours();
+    var hello = h < 5 ? 'Ancora sveglia' : h < 13 ? 'Buongiorno' : h < 18 ? 'Buon pomeriggio' : 'Buonasera';
+    var greet = esc(hello) + (name ? ', ' + esc(name) : '') + (h < 5 ? '?' : '');
+    var toExam = diffDays(t, EXAM);
+    var examChip = toExam > 1 ? toExam + ' giorni all’esame' : toExam === 1 ? 'Domani l’esame' : toExam === 0 ? 'Oggi l’esame' : 'Esame del 21 dicembre';
+    var html = topbar() +
+      '<header class="head"><span class="eyebrow">' + cap(fmtLong(t)) + '</span><h1 class="display">' + greet + '</h1>' +
+      '<div class="chips"><span class="chip">' + I.hourglass + examChip + '</span>' +
+      (d ? '<span class="chip">' + I.sprout + 'Giornata ' + (d.idx + 1) + ' di ' + TOTAL + '</span>' : '') + '</div></header>';
+
+    // La scheda principale
+    if (d) {
+      var p = phaseOf(d.phase), on = isDone(t);
+      html += '<section class="card today p' + d.phase + '">' + flowerBig('wm') +
+        '<div class="row between wrap"><span class="eyebrow">Il programma di oggi</span><span class="pill">Fase ' + d.phase + ' · ' + esc(p.short) + '</span></div>';
+      if (d.critici) {
+        var ot = openTopics();
+        html += '<h2 class="big display">Solo argomenti<br>critici</h2>' +
+          '<p class="meta">L’ultimo giorno è per ciò che hai segnato come difficile. Con calma, uno alla volta.</p>';
+        if (ot.length) html += '<div>' + ot.map(topicRow).join('') + '</div>';
+        else html += '<p class="small muted">Non hai argomenti segnati: ripassa liberamente i punti in cui ti senti meno sicura.</p>';
+      } else {
+        html += '<h2 class="big display">' + d.segs.map(function (s) { return '<span>' + segLabel(s) + '</span>'; }).join('') +
+          (d.extra ? '<small>+ ' + esc(d.extra) + '</small>' : '') + '</h2>' +
+          '<p class="meta">' + dayPages(d) + ' pagine · ' + esc(p.title) + '</p>' + pagesBlock(d, UI.pagesOpen);
+      }
+      if (on) {
+        html += '<div class="done-msg"><span class="check on">' + I.check + '</span><div><b>Fatto.</b> ' + esc(DONE_MSG[hash(t) % DONE_MSG.length]) + '</div></div>' +
+          moodBlock(t) +
+          '<div class="row between"><button class="btn ghost" data-a="openDay" data-iso="' + t + '">' + I.pen + 'Scrivi una nota</button>' +
+          '<button class="btn ghost" data-a="toggleDay" data-iso="' + t + '">Annulla la spunta</button></div>';
+      } else {
+        html += '<button class="btn block" data-a="toggleDay" data-iso="' + t + '">' + I.check + 'Ho finito per oggi</button>' +
+          '<div class="row between"><button class="btn ghost" data-a="openDay" data-iso="' + t + '">' + I.pen + 'Scrivi una nota</button>' +
+          '<button class="btn ghost" data-a="tab" data-tab="notes" data-focus="tpText">' + I.leaf + 'Segna un dubbio</button></div>';
+      }
+      html += '</section>';
+    } else if (t < DAYS[0].iso) {
+      var f = DAYS[0];
+      html += '<section class="card today p1">' + flowerBig('wm') + '<span class="eyebrow">Si comincia ' + relDay(f.iso) + '</span>' +
+        '<h2 class="big display">' + cap(fmtLong(f.iso)) + '</h2><p class="meta">' + esc(dayLabel(f)) + ' · ' + dayPages(f) + ' pagine</p></section>';
+    } else if (t === EXAM) {
+      html += '<section class="card today p2">' + flowerBig('wm') + '<span class="eyebrow">21 dicembre</span>' +
+        '<h2 class="big display">Oggi è il giorno.</h2>' +
+        '<p class="meta">Hai fatto tutto il percorso. Respira, entra con calma e racconta quello che sai. In bocca al lupo.</p>' +
+        '<button class="btn block" data-a="breathe">' + I.breath + 'Un minuto per respirare</button></section>';
+    } else {
+      html += '<section class="card today p4">' + flowerBig('wm') + '<span class="eyebrow">Percorso concluso</span>' +
+        '<h2 class="big display">Il tuo giardino è fiorito.</h2>' +
+        '<p class="meta">' + doneCount() + ' giornate completate su ' + TOTAL + '. Qualunque cosa sia successa all’esame, questo lavoro è tuo.</p></section>';
+    }
+
+    // Giornate rimaste indietro
+    var miss = missedDays();
+    if (miss.length) {
+      html += '<section class="card"><div class="row between"><h3 class="h3">Da recuperare, con calma</h3><span class="pill p2">' + miss.length + '</span></div>' +
+        '<p class="small muted" style="margin-top:4px">Nessuna fretta: spuntale quando le hai completate.</p><div class="daylist">' +
+        miss.slice(0, 4).map(function (x) { return dayRow(x, { month: true }); }).join('') + '</div>' +
+        (miss.length > 4 ? '<button class="btn ghost" data-a="tab" data-tab="plan">' + (miss.length === 5 ? 'E un’altra nel programma' : 'E altre ' + (miss.length - 4) + ' nel programma') + '</button>' : '') + '</section>';
+    }
+
+    html += garden();
+
+    // Prossima giornata
+    var nx = DAYS.filter(function (x) { return x.iso > t; })[0];
+    if (nx && d) {
+      html += '<button class="card next p' + nx.phase + '" data-a="openDay" data-iso="' + nx.iso + '">' +
+        whenTile(nx.iso) +
+        '<span class="what"><span class="eyebrow">' + (relDay(nx.iso) === 'domani' ? 'Domani' : 'Prossima giornata') + '</span>' +
+        '<span class="lbl" style="margin-top:3px">' + esc(dayLabel(nx)) + '</span>' +
+        '<span class="sub">' + (nx.critici ? 'Ripasso finale' : dayPages(nx) + ' pagine') + (nx.phase !== (d ? d.phase : 0) ? ' · inizia la Fase ' + nx.phase : '') + '</span></span>' +
+        '<span class="chev" style="width:18px;color:var(--muted)">' + I.chev + '</span></button>';
+    }
+
+    // Concentrazione di oggi
+    var fo = focusOf(t), st = Timer.status();
+    html += '<section class="card"><div class="row between"><div><span class="eyebrow">Concentrazione</span>' +
+      '<h3 class="h3" style="margin-top:5px">Oggi ' + fmtMin(fo.ms) + '</h3><p class="small muted">' + fo.n + ' ' + plural(fo.n, 'sessione completata', 'sessioni completate') + '</p></div>' +
+      '<button class="btn soft sm" data-a="tab" data-tab="focus">' + (st === 'run' ? (S.timer.mode === 'study' ? 'Studio' : 'Pausa') + ' · <span data-timer>' + mmss(Timer.left()) + '</span>' : st === 'pause' ? 'In pausa' : 'Inizia') + '</button></div></section>';
+
+    html += '<figure class="quote">' + I.leaf + '<blockquote>' + esc(QUOTES[hash(t + 'q') % QUOTES.length]) + '</blockquote></figure>';
+    return html;
+  }
+
+  function viewPlan() {
+    var t = today(), done = doneCount(), pct = Math.round(done / TOTAL * 100), cur = currentPhase();
+    var allOpen = PHASES.every(function (p) { return isOpen(p.n, cur); });
+    var html = topbar() + '<header class="head"><span class="eyebrow">' + SUBJECT + '</span><h1 class="display">Il programma</h1>' +
+      '<p>Dal 3 novembre al 20 dicembre. Spunta una giornata solo quando l’hai completata.</p></header>' +
+      '<section class="card"><div class="row between"><div><span class="eyebrow">Avanzamento complessivo</span>' +
+      '<h3 class="h3" style="margin-top:5px">' + done + ' / ' + TOTAL + ' giornate</h3></div><div class="pct display">' + pct + '<small>%</small></div></div>' +
+      '<div class="bar"><i style="left:' + pct + '%"></i></div>' +
+      '<div class="row between"><span class="small muted">Esame: lunedì 21 dicembre</span>' +
+      '<button class="btn ghost" style="margin-right:-10px" data-a="expandAll" data-v="' + (allOpen ? 0 : 1) + '">' + (allOpen ? 'Comprimi tutto' : 'Espandi tutto') + '</button></div></section>';
+
+    PHASES.forEach(function (p) {
+      var c = phaseDoneCount(p), open = isOpen(p.n, cur);
+      html += '<section class="card phase p' + p.n + (open ? ' open' : '') + '">' +
+        '<button class="phase-h" data-a="phase" data-n="' + p.n + '" aria-expanded="' + open + '">' +
+        '<span class="ph-n">' + (c === p.list.length ? '<span class="check on" style="width:44px;height:44px;border:0">' + I.check + '</span>' : p.n) + '</span>' +
+        '<span class="grow"><span class="eyebrow">Fase ' + p.n + '</span><span class="ph-t">' + esc(p.title) + '</span><span class="ph-m">' + esc(p.range) + (p.note ? ' · ' + esc(p.note) : '') + '</span></span>' +
+        '<span class="ph-c">' + c + '/' + p.list.length + '</span><span class="chev">' + I.chev + '</span></button>' +
+        '<div class="mini"><i style="width:' + Math.round(c / p.list.length * 100) + '%"></i></div>' +
+        '<div class="body"><div class="daylist">' + p.list.map(function (d) { return dayRow(d, { month: true }); }).join('') + '</div></div></section>';
+    });
+    html += '<section class="card exam">' + whenTile(EXAM) + '<div><h3 class="h3">Esame</h3>' +
+      '<p class="small muted" style="margin-top:3px">Obiettivo: tutte le giornate completate e programma consolidato.</p></div></section>';
+    return html;
+  }
+  function isOpen(n, cur) { return S.open[n] != null ? !!S.open[n] : n === cur; }
+
+  var SOUNDS = [['none', 'Silenzio', I.mute], ['rain', 'Pioggia', I.rain], ['waves', 'Onde', I.waves], ['hum', 'Brusio', I.moon]];
+  function viewFocus() {
+    var tm = S.timer, st = Timer.status(), study = tm.mode === 'study', idle = st === 'idle';
+    var lens = study ? [25, 40, 50, 60] : [5, 10, 15];
+    var t = today(), fo = focusOf(t);
+    var wk = 0, all = 0, wkStart = (function () { var d = dateOf(t); var wd = (d.getDay() + 6) % 7; d.setDate(d.getDate() - wd); return isoOf(d); })();
+    Object.keys(S.focus).forEach(function (dv) {
+      Object.keys(S.focus[dv] || {}).forEach(function (k) { var m = S.focus[dv][k].ms || 0; all += m; if (k >= wkStart && k <= t) wk += m; });
+    });
+    var cur = Sound.cur ? Sound.cur.kind : 'none';
+    var html = topbar() + '<header class="head"><span class="eyebrow">Concentrazione</span><h1 class="display">Una sessione alla volta</h1>' +
+      '<p>Scegli quanto studiare, poi lascia che sia il timer a ricordarti la pausa.</p></header>' +
+      '<section class="card">' +
+      '<div class="seg" role="group" aria-label="Tipo di sessione">' +
+      '<button data-a="mode" data-v="study" aria-pressed="' + study + '"' + (idle ? '' : ' disabled') + '>Studio</button>' +
+      '<button data-a="mode" data-v="break" aria-pressed="' + !study + '"' + (idle ? '' : ' disabled') + '>Pausa</button></div>' +
+      '<div class="ring' + (st === 'run' ? ' run' : '') + (study ? '' : ' brk') + '">' +
+      '<svg viewBox="0 0 220 220" aria-hidden="true"><circle class="trk" cx="110" cy="110" r="98"/><circle class="arc" id="arc" cx="110" cy="110" r="98" pathLength="1000" stroke-dasharray="1000" stroke-dashoffset="1000"/></svg>' +
+      '<div class="ring-in"><div class="time" data-timer>' + mmss(Timer.left()) + '</div><div class="lab2">' + (study ? 'Studio' : 'Pausa') + (st === 'pause' ? ' · in pausa' : '') + '</div></div></div>' +
+      '<div class="controls">' +
+      '<button class="ib" data-a="tstop" aria-label="Ricomincia da capo"' + (idle ? ' style="visibility:hidden"' : '') + '>' + I.reset + '</button>' +
+      '<button class="play' + (study ? '' : ' brk') + '" data-a="' + (st === 'run' ? 'tpause' : 'tstart') + '" aria-label="' + (st === 'run' ? 'Metti in pausa' : 'Avvia') + '">' + (st === 'run' ? I.pause : I.play) + '</button>' +
+      '<span style="width:42px"></span></div>' +
+      '<div class="seg" role="group" aria-label="Durata">' + lens.map(function (m) {
+        return '<button data-a="len" data-v="' + m + '" aria-pressed="' + (tm.len === m) + '"' + (idle ? '' : ' disabled') + '>' + m + ' min</button>';
+      }).join('') + '</div></section>';
+
+    html += '<section class="card"><div class="row between"><h3 class="h3">Suono di sottofondo</h3></div>' +
+      '<div class="sounds">' + SOUNDS.map(function (s) { return '<button class="snd" data-a="ambient" data-v="' + s[0] + '" aria-pressed="' + (cur === s[0]) + '">' + s[2] + s[1] + '</button>'; }).join('') + '</div>' +
+      '<label class="row"><span class="tiny muted">Volume</span><input type="range" min="0.05" max="1" step="0.01" value="' + S.settings.volume + '" data-vol aria-label="Volume"></label></section>';
+
+    html += '<button class="card breath-btn" data-a="breathe"><span class="bi">' + I.breath + '</span><span class="grow"><span class="h3" style="display:block">Un minuto per respirare</span>' +
+      '<span class="small muted">Quando senti l’ansia salire, o prima di ricominciare.</span></span><span class="chev" style="width:18px;color:var(--muted)">' + I.chev + '</span></button>';
+
+    html += '<section class="card"><div class="stats"><div><b>' + fmtMin(fo.ms) + '</b><span>oggi</span></div><div><b>' + fmtMin(wk) + '</b><span>questa settimana</span></div><div><b>' + fmtMin(all) + '</b><span>in tutto</span></div></div></section>';
+    return html;
+  }
+
+  function topicRow(tp) {
+    var where = (tp.vol ? 'V' + tp.vol : '') + (tp.page ? (tp.vol ? ' · ' : '') + 'p. ' + esc(tp.page) : '');
+    return '<div class="topic p' + (DAY[tp.day] ? DAY[tp.day].phase : 2) + (tp.solved ? ' solved' : '') + '">' +
+      '<button class="check ' + (tp.solved ? 'on' : '') + '" data-a="solve" data-id="' + tp.id + '" aria-pressed="' + !!tp.solved + '" aria-label="' + (tp.solved ? 'Da rivedere di nuovo' : 'Chiarito') + '">' + I.check + '</button>' +
+      '<div class="tx"><p>' + esc(tp.text) + '</p><span class="sub">' + (where ? where + ' · ' : '') + 'segnato il ' + fmtShort(tp.day) + '</span></div>' +
+      '<button class="ib sm flat" data-a="delTopic" data-id="' + tp.id + '" aria-label="Elimina">' + I.x + '</button></div>';
+  }
+  function viewNotes() {
+    var ot = openTopics(), solved = S.topics.filter(function (t) { return t.solved; });
+    var html = topbar() + '<header class="head"><span class="eyebrow">Appunti</span><h1 class="display">Argomenti critici</h1>' +
+      '<p>Segna qui ciò che ti sembra difficile mentre studi. Il 20 dicembre diventerà il tuo ripasso finale.</p></header>' +
+      '<form class="card" data-form="topic" autocomplete="off">' +
+      '<label class="lab" for="tpText">Cosa vuoi rivedere?</label>' +
+      '<textarea class="field" id="tpText" name="text" rows="2" placeholder="Es. differenza tra litispendenza e continenza"></textarea>' +
+      '<div class="addrow"><div class="seg" role="radiogroup" aria-label="Volume">' +
+      '<label><input type="radio" name="vol" value="" checked><span>—</span></label>' +
+      '<label><input type="radio" name="vol" value="1"><span>Vol. 1</span></label>' +
+      '<label><input type="radio" name="vol" value="2"><span>Vol. 2</span></label></div>' +
+      '<input class="field pgin" name="page" inputmode="numeric" placeholder="Pagina" aria-label="Pagina">' +
+      '<button class="btn sm" type="submit">Aggiungi</button></div></form>';
+
+    html += '<section class="card"><div class="row between"><h3 class="h3">Da rivedere</h3>' + (ot.length ? '<span class="pill p2">' + ot.length + '</span>' : '') + '</div>';
+    if (ot.length) html += '<div>' + ot.map(topicRow).join('') + '</div>';
+    else html += '<div class="empty p3">' + flowerBig() + '<p class="small muted">Ancora niente. Quando qualcosa non ti torna, scrivilo qui: toglierlo dalla testa aiuta.</p></div>';
+    html += '</section>';
+    if (solved.length) {
+      html += '<section class="card"><details class="more"><summary><span>Chiariti · ' + solved.length + '</span>' + I.chev + '</summary><div style="margin-top:8px">' +
+        solved.map(topicRow).join('') + '</div></details></section>';
+    }
+    var withNotes = DAYS.filter(function (d) { return (S.notes[d.iso] || '').trim(); });
+    html += '<section class="card"><h3 class="h3">Note delle giornate</h3>';
+    if (withNotes.length) {
+      html += '<div>' + withNotes.map(function (d) {
+        return '<button class="notecard p' + d.phase + '" data-a="openDay" data-iso="' + d.iso + '"><span class="eyebrow">' + cap(fmtLong(d.iso)) + ' · ' + esc(dayLabel(d)) + '</span><p>' + esc(S.notes[d.iso]) + '</p></button>';
+      }).join('') + '</div>';
+    } else html += '<p class="small muted">Puoi scrivere una nota per ogni giornata: tocca un giorno nel programma.</p>';
+    html += '</section>';
+    return html;
+  }
+
+  /* ================= DISEGNO ================= */
+  var lastDay = today();
+  function render(animate) {
+    var v = $('#view');
+    var html = UI.tab === 'plan' ? viewPlan() : UI.tab === 'focus' ? viewFocus() : UI.tab === 'notes' ? viewNotes() : viewToday();
+    if (animate) { v.classList.add('swap'); void v.offsetWidth; v.classList.remove('swap'); }
+    v.innerHTML = html;
+    $$('.tab').forEach(function (b) { if (b.dataset.tab === UI.tab) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+    var n = openTopics().length, num = $('.tab .num');
+    num.textContent = n > 9 ? '9+' : n; num.classList.toggle('show', n > 0);
+    $('.tab .dot').classList.toggle('show', Timer.status() === 'run');
+    var det = $('[data-pages]', v);
+    if (det) det.addEventListener('toggle', function () { UI.pagesOpen = det.open; });
+    justBloomed = null;
+    lastDay = today();
+    paintTimer();
+    paintAcct();
+  }
+  function paintTimer() {
+    var left = Timer.left(), txt = mmss(left);
+    $$('[data-timer]').forEach(function (e) { e.textContent = txt; });
+    var arc = $('#arc');
+    if (arc) { arc.style.strokeDashoffset = String(1000 * (left / Timer.total())); arc.style.opacity = left >= Timer.total() ? '0' : '1'; }
+    document.title = Timer.status() === 'run' ? txt + ' · Fioritura' : 'Fioritura';
+  }
+  setInterval(function () {
+    if (S.timer.endAt && Date.now() >= S.timer.endAt) { Timer.complete(false); render(); return; }
+    if (today() !== lastDay && !sheetOpen()) { render(); return; }
+    paintTimer();
+  }, 500);
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) return;
+    if (S.timer.endAt && Date.now() >= S.timer.endAt) { Timer.complete(false); render(); }
+    else if (S.timer.endAt) wake(true);
+    if (today() !== lastDay && !sheetOpen()) render();
+  });
+
+  /* ================= FOGLI ================= */
+  var sheet = null;
+  function sheetOpen() { return !!sheet; }
+  function openSheet(build, opts) {
+    closeSheet(true);
+    var bd = document.createElement('div'); bd.className = 'backdrop';
+    var sh = document.createElement('div'); sh.className = 'sheet'; sh.setAttribute('role', 'dialog'); sh.setAttribute('aria-modal', 'true');
+    document.body.appendChild(bd); document.body.appendChild(sh);
+    sheet = { el: sh, bd: bd, build: build, opts: opts || {}, prevFocus: document.activeElement };
+    refreshSheet();
+    bd.addEventListener('click', function () { closeSheet(); });
+    requestAnimationFrame(function () { requestAnimationFrame(function () { bd.classList.add('open'); sh.classList.add('open'); }); });
+    setTimeout(function () { var f = sh.querySelector('[data-autofocus]') || sh.querySelector('.ib'); if (f) try { f.focus({ preventScroll: true }); } catch (e) {} }, 380);
+  }
+  function refreshSheet() {
+    if (!sheet) return;
+    flushNote();
+    var top = sheet.el.scrollTop;
+    sheet.el.innerHTML = '<div class="grab"></div>' + sheet.build();
+    sheet.el.scrollTop = top;
+    paintAcct();
+  }
+  function closeSheet(instant) {
+    if (!sheet) return;
+    flushNote();
+    var s = sheet; sheet = null;
+    if (s.opts.onClose) s.opts.onClose();
+    if (instant) { s.el.remove(); s.bd.remove(); return; }
+    s.el.classList.remove('open'); s.bd.classList.remove('open');
+    setTimeout(function () { s.el.remove(); s.bd.remove(); }, 420);
+    if (s.prevFocus && s.prevFocus.focus && document.body.contains(s.prevFocus)) try { s.prevFocus.focus({ preventScroll: true }); } catch (e) {}
+    render();
+  }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { if ($('.breathe')) closeBreath(); else if (sheet) closeSheet(); }
+  });
+
+  function daySheet(iso) {
+    var d = DAY[iso], p = phaseOf(d.phase), on = isDone(iso), fo = focusOf(iso);
+    return '<div class="sh-head p' + d.phase + '"><div><span class="eyebrow">' + cap(fmtLong(iso)) + ' · ' + relDay(iso) + '</span>' +
+      '<h2 class="display">' + esc(dayLabel(d)) + '</h2></div><button class="ib" data-a="closeSheet" aria-label="Chiudi">' + I.x + '</button></div>' +
+      '<div class="row wrap p' + d.phase + '"><span class="pill">Fase ' + d.phase + ' · ' + esc(p.title) + '</span>' +
+      (d.critici ? '' : '<span class="small muted">' + dayPages(d) + ' pagine</span>') + '</div>' +
+      '<div class="p' + d.phase + '">' +
+      '<button class="btn block ' + (on ? 'soft' : '') + '" data-a="toggleDay" data-iso="' + iso + '">' + I.check + (on ? 'Fatta · tocca per togliere la spunta' : 'Segna come fatta') + '</button></div>' +
+      (d.critici ? '' : '<div class="p' + d.phase + '">' + pagesBlock(d, true) + '</div>') +
+      (on ? '<div class="p' + d.phase + '">' + moodBlock(iso) + '</div>' : '') +
+      '<div><label class="lab" for="dayNote">Note della giornata</label>' +
+      '<textarea class="field" id="dayNote" rows="4" data-note="' + iso + '" placeholder="Cosa ti è rimasto in mente? Dubbi, collegamenti, domande da fare…">' + esc(S.notes[iso] || '') + '</textarea>' +
+      '<div class="row between tiny muted" style="margin-top:6px"><span>Concentrazione: ' + fmtMin(fo.ms) + '</span><span data-saved></span></div></div>' +
+      '<div><label class="lab" for="quickTopic">Un argomento critico da questa giornata</label>' +
+      '<div class="row"><input class="field" id="quickTopic" placeholder="Es. l’onere della prova" enterkeyhint="done"><button class="btn sm soft" data-a="quickTopic" data-iso="' + iso + '">Aggiungi</button></div></div>';
+  }
+  function openDay(iso) { if (DAY[iso]) openSheet(function () { return daySheet(iso); }, { iso: iso }); }
+
+  function settingsSheet() {
+    var st = S.settings;
+    function sw(k, title, desc) {
+      return '<div class="set-row"><div><b>' + title + '</b><p class="small muted">' + desc + '</p></div>' +
+        '<button class="switch" role="switch" aria-checked="' + !!st[k] + '" aria-label="' + title + '" data-a="setToggle" data-k="' + k + '"></button></div>';
+    }
+    return '<div class="sh-head"><div><span class="eyebrow">Fioritura</span><h2 class="display">Impostazioni</h2></div><button class="ib" data-a="closeSheet" aria-label="Chiudi">' + I.x + '</button></div>' +
+      (canSync ? '<button class="who" data-a="account" style="width:100%;text-align:left">' +
+        '<span class="av">' + (signedIn() ? esc(initial()) : I.cloud.replace('<svg', '<svg style="width:22px;height:22px"')) + '</span>' +
+        '<span class="grow"><b>' + (signedIn() ? 'Il tuo account' : 'Accedi o crea un account') + '</b>' +
+        '<small data-acct-line></small></span><span class="chev" style="width:18px;color:var(--muted)">' + I.chev + '</span></button>' : '') +
+      '<div><label class="lab" for="setName">Il tuo nome</label><input class="field" id="setName" data-setting="name" value="' + esc(st.name) + '" placeholder="Per salutarti la mattina" autocomplete="given-name"></div>' +
+      '<h3 class="sec-t">Colori</h3>' + palGrid() +
+      '<div><p class="lab" style="margin-bottom:4px">Luce</p><p class="small muted" style="margin-bottom:9px">«Auto» segue il telefono; «Di sera» diventa nera dalle 19 alle 7.</p>' +
+      '<div class="seg four" role="group" aria-label="Luce">' +
+      [['auto', 'Auto'], ['light', 'Chiara'], ['dark', 'Scura'], ['evening', 'Di sera']].map(function (o) { return '<button data-a="theme" data-v="' + o[0] + '" aria-pressed="' + (st.theme === o[0]) + '">' + o[1] + '</button>'; }).join('') + '</div></div>' +
+      sw('sounds', 'Suoni delicati', 'Un piccolo rintocco quando chiudi una giornata o finisce una sessione.') +
+      sw('wake', 'Schermo acceso durante le sessioni', 'Così sul telefono il timer suona anche alla fine.') +
+      '<h3 class="sec-t">I tuoi dati</h3>' +
+      '<p class="help">' + (signedIn() ? 'I tuoi dati sono nel tuo account e su questo dispositivo. Se vuoi, puoi anche salvarne una copia in un file.' :
+        'Senza account tutto resta solo su questo dispositivo. Puoi salvarne una copia in un file e caricarla su un altro dispositivo (le due versioni si uniscono, non si perde nulla), oppure accedere con un account e lasciar fare a lui.') + '</p>' +
+      '<div class="btns"><button class="btn soft sm" data-a="export">' + I.download + 'Salva una copia</button><button class="btn soft sm" data-a="import">' + I.upload + 'Carica una copia</button></div>' +
+      '<h3 class="sec-t">Mettila nella schermata Home</h3>' +
+      '<ul class="help"><li><b>iPhone:</b> apri questa pagina con Safari, tocca Condividi e poi «Aggiungi alla schermata Home».</li>' +
+      '<li><b>Android:</b> menu ⋮ in Chrome, poi «Installa app».</li>' +
+      '<li>Così si apre come un’app, funziona anche senza internet e il telefono non cancella i dati.</li></ul>' +
+      '<div style="text-align:center"><button class="btn ghost danger" data-a="reset">' + I.trash + (signedIn() ? 'Cancella i dati da questo dispositivo' : 'Cancella tutti i dati') + '</button></div>' +
+      '<p class="foot">Fioritura · fatta con cura, per te.</p>';
+  }
+  function welcomeSheet() {
+    return '<div class="welcome">' + LOGO.replace('<svg', '<svg class="logo"') + '<h2 class="display">Benvenuta</h2>' +
+      '<p class="muted" style="margin-top:8px">Qui c’è il tuo programma di ' + SUBJECT + ', giorno per giorno, fino all’esame del 21 dicembre.</p>' +
+      '<ul><li class="p1"><i></i>Ogni giornata completata fa sbocciare un fiore nel tuo giardino. Il 3 novembre è già segnato.</li>' +
+      '<li class="p3"><i></i>Il timer ti aiuta a concentrarti, con il suono della pioggia o del mare se ti va.</li>' +
+      '<li class="p4"><i></i>Negli appunti raccogli i dubbi: alla fine diventano il tuo ripasso.</li></ul></div>' +
+      '<div><label class="lab" for="wName">Come ti chiami? <span class="muted" style="font-weight:400">(facoltativo)</span></label>' +
+      '<input class="field" id="wName" data-setting="name" value="' + esc(S.settings.name) + '" autocomplete="given-name" enterkeyhint="done"></div>' +
+      '<div><p class="lab">Scegli il tuo colore <span class="muted" style="font-weight:400">(lo cambi quando vuoi)</span></p>' + palGrid() + '</div>' +
+      '<button class="btn block" data-a="welcomeDone">Iniziamo</button>' +
+      (canSync ? '<div style="text-align:center"><button class="linkbtn" data-a="welcomeLogin">Hai già un account? Accedi</button></div>' : '');
+  }
+
+  function palGrid() {
+    var P = window.FIO_PAL;
+    return '<div class="pals" role="group" aria-label="Colori">' + Object.keys(P).map(function (k) {
+      var l = P[k].l;
+      return '<button class="sw" data-a="pal" data-v="' + k + '" aria-pressed="' + (S.settings.pal === k) + '"><i style="background:linear-gradient(135deg,' + l[1] + ' 0 47%,' + l[4] + ' 53% 100%)"></i>' + P[k].name + '</button>';
+    }).join('') + '</div>';
+  }
+
+  var acctView = 'main', acctMode = '', acctMsg = '', acctBad = false, acctDraft = '';
+  function acctNote(msg, bad) {
+    acctMsg = msg || ''; acctBad = !!bad;
+    var el = $('[data-acct-msg]'); if (el) { el.textContent = acctMsg; el.classList.toggle('bad', acctBad); }
+  }
+  function acctSheet() {
+    function head(t) { return '<div class="sh-head"><div><span class="eyebrow">Account</span><h2 class="display">' + t + '</h2></div><button class="ib" data-a="closeSheet" aria-label="Chiudi">' + I.x + '</button></div>'; }
+    var msg = '<p class="msg' + (acctBad ? ' bad' : '') + '" data-acct-msg role="status">' + esc(acctMsg) + '</p>';
+    if (acctView === 'newpw') {
+      return head('Nuova password') + '<p class="help">Scegli una password nuova, di almeno 8 caratteri. Ti servirà per accedere da tutti i tuoi dispositivi.</p>' +
+        '<div><label class="lab" for="acPw1">Nuova password</label><input class="field" id="acPw1" type="password" autocomplete="new-password" data-autofocus></div>' +
+        '<div><label class="lab" for="acPw2">Ripetila</label><input class="field" id="acPw2" type="password" autocomplete="new-password" enterkeyhint="done"></div>' +
+        msg + '<button class="btn block" data-a="savePw">Salva la password</button>' +
+        '<div style="text-align:center"><button class="btn ghost" data-a="acctBack">Annulla</button></div>';
+    }
+    if (signedIn()) {
+      var name = (S.settings.name || '').trim();
+      return head('Il tuo account') +
+        '<div class="who"><span class="av">' + esc(initial()) + '</span><span class="grow"><b>' + esc(name || 'Collegata') + '</b><small>' + esc(acct.email) + '</small></span></div>' +
+        '<div class="syncline"><i class="sdot" data-acct-dot></i><span data-acct-line></span></div>' +
+        '<p class="help">Tutto quello che fai qui è salvato nel tuo account. Accedi con la stessa email sul telefono, sul tablet o sul computer e ritrovi le giornate, le pagine, le note, gli argomenti critici e i tuoi colori.</p>' +
+        msg +
+        '<div class="btns"><button class="btn soft sm" data-a="syncNow">' + I.sync + 'Sincronizza ora</button><button class="btn line sm" data-a="acctNewPw">Cambia password</button></div>' +
+        '<div style="text-align:center"><button class="btn ghost danger" data-a="logout">Esci da questo dispositivo</button>' +
+        '<p class="tiny muted">Uscendo, i dati restano comunque anche qui.</p></div>';
+    }
+    var up = (acctMode || (acct.email ? 'login' : 'signup')) === 'signup';
+    var email = acctDraft || acct.email;
+    return head(up ? 'Crea il tuo account' : 'Accedi') +
+      '<p class="help">' + (up ? 'Con un account i tuoi progressi restano uguali su telefono, tablet e computer, e non si perdono se cambi dispositivo.' :
+        'Accedi con la tua email per ritrovare i progressi su tutti i tuoi dispositivi.') + '</p>' +
+      '<div><label class="lab" for="acEmail">Email</label><input class="field" id="acEmail" type="email" inputmode="email" autocomplete="username" autocapitalize="off" spellcheck="false" value="' + esc(email) + '"></div>' +
+      '<div><label class="lab" for="acPw">Password' + (up ? ' <span class="muted" style="font-weight:400">(almeno 8 caratteri)</span>' : '') + '</label>' +
+      '<input class="field" id="acPw" type="password" autocomplete="' + (up ? 'new-password' : 'current-password') + '" enterkeyhint="go"></div>' +
+      msg +
+      '<button class="btn block" data-a="' + (up ? 'signup' : 'login') + '" id="acGo">' + (up ? 'Crea l’account' : 'Accedi') + '</button>' +
+      '<div class="row between wrap"><button class="linkbtn" data-a="acctMode" data-v="' + (up ? 'login' : 'signup') + '">' + (up ? 'Ho già un account' : 'Non hai un account? Creane uno') + '</button>' +
+      (up ? '' : '<button class="linkbtn" data-a="forgot">Password dimenticata?</button>') + '</div>' +
+      '<p class="tiny muted">Senza account va bene lo stesso: i dati restano su questo dispositivo.</p>';
+  }
+  function busyBtn(el, label) { if (!el) return function () {}; var old = el.innerHTML; el.disabled = true; el.textContent = label || 'Un attimo…'; return function () { if (document.body.contains(el)) { el.disabled = false; el.innerHTML = old; } }; }
+
+  /* ================= NOTE ================= */
+  var noteTimer = null, notePending = null;
+  function flushNote() {
+    if (!notePending) return;
+    clearTimeout(noteTimer);
+    var n = notePending; notePending = null;
+    if ((S.notes[n.iso] || '') === (n.v.trim() ? n.v : '')) return;
+    if (n.v.trim()) S.notes[n.iso] = n.v; else delete S.notes[n.iso];
+    S.notesAt[n.iso] = Date.now();
+    save();
+    var sv = $('[data-saved]'); if (sv) sv.textContent = 'Salvata';
+  }
+
+  /* ================= MOMENTI BELLI ================= */
+  function petals(n) {
+    if (reduceMotion) return;
+    var cols = ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)'];
+    for (var i = 0; i < (n || 18); i++) {
+      var p = document.createElement('i'); p.className = 'petal';
+      var s = 9 + Math.random() * 9;
+      p.style.cssText = 'left:' + (Math.random() * 100) + 'vw;width:' + s + 'px;height:' + (s * 1.25) + 'px;background:' + cols[i % 4] +
+        ';animation-duration:' + (2.6 + Math.random() * 1.8) + 's;animation-delay:' + (Math.random() * .6) + 's;--dx:' + (Math.random() * 140 - 70) + 'px;--rot:' + (180 + Math.random() * 400) + 'deg';
+      document.body.appendChild(p);
+      setTimeout(p.remove.bind(p), 5200);
+    }
+  }
+  function celebrate(iso) {
+    var d = DAY[iso], p = phaseOf(d.phase);
+    justBloomed = iso;
+    buzz(20);
+    if (phaseDoneCount(p) === p.list.length) {
+      Sound.chime('phase'); petals(34);
+      toast('Fase ' + p.n + ' completata. ' + PHASE_DONE[p.n], null, 6500);
+    } else {
+      Sound.chime('done'); petals(16);
+      if (iso !== today()) toast(cap(fmtLong(iso)) + ': fatta.');
+    }
+  }
+
+  /* ================= RESPIRO ================= */
+  var breathTimers = [];
+  function closeBreath() {
+    breathTimers.forEach(clearTimeout); breathTimers = [];
+    var ov = $('.breathe'); if (!ov) return;
+    ov.classList.remove('open'); setTimeout(function () { ov.remove(); }, 500);
+  }
+  function breathe() {
+    closeBreath();
+    var ov = document.createElement('div'); ov.className = 'breathe'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-label', 'Respiro guidato');
+    ov.innerHTML = '<button class="ib close" aria-label="Chiudi">' + I.x + '</button><div class="bcirc"><i></i></div><p class="bword display">Mettiti comoda</p><p class="bcount small">Spalle giù, mani in grembo.</p>';
+    document.body.appendChild(ov);
+    ov.querySelector('.close').addEventListener('click', closeBreath);
+    requestAnimationFrame(function () { ov.classList.add('open'); });
+    var circ = ov.querySelector('.bcirc i'), word = ov.querySelector('.bword'), count = ov.querySelector('.bcount');
+    var steps = [['Inspira', 4000, 1], ['Trattieni', 2000, 1], ['Espira', 6000, .5]], cycles = 5, t = 2200;
+    function at(ms, fn) { breathTimers.push(setTimeout(fn, ms)); }
+    for (var c = 0; c < cycles; c++) {
+      steps.forEach(function (s, i) {
+        var cc = c;
+        at(t, function () {
+          word.textContent = s[0];
+          count.textContent = (cc + 1) + ' di ' + cycles;
+          circ.style.transition = 'transform ' + s[1] + 'ms cubic-bezier(.45,.05,.55,.95)';
+          circ.style.transform = 'scale(' + s[2] + ')';
+        });
+        t += s[1];
+      });
+    }
+    at(t + 200, function () { word.textContent = 'Ecco fatto.'; count.textContent = 'Torna qui ogni volta che ne hai bisogno.'; Sound.chime('done'); });
+  }
+
+  /* ================= COPIA DEI DATI ================= */
+  function exportData() {
+    flushNote();
+    var copy = JSON.parse(JSON.stringify(syncable()));
+    var text = JSON.stringify({ app: 'fioritura', v: 1, savedAt: new Date().toISOString(), state: copy }, null, 1);
+    var name = 'fioritura-' + today() + '.json';
+    var blob = new Blob([text], { type: 'application/json' });
+    var coarse = window.matchMedia && matchMedia('(pointer: coarse)').matches;
+    try {
+      var file = new File([blob], name, { type: 'application/json' });
+      if (coarse && navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({ files: [file], title: 'Copia di Fioritura' }).then(function () { toast('Copia pronta.'); }).catch(function (e) { if (e && e.name !== 'AbortError') download(); });
+        return;
+      }
+    } catch (e) {}
+    download();
+    function download() {
+      var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+      toast('Copia salvata: ' + name);
+    }
+  }
+  // Unisce i dati di un altro dispositivo (o di una copia) con quelli di qui. Per ogni cosa vince la modifica
+  // più recente; le spunte tolte e gli argomenti eliminati restano tolti. Unire due volte non cambia nulla.
+  var SYNC_SETTINGS = ['name', 'pal', 'theme'];
+  function mergeIn(o) {
+    o = o || {};
+    Object.keys(o.done || {}).forEach(function (k) {
+      var v = +o.done[k] || 0;
+      if (DAY[k] && Math.abs(v) > Math.abs(S.done[k] || 0)) S.done[k] = v;
+    });
+    var pa = o.pagesAt || {};
+    Object.keys(o.pages || {}).forEach(function (k) {
+      if (!DAY[k] || !Array.isArray(o.pages[k])) return;
+      var tb = +pa[k] || 0, ta = S.pagesAt[k] || 0;
+      if (tb > ta) { S.pages[k] = o.pages[k].slice(); S.pagesAt[k] = tb; }
+      else if (!tb && !ta) { var cur = S.pages[k] || []; o.pages[k].forEach(function (x) { if (cur.indexOf(x) < 0) cur.push(x); }); S.pages[k] = cur; }
+    });
+    var na = o.notesAt || {}, notes = o.notes || {};
+    Object.keys(notes).concat(Object.keys(na)).forEach(function (k) {
+      if (!DAY[k]) return;
+      var tb = +na[k] || 0, ta = S.notesAt[k] || 0, b = String(notes[k] || ''), a = S.notes[k] || '';
+      if (tb > ta) { if (b.trim()) S.notes[k] = b; else delete S.notes[k]; S.notesAt[k] = tb; }
+      else if (!tb && !ta && b.trim() && a.indexOf(b) < 0) S.notes[k] = a.trim() ? a + '\n\n' + b : b;
+    });
+    var ma = o.moodAt || {}, mood = o.mood || {};
+    Object.keys(mood).concat(Object.keys(ma)).forEach(function (k) {
+      if (!DAY[k]) return;
+      var tb = +ma[k] || 0, ta = S.moodAt[k] || 0;
+      if (tb > ta) { S.mood[k] = mood[k] || ''; S.moodAt[k] = tb; }
+      else if (!tb && !ta && !S.mood[k] && mood[k]) S.mood[k] = mood[k];
+    });
+    Object.keys(o.focus || {}).forEach(function (dv) {
+      var src = o.focus[dv] || {};
+      if (/^\d{4}-\d\d-\d\d$/.test(dv)) { var w = {}; w[dv] = src; src = w; dv = 'copia'; }   // copia della prima versione
+      var mine = S.focus[dv] = S.focus[dv] || {};
+      Object.keys(src).forEach(function (k) {
+        var a = mine[k] || { ms: 0, n: 0 }, b = src[k] || {};
+        mine[k] = { ms: Math.max(a.ms || 0, +b.ms || 0), n: Math.max(a.n || 0, +b.n || 0) };
+      });
+    });
+    (o.gone || []).forEach(function (id) { if (S.gone.indexOf(id) < 0) S.gone.push(id); });
+    (o.topics || []).forEach(function (t) {
+      if (!t || !t.id || S.gone.indexOf(t.id) >= 0) return;
+      var mine = S.topics.filter(function (x) { return x.id === t.id; })[0];
+      if (!mine) { S.topics.push(JSON.parse(JSON.stringify(t))); return; }
+      if ((+t.st || 0) > (mine.st || 0)) { mine.solved = +t.solved || 0; mine.st = +t.st; }
+      else if (!t.st && !mine.st) mine.solved = Math.max(mine.solved || 0, +t.solved || 0);
+    });
+    if ((+o.settingsAt || 0) > (S.settingsAt || 0) && o.settings) {
+      SYNC_SETTINGS.forEach(function (k) { if (o.settings[k] != null) S.settings[k] = o.settings[k]; });
+      S.settingsAt = +o.settingsAt;
+    } else if (!S.settings.name && o.settings && o.settings.name) S.settings.name = o.settings.name;
+    if (o.welcomed) S.welcomed = true;
+    tidy();
+  }
+  // sempre nello stesso ordine, così due dispositivi con gli stessi dati hanno esattamente lo stesso testo
+  function tidy() {
+    S.topics = S.topics.filter(function (t) { return S.gone.indexOf(t.id) < 0; })
+      .sort(function (a, b) { return (b.at || 0) - (a.at || 0) || (a.id < b.id ? -1 : 1); });
+    S.gone.sort();
+    Object.keys(S.pages).forEach(function (k) { S.pages[k].sort(); });
+  }
+  function syncable() {
+    var st = {};
+    SYNC_SETTINGS.forEach(function (k) { st[k] = S.settings[k]; });
+    return { v: 1, done: S.done, pages: S.pages, pagesAt: S.pagesAt, notes: S.notes, notesAt: S.notesAt, mood: S.mood, moodAt: S.moodAt,
+      focus: S.focus, topics: S.topics, gone: S.gone, settings: st, settingsAt: S.settingsAt, welcomed: S.welcomed };
+  }
+  function canon(v) {
+    if (Array.isArray(v)) return '[' + v.map(canon).join(',') + ']';
+    if (v && typeof v === 'object') return '{' + Object.keys(v).sort().filter(function (k) { return v[k] !== undefined; })
+      .map(function (k) { return JSON.stringify(k) + ':' + canon(v[k]); }).join(',') + '}';
+    return JSON.stringify(v === undefined ? null : v);
+  }
+  function hashOf(str) { var h = 2166136261; for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36) + '.' + str.length; }
+  function stateHash() { return hashOf(canon(syncable())); }
+  /* ================= ACCOUNT E SINCRONIZZAZIONE ================= */
+  // Account con email e password: ognuno si registra con la SUA email e vede solo la sua riga.
+  // Sta nel progetto Supabase già usato da Analisi Finanziarie (registrazione aperta a tutti), in una tabella
+  // a parte (fioritura, vedi fioritura/supabase/schema.sql): non dà accesso a Documenti Raho né ai dati di altri.
+  // D: "l'importante è che lei acceda con una sua mail, non mi importa dove va a finire l'utenza".
+  // Una riga per account con "version": ogni salvataggio fa PATCH ...version=eq.N; se intanto un altro dispositivo
+  // ha salvato, si scarica, si unisce (mergeIn) e si riprova.
+  var CLOUD = {
+    url: 'https://ztjlqorvnulgfvbtvavm.supabase.co',
+    key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp0amxxb3J2bnVsZ2Z2YnR2YXZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2OTgwMDIsImV4cCI6MjA5NzI3NDAwMn0._6gEbzCCnejpyh36Lpqe0_fj27UaonCkn2a7NastDMA'   // chiave pubblica "anon"
+  };
+  var SB = { url: String(CLOUD.url || '').replace(/\/+$/, ''), key: String(CLOUD.key || '') };
+  function keyIsPublic(k) {
+    if (!k || /^sb_secret_/.test(k)) return false;
+    if (/^sb_publishable_/.test(k)) return true;
+    try { return JSON.parse(atob(k.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).role === 'anon'; } catch (e) { return false; }
+  }
+  var ACCT_KEY = 'fioritura.sync';
+  function emptyAcct() { return { email: '', uid: '', access: '', refresh: '', exp: 0, version: 0, hash: '', at: 0 }; }
+  var acct = emptyAcct();
+  try { var ra = JSON.parse(localStorage.getItem(ACCT_KEY) || 'null'); if (ra && typeof ra === 'object') acct = Object.assign(acct, ra); } catch (e) {}
+  var sync = { busy: false, err: '', timer: null, tries: 0 };
+  function saveAcct() { try { localStorage.setItem(ACCT_KEY, JSON.stringify(acct)); } catch (e) {} }
+  function signedIn() { return !!(acct.uid && acct.refresh); }
+  var canSync = /^https?:$/.test(location.protocol) && !!window.fetch && /^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(SB.url) && keyIsPublic(SB.key);
+  if (SB.key && !keyIsPublic(SB.key)) console.error('Fioritura: la chiave in CLOUD non è quella pubblica (anon / publishable): account spento.');
+
+  async function api(path, o) {
+    o = o || {};
+    var h = { apikey: SB.key, 'Content-Type': 'application/json' };
+    if (o.auth !== false) { await freshToken(); h.Authorization = 'Bearer ' + (acct.access || SB.key); }
+    if (o.prefer) h.Prefer = o.prefer;
+    var r = await fetch(SB.url + path, { method: o.method || 'GET', headers: h, body: o.body ? JSON.stringify(o.body) : undefined });
+    var txt = await r.text(), data = null;
+    try { data = txt ? JSON.parse(txt) : null; } catch (e) {}
+    if (!r.ok) {
+      var err = new Error((data && (data.msg || data.message || data.error_description || data.error)) || ('Errore ' + r.status));
+      err.status = r.status; err.code = data && (data.error_code || data.code); throw err;
+    }
+    return data;
+  }
+  function setSession(d) {
+    acct.access = d.access_token; acct.refresh = d.refresh_token; acct.exp = Date.now() + (+d.expires_in || 3600) * 1000;
+    if (d.user) { acct.uid = d.user.id; acct.email = d.user.email || acct.email; }
+    saveAcct();
+  }
+  var refreshing = null;
+  async function freshToken() {
+    if (!acct.refresh || acct.exp - Date.now() > 60000) return;
+    if (!refreshing) refreshing = (async function () {
+      try { setSession(await api('/auth/v1/token?grant_type=refresh_token', { method: 'POST', auth: false, body: { refresh_token: acct.refresh } })); }
+      catch (e) { if (e.status === 400 || e.status === 401) expired(); throw e; }
+      finally { refreshing = null; }
+    })();
+    return refreshing;
+  }
+  function expired() {
+    acct.access = ''; acct.refresh = ''; acct.exp = 0; saveAcct();
+    sync.err = 'Sei uscita dall’account su questo dispositivo: accedi di nuovo per sincronizzare.';
+    paintAcct();
+  }
+  function typingNow() { var a = document.activeElement; return !!a && /^(INPUT|TEXTAREA)$/.test(a.nodeName); }
+  function syncError(e) {
+    if (e && e.status === 401) { expired(); return; }
+    if (navigator.onLine === false || (e && e.name === 'TypeError')) sync.err = 'Sei offline: sincronizzo appena torna la rete.';
+    else if (e && (e.status === 404 || e.code === '42P01' || e.code === 'PGRST205')) sync.err = 'La sincronizzazione non è ancora pronta sul server.';
+    else sync.err = 'Non riesco a sincronizzare: ' + (e && e.message || 'errore sconosciuto');
+  }
+  function adopt(before) {
+    if (stateHash() === before) return;
+    save(true); applyTheme();
+    if (!sheetOpen()) render(); else if (!typingNow()) { refreshSheet(); render(); }
+  }
+  async function pull(force) {
+    if (!canSync || !signedIn() || sync.busy) return;
+    if (!force && typingNow()) return;
+    sync.busy = true; paintAcct();
+    var again = false;
+    try {
+      var rows = await api('/rest/v1/fioritura?select=version&user_id=eq.' + acct.uid);
+      var v = rows && rows[0] ? +rows[0].version : 0;
+      if (v && v !== acct.version) {
+        var full = await api('/rest/v1/fioritura?select=data,version&user_id=eq.' + acct.uid);
+        if (full && full[0]) {
+          flushNote();
+          var before = stateHash(), cloud = full[0].data || {};
+          mergeIn(cloud);
+          acct.version = +full[0].version;
+          acct.hash = cloudHash(cloud);
+          adopt(before);
+        }
+      } else if (!v) acct.version = 0;
+      if (stateHash() !== acct.hash || !acct.version) again = true;
+      acct.at = Date.now(); sync.err = ''; saveAcct();
+    } catch (e) { syncError(e); }
+    finally { sync.busy = false; paintAcct(); }
+    if (again && !sync.err) push();
+  }
+  async function push() {
+    if (!canSync || !signedIn()) return;
+    if (sync.busy) { schedulePush(900); return; }
+    flushNote();
+    var payload = syncable(), h = stateHash();
+    if (h === acct.hash && acct.version > 0) return;
+    sync.busy = true; paintAcct();
+    var retry = false;
+    try {
+      var rows;
+      if (acct.version <= 0) rows = await api('/rest/v1/fioritura', { method: 'POST', prefer: 'return=representation', body: { user_id: acct.uid, data: payload, version: 1 } });
+      else rows = await api('/rest/v1/fioritura?user_id=eq.' + acct.uid + '&version=eq.' + acct.version, { method: 'PATCH', prefer: 'return=representation',
+        body: { data: payload, version: acct.version + 1, updated_at: new Date().toISOString() } });
+      if (!rows || !rows.length) retry = true;
+      else { acct.version = +rows[0].version; acct.hash = h; acct.at = Date.now(); sync.err = ''; sync.tries = 0; saveAcct(); }
+    } catch (e) { if (e.status === 409 || e.code === '23505') retry = true; else syncError(e); }
+    finally { sync.busy = false; paintAcct(); }
+    if (retry) {
+      // un altro dispositivo ha salvato prima: si scarica, si unisce e si riprova (al massimo qualche volta)
+      if (++sync.tries > 4) { sync.tries = 0; sync.err = 'Non riesco a sincronizzare adesso: riprovo tra poco.'; paintAcct(); return; }
+      acct.version = -1; await pull(true);
+    }
+  }
+  // com'è online, messo nella stessa forma di qui: se coincide con i dati di qui non serve rimandarlo
+  function cloudHash(cloud) {
+    var mine = S;
+    try {
+      S = defaults();
+      if (cloud.settings) SYNC_SETTINGS.forEach(function (k) { if (cloud.settings[k] != null) S.settings[k] = cloud.settings[k]; });
+      S.settingsAt = +cloud.settingsAt || 0;
+      mergeIn(cloud);
+      return stateHash();
+    } finally { S = mine; }
+  }
+  function schedulePush(ms) {
+    if (!canSync || !signedIn()) return;
+    clearTimeout(sync.timer); sync.timer = setTimeout(push, ms == null ? 1500 : ms);
+  }
+  function redirectUrl() { return location.origin + location.pathname; }
+  async function enterWith(d, what) {
+    var prev = acct.uid;
+    setSession(d);
+    if (!acct.uid) { var u = await api('/auth/v1/user'); acct.uid = u.id; acct.email = u.email || acct.email; saveAcct(); }
+    if (prev && prev !== acct.uid) acct.hash = '';
+    acct.version = -1; sync.err = ''; saveAcct();
+    S.welcomed = true; save(true);
+    paintAcct();
+    await pull(true);
+    if (what !== 'quiet') toast(what || 'Fatto: sei dentro. Ora tutto resta sincronizzato.');
+  }
+  async function logIn(email, pw) {
+    var d = await api('/auth/v1/token?grant_type=password', { method: 'POST', auth: false, body: { email: email, password: pw } });
+    await enterWith(d);
+  }
+  async function signUp(email, pw) {
+    var d = await api('/auth/v1/signup?redirect_to=' + encodeURIComponent(redirectUrl()), { method: 'POST', auth: false, body: { email: email, password: pw } });
+    if (d && d.access_token) { await enterWith(d, 'Account creato. Ora tutto resta sincronizzato.'); return 'in'; }
+    acct.email = email; saveAcct();
+    return 'confirm';
+  }
+  async function recover(email) {
+    await api('/auth/v1/recover?redirect_to=' + encodeURIComponent(redirectUrl()), { method: 'POST', auth: false, body: { email: email } });
+  }
+  async function newPassword(pw) { await api('/auth/v1/user', { method: 'PUT', body: { password: pw } }); }
+  async function logOut() {
+    flushNote();
+    try { if (sync.busy) await new Promise(function (r) { setTimeout(r, 1200); }); await push(); } catch (e) {}
+    try { if (acct.access) await api('/auth/v1/logout', { method: 'POST' }); } catch (e) {}
+    var email = acct.email; acct = emptyAcct(); acct.email = email; saveAcct();
+    sync.err = ''; paintAcct();
+  }
+  function authError(e) {
+    var m = (e && (e.code || '') + ' ' + (e.message || '')).toLowerCase();
+    if (navigator.onLine === false) return 'Sei offline: serve internet per accedere.';
+    if (/invalid_credentials|invalid login/.test(m)) return 'Email o password non corrette.';
+    if (/email_not_confirmed|not confirmed/.test(m)) return 'Prima conferma l’email: apri il link che ti è arrivato (guarda anche nello spam).';
+    if (/user_already_exists|already registered/.test(m)) return 'Esiste già un account con questa email: accedi.';
+    if (/weak_password|password should/.test(m)) return 'La password è troppo semplice: usane una più lunga.';
+    if (/rate|too many|over_email/.test(m)) return 'Troppi tentativi: aspetta qualche minuto e riprova.';
+    if (/email_address_invalid|invalid email|validate email/.test(m)) return 'Questa email non sembra giusta.';
+    if (/same_password/.test(m)) return 'È uguale a quella di prima: scegline una diversa.';
+    if (/not authorized|email_address_not_authorized|smtp|sending/.test(m)) return 'Per ora le email non partono, quindi il recupero della password non è attivo. Scrivi a chi ti ha dato l’app.';
+    if (/signup.*disabled|signups not allowed/.test(m)) return 'Le registrazioni sono chiuse.';
+    return 'Qualcosa non è andato: ' + (e && e.message || 'riprova tra poco.');
+  }
+  // tornando dal link dell'email (conferma dell'account o nuova password)
+  async function landing() {
+    var h = location.hash.replace(/^#/, '');
+    if (!/access_token=|error=|error_code=/.test(h)) return;
+    var q = {}; h.split('&').forEach(function (kv) { var i = kv.indexOf('='); if (i > 0) q[decodeURIComponent(kv.slice(0, i))] = decodeURIComponent(kv.slice(i + 1).replace(/\+/g, ' ')); });
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+    if (q.error || q.error_code) {
+      toast(/expired|invalid/.test((q.error_code || '') + (q.error_description || '')) ? 'Il link è scaduto o è già stato usato: chiedine un altro.' : 'Il link non ha funzionato: ' + (q.error_description || q.error), null, 6500);
+      return;
+    }
+    try {
+      if (q.type === 'recovery') {
+        await enterWith({ access_token: q.access_token, refresh_token: q.refresh_token, expires_in: q.expires_in }, 'quiet');
+        S.welcomed = true; save(true); closeSheet(true);
+        acctView = 'newpw'; openSheet(acctSheet);
+      } else {
+        await enterWith({ access_token: q.access_token, refresh_token: q.refresh_token, expires_in: q.expires_in }, 'Email confermata: sei dentro. Ora tutto resta sincronizzato.');
+        closeSheet(true);
+      }
+    } catch (e) { toast(authError(e), null, 6500); }
+  }
+  function acctLine() {
+    if (!signedIn()) return { cls: '', text: acct.email && sync.err ? sync.err : 'Non collegata: i dati restano solo qui.' };
+    if (sync.busy) return { cls: 'busy', text: 'Sincronizzo…' };
+    if (sync.err) return { cls: 'warn', text: sync.err };
+    if (!acct.at) return { cls: 'busy', text: 'Collegata. Sincronizzo appena possibile…' };
+    var d = new Date(acct.at);
+    return { cls: 'ok', text: 'Sincronizzato' + (isoOf(d) === isoOf(new Date()) ? ' alle ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) : ' il ' + fmtShort(isoOf(d))) };
+  }
+  function paintAcct() {
+    var l = acctLine();
+    $$('[data-acct-dot]').forEach(function (e) { e.className = 'sdot ' + l.cls; e.hidden = !signedIn() && !(acct.email && sync.err); });
+    $$('[data-acct-line]').forEach(function (e) { e.textContent = l.text; });
+  }
+  if (canSync) {
+    window.addEventListener('online', function () { pull(true); });
+    setInterval(function () { if (!document.hidden) pull(); }, 45000);
+  }
+
+  $('#importFile').addEventListener('change', function (e) {
+    var f = e.target.files && e.target.files[0]; if (!f) return;
+    var r = new FileReader();
+    r.onload = function () {
+      try {
+        var data = JSON.parse(r.result);
+        if (!data || data.app !== 'fioritura' || !data.state) throw new Error('x');
+        var before = doneCount();
+        mergeIn(data.state); save(); applyTheme(); closeSheet(true); render();
+        var gained = doneCount() - before;
+        toast('Copia caricata' + (gained > 0 ? ': ' + gained + ' ' + plural(gained, 'giornata in più', 'giornate in più') : '. Tutto unito.'));
+      } catch (err) { toast('Questo file non sembra una copia di Fioritura.'); }
+      e.target.value = '';
+    };
+    r.readAsText(f);
+  });
+
+  /* ================= TEMA ================= */
+  var mq = window.matchMedia ? matchMedia('(prefers-color-scheme: dark)') : null;
+  var themeNow = '';
+  function applyTheme() {
+    var r = window.FIO_THEME(S.settings);
+    themeNow = S.settings.pal + (r.dark ? ':d' : ':l');
+    $('#themeColor').setAttribute('content', r.bg);
+  }
+  if (mq && mq.addEventListener) mq.addEventListener('change', applyTheme);
+  applyTheme();
+  // "Scura la sera": alle 19 si fa notte, alle 7 torna giorno
+  setInterval(function () { var before = themeNow; if (S.settings.theme === 'evening') { applyTheme(); if (themeNow !== before) render(); } }, 60000);
+
+  /* ================= AVVISI ================= */
+  var toastTimer = null;
+  function toast(msg, action, ms) {
+    var el = $('#toast');
+    el.innerHTML = '<span>' + esc(msg) + '</span>' + (action ? '<button>' + esc(action.label) + '</button>' : '');
+    if (action) el.querySelector('button').onclick = function () { el.classList.remove('show'); action.run(); };
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.classList.remove('show'); }, ms || (action ? 5000 : 3200));
+  }
+  function arm(el, label, fn) {
+    if (el.dataset.armed) { fn(); return; }
+    el.dataset.armed = '1'; var old = el.innerHTML; el.textContent = label;
+    setTimeout(function () { if (document.body.contains(el)) { delete el.dataset.armed; el.innerHTML = old; } }, 3200);
+  }
+
+  /* ================= AZIONI ================= */
+  function addTopic(text, vol, page, day) {
+    S.topics.unshift({ id: uid(), text: text, vol: vol || '', page: page || '', day: day || today(), at: Date.now(), solved: 0 });
+    save();
+  }
+  var A = {
+    tab: function (el) {
+      var t = el.dataset.tab; if (!t) return;
+      var same = t === UI.tab;
+      UI.tab = t; try { localStorage.setItem('fioritura.tab', t); } catch (e) {}
+      render(!same);
+      window.scrollTo({ top: 0, behavior: same ? 'smooth' : 'auto' });
+      if (el.dataset.focus) { var fe = document.getElementById(el.dataset.focus); if (fe) setTimeout(function () { try { fe.focus(); } catch (e) {} }, 60); }
+      if (t === 'plan' && !same) {
+        var row = $('.day.is-today');
+        if (row) setTimeout(function () { row.scrollIntoView({ block: 'center', behavior: reduceMotion ? 'auto' : 'smooth' }); }, 120);
+      }
+    },
+    toggleDay: function (el) {
+      var iso = el.dataset.iso, was = isDone(iso);
+      setDone(iso, !was); save();
+      if (!was) celebrate(iso);
+      else toast('Spunta tolta: ' + fmtLong(iso) + '.', { label: 'Rimetti', run: function () { setDone(iso, true); save(); celebrate(iso); refreshSheet(); render(); } });
+      refreshSheet(); render();
+    },
+    openDay: function (el) { openDay(el.dataset.iso); },
+    page: function (el) {
+      var iso = el.dataset.iso, k = el.dataset.k;
+      if (isDone(iso)) { toast('La giornata è già segnata come fatta.'); return; }
+      var a = S.pages[iso] || [], i = a.indexOf(k);
+      if (i >= 0) a.splice(i, 1); else a.push(k);
+      S.pages[iso] = a; S.pagesAt[iso] = Date.now(); save(); buzz(8);
+      var d = DAY[iso];
+      if (pagesRead(d) === dayPages(d) && i < 0) toast('Tutte le pagine lette. Chiudi la giornata?', { label: 'Sì, fatta', run: function () { setDone(iso, true); save(); celebrate(iso); refreshSheet(); render(); } }, 7000);
+      refreshSheet(); render();
+    },
+    mood: function (el) {
+      var iso = el.dataset.iso, v = el.dataset.v;
+      S.mood[iso] = S.mood[iso] === v ? '' : v; S.moodAt[iso] = Date.now(); save();
+      if (v === 'faticosa' && S.mood[iso]) toast('Capita. Domani sarà più leggera: stasera riposa.');
+      refreshSheet(); render();
+    },
+    phase: function (el) { var n = +el.dataset.n; S.open[n] = !isOpen(n, currentPhase()); save(); render(); },
+    expandAll: function (el) { var v = el.dataset.v === '1'; PHASES.forEach(function (p) { S.open[p.n] = v; }); save(); render(); },
+    settings: function () { openSheet(settingsSheet); },
+    closeSheet: function () { closeSheet(); },
+    theme: function (el) { S.settings.theme = el.dataset.v; S.settingsAt = Date.now(); save(); applyTheme(); refreshSheet(); render(); },
+    pal: function (el) { S.settings.pal = el.dataset.v; S.settingsAt = Date.now(); save(); applyTheme(); refreshSheet(); render(); },
+    account: function () { acctView = 'main'; acctMsg = ''; acctBad = false; acctDraft = ''; openSheet(acctSheet); },
+    acctMode: function (el) { var e = $('#acEmail'); acctDraft = e ? e.value.trim() : ''; acctMode = el.dataset.v; acctNote(''); refreshSheet(); },
+    acctNewPw: function () { acctView = 'newpw'; acctNote(''); refreshSheet(); },
+    acctBack: function () { acctView = 'main'; acctNote(''); refreshSheet(); },
+    login: async function (el) {
+      var email = $('#acEmail').value.trim(), pw = $('#acPw').value;
+      if (!email || !pw) { acctNote('Scrivi la tua email e la password.', true); return; }
+      var done = busyBtn(el, 'Accedo…');
+      try { await logIn(email, pw); acctNote(''); acctMode = ''; refreshSheet(); render(); }
+      catch (e) { acctNote(authError(e), true); }
+      finally { done(); }
+    },
+    signup: async function (el) {
+      var email = $('#acEmail').value.trim(), pw = $('#acPw').value;
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { acctNote('Scrivi un’email valida.', true); return; }
+      if (pw.length < 8) { acctNote('La password deve avere almeno 8 caratteri.', true); return; }
+      var done = busyBtn(el, 'Creo l’account…');
+      try {
+        var r = await signUp(email, pw);
+        if (r === 'in') { acctNote(''); acctMode = ''; refreshSheet(); render(); }
+        else { acctMode = 'login'; acctDraft = email; refreshSheet(); acctNote('Ti ho mandato un’email a ' + email + ': apri il link per confermare e sei dentro. Se non la trovi, guarda nello spam.'); }
+      } catch (e) { acctNote(authError(e), true); }
+      finally { done(); }
+    },
+    forgot: async function (el) {
+      var email = $('#acEmail').value.trim();
+      if (!email) { acctNote('Scrivi prima la tua email, poi tocca «Password dimenticata?».', true); $('#acEmail').focus(); return; }
+      var done = busyBtn(el, 'Invio…');
+      try { await recover(email); acctNote('Se c’è un account con questa email, ti è arrivato un link per sceglierne una nuova. Aprilo da questo dispositivo.'); }
+      catch (e) { acctNote(authError(e), true); }
+      finally { done(); }
+    },
+    savePw: async function (el) {
+      var a = $('#acPw1').value, b = $('#acPw2').value;
+      if (a.length < 8) { acctNote('La password deve avere almeno 8 caratteri.', true); return; }
+      if (a !== b) { acctNote('Le due password non sono uguali.', true); return; }
+      var done = busyBtn(el, 'Salvo…');
+      try { await newPassword(a); acctView = 'main'; acctNote(''); refreshSheet(); toast('Password cambiata.'); }
+      catch (e) { acctNote(authError(e), true); }
+      finally { done(); }
+    },
+    syncNow: async function (el) {
+      var done = busyBtn(el, 'Sincronizzo…');
+      sync.tries = 0; if (!(acct.version > 0)) acct.version = -1;
+      await pull(true); done();
+      if (sync.err) acctNote(sync.err, true); else { acctNote(''); toast('Tutto sincronizzato.'); }
+    },
+    logout: function (el) {
+      arm(el, 'Tocca di nuovo per uscire', async function () {
+        await logOut(); acctNote(''); refreshSheet(); render();
+        toast('Sei uscita. I dati restano anche su questo dispositivo.');
+      });
+    },
+    welcomeLogin: function () { S.welcomed = true; save(); closeSheet(true); acctMode = 'login'; A.account(); },
+    setToggle: function (el) { var k = el.dataset.k; S.settings[k] = !S.settings[k]; save(); if (k === 'sounds' && S.settings.sounds) Sound.chime('done'); refreshSheet(); },
+    export: exportData,
+    import: function () { $('#importFile').click(); },
+    reset: function (el) {
+      var was = signedIn();
+      arm(el, 'Tocca di nuovo per cancellare', async function () {
+        Timer.stop(); Sound.stop();
+        if (was) await logOut();
+        try { localStorage.removeItem(KEY); } catch (e) {}
+        S = defaults(); save(true); applyTheme(); closeSheet(true); render();
+        toast(was ? 'Dati cancellati da questo dispositivo. Nel tuo account ci sono ancora: accedi per riaverli.' : 'Dati cancellati.', null, 6000);
+      });
+    },
+    welcomeDone: function () { S.welcomed = true; save(); closeSheet(); },
+    solve: function (el) {
+      var t = S.topics.filter(function (x) { return x.id === el.dataset.id; })[0]; if (!t) return;
+      t.solved = t.solved ? 0 : Date.now(); t.st = Date.now(); save();
+      if (t.solved) { buzz(12); toast('Chiarito. Un pensiero in meno.'); }
+      render();
+    },
+    delTopic: function (el) {
+      var id = el.dataset.id, i = -1;
+      S.topics.forEach(function (x, j) { if (x.id === id) i = j; });
+      if (i < 0) return;
+      var t = S.topics.splice(i, 1)[0]; S.gone.push(id); save(); render();
+      toast('Argomento eliminato.', { label: 'Annulla', run: function () { S.gone = S.gone.filter(function (g) { return g !== id; }); S.topics.splice(i, 0, t); save(); render(); } });
+    },
+    quickTopic: function (el) {
+      var inp = $('#quickTopic'), v = inp && inp.value.trim();
+      if (!v) { if (inp) inp.focus(); return; }
+      addTopic(v, '', '', el.dataset.iso); inp.value = '';
+      toast('Aggiunto agli argomenti critici.'); render();
+    },
+    tstart: function () { Timer.start(); render(); },
+    tpause: function () { Timer.pause(); render(); },
+    tstop: function () { Timer.stop(); render(); },
+    mode: function (el) {
+      if (Timer.status() !== 'idle') return;
+      S.timer.mode = el.dataset.v; S.timer.len = S.timer.mode === 'study' ? S.settings.study : S.settings.brk; save(); render();
+    },
+    len: function (el) {
+      if (Timer.status() !== 'idle') return;
+      var m = +el.dataset.v; S.timer.len = m;
+      if (S.timer.mode === 'study') { S.settings.study = m; S.settings.brk = m >= 50 ? 10 : 5; } else S.settings.brk = m;
+      save(); render();
+    },
+    ambient: function (el) { var v = el.dataset.v; if (v === 'none') Sound.stop(); else Sound.play(v); render(); },
+    breathe: breathe
+  };
+  document.addEventListener('click', function (e) {
+    var el = e.target.closest('[data-a]'); if (!el || el.disabled) return;
+    var fn = A[el.dataset.a]; if (!fn) return;
+    e.preventDefault();
+    fn(el, e);
+  });
+  document.addEventListener('input', function (e) {
+    var t = e.target;
+    if (t.matches('[data-note]')) {
+      notePending = { iso: t.dataset.note, v: t.value };
+      var sv = $('[data-saved]'); if (sv) sv.textContent = '';
+      clearTimeout(noteTimer); noteTimer = setTimeout(flushNote, 500);
+    } else if (t.matches('[data-setting]')) {
+      S.settings[t.dataset.setting] = t.value.slice(0, 40); S.settingsAt = Date.now(); save();
+      clearTimeout(t._r); t._r = setTimeout(function () { render(); }, 250);
+    } else if (t.matches('[data-vol]')) {
+      S.settings.volume = +t.value; Sound.volume(); save();
+    }
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter') return;
+    if (e.target.id === 'quickTopic') { e.preventDefault(); A.quickTopic($('[data-a="quickTopic"]')); }
+    if (e.target.id === 'wName') { e.preventDefault(); A.welcomeDone(); }
+    if (e.target.id === 'acPw' || e.target.id === 'acEmail') { e.preventDefault(); var g = $('#acGo'); if (g && !g.disabled) g.click(); }
+    if (e.target.id === 'acPw2') { e.preventDefault(); var sp = $('[data-a="savePw"]'); if (sp && !sp.disabled) sp.click(); }
+    if (e.target.id === 'tpText' && !e.shiftKey) { e.preventDefault(); e.target.form.requestSubmit ? e.target.form.requestSubmit() : e.target.form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true })); }
+  });
+  document.addEventListener('submit', function (e) {
+    var f = e.target; if (!f.matches('[data-form="topic"]')) return;
+    e.preventDefault();
+    var text = f.elements.text.value.trim();
+    if (!text) { f.elements.text.focus(); return; }
+    addTopic(text, f.elements.vol.value, f.elements.page.value.trim(), today());
+    toast('Aggiunto. Ci torniamo con calma.');
+    render();
+  });
+  window.addEventListener('pagehide', flushNote);
+
+  /* ================= AVVIO ================= */
+  render();
+  var fromLink = /access_token=|error_code=|error=/.test(location.hash);
+  if (canSync) {
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) pull(); });
+    landing().then(function () { if (signedIn()) pull(true); });
+  }
+  if (!S.welcomed && !fromLink) setTimeout(function () {
+    if (S.welcomed || sheetOpen()) return; openSheet(welcomeSheet, { onClose: function () { if (!S.welcomed) { S.welcomed = true; save(); } } }); }, 450);
+
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    window.addEventListener('load', function () {
+      var hadController = !!navigator.serviceWorker.controller;
+      navigator.serviceWorker.register('sw.js').then(function (reg) {
+        var check = function () { reg.update().catch(function () {}); };
+        document.addEventListener('visibilitychange', function () { if (!document.hidden) check(); });
+      }).catch(function () {});
+      var refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', function () {
+        if (!hadController || refreshing || sheetOpen() || Timer.status() === 'run') return;
+        refreshing = true; location.reload();
+      });
+    });
+  }
+})();
+</script>
+</body>
+</html>

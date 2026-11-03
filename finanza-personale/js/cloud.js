@@ -121,6 +121,15 @@ export async function setPassword(password) {
   await api('/auth/v1/user', { method: 'PUT', body: { password } });
 }
 
+/** "Password dimenticata" via email: il server sigilla la chiave dei dati per questo account… */
+export async function escrowSeal(dek) {
+  return api('/rest/v1/rpc/finanza_personale_escrow_seal', { method: 'POST', body: { dek } });
+}
+/** …e la riapre solo a chi è entrato col link dell'email da meno di un'ora. */
+export async function escrowOpen(sealed) {
+  return api('/rest/v1/rpc/finanza_personale_escrow_open', { method: 'POST', body: { sealed } });
+}
+
 export async function signOut() {
   try { if (sess?.access) await api('/auth/v1/logout', { method: 'POST', ms: 6000 }); } catch { /* si esce comunque */ }
   sess = null;

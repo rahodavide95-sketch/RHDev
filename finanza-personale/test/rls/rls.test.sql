@@ -71,7 +71,54 @@ select _check(true, 'da un altro sito non si salva');
 select _as('davide', null);
 select _check((select count(*) from finanza_personale) = 1, 'senza Origin: solo la propria riga');
 
--- 5. Niente più resti del proprietario unico
+-- 5. Chiave di riserva per "password dimenticata" via email
+reset role;
+create or replace function public._as_link(who text, ago int, method text default 'otp', origin text default 'https://rahodavide95-sketch.github.io') returns void language plpgsql as $$
+begin
+  perform _as(who, origin);
+  perform set_config('request.jwt.claims', (current_setting('request.jwt.claims')::jsonb || jsonb_build_object('amr', jsonb_build_array(jsonb_build_object('method', method, 'timestamp', extract(epoch from now())::bigint - ago))))::text, false);
+end $$;
+grant execute on function public._as_link(text, int, text, text) to authenticated, anon;
+set role authenticated;
+select _as('davide');
+select _fails($$select finanza_personale_escrow_secret()$$);
+select _check(true, 'il segreto del server non si legge dall''app');
+select _fails($$select * from finanza_personale_escrow_key$$);
+select _check(true, 'la tabella del segreto non si legge');
+select _fails($$select * from vault.decrypted_secrets$$);
+select _check(true, 'Vault non si legge dall''app');
+create temp table _sealed as select finanza_personale_escrow_seal('QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE=') as s;
+select _check(length((select s from _sealed)) > 40 and position('QUFB' in (select s from _sealed)) = 0, 'la chiave dei dati si sigilla (e non si legge così com''è)');
+select _fails($$select finanza_personale_escrow_seal('non è una chiave')$$);
+select _check(true, 'si sigilla solo una chiave vera');
+select _fails($$select finanza_personale_escrow_open((select s from _sealed))$$);
+select _check(true, 'con la sola password dell''account non si riapre');
+select _as_link('davide', 120);
+select _check(finanza_personale_escrow_open((select s from _sealed)) = 'QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE=', 'dal link dell''email (2 minuti fa) si riapre');
+select _as_link('davide', 120, 'recovery');
+select _check(finanza_personale_escrow_open((select s from _sealed)) = 'QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE=', 'anche col metodo "recovery"');
+select _as_link('davide', 2 * 3600);
+select _fails($$select finanza_personale_escrow_open((select s from _sealed))$$);
+select _check(true, 'un link di più di un''ora fa non basta');
+select _as_link('davide', 120, 'password');
+select _fails($$select finanza_personale_escrow_open((select s from _sealed))$$);
+select _check(true, 'un accesso con password non basta');
+select _as_link('eve', 60);
+select _fails($$select finanza_personale_escrow_open((select s from _sealed))$$);
+select _check(true, 'un altro account, anche dal suo link, non riapre la chiave di Davide');
+select _as_link('davide', 60, 'otp', 'https://copia-di-rh-finance.example');
+select _fails($$select finanza_personale_escrow_open((select s from _sealed))$$);
+select _check(true, 'da un altro sito non si riapre');
+set role anon;
+select _as('anon');
+select _fails($$select finanza_personale_escrow_seal('QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE=')$$);
+select _check(true, 'senza accesso non si sigilla niente');
+reset role;
+select _check((select count(*) from vault.secrets where name = 'finanza_personale_escrow') = 1, 'il segreto è uno solo, in Vault (anche rieseguendo lo schema)');
+select _check((select count(*) from finanza_personale_escrow_key) = 0, 'con Vault la tabella di riserva resta vuota');
+set role authenticated;
+
+-- 6. Niente più resti del proprietario unico
 select _check(to_regclass('public.finanza_personale_owner') is null, 'la tabella del proprietario non c''è più');
 select _check(not exists (select 1 from pg_proc where proname in ('finanza_personale_has_owner', 'finanza_personale_is_owner')), 'le funzioni del proprietario non ci sono più');
 reset role;

@@ -2,7 +2,7 @@
    uso senza account, codice di recupero, sblocco, password dimenticata, backup. */
 
 import { h, icon, download, pickFile, readText } from '../ui/dom.js';
-import { toast, confirmDialog, promptDialog } from '../ui/components.js';
+import { toast, confirmDialog, promptDialog, openSheet } from '../ui/components.js';
 import { passwordStrength, isRecoveryCodeShape, WrongSecret } from '../core/crypto.js';
 import { demoState } from '../demo.js';
 import * as cloud from '../cloud.js';
@@ -118,13 +118,13 @@ function loginScreen(ctx) {
 async function resetRequest(prefill) {
   const email = await promptDialog({
     title: 'Password dimenticata', label: 'Email dell\'account', type: 'email', confirm: 'Mandami il link',
-    message: 'Ti mando un\'email per scegliere una nuova password. Per riaprire i dati servirà anche il codice di recupero.',
+    message: 'Ti mando un\'email: apri il link (vale un\'ora), scegli una nuova password e i tuoi dati si riaprono.',
     validate: async v => {
       if (!EMAIL.test(v.trim())) return 'Scrivi un\'email valida.';
       try { await cloud.requestReset(v); return ''; } catch (e) { return e?.message || String(e); }
     },
   });
-  if (email) toast('Email inviata: apri il link dal dispositivo su cui vuoi usare l\'app.', { kind: 'ok' });
+  if (email) toast('Email inviata: apri il link (vale un\'ora) e scegli una nuova password.', { kind: 'ok' });
   void prefill;
 }
 
@@ -186,32 +186,47 @@ function oldScreen(ctx) {
   return h('div.gate', form);
 }
 
-/* ─── Dal link "password dimenticata" ─── */
+/* ─── Dal link "password dimenticata" (D: "la password dimenticata facciamola tramite email") ───
+   Basta la nuova password: i dati si riaprono con la chiave di riserva che il server dà a chi arriva dal link.
+   Il codice di recupero si chiede solo se questi dati non hanno ancora la chiave di riserva. */
 function resetScreen(ctx) {
   const code = h('input.input', { type: 'text', placeholder: 'Codice di recupero (32 caratteri)', autocomplete: 'off', spellcheck: 'false', autocapitalize: 'characters' });
-  const p1 = pwField('Nuova password', 'new-password');
+  const codeWrap = h('div.stack-sm', { hidden: !G.reset.needCode }, code);
+  const p1 = pwField('Nuova password', 'new-password', true);
   const p2 = pwField('Ripetila', 'new-password');
   const err = h('p.field-err', { hidden: true, role: 'alert' });
-  const btn = h('button.btn.btn-primary.btn-lg.btn-block', { type: 'submit' }, 'Salva e apri i dati');
+  const label = 'Salva e apri i miei dati';
+  const btn = h('button.btn.btn-primary.btn-lg.btn-block', { type: 'submit' }, label);
+  const intro = h('p.muted', G.reset.needCode ? 'Scrivi anche il codice di recupero che hai salvato quando hai creato la cassaforte.' : 'Scegli una nuova password: i tuoi dati si riaprono da soli e la password vale da ora su tutti i dispositivi.');
   const form = h('form.gate-card', { onsubmit: async e => {
     e.preventDefault();
     const a = p1.input.value;
     let msg = '';
-    if (!isRecoveryCodeShape(code.value)) msg = 'Il codice di recupero è di 32 caratteri tra lettere e numeri.';
+    if (G.reset.needCode && !isRecoveryCodeShape(code.value)) msg = 'Il codice di recupero è di 32 caratteri tra lettere e numeri.';
     else if (a.length < 10) msg = 'Usa almeno 10 caratteri.';
     else if (passwordStrength(a).score < 2 && a.length < 14) msg = 'Troppo facile da indovinare.';
     else if (a !== p2.input.value) msg = 'Le due password non sono uguali.';
     if (msg) { err.textContent = msg; err.hidden = false; return; }
-    btn.disabled = true; btn.textContent = 'Salvo…';
+    btn.disabled = true; btn.textContent = 'Apro i dati…';
     try {
-      await ctx.session.resetFromLink(G.reset.access, G.reset.refresh, code.value, a);
-      G.reset = null; G.step = 'welcome';
-      toast('Password cambiata. Il codice di recupero resta lo stesso.', { kind: 'ok' });
-    } catch (e2) { fail(err, btn, 'Salva e apri i dati', e2 instanceof WrongSecret ? new Error('Il codice di recupero non è corretto.') : e2); }
+      const r = await ctx.session.resetFromLink(G.reset.access, G.reset.refresh, G.reset.needCode ? code.value : '', a);
+      G.reset = null;
+      if (r?.empty) { G.notice = 'Password cambiata. Ora accedi con la nuova password.'; G.email = cloud.session()?.email || ''; go('login'); return; }
+      G.step = 'welcome';
+      toast('Password cambiata: i tuoi dati sono aperti. Da ora usa la nuova password.', { kind: 'ok' });
+    } catch (e2) {
+      if (e2?.code === 'needCode') {
+        G.reset.needCode = true; codeWrap.hidden = false;
+        intro.textContent = 'Scrivi anche il codice di recupero che hai salvato quando hai creato la cassaforte.';
+        fail(err, btn, label, e2); code.focus();
+        return;
+      }
+      fail(err, btn, label, e2 instanceof WrongSecret ? new Error('Il codice di recupero non è corretto.') : e2);
+    }
   } },
     h('h2', 'Nuova password'),
-    h('p.muted', 'Per riaprire i dati cifrati serve il codice di recupero che hai salvato quando hai creato la cassaforte.'),
-    h('div.stack-sm', code, p1, strengthMeter(p1.input), p2), err, btn,
+    intro,
+    h('div.stack-sm', codeWrap, p1, strengthMeter(p1.input), p2), err, btn,
     h('button.link', { type: 'button', onclick: () => { G.reset = null; go('welcome'); } }, 'Annulla'));
   return h('div.gate', form);
 }
@@ -294,7 +309,7 @@ function recoveryScreen(ctx) {
   return h('div.gate', h('div.gate-card',
     h('div.gate-step', 'Ultimo passo'),
     h('h2', 'Il tuo codice di recupero'),
-    h('p.muted', 'Se dimentichi la password, solo questo codice apre i tuoi dati. Salvalo fuori da questo dispositivo: stampalo, scrivilo o mettilo in un password manager.'),
+    h('p.muted', 'Se dimentichi la password e hai l\'account, basta l\'email: ti arriva un link per sceglierne una nuova. Questo codice è la strada di riserva (e l\'unica se usi l\'app senza account): salvalo fuori da questo dispositivo, stampalo, scrivilo o mettilo in un password manager.'),
     h('div.code-box', { 'aria-label': 'Codice di recupero' }, G.code.split('-').map(g => h('span', g))),
     h('div.row-2',
       h('button.btn.btn-soft', { type: 'button', onclick: save }, icon('download', 18), 'Scarica'),
@@ -360,8 +375,29 @@ async function otherAccount(ctx, acct) {
   G.notice = ''; go('login');
 }
 
+/* ─── Password dimenticata dallo sblocco: con l'account, un'email al suo indirizzo (D: "la password dimenticata
+   facciamola tramite email"); il codice di recupero resta come seconda strada (e l'unica senza account). ─── */
+function forgotFlow(ctx) {
+  const acct = ctx.S.cloud.email || ctx.session.lastAccount();
+  if (!acct) { codeFlow(ctx); return; }
+  const err = h('p.field-err', { hidden: true, role: 'alert' });
+  const send = h('button.btn.btn-primary', { type: 'button', onclick: async () => {
+    send.disabled = true; send.textContent = 'Mando l\'email…'; err.hidden = true;
+    try {
+      await cloud.requestReset(acct);
+      sh.close(true);
+      toast(`Email mandata a ${acct}: apri il link (vale un'ora) e scegli una nuova password.`, { kind: 'ok', ms: 9000 });
+    } catch (e) { send.disabled = false; send.textContent = 'Mandami l\'email'; err.textContent = e?.message || String(e); err.hidden = false; }
+  } }, 'Mandami l\'email');
+  const sh = openSheet({
+    title: 'Password dimenticata', size: 'sm',
+    body: h('div.stack', h('p', 'Ti mando un\'email a ', h('b', acct), ': apri il link, scegli una nuova password e i tuoi dati si riaprono. Il link vale un\'ora.'), err),
+    footer: [h('button.btn.btn-ghost', { type: 'button', onclick: () => { sh.close(true); codeFlow(ctx); } }, 'Ho il codice di recupero'), send],
+  });
+}
+
 /* ─── Password dimenticata: codice di recupero + nuova password ─── */
-async function forgotFlow(ctx) {
+async function codeFlow(ctx) {
   const code = await promptDialog({
     title: 'Codice di recupero', label: 'Codice (32 caratteri)', message: 'Scrivi il codice che hai salvato quando hai creato la cassaforte. Maiuscole, spazi e trattini non contano.',
     validate: v => (isRecoveryCodeShape(v) ? '' : 'Il codice è di 32 caratteri tra lettere e numeri.'),

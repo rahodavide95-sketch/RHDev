@@ -20,6 +20,7 @@
 | Password | PBKDF2-SHA256 con **600.000** passaggi (raccomandazione OWASP) e sale casuale di 16 byte; chiude (wrap) la chiave dei dati |
 | Codice di recupero | 160 bit casuali (32 caratteri), chiude una seconda copia della chiave dei dati |
 | Cambio password | si richiude solo la chiave (sale nuovo); i dati non vengono riscritti |
+| Chiave di riserva (email) | solo con l'account: una copia della chiave dei dati sigillata dal server (`keys.em`, vedi sotto "Password dimenticata"); da sola non apre niente |
 
 Sul dispositivo (IndexedDB `rh-finance`) ci sono: la cassaforte cifrata, la versione
 precedente (se l'ultima scrittura si rovinasse) e una copia automatica al giorno per
@@ -46,9 +47,9 @@ sbagliati l'interfaccia fa aspettare (la vera protezione resta il costo di PBKDF
 | Senza rete | si continua a lavorare sul dispositivo; si sincronizza appena torna la rete |
 
 Le regole del database sono verificate da `test/rls/run.sh` su un Postgres vero
-(22 controlli: chi non ha fatto l'accesso, due account diversi che non si vedono a vicenda,
-versioni superate, cancellazioni, richieste da un altro sito, niente resti del vecchio
-"proprietario unico").
+(37 controlli: chi non ha fatto l'accesso, due account diversi che non si vedono a vicenda,
+versioni superate, cancellazioni, richieste da un altro sito, la chiave di riserva per
+"password dimenticata", niente resti del vecchio "proprietario unico").
 
 Il codice è visibile ma non è open source: `LICENSE` (tutti i diritti riservati, vietato copiarlo
 o riusarlo senza permesso).
@@ -58,8 +59,29 @@ Cambi di password:
   dispositivi la accettano al prossimo sblocco;
 - cambiata altrove (es. da [RH] Documents): l'app chiede una volta la password di prima
   (o il codice di recupero) e richiude i dati con quella nuova;
-- dimenticata: link via email per sceglierne una nuova + codice di recupero per riaprire
-  i dati. Senza codice di recupero i dati cifrati non si possono aprire.
+- dimenticata (scelta di D: "la password dimenticata facciamola tramite email", opzione "Solo
+  email"): dal blocco o dall'accesso, "Password dimenticata?" manda un'email all'account; dal
+  link si sceglie la nuova password e i dati si riaprono, **senza codice di recupero**.
+
+### Password dimenticata via email: come funziona
+
+- Alla prima apertura con la password (con l'account collegato) l'app manda al server la chiave
+  dei dati e il server la restituisce **sigillata** (`finanza_personale_escrow_seal`: pgcrypto
+  AES-256 con un segreto del server + l'id dell'account). La copia sigillata sta nella cassaforte
+  stessa (`keys.em`), quindi anche online e nei backup; il server non la conserva.
+- Il segreto del server sta in **Supabase Vault** (cifrato con una chiave che non è nel database);
+  nessuna funzione lo dà all'app (`finanza_personale_escrow_secret` non si può chiamare).
+- `finanza_personale_escrow_open` riapre la chiave solo se: la richiesta arriva dal sito dell'app,
+  è dello stesso account, e la sessione è nata dal **link dell'email da meno di un'ora** (nel token,
+  `amr` con metodo `otp`, come fa Supabase per i link delle email; verificato sul codice di Supabase
+  Auth). Un accesso con la sola password non basta.
+- Dal link: prima si riaprono i dati, poi si cambia la password dell'account e si richiude la
+  cassaforte con quella nuova (mai una password nuova con i dati ancora chiusi con la vecchia).
+- Cassaforte senza chiave di riserva (creata prima, mai riaperta con questa versione): il link
+  chiede anche il codice di recupero, e la chiave di riserva si crea subito dopo.
+- Il prezzo della scelta: **chi controlla la casella email** dell'account può riaprire i dati; e
+  chi gestisce il server (il titolare del progetto Supabase), in teoria, potrebbe farlo cambiando
+  le funzioni. Senza account resta tutto come prima: solo password o codice di recupero.
 
 ## Durante l'uso
 
@@ -115,17 +137,18 @@ pagamento (verificato il 30/10/2026).
 ## Backup
 
 - **Backup cifrato** (`RH-Finance-backup-AAAA-MM-GG.json`): è la cassaforte stessa;
-  si apre con la password o il codice di recupero di quando è stato creato.
+  si apre con la password o il codice di recupero di quando è stato creato (la chiave di riserva
+  dentro il file da sola non serve: la riapre solo il server, dal link dell'email).
 - **Esporta JSON in chiaro**: solo per passare ad altri programmi, con avviso.
 - Ripristinare un backup sostituisce i dati (con "Annulla" subito dopo).
 
 ## Limiti noti
 
-- Password e codice dimenticati entrambi = dati persi (per scelta: nessuno ha una
-  "chiave di riserva").
+- Con l'account, la casella email è la chiave di riserva: proteggila (password forte, verifica
+  in due passaggi). Senza account, password e codice dimenticati entrambi = dati persi.
 - Il token di accesso all'account sta nell'archivio del browser, condiviso con le altre
   app del sito su GitHub Pages: chi lo rubasse potrebbe scaricare la cassaforte, ma non
-  aprirla senza la password.
+  aprirla senza la password (a meno di rubare quello di un link dell'email nell'ora in cui vale).
 - Safari su iPhone può cancellare i dati di un sito non usato per settimane: installa
   l'app nella schermata Home e fai backup regolari (l'app li ricorda).
 - Un dispositivo compromesso (malware, estensioni del browser con accesso alle pagine)

@@ -491,6 +491,21 @@ Categorie = riepilogo per macro categoria con le sue voci (tocca → gestione).
   (`cloudSync`, `linkAccount`) e all'apertura (`A.fixDuplicates()` in `afterOpen`, con avviso "Ho unito N
   righe doppie…" e "Annulla"). Test `test/dedupe.test.js`; provato nel browser con due dispositivi e il file
   di D (36 righe e totale doppio → 18 righe e totale giusto).
+- **Password dimenticata via email** (D: "la password dimenticata facciamola tramite email", scelta "Solo email"
+  dopo avergli spiegato il prezzo: chi controlla la casella email può riaprire i dati): la chiave dei dati,
+  sigillata dal server (`finanza_personale_escrow_seal`, pgcrypto + segreto in Supabase Vault + id dell'account),
+  sta nella cassaforte in `keys.em = {s, uid}`; `ensureEscrow()` (session.js) la crea una volta per account
+  (dopo sblocco/accesso/collegamento con la password, o dopo un reset), `keysAt` la fa arrivare online e agli
+  altri dispositivi. `finanza_personale_escrow_open` la riapre solo dal sito dell'app, per lo stesso account e
+  con una sessione nata dal link dell'email da meno di un'ora (`amr` metodo `otp`: così Supabase Auth marca i
+  link nel flusso implicito, visto in `internal/api/verify.go`). `resetFromLink(access, refresh, code, pw)`:
+  riapre i dati (chiave di riserva, o il codice se manca: errore `needCode`), poi cambia la password
+  dell'account e richiude. Schermate: lo sblocco ha "Password dimenticata?" → email all'account ricordato
+  ("Ho il codice di recupero" come seconda strada; senza account solo il codice); il link apre "Nuova
+  password" senza codice. `pushNow` lascia `pushKeys` acceso se le chiavi cambiano durante l'invio. Prove:
+  37 controlli RLS (anche senza Vault: tabella di riserva `finanza_personale_escrow_key`), finto Supabase con
+  amr e link (`recoveryLink`), 8 casi nel browser (password sola rifiutata, link scaduto, cassaforte vecchia
+  → codice, poi chiave ricreata). Dettagli in `docs/SICUREZZA.md`.
 - Prove: finto Supabase con Playwright (`route`), più dispositivi insieme. Da qui Supabase non
   è raggiungibile.
 

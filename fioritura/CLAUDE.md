@@ -12,6 +12,7 @@ Online: https://rahodavide95-sketch.github.io/RHDev/fioritura/ (pubblicata dal w
 - `sw.js`: service worker (funziona offline; la pagina arriva sempre fresca dalla rete). Se cambi l'elenco dei file in cache, alza `VERSION`.
 - `manifest.webmanifest` e le icone PNG: per installarla sulla schermata Home.
 - `supabase/schema.sql`: la tabella per l'account, applicata dal workflow `.github/workflows/fioritura-db.yml`.
+- `docs/ACCOUNT.md`: la guida per D per creare e collegare il progetto Supabase di Fioritura.
 
 ## Il programma
 
@@ -44,14 +45,17 @@ Il repo è pubblico: non mettere mai nel codice nomi o dati personali.
 
 ## Account e sincronizzazione (richiesta di D: "collegare con un account così resta tutto sincronizzato")
 
-- Email e password sul progetto Supabase di Label Finance (`ztjlqorvnulgfvbtvavm`, lo stesso di Documenti Raho e Analisi Finanziarie), tabella `public.fioritura`: una riga per account (`data` jsonb, `version`), regole RLS "ognuno la sua riga" e solo dal sito dell'app (`fioritura_from_app()`). Registrazione aperta. Non toccare gli oggetti delle altre app.
-- Dati NON cifrati (sono progressi di studio): chi gestisce il progetto Supabase potrebbe vederli. Scelta fatta per semplicità: la password dimenticata si recupera dal link via email senza perdere nulla.
+- D: "non deve entrare con l'utenza di Documents, non è mia, è una cosa su cui deve registrarsi un'altra persona".
+  Quindi Fioritura ha un progetto Supabase **tutto suo**, separato da Label Finance / Documenti Raho / Finance (come consiglia anche la guida di Orbita). Non usare mai il progetto `ztjlqorvnulgfvbtvavm` né i suoi account.
+- Collegamento: oggetto `CLOUD` in `index.html` (Project URL + chiave anon/publishable). Vuoto = account spento (niente pulsante, dati solo sul dispositivo). Una chiave che non sia pubblica (service_role, `sb_secret_`) viene rifiutata (`keyIsPublic()`). Guida per D: `docs/ACCOUNT.md`.
+- Workflow `.github/workflows/fioritura-db.yml`: con i secret `SUPABASE_ACCESS_TOKEN` e `FIORITURA_SUPABASE_PROJECT_REF` crea la tabella (`supabase/schema.sql`) e imposta l'accesso del progetto: Site URL e indirizzi di ritorno = indirizzo dell'app, registrazione senza email di conferma (`mailer_autoconfirm`: il servizio email di prova di Supabase manda solo ai membri del progetto), password minima 8, testi delle email in italiano. Senza il secret del progetto si salta.
+- Tabella `public.fioritura`: una riga per account (`data` jsonb, `version`), RLS "ognuno la sua riga" e solo dal sito dell'app (`fioritura_from_app()`). Registrazione aperta. Dati non cifrati (sono progressi di studio).
 - Client senza librerie (`fetch` verso `/auth/v1` e `/rest/v1`). Salvataggio con `PATCH ...&version=eq.N`: se un altro dispositivo ha salvato prima, si scarica, si unisce e si riprova (`push()` / `pull()`). Confronto con `stateHash()` (JSON con le chiavi in ordine, `canon()`), così due dispositivi uguali non si rimandano i dati a vicenda.
 - Si sincronizza 1,5 s dopo ogni modifica, all'apertura, tornando sulla pagina, quando torna la rete e ogni 45 s; non mentre si scrive in un campo.
-- Pulsante rotondo in alto (nuvola, o l'iniziale con il pallino dello stato) e riga in cima alle Impostazioni: aprono "Account" (Accedi / Crea l'account / Password dimenticata; da dentro: Sincronizza ora, Cambia password, Esci). Nel benvenuto "Hai già un account? Accedi".
-- Link delle email (conferma e nuova password): tornano su `…/RHDev/fioritura/` con i dati nell'indirizzo dopo `#`; `landing()` fa entrare (o apre "Nuova password") e ripulisce l'indirizzo. Il workflow aggiunge l'indirizzo dell'app agli indirizzi di ritorno consentiti di Supabase.
+- Pulsante rotondo in alto (nuvola, o l'iniziale con il pallino dello stato) e riga in cima alle Impostazioni: aprono "Account" (Crea il tuo account / Accedi / Password dimenticata; da dentro: Sincronizza ora, Cambia password, Esci). Nel benvenuto "Hai già un account? Accedi".
+- "Password dimenticata?" funziona solo se nel progetto c'è un SMTP (es. Resend); senza, l'app lo dice con un messaggio chiaro. Link delle email: tornano su `…/RHDev/fioritura/` con i dati dopo `#`; `landing()` fa entrare (o apre "Nuova password") e ripulisce l'indirizzo.
 - Uscendo i dati restano sul dispositivo. "Cancella i dati da questo dispositivo" con l'account fa uscire e cancella solo qui.
-- Da qui Supabase non si raggiunge: i test usano un finto Supabase con Playwright (`route`).
+- Da qui Supabase non si raggiunge: i test usano un finto Supabase con Playwright (`route`), mettendo un indirizzo finto in `CLOUD` nella pagina servita.
 
 ## Prove
 

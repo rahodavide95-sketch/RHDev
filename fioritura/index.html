@@ -1542,11 +1542,21 @@
   function hashOf(str) { var h = 2166136261; for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36) + '.' + str.length; }
   function stateHash() { return hashOf(canon(syncable())); }
   /* ================= ACCOUNT E SINCRONIZZAZIONE ================= */
-  // Account con email e password sul progetto Supabase già usato da Documenti Raho e Analisi Finanziarie
-  // (tabella fioritura, vedi fioritura/supabase/schema.sql). Ognuno vede solo la sua riga.
+  // Account con email e password su un progetto Supabase SOLO di Fioritura (utenti e dati separati da tutto il resto).
+  // Ognuno si registra con la sua email e vede solo la sua riga (tabella fioritura, vedi fioritura/supabase/schema.sql).
+  // Come collegarlo: fioritura/docs/ACCOUNT.md. Finché CLOUD è vuoto l'account non compare e i dati restano sul dispositivo.
   // Una riga per account con "version": ogni salvataggio fa PATCH ...version=eq.N; se intanto un altro dispositivo
   // ha salvato, si scarica, si unisce (mergeIn) e si riprova.
-  var SB = { url: 'https://ztjlqorvnulgfvbtvavm.supabase.co', key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp0amxxb3J2bnVsZ2Z2YnR2YXZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2OTgwMDIsImV4cCI6MjA5NzI3NDAwMn0._6gEbzCCnejpyh36Lpqe0_fj27UaonCkn2a7NastDMA' };
+  var CLOUD = {
+    url: '',   // Project URL, es. https://abcdefghijklmnop.supabase.co
+    key: ''    // chiave "anon" / "publishable" (è pubblica per natura). MAI la "service_role" o una "secret".
+  };
+  var SB = { url: String(CLOUD.url || '').replace(/\/+$/, ''), key: String(CLOUD.key || '') };
+  function keyIsPublic(k) {
+    if (!k || /^sb_secret_/.test(k)) return false;
+    if (/^sb_publishable_/.test(k)) return true;
+    try { return JSON.parse(atob(k.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).role === 'anon'; } catch (e) { return false; }
+  }
   var ACCT_KEY = 'fioritura.sync';
   function emptyAcct() { return { email: '', uid: '', access: '', refresh: '', exp: 0, version: 0, hash: '', at: 0 }; }
   var acct = emptyAcct();
@@ -1554,7 +1564,8 @@
   var sync = { busy: false, err: '', timer: null, tries: 0 };
   function saveAcct() { try { localStorage.setItem(ACCT_KEY, JSON.stringify(acct)); } catch (e) {} }
   function signedIn() { return !!(acct.uid && acct.refresh); }
-  var canSync = /^https?:$/.test(location.protocol) && !!window.fetch;
+  var canSync = /^https?:$/.test(location.protocol) && !!window.fetch && /^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(SB.url) && keyIsPublic(SB.key);
+  if (SB.key && !keyIsPublic(SB.key)) console.error('Fioritura: la chiave in CLOUD non è quella pubblica (anon / publishable): account spento.');
 
   async function api(path, o) {
     o = o || {};
@@ -1708,6 +1719,8 @@
     if (/rate|too many|over_email/.test(m)) return 'Troppi tentativi: aspetta qualche minuto e riprova.';
     if (/email_address_invalid|invalid email|validate email/.test(m)) return 'Questa email non sembra giusta.';
     if (/same_password/.test(m)) return 'È uguale a quella di prima: scegline una diversa.';
+    if (/not authorized|email_address_not_authorized|smtp|sending/.test(m)) return 'Per ora le email non partono, quindi il recupero della password non è attivo. Scrivi a chi ti ha dato l’app.';
+    if (/signup.*disabled|signups not allowed/.test(m)) return 'Le registrazioni sono chiuse.';
     return 'Qualcosa non è andato: ' + (e && e.message || 'riprova tra poco.');
   }
   // tornando dal link dell'email (conferma dell'account o nuova password)

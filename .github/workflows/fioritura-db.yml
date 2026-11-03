@@ -1,13 +1,15 @@
 name: Database Fioritura
 
-# Prepara su Supabase (progetto di Label Finance, lo stesso di Documenti Raho e Analisi Finanziarie) la tabella
-# fioritura per la sincronizzazione dei progressi di studio. Usa lo stesso secret SUPABASE_ACCESS_TOKEN.
-# Lo script SQL si può rieseguire: crea solo ciò che manca e non tocca le altre app.
+# Prepara il progetto Supabase di Fioritura (un progetto SOLO suo, separato da Label Finance e dalle altre app):
+# crea la tabella, mette l'indirizzo dell'app per i link delle email e le email in italiano.
+# Servono due secret nel repository: SUPABASE_ACCESS_TOKEN (c'è già, vale per tutti i progetti dell'account
+# Supabase) e FIORITURA_SUPABASE_PROJECT_REF (l'id del progetto di Fioritura). Guida: fioritura/docs/ACCOUNT.md.
+# Senza FIORITURA_SUPABASE_PROJECT_REF il job si salta e non tocca nient'altro. Si può rieseguire.
 on:
   push:
     branches: [main]
     paths:
-      - 'fioritura/supabase/schema.sql'
+      - 'fioritura/supabase/**'
       - '.github/workflows/fioritura-db.yml'
   workflow_dispatch:
 
@@ -19,24 +21,25 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  schema:
+  setup:
     runs-on: ubuntu-latest
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      PROJECT_REF: ztjlqorvnulgfvbtvavm
+      PROJECT_REF: ${{ secrets.FIORITURA_SUPABASE_PROJECT_REF }}
+      APP_URL: https://rahodavide95-sketch.github.io/RHDev/fioritura/
     steps:
       - uses: actions/checkout@v4
 
-      - name: Controlla il token di Supabase
-        id: token
+      - name: Controlla i secret
+        id: secrets
         run: |
-          if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then
-            echo "::warning::Manca il secret SUPABASE_ACCESS_TOKEN: tabelle NON create. Incolla fioritura/supabase/schema.sql nel SQL Editor di Supabase."
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ] || [ -z "$PROJECT_REF" ]; then
+            echo "::warning::Mancano SUPABASE_ACCESS_TOKEN o FIORITURA_SUPABASE_PROJECT_REF: progetto di Fioritura NON preparato. Vedi fioritura/docs/ACCOUNT.md"
             echo "skip=1" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Applica lo schema
-        if: steps.token.outputs.skip != '1'
+      - name: Crea la tabella
+        if: steps.secrets.outputs.skip != '1'
         run: |
           jq -Rs '{query: .}' fioritura/supabase/schema.sql > /tmp/body.json
           code=$(curl -sS -o /tmp/out.json -w '%{http_code}' -X POST \
@@ -47,32 +50,40 @@ jobs:
           echo "Risposta $code"; head -c 2000 /tmp/out.json; echo
           if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then exit 1; fi
 
-      # Il link nell'email di conferma deve riportare a Fioritura e non al sito di Label Finance:
-      # aggiunge l'indirizzo dello strumento agli indirizzi di ritorno consentiti, senza togliere quelli
-      # che ci sono già e senza cambiare il Site URL di Label Finance.
-      - name: Consenti il ritorno a Fioritura dopo la conferma email
-        if: steps.token.outputs.skip != '1'
-        env:
-          APP_URL: https://rahodavide95-sketch.github.io/RHDev/fioritura/
+      # Il progetto è solo di Fioritura, quindi si può impostare tutto qui:
+      # - indirizzo dell'app per i link delle email (Site URL e indirizzi di ritorno, più quello per le prove);
+      # - registrazione senza email di conferma: il servizio email di prova di Supabase manda solo ai membri
+      #   del progetto, quindi una conferma via email a un'altra persona non arriverebbe;
+      # - password di almeno 8 caratteri, come chiede l'app;
+      # - testi delle email (nuova password, cambio email) in italiano, per quando ci sarà un servizio email.
+      - name: Impostazioni di accesso ed email in italiano
+        if: steps.secrets.outputs.skip != '1'
         run: |
-          code=$(curl -sS -o /tmp/auth.json -w '%{http_code}' \
-            "https://api.supabase.com/v1/projects/$PROJECT_REF/config/auth" \
-            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN")
-          if [ "$code" != 200 ]; then
-            echo "::warning::Impostazioni di accesso non lette ($code): aggiungi a mano $APP_URL e ${APP_URL}** in Supabase › Authentication › URL Configuration › Redirect URLs."
-            exit 0
-          fi
-          jq --arg a "$APP_URL" --arg b "${APP_URL}**" '
-            ((.uri_allow_list // "") | split(",") | map(gsub("^\\s+|\\s+$"; "")) | map(select(length > 0))) as $l
-            | {add: (([$a, $b] - $l) | length), body: {uri_allow_list: ($l + ([$a, $b] - $l) | join(","))}}' /tmp/auth.json > /tmp/plan.json
-          echo "Indirizzi di ritorno già presenti: $(jq -r '(.uri_allow_list // "") | split(",") | map(select(length > 0)) | length' /tmp/auth.json)"
-          if [ "$(jq '.add' /tmp/plan.json)" = 0 ]; then echo "Fioritura è già tra gli indirizzi consentiti."; exit 0; fi
-          jq '.body' /tmp/plan.json > /tmp/patch.json
+          jq -n --arg app "$APP_URL" '
+            def mail($title; $text; $button):
+              "<div style=\"font-family:Georgia,serif;max-width:480px;margin:auto;padding:28px;color:#3a2e33\">"
+              + "<h2 style=\"font-weight:400\">" + $title + "</h2><p style=\"font-family:Arial,sans-serif;line-height:1.5\">" + $text + "</p>"
+              + "<p><a href=\"{{ .ConfirmationURL }}\" style=\"display:inline-block;background:#a95f63;color:#fff;padding:12px 22px;border-radius:999px;text-decoration:none;font-family:Arial,sans-serif\">" + $button + "</a></p>"
+              + "<p style=\"font-family:Arial,sans-serif;font-size:13px;color:#8a7a80\">Se non sei stata tu, puoi ignorare questa email.</p></div>";
+            {
+              site_url: $app,
+              uri_allow_list: ([$app, ($app + "**"), "http://localhost:8000/fioritura/"] | join(",")),
+              mailer_autoconfirm: true,
+              password_min_length: 8,
+              mailer_subjects_confirmation: "Conferma il tuo account Fioritura",
+              mailer_templates_confirmation_content: mail("Benvenuta in Fioritura"; "Tocca il pulsante per confermare la tua email."; "Conferma l’email"),
+              mailer_subjects_recovery: "Nuova password per Fioritura",
+              mailer_templates_recovery_content: mail("Nuova password"; "Hai chiesto di cambiare la password di Fioritura. Tocca il pulsante e scegline una nuova."; "Scegli la nuova password"),
+              mailer_subjects_email_change: "Conferma la nuova email di Fioritura",
+              mailer_templates_email_change_content: mail("Nuova email"; "Tocca il pulsante per confermare la nuova email del tuo account Fioritura."; "Conferma la nuova email")
+            }' > /tmp/auth.json
           code=$(curl -sS -o /tmp/out.json -w '%{http_code}' -X PATCH \
             "https://api.supabase.com/v1/projects/$PROJECT_REF/config/auth" \
             -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
             -H "Content-Type: application/json" \
-            --data @/tmp/patch.json)
+            --data @/tmp/auth.json)
           echo "Risposta $code"
-          if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then head -c 500 /tmp/out.json; echo; exit 1; fi
-          echo "Aggiunti $(jq '.add' /tmp/plan.json) indirizzi; ora sono $(jq -r '(.uri_allow_list // "") | split(",") | length' /tmp/out.json)."
+          if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then
+            head -c 800 /tmp/out.json; echo
+            echo "::warning::Impostazioni di accesso non applicate ($code): mettile a mano come spiegato in fioritura/docs/ACCOUNT.md (passo 5)."
+          fi

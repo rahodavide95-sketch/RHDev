@@ -1600,3 +1600,6 @@ tr:hover .name-edit, .name-edit:focus-visible { opacity: 1; }
   .nw-years-t td, .nw-years-t th { padding-left: 6px; padding-right: 6px; }
   .nw-years-part { display: block; font-size: 11px; }
 }
+
+/* Annulla e Ripeti in alto */
+.icon-btn.hist-btn:disabled { opacity: .3; cursor: default; background: none; }

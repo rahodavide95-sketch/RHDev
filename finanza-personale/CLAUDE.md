@@ -501,6 +501,17 @@ salvataggio scritto ("Salvato", "Sincronizzato", "Prova"…). **Entra sempre tut
 (D: "non devo scrollare nella barra, deve entrare tutto lì"): altezza delle voci (`--sl`), spazi dei
 blocchi (`--sg`) e del logo (`--sb`) con `clamp(…vh…)`; ≤600 anche aperta i blocchi diventano solo
 la linea. Provata da 560 a 1100 px di altezza, aperta, chiusa e a 1024 px.
+**Annulla e Ripeti** (D: "metti anche undo e avanti"; "con mac è cmd shift z"): in `session.js` una
+cronologia vera (`past`/`future`, ultime 40 copie dei dati, max ~60 MB di testo): ogni `commit` di D salva
+la copia di prima (etichetta = `opts.undo` o "Modifica") e svuota "Ripeti"; `undo()`/`redo()` scambiano
+le copie (`canUndo`, `canRedo`, `undoLabel`, `redoLabel`). Non entrano le modifiche automatiche: `silent`
+o `auto` (prezzi `setPrices`, cambi BCE automatici `setFx(…, {auto})`, scadenze registrate da sole,
+`tidyCategories`, fotografia del mese). Cronologia buttata quando l'app si blocca o si cancella (dati in
+chiaro) e quando arrivano modifiche da un altro dispositivo. `undoToken()`/`undo(tk)` per l'"Annulla"
+negli avvisi (solo se è ancora l'ultima modifica). UI in app.js: pulsanti ↶ ↷ (`.hist-btn`, spenti se
+non c'è niente) prima dell'occhio, voci nel menu del profilo, scorciatoie Cmd+Z / Cmd+Maiusc+Z su Mac,
+Ctrl+Z / Ctrl+Y (o Ctrl+Maiusc+Z) altrove; dentro una casella di testo resta l'annulla del testo e con
+una finestra aperta non fanno niente. Avviso "Annullato: …" con "Ripeti".
 **Profilo in alto a destra** (D: "le impostazioni puoi metterle anche in alto a destra se crei tipo un
 cerchio con le iniziali del profilo…"): `profileBtn()` in app.js, ultimo pulsante della testata (anche
 su telefono), iniziali del nome (Profilo) o dell'email, anello pieno quando sei in Impostazioni. Menu

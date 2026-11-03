@@ -214,7 +214,7 @@ export function runAutoPost() {
       if (!r) continue;
       for (const d of dates) { postOne(st, r, d); n++; }
     }
-  });
+  }, { auto: true });
   return n;
 }
 
@@ -291,7 +291,7 @@ export function setPrices(updates) {
       if (u.ovType) hd.ovType = u.ovType;
       if (u.src != null) hd.priceSrc = u.src;
     }
-  });
+  }, { auto: true });
 }
 /** Collega i titoli al loro codice ISIN (per i prezzi online). */
 export function linkHoldings(list) {
@@ -509,7 +509,7 @@ export function setSetting(path, value) {
 export function tidyCategories() {
   if (!S.state || !tidyPlan(S.state).count) return 0;
   let n = 0;
-  commit(st => { n = applyTidy(st); });
+  commit(st => { n = applyTidy(st); }, { auto: true });
   return n;
 }
 
@@ -535,8 +535,8 @@ export function setBaseCurrency(cur) {
     st.settings.currency = cur;
   });
 }
-export function setFx(rates, date) {
-  commit(st => { st.fx.rates = { ...st.fx.rates, ...rates, [st.settings.currency]: 1 }; if (date) st.fx.date = date; });
+export function setFx(rates, date, { auto = false } = {}) {
+  commit(st => { st.fx.rates = { ...st.fx.rates, ...rates, [st.settings.currency]: 1 }; if (date) st.fx.date = date; }, { auto });
 }
 export function saveSim(key, params) {
   commit(st => { st.sims[key] = params; }, { silent: true, noCount: true });

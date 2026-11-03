@@ -188,37 +188,71 @@ export async function lock(reason = '') {
   if (S.mode === 'demo') { S.mode = S.hasVault ? 'locked' : 'new'; }
   else if (S.mode === 'open') S.mode = 'locked';
   S.state = null; dek = null; S.rev++;
-  undoSnap = null;          // la copia per "Annulla" contiene dati in chiaro: via anche lei
+  clearHistory();          // le copie per "Annulla" contengono dati in chiaro: via anche loro
   S.lockReason = reason;
   dcache = { rev: -1 };
   emit('mode');
 }
 
 /* ─── Modifiche e salvataggio ─── */
-let undoSnap = null;
+/* Annulla e Ripeti (D: "metti anche undo e avanti"; su Mac Cmd+Z e Cmd+Maiusc+Z): prima di ogni modifica
+   fatta da D si tiene una copia dei dati (le ultime 40, al massimo ~60 MB di testo); "Annulla" torna alla
+   copia prima e mette quella di adesso in "Ripeti". Una modifica nuova svuota "Ripeti". Le modifiche
+   automatiche (prezzi, cambi, scadenze registrate da sole, fotografie del mese) non entrano: sono
+   `silent` o `auto`. Le copie contengono dati in chiaro: si buttano quando l'app si blocca. */
+const HISTORY_MAX = 40, HISTORY_CHARS = 60e6;
+let past = [], future = [];
+const histSize = () => past.reduce((a, x) => a + x.json.length, 0) + future.reduce((a, x) => a + x.json.length, 0);
+export function clearHistory() { past = []; future = []; }
 
-/** Applica una modifica ai dati. opts.undo = etichetta per poterla annullare. */
+/** Applica una modifica ai dati. opts.undo = etichetta per l'avviso con "Annulla". */
 export function commit(fn, opts = {}) {
   if (!S.state) return;
-  if (opts.undo) undoSnap = { label: opts.undo, json: JSON.stringify(S.state), rev: S.rev + 1 };
+  const keep = !opts.silent && !opts.auto;
+  if (keep) {
+    past.push({ label: opts.undo || 'Modifica', json: JSON.stringify(S.state), rev: S.rev + 1 });
+    future = [];
+    while (past.length > HISTORY_MAX || (past.length > 1 && histSize() > HISTORY_CHARS)) past.shift();
+  }
   fn(S.state);
   if (!opts.noCount) S.state.meta.changesSinceBackup = (S.state.meta.changesSinceBackup || 0) + 1;
   S.rev++;
+  // una modifica automatica dopo quella di D non deve impedire di annullarla dall'avviso
+  if (!keep && past.length && past[past.length - 1].rev === S.rev - 1) past[past.length - 1].rev = S.rev;
   if (S.mode === 'open') scheduleSave(opts.now ? 0 : 500);
   emit(opts.silent ? 'silent' : 'data');
 }
 
-export function canUndo() { return !!undoSnap && undoSnap.rev === S.rev; }
-/** Segno dell'ultima modifica annullabile: un vecchio "Annulla" non deve annullare quella dopo. */
-export function undoToken() { return canUndo() ? undoSnap : null; }
-export function undo(token) {
-  if (!canUndo() || (token && token !== undoSnap)) return false;
-  S.state = sanitize(JSON.parse(undoSnap.json));
-  undoSnap = null;
+export const canUndo = () => past.length > 0;
+export const canRedo = () => future.length > 0;
+export const undoLabel = () => past[past.length - 1]?.label || '';
+export const redoLabel = () => future[future.length - 1]?.label || '';
+/** Segno dell'ultima modifica annullabile: un vecchio "Annulla" (nell'avviso) non deve annullare quella dopo. */
+export function undoToken() { const t = past[past.length - 1]; return t && t.rev === S.rev ? t : null; }
+function restore(json) {
+  S.state = sanitize(JSON.parse(json));
   S.rev++;
   if (S.mode === 'open') scheduleSave(0);
   emit('data');
-  return true;
+}
+/** Annulla l'ultima modifica (con `token`: solo se è ancora l'ultima). */
+export function undo(token) {
+  if (!S.state || !past.length) return false;
+  const top = past[past.length - 1];
+  if (token && (token !== top || top.rev !== S.rev)) return false;
+  past.pop();
+  future.push({ label: top.label, json: JSON.stringify(S.state) });
+  restore(top.json);
+  for (const x of past) x.rev = -1;            // gli avvisi vecchi non annullano più niente
+  return top.label;
+}
+/** Rifà l'ultima modifica annullata. */
+export function redo() {
+  if (!S.state || !future.length) return false;
+  const top = future.pop();
+  past.push({ label: top.label, json: JSON.stringify(S.state), rev: -1 });
+  restore(top.json);
+  return top.label;
 }
 
 function scheduleSave(ms) {
@@ -399,7 +433,7 @@ export async function wipeAll() {
   await store.wipe();
   try { history.replaceState(null, '', location.pathname + location.search + '#/'); } catch { /* */ }
   vault = null; dek = null; S.state = null; S.hasVault = false; S.mode = 'new'; S.rev++;
-  undoSnap = null;
+  clearHistory();
   dcache = { rev: -1 };
   emit('mode');
 }
@@ -463,6 +497,7 @@ async function pullMerge() {
   await setBase(row.version, rv, content(remote));
   if (content(merged) !== content(S.state)) {
     S.state = merged;
+    clearHistory();           // arrivano modifiche da un altro dispositivo: "Annulla" non deve toglierle
     S.rev++;
     scheduleSave(0);
     emit('data');

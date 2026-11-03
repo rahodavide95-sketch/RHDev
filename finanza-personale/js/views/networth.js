@@ -60,7 +60,7 @@ function laterPins(ctx, acc, dt) {
 }
 function editCell(td, r, dt, cur, ctx) {
   editInCell(td, {
-    cur, label: `${r.label} al ${formatDate(dt, { year: true })}`,
+    cur, label: `${r.label} al ${formatDate(dt, { year: true })}`, unit: r.cur ? CUR_SYM[r.cur] || r.cur : '',
     save: c => {
       const liab = r.acc && isLiability(r.acc);
       const val = c == null ? 0 : liab ? -Math.abs(c) : c;
@@ -160,20 +160,27 @@ function sheetTable(ctx, Y) {
   const gap = () => h('tr.nw-gap', { 'aria-hidden': 'true' }, h('td.sticky'), dates.map(() => h('td')), noDiff());
   const body = [];
   // le celle delle righe si scrivono direttamente (D: "se clicco in una cella devo poter modificare da solo
-  // l'importo"); una riga in un'altra valuta (i contanti in dollari) si legge nella sua valuta, come nel foglio
+  // l'importo"). Una riga in un'altra valuta (i contanti in dollari) si vede in euro, così la colonna somma
+  // esattamente al Total (D: "la somma delle colonne cash-liquidità è sbagliata... perché?": prima la cella
+  // diceva "100,00 $" e il Total contava i dollari convertiti); i dollari si leggono passandoci sopra e si scrivono
+  // toccando la cella (in dollari).
   const natFmt = (v, cur) => (v == null ? '' : ui.privacy ? moneyText(v, cur) : `${formatNumber(v / 100, 2, 2)} ${CUR_SYM[cur] || cur}`);
+  const rateText = cur => {
+    const rt = d.rates?.[cur];
+    return !rt || d.missingFx.has(cur) ? `manca il cambio ${cur}: contati 1 a 1` : `cambio ${ctx.st.fx.date ? `BCE del ${formatDate(ctx.st.fx.date, { year: true })}` : 'di oggi'}: 1 € = ${formatNumber(rt, 4, 4)} ${CUR_SYM[cur] || cur}`;
+  };
   const itemCells = r => r.values.map((v, i) => {
     const dt = S0.cols[i];
     const nat = r.native ? r.native[i] : v;
     const can = !!dt && !(r.acc && hasPlan(r.acc));
-    const attrs = { class: [i === 0 ? 'prev' : '', dt ? '' : 'future', can ? 'nw-cell cell-edit' : ''].join(' '), dataset: { k: r.key, i: String(i) },
-      title: r.native && v != null ? `${natFmt(nat, r.cur)} ≈ ${moneyText(v)} al cambio` : can ? 'Tocca per scrivere il valore esatto' : null };
+    const attrs = { class: [i === 0 ? 'prev' : '', dt ? '' : 'future', can ? 'nw-cell cell-edit' : '', r.native ? 'nw-fx' : ''].join(' '), dataset: { k: r.key, i: String(i) },
+      title: r.native && v != null ? `${natFmt(nat, r.cur)} = ${moneyText(v)} (${rateText(r.cur)})${can ? ' · tocca per scrivere il valore in ' + (CUR_SYM[r.cur] || r.cur) : ''}` : can ? 'Tocca per scrivere il valore esatto' : null };
     if (can) {
       attrs.tabindex = '0';
       attrs.onclick = e => { e.stopPropagation(); editCell(e.currentTarget, r, dt, nat, ctx); };
       attrs.onkeydown = e => { if (e.key === 'Enter' || e.key === 'F2') { e.preventDefault(); editCell(e.currentTarget, r, dt, nat, ctx); } };
     }
-    return h('td.num', attrs, r.native ? natFmt(nat, r.cur) : t2(v));
+    return h('td.num', attrs, t2(v));
   });
   for (const sec of S0.sections) {
     const col = colorVar(sec.color);
@@ -185,10 +192,11 @@ function sheetTable(ctx, Y) {
         // una riga sola come nel foglio: il tipo (conto corrente, ETF…) si legge passandoci sopra
         h('td.sticky.nw-drag-h', { title: [r.label, r.hd && r.label !== r.name ? r.name : r.sub, r.skip ? 'in sospeso: si vede ma non entra nei totali' : '', 'trascina per spostare'].filter(Boolean).join(' · '), onpointerdown: e => startDrag(e, ctx) },
           h('span.nw-name', icon('grip', 14, 'nw-grip'), r.hd ? hdBadge(r.hd, true) : r.acc && bankLogo(r.acc.name, r.acc.institution) ? h('img.nw-logo', { src: bankLogo(r.acc.name, r.acc.institution), alt: '', width: 16, height: 16 }) : r.acc?.cls ? hdBadge(r.acc, true) : null, r.label,
+            r.native ? h('small.nw-cur-tag', { title: `Valori in ${r.cur}, mostrati in euro (${rateText(r.cur)})` }, CUR_SYM[r.cur] || r.cur) : null,
             r.skip ? h('small.nw-pend-tag', 'in sospeso') : null),
           // cestino della riga (D: "devo eliminare qualsiasi riga non solo la categoria")
           h('button.name-edit.name-del.nw-row-del', { type: 'button', 'aria-label': `Elimina la riga ${r.label}`, title: 'Elimina la riga', onpointerdown: e => e.stopPropagation(), onclick: e => { e.stopPropagation(); askDeleteRow(ctx, r); } }, icon('trash', 14))),
-        itemCells(r), diffs(r.native || r.values, r.native ? v => natFmt(v, r.cur) : null)));
+        itemCells(r), diffs(r.values)));
     }
     body.push(h('tr.nw-total', { style: { '--sec': col }, dataset: { sec: sec.name } }, h('td.sticky', 'Total'), cells(sec.total, t2), diffs(sec.total)));
     body.push(h('tr.nw-gain', h('td.sticky', 'Gain/Loss'), cells(sec.gain, sg, tone), noDiff()));
@@ -233,10 +241,14 @@ function sheetTable(ctx, Y) {
   const scroller = h('div.table-wrap.nw-scroll', table);
   // su telefono si apre sui mesi più recenti
   if (!fit && Y === curY) requestAnimationFrame(() => requestAnimationFrame(() => { const th = scroller.querySelectorAll('thead th')[Math.max(1, Number(d.refDate.slice(5, 7)) - 3)]; if (th) scroller.scrollLeft = th.offsetLeft - 220; }));
+  // riga in un'altra valuta senza il cambio: lo si dice (i dollari sono contati 1 a 1)
+  const noRate = [...new Set(S0.sections.flatMap(x => x.rows.filter(r => r.native && d.missingFx.has(r.cur)).map(r => r.cur)))];
+  const fxWarn = noRate.length ? h('a.dash-note.nw-fx-warn', { href: '#/impostazioni?sez=fx' }, icon('alert', 17),
+    h('span', h('b', `Manca il cambio per ${noRate.join(', ')}: `), 'quelle righe sono contate 1 a 1 nei totali. Aggiungilo nelle impostazioni (o aggiornalo dalla BCE).')) : null;
   return card(`Net Worth ${Y}`, {
     sub: 'Valori a fine mese, al centesimo. Tocca una cella per scrivere il valore, tocca un nome per rinominarlo o trascinalo per spostare la riga.',
     action: h('div.card-acts', h('button.btn.btn-sm.btn-ghost', { type: 'button', onclick: () => organizeSheet(ctx, S0) }, icon('edit', 16), 'Organizza'), h('button.btn.btn-sm.btn-ghost', { type: 'button', onclick: exportCsv }, icon('download', 16), 'CSV')),
-  }, h('div.inv-filters', filterBox('nw', nwQ, v => { nwQ = v; ctx.rerender(); }, 'Filtra: conto, titolo o sezione')), scroller);
+  }, fxWarn, h('div.inv-filters', filterBox('nw', nwQ, v => { nwQ = v; ctx.rerender(); }, 'Filtra: conto, titolo o sezione')), scroller);
 }
 
 /** Una riga del Net Worth (D: "se clicco su un etf… voglio avere la possibilità di modificare o spostarlo

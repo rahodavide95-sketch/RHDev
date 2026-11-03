@@ -148,31 +148,43 @@ details > summary::-webkit-details-marker { display: none; }
 .shell { min-height: 100vh; }
 .side {
   position: fixed; inset: 0 auto 0 0; width: var(--side-w); z-index: 20;
-  display: flex; flex-direction: column; gap: 6px;
-  padding: calc(14px + var(--safe-t)) 12px 12px;
-  background: var(--bg);
-  overflow-y: auto; scrollbar-width: none;
+  display: flex; flex-direction: column; gap: 4px;
+  padding: calc(14px + var(--safe-t)) 10px 12px;
+  background: var(--side-bg); border-right: 1px solid var(--side-edge);
+  overflow-y: auto; overflow-x: hidden; scrollbar-width: none;
 }
-.brand { display: flex; align-items: baseline; gap: 8px; padding: 4px 10px 10px; font-size: 20px; letter-spacing: -0.03em; }
+/* barra laterale (D: "i separatori non si vedono… rendila migliore in generale sia da aperta sia da chiusa"):
+   un pannello suo, separatori visibili tra i blocchi, la voce attiva con una barretta a sinistra */
+:root { --side-bg: color-mix(in srgb, var(--card) 72%, var(--bg)); --side-edge: color-mix(in srgb, var(--ink) 9%, transparent); --side-sep: color-mix(in srgb, var(--ink) 13%, transparent); }
+.brand { display: flex; align-items: center; gap: 10px; padding: 2px 8px 12px; font-size: 17px; letter-spacing: -0.03em; }
 .side-search {
-  display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 12px; margin: 0 0 4px;
-  border-radius: 12px; background: var(--card); color: var(--ink-3); font-size: 14px; text-align: left;
+  display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px 0 12px; margin: 0 0 6px;
+  border-radius: 11px; background: var(--field); color: var(--ink-3); font-size: 13.5px; text-align: left;
+  box-shadow: inset 0 0 0 1px var(--side-edge); transition: box-shadow .15s, color .15s;
 }
+.side-search:hover { color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--side-sep); }
 .side-search span { flex: 1; }
+.side-search kbd { background: var(--side-bg); box-shadow: inset 0 0 0 1px var(--side-edge); }
 kbd { font: 500 11px/1 var(--font); padding: 4px 6px; border-radius: 6px; background: var(--fill); color: var(--ink-3); letter-spacing: 0; }
-.side-nav { display: flex; flex-direction: column; gap: 1px; }
-/* menu più compatto (D: "un po' più compatto ma con il giusto spazio tra i diversi blocchi"): voci vicine, blocchi staccati */
-.side-group { font-size: 11.5px; font-weight: 650; color: var(--ink-3); padding: 14px 12px 4px; letter-spacing: .02em; }
+.side-nav { display: flex; flex-direction: column; gap: 2px; }
+/* separatore con il nome del blocco: GESTIONE ───── */
+.side-group { display: flex; align-items: center; gap: 8px; padding: 14px 6px 5px 12px; font-size: 10.5px; font-weight: 680; color: var(--ink-3); letter-spacing: .08em; text-transform: uppercase; }
+.side-group::after { content: ''; flex: 1; height: 1px; background: var(--side-sep); }
 .side-link {
-  display: flex; align-items: center; gap: 11px; height: 35px; padding: 0 12px; border-radius: 11px;
+  position: relative; display: flex; align-items: center; gap: 11px; height: 35px; padding: 0 12px; border-radius: 10px;
   color: var(--ink-2); font-weight: 520; font-size: 14px; transition: background .15s, color .15s;
 }
 .side-link:hover { background: var(--hover); color: var(--ink); }
 .side-link.on { background: var(--brand-soft); color: var(--brand); font-weight: 650; }
 .side-link.on .ic { color: var(--brand); }
-.side-foot { margin-top: auto; padding-top: 10px; display: flex; flex-direction: column; gap: 4px; }
-.side-tools { display: flex; align-items: center; gap: 4px; padding: 0 4px; }
-.side-save { margin-left: auto; padding-right: 8px; display: flex; }
+.side-link.on::after { content: ''; position: absolute; left: -10px; top: 9px; bottom: 9px; width: 3px; border-radius: 0 3px 3px 0; background: var(--brand); }
+.side-foot { margin-top: auto; padding-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.side-foot::before { content: ''; display: block; height: 1px; margin: 0 6px 4px; background: var(--side-sep); }
+.side-tools { display: flex; align-items: center; gap: 2px; padding: 0 2px; }
+.side-tools .icon-btn { width: 36px; height: 36px; border-radius: 10px; color: var(--ink-3); }
+.side-tools .icon-btn:hover { color: var(--ink); }
+.side-save { margin-left: auto; padding-right: 6px; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.save-t { font-size: 12px; font-weight: 560; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .save-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--pos); box-shadow: 0 0 0 4px var(--pos-soft); }
 .save-dot.sd-pending, .save-dot.sd-saving { background: var(--warn); box-shadow: 0 0 0 4px var(--warn-soft); }
 .save-dot.sd-error { background: var(--neg); box-shadow: 0 0 0 4px var(--neg-soft); }
@@ -201,35 +213,43 @@ kbd { font: 500 11px/1 var(--font); padding: 4px 6px; border-radius: 6px; backgr
 .tabbar { display: none; }
 .only-mobile { display: none !important; }
 
-/* computer piccolo / tablet, o barra compressa a mano: barra laterale a icone */
-@media (max-width: 1100px) and (min-width: 760px) {
-  :root { --side-w: 86px; }
-  .side { padding-left: 6px; padding-right: 6px; align-items: stretch; }
-  .brand { padding: 4px 0 10px; justify-content: center; }
-  .brand-name, .side-search span:not(.mini-l), .side-search kbd { display: none; }
-  .side-search { flex-direction: column; justify-content: center; gap: 2px; height: auto; padding: 7px 2px; }
-  .side-link { flex-direction: column; justify-content: center; gap: 2px; height: auto; min-height: 41px; padding: 5px 2px; border-radius: 12px; }
-  .side-link span, .side-search .mini-l { display: block; font-size: 10.5px; line-height: 1.15; font-weight: 560; text-align: center; white-space: normal; }
-  .side-link.on span { font-weight: 680; }
-  .side-group { display: block; height: 1px; width: 34px; margin: 6px auto; padding: 0; font-size: 0; overflow: hidden; background: var(--line); }
-  .side-tools { display: grid; grid-template-columns: repeat(2, 36px); justify-content: center; gap: 2px; padding: 0; }
-  .side-save { margin: 0; padding: 0; display: grid; place-items: center; }
-  .side-mini-btn { display: none; }
-  .topbar, .banners, .view { padding-left: 28px; padding-right: 28px; }
-}
-@media (min-width: 1101px) {
-  html.side-mini { --side-w: 86px; }
-  html.side-mini .side { padding-left: 6px; padding-right: 6px; align-items: stretch; }
-  html.side-mini .brand { padding: 4px 0 10px; justify-content: center; }
-  html.side-mini .brand-name, html.side-mini .side-search span:not(.mini-l), html.side-mini .side-search kbd { display: none; }
-  html.side-mini .side-search { flex-direction: column; justify-content: center; gap: 2px; height: auto; padding: 7px 2px; }
-  html.side-mini .side-link { flex-direction: column; justify-content: center; gap: 2px; height: auto; min-height: 41px; padding: 5px 2px; border-radius: 12px; }
-  html.side-mini .side-link span, html.side-mini .side-search .mini-l { display: block; font-size: 10.5px; line-height: 1.15; font-weight: 560; text-align: center; white-space: normal; }
-  html.side-mini .side-link.on span { font-weight: 680; }
-  html.side-mini .side-group { display: block; height: 1px; width: 34px; margin: 6px auto; padding: 0; font-size: 0; overflow: hidden; background: var(--line); }
-  html.side-mini .side-tools { display: grid; grid-template-columns: repeat(2, 36px); justify-content: center; gap: 2px; padding: 0; }
+/* barra compressa (a mano, o sempre tra 760 e 1100 px): icone con il nome sotto, la voce attiva
+   ha la pillola colorata intorno all'icona; separatori corti ma visibili tra i blocchi */
+@media (min-width: 760px) {
+  html.side-mini { --side-w: 88px; }
+  html.side-mini .side { padding-left: 6px; padding-right: 6px; gap: 2px; align-items: stretch; }
+  html.side-mini .brand { padding: 2px 0 12px; justify-content: center; }
+  html.side-mini .brand-ic { width: 34px; height: 34px; border-radius: 10px; }
+  html.side-mini .brand-name, html.side-mini .side-search span:not(.mini-l), html.side-mini .side-search kbd, html.side-mini .save-t { display: none; }
+  html.side-mini .side-search, html.side-mini .side-link {
+    position: relative; isolation: isolate; flex-direction: column; justify-content: flex-start; gap: 5px;
+    height: auto; min-height: 47px; padding: 5px 2px 4px; border-radius: 0; background: none; box-shadow: none; color: var(--ink-2);
+  }
+  html.side-mini .side-search { margin: 0 0 2px; color: var(--ink-3); }
+  html.side-mini .side-search::before, html.side-mini .side-link::before {
+    content: ''; position: absolute; z-index: -1; top: 1px; left: 50%; width: 50px; height: 28px; margin-left: -25px;
+    border-radius: 14px; background: transparent; transition: background .15s;
+  }
+  html.side-mini .side-search::before { background: var(--field); box-shadow: inset 0 0 0 1px var(--side-edge); }
+  html.side-mini .side-link:hover::before, html.side-mini .side-search:hover::before { background: var(--hover); }
+  html.side-mini .side-search:hover::before { background: var(--fill); }
+  html.side-mini .side-link.on::before { background: var(--brand-soft); }
+  html.side-mini .side-link.on { color: var(--brand); }
+  html.side-mini .side-link.on::after { left: -6px; top: 6px; bottom: auto; height: 18px; }
+  html.side-mini .side-link span, html.side-mini .side-search .mini-l { display: block; font-size: 10.5px; line-height: 1.2; font-weight: 560; text-align: center; white-space: normal; overflow-wrap: anywhere; }
+  html.side-mini .side-link.on span { font-weight: 700; }
+  html.side-mini .side-group { display: block; flex: none; height: 1px; width: 40px; margin: 6px auto; padding: 0; background: var(--side-sep); }
+  html.side-mini .side-group::after, html.side-mini .side-group span { display: none; }
+  html.side-mini .side-foot { gap: 2px; }
+  html.side-mini .side-foot::before { width: 40px; margin: 0 auto 6px; }
+  html.side-mini .side-tools { display: grid; grid-template-columns: repeat(2, 36px); justify-content: center; gap: 2px; padding: 4px 0 0; }
   html.side-mini .side-save { margin: 0; padding: 0; display: grid; place-items: center; }
+  html.side-auto .side-mini-btn { display: none; }
+  html.side-auto .side-save { grid-column: 1 / -1; padding-top: 6px; }
   html.side-mini .topbar, html.side-mini .banners, html.side-mini .view { padding-left: 32px; padding-right: 32px; }
+}
+@media (min-width: 760px) and (max-width: 1100px) {
+  .topbar, .banners, .view, html.side-mini .topbar, html.side-mini .banners, html.side-mini .view { padding-left: 28px; padding-right: 28px; }
 }
 .side, .main { transition: width .2s var(--spring), margin-left .2s var(--spring); }
 
@@ -621,6 +641,7 @@ input[type="date"].input::-webkit-date-and-time-value { text-align: left; }
 .acc-hero .acc-hero-top { display: flex; gap: 16px; align-items: center; margin-bottom: 8px; }
 .acc-hero .avatar { width: 56px; height: 56px; font-size: 28px; border-radius: 18px; }
 .acc-hero .row-btns { margin-top: 12px; }
+.acc-period { margin: 6px 0 4px; }
 .acc-row .row-end { gap: 1px; }
 .month-nav { display: flex; align-items: center; gap: 6px; margin-bottom: 14px; }
 .month-label { font-weight: 650; font-size: 16px; min-width: 140px; text-align: center; text-transform: capitalize; }
@@ -1339,7 +1360,16 @@ table.resizing { user-select: none; cursor: col-resize; }
 .dash-list { display: flex; flex-direction: column; }
 .dash-row { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto auto; gap: 4px 12px; align-items: center; padding: 9px 2px; border-bottom: 1px solid var(--line); font-size: 14px; color: var(--ink); }
 .dash-row:last-child { border-bottom: 0; }
-.dash-row:hover .dash-n { text-decoration: underline; text-underline-offset: 3px; }
+/* righe del riepilogo: tutta la riga si tocca, ma solo se porta da qualche parte
+   (D: "perché esce la riga sotto se poi non posso cliccare?") */
+.dash-row { position: relative; }
+.dash-row > .cdot { position: relative; z-index: 1; }
+.dash-row > a.dash-n::after, .dash-row > .dash-pick::after { content: ''; position: absolute; inset: 0; }
+a.dash-row:hover .dash-n, .dash-row:has(> a.dash-n, > .dash-pick):hover .dash-n { text-decoration: underline; text-underline-offset: 3px; text-decoration-color: color-mix(in srgb, currentColor 45%, transparent); }
+a.dash-row:focus-visible, .dash-row > a.dash-n:focus-visible, .dash-row > .dash-pick:focus-visible { outline: none; }
+a.dash-row:focus-visible, .dash-row:has(> a.dash-n:focus-visible, > .dash-pick:focus-visible) { box-shadow: 0 0 0 2px var(--ring); border-radius: 8px; }
+tr.nw-band.nw-flash td { animation: nwFlash 1.6s ease-out; }
+@keyframes nwFlash { 0%, 35% { background: color-mix(in srgb, var(--brand) 22%, var(--card)); } }
 .dash-dot { width: 10px; height: 10px; border-radius: 3px; }
 .dash-n { font-weight: 560; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dash-p { color: var(--ink-3); font-size: 12.5px; text-align: right; min-width: 34px; }
@@ -1371,6 +1401,11 @@ table.resizing { user-select: none; cursor: col-resize; }
 .nw-summary .dash-head .btn { flex: none; }
 .nw-sum-tools { display: flex; justify-content: flex-end; align-items: center; flex-wrap: wrap; gap: 8px 14px; margin-bottom: 4px; }
 /* periodo personalizzato del grafico: Da … A … */
+/* periodo a scelta (uguale in ogni pagina) */
+.period-pick { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; min-width: 0; }
+.period-pick .tabs { min-width: 0; }
+.dash-period { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; padding: 2px 2px 0; }
+.dash-period-l { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 620; color: var(--ink-3); }
 .nw-range { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .nw-range label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-3); }
 .nw-range .select-wrap { min-width: 150px; }
@@ -1432,6 +1467,7 @@ img.gate-mark { width: 112px; height: 112px; border-radius: 28px; }
 .name-pop-t { font-size: 13px; font-weight: 620; color: var(--ink-2); }
 .name-pop-b { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
 .side-search .mini-l { display: none; }
+html.side-mini .side-search .mini-l { display: block; }
 /* matita sulle intestazioni che si possono rinominare: compare passandoci sopra (sempre, un po' tenue, sugli schermi touch) */
 .th-rename:not(.sticky) { position: relative; }
 .th-rename::after { content: ''; position: absolute; top: 3px; right: 4px; width: 9px; height: 9px; background: currentColor; opacity: 0; transition: opacity .15s; pointer-events: none;

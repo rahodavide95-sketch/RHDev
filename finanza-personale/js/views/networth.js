@@ -9,7 +9,8 @@ import { h, icon, download } from '../ui/dom.js';
 import { barChart, legend, sparkline } from '../ui/charts.js';
 import { openSheet, amountInput, toast, empty, selectInput, colorChoice, textInput, field } from '../ui/components.js';
 import { money, moneyText, delta, axisMoney, tipMoney, ui } from '../ui/fmt.js';
-import { card, accAvatar, segTabs, filterBox, hdBadge, colorVar, colorDot, setSectionColor, softColor } from './common.js';
+import { card, accAvatar, segTabs, filterBox, hdBadge, colorVar, colorDot, setSectionColor, softColor, loadPeriod, savePeriod, periodPicker } from './common.js';
+import { cleanPeriod } from '../core/period.js';
 import { accountEditor, undoToast } from './editors.js';
 import { openFileImport } from './invimport.js';
 import { bankLogo } from '../data/banks.js';
@@ -23,8 +24,9 @@ import { fitTable, watchFit, fitMoney } from '../ui/fit.js';
 let year = null;
 // periodo del grafico (D: "voglio la possibilità di personalizzare il range del periodo per l'istogramma"):
 // 12 | 24 mesi, 'ytd' (dal 31/12), 'all', oppure { from: 'AAAA-MM', to: 'AAAA-MM' }; resta su questo dispositivo
-let span = (() => { try { const v = JSON.parse(localStorage.getItem('rhf-nw-span') || '12'); return v ?? 12; } catch { return 12; } })();
-const setSpan = v => { span = v; try { localStorage.setItem('rhf-nw-span', JSON.stringify(v)); } catch { /* navigazione privata */ } };
+// (prima era in 'rhf-nw-span': la scelta fatta allora resta)
+let span = loadPeriod('nw', (() => { try { return cleanPeriod(JSON.parse(localStorage.getItem('rhf-nw-span')), 12); } catch { return 12; } })());
+const setSpan = v => { span = v; savePeriod('nw', v); };
 let nwQ = '';
 const pctOf = (a, b) => (a != null && b ? (a - b) / Math.abs(b) * 100 : null);
 
@@ -63,7 +65,7 @@ function sheetTable(ctx, Y) {
   const cells = (vals, fmt, cls) => vals.map((v, i) => h('td.num', { class: [cls ? cls(v) : '', i === 0 ? 'prev' : '', S0.cols[i] ? '' : 'future'].join(' ') }, fmt(v)));
   const diffs = vals => [h('td.num.nw-dcol', { class: tone(diffOf(vals)) }, sg(diffOf(vals))), h('td.num.nw-dpct', { class: tone(diffPct(vals)) }, pcs(diffPct(vals)))];
   const noDiff = () => [h('td.num.nw-dcol'), h('td.num.nw-dpct')];
-  const band = (label, color, raw) => h('tr.nw-band', { style: { '--sec': color } },
+  const band = (label, color, raw) => h('tr.nw-band', { style: { '--sec': color }, dataset: { sec: label } },
     h('td.sticky', h('span', raw !== undefined ? colorDot(raw, c => setSectionColor(d, label, c), `Colore di ${label}`) : h('i.nw-band-dot'), label)), dates.map(() => h('td')), noDiff());
   // spazio tra una sezione e l'altra: si vede dove finisce un blocco e ne comincia un altro
   const gap = () => h('tr.nw-gap', { 'aria-hidden': 'true' }, h('td.sticky'), dates.map(() => h('td')), noDiff());
@@ -285,12 +287,26 @@ function yearsCard(ctx, years) {
         h('td.num', r.start ? formatPercent(pctOf(r.end, r.start), 2, true) : '—')))))));
 }
 
+/** Scorre fino alla sezione nella tabella del Net Worth e la fa lampeggiare un attimo. */
+function showSection(name) {
+  const row = [...document.querySelectorAll('table.nw-sheet tr.nw-band')].find(r => r.dataset.sec === name);
+  if (!row) return;
+  row.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  row.classList.remove('nw-flash'); void row.offsetWidth; row.classList.add('nw-flash');
+}
+
 export default {
   render(ctx) {
     const { d } = ctx;
     const curY = Number(d.refDate.slice(0, 4));
     const M = d.nwMonthly(120);
     const hasData = M.sections.length > 0 && M.total[M.last] != null;
+    // arrivo da una riga del riepilogo (qui o nella Panoramica): porto la tabella su quella sezione
+    const sez = ctx.route.query.sez;
+    if (sez) {
+      history.replaceState(null, '', '#/patrimonio');
+      setTimeout(() => showSection(sez), 60);
+    }
     const actions = [
       h('button.btn.btn-soft', { type: 'button', onclick: () => openFileImport(ctx) }, icon('upload', 18), h('span', 'Importa da Excel')),
     ];
@@ -321,21 +337,19 @@ export default {
     let from = Math.max(firstI, L + 1 - 12), to = L;
     if (span === 'all') from = firstI;
     else if (span === 'ytd') { const di = M.cols.indexOf(`${Number(lastDate.slice(0, 4)) - 1}-12-31`); from = di >= firstI ? di : firstI; }
+    else if (span === 'py') {
+      const y1 = Number(lastDate.slice(0, 4)) - 1;
+      from = Math.max(firstI, posOf(`${y1}-01`) ?? firstI); to = Math.min(L, posOf(`${y1}-12`) ?? L);
+      if (from > to) { from = Math.max(firstI, L - 11); to = L; }
+    }
     else if (span && typeof span === 'object') {
       from = posOf(span.from) ?? firstI; to = posOf(span.to) ?? L;
       if (from > to) [from, to] = [to, from];
       from = Math.max(firstI, from); to = Math.min(L, to);
     } else if (Number.isFinite(span)) from = Math.max(firstI, L + 1 - span);
     const idx = Array.from({ length: Math.max(1, to + 1 - from) }, (_, k) => from + k);
-    const custom = span && typeof span === 'object';
-    const monthOpts = withData.map(i => ({ value: monthKey(M.cols[i]), label: formatMonth(monthKey(M.cols[i])) }));
     const rangeTools = h('div.nw-sum-tools',
-      segTabs([{ value: 12, label: '12M' }, { value: 24, label: '24M' }, { value: 'ytd', label: 'Quest\'anno' }, { value: 'all', label: 'Tutto' }, { value: 'custom', label: 'Personalizza' }],
-        custom ? 'custom' : span,
-        v => { setSpan(v === 'custom' ? { from: monthKey(M.cols[Math.max(firstI, L - 11)]), to: monthKey(M.cols[L]) } : v); ctx.rerender(); }),
-      custom ? h('div.nw-range',
-        h('label', h('span', 'Da'), selectInput(monthOpts, monthKey(M.cols[from]), v => { setSpan({ from: v, to: span.to }); ctx.rerender(); })),
-        h('label', h('span', 'A'), selectInput(monthOpts, monthKey(M.cols[to]), v => { setSpan({ from: span.from, to: v }); ctx.rerender(); }))) : null);
+      periodPicker({ value: span, range: { from: monthKey(M.cols[from]), to: monthKey(M.cols[to]) }, months: withData.map(i => monthKey(M.cols[i])), onChange: v => { setSpan(v); ctx.rerender(); } }));
     const chartEl = barChart({
       labels: idx.map(i => formatMonth(monthKey(M.cols[i]), true)), tipLabels: idx.map(i => `Fine ${formatMonth(monthKey(M.cols[i]))}`),
       series: M.sections.map(sec => ({ name: sec.name, color: softColor(colorVar(sec.color)), values: idx.map(i => sec.total[i] || 0) })),
@@ -361,7 +375,7 @@ export default {
             const v = sec.total[L], g = sec.gain[L];
             return h('div.dash-row.nw-sum-row',
               colorDot(sec.color, c => setSectionColor(d, sec.name, c), `Colore di ${sec.name}`),
-              h('span.dash-n', sec.name),
+              h('a.dash-n', { href: '#/patrimonio?sez=' + encodeURIComponent(sec.name), title: `Vai a ${sec.name} nella tabella` }, sec.name),
               h('span.dash-p', v > 0 ? formatPercent(v / pos * 100, 0) : ''),
               h('span.dash-v', v == null ? h('span.muted', '—') : money(v, d.base, { tone: v < 0 ? 'neg' : '' })),
               h('span.dash-g', g ? money(g, d.base, { sign: true, tone: g >= 0 ? 'pos' : 'neg' }) : ''));

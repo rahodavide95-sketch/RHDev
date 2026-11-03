@@ -70,28 +70,41 @@ let currentPath = null;
 
 function saveDot() {
   const st = S.saveStatus, c = S.cloud;
-  let cls, label;
-  if (S.mode === 'demo') { cls = 'demo'; label = 'Prova: non si salva'; }
-  else if (st === 'error') { cls = 'error'; label = 'Salvataggio non riuscito'; }
-  else if (c.linked && c.status !== 'off') { cls = c.status === 'ok' ? 'saved' : c.status === 'syncing' ? 'saving' : c.status === 'offline' ? 'offline' : 'error'; label = CLOUD_LABEL[c.status] || ''; }
-  else { cls = st; label = st === 'saving' || st === 'pending' ? 'Salvataggio…' : 'Salvato e cifrato su questo dispositivo'; }
-  return h('span.save-dot', { class: 'sd-' + cls, title: label, 'aria-label': label });
+  let cls, label, short;
+  if (S.mode === 'demo') { cls = 'demo'; label = 'Prova: non si salva'; short = 'Prova'; }
+  else if (st === 'error') { cls = 'error'; label = 'Salvataggio non riuscito'; short = 'Non salvato'; }
+  else if (c.linked && c.status !== 'off') { cls = c.status === 'ok' ? 'saved' : c.status === 'syncing' ? 'saving' : c.status === 'offline' ? 'offline' : 'error'; label = CLOUD_LABEL[c.status] || ''; short = { ok: 'Sincronizzato', syncing: 'Sincronizzo…', offline: 'Offline' }[c.status] || 'Non sincronizzato'; }
+  else { cls = st; label = st === 'saving' || st === 'pending' ? 'Salvataggio…' : 'Salvato e cifrato su questo dispositivo'; short = st === 'saving' || st === 'pending' ? 'Salvo…' : 'Salvato'; }
+  return [h('span.save-dot', { class: 'sd-' + cls, title: label, 'aria-label': label }), h('span.save-t', { title: label, 'aria-hidden': 'true' }, short)];
 }
 
-/* barra laterale comprimibile (solo icone): la scelta resta su questo dispositivo */
+/* barra laterale comprimibile (icone con il nome sotto): la scelta resta su questo dispositivo.
+   Tra 760 e 1100 px di larghezza è sempre compressa (html.side-auto); html.side-mini = compressa davvero. */
+const mqSide = matchMedia('(min-width: 760px) and (max-width: 1100px)');
+let sidePref = false;
+try { sidePref = localStorage.getItem('rhf-side') === 'mini'; } catch { /* navigazione privata */ }
+function applySide() {
+  const R = document.documentElement;
+  R.classList.toggle('side-auto', mqSide.matches);
+  R.classList.toggle('side-mini', mqSide.matches || sidePref);
+  const b = document.querySelector('.side-mini-btn');
+  if (b) { const t = sidePref ? 'Allarga la barra laterale ([)' : 'Comprimi la barra laterale ([)'; b.title = t; b.setAttribute('aria-label', t.replace(/ \(\[\)$/, '')); }
+}
 function toggleSide() {
-  const on = !document.documentElement.classList.contains('side-mini');
-  document.documentElement.classList.toggle('side-mini', on);
-  try { localStorage.setItem('rhf-side', on ? 'mini' : ''); } catch { /* navigazione privata */ }
+  if (mqSide.matches) return;
+  sidePref = !sidePref;
+  try { localStorage.setItem('rhf-side', sidePref ? 'mini' : ''); } catch { /* navigazione privata */ }
+  applySide();
   setTimeout(() => dispatchEvent(new Event('resize')), 250);     // le tabelle che si adattano alla larghezza
 }
+mqSide.addEventListener?.('change', applySide);
+applySide();
 addEventListener('rhf-rerender', () => render());
-try { if (localStorage.getItem('rhf-side') === 'mini') document.documentElement.classList.add('side-mini'); } catch { /* */ }
 
 function buildShell() {
   const nav = h('nav.side-nav', { 'aria-label': 'Sezioni' },
     NAV.map(n => n.group
-      ? h('div.side-group', n.group)
+      ? h('div.side-group', { role: 'presentation' }, h('span', n.group))
       : h('a.side-link', { href: '#/' + n.path, dataset: { path: n.path } }, icon(n.icon, 20), h('span', n.label))));
   const side = h('aside.side',
     h('a.brand', { href: '#/', 'aria-label': '[RH] Finance, panoramica' }, h('img.brand-ic', { src: 'icons/mark-192.png', alt: '', width: 30, height: 30 }), h('span.brand-name', '[RH]', h('b', ' Finance'))),
@@ -102,7 +115,7 @@ function buildShell() {
       h('div.side-tools',
         h('button.icon-btn', { type: 'button', id: 'side-priv', onclick: togglePrivacy, 'aria-label': 'Nascondi gli importi' }, icon('eye', 20)),
         h('button.icon-btn', { type: 'button', onclick: () => session.lock(), 'aria-label': 'Blocca ora', title: 'Blocca ora (L)' }, icon('lock', 20)),
-        h('button.icon-btn.side-mini-btn', { type: 'button', onclick: toggleSide, 'aria-label': 'Comprimi o allarga la barra laterale', title: 'Comprimi la barra laterale ([)' }, icon('sidebar', 20)),
+        h('button.icon-btn.side-mini-btn', { type: 'button', onclick: toggleSide, 'aria-label': sidePref ? 'Allarga la barra laterale' : 'Comprimi la barra laterale', title: sidePref ? 'Allarga la barra laterale ([)' : 'Comprimi la barra laterale ([)' }, icon('sidebar', 20)),
         h('span.side-save', { id: 'side-save' }, saveDot()))));
   const top = h('header.topbar',
     h('div.top-titles', h('h1.top-title', { id: 'top-title' }), h('p.top-sub', { id: 'top-sub' })),
@@ -234,7 +247,7 @@ function doRender() {
 
 function updateSave() {
   const el = $('#side-save');
-  if (el) el.replaceChildren(saveDot());
+  if (el) el.replaceChildren(...saveDot());
 }
 /** Stato della sincronizzazione: aggiorna solo il pallino, gli avvisi e la riga nelle Impostazioni (mai tutta la pagina). */
 function updateCloud() {

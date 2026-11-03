@@ -53,6 +53,7 @@ Il repo è pubblico: non mettere mai nel codice nomi o dati personali.
 - Si sincronizza 1,5 s dopo ogni modifica, all'apertura, tornando sulla pagina, quando torna la rete e ogni 45 s; non mentre si scrive in un campo.
 - Pulsante rotondo in alto (nuvola, o l'iniziale con il pallino dello stato) e riga in cima alle Impostazioni: aprono "Account" (Crea il tuo account / Accedi / Password dimenticata; da dentro: Sincronizza ora, Cambia password, Esci). Nel benvenuto "Hai già un account? Accedi".
 - Link delle email (conferma della registrazione, nuova password): tornano su `…/RHDev/fioritura/` con i dati dopo `#`; `landing()` fa entrare (o apre "Nuova password") e ripulisce l'indirizzo.
+- Password visibile a richiesta (D: "rendi possibile vedere la password mentre si accede"): ogni campo password (`pwField()`) ha l'occhio a destra (`pwEye`) che la mostra e la nasconde; toccandolo il cursore resta nel campo (`pointerdown` senza togliere il fuoco), così la tastiera non si chiude.
 - Uscendo i dati restano sul dispositivo. "Cancella i dati da questo dispositivo" con l'account fa uscire e cancella solo qui.
 - Da qui Supabase non si raggiunge: i test usano un finto Supabase con Playwright (`route`).
 

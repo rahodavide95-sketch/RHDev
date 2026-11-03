@@ -146,9 +146,14 @@ collegata a nient'altro." Quindi il patrimonio è **solo** il Net Worth, a fine 
 - **Celle che si scrivono** (D: "se clicco in una cella devo poter modificare da solo l'importo senza
   passare da altre cose… il tool fa quello che vuole lui o quello che voglio io?"): `editInCell` /
   `resumeEdit` in common (`td.cell-edit` con data-k/data-i; Invio salva e scende, Tab a destra,
-  Esc annulla, vuota = valore tolto; "Annulla" nell'avviso). Net Worth: `A.setNwCell` = saldo del conto a
-  quella fine mese nella sua valuta (`valuations` kind adjust) o valore del titolo (`snapshots.nwHd`);
-  i debiti anche positivi; niente celle per i mutui col piano. Entrate e uscite: `A.setFlowCell` cambia
+  Esc annulla; "Annulla" nell'avviso). Net Worth: `A.setNwCell(target, data, valore, pins)` = saldo del
+  conto a quella fine mese nella sua valuta (`valuations` kind adjust) o valore del titolo
+  (`snapshots.nwHd`); i debiti anche positivi; niente celle per i mutui col piano. **Ogni cella è
+  indipendente come in Excel** (D: "se modifico l'importo di una cella e faccio invio modifica tutte le
+  celle successive con lo stesso valore!!!"): il saldo dei mesi senza un valore scritto si calcola dal
+  punto fermo prima, quindi `laterPins()` (networth.js) fissa al valore di adesso tutte le fine mese dopo
+  senza un valore scritto (non per i conti `nwSparse`), nello stesso commit. **Cella svuotata = 0**
+  (D: "se cancello il contenuto deve uscire 0"), non più "valore tolto". Entrate e uscite: `A.setFlowCell` cambia
   l'unico movimento della cella, lo toglie o ne crea uno a fine mese (conto: quello usato di solito per
   la sottocategoria); con più movimenti, in valuta o di verso opposto la cella apre Movimenti come prima.
   Reimportando il file, un valore cambiato a mano compare tra i "cambiati" (si può togliere la spunta).

@@ -40,16 +40,33 @@ const CUR_SYM = { USD: '$', GBP: '£', JPY: '¥', CHF: 'CHF' };
 
 /* ─── Scrivere un valore nella cella (editInCell, in common) ───
    Per un conto è il saldo a quella data nella sua valuta, per un titolo il valore del Net Worth di
-   quel mese. I debiti si possono scrivere anche positivi. */
-function editCell(td, r, dt, cur) {
+   quel mese. I debiti si possono scrivere anche positivi. Ogni cella è indipendente, come in Excel
+   (D: "se modifico l'importo di una cella e faccio invio modifica tutte le celle successive con lo
+   stesso valore!!!"): le fine mese dopo che non hanno un valore scritto vengono fissate al valore che
+   hanno adesso, così non si spostano. Cella svuotata = 0 (D: "se cancello il contenuto deve uscire 0"). */
+function laterPins(ctx, acc, dt) {
+  if (acc.nwSparse) return [];          // conta solo dove è scritto: le altre celle restano vuote
+  const { d, st } = ctx;
+  const have = new Set(st.valuations.filter(v => v.account === acc.id).map(v => v.date));
+  const out = [];
+  let m = monthKey(dt);
+  for (let k = 0; k < 600; k++) {
+    m = addMonthKey(m, 1);
+    const end = monthEnd(m);
+    if (end > d.refDate) break;
+    if (!have.has(end)) out.push({ date: end, value: d.accountValue(acc, end) });
+  }
+  return out;
+}
+function editCell(td, r, dt, cur, ctx) {
   editInCell(td, {
     cur, label: `${r.label} al ${formatDate(dt, { year: true })}`,
     save: c => {
       const liab = r.acc && isLiability(r.acc);
-      const val = c == null ? null : liab ? -Math.abs(c) : c;
+      const val = c == null ? 0 : liab ? -Math.abs(c) : c;
       if (val === cur) return false;
-      setNwCell(r.hd ? { holding: r.hd.id } : { account: r.acc.id }, dt, val);
-      undoToast(val == null ? `Valore tolto: ${r.label}, ${formatDate(dt, { year: true })}` : `${r.label}, ${formatDate(dt, { year: true })}: ${r.cur ? `${formatNumber(val / 100, 2, 2)} ${CUR_SYM[r.cur] || r.cur}` : moneyText(val)}`);
+      setNwCell(r.hd ? { holding: r.hd.id } : { account: r.acc.id }, dt, val, r.acc ? laterPins(ctx, r.acc, dt) : []);
+      undoToast(`${r.label}, ${formatDate(dt, { year: true })}: ${r.cur ? `${formatNumber(val / 100, 2, 2)} ${CUR_SYM[r.cur] || r.cur}` : moneyText(val)}`);
       return true;
     },
   });
@@ -151,8 +168,8 @@ function sheetTable(ctx, Y) {
       title: r.native && v != null ? `${natFmt(nat, r.cur)} ≈ ${moneyText(v)} al cambio` : can ? 'Tocca per scrivere il valore esatto' : null };
     if (can) {
       attrs.tabindex = '0';
-      attrs.onclick = e => { e.stopPropagation(); editCell(e.currentTarget, r, dt, nat); };
-      attrs.onkeydown = e => { if (e.key === 'Enter' || e.key === 'F2') { e.preventDefault(); editCell(e.currentTarget, r, dt, nat); } };
+      attrs.onclick = e => { e.stopPropagation(); editCell(e.currentTarget, r, dt, nat, ctx); };
+      attrs.onkeydown = e => { if (e.key === 'Enter' || e.key === 'F2') { e.preventDefault(); editCell(e.currentTarget, r, dt, nat, ctx); } };
     }
     return h('td.num', attrs, r.native ? natFmt(nat, r.cur) : t2(v));
   });

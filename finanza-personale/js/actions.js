@@ -66,8 +66,9 @@ export function saveCheckIn(date, entries, note = 'Aggiornamento valori') {
 }
 /** Un valore di fine mese del Net Worth scritto nella cella (D: "se clicco in una cella devo poter
     modificare da solo l'importo"): per un conto è il saldo a quella data (nella sua valuta), per un
-    titolo il valore del Net Worth di quel mese. `value` null = cella svuotata (tolgo il valore scritto). */
-export function setNwCell({ account = null, holding = null }, date, value) {
+    titolo il valore del Net Worth di quel mese. `pins`: le fine mese dopo senza un valore scritto,
+    fissate al valore di prima, così cambiare una cella non sposta le altre. */
+export function setNwCell({ account = null, holding = null }, date, value, pins = []) {
   commit(st => {
     if (holding) {
       const m = date.slice(0, 7);
@@ -76,8 +77,13 @@ export function setNwCell({ account = null, holding = null }, date, value) {
       if (value == null) delete snap.nwHd[holding]; else snap.nwHd[holding] = value;
       return;
     }
+    const now = stamp();
+    for (const p of pins) {
+      if (p.value == null || st.valuations.some(v => v.account === account && v.date === p.date)) continue;
+      st.valuations.push({ id: uid('v-'), account, date: p.date, value: p.value, created: now, kind: 'adjust', note: 'Fissato (è cambiata una cella prima)' });
+    }
     st.valuations = st.valuations.filter(v => !(v.account === account && v.date === date && v.kind === 'adjust'));
-    if (value != null) st.valuations.push({ id: uid('v-'), account, date, value, created: stamp(), kind: 'adjust', note: 'Scritto nella tabella del Net Worth' });
+    if (value != null) st.valuations.push({ id: uid('v-'), account, date, value, created: now, kind: 'adjust', note: 'Scritto nella tabella del Net Worth' });
   }, { undo: 'Valore cambiato' });
 }
 

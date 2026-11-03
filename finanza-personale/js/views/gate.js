@@ -309,6 +309,7 @@ function recoveryScreen(ctx) {
 
 /* ─── Sblocco ─── */
 function lockScreen(ctx) {
+  const acct = ctx.S.cloud.email || ctx.session.lastAccount();
   const pw = pwField('Password', 'current-password', true);
   const err = h('p.field-err', { hidden: true, role: 'alert' });
   const btn = h('button.btn.btn-primary.btn-lg.btn-block', { type: 'submit' }, icon('unlock', 18), 'Sblocca');
@@ -334,16 +335,33 @@ function lockScreen(ctx) {
     }
   } },
     mark(),
-    h('h2.center-text', 'Bentornato'),
-    ctx.S.cloud.linked ? h('p.gate-email', icon('refresh', 15), ctx.S.cloud.email) : null,
+    // chi sei (D: "il tool deve sapere che sono io, cioè quale account era connesso prima")
+    h('h2.center-text', ctx.session.lastName() ? `Bentornato, ${ctx.session.lastName()}` : 'Bentornato'),
+    acct ? h('p.gate-email', icon('refresh', 15), acct, !ctx.S.cloud.linked ? h('small', ' · ti ricollego appena sblocchi') : null)
+      : h('p.gate-email.muted', icon('lock', 15), 'Senza account: i dati sono solo su questo dispositivo'),
     h('p.muted.center-text', ctx.S.lockReason || 'I tuoi dati sono cifrati. Inserisci la password per aprirli.'),
-    h('input', { type: 'text', name: 'username', autocomplete: 'username', value: ctx.S.cloud.email || '[RH] Finance', hidden: true, readonly: true }),
+    h('input', { type: 'text', name: 'username', autocomplete: 'username', value: acct || '[RH] Finance', hidden: true, readonly: true }),
     pw, err, btn,
     h('div.gate-links',
+      acct ? h('button.link', { type: 'button', onclick: () => otherAccount(ctx, acct) }, 'Non sei tu? Accedi con un altro account') : null,
       h('button.link', { type: 'button', onclick: () => forgotFlow(ctx) }, 'Password dimenticata?'),
       h('button.link', { type: 'button', onclick: () => restoreFlow(ctx) }, 'Ripristina un backup'),
       h('button.link', { type: 'button', onclick: () => ctx.session.startDemo(demoState()) }, 'Prova con dati di esempio')));
   return h('div.gate', card, h('button.gate-wipe', { type: 'button', onclick: () => wipeFlow(ctx) }, 'Cancella i dati da questo dispositivo'));
+}
+
+/* ─── Cambiare account (D: "a meno che non si vuole cambiare account e quindi chiederà di fare l'accesso con
+   un altro"): i dati di questo account restano online; da questo dispositivo si toglie la copia e si accede
+   con l'altro account. ─── */
+async function otherAccount(ctx, acct) {
+  const ok = await confirmDialog({
+    title: 'Accedere con un altro account?',
+    message: `I dati di ${acct} restano online, cifrati: li ritrovi accedendo di nuovo con quell'account. Da questo dispositivo tolgo la copia e ti chiedo email e password dell'altro account.`,
+    confirm: 'Cambia account', danger: true,
+  });
+  if (!ok) return;
+  try { await ctx.session.wipeAll(); } catch (e) { toast('Non ci sono riuscito: ' + (e?.message || e), { kind: 'err' }); return; }
+  G.notice = ''; go('login');
 }
 
 /* ─── Password dimenticata: codice di recupero + nuova password ─── */

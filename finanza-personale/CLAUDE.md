@@ -543,6 +543,16 @@ negli avvisi (solo se è ancora l'ultima modifica). UI in app.js: pulsanti ↶ �
 non c'è niente) prima dell'occhio, voci nel menu del profilo, scorciatoie Cmd+Z / Cmd+Maiusc+Z su Mac,
 Ctrl+Z / Ctrl+Y (o Ctrl+Maiusc+Z) altrove; dentro una casella di testo resta l'annulla del testo e con
 una finestra aperta non fanno niente. Avviso "Annullato: …" con "Ripeti".
+**L'app sa chi sei** (D: "quando si disconnette momentaneamente il tool deve sapere che sono io (cioè quale
+account era connesso prima), a meno che non si vuole cambiare account"): in `localStorage` restano l'email
+dell'ultimo account collegato (`rhf-account`, tolta solo uscendo dall'account o cancellando i dati) e il
+nome per il saluto (`rhf-who`, aggiornato all'apertura e al blocco). Schermata di sblocco: "Bentornato,
+Davide", l'email (con "ti ricollego appena sblocchi" se il collegamento si è perso) oppure "Senza account:
+i dati sono solo su questo dispositivo", e "Non sei tu? Accedi con un altro account" (conferma → `wipeAll`
+→ accesso; i dati dell'account restano online). Allo sblocco `reconnect(password)` (session.js): se il
+collegamento manca o la sessione è scaduta (dopo un primo `cloudSync`), rientra da solo con la stessa
+password (quella dell'app è quella dell'account) e sincronizza. Profilo: "email · non collegato" e
+"Ricollega l'account" quando serve.
 **Profilo in alto a destra** (D: "le impostazioni puoi metterle anche in alto a destra se crei tipo un
 cerchio con le iniziali del profilo…"): `profileBtn()` in app.js, ultimo pulsante della testata (anche
 su telefono), iniziali del nome (Profilo) o dell'email, anello pieno quando sei in Impostazioni. Menu

@@ -45,11 +45,39 @@ if (bc) bc.onmessage = async e => {
 };
 const announce = () => { try { bc?.postMessage({ t: 'active', tab: TAB }); } catch { /* ignore */ } };
 
+/* ─── Chi sei (D: "quando si disconnette momentaneamente il tool deve sapere che sono io, cioè quale account
+   era connesso prima"): l'email dell'ultimo account collegato e il nome resta su questo dispositivo (non
+   sono i dati: quelli restano cifrati). Allo sblocco, se il collegamento all'account si è perso o è
+   scaduto, ci si ricollega da soli con la stessa password. ─── */
+const ACC_KEY = 'rhf-account', WHO_KEY = 'rhf-who';
+const rememberAccount = email => { try { if (email) localStorage.setItem(ACC_KEY, email); } catch { /* navigazione privata */ } };
+const forgetAccount = () => { try { localStorage.removeItem(ACC_KEY); } catch { /* */ } };
+export const lastAccount = () => { try { return localStorage.getItem(ACC_KEY) || ''; } catch { return ''; } };
+export const lastName = () => { try { return localStorage.getItem(WHO_KEY) || ''; } catch { return ''; } };
+async function reconnect(password) {
+  const email = S.cloud.email || lastAccount();
+  if (!email || !password) return;
+  if (S.cloud.linked && cloud.session()) {
+    // prima si prova come sempre; solo se la sessione è scaduta si rientra con la password appena scritta
+    try { await cloudSync(); } catch { /* lo stato lo dice */ }
+    if (S.cloud.status !== 'login') return;
+  }
+  try {
+    await cloud.signIn(email, password);
+    S.cloud.linked = true; S.cloud.email = cloud.session()?.email || email; S.cloud.error = '';
+    rememberAccount(S.cloud.email);
+    emit('cloud');
+    await cloudSync();
+  } catch { /* resta com'era: dalle Impostazioni (o dall'avviso) si può accedere di nuovo */ }
+}
+
 /* ─── Avvio ─── */
 export async function boot() {
   try {
     const sess = await cloud.loadSession();
     S.cloud.linked = !!sess; S.cloud.email = sess?.email || '';
+    if (sess?.email) rememberAccount(sess.email);
+    else if (lastAccount()) S.cloud.email = lastAccount();          // collegamento perso: si sa ancora chi sei
     base = (await store.get('cloud-base')) || null;
   } catch { /* senza account va bene lo stesso */ }
   try {
@@ -72,6 +100,7 @@ export async function boot() {
 
 function opened(stateObj) {
   S.state = stateObj;
+  try { const n = (stateObj.settings?.name || '').trim().split(/\s+/)[0]; if (n) localStorage.setItem(WHO_KEY, n.slice(0, 30)); else localStorage.removeItem(WHO_KEY); } catch { /* */ }
   S.rev++;
   S.mode = 'open';
   S.lockReason = '';
@@ -129,6 +158,7 @@ export async function unlock(password) {
     throw e;
   }
   await openWith(key, v);
+  reconnect(password);
 }
 
 /** La password non apre la copia di questo dispositivo: si prova con i dati online. */
@@ -185,6 +215,8 @@ export async function lock(reason = '') {
   if (S.mode === 'open') await flush();
   stopSync();
   if (S.mode === 'open' && S.cloud.linked) await Promise.race([cloudSync(), new Promise(r => setTimeout(r, 4000))]).catch(() => {});
+  // il nome per il "Bentornato" (anche se cambiato dopo l'apertura)
+  if (S.mode === 'open') { try { const n = (S.state?.settings?.name || '').trim().split(/\s+/)[0]; if (n) localStorage.setItem(WHO_KEY, n.slice(0, 30)); else localStorage.removeItem(WHO_KEY); } catch { /* */ } }
   if (S.mode === 'demo') { S.mode = S.hasVault ? 'locked' : 'new'; }
   else if (S.mode === 'open') S.mode = 'locked';
   S.state = null; dek = null; S.rev++;
@@ -545,7 +577,7 @@ export function cloudSync() {
 /** Accesso da un dispositivo nuovo (nessun dato qui): scarica i dati o crea la cassaforte. */
 export async function loginNewDevice(email, password) {
   await cloud.signIn(email, password);
-  S.cloud.linked = true; S.cloud.email = cloud.session().email || email;
+  S.cloud.linked = true; S.cloud.email = cloud.session().email || email; rememberAccount(S.cloud.email);
   const row = await cloud.fetchRow();
   if (row) {
     const rv = C.checkVault(JSON.parse(row.data));
@@ -633,7 +665,7 @@ export async function linkAccount(email, password, { create = false, localPasswo
     base = null; baseJson = '';
     await store.del('cloud-base');
   }
-  S.cloud.linked = true; S.cloud.email = cloud.session().email || email;
+  S.cloud.linked = true; S.cloud.email = cloud.session().email || email; rememberAccount(S.cloud.email);
   emit('data');
   startSync();
   await cloudSync();
@@ -654,6 +686,7 @@ export async function unlinkAccount() {
   await store.del('cloud-base');
   base = null; baseJson = '';
   S.cloud = { linked: false, email: '', status: 'off', at: 0, error: '' };
+  forgetAccount();          // uscita voluta: non si ricollega da solo
   emit('cloud');
 }
 
@@ -661,7 +694,7 @@ export async function unlinkAccount() {
 export async function resetFromLink(access, refresh, code, newPassword) {
   await cloud.adoptLinkSession(access, refresh);
   await cloud.setPassword(newPassword);
-  S.cloud.linked = true; S.cloud.email = cloud.session().email;
+  S.cloud.linked = true; S.cloud.email = cloud.session().email; rememberAccount(S.cloud.email);
   const row = await cloud.fetchRow();
   if (row) {
     const rv = C.checkVault(JSON.parse(row.data));

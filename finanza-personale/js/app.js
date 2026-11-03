@@ -143,14 +143,14 @@ function openProfile(btn) {
   const name = (S.state?.settings?.name || '').trim();
   const ini = initials();
   const item = (ic, label, fn, key) => h('button.prof-item', { type: 'button', role: 'menuitem', onclick: () => { closeProfile(); fn(); } }, icon(ic, 18), h('span', label), key ? h('kbd', key) : null);
-  const where = S.mode === 'demo' ? 'Prova con dati di esempio' : S.cloud.linked ? S.cloud.email : 'Solo su questo dispositivo';
+  const where = S.mode === 'demo' ? 'Prova con dati di esempio' : S.cloud.linked ? S.cloud.email : S.cloud.email ? `${S.cloud.email} · non collegato` : 'Nessun account: dati solo su questo dispositivo';
   profPop = h('div.prof-pop', { role: 'menu', 'aria-label': 'Profilo e impostazioni' },
     h('div.prof-head', h('span.prof-av', ini ? h('span', ini) : icon('user', 20)),
       h('div.prof-id', h('b', name || 'Il tuo profilo'), h('span', where), h('span.prof-status', ...saveDot()))),
     h('div.prof-sep'),
     item('settings', 'Impostazioni', () => go('impostazioni')),
     item('user', 'Profilo', () => go('impostazioni?sez=profile')),
-    S.mode === 'demo' ? null : item('refresh', S.cloud.linked ? 'Account e sincronizzazione' : 'Accedi o crea un account', () => go('impostazioni?sez=account')),
+    S.mode === 'demo' ? null : item('refresh', S.cloud.linked ? 'Account e sincronizzazione' : S.cloud.email ? 'Ricollega l\'account' : 'Collega un account (dati anche su altri dispositivi)', () => go('impostazioni?sez=account')),
     item('sun', 'Aspetto e colori', () => go('impostazioni?sez=look')),
     item('download', 'Backup e dati', () => go('impostazioni?sez=backup')),
     item('shield', 'Sicurezza', () => go('impostazioni?sez=security')),

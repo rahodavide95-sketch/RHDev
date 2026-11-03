@@ -101,6 +101,28 @@ mqSide.addEventListener?.('change', applySide);
 applySide();
 addEventListener('rhf-rerender', () => render());
 
+/* ─── Annulla e Ripeti (D: "metti anche undo e avanti"; "con mac è cmd shift z"): pulsanti in alto,
+   Cmd+Z / Cmd+Maiusc+Z su Mac, Ctrl+Z / Ctrl+Y (o Ctrl+Maiusc+Z) su Windows; anche nel menu del profilo ─── */
+const MAC = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+const KEY_UNDO = MAC ? '⌘Z' : 'Ctrl+Z', KEY_REDO = MAC ? '⇧⌘Z' : 'Ctrl+Y';
+function doUndo() {
+  const l = session.undo();
+  if (l) toast(`Annullato: ${l}`, { action: session.canRedo() ? { label: 'Ripeti', fn: doRedo } : null });
+  else toast('Niente da annullare');
+}
+function doRedo() {
+  const l = session.redo();
+  if (l) toast(`Rifatto: ${l}`, { action: { label: 'Annulla', fn: doUndo } });
+  else toast('Niente da ripetere');
+}
+function undoButtons() {
+  const u = session.canUndo(), r = session.canRedo();
+  return [
+    h('button.icon-btn.only-desktop.hist-btn', { type: 'button', disabled: !u, onclick: doUndo, 'aria-label': 'Annulla', title: u ? `Annulla: ${session.undoLabel()} (${KEY_UNDO})` : 'Niente da annullare' }, icon('undo', 20)),
+    h('button.icon-btn.only-desktop.hist-btn', { type: 'button', disabled: !r, onclick: doRedo, 'aria-label': 'Ripeti', title: r ? `Ripeti: ${session.redoLabel()} (${KEY_REDO})` : 'Niente da ripetere' }, icon('redo', 20)),
+  ];
+}
+
 /* ─── Profilo in alto a destra (D: "le impostazioni puoi metterle anche in alto a destra se crei tipo un
    cerchio con le iniziali del profilo e se clicchi da lì puoi andare nelle impostazioni generali, oltre a
    quelle della mail dell'account"): iniziali del nome (o dell'email), menu con le impostazioni, l'account,
@@ -133,6 +155,8 @@ function openProfile(btn) {
     item('download', 'Backup e dati', () => go('impostazioni?sez=backup')),
     item('shield', 'Sicurezza', () => go('impostazioni?sez=security')),
     h('div.prof-sep'),
+    session.canUndo() ? item('undo', `Annulla: ${session.undoLabel()}`, doUndo, KEY_UNDO) : null,
+    session.canRedo() ? item('redo', `Ripeti: ${session.redoLabel()}`, doRedo, KEY_REDO) : null,
     item(ui.privacy ? 'eye' : 'eyeOff', ui.privacy ? 'Mostra gli importi' : 'Nascondi gli importi', togglePrivacy, 'H'),
     S.mode === 'demo' ? item('logout', 'Esci dalla prova', () => session.lock()) : item('lock', 'Blocca ora', () => session.lock(), 'L'));
   document.body.append(profPop);
@@ -272,6 +296,7 @@ function doRender() {
   $('#top-actions').replaceChildren(
     ...actions,
     h('button.icon-btn.only-mobile', { type: 'button', 'aria-label': 'Cerca', onclick: () => openPalette(ctx) }, icon('search', 20)),
+    ...undoButtons(),
     h('button.icon-btn.only-desktop', { type: 'button', 'aria-label': ui.privacy ? 'Mostra gli importi' : 'Nascondi gli importi', title: 'Nascondi/mostra importi (H)', onclick: togglePrivacy }, icon(ui.privacy ? 'eyeOff' : 'eye', 20)),
     h('button.btn.btn-primary.only-desktop', { type: 'button', onclick: () => txEditor(ctx), title: 'Nuovo movimento (N)' }, icon('plus', 18), h('span', 'Movimento')),
     profileBtn(route.path === 'impostazioni'));
@@ -366,6 +391,12 @@ addEventListener('keydown', e => {
   if (S.mode !== 'open' && S.mode !== 'demo') return;
   const typing = e.target.closest?.('input,textarea,select,[contenteditable]');
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); if (!topSheet()) openPalette(ctxBase()); return; }
+  // Annulla / Ripeti (dentro una casella di testo resta l'annulla del testo)
+  if ((e.metaKey || e.ctrlKey) && !e.altKey && !typing && !topSheet() && (e.key.toLowerCase() === 'z' || (!MAC && e.key.toLowerCase() === 'y'))) {
+    e.preventDefault();
+    if (e.key.toLowerCase() === 'y' || e.shiftKey) doRedo(); else doUndo();
+    return;
+  }
   if (typing || e.metaKey || e.ctrlKey || e.altKey || topSheet()) return;
   const k = e.key.toLowerCase();
   if (k === 'n') { e.preventDefault(); txEditor(ctxBase()); }

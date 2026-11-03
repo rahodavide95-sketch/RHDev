@@ -98,7 +98,7 @@ export async function updatePrices(ctx, { silent = false } = {}) {
   ctx.rerender();
   try {
     let rates = S.state.fx.rates;
-    try { const r = await ecbRates(S.state.settings.currency); setFx(r.rates, r.date); rates = r.rates; } catch { /* usa i cambi salvati */ }
+    try { const r = await ecbRates(S.state.settings.currency); setFx(r.rates, r.date, { auto: true }); rates = r.rates; } catch { /* usa i cambi salvati */ }
     const { updated, failed } = await refreshHoldings(ready, rates);
     if (updated.length) setPrices(updated.map(u => ({ ...u, date: today() })));
     if (silent) { if (!updated.length && failed.length) console.warn('Prezzi non aggiornati'); }

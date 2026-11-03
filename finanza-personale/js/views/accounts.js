@@ -5,11 +5,12 @@ import { h, icon } from '../ui/dom.js';
 import { lineChart } from '../ui/charts.js';
 import { empty, twoTap } from '../ui/components.js';
 import { money, moneyText, axisMoney, tipMoney, ui } from '../ui/fmt.js';
-import { card, accountRow, txGroups, avatar, accAvatar, linkBtn, hdBadge } from './common.js';
+import { card, accountRow, txGroups, avatar, accAvatar, linkBtn, hdBadge, loadPeriod, savePeriod, periodPicker } from './common.js';
+import { resolvePeriod, monthsBetween } from '../core/period.js';
 import { accountEditor, adjustEditor, txEditor, holdingEditor, undoToast } from './editors.js';
 import { deleteValuation } from '../actions.js';
 import { ACCOUNT_TYPES, GROUPS, isLiability, hasHoldings, hasPlan, paidInstallments, position } from '../core/model.js';
-import { formatMonth, formatDate, lastMonths, monthKey, monthEnd, addMonths, monthName } from '../core/dates.js';
+import { formatMonth, formatDate, lastMonths, monthKey, monthEnd, addMonths, addMonthKey, monthName } from '../core/dates.js';
 import { simLoan } from '../core/finance.js';
 import { formatPercent } from '../core/money.js';
 
@@ -72,8 +73,18 @@ function detail(ctx, id) {
   if (!a) return { title: 'Conto', node: h('section.card', empty({ icon: 'wallet', title: 'Conto non trovato', action: linkBtn('Torna ai conti', '#/conti') })) };
   const t = ACCOUNT_TYPES[a.type];
   const v = d.balances.get(a.id) || 0;
-  const months = lastMonths(12, monthKey(d.refDate));
-  const hist = months.map(m => (m === monthKey(d.refDate) ? v : d.accountValue(a, monthEnd(m))));
+  // periodo del grafico a scelta, come nelle altre pagine
+  const curM = monthKey(d.refDate);
+  let first = a.created ? new Date(a.created).toISOString().slice(0, 7) : curM;
+  for (const x of st.transactions) if ((x.account === a.id || x.toAccount === a.id) && x.date.slice(0, 7) < first) first = x.date.slice(0, 7);
+  for (const x of st.valuations) if (x.account === a.id && x.date.slice(0, 7) < first) first = x.date.slice(0, 7);
+  if (first > curM) first = curM;
+  const accSpan = loadPeriod('conto', 12);
+  const R = resolvePeriod(accSpan, curM, accSpan === 'all' ? first : null);
+  const months = R.months.length ? R.months : lastMonths(12, curM);
+  const hist = months.map(m => (m === curM ? v : d.accountValue(a, monthEnd(m))));
+  const accPick = periodPicker({ value: accSpan, range: { from: months[0], to: months[months.length - 1] }, months: monthsBetween(first < addMonthKey(curM, -35) ? first : addMonthKey(curM, -35), curM),
+    onChange: x => { savePeriod('conto', x); ctx.rerender(); } });
   const txs = st.transactions.filter(x => x.account === a.id || x.toAccount === a.id).sort((x, y) => (x.date < y.date ? 1 : x.date > y.date ? -1 : y.created - x.created));
   const vals = st.valuations.filter(x => x.account === a.id).sort((x, y) => (x.date < y.date ? 1 : -1));
   const holdings = hasHoldings(a) ? st.holdings.filter(hd => hd.account === a.id) : [];
@@ -83,6 +94,7 @@ function detail(ctx, id) {
       h('div.acc-hero-top', accAvatar(a),
         h('div', h('div.hero-label', [t.label, a.institution, a.currency !== d.base ? a.currency : ''].filter(Boolean).join(' · ')), h('div.hero-value', money(v, a.currency, { tone: v < 0 ? 'neg' : '' })),
           a.currency !== d.base ? h('div.muted', '≈ ', moneyText(d.toBase(v, a.currency))) : null)),
+      hasPlan(a) ? null : h('div.acc-period', accPick),
       hasPlan(a) ? null : lineChart({ labels: months.map(m => formatMonth(m, true)), tipLabels: months.map(m => formatMonth(m)), series: [{ name: 'Saldo', color: isLiability(a) ? 'var(--c8)' : 'var(--c1)', values: hist, area: true }], fmt: c => moneyText(Math.round(c), a.currency), fmtAxis: axisMoney, height: 170, zero: false, mask: ui.privacy }),
       h('div.row-btns',
         !hasPlan(a) ? h('button.btn.btn-soft', { type: 'button', onclick: () => adjustEditor(ctx, a) }, icon('check', 18), t.group === 'assets' ? 'Aggiorna valore' : 'Aggiorna saldo') : null,

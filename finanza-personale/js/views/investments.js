@@ -6,12 +6,13 @@ import { h, icon, download } from '../ui/dom.js';
 import { donut, SERIES, lineChart, barChart } from '../ui/charts.js';
 import { empty, toast, confirmDialog, selectInput, openSheet, textInput, field } from '../ui/components.js';
 import { money, moneyText, compactText, delta, tipMoney, axisMoney, ui } from '../ui/fmt.js';
-import { card, avatar, linkBtn, segTabs, stat, hdBadge } from './common.js';
+import { card, avatar, linkBtn, segTabs, stat, hdBadge, loadPeriod, savePeriod, periodPicker } from './common.js';
+import { resolvePeriod, monthsBetween } from '../core/period.js';
 import { holdingEditor, opEditor, accountEditor, pacEditor, bolloEditor, pickHoldingOp, txEditor } from './editors.js';
 import { setPrices, setSetting, setFx, linkHoldings } from '../actions.js';
 import { ASSET_CLASSES, position, hasHoldings, buyHistory } from '../core/model.js';
 import { formatNumber, formatPercent, CURRENCIES } from '../core/money.js';
-import { formatDate, today, monthName, formatMonth, lastMonths, diffMonths } from '../core/dates.js';
+import { formatDate, today, monthName, formatMonth, lastMonths, diffMonths, addMonthKey } from '../core/dates.js';
 import { toCSV, csvNumber } from '../core/csv.js';
 import { refreshHoldings, quote, ecbRates, isIsin, isCrypto, findCandidates } from '../market.js';
 import { S } from '../session.js';
@@ -392,9 +393,13 @@ function yearsView(ctx) {
       stat('Tasse e costi', money(costsAll), 'commissioni, imposte e bollo')));
 
   // grafico: investito ogni mese
-  const span = Math.min(36, Math.max(12, monthsAll));
-  const keys = lastMonths(span, curM);
+  // periodo del grafico a scelta (come nelle altre pagine); di partenza 12–36 mesi secondo da quanto investi
+  const invSpan = loadPeriod('investito', Math.min(36, Math.max(12, Math.ceil(monthsAll / 12) * 12)));
+  const R = resolvePeriod(invSpan, curM, invSpan === 'all' ? inv.firstMonth || curM : null);
+  const keys = R.months.length ? R.months : lastMonths(12, curM);
   const chart = card('Investito ogni mese', { sub: 'Acquisti meno vendite, commissioni comprese' },
+    periodPicker({ value: invSpan, range: { from: keys[0], to: keys[keys.length - 1] }, months: monthsBetween(inv.firstMonth && inv.firstMonth < curM ? inv.firstMonth : addMonthKey(curM, -11), curM),
+      presets: [12, 24, 36, 'ytd', 'py', 'all'], onChange: v => { savePeriod('investito', v); ctx.rerender(); } }),
     barChart({ labels: keys.map(k => formatMonth(k, true)), tipLabels: keys.map(k => formatMonth(k)), series: [{ name: 'Investito', color: 'var(--c1)', values: keys.map(k => inv.months.get(k) || 0) }], fmt: tipMoney, fmtAxis: axisMoney, height: 220, mask: ui.privacy, highlight: keys.length - 1 }));
 
   // tabella mesi × anni

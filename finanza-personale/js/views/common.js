@@ -5,9 +5,10 @@ import { bankLogo } from '../data/banks.js';
 import { coinLogo } from '../data/coins.js';
 import { money, moneyText } from '../ui/fmt.js';
 import { ACCOUNT_TYPES, ASSET_CLASSES, isLiability } from '../core/model.js';
-import { formatDay } from '../core/dates.js';
+import { formatDay, formatMonth } from '../core/dates.js';
+import { cleanPeriod, isCustom } from '../core/period.js';
 import { txEditor } from './editors.js';
-import { colorChoice } from '../ui/components.js';
+import { colorChoice, selectInput } from '../ui/components.js';
 import { setSetting } from '../actions.js';
 
 export function card(title, opts = {}, ...body) {
@@ -96,6 +97,32 @@ export function pageGrid(...cards) { return h('div.page-grid', cards); }
 
 export function segTabs(options, value, onChange) {
   return h('div.tabs', { role: 'tablist' }, options.map(o => h('button.tab-btn', { type: 'button', role: 'tab', 'aria-selected': String(o.value === value), onclick: () => onChange(o.value) }, o.label, o.count != null ? h('span.tab-count', o.count) : null)));
+}
+
+/* ─── Periodo a scelta, uguale in ogni pagina ───
+   (D: "anche nella panoramica, ovunque, devo avere la possibilità di mettere il range periodo che voglio")
+   La scelta resta su questo dispositivo, una per pagina (o per grafico). */
+export function loadPeriod(key, def = 12) {
+  try { return cleanPeriod(JSON.parse(localStorage.getItem('rhf-period-' + key)), def); } catch { return def; }
+}
+export function savePeriod(key, v) {
+  try { localStorage.setItem('rhf-period-' + key, JSON.stringify(v)); } catch { /* navigazione privata */ }
+}
+const PERIOD_LABEL = { 6: '6M', 12: '12M', 24: '24M', 36: '36M', ytd: 'Quest\'anno', py: 'Anno scorso', all: 'Tutto' };
+/**
+ * Le scorciatoie (12M, Quest'anno…) e "Personalizza", che apre Da / A con i mesi.
+ * `range` è il periodo già risolto ({from, to}), `months` i mesi che si possono scegliere (dal più vecchio).
+ */
+export function periodPicker({ value, range, months, onChange, presets = [12, 24, 'ytd', 'py', 'all'] }) {
+  const custom = isCustom(value);
+  const opts = months.map(k => ({ value: k, label: formatMonth(k) }));
+  const from = range?.from || months[0], to = range?.to || months[months.length - 1];
+  return h('div.period-pick',
+    segTabs([...presets.map(p => ({ value: p, label: PERIOD_LABEL[p] })), { value: 'custom', label: 'Personalizza' }], custom ? 'custom' : value,
+      v => onChange(v === 'custom' ? { from, to } : v)),
+    custom && opts.length ? h('div.nw-range',
+      h('label', h('span', 'Da'), selectInput(opts, from, v => onChange({ from: v, to }))),
+      h('label', h('span', 'A'), selectInput(opts, to, v => onChange({ from, to: v })))) : null);
 }
 
 /** Casella per filtrare una tabella: aggiorna la pagina mentre scrivi e resta selezionata. */

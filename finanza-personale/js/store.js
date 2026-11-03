@@ -82,7 +82,10 @@ export async function clearCopies() {
 /** Cancella tutto ciò che questa app ha salvato su questo dispositivo. */
 export async function wipe() {
   await tx('readwrite', os => { os.clear(); });
-  try { for (const k of ['rhf-theme', 'rhf-hint', 'rhf-look', 'rhf-tables', 'rhf-side']) localStorage.removeItem(k); } catch { /* ignore */ }
+  try {
+    for (const k of ['rhf-theme', 'rhf-hint', 'rhf-look', 'rhf-tables', 'rhf-side', 'rhf-nw-span']) localStorage.removeItem(k);
+    for (const k of Object.keys(localStorage)) if (k.startsWith('rhf-period-')) localStorage.removeItem(k);
+  } catch { /* ignore */ }
 }
 
 export async function persistStatus() {

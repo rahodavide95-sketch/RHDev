@@ -60,6 +60,12 @@ export default {
     const cy = +today().slice(0, 4);
     if (!years.includes(cy)) years.push(cy);
     if (!V.year || !years.includes(V.year)) V.year = cy;
+    // arrivo da una categoria della Panoramica: solo quella, nell'anno giusto (poi l'indirizzo torna pulito)
+    if (q.cat) {
+      if (years.includes(+q.anno)) V.year = +q.anno;
+      V.focus = q.cat;
+      history.replaceState(null, '', '#/entrate-uscite?tipo=' + (V.kind === 'income' ? 'entrate' : 'uscite'));
+    }
     const full = d.yearTable(V.year, V.kind, { empty: V.empty });
     if (V.focus && !full.groups.some(g => g.name === V.focus)) V.focus = '';
     const T = filterTable(full, V.q, V.focus);

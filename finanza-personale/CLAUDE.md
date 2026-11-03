@@ -118,7 +118,22 @@ collegata a nient'altro." Quindi il patrimonio è **solo** il Net Worth, a fine 
   (senza la riga di spiegazione sotto: D l'ha fatta togliere). **Periodo del grafico** (D: "voglio la
   possibilità di personalizzare il range del periodo per l'istogramma"): 12M, 24M, Quest'anno (dal 31/12),
   Tutto (dal primo mese con valori), Personalizza (menu "Da" e "A" con i mesi che hanno valori; se
-  invertiti si scambiano); la scelta resta su questo dispositivo (`localStorage` `rhf-nw-span`).
+  invertiti si scambiano); la scelta resta su questo dispositivo (`rhf-period-nw`; quella vecchia in
+  `rhf-nw-span` viene ripresa). Le sezioni del riepilogo sono link (`?sez=NOME`): la tabella scorre
+  sulla banda di quella sezione (`tr.nw-band[data-sec]`) e la fa lampeggiare (`nw-flash`).
+- **Periodo a scelta ovunque** (D: "anche nella panoramica, ovunque, devo avere la possibilità di mettere
+  il range periodo che voglio"): `core/period.js` (`resolvePeriod`, `cleanPeriod`, `monthsBetween`,
+  `previousPeriod`) e `periodPicker`/`loadPeriod`/`savePeriod` in common (12M, 24M, Quest'anno, Anno
+  scorso, Tutto, Personalizza con Da/A; uno per pagina in `rhf-period-<pagina>`). Panoramica: barra
+  "Periodo" sopra le card, vale per Net Worth (valore a fine dell'ultimo mese del periodo, sul mese prima,
+  dalla fine del mese prima del periodo, il più alto nel periodo), Entrate e uscite (somma dei mesi del
+  periodo anche a cavallo di due anni, media sui mesi trascorsi dal primo movimento) e Investimenti
+  (investito nel periodo, media dal primo mese investito, "Da sempre"). Anche in Analisi, Investimenti ›
+  Anno per anno (grafico "Investito ogni mese") e nel grafico del singolo conto. Movimenti ha già Dal…al….
+- **Righe del riepilogo** (D: "perché esce la riga sotto se poi non posso cliccare?"): sottolineate solo
+  se portano da qualche parte, e allora tutta la riga si tocca (link "steso" `a.dash-n::after`, il
+  quadratino del colore sta sopra). Panoramica → sezione nel Net Worth / macro in Entrate e uscite
+  (`?cat=&anno=`, poi l'indirizzo torna pulito con `history.replaceState`).
 - Tabelle-foglio **da leggere come in Excel** (D: "mi girano ancora gli occhi… su Excel è molto meglio
   leggere"; "il networth è ancora molto confusionario"): una riga sola per voce (il tipo in `title`),
   griglia leggera tra le colonne dei numeri, niente righe alterne (`.table.fit` escluso dallo zebra),
@@ -446,12 +461,17 @@ scrive tutto `nwLayout` con le sezioni come si vedono). `colorChoice(valore, onC
 `colorVar()` (common) dà `var(--cN)` o l'hex. "Tutti i colori come all'inizio" (due tocchi) rimette
 la palette Excel (non tocca categorie e sezioni).
 Layout a **tutta larghezza** (D col monitor da 27": niente `max-width`), barra laterale
-**comprimibile** (pulsante in basso o tasto `[`, `html.side-mini`, `rhf-side`). Menu **compatto**
-(D: "un po' più compatto ma con il giusto spazio tra i diversi blocchi"): larghezza 236 px, voci alte
-35 px e vicine, titoli dei blocchi (Gestione, Pianificazione, Strumenti) con 14 px sopra. Chiuso (86 px,
-anche sugli schermi da 760 a 1100 px) ha **il nome sotto ogni icona** (D: "aggiungi i titoli sotto
-all'icona per far vedere cosa è"; "Cerca" con `span.mini-l`), una lineetta tra un blocco e l'altro e
-i pulsanti in fondo su due colonne, così entra tutto in 945 px di altezza; finestre alte
+**comprimibile** (pulsante in basso o tasto `[`, `rhf-side`). `html.side-mini` = compressa davvero
+(la mette `applySide()` in app.js: scelta di D, oppure sempre tra 760 e 1100 px con `html.side-auto`,
+dove il pulsante sparisce); tutte le regole della barra compressa stanno in un blocco solo.
+Barra rifatta (D: "i separatori non si vedono… rendila migliore in generale sia da aperta sia da
+chiusa"): pannello suo (`--side-bg`, bordo `--side-edge`), separatori `--side-sep` ben visibili.
+Aperta (236 px): voci alte 35 px, titoli dei blocchi in maiuscoletto con la linea che continua
+(GESTIONE ─────), voce attiva con barretta a sinistra, linea sopra Impostazioni, in fondo occhio,
+lucchetto, comprimi e lo stato del salvataggio scritto ("Salvato", "Sincronizzato", "Prova"…).
+Chiusa (88 px) **a binario**: icona dentro una pillola (colorata se attiva), **il nome sotto**
+(D: "aggiungi i titoli sotto all'icona per far vedere cosa è"; "Cerca" con `span.mini-l`), una
+lineetta di 40 px tra i blocchi, i pulsanti in fondo su due colonne; entra in 945 px di altezza; finestre alte
 fino allo schermo (niente tetti a 46vh/900px), `sheet-lg` fino a 1280 px.
 **Intestazioni delle tabelle al centro e rinominabili** (D: "i nomi delle intestazioni delle tabelle li
 voglio centrali. ma anche qui, dammi la possibilità di modificarli come voglio"): tutte le `thead th`

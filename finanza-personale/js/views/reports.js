@@ -5,12 +5,13 @@ import { h, icon, download } from '../ui/dom.js';
 import { barChart, lineChart, donut, SERIES, legend } from '../ui/charts.js';
 import { selectInput, toast } from '../ui/components.js';
 import { money, moneyText, delta, axisMoney, tipMoney, ui } from '../ui/fmt.js';
-import { card, segTabs } from './common.js';
+import { card, segTabs, loadPeriod, savePeriod, periodPicker } from './common.js';
+import { resolvePeriod, monthsBetween } from '../core/period.js';
 import { lastMonths, monthKey, monthStart, monthEnd, formatMonth, weekday, addMonthKey } from '../core/dates.js';
 import { formatPercent } from '../core/money.js';
 import { toCSV, csvNumber } from '../core/csv.js';
 
-let span = 12;
+let span = loadPeriod('analisi', 12);
 let trendCat = '';
 let catView = 'cat';
 
@@ -18,7 +19,11 @@ export default {
   render(ctx) {
     const { st, d } = ctx;
     const end = monthKey(d.refDate);
-    const months = span === 'ytd' ? lastMonths(Number(end.slice(5)), end) : span === 'py' ? lastMonths(12, `${Number(end.slice(0, 4)) - 1}-12`) : lastMonths(span, end);
+    // il periodo a scelta (D: "ovunque, devo avere la possibilità di mettere il range periodo che voglio")
+    let first = end;
+    for (const t of st.transactions) if (t.date.slice(0, 7) < first) first = t.date.slice(0, 7);
+    const R = resolvePeriod(span, end, span === 'all' ? first : null);
+    const months = R.months.length ? R.months : lastMonths(12, end);
     const from = monthStart(months[0]), to = monthEnd(months[months.length - 1]);
     const prevMonths = months.map(m => addMonthKey(m, -months.length));
     const flows = months.map(m => ({ month: m, ...d.flows(monthStart(m), monthEnd(m)) }));
@@ -28,7 +33,8 @@ export default {
     const labels = months.map(m => formatMonth(m, true));
     const tips = months.map(m => formatMonth(m));
 
-    const periodSel = segTabs([{ value: 6, label: '6 mesi' }, { value: 12, label: '12 mesi' }, { value: 24, label: '24 mesi' }, { value: 'ytd', label: 'Quest\'anno' }, { value: 'py', label: 'Anno scorso' }], span, v => { span = v; ctx.rerender(); });
+    const periodSel = periodPicker({ value: span, range: { from: months[0], to: months[months.length - 1] }, months: monthsBetween(first < addMonthKey(end, -35) ? first : addMonthKey(end, -35), end),
+      presets: [6, 12, 24, 'ytd', 'py', 'all'], onChange: v => { span = v; savePeriod('analisi', v); ctx.rerender(); } });
 
     const kpis = h('section.card.nw-strip',
       h('div.stat', h('div.stat-label', 'Entrate'), h('div.stat-value', money(tot.income, d.base, { tone: 'pos' })), h('div.stat-extra', delta(prev.income ? (tot.income - prev.income) / prev.income * 100 : null), h('span.muted', ' vs periodo prima'))),

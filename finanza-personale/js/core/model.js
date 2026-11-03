@@ -123,6 +123,7 @@ export function defaults() {
       market: { enabled: false, proxies: true, portfolioProxies: false },
       backupDays: 14,
       onboarded: false,
+      nwConvert: false,
       groupColors: {},
       colNames: {},
       // aspetto: palette (o colori scelti), colori dei grafici, righe alterne, tabelle compatte
@@ -312,6 +313,9 @@ export function sanitize(raw) {
       market: { enabled: bool(set.market?.enabled), proxies: bool(set.market?.proxies, true), portfolioProxies: bool(set.market?.portfolioProxies) },
       backupDays: [0, 7, 14, 30].includes(set.backupDays) ? set.backupDays : 14,
       onboarded: bool(set.onboarded),
+      // righe in un'altra valuta nel Net Worth: false (D: "la conversione non la voglio attiva, devo vederla solo se
+      // mi fermo con la freccia") = contano così come sono, come nel foglio; true = convertite al cambio
+      nwConvert: bool(set.nwConvert, false),
       // colore di ogni gruppo di categorie ("income:Lavoro" → 1…8, la palette dei grafici)
       groupColors: Object.fromEntries(Object.entries(set.groupColors && typeof set.groupColors === 'object' ? set.groupColors : {})
         .filter(([k, v]) => typeof k === 'string' && k.length <= 60 && /^(income|expense):/.test(k) && ((Number.isInteger(v) && v >= 1 && v <= 8) || (typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v)))).slice(0, 300).map(([k, v]) => [k, typeof v === 'string' ? v.toLowerCase() : v])),
@@ -788,7 +792,7 @@ export function derive(state, refDate = today()) {
       const firstVal = ledger.cps.get(a.id)?.[0]?.date || null;
       const written = a.nwSparse ? new Set((ledger.cps.get(a.id) || []).map(z => z.date)) : null;
       out.push({ key: 'a:' + a.id, label: a.name, sub: (a.cls ? ASSET_CLASSES[a.cls].label : ACCOUNT_TYPES[a.type].label) + (a.currency !== base ? ' · ' + a.currency : ''), section: (a.cls && HD_SECTION[a.cls]) || ACC_SECTION[a.type] || 'Altro', acc: a, skip: !a.inNetWorth,
-        at: dt => { if (firstVal && dt < firstVal) return null; if (written && !written.has(dt)) return null; const v = valueAt(a, dt); return v == null ? null : toBase(v, a.currency); },
+        at: dt => { if (firstVal && dt < firstVal) return null; if (written && !written.has(dt)) return null; const v = valueAt(a, dt); return v == null ? null : state.settings.nwConvert ? toBase(v, a.currency) : v; },
         // nella sua valuta (la riga dei contanti in dollari si legge in dollari, come nel foglio)
         raw: a.currency === base ? null : dt => { if (firstVal && dt < firstVal) return null; if (written && !written.has(dt)) return null; return valueAt(a, dt) ?? null; } });
     }

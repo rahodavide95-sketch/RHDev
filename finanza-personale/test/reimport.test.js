@@ -296,3 +296,16 @@ test('reimportando: i valori corretti da D nell\'app restano i suoi (Net Worth e
   assert.deepEqual([p2.txs.length, p2.changed.length, p2.removes.length], [0, 0, 0]);
   assert.deepEqual(p2.kept.map(k => [k.payee, k.ym, k.mine, k.file]).sort(), [['STIPENDIO', '2026-02', 190000, 185000], ['Serata A', '2026-01', 0, 22000]].sort());
 });
+
+test('righe fuori dalle sezioni di D: un gruppo dell\'app segnato come da sistemare', async () => {
+  const { derive } = await import('../js/core/model.js');
+  const st = sanitize({ ...defaults(),
+    accounts: [{ id: 'a-b', name: 'Banca Uno', type: 'checking', currency: 'EUR' }, { id: 'a-z', name: 'Conto titoli', type: 'broker', currency: 'EUR' }],
+    valuations: [{ id: 'v1', account: 'a-b', date: '2026-01-31', value: 1000, kind: 'open' }, { id: 'v2', account: 'a-z', date: '2026-01-31', value: 500, kind: 'open' }],
+    settings: { ...defaults().settings, nwLayout: { sections: [{ name: 'Cash - Liquidity', items: ['a:a-b'] }], labels: {} } } });
+  const S0 = derive(st, '2026-03-10').nwSheet(2026);
+  assert.deepEqual(S0.sections.map(x => [x.name, x.auto]), [['Cash - Liquidity', false], ['Altri investimenti', true]]);
+  // senza sezioni di D (nessun foglio importato) i gruppi di base non sono "da sistemare"
+  const S1 = derive(sanitize({ ...st, settings: { ...st.settings, nwLayout: { sections: [], labels: {} } } }), '2026-03-10').nwSheet(2026);
+  assert.ok(S1.sections.every(x => !x.auto));
+});

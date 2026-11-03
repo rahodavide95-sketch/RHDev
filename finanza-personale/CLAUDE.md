@@ -210,9 +210,13 @@ collegata a nient'altro." Quindi il patrimonio è **solo** il Net Worth, a fine 
   sottocategoria o sulla riga della categoria). Col mouse si trascina il nome (soglia 6 px, poi il clic
   non apre la finestra), col dito la maniglia `.nw-grip`. Una sottocategoria spostata si ricorda da
   dove veniva (`category.was` = catKey del file) e `planMonths` la ritrova: niente doppioni al reimport.
-- **Valute nel Net Worth**: la riga in un'altra valuta (i contanti in dollari) si legge nella sua
-  ("100,00 $", passandoci sopra il cambio in euro; `row.native`/`row.cur` da `nwTable`), i totali in
-  euro. `currencyFor(type, name)`: dal Type ("Dollari", "USD", "$") o, per contanti e conti, dal nome
+- **Valute nel Net Worth**: la riga in un'altra valuta (i contanti in dollari) si vede **in euro** come i
+  totali (D: "la somma delle colonne cash-liquidità è sbagliata... perché?": prima la cella diceva "100,00 $" e
+  il Total contava i dollari convertiti al cambio, quindi la colonna non tornava). Accanto al nome il simbolo
+  (`.nw-cur-tag`); passandoci sopra "100,00 $ = 86,21 € (cambio BCE del …: 1 € = …)"; toccando la cella si
+  scrive in dollari (`editInCell({unit})`, "$" accanto alla casella; `row.native`/`row.cur` da `nwTable`).
+  Senza cambio la valuta conta 1 a 1 (`convert`) e sopra la tabella c'è l'avviso `.nw-fx-warn` con il link a
+  Impostazioni › Valute e cambi. Il cambio è uno solo (quello di oggi) per tutte le fine mese. `currencyFor(type, name)`: dal Type ("Dollari", "USD", "$") o, per contanti e conti, dal nome
   ("Contanti $", "Contanti (USD)"); un ETF "$ Treasury" resta in euro.
 - **Colore al volo** (D: "cambiare il colore delle varie categorie direttamente cliccando sul
   quadratino"): `colorDot()` in `views/common.js` = quadratino-pulsante che apre la tavolozza lì accanto

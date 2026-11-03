@@ -132,11 +132,12 @@ export function periodPicker({ value, range, months, onChange, presets = [12, 24
    (colonna), così dopo il ridisegno si riprende dalla cella giusta (`resumeEdit`). */
 let nextEdit = null;
 const findCell = (root, k, i) => [...root.querySelectorAll('td.cell-edit')].find(x => x.dataset.k === k && x.dataset.i === i);
-export function editInCell(td, { cur, label, save }) {
+export function editInCell(td, { cur, label, save, unit = '' }) {
   if (td.classList.contains('editing')) return;
   const old = [...td.childNodes];
-  const inp = h('input.cell-in', { type: 'text', inputmode: 'decimal', autocomplete: 'off', 'aria-label': label, value: cur == null || cur === 0 ? '' : formatNumber(cur / 100, 2, 2) });
-  td.replaceChildren(inp); td.classList.add('editing');
+  const inp = h('input.cell-in', { type: 'text', inputmode: 'decimal', autocomplete: 'off', 'aria-label': unit ? `${label} (in ${unit})` : label, value: cur == null || cur === 0 ? '' : formatNumber(cur / 100, 2, 2) });
+  // in un'altra valuta (i contanti in dollari) si scrive nella sua: lo dice il simbolo accanto
+  td.replaceChildren(unit ? h('span.cell-in-wrap', inp, h('span.cell-unit', unit)) : inp); td.classList.add('editing');
   inp.focus(); inp.select();
   const neighbour = dir => {
     if (dir === 'down') {

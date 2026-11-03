@@ -330,6 +330,7 @@ function fxCard(ctx) {
   });
   return section('fx', 'Valute e cambi', st.fx.date ? `Cambi BCE del ${formatDate(st.fx.date, { year: true })}` : 'Servono per sommare conti e titoli in valute diverse',
     used.length ? h('div.set-rows', rows) : h('p.muted', 'Tutti i conti sono in ' + base + '.'),
+    used.length ? toggle('Converti in ' + base + ' le righe in valuta del Net Worth', !!st.settings.nwConvert, v => A.setSetting('nwConvert', v), { hint: `Spento (come il tuo foglio): i contanti in dollari si vedono e contano così come sono; il cambio in ${base} compare solo passando sopra la cella. Acceso: si vedono e contano convertiti al cambio qui sopra.` }) : null,
     h('button.btn.btn-soft.btn-sm', { type: 'button', onclick: async () => {
       if (!(await askMarketConsent(ctx))) return;
       try { const r = await ecbRates(base); A.setFx(r.rates, r.date); toast('Cambi aggiornati dalla BCE', { kind: 'ok' }); } catch { toast('BCE non raggiungibile ora', { kind: 'err' }); }

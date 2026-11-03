@@ -130,7 +130,7 @@ let openPop = null;
 function closePop() { if (openPop) { openPop.remove(); openPop = null; } }
 addEventListener('keydown', e => { if (e.key === 'Escape') closePop(); });
 addEventListener('pointerdown', e => { if (openPop && !openPop.contains(e.target) && !e.target.closest?.('.cdot')) closePop(); }, true);
-addEventListener('scroll', () => closePop(), { passive: true });
+addEventListener('scroll', () => { if (openPop && openPop.anchor && Math.abs(openPop.anchor.getBoundingClientRect().top - openPop.anchorTop) > 60) closePop(); }, { passive: true, capture: true });
 /** Colore smorzato (D: "quei colori non farli così vivaci"): per pallini, barre e grafici a blocchi. */
 export const softColor = c => `color-mix(in srgb, ${c} 62%, var(--ink-3))`;
 /** `value`: 1…8 o "#rrggbb"; `onPick(v)` salva. */
@@ -144,6 +144,7 @@ export function colorDot(value, onPick, label = 'Cambia colore') {
     const pop = h('div.color-pop', { role: 'dialog', 'aria-label': label, dataset: { for: label } }, h('div.color-pop-t', label), pick);
     document.body.append(pop);
     const r = b.getBoundingClientRect(), pw = pop.offsetWidth, ph = pop.offsetHeight;
+    pop.anchor = b; pop.anchorTop = r.top;
     pop.style.left = Math.max(8, Math.min(innerWidth - pw - 8, r.left - 12)) + 'px';
     pop.style.top = (r.bottom + ph + 12 > innerHeight ? Math.max(8, r.top - ph - 8) : r.bottom + 8) + 'px';
     openPop = pop;

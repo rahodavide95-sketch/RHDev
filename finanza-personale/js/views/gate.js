@@ -29,7 +29,8 @@ export function handleAuthLanding() {
   history.replaceState(null, '', location.pathname + location.search + '#/');
 }
 
-const mark = () => h('img.gate-mark', { src: 'icons/icon-192.png', alt: '', width: 76, height: 76 });
+// il logo [RH] con Finance sotto (D: "al logo devi aggiungere Finance sotto ad RH")
+const mark = () => h('img.gate-mark', { src: 'icons/icon-512.png', alt: '[RH] Finance', width: 112, height: 112 });
 
 function pwField(placeholder, autocomplete, autofocus) {
   const inp = h('input.input.pw-input', { type: 'password', placeholder, autocomplete, autofocus, spellcheck: 'false', autocapitalize: 'off' });
@@ -224,7 +225,6 @@ function welcome(ctx) {
   return h('div.gate',
     h('div.gate-hero',
       mark(),
-      h('div.gate-name', '[RH] ', h('b', 'Finance')),
       h('h1.gate-title', 'Tutte le tue finanze.', h('br'), h('span.gate-title-soft', 'Solo tue.')),
       h('p.gate-lead', 'Conti, spese, budget, scadenze, investimenti e simulazioni in un\'unica app, sul telefono e sul computer. I dati vengono cifrati qui, con la tua password, prima di partire: online nessuno può leggerli.'),
       h('ul.gate-points',

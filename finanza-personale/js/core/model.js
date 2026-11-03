@@ -205,6 +205,8 @@ function cleanAccount(a) {
     // nel Net Worth conta solo nelle fine mese con un valore scritto (come il TFR nel foglio di D:
     // scritto una volta l'anno, il suo totale lo conta solo lì)
     nwSparse: bool(a.nwSparse, false),
+    // scelto da D (nella riga del Net Worth o nel conto): reimportando il file non cambia più
+    ...(a.sparseMine ? { sparseMine: true } : {}),
     emoji: emoji(a.emoji), color: COLOR.test(a.color) ? a.color : '', archived: bool(a.archived), inNetWorth: bool(a.inNetWorth, true),
     // fuori dal patrimonio ma visibile nella tabella del Net Worth, "non conta" (D: "lasciarlo lì senza essere
     // contato, ad esempio come il TFR lordo o dei buoni postali di cui non so ancora la cifra esatta")
@@ -318,6 +320,8 @@ export function sanitize(raw) {
         .filter(([k, v]) => typeof k === 'string' && k.length <= 120 && k.includes('|') && typeof v === 'string' && v.trim() && v.length <= 40).slice(0, 500).map(([k, v]) => [k, v.trim()])),
       look: cleanLook(set.look, d.settings.look),
       nwLayout: cleanLayout(set.nwLayout),
+      // righe eliminate da D dal Net Worth (nome come lo legge l'import): reimportando il file restano fuori
+      nwGone: [...new Set(arr(set.nwGone).filter(k => typeof k === 'string' && k.trim() && k.length <= 80))].slice(-300),
     },
     accounts: arr(s.accounts).map(cleanAccount).filter(Boolean),
     valuations: arr(s.valuations).map(cleanValuation).filter(Boolean),

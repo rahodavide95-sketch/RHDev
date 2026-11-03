@@ -23,7 +23,12 @@ export function addAccount(a, opening = 0, openingDate = today()) {
 }
 
 export function updateAccount(id, patch) {
-  commit(st => { const a = find(st.accounts, id); if (a) Object.assign(a, patch); });
+  commit(st => {
+    const a = find(st.accounts, id);
+    if (!a) return;
+    if ('nwSparse' in patch && !!patch.nwSparse !== !!a.nwSparse) a.sparseMine = true;     // scelto da D: il file non lo cambia
+    Object.assign(a, patch);
+  });
 }
 
 export function setOpening(accId, value, date) {
@@ -367,9 +372,15 @@ export function addNwRow(G, { name, type, cls = '', currency, section, date, val
   }, { undo: `Riga aggiunta: ${String(name).trim()}` });
   return id;
 }
-/** Una riga del Net Worth conta nel patrimonio o si vede soltanto ("non conta"). */
-export function setNwCount(accId, count) {
-  commit(st => { const a = find(st.accounts, accId); if (a) { a.inNetWorth = !!count; a.nwShow = !count; } }, { undo: count ? 'La riga conta nel patrimonio' : 'La riga non conta più nel patrimonio' });
+/** Una riga del Net Worth conta nel patrimonio o si vede soltanto ("non conta"); `sparse` (se dato) = conta solo
+    nelle fine mese con un valore scritto, o anche nei mesi dopo (resta l'ultimo valore). Un solo "Annulla". */
+export function setNwCount(accId, count, sparse) {
+  commit(st => {
+    const a = find(st.accounts, accId);
+    if (!a) return;
+    a.inNetWorth = !!count; a.nwShow = !count;
+    if (sparse != null && !!sparse !== !!a.nwSparse) { a.nwSparse = !!sparse; a.sparseMine = true; }
+  }, { undo: count ? 'La riga conta nel patrimonio' : 'La riga non conta più nel patrimonio' });
 }
 
 /** Sposta una riga del Net Worth trascinandola: nella sezione `section`, prima o dopo un'altra riga,
@@ -407,6 +418,69 @@ export function editNwItem(G, key, { name, section } = {}) {
     lay.sections = lay.sections.filter(x => x.items.length);
     st.settings.nwLayout = lay;
   }, { undo: 'Riga del Net Worth modificata' });
+}
+/** Elimina righe intere dal Net Worth (D: "devo anche poter eliminare una riga intera dal networth oltre ad
+    una categoria"). Un conto che serve anche altrove (movimenti, scadenze, obiettivi, titoli) resta, così
+    Entrate e uscite e i saldi non cambiano, ma esce dal Net Worth; uno che c'è solo nel Net Worth si cancella
+    con i suoi valori. Un titolo perde solo i suoi valori del Net Worth (negli Investimenti resta). I nomi vanno
+    in `settings.nwGone`: reimportando il file quelle righe restano fuori (si possono riaccendere nell'anteprima). */
+function dropNwRows(st, keys) {
+  const gone = new Set(st.settings.nwGone || []);
+  const lay = st.settings.nwLayout || (st.settings.nwLayout = { sections: [], labels: {} });
+  for (const key of keys) {
+    const id = key.slice(2);
+    if (key.startsWith('a:')) {
+      const a = find(st.accounts, id);
+      if (!a) continue;
+      gone.add(nameKey(a.name)); for (const k of a.aka || []) gone.add(k);
+      const used = st.transactions.some(t => t.account === id || t.toAccount === id) || st.recurring.some(r => r.account === id || r.toAccount === id)
+        || st.goals.some(g => g.account === id) || st.holdings.some(h => h.account === id);
+      if (used) { a.inNetWorth = false; a.nwShow = false; }
+      else {
+        st.accounts = st.accounts.filter(x => x.id !== id);
+        st.valuations = st.valuations.filter(v => v.account !== id);
+        for (const sn of Object.values(st.snapshots || {})) if (sn.byAcc) delete sn.byAcc[id];
+      }
+    } else if (key.startsWith('h:')) {
+      const hd = find(st.holdings, id);
+      if (lay.labels?.[key]) gone.add(nameKey(lay.labels[key]));
+      if (hd) gone.add(nameKey(hd.name));
+      for (const sn of Object.values(st.snapshots || {})) { if (sn.nwHd) delete sn.nwHd[id]; if (sn.nwMan) delete sn.nwMan[id]; }
+    }
+    if (lay.labels) delete lay.labels[key];
+  }
+  const ks = new Set(keys);
+  for (const x of lay.sections) x.items = x.items.filter(k => !ks.has(k));
+  lay.sections = lay.sections.filter(x => x.items.length);
+  st.settings.nwGone = [...gone].slice(-300);
+}
+const layoutOf = G => ({ sections: G.sections.map(x => ({ name: x.name, color: x.color, items: x.items.slice(), ...(x.was ? { was: x.was.slice() } : {}) })), labels: { ...G.labels } });
+export function deleteNwRow(G, key, label = '') {
+  commit(st => {
+    st.settings.nwLayout = layoutOf(G);          // le righe come si vedono adesso (anche quelle messe da sole in una sezione)
+    dropNwRows(st, [key]);
+  }, { undo: label ? `Riga eliminata: ${label}` : 'Riga eliminata' });
+}
+/** Elimina una sezione del Net Worth: con `moveTo` le sue righe vanno in fondo a quella sezione (che si
+    ricorda il nome vecchio, così le righe nuove del file per quella sezione arrivano lì), altrimenti si
+    eliminano anche le righe. */
+export function deleteNwSection(G, name, { moveTo = '' } = {}) {
+  commit(st => {
+    const lay = layoutOf(G);
+    const sec = lay.sections.find(x => x.name === name);
+    if (!sec) return;
+    const to = moveTo && lay.sections.find(x => x !== sec && x.name === moveTo);
+    if (to) {
+      to.items.push(...sec.items.filter(k => !to.items.includes(k)));
+      to.was = [...new Set([...(to.was || []), name, ...(sec.was || [])])].filter(w => w !== to.name).slice(-8);
+      lay.sections = lay.sections.filter(x => x !== sec);
+      st.settings.nwLayout = lay;
+    } else {
+      st.settings.nwLayout = lay;
+      dropNwRows(st, sec.items);
+      st.settings.nwLayout.sections = st.settings.nwLayout.sections.filter(x => x.name !== name);
+    }
+  }, { undo: `Sezione eliminata: ${name}` });
 }
 /** Nome di una colonna scelto da D (vuoto = torna quello di partenza). */
 export function setColName(key, name) {
@@ -647,6 +721,13 @@ function applyInvestPlan(st, plan, cash, costAcc = new Map()) {
 export function importWorkbook({ nw = [], invest = null, cash = false, months = [] }) {
   commit(st => {
     const nwId = new Map(), byName = new Map();
+    // righe eliminate da D dal Net Worth e riaccese nell'anteprima: tornano
+    const back = nw.filter(r => r.deleted);
+    if (back.length) {
+      const ks = new Set(back.flatMap(r => [nameKey(r.name), r.existing && nameKey(r.existing.name), ...(r.existing?.aka || []), r.holding?.name && nameKey(r.holding.name)]).filter(Boolean));
+      st.settings.nwGone = (st.settings.nwGone || []).filter(k => !ks.has(k));
+      for (const r of back) { const ex = r.existing && find(st.accounts, r.existing.id); if (ex) { ex.inNetWorth = !r.gross; ex.nwShow = !!r.gross; } }
+    }
     const accRows = nw.filter(r => !r.holding);
     for (const r of accRows) {
       if (r.existing) {
@@ -654,7 +735,7 @@ export function importWorkbook({ nw = [], invest = null, cash = false, months = 
         // un conto importato prima prende il tipo di titolo letto ora (ETF, ETC…), se non l'aveva
         const ex = find(st.accounts, r.existing.id);
         if (ex && r.cls && !ex.cls) ex.cls = r.cls;
-        if (ex) ex.nwSparse = !!r.sparse;      // il foglio dice se conta anche nei mesi vuoti
+        if (ex && !ex.sparseMine) ex.nwSparse = !!r.sparse;      // il foglio dice se conta anche nei mesi vuoti (se D non l'ha scelto lui)
         continue;
       }
       // lo stesso conto in più fogli del patrimonio (es. uno per anno) resta uno solo

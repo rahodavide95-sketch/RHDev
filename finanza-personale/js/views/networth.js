@@ -7,14 +7,14 @@
 
 import { h, icon, download } from '../ui/dom.js';
 import { barChart } from '../ui/charts.js';
-import { openSheet, amountInput, toast, empty, selectInput, colorChoice, textInput, field } from '../ui/components.js';
+import { openSheet, amountInput, toast, empty, selectInput, colorChoice, textInput, field, twoTap, confirmDialog } from '../ui/components.js';
 import { money, moneyText, delta, axisMoney, tipMoney, ui } from '../ui/fmt.js';
 import { card, accAvatar, segTabs, filterBox, hdBadge, colorVar, colorDot, setSectionColor, softColor, loadPeriod, savePeriod, periodPicker, editInCell, resumeEdit, renameBtn } from './common.js';
 import { cleanPeriod } from '../core/period.js';
 import { accountEditor, undoToast } from './editors.js';
 import { openFileImport } from './invimport.js';
 import { bankLogo } from '../data/banks.js';
-import { saveCheckIn, setSetting, editNwItem, setNwCell, moveNwItem, renameNwSection, addNwRow, setNwCount } from '../actions.js';
+import { saveCheckIn, setSetting, editNwItem, setNwCell, moveNwItem, renameNwSection, addNwRow, setNwCount, deleteNwRow, deleteNwSection } from '../actions.js';
 import { isLiability, hasPlan, position } from '../core/model.js';
 import { monthKey, monthEnd, addMonthKey, formatMonth, formatDate, monthName } from '../core/dates.js';
 import { formatPercent, formatNumber, CURRENCIES } from '../core/money.js';
@@ -153,7 +153,8 @@ function sheetTable(ctx, Y) {
     // sezione: quadratino del colore e matita per il nome; Asset Allocation senza quadratino (D)
     h('td.sticky', h('span', raw !== undefined ? colorDot(raw, c => setSectionColor(d, label, c), `Colore di ${label}`) : null, label),
       raw !== undefined ? h('button.name-edit.name-add', { type: 'button', 'aria-label': `Aggiungi una riga in ${label}`, title: 'Aggiungi una riga (un conto, un ETF, dei buoni…)', onpointerdown: e => e.stopPropagation(), onclick: e => { e.stopPropagation(); addRowSheet(ctx, label, S0.cols); } }, icon('plus', 14)) : null,
-      raw !== undefined ? renameBtn('Nome della sezione', label, v => { renameNwSection(d.nwGroups(), label, v); undoToast(`Sezione rinominata: ${v}`); }) : null),
+      raw !== undefined ? renameBtn('Nome della sezione', label, v => { renameNwSection(d.nwGroups(), label, v); undoToast(`Sezione rinominata: ${v}`); }) : null,
+      raw !== undefined ? h('button.name-edit.name-del', { type: 'button', 'aria-label': `Elimina la sezione ${label}`, title: 'Elimina la sezione', onpointerdown: e => e.stopPropagation(), onclick: e => { e.stopPropagation(); deleteSectionSheet(ctx, label); } }, icon('trash', 14)) : null),
     dates.map(() => h('td')), noDiff());
   // spazio tra una sezione e l'altra: si vede dove finisce un blocco e ne comincia un altro
   const gap = () => h('tr.nw-gap', { 'aria-hidden': 'true' }, h('td.sticky'), dates.map(() => h('td')), noDiff());
@@ -184,7 +185,9 @@ function sheetTable(ctx, Y) {
         // una riga sola come nel foglio: il tipo (conto corrente, ETF…) si legge passandoci sopra
         h('td.sticky.nw-drag-h', { title: [r.label, r.hd && r.label !== r.name ? r.name : r.sub, r.skip ? 'in sospeso: si vede ma non entra nei totali' : '', 'trascina per spostare'].filter(Boolean).join(' · '), onpointerdown: e => startDrag(e, ctx) },
           h('span.nw-name', icon('grip', 14, 'nw-grip'), r.hd ? hdBadge(r.hd, true) : r.acc && bankLogo(r.acc.name, r.acc.institution) ? h('img.nw-logo', { src: bankLogo(r.acc.name, r.acc.institution), alt: '', width: 16, height: 16 }) : r.acc?.cls ? hdBadge(r.acc, true) : null, r.label,
-            r.skip ? h('small.nw-pend-tag', 'in sospeso') : null)),
+            r.skip ? h('small.nw-pend-tag', 'in sospeso') : null),
+          // cestino della riga (D: "devo eliminare qualsiasi riga non solo la categoria")
+          h('button.name-edit.name-del.nw-row-del', { type: 'button', 'aria-label': `Elimina la riga ${r.label}`, title: 'Elimina la riga', onpointerdown: e => e.stopPropagation(), onclick: e => { e.stopPropagation(); askDeleteRow(ctx, r); } }, icon('trash', 14))),
         itemCells(r), diffs(r.native || r.values, r.native ? v => natFmt(v, r.cur) : null)));
     }
     body.push(h('tr.nw-total', { style: { '--sec': col }, dataset: { sec: sec.name } }, h('td.sticky', 'Total'), cells(sec.total, t2), diffs(sec.total)));
@@ -251,17 +254,29 @@ function nwItemSheet(ctx, r, secName) {
   // conta nel patrimonio o resta "in sospeso" (D: "solo una volta inserito nella sua categoria si può decidere se
   // includerlo nei conti o meno")
   const countBox = r.acc ? h('input', { type: 'checkbox', checked: !r.skip }) : null;
+  // conta solo nelle fine mese con un valore (il TFR scritto al 31/12) o anche nei mesi dopo (D: "la funzione conta
+  // nel patrimonio l'ho usata con il TFR ma non funziona, il totale rimane sempre quello": il TFR aveva un valore
+  // solo al 31/12/2025, quindi contava solo lì e il totale di fine ottobre non cambiava)
+  const written = r.acc ? [...new Set(ctx.st.valuations.filter(v => v.account === r.acc.id).map(v => v.date))].sort() : [];
+  const sparseBox = r.acc && (r.acc.nwSparse || r.acc.sparseMine) ? h('input', { type: 'checkbox', checked: !!r.acc.nwSparse }) : null;
+  const whenText = written.length ? (written.length <= 3 ? written.map(dmy).join(', ') : `${written.length} fine mese, l'ultima ${dmy(written[written.length - 1])}`) : '';
+  const used = !!r.acc && usedElsewhere(ctx.st, r.acc.id);
   const save = () => {
     const section = target === '__new' ? newIn.value.trim() : target;
     if (target === '__new' && !section) { toast('Scrivi il nome della nuova sezione', { kind: 'err' }); return; }
     const name = nameIn.value.trim();
     if (!name) { toast('Il nome non può essere vuoto', { kind: 'err' }); return; }
     const count = countBox ? countBox.checked : !r.skip;
-    if (name === r.label && section === secName && count === !r.skip) { sh.close(true); return; }
+    const sparse = sparseBox ? sparseBox.checked : !!r.acc?.nwSparse;
+    const sparseChanged = !!sparseBox && sparse !== !!r.acc.nwSparse;
+    if (name === r.label && section === secName && count === !r.skip && !sparseChanged) { sh.close(true); return; }
     if (name !== r.label || section !== secName) editNwItem(G, r.key, { name: name !== r.label ? name : '', section: section !== secName ? section : '' });
-    if (count === r.skip) setNwCount(r.acc.id, count);
+    if (count === r.skip || sparseChanged) setNwCount(r.acc.id, count, sparseBox ? sparse : null);
     sh.close(true);
-    undoToast(count === r.skip ? (count ? `${name} ora conta nel patrimonio` : `${name} in sospeso: si vede ma non conta`) : section !== secName ? `Spostato in ${section}` : 'Nome cambiato');
+    const only = sparse && whenText ? ` (solo ${written.length === 1 ? 'al' : 'nelle fine mese con un valore:'} ${whenText})` : '';
+    undoToast(count === r.skip ? (count ? `${name} ora conta nel patrimonio${only}` : `${name} in sospeso: si vede ma non conta`)
+      : sparseChanged ? (sparse ? `${name} conta solo nelle fine mese con un valore` : `${name} vale anche nei mesi dopo, finché non scrivi un valore nuovo`)
+      : section !== secName ? `Spostato in ${section}` : 'Nome cambiato');
   };
   nameIn.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); save(); } });
   const sh = openSheet({
@@ -270,9 +285,57 @@ function nwItemSheet(ctx, r, secName) {
       field('Nome', nameIn, { hint: r.acc ? 'Cambia ovunque nell\'app. Reimportando il file, la riga col nome vecchio resta questa.' : 'Il nome che ha nel Net Worth (negli Investimenti resta il suo).' }),
       field('Sezione', sel),
       newWrap,
-      countBox ? h('div.field', h('label.chk', countBox, 'Conta nel patrimonio'), h('p.field-hint', 'Togli la spunta per tenerla "in sospeso": resta nella tabella col segno arancione ma non entra nei totali (come il TFR lordo, o dei buoni di cui non sai ancora la cifra esatta).')) : null),
-    footer: [open ? h('button.btn.btn-ghost', { type: 'button', onclick: () => { sh.close(true); open(); } }, r.acc?.cls ? 'Apri i dettagli' : r.acc ? 'Apri il conto' : 'Apri il titolo') : null,
+      countBox ? h('div.field', h('label.chk', countBox, 'Conta nel patrimonio'), h('p.field-hint', 'Togli la spunta per tenerla "in sospeso": resta nella tabella col segno arancione ma non entra nei totali (come il TFR lordo, o dei buoni di cui non sai ancora la cifra esatta).')) : null,
+      sparseBox ? h('div.field', h('label.chk', sparseBox, 'Solo nelle fine mese in cui ha un valore'), h('p.field-hint', `Ha un valore ${written.length === 1 ? 'solo al' : 'in'} ${whenText || 'nessuna fine mese'}: con la spunta conta solo lì, come nel tuo foglio, e il totale degli altri mesi non cambia. Togli la spunta per farla valere anche nei mesi dopo, finché non scrivi un valore nuovo.`)) : null),
+    footer: [twoTap('Elimina la riga', () => {
+      deleteNwRow(G, r.key, r.label);
+      sh.close(true);
+      undoToast(used ? `${r.label} tolta dal Net Worth: il conto resta, con i suoi movimenti` : `Riga eliminata: ${r.label}`);
+    }, { iconName: 'trash', confirmLabel: 'Tocca di nuovo per eliminarla' }),
+    open ? h('button.btn.btn-ghost', { type: 'button', onclick: () => { sh.close(true); open(); } }, r.acc?.cls ? 'Apri i dettagli' : r.acc ? 'Apri il conto' : 'Apri il titolo') : null,
       h('button.btn.btn-primary', { type: 'button', onclick: save }, 'Salva')],
+  });
+}
+
+/** Il conto serve anche fuori dal Net Worth: eliminando la riga resta nei Conti (esce solo dal Net Worth). */
+function usedElsewhere(st, id) {
+  return st.transactions.some(t => t.account === id || t.toAccount === id) || st.recurring.some(x => x.account === id || x.toAccount === id)
+    || st.goals.some(g => g.account === id) || st.holdings.some(x => x.account === id);
+}
+/** Cestino sulla riga: conferma ed elimina (con "Annulla" subito dopo). */
+async function askDeleteRow(ctx, r) {
+  const used = !!r.acc && usedElsewhere(ctx.st, r.acc.id);
+  const ok = await confirmDialog({
+    title: `Eliminare «${r.label}»?`, danger: true, confirm: 'Elimina la riga',
+    message: (used ? 'Esce dal Net Worth; il conto resta nei Conti con i suoi movimenti.' : r.hd ? 'Si tolgono i suoi valori dal Net Worth; negli Investimenti il titolo resta.' : 'Si cancellano la riga e i suoi valori.')
+      + ' Reimportando il file non torna. Subito dopo puoi annullare.',
+  });
+  if (!ok) return;
+  deleteNwRow(ctx.d.nwGroups(), r.key, r.label);
+  undoToast(used ? `${r.label} tolta dal Net Worth: il conto resta, con i suoi movimenti` : `Riga eliminata: ${r.label}`);
+}
+
+/* ─── Eliminare una sezione intera (D: "devo anche poter eliminare una riga intera dal networth oltre ad una
+   categoria"): con le sue righe, oppure spostandole in un'altra sezione. ─── */
+function deleteSectionSheet(ctx, name) {
+  const G = ctx.d.nwGroups();
+  const sec = G.sections.find(x => x.name === name);
+  if (!sec) return;
+  const n = sec.items.length;
+  let moveTo = '';
+  const others = G.sections.filter(x => x !== sec && x.items.length);
+  const sel = selectInput([{ value: '', label: n === 1 ? 'Eliminala insieme alla sezione' : 'Eliminale insieme alla sezione' }, ...others.map(x => ({ value: x.name, label: `${n === 1 ? 'Spostala' : 'Spostale'} in ${x.name}` }))], '', v => { moveTo = v; });
+  const go = () => {
+    deleteNwSection(G, name, { moveTo });
+    sh.close(true);
+    undoToast(moveTo ? `Sezione eliminata: ${name}. Le righe sono in ${moveTo}` : `Sezione eliminata: ${name}, con le sue righe`);
+  };
+  const sh = openSheet({
+    title: `Elimina «${name}»`, subtitle: n === 1 ? '1 riga' : `${n} righe`, size: 'sm',
+    body: h('div.stack',
+      field(n === 1 ? 'La sua riga' : 'Le sue righe', sel, { hint: 'Un conto che ha anche dei movimenti resta nei Conti, esce solo dal Net Worth. Reimportando il file le righe eliminate restano fuori. Subito dopo puoi annullare.' })),
+    footer: [h('button.btn.btn-ghost', { type: 'button', onclick: () => sh.close(true) }, 'Annulla'),
+      h('button.btn.btn-danger', { type: 'button', onclick: go }, 'Elimina la sezione')],
   });
 }
 

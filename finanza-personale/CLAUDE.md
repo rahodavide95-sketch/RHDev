@@ -136,6 +136,21 @@ collegata a nient'altro." Quindi il patrimonio è **solo** il Net Worth, a fine 
   Panoramica). Segno: etichetta arancione "in sospeso" (`.nw-pend-tag`), striscia arancione a sinistra,
   numeri in corsivo tenui. Si decide toccando il nome ("Conta nel patrimonio", `A.setNwCount`). Il TFR
   lordo del file ora si importa così (prima restava fuori): come nel foglio, si vede e il Total conta il netto.
+- **Eliminare righe e sezioni** (D: "devo anche poter eliminare una riga intera dal networth oltre ad una categoria";
+  "devo eliminare qualsiasi riga non solo la categoria"): cestino su ogni riga (`.nw-row-del`, compare passando
+  sopra, conferma `askDeleteRow`) e "Elimina la riga" (due tocchi) nella finestra della riga; cestino sulla banda di
+  ogni sezione (`deleteSectionSheet`: le righe si eliminano con la sezione o si spostano in un'altra, che si ricorda
+  il nome vecchio in `was`). `A.deleteNwRow(G, key)` / `A.deleteNwSection(G, nome, {moveTo})` → `dropNwRows`: un
+  conto usato anche altrove (movimenti, scadenze, obiettivi, titoli) resta nei Conti ma esce dal Net Worth
+  (`inNetWorth`/`nwShow` falsi), uno solo del Net Worth si cancella coi suoi valori; un titolo perde solo `nwHd`/
+  `nwMan`. I nomi (`nameKey` + `aka`) vanno in `settings.nwGone`: `planNetWorth` mette quelle righe spente
+  ("l'hai eliminata dal Net Worth", `row.deleted`), riaccese nell'anteprima tornano (e escono da `nwGone`); il
+  controllo col foglio spiega la differenza (causa `gone`). "Annulla" rimette tutto.
+- **TFR e "Conta nel patrimonio"** (D: "l'ho usata con il TFR ma non funziona, il totale rimane sempre quello"):
+  il TFR del file ha un valore solo al 31/12 ed è `nwSparse`, quindi contava solo in quella colonna e il totale di
+  fine ottobre non cambiava. Nella finestra della riga c'è ora anche "Solo nelle fine mese in cui ha un valore"
+  (con le date dei valori; tolta la spunta vale anche nei mesi dopo) e l'avviso dice dove conta. La scelta di D
+  (`account.sparseMine`, anche dal conto) non viene più cambiata dal reimport.
 - **Aggiungere una riga dalla tabella** (D: "come faccio ad aggiungere qualcosa nella categoria? ad esempio un
   nuovo conto o un nuovo etf direttamente dalla tabella?"): "+" sulla riga di ogni sezione (accanto alla
   matita) → `addRowSheet`: nome, tipo (`ROW_TYPES`: conti, ETF/azione/obbligazione e buoni/oro/fondo/crypto
@@ -642,7 +657,7 @@ netti, pulito ed elegante.
 
 ## Prove
 
-- `npm test`: 74 test (calcoli, colori scelti, reimport e controllo col foglio, cifratura, unione dei dati, CSV, investimenti, import da Excel di tutti i fogli, crypto, storia degli acquisti, quotazioni con risposte finte).
+- `npm test`: 75 test (calcoli, colori scelti, reimport e controllo col foglio, cifratura, unione dei dati, CSV, investimenti, import da Excel di tutti i fogli, crypto, storia degli acquisti, quotazioni con risposte finte).
 - `bash test/rls/run.sh`: regole di sicurezza del database su Postgres.
 - Nel browser: `python3 -m http.server` nella cartella e Playwright (Chromium già
   installato). Da questo ambiente onvista/Binance/BCE non sono raggiungibili: per provarli

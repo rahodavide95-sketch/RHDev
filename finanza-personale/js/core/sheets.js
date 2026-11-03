@@ -326,7 +326,7 @@ export function isGross(a, all) {
     Cause, raggruppate sui mesi: una sezione che nell'app vale diverso (riga in un'altra valuta,
     ultimo valore che resta nei mesi vuoti del foglio) o un totale del foglio che non è la somma delle
     sue sezioni (una riga dell'Asset Allocation vuota o diversa dalla sezione). */
-export function reconcileNetWorth(read, app, { refDate } = {}) {
+export function reconcileNetWorth(read, app, { refDate, gone = new Set() } = {}) {
   const c = v => (v == null ? null : Math.round(v * 100));
   const at = (vals, date) => c(vals?.find(v => v.date === date)?.value);
   // senza totali nel foglio (né Total delle sezioni né quello del Net Worth) non c'è niente da confrontare
@@ -353,6 +353,7 @@ export function reconcileNetWorth(read, app, { refDate } = {}) {
       let why = false;
       for (const a of read.accounts.filter(y => y.section === x.section)) {
         const f = at(a.values, date), m = app.row(a, date);
+        if (m == null && f && (gone.has(nameKey(a.name)) || gone.has(nameKey(`${a.name} (${a.type})`)))) { why = true; add(`gone|${a.row}`, { kind: 'gone', name: a.name, section: x.section, file: f }, date); continue; }
         if (m == null || Math.abs((m || 0) - (f || 0)) < 1) continue;
         why = true;
         if (f == null) add(`carry|${a.row}`, { kind: 'carry', name: a.name, section: x.section, app: m }, date);
@@ -404,6 +405,7 @@ const CASH_OF_BROKER = [[/scalable/, 'savings', 'Conto deposito'], [/trade ?repu
     arrivano dal foglio delle operazioni dello stesso file: le loro righe diventano i valori di
     fine mese di quei titoli (non conti a parte, così non si contano due volte). */
 export function planNetWorth(read, state, { includeOdd = false, holdings = state.holdings, investNames = [], refDate } = {}) {
+  const gone = new Set(state.settings?.nwGone || []);
   const inv = new Set([...investNames, ...state.accounts.filter(a => state.holdings.some(h => h.account === a.id)).map(a => a.name)].map(normHead));
   // stesso nome in più righe ("Contanti" in euro e "Contanti" in dollari): conti diversi, col tipo nel nome
   const count = new Map();
@@ -471,12 +473,14 @@ export function planNetWorth(read, state, { includeOdd = false, holdings = state
     const gross = isGross(a, read.accounts);
     const zero = !usable.some(v => v.value);
     // il lordo (TFR lordo) si importa come riga che si vede ma non conta, come nel foglio di D (il Total conta il netto)
-    const reason = invAcc ? 'è il totale del conto titoli: lo calcolo dai titoli' : zero && usable.length && !gross ? 'sempre a zero' : '';
+    // eliminata da D dal Net Worth: il file non la rimette (si può riaccendere nell'anteprima)
+    const deleted = gone.has(nameKey(name)) || gone.has(nameKey(a.name));
+    const reason = deleted ? 'l\'hai eliminata dal Net Worth' : invAcc ? 'è il totale del conto titoli: lo calcolo dai titoli' : zero && usable.length && !gross ? 'sempre a zero' : '';
     // celle vuote dopo il primo valore (es. TFR scritto solo al 31/12): nel foglio quei mesi non lo contano
     const past = read.dates.filter(dt => !refDate || dt <= refDate);
     const firstAt = past.findIndex(dt => a.values.some(v => v.date === dt));
     const sparse = firstAt >= 0 && past.slice(firstAt).some(dt => !a.values.some(v => v.date === dt));
-    return { ...a, name, institution, cls, sparse, key: String(a.row), holding, existing, type, currency, odd, future, known, changed, kept, values, reason, gross, cash, on: !reason && (values.length > 0 || changed.length > 0) };
+    return { ...a, name, institution, cls, sparse, key: String(a.row), holding, existing, type, currency, odd, future, known, changed, kept, values, reason, deleted, gross, cash, on: !reason && (values.length > 0 || changed.length > 0) };
   });
   return { rows };
 }

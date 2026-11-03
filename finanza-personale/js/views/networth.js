@@ -7,13 +7,13 @@
 
 import { h, icon, download } from '../ui/dom.js';
 import { barChart, legend, sparkline } from '../ui/charts.js';
-import { openSheet, amountInput, toast, empty, selectInput, colorChoice } from '../ui/components.js';
+import { openSheet, amountInput, toast, empty, selectInput, colorChoice, textInput, field } from '../ui/components.js';
 import { money, moneyText, delta, axisMoney, tipMoney, ui } from '../ui/fmt.js';
 import { card, accAvatar, segTabs, filterBox, hdBadge, colorVar, colorDot, setSectionColor, softColor } from './common.js';
-import { accountEditor } from './editors.js';
+import { accountEditor, undoToast } from './editors.js';
 import { openFileImport } from './invimport.js';
 import { bankLogo } from '../data/banks.js';
-import { saveCheckIn, setSetting } from '../actions.js';
+import { saveCheckIn, setSetting, editNwItem } from '../actions.js';
 import { isLiability, hasPlan, position } from '../core/model.js';
 import { monthKey, monthEnd, addMonthKey, formatMonth, formatDate, monthName } from '../core/dates.js';
 import { formatPercent, formatNumber } from '../core/money.js';
@@ -73,8 +73,8 @@ function sheetTable(ctx, Y) {
     if (body.length) body.push(gap());
     body.push(band(sec.name, col, sec.color));
     for (const r of sec.rows) {
-      const go = r.hd ? () => ctx.go('investimenti/' + r.hd.id) : r.acc ? () => ctx.go('conti/' + r.acc.id) : null;
-      body.push(h('tr.nw-item.click', { onclick: go, style: { '--sec': col } },
+      // tocca una riga: nome e sezione a piacere, oppure apri il conto / il titolo
+      body.push(h('tr.nw-item.click', { onclick: () => nwItemSheet(ctx, r, sec.name), style: { '--sec': col } },
         // una riga sola come nel foglio: il tipo (conto corrente, ETF…) si legge passandoci sopra
         h('td.sticky', { title: [r.label, r.hd && r.label !== r.name ? r.name : r.sub].filter(Boolean).join(' · ') }, h('span.nw-name', r.hd ? hdBadge(r.hd, true) : r.acc && bankLogo(r.acc.name, r.acc.institution) ? h('img.nw-logo', { src: bankLogo(r.acc.name, r.acc.institution), alt: '', width: 16, height: 16 }) : r.acc?.cls ? hdBadge(r.acc, true) : null, r.label)),
         cells(r.values, t2), diffs(r.values)));
@@ -123,6 +123,40 @@ function sheetTable(ctx, Y) {
     sub: 'Valori a fine mese, sezione per sezione, con guadagno o perdita sul mese prima e la differenza sull\'anno. Tocca una riga per i dettagli.',
     action: h('div.card-acts', h('button.btn.btn-sm.btn-ghost', { type: 'button', onclick: () => organizeSheet(ctx, S0) }, icon('edit', 16), 'Organizza'), h('button.btn.btn-sm.btn-ghost', { type: 'button', onclick: exportCsv }, icon('download', 16), 'CSV')),
   }, h('div.inv-filters', filterBox('nw', nwQ, v => { nwQ = v; ctx.rerender(); }, 'Filtra: conto, titolo o sezione')), scroller);
+}
+
+/** Una riga del Net Worth (D: "se clicco su un etf… voglio avere la possibilità di modificare o spostarlo
+    all'interno di una categoria a mio piacimento"): nome, sezione (anche una nuova), e "Apri". */
+function nwItemSheet(ctx, r, secName) {
+  const G = ctx.d.nwGroups();
+  const nameIn = textInput({ value: r.label, max: 60 });
+  const newIn = textInput({ value: '', placeholder: 'es. Azioni USA', max: 60 });
+  const newWrap = h('div', field('Nome della nuova sezione', newIn));
+  newWrap.style.display = 'none';
+  let target = secName;
+  const opts = [...G.sections.filter(x => x.items.length).map(x => ({ value: x.name, label: x.name })), { value: '__new', label: '+ Nuova sezione…' }];
+  const sel = selectInput(opts, secName, v => { target = v; newWrap.style.display = v === '__new' ? '' : 'none'; if (v === '__new') newIn.focus(); });
+  const open = r.hd ? () => ctx.go('investimenti/' + r.hd.id) : r.acc ? () => ctx.go('conti/' + r.acc.id) : null;
+  const save = () => {
+    const section = target === '__new' ? newIn.value.trim() : target;
+    if (target === '__new' && !section) { toast('Scrivi il nome della nuova sezione', { kind: 'err' }); return; }
+    const name = nameIn.value.trim();
+    if (!name) { toast('Il nome non può essere vuoto', { kind: 'err' }); return; }
+    if (name === r.label && section === secName) { sh.close(true); return; }
+    editNwItem(G, r.key, { name: name !== r.label ? name : '', section: section !== secName ? section : '' });
+    sh.close(true);
+    undoToast(section !== secName ? `Spostato in ${section}` : 'Nome cambiato');
+  };
+  nameIn.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); save(); } });
+  const sh = openSheet({
+    title: r.label, subtitle: [r.hd && r.label !== r.name ? r.name : r.sub, secName].filter(Boolean).join(' · '), size: 'sm',
+    body: h('div.stack',
+      field('Nome', nameIn, { hint: r.acc ? 'Cambia ovunque nell\'app. Reimportando il file, la riga col nome vecchio resta questa.' : 'Il nome che ha nel Net Worth (negli Investimenti resta il suo).' }),
+      field('Sezione', sel),
+      newWrap),
+    footer: [open ? h('button.btn.btn-ghost', { type: 'button', onclick: () => { sh.close(true); open(); } }, r.acc?.cls ? 'Apri i dettagli' : r.acc ? 'Apri il conto' : 'Apri il titolo') : null,
+      h('button.btn.btn-primary', { type: 'button', onclick: save }, 'Salva')],
+  });
 }
 
 /** Sezioni e righe del Net Worth: rinomina, colori, ordine, sposta le righe da una sezione all'altra. */

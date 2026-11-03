@@ -198,6 +198,8 @@ function cleanAccount(a) {
     id: aid, name: str(a.name, 60) || 'Conto', type, institution: str(a.institution, 60), currency: cur(a.currency),
     // titolo tenuto solo nel Net Worth (riga "Indice | ETF:S" del foglio): il suo tipo, per il distintivo e la sezione
     cls: ASSET_CLASSES[a.cls] ? a.cls : '',
+    // nomi di prima (rinominato da D): reimportando il file la riga col nome vecchio è lo stesso conto
+    aka: [...new Set((Array.isArray(a.aka) ? a.aka : []).filter(x => typeof x === 'string' && x && x.length <= 80))].slice(0, 12),
     // nel Net Worth conta solo nelle fine mese con un valore scritto (come il TFR nel foglio di D:
     // scritto una volta l'anno, il suo totale lo conta solo lì)
     nwSparse: bool(a.nwSparse, false),
@@ -786,11 +788,16 @@ export function derive(state, refDate = today()) {
       : /ucits|\betf\b|msci|s&p|ftse|stoxx|nasdaq|ishares|vanguard|xtrackers|amundi|spdr|lyxor|wisdomtree/i.test(`${it.label} ${it.sub || ''}`) ? 'ETF'
       : /\bgold\b|\boro\b|silver|argento|\betc\b|xau/i.test(`${it.label} ${it.sub || ''}`) ? 'Materie prime'
       : /bitcoin|\bbtc\b|ethereum|\beth\b|crypto|solana/i.test(`${it.label} ${it.sub || ''}`) ? 'Crypto' : it.section);
+    // la sezione del file da cui è nato il conto (l'import la scrive nelle note: 'sezione "Stock"')
+    const fromFile = it => { const m = /sezione "([^"]+)"/.exec(it.acc?.notes || ''); return m ? secs.find(x => x.fromLayout && catNorm(x.name) === catNorm(m[1])) : null; };
     for (const it0 of items) {
       if (placed.has(it0.key)) continue;
       const it = { ...it0, section: guess(it0) };
-      let sec = secs.find(x => catNorm(x.name) === catNorm(it.section))
-        || secs.find(x => x.fromLayout && fam.get(x)?.has(it.section))
+      // "Altri investimenti" = tipo sconosciuto: non basta per dire che va con altre righe sconosciute
+      // (D: "non c'è più la sezione stocks… l'hai messa negli etf")
+      let sec = fromFile(it)
+        || secs.find(x => catNorm(x.name) === catNorm(it.section))
+        || (it.section !== 'Altri investimenti' ? secs.find(x => x.fromLayout && fam.get(x)?.has(it.section)) : null)
         || secs.find(x => x.fromLayout && looksLike(x.name, it.section));
       if (!sec) {
         sec = { name: it.section, color: 0, keys: [] };

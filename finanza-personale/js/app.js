@@ -95,7 +95,7 @@ function buildShell() {
       : h('a.side-link', { href: '#/' + n.path, dataset: { path: n.path } }, icon(n.icon, 20), h('span', n.label))));
   const side = h('aside.side',
     h('a.brand', { href: '#/', 'aria-label': '[RH] Finance, panoramica' }, h('img.brand-ic', { src: 'icons/mark-192.png', alt: '', width: 30, height: 30 }), h('span.brand-name', '[RH]', h('b', ' Finance'))),
-    h('button.side-search', { type: 'button', onclick: () => openPalette(ctxBase()) }, icon('search', 18), h('span', 'Cerca o vai a…'), h('kbd', navigator.platform?.includes('Mac') ? '⌘K' : 'Ctrl K')),
+    h('button.side-search', { type: 'button', onclick: () => openPalette(ctxBase()), title: 'Cerca o vai a…' }, icon('search', 18), h('span', 'Cerca o vai a…'), h('span.mini-l', 'Cerca'), h('kbd', navigator.platform?.includes('Mac') ? '⌘K' : 'Ctrl K')),
     nav,
     h('div.side-foot',
       h('a.side-link', { href: '#/impostazioni', dataset: { path: 'impostazioni' } }, icon('settings', 20), h('span', 'Impostazioni')),

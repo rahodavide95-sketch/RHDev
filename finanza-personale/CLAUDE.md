@@ -429,11 +429,18 @@ scrive tutto `nwLayout` con le sezioni come si vedono). `colorChoice(valore, onC
 `colorVar()` (common) dà `var(--cN)` o l'hex. "Tutti i colori come all'inizio" (due tocchi) rimette
 la palette Excel (non tocca categorie e sezioni).
 Layout a **tutta larghezza** (D col monitor da 27": niente `max-width`), barra laterale
-**comprimibile** (pulsante in basso o tasto `[`, `html.side-mini`, `rhf-side`), finestre alte
+**comprimibile** (pulsante in basso o tasto `[`, `html.side-mini`, `rhf-side`). Menu **compatto**
+(D: "un po' più compatto ma con il giusto spazio tra i diversi blocchi"): larghezza 236 px, voci alte
+35 px e vicine, titoli dei blocchi (Gestione, Pianificazione, Strumenti) con 14 px sopra. Chiuso (86 px,
+anche sugli schermi da 760 a 1100 px) ha **il nome sotto ogni icona** (D: "aggiungi i titoli sotto
+all'icona per far vedere cosa è"; "Cerca" con `span.mini-l`), una lineetta tra un blocco e l'altro e
+i pulsanti in fondo su due colonne, così entra tutto in 945 px di altezza; finestre alte
 fino allo schermo (niente tetti a 46vh/900px), `sheet-lg` fino a 1280 px.
 **Intestazioni delle tabelle al centro e rinominabili** (D: "i nomi delle intestazioni delle tabelle li
 voglio centrali. ma anche qui, dammi la possibilità di modificarli come voglio"): tutte le `thead th`
-centrate; nelle tabelle con `data-tid` si tocca l'intestazione e si scrive il nome (riquadro
+centrate; nelle tabelle con `data-tid` si tocca l'intestazione (passandoci sopra compare una piccola
+matita nell'angolo in alto a destra, `.th-rename::after` con una maschera SVG; sugli schermi touch è
+sempre visibile, tenue) e si scrive il nome (riquadro
 `.name-pop` in `ui/tables.js`, "Torna a «…»" per il nome di partenza). Nomi in `settings.colNames`
 (`"tabella|colonna"`, sincronizzati), chiave della colonna = `data-col` (stabile: Net Worth `name`,
 `c0`…`c12`, `diff`, `pct`; Entrate e uscite `name`, `m0`…`m11`, `tot`, `avg`, `pct`, separati per

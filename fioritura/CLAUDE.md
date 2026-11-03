@@ -1,6 +1,6 @@
 # Fioritura
 
-Webapp di studio per la compagna di D (Diritto processuale civile, esame il 21 dicembre 2026).
+Webapp di studio nata per la compagna di D (Bi: Diritto processuale civile, esame il 21 dicembre 2026), poi aperta a chiunque si registri, con tutti gli esami che servono.
 L'ha chiesta D: deve essere rilassante, con un design morbido, elegante e moderno, e pensata per una donna (testi al femminile: "Benvenuta", "Sei stata brava").
 D scrive in italiano e non è uno sviluppatore: spiega in modo semplice e fai tu le modifiche.
 
@@ -17,11 +17,17 @@ Online: https://rahodavide95-sketch.github.io/RHDev/fioritura/ (pubblicata dal w
 
 Riga di crediti scritta da D (testo esatto, non cambiarlo): «Progettata per dare un piccolo aiuto alla mia bellissima Bi, ti amo! ❤️». Costante `CREDITS`, in fondo alla pagina Oggi (`.credits`, sotto la frase del giorno) e in fondo alle Impostazioni.
 
-## Il programma
+## Esami (D: "l'app è fatta non solo per 1 solo esame ma per tanti, per quelli che servono, in base a chi si registra")
 
-È scritto in `PHASES` dentro `index.html`: 4 fasi, 48 giornate dal 3 novembre al 20 dicembre.
-Ogni giornata è `[data, [[volume, da, a], ...], { extra, critici }]`. Il 19 dicembre ha `extra: 'simulazione orale'`; il 20 dicembre è `critici: true` (mostra gli argomenti critici segnati negli Appunti).
-Al primo avvio il 3 novembre risulta già fatto: era già completato quando D ha mandato il programma.
+- Ognuno ha i suoi esami in `S.exams`: `{ id, name, date (giorno dell'esame), start, books: [nomi], phases: [{ title, short, days: [[giorno, [[libro, da, a], ...], { extra, critici }]] }], gen, at, mt }`. Si sincronizzano per `id` (vince `mt`), gli eliminati vanno in `gone`.
+- L'esame in corso è scelto su ogni dispositivo (`fioritura.exam`, `setActive()` / `pickActive()`: altrimenti il prossimo esame in calendario). `useExam()` rifà le variabili che usano le viste: `SUBJECT`, `EXAM`, `EXID`, `BOOKS`, `PHASES`, `DAYS`, `DAY`, `TOTAL`.
+- Spunte, pagine, note e umore sono per esame: chiave `esame|giorno` (`K(iso)`, es. `dpc|2026-11-03`). Gli argomenti critici hanno `ex`. Il calendario, i minuti di concentrazione e le impostazioni non dipendono dall'esame.
+- **Programma pronto** `TEMPLATES.dpc`: Diritto processuale civile, il programma con cui è nata l'app (di Bi): 4 fasi, 48 giornate dal 3 novembre al 20 dicembre, esame il 21 dicembre 2026; il 19 dicembre ha `extra: 'simulazione orale'`, il 20 è `critici: true`. Aggiungendolo il 3 novembre risulta già fatto (`firstDone`). Compare tra i programmi pronti finché la data dell'esame non è passata.
+- **Dati di prima** (senza `exams`, giornate scritte solo come data): `upgradeData()` li trasforma in `dpc|giorno` e aggiunge quell'esame (con `at`/`mt` = 1, così qualunque modifica vera vince). Vale per i dati sul dispositivo (salvati subito nel nuovo formato), per quelli online e per le copie in file.
+- **Nuovo esame** (`genSheet()` + `makePlan()`): nome, inizio, giorno dell'esame, libri con le pagine, quante ripetizioni dopo la prima lettura (0–3, quindi al massimo 4 fasi e 4 colori), più pagine nel weekend (doppio), domenica libera, l'ultimo giorno solo argomenti critici. I giorni vanno dall'inizio alla vigilia; la prima lettura ha il doppio del tempo di ogni ripetizione; ogni giro copre tutte le pagine in ordine (un giorno può avere pezzi di due libri). Anteprima dal vivo e messaggi chiari se mancano dati o giorni. Un utente nuovo dopo il benvenuto apre subito "Nuovo esame"; senza esami Oggi e Programma mostrano "Aggiungi il tuo primo esame".
+- In Oggi e nel Programma la pillola con il nome dell'esame apre "I tuoi esami" (progressi, cambia esame, modifica: nome e data, elimina con due tocchi e Annulla, aggiungi). In Oggi la scheda "Anche oggi" mostra le giornate degli altri esami.
+- **Modifica la giornata** (dal foglio della giornata): pezzi di pagine (libro, da, a), "altro da fare", "solo argomenti critici".
+- Frasi: la vigilia e il giorno dell'esame in corso hanno le loro (Dante, Virgilio).
 
 ## Sezioni
 
@@ -73,5 +79,5 @@ Il repo è pubblico: non mettere mai nel codice nomi o dati personali.
 
 ## Prove
 
-`?oggi=AAAA-MM-GG` nell'indirizzo finge un altro giorno (utile per vedere arretrati, il 20 dicembre, il giorno dell'esame).
+`?oggi=AAAA-MM-GG` nell’indirizzo finge un altro giorno (utile per vedere arretrati, la vigilia, il giorno dell’esame). I dati salvati senza `exams` vengono trattati come dati di prima (Diritto processuale civile).
 Si prova con un server locale (`python3 -m http.server` nella cartella del repo, poi `http://localhost:8000/fioritura/`): da `file://` l'account è spento.

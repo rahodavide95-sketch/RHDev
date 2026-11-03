@@ -123,6 +123,13 @@ collegata a nient'altro." Quindi il patrimonio è **solo** il Net Worth, a fine 
   invertiti si scambiano); la scelta resta su questo dispositivo (`rhf-period-nw`; quella vecchia in
   `rhf-nw-span` viene ripresa). Le sezioni del riepilogo sono link (`?sez=NOME`): la tabella scorre
   sulla banda di quella sezione (`tr.nw-band[data-sec]`) e la fa lampeggiare (`nw-flash`).
+- **Gruppi fatti dall'app** (D: "cosa vuol dire altri investimenti se clicco e non succede niente?"):
+  una riga che non sta in nessuna sezione di D (conto creato dopo, titolo di tipo sconosciuto…) va in un
+  gruppo di base ("Altri investimenti", "Liquidità"…); se D ha già le sue sezioni, `nwTable` lo segna
+  `auto: true` e ovunque compare con l'etichetta arancione "da sistemare" (`.nw-auto-tag`, spiegazione
+  nel `title`: trascina le righe nella sezione giusta, quando è vuoto sparisce). Il clic su una sezione
+  del riepilogo (`?sez=`) apre l'anno più recente in cui ha righe (prima, se nell'anno mostrato non ne
+  aveva, non succedeva niente).
 - **Periodo a scelta ovunque** (D: "anche nella panoramica, ovunque, devo avere la possibilità di mettere
   il range periodo che voglio"): `core/period.js` (`resolvePeriod`, `cleanPeriod`, `monthsBetween`,
   `previousPeriod`) e `periodPicker`/`loadPeriod`/`savePeriod` in common (12M, 24M, Quest'anno, Anno

@@ -835,6 +835,7 @@ export function derive(state, refDate = today()) {
   function nwTable(cols, q = '') {
     const items = nwItems();
     const { secs, byKey, labels } = nwSections(items);
+    const hasLayout = secs.some(x => x.fromLayout);
     const qn = catNorm(q || '');
     const sum = arr => (arr.every(v => v == null) ? null : arr.reduce((a, v) => a + (v || 0), 0));
     const gainOf = tot => tot.map((v, i) => (i === 0 || v == null || tot[i - 1] == null ? null : v - tot[i - 1]));
@@ -848,7 +849,9 @@ export function derive(state, refDate = today()) {
       }).filter(r => r.values.some(v => v))
         .filter(r => !qn || catNorm(x.name).includes(qn) || [r.label, r.name, r.sub].some(t => catNorm(t || '').includes(qn)));
       const total = cols.map((c, i) => sum(rows.map(r => r.values[i])));
-      return { name: x.name, color: x.color || (si % 8) + 1, rows, total, gain: gainOf(total), pct: pctOf(total) };
+      // `auto`: un gruppo fatto dall'app (non è una sezione di D) per righe che non sa dove mettere
+      // (D: "cosa vuol dire altri investimenti?"); solo se D ha già le sue sezioni
+      return { name: x.name, color: x.color || (si % 8) + 1, rows, total, gain: gainOf(total), pct: pctOf(total), auto: !x.fromLayout && hasLayout };
     }).filter(x => x.rows.length);
     const total = cols.map((c, i) => sum(sections.map(x => x.total[i])));
     const alloc = sections.map(x => ({ name: x.name, color: x.color, pct: cols.map((c, i) => {

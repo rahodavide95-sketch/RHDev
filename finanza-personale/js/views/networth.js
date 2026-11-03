@@ -37,6 +37,7 @@ const pc = v => (v == null ? '' : formatPercent(v, 2, true));
 const tone = v => (v == null || !Math.round(v * 100) ? '' : v > 0 ? 'pos' : 'neg');
 
 const CUR_SYM = { USD: '$', GBP: '£', JPY: '¥', CHF: 'CHF' };
+const AUTO_HINT = 'Gruppo fatto dall\'app: righe che non sono in nessuna delle tue sezioni. Trascinale nella sezione giusta (o tocca il nome → Sezione); quando è vuoto sparisce.';
 
 /* ─── Scrivere un valore nella cella (editInCell, in common) ───
    Per un conto è il saldo a quella data nella sua valuta, per un titolo il valore del Net Worth di
@@ -149,9 +150,9 @@ function sheetTable(ctx, Y) {
   const cells = (vals, fmt, cls) => vals.map((v, i) => h('td.num', { class: [cls ? cls(v) : '', i === 0 ? 'prev' : '', S0.cols[i] ? '' : 'future'].join(' ') }, fmt(v)));
   const diffs = (vals, fmt) => [h('td.num.nw-dcol', { class: tone(diffOf(vals)) }, fmt ? (diffOf(vals) == null ? '' : (diffOf(vals) > 0 ? '+' : '') + fmt(diffOf(vals))) : sg(diffOf(vals))), h('td.num.nw-dpct', { class: tone(diffPct(vals)) }, pcs(diffPct(vals)))];
   const noDiff = () => [h('td.num.nw-dcol'), h('td.num.nw-dpct')];
-  const band = (label, color, raw) => h('tr.nw-band', { style: { '--sec': color }, dataset: { sec: label } },
+  const band = (label, color, raw, auto = false) => h('tr.nw-band', { style: { '--sec': color }, dataset: { sec: label }, class: auto ? 'nw-auto' : '' },
     // sezione: quadratino del colore e matita per il nome; Asset Allocation senza quadratino (D)
-    h('td.sticky', h('span', raw !== undefined ? colorDot(raw, c => setSectionColor(d, label, c), `Colore di ${label}`) : null, label),
+    h('td.sticky', { title: auto ? AUTO_HINT : null }, h('span', raw !== undefined ? colorDot(raw, c => setSectionColor(d, label, c), `Colore di ${label}`) : null, label, auto ? h('small.nw-auto-tag', 'da sistemare') : null),
       raw !== undefined ? renameBtn('Nome della sezione', label, v => { renameNwSection(d.nwGroups(), label, v); undoToast(`Sezione rinominata: ${v}`); }) : null),
     dates.map(() => h('td')), noDiff());
   // spazio tra una sezione e l'altra: si vede dove finisce un blocco e ne comincia un altro
@@ -176,7 +177,7 @@ function sheetTable(ctx, Y) {
   for (const sec of S0.sections) {
     const col = colorVar(sec.color);
     if (body.length) body.push(gap());
-    body.push(band(sec.name, col, sec.color));
+    body.push(band(sec.name, col, sec.color, sec.auto));
     for (const r of sec.rows) {
       // tocca il nome: nome e sezione a piacere, oppure apri il conto / il titolo; trascinalo per spostare la riga
       body.push(h('tr.nw-item.click', { onclick: () => { if (!dragJustEnded()) nwItemSheet(ctx, r, sec.name); }, style: { '--sec': col }, dataset: { k: r.key, sec: sec.name } },
@@ -435,6 +436,9 @@ export default {
     const sez = ctx.route.query.sez;
     if (sez) {
       history.replaceState(null, '', '#/patrimonio');
+      // l'anno più recente in cui la sezione ha righe (se in quello mostrato non c'è, il clic non faceva niente)
+      const has = y => d.nwSheet(y).sections.some(x => x.name === sez);
+      if (!(year && has(year))) for (let y = curY; y >= curY - 30; y--) if (has(y)) { year = y; break; }
       setTimeout(() => showSection(sez), 60);
     }
     const actions = [
@@ -505,7 +509,7 @@ export default {
             const v = sec.total[L], g = sec.gain[L];
             return h('div.dash-row.nw-sum-row',
               colorDot(sec.color, c => setSectionColor(d, sec.name, c), `Colore di ${sec.name}`),
-              h('a.dash-n', { href: '#/patrimonio?sez=' + encodeURIComponent(sec.name), title: `Vai a ${sec.name} nella tabella` }, sec.name),
+              h('a.dash-n', { href: '#/patrimonio?sez=' + encodeURIComponent(sec.name), title: sec.auto ? AUTO_HINT : `Vai a ${sec.name} nella tabella` }, sec.name, sec.auto ? h('small.nw-auto-tag', 'da sistemare') : null),
               h('span.dash-p', v > 0 ? formatPercent(v / pos * 100, 0) : ''),
               h('span.dash-v', v == null ? h('span.muted', '—') : money(v, d.base, { tone: v < 0 ? 'neg' : '' })),
               h('span.dash-g', g ? money(g, d.base, { sign: true, tone: g >= 0 ? 'pos' : 'neg' }) : ''));

@@ -1603,3 +1603,9 @@ tr:hover .name-edit, .name-edit:focus-visible { opacity: 1; }
 
 /* Annulla e Ripeti in alto */
 .icon-btn.hist-btn:disabled { opacity: .3; cursor: default; background: none; }
+
+/* gruppo fatto dall'app (righe fuori dalle sezioni di D): un'etichetta "da sistemare" */
+.nw-auto-tag { margin-left: 8px; padding: 1px 7px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); font-size: 10.5px; font-weight: 650; letter-spacing: .02em; text-transform: none; vertical-align: 1px; white-space: nowrap; }
+/* il nome della sezione (con "da sistemare") può uscire dalla prima colonna: le altre celle della banda sono vuote */
+.nw-sheet tr.nw-band td.sticky, .nw-sheet.fit tr.nw-band td.sticky { overflow: visible; text-overflow: clip; z-index: 3; }
+.nw-sheet tr.nw-band td.sticky > span { white-space: nowrap; }

@@ -205,7 +205,9 @@
     background-repeat:no-repeat;background-position:right 14px center;background-size:18px}
   input[type=date].field,input[type=time].field{min-height:50px;-webkit-appearance:none;appearance:none;display:block}
   .field:disabled{opacity:.45}
-  .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+  .two > div{min-width:0}
+  input[type=date].field,input[type=time].field{width:100%;min-width:0;max-width:100%}
   /* Notifiche */
   .ib.bell{position:relative}
   .ib .num{position:absolute;top:-4px;right:-4px;min-width:19px;height:19px;padding:0 5px;border-radius:999px;background:var(--accent);
@@ -312,7 +314,23 @@
 
   /* Giardino */
   .garden .grid{display:flex;flex-direction:column;gap:5px;margin-top:16px}
-  .grow-row{display:grid;grid-template-columns:24px repeat(14,minmax(0,1fr));gap:2px;align-items:center}
+  .grow-row{display:grid;grid-template-columns:24px 1fr;gap:2px;align-items:start}
+  .grow-row .fls{display:grid;grid-template-columns:repeat(14,minmax(0,1fr));gap:2px}
+  .grow-row .rn{padding-top:3px}
+  .exam-chip{cursor:pointer;font-weight:600;color:var(--ink)}
+  .exam-chip .chev{width:14px;height:14px;transform:rotate(90deg);color:var(--muted)}
+  .exrow{display:flex;align-items:center;gap:10px;padding:12px 2px;border-top:1px solid var(--line)}
+  .exrow:first-child{border-top:0}
+  .exrow .tx{flex:1;min-width:0;text-align:left}
+  .exrow .tx b{display:block;font-weight:600;font-size:15.5px}
+  .exrow .tx span{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}
+  .exrow .mini{margin-top:8px}
+  .exrow .mini i{background:var(--accent)}
+  .bookrow,.segrow{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+  .bookrow .field:first-child{flex:1;min-width:0}
+  .bookrow .pgs{flex:0 0 96px}
+  .segrow select{flex:1;min-width:0}
+  .segrow .pgs{flex:0 0 74px}
   .grow-row .rn{font-family:var(--serif);font-size:12px;color:var(--muted);font-variation-settings:"SOFT" 100}
   .f{display:block;aspect-ratio:1;border-radius:50%;padding:0}
   .f svg{width:100%;height:100%;display:block;overflow:visible}
@@ -559,79 +577,86 @@
 (function () {
   'use strict';
 
-  /* ================= IL PROGRAMMA ================= */
-  var SUBJECT = 'Diritto processuale civile';
-  var EXAM = '2026-12-21';
-  var PHASES = [
-    { n: 1, title: 'Studio delle 40 pagine nuove', short: 'Pagine nuove', range: '3–8 novembre', note: '', days: [
-      ['2026-11-03', [[2, 111, 115]]],
-      ['2026-11-04', [[2, 116, 120]]],
-      ['2026-11-05', [[2, 121, 125]]],
-      ['2026-11-06', [[2, 126, 130]]],
-      ['2026-11-07', [[2, 131, 140]]],
-      ['2026-11-08', [[2, 141, 150]]]
-    ] },
-    { n: 2, title: 'Prima ripetizione', short: 'Prima ripetizione', range: '9–22 novembre', note: '200 pagine', days: [
-      ['2026-11-09', [[1, 1, 12]]],
-      ['2026-11-10', [[1, 13, 24]]],
-      ['2026-11-11', [[1, 25, 36]]],
-      ['2026-11-12', [[1, 37, 48]]],
-      ['2026-11-13', [[1, 49, 60]]],
-      ['2026-11-14', [[1, 61, 80]]],
-      ['2026-11-15', [[1, 81, 90], [2, 1, 10]]],
-      ['2026-11-16', [[2, 11, 22]]],
-      ['2026-11-17', [[2, 23, 34]]],
-      ['2026-11-18', [[2, 35, 46]]],
-      ['2026-11-19', [[2, 47, 58]]],
-      ['2026-11-20', [[2, 59, 70]]],
-      ['2026-11-21', [[2, 71, 90]]],
-      ['2026-11-22', [[2, 91, 110]]]
-    ] },
-    { n: 3, title: 'Seconda ripetizione', short: 'Seconda ripetizione', range: '23 novembre – 6 dicembre', note: '240 pagine', days: [
-      ['2026-11-23', [[1, 1, 12]]],
-      ['2026-11-24', [[1, 13, 24]]],
-      ['2026-11-25', [[1, 25, 36]]],
-      ['2026-11-26', [[1, 37, 48]]],
-      ['2026-11-27', [[1, 49, 60]]],
-      ['2026-11-28', [[1, 61, 90]]],
-      ['2026-11-29', [[2, 1, 30]]],
-      ['2026-11-30', [[2, 31, 42]]],
-      ['2026-12-01', [[2, 43, 54]]],
-      ['2026-12-02', [[2, 55, 66]]],
-      ['2026-12-03', [[2, 67, 78]]],
-      ['2026-12-04', [[2, 79, 90]]],
-      ['2026-12-05', [[2, 91, 120]]],
-      ['2026-12-06', [[2, 121, 150]]]
-    ] },
-    { n: 4, title: 'Terza ripetizione', short: 'Ripetizione orale', range: '7–20 dicembre', note: 'ripetizione orale', days: [
-      ['2026-12-07', [[1, 1, 15]]],
-      ['2026-12-08', [[1, 16, 30]]],
-      ['2026-12-09', [[1, 31, 45]]],
-      ['2026-12-10', [[1, 46, 60]]],
-      ['2026-12-11', [[1, 61, 75]]],
-      ['2026-12-12', [[1, 76, 90], [2, 1, 15]]],
-      ['2026-12-13', [[2, 16, 45]]],
-      ['2026-12-14', [[2, 46, 60]]],
-      ['2026-12-15', [[2, 61, 75]]],
-      ['2026-12-16', [[2, 76, 90]]],
-      ['2026-12-17', [[2, 91, 105]]],
-      ['2026-12-18', [[2, 106, 120]]],
-      ['2026-12-19', [[2, 121, 150]], { extra: 'simulazione orale' }],
-      ['2026-12-20', [], { critici: true }]
-    ] }
-  ];
-
-  var DAYS = [], DAY = {};
-  PHASES.forEach(function (p) {
-    p.list = [];
-    p.days.forEach(function (row) {
-      var o = row[2] || {};
-      var d = { iso: row[0], phase: p.n, segs: row[1], extra: o.extra || '', critici: !!o.critici };
-      d.idx = DAYS.length;
-      DAYS.push(d); DAY[d.iso] = d; p.list.push(d);
+  /* ================= ESAMI ================= */
+  // Ognuno ha i suoi esami (S.exams), ciascuno con il suo piano giorno per giorno (fasi -> giornate).
+  // Le variabili qui sotto descrivono l'esame in corso su questo dispositivo: useExam() le rifà quando cambia.
+  // Programmi già pronti: Diritto processuale civile è il programma con cui è nata l'app (quello di Bi);
+  // chi usava l'app prima degli esami multipli lo ritrova come primo esame (upgradeData()).
+  var TEMPLATES = {
+    dpc: { id: 'dpc', name: 'Diritto processuale civile', date: '2026-12-21', start: '2026-11-03', books: ['V1', 'V2'], firstDone: '2026-11-03', phases: [
+        { n: 1, title: 'Studio delle 40 pagine nuove', short: 'Pagine nuove', range: '3–8 novembre', note: '', days: [
+          ['2026-11-03', [[2, 111, 115]]],
+          ['2026-11-04', [[2, 116, 120]]],
+          ['2026-11-05', [[2, 121, 125]]],
+          ['2026-11-06', [[2, 126, 130]]],
+          ['2026-11-07', [[2, 131, 140]]],
+          ['2026-11-08', [[2, 141, 150]]]
+        ] },
+        { n: 2, title: 'Prima ripetizione', short: 'Prima ripetizione', range: '9–22 novembre', note: '200 pagine', days: [
+          ['2026-11-09', [[1, 1, 12]]],
+          ['2026-11-10', [[1, 13, 24]]],
+          ['2026-11-11', [[1, 25, 36]]],
+          ['2026-11-12', [[1, 37, 48]]],
+          ['2026-11-13', [[1, 49, 60]]],
+          ['2026-11-14', [[1, 61, 80]]],
+          ['2026-11-15', [[1, 81, 90], [2, 1, 10]]],
+          ['2026-11-16', [[2, 11, 22]]],
+          ['2026-11-17', [[2, 23, 34]]],
+          ['2026-11-18', [[2, 35, 46]]],
+          ['2026-11-19', [[2, 47, 58]]],
+          ['2026-11-20', [[2, 59, 70]]],
+          ['2026-11-21', [[2, 71, 90]]],
+          ['2026-11-22', [[2, 91, 110]]]
+        ] },
+        { n: 3, title: 'Seconda ripetizione', short: 'Seconda ripetizione', range: '23 novembre – 6 dicembre', note: '240 pagine', days: [
+          ['2026-11-23', [[1, 1, 12]]],
+          ['2026-11-24', [[1, 13, 24]]],
+          ['2026-11-25', [[1, 25, 36]]],
+          ['2026-11-26', [[1, 37, 48]]],
+          ['2026-11-27', [[1, 49, 60]]],
+          ['2026-11-28', [[1, 61, 90]]],
+          ['2026-11-29', [[2, 1, 30]]],
+          ['2026-11-30', [[2, 31, 42]]],
+          ['2026-12-01', [[2, 43, 54]]],
+          ['2026-12-02', [[2, 55, 66]]],
+          ['2026-12-03', [[2, 67, 78]]],
+          ['2026-12-04', [[2, 79, 90]]],
+          ['2026-12-05', [[2, 91, 120]]],
+          ['2026-12-06', [[2, 121, 150]]]
+        ] },
+        { n: 4, title: 'Terza ripetizione', short: 'Ripetizione orale', range: '7–20 dicembre', note: 'ripetizione orale', days: [
+          ['2026-12-07', [[1, 1, 15]]],
+          ['2026-12-08', [[1, 16, 30]]],
+          ['2026-12-09', [[1, 31, 45]]],
+          ['2026-12-10', [[1, 46, 60]]],
+          ['2026-12-11', [[1, 61, 75]]],
+          ['2026-12-12', [[1, 76, 90], [2, 1, 15]]],
+          ['2026-12-13', [[2, 16, 45]]],
+          ['2026-12-14', [[2, 46, 60]]],
+          ['2026-12-15', [[2, 61, 75]]],
+          ['2026-12-16', [[2, 76, 90]]],
+          ['2026-12-17', [[2, 91, 105]]],
+          ['2026-12-18', [[2, 106, 120]]],
+          ['2026-12-19', [[2, 121, 150]], { extra: 'simulazione orale' }],
+          ['2026-12-20', [], { critici: true }]
+        ] }
+      ] }
+  };
+  var SUBJECT = '', EXAM = '', EXID = '', BOOKS = [], PHASES = [], DAYS = [], DAY = {}, TOTAL = 0;
+  function useExam(ex) {
+    EXID = ex ? ex.id : ''; SUBJECT = ex ? ex.name : ''; EXAM = ex ? ex.date : ''; BOOKS = ex && ex.books ? ex.books : [];
+    PHASES = []; DAYS = []; DAY = {};
+    ((ex && ex.phases) || []).forEach(function (p) {
+      var ph = { n: PHASES.length + 1, title: p.title || '', short: p.short || p.title || '', note: p.note || '', list: [] };
+      (p.days || []).forEach(function (row) {
+        var o = row[2] || {};
+        var d = { iso: row[0], phase: ph.n, segs: row[1] || [], extra: o.extra || '', critici: !!o.critici };
+        d.idx = DAYS.length; DAYS.push(d); DAY[d.iso] = d; ph.list.push(d);
+      });
+      if (ph.list.length) { ph.range = rangeText(ph.list[0].iso, ph.list[ph.list.length - 1].iso); PHASES.push(ph); }
     });
-  });
-  var TOTAL = DAYS.length; // 48
+    TOTAL = DAYS.length;
+  }
 
   /* ================= FRASI ================= */
   // I crediti, testo di D (richiesta: "aggiungi una riga di crediti")
@@ -870,12 +895,11 @@
     ['Che meraviglia che nessuno debba aspettare un solo istante prima di cominciare a migliorare il mondo.', 'Anne Frank']
   ];
 
-  var QUOTE_DAY = {
-    '2026-12-20': ['E quindi uscimmo a riveder le stelle.', 'Dante Alighieri'],
-    '2026-12-21': ['La fortuna aiuta gli audaci.', 'Virgilio']
-  };
+  // la vigilia e il giorno dell'esame in corso hanno la loro frase
+  var QUOTE_EVE = ['E quindi uscimmo a riveder le stelle.', 'Dante Alighieri'], QUOTE_EXAM = ['La fortuna aiuta gli audaci.', 'Virgilio'];
   function quoteOf(iso) {
-    if (QUOTE_DAY[iso]) return QUOTE_DAY[iso];
+    if (EXAM && iso === EXAM) return QUOTE_EXAM;
+    if (EXAM && iso === addDays(EXAM, -1)) return QUOTE_EVE;
     var n = diffDays('2026-11-03', iso), L = QUOTES.length;
     return QUOTES[((n % L) + L) % L];
   }
@@ -884,16 +908,15 @@
     'Sei stata brava.',
     'Anche oggi è sbocciato un fiore.',
     'Ora goditi il resto della giornata.',
-    'Un altro passo verso il 21 dicembre.',
+    'Un altro passo verso l’esame.',
     'Il tuo giardino cresce.',
     'Adesso riposa un po’: te lo sei meritato.'
   ];
-  var PHASE_DONE = {
-    1: 'Le pagine nuove sono tutte studiate. Da qui in poi si ripete, e ogni volta sarà più facile.',
-    2: 'Prima ripetizione completata: hai rivisto tutto il programma una volta intera.',
-    3: 'Seconda ripetizione completata. Ora tocca alla voce: si ripete a parole tue.',
-    4: 'Hai completato tutto il programma. Domani racconta quello che sai, con calma.'
-  };
+  function phaseDoneMsg(p) {
+    if (p.n === PHASES.length) return 'Hai completato tutto il programma. All’esame racconta quello che sai, con calma.';
+    if (p.n === 1) return 'Il primo tratto è fatto: da qui in poi ogni ripetizione sarà più facile.';
+    return 'Un altro giro completo: quello che sai è sempre più tuo.';
+  }
 
   /* ================= DATE ================= */
   var WD = ['domenica', 'lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato'];
@@ -905,6 +928,13 @@
   function dateOf(iso) { var a = iso.split('-'); return new Date(+a[0], +a[1] - 1, +a[2]); }
   function diffDays(a, b) { return Math.round((dateOf(b) - dateOf(a)) / 864e5); }
   function fmtLong(iso) { var d = dateOf(iso); return WD[d.getDay()] + ' ' + d.getDate() + ' ' + MO[d.getMonth()]; }
+  function addDays(iso, n) { var d = dateOf(iso); d.setDate(d.getDate() + n); return isoOf(d); }
+  function fmtDM(iso) { var d = dateOf(iso); return d.getDate() + ' ' + MO[d.getMonth()]; }
+  function rangeText(a, b) {
+    var x = dateOf(a), y = dateOf(b);
+    if (a === b) return fmtDM(a);
+    return x.getMonth() === y.getMonth() && x.getFullYear() === y.getFullYear() ? x.getDate() + '–' + fmtDM(b) : fmtDM(a) + ' – ' + fmtDM(b);
+  }
   function fmtShort(iso) { var d = dateOf(iso); return d.getDate() + ' ' + MOS[d.getMonth()]; }
   function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
   var FAKE_TODAY = (function () { try { var q = new URLSearchParams(location.search).get('oggi'); return q && /^\d{4}-\d\d-\d\d$/.test(q) ? q : ''; } catch (e) { return ''; } })();
@@ -990,12 +1020,14 @@
     return {
       v: 1,
       // Ogni cosa ha la sua data di modifica: unendo due dispositivi vince la più recente.
-      done: {},      // giorno -> data della spunta (negativa = tolta)
-      pages: {}, pagesAt: {},   // giorno -> ["2-111", ...]
-      notes: {}, notesAt: {},   // giorno -> testo
-      mood: {}, moodAt: {},     // giorno -> leggera | normale | faticosa
+      // Le giornate sono "esame|giorno" (es. "dpc|2026-11-03"): ogni esame ha le sue spunte, pagine, note.
+      exams: [],     // { id, name, date (dell'esame), start, books: [nomi], phases: [{ title, short, days: [[giorno, [[libro, da, a]], { extra, critici }]] }], gen, at, mt }
+      done: {},      // esame|giorno -> data della spunta (negativa = tolta)
+      pages: {}, pagesAt: {},   // esame|giorno -> ["2-111", ...]
+      notes: {}, notesAt: {},   // esame|giorno -> testo
+      mood: {}, moodAt: {},     // esame|giorno -> leggera | normale | faticosa
       focus: {},     // dispositivo -> giorno -> { ms, n } (ogni dispositivo conta i suoi minuti)
-      topics: [],    // argomenti critici { id, text, vol, page, day, at, solved, st }
+      topics: [],    // argomenti critici { id, ex (esame), text, vol, page, day, at, solved, st }
       events: [],    // calendario { id, title, date, time ('' = tutto il giorno), rem (minuti prima, -1 = nessuno), color 0-4, note, at, mt }
       notifRead: {}, notifHide: {},   // promemoria letti / tolti dalla campanella (chiave evento@ora)
       keep: {},      // dati di versioni più nuove dell'app: si conservano e si rimandano così come sono
@@ -1010,12 +1042,9 @@
   function load() {
     var d = defaults(), s = null;
     try { s = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { s = null; }
-    if (!s || s.v !== 1) {
-      // Il primo giorno (martedì 3 novembre) era già fatto quando il programma è arrivato qui.
-      // Data minima: qualunque spunta vera, anche da un altro dispositivo, conta di più.
-      d.done['2026-11-03'] = 1;
-      return d;
-    }
+    if (!s || s.v !== 1) return d;   // nuova installazione: nessun esame, si crea il primo
+    var wasOld = !Array.isArray(s.exams);
+    s = upgradeData(s);
     Object.keys(d).forEach(function (k) {
       if (s[k] == null) return;
       if (k === 'settings' || k === 'timer') d[k] = Object.assign(d[k], s[k]);
@@ -1025,11 +1054,40 @@
     var old = {};
     Object.keys(d.focus).forEach(function (k) { if (/^\d{4}-\d\d-\d\d$/.test(k)) { old[k] = d.focus[k]; delete d.focus[k]; } });
     if (Object.keys(old).length) d.focus[DEV] = Object.assign(d.focus[DEV] || {}, old);
+    if (wasOld) { try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) {} }   // salvati subito nel formato nuovo
     return d;
+  }
+  // Dati di prima degli esami multipli (giornate scritte solo come "2026-11-03", nessun elenco di esami):
+  // erano tutti del programma di Diritto processuale civile, quindi diventano "dpc|2026-11-03" e quell'esame.
+  var ISO_RE = /^\d{4}-\d\d-\d\d$/, KEY_RE = /^[\w-]+\|\d{4}-\d\d-\d\d$/;
+  var DAY_MAPS = ['done', 'pages', 'pagesAt', 'notes', 'notesAt', 'mood', 'moodAt'];
+  function fromTemplate(id) { var t = JSON.parse(JSON.stringify(TEMPLATES[id])); t.at = 1; t.mt = 1; return t; }
+  function upgradeData(o) {
+    if (!o || typeof o !== 'object' || Array.isArray(o.exams)) return o;
+    DAY_MAPS.forEach(function (k) {
+      var m = o[k]; if (!m || typeof m !== 'object') return;
+      var n = {}; Object.keys(m).forEach(function (key) { n[ISO_RE.test(key) ? 'dpc|' + key : key] = m[key]; }); o[k] = n;
+    });
+    (o.topics || []).forEach(function (t) { if (t && t.ex == null) t.ex = 'dpc'; });
+    o.exams = [fromTemplate('dpc')];
+    return o;
   }
   var S = load();
   var UI = { tab: 'today', pagesOpen: false, calSel: '', calMonth: '' };
   try { var t0 = localStorage.getItem('fioritura.tab'); if (t0) UI.tab = t0; } catch (e) {}
+  // l'esame in corso: quello scelto su questo dispositivo, altrimenti il prossimo esame in calendario
+  function examById(id) { return S.exams.filter(function (e) { return e.id === id; })[0]; }
+  function pickActive() {
+    var id = ''; try { id = localStorage.getItem('fioritura.exam') || ''; } catch (e) {}
+    var ex = examById(id);
+    if (!ex) {
+      var t = today(), next = S.exams.filter(function (e) { return e.date >= t; }).sort(function (a, b) { return a.date.localeCompare(b.date); });
+      ex = next[0] || S.exams[S.exams.length - 1] || null;
+    }
+    useExam(ex);
+  }
+  function setActive(id) { try { localStorage.setItem('fioritura.exam', id); } catch (e) {} pickActive(); }
+  pickActive();
   var saveFailed = false;
   function save(quiet) {
     try { localStorage.setItem(KEY, JSON.stringify(S)); saveFailed = false; }
@@ -1038,31 +1096,47 @@
   }
   if (navigator.storage && navigator.storage.persist) { try { navigator.storage.persist(); } catch (e) {} }
 
-  function isDone(iso) { return (S.done[iso] || 0) > 0; }
-  function setDone(iso, v) { S.done[iso] = v ? Date.now() : -Date.now(); }
+  function K(iso) { return EXID + '|' + iso; }   // la giornata dell'esame in corso
+  function isDone(iso) { return (S.done[K(iso)] || 0) > 0; }
+  function setDone(iso, v) { S.done[K(iso)] = v ? Date.now() : -Date.now(); }
   function doneCount() { return DAYS.filter(function (d) { return isDone(d.iso); }).length; }
   function phaseDoneCount(p) { return p.list.filter(function (d) { return isDone(d.iso); }).length; }
   function missedDays() { var t = today(); return DAYS.filter(function (d) { return d.iso < t && !isDone(d.iso); }); }
   function currentPhase() {
     var t = today();
     var d = DAY[t] || DAYS.filter(function (x) { return x.iso > t; })[0];
-    return d ? d.phase : 4;
+    return d ? d.phase : PHASES.length || 1;
   }
   // spazi e trattino che non vanno a capo: "V2 · pp. 111–115" resta sempre su una riga
-  function segLabel(s) { return 'V' + s[0] + '\u00a0·\u00a0pp.\u00a0' + s[1] + '\u2060–\u2060' + s[2]; }
-  function dayLabel(d) {
-    if (d.critici) return 'Solo argomenti critici';
-    return d.segs.map(segLabel).join(' + ') + (d.extra ? ' + ' + d.extra : '');
+  function bookName(i, books) { var b = (books || BOOKS)[i - 1]; return (b && String(b).trim()) || 'V' + i; }
+  function segLabel(s, books) { return bookName(s[0], books).replace(/ /g, '\u00a0') + '\u00a0·\u00a0pp.\u00a0' + s[1] + '\u2060–\u2060' + s[2]; }
+  function labelOf(segs, o, books) {
+    if (o && o.critici) return 'Solo argomenti critici';
+    var parts = (segs || []).map(function (x) { return segLabel(x, books); });
+    if (o && o.extra) parts.push(o.extra);
+    return parts.join(' + ') || 'Ripasso libero';
   }
+  function dayLabel(d) { return labelOf(d.segs, d); }
   function dayPages(d) { return d.segs.reduce(function (a, s) { return a + s[2] - s[1] + 1; }, 0); }
   function pageKeys(d) { var k = []; d.segs.forEach(function (s) { for (var p = s[1]; p <= s[2]; p++) k.push(s[0] + '-' + p); }); return k; }
-  function pagesRead(d) { if (isDone(d.iso)) return dayPages(d); var set = S.pages[d.iso] || []; return pageKeys(d).filter(function (k) { return set.indexOf(k) >= 0; }).length; }
+  function pagesRead(d) { if (isDone(d.iso)) return dayPages(d); var set = S.pages[K(d.iso)] || []; return pageKeys(d).filter(function (k) { return set.indexOf(k) >= 0; }).length; }
   function focusOf(iso) {
     var o = { ms: 0, n: 0 };
     Object.keys(S.focus).forEach(function (dv) { var f = S.focus[dv] && S.focus[dv][iso]; if (f) { o.ms += f.ms || 0; o.n += f.n || 0; } });
     return o;
   }
-  function openTopics() { return S.topics.filter(function (t) { return !t.solved; }); }
+  function myTopics() { return S.topics.filter(function (t) { return (t.ex || '') === EXID; }); }
+  function openTopics() { return myTopics().filter(function (t) { return !t.solved; }); }
+  function examProgress(e) {
+    var n = 0, tot = 0;
+    (e.phases || []).forEach(function (p) { (p.days || []).forEach(function (r) { tot++; if ((S.done[e.id + '|' + r[0]] || 0) > 0) n++; }); });
+    return [n, tot];
+  }
+  function examDayOn(e, iso) {
+    var found = null;
+    (e.phases || []).forEach(function (p) { (p.days || []).forEach(function (r) { if (r[0] === iso) found = r; }); });
+    return found;
+  }
   function phaseOf(n) { return PHASES[n - 1]; }
 
   /* ================= SUONI (generati, niente file) ================= */
@@ -1242,7 +1316,7 @@
   function whenTile(iso) { var dd = dateOf(iso); return '<span class="when"><span>' + WDS[dd.getDay()] + '</span><b>' + dd.getDate() + '</b><span>' + MOS[dd.getMonth()] + '</span></span>'; }
   function dayRow(d, opts) {
     var t = today(), on = isDone(d.iso), isToday = d.iso === t, lost = !on && d.iso < t;
-    var dd = dateOf(d.iso), pages = dayPages(d), hasNote = (S.notes[d.iso] || '').trim();
+    var dd = dateOf(d.iso), pages = dayPages(d), hasNote = (S.notes[K(d.iso)] || '').trim();
     var sub = d.critici ? 'Ripasso libero di ciò che hai segnato' : pages + ' pagine' + (d.extra ? ' · e ' + d.extra : '');
     if (lost) sub += ' · <em>da recuperare</em>';
     else if (!on && !isToday) { var pr = pagesRead(d); if (pr) sub += ' · ' + pr + ' lette'; }
@@ -1257,7 +1331,7 @@
   }
   function pagesBlock(d, open) {
     if (d.critici) return '';
-    var keys = pageKeys(d), set = S.pages[d.iso] || [], all = isDone(d.iso);
+    var keys = pageKeys(d), set = S.pages[K(d.iso)] || [], all = isDone(d.iso);
     var read = pagesRead(d), total = keys.length;
     var html = '', lastVol = 0, multi = d.segs.length > 1;
     keys.forEach(function (k) {
@@ -1273,7 +1347,7 @@
       '<div class="pgrid">' + html + '</div></details>';
   }
   function moodBlock(iso) {
-    var m = S.mood[iso] || '';
+    var m = S.mood[K(iso)] || '';
     var opts = [['leggera', 'Leggera'], ['normale', 'Normale'], ['faticosa', 'Faticosa']];
     return '<div class="moods"><p class="small muted">Com’è andata?</p><div class="seg" role="group" aria-label="Com’è andata">' +
       opts.map(function (o) { return '<button data-a="mood" data-iso="' + iso + '" data-v="' + o[0] + '" aria-pressed="' + (m === o[0]) + '">' + o[1] + '</button>'; }).join('') +
@@ -1283,11 +1357,11 @@
   function garden() {
     var t = today(), done = doneCount(), pct = Math.round(done / TOTAL * 100);
     var rows = PHASES.map(function (p) {
-      return '<div class="grow-row p' + p.n + '"><span class="rn">' + ['I', 'II', 'III', 'IV'][p.n - 1] + '</span>' +
+      return '<div class="grow-row p' + p.n + '"><span class="rn">' + (['I', 'II', 'III', 'IV'][p.n - 1] || p.n) + '</span><div class="fls">' +
         p.list.map(function (d) {
           var st = isDone(d.iso) ? 'done' : d.iso === t ? 'today' : d.iso < t ? 'lost' : 'seed';
           return '<button class="f' + (justBloomed === d.iso ? ' bloom' : '') + '" data-a="openDay" data-iso="' + d.iso + '" aria-label="' + cap(fmtLong(d.iso)) + (st === 'done' ? ', fatta' : '') + '">' + flower(st) + '</button>';
-        }).join('') + '</div>';
+        }).join('') + '</div></div>';
     }).join('');
     return '<section class="card garden"><div class="row between"><div><span class="eyebrow">Il tuo giardino</span>' +
       '<h3 class="h3" style="margin-top:5px">' + done + ' di ' + TOTAL + ' giornate</h3></div>' +
@@ -1301,15 +1375,18 @@
     var hello = h < 5 ? 'Ancora sveglia' : h < 13 ? 'Buongiorno' : h < 18 ? 'Buon pomeriggio' : 'Buonasera';
     var greet = esc(hello) + (name ? ', ' + esc(name) : '') + (h < 5 ? '?' : '');
     var toExam = diffDays(t, EXAM);
-    var examChip = toExam > 1 ? toExam + ' giorni all’esame' : toExam === 1 ? 'Domani l’esame' : toExam === 0 ? 'Oggi l’esame' : 'Esame del 21 dicembre';
+    var examChip = toExam > 1 ? toExam + ' giorni all’esame' : toExam === 1 ? 'Domani l’esame' : toExam === 0 ? 'Oggi l’esame' : 'Esame del ' + fmtDM(EXAM);
     var html = topbar() +
       '<header class="head"><span class="eyebrow">' + cap(fmtLong(t)) + '</span><h1 class="display">' + greet + '</h1>' +
       (function (q) { return '<p class="motto">«' + esc(q[0]) + '»</p><p class="motto-by">' + esc(q[1]) + '</p>'; })(quoteOf(t)) +
-      '<div class="chips"><span class="chip">' + I.hourglass + examChip + '</span>' +
-      (d ? '<span class="chip">' + I.sprout + 'Giornata ' + (d.idx + 1) + ' di ' + TOTAL + '</span>' : '') + '</div></header>';
+      '<div class="chips">' + (EXID ? examChipBtn() + '<span class="chip">' + I.hourglass + examChip + '</span>' +
+      (d ? '<span class="chip">' + I.sprout + 'Giornata ' + (d.idx + 1) + ' di ' + TOTAL + '</span>' : '') :
+      '<button class="chip exam-chip" data-a="examNew">' + I.plus + 'Aggiungi un esame</button>') + '</div></header>';
 
     // La scheda principale
-    if (d) {
+    if (!EXID) {
+      html += noExamCard();
+    } else if (d) {
       var p = phaseOf(d.phase), on = isDone(t);
       html += '<section class="card today p' + d.phase + '">' + flowerBig('wm') +
         '<div class="row between wrap"><span class="eyebrow">Il programma di oggi</span><span class="pill">Fase ' + d.phase + ' · ' + esc(p.short) + '</span></div>';
@@ -1340,7 +1417,7 @@
       html += '<section class="card today p1">' + flowerBig('wm') + '<span class="eyebrow">Si comincia ' + relDay(f.iso) + '</span>' +
         '<h2 class="big display">' + cap(fmtLong(f.iso)) + '</h2><p class="meta">' + esc(dayLabel(f)) + ' · ' + dayPages(f) + ' pagine</p></section>';
     } else if (t === EXAM) {
-      html += '<section class="card today p2">' + flowerBig('wm') + '<span class="eyebrow">21 dicembre</span>' +
+      html += '<section class="card today p2">' + flowerBig('wm') + '<span class="eyebrow">' + esc(SUBJECT) + ' · ' + fmtDM(EXAM) + '</span>' +
         '<h2 class="big display">Oggi è il giorno.</h2>' +
         '<p class="meta">Hai fatto tutto il percorso. Respira, entra con calma e racconta quello che sai. In bocca al lupo.</p>' +
         '<button class="btn block" data-a="breathe">' + I.breath + 'Un minuto per respirare</button></section>';
@@ -1366,7 +1443,18 @@
         (miss.length > 4 ? '<button class="btn ghost" data-a="tab" data-tab="plan">' + (miss.length === 5 ? 'E un’altra nel programma' : 'E altre ' + (miss.length - 4) + ' nel programma') + '</button>' : '') + '</section>';
     }
 
-    html += garden();
+    if (EXID) html += garden();
+
+    // Gli altri esami che oggi hanno una giornata
+    var others = S.exams.filter(function (e) { return e.id !== EXID; }).map(function (e) { return { e: e, r: examDayOn(e, t) }; }).filter(function (x) { return x.r; });
+    if (others.length) {
+      html += '<section class="card"><h3 class="h3">Anche oggi</h3><div>' + others.map(function (x) {
+        var fatto = (S.done[x.e.id + '|' + t] || 0) > 0;
+        return '<button class="evrow" data-a="examUse" data-id="' + x.e.id + '"><span class="tm"><small>Studio</small></span><span class="vbar"></span>' +
+          '<span class="tx"><b>' + esc(x.e.name) + '</b><span>' + esc(labelOf(x.r[1], x.r[2], x.e.books)) + (fatto ? ' · fatta' : '') + '</span></span>' +
+          '<span class="chev" style="width:16px;color:var(--muted)">' + I.chev + '</span></button>';
+      }).join('') + '</div></section>';
+    }
 
     // Prossima giornata
     var nx = DAYS.filter(function (x) { return x.iso > t; })[0];
@@ -1390,14 +1478,17 @@
   }
 
   function viewPlan() {
+    if (!EXID) return topbar() + '<header class="head"><span class="eyebrow">Programma</span><h1 class="display">I tuoi esami</h1>' +
+      '<p>Aggiungi un esame e qui trovi il piano giorno per giorno.</p></header>' + noExamCard();
     var t = today(), done = doneCount(), pct = Math.round(done / TOTAL * 100), cur = currentPhase();
     var allOpen = PHASES.every(function (p) { return isOpen(p.n, cur); });
-    var html = topbar() + '<header class="head"><span class="eyebrow">' + SUBJECT + '</span><h1 class="display">Il programma</h1>' +
-      '<p>Dal 3 novembre al 20 dicembre. Spunta una giornata solo quando l’hai completata.</p></header>' +
+    var html = topbar() + '<header class="head"><span class="eyebrow">Il programma</span><h1 class="display">' + esc(SUBJECT) + '</h1>' +
+      '<p>Dal ' + fmtDM(DAYS[0].iso) + ' al ' + fmtDM(DAYS[DAYS.length - 1].iso) + '. Spunta una giornata solo quando l’hai completata.</p>' +
+      '<div class="chips">' + examChipBtn() + '</div></header>' +
       '<section class="card"><div class="row between"><div><span class="eyebrow">Avanzamento complessivo</span>' +
       '<h3 class="h3" style="margin-top:5px">' + done + ' / ' + TOTAL + ' giornate</h3></div><div class="pct display">' + pct + '<small>%</small></div></div>' +
       '<div class="bar"><i style="left:' + pct + '%"></i></div>' +
-      '<div class="row between"><span class="small muted">Esame: lunedì 21 dicembre</span>' +
+      '<div class="row between"><span class="small muted">Esame: ' + fmtLong(EXAM) + '</span>' +
       '<button class="btn ghost" style="margin-right:-10px" data-a="expandAll" data-v="' + (allOpen ? 0 : 1) + '">' + (allOpen ? 'Comprimi tutto' : 'Espandi tutto') + '</button></div></section>';
 
     PHASES.forEach(function (p) {
@@ -1462,9 +1553,9 @@
       '<button class="ib sm flat" data-a="delTopic" data-id="' + tp.id + '" aria-label="Elimina">' + I.x + '</button></div>';
   }
   function viewNotes() {
-    var ot = openTopics(), solved = S.topics.filter(function (t) { return t.solved; });
+    var ot = openTopics(), solved = myTopics().filter(function (t) { return t.solved; });
     var html = topbar() + '<header class="head"><span class="eyebrow">Appunti</span><h1 class="display">Argomenti critici</h1>' +
-      '<p>Segna qui ciò che ti sembra difficile mentre studi. Il 20 dicembre diventerà il tuo ripasso finale.</p></header>' +
+      '<p>Segna qui ciò che ti sembra difficile mentre studi' + (EXID ? ' ' + esc(SUBJECT) : '') + ': l’ultimo giorno prima dell’esame diventerà il tuo ripasso finale.</p></header>' +
       '<form class="card" data-form="topic" autocomplete="off">' +
       '<label class="lab" for="tpText">Cosa vuoi rivedere?</label>' +
       '<textarea class="field" id="tpText" name="text" rows="2" placeholder="Es. differenza tra litispendenza e continenza"></textarea>' +
@@ -1483,11 +1574,11 @@
       html += '<section class="card"><details class="more"><summary><span>Chiariti · ' + solved.length + '</span>' + I.chev + '</summary><div style="margin-top:8px">' +
         solved.map(topicRow).join('') + '</div></details></section>';
     }
-    var withNotes = DAYS.filter(function (d) { return (S.notes[d.iso] || '').trim(); });
+    var withNotes = DAYS.filter(function (d) { return (S.notes[K(d.iso)] || '').trim(); });
     html += '<section class="card"><h3 class="h3">Note delle giornate</h3>';
     if (withNotes.length) {
       html += '<div>' + withNotes.map(function (d) {
-        return '<button class="notecard p' + d.phase + '" data-a="openDay" data-iso="' + d.iso + '"><span class="eyebrow">' + cap(fmtLong(d.iso)) + ' · ' + esc(dayLabel(d)) + '</span><p>' + esc(S.notes[d.iso]) + '</p></button>';
+        return '<button class="notecard p' + d.phase + '" data-a="openDay" data-iso="' + d.iso + '"><span class="eyebrow">' + cap(fmtLong(d.iso)) + ' · ' + esc(dayLabel(d)) + '</span><p>' + esc(S.notes[K(d.iso)]) + '</p></button>';
       }).join('') + '</div>';
     } else html += '<p class="small muted">Puoi scrivere una nota per ogni giornata: tocca un giorno nel programma.</p>';
     html += '</section>';
@@ -1768,11 +1859,12 @@
       '<div class="row wrap p' + d.phase + '"><span class="pill">Fase ' + d.phase + ' · ' + esc(p.title) + '</span>' +
       (d.critici ? '' : '<span class="small muted">' + dayPages(d) + ' pagine</span>') + '</div>' +
       '<div class="p' + d.phase + '">' +
-      '<button class="btn block ' + (on ? 'soft' : '') + '" data-a="toggleDay" data-iso="' + iso + '">' + I.check + (on ? 'Fatta · tocca per togliere la spunta' : 'Segna come fatta') + '</button></div>' +
+      '<button class="btn block ' + (on ? 'soft' : '') + '" data-a="toggleDay" data-iso="' + iso + '">' + I.check + (on ? 'Fatta · tocca per togliere la spunta' : 'Segna come fatta') + '</button>' +
+      '<div style="text-align:center;margin-top:6px"><button class="btn ghost" data-a="dayEdit" data-iso="' + iso + '">' + I.pen + 'Modifica la giornata</button></div></div>' +
       (d.critici ? '' : '<div class="p' + d.phase + '">' + pagesBlock(d, true) + '</div>') +
       (on ? '<div class="p' + d.phase + '">' + moodBlock(iso) + '</div>' : '') +
       '<div><label class="lab" for="dayNote">Note della giornata</label>' +
-      '<textarea class="field" id="dayNote" rows="4" data-note="' + iso + '" placeholder="Cosa ti è rimasto in mente? Dubbi, collegamenti, domande da fare…">' + esc(S.notes[iso] || '') + '</textarea>' +
+      '<textarea class="field" id="dayNote" rows="4" data-note="' + iso + '" placeholder="Cosa ti è rimasto in mente? Dubbi, collegamenti, domande da fare…">' + esc(S.notes[K(iso)] || '') + '</textarea>' +
       '<div class="row between tiny muted" style="margin-top:6px"><span>Concentrazione: ' + fmtMin(fo.ms) + '</span><span data-saved></span></div></div>' +
       '<div><label class="lab" for="quickTopic">Un argomento critico da questa giornata</label>' +
       '<div class="row"><input class="field" id="quickTopic" placeholder="Es. l’onere della prova" enterkeyhint="done"><button class="btn sm soft" data-a="quickTopic" data-iso="' + iso + '">Aggiungi</button></div></div>';
@@ -1810,8 +1902,8 @@
   }
   function welcomeSheet() {
     return '<div class="welcome">' + LOGO.replace('<svg', '<svg class="logo"') + '<h2 class="display">Benvenuta</h2>' +
-      '<p class="muted" style="margin-top:8px">Qui c’è il tuo programma di ' + SUBJECT + ', giorno per giorno, fino all’esame del 21 dicembre.</p>' +
-      '<ul><li class="p1"><i></i>Ogni giornata completata fa sbocciare un fiore nel tuo giardino. Il 3 novembre è già segnato.</li>' +
+      '<p class="muted" style="margin-top:8px">Qui organizzi lo studio dei tuoi esami, giorno per giorno, fino al giorno dell’esame.</p>' +
+      '<ul><li class="p1"><i></i>Aggiungi un esame: Fioritura ti prepara il piano con le ripetizioni, e ogni giornata completata fa sbocciare un fiore.</li>' +
       '<li class="p3"><i></i>Il timer ti aiuta a concentrarti, con il suono della pioggia o del mare se ti va.</li>' +
       '<li class="p4"><i></i>Negli appunti raccogli i dubbi: alla fine diventano il tuo ripasso.</li></ul></div>' +
       '<div><label class="lab" for="wName">Come ti chiami? <span class="muted" style="font-weight:400">(facoltativo)</span></label>' +
@@ -1875,15 +1967,175 @@
   }
   function busyBtn(el, label) { if (!el) return function () {}; var old = el.innerHTML; el.disabled = true; el.textContent = label || 'Un attimo…'; return function () { if (document.body.contains(el)) { el.disabled = false; el.innerHTML = old; } }; }
 
+  /* ================= ESAMI: FOGLI ================= */
+  function sheetHead(title, eyebrow) {
+    return '<div class="sh-head"><div><span class="eyebrow">' + (eyebrow || '') + '</span><h2 class="display">' + title + '</h2></div><button class="ib" data-a="closeSheet" aria-label="Chiudi">' + I.x + '</button></div>';
+  }
+  function examChipBtn() {
+    return '<button class="chip exam-chip" data-a="exams" aria-label="Esame in corso: ' + esc(SUBJECT) + '. Cambia esame">' + I.leaf + esc(SUBJECT) + '<span class="chev">' + I.chev + '</span></button>';
+  }
+  function noExamCard() {
+    return '<section class="card today p3">' + flowerBig('wm') + '<span class="eyebrow">Per cominciare</span>' +
+      '<h2 class="big display">Aggiungi il tuo primo esame</h2>' +
+      '<p class="meta">Scrivi la data dell’esame e cosa devi studiare: Fioritura ti prepara il piano giorno per giorno, con le ripetizioni.</p>' +
+      '<button class="btn block" data-a="examNew">' + I.plus + 'Aggiungi un esame</button></section>';
+  }
+  function examsSheet() {
+    var t = today(), html = sheetHead('I tuoi esami', 'Esami');
+    if (S.exams.length) {
+      html += '<div>' + S.exams.map(function (e) {
+        var pr = examProgress(e), on = e.id === EXID;
+        return '<div class="exrow"><button class="tx" data-a="examUse" data-id="' + e.id + '"><b>' + esc(e.name) + '</b>' +
+          '<span>' + (e.date < t ? 'Esame fatto il ' : 'Esame ') + fmtLong(e.date) + ' · ' + pr[0] + '/' + pr[1] + ' giornate</span>' +
+          '<span class="mini"><i style="width:' + (pr[1] ? Math.round(pr[0] / pr[1] * 100) : 0) + '%"></i></span></button>' +
+          (on ? '<span class="badge">in corso</span>' : '') +
+          '<button class="ib sm flat" data-a="examEdit" data-id="' + e.id + '" aria-label="Modifica ' + esc(e.name) + '">' + I.pen + '</button></div>';
+      }).join('') + '</div>';
+    } else html += '<p class="small muted">Ancora nessun esame.</p>';
+    return html + '<button class="btn block" data-a="examNew">' + I.plus + 'Aggiungi un esame</button>';
+  }
+
+  // Il piano automatico: tutte le pagine dei libri, una prima lettura (che vale il doppio del tempo) e le ripetizioni,
+  // distribuite sui giorni dall'inizio alla vigilia dell'esame; nel weekend il doppio delle pagine; l'ultimo giorno
+  // (se scelto) solo argomenti critici; la domenica libera se scelta.
+  var PASS_TITLES = ['Prima lettura', 'Prima ripetizione', 'Seconda ripetizione', 'Terza ripetizione'];
+  function makePlan(g) {
+    var books = g.books.filter(function (b) { return String(b.name).trim() || String(b.pages).trim(); })
+      .map(function (b) { return { name: String(b.name).trim().slice(0, 24) || '', pages: Math.floor(+String(b.pages).replace(/\D/g, '')) }; });
+    if (!String(g.name).trim()) return { error: 'Scrivi il nome dell’esame.' };
+    if (!books.length) return { error: 'Scrivi almeno un libro con il numero di pagine.' };
+    if (books.some(function (b) { return !(b.pages > 0); })) return { error: 'Scrivi quante pagine ha ogni libro.' };
+    books.forEach(function (b, i) { if (!b.name) b.name = books.length === 1 ? 'Libro' : 'Libro ' + (i + 1); });
+    if (!ISO_RE.test(g.start) || !ISO_RE.test(g.date)) return { error: 'Scegli le date.' };
+    if (!(g.date > g.start)) return { error: 'L’esame deve venire dopo l’inizio dello studio.' };
+    var days = [];
+    for (var d = g.start; d < g.date; d = addDays(d, 1)) { if (g.rest && dateOf(d).getDay() === 0) continue; days.push(d); }
+    var crit = g.critici && days.length > 2 ? days.pop() : null;
+    var passes = 1 + g.reps;
+    if (days.length < passes) return { error: 'Troppo pochi giorni per ' + (passes === 1 ? 'una lettura' : passes + ' giri') + ': togli una ripetizione o sposta la data.' };
+    var W = [2]; for (var r = 0; r < g.reps; r++) W.push(1);
+    var tw = W.reduce(function (a, b) { return a + b; }, 0);
+    var alloc = W.map(function (w) { return Math.max(1, Math.round(days.length * w / tw)); });
+    var sum = function () { return alloc.reduce(function (a, b) { return a + b; }, 0); };
+    while (sum() > days.length) { var mx = alloc.indexOf(Math.max.apply(null, alloc)); alloc[mx]--; }
+    while (sum() < days.length) alloc[0]++;
+    var total = books.reduce(function (a, b) { return a + b.pages; }, 0);
+    function segsFor(a, b) {   // pagine globali a..b -> pezzi per libro
+      var out = [], off = 0;
+      books.forEach(function (bk, i) {
+        var lo = Math.max(a, off + 1), hi = Math.min(b, off + bk.pages);
+        if (lo <= hi) out.push([i + 1, lo - off, hi - off]);
+        off += bk.pages;
+      });
+      return out;
+    }
+    var phases = [], pos = 0, perDay = [];
+    alloc.forEach(function (n, pi) {
+      var pd = days.slice(pos, pos + n); pos += n;
+      var wts = pd.map(function (iso) { var wd = dateOf(iso).getDay(); return g.weekend && (wd === 0 || wd === 6) ? 2 : 1; });
+      var sw = wts.reduce(function (a, b) { return a + b; }, 0), cum = 0, prev = 0, list = [];
+      pd.forEach(function (iso, i) {
+        cum += wts[i];
+        var end = i === pd.length - 1 ? total : Math.round(total * cum / sw);
+        if (end <= prev) { list.push([iso, [], { extra: 'Ripasso libero' }]); return; }
+        list.push([iso, segsFor(prev + 1, end)]); prev = end;
+      });
+      perDay.push(Math.round(total / n));
+      phases.push({ title: PASS_TITLES[pi], short: PASS_TITLES[pi], days: list });
+    });
+    if (crit) phases[phases.length - 1].days.push([crit, [], { critici: true }]);
+    return { books: books.map(function (b) { return b.name; }), phases: phases, alloc: alloc, perDay: perDay, total: total, days: days.length + (crit ? 1 : 0), crit: !!crit };
+  }
+  var genDraft = null;
+  function newGen() { var t = today(); return { name: '', start: t, date: addDays(t, 42), books: [{ name: '', pages: '' }], reps: 2, weekend: true, rest: false, critici: true }; }
+  function genPreviewText() {
+    var r = makePlan(genDraft);
+    if (r.error) return { bad: true, text: r.error };
+    var parts = r.alloc.map(function (n, i) { return PASS_TITLES[i].toLowerCase() + ' in ' + n + ' ' + plural(n, 'giorno', 'giorni') + ' (circa ' + r.perDay[i] + ' pagine al giorno)'; });
+    return { bad: false, text: r.days + ' giornate di studio: ' + parts.join(', ') + (r.crit ? '; l’ultimo giorno solo argomenti critici' : '') + '.' };
+  }
+  function paintGenPreview() {
+    var el = $('[data-gen-preview]'); if (!el || !genDraft) return;
+    var pv = genPreviewText(); el.textContent = pv.text; el.classList.toggle('bad', pv.bad);
+  }
+  function genSheet() {
+    var g = genDraft, t = today();
+    var tpl = Object.keys(TEMPLATES).filter(function (id) { return !examById(id) && TEMPLATES[id].date >= t; });
+    function sw(k, title, desc) {
+      return '<div class="set-row"><div><b>' + title + '</b><p class="small muted">' + desc + '</p></div>' +
+        '<button class="switch" role="switch" aria-checked="' + !!g[k] + '" aria-label="' + title + '" data-a="genToggle" data-k="' + k + '"></button></div>';
+    }
+    var html = sheetHead('Nuovo esame', 'Esami') +
+      '<div><label class="lab" for="gName">Che esame è?</label><input class="field" id="gName" data-gen="name" maxlength="60" value="' + esc(g.name) + '" placeholder="Es. Diritto privato" data-autofocus></div>' +
+      '<div class="two"><div><label class="lab" for="gStart">Inizio dello studio</label><input class="field" type="date" id="gStart" data-gen="start" value="' + esc(g.start) + '"></div>' +
+      '<div><label class="lab" for="gDate">Giorno dell’esame</label><input class="field" type="date" id="gDate" data-gen="date" value="' + esc(g.date) + '"></div></div>' +
+      '<div><p class="lab">Cosa devi studiare</p><p class="small muted" style="margin-bottom:8px">Ogni libro o dispensa con il numero di pagine.</p>' +
+      g.books.map(function (b, i) {
+        return '<div class="bookrow"><input class="field" data-gen-book="' + i + '" data-k="name" maxlength="24" value="' + esc(b.name) + '" placeholder="' + (i ? 'Es. Dispensa' : 'Es. Manuale') + '" aria-label="Nome del libro ' + (i + 1) + '">' +
+          '<input class="field pgs" data-gen-book="' + i + '" data-k="pages" inputmode="numeric" value="' + esc(b.pages) + '" placeholder="Pagine" aria-label="Pagine del libro ' + (i + 1) + '">' +
+          (g.books.length > 1 ? '<button class="ib sm flat" data-a="genBookDel" data-i="' + i + '" aria-label="Togli il libro">' + I.x + '</button>' : '') + '</div>';
+      }).join('') +
+      (g.books.length < 8 ? '<button class="btn ghost" data-a="genBookAdd">' + I.plus + 'Aggiungi un libro</button>' : '') + '</div>' +
+      '<div><p class="lab">Quante volte ripassare tutto, dopo la prima lettura</p><div class="seg" role="group" aria-label="Ripetizioni">' +
+      [[0, 'Nessuna'], [1, 'Una'], [2, 'Due'], [3, 'Tre']].map(function (o) { return '<button data-a="genReps" data-v="' + o[0] + '" aria-pressed="' + (g.reps === o[0]) + '">' + o[1] + '</button>'; }).join('') + '</div></div>' +
+      sw('weekend', 'Più pagine nel weekend', 'Sabato e domenica il doppio delle pagine.') +
+      sw('rest', 'Domenica libera', 'Niente studio la domenica.') +
+      sw('critici', 'L’ultimo giorno solo argomenti critici', 'La vigilia dell’esame ripassi ciò che hai segnato come difficile.') +
+      '<p class="msg" data-gen-preview></p>' +
+      '<button class="btn block" data-a="genSave">' + I.check + 'Crea il piano</button>' +
+      '<p class="tiny muted" style="text-align:center">Dopo puoi cambiare ogni giornata dal programma.</p>';
+    if (tpl.length) {
+      html += '<h3 class="sec-t">Oppure un programma già pronto</h3>' + tpl.map(function (id) {
+        var tp = TEMPLATES[id], n = tp.phases.reduce(function (a, ph) { return a + ph.days.length; }, 0);
+        return '<button class="who" data-a="examTemplate" data-v="' + id + '" style="width:100%;text-align:left"><span class="av">' + I.leaf.replace('<svg', '<svg style="width:22px;height:22px"') + '</span>' +
+          '<span class="grow"><b>' + esc(tp.name) + '</b><small>Esame ' + fmtLong(tp.date) + ' · ' + n + ' giornate già divise</small></span></button>';
+      }).join('');
+    }
+    return html;
+  }
+  var exDraft = null;
+  function examEditSheet() {
+    var e = exDraft;
+    return sheetHead('Modifica esame', 'Esami') +
+      '<div><label class="lab" for="xName">Nome</label><input class="field" id="xName" data-xd="name" maxlength="60" value="' + esc(e.name) + '"></div>' +
+      '<div><label class="lab" for="xDate">Giorno dell’esame</label><input class="field" type="date" id="xDate" data-xd="date" value="' + esc(e.date) + '">' +
+      '<p class="tiny muted" style="margin-top:6px">Spostare la data non cambia le giornate già divise: se cambia molto, conviene creare un piano nuovo.</p></div>' +
+      '<p class="msg bad" data-xd-msg></p>' +
+      '<button class="btn block" data-a="examSave">' + I.check + 'Salva</button>' +
+      (e.id !== EXID ? '<button class="btn block soft" data-a="examUse" data-id="' + e.id + '">Apri questo esame</button>' : '') +
+      '<div style="text-align:center"><button class="btn ghost danger" data-a="examDel">' + I.trash + 'Elimina l’esame</button></div>';
+  }
+  var deDraft = null;
+  function dayEditSheet() {
+    var e = deDraft, books = BOOKS.length ? BOOKS : ['V1'];
+    var html = sheetHead('Modifica la giornata', cap(fmtLong(e.iso))) +
+      '<div class="set-row" style="border-top:0;padding-top:0"><div><b>Solo argomenti critici</b><p class="small muted">Un giorno di ripasso di ciò che hai segnato.</p></div>' +
+      '<button class="switch" role="switch" aria-checked="' + !!e.critici + '" aria-label="Solo argomenti critici" data-a="deCrit"></button></div>';
+    if (!e.critici) {
+      html += '<div><p class="lab">Pagine</p>' + e.segs.map(function (sg, i) {
+        return '<div class="segrow"><select class="field" data-de="' + i + '" data-k="0" aria-label="Libro">' +
+          books.map(function (b, bi) { return '<option value="' + (bi + 1) + '"' + (sg[0] === bi + 1 ? ' selected' : '') + '>' + esc(bookName(bi + 1, books)) + '</option>'; }).join('') + '</select>' +
+          '<input class="field pgs" data-de="' + i + '" data-k="1" inputmode="numeric" value="' + (sg[1] || '') + '" placeholder="Da" aria-label="Da pagina">' +
+          '<input class="field pgs" data-de="' + i + '" data-k="2" inputmode="numeric" value="' + (sg[2] || '') + '" placeholder="A" aria-label="A pagina">' +
+          '<button class="ib sm flat" data-a="deSegDel" data-i="' + i + '" aria-label="Togli">' + I.x + '</button></div>';
+      }).join('') + '<button class="btn ghost" data-a="deSegAdd">' + I.plus + 'Aggiungi pagine</button></div>' +
+        '<div><label class="lab" for="deExtra">Altro da fare <span class="muted" style="font-weight:400">(facoltativo)</span></label>' +
+        '<input class="field" id="deExtra" data-de-extra maxlength="80" value="' + esc(e.extra) + '" placeholder="Es. simulazione orale"></div>';
+    }
+    return html + '<p class="msg bad" data-de-msg></p>' +
+      '<button class="btn block" data-a="deSave">' + I.check + 'Salva la giornata</button>' +
+      '<div style="text-align:center"><button class="btn ghost" data-a="openDay" data-iso="' + e.iso + '">Annulla</button></div>';
+  }
+
   /* ================= NOTE ================= */
   var noteTimer = null, notePending = null;
   function flushNote() {
     if (!notePending) return;
     clearTimeout(noteTimer);
     var n = notePending; notePending = null;
-    if ((S.notes[n.iso] || '') === (n.v.trim() ? n.v : '')) return;
-    if (n.v.trim()) S.notes[n.iso] = n.v; else delete S.notes[n.iso];
-    S.notesAt[n.iso] = Date.now();
+    if ((S.notes[n.key] || '') === (n.v.trim() ? n.v : '')) return;
+    if (n.v.trim()) S.notes[n.key] = n.v; else delete S.notes[n.key];
+    S.notesAt[n.key] = Date.now();
     save();
     var sv = $('[data-saved]'); if (sv) sv.textContent = 'Salvata';
   }
@@ -1907,7 +2159,7 @@
     buzz(20);
     if (phaseDoneCount(p) === p.list.length) {
       Sound.chime('phase'); petals(34);
-      toast('Fase ' + p.n + ' completata. ' + PHASE_DONE[p.n], null, 6500);
+      toast('Fase ' + p.n + ' completata. ' + phaseDoneMsg(p), null, 6500);
     } else {
       Sound.chime('done'); petals(16);
       if (iso !== today()) toast(cap(fmtLong(iso)) + ': fatta.');
@@ -1972,30 +2224,30 @@
   // Unisce i dati di un altro dispositivo (o di una copia) con quelli di qui. Per ogni cosa vince la modifica
   // più recente; le spunte tolte e gli argomenti eliminati restano tolti. Unire due volte non cambia nulla.
   var SYNC_SETTINGS = ['name', 'pal', 'theme'];
-  var SYNC_KEYS = ['done', 'pages', 'pagesAt', 'notes', 'notesAt', 'mood', 'moodAt', 'focus', 'topics', 'gone', 'settings', 'settingsAt', 'welcomed', 'events', 'notifRead', 'notifHide'];
+  var SYNC_KEYS = ['exams', 'done', 'pages', 'pagesAt', 'notes', 'notesAt', 'mood', 'moodAt', 'focus', 'topics', 'gone', 'settings', 'settingsAt', 'welcomed', 'events', 'notifRead', 'notifHide'];
   function mergeIn(o) {
-    o = o || {};
+    o = upgradeData(o || {});
     Object.keys(o.done || {}).forEach(function (k) {
       var v = +o.done[k] || 0;
-      if (DAY[k] && Math.abs(v) > Math.abs(S.done[k] || 0)) S.done[k] = v;
+      if (KEY_RE.test(k) && Math.abs(v) > Math.abs(S.done[k] || 0)) S.done[k] = v;
     });
     var pa = o.pagesAt || {};
     Object.keys(o.pages || {}).forEach(function (k) {
-      if (!DAY[k] || !Array.isArray(o.pages[k])) return;
+      if (!KEY_RE.test(k) || !Array.isArray(o.pages[k])) return;
       var tb = +pa[k] || 0, ta = S.pagesAt[k] || 0;
       if (tb > ta) { S.pages[k] = o.pages[k].slice(); S.pagesAt[k] = tb; }
       else if (!tb && !ta) { var cur = S.pages[k] || []; o.pages[k].forEach(function (x) { if (cur.indexOf(x) < 0) cur.push(x); }); S.pages[k] = cur; }
     });
     var na = o.notesAt || {}, notes = o.notes || {};
     Object.keys(notes).concat(Object.keys(na)).forEach(function (k) {
-      if (!DAY[k]) return;
+      if (!KEY_RE.test(k)) return;
       var tb = +na[k] || 0, ta = S.notesAt[k] || 0, b = String(notes[k] || ''), a = S.notes[k] || '';
       if (tb > ta) { if (b.trim()) S.notes[k] = b; else delete S.notes[k]; S.notesAt[k] = tb; }
       else if (!tb && !ta && b.trim() && a.indexOf(b) < 0) S.notes[k] = a.trim() ? a + '\n\n' + b : b;
     });
     var ma = o.moodAt || {}, mood = o.mood || {};
     Object.keys(mood).concat(Object.keys(ma)).forEach(function (k) {
-      if (!DAY[k]) return;
+      if (!KEY_RE.test(k)) return;
       var tb = +ma[k] || 0, ta = S.moodAt[k] || 0;
       if (tb > ta) { S.mood[k] = mood[k] || ''; S.moodAt[k] = tb; }
       else if (!tb && !ta && !S.mood[k] && mood[k]) S.mood[k] = mood[k];
@@ -2010,6 +2262,12 @@
       });
     });
     (o.gone || []).forEach(function (id) { if (S.gone.indexOf(id) < 0) S.gone.push(id); });
+    (o.exams || []).forEach(function (e) {
+      if (!e || !e.id || S.gone.indexOf(e.id) >= 0) return;
+      var i = -1; S.exams.forEach(function (x, j) { if (x.id === e.id) i = j; });
+      if (i < 0) S.exams.push(JSON.parse(JSON.stringify(e)));
+      else if ((+e.mt || 0) > (S.exams[i].mt || 0)) S.exams[i] = JSON.parse(JSON.stringify(e));
+    });
     (o.events || []).forEach(function (e) {
       if (!e || !e.id || S.gone.indexOf(e.id) >= 0) return;
       var i = -1; S.events.forEach(function (x, j) { if (x.id === e.id) i = j; });
@@ -2039,13 +2297,14 @@
     S.topics = S.topics.filter(function (t) { return S.gone.indexOf(t.id) < 0; })
       .sort(function (a, b) { return (b.at || 0) - (a.at || 0) || (a.id < b.id ? -1 : 1); });
     S.gone.sort();
+    S.exams = S.exams.filter(function (e) { return S.gone.indexOf(e.id) < 0; }).sort(function (a, b) { return a.date.localeCompare(b.date) || (a.id < b.id ? -1 : 1); });
     S.events = S.events.filter(function (e) { return S.gone.indexOf(e.id) < 0; }).sort(byTime);
     Object.keys(S.pages).forEach(function (k) { S.pages[k].sort(); });
   }
   function syncable() {
     var st = {};
     SYNC_SETTINGS.forEach(function (k) { st[k] = S.settings[k]; });
-    return Object.assign({}, S.keep, { v: 1, done: S.done, pages: S.pages, pagesAt: S.pagesAt, notes: S.notes, notesAt: S.notesAt, mood: S.mood, moodAt: S.moodAt,
+    return Object.assign({}, S.keep, { v: 1, exams: S.exams, done: S.done, pages: S.pages, pagesAt: S.pagesAt, notes: S.notes, notesAt: S.notesAt, mood: S.mood, moodAt: S.moodAt,
       focus: S.focus, topics: S.topics, gone: S.gone, settings: st, settingsAt: S.settingsAt, welcomed: S.welcomed,
       events: S.events, notifRead: S.notifRead, notifHide: S.notifHide });
   }
@@ -2127,7 +2386,7 @@
   }
   function adopt(before) {
     if (stateHash() === before) return;
-    save(true); applyTheme();
+    save(true); applyTheme(); pickActive();
     if (!sheetOpen()) render(); else if (!typingNow()) { refreshSheet(); render(); }
   }
   async function pull(force) {
@@ -2287,7 +2546,7 @@
         var data = JSON.parse(r.result);
         if (!data || data.app !== 'fioritura' || !data.state) throw new Error('x');
         var before = doneCount();
-        mergeIn(data.state); save(); applyTheme(); closeSheet(true); render();
+        mergeIn(data.state); save(); applyTheme(); pickActive(); closeSheet(true); render();
         var gained = doneCount() - before;
         toast('Copia caricata' + (gained > 0 ? ': ' + gained + ' ' + plural(gained, 'giornata in più', 'giornate in più') : '. Tutto unito.'));
       } catch (err) { toast('Questo file non sembra una copia di Fioritura.'); }
@@ -2327,7 +2586,7 @@
 
   /* ================= AZIONI ================= */
   function addTopic(text, vol, page, day) {
-    S.topics.unshift({ id: uid(), text: text, vol: vol || '', page: page || '', day: day || today(), at: Date.now(), solved: 0 });
+    S.topics.unshift({ id: uid(), ex: EXID, text: text, vol: vol || '', page: page || '', day: day || today(), at: Date.now(), solved: 0 });
     save();
   }
   var A = {
@@ -2354,17 +2613,18 @@
     page: function (el) {
       var iso = el.dataset.iso, k = el.dataset.k;
       if (isDone(iso)) { toast('La giornata è già segnata come fatta.'); return; }
-      var a = S.pages[iso] || [], i = a.indexOf(k);
+      var pk = K(iso), a = S.pages[pk] || [], i = a.indexOf(k);
       if (i >= 0) a.splice(i, 1); else a.push(k);
-      S.pages[iso] = a; S.pagesAt[iso] = Date.now(); save(); buzz(8);
+      S.pages[pk] = a; S.pagesAt[pk] = Date.now(); save(); buzz(8);
       var d = DAY[iso];
       if (pagesRead(d) === dayPages(d) && i < 0) toast('Tutte le pagine lette. Chiudi la giornata?', { label: 'Sì, fatta', run: function () { setDone(iso, true); save(); celebrate(iso); refreshSheet(); render(); } }, 7000);
       refreshSheet(); render();
     },
     mood: function (el) {
       var iso = el.dataset.iso, v = el.dataset.v;
-      S.mood[iso] = S.mood[iso] === v ? '' : v; S.moodAt[iso] = Date.now(); save();
-      if (v === 'faticosa' && S.mood[iso]) toast('Capita. Domani sarà più leggera: stasera riposa.');
+      var mk = K(iso);
+      S.mood[mk] = S.mood[mk] === v ? '' : v; S.moodAt[mk] = Date.now(); save();
+      if (v === 'faticosa' && S.mood[mk]) toast('Capita. Domani sarà più leggera: stasera riposa.');
       refreshSheet(); render();
     },
     phase: function (el) { var n = +el.dataset.n; S.open[n] = !isOpen(n, currentPhase()); save(); render(); },
@@ -2433,6 +2693,82 @@
         await logOut(); acctNote(''); refreshSheet(); render();
         toast('Sei uscita. I dati restano anche su questo dispositivo.');
       });
+    },
+    exams: function () { openSheet(examsSheet); },
+    examUse: function (el) {
+      var e = examById(el.dataset.id); if (!e) return;
+      setActive(e.id); closeSheet(true); render(true); window.scrollTo(0, 0);
+      toast('Esame in corso: ' + e.name + '.');
+    },
+    examNew: function () { genDraft = newGen(); openSheet(genSheet); setTimeout(paintGenPreview, 30); },
+    genBookAdd: function () { genDraft.books.push({ name: '', pages: '' }); refreshSheet(); paintGenPreview(); },
+    genBookDel: function (el) { genDraft.books.splice(+el.dataset.i, 1); refreshSheet(); paintGenPreview(); },
+    genReps: function (el) { genDraft.reps = +el.dataset.v; refreshSheet(); paintGenPreview(); },
+    genToggle: function (el) { var k = el.dataset.k; genDraft[k] = !genDraft[k]; refreshSheet(); paintGenPreview(); },
+    genSave: function () {
+      var r = makePlan(genDraft);
+      if (r.error) { paintGenPreview(); var m = $('[data-gen-preview]'); if (m) m.scrollIntoView({ block: 'center', behavior: 'smooth' }); return; }
+      var now = Date.now(), g = genDraft;
+      var ex = { id: 'e' + uid(), name: String(g.name).trim().slice(0, 60), date: g.date, start: g.start, books: r.books, phases: r.phases,
+        gen: { books: g.books, reps: g.reps, weekend: g.weekend, rest: g.rest, critici: g.critici }, at: now, mt: now };
+      S.exams.push(ex); tidy(); save(); setActive(ex.id);
+      closeSheet(true); UI.tab = 'plan'; try { localStorage.setItem('fioritura.tab', 'plan'); } catch (e) {}
+      render(true); window.scrollTo(0, 0);
+      toast('Piano pronto: ' + r.days + ' giornate fino al ' + fmtDM(g.date) + '. Buono studio!', null, 5000);
+    },
+    examTemplate: function (el) {
+      var id = el.dataset.v; if (!TEMPLATES[id] || examById(id)) return;
+      var ex = fromTemplate(id);
+      S.gone = S.gone.filter(function (g) { return g !== id; });
+      S.exams.push(ex);
+      if (ex.firstDone && !S.done[id + '|' + ex.firstDone]) S.done[id + '|' + ex.firstDone] = 1;   // il primo giorno era già fatto
+      tidy(); save(); setActive(id);
+      closeSheet(true); UI.tab = 'today'; try { localStorage.setItem('fioritura.tab', 'today'); } catch (e) {}
+      render(true); window.scrollTo(0, 0);
+      toast('Aggiunto: ' + ex.name + '.');
+    },
+    examEdit: function (el) { var e = examById(el.dataset.id); if (!e) return; exDraft = { id: e.id, name: e.name, date: e.date }; openSheet(examEditSheet); },
+    examSave: function () {
+      var e = examById(exDraft.id), msg = $('[data-xd-msg]'); if (!e) return;
+      var name = String(exDraft.name).trim();
+      if (!name) { if (msg) msg.textContent = 'Scrivi il nome dell’esame.'; return; }
+      if (!ISO_RE.test(exDraft.date)) { if (msg) msg.textContent = 'Scegli il giorno dell’esame.'; return; }
+      e.name = name.slice(0, 60); e.date = exDraft.date; e.mt = Date.now();
+      tidy(); save(); pickActive(); closeSheet(true); render(); toast('Esame aggiornato.');
+    },
+    examDel: function (el) {
+      arm(el, 'Tocca di nuovo per eliminarlo', function () {
+        var id = exDraft.id, i = -1; S.exams.forEach(function (x, j) { if (x.id === id) i = j; });
+        if (i < 0) return;
+        var ex = S.exams.splice(i, 1)[0]; S.gone.push(id); save(); pickActive(); closeSheet(true); render();
+        toast('Esame eliminato.', { label: 'Annulla', run: function () { S.gone = S.gone.filter(function (g) { return g !== id; }); ex.mt = Date.now(); S.exams.push(ex); tidy(); save(); setActive(id); render(); } });
+      });
+    },
+    dayEdit: function (el) {
+      var d = DAY[el.dataset.iso]; if (!d) return;
+      deDraft = { iso: d.iso, segs: d.segs.map(function (x) { return x.slice(); }), extra: d.extra, critici: d.critici };
+      if (!deDraft.segs.length && !deDraft.critici) deDraft.segs.push([1, '', '']);
+      openSheet(dayEditSheet);
+    },
+    deCrit: function () { deDraft.critici = !deDraft.critici; if (!deDraft.critici && !deDraft.segs.length) deDraft.segs.push([1, '', '']); refreshSheet(); },
+    deSegAdd: function () { var last = deDraft.segs[deDraft.segs.length - 1]; deDraft.segs.push([last ? last[0] : 1, '', '']); refreshSheet(); },
+    deSegDel: function (el) { deDraft.segs.splice(+el.dataset.i, 1); refreshSheet(); },
+    deSave: function () {
+      var e = deDraft, msg = $('[data-de-msg]'), ex = examById(EXID); if (!ex) return;
+      var segs = [];
+      if (!e.critici) {
+        for (var i = 0; i < e.segs.length; i++) {
+          var sg = e.segs[i], a = Math.floor(+sg[1]), b = Math.floor(+sg[2]);
+          if (!sg[1] && !sg[2]) continue;
+          if (!(a > 0) || !(b >= a)) { if (msg) msg.textContent = 'Controlla le pagine: «da» deve essere un numero e «a» non può essere più piccolo.'; return; }
+          segs.push([+sg[0] || 1, a, b]);
+        }
+      }
+      var opts = {}; if (e.critici) opts.critici = true; else if (String(e.extra || '').trim()) opts.extra = String(e.extra).trim().slice(0, 80);
+      var row = examDayOn(ex, e.iso); if (!row) return;
+      row[1] = segs; if (Object.keys(opts).length) row[2] = opts; else row.length = 2;
+      ex.mt = Date.now(); save(); pickActive();
+      openDay(e.iso); render(); toast('Giornata aggiornata.');
     },
     calSel: function (el) { UI.calSel = el.dataset.iso; UI.calMonth = UI.calSel.slice(0, 7); render(); },
     calMove: function (el) {
@@ -2514,11 +2850,11 @@
         Timer.stop(); Sound.stop();
         if (was) await logOut();
         try { localStorage.removeItem(KEY); } catch (e) {}
-        S = defaults(); save(true); applyTheme(); closeSheet(true); render();
+        S = defaults(); save(true); applyTheme(); pickActive(); closeSheet(true); render();
         toast(was ? 'Dati cancellati da questo dispositivo. Nel tuo account ci sono ancora: accedi per riaverli.' : 'Dati cancellati.', null, 6000);
       });
     },
-    welcomeDone: function () { S.welcomed = true; save(); closeSheet(); },
+    welcomeDone: function () { S.welcomed = true; save(); closeSheet(); if (!S.exams.length) setTimeout(function () { A.examNew(); }, 450); },
     solve: function (el) {
       var t = S.topics.filter(function (x) { return x.id === el.dataset.id; })[0]; if (!t) return;
       t.solved = t.solved ? 0 : Date.now(); t.st = Date.now(); save();
@@ -2564,12 +2900,22 @@
   document.addEventListener('input', function (e) {
     var t = e.target;
     if (t.matches('[data-note]')) {
-      notePending = { iso: t.dataset.note, v: t.value };
+      notePending = { key: K(t.dataset.note), v: t.value };
       var sv = $('[data-saved]'); if (sv) sv.textContent = '';
       clearTimeout(noteTimer); noteTimer = setTimeout(flushNote, 500);
     } else if (t.matches('[data-setting]')) {
       S.settings[t.dataset.setting] = t.value.slice(0, 40); S.settingsAt = Date.now(); save();
       clearTimeout(t._r); t._r = setTimeout(function () { render(); }, 250);
+    } else if (t.matches('[data-gen]') && genDraft) {
+      genDraft[t.dataset.gen] = t.value; paintGenPreview();
+    } else if (t.matches('[data-gen-book]') && genDraft) {
+      genDraft.books[+t.dataset.genBook][t.dataset.k] = t.value; paintGenPreview();
+    } else if (t.matches('[data-xd]') && exDraft) {
+      exDraft[t.dataset.xd] = t.value;
+    } else if (t.matches('[data-de]') && deDraft) {
+      deDraft.segs[+t.dataset.de][+t.dataset.k] = t.dataset.k === '0' ? +t.value : t.value;
+    } else if (t.matches('[data-de-extra]') && deDraft) {
+      deDraft.extra = t.value;
     } else if (t.matches('[data-ev]') && evDraft) {
       var k = t.dataset.ev; evDraft[k] = k === 'rem' ? +t.value : t.value;
     } else if (t.matches('[data-vol]')) {
@@ -2579,6 +2925,9 @@
   document.addEventListener('change', function (e) {
     var t = e.target;
     if (t.matches && t.matches('[data-ev]') && evDraft) { var k = t.dataset.ev; evDraft[k] = k === 'rem' ? +t.value : t.value; }
+    if (t.matches && t.matches('[data-de]') && deDraft) deDraft.segs[+t.dataset.de][+t.dataset.k] = t.dataset.k === '0' ? +t.value : t.value;
+    if (t.matches && t.matches('[data-gen]') && genDraft) { genDraft[t.dataset.gen] = t.value; paintGenPreview(); }
+    if (t.matches && t.matches('[data-xd]') && exDraft) exDraft[t.dataset.xd] = t.value;
   });
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Enter') return;

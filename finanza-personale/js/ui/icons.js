@@ -24,6 +24,7 @@ export const ICONS = {
   chevR: '<path d="m9.5 5.5 6.5 6.5-6.5 6.5"/>',
   chevL: '<path d="M14.5 5.5 8 12l6.5 6.5"/>',
   sidebar: '<rect x="3.5" y="4.5" width="17" height="15" rx="3"/><path d="M9.5 4.5v15"/>',
+  user: '<circle cx="12" cy="8.5" r="3.6"/><path d="M5 19.5c1.3-3.3 3.9-5 7-5s5.7 1.7 7 5"/>',
   chevD: '<path d="m5.5 9.5 6.5 6.5 6.5-6.5"/>',
   chevU: '<path d="m5.5 14.5 6.5-6.5 6.5 6.5"/>',
   arrowUp: '<path d="M12 19V5M6 11l6-6 6 6"/>',

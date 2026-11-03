@@ -411,7 +411,9 @@ export default {
         h('p.muted', `Versione ${VERSION} · Funziona offline · Dati cifrati prima di partire · Nessun tracciamento, nessuna pubblicità.`),
         h('p.muted', 'Sviluppato con cura da Davide Raho · © 2026'),
         h('p.fine', 'I calcoli fiscali seguono le regole italiane per le persone fisiche (2026) e sono indicativi: per la dichiarazione dei redditi rivolgiti a un commercialista.')));
-    if (q.backup) setTimeout(() => { const el = document.getElementById('set-backup'); if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); el.classList.add('flash'); } }, 80);
+    // arrivo dal menu del profilo (?sez=account…) o da "fai il backup": porto la pagina su quella sezione
+    const sez = q.sez || (q.backup ? 'backup' : '');
+    if (sez) setTimeout(() => { history.replaceState(null, '', '#/impostazioni'); const el = document.getElementById('set-' + sez); if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); el.classList.add('flash'); } }, 80);
     void ui;
     // a sinistra le sezioni (sempre visibili), a destra una sotto l'altra
     const secs = [...node.querySelectorAll('section.set-card')].map(x => ({ id: x.id, title: x.querySelector('.card-title')?.textContent || '' }));

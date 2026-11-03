@@ -187,3 +187,22 @@ test('conto "solo nei mesi con un valore": nel Net Worth vale solo dove è scrit
   assert.deepEqual(row('Banca'), [120000, 120000, 120000]);
   assert.deepEqual(S0.total.slice(0, 3), [820000, 120000, 120000]);
 });
+
+test('righe fuori dalle sezioni di D: nella sua sezione dello stesso tipo, niente nomi inventati', async () => {
+  const { derive } = await import('../js/core/model.js');
+  const st = sanitize({ ...defaults(),
+    accounts: [
+      { id: 'a-b1', name: 'Banca Uno', type: 'checking', currency: 'EUR' },
+      { id: 'a-b2', name: 'Banca Due', type: 'savings', currency: 'EUR' },        // non è nel layout
+      { id: 'a-tfr', name: 'TFR', type: 'receivable', currency: 'EUR' },        // non è nel layout
+      { id: 'a-x', name: 'Vanguard FTSE All-World', type: 'broker', currency: 'EUR' },   // tipo sconosciuto, nome da ETF
+    ],
+    valuations: ['a-b1', 'a-b2', 'a-tfr', 'a-x'].map((a, i) => ({ id: 'v' + i, account: a, date: '2026-01-31', value: 10000 * (i + 1), kind: 'open', created: 1 })),
+    settings: { ...defaults().settings, nwLayout: { sections: [{ name: 'Cash - Liquidity', color: 1, items: ['a:a-b1'] }, { name: 'ETF', color: 2, items: [] }, { name: 'WORK', color: 3, items: [] }], labels: {} } } });
+  const S0 = derive(st, '2026-03-10').nwSheet(2026);
+  const where = Object.fromEntries(S0.sections.flatMap(x => x.rows.map(r => [r.name, x.name])));
+  assert.equal(where['Banca Due'], 'Cash - Liquidity');
+  assert.equal(where['TFR'], 'WORK');
+  assert.equal(where['Vanguard FTSE All-World'], 'ETF');
+  assert.ok(!S0.sections.some(x => ['Liquidità', 'Crediti', 'Altri investimenti'].includes(x.name)));
+});

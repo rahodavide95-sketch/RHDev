@@ -51,7 +51,7 @@ jobs:
           else
             JWK=$(node -e "const k=require('crypto').generateKeyPairSync('ec',{namedCurve:'P-256'}).privateKey.export({format:'jwk'});process.stdout.write(JSON.stringify({kty:'EC',crv:'P-256',d:k.d,x:k.x,y:k.y}))")
             echo "::add-mask::$JWK"
-            supabase secrets set --project-ref "$PROJECT_REF" "FIORITURA_VAPID_JWK=$JWK" > /dev/null
+            supabase secrets set --yes --project-ref "$PROJECT_REF" "FIORITURA_VAPID_JWK=$JWK" > /dev/null
             echo "Chiavi VAPID create."
           fi
 
@@ -60,13 +60,13 @@ jobs:
         run: |
           SECRET=$(openssl rand -hex 24)
           echo "::add-mask::$SECRET"
-          supabase secrets set --project-ref "$PROJECT_REF" "FIORITURA_CRON_SECRET=$SECRET" > /dev/null
+          supabase secrets set --yes --project-ref "$PROJECT_REF" "FIORITURA_CRON_SECRET=$SECRET" > /dev/null
           echo "CRON_SECRET=$SECRET" >> "$GITHUB_ENV"
 
       - name: Pubblica la funzione
         if: steps.token.outputs.skip != '1'
         working-directory: fioritura
-        run: supabase functions deploy fioritura-push --project-ref "$PROJECT_REF" --no-verify-jwt --use-api
+        run: supabase functions deploy fioritura-push --yes --project-ref "$PROJECT_REF" --no-verify-jwt --use-api
 
       - name: Tabelle e giro di ogni minuto (pg_cron)
         if: steps.token.outputs.skip != '1'

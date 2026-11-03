@@ -511,6 +511,16 @@ su una riga sola** (D: "aggiungi i titoli sotto all'icona"; "Entrate e uscite" c
 "allarga" e il pallino del salvataggio uno sotto l'altro. ≤720 px di altezza solo icone (nome nel
 `title`), ≤620 e ≤580 voci più basse. Finestre alte
 fino allo schermo (niente tetti a 46vh/900px), `sheet-lg` fino a 1280 px.
+**Niente righino grigio sotto le intestazioni** (D: "sotto ad ogni intestazione togli quel righino grigio
+che mi disturba la vista"): la prima riga sotto `thead` e la riga subito sotto una sezione/categoria
+(`nw-band`, `fin-macro`, `inv-cat`) non hanno la linea in alto; le righe delle categorie di Entrate e uscite
+non hanno più né la linea sopra né la barretta colorata a sinistra (il colore è nel quadratino).
+**Patrimonio › Anno per anno** (D: "fa schifo, aggiustala, riducila perché troppo grande, affianco metti
+qualcos'altro"): `yearsCard(ctx, years, M)` = griglia `.nw-years` a due colonne (una sotto l'altra sotto i
+1000 px): tabella piccola `table.fit.nw-years-t` (anno, fine anno, differenza, %; "a fine ott" per l'anno
+in corso; l'anno mostrato nel Net Worth evidenziato; tocca per vederlo) e accanto "I numeri del
+patrimonio" (`.nw-stats`): mese migliore e peggiore (fine mese su fine mese, con la %), media al mese e
+mesi in crescita negli ultimi 12 (pallini verdi/rossi), il più alto di sempre.
 **Tutto arrotondato** (D: "o tutto squadrato o tutto arrotondato… tutto arrotondato"): le righe colorate
 (`nw-band`, `fin-macro`, `inv-cat`) hanno le estremità tonde (8 px) come l'intestazione; la banda delle
 sezioni senza la riga sotto. **Asset Allocation senza quadratino** (D).

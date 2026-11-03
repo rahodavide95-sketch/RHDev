@@ -357,8 +357,10 @@ export function checkInEditor(ctx, presetMonth) {
   const s = openSheet({ title: 'Aggiorna il Net Worth', subtitle: 'I valori effettivi di fine mese, riga per riga', size: 'md', body, footer: [h('button.btn.btn-primary', { type: 'button', onclick: save }, 'Salva i valori')] });
 }
 
-/* ─── Anno per anno: il patrimonio a fine anno (31/12 del foglio) ─── */
-function yearsCard(ctx, years) {
+/* ─── Anno per anno (D: "la tabella anno per anno fa schifo, aggiustala, riducila perché troppo grande,
+   affianco metti qualcos'altro"): a sinistra una tabella piccola (anno, fine anno, differenza, %),
+   a destra i numeri del patrimonio mese per mese (mese migliore e peggiore, media, mesi in crescita, record) ─── */
+function yearsCard(ctx, years, M) {
   const { d } = ctx;
   const rows = years.slice().sort().map(Y => {
     const T = d.nwSheet(Y);
@@ -367,14 +369,35 @@ function yearsCard(ctx, years) {
     return { Y, end: T.total[li], endCol: T.cols[li], start: T.total[0] };
   }).filter(r => r.end != null).reverse();
   if (rows.length < 1) return null;
-  return card('Anno per anno', { sub: 'Patrimonio a fine anno (o all\'ultima fine mese) e differenza dal 31/12 prima' },
-    h('div.table-wrap', h('table.table',
-      h('thead', h('tr', h('th', 'Anno'), h('th.num', 'Patrimonio'), h('th.num', 'Differenza'), h('th.num', '%'))),
-      h('tbody', rows.map(r => h('tr.click', { onclick: () => { year = r.Y; ctx.rerender(); } },
-        h('td', r.endCol && r.endCol.slice(5) !== '12-31' ? `${r.Y} (a fine ${monthName(Number(r.endCol.slice(5, 7)))})` : String(r.Y)),
+  const table = card('Anno per anno', { sub: 'A fine anno, e quanto è cambiato dal 31/12 prima', cls: 'nw-years-card' },
+    h('div.table-wrap', h('table.table.fit.nw-years-t',
+      h('thead', h('tr', h('th', 'Anno'), h('th.num', 'Fine anno'), h('th.num', 'Differenza'), h('th.num', '%'))),
+      h('tbody', rows.map(r => h('tr.click', { class: r.Y === year ? 'on' : '', onclick: () => { year = r.Y; ctx.rerender(); }, title: `Mostra il Net Worth ${r.Y}` },
+        h('td', h('b', String(r.Y)), r.endCol && r.endCol.slice(5) !== '12-31' ? h('small.nw-years-part', ` a fine ${monthName(Number(r.endCol.slice(5, 7)), true)}`) : null),
         h('td.num', moneyText(r.end)),
         h('td.num', { class: r.start == null ? 'muted' : r.end - r.start >= 0 ? 'pos' : 'neg' }, r.start == null ? 'primo anno' : moneyText(r.end - r.start, ui.base, { sign: true })),
-        h('td.num', r.start ? formatPercent(pctOf(r.end, r.start), 2, true) : '—')))))));
+        h('td.num', { class: r.start ? (r.end >= r.start ? 'pos' : 'neg') : 'muted' }, r.start ? formatPercent(pctOf(r.end, r.start), 2, true) : '—')))))));
+
+  // i numeri mese per mese, da tutte le fine mese con un valore
+  const steps = [];
+  for (let i = 1; i <= M.last; i++) if (M.total[i] != null && M.total[i - 1] != null) steps.push({ i, v: M.total[i] - M.total[i - 1], p: pctOf(M.total[i], M.total[i - 1]) });
+  const when = i => formatMonth(monthKey(M.cols[i]));
+  const best = steps.reduce((x, y) => (!x || y.v > x.v ? y : x), null);
+  const worst = steps.reduce((x, y) => (!x || y.v < x.v ? y : x), null);
+  const last12 = steps.slice(-12);
+  const avg = last12.length ? Math.round(last12.reduce((a, x) => a + x.v, 0) / last12.length) : null;
+  const up = last12.filter(x => x.v > 0).length;
+  let peak = null;
+  M.total.forEach((v, i) => { if (v != null && i <= M.last && (peak == null || v > M.total[peak])) peak = i; });
+  const stat = (label, value, sub, tone) => h('div.nw-stat', h('span.nw-stat-l', label), h('span.nw-stat-v', { class: tone || '' }, value), sub ? h('span.nw-stat-s', sub) : null);
+  const stats = steps.length ? card('I numeri del patrimonio', { sub: 'Fine mese dopo fine mese', cls: 'nw-years-card' },
+    h('div.nw-stats',
+      best ? stat('Il mese migliore', money(best.v, d.base, { sign: true, tone: best.v >= 0 ? 'pos' : 'neg' }), `${when(best.i)} · ${formatPercent(best.p ?? 0, 1, true)}`) : null,
+      worst ? stat('Il mese peggiore', money(worst.v, d.base, { sign: true, tone: worst.v >= 0 ? 'pos' : 'neg' }), `${when(worst.i)} · ${formatPercent(worst.p ?? 0, 1, true)}`) : null,
+      avg != null ? stat('In media al mese', money(avg, d.base, { sign: true, tone: avg >= 0 ? 'pos' : 'neg' }), `negli ultimi ${last12.length} ${last12.length === 1 ? 'mese' : 'mesi'}`) : null,
+      last12.length ? stat('Mesi in crescita', `${up} su ${last12.length}`, h('span.nw-dots', last12.map(x => h('i', { class: x.v > 0 ? 'pos' : x.v < 0 ? 'neg' : '', title: `${when(x.i)}: ${moneyText(x.v, ui.base, { sign: true })}` })))) : null,
+      peak != null ? stat('Il più alto di sempre', money(M.total[peak]), when(peak)) : null)) : null;
+  return h('div.nw-years', table, stats);
 }
 
 /** Scorre fino alla sezione nella tabella del Net Worth e la fa lampeggiare un attimo. */
@@ -478,7 +501,7 @@ export default {
       node: h('div.stack', summary,
         h('div.nw-year-bar', h('h2.section-title', 'Net Worth'), yearTabs),
         sheetTable(ctx, year),
-        yearsCard(ctx, years),
+        yearsCard(ctx, years, M),
         h('p.fine', icon('info', 14), ' Il patrimonio è il tuo Net Worth: i valori effettivi di fine mese di conti, titoli, TFR netto… come nel foglio. I titoli valgono quanto scritto nel Net Worth (dal file o da "Aggiorna i valori"), non i prezzi degli Investimenti, che restano a sé. Le entrate e le uscite non si sommano: contano i valori di fine mese.')),
     };
   },

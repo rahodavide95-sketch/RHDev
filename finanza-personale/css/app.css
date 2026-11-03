@@ -1278,8 +1278,8 @@ table.resizing { user-select: none; cursor: col-resize; }
 .fin-card .spark { width: 100%; height: 30px; }
 .fin-table.nw-months .sticky { min-width: 210px; max-width: 280px; }
 .fin-table td.b { font-weight: 700; }
-.fin-table tr.fin-macro td { background: color-mix(in srgb, var(--chip) 11%, var(--card)); box-shadow: inset 0 1px 0 color-mix(in srgb, var(--chip) 30%, transparent); padding-top: 11px; padding-bottom: 11px; }
-.fin-table tr.fin-macro td.sticky { box-shadow: inset 5px 0 0 var(--chip), inset 0 1px 0 color-mix(in srgb, var(--chip) 30%, transparent); }
+.fin-table tr.fin-macro td { background: color-mix(in srgb, var(--chip) 11%, var(--card)); box-shadow: none; padding-top: 11px; padding-bottom: 11px; }
+.fin-table tr.fin-macro td.sticky { box-shadow: none; }
 .fin-macro-name { display: inline-flex; align-items: center; gap: 6px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; font-size: 13.5px; color: color-mix(in srgb, var(--chip) 78%, var(--ink)); }
 .fin-caret { display: inline-flex; width: 16px; justify-content: center; color: color-mix(in srgb, var(--chip) 70%, var(--ink-3)); }
 .fin-table tr.fin-sub td.sticky { padding-left: 38px; box-shadow: inset 5px 0 0 color-mix(in srgb, var(--chip) 35%, transparent), inset 0 1px 0 var(--line); }
@@ -1289,7 +1289,7 @@ table.resizing { user-select: none; cursor: col-resize; }
 .fin-table tr.fin-note td { font-size: 12.5px; color: var(--ink-2); padding-top: 6px; padding-bottom: 6px; }
 .fin-table tr.fin-note td.sticky { padding-left: 56px; box-shadow: inset 5px 0 0 color-mix(in srgb, var(--chip, var(--line)) 20%, transparent); }
 .fin-table .fin-tot { font-weight: 700; box-shadow: inset 1px 0 0 var(--line); }
-.fin-table tr.fin-macro td.fin-tot { box-shadow: inset 1px 0 0 var(--line), inset 0 1px 0 color-mix(in srgb, var(--chip) 30%, transparent); }
+.fin-table tr.fin-macro td.fin-tot { box-shadow: inset 1px 0 0 var(--line); }
 .fin-table .fin-pct { color: var(--ink-3); font-size: 13px; }
 .fin-table tr.fin-grand td { font-weight: 800; font-size: 15px; box-shadow: inset 0 2px 0 var(--ink); background: var(--card); }
 .fin-table tr.fin-macro.click { cursor: pointer; }
@@ -1321,8 +1321,9 @@ table.resizing { user-select: none; cursor: col-resize; }
 [data-colors="few"] .fin-bar i { background: var(--ink-3); }
 [data-colors="few"] .fin-card .spark .line { stroke: var(--ink-3) !important; }
 [data-colors="few"] .fin-card .spark .area { fill: var(--ink-3) !important; }
-[data-colors="few"] .fin-table tr.fin-macro td { background: color-mix(in srgb, var(--chip) 9%, var(--card)); box-shadow: inset 0 1px 0 var(--line); }
-[data-colors="few"] .fin-table tr.fin-macro td.sticky, [data-colors="few"] .fin-table tr.fin-macro td.fin-tot { box-shadow: inset 0 1px 0 var(--line); }
+[data-colors="few"] .fin-table tr.fin-macro td { background: color-mix(in srgb, var(--chip) 9%, var(--card)); box-shadow: none; }
+[data-colors="few"] .fin-table tr.fin-macro td.sticky { box-shadow: none; }
+[data-colors="few"] .fin-table tr.fin-macro td.fin-tot { box-shadow: inset 1px 0 0 var(--line); }
 [data-colors="few"] .fin-table tr.fin-macro.click:hover td { background: color-mix(in srgb, var(--chip) 15%, var(--card)); }
 [data-colors="few"] .fin-macro-name { color: var(--ink); }
 [data-colors="few"] .fin-caret { color: var(--ink-3); }
@@ -1515,8 +1516,8 @@ img.gate-mark { width: 112px; height: 112px; border-radius: 28px; }
 .fin-table tr.fin-sub .nw-grip { left: 14px; }
 .nw-sheet tr.nw-item td.nw-drag-h, .fin-table td.fin-drag-h { cursor: grab; }
 .table tr.nw-dragging td { opacity: .4; }
-.table tr.drop-before td { box-shadow: inset 0 2px 0 var(--brand); }
-.table tr.drop-after td { box-shadow: inset 0 -2px 0 var(--brand); }
+html .table tbody tr.drop-before > td { box-shadow: inset 0 2px 0 var(--brand); }
+html .table tbody tr.drop-after > td { box-shadow: inset 0 -2px 0 var(--brand); }
 body.nw-drag-on, body.nw-drag-on * { cursor: grabbing !important; user-select: none; -webkit-user-select: none; }
 
 /* cerchio del profilo in alto a destra e il suo menu */
@@ -1563,3 +1564,39 @@ tr:hover .name-edit, .name-edit:focus-visible { opacity: 1; }
 .table tr.nw-band > td:last-child, .table tr.fin-macro > td:last-child, .table tr.inv-cat > td:last-child { border-top-right-radius: 8px; border-bottom-right-radius: 8px; }
 .nw-sheet tr.nw-band td { box-shadow: none; }
 .nw-sheet tr.nw-band td.sticky span { gap: 9px; }
+
+/* niente righino grigio sotto le intestazioni (D: "sotto ad ogni intestazione togli quel righino grigio che
+   mi disturba la vista"): né sotto l'intestazione della tabella, né sotto le righe delle sezioni/categorie */
+.table tbody tr:first-child > td { box-shadow: none; }
+.table tr.inv-cat > td, .table tr.inv-cat + tr > td { box-shadow: none; }
+.nw-sheet tr.nw-band + tr > td, .nw-sheet tr.nw-band + tr > td.sticky { box-shadow: none; }
+.fin-table tr.fin-macro + tr > td, .fin-table tr.fin-macro + tr > td.sticky,
+[data-colors="few"] .fin-table tr.fin-macro + tr.fin-sub > td.sticky { box-shadow: none; }
+.fin-table tr.fin-macro + tr > td.fin-tot { box-shadow: inset 1px 0 0 var(--line); }
+/* Patrimonio › Anno per anno: tabella piccola a sinistra, i numeri del patrimonio a destra */
+.nw-years { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 1000px) { .nw-years { grid-template-columns: minmax(0, 1fr); } }
+.nw-years .card { margin: 0; }
+.nw-years-t { font-size: 14px; }
+.nw-years-t td, .nw-years-t th { padding-top: 8px; padding-bottom: 8px; }
+.nw-years-t td b { font-weight: 700; }
+.nw-years-t tr.on > td { background: color-mix(in srgb, var(--brand) 7%, var(--card)); }
+.nw-years-t tr.on > td:first-child { border-top-left-radius: 8px; border-bottom-left-radius: 8px; }
+.nw-years-t tr.on > td:last-child { border-top-right-radius: 8px; border-bottom-right-radius: 8px; }
+.nw-years-part { color: var(--ink-3); font-size: 12px; font-weight: 500; }
+.nw-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.nw-stat { display: flex; flex-direction: column; gap: 3px; padding: 12px 14px; border-radius: 14px; background: var(--card-2); min-width: 0; }
+.nw-stat-l { font-size: 12.5px; color: var(--ink-3); font-weight: 560; }
+.nw-stat-v { font-size: 18px; font-weight: 720; letter-spacing: -.02em; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nw-stat-s { font-size: 12px; color: var(--ink-3); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.nw-dots { display: inline-flex; gap: 3px; }
+.nw-dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--fill-2); }
+.nw-dots i.pos { background: color-mix(in srgb, var(--pos) 75%, var(--card)); }
+.nw-dots i.neg { background: color-mix(in srgb, var(--neg) 75%, var(--card)); }
+.nw-stats .nw-stat:last-child:nth-child(odd) { grid-column: 1 / -1; }
+.nw-years-t td:first-child { white-space: nowrap; }
+@media (max-width: 759px) {
+  .nw-years-t { font-size: 13px; }
+  .nw-years-t td, .nw-years-t th { padding-left: 6px; padding-right: 6px; }
+  .nw-years-part { display: block; font-size: 11px; }
+}

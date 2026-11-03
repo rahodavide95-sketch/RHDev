@@ -1542,14 +1542,15 @@
   function hashOf(str) { var h = 2166136261; for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36) + '.' + str.length; }
   function stateHash() { return hashOf(canon(syncable())); }
   /* ================= ACCOUNT E SINCRONIZZAZIONE ================= */
-  // Account con email e password su un progetto Supabase SOLO di Fioritura (utenti e dati separati da tutto il resto).
-  // Ognuno si registra con la sua email e vede solo la sua riga (tabella fioritura, vedi fioritura/supabase/schema.sql).
-  // Come collegarlo: fioritura/docs/ACCOUNT.md. Finché CLOUD è vuoto l'account non compare e i dati restano sul dispositivo.
+  // Account con email e password: ognuno si registra con la SUA email e vede solo la sua riga.
+  // Sta nel progetto Supabase già usato da Analisi Finanziarie (registrazione aperta a tutti), in una tabella
+  // a parte (fioritura, vedi fioritura/supabase/schema.sql): non dà accesso a Documenti Raho né ai dati di altri.
+  // D: "l'importante è che lei acceda con una sua mail, non mi importa dove va a finire l'utenza".
   // Una riga per account con "version": ogni salvataggio fa PATCH ...version=eq.N; se intanto un altro dispositivo
   // ha salvato, si scarica, si unisce (mergeIn) e si riprova.
   var CLOUD = {
-    url: '',   // Project URL, es. https://abcdefghijklmnop.supabase.co
-    key: ''    // chiave "anon" / "publishable" (è pubblica per natura). MAI la "service_role" o una "secret".
+    url: 'https://ztjlqorvnulgfvbtvavm.supabase.co',
+    key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp0amxxb3J2bnVsZ2Z2YnR2YXZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2OTgwMDIsImV4cCI6MjA5NzI3NDAwMn0._6gEbzCCnejpyh36Lpqe0_fj27UaonCkn2a7NastDMA'   // chiave pubblica "anon"
   };
   var SB = { url: String(CLOUD.url || '').replace(/\/+$/, ''), key: String(CLOUD.key || '') };
   function keyIsPublic(k) {

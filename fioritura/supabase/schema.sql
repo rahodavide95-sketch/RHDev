@@ -1,11 +1,10 @@
 -- Fioritura: i progressi di studio sincronizzati tra i dispositivi, un account per persona.
--- Va in un progetto Supabase SOLO di Fioritura (non quello di Label Finance / Documenti Raho):
--- utenti e dati restano separati da tutte le altre app. Guida: fioritura/docs/ACCOUNT.md.
--- Ognuno si registra con la sua email, ha la sua riga e vede solo quella. I dati non sono cifrati
--- (sono progressi di studio: giornate, pagine, note, argomenti critici).
+-- Sta nel progetto Supabase di Label Finance (lo stesso di Documenti Raho e Analisi Finanziarie, quindi gli
+-- stessi account email e password) ma usa solo oggetti con il prefisso fioritura: non tocca nient'altro.
+-- Ognuno ha la sua riga e vede solo quella. I dati non sono cifrati (sono progressi di studio: giornate,
+-- pagine, note, argomenti critici); chi gestisce il progetto Supabase potrebbe vederli dal pannello.
 -- Il server risponde solo all'app dal suo sito: una copia messa su un altro sito non può usare questo database.
--- Si può rieseguire senza problemi (lo applica il workflow .github/workflows/fioritura-db.yml, oppure
--- si incolla nel SQL Editor del progetto).
+-- Si può rieseguire senza problemi (lo applica il workflow .github/workflows/fioritura-db.yml).
 
 -- i dati: una riga per account, con la versione per non sovrascrivere le modifiche di un altro dispositivo
 create table if not exists public.fioritura (

@@ -35,7 +35,6 @@ export const toCents = n => {
   const v = Math.round(Number(n) * 100);
   return Number.isFinite(v) ? v : 0;
 };
-export const fromCents = c => (Number(c) || 0) / 100;
 
 /** Normalizza un numero scritto a mano in formato JS ("1.234,56" → "1234.56"). */
 function normalizeNumber(tok) {

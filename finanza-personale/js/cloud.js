@@ -9,7 +9,6 @@ const SB_URL = 'https://ztjlqorvnulgfvbtvavm.supabase.co';
 // chiave pubblica "anon" (fatta per stare nelle pagine web: da sola non apre nulla, decidono le regole del database)
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp0amxxb3J2bnVsZ2Z2YnR2YXZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2OTgwMDIsImV4cCI6MjA5NzI3NDAwMn0._6gEbzCCnejpyh36Lpqe0_fj27UaonCkn2a7NastDMA';
 const TABLE = 'finanza_personale';
-export const APP_URL = 'https://rahodavide95-sketch.github.io/RHDev/finanza-personale/';
 
 export class CloudError extends Error {
   constructor(msg, status, code) { super(msg); this.name = 'CloudError'; this.status = status; this.code = code; }
@@ -78,17 +77,16 @@ async function freshToken() {
 
 const back = () => (/^https?:$/.test(location.protocol) ? '?redirect_to=' + encodeURIComponent(location.origin + location.pathname) : '');
 
-/** C'è già un proprietario? (solo il primo account che accede può usare il cloud dell'app) */
-export async function hasOwner() {
-  try { return !!(await api('/rest/v1/rpc/finanza_personale_has_owner', { method: 'POST', auth: false, body: {} })); } catch { return true; }
-}
+
+// ogni account ha la sua riga (registrazione aperta a tutti); il server risponde solo all'app dal suo sito
+const NOT_HERE = 'La sincronizzazione funziona solo dal sito di [RH] Finance. Qui puoi usare l\'app senza account, solo su questo dispositivo.';
 
 export async function signIn(email, password) {
   await setSession(await api('/auth/v1/token?grant_type=password', { method: 'POST', auth: false, body: { email: email.trim(), password } }));
   const mine = await api('/rest/v1/rpc/finanza_personale_claim', { method: 'POST', body: {} });
   if (mine !== true) {
     await signOut();
-    throw new CloudError('Questa app è già collegata a un altro account. Puoi usarla senza account, solo su questo dispositivo.', 403, 'denied');
+    throw new CloudError(NOT_HERE, 403, 'denied');
   }
   return sess;
 }
@@ -99,7 +97,7 @@ export async function signUp(email, password) {
   if (!d || !d.access_token) return 'confirm';
   await setSession(d);
   const mine = await api('/rest/v1/rpc/finanza_personale_claim', { method: 'POST', body: {} });
-  if (mine !== true) { await signOut(); throw new CloudError('Questa app è già collegata a un altro account.', 403, 'denied'); }
+  if (mine !== true) { await signOut(); throw new CloudError(NOT_HERE, 403, 'denied'); }
   return 'ok';
 }
 

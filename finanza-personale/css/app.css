@@ -406,16 +406,10 @@ button.row:hover, a.row:hover { background: var(--hover); }
 @media (max-width: 759px) { .tx-list { padding: 10px 16px 14px; border-radius: 22px; } .row { min-height: 58px; padding: 9px 10px; gap: 11px; } .avatar { width: 40px; height: 40px; border-radius: 13px; font-size: 19px; } }
 
 /* ─── Numeri ─────────────────────────────────────────────────────────── */
-.hero-card { padding-bottom: 18px; }
-.hero-top { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; margin-bottom: 8px; }
 .hero-label { color: var(--ink-3); font-size: 14px; font-weight: 520; }
 .hero-value { font-size: clamp(36px, 4.6vw, 52px); font-weight: 680; letter-spacing: -0.045em; line-height: 1.08; margin: 4px 0 6px; }
 .hero-value .amt { font-variant-numeric: normal; }
 .hero-delta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 14px; font-weight: 560; }
-.hero-groups { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-.hero-chip { display: flex; flex-direction: column; gap: 1px; padding: 10px 14px; border-radius: 16px; background: var(--card-2); font-weight: 620; font-size: 15px; min-width: 120px; }
-.hero-chip:hover { background: var(--fill); }
-.hero-chip-l { color: var(--ink-3); font-size: 12.5px; font-weight: 520; }
 .delta { font-weight: 600; font-size: 13.5px; color: var(--ink-3); white-space: nowrap; }
 .delta-pos { color: var(--pos); }
 .delta-neg { color: var(--neg); }
@@ -424,8 +418,7 @@ button.row:hover, a.row:hover { background: var(--hover); }
 .stat-value { font-size: 21px; font-weight: 650; letter-spacing: -0.03em; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .stat-value.big { font-size: 28px; }
 .stat-extra { color: var(--ink-3); font-size: 12.5px; margin-top: 2px; }
-.stats-2, .stats-3, .stats-4 { display: grid; gap: 16px; margin: 4px 0 16px; }
-.stats-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.stats-3, .stats-4 { display: grid; gap: 16px; margin: 4px 0 16px; }
 .stats-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .stats-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .nw-strip, .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 18px; }
@@ -435,14 +428,9 @@ button.row:hover, a.row:hover { background: var(--hover); }
   .stats-3 .stat-value { font-size: 17px; }
   .nw-strip, .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
   .stat-value { font-size: 19px; }
-  .hero-top { flex-direction: column; }
 }
 
 /* ─── Panoramica ─────────────────────────────────────────────────────── */
-.dash { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(320px, 1fr); gap: 18px; align-items: start; }
-.dash-col { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
-@media (max-width: 1180px) { .dash { grid-template-columns: minmax(0, 1fr); } }
-@media (max-width: 759px) { .dash, .dash-col { gap: 12px; } }
 .mini-list { display: flex; flex-direction: column; gap: 12px; }
 .mini-row { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; align-items: center; font-size: 14px; }
 .mini-row .bar { grid-column: 1 / -1; }
@@ -465,20 +453,12 @@ button.row:hover, a.row:hover { background: var(--hover); }
 .goal-mini-s { font-size: 12.5px; color: var(--ink-3); }
 .alloc-bar { display: flex; gap: 2px; height: 12px; border-radius: 999px; overflow: hidden; margin-bottom: 10px; }
 .alloc-bar span { display: block; min-width: 3px; }
-.alloc-legend, .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; color: var(--ink-2); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; color: var(--ink-2); }
 .legend { margin-top: 10px; }
 .legend-item { display: inline-flex; align-items: center; gap: 6px; }
 .legend-key { width: 10px; height: 10px; border-radius: 3px; flex: none; }
 .legend-key.line { height: 0; width: 14px; border-top: 2px solid; border-radius: 0; }
 .legend-key.dashed { height: 0; width: 14px; border-top: 2px dashed; border-radius: 0; }
-.insights { display: flex; flex-direction: column; gap: 10px; }
-.insight { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: 16px; background: var(--card-2); font-size: 14px; line-height: 1.35; }
-a.insight:hover { background: var(--fill); }
-.insight b { display: block; font-weight: 600; margin-bottom: 2px; }
-.insight .muted { font-size: 13px; }
-.insight-ic { width: 32px; height: 32px; flex: none; display: grid; place-items: center; border-radius: 10px; background: var(--brand-soft); color: var(--brand); }
-.ins-pos .insight-ic { background: var(--pos-soft); color: var(--pos); }
-.ins-warn .insight-ic { background: var(--warn-soft); color: var(--warn); }
 .start-card .steps { display: flex; flex-direction: column; gap: 4px; margin: 0 -10px 12px; }
 .step { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 16px; text-align: left; }
 .step:hover:not(:disabled) { background: var(--hover); }
@@ -1067,12 +1047,6 @@ html.veiled #overlays { filter: blur(28px); }
 .gate-mark { object-fit: cover; }
 img.gate-mark { background: none; }
 .banner-slim { padding-top: 8px; padding-bottom: 8px; }
-@media (max-width: 1180px) {
-  .dash { display: flex; flex-direction: column; align-items: stretch; }
-  .dash-col { display: contents; }
-  .dash .o-1 { order: 1; } .dash .o-2 { order: 2; } .dash .o-3 { order: 3; } .dash .o-4 { order: 4; } .dash .o-5 { order: 5; }
-  .dash .o-6 { order: 6; } .dash .o-7 { order: 7; } .dash .o-8 { order: 8; } .dash .o-9 { order: 9; } .dash .o-10 { order: 10; }
-}
 @media (max-width: 759px) {
   .stat-wide { grid-column: 1 / -1; }
   .only-wide { display: none; }
@@ -1094,21 +1068,9 @@ img.gate-mark { background: none; }
 .brand-big { align-items: center; }
 .brand-big .brand-ic { width: 34px; height: 34px; border-radius: 10px; }
 .brand-big span { font-weight: 650 !important; color: var(--ink) !important; }
-.hero-link { display: inline-flex; align-items: center; gap: 2px; }
-.hero-link:hover { color: var(--ink); }
 .nw-link { grid-column: 1 / -1; justify-self: start; }
-.nw-hero { display: flex; gap: 24px; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; }
-.nw-hero-main { min-width: 0; }
-.nw-hero-side { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; max-width: 260px; text-align: right; }
-.nw-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-.nw-chip { display: flex; flex-direction: column; gap: 2px; padding: 10px 14px; border-radius: 16px; background: var(--card-2); font-weight: 620; font-size: 15px; }
-.nw-chip > span:last-child { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
 .nw-year-bar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 6px; }
 .section-title { font-size: 20px; font-weight: 700; letter-spacing: -0.03em; }
-.nw-diff { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 24px; align-items: start; margin-bottom: 18px; }
-.nw-diff-value { font-size: clamp(30px, 4vw, 42px); font-weight: 690; letter-spacing: -0.04em; margin: 2px 0 4px; }
-.nw-why { background: var(--card-2); border-radius: var(--radius-md); padding: 6px 16px; }
-.bd-hint { display: block; font-size: 12px; color: var(--ink-3); font-weight: 450; margin-top: 1px; }
 .nw-table .grp td { font-weight: 650; background: var(--card-2); }
 .nw-table .grp td:first-child { border-radius: 10px 0 0 10px; }
 .nw-table .grp td:last-child { border-radius: 0 10px 10px 0; }
@@ -1138,16 +1100,12 @@ img.gate-mark { background: none; }
 .checkin-ctl .amount-wrap { width: 100%; }
 .checkin-ctl .amount-input { height: 42px; font-size: 15px; }
 @media (max-width: 760px) {
-  .nw-diff { grid-template-columns: minmax(0, 1fr); gap: 14px; }
-  .nw-hero-side { align-items: stretch; max-width: none; text-align: left; width: 100%; }
   .nw-scroll { margin: 0 -18px 0 0; padding: 0 18px 0 0; }
   .nw-months .sticky { min-width: 130px; max-width: 150px; }
   .checkin-row { grid-template-columns: auto minmax(0, 1fr); }
   .checkin-ctl { grid-column: 2; }
 }
 @media (max-width: 760px) {
-  .nw-chips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .nw-chip:last-child:nth-child(odd) { grid-column: 1 / -1; }
 }
 
 /* ─── Account ────────────────────────────────────────────────────────── */
@@ -1166,15 +1124,6 @@ img.gate-mark { background: none; }
 .grp-chip, .sub-chip { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-radius: 999px; font-weight: 680; }
 .grp-chip { padding: 3px 11px; font-size: 12px; letter-spacing: .02em; text-transform: uppercase; color: #fff; background: var(--chip, var(--c1)); }
 .sub-chip { padding: 2px 10px; font-size: 12.5px; font-weight: 600; color: var(--chip, var(--c1)); background: color-mix(in srgb, var(--chip, var(--c1)) 16%, transparent); }
-.year-table th.future, .year-table td.future { color: var(--ink-3); }
-.year-table td.click { cursor: pointer; }
-.year-table td.click:hover { text-decoration: underline; text-underline-offset: 3px; }
-.year-table tr.cat td.sticky { padding-left: 18px; }
-.year-table tr.cat.click td.sticky { cursor: pointer; }
-.year-table .exp { display: inline-flex; vertical-align: middle; margin-left: 4px; color: var(--ink-3); }
-.year-table tr.pay td { font-size: 13px; color: var(--ink-2); }
-.year-table tr.pay td.sticky { padding-left: 34px; }
-.year-table .pay-name { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
 .chk { display: inline-flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--ink-2); cursor: pointer; }
 .chk input { width: 18px; height: 18px; accent-color: var(--brand); }
 .catman { display: flex; flex-direction: column; gap: 18px; }
@@ -1211,7 +1160,6 @@ img.gate-mark { background: none; }
 .nw-sheet .nw-al-n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nw-sheet .nw-share { margin-left: auto; padding-left: 4px; font-size: .92em; font-weight: 650; color: var(--ink-2); font-variant-numeric: tabular-nums; }
 .nw-sheet .nw-name { display: block; font-weight: 560; overflow: hidden; text-overflow: ellipsis; }
-.nw-sheet .nw-sub { display: block; font-size: 12px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; }
 .nw-sheet tr.nw-total td { font-weight: 720; background: color-mix(in srgb, var(--sec-m) 6%, var(--card)); box-shadow: inset 0 1.5px 0 color-mix(in srgb, var(--ink-3) 70%, transparent); }
 .nw-sheet tr.nw-grand td { font-size: 15.5px; }
 .nw-sheet tr.nw-gain td, .nw-sheet tr.nw-pct td { font-size: 12.5px; font-weight: 600; box-shadow: none; padding-top: 4px; padding-bottom: 4px; }
@@ -1228,23 +1176,10 @@ img.gate-mark { background: none; }
 .catman-row .select-wrap .select { height: 34px; font-size: 13px; padding-top: 4px; padding-bottom: 4px; }
 
 /* Entrate e uscite come il foglio: categoria colorata e unita sulle sue righe */
-.sheet-table td.sh-grp { background: var(--chip); color: #fff; font-weight: 750; font-size: 12.5px; letter-spacing: .03em; text-transform: uppercase; vertical-align: top; white-space: normal; min-width: 120px; max-width: 170px; box-shadow: inset 0 -2px 0 var(--card); }
-.sheet-table td.sh-sub { vertical-align: top; background: color-mix(in srgb, var(--chip) 7%, var(--card)); min-width: 140px; }
-.sheet-table td.sh-note { color: var(--ink-2); font-size: 13px; min-width: 110px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
-.sheet-table tr.sh-tot td { font-weight: 720; background: color-mix(in srgb, var(--chip) 12%, var(--card)); box-shadow: inset 0 1px 0 color-mix(in srgb, var(--chip) 45%, transparent); }
-.sheet-table tr.sh-tot td.sticky { color: color-mix(in srgb, var(--chip) 75%, var(--ink)); background: color-mix(in srgb, var(--chip) 12%, var(--card)); }
-.sheet-table tfoot td.sticky { background: var(--card); }
 .nw-sheet .nw-logo { width: 16px; height: 16px; border-radius: 4px; vertical-align: -3px; margin-right: 6px; background: #fff; }
 /* riquadri bloccati come in Excel: Categoria (e su computer anche Sottocategoria) restano ferme */
-.sheet-table.nw-months .sticky { min-width: 132px; max-width: 132px; width: 132px; white-space: normal; }
 @media (min-width: 760px) {
-  .sheet-table td.sh-sub, .sheet-table .sh-sub2 { position: sticky; left: 132px; z-index: 1; min-width: 170px; max-width: 170px; overflow: hidden; text-overflow: ellipsis; }
-  .sheet-table th.sh-sub2 { background: var(--thead-bg, var(--card)); }
-  .sheet-table tfoot .sh-sub2 { background: var(--card); }
-  .sheet-table td.sh-sub2:empty, .sheet-table td.sh-sub { box-shadow: inset -1px 0 0 var(--line); }
 }
-@media (max-width: 759px) { .sheet-table.nw-months .sticky { min-width: 100px; max-width: 100px; width: 100px; font-size: 12px; } }
-@media (min-width: 760px) { .sheet-table tfoot td.sh-sub2 { box-shadow: inset 0 2px 0 var(--ink); } }
 
 /* colonne allargabili */
 table[data-tid] thead th { position: relative; }
@@ -1263,19 +1198,6 @@ table.resizing { user-select: none; cursor: col-resize; }
 .mini-badge { display: inline-grid; place-items: center; min-width: 30px; height: 16px; padding: 0 4px; border-radius: 4px; margin-right: 6px; vertical-align: 1px; background: var(--badge); color: #fff; font-size: 9px; font-weight: 800; letter-spacing: .03em; }
 
 /* ─── Entrate e uscite come un bilancio: schede per categoria, macro → voci ─── */
-.fin-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
-.fin-card { display: grid; gap: 7px; padding: 16px 18px 14px; border-radius: var(--radius); background: var(--card); text-align: left; box-shadow: inset 0 4px 0 var(--chip); transition: opacity .15s, transform .15s; }
-.fin-card:hover { transform: translateY(-1px); }
-.fin-card.dim { opacity: .5; }
-.fin-card.on { box-shadow: inset 0 4px 0 var(--chip), 0 0 0 2px var(--chip); }
-.fin-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.fin-card-name { font-size: 13px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: color-mix(in srgb, var(--chip) 82%, var(--ink)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fin-card-pct { font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; color: color-mix(in srgb, var(--chip) 80%, var(--ink)); background: color-mix(in srgb, var(--chip) 15%, transparent); flex: none; }
-.fin-card-val { font-size: 24px; font-weight: 750; letter-spacing: -0.03em; }
-.fin-bar { display: block; height: 6px; border-radius: 3px; background: var(--fill); overflow: hidden; }
-.fin-bar i { display: block; height: 100%; border-radius: 3px; background: var(--chip); }
-.fin-card-sub { font-size: 12.5px; color: var(--ink-3); }
-.fin-card .spark { width: 100%; height: 30px; }
 .fin-table.nw-months .sticky { min-width: 210px; max-width: 280px; }
 .fin-table td.b { font-weight: 700; }
 .fin-table tr.fin-macro td { background: color-mix(in srgb, var(--chip) 11%, var(--card)); box-shadow: none; padding-top: 11px; padding-bottom: 11px; }
@@ -1294,15 +1216,10 @@ table.resizing { user-select: none; cursor: col-resize; }
 .fin-table tr.fin-grand td { font-weight: 800; font-size: 15px; box-shadow: inset 0 2px 0 var(--ink); background: var(--card); }
 .fin-table tr.fin-macro.click { cursor: pointer; }
 @media (max-width: 759px) {
-  .fin-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-  .fin-card { padding: 13px 14px 11px; }
-  .fin-card-val { font-size: 19px; }
-  .fin-card-sub { display: none; }
   .fin-table.nw-months .sticky { min-width: 140px; max-width: 160px; }
   .fin-table tr.fin-sub td.sticky { padding-left: 24px; }
   .fin-table tr.fin-note td.sticky { padding-left: 36px; }
 }
-.hero-groups .hero-chip { box-shadow: inset 3px 0 0 var(--chip, transparent); }
 .inv-bar { align-items: center; }
 
 /* righe colorate (macro categorie): al passaggio del mouse un po' più scure, mai trasparenti */
@@ -1313,14 +1230,6 @@ table.resizing { user-select: none; cursor: col-resize; }
    per riconoscere ogni categoria o sezione nei grafici. Verde e rosso per guadagni e perdite,
    grafici a colori. Con "Colori vivaci" (data-colors="many") torna tutto colorato. */
 [data-colors="few"] .card-title::before { display: none; }
-[data-colors="few"] .fin-card { box-shadow: none; }
-[data-colors="few"] .fin-card.on { box-shadow: 0 0 0 2px var(--ink); }
-[data-colors="few"] .fin-card-name { color: var(--ink-2); display: inline-flex; align-items: center; gap: 7px; }
-[data-colors="few"] .fin-card-name::before { content: ''; width: 8px; height: 8px; border-radius: 2px; background: var(--chip); flex: none; }
-[data-colors="few"] .fin-card-pct { color: var(--ink-2); background: var(--fill); }
-[data-colors="few"] .fin-bar i { background: var(--ink-3); }
-[data-colors="few"] .fin-card .spark .line { stroke: var(--ink-3) !important; }
-[data-colors="few"] .fin-card .spark .area { fill: var(--ink-3) !important; }
 [data-colors="few"] .fin-table tr.fin-macro td { background: color-mix(in srgb, var(--chip) 9%, var(--card)); box-shadow: none; }
 [data-colors="few"] .fin-table tr.fin-macro td.sticky { box-shadow: none; }
 [data-colors="few"] .fin-table tr.fin-macro td.fin-tot { box-shadow: inset 1px 0 0 var(--line); }
@@ -1334,7 +1243,6 @@ table.resizing { user-select: none; cursor: col-resize; }
    uscite o investimenti"): sezioni del Net Worth, macro categorie, categorie degli investimenti */
 .nw-sheet tr.nw-band td { background: color-mix(in srgb, var(--sec) 9%, var(--card)); }
 [data-colors="few"] .avatar.av-badge, [data-colors="few"] .mini-badge { background: var(--fill-2); color: var(--ink-2); }
-[data-colors="few"] .hero-groups .hero-chip { box-shadow: none; }
 [data-colors="few"] .sub-chip { color: var(--ink); background: var(--fill); }
 [data-colors="few"] .grp-chip { color: var(--ink); background: var(--fill-2); }
 
@@ -1347,7 +1255,6 @@ table.resizing { user-select: none; cursor: col-resize; }
 .nw-sheet.fit thead th { font-size: .86em; letter-spacing: 0; padding-left: 2px; padding-right: 5px; }
 .nw-sheet.fit thead th.nw-dcol { white-space: normal; line-height: 1.15; }
 .nw-sheet .nw-dcol { border-left: 1px solid var(--line); font-weight: 650; }
-.nw-sheet.fit .nw-sub { font-size: .85em; }
 /* in "adatta allo schermo" tutte le righe usano il carattere scelto per la tabella */
 .nw-sheet.fit tr.nw-grand td, .nw-sheet.fit tr.nw-alloc td { font-size: 1em; }
 .nw-sheet.fit tr.nw-gain td, .nw-sheet.fit tr.nw-pct td { font-size: .96em; }
@@ -1446,7 +1353,6 @@ tr.nw-band.nw-flash td { animation: nwFlash 1.6s ease-out; }
    voce, celle vuote vuote, griglia leggera tra le colonne, niente righe alterne, verde e rosso
    smorzati, totali senza fondo colorato. ── */
 .nw-sheet tr.nw-band td.sticky span::before { content: none; }
-.nw-band-dot { flex: none; display: inline-block; width: 12px; height: 12px; border-radius: 3.5px; background: var(--sec-m); }
 .table.fit td { padding-top: 7px; padding-bottom: 7px; }
 .table.fit td.num:not(.nw-dcol):not(.nw-dpct), .table.fit th.num:not(.nw-dcol):not(.nw-dpct) { border-left: 1px solid color-mix(in srgb, var(--line) 60%, transparent); }
 .table.fit thead th.num:not(.nw-dcol):not(.nw-dpct) { border-left-color: color-mix(in srgb, var(--thead-ink, var(--ink)) 14%, transparent); }
@@ -1509,7 +1415,6 @@ img.gate-mark { width: 112px; height: 112px; border-radius: 28px; }
 .table td.editing { padding: 0 !important; }
 .cell-in { display: block; width: 100%; min-width: 0; height: 30px; margin: 0; padding: 0 6px; border: 0; border-radius: 4px; outline: 2px solid var(--brand); outline-offset: -2px;
   background: var(--card); color: var(--ink); font: inherit; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
-.nw-name small.nw-cur { margin-left: 5px; font-size: .78em; font-weight: 650; color: var(--ink-3); letter-spacing: .03em; }
 .nw-sheet .nw-grip, .fin-table .nw-grip { position: absolute; left: 0; top: 50%; margin-top: -7px; width: 14px; height: 14px; color: var(--ink-3); opacity: 0; transition: opacity .15s; cursor: grab; touch-action: none; }
 .nw-sheet tr.nw-item:hover .nw-grip, .fin-table tr.fin-sub:hover .nw-grip { opacity: .8; }
 @media (hover: none) { .nw-sheet .nw-grip, .fin-table .nw-grip { opacity: .5; } }

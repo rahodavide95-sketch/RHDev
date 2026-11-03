@@ -65,7 +65,6 @@ export function icon(name, size = 20, cls = '') {
 }
 
 export const $ = (sel, root = document) => root.querySelector(sel);
-export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
 export function clear(el) { while (el.firstChild) el.removeChild(el.firstChild); return el; }
 
@@ -124,4 +123,3 @@ export function readText(file) {
 }
 
 export const isMobile = () => matchMedia('(max-width: 759px)').matches;
-export const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;

@@ -6,7 +6,7 @@
    di fine mese, riga per riga. */
 
 import { h, icon, download } from '../ui/dom.js';
-import { barChart, legend, sparkline } from '../ui/charts.js';
+import { barChart } from '../ui/charts.js';
 import { openSheet, amountInput, toast, empty, selectInput, colorChoice, textInput, field } from '../ui/components.js';
 import { money, moneyText, delta, axisMoney, tipMoney, ui } from '../ui/fmt.js';
 import { card, accAvatar, segTabs, filterBox, hdBadge, colorVar, colorDot, setSectionColor, softColor, loadPeriod, savePeriod, periodPicker, editInCell, resumeEdit, renameBtn } from './common.js';

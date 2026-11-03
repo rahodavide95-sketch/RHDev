@@ -4,7 +4,7 @@ import { h, icon, download, pickFile, readText } from '../ui/dom.js';
 import { field, textInput, selectInput, toggle, toast, confirmDialog, promptDialog, openSheet, numberInput, segmented, twoTap, colorChoice } from '../ui/components.js';
 import { ui } from '../ui/fmt.js';
 import { card } from './common.js';
-import { categoryEditor, undoToast } from './editors.js';
+import { undoToast } from './editors.js';
 import { openImporter } from './importer.js';
 import * as A from '../actions.js';
 import * as session from '../session.js';
@@ -409,7 +409,7 @@ export default {
       h('section.card.about',
         h('div.brand-big', h('img.brand-ic', { src: 'icons/mark-192.png', alt: '', width: 34, height: 34 }), h('span', '[RH] Finance')),
         h('p.muted', `Versione ${VERSION} · Funziona offline · Dati cifrati prima di partire · Nessun tracciamento, nessuna pubblicità.`),
-        h('p.muted', 'Sviluppato con cura da Davide Raho · © 2026'),
+        h('p.muted', 'Sviluppato con cura da Davide Raho · © 2026 · Tutti i diritti riservati'),
         h('p.fine', 'I calcoli fiscali seguono le regole italiane per le persone fisiche (2026) e sono indicativi: per la dichiarazione dei redditi rivolgiti a un commercialista.')));
     // arrivo dal menu del profilo (?sez=account…) o da "fai il backup": porto la pagina su quella sezione
     const sez = q.sez || (q.backup ? 'backup' : '');

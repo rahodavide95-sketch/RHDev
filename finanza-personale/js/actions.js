@@ -2,8 +2,8 @@
    così ogni modifica viene salvata cifrata e l'interfaccia si aggiorna. */
 
 import { S, commit } from './session.js';
-import { uid, stamp, hasPlan, isLiability, defaults, tidyPlan, applyTidy, ASSET_CLASSES } from './core/model.js';
-import { convert } from './core/money.js';
+import { uid, stamp, isLiability, defaults, tidyPlan, applyTidy, ASSET_CLASSES } from './core/model.js';
+
 import { catKey, nameKey } from './core/sheets.js';
 import { normHead } from './core/invimport.js';
 import { today, addDays, occurrences, monthEnd as monthEndOf } from './core/dates.js';
@@ -104,9 +104,6 @@ export function deleteAccount(id) {
   }, { undo: 'Conto eliminato' });
 }
 
-export function reorderAccounts(ids) {
-  commit(st => { ids.forEach((id, i) => { const a = find(st.accounts, id); if (a) a.order = i; }); });
-}
 
 /* ─── Movimenti ─── */
 export function saveTx(t) {
@@ -529,7 +526,6 @@ export function moveGroup(kind, group, dir) {
     st.categories = [...order.flatMap(g => same.filter(c => c.group === g)), ...others];
   }, { noCount: true });
 }
-export function archiveCategory(id, v = true) { commit(st => { const c = find(st.categories, id); if (c) c.archived = v; }); }
 
 export function deleteRule(id) { commit(st => { st.rules = st.rules.filter(r => r.id !== id); }); }
 export function saveRule(r) {
@@ -596,7 +592,6 @@ export function importTransactions(list) {
   }, { undo: `${list.length} movimenti importati` });
 }
 
-export const accountIsPlan = acc => hasPlan(acc);
 
 /** Importa investimenti già preparati da `planImport` (foglio Excel o CSV): una sola modifica, un solo "Annulla". */
 /** Operazioni del foglio "wallet" dentro lo stato (conti, titoli, operazioni, imposte). */
@@ -631,9 +626,6 @@ function applyInvestPlan(st, plan, cash, costAcc = new Map()) {
     // l'imposta di bollo si paga dalla liquidità: dal conto corrente del broker, se c'è
     st.transactions.push({ id: uid('t-'), date: c.date, kind: 'expense', amount: Math.round(c.amount * 100), account: costAcc.get(c.acc) || accId.get(c.acc), toAccount: null, amountTo: null, category: cat?.id || null, payee: c.payee || 'Imposta di bollo', note: c.note || '', tags: costAcc.get(c.acc) ? ['investimenti'] : [], recurring: null, created: now, updated: now, importHash: '', flagged: false });
   }
-}
-export function importInvestments(plan, { cash = false } = {}) {
-  commit(st => applyInvestPlan(st, plan, cash), { undo: 'Importazione degli investimenti' });
 }
 
 /** Tutto il file Excel insieme, con un solo "Annulla":

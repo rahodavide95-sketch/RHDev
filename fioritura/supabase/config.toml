@@ -1,0 +1,7 @@
+# Configurazione minima per la CLI di Supabase: pubblica la funzione fioritura-push
+# (lo fa il workflow .github/workflows/fioritura-push.yml). La funzione la chiama pg_cron, non un utente:
+# niente controllo del token, al suo posto l'intestazione x-cron-secret.
+project_id = "ztjlqorvnulgfvbtvavm"
+
+[functions.fioritura-push]
+verify_jwt = false

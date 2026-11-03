@@ -1054,6 +1054,8 @@
     var old = {};
     Object.keys(d.focus).forEach(function (k) { if (/^\d{4}-\d\d-\d\d$/.test(k)) { old[k] = d.focus[k]; delete d.focus[k]; } });
     if (Object.keys(old).length) d.focus[DEV] = Object.assign(d.focus[DEV] || {}, old);
+    // impegni salvati prima delle notifiche push: l'ora del promemoria la calcola il telefono
+    d.events.forEach(function (e) { if (e && e.remTs == null) { var r = remAt(e); e.remTs = r > Date.now() ? r : -1; e.tz = e.tz || tzName(); } });
     if (wasOld) { try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) {} }   // salvati subito nel formato nuovo
     return d;
   }
@@ -1758,10 +1760,14 @@
           '<span>Ti avviso ' + when + ' alle ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + '</span></span></button>';
       }).join('') + '</div>';
     }
-    html += '<div class="set-row"><div><b>Avvisi anche sul telefono</b><p class="small muted">' +
-      (supported ? 'Arrivano mentre Fioritura è aperta. Se è chiusa, li trovi qui nella campanella appena la riapri.' :
-        'Questo browser non li supporta. Su iPhone metti Fioritura nella schermata Home e aprila da lì.') + '</p></div>' +
-      (supported ? '<button class="switch" role="switch" aria-checked="' + !!(S.settings.sysNotif && Notification.permission === 'granted') + '" aria-label="Avvisi anche sul telefono" data-a="sysNotif"></button>' : '') + '</div>';
+    var iosHome = isIOS() && !standalone();
+    var desc = iosHome ? 'Su iPhone arrivano solo con Fioritura nella schermata Home: tocca Condividi, poi «Aggiungi alla schermata Home», e aprila da lì.' :
+      !supported ? 'Questo browser non li supporta.' :
+      pushSupported() && canSync ? (signedIn() ? 'Arrivano sul telefono anche quando Fioritura è chiusa, con il suono delle notifiche.' :
+        'Mentre Fioritura è aperta. Per riceverli anche ad app chiusa accedi al tuo account.') :
+      'Arrivano mentre Fioritura è aperta. Se è chiusa, li trovi qui nella campanella appena la riapri.';
+    html += '<div class="set-row"><div><b>Avvisi sul telefono</b><p class="small muted">' + desc + '</p></div>' +
+      (supported && !iosHome ? '<button class="switch" role="switch" aria-checked="' + !!(S.settings.sysNotif && Notification.permission !== 'denied') + '" aria-label="Avvisi sul telefono" data-a="sysNotif"></button>' : '') + '</div>';
     return html;
   }
   function openNotifs() {
@@ -2462,6 +2468,7 @@
     S.welcomed = true; save(true);
     paintAcct();
     await pull(true);
+    pushRefresh(true);   // se gli avvisi erano attivi, il telefono si iscrive per questo account
     if (what !== 'quiet') toast(what || 'Fatto: sei dentro. Ora tutto resta sincronizzato.');
   }
   async function logIn(email, pw) {
@@ -2481,10 +2488,60 @@
   async function logOut() {
     flushNote();
     try { if (sync.busy) await new Promise(function (r) { setTimeout(r, 1200); }); await push(); } catch (e) {}
+    try { await pushUnsubscribe(); } catch (e) {}   // i promemoria di questo account non arrivano più qui
     try { if (acct.access) await api('/auth/v1/logout', { method: 'POST' }); } catch (e) {}
     var email = acct.email; acct = emptyAcct(); acct.email = email; saveAcct();
     sync.err = ''; paintAcct();
   }
+  /* ================= NOTIFICHE PUSH ================= */
+  // Il telefono si iscrive al servizio di notifiche del browser con la chiave pubblica VAPID della funzione
+  // fioritura-push; l'iscrizione va in fioritura_push (fioritura_push_save, solo per l'account collegato).
+  // Ogni minuto il server manda i promemoria scattati (fioritura/supabase/functions/fioritura-push, pg_cron).
+  // Su iPhone funziona solo con l'app nella schermata Home (iOS 16.4 o più nuovo).
+  var PUSH_URL = SB.url + '/functions/v1/fioritura-push';
+  function tzName() { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Rome'; } catch (e) { return 'Europe/Rome'; } }
+  function isIOS() { return /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); }
+  function standalone() { return navigator.standalone === true || (!!window.matchMedia && matchMedia('(display-mode: standalone)').matches); }
+  function pushSupported() { return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window && location.protocol === 'https:'; }
+  function b64uBytes(str) {
+    var t = str.replace(/-/g, '+').replace(/_/g, '/'); while (t.length % 4) t += '=';
+    var bin = atob(t), out = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i); return out;
+  }
+  function withTimeout(pr, ms) { return Promise.race([pr, new Promise(function (_, rej) { setTimeout(function () { rej(new Error('il telefono non risponde')); }, ms); })]); }
+  async function pushSubscribe() {
+    var r = await fetch(PUSH_URL + '?key=1', { headers: { apikey: SB.key } });
+    var j = {}; try { j = await r.json(); } catch (e) {}
+    if (!r.ok || !j.publicKey) throw new Error('il server delle notifiche non è ancora pronto');
+    var reg = await withTimeout(navigator.serviceWorker.ready, 8000), key = b64uBytes(j.publicKey);
+    var sub = await reg.pushManager.getSubscription();
+    if (sub && sub.options && sub.options.applicationServerKey) {
+      var cur = new Uint8Array(sub.options.applicationServerKey);
+      if (cur.length !== key.length || cur.some(function (v, i) { return v !== key[i]; })) { await sub.unsubscribe(); sub = null; }
+    }
+    if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
+    var js = sub.toJSON();
+    var ok = await api('/rest/v1/rpc/fioritura_push_save', { method: 'POST', body: { p_endpoint: js.endpoint, p_p256dh: js.keys.p256dh, p_auth: js.keys.auth } });
+    if (ok !== true) throw new Error('iscrizione non salvata');
+    try { localStorage.setItem('fioritura.pushAt', String(Date.now())); } catch (e) {}
+  }
+  async function pushUnsubscribe() {
+    if (!pushSupported()) return;
+    try {
+      var reg = await withTimeout(navigator.serviceWorker.ready, 5000), sub = await reg.pushManager.getSubscription();
+      if (!sub) return;
+      if (signedIn()) { try { await api('/rest/v1/rpc/fioritura_push_remove', { method: 'POST', body: { p_endpoint: sub.endpoint } }); } catch (e) {} }
+      await sub.unsubscribe();
+    } catch (e) {}
+    try { localStorage.removeItem('fioritura.pushAt'); } catch (e) {}
+  }
+  // ogni tanto (e dopo l'accesso) si rinnova l'iscrizione: il servizio del browser può cambiarla
+  function pushRefresh(force) {
+    if (!S.settings.sysNotif || !canSync || !signedIn() || !pushSupported() || Notification.permission !== 'granted') return;
+    var last = 0; try { last = +localStorage.getItem('fioritura.pushAt') || 0; } catch (e) {}
+    if (!force && Date.now() - last < 3 * 864e5) return;
+    pushSubscribe().catch(function () {});
+  }
+
   function authError(e) {
     var m = (e && (e.code || '') + ' ' + (e.message || '')).toLowerCase();
     if (navigator.onLine === false) return 'Sei offline: serve internet per accedere.';
@@ -2805,6 +2862,7 @@
       if (i >= 0) S.events[i] = ev; else S.events.push(ev);
       // un promemoria già passato (impegno appena segnato per un'ora vicina) non deve suonare
       var ra = remAt(ev);
+      ev.remTs = ra > now ? ra : -1; ev.tz = tzName();   // per le notifiche ad app chiusa (funzione fioritura-push)
       if (ra && ra <= now) { S.notifRead[remKey(ev)] = now; announced[remKey(ev)] = now; saveAnnounced(); }
       tidy(); save();
       UI.calSel = ev.date; UI.calMonth = ev.date.slice(0, 7);
@@ -2832,12 +2890,20 @@
       save(); refreshSheet(); paintBell(); toast('Notifiche svuotate.');
     },
     sysNotif: function () {
-      if (!('Notification' in window)) { toast('Questo browser non può mandare avvisi. Su iPhone metti Fioritura nella schermata Home.', null, 6000); return; }
-      if (S.settings.sysNotif && Notification.permission === 'granted') { S.settings.sysNotif = false; save(); refreshSheet(); return; }
-      if (Notification.permission === 'denied') { toast('Gli avvisi sono bloccati: puoi riattivarli dalle impostazioni del browser per questo sito.', null, 7000); return; }
-      Notification.requestPermission().then(function (p) {
-        S.settings.sysNotif = p === 'granted'; save(); refreshSheet();
-        toast(p === 'granted' ? 'Avvisi attivi: ti arrivano anche sul telefono mentre Fioritura è aperta.' : 'Va bene, li trovi comunque nella campanella.', null, 6000);
+      if (S.settings.sysNotif) {
+        S.settings.sysNotif = false; save(); refreshSheet(); pushUnsubscribe(); toast('Avvisi sul telefono spenti.'); return;
+      }
+      if (isIOS() && !standalone()) { toast('Su iPhone gli avvisi arrivano solo con Fioritura nella schermata Home: Condividi → «Aggiungi alla schermata Home», poi aprila da lì.', null, 9000); return; }
+      if (!('Notification' in window)) { toast('Questo browser non può mandare avvisi.', null, 6000); return; }
+      Notification.requestPermission().then(function (p) {   // la richiesta parte subito dal tocco (iPhone lo vuole)
+        if (p === 'denied') { toast('Gli avvisi sono bloccati: puoi riattivarli dalle impostazioni del browser per questo sito.', null, 7000); return; }
+        if (p !== 'granted') { toast('Va bene, li trovi comunque nella campanella.', null, 6000); return; }
+        S.settings.sysNotif = true; save(); refreshSheet();
+        if (!pushSupported() || !canSync) { toast('Avvisi attivi mentre Fioritura è aperta.', null, 6000); return; }
+        if (!signedIn()) { toast('Avvisi attivi mentre l’app è aperta. Per riceverli anche ad app chiusa accedi.', { label: 'Accedi', run: function () { A.account(); } }, 9000); return; }
+        toast('Attivo gli avvisi…');
+        pushSubscribe().then(function () { refreshSheet(); toast('Fatto: i promemoria ti arrivano sul telefono anche ad app chiusa.', null, 6500); })
+          .catch(function (e) { toast('Avvisi attivi mentre l’app è aperta; ad app chiusa non ancora (' + (e && e.message || 'errore') + ').', null, 9000); });
       }).catch(function () {});
     },
     welcomeLogin: function () { S.welcomed = true; save(); closeSheet(true); acctMode = 'login'; A.account(); },
@@ -2952,6 +3018,21 @@
   /* ================= AVVIO ================= */
   render();
   lastRemCheck = Date.now() - 13000;   // il primo controllo dei promemoria poco dopo l'apertura
+  // toccando un avviso del telefono: si apre il calendario su quel giorno (?cal=… o messaggio del service worker)
+  function goCal(iso) {
+    if (!ISO_RE.test(iso || '')) return;
+    closeSheet(true); UI.tab = 'cal'; UI.calSel = iso; UI.calMonth = iso.slice(0, 7);
+    try { localStorage.setItem('fioritura.tab', 'cal'); } catch (e) {}
+    render(true); window.scrollTo(0, 0);
+  }
+  (function () {
+    try {
+      var qs = new URLSearchParams(location.search), c = qs.get('cal');
+      if (c) { qs.delete('cal'); history.replaceState(null, '', location.pathname + (qs.toString() ? '?' + qs : '') + location.hash); goCal(c); }
+    } catch (e) {}
+    if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', function (ev) { var m = ev.data || {}; if (m.type === 'cal') goCal(m.date); });
+  })();
+  if (canSync) setTimeout(function () { pushRefresh(false); }, 4000);
   var fromLink = /access_token=|error_code=|error=/.test(location.hash);
   if (canSync) {
     document.addEventListener('visibilitychange', function () { if (!document.hidden) pull(); });

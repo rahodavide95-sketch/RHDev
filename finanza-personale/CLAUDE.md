@@ -14,8 +14,10 @@ sotto, attaccato, **"Finance"** in Liberation Sans Regular (lo stesso disegno di
 del nome di [RH] Documents) leggermente spaziato e largo esattamente come "[RH]"; bianco su nero.
 File: `icon-512.png`, `icon-192.png`, `apple-touch-icon.png` (180), `favicon-64.png` col logo intero;
 `icon-maskable-512.png` uguale ma un po' più piccolo (dentro la zona sicura del cerchio di Android);
-`favicon-32.png` e `mark-192.png` solo "[RH]" (a 30 px "Finance" non si leggerebbe): `mark-192.png`
-nella barra laterale e in Impostazioni, accanto alla scritta "[RH] **Finance**". Schermata di accesso:
+`favicon-32.png`, `favicon-64.png` e `mark-192.png` anche loro con "Finance" (D: "anche il logo nelle tab
+e dell'app deve essere con finance"), ma più grandi nel quadrato (segno all'80% invece del 68%) perché
+si leggano a 32 px; i link delle favicon in index.html hanno `?v=2` (i browser le tengono a lungo in
+memoria). `mark-192.png` nella barra laterale e in Impostazioni, accanto alla scritta "[RH] **Finance**". Schermata di accesso:
 il logo intero a 112 px. Gli script che li hanno disegnati erano nello scratchpad della sessione.
 File scaricati: `RH-Finance-backup-….json`, `RH-Finance-codice-di-recupero.txt`. Non inventare
 nomi, loghi con scritte o marchi: se serve, chiedi.

@@ -8,8 +8,8 @@
 import { h, icon, download } from '../ui/dom.js';
 import { toast, empty } from '../ui/components.js';
 import { money, moneyText, delta, tipMoney, axisMoney, ui } from '../ui/fmt.js';
-import { card, segTabs, filterBox, stat, colorDot, softColor, editInCell, resumeEdit } from './common.js';
-import { setGroupColor, setFlowCell, placeCategory } from '../actions.js';
+import { card, segTabs, filterBox, stat, colorDot, softColor, editInCell, resumeEdit, renameBtn } from './common.js';
+import { setGroupColor, setFlowCell, placeCategory, renameGroup, renameCategory } from '../actions.js';
 import { fitTable, watchFit, fitMoney } from '../ui/fit.js';
 import { categoryEditor, txEditor, undoToast } from './editors.js';
 import { categoryManager, groupColor } from './categories.js';
@@ -222,7 +222,8 @@ export default {
       const catId = isSingle ? g.cats[0].id : null;
       const singleCat = isSingle ? d.catById.get(g.cats[0].id) || null : null;
       body.push(h('tr.fin-macro', { style: { '--chip': col }, class: isSingle ? '' : 'click', dataset: { group: g.name }, onclick: isSingle ? null : () => { if (Date.now() - dragEnded < 300) return; if (closed) V.closed.delete(g.name); else V.closed.add(g.name); ctx.rerender(); } },
-        h('td.sticky', h('span.fin-macro-name', isSingle ? h('span.fin-caret') : h('span.fin-caret', icon(closed ? 'chevR' : 'chevD', 14)), colorDot(cval(col), v => setGroupColor(V.kind, g.name, v), `Colore di ${g.name}`), h('span.fin-macro-t', g.name))),
+        h('td.sticky', h('span.fin-macro-name', isSingle ? h('span.fin-caret') : h('span.fin-caret', icon(closed ? 'chevR' : 'chevD', 14)), colorDot(cval(col), v => setGroupColor(V.kind, g.name, v), `Colore di ${g.name}`), h('span.fin-macro-t', g.name)),
+          renameBtn('Nome della categoria', g.name, v => { renameGroup(V.kind, g.name, v, { single: isSingle ? catId : null }); if (V.focus === g.name) V.focus = v; if (V.closed.delete(g.name)) V.closed.add(v); undoToast(`Categoria rinominata: ${v}`); }, { max: 40 })),
         cells(g, catId ? `&cat=${catId}` : null, true, isSingle && (singleCat || !g.cats[0].id) ? { cat: singleCat, payee: null, key: 'c:' + (g.cats[0].id || '-'), label: g.name } : null), ends(g)));
       const showNotes = c => V.notes || V.openNotes.has(c.id || c.name);
       if (isSingle) {
@@ -238,6 +239,7 @@ export default {
         body.push(h('tr.fin-sub', { style: { '--chip': col }, dataset: { group: g.name, cat: c.id || '' } },
           h('td.sticky', { class: c.id ? 'fin-drag-h' : '', title: c.id ? 'Trascina per spostarla in un\'altra categoria' : null, onpointerdown: c.id ? e => startDrag(e, c) : null },
             c.id ? icon('grip', 14, 'nw-grip') : null, h('span.fin-sub-name', c.name),
+            c.id ? renameBtn('Nome della sottocategoria', c.name, v => { renameCategory(c.id, v); undoToast(`Sottocategoria rinominata: ${v}`); }, { max: 50 }) : null,
             ns.length && !V.notes ? h('button.fin-notes-btn', { type: 'button', 'aria-label': 'Mostra le note', onclick: e => { e.stopPropagation(); if (V.openNotes.has(key)) V.openNotes.delete(key); else V.openNotes.add(key); ctx.rerender(); } }, `${ns.length} ${ns.length === 1 ? 'nota' : 'note'}`, icon(V.openNotes.has(key) ? 'chevD' : 'chevR', 12)) : null),
           cells(c, c.id ? `&cat=${c.id}` : '', false, { cat, payee: null, key: 'c:' + (c.id || '-'), label: c.name }), ends(c)));
         if (showNotes(c)) for (const p of ns) body.push(h('tr.fin-note', h('td.sticky', h('span', p.name)), cells(p, `${c.id ? `&cat=${c.id}` : ''}&q=${encodeURIComponent(p.name)}`, false, { cat, payee: p.name, key: `n:${c.id || '-'}:${p.name}`, label: p.name }), ends(p)));

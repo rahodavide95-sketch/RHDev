@@ -106,6 +106,12 @@ collegata a nient'altro." Quindi il patrimonio è **solo** il Net Worth, a fine 
   (8 colori + arcobaleno); `setSectionColor(d, nome, colore)` per le sezioni del Net Worth,
   `A.setGroupColor` per le macro categorie. C'è nelle sezioni (titoli della tabella, Asset Allocation,
   card in cima), nelle macro categorie di Entrate e uscite (tabella e card) e nella Panoramica.
+- **Righe delle categorie con il colore del quadratino, molto tenue** (D: "fai anche la barra dello
+  stesso colore ma molto tenue… solo le categorie di ogni cosa, che sia net worth, entrate, uscite o
+  investimenti"): fondo `color-mix(colore 9%, --card)` sul titolo di ogni sezione del Net Worth
+  (`tr.nw-band`), sulla riga di ogni macro categoria di Entrate e uscite (`tr.fin-macro`) e, negli
+  Investimenti › Anno per anno per Tipo o Categoria, su ogni riga (`tr.inv-cat`, quadratino e colore
+  della ciambella). Le righe delle voci restano bianche; le righe alterne non coprono le categorie.
 - **Asset Allocation come il foglio di D** (D: "nelle varie celle ci sono le somme di tutto, le % sono
   solo nella prima colonna"): una riga per sezione con le sue somme mese per mese e la quota (%)
   dell'ultima fine mese accanto al nome; sotto Total (il Net Worth), Gain/Loss e %. Non c'è più una

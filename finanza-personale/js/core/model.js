@@ -745,6 +745,7 @@ export function derive(state, refDate = today()) {
      prezzi degli Investimenti; i conti titoli e crypto degli Investimenti non entrano. ─── */
   const HD_SECTION = { etf_eq: 'ETF', etf_bd: 'ETF', etf_mm: 'ETF', stock: 'Azioni', gold: 'Materie prime', crypto: 'Crypto', gov: 'Obbligazioni', bond: 'Obbligazioni', fund: 'Fondi', other: 'Altri investimenti' };
   const ACC_SECTION = { checking: 'Liquidità', savings: 'Liquidità', cash: 'Liquidità', prepaid: 'Liquidità', card: 'Debiti', broker: 'Altri investimenti', crypto: 'Crypto', pension: 'Previdenza', receivable: 'Crediti', property: 'Beni', vehicle: 'Beni', asset: 'Beni', mortgage: 'Debiti', loan: 'Debiti', debt: 'Debiti' };
+  const SECTION_HINT = { 'Liquidità': /cash|liquid|contant|conti|conto|banc|deposit|risparm/, ETF: /etf/, Azioni: /stock|azion|share|equity/, 'Materie prime': /materi|commod|oro|gold|metall|etc/, Crypto: /crypto|cripto|bitcoin/, Obbligazioni: /obblig|bond|btp|stato/, Fondi: /fond/, Previdenza: /pension|previd/, Crediti: /credit|tfr|work|lavoro/, Beni: /beni|casa|immobil|auto/, Debiti: /debit|mutu|prestit|finanziam/, 'Altri investimenti': /invest|titoli|wallet|portafogl/ };
   const SECTION_ORDER = ['Liquidità', 'ETF', 'Azioni', 'Obbligazioni', 'Fondi', 'Materie prime', 'Crypto', 'Altri investimenti', 'Previdenza', 'Crediti', 'Beni', 'Debiti'];
   const nwHdIds = new Set();
   for (const sn of Object.values(state.snapshots)) for (const k of Object.keys(sn.nwHd || {})) nwHdIds.add(k);
@@ -774,9 +775,23 @@ export function derive(state, refDate = today()) {
     const byKey = new Map(items.map(x => [x.key, x]));
     const secs = layout.sections.map(x => ({ name: x.name, color: x.color, keys: x.items.filter(k => byKey.has(k)), fromLayout: true }));
     const placed = new Set(secs.flatMap(x => x.keys));
-    for (const it of items) {
-      if (placed.has(it.key)) continue;
-      let sec = secs.find(x => catNorm(x.name) === catNorm(it.section));
+    // una riga che non è in nessuna sezione di D (conto creato a mano, arrivato da un altro import…)
+    // va in una sua sezione dello stesso tipo, non in una sezione col nome inventato dall'app
+    // (D: "perché c'è scritto liquidità… io non ho mai chiamato nulla liquidità"):
+    // 1) stesso nome; 2) una sezione di D che ha già righe dello stesso tipo; 3) un nome che gli somiglia
+    const fam = new Map(secs.map(x => [x, new Set(x.keys.map(k => byKey.get(k).section))]));
+    const looksLike = (name, base) => SECTION_HINT[base]?.test(catNorm(name));
+    // un titolo di tipo sconosciuto: il tipo dal nome, quando si capisce (ETF, oro, crypto)
+    const guess = it => (it.section !== 'Altri investimenti' ? it.section
+      : /ucits|\betf\b|msci|s&p|ftse|stoxx|nasdaq|ishares|vanguard|xtrackers|amundi|spdr|lyxor|wisdomtree/i.test(`${it.label} ${it.sub || ''}`) ? 'ETF'
+      : /\bgold\b|\boro\b|silver|argento|\betc\b|xau/i.test(`${it.label} ${it.sub || ''}`) ? 'Materie prime'
+      : /bitcoin|\bbtc\b|ethereum|\beth\b|crypto|solana/i.test(`${it.label} ${it.sub || ''}`) ? 'Crypto' : it.section);
+    for (const it0 of items) {
+      if (placed.has(it0.key)) continue;
+      const it = { ...it0, section: guess(it0) };
+      let sec = secs.find(x => catNorm(x.name) === catNorm(it.section))
+        || secs.find(x => x.fromLayout && fam.get(x)?.has(it.section))
+        || secs.find(x => x.fromLayout && looksLike(x.name, it.section));
       if (!sec) {
         sec = { name: it.section, color: 0, keys: [] };
         const at = secs.findIndex(x => !x.fromLayout && SECTION_ORDER.indexOf(x.name) > SECTION_ORDER.indexOf(it.section));

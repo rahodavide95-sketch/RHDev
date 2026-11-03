@@ -73,8 +73,12 @@ collegata a nient'altro." Quindi il patrimonio è **solo** il Net Worth, a fine 
   i conti titoli/crypto con titoli non entrano, né la loro liquidità; un titolo senza `nwHd` non c'è.
   Conti fuori dal patrimonio (es. "Entrate e uscite dal file", TFR lordo) non entrano.
 - Colonne: solo fine mese **passate** (`pastEnd`): il mese in corso resta vuoto fino a fine mese.
-- `nwSections` (ordine e nomi da `settings.nwLayout`, scritto dall'import o da "Organizza", poi
-  sezioni di base per le righe nuove), `nwTable(cols)`, `nwSheet(anno, filtro)` (31/12 anno prima
+- `nwSections` (ordine e nomi da `settings.nwLayout`, scritto dall'import o da "Organizza"; una riga che
+  non è in nessuna sezione di D va, nell'ordine, nella sezione con lo stesso nome, in una sezione di D
+  che ha già righe dello stesso tipo, in una il cui nome gli somiglia (`SECTION_HINT`: "Cash - Liquidity"
+  per i conti, "WORK" per il TFR…; il tipo di un titolo sconosciuto si indovina dal nome: ETF, oro,
+  crypto) e solo se niente va bene in una sezione di base. D: "perché c'è scritto liquidità… io non ho
+  mai chiamato nulla liquidità": prima finiva nelle sezioni di base "Liquidità"/"Altri investimenti"), `nwTable(cols)`, `nwSheet(anno, filtro)` (31/12 anno prima
   + 12 fine mese: per sezione Total, Gain/Loss, %; Net Worth; Asset Allocation), `nwMonthly(n)`
   (ultime fine mese, `last` = l'ultima con valori).
 - Pagina: patrimonio all'ultima fine mese con variazione sul mese prima, dal 31/12 e massimo; una

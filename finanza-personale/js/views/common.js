@@ -94,7 +94,6 @@ export function txGroups(ctx, list, opts = {}) {
   return out;
 }
 
-export function pageGrid(...cards) { return h('div.page-grid', cards); }
 
 export function segTabs(options, value, onChange) {
   return h('div.tabs', { role: 'tablist' }, options.map(o => h('button.tab-btn', { type: 'button', role: 'tab', 'aria-selected': String(o.value === value), onclick: () => onChange(o.value) }, o.label, o.count != null ? h('span.tab-count', o.count) : null)));

@@ -1,7 +1,7 @@
 /* Import dell'estratto conto (CSV): si sceglie il file, si controllano le colonne,
    si vede l'anteprima con le categorie suggerite e i doppioni già esclusi. */
 
-import { h, icon, pickFile, readText } from '../ui/dom.js';
+import { h, pickFile, readText } from '../ui/dom.js';
 import { openSheet, field, selectInput, toggle, toast } from '../ui/components.js';
 import { undo, undoToken } from '../session.js';
 import { moneyText } from '../ui/fmt.js';

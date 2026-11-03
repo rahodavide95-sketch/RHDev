@@ -34,17 +34,24 @@ sbagliati l'interfaccia fa aspettare (la vera protezione resta il costo di PBKDF
 
 | Cosa | Come |
 | --- | --- |
-| Dove | Supabase, progetto di Label Finance (lo stesso di [RH] Documents, quindi lo stesso account), tabelle con il prefisso `finanza_personale` |
-| Cosa c'è online | una riga per l'account: la cassaforte cifrata (stesso formato del file di backup) e il numero di versione |
-| Chi la legge | solo il proprietario: il primo account che accede dall'app (`finanza_personale_claim()`); gli altri vengono rifiutati dalle regole del database (RLS) |
-| Cancellazione | non permessa dall'app (nemmeno al proprietario): un accesso rubato non può cancellare i dati |
+| Dove | Supabase, progetto di Label Finance (lo stesso di [RH] Documents, quindi gli stessi account), tabelle con il prefisso `finanza_personale` |
+| Chi può registrarsi | chiunque (registrazione aperta): ognuno ha il suo account e la sua riga |
+| Cosa c'è online | una riga per account: la cassaforte cifrata (stesso formato del file di backup) e il numero di versione |
+| Chi la legge | solo l'account a cui appartiene (regole del database, RLS: `user_id = auth.uid()`); nessuno vede le righe degli altri, e il contenuto è comunque cifrato con la password di ciascuno |
+| Da dove | solo dal sito dell'app: le regole controllano l'Origin della richiesta (`finanza_personale_from_app()`), così una copia messa su un altro sito non può usare il database |
+| Altre app dello stesso progetto | un nuovo account non vede niente di Label Finance (serve l'approvazione del titolare) né di [RH] Documents (solo il suo proprietario) |
+| Cancellazione | non permessa dall'app: un accesso rubato non può cancellare i dati |
 | Password | è anche la password che cifra i dati. Viaggia verso Supabase solo per l'accesso (HTTPS), come in [RH] Documents; i dati restano cifrati con una chiave PBKDF2 a 600.000 passaggi |
 | Due dispositivi | ogni salvataggio dice su quale versione si basa: se nel frattempo un altro dispositivo ha salvato, si scarica, si unisce elemento per elemento (unione a tre vie, `js/core/merge.js`) e si riprova; niente si sovrascrive di nascosto |
 | Senza rete | si continua a lavorare sul dispositivo; si sincronizza appena torna la rete |
 
 Le regole del database sono verificate da `test/rls/run.sh` su un Postgres vero
-(18 controlli: chi non ha fatto l'accesso, il proprietario, un estraneo, versioni
-superate, cancellazioni).
+(22 controlli: chi non ha fatto l'accesso, due account diversi che non si vedono a vicenda,
+versioni superate, cancellazioni, richieste da un altro sito, niente resti del vecchio
+"proprietario unico").
+
+Il codice è visibile ma non è open source: `LICENSE` (tutti i diritti riservati, vietato copiarlo
+o riusarlo senza permesso).
 
 Cambi di password:
 - cambiata dall'app: si cambia online e la cassaforte si richiude con la nuova; gli altri

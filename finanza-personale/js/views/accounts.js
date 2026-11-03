@@ -5,7 +5,7 @@ import { h, icon } from '../ui/dom.js';
 import { lineChart } from '../ui/charts.js';
 import { empty, twoTap } from '../ui/components.js';
 import { money, moneyText, axisMoney, tipMoney, ui } from '../ui/fmt.js';
-import { card, accountRow, txGroups, avatar, accAvatar, linkBtn, hdBadge, loadPeriod, savePeriod, periodPicker } from './common.js';
+import { card, accountRow, txGroups, accAvatar, linkBtn, hdBadge, loadPeriod, savePeriod, periodPicker } from './common.js';
 import { resolvePeriod, monthsBetween } from '../core/period.js';
 import { accountEditor, adjustEditor, txEditor, holdingEditor, undoToast } from './editors.js';
 import { deleteValuation } from '../actions.js';

@@ -2,7 +2,7 @@
 
 import { h, icon, debounce, download } from '../ui/dom.js';
 import { selectInput, toast, empty, openSheet, confirmDialog, textInput } from '../ui/components.js';
-import { money, moneyText } from '../ui/fmt.js';
+import { money } from '../ui/fmt.js';
 import { txGroups } from './common.js';
 import { txEditor, accountOptions, pickCategory, undoToast } from './editors.js';
 import { openImporter } from './importer.js';

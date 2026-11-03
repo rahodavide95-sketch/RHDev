@@ -8,13 +8,13 @@
 import { h, icon, download } from '../ui/dom.js';
 import { toast, empty } from '../ui/components.js';
 import { money, moneyText, delta, tipMoney, axisMoney, ui } from '../ui/fmt.js';
-import { card, segTabs, filterBox, stat, colorDot, softColor, editInCell, resumeEdit, renameBtn } from './common.js';
+import { card, segTabs, filterBox, colorDot, softColor, editInCell, resumeEdit, renameBtn } from './common.js';
 import { setGroupColor, setFlowCell, placeCategory, renameGroup, renameCategory } from '../actions.js';
 import { fitTable, watchFit, fitMoney } from '../ui/fit.js';
 import { categoryEditor, txEditor, undoToast } from './editors.js';
 import { categoryManager, groupColor } from './categories.js';
 import { openFileImport } from './invimport.js';
-import { barChart, sparkline, legend } from '../ui/charts.js';
+import { barChart } from '../ui/charts.js';
 import { monthName, today } from '../core/dates.js';
 import { formatPercent } from '../core/money.js';
 import { toCSV, csvNumber } from '../core/csv.js';

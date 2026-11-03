@@ -432,8 +432,18 @@ Categorie = riepilogo per macro categoria con le sue voci (tocca → gestione).
 
 - Stesso schema collaudato di Documenti Raho (leggi `documenti-raho/CLAUDE.md`, "Account e
   sincronizzazione"): progetto Supabase di Label Finance `ztjlqorvnulgfvbtvavm`, oggetti con
-  prefisso `finanza_personale`, un solo proprietario (`finanza_personale_claim()`), client
-  senza librerie (`js/cloud.js`: `/auth/v1`, `/rest/v1`). Stesso account di Documents.
+  prefisso `finanza_personale`, client senza librerie (`js/cloud.js`: `/auth/v1`, `/rest/v1`).
+  **Registrazione aperta a tutti** (D: "aperto a tutti", "regolamentarlo ai fini della sicurezza per non
+  farmelo copiare"): ognuno il suo account e la sua riga (RLS `user_id = auth.uid()`), "Crea un account"
+  sempre visibile. `finanza_personale_claim()` dice solo se la sincronizzazione è consentita da qui:
+  `finanza_personale_from_app()` controlla l'Origin della richiesta (`https://rahodavide95-sketch.github.io`;
+  senza Origin vale solo l'account), così una copia su un altro sito non usa il database. Tolti tabella e
+  funzioni del vecchio proprietario unico (`finanza_personale_owner`, `_is_owner`, `_has_owner`): lo
+  schema le cancella. Se il sito cambia indirizzo, va cambiato anche lì. Label Finance (approvazione del
+  titolare) e Documenti Raho (solo proprietario) restano chiusi ai nuovi account. Il codice è "tutti i
+  diritti riservati" (`LICENSE`, commento in `index.html`, "Tutti i diritti riservati" in accesso e
+  Impostazioni): il repository è pubblico, quindi la protezione vera contro la copia è legale e il
+  blocco del database; renderlo privato vorrebbe dire GitHub Pro (per Pages) e riguarda tutte le app.
 - Schema: `supabase/schema.sql` (niente DELETE per `authenticated`), applicato dal workflow
   `.github/workflows/finanza-personale-db.yml` (secret `SUPABASE_ACCESS_TOKEN`), che aggiunge
   anche l'indirizzo dell'app ai ritorni consentiti dopo le email. Test: `bash test/rls/run.sh`.

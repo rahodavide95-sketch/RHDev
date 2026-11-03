@@ -7,7 +7,7 @@ import { passwordStrength, isRecoveryCodeShape, WrongSecret } from '../core/cryp
 import { demoState } from '../demo.js';
 import * as cloud from '../cloud.js';
 
-const G = { step: 'welcome', code: '', finish: null, busy: false, fails: 0, waitUntil: 0, owner: null, notice: '', email: '', pw: '', reset: null };
+const G = { step: 'welcome', code: '', finish: null, busy: false, fails: 0, waitUntil: 0, notice: '', email: '', pw: '', reset: null };
 const go = step => { G.step = step; document.dispatchEvent(new Event('rhf-gate')); };
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -105,12 +105,12 @@ function loginScreen(ctx) {
   } },
     back(),
     h('h2', 'Accedi'),
-    h('p.muted', 'Con lo stesso account di [RH] Documents. I dati arrivano cifrati e si aprono solo qui, con la tua password.'),
+    h('p.muted', 'Con il tuo account [RH] (email e password). I dati arrivano cifrati e si aprono solo qui, con la tua password.'),
     notice(),
     h('div.stack-sm', em, pw), err, btn,
     h('div.gate-links',
       h('button.link', { type: 'button', onclick: () => resetRequest(em.value) }, 'Password dimenticata?'),
-      G.owner === false ? h('button.link', { type: 'button', onclick: () => { G.notice = ''; go('signup'); } }, 'Non hai un account? Crealo') : null));
+      h('button.link', { type: 'button', onclick: () => { G.notice = ''; go('signup'); } }, 'Non hai un account? Crealo')));
   setTimeout(() => (G.email ? pw.input : em).focus(), 80);
   return h('div.gate', form);
 }
@@ -218,10 +218,6 @@ function resetScreen(ctx) {
 
 /* ─── Benvenuto ─── */
 function welcome(ctx) {
-  if (G.owner === null && !G.asked) {
-    G.asked = true;
-    cloud.hasOwner().then(v => { G.owner = v; document.dispatchEvent(new Event('rhf-gate')); });
-  }
   return h('div.gate',
     h('div.gate-hero',
       mark(),
@@ -236,12 +232,12 @@ function welcome(ctx) {
       notice(),
       h('div.gate-actions',
         h('button.btn.btn-primary.btn-lg', { type: 'button', onclick: () => go('login') }, 'Accedi con email e password', icon('chevR', 18)),
-        G.owner === false ? h('button.btn.btn-soft.btn-lg', { type: 'button', onclick: () => go('signup') }, 'Crea un account') : null,
+        h('button.btn.btn-soft.btn-lg', { type: 'button', onclick: () => go('signup') }, 'Crea un account'),
         h('button.btn.btn-soft.btn-lg', { type: 'button', onclick: () => ctx.session.startDemo(demoState()) }, icon('sparkle', 18), 'Prova con dati di esempio'),
         h('div.gate-more',
           h('button.link', { type: 'button', onclick: () => go('create') }, 'Usa senza account, solo su questo dispositivo'),
           h('button.link', { type: 'button', onclick: () => restoreFlow(ctx) }, 'Ho un file di backup')))),
-    h('p.gate-foot', 'Sviluppato con cura da Davide Raho · © 2026'));
+    h('p.gate-foot', 'Sviluppato con cura da Davide Raho · © 2026 · Tutti i diritti riservati'));
 }
 
 /* ─── Creazione ─── */

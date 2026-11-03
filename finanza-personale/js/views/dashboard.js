@@ -76,7 +76,7 @@ function netWorthCard(ctx, P) {
       h('div.dash-secs',
         h('div.alloc-bar.dash-alloc', secs.filter(x => x.v > 0).map(x => h('span', { style: { width: (x.v / pos * 100) + '%', background: x.col }, title: x.s.name }))),
         h('div.dash-list', secs.map(x => h('div.dash-row',
-          colorDot(x.s.color, c => setSectionColor(d, x.s.name, c), `Colore di ${x.s.name}`), h('a.dash-n', { href: '#/patrimonio?sez=' + encodeURIComponent(x.s.name), title: x.s.auto ? 'Gruppo fatto dall\'app: righe che non sono in nessuna delle tue sezioni. Toccalo per vederle e spostarle dove vuoi.' : `Apri ${x.s.name} nel Net Worth` }, x.s.name, x.s.auto ? h('small.nw-auto-tag', 'da sistemare') : null),
+          colorDot(x.s.color, c => setSectionColor(d, x.s.name, c), `Colore di ${x.s.name}`), h('a.dash-n', { href: '#/patrimonio?sez=' + encodeURIComponent(x.s.name), title: `Apri ${x.s.name} nel Net Worth` }, x.s.name),
           h('span.dash-p', x.v > 0 ? formatPercent(x.v / pos * 100, 0) : ''), x.s.total[L] == null ? h('span.dash-v.muted', '—') : h('span.dash-v', money(x.v, d.base, { tone: x.v < 0 ? 'neg' : '' }))))))));
 }
 

@@ -470,7 +470,8 @@ export function planNetWorth(read, state, { includeOdd = false, holdings = state
     const values = usable.filter(v => nowOf(v) == null);
     const gross = isGross(a, read.accounts);
     const zero = !usable.some(v => v.value);
-    const reason = invAcc ? 'è il totale del conto titoli: lo calcolo dai titoli' : gross ? 'lordo: conta solo il netto' : zero && usable.length ? 'sempre a zero' : '';
+    // il lordo (TFR lordo) si importa come riga che si vede ma non conta, come nel foglio di D (il Total conta il netto)
+    const reason = invAcc ? 'è il totale del conto titoli: lo calcolo dai titoli' : zero && usable.length && !gross ? 'sempre a zero' : '';
     // celle vuote dopo il primo valore (es. TFR scritto solo al 31/12): nel foglio quei mesi non lo contano
     const past = read.dates.filter(dt => !refDate || dt <= refDate);
     const firstAt = past.findIndex(dt => a.values.some(v => v.date === dt));

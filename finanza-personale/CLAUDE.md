@@ -123,13 +123,25 @@ collegata a nient'altro." Quindi il patrimonio è **solo** il Net Worth, a fine 
   invertiti si scambiano); la scelta resta su questo dispositivo (`rhf-period-nw`; quella vecchia in
   `rhf-nw-span` viene ripresa). Le sezioni del riepilogo sono link (`?sez=NOME`): la tabella scorre
   sulla banda di quella sezione (`tr.nw-band[data-sec]`) e la fa lampeggiare (`nw-flash`).
-- **Gruppi fatti dall'app** (D: "cosa vuol dire altri investimenti se clicco e non succede niente?"):
-  una riga che non sta in nessuna sezione di D (conto creato dopo, titolo di tipo sconosciuto…) va in un
-  gruppo di base ("Altri investimenti", "Liquidità"…); se D ha già le sue sezioni, `nwTable` lo segna
-  `auto: true` e ovunque compare con l'etichetta arancione "da sistemare" (`.nw-auto-tag`, spiegazione
-  nel `title`: trascina le righe nella sezione giusta, quando è vuoto sparisce). Il clic su una sezione
-  del riepilogo (`?sez=`) apre l'anno più recente in cui ha righe (prima, se nell'anno mostrato non ne
-  aveva, non succedeva niente).
+- **Ogni riga in una sezione di D, mai gruppi inventati** (D: "altri investimenti non deve esistere perché
+  ogni cosa deve avere la sua categoria"): se D ha le sue sezioni (`nwLayout`), una riga senza posto va
+  (dopo `fromFile`, nome, famiglia, indizio) nella sezione di D dello stesso genere (`KIND_OF`/`KIND_HINT`:
+  liquidità, investimenti, lavoro/TFR, beni, debiti), altrimenti nella prima; i gruppi di base ("Liquidità",
+  "Altri investimenti"…) solo per chi non ha ancora sezioni. Il clic su una sezione del riepilogo (`?sez=`)
+  apre l'anno più recente in cui ha righe.
+- **Righe "in sospeso"** (D: "devo poterlo lasciare lì senza essere contato, ad esempio come il TFR lordo o
+  dei buoni postali… solo una volta inserito nella sua categoria si può decidere se includerlo nei conti o
+  meno… ci vuole un segno di riconoscimento"): conto con `inNetWorth: false` + `nwShow: true` = si vede nel
+  Net Worth (`row.skip`) ma non entra in nessun totale (sezione, Asset Allocation, Net Worth, grafici,
+  Panoramica). Segno: etichetta arancione "in sospeso" (`.nw-pend-tag`), striscia arancione a sinistra,
+  numeri in corsivo tenui. Si decide toccando il nome ("Conta nel patrimonio", `A.setNwCount`). Il TFR
+  lordo del file ora si importa così (prima restava fuori): come nel foglio, si vede e il Total conta il netto.
+- **Aggiungere una riga dalla tabella** (D: "come faccio ad aggiungere qualcosa nella categoria? ad esempio un
+  nuovo conto o un nuovo etf direttamente dalla tabella?"): "+" sulla riga di ogni sezione (accanto alla
+  matita) → `addRowSheet`: nome, tipo (`ROW_TYPES`: conti, ETF/azione/obbligazione e buoni/oro/fondo/crypto
+  come titolo tenuto nel Net Worth con `cls`, credito/TFR, beni, debiti; proposto dal nome della sezione),
+  valuta, valore all'ultima fine mese mostrata, "Conta nel patrimonio". `A.addNwRow(G, …)` crea il conto,
+  il valore (manuale) e la mette in fondo alla sezione; tutto si aggiorna, "Annulla" toglie tutto.
 - **Periodo a scelta ovunque** (D: "anche nella panoramica, ovunque, devo avere la possibilità di mettere
   il range periodo che voglio"): `core/period.js` (`resolvePeriod`, `cleanPeriod`, `monthsBetween`,
   `previousPeriod`) e `periodPicker`/`loadPeriod`/`savePeriod` in common (12M, 24M, Quest'anno, Anno

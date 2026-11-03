@@ -210,7 +210,7 @@ export async function openFileImport(ctx) {
               h('span.row-main', h('span.row-title', r.name, r.existing ? h('span.pill', 'già nell\'app') : null, r.holding ? h('span.pill', 'titolo degli Investimenti') : r.cls ? h('span.pill', 'titolo') : null),
                 h('span.row-sub', (r.holding
                   ? [`valori di fine mese di «${r.holding.name}»`, plural(r.values.length, ['valore', 'valori'])]
-                  : [r.cls ? ASSET_CLASSES[r.cls].label : ACCOUNT_TYPES[r.type]?.label, r.currency !== st.settings.currency ? r.currency : '', r.values.length ? plural(r.values.length, ['valore nuovo', 'valori nuovi']) : '', r.changed.length ? plural(r.changed.length, ['aggiornato', 'aggiornati']) : '', r.reason]).filter(Boolean).join(' · '))),
+                  : [r.cls ? ASSET_CLASSES[r.cls].label : ACCOUNT_TYPES[r.type]?.label, r.currency !== st.settings.currency ? r.currency : '', r.values.length ? plural(r.values.length, ['valore nuovo', 'valori nuovi']) : '', r.changed.length ? plural(r.changed.length, ['aggiornato', 'aggiornati']) : '', r.gross ? 'lordo: si vede ma non conta (conta il netto)' : '', r.reason]).filter(Boolean).join(' · '))),
               h('span.row-end', last ? moneyText(cents(last.value), r.currency) : '—')),
             r.on && !r.existing && !r.holding ? h('div.imp-row-opts',
               selectInput(typeOpts, r.type, val => set(r.key, { type: val })),

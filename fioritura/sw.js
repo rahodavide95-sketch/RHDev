@@ -1,5 +1,5 @@
 /* Fioritura: funziona anche senza internet e prende da sola gli aggiornamenti */
-const VERSION = 'fioritura-v1';
+const VERSION = 'fioritura-v2';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {

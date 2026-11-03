@@ -17,12 +17,43 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,300..600,100;1,9..144,300..500,100&family=DM+Sans:opsz,wght@9..40,400..600&display=swap" rel="stylesheet">
 <script>
+  /* Colori tenui: ogni tavolozza ha la sua versione di giorno (l) e di sera (d).
+     l = [sfondo, nuvola 1, nuvola 2, nuvola 3, colore, colore tenue, testo colorato, testo sul colore, alone, binario, fogli]
+     d = [sfondo, nuvola 1, nuvola 2, nuvola 3, colore, colore tenue, testo colorato, testo sul colore, fogli] */
+  window.FIO_PAL = {
+    cipria:   { name: 'Cipria',   l: ['#f7f1ec', '#f2d6cf', '#e3dbf1', '#dbe8da', '#a95f63', '#f5e3e0', '#93505a', '#ffffff', 'rgba(169,95,99,.38)', '#ede3de', '#fffaf7'], d: ['#131012', '#2e1d24', '#1f1b2c', '#18211c', '#e8a9a8', '#3b2a31', '#f2bdbb', '#2a1d22', '#1f1a1d'] },
+    lilla:    { name: 'Lilla',    l: ['#f4f1f9', '#e2d7f4', '#f2dcec', '#dde4f6', '#7d68a6', '#ebe5f6', '#66538f', '#ffffff', 'rgba(125,104,166,.36)', '#e6e1ef', '#fdfbff'], d: ['#121015', '#251d33', '#2a1b28', '#1a1e2e', '#c5b4e8', '#2f2842', '#d6c9f2', '#221b30', '#1d1a23'] },
+    salvia:   { name: 'Salvia',   l: ['#f1f5f0', '#d6e8d6', '#e8efd5', '#d3e6e5', '#557e63', '#dfece2', '#466f55', '#ffffff', 'rgba(85,126,99,.34)', '#e1e8e0', '#fbfdfa'], d: ['#0f1211', '#1a2a20', '#232a19', '#16262a', '#a8cfb4', '#22332a', '#bfe1ca', '#17251d', '#191e1b'] },
+    vaniglia: { name: 'Vaniglia', l: ['#fbf7ea', '#f7e8b8', '#f8ddcb', '#e9edcf', '#ebc96c', '#f8edc9', '#86681b', '#4a3a14', 'rgba(214,170,60,.35)', '#efe7cf', '#fffdf4', '#fffdf4'], d: ['#131210', '#2e2716', '#2d1f17', '#22261a', '#ecd38c', '#383020', '#f3e0a6', '#2b2410', '#1f1d18', '#1f1d18'] },
+    cielo:    { name: 'Cielo',    l: ['#eff4f9', '#d4e5f4', '#e0dcf3', '#d6efea', '#4f7aa0', '#dfeaf5', '#42698d', '#ffffff', 'rgba(79,122,160,.34)', '#e0e7ee', '#fbfdff'], d: ['#0f1114', '#172536', '#1f1c30', '#142826', '#a9c9e8', '#1f2d3c', '#c1d9f1', '#16222e', '#191d22'] },
+    pesca:    { name: 'Pesca',    l: ['#faf2ec', '#f8dac8', '#f6e4cf', '#f1d8de', '#a8644a', '#f8e4d8', '#94563c', '#ffffff', 'rgba(168,100,74,.35)', '#efe2d9', '#fffaf6'], d: ['#131010', '#301f17', '#2c2316', '#2c1a20', '#f0bb9e', '#3c2b23', '#f6cdb6', '#2b1d16', '#201b19'] },
+    neve:     { name: 'Neve',     l: ['#fafafa', '#f0eeee', '#eeeff3', '#f0f1ee', '#3f3a3d', '#efedee', '#3f3a3d', '#ffffff', 'rgba(40,35,38,.25)', '#ebe9ea', '#ffffff'], d: ['#0b0b0c', '#19181a', '#161619', '#171817', '#ecebeb', '#29282a', '#f0eeef', '#141314', '#1a1a1b'] }
+  };
   /* Tema prima del primo disegno, così non lampeggia */
-  (function(){
-    var t = 'auto';
-    try { var s = JSON.parse(localStorage.getItem('fioritura.v1') || 'null'); if (s && s.settings && s.settings.theme) t = s.settings.theme; } catch (e) {}
-    var dark = t === 'dark' || (t === 'auto' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
-    document.documentElement.setAttribute('data-mode', dark ? 'dark' : 'light');
+  window.FIO_THEME = function (settings) {
+    var t = (settings && settings.theme) || 'auto', p = (settings && settings.pal) || 'cipria', h = new Date().getHours();
+    if (!window.FIO_PAL[p]) p = 'cipria';
+    var dark = t === 'dark' || (t === 'evening' && (h >= 19 || h < 7)) ||
+      (t === 'auto' && !!window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+    var el = document.documentElement;
+    el.setAttribute('data-mode', dark ? 'dark' : 'light');
+    el.setAttribute('data-pal', p);
+    return { dark: dark, bg: window.FIO_PAL[p][dark ? 'd' : 'l'][0] };
+  };
+  (function () {
+    var css = '';
+    Object.keys(window.FIO_PAL).forEach(function (k) {
+      var l = window.FIO_PAL[k].l, d = window.FIO_PAL[k].d;
+      css += ':root[data-mode="light"][data-pal="' + k + '"]{--bg:' + l[0] + ';--blob1:' + l[1] + ';--blob2:' + l[2] + ';--blob3:' + l[3] +
+        ';--accent:' + l[4] + ';--accent-soft:' + l[5] + ';--accent-text:' + l[6] + ';--accent-ink:' + l[7] + ';--accent-glow:' + l[8] + ';--track:' + l[9] + ';--card-solid:' + l[10] + '}\n';
+      css += ':root[data-mode="dark"][data-pal="' + k + '"]{--bg:' + d[0] + ';--blob1:' + d[1] + ';--blob2:' + d[2] + ';--blob3:' + d[3] +
+        ';--accent:' + d[4] + ';--accent-soft:' + d[5] + ';--accent-text:' + d[6] + ';--accent-ink:' + d[7] + ';--card-solid:' + d[8] + '}\n';
+    });
+    var st = document.createElement('style'); st.id = 'palcss'; st.textContent = css;
+    document.head.appendChild(st);
+    var s = null;
+    try { s = JSON.parse(localStorage.getItem('fioritura.v1') || 'null'); } catch (e) {}
+    window.FIO_THEME(s && s.settings);
   })();
 </script>
 <style>
@@ -51,15 +82,15 @@
     color-scheme:light;
   }
   :root[data-mode="dark"]{
-    --bg:#1c171c;
-    --blob1:#3b2630; --blob2:#2b2741; --blob3:#21302a;
-    --card:rgba(43,35,42,.74);
-    --card-solid:#2a2229;
+    --bg:#131012;
+    --blob1:#2e1d24; --blob2:#1f1b2c; --blob3:#18211c;
+    --card:rgba(32,28,32,.78);
+    --card-solid:#1f1b1f;
     --card-border:rgba(255,255,255,.06);
     --ink:#f4eae7; --ink-2:#ddcfd2; --muted:#a8979d;
     --line:rgba(255,236,236,.08); --line-2:rgba(255,236,236,.17);
-    --track:#3a3037;
-    --accent:#e8a9a8; --accent-ink:#2a1d22; --accent-soft:#46323b; --accent-text:#f2bdbb;
+    --track:#2f292d;
+    --accent:#e8a9a8; --accent-ink:#2a1d22; --accent-soft:#3b2a31; --accent-text:#f2bdbb;
     --accent-glow:rgba(232,169,168,.25);
     --c1:#ebb598; --c1s:#493630;
     --c2:#e8a5ad; --c2s:#4a3139;
@@ -114,6 +145,31 @@
   .ib:active{transform:scale(.94)}
   .ib svg{width:20px;height:20px}
   .ib.flat{box-shadow:none;background:transparent;border-color:transparent}
+  .tb-r{display:flex;gap:8px}
+  .ib.acct{position:relative;font-family:var(--serif);font-size:18px;font-variation-settings:"SOFT" 100;color:var(--accent-text)}
+  .ib.acct.in{background:var(--accent-soft)}
+  .sdot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--line-2);flex:none}
+  .ib.acct .sdot{position:absolute;top:1px;right:1px;border:2px solid var(--bg);width:12px;height:12px}
+  .sdot[hidden]{display:none}
+  .sdot.ok{background:#7fb38f} .sdot.busy{background:var(--c3);animation:pulse 1.2s ease-in-out infinite} .sdot.warn{background:#e0a65a}
+  @keyframes pulse{50%{opacity:.35}}
+  .who{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:20px;background:var(--accent-soft)}
+  .who .av{width:46px;height:46px;border-radius:50%;flex:none;display:grid;place-items:center;background:var(--accent);color:var(--accent-ink);
+    font-family:var(--serif);font-size:22px;font-variation-settings:"SOFT" 100}
+  .who b{display:block;font-weight:600}
+  .who small{display:block;color:var(--ink-2);font-size:13.5px;overflow-wrap:anywhere}
+  .syncline{display:flex;align-items:center;gap:9px;font-size:14px;color:var(--ink-2)}
+  .msg{font-size:14px;line-height:1.45;padding:11px 14px;border-radius:14px;background:var(--accent-soft);color:var(--accent-text)}
+  .msg.bad{background:rgba(214,120,90,.14);color:#b0563f}
+  :root[data-mode="dark"] .msg.bad{color:#f0a58d}
+  .msg:empty{display:none}
+  .linkbtn{color:var(--accent-text);font-weight:500;font-size:14px;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--line-2)}
+  .pals{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 6px}
+  .sw{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-2);padding:4px 0}
+  .sw i{width:46px;height:46px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06),0 4px 12px -6px rgba(0,0,0,.3);transition:transform .2s;position:relative}
+  .sw[aria-pressed="true"] i{transform:scale(1.06);box-shadow:0 0 0 2px var(--card-solid),0 0 0 4px var(--accent)}
+  .sw[aria-pressed="true"]{color:var(--ink);font-weight:600}
+  .seg.four button{font-size:13px;padding:9px 4px}
   .ib.sm{width:34px;height:34px}
   .ib.sm svg{width:16px;height:16px}
 
@@ -609,7 +665,9 @@
     leaf: ic('<path d="M5 19c0-8 5-13.5 14-14-.5 9-6 14-14 14zM5 19l7-7"/>'),
     upload: ic('<path d="M12 15.5V4M7.5 8.5L12 4l4.5 4.5M4.5 15v3.5a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V15"/>'),
     download: ic('<path d="M12 4v11.5M7.5 11L12 15.5l4.5-4.5M4.5 15v3.5a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V15"/>'),
-    trash: ic('<path d="M4.5 7h15M10 11v6M14 11v6M6.5 7l1 12a2 2 0 0 0 2 2h5a2 2 0 0 0 2-2l1-12M9.5 7V4.5h5V7"/>')
+    trash: ic('<path d="M4.5 7h15M10 11v6M14 11v6M6.5 7l1 12a2 2 0 0 0 2 2h5a2 2 0 0 0 2-2l1-12M9.5 7V4.5h5V7"/>'),
+    cloud: ic('<path d="M7.5 18.5h10a4 4 0 0 0 .7-7.94A6 6 0 0 0 6.6 9.9a4.3 4.3 0 0 0 .9 8.6z"/>'),
+    sync: ic('<path d="M19.5 12a7.5 7.5 0 0 1-13 5.1M4.5 12a7.5 7.5 0 0 1 13-5.1M17.5 3.5v3.6h-3.6M6.5 20.5v-3.6h3.6"/>')
   };
   function flowerBig(cls) {
     var p = '';
@@ -632,18 +690,22 @@
 
   /* ================= DATI ================= */
   var KEY = 'fioritura.v1';
+  // un nome a caso per questo dispositivo (non si sincronizza): serve per sommare i minuti di più dispositivi
+  var DEV = (function () { var v = ''; try { v = localStorage.getItem('fioritura.dev') || ''; if (!v) { v = 'd' + Math.random().toString(36).slice(2, 10); localStorage.setItem('fioritura.dev', v); } } catch (e) { v = 'd0'; } return v; })();
   function defaults() {
     return {
       v: 1,
+      // Ogni cosa ha la sua data di modifica: unendo due dispositivi vince la più recente.
       done: {},      // giorno -> data della spunta (negativa = tolta)
-      pages: {},     // giorno -> ["2-111", ...]
-      notes: {},     // giorno -> testo
-      mood: {},      // giorno -> leggera | normale | faticosa
-      focus: {},     // giorno -> { ms, n }
-      topics: [],    // argomenti critici
-      gone: [],      // argomenti eliminati (per non farli tornare da una copia)
+      pages: {}, pagesAt: {},   // giorno -> ["2-111", ...]
+      notes: {}, notesAt: {},   // giorno -> testo
+      mood: {}, moodAt: {},     // giorno -> leggera | normale | faticosa
+      focus: {},     // dispositivo -> giorno -> { ms, n } (ogni dispositivo conta i suoi minuti)
+      topics: [],    // argomenti critici { id, text, vol, page, day, at, solved, st }
+      gone: [],      // argomenti eliminati (per non farli tornare da un altro dispositivo)
       timer: { mode: 'study', len: 25, endAt: 0, remain: 0, seg: 0 },
-      settings: { name: '', theme: 'auto', sounds: true, wake: true, study: 25, brk: 5, volume: 0.5 },
+      settings: { name: '', theme: 'auto', pal: 'cipria', sounds: true, wake: true, study: 25, brk: 5, volume: 0.5 },
+      settingsAt: 0,
       welcomed: false,
       open: {}
     };
@@ -653,7 +715,8 @@
     try { s = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { s = null; }
     if (!s || s.v !== 1) {
       // Il primo giorno (martedì 3 novembre) era già fatto quando il programma è arrivato qui.
-      d.done['2026-11-03'] = Date.now();
+      // Data minima: qualunque spunta vera, anche da un altro dispositivo, conta di più.
+      d.done['2026-11-03'] = 1;
       return d;
     }
     Object.keys(d).forEach(function (k) {
@@ -661,15 +724,20 @@
       if (k === 'settings' || k === 'timer') d[k] = Object.assign(d[k], s[k]);
       else d[k] = s[k];
     });
+    // minuti di concentrazione salvati con la prima versione (giorno -> minuti): diventano di questo dispositivo
+    var old = {};
+    Object.keys(d.focus).forEach(function (k) { if (/^\d{4}-\d\d-\d\d$/.test(k)) { old[k] = d.focus[k]; delete d.focus[k]; } });
+    if (Object.keys(old).length) d.focus[DEV] = Object.assign(d.focus[DEV] || {}, old);
     return d;
   }
   var S = load();
   var UI = { tab: 'today', pagesOpen: false };
   try { var t0 = localStorage.getItem('fioritura.tab'); if (t0) UI.tab = t0; } catch (e) {}
   var saveFailed = false;
-  function save() {
+  function save(quiet) {
     try { localStorage.setItem(KEY, JSON.stringify(S)); saveFailed = false; }
     catch (e) { if (!saveFailed) toast('Non riesco a salvare su questo dispositivo. Salva una copia dalle impostazioni.'); saveFailed = true; }
+    if (!quiet) schedulePush();
   }
   if (navigator.storage && navigator.storage.persist) { try { navigator.storage.persist(); } catch (e) {} }
 
@@ -692,7 +760,11 @@
   function dayPages(d) { return d.segs.reduce(function (a, s) { return a + s[2] - s[1] + 1; }, 0); }
   function pageKeys(d) { var k = []; d.segs.forEach(function (s) { for (var p = s[1]; p <= s[2]; p++) k.push(s[0] + '-' + p); }); return k; }
   function pagesRead(d) { if (isDone(d.iso)) return dayPages(d); var set = S.pages[d.iso] || []; return pageKeys(d).filter(function (k) { return set.indexOf(k) >= 0; }).length; }
-  function focusOf(iso) { return S.focus[iso] || { ms: 0, n: 0 }; }
+  function focusOf(iso) {
+    var o = { ms: 0, n: 0 };
+    Object.keys(S.focus).forEach(function (dv) { var f = S.focus[dv] && S.focus[dv][iso]; if (f) { o.ms += f.ms || 0; o.n += f.n || 0; } });
+    return o;
+  }
   function openTopics() { return S.topics.filter(function (t) { return !t.solved; }); }
   function phaseOf(n) { return PHASES[n - 1]; }
 
@@ -806,10 +878,10 @@
   }
   function credit(ms, finished) {
     if (S.timer.mode !== 'study') return;
-    var t = today(), f = S.focus[t] || { ms: 0, n: 0 };
+    var t = today(), mine = S.focus[DEV] = S.focus[DEV] || {}, f = mine[t] || { ms: 0, n: 0 };
     f.ms += Math.max(0, ms || 0);
     if (finished) f.n += 1;
-    S.focus[t] = f;
+    mine[t] = f;
   }
   var Timer = {
     status: function () { return S.timer.endAt ? 'run' : S.timer.remain ? 'pause' : 'idle'; },
@@ -857,9 +929,13 @@
   if (S.timer.endAt && Date.now() >= S.timer.endAt) Timer.complete(true);
 
   /* ================= VISTE ================= */
+  function initial() { return ((S.settings.name || '').trim() || acct.email || '?').charAt(0).toUpperCase(); }
   function topbar() {
-    return '<div class="topbar"><div class="brand">' + LOGO + 'Fioritura</div>' +
-      '<button class="ib" data-a="settings" aria-label="Impostazioni">' + I.sliders + '</button></div>';
+    var inn = signedIn();
+    return '<div class="topbar"><div class="brand">' + LOGO + 'Fioritura</div><div class="tb-r">' +
+      (canSync ? '<button class="ib acct' + (inn ? ' in' : '') + '" data-a="account" aria-label="' + (inn ? 'Il tuo account' : 'Accedi o crea un account') + '">' +
+        (inn ? esc(initial()) : I.cloud) + '<i class="sdot" data-acct-dot hidden></i></button>' : '') +
+      '<button class="ib" data-a="settings" aria-label="Impostazioni">' + I.sliders + '</button></div></div>';
   }
   function checkBtn(iso, label) {
     var on = isDone(iso);
@@ -1040,7 +1116,9 @@
     var lens = study ? [25, 40, 50, 60] : [5, 10, 15];
     var t = today(), fo = focusOf(t);
     var wk = 0, all = 0, wkStart = (function () { var d = dateOf(t); var wd = (d.getDay() + 6) % 7; d.setDate(d.getDate() - wd); return isoOf(d); })();
-    Object.keys(S.focus).forEach(function (k) { all += S.focus[k].ms; if (k >= wkStart && k <= t) wk += S.focus[k].ms; });
+    Object.keys(S.focus).forEach(function (dv) {
+      Object.keys(S.focus[dv] || {}).forEach(function (k) { var m = S.focus[dv][k].ms || 0; all += m; if (k >= wkStart && k <= t) wk += m; });
+    });
     var cur = Sound.cur ? Sound.cur.kind : 'none';
     var html = topbar() + '<header class="head"><span class="eyebrow">Concentrazione</span><h1 class="display">Una sessione alla volta</h1>' +
       '<p>Scegli quanto studiare, poi lascia che sia il timer a ricordarti la pausa.</p></header>' +
@@ -1126,6 +1204,7 @@
     justBloomed = null;
     lastDay = today();
     paintTimer();
+    paintAcct();
   }
   function paintTimer() {
     var left = Timer.left(), txt = mmss(left);
@@ -1166,6 +1245,7 @@
     var top = sheet.el.scrollTop;
     sheet.el.innerHTML = '<div class="grab"></div>' + sheet.build();
     sheet.el.scrollTop = top;
+    paintAcct();
   }
   function closeSheet(instant) {
     if (!sheet) return;
@@ -1207,20 +1287,26 @@
         '<button class="switch" role="switch" aria-checked="' + !!st[k] + '" aria-label="' + title + '" data-a="setToggle" data-k="' + k + '"></button></div>';
     }
     return '<div class="sh-head"><div><span class="eyebrow">Fioritura</span><h2 class="display">Impostazioni</h2></div><button class="ib" data-a="closeSheet" aria-label="Chiudi">' + I.x + '</button></div>' +
+      (canSync ? '<button class="who" data-a="account" style="width:100%;text-align:left">' +
+        '<span class="av">' + (signedIn() ? esc(initial()) : I.cloud.replace('<svg', '<svg style="width:22px;height:22px"')) + '</span>' +
+        '<span class="grow"><b>' + (signedIn() ? 'Il tuo account' : 'Accedi o crea un account') + '</b>' +
+        '<small data-acct-line></small></span><span class="chev" style="width:18px;color:var(--muted)">' + I.chev + '</span></button>' : '') +
       '<div><label class="lab" for="setName">Il tuo nome</label><input class="field" id="setName" data-setting="name" value="' + esc(st.name) + '" placeholder="Per salutarti la mattina" autocomplete="given-name"></div>' +
-      '<div class="set-row"><div><b>Aspetto</b><p class="small muted">Automatico segue il telefono.</p></div></div>' +
-      '<div class="seg" role="group" aria-label="Aspetto" style="margin-top:0">' +
-      [['auto', 'Automatico'], ['light', 'Chiaro'], ['dark', 'Scuro']].map(function (o) { return '<button data-a="theme" data-v="' + o[0] + '" aria-pressed="' + (st.theme === o[0]) + '">' + o[1] + '</button>'; }).join('') + '</div>' +
+      '<h3 class="sec-t">Colori</h3>' + palGrid() +
+      '<div><p class="lab" style="margin-bottom:4px">Luce</p><p class="small muted" style="margin-bottom:9px">«Auto» segue il telefono; «Di sera» diventa nera dalle 19 alle 7.</p>' +
+      '<div class="seg four" role="group" aria-label="Luce">' +
+      [['auto', 'Auto'], ['light', 'Chiara'], ['dark', 'Scura'], ['evening', 'Di sera']].map(function (o) { return '<button data-a="theme" data-v="' + o[0] + '" aria-pressed="' + (st.theme === o[0]) + '">' + o[1] + '</button>'; }).join('') + '</div></div>' +
       sw('sounds', 'Suoni delicati', 'Un piccolo rintocco quando chiudi una giornata o finisce una sessione.') +
       sw('wake', 'Schermo acceso durante le sessioni', 'Così sul telefono il timer suona anche alla fine.') +
       '<h3 class="sec-t">I tuoi dati</h3>' +
-      '<p class="help">Tutto resta su questo dispositivo, niente va su internet. Ogni tanto salva una copia: serve anche per passare i progressi dal telefono al computer (sull’altro dispositivo tocca «Carica una copia»: le due versioni si uniscono, non si perde nulla).</p>' +
+      '<p class="help">' + (signedIn() ? 'I tuoi dati sono nel tuo account e su questo dispositivo. Se vuoi, puoi anche salvarne una copia in un file.' :
+        'Senza account tutto resta solo su questo dispositivo. Puoi salvarne una copia in un file e caricarla su un altro dispositivo (le due versioni si uniscono, non si perde nulla), oppure accedere con un account e lasciar fare a lui.') + '</p>' +
       '<div class="btns"><button class="btn soft sm" data-a="export">' + I.download + 'Salva una copia</button><button class="btn soft sm" data-a="import">' + I.upload + 'Carica una copia</button></div>' +
       '<h3 class="sec-t">Mettila nella schermata Home</h3>' +
       '<ul class="help"><li><b>iPhone:</b> apri questa pagina con Safari, tocca Condividi e poi «Aggiungi alla schermata Home».</li>' +
       '<li><b>Android:</b> menu ⋮ in Chrome, poi «Installa app».</li>' +
       '<li>Così si apre come un’app, funziona anche senza internet e il telefono non cancella i dati.</li></ul>' +
-      '<div style="text-align:center"><button class="btn ghost danger" data-a="reset">' + I.trash + 'Cancella tutti i dati</button></div>' +
+      '<div style="text-align:center"><button class="btn ghost danger" data-a="reset">' + I.trash + (signedIn() ? 'Cancella i dati da questo dispositivo' : 'Cancella tutti i dati') + '</button></div>' +
       '<p class="foot">Fioritura · fatta con cura, per te.</p>';
   }
   function welcomeSheet() {
@@ -1231,8 +1317,60 @@
       '<li class="p4"><i></i>Negli appunti raccogli i dubbi: alla fine diventano il tuo ripasso.</li></ul></div>' +
       '<div><label class="lab" for="wName">Come ti chiami? <span class="muted" style="font-weight:400">(facoltativo)</span></label>' +
       '<input class="field" id="wName" data-setting="name" value="' + esc(S.settings.name) + '" autocomplete="given-name" enterkeyhint="done"></div>' +
-      '<button class="btn block" data-a="welcomeDone">Iniziamo</button>';
+      '<div><p class="lab">Scegli il tuo colore <span class="muted" style="font-weight:400">(lo cambi quando vuoi)</span></p>' + palGrid() + '</div>' +
+      '<button class="btn block" data-a="welcomeDone">Iniziamo</button>' +
+      (canSync ? '<div style="text-align:center"><button class="linkbtn" data-a="welcomeLogin">Hai già un account? Accedi</button></div>' : '');
   }
+
+  function palGrid() {
+    var P = window.FIO_PAL;
+    return '<div class="pals" role="group" aria-label="Colori">' + Object.keys(P).map(function (k) {
+      var l = P[k].l;
+      return '<button class="sw" data-a="pal" data-v="' + k + '" aria-pressed="' + (S.settings.pal === k) + '"><i style="background:linear-gradient(135deg,' + l[1] + ' 0 47%,' + l[4] + ' 53% 100%)"></i>' + P[k].name + '</button>';
+    }).join('') + '</div>';
+  }
+
+  var acctView = 'main', acctMode = '', acctMsg = '', acctBad = false, acctDraft = '';
+  function acctNote(msg, bad) {
+    acctMsg = msg || ''; acctBad = !!bad;
+    var el = $('[data-acct-msg]'); if (el) { el.textContent = acctMsg; el.classList.toggle('bad', acctBad); }
+  }
+  function acctSheet() {
+    function head(t) { return '<div class="sh-head"><div><span class="eyebrow">Account</span><h2 class="display">' + t + '</h2></div><button class="ib" data-a="closeSheet" aria-label="Chiudi">' + I.x + '</button></div>'; }
+    var msg = '<p class="msg' + (acctBad ? ' bad' : '') + '" data-acct-msg role="status">' + esc(acctMsg) + '</p>';
+    if (acctView === 'newpw') {
+      return head('Nuova password') + '<p class="help">Scegli una password nuova, di almeno 8 caratteri. Ti servirà per accedere da tutti i tuoi dispositivi.</p>' +
+        '<div><label class="lab" for="acPw1">Nuova password</label><input class="field" id="acPw1" type="password" autocomplete="new-password" data-autofocus></div>' +
+        '<div><label class="lab" for="acPw2">Ripetila</label><input class="field" id="acPw2" type="password" autocomplete="new-password" enterkeyhint="done"></div>' +
+        msg + '<button class="btn block" data-a="savePw">Salva la password</button>' +
+        '<div style="text-align:center"><button class="btn ghost" data-a="acctBack">Annulla</button></div>';
+    }
+    if (signedIn()) {
+      var name = (S.settings.name || '').trim();
+      return head('Il tuo account') +
+        '<div class="who"><span class="av">' + esc(initial()) + '</span><span class="grow"><b>' + esc(name || 'Collegata') + '</b><small>' + esc(acct.email) + '</small></span></div>' +
+        '<div class="syncline"><i class="sdot" data-acct-dot></i><span data-acct-line></span></div>' +
+        '<p class="help">Tutto quello che fai qui è salvato nel tuo account. Accedi con la stessa email sul telefono, sul tablet o sul computer e ritrovi le giornate, le pagine, le note, gli argomenti critici e i tuoi colori.</p>' +
+        msg +
+        '<div class="btns"><button class="btn soft sm" data-a="syncNow">' + I.sync + 'Sincronizza ora</button><button class="btn line sm" data-a="acctNewPw">Cambia password</button></div>' +
+        '<div style="text-align:center"><button class="btn ghost danger" data-a="logout">Esci da questo dispositivo</button>' +
+        '<p class="tiny muted">Uscendo, i dati restano comunque anche qui.</p></div>';
+    }
+    var up = (acctMode || (acct.email ? 'login' : 'signup')) === 'signup';
+    var email = acctDraft || acct.email;
+    return head(up ? 'Crea il tuo account' : 'Accedi') +
+      '<p class="help">' + (up ? 'Con un account i tuoi progressi restano uguali su telefono, tablet e computer, e non si perdono se cambi dispositivo.' :
+        'Accedi con la tua email per ritrovare i progressi su tutti i tuoi dispositivi.') + '</p>' +
+      '<div><label class="lab" for="acEmail">Email</label><input class="field" id="acEmail" type="email" inputmode="email" autocomplete="username" autocapitalize="off" spellcheck="false" value="' + esc(email) + '"></div>' +
+      '<div><label class="lab" for="acPw">Password' + (up ? ' <span class="muted" style="font-weight:400">(almeno 8 caratteri)</span>' : '') + '</label>' +
+      '<input class="field" id="acPw" type="password" autocomplete="' + (up ? 'new-password' : 'current-password') + '" enterkeyhint="go"></div>' +
+      msg +
+      '<button class="btn block" data-a="' + (up ? 'signup' : 'login') + '" id="acGo">' + (up ? 'Crea l’account' : 'Accedi') + '</button>' +
+      '<div class="row between wrap"><button class="linkbtn" data-a="acctMode" data-v="' + (up ? 'login' : 'signup') + '">' + (up ? 'Ho già un account' : 'Non hai un account? Creane uno') + '</button>' +
+      (up ? '' : '<button class="linkbtn" data-a="forgot">Password dimenticata?</button>') + '</div>' +
+      '<p class="tiny muted">Senza account va bene lo stesso: i dati restano su questo dispositivo.</p>';
+  }
+  function busyBtn(el, label) { if (!el) return function () {}; var old = el.innerHTML; el.disabled = true; el.textContent = label || 'Un attimo…'; return function () { if (document.body.contains(el)) { el.disabled = false; el.innerHTML = old; } }; }
 
   /* ================= NOTE ================= */
   var noteTimer = null, notePending = null;
@@ -1240,7 +1378,9 @@
     if (!notePending) return;
     clearTimeout(noteTimer);
     var n = notePending; notePending = null;
+    if ((S.notes[n.iso] || '') === (n.v.trim() ? n.v : '')) return;
     if (n.v.trim()) S.notes[n.iso] = n.v; else delete S.notes[n.iso];
+    S.notesAt[n.iso] = Date.now();
     save();
     var sv = $('[data-saved]'); if (sv) sv.textContent = 'Salvata';
   }
@@ -1306,7 +1446,7 @@
   /* ================= COPIA DEI DATI ================= */
   function exportData() {
     flushNote();
-    var copy = JSON.parse(JSON.stringify(S)); delete copy.timer; delete copy.open;
+    var copy = JSON.parse(JSON.stringify(syncable()));
     var text = JSON.stringify({ app: 'fioritura', v: 1, savedAt: new Date().toISOString(), state: copy }, null, 1);
     var name = 'fioritura-' + today() + '.json';
     var blob = new Blob([text], { type: 'application/json' });
@@ -1326,37 +1466,289 @@
       toast('Copia salvata: ' + name);
     }
   }
+  // Unisce i dati di un altro dispositivo (o di una copia) con quelli di qui. Per ogni cosa vince la modifica
+  // più recente; le spunte tolte e gli argomenti eliminati restano tolti. Unire due volte non cambia nulla.
+  var SYNC_SETTINGS = ['name', 'pal', 'theme'];
   function mergeIn(o) {
-    Object.keys(o.done || {}).forEach(function (k) { if (DAY[k] && Math.abs(o.done[k]) > Math.abs(S.done[k] || 0)) S.done[k] = o.done[k]; });
+    o = o || {};
+    Object.keys(o.done || {}).forEach(function (k) {
+      var v = +o.done[k] || 0;
+      if (DAY[k] && Math.abs(v) > Math.abs(S.done[k] || 0)) S.done[k] = v;
+    });
+    var pa = o.pagesAt || {};
     Object.keys(o.pages || {}).forEach(function (k) {
       if (!DAY[k] || !Array.isArray(o.pages[k])) return;
-      var cur = S.pages[k] || [];
-      o.pages[k].forEach(function (x) { if (cur.indexOf(x) < 0) cur.push(x); });
-      S.pages[k] = cur;
+      var tb = +pa[k] || 0, ta = S.pagesAt[k] || 0;
+      if (tb > ta) { S.pages[k] = o.pages[k].slice(); S.pagesAt[k] = tb; }
+      else if (!tb && !ta) { var cur = S.pages[k] || []; o.pages[k].forEach(function (x) { if (cur.indexOf(x) < 0) cur.push(x); }); S.pages[k] = cur; }
     });
-    Object.keys(o.notes || {}).forEach(function (k) {
-      var a = S.notes[k] || '', b = String(o.notes[k] || '');
-      if (!b.trim()) return;
-      if (!a.trim()) S.notes[k] = b;
-      else if (a.indexOf(b) < 0 && b.indexOf(a) < 0) S.notes[k] = a + '\n\n' + b;
-      else if (b.length > a.length) S.notes[k] = b;
+    var na = o.notesAt || {}, notes = o.notes || {};
+    Object.keys(notes).concat(Object.keys(na)).forEach(function (k) {
+      if (!DAY[k]) return;
+      var tb = +na[k] || 0, ta = S.notesAt[k] || 0, b = String(notes[k] || ''), a = S.notes[k] || '';
+      if (tb > ta) { if (b.trim()) S.notes[k] = b; else delete S.notes[k]; S.notesAt[k] = tb; }
+      else if (!tb && !ta && b.trim() && a.indexOf(b) < 0) S.notes[k] = a.trim() ? a + '\n\n' + b : b;
     });
-    Object.keys(o.mood || {}).forEach(function (k) { if (!S.mood[k]) S.mood[k] = o.mood[k]; });
-    Object.keys(o.focus || {}).forEach(function (k) {
-      var a = S.focus[k] || { ms: 0, n: 0 }, b = o.focus[k] || {};
-      S.focus[k] = { ms: Math.max(a.ms || 0, +b.ms || 0), n: Math.max(a.n || 0, +b.n || 0) };
+    var ma = o.moodAt || {}, mood = o.mood || {};
+    Object.keys(mood).concat(Object.keys(ma)).forEach(function (k) {
+      if (!DAY[k]) return;
+      var tb = +ma[k] || 0, ta = S.moodAt[k] || 0;
+      if (tb > ta) { S.mood[k] = mood[k] || ''; S.moodAt[k] = tb; }
+      else if (!tb && !ta && !S.mood[k] && mood[k]) S.mood[k] = mood[k];
+    });
+    Object.keys(o.focus || {}).forEach(function (dv) {
+      var src = o.focus[dv] || {};
+      if (/^\d{4}-\d\d-\d\d$/.test(dv)) { var w = {}; w[dv] = src; src = w; dv = 'copia'; }   // copia della prima versione
+      var mine = S.focus[dv] = S.focus[dv] || {};
+      Object.keys(src).forEach(function (k) {
+        var a = mine[k] || { ms: 0, n: 0 }, b = src[k] || {};
+        mine[k] = { ms: Math.max(a.ms || 0, +b.ms || 0), n: Math.max(a.n || 0, +b.n || 0) };
+      });
     });
     (o.gone || []).forEach(function (id) { if (S.gone.indexOf(id) < 0) S.gone.push(id); });
     (o.topics || []).forEach(function (t) {
       if (!t || !t.id || S.gone.indexOf(t.id) >= 0) return;
       var mine = S.topics.filter(function (x) { return x.id === t.id; })[0];
-      if (mine) mine.solved = Math.max(mine.solved || 0, t.solved || 0);
-      else S.topics.push(t);
+      if (!mine) { S.topics.push(JSON.parse(JSON.stringify(t))); return; }
+      if ((+t.st || 0) > (mine.st || 0)) { mine.solved = +t.solved || 0; mine.st = +t.st; }
+      else if (!t.st && !mine.st) mine.solved = Math.max(mine.solved || 0, +t.solved || 0);
     });
-    S.topics = S.topics.filter(function (t) { return S.gone.indexOf(t.id) < 0; }).sort(function (a, b) { return b.at - a.at; });
-    if (!S.settings.name && o.settings && o.settings.name) S.settings.name = o.settings.name;
-    S.welcomed = true;
+    if ((+o.settingsAt || 0) > (S.settingsAt || 0) && o.settings) {
+      SYNC_SETTINGS.forEach(function (k) { if (o.settings[k] != null) S.settings[k] = o.settings[k]; });
+      S.settingsAt = +o.settingsAt;
+    } else if (!S.settings.name && o.settings && o.settings.name) S.settings.name = o.settings.name;
+    if (o.welcomed) S.welcomed = true;
+    tidy();
   }
+  // sempre nello stesso ordine, così due dispositivi con gli stessi dati hanno esattamente lo stesso testo
+  function tidy() {
+    S.topics = S.topics.filter(function (t) { return S.gone.indexOf(t.id) < 0; })
+      .sort(function (a, b) { return (b.at || 0) - (a.at || 0) || (a.id < b.id ? -1 : 1); });
+    S.gone.sort();
+    Object.keys(S.pages).forEach(function (k) { S.pages[k].sort(); });
+  }
+  function syncable() {
+    var st = {};
+    SYNC_SETTINGS.forEach(function (k) { st[k] = S.settings[k]; });
+    return { v: 1, done: S.done, pages: S.pages, pagesAt: S.pagesAt, notes: S.notes, notesAt: S.notesAt, mood: S.mood, moodAt: S.moodAt,
+      focus: S.focus, topics: S.topics, gone: S.gone, settings: st, settingsAt: S.settingsAt, welcomed: S.welcomed };
+  }
+  function canon(v) {
+    if (Array.isArray(v)) return '[' + v.map(canon).join(',') + ']';
+    if (v && typeof v === 'object') return '{' + Object.keys(v).sort().filter(function (k) { return v[k] !== undefined; })
+      .map(function (k) { return JSON.stringify(k) + ':' + canon(v[k]); }).join(',') + '}';
+    return JSON.stringify(v === undefined ? null : v);
+  }
+  function hashOf(str) { var h = 2166136261; for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36) + '.' + str.length; }
+  function stateHash() { return hashOf(canon(syncable())); }
+  /* ================= ACCOUNT E SINCRONIZZAZIONE ================= */
+  // Account con email e password sul progetto Supabase già usato da Documenti Raho e Analisi Finanziarie
+  // (tabella fioritura, vedi fioritura/supabase/schema.sql). Ognuno vede solo la sua riga.
+  // Una riga per account con "version": ogni salvataggio fa PATCH ...version=eq.N; se intanto un altro dispositivo
+  // ha salvato, si scarica, si unisce (mergeIn) e si riprova.
+  var SB = { url: 'https://ztjlqorvnulgfvbtvavm.supabase.co', key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp0amxxb3J2bnVsZ2Z2YnR2YXZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2OTgwMDIsImV4cCI6MjA5NzI3NDAwMn0._6gEbzCCnejpyh36Lpqe0_fj27UaonCkn2a7NastDMA' };
+  var ACCT_KEY = 'fioritura.sync';
+  function emptyAcct() { return { email: '', uid: '', access: '', refresh: '', exp: 0, version: 0, hash: '', at: 0 }; }
+  var acct = emptyAcct();
+  try { var ra = JSON.parse(localStorage.getItem(ACCT_KEY) || 'null'); if (ra && typeof ra === 'object') acct = Object.assign(acct, ra); } catch (e) {}
+  var sync = { busy: false, err: '', timer: null, tries: 0 };
+  function saveAcct() { try { localStorage.setItem(ACCT_KEY, JSON.stringify(acct)); } catch (e) {} }
+  function signedIn() { return !!(acct.uid && acct.refresh); }
+  var canSync = /^https?:$/.test(location.protocol) && !!window.fetch;
+
+  async function api(path, o) {
+    o = o || {};
+    var h = { apikey: SB.key, 'Content-Type': 'application/json' };
+    if (o.auth !== false) { await freshToken(); h.Authorization = 'Bearer ' + (acct.access || SB.key); }
+    if (o.prefer) h.Prefer = o.prefer;
+    var r = await fetch(SB.url + path, { method: o.method || 'GET', headers: h, body: o.body ? JSON.stringify(o.body) : undefined });
+    var txt = await r.text(), data = null;
+    try { data = txt ? JSON.parse(txt) : null; } catch (e) {}
+    if (!r.ok) {
+      var err = new Error((data && (data.msg || data.message || data.error_description || data.error)) || ('Errore ' + r.status));
+      err.status = r.status; err.code = data && (data.error_code || data.code); throw err;
+    }
+    return data;
+  }
+  function setSession(d) {
+    acct.access = d.access_token; acct.refresh = d.refresh_token; acct.exp = Date.now() + (+d.expires_in || 3600) * 1000;
+    if (d.user) { acct.uid = d.user.id; acct.email = d.user.email || acct.email; }
+    saveAcct();
+  }
+  var refreshing = null;
+  async function freshToken() {
+    if (!acct.refresh || acct.exp - Date.now() > 60000) return;
+    if (!refreshing) refreshing = (async function () {
+      try { setSession(await api('/auth/v1/token?grant_type=refresh_token', { method: 'POST', auth: false, body: { refresh_token: acct.refresh } })); }
+      catch (e) { if (e.status === 400 || e.status === 401) expired(); throw e; }
+      finally { refreshing = null; }
+    })();
+    return refreshing;
+  }
+  function expired() {
+    acct.access = ''; acct.refresh = ''; acct.exp = 0; saveAcct();
+    sync.err = 'Sei uscita dall’account su questo dispositivo: accedi di nuovo per sincronizzare.';
+    paintAcct();
+  }
+  function typingNow() { var a = document.activeElement; return !!a && /^(INPUT|TEXTAREA)$/.test(a.nodeName); }
+  function syncError(e) {
+    if (e && e.status === 401) { expired(); return; }
+    if (navigator.onLine === false || (e && e.name === 'TypeError')) sync.err = 'Sei offline: sincronizzo appena torna la rete.';
+    else if (e && (e.status === 404 || e.code === '42P01' || e.code === 'PGRST205')) sync.err = 'La sincronizzazione non è ancora pronta sul server.';
+    else sync.err = 'Non riesco a sincronizzare: ' + (e && e.message || 'errore sconosciuto');
+  }
+  function adopt(before) {
+    if (stateHash() === before) return;
+    save(true); applyTheme();
+    if (!sheetOpen()) render(); else if (!typingNow()) { refreshSheet(); render(); }
+  }
+  async function pull(force) {
+    if (!canSync || !signedIn() || sync.busy) return;
+    if (!force && typingNow()) return;
+    sync.busy = true; paintAcct();
+    var again = false;
+    try {
+      var rows = await api('/rest/v1/fioritura?select=version&user_id=eq.' + acct.uid);
+      var v = rows && rows[0] ? +rows[0].version : 0;
+      if (v && v !== acct.version) {
+        var full = await api('/rest/v1/fioritura?select=data,version&user_id=eq.' + acct.uid);
+        if (full && full[0]) {
+          flushNote();
+          var before = stateHash(), cloud = full[0].data || {};
+          mergeIn(cloud);
+          acct.version = +full[0].version;
+          acct.hash = cloudHash(cloud);
+          adopt(before);
+        }
+      } else if (!v) acct.version = 0;
+      if (stateHash() !== acct.hash || !acct.version) again = true;
+      acct.at = Date.now(); sync.err = ''; saveAcct();
+    } catch (e) { syncError(e); }
+    finally { sync.busy = false; paintAcct(); }
+    if (again && !sync.err) push();
+  }
+  async function push() {
+    if (!canSync || !signedIn()) return;
+    if (sync.busy) { schedulePush(900); return; }
+    flushNote();
+    var payload = syncable(), h = stateHash();
+    if (h === acct.hash && acct.version > 0) return;
+    sync.busy = true; paintAcct();
+    var retry = false;
+    try {
+      var rows;
+      if (acct.version <= 0) rows = await api('/rest/v1/fioritura', { method: 'POST', prefer: 'return=representation', body: { user_id: acct.uid, data: payload, version: 1 } });
+      else rows = await api('/rest/v1/fioritura?user_id=eq.' + acct.uid + '&version=eq.' + acct.version, { method: 'PATCH', prefer: 'return=representation',
+        body: { data: payload, version: acct.version + 1, updated_at: new Date().toISOString() } });
+      if (!rows || !rows.length) retry = true;
+      else { acct.version = +rows[0].version; acct.hash = h; acct.at = Date.now(); sync.err = ''; sync.tries = 0; saveAcct(); }
+    } catch (e) { if (e.status === 409 || e.code === '23505') retry = true; else syncError(e); }
+    finally { sync.busy = false; paintAcct(); }
+    if (retry) {
+      // un altro dispositivo ha salvato prima: si scarica, si unisce e si riprova (al massimo qualche volta)
+      if (++sync.tries > 4) { sync.tries = 0; sync.err = 'Non riesco a sincronizzare adesso: riprovo tra poco.'; paintAcct(); return; }
+      acct.version = -1; await pull(true);
+    }
+  }
+  // com'è online, messo nella stessa forma di qui: se coincide con i dati di qui non serve rimandarlo
+  function cloudHash(cloud) {
+    var mine = S;
+    try {
+      S = defaults();
+      if (cloud.settings) SYNC_SETTINGS.forEach(function (k) { if (cloud.settings[k] != null) S.settings[k] = cloud.settings[k]; });
+      S.settingsAt = +cloud.settingsAt || 0;
+      mergeIn(cloud);
+      return stateHash();
+    } finally { S = mine; }
+  }
+  function schedulePush(ms) {
+    if (!canSync || !signedIn()) return;
+    clearTimeout(sync.timer); sync.timer = setTimeout(push, ms == null ? 1500 : ms);
+  }
+  function redirectUrl() { return location.origin + location.pathname; }
+  async function enterWith(d, what) {
+    var prev = acct.uid;
+    setSession(d);
+    if (!acct.uid) { var u = await api('/auth/v1/user'); acct.uid = u.id; acct.email = u.email || acct.email; saveAcct(); }
+    if (prev && prev !== acct.uid) acct.hash = '';
+    acct.version = -1; sync.err = ''; saveAcct();
+    S.welcomed = true; save(true);
+    paintAcct();
+    await pull(true);
+    if (what !== 'quiet') toast(what || 'Fatto: sei dentro. Ora tutto resta sincronizzato.');
+  }
+  async function logIn(email, pw) {
+    var d = await api('/auth/v1/token?grant_type=password', { method: 'POST', auth: false, body: { email: email, password: pw } });
+    await enterWith(d);
+  }
+  async function signUp(email, pw) {
+    var d = await api('/auth/v1/signup?redirect_to=' + encodeURIComponent(redirectUrl()), { method: 'POST', auth: false, body: { email: email, password: pw } });
+    if (d && d.access_token) { await enterWith(d, 'Account creato. Ora tutto resta sincronizzato.'); return 'in'; }
+    acct.email = email; saveAcct();
+    return 'confirm';
+  }
+  async function recover(email) {
+    await api('/auth/v1/recover?redirect_to=' + encodeURIComponent(redirectUrl()), { method: 'POST', auth: false, body: { email: email } });
+  }
+  async function newPassword(pw) { await api('/auth/v1/user', { method: 'PUT', body: { password: pw } }); }
+  async function logOut() {
+    flushNote();
+    try { if (sync.busy) await new Promise(function (r) { setTimeout(r, 1200); }); await push(); } catch (e) {}
+    try { if (acct.access) await api('/auth/v1/logout', { method: 'POST' }); } catch (e) {}
+    var email = acct.email; acct = emptyAcct(); acct.email = email; saveAcct();
+    sync.err = ''; paintAcct();
+  }
+  function authError(e) {
+    var m = (e && (e.code || '') + ' ' + (e.message || '')).toLowerCase();
+    if (navigator.onLine === false) return 'Sei offline: serve internet per accedere.';
+    if (/invalid_credentials|invalid login/.test(m)) return 'Email o password non corrette.';
+    if (/email_not_confirmed|not confirmed/.test(m)) return 'Prima conferma l’email: apri il link che ti è arrivato (guarda anche nello spam).';
+    if (/user_already_exists|already registered/.test(m)) return 'Esiste già un account con questa email: accedi.';
+    if (/weak_password|password should/.test(m)) return 'La password è troppo semplice: usane una più lunga.';
+    if (/rate|too many|over_email/.test(m)) return 'Troppi tentativi: aspetta qualche minuto e riprova.';
+    if (/email_address_invalid|invalid email|validate email/.test(m)) return 'Questa email non sembra giusta.';
+    if (/same_password/.test(m)) return 'È uguale a quella di prima: scegline una diversa.';
+    return 'Qualcosa non è andato: ' + (e && e.message || 'riprova tra poco.');
+  }
+  // tornando dal link dell'email (conferma dell'account o nuova password)
+  async function landing() {
+    var h = location.hash.replace(/^#/, '');
+    if (!/access_token=|error=|error_code=/.test(h)) return;
+    var q = {}; h.split('&').forEach(function (kv) { var i = kv.indexOf('='); if (i > 0) q[decodeURIComponent(kv.slice(0, i))] = decodeURIComponent(kv.slice(i + 1).replace(/\+/g, ' ')); });
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+    if (q.error || q.error_code) {
+      toast(/expired|invalid/.test((q.error_code || '') + (q.error_description || '')) ? 'Il link è scaduto o è già stato usato: chiedine un altro.' : 'Il link non ha funzionato: ' + (q.error_description || q.error), null, 6500);
+      return;
+    }
+    try {
+      if (q.type === 'recovery') {
+        await enterWith({ access_token: q.access_token, refresh_token: q.refresh_token, expires_in: q.expires_in }, 'quiet');
+        S.welcomed = true; save(true); closeSheet(true);
+        acctView = 'newpw'; openSheet(acctSheet);
+      } else {
+        await enterWith({ access_token: q.access_token, refresh_token: q.refresh_token, expires_in: q.expires_in }, 'Email confermata: sei dentro. Ora tutto resta sincronizzato.');
+        closeSheet(true);
+      }
+    } catch (e) { toast(authError(e), null, 6500); }
+  }
+  function acctLine() {
+    if (!signedIn()) return { cls: '', text: acct.email && sync.err ? sync.err : 'Non collegata: i dati restano solo qui.' };
+    if (sync.busy) return { cls: 'busy', text: 'Sincronizzo…' };
+    if (sync.err) return { cls: 'warn', text: sync.err };
+    if (!acct.at) return { cls: 'busy', text: 'Collegata. Sincronizzo appena possibile…' };
+    var d = new Date(acct.at);
+    return { cls: 'ok', text: 'Sincronizzato' + (isoOf(d) === isoOf(new Date()) ? ' alle ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) : ' il ' + fmtShort(isoOf(d))) };
+  }
+  function paintAcct() {
+    var l = acctLine();
+    $$('[data-acct-dot]').forEach(function (e) { e.className = 'sdot ' + l.cls; e.hidden = !signedIn() && !(acct.email && sync.err); });
+    $$('[data-acct-line]').forEach(function (e) { e.textContent = l.text; });
+  }
+  if (canSync) {
+    window.addEventListener('online', function () { pull(true); });
+    setInterval(function () { if (!document.hidden) pull(); }, 45000);
+  }
+
   $('#importFile').addEventListener('change', function (e) {
     var f = e.target.files && e.target.files[0]; if (!f) return;
     var r = new FileReader();
@@ -1365,7 +1757,7 @@
         var data = JSON.parse(r.result);
         if (!data || data.app !== 'fioritura' || !data.state) throw new Error('x');
         var before = doneCount();
-        mergeIn(data.state); save(); closeSheet(true); render();
+        mergeIn(data.state); save(); applyTheme(); closeSheet(true); render();
         var gained = doneCount() - before;
         toast('Copia caricata' + (gained > 0 ? ': ' + gained + ' ' + plural(gained, 'giornata in più', 'giornate in più') : '. Tutto unito.'));
       } catch (err) { toast('Questo file non sembra una copia di Fioritura.'); }
@@ -1376,13 +1768,16 @@
 
   /* ================= TEMA ================= */
   var mq = window.matchMedia ? matchMedia('(prefers-color-scheme: dark)') : null;
+  var themeNow = '';
   function applyTheme() {
-    var t = S.settings.theme, dark = t === 'dark' || (t === 'auto' && mq && mq.matches);
-    document.documentElement.setAttribute('data-mode', dark ? 'dark' : 'light');
-    $('#themeColor').setAttribute('content', dark ? '#1c171c' : '#f7f1ec');
+    var r = window.FIO_THEME(S.settings);
+    themeNow = S.settings.pal + (r.dark ? ':d' : ':l');
+    $('#themeColor').setAttribute('content', r.bg);
   }
   if (mq && mq.addEventListener) mq.addEventListener('change', applyTheme);
   applyTheme();
+  // "Scura la sera": alle 19 si fa notte, alle 7 torna giorno
+  setInterval(function () { var before = themeNow; if (S.settings.theme === 'evening') { applyTheme(); if (themeNow !== before) render(); } }, 60000);
 
   /* ================= AVVISI ================= */
   var toastTimer = null;
@@ -1431,14 +1826,14 @@
       if (isDone(iso)) { toast('La giornata è già segnata come fatta.'); return; }
       var a = S.pages[iso] || [], i = a.indexOf(k);
       if (i >= 0) a.splice(i, 1); else a.push(k);
-      S.pages[iso] = a; save(); buzz(8);
+      S.pages[iso] = a; S.pagesAt[iso] = Date.now(); save(); buzz(8);
       var d = DAY[iso];
       if (pagesRead(d) === dayPages(d) && i < 0) toast('Tutte le pagine lette. Chiudi la giornata?', { label: 'Sì, fatta', run: function () { setDone(iso, true); save(); celebrate(iso); refreshSheet(); render(); } }, 7000);
       refreshSheet(); render();
     },
     mood: function (el) {
       var iso = el.dataset.iso, v = el.dataset.v;
-      S.mood[iso] = S.mood[iso] === v ? '' : v; save();
+      S.mood[iso] = S.mood[iso] === v ? '' : v; S.moodAt[iso] = Date.now(); save();
       if (v === 'faticosa' && S.mood[iso]) toast('Capita. Domani sarà più leggera: stasera riposa.');
       refreshSheet(); render();
     },
@@ -1446,21 +1841,79 @@
     expandAll: function (el) { var v = el.dataset.v === '1'; PHASES.forEach(function (p) { S.open[p.n] = v; }); save(); render(); },
     settings: function () { openSheet(settingsSheet); },
     closeSheet: function () { closeSheet(); },
-    theme: function (el) { S.settings.theme = el.dataset.v; save(); applyTheme(); refreshSheet(); },
+    theme: function (el) { S.settings.theme = el.dataset.v; S.settingsAt = Date.now(); save(); applyTheme(); refreshSheet(); render(); },
+    pal: function (el) { S.settings.pal = el.dataset.v; S.settingsAt = Date.now(); save(); applyTheme(); refreshSheet(); render(); },
+    account: function () { acctView = 'main'; acctMsg = ''; acctBad = false; acctDraft = ''; openSheet(acctSheet); },
+    acctMode: function (el) { var e = $('#acEmail'); acctDraft = e ? e.value.trim() : ''; acctMode = el.dataset.v; acctNote(''); refreshSheet(); },
+    acctNewPw: function () { acctView = 'newpw'; acctNote(''); refreshSheet(); },
+    acctBack: function () { acctView = 'main'; acctNote(''); refreshSheet(); },
+    login: async function (el) {
+      var email = $('#acEmail').value.trim(), pw = $('#acPw').value;
+      if (!email || !pw) { acctNote('Scrivi la tua email e la password.', true); return; }
+      var done = busyBtn(el, 'Accedo…');
+      try { await logIn(email, pw); acctNote(''); acctMode = ''; refreshSheet(); render(); }
+      catch (e) { acctNote(authError(e), true); }
+      finally { done(); }
+    },
+    signup: async function (el) {
+      var email = $('#acEmail').value.trim(), pw = $('#acPw').value;
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { acctNote('Scrivi un’email valida.', true); return; }
+      if (pw.length < 8) { acctNote('La password deve avere almeno 8 caratteri.', true); return; }
+      var done = busyBtn(el, 'Creo l’account…');
+      try {
+        var r = await signUp(email, pw);
+        if (r === 'in') { acctNote(''); acctMode = ''; refreshSheet(); render(); }
+        else { acctMode = 'login'; acctDraft = email; refreshSheet(); acctNote('Ti ho mandato un’email a ' + email + ': apri il link per confermare e sei dentro. Se non la trovi, guarda nello spam.'); }
+      } catch (e) { acctNote(authError(e), true); }
+      finally { done(); }
+    },
+    forgot: async function (el) {
+      var email = $('#acEmail').value.trim();
+      if (!email) { acctNote('Scrivi prima la tua email, poi tocca «Password dimenticata?».', true); $('#acEmail').focus(); return; }
+      var done = busyBtn(el, 'Invio…');
+      try { await recover(email); acctNote('Se c’è un account con questa email, ti è arrivato un link per sceglierne una nuova. Aprilo da questo dispositivo.'); }
+      catch (e) { acctNote(authError(e), true); }
+      finally { done(); }
+    },
+    savePw: async function (el) {
+      var a = $('#acPw1').value, b = $('#acPw2').value;
+      if (a.length < 8) { acctNote('La password deve avere almeno 8 caratteri.', true); return; }
+      if (a !== b) { acctNote('Le due password non sono uguali.', true); return; }
+      var done = busyBtn(el, 'Salvo…');
+      try { await newPassword(a); acctView = 'main'; acctNote(''); refreshSheet(); toast('Password cambiata.'); }
+      catch (e) { acctNote(authError(e), true); }
+      finally { done(); }
+    },
+    syncNow: async function (el) {
+      var done = busyBtn(el, 'Sincronizzo…');
+      sync.tries = 0; if (!(acct.version > 0)) acct.version = -1;
+      await pull(true); done();
+      if (sync.err) acctNote(sync.err, true); else { acctNote(''); toast('Tutto sincronizzato.'); }
+    },
+    logout: function (el) {
+      arm(el, 'Tocca di nuovo per uscire', async function () {
+        await logOut(); acctNote(''); refreshSheet(); render();
+        toast('Sei uscita. I dati restano anche su questo dispositivo.');
+      });
+    },
+    welcomeLogin: function () { S.welcomed = true; save(); closeSheet(true); acctMode = 'login'; A.account(); },
     setToggle: function (el) { var k = el.dataset.k; S.settings[k] = !S.settings[k]; save(); if (k === 'sounds' && S.settings.sounds) Sound.chime('done'); refreshSheet(); },
     export: exportData,
     import: function () { $('#importFile').click(); },
     reset: function (el) {
-      arm(el, 'Tocca di nuovo per cancellare tutto', function () {
+      var was = signedIn();
+      arm(el, 'Tocca di nuovo per cancellare', async function () {
         Timer.stop(); Sound.stop();
+        if (was) await logOut();
         try { localStorage.removeItem(KEY); } catch (e) {}
-        S = defaults(); save(); closeSheet(true); render(); toast('Dati cancellati.');
+        S = defaults(); save(true); applyTheme(); closeSheet(true); render();
+        toast(was ? 'Dati cancellati da questo dispositivo. Nel tuo account ci sono ancora: accedi per riaverli.' : 'Dati cancellati.', null, 6000);
       });
     },
     welcomeDone: function () { S.welcomed = true; save(); closeSheet(); },
     solve: function (el) {
       var t = S.topics.filter(function (x) { return x.id === el.dataset.id; })[0]; if (!t) return;
-      t.solved = t.solved ? 0 : Date.now(); save();
+      t.solved = t.solved ? 0 : Date.now(); t.st = Date.now(); save();
       if (t.solved) { buzz(12); toast('Chiarito. Un pensiero in meno.'); }
       render();
     },
@@ -1506,7 +1959,7 @@
       var sv = $('[data-saved]'); if (sv) sv.textContent = '';
       clearTimeout(noteTimer); noteTimer = setTimeout(flushNote, 500);
     } else if (t.matches('[data-setting]')) {
-      S.settings[t.dataset.setting] = t.value.slice(0, 40); save();
+      S.settings[t.dataset.setting] = t.value.slice(0, 40); S.settingsAt = Date.now(); save();
       clearTimeout(t._r); t._r = setTimeout(function () { render(); }, 250);
     } else if (t.matches('[data-vol]')) {
       S.settings.volume = +t.value; Sound.volume(); save();
@@ -1516,6 +1969,8 @@
     if (e.key !== 'Enter') return;
     if (e.target.id === 'quickTopic') { e.preventDefault(); A.quickTopic($('[data-a="quickTopic"]')); }
     if (e.target.id === 'wName') { e.preventDefault(); A.welcomeDone(); }
+    if (e.target.id === 'acPw' || e.target.id === 'acEmail') { e.preventDefault(); var g = $('#acGo'); if (g && !g.disabled) g.click(); }
+    if (e.target.id === 'acPw2') { e.preventDefault(); var sp = $('[data-a="savePw"]'); if (sp && !sp.disabled) sp.click(); }
     if (e.target.id === 'tpText' && !e.shiftKey) { e.preventDefault(); e.target.form.requestSubmit ? e.target.form.requestSubmit() : e.target.form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true })); }
   });
   document.addEventListener('submit', function (e) {
@@ -1531,7 +1986,13 @@
 
   /* ================= AVVIO ================= */
   render();
-  if (!S.welcomed) setTimeout(function () { openSheet(welcomeSheet, { onClose: function () { if (!S.welcomed) { S.welcomed = true; save(); } } }); }, 450);
+  var fromLink = /access_token=|error_code=|error=/.test(location.hash);
+  if (canSync) {
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) pull(); });
+    landing().then(function () { if (signedIn()) pull(true); });
+  }
+  if (!S.welcomed && !fromLink) setTimeout(function () {
+    if (S.welcomed || sheetOpen()) return; openSheet(welcomeSheet, { onClose: function () { if (!S.welcomed) { S.welcomed = true; save(); } } }); }, 450);
 
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
     window.addEventListener('load', function () {

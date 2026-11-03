@@ -21,7 +21,10 @@ import { toCSV, csvNumber } from '../core/csv.js';
 import { fitTable, watchFit, fitMoney } from '../ui/fit.js';
 
 let year = null;
-let span = 12;
+// periodo del grafico (D: "voglio la possibilità di personalizzare il range del periodo per l'istogramma"):
+// 12 | 24 mesi, 'ytd' (dal 31/12), 'all', oppure { from: 'AAAA-MM', to: 'AAAA-MM' }; resta su questo dispositivo
+let span = (() => { try { const v = JSON.parse(localStorage.getItem('rhf-nw-span') || '12'); return v ?? 12; } catch { return 12; } })();
+const setSpan = v => { span = v; try { localStorage.setItem('rhf-nw-span', JSON.stringify(v)); } catch { /* navigazione privata */ } };
 let nwQ = '';
 const pctOf = (a, b) => (a != null && b ? (a - b) / Math.abs(b) * 100 : null);
 
@@ -277,9 +280,28 @@ export default {
     // l'andamento per sezione e accanto le sezioni con valore, quota e variazione sul mese prima
     const pos = M.sections.reduce((a, x) => a + Math.max(0, x.total[L] || 0), 0) || 1;
     const kpi = (label, value, extra) => h('div.dk', h('span.dk-l', label), h('span.dk-v', value), extra ? h('span.dk-x', extra) : null);
-    const n = span === 'all' ? M.cols.length : Math.min(span, M.cols.length);
-    const from = Math.max(0, L + 1 - n);
-    const idx = Array.from({ length: L + 1 - from }, (_, k) => from + k);
+    // i mesi del grafico: dal primo con valori, dal 31/12, le ultime 12 / 24 fine mese o da un mese a un altro
+    const withData = M.cols.map((c, i) => i).filter(i => M.total[i] != null && i <= L);
+    const firstI = withData[0] ?? 0;
+    const posOf = ym => { const i = M.cols.findIndex(c => c && monthKey(c) === ym); return i < 0 ? null : i; };
+    let from = Math.max(firstI, L + 1 - 12), to = L;
+    if (span === 'all') from = firstI;
+    else if (span === 'ytd') { const di = M.cols.indexOf(`${Number(lastDate.slice(0, 4)) - 1}-12-31`); from = di >= firstI ? di : firstI; }
+    else if (span && typeof span === 'object') {
+      from = posOf(span.from) ?? firstI; to = posOf(span.to) ?? L;
+      if (from > to) [from, to] = [to, from];
+      from = Math.max(firstI, from); to = Math.min(L, to);
+    } else if (Number.isFinite(span)) from = Math.max(firstI, L + 1 - span);
+    const idx = Array.from({ length: Math.max(1, to + 1 - from) }, (_, k) => from + k);
+    const custom = span && typeof span === 'object';
+    const monthOpts = withData.map(i => ({ value: monthKey(M.cols[i]), label: formatMonth(monthKey(M.cols[i])) }));
+    const rangeTools = h('div.nw-sum-tools',
+      segTabs([{ value: 12, label: '12M' }, { value: 24, label: '24M' }, { value: 'ytd', label: 'Quest\'anno' }, { value: 'all', label: 'Tutto' }, { value: 'custom', label: 'Personalizza' }],
+        custom ? 'custom' : span,
+        v => { setSpan(v === 'custom' ? { from: monthKey(M.cols[Math.max(firstI, L - 11)]), to: monthKey(M.cols[L]) } : v); ctx.rerender(); }),
+      custom ? h('div.nw-range',
+        h('label', h('span', 'Da'), selectInput(monthOpts, monthKey(M.cols[from]), v => { setSpan({ from: v, to: span.to }); ctx.rerender(); })),
+        h('label', h('span', 'A'), selectInput(monthOpts, monthKey(M.cols[to]), v => { setSpan({ from: span.from, to: v }); ctx.rerender(); }))) : null);
     const chartEl = barChart({
       labels: idx.map(i => formatMonth(monthKey(M.cols[i]), true)), tipLabels: idx.map(i => `Fine ${formatMonth(monthKey(M.cols[i]))}`),
       series: M.sections.map(sec => ({ name: sec.name, color: softColor(colorVar(sec.color)), values: idx.map(i => sec.total[i] || 0) })),
@@ -297,7 +319,7 @@ export default {
         kpi('Il più alto', peak.i >= 0 ? money(peak.v) : '—', peak.i >= 0 ? formatMonth(monthKey(M.cols[peak.i])) : null)),
       h('div.dash-nw-body',
         h('div.dash-chart',
-          h('div.nw-sum-tools', segTabs([{ value: 12, label: '12M' }, { value: 24, label: '24M' }, { value: 'all', label: 'Tutto' }], span, v => { span = v; ctx.rerender(); })),
+          rangeTools,
           chartEl),
         h('div.dash-secs',
           h('div.alloc-bar.dash-alloc', M.sections.filter(x => (x.total[L] || 0) > 0).map(x => h('span', { style: { width: ((x.total[L] || 0) / pos * 100) + '%', background: softColor(colorVar(x.color)) }, title: x.name }))),
@@ -309,8 +331,7 @@ export default {
               h('span.dash-p', v > 0 ? formatPercent(v / pos * 100, 0) : ''),
               h('span.dash-v', v == null ? h('span.muted', '—') : money(v, d.base, { tone: v < 0 ? 'neg' : '' })),
               h('span.dash-g', g ? money(g, d.base, { sign: true, tone: g >= 0 ? 'pos' : 'neg' }) : ''));
-          })),
-          h('p.dash-cap', 'Accanto al valore, la variazione sul mese prima. Tocca il quadratino per cambiare il colore della sezione.'))),
+          })))),
       h('p.dash-foot', 'Il patrimonio è quello del tuo Net Worth a fine mese, come nel foglio. Gli Investimenti restano a sé.'));
 
     const yearTabs = segTabs(years.map(y => ({ value: y, label: String(y) })), year, v => { year = v; ctx.rerender(); });

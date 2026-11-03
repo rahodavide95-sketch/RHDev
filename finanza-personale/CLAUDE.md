@@ -105,7 +105,11 @@ collegata a nient'altro." Quindi il patrimonio è **solo** il Net Worth, a fine 
   una sezione e l'altra. Con "Colori vivaci" il titolo ha solo un fondo leggero.
 - In cima **una card sola** (D: "anche le cards in patrimonio non mi piacciono"; tolte le schede per
   sezione): Net Worth a fine mese, sul mese prima / dal 31/12 / il più alto, barre per sezione (colori
-  smorzati `softColor`) con la linea del totale, e accanto le sezioni con quota, valore e variazione.
+  smorzati `softColor`) con la linea del totale, e accanto le sezioni con quota, valore e variazione
+  (senza la riga di spiegazione sotto: D l'ha fatta togliere). **Periodo del grafico** (D: "voglio la
+  possibilità di personalizzare il range del periodo per l'istogramma"): 12M, 24M, Quest'anno (dal 31/12),
+  Tutto (dal primo mese con valori), Personalizza (menu "Da" e "A" con i mesi che hanno valori; se
+  invertiti si scambiano); la scelta resta su questo dispositivo (`localStorage` `rhf-nw-span`).
 - Tabelle-foglio **da leggere come in Excel** (D: "mi girano ancora gli occhi… su Excel è molto meglio
   leggere"; "il networth è ancora molto confusionario"): una riga sola per voce (il tipo in `title`),
   griglia leggera tra le colonne dei numeri, niente righe alterne (`.table.fit` escluso dallo zebra),

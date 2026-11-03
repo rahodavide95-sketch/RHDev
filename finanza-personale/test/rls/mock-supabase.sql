@@ -22,3 +22,11 @@ grant execute on all functions in schema auth to anon, authenticated;
 grant usage on schema public to anon, authenticated;
 -- come Supabase: le tabelle nuove di public sono concesse ad anon e authenticated
 alter default privileges in schema public grant all on tables to anon, authenticated;
+
+-- Vault come su Supabase (qui senza cifratura: serve solo a provare le funzioni che lo leggono)
+create schema if not exists vault;
+create table if not exists vault.secrets (id uuid primary key default gen_random_uuid(), name text unique, secret text, description text);
+create or replace view vault.decrypted_secrets as select id, name, description, secret, secret as decrypted_secret from vault.secrets;
+create or replace function vault.create_secret(new_secret text, new_name text default null, new_description text default '') returns uuid
+language sql as $$ insert into vault.secrets (name, secret, description) values (new_name, new_secret, new_description) returning id $$;
+revoke all on schema vault from public;

@@ -72,6 +72,24 @@ async function reconnect(password) {
   } catch { /* resta com'era: dalle Impostazioni (o dall'avviso) si può accedere di nuovo */ }
 }
 
+/** Chiave di riserva per "password dimenticata" via email (D: "la password dimenticata facciamola tramite email",
+    scelta "Solo email"): la chiave dei dati, sigillata dal server, va nella cassaforte (`keys.em`); il server la
+    riapre solo a chi entra col link dell'email (supabase/schema.sql). Una volta per account: la chiave dei dati
+    non cambia con la password. `getDekX` dà la chiave esportabile (con la password appena scritta). */
+async function ensureEscrow(getDekX) {
+  try {
+    const s = cloud.session();
+    if (!S.cloud.linked || !s?.uid || !vault || S.mode !== 'open' || vault.keys?.em?.uid === s.uid) return;
+    const dx = await getDekX();
+    const sealed = await cloud.escrowSeal(await C.exportDek(dx));
+    if (typeof sealed !== 'string' || !sealed || !vault || vault.keys?.em?.uid === s.uid) return;
+    vault = { ...vault, keys: { ...vault.keys, em: { s: sealed, uid: s.uid } }, keysAt: Date.now() };
+    pushKeys = true;
+    scheduleSave(0);
+    scheduleCloud(300);
+  } catch { /* senza rete o col server non ancora aggiornato: si riprova al prossimo sblocco */ }
+}
+
 /* ─── Avvio ─── */
 export async function boot() {
   try {
@@ -120,7 +138,8 @@ export async function create(password, initial) {
   S.hasVault = true;
   store.requestPersist();
   // l'app si apre solo dopo che il codice di recupero è stato mostrato e salvato
-  return { recoveryCode: res.recoveryCode, finish: () => opened(st) };
+  const first = res.vault;
+  return { recoveryCode: res.recoveryCode, finish: () => { opened(st); ensureEscrow(() => C.unlockWithPassword(first, password, true)); } };
 }
 
 async function freshVault() {
@@ -159,7 +178,7 @@ export async function unlock(password) {
     throw e;
   }
   await openWith(key, v);
-  reconnect(password);
+  reconnect(password).then(() => ensureEscrow(() => C.unlockWithPassword(vault, password, true)));
 }
 
 /** La password non apre la copia di questo dispositivo: si prova con i dati online. */
@@ -194,6 +213,7 @@ export async function rekey(oldOrCode, newPassword) {
   await store.saveVault(nv, v, null);
   pushKeys = true;
   await openWith(await C.lockKey(dx), nv);
+  ensureEscrow(() => dx);
 }
 
 /** Sblocco con il codice di recupero: poi si deve scegliere una nuova password. */
@@ -209,6 +229,7 @@ export async function unlockWithRecovery(code, newPassword) {
   opened(st);
   // con l'account: la password nuova vale anche per accedere online
   if (S.cloud.linked) cloud.setPassword(newPassword).catch(() => { S.cloud.error = 'Cambia la password anche dell\'account: dalle Impostazioni.'; });
+  ensureEscrow(() => dx);
 }
 
 /** Blocca: salva quello che manca e toglie dati e chiave dalla memoria. */
@@ -306,7 +327,9 @@ async function save() {
       S.state.meta.updated = Date.now();
       const nv = await C.encryptState(vault, dek, S.state);   // i dati sono letti subito, prima di ogni attesa
       await store.saveVault(nv, vault, today());
-      vault = nv;
+      // chiavi cambiate nel frattempo (es. la chiave di riserva appena creata): restano, e si salvano al prossimo giro
+      if (vault && (vault.keysAt || 0) > (nv.keysAt || 0)) { vault = { ...nv, kdf: vault.kdf, keys: vault.keys, keysAt: vault.keysAt }; dirty = true; clearTimeout(saveTimer); saveTimer = setTimeout(save, 0); }
+      else vault = nv;
       S.saveStatus = dirty ? 'pending' : 'saved';
       S.saveError = '';
       S.lastSaved = Date.now();
@@ -542,10 +565,11 @@ async function pullMerge() {
 /** Invia lo stato attuale; false se nel frattempo un altro dispositivo ha salvato. */
 async function pushNow() {
   const snap = content(S.state);
+  const keysAt = vault.keysAt;
   const nv = await C.encryptState(vault, dek, S.state);   // lo stato è letto subito
   const v = await cloud.pushRow(JSON.stringify(nv), base?.version || 0);
   if (v == null) return false;
-  pushKeys = false;
+  if (vault.keysAt === keysAt) pushKeys = false;          // chiavi cambiate intanto (es. chiave di riserva): partono al giro dopo
   await setBase(v, nv, snap);
   return true;
 }
@@ -566,7 +590,7 @@ export function cloudSync() {
         if (rv && base?.version === rv && content(S.state) === baseJson && !pushKeys) done = true;   // tutto allineato
         else done = await pushNow();           // false: un altro dispositivo ha appena salvato, si ricomincia
       }
-      if (done) setCloud('ok');
+      if (done) { setCloud('ok'); if (pushKeys) scheduleCloud(300); }
       else { setCloud('error', 'Altri dispositivi stanno salvando: riprovo tra poco.'); scheduleCloud(5000); }
     } catch (e) {
       setCloud(e.code === 'offline' ? 'offline' : e.status === 401 ? 'login' : 'error', e.message || String(e));
@@ -594,6 +618,7 @@ export async function loginNewDevice(email, password) {
     vault = rv; dek = key; S.hasVault = true;
     store.requestPersist();
     opened(st);
+    ensureEscrow(() => C.unlockWithPassword(rv, password, true));
     return { ok: true };
   }
   // primo dispositivo con questo account: nuova cassaforte chiusa con la password dell'account
@@ -604,7 +629,8 @@ export async function loginNewDevice(email, password) {
   vault = res.vault; dek = res.dek; S.hasVault = true; base = null; baseJson = '';
   await store.del('cloud-base');
   store.requestPersist();
-  return { recoveryCode: res.recoveryCode, finish: () => opened(st) };
+  const first = res.vault;
+  return { recoveryCode: res.recoveryCode, finish: () => { opened(st); ensureEscrow(() => C.unlockWithPassword(first, password, true)); } };
 }
 
 /** Dispositivo nuovo, ma i dati online sono chiusi con la password di prima dell'account. */
@@ -623,6 +649,7 @@ export async function loginWithOld(oldOrCode, newPassword) {
   vault = nv; dek = key; S.hasVault = true;
   pushKeys = true;
   opened(st);   // la sincronizzazione invia subito le chiavi nuove
+  ensureEscrow(() => dx);
 }
 
 /** Nuovo account. 'confirm' = bisogna prima confermare l'email. */
@@ -673,6 +700,7 @@ export async function linkAccount(email, password, { create = false, localPasswo
   emit('data');
   startSync();
   await cloudSync();
+  await ensureEscrow(() => C.unlockWithPassword(vault, password, true));
   // adopted: da ora valgono la password e il codice di recupero dei dati online
   return { ok: true, adopted };
 }
@@ -681,6 +709,7 @@ export async function linkAccount(email, password, { create = false, localPasswo
 export async function relogin(password) {
   await cloud.signIn(S.cloud.email, password);
   await cloudSync();
+  ensureEscrow(() => C.unlockWithPassword(vault, password, true));
 }
 
 /** Esce dall'account su questo dispositivo: i dati qui restano. */
@@ -694,28 +723,57 @@ export async function unlinkAccount() {
   emit('cloud');
 }
 
-/** Dal link "password dimenticata" dell'email: nuova password + codice di recupero. */
+/** Dal link "password dimenticata" dell'email: nuova password, e i dati si riaprono con la chiave di riserva che
+    il server riapre a chi arriva dal link (D: "la password dimenticata facciamola tramite email"). Se la cassaforte
+    non ha ancora la chiave di riserva (mai aperta con questa versione) serve il codice di recupero: errore
+    `needCode`. Prima si riaprono i dati, poi si cambia la password dell'account (mai una password nuova con i dati
+    ancora chiusi con la vecchia). */
 export async function resetFromLink(access, refresh, code, newPassword) {
   await cloud.adoptLinkSession(access, refresh);
+  const uid = cloud.session().uid;
+  const row = await cloud.fetchRow();
+  let local = null;
+  if (!row) { try { local = await freshVault(); } catch { local = null; } }
+  const src = row ? C.checkVault(JSON.parse(row.data)) : local;
+  if (!src) {
+    // nessun dato né online né qui: basta la password nuova (al prossimo accesso si crea la cassaforte)
+    await cloud.setPassword(newPassword);
+    S.cloud.linked = true; S.cloud.email = cloud.session().email; rememberAccount(S.cloud.email);
+    return { empty: true };
+  }
+  const needCode = () => {
+    const e = new Error('Questa volta serve anche il codice di recupero: la chiave di riserva per l\'email si crea la prima volta che apri l\'app con la password, e questi dati non l\'hanno ancora.');
+    e.code = 'needCode';
+    return e;
+  };
+  let dx;
+  if (code) dx = await C.unlockWithRecovery(src, code, true);
+  else {
+    if (!src.keys.em || src.keys.em.uid !== uid) throw needCode();
+    let raw;
+    try { raw = await cloud.escrowOpen(src.keys.em.s); }
+    catch (e) {
+      const err = new Error(/link|42501|non consentito/i.test(e?.message || '') ? 'Il link dell\'email è scaduto (vale un\'ora): chiedine un altro da "Password dimenticata?".' : (e?.message || String(e)));
+      err.code = 'escrow';
+      throw err;
+    }
+    try { dx = await C.importDek(src, raw); } catch { throw needCode(); }     // chiave di riserva di una cassaforte di prima
+  }
   await cloud.setPassword(newPassword);
   S.cloud.linked = true; S.cloud.email = cloud.session().email; rememberAccount(S.cloud.email);
-  const row = await cloud.fetchRow();
+  const nv = await C.rewrapPassword(src, dx, newPassword);
+  const key = await C.lockKey(dx);
+  const st = sanitize(await C.decryptState(nv, key));
   if (row) {
-    const rv = C.checkVault(JSON.parse(row.data));
-    const dx = await C.unlockWithRecovery(rv, code, true);
-    const nv = await C.rewrapPassword(rv, dx, newPassword);
-    const key = await C.lockKey(dx);
-    const st = sanitize(await C.decryptState(nv, key));
     await store.clearCopies();
     await store.saveVault(nv, null, null);
-    await setBase(row.version, rv, content(st));
-    vault = nv; dek = key; S.hasVault = true;
-    pushKeys = true;
-    opened(st);
-    return;
-  }
-  // niente online: si usa la copia di questo dispositivo, se c'è
-  await unlockWithRecovery(code, newPassword);
+    await setBase(row.version, src, content(st));
+  } else await store.saveVault(nv, local, null);
+  vault = nv; dek = key; S.hasVault = true;
+  pushKeys = true;
+  opened(st);
+  ensureEscrow(() => dx);
+  return { ok: true };
 }
 
 /* Salvataggio prima di chiudere o nascondere la pagina */

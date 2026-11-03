@@ -112,6 +112,7 @@ export function checkVault(v) {
   if (!v.kdf || !isStr(v.kdf.salt) || !Number.isInteger(v.kdf.iter) || v.kdf.iter < 100000 || v.kdf.iter > 10000000) throw new BadVault();
   if (!v.keys || !isW(v.keys.pw) || !isW(v.data)) throw new BadVault();
   if (v.keys.rc && (!isW(v.keys.rc) || !isStr(v.keys.rc.salt))) throw new BadVault();
+  if (v.keys.em && (typeof v.keys.em.s !== 'string' || v.keys.em.s.length > 4000 || typeof v.keys.em.uid !== 'string')) throw new BadVault();
   return v;
 }
 
@@ -169,6 +170,29 @@ export async function rewrapRecovery(vault, dekX) {
   const salt = randomBytes(16);
   const kek = await kekFrom(normalizeRecoveryCode(code), salt, RC_ITER);
   return { vault: { ...vault, keys: { ...vault.keys, rc: { ...(await wrap(dekX, kek)), salt: b64(salt), iter: RC_ITER } }, updated: Date.now(), keysAt: Date.now() }, code };
+}
+
+/* ─── "Password dimenticata" via email: la chiave dei dati sigillata dal server (vedi supabase/schema.sql) ───
+   In `vault.keys.em = { s, uid }` c'è la copia sigillata; il server la riapre solo a chi arriva dal link
+   dell'email. Qui solo la conversione della chiave da e verso il testo che il server sigilla. */
+export async function exportDek(dekX) {
+  const raw = new Uint8Array(await subtle().exportKey('raw', dekX));
+  const s = b64(raw);
+  raw.fill(0);
+  return s;
+}
+/** Dalla chiave riaperta dal server: chiave esportabile (per richiudere con la password nuova), provata sui dati. */
+export async function importDek(vault, s) {
+  checkVault(vault);
+  let k;
+  try {
+    const raw = unb64(s);
+    if (raw.length !== 32) throw new Error();
+    k = await subtle().importKey('raw', raw, { name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']);
+    raw.fill(0);
+    await openData(k, vault.data);
+  } catch { throw new WrongSecret(); }
+  return k;
 }
 
 /** Chiave non esportabile a partire da quella esportabile (dopo un cambio). */

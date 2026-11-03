@@ -47,6 +47,30 @@ jobs:
           echo "Risposta $code"; head -c 2000 /tmp/out.json; echo
           if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then exit 1; fi
 
+      # "Password dimenticata" via email: il server deve poter sigillare e riaprire una chiave (prova con una
+      # chiave finta e un account inesistente, come se arrivasse dal link dell'email). Non stampa mai il segreto.
+      - name: Controlla la chiave di riserva per "password dimenticata"
+        if: steps.token.outputs.skip != '1'
+        run: |
+          cat > /tmp/check.sql <<'SQL'
+          -- una sola istruzione: prima (nella sottoquery) l'accesso finto "dal link dell'email", poi sigilla e riapre
+          select public.finanza_personale_escrow_open(public.finanza_personale_escrow_seal(x.k)) = x.k as giro_completo,
+            exists (select 1 from public.finanza_personale_escrow_key) as segreto_nella_tabella_di_riserva
+          from (select 'QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE='::text as k,
+            set_config('request.jwt.claims', json_build_object('sub', '00000000-0000-0000-0000-000000000000', 'role', 'authenticated',
+              'amr', json_build_array(json_build_object('method', 'otp', 'timestamp', extract(epoch from now())::bigint)))::text, true) as c) x;
+          SQL
+          jq -Rs '{query: .}' /tmp/check.sql > /tmp/body.json
+          code=$(curl -sS -o /tmp/out.json -w '%{http_code}' -X POST \
+            "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data @/tmp/body.json)
+          echo "Risposta $code"; head -c 1000 /tmp/out.json; echo
+          if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then exit 1; fi
+          jq -e '.[0].giro_completo == true' /tmp/out.json > /dev/null || { echo "::error::La chiave di riserva non si sigilla o non si riapre"; exit 1; }
+          echo "Chiave di riserva: sigilla e riapre ✓"
+
       # Il link nell'email di conferma deve riportare ad Analisi Finanziarie e non al sito di Label Finance:
       # aggiunge l'indirizzo dello strumento agli indirizzi di ritorno consentiti, senza togliere quelli
       # che ci sono già e senza cambiare il Site URL di Label Finance.

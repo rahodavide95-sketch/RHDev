@@ -163,6 +163,11 @@
   .msg.bad{background:rgba(214,120,90,.14);color:#b0563f}
   :root[data-mode="dark"] .msg.bad{color:#f0a58d}
   .msg:empty{display:none}
+  .pwwrap{position:relative}
+  .pwwrap .field{padding-right:54px}
+  .eye{position:absolute;top:50%;right:6px;transform:translateY(-50%);width:42px;height:42px;border-radius:50%;display:grid;place-items:center;color:var(--muted)}
+  .eye svg{width:21px;height:21px}
+  .eye[aria-pressed="true"]{color:var(--accent-text)}
   .linkbtn{color:var(--accent-text);font-weight:500;font-size:14px;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--line-2)}
   .pals{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 6px}
   .sw{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-2);padding:4px 0}
@@ -666,6 +671,8 @@
     upload: ic('<path d="M12 15.5V4M7.5 8.5L12 4l4.5 4.5M4.5 15v3.5a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V15"/>'),
     download: ic('<path d="M12 4v11.5M7.5 11L12 15.5l4.5-4.5M4.5 15v3.5a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V15"/>'),
     trash: ic('<path d="M4.5 7h15M10 11v6M14 11v6M6.5 7l1 12a2 2 0 0 0 2 2h5a2 2 0 0 0 2-2l1-12M9.5 7V4.5h5V7"/>'),
+    eye: ic('<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>'),
+    eyeOff: ic('<path d="M10.6 6A9.6 9.6 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-2.6 3.4M6.6 6.9C4 8.6 2.5 12 2.5 12S6 18.5 12 18.5c1.7 0 3.2-.5 4.5-1.2M9.9 9.9a3 3 0 0 0 4.2 4.2M3.5 3.5l17 17"/>'),
     cloud: ic('<path d="M7.5 18.5h10a4 4 0 0 0 .7-7.94A6 6 0 0 0 6.6 9.9a4.3 4.3 0 0 0 .9 8.6z"/>'),
     sync: ic('<path d="M19.5 12a7.5 7.5 0 0 1-13 5.1M4.5 12a7.5 7.5 0 0 1 13-5.1M17.5 3.5v3.6h-3.6M6.5 20.5v-3.6h3.6"/>')
   };
@@ -1340,8 +1347,8 @@
     var msg = '<p class="msg' + (acctBad ? ' bad' : '') + '" data-acct-msg role="status">' + esc(acctMsg) + '</p>';
     if (acctView === 'newpw') {
       return head('Nuova password') + '<p class="help">Scegli una password nuova, di almeno 8 caratteri. Ti servirà per accedere da tutti i tuoi dispositivi.</p>' +
-        '<div><label class="lab" for="acPw1">Nuova password</label><input class="field" id="acPw1" type="password" autocomplete="new-password" data-autofocus></div>' +
-        '<div><label class="lab" for="acPw2">Ripetila</label><input class="field" id="acPw2" type="password" autocomplete="new-password" enterkeyhint="done"></div>' +
+        '<div><label class="lab" for="acPw1">Nuova password</label>' + pwField('acPw1', 'autocomplete="new-password" data-autofocus') + '</div>' +
+        '<div><label class="lab" for="acPw2">Ripetila</label>' + pwField('acPw2', 'autocomplete="new-password" enterkeyhint="done"') + '</div>' +
         msg + '<button class="btn block" data-a="savePw">Salva la password</button>' +
         '<div style="text-align:center"><button class="btn ghost" data-a="acctBack">Annulla</button></div>';
     }
@@ -1363,12 +1370,16 @@
         'Accedi con la tua email per ritrovare i progressi su tutti i tuoi dispositivi.') + '</p>' +
       '<div><label class="lab" for="acEmail">Email</label><input class="field" id="acEmail" type="email" inputmode="email" autocomplete="username" autocapitalize="off" spellcheck="false" value="' + esc(email) + '"></div>' +
       '<div><label class="lab" for="acPw">Password' + (up ? ' <span class="muted" style="font-weight:400">(almeno 8 caratteri)</span>' : '') + '</label>' +
-      '<input class="field" id="acPw" type="password" autocomplete="' + (up ? 'new-password' : 'current-password') + '" enterkeyhint="go"></div>' +
+      pwField('acPw', 'autocomplete="' + (up ? 'new-password' : 'current-password') + '" enterkeyhint="go"') + '</div>' +
       msg +
       '<button class="btn block" data-a="' + (up ? 'signup' : 'login') + '" id="acGo">' + (up ? 'Crea l’account' : 'Accedi') + '</button>' +
       '<div class="row between wrap"><button class="linkbtn" data-a="acctMode" data-v="' + (up ? 'login' : 'signup') + '">' + (up ? 'Ho già un account' : 'Non hai un account? Creane uno') + '</button>' +
       (up ? '' : '<button class="linkbtn" data-a="forgot">Password dimenticata?</button>') + '</div>' +
       '<p class="tiny muted">Senza account va bene lo stesso: i dati restano su questo dispositivo.</p>';
+  }
+  function pwField(id, extra) {
+    return '<div class="pwwrap"><input class="field" id="' + id + '" type="password" ' + extra + '>' +
+      '<button type="button" class="eye" data-a="pwEye" data-for="' + id + '" aria-pressed="false" aria-label="Mostra la password">' + I.eye + '</button></div>';
   }
   function busyBtn(el, label) { if (!el) return function () {}; var old = el.innerHTML; el.disabled = true; el.textContent = label || 'Un attimo…'; return function () { if (document.body.contains(el)) { el.disabled = false; el.innerHTML = old; } }; }
 
@@ -1859,6 +1870,14 @@
     pal: function (el) { S.settings.pal = el.dataset.v; S.settingsAt = Date.now(); save(); applyTheme(); refreshSheet(); render(); },
     account: function () { acctView = 'main'; acctMsg = ''; acctBad = false; acctDraft = ''; openSheet(acctSheet); },
     acctMode: function (el) { var e = $('#acEmail'); acctDraft = e ? e.value.trim() : ''; acctMode = el.dataset.v; acctNote(''); refreshSheet(); },
+    pwEye: function (el) {
+      var inp = document.getElementById(el.dataset.for); if (!inp) return;
+      var show = inp.type === 'password';
+      inp.type = show ? 'text' : 'password';
+      el.setAttribute('aria-pressed', String(show));
+      el.setAttribute('aria-label', show ? 'Nascondi la password' : 'Mostra la password');
+      el.innerHTML = show ? I.eyeOff : I.eye;
+    },
     acctNewPw: function () { acctView = 'newpw'; acctNote(''); refreshSheet(); },
     acctBack: function () { acctView = 'main'; acctNote(''); refreshSheet(); },
     login: async function (el) {
@@ -1966,6 +1985,7 @@
     e.preventDefault();
     fn(el, e);
   });
+  document.addEventListener('pointerdown', function (e) { if (e.target.closest && e.target.closest('.eye')) e.preventDefault(); });
   document.addEventListener('input', function (e) {
     var t = e.target;
     if (t.matches('[data-note]')) {

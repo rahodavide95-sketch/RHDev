@@ -486,6 +486,8 @@
   .set-row b{font-weight:600;font-size:15px}
   .set-row p{margin-top:2px}
   .sec-t{font-family:var(--serif);font-size:19px;font-variation-settings:"SOFT" 100;padding-top:8px}
+  .credits{text-align:center;color:var(--muted);font-family:var(--serif);font-style:italic;font-size:13.5px;line-height:1.5;
+    font-variation-settings:"SOFT" 100;padding:6px 24px 4px;opacity:.9}
   .foot{text-align:center;color:var(--muted);font-size:12.5px;font-family:var(--serif);font-style:italic;padding-top:6px}
   .help{font-size:14px;color:var(--ink-2);line-height:1.55}
   .help li{margin:6px 0 0 18px}
@@ -627,6 +629,8 @@
   var TOTAL = DAYS.length; // 48
 
   /* ================= FRASI ================= */
+  // I crediti, testo di D (richiesta: "aggiungi una riga di crediti")
+  var CREDITS = 'Progettata per dare un piccolo aiuto alla mia bellissima Bi, ti amo! ❤️';
   var QUOTES = [
     'Un passo alla volta è comunque un passo avanti.',
     'Non serve correre: serve esserci, anche oggi.',
@@ -1156,6 +1160,7 @@
       '<button class="btn soft sm" data-a="tab" data-tab="focus">' + (st === 'run' ? (S.timer.mode === 'study' ? 'Studio' : 'Pausa') + ' · <span data-timer>' + mmss(Timer.left()) + '</span>' : st === 'pause' ? 'In pausa' : 'Inizia') + '</button></div></section>';
 
     html += '<figure class="quote">' + I.leaf + '<blockquote>' + esc(QUOTES[hash(t + 'q') % QUOTES.length]) + '</blockquote></figure>';
+    html += '<p class="credits">' + CREDITS + '</p>';
     return html;
   }
 
@@ -1576,7 +1581,7 @@
       '<li><b>Android:</b> menu ⋮ in Chrome, poi «Installa app».</li>' +
       '<li>Così si apre come un’app, funziona anche senza internet e il telefono non cancella i dati.</li></ul>' +
       '<div style="text-align:center"><button class="btn ghost danger" data-a="reset">' + I.trash + (signedIn() ? 'Cancella i dati da questo dispositivo' : 'Cancella tutti i dati') + '</button></div>' +
-      '<p class="foot">Fioritura · fatta con cura, per te.</p>';
+      '<p class="foot">' + CREDITS + '</p>';
   }
   function welcomeSheet() {
     return '<div class="welcome">' + LOGO.replace('<svg', '<svg class="logo"') + '<h2 class="display">Benvenuta</h2>' +

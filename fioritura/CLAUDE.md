@@ -13,6 +13,10 @@ Online: https://rahodavide95-sketch.github.io/RHDev/fioritura/ (pubblicata dal w
 - `manifest.webmanifest` e le icone PNG: per installarla sulla schermata Home.
 - `supabase/schema.sql`: la tabella per l'account, applicata dal workflow `.github/workflows/fioritura-db.yml`.
 
+## Crediti
+
+Riga di crediti scritta da D (testo esatto, non cambiarlo): «Progettata per dare un piccolo aiuto alla mia bellissima Bi, ti amo! ❤️». Costante `CREDITS`, in fondo alla pagina Oggi (`.credits`, sotto la frase del giorno) e in fondo alle Impostazioni.
+
 ## Il programma
 
 È scritto in `PHASES` dentro `index.html`: 4 fasi, 48 giornate dal 3 novembre al 20 dicembre.

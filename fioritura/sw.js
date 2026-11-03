@@ -1,5 +1,5 @@
 /* Fioritura: funziona anche senza internet e prende da sola gli aggiornamenti */
-const VERSION = 'fioritura-v3';
+const VERSION = 'fioritura-v4';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
@@ -44,13 +44,30 @@ self.addEventListener('fetch', e => {
   }
 });
 
-// Toccando un avviso del telefono si torna su Fioritura (o si apre)
+// Notifica push dal server (promemoria del calendario, anche ad app chiusa): la funzione fioritura-push
+// manda { title, body, tag, date }.
+self.addEventListener('push', e => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (err) { d = { body: e.data ? e.data.text() : '' }; }
+  e.waitUntil(self.registration.showNotification(d.title || 'Promemoria di Fioritura', {
+    body: d.body || 'Apri Fioritura per vederlo.',
+    icon: 'icon-192.png',
+    badge: 'icon-192.png',
+    tag: d.tag || 'fioritura',
+    data: { date: d.date || '' }
+  }));
+});
+
+// Toccando un avviso: si torna su Fioritura (o si apre) sul giorno dell'impegno nel calendario
 self.addEventListener('notificationclick', e => {
   e.notification.close();
+  const date = (e.notification.data && e.notification.data.date) || '';
   e.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
-      for (const c of list) if (c.url.includes('/fioritura/') && 'focus' in c) return c.focus();
-      return self.clients.openWindow('./');
+      for (const c of list) {
+        if (c.url.includes('/fioritura/') && 'focus' in c) { if (date) c.postMessage({ type: 'cal', date }); return c.focus(); }
+      }
+      return self.clients.openWindow('./' + (date ? '?cal=' + date : ''));
     })
   );
 });

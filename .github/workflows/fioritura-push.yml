@@ -1,0 +1,100 @@
+name: Notifiche push Fioritura
+
+# Prepara le notifiche push di Fioritura (promemoria del calendario anche ad app chiusa) sul progetto Supabase
+# dove sta già la tabella fioritura: chiavi VAPID (solo la prima volta), segreto del giro di ogni minuto,
+# funzione fioritura-push, tabelle e job pg_cron. Usa il secret SUPABASE_ACCESS_TOKEN già presente.
+# Senza il secret il job si salta. Si può rieseguire: le chiavi VAPID non cambiano.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'fioritura/supabase/functions/**'
+      - 'fioritura/supabase/push.sql'
+      - 'fioritura/supabase/config.toml'
+      - '.github/workflows/fioritura-push.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fioritura-push
+  cancel-in-progress: false
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PROJECT_REF: ztjlqorvnulgfvbtvavm
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Controlla il token di Supabase
+        id: token
+        run: |
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then
+            echo "::warning::Manca il secret SUPABASE_ACCESS_TOKEN: notifiche push di Fioritura NON preparate."
+            echo "skip=1" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: supabase/setup-cli@v1
+        if: steps.token.outputs.skip != '1'
+        with:
+          version: latest
+
+      - name: Chiavi VAPID (solo la prima volta)
+        if: steps.token.outputs.skip != '1'
+        run: |
+          if supabase secrets list --project-ref "$PROJECT_REF" | grep -q FIORITURA_VAPID_JWK; then
+            echo "Chiavi VAPID già presenti: restano quelle, così i telefoni già iscritti continuano a ricevere."
+          else
+            JWK=$(node -e "const k=require('crypto').generateKeyPairSync('ec',{namedCurve:'P-256'}).privateKey.export({format:'jwk'});process.stdout.write(JSON.stringify({kty:'EC',crv:'P-256',d:k.d,x:k.x,y:k.y}))")
+            echo "::add-mask::$JWK"
+            supabase secrets set --project-ref "$PROJECT_REF" "FIORITURA_VAPID_JWK=$JWK" > /dev/null
+            echo "Chiavi VAPID create."
+          fi
+
+      - name: Segreto del giro di ogni minuto
+        if: steps.token.outputs.skip != '1'
+        run: |
+          SECRET=$(openssl rand -hex 24)
+          echo "::add-mask::$SECRET"
+          supabase secrets set --project-ref "$PROJECT_REF" "FIORITURA_CRON_SECRET=$SECRET" > /dev/null
+          echo "CRON_SECRET=$SECRET" >> "$GITHUB_ENV"
+
+      - name: Pubblica la funzione
+        if: steps.token.outputs.skip != '1'
+        working-directory: fioritura
+        run: supabase functions deploy fioritura-push --project-ref "$PROJECT_REF" --no-verify-jwt --use-api
+
+      - name: Tabelle e giro di ogni minuto (pg_cron)
+        if: steps.token.outputs.skip != '1'
+        run: |
+          sed "s/__CRON_SECRET__/$CRON_SECRET/" fioritura/supabase/push.sql > /tmp/push.sql
+          jq -Rs '{query: .}' /tmp/push.sql > /tmp/body.json
+          code=$(curl -sS -o /tmp/out.json -w '%{http_code}' -X POST \
+            "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data @/tmp/body.json)
+          echo "Risposta $code"; head -c 1500 /tmp/out.json; echo
+          if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then exit 1; fi
+
+      - name: Prova - la funzione dà la chiave pubblica
+        if: steps.token.outputs.skip != '1'
+        run: |
+          for i in 1 2 3 4 5 6; do
+            code=$(curl -sS -o /tmp/key.json -w '%{http_code}' "https://$PROJECT_REF.supabase.co/functions/v1/fioritura-push?key=1")
+            [ "$code" = 200 ] && break; sleep 5
+          done
+          echo "Risposta $code"; cat /tmp/key.json; echo
+          if [ "$code" != 200 ]; then exit 1; fi
+
+      - name: Prova - il giro di ogni minuto risponde
+        if: steps.token.outputs.skip != '1'
+        run: |
+          code=$(curl -sS -o /tmp/run.json -w '%{http_code}' -X POST "https://$PROJECT_REF.supabase.co/functions/v1/fioritura-push" \
+            -H "x-cron-secret: $CRON_SECRET" -H "Content-Type: application/json" -d '{}')
+          echo "Risposta $code"; cat /tmp/run.json; echo
+          if [ "$code" != 200 ]; then exit 1; fi

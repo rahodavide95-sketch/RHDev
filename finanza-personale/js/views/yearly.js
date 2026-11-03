@@ -153,7 +153,7 @@ export default {
       }
     }
     const table = h('table.table.nw-table.nw-months.fin-table', { 'data-tid': fit ? `fin-${V.kind}-fit` : `fin-${V.kind}`, class: fit ? 'fit' : '' },
-      h('thead', h('tr', h('th.sticky', fit && !fit.euro ? 'Categoria (€)' : 'Categoria'), months.map(m => h('th.num', { class: m >= curM ? 'future' : '' }, monthName(m + 1, true).toUpperCase())), h('th.num.fin-tot', 'Totale'), h('th.num', 'Media'), h('th.num', '%'))),
+      h('thead', h('tr', h('th.sticky', { dataset: { col: 'name' } }, fit && !fit.euro ? 'Categoria (€)' : 'Categoria'), months.map(m => h('th.num', { dataset: { col: 'm' + m }, class: m >= curM ? 'future' : '' }, monthName(m + 1, true).toUpperCase())), h('th.num.fin-tot', { dataset: { col: 'tot' } }, 'Totale'), h('th.num', { dataset: { col: 'avg' } }, 'Media'), h('th.num', { dataset: { col: 'pct' } }, '%'))),
       h('tbody', body),
       h('tfoot', h('tr.fin-grand', h('td.sticky', V.focus || V.q ? `Totale (filtrato)` : `Totale ${label.toLowerCase()}`), cells(T, null, true), ends(T))));
     if (fit) { table.style.setProperty('--nw-first', fit.first + 'px'); table.style.fontSize = fit.font + 'px'; }

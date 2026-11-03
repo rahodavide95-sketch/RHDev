@@ -124,6 +124,7 @@ export function defaults() {
       backupDays: 14,
       onboarded: false,
       groupColors: {},
+      colNames: {},
       // aspetto: palette (o colori scelti), colori dei grafici, righe alterne, tabelle compatte
       // Net Worth come il foglio di D: sezioni con i loro conti e titoli, nell'ordine scelto
       nwLayout: { sections: [], labels: {} },
@@ -295,6 +296,9 @@ export function sanitize(raw) {
       // colore di ogni gruppo di categorie ("income:Lavoro" → 1…8, la palette dei grafici)
       groupColors: Object.fromEntries(Object.entries(set.groupColors && typeof set.groupColors === 'object' ? set.groupColors : {})
         .filter(([k, v]) => typeof k === 'string' && k.length <= 60 && /^(income|expense):/.test(k) && ((Number.isInteger(v) && v >= 1 && v <= 8) || (typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v)))).slice(0, 300).map(([k, v]) => [k, typeof v === 'string' ? v.toLowerCase() : v])),
+      // nomi delle intestazioni scelti da D ("tabella|colonna" → nome; D: "dammi la possibilità di modificarli come voglio")
+      colNames: Object.fromEntries(Object.entries(set.colNames && typeof set.colNames === 'object' ? set.colNames : {})
+        .filter(([k, v]) => typeof k === 'string' && k.length <= 120 && k.includes('|') && typeof v === 'string' && v.trim() && v.length <= 40).slice(0, 500).map(([k, v]) => [k, v.trim()])),
       look: cleanLook(set.look, d.settings.look),
       nwLayout: cleanLayout(set.nwLayout),
     },

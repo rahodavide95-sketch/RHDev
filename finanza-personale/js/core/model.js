@@ -222,7 +222,10 @@ function cleanValuation(v) {
 }
 function cleanCategory(c) {
   const cid = id(c?.id); if (!cid) return null;
-  return { id: cid, name: str(c.name, 50) || 'Categoria', emoji: emoji(c.emoji) || '•', kind: c.kind === 'income' ? 'income' : 'expense', group: str(c.group, 40) || 'Altro', archived: bool(c.archived) };
+  // `was`: dove stava nel file prima di essere spostata a mano (categoria|sottocategoria), così reimportando
+  // il file la riconosco e non ne creo una nuova
+  const was = [...new Set((Array.isArray(c.was) ? c.was : []).filter(x => typeof x === 'string' && x && x.length <= 100))].slice(-8);
+  return { id: cid, name: str(c.name, 50) || 'Categoria', emoji: emoji(c.emoji) || '•', kind: c.kind === 'income' ? 'income' : 'expense', group: str(c.group, 40) || 'Altro', archived: bool(c.archived), ...(was.length ? { was } : {}) };
 }
 function cleanTx(t) {
   const tid = id(t?.id), acc = id(t?.account), d = date(t?.date);
@@ -762,7 +765,9 @@ export function derive(state, refDate = today()) {
       const firstVal = ledger.cps.get(a.id)?.[0]?.date || null;
       const written = a.nwSparse ? new Set((ledger.cps.get(a.id) || []).map(z => z.date)) : null;
       out.push({ key: 'a:' + a.id, label: a.name, sub: (a.cls ? ASSET_CLASSES[a.cls].label : ACCOUNT_TYPES[a.type].label) + (a.currency !== base ? ' · ' + a.currency : ''), section: (a.cls && HD_SECTION[a.cls]) || ACC_SECTION[a.type] || 'Altro', acc: a,
-        at: dt => { if (firstVal && dt < firstVal) return null; if (written && !written.has(dt)) return null; const v = valueAt(a, dt); return v == null ? null : toBase(v, a.currency); } });
+        at: dt => { if (firstVal && dt < firstVal) return null; if (written && !written.has(dt)) return null; const v = valueAt(a, dt); return v == null ? null : toBase(v, a.currency); },
+        // nella sua valuta (la riga dei contanti in dollari si legge in dollari, come nel foglio)
+        raw: a.currency === base ? null : dt => { if (firstVal && dt < firstVal) return null; if (written && !written.has(dt)) return null; return valueAt(a, dt) ?? null; } });
     }
     for (const hd of state.holdings) {
       if (!nwHdIds.has(hd.id)) continue;
@@ -826,7 +831,8 @@ export function derive(state, refDate = today()) {
       const rows = x.keys.map(k => {
         const it = byKey.get(k);
         const values = cols.map(c => (c ? it.at(c) : null));
-        return { key: k, label: labels[k] || it.label, name: it.label, sub: it.sub, values, acc: it.acc || null, hd: it.hd || null };
+        const native = it.raw ? cols.map(c => (c ? it.raw(c) : null)) : null;
+        return { key: k, label: labels[k] || it.label, name: it.label, sub: it.sub, values, native, cur: it.raw ? it.acc.currency : null, acc: it.acc || null, hd: it.hd || null };
       }).filter(r => r.values.some(v => v))
         .filter(r => !qn || catNorm(x.name).includes(qn) || [r.label, r.name, r.sub].some(t => catNorm(t || '').includes(qn)));
       const total = cols.map((c, i) => sum(rows.map(r => r.values[i])));

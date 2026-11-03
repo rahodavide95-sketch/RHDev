@@ -149,12 +149,18 @@ export function accountTypeFor(section, type, name) {
   if (/work|lavoro/.test(s)) return 'asset';
   return 'checking';
 }
-export function currencyFor(type) {
-  const t = normHead(type);
-  if (/dollar|usd|\$/.test(t)) return 'USD';
-  if (/sterlin|gbp|£/.test(t)) return 'GBP';
-  if (/franch|chf/.test(t)) return 'CHF';
-  return null;
+/** La valuta di una riga: dalla colonna Type ("Dollari", "USD", "$") o, se lì non c'è, dal nome
+    ("Contanti $", "Contanti (USD)", "Cash dollari"). Il testo grezzo: normHead toglierebbe "$" e le parentesi. */
+export function currencyFor(type, name = '') {
+  const of = x => {
+    const t = String(x ?? '').toLowerCase();
+    if (/dollar|\busd\b|us\$|\$/.test(t)) return 'USD';
+    if (/sterlin|\bgbp\b|£/.test(t)) return 'GBP';
+    if (/franch[io] svizzer|\bchf\b/.test(t) || /^\s*franchi\s*$/.test(t)) return 'CHF';
+    return null;
+  };
+  // dal nome solo per contanti e conti (un ETF "$ Treasury" vale comunque in euro nel foglio)
+  return of(type) || (/contant|cash|liquid|dollar|banconot|conto|wallet/i.test(String(name ?? '')) ? of(name) : null);
 }
 
 export function readNetWorth(rows, info, { nums } = {}) {
@@ -247,7 +253,8 @@ export const cellHash = (kind, ym, key, payee) => { const id = `${kind}|${ym}|${
 export function planMonths(read, state, { year, kind, refDate }) {
   const cats = state.categories.filter(c => c.kind === kind);
   // stessa categoria solo se coincidono categoria e sottocategoria: "MUSICA › ROYALTIES" non è "Lavoro › Royalties"
-  const find = (g, n) => cats.find(c => catKey(c.group, c.name) === catKey(g, n));
+  // (o una spostata a mano in un'altra categoria: si ricorda da dove veniva)
+  const find = (g, n) => cats.find(c => catKey(c.group, c.name) === catKey(g, n)) || cats.find(c => (c.was || []).includes(catKey(g, n)));
   const other = kind === 'income' ? 'expense' : 'income';
   const newCats = new Map();
   const cells = new Map();
@@ -346,7 +353,7 @@ export function reconcileNetWorth(read, app, { refDate } = {}) {
         if (m == null || Math.abs((m || 0) - (f || 0)) < 1) continue;
         why = true;
         if (f == null) add(`carry|${a.row}`, { kind: 'carry', name: a.name, section: x.section, app: m }, date);
-        else if (currencyFor(a.type)) add(`fx|${a.row}`, { kind: 'fx', name: a.name, section: x.section, currency: currencyFor(a.type) }, date);
+        else if (currencyFor(a.type, a.name)) add(`fx|${a.row}`, { kind: 'fx', name: a.name, section: x.section, currency: currencyFor(a.type, a.name) }, date);
         else add(`row|${a.row}`, { kind: 'row', name: a.name, section: x.section }, date);
       }
       if (!why) add(`sec|${x.section}`, { kind: 'section', section: x.section }, date);
@@ -412,7 +419,7 @@ export function planNetWorth(read, state, { includeOdd = false, holdings = state
     let holding = null, invAcc = false;
     // un conto dello stesso nome già nell'app (da un import di prima) resta quello: niente doppioni
     // (anche "Contanti" di prima per "Contanti (Euro)", se la valuta è la stessa)
-    const curGuess = currencyFor(a.type) || state.settings.currency;
+    const curGuess = currencyFor(a.type, a.name) || state.settings.currency;
     const findExisting = nm => state.accounts.find(x => !x.archived && !claimed.has(x.id) && !(hasHoldingsType(x.type) && state.holdings.some(hd => hd.account === x.id))
       && (nameKey(x.name) === nameKey(nm) || (x.aka || []).includes(nameKey(nm)) || (x.aka || []).includes(nameKey(a.name))
         || (name !== a.name && nameKey(x.name) === nameKey(a.name) && x.currency === curGuess)));
@@ -438,7 +445,7 @@ export function planNetWorth(read, state, { includeOdd = false, holdings = state
     }
     const existing = holding ? null : findExisting(name) || null;
     if (existing) { type = existing.type; claimed.add(existing.id); }
-    const currency = existing?.currency || currencyFor(a.type) || state.settings.currency;
+    const currency = existing?.currency || currencyFor(a.type, a.name) || state.settings.currency;
     const odd = a.values.filter(v => v.odd);
     const future = a.values.filter(v => refDate && v.date > refDate).length;
     // già nell'app: il punto fermo del conto o il valore di fine mese del titolo (in centesimi)

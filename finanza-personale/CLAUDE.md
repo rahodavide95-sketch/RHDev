@@ -138,7 +138,31 @@ collegata a nient'altro." Quindi il patrimonio è **solo** il Net Worth, a fine 
   leggere"; "il networth è ancora molto confusionario"): una riga sola per voce (il tipo in `title`),
   griglia leggera tra le colonne dei numeri, niente righe alterne (`.table.fit` escluso dallo zebra),
   verde/rosso smorzati, Total senza fondo. Logica "entra nello schermo" condivisa in `ui/fit.js`
-  (`fitTable`, `watchFit`, `fitMoney`: senza decimali solo sopra 1.000 €, sotto restano i centesimi).
+  (`fitTable`, `watchFit`, `fitMoney`). **Sempre al centesimo** (D: "non devi MAI arrotondare nulla,
+  voglio le cifre esatte di tutto quello importato"): `fitTable` prova solo caratteri più piccoli e poi
+  toglie "€", mai i decimali; se non c'entra la tabella scorre di lato (prima colonna ferma). Su un 27"
+  (2560) e a 1920 entra tutto; a 1512 scorre. Gli importi sono salvati in centesimi come li mostra
+  Excel (#,##0.00); quote e prezzi dei titoli si leggono fino a 8 decimali.
+- **Celle che si scrivono** (D: "se clicco in una cella devo poter modificare da solo l'importo senza
+  passare da altre cose… il tool fa quello che vuole lui o quello che voglio io?"): `editInCell` /
+  `resumeEdit` in common (`td.cell-edit` con data-k/data-i; Invio salva e scende, Tab a destra,
+  Esc annulla, vuota = valore tolto; "Annulla" nell'avviso). Net Worth: `A.setNwCell` = saldo del conto a
+  quella fine mese nella sua valuta (`valuations` kind adjust) o valore del titolo (`snapshots.nwHd`);
+  i debiti anche positivi; niente celle per i mutui col piano. Entrate e uscite: `A.setFlowCell` cambia
+  l'unico movimento della cella, lo toglie o ne crea uno a fine mese (conto: quello usato di solito per
+  la sottocategoria); con più movimenti, in valuta o di verso opposto la cella apre Movimenti come prima.
+  Reimportando il file, un valore cambiato a mano compare tra i "cambiati" (si può togliere la spunta).
+- **Righe da trascinare** (D: "voglio spostare una riga trascinandola, non per forza entrando nelle
+  impostazioni con le freccette, e se la sposto in un'altra categoria tutto deve aggiornarsi"): Net Worth
+  `A.moveNwItem(G, key, sezione, {before|after|at})` (sopra/sotto una riga, sulla testata = in cima, sul
+  Total = in fondo); Entrate e uscite `A.placeCategory(id, gruppo, {before|after})` (sotto un'altra
+  sottocategoria o sulla riga della categoria). Col mouse si trascina il nome (soglia 6 px, poi il clic
+  non apre la finestra), col dito la maniglia `.nw-grip`. Una sottocategoria spostata si ricorda da
+  dove veniva (`category.was` = catKey del file) e `planMonths` la ritrova: niente doppioni al reimport.
+- **Valute nel Net Worth**: la riga in un'altra valuta (i contanti in dollari) si legge nella sua
+  ("100,00 $", passandoci sopra il cambio in euro; `row.native`/`row.cur` da `nwTable`), i totali in
+  euro. `currencyFor(type, name)`: dal Type ("Dollari", "USD", "$") o, per contanti e conti, dal nome
+  ("Contanti $", "Contanti (USD)"); un ETF "$ Treasury" resta in euro.
 - **Colore al volo** (D: "cambiare il colore delle varie categorie direttamente cliccando sul
   quadratino"): `colorDot()` in `views/common.js` = quadratino-pulsante che apre la tavolozza lì accanto
   (8 colori + arcobaleno); `setSectionColor(d, nome, colore)` per le sezioni del Net Worth,

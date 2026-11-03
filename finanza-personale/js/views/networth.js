@@ -9,12 +9,12 @@ import { h, icon, download } from '../ui/dom.js';
 import { barChart, legend, sparkline } from '../ui/charts.js';
 import { openSheet, amountInput, toast, empty, selectInput, colorChoice, textInput, field } from '../ui/components.js';
 import { money, moneyText, delta, axisMoney, tipMoney, ui } from '../ui/fmt.js';
-import { card, accAvatar, segTabs, filterBox, hdBadge, colorVar, colorDot, setSectionColor, softColor, loadPeriod, savePeriod, periodPicker } from './common.js';
+import { card, accAvatar, segTabs, filterBox, hdBadge, colorVar, colorDot, setSectionColor, softColor, loadPeriod, savePeriod, periodPicker, editInCell, resumeEdit } from './common.js';
 import { cleanPeriod } from '../core/period.js';
 import { accountEditor, undoToast } from './editors.js';
 import { openFileImport } from './invimport.js';
 import { bankLogo } from '../data/banks.js';
-import { saveCheckIn, setSetting, editNwItem } from '../actions.js';
+import { saveCheckIn, setSetting, editNwItem, setNwCell, moveNwItem } from '../actions.js';
 import { isLiability, hasPlan, position } from '../core/model.js';
 import { monthKey, monthEnd, addMonthKey, formatMonth, formatDate, monthName } from '../core/dates.js';
 import { formatPercent, formatNumber } from '../core/money.js';
@@ -35,6 +35,73 @@ const pctOf = (a, b) => (a != null && b ? (a - b) / Math.abs(b) * 100 : null);
 const dmy = iso => `${iso.slice(8)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
 const pc = v => (v == null ? '' : formatPercent(v, 2, true));
 const tone = v => (v == null || !Math.round(v * 100) ? '' : v > 0 ? 'pos' : 'neg');
+
+const CUR_SYM = { USD: '$', GBP: '£', JPY: '¥', CHF: 'CHF' };
+
+/* ─── Scrivere un valore nella cella (editInCell, in common) ───
+   Per un conto è il saldo a quella data nella sua valuta, per un titolo il valore del Net Worth di
+   quel mese. I debiti si possono scrivere anche positivi. */
+function editCell(td, r, dt, cur) {
+  editInCell(td, {
+    cur, label: `${r.label} al ${formatDate(dt, { year: true })}`,
+    save: c => {
+      const liab = r.acc && isLiability(r.acc);
+      const val = c == null ? null : liab ? -Math.abs(c) : c;
+      if (val === cur) return false;
+      setNwCell(r.hd ? { holding: r.hd.id } : { account: r.acc.id }, dt, val);
+      undoToast(val == null ? `Valore tolto: ${r.label}, ${formatDate(dt, { year: true })}` : `${r.label}, ${formatDate(dt, { year: true })}: ${r.cur ? `${formatNumber(val / 100, 2, 2)} ${CUR_SYM[r.cur] || r.cur}` : moneyText(val)}`);
+      return true;
+    },
+  });
+}
+
+/* ─── Spostare una riga trascinandola (D: "voglio spostare una riga trascinandola… e se la sposto
+   in un'altra categoria tutto deve aggiornarsi"): sopra o sotto un'altra riga, sulla testata di una
+   sezione (in cima) o sul suo Total (in fondo). Col mouse si trascina il nome, col dito la maniglia. */
+let dragEnd = 0;
+const dragJustEnded = () => Date.now() - dragEnd < 300;
+function startDrag(e, ctx) {
+  if (e.button !== 0) return;
+  if (e.pointerType === 'touch' && !e.target.closest('.nw-grip')) return;
+  const src = e.currentTarget.closest('tr.nw-item');
+  const x0 = e.clientX, y0 = e.clientY;
+  let on = false, mark = null, where = null;
+  const clear = () => { mark?.classList.remove('drop-before', 'drop-after'); mark = null; };
+  const move = ev => {
+    if (!on) {
+      if (Math.hypot(ev.clientX - x0, ev.clientY - y0) < 6) return;
+      on = true; src.classList.add('nw-dragging'); document.body.classList.add('nw-drag-on');
+    }
+    ev.preventDefault();
+    if (ev.clientY < 70) scrollBy(0, -14); else if (ev.clientY > innerHeight - 50) scrollBy(0, 14);
+    const tr = document.elementFromPoint(ev.clientX, ev.clientY)?.closest('table.nw-sheet tr');
+    clear(); where = null;
+    if (!tr || tr === src) return;
+    const sec = tr.dataset.sec;
+    if (!sec) return;
+    const r = tr.getBoundingClientRect();
+    if (tr.classList.contains('nw-item')) {
+      const up = ev.clientY < r.top + r.height / 2;
+      where = { section: sec, ...(up ? { before: tr.dataset.k } : { after: tr.dataset.k }) };
+      mark = tr; tr.classList.add(up ? 'drop-before' : 'drop-after');
+    } else if (tr.classList.contains('nw-band') && tr.closest('tbody') && sec !== 'Asset Allocation' && !tr.classList.contains('nw-aa')) {
+      where = { section: sec, at: 'start' }; mark = tr; tr.classList.add('drop-after');
+    } else if (tr.classList.contains('nw-total')) {
+      where = { section: sec, at: 'end' }; mark = tr; tr.classList.add('drop-before');
+    }
+  };
+  const up = () => {
+    removeEventListener('pointermove', move); removeEventListener('pointerup', up); removeEventListener('pointercancel', up);
+    if (!on) return;
+    dragEnd = Date.now();
+    src.classList.remove('nw-dragging'); document.body.classList.remove('nw-drag-on'); clear();
+    if (!where) return;
+    const from = src.dataset.sec;
+    moveNwItem(ctx.d.nwGroups(), src.dataset.k, where.section, where);
+    undoToast(from === where.section ? 'Riga spostata' : `Spostata in ${where.section}`);
+  };
+  addEventListener('pointermove', move, { passive: false }); addEventListener('pointerup', up); addEventListener('pointercancel', up);
+}
 
 function sheetTable(ctx, Y) {
   const { d } = ctx;
@@ -63,25 +130,42 @@ function sheetTable(ctx, Y) {
     h('th.num.nw-dcol', { dataset: { col: 'diff' }, title: `Differenza dal 31/12/${Y - 1} all'ultima fine mese` }, fit && fit.per < 105 ? `Diff. ${String(Y - 1).slice(2)}→${String(Y).slice(2)}` : `Diff. ${Y - 1}→${Y}`), h('th.num.nw-dpct', { dataset: { col: 'pct' } }, '%'));
   const pcs = v => (v == null ? '' : formatPercent(v, fit ? fit.pdec : 2, true));
   const cells = (vals, fmt, cls) => vals.map((v, i) => h('td.num', { class: [cls ? cls(v) : '', i === 0 ? 'prev' : '', S0.cols[i] ? '' : 'future'].join(' ') }, fmt(v)));
-  const diffs = vals => [h('td.num.nw-dcol', { class: tone(diffOf(vals)) }, sg(diffOf(vals))), h('td.num.nw-dpct', { class: tone(diffPct(vals)) }, pcs(diffPct(vals)))];
+  const diffs = (vals, fmt) => [h('td.num.nw-dcol', { class: tone(diffOf(vals)) }, fmt ? (diffOf(vals) == null ? '' : (diffOf(vals) > 0 ? '+' : '') + fmt(diffOf(vals))) : sg(diffOf(vals))), h('td.num.nw-dpct', { class: tone(diffPct(vals)) }, pcs(diffPct(vals)))];
   const noDiff = () => [h('td.num.nw-dcol'), h('td.num.nw-dpct')];
   const band = (label, color, raw) => h('tr.nw-band', { style: { '--sec': color }, dataset: { sec: label } },
     h('td.sticky', h('span', raw !== undefined ? colorDot(raw, c => setSectionColor(d, label, c), `Colore di ${label}`) : h('i.nw-band-dot'), label)), dates.map(() => h('td')), noDiff());
   // spazio tra una sezione e l'altra: si vede dove finisce un blocco e ne comincia un altro
   const gap = () => h('tr.nw-gap', { 'aria-hidden': 'true' }, h('td.sticky'), dates.map(() => h('td')), noDiff());
   const body = [];
+  // le celle delle righe si scrivono direttamente (D: "se clicco in una cella devo poter modificare da solo
+  // l'importo"); una riga in un'altra valuta (i contanti in dollari) si legge nella sua valuta, come nel foglio
+  const natFmt = (v, cur) => (v == null ? '' : ui.privacy ? moneyText(v, cur) : `${formatNumber(v / 100, 2, 2)} ${CUR_SYM[cur] || cur}`);
+  const itemCells = r => r.values.map((v, i) => {
+    const dt = S0.cols[i];
+    const nat = r.native ? r.native[i] : v;
+    const can = !!dt && !(r.acc && hasPlan(r.acc));
+    const attrs = { class: [i === 0 ? 'prev' : '', dt ? '' : 'future', can ? 'nw-cell cell-edit' : ''].join(' '), dataset: { k: r.key, i: String(i) },
+      title: r.native && v != null ? `${natFmt(nat, r.cur)} ≈ ${moneyText(v)} al cambio` : can ? 'Tocca per scrivere il valore esatto' : null };
+    if (can) {
+      attrs.tabindex = '0';
+      attrs.onclick = e => { e.stopPropagation(); editCell(e.currentTarget, r, dt, nat); };
+      attrs.onkeydown = e => { if (e.key === 'Enter' || e.key === 'F2') { e.preventDefault(); editCell(e.currentTarget, r, dt, nat); } };
+    }
+    return h('td.num', attrs, r.native ? natFmt(nat, r.cur) : t2(v));
+  });
   for (const sec of S0.sections) {
     const col = colorVar(sec.color);
     if (body.length) body.push(gap());
     body.push(band(sec.name, col, sec.color));
     for (const r of sec.rows) {
-      // tocca una riga: nome e sezione a piacere, oppure apri il conto / il titolo
-      body.push(h('tr.nw-item.click', { onclick: () => nwItemSheet(ctx, r, sec.name), style: { '--sec': col } },
+      // tocca il nome: nome e sezione a piacere, oppure apri il conto / il titolo; trascinalo per spostare la riga
+      body.push(h('tr.nw-item.click', { onclick: () => { if (!dragJustEnded()) nwItemSheet(ctx, r, sec.name); }, style: { '--sec': col }, dataset: { k: r.key, sec: sec.name } },
         // una riga sola come nel foglio: il tipo (conto corrente, ETF…) si legge passandoci sopra
-        h('td.sticky', { title: [r.label, r.hd && r.label !== r.name ? r.name : r.sub].filter(Boolean).join(' · ') }, h('span.nw-name', r.hd ? hdBadge(r.hd, true) : r.acc && bankLogo(r.acc.name, r.acc.institution) ? h('img.nw-logo', { src: bankLogo(r.acc.name, r.acc.institution), alt: '', width: 16, height: 16 }) : r.acc?.cls ? hdBadge(r.acc, true) : null, r.label)),
-        cells(r.values, t2), diffs(r.values)));
+        h('td.sticky.nw-drag-h', { title: [r.label, r.hd && r.label !== r.name ? r.name : r.sub, 'trascina per spostare'].filter(Boolean).join(' · '), onpointerdown: e => startDrag(e, ctx) },
+          h('span.nw-name', icon('grip', 14, 'nw-grip'), r.hd ? hdBadge(r.hd, true) : r.acc && bankLogo(r.acc.name, r.acc.institution) ? h('img.nw-logo', { src: bankLogo(r.acc.name, r.acc.institution), alt: '', width: 16, height: 16 }) : r.acc?.cls ? hdBadge(r.acc, true) : null, r.label)),
+        itemCells(r), diffs(r.native || r.values, r.native ? v => natFmt(v, r.cur) : null)));
     }
-    body.push(h('tr.nw-total', { style: { '--sec': col } }, h('td.sticky', 'Total'), cells(sec.total, t2), diffs(sec.total)));
+    body.push(h('tr.nw-total', { style: { '--sec': col }, dataset: { sec: sec.name } }, h('td.sticky', 'Total'), cells(sec.total, t2), diffs(sec.total)));
     body.push(h('tr.nw-gain', h('td.sticky', 'Gain/Loss'), cells(sec.gain, sg, tone), noDiff()));
     body.push(h('tr.nw-pct', h('td.sticky', '%'), cells(sec.pct, pcs, tone), noDiff()));
   }
@@ -91,6 +175,7 @@ function sheetTable(ctx, Y) {
   const endI = lastIdx(S0.total);
   const shareOf = name => { const a = S0.alloc.find(x => x.name === name); return a && endI >= 0 ? a.pct[endI] : null; };
   body.push(gap(), band('Asset Allocation', 'var(--ink-3)'));
+  body[body.length - 1].classList.add('nw-aa'); delete body[body.length - 1].dataset.sec;
   for (const sec of S0.sections) {
     const sh = shareOf(sec.name);
     body.push(h('tr.nw-alloc', { style: { '--sec': colorVar(sec.color) } },
@@ -117,12 +202,14 @@ function sheetTable(ctx, Y) {
     toast('Tabella esportata', { kind: 'ok' });
   };
   const table = h('table.table.nw-table.nw-months.nw-sheet', { 'data-tid': fit ? 'nw-fit' : 'nw', class: fit ? 'fit' : '' }, h('thead', head), h('tbody', body));
+  // dopo Invio / Tab nella cella di prima: si continua a scrivere in quella dopo
+  resumeEdit(table);
   if (fit) { table.style.setProperty('--nw-first', fit.first + 'px'); table.style.fontSize = fit.font + 'px'; }
   const scroller = h('div.table-wrap.nw-scroll', table);
   // su telefono si apre sui mesi più recenti
   if (!fit && Y === curY) requestAnimationFrame(() => requestAnimationFrame(() => { const th = scroller.querySelectorAll('thead th')[Math.max(1, Number(d.refDate.slice(5, 7)) - 3)]; if (th) scroller.scrollLeft = th.offsetLeft - 220; }));
   return card(`Net Worth ${Y}`, {
-    sub: 'Valori a fine mese, sezione per sezione, con guadagno o perdita sul mese prima e la differenza sull\'anno. Tocca una riga per i dettagli.',
+    sub: 'Valori a fine mese, al centesimo. Tocca una cella per scrivere il valore, tocca un nome per rinominarlo o trascinalo per spostare la riga.',
     action: h('div.card-acts', h('button.btn.btn-sm.btn-ghost', { type: 'button', onclick: () => organizeSheet(ctx, S0) }, icon('edit', 16), 'Organizza'), h('button.btn.btn-sm.btn-ghost', { type: 'button', onclick: exportCsv }, icon('download', 16), 'CSV')),
   }, h('div.inv-filters', filterBox('nw', nwQ, v => { nwQ = v; ctx.rerender(); }, 'Filtra: conto, titolo o sezione')), scroller);
 }

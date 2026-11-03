@@ -28,7 +28,7 @@ let lastAuto = 0;
 
 const NO_GROUP = 'Senza categoria';
 const groupOf = hd => hd.group || NO_GROUP;
-const qtyText = q => (ui.privacy ? '••••' : formatNumber(q, 6));
+const qtyText = q => (ui.privacy ? '••••' : formatNumber(q, 8));
 
 export async function askMarketConsent(ctx) {
   if (ctx.st.settings.market.enabled) return true;
@@ -175,7 +175,7 @@ function table(ctx, p) {
   const line = r => h('a.row.hold-row', { href: '#/investimenti/' + r.holding.id },
     hdBadge(r.holding),
     h('span.row-main', h('span.row-title', r.holding.name),
-      h('span.row-sub', [r.holding.symbol, `${formatNumber(r.qty, 6)} × ${formatNumber(r.holding.price, 4)} ${r.holding.currency}`, r.holding.priceDate && r.holding.priceDate < today() ? `prezzo del ${formatDate(r.holding.priceDate)}` : ''].filter(Boolean).join(' · '))),
+      h('span.row-sub', [r.holding.symbol, `${formatNumber(r.qty, 8)} × ${formatNumber(r.holding.price, 8)} ${r.holding.currency}`, r.holding.priceDate && r.holding.priceDate < today() ? `prezzo del ${formatDate(r.holding.priceDate)}` : ''].filter(Boolean).join(' · '))),
     h('span.row-end', money(r.valueBase), h('span.row-sub', money(r.valueBase - r.costBase, d.base, { sign: true, tone: r.valueBase >= r.costBase ? 'pos' : 'neg' }), ' ', delta(r.unrealizedPct)), h('span.weight', h('i', { style: { width: Math.min(100, r.valueBase / total * 100) + '%' } }))));
   return h('div.stack',
     card('Titoli', { sub: `${open.length} posizioni aperte` }, h('div.rows', open.map(line))),
@@ -188,7 +188,7 @@ const OP_LABEL = { buy: 'Acquisto', sell: 'Vendita', div: 'Cedola / dividendo', 
 function opDetail(o, c) {
   if (o.type !== 'buy' && o.type !== 'sell') return '';
   if (ui.privacy) return '';
-  return `${formatNumber(o.qty, 6)} × ${formatNumber(o.price, 4)} ${c}` + (o.fee ? ` + ${formatNumber(o.fee, 2)} comm.` : '') + (o.tax ? ` − ${formatNumber(o.tax, 2)} imposta` : '');
+  return `${formatNumber(o.qty, 8)} × ${formatNumber(o.price, 8)} ${c}` + (o.fee ? ` + ${formatNumber(o.fee, 2)} comm.` : '') + (o.tax ? ` − ${formatNumber(o.tax, 2)} imposta` : '');
 }
 /** Effetto sui soldi: acquisti e costi in uscita, vendite e cedole in entrata. */
 function opAmount(o, c) {
@@ -274,7 +274,7 @@ function detail(ctx, id) {
     actions: [h('a.icon-btn', { href: '#/investimenti', 'aria-label': 'Portafoglio' }, icon('chevL', 20)), h('button.icon-btn', { type: 'button', 'aria-label': 'Modifica titolo', onclick: () => holdingEditor(ctx, hd) }, icon('edit', 20))],
     node: h('div.stack',
       h('section.card.inv-hero',
-        h('div.hero-label', `${acc?.name || ''} · ${formatNumber(p.qty, 6)} quote`),
+        h('div.hero-label', `${acc?.name || ''} · ${formatNumber(p.qty, 8)} quote`),
         h('div.hero-value', m(p.value)),
         h('div.hero-delta', money(Math.round((p.value - p.cost) * 100), c, { sign: true, tone: p.value >= p.cost ? 'pos' : 'neg' }), delta(p.unrealizedPct), h('span.muted', `prezzo ${formatNumber(hd.price, 4)} ${c}${hd.priceDate ? ' del ' + formatDate(hd.priceDate) : ''}${hd.priceSrc ? ' · ' + hd.priceSrc : ''}`)),
         h('div.stats-4',

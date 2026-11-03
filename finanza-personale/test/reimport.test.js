@@ -230,3 +230,24 @@ test('conto rinominato in app: reimportando, la riga col nome vecchio è lo stes
   const r = rows.find(x => x.name === 'Banca Uno');
   assert.equal(r.existing?.id, 'a-b1');
 });
+
+test('sottocategoria spostata a mano in un\'altra categoria: reimportando non ne nasce una nuova', () => {
+  // D trascina "DJ" da MUSICA a LAVORO: l'app si ricorda da dove veniva (was) e il file la ritrova
+  const st = sanitize({ ...defaults(),
+    categories: [{ id: 'c-st', name: 'STIPENDIO', kind: 'income', group: 'LAVORO' }, { id: 'c-bp', name: 'BUONI PASTO', kind: 'income', group: 'LAVORO' },
+      { id: 'c-dj', name: 'DJ', kind: 'income', group: 'LAVORO', was: ['musica|dj'] }] });
+  assert.deepEqual(st.categories.find(c => c.id === 'c-dj').was, ['musica|dj']);
+  const p = planMonths(readMonths(EN(), detectMonths(EN())), st, { year: 2026, kind: 'income', refDate: '2026-03-28' });
+  assert.deepEqual(p.newCats, []);
+  assert.ok(p.txs.filter(t => t.payee.startsWith('Serata')).every(t => t.catId === 'c-dj'));
+});
+
+test('valuta di una riga del Net Worth: dal Type o dal nome (solo per contanti e conti)', async () => {
+  const { currencyFor } = await import('../js/core/sheets.js');
+  assert.equal(currencyFor('Dollari', 'Contanti'), 'USD');
+  assert.equal(currencyFor('$', 'Contanti'), 'USD');
+  assert.equal(currencyFor('Cash', 'Contanti (USD)'), 'USD');
+  assert.equal(currencyFor('Cash', 'Contanti $'), 'USD');
+  assert.equal(currencyFor('Euro', 'Contanti'), null);
+  assert.equal(currencyFor('ETF:S', 'iShares $ Treasury'), null);
+});

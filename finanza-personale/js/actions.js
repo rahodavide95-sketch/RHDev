@@ -64,6 +64,23 @@ export function saveCheckIn(date, entries, note = 'Aggiornamento valori') {
     }
   });
 }
+/** Un valore di fine mese del Net Worth scritto nella cella (D: "se clicco in una cella devo poter
+    modificare da solo l'importo"): per un conto è il saldo a quella data (nella sua valuta), per un
+    titolo il valore del Net Worth di quel mese. `value` null = cella svuotata (tolgo il valore scritto). */
+export function setNwCell({ account = null, holding = null }, date, value) {
+  commit(st => {
+    if (holding) {
+      const m = date.slice(0, 7);
+      const snap = st.snapshots[m] || (st.snapshots[m] = { byAcc: {}, byHd: {}, nwHd: {}, at: 0 });
+      snap.nwHd = snap.nwHd || {};
+      if (value == null) delete snap.nwHd[holding]; else snap.nwHd[holding] = value;
+      return;
+    }
+    st.valuations = st.valuations.filter(v => !(v.account === account && v.date === date && v.kind === 'adjust'));
+    if (value != null) st.valuations.push({ id: uid('v-'), account, date, value, created: stamp(), kind: 'adjust', note: 'Scritto nella tabella del Net Worth' });
+  }, { undo: 'Valore cambiato' });
+}
+
 export function deleteValuation(id) {
   commit(st => { st.valuations = st.valuations.filter(v => v.id !== id || v.kind === 'open'); }, { undo: 'Valore eliminato' });
 }
@@ -310,6 +327,21 @@ export function renameGroup(kind, from, to) {
     di modificare o spostarlo all'interno di una categoria a mio piacimento"). `G` = d.nwGroups() di adesso.
     Conto: cambia il nome del conto (ovunque), il nome vecchio resta come alias per i prossimi import.
     Titolo: cambia il nome che ha nel Net Worth (negli Investimenti resta il suo). */
+/** Sposta una riga del Net Worth trascinandola: nella sezione `section`, prima o dopo un'altra riga,
+    in cima o in fondo. Le sezioni rimaste vuote spariscono; totali e grafici si rifanno da soli. */
+export function moveNwItem(G, key, section, { before = null, after = null, at = 'end' } = {}) {
+  commit(st => {
+    const lay = { sections: G.sections.map(x => ({ name: x.name, color: x.color, items: x.items.filter(k => k !== key) })), labels: { ...G.labels } };
+    let sec = lay.sections.find(x => normHead(x.name) === normHead(section) && x.name === section) || lay.sections.find(x => normHead(x.name) === normHead(section));
+    if (!sec) lay.sections.push(sec = { name: section, color: 0, items: [] });
+    const j = before ? sec.items.indexOf(before) : after ? sec.items.indexOf(after) : -1;
+    const i = before && j >= 0 ? j : after && j >= 0 ? j + 1 : at === 'start' ? 0 : sec.items.length;
+    sec.items.splice(i, 0, key);
+    lay.sections = lay.sections.filter(x => x.items.length);
+    st.settings.nwLayout = lay;
+  }, { undo: 'Riga spostata' });
+}
+
 export function editNwItem(G, key, { name, section } = {}) {
   commit(st => {
     const nm = String(name || '').trim().slice(0, 60);
@@ -354,6 +386,46 @@ export function moveCategory(id, dir) {
     [st.categories[a], st.categories[b]] = [st.categories[b], st.categories[a]];
   }, { noCount: true });
 }
+/** Sposta una sottocategoria trascinandola (D: "voglio spostare una riga trascinandola… e se la sposto in
+    un'altra categoria tutto deve aggiornarsi"): nella categoria `group`, prima o dopo un'altra sottocategoria
+    (o in fondo). I movimenti restano suoi, quindi totali, grafici e budget si rifanno da soli. */
+export function placeCategory(id, group, { before = null, after = null } = {}) {
+  commit(st => {
+    const c = find(st.categories, id);
+    if (!c) return;
+    if (normHead(c.group) !== normHead(group)) {
+      c.was = [...new Set([...(c.was || []), catKey(c.group, c.name)])].slice(-8);
+      c.group = group;
+    }
+    st.categories.splice(st.categories.indexOf(c), 1);
+    const ref = before || after ? find(st.categories, before || after) : null;
+    let i = ref ? st.categories.indexOf(ref) + (after ? 1 : 0) : -1;
+    if (i < 0) {
+      // in fondo alla sua categoria (dopo l'ultima sottocategoria dello stesso gruppo)
+      const last = st.categories.map((x, j) => (x.kind === c.kind && normHead(x.group) === normHead(group) ? j : -1)).filter(j => j >= 0).pop();
+      i = last != null ? last + 1 : st.categories.length;
+    }
+    st.categories.splice(i, 0, c);
+  }, { undo: 'Sottocategoria spostata' });
+}
+
+/** Un importo di Entrate e uscite scritto nella cella: cambia l'unico movimento di quella cella, lo toglie
+    (cella svuotata) o ne crea uno nuovo a fine mese (cella vuota). */
+export function setFlowCell({ txId = null, kind, category = null, payee = '', date, account }, cents) {
+  commit(st => {
+    const now = stamp();
+    if (txId) {
+      const t = find(st.transactions, txId);
+      if (!t) return;
+      if (!cents) { st.transactions = st.transactions.filter(x => x.id !== txId); return; }
+      t.amount = Math.abs(cents); t.updated = now;
+      return;
+    }
+    if (!cents || !account) return;
+    st.transactions.push({ id: uid('t-'), date, kind, amount: Math.abs(cents), account, toAccount: null, amountTo: null, category, payee: payee || '', note: '', tags: [], recurring: null, created: now, updated: now, importHash: '', flagged: false });
+  }, { undo: 'Importo cambiato' });
+}
+
 /** Sposta un gruppo intero prima o dopo il gruppo vicino. */
 export function moveGroup(kind, group, dir) {
   commit(st => {

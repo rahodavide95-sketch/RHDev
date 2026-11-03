@@ -578,7 +578,7 @@ export function pickHoldingOp(ctx) {
   const s = openSheet({
     title: 'Nuova operazione', subtitle: 'Su quale titolo?', size: 'sm',
     body: h('div.rows', list.map(({ hd, qty }) => h('button.row', { type: 'button', onclick: () => { s.close(true); opEditor(ctx, hd); } },
-      h('span.row-main', h('span.row-title', hd.name), h('span.row-sub', [hd.symbol, qty > 0 ? `${formatNumber(qty, 6)} quote` : 'posizione chiusa'].filter(Boolean).join(' · '))), icon('chevR', 18)))),
+      h('span.row-main', h('span.row-title', hd.name), h('span.row-sub', [hd.symbol, qty > 0 ? `${formatNumber(qty, 8)} quote` : 'posizione chiusa'].filter(Boolean).join(' · '))), icon('chevR', 18)))),
   });
 }
 

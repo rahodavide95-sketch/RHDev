@@ -1,8 +1,9 @@
 /* Tabelle che entrano tutte nello schermo (Net Worth ed Entrate e uscite). D: "far entrare tutto…
    anche senza comprimere la barra", "cerca di far entrare tutto anche nelle entrate/uscite".
    Su computer le colonne (15) sono uguali e riempiono la pagina; carattere, decimali e simbolo €
-   si scelgono misurando con un canvas l'importo e la percentuale più lunghi: prima si tolgono i
-   decimali, poi si rimpicciolisce il carattere, per ultimo si toglie "€" (che va nell'intestazione).
+   si scelgono misurando con un canvas l'importo e la percentuale più lunghi: prima si rimpicciolisce
+   il carattere, poi si toglie "€" (che va nell'intestazione). I centesimi restano SEMPRE
+   (D: "non devi MAI arrotondare nulla, voglio le cifre esatte"): se non c'entrano, la tabella scorre.
    Su telefono la tabella scorre. Cambiando la larghezza (anche aprendo o chiudendo la barra) la
    pagina si ridisegna se la scelta cambia. */
 
@@ -13,7 +14,7 @@ const measure = (txt, px) => {
   c.font = `700 ${px}px Inter, system-ui, sans-serif`;
   return c.measureText(txt).width;
 };
-const TRIES = [[14, 2, true], [14, 0, true], [13, 0, true], [12, 0, true], [12, 0, false], [11.5, 0, false], [11, 0, false], [10.5, 0, false]];
+const TRIES = [[14, 2, true], [13.5, 2, true], [13, 2, true], [12.5, 2, true], [12, 2, true], [13, 2, false], [12.5, 2, false], [12, 2, false], [11.5, 2, false], [11, 2, false], [10.5, 2, false]];
 
 /** { first, per, dec, font, euro, pdec, short } o null (telefono: la tabella scorre). */
 export function fitTable({ cols = 15, maxAbs = 0, maxPct = 0 } = {}) {
@@ -47,15 +48,11 @@ addEventListener('resize', () => {
   }, 200);
 });
 
-/** Importo per le celle: senza "€" se non c'entra (resta nell'intestazione). */
+/** Importo per le celle, sempre coi centesimi: senza "€" se non c'entra (resta nell'intestazione). */
 export function fitMoney(fit, moneyText, base, privacy) {
-  const dec = fit ? fit.dec : 2;
   const noEuro = fit && !fit.euro;
   return (v, sign = false) => {
     if (v == null) return '';
-    // senza decimali quando lo spazio è poco, ma gli importi sotto 1.000 con i centesimi li tengono
-    // (gli interessi da 2,20 € restano 2,20, non 2): sono corti e c'entrano comunque
-    const dd = dec === 0 && Math.abs(v) < 100000 && v % 100 !== 0 ? 2 : dec;
-    return noEuro && !privacy ? (sign && v > 0 ? '+' : '') + formatNumber(v / 100, dd, dd) : moneyText(v, base, { sign, decimals: dd });
+    return noEuro && !privacy ? (sign && v > 0 ? '+' : '') + formatNumber(v / 100, 2, 2) : moneyText(v, base, { sign, decimals: 2 });
   };
 }

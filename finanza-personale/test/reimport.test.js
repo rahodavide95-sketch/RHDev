@@ -62,7 +62,8 @@ test('Net Worth come quello di D: ogni riga al posto giusto', () => {
   assert.equal(by['Oro (Piattaforma)'].cls, 'gold');
   assert.deepEqual([by['Exchange Uno'].cls, by['Exchange Uno'].type], ['crypto', 'crypto']);
   // TFR: solo il netto
-  assert.equal(by['TFR Lordo'].on, false);
+  // il TFR lordo si importa ma "in sospeso": si vede e non conta (D: "lasciarlo lì senza essere contato")
+  assert.deepEqual([by['TFR Lordo'].on, by['TFR Lordo'].gross], [true, true]);
   assert.equal(by['TFR Netto'].on, true);
   assert.equal(by['TFR Netto'].type, 'receivable');
   assert.equal(by['Banca Uno'].cls, '');
@@ -207,7 +208,7 @@ test('righe fuori dalle sezioni di D: nella sua sezione dello stesso tipo, nient
   assert.ok(!S0.sections.some(x => ['Liquidità', 'Crediti', 'Altri investimenti'].includes(x.name)));
 });
 
-test('un conto nato dal file resta nella sua sezione del file; i tipi sconosciuti non si mescolano', async () => {
+test('un conto nato dal file resta nella sua sezione del file; i tipi sconosciuti in una sezione di D', async () => {
   const { derive } = await import('../js/core/model.js');
   const st = sanitize({ ...defaults(),
     accounts: [
@@ -220,7 +221,9 @@ test('un conto nato dal file resta nella sua sezione del file; i tipi sconosciut
   const S0 = derive(st, '2026-03-10').nwSheet(2026);
   const where = Object.fromEntries(S0.sections.flatMap(x => x.rows.map(r => [r.name, x.name])));
   assert.equal(where['Razzi Spa'], 'Stock');
-  assert.notEqual(where['Qualcosa'], 'ETF');
+  // un tipo sconosciuto va comunque in una sezione di D, mai in un gruppo inventato (D: "ogni cosa deve avere la sua categoria")
+  assert.ok(['ETF', 'Stock'].includes(where['Qualcosa']), where['Qualcosa']);
+  assert.deepEqual(S0.sections.map(x => x.name), ['ETF', 'Stock']);
 });
 
 test('conto rinominato in app: reimportando, la riga col nome vecchio è lo stesso conto', () => {
@@ -297,15 +300,32 @@ test('reimportando: i valori corretti da D nell\'app restano i suoi (Net Worth e
   assert.deepEqual(p2.kept.map(k => [k.payee, k.ym, k.mine, k.file]).sort(), [['STIPENDIO', '2026-02', 190000, 185000], ['Serata A', '2026-01', 0, 22000]].sort());
 });
 
-test('righe fuori dalle sezioni di D: un gruppo dell\'app segnato come da sistemare', async () => {
+test('righe fuori dalle sezioni di D: sempre in una sua sezione, mai "Altri investimenti"', async () => {
+  // D: "altri investimenti non deve esistere perché ogni cosa deve avere la sua categoria"
   const { derive } = await import('../js/core/model.js');
   const st = sanitize({ ...defaults(),
-    accounts: [{ id: 'a-b', name: 'Banca Uno', type: 'checking', currency: 'EUR' }, { id: 'a-z', name: 'Conto titoli', type: 'broker', currency: 'EUR' }],
-    valuations: [{ id: 'v1', account: 'a-b', date: '2026-01-31', value: 1000, kind: 'open' }, { id: 'v2', account: 'a-z', date: '2026-01-31', value: 500, kind: 'open' }],
-    settings: { ...defaults().settings, nwLayout: { sections: [{ name: 'Cash - Liquidity', items: ['a:a-b'] }], labels: {} } } });
+    accounts: [{ id: 'a-b', name: 'Banca Uno', type: 'checking', currency: 'EUR' }, { id: 'a-e', name: 'Indice Mondo', type: 'broker', cls: 'etf_eq', currency: 'EUR' },
+      { id: 'a-z', name: 'Conto titoli', type: 'broker', currency: 'EUR' }, { id: 'a-c', name: 'Conto nuovo', type: 'checking', currency: 'EUR' }],
+    valuations: ['a-b', 'a-e', 'a-z', 'a-c'].map((a, i) => ({ id: 'v' + i, account: a, date: '2026-01-31', value: 1000, kind: 'open' })),
+    settings: { ...defaults().settings, nwLayout: { sections: [{ name: 'Cash - Liquidity', items: ['a:a-b'] }, { name: 'ETF', items: ['a:a-e'] }], labels: {} } } });
   const S0 = derive(st, '2026-03-10').nwSheet(2026);
-  assert.deepEqual(S0.sections.map(x => [x.name, x.auto]), [['Cash - Liquidity', false], ['Altri investimenti', true]]);
-  // senza sezioni di D (nessun foglio importato) i gruppi di base non sono "da sistemare"
+  assert.deepEqual(S0.sections.map(x => [x.name, x.rows.map(r => r.name)]), [['Cash - Liquidity', ['Banca Uno', 'Conto nuovo']], ['ETF', ['Indice Mondo', 'Conto titoli']]]);
+  // senza sezioni di D (nessun foglio importato) restano i gruppi di base
   const S1 = derive(sanitize({ ...st, settings: { ...st.settings, nwLayout: { sections: [], labels: {} } } }), '2026-03-10').nwSheet(2026);
-  assert.ok(S1.sections.every(x => !x.auto));
+  assert.ok(S1.sections.some(x => x.name === 'Liquidità'));
+});
+
+test('riga "in sospeso": si vede nel Net Worth ma non entra nei totali', async () => {
+  const { derive } = await import('../js/core/model.js');
+  const st = sanitize({ ...defaults(),
+    accounts: [{ id: 'a-n', name: 'TFR Netto', type: 'receivable', currency: 'EUR' }, { id: 'a-l', name: 'TFR Lordo', type: 'receivable', currency: 'EUR', inNetWorth: false, nwShow: true },
+      { id: 'a-x', name: 'Fuori', type: 'checking', currency: 'EUR', inNetWorth: false }],
+    valuations: [{ id: 'v1', account: 'a-n', date: '2026-01-31', value: 70000, kind: 'open' }, { id: 'v2', account: 'a-l', date: '2026-01-31', value: 90000, kind: 'open' }, { id: 'v3', account: 'a-x', date: '2026-01-31', value: 5000, kind: 'open' }],
+    settings: { ...defaults().settings, nwLayout: { sections: [{ name: 'WORK', items: ['a:a-n', 'a:a-l'] }], labels: {} } } });
+  const S0 = derive(st, '2026-03-10').nwSheet(2026);
+  const w = S0.sections.find(x => x.name === 'WORK');
+  assert.deepEqual(w.rows.map(r => [r.name, r.skip]), [['TFR Netto', false], ['TFR Lordo', true]]);
+  assert.equal(w.total[1], 70000);
+  assert.equal(S0.total[1], 70000);
+  assert.ok(!S0.sections.flatMap(x => x.rows).some(r => r.name === 'Fuori'));
 });

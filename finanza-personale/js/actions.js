@@ -349,6 +349,31 @@ export function renameGroup(kind, from, to, { single = null } = {}) {
     di modificare o spostarlo all'interno di una categoria a mio piacimento"). `G` = d.nwGroups() di adesso.
     Conto: cambia il nome del conto (ovunque), il nome vecchio resta come alias per i prossimi import.
     Titolo: cambia il nome che ha nel Net Worth (negli Investimenti resta il suo). */
+/** Una riga nuova aggiunta dalla tabella del Net Worth (D: "come faccio ad aggiungere qualcosa nella categoria?
+    ad esempio un nuovo conto o un nuovo ETF direttamente dalla tabella"): un conto (o un titolo tenuto solo
+    nel Net Worth, con `cls`) col suo valore a una fine mese, in fondo alla sezione. `count` false = si vede ma
+    non conta (come il TFR lordo o dei buoni postali di cui non si sa ancora la cifra esatta). */
+export function addNwRow(G, { name, type, cls = '', currency, section, date, value = 0, count = true }) {
+  let id = null;
+  commit(st => {
+    id = uid('a-');
+    const now = stamp();
+    st.accounts.push({ id, name: String(name).trim().slice(0, 60), type, cls, institution: '', currency, emoji: '', color: '', archived: false,
+      inNetWorth: !!count, nwShow: !count, nwSparse: false, aka: [], notes: `Aggiunto dalla tabella del Net Worth (sezione "${String(section).slice(0, 60)}")`, created: now, order: st.accounts.length, plan: null });
+    st.valuations.push({ id: uid('v-'), account: id, date, value: Math.round(value || 0), created: now, kind: 'open', note: 'Scritto nella tabella del Net Worth', manual: true });
+    const lay = { sections: G.sections.map(x => ({ name: x.name, color: x.color, items: x.items.slice(), ...(x.was ? { was: x.was } : {}) })), labels: { ...G.labels } };
+    let sec = lay.sections.find(x => x.name === section) || lay.sections.find(x => normHead(x.name) === normHead(section));
+    if (!sec) lay.sections.push(sec = { name: String(section).slice(0, 60), color: 0, items: [] });
+    sec.items.push('a:' + id);
+    st.settings.nwLayout = { sections: lay.sections.filter(x => x.items.length), labels: lay.labels };
+  }, { undo: `Riga aggiunta: ${String(name).trim()}` });
+  return id;
+}
+/** Una riga del Net Worth conta nel patrimonio o si vede soltanto ("non conta"). */
+export function setNwCount(accId, count) {
+  commit(st => { const a = find(st.accounts, accId); if (a) { a.inNetWorth = !!count; a.nwShow = !count; } }, { undo: count ? 'La riga conta nel patrimonio' : 'La riga non conta più nel patrimonio' });
+}
+
 /** Sposta una riga del Net Worth trascinandola: nella sezione `section`, prima o dopo un'altra riga,
     in cima o in fondo. Le sezioni rimaste vuote spariscono; totali e grafici si rifanno da soli. */
 export function moveNwItem(G, key, section, { before = null, after = null, at = 'end' } = {}) {
@@ -634,7 +659,7 @@ export function importWorkbook({ nw = [], invest = null, cash = false, months = 
       if (byName.has(nk)) { nwId.set(r.key, byName.get(nk)); continue; }
       const id = uid('a-');
       byName.set(nk, id);
-      st.accounts.push({ id, name: r.name.slice(0, 60), type: r.type, cls: r.cls || '', nwSparse: !!r.sparse, institution: (r.institution || '').slice(0, 60), currency: r.currency, emoji: '', color: '', archived: false, inNetWorth: !r.gross, notes: `Creato importando un file${r.section ? ` (sezione "${r.section.slice(0, 60)}")` : ''}${r.cls ? `. Valore di fine mese di un titolo (${ASSET_CLASSES[r.cls]?.label || r.cls}), come nel tuo Net Worth: non è negli Investimenti.` : ''}${r.gross ? '. È il lordo: fuori dal patrimonio, conta il netto.' : ''}`, created: stamp(), order: st.accounts.length, plan: null });
+      st.accounts.push({ id, name: r.name.slice(0, 60), type: r.type, cls: r.cls || '', nwSparse: !!r.sparse, institution: (r.institution || '').slice(0, 60), currency: r.currency, emoji: '', color: '', archived: false, inNetWorth: !r.gross, nwShow: !!r.gross, notes: `Creato importando un file${r.section ? ` (sezione "${r.section.slice(0, 60)}")` : ''}${r.cls ? `. Valore di fine mese di un titolo (${ASSET_CLASSES[r.cls]?.label || r.cls}), come nel tuo Net Worth: non è negli Investimenti.` : ''}${r.gross ? '. È il lordo: si vede nel Net Worth ma non conta, conta il netto.' : ''}`, created: stamp(), order: st.accounts.length, plan: null });
       nwId.set(r.key, id);
     }
     // costi del broker (bollo) sul suo conto di liquidità dal Net Worth (es. Trade Republic – Conto corrente)
@@ -721,7 +746,7 @@ export function importWorkbook({ nw = [], invest = null, cash = false, months = 
     const lay = st.settings.nwLayout || (st.settings.nwLayout = { sections: [], labels: {} });
     const inLayout = new Set(lay.sections.flatMap(x => x.items));
     for (const r of nw) {
-      const key = r.holding ? (r.hdId ? 'h:' + r.hdId : null) : (nwId.get(r.key) && !r.gross ? 'a:' + nwId.get(r.key) : null);
+      const key = r.holding ? (r.hdId ? 'h:' + r.hdId : null) : (nwId.get(r.key) ? 'a:' + nwId.get(r.key) : null);
       if (!key || inLayout.has(key)) continue;
       const secName = (r.section || 'Altro').slice(0, 60);
       let sec = lay.sections.find(x => normHead(x.name) === normHead(secName)) || lay.sections.find(x => (x.was || []).some(w => normHead(w) === normHead(secName)));

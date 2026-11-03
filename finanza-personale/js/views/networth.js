@@ -14,10 +14,10 @@ import { cleanPeriod } from '../core/period.js';
 import { accountEditor, undoToast } from './editors.js';
 import { openFileImport } from './invimport.js';
 import { bankLogo } from '../data/banks.js';
-import { saveCheckIn, setSetting, editNwItem, setNwCell, moveNwItem, renameNwSection } from '../actions.js';
+import { saveCheckIn, setSetting, editNwItem, setNwCell, moveNwItem, renameNwSection, addNwRow, setNwCount } from '../actions.js';
 import { isLiability, hasPlan, position } from '../core/model.js';
 import { monthKey, monthEnd, addMonthKey, formatMonth, formatDate, monthName } from '../core/dates.js';
-import { formatPercent, formatNumber } from '../core/money.js';
+import { formatPercent, formatNumber, CURRENCIES } from '../core/money.js';
 import { toCSV, csvNumber } from '../core/csv.js';
 import { fitTable, watchFit, fitMoney } from '../ui/fit.js';
 
@@ -37,7 +37,6 @@ const pc = v => (v == null ? '' : formatPercent(v, 2, true));
 const tone = v => (v == null || !Math.round(v * 100) ? '' : v > 0 ? 'pos' : 'neg');
 
 const CUR_SYM = { USD: '$', GBP: '£', JPY: '¥', CHF: 'CHF' };
-const AUTO_HINT = 'Gruppo fatto dall\'app: righe che non sono in nessuna delle tue sezioni. Trascinale nella sezione giusta (o tocca il nome → Sezione); quando è vuoto sparisce.';
 
 /* ─── Scrivere un valore nella cella (editInCell, in common) ───
    Per un conto è il saldo a quella data nella sua valuta, per un titolo il valore del Net Worth di
@@ -150,9 +149,10 @@ function sheetTable(ctx, Y) {
   const cells = (vals, fmt, cls) => vals.map((v, i) => h('td.num', { class: [cls ? cls(v) : '', i === 0 ? 'prev' : '', S0.cols[i] ? '' : 'future'].join(' ') }, fmt(v)));
   const diffs = (vals, fmt) => [h('td.num.nw-dcol', { class: tone(diffOf(vals)) }, fmt ? (diffOf(vals) == null ? '' : (diffOf(vals) > 0 ? '+' : '') + fmt(diffOf(vals))) : sg(diffOf(vals))), h('td.num.nw-dpct', { class: tone(diffPct(vals)) }, pcs(diffPct(vals)))];
   const noDiff = () => [h('td.num.nw-dcol'), h('td.num.nw-dpct')];
-  const band = (label, color, raw, auto = false) => h('tr.nw-band', { style: { '--sec': color }, dataset: { sec: label }, class: auto ? 'nw-auto' : '' },
+  const band = (label, color, raw) => h('tr.nw-band', { style: { '--sec': color }, dataset: { sec: label } },
     // sezione: quadratino del colore e matita per il nome; Asset Allocation senza quadratino (D)
-    h('td.sticky', { title: auto ? AUTO_HINT : null }, h('span', raw !== undefined ? colorDot(raw, c => setSectionColor(d, label, c), `Colore di ${label}`) : null, label, auto ? h('small.nw-auto-tag', 'da sistemare') : null),
+    h('td.sticky', h('span', raw !== undefined ? colorDot(raw, c => setSectionColor(d, label, c), `Colore di ${label}`) : null, label),
+      raw !== undefined ? h('button.name-edit.name-add', { type: 'button', 'aria-label': `Aggiungi una riga in ${label}`, title: 'Aggiungi una riga (un conto, un ETF, dei buoni…)', onpointerdown: e => e.stopPropagation(), onclick: e => { e.stopPropagation(); addRowSheet(ctx, label, S0.cols); } }, icon('plus', 14)) : null,
       raw !== undefined ? renameBtn('Nome della sezione', label, v => { renameNwSection(d.nwGroups(), label, v); undoToast(`Sezione rinominata: ${v}`); }) : null),
     dates.map(() => h('td')), noDiff());
   // spazio tra una sezione e l'altra: si vede dove finisce un blocco e ne comincia un altro
@@ -177,13 +177,14 @@ function sheetTable(ctx, Y) {
   for (const sec of S0.sections) {
     const col = colorVar(sec.color);
     if (body.length) body.push(gap());
-    body.push(band(sec.name, col, sec.color, sec.auto));
+    body.push(band(sec.name, col, sec.color));
     for (const r of sec.rows) {
       // tocca il nome: nome e sezione a piacere, oppure apri il conto / il titolo; trascinalo per spostare la riga
-      body.push(h('tr.nw-item.click', { onclick: () => { if (!dragJustEnded()) nwItemSheet(ctx, r, sec.name); }, style: { '--sec': col }, dataset: { k: r.key, sec: sec.name } },
+      body.push(h('tr.nw-item.click', { class: r.skip ? 'nw-skip' : '', onclick: () => { if (!dragJustEnded()) nwItemSheet(ctx, r, sec.name); }, style: { '--sec': col }, dataset: { k: r.key, sec: sec.name } },
         // una riga sola come nel foglio: il tipo (conto corrente, ETF…) si legge passandoci sopra
-        h('td.sticky.nw-drag-h', { title: [r.label, r.hd && r.label !== r.name ? r.name : r.sub, 'trascina per spostare'].filter(Boolean).join(' · '), onpointerdown: e => startDrag(e, ctx) },
-          h('span.nw-name', icon('grip', 14, 'nw-grip'), r.hd ? hdBadge(r.hd, true) : r.acc && bankLogo(r.acc.name, r.acc.institution) ? h('img.nw-logo', { src: bankLogo(r.acc.name, r.acc.institution), alt: '', width: 16, height: 16 }) : r.acc?.cls ? hdBadge(r.acc, true) : null, r.label)),
+        h('td.sticky.nw-drag-h', { title: [r.label, r.hd && r.label !== r.name ? r.name : r.sub, r.skip ? 'in sospeso: si vede ma non entra nei totali' : '', 'trascina per spostare'].filter(Boolean).join(' · '), onpointerdown: e => startDrag(e, ctx) },
+          h('span.nw-name', icon('grip', 14, 'nw-grip'), r.hd ? hdBadge(r.hd, true) : r.acc && bankLogo(r.acc.name, r.acc.institution) ? h('img.nw-logo', { src: bankLogo(r.acc.name, r.acc.institution), alt: '', width: 16, height: 16 }) : r.acc?.cls ? hdBadge(r.acc, true) : null, r.label,
+            r.skip ? h('small.nw-pend-tag', 'in sospeso') : null)),
         itemCells(r), diffs(r.native || r.values, r.native ? v => natFmt(v, r.cur) : null)));
     }
     body.push(h('tr.nw-total', { style: { '--sec': col }, dataset: { sec: sec.name } }, h('td.sticky', 'Total'), cells(sec.total, t2), diffs(sec.total)));
@@ -247,15 +248,20 @@ function nwItemSheet(ctx, r, secName) {
   const opts = [...G.sections.filter(x => x.items.length).map(x => ({ value: x.name, label: x.name })), { value: '__new', label: '+ Nuova sezione…' }];
   const sel = selectInput(opts, secName, v => { target = v; newWrap.style.display = v === '__new' ? '' : 'none'; if (v === '__new') newIn.focus(); });
   const open = r.hd ? () => ctx.go('investimenti/' + r.hd.id) : r.acc ? () => ctx.go('conti/' + r.acc.id) : null;
+  // conta nel patrimonio o resta "in sospeso" (D: "solo una volta inserito nella sua categoria si può decidere se
+  // includerlo nei conti o meno")
+  const countBox = r.acc ? h('input', { type: 'checkbox', checked: !r.skip }) : null;
   const save = () => {
     const section = target === '__new' ? newIn.value.trim() : target;
     if (target === '__new' && !section) { toast('Scrivi il nome della nuova sezione', { kind: 'err' }); return; }
     const name = nameIn.value.trim();
     if (!name) { toast('Il nome non può essere vuoto', { kind: 'err' }); return; }
-    if (name === r.label && section === secName) { sh.close(true); return; }
-    editNwItem(G, r.key, { name: name !== r.label ? name : '', section: section !== secName ? section : '' });
+    const count = countBox ? countBox.checked : !r.skip;
+    if (name === r.label && section === secName && count === !r.skip) { sh.close(true); return; }
+    if (name !== r.label || section !== secName) editNwItem(G, r.key, { name: name !== r.label ? name : '', section: section !== secName ? section : '' });
+    if (count === r.skip) setNwCount(r.acc.id, count);
     sh.close(true);
-    undoToast(section !== secName ? `Spostato in ${section}` : 'Nome cambiato');
+    undoToast(count === r.skip ? (count ? `${name} ora conta nel patrimonio` : `${name} in sospeso: si vede ma non conta`) : section !== secName ? `Spostato in ${section}` : 'Nome cambiato');
   };
   nameIn.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); save(); } });
   const sh = openSheet({
@@ -263,10 +269,73 @@ function nwItemSheet(ctx, r, secName) {
     body: h('div.stack',
       field('Nome', nameIn, { hint: r.acc ? 'Cambia ovunque nell\'app. Reimportando il file, la riga col nome vecchio resta questa.' : 'Il nome che ha nel Net Worth (negli Investimenti resta il suo).' }),
       field('Sezione', sel),
-      newWrap),
+      newWrap,
+      countBox ? h('div.field', h('label.chk', countBox, 'Conta nel patrimonio'), h('p.field-hint', 'Togli la spunta per tenerla "in sospeso": resta nella tabella col segno arancione ma non entra nei totali (come il TFR lordo, o dei buoni di cui non sai ancora la cifra esatta).')) : null),
     footer: [open ? h('button.btn.btn-ghost', { type: 'button', onclick: () => { sh.close(true); open(); } }, r.acc?.cls ? 'Apri i dettagli' : r.acc ? 'Apri il conto' : 'Apri il titolo') : null,
       h('button.btn.btn-primary', { type: 'button', onclick: save }, 'Salva')],
   });
+}
+
+/* ─── Aggiungere una riga dalla tabella (D: "come faccio ad aggiungere qualcosa nella categoria? ad esempio un
+   nuovo conto o un nuovo etf direttamente dalla tabella? … devo anche poterlo lasciare lì senza essere contato") ───
+   Il "+" sulla riga della sezione: nome, tipo, valuta, valore all'ultima fine mese e "Conta nel patrimonio". */
+const ROW_TYPES = [
+  { value: 'checking', label: 'Conto corrente', group: 'Liquidità', type: 'checking' },
+  { value: 'savings', label: 'Conto deposito / risparmio', group: 'Liquidità', type: 'savings' },
+  { value: 'cash', label: 'Contanti', group: 'Liquidità', type: 'cash' },
+  { value: 'prepaid', label: 'Carta prepagata', group: 'Liquidità', type: 'prepaid' },
+  { value: 'etf', label: 'ETF', group: 'Investimenti', type: 'broker', cls: 'etf_eq' },
+  { value: 'stock', label: 'Azione', group: 'Investimenti', type: 'broker', cls: 'stock' },
+  { value: 'bond', label: 'Obbligazione / titolo di Stato / buono', group: 'Investimenti', type: 'broker', cls: 'bond' },
+  { value: 'gold', label: 'Oro e materie prime', group: 'Investimenti', type: 'broker', cls: 'gold' },
+  { value: 'fund', label: 'Fondo', group: 'Investimenti', type: 'broker', cls: 'fund' },
+  { value: 'crypto', label: 'Crypto', group: 'Investimenti', type: 'crypto', cls: 'crypto' },
+  { value: 'other', label: 'Altro investimento', group: 'Investimenti', type: 'broker', cls: 'other' },
+  { value: 'receivable', label: 'Credito / TFR', group: 'Altro', type: 'receivable' },
+  { value: 'pension', label: 'Fondo pensione', group: 'Altro', type: 'pension' },
+  { value: 'asset', label: 'Bene', group: 'Altro', type: 'asset' },
+  { value: 'property', label: 'Immobile', group: 'Altro', type: 'property' },
+  { value: 'vehicle', label: 'Veicolo', group: 'Altro', type: 'vehicle' },
+  { value: 'debt', label: 'Debito', group: 'Altro', type: 'debt' },
+];
+const guessRowType = sec => {
+  const n = String(sec).toLowerCase();
+  return /etf/.test(n) ? 'etf' : /stock|azion|share/.test(n) ? 'stock' : /crypto|cripto|bitcoin/.test(n) ? 'crypto'
+    : /materi|oro|gold|commod|metall/.test(n) ? 'gold' : /obblig|bond|btp|buon/.test(n) ? 'bond' : /fond/.test(n) ? 'fund'
+    : /cash|liquid|contant|cont[io]|banc|deposit|risparm/.test(n) ? 'checking' : /work|lavoro|tfr|credit/.test(n) ? 'receivable'
+    : /pension|previd/.test(n) ? 'pension' : /debit|mutu|prestit|finanz/.test(n) ? 'debt' : /casa|immobil/.test(n) ? 'property' : /beni|auto/.test(n) ? 'asset' : 'other';
+};
+function addRowSheet(ctx, secName, cols) {
+  const { d, st } = ctx;
+  // il valore va all'ultima fine mese passata mostrata (o a quella dell'anno prima, se l'anno non è iniziato)
+  const date = [...cols].reverse().find(Boolean) || monthEnd(monthKey(d.refDate));
+  let type = guessRowType(secName), currency = st.settings.currency;
+  const nameIn = textInput({ value: '', placeholder: 'es. Buoni postali, Vanguard All-World, Conto Fineco', max: 60 });
+  const typeSel = selectInput(ROW_TYPES.map(t => ({ value: t.value, label: t.label, group: t.group })), type, v => { type = v; });
+  const curSel = selectInput(Object.keys(CURRENCIES).map(c => ({ value: c, label: c })), currency, v => { currency = v; });
+  const amt = amountInput({ value: null, currency, placeholder: '0,00' });
+  const countBox = h('input', { type: 'checkbox', checked: true });
+  const save = () => {
+    const name = nameIn.value.trim();
+    if (!name) { toast('Scrivi il nome della riga', { kind: 'err' }); nameIn.focus(); return; }
+    const t = ROW_TYPES.find(x => x.value === type) || ROW_TYPES[0];
+    const c = amt.getCents?.() ?? null;
+    const liab = isLiability({ type: t.type });
+    addNwRow(d.nwGroups(), { name, type: t.type, cls: t.cls || '', currency, section: secName, date, value: c == null ? 0 : liab ? -Math.abs(c) : c, count: countBox.checked });
+    sh.close(true);
+    undoToast(countBox.checked ? `${name} aggiunta in ${secName}` : `${name} aggiunta in ${secName}, in sospeso (non conta)`);
+  };
+  nameIn.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); save(); } });
+  const sh = openSheet({
+    title: `Nuova riga in ${secName}`, subtitle: 'Un conto, un ETF, dei buoni… direttamente nel Net Worth', size: 'sm',
+    body: h('div.stack',
+      field('Nome', nameIn),
+      h('div.grid-2', field('Tipo', typeSel), field('Valuta', curSel)),
+      field(`Valore al ${formatDate(date, { year: true })}`, amt, { hint: 'Anche approssimativo: lo cambi quando vuoi toccando la cella. I mesi dopo restano uguali finché non scrivi un valore nuovo.' }),
+      h('div.field', h('label.chk', countBox, 'Conta nel patrimonio'), h('p.field-hint', 'Senza spunta resta "in sospeso": la vedi nella tabella col segno arancione ma non entra nei totali (come il TFR lordo).'))),
+    footer: [h('button.btn.btn-primary', { type: 'button', onclick: save }, 'Aggiungi')],
+  });
+  setTimeout(() => nameIn.focus(), 60);
 }
 
 /** Sezioni e righe del Net Worth: rinomina, colori, ordine, sposta le righe da una sezione all'altra. */
@@ -509,7 +578,7 @@ export default {
             const v = sec.total[L], g = sec.gain[L];
             return h('div.dash-row.nw-sum-row',
               colorDot(sec.color, c => setSectionColor(d, sec.name, c), `Colore di ${sec.name}`),
-              h('a.dash-n', { href: '#/patrimonio?sez=' + encodeURIComponent(sec.name), title: sec.auto ? AUTO_HINT : `Vai a ${sec.name} nella tabella` }, sec.name, sec.auto ? h('small.nw-auto-tag', 'da sistemare') : null),
+              h('a.dash-n', { href: '#/patrimonio?sez=' + encodeURIComponent(sec.name), title: `Vai a ${sec.name} nella tabella` }, sec.name),
               h('span.dash-p', v > 0 ? formatPercent(v / pos * 100, 0) : ''),
               h('span.dash-v', v == null ? h('span.muted', '—') : money(v, d.base, { tone: v < 0 ? 'neg' : '' })),
               h('span.dash-g', g ? money(g, d.base, { sign: true, tone: g >= 0 ? 'pos' : 'neg' }) : ''));

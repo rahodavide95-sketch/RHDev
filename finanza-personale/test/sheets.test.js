@@ -129,7 +129,7 @@ test('Net Worth: sezioni, totali saltati, valori strani, titoli, conti dei broke
   ];
   const p = planNetWorth(r, st, { refDate: REF, holdings, investNames: ['Trade Republic', 'Binance'] });
   const row = n => p.rows.find(x => x.name === n || x.institution === n);
-  assert.deepEqual(p.rows.filter(x => x.on && !x.holding).map(x => x.name), ['Conto BancaX', 'Trade Republic – Conto corrente', 'Scalable Capital', 'Contanti', 'Conto USD', 'TFR Netto']);
+  assert.deepEqual(p.rows.filter(x => x.on && !x.holding).map(x => x.name), ['Conto BancaX', 'Trade Republic – Conto corrente', 'Scalable Capital', 'Contanti', 'Conto USD', 'TFR Lordo', 'TFR Netto']);
   assert.deepEqual(p.rows.filter(x => x.on && x.holding).map(x => x.name), ['S&P 500', 'Emerging Markets', 'Gold', 'Rocket Lab', 'Bitcoin', 'Ethereum']);
   // Trade Republic e Scalable nella liquidità: il conto corrente e il conto deposito, non il conto titoli
   assert.equal(row('Trade Republic').type, 'checking');
@@ -139,9 +139,9 @@ test('Net Worth: sezioni, totali saltati, valori strani, titoli, conti dei broke
   assert.equal(row('Contanti').type, 'cash');
   assert.equal(row('Conto USD').currency, 'USD');
   assert.equal(row('TFR Netto').type, 'receivable');
-  // il TFR lordo non si somma mai
+  // il TFR lordo non si somma mai: si importa "in sospeso" (si vede ma non conta)
   assert.equal(row('TFR Lordo').gross, true);
-  assert.equal(row('TFR Lordo').on, false);
+  assert.equal(row('TFR Lordo').on, true);
   assert.match(row('Xeon').reason, /zero/);
   assert.equal(isGross({ name: 'TFR', section: 'WORK' }, [{ name: 'TFR', section: 'WORK' }, { name: 'TFR NETTO', section: 'WORK' }]), true);
   assert.equal(isGross({ name: 'Stipendio', section: 'WORK' }, [{ name: 'Stipendio', section: 'WORK' }, { name: 'TFR NETTO', section: 'WORK' }]), false);

@@ -206,6 +206,9 @@ function cleanAccount(a) {
     // scritto una volta l'anno, il suo totale lo conta solo lì)
     nwSparse: bool(a.nwSparse, false),
     emoji: emoji(a.emoji), color: COLOR.test(a.color) ? a.color : '', archived: bool(a.archived), inNetWorth: bool(a.inNetWorth, true),
+    // fuori dal patrimonio ma visibile nella tabella del Net Worth, "non conta" (D: "lasciarlo lì senza essere
+    // contato, ad esempio come il TFR lordo o dei buoni postali di cui non so ancora la cifra esatta")
+    nwShow: bool(a.nwShow, false),
     notes: str(a.notes, 2000), created: int(a.created, 0), order: num(a.order, 0),
     plan: null,
   };
@@ -763,6 +766,9 @@ export function derive(state, refDate = today()) {
   const HD_SECTION = { etf_eq: 'ETF', etf_bd: 'ETF', etf_mm: 'ETF', stock: 'Azioni', gold: 'Materie prime', crypto: 'Crypto', gov: 'Obbligazioni', bond: 'Obbligazioni', fund: 'Fondi', other: 'Altri investimenti' };
   const ACC_SECTION = { checking: 'Liquidità', savings: 'Liquidità', cash: 'Liquidità', prepaid: 'Liquidità', card: 'Debiti', broker: 'Altri investimenti', crypto: 'Crypto', pension: 'Previdenza', receivable: 'Crediti', property: 'Beni', vehicle: 'Beni', asset: 'Beni', mortgage: 'Debiti', loan: 'Debiti', debt: 'Debiti' };
   const SECTION_HINT = { 'Liquidità': /cash|liquid|contant|conti|conto|banc|deposit|risparm/, ETF: /etf/, Azioni: /stock|azion|share|equity/, 'Materie prime': /materi|commod|oro|gold|metall|etc/, Crypto: /crypto|cripto|bitcoin/, Obbligazioni: /obblig|bond|btp|stato/, Fondi: /fond/, Previdenza: /pension|previd/, Crediti: /credit|tfr|work|lavoro/, Beni: /beni|casa|immobil|auto/, Debiti: /debit|mutu|prestit|finanziam/, 'Altri investimenti': /invest|titoli|wallet|portafogl/ };
+  // il genere di una sezione di base, per trovare la sezione di D giusta per una riga senza posto
+  const KIND_OF = { 'Liquidità': 'cash', ETF: 'inv', Azioni: 'inv', Obbligazioni: 'inv', Fondi: 'inv', 'Materie prime': 'inv', Crypto: 'inv', 'Altri investimenti': 'inv', Previdenza: 'work', Crediti: 'work', Beni: 'goods', Debiti: 'debt' };
+  const KIND_HINT = { cash: /cash|liquid|contant|cont[io]|banc|deposit|risparm/, inv: /etf|stock|azion|invest|titol|crypto|cripto|materi|oro|gold|bond|obblig|fond|wallet/, work: /work|lavoro|tfr|credit|pension|previd/, goods: /beni|casa|immobil|auto/, debt: /debit|mutu|prestit|finanz/ };
   const SECTION_ORDER = ['Liquidità', 'ETF', 'Azioni', 'Obbligazioni', 'Fondi', 'Materie prime', 'Crypto', 'Altri investimenti', 'Previdenza', 'Crediti', 'Beni', 'Debiti'];
   const nwHdIds = new Set();
   for (const sn of Object.values(state.snapshots)) for (const k of Object.keys(sn.nwHd || {})) nwHdIds.add(k);
@@ -770,13 +776,14 @@ export function derive(state, refDate = today()) {
       con valori scritti nel Net Worth ("h:"). */
   function nwItems() {
     const out = [];
-    for (const a of nwAccounts) {
+    for (const a of state.accounts) {
+      if (!a.inNetWorth && !a.nwShow) continue;
       if (hasHoldings(a) && (holdingsByAcc.get(a.id) || []).length) continue;      // Investimenti: a sé
       // con dei valori di fine mese (dal foglio o scritti a mano) il conto conta solo da quando ne ha uno:
       // niente ricostruzioni all'indietro da un movimento isolato
       const firstVal = ledger.cps.get(a.id)?.[0]?.date || null;
       const written = a.nwSparse ? new Set((ledger.cps.get(a.id) || []).map(z => z.date)) : null;
-      out.push({ key: 'a:' + a.id, label: a.name, sub: (a.cls ? ASSET_CLASSES[a.cls].label : ACCOUNT_TYPES[a.type].label) + (a.currency !== base ? ' · ' + a.currency : ''), section: (a.cls && HD_SECTION[a.cls]) || ACC_SECTION[a.type] || 'Altro', acc: a,
+      out.push({ key: 'a:' + a.id, label: a.name, sub: (a.cls ? ASSET_CLASSES[a.cls].label : ACCOUNT_TYPES[a.type].label) + (a.currency !== base ? ' · ' + a.currency : ''), section: (a.cls && HD_SECTION[a.cls]) || ACC_SECTION[a.type] || 'Altro', acc: a, skip: !a.inNetWorth,
         at: dt => { if (firstVal && dt < firstVal) return null; if (written && !written.has(dt)) return null; const v = valueAt(a, dt); return v == null ? null : toBase(v, a.currency); },
         // nella sua valuta (la riga dei contanti in dollari si legge in dollari, come nel foglio)
         raw: a.currency === base ? null : dt => { if (firstVal && dt < firstVal) return null; if (written && !written.has(dt)) return null; return valueAt(a, dt) ?? null; } });
@@ -794,6 +801,7 @@ export function derive(state, refDate = today()) {
     const byKey = new Map(items.map(x => [x.key, x]));
     const secs = layout.sections.map(x => ({ name: x.name, color: x.color, was: x.was || [], keys: x.items.filter(k => byKey.has(k)), fromLayout: true }));
     const placed = new Set(secs.flatMap(x => x.keys));
+    const hasLayout = secs.length > 0;
     // una riga che non è in nessuna sezione di D (conto creato a mano, arrivato da un altro import…)
     // va in una sua sezione dello stesso tipo, non in una sezione col nome inventato dall'app
     // (D: "perché c'è scritto liquidità… io non ho mai chiamato nulla liquidità"):
@@ -816,6 +824,15 @@ export function derive(state, refDate = today()) {
         || secs.find(x => catNorm(x.name) === catNorm(it.section))
         || (it.section !== 'Altri investimenti' ? secs.find(x => x.fromLayout && fam.get(x)?.has(it.section)) : null)
         || secs.find(x => x.fromLayout && looksLike(x.name, it.section));
+      // con le sezioni di D non si inventa niente (D: "altri investimenti non deve esistere perché ogni cosa deve
+      // avere la sua categoria"): la sua sezione dello stesso genere (liquidità, investimenti, lavoro, beni,
+      // debiti), se no la prima; poi D la sposta dove vuole trascinandola
+      if (!sec && hasLayout) {
+        const kind = KIND_OF[it.section] || 'inv';
+        sec = secs.find(x => x.fromLayout && [...(fam.get(x) || [])].some(b => (KIND_OF[b] || 'inv') === kind))
+          || secs.find(x => x.fromLayout && KIND_HINT[kind].test(catNorm(x.name)))
+          || secs.find(x => x.fromLayout);
+      }
       if (!sec) {
         sec = { name: it.section, color: 0, keys: [] };
         const at = secs.findIndex(x => !x.fromLayout && SECTION_ORDER.indexOf(x.name) > SECTION_ORDER.indexOf(it.section));
@@ -835,7 +852,6 @@ export function derive(state, refDate = today()) {
   function nwTable(cols, q = '') {
     const items = nwItems();
     const { secs, byKey, labels } = nwSections(items);
-    const hasLayout = secs.some(x => x.fromLayout);
     const qn = catNorm(q || '');
     const sum = arr => (arr.every(v => v == null) ? null : arr.reduce((a, v) => a + (v || 0), 0));
     const gainOf = tot => tot.map((v, i) => (i === 0 || v == null || tot[i - 1] == null ? null : v - tot[i - 1]));
@@ -845,13 +861,12 @@ export function derive(state, refDate = today()) {
         const it = byKey.get(k);
         const values = cols.map(c => (c ? it.at(c) : null));
         const native = it.raw ? cols.map(c => (c ? it.raw(c) : null)) : null;
-        return { key: k, label: labels[k] || it.label, name: it.label, sub: it.sub, values, native, cur: it.raw ? it.acc.currency : null, acc: it.acc || null, hd: it.hd || null };
+        return { key: k, label: labels[k] || it.label, name: it.label, sub: it.sub, values, native, cur: it.raw ? it.acc.currency : null, acc: it.acc || null, hd: it.hd || null, skip: !!it.skip };
       }).filter(r => r.values.some(v => v))
         .filter(r => !qn || catNorm(x.name).includes(qn) || [r.label, r.name, r.sub].some(t => catNorm(t || '').includes(qn)));
-      const total = cols.map((c, i) => sum(rows.map(r => r.values[i])));
-      // `auto`: un gruppo fatto dall'app (non è una sezione di D) per righe che non sa dove mettere
-      // (D: "cosa vuol dire altri investimenti?"); solo se D ha già le sue sezioni
-      return { name: x.name, color: x.color || (si % 8) + 1, rows, total, gain: gainOf(total), pct: pctOf(total), auto: !x.fromLayout && hasLayout };
+      // le righe "non conta" si vedono ma non entrano nei totali
+      const total = cols.map((c, i) => sum(rows.filter(r => !r.skip).map(r => r.values[i])));
+      return { name: x.name, color: x.color || (si % 8) + 1, rows, total, gain: gainOf(total), pct: pctOf(total) };
     }).filter(x => x.rows.length);
     const total = cols.map((c, i) => sum(sections.map(x => x.total[i])));
     const alloc = sections.map(x => ({ name: x.name, color: x.color, pct: cols.map((c, i) => {

@@ -1604,8 +1604,17 @@ tr:hover .name-edit, .name-edit:focus-visible { opacity: 1; }
 /* Annulla e Ripeti in alto */
 .icon-btn.hist-btn:disabled { opacity: .3; cursor: default; background: none; }
 
-/* gruppo fatto dall'app (righe fuori dalle sezioni di D): un'etichetta "da sistemare" */
-.nw-auto-tag { margin-left: 8px; padding: 1px 7px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); font-size: 10.5px; font-weight: 650; letter-spacing: .02em; text-transform: none; vertical-align: 1px; white-space: nowrap; }
+/* riga "in sospeso" (si vede ma non conta): un'etichetta e i numeri tenui */
+.nw-pend-tag { margin-left: 8px; padding: 1px 7px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); font-size: 10.5px; font-weight: 650; letter-spacing: .02em; text-transform: none; vertical-align: 1px; white-space: nowrap; }
 /* il nome della sezione (con "da sistemare") può uscire dalla prima colonna: le altre celle della banda sono vuote */
 .nw-sheet tr.nw-band td.sticky, .nw-sheet.fit tr.nw-band td.sticky { overflow: visible; text-overflow: clip; z-index: 3; }
 .nw-sheet tr.nw-band td.sticky > span { white-space: nowrap; }
+
+/* righe "in sospeso" (D: "per riconoscere queste cose in sospeso bisogna che ci sia un segno di riconoscimento"):
+   etichetta arancione, numeri in corsivo e tenui, una striscia arancione a sinistra */
+.nw-pend-tag { display: inline-block; }
+.nw-sheet tr.nw-skip td { color: var(--ink-3); font-style: italic; }
+.nw-sheet tr.nw-skip td.sticky { box-shadow: inset 3px 0 0 color-mix(in srgb, var(--warn) 70%, transparent); }
+.nw-sheet tr.nw-skip .nw-name { font-style: normal; color: var(--ink-2); }
+/* il "+" e la matita sulla riga della sezione, uno accanto all'altro dopo il nome */
+.nw-sheet tr.nw-band .name-edit { position: static; margin: 0 0 0 6px; vertical-align: middle; display: inline-grid; }

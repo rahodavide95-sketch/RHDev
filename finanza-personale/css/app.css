@@ -848,7 +848,7 @@ input[type="date"].input::-webkit-date-and-time-value { text-align: left; }
 .table thead th.future { color: color-mix(in srgb, var(--thead-ink, var(--ink-3)) 60%, transparent); }
 .table thead tr > th:first-child { border-radius: 8px 0 0 8px; }
 .table thead tr > th:last-child { border-radius: 0 8px 8px 0; }
-[data-zebra] .table:not(.fit) tbody tr:not(.grp):not(.nw-band):not(.nw-total):not(.nw-gap):not(.sh-tot):not(.fin-macro):nth-child(even) > td:not(.sh-grp):not(.sh-sub) { background: color-mix(in srgb, var(--card) 95%, var(--ink)); }
+[data-zebra] .table:not(.fit) tbody tr:not(.grp):not(.nw-band):not(.nw-total):not(.nw-gap):not(.sh-tot):not(.fin-macro):not(.inv-cat):nth-child(even) > td:not(.sh-grp):not(.sh-sub) { background: color-mix(in srgb, var(--card) 95%, var(--ink)); }
 [data-zebra] .table tbody tr.click:hover > td { background: color-mix(in srgb, var(--card) 90%, var(--ink)); }
 [data-density="compact"] .table td { padding-top: 6px; padding-bottom: 6px; }
 [data-density="compact"] .table th { padding-top: 6px; padding-bottom: 6px; }
@@ -1269,15 +1269,17 @@ table.resizing { user-select: none; cursor: col-resize; }
 [data-colors="few"] .fin-bar i { background: var(--ink-3); }
 [data-colors="few"] .fin-card .spark .line { stroke: var(--ink-3) !important; }
 [data-colors="few"] .fin-card .spark .area { fill: var(--ink-3) !important; }
-[data-colors="few"] .fin-table tr.fin-macro td { background: var(--card-2); box-shadow: inset 0 1px 0 var(--line); }
+[data-colors="few"] .fin-table tr.fin-macro td { background: color-mix(in srgb, var(--chip) 9%, var(--card)); box-shadow: inset 0 1px 0 var(--line); }
 [data-colors="few"] .fin-table tr.fin-macro td.sticky, [data-colors="few"] .fin-table tr.fin-macro td.fin-tot { box-shadow: inset 0 1px 0 var(--line); }
-[data-colors="few"] .fin-table tr.fin-macro.click:hover td { background: var(--fill); }
+[data-colors="few"] .fin-table tr.fin-macro.click:hover td { background: color-mix(in srgb, var(--chip) 15%, var(--card)); }
 [data-colors="few"] .fin-macro-name { color: var(--ink); }
 [data-colors="few"] .fin-caret { color: var(--ink-3); }
 [data-colors="few"] .fin-table tr.fin-sub td.sticky { box-shadow: inset 0 1px 0 var(--line); }
 [data-colors="few"] .fin-table tr.fin-note td.sticky { box-shadow: none; }
-/* con "Colori vivaci" il titolo della sezione ha un fondo leggero del suo colore */
-[data-colors="many"] .nw-sheet tr.nw-band td { background: color-mix(in srgb, var(--sec-m) 9%, var(--card)); }
+/* la riga di ogni categoria prende il colore del suo quadratino, molto tenue (D: "fai anche la barra
+   dello stesso colore ma molto tenue… solo le categorie di ogni cosa, che sia net worth, entrate,
+   uscite o investimenti"): sezioni del Net Worth, macro categorie, categorie degli investimenti */
+.nw-sheet tr.nw-band td { background: color-mix(in srgb, var(--sec) 9%, var(--card)); }
 [data-colors="few"] .avatar.av-badge, [data-colors="few"] .mini-badge { background: var(--fill-2); color: var(--ink-2); }
 [data-colors="few"] .hero-groups .hero-chip { box-shadow: none; }
 [data-colors="few"] .sub-chip { color: var(--ink); background: var(--fill); }
@@ -1408,3 +1410,6 @@ table.resizing { user-select: none; cursor: col-resize; }
 .brand-name { white-space: nowrap; }
 .gate-name { margin: -6px 0 2px; font-size: 19px; letter-spacing: -0.02em; color: var(--ink-2); text-align: center; }
 .gate-name b { color: var(--ink); font-weight: 700; }
+.inv-table tr.inv-cat td { background: color-mix(in srgb, var(--cat) 9%, var(--card)); }
+.inv-cat-n { display: inline-flex; align-items: center; gap: 8px; }
+.cat-sq { flex: none; display: inline-block; width: 12px; height: 12px; border-radius: 3.5px; background: color-mix(in srgb, var(--cat) 62%, var(--ink-3)); }

@@ -436,12 +436,17 @@ function yearsView(ctx) {
   const totAll = groups.reduce((a, g) => a + g.total, 0);
   const qcell = q => h('td.num', { class: q ? (q < 0 ? 'neg' : '') : 'muted' }, q ? qtyText(q) : '—');
   const pmc = x => (x && x.p.qty > 0 ? (ui.privacy ? '••••' : `${formatNumber(x.p.avg, 4)} ${x.hd.currency}`) : '—');
+  // per tipo o categoria ogni riga è una categoria: il colore della ciambella, molto tenue
+  // (D: "la barra dello stesso colore ma molto tenue… solo le categorie di ogni cosa")
+  const isCat = pivotBy === 'cls' || pivotBy === 'grp';
+  const posG = groups.filter(g => g.total > 0), topN = posG.length > 8 ? 7 : 8;
+  const colorFor = g => { const i = posG.indexOf(g); return i < 0 ? 'var(--ink-3)' : SERIES[i < topN ? i : 7]; };
   const pivotTable = h('table.table.nw-table.nw-months.inv-table', { 'data-tid': 'inv-pivot' },
     h('thead', h('tr', h('th.sticky', ''), years.map(y => h('th.num', String(y))), h('th.num.diff', inQty ? 'Quote' : 'Totale'), isHd ? [inQty ? null : h('th.num', 'Quote'), h('th.num', 'Prezzo medio')] : h('th.num', 'Peso'))),
     h('tbody', groups.map(g => {
       const x = isHd ? posOf(g.key) : null;
-      return h('tr', { class: isHd ? 'click' : '', onclick: isHd ? () => ctx.go('investimenti/' + g.key) : null },
-        h('td.sticky', labelOf(g.key)),
+      return h('tr', { class: [isHd ? 'click' : '', isCat ? 'inv-cat' : ''].join(' '), style: isCat ? { '--cat': colorFor(g) } : null, onclick: isHd ? () => ctx.go('investimenti/' + g.key) : null },
+        h('td.sticky', isCat ? h('span.inv-cat-n', h('i.cat-sq'), labelOf(g.key)) : labelOf(g.key)),
         years.map(y => (inQty ? qcell(g.qtyByYear.get(y) || 0) : cell(g.byYear.get(y) || 0))),
         inQty ? h('td.num.diff', x && x.p.qty > 0 ? qtyText(x.p.qty) : '—') : h('td.num.diff', { class: g.total < 0 ? 'neg' : '' }, c2(g.total)),
         isHd ? [inQty ? null : h('td.num', x && x.p.qty > 0 ? qtyText(x.p.qty) : '—'), h('td.num', pmc(x))]

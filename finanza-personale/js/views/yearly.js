@@ -72,8 +72,10 @@ export default {
     const colOf = g => groupColor(st, V.kind, g.name);
     // la tabella entra tutta nello schermo, come il Net Worth (D: "cerca di far entrare tutto anche nelle entrate/uscite")
     const maxAbs = Math.max(0, T.total, ...T.groups.flatMap(g => [g.total, ...g.byMonth.map(Math.abs)]));
-    const fit = fitTable({ maxAbs, maxPct: 100 });
-    watchFit('#/entrate-uscite', fit, () => fitTable({ maxAbs, maxPct: 100 }));
+    // la % più lunga delle righe (il totale è sempre "100%", senza decimali)
+    const maxPct = T.total ? Math.max(0, ...T.groups.map(g => g.total / T.total * 100)) : 0;
+    const fit = fitTable({ maxAbs, maxPct });
+    watchFit('#/entrate-uscite', fit, () => fitTable({ maxAbs, maxPct }));
     const fm = fitMoney(fit, moneyText, ui.base, ui.privacy);
     // celle vuote vuote, come in Excel (prima c'era un trattino in ogni mese senza importi)
     const t2 = v => (v ? fm(v) : '');
@@ -123,7 +125,7 @@ export default {
       class: [m >= curM ? 'future' : '', r.byMonth[m] ? (extra != null ? 'click' : '') : 'muted', strong ? 'b' : ''].join(' '),
       onclick: r.byMonth[m] && extra != null ? e => { e.stopPropagation(); goMonth(m, extra); } : null,
     }, t2(r.byMonth[m])));
-    const ends = r => [h('td.num.fin-tot', t2(r.total)), h('td.num', T.months && r.total ? fm(avg(r)) : ''), h('td.num.fin-pct', r.total && T.total ? formatPercent(share(r), fit ? Math.min(1, fit.pdec) : 1) : '')];
+    const ends = r => [h('td.num.fin-tot', t2(r.total)), h('td.num', T.months && r.total ? fm(avg(r)) : ''), h('td.num.fin-pct', !r.total || !T.total ? '' : r === T ? '100%' : formatPercent(share(r), fit ? Math.min(1, fit.pdec) : 1))];
     const body = [];
     for (const g of T.groups) {
       const col = colOf(g);

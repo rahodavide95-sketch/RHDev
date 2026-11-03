@@ -5,7 +5,7 @@ import { toast, openSheet, closeAllSheets, topSheet, promptDialog } from './ui/c
 import { ui } from './ui/fmt.js';
 import * as session from './session.js';
 import { S, CLOUD_LABEL, cloudLine } from './session.js';
-import { runAutoPost, tidyCategories } from './actions.js';
+import { runAutoPost, tidyCategories, fixDuplicates } from './actions.js';
 import { formatDate } from './core/dates.js';
 import { applyTheme } from './ui/theme.js';
 import { enhanceTables } from './ui/tables.js';
@@ -333,6 +333,15 @@ function afterOpen() {
   ui.base = S.state.settings.currency;
   applyTheme(S.state.settings.theme, S.state.settings.look);
   if (S.mode === 'open') { const n = tidyCategories(); if (n) toast('Categorie sistemate: doppioni uniti e statistiche (es. "Liquidità a fine 2025") tolte dalle entrate', { kind: 'ok' }); }
+  if (S.mode === 'open') {
+    // righe doppie arrivate unendo due copie degli stessi dati: si uniscono (con "Annulla")
+    const dup = fixDuplicates();
+    if (dup) {
+      const tk = session.undoToken();
+      const what = dup.rows ? `${dup.rows} ${dup.rows === 1 ? 'riga doppia' : 'righe doppie'} del Net Worth` : 'alcuni valori doppi';
+      toast(`Ho unito ${what}: erano gli stessi conti arrivati due volte unendo due copie dei dati.`, { kind: 'ok', ms: 15000, action: { label: 'Annulla', fn: () => { if (session.undo(tk)) toast('Annullato'); } } });
+    }
+  }
   lastActivity = Date.now();
   if (S.mode === 'open') {
     const n = runAutoPost();

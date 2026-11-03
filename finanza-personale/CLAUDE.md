@@ -463,6 +463,19 @@ Categorie = riepilogo per macro categoria con le sue voci (tocca → gestione).
   dimenticata" + codice di recupero), `relogin` (sessione scaduta), `unlinkAccount`.
 - Schermate in `views/gate.js` (accesso, nuovo account, password cambiata, nuova password dal
   link; `handleAuthLanding()` legge `#access_token…` / `#error…` tornando dalle email).
+- **Doppioni dopo un'unione** (D: "adesso perché si è duplicata ogni cosa nel networth? cosa è successo?"):
+  `merge3` unisce per codice interno, quindi lo stesso Excel importato su due copie dei dati (un altro
+  dispositivo, o di nuovo dopo che il collegamento si era perso) e poi unito con `linkAccount` (senza base)
+  o `cloudSync` dava ogni riga due volte e il totale doppio. `core/dedupe.js` (`dedupePlan`/`applyDedupe`)
+  li riconosce dal contenuto: conti con stesso nome (`nk`), tipo, valuta, banca e `cls`; titoli con stesso
+  conto, nome, simbolo e tipo (operazioni uguali una volta); valori alla stessa data da due conti uniti
+  (vince quello `manual`, poi quello del conto tenuto, poi il più recente); movimenti con la stessa
+  `importHash` nello stesso conto; sezioni del Net Worth con lo stesso nome. Tiene il conto che è nel
+  layout (poi quello con più dati, poi il più vecchio) e gli sposta valori, movimenti, scadenze, obiettivi,
+  titoli, fotografie, righe e nomi del layout; il nome dell'altro va in `aka`. Gira dopo ogni `merge3`
+  (`cloudSync`, `linkAccount`) e all'apertura (`A.fixDuplicates()` in `afterOpen`, con avviso "Ho unito N
+  righe doppie…" e "Annulla"). Test `test/dedupe.test.js`; provato nel browser con due dispositivi e il file
+  di D (36 righe e totale doppio → 18 righe e totale giusto).
 - Prove: finto Supabase con Playwright (`route`), più dispositivi insieme. Da qui Supabase non
   è raggiungibile.
 
@@ -629,7 +642,7 @@ netti, pulito ed elegante.
 
 ## Prove
 
-- `npm test`: 58 test (calcoli, colori scelti, reimport e controllo col foglio, cifratura, unione dei dati, CSV, investimenti, import da Excel di tutti i fogli, crypto, storia degli acquisti, quotazioni con risposte finte).
+- `npm test`: 74 test (calcoli, colori scelti, reimport e controllo col foglio, cifratura, unione dei dati, CSV, investimenti, import da Excel di tutti i fogli, crypto, storia degli acquisti, quotazioni con risposte finte).
 - `bash test/rls/run.sh`: regole di sicurezza del database su Postgres.
 - Nel browser: `python3 -m http.server` nella cartella e Playwright (Chromium già
   installato). Da questo ambiente onvista/Binance/BCE non sono raggiungibili: per provarli

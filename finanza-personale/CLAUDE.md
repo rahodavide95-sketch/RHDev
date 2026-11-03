@@ -491,8 +491,19 @@ dove il pulsante sparisce); tutte le regole della barra compressa stanno in un b
 Barra rifatta (D: "i separatori non si vedono… rendila migliore in generale sia da aperta sia da
 chiusa"): pannello suo (`--side-bg`, bordo `--side-edge`), separatori `--side-sep` ben visibili.
 Aperta (236 px): voci alte 35 px, titoli dei blocchi in maiuscoletto con la linea che continua
-(GESTIONE ─────), voce attiva con barretta a sinistra, linea sopra Impostazioni, in fondo occhio,
-lucchetto, comprimi e lo stato del salvataggio scritto ("Salvato", "Sincronizzato", "Prova"…).
+(GESTIONE ─────), voce attiva con barretta a sinistra; in fondo solo "comprimi" e lo stato del
+salvataggio scritto ("Salvato", "Sincronizzato", "Prova"…). **Entra sempre tutta, senza scorrere**
+(D: "non devo scrollare nella barra, deve entrare tutto lì"): altezza delle voci (`--sl`), spazi dei
+blocchi (`--sg`) e del logo (`--sb`) con `clamp(…vh…)`; chiusa con media query sull'altezza (≤880,
+≤740, ≤640 solo icone col nome nel `title`, ≤600 anche aperta i blocchi diventano solo la linea).
+Provata da 560 a 1100 px di altezza, aperta, chiusa e a 1024 px.
+**Profilo in alto a destra** (D: "le impostazioni puoi metterle anche in alto a destra se crei tipo un
+cerchio con le iniziali del profilo…"): `profileBtn()` in app.js, ultimo pulsante della testata (anche
+su telefono), iniziali del nome (Profilo) o dell'email, anello pieno quando sei in Impostazioni. Menu
+`.prof-pop`: nome, email o "Solo su questo dispositivo", stato del salvataggio; Impostazioni, Profilo,
+Account e sincronizzazione (o "Accedi o crea un account"; non nella prova), Aspetto e colori, Backup e
+dati, Sicurezza; Nascondi gli importi (H), Blocca ora (L) / Esci dalla prova. Le voci aprono
+`impostazioni?sez=<id>` e la pagina scorre su `#set-<id>` (anche `?backup=1` come prima).
 Chiusa (88 px) **a binario**: icona dentro una pillola (colorata se attiva), **il nome sotto**
 (D: "aggiungi i titoli sotto all'icona per far vedere cosa è"; "Cerca" con `span.mini-l`), una
 lineetta di 40 px tra i blocchi, i pulsanti in fondo su due colonne; entra in 945 px di altezza; finestre alte

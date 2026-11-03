@@ -101,20 +101,63 @@ mqSide.addEventListener?.('change', applySide);
 applySide();
 addEventListener('rhf-rerender', () => render());
 
+/* ─── Profilo in alto a destra (D: "le impostazioni puoi metterle anche in alto a destra se crei tipo un
+   cerchio con le iniziali del profilo e se clicchi da lì puoi andare nelle impostazioni generali, oltre a
+   quelle della mail dell'account"): iniziali del nome (o dell'email), menu con le impostazioni, l'account,
+   nascondi importi e blocca. ─── */
+function initials() {
+  const n = (S.state?.settings?.name || '').trim();
+  if (n) { const w = n.split(/\s+/).filter(Boolean); return ((w[0][0] || '') + (w.length > 1 ? w[w.length - 1][0] : '')).toUpperCase(); }
+  return (S.cloud?.email || '').slice(0, 1).toUpperCase();
+}
+function profileBtn(on = false) {
+  const ini = initials();
+  return h('button.prof-btn', { type: 'button', id: 'prof-btn', class: on ? 'on' : '', 'aria-label': 'Profilo e impostazioni', title: 'Profilo e impostazioni', 'aria-haspopup': 'menu',
+    onclick: e => { e.stopPropagation(); if (profPop) closeProfile(); else openProfile(e.currentTarget); } }, ini ? h('span', ini) : icon('user', 18));
+}
+let profPop = null;
+function closeProfile() { if (profPop) { profPop.remove(); profPop = null; } }
+function openProfile(btn) {
+  const name = (S.state?.settings?.name || '').trim();
+  const ini = initials();
+  const item = (ic, label, fn, key) => h('button.prof-item', { type: 'button', role: 'menuitem', onclick: () => { closeProfile(); fn(); } }, icon(ic, 18), h('span', label), key ? h('kbd', key) : null);
+  const where = S.mode === 'demo' ? 'Prova con dati di esempio' : S.cloud.linked ? S.cloud.email : 'Solo su questo dispositivo';
+  profPop = h('div.prof-pop', { role: 'menu', 'aria-label': 'Profilo e impostazioni' },
+    h('div.prof-head', h('span.prof-av', ini ? h('span', ini) : icon('user', 20)),
+      h('div.prof-id', h('b', name || 'Il tuo profilo'), h('span', where), h('span.prof-status', ...saveDot()))),
+    h('div.prof-sep'),
+    item('settings', 'Impostazioni', () => go('impostazioni')),
+    item('user', 'Profilo', () => go('impostazioni?sez=profile')),
+    S.mode === 'demo' ? null : item('refresh', S.cloud.linked ? 'Account e sincronizzazione' : 'Accedi o crea un account', () => go('impostazioni?sez=account')),
+    item('sun', 'Aspetto e colori', () => go('impostazioni?sez=look')),
+    item('download', 'Backup e dati', () => go('impostazioni?sez=backup')),
+    item('shield', 'Sicurezza', () => go('impostazioni?sez=security')),
+    h('div.prof-sep'),
+    item(ui.privacy ? 'eye' : 'eyeOff', ui.privacy ? 'Mostra gli importi' : 'Nascondi gli importi', togglePrivacy, 'H'),
+    S.mode === 'demo' ? item('logout', 'Esci dalla prova', () => session.lock()) : item('lock', 'Blocca ora', () => session.lock(), 'L'));
+  document.body.append(profPop);
+  const r = btn.getBoundingClientRect();
+  profPop.style.top = (r.bottom + 8) + 'px';
+  profPop.style.right = Math.max(8, innerWidth - r.right) + 'px';
+  profPop.querySelector('.prof-item')?.focus();
+}
+addEventListener('pointerdown', e => { if (profPop && !profPop.contains(e.target) && !e.target.closest?.('#prof-btn')) closeProfile(); }, true);
+addEventListener('keydown', e => { if (e.key === 'Escape') closeProfile(); });
+addEventListener('hashchange', closeProfile);
+
 function buildShell() {
   const nav = h('nav.side-nav', { 'aria-label': 'Sezioni' },
     NAV.map(n => n.group
       ? h('div.side-group', { role: 'presentation' }, h('span', n.group))
-      : h('a.side-link', { href: '#/' + n.path, dataset: { path: n.path } }, icon(n.icon, 20), h('span', n.label))));
+      : h('a.side-link', { href: '#/' + n.path, dataset: { path: n.path }, title: n.label }, icon(n.icon, 20), h('span', n.label))));
   const side = h('aside.side',
     h('a.brand', { href: '#/', 'aria-label': '[RH] Finance, panoramica' }, h('img.brand-ic', { src: 'icons/mark-192.png', alt: '', width: 30, height: 30 }), h('span.brand-name', '[RH]', h('b', ' Finance'))),
     h('button.side-search', { type: 'button', onclick: () => openPalette(ctxBase()), title: 'Cerca o vai a…' }, icon('search', 18), h('span', 'Cerca o vai a…'), h('span.mini-l', 'Cerca'), h('kbd', navigator.platform?.includes('Mac') ? '⌘K' : 'Ctrl K')),
     nav,
+    // in fondo solo "comprimi" e lo stato del salvataggio: impostazioni, nascondi importi e blocca
+    // stanno nel cerchio del profilo in alto a destra (così la barra entra sempre tutta)
     h('div.side-foot',
-      h('a.side-link', { href: '#/impostazioni', dataset: { path: 'impostazioni' } }, icon('settings', 20), h('span', 'Impostazioni')),
       h('div.side-tools',
-        h('button.icon-btn', { type: 'button', id: 'side-priv', onclick: togglePrivacy, 'aria-label': 'Nascondi gli importi' }, icon('eye', 20)),
-        h('button.icon-btn', { type: 'button', onclick: () => session.lock(), 'aria-label': 'Blocca ora', title: 'Blocca ora (L)' }, icon('lock', 20)),
         h('button.icon-btn.side-mini-btn', { type: 'button', onclick: toggleSide, 'aria-label': sidePref ? 'Allarga la barra laterale' : 'Comprimi la barra laterale', title: sidePref ? 'Allarga la barra laterale ([)' : 'Comprimi la barra laterale ([)' }, icon('sidebar', 20)),
         h('span.side-save', { id: 'side-save' }, saveDot()))));
   const top = h('header.topbar',
@@ -230,13 +273,13 @@ function doRender() {
     ...actions,
     h('button.icon-btn.only-mobile', { type: 'button', 'aria-label': 'Cerca', onclick: () => openPalette(ctx) }, icon('search', 20)),
     h('button.icon-btn.only-desktop', { type: 'button', 'aria-label': ui.privacy ? 'Mostra gli importi' : 'Nascondi gli importi', title: 'Nascondi/mostra importi (H)', onclick: togglePrivacy }, icon(ui.privacy ? 'eyeOff' : 'eye', 20)),
-    h('button.btn.btn-primary.only-desktop', { type: 'button', onclick: () => txEditor(ctx), title: 'Nuovo movimento (N)' }, icon('plus', 18), h('span', 'Movimento')));
+    h('button.btn.btn-primary.only-desktop', { type: 'button', onclick: () => txEditor(ctx), title: 'Nuovo movimento (N)' }, icon('plus', 18), h('span', 'Movimento')),
+    profileBtn(route.path === 'impostazioni'));
+  closeProfile();
   $('#banners').replaceChildren(...banners(ctx));
   viewEl.replaceChildren(node);
   viewEl.dataset.route = route.path || 'home';
   enhanceTables(viewEl);
-  const priv = $('#side-priv');
-  if (priv) { priv.replaceChildren(icon(ui.privacy ? 'eyeOff' : 'eye', 20)); priv.setAttribute('aria-label', ui.privacy ? 'Mostra gli importi' : 'Nascondi gli importi'); }
   updateSave();
   if (changed) {
     currentPath = location.hash;

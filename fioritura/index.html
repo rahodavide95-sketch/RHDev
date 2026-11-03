@@ -487,7 +487,10 @@
   .set-row p{margin-top:2px}
   .sec-t{font-family:var(--serif);font-size:19px;font-variation-settings:"SOFT" 100;padding-top:8px}
   .credits{text-align:center;color:var(--muted);font-family:var(--serif);font-style:italic;font-size:13.5px;line-height:1.5;
-    font-variation-settings:"SOFT" 100;padding:6px 24px 4px;opacity:.9}
+    font-variation-settings:"SOFT" 100;padding:22px 24px 4px;opacity:.9}
+  .credits svg{width:20px;height:20px;color:var(--accent-text);opacity:.7;margin-bottom:6px}
+  .head .motto{font-family:var(--serif);font-style:italic;font-weight:350;font-size:18.5px;line-height:1.4;color:var(--ink-2);
+    font-variation-settings:"SOFT" 100;margin-top:10px;max-width:30em}
   .foot{text-align:center;color:var(--muted);font-size:12.5px;font-family:var(--serif);font-style:italic;padding-top:6px}
   .help{font-size:14px;color:var(--ink-2);line-height:1.55}
   .help li{margin:6px 0 0 18px}
@@ -631,30 +634,82 @@
   /* ================= FRASI ================= */
   // I crediti, testo di D (richiesta: "aggiungi una riga di crediti")
   var CREDITS = 'Progettata per dare un piccolo aiuto alla mia bellissima Bi, ti amo! ❤️';
+  // Una frase diversa ogni giorno (richiesta di D): si va in ordine dal 3 novembre, quindi in 64 giorni non se ne ripete nessuna.
   var QUOTES = [
+    'Oggi non devi essere perfetta: ti basta esserci.',
     'Un passo alla volta è comunque un passo avanti.',
-    'Non serve correre: serve esserci, anche oggi.',
+    'La fatica di oggi è la sicurezza del 21 dicembre.',
     'Ogni pagina letta è una pagina che già ti appartiene.',
+    'Sei più forte della voglia di rimandare.',
     'Le cose difficili diventano familiari, a forza di tornarci.',
+    'Il tuo impegno di oggi è un regalo per la te di domani.',
+    'Non contare le pagine che mancano: conta quelle che hai già fatto.',
     'Concediti una pausa vera: anche riposare fa parte dello studio.',
+    'Hai già superato giornate difficili: anche questa passerà.',
     'Ripetere non è rifare: è vedere meglio.',
+    'Concentrati sul prossimo paragrafo, non su tutto il libro.',
     'Sei più preparata di quanto pensi.',
+    'I dubbi di oggi sono le risposte sicure di domani.',
     'Una giornata storta non cancella quelle buone.',
+    'Non serve andare veloce: serve non fermarsi.',
     'Respira. Il programma è fatto apposta per arrivare in tempo.',
+    'Sei capace di molto più di quanto immagini.',
     'Piccole sessioni, tanti giorni: è così che si costruisce.',
+    'La paura dell’esame si scioglie una pagina alla volta.',
     'Oggi basta fare la parte di oggi.',
+    'Anche un’ora fatta bene è una vittoria.',
     'Quello che capisci adesso, all’esame lo racconterai con calma.',
+    'Oggi scegli di essere fiera di te.',
     'Un bicchiere d’acqua, la finestra aperta, e si riparte.',
+    'Il segreto è cominciare: il resto viene da sé.',
     'Non devi sapere tutto oggi. Devi solo andare avanti.',
+    'Non confrontarti con gli altri, ma con la te di ieri.',
     'La costanza è gentile: lavora anche quando non te ne accorgi.',
+    'Un caffè, un respiro profondo, e si parte.',
     'Ogni ripetizione rende il terreno più solido.',
+    'La calma è la tua arma migliore.',
     'Studiare bene è anche studiare serena.',
+    'Quello che oggi ti sembra difficile, tra una settimana ti sembrerà ovvio.',
     'Il tuo impegno si vede, anche quando tu non lo vedi.',
+    'Sii gentile con te stessa: stai facendo un ottimo lavoro.',
     'Spiegalo ad alta voce: se lo sai dire, lo sai.',
+    'La disciplina è ricordarsi che cosa vuoi davvero.',
     'Chiudi il libro quando hai finito: il resto della giornata è tuo.',
+    'Non esistono giornate perse, solo giornate di riposo.',
     'Anche i fiori più belli sbocciano un petalo alla volta.',
-    'Fidati del lavoro che hai già fatto.'
+    'Stai diventando la professionista che sogni di essere.',
+    'Fidati del lavoro che hai già fatto.',
+    'La memoria si allena come un muscolo: oggi è giorno di palestra.',
+    'Brava per tutte le volte che non hai mollato.',
+    'Il diritto si capisce collegando: cerca il filo tra le cose.',
+    'Hai già fatto tanta strada: guarda il tuo giardino.',
+    'Spiegalo come se lo raccontassi a un’amica.',
+    'La costanza vale più dell’ispirazione.',
+    'La tua determinazione è più grande di qualsiasi manuale.',
+    'Oggi semini, e il raccolto arriverà.',
+    'Oggi è un buon giorno per capire una cosa in più.',
+    'Ogni giorno di studio è un mattone della tua strada.',
+    'Piano piano, ma sempre avanti.',
+    'Sei sulla strada giusta: continua così.',
+    'Più ripeti, più l’esame diventa una conversazione.',
+    'Il traguardo è più vicino di quanto pensi.',
+    'Una giornata alla volta, un obiettivo alla volta.',
+    'Lascia fuori il rumore: adesso ci siete solo tu e il tuo libro.',
+    'Stasera guarda quanto hai fatto: è tanto.',
+    'Le domande difficili sono solo domande che non hai ancora ripetuto abbastanza.',
+    'Credi nel lavoro che stai facendo, giorno dopo giorno.',
+    'Tra poco questo esame sarà un bel ricordo.',
+    'Quando ti senti stanca, ricorda perché hai cominciato.'
   ];
+  var QUOTE_DAY = {
+    '2026-12-20': 'Domani racconti quello che sai. Stasera ripassa poco e riposa tanto.',
+    '2026-12-21': 'Oggi è il tuo giorno. Sei pronta: in bocca al lupo!'
+  };
+  function quoteOf(iso) {
+    if (QUOTE_DAY[iso]) return QUOTE_DAY[iso];
+    var n = diffDays('2026-11-03', iso), L = QUOTES.length;
+    return QUOTES[((n % L) + L) % L];
+  }
   var DONE_MSG = [
     'Sei stata brava.',
     'Anche oggi è sbocciato un fiore.',
@@ -1079,6 +1134,7 @@
     var examChip = toExam > 1 ? toExam + ' giorni all’esame' : toExam === 1 ? 'Domani l’esame' : toExam === 0 ? 'Oggi l’esame' : 'Esame del 21 dicembre';
     var html = topbar() +
       '<header class="head"><span class="eyebrow">' + cap(fmtLong(t)) + '</span><h1 class="display">' + greet + '</h1>' +
+      '<p class="motto">' + esc(quoteOf(t)) + '</p>' +
       '<div class="chips"><span class="chip">' + I.hourglass + examChip + '</span>' +
       (d ? '<span class="chip">' + I.sprout + 'Giornata ' + (d.idx + 1) + ' di ' + TOTAL + '</span>' : '') + '</div></header>';
 
@@ -1159,8 +1215,7 @@
       '<h3 class="h3" style="margin-top:5px">Oggi ' + fmtMin(fo.ms) + '</h3><p class="small muted">' + fo.n + ' ' + plural(fo.n, 'sessione completata', 'sessioni completate') + '</p></div>' +
       '<button class="btn soft sm" data-a="tab" data-tab="focus">' + (st === 'run' ? (S.timer.mode === 'study' ? 'Studio' : 'Pausa') + ' · <span data-timer>' + mmss(Timer.left()) + '</span>' : st === 'pause' ? 'In pausa' : 'Inizia') + '</button></div></section>';
 
-    html += '<figure class="quote">' + I.leaf + '<blockquote>' + esc(QUOTES[hash(t + 'q') % QUOTES.length]) + '</blockquote></figure>';
-    html += '<p class="credits">' + CREDITS + '</p>';
+    html += '<footer class="credits">' + I.leaf + '<p>' + CREDITS + '</p></footer>';
     return html;
   }
 

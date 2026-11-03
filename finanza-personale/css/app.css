@@ -216,41 +216,63 @@ kbd { font: 500 11px/1 var(--font); padding: 4px 6px; border-radius: 6px; backgr
 .tabbar { display: none; }
 .only-mobile { display: none !important; }
 
-/* barra compressa (a mano, o sempre tra 760 e 1100 px): icone con il nome sotto, la voce attiva
-   ha la pillola colorata intorno all'icona; separatori corti ma visibili tra i blocchi */
+/* barra compressa (a mano, o sempre tra 760 e 1100 px) "a binario" (D: "barra chiusa no, migliorala"):
+   icona in una pillola (colorata se è la pagina aperta) e il nome sotto su una riga sola; le voci hanno
+   tutte la stessa altezza, che segue quella della finestra (--rl), così riempiono la barra con un ritmo
+   regolare invece di ammassarsi in alto; in fondo "allarga" e il pallino del salvataggio, uno sotto l'altro */
 @media (min-width: 760px) {
-  html.side-mini { --side-w: 88px; }
-  html.side-mini .side { padding-left: 6px; padding-right: 6px; gap: 2px; align-items: stretch; }
-  html.side-mini .brand { padding: 2px 0 12px; justify-content: center; }
-  html.side-mini .brand-ic { width: 34px; height: 34px; border-radius: 10px; }
+  html.side-mini { --side-w: 92px; }
+  html.side-mini .side { --rl: clamp(41px, 5.6vh, 58px); --rs: clamp(3px, .8vh, 9px); padding: calc(12px + var(--safe-t)) 4px 10px; gap: 0; align-items: stretch; }
+  html.side-mini .brand { padding: 0 0 clamp(6px, 1.3vh, 14px); justify-content: center; flex: none; }
+  html.side-mini .brand-ic { width: 36px; height: 36px; border-radius: 10px; }
   html.side-mini .brand-name, html.side-mini .side-search span:not(.mini-l), html.side-mini .side-search kbd, html.side-mini .save-t { display: none; }
+  html.side-mini .side-nav { gap: 0; }
   html.side-mini .side-search, html.side-mini .side-link {
-    position: relative; isolation: isolate; flex-direction: column; justify-content: flex-start; gap: 5px;
-    height: auto; min-height: 47px; padding: 5px 2px 4px; border-radius: 0; background: none; box-shadow: none; color: var(--ink-2);
+    position: relative; isolation: isolate; flex: none; flex-direction: column; justify-content: flex-start; align-items: center; gap: 0;
+    height: var(--rl); min-height: 0; padding: 0 2px; margin: 0; border-radius: 0; background: none; box-shadow: none; color: var(--ink-2);
   }
-  html.side-mini .side-search { margin: 0 0 2px; color: var(--ink-3); }
+  html.side-mini .side-search .ic, html.side-mini .side-link .ic { margin-top: calc(var(--rl) / 2 - 16px); margin-bottom: 6px; }
   html.side-mini .side-search::before, html.side-mini .side-link::before {
-    content: ''; position: absolute; z-index: -1; top: 1px; left: 50%; width: 50px; height: 28px; margin-left: -25px;
-    border-radius: 14px; background: transparent; transition: background .15s;
+    content: ''; position: absolute; z-index: -1; top: calc(var(--rl) / 2 - 21px); left: 50%; width: 54px; height: 30px; margin-left: -27px;
+    border-radius: 15px; background: transparent; transition: background .15s;
   }
-  html.side-mini .side-search::before { background: var(--field); box-shadow: inset 0 0 0 1px var(--side-edge); }
+  html.side-mini .side-link:hover, html.side-mini .side-search:hover { color: var(--ink); }
   html.side-mini .side-link:hover::before, html.side-mini .side-search:hover::before { background: var(--hover); }
-  html.side-mini .side-search:hover::before { background: var(--fill); }
   html.side-mini .side-link.on::before { background: var(--brand-soft); }
   html.side-mini .side-link.on { color: var(--brand); }
-  html.side-mini .side-link.on::after { left: -6px; top: 6px; bottom: auto; height: 18px; }
-  html.side-mini .side-link span, html.side-mini .side-search .mini-l { display: block; font-size: 10.5px; line-height: 1.2; font-weight: 560; text-align: center; white-space: normal; overflow-wrap: anywhere; }
+  html.side-mini .side-link.on::after { display: none; }
+  html.side-mini .side-link span, html.side-mini .side-search .mini-l {
+    display: block; max-width: 100%; font-size: 10.5px; line-height: 1.2; font-weight: 560; letter-spacing: -.01em; text-align: center;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
   html.side-mini .side-link.on span { font-weight: 700; }
-  html.side-mini .side-group { display: block; flex: none; height: 1px; width: 40px; margin: 6px auto; padding: 0; background: var(--side-sep); }
+  html.side-mini .side-group { display: block; flex: none; height: 1px; width: 44px; margin: var(--rs) auto; padding: 0; background: var(--side-sep); }
   html.side-mini .side-group::after, html.side-mini .side-group span { display: none; }
-  html.side-mini .side-foot { gap: 2px; }
-  html.side-mini .side-foot::before { width: 40px; margin: 0 auto 6px; }
-  html.side-mini .side-tools { display: grid; grid-template-columns: repeat(2, 36px); justify-content: center; gap: 2px; padding: 4px 0 0; }
-  html.side-mini .side-save { margin: 0; padding: 0; display: grid; place-items: center; }
+  html.side-mini .side-foot { align-items: center; gap: 0; padding-top: 8px; }
+  html.side-mini .side-foot::before { width: 44px; margin: 0 auto 8px; }
+  html.side-mini .side-tools { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 0; }
+  html.side-mini .side-tools .icon-btn { width: 40px; height: 34px; border-radius: 12px; }
+  html.side-mini .side-save { margin: 0; padding: 0 0 2px; display: grid; place-items: center; }
   html.side-auto .side-mini-btn { display: none; }
-  html.side-auto .side-tools { grid-template-columns: 36px; }
-  html.side-auto .side-save { grid-column: auto; padding-top: 0; }
   html.side-mini .topbar, html.side-mini .banners, html.side-mini .view { padding-left: 32px; padding-right: 32px; }
+}
+/* finestre basse: sotto i 720 px di altezza restano le icone (il nome compare passandoci sopra) */
+@media (min-width: 760px) and (max-height: 720px) {
+  html.side-mini .side { --rl: 36px; }
+  html.side-mini .side-link span, html.side-mini .side-search .mini-l { display: none; }
+  html.side-mini .side-search .ic, html.side-mini .side-link .ic { margin: 8px 0 0; }
+  html.side-mini .side-search::before, html.side-mini .side-link::before { top: 3px; }
+}
+@media (min-width: 760px) and (max-height: 620px) {
+  html.side-mini .side { --rl: 32px; --rs: 3px; }
+  html.side-mini .side-search .ic, html.side-mini .side-link .ic { margin-top: 6px; }
+  html.side-mini .side-search::before, html.side-mini .side-link::before { top: 1px; }
+}
+@media (min-width: 760px) and (max-height: 580px) {
+  html.side-mini .side { --rl: 30px; padding-top: 8px; }
+  html.side-mini .brand { padding-bottom: 4px; }
+  html.side-mini .side-search .ic, html.side-mini .side-link .ic { margin-top: 5px; }
+  html.side-mini .side-search::before, html.side-mini .side-link::before { top: 0; }
 }
 @media (min-width: 760px) and (max-width: 1100px) {
   .topbar, .banners, .view, html.side-mini .topbar, html.side-mini .banners, html.side-mini .view { padding-left: 28px; padding-right: 28px; }
@@ -1471,7 +1493,6 @@ img.gate-mark { width: 112px; height: 112px; border-radius: 28px; }
 .name-pop-t { font-size: 13px; font-weight: 620; color: var(--ink-2); }
 .name-pop-b { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
 .side-search .mini-l { display: none; }
-html.side-mini .side-search .mini-l { display: block; }
 /* matita sulle intestazioni che si possono rinominare: compare passandoci sopra (sempre, un po' tenue, sugli schermi touch) */
 .th-rename:not(.sticky) { position: relative; }
 .th-rename::after { content: ''; position: absolute; top: 3px; right: 4px; width: 9px; height: 9px; background: currentColor; opacity: 0; transition: opacity .15s; pointer-events: none;
@@ -1497,26 +1518,6 @@ html.side-mini .side-search .mini-l { display: block; }
 .table tr.drop-before td { box-shadow: inset 0 2px 0 var(--brand); }
 .table tr.drop-after td { box-shadow: inset 0 -2px 0 var(--brand); }
 body.nw-drag-on, body.nw-drag-on * { cursor: grabbing !important; user-select: none; -webkit-user-select: none; }
-
-/* barra compressa su finestre basse: voci più vicine; sotto i 640 px restano solo le icone (il nome nel tooltip) */
-@media (min-width: 760px) and (max-height: 880px) {
-  html.side-mini .side-search, html.side-mini .side-link { min-height: 42px; gap: 3px; padding: 3px 2px 3px; }
-  html.side-mini .side-search::before, html.side-mini .side-link::before { top: 0; height: 26px; }
-  html.side-mini .side-link.on::after { top: 4px; }
-  html.side-mini .side-group { margin: 4px auto; }
-  html.side-mini .brand { padding-bottom: 8px; }
-  html.side-mini .brand-ic { width: 30px; height: 30px; border-radius: 9px; }
-}
-@media (min-width: 760px) and (max-height: 740px) {
-  html.side-mini .side-link span, html.side-mini .side-search .mini-l { font-size: 9.5px; line-height: 1.1; }
-  html.side-mini .side-search, html.side-mini .side-link { min-height: 37px; gap: 2px; padding: 2px; }
-  html.side-mini .side-group { margin: 3px auto; }
-}
-@media (min-width: 760px) and (max-height: 640px) {
-  html.side-mini .side-link span, html.side-mini .side-search .mini-l { display: none; }
-  html.side-mini .side-search, html.side-mini .side-link { min-height: 32px; justify-content: center; }
-  html.side-mini .side-search::before, html.side-mini .side-link::before { top: 3px; }
-}
 
 /* cerchio del profilo in alto a destra e il suo menu */
 .prof-btn { flex: none; width: 40px; height: 40px; border-radius: 50%; display: inline-grid; place-items: center; padding: 0;
@@ -1547,7 +1548,18 @@ body.nw-drag-on, body.nw-drag-on * { cursor: grabbing !important; user-select: n
   .side-group { padding-top: 5px; padding-bottom: 4px; }
   .side-group span { display: none; }
   .brand { padding-bottom: 4px; }
-  html.side-mini .side-search, html.side-mini .side-link { min-height: 29px; padding: 1px 2px; }
-  html.side-mini .side-search::before, html.side-mini .side-link::before { top: 1px; }
-  html.side-mini .side-group { margin: 2px auto; }
 }
+
+/* matita per rinominare dalla tabella: compare passando sulla riga (sempre un po' visibile sugli schermi touch) */
+.name-edit { position: absolute; right: 4px; top: 50%; margin-top: -12px; z-index: 2; width: 24px; height: 24px; border-radius: 8px; display: inline-grid; place-items: center;
+  color: var(--ink-3); background: var(--card); box-shadow: 0 0 0 1px var(--side-edge); opacity: 0; transition: opacity .15s, background .15s, color .15s; }
+tr:hover .name-edit, .name-edit:focus-visible { opacity: 1; }
+.name-edit:hover { color: var(--brand); background: color-mix(in srgb, var(--brand) 10%, var(--card)); }
+@media (hover: none) { .name-edit { opacity: .55; } }
+/* tutto arrotondato (D: "o tutto squadrato o tutto arrotondato… tutto arrotondato"): le righe colorate
+   (sezioni del Net Worth, categorie di Entrate e uscite e degli Investimenti, totali) hanno le estremità
+   tonde come l'intestazione */
+.table tr.nw-band > td:first-child, .table tr.fin-macro > td:first-child, .table tr.inv-cat > td:first-child { border-top-left-radius: 8px; border-bottom-left-radius: 8px; }
+.table tr.nw-band > td:last-child, .table tr.fin-macro > td:last-child, .table tr.inv-cat > td:last-child { border-top-right-radius: 8px; border-bottom-right-radius: 8px; }
+.nw-sheet tr.nw-band td { box-shadow: none; }
+.nw-sheet tr.nw-band td.sticky span { gap: 9px; }

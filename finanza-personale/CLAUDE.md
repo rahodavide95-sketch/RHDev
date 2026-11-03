@@ -494,9 +494,8 @@ Aperta (236 px): voci alte 35 px, titoli dei blocchi in maiuscoletto con la line
 (GESTIONE ─────), voce attiva con barretta a sinistra; in fondo solo "comprimi" e lo stato del
 salvataggio scritto ("Salvato", "Sincronizzato", "Prova"…). **Entra sempre tutta, senza scorrere**
 (D: "non devo scrollare nella barra, deve entrare tutto lì"): altezza delle voci (`--sl`), spazi dei
-blocchi (`--sg`) e del logo (`--sb`) con `clamp(…vh…)`; chiusa con media query sull'altezza (≤880,
-≤740, ≤640 solo icone col nome nel `title`, ≤600 anche aperta i blocchi diventano solo la linea).
-Provata da 560 a 1100 px di altezza, aperta, chiusa e a 1024 px.
+blocchi (`--sg`) e del logo (`--sb`) con `clamp(…vh…)`; ≤600 anche aperta i blocchi diventano solo
+la linea. Provata da 560 a 1100 px di altezza, aperta, chiusa e a 1024 px.
 **Profilo in alto a destra** (D: "le impostazioni puoi metterle anche in alto a destra se crei tipo un
 cerchio con le iniziali del profilo…"): `profileBtn()` in app.js, ultimo pulsante della testata (anche
 su telefono), iniziali del nome (Profilo) o dell'email, anello pieno quando sei in Impostazioni. Menu
@@ -504,10 +503,26 @@ su telefono), iniziali del nome (Profilo) o dell'email, anello pieno quando sei 
 Account e sincronizzazione (o "Accedi o crea un account"; non nella prova), Aspetto e colori, Backup e
 dati, Sicurezza; Nascondi gli importi (H), Blocca ora (L) / Esci dalla prova. Le voci aprono
 `impostazioni?sez=<id>` e la pagina scorre su `#set-<id>` (anche `?backup=1` come prima).
-Chiusa (88 px) **a binario**: icona dentro una pillola (colorata se attiva), **il nome sotto**
-(D: "aggiungi i titoli sotto all'icona per far vedere cosa è"; "Cerca" con `span.mini-l`), una
-lineetta di 40 px tra i blocchi, i pulsanti in fondo su due colonne; entra in 945 px di altezza; finestre alte
+Chiusa (92 px) **a binario**, rifatta (D: "barra chiusa no, migliorala"): tutte le voci alte uguali
+`--rl: clamp(41px, 5.6vh, 58px)` (riempiono la barra con un ritmo regolare invece di ammassarsi in alto),
+icona centrata in una pillola 54×30 (colorata se è la pagina aperta, niente barretta), **il nome sotto
+su una riga sola** (D: "aggiungi i titoli sotto all'icona"; "Entrate e uscite" ci sta a 92 px; "Cerca"
+è una voce come le altre, non più una casella), lineetta di 44 px tra i blocchi (`--rs`), in fondo
+"allarga" e il pallino del salvataggio uno sotto l'altro. ≤720 px di altezza solo icone (nome nel
+`title`), ≤620 e ≤580 voci più basse. Finestre alte
 fino allo schermo (niente tetti a 46vh/900px), `sheet-lg` fino a 1280 px.
+**Tutto arrotondato** (D: "o tutto squadrato o tutto arrotondato… tutto arrotondato"): le righe colorate
+(`nw-band`, `fin-macro`, `inv-cat`) hanno le estremità tonde (8 px) come l'intestazione; la banda delle
+sezioni senza la riga sotto. **Asset Allocation senza quadratino** (D).
+**Matita per rinominare le categorie dalla tabella** (D: "voglio poter modificare ogni nome di categoria
+direttamente dalla tabella con la matita"): `renameBtn()` in common (`.name-edit`, compare passando sulla
+riga, riquadro `.name-pop`). Net Worth: sezioni → `A.renameNwSection(G, da, a)` (se il nome è di
+un'altra sezione le righe vanno lì); il nome vecchio resta in `nwLayout.sections[].was` (lo tiene
+`cleanLayout`), e l'import e `fromFile` ritrovano la sezione anche col nome del file. Entrate e uscite:
+categoria → `A.renameGroup(kind, da, a, {single})` (con `single` cambia anche la sottocategoria omonima,
+es. ALTRO › ALTRO), sottocategoria → `A.renameCategory(id, nome)`; il vecchio `catKey` va in
+`category.was`, così il reimport non crea doppioni. Tutti i layout riscritti (`editNwItem`,
+`moveNwItem`, `setSectionColor`) conservano `was`.
 **Intestazioni delle tabelle al centro e rinominabili** (D: "i nomi delle intestazioni delle tabelle li
 voglio centrali. ma anche qui, dammi la possibilità di modificarli come voglio"): tutte le `thead th`
 centrate; nelle tabelle con `data-tid` si tocca l'intestazione (passandoci sopra compare una piccola

@@ -168,6 +168,8 @@ function cleanLayout(l) {
     // uno degli 8 colori della palette (1…8) o uno scelto liberamente (#rrggbb)
     color: Number.isInteger(x?.color) && x.color >= 0 && x.color <= 8 ? x.color : typeof x?.color === 'string' && /^#[0-9a-f]{6}$/i.test(x.color) ? x.color.toLowerCase() : 0,
     items: (Array.isArray(x?.items) ? x.items : []).filter(k => typeof k === 'string' && NW_KEY.test(k) && !seen.has(k) && seen.add(k)).slice(0, 400),
+    // i nomi che aveva prima di essere rinominata (per riconoscerla reimportando il file)
+    ...(Array.isArray(x?.was) && x.was.some(w => str(w, 60)) ? { was: [...new Set(x.was.map(w => str(w, 60)).filter(Boolean))].slice(-8) } : {}),
   }));
   const labels = {};
   if (o.labels && typeof o.labels === 'object') for (const [k, v] of Object.entries(o.labels)) if (NW_KEY.test(k) && str(v, 60)) labels[k] = str(v, 60);
@@ -780,7 +782,7 @@ export function derive(state, refDate = today()) {
   function nwSections(items) {
     const layout = state.settings.nwLayout || { sections: [], labels: {} };
     const byKey = new Map(items.map(x => [x.key, x]));
-    const secs = layout.sections.map(x => ({ name: x.name, color: x.color, keys: x.items.filter(k => byKey.has(k)), fromLayout: true }));
+    const secs = layout.sections.map(x => ({ name: x.name, color: x.color, was: x.was || [], keys: x.items.filter(k => byKey.has(k)), fromLayout: true }));
     const placed = new Set(secs.flatMap(x => x.keys));
     // una riga che non è in nessuna sezione di D (conto creato a mano, arrivato da un altro import…)
     // va in una sua sezione dello stesso tipo, non in una sezione col nome inventato dall'app
@@ -794,7 +796,7 @@ export function derive(state, refDate = today()) {
       : /\bgold\b|\boro\b|silver|argento|\betc\b|xau/i.test(`${it.label} ${it.sub || ''}`) ? 'Materie prime'
       : /bitcoin|\bbtc\b|ethereum|\beth\b|crypto|solana/i.test(`${it.label} ${it.sub || ''}`) ? 'Crypto' : it.section);
     // la sezione del file da cui è nato il conto (l'import la scrive nelle note: 'sezione "Stock"')
-    const fromFile = it => { const m = /sezione "([^"]+)"/.exec(it.acc?.notes || ''); return m ? secs.find(x => x.fromLayout && catNorm(x.name) === catNorm(m[1])) : null; };
+    const fromFile = it => { const m = /sezione "([^"]+)"/.exec(it.acc?.notes || ''); return m ? secs.find(x => x.fromLayout && (catNorm(x.name) === catNorm(m[1]) || x.was.some(w => catNorm(w) === catNorm(m[1])))) : null; };
     for (const it0 of items) {
       if (placed.has(it0.key)) continue;
       const it = { ...it0, section: guess(it0) };
@@ -816,7 +818,7 @@ export function derive(state, refDate = today()) {
   /** Le sezioni del Net Worth come si vedono (anche quelle di base), per cambiarne i colori. */
   function nwGroups() {
     const { secs, labels } = nwSections(nwItems());
-    return { sections: secs.map((x, si) => ({ name: x.name, color: x.color || 0, shown: x.color || (si % 8) + 1, items: x.keys })), labels };
+    return { sections: secs.map((x, si) => ({ name: x.name, color: x.color || 0, shown: x.color || (si % 8) + 1, items: x.keys, ...(x.was?.length ? { was: x.was } : {}) })), labels };
   }
   /** Fine mese (solo quelle passate: il valore effettivo è quello di fine mese). */
   const pastEnd = m => (monthEnd(m) <= refDate ? monthEnd(m) : null);

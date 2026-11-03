@@ -314,11 +314,19 @@ export function deleteCategory(id, moveTo = null) {
   }, { undo: 'Categoria eliminata' });
 }
 /** Rinomina un gruppo (la "categoria" dei fogli): tutte le sue sottocategorie lo seguono. */
-export function renameGroup(kind, from, to) {
+export function renameGroup(kind, from, to, { single = null } = {}) {
   const name = to.trim().slice(0, 40);
   if (!name || name === from) return;
+  const same = g => String(g || '').trim().toLowerCase() === String(from || '').trim().toLowerCase();
   commit(st => {
-    for (const c of st.categories) if (c.kind === kind && c.group === from) c.group = name;
+    // il nome vecchio resta ricordato in ogni sottocategoria: reimportando il file la si ritrova
+    for (const c of st.categories) {
+      if (c.kind !== kind || !same(c.group)) continue;
+      c.was = [...new Set([...(c.was || []), catKey(c.group, c.name)])].slice(-8);
+      c.group = name;
+      // categoria senza sottocategorie vere (es. ALTRO › ALTRO): cambia anche il nome della sottocategoria
+      if (single && c.id === single) c.name = name.slice(0, 50);
+    }
     const gc = st.settings.groupColors;
     if (gc[`${kind}:${from}`]) { gc[`${kind}:${name}`] = gc[`${kind}:${from}`]; delete gc[`${kind}:${from}`]; }
   }, { undo: 'Gruppo rinominato' });
@@ -331,7 +339,7 @@ export function renameGroup(kind, from, to) {
     in cima o in fondo. Le sezioni rimaste vuote spariscono; totali e grafici si rifanno da soli. */
 export function moveNwItem(G, key, section, { before = null, after = null, at = 'end' } = {}) {
   commit(st => {
-    const lay = { sections: G.sections.map(x => ({ name: x.name, color: x.color, items: x.items.filter(k => k !== key) })), labels: { ...G.labels } };
+    const lay = { sections: G.sections.map(x => ({ name: x.name, color: x.color, items: x.items.filter(k => k !== key), ...(x.was ? { was: x.was } : {}) })), labels: { ...G.labels } };
     let sec = lay.sections.find(x => normHead(x.name) === normHead(section) && x.name === section) || lay.sections.find(x => normHead(x.name) === normHead(section));
     if (!sec) lay.sections.push(sec = { name: section, color: 0, items: [] });
     const j = before ? sec.items.indexOf(before) : after ? sec.items.indexOf(after) : -1;
@@ -345,7 +353,7 @@ export function moveNwItem(G, key, section, { before = null, after = null, at = 
 export function editNwItem(G, key, { name, section } = {}) {
   commit(st => {
     const nm = String(name || '').trim().slice(0, 60);
-    const lay = { sections: G.sections.map(x => ({ name: x.name, color: x.color, items: x.items.slice() })), labels: { ...G.labels } };
+    const lay = { sections: G.sections.map(x => ({ name: x.name, color: x.color, items: x.items.slice(), ...(x.was ? { was: x.was } : {}) })), labels: { ...G.labels } };
     if (nm) {
       if (key.startsWith('a:')) {
         const a = find(st.accounts, key.slice(2));
@@ -424,6 +432,39 @@ export function setFlowCell({ txId = null, kind, category = null, payee = '', da
     if (!cents || !account) return;
     st.transactions.push({ id: uid('t-'), date, kind, amount: Math.abs(cents), account, toAccount: null, amountTo: null, category, payee: payee || '', note: '', tags: [], recurring: null, created: now, updated: now, importHash: '', flagged: false });
   }, { undo: 'Importo cambiato' });
+}
+
+/** Nuovo nome di una sottocategoria scritto con la matita nella tabella (il vecchio resta per i reimport). */
+export function renameCategory(id, to) {
+  const name = String(to || '').trim().slice(0, 50);
+  if (!name) return;
+  commit(st => {
+    const c = find(st.categories, id);
+    if (!c || c.name === name) return;
+    c.was = [...new Set([...(c.was || []), catKey(c.group, c.name)])].slice(-8);
+    c.name = name;
+  }, { undo: 'Categoria rinominata' });
+}
+/** Nuovo nome di una sezione del Net Worth (matita sulla riga della sezione). Se il nome è quello di
+    un'altra sezione, le righe vanno lì. Il nome vecchio resta per riconoscerla reimportando il file. */
+export function renameNwSection(G, from, to) {
+  const name = String(to || '').trim().slice(0, 60);
+  if (!name || name === from) return;
+  commit(st => {
+    const lay = { sections: G.sections.map(x => ({ name: x.name, color: x.color, items: x.items.slice(), ...(x.was ? { was: x.was.slice() } : {}) })), labels: { ...G.labels } };
+    const sec = lay.sections.find(x => x.name === from);
+    if (!sec) return;
+    const other = lay.sections.find(x => x !== sec && normHead(x.name) === normHead(name));
+    if (other) {
+      other.items.push(...sec.items.filter(k => !other.items.includes(k)));
+      other.was = [...new Set([...(other.was || []), from, ...(sec.was || [])])].slice(-8);
+      lay.sections = lay.sections.filter(x => x !== sec);
+    } else {
+      sec.was = [...new Set([...(sec.was || []), from])].filter(w => w !== name).slice(-8);
+      sec.name = name;
+    }
+    st.settings.nwLayout = { sections: lay.sections.filter(x => x.items.length), labels: lay.labels };
+  }, { undo: 'Sezione rinominata' });
 }
 
 /** Sposta un gruppo intero prima o dopo il gruppo vicino. */
@@ -658,7 +699,7 @@ export function importWorkbook({ nw = [], invest = null, cash = false, months = 
       const key = r.holding ? (r.hdId ? 'h:' + r.hdId : null) : (nwId.get(r.key) && !r.gross ? 'a:' + nwId.get(r.key) : null);
       if (!key || inLayout.has(key)) continue;
       const secName = (r.section || 'Altro').slice(0, 60);
-      let sec = lay.sections.find(x => normHead(x.name) === normHead(secName));
+      let sec = lay.sections.find(x => normHead(x.name) === normHead(secName)) || lay.sections.find(x => (x.was || []).some(w => normHead(w) === normHead(secName)));
       if (!sec) lay.sections.push(sec = { name: secName, color: 0, items: [] });
       sec.items.push(key);
       inLayout.add(key);

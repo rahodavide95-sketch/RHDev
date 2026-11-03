@@ -9,12 +9,12 @@ import { h, icon, download } from '../ui/dom.js';
 import { barChart, legend, sparkline } from '../ui/charts.js';
 import { openSheet, amountInput, toast, empty, selectInput, colorChoice, textInput, field } from '../ui/components.js';
 import { money, moneyText, delta, axisMoney, tipMoney, ui } from '../ui/fmt.js';
-import { card, accAvatar, segTabs, filterBox, hdBadge, colorVar, colorDot, setSectionColor, softColor, loadPeriod, savePeriod, periodPicker, editInCell, resumeEdit } from './common.js';
+import { card, accAvatar, segTabs, filterBox, hdBadge, colorVar, colorDot, setSectionColor, softColor, loadPeriod, savePeriod, periodPicker, editInCell, resumeEdit, renameBtn } from './common.js';
 import { cleanPeriod } from '../core/period.js';
 import { accountEditor, undoToast } from './editors.js';
 import { openFileImport } from './invimport.js';
 import { bankLogo } from '../data/banks.js';
-import { saveCheckIn, setSetting, editNwItem, setNwCell, moveNwItem } from '../actions.js';
+import { saveCheckIn, setSetting, editNwItem, setNwCell, moveNwItem, renameNwSection } from '../actions.js';
 import { isLiability, hasPlan, position } from '../core/model.js';
 import { monthKey, monthEnd, addMonthKey, formatMonth, formatDate, monthName } from '../core/dates.js';
 import { formatPercent, formatNumber } from '../core/money.js';
@@ -133,7 +133,10 @@ function sheetTable(ctx, Y) {
   const diffs = (vals, fmt) => [h('td.num.nw-dcol', { class: tone(diffOf(vals)) }, fmt ? (diffOf(vals) == null ? '' : (diffOf(vals) > 0 ? '+' : '') + fmt(diffOf(vals))) : sg(diffOf(vals))), h('td.num.nw-dpct', { class: tone(diffPct(vals)) }, pcs(diffPct(vals)))];
   const noDiff = () => [h('td.num.nw-dcol'), h('td.num.nw-dpct')];
   const band = (label, color, raw) => h('tr.nw-band', { style: { '--sec': color }, dataset: { sec: label } },
-    h('td.sticky', h('span', raw !== undefined ? colorDot(raw, c => setSectionColor(d, label, c), `Colore di ${label}`) : h('i.nw-band-dot'), label)), dates.map(() => h('td')), noDiff());
+    // sezione: quadratino del colore e matita per il nome; Asset Allocation senza quadratino (D)
+    h('td.sticky', h('span', raw !== undefined ? colorDot(raw, c => setSectionColor(d, label, c), `Colore di ${label}`) : null, label),
+      raw !== undefined ? renameBtn('Nome della sezione', label, v => { renameNwSection(d.nwGroups(), label, v); undoToast(`Sezione rinominata: ${v}`); }) : null),
+    dates.map(() => h('td')), noDiff());
   // spazio tra una sezione e l'altra: si vede dove finisce un blocco e ne comincia un altro
   const gap = () => h('tr.nw-gap', { 'aria-hidden': 'true' }, h('td.sticky'), dates.map(() => h('td')), noDiff());
   const body = [];

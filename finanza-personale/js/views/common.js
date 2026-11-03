@@ -212,8 +212,32 @@ export const colorVar = c => (typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c)
 let openPop = null;
 function closePop() { if (openPop) { openPop.remove(); openPop = null; } }
 addEventListener('keydown', e => { if (e.key === 'Escape') closePop(); });
-addEventListener('pointerdown', e => { if (openPop && !openPop.contains(e.target) && !e.target.closest?.('.cdot')) closePop(); }, true);
+addEventListener('pointerdown', e => { if (openPop && !openPop.contains(e.target) && !e.target.closest?.('.cdot, .name-edit')) closePop(); }, true);
 addEventListener('scroll', () => { if (openPop && openPop.anchor && Math.abs(openPop.anchor.getBoundingClientRect().top - openPop.anchorTop) > 60) closePop(); }, { passive: true, capture: true });
+/* ─── Matita per rinominare dalla tabella (D: "voglio poter modificare ogni nome di categoria direttamente
+   dalla tabella con la matita"): il pulsante compare passando sulla riga, apre un riquadro col nome. ─── */
+export function renameBtn(label, value, onSave, { max = 60 } = {}) {
+  const b = h('button.name-edit', { type: 'button', 'aria-label': `Rinomina ${value}`, title: 'Rinomina' }, icon('edit', 13));
+  b.addEventListener('pointerdown', e => e.stopPropagation());
+  b.addEventListener('click', e => {
+    e.preventDefault(); e.stopPropagation();
+    closePop();
+    const inp = h('input.input', { type: 'text', value, maxlength: max, 'aria-label': label });
+    const save = () => { const v = inp.value.trim(); closePop(); if (v && v !== value) onSave(v); };
+    inp.addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); save(); } });
+    const pop = h('div.name-pop', { role: 'dialog', 'aria-label': label },
+      h('div.name-pop-t', label), inp,
+      h('div.name-pop-b', h('button.btn.btn-sm.btn-ghost', { type: 'button', onclick: closePop }, 'Annulla'), h('button.btn.btn-sm.btn-primary', { type: 'button', onclick: save }, 'Salva')));
+    document.body.append(pop);
+    const r = b.getBoundingClientRect(), pw = pop.offsetWidth, ph = pop.offsetHeight;
+    pop.anchor = b; pop.anchorTop = r.top;
+    pop.style.left = Math.max(8, Math.min(innerWidth - pw - 8, r.left - 20)) + 'px';
+    pop.style.top = (r.bottom + ph + 12 > innerHeight ? Math.max(8, r.top - ph - 8) : r.bottom + 8) + 'px';
+    openPop = pop;
+    inp.focus(); inp.select();
+  });
+  return b;
+}
 /** Colore smorzato (D: "quei colori non farli così vivaci"): per pallini, barre e grafici a blocchi. */
 export const softColor = c => `color-mix(in srgb, ${c} 62%, var(--ink-3))`;
 /** `value`: 1…8 o "#rrggbb"; `onPick(v)` salva. */
@@ -238,6 +262,6 @@ export function colorDot(value, onPick, label = 'Cambia colore') {
 /** Il colore di una sezione del Net Worth, salvato nell'ordine del foglio come la vede D. */
 export function setSectionColor(d, name, color) {
   const G = d.nwGroups();
-  const sections = G.sections.map(x => ({ name: x.name, color: x.name === name ? color : x.color, items: x.items })).filter(x => x.items.length);
+  const sections = G.sections.map(x => ({ name: x.name, color: x.name === name ? color : x.color, items: x.items, ...(x.was ? { was: x.was } : {}) })).filter(x => x.items.length);
   setSetting('nwLayout', { sections, labels: { ...G.labels } });
 }

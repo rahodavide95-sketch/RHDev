@@ -251,3 +251,15 @@ test('valuta di una riga del Net Worth: dal Type o dal nome (solo per contanti e
   assert.equal(currencyFor('Euro', 'Contanti'), null);
   assert.equal(currencyFor('ETF:S', 'iShares $ Treasury'), null);
 });
+
+test('sezione del Net Worth rinominata: il nome vecchio resta, e le righe nate da quella sezione ci tornano', async () => {
+  const { derive } = await import('../js/core/model.js');
+  const st = sanitize({ ...defaults(),
+    accounts: [{ id: 'a-r', name: 'Razzi Spa', type: 'broker', currency: 'EUR', notes: 'Importato dal foglio Net Worth (sezione "Stock")' }],
+    valuations: [{ id: 'v1', account: 'a-r', date: '2026-01-31', value: 25000, kind: 'open' }],
+    settings: { ...defaults().settings, nwLayout: { sections: [{ name: 'Azioni', color: 3, items: [], was: ['Stock', '', 'Stock'] }, { name: 'ETF', items: ['a:zzz'] }], labels: {} } } });
+  assert.deepEqual(st.settings.nwLayout.sections[0].was, ['Stock']);
+  assert.equal(st.settings.nwLayout.sections[1].was, undefined);
+  const G = derive(st).nwGroups();
+  assert.ok(G.sections.find(x => x.name === 'Azioni').items.includes('a:a-r'));
+});

@@ -220,7 +220,12 @@ function cleanAccount(a) {
 function cleanValuation(v) {
   const vid = id(v?.id), acc = id(v?.account), d = date(v?.date);
   if (!vid || !acc || !d) return null;
-  return { id: vid, account: acc, date: d, value: int(v.value), created: int(v.created, 0), kind: v.kind === 'open' ? 'open' : 'adjust', note: str(v.note, 300) };
+  // `manual`: scritto da D (cella del Net Worth, "Aggiorna i valori"): un nuovo import non lo cambia
+  // (D: "io ho cambiato alcuni dati che non aveva trasferito bene"); i valori scritti prima del segno si
+  // riconoscono dalla nota
+  const note = str(v.note, 300);
+  const manual = bool(v.manual) || /^(Scritto nella tabella|Aggiornamento valori)/.test(note);
+  return { id: vid, account: acc, date: d, value: int(v.value), created: int(v.created, 0), kind: v.kind === 'open' ? 'open' : 'adjust', note, ...(manual ? { manual: true } : {}) };
 }
 function cleanCategory(c) {
   const cid = id(c?.id); if (!cid) return null;
@@ -242,6 +247,8 @@ function cleanTx(t) {
     payee: str(t.payee, 120), note: str(t.note, 1000), tags: tags(t.tags),
     recurring: id(t.recurring), created: int(t.created, 0), updated: int(t.updated, 0),
     importHash: str(t.importHash, 64), flagged: bool(t.flagged),
+    // corretto da D nell'app: reimportando il file resta com'è (un importo 0 = tolto da D, non si rimette)
+    ...(t.manual ? { manual: true } : {}),
   };
   if (kind === 'transfer' && (!out.toAccount || out.toAccount === acc)) return null;
   return out;
@@ -337,7 +344,10 @@ export function sanitize(raw) {
       // righe dei titoli nel Net Worth (valuta principale): solo dal foglio o da "Aggiorna i valori", mai dai prezzi
       const nwHd = {};
       if (v.nwHd && typeof v.nwHd === 'object') for (const [a, c] of Object.entries(v.nwHd)) if (id(a)) nwHd[a] = int(c);
-      out.snapshots[k] = { byAcc, byHd, nwHd, at: int(v.at, 0) };
+      // titoli il cui valore del mese l'ha scritto D (un nuovo import non lo cambia)
+      const nwMan = {};
+      if (v.nwMan && typeof v.nwMan === 'object') for (const [a, c] of Object.entries(v.nwMan)) if (id(a) && c) nwMan[a] = 1;
+      out.snapshots[k] = { byAcc, byHd, nwHd, at: int(v.at, 0), ...(Object.keys(nwMan).length ? { nwMan } : {}) };
     }
   }
   if (s.fx?.rates && typeof s.fx.rates === 'object') {

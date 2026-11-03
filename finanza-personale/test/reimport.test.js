@@ -263,3 +263,36 @@ test('sezione del Net Worth rinominata: il nome vecchio resta, e le righe nate d
   const G = derive(st).nwGroups();
   assert.ok(G.sections.find(x => x.name === 'Azioni').items.includes('a:a-r'));
 });
+
+test('reimportando: i valori corretti da D nell\'app restano i suoi (Net Worth ed Entrate)', () => {
+  // D: "io ho cambiato alcuni dati che non aveva trasferito bene": il file non deve rimetterli
+  const read = readNetWorth(NW, detectNetWorth(NW));
+  const st = sanitize({ ...defaults(),
+    accounts: [{ id: 'a-b1', name: 'Banca Uno', type: 'checking', currency: 'EUR' }],
+    valuations: [
+      { id: 'v1', account: 'a-b1', date: '2025-12-31', value: 120000, kind: 'open', created: 1 },
+      { id: 'v2', account: 'a-b1', date: '2026-01-31', value: 99000, kind: 'adjust', created: 1, note: 'Scritto nella tabella del Net Worth' },   // corretto prima del segno
+      { id: 'v3', account: 'a-b1', date: '2026-02-28', value: 77700, kind: 'adjust', created: 1, manual: true },
+      { id: 'v4', account: 'a-b1', date: '2026-03-31', value: 50000, kind: 'adjust', created: 1, note: 'Dal file' },
+    ] });
+  assert.equal(st.valuations.find(v => v.id === 'v2').manual, true);
+  assert.equal(st.valuations.find(v => v.id === 'v4').manual, undefined);
+  const r = planNetWorth(read, st, { refDate: '2026-03-10' }).rows.find(x => x.name === 'Banca Uno');
+  assert.deepEqual(r.changed, []);
+  assert.deepEqual(r.kept.map(v => [v.date, v.mine, v.value]), [['2026-01-31', 990, 1350], ['2026-02-28', 777, 1410]]);
+
+  // Entrate e uscite: un importo corretto e uno tolto da D restano così
+  const plan = rows => planMonths(readMonths(rows, detectMonths(rows)), st2, { year: 2026, kind: 'income', refDate: '2026-03-15' });
+  const st0 = sanitize(defaults());
+  const p1 = planMonths(readMonths(EN(), detectMonths(EN())), st0, { year: 2026, kind: 'income', refDate: '2026-03-15' });
+  const txs = p1.txs.map((t, i) => ({ id: 't' + i, date: t.date, kind: t.kind, amount: t.amount, account: 'a-f', category: 'c' + t.catKey, payee: t.payee, importHash: t.hash, tags: [] }));
+  const feb = txs.find(t => t.payee === 'STIPENDIO' && t.date.startsWith('2026-02'));
+  Object.assign(feb, { amount: 190000, manual: true });
+  const serA = txs.find(t => t.payee === 'Serata A');
+  Object.assign(serA, { amount: 0, manual: true });
+  const st2 = sanitize({ ...st0, transactions: txs });
+  assert.equal(st2.transactions.find(t => t.id === feb.id).manual, true);
+  const p2 = plan(EN());
+  assert.deepEqual([p2.txs.length, p2.changed.length, p2.removes.length], [0, 0, 0]);
+  assert.deepEqual(p2.kept.map(k => [k.payee, k.ym, k.mine, k.file]).sort(), [['STIPENDIO', '2026-02', 190000, 185000], ['Serata A', '2026-01', 0, 22000]].sort());
+});

@@ -85,7 +85,7 @@ function detail(ctx, id) {
   const hist = months.map(m => (m === curM ? v : d.accountValue(a, monthEnd(m))));
   const accPick = periodPicker({ value: accSpan, range: { from: months[0], to: months[months.length - 1] }, months: monthsBetween(first < addMonthKey(curM, -35) ? first : addMonthKey(curM, -35), curM),
     onChange: x => { savePeriod('conto', x); ctx.rerender(); } });
-  const txs = st.transactions.filter(x => x.account === a.id || x.toAccount === a.id).sort((x, y) => (x.date < y.date ? 1 : x.date > y.date ? -1 : y.created - x.created));
+  const txs = st.transactions.filter(x => (x.account === a.id || x.toAccount === a.id) && !(x.manual && !x.amount)).sort((x, y) => (x.date < y.date ? 1 : x.date > y.date ? -1 : y.created - x.created));
   const vals = st.valuations.filter(x => x.account === a.id).sort((x, y) => (x.date < y.date ? 1 : -1));
   const holdings = hasHoldings(a) ? st.holdings.filter(hd => hd.account === a.id) : [];
   const inflow = txs.filter(x => (x.kind === 'income' && x.account === a.id) || (x.kind === 'transfer' && x.toAccount === a.id)).length;

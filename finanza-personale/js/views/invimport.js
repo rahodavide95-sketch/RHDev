@@ -191,6 +191,11 @@ export async function openFileImport(ctx) {
         const ch = rows.filter(r => r.on && r.changed.length);
         if (ch.length) sec.push(banner('info', h('b', `${plural(ch.reduce((a, r) => a + r.changed.length, 0), ['valore cambiato', 'valori cambiati'])} nel file dall'ultima volta: li aggiorno. `),
           ch.flatMap(r => r.changed.map(v => `${r.name} al ${formatDate(v.date, { year: true })}: ${moneyText(cents(v.was), r.currency)} → ${moneyText(cents(v.value), r.currency)}`)).slice(0, 8).join('; ') + (ch.reduce((a, r) => a + r.changed.length, 0) > 8 ? '…' : '.')));
+        // valori corretti da D nell'app: restano i suoi (D: "io ho cambiato alcuni dati che non aveva trasferito bene")
+        const kept = rows.filter(r => r.kept?.length);
+        const nKept = kept.reduce((a, r) => a + r.kept.length, 0);
+        if (nKept) sec.push(banner('ok', h('b', `${plural(nKept, ['valore che hai corretto tu resta il tuo', 'valori che hai corretto tu restano i tuoi'])}: il file non ${nKept === 1 ? 'lo' : 'li'} cambia. `),
+          kept.flatMap(r => r.kept.map(v => `${r.name} al ${formatDate(v.date, { year: true })}: tuo ${moneyText(cents(v.mine), r.currency)}, nel file ${moneyText(cents(v.value), r.currency)}`)).slice(0, 8).join('; ') + (nKept > 8 ? '…' : '.')));
         const typeOpts = Object.entries(ACCOUNT_TYPES).filter(([k]) => !ACCOUNT_TYPES[k].plan).map(([k, t]) => ({ value: k, label: t.label }));
         const curOpts = Object.keys(CURRENCIES).map(c => ({ value: c, label: c }));
         const set = (key, patch) => { x.rows.set(key, { ...(x.rows.get(key) || {}), ...patch }); draw(); };
@@ -259,6 +264,8 @@ export async function openFileImport(ctx) {
         const mon = ym => `${monthName(Number(ym.slice(5)), true)} ${ym.slice(0, 4)}`;
         if (plan.changed.length) sec.push(banner('info', h('b', `${plural(plan.changed.length, ['importo cambiato', 'importi cambiati'])} nel file dall'ultima volta: li aggiorno (niente doppioni). `),
           plan.changed.slice(0, 8).map(u => `${u.payee}, ${mon(u.ym)}: ${moneyText(u.was)} → ${moneyText(u.now)}`).join('; ') + (plan.changed.length > 8 ? '…' : '.')));
+        if (plan.kept?.length) sec.push(banner('ok', h('b', `${plural(plan.kept.length, ['importo che hai corretto tu resta il tuo', 'importi che hai corretto tu restano i tuoi'])}: il file non ${plan.kept.length === 1 ? 'lo' : 'li'} cambia. `),
+          plan.kept.slice(0, 8).map(u => `${u.payee}, ${mon(u.ym)}: tuo ${u.mine ? moneyText(u.mine) : 'tolto'}, nel file ${moneyText(u.file)}`).join('; ') + (plan.kept.length > 8 ? '…' : '.')));
         const gone = plan.removes.filter(x => !x.merged);
         if (gone.length) sec.push(banner('warn', h('b', `${plural(gone.length, ['importo tolto', 'importi tolti'])} dal file: lo tolgo anche dall'app. `),
           gone.slice(0, 8).map(u => `${u.payee}, ${mon(u.ym)} (${moneyText(u.was)})`).join('; ') + (gone.length > 8 ? '…' : '.')));

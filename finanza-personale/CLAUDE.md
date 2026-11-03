@@ -158,7 +158,17 @@ collegata a nient'altro." Quindi il patrimonio è **solo** il Net Worth, a fine 
   (D: "se cancello il contenuto deve uscire 0"), non più "valore tolto". Entrate e uscite: `A.setFlowCell` cambia
   l'unico movimento della cella, lo toglie o ne crea uno a fine mese (conto: quello usato di solito per
   la sottocategoria); con più movimenti, in valuta o di verso opposto la cella apre Movimenti come prima.
-  Reimportando il file, un valore cambiato a mano compare tra i "cambiati" (si può togliere la spunta).
+  **Le correzioni di D restano** (D: "se fa la stessa lettura di prima crea un casino perché io ho cambiato
+  alcuni dati che non aveva trasferito bene"): ogni valore scritto da D è segnato `manual` — valutazioni
+  (cella del Net Worth, "Aggiorna i valori"; quelle di prima riconosciute dalla nota "Scritto nella
+  tabella…"/"Aggiornamento valori"), `snapshots[mese].nwMan[titolo]`, movimenti `manual` (cella di Entrate e
+  uscite, movimento importato modificato nell'editor). Un movimento nato dal file e poi svuotato/eliminato
+  da D resta a 0 con `manual` (nascosto in Movimenti e nel conto), così il file non lo rimette.
+  `planNetWorth` mette i valori manuali che il file ha diversi in `kept` (non in `changed`), `planMonths`
+  in `plan.kept`; l'anteprima li mostra in verde ("restano i tuoi: il file non li cambia", tuo/nel file).
+  Un importo scritto in una cella vuota di Entrate e uscite va nel conto già usato per quella
+  sottocategoria, altrimenti in "Entrate e uscite dal file" (fuori dal patrimonio, creato se manca): prima
+  finiva nel primo conto corrente e cambiava il Net Worth.
 - **Righe da trascinare** (D: "voglio spostare una riga trascinandola, non per forza entrando nelle
   impostazioni con le freccette, e se la sposto in un'altra categoria tutto deve aggiornarsi"): Net Worth
   `A.moveNwItem(G, key, sezione, {before|after|at})` (sopra/sotto una riga, sulla testata = in cima, sul

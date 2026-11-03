@@ -46,6 +46,7 @@ function filtered(ctx) {
   const q = F.q.trim().toLowerCase();
   const qAmt = q ? parseAmount(q) : null;
   return st.transactions.filter(t => {
+    if (t.manual && !t.amount) return false;          // tolto da D (resta solo perché l'import non lo rimetta)
     if (t.date < from || t.date > to) return false;
     if (F.account && t.account !== F.account && t.toAccount !== F.account) return false;
     if (F.category === '_none') { if (t.category || t.kind === 'transfer') return false; }

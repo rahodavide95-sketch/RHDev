@@ -329,3 +329,22 @@ test('riga "in sospeso": si vede nel Net Worth ma non entra nei totali', async (
   assert.equal(S0.total[1], 70000);
   assert.ok(!S0.sections.flatMap(x => x.rows).some(r => r.name === 'Fuori'));
 });
+
+test('righe eliminate da D dal Net Worth: reimportando il file restano fuori', () => {
+  const read = readNetWorth(NW, detectNetWorth(NW));
+  const st = sanitize({ ...defaults(), settings: { ...defaults().settings, nwGone: ['indice mondo', 'contanti dollari'] } });
+  assert.deepEqual(st.settings.nwGone, ['indice mondo', 'contanti dollari']);
+  const { rows } = planNetWorth(read, st, { refDate: '2026-03-10' });
+  const by = Object.fromEntries(rows.map(r => [r.name, r]));
+  for (const n of ['Indice Mondo', 'Contanti (Dollari)']) {
+    assert.equal(by[n].on, false, n);
+    assert.equal(by[n].deleted, true);
+    assert.match(by[n].reason, /eliminata/);
+  }
+  assert.equal(by['Contanti (Euro)'].on, true);
+  assert.equal(by['Banca Uno'].on, true);
+  // il controllo col foglio spiega la differenza: la riga l'ha eliminata D
+  const app = { grand: () => 0, section: () => 0, row: () => null };
+  const rec = reconcileNetWorth(read, app, { refDate: '2026-03-10', gone: new Set(st.settings.nwGone) });
+  assert.ok(rec.causes.some(c => c.kind === 'gone' && c.name === 'Indice Mondo'));
+});

@@ -1523,3 +1523,5 @@ tr:hover .name-edit, .name-edit:focus-visible { opacity: 1; }
 .nw-sheet tr.nw-skip .nw-name { font-style: normal; color: var(--ink-2); }
 /* il "+" e la matita sulla riga della sezione, uno accanto all'altro dopo il nome */
 .nw-sheet tr.nw-band .name-edit { position: static; margin: 0 0 0 6px; vertical-align: middle; display: inline-grid; }
+/* il cestino della sezione: rosso solo passandoci sopra */
+.name-edit.name-del:hover { color: var(--neg); background: var(--neg-soft); }

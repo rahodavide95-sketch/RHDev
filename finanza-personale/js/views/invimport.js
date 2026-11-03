@@ -166,7 +166,7 @@ export async function openFileImport(ctx) {
           const o = x.rows.get(key) || {};
           return { ...r, key, on: o.on ?? r.on, type: o.type || r.type, currency: o.currency || r.currency };
         });
-        const on = rows.filter(r => r.on && (r.values.length || r.changed.length));
+        const on = rows.filter(r => r.on && (r.values.length || r.changed.length || r.deleted));     // una riga eliminata e riaccesa torna anche senza valori nuovi
         x.check = { read, rows };
         nwRows.push(...on);
         const dates = read.dates.filter(d => d <= refDate);
@@ -350,7 +350,7 @@ function fileCheck({ read, rows }, refDate) {
       return null;
     },
   };
-  return reconcileNetWorth(read, app, { refDate });
+  return reconcileNetWorth(read, app, { refDate, gone: new Set(S.state.settings.nwGone || []) });
 }
 
 /** "gen–ott 2026", "dic 2025, gen–mar 2026": i mesi di fila uniti. */
@@ -371,6 +371,7 @@ function monthsText(dates) {
 function causeText(c) {
   const when = monthsText(c.dates);
   switch (c.kind) {
+    case 'gone': return [h('b', c.name), `: l'hai eliminata dal Net Worth (${when}); nel foglio c'è ancora, quindi il totale del foglio la conta e l'app no.`];
     case 'carry': return [h('b', c.name), `: nel foglio è vuoto (${when}); nell'app resta l'ultimo valore scritto, ${moneyText(c.app)}, finché non ne metti uno nuovo.`];
     case 'fx': return [h('b', c.name), ` è in ${c.currency}: l'app lo converte in euro col cambio, il foglio lo somma così com'è (${when}).`];
     case 'allocEmpty': return ['Nella tua Asset Allocation la riga ', h('b', `«${c.name}»`), ` è vuota (${when}), ma la sezione ${c.section} ha dei valori: il totale del tuo foglio in quei mesi non la conta. L'app sì.`];

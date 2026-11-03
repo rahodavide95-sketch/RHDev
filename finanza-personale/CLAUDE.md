@@ -78,7 +78,10 @@ collegata a nient'altro." Quindi il patrimonio è **solo** il Net Worth, a fine 
   che ha già righe dello stesso tipo, in una il cui nome gli somiglia (`SECTION_HINT`: "Cash - Liquidity"
   per i conti, "WORK" per il TFR…; il tipo di un titolo sconosciuto si indovina dal nome: ETF, oro,
   crypto) e solo se niente va bene in una sezione di base. D: "perché c'è scritto liquidità… io non ho
-  mai chiamato nulla liquidità": prima finiva nelle sezioni di base "Liquidità"/"Altri investimenti"), `nwTable(cols)`, `nwSheet(anno, filtro)` (31/12 anno prima
+  mai chiamato nulla liquidità": prima finiva nelle sezioni di base "Liquidità"/"Altri investimenti").
+  Prima di tutto un conto nato dal file torna nella sezione del file scritta nelle sue note
+  ('sezione "Stock"'); un tipo sconosciuto ("Altri investimenti") non segue le altre righe sconosciute
+  (D: "non c'è più la sezione stocks… l'hai messa negli etf"), `nwTable(cols)`, `nwSheet(anno, filtro)` (31/12 anno prima
   + 12 fine mese: per sezione Total, Gain/Loss, %; Net Worth; Asset Allocation), `nwMonthly(n)`
   (ultime fine mese, `last` = l'ultima con valori).
 - Pagina: patrimonio all'ultima fine mese con variazione sul mese prima, dal 31/12 e massimo; una
@@ -94,6 +97,12 @@ collegata a nient'altro." Quindi il patrimonio è **solo** il Net Worth, a fine 
   quando non entrano; ridisegno al cambio di larghezza (`rhf-rerender`). Su telefono scorre.
   Provato a 1280, 1366, 1440, 1512, 1920 e 2560 px: nessuna cella tagliata. Classi delle colonne
   `nw-dcol`/`nw-dpct` (`.nw-diff` è già usata dal confronto tra date).
+- **Toccando una riga** della tabella (D: "se clicco su un etf… voglio avere la possibilità di modificare o
+  spostarlo all'interno di una categoria a mio piacimento") si apre `nwItemSheet`: nome, sezione (anche
+  "+ Nuova sezione…") e "Apri il conto / il titolo / i dettagli". `A.editNwItem(G, key, {name, section})`
+  in un solo "Annulla": un conto cambia nome ovunque e il nome vecchio va in `account.aka` (così
+  reimportando il file la riga col nome vecchio è lo stesso conto: `planNetWorth` guarda anche `aka`);
+  un titolo cambia solo il nome nel Net Worth (`nwLayout.labels`); spostare scrive tutto `nwLayout`.
 - "Aggiorna i valori" (`checkInEditor`, `saveCheckIn`): il Net Worth di una fine mese riga per
   riga come nel foglio (precompilato, "fine mese prima: …"); conti → punto fermo `adjust` (uno
   per data, il nuovo sostituisce), titoli → `nwHd`; per i titoli c'è solo come **suggerimento**

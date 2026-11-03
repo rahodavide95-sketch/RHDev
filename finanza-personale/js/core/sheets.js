@@ -414,7 +414,8 @@ export function planNetWorth(read, state, { includeOdd = false, holdings = state
     // (anche "Contanti" di prima per "Contanti (Euro)", se la valuta è la stessa)
     const curGuess = currencyFor(a.type) || state.settings.currency;
     const findExisting = nm => state.accounts.find(x => !x.archived && !claimed.has(x.id) && !(hasHoldingsType(x.type) && state.holdings.some(hd => hd.account === x.id))
-      && (nameKey(x.name) === nameKey(nm) || (name !== a.name && nameKey(x.name) === nameKey(a.name) && x.currency === curGuess)));
+      && (nameKey(x.name) === nameKey(nm) || (x.aka || []).includes(nameKey(nm)) || (x.aka || []).includes(nameKey(a.name))
+        || (name !== a.name && nameKey(x.name) === nameKey(a.name) && x.currency === curGuess)));
     if (cash) {
       if (/^etf/i.test(a.type)) {
         // un ETF tenuto come liquidità ("ETF:M", un ETF monetario): resta nella liquidità, ma è un ETF

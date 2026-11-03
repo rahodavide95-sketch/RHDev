@@ -206,3 +206,27 @@ test('righe fuori dalle sezioni di D: nella sua sezione dello stesso tipo, nient
   assert.equal(where['Vanguard FTSE All-World'], 'ETF');
   assert.ok(!S0.sections.some(x => ['Liquidità', 'Crediti', 'Altri investimenti'].includes(x.name)));
 });
+
+test('un conto nato dal file resta nella sua sezione del file; i tipi sconosciuti non si mescolano', async () => {
+  const { derive } = await import('../js/core/model.js');
+  const st = sanitize({ ...defaults(),
+    accounts: [
+      { id: 'a-etf', name: 'Indice Mondo', type: 'broker', currency: 'EUR', notes: 'Creato importando un file (sezione "ETF")' },
+      { id: 'a-stk', name: 'Razzi Spa', type: 'broker', currency: 'EUR', notes: 'Creato importando un file (sezione "Stock")' },   // fuori dal layout
+      { id: 'a-unk', name: 'Qualcosa', type: 'broker', currency: 'EUR' },                                                     // tipo sconosciuto, nessun indizio
+    ],
+    valuations: ['a-etf', 'a-stk', 'a-unk'].map((a, i) => ({ id: 'v' + i, account: a, date: '2026-01-31', value: 10000, kind: 'open', created: 1 })),
+    settings: { ...defaults().settings, nwLayout: { sections: [{ name: 'ETF', color: 1, items: ['a:a-etf'] }, { name: 'Stock', color: 2, items: [] }], labels: {} } } });
+  const S0 = derive(st, '2026-03-10').nwSheet(2026);
+  const where = Object.fromEntries(S0.sections.flatMap(x => x.rows.map(r => [r.name, x.name])));
+  assert.equal(where['Razzi Spa'], 'Stock');
+  assert.notEqual(where['Qualcosa'], 'ETF');
+});
+
+test('conto rinominato in app: reimportando, la riga col nome vecchio è lo stesso conto', () => {
+  const read = readNetWorth(NW, detectNetWorth(NW));
+  const st = sanitize({ ...defaults(), accounts: [{ id: 'a-b1', name: 'Il mio conto', type: 'checking', currency: 'EUR', aka: ['banca uno'] }] });
+  const { rows } = planNetWorth(read, st, { refDate: '2026-03-10' });
+  const r = rows.find(x => x.name === 'Banca Uno');
+  assert.equal(r.existing?.id, 'a-b1');
+});

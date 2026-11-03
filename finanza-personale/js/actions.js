@@ -306,6 +306,31 @@ export function renameGroup(kind, from, to) {
     if (gc[`${kind}:${from}`]) { gc[`${kind}:${name}`] = gc[`${kind}:${from}`]; delete gc[`${kind}:${from}`]; }
   }, { undo: 'Gruppo rinominato' });
 }
+/** Una riga del Net Worth: nome nuovo e/o sezione nuova (D: "se clicco su un etf… voglio avere la possibilità
+    di modificare o spostarlo all'interno di una categoria a mio piacimento"). `G` = d.nwGroups() di adesso.
+    Conto: cambia il nome del conto (ovunque), il nome vecchio resta come alias per i prossimi import.
+    Titolo: cambia il nome che ha nel Net Worth (negli Investimenti resta il suo). */
+export function editNwItem(G, key, { name, section } = {}) {
+  commit(st => {
+    const nm = String(name || '').trim().slice(0, 60);
+    const lay = { sections: G.sections.map(x => ({ name: x.name, color: x.color, items: x.items.slice() })), labels: { ...G.labels } };
+    if (nm) {
+      if (key.startsWith('a:')) {
+        const a = find(st.accounts, key.slice(2));
+        if (a && a.name !== nm) { const k = nameKey(a.name); a.aka = [...new Set([...(a.aka || []), k])].slice(-12); a.name = nm; delete lay.labels[key]; }
+      } else if (key.startsWith('h:')) lay.labels[key] = nm;
+    }
+    const to = String(section || '').trim().slice(0, 60);
+    if (to) {
+      for (const x of lay.sections) x.items = x.items.filter(k => k !== key);
+      let sec = lay.sections.find(x => normHead(x.name) === normHead(to));
+      if (!sec) lay.sections.push(sec = { name: to, color: 0, items: [] });
+      sec.items.push(key);
+    }
+    lay.sections = lay.sections.filter(x => x.items.length);
+    st.settings.nwLayout = lay;
+  }, { undo: 'Riga del Net Worth modificata' });
+}
 /** Nome di una colonna scelto da D (vuoto = torna quello di partenza). */
 export function setColName(key, name) {
   commit(st => {

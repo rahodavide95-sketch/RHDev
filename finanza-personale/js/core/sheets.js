@@ -276,7 +276,7 @@ export function planMonths(read, state, { year, kind, refDate }) {
       cells.set(hash, c);
     }
   }
-  const txs = [], updates = [], removes = [];
+  const txs = [], updates = [], removes = [], kept = [];
   let dups = 0;
   for (const c of cells.values()) {
     const want = Math.round(c.value * 100);
@@ -294,6 +294,9 @@ export function planMonths(read, state, { year, kind, refDate }) {
       if (want) dups++;
       // si segna l'impronta anche su quelli importati prima, per le volte dopo
       for (const t of mine) if (t.importHash !== c.hash) updates.push({ id: t.id, same: true, hash: c.hash });
+    } else if (mine.some(t => t.manual)) {
+      // corretto (o tolto) da D nell'app: resta il suo, il file non lo cambia
+      kept.push({ ym: c.ym, payee: c.payee, mine: net, file: want });
     } else if (!want) {
       // cella svuotata nel file: si tolgono solo i movimenti nati da quella cella
       for (const t of mine) if (t.importHash === c.hash) removes.push({ id: t.id, ym: c.ym, payee: c.payee, was: t.amount });
@@ -306,7 +309,7 @@ export function planMonths(read, state, { year, kind, refDate }) {
   // i nomi come scritti nel file, per ogni categoria (anche quelle che ci sono già)
   const names = Object.fromEntries(read.lines.map(l => [catKey(niceName(l.group), niceName(l.sub || l.group)), { group: niceName(l.group), name: niceName(l.sub || l.group) }]));
   const changed = updates.filter(u => !u.same);
-  return { txs, updates, removes, changed, newCats: [...newCats.values()], keys, names, dups, future, total: txs.reduce((a, t) => a + (t.kind === kind ? t.amount : -t.amount), 0) };
+  return { txs, updates, removes, changed, kept, newCats: [...newCats.values()], keys, names, dups, future, total: txs.reduce((a, t) => a + (t.kind === kind ? t.amount : -t.amount), 0) };
 }
 
 /** TFR e simili: conta solo il netto. Lordo = "lordo" nel nome, o la stessa voce senza "netto"
@@ -450,16 +453,20 @@ export function planNetWorth(read, state, { includeOdd = false, holdings = state
     const future = a.values.filter(v => refDate && v.date > refDate).length;
     // già nell'app: il punto fermo del conto o il valore di fine mese del titolo (in centesimi)
     const liab = existing ? isLiab(existing.type) : false;
+    const valOf = v => (existing ? state.valuations.filter(y => y.account === existing.id && y.date === v.date).sort((p, q) => (q.manual ? 1 : 0) - (p.manual ? 1 : 0))[0] : null);
     const nowOf = v => {
-      if (existing) { const z = state.valuations.find(y => y.account === existing.id && y.date === v.date); return z ? (liab ? Math.abs(z.value) : z.value) : null; }
+      if (existing) { const z = valOf(v); return z ? (liab ? Math.abs(z.value) : z.value) : null; }
       if (holding?.id) return state.snapshots?.[v.date.slice(0, 7)]?.nwHd?.[holding.id] ?? null;
       return null;
     };
+    // scritto da D nell'app (cella, "Aggiorna i valori"): il file non lo cambia
+    const manualOf = v => (existing ? !!valOf(v)?.manual : holding?.id ? !!state.snapshots?.[v.date.slice(0, 7)]?.nwMan?.[holding.id] : false);
     const usable = a.values.filter(v => (includeOdd || !v.odd) && !(refDate && v.date > refDate));
     const same = v => { const x = nowOf(v); return x != null && x === Math.round((liab ? Math.abs(v.value) : v.value) * 100); };
     const known = usable.filter(same).length;
     // un valore corretto nel file dopo l'ultimo import si aggiorna
-    const changed = usable.filter(v => nowOf(v) != null && !same(v)).map(v => ({ ...v, was: nowOf(v) / 100 }));
+    const changed = usable.filter(v => nowOf(v) != null && !same(v) && !manualOf(v)).map(v => ({ ...v, was: nowOf(v) / 100 }));
+    const kept = usable.filter(v => nowOf(v) != null && !same(v) && manualOf(v)).map(v => ({ ...v, mine: nowOf(v) / 100 }));
     const values = usable.filter(v => nowOf(v) == null);
     const gross = isGross(a, read.accounts);
     const zero = !usable.some(v => v.value);
@@ -468,7 +475,7 @@ export function planNetWorth(read, state, { includeOdd = false, holdings = state
     const past = read.dates.filter(dt => !refDate || dt <= refDate);
     const firstAt = past.findIndex(dt => a.values.some(v => v.date === dt));
     const sparse = firstAt >= 0 && past.slice(firstAt).some(dt => !a.values.some(v => v.date === dt));
-    return { ...a, name, institution, cls, sparse, key: String(a.row), holding, existing, type, currency, odd, future, known, changed, values, reason, gross, cash, on: !reason && (values.length > 0 || changed.length > 0) };
+    return { ...a, name, institution, cls, sparse, key: String(a.row), holding, existing, type, currency, odd, future, known, changed, kept, values, reason, gross, cash, on: !reason && (values.length > 0 || changed.length > 0) };
   });
   return { rows };
 }

@@ -48,6 +48,7 @@ export function saveCheckIn(date, entries, note = 'Aggiornamento valori') {
         const snap = st.snapshots[m] || (st.snapshots[m] = { byAcc: {}, byHd: {}, nwHd: {}, at: 0 });
         snap.nwHd = snap.nwHd || {};
         snap.nwHd[e.holding] = e.value;
+        snap.nwMan = { ...(snap.nwMan || {}), [e.holding]: 1 };     // scritto da D: l'import non lo cambia
         continue;
       }
       if (e.account && e.value != null && !e.snapshot) {
@@ -59,7 +60,7 @@ export function saveCheckIn(date, entries, note = 'Aggiornamento valori') {
         snap.byAcc[e.account] = e.snapshot;
         snap.at = Date.now();
       } else {
-        st.valuations.push({ id: uid('v-'), account: e.account, date, value: e.value, created: stamp(), kind: 'adjust', note });
+        st.valuations.push({ id: uid('v-'), account: e.account, date, value: e.value, created: stamp(), kind: 'adjust', note, manual: true });
       }
     }
   });
@@ -75,6 +76,7 @@ export function setNwCell({ account = null, holding = null }, date, value, pins 
       const snap = st.snapshots[m] || (st.snapshots[m] = { byAcc: {}, byHd: {}, nwHd: {}, at: 0 });
       snap.nwHd = snap.nwHd || {};
       if (value == null) delete snap.nwHd[holding]; else snap.nwHd[holding] = value;
+      snap.nwMan = { ...(snap.nwMan || {}), [holding]: 1 };
       return;
     }
     const now = stamp();
@@ -83,7 +85,7 @@ export function setNwCell({ account = null, holding = null }, date, value, pins 
       st.valuations.push({ id: uid('v-'), account, date: p.date, value: p.value, created: now, kind: 'adjust', note: 'Fissato (è cambiata una cella prima)' });
     }
     st.valuations = st.valuations.filter(v => !(v.account === account && v.date === date && v.kind === 'adjust'));
-    if (value != null) st.valuations.push({ id: uid('v-'), account, date, value, created: now, kind: 'adjust', note: 'Scritto nella tabella del Net Worth' });
+    if (value != null) st.valuations.push({ id: uid('v-'), account, date, value, created: now, kind: 'adjust', note: 'Scritto nella tabella del Net Worth', manual: true });
   }, { undo: 'Valore cambiato' });
 }
 
@@ -119,7 +121,7 @@ export function saveTx(t) {
       payee: t.payee || '', note: t.note || '', tags: t.tags || [], flagged: !!t.flagged,
     };
     const ex = id && find(st.transactions, id);
-    if (ex) Object.assign(ex, clean, { updated: now });
+    if (ex) Object.assign(ex, clean, { updated: now }, ex.importHash ? { manual: true } : {});     // corretto da D: l'import non lo cambia
     else {
       id = uid('t-');
       st.transactions.push({ id, ...clean, recurring: t.recurring || null, created: now, updated: now, importHash: t.importHash || '' });
@@ -134,7 +136,13 @@ export function saveTx(t) {
 
 export function deleteTx(ids) {
   const set = new Set([].concat(ids));
-  commit(st => { st.transactions = st.transactions.filter(t => !set.has(t.id)); }, { undo: set.size > 1 ? `${set.size} movimenti eliminati` : 'Movimento eliminato' });
+  commit(st => {
+    // un movimento nato dal file non sparisce del tutto: resta a 0, nascosto, segnato come tolto da D,
+    // così reimportando lo stesso file non ritorna
+    const now = stamp();
+    for (const t of st.transactions) if (set.has(t.id) && t.importHash && t.kind !== 'transfer') Object.assign(t, { amount: 0, manual: true, updated: now });
+    st.transactions = st.transactions.filter(t => !set.has(t.id) || (t.importHash && t.kind !== 'transfer'));
+  }, { undo: set.size > 1 ? `${set.size} movimenti eliminati` : 'Movimento eliminato' });
 }
 
 export function bulkUpdateTx(ids, patch) {
@@ -431,12 +439,23 @@ export function setFlowCell({ txId = null, kind, category = null, payee = '', da
     if (txId) {
       const t = find(st.transactions, txId);
       if (!t) return;
-      if (!cents) { st.transactions = st.transactions.filter(x => x.id !== txId); return; }
-      t.amount = Math.abs(cents); t.updated = now;
+      // nato dal file: resta (a 0 se svuotato) e segnato come corretto da D, così il prossimo import non lo rimette
+      if (!cents && !t.importHash) { st.transactions = st.transactions.filter(x => x.id !== txId); return; }
+      t.amount = Math.abs(cents || 0); t.updated = now; t.manual = true;
       return;
     }
-    if (!cents || !account) return;
-    st.transactions.push({ id: uid('t-'), date, kind, amount: Math.abs(cents), account, toAccount: null, amountTo: null, category, payee: payee || '', note: '', tags: [], recurring: null, created: now, updated: now, importHash: '', flagged: false });
+    if (!cents) return;
+    // senza un conto già usato per questa sottocategoria: il conto apposta "Entrate e uscite dal file",
+    // fuori dal patrimonio (come per l'import), così scrivere un'entrata non cambia i saldi del Net Worth
+    let acc = account && find(st.accounts, account) ? account : null;
+    if (!acc) {
+      acc = st.accounts.find(a => !a.archived && !a.inNetWorth && a.name === 'Entrate e uscite dal file')?.id || null;
+      if (!acc) {
+        acc = uid('a-');
+        st.accounts.push({ id: acc, name: 'Entrate e uscite dal file', type: 'checking', institution: '', currency: st.settings.currency, emoji: '📊', color: '', archived: false, inNetWorth: false, notes: 'Raccoglie le entrate e le uscite scritte mese per mese. È fuori dal patrimonio, così i saldi dei conti non cambiano.', created: stamp(), order: st.accounts.length, plan: null });
+      }
+    }
+    st.transactions.push({ id: uid('t-'), date, kind, amount: Math.abs(cents), account: acc, toAccount: null, amountTo: null, category, payee: payee || '', note: '', tags: [], recurring: null, created: now, updated: now, importHash: '', flagged: false, manual: true });
   }, { undo: 'Importo cambiato' });
 }
 

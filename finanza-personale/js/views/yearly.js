@@ -139,12 +139,11 @@ export default {
       const m = +t.date.slice(5, 7) - 1, ck = t.category || '';
       push(`${ck}|${m}`, t); push(`${ck}|${m}|${((t.payee || '').trim() || 'Senza descrizione').toLowerCase()}`, t);
     }
-    // il conto per un movimento nuovo: quello usato di solito per quella sottocategoria, se no quello dei fogli importati
+    // il conto per un movimento nuovo: quello usato di solito per quella sottocategoria; se no il conto apposta
+    // "Entrate e uscite dal file" (fuori dal patrimonio: scrivere un'entrata non cambia il Net Worth)
     const accFor = catId => {
-      const last = st.transactions.filter(t => t.category === catId && t.kind === V.kind).sort((a, b) => (a.date < b.date ? 1 : -1))[0];
-      if (last) return last.account;
-      const any = st.transactions.filter(t => t.kind === V.kind).sort((a, b) => (a.date < b.date ? 1 : -1))[0];
-      return any?.account || st.accounts.find(a => !a.archived && a.type === 'checking')?.id || st.accounts[0]?.id || null;
+      const last = st.transactions.filter(t => t.category && t.category === catId && t.kind === V.kind).sort((a, b) => (a.date < b.date ? 1 : -1))[0];
+      return last?.account || null;
     };
     const monthDate = m => { const ym = `${V.year}-${String(m + 1).padStart(2, '0')}`; const end = new Date(V.year, m + 1, 0).getDate(); const dt = `${ym}-${String(end).padStart(2, '0')}`; return dt > today() ? today() : dt; };
     // una cella si scrive se dietro c'è al massimo un movimento, nella valuta principale e del verso giusto;
@@ -174,7 +173,6 @@ export default {
         if (c != null && c < 0) { toast('Scrivi l\'importo senza il meno', { kind: 'err' }); return false; }
         if ((c || 0) === cur) return false;
         const account = e.t ? e.t.account : accFor(e.cat?.id || null);
-        if (!e.t && !account) { toast('Aggiungi prima un conto', { kind: 'err' }); return false; }
         setFlowCell({ txId: e.t?.id || null, kind: V.kind, category: e.cat?.id || null, payee: e.payee ?? e.cat?.name ?? '', date: monthDate(m), account }, c || 0);
         undoToast(`${what}, ${monthName(m + 1)}: ${c ? moneyText(c) : 'tolto'}`);
         return true;

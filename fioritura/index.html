@@ -213,7 +213,11 @@
   .herb{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px 6px;margin-top:6px}
   .hb{display:flex;flex-direction:column;align-items:center;gap:5px;padding:6px 2px;border-radius:16px;font-size:11.5px;color:var(--muted);text-align:center;line-height:1.2}
   .hb .rf{width:48px;height:48px}
-  .hb:not(.got) .rf{filter:grayscale(1) brightness(.72);opacity:.28}
+  .hb .bud{width:48px;height:48px;display:block}
+  .hb:not(.got) span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .bud-s{fill:none;stroke:var(--line-2);stroke-width:3;stroke-linecap:round}
+  .bud-l{fill:var(--c4s)} .bud-b{fill:var(--track)} .bud-k{fill:var(--c4);opacity:.45}
+  .hb .laurel{width:52px;height:52px}
   .hb.got span{color:var(--ink-2);font-weight:500}
   .hb:active{transform:scale(.95)}
   .tierpill.t1{--pc:var(--c4);--ps:var(--c4s)} .tierpill.t2{--pc:var(--c1);--ps:var(--c1s)} .tierpill.t3{--pc:var(--c2);--ps:var(--c2s)} .tierpill.t4{--pc:var(--c3);--ps:var(--c3s)}
@@ -243,7 +247,6 @@
   .librow:first-child{border-top:0}
   .librow .vote{width:48px;height:48px;border-radius:50%;flex:none;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent-text);
     font-family:var(--serif);font-size:21px;font-variation-settings:"SOFT" 100;position:relative}
-  .librow .vote small{position:absolute;right:-2px;bottom:-2px;font:700 10px var(--sans);background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:2px 5px}
   .librow .tx{flex:1;min-width:0}
   .librow .tx b{display:block;font-weight:500;font-size:15px}
   .librow .tx span{display:block;font-size:12.5px;color:var(--muted)}
@@ -256,7 +259,46 @@
   .tro-card > * + *{margin-top:12px}
   .tro-flower{width:min(52vw,210px);aspect-ratio:1;margin:8px auto 0}
   .tro-flower.small{width:120px;margin:0 auto}
-  .tro-flower.locked .rf{filter:grayscale(1) brightness(.72);opacity:.3}
+  .tro-flower .bud{width:100%;height:100%;display:block}
+  .laurel{display:block;width:100%;height:100%;overflow:visible}
+  .lw-st{fill:none;stroke:#6b8f58;stroke-width:2.6;stroke-linecap:round}
+  .lw-l.a{fill:#7da36a} .lw-l.b{fill:#a3c58c}
+  .lw-r{fill:var(--accent)} .lw-k{fill:var(--accent-text)}
+  .laurel.gold .lw-st{stroke:#b98d2e} .laurel.gold .lw-l.a{fill:#d6a640} .laurel.gold .lw-l.b{fill:#efcd73}
+  .tro-ov .laurel .lw-l,.libcover.done .laurel .lw-l{transform-box:fill-box;transform-origin:0 50%;animation:leafIn .5s calc(var(--i) * 45ms) cubic-bezier(.2,1.5,.4,1) both}
+  @keyframes leafIn{from{opacity:0;scale:.2}}
+  .tro-ov.grand{background:radial-gradient(120% 80% at 50% 20%,color-mix(in srgb,#efcd73 30%,var(--bg)) 0%,var(--bg) 62%)}
+  .wreath{position:relative;width:min(62vw,240px);aspect-ratio:1;margin:6px auto 0}
+  .wreath::before{content:"";position:absolute;inset:14%;border-radius:50%;background:radial-gradient(circle,rgba(239,205,115,.45),transparent 70%);animation:glow 3s ease-in-out infinite alternate}
+  @keyframes glow{from{opacity:.5;transform:scale(.92)}to{opacity:1;transform:scale(1.06)}}
+  .wreath .laurel{position:relative}
+  .wr-in{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-bottom:6%}
+  .wr-in b{font-size:clamp(46px,14vw,62px);line-height:1;color:var(--ink)}
+  .wr-in span{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+  .tro-ov.grand .stats{justify-content:center}
+  /* il libretto */
+  .libcover{position:relative;overflow:hidden;border-radius:var(--r);padding:26px 22px 22px;margin-bottom:14px;text-align:center;
+    background:linear-gradient(160deg,color-mix(in srgb,var(--c4s) 75%,var(--card-solid)) 0%,var(--card-solid) 55%,color-mix(in srgb,var(--accent-soft) 70%,var(--card-solid)) 100%);
+    border:1px solid var(--card-border);box-shadow:var(--shadow)}
+  .libcover.done{background:linear-gradient(160deg,color-mix(in srgb,#efcd73 30%,var(--card-solid)) 0%,var(--card-solid) 55%,color-mix(in srgb,#efcd73 18%,var(--card-solid)) 100%)}
+  .libcover > * + *{margin-top:8px}
+  .lc-art{width:92px;height:92px;margin:0 auto 4px}
+  .libcover h2{font-size:clamp(26px,7.4vw,32px)}
+  .lc-line{color:var(--ink-2);font-size:15px;line-height:1.5;max-width:30ch;margin-left:auto;margin-right:auto}
+  .leaves{display:flex;flex-wrap:wrap;justify-content:center;gap:3px;margin-top:14px}
+  .lf{width:20px;height:20px;display:block}
+  .lf svg{width:100%;height:100%;display:block}
+  .lf path{fill:none;stroke:var(--line-2);stroke-width:1.6;stroke-linejoin:round}
+  .lf.on path{fill:#8db57a;stroke:#6b8f58} .lf.on path.v{fill:none;stroke:rgba(255,255,255,.6)}
+  .libcover.done .lf.on path{fill:#e2b955;stroke:#b98d2e}
+  .lc-meta{font-size:13px;color:var(--muted);margin-top:10px}
+  .lc-ask{display:block;width:100%;margin-top:14px;padding:14px 16px;border-radius:18px;background:var(--card-solid);border:1px dashed var(--line-2);text-align:center}
+  .lc-ask b{display:block;font-weight:600;font-size:15px;color:var(--ink)}
+  .lc-ask span{display:block;font-size:13px;color:var(--muted);margin-top:3px}
+  .libpages .librow .tx b{font-family:var(--serif);font-weight:450;font-size:16.5px}
+  .librow .vote.lode{background:linear-gradient(145deg,#f6dd9a,#e2b955);color:#5a4210;box-shadow:0 0 0 2px var(--card-solid),0 0 0 3.5px #e2b955}
+  .librow .vote.ok{background:var(--c4s);color:var(--c4)}
+  .librow .vote.ok svg{width:20px;height:20px}
   .tro-ov .tro-flower .rf-p{transform-origin:50% 50%;animation:troBloom 1.4s cubic-bezier(.2,1.4,.4,1) both}
   .tro-ov .tro-flower .rf-c{transform-origin:50% 50%;animation:troBloom .9s .45s cubic-bezier(.2,1.6,.4,1) both}
   .tro-ov .tro-flower{animation:troFloat 5s 1.4s ease-in-out infinite alternate}
@@ -1103,7 +1145,7 @@
       hidden: {},    // schede chiuse e avvisi già dati (es. week:2026-11-02, esito:<esame>, rec:<chiave>:<giorno>)
       gone: [],      // argomenti eliminati (per non farli tornare da un altro dispositivo)
       timer: { mode: 'study', len: 25, endAt: 0, remain: 0, seg: 0 },
-      settings: { name: '', theme: 'auto', pal: 'cipria', sounds: true, wake: true, study: 25, brk: 5, volume: 0.5, sysNotif: false, studyRemind: false, studyTime: '18:00', tz: '' },
+      settings: { name: '', theme: 'auto', pal: 'cipria', sounds: true, wake: true, study: 25, brk: 5, volume: 0.5, sysNotif: false, studyRemind: false, studyTime: '18:00', tz: '', libTotal: 0 },
       settingsAt: 0,
       welcomed: false,
       open: {}
@@ -1897,87 +1939,50 @@
 
   /* ================= PROGRESSI: TRAGUARDI, ERBARIO, RECORD, SERIE, SETTIMANA ================= */
   // D: "quando si raggiunge un obiettivo bisogna dare qualcosa di motivazionale per continuare ad impegnarsi a fare
-  // sempre meglio e sempre di più", "mettine di tutte le difficoltà, mettine di più".
+  // sempre meglio e sempre di più", "mettine di tutte le difficoltà"; poi: "le mancano solo 2 esami, quindi metti dei
+  // traguardi fattibili". Quindi 32 traguardi, tutti raggiungibili con i due esami che restano (Diritto processuale
+  // civile: 48 giornate, 720 pagine). Gli id non si cambiano: sono salvati. I fiori non conquistati non si vedono.
   // Ogni traguardo ha un fiore raro (disegnato qui sotto), un messaggio e una citazione celebre. Quelli conquistati
   // stanno in S.trophies (id -> data), si sincronizzano; la prima volta quelli già raggiunti si sbloccano in silenzio.
   var TIERS = ['', 'Facile', 'Medio', 'Difficile', 'Leggendario'], TIERS_PL = ['', 'Facili', 'Medi', 'Difficili', 'Leggendari'];
   // fiore: [nome, petali, forma, colore (o elenco di colori), colore interno, centro, strati]
   var TROPHIES = [
-    // primi passi
-    ['primo-esame', 1, 'Si comincia', 'Aggiungi il tuo primo esame', 'exams', 1, ['Primula', 5, 'heart', '#f2d36b', '#f7e7a6', '#e59a3a', 2], 'Il primo esame è nel tuo calendario. Ora ha una forma, delle date, un piano: il resto lo farai un giorno alla volta.', ['L’unica gioia al mondo è cominciare.', 'Cesare Pavese']],
+    // facili: i primi passi
     ['primo-giorno', 1, 'Il primo seme', 'Completa la tua prima giornata', 'days', 1, ['Margherita', 12, 'thin', '#fffaf2', '', '#f2c230', 1], 'La prima giornata è fatta. Ogni giardino comincia da un seme solo: il tuo è appena stato piantato.', ['Un viaggio di mille miglia comincia con un singolo passo.', 'Lao Tzu']],
-    ['prima-sessione', 1, 'Prima sessione', 'Completa una sessione di concentrazione', 'sessions', 1, ['Viola', 5, 'round', '#8f7cc9', '', '#f4d35e', 1], 'Hai lasciato fuori il mondo e sei rimasta sul libro fino alla fine. La concentrazione si costruisce così: una sessione alla volta.', ['Chi è ovunque non è da nessuna parte.', 'Seneca']],
-    ['primo-dubbio', 1, 'Le domande giuste', 'Segna il tuo primo argomento critico', 'topics', 1, ['Fiordaliso', 8, 'point', '#6f9fd8', '', '#41608f', 1], 'Sapere che cosa non è ancora chiaro è già metà del lavoro: ora quel dubbio ha un posto dove aspettarti.', ['Quando sai una cosa, riconosci di saperla; quando non la sai, riconosci di non saperla: questo è sapere.', 'Confucio']],
-    ['primo-chiarito', 1, 'Ora è chiaro', 'Chiarisci un argomento critico', 'solved', 1, ['Mughetto', 6, 'wide', '#fbf8ee', '', '#bcd9a4', 1], 'Un dubbio in meno, una certezza in più. Quella cosa adesso è tua.', ['Nella vita non c’è nulla da temere, solo da capire.', 'Marie Curie']],
-    ['prima-nota', 1, 'Pensieri in ordine', 'Scrivi la nota di una giornata', 'notes', 1, ['Calendula', 14, 'thin', '#f2a33a', '#f6c75c', '#b35d1e', 2], 'Scrivere quello che hai capito lo fissa nella memoria. Le tue note sono un piccolo tesoro.', ['Leggere rende l’uomo completo, conversare lo rende pronto, scrivere lo rende preciso.', 'Francis Bacon']],
-    ['primo-impegno', 1, 'Agenda in ordine', 'Segna un impegno nel calendario', 'events', 1, ['Anemone', 6, 'wide', '#e06c8a', '', '#3a2e4a', 1], 'Ora i tuoi impegni hanno un posto: la testa può pensare solo allo studio.', ['Nessun vento è favorevole per chi non sa dove andare.', 'Seneca']],
-    ['primo-respiro', 1, 'Un respiro', 'Fai il minuto di respiro guidato', 'breath', 1, ['Bucaneve', 3, 'point', '#f6f8f3', '#d4e9c8', '#9fc58a', 2], 'Fermarsi un minuto non è perdere tempo: è ritrovare la calma per andare avanti meglio.', ['Conserva una mente serena nelle difficoltà.', 'Orazio']],
-    ['pagine-una', 1, 'Pagina per pagina', 'Segna una per una tutte le pagine di una giornata', 'allPagesOnce', true, ['Nontiscordardimé', 5, 'round', '#8fb8e8', '', '#f4d35e', 1], 'Una pagina, poi un’altra, poi un’altra ancora: così si arriva in fondo, senza fretta.', ['Nessun giorno senza una linea.', 'Apelle, secondo Plinio il Vecchio']],
-    // giornate completate
     ['giorni-3', 1, 'Il germoglio', 'Completa 3 giornate', 'days', 3, ['Ranuncolo', 10, 'round', '#f19a7a', '#f6c0a8', '#7b9e4e', 2], 'Tre giornate fatte: il germoglio è spuntato. La costanza comincia proprio così.', ['La goccia scava la pietra.', 'Ovidio']],
+    ['pagine-50', 1, 'Le prime 50 pagine', 'Completa 50 pagine', 'pages', 50, ['Zinnia', 16, 'thin', '#ef7f5a', '#f5a77a', '#7a3b2a', 2], 'Cinquanta pagine sono già un capitolo della tua storia.', ['Leggere è andare incontro a qualcosa che sta per essere e ancora nessuno sa che cosa sarà.', 'Italo Calvino']],
+    ['prima-sessione', 1, 'Prima sessione', 'Completa una sessione di concentrazione', 'sessions', 1, ['Viola', 5, 'round', '#8f7cc9', '', '#f4d35e', 1], 'Hai lasciato fuori il mondo e sei rimasta sul libro fino alla fine. La concentrazione si costruisce così: una sessione alla volta.', ['Chi è ovunque non è da nessuna parte.', 'Seneca']],
+    ['focus-1', 1, 'La prima ora', 'Arriva a 1 ora di concentrazione', 'focusH', 1, ['Papavero', 4, 'wide', '#e8574f', '', '#2e2a33', 1], 'La prima ora di concentrazione è nel tuo giardino. Le prossime arriveranno più facilmente.', ['Il genio è per l’1% ispirazione e per il 99% traspirazione.', 'Thomas Edison']],
+    ['primo-dubbio', 1, 'Le domande giuste', 'Segna il tuo primo argomento critico', 'topics', 1, ['Fiordaliso', 8, 'point', '#6f9fd8', '', '#41608f', 1], 'Sapere che cosa non è ancora chiaro è già metà del lavoro: ora quel dubbio ha un posto dove aspettarti.', ['Quando sai una cosa, riconosci di saperla; quando non la sai, riconosci di non saperla: questo è sapere.', 'Confucio']],
+    ['prima-nota', 1, 'Pensieri in ordine', 'Scrivi la nota di una giornata', 'notes', 1, ['Calendula', 14, 'thin', '#f2a33a', '#f6c75c', '#b35d1e', 2], 'Scrivere quello che hai capito lo fissa nella memoria. Le tue note sono un piccolo tesoro.', ['Leggere rende l’uomo completo, conversare lo rende pronto, scrivere lo rende preciso.', 'Francis Bacon']],
+    ['primo-respiro', 1, 'Un respiro', 'Fai il minuto di respiro guidato', 'breath', 1, ['Bucaneve', 3, 'point', '#f6f8f3', '#d4e9c8', '#9fc58a', 2], 'Fermarsi un minuto non è perdere tempo: è ritrovare la calma per andare avanti meglio.', ['Conserva una mente serena nelle difficoltà.', 'Orazio']],
+    ['serie-3', 1, 'Tre giorni di fila', 'Studia 3 giorni di fila', 'bestStreak', 3, ['Giacinto', 6, 'point', '#9a8fe0', '', '#d6cff7', 1], 'Tre giorni di fila: il ritmo c’è. Domani tocca alla quarta perla della collana.', ['Affrettati lentamente.', 'Augusto']],
+    ['recupero', 1, 'Rimessa in pari', 'Completa una giornata rimasta indietro', 'recoveries', 1, ['Trifoglio', 4, 'heart', '#8fbf7a', '', '#6a9e58', 1], 'Hai recuperato una giornata rimasta indietro. Non conta inciampare: conta rialzarsi, e tu l’hai fatto.', ['Se non puoi volare, corri; se non puoi correre, cammina; se non puoi camminare, striscia. Ma qualunque cosa tu faccia, continua ad andare avanti.', 'Martin Luther King']],
+    ['record', 1, 'Nuovo record', 'Batti un tuo record personale', 'records', 1, ['Begonia', 4, 'round', '#f08a8a', '', '#f6d36b', 1], 'Hai superato te stessa. Il record più bello è quello battuto contro chi eri ieri.', ['Diventa ciò che sei.', 'Friedrich Nietzsche']],
+    // medi: qualche settimana di lavoro
     ['giorni-7', 2, 'Una settimana di lavoro', 'Completa 7 giornate', 'days', 7, ['Tulipano', 3, 'wide', '#e8667a', '#f39aa8', '#5a3a2e', 2], 'Sette giornate completate: una settimana intera di studio è alle tue spalle. Dovresti essere fiera di te.', ['Il successo è la somma di piccoli sforzi, ripetuti giorno dopo giorno.', 'Robert Collier']],
     ['giorni-15', 2, 'Quindici giornate', 'Completa 15 giornate', 'days', 15, ['Fresia', 6, 'round', '#f3c4d6', '#f8e0ea', '#f4d35e', 2], 'Quindici giornate: lo studio è diventato un’abitudine, e le abitudini sono la tua forza.', ['L’abitudine è quasi una seconda natura.', 'Cicerone']],
-    ['giorni-30', 3, 'Un mese di impegno', 'Completa 30 giornate', 'days', 30, ['Iris', 6, 'point', '#7a6bc4', '#f2d36b', '#4b3f8f', 2], 'Trenta giornate completate. Un mese di lavoro vero: guarda quanta strada hai fatto.', ['Il lavoro tenace vince ogni cosa.', 'Virgilio']],
-    ['giorni-50', 3, 'Cinquanta', 'Completa 50 giornate', 'days', 50, ['Peonia', 12, 'wide', '#f2a6b8', '#f7c9d4', '#f4d35e', 2], 'Cinquanta giornate: questo non è più un tentativo, è un percorso. Ed è tutto merito tuo.', ['Nulla di grande nasce all’improvviso.', 'Epitteto']],
-    ['giorni-100', 4, 'Cento giornate', 'Completa 100 giornate', 'days', 100, ['Loto', 10, 'point', '#f5b8c8', '#fbe1e8', '#e7c45a', 2], 'Cento giornate di studio. Pochi arrivano fin qui: tu ci sei arrivata, una giornata alla volta.', ['Le grandi opere non sono compiute dalla forza, ma dalla perseveranza.', 'Samuel Johnson']],
-    // pagine
-    ['pagine-50', 1, 'Le prime 50 pagine', 'Completa 50 pagine', 'pages', 50, ['Zinnia', 16, 'thin', '#ef7f5a', '#f5a77a', '#7a3b2a', 2], 'Cinquanta pagine sono già un capitolo della tua storia.', ['Leggere è andare incontro a qualcosa che sta per essere e ancora nessuno sa che cosa sarà.', 'Italo Calvino']],
-    ['pagine-100', 2, 'Cento pagine', 'Completa 100 pagine', 'pages', 100, ['Dalia', 16, 'point', '#c95b8a', '#e48fb2', '#f4d35e', 2], 'Cento pagine studiate: un libro intero comincia a prendere forma nella tua testa.', ['Chi non legge, a settant’anni avrà vissuto una sola vita: la propria. Chi legge avrà vissuto cinquemila anni.', 'Umberto Eco']],
     ['pagine-250', 2, 'Un bel mattone', 'Completa 250 pagine', 'pages', 250, ['Ortensia', 4, 'round', '#9fb6e6', '#c8b6e6', '#f4f1fb', 2], 'Duecentocinquanta pagine: più di un manuale intero. Il tuo impegno pesa, nel senso migliore.', ['Ciò che fu duro da sopportare è dolce da ricordare.', 'Seneca']],
-    ['pagine-500', 3, 'Mezzo migliaio', 'Completa 500 pagine', 'pages', 500, ['Gardenia', 6, 'wide', '#fbf6ec', '#f3ead8', '#e9d9a6', 2], 'Cinquecento pagine. Ogni ripetizione le ha rese più tue: ormai molte le sapresti raccontare.', ['Chi ripassa ciò che sa e vi scopre il nuovo può diventare un maestro.', 'Confucio']],
-    ['pagine-1000', 4, 'Mille pagine', 'Completa 1000 pagine', 'pages', 1000, ['Magnolia', 6, 'wide', '#f6d6e0', '#fbeef2', '#d9a05b', 2], 'Mille pagine. È un numero che fa impressione: e l’hai raggiunto tu.', ['L’albero che si abbraccia a stento nasce da un germoglio sottile.', 'Lao Tzu']],
-    ['pagine-2000', 4, 'Biblioteca vivente', 'Completa 2000 pagine', 'pages', 2000, ['Orchidea', 5, 'heart', '#c88fd6', '#e9c4ef', '#f2d36b', 2], 'Duemila pagine studiate: sei una piccola biblioteca che cammina.', ['Ho sempre immaginato che il Paradiso fosse una specie di biblioteca.', 'Jorge Luis Borges']],
-    // serie di giorni (con un jolly a settimana)
-    ['serie-3', 1, 'Tre giorni di fila', 'Studia 3 giorni di fila', 'bestStreak', 3, ['Giacinto', 6, 'point', '#9a8fe0', '', '#d6cff7', 1], 'Tre giorni di fila: il ritmo c’è. Domani tocca alla quarta perla della collana.', ['Affrettati lentamente.', 'Augusto']],
     ['serie-7', 2, 'Una settimana senza fermarti', 'Studia 7 giorni di fila (un giorno saltato a settimana non conta)', 'bestStreak', 7, ['Lavanda', 8, 'thin', '#a08fd0', '#c4b8e8', '#7a6bb4', 2], 'Sette giorni di fila: una settimana intera di costanza. È così che si vincono gli esami.', ['Piano e costante vince la corsa.', 'Esopo']],
-    ['serie-14', 3, 'Due settimane di fila', 'Studia 14 giorni di fila', 'bestStreak', 14, ['Glicine', 9, 'round', '#b4a6e4', '#d6ccf2', '#8f7cc9', 2], 'Quattordici giorni di fila: la tua determinazione è più forte di qualsiasi stanchezza.', ['I due guerrieri più potenti sono la pazienza e il tempo.', 'Lev Tolstoj']],
-    ['serie-30', 4, 'Un mese senza fermarti', 'Studia 30 giorni di fila', 'bestStreak', 30, ['Stella alpina', 8, 'point', '#f4f4ef', '#e2e6d8', '#d9c86a', 2], 'Trenta giorni di fila. È un traguardo rarissimo: la costanza è diventata il tuo talento.', ['Volli, e volli sempre, e fortissimamente volli.', 'Vittorio Alfieri']],
-    // concentrazione
-    ['focus-1', 1, 'La prima ora', 'Arriva a 1 ora di concentrazione', 'focusH', 1, ['Papavero', 4, 'wide', '#e8574f', '', '#2e2a33', 1], 'La prima ora di concentrazione è nel tuo giardino. Le prossime arriveranno più facilmente.', ['Il genio è per l’1% ispirazione e per il 99% traspirazione.', 'Thomas Edison']],
-    ['focus-5', 2, 'Cinque ore', 'Arriva a 5 ore di concentrazione', 'focusH', 5, ['Camelia', 10, 'round', '#e57a92', '#f2a9ba', '#f4d35e', 2], 'Cinque ore di studio concentrato: tempo vero, speso bene.', ['La vita, se sai usarla, è lunga.', 'Seneca']],
     ['focus-10', 2, 'Dieci ore', 'Arriva a 10 ore di concentrazione', 'focusH', 10, ['Gelsomino', 5, 'point', '#fbf8f0', '', '#f2d36b', 1], 'Dieci ore di concentrazione. La tua mente si sta allenando come quella di un’atleta.', ['La memoria diminuisce, se non la eserciti.', 'Cicerone']],
-    ['focus-25', 3, 'Venticinque ore', 'Arriva a 25 ore di concentrazione', 'focusH', 25, ['Ninfea', 12, 'point', '#f7c6d4', '#fbe7ec', '#f2c94c', 2], 'Venticinque ore di studio concentrato: un impegno che si vede, e che all’esame si sentirà.', ['La fortuna favorisce la mente preparata.', 'Louis Pasteur']],
-    ['focus-50', 3, 'Cinquanta ore', 'Arriva a 50 ore di concentrazione', 'focusH', 50, ['Fiore di ciliegio', 5, 'heart', '#f8c9d8', '', '#e88aa6', 1], 'Cinquanta ore. C’è chi le passa davanti a uno schermo; tu le hai regalate al tuo futuro.', ['Non è che abbiamo poco tempo: è che ne perdiamo molto.', 'Seneca']],
-    ['focus-100', 4, 'Cento ore', 'Arriva a 100 ore di concentrazione', 'focusH', 100, ['Rosa del deserto', 5, 'round', '#e86a8f', '#fbe0e8', '#f6f0f3', 2], 'Cento ore di concentrazione: un traguardo leggendario. Sei la prova che la costanza batte tutto.', ['Come il ferro s’arrugginisce senza esercizio, così l’ingegno senza esercizio si guasta.', 'Leonardo da Vinci']],
-    ['giorno-2h', 2, 'Giornata piena', 'Fai 2 ore di concentrazione in un giorno', 'focusDayH', 2, ['Narciso', 6, 'point', '#f6e7a0', '#f2b84a', '#e8962e', 2], 'Due ore di concentrazione in un giorno solo: una giornata piena, e piena di cose imparate.', ['Come una giornata bene spesa dà lieto dormire, così una vita bene usata dà lieto morire.', 'Leonardo da Vinci']],
-    ['giorno-4h', 3, 'Maratoneta', 'Fai 4 ore di concentrazione in un giorno', 'focusDayH', 4, ['Girasole', 18, 'thin', '#f2c230', '#f7d65a', '#6b4a2b', 2], 'Quattro ore in un giorno: una vera maratona di studio. Ora però riposa, te lo sei meritato.', ['Odiavo ogni minuto di allenamento, ma mi dicevo: non mollare. Soffri ora e vivi il resto della vita da campione.', 'Muhammad Ali']],
-    ['sessioni-10', 2, 'Dieci sessioni', 'Completa 10 sessioni di concentrazione', 'sessions', 10, ['Fucsia', 4, 'point', '#d9467a', '#8a5bc4', '#f2a6c2', 2], 'Dieci sessioni portate fino in fondo: il timer è diventato un tuo alleato.', ['Inizia da dove sei. Usa quello che hai. Fai quello che puoi.', 'Arthur Ashe']],
-    ['sessioni-50', 3, 'Cinquanta sessioni', 'Completa 50 sessioni di concentrazione', 'sessions', 50, ['Passiflora', 10, 'thin', '#c7b8ea', '#6f5aa6', '#7aa86a', 2], 'Cinquanta sessioni complete. Concentrarsi è una capacità, e tu la stai coltivando ogni giorno.', ['L’attenzione è la forma più rara e più pura della generosità.', 'Simone Weil']],
-    // programma
     ['fase', 2, 'Una fase intera', 'Completa una fase del programma', 'phasesDone', 1, ['Rosa canina', 5, 'heart', '#f4b6c2', '', '#f2d36b', 1], 'Una fase intera è fatta. Un tratto di strada è alle spalle: da qui in poi ogni giro sarà più facile.', ['Forse un giorno ci farà piacere ricordare anche queste cose.', 'Virgilio']],
     ['meta', 2, 'A metà strada', 'Completa metà del programma di un esame', 'half', true, ['Gerbera', 20, 'thin', '#f28a6b', '#f6b39a', '#5a3a2e', 2], 'Metà del programma è fatta. Da qui la strada è in discesa: hai già fatto la parte più lunga.', ['Chi ben comincia è a metà dell’opera.', 'Orazio']],
-    ['tre-quarti', 3, 'Tre quarti', 'Completa tre quarti del programma di un esame', 'threeQ', true, ['Clematide', 6, 'point', '#8a79d0', '', '#f4f1fb', 1], 'Tre quarti del programma alle spalle. Il traguardo si vede già, e tu ci stai arrivando a testa alta.', ['Non c’è una via facile dalla terra alle stelle.', 'Seneca']],
-    ['programma', 4, 'Programma completato', 'Completa tutto il programma di un esame', 'plansDone', 1, ['Rosa damascena', 12, 'round', '#e07a96', '#f2a8bc', '#c85a7a', 2], 'Hai completato tutto il programma. Ogni pagina, ogni ripetizione: è tutto dentro di te. Ora vai e raccontalo.', ['Così si va alle stelle.', 'Virgilio']],
-    ['due-programmi', 4, 'Doppio traguardo', 'Completa il programma di due esami', 'plansDone', 2, ['Orchidea fantasma', 5, 'thin', '#f4f6f2', '#e6eee0', '#cfe0b8', 2], 'Due programmi completati dall’inizio alla fine. Non è fortuna: è il tuo metodo che funziona.', ['Tutte le cose eccellenti sono tanto difficili quanto rare.', 'Baruch Spinoza']],
-    // argomenti critici e note
-    ['dubbi-10', 2, 'Occhio attento', 'Segna 10 argomenti critici', 'topics', 10, ['Erica', 8, 'round', '#d98fbf', '', '#b05a92', 1], 'Dieci argomenti segnati: sai esattamente dove guardare. È così che studia chi vuole capire davvero.', ['Una vita senza ricerca non è degna di essere vissuta.', 'Socrate']],
-    ['chiariti-10', 2, 'Dieci certezze', 'Chiarisci 10 argomenti critici', 'solved', 10, ['Malva', 5, 'heart', '#c58fd0', '', '#f4e9f7', 1], 'Dieci dubbi diventati certezze. Ogni argomento chiarito è un passo verso un esame sereno.', ['È impossibile imparare ciò che si crede di sapere già.', 'Epitteto']],
-    ['tutto-chiaro', 3, 'Tutto chiaro', 'Chiarisci tutti gli argomenti critici di un esame (almeno 5)', 'critAll', true, ['Agapanto', 12, 'thin', '#7f9de0', '', '#4b67b0', 1], 'Tutti gli argomenti critici sono chiariti. Il ripasso finale sarà più leggero del previsto.', ['Felice chi ha potuto conoscere le cause delle cose.', 'Virgilio']],
-    ['note-10', 2, 'Quaderno prezioso', 'Scrivi 10 note delle giornate', 'notes', 10, ['Ciclamino', 5, 'point', '#e66aa0', '', '#a3346a', 1], 'Dieci note scritte: il tuo quaderno sta diventando una mappa di tutto quello che sai.', ['Sapere è potere.', 'Francis Bacon']],
-    // costanza e coraggio
-    ['fatica-3', 2, 'Anche quando è dura', 'Completa 3 giornate segnate come «faticose»', 'tired', 3, ['Cardo', 24, 'thin', '#a07ad0', '#c8acea', '#7a9e6a', 2], 'Tre giornate faticose portate fino in fondo. Il coraggio non è non sentire la fatica: è finire lo stesso.', ['Il coraggio non sempre ruggisce. A volte è la vocina alla fine del giorno che dice: domani ci riprovo.', 'Mary Anne Radmacher']],
-    ['fatica-10', 3, 'Cuore forte', 'Completa 10 giornate segnate come «faticose»', 'tired', 10, ['Protea', 14, 'point', '#f0a0a8', '#f7cfd2', '#f4ece4', 2], 'Dieci giornate difficili, e le hai finite tutte. Questa forza resterà con te ben oltre l’esame.', ['Chi ha un perché per vivere sopporta quasi ogni come.', 'Friedrich Nietzsche']],
-    ['recupero', 1, 'Rimessa in pari', 'Completa una giornata rimasta indietro', 'recoveries', 1, ['Trifoglio', 4, 'heart', '#8fbf7a', '', '#6a9e58', 1], 'Hai recuperato una giornata rimasta indietro. Non conta inciampare: conta rialzarsi, e tu l’hai fatto.', ['Se non puoi volare, corri; se non puoi correre, cammina; se non puoi camminare, striscia. Ma qualunque cosa tu faccia, continua ad andare avanti.', 'Martin Luther King']],
-    ['recuperi-5', 2, 'Mai arrendersi', 'Recupera 5 giornate rimaste indietro', 'recoveries', 5, ['Verbena', 5, 'heart', '#b98be0', '', '#f4f1fb', 1], 'Cinque recuperi: nessuna giornata è andata persa davvero. Questa è tenacia.', ['Sii paziente e tenace: un giorno questo dolore ti sarà utile.', 'Ovidio']],
-    ['mattiniera', 2, 'Mattiniera', 'Completa 5 giornate prima delle 10 del mattino', 'mornings', 5, ['Gloria del mattino', 5, 'wide', '#7fa8e8', '#c8daf6', '#f7f1d8', 2], 'Cinque giornate chiuse prima delle dieci: la mattina ha l’oro in bocca, e tu lo sai bene.', ['Al mattino, quando fai fatica ad alzarti, pensa: mi alzo per fare il lavoro di un essere umano.', 'Marco Aurelio']],
-    ['notte', 2, 'Sotto le stelle', 'Completa 3 giornate dopo le 22', 'nights', 3, ['Bella di notte', 5, 'wide', '#d65c9e', '#f2a0c8', '#f6e0ec', 2], 'Tre giornate chiuse a tarda sera. Che impegno! Ricordati anche di dormire: la memoria si fissa riposando.', ['Ricordati di guardare le stelle e non i tuoi piedi.', 'Stephen Hawking']],
-    ['weekend', 2, 'Weekend da campionessa', 'Completa sia il sabato sia la domenica dello stesso weekend', 'weekendFull', true, ['Petunia', 5, 'wide', '#b05bb8', '#d79ad9', '#f2d36b', 2], 'Sabato e domenica, tutte e due fatte. Un weekend da vera campionessa: lunedì partirai avvantaggiata.', ['Fai di ogni giorno il tuo capolavoro.', 'John Wooden']],
-    ['settimana-perfetta', 3, 'Settimana perfetta', 'Completa tutte le giornate del programma di una settimana (almeno 5)', 'perfectWeek', true, ['Plumeria', 5, 'round', '#fbf3e4', '#f6d36b', '#f2b84a', 2], 'Una settimana perfetta: tutte le giornate fatte, nessuna lasciata indietro. Rara come questo fiore.', ['Non basta sapere, bisogna anche applicare; non basta volere, bisogna anche fare.', 'Johann Wolfgang von Goethe']],
     ['anticipo', 2, 'In anticipo', 'Completa una giornata prima della sua data', 'early', 1, ['Lillà', 4, 'round', '#c3a6e2', '', '#efe6fa', 1], 'Hai fatto una giornata in anticipo: domani avrai un po’ di respiro in più. Furba e brava.', ['La diligenza è madre della buona fortuna.', 'Benjamin Franklin']],
-    ['crescita', 2, 'In crescita', 'Fai una settimana con più pagine della precedente', 'weekUp', true, ['Calla', 3, 'wide', '#fbf6ee', '#f1e5c8', '#f2c94c', 2], 'Questa settimana hai fatto più pagine della scorsa: sempre meglio, sempre di più.', ['Scrivi nel tuo cuore che ogni giorno è il giorno migliore dell’anno.', 'Ralph Waldo Emerson']],
-    ['record', 1, 'Nuovo record', 'Batti un tuo record personale', 'records', 1, ['Begonia', 4, 'round', '#f08a8a', '', '#f6d36b', 1], 'Hai superato te stessa. Il record più bello è quello battuto contro chi eri ieri.', ['Diventa ciò che sei.', 'Friedrich Nietzsche']],
-    ['tre-esami', 2, 'Tre esami in vista', 'Aggiungi 3 esami', 'exams', 3, ['Astro', 16, 'thin', '#a99be6', '', '#f2c94c', 1], 'Tre esami organizzati: hai una visione chiara del tuo percorso. Uno alla volta li supererai tutti.', ['Nessuno è diventato saggio per caso.', 'Seneca']],
-    // libretto
-    ['esame-superato', 3, 'Esame superato', 'Segna nel libretto il tuo primo esame superato', 'libN', 1, ['Alloro', 7, 'thin', '#7aa66a', '#a9c98f', '#f2d36b', 2], 'Esame superato! Tutto il lavoro di queste settimane è diventato un voto sul libretto. Festeggia: te lo sei meritato.', ['Ho eretto un monumento più duraturo del bronzo.', 'Orazio']],
-    ['trenta', 3, 'Trenta!', 'Prendi un 30', 'has30', true, ['Ibisco', 5, 'wide', '#e8475f', '', '#f2c94c', 1], 'Trenta! Il massimo dei voti: il risultato di ogni pagina, di ogni ripetizione, di ogni giornata in cui non hai mollato.', ['Nulla di grande è stato fatto al mondo senza passione.', 'Georg Wilhelm Friedrich Hegel']],
-    ['lode', 4, 'Trenta e lode', 'Prendi un 30 e lode', 'lode', 1, ['Corona imperiale', 6, 'point', '#f08a2e', '#f6b04a', '#7a4a1e', 2], 'Trenta e lode. Non ci sono altre parole: solo un applauso lunghissimo. Sei straordinaria.', ['Sappiamo ciò che siamo, ma non ciò che potremmo essere.', 'William Shakespeare']],
-    ['media-27', 4, 'Media d’eccellenza', 'Arriva a una media ponderata di almeno 27 (con 3 esami)', 'media27', true, ['Strelitzia', 3, 'thin', '#f2802e', '#5b6fd6', '#3e8a6a', 2], 'Una media sopra il 27: il tuo impegno costante si legge in ogni voto.', ['Il talento si forma nella quiete, il carattere nel tumulto del mondo.', 'Johann Wolfgang von Goethe']],
-    ['cfu-60', 3, 'Sessanta crediti', 'Arriva a 60 CFU nel libretto', 'cfu', 60, ['Bougainvillea', 3, 'heart', '#d9468f', '', '#f8f2e4', 1], 'Sessanta crediti: un anno intero di università conquistato.', ['Se si avanza fiduciosi nella direzione dei propri sogni, si incontra un successo inatteso.', 'Henry David Thoreau']],
-    ['cfu-120', 4, 'Centoventi crediti', 'Arriva a 120 CFU nel libretto', 'cfu', 120, ['Giglio', 6, 'point', '#f7e2c8', '#f2a88a', '#c2643a', 2], 'Centoventi crediti: hai già alle spalle una parte enorme del tuo percorso. Avanti così.', ['Lottare, cercare, trovare, e non cedere.', 'Alfred Tennyson']],
-    ['cfu-180', 4, 'Centottanta crediti', 'Arriva a 180 CFU nel libretto', 'cfu', 180, ['Amarillide', 6, 'point', '#d93a4a', '#f2f2ee', '#7aa86a', 2], 'Centottanta crediti. È un traguardo enorme: la laurea è sempre più vicina.', ['Abbi il coraggio di servirti della tua intelligenza.', 'Immanuel Kant']],
-    // l'erbario stesso
-    ['erbario-25', 3, 'Giardino rigoglioso', 'Conquista 25 traguardi', 'trophyCount', 25, ['Mimosa', 12, 'round', '#f5d547', '#f9e58a', '#e8b92e', 2], 'Venticinque fiori nel tuo erbario: il tuo giardino è rigoglioso, come il tuo impegno.', ['Bisogna coltivare il nostro giardino.', 'Voltaire']],
-    ['erbario-50', 4, 'Fioritura', 'Conquista 50 traguardi', 'trophyCount', 50, ['Fioritura', 5, 'round', ['#d8909a', '#e2a585', '#8eb09b', '#a898cd', '#f1cf94'], '', '#f1cf94', 1], 'Cinquanta traguardi. Il tuo giardino è in piena fioritura, proprio come te.', ['Nel mezzo dell’inverno ho scoperto che vi era in me un’invincibile estate.', 'Albert Camus']]
+    ['fatica-3', 2, 'Anche quando è dura', 'Completa 3 giornate segnate come «faticose»', 'tired', 3, ['Cardo', 24, 'thin', '#a07ad0', '#c8acea', '#7a9e6a', 2], 'Tre giornate faticose portate fino in fondo. Il coraggio non è non sentire la fatica: è finire lo stesso.', ['Il coraggio non sempre ruggisce. A volte è la vocina alla fine del giorno che dice: domani ci riprovo.', 'Mary Anne Radmacher']],
+    ['chiariti-5', 2, 'Cinque certezze', 'Chiarisci 5 argomenti critici', 'solved', 5, ['Malva', 5, 'heart', '#c58fd0', '', '#f4e9f7', 1], 'Cinque dubbi diventati certezze. Ogni argomento chiarito è un passo verso un esame sereno.', ['È impossibile imparare ciò che si crede di sapere già.', 'Epitteto']],
+    // difficili: un programma quasi finito
+    ['giorni-30', 3, 'Un mese di impegno', 'Completa 30 giornate', 'days', 30, ['Iris', 6, 'point', '#7a6bc4', '#f2d36b', '#4b3f8f', 2], 'Trenta giornate completate. Un mese di lavoro vero: guarda quanta strada hai fatto.', ['Il lavoro tenace vince ogni cosa.', 'Virgilio']],
+    ['pagine-500', 3, 'Mezzo migliaio', 'Completa 500 pagine', 'pages', 500, ['Gardenia', 6, 'wide', '#fbf6ec', '#f3ead8', '#e9d9a6', 2], 'Cinquecento pagine. Ogni ripetizione le ha rese più tue: ormai molte le sapresti raccontare.', ['Chi ripassa ciò che sa e vi scopre il nuovo può diventare un maestro.', 'Confucio']],
+    ['serie-14', 3, 'Due settimane di fila', 'Studia 14 giorni di fila', 'bestStreak', 14, ['Glicine', 9, 'round', '#b4a6e4', '#d6ccf2', '#8f7cc9', 2], 'Quattordici giorni di fila: la tua determinazione è più forte di qualsiasi stanchezza.', ['I due guerrieri più potenti sono la pazienza e il tempo.', 'Lev Tolstoj']],
+    ['tre-quarti', 3, 'Tre quarti', 'Completa tre quarti del programma di un esame', 'threeQ', true, ['Clematide', 6, 'point', '#8a79d0', '', '#f4f1fb', 1], 'Tre quarti del programma alle spalle. Il traguardo si vede già, e tu ci stai arrivando a testa alta.', ['Non c’è una via facile dalla terra alle stelle.', 'Seneca']],
+    ['settimana-perfetta', 3, 'Settimana perfetta', 'Completa tutte le giornate del programma di una settimana (almeno 5)', 'perfectWeek', true, ['Plumeria', 5, 'round', '#fbf3e4', '#f6d36b', '#f2b84a', 2], 'Una settimana perfetta: tutte le giornate fatte, nessuna lasciata indietro. Rara come questo fiore.', ['Non basta sapere, bisogna anche applicare; non basta volere, bisogna anche fare.', 'Johann Wolfgang von Goethe']],
+    ['tutto-chiaro', 3, 'Tutto chiaro', 'Chiarisci tutti gli argomenti critici di un esame (almeno 5)', 'critAll', true, ['Agapanto', 12, 'thin', '#7f9de0', '', '#4b67b0', 1], 'Tutti gli argomenti critici sono chiariti. Il ripasso finale sarà più leggero del previsto.', ['Felice chi ha potuto conoscere le cause delle cose.', 'Virgilio']],
+    // leggendari: i due esami che mancano e la fine del libretto
+    ['programma', 4, 'Programma completato', 'Completa tutto il programma di un esame', 'plansDone', 1, ['Rosa damascena', 12, 'round', '#e07a96', '#f2a8bc', '#c85a7a', 2], 'Hai completato tutto il programma. Ogni pagina, ogni ripetizione: è tutto dentro di te. Ora vai e raccontalo.', ['Così si va alle stelle.', 'Virgilio']],
+    ['esame-superato', 4, 'Esame superato', 'Supera un esame preparato con Fioritura e segnalo nel libretto', 'libFio', 1, ['Camelia', 10, 'round', '#e57a92', '#f2a9ba', '#f4d35e', 2], 'Esame superato! Tutto il lavoro di queste settimane è diventato un voto sul libretto. Festeggia: te lo sei meritato.', ['Ho eretto un monumento più duraturo del bronzo.', 'Orazio']],
+    ['lode', 4, 'Trenta e lode', 'Un 30 e lode nel libretto', 'lode', 1, ['Corona imperiale', 6, 'point', '#f08a2e', '#f6b04a', '#7a4a1e', 2], 'Trenta e lode. Non ci sono altre parole: solo un applauso lunghissimo. Sei straordinaria.', ['Sappiamo ciò che siamo, ma non ciò che potremmo essere.', 'William Shakespeare']],
+    ['due-programmi', 4, 'Doppio traguardo', 'Completa il programma di due esami', 'plansDone', 2, ['Orchidea fantasma', 5, 'thin', '#f4f6f2', '#e6eee0', '#cfe0b8', 2], 'Due programmi completati dall’inizio alla fine. Non è fortuna: è il tuo metodo che funziona.', ['Tutte le cose eccellenti sono tanto difficili quanto rare.', 'Baruch Spinoza']],
+    ['laurea', 4, 'Tutti gli esami', 'Completa il libretto: tutti gli esami del tuo corso superati', 'libDone', true, ['Corona d’alloro', 9, 'thin', '#6f9a5c', '#a9c98f', '#e9c46a', 2], 'Tutti gli esami superati. Ogni voto del tuo libretto racconta mattine presto, sere lunghe e dubbi diventati certezze: adesso sono tutti lì, uno dopo l’altro.', ['Non c’è una via facile dalla terra alle stelle.', 'Seneca']]
   ].map(function (r) { return { id: r[0], t: r[1], name: r[2], how: r[3], k: r[4], n: r[5], f: r[6], msg: r[7], q: r[8] }; });
   function trophyById(id) { return TROPHIES.filter(function (x) { return x.id === id; })[0]; }
   function trophyHit(tr, st) { var v = st[tr.k]; return typeof tr.n === 'number' ? (+v || 0) >= tr.n : !!v; }
@@ -1992,6 +1997,31 @@
     if (shape === 'wide') return 'M50 50C29 41 29 15 50 11C71 15 71 41 50 50Z';
     return 'M50 50C37 40 37 20 50 12C63 20 63 40 50 50Z';
   }
+  // il fiore non ancora conquistato: un bocciolo chiuso, uguale per tutti (D: "le piante da scoprire non devono essere svelate")
+  var BUD = '<svg class="bud" viewBox="0 0 100 100" aria-hidden="true"><path class="bud-s" d="M50 93V58"/>' +
+    '<path class="bud-l" d="M50 80C39 80 30 74 27 64C38 63 47 68 50 80Z"/><path class="bud-l" d="M50 72C59 71 67 65 70 56C60 56 52 61 50 72Z"/>' +
+    '<path class="bud-b" d="M50 20C62 31 64 47 50 61C36 47 38 31 50 20Z"/><path class="bud-k" d="M50 61C43 56 40 50 40 44C44 48 47 50 50 50C53 50 56 48 60 44C60 50 57 56 50 61Z"/></svg>';
+  // l'immagine di un traguardo: la corona d'alloro per il libretto completo, altrimenti il suo fiore raro
+  function troArt(tr, cls) { return tr.id === 'laurea' ? laurel('mini ' + (cls || '')) : rareFlower(tr.f, cls); }
+  // corona d'alloro: due rami di foglie su un cerchio e un nastro
+  function laurel(cls) {
+    var leaf = 'M0 0C5 -6 15 -7 23 0C15 7 5 6 0 0Z', side = '', cx = 100, cy = 100, R = 70, k = 0;
+    var a0 = 98 * Math.PI / 180, a1 = 246 * Math.PI / 180;
+    side += '<path class="lw-st" d="M' + (cx + R * Math.cos(a0)).toFixed(1) + ' ' + (cy + R * Math.sin(a0)).toFixed(1) + 'A' + R + ' ' + R + ' 0 0 1 ' +
+      (cx + R * Math.cos(a1)).toFixed(1) + ' ' + (cy + R * Math.sin(a1)).toFixed(1) + '"/>';
+    for (var i = 0; i < 10; i++) {
+      var th = (102 + i * 15.5) * Math.PI / 180, x = cx + R * Math.cos(th), y = cy + R * Math.sin(th);
+      var tg = Math.atan2(Math.cos(th), -Math.sin(th)) * 180 / Math.PI, sc = (1 - i * .035).toFixed(3);
+      side += '<path class="lw-l a" style="--i:' + (k++) + '" d="' + leaf + '" transform="translate(' + x.toFixed(1) + ' ' + y.toFixed(1) + ') rotate(' + (tg - 34).toFixed(1) + ') scale(' + sc + ')"/>';
+      side += '<path class="lw-l b" style="--i:' + (k++) + '" d="' + leaf + '" transform="translate(' + x.toFixed(1) + ' ' + y.toFixed(1) + ') rotate(' + (tg + 30).toFixed(1) + ') scale(' + (sc * .88).toFixed(3) + ')"/>';
+    }
+    var ta = a1 + .02, tx = cx + R * Math.cos(ta), ty = cy + R * Math.sin(ta), ttg = Math.atan2(Math.cos(ta), -Math.sin(ta)) * 180 / Math.PI;
+    side += '<path class="lw-l a" style="--i:' + k + '" d="' + leaf + '" transform="translate(' + tx.toFixed(1) + ' ' + ty.toFixed(1) + ') rotate(' + ttg.toFixed(1) + ') scale(.8)"/>';
+    return '<svg class="laurel ' + (cls || '') + '" viewBox="0 0 200 200" aria-hidden="true"><g>' + side + '</g><g transform="translate(200 0) scale(-1 1)">' + side + '</g>' +
+      '<path class="lw-r" d="M100 168L84 190L90 176L80 178Z"/><path class="lw-r" d="M100 168L116 190L110 176L120 178Z"/>' +
+      '<path class="lw-r" d="M100 168C92 158 80 160 82 168C84 175 94 172 100 168ZM100 168C108 158 120 160 118 168C116 175 106 172 100 168Z"/><circle class="lw-k" cx="100" cy="168" r="4.5"/></svg>';
+  }
+  var LEAF = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20C4 11 10 5 20 4C19.5 14 13 20 4 20Z"/><path class="v" d="M5 19L15 9"/></svg>';
   function rareFlower(f, cls) {
     var n = f[1], d = petalPath(f[2]), cols = Array.isArray(f[3]) ? f[3] : [f[3]], out = '';
     for (var i = 0; i < n; i++) out += '<path d="' + d + '" fill="' + cols[i % cols.length] + '" transform="rotate(' + (360 / n * i).toFixed(1) + ' 50 50)"/>';
@@ -2105,18 +2135,27 @@
     st.notes = Object.keys(S.notes).filter(function (k) { return String(S.notes[k] || '').trim(); }).length;
     st.events = S.events.length; st.breath = S.counters.breath || 0; st.records = S.counters.records || 0;
     // libretto
-    var lib = libStats(); st.libN = lib.n; st.has30 = lib.max >= 30; st.lode = lib.lode; st.cfu = lib.cfu; st.media27 = lib.n >= 3 && lib.weighted >= 27; st.lib = lib;
+    var lib = libStats(); st.libN = lib.n; st.has30 = lib.max >= 30; st.lode = lib.lode; st.cfu = lib.cfu; st.media27 = lib.graded >= 3 && lib.weighted >= 27; st.lib = lib;
+    // esami preparati qui e poi superati; libretto completo (tutti gli esami del corso)
+    st.libFio = S.libretto.filter(function (x) { return x.ex || S.exams.some(function (e) { return normName(e.name) === normName(x.name); }); }).length;
+    st.libTotal = +S.settings.libTotal || 0; st.libDone = st.libTotal > 0 && lib.n >= st.libTotal;
     st.trophyCount = trophiesWon().length;
     return st;
   }
 
   // ---------- libretto ----------
+  // voto 0 = idoneità: conta come esame superato e per i CFU, non per le medie
   function libStats() {
-    var L = S.libretto, n = L.length, sum = 0, wsum = 0, cfu = 0, max = 0, lode = 0;
-    L.forEach(function (x) { var v = +x.voto || 0, c = +x.cfu || 0; sum += v; wsum += v * c; cfu += c; if (v > max) max = v; if (v >= 30 && x.lode) lode++; });
-    var weighted = cfu ? wsum / cfu : 0;
-    return { n: n, avg: n ? sum / n : 0, weighted: weighted, cfu: cfu, max: max, lode: lode, base: weighted ? weighted * 110 / 30 : 0 };
+    var L = S.libretto, n = L.length, g = 0, sum = 0, wsum = 0, cfu = 0, gcfu = 0, max = 0, lode = 0;
+    L.forEach(function (x) {
+      var v = +x.voto || 0, c = +x.cfu || 0; cfu += c;
+      if (v < 18) return;
+      g++; sum += v; wsum += v * c; gcfu += c; if (v > max) max = v; if (v >= 30 && x.lode) lode++;
+    });
+    var weighted = gcfu ? wsum / gcfu : g ? sum / g : 0;
+    return { n: n, graded: g, avg: g ? sum / g : 0, weighted: weighted, cfu: cfu, max: max, lode: lode, base: weighted ? weighted * 110 / 30 : 0 };
   }
+  function normName(x) { return String(x || '').toLowerCase().replace(/[^a-z0-9àèéìòù]+/g, ' ').trim(); }
   function fmtNum(x, d) { return (Math.round(x * Math.pow(10, d)) / Math.pow(10, d)).toFixed(d).replace('.', ','); }
 
   // ---------- record personali ----------
@@ -2152,8 +2191,12 @@
     // l'erbario nasce col primo traguardo: così un telefono nuovo, vuoto prima di accedere, non festeggia di nuovo tutto ciò che arriva dall'account
     if (first && fresh.length) { S.trophies._init = now; changed = true; }
     if (changed) { save(); if (UI.tab === 'prog') render(); }   // l'erbario e i record sullo schermo si aggiornano subito
-    if (first) { if (fresh.length) trophyQueue.push({ intro: fresh.length }); }
-    else if (fresh.length) { fresh.sort(function (a, b) { return b.t - a.t; }); trophyQueue.push({ tr: fresh[0], more: fresh.length - 1 }); }
+    var lau = fresh.some(function (x) { return x.id === 'laurea'; }), rest = fresh.filter(function (x) { return x.id !== 'laurea'; });
+    if (first) { if (fresh.length) trophyQueue.push({ intro: fresh.length }); if (lau) trophyQueue.push({ laurea: true }); }
+    else {
+      if (lau) trophyQueue.push({ laurea: true });   // il libretto completo ha il suo momento, più grande
+      if (rest.length) { rest.sort(function (a, b) { return b.t - a.t; }); trophyQueue.push({ tr: rest[0], more: rest.length - 1 }); }
+    }
     if (newRecord && !first) {
       var nr = newRecord;
       setTimeout(function () { petals(22); Sound.chime('done'); toast('Nuovo record! ' + nr[2](S.records[nr[0]].v) + '.', { label: 'Vedi', run: function () { goProgress('tro'); } }, 7000); }, fresh.length ? 200 : 0);
@@ -2164,10 +2207,11 @@
     if (!trophyQueue.length || $('.tro-ov') || $('.breathe')) return;
     if (sheetOpen() || document.hidden) { setTimeout(showNextTrophy, 1500); return; }
     var item = trophyQueue.shift(), html;
+    if (item.laurea) { showLaurea(); return; }
     if (item.intro) {
       var won = trophiesWon().sort(function (a, b) { return b.t - a.t; }), top = won[0];
       html = '<span class="eyebrow">Nuovo: l’erbario</span>' +
-        '<div class="tro-flower">' + rareFlower(top.f, 'big') + '</div>' +
+        '<div class="tro-flower">' + troArt(top, 'big') + '</div>' +
         '<h2 class="display">Il tuo erbario è nato</h2>' +
         '<p class="tro-msg">Ogni traguardo che raggiungi fa sbocciare un fiore raro. ' +
         (item.intro === 1 ? 'Il primo l’hai appena conquistato: ' : 'Con il lavoro che hai già fatto ne hai conquistati <b>' + item.intro + '</b>: ') +
@@ -2176,7 +2220,7 @@
     } else {
       var tr = item.tr;
       html = '<span class="eyebrow tier t' + tr.t + '">Traguardo ' + TIERS[tr.t].toLowerCase() + '</span>' +
-        '<div class="tro-flower">' + rareFlower(tr.f, 'big') + '</div>' +
+        '<div class="tro-flower">' + troArt(tr, 'big') + '</div>' +
         '<p class="tro-fname">' + esc(tr.f[0]) + ' · nuovo fiore nell’erbario</p>' +
         '<h2 class="display">' + esc(tr.name) + '</h2>' +
         '<p class="tro-msg">' + esc(tr.msg) + '</p>' +
@@ -2191,6 +2235,29 @@
     requestAnimationFrame(function () { ov.classList.add('open'); });
     Sound.chime('phase'); buzz([30, 50, 30, 50, 60]);
     setTimeout(function () { petals(40); }, 250);
+    setTimeout(function () { var b = ov.querySelector('[data-a="troClose"]'); if (b) try { b.focus({ preventScroll: true }); } catch (e) {} }, 400);
+  }
+  // Tutti gli esami superati (D: "una volta completato tutto dovrà uscire qualcosa di meraviglioso")
+  function showLaurea() {
+    var lib = libStats(), nm = String(S.settings.name || '').trim();
+    var html = '<span class="eyebrow">Libretto completo</span>' +
+      '<div class="wreath">' + laurel('gold') + '<div class="wr-in"><b class="display">' + lib.n + '</b><span>esami</span></div></div>' +
+      '<h2 class="display">Tutti gli esami superati</h2>' +
+      '<p class="tro-fname">' + (nm ? 'Bravissima, ' + esc(nm) + '.' : 'Bravissima.') + '</p>' +
+      '<div class="stats"><div><b>' + lib.cfu + '</b><span>CFU</span></div>' +
+      (lib.graded ? '<div><b>' + fmtNum(lib.weighted, 2) + '</b><span>media</span></div>' : '') +
+      (lib.lode ? '<div><b>' + lib.lode + '</b><span>' + plural(lib.lode, 'lode', 'lodi') + '</span></div>' : '') + '</div>' +
+      '<p class="tro-msg">Ogni voto di questo libretto racconta mattine presto, sere lunghe, pagine ripetute e dubbi diventati certezze. ' +
+      'Adesso sono tutti qui, uno dopo l’altro: li hai superati tutti. Fermati un momento e goditelo: è tuo, e te lo sei meritato fino all’ultima pagina.</p>' +
+      '<blockquote class="tro-q">«Non c’è una via facile dalla terra alle stelle.»<span>Seneca</span></blockquote>';
+    var ov = document.createElement('div');
+    ov.className = 'tro-ov grand'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', 'Tutti gli esami superati');
+    ov.innerHTML = '<div class="tro-card">' + html + '<div class="btns"><button class="btn" data-a="troClose">' + I.check + 'Grazie</button>' +
+      '<button class="btn soft" data-a="troLib">Vedi il libretto</button></div></div>';
+    document.body.appendChild(ov);
+    requestAnimationFrame(function () { ov.classList.add('open'); });
+    Sound.chime('phase'); setTimeout(function () { Sound.chime('done'); }, 900); buzz([40, 60, 40, 60, 40, 60, 120]);
+    [250, 1400, 2800, 4600].forEach(function (ms, i) { setTimeout(function () { if (ov.isConnected) petals(i ? 30 : 60); }, ms); });
     setTimeout(function () { var b = ov.querySelector('[data-a="troClose"]'); if (b) try { b.focus({ preventScroll: true }); } catch (e) {} }, 400);
   }
   function closeTrophy() {
@@ -2248,7 +2315,7 @@
     var won = trophiesWon().length, total = TROPHIES.length;
     var html = '<section class="card"><div class="row between"><div><span class="eyebrow">L’erbario</span><h3 class="h3" style="margin-top:5px">' + won + ' di ' + total + ' fiori</h3></div>' +
       '<div class="pct display">' + Math.round(won / total * 100) + '<small>%</small></div></div><div class="bar"><i style="left:' + Math.round(won / total * 100) + '%"></i></div>' +
-      '<p class="tiny muted">Ogni traguardo fa sbocciare un fiore raro. Toccane uno per vedere come si conquista.</p></section>';
+      '<p class="tiny muted">Ogni traguardo fa sbocciare un fiore raro: finché non lo conquisti resta un bocciolo, e nessuno sa che fiore sarà. Tocca un bocciolo per vedere come si conquista.</p></section>';
     // serie e record
     html += '<section class="card"><div class="row between"><div><span class="eyebrow">Serie di giorni</span><h3 class="h3" style="margin-top:5px">' +
       (st.streak ? st.streak + ' ' + plural(st.streak, 'giorno', 'giorni') + ' di fila' : 'Comincia oggi la tua serie') + '</h3></div>' +
@@ -2265,8 +2332,8 @@
       html += '<section class="card"><div class="row between"><h3 class="h3">' + TIERS_PL[tier] + '</h3><span class="pill tierpill t' + tier + '">' + n + ' / ' + list.length + '</span></div>' +
         '<div class="herb">' + list.map(function (tr) {
           var got = !!S.trophies[tr.id];
-          return '<button class="hb' + (got ? ' got' : '') + '" data-a="troInfo" data-id="' + tr.id + '" aria-label="' + esc(tr.name) + (got ? ', conquistato' : ', da conquistare') + '">' +
-            rareFlower(tr.f) + '<span>' + (got ? esc(tr.f[0]) : '?') + '</span></button>';
+          return '<button class="hb' + (got ? ' got' : '') + '" data-a="troInfo" data-id="' + tr.id + '" aria-label="' + esc(tr.name) + (got ? ', conquistato: ' + esc(tr.f[0]) : ', da conquistare') + '">' +
+            (got ? troArt(tr) : BUD) + '<span>' + esc(got ? tr.f[0] : tr.name) + '</span></button>';
         }).join('') + '</div></section>';
     });
     return html;
@@ -2274,8 +2341,8 @@
   function trophySheet(id) {
     var tr = trophyById(id), st = computeStats(), got = S.trophies[id], pr = trophyProg(tr, st);
     return sheetHead(esc(tr.name), 'Traguardo ' + TIERS[tr.t].toLowerCase()) +
-      '<div class="tro-flower small' + (got ? '' : ' locked') + '">' + rareFlower(tr.f, 'big') + '</div>' +
-      '<p class="tro-fname" style="text-align:center">' + (got ? esc(tr.f[0]) + ' · conquistato il ' + fmtShort(isoOf(new Date(got > 1e12 ? got : Date.now()))) : 'Fiore da scoprire') + '</p>' +
+      '<div class="tro-flower small' + (got ? '' : ' locked') + '">' + (got ? troArt(tr, 'big') : BUD) + '</div>' +
+      '<p class="tro-fname" style="text-align:center">' + (got ? esc(tr.f[0]) + ' · conquistato il ' + fmtShort(isoOf(new Date(got > 1e12 ? got : Date.now()))) : 'Fiore da scoprire: si svela solo quando conquisti il traguardo') + '</p>' +
       '<div class="msg">' + (got ? '' : 'Come si conquista: ') + esc(tr.how) + '.</div>' +
       (!got && pr ? '<div><div class="pbar"><i style="width:' + Math.round(pr[0] / pr[1] * 100) + '%"></i></div><p class="tiny muted" style="margin-top:6px">' + fmtProg(tr, pr) + '</p></div>' : '') +
       (got ? '<p class="tro-msg" style="text-align:left">' + esc(tr.msg) + '</p><blockquote class="tro-q" style="text-align:left">«' + esc(tr.q[0]) + '»<span>' + esc(tr.q[1]) + '</span></blockquote>' : '');
@@ -2346,31 +2413,64 @@
 
   // ---------- libretto ----------
   function librettoBody(st) {
-    var lib = st.lib;
-    var html = '<section class="card"><div class="stats four"><div><b>' + (lib.n ? fmtNum(lib.weighted, 2) : '–') + '</b><span>media ponderata</span></div>' +
-      '<div><b>' + (lib.n ? fmtNum(lib.avg, 2) : '–') + '</b><span>media aritmetica</span></div><div><b>' + lib.cfu + '</b><span>CFU</span></div>' +
-      '<div><b>' + (lib.n ? fmtNum(lib.base, 1) : '–') + '</b><span>base di laurea</span></div></div>' +
-      '<p class="tiny muted">Base di laurea = media ponderata × 110 ÷ 30. Alcune università la calcolano in modo diverso.</p></section>';
+    var lib = st.lib, tot = st.libTotal, n = lib.n, left = tot ? Math.max(0, tot - n) : 0, nm = String(S.settings.name || '').trim();
+    var line = !n ? 'Comincia dal primo esame che hai superato: ogni riga di questo libretto è una vittoria tua.' :
+      !tot ? 'Hai già superato ' + n + ' ' + plural(n, 'esame', 'esami') + '. Ognuno è una piccola vittoria: sono tutti qui.' :
+      st.libDone ? 'Tutti gli esami superati. Che percorso meraviglioso.' :
+      left === 1 ? 'Ne manca uno solo: l’ultimo passo.' :
+      left <= 3 ? 'Mancano solo ' + left + ' esami. Ci sei quasi.' :
+      'Hai già superato ' + n + ' esami. Ne mancano ' + left + ': uno alla volta.';
+    var html = '<section class="libcover' + (st.libDone ? ' done' : '') + '">' +
+      '<div class="lc-art">' + laurel(st.libDone ? 'gold' : '') + '</div>' +
+      '<span class="eyebrow">Libretto universitario</span>' +
+      '<h2 class="display">' + (nm ? 'Il libretto di ' + esc(nm) : 'Il mio libretto') + '</h2>' +
+      '<p class="lc-line">' + line + '</p>';
+    if (tot) {
+      var shown = Math.min(n, tot);
+      html += (tot <= 60 ? '<div class="leaves" aria-hidden="true">' + Array.apply(null, Array(tot)).map(function (_, i) { return '<i class="lf' + (i < shown ? ' on' : '') + '">' + LEAF + '</i>'; }).join('') + '</div>' :
+        '<div class="pbar"><i style="width:' + Math.round(shown / tot * 100) + '%"></i></div>') +
+        '<div class="row between lc-meta"><span>' + shown + ' di ' + tot + ' esami · ' + lib.cfu + ' CFU</span><button class="btn ghost sm" data-a="libGoal">Modifica</button></div>';
+      if (st.libDone) html += '<button class="btn soft block" data-a="libReplay">' + I.sprout + 'Rivivi il momento</button>';
+    } else {
+      html += '<button class="lc-ask" data-a="libGoal"><b>Quanti esami ha il tuo corso di laurea?</b><span>Così ti mostro quanti ne mancano, e per l’ultimo c’è una sorpresa.</span></button>';
+    }
+    html += '</section>';
+    if (lib.graded) html += '<section class="card"><div class="stats four"><div><b>' + fmtNum(lib.weighted, 2) + '</b><span>media ponderata</span></div>' +
+      '<div><b>' + fmtNum(lib.avg, 2) + '</b><span>media aritmetica</span></div><div><b>' + lib.cfu + '</b><span>CFU</span></div>' +
+      '<div><b>' + fmtNum(lib.base, 1) + '</b><span>base di laurea</span></div></div>' +
+      '<p class="tiny muted">Base di laurea = media ponderata × 110 ÷ 30. Alcune università la calcolano in modo diverso. Le idoneità contano per i CFU, non per le medie.</p></section>';
     var L = S.libretto.slice().sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); });
-    html += '<section class="card"><div class="row between"><h3 class="h3">Esami sostenuti</h3><button class="btn sm" data-a="libNew">' + I.plus + 'Aggiungi</button></div>' +
+    html += '<section class="card libpages"><div class="row between"><h3 class="h3">Esami superati</h3><button class="btn sm" data-a="libNew">' + I.plus + 'Aggiungi</button></div>' +
       (L.length ? '<div>' + L.map(function (x) {
-        return '<button class="librow" data-a="libEdit" data-id="' + x.id + '"><span class="vote">' + x.voto + (x.lode && +x.voto === 30 ? '<small>L</small>' : '') + '</span>' +
-          '<span class="tx"><b>' + esc(x.name) + '</b><span>' + (x.cfu ? x.cfu + ' CFU · ' : '') + (x.date ? fmtShort(x.date) + ' ' + x.date.slice(0, 4) : '') + '</span></span><span class="chev" style="width:16px;color:var(--muted)">' + I.chev + '</span></button>';
-      }).join('') + '</div>' : '<p class="small muted">Qui segni gli esami superati con voto e crediti: la media si calcola da sola.</p>') + '</section>';
+        var v = +x.voto || 0, lode = v === 30 && x.lode;
+        return '<button class="librow" data-a="libEdit" data-id="' + x.id + '"><span class="vote' + (lode ? ' lode' : '') + (v < 18 ? ' ok' : '') + '">' + (v < 18 ? I.check : v) + '</span>' +
+          '<span class="tx"><b>' + esc(x.name) + '</b><span>' + (v < 18 ? 'Idoneità · ' : lode ? 'e lode · ' : '') + (x.cfu ? x.cfu + ' CFU · ' : '') + (x.date ? fmtShort(x.date) + ' ' + x.date.slice(0, 4) : '') + '</span></span>' +
+          '<span class="chev" style="width:16px;color:var(--muted)">' + I.chev + '</span></button>';
+      }).join('') + '</div>' : '<p class="small muted">Aggiungi gli esami che hai già superato, uno alla volta, con voto, crediti e data: la media si calcola da sola. Ci vuole qualche minuto, ma poi il tuo percorso è tutto qui.</p>') + '</section>';
     return html;
   }
   var libDraft = null;
   function libSheet() {
     var d = libDraft, votes = []; for (var v = 30; v >= 18; v--) votes.push(v);
-    return sheetHead(d.id ? 'Modifica esame' : 'Esame sostenuto', 'Libretto') +
+    return sheetHead(d.id ? 'Modifica esame' : 'Esame superato', 'Libretto') +
       '<div><label class="lab" for="lName">Esame</label><input class="field" id="lName" data-lib="name" maxlength="80" value="' + esc(d.name) + '" placeholder="Es. Diritto privato"' + (d.id ? '' : ' data-autofocus') + '></div>' +
-      '<div class="two"><div><label class="lab" for="lVoto">Voto</label><select class="field" id="lVoto" data-lib="voto">' + votes.map(function (x) { return '<option value="' + x + '"' + (+d.voto === x ? ' selected' : '') + '>' + x + '</option>'; }).join('') + '</select></div>' +
+      '<div class="two"><div><label class="lab" for="lVoto">Voto</label><select class="field" id="lVoto" data-lib="voto">' + votes.map(function (x) { return '<option value="' + x + '"' + (+d.voto === x ? ' selected' : '') + '>' + x + '</option>'; }).join('') +
+      '<option value="0"' + (+d.voto === 0 ? ' selected' : '') + '>Idoneità</option></select></div>' +
       '<div><label class="lab" for="lCfu">CFU</label><input class="field" id="lCfu" data-lib="cfu" inputmode="numeric" maxlength="3" value="' + esc(d.cfu) + '" placeholder="Es. 9"></div></div>' +
       (+d.voto === 30 ? '<div class="set-row" style="border-top:0;padding:2px 0"><b>Con lode</b><button class="switch" role="switch" aria-checked="' + !!d.lode + '" aria-label="Con lode" data-a="libLode"></button></div>' : '') +
       '<div><label class="lab" for="lDate">Data</label><input class="field" type="date" id="lDate" data-lib="date" value="' + esc(d.date) + '"></div>' +
       '<p class="msg bad" data-lib-msg></p>' +
       '<button class="btn block" data-a="libSave">' + I.check + 'Salva</button>' +
-      (d.id ? '<div style="text-align:center"><button class="btn ghost danger" data-a="libDel">' + I.trash + 'Elimina dal libretto</button></div>' : '');
+      (d.id ? '<div style="text-align:center"><button class="btn ghost danger" data-a="libDel">' + I.trash + 'Elimina dal libretto</button></div>' :
+        '<button class="btn soft block" data-a="libSave" data-next="1">' + I.plus + 'Salva e aggiungi un altro</button>');
+  }
+  function libGoalSheet() {
+    var cur = +S.settings.libTotal || '';
+    return sheetHead('Il tuo corso di laurea', 'Libretto') +
+      '<p class="small muted">Quanti esami prevede in tutto il tuo corso di laurea? Contali tutti, anche le idoneità. Così il libretto ti mostra quanti ne mancano, e quando li avrai superati tutti… vedrai.</p>' +
+      '<div><label class="lab" for="lTot">Esami in tutto</label><input class="field" id="lTot" inputmode="numeric" maxlength="2" value="' + cur + '" placeholder="Es. 30" data-autofocus></div>' +
+      '<p class="msg bad" data-goal-msg></p>' +
+      '<button class="btn block" data-a="libGoalSave">' + I.check + 'Salva</button>';
   }
 
   /* ================= DISEGNO ================= */
@@ -2830,7 +2930,7 @@
   }
   // Unisce i dati di un altro dispositivo (o di una copia) con quelli di qui. Per ogni cosa vince la modifica
   // più recente; le spunte tolte e gli argomenti eliminati restano tolti. Unire due volte non cambia nulla.
-  var SYNC_SETTINGS = ['name', 'pal', 'theme', 'studyRemind', 'studyTime', 'tz'];   // studyRemind/studyTime/tz li legge anche il server delle notifiche
+  var SYNC_SETTINGS = ['name', 'pal', 'theme', 'studyRemind', 'studyTime', 'tz', 'libTotal'];   // studyRemind/studyTime/tz li legge anche il server delle notifiche
   var SYNC_KEYS = ['exams', 'done', 'pages', 'pagesAt', 'notes', 'notesAt', 'mood', 'moodAt', 'focus', 'topics', 'gone', 'settings', 'settingsAt', 'welcomed', 'events', 'notifRead', 'notifHide', 'trophies', 'records', 'libretto', 'counters', 'hidden'];
   function mergeIn(o) {
     o = upgradeData(o || {});
@@ -3282,16 +3382,38 @@
       openSheet(libSheet);
     },
     libLode: function () { libDraft.lode = !libDraft.lode; refreshSheet(); },
-    libSave: function () {
+    libSave: function (el) {
       var d = libDraft, msg = $('[data-lib-msg]'), name = String(d.name || '').trim(), cfu = Math.floor(+String(d.cfu || '').replace(/\D/g, '')) || 0;
       if (!name) { if (msg) msg.textContent = 'Scrivi il nome dell’esame.'; return; }
-      var now = Date.now(), x = { id: d.id || 'l' + uid(), name: name.slice(0, 80), voto: +d.voto || 18, lode: +d.voto === 30 && !!d.lode, cfu: Math.min(cfu, 60), date: ISO_RE.test(d.date || '') ? d.date : today(), ex: d.ex || '', at: d.at || now, mt: now };
+      var v = +d.voto; v = v === 0 ? 0 : Math.min(30, Math.max(18, v || 18));
+      var now = Date.now(), x = { id: d.id || 'l' + uid(), name: name.slice(0, 80), voto: v, lode: v === 30 && !!d.lode, cfu: Math.min(cfu, 60), date: ISO_RE.test(d.date || '') ? d.date : today(), ex: d.ex || '', at: d.at || now, mt: now };
       var i = -1; S.libretto.forEach(function (l, j) { if (l.id === x.id) i = j; });
       if (i >= 0) S.libretto[i] = x; else S.libretto.push(x);
-      tidy(); save(); closeSheet(true);
-      if (UI.tab !== 'prog') goProgress('lib'); else render();
-      toast(i >= 0 ? 'Libretto aggiornato.' : 'Segnato nel libretto: ' + x.voto + (x.lode ? ' e lode' : '') + '. Complimenti!', null, 4500);
+      tidy(); save();
+      var what = v ? v + (x.lode ? ' e lode' : '') : 'idoneità';
+      if (el && el.dataset.next) {   // tanti esami da segnare a mano: il foglio resta aperto per il prossimo
+        libDraft = { id: '', name: '', voto: v || 27, lode: false, cfu: '', date: x.date, ex: '' };
+        refreshSheet(); render();
+        setTimeout(function () { var f = $('#lName'); if (f) try { f.focus(); } catch (e) {} }, 60);
+        toast('Segnato: ' + x.name + ', ' + what + '. Ora il prossimo.', null, 3500);
+        return;
+      }
+      closeSheet(true);
+      if (UI.tab !== 'prog' || UI.progSeg !== 'lib') goProgress('lib'); else render();
+      toast(i >= 0 ? 'Libretto aggiornato.' : 'Segnato nel libretto: ' + what + '. Complimenti!', null, 4500);
     },
+    libGoal: function () { openSheet(libGoalSheet); },
+    libGoalSave: function () {
+      var f = $('#lTot'), msg = $('[data-goal-msg]'), raw = String(f ? f.value : '').trim(), v = Math.floor(+raw.replace(/\D/g, '')) || 0, n = S.libretto.length;
+      if (!raw) { S.settings.libTotal = 0; S.settingsAt = Date.now(); save(); closeSheet(true); render(); return; }
+      if (v < 1 || v > 80) { if (msg) msg.textContent = 'Scrivi un numero da 1 a 80.'; return; }
+      if (v < n) { if (msg) msg.textContent = 'Nel libretto ci sono già ' + n + ' esami: il totale non può essere più basso.'; return; }
+      S.settings.libTotal = v; S.settingsAt = Date.now(); save(); closeSheet(true); render();
+      var left = v - n;
+      toast(left ? (left === 1 ? 'Fatto: ne manca uno solo!' : 'Fatto: ne mancano ' + left + '.') : 'Fatto.', null, 4000);
+    },
+    libReplay: function () { trophyQueue.push({ laurea: true }); showNextTrophy(); },
+    troLib: function () { closeTrophy(); goProgress('lib'); },
     libDel: function (el) {
       arm(el, 'Tocca di nuovo per eliminarlo', function () {
         var id = libDraft.id, i = -1; S.libretto.forEach(function (l, j) { if (l.id === id) i = j; });

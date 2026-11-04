@@ -564,6 +564,9 @@
   .sh-head h2{font-size:28px;margin-top:5px}
   .set-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-top:1px solid var(--line)}
   .set-row b{font-weight:600;font-size:15px}
+  .study-time{display:flex;align-items:center;gap:12px;padding:0 0 14px}
+  .study-time .lab{margin:0}
+  .study-time select{width:auto;min-width:120px}
   .set-row p{margin-top:2px}
   .sec-t{font-family:var(--serif);font-size:19px;font-variation-settings:"SOFT" 100;padding-top:8px}
   .credits{text-align:center;color:var(--muted);font-family:var(--serif);font-style:italic;font-size:13.5px;line-height:1.5;
@@ -1100,7 +1103,7 @@
       hidden: {},    // schede chiuse e avvisi già dati (es. week:2026-11-02, esito:<esame>, rec:<chiave>:<giorno>)
       gone: [],      // argomenti eliminati (per non farli tornare da un altro dispositivo)
       timer: { mode: 'study', len: 25, endAt: 0, remain: 0, seg: 0 },
-      settings: { name: '', theme: 'auto', pal: 'cipria', sounds: true, wake: true, study: 25, brk: 5, volume: 0.5, sysNotif: false },
+      settings: { name: '', theme: 'auto', pal: 'cipria', sounds: true, wake: true, study: 25, brk: 5, volume: 0.5, sysNotif: false, studyRemind: false, studyTime: '18:00', tz: '' },
       settingsAt: 0,
       welcomed: false,
       open: {}
@@ -1687,17 +1690,40 @@
     var h = Math.round(m / 60); if (h < 24) return h === 1 ? 'un’ora fa' : h + ' ore fa';
     var d = Math.round(h / 24); return d === 1 ? 'ieri' : d + ' giorni fa';
   }
+  // Promemoria dello studio (D: "promemoria dello studio"): ogni giorno all'ora scelta, solo se oggi c'è una giornata
+  // del programma non ancora fatta (in qualsiasi esame). Lo stesso testo lo manda il server ad app chiusa (fioritura-push).
+  var STUDY_TIMES = (function () { var a = []; for (var h = 6; h <= 23; h++) { a.push(pad(h) + ':00'); a.push(pad(h) + ':30'); } return a; })();
+  function studyTodo(iso) {
+    var out = [];
+    S.exams.forEach(function (e) {
+      if (S.done[e.id + '|' + iso] > 0) return;
+      var r = examDayOn(e, iso); if (r) out.push({ e: e, r: r });
+    });
+    return out;
+  }
+  function studyText(list) {
+    return list.map(function (x) { return x.e.name + ': ' + labelOf(x.r[1], x.r[2], x.e.books).replace(/\u00a0/g, ' ').replace(/\u2060/g, ''); }).join('; ');
+  }
+  function studyNotif() {
+    var st = S.settings; if (!st.studyRemind || !/^\d\d:\d\d$/.test(st.studyTime || '')) return null;
+    var t = today(), list = studyTodo(t); if (!list.length) return null;
+    var d = dateOf(t), hm = st.studyTime.split(':'); d.setHours(+hm[0], +hm[1], 0, 0);
+    var key = 'study@' + t; if (S.notifHide[key]) return null;
+    return { study: true, key: key, at: d.getTime(), ev: { title: 'È l’ora di studiare', date: t, time: st.studyTime, note: studyText(list) } };
+  }
   // le notifiche: i promemoria già scattati (ultimi 45 giorni), dal più recente
   function notifications() {
-    var now = Date.now(), lim = now - 45 * 864e5;
+    var now = Date.now(), lim = now - 45 * 864e5, sn = studyNotif();
     return S.events.map(function (ev) { return { ev: ev, at: remAt(ev), key: remKey(ev) }; })
+      .concat(sn ? [sn] : [])
       .filter(function (n) { return n.at && n.at <= now && n.at > lim && !S.notifHide[n.key]; })
       .sort(function (a, b) { return b.at - a.at; });
   }
   function unreadCount() { return notifications().filter(function (n) { return !S.notifRead[n.key]; }).length; }
   function upcomingRem() {
     var now = Date.now();
-    return S.events.map(function (ev) { return { ev: ev, at: remAt(ev) }; }).filter(function (n) { return n.at > now; }).sort(function (a, b) { return a.at - b.at; });
+    var sn = studyNotif();
+    return S.events.map(function (ev) { return { ev: ev, at: remAt(ev) }; }).concat(sn ? [sn] : []).filter(function (n) { return n.at > now; }).sort(function (a, b) { return a.at - b.at; });
   }
   function paintBell() {
     var n = unreadCount();
@@ -1714,7 +1740,7 @@
   }
   function sysNotify(n) {
     if (!S.settings.sysNotif || !('Notification' in window) || Notification.permission !== 'granted') return;
-    var opts = { body: whenText(n.ev) + (n.ev.note ? ' · ' + n.ev.note : ''), icon: 'icon-192.png', badge: 'icon-192.png', tag: n.key };
+    var opts = { body: n.study ? n.ev.note : whenText(n.ev) + (n.ev.note ? ' · ' + n.ev.note : ''), icon: 'icon-192.png', badge: 'icon-192.png', tag: n.key, data: n.study ? { tab: 'today' } : { date: n.ev.date } };
     var plain = function () { try { new Notification(n.ev.title, opts); } catch (e) {} };
     if (navigator.serviceWorker && navigator.serviceWorker.controller) navigator.serviceWorker.ready.then(function (r) { return r.showNotification(n.ev.title, opts); }).catch(plain);
     else plain();
@@ -1731,7 +1757,8 @@
     if (fresh.length) {
       var f = fresh[0];
       Sound.chime('timer'); buzz([40, 60, 40]);
-      toast('Promemoria: ' + f.ev.title + ' · ' + whenText(f.ev), { label: 'Vedi', run: openNotifs }, 9000);
+      if (f.study) toast('È l’ora di studiare: ' + f.ev.note, { label: 'Vai', run: function () { goToday(); } }, 9000);
+      else toast('Promemoria: ' + f.ev.title + ' · ' + whenText(f.ev), { label: 'Vedi', run: openNotifs }, 9000);
       fresh.forEach(sysNotify);
     } else if (old) toast(old === 1 ? 'Hai un promemoria nella campanella.' : 'Hai ' + old + ' promemoria nella campanella.', { label: 'Apri', run: openNotifs }, 6500);
     paintBell();
@@ -1821,19 +1848,19 @@
     var html = '<div class="sh-head"><div><span class="eyebrow">Promemoria</span><h2 class="display">Notifiche</h2></div><button class="ib" data-a="closeSheet" aria-label="Chiudi">' + I.x + '</button></div>';
     if (list.length) {
       html += '<div>' + list.map(function (n) {
-        return '<button class="ntf ' + evClass(n.ev) + (notifSnap[n.key] ? ' unread' : '') + '" data-a="notifGo" data-iso="' + n.ev.date + '">' +
-          '<span class="ni">' + I.bell + '</span><span class="tx"><b>' + esc(n.ev.title) + '</b><span>' + esc(whenText(n.ev)) + (n.ev.note ? ' · ' + esc(n.ev.note) : '') + '</span>' +
+        return '<button class="ntf ' + evClass(n.ev) + (notifSnap[n.key] ? ' unread' : '') + '" data-a="' + (n.study ? 'goToday' : 'notifGo') + '" data-iso="' + n.ev.date + '">' +
+          '<span class="ni">' + (n.study ? I.sprout : I.bell) + '</span><span class="tx"><b>' + esc(n.ev.title) + '</b><span>' + (n.study ? esc(n.ev.note) : esc(whenText(n.ev)) + (n.ev.note ? ' · ' + esc(n.ev.note) : '')) + '</span>' +
           '<small>' + ago(n.at) + '</small></span></button>';
       }).join('') + '</div>' +
         '<div style="text-align:center"><button class="btn ghost" data-a="notifClear">' + I.trash + 'Svuota le notifiche</button></div>';
     } else {
       html += '<div class="empty p3">' + I.bell.replace('<svg', '<svg style="width:44px;height:44px;opacity:.6"') +
-        '<p class="small muted">Nessuna notifica. Qui arrivano i promemoria degli impegni che segni nel calendario.</p></div>';
+        '<p class="small muted">Nessuna notifica. Qui arrivano i promemoria degli impegni che segni nel calendario e, se lo vuoi, quello dello studio.</p></div>';
     }
     if (up.length) {
       html += '<h3 class="sec-t">In arrivo</h3><div>' + up.map(function (n) {
         var d = new Date(n.at), when = isoOf(d) === isoOf(new Date()) ? 'oggi' : relDay(isoOf(d));
-        return '<button class="ntf ' + evClass(n.ev) + '" data-a="notifGo" data-iso="' + n.ev.date + '"><span class="ni">' + I.cal + '</span><span class="tx"><b>' + esc(n.ev.title) + '</b>' +
+        return '<button class="ntf ' + evClass(n.ev) + '" data-a="' + (n.study ? 'goToday' : 'notifGo') + '" data-iso="' + n.ev.date + '"><span class="ni">' + (n.study ? I.sprout : I.cal) + '</span><span class="tx"><b>' + esc(n.ev.title) + '</b>' +
           '<span>Ti avviso ' + when + ' alle ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + '</span></span></button>';
       }).join('') + '</div>';
     }
@@ -1845,7 +1872,19 @@
       'Arrivano mentre Fioritura è aperta. Se è chiusa, li trovi qui nella campanella appena la riapri.';
     html += '<div class="set-row"><div><b>Avvisi sul telefono</b><p class="small muted">' + desc + '</p></div>' +
       (supported && !iosHome ? '<button class="switch" role="switch" aria-checked="' + !!(S.settings.sysNotif && Notification.permission !== 'denied') + '" aria-label="Avvisi sul telefono" data-a="sysNotif"></button>' : '') + '</div>';
-    return html;
+    return html + studyRow();
+  }
+  // l'interruttore "Ricordami di studiare" (nella campanella e nelle Impostazioni)
+  function studyRow() {
+    var st = S.settings, on = !!st.studyRemind;
+    return '<div class="set-row"><div><b>Ricordami di studiare</b><p class="small muted">' +
+      (on ? 'Ogni giorno alle ' + esc(st.studyTime) + ', se la giornata di oggi non è ancora fatta. Se l’hai già fatta, nessun avviso.' :
+        'Un promemoria gentile ogni giorno all’ora che scegli, solo se la giornata di oggi non è ancora fatta.') +
+      (on && !st.sysNotif ? ' Per riceverlo anche ad app chiusa attiva «Avvisi sul telefono» nella campanella in alto.' : '') + '</p></div>' +
+      '<button class="switch" role="switch" aria-checked="' + on + '" aria-label="Ricordami di studiare" data-a="studyRemind"></button></div>' +
+      (on ? '<div class="study-time"><label class="lab" for="studyTime">Alle</label><select class="field" id="studyTime" data-study-time>' +
+        STUDY_TIMES.concat(STUDY_TIMES.indexOf(st.studyTime) < 0 ? [st.studyTime] : []).map(function (v) { return '<option' + (v === st.studyTime ? ' selected' : '') + '>' + v + '</option>'; }).join('') +
+        '</select></div>' : '');
   }
   function openNotifs() {
     notifSnap = {};
@@ -2453,6 +2492,7 @@
       [['auto', 'Auto'], ['light', 'Chiara'], ['dark', 'Scura'], ['evening', 'Di sera']].map(function (o) { return '<button data-a="theme" data-v="' + o[0] + '" aria-pressed="' + (st.theme === o[0]) + '">' + o[1] + '</button>'; }).join('') + '</div></div>' +
       sw('sounds', 'Suoni delicati', 'Un piccolo rintocco quando chiudi una giornata o finisce una sessione.') +
       sw('wake', 'Schermo acceso durante le sessioni', 'Così sul telefono il timer suona anche alla fine.') +
+      '<h3 class="sec-t">Promemoria dello studio</h3>' + studyRow() +
       '<h3 class="sec-t">I tuoi dati</h3>' +
       '<p class="help">' + (signedIn() ? 'I tuoi dati sono nel tuo account e su questo dispositivo. Se vuoi, puoi anche salvarne una copia in un file.' :
         'Senza account tutto resta solo su questo dispositivo. Puoi salvarne una copia in un file e caricarla su un altro dispositivo (le due versioni si uniscono, non si perde nulla), oppure accedere con un account e lasciar fare a lui.') + '</p>' +
@@ -2790,7 +2830,7 @@
   }
   // Unisce i dati di un altro dispositivo (o di una copia) con quelli di qui. Per ogni cosa vince la modifica
   // più recente; le spunte tolte e gli argomenti eliminati restano tolti. Unire due volte non cambia nulla.
-  var SYNC_SETTINGS = ['name', 'pal', 'theme'];
+  var SYNC_SETTINGS = ['name', 'pal', 'theme', 'studyRemind', 'studyTime', 'tz'];   // studyRemind/studyTime/tz li legge anche il server delle notifiche
   var SYNC_KEYS = ['exams', 'done', 'pages', 'pagesAt', 'notes', 'notesAt', 'mood', 'moodAt', 'focus', 'topics', 'gone', 'settings', 'settingsAt', 'welcomed', 'events', 'notifRead', 'notifHide', 'trophies', 'records', 'libretto', 'counters', 'hidden'];
   function mergeIn(o) {
     o = upgradeData(o || {});
@@ -3520,6 +3560,17 @@
           .catch(function (e) { toast('Avvisi attivi mentre l’app è aperta; ad app chiusa non ancora (' + (e && e.message || 'errore') + ').', null, 9000); });
       }).catch(function () {});
     },
+    studyRemind: function () {
+      var st = S.settings;
+      st.studyRemind = !st.studyRemind;
+      try { st.tz = Intl.DateTimeFormat().resolvedOptions().timeZone || st.tz; } catch (e) {}
+      S.settingsAt = Date.now(); save(); refreshSheet(); paintBell();
+      if (!st.studyRemind) { toast('Promemoria dello studio spento.'); return; }
+      var msg = 'Fatto: ogni giorno alle ' + st.studyTime + ' ti ricordo la giornata di studio, se non l’hai ancora fatta.';
+      if (!st.sysNotif && 'Notification' in window && !(isIOS() && !standalone())) toast(msg + ' Vuoi riceverlo anche ad app chiusa?', { label: 'Sì', run: function () { A.sysNotif(); } }, 10000);
+      else toast(msg, null, 6500);
+    },
+    goToday: function () { goToday(); },
     welcomeLogin: function () { S.welcomed = true; save(); closeSheet(true); acctMode = 'login'; A.account(); },
     setToggle: function (el) { var k = el.dataset.k; S.settings[k] = !S.settings[k]; save(); if (k === 'sounds' && S.settings.sounds) Sound.chime('done'); refreshSheet(); },
     export: exportData,
@@ -3583,6 +3634,12 @@
       notePending = { key: K(t.dataset.note), v: t.value };
       var sv = $('[data-saved]'); if (sv) sv.textContent = '';
       clearTimeout(noteTimer); noteTimer = setTimeout(flushNote, 500);
+    } else if (t.matches('[data-study-time]')) {
+      S.settings.studyTime = t.value; S.settingsAt = Date.now();
+      try { S.settings.tz = Intl.DateTimeFormat().resolvedOptions().timeZone || S.settings.tz; } catch (e2) {}
+      save(); paintBell();
+      var row = t.closest('.study-time'), p = row && row.previousElementSibling && row.previousElementSibling.querySelector('p');
+      if (p) p.textContent = p.textContent.replace(/alle \d\d:\d\d/, 'alle ' + t.value);
     } else if (t.matches('[data-setting]')) {
       S.settings[t.dataset.setting] = t.value.slice(0, 40); S.settingsAt = Date.now(); save();
       clearTimeout(t._r); t._r = setTimeout(function () { render(); }, 250);
@@ -3636,7 +3693,13 @@
   /* ================= AVVIO ================= */
   render();
   lastRemCheck = Date.now() - 13000;   // il primo controllo dei promemoria poco dopo l'apertura
-  // toccando un avviso del telefono: si apre il calendario su quel giorno (?cal=… o messaggio del service worker)
+  // toccando un avviso del telefono: si apre il calendario su quel giorno (?cal=… o messaggio del service worker),
+  // oppure Oggi per il promemoria dello studio (?tab=today)
+  function goToday() {
+    closeSheet(true); UI.tab = 'today';
+    try { localStorage.setItem('fioritura.tab', 'today'); } catch (e) {}
+    render(true); window.scrollTo(0, 0);
+  }
   function goCal(iso) {
     if (!ISO_RE.test(iso || '')) return;
     closeSheet(true); UI.tab = 'cal'; UI.calSel = iso; UI.calMonth = iso.slice(0, 7);
@@ -3645,10 +3708,11 @@
   }
   (function () {
     try {
-      var qs = new URLSearchParams(location.search), c = qs.get('cal');
-      if (c) { qs.delete('cal'); history.replaceState(null, '', location.pathname + (qs.toString() ? '?' + qs : '') + location.hash); goCal(c); }
+      var qs = new URLSearchParams(location.search), c = qs.get('cal'), tb = qs.get('tab');
+      if (c || tb) { qs.delete('cal'); qs.delete('tab'); history.replaceState(null, '', location.pathname + (qs.toString() ? '?' + qs : '') + location.hash); }
+      if (c) goCal(c); else if (tb === 'today') goToday();
     } catch (e) {}
-    if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', function (ev) { var m = ev.data || {}; if (m.type === 'cal') goCal(m.date); });
+    if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', function (ev) { var m = ev.data || {}; if (m.type === 'cal') goCal(m.date); else if (m.type === 'today') goToday(); });
   })();
   if (canSync) setTimeout(function () { pushRefresh(false); }, 4000);
   var fromLink = /access_token=|error_code=|error=/.test(location.hash);

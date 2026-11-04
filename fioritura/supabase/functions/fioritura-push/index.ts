@@ -8,6 +8,8 @@
 // Niente librerie: firma VAPID (ES256, RFC 8292) e cifratura del messaggio (aes128gcm, RFC 8291) con WebCrypto.
 // I promemoria stanno negli impegni del calendario (fioritura.data -> events): ogni impegno ha remTs, l'ora del
 // promemoria in millisecondi già calcolata dall'app (-1 = nessun promemoria), e tz, il fuso del telefono.
+// Promemoria dello studio: se data -> settings ha studyRemind, ogni giorno all'ora studyTime (nel fuso settings.tz) parte
+// "È l'ora di studiare" con le giornate di oggi non ancora fatte (data -> exams, data -> done). Nessuna giornata da fare: niente avviso.
 // Segreti della funzione (li mette il workflow .github/workflows/fioritura-push.yml): FIORITURA_VAPID_JWK, FIORITURA_CRON_SECRET.
 
 const SUBJECT = 'https://rahodavide95-sketch.github.io/RHDev/fioritura/';
@@ -121,6 +123,49 @@ function plusDay(iso: string, n: number): string {
   d.setUTCDate(d.getUTCDate() + n);
   return d.toISOString().slice(0, 10);
 }
+// giorno (AAAA-MM-GG) e minuti dalla mezzanotte nel fuso dato
+export function clockInTz(ms: number, tz: string): { date: string; min: number } {
+  try {
+    const parts = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+      .formatToParts(new Date(ms));
+    const g = (t: string) => (parts.find((p) => p.type === t) || { value: '0' }).value;
+    return { date: g('year') + '-' + g('month') + '-' + g('day'), min: (+g('hour') % 24) * 60 + (+g('minute')) };
+  } catch (_e) {
+    const d = new Date(ms);
+    return { date: d.toISOString().slice(0, 10), min: d.getUTCHours() * 60 + d.getUTCMinutes() };
+  }
+}
+// le giornate di oggi non ancora fatte, in tutti gli esami, come le scrive l'app ("Esame: V2 · pp. 91–105")
+export function studyTodo(exams: any, done: any, date: string): string[] {
+  const out: string[] = [];
+  for (const e of (Array.isArray(exams) ? exams : [])) {
+    if (!e || !e.id || (done && +done[e.id + '|' + date] > 0)) continue;
+    let row: any = null;
+    for (const p of (Array.isArray(e.phases) ? e.phases : [])) for (const r of (Array.isArray(p.days) ? p.days : [])) if (r && r[0] === date) row = r;
+    if (!row) continue;
+    const o = row[2] || {}, books = Array.isArray(e.books) ? e.books : [];
+    let label: string;
+    if (o.critici) label = 'Solo argomenti critici';
+    else {
+      const parts = (Array.isArray(row[1]) ? row[1] : []).map((x: any) => ((books[x[0] - 1] && String(books[x[0] - 1]).trim()) || 'V' + x[0]) + ' · pp. ' + x[1] + '–' + x[2]);
+      if (o.extra) parts.push(String(o.extra));
+      label = parts.join(' + ') || 'Ripasso libero';
+    }
+    out.push(String(e.name || 'Studio') + ': ' + label);
+  }
+  return out;
+}
+// il promemoria dello studio di questo account, se è il momento (finestra di 10 minuti dopo l'ora scelta)
+export function studyDue(row: any, nowMs: number): { key: string; date: string; body: string } | null {
+  const st = row && row.settings;
+  if (!st || !st.studyRemind || !/^\d\d:\d\d$/.test(String(st.studyTime || ''))) return null;
+  const at = String(st.studyTime).split(':'), want = (+at[0]) * 60 + (+at[1]);
+  const c = clockInTz(nowMs, st.tz || 'Europe/Rome');
+  if (c.min < want || c.min >= want + 10) return null;
+  const todo = studyTodo(row.exams, row.done, c.date);
+  if (!todo.length) return null;
+  return { key: 'study@' + c.date, date: c.date, body: todo.join('; ').slice(0, 300) };
+}
 export function whenText(e: any, nowMs: number): string {
   const today = dayInTz(nowMs, e.tz || 'Europe/Rome');
   let day: string;
@@ -143,13 +188,15 @@ async function rest(path: string, opts: { method?: string; body?: unknown; prefe
 export async function run(nowMs?: number): Promise<{ due: number; sent: number; gone: number }> {
   const now = nowMs || Date.now(), from = now - 10 * 60000;
   if (!CFG.jwk) throw new Error('mancano le chiavi VAPID');
-  const rows: any[] = await rest('/fioritura?select=user_id,events:data->events') || [];
+  const rows: any[] = await rest('/fioritura?select=user_id,events:data->events,settings:data->settings,exams:data->exams,done:data->done') || [];
   const due: any[] = [];
   for (const row of rows) {
     for (const e of (Array.isArray(row.events) ? row.events : [])) {
       const ts = +e.remTs || 0;
       if (e && e.id && ts > from && ts <= now) due.push({ user: row.user_id, key: e.id + '@' + ts, e });
     }
+    const sd = studyDue(row, now);
+    if (sd) due.push({ user: row.user_id, key: sd.key, study: sd });
   }
   if (!due.length) return { due: 0, sent: 0, gone: 0 };
   // ogni promemoria una volta sola: tornano solo le righe nuove
@@ -164,8 +211,12 @@ export async function run(nowMs?: number): Promise<{ due: number; sent: number; 
   const subs: any[] = await rest('/fioritura_push?select=endpoint,p256dh,auth,user_id&user_id=in.(' + users.join(',') + ')') || [];
   let sent = 0, gone = 0;
   for (const d of todo) {
-    const note = d.e.note ? ' · ' + String(d.e.note).slice(0, 120) : '';
-    const payload = { title: String(d.e.title || 'Promemoria').slice(0, 120), body: whenText(d.e, now) + note, tag: d.key, date: d.e.date };
+    let payload: any;
+    if (d.study) payload = { title: 'È l’ora di studiare', body: d.study.body, tag: d.key, tab: 'today' };
+    else {
+      const note = d.e.note ? ' · ' + String(d.e.note).slice(0, 120) : '';
+      payload = { title: String(d.e.title || 'Promemoria').slice(0, 120), body: whenText(d.e, now) + note, tag: d.key, date: d.e.date };
+    }
     for (const s of subs.filter((x) => x.user_id === d.user)) {
       try {
         const status = await sendPush(s, payload, CFG.jwk);

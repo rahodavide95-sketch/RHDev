@@ -1,5 +1,5 @@
 /* Fioritura: funziona anche senza internet e prende da sola gli aggiornamenti */
-const VERSION = 'fioritura-v4';
+const VERSION = 'fioritura-v5';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
@@ -54,20 +54,25 @@ self.addEventListener('push', e => {
     icon: 'icon-192.png',
     badge: 'icon-192.png',
     tag: d.tag || 'fioritura',
-    data: { date: d.date || '' }
+    data: { date: d.date || '', tab: d.tab || '' }
   }));
 });
 
-// Toccando un avviso: si torna su Fioritura (o si apre) sul giorno dell'impegno nel calendario
+// Toccando un avviso: si torna su Fioritura (o si apre) sul giorno dell'impegno nel calendario,
+// oppure su Oggi per il promemoria dello studio
 self.addEventListener('notificationclick', e => {
   e.notification.close();
-  const date = (e.notification.data && e.notification.data.date) || '';
+  const data = e.notification.data || {};
+  const date = data.date || '', toToday = data.tab === 'today';
   e.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
       for (const c of list) {
-        if (c.url.includes('/fioritura/') && 'focus' in c) { if (date) c.postMessage({ type: 'cal', date }); return c.focus(); }
+        if (c.url.includes('/fioritura/') && 'focus' in c) {
+          if (toToday) c.postMessage({ type: 'today' }); else if (date) c.postMessage({ type: 'cal', date });
+          return c.focus();
+        }
       }
-      return self.clients.openWindow('./' + (date ? '?cal=' + date : ''));
+      return self.clients.openWindow('./' + (toToday ? '?tab=today' : date ? '?cal=' + date : ''));
     })
   );
 });

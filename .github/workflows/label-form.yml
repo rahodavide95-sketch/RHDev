@@ -133,7 +133,13 @@ jobs:
           echo "anon=$ANON" >> "$GITHUB_OUTPUT"
           echo "Progetto trovato: $(api "$API/projects/$REF" | jq -r '"nome \(.name), regione \(.region), stato \(.status)"')"
           echo "Indirizzo del progetto: https://$REF.supabase.co"
-          echo "Chiave pubblica (anon, fatta per stare nel codice del browser): $ANON"
+          # GitHub a volte nasconde la chiave nei log (***): la stampo anche in esadecimale.
+          # Non è un segreto: è la chiave pubblica fatta apposta per stare nel codice del browser.
+          echo "Chiave pubblica (anon): $ANON"
+          echo "Chiave pubblica in esadecimale: $(printf '%s' "$ANON" | od -An -v -tx1 | tr -d ' \n')"
+          if grep -q "$REF" label-form/js/config.js && ! grep -q "$ANON" label-form/js/config.js; then
+            echo "::warning::label-form/js/config.js ha l'indirizzo giusto ma una chiave pubblica diversa da quella del progetto."
+          fi
           if grep -q "$REF" label-form/js/config.js; then
             echo "L'app punta già al progetto di Label Form."
             echo "app_on_new=1" >> "$GITHUB_OUTPUT"
@@ -208,7 +214,7 @@ jobs:
           code=$(curl -sS -o /tmp/out.json -w '%{http_code}' -X PATCH "$API/projects/$REF/config/auth" \
             -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" --data @/tmp/mail.json)
           echo "Testi delle email: risposta $code"
-          if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then echo "::warning::Testi delle email non aggiornati: $(head -c 300 /tmp/out.json)"; fi
+          if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then echo "Testi delle email: restano quelli standard di Supabase (col piano gratuito servirebbe un server email proprio). Non è un problema: l'accesso non manda email di conferma."; fi
 
       # Come manda le email di accesso Supabase. Solo numeri e sì/no: il repository è pubblico,
       # quindi niente indirizzi né altri dati personali nel registro.

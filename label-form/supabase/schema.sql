@@ -1,7 +1,7 @@
 -- ============================================================================
 -- Label Form — il modulo dell'etichetta per gli artisti (cartella label-form/)
 --
--- Sta nel progetto Supabase "label-form", tutto suo: nessun'altra app ci mette account o tabelle.
+-- Sta nel progetto Supabase "label-form" (Francoforte, UE), tutto suo: nessun'altra app ci mette account o tabelle.
 -- Si può rieseguire senza problemi (lo applica il workflow .github/workflows/label-form.yml).
 --
 -- Regole di sicurezza

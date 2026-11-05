@@ -116,9 +116,9 @@ function showAuth(mode = 'signin', prefill = '') {
     mode !== 'signin' ? h('button.linkbtn', { type: 'button', onclick: () => showAuth('signin', email.value.trim()) }, 'Ho già un account') : h('button.linkbtn', { type: 'button', onclick: () => showAuth('signup', email.value.trim()) }, 'Prima volta? Crea un account'),
     mode !== 'reset' ? h('button.linkbtn', { type: 'button', onclick: () => showAuth('reset', email.value.trim()) }, 'Password dimenticata') : null);
   gateScreen(mode === 'signin' ? 'Area dell\'etichetta' : mode === 'signup' ? 'Crea l\'account' : 'Password dimenticata',
-    mode === 'signin' ? 'Accedi con l\'account dell\'etichetta. La prima volta tocca "Crea un account".'
-      : mode === 'signup' ? 'Usa l\'email con cui sei iscritto a Supabase: è l\'unica a cui il servizio email gratuito manda la conferma. Dopo il tuo primo accesso le iscrizioni si chiudono: nessun altro potrà creare un account.'
-      : 'Ti arriva un link per sceglierne una nuova.',
+    mode === 'signin' ? 'Entra con la tua mail e la tua password. La prima volta tocca "Crea un account".'
+      : mode === 'signup' ? 'Scegli la mail e la password che vuoi (almeno 10 caratteri). Non serve nessuna email di conferma.'
+      : 'Ti arriva un link per sceglierne una nuova (solo se l\'indirizzo è quello del tuo account Supabase; altrimenti scrivi a chi gestisce il sito).',
     form, links,
     h('div.gate-demo', h('p.muted', 'Vuoi solo provare? La prova tiene tutto in questo browser, senza account.'), btn('Prova senza account', () => { localStorage.setItem('consegne-mode', 'demo'); location.reload(); }, { kind: 'ghost block', ic: 'sparkle' })));
 }
@@ -172,18 +172,21 @@ function showChallenge() {
 }
 
 function showClaim() {
+  const code = input({ type: 'text', autocomplete: 'off', spellcheck: 'false', placeholder: 'XXXXX-XXXXX-XXXXX-XXXXX', maxlength: 40 });
   const err = errBox();
-  const b = btn('Sì, questo è l\'account dell\'etichetta', null, { kind: 'block' });
-  b.onclick = async () => {
-    busy(b, true);
-    try {
-      const r = await A.api.claim();
-      if (r === 'ok' || r === 'already') { toast('Area dell\'etichetta pronta', { type: 'ok' }); gate(); return; }
-      err.textContent = { taken: 'Questo spazio è già di un altro account.', not_allowed: 'Questo account non è autorizzato.', need_mfa: 'Serve la verifica in due passaggi.', need_email: 'Conferma prima l\'email.' }[r] || 'Non riuscito.';
-    } catch (x) { err.textContent = friendly(x); }
-    busy(b, false);
-  };
-  gateScreen('Primo accesso', 'Questo account diventerà l\'unico che può aprire l\'area dell\'etichetta. Nessun altro account potrà più farlo.', err, b,
+  const b = btn('Attiva', null, { type: 'submit', kind: 'block' });
+  gateScreen('Codice di attivazione', 'Serve solo la prima volta: scrivi il codice che ti è stato dato. Da quel momento questo account è l\'unico che può aprire l\'area dell\'etichetta e nessun altro potrà più iscriversi.',
+    h('form.stack', { onsubmit: async e => {
+      e.preventDefault(); err.textContent = '';
+      if (!code.value.trim()) { err.textContent = 'Scrivi il codice.'; return; }
+      busy(b, true);
+      try {
+        const r = await A.api.claim(code.value.trim());
+        if (r === 'ok' || r === 'already') { toast('Area dell\'etichetta pronta', { type: 'ok' }); gate(); return; }
+        err.textContent = { bad_code: 'Codice sbagliato: controlla di averlo copiato tutto.', taken: 'Questo spazio è già di un altro account.', not_allowed: 'Questo account non è autorizzato.', need_mfa: 'Serve la verifica in due passaggi.', need_email: 'L\'email dell\'account non risulta confermata.' }[r] || 'Non riuscito.';
+      } catch (x) { err.textContent = friendly(x); }
+      busy(b, false);
+    } }, field('Codice', code), err, b),
     btn('Esci', async () => { await A.api.auth.signOut(); gate(); }, { kind: 'ghost block' }));
 }
 function showNotOwner(st) {
@@ -269,6 +272,11 @@ function showUnlock(useCode = false) {
 /* ─── percorso d'ingresso ─── */
 let gating = false;
 export async function gate() {
+  if (!A.demo && A.notReady) {
+    gateScreen('Quasi pronto', 'Sto preparando lo spazio di Consegne. Ti avviso io quando puoi entrare.',
+      btn('Intanto prova senza account', () => { localStorage.setItem('consegne-mode', 'demo'); location.reload(); }, { kind: 'ghost block', ic: 'sparkle' }));
+    return;
+  }
   if (gating) return;
   gating = true;
   try {
@@ -361,6 +369,7 @@ document.addEventListener('click', e => { if (!e.target.closest('.menu-wrap')) d
 
 /* ─── avvio ─── */
 async function boot() {
+  try { A.notReady = !(await import('../config.js')).CONFIG.ready; } catch { A.notReady = true; }
   try {
     A.api = A.demo ? (await import('../api/demo.js')).adminApi : (await import('../api/supabase.js')).adminApi;
   } catch (x) { gateScreen('Connessione non riuscita', 'Non riesco a caricare i componenti. Ricarica la pagina.'); return; }

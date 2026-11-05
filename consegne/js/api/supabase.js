@@ -128,7 +128,7 @@ export const adminApi = {
     async user() { const { data } = await admin().auth.getUser(); return data.user || null; },
   },
   status: () => rpc(admin(), 'consegne_status', {}),
-  claim: () => rpc(admin(), 'consegne_claim', {}),
+  claim: code => rpc(admin(), 'consegne_claim', { p_code: code }),
 
   async getSettings() { return check(await admin().from('consegne_settings').select('*').maybeSingle()); },
   async saveSettings(patch) {

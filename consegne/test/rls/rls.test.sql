@@ -41,6 +41,9 @@ create table public._ids (k text primary key, v uuid);
 grant all on public._ids to authenticated, anon, service_role;
 set client_min_messages = notice;
 
+-- codice di attivazione di prova (quello vero lo conosce solo l'etichetta)
+update consegne_activation set code_hash = encode(sha256(convert_to('PROVA12345', 'UTF8')), 'hex');
+
 -- 0. il workflow fissa l'email del proprietario
 select _check(public.consegne_pin_owner('d@example.com') = 'pinned', 'email del proprietario fissata dal workflow');
 
@@ -50,7 +53,8 @@ select _as('anon');
 select _fails($$select * from consegne_settings$$);
 select _fails($$select * from consegne_invites$$);
 select _fails($$select * from consegne_owner$$);
-select _fails($$select consegne_claim()$$);
+select _fails($$select consegne_claim('PROVA12345')$$);
+select _fails($$select * from consegne_activation$$);
 select _fails($$select consegne_find('x')$$);
 select _fails($$select consegne_mail_claim()$$);
 select _fails($$select consegne_copy_ok('x', null)$$);
@@ -61,22 +65,26 @@ select _check(consegne_open(_tok('nessuno')) ->> 'error' = 'not_found', 'link in
 -- 2. Reclamo dell'area dell'etichetta
 set role authenticated;
 select _as('eve');
-select _check(consegne_claim() = 'need_mfa', 'senza 2FA non si reclama');
+select _check(consegne_claim('PROVA12345') = 'need_mfa', 'senza 2FA non si reclama');
 select _as('eve', 'aal2');
-select _check(consegne_claim() = 'not_allowed', 'un''altra email non può reclamare (email fissata)');
+select _check(consegne_claim('PROVA12345') = 'not_allowed', 'un''altra email non può reclamare (email fissata)');
 select _check(not (consegne_status() ->> 'can_claim')::boolean, 'stato: eve non può reclamare');
 select _as('carol', 'aal2');
-select _check(consegne_claim() = 'need_email', 'email non confermata: no');
+select _check(consegne_claim('PROVA12345') = 'need_email', 'email non confermata: no');
 select _as('d');
-select _check(consegne_claim() = 'need_mfa', 'anche D senza 2FA: no');
+select _check(consegne_claim('PROVA12345') = 'need_mfa', 'anche D senza 2FA: no');
 select _check(not consegne_is_owner(), 'D senza 2FA non è proprietario');
 select _as('d', 'aal2');
 select _check((consegne_status() ->> 'can_claim')::boolean, 'stato: D può reclamare');
-select _check(consegne_claim() = 'ok', 'D reclama con 2FA ed email confermata');
-select _check(consegne_claim() = 'already', 'secondo reclamo: già suo');
+select _check(consegne_claim(null) = 'bad_code', 'senza codice di attivazione: no');
+select _check(consegne_claim('SBAGLIATO01') = 'bad_code', 'codice di attivazione sbagliato: no');
+select _fails($$select * from consegne_activation$$);
+select _check(true, 'il codice (anche solo la sua impronta) non si legge');
+select _check(consegne_claim('prova-12345') = 'ok', 'D reclama con 2FA, email confermata e codice (trattini e minuscole ok)');
+select _check(consegne_claim('PROVA12345') = 'already', 'secondo reclamo: già suo');
 select _check(consegne_is_owner(), 'D è proprietario con 2FA');
 select _as('eve', 'aal2');
-select _check(consegne_claim() = 'taken', 'dopo D nessun altro');
+select _check(consegne_claim('PROVA12345') = 'taken', 'dopo D nessun altro, nemmeno con il codice');
 reset role;
 select _check(public.consegne_pin_owner('altro@example.com') = 'claimed_by_other', 'il workflow non può cambiare un proprietario già attivo');
 set role authenticated;

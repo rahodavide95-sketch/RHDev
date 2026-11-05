@@ -87,7 +87,10 @@ jobs:
         run: |
           api() { curl -sS -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" "$@"; }
           api "$API/projects" > /tmp/projects.json
-          REF=$(jq -r '[.[] | select(.name == "label-form" or .name == "label form" or .name == "consegne")][0] | (.ref // .id // empty)' /tmp/projects.json)
+          # il nome può essere scritto in vari modi: "label-form", "Label Form", "label_form", "LabelForm"…
+          SEL='[.[] | select((.name | ascii_downcase | gsub("[^a-z]"; "")) as $n | $n == "labelform" or $n == "consegne")][0] | (.ref // .id // empty)'
+          REF=$(jq -r "$SEL" /tmp/projects.json)
+          echo "Progetti che questo accesso vede: $(jq -r 'length' /tmp/projects.json) ($(jq -r '[.[].name] | join(", ")' /tmp/projects.json))"
           if [ -z "$REF" ]; then
             echo "Campi di un progetto: $(jq -c '.[0] | keys' /tmp/projects.json 2>/dev/null)"
             ORG=$(jq -r --arg r "$OLD_REF" '[.[] | select((.ref // .id) == $r)][0] | (.organization_slug // .organization_id // empty)' /tmp/projects.json)
@@ -329,7 +332,7 @@ jobs:
       - name: Tieni sveglio il progetto
         run: |
           [ -n "$SUPABASE_ACCESS_TOKEN" ] || { echo "Manca SUPABASE_ACCESS_TOKEN"; exit 0; }
-          REF=$(curl -sS "$API/projects" -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" | jq -r '[.[] | select(.name == "label-form" or .name == "label form" or .name == "consegne")][0] | (.ref // .id // empty)')
+          REF=$(curl -sS "$API/projects" -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" | jq -r '[.[] | select((.name | ascii_downcase | gsub("[^a-z]"; "")) as $n | $n == "labelform" or $n == "consegne")][0] | (.ref // .id // empty)')
           [ -n "$REF" ] || { echo "Progetto label-form non ancora creato"; exit 0; }
           st=$(curl -sS "$API/projects/$REF" -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" | jq -r '.status // empty')
           echo "Stato: $st"

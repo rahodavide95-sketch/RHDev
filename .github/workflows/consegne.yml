@@ -5,9 +5,9 @@ name: Consegne (database ed email)
 #   1. fa girare i test (codice + sicurezza del database su un Postgres vero): se uno fallisce, si ferma;
 #   2. trova il progetto "consegne" o, se non c'è ancora, lo crea (server a Francoforte, UE) — SOLO se il
 #      piano Supabase è gratuito, così non costa nulla;
-#   3. applica lo schema e le impostazioni di accesso (email in italiano a nome di Consegne, indirizzi di
-#      ritorno, password lunghe, verifica in due passaggi) e chiude le iscrizioni appena il proprietario è
-#      entrato: da lì nessun altro può nemmeno creare un account;
+#   3. applica lo schema e le impostazioni di accesso (si entra con la mail che si vuole, senza email di
+#      conferma; diventa proprietario solo chi ha il codice di attivazione; password lunghe, verifica in due
+#      passaggi) e chiude le iscrizioni appena il proprietario è entrato: nessun altro può creare un account;
 #   4. pubblica la funzione delle email e prova tutto dal vivo, come un estraneo senza account;
 #   5. quando l'app punta al progetto di Consegne, toglie dal progetto di un'altra app le tabelle consegne_
 #      messe lì il primo giorno (solo se vuote) e la sua funzione;
@@ -98,8 +98,8 @@ jobs:
             PLAN=$(jq -r '.plan // .billing_plan // .tier // "sconosciuto"' /tmp/org.json 2>/dev/null)
             echo "Piano Supabase: $PLAN"
             if [ "$PLAN" != "free" ]; then
-              echo "::error::Il piano Supabase non è gratuito ($PLAN): per non farti spendere soldi non creo il progetto. Crealo tu su supabase.com con il nome \"consegne\" (regione Frankfurt) e rilancia il workflow."
-              exit 1
+              echo "::warning::Progetto \"consegne\" non trovato e non posso verificare che il piano Supabase sia gratuito ($PLAN): per non rischiare costi non lo creo io. Crealo su supabase.com (nome consegne, regione Frankfurt, piano Free) e rilancia il workflow."
+              exit 0
             fi
             PASS=$(openssl rand -hex 24)
             echo "::add-mask::$PASS"
@@ -133,7 +133,7 @@ jobs:
           fi
 
       - name: Applica lo schema
-        if: steps.token.outputs.skip != '1'
+        if: steps.proj.outputs.ref != ''
         env:
           REF: ${{ steps.proj.outputs.ref }}
         run: |
@@ -144,7 +144,7 @@ jobs:
           if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then exit 1; fi
 
       - name: Fissa l'email del proprietario
-        if: steps.token.outputs.skip != '1' && env.OWNER_EMAIL != ''
+        if: steps.proj.outputs.ref != '' && env.OWNER_EMAIL != ''
         env:
           REF: ${{ steps.proj.outputs.ref }}
         run: |
@@ -158,7 +158,7 @@ jobs:
           if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then exit 1; fi
 
       - name: Impostazioni di accesso
-        if: steps.token.outputs.skip != '1'
+        if: steps.proj.outputs.ref != ''
         env:
           REF: ${{ steps.proj.outputs.ref }}
         run: |
@@ -170,7 +170,7 @@ jobs:
           for o in $(echo "$EXTRA_ORIGINS" | tr ',' ' '); do LIST="$LIST,$o/**"; done
           jq -n --arg site "$APP_URL" --arg list "$LIST" --argjson closed "$CLOSED" '{
             site_url: $site, uri_allow_list: $list, disable_signup: $closed,
-            external_email_enabled: true, mailer_autoconfirm: false, password_min_length: 10,
+            external_email_enabled: true, mailer_autoconfirm: true, password_min_length: 10,
             mfa_totp_enroll_enabled: true, mfa_totp_verify_enabled: true
           }' > /tmp/auth.json
           code=$(curl -sS -o /tmp/out.json -w '%{http_code}' -X PATCH "$API/projects/$REF/config/auth" \
@@ -204,7 +204,7 @@ jobs:
       # Come manda le email di accesso Supabase. Solo numeri e sì/no: il repository è pubblico,
       # quindi niente indirizzi né altri dati personali nel registro.
       - name: Email di accesso (controllo, senza dati personali)
-        if: steps.token.outputs.skip != '1'
+        if: steps.proj.outputs.ref != ''
         env:
           REF: ${{ steps.proj.outputs.ref }}
         run: |
@@ -218,12 +218,12 @@ jobs:
             -H "Content-Type: application/json" --data @/tmp/q.json | jq -c '.[0] // .' || true
 
       - uses: supabase/setup-cli@v1
-        if: steps.token.outputs.skip != '1'
+        if: steps.proj.outputs.ref != ''
         with:
           version: latest
 
       - name: Impostazioni della funzione delle email
-        if: steps.token.outputs.skip != '1'
+        if: steps.proj.outputs.ref != ''
         working-directory: consegne
         env:
           REF: ${{ steps.proj.outputs.ref }}
@@ -236,7 +236,7 @@ jobs:
           echo "Impostazioni salvate: ${#args[@]}"
 
       - name: Pubblica la funzione delle email
-        if: steps.token.outputs.skip != '1'
+        if: steps.proj.outputs.ref != ''
         working-directory: consegne
         env:
           REF: ${{ steps.proj.outputs.ref }}
@@ -245,7 +245,7 @@ jobs:
       # Prova dal vivo, come un estraneo senza account: niente dati visibili, link finti rifiutati,
       # funzioni interne chiuse, funzione delle email raggiungibile. Se qualcosa non torna, il workflow è rosso.
       - name: Prova dal vivo (come un estraneo)
-        if: steps.token.outputs.skip != '1'
+        if: steps.proj.outputs.ref != ''
         env:
           REF: ${{ steps.proj.outputs.ref }}
           ANON: ${{ steps.proj.outputs.anon }}
@@ -280,7 +280,7 @@ jobs:
       # Consegne non deve stare nel progetto di un'altra app. Si toglie solo quando l'app punta già al
       # progetto di Consegne, e le tabelle si cancellano solo se sono vuote (altrimenti si avvisa e basta).
       - name: Togli Consegne dal progetto dell'altra app
-        if: steps.token.outputs.skip != '1' && steps.proj.outputs.app_on_new == '1'
+        if: steps.proj.outputs.ref != '' && steps.proj.outputs.app_on_new == '1'
         run: |
           q() { jq -n --arg s "$1" '{query: $s}' > /tmp/q.json; curl -sS -X POST "$API/projects/$OLD_REF/database/query" \
             -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" --data @/tmp/q.json; }

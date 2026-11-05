@@ -50,11 +50,25 @@ begin
   );
 end $$;
 
--- Il primo accesso (con email confermata e 2FA) diventa proprietario. Se il workflow ha fissato
--- l'email del proprietario (secret CONSEGNE_OWNER_EMAIL), può reclamare solo quell'indirizzo.
-create or replace function public.consegne_claim() returns text
+-- Codice di attivazione: solo chi lo conosce può diventare proprietario. Qui c'è solo la sua impronta
+-- SHA-256 (100 bit casuali: non si ricava dall'impronta); il codice lo ha solo l'etichetta.
+create table if not exists public.consegne_activation (
+  id boolean primary key default true check (id),
+  code_hash text not null check (code_hash ~ '^[0-9a-f]{64}$'),
+  used_at timestamptz
+);
+alter table public.consegne_activation enable row level security;
+revoke all on public.consegne_activation from anon, authenticated;
+insert into public.consegne_activation (id, code_hash)
+  values (true, 'c01588bea84045e37cae45d9c81511849acc7309ae44337e429ecd24c5610b33')
+  on conflict (id) do update set code_hash = excluded.code_hash where public.consegne_activation.used_at is null;
+
+-- Diventa proprietario chi ha 2FA, email confermata (in automatico nel progetto di Consegne) e il codice
+-- di attivazione. Se il workflow ha fissato l'email (secret CONSEGNE_OWNER_EMAIL), serve anche quella.
+drop function if exists public.consegne_claim();
+create or replace function public.consegne_claim(p_code text) returns text
 language plpgsql security definer set search_path = public as $$
-declare o public.consegne_owner; me text;
+declare o public.consegne_owner; me text; a public.consegne_activation;
 begin
   if auth.uid() is null then return 'not_allowed'; end if;
   if coalesce((auth.jwt() ->> 'aal'), '') <> 'aal2' then return 'need_mfa'; end if;
@@ -65,8 +79,14 @@ begin
   if found and o.user_id = auth.uid() then return 'already'; end if;
   if found and o.user_id is not null then return 'taken'; end if;
   if found and o.email is not null and o.email <> me then return 'not_allowed'; end if;
+  select * into a from public.consegne_activation where id;
+  if not found or a.code_hash is null
+     or encode(sha256(convert_to(upper(regexp_replace(coalesce(p_code, ''), '[^A-Za-z0-9]', '', 'g')), 'UTF8')), 'hex') <> a.code_hash then
+    return 'bad_code';
+  end if;
   insert into public.consegne_owner (id, user_id, email) values (true, auth.uid(), me)
     on conflict (id) do update set user_id = excluded.user_id, email = excluded.email;
+  update public.consegne_activation set used_at = now() where id;
   return 'ok';
 end $$;
 
@@ -543,7 +563,7 @@ do $$
 declare fn text;
 begin
   foreach fn in array array[
-    'consegne_is_owner()', 'consegne_status()', 'consegne_claim()', 'consegne_pin_owner(text)',
+    'consegne_is_owner()', 'consegne_status()', 'consegne_claim(text)', 'consegne_pin_owner(text)',
     'consegne_find(text)', 'consegne_link_error(public.consegne_invites)', 'consegne_sealed_ok(jsonb, integer)',
     'consegne_ids_ok(jsonb)', 'consegne_ids(jsonb)', 'consegne_pw_ok(jsonb)', 'consegne_verifier_hash(text)',
     'consegne_check_pw(public.consegne_invites, text)', 'consegne_open(text)', 'consegne_unlock(text, text)',
@@ -557,7 +577,7 @@ begin
 end $$;
 grant execute on function public.consegne_is_owner() to authenticated;
 grant execute on function public.consegne_status() to authenticated;
-grant execute on function public.consegne_claim() to authenticated;
+grant execute on function public.consegne_claim(text) to authenticated;
 grant execute on function public.consegne_open(text) to anon, authenticated;
 grant execute on function public.consegne_unlock(text, text) to anon, authenticated;
 grant execute on function public.consegne_submit(text, jsonb) to anon, authenticated;

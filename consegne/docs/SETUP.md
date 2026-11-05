@@ -41,17 +41,14 @@ le **iscrizioni si chiudono**: nessun altro può nemmeno creare un account.
 
 Apri **https://rahodavide95-sketch.github.io/RHDev/consegne/**.
 
-1. **Crea un account** con l'email con cui sei iscritto a **Supabase** (quella del tuo account sul sito
-   supabase.com). Il servizio email gratuito di Supabase manda la conferma **solo** a quell'indirizzo e
-   al massimo un paio di email all'ora. Con un altro indirizzo l'email non parte.
-   - L'email ha come oggetto "Conferma il tuo account di Consegne" e come mittente "Supabase Auth":
-     guarda anche in Spam e, su Gmail, in Promozioni o Aggiornamenti.
-   - Apri il link dallo stesso dispositivo, poi accedi.
+1. **Crea un account** con la mail e la password che vuoi (password di almeno 10 caratteri).
+   Non arriva nessuna email di conferma: entri subito.
 2. **Verifica in due passaggi**: è obbligatoria.
    - Installa un'app di autenticazione: Google Authenticator, Microsoft Authenticator, 1Password, Authy o "Password" di iPhone.
    - Inquadra il QR e scrivi il codice di 6 cifre.
    - Da quel momento, per entrare servono password + codice.
-3. **Primo accesso**: conferma che questo è l'account dell'etichetta.
+3. **Codice di attivazione** (solo la prima volta): scrivi il codice che ti è stato dato in privato.
+   Da quel momento il tuo account è l'unico proprietario e le iscrizioni si chiudono.
 4. **Chiave di cifratura**:
    - Scegli una password di cifratura **diversa** da quella dell'account (meglio una frase lunga).
    - Ti viene mostrato il **codice di recupero**: scaricalo o stampalo e tienilo al sicuro.
@@ -124,7 +121,7 @@ Esempio con il dominio su Cloudflare e la pagina su `invio.subconsciousculture.c
 |---|---|
 | Ho dimenticato la password di cifratura | Sblocca › "uso il codice di recupero" e scegli una password nuova. |
 | Ho perso password **e** codice di recupero | I dati già inviati non si possono più aprire (è la garanzia di sicurezza). Crea una nuova chiave dal pannello Supabase (progetto `consegne`: svuota `label_key` in `consegne_settings`) e chiedi agli artisti di reinviare. |
-| L'email di conferma non arriva | Usa l'email del tuo account Supabase (vedi punto 2), guarda in Spam/Promozioni, aspetta un'ora se l'hai chiesta più volte. Oppure: supabase.com › progetto `consegne` › Authentication › Users › **Add user** › **Create new user** con la tua email e password, spunta **Auto Confirm User**, poi accedi da Consegne. |
+| Ho dimenticato la password dell'account | Se la tua mail è quella dell'account Supabase usa "Password dimenticata". Altrimenti: supabase.com › progetto `consegne` › Authentication › Users › il tuo utente › cambia la password. I dati degli artisti non si perdono: sono chiusi con la chiave di cifratura, non con la password dell'account. |
 | Ho perso il telefono con il codice 2FA | supabase.com › progetto `consegne` › Authentication › Users › il tuo utente › elimina il fattore MFA, poi rientra e riattivalo. |
 | Un link è finito nelle mani sbagliate | Nella release › menu dell'artista › **Nuovo link** (il vecchio smette subito di funzionare). Chi ha il link non può leggere i dati già inviati. |
 | L'artista ha dimenticato la sua password | Non si recupera: i dati restano al sicuro da te. Puoi mandargli il PDF dell'invio. |

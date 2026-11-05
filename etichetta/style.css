@@ -9,13 +9,29 @@ a { color: inherit; text-decoration: none; }
 button { cursor: pointer; border: none; background: none; font: inherit; }
 textarea { resize: none; }
 
+/* ----- Fonts (self-hosted, see fonts/LICENSE.txt) ----- */
+@font-face {
+  font-family: 'Syne';
+  font-style:  normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('fonts/syne.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'DM Sans';
+  font-style:  normal;
+  font-weight: 100 1000;
+  font-display: swap;
+  src: url('fonts/dm-sans.woff2') format('woff2');
+}
+
 /* ----- Design tokens ----- */
 :root {
   --bg:          #080808;
   --bg-alt:      #0e0e0e;
   --fg:          #f0ece6;
   --fg-2:        #9a9590;
-  --fg-3:        #555250;
+  --fg-3:        #7d7873;   /* ≥ 4.5:1 on the dark background (WCAG AA) */
   --accent:      #f0ece6;
   --border:      rgba(240, 236, 230, 0.07);
 
@@ -60,6 +76,18 @@ body {
 .page-cover.is-hidden { opacity: 0; }
 
 ::selection { background: var(--fg); color: var(--bg); }
+
+/* Visible focus for keyboard users only */
+:focus-visible {
+  outline:        1px solid var(--fg);
+  outline-offset: 4px;
+}
+.field input:focus-visible,
+.field textarea:focus-visible,
+.modal-search:focus-visible,
+.releases-sort:focus-visible { outline: none; }
+
+[hidden] { display: none !important; }
 
 
 /* ============================================================
@@ -129,7 +157,16 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .bg-blob { animation: none !important; }
+  html { scroll-behavior: auto; }
+  .bg-blob,
+  .hero-scroll-line,
+  .live-dot { animation: none !important; }
+  .hero-logo-wrap, .hero-title, .hero-tagline, .hero-scroll {
+    animation: none !important; opacity: 1 !important; transform: none !important;
+  }
+  [data-aos], .release-card, .artist-card, .podcast-item, .event-item, .merch-card {
+    transition: none !important;
+  }
 }
 
 ::-webkit-scrollbar       { width: 2px; }
@@ -329,10 +366,6 @@ body {
   height:     100%;
   object-fit: contain;
 }
-/* Hide broken-image icon; show nothing if file missing */
-.hero-logo[src="images/logo.png"]:not([complete]),
-.hero-logo:-moz-broken           { opacity: 0; }
-img.broken-hide                   { visibility: hidden; }
 
 /* Title */
 .hero-title {
@@ -1027,8 +1060,34 @@ img.broken-hide                   { visibility: hidden; }
 }
 .form-footer {
   display:         flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items:     center;
+  gap:             1.5rem;
+  flex-wrap:       wrap;
   padding-top:     0.5rem;
+}
+.form-note {
+  font-size:      0.72rem;
+  color:          var(--fg-3);
+  letter-spacing: 0.02em;
+  max-width:      46ch;
+}
+.form-status {
+  min-height:  1.4em;
+  font-size:   0.85rem;
+  color:       var(--fg-2);
+  text-align:  right;
+}
+.form-status[data-kind="error"] { color: #ff8a80; }
+.form-status[data-kind="ok"]    { color: #a5d6a7; }
+
+/* Honeypot: off-screen, never visible to people */
+.hp-field {
+  position: absolute;
+  left:     -9999px;
+  width:    1px;
+  height:   1px;
+  overflow: hidden;
 }
 .btn-send {
   font-family:    var(--f-display);
@@ -1044,6 +1103,7 @@ img.broken-hide                   { visibility: hidden; }
   transition:     background 0.3s, transform 0.2s;
 }
 .btn-send:hover  { background: var(--fg-2); transform: translateY(-1px); }
+.btn-send:disabled { cursor: progress; opacity: 0.7; transform: none; }
 .btn-send.sent   { background: #2e7d32; color: #fff; }
 
 

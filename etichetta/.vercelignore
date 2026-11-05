@@ -1,0 +1,4 @@
+# File che non devono finire online
+strumenti/
+_originali/
+.gitignore

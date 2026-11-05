@@ -2,6 +2,15 @@
 //  CONTENT.JS — MODIFICA QUI TUTTI I CONTENUTI DEL SITO
 //  Non serve saper programmare: cambia solo i testi tra virgolette!
 //  Dopo ogni modifica salva il file e ricarica il browser.
+//
+//  IMMAGINI: prima di aggiungerne una nuova, mettila in images/releases
+//  o images/artists e lancia (dalla cartella etichetta):
+//      python3 strumenti/ottimizza-immagini.py
+//  Ti crea la versione .webp leggera (senza dati EXIF) e ti stampa il
+//  percorso da incollare qui sotto. Gli originali pesanti finiscono in
+//  _originali/ e NON vengono pubblicati.
+//
+//  LINK: lascia "#" o "" se un link non c'è ancora: il sito lo nasconde.
 // ============================================================
 
 const SITE = {
@@ -45,7 +54,7 @@ const SITE = {
       date:    "23/01/2026",
       catalog: "SSSCLTR001",
       format:  "Digital",
-      cover:   "images/releases/sc001.jpg",
+      cover:   "images/releases/sc001.webp",
       link:    "https://fanlink.tv/raho-solvane-ep-subconscious-culture",
     },
     {
@@ -54,7 +63,7 @@ const SITE = {
       date:    "13/02/2026",
       catalog: "SSSCLTR002",
       format:  "Digital",
-      cover:   "images/releases/sc002.jpg",
+      cover:   "images/releases/sc002.webp",
       link:    "https://fanlink.tv/raho-somnara-ep-subconscious-culture",
     },
     {
@@ -63,7 +72,7 @@ const SITE = {
       date:    "10/04/2026",
       catalog: "SSSCLTR003",
       format:  "Digital",
-      cover:   "images/releases/sc003.jpg",
+      cover:   "images/releases/sc003.webp",
       link:    "https://fanlink.tv/raho-lunthera-ep-subconscious-culture",
     },
     {
@@ -72,7 +81,7 @@ const SITE = {
       date:    "08/05/2026",
       catalog: "SSSCLTR004",
       format:  "Digital",
-      cover:   "images/releases/sc004.jpg",
+      cover:   "images/releases/sc004.webp",
       link:    "https://fanlink.tv/raho-aevum-ep-subconscious-culture",
     },
     {
@@ -81,7 +90,7 @@ const SITE = {
       date:    "05/06/2026",
       catalog: "SSSCLTRS01",
       format:  "Digital",
-      cover:   "images/releases/va01.jpg",
+      cover:   "images/releases/va01.webp",
       link:    "https://fanlink.tv/subconscious-culture-various-artists-somnia-i",
     },
   ],
@@ -94,7 +103,7 @@ const SITE = {
       name:       "Raho",
       origin:     "Italy",
       bio:        "Breve descrizione dell'artista.",
-      photo:      "images/artists/raho.jpg",
+      photo:      "images/artists/raho.webp",
       instagram:  "#",
       soundcloud: "#",
     },
@@ -102,7 +111,7 @@ const SITE = {
       name:       "Daryn Steytler",
       origin:     "Città, Paese",
       bio:        "Breve descrizione dell'artista.",
-      photo:      "images/artists/daryn steytler.jpg",
+      photo:      "images/artists/daryn-steytler.webp",
       instagram:  "#",
       soundcloud: "#",
     },
@@ -110,7 +119,7 @@ const SITE = {
       name:       "Egotot",
       origin:     "Città, Paese",
       bio:        "Breve descrizione dell'artista.",
-      photo:      "images/artists/egotot.jpg",
+      photo:      "images/artists/egotot.webp",
       instagram:  "#",
       soundcloud: "#",
     },
@@ -118,7 +127,7 @@ const SITE = {
       name:       "FALN",
       origin:     "Città, Paese",
       bio:        "Breve descrizione dell'artista.",
-      photo:      "images/artists/faln.jpg",
+      photo:      "images/artists/faln.webp",
       instagram:  "#",
       soundcloud: "#",
     },
@@ -126,7 +135,7 @@ const SITE = {
       name:       "Jack Fresia feat. VITA",
       origin:     "Città, Paese",
       bio:        "Breve descrizione dell'artista.",
-      photo:      "images/artists/jack fresia feat vita.jpg",
+      photo:      "images/artists/jack-fresia-feat-vita.webp",
       instagram:  "#",
       soundcloud: "#",
     },
@@ -134,7 +143,7 @@ const SITE = {
       name:       "Jacom",
       origin:     "Città, Paese",
       bio:        "Breve descrizione dell'artista.",
-      photo:      "images/artists/jacom.jpg",
+      photo:      "images/artists/jacom.webp",
       instagram:  "#",
       soundcloud: "#",
     },
@@ -142,7 +151,7 @@ const SITE = {
       name:       "Kevin Ferhati",
       origin:     "Città, Paese",
       bio:        "Breve descrizione dell'artista.",
-      photo:      "images/artists/kevin ferhati.jpg",
+      photo:      "images/artists/kevin-ferhati.webp",
       instagram:  "#",
       soundcloud: "#",
     },
@@ -150,7 +159,7 @@ const SITE = {
       name:       "Pøl",
       origin:     "Città, Paese",
       bio:        "Breve descrizione dell'artista.",
-      photo:      "images/artists/pol.jpg",
+      photo:      "images/artists/pol.webp",
       instagram:  "#",
       soundcloud: "#",
     },
@@ -158,7 +167,7 @@ const SITE = {
       name:       "Rhythm Assembler",
       origin:     "Città, Paese",
       bio:        "Breve descrizione dell'artista.",
-      photo:      "images/artists/rhythm assembler.jpg",
+      photo:      "images/artists/rhythm-assembler.webp",
       instagram:  "#",
       soundcloud: "#",
     },
@@ -166,7 +175,7 @@ const SITE = {
       name:       "Zimer",
       origin:     "Città, Paese",
       bio:        "Breve descrizione dell'artista.",
-      photo:      "images/artists/zimer.jpg",
+      photo:      "images/artists/zimer.webp",
       instagram:  "#",
       soundcloud: "#",
     },
@@ -244,6 +253,11 @@ const SITE = {
 
   // ---- CONTATTI -----------------------------------------------
   contact: {
+    // Modulo contatti: crea una Access Key gratuita su https://web3forms.com
+    // (con la mail che deve ricevere i messaggi) e incollala qui.
+    // Finché resta vuota, il modulo apre l'app di posta del visitatore
+    // con il messaggio già scritto, indirizzato a "email" qui sotto.
+    formKey:        "",
     email:          "subconscious.infoart@gmail.com",
     bookings:       "bookings@subconsciousculture.com",
     demos:          "demos@subconsciousculture.com",

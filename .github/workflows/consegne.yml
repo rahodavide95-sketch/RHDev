@@ -88,9 +88,14 @@ jobs:
           api "$API/projects" > /tmp/projects.json
           REF=$(jq -r '[.[] | select(.name == "consegne")][0] | (.ref // .id // empty)' /tmp/projects.json)
           if [ -z "$REF" ]; then
-            ORG=$(jq -r --arg r "$OLD_REF" '[.[] | select((.ref // .id) == $r)][0].organization_id // empty' /tmp/projects.json)
-            [ -n "$ORG" ] || ORG=$(api "$API/organizations" | jq -r '.[0].id // empty')
-            PLAN=$(api "$API/organizations/$ORG" | jq -r '.plan // "sconosciuto"')
+            echo "Campi di un progetto: $(jq -c '.[0] | keys' /tmp/projects.json 2>/dev/null)"
+            ORG=$(jq -r --arg r "$OLD_REF" '[.[] | select((.ref // .id) == $r)][0] | (.organization_slug // .organization_id // empty)' /tmp/projects.json)
+            api -o /tmp/orgs.json "$API/organizations" || true
+            echo "Organizzazioni: $(jq -r 'length' /tmp/orgs.json 2>/dev/null) · campi: $(jq -c '.[0] | keys' /tmp/orgs.json 2>/dev/null)"
+            [ -n "$ORG" ] || ORG=$(jq -r '.[0] | (.slug // .id // empty)' /tmp/orgs.json)
+            code=$(api -o /tmp/org.json -w '%{http_code}' "$API/organizations/$ORG")
+            echo "Organizzazione: risposta $code · campi: $(jq -c 'keys' /tmp/org.json 2>/dev/null)"
+            PLAN=$(jq -r '.plan // .billing_plan // .tier // "sconosciuto"' /tmp/org.json 2>/dev/null)
             echo "Piano Supabase: $PLAN"
             if [ "$PLAN" != "free" ]; then
               echo "::error::Il piano Supabase non è gratuito ($PLAN): per non farti spendere soldi non creo il progetto. Crealo tu su supabase.com con il nome \"consegne\" (regione Frankfurt) e rilancia il workflow."

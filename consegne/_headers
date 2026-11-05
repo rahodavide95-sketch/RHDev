@@ -1,0 +1,10 @@
+# Intestazioni di sicurezza per Cloudflare Pages (se pubblichi la cartella consegne su Cloudflare)
+/*
+  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://ztjlqorvnulgfvbtvavm.supabase.co wss://ztjlqorvnulgfvbtvavm.supabase.co; base-uri 'none'; form-action 'none'; object-src 'none'; manifest-src 'self'; frame-ancestors 'none'
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  X-Frame-Options: DENY
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
+  Strict-Transport-Security: max-age=63072000; includeSubDomains
+  Cross-Origin-Opener-Policy: same-origin
+  X-Robots-Tag: noindex, nofollow

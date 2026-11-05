@@ -1,0 +1,17 @@
+/* Documento per il PDF (copia dell'invio + contratto). Sempre chiaro, indipendente dal tema. */
+.pdf-host { position: fixed; left: -10000px; top: 0; width: 740px; z-index: -1; }
+.pdf-doc, .pdf-doc * { box-sizing: border-box; }
+.pdf-doc { width: 740px; background: #fff; color: #1d1d22; font: 13px/1.5 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; padding: 18px 14px; }
+.pdf-doc .pdf-top { display: flex; justify-content: space-between; gap: 20px; align-items: flex-start; border-bottom: 2px solid #1d1d22; padding-bottom: 14px; margin-bottom: 8px; }
+.pdf-doc h1 { font-size: 22px; margin: 2px 0 4px; letter-spacing: -.01em; }
+.pdf-doc .pdf-label { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #666; }
+.pdf-doc .pdf-sub { color: #555; font-size: 12.5px; }
+.pdf-doc .pdf-logo { max-width: 120px; max-height: 60px; object-fit: contain; background: #111; border-radius: 8px; padding: 5px; }
+.pdf-doc .pdf-sec h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: #6d28d9; margin: 18px 0 6px; }
+.pdf-doc table { width: 100%; border-collapse: collapse; }
+.pdf-doc th, .pdf-doc td { text-align: left; vertical-align: top; padding: 6px 8px; border-bottom: 1px solid #eee; font-size: 12.5px; }
+.pdf-doc th { width: 34%; color: #555; font-weight: 600; }
+.pdf-doc td { white-space: pre-wrap; overflow-wrap: anywhere; }
+.pdf-doc .pdf-break { page-break-before: always; break-before: page; height: 0; }
+.pdf-doc .f-contract { padding: 10px 0 0; border-radius: 0; font-size: 12.5px; }
+.pdf-doc .pdf-foot { margin-top: 22px; color: #888; font-size: 10.5px; border-top: 1px solid #eee; padding-top: 8px; }

@@ -1,0 +1,137 @@
+name: Consegne (database ed email)
+
+# Prepara su Supabase (progetto di Label Finance, lo stesso di Documenti Raho e Fioritura) le tabelle
+# consegne_* e pubblica la funzione delle email. Prima fa girare i test (anche quelli di sicurezza del
+# database su un Postgres vero): se un test fallisce non pubblica nulla.
+# Usa lo stesso secret SUPABASE_ACCESS_TOKEN delle altre app. Facoltativi (Settings › Secrets › Actions):
+#   CONSEGNE_OWNER_EMAIL      la tua email: solo lei potrà aprire l'area dell'etichetta (consigliato)
+#   CONSEGNE_RESEND_API_KEY   chiave di Resend per le email (senza: avvisi solo nell'app)
+#   CONSEGNE_MAIL_FROM        mittente, es. "SUBCONSCIOUS Culture <invio@tuodominio.com>"
+#   CONSEGNE_ALLOWED_ORIGINS  indirizzi extra della pagina, es. "https://invio.tuodominio.com" (quando avrai il dominio)
+# Lo script SQL si può rieseguire: crea solo ciò che manca e non tocca le altre app.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'consegne/supabase/**'
+      - 'consegne/test/**'
+      - 'consegne/js/core/**'
+      - '.github/workflows/consegne.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: consegne
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: consegne
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test del codice
+        run: npm test
+      - name: Test di sicurezza del database
+        run: bash test/rls/run.sh
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PROJECT_REF: ztjlqorvnulgfvbtvavm
+      OWNER_EMAIL: ${{ secrets.CONSEGNE_OWNER_EMAIL }}
+      RESEND_KEY: ${{ secrets.CONSEGNE_RESEND_API_KEY }}
+      MAIL_FROM: ${{ secrets.CONSEGNE_MAIL_FROM }}
+      EXTRA_ORIGINS: ${{ secrets.CONSEGNE_ALLOWED_ORIGINS }}
+      APP_URL: https://rahodavide95-sketch.github.io/RHDev/consegne/
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Controlla il token di Supabase
+        id: token
+        run: |
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then
+            echo "::warning::Manca il secret SUPABASE_ACCESS_TOKEN: niente pubblicato. Incolla consegne/supabase/schema.sql nel SQL Editor di Supabase (vedi consegne/docs/SETUP.md)."
+            echo "skip=1" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Applica lo schema
+        if: steps.token.outputs.skip != '1'
+        run: |
+          jq -Rs '{query: .}' consegne/supabase/schema.sql > /tmp/body.json
+          code=$(curl -sS -o /tmp/out.json -w '%{http_code}' -X POST \
+            "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data @/tmp/body.json)
+          echo "Risposta $code"; head -c 2000 /tmp/out.json; echo
+          if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then exit 1; fi
+
+      - name: Fissa l'email del proprietario
+        if: steps.token.outputs.skip != '1' && env.OWNER_EMAIL != ''
+        run: |
+          if ! [[ "$OWNER_EMAIL" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
+            echo "::error::CONSEGNE_OWNER_EMAIL non sembra un indirizzo email valido."; exit 1
+          fi
+          jq -n --arg e "$OWNER_EMAIL" '{query: ("select public.consegne_pin_owner('"'"'" + $e + "'"'"') as esito")}' > /tmp/pin.json
+          code=$(curl -sS -o /tmp/out.json -w '%{http_code}' -X POST \
+            "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data @/tmp/pin.json)
+          echo "Risposta $code: $(jq -c '.' /tmp/out.json 2>/dev/null | head -c 300)"
+          if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then exit 1; fi
+
+      # Il link nell'email di conferma deve riportare a Consegne e non al sito di Label Finance:
+      # aggiunge l'indirizzo agli indirizzi di ritorno consentiti, senza togliere quelli che ci sono già.
+      - name: Consenti il ritorno a Consegne dopo la conferma email
+        if: steps.token.outputs.skip != '1'
+        run: |
+          code=$(curl -sS -o /tmp/auth.json -w '%{http_code}' \
+            "https://api.supabase.com/v1/projects/$PROJECT_REF/config/auth" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN")
+          if [ "$code" != 200 ]; then
+            echo "::warning::Impostazioni di accesso non lette ($code): aggiungi a mano $APP_URL e ${APP_URL}** in Supabase › Authentication › URL Configuration › Redirect URLs."
+            exit 0
+          fi
+          jq --arg a "$APP_URL" --arg b "${APP_URL}**" '
+            ((.uri_allow_list // "") | split(",") | map(gsub("^\\s+|\\s+$"; "")) | map(select(length > 0))) as $l
+            | {add: (([$a, $b] - $l) | length), body: {uri_allow_list: ($l + ([$a, $b] - $l) | join(","))}}' /tmp/auth.json > /tmp/plan.json
+          if [ "$(jq '.add' /tmp/plan.json)" = 0 ]; then echo "Consegne è già tra gli indirizzi consentiti."; exit 0; fi
+          jq '.body' /tmp/plan.json > /tmp/patch.json
+          code=$(curl -sS -o /tmp/out.json -w '%{http_code}' -X PATCH \
+            "https://api.supabase.com/v1/projects/$PROJECT_REF/config/auth" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data @/tmp/patch.json)
+          echo "Risposta $code"
+          if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then head -c 500 /tmp/out.json; echo; exit 1; fi
+
+      - uses: supabase/setup-cli@v1
+        if: steps.token.outputs.skip != '1'
+        with:
+          version: latest
+
+      - name: Impostazioni della funzione delle email
+        if: steps.token.outputs.skip != '1'
+        working-directory: consegne
+        run: |
+          args=("ADMIN_URL=$APP_URL")
+          [ -n "$RESEND_KEY" ] && args+=("RESEND_API_KEY=$RESEND_KEY")
+          [ -n "$MAIL_FROM" ] && args+=("MAIL_FROM=$MAIL_FROM")
+          [ -n "$EXTRA_ORIGINS" ] && args+=("ALLOWED_ORIGINS=$EXTRA_ORIGINS")
+          supabase secrets set "${args[@]}" --project-ref "$PROJECT_REF"
+
+      - name: Pubblica la funzione delle email
+        if: steps.token.outputs.skip != '1'
+        working-directory: consegne
+        run: supabase functions deploy consegne-mail --project-ref "$PROJECT_REF" --no-verify-jwt --use-api

@@ -208,110 +208,6 @@
   .two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
   .two > div{min-width:0}
   input[type=date].field,input[type=time].field{width:100%;min-width:0;max-width:100%}
-  /* Progressi */
-  .rf{width:100%;height:100%;display:block;overflow:visible;filter:drop-shadow(0 2px 3px rgba(60,30,40,.18))}
-  .herb{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px 6px;margin-top:6px}
-  .hb{display:flex;flex-direction:column;align-items:center;gap:5px;padding:6px 2px;border-radius:16px;font-size:11.5px;color:var(--muted);text-align:center;line-height:1.2}
-  .hb .rf{width:48px;height:48px}
-  .hb .bud{width:48px;height:48px;display:block}
-  .hb:not(.got) span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-  .bud-s{fill:none;stroke:var(--line-2);stroke-width:3;stroke-linecap:round}
-  .bud-l{fill:var(--c4s)} .bud-b{fill:var(--track)} .bud-k{fill:var(--c4);opacity:.45}
-  .hb .laurel{width:52px;height:52px}
-  .hb.got span{color:var(--ink-2);font-weight:500}
-  .hb:active{transform:scale(.95)}
-  .tierpill.t1{--pc:var(--c4);--ps:var(--c4s)} .tierpill.t2{--pc:var(--c1);--ps:var(--c1s)} .tierpill.t3{--pc:var(--c2);--ps:var(--c2s)} .tierpill.t4{--pc:var(--c3);--ps:var(--c3s)}
-  .recrow{display:flex;align-items:center;gap:12px;padding:10px 2px;border-top:1px solid var(--line)}
-  .recrow:first-child{border-top:0}
-  .recrow .ri{width:36px;height:36px;border-radius:50%;flex:none;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent-text)}
-  .recrow .ri svg{width:18px;height:18px}
-  .recrow b{display:block;font-weight:600;font-size:15px}
-  .recrow .tx span{display:block;font-size:12.5px;color:var(--muted)}
-  .stats.four{grid-template-columns:repeat(2,1fr);gap:14px 8px}
-  .chart svg{width:100%;height:auto;display:block;margin-top:8px;overflow:visible}
-  .chart .base{stroke:var(--line-2);stroke-width:1}
-  .chart .b{fill:var(--accent)}
-  .chart .bh{cursor:pointer;outline:none}
-  .chart .bh.on .b,.chart .bh:focus-visible .b{fill:var(--accent-text)}
-  .chart .vl{font:600 10.5px var(--sans);fill:var(--ink-2)}
-  .chart .xl{font:500 10px var(--sans);fill:var(--muted)}
-  .tipline{min-height:18px;margin-top:4px}
-  .ntable div{display:flex;justify-content:space-between;gap:10px;padding:6px 2px;border-top:1px solid var(--line);font-size:13.5px}
-  .ntable div:first-child{border-top:0}
-  .moodbars{display:grid;gap:10px;margin-top:4px}
-  .mb{display:grid;grid-template-columns:72px 1fr 28px;align-items:center;gap:10px;font-size:13.5px;color:var(--ink-2)}
-  .mb b{text-align:right;font-weight:600}
-  .mtrack{height:8px;border-radius:4px;background:var(--track);overflow:hidden}
-  .mtrack i{display:block;height:100%;border-radius:4px;background:var(--accent)}
-  .librow{display:flex;align-items:center;gap:14px;padding:11px 2px;border-top:1px solid var(--line);width:100%;text-align:left}
-  .librow:first-child{border-top:0}
-  .librow .vote{width:48px;height:48px;border-radius:50%;flex:none;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent-text);
-    font-family:var(--serif);font-size:21px;font-variation-settings:"SOFT" 100;position:relative}
-  .librow .tx{flex:1;min-width:0}
-  .librow .tx b{display:block;font-weight:500;font-size:15px}
-  .librow .tx span{display:block;font-size:12.5px;color:var(--muted)}
-  .week .stats{margin-top:10px}
-  /* Momento speciale */
-  .tro-ov{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;padding:20px;
-    background:radial-gradient(circle at 50% 35%,var(--accent-soft),var(--bg) 70%);opacity:0;transition:opacity .45s;overflow:auto}
-  .tro-ov.open{opacity:1}
-  .tro-card{width:min(100%,440px);text-align:center;padding:10px 4px calc(env(safe-area-inset-bottom) + 10px)}
-  .tro-card > * + *{margin-top:12px}
-  .tro-flower{width:min(52vw,210px);aspect-ratio:1;margin:8px auto 0}
-  .tro-flower.small{width:120px;margin:0 auto}
-  .tro-flower .bud{width:100%;height:100%;display:block}
-  .laurel{display:block;width:100%;height:100%;overflow:visible}
-  .lw-st{fill:none;stroke:#6b8f58;stroke-width:2.6;stroke-linecap:round}
-  .lw-l.a{fill:#7da36a} .lw-l.b{fill:#a3c58c}
-  .lw-r{fill:var(--accent)} .lw-k{fill:var(--accent-text)}
-  .laurel.gold .lw-st{stroke:#b98d2e} .laurel.gold .lw-l.a{fill:#d6a640} .laurel.gold .lw-l.b{fill:#efcd73}
-  .tro-ov .laurel .lw-l,.libcover.done .laurel .lw-l{transform-box:fill-box;transform-origin:0 50%;animation:leafIn .5s calc(var(--i) * 45ms) cubic-bezier(.2,1.5,.4,1) both}
-  @keyframes leafIn{from{opacity:0;scale:.2}}
-  .tro-ov.grand{background:radial-gradient(120% 80% at 50% 20%,color-mix(in srgb,#efcd73 30%,var(--bg)) 0%,var(--bg) 62%)}
-  .wreath{position:relative;width:min(62vw,240px);aspect-ratio:1;margin:6px auto 0}
-  .wreath::before{content:"";position:absolute;inset:14%;border-radius:50%;background:radial-gradient(circle,rgba(239,205,115,.45),transparent 70%);animation:glow 3s ease-in-out infinite alternate}
-  @keyframes glow{from{opacity:.5;transform:scale(.92)}to{opacity:1;transform:scale(1.06)}}
-  .wreath .laurel{position:relative}
-  .wr-in{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-bottom:6%}
-  .wr-in b{font-size:clamp(46px,14vw,62px);line-height:1;color:var(--ink)}
-  .wr-in span{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:4px}
-  .tro-ov.grand .stats{justify-content:center}
-  /* il libretto */
-  .libcover{position:relative;overflow:hidden;border-radius:var(--r);padding:26px 22px 22px;margin-bottom:14px;text-align:center;
-    background:linear-gradient(160deg,color-mix(in srgb,var(--c4s) 75%,var(--card-solid)) 0%,var(--card-solid) 55%,color-mix(in srgb,var(--accent-soft) 70%,var(--card-solid)) 100%);
-    border:1px solid var(--card-border);box-shadow:var(--shadow)}
-  .libcover.done{background:linear-gradient(160deg,color-mix(in srgb,#efcd73 30%,var(--card-solid)) 0%,var(--card-solid) 55%,color-mix(in srgb,#efcd73 18%,var(--card-solid)) 100%)}
-  .libcover > * + *{margin-top:8px}
-  .lc-art{width:92px;height:92px;margin:0 auto 4px}
-  .libcover h2{font-size:clamp(26px,7.4vw,32px)}
-  .lc-line{color:var(--ink-2);font-size:15px;line-height:1.5;max-width:30ch;margin-left:auto;margin-right:auto}
-  .leaves{display:flex;flex-wrap:wrap;justify-content:center;gap:3px;margin-top:14px}
-  .lf{width:20px;height:20px;display:block}
-  .lf svg{width:100%;height:100%;display:block}
-  .lf path{fill:none;stroke:var(--line-2);stroke-width:1.6;stroke-linejoin:round}
-  .lf.on path{fill:#8db57a;stroke:#6b8f58} .lf.on path.v{fill:none;stroke:rgba(255,255,255,.6)}
-  .libcover.done .lf.on path{fill:#e2b955;stroke:#b98d2e}
-  .lc-meta{font-size:13px;color:var(--muted);margin-top:10px}
-  .lc-ask{display:block;width:100%;margin-top:14px;padding:14px 16px;border-radius:18px;background:var(--card-solid);border:1px dashed var(--line-2);text-align:center}
-  .lc-ask b{display:block;font-weight:600;font-size:15px;color:var(--ink)}
-  .lc-ask span{display:block;font-size:13px;color:var(--muted);margin-top:3px}
-  .libpages .librow .tx b{font-family:var(--serif);font-weight:450;font-size:16.5px}
-  .librow .vote.lode{background:linear-gradient(145deg,#f6dd9a,#e2b955);color:#5a4210;box-shadow:0 0 0 2px var(--card-solid),0 0 0 3.5px #e2b955}
-  .librow .vote.ok{background:var(--c4s);color:var(--c4)}
-  .librow .vote.ok svg{width:20px;height:20px}
-  .tro-ov .tro-flower .rf-p{transform-origin:50% 50%;animation:troBloom 1.4s cubic-bezier(.2,1.4,.4,1) both}
-  .tro-ov .tro-flower .rf-c{transform-origin:50% 50%;animation:troBloom .9s .45s cubic-bezier(.2,1.6,.4,1) both}
-  .tro-ov .tro-flower{animation:troFloat 5s 1.4s ease-in-out infinite alternate}
-  @keyframes troBloom{from{transform:scale(0) rotate(-90deg);opacity:0}to{transform:none;opacity:1}}
-  @keyframes troFloat{from{transform:translateY(0) rotate(0)}to{transform:translateY(-6px) rotate(6deg)}}
-  .tro-card h2{font-size:clamp(28px,8vw,36px)}
-  .tro-fname{font-size:13px;letter-spacing:.06em;color:var(--accent-text)}
-  .tro-msg{font-size:16px;line-height:1.55;color:var(--ink-2)}
-  .tro-q{font-family:var(--serif);font-style:italic;font-weight:350;font-size:17px;line-height:1.45;color:var(--ink-2);font-variation-settings:"SOFT" 100}
-  .tro-q span{display:block;font-family:var(--sans);font-style:normal;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:6px}
-  .tro-q span::before{content:"— "}
-  .tier.t4{color:var(--accent-text)}
-  .tro-card .btns{margin-top:22px}
   /* Notifiche */
   .ib.bell{position:relative}
   .ib .num{position:absolute;top:-4px;right:-4px;min-width:19px;height:19px;padding:0 5px;border-radius:999px;background:var(--accent);
@@ -606,9 +502,6 @@
   .sh-head h2{font-size:28px;margin-top:5px}
   .set-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-top:1px solid var(--line)}
   .set-row b{font-weight:600;font-size:15px}
-  .study-time{display:flex;align-items:center;gap:12px;padding:0 0 14px}
-  .study-time .lab{margin:0}
-  .study-time select{width:auto;min-width:120px}
   .set-row p{margin-top:2px}
   .sec-t{font-family:var(--serif);font-size:19px;font-variation-settings:"SOFT" 100;padding-top:8px}
   .credits{text-align:center;color:var(--muted);font-family:var(--serif);font-style:italic;font-size:13.5px;line-height:1.5;
@@ -670,10 +563,10 @@
 
 <nav class="tabs" aria-label="Sezioni">
   <button class="tab" data-a="tab" data-tab="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4"/></svg>Oggi</button>
-  <button class="tab" data-a="tab" data-tab="plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 6.5h9.5M10.5 12h9.5M10.5 17.5h9.5"/><path d="M3.8 6.6l1.4 1.4 2.6-2.6M3.8 12.1l1.4 1.4 2.6-2.6M3.8 17.6l1.4 1.4 2.6-2.6"/></svg>Programma<i class="num"></i></button>
+  <button class="tab" data-a="tab" data-tab="plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 6.5h9.5M10.5 12h9.5M10.5 17.5h9.5"/><path d="M3.8 6.6l1.4 1.4 2.6-2.6M3.8 12.1l1.4 1.4 2.6-2.6M3.8 17.6l1.4 1.4 2.6-2.6"/></svg>Programma</button>
   <button class="tab" data-a="tab" data-tab="cal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="16.5" rx="3.5"/><path d="M8 2.8v3.4M16 2.8v3.4M3.5 9.8h17M8 14h.01M12 14h.01M16 14h.01M8 17.5h.01M12 17.5h.01"/></svg>Calendario</button>
   <button class="tab" data-a="tab" data-tab="focus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 9.5v4l2.6 1.8M9.5 2.5h5"/></svg>Concentrati<i class="dot"></i></button>
-  <button class="tab" data-a="tab" data-tab="prog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21v-7"/><path d="M12 14c-3.6 0-6.2-2.3-6.2-5.6 3.6 0 6.2 2.3 6.2 5.6zM12 14c3.6 0 6.2-2.3 6.2-5.6-3.6 0-6.2 2.3-6.2 5.6z"/><circle cx="12" cy="5.6" r="2.5"/></svg>Progressi</button>
+  <button class="tab" data-a="tab" data-tab="notes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4.8A1.8 1.8 0 0 1 6.8 3H19v14.5H6.8A1.8 1.8 0 0 0 5 19.3z"/><path d="M5 19.3A1.8 1.8 0 0 0 6.8 21H19v-3.5M9 7.5h6M9 11h4"/></svg>Appunti<i class="num"></i></button>
 </nav>
 
 <div class="toast" id="toast" role="status"></div>
@@ -1138,14 +1031,9 @@
       events: [],    // calendario { id, title, date, time ('' = tutto il giorno), rem (minuti prima, -1 = nessuno), color 0-4, note, at, mt }
       notifRead: {}, notifHide: {},   // promemoria letti / tolti dalla campanella (chiave evento@ora)
       keep: {},      // dati di versioni più nuove dell'app: si conservano e si rimandano così come sono
-      trophies: {},  // traguardi conquistati: id -> data (_init = prima volta, in silenzio)
-      records: {},   // record personali: chiave -> { v, at }
-      libretto: [],  // esami sostenuti { id, name, voto, lode, cfu, date, ex, at, mt }
-      counters: {},  // contatori: breath (minuti di respiro), records (record battuti)
-      hidden: {},    // schede chiuse e avvisi già dati (es. week:2026-11-02, esito:<esame>, rec:<chiave>:<giorno>)
       gone: [],      // argomenti eliminati (per non farli tornare da un altro dispositivo)
       timer: { mode: 'study', len: 25, endAt: 0, remain: 0, seg: 0 },
-      settings: { name: '', theme: 'auto', pal: 'cipria', sounds: true, wake: true, study: 25, brk: 5, volume: 0.5, sysNotif: false, studyRemind: false, studyTime: '18:00', tz: '', libTotal: 0 },
+      settings: { name: '', theme: 'auto', pal: 'cipria', sounds: true, wake: true, study: 25, brk: 5, volume: 0.5, sysNotif: false },
       settingsAt: 0,
       welcomed: false,
       open: {}
@@ -1189,6 +1077,7 @@
   var S = load();
   var UI = { tab: 'today', pagesOpen: false, calSel: '', calMonth: '' };
   try { var t0 = localStorage.getItem('fioritura.tab'); if (t0) UI.tab = t0; } catch (e) {}
+  if (['today', 'plan', 'cal', 'focus', 'notes'].indexOf(UI.tab) < 0) UI.tab = 'today';   // schede tolte (Progressi): si torna a Oggi
   // l'esame in corso: quello scelto su questo dispositivo, altrimenti il prossimo esame in calendario
   function examById(id) { return S.exams.filter(function (e) { return e.id === id; })[0]; }
   function pickActive() {
@@ -1523,7 +1412,7 @@
       } else {
         html += '<button class="btn block" data-a="toggleDay" data-iso="' + t + '">' + I.check + 'Ho finito per oggi</button>' +
           '<div class="row between"><button class="btn ghost" data-a="openDay" data-iso="' + t + '">' + I.pen + 'Scrivi una nota</button>' +
-          '<button class="btn ghost" data-a="goNotes">' + I.leaf + 'Segna un dubbio</button></div>';
+          '<button class="btn ghost" data-a="tab" data-tab="notes" data-focus="tpText">' + I.leaf + 'Segna un dubbio</button></div>';
       }
       html += '</section>';
     } else if (t < DAYS[0].iso) {
@@ -1547,10 +1436,6 @@
       html += '<section class="card"><div class="row between"><h3 class="h3">Oggi in calendario</h3><button class="btn ghost" data-a="tab" data-tab="cal" style="margin-right:-8px">' + I.cal + 'Calendario</button></div>' +
         '<div>' + tev.map(evRow).join('') + '</div></section>';
     }
-
-    // Esami passati senza voto e, la domenica sera e il lunedì, "La tua settimana"
-    var stw = computeStats();
-    html += esitoCard() + weekCard(stw);
 
     // Giornate rimaste indietro
     var miss = missedDays();
@@ -1596,14 +1481,13 @@
   }
 
   function viewPlan() {
-    if (UI.planSeg === 'notes') return viewNotes(true);
     if (!EXID) return topbar() + '<header class="head"><span class="eyebrow">Programma</span><h1 class="display">I tuoi esami</h1>' +
-      '<p>Aggiungi un esame e qui trovi il piano giorno per giorno.</p></header>' + planSegBar() + noExamCard();
+      '<p>Aggiungi un esame e qui trovi il piano giorno per giorno.</p></header>' + noExamCard();
     var t = today(), done = doneCount(), pct = Math.round(done / TOTAL * 100), cur = currentPhase();
     var allOpen = PHASES.every(function (p) { return isOpen(p.n, cur); });
     var html = topbar() + '<header class="head"><span class="eyebrow">Il programma</span><h1 class="display">' + esc(SUBJECT) + '</h1>' +
       '<p>Dal ' + fmtDM(DAYS[0].iso) + ' al ' + fmtDM(DAYS[DAYS.length - 1].iso) + '. Spunta una giornata solo quando l’hai completata.</p>' +
-      '<div class="chips">' + examChipBtn() + '</div></header>' + planSegBar() +
+      '<div class="chips">' + examChipBtn() + '</div></header>' +
       '<section class="card"><div class="row between"><div><span class="eyebrow">Avanzamento complessivo</span>' +
       '<h3 class="h3" style="margin-top:5px">' + done + ' / ' + TOTAL + ' giornate</h3></div><div class="pct display">' + pct + '<small>%</small></div></div>' +
       '<div class="bar"><i style="left:' + pct + '%"></i></div>' +
@@ -1671,15 +1555,10 @@
       '<div class="tx"><p>' + esc(tp.text) + '</p><span class="sub">' + (where ? where + ' · ' : '') + 'segnato il ' + fmtShort(tp.day) + '</span></div>' +
       '<button class="ib sm flat" data-a="delTopic" data-id="' + tp.id + '" aria-label="Elimina">' + I.x + '</button></div>';
   }
-  function planSegBar() {
-    var sg = UI.planSeg || 'days', n = openTopics().length;
-    return '<div class="seg" role="tablist" aria-label="Programma"><button role="tab" data-a="planSeg" data-v="days" aria-pressed="' + (sg !== 'notes') + '">Giornate</button>' +
-      '<button role="tab" data-a="planSeg" data-v="notes" aria-pressed="' + (sg === 'notes') + '">Appunti' + (n ? ' · ' + n : '') + '</button></div>';
-  }
   function viewNotes() {
     var ot = openTopics(), solved = myTopics().filter(function (t) { return t.solved; });
-    var html = topbar() + '<header class="head"><span class="eyebrow">Appunti' + (EXID ? ' · ' + esc(SUBJECT) : '') + '</span><h1 class="display">Argomenti critici</h1>' +
-      '<p>Segna qui ciò che ti sembra difficile mentre studi: l’ultimo giorno prima dell’esame diventerà il tuo ripasso finale.</p></header>' + planSegBar() +
+    var html = topbar() + '<header class="head"><span class="eyebrow">Appunti</span><h1 class="display">Argomenti critici</h1>' +
+      '<p>Segna qui ciò che ti sembra difficile mentre studi' + (EXID ? ' ' + esc(SUBJECT) : '') + ': l’ultimo giorno prima dell’esame diventerà il tuo ripasso finale.</p></header>' +
       '<form class="card" data-form="topic" autocomplete="off">' +
       '<label class="lab" for="tpText">Cosa vuoi rivedere?</label>' +
       '<textarea class="field" id="tpText" name="text" rows="2" placeholder="Es. differenza tra litispendenza e continenza"></textarea>' +
@@ -1732,40 +1611,17 @@
     var h = Math.round(m / 60); if (h < 24) return h === 1 ? 'un’ora fa' : h + ' ore fa';
     var d = Math.round(h / 24); return d === 1 ? 'ieri' : d + ' giorni fa';
   }
-  // Promemoria dello studio (D: "promemoria dello studio"): ogni giorno all'ora scelta, solo se oggi c'è una giornata
-  // del programma non ancora fatta (in qualsiasi esame). Lo stesso testo lo manda il server ad app chiusa (fioritura-push).
-  var STUDY_TIMES = (function () { var a = []; for (var h = 6; h <= 23; h++) { a.push(pad(h) + ':00'); a.push(pad(h) + ':30'); } return a; })();
-  function studyTodo(iso) {
-    var out = [];
-    S.exams.forEach(function (e) {
-      if (S.done[e.id + '|' + iso] > 0) return;
-      var r = examDayOn(e, iso); if (r) out.push({ e: e, r: r });
-    });
-    return out;
-  }
-  function studyText(list) {
-    return list.map(function (x) { return x.e.name + ': ' + labelOf(x.r[1], x.r[2], x.e.books).replace(/\u00a0/g, ' ').replace(/\u2060/g, ''); }).join('; ');
-  }
-  function studyNotif() {
-    var st = S.settings; if (!st.studyRemind || !/^\d\d:\d\d$/.test(st.studyTime || '')) return null;
-    var t = today(), list = studyTodo(t); if (!list.length) return null;
-    var d = dateOf(t), hm = st.studyTime.split(':'); d.setHours(+hm[0], +hm[1], 0, 0);
-    var key = 'study@' + t; if (S.notifHide[key]) return null;
-    return { study: true, key: key, at: d.getTime(), ev: { title: 'È l’ora di studiare', date: t, time: st.studyTime, note: studyText(list) } };
-  }
   // le notifiche: i promemoria già scattati (ultimi 45 giorni), dal più recente
   function notifications() {
-    var now = Date.now(), lim = now - 45 * 864e5, sn = studyNotif();
+    var now = Date.now(), lim = now - 45 * 864e5;
     return S.events.map(function (ev) { return { ev: ev, at: remAt(ev), key: remKey(ev) }; })
-      .concat(sn ? [sn] : [])
       .filter(function (n) { return n.at && n.at <= now && n.at > lim && !S.notifHide[n.key]; })
       .sort(function (a, b) { return b.at - a.at; });
   }
   function unreadCount() { return notifications().filter(function (n) { return !S.notifRead[n.key]; }).length; }
   function upcomingRem() {
     var now = Date.now();
-    var sn = studyNotif();
-    return S.events.map(function (ev) { return { ev: ev, at: remAt(ev) }; }).concat(sn ? [sn] : []).filter(function (n) { return n.at > now; }).sort(function (a, b) { return a.at - b.at; });
+    return S.events.map(function (ev) { return { ev: ev, at: remAt(ev) }; }).filter(function (n) { return n.at > now; }).sort(function (a, b) { return a.at - b.at; });
   }
   function paintBell() {
     var n = unreadCount();
@@ -1782,7 +1638,7 @@
   }
   function sysNotify(n) {
     if (!S.settings.sysNotif || !('Notification' in window) || Notification.permission !== 'granted') return;
-    var opts = { body: n.study ? n.ev.note : whenText(n.ev) + (n.ev.note ? ' · ' + n.ev.note : ''), icon: 'icon-192.png', badge: 'icon-192.png', tag: n.key, data: n.study ? { tab: 'today' } : { date: n.ev.date } };
+    var opts = { body: whenText(n.ev) + (n.ev.note ? ' · ' + n.ev.note : ''), icon: 'icon-192.png', badge: 'icon-192.png', tag: n.key };
     var plain = function () { try { new Notification(n.ev.title, opts); } catch (e) {} };
     if (navigator.serviceWorker && navigator.serviceWorker.controller) navigator.serviceWorker.ready.then(function (r) { return r.showNotification(n.ev.title, opts); }).catch(plain);
     else plain();
@@ -1799,8 +1655,7 @@
     if (fresh.length) {
       var f = fresh[0];
       Sound.chime('timer'); buzz([40, 60, 40]);
-      if (f.study) toast('È l’ora di studiare: ' + f.ev.note, { label: 'Vai', run: function () { goToday(); } }, 9000);
-      else toast('Promemoria: ' + f.ev.title + ' · ' + whenText(f.ev), { label: 'Vedi', run: openNotifs }, 9000);
+      toast('Promemoria: ' + f.ev.title + ' · ' + whenText(f.ev), { label: 'Vedi', run: openNotifs }, 9000);
       fresh.forEach(sysNotify);
     } else if (old) toast(old === 1 ? 'Hai un promemoria nella campanella.' : 'Hai ' + old + ' promemoria nella campanella.', { label: 'Apri', run: openNotifs }, 6500);
     paintBell();
@@ -1890,19 +1745,19 @@
     var html = '<div class="sh-head"><div><span class="eyebrow">Promemoria</span><h2 class="display">Notifiche</h2></div><button class="ib" data-a="closeSheet" aria-label="Chiudi">' + I.x + '</button></div>';
     if (list.length) {
       html += '<div>' + list.map(function (n) {
-        return '<button class="ntf ' + evClass(n.ev) + (notifSnap[n.key] ? ' unread' : '') + '" data-a="' + (n.study ? 'goToday' : 'notifGo') + '" data-iso="' + n.ev.date + '">' +
-          '<span class="ni">' + (n.study ? I.sprout : I.bell) + '</span><span class="tx"><b>' + esc(n.ev.title) + '</b><span>' + (n.study ? esc(n.ev.note) : esc(whenText(n.ev)) + (n.ev.note ? ' · ' + esc(n.ev.note) : '')) + '</span>' +
+        return '<button class="ntf ' + evClass(n.ev) + (notifSnap[n.key] ? ' unread' : '') + '" data-a="notifGo" data-iso="' + n.ev.date + '">' +
+          '<span class="ni">' + I.bell + '</span><span class="tx"><b>' + esc(n.ev.title) + '</b><span>' + esc(whenText(n.ev)) + (n.ev.note ? ' · ' + esc(n.ev.note) : '') + '</span>' +
           '<small>' + ago(n.at) + '</small></span></button>';
       }).join('') + '</div>' +
         '<div style="text-align:center"><button class="btn ghost" data-a="notifClear">' + I.trash + 'Svuota le notifiche</button></div>';
     } else {
       html += '<div class="empty p3">' + I.bell.replace('<svg', '<svg style="width:44px;height:44px;opacity:.6"') +
-        '<p class="small muted">Nessuna notifica. Qui arrivano i promemoria degli impegni che segni nel calendario e, se lo vuoi, quello dello studio.</p></div>';
+        '<p class="small muted">Nessuna notifica. Qui arrivano i promemoria degli impegni che segni nel calendario.</p></div>';
     }
     if (up.length) {
       html += '<h3 class="sec-t">In arrivo</h3><div>' + up.map(function (n) {
         var d = new Date(n.at), when = isoOf(d) === isoOf(new Date()) ? 'oggi' : relDay(isoOf(d));
-        return '<button class="ntf ' + evClass(n.ev) + '" data-a="' + (n.study ? 'goToday' : 'notifGo') + '" data-iso="' + n.ev.date + '"><span class="ni">' + (n.study ? I.sprout : I.cal) + '</span><span class="tx"><b>' + esc(n.ev.title) + '</b>' +
+        return '<button class="ntf ' + evClass(n.ev) + '" data-a="notifGo" data-iso="' + n.ev.date + '"><span class="ni">' + I.cal + '</span><span class="tx"><b>' + esc(n.ev.title) + '</b>' +
           '<span>Ti avviso ' + when + ' alle ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + '</span></span></button>';
       }).join('') + '</div>';
     }
@@ -1914,19 +1769,7 @@
       'Arrivano mentre Fioritura è aperta. Se è chiusa, li trovi qui nella campanella appena la riapri.';
     html += '<div class="set-row"><div><b>Avvisi sul telefono</b><p class="small muted">' + desc + '</p></div>' +
       (supported && !iosHome ? '<button class="switch" role="switch" aria-checked="' + !!(S.settings.sysNotif && Notification.permission !== 'denied') + '" aria-label="Avvisi sul telefono" data-a="sysNotif"></button>' : '') + '</div>';
-    return html + studyRow();
-  }
-  // l'interruttore "Ricordami di studiare" (nella campanella e nelle Impostazioni)
-  function studyRow() {
-    var st = S.settings, on = !!st.studyRemind;
-    return '<div class="set-row"><div><b>Ricordami di studiare</b><p class="small muted">' +
-      (on ? 'Ogni giorno alle ' + esc(st.studyTime) + ', se la giornata di oggi non è ancora fatta. Se l’hai già fatta, nessun avviso.' :
-        'Un promemoria gentile ogni giorno all’ora che scegli, solo se la giornata di oggi non è ancora fatta.') +
-      (on && !st.sysNotif ? ' Per riceverlo anche ad app chiusa attiva «Avvisi sul telefono» nella campanella in alto.' : '') + '</p></div>' +
-      '<button class="switch" role="switch" aria-checked="' + on + '" aria-label="Ricordami di studiare" data-a="studyRemind"></button></div>' +
-      (on ? '<div class="study-time"><label class="lab" for="studyTime">Alle</label><select class="field" id="studyTime" data-study-time>' +
-        STUDY_TIMES.concat(STUDY_TIMES.indexOf(st.studyTime) < 0 ? [st.studyTime] : []).map(function (v) { return '<option' + (v === st.studyTime ? ' selected' : '') + '>' + v + '</option>'; }).join('') +
-        '</select></div>' : '');
+    return html;
   }
   function openNotifs() {
     notifSnap = {};
@@ -1937,548 +1780,11 @@
     paintBell();
   }
 
-  /* ================= PROGRESSI: TRAGUARDI, ERBARIO, RECORD, SERIE, SETTIMANA ================= */
-  // D: "quando si raggiunge un obiettivo bisogna dare qualcosa di motivazionale per continuare ad impegnarsi a fare
-  // sempre meglio e sempre di più", "mettine di tutte le difficoltà"; poi: "le mancano solo 2 esami, quindi metti dei
-  // traguardi fattibili". Quindi 32 traguardi, tutti raggiungibili con i due esami che restano (Diritto processuale
-  // civile: 48 giornate, 720 pagine). Gli id non si cambiano: sono salvati. I fiori non conquistati non si vedono.
-  // Ogni traguardo ha un fiore raro (disegnato qui sotto), un messaggio e una citazione celebre. Quelli conquistati
-  // stanno in S.trophies (id -> data), si sincronizzano; la prima volta quelli già raggiunti si sbloccano in silenzio.
-  var TIERS = ['', 'Facile', 'Medio', 'Difficile', 'Leggendario'], TIERS_PL = ['', 'Facili', 'Medi', 'Difficili', 'Leggendari'];
-  // fiore: [nome, petali, forma, colore (o elenco di colori), colore interno, centro, strati]
-  var TROPHIES = [
-    // facili: i primi passi
-    ['primo-giorno', 1, 'Il primo seme', 'Completa la tua prima giornata', 'days', 1, ['Margherita', 12, 'thin', '#fffaf2', '', '#f2c230', 1], 'La prima giornata è fatta. Ogni giardino comincia da un seme solo: il tuo è appena stato piantato.', ['Un viaggio di mille miglia comincia con un singolo passo.', 'Lao Tzu']],
-    ['giorni-3', 1, 'Il germoglio', 'Completa 3 giornate', 'days', 3, ['Ranuncolo', 10, 'round', '#f19a7a', '#f6c0a8', '#7b9e4e', 2], 'Tre giornate fatte: il germoglio è spuntato. La costanza comincia proprio così.', ['La goccia scava la pietra.', 'Ovidio']],
-    ['pagine-50', 1, 'Le prime 50 pagine', 'Completa 50 pagine', 'pages', 50, ['Zinnia', 16, 'thin', '#ef7f5a', '#f5a77a', '#7a3b2a', 2], 'Cinquanta pagine sono già un capitolo della tua storia.', ['Leggere è andare incontro a qualcosa che sta per essere e ancora nessuno sa che cosa sarà.', 'Italo Calvino']],
-    ['prima-sessione', 1, 'Prima sessione', 'Completa una sessione di concentrazione', 'sessions', 1, ['Viola', 5, 'round', '#8f7cc9', '', '#f4d35e', 1], 'Hai lasciato fuori il mondo e sei rimasta sul libro fino alla fine. La concentrazione si costruisce così: una sessione alla volta.', ['Chi è ovunque non è da nessuna parte.', 'Seneca']],
-    ['focus-1', 1, 'La prima ora', 'Arriva a 1 ora di concentrazione', 'focusH', 1, ['Papavero', 4, 'wide', '#e8574f', '', '#2e2a33', 1], 'La prima ora di concentrazione è nel tuo giardino. Le prossime arriveranno più facilmente.', ['Il genio è per l’1% ispirazione e per il 99% traspirazione.', 'Thomas Edison']],
-    ['primo-dubbio', 1, 'Le domande giuste', 'Segna il tuo primo argomento critico', 'topics', 1, ['Fiordaliso', 8, 'point', '#6f9fd8', '', '#41608f', 1], 'Sapere che cosa non è ancora chiaro è già metà del lavoro: ora quel dubbio ha un posto dove aspettarti.', ['Quando sai una cosa, riconosci di saperla; quando non la sai, riconosci di non saperla: questo è sapere.', 'Confucio']],
-    ['prima-nota', 1, 'Pensieri in ordine', 'Scrivi la nota di una giornata', 'notes', 1, ['Calendula', 14, 'thin', '#f2a33a', '#f6c75c', '#b35d1e', 2], 'Scrivere quello che hai capito lo fissa nella memoria. Le tue note sono un piccolo tesoro.', ['Leggere rende l’uomo completo, conversare lo rende pronto, scrivere lo rende preciso.', 'Francis Bacon']],
-    ['primo-respiro', 1, 'Un respiro', 'Fai il minuto di respiro guidato', 'breath', 1, ['Bucaneve', 3, 'point', '#f6f8f3', '#d4e9c8', '#9fc58a', 2], 'Fermarsi un minuto non è perdere tempo: è ritrovare la calma per andare avanti meglio.', ['Conserva una mente serena nelle difficoltà.', 'Orazio']],
-    ['serie-3', 1, 'Tre giorni di fila', 'Studia 3 giorni di fila', 'bestStreak', 3, ['Giacinto', 6, 'point', '#9a8fe0', '', '#d6cff7', 1], 'Tre giorni di fila: il ritmo c’è. Domani tocca alla quarta perla della collana.', ['Affrettati lentamente.', 'Augusto']],
-    ['recupero', 1, 'Rimessa in pari', 'Completa una giornata rimasta indietro', 'recoveries', 1, ['Trifoglio', 4, 'heart', '#8fbf7a', '', '#6a9e58', 1], 'Hai recuperato una giornata rimasta indietro. Non conta inciampare: conta rialzarsi, e tu l’hai fatto.', ['Se non puoi volare, corri; se non puoi correre, cammina; se non puoi camminare, striscia. Ma qualunque cosa tu faccia, continua ad andare avanti.', 'Martin Luther King']],
-    ['record', 1, 'Nuovo record', 'Batti un tuo record personale', 'records', 1, ['Begonia', 4, 'round', '#f08a8a', '', '#f6d36b', 1], 'Hai superato te stessa. Il record più bello è quello battuto contro chi eri ieri.', ['Diventa ciò che sei.', 'Friedrich Nietzsche']],
-    // medi: qualche settimana di lavoro
-    ['giorni-7', 2, 'Una settimana di lavoro', 'Completa 7 giornate', 'days', 7, ['Tulipano', 3, 'wide', '#e8667a', '#f39aa8', '#5a3a2e', 2], 'Sette giornate completate: una settimana intera di studio è alle tue spalle. Dovresti essere fiera di te.', ['Il successo è la somma di piccoli sforzi, ripetuti giorno dopo giorno.', 'Robert Collier']],
-    ['giorni-15', 2, 'Quindici giornate', 'Completa 15 giornate', 'days', 15, ['Fresia', 6, 'round', '#f3c4d6', '#f8e0ea', '#f4d35e', 2], 'Quindici giornate: lo studio è diventato un’abitudine, e le abitudini sono la tua forza.', ['L’abitudine è quasi una seconda natura.', 'Cicerone']],
-    ['pagine-250', 2, 'Un bel mattone', 'Completa 250 pagine', 'pages', 250, ['Ortensia', 4, 'round', '#9fb6e6', '#c8b6e6', '#f4f1fb', 2], 'Duecentocinquanta pagine: più di un manuale intero. Il tuo impegno pesa, nel senso migliore.', ['Ciò che fu duro da sopportare è dolce da ricordare.', 'Seneca']],
-    ['serie-7', 2, 'Una settimana senza fermarti', 'Studia 7 giorni di fila (un giorno saltato a settimana non conta)', 'bestStreak', 7, ['Lavanda', 8, 'thin', '#a08fd0', '#c4b8e8', '#7a6bb4', 2], 'Sette giorni di fila: una settimana intera di costanza. È così che si vincono gli esami.', ['Piano e costante vince la corsa.', 'Esopo']],
-    ['focus-10', 2, 'Dieci ore', 'Arriva a 10 ore di concentrazione', 'focusH', 10, ['Gelsomino', 5, 'point', '#fbf8f0', '', '#f2d36b', 1], 'Dieci ore di concentrazione. La tua mente si sta allenando come quella di un’atleta.', ['La memoria diminuisce, se non la eserciti.', 'Cicerone']],
-    ['fase', 2, 'Una fase intera', 'Completa una fase del programma', 'phasesDone', 1, ['Rosa canina', 5, 'heart', '#f4b6c2', '', '#f2d36b', 1], 'Una fase intera è fatta. Un tratto di strada è alle spalle: da qui in poi ogni giro sarà più facile.', ['Forse un giorno ci farà piacere ricordare anche queste cose.', 'Virgilio']],
-    ['meta', 2, 'A metà strada', 'Completa metà del programma di un esame', 'half', true, ['Gerbera', 20, 'thin', '#f28a6b', '#f6b39a', '#5a3a2e', 2], 'Metà del programma è fatta. Da qui la strada è in discesa: hai già fatto la parte più lunga.', ['Chi ben comincia è a metà dell’opera.', 'Orazio']],
-    ['anticipo', 2, 'In anticipo', 'Completa una giornata prima della sua data', 'early', 1, ['Lillà', 4, 'round', '#c3a6e2', '', '#efe6fa', 1], 'Hai fatto una giornata in anticipo: domani avrai un po’ di respiro in più. Furba e brava.', ['La diligenza è madre della buona fortuna.', 'Benjamin Franklin']],
-    ['fatica-3', 2, 'Anche quando è dura', 'Completa 3 giornate segnate come «faticose»', 'tired', 3, ['Cardo', 24, 'thin', '#a07ad0', '#c8acea', '#7a9e6a', 2], 'Tre giornate faticose portate fino in fondo. Il coraggio non è non sentire la fatica: è finire lo stesso.', ['Il coraggio non sempre ruggisce. A volte è la vocina alla fine del giorno che dice: domani ci riprovo.', 'Mary Anne Radmacher']],
-    ['chiariti-5', 2, 'Cinque certezze', 'Chiarisci 5 argomenti critici', 'solved', 5, ['Malva', 5, 'heart', '#c58fd0', '', '#f4e9f7', 1], 'Cinque dubbi diventati certezze. Ogni argomento chiarito è un passo verso un esame sereno.', ['È impossibile imparare ciò che si crede di sapere già.', 'Epitteto']],
-    // difficili: un programma quasi finito
-    ['giorni-30', 3, 'Un mese di impegno', 'Completa 30 giornate', 'days', 30, ['Iris', 6, 'point', '#7a6bc4', '#f2d36b', '#4b3f8f', 2], 'Trenta giornate completate. Un mese di lavoro vero: guarda quanta strada hai fatto.', ['Il lavoro tenace vince ogni cosa.', 'Virgilio']],
-    ['pagine-500', 3, 'Mezzo migliaio', 'Completa 500 pagine', 'pages', 500, ['Gardenia', 6, 'wide', '#fbf6ec', '#f3ead8', '#e9d9a6', 2], 'Cinquecento pagine. Ogni ripetizione le ha rese più tue: ormai molte le sapresti raccontare.', ['Chi ripassa ciò che sa e vi scopre il nuovo può diventare un maestro.', 'Confucio']],
-    ['serie-14', 3, 'Due settimane di fila', 'Studia 14 giorni di fila', 'bestStreak', 14, ['Glicine', 9, 'round', '#b4a6e4', '#d6ccf2', '#8f7cc9', 2], 'Quattordici giorni di fila: la tua determinazione è più forte di qualsiasi stanchezza.', ['I due guerrieri più potenti sono la pazienza e il tempo.', 'Lev Tolstoj']],
-    ['tre-quarti', 3, 'Tre quarti', 'Completa tre quarti del programma di un esame', 'threeQ', true, ['Clematide', 6, 'point', '#8a79d0', '', '#f4f1fb', 1], 'Tre quarti del programma alle spalle. Il traguardo si vede già, e tu ci stai arrivando a testa alta.', ['Non c’è una via facile dalla terra alle stelle.', 'Seneca']],
-    ['settimana-perfetta', 3, 'Settimana perfetta', 'Completa tutte le giornate del programma di una settimana (almeno 5)', 'perfectWeek', true, ['Plumeria', 5, 'round', '#fbf3e4', '#f6d36b', '#f2b84a', 2], 'Una settimana perfetta: tutte le giornate fatte, nessuna lasciata indietro. Rara come questo fiore.', ['Non basta sapere, bisogna anche applicare; non basta volere, bisogna anche fare.', 'Johann Wolfgang von Goethe']],
-    ['tutto-chiaro', 3, 'Tutto chiaro', 'Chiarisci tutti gli argomenti critici di un esame (almeno 5)', 'critAll', true, ['Agapanto', 12, 'thin', '#7f9de0', '', '#4b67b0', 1], 'Tutti gli argomenti critici sono chiariti. Il ripasso finale sarà più leggero del previsto.', ['Felice chi ha potuto conoscere le cause delle cose.', 'Virgilio']],
-    // leggendari: i due esami che mancano e la fine del libretto
-    ['programma', 4, 'Programma completato', 'Completa tutto il programma di un esame', 'plansDone', 1, ['Rosa damascena', 12, 'round', '#e07a96', '#f2a8bc', '#c85a7a', 2], 'Hai completato tutto il programma. Ogni pagina, ogni ripetizione: è tutto dentro di te. Ora vai e raccontalo.', ['Così si va alle stelle.', 'Virgilio']],
-    ['esame-superato', 4, 'Esame superato', 'Supera un esame preparato con Fioritura e segnalo nel libretto', 'libFio', 1, ['Camelia', 10, 'round', '#e57a92', '#f2a9ba', '#f4d35e', 2], 'Esame superato! Tutto il lavoro di queste settimane è diventato un voto sul libretto. Festeggia: te lo sei meritato.', ['Ho eretto un monumento più duraturo del bronzo.', 'Orazio']],
-    ['lode', 4, 'Trenta e lode', 'Un 30 e lode nel libretto', 'lode', 1, ['Corona imperiale', 6, 'point', '#f08a2e', '#f6b04a', '#7a4a1e', 2], 'Trenta e lode. Non ci sono altre parole: solo un applauso lunghissimo. Sei straordinaria.', ['Sappiamo ciò che siamo, ma non ciò che potremmo essere.', 'William Shakespeare']],
-    ['due-programmi', 4, 'Doppio traguardo', 'Completa il programma di due esami', 'plansDone', 2, ['Orchidea fantasma', 5, 'thin', '#f4f6f2', '#e6eee0', '#cfe0b8', 2], 'Due programmi completati dall’inizio alla fine. Non è fortuna: è il tuo metodo che funziona.', ['Tutte le cose eccellenti sono tanto difficili quanto rare.', 'Baruch Spinoza']],
-    ['laurea', 4, 'Tutti gli esami', 'Completa il libretto: tutti gli esami del tuo corso superati', 'libDone', true, ['Corona d’alloro', 9, 'thin', '#6f9a5c', '#a9c98f', '#e9c46a', 2], 'Tutti gli esami superati. Ogni voto del tuo libretto racconta mattine presto, sere lunghe e dubbi diventati certezze: adesso sono tutti lì, uno dopo l’altro.', ['Non c’è una via facile dalla terra alle stelle.', 'Seneca']]
-  ].map(function (r) { return { id: r[0], t: r[1], name: r[2], how: r[3], k: r[4], n: r[5], f: r[6], msg: r[7], q: r[8] }; });
-  function trophyById(id) { return TROPHIES.filter(function (x) { return x.id === id; })[0]; }
-  function trophyHit(tr, st) { var v = st[tr.k]; return typeof tr.n === 'number' ? (+v || 0) >= tr.n : !!v; }
-  function trophyProg(tr, st) { return typeof tr.n === 'number' ? [Math.min(tr.n, Math.floor(+st[tr.k] || 0)), tr.n] : null; }
-  function trophiesWon() { return TROPHIES.filter(function (x) { return S.trophies[x.id]; }); }
-
-  // ---------- i fiori rari ----------
-  function petalPath(shape) {
-    if (shape === 'point') return 'M50 50C40 38 41 21 50 9C59 21 60 38 50 50Z';
-    if (shape === 'heart') return 'M50 50C35 40 33 18 44 12C47 10 49 12 50 16C51 12 53 10 56 12C67 18 65 40 50 50Z';
-    if (shape === 'thin') return 'M50 50C46.5 36 46.5 20 50 7C53.5 20 53.5 36 50 50Z';
-    if (shape === 'wide') return 'M50 50C29 41 29 15 50 11C71 15 71 41 50 50Z';
-    return 'M50 50C37 40 37 20 50 12C63 20 63 40 50 50Z';
-  }
-  // il fiore non ancora conquistato: un bocciolo chiuso, uguale per tutti (D: "le piante da scoprire non devono essere svelate")
-  var BUD = '<svg class="bud" viewBox="0 0 100 100" aria-hidden="true"><path class="bud-s" d="M50 93V58"/>' +
-    '<path class="bud-l" d="M50 80C39 80 30 74 27 64C38 63 47 68 50 80Z"/><path class="bud-l" d="M50 72C59 71 67 65 70 56C60 56 52 61 50 72Z"/>' +
-    '<path class="bud-b" d="M50 20C62 31 64 47 50 61C36 47 38 31 50 20Z"/><path class="bud-k" d="M50 61C43 56 40 50 40 44C44 48 47 50 50 50C53 50 56 48 60 44C60 50 57 56 50 61Z"/></svg>';
-  // l'immagine di un traguardo: la corona d'alloro per il libretto completo, altrimenti il suo fiore raro
-  function troArt(tr, cls) { return tr.id === 'laurea' ? laurel('mini ' + (cls || '')) : rareFlower(tr.f, cls); }
-  // corona d'alloro: due rami di foglie su un cerchio e un nastro
-  function laurel(cls) {
-    var leaf = 'M0 0C5 -6 15 -7 23 0C15 7 5 6 0 0Z', side = '', cx = 100, cy = 100, R = 70, k = 0;
-    var a0 = 98 * Math.PI / 180, a1 = 246 * Math.PI / 180;
-    side += '<path class="lw-st" d="M' + (cx + R * Math.cos(a0)).toFixed(1) + ' ' + (cy + R * Math.sin(a0)).toFixed(1) + 'A' + R + ' ' + R + ' 0 0 1 ' +
-      (cx + R * Math.cos(a1)).toFixed(1) + ' ' + (cy + R * Math.sin(a1)).toFixed(1) + '"/>';
-    for (var i = 0; i < 10; i++) {
-      var th = (102 + i * 15.5) * Math.PI / 180, x = cx + R * Math.cos(th), y = cy + R * Math.sin(th);
-      var tg = Math.atan2(Math.cos(th), -Math.sin(th)) * 180 / Math.PI, sc = (1 - i * .035).toFixed(3);
-      side += '<path class="lw-l a" style="--i:' + (k++) + '" d="' + leaf + '" transform="translate(' + x.toFixed(1) + ' ' + y.toFixed(1) + ') rotate(' + (tg - 34).toFixed(1) + ') scale(' + sc + ')"/>';
-      side += '<path class="lw-l b" style="--i:' + (k++) + '" d="' + leaf + '" transform="translate(' + x.toFixed(1) + ' ' + y.toFixed(1) + ') rotate(' + (tg + 30).toFixed(1) + ') scale(' + (sc * .88).toFixed(3) + ')"/>';
-    }
-    var ta = a1 + .02, tx = cx + R * Math.cos(ta), ty = cy + R * Math.sin(ta), ttg = Math.atan2(Math.cos(ta), -Math.sin(ta)) * 180 / Math.PI;
-    side += '<path class="lw-l a" style="--i:' + k + '" d="' + leaf + '" transform="translate(' + tx.toFixed(1) + ' ' + ty.toFixed(1) + ') rotate(' + ttg.toFixed(1) + ') scale(.8)"/>';
-    return '<svg class="laurel ' + (cls || '') + '" viewBox="0 0 200 200" aria-hidden="true"><g>' + side + '</g><g transform="translate(200 0) scale(-1 1)">' + side + '</g>' +
-      '<path class="lw-r" d="M100 168L84 190L90 176L80 178Z"/><path class="lw-r" d="M100 168L116 190L110 176L120 178Z"/>' +
-      '<path class="lw-r" d="M100 168C92 158 80 160 82 168C84 175 94 172 100 168ZM100 168C108 158 120 160 118 168C116 175 106 172 100 168Z"/><circle class="lw-k" cx="100" cy="168" r="4.5"/></svg>';
-  }
-  var LEAF = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20C4 11 10 5 20 4C19.5 14 13 20 4 20Z"/><path class="v" d="M5 19L15 9"/></svg>';
-  function rareFlower(f, cls) {
-    var n = f[1], d = petalPath(f[2]), cols = Array.isArray(f[3]) ? f[3] : [f[3]], out = '';
-    for (var i = 0; i < n; i++) out += '<path d="' + d + '" fill="' + cols[i % cols.length] + '" transform="rotate(' + (360 / n * i).toFixed(1) + ' 50 50)"/>';
-    if (f[6] === 2) {
-      for (var j = 0; j < n; j++) out += '<path d="' + d + '" fill="' + (f[4] || cols[0]) + '" transform="rotate(' + (360 / n * j + 180 / n).toFixed(1) + ' 50 50) translate(50 50) scale(.6) translate(-50 -50)"/>';
-    }
-    return '<svg class="rf ' + (cls || '') + '" viewBox="0 0 100 100" aria-hidden="true"><g class="rf-p">' + out + '</g>' +
-      '<circle class="rf-c" cx="50" cy="50" r="' + (n > 12 ? 10 : 8) + '" fill="' + f[5] + '"/><circle cx="47" cy="47" r="2.4" fill="#fff" opacity=".35"/></svg>';
-  }
-
-  // ---------- i numeri del percorso ----------
-  function segPagesOf(segs) { return (segs || []).reduce(function (a, x) { return a + Math.max(0, x[2] - x[1] + 1); }, 0); }
-  function weekStartOf(iso) { var d = dateOf(iso); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return isoOf(d); }
-  function focusByDate() {
-    var fd = {};
-    Object.keys(S.focus).forEach(function (dv) {
-      Object.keys(S.focus[dv] || {}).forEach(function (k) { var f = S.focus[dv][k] || {}; var o = fd[k] = fd[k] || { ms: 0, n: 0 }; o.ms += f.ms || 0; o.n += f.n || 0; });
-    });
-    return fd;
-  }
-  // serie di giorni di studio: un giorno saltato per settimana (lun-dom) non la interrompe (il "jolly")
-  function streakNow(studied, t) {
-    var run = 0, used = {}, d = studied[t] ? t : addDays(t, -1);
-    for (var i = 0; i < 800; i++) {
-      if (studied[d]) run++;
-      else { var w = weekStartOf(d); if (used[w]) break; used[w] = 1; }
-      d = addDays(d, -1);
-    }
-    return { n: run, jollyUsed: !!used[weekStartOf(t)] };
-  }
-  function streakBest(studied, t) {
-    var keys = Object.keys(studied).sort(); if (!keys.length) return 0;
-    var d = keys[0], run = 0, best = 0, used = {};
-    while (d <= t) {
-      if (studied[d]) { run++; if (run > best) best = run; }
-      else if (d < t) { var w = weekStartOf(d); if (used[w]) { run = 0; used = {}; } else used[w] = 1; }
-      d = addDays(d, 1);
-    }
-    return best;
-  }
-  function computeStats() {
-    var t = today(), st = { exams: S.exams.length, days: 0, pages: 0, byDate: {}, planWeek: {}, mornings: 0, nights: 0, recoveries: 0, early: 0, tired: 0,
-      phasesDone: 0, plansDone: 0, half: false, threeQ: false, allPagesOnce: false, mood: { leggera: 0, normale: 0, faticosa: 0 } };
-    S.exams.forEach(function (e) {
-      var total = 0, doneN = 0;
-      (e.phases || []).forEach(function (p) {
-        var pd = 0;
-        (p.days || []).forEach(function (r) {
-          total++;
-          var key = e.id + '|' + r[0], at = S.done[key] || 0, pg = segPagesOf(r[1]), ws = weekStartOf(r[0]);
-          var pw = st.planWeek[ws] = st.planWeek[ws] || { plan: 0, done: 0 }; pw.plan++;
-          if (at <= 0) return;
-          doneN++; pd++; pw.done++; st.days++; st.pages += pg;
-          var when = at > 1e12 ? isoOf(new Date(at)) : r[0];
-          var b = st.byDate[when] = st.byDate[when] || { days: 0, pages: 0 }; b.days++; b.pages += pg;
-          if (at > 1e12) {
-            var h = new Date(at).getHours();
-            if (h >= 4 && h < 10) st.mornings++;
-            if (h >= 22 || h < 4) st.nights++;
-            if (when > r[0]) st.recoveries++;
-            if (when < r[0]) st.early++;
-          }
-          var m = S.mood[key]; if (m && st.mood[m] != null) st.mood[m]++;
-          if (m === 'faticosa') st.tired++;
-          var marked = S.pages[key]; if (pg > 0 && marked && marked.length >= pg) st.allPagesOnce = true;
-        });
-        if ((p.days || []).length && pd === p.days.length) st.phasesDone++;
-      });
-      if (total) { var fr = doneN / total; if (fr >= .5) st.half = true; if (fr >= .75) st.threeQ = true; if (doneN === total) st.plansDone++; }
-    });
-    // concentrazione
-    var fd = focusByDate(); st.focusByDate = fd; st.focusMs = 0; st.sessions = 0; st.focusDayMs = 0;
-    Object.keys(fd).forEach(function (k) { st.focusMs += fd[k].ms; st.sessions += fd[k].n; if (fd[k].ms > st.focusDayMs) st.focusDayMs = fd[k].ms; });
-    st.focusH = st.focusMs / 36e5; st.focusDayH = st.focusDayMs / 36e5;
-    // giorni di studio: una giornata fatta o almeno 20 minuti di concentrazione
-    var studied = {};
-    Object.keys(st.byDate).forEach(function (k) { studied[k] = 1; });
-    Object.keys(fd).forEach(function (k) { if (fd[k].ms >= 20 * 60000) studied[k] = 1; });
-    st.studied = studied;
-    var sn = streakNow(studied, t); st.streak = sn.n; st.jollyUsed = sn.jollyUsed;
-    st.bestStreak = Math.max(streakBest(studied, t), st.streak);
-    // weekend, settimane
-    Object.keys(st.byDate).forEach(function (k) { if (dateOf(k).getDay() === 6 && st.byDate[addDays(k, 1)]) st.weekendFull = true; });
-    Object.keys(st.planWeek).forEach(function (w) { var x = st.planWeek[w]; if (x.plan >= 5 && x.done === x.plan) st.perfectWeek = true; });
-    st.week = function (ws) {
-      var o = { days: 0, pages: 0, focus: 0, sessions: 0 };
-      for (var i = 0; i < 7; i++) {
-        var d = addDays(ws, i), b = st.byDate[d], f = fd[d];
-        if (b) { o.days += b.days; o.pages += b.pages; }
-        if (f) { o.focus += f.ms; o.sessions += f.n; }
-      }
-      return o;
-    };
-    var thisW = weekStartOf(t), wk = thisW, prev = null, bestWP = 0, bestWF = 0;
-    var firstDate = Object.keys(studied).sort()[0];
-    if (firstDate) {
-      var w0 = weekStartOf(firstDate);
-      for (var w = w0; w <= thisW; w = addDays(w, 7)) {
-        var cur = st.week(w);
-        if (prev && prev.pages > 0 && cur.pages > prev.pages) st.weekUp = true;
-        if (cur.pages > bestWP) bestWP = cur.pages; if (cur.focus > bestWF) bestWF = cur.focus;
-        prev = cur;
-      }
-    }
-    st.bestWeekPages = bestWP; st.bestWeekFocus = bestWF;
-    var maxPD = 0; Object.keys(st.byDate).forEach(function (k) { if (st.byDate[k].pages > maxPD) maxPD = st.byDate[k].pages; });
-    st.maxPagesDay = maxPD;
-    // argomenti critici, note, calendario, respiro, record
-    st.topics = S.topics.length; st.solved = S.topics.filter(function (x) { return x.solved; }).length;
-    st.critAll = S.exams.some(function (e) { var ts = S.topics.filter(function (x) { return x.ex === e.id; }); return ts.length >= 5 && ts.every(function (x) { return x.solved; }); });
-    st.notes = Object.keys(S.notes).filter(function (k) { return String(S.notes[k] || '').trim(); }).length;
-    st.events = S.events.length; st.breath = S.counters.breath || 0; st.records = S.counters.records || 0;
-    // libretto
-    var lib = libStats(); st.libN = lib.n; st.has30 = lib.max >= 30; st.lode = lib.lode; st.cfu = lib.cfu; st.media27 = lib.graded >= 3 && lib.weighted >= 27; st.lib = lib;
-    // esami preparati qui e poi superati; libretto completo (tutti gli esami del corso)
-    st.libFio = S.libretto.filter(function (x) { return x.ex || S.exams.some(function (e) { return normName(e.name) === normName(x.name); }); }).length;
-    st.libTotal = +S.settings.libTotal || 0; st.libDone = st.libTotal > 0 && lib.n >= st.libTotal;
-    st.trophyCount = trophiesWon().length;
-    return st;
-  }
-
-  // ---------- libretto ----------
-  // voto 0 = idoneità: conta come esame superato e per i CFU, non per le medie
-  function libStats() {
-    var L = S.libretto, n = L.length, g = 0, sum = 0, wsum = 0, cfu = 0, gcfu = 0, max = 0, lode = 0;
-    L.forEach(function (x) {
-      var v = +x.voto || 0, c = +x.cfu || 0; cfu += c;
-      if (v < 18) return;
-      g++; sum += v; wsum += v * c; gcfu += c; if (v > max) max = v; if (v >= 30 && x.lode) lode++;
-    });
-    var weighted = gcfu ? wsum / gcfu : g ? sum / g : 0;
-    return { n: n, graded: g, avg: g ? sum / g : 0, weighted: weighted, cfu: cfu, max: max, lode: lode, base: weighted ? weighted * 110 / 30 : 0 };
-  }
-  function normName(x) { return String(x || '').toLowerCase().replace(/[^a-z0-9àèéìòù]+/g, ' ').trim(); }
-  function fmtNum(x, d) { return (Math.round(x * Math.pow(10, d)) / Math.pow(10, d)).toFixed(d).replace('.', ','); }
-
-  // ---------- record personali ----------
-  var RECORDS = [
-    ['pagesDay', 'Pagine in un giorno', function (v) { return v + ' ' + plural(v, 'pagina', 'pagine') + ' in un giorno'; }, function (st) { return st.maxPagesDay; }],
-    ['focusDay', 'Concentrazione in un giorno', function (v) { return fmtMin(v) + ' di concentrazione in un giorno'; }, function (st) { return st.focusDayMs; }],
-    ['streak', 'Giorni di fila', function (v) { return v + ' ' + plural(v, 'giorno', 'giorni') + ' di fila'; }, function (st) { return st.bestStreak; }],
-    ['weekPages', 'Pagine in una settimana', function (v) { return v + ' pagine in una settimana'; }, function (st) { return st.bestWeekPages; }],
-    ['weekFocus', 'Concentrazione in una settimana', function (v) { return fmtMin(v) + ' di concentrazione in una settimana'; }, function (st) { return st.bestWeekFocus; }]
-  ];
-
-  // ---------- controllo dei traguardi (dopo ogni cambiamento) ----------
-  var trophyQueue = [], trophyTimer = null;
-  function scheduleTrophies() { clearTimeout(trophyTimer); trophyTimer = setTimeout(checkTrophies, 450); }
-  function checkTrophies() {
-    var st = computeStats(), now = Date.now(), fresh = [], changed = false, newRecord = null;
-    var first = !S.trophies._init;
-    // record: la prima volta si ricordano in silenzio
-    RECORDS.forEach(function (r) {
-      var v = r[3](st) || 0, old = S.records[r[0]];
-      if (!old) { if (v > 0) { S.records[r[0]] = { v: v, at: now }; changed = true; } return; }
-      if (v > old.v) {
-        S.records[r[0]] = { v: v, at: now }; changed = true;
-        var hk = 'rec:' + r[0] + ':' + today();
-        if (!first && !S.hidden[hk] && (!newRecord || r[0] === 'focusDay' || r[0] === 'pagesDay')) { newRecord = r; S.hidden[hk] = now; }
-      }
-    });
-    if (newRecord) { S.counters.records = (S.counters.records || 0) + 1; st.records = S.counters.records; }
-    for (var pass = 0; pass < 2; pass++) {   // il secondo giro per i traguardi che contano i traguardi
-      st.trophyCount = trophiesWon().length;
-      TROPHIES.forEach(function (tr) { if (!S.trophies[tr.id] && trophyHit(tr, st)) { S.trophies[tr.id] = now; fresh.push(tr); changed = true; } });
-    }
-    // l'erbario nasce col primo traguardo: così un telefono nuovo, vuoto prima di accedere, non festeggia di nuovo tutto ciò che arriva dall'account
-    if (first && fresh.length) { S.trophies._init = now; changed = true; }
-    if (changed) { save(); if (UI.tab === 'prog') render(); }   // l'erbario e i record sullo schermo si aggiornano subito
-    var lau = fresh.some(function (x) { return x.id === 'laurea'; }), rest = fresh.filter(function (x) { return x.id !== 'laurea'; });
-    if (first) { if (fresh.length) trophyQueue.push({ intro: fresh.length }); if (lau) trophyQueue.push({ laurea: true }); }
-    else {
-      if (lau) trophyQueue.push({ laurea: true });   // il libretto completo ha il suo momento, più grande
-      if (rest.length) { rest.sort(function (a, b) { return b.t - a.t; }); trophyQueue.push({ tr: rest[0], more: rest.length - 1 }); }
-    }
-    if (newRecord && !first) {
-      var nr = newRecord;
-      setTimeout(function () { petals(22); Sound.chime('done'); toast('Nuovo record! ' + nr[2](S.records[nr[0]].v) + '.', { label: 'Vedi', run: function () { goProgress('tro'); } }, 7000); }, fresh.length ? 200 : 0);
-    }
-    showNextTrophy();
-  }
-  function showNextTrophy() {
-    if (!trophyQueue.length || $('.tro-ov') || $('.breathe')) return;
-    if (sheetOpen() || document.hidden) { setTimeout(showNextTrophy, 1500); return; }
-    var item = trophyQueue.shift(), html;
-    if (item.laurea) { showLaurea(); return; }
-    if (item.intro) {
-      var won = trophiesWon().sort(function (a, b) { return b.t - a.t; }), top = won[0];
-      html = '<span class="eyebrow">Nuovo: l’erbario</span>' +
-        '<div class="tro-flower">' + troArt(top, 'big') + '</div>' +
-        '<h2 class="display">Il tuo erbario è nato</h2>' +
-        '<p class="tro-msg">Ogni traguardo che raggiungi fa sbocciare un fiore raro. ' +
-        (item.intro === 1 ? 'Il primo l’hai appena conquistato: ' : 'Con il lavoro che hai già fatto ne hai conquistati <b>' + item.intro + '</b>: ') +
-        'ne restano ' + (TROPHIES.length - won.length) + ', dai più facili ai leggendari.</p>' +
-        '<blockquote class="tro-q">«Bisogna coltivare il nostro giardino.»<span>Voltaire</span></blockquote>';
-    } else {
-      var tr = item.tr;
-      html = '<span class="eyebrow tier t' + tr.t + '">Traguardo ' + TIERS[tr.t].toLowerCase() + '</span>' +
-        '<div class="tro-flower">' + troArt(tr, 'big') + '</div>' +
-        '<p class="tro-fname">' + esc(tr.f[0]) + ' · nuovo fiore nell’erbario</p>' +
-        '<h2 class="display">' + esc(tr.name) + '</h2>' +
-        '<p class="tro-msg">' + esc(tr.msg) + '</p>' +
-        '<blockquote class="tro-q">«' + esc(tr.q[0]) + '»<span>' + esc(tr.q[1]) + '</span></blockquote>' +
-        (item.more > 0 ? '<p class="tiny muted">' + (item.more === 1 ? 'E un altro traguardo: lo trovi nell’erbario.' : 'E altri ' + item.more + ' traguardi: li trovi nell’erbario.') + '</p>' : '');
-    }
-    var ov = document.createElement('div');
-    ov.className = 'tro-ov'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', 'Traguardo raggiunto');
-    ov.innerHTML = '<div class="tro-card">' + html + '<div class="btns"><button class="btn" data-a="troClose">' + I.check + 'Avanti così</button>' +
-      '<button class="btn soft" data-a="troHerb">Vedi l’erbario</button></div></div>';
-    document.body.appendChild(ov);
-    requestAnimationFrame(function () { ov.classList.add('open'); });
-    Sound.chime('phase'); buzz([30, 50, 30, 50, 60]);
-    setTimeout(function () { petals(40); }, 250);
-    setTimeout(function () { var b = ov.querySelector('[data-a="troClose"]'); if (b) try { b.focus({ preventScroll: true }); } catch (e) {} }, 400);
-  }
-  // Tutti gli esami superati (D: "una volta completato tutto dovrà uscire qualcosa di meraviglioso")
-  function showLaurea() {
-    var lib = libStats(), nm = String(S.settings.name || '').trim();
-    var html = '<span class="eyebrow">Libretto completo</span>' +
-      '<div class="wreath">' + laurel('gold') + '<div class="wr-in"><b class="display">' + lib.n + '</b><span>esami</span></div></div>' +
-      '<h2 class="display">Tutti gli esami superati</h2>' +
-      '<p class="tro-fname">' + (nm ? 'Bravissima, ' + esc(nm) + '.' : 'Bravissima.') + '</p>' +
-      '<div class="stats"><div><b>' + lib.cfu + '</b><span>CFU</span></div>' +
-      (lib.graded ? '<div><b>' + fmtNum(lib.weighted, 2) + '</b><span>media</span></div>' : '') +
-      (lib.lode ? '<div><b>' + lib.lode + '</b><span>' + plural(lib.lode, 'lode', 'lodi') + '</span></div>' : '') + '</div>' +
-      '<p class="tro-msg">Ogni voto di questo libretto racconta mattine presto, sere lunghe, pagine ripetute e dubbi diventati certezze. ' +
-      'Adesso sono tutti qui, uno dopo l’altro: li hai superati tutti. Fermati un momento e goditelo: è tuo, e te lo sei meritato fino all’ultima pagina.</p>' +
-      '<blockquote class="tro-q">«Non c’è una via facile dalla terra alle stelle.»<span>Seneca</span></blockquote>';
-    var ov = document.createElement('div');
-    ov.className = 'tro-ov grand'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', 'Tutti gli esami superati');
-    ov.innerHTML = '<div class="tro-card">' + html + '<div class="btns"><button class="btn" data-a="troClose">' + I.check + 'Grazie</button>' +
-      '<button class="btn soft" data-a="troLib">Vedi il libretto</button></div></div>';
-    document.body.appendChild(ov);
-    requestAnimationFrame(function () { ov.classList.add('open'); });
-    Sound.chime('phase'); setTimeout(function () { Sound.chime('done'); }, 900); buzz([40, 60, 40, 60, 40, 60, 120]);
-    [250, 1400, 2800, 4600].forEach(function (ms, i) { setTimeout(function () { if (ov.isConnected) petals(i ? 30 : 60); }, ms); });
-    setTimeout(function () { var b = ov.querySelector('[data-a="troClose"]'); if (b) try { b.focus({ preventScroll: true }); } catch (e) {} }, 400);
-  }
-  function closeTrophy() {
-    var ov = $('.tro-ov'); if (!ov) return;
-    ov.classList.remove('open'); setTimeout(function () { ov.remove(); showNextTrophy(); }, 380);
-  }
-
-  // ---------- "La tua settimana" (domenica sera e lunedì) ----------
-  function pct(a, b) { return b > 0 ? Math.round((a - b) / b * 100) : 0; }
-  function deltaText(a, b, unit) {
-    if (!b && !a) return '';
-    if (!b) return 'prima settimana';
-    var p = pct(a, b);
-    return p > 0 ? '+' + p + '% rispetto alla settimana prima' : p < 0 ? p + '% rispetto alla settimana prima' : 'come la settimana prima';
-  }
-  function weekCard(st) {
-    var t = today(), wd = dateOf(t).getDay(), h = new Date().getHours(), ws;
-    if (wd === 0 && h >= 18) ws = weekStartOf(t); else if (wd === 1) ws = weekStartOf(addDays(t, -1)); else return '';
-    if (S.hidden['week:' + ws]) return '';
-    var w = st.week(ws), pw = st.week(addDays(ws, -7));
-    if (!w.days && w.focus < 60000) return '';
-    var better = w.pages > pw.pages || w.focus > pw.focus;
-    return '<section class="card week"><div class="row between"><div><span class="eyebrow">La tua settimana · ' + fmtDM(ws) + ' – ' + fmtDM(addDays(ws, 6)) + '</span>' +
-      '<h3 class="h3" style="margin-top:5px">' + (better ? 'Sempre meglio, sempre di più' : 'Una settimana di lavoro') + '</h3></div></div>' +
-      '<div class="stats"><div><b>' + w.days + '</b><span>' + plural(w.days, 'giornata', 'giornate') + '</span></div><div><b>' + w.pages + '</b><span>pagine</span></div><div><b>' + fmtMin(w.focus) + '</b><span>concentrazione</span></div></div>' +
-      '<p class="small muted">' + (deltaText(w.pages, pw.pages) ? 'Pagine: ' + deltaText(w.pages, pw.pages) + '. ' : '') + (deltaText(w.focus, pw.focus) ? 'Concentrazione: ' + deltaText(w.focus, pw.focus) + '.' : '') + '</p>' +
-      '<p class="small">' + (better ? 'Hai fatto più della settimana scorsa: stai crescendo, e si vede.' : 'Ogni settimana conta, anche quelle più leggere: la prossima può essere la migliore.') + '</p>' +
-      '<div class="row between"><button class="btn ghost" data-a="goProg" data-v="stat">' + I.chev + 'Statistiche</button><button class="btn ghost" data-a="hideCard" data-k="week:' + ws + '">Chiudi</button></div></section>';
-  }
-  // dopo il giorno dell'esame: com'è andato?
-  function esitoCard() {
-    var t = today();
-    var e = S.exams.filter(function (x) { return x.date < t && !S.hidden['esito:' + x.id] && !S.libretto.some(function (l) { return l.ex === x.id; }); })[0];
-    if (!e) return '';
-    return '<section class="card esito"><span class="eyebrow">Libretto</span><h3 class="h3" style="margin-top:5px">Com’è andato l’esame di ' + esc(e.name) + '?</h3>' +
-      '<p class="small muted">Segna il voto nel libretto: la media e i crediti si aggiornano da soli.</p>' +
-      '<div class="row between wrap"><button class="btn sm" data-a="libNew" data-ex="' + e.id + '">' + I.check + 'Segna il voto</button>' +
-      '<button class="btn ghost" data-a="hideCard" data-k="esito:' + e.id + '">Non ancora</button></div></section>';
-  }
-
-  // ---------- la scheda Progressi ----------
-  function goProgress(seg) { closeSheet(true); UI.tab = 'prog'; UI.progSeg = seg || 'tro'; try { localStorage.setItem('fioritura.tab', 'prog'); } catch (e) {} render(true); window.scrollTo(0, 0); }
-  function viewProgress() {
-    var seg = UI.progSeg || 'tro', st = computeStats();
-    var html = topbar() + '<header class="head"><span class="eyebrow">Progressi</span><h1 class="display">Il tuo percorso</h1>' +
-      '<p>Traguardi, record, numeri e voti: tutto quello che hai costruito, giorno dopo giorno.</p></header>' +
-      '<div class="seg" role="tablist" aria-label="Progressi">' + [['tro', 'Traguardi'], ['stat', 'Statistiche'], ['lib', 'Libretto']].map(function (o) {
-        return '<button role="tab" data-a="progSeg" data-v="' + o[0] + '" aria-pressed="' + (seg === o[0]) + '" aria-selected="' + (seg === o[0]) + '">' + o[1] + '</button>';
-      }).join('') + '</div>';
-    if (seg === 'stat') return html + statsBody(st);
-    if (seg === 'lib') return html + librettoBody(st);
-    return html + trophiesBody(st);
-  }
-  function trophiesBody(st) {
-    var won = trophiesWon().length, total = TROPHIES.length;
-    var html = '<section class="card"><div class="row between"><div><span class="eyebrow">L’erbario</span><h3 class="h3" style="margin-top:5px">' + won + ' di ' + total + ' fiori</h3></div>' +
-      '<div class="pct display">' + Math.round(won / total * 100) + '<small>%</small></div></div><div class="bar"><i style="left:' + Math.round(won / total * 100) + '%"></i></div>' +
-      '<p class="tiny muted">Ogni traguardo fa sbocciare un fiore raro: finché non lo conquisti resta un bocciolo, e nessuno sa che fiore sarà. Tocca un bocciolo per vedere come si conquista.</p></section>';
-    // serie e record
-    html += '<section class="card"><div class="row between"><div><span class="eyebrow">Serie di giorni</span><h3 class="h3" style="margin-top:5px">' +
-      (st.streak ? st.streak + ' ' + plural(st.streak, 'giorno', 'giorni') + ' di fila' : 'Comincia oggi la tua serie') + '</h3></div>' +
-      '<span class="pill p4">' + (st.jollyUsed ? 'Jolly usato' : 'Jolly disponibile') + '</span></div>' +
-      '<p class="small muted">Conta ogni giorno in cui completi una giornata o studi almeno 20 minuti. Un giorno saltato a settimana non interrompe la serie: è il tuo jolly.</p></section>';
-    var recs = RECORDS.filter(function (r) { return S.records[r[0]] && S.records[r[0]].v > 0; });
-    html += '<section class="card"><h3 class="h3">I tuoi record</h3>' + (recs.length ? '<div>' + recs.map(function (r) {
-      var rec = S.records[r[0]];
-      return '<div class="recrow"><span class="ri">' + I.sprout + '</span><span class="tx"><b>' + esc(r[2](rec.v)) + '</b><span>' + r[1] + ' · ' + (rec.at > 1e12 ? 'dal ' + fmtShort(isoOf(new Date(rec.at))) : '') + '</span></span></div>';
-    }).join('') + '</div>' : '<p class="small muted">Completa giornate e sessioni: qui compariranno i tuoi record, e un avviso quando li batti.</p>') + '</section>';
-    // l'erbario, per difficoltà
-    [1, 2, 3, 4].forEach(function (tier) {
-      var list = TROPHIES.filter(function (x) { return x.t === tier; }), n = list.filter(function (x) { return S.trophies[x.id]; }).length;
-      html += '<section class="card"><div class="row between"><h3 class="h3">' + TIERS_PL[tier] + '</h3><span class="pill tierpill t' + tier + '">' + n + ' / ' + list.length + '</span></div>' +
-        '<div class="herb">' + list.map(function (tr) {
-          var got = !!S.trophies[tr.id];
-          return '<button class="hb' + (got ? ' got' : '') + '" data-a="troInfo" data-id="' + tr.id + '" aria-label="' + esc(tr.name) + (got ? ', conquistato: ' + esc(tr.f[0]) : ', da conquistare') + '">' +
-            (got ? troArt(tr) : BUD) + '<span>' + esc(got ? tr.f[0] : tr.name) + '</span></button>';
-        }).join('') + '</div></section>';
-    });
-    return html;
-  }
-  function trophySheet(id) {
-    var tr = trophyById(id), st = computeStats(), got = S.trophies[id], pr = trophyProg(tr, st);
-    return sheetHead(esc(tr.name), 'Traguardo ' + TIERS[tr.t].toLowerCase()) +
-      '<div class="tro-flower small' + (got ? '' : ' locked') + '">' + (got ? troArt(tr, 'big') : BUD) + '</div>' +
-      '<p class="tro-fname" style="text-align:center">' + (got ? esc(tr.f[0]) + ' · conquistato il ' + fmtShort(isoOf(new Date(got > 1e12 ? got : Date.now()))) : 'Fiore da scoprire: si svela solo quando conquisti il traguardo') + '</p>' +
-      '<div class="msg">' + (got ? '' : 'Come si conquista: ') + esc(tr.how) + '.</div>' +
-      (!got && pr ? '<div><div class="pbar"><i style="width:' + Math.round(pr[0] / pr[1] * 100) + '%"></i></div><p class="tiny muted" style="margin-top:6px">' + fmtProg(tr, pr) + '</p></div>' : '') +
-      (got ? '<p class="tro-msg" style="text-align:left">' + esc(tr.msg) + '</p><blockquote class="tro-q" style="text-align:left">«' + esc(tr.q[0]) + '»<span>' + esc(tr.q[1]) + '</span></blockquote>' : '');
-  }
-  function fmtProg(tr, pr) {
-    if (tr.k === 'focusH' || tr.k === 'focusDayH') return pr[0] + ' di ' + pr[1] + ' ore';
-    return pr[0] + ' di ' + pr[1];
-  }
-
-  // ---------- statistiche ----------
-  function lastDays(n) { var t = today(), out = []; for (var i = n - 1; i >= 0; i--) out.push(addDays(t, -i)); return out; }
-  function barChart(id, pts, fmt, unitLabel) {
-    // pts: [{ k: etichetta breve, full: etichetta lunga, v: numero }]; una serie, un colore, valore al tocco
-    var W = 340, H = 150, pb = 24, pt = 20, n = pts.length, max = Math.max.apply(null, pts.map(function (p) { return p.v; }).concat([1]));
-    var slot = W / n, bw = Math.min(24, Math.max(6, slot - 8)), ih = H - pb - pt, body = '', maxI = -1;
-    pts.forEach(function (p, i) { if (p.v > 0 && (maxI < 0 || p.v >= pts[maxI].v)) maxI = i; });
-    pts.forEach(function (p, i) {
-      var x = i * slot + (slot - bw) / 2, h = p.v > 0 ? Math.max(3, p.v / max * ih) : 0, y = H - pb - h, r = Math.min(4, h, bw / 2);
-      var bar = h ? '<path class="b" d="M' + x.toFixed(1) + ' ' + (H - pb) + 'V' + (y + r).toFixed(1) + 'Q' + x.toFixed(1) + ' ' + y.toFixed(1) + ' ' + (x + r).toFixed(1) + ' ' + y.toFixed(1) +
-        'H' + (x + bw - r).toFixed(1) + 'Q' + (x + bw).toFixed(1) + ' ' + y.toFixed(1) + ' ' + (x + bw).toFixed(1) + ' ' + (y + r).toFixed(1) + 'V' + (H - pb) + 'Z"/>' : '';
-      var lab = (i === maxI || i === n - 1) && p.v > 0 ? '<text class="vl" x="' + (x + bw / 2).toFixed(1) + '" y="' + (y - 6).toFixed(1) + '" text-anchor="middle">' + esc(fmt(p.v)) + '</text>' : '';
-      var tick = (n <= 8 || i % 2 === (n - 1) % 2) ? '<text class="xl" x="' + (x + bw / 2).toFixed(1) + '" y="' + (H - 7) + '" text-anchor="middle">' + esc(p.k) + '</text>' : '';
-      body += '<g class="bh" tabindex="0" data-tip="' + esc(p.full + ' · ' + fmt(p.v)) + '"><rect x="' + (i * slot).toFixed(1) + '" y="0" width="' + slot.toFixed(1) + '" height="' + H + '" fill="transparent"/>' + bar + lab + tick + '</g>';
-    });
-    return '<div class="chart" data-chart="' + id + '"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(unitLabel) + '">' +
-      '<line class="base" x1="0" x2="' + W + '" y1="' + (H - pb) + '" y2="' + (H - pb) + '"/>' + body + '</svg>' +
-      '<p class="tipline tiny muted" data-tipline>Tocca una barra per vedere il valore.</p>' +
-      '<details class="more numbers"><summary><span>Vedi i numeri</span>' + I.chev + '</summary><div class="ntable">' +
-      pts.slice().reverse().map(function (p) { return '<div><span>' + esc(p.full) + '</span><b>' + esc(fmt(p.v)) + '</b></div>'; }).join('') + '</div></details></div>';
-  }
-  function statsBody(st) {
-    var days14 = lastDays(14), weeks = [], ws = weekStartOf(today());
-    for (var i = 7; i >= 0; i--) weeks.push(addDays(ws, -7 * i));
-    var html = '<section class="card"><div class="stats four"><div><b>' + st.days + '</b><span>giornate fatte</span></div><div><b>' + st.pages + '</b><span>pagine</span></div>' +
-      '<div><b>' + fmtMin(st.focusMs) + '</b><span>concentrazione</span></div><div><b>' + st.bestStreak + '</b><span>serie migliore</span></div></div></section>';
-    var cw = st.week(ws), pw = st.week(addDays(ws, -7));
-    html += '<section class="card"><span class="eyebrow">Questa settimana</span><div class="stats" style="margin-top:10px"><div><b>' + cw.days + '</b><span>' + plural(cw.days, 'giornata', 'giornate') + '</span></div>' +
-      '<div><b>' + cw.pages + '</b><span>pagine</span></div><div><b>' + fmtMin(cw.focus) + '</b><span>concentrazione</span></div></div>' +
-      '<p class="small muted">' + (pw.pages || pw.focus ? 'Rispetto alla settimana scorsa: pagine ' + (cw.pages - pw.pages >= 0 ? '+' : '−') + Math.abs(cw.pages - pw.pages) + ', concentrazione ' + (cw.focus - pw.focus >= 0 ? '+' : '−') + fmtMin(Math.abs(cw.focus - pw.focus)) + '.' : 'Dalla prossima settimana qui vedrai il confronto con quella prima.') + '</p></section>';
-    html += '<section class="card"><h3 class="h3">Concentrazione, ultimi 14 giorni</h3>' + barChart('focus', days14.map(function (d) {
-      var f = st.focusByDate[d]; return { k: String(dateOf(d).getDate()), full: cap(fmtLong(d)), v: Math.round((f ? f.ms : 0) / 60000) };
-    }), function (v) { return fmtMin(v * 60000); }, 'Minuti di concentrazione al giorno, ultimi 14 giorni') + '</section>';
-    html += '<section class="card"><h3 class="h3">Pagine completate, ultimi 14 giorni</h3>' + barChart('pages', days14.map(function (d) {
-      var b = st.byDate[d]; return { k: String(dateOf(d).getDate()), full: cap(fmtLong(d)), v: b ? b.pages : 0 };
-    }), function (v) { return v + ' ' + plural(v, 'pagina', 'pagine'); }, 'Pagine delle giornate completate, ultimi 14 giorni') + '</section>';
-    html += '<section class="card"><h3 class="h3">Giornate per settimana</h3>' + barChart('weeks', weeks.map(function (w) {
-      return { k: fmtShort(w).replace(' ', ' '), full: 'Settimana dal ' + fmtDM(w), v: st.week(w).days };
-    }), function (v) { return v + ' ' + plural(v, 'giornata', 'giornate'); }, 'Giornate completate per settimana, ultime 8 settimane') + '</section>';
-    var mt = st.mood.leggera + st.mood.normale + st.mood.faticosa;
-    html += '<section class="card"><h3 class="h3">Com’è andata</h3>' + (mt ? '<div class="moodbars">' + [['leggera', 'Leggere'], ['normale', 'Normali'], ['faticosa', 'Faticose']].map(function (o) {
-      var v = st.mood[o[0]], w = Math.round(v / mt * 100);
-      return '<div class="mb"><span class="ml">' + o[1] + '</span><span class="mtrack"><i style="width:' + w + '%"></i></span><b>' + v + '</b></div>';
-    }).join('') + '</div><p class="tiny muted">Dalle risposte a «Com’è andata?» dopo ogni giornata.</p>' : '<p class="small muted">Quando chiudi una giornata, rispondi a «Com’è andata?»: qui vedrai come stanno andando le tue giornate.</p>') + '</section>';
-    return html;
-  }
-  function paintCharts() {
-    $$('.chart').forEach(function (c) {
-      if (c._wired) return; c._wired = true;
-      var line = c.querySelector('[data-tipline]');
-      var show = function (e) {
-        var g = e.target.closest && e.target.closest('.bh'); if (!g) return;
-        c.querySelectorAll('.bh.on').forEach(function (x) { x.classList.remove('on'); }); g.classList.add('on');
-        line.textContent = g.getAttribute('data-tip');
-      };
-      c.addEventListener('pointerover', show); c.addEventListener('click', show); c.addEventListener('focusin', show);
-    });
-  }
-
-  // ---------- libretto ----------
-  function librettoBody(st) {
-    var lib = st.lib, tot = st.libTotal, n = lib.n, left = tot ? Math.max(0, tot - n) : 0, nm = String(S.settings.name || '').trim();
-    var line = !n ? 'Comincia dal primo esame che hai superato: ogni riga di questo libretto è una vittoria tua.' :
-      !tot ? 'Hai già superato ' + n + ' ' + plural(n, 'esame', 'esami') + '. Ognuno è una piccola vittoria: sono tutti qui.' :
-      st.libDone ? 'Tutti gli esami superati. Che percorso meraviglioso.' :
-      left === 1 ? 'Ne manca uno solo: l’ultimo passo.' :
-      left <= 3 ? 'Mancano solo ' + left + ' esami. Ci sei quasi.' :
-      'Hai già superato ' + n + ' esami. Ne mancano ' + left + ': uno alla volta.';
-    var html = '<section class="libcover' + (st.libDone ? ' done' : '') + '">' +
-      '<div class="lc-art">' + laurel(st.libDone ? 'gold' : '') + '</div>' +
-      '<span class="eyebrow">Libretto universitario</span>' +
-      '<h2 class="display">' + (nm ? 'Il libretto di ' + esc(nm) : 'Il mio libretto') + '</h2>' +
-      '<p class="lc-line">' + line + '</p>';
-    if (tot) {
-      var shown = Math.min(n, tot);
-      html += (tot <= 60 ? '<div class="leaves" aria-hidden="true">' + Array.apply(null, Array(tot)).map(function (_, i) { return '<i class="lf' + (i < shown ? ' on' : '') + '">' + LEAF + '</i>'; }).join('') + '</div>' :
-        '<div class="pbar"><i style="width:' + Math.round(shown / tot * 100) + '%"></i></div>') +
-        '<div class="row between lc-meta"><span>' + shown + ' di ' + tot + ' esami · ' + lib.cfu + ' CFU</span><button class="btn ghost sm" data-a="libGoal">Modifica</button></div>';
-      if (st.libDone) html += '<button class="btn soft block" data-a="libReplay">' + I.sprout + 'Rivivi il momento</button>';
-    } else {
-      html += '<button class="lc-ask" data-a="libGoal"><b>Quanti esami ha il tuo corso di laurea?</b><span>Così ti mostro quanti ne mancano, e per l’ultimo c’è una sorpresa.</span></button>';
-    }
-    html += '</section>';
-    if (lib.graded) html += '<section class="card"><div class="stats four"><div><b>' + fmtNum(lib.weighted, 2) + '</b><span>media ponderata</span></div>' +
-      '<div><b>' + fmtNum(lib.avg, 2) + '</b><span>media aritmetica</span></div><div><b>' + lib.cfu + '</b><span>CFU</span></div>' +
-      '<div><b>' + fmtNum(lib.base, 1) + '</b><span>base di laurea</span></div></div>' +
-      '<p class="tiny muted">Base di laurea = media ponderata × 110 ÷ 30. Alcune università la calcolano in modo diverso. Le idoneità contano per i CFU, non per le medie.</p></section>';
-    var L = S.libretto.slice().sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); });
-    html += '<section class="card libpages"><div class="row between"><h3 class="h3">Esami superati</h3><button class="btn sm" data-a="libNew">' + I.plus + 'Aggiungi</button></div>' +
-      (L.length ? '<div>' + L.map(function (x) {
-        var v = +x.voto || 0, lode = v === 30 && x.lode;
-        return '<button class="librow" data-a="libEdit" data-id="' + x.id + '"><span class="vote' + (lode ? ' lode' : '') + (v < 18 ? ' ok' : '') + '">' + (v < 18 ? I.check : v) + '</span>' +
-          '<span class="tx"><b>' + esc(x.name) + '</b><span>' + (v < 18 ? 'Idoneità · ' : lode ? 'e lode · ' : '') + (x.cfu ? x.cfu + ' CFU · ' : '') + (x.date ? fmtShort(x.date) + ' ' + x.date.slice(0, 4) : '') + '</span></span>' +
-          '<span class="chev" style="width:16px;color:var(--muted)">' + I.chev + '</span></button>';
-      }).join('') + '</div>' : '<p class="small muted">Aggiungi gli esami che hai già superato, uno alla volta, con voto, crediti e data: la media si calcola da sola. Ci vuole qualche minuto, ma poi il tuo percorso è tutto qui.</p>') + '</section>';
-    return html;
-  }
-  var libDraft = null;
-  function libSheet() {
-    var d = libDraft, votes = []; for (var v = 30; v >= 18; v--) votes.push(v);
-    return sheetHead(d.id ? 'Modifica esame' : 'Esame superato', 'Libretto') +
-      '<div><label class="lab" for="lName">Esame</label><input class="field" id="lName" data-lib="name" maxlength="80" value="' + esc(d.name) + '" placeholder="Es. Diritto privato"' + (d.id ? '' : ' data-autofocus') + '></div>' +
-      '<div class="two"><div><label class="lab" for="lVoto">Voto</label><select class="field" id="lVoto" data-lib="voto">' + votes.map(function (x) { return '<option value="' + x + '"' + (+d.voto === x ? ' selected' : '') + '>' + x + '</option>'; }).join('') +
-      '<option value="0"' + (+d.voto === 0 ? ' selected' : '') + '>Idoneità</option></select></div>' +
-      '<div><label class="lab" for="lCfu">CFU</label><input class="field" id="lCfu" data-lib="cfu" inputmode="numeric" maxlength="3" value="' + esc(d.cfu) + '" placeholder="Es. 9"></div></div>' +
-      (+d.voto === 30 ? '<div class="set-row" style="border-top:0;padding:2px 0"><b>Con lode</b><button class="switch" role="switch" aria-checked="' + !!d.lode + '" aria-label="Con lode" data-a="libLode"></button></div>' : '') +
-      '<div><label class="lab" for="lDate">Data</label><input class="field" type="date" id="lDate" data-lib="date" value="' + esc(d.date) + '"></div>' +
-      '<p class="msg bad" data-lib-msg></p>' +
-      '<button class="btn block" data-a="libSave">' + I.check + 'Salva</button>' +
-      (d.id ? '<div style="text-align:center"><button class="btn ghost danger" data-a="libDel">' + I.trash + 'Elimina dal libretto</button></div>' :
-        '<button class="btn soft block" data-a="libSave" data-next="1">' + I.plus + 'Salva e aggiungi un altro</button>');
-  }
-  function libGoalSheet() {
-    var cur = +S.settings.libTotal || '';
-    return sheetHead('Il tuo corso di laurea', 'Libretto') +
-      '<p class="small muted">Quanti esami prevede in tutto il tuo corso di laurea? Contali tutti, anche le idoneità. Così il libretto ti mostra quanti ne mancano, e quando li avrai superati tutti… vedrai.</p>' +
-      '<div><label class="lab" for="lTot">Esami in tutto</label><input class="field" id="lTot" inputmode="numeric" maxlength="2" value="' + cur + '" placeholder="Es. 30" data-autofocus></div>' +
-      '<p class="msg bad" data-goal-msg></p>' +
-      '<button class="btn block" data-a="libGoalSave">' + I.check + 'Salva</button>';
-  }
-
   /* ================= DISEGNO ================= */
   var lastDay = today();
   function render(animate) {
     var v = $('#view');
-    if (UI.tab === 'notes') { UI.tab = 'plan'; UI.planSeg = 'notes'; }   // la vecchia scheda Appunti ora è nel Programma
-    var html = UI.tab === 'plan' ? viewPlan() : UI.tab === 'cal' ? viewCal() : UI.tab === 'focus' ? viewFocus() : UI.tab === 'prog' ? viewProgress() : viewToday();
+    var html = UI.tab === 'plan' ? viewPlan() : UI.tab === 'cal' ? viewCal() : UI.tab === 'focus' ? viewFocus() : UI.tab === 'notes' ? viewNotes() : viewToday();
     if (animate) { v.classList.add('swap'); void v.offsetWidth; v.classList.remove('swap'); }
     v.innerHTML = html;
     $$('.tab').forEach(function (b) { if (b.dataset.tab === UI.tab) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
@@ -2492,8 +1798,6 @@
     paintTimer();
     paintAcct();
     paintBell();
-    paintCharts();
-    scheduleTrophies();
   }
   function paintTimer() {
     var left = Timer.left(), txt = mmss(left);
@@ -2552,7 +1856,7 @@
     render();
   }
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') { if ($('.tro-ov')) closeTrophy(); else if ($('.breathe')) closeBreath(); else if (sheet) closeSheet(); }
+    if (e.key === 'Escape') { if ($('.breathe')) closeBreath(); else if (sheet) closeSheet(); }
   });
 
   function daySheet(iso) {
@@ -2592,7 +1896,6 @@
       [['auto', 'Auto'], ['light', 'Chiara'], ['dark', 'Scura'], ['evening', 'Di sera']].map(function (o) { return '<button data-a="theme" data-v="' + o[0] + '" aria-pressed="' + (st.theme === o[0]) + '">' + o[1] + '</button>'; }).join('') + '</div></div>' +
       sw('sounds', 'Suoni delicati', 'Un piccolo rintocco quando chiudi una giornata o finisce una sessione.') +
       sw('wake', 'Schermo acceso durante le sessioni', 'Così sul telefono il timer suona anche alla fine.') +
-      '<h3 class="sec-t">Promemoria dello studio</h3>' + studyRow() +
       '<h3 class="sec-t">I tuoi dati</h3>' +
       '<p class="help">' + (signedIn() ? 'I tuoi dati sono nel tuo account e su questo dispositivo. Se vuoi, puoi anche salvarne una copia in un file.' :
         'Senza account tutto resta solo su questo dispositivo. Puoi salvarne una copia in un file e caricarla su un altro dispositivo (le due versioni si uniscono, non si perde nulla), oppure accedere con un account e lasciar fare a lui.') + '</p>' +
@@ -2899,10 +2202,7 @@
         t += s[1];
       });
     }
-    at(t + 200, function () {
-      word.textContent = 'Ecco fatto.'; count.textContent = 'Torna qui ogni volta che ne hai bisogno.'; Sound.chime('done');
-      S.counters.breath = (S.counters.breath || 0) + 1; save(); scheduleTrophies();
-    });
+    at(t + 200, function () { word.textContent = 'Ecco fatto.'; count.textContent = 'Torna qui ogni volta che ne hai bisogno.'; Sound.chime('done'); });
   }
 
   /* ================= COPIA DEI DATI ================= */
@@ -2930,8 +2230,8 @@
   }
   // Unisce i dati di un altro dispositivo (o di una copia) con quelli di qui. Per ogni cosa vince la modifica
   // più recente; le spunte tolte e gli argomenti eliminati restano tolti. Unire due volte non cambia nulla.
-  var SYNC_SETTINGS = ['name', 'pal', 'theme', 'studyRemind', 'studyTime', 'tz', 'libTotal'];   // studyRemind/studyTime/tz li legge anche il server delle notifiche
-  var SYNC_KEYS = ['exams', 'done', 'pages', 'pagesAt', 'notes', 'notesAt', 'mood', 'moodAt', 'focus', 'topics', 'gone', 'settings', 'settingsAt', 'welcomed', 'events', 'notifRead', 'notifHide', 'trophies', 'records', 'libretto', 'counters', 'hidden'];
+  var SYNC_SETTINGS = ['name', 'pal', 'theme'];
+  var SYNC_KEYS = ['exams', 'done', 'pages', 'pagesAt', 'notes', 'notesAt', 'mood', 'moodAt', 'focus', 'topics', 'gone', 'settings', 'settingsAt', 'welcomed', 'events', 'notifRead', 'notifHide'];
   function mergeIn(o) {
     o = upgradeData(o || {});
     Object.keys(o.done || {}).forEach(function (k) {
@@ -2969,15 +2269,6 @@
       });
     });
     (o.gone || []).forEach(function (id) { if (S.gone.indexOf(id) < 0) S.gone.push(id); });
-    Object.keys(o.trophies || {}).forEach(function (k) { var v = +o.trophies[k] || 0; if (v && (!S.trophies[k] || v < S.trophies[k])) S.trophies[k] = v; });
-    Object.keys(o.records || {}).forEach(function (k) { var r = o.records[k]; if (r && (+r.v || 0) > ((S.records[k] || {}).v || 0)) S.records[k] = { v: +r.v, at: +r.at || 0 }; });
-    ['counters', 'hidden'].forEach(function (m) { Object.keys(o[m] || {}).forEach(function (k) { var v = +o[m][k] || 0; if (v > (S[m][k] || 0)) S[m][k] = v; }); });
-    (o.libretto || []).forEach(function (e) {
-      if (!e || !e.id || S.gone.indexOf(e.id) >= 0) return;
-      var i = -1; S.libretto.forEach(function (x, j) { if (x.id === e.id) i = j; });
-      if (i < 0) S.libretto.push(JSON.parse(JSON.stringify(e)));
-      else if ((+e.mt || 0) > (S.libretto[i].mt || 0)) S.libretto[i] = JSON.parse(JSON.stringify(e));
-    });
     (o.exams || []).forEach(function (e) {
       if (!e || !e.id || S.gone.indexOf(e.id) >= 0) return;
       var i = -1; S.exams.forEach(function (x, j) { if (x.id === e.id) i = j; });
@@ -3015,7 +2306,6 @@
     S.gone.sort();
     S.exams = S.exams.filter(function (e) { return S.gone.indexOf(e.id) < 0; }).sort(function (a, b) { return a.date.localeCompare(b.date) || (a.id < b.id ? -1 : 1); });
     S.events = S.events.filter(function (e) { return S.gone.indexOf(e.id) < 0; }).sort(byTime);
-    S.libretto = S.libretto.filter(function (e) { return S.gone.indexOf(e.id) < 0; }).sort(function (a, b) { return String(a.date).localeCompare(String(b.date)) || (a.id < b.id ? -1 : 1); });
     Object.keys(S.pages).forEach(function (k) { S.pages[k].sort(); });
   }
   function syncable() {
@@ -3023,8 +2313,7 @@
     SYNC_SETTINGS.forEach(function (k) { st[k] = S.settings[k]; });
     return Object.assign({}, S.keep, { v: 1, exams: S.exams, done: S.done, pages: S.pages, pagesAt: S.pagesAt, notes: S.notes, notesAt: S.notesAt, mood: S.mood, moodAt: S.moodAt,
       focus: S.focus, topics: S.topics, gone: S.gone, settings: st, settingsAt: S.settingsAt, welcomed: S.welcomed,
-      events: S.events, notifRead: S.notifRead, notifHide: S.notifHide,
-      trophies: S.trophies, records: S.records, libretto: S.libretto, counters: S.counters, hidden: S.hidden });
+      events: S.events, notifRead: S.notifRead, notifHide: S.notifHide });
   }
   function canon(v) {
     if (Array.isArray(v)) return '[' + v.map(canon).join(',') + ']';
@@ -3359,73 +2648,9 @@
     save();
   }
   var A = {
-    planSeg: function (el) { UI.planSeg = el.dataset.v; render(); },
-    progSeg: function (el) { UI.progSeg = el.dataset.v; render(); },
-    goNotes: function () {
-      UI.tab = 'plan'; UI.planSeg = 'notes'; try { localStorage.setItem('fioritura.tab', 'plan'); } catch (e) {}
-      render(true); window.scrollTo(0, 0);
-      setTimeout(function () { var f = document.getElementById('tpText'); if (f) try { f.focus(); } catch (e) {} }, 60);
-    },
-    goProg: function (el) { goProgress(el.dataset.v); },
-    troClose: function () { closeTrophy(); },
-    troHerb: function () { closeTrophy(); goProgress('tro'); },
-    troInfo: function (el) { openSheet(function () { return trophySheet(el.dataset.id); }); },
-    hideCard: function (el) { S.hidden[el.dataset.k] = Date.now(); save(); render(); },
-    libNew: function (el) {
-      var ex = el.dataset.ex ? examById(el.dataset.ex) : null;
-      libDraft = { id: '', name: ex ? ex.name : '', voto: 27, lode: false, cfu: '', date: ex ? ex.date : today(), ex: ex ? ex.id : '' };
-      openSheet(libSheet);
-    },
-    libEdit: function (el) {
-      var x = S.libretto.filter(function (l) { return l.id === el.dataset.id; })[0]; if (!x) return;
-      libDraft = { id: x.id, name: x.name, voto: x.voto, lode: !!x.lode, cfu: x.cfu || '', date: x.date || '', ex: x.ex || '', at: x.at };
-      openSheet(libSheet);
-    },
-    libLode: function () { libDraft.lode = !libDraft.lode; refreshSheet(); },
-    libSave: function (el) {
-      var d = libDraft, msg = $('[data-lib-msg]'), name = String(d.name || '').trim(), cfu = Math.floor(+String(d.cfu || '').replace(/\D/g, '')) || 0;
-      if (!name) { if (msg) msg.textContent = 'Scrivi il nome dell’esame.'; return; }
-      var v = +d.voto; v = v === 0 ? 0 : Math.min(30, Math.max(18, v || 18));
-      var now = Date.now(), x = { id: d.id || 'l' + uid(), name: name.slice(0, 80), voto: v, lode: v === 30 && !!d.lode, cfu: Math.min(cfu, 60), date: ISO_RE.test(d.date || '') ? d.date : today(), ex: d.ex || '', at: d.at || now, mt: now };
-      var i = -1; S.libretto.forEach(function (l, j) { if (l.id === x.id) i = j; });
-      if (i >= 0) S.libretto[i] = x; else S.libretto.push(x);
-      tidy(); save();
-      var what = v ? v + (x.lode ? ' e lode' : '') : 'idoneità';
-      if (el && el.dataset.next) {   // tanti esami da segnare a mano: il foglio resta aperto per il prossimo
-        libDraft = { id: '', name: '', voto: v || 27, lode: false, cfu: '', date: x.date, ex: '' };
-        refreshSheet(); render();
-        setTimeout(function () { var f = $('#lName'); if (f) try { f.focus(); } catch (e) {} }, 60);
-        toast('Segnato: ' + x.name + ', ' + what + '. Ora il prossimo.', null, 3500);
-        return;
-      }
-      closeSheet(true);
-      if (UI.tab !== 'prog' || UI.progSeg !== 'lib') goProgress('lib'); else render();
-      toast(i >= 0 ? 'Libretto aggiornato.' : 'Segnato nel libretto: ' + what + '. Complimenti!', null, 4500);
-    },
-    libGoal: function () { openSheet(libGoalSheet); },
-    libGoalSave: function () {
-      var f = $('#lTot'), msg = $('[data-goal-msg]'), raw = String(f ? f.value : '').trim(), v = Math.floor(+raw.replace(/\D/g, '')) || 0, n = S.libretto.length;
-      if (!raw) { S.settings.libTotal = 0; S.settingsAt = Date.now(); save(); closeSheet(true); render(); return; }
-      if (v < 1 || v > 80) { if (msg) msg.textContent = 'Scrivi un numero da 1 a 80.'; return; }
-      if (v < n) { if (msg) msg.textContent = 'Nel libretto ci sono già ' + n + ' esami: il totale non può essere più basso.'; return; }
-      S.settings.libTotal = v; S.settingsAt = Date.now(); save(); closeSheet(true); render();
-      var left = v - n;
-      toast(left ? (left === 1 ? 'Fatto: ne manca uno solo!' : 'Fatto: ne mancano ' + left + '.') : 'Fatto.', null, 4000);
-    },
-    libReplay: function () { trophyQueue.push({ laurea: true }); showNextTrophy(); },
-    troLib: function () { closeTrophy(); goProgress('lib'); },
-    libDel: function (el) {
-      arm(el, 'Tocca di nuovo per eliminarlo', function () {
-        var id = libDraft.id, i = -1; S.libretto.forEach(function (l, j) { if (l.id === id) i = j; });
-        if (i < 0) return;
-        var x = S.libretto.splice(i, 1)[0]; S.gone.push(id); save(); closeSheet(true); render();
-        toast('Tolto dal libretto.', { label: 'Annulla', run: function () { S.gone = S.gone.filter(function (g) { return g !== id; }); x.mt = Date.now(); S.libretto.push(x); tidy(); save(); render(); } });
-      });
-    },
     tab: function (el) {
       var t = el.dataset.tab; if (!t) return;
       var same = t === UI.tab;
-      if (t === 'plan') UI.planSeg = 'days';
       UI.tab = t; try { localStorage.setItem('fioritura.tab', t); } catch (e) {}
       render(!same);
       window.scrollTo({ top: 0, behavior: same ? 'smooth' : 'auto' });
@@ -3682,17 +2907,6 @@
           .catch(function (e) { toast('Avvisi attivi mentre l’app è aperta; ad app chiusa non ancora (' + (e && e.message || 'errore') + ').', null, 9000); });
       }).catch(function () {});
     },
-    studyRemind: function () {
-      var st = S.settings;
-      st.studyRemind = !st.studyRemind;
-      try { st.tz = Intl.DateTimeFormat().resolvedOptions().timeZone || st.tz; } catch (e) {}
-      S.settingsAt = Date.now(); save(); refreshSheet(); paintBell();
-      if (!st.studyRemind) { toast('Promemoria dello studio spento.'); return; }
-      var msg = 'Fatto: ogni giorno alle ' + st.studyTime + ' ti ricordo la giornata di studio, se non l’hai ancora fatta.';
-      if (!st.sysNotif && 'Notification' in window && !(isIOS() && !standalone())) toast(msg + ' Vuoi riceverlo anche ad app chiusa?', { label: 'Sì', run: function () { A.sysNotif(); } }, 10000);
-      else toast(msg, null, 6500);
-    },
-    goToday: function () { goToday(); },
     welcomeLogin: function () { S.welcomed = true; save(); closeSheet(true); acctMode = 'login'; A.account(); },
     setToggle: function (el) { var k = el.dataset.k; S.settings[k] = !S.settings[k]; save(); if (k === 'sounds' && S.settings.sounds) Sound.chime('done'); refreshSheet(); },
     export: exportData,
@@ -3756,18 +2970,9 @@
       notePending = { key: K(t.dataset.note), v: t.value };
       var sv = $('[data-saved]'); if (sv) sv.textContent = '';
       clearTimeout(noteTimer); noteTimer = setTimeout(flushNote, 500);
-    } else if (t.matches('[data-study-time]')) {
-      S.settings.studyTime = t.value; S.settingsAt = Date.now();
-      try { S.settings.tz = Intl.DateTimeFormat().resolvedOptions().timeZone || S.settings.tz; } catch (e2) {}
-      save(); paintBell();
-      var row = t.closest('.study-time'), p = row && row.previousElementSibling && row.previousElementSibling.querySelector('p');
-      if (p) p.textContent = p.textContent.replace(/alle \d\d:\d\d/, 'alle ' + t.value);
     } else if (t.matches('[data-setting]')) {
       S.settings[t.dataset.setting] = t.value.slice(0, 40); S.settingsAt = Date.now(); save();
       clearTimeout(t._r); t._r = setTimeout(function () { render(); }, 250);
-    } else if (t.matches('[data-lib]') && libDraft) {
-      libDraft[t.dataset.lib] = t.value;
-      if (t.dataset.lib === 'voto') refreshSheet();
     } else if (t.matches('[data-gen]') && genDraft) {
       genDraft[t.dataset.gen] = t.value; paintGenPreview();
     } else if (t.matches('[data-gen-book]') && genDraft) {
@@ -3790,7 +2995,6 @@
     if (t.matches && t.matches('[data-de]') && deDraft) deDraft.segs[+t.dataset.de][+t.dataset.k] = t.dataset.k === '0' ? +t.value : t.value;
     if (t.matches && t.matches('[data-gen]') && genDraft) { genDraft[t.dataset.gen] = t.value; paintGenPreview(); }
     if (t.matches && t.matches('[data-xd]') && exDraft) exDraft[t.dataset.xd] = t.value;
-    if (t.matches && t.matches('[data-lib]') && libDraft && libDraft[t.dataset.lib] !== t.value) { libDraft[t.dataset.lib] = t.value; if (t.dataset.lib === 'voto') refreshSheet(); }
   });
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Enter') return;
@@ -3815,13 +3019,7 @@
   /* ================= AVVIO ================= */
   render();
   lastRemCheck = Date.now() - 13000;   // il primo controllo dei promemoria poco dopo l'apertura
-  // toccando un avviso del telefono: si apre il calendario su quel giorno (?cal=… o messaggio del service worker),
-  // oppure Oggi per il promemoria dello studio (?tab=today)
-  function goToday() {
-    closeSheet(true); UI.tab = 'today';
-    try { localStorage.setItem('fioritura.tab', 'today'); } catch (e) {}
-    render(true); window.scrollTo(0, 0);
-  }
+  // toccando un avviso del telefono: si apre il calendario su quel giorno (?cal=… o messaggio del service worker)
   function goCal(iso) {
     if (!ISO_RE.test(iso || '')) return;
     closeSheet(true); UI.tab = 'cal'; UI.calSel = iso; UI.calMonth = iso.slice(0, 7);
@@ -3830,11 +3028,10 @@
   }
   (function () {
     try {
-      var qs = new URLSearchParams(location.search), c = qs.get('cal'), tb = qs.get('tab');
-      if (c || tb) { qs.delete('cal'); qs.delete('tab'); history.replaceState(null, '', location.pathname + (qs.toString() ? '?' + qs : '') + location.hash); }
-      if (c) goCal(c); else if (tb === 'today') goToday();
+      var qs = new URLSearchParams(location.search), c = qs.get('cal');
+      if (c) { qs.delete('cal'); history.replaceState(null, '', location.pathname + (qs.toString() ? '?' + qs : '') + location.hash); goCal(c); }
     } catch (e) {}
-    if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', function (ev) { var m = ev.data || {}; if (m.type === 'cal') goCal(m.date); else if (m.type === 'today') goToday(); });
+    if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', function (ev) { var m = ev.data || {}; if (m.type === 'cal') goCal(m.date); });
   })();
   if (canSync) setTimeout(function () { pushRefresh(false); }, 4000);
   var fromLink = /access_token=|error_code=|error=/.test(location.hash);

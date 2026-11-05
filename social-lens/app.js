@@ -1,7 +1,7 @@
-/* Lente — l'interfaccia. I calcoli sono in core.js (window.Lente). */
+/* Social Lens — l'interfaccia. I calcoli sono in core.js (window.SocialLens). */
 (function () {
   'use strict';
-  const L = window.Lente;
+  const L = window.SocialLens;
   const $ = (s, el) => (el || document).querySelector(s);
   const $$ = (s, el) => [...(el || document).querySelectorAll(s)];
   const isNum = (v) => typeof v === 'number' && isFinite(v);
@@ -27,7 +27,7 @@
   };
 
   /* ================= archivio sul dispositivo ================= */
-  const KEY = 'lente.v1';
+  const KEY = 'social-lens.v1';
   function blank() {
     return { v: 1, profiles: {}, exportSnaps: [], settings: { version: L.API_VERSION, maxPosts: 50, theme: 'auto', accounts: [], igId: '', token: '' } };
   }
@@ -46,7 +46,7 @@
     get(k) { try { return sessionStorage.getItem(k) || ''; } catch (e) { return ''; } },
     set(k, v) { try { if (v) sessionStorage.setItem(k, v); else sessionStorage.removeItem(k); } catch (e) { /* niente */ } },
   };
-  let TOKEN = DB.settings.token || sess.get('lente.token');
+  let TOKEN = DB.settings.token || sess.get('social-lens.token');
 
   const S = {
     view: 'analyze', src: 'api', cur: null, exp: null, rows: [], compare: [],
@@ -379,7 +379,7 @@
     // punteggio e riferimento
     h += '<div class="grid g2" style="margin-top:14px">';
     if (A.score.total !== null) {
-      h += '<div class="card"><h2>Punteggio del profilo</h2><p class="sub">Da 0 a 100, calcolato su quello che Lente può misurare.</p><div class="score">' + ring(A.score.total, A.score.grade) + '<div class="parts">' +
+      h += '<div class="card"><h2>Punteggio del profilo</h2><p class="sub">Da 0 a 100, calcolato su quello che Social Lens può misurare.</p><div class="score">' + ring(A.score.total, A.score.grade) + '<div class="parts">' +
         A.score.parts.map((p) => '<div class="part"><span>' + esc(p.label) + '</span><span class="tr" data-tip="' + esc(p.label + ': ' + DEC(p.pts) + ' su ' + p.max) + '"><i style="width:' + (p.pts / p.max) * 100 + '%"></i></span><b>' + DEC(p.pts) + '<span class="muted" style="font-weight:500">/' + p.max + '</span></b><small>' + esc(p.note) + '</small></div>').join('') +
         '</div></div></div>';
     }
@@ -439,7 +439,7 @@
       h += '<div class="card">' + line(growth.points.map((s) => ({ x: s.at, y: s.followers, tip: D(s.at) + '\n' + N(s.followers) + ' follower' })), { endLabel: C(growth.points[growth.points.length - 1].followers), label: 'Follower nel tempo' }) +
         '<p class="small muted" style="margin:10px 0 0">' + (growth.delta >= 0 ? '+' : '−') + N(Math.abs(growth.delta)) + ' follower in ' + N((growth.to - growth.from) / L.DAY) + ' giorni (' + (growth.perDay >= 0 ? '+' : '') + DEC(growth.perDay) + ' al giorno). Analizza di nuovo il profilo nei prossimi giorni per allungare la linea.</p></div>';
     } else if (P.source === 'api') {
-      h += '<p class="small muted noprint" style="margin:14px 2px 0">Analizza di nuovo questo profilo nei prossimi giorni: Lente disegnerà la crescita dei follower.</p>';
+      h += '<p class="small muted noprint" style="margin:14px 2px 0">Analizza di nuovo questo profilo nei prossimi giorni: Social Lens disegnerà la crescita dei follower.</p>';
     }
 
     // insights del proprio account
@@ -598,7 +598,7 @@
       '<div class="actions"><button class="btn ghost sm" data-act="exp-json">Scarica il riepilogo (JSON)</button><button class="btn ghost sm" data-act="print">Stampa o salva PDF</button></div></div>';
 
     if (X.html && !c.followers && !c.following) {
-      h += '<div class="card"><div class="tipc warn"><span class="ic">!</span><div><b>Questo export è in formato HTML</b><p>Lente legge il formato JSON. Richiedi di nuovo i dati scegliendo "Formato: JSON" (vedi le istruzioni sopra).</p></div></div></div>';
+      h += '<div class="card"><div class="tipc warn"><span class="ic">!</span><div><b>Questo export è in formato HTML</b><p>Social Lens legge il formato JSON. Richiedi di nuovo i dati scegliendo "Formato: JSON" (vedi le istruzioni sopra).</p></div></div></div>';
     }
 
     h += '<div class="tiles" style="margin-top:14px">' +
@@ -621,7 +621,7 @@
       h += '<div class="grid g2"><div class="card"><h3>Hanno smesso di seguirti · ' + N(dd.lost.length) + '</h3>' + peopleHTML(dd.lost.slice(0, 300).map((u) => ({ u })), 'Nessuno: ottimo!') + '</div>' +
         '<div class="card"><h3>Nuovi follower · ' + N(dd.gained.length) + '</h3>' + peopleHTML(dd.gained.slice(0, 300).map((u) => ({ u })), 'Nessun nuovo follower.') + '</div></div>';
     } else if (c.followers) {
-      h += '<div class="note" style="margin-top:14px">La prossima volta che carichi un export, Lente ti dirà <b>chi ha smesso di seguirti</b> e chi è arrivato nel frattempo.</div>';
+      h += '<div class="note" style="margin-top:14px">La prossima volta che carichi un export, Social Lens ti dirà <b>chi ha smesso di seguirti</b> e chi è arrivato nel frattempo.</div>';
     }
 
     // elenchi
@@ -658,7 +658,7 @@
     }
     if (X.topStoryLikes.length) h += '<div class="card" style="margin-top:14px"><h3>Storie a cui metti più mi piace</h3>' + hbars(X.topStoryLikes.slice(0, 10).map((x) => ({ k: '@' + x.k, href: igUrl(x.k), v: x.n, text: N(x.n) }))) + '</div>';
     if (X.threads.length) {
-      h += '<div class="card" style="margin-top:14px"><h3>Conversazioni più attive</h3><p class="sub">Numero di messaggi (Lente non legge il testo dei messaggi).</p>' +
+      h += '<div class="card" style="margin-top:14px"><h3>Conversazioni più attive</h3><p class="sub">Numero di messaggi (Social Lens non legge il testo dei messaggi).</p>' +
         hbars(X.threads.slice(0, 10).map((t) => ({ k: t.title || 'Conversazione', v: t.n, text: N(t.n), tip: (t.title || 'Conversazione') + '\n' + N(t.n) + ' messaggi' + (t.first ? '\ndal ' + D(t.first) + ' al ' + D(t.last) : '') }))) + '</div>';
     }
     if (X.interests.length) h += '<div class="card" style="margin-top:14px"><h3>I tuoi interessi secondo Instagram</h3><p class="sub">Quelli che Instagram usa per scegliere le pubblicità e i contenuti consigliati.</p><div class="chips">' + X.interests.slice(0, 80).map((t) => '<span class="chip">' + esc(t) + '</span>').join('') + '</div></div>';
@@ -792,7 +792,7 @@
       DB.settings.accounts = accs.map((a) => ({ id: a.id, username: a.username, name: a.name, avatar: safeImg(a.avatar), followers: a.followers, page: a.page }));
       DB.settings.igId = manual && !accs.some((a) => a.id === manual) && !accs.length ? manual : (accs.find((a) => a.id === manual) || accs[0]).id;
       DB.settings.token = $('#remember').checked ? tok : '';
-      sess.set('lente.token', tok);
+      sess.set('social-lens.token', tok);
       save();
       $('#tok').value = '';
       status('#apiStatus', 'Collegato.');
@@ -805,7 +805,7 @@
   }
   function disconnect() {
     TOKEN = ''; DB.settings.token = ''; DB.settings.igId = ''; DB.settings.accounts = [];
-    sess.set('lente.token', ''); save(); renderApi(); status('#apiStatus', 'Scollegato. Il token è stato cancellato da questo dispositivo.');
+    sess.set('social-lens.token', ''); save(); renderApi(); status('#apiStatus', 'Scollegato. Il token è stato cancellato da questo dispositivo.');
   }
   let busy = false;
   async function discover(username) {
@@ -865,7 +865,7 @@
     renderRows();
   });
   $('#tplBtn').addEventListener('click', () => {
-    download('modello-lente.csv', '﻿data;tipo;mi piace;commenti;visualizzazioni;didascalia;link\r\n03/11/2026 18:30;reel;1250;48;15400;Nuovo singolo fuori ora! #musica;\r\n31/10/2026 13:05;carosello;980;31;;Le foto del live #concerto;\r\n28/10/2026 19:40;foto;640;12;;Studio day ☕️;\r\n', 'text/csv;charset=utf-8');
+    download('modello-social-lens.csv', '﻿data;tipo;mi piace;commenti;visualizzazioni;didascalia;link\r\n03/11/2026 18:30;reel;1250;48;15400;Nuovo singolo fuori ora! #musica;\r\n31/10/2026 13:05;carosello;980;31;;Le foto del live #concerto;\r\n28/10/2026 19:40;foto;640;12;;Studio day ☕️;\r\n', 'text/csv;charset=utf-8');
   });
   $('#csvIn').addEventListener('change', async (e) => {
     const f = e.target.files[0]; if (!f) return;
@@ -985,7 +985,7 @@
     const f = e.target.files[0]; if (!f) return;
     f.text().then((t) => {
       const j = JSON.parse(t);
-      if (!j || j.app !== 'lente' || !j.profiles) throw new Error('Non è un archivio di Lente.');
+      if (!j || j.app !== 'social-lens' || !j.profiles) throw new Error('Non è un archivio di Social Lens.');
       let n = 0;
       for (const k in j.profiles) {
         const inc = j.profiles[k], cur = DB.profiles[k];
@@ -1016,17 +1016,17 @@
         if (P.own) own(); else discover(P.username);
         break;
       }
-      case 'csv': download('lente-' + S.cur.key + '-' + stamp() + '.csv', L.postsToCSV(S.cur.A.posts), 'text/csv;charset=utf-8'); break;
+      case 'csv': download('social-lens-' + S.cur.key + '-' + stamp() + '.csv', L.postsToCSV(S.cur.A.posts), 'text/csv;charset=utf-8'); break;
       case 'json': {
         const { P, A } = S.cur;
-        const out = { app: 'lente', tipo: 'analisi', creato: new Date().toISOString(), profilo: trimP(P), risultati: { followers: A.followers, er: A.er, erMediano: A.erMedian, mediaMiPiace: A.avgLikes, mediaCommenti: A.avgComments, postASettimana: A.perWeek, punteggio: A.score, consigli: A.tips, segnali: A.signals, formati: A.types, hashtag: A.tags.slice(0, 50), momentoMigliore: A.bestCell, valoreIndicativo: A.value } };
-        download('lente-' + S.cur.key + '-' + stamp() + '.json', JSON.stringify(out, null, 2), 'application/json');
+        const out = { app: 'social-lens', tipo: 'analisi', creato: new Date().toISOString(), profilo: trimP(P), risultati: { followers: A.followers, er: A.er, erMediano: A.erMedian, mediaMiPiace: A.avgLikes, mediaCommenti: A.avgComments, postASettimana: A.perWeek, punteggio: A.score, consigli: A.tips, segnali: A.signals, formati: A.types, hashtag: A.tags.slice(0, 50), momentoMigliore: A.bestCell, valoreIndicativo: A.value } };
+        download('social-lens-' + S.cur.key + '-' + stamp() + '.json', JSON.stringify(out, null, 2), 'application/json');
         break;
       }
       case 'exp-json': {
         const X = S.exp.X;
-        const out = { app: 'lente', tipo: 'export', creato: new Date().toISOString(), account: X.owner, numeri: X.counts, nonTiSeguono: X.lists.notBack.map((x) => x.u), fan: X.lists.fans.map((x) => x.u), reciproci: X.lists.mutual.map((x) => x.u), cambiamenti: X.diff };
-        download('lente-export-' + stamp() + '.json', JSON.stringify(out, null, 2), 'application/json');
+        const out = { app: 'social-lens', tipo: 'export', creato: new Date().toISOString(), account: X.owner, numeri: X.counts, nonTiSeguono: X.lists.notBack.map((x) => x.u), fan: X.lists.fans.map((x) => x.u), reciproci: X.lists.mutual.map((x) => x.u), cambiamenti: X.diff };
+        download('social-lens-export-' + stamp() + '.json', JSON.stringify(out, null, 2), 'application/json');
         break;
       }
       case 'print': window.print(); break;
@@ -1043,7 +1043,7 @@
       case 'list-tab': S.list.tab = b.dataset.l; S.list.q = ''; S.list.show = 120; renderLists(); break;
       case 'list-more': S.list.show += 300; renderLists(); break;
       case 'list-copy': copy(currentList().map((x) => '@' + x.u).join('\n')); break;
-      case 'list-csv': download('lente-' + S.list.tab + '-' + stamp() + '.csv', L.listToCSV(currentList(), S.list.tab === 'followers' ? 'Ti segue dal' : 'Data'), 'text/csv;charset=utf-8'); break;
+      case 'list-csv': download('social-lens-' + S.list.tab + '-' + stamp() + '.csv', L.listToCSV(currentList(), S.list.tab === 'followers' ? 'Ti segue dal' : 'Data'), 'text/csv;charset=utf-8'); break;
       case 'acc': DB.settings.igId = b.dataset.id; save(); renderApi(); break;
       case 'row-del': { const tr = b.closest('tr[data-i]'); S.rows.splice(+tr.dataset.i, 1); renderRows(); break; }
       case 'arch-open': {
@@ -1061,7 +1061,7 @@
         if (S.delArm !== '*') { S.delArm = '*'; renderArchive(); return; }
         DB.profiles = {}; DB.exportSnaps = []; S.delArm = ''; S.compare = []; save(); renderArchive(); toast('Archivio svuotato');
         break;
-      case 'arch-export': download('lente-archivio-' + stamp() + '.json', JSON.stringify({ app: 'lente', v: 1, creato: new Date().toISOString(), profiles: DB.profiles }), 'application/json'); break;
+      case 'arch-export': download('social-lens-archivio-' + stamp() + '.json', JSON.stringify({ app: 'social-lens', v: 1, creato: new Date().toISOString(), profiles: DB.profiles }), 'application/json'); break;
       case 'arch-demo': {
         const a = L.demoProfile(2), b2 = L.demoProfile(1);
         archive(a, L.analyze(a)); archive(b2, L.analyze(b2));

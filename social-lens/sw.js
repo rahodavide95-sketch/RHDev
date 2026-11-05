@@ -1,7 +1,7 @@
-/* Service worker di Lente: la pagina arriva sempre fresca dalla rete,
+/* Service worker di Social Lens: la pagina arriva sempre fresca dalla rete,
    la cache serve solo per aprire l'app senza connessione.
    Se cambi l'elenco dei file, alza VERSION. */
-const VERSION = 'lente-v1';
+const VERSION = 'social-lens-v1';
 const ASSETS = ['./', 'index.html', 'core.js', 'app.js', 'manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', (e) => {
@@ -9,7 +9,7 @@ self.addEventListener('install', (e) => {
   self.skipWaiting();
 });
 self.addEventListener('activate', (e) => {
-  e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k.startsWith('lente-') && k !== VERSION).map((k) => caches.delete(k)))));
+  e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k.startsWith('social-lens-') && k !== VERSION).map((k) => caches.delete(k)))));
   self.clients.claim();
 });
 self.addEventListener('fetch', (e) => {

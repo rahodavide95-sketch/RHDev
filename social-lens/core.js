@@ -1,5 +1,5 @@
-/* Lente — il motore dell'analisi (niente interfaccia).
-   Nel browser diventa window.Lente, in Node si usa con require() per i test.
+/* Social Lens — il motore dell'analisi (niente interfaccia).
+   Nel browser diventa window.SocialLens, in Node si usa con require() per i test.
    Tutto gira sul dispositivo: nessun dato viene mandato a server nostri. */
 (function (root) {
   'use strict';
@@ -1245,7 +1245,7 @@
     ];
   }
 
-  const Lente = {
+  const SocialLens = {
     DAY, DAYS, DAYS_LONG, SLOTS, TYPE_LABEL, TIERS, API_VERSION,
     mean, median, stdev, countBy, monthKey,
     fmtNum, fmtCompact, fmtPct, fmtDec, fmtDate, fmtMonth, fmtEuro, agoText, calDays,
@@ -1257,6 +1257,6 @@
     tokenKind, graphBase, makeApi, explainError, ApiError, mediaToPost,
     demoProfile, demoExportFiles,
   };
-  if (typeof module !== 'undefined' && module.exports) module.exports = Lente;
-  else root.Lente = Lente;
+  if (typeof module !== 'undefined' && module.exports) module.exports = SocialLens;
+  else root.SocialLens = SocialLens;
 })(typeof self !== 'undefined' ? self : this);

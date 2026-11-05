@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Lente — analizzatore di profili Instagram</title>
+<title>Social Lens — analizzatore di profili Instagram</title>
 <meta name="description" content="Analizza profili Instagram: engagement, orari migliori, formati, hashtag, punteggio, consigli, follower che non ricambiano, crescita e confronto tra profili.">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#d62a74">
@@ -12,7 +12,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Lente">
+<meta name="apple-mobile-web-app-title" content="Social Lens">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -20,7 +20,7 @@
   /* tema prima del primo disegno, così non lampeggia */
   (function () {
     try {
-      var s = JSON.parse(localStorage.getItem('lente.v1') || '{}');
+      var s = JSON.parse(localStorage.getItem('social-lens.v1') || '{}');
       var t = s && s.settings && s.settings.theme;
       if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
     } catch (e) {}
@@ -346,9 +346,9 @@
 <body>
 <header class="top">
   <div class="wrap bar">
-    <a class="brand" href="#analizza" aria-label="Lente, home">
+    <a class="brand" href="#analizza" aria-label="Social Lens, home">
       <img src="icon.svg" alt="">
-      <div><b>Lente</b><span>Analizzatore di profili Instagram</span></div>
+      <div><b>Social Lens</b><span>Analizzatore di profili Instagram</span></div>
     </a>
     <nav class="tabs" aria-label="Sezioni">
       <button data-view="analyze" aria-current="page">Analizza</button>
@@ -384,7 +384,7 @@
       </button>
       <button class="src" data-src="demo" aria-pressed="false">
         <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/></svg></span>
-        <span><b>Esempio</b><span>Prova subito Lente con dati inventati</span></span>
+        <span><b>Esempio</b><span>Prova subito Social Lens con dati inventati</span></span>
       </button>
     </div>
 
@@ -445,7 +445,7 @@
     <!-- EXPORT -->
     <div class="card src-panel hidden" id="p-export">
       <h2>Analizza i tuoi dati di Instagram</h2>
-      <p class="sub">Instagram ti dà gratis una copia dei tuoi dati. Lente la legge qui nel browser: i file non vengono inviati a nessuno.</p>
+      <p class="sub">Instagram ti dà gratis una copia dei tuoi dati. Social Lens la legge qui nel browser: i file non vengono inviati a nessuno.</p>
       <div class="drop" id="drop">
         <b>Trascina qui lo ZIP dell'export</b>
         <span class="muted small">oppure la cartella estratta, o i singoli file .json</span>
@@ -501,7 +501,7 @@
     <!-- DEMO -->
     <div class="card src-panel hidden" id="p-demo">
       <h2>Prova con dati d'esempio</h2>
-      <p class="sub">Profili e numeri inventati, per vedere cosa sa fare Lente prima di collegare i tuoi dati.</p>
+      <p class="sub">Profili e numeri inventati, per vedere cosa sa fare Social Lens prima di collegare i tuoi dati.</p>
       <div class="row">
         <button class="btn pri" id="demo1">Profilo d'esempio</button>
         <button class="btn sec" id="demo2">Seconda band (per il confronto)</button>
@@ -518,8 +518,8 @@
   <!-- ============ GUIDA ============ -->
   <section id="v-guide" class="hidden">
     <div class="card guide">
-      <h2>Guida a Lente</h2>
-      <p>Lente analizza i profili Instagram in tre modi, tutti consentiti da Instagram. Non usa trucchi né "scraping": per questo non può leggere i profili privati né dire chi ha visitato un profilo (nessuno strumento può farlo davvero).</p>
+      <h2>Guida a Social Lens</h2>
+      <p>Social Lens analizza i profili Instagram in tre modi, tutti consentiti da Instagram. Non usa trucchi né "scraping": per questo non può leggere i profili privati né dire chi ha visitato un profilo (nessuno strumento può farlo davvero).</p>
 
       <h3>1. Profilo pubblico, con le API di Meta</h3>
       <p>Legge follower, seguiti, bio e gli ultimi post (mi piace, commenti, visualizzazioni dei Reel) di <b>qualsiasi profilo Business o Creator</b>, anche non tuo: utile per artisti, concorrenti e collaborazioni. Con il tuo account aggiunge gli <b>insights</b>: copertura, salvataggi, condivisioni, città, paesi, età e genere del pubblico.</p>
@@ -529,23 +529,23 @@
         <li>Vai su <a href="https://developers.facebook.com/apps" target="_blank" rel="noopener">developers.facebook.com/apps</a> e crea un'app di tipo <b>Business</b> (gratis, nessuna revisione: la usi solo tu).</li>
         <li>Nell'app aggiungi il prodotto <b>Instagram</b> → "API con accesso tramite Facebook Login".</li>
         <li>Apri lo <a href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noopener">Strumento di esplorazione della API Graph</a>, scegli la tua app e premi <b>Genera token di accesso</b>. Concedi i permessi <code>instagram_basic</code>, <code>instagram_manage_insights</code>, <code>pages_show_list</code>, <code>pages_read_engagement</code> e <code>business_management</code>.</li>
-        <li>Copia il token (inizia con <b>EAA</b>) e incollalo in Lente → <b>Collega</b>.</li>
+        <li>Copia il token (inizia con <b>EAA</b>) e incollalo in Social Lens → <b>Collega</b>.</li>
         <li>Il token dura circa un'ora. Per averne uno da circa 60 giorni: apri lo <a href="https://developers.facebook.com/tools/debug/accesstoken/" target="_blank" rel="noopener">Strumento di debug del token</a>, incollalo e premi <b>Estendi token di accesso</b>.</li>
       </ol>
       <p class="small muted">Un token "Accesso con Instagram" (inizia con IG) funziona solo per il tuo account: non permette di analizzare altri profili. Il token resta nel tuo browser e viene mandato solo a Meta. Se spunti "Ricorda", è salvato su questo dispositivo: non farlo su un computer condiviso.</p>
 
       <h3>2. I tuoi dati (export)</h3>
-      <p>Con la copia dei dati che Instagram ti manda, Lente trova <b>chi non ti segue</b> più o non ti ha mai ricambiato, i <b>fan</b> che non segui, chi ti segue da poco, gli unfollow recenti, le richieste in sospeso, quanto e quando pubblichi, gli hashtag che usi, a chi metti più mi piace e le conversazioni più attive. Ogni volta che carichi un export nuovo, Lente ti dice <b>chi ha smesso di seguirti</b> rispetto alla volta prima.</p>
+      <p>Con la copia dei dati che Instagram ti manda, Social Lens trova <b>chi non ti segue</b> più o non ti ha mai ricambiato, i <b>fan</b> che non segui, chi ti segue da poco, gli unfollow recenti, le richieste in sospeso, quanto e quando pubblichi, gli hashtag che usi, a chi metti più mi piace e le conversazioni più attive. Ogni volta che carichi un export nuovo, Social Lens ti dice <b>chi ha smesso di seguirti</b> rispetto alla volta prima.</p>
       <p class="small muted">L'export non contiene i mi piace ricevuti dai tuoi post: per l'engagement usa le API o il CSV di Meta Business Suite.</p>
 
       <h3>3. CSV o numeri a mano</h3>
-      <p>Da <b>Meta Business Suite</b> (business.facebook.com): Insights → Contenuti → scegli il periodo → <b>Esporta dati</b> in CSV. Lente riconosce da solo le colonne (data di pubblicazione, mi piace, commenti, visualizzazioni, copertura, salvataggi, condivisioni, tipo, descrizione), in italiano o in inglese. Va bene anche un file tuo con almeno una colonna data e una con i mi piace: scarica il modello dalla scheda "CSV o a mano".</p>
+      <p>Da <b>Meta Business Suite</b> (business.facebook.com): Insights → Contenuti → scegli il periodo → <b>Esporta dati</b> in CSV. Social Lens riconosce da solo le colonne (data di pubblicazione, mi piace, commenti, visualizzazioni, copertura, salvataggi, condivisioni, tipo, descrizione), in italiano o in inglese. Va bene anche un file tuo con almeno una colonna data e una con i mi piace: scarica il modello dalla scheda "CSV o a mano".</p>
 
       <h3>Le parole dell'analisi</h3>
       <dl>
         <dt>Engagement rate (ER)</dt><dd>Mi piace + commenti medi di un post, diviso i follower. Dice quanta parte del pubblico interagisce. I post delle ultime 24 ore non contano: non hanno ancora raccolto le loro interazioni.</dd>
         <dt>ER mediano</dt><dd>Come l'ER, ma con il post "di mezzo": non si lascia gonfiare da un singolo post virale.</dd>
-        <dt>Fasce</dt><dd>Più follower ha un profilo, più l'ER tende a scendere. Lente confronta ogni profilo con i valori tipici della sua fascia (Nano, Micro, Medio, Macro, Mega). Sono valori indicativi di settore.</dd>
+        <dt>Fasce</dt><dd>Più follower ha un profilo, più l'ER tende a scendere. Social Lens confronta ogni profilo con i valori tipici della sua fascia (Nano, Micro, Medio, Macro, Mega). Sono valori indicativi di settore.</dd>
         <dt>Punteggio</dt><dd>Da 0 a 100: coinvolgimento (35), costanza (20), attività recente (15), varietà dei formati (10), profilo completo (10) e andamento (10). Se un dato manca, quella voce non conta.</dd>
         <dt>Momento migliore</dt><dd>Giorno e fascia oraria (ora del tuo dispositivo) in cui i post hanno avuto in media più interazioni.</dd>
         <dt>Segnali da controllare</dt><dd>Numeri insoliti (pochi commenti rispetto ai mi piace, engagement molto basso per i follower che ha…). Non sono prove di follower falsi: sono solo cose da guardare meglio.</dd>
@@ -553,12 +553,12 @@
       </dl>
 
       <h3>Archivio, crescita e confronto</h3>
-      <p>Ogni analisi si salva nell'Archivio di questo dispositivo. Analizzando di nuovo lo stesso profilo nei giorni seguenti, Lente disegna la <b>crescita dei follower</b>. Seleziona da 2 a 4 profili per <b>confrontarli</b> fianco a fianco. Puoi esportare l'archivio in un file e ricaricarlo su un altro dispositivo.</p>
+      <p>Ogni analisi si salva nell'Archivio di questo dispositivo. Analizzando di nuovo lo stesso profilo nei giorni seguenti, Social Lens disegna la <b>crescita dei follower</b>. Seleziona da 2 a 4 profili per <b>confrontarli</b> fianco a fianco. Puoi esportare l'archivio in un file e ricaricarlo su un altro dispositivo.</p>
     </div>
   </section>
 </main>
 
-<footer class="noprint">Lente gira tutta nel tuo browser: i dati restano su questo dispositivo. Non è affiliata a Instagram o Meta.</footer>
+<footer class="noprint">Social Lens lavora solo nel tuo browser: i dati restano su questo dispositivo. Nessun legame ufficiale con Instagram o Meta.</footer>
 <div id="tip" role="tooltip"></div>
 <div id="toast" role="status" aria-live="polite"></div>
 

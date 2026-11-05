@@ -1,5 +1,5 @@
 {
-  "name": "lente",
+  "name": "social-lens",
   "private": true,
   "scripts": {
     "test": "TZ=Europe/Rome node --test test/*.test.js"

@@ -1,4 +1,4 @@
-/* Prove del motore di Lente: TZ=Europe/Rome node --test test/ */
+/* Prove del motore di Social Lens: TZ=Europe/Rome node --test test/ */
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -140,7 +140,7 @@ with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as z:
 
 for (const zip64 of [false, true]) {
   test('ZIP dell\'export letto senza librerie' + (zip64 ? ' (ZIP64)' : ''), async () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lente-'));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'social-lens-'));
     const files = exportFiles();
     files.push({ path: 'media/big.jpg', text: 'x'.repeat(200000) });
     const zipPath = makeZip(dir, files, zip64);

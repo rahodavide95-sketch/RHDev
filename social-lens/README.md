@@ -1,9 +1,9 @@
-# Lente — analizzatore di profili Instagram
+# Social Lens — analizzatore di profili Instagram
 
-Lente analizza un profilo Instagram e ti dice come va e cosa fare per crescere.
+Social Lens analizza un profilo Instagram e ti dice come va e cosa fare per crescere.
 Gira tutta nel browser: i dati restano sul tuo dispositivo.
 
-Online (quando arriva su `main`): <https://rahodavide95-sketch.github.io/RHDev/lente/>
+Online (quando arriva su `main`): <https://rahodavide95-sketch.github.io/RHDev/social-lens/>
 
 ## Cosa fa
 
@@ -28,7 +28,7 @@ Online (quando arriva su `main`): <https://rahodavide95-sketch.github.io/RHDev/l
    anche non tuo. Con il tuo account aggiunge gli insights (copertura, salvataggi,
    condivisioni, città, paesi, età, genere). Serve un token gratuito: la scheda
    **Guida** dell'app spiega come averlo, passo per passo.
-2. **I tuoi dati (export di Instagram)**: lo ZIP che Instagram ti manda. Lente trova
+2. **I tuoi dati (export di Instagram)**: lo ZIP che Instagram ti manda. Social Lens trova
    chi non ti segue, i fan che non segui, i reciproci, gli unfollow, le richieste,
    quando pubblichi, a chi metti più mi piace. Caricando un export nuovo ti dice
    **chi ha smesso di seguirti** dalla volta prima.
@@ -51,5 +51,5 @@ profilo: nessuno strumento ufficiale può farlo.
 ## Prove
 
 ```bash
-cd lente && npm test
+cd social-lens && npm test
 ```

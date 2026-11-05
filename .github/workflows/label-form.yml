@@ -124,6 +124,7 @@ jobs:
           [ -n "$ANON" ] || { echo "::error::Chiave pubblica del progetto non trovata"; exit 1; }
           echo "ref=$REF" >> "$GITHUB_OUTPUT"
           echo "anon=$ANON" >> "$GITHUB_OUTPUT"
+          echo "Progetto trovato: $(api "$API/projects/$REF" | jq -r '"nome \(.name), regione \(.region), stato \(.status)"')"
           echo "Indirizzo del progetto: https://$REF.supabase.co"
           echo "Chiave pubblica (anon, fatta per stare nel codice del browser): $ANON"
           if grep -q "$REF" label-form/js/config.js; then

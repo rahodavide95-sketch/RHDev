@@ -39,37 +39,86 @@ function errBox() { return h('div.err', { role: 'alert' }); }
 function leaveDemo() { try { localStorage.removeItem('consegne-mode'); } catch { /* */ } location.href = location.pathname; }
 function busy(b, on, label) { b.disabled = on; if (label) { append(clear(b), [on ? spinner() : null, h('span', label)]); } }
 
-function showAuth(mode = 'signin') {
-  const email = input({ type: 'email', autocomplete: 'username', placeholder: 'nome@esempio.com', required: true });
+const MAIL_TIPS = [
+  'Può arrivare dopo qualche minuto: guarda anche in Spam e, su Gmail, in Promozioni o Aggiornamenti.',
+  'Il mittente è "Supabase Auth" (noreply@mail.app.supabase.io), non l\'etichetta.',
+  'Il servizio email gratuito di Supabase manda al massimo un paio di email all\'ora, e solo all\'email con cui sei iscritto a Supabase (quella del tuo account sul sito supabase.com). Con un altro indirizzo l\'email non parte.',
+];
+function mailErrText(x) {
+  if (x.code === 'rate') return 'Supabase ha già mandato troppe email da poco: aspetta un\'ora e riprova (è un limite del servizio gratuito).';
+  if (x.code === 'closed') return 'Le iscrizioni sono chiuse: l\'area dell\'etichetta ha già il suo proprietario. Entra con quell\'account.';
+  return friendly(x);
+}
+/** Schermata "controlla la posta" con consigli e pulsante per rimandare l'email (dopo 60 secondi). */
+function showMailSent(kind, email, resend) {
+  const err = errBox();
+  const again = btn('Rimanda l\'email', null, { kind: 'ghost block', ic: 'refresh' });
+  let left = 60, timer = null;
+  const tick = () => {
+    if (left <= 0) { clearInterval(timer); again.disabled = false; again.lastChild.textContent = 'Rimanda l\'email'; return; }
+    again.disabled = true; again.lastChild.textContent = `Rimanda l'email (tra ${left--} s)`;
+  };
+  tick(); timer = setInterval(tick, 1000);
+  again.onclick = async () => {
+    err.textContent = '';
+    again.disabled = true;
+    try { await resend(); toast('Email rimandata', { type: 'ok' }); left = 60; tick(); clearInterval(timer); timer = setInterval(tick, 1000); }
+    catch (x) { err.textContent = mailErrText(x); again.disabled = false; }
+  };
+  gateScreen('Controlla la posta', kind === 'signup'
+    ? `Ho chiesto a Supabase di mandare a ${email} il link per confermare l'indirizzo. Aprilo da questo dispositivo, poi accedi.`
+    : `Se ${email} ha un account, arriva un link per scegliere una nuova password. Aprilo da questo dispositivo.`,
+    h('ul.tips', MAIL_TIPS.map(t => h('li', t))), err, again,
+    btn('Torna all\'accesso', () => { clearInterval(timer); showAuth(); }, { kind: 'ghost block' }));
+}
+
+function showAuth(mode = 'signin', prefill = '') {
+  const email = input({ type: 'email', autocomplete: 'username', placeholder: 'nome@esempio.com', required: true, value: prefill });
   const pw = input({ type: 'password', autocomplete: mode === 'signup' ? 'new-password' : 'current-password', placeholder: mode === 'signup' ? 'Almeno 10 caratteri' : 'Password' });
   const err = errBox();
   const main = btn(mode === 'signin' ? 'Accedi' : mode === 'signup' ? 'Crea account' : 'Mandami il link', null, { type: 'submit', kind: 'block' });
   const here = location.href.replace(/[?#].*$/, '');
   const form = h('form.stack', { onsubmit: async e => {
-    e.preventDefault(); err.textContent = '';
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(email.value.trim())) { err.textContent = 'Controlla l\'email.'; return; }
+    e.preventDefault(); clear(err);
+    const mail = email.value.trim().toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(mail)) { err.textContent = 'Controlla l\'email.'; return; }
     busy(main, true);
     try {
-      if (mode === 'signin') { await A.api.auth.signIn(email.value.trim(), pw.value); await gate(); return; }
+      if (mode === 'signin') { await A.api.auth.signIn(mail, pw.value); await gate(); return; }
       if (mode === 'signup') {
         const p = C.passwordProblem(pw.value);
         if (p) { err.textContent = p; busy(main, false); return; }
-        await A.api.auth.signUp(email.value.trim(), pw.value, here);
-        gateScreen('Controlla la posta', `Ti ho mandato un link a ${email.value.trim()} per confermare l'indirizzo. Aprilo da questo dispositivo.`, btn('Torna all\'accesso', () => showAuth(), { kind: 'ghost block' }));
+        const data = await A.api.auth.signUp(mail, pw.value, here);
+        if (data && data.session) { toast('Account creato', { type: 'ok' }); await gate(); return; }
+        // Supabase non rivela se l'email esiste già: in quel caso restituisce un utente senza "identità" e non manda nulla
+        if (data && data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+          gateScreen('Hai già un account', `Con ${mail} c'è già un account di Consegne: non serve crearne un altro e non arriva nessuna email. Accedi con la sua password. Se non la ricordi, usa "Password dimenticata".`,
+            btn('Accedi', () => showAuth('signin', mail), { kind: 'block' }), btn('Password dimenticata', () => showAuth('reset', mail), { kind: 'ghost block' }));
+          return;
+        }
+        showMailSent('signup', mail, () => A.api.auth.resendSignup(mail, here));
         return;
       }
-      await A.api.auth.reset(email.value.trim(), here);
-      gateScreen('Controlla la posta', 'Se l\'indirizzo ha un account, ti arriva un link per scegliere una nuova password.', btn('Torna all\'accesso', () => showAuth(), { kind: 'ghost block' }));
+      await A.api.auth.reset(mail, here);
+      showMailSent('reset', mail, () => A.api.auth.reset(mail, here));
     } catch (x) {
-      err.textContent = x.code === 'invalid' ? 'Email o password sbagliate.' : x.code === 'confirm' ? 'Conferma prima l\'email (guarda nella posta).' : friendly(x);
+      if (x.code === 'confirm') {
+        append(err, ['L\'email non è ancora confermata: apri il link che ti ha mandato Supabase. ',
+          h('button.linkbtn', { type: 'button', onclick: async () => {
+            try { await A.api.auth.resendSignup(mail, here); showMailSent('signup', mail, () => A.api.auth.resendSignup(mail, here)); }
+            catch (y) { err.textContent = mailErrText(y); }
+          } }, 'Rimandami l\'email')]);
+      } else err.textContent = x.code === 'invalid' ? 'Email o password sbagliate.' : mailErrText(x);
       busy(main, false);
     }
   } }, field('Email', email), mode !== 'reset' ? field('Password', pw) : null, err, main);
   const links = h('div.gate-links',
-    mode !== 'signin' ? h('button.linkbtn', { type: 'button', onclick: () => showAuth('signin') }, 'Ho già un account') : h('button.linkbtn', { type: 'button', onclick: () => showAuth('signup') }, 'Crea un account'),
-    mode !== 'reset' ? h('button.linkbtn', { type: 'button', onclick: () => showAuth('reset') }, 'Password dimenticata') : null);
+    mode !== 'signin' ? h('button.linkbtn', { type: 'button', onclick: () => showAuth('signin', email.value.trim()) }, 'Ho già un account') : h('button.linkbtn', { type: 'button', onclick: () => showAuth('signup', email.value.trim()) }, 'Prima volta? Crea un account'),
+    mode !== 'reset' ? h('button.linkbtn', { type: 'button', onclick: () => showAuth('reset', email.value.trim()) }, 'Password dimenticata') : null);
   gateScreen(mode === 'signin' ? 'Area dell\'etichetta' : mode === 'signup' ? 'Crea l\'account' : 'Password dimenticata',
-    mode === 'signin' ? 'Accedi con l\'account dell\'etichetta. Puoi usare lo stesso di Label Finance.' : '',
+    mode === 'signin' ? 'Accedi con l\'account dell\'etichetta. La prima volta tocca "Crea un account".'
+      : mode === 'signup' ? 'Usa l\'email con cui sei iscritto a Supabase: è l\'unica a cui il servizio email gratuito manda la conferma. Dopo il tuo primo accesso le iscrizioni si chiudono: nessun altro potrà creare un account.'
+      : 'Ti arriva un link per sceglierne una nuova.',
     form, links,
     h('div.gate-demo', h('p.muted', 'Vuoi solo provare? La prova tiene tutto in questo browser, senza account.'), btn('Prova senza account', () => { localStorage.setItem('consegne-mode', 'demo'); location.reload(); }, { kind: 'ghost block', ic: 'sparkle' })));
 }

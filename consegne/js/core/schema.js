@@ -197,7 +197,7 @@ export function blankField(type) {
   return base;
 }
 
-/* ─── Contratto predefinito (lo stesso di Label Finance, con i segnaposto) ─── */
+/* ─── Contratto predefinito dell'etichetta, con i segnaposto ─── */
 const P = (...c) => ({ t: 'p', a: 'j', c });
 const T = x => ({ x });
 const B = x => ({ x, b: 1 });

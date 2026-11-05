@@ -1,6 +1,6 @@
 /* ============================================================================
-   Configurazione di Consegne: il progetto Supabase (lo stesso di Label Finance,
-   Documenti Raho e Fioritura; le tabelle di Consegne hanno il prefisso consegne_).
+   Configurazione di Consegne: il SUO progetto Supabase ("consegne"), separato
+   da tutte le altre app (lo crea e lo prepara il workflow consegne.yml).
 
    NB: la chiave "anon" è PUBBLICA per natura: sta nel codice del browser ed è
    protetta dalle regole del database (supabase/schema.sql). Non incollare MAI qui

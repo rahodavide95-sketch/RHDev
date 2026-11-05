@@ -12,35 +12,41 @@ compilare il modulo come se fossi l'artista e vedere cosa ricevi. Per uscire: "E
 
 ## 1. Il database (si fa da solo)
 
-Il database sta sul progetto Supabase che usi già per Label Finance, Documenti Raho e Fioritura
-(le tabelle di Consegne si chiamano `consegne_…` e non toccano le altre app).
+Consegne ha il **suo progetto Supabase**, chiamato `consegne`, separato da tutte le altre app:
+account, tabelle ed email sono solo suoi.
 
-Quando le modifiche arrivano su `main`, il workflow **"Consegne (database ed email)"**:
+Il workflow **"Consegne (database ed email)"** (GitHub › Actions):
 
 1. fa girare tutti i test (anche quelli di sicurezza del database);
-2. crea le tabelle e le regole;
-3. pubblica la funzione delle email.
-
-Usa lo stesso secret `SUPABASE_ACCESS_TOKEN` che c'è già. Se il workflow è verde, è tutto a posto.
+2. trova il progetto `consegne` oppure, la prima volta, lo crea da solo:
+   - con il tuo account Supabase (secret `SUPABASE_ACCESS_TOKEN`, c'è già);
+   - server a Francoforte, nell'UE;
+   - **solo se il piano Supabase è gratuito**, così non spendi nulla;
+3. prepara tabelle, regole e le email di accesso in italiano a nome di Consegne;
+4. pubblica la funzione delle email e prova tutto dal vivo;
+5. ogni giorno tiene sveglio il progetto: i progetti gratuiti si addormentano dopo una settimana senza uso.
 
 ### Consigliato: blocca l'area dell'etichetta sulla tua email
 
-Prima di fare il merge (o dopo, rilanciando il workflow) aggiungi un secret su GitHub:
-
 1. Su GitHub apri il repository › **Settings** › **Secrets and variables** › **Actions** › **New repository secret**.
 2. **Name:** `CONSEGNE_OWNER_EMAIL`.
-3. **Secret:** l'email del tuo account (la stessa con cui entri in Label Finance).
-4. Salva.
+3. **Secret:** l'email con cui sei iscritto a Supabase.
+4. Salva e rilancia il workflow (Actions › Consegne › Run workflow).
 
-Così, anche se qualcuno trovasse la pagina prima di te, solo il tuo account può diventare
-"proprietario" dell'area. Senza questo secret vale la regola "il primo che entra" (con email
-confermata e verifica in due passaggi).
+Così solo quell'email può diventare "proprietario" dell'area. Senza il secret vale "il primo che
+entra" (con email confermata e verifica in due passaggi). In ogni caso, appena il proprietario è entrato
+le **iscrizioni si chiudono**: nessun altro può nemmeno creare un account.
 
 ## 2. Primo accesso
 
 Apri **https://rahodavide95-sketch.github.io/RHDev/consegne/**.
 
-1. **Accedi** con il tuo account. Puoi usare lo stesso di Label Finance, oppure crearne uno.
+1. **Crea un account** con l'email con cui sei iscritto a **Supabase** (quella del tuo account sul sito
+   supabase.com). Il servizio email gratuito di Supabase manda la conferma **solo** a quell'indirizzo e
+   al massimo un paio di email all'ora. Con un altro indirizzo l'email non parte.
+   - L'email ha come oggetto "Conferma il tuo account di Consegne" e come mittente "Supabase Auth":
+     guarda anche in Spam e, su Gmail, in Promozioni o Aggiornamenti.
+   - Apri il link dallo stesso dispositivo, poi accedi.
 2. **Verifica in due passaggi**: è obbligatoria.
    - Installa un'app di autenticazione: Google Authenticator, Microsoft Authenticator, 1Password, Authy o "Password" di iPhone.
    - Inquadra il QR e scrivi il codice di 6 cifre.
@@ -107,8 +113,7 @@ Esempio con il dominio su Cloudflare e la pagina su `invio.subconsciousculture.c
 3. In Consegne › Impostazioni › **Indirizzo dei link**: scrivi `https://invio.subconsciousculture.com/invio.html`.
    I link nuovi useranno quello. Quelli vecchi continuano a funzionare finché resta online anche GitHub Pages.
 4. Secret GitHub `CONSEGNE_ALLOWED_ORIGINS` = `https://invio.subconsciousculture.com`, poi rilancia il workflow.
-5. Supabase › **Authentication** › **URL Configuration** › aggiungi `https://invio.subconsciousculture.com/**`
-   tra i "Redirect URLs" (serve per i link di conferma e di reset password).
+5. Gli indirizzi di ritorno per le email di accesso li aggiunge il workflow (dal secret del punto 4).
 6. Email (Resend):
    - **Domains** › **Add domain** e copia i record DNS che ti dà Resend in Cloudflare (SPF e DKIM);
    - poi `CONSEGNE_MAIL_FROM` = `SUBCONSCIOUS Culture <invio@subconsciousculture.com>` e rilancia il workflow.
@@ -118,8 +123,9 @@ Esempio con il dominio su Cloudflare e la pagina su `invio.subconsciousculture.c
 | Problema | Cosa fare |
 |---|---|
 | Ho dimenticato la password di cifratura | Sblocca › "uso il codice di recupero" e scegli una password nuova. |
-| Ho perso password **e** codice di recupero | I dati già inviati non si possono più aprire (è la garanzia di sicurezza). Crea una nuova chiave dal pannello Supabase (svuota `label_key` in `consegne_settings`) e chiedi agli artisti di reinviare. |
-| Ho perso il telefono con il codice 2FA | Supabase › Authentication › Users › il tuo utente › elimina il fattore MFA, poi rientra e riattivalo. |
+| Ho perso password **e** codice di recupero | I dati già inviati non si possono più aprire (è la garanzia di sicurezza). Crea una nuova chiave dal pannello Supabase (progetto `consegne`: svuota `label_key` in `consegne_settings`) e chiedi agli artisti di reinviare. |
+| L'email di conferma non arriva | Usa l'email del tuo account Supabase (vedi punto 2), guarda in Spam/Promozioni, aspetta un'ora se l'hai chiesta più volte. Oppure: supabase.com › progetto `consegne` › Authentication › Users › **Add user** › **Create new user** con la tua email e password, spunta **Auto Confirm User**, poi accedi da Consegne. |
+| Ho perso il telefono con il codice 2FA | supabase.com › progetto `consegne` › Authentication › Users › il tuo utente › elimina il fattore MFA, poi rientra e riattivalo. |
 | Un link è finito nelle mani sbagliate | Nella release › menu dell'artista › **Nuovo link** (il vecchio smette subito di funzionare). Chi ha il link non può leggere i dati già inviati. |
 | L'artista ha dimenticato la sua password | Non si recupera: i dati restano al sicuro da te. Puoi mandargli il PDF dell'invio. |
 | Il workflow è rosso | Apri il run su GitHub Actions: se è un test, il messaggio dice quale regola non è rispettata. Niente viene pubblicato finché i test non passano. |

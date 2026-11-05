@@ -129,9 +129,44 @@ jobs:
           [ -n "$RESEND_KEY" ] && args+=("RESEND_API_KEY=$RESEND_KEY")
           [ -n "$MAIL_FROM" ] && args+=("MAIL_FROM=$MAIL_FROM")
           [ -n "$EXTRA_ORIGINS" ] && args+=("ALLOWED_ORIGINS=$EXTRA_ORIGINS")
-          supabase secrets set "${args[@]}" --project-ref "$PROJECT_REF"
+          supabase secrets set --yes --project-ref "$PROJECT_REF" "${args[@]}" > /dev/null
+          echo "Impostazioni salvate: ${#args[@]}"
 
       - name: Pubblica la funzione delle email
         if: steps.token.outputs.skip != '1'
         working-directory: consegne
-        run: supabase functions deploy consegne-mail --project-ref "$PROJECT_REF" --no-verify-jwt --use-api
+        run: supabase functions deploy consegne-mail --yes --project-ref "$PROJECT_REF" --no-verify-jwt --use-api
+
+      # Prova dal vivo, come un estraneo senza account: niente dati visibili, link finti rifiutati,
+      # funzioni interne chiuse, funzione delle email raggiungibile. Se qualcosa non torna, il workflow è rosso.
+      - name: Prova dal vivo (come un estraneo)
+        if: steps.token.outputs.skip != '1'
+        run: |
+          set -u
+          URL="https://$PROJECT_REF.supabase.co"
+          ANON=$(grep -o "supabaseAnonKey: '[^']*'" consegne/js/config.js | sed "s/supabaseAnonKey: '//; s/'$//")
+          H=(-H "apikey: $ANON" -H "Authorization: Bearer $ANON" -H "Content-Type: application/json")
+          FAKE=$(printf 'A%.0s' $(seq 1 43))
+          fail=0
+          ok() { echo "ok   $1"; }
+          ko() { echo "::error::$1"; fail=1; }
+
+          r=$(curl -sS "${H[@]}" -X POST "$URL/rest/v1/rpc/consegne_open" -d "{\"p_token\":\"$FAKE\"}")
+          echo "$r" | grep -q '"not_found"' && ok "link finto: non trovato" || ko "consegne_open con link finto: $r"
+          r=$(curl -sS "${H[@]}" -X POST "$URL/rest/v1/rpc/consegne_submit" -d "{\"p_token\":\"$FAKE\",\"p\":{}}")
+          echo "$r" | grep -q '"not_found"' && ok "invio con link finto: rifiutato" || ko "consegne_submit con link finto: $r"
+          for t in consegne_settings consegne_invites consegne_forms consegne_releases consegne_versions consegne_events consegne_owner; do
+            code=$(curl -sS -o /tmp/t.json -w '%{http_code}' "${H[@]}" "$URL/rest/v1/$t?select=*&limit=1")
+            if [ "$code" = 200 ] && [ "$(tr -d '[:space:]' < /tmp/t.json)" != "[]" ]; then ko "$t leggibile senza accesso: $(head -c 200 /tmp/t.json)"; else ok "$t: nessun dato visibile ($code)"; fi
+          done
+          for fn in consegne_mail_claim consegne_claim; do
+            code=$(curl -sS -o /tmp/f.json -w '%{http_code}' "${H[@]}" -X POST "$URL/rest/v1/rpc/$fn" -d '{}')
+            [ "$code" != 200 ] && ok "$fn chiusa agli estranei ($code)" || ko "$fn aperta agli estranei: $(head -c 200 /tmp/f.json)"
+          done
+          for i in 1 2 3 4 5; do
+            r=$(curl -sS "${H[@]}" -X POST "$URL/functions/v1/consegne-mail" -d '{"action":"ping"}' || true)
+            echo "$r" | grep -q '"email"' && break
+            sleep 4
+          done
+          echo "$r" | grep -q '"email"' && ok "funzione delle email raggiungibile: $r" || ko "funzione delle email: $r"
+          exit $fail

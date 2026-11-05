@@ -1,8 +1,0 @@
-# Configurazione minima per la CLI di Supabase (pubblicazione della funzione delle email di Consegne).
-# La usa il workflow .github/workflows/consegne.yml.
-project_id = "consegne"
-
-# Pubblica: la chiamano anche gli artisti (senza account). Le azioni dell'etichetta controllano
-# da sole il suo accesso; le altre non leggono dati degli artisti.
-[functions.consegne-mail]
-verify_jwt = false

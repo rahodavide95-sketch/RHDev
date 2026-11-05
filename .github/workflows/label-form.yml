@@ -13,6 +13,7 @@ name: Label Form (database ed email)
 #      messe lì il primo giorno (solo se vuote) e la sua funzione;
 #   6. ogni giorno tiene sveglio il progetto (i progetti gratuiti si addormentano dopo una settimana senza uso).
 # Secret facoltativi (Settings › Secrets › Actions):
+#   LABELFORM_SUPABASE_TOKEN   chiave di accesso a Supabase che vede il progetto label-form (supabase.com › Account › Access Tokens)
 #   LABELFORM_OWNER_EMAIL      la tua email: solo lei potrà aprire l'area dell'etichetta (consigliato)
 #   LABELFORM_RESEND_API_KEY   chiave di Resend per le email degli avvisi (senza: avvisi solo nell'app)
 #   LABELFORM_MAIL_FROM        mittente, es. "SUBCONSCIOUS Culture <invio@tuodominio.com>"
@@ -65,7 +66,10 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     env:
-      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      # chiave di accesso a Supabase che vede il progetto label-form (se manca si prova con quella generale)
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.LABELFORM_SUPABASE_TOKEN || secrets.SUPABASE_ACCESS_TOKEN }}
+      # chiave generale (quella che vede il progetto dell'altra app): serve solo per togliere Label Form da lì
+      OLD_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       OWNER_EMAIL: ${{ secrets.LABELFORM_OWNER_EMAIL }}
       RESEND_KEY: ${{ secrets.LABELFORM_RESEND_API_KEY }}
       MAIL_FROM: ${{ secrets.LABELFORM_MAIL_FROM }}
@@ -102,7 +106,7 @@ jobs:
             PLAN=$(jq -r '.plan // .billing_plan // .tier // "sconosciuto"' /tmp/org.json 2>/dev/null)
             echo "Piano Supabase: $PLAN"
             if [ "$PLAN" != "free" ]; then
-              echo "::warning::Progetto \"label-form\" non trovato e non posso verificare che il piano Supabase sia gratuito ($PLAN): per non rischiare costi non lo creo io. Crealo su supabase.com (nome label-form, regione Frankfurt, piano Free) e rilancia il workflow."
+              echo "::warning::Progetto \"label-form\" non visibile con questa chiave di accesso. Se l'hai già creato su supabase.com, crea una chiave in supabase.com › Account › Access Tokens e salvala su GitHub come secret LABELFORM_SUPABASE_TOKEN (vedi label-form/docs/SETUP.md). Se non l'hai creato: crealo (nome label-form, regione Frankfurt, piano Free)."
               exit 0
             fi
             PASS=$(openssl rand -hex 24)
@@ -288,14 +292,14 @@ jobs:
         if: steps.proj.outputs.ref != '' && steps.proj.outputs.app_on_new == '1'
         run: |
           q() { jq -n --arg s "$1" '{query: $s}' > /tmp/q.json; curl -sS -X POST "$API/projects/$OLD_REF/database/query" \
-            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" --data @/tmp/q.json; }
+            -H "Authorization: Bearer $OLD_ACCESS_TOKEN" -H "Content-Type: application/json" --data @/tmp/q.json; }
           present=$(q "select to_regclass('public.consegne_forms') is not null as c" | jq -r '.[0].c // false')
           if [ "$present" = true ]; then
             n=$(q "select (select count(*) from public.consegne_forms) + (select count(*) from public.consegne_releases) + (select count(*) from public.consegne_settings) + (select count(*) from public.consegne_owner where user_id is not null) as n" | jq -r '.[0].n // -1')
             if [ "$n" = 0 ]; then
               jq -Rs '{query: .}' label-form/supabase/pulizia-vecchio-progetto.sql > /tmp/rm.json
               code=$(curl -sS -o /tmp/out.json -w '%{http_code}' -X POST "$API/projects/$OLD_REF/database/query" \
-                -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" --data @/tmp/rm.json)
+                -H "Authorization: Bearer $OLD_ACCESS_TOKEN" -H "Content-Type: application/json" --data @/tmp/rm.json)
               echo "Tabelle del primo giorno (consegne_) tolte dall'altro progetto: risposta $code"
             else
               echo "::warning::Nell'altro progetto le tabelle del primo giorno (consegne_) contengono dati ($n righe): non le cancello. Se non servono, toglile con label-form/supabase/pulizia-vecchio-progetto.sql."
@@ -303,7 +307,7 @@ jobs:
           else
             echo "Nell'altro progetto non ci sono più tabelle di Label Form."
           fi
-          code=$(curl -sS -o /tmp/auth.json -w '%{http_code}' "$API/projects/$OLD_REF/config/auth" -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN")
+          code=$(curl -sS -o /tmp/auth.json -w '%{http_code}' "$API/projects/$OLD_REF/config/auth" -H "Authorization: Bearer $OLD_ACCESS_TOKEN")
           if [ "$code" = 200 ]; then
             jq --arg a "$OLD_APP_URL" '((.uri_allow_list // "") | split(",") | map(gsub("^\\s+|\\s+$"; "")) | map(select(length > 0))) as $l
               | {before: ($l | length), body: {uri_allow_list: ($l | map(select(startswith($a) | not)) | join(","))}}' /tmp/auth.json > /tmp/plan.json
@@ -311,13 +315,13 @@ jobs:
             if [ "$after" != "$(jq -r '.before' /tmp/plan.json)" ]; then
               jq '.body' /tmp/plan.json > /tmp/patch.json
               code=$(curl -sS -o /dev/null -w '%{http_code}' -X PATCH "$API/projects/$OLD_REF/config/auth" \
-                -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" --data @/tmp/patch.json)
+                -H "Authorization: Bearer $OLD_ACCESS_TOKEN" -H "Content-Type: application/json" --data @/tmp/patch.json)
               echo "Indirizzi di Label Form tolti dall'altro progetto: risposta $code"
             else
               echo "Nell'altro progetto non ci sono più indirizzi di Label Form."
             fi
           fi
-          code=$(curl -sS -o /dev/null -w '%{http_code}' -X DELETE "$API/projects/$OLD_REF/functions/consegne-mail" -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN")
+          code=$(curl -sS -o /dev/null -w '%{http_code}' -X DELETE "$API/projects/$OLD_REF/functions/consegne-mail" -H "Authorization: Bearer $OLD_ACCESS_TOKEN")
           echo "Funzione del primo giorno nell'altro progetto: $( [ "$code" = 200 ] && echo tolta || echo "già assente ($code)")"
 
   # I progetti Supabase gratuiti si addormentano dopo una settimana senza uso: una richiesta al giorno
@@ -326,7 +330,7 @@ jobs:
     if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
     env:
-      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.LABELFORM_SUPABASE_TOKEN || secrets.SUPABASE_ACCESS_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - name: Tieni sveglio il progetto

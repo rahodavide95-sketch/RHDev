@@ -26,6 +26,16 @@ Il workflow **"Label Form (database ed email)"** (GitHub › Actions):
 4. pubblica la funzione delle email e prova tutto dal vivo;
 5. ogni giorno tiene sveglio il progetto: i progetti gratuiti si addormentano dopo una settimana senza uso.
 
+### La chiave di accesso a Supabase (una volta sola)
+
+Il workflow lavora sul progetto `label-form` con una chiave di accesso a Supabase salvata su GitHub.
+1. Su **supabase.com** (con l'account dove c'è il progetto `label-form`) apri **Account** › **Access Tokens**
+   (https://supabase.com/dashboard/account/tokens) › **Generate new token**, nome `label-form-github`, e copia
+   la chiave (inizia con `sbp_`).
+2. Su GitHub apri il repository › **Settings** › **Secrets and variables** › **Actions** › **New repository secret**
+   (https://github.com/rahodavide95-sketch/RHDev/settings/secrets/actions/new).
+3. **Name:** `LABELFORM_SUPABASE_TOKEN` · **Secret:** incolla la chiave · **Add secret**.
+
 ### Consigliato: blocca l'area dell'etichetta sulla tua email
 
 1. Su GitHub apri il repository › **Settings** › **Secrets and variables** › **Actions** › **New repository secret**.

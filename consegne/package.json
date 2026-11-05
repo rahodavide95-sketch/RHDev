@@ -1,0 +1,9 @@
+{
+  "name": "consegne",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "TZ=Europe/Rome node --test test/*.test.js",
+    "test:db": "bash test/rls/run.sh"
+  }
+}

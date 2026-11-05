@@ -7,8 +7,8 @@
    la chiave "service_role".
    ============================================================================ */
 export const CONFIG = {
-  // false finché il progetto Supabase di Label Form non è pronto: l'area dell'etichetta mostra "Quasi pronto"
-  ready: false,
-  supabaseUrl: 'https://ztjlqorvnulgfvbtvavm.supabase.co',
-  supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp0amxxb3J2bnVsZ2Z2YnR2YXZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2OTgwMDIsImV4cCI6MjA5NzI3NDAwMn0._6gEbzCCnejpyh36Lpqe0_fj27UaonCkn2a7NastDMA',
+  // true: il progetto Supabase di Label Form è pronto (con false l'area dell'etichetta mostra "Quasi pronto")
+  ready: true,
+  supabaseUrl: 'https://ktyxenqmqvhhbyvojdmz.supabase.co',
+  supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0eXhlbnFtcXZoaGJ5dm9qZG16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM5MTQzODQsImV4cCI6MjEwOTQ5MDM4NH0.TkgBAtBuXm_Lv1Cb9ixaqfifEwrMvyrVQQdZ8sCw6z8',
 };

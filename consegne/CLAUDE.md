@@ -12,9 +12,11 @@ scritte (le icone sono il logo dell'etichetta preso da `etichetta/images/logo.pn
 
 - I file restano su Drive/Dropbox ecc.: gli artisti incollano i **link** ("utilizzo comunque i servizi di
   google come drive … la piattaforma principale non è google form ma la mia"). Niente caricamento di WAV.
-- **Progetto a parte** da Label Finance ("label finance per ora non centra niente quindi tutto a parte ma
-  il sistema deve essere pressochè identico"): stesso stack (Supabase dello stesso progetto, pagine
-  statiche, firma come Label Finance, aspetto scuro/viola), nessun collegamento ai dati di Label Finance.
+- **Niente a che fare con Label Finance**: "label finance per ora non centra niente quindi tutto a parte".
+  Il primo giorno Consegne era finito nel progetto Supabase di Label Finance e la pagina d'accesso diceva
+  "usa lo stesso account di Label Finance": D l'ha ripreso ("ma ti ho detto che non centra niente con label
+  finance"). Ora ha il SUO progetto Supabase (`consegne`) e nessun testo nomina Label Finance. Non
+  ricollegarli mai (account, tabelle, email, testi).
 - L'artista **vede quello che ha compilato** e sceglie se avere la copia (PDF o email).
 - L'artista **può modificare finché la release non è chiusa**, e "per ogni modifica devo essere avvisato".
 - "il contratto una volta firmato non si può più modificare" → bloccato dal database (trigger).
@@ -32,11 +34,11 @@ scritte (le icone sono il logo dell'etichetta preso da `etichetta/images/logo.pn
 - `invio.html` + `js/artist/app.js`: pagina artista a passi (sezioni → contratto → riepilogo/password/copie).
 - `js/core/*` (testati in `test/core.test.js`): `crypto.js` (RSA-OAEP 3072 etichetta, AES-GCM dati con AAD
   per invito, PBKDF2 600k, codice di recupero), `schema.js` (modulo + `defaultForm()` "Consegna release" con
-  il contratto di Label Finance e segnaposto), `answers.js` (controlli, IBAN/CF/P.IVA, filled, diff, maschere),
+  il contratto dell'etichetta e segnaposto), `answers.js` (controlli, IBAN/CF/P.IVA, filled, diff, maschere),
   `links.js` (provider, errori di battitura), `contract.js` (segnaposto, copia congelata, impronta),
   `richtext.js` (testo formattato come DATI, mai HTML), `theme.js` (colori/caratteri controllati).
 - `js/ui/*`: `dom.js` (`h()` solo textContent), `rich.js` (render + editor contenteditable → modello),
-  `form-view.js` (campi del modulo, usato anche nell'anteprima del costruttore), `signature.js` (= Label Finance),
+  `form-view.js` (campi del modulo, usato anche nell'anteprima del costruttore), `signature.js`,
   `pdf.js` (html2pdf da `vendor/`).
 - `js/api/supabase.js` e `js/api/demo.js` hanno la stessa interfaccia. La **modalità prova** (`?demo=1`,
   `localStorage['consegne-mode']='demo'`) replica in JS le regole SQL: serve a D per provare e ai test.
@@ -45,9 +47,15 @@ scritte (le icone sono il logo dell'etichetta preso da `etichetta/images/logo.pn
 
 ## Database (`supabase/schema.sql`, prefisso `consegne_`)
 
-Progetto Supabase di Label Finance (`ztjlqorvnulgfvbtvavm`). Applicato dal workflow
-`.github/workflows/consegne.yml` (prima test + test RLS, poi schema, email del proprietario dal secret
-`CONSEGNE_OWNER_EMAIL`, redirect URL, funzione `consegne-mail`).
+Progetto Supabase **tutto suo**, chiamato `consegne` (Francoforte). Il workflow `.github/workflows/consegne.yml`
+lo trova o lo crea (solo con piano gratuito), poi: test + test RLS, schema, proprietario dal secret
+`CONSEGNE_OWNER_EMAIL`, impostazioni di accesso (site URL, redirect, testi delle email in italiano,
+iscrizioni chiuse appena c'è il proprietario), funzione `consegne-mail`, prova dal vivo, pulizia delle
+tabelle `consegne_` dal progetto di un'altra app (`OLD_REF`, solo se vuote) e, ogni giorno, "sveglia" del
+progetto (i progetti gratuiti si addormentano dopo 7 giorni). `js/config.js` e le CSP (index.html, invio.html,
+vercel.json, _headers) devono puntare al progetto `consegne`.
+Email di accesso: senza SMTP personalizzato Supabase le manda solo agli indirizzi del team Supabase e poche
+all'ora: il proprietario deve iscriversi con l'email del suo account Supabase.
 - Proprietario unico (`consegne_owner`), tutte le tabelle richiedono `consegne_is_owner()` = proprietario + aal2.
 - Artisti senza account: solo RPC `consegne_open/unlock/submit/update` (security definer). Link = token 256 bit,
   nel DB solo `token_hash` (sha256) + `token_enc` (cifrato per l'etichetta).

@@ -15,7 +15,7 @@ Se qualcuno rubasse il database, troverebbe solo dati inutilizzabili.
 | **Tu (etichetta)** con password + codice 2FA | Creare release, moduli e link; leggere gli invii (con la chiave di cifratura) | Cambiare i dati inviati da un artista; cambiare un contratto firmato |
 | **Artista con il link** | Compilare e inviare **una volta** | Leggere o sovrascrivere un invio già fatto |
 | **Artista con link + sua password** | Rivedere e modificare il suo invio finché la release è aperta | Cambiare il contratto dopo la firma |
-| **Altri account Supabase** (es. utenti di Label Finance) | Nulla | Vedere qualsiasi dato di Consegne |
+| **Chiunque altro** | Nulla: Consegne ha un progetto Supabase tutto suo e, dopo il tuo primo accesso, le iscrizioni sono chiuse | Creare un account, vedere qualsiasi dato |
 | **Chi ruba il database** | Vedere testo cifrato, impronte, date | Leggere dati, link o password |
 
 Tutte queste regole stanno **nel database** (Row Level Security + funzioni controllate), non solo

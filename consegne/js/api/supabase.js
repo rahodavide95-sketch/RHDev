@@ -26,6 +26,14 @@ function admin() {
 export class ApiError extends Error {
   constructor(code, msg) { super(msg || code); this.code = code; }
 }
+// errori delle email di accesso: limite di invio, registrazioni chiuse, altro
+function mailError(error) {
+  const m = (error && (error.message || error.code)) || '';
+  if (/rate|too many|security purposes|seconds/i.test(m) || (error && /rate_limit/.test(error.code || ''))) return new ApiError('rate', m);
+  if (/signups? not allowed|disabled/i.test(m)) return new ApiError('closed', m);
+  if (/fetch|network/i.test(m)) return new ApiError('network', 'Connessione non riuscita');
+  return new ApiError('server', m);
+}
 async function rpc(client, fn, args) {
   let res;
   try { res = await client.rpc(fn, args); }
@@ -79,16 +87,20 @@ export const adminApi = {
     onChange(cb) { return admin().auth.onAuthStateChange((ev, s) => cb(ev, s)); },
     async signIn(email, password) {
       const { error } = await admin().auth.signInWithPassword({ email, password });
-      if (error) throw new ApiError(/confirm/i.test(error.message) ? 'confirm' : /invalid/i.test(error.message) ? 'invalid' : 'server', error.message);
+      if (error) throw new ApiError(/confirm/i.test(error.message) || error.code === 'email_not_confirmed' ? 'confirm' : /invalid/i.test(error.message) ? 'invalid' : /rate|too many/i.test(error.message) ? 'rate' : 'server', error.message);
     },
     async signUp(email, password, redirect) {
       const { data, error } = await admin().auth.signUp({ email, password, options: { emailRedirectTo: redirect } });
-      if (error) throw new ApiError('server', error.message);
+      if (error) throw mailError(error);
       return data;
+    },
+    async resendSignup(email, redirect) {
+      const { error } = await admin().auth.resend({ type: 'signup', email, options: { emailRedirectTo: redirect } });
+      if (error) throw mailError(error);
     },
     async reset(email, redirect) {
       const { error } = await admin().auth.resetPasswordForEmail(email, { redirectTo: redirect });
-      if (error) throw new ApiError('server', error.message);
+      if (error) throw mailError(error);
     },
     async setPassword(password) {
       const { error } = await admin().auth.updateUser({ password });

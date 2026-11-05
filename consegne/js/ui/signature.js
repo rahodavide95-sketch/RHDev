@@ -1,4 +1,4 @@
-/* Riquadro firma (lo stesso di Label Finance, come modulo).
+/* Riquadro firma.
    La firma si può DISEGNARE (mouse, dito, penna) oppure CARICARE da una foto: lo sfondo chiaro del foglio
    diventa trasparente e l'immagine viene ritagliata attorno alla firma. Il risultato è un PNG leggero.
    Uso: const pad = attachSignature(canvas)  →  pad.loadFile(file), pad.png(), pad.clear(), pad.isEmpty() */

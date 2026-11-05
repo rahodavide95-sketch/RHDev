@@ -135,7 +135,7 @@ export const adminApi = {
   auth: {
     async session() { return { user: { email: 'prova@consegne.local' } }; },
     onChange() { return { data: { subscription: { unsubscribe() {} } } }; },
-    async signIn() {}, async signUp() {}, async reset() {}, async setPassword() {},
+    async signIn() {}, async signUp() { return {}; }, async resendSignup() {}, async reset() {}, async setPassword() {},
     async signOut() {},
     async mfa() { return { level: 'aal2', factors: [{ id: 'demo' }] }; },
     async enroll() { return null; }, async verify() {},

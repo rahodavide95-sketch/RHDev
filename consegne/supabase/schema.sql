@@ -1,9 +1,8 @@
 -- ============================================================================
 -- Consegne — il modulo dell'etichetta per gli artisti (cartella consegne/)
 --
--- Sta nel progetto Supabase di Label Finance ma usa SOLO oggetti con il prefisso consegne_:
--- non tocca tabelle, funzioni o regole delle altre app. Si può rieseguire senza problemi
--- (lo applica il workflow .github/workflows/consegne.yml).
+-- Sta nel progetto Supabase "consegne", tutto suo: nessun'altra app ci mette account o tabelle.
+-- Si può rieseguire senza problemi (lo applica il workflow .github/workflows/consegne.yml).
 --
 -- Regole di sicurezza
 --   • L'etichetta (una sola persona, il "proprietario") vede e gestisce tutto, ma SOLO con la

@@ -49,7 +49,7 @@ scritte (le icone sono il logo dell'etichetta preso da `etichetta/images/logo.pn
 
 ## Database (`supabase/schema.sql`, prefisso `labelform_`)
 
-Progetto Supabase **tutto suo**, chiamato `label-form` (Francoforte). Il workflow `.github/workflows/label-form.yml`
+Progetto Supabase **tutto suo**, chiamato `label-form` (server in Irlanda, UE). Il workflow `.github/workflows/label-form.yml`
 lo trova o lo crea (solo con piano gratuito), poi: test + test RLS, schema, proprietario dal secret
 `LABELFORM_OWNER_EMAIL`, impostazioni di accesso (site URL, redirect, testi delle email in italiano,
 iscrizioni chiuse appena c'è il proprietario), funzione `label-form-mail`, prova dal vivo, pulizia delle

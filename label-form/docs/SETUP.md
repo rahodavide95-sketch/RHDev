@@ -20,7 +20,7 @@ Il workflow **"Label Form (database ed email)"** (GitHub › Actions):
 1. fa girare tutti i test (anche quelli di sicurezza del database);
 2. trova il progetto `label-form` oppure, la prima volta, lo crea da solo:
    - con il tuo account Supabase (secret `SUPABASE_ACCESS_TOKEN`, c'è già);
-   - server a Francoforte, nell'UE;
+   - server nell'UE (Irlanda o Francoforte);
    - **solo se il piano Supabase è gratuito**, così non spendi nulla;
 3. prepara tabelle, regole e le email di accesso in italiano a nome di Label Form;
 4. pubblica la funzione delle email e prova tutto dal vivo;

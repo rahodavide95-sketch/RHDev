@@ -143,6 +143,39 @@ export function domToRich(root) {
 /* ─── Editor ─── */
 const exec = (cmd, val = null) => { try { document.execCommand(cmd, false, val); } catch { /* */ } };
 
+/* La selezione si ricorda come "numero di caratteri dall'inizio": resta valida anche quando l'editor si
+   ridisegna o il fuoco passa a un menu, al selettore del colore o alla finestra del link. */
+function offsetOf(root, node, off) {
+  const r = document.createRange();
+  r.selectNodeContents(root);
+  try { r.setEnd(node, off); } catch { return 0; }
+  return r.toString().length;
+}
+function pointAt(root, n) {
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let t, last = null;
+  while ((t = w.nextNode())) {
+    const L = t.nodeValue.length;
+    if (n <= L) {
+      const chip = t.parentElement && t.parentElement.closest('.ph');
+      if (chip && root.contains(chip)) return [chip.parentNode, [...chip.parentNode.childNodes].indexOf(chip) + 1];
+      return [t, n];
+    }
+    n -= L; last = t;
+  }
+  return last ? [last, last.nodeValue.length] : [root, root.childNodes.length];
+}
+if (typeof document !== 'undefined' && !document.__lfRteSel) {
+  document.__lfRteSel = true;
+  document.addEventListener('selectionchange', () => {
+    const s = getSelection();
+    if (!s || !s.rangeCount || !s.anchorNode) return;
+    const n = s.anchorNode.nodeType === 1 ? s.anchorNode : s.anchorNode.parentElement;
+    const area = n && n.closest && n.closest('.rte-area');
+    if (area && area._lfKeep) area._lfKeep();
+  });
+}
+
 /**
  * Editor di testo formattato.
  * opts: { value, onChange(doc), placeholders: () => [{id, label}], phLabel(id), compact, hint }
@@ -157,8 +190,27 @@ export function richEditor(opts = {}) {
     area.classList.toggle('empty', !area.textContent.trim() && !area.querySelector('.ph'));
     if (opts.onChange) opts.onChange(doc);
   };
+  let saved = null;
+  const keep = () => {
+    const s = getSelection();
+    if (!s.rangeCount || !area.contains(s.anchorNode)) return;
+    const r = s.getRangeAt(0);
+    saved = { s: offsetOf(area, r.startContainer, r.startOffset), e: offsetOf(area, r.endContainer, r.endOffset) };
+  };
+  area._lfKeep = keep;
+  const restore = () => {
+    area.focus({ preventScroll: true });
+    const s = getSelection();
+    const r = document.createRange();
+    if (saved) {
+      const [sn, so] = pointAt(area, saved.s), [en, eo] = pointAt(area, saved.e);
+      try { r.setStart(sn, so); r.setEnd(en, eo); } catch { r.selectNodeContents(area); r.collapse(false); }
+    } else { r.selectNodeContents(area); r.collapse(false); }
+    s.removeAllRanges(); s.addRange(r);
+  };
   area.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(read, 250); });
-  area.addEventListener('blur', () => { clearTimeout(timer); read(); render(); });
+  // lasciando l'editor (non per un suo pulsante o menu) si rilegge e si ridisegna pulito
+  area.addEventListener('blur', e => { clearTimeout(timer); read(); if (!(e.relatedTarget && el.contains(e.relatedTarget))) { render(); } });
   area.addEventListener('paste', e => {
     e.preventDefault();
     const text = (e.clipboardData && e.clipboardData.getData('text/plain')) || '';
@@ -174,21 +226,18 @@ export function richEditor(opts = {}) {
     }
   });
 
-  let saved = null;
-  const keep = () => { const s = getSelection(); if (s.rangeCount && area.contains(s.anchorNode)) saved = s.getRangeAt(0).cloneRange(); };
-  const restore = () => { area.focus(); if (saved) { const s = getSelection(); s.removeAllRanges(); s.addRange(saved); } };
-  area.addEventListener('keyup', keep);
-  area.addEventListener('mouseup', keep);
-  area.addEventListener('focusout', keep);
-
-  const btn = (ic, title, fn) => h('button.rte-btn', { type: 'button', title, 'aria-label': title, onmousedown: e => e.preventDefault(), onclick: () => { restore(); fn(); keep(); read(); } }, icon(ic, 17));
+  const noFocus = e => e.preventDefault();   // il pulsante non ruba il fuoco (né la selezione) al testo
+  const apply = fn => { restore(); fn(); keep(); clearTimeout(timer); read(); };
+  const btn = (ic, title, fn) => h('button.rte-btn', { type: 'button', title, 'aria-label': title, onpointerdown: noFocus, onmousedown: noFocus, onclick: () => apply(fn) }, icon(ic, 17));
   const colorIn = h('input.rte-color', { type: 'color', value: '#a78bfa', title: 'Colore del testo', 'aria-label': 'Colore del testo',
-    onchange: e => { restore(); exec('styleWithCSS', false); exec('foreColor', e.target.value); read(); } });
+    onchange: e => apply(() => { exec('styleWithCSS', false); exec('foreColor', e.target.value); }) });
   const sizeSel = h('select.rte-size', { title: 'Dimensione', 'aria-label': 'Dimensione del testo', onchange: e => {
-    restore(); exec('fontSize', { s: '2', m: '3', l: '5' }[e.target.value]); e.target.value = ''; read();
+    const v = e.target.value; e.target.value = '';
+    if (v) apply(() => exec('fontSize', { s: '2', m: '3', l: '5' }[v]));
   } }, h('option', { value: '' }, 'Aa'), h('option', { value: 's' }, 'Piccolo'), h('option', { value: 'm' }, 'Normale'), h('option', { value: 'l' }, 'Grande'));
   const blockSel = h('select.rte-block', { title: 'Stile del paragrafo', 'aria-label': 'Stile del paragrafo', onchange: e => {
-    restore(); exec('formatBlock', e.target.value); e.target.value = ''; read();
+    const v = e.target.value; e.target.value = '';
+    if (v) apply(() => exec('formatBlock', v));
   } }, h('option', { value: '' }, 'Paragrafo'), h('option', { value: 'p' }, 'Testo'), h('option', { value: 'h3' }, 'Titolo'), h('option', { value: 'h4' }, 'Sottotitolo'), h('option', { value: 'blockquote' }, 'Citazione'));
 
   const tools = [
@@ -205,27 +254,38 @@ export function richEditor(opts = {}) {
     btn('alignL', 'Allinea a sinistra', () => exec('justifyLeft')),
     btn('alignC', 'Centra', () => exec('justifyCenter')),
     btn('alignR', 'Allinea a destra', () => exec('justifyRight')),
-    btn('link', 'Link', () => {
+    h('button.rte-btn', { type: 'button', title: 'Link', 'aria-label': 'Link', onpointerdown: noFocus, onmousedown: noFocus, onclick: () => {
+      keep();
       const u = prompt('Indirizzo del link (https://…)', 'https://');
+      if (u === null) return;
       const href = safeHref(u);
-      if (href) exec('createLink', href); else if (u) alert('Il link deve iniziare con https:// o mailto:');
-    }),
+      if (!href) { alert('Il link deve iniziare con https:// o mailto:'); return; }
+      apply(() => exec('createLink', href));
+    } }, icon('link', 17)),
     btn('clearFmt', 'Togli la formattazione', () => { exec('removeFormat'); exec('unlink'); }),
   ];
   if (opts.placeholders) {
-    const sel = h('select.rte-ph', { title: 'Inserisci un dato', 'aria-label': 'Inserisci un dato del modulo', onfocus: () => fillPh(), onmousedown: () => fillPh(), onchange: e => {
+    let sig = '';
+    const fillPh = () => {
+      const list = opts.placeholders();
+      const next = list.map(p => p.id + ':' + p.label).join('|');
+      if (next === sig) return;
+      sig = next;
+      clear(sel);
+      sel.append(h('option', { value: '' }, '+ Dato'), ...list.map(p => h('option', { value: p.id }, p.label)));
+    };
+    const sel = h('select.rte-ph', { title: 'Inserisci un dato', 'aria-label': 'Inserisci un dato del modulo', onfocus: () => fillPh(), onchange: e => {
       const id = e.target.value; e.target.value = '';
       if (!id) return;
-      restore();
-      const chip = h('span.ph', { contenteditable: 'false', dataset: { f: id } }, opts.phLabel ? opts.phLabel(id) : id);
-      const s = getSelection();
-      if (s.rangeCount && area.contains(s.anchorNode)) {
-        const r = s.getRangeAt(0); r.deleteContents(); r.insertNode(chip);
-        r.setStartAfter(chip); r.collapse(true); s.removeAllRanges(); s.addRange(r);
-      } else area.append(chip);
-      read(); keep();
+      apply(() => {
+        const chip = h('span.ph', { contenteditable: 'false', dataset: { f: id } }, opts.phLabel ? opts.phLabel(id) : id);
+        const s = getSelection();
+        if (s.rangeCount && area.contains(s.anchorNode)) {
+          const r = s.getRangeAt(0); r.deleteContents(); r.insertNode(chip);
+          r.setStartAfter(chip); r.collapse(true); s.removeAllRanges(); s.addRange(r);
+        } else area.append(chip);
+      });
     } });
-    const fillPh = () => { clear(sel); sel.append(h('option', { value: '' }, '+ Dato'), ...opts.placeholders().map(p => h('option', { value: p.id }, p.label))); };
     fillPh();
     tools.push(h('span.rte-sep'), sel);
   }

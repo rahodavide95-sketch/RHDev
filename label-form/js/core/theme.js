@@ -17,7 +17,7 @@ export const FONTS = {
 };
 
 export const PRESETS = {
-  notte: { label: 'Scuro', bg: '#0b0b0f', bg2: '#1c1630', card: '#16161d', text: '#f2f1f6', accent: '#a78bfa', bgStyle: 'glow', cardStyle: 'glass' },
+  notte: { label: 'Scuro', bg: '#0b0c11', bg2: '#271a45', card: '#161721', text: '#f2f3f8', accent: '#a78bfa', bgStyle: 'glow', cardStyle: 'glass', titleFont: 'syne', bodyFont: 'dmsans' },
   chiaro: { label: 'Chiaro', bg: '#f4f4f7', bg2: '#ece8fb', card: '#ffffff', text: '#16161d', accent: '#6d28d9', bgStyle: 'solid', cardStyle: 'shadow' },
   minimal: { label: 'Minimal', bg: '#ffffff', bg2: '#ffffff', card: '#ffffff', text: '#0a0a0a', accent: '#0a0a0a', bgStyle: 'solid', cardStyle: 'flat', titleFont: 'dmsans', bodyFont: 'dmsans', radius: 2, button: 'outline' },
   carta: { label: 'Carta', bg: '#f3efe7', bg2: '#e9e1d2', card: '#fffdf8', text: '#1d1a16', accent: '#b4532a', bgStyle: 'solid', cardStyle: 'border', titleFont: 'serif' },
@@ -30,11 +30,11 @@ const SIZE_PX = { s: 15, m: 16, l: 18 };
 const WIDTH_PX = { s: 620, m: 720, l: 860 };
 
 export const DEFAULT_THEME = {
-  preset: 'notte', bg: '#0b0b0f', bg2: '#1c1630', card: '#16161d', text: '#f2f1f6', accent: '#a78bfa',
+  preset: 'notte', bg: '#0b0c11', bg2: '#271a45', card: '#161721', text: '#f2f3f8', accent: '#a78bfa',
   bgStyle: 'glow', cardStyle: 'glass', button: 'fill',
-  titleFont: 'inter', bodyFont: 'inter', titleCase: 'normal', size: 'm', radius: 16, width: 'm',
+  titleFont: 'syne', bodyFont: 'dmsans', titleCase: 'normal', size: 'm', radius: 16, width: 'm',
   fontPx: 16, widthPx: 720, titlePx: 32, titleAlign: 'left', cardPad: 24, fieldGap: 14,
-  header: '', headerHeight: 180, headerFit: 'cover', logo: true, logoShape: 'square', logoSize: 48,
+  header: '', headerHeight: 180, headerFit: 'cover', logo: true, logoShape: 'square', logoSize: 48, logoPos: 'left', logoPlace: 'card',
 };
 
 const pick = (v, allowed, d) => allowed.includes(v) ? v : d;
@@ -47,6 +47,8 @@ export const safeImage = s => typeof s === 'string' && s.length <= MAX_IMAGE && 
 
 export function sanitizeTheme(t) {
   t = t && typeof t === 'object' ? t : {};
+  // lo stile "Scuro" non toccato segue sempre quello dell'etichetta (colori e caratteri di Label Finance)
+  if (t.preset === 'notte') { const { label, ...p } = PRESETS.notte; t = { ...t, ...p }; }
   const d = DEFAULT_THEME;
   const size = pick(t.size, ['s', 'm', 'l'], d.size);
   const width = pick(t.width, ['s', 'm', 'l'], d.width);
@@ -73,6 +75,8 @@ export function sanitizeTheme(t) {
     logo: t.logo !== false,
     logoShape: pick(t.logoShape, ['square', 'rounded', 'circle'], d.logoShape),
     logoSize: num(t.logoSize, 20, 240, d.logoSize),
+    logoPos: pick(t.logoPos, ['left', 'center', 'right'], d.logoPos),
+    logoPlace: pick(t.logoPlace, ['card', 'top', 'cover'], d.logoPlace),
   };
 }
 
@@ -95,11 +99,43 @@ export const onColor = hex => contrast(hex, '#ffffff') >= contrast(hex, '#111111
 export const isDark = hex => lum(hex) < 0.2;
 export function rgba(hex, a) { const [r, g, b] = rgb(hex); return `rgba(${r}, ${g}, ${b}, ${a})`; }
 
-/** Avvisi di leggibilità per chi disegna il modulo. */
+const hex2 = n => Math.round(Math.min(255, Math.max(0, n))).toString(16).padStart(2, '0');
+/** Miscela di due colori (t = 0 → a, t = 1 → b). */
+export function mix(a, b, t) { const A = rgb(a), B = rgb(b); return '#' + A.map((v, i) => hex2(v + (B[i] - v) * t)).join(''); }
+/** Lo stesso colore, schiarito o scurito quanto basta per avere almeno `min` di contrasto con lo sfondo. */
+export function ensureContrast(fg, bg, min) {
+  if (contrast(fg, bg) >= min) return fg;
+  const target = contrast('#ffffff', bg) >= contrast('#000000', bg) ? '#ffffff' : '#000000';
+  for (let k = 0.05; k < 1; k += 0.05) { const c = mix(fg, target, k); if (contrast(c, bg) >= min) return c; }
+  return target;
+}
+
+/** Colori che si vedono davvero: la superficie dove stanno i campi (riquadro, o sfondo se i riquadri sono
+    piatti/trasparenti), campi e pulsanti sempre staccati da quella superficie, testi sempre leggibili. */
+export function readableColors(theme) {
+  const t = sanitizeTheme(theme);
+  const surface = t.cardStyle === 'flat' ? t.bg : t.cardStyle === 'glass' ? mix(t.bg, t.card, 0.72) : t.card;
+  const dark = isDark(surface);
+  const text = ensureContrast(t.text, surface, 7);
+  let field = surface;
+  for (let k = dark ? 0.08 : 0.035; k <= 0.4; k += 0.01) { field = mix(surface, text, k); if (contrast(field, surface) >= (dark ? 1.38 : 1.1)) break; }
+  const button = ensureContrast(t.accent, surface, 3);
+  return {
+    surface, dark, text, field, button,
+    onButton: onColor(button),
+    accentText: ensureContrast(t.accent, surface, 4.5),
+    muted: ensureContrast(mix(surface, text, 0.78), surface, 4.6),
+    faint: ensureContrast(mix(surface, text, 0.56), surface, 3.2),
+    ghost: mix(surface, text, dark ? 0.12 : 0.06),
+  };
+}
+
+/** Avvisi per chi disegna il modulo (i colori poco leggibili si correggono da soli nella pagina dell'artista). */
 export function themeWarnings(t) {
   const w = [];
-  if (contrast(t.text, t.card) < 4.5) w.push('Il testo si legge poco sullo sfondo dei riquadri: scegli colori più diversi.');
-  if (contrast(t.accent, t.card) < 2.2) w.push('Il colore principale si vede poco sui riquadri.');
+  const r = readableColors(t);
+  if (contrast(t.text, r.surface) < 4.5) w.push('Il testo che hai scelto si leggerebbe poco: nel modulo lo schiarisco o scurisco da solo quanto basta.');
+  if (contrast(t.accent, r.surface) < 3) w.push('Il colore principale si vedrebbe poco sui pulsanti: nel modulo lo correggo da solo quanto basta.');
   return w;
 }
 
@@ -108,12 +144,14 @@ export const LOGO_RADIUS = { square: '0', rounded: '22%', circle: '50%' };
 /** Variabili CSS del tema (valori già controllati). */
 export function themeVars(theme) {
   const t = sanitizeTheme(theme);
+  const rc = readableColors(t);
   const dark = isDark(t.card);
   return {
-    '--f-bg': t.bg, '--f-bg2': t.bg2, '--f-card': t.card, '--f-text': t.text, '--f-accent': t.accent,
-    '--f-on-accent': onColor(t.accent),
-    '--f-muted': rgba(t.text, 0.66), '--f-faint': rgba(t.text, 0.42),
-    '--f-line': rgba(t.text, dark ? 0.14 : 0.16), '--f-field': rgba(t.text, dark ? 0.06 : 0.035),
+    '--f-bg': t.bg, '--f-bg2': t.bg2, '--f-card': t.card, '--f-text': rc.text, '--f-accent': rc.button, '--f-accent-text': rc.accentText,
+    '--f-on-accent': rc.onButton,
+    '--f-muted': rc.muted, '--f-faint': rc.faint,
+    '--f-line': rgba(rc.text, rc.dark ? 0.16 : 0.18), '--f-field': rc.field, '--f-ghost': rc.ghost,
+    '--f-border': rc.dark ? 'transparent' : rgba(rc.text, 0.2),
     '--f-accent-soft': rgba(t.accent, dark ? 0.18 : 0.12),
     '--f-card-glass': rgba(t.card, 0.72),
     '--f-radius': t.radius + 'px', '--f-radius-sm': Math.max(0, Math.round(t.radius * 0.62)) + 'px',
@@ -140,7 +178,7 @@ export const CONTRACT_STYLE = {
   text: '#333333', heading: '#15131f', accent: '#7c3aed',
   titleUpper: true, titleAlign: 'c', titleBar: true, titleSize: 132,
   headSize: 116, logoPos: 'r', logoH: 60, logoBg: 'auto', headLine: true, lineColor: '#d8d4e6',
-  pad: 52, signs: 'row', paper: true,
+  pad: 52, signs: 'row', frame: false,
 };
 export function sanitizeContractStyle(s) {
   s = s && typeof s === 'object' ? s : {};
@@ -164,7 +202,7 @@ export function sanitizeContractStyle(s) {
     lineColor: color(s.lineColor, d.lineColor),
     pad: num(s.pad, 12, 90, d.pad),
     signs: pick(s.signs, ['row', 'col'], d.signs),
-    paper: s.paper !== false,
+    frame: s.frame === true,
   };
 }
 export function contractVars(style) {

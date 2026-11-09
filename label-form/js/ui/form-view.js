@@ -32,25 +32,36 @@ export function applyTheme(el, theme) {
 export function formHeader({ form, label = {}, release = null, artist = '', design = false }) {
   const t = sanitizeTheme(form.theme);
   const head = h('header.f-head');
+  const src = safeImage(label.logo || '');
+  // logo: dove (nel riquadro del titolo, sopra, sull'immagine di testata) e da che parte (sinistra, centro, destra)
+  const logoEl = () => {
+    const img = h('img.f-logo', { src, alt: '' });
+    logoTone(src).then(x => { if (x !== 'none' && isLight(t.card)) img.dataset.bg = x; });
+    return design ? h('span.b-logo-wrap', img, h('span.b-rs.b-rs-xy', { dataset: { rs: 'logo' }, title: 'Trascina per cambiare la grandezza', 'aria-hidden': 'true' })) : img;
+  };
+  const withLogo = t.logo && src;
+  const place = t.logoPlace === 'cover' && !t.header ? 'top' : t.logoPlace;
   if (t.header) head.append(h('div.f-cover', { style: { backgroundImage: `url("${safeImage(t.header)}")`, backgroundSize: t.headerFit } },
+    withLogo && place === 'cover' ? h('div.f-logo-cover', { dataset: { pos: t.logoPos } }, logoEl()) : null,
     design ? h('span.b-rs.b-rs-y', { dataset: { rs: 'cover' }, title: 'Trascina per cambiare l\'altezza', 'aria-hidden': 'true' }) : null));
-  const top = h('div.f-brand');
-  const logo = safeImage(label.logo || '');
-  if (t.logo && logo) {
-    const img = h('img.f-logo', { src: logo, alt: '' });
-    logoTone(logo).then(x => { if (x !== 'none' && isLight(t.card)) img.dataset.bg = x; });
-    top.append(design ? h('span.b-logo-wrap', img, h('span.b-rs.b-rs-xy', { dataset: { rs: 'logo' }, title: 'Trascina per cambiare la grandezza', 'aria-hidden': 'true' })) : img);
-  }
+  const top = h('div.f-brand', { dataset: { pos: t.logoPos } });
+  if (withLogo && place === 'card') top.append(logoEl());
   if (label.name && shown(form, 'labelName')) top.append(h('span.f-label', label.name));
   const card = h('div.f-card.f-titlecard', { dataset: { align: t.titleAlign } },
+    withLogo && place === 'top' ? h('div.f-logo-top', { dataset: { pos: t.logoPos } }, logoEl()) : null,
     top.childNodes.length ? top : null,
     h('h1.f-title', form.title),
-    release && shown(form, 'release') ? h('p.f-release', icon('disc', 16), h('span', release.title + (release.catalog ? ` · ${release.catalog}` : ''))) : null,
+    release && shown(form, 'release') ? h('p.f-release', icon('disc', 16), h('span', releaseLine(form, release))) : null,
     artist && shown(form, 'hello') ? h('p.f-hello', textOf(form, 'hello', { artista: artist, nome: artist })) : null,
     isEmptyRich(form.intro) ? null : richBlock(form.intro, {}, 'f-intro'),
   );
   head.append(card);
   return head;
+}
+/** Riga della release: il modello dei testi con titolo e numero di catalogo (senza separatori orfani se manca il numero). */
+export function releaseLine(form, release) {
+  const t = textOf(form, 'release', { release: release.title || '', catalogo: release.catalog || '' });
+  return t.replace(/\(\s*\)|\[\s*\]/g, '').replace(/^[\s·|,–-]+|[\s·|,–-]+$/g, '').replace(/\s{2,}/g, ' ') || release.title || '';
 }
 const isLight = hex => { const n = parseInt(String(hex).slice(1), 16); return ((n >> 16 & 255) * 0.299 + (n >> 8 & 255) * 0.587 + (n & 255) * 0.114) > 150; };
 

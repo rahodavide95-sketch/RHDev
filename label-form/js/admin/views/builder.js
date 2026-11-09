@@ -165,6 +165,19 @@ export async function render(el, id) {
       return;
     }
     if (e.target.closest('.f-cover') || e.target.closest('.f-logo')) { tab = 'aspetto'; drawTabs(); drawPanel(); drawPreview(); return; }
+    const top = e.target.closest('.f-release, .f-hello, .f-label');
+    if (top) {
+      const key = top.matches('.f-release') ? 'release' : top.matches('.f-hello') ? 'hello' : 'labelName';
+      if (tab !== 'domande') { tab = 'domande'; drawTabs(); drawPanel(); drawPreview(); }
+      requestAnimationFrame(() => {
+        const box = panel.querySelector(`.top-line[data-line="${key}"]`);
+        if (!box) return;
+        box.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        box.classList.remove('flash'); void box.offsetWidth; box.classList.add('flash');
+        const inp = box.querySelector('input[data-txt]'); if (inp) setTimeout(() => inp.focus({ preventScroll: true }), 350);
+      });
+      return;
+    }
     if (e.target.closest('.f-actions, .f-foot, .f-progress')) { tab = 'testi'; drawTabs(); drawPanel(); drawPreview(); return; }
     if (e.target.closest('.f-titlecard')) { if (tab !== 'domande') { tab = 'domande'; drawTabs(); drawPanel(); drawPreview(); } panel.scrollTo({ top: 0, behavior: 'smooth' }); return; }
     const sec = e.target.closest('[data-section]');
@@ -408,6 +421,21 @@ export async function render(el, id) {
     return rowEl;
   }
 
+  /* righe automatiche in alto: nome dell'etichetta, release, saluto */
+  function topLines() {
+    form.texts = { ...TEXT_DEFAULTS, ...(form.texts || {}) };
+    form.show = { ...SHOW_DEFAULTS, ...(form.show || {}) };
+    const line = (showKey, textKey, label, hint) => h('div.top-line', { dataset: { line: showKey } },
+      toggle(label, form.show[showKey] !== false, v => { form.show[showKey] = v; changed(true); }, hint),
+      textKey && form.show[showKey] !== false ? h('div.txt-row', input({ type: 'text', value: form.texts[textKey], maxlength: 300, placeholder: TEXT_DEFAULTS[textKey], dataset: { txt: textKey }, oninput: e => { form.texts[textKey] = e.target.value; changed(); } }),
+        form.texts[textKey] !== TEXT_DEFAULTS[textKey] ? iconBtn('reset', 'Rimetti il testo di partenza', () => { form.texts[textKey] = TEXT_DEFAULTS[textKey]; changed(true); }, 'tiny') : null) : null);
+    return h('div.top-lines',
+      h('span.fld-l', 'Righe in alto (si riempiono da sole)'),
+      h('p.fld-h', 'Qui vedi "Esempio EP · CAT001" e "Nome artista": sono esempi. Per ogni artista si riempiono da soli con la release a cui lo inviti (titolo e numero di catalogo che scrivi in Release) e con il suo nome. Puoi nasconderle o cambiare come sono scritte: {release}, {catalogo}, {artista}.'),
+      line('labelName', null, 'Nome dell\'etichetta', 'Quello di Impostazioni'),
+      line('release', 'release', 'Titolo e catalogo della release', ''),
+      line('hello', 'hello', 'Saluto all\'artista', ''));
+  }
   function questionsPanel() {
     const out = h('div.b-stack');
     if (usedBy) out.append(h('div.note', icon('info', 16), h('span', `Questo modulo è usato da ${usedBy} ${usedBy === 1 ? 'artista' : 'artisti'}: le modifiche valgono subito anche per loro. I dati già inviati non si perdono.`)));
@@ -416,7 +444,8 @@ export async function render(el, id) {
       field('Titolo del modulo', input({ type: 'text', value: form.title, maxlength: 200, oninput: e => { form.title = e.target.value; titleIn.value = e.target.value; changed(); } })),
       field('Introduzione', richEditor({ value: form.intro, onChange: d => { form.intro = d; changed(); }, hint: 'Un messaggio di benvenuto per l\'artista…' }).el),
       field('Email con cui condividere le cartelle (facoltativa)', input({ type: 'email', value: form.shareWith || '', placeholder: A.settings.notify_email || 'la tua email', oninput: e => { form.shareWith = e.target.value.trim(); changed(); } }),
-        'Sotto i campi dei link suggeriamo di condividere i file con questa email (vuoto = email degli avvisi)')));
+        'Sotto i campi dei link suggeriamo di condividere i file con questa email (vuoto = email degli avvisi)'),
+      topLines()));
     form.sections.forEach((s, si) => {
       const fields = h('div.b-fields');
       s.fields.forEach((f, fi) => fields.append(fieldRow(f, s.fields, fi)));
@@ -476,7 +505,7 @@ export async function render(el, id) {
       h('div.card.b-sec', h('h3', 'Colori'), h('div.colors',
         colorField(() => t.bg, v => set('bg', v), 'Sfondo'), colorField(() => t.bg2, v => set('bg2', v), 'Sfondo 2'), colorField(() => t.card, v => set('card', v), 'Riquadri'),
         colorField(() => t.text, v => set('text', v), 'Testo'), colorField(() => t.accent, v => set('accent', v), 'Colore principale')),
-        warns.map(w => h('div.note.warn', icon('alert', 16), h('span', w))),
+        warns.map(w => h('div.note', icon('info', 16), h('span', w))),
         h('div.row3',
           field('Sfondo', selectEl([['solid', 'Tinta unita'], ['gradient', 'Sfumato'], ['glow', 'Con luce']], t.bgStyle, v => set('bgStyle', v))),
           field('Riquadri', selectEl([['glass', 'Vetro'], ['shadow', 'Ombra'], ['border', 'Bordo'], ['flat', 'Piatti']], t.cardStyle, v => set('cardStyle', v))),
@@ -499,6 +528,10 @@ export async function render(el, id) {
           h('div', toggle('Titoli in maiuscolo', t.titleCase === 'upper', v => set('titleCase', v ? 'upper' : 'normal'))))),
       h('div.card.b-sec', h('h3', 'Logo'),
         toggle('Mostra il logo dell\'etichetta', t.logo !== false, v => set('logo', v, true), A.settings.logo ? '' : 'Caricalo in Impostazioni'),
+        h('div.row2',
+          field('Dove', selectEl([['card', 'Nel riquadro del titolo'], ['top', 'Da solo, sopra il titolo'], ['cover', 'Sopra l\'immagine di testata']], t.logoPlace, v => set('logoPlace', v, true)),
+            t.logoPlace === 'cover' && !t.header ? 'Senza immagine di testata va sopra il titolo' : ''),
+          field('Posizione', selectEl([['left', 'A sinistra'], ['center', 'Al centro'], ['right', 'A destra']], t.logoPos, v => set('logoPos', v)))),
         h('div.row2',
           field('Forma', selectEl([['square', 'Quadrato'], ['rounded', 'Angoli arrotondati'], ['circle', 'Cerchio']], t.logoShape, v => set('logoShape', v))),
           slider('Grandezza', 20, 240, t.logoSize, 'px', v => set('logoSize', v))),
@@ -572,7 +605,7 @@ export async function render(el, id) {
             toggle('Titolo in maiuscolo', st.titleUpper, v => setS('titleUpper', v)),
             toggle('Barretta sotto il titolo', st.titleBar, v => setS('titleBar', v)),
             toggle('Linea sotto l\'intestazione', st.headLine, v => setS('headLine', v)),
-            toggle('Bordo del foglio (sullo schermo)', st.paper, v => setS('paper', v))),
+            toggle('Bordo intorno al foglio', st.frame, v => setS('frame', v))),
           h('div.colors',
             colorField(() => st.text, v => setS('text', v), 'Testo'), colorField(() => st.heading, v => setS('heading', v), 'Titoli'),
             colorField(() => st.accent, v => setS('accent', v), 'Barretta'), colorField(() => st.lineColor, v => setS('lineColor', v), 'Linea')),

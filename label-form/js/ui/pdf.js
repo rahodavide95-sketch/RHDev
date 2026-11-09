@@ -71,7 +71,7 @@ export function contractDoc(snap, { label = {}, signedAt = '', hash = '' } = {})
   if (st.titleUpper) root.classList.add('cd-upper');
   if (st.titleBar) root.classList.add('cd-bar');
   if (st.headLine) root.classList.add('cd-rule');
-  if (st.paper) root.classList.add('cd-paper');
+  if (st.frame) root.classList.add('cd-paper');
 
   const cell = (role, png, who, meta) => h('div.cd-sgn', h('span.cd-sgn-role', role),
     safeImage(png)

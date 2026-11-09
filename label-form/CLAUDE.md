@@ -43,6 +43,19 @@ scritte (le icone sono il logo dell'etichetta preso da `etichetta/images/logo.pn
     aggiorna da solo" → zoom e telefono/tablet/computer nel costruttore; `anteprima.html#p=…` legge
     `labelform_preview()` ogni 4 secondi (e subito, via BroadcastChannel, se il costruttore è aperto nello
     stesso browser). Nel database solo l'impronta del codice (`preview_hash`) e il codice cifrato.
+- Richieste del 9/11/2026 (fatte):
+  - "togli quei bordi bianchi e fai tutto come label finance, senza bordi è cambiato in meglio tutto" → tema
+    Scuro identico a quello di Label Finance: niente contorni fissi (`--line: transparent`), bordo viola solo al
+    passaggio o sul campo attivo, separatori leggeri (`--sep`), caratteri DM Sans + Syne (titoli), barretta
+    viola nei titoli di pagina e nella voce di menu attiva. Lo stile "Scuro" dei moduli usa gli stessi
+    colori e caratteri; il contratto è senza bordo intorno al foglio (si può accendere).
+  - "lo sfondo deve avere sempre un contrasto bello con i campi e con i tasti" → `readableColors()` in
+    `theme.js`: campi, pulsanti, testi e link si correggono da soli quanto basta (testo ≥ 7:1, pulsanti ≥ 3:1).
+  - "voglio decidere anche dove posizionare il logo" → `logoPlace` (nel riquadro / sopra il titolo /
+    sull'immagine di testata) e `logoPos` (sinistra / centro / destra) in Aspetto › Logo.
+  - "più leggibile e ben comprensibile" → testo a 16px, etichette e grigi più chiari.
+  - "Esempio EP · CAT001, se clicco non c'è un campo per modificarlo" → è un esempio: si riempie con la release
+    vera. Ora il clic apre "Righe in alto" (mostra/nascondi e testo `{release} · {catalogo}`).
 
 ## Architettura (niente compilazione, moduli ES)
 

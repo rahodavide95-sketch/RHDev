@@ -64,6 +64,7 @@ export const SYSTEM_PLACEHOLDERS = {
 
 /* Testi della pagina dell'artista: tutti modificabili dal costruttore. */
 export const TEXT_DEFAULTS = {
+  release: '{release} · {catalogo}',
   hello: 'Ciao {artista}!',
   next: 'Avanti', back: 'Indietro', send: 'Invia', saveEdit: 'Salva le modifiche',
   step: 'Passo {n} di {tot}',
@@ -75,6 +76,7 @@ export const TEXT_DEFAULTS = {
   foot: 'I tuoi dati vengono cifrati in questo browser prima di partire: li può leggere solo {etichetta}.',
 };
 export const TEXT_LABELS = {
+  release: 'Riga della release (in alto)',
   hello: 'Saluto (sotto il titolo)', next: 'Pulsante "Avanti"', back: 'Pulsante "Indietro"', send: 'Pulsante di invio', saveEdit: 'Pulsante per salvare le modifiche',
   step: 'Avanzamento', reviewTitle: 'Titolo del riepilogo', contractTitle: 'Titolo prima del contratto', contractNote: 'Nota prima del contratto',
   signTitle: 'Titolo della firma', signBtn: 'Pulsante della firma', doneTitle: 'Titolo dopo l\'invio', foot: 'Nota in fondo alla pagina',

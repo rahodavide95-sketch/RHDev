@@ -134,9 +134,9 @@ test('link: provider giusti, errori di battitura, link sbagliati', () => {
 /* ─── Aspetto ─── */
 test('tema: valori controllati, immagini solo come data URL di immagini', () => {
   const t = sanitizeTheme({ bg: 'red', accent: '#ABCDEF', titleFont: 'comic', radius: 99, header: 'data:text/html;base64,AAAA', size: 'xl' });
-  assert.equal(t.bg, '#0b0b0f');
+  assert.equal(t.bg, '#0b0c11');
   assert.equal(t.accent, '#abcdef');
-  assert.equal(t.titleFont, 'inter');
+  assert.equal(t.titleFont, 'syne');
   assert.equal(t.radius, 28);
   assert.equal(t.header, '');
   assert.equal(t.size, 'm');

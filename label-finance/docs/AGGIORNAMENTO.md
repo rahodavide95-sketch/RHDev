@@ -1,3 +1,31 @@
+# Pianificazione, quote dai contratti e calendario (novembre 2026) — niente da fare online
+
+Nessuna modifica al database: basta la pubblicazione dell'app.
+
+**Pianificazione**
+- Tolto lo stato **"Uscita"**. Una voce **confermata** che arriva alla sua data esce dall'elenco e
+  resta solo nel **calendario** con il tag "✓ Uscita". Le voci con gli altri stati restano in elenco
+  finché non le togli tu; se ne cambi una in "confermata" a data passata, fa lo stesso.
+  Le vecchie voci "Uscita" diventano "confermate" (e quindi uscite).
+
+**Quote**
+- Nelle **compilation (VA)** ogni artista prende di default il **50%** sulla sua traccia (se sulla
+  traccia ci sono più artisti si divide tra loro); poi si cambia a mano.
+- Nel **contratto** si sceglie la **release** da un menu (o si scrive il titolo di una nuova, che resta
+  proposta nei contratti successivi). Quando il contratto è **firmato**, la quota dell'artista va da
+  sola nelle quote di quella release (sulla sua traccia nelle VA). Se la release viene aggiunta dopo,
+  prende la quota dal contratto appena la salvi. Succede una volta sola: se poi cambi la quota a mano,
+  resta com'è. Nell'anteprima del contratto la release si può collegare anche a contratto firmato.
+
+**Calendario** (Pianificazione ed Eventi)
+- **Trascina** una voce su un altro giorno per spostarla; tieni premuto **⌥ Option** (Alt su Windows)
+  mentre trascini per **duplicarla**. Anche l'elenco si aggiorna.
+- Voci più chiare: colore del tipo a sinistra, tipo in alto, titolo leggibile, sotto artista e canale
+  (o luogo per gli eventi) e lo stato (Idea, Pianificata, ✓ Uscita); gli eventi mostrano l'orario e
+  sono in ordine di orario.
+
+---
+
 # Contratti: niente più richieste di firmare di nuovo (ottobre 2026) — niente da fare online
 
 Nessuna modifica al database: basta la pubblicazione dell'app.

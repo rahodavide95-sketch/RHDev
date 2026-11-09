@@ -199,7 +199,19 @@ window.LF = {
     if(typeof updateIdentity==='function') updateIdentity(); if(typeof rebuildAccountMenu==='function') rebuildAccountMenu(); },
   goto(v){ if(typeof goto==='function') goto(v); },
 };
-function reloadViews(){ renderDashboard(); renderTx(); renderReleases(); renderPlanning(); renderEvents(); renderSupports(); renderRoyalties(); renderArtists(); renderContracts(); renderTasks(); renderMerch(); renderOffers(); renderSettings(); }
+// compilation (VA): le tracce senza quote prendono il 50% dei loro artisti (diviso se sono più di uno).
+// Una volta sola per etichetta; l'artista si riconosce dalla traccia, dalle vendite o dal titolo "Artista - Titolo".
+function migrateVaQuotas(){
+  if(!DB || DB.vaQuotaV===1 || window.LF_readOnly) return;
+  let n=0;
+  (DB.releases||[]).forEach(r=>{ if(!r || !isVARelease(r)) return;
+    (r.tracks||[]).forEach(t=>{ if((t.splits||[]).some(s=>(s.name||'').trim())) return;
+      const names=trackArtistNames(r,t); if(!names.length) return;
+      t.splits=names.map(nm=>({ name:nm, pct:pctR(50/names.length) })); n++; }); });
+  DB.vaQuotaV=1;
+  if(n) save(); else saveLocal();
+}
+function reloadViews(){ try{ migrateVaQuotas(); }catch(e){} renderDashboard(); renderTx(); renderReleases(); renderPlanning(); renderEvents(); renderSupports(); renderRoyalties(); renderArtists(); renderContracts(); renderTasks(); renderMerch(); renderOffers(); renderSettings(); }
 /* ---- Vista consolidata multi-etichetta (Company/Enterprise) ---- */
 function updateConsolidatedNav(){ const b=document.querySelector('[data-view="consolidated"]'); if(b) b.hidden=((ACCOUNT&&ACCOUNT.labels)||[]).length<2;
   if(currentView==='consolidated' && ((ACCOUNT&&ACCOUNT.labels)||[]).length<2) goto('dashboard'); }
@@ -1447,7 +1459,7 @@ const normIsrcKey=s=>(s||'').toString().replace(/[^a-z0-9]/gi,'').toUpperCase();
 let trkArtCache=null;
 function trackArtistIndex(){
   const txs=DB.transactions||[], rev=window.LF_dataRev||0, arts=DB.artists||[];
-  if(trkArtCache && trkArtCache.ref===txs && trkArtCache.rev===rev && trkArtCache.len===txs.length && trkArtCache.arts===arts) return trkArtCache;
+  if(trkArtCache && trkArtCache.ref===txs && trkArtCache.rev===rev && trkArtCache.len===txs.length && trkArtCache.arts===arts && trkArtCache.artsLen===arts.length) return trkArtCache;
   const byIsrc=new Map(), byCatTitle=new Map(), known=new Map();
   const put=(m,k,raw)=>{ if(!k) return; splitArtistNames(raw).forEach(n=>{ const nk=normArt(n); if(!nk || isVAName(n)) return;
     let s=m.get(k); if(!s){ s=new Map(); m.set(k,s); } if(!s.has(nk)) s.set(nk,n.trim()); }); };
@@ -1456,7 +1468,7 @@ function trackArtistIndex(){
     if(t.catalog && t.product) put(byCatTitle, normCat(t.catalog)+'|'+normArt(t.product), t.artist);
     splitArtistNames(t.artist).forEach(n=>{ const k=normArt(n); if(k && !isVAName(n) && !known.has(k)) known.set(k,n.trim()); }); });
   arts.forEach(a=>{ const k=normArt(a.name); if(k) known.set(k,a.name); });
-  return (trkArtCache={ ref:txs, rev, len:txs.length, arts, byIsrc, byCatTitle, known });
+  return (trkArtCache={ ref:txs, rev, len:txs.length, arts, artsLen:arts.length, byIsrc, byCatTitle, known });
 }
 function trackArtistNames(r, t){
   const out=new Map();
@@ -1690,13 +1702,17 @@ function releaseGaps(){
   return releases().map(r=>{
     const g=[];
     if(!(r.artist||'').trim()) g.push('artist');
-    if(!(r.splits||[]).some(s=>(s.name||'').trim() && +s.pct>0)) g.push('splits');
+    // quote: sulla release, oppure su tutte le tracce; nelle compilation (o con distribuzione per traccia) contano le tracce
+    const hasQ=l=>(l||[]).some(s=>(s.name||'').trim() && +s.pct>0);
+    const tracksQ=(r.tracks||[]).length>0 && (r.tracks||[]).every(t=>hasQ(t.splits));
+    const perTrack=isVARelease(r) || (r.royaltyMode && r.royaltyMode!=='release');
+    if(perTrack ? !tracksQ : !(hasQ(r.splits) || tracksQ)) g.push('splits');
     if(!(r.upc||'').trim()) g.push('upc');
     const tracks=r.tracks||[];
     if(tracks.length && tracks.some(t=>!(t.isrc||'').trim())) g.push('isrc');
     // --- validazione dati ---
-    const sum=(r.splits||[]).reduce((s,x)=>s+(+x.pct||0),0);
-    if(sum>100) g.push('split_over');
+    const sumOf=l=>(l||[]).reduce((s,x)=>s+(+x.pct||0),0);
+    if(sumOf(r.splits)>100 || (r.tracks||[]).some(t=>sumOf(t.splits)>100)) g.push('split_over');
     const upcd=(r.upc||'').replace(/\D/g,'');
     if(upcd && upcd.length!==12 && upcd.length!==13) g.push('upc_bad');
     if(tracks.some(t=>(t.isrc||'').trim() && !ISRC_RE.test((t.isrc||'').trim()))) g.push('isrc_bad');
@@ -3665,6 +3681,16 @@ function setTheme(p){ localStorage.setItem(THEME_KEY,p); applyTheme(); }
 $$('[data-theme-opt]').forEach(b=>b.onclick=()=>setTheme(b.dataset.themeOpt));
 themeMq.addEventListener('change',()=>{ if(themePref()==='system') applyTheme(); });
 applyTheme();
+/* colore del tema: viola (predefinito), blu, verde, arancio, rosa, bianco e nero — ricordato su questo dispositivo */
+const ACCENT_KEY='labelfinance.accent', ACCENTS=['violet','blue','green','orange','pink','mono'];
+function accentPref(){ try{ const a=localStorage.getItem(ACCENT_KEY); return ACCENTS.includes(a)?a:'violet'; }catch(e){ return 'violet'; } }
+function applyAccent(){ const a=accentPref();
+  if(a==='violet') document.documentElement.removeAttribute('data-accent'); else document.documentElement.setAttribute('data-accent', a);
+  $$('[data-accent-opt]').forEach(b=>{ const on=b.dataset.accentOpt===a; b.classList.toggle('is-active', on); b.setAttribute('aria-pressed', on?'true':'false'); });
+  const mt=document.querySelector('meta[name="theme-color"]'); if(mt){ try{ mt.setAttribute('content', getComputedStyle(document.documentElement).getPropertyValue('--brand').trim()||mt.content); }catch(e){} } }
+function setAccent(a){ try{ localStorage.setItem(ACCENT_KEY, ACCENTS.includes(a)?a:'violet'); }catch(e){} applyAccent(); }
+$$('[data-accent-opt]').forEach(b=>b.onclick=()=>setAccent(b.dataset.accentOpt));
+applyAccent();
 
 /* ---------- PWA: service worker ---------- */
 if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); }); }

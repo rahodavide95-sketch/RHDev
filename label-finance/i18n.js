@@ -2889,6 +2889,15 @@
   Object.assign(DICT.pt, {"cal.moved": "Movido para {d}", "cal.duplicated": "Duplicado a {d}", "cal.drag_hint": "Arraste um item para o mover para outro dia · mantenha ⌥ Option (Alt no Windows) ao arrastar para o duplicar."});
   Object.assign(DICT.nl, {"cal.moved": "Verplaatst naar {d}", "cal.duplicated": "Gedupliceerd op {d}", "cal.drag_hint": "Sleep een item om het naar een andere dag te verplaatsen · houd ⌥ Option (Alt op Windows) ingedrukt tijdens het slepen om het te dupliceren."});
 
+  /* colori del tema */
+  Object.assign(DICT.it, {"set.color": "Colore", "set.color_hint": "Il colore principale dell'app, in chiaro e in scuro.", "acc.violet": "Viola", "acc.blue": "Blu", "acc.green": "Verde", "acc.orange": "Arancio", "acc.pink": "Rosa", "acc.mono": "Bianco e nero"});
+  Object.assign(DICT.en, {"set.color": "Colour", "set.color_hint": "The app's main colour, in light and dark mode.", "acc.violet": "Violet", "acc.blue": "Blue", "acc.green": "Green", "acc.orange": "Orange", "acc.pink": "Pink", "acc.mono": "Black & white"});
+  Object.assign(DICT.es, {"set.color": "Color", "set.color_hint": "El color principal de la app, en claro y en oscuro.", "acc.violet": "Violeta", "acc.blue": "Azul", "acc.green": "Verde", "acc.orange": "Naranja", "acc.pink": "Rosa", "acc.mono": "Blanco y negro"});
+  Object.assign(DICT.fr, {"set.color": "Couleur", "set.color_hint": "La couleur principale de l'app, en clair et en sombre.", "acc.violet": "Violet", "acc.blue": "Bleu", "acc.green": "Vert", "acc.orange": "Orange", "acc.pink": "Rose", "acc.mono": "Noir et blanc"});
+  Object.assign(DICT.de, {"set.color": "Farbe", "set.color_hint": "Die Hauptfarbe der App, hell und dunkel.", "acc.violet": "Violett", "acc.blue": "Blau", "acc.green": "Grün", "acc.orange": "Orange", "acc.pink": "Pink", "acc.mono": "Schwarz-Weiß"});
+  Object.assign(DICT.pt, {"set.color": "Cor", "set.color_hint": "A cor principal da app, em claro e em escuro.", "acc.violet": "Violeta", "acc.blue": "Azul", "acc.green": "Verde", "acc.orange": "Laranja", "acc.pink": "Rosa", "acc.mono": "Preto e branco"});
+  Object.assign(DICT.nl, {"set.color": "Kleur", "set.color_hint": "De hoofdkleur van de app, in licht en donker.", "acc.violet": "Paars", "acc.blue": "Blauw", "acc.green": "Groen", "acc.orange": "Oranje", "acc.pink": "Roze", "acc.mono": "Zwart-wit"});
+
   // lingua salvata (condivisa con la pagina pubblica) oppure quella del browser, se è una delle 7
   let lang = (function(){ let s=null; try{ s=localStorage.getItem(KEY); }catch(e){}
     if(s && DICT[s]) return s;

@@ -1,4 +1,4 @@
-# Pianificazione, quote dai contratti e calendario (novembre 2026) — niente da fare online
+# Pianificazione, quote dai contratti, calendario e colori del tema (novembre 2026) — niente da fare online
 
 Nessuna modifica al database: basta la pubblicazione dell'app.
 
@@ -16,6 +16,9 @@ Nessuna modifica al database: basta la pubblicazione dell'app.
   sola nelle quote di quella release (sulla sua traccia nelle VA). Se la release viene aggiunta dopo,
   prende la quota dal contratto appena la salvi. Succede una volta sola: se poi cambi la quota a mano,
   resta com'è. Nell'anteprima del contratto la release si può collegare anche a contratto firmato.
+- Il pannello **"release da completare"** non segnala più "Quote" sulle compilation che hanno le quote
+  sulle tracce. Le compilation già salvate con tracce senza quote ricevono una volta il 50% per i loro
+  artisti (riconosciuti dalla traccia, dalle vendite o dal titolo "Artista - Titolo").
 
 **Calendario** (Pianificazione ed Eventi)
 - **Trascina** una voce su un altro giorno per spostarla; tieni premuto **⌥ Option** (Alt su Windows)
@@ -23,6 +26,11 @@ Nessuna modifica al database: basta la pubblicazione dell'app.
 - Voci più chiare: colore del tipo a sinistra, tipo in alto, titolo leggibile, sotto artista e canale
   (o luogo per gli eventi) e lo stato (Idea, Pianificata, ✓ Uscita); gli eventi mostrano l'orario e
   sono in ordine di orario.
+
+**Colori del tema**
+- In Impostazioni → Preferenze c'è **Colore**: Viola (quello di sempre), Blu, Verde, Arancio, Rosa e
+  **Bianco e nero**. Vale in chiaro e in scuro, resta ricordato su questo dispositivo e si vede anche
+  al login. I documenti (contratti, statement, email) restano con i colori dell'etichetta.
 
 ---
 

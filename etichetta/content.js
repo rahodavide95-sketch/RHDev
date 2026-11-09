@@ -38,6 +38,16 @@ const SITE = {
   // Release singola/EP/album → catalog: "SSSCLTR001", "SSSCLTR002", ecc.
   // Various Artists (VA)    → catalog: "SSSCLTRS01",  "SSSCLTRS02",  ecc.
   // date: formato GG/MM/AAAA  es. "15/06/2026"
+  //
+  // FACOLTATIVI (aggiungili dentro il blocco di un'uscita, se vuoi):
+  //   tracks:  [ { title: "Titolo traccia", artist: "Nome artista", link: "https://..." }, ... ]
+  //            → nella pagina dell'uscita compare la tracklist; ogni traccia apre il suo link.
+  //   artists: [ "Nome Artista 1", "Nome Artista 2" ]
+  //            → collega l'uscita (es. una VA) alle pagine di quegli artisti.
+  //
+  // IMMAGINI LEGGERE: se accanto a una copertina esiste "thumbs/stesso-nome.jpg"
+  // (es. images/releases/thumbs/sc001.jpg, circa 800 px) il sito usa quella,
+  // altrimenti carica l'originale. Vale anche per le foto degli artisti.
   releases: [
     {
       artist:  "Raho",

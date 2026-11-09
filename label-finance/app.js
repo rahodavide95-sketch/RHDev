@@ -76,7 +76,10 @@ function ensureLabelShape(l){
   l.txOrder=l.txOrder||DEFAULT_TX_ORDER.slice();
   l.txHidden=l.txHidden||DEFAULT_TX_ORDER.filter(c=>!DEFAULT_TX_VISIBLE.includes(c));
   l.artists=l.artists||[]; l.tasks=l.tasks||[]; l.contracts=l.contracts||[]; l.merch=l.merch||[];
-  l.planning=l.planning||[]; l.events=l.events||[]; l.supports=l.supports||[]; l.recurring=l.recurring||[];
+  l.planning=l.planning||[];
+  // "Uscita" non è più uno stato: una voce confermata con la data arrivata è uscita
+  l.planning.forEach(p=>{ if(p && p.status==='done') p.status='confirmed'; });
+  l.events=l.events||[]; l.supports=l.supports||[]; l.recurring=l.recurring||[];
   l.payouts=l.payouts||[];
   // cambi automatici BCE: attivi di serie per le etichette nuove (vuote); per quelle già
   // in uso si attivano dalle Impostazioni (gli importi in valuta cambierebbero da soli)
@@ -161,7 +164,9 @@ function wipeLocalData(){
   try{ if(typeof teamCache!=='undefined') teamCache=null; }catch(e){}   // elenco del team dell'account precedente
 }
 let roRevertT=null, roToastAt=0;
-function save(){ window.LF_dataRev=(window.LF_dataRev||0)+1; saveLocal();   // LF_dataRev: i dati sono cambiati (cache che dipendono dai movimenti)
+function save(){ window.LF_dataRev=(window.LF_dataRev||0)+1;
+  if(!window.LF_readOnly && typeof applyContractQuotas==='function'){ try{ applyContractQuotas(); }catch(e){} }   // quota del contratto firmato → quote della release
+  saveLocal();   // LF_dataRev: i dati sono cambiati (cache che dipendono dai movimenti)
   // accesso team in sola lettura: niente salvataggi, le modifiche tornano com'erano
   if(window.LF_readOnly){
     if(Date.now()-roToastAt>4000 && (!navigator.userActivation || navigator.userActivation.isActive)){ roToastAt=Date.now(); toast(tt('team.readonly')); }
@@ -194,7 +199,19 @@ window.LF = {
     if(typeof updateIdentity==='function') updateIdentity(); if(typeof rebuildAccountMenu==='function') rebuildAccountMenu(); },
   goto(v){ if(typeof goto==='function') goto(v); },
 };
-function reloadViews(){ renderDashboard(); renderTx(); renderReleases(); renderPlanning(); renderEvents(); renderSupports(); renderRoyalties(); renderArtists(); renderContracts(); renderTasks(); renderMerch(); renderOffers(); renderSettings(); }
+// compilation (VA): le tracce senza quote prendono il 50% dei loro artisti (diviso se sono più di uno).
+// Una volta sola per etichetta; l'artista si riconosce dalla traccia, dalle vendite o dal titolo "Artista - Titolo".
+function migrateVaQuotas(){
+  if(!DB || DB.vaQuotaV===1 || window.LF_readOnly) return;
+  let n=0;
+  (DB.releases||[]).forEach(r=>{ if(!r || !isVARelease(r)) return;
+    (r.tracks||[]).forEach(t=>{ if((t.splits||[]).some(s=>(s.name||'').trim())) return;
+      const names=trackArtistNames(r,t); if(!names.length) return;
+      t.splits=names.map(nm=>({ name:nm, pct:pctR(50/names.length) })); n++; }); });
+  DB.vaQuotaV=1;
+  if(n) save(); else saveLocal();
+}
+function reloadViews(){ try{ migrateVaQuotas(); }catch(e){} renderDashboard(); renderTx(); renderReleases(); renderPlanning(); renderEvents(); renderSupports(); renderRoyalties(); renderArtists(); renderContracts(); renderTasks(); renderMerch(); renderOffers(); renderSettings(); }
 /* ---- Vista consolidata multi-etichetta (Company/Enterprise) ---- */
 function updateConsolidatedNav(){ const b=document.querySelector('[data-view="consolidated"]'); if(b) b.hidden=((ACCOUNT&&ACCOUNT.labels)||[]).length<2;
   if(currentView==='consolidated' && ((ACCOUNT&&ACCOUNT.labels)||[]).length<2) goto('dashboard'); }
@@ -1442,7 +1459,7 @@ const normIsrcKey=s=>(s||'').toString().replace(/[^a-z0-9]/gi,'').toUpperCase();
 let trkArtCache=null;
 function trackArtistIndex(){
   const txs=DB.transactions||[], rev=window.LF_dataRev||0, arts=DB.artists||[];
-  if(trkArtCache && trkArtCache.ref===txs && trkArtCache.rev===rev && trkArtCache.len===txs.length && trkArtCache.arts===arts) return trkArtCache;
+  if(trkArtCache && trkArtCache.ref===txs && trkArtCache.rev===rev && trkArtCache.len===txs.length && trkArtCache.arts===arts && trkArtCache.artsLen===arts.length) return trkArtCache;
   const byIsrc=new Map(), byCatTitle=new Map(), known=new Map();
   const put=(m,k,raw)=>{ if(!k) return; splitArtistNames(raw).forEach(n=>{ const nk=normArt(n); if(!nk || isVAName(n)) return;
     let s=m.get(k); if(!s){ s=new Map(); m.set(k,s); } if(!s.has(nk)) s.set(nk,n.trim()); }); };
@@ -1451,7 +1468,7 @@ function trackArtistIndex(){
     if(t.catalog && t.product) put(byCatTitle, normCat(t.catalog)+'|'+normArt(t.product), t.artist);
     splitArtistNames(t.artist).forEach(n=>{ const k=normArt(n); if(k && !isVAName(n) && !known.has(k)) known.set(k,n.trim()); }); });
   arts.forEach(a=>{ const k=normArt(a.name); if(k) known.set(k,a.name); });
-  return (trkArtCache={ ref:txs, rev, len:txs.length, arts, byIsrc, byCatTitle, known });
+  return (trkArtCache={ ref:txs, rev, len:txs.length, arts, artsLen:arts.length, byIsrc, byCatTitle, known });
 }
 function trackArtistNames(r, t){
   const out=new Map();
@@ -1685,13 +1702,17 @@ function releaseGaps(){
   return releases().map(r=>{
     const g=[];
     if(!(r.artist||'').trim()) g.push('artist');
-    if(!(r.splits||[]).some(s=>(s.name||'').trim() && +s.pct>0)) g.push('splits');
+    // quote: sulla release, oppure su tutte le tracce; nelle compilation (o con distribuzione per traccia) contano le tracce
+    const hasQ=l=>(l||[]).some(s=>(s.name||'').trim() && +s.pct>0);
+    const tracksQ=(r.tracks||[]).length>0 && (r.tracks||[]).every(t=>hasQ(t.splits));
+    const perTrack=isVARelease(r) || (r.royaltyMode && r.royaltyMode!=='release');
+    if(perTrack ? !tracksQ : !(hasQ(r.splits) || tracksQ)) g.push('splits');
     if(!(r.upc||'').trim()) g.push('upc');
     const tracks=r.tracks||[];
     if(tracks.length && tracks.some(t=>!(t.isrc||'').trim())) g.push('isrc');
     // --- validazione dati ---
-    const sum=(r.splits||[]).reduce((s,x)=>s+(+x.pct||0),0);
-    if(sum>100) g.push('split_over');
+    const sumOf=l=>(l||[]).reduce((s,x)=>s+(+x.pct||0),0);
+    if(sumOf(r.splits)>100 || (r.tracks||[]).some(t=>sumOf(t.splits)>100)) g.push('split_over');
     const upcd=(r.upc||'').replace(/\D/g,'');
     if(upcd && upcd.length!==12 && upcd.length!==13) g.push('upc_bad');
     if(tracks.some(t=>(t.isrc||'').trim() && !ISRC_RE.test((t.isrc||'').trim()))) g.push('isrc_bad');
@@ -1871,6 +1892,8 @@ function openRelease(id){
   enableTrackDrag($('#r-tracks'));
   refreshSplitTotal();
   // distribuzione royalty: quella salvata; per una release nuova si propone in base al tipo (si cambia quando si vuole)
+  const cn=$('#r-contract-note'); if(cn){ const list=r ? (DB.contracts||[]).filter(c=>conFullySigned(c) && relForContract(c)===r) : [];
+    cn.hidden=!list.length; cn.textContent=list.length ? tt('rel.from_contracts')+' '+list.map(c=>`${c.projectName||c.artistNames||c.fullName} ${+c.artistPct}%`).join(' · ') : ''; }
   const rm=$('#r-roymode'); if(rm){ rm.value=(r && r.royaltyMode) || (!r && relTypeIsVA($('#r-type').value) ? 'tracks' : 'release'); rm.dataset.touched=r?'1':''; }
   refreshRoyMode();
   $('#r-delete').hidden=!r;
@@ -1907,7 +1930,9 @@ $('#r-propose-splits')?.addEventListener('click', ()=>{
     const st=saved && (saved.tracks||[]).find(t=>t.id && t.id===tb.dataset.tid);
     const tr={ title:tb.querySelector('.track-title').value.trim(), isrc:tb.querySelector('.track-isrc').value.trim(), artist:tb.dataset.tartist||(st&&st.artist)||'', splits:[] };
     const names=trackArtistNames(saved||relLike, tr); if(!names.length) return;
-    const pcts=relSplitsFor(names.join(', ')); if(!pcts.length) return;
+    const pcts=relSplitsFor(names.join(', '), relTypeIsVA($('#r-type').value)); if(!pcts.length) return;
+    // quota del contratto firmato per questa release, se c'è (divisa tra gli artisti della traccia)
+    if(saved) pcts.forEach(s=>{ const c=signedContractFor(saved, s.name); if(c) s.pct=pctR((+c.artistPct)/pcts.length); });
     box.innerHTML=pcts.map(s=>splitRowHTML(s.name, s.pct)).join(''); n++;
   });
   refreshRoyMode();
@@ -1933,6 +1958,10 @@ $('#r-delete').onclick=()=>{
 $('#rel-form').onsubmit=e=>{
   e.preventDefault();
   const id=$('#r-id').value;
+  // compilation: le quote lasciate vuote sulle tracce diventano 50% (divise tra gli artisti della traccia)
+  if(relTypeIsVA($('#r-type').value)) $$('#r-tracks .track-splits').forEach(box=>{
+    const rows=[...box.querySelectorAll('.split-row')].filter(r=>r.querySelector('.split-name').value.trim());
+    rows.forEach(r=>{ const p=r.querySelector('.split-pct'); if(p && p.value==='') p.value=pctR(50/rows.length); }); });
   const splits=collectSplits($('#r-splits'));
   const tracks=[];
   $$('#r-tracks .track-block').forEach(tb=>{
@@ -2051,9 +2080,11 @@ function relMatch(a,b){
 /* quote proposte per una release nuova: "manual" → vuote (da scrivere a mano);
    altrimenti la quota predefinita di ogni artista nominato, o il 50% diviso tra gli artisti */
 let relSplitMode='default';
-function relSplitsFor(raw){
+function relSplitsFor(raw, va){
   if(relSplitMode==='manual') return [];
   const names=splitArtistNames(raw).filter(n=>!/^various artists?$|^v\.?a\.?$/i.test(n)); if(!names.length) return [];
+  // compilation: 50/50 per tutti di default (poi si cambiano a mano o arrivano dai contratti firmati)
+  if(va) return names.map(n=>({name:n, pct:pctR(50/names.length)}));
   // più artisti sulla stessa traccia/release: la quota di ognuno (predefinita o 50%) si divide per quanti sono
   const defs=names.map(n=>{ const a=findArtist(n); return a && +a.split>0 ? +a.split : 50; });
   return names.map((n,i)=>({name:n, pct:pctR(defs[i]/names.length)}));
@@ -2068,7 +2099,7 @@ function askSplitMode(run){
 function itemToRelease(it){
   const title=(it.title||'').trim(), artist=(it.artist||'').trim(), upc=(it.upc||'').trim(), catalog=(it.catalog||'').trim();
   const date=normDate(it.date||'');
-  const half = relSplitsFor;   // quote come scelto in "Quote degli artisti" (predefinite/50% oppure vuote)
+  const half = raw=>relSplitsFor(raw, !!it.isVA);   // quote come scelto in "Quote degli artisti" (VA: 50/50 per tutti)
   let tracks=[]; const seen=new Set();
   if(Array.isArray(it.tracks) && it.tracks.length){
     it.tracks.forEach(t=>{ const code=(t.isrc||'').trim(), k=code.toLowerCase();
@@ -3650,6 +3681,16 @@ function setTheme(p){ localStorage.setItem(THEME_KEY,p); applyTheme(); }
 $$('[data-theme-opt]').forEach(b=>b.onclick=()=>setTheme(b.dataset.themeOpt));
 themeMq.addEventListener('change',()=>{ if(themePref()==='system') applyTheme(); });
 applyTheme();
+/* colore del tema: viola (predefinito), blu, verde, arancio, rosa, bianco e nero — ricordato su questo dispositivo */
+const ACCENT_KEY='labelfinance.accent', ACCENTS=['violet','blue','green','orange','pink','mono'];
+function accentPref(){ try{ const a=localStorage.getItem(ACCENT_KEY); return ACCENTS.includes(a)?a:'violet'; }catch(e){ return 'violet'; } }
+function applyAccent(){ const a=accentPref();
+  if(a==='violet') document.documentElement.removeAttribute('data-accent'); else document.documentElement.setAttribute('data-accent', a);
+  $$('[data-accent-opt]').forEach(b=>{ const on=b.dataset.accentOpt===a; b.classList.toggle('is-active', on); b.setAttribute('aria-pressed', on?'true':'false'); });
+  const mt=document.querySelector('meta[name="theme-color"]'); if(mt){ try{ mt.setAttribute('content', getComputedStyle(document.documentElement).getPropertyValue('--brand').trim()||mt.content); }catch(e){} } }
+function setAccent(a){ try{ localStorage.setItem(ACCENT_KEY, ACCENTS.includes(a)?a:'violet'); }catch(e){} applyAccent(); }
+$$('[data-accent-opt]').forEach(b=>b.onclick=()=>setAccent(b.dataset.accentOpt));
+applyAccent();
 
 /* ---------- PWA: service worker ---------- */
 if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); }); }
@@ -4165,7 +4206,7 @@ function renderExtraWidgets(txs){
   // Prossime uscite (da Pianificazione)
   const nrb=$('#nextrel-body');
   if(nrb){
-    const up=(DB.planning||[]).filter(p=>p.date && p.date>=todayStr && p.status!=='done')
+    const up=(DB.planning||[]).filter(p=>p.date && p.date>=todayStr && (p.date===todayStr || !plnReleased(p)))
       .sort((a,b)=>a.date.localeCompare(b.date)).slice(0,6);
     nrb.innerHTML = up.length ? up.map(p=>`<div class="wrow" data-goto="planning">
         <span class="wrow-date">${esc(fmtDate(p.date))}</span>
@@ -4534,7 +4575,7 @@ function conFillFromArtist(id){
   // l'artista scelto sostituisce i dati di quello di prima (anche quelli che lui non ha)
   $('#con-fullname').value=a.legal||''; $('#con-project').value=a.name||''; $('#con-artist-names').value=a.name||'';
   $('#con-email').value=a.email||''; $('#con-artist-pct').value=+a.split>0 ? a.split : 50;
-  updateSplitBar();
+  updateSplitBar(); guessConRelease();
 }
 function updateSplitBar(){
   let p=Number($('#con-artist-pct').value); if(isNaN(p)) p=50; p=Math.max(0,Math.min(100,p));
@@ -4548,7 +4589,7 @@ function conNew(){
   ['con-titles','con-artist-names','con-written','con-fullname','con-project','con-email'].forEach(id=>{const e=document.getElementById(id); if(e) e.value='';});
   $('#con-date').value=isoD(new Date()); $('#con-artist-pct').value=50;
   conArtistPickOptions(); if($('#con-artist-pick')) $('#con-artist-pick').value='';
-  setConLogo((DB.profile&&DB.profile.logo)||''); updateSplitBar();
+  setConLogo((DB.profile&&DB.profile.logo)||''); updateSplitBar(); fillConRelease(null);
   $('#con-preview').hidden=true; $('#con-form').hidden=false;
   $('#con-form').scrollIntoView({behavior:'smooth',block:'start'});
 }
@@ -4560,7 +4601,7 @@ function editContract(){ // torna al form mantenendo i dati per correggere prima
   $('#con-written').value=c.writtenBy||''; $('#con-fullname').value=c.fullName||'';
   $('#con-project').value=c.projectName||''; $('#con-email').value=c.email||'';
   $('#con-date').value=c.date||isoD(new Date()); $('#con-artist-pct').value=c.artistPct??50;
-  setConLogo(c.logo||(DB.profile&&DB.profile.logo)||''); updateSplitBar();
+  setConLogo(c.logo||(DB.profile&&DB.profile.logo)||''); updateSplitBar(); fillConRelease(c);
   $('#con-preview').hidden=true; $('#con-form').hidden=false;
   $('#con-form').scrollIntoView({behavior:'smooth',block:'start'});
 }
@@ -4576,7 +4617,7 @@ function collectContract(){
     artistPct:p, label:(currentContract&&currentContract.label)||labelName(), logo:conLogoData||'', labelId:(currentContract&&currentContract.labelId)||DB.id,
     status:(currentContract&&currentContract.status)||'draft',
     signed:(currentContract&&currentContract.signed)||null
-  });
+  }, conRelFromSelect($('#con-release'), $('#con-release-new')));
 }
 // i termini che una firma approva: se cambiano, le firme non valgono più
 function contractTermsSig(c){ c=c||{}; return LFCore.stableStringify({ titles:c.titles||'', artistNames:c.artistNames||'', writtenBy:c.writtenBy||'',
@@ -4935,7 +4976,128 @@ function confirmSign(){
 }
 // firmato dall'artista = concluso (i contratti di prima della firma dell'etichetta non ce l'hanno: non si chiede di rifirmarli)
 function conFullySigned(c){ return !!(c && c.status==='signed' && (c.artistSign||c.signed)); }
+/* ---------- Contratto ↔ release ----------
+   Nel contratto si sceglie la release (o si scrive il titolo di una nuova, che resta proposta nei contratti
+   successivi finché non la aggiungi in Discografia). Quando il contratto è firmato, la quota dell'artista va
+   da sola nelle quote di quella release: una volta per contratto e release, così le modifiche fatte a mano
+   dopo restano. Se la release viene creata dopo il contratto, la quota arriva appena la salvi. */
+function relForContract(c){ if(!c) return null;
+  if(c.releaseId){ const r=releases().find(x=>x.id===c.releaseId); if(r) return r; }
+  if(c.releaseTitle){ const k=normArt(c.releaseTitle); const r=k && releases().find(x=>normArt(x.title)===k); if(r) return r; }
+  return null; }
+function conArtistKeys(c){ const names=[c.projectName, ...splitArtistNames(c.artistNames)].map(x=>(x||'').trim()).filter(Boolean);
+  return { names, keys:new Set(names.map(normArt).filter(Boolean)) }; }
+// contratto firmato di questo artista per questa release (per proporre le quote)
+function signedContractFor(rel, name){ const k=normArt(name); if(!rel || !k) return null;
+  return (DB.contracts||[]).find(c=>conFullySigned(c) && relForContract(c)===rel && conArtistKeys(c).keys.has(k)) || null; }
+// titoli di release scritti nei contratti ma non ancora in Discografia
+function conPendingTitles(exceptId){
+  const have=new Set(releases().map(r=>normArt(r.title)).filter(Boolean)), out=new Map();
+  (DB.contracts||[]).forEach(c=>{ if(c.id===exceptId || c.releaseId || !c.releaseTitle) return;
+    const k=normArt(c.releaseTitle); if(k && !have.has(k) && !out.has(k)) out.set(k, c.releaseTitle.trim()); });
+  return [...out.values()]; }
+function conReleaseOptionsHTML(c){
+  const rel=relForContract(c);
+  const cur=rel ? 'id:'+rel.id : (c && c.releaseTitle ? 'new:'+c.releaseTitle.trim() : '');
+  const rels=releases().slice().sort((a,b)=>String(b.orderDate||b.year||'').localeCompare(String(a.orderDate||a.year||'')));
+  let h=`<option value="">${esc(tt('con.rel_none'))}</option>`
+    + rels.map(r=>`<option value="id:${esc(r.id)}">${esc([r.catalog, r.title].filter(Boolean).join(' — ')||'—')}</option>`).join('');
+  const pend=conPendingTitles(c && c.id);
+  if(!rel && c && c.releaseTitle && !pend.some(t=>normArt(t)===normArt(c.releaseTitle))) pend.unshift(c.releaseTitle.trim());
+  if(pend.length) h+=`<optgroup label="${esc(tt('con.rel_pending'))}">`+pend.map(t=>`<option value="new:${esc(t)}">${esc(t)}</option>`).join('')+`</optgroup>`;
+  h+=`<option value="__new">${esc(tt('con.rel_add'))}</option>`;
+  return { html:h, cur };
+}
+function conRelFromSelect(sel, input){
+  const v=(sel && sel.value)||'';
+  if(v==='__new'){ const t=((input && input.value)||'').trim(); return { releaseId:'', releaseTitle:t }; }
+  if(v.startsWith('id:')) return { releaseId:v.slice(3), releaseTitle:'' };
+  if(v.startsWith('new:')) return { releaseId:'', releaseTitle:v.slice(4) };
+  return { releaseId:'', releaseTitle:'' };
+}
+function fillConRelease(c){
+  const sel=$('#con-release'), inp=$('#con-release-new'); if(!sel) return;
+  const o=conReleaseOptionsHTML(c); sel.innerHTML=o.html; sel.value=o.cur||'';
+  if(inp){ inp.value=''; inp.hidden=true; }
+}
+// release più probabile per i titoli scritti nel contratto (titolo della release o di una traccia)
+function guessConRelease(){
+  const sel=$('#con-release'); if(!sel || sel.value) return;
+  const want=new Set(String($('#con-titles').value||'').split(/[,;\n]+/).map(s=>normArt(s)).filter(Boolean)); if(!want.size) return;
+  let best=null, bestN=0;
+  releases().forEach(r=>{ let n=want.has(normArt(r.title))?2:0; (r.tracks||[]).forEach(t=>{ if(want.has(normArt(t.title))) n++; });
+    if(n>bestN){ best=r; bestN=n; } });
+  if(best) sel.value='id:'+best.id;
+}
+$('#con-release')?.addEventListener('change', e=>{ const inp=$('#con-release-new'); if(!inp) return;
+  inp.hidden=e.target.value!=='__new'; if(!inp.hidden) inp.focus(); });
+$('#con-titles')?.addEventListener('change', guessConRelease);
+// mette la quota firmata nelle quote della release; su una traccia con più artisti si divide tra loro
+function applyContractQuota(c, rel){
+  const pct=Number(c.artistPct); if(!(pct>=0 && pct<=100)) return 0;
+  const { names, keys }=conArtistKeys(c); if(!names.length) return 0;
+  const va=isVARelease(rel); let n=0;
+  const put=(list, name, share)=>{ let s=list.find(x=>keys.has(normArt(x.name)));
+    if(!s){ s={ name, pct:0 }; list.push(s); }
+    s.pct=pctR(share); s.fromContract=c.id; n++; };
+  let tracks=(rel.tracks||[]).filter(t=>trackArtistNames(rel,t).some(x=>keys.has(normArt(x))));
+  if(va && !tracks.length){   // compilation senza artisti sulle tracce: le tracce con i titoli del contratto
+    const want=new Set(String(c.titles||'').split(/[,;\n]+/).map(s=>normArt(s)).filter(Boolean));
+    tracks=(rel.tracks||[]).filter(t=>want.has(normArt(t.title)));
+  }
+  const relHas=splitArtistNames(rel.artist).some(x=>keys.has(normArt(x))) || (rel.splits||[]).some(s=>keys.has(normArt(s.name)));
+  if(!va && (relHas || !tracks.length)){
+    rel.splits=rel.splits||[];
+    const co=Math.max(1, rel.splits.filter(s=>(s.name||'').trim() && !keys.has(normArt(s.name))).length + 1);
+    put(rel.splits, names[0], pct/co);
+  }
+  tracks.forEach(t=>{
+    if(!va && !(t.splits||[]).length) return;   // release di un artista: la traccia usa già le quote della release
+    t.splits=t.splits||[];
+    const co=Math.max(1, trackArtistNames(rel,t).length, t.splits.filter(s=>(s.name||'').trim()).length || 1);
+    const nm=(trackArtistNames(rel,t).find(x=>keys.has(normArt(x))))||names[0];
+    put(t.splits, nm, pct/co);
+  });
+  if(n){ c.quotaRelId=rel.id; c.quotaAt=Date.now(); }
+  return n;
+}
+// a ogni salvataggio: contratti firmati con la loro release (una volta sola per contratto e release)
+var conQuotaToastAt=0;   // var: save() può girare prima di questa riga
+function applyContractQuotas(){
+  const done=[];
+  (DB.contracts||[]).forEach(c=>{
+    if(!c || (c.labelId && c.labelId!==DB.id)) return;
+    const rel=relForContract(c); if(!rel) return;
+    if(c.releaseId!==rel.id){ c.releaseId=rel.id; }   // titolo scritto nel contratto: ora la release esiste
+    if(!conFullySigned(c) || c.quotaRelId===rel.id) return;
+    if(applyContractQuota(c, rel)) done.push({ c, rel });
+  });
+  if(done.length && Date.now()-conQuotaToastAt>1500){ conQuotaToastAt=Date.now();
+    const d=done[0]; setTimeout(()=>toast(tt('con.quota_applied').replace('{name}', d.c.projectName||d.c.artistNames||d.c.fullName||'—')
+      .replace('{pct}', +d.c.artistPct).replace('{rel}', d.rel.title||d.rel.catalog||'—')+(done.length>1?` (+${done.length-1})`:'')), 0); }
+  return done;
+}
+// anteprima del contratto: release collegata (si cambia anche a contratto firmato: non fa parte dei termini)
+function renderConRelLink(){
+  const box=$('#con-rel-link'); if(!box) return; const c=currentContract;
+  if(!c){ box.innerHTML=''; return; }
+  const o=conReleaseOptionsHTML(c), rel=relForContract(c), signed=conFullySigned(c);
+  const st = rel && signed && c.quotaRelId===rel.id ? tt('con.rel_applied').replace('{pct}', +c.artistPct)
+    : (rel || c.releaseTitle) ? tt(signed ? 'con.rel_wait_rel' : 'con.rel_wait_sign') : tt('con.rel_pick');
+  box.innerHTML=`<label class="con-rel-lbl"><span>${esc(tt('con.release'))}</span><select class="select" id="con-rel-sel">${o.html}</select></label>`
+    +`<input class="input" id="con-rel-sel-new" placeholder="${esc(tt('con.rel_new_ph'))}" hidden><span class="muted small con-rel-st">${esc(st)}</span>`;
+  $('#con-rel-sel').value=o.cur||'';
+}
+function setConRelLink(v){ const c=currentContract; if(!c) return; Object.assign(c, v); saveCurrentContract(); renderContracts(); renderConRelLink(); }
+document.addEventListener('change', e=>{
+  if(e.target.id==='con-rel-sel'){ const inp=$('#con-rel-sel-new');
+    if(e.target.value==='__new'){ if(inp){ inp.hidden=false; inp.focus(); } return; }
+    setConRelLink(conRelFromSelect(e.target)); }
+  else if(e.target.id==='con-rel-sel-new'){ const t=e.target.value.trim(); if(t) setConRelLink({ releaseId:'', releaseTitle:t }); }
+});
+
 function updateConSendBtn(){
+  renderConRelLink();   // release collegata, sempre visibile nell'anteprima
   const b=$('#con-send'); if(!b) return;
   const done=conFullySigned(currentContract);
   const ok=!!(currentContract && currentContract.labelSign) && !done;
@@ -5603,7 +5765,7 @@ function renderCalendar(sec, items, chip, cont){
   for(let i=0;i<startDow;i++) cells+='<div class="cal-cell cal-out"></div>';
   for(let d=1;d<=days;d++){
     const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const its=items.filter(x=>x.date===ds), hol=holidayOf(ds), sun=new Date(y,m,d).getDay()===0;
+    const its=items.filter(x=>x.date===ds).sort((a,b)=>String(a.time||'').localeCompare(String(b.time||'')) || String(a.title||'').localeCompare(String(b.title||''))), hol=holidayOf(ds), sun=new Date(y,m,d).getDay()===0;
     cells+=`<div class="cal-cell${ds===today?' cal-today':''}${hol?' cal-hol':''}${sun?' cal-sun':''}" data-calday="${ds}"${hol?` title="${esc(hol)}"`:''}><span class="cal-d">${d}</span>${hol?`<span class="cal-hol-name">${esc(hol)}</span>`:''}<div class="cal-items">${its.map(chip).join('')}</div></div>`;
   }
   const label=cur.toLocaleDateString(calLang(),{month:'long',year:'numeric'});
@@ -5614,7 +5776,43 @@ function renderCalendar(sec, items, chip, cont){
       <button class="cal-nav cal-today-btn" data-calnav="0">${tt('cal.today')}</button>
       ${holSelectHTML()}
     </div>
-    <div class="cal">${dows.map((w,i)=>`<div class="cal-dow${i===6?' cal-dow--sun':''}">${esc(w)}</div>`).join('')}${cells}</div>`;
+    <div class="cal">${dows.map((w,i)=>`<div class="cal-dow${i===6?' cal-dow--sun':''}">${esc(w)}</div>`).join('')}${cells}</div>
+    <p class="cal-hint">${esc(tt('cal.drag_hint'))}</p>`;
+}
+/* ---------- Calendario: trascina una voce per spostarla, Option/Alt (o Ctrl) + trascina per duplicarla ---------- */
+let calDrag=null;
+document.addEventListener('dragstart', e=>{
+  const ch=e.target.closest && e.target.closest('.cal-chip[data-pln],.cal-chip[data-evt]'); if(!ch) return;
+  calDrag={ type:ch.dataset.pln?'pln':'evt', id:ch.dataset.pln||ch.dataset.evt, copy:false };
+  try{ e.dataTransfer.effectAllowed='copyMove'; e.dataTransfer.setData('text/plain', calDrag.id); }catch(_){}
+  ch.classList.add('cal-chip--dragging'); document.body.classList.add('cal-dragging');
+});
+function calDragClear(){ document.body.classList.remove('cal-dragging');
+  $$('.cal-chip--dragging').forEach(x=>x.classList.remove('cal-chip--dragging'));
+  $$('.cal-drop').forEach(x=>x.classList.remove('cal-drop','cal-drop--copy')); }
+document.addEventListener('dragend', ()=>{ calDrag=null; calDragClear(); });
+document.addEventListener('dragover', e=>{
+  if(!calDrag) return; const cell=e.target.closest && e.target.closest('.cal-cell[data-calday]'); if(!cell) return;
+  e.preventDefault(); calDrag.copy=!!(e.altKey||e.ctrlKey);
+  try{ e.dataTransfer.dropEffect=calDrag.copy?'copy':'move'; }catch(_){}
+  $$('.cal-drop').forEach(x=>{ if(x!==cell) x.classList.remove('cal-drop','cal-drop--copy'); });
+  cell.classList.add('cal-drop'); cell.classList.toggle('cal-drop--copy', calDrag.copy);
+});
+document.addEventListener('drop', e=>{
+  if(!calDrag) return; const cell=e.target.closest && e.target.closest('.cal-cell[data-calday]'); if(!cell) return;
+  e.preventDefault(); const d=calDrag, copy=d.copy || !!(e.altKey||e.ctrlKey); calDrag=null; calDragClear();
+  calMoveItem(d.type, d.id, cell.dataset.calday, copy);
+});
+// sposta (o duplica) una voce di Pianificazione o Eventi in un altro giorno; anche l'elenco si aggiorna
+function calMoveItem(type, id, date, copy){
+  const list=type==='pln' ? (DB.planning=DB.planning||[]) : (DB.events=DB.events||[]);
+  const it=list.find(x=>x.id===id); if(!it || !date) return null;
+  let res=it;
+  if(copy){ res=Object.assign(JSON.parse(JSON.stringify(it)), { id:newId(), date }); delete res.demo; list.push(res); }
+  else { if(it.date===date) return it; it.date=date; }
+  save(); type==='pln' ? renderPlanning() : renderEvents();
+  toast(tt(copy?'cal.duplicated':'cal.moved').replace('{d}', fmtDate(date)));
+  return res;
 }
 function calMove(sec, delta){ if(delta===0) calState[sec]=new Date(); else calState[sec]=new Date(calState[sec].getFullYear(), calState[sec].getMonth()+delta, 1); }
 function clearPager(anchor){ const m=anchor&&anchor.nextElementSibling; if(m&&m.classList&&m.classList.contains('pager-mount')) m.innerHTML=''; }
@@ -5628,11 +5826,21 @@ function plnWhenTag(p){ const d=plnDays(p); if(d==null || d<0 || d>7 || p.status
   const txt=d===0?tt('pln.w_today'):d===1?tt('pln.w_tomorrow'):tt('pln.w_in').replace('{n}',d);
   return `<span class="pln-when${d<=1?' pln-when--now':''}">${esc(txt)}</span>`; }
 const PLN_STATUS={idea:'pln.s_idea',planned:'pln.s_planned',confirmed:'pln.s_confirmed',done:'pln.s_done'};
+// uscita = confermata e arrivata alla sua data: esce dall'elenco e resta solo nel calendario con il tag "Uscita".
+// Gli altri stati restano in elenco finché non li togli tu (anche a data passata).
+function plnReleased(p){ return !!(p && (p.status==='confirmed' || p.status==='done') && p.date && p.date<=LFCore.today()); }
 const PLN_STK={idea:'mut',planned:'warn',confirmed:'info',done:'ok'};
 function plnById(id){ return (DB.planning||[]).find(x=>x.id===id); }
-function plnChip(p){ const d=plnDays(p), soon=d!=null && d>=0 && d<=7 && p.status!=='done';
-  const k=tt(PLN_KIND[p.kind]||'pln.k_release');
-  return `<span class="cal-chip cal-k-${p.kind}${soon?' cal-chip--soon':''}" data-pln="${p.id}" title="${esc(k+' · '+p.title)}"><span class="cal-chip-k">${esc(k)}</span><span class="cal-chip-t">${esc(p.title)}</span></span>`; }
+// voce nel calendario: colore del tipo a sinistra, tipo e stato in alto, titolo, sotto artista e canale
+function plnChip(p){ const out=plnReleased(p), d=plnDays(p), soon=!out && d!=null && d>=0 && d<=7;
+  const k=tt(PLN_KIND[p.kind]||'pln.k_release'), st=out?'out':(p.status||'idea');
+  const badge=out ? `<span class="cal-chip-out">✓ ${esc(tt('pln.s_done'))}</span>`
+    : st!=='confirmed' ? `<span class="cal-chip-st">${esc(tt(PLN_STATUS[st]||'pln.s_idea'))}</span>` : '';
+  const sub=[p.artist, p.platform].filter(Boolean).join(' · ');
+  const tip=[k, p.title, p.artist, out?tt('pln.s_done'):tt(PLN_STATUS[p.status]||'pln.s_idea')].filter(Boolean).join(' · ');
+  return `<span class="cal-chip cal-k-${esc(p.kind||'release')} cal-st-${st}${soon?' cal-chip--soon':''}${out?' cal-chip--out':''}" data-pln="${p.id}" draggable="true" title="${esc(tip)}">`
+    +`<span class="cal-chip-top"><span class="cal-chip-k">${esc(k)}</span></span>`
+    +`<span class="cal-chip-t">${esc(p.title)}</span>${(badge||sub)?`<span class="cal-chip-foot">${badge}${sub?`<span class="cal-chip-sub">${esc(sub)}</span>`:''}</span>`:''}</span>`; }
 function renderPlanning(){
   const listC=$('#planning-list'), calC=$('#planning-cal'); if(!listC) return;
   const pq=($('#pln-search')&&$('#pln-search').value||'').toLowerCase().trim();
@@ -5641,14 +5849,19 @@ function renderPlanning(){
   $('#planning-empty').hidden=allRaw.length>0;
   const mode=getVM('planning','list');
   listC.hidden=(mode==='cal'); calC.hidden=(mode!=='cal');
-  if(mode==='cal'){ clearPager(listC); renderCalendar('planning', all, plnChip, calC); syncVMButtons(); return; }
+  const hint=$('#pln-out-hint');
+  if(mode==='cal'){ clearPager(listC); if(hint) hint.hidden=true; renderCalendar('planning', all, plnChip, calC); syncVMButtons(); return; }
+  // in elenco solo quello che non è ancora uscito; le uscite restano nel calendario
+  const outN=all.filter(plnReleased).length, listAll=all.filter(p=>!plnReleased(p));
+  if(hint){ hint.hidden=!outN; hint.innerHTML=outN ? `${esc(tt('pln.out_hint').replace('{n}', outN))} <button type="button" class="btn btn-sm" data-pln-cal>${esc(tt('pln.open_cal'))}</button>` : ''; }
   const cols=colsFor('planning');
-  const info=paginate(colSort('planning',all,plnSort),'planning');
+  const info=paginate(colSort('planning',listAll,plnSort),'planning');
   listC.className='dbl';
   const sel=selOpt('planning');
   listC.innerHTML=dbHead(cols,plnSort,{actions:1,sel})+dbRows(info.slice,cols,{actions:p=>rowActs('pln',p.id),sel});
   mountPager(listC,'planning',info); syncVMButtons();
 }
+document.addEventListener('click', e=>{ if(e.target.closest('[data-pln-cal]')) setVM('planning','cal'); });
 function openPlnForm(id){ editingPlnId=id||null; const p=id?plnById(id):null;
   $('#pln-form-title').textContent = p?tt('common.edit'):tt('pln.new');
   $('#pln-title').value=p?p.title||'':''; $('#pln-kind').value=p?p.kind||'release':'release';
@@ -5669,9 +5882,12 @@ function deletePlanning(id){ const p=plnById(id); if(!p) return; if(!confirm(tt(
 let evtSort={col:'date',dir:1}, editingEvtId=null;
 const EVT_KIND={showcase:'evt.k_showcase',radio:'evt.k_radio',live:'evt.k_live',club:'evt.k_club',festival:'evt.k_festival',other:'evt.k_other'};
 function evtById(id){ return (DB.events||[]).find(x=>x.id===id); }
-// nel calendario: prima riga il tipo di attività (in maiuscolo), poi orario e titolo
-function evtChip(e){ const k=tt(EVT_KIND[e.kind]||'evt.k_other');
-  return `<span class="cal-chip cal-k-${e.kind}" data-evt="${e.id}" title="${esc(k+' · '+e.title)}"><span class="cal-chip-k">${esc(k)}</span><span class="cal-chip-t">${e.time?('<b>'+esc(e.time)+'</b> '):''}${esc(e.title)}</span></span>`; }
+// nel calendario: prima riga il tipo di attività (in maiuscolo) e l'orario, poi il titolo e il luogo
+function evtChip(e){ const k=tt(EVT_KIND[e.kind]||'evt.k_other'), sub=[e.venue, e.city].filter(Boolean).join(' · ');
+  const tip=[k, e.time, e.title, sub].filter(Boolean).join(' · ');
+  return `<span class="cal-chip cal-k-${esc(e.kind||'other')}" data-evt="${e.id}" draggable="true" title="${esc(tip)}">`
+    +`<span class="cal-chip-top"><span class="cal-chip-k">${esc(k)}</span>${e.time?`<span class="cal-chip-time">${esc(e.time)}</span>`:''}</span>`
+    +`<span class="cal-chip-t">${esc(e.title)}</span>${sub?`<span class="cal-chip-sub">${esc(sub)}</span>`:''}</span>`; }
 function renderEvents(){
   const listC=$('#events-list'), calC=$('#events-cal'); if(!listC) return;
   const eq=($('#evt-search')&&$('#evt-search').value||'').toLowerCase().trim();

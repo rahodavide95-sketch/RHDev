@@ -1,3 +1,39 @@
+# Pianificazione, quote dai contratti, calendario e colori del tema (novembre 2026) — niente da fare online
+
+Nessuna modifica al database: basta la pubblicazione dell'app.
+
+**Pianificazione**
+- Tolto lo stato **"Uscita"**. Una voce **confermata** che arriva alla sua data esce dall'elenco e
+  resta solo nel **calendario** con il tag "✓ Uscita". Le voci con gli altri stati restano in elenco
+  finché non le togli tu; se ne cambi una in "confermata" a data passata, fa lo stesso.
+  Le vecchie voci "Uscita" diventano "confermate" (e quindi uscite).
+
+**Quote**
+- Nelle **compilation (VA)** ogni artista prende di default il **50%** sulla sua traccia (se sulla
+  traccia ci sono più artisti si divide tra loro); poi si cambia a mano.
+- Nel **contratto** si sceglie la **release** da un menu (o si scrive il titolo di una nuova, che resta
+  proposta nei contratti successivi). Quando il contratto è **firmato**, la quota dell'artista va da
+  sola nelle quote di quella release (sulla sua traccia nelle VA). Se la release viene aggiunta dopo,
+  prende la quota dal contratto appena la salvi. Succede una volta sola: se poi cambi la quota a mano,
+  resta com'è. Nell'anteprima del contratto la release si può collegare anche a contratto firmato.
+- Il pannello **"release da completare"** non segnala più "Quote" sulle compilation che hanno le quote
+  sulle tracce. Le compilation già salvate con tracce senza quote ricevono una volta il 50% per i loro
+  artisti (riconosciuti dalla traccia, dalle vendite o dal titolo "Artista - Titolo").
+
+**Calendario** (Pianificazione ed Eventi)
+- **Trascina** una voce su un altro giorno per spostarla; tieni premuto **⌥ Option** (Alt su Windows)
+  mentre trascini per **duplicarla**. Anche l'elenco si aggiorna.
+- Voci più chiare: colore del tipo a sinistra, tipo in alto, titolo leggibile, sotto artista e canale
+  (o luogo per gli eventi) e lo stato (Idea, Pianificata, ✓ Uscita); gli eventi mostrano l'orario e
+  sono in ordine di orario.
+
+**Colori del tema**
+- In Impostazioni → Preferenze c'è **Colore**: Viola (quello di sempre), Blu, Verde, Arancio, Rosa e
+  **Bianco e nero**. Vale in chiaro e in scuro, resta ricordato su questo dispositivo e si vede anche
+  al login. I documenti (contratti, statement, email) restano con i colori dell'etichetta.
+
+---
+
 # Contratti: niente più richieste di firmare di nuovo (ottobre 2026) — niente da fare online
 
 Nessuna modifica al database: basta la pubblicazione dell'app.

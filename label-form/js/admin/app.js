@@ -7,8 +7,10 @@ import { defaultForm } from '../core/schema.js';
 import { A, go } from './state.js';
 import * as K from './keys.js';
 import { toast, btn, field, input, friendly, spinner, toggle, copyText } from './ui.js';
+import { applySiteTheme, siteTheme, setSiteTheme, THEMES, sideMini, setSideMini } from './look.js';
 
 guardFrame();
+applySiteTheme();
 const root = document.getElementById('app');
 const qs = new URLSearchParams(location.search);
 if (qs.get('demo') === '1') { try { localStorage.setItem('labelform-mode', 'demo'); } catch { /* */ } history.replaceState(null, '', location.pathname + location.hash); }
@@ -313,15 +315,27 @@ function startShell() {
   shellOn = true;
   clear(root);
   document.body.className = 'app-body';
-  const navItem = ([key, label, ic]) => h('a.nav-i', { href: '#/' + key, dataset: { nav: key } }, icon(ic, 20), h('span', label), key === 'avvisi' ? h('b.badge', { hidden: true }) : null);
+  const navItem = ([key, label, ic]) => h('a.nav-i', { href: '#/' + key, title: label, dataset: { nav: key } }, icon(ic, 20), h('span', label), key === 'avvisi' ? h('b.badge', { hidden: true }) : null);
+  const sideBtn = h('button.icon-btn.side-toggle', { type: 'button' });
+  const paintSide = () => { const mini = sideMini(); clear(sideBtn).append(icon(mini ? 'sidebarOpen' : 'sidebarClose', 19)); sideBtn.title = mini ? 'Allarga la barra' : 'Stringi la barra'; sideBtn.setAttribute('aria-label', sideBtn.title); };
+  sideBtn.onclick = () => { setSideMini(!sideMini()); paintSide(); };
+  paintSide();
+  const order = ['scuro', 'chiaro', 'minimal'];
+  const themeBtn = h('button.nav-i.ghost', { type: 'button' });
+  const paintTheme = () => { const t = siteTheme(); clear(themeBtn).append(icon(THEMES[t].ic, 20), h('span', 'Tema: ' + THEMES[t].label)); themeBtn.title = 'Cambia tema del sito (ora: ' + THEMES[t].label + ')'; };
+  themeBtn.onclick = () => { const t = siteTheme(); setSiteTheme(order[(order.indexOf(t) + 1) % order.length]); paintTheme(); toast('Tema: ' + THEMES[siteTheme()].label); };
+  paintTheme();
   const side = h('aside.side',
-    h('a.brand', { href: '#/release' }, h('img', { src: 'icons/mark-192.png', alt: '' }), h('span', 'Label Form'), A.demo ? h('em.demo-tag', 'prova') : null),
+    h('div.side-top',
+      h('a.brand', { href: '#/release', title: 'Label Form' }, h('img', { src: 'icons/mark-192.png', alt: '' }), h('span', 'Label Form'), A.demo ? h('em.demo-tag', 'prova') : null),
+      sideBtn),
     h('nav.nav', NAV.map(navItem)),
     h('div.side-foot',
       h('div.side-label', (A.settings && A.settings.label_name) || ''),
-      h('button.nav-i.ghost', { type: 'button', onclick: async () => { await K.lock(); toast('Dati bloccati'); gate(); } }, icon('lock', 20), h('span', 'Blocca')),
-      A.demo ? h('button.nav-i.ghost', { type: 'button', onclick: leaveDemo }, icon('logout', 20), h('span', 'Esci dalla prova'))
-        : h('button.nav-i.ghost', { type: 'button', onclick: async () => { await K.lock(); await A.api.auth.signOut(); gate(); } }, icon('logout', 20), h('span', 'Esci'))));
+      themeBtn,
+      h('button.nav-i.ghost', { type: 'button', title: 'Blocca', onclick: async () => { await K.lock(); toast('Dati bloccati'); gate(); } }, icon('lock', 20), h('span', 'Blocca')),
+      A.demo ? h('button.nav-i.ghost', { type: 'button', title: 'Esci dalla prova', onclick: leaveDemo }, icon('logout', 20), h('span', 'Esci dalla prova'))
+        : h('button.nav-i.ghost', { type: 'button', title: 'Esci', onclick: async () => { await K.lock(); await A.api.auth.signOut(); gate(); } }, icon('logout', 20), h('span', 'Esci'))));
   viewEl = h('main.view#view');
   const tabbar = h('nav.tabbar', NAV.map(navItem));
   root.append(h('div.shell', side, h('div.main-col', A.demo ? h('div.demo-bar', icon('sparkle', 16), h('span', 'Modalità prova: tutto resta in questo browser. I link per gli artisti funzionano solo qui.')) : null, viewEl), tabbar));

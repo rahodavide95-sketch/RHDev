@@ -2,11 +2,11 @@
    invia tutto cifrato e, se ha scelto una password, può tornare a vedere e modificare. */
 
 import { h, icon, clear, append, fmtDateTime, todayYmd, guardFrame, debounce } from '../ui/dom.js';
-import { applyTheme, formHeader, sectionBlock, focusFirstError } from '../ui/form-view.js';
+import { applyTheme, formHeader, sectionBlock, focusFirstError, textOf, shown } from '../ui/form-view.js';
 import { richBlock } from '../ui/rich.js';
 import { attachSignature } from '../ui/signature.js';
 import { contractDoc, copyDocument, savePdf, pdfName } from '../ui/pdf.js';
-import { sanitizeForm, hasContract, SENSITIVE_TYPES } from '../core/schema.js';
+import { sanitizeForm, hasContract, SENSITIVE_TYPES, isStatic } from '../core/schema.js';
 import * as C from '../core/crypto.js';
 import { sectionProblems, formProblems, splitAnswers, filledIds, changedIds, summaryRows, formatValue, EMAIL_RE } from '../core/answers.js';
 import { contractSnapshot, contractHash } from '../core/contract.js';
@@ -15,7 +15,9 @@ import { isEmptyRich } from '../core/richtext.js';
 guardFrame();
 const root = document.getElementById('app');
 const params = new URLSearchParams(location.hash.slice(1));
-const token = params.get('k') || '';
+const previewToken = params.get('p') || '';
+const PREVIEW = !!previewToken;           // link di anteprima dell'etichetta: si vede tutto, non si invia niente
+const token = PREVIEW ? previewToken : (params.get('k') || '');
 const demo = params.get('demo') === '1';
 let api = null;
 
@@ -59,7 +61,8 @@ function errText(r) {
   return ERR[r.error] || ERR[r.code] || 'Qualcosa non ha funzionato. Riprova tra poco.';
 }
 const labelName = () => S.label.name || 'l\'etichetta';
-const ctxContract = () => ({ label: S.label.name, release: S.release.title, catalog: S.release.catalog, artist: S.invite.artist, artistPct: S.invite.artist_pct });
+const ctxContract = () => ({ label: S.label.name, signer: S.label.signer, release: S.release.title, catalog: S.release.catalog, artist: S.invite.artist, artistPct: S.invite.artist_pct });
+const tx = (key, vars) => textOf(S.form, key, vars);
 const hasContractPart = () => S.form.sections.some(s => s.contract) || hasContract(S.form);
 
 /* ─── struttura della pagina ─── */
@@ -68,9 +71,10 @@ const main = h('main#main');
 function frame() {
   clear(root).append(wrap);
   clear(wrap);
-  if (demo) wrap.append(h('div.f-banner.warn', icon('info', 18), h('span', 'Modalità prova: questo invio resta solo in questo browser, non arriva a nessuno.')));
+  if (PREVIEW) wrap.append(previewBar());
+  else if (demo) wrap.append(h('div.f-banner.warn', icon('info', 18), h('span', 'Modalità prova: questo invio resta solo in questo browser, non arriva a nessuno.')));
   wrap.append(formHeader({ form: S.form, label: S.label, release: S.release, artist: S.invite.artist }), main,
-    h('p.f-foot', icon('lock', 14), h('span', `I tuoi dati vengono cifrati in questo browser prima di partire: li può leggere solo ${labelName()}${S.wantPw ? ' (e tu, con la tua password)' : ''}.`)));
+    shown(S.form, 'foot') ? h('p.f-foot', icon('lock', 14), h('span', tx('foot', { etichetta: labelName() }))) : null);
 }
 function screen(...kids) { clear(main); append(main, kids); }
 function message({ ic = 'info', tone = '', title, text, actions = [] }) {
@@ -88,7 +92,7 @@ function fatal(title, text, retry = false) {
 function draftable(answers) {
   const out = {};
   for (const s of S.form.sections) for (const f of s.fields) {
-    if (f.type === 'info' || f.sensitive || SENSITIVE_TYPES.includes(f.type)) continue;
+    if (isStatic(f) || f.sensitive || SENSITIVE_TYPES.includes(f.type)) continue;
     let v = answers[f.id];
     if (f.type === 'group' && Array.isArray(v)) v = v.map(item => Object.fromEntries(Object.entries(item || {}).filter(([k]) => { const sf = f.fields.find(x => x.id === k); return sf && !sf.sensitive && !SENSITIVE_TYPES.includes(sf.type); })));
     if (v !== undefined) out[f.id] = v;
@@ -96,7 +100,7 @@ function draftable(answers) {
   return out;
 }
 const saveDraft = debounce(() => {
-  if (S.mode !== 'new' || !S.draftKey) return;
+  if (S.mode !== 'new' || !S.draftKey || PREVIEW) return;
   try { localStorage.setItem(S.draftKey, JSON.stringify({ at: Date.now(), answers: draftable(S.answers) })); } catch { /* */ }
 }, 600);
 function loadDraft() {
@@ -111,6 +115,7 @@ function dropDraft() { try { localStorage.removeItem(S.draftKey); } catch { /* *
 /* ─── avvio ─── */
 async function boot() {
   if (!C.isTokenShape(token)) { fatal('Link non valido', ERR.not_found); return; }
+  if (PREVIEW) { bootPreview(); return; }
   try {
     api = demo ? (await import('../api/demo.js')).artistApi : (await import('../api/supabase.js')).artistApi;
   } catch { fatal('Connessione non riuscita', ERR.network, true); return; }
@@ -184,7 +189,7 @@ async function unlock(password) {
 function summary(answers, { editable = false } = {}) {
   const out = h('div');
   S.form.sections.forEach((s, si) => {
-    const fields = s.fields.filter(f => f.type !== 'info');
+    const fields = s.fields.filter(f => !isStatic(f));
     if (!fields.length) return;
     const stepIdx = S.steps.findIndex(x => x.kind === 'section' && x.section.id === s.id);
     out.append(h('div.f-sum-sec',
@@ -227,13 +232,14 @@ function go(i) {
 }
 function progress() {
   const st = S.steps[S.step];
+  if (!shown(S.form, 'progress')) return null;
   const name = st.kind === 'section' ? (st.section.title || `Parte ${S.step + 1}`) : st.kind === 'contract' ? 'Contratto' : (S.mode === 'edit' ? 'Salva' : 'Invio');
   const pct = Math.round(((S.step + 1) / S.steps.length) * 100);
-  return h('div.f-progress', h('div.f-progress-row', h('span', `Passo ${S.step + 1} di ${S.steps.length}`), h('span', name)), h('div.f-bar', h('i', { style: { width: pct + '%' } })));
+  return h('div.f-progress', h('div.f-progress-row', h('span', tx('step', { n: S.step + 1, tot: S.steps.length })), h('span', name)), h('div.f-bar', h('i', { style: { width: pct + '%' } })));
 }
-function nav({ next = 'Avanti', onNext, back = true }) {
+function nav({ next = tx('next'), onNext, back = true }) {
   return h('div.f-actions',
-    back && S.step > 0 ? h('button.f-btn.ghost', { type: 'button', onclick: () => go(S.step - 1) }, icon('back', 18), 'Indietro')
+    back && S.step > 0 ? h('button.f-btn.ghost', { type: 'button', onclick: () => go(S.step - 1) }, icon('back', 18), tx('back'))
       : S.mode === 'edit' ? h('button.f-btn.ghost', { type: 'button', onclick: () => { if (dirty() && !confirm('Uscire senza salvare le modifiche?')) return; S.answers = structuredClone(S.before); S.signature = null; S.mode = 'view'; showView(); } }, 'Annulla') : h('span'),
     h('button.f-btn', { type: 'button', onclick: onNext }, next, icon('arrowR', 18)));
 }
@@ -248,15 +254,15 @@ function renderStep() {
 
 function renderSection(section) {
   const locked = section.contract && S.contractSigned;
-  const ctx = { errors: S.errors, live: true, shareWith: S.label.share_with || S.form.shareWith, onChange: () => { saveDraft(); if (section.contract && S.signature) invalidateSignatureIfChanged(); }, lockContract: S.contractSigned };
+  const ctx = { errors: S.errors, live: true, showRequired: shown(S.form, 'required'), shareWith: S.label.share_with || S.form.shareWith, onChange: () => { saveDraft(); if (section.contract && S.signature) invalidateSignatureIfChanged(); }, lockContract: S.contractSigned };
   const card = sectionBlock(section, S.answers, ctx);
-  const draftInfo = S.mode === 'new' ? h('div.f-draft', h('span', 'La bozza si salva da sola su questo dispositivo (tranne i dati bancari e fiscali).'),
+  const draftInfo = S.mode === 'new' && !PREVIEW && shown(S.form, 'draft') ? h('div.f-draft', h('span', 'La bozza si salva da sola su questo dispositivo (tranne i dati bancari e fiscali).'),
     h('button.f-link', { type: 'button', onclick: () => { if (confirm('Cancellare tutto quello che hai scritto?')) { dropDraft(); S.answers = {}; S.signature = null; renderStep(); } } }, 'Ricomincia')) : null;
   screen(progress(), S.step === 0 ? draftInfo : null,
     locked ? h('div.f-banner', icon('lock', 18), h('span', 'Questi dati sono nel contratto che hai firmato: non si possono più modificare.')) : null,
     card,
     nav({ onNext: () => {
-      if (!locked) {
+      if (!locked && !PREVIEW) {
         const errs = sectionProblems(section, S.answers);
         if (Object.keys(errs).length) { S.errors = errs; renderStep(); focusFirstError(main); toast('Controlla i campi segnati in rosso'); return; }
       }
@@ -307,7 +313,7 @@ function renderContract() {
     go(S.step + 1);
   };
   const panel = h('section.f-card',
-    h('h2.f-stitle', signed ? 'Firma pronta' : 'Firma'),
+    h('h2.f-stitle', signed ? 'Firma pronta' : tx('signTitle')),
     h('div.f-fields',
       h('div.f-field.half', h('label.f-q', 'Nome e cognome'), name),
       h('div.f-field.half', h('label.f-q', 'Luogo'), place),
@@ -320,16 +326,16 @@ function renderContract() {
       h('div.f-field', h('label.f-check', accept, h('span', c.accept)))),
     err,
     h('div.f-actions',
-      h('button.f-btn.ghost', { type: 'button', onclick: () => go(S.step - 1) }, icon('back', 18), 'Indietro'),
-      !c.required ? h('button.f-link', { type: 'button', onclick: () => { S.signature = null; S.skipSign = true; go(S.step + 1); } }, 'Firma più tardi') : null,
-      h('button.f-btn', { type: 'button', onclick: sign }, icon('pen', 18), 'Firmo e continuo')));
+      h('button.f-btn.ghost', { type: 'button', onclick: () => go(S.step - 1) }, icon('back', 18), tx('back')),
+      !c.required || PREVIEW ? h('button.f-link', { type: 'button', onclick: () => { S.signature = null; S.skipSign = true; go(S.step + 1); } }, PREVIEW ? 'Salta (anteprima)' : 'Firma più tardi') : null,
+      h('button.f-btn', { type: 'button', onclick: sign }, icon('pen', 18), tx('signBtn'))));
   const fileIn = h('input', { type: 'file', accept: 'image/*', hidden: true, onchange: async e => {
     const f = e.target.files[0]; e.target.value = '';
     if (!f || !pad) return;
     try { await pad.loadFile(f); fileMsg.textContent = 'Firma caricata ✓ Controlla l\'anteprima.'; }
     catch (x) { fileMsg.textContent = x.message === 'too_big' ? 'Immagine troppo grande (massimo 15 MB).' : x.message === 'empty_image' ? 'Non vedo una firma: prova con una foto più nitida su sfondo chiaro.' : 'Scegli un\'immagine (PNG o JPG).'; }
   } });
-  screen(progress(), h('section.f-card', h('h2.f-stitle', 'Leggi il contratto'), h('p.f-note', 'Dentro ci sono già i tuoi dati. Dopo la firma non si potrà più cambiare.'), doc), panel, fileIn);
+  screen(progress(), h('section.f-card', h('h2.f-stitle', tx('contractTitle')), tx('contractNote') ? h('p.f-note', tx('contractNote')) : null, doc), panel, fileIn);
   requestAnimationFrame(() => {
     pad = attachSignature(canvas);
     if (signed && S.signature.png) {
@@ -385,11 +391,12 @@ function renderFinal() {
     S.emailOn ? mailSub : null);
 
   const err = h('div.f-err', { role: 'alert' });
-  const send = h('button.f-btn', { type: 'button', onclick: () => submit(send, err) }, icon('send', 18), isNew ? 'Invia' : 'Salva le modifiche');
+  const send = h('button.f-btn', { type: 'button', onclick: () => PREVIEW ? toast('Anteprima: qui l\'artista invia. Nell\'anteprima non parte niente.') : submit(send, err) }, icon('send', 18), isNew ? tx('send') : tx('saveEdit'));
   screen(progress(),
-    h('section.f-card', h('h2.f-stitle', isNew ? 'Controlla e invia' : 'Controlla le modifiche'), contractLine, summary(S.answers, { editable: true })),
+    h('section.f-card', h('h2.f-stitle', isNew ? tx('reviewTitle') : 'Controlla le modifiche'), contractLine, summary(S.answers, { editable: true })),
     h('section.f-card', pwBox, copyBox, err,
-      h('div.f-actions', h('button.f-btn.ghost', { type: 'button', onclick: () => go(S.step - 1) }, icon('back', 18), 'Indietro'), send)));
+      h('div.f-actions', h('button.f-btn.ghost', { type: 'button', onclick: () => go(S.step - 1) }, icon('back', 18), tx('back')), send)),
+    PREVIEW ? h('div.f-banner', icon('eye', 18), h('span', 'Anteprima: dopo l\'invio l\'artista vede questo messaggio.'), h('button.f-link', { type: 'button', onclick: () => showDone(true) }, 'Mostra')) : null);
   meter();
   if (needSign && S.form.contract.required && !signedNow) send.title = 'Prima firma il contratto';
 }
@@ -472,18 +479,25 @@ async function submit(btn, err) {
   } catch (e) {
     S.busy = false;
     btn.disabled = false;
-    clear(btn).append(icon('send', 18), isNew ? 'Invia' : 'Salva le modifiche');
+    clear(btn).append(icon('send', 18), isNew ? tx('send') : tx('saveEdit'));
     err.textContent = e.message || 'Qualcosa non ha funzionato. Riprova.';
   }
 }
 
 function showDone(isNew) {
+  if (PREVIEW) {
+    screen(h('div.f-card.f-msg', h('div.f-bigicon.ok', icon('checkCircle', 30)), h('h2', tx('doneTitle')),
+      !isEmptyRich(S.form.done) ? richBlock(S.form.done, {}, 'f-intro') : h('p', `${labelName()} ha ricevuto tutto.`),
+      h('div.f-actions', h('button.f-btn.ghost.small', { type: 'button', onclick: () => go(0) }, icon('back', 17), 'Torna all\'inizio'))));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
+  }
   const canEdit = !!S.invite.has_password;
   const actions = [...copyButtons()];
   if (canEdit && !S.release.closed) actions.push(h('button.f-btn.ghost.small', { type: 'button', onclick: () => { S.mode = 'view'; showView(); } }, icon('eye', 17), 'Rivedi il tuo invio'));
   screen(h('div.f-card.f-msg',
     h('div.f-bigicon.ok', icon('checkCircle', 30)),
-    h('h2', isNew ? 'Inviato!' : 'Modifiche salvate'),
+    h('h2', isNew ? tx('doneTitle') : 'Modifiche salvate'),
     isNew && !isEmptyRich(S.form.done) ? richBlock(S.form.done, {}, 'f-intro') : h('p', isNew ? `${labelName()} ha ricevuto tutto.` : `${labelName()} riceve un avviso con quello che hai cambiato.`),
     canEdit ? h('p', 'Per rivedere o modificare usa lo stesso link e la tua password.') : h('p', 'Hai scelto di non mettere una password: per cambiare qualcosa scrivi all\'etichetta.'),
     h('div.f-actions', actions)));
@@ -515,6 +529,87 @@ async function sendMail(to) {
   const r = await api.mailCopy({ token, verifier: S.verifier, to, title: S.form.title, rows }).catch(() => null);
   if (r && r.ok) toast(`Copia mandata a ${to} ✓`);
   else toast(r && r.error === 'too_many' ? 'Hai già chiesto troppe copie oggi.' : 'Email non partita. Puoi scaricare il PDF.');
+}
+
+/* ─── anteprima dell'etichetta (anteprima.html#p=…) ───
+   Mostra il modulo esattamente come lo vede l'artista, con dati d'esempio, e si aggiorna da solo
+   quando l'etichetta lo modifica (controllo ogni pochi secondi + aggiornamento immediato se il
+   costruttore è aperto in un'altra finestra dello stesso browser). Non si può inviare niente. */
+let pvSince = null, pvTimer = null, pvPending = null, pvBusy = false, pvLast = null;
+const PV_ZOOM_KEY = 'labelform-pv-zoom';
+let pvZoom = (() => { try { return Math.min(2, Math.max(0.5, Number(localStorage.getItem(PV_ZOOM_KEY)) || 1)); } catch { return 1; } })();
+function setZoom(z) {
+  pvZoom = Math.round(Math.min(2, Math.max(0.5, z)) * 10) / 10;
+  root.style.zoom = String(pvZoom);
+  const lab = document.querySelector('.pv-zoom-v'); if (lab) lab.textContent = Math.round(pvZoom * 100) + '%';
+  try { localStorage.setItem(PV_ZOOM_KEY, String(pvZoom)); } catch { /* */ }
+}
+function previewBar() {
+  return h('div.f-banner.pv-bar', h('span.pv-dot'), h('span', h('b', 'Anteprima'), ' · si aggiorna da sola quando modifichi il modulo. Qui non si invia niente.'),
+    h('span.pv-when', pvLast ? 'Aggiornata alle ' + pvLast.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : ''));
+}
+function zoomBar() {
+  const b = (ic, title, fn) => h('button.pv-zb', { type: 'button', title, 'aria-label': title, onclick: fn }, icon(ic, 18));
+  return h('div.pv-zoom', b('zoomOut', 'Rimpicciolisci', () => setZoom(pvZoom - 0.1)), h('button.pv-zoom-v', { type: 'button', title: 'Dimensione normale', onclick: () => setZoom(1) }, Math.round(pvZoom * 100) + '%'), b('zoomIn', 'Ingrandisci', () => setZoom(pvZoom + 0.1)));
+}
+function applyPreview(r) {
+  S.form = sanitizeForm(r.form);
+  S.label = r.label || {};
+  pvLast = new Date();
+  document.title = `Anteprima — ${S.form.title}`;
+  const theme = applyTheme(document.body, S.form.theme);
+  document.documentElement.style.backgroundColor = theme.bg;
+  const y = window.scrollY;
+  const keep = S.step;
+  frame();
+  S.steps = buildSteps();
+  S.step = Math.max(0, Math.min(S.steps.length - 1, keep));
+  renderStep();
+  window.scrollTo(0, y);
+}
+async function pollPreview() {
+  if (pvBusy || document.visibilityState !== 'visible') return;
+  pvBusy = true;
+  try {
+    const r = await api.preview(token, pvSince);
+    if (r && !r.error && !r.same) {
+      pvSince = r.updated_at;
+      if (document.activeElement && document.activeElement.matches('input, textarea, select, [contenteditable]')) pvPending = r;
+      else applyPreview(r);
+    } else if (r && r.error) { clearInterval(pvTimer); fatal('Anteprima non disponibile', 'Questo link di anteprima non è più attivo: creane uno nuovo dal costruttore del modulo.'); }
+  } catch { /* rete assente: riprova al prossimo giro */ }
+  pvBusy = false;
+}
+async function bootPreview() {
+  try { api = demo ? (await import('../api/demo.js')).artistApi : (await import('../api/supabase.js')).artistApi; }
+  catch { fatal('Connessione non riuscita', ERR.network, true); return; }
+  let r;
+  try { r = await api.preview(token, null); } catch { fatal('Connessione non riuscita', ERR.network, true); return; }
+  if (!r || r.error) { fatal('Anteprima non disponibile', 'Questo link di anteprima non è attivo: creane uno nuovo dal costruttore del modulo.'); return; }
+  pvSince = r.updated_at;
+  S.mode = 'new';
+  S.invite = { id: 'anteprima', artist: 'Nome artista', artist_pct: 50, version: 0 };
+  S.release = { title: 'Esempio EP', catalog: 'CAT001' };
+  document.body.classList.add('fx', 'pv');
+  document.body.append(zoomBar());
+  setZoom(pvZoom);
+  applyPreview(r);
+  pvTimer = setInterval(pollPreview, 4000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') pollPreview(); });
+  document.addEventListener('focusout', () => setTimeout(() => {
+    if (pvPending && !(document.activeElement && document.activeElement.matches('input, textarea, select, [contenteditable]'))) { const x = pvPending; pvPending = null; applyPreview(x); }
+  }, 50));
+  // aggiornamento immediato dal costruttore aperto nello stesso browser
+  const mine = (await C.sha256hex(token)).slice(0, 16);
+  try {
+    const ch = new BroadcastChannel('labelform-preview');
+    ch.onmessage = e => {
+      const m = e.data;
+      if (!m || m.k !== mine || !m.form) return;
+      const x = { form: m.form, label: m.label || S.label, updated_at: pvSince };
+      if (document.activeElement && document.activeElement.matches('input, textarea, select, [contenteditable]')) pvPending = x; else applyPreview(x);
+    };
+  } catch { /* browser senza BroadcastChannel: basta il controllo periodico */ }
 }
 
 boot();

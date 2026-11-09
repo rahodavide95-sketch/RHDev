@@ -26,6 +26,23 @@ scritte (le icone sono il logo dell'etichetta preso da `etichetta/images/logo.pn
   colori, ecc". → costruttore in `js/admin/views/builder.js`.
 - Gli piacciono: firma sulla pagina, checklist per release ("manca artwork", "contratto firmato ✓"),
   controllo dei link (Drive, Dropbox… ed errori di battitura).
+- Richieste del 6/11/2026 (tutte fatte, non tornare indietro):
+  - "servono tasti indietro - ripeti" → Indietro/Ripeti nel costruttore (anche Ctrl+Z / Ctrl+Maiusc+Z).
+  - "qualsiasi testo, forma, modulo, cosa, deve essere cancellabile, modulabile, ridimensionabile, tutto" →
+    larghezza di ogni elemento (¼…intera, anche trascinando il bordo nell'anteprima), immagini e separatori,
+    titoli nascondibili, tutti i testi e i pulsanti della pagina dell'artista modificabili (`form.texts`,
+    `form.show`), misure del modulo e del logo con cursori, riordino trascinando.
+  - "barra laterale comprimibile" → `js/admin/look.js` (scelta salvata nel browser).
+  - "il logo dell'etichetta lo voglio quadrato non arrotondato" → logo sempre quadrato (forma regolabile nei moduli).
+  - "il contratto deve essere tale e quale a quello di label finance (senza il logo di label finance) ma con la
+    possibilità di modificare la formattazione generale, layout" → stesso testo e impaginazione
+    (`labelContract()` in `schema.js`, `contractDoc()` in `ui/pdf.js`, caratteri DM Sans e Syne in `fonts/`),
+    formattazione in `form.contract.style`. Nessuna scritta o logo di Label Finance.
+  - "temi del sito, minimal, chiaro, scuro" → `data-theme` su `<html>` (Impostazioni › Aspetto del sito).
+  - "l'anteprima del modulo deve essere zoomabile e visibile anche da finito tramite link anteprima che si
+    aggiorna da solo" → zoom e telefono/tablet/computer nel costruttore; `anteprima.html#p=…` legge
+    `labelform_preview()` ogni 4 secondi (e subito, via BroadcastChannel, se il costruttore è aperto nello
+    stesso browser). Nel database solo l'impronta del codice (`preview_hash`) e il codice cifrato.
 
 ## Architettura (niente compilazione, moduli ES)
 
@@ -61,12 +78,13 @@ all'ora: il proprietario deve iscriversi con l'email del suo account Supabase.
 - Proprietario unico (`labelform_owner`), tutte le tabelle richiedono `labelform_is_owner()` = proprietario + aal2.
 - Artisti senza account: solo RPC `labelform_open/unlock/submit/update` (security definer). Link = token 256 bit,
   nel DB solo `token_hash` (sha256) + `token_enc` (cifrato per l'etichetta).
+- Anteprima: `labelform_preview(token, since)` restituisce solo il modulo e nome/logo/firma dell'etichetta.
 - Password artista: il DB ha `sha256(verifier)`; 8 errori → 15 minuti di blocco.
 - Trigger: contratto firmato immutabile, `dek_label` immutabile, storico (`labelform_versions`) immutabile.
 - L'etichetta non può scrivere i campi cifrati (permessi per colonna).
 - Avvisi: `labelform_events` (opened/submitted/updated/signed, `changed` = id dei campi). Email via
   `labelform_mail_claim()` dalla funzione (service_role).
-- Test: `bash test/rls/run.sh` (82 controlli). Ogni regola nuova → un test nuovo.
+- Test: `bash test/rls/run.sh` (91 controlli). Ogni regola nuova → un test nuovo.
 
 ## Pubblicazione
 

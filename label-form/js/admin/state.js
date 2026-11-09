@@ -1,7 +1,7 @@
 /* Stato condiviso dell'area dell'etichetta e piccoli aiuti usati da più pagine. */
 
 import * as C from '../core/crypto.js';
-import { sanitizeForm } from '../core/schema.js';
+import { sanitizeForm, isStatic } from '../core/schema.js';
 import * as K from './keys.js';
 
 export const A = {
@@ -69,7 +69,7 @@ export function checklist(invite, form) {
   const items = [];
   const filled = new Set(invite.filled || []);
   for (const s of form.sections) for (const f of s.fields) {
-    if (f.type === 'info' || !f.checklist) continue;
+    if (isStatic(f) || !f.checklist) continue;
     items.push({ label: f.label, ok: filled.has(f.id) });
   }
   if (form.contract.enabled) items.push({ label: 'Contratto firmato', ok: !!invite.contract_signed_at, contract: true });

@@ -16,10 +16,11 @@ Se qualcuno rubasse il database, troverebbe solo dati inutilizzabili.
 | **Artista con il link** | Compilare e inviare **una volta** | Leggere o sovrascrivere un invio già fatto |
 | **Artista con link + sua password** | Rivedere e modificare il suo invio finché la release è aperta | Cambiare il contratto dopo la firma |
 | **Chiunque altro** | Nulla: Label Form ha un progetto Supabase tutto suo e, dopo il tuo primo accesso, le iscrizioni sono chiuse | Creare un account, vedere qualsiasi dato |
+| **Chi ha il link di anteprima** | Vedere il modulo (domande, aspetto, contratto con gli spazi vuoti) | Vedere i dati degli artisti, inviare qualcosa |
 | **Chi ruba il database** | Vedere testo cifrato, impronte, date | Leggere dati, link o password |
 
 Tutte queste regole stanno **nel database** (Row Level Security + funzioni controllate), non solo
-nell'interfaccia. Sono verificate da `test/rls/run.sh`: 82 controlli su un Postgres vero, che girano
+nell'interfaccia. Sono verificate da `test/rls/run.sh`: 91 controlli su un Postgres vero, che girano
 a ogni pubblicazione. Se uno fallisce, non si pubblica nulla.
 
 ## Come funziona la cifratura (per i curiosi)

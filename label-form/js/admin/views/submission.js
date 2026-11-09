@@ -5,7 +5,7 @@ import { h, swap, icon, clear, fmtDateTime, ago } from '../../ui/dom.js';
 import { contractDoc, copyDocument, savePdf, pdfName } from '../../ui/pdf.js';
 import { formatValue, summaryRows, changedIds } from '../../core/answers.js';
 import { checkLink } from '../../core/links.js';
-import { fieldById } from '../../core/schema.js';
+import { fieldById, isStatic } from '../../core/schema.js';
 import { verifyContract } from '../../core/contract.js';
 import { A, go, formOf, openInvite, openVersion, inviteState, checklist, tokenOf } from '../state.js';
 import { btn, iconBtn, toast, friendly, empty, chip, copyText } from '../ui.js';
@@ -67,7 +67,7 @@ export async function render(el, id) {
   // dati
   const data = h('div');
   for (const s of form.sections) {
-    const fields = s.fields.filter(f => f.type !== 'info');
+    const fields = s.fields.filter(f => !isStatic(f));
     if (!fields.length) continue;
     data.append(h('section.card.dsec', h('h2', s.title || 'Dati', s.contract ? chip(inv.contract_signed_at ? 'Nel contratto firmato' : 'Per il contratto', inv.contract_signed_at ? 'green' : 'muted', 'pen') : null),
       fields.map(f => rowFor(f, answers[f.id]))));

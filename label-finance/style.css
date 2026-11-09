@@ -2165,3 +2165,26 @@ tr.is-unpaid td.num .neg,tr.is-unpaid td.num .pos{opacity:.55}
 .accent-opt[data-accent-opt="orange"] i{background:linear-gradient(135deg,#fb923c,#c2410c)}
 .accent-opt[data-accent-opt="pink"] i{background:linear-gradient(135deg,#f472b6,#be185d)}
 .accent-opt[data-accent-opt="mono"] i{background:linear-gradient(135deg,#ffffff 0 50%,#111111 50% 100%)}
+/* striscia del tipo dritta (prima era un bordo sinistro spesso che sugli angoli arrotondati si curvava) */
+.cal-chip{border:1px solid color-mix(in srgb,var(--k) 26%,var(--line));padding-left:9px;
+  background:linear-gradient(var(--k),var(--k)) left top/3px 100% no-repeat,color-mix(in srgb,var(--k) 12%,var(--panel))}
+.cal-chip:hover{background:linear-gradient(var(--k),var(--k)) left top/3px 100% no-repeat,color-mix(in srgb,var(--k) 20%,var(--panel))}
+.cal-st-idea{border-style:dashed;background:linear-gradient(var(--k),var(--k)) left top/3px 100% no-repeat,color-mix(in srgb,var(--k) 6%,var(--panel))}
+@media(max-width:680px){ .cal-chip{padding-left:6px;background-size:2px 100%,auto} }
+/* voce in arrivo (prossimi 7 giorni): bordo evidenziato dentro la voce. L'alone esterno veniva tagliato
+   dalla cella e restavano solo gli angoli colorati */
+.cal-chip.cal-chip--soon{box-shadow:none;border-color:color-mix(in srgb,var(--accent) 75%,var(--line))}
+
+/* Notifiche: ogni tipo ha il suo colore (pianificazione come il calendario, attività, pagamenti, avvisi…).
+   Striscia dritta a sinistra (niente bordo spesso che si curva sugli angoli) */
+.notif-item{--k:var(--accent);background-color:transparent;background-image:linear-gradient(var(--k),var(--k));background-size:3px calc(100% - 16px);background-position:left 8px;background-repeat:no-repeat;padding-left:12px}
+.notif-item:hover{background-color:var(--panel-2)}
+.notif-item.unread{background-color:color-mix(in srgb,var(--k) 8%,var(--panel))}
+.notif-item.unread .notif-dot{background:var(--k)}
+.notif-ico{background:color-mix(in srgb,var(--k) 12%,var(--panel));color:color-mix(in srgb,var(--k) 80%,var(--text))}
+.notif-item.unread .notif-ico{background:color-mix(in srgb,var(--k) 22%,var(--panel));color:var(--k)}
+.notif-item:hover .notif-t{color:color-mix(in srgb,var(--k) 75%,var(--text))}
+.lf-alert{--k:var(--accent);border:1px solid color-mix(in srgb,var(--k) 32%,var(--line));padding-left:16px;
+  background:linear-gradient(var(--k),var(--k)) left top/4px 100% no-repeat,var(--panel)}
+.lf-alert-ic{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.15rem;
+  background:color-mix(in srgb,var(--k) 18%,var(--panel))}

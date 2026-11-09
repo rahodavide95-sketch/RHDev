@@ -1,3 +1,22 @@
+# Avvisi tradotti, notifiche a colori, calendario più pulito e firma correggibile (novembre 2026) — niente da fare online
+
+Nessuna modifica al database: basta la pubblicazione dell'app.
+
+- Gli avvisi che compaiono **all'apertura dell'app** (pianificazione e attività) mostravano i nomi
+  interni dei testi ("pln.k_release · pln.w_in") perché partivano prima che le traduzioni fossero
+  caricate: ora aspettano un attimo e si leggono bene ("Release · Tra 4 giorni", "Premiere · Oggi").
+- **Calendario**: la striscia colorata del tipo è dritta e le voci in arrivo nei prossimi 7 giorni hanno
+  un bordo evidenziato intero (prima l'alone veniva tagliato dalla cella e restavano gli angoli).
+- **Notifiche a colori**: ogni tipo ha il suo colore, nel pannello della campanella e nei riquadri a
+  comparsa (la pianificazione usa gli stessi colori del calendario, con un'icona per tipo: 💿 release,
+  🎬 premiere, 🛒 pre-order, 🎤 evento, 👕 merch, 🎙️ podcast, 🔎 scouting; attività, pagamenti e avvisi
+  hanno colori loro). La striscia colorata dei riquadri è dritta.
+- **Contratti**: la tua firma si può **correggere** finché l'artista non ha firmato ("✎ Correggi la tua
+  firma"): nome e luogo sono già compilati, se non ridisegni resta la firma di prima. Se il contratto
+  era già stato inviato, si aggiorna anche il link dell'artista (lo stesso link).
+
+---
+
 # Pianificazione, quote dai contratti, calendario e colori del tema (novembre 2026) — niente da fare online
 
 Nessuna modifica al database: basta la pubblicazione dell'app.

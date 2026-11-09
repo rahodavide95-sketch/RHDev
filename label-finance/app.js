@@ -4944,9 +4944,15 @@ function renderContracts(){
 
 /* ---------- Firma in-app (canvas) ---------- */
 let sigPad=null;
-function openSignPad(){
+async function openSignPad(){
   if(!currentContract){ toast(tt('con.gen_first')); return; }
-  $('#sign-place').value=''; $('#sign-name').value=(DB.profile&&DB.profile.name)||currentContract.label||labelName();
+  // già inviato: prima di correggere guarda se l'artista ha firmato nel frattempo
+  if(currentContract.token && currentContract.labelSign && window.LF_refreshContractStatuses){ try{ await refreshContractStatuses(); }catch(e){}
+    const fresh=(DB.contracts||[]).find(x=>x.id===currentContract.id); if(fresh) currentContract=fresh; }
+  if(conFullySigned(currentContract)){ toast(tt('con.already_signed')); updateConSendBtn(); return; }
+  const prev=currentContract.labelSign;
+  $('#sign-place').value=(prev&&prev.place)||''; $('#sign-name').value=(prev&&prev.name)||(DB.profile&&DB.profile.name)||currentContract.label||labelName();
+  const eh=$('#sign-edit-hint'); if(eh) eh.hidden=!prev;
   $('#sign-modal').hidden=false;
   // firma disegnata al momento oppure caricata da file (signature.js)
   sigPad=LFSignature.attach($('#sign-canvas'));
@@ -4961,18 +4967,27 @@ async function loadSignFile(file){
 function closeSignPad(){ $('#sign-modal').hidden=true; sigPad=null; }
 function confirmSign(){
   if(conFullySigned(currentContract)){ toast(tt('con.already_signed')); closeSignPad(); return; }
-  if(!sigPad || sigPad.isEmpty()){ toast(tt('con.sign_empty')); return; }
+  const prev=currentContract.labelSign, redraw=!!(sigPad && !sigPad.isEmpty());
+  if(!redraw && !prev){ toast(tt('con.sign_empty')); return; }
   const now=new Date();
-  // firma dell'ETICHETTA (obbligatoria prima dell'invio all'artista)
-  currentContract.labelSign={ dataUrl:sigPad.png(),
+  // firma dell'ETICHETTA (obbligatoria prima dell'invio all'artista). Correzione: se non la ridisegni resta quella
+  // di prima (con la sua data e ora) e cambiano solo nome e luogo
+  currentContract.labelSign={ dataUrl:redraw ? sigPad.png() : prev.dataUrl,
     name:$('#sign-name').value.trim()||currentContract.label||labelName(),
     place:$('#sign-place').value.trim(),
-    date:isoD(now), time:now.toTimeString().slice(0,5) };
+    date:redraw||!prev ? isoD(now) : prev.date, time:redraw||!prev ? now.toTimeString().slice(0,5) : prev.time };
   if(currentContract.status==='draft'||!currentContract.status) currentContract.status='ready';
   saveCurrentContract(); renderContracts();
   $('#contract-doc').innerHTML=buildContractDoc(currentContract);
   updateConSendBtn();
-  closeSignPad(); toast(tt('con.signed_label_ok'));
+  closeSignPad();
+  // già inviato e l'artista non ha ancora firmato: aggiorna anche la copia del link (stesso link)
+  if(prev && currentContract.token && currentContract.status==='sent' && window.LF_sendForSignature){
+    const c=currentContract;
+    window.LF_sendForSignature(c).then(r=>toast(tt(r && r.link ? 'con.sign_updated_link' : 'con.sign_updated'))).catch(()=>toast(tt('con.sign_updated')));
+    return;
+  }
+  toast(tt(prev ? 'con.sign_updated' : 'con.signed_label_ok'));
 }
 // firmato dall'artista = concluso (i contratti di prima della firma dell'etichetta non ce l'hanno: non si chiede di rifirmarli)
 function conFullySigned(c){ return !!(c && c.status==='signed' && (c.artistSign||c.signed)); }
@@ -5106,8 +5121,8 @@ function updateConSendBtn(){
   const back=$('#con-back'); if(back){ back.disabled=done; back.classList.toggle('is-disabled',done); back.title=done?tt('con.already_signed'):''; }
   // hai già firmato come etichetta: il pulsante lo dice e non chiede di firmare di nuovo
   const sg=$('#con-sign'), mine=!!(currentContract && currentContract.labelSign);
-  if(sg){ sg.disabled=done||mine; sg.classList.toggle('is-disabled',done||mine);
-    sg.textContent=tt(mine?'con.sign_done':'con.sign_now'); sg.title=done?tt('con.already_signed'):(mine?tt('con.sign_done_t'):''); }
+  if(sg){ sg.disabled=done; sg.classList.toggle('is-disabled',done);
+    sg.textContent=tt(done&&mine?'con.sign_done':mine?'con.sign_edit':'con.sign_now'); sg.title=done?tt('con.already_signed'):(mine?tt('con.sign_edit_t'):''); }
 }
 
 /* ---------- Task ---------- */
@@ -5211,7 +5226,10 @@ function ensureNotifyPermission(){ try{ if('Notification' in window && Notificat
 function updateNotifHint(){ const h=$('#tsk-notif-hint'); if(!h) return;
   h.hidden = !('Notification' in window) || Notification.permission!=='default'; }
 function taskDateTime(t){ if(!t.due) return null; const d=new Date(t.due+'T'+((t.time||'09:00'))+':00'); return isNaN(d.getTime())?null:d.getTime(); }
+// gli avvisi possono partire all'apertura, prima che i18n.js sia caricato: si aspetta che le traduzioni siano pronte
+function whenI18n(fn){ if(window.LFI18N) fn(); else document.addEventListener('DOMContentLoaded', ()=>fn(), { once:true }); }
 function fireTaskAlert(t, kind){
+  if(!window.LFI18N){ whenI18n(()=>fireTaskAlert(t, kind)); return; }
   const icon={payment:'💸',contract:'📄',other:'•'}[t.type]||'•';
   const title = kind==='pre' ? tt('tsk.notif_pre') : tt('tsk.notif_due');
   const body = `${icon} ${t.title}`+(t.due?` — ${fmtDate(t.due)}${t.time?(' '+t.time):''}`:'');
@@ -5221,12 +5239,14 @@ function fireTaskAlert(t, kind){
     try{ const n=new Notification('Label Finance · '+title, { body, icon:'icon.png?v=3', tag:'lf-task-'+t.id, renotify:true });
       n.onclick=()=>{ try{ window.focus(); }catch(e){} goto('tasks'); n.close(); }; shown=true; }catch(e){}
   }
-  showTaskPopup(title, body); // mostra sempre anche il popup in-app
+  showTaskPopup(title, body, 'tasks', null, { color:NOTIF_COLORS[t.type]||NOTIF_COLORS.task, icon:icon==='•'?'🔔':icon }); // mostra sempre anche il popup in-app
 }
-function showTaskPopup(title, body, view, onOpen){
+function showTaskPopup(title, body, view, onOpen, look){
+  look=look||{};
   let wrap=$('#lf-alerts'); if(!wrap){ wrap=document.createElement('div'); wrap.id='lf-alerts'; wrap.className='lf-alerts'; document.body.appendChild(wrap); }
   const el=document.createElement('div'); el.className='lf-alert';
-  el.innerHTML=`<div class="lf-alert-ic">🔔</div><div class="lf-alert-tx"><b>${esc(title)}</b><span>${esc(body)}</span></div>
+  el.style.setProperty('--k', look.color||NOTIF_COLORS.task);
+  el.innerHTML=`<div class="lf-alert-ic">${esc(look.icon||'🔔')}</div><div class="lf-alert-tx"><b>${esc(title)}</b><span>${esc(body)}</span></div>
     <button class="lf-alert-x" aria-label="Chiudi">✕</button>`;
   el.querySelector('.lf-alert-x').onclick=()=>el.remove();
   el.querySelector('.lf-alert-tx').onclick=()=>{ goto(view||'tasks'); if(onOpen) onOpen(); el.remove(); };
@@ -6112,6 +6132,7 @@ function plnScan(){
 function plnAlertText(p, d){ const when=d===0?tt('pln.w_today'):d===1?tt('pln.w_tomorrow'):tt('pln.w_in').replace('{n}',d);
   return { title: tt(PLN_KIND[p.kind]||'pln.k_release')+' · '+when, body: (p.title||'')+(p.date?' — '+fmtDate(p.date):'')+(p.artist?' · '+p.artist:'') }; }
 function firePlnAlerts(list){
+  if(!window.LFI18N){ whenI18n(()=>firePlnAlerts(list)); return; }   // altrimenti si vedrebbero le chiavi (pln.k_release…)
   playChime();
   const show=list.length>2 ? [[null, list.length]] : list;
   show.forEach(([p,d])=>{
@@ -6120,7 +6141,8 @@ function firePlnAlerts(list){
       try{ const n=new Notification('Label Finance · '+tx.title, { body:tx.body, icon:'icon.png?v=3', tag:'lf-pln-'+(p?p.id:'many'), renotify:true });
         n.onclick=()=>{ try{ window.focus(); }catch(e){} goto('planning'); if(p) openPlnForm(p.id); n.close(); }; }catch(e){}
     }
-    showTaskPopup(tx.title, tx.body, 'planning', p ? ()=>openPlnForm(p.id) : null);
+    showTaskPopup(tx.title, tx.body, 'planning', p ? ()=>openPlnForm(p.id) : null,
+      p ? { color:NOTIF_COLORS[p.kind]||NOTIF_COLORS.release, icon:PLN_ICONS[p.kind]||'📅' } : { color:NOTIF_COLORS.release, icon:'📅' });
   });
 }
 // numero sulla voce "Pianificazione" del menu: quante voci ci sono nei prossimi 7 giorni
@@ -6154,13 +6176,23 @@ function notifText(n){
   return { title:n.title||'', body:n.body||'' };
 }
 function notifTime(ts){ try{ const d=new Date(ts), p=n=>String(n).padStart(2,'0'); return p(d.getDate())+'/'+p(d.getMonth()+1)+'/'+d.getFullYear()+' · '+p(d.getHours())+':'+p(d.getMinutes()); }catch(e){ return ''; } }
+/* colore (e icona) di ogni tipo di notifica: la pianificazione usa gli stessi colori del calendario */
+const NOTIF_COLORS={ release:'#8b5cf6', premiere:'#0ea5e9', preorder:'#f59e0b', event:'#22c55e', merch:'#ec4899', podcast:'#14b8a6', scouting:'#eab308',
+  task:'#6366f1', task_late:'#ef4444', payment:'#10b981', contract:'#6366f1', recoup:'#10b981', recur:'#f97316', unlinked:'#f43f5e', enrich:'#3b82f6',
+  owed:'#10b981', fx:'#eab308', missing:'#f43f5e', close:'#f97316', unsigned:'#6366f1' };
+const PLN_ICONS={ release:'💿', premiere:'🎬', preorder:'🛒', event:'🎤', merch:'👕', podcast:'🎙️', scouting:'🔎' };
+function notifColor(it){ if(!it) return NOTIF_COLORS.task;
+  if(it.type==='pln') return NOTIF_COLORS[it.kind]||NOTIF_COLORS.release;
+  if(it.type==='task') return it.overdue ? NOTIF_COLORS.task_late : NOTIF_COLORS.task;
+  if(it.type==='smart') return NOTIF_COLORS[it.kind]||'#06b6d4';
+  return NOTIF_COLORS[it.type]||'#06b6d4'; }
 function renderNotifs(){
   const badge=$('#notif-badge'); const unread=NOTIFS.list.filter(n=>!n.read).length;
   if(badge){ badge.textContent=unread>9?'9+':String(unread); badge.hidden=unread===0; }
   const list=$('#notif-list'); if(!list) return;
   if(!NOTIFS.list.length){ list.innerHTML=`<div class="notif-empty">${tt('notif.empty')}</div>`; return; }
   list.innerHTML=NOTIFS.list.map(it=>{ const tx=notifText(it);
-    return `<div class="notif-item${it.read?'':' unread'}" data-nid="${it.id}">
+    return `<div class="notif-item${it.read?'':' unread'}" data-nid="${it.id}" style="--k:${notifColor(it)}">
       <span class="notif-ico">${notifIcon(it)}</span>
       <div class="notif-body">
         <div class="notif-t">${esc(tx.title)}</div>

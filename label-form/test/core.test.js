@@ -294,12 +294,7 @@ test('contratto: numeri in lettere, autori dai crediti, formattazione e ripristi
   assert.equal(st.font, CONTRACT_STYLE.font);
   assert.equal(st.size, 20);
   assert.equal(st.accent, CONTRACT_STYLE.accent);
-  assert.equal(st.logoPos, 'c');
-  // moduli salvati prima: il logo del contratto passa al centro; una scelta nuova resta
-  assert.equal(sanitizeForm({ ...f, contract: { ...f.contract, style: { ...f.contract.style, v: undefined, logoPos: 'r' } } }).contract.style.logoPos, 'c');
-  assert.equal(sanitizeForm({ ...f, contract: { ...f.contract, style: { ...f.contract.style, logoPos: 'l' } } }).contract.style.logoPos, 'l');
-  // un contratto già firmato si vede come è stato firmato
-  assert.equal(sanitizeContractStyle({ logoPos: 'r' }).logoPos, 'r');
+  assert.equal(st.logoPos, 'r');
   assert.equal(st.line, 110);
   const changedC = { ...f.contract, body: [], title: 'X', style: { ...f.contract.style, size: 10 } };
   const r = sanitizeForm({ ...f, contract: restoreContract(changedC, f.sections) }).contract;

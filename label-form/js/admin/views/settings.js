@@ -9,6 +9,8 @@ import { A, artistBase } from '../state.js';
 import * as K from '../keys.js';
 import { btn, field, input, toast, friendly, toggle, modal, confirmBox, copyText } from '../ui.js';
 import { showRecovery } from '../app.js';
+import { THEMES, siteTheme, setSiteTheme } from '../look.js';
+import { logoTone } from '../../ui/pdf.js';
 
 export async function render(el) {
   A.settings = await A.api.getSettings();
@@ -25,7 +27,7 @@ export async function render(el) {
   const drawLogo = () => {
     clear(logoBox);
     const src = safeImage(A.settings.logo || '');
-    append(logoBox, [src ? h('img', { src, alt: 'Logo' }) : h('span.muted.small', 'Nessun logo'),
+    append(logoBox, [src ? h('img', { src, alt: 'Logo', ref: img => logoTone(src).then(t => { if (t !== 'none') img.dataset.bg = t; }) }) : h('span.muted.small', 'Nessun logo'),
       btn(src ? 'Cambia' : 'Carica logo', async () => {
         const f = await pickFile('image/png,image/jpeg,image/webp');
         if (!f) return;
@@ -108,8 +110,16 @@ export async function render(el) {
 
   const twoFa = h('span.muted.small', A.demo ? 'Nella prova non c\'è accesso.' : 'Attiva ✓ (serve per entrare)');
 
+  const themes = h('div.theme-pick');
+  const drawThemes = () => { clear(themes); for (const [k, t] of Object.entries(THEMES)) themes.append(h('button.theme-b' + (siteTheme() === k ? '.on' : ''), { type: 'button', dataset: { t: k }, onclick: () => { setSiteTheme(k); drawThemes(); } },
+    h('span.theme-sw', h('i'), h('b')), h('span.theme-t', icon(t.ic, 16), t.label), h('small', t.hint))); };
+  drawThemes();
+
   swap(el, 
     h('div.page-head', h('div', h('h1', 'Impostazioni'), h('p.muted', A.demo ? 'Modalità prova' : (A.user && A.user.email) || ''))),
+    h('section.card.set-sec', h('h2', icon('palette', 18), 'Aspetto del sito'),
+      h('p.muted.small', 'Solo per l\'area dell\'etichetta, su questo dispositivo. L\'aspetto dei moduli per gli artisti si cambia in Moduli › Aspetto.'),
+      themes),
     h('section.card.set-sec', h('h2', icon('disc', 18), 'Etichetta'),
       h('div.row2', field('Nome', name), field('Firma per l\'etichetta di', signer)),
       btn('Salva', () => saveNow({ label_name: name.value.trim(), label_signer: signer.value.trim() }), { ic: 'check', kind: 'small' }),

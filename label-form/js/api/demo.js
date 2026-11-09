@@ -124,6 +124,15 @@ export const artistApi = {
     save();
     return { ok: true, version: i.version, updated_at: t, contract_signed_at: i.contract_signed_at };
   },
+  async preview(token, since) {
+    const hsh = await tokenHash(token);
+    reload();
+    const f = hsh ? db.forms.find(x => x.preview_hash === hsh) : null;
+    if (!f) return { error: 'not_found' };
+    if (since && f.updated_at <= since) return { same: true, updated_at: f.updated_at };
+    const s = db.settings || {};
+    return clone({ form: f.schema, updated_at: f.updated_at, label: { name: s.label_name, logo: s.logo, signature: s.label_signature, signer: s.label_signer } });
+  },
   async mailPing() { return false; },
   async mailCopy() { return { error: 'email_off' }; },
   mailFlush() {},
@@ -150,6 +159,14 @@ export const adminApi = {
   async getForm(id) { reload(); const f = db.forms.find(x => x.id === id); if (!f) throw new Error('Modulo non trovato'); return clone(f); },
   async createForm(title, schema) { reload(); const f = { id: uuid(), title, schema: clone(schema), archived: false, created_at: now(), updated_at: now() }; db.forms.push(f); save(); return clone(f); },
   async updateForm(id, patch) { reload(); const f = db.forms.find(x => x.id === id); Object.assign(f, clone(patch), { updated_at: now() }); save(); return { id, updated_at: f.updated_at }; },
+  async setPreview(id, patch) {
+    reload();
+    const f = db.forms.find(x => x.id === id);
+    const hsh = patch.preview_hash || null;
+    if (hsh && !/^[0-9a-f]{64}$/.test(hsh)) throw new Error('Link di anteprima non valido');
+    f.preview_hash = hsh; f.preview_enc = hsh ? patch.preview_enc : null; save();
+    return { id, preview_hash: f.preview_hash, preview_enc: f.preview_enc };
+  },
   async deleteForm(id) {
     reload();
     if (db.invites.some(i => i.form_id === id)) { const e = new Error('Il modulo è usato da qualche artista'); e.code = 'in_use'; throw e; }

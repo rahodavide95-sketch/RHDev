@@ -7,6 +7,15 @@ import { themeVars, sanitizeTheme, safeImage } from '../core/theme.js';
 import { checkLink, LINK_KINDS } from '../core/links.js';
 import { formatValue, fieldProblem, parseNumber, compactIban, formatIban, isFilled } from '../core/answers.js';
 import { isEmptyRich } from '../core/richtext.js';
+import { widthOf, fillText, TEXT_DEFAULTS, SHOW_DEFAULTS } from '../core/schema.js';
+import { logoTone } from './pdf.js';
+
+/** Testi e interruttori della pagina dell'artista (con i valori predefiniti se mancano). */
+export const textOf = (form, key, vars = {}) => fillText((form.texts && form.texts[key]) || TEXT_DEFAULTS[key] || '', vars);
+export const shown = (form, key) => form.show && typeof form.show[key] === 'boolean' ? form.show[key] : SHOW_DEFAULTS[key];
+const widthStyle = f => ({ '--fw': String(widthOf(f) / 100) });
+/** Maniglia per allargare/stringere un elemento nell'anteprima del costruttore. */
+const resizeHandle = (kind, id) => h('span.b-rs', { dataset: { rs: kind, target: id }, title: 'Trascina per cambiare la larghezza', 'aria-hidden': 'true' });
 
 /** Applica l'aspetto del modulo a un elemento (variabili CSS + attributi, mai stili scritti a mano). */
 export function applyTheme(el, theme) {
@@ -19,25 +28,31 @@ export function applyTheme(el, theme) {
   return t;
 }
 
-/** Testata: immagine, logo, nome dell'etichetta, titolo e introduzione. */
-export function formHeader({ form, label = {}, release = null, artist = '' }) {
+/** Testata: immagine, logo, nome dell'etichetta, titolo e introduzione. design = maniglie del costruttore. */
+export function formHeader({ form, label = {}, release = null, artist = '', design = false }) {
   const t = sanitizeTheme(form.theme);
   const head = h('header.f-head');
-  if (t.header) head.append(h('div.f-cover', { style: { backgroundImage: `url("${safeImage(t.header)}")`, backgroundSize: t.headerFit } }));
+  if (t.header) head.append(h('div.f-cover', { style: { backgroundImage: `url("${safeImage(t.header)}")`, backgroundSize: t.headerFit } },
+    design ? h('span.b-rs.b-rs-y', { dataset: { rs: 'cover' }, title: 'Trascina per cambiare l\'altezza', 'aria-hidden': 'true' }) : null));
   const top = h('div.f-brand');
   const logo = safeImage(label.logo || '');
-  if (t.logo && logo) top.append(h('img.f-logo', { src: logo, alt: '' }));
-  if (label.name) top.append(h('span.f-label', label.name));
-  const card = h('div.f-card.f-titlecard',
+  if (t.logo && logo) {
+    const img = h('img.f-logo', { src: logo, alt: '' });
+    logoTone(logo).then(x => { if (x !== 'none' && isLight(t.card)) img.dataset.bg = x; });
+    top.append(design ? h('span.b-logo-wrap', img, h('span.b-rs.b-rs-xy', { dataset: { rs: 'logo' }, title: 'Trascina per cambiare la grandezza', 'aria-hidden': 'true' })) : img);
+  }
+  if (label.name && shown(form, 'labelName')) top.append(h('span.f-label', label.name));
+  const card = h('div.f-card.f-titlecard', { dataset: { align: t.titleAlign } },
     top.childNodes.length ? top : null,
     h('h1.f-title', form.title),
-    release ? h('p.f-release', icon('disc', 16), h('span', release.title + (release.catalog ? ` · ${release.catalog}` : ''))) : null,
-    artist ? h('p.f-hello', `Ciao ${artist}!`) : null,
+    release && shown(form, 'release') ? h('p.f-release', icon('disc', 16), h('span', release.title + (release.catalog ? ` · ${release.catalog}` : ''))) : null,
+    artist && shown(form, 'hello') ? h('p.f-hello', textOf(form, 'hello', { artista: artist, nome: artist })) : null,
     isEmptyRich(form.intro) ? null : richBlock(form.intro, {}, 'f-intro'),
   );
   head.append(card);
   return head;
 }
+const isLight = hex => { const n = parseInt(String(hex).slice(1), 16); return ((n >> 16 & 255) * 0.299 + (n >> 8 & 255) * 0.587 + (n & 255) * 0.114) > 150; };
 
 const fieldId = (path) => 'q-' + path.replace(/[^a-z0-9_-]/gi, '-');
 
@@ -60,7 +75,7 @@ function control(field, value, path, ctx, set) {
   const common = { id, name: id, placeholder: field.placeholder || '', 'aria-describedby': id + '-err' };
   switch (field.type) {
     case 'long': {
-      const ta = h('textarea.f-input', { ...common, rows: 4, maxlength: field.maxLength, value: value || '', oninput: e => { set(e.target.value); grow(e.target); } });
+      const ta = h('textarea.f-input', { ...common, rows: field.rows || 4, style: { minHeight: ((field.rows || 4) * 1.5 + 1.6) + 'em' }, maxlength: field.maxLength, value: value || '', oninput: e => { set(e.target.value); grow(e.target); } });
       requestAnimationFrame(() => grow(ta));
       return ta;
     }
@@ -148,11 +163,25 @@ function splitControl(field, value, id, set) {
   return wrap;
 }
 
+/** Elementi senza risposta: testo/titolo, immagine, separatore. */
+function staticBlock(field, ctx) {
+  const tools = ctx.design ? resizeHandle('w', field.id) : null;
+  const ds = { fid: field.id };
+  if (field.type === 'image') {
+    const src = safeImage(field.src || '');
+    const img = src ? h('img', { src, alt: field.alt || '', style: { borderRadius: (field.radius || 0) + 'px', maxHeight: field.maxH ? field.maxH + 'px' : null } }) : (ctx.design ? h('div.f-img-empty', icon('image', 22), h('div', 'Immagine: caricala qui a sinistra')) : null);
+    if (!img) return null;
+    return h('div.f-img', { dataset: { ...ds, align: field.align || 'c' }, style: widthStyle(field) }, h('figure', img, field.caption ? h('figcaption', field.caption) : null), tools);
+  }
+  if (field.type === 'divider') {
+    return h('div.f-div', { dataset: { ...ds, style: field.style || 'line' }, style: { ...widthStyle(field), paddingTop: (field.size ?? 24) / 2 + 'px', paddingBottom: (field.size ?? 24) / 2 + 'px' } }, h('i'), tools);
+  }
+  return h('div.f-info', { dataset: ds, style: widthStyle(field) }, field.label ? h('h3.f-info-title', field.label) : null, isEmptyRich(field.help) ? null : richBlock(field.help), tools);
+}
+
 /** Un campo completo: etichetta, aiuto, controllo, errore. */
 export function fieldBlock(field, answers, ctx, path = field.id, setter = null) {
-  if (field.type === 'info') {
-    return h('div.f-info', field.label ? h('h3.f-info-title', field.label) : null, isEmptyRich(field.help) ? null : richBlock(field.help));
-  }
+  if (field.type === 'info' || field.type === 'image' || field.type === 'divider') return staticBlock(field, ctx);
   const set = setter || (v => { answers[field.id] = v; ctx.onChange && ctx.onChange(field.id, v); refreshErr(); });
   const err = h('div.f-err', { id: fieldId(path) + '-err', role: 'alert' });
   const refreshErr = () => {
@@ -162,13 +191,15 @@ export function fieldBlock(field, answers, ctx, path = field.id, setter = null) 
   };
   const paint = () => { const m = ctx.errors && ctx.errors[path]; err.textContent = m || ''; box.classList.toggle('has-err', !!m); };
   const value = setter ? ctx.valueOf(path) : answers[field.id];
-  const box = h('div.f-field' + (field.half ? '.half' : '') + (ctx.locked ? '.locked' : ''), { dataset: { path } },
-    h('label.f-q', { for: fieldId(path) }, field.label, field.required && !ctx.readonly ? h('span.f-req', { 'aria-label': 'obbligatorio' }, ' *') : null,
+  const star = field.required && !ctx.readonly && ctx.showRequired !== false;
+  const box = h('div.f-field' + (ctx.locked ? '.locked' : ''), { dataset: { path, fid: field.id }, style: widthStyle(field) },
+    h('label.f-q' + (field.hideLabel ? '.f-q-hidden' : ''), { for: fieldId(path) }, field.label, star ? h('span.f-req', { 'aria-label': 'obbligatorio' }, ' *') : null,
       ctx.locked ? h('span.f-lock', icon('lock', 14), 'Firmato') : null),
     !ctx.readonly && !isEmptyRich(field.help) ? richBlock(field.help, {}, 'f-help') : null,
     field.type === 'group' ? groupControl(field, answers, ctx, path) : control(field, value, path, ctx, set),
     field.type === 'link' && !ctx.readonly && !ctx.locked ? h('p.f-hint', linkHint(field, ctx.shareWith)) : null,
-    err);
+    err,
+    ctx.design ? resizeHandle('w', field.id) : null);
   paint();
   return box;
 }
@@ -215,7 +246,7 @@ function groupControl(field, answers, ctx, path) {
 /** Una sezione (riquadro con titolo, descrizione e campi). */
 export function sectionBlock(section, answers, ctx) {
   return h('section.f-card.f-section', { dataset: { section: section.id } },
-    section.title ? h('h2.f-stitle', section.title) : null,
+    section.title ? h('h2.f-stitle', section.title) : (ctx.design ? h('h2.f-stitle.b-empty-title', 'Sezione senza titolo') : null),
     isEmptyRich(section.desc) ? null : richBlock(section.desc, {}, 'f-sdesc'),
     h('div.f-fields', section.fields.map(f => fieldBlock(f, answers, { ...ctx, locked: ctx.lockContract && section.contract }))));
 }

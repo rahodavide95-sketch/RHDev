@@ -136,6 +136,14 @@ grant select, insert, update, delete on public.labelform_forms to authenticated;
 drop policy if exists labelform_forms_owner on public.labelform_forms;
 create policy labelform_forms_owner on public.labelform_forms for all to authenticated
   using (public.labelform_is_owner()) with check (public.labelform_is_owner());
+-- link di anteprima del modulo: nel database solo l'impronta del codice e il codice chiuso con la chiave dell'etichetta
+alter table public.labelform_forms add column if not exists preview_hash text;
+alter table public.labelform_forms add column if not exists preview_enc text;
+alter table public.labelform_forms drop constraint if exists labelform_forms_preview_ok;
+alter table public.labelform_forms add constraint labelform_forms_preview_ok check (
+  (preview_hash is null and preview_enc is null) or
+  (preview_hash is not null and preview_enc is not null and preview_hash ~ '^[0-9a-f]{64}$' and length(preview_enc) between 100 and 1200));
+create unique index if not exists labelform_forms_preview_hash on public.labelform_forms (preview_hash) where preview_hash is not null;
 
 -- ─── Release ────────────────────────────────────────────────────────────────
 create table if not exists public.labelform_releases (
@@ -558,6 +566,23 @@ language sql stable security definer set search_path = public as $$
     left join fields on fields.fld ->> 'id' = x), '{}');
 $$;
 
+-- ─── Anteprima del modulo (link dell'etichetta) ────────────────────────────
+-- Solo il modulo (domande, aspetto, contratto con i segnaposto) e nome/logo dell'etichetta:
+-- nessun dato degli artisti. p_since = data dell'ultima versione vista: se il modulo non è cambiato
+-- risponde solo { same: true } (la pagina controlla ogni pochi secondi).
+create or replace function public.labelform_preview(p_token text, p_since timestamptz default null) returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare f public.labelform_forms; s public.labelform_settings;
+begin
+  if p_token is null or p_token !~ '^[A-Za-z0-9_-]{43}$' then return jsonb_build_object('error', 'not_found'); end if;
+  select * into f from public.labelform_forms where preview_hash = encode(sha256(convert_to(p_token, 'UTF8')), 'hex');
+  if not found then return jsonb_build_object('error', 'not_found'); end if;
+  if p_since is not null and f.updated_at <= p_since then return jsonb_build_object('same', true, 'updated_at', f.updated_at); end if;
+  select * into s from public.labelform_settings where id;
+  return jsonb_build_object('form', f.schema, 'updated_at', f.updated_at,
+    'label', jsonb_build_object('name', s.label_name, 'logo', s.logo, 'signature', s.label_signature, 'signer', s.label_signer));
+end $$;
+
 -- ─── Permessi delle funzioni ───────────────────────────────────────────────
 do $$
 declare fn text;
@@ -569,7 +594,7 @@ begin
     'labelform_check_pw(public.labelform_invites, text)', 'labelform_open(text)', 'labelform_unlock(text, text)',
     'labelform_submit(text, jsonb)', 'labelform_update(text, text, jsonb)', 'labelform_copy_ok(text, text)',
     'labelform_mail_claim()', 'labelform_mail_unclaim(bigint[])', 'labelform_field_labels(uuid, text[])',
-    'labelform_invites_guard()', 'labelform_versions_frozen()'
+    'labelform_invites_guard()', 'labelform_versions_frozen()', 'labelform_preview(text, timestamptz)'
   ] loop
     execute format('revoke all on function public.%s from public', fn);
     execute format('revoke all on function public.%s from anon, authenticated', fn);
@@ -582,6 +607,7 @@ grant execute on function public.labelform_open(text) to anon, authenticated;
 grant execute on function public.labelform_unlock(text, text) to anon, authenticated;
 grant execute on function public.labelform_submit(text, jsonb) to anon, authenticated;
 grant execute on function public.labelform_update(text, text, jsonb) to anon, authenticated;
+grant execute on function public.labelform_preview(text, timestamptz) to anon, authenticated;
 do $$ begin
   if exists (select 1 from pg_roles where rolname = 'service_role') then
     grant execute on function public.labelform_copy_ok(text, text) to service_role;

@@ -228,7 +228,38 @@ select _as('anon');
 select _check(labelform_open(_tok('uno')) ->> 'error' = 'not_found', 'il vecchio link non funziona più');
 select _check(labelform_unlock(_tok('tre'), _ver('segreta')) ->> 'version' = '4', 'il nuovo link funziona con la stessa password');
 
--- 14. Eliminazione a cascata
+-- 14. Link di anteprima del modulo
+set role authenticated;
+select _as('eve', 'aal2');
+select _check(_rows($$update labelform_forms set preview_hash = encode(sha256(convert_to(_tok('anteprima-eve'), 'UTF8')), 'hex'), preview_enc = repeat('E', 200)$$) = 0, 'un estraneo non può mettere un link di anteprima');
+select _as('d', 'aal2');
+select _fails($$update labelform_forms set preview_hash = 'corto', preview_enc = repeat('E', 200)$$);
+select _fails($$update labelform_forms set preview_hash = encode(sha256(convert_to(_tok('x'), 'UTF8')), 'hex'), preview_enc = null$$);
+select _check(true, 'anteprima: impronta e codice cifrato devono avere la forma giusta');
+update labelform_forms set preview_hash = encode(sha256(convert_to(_tok('anteprima'), 'UTF8')), 'hex'), preview_enc = repeat('P', 200);
+insert into _ids (k, v) select 'pv_form', id from labelform_forms limit 1 on conflict (k) do update set v = excluded.v;
+set role anon;
+select _as('anon');
+select _fails($$select preview_hash from labelform_forms$$);
+select _check(labelform_preview('corto') ->> 'error' = 'not_found', 'anteprima: link malformato rifiutato');
+select _check(labelform_preview(_tok('sbagliato')) ->> 'error' = 'not_found', 'anteprima: link sbagliato rifiutato');
+select _check(labelform_preview(_tok('anteprima')) -> 'form' ->> 'title' is not null, 'anteprima: con il link giusto si vede il modulo');
+select _check(not (labelform_preview(_tok('anteprima')) ? 'invites') and labelform_preview(_tok('anteprima'))::text not like '%token%' and labelform_preview(_tok('anteprima'))::text not like '%PPPP%', 'anteprima: niente dati degli artisti né codici');
+select _check(labelform_preview(_tok('anteprima'), (labelform_preview(_tok('anteprima')) ->> 'updated_at')::timestamptz) ->> 'same' = 'true', 'anteprima: se il modulo non è cambiato risponde solo "uguale"');
+set role authenticated;
+select _as('d', 'aal2');
+update labelform_forms set title = title, updated_at = now() + interval '1 second' where id = (select v from _ids where k = 'pv_form');
+set role anon;
+select _as('anon');
+select _check(labelform_preview(_tok('anteprima'), now()) ? 'form', 'anteprima: dopo una modifica arriva il modulo nuovo');
+set role authenticated;
+select _as('d', 'aal2');
+update labelform_forms set preview_hash = null, preview_enc = null;
+set role anon;
+select _as('anon');
+select _check(labelform_preview(_tok('anteprima')) ->> 'error' = 'not_found', 'anteprima: link spento non funziona più');
+
+-- 15. Eliminazione a cascata
 set role authenticated;
 select _as('d', 'aal2');
 select _fails($$delete from labelform_forms$$);

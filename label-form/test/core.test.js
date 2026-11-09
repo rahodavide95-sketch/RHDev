@@ -6,7 +6,9 @@ import { checkLink, typoSuggestion } from '../js/core/links.js';
 import { sanitizeTheme, themeVars, applyPreset, safeImage, onColor } from '../js/core/theme.js';
 import { sanitizeForm, defaultForm, blankForm, fieldById, ID_RE } from '../js/core/schema.js';
 import * as A from '../js/core/answers.js';
-import { contractValues, contractSnapshot, contractHash, verifyContract, fillContract, trackTitles } from '../js/core/contract.js';
+import { contractValues, contractSnapshot, contractHash, verifyContract, fillContract, trackTitles, numWord, writers } from '../js/core/contract.js';
+import { sanitizeContractStyle, CONTRACT_STYLE } from '../js/core/theme.js';
+import { restoreContract, widthOf, nearestWidth, TEXT_DEFAULTS } from '../js/core/schema.js';
 
 const FAST = 1000;   // passaggi PBKDF2 ridotti nei test (in produzione 600.000)
 
@@ -259,8 +261,11 @@ test('contratto: segnaposto, copia congelata e impronta', async () => {
   assert.equal(v[name.id], 'Mario Rossi');
   const filled = fillContract(f.contract.body, v);
   const text = filled.map(b => (b.c || []).map(p => p.x).join('')).join('\n');
-  assert.ok(text.includes('60% to the Artist and 40% to the Label'));
-  assert.ok(text.includes('Uno (Original Mix), Due'));
+  assert.ok(text.includes('60% (sixty percent) to the Artist and 40% (forty percent) to the Label'));
+  const copy = fillContract(f.contract.copy, v, '—').map(b => (b.c || []).map(p => p.x).join('')).join('\n');
+  assert.ok(copy.includes('Title(s): Uno (Original Mix), Due'));
+  assert.ok(copy.includes('Full Name: Mario Rossi'));
+  assert.ok(copy.includes('Written by: —'));
   const snap = contractSnapshot({ form: f, answers, ctx, inviteId: 'i1', signature: { name: 'Mario Rossi', place: 'Milano', date: '2026-11-05', time: '10:00', png: 'data:image/png;base64,AAAA' } });
   const h = await contractHash(snap);
   assert.match(h, /^[0-9a-f]{64}$/);
@@ -268,4 +273,76 @@ test('contratto: segnaposto, copia congelata e impronta', async () => {
   const tampered = structuredClone(snap);
   tampered.text = tampered.text.replace('60%', '10%');
   assert.ok(!(await verifyContract(tampered, h)));
+  // anche la forma è coperta dall'impronta
+  const restyled = structuredClone(snap); restyled.style.size = 9;
+  assert.ok(!(await verifyContract(restyled, h)));
+  assert.equal(snap.v, 2);
+  assert.equal(snap.artistRole, 'For the Artist — Mario Rossi');
+  assert.equal(snap.labelRole, 'For the Label — SUBCONSCIOUS Culture');
+  assert.equal(snap.dateText, '05/11/2026');
+});
+
+test('contratto: numeri in lettere, autori dai crediti, formattazione e ripristino', () => {
+  assert.deepEqual([0, 7, 19, 20, 33, 50, 66, 99, 100, 150].map(numWord), ['zero', 'seven', 'nineteen', 'twenty', 'thirty-three', 'fifty', 'sixty-six', 'ninety-nine', 'one hundred', 'one hundred']);
+  const f = defaultForm();
+  const tg = f.sections[2].fields[0];
+  const sp = tg.fields.find(x => x.type === 'split');
+  const a = { [tg.id]: [{ [sp.id]: [{ name: 'Mario Rossi', role: 'Autore', pct: '50' }, { name: 'Luca', role: 'Produttore', pct: '50' }] }, { [sp.id]: [{ name: 'Mario Rossi', role: 'Compositore', pct: '100' }] }] };
+  assert.equal(writers(f, a), 'Mario Rossi');
+  assert.equal(writers(f, { [tg.id]: [{ [sp.id]: [{ name: 'Anna', role: 'Remixer', pct: '100' }] }] }), 'Anna');
+  const st = sanitizeContractStyle({ font: 'comic', size: 99, accent: 'red', logoPos: 'x', line: 10 });
+  assert.equal(st.font, CONTRACT_STYLE.font);
+  assert.equal(st.size, 20);
+  assert.equal(st.accent, CONTRACT_STYLE.accent);
+  assert.equal(st.logoPos, 'r');
+  assert.equal(st.line, 110);
+  const changedC = { ...f.contract, body: [], title: 'X', style: { ...f.contract.style, size: 10 } };
+  const r = sanitizeForm({ ...f, contract: restoreContract(changedC, f.sections) }).contract;
+  assert.deepEqual(r.body, f.contract.body);
+  assert.equal(r.title, f.contract.title);
+  assert.equal(r.style.size, CONTRACT_STYLE.size);
+  // un contratto salvato prima della nuova impaginazione diventa quello completo, con la pagina dei dati
+  const old = sanitizeForm({ ...f, contract: { enabled: true, title: 'Vecchio', body: [{ t: 'h2', c: [{ x: '1. Declaration of ownership of rights' }] }] } }).contract;
+  assert.equal(old.layout, 2);
+  assert.equal(old.title, f.contract.title);
+  assert.ok(old.copy.length > 5);
+  const custom = sanitizeForm({ ...f, contract: { enabled: true, title: 'Mio', body: [{ t: 'p', c: [{ x: 'Testo mio' }] }] } }).contract;
+  assert.equal(custom.title, 'Mio');
+  assert.equal(custom.body.length, 1);
+});
+
+test('modulo: larghezze, immagini, separatori e testi della pagina', () => {
+  assert.equal(widthOf({ half: true }), 50);
+  assert.equal(widthOf({ w: 33 }), 33);
+  assert.equal(widthOf({ w: 40 }), 100);
+  assert.equal(nearestWidth(30), 33);
+  assert.equal(nearestWidth(71), 67);
+  const f = sanitizeForm({
+    texts: { next: 'Next', send: '', hacker: 'x' }, show: { progress: false, hello: 'no' },
+    sections: [{ fields: [
+      { type: 'image', src: 'data:image/svg+xml;base64,PHN2Zz4=', radius: 999, w: 50 },
+      { type: 'image', src: 'data:image/png;base64,iVBORw0KGgo=', align: 'z' },
+      { type: 'divider', style: 'boh', size: -5 },
+      { type: 'long', label: 'Bio', rows: 99, w: 67, hideLabel: true },
+    ] }],
+  });
+  const [img1, img2, div, bio] = f.sections[0].fields;
+  assert.equal(img1.src, '');
+  assert.equal(img1.radius, 60);
+  assert.equal(img1.w, 50);
+  assert.equal(img2.align, 'c');
+  assert.equal(div.style, 'line');
+  assert.equal(div.size, 0);
+  assert.equal(bio.rows, 30);
+  assert.equal(bio.w, 67);
+  assert.ok(bio.hideLabel);
+  assert.equal(f.texts.next, 'Next');
+  assert.equal(f.texts.send, TEXT_DEFAULTS.send);
+  assert.ok(!('hacker' in f.texts));
+  assert.equal(f.show.progress, false);
+  assert.equal(f.show.hello, true);
+  // immagini e separatori non hanno risposte
+  assert.deepEqual(A.filledIds(f, { [img2.id]: 'x', [bio.id]: 'ciao' }), [bio.id]);
+  assert.equal(A.fieldProblem(div, undefined), '');
+  assert.deepEqual(Object.keys(A.cleanAnswers(f, { [img2.id]: 'x', [div.id]: 'y' })), [bio.id]);
 });

@@ -61,6 +61,7 @@ export const artistApi = {
   unlock: (token, verifier) => rpc(artist(), 'labelform_unlock', { p_token: token, p_verifier: verifier }),
   submit: (token, p) => rpc(artist(), 'labelform_submit', { p_token: token, p }),
   update: (token, verifier, p) => rpc(artist(), 'labelform_update', { p_token: token, p_verifier: verifier, p }),
+  preview: (token, since) => rpc(artist(), 'labelform_preview', since ? { p_token: token, p_since: since } : { p_token: token }),
   async mailPing() {
     try { const { data } = await artist().functions.invoke('label-form-mail', { body: { action: 'ping' } }); return !!(data && data.email); }
     catch { return false; }
@@ -142,6 +143,7 @@ export const adminApi = {
   async getForm(id) { return check(await admin().from('labelform_forms').select('*').eq('id', id).single()); },
   async createForm(title, schema) { return check(await admin().from('labelform_forms').insert({ title, schema }).select('*').single()); },
   async updateForm(id, patch) { return check(await admin().from('labelform_forms').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id).select('id, updated_at').single()); },
+  async setPreview(id, patch) { return check(await admin().from('labelform_forms').update({ preview_hash: patch.preview_hash || null, preview_enc: patch.preview_enc || null }).eq('id', id).select('id, preview_hash, preview_enc').single()); },
   async deleteForm(id) {
     const r = await admin().from('labelform_forms').delete().eq('id', id);
     if (r.error && /foreign key|violates/i.test(r.error.message)) throw new ApiError('in_use', 'Il modulo è usato da qualche artista');

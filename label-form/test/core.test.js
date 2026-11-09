@@ -8,7 +8,8 @@ import { sanitizeForm, defaultForm, blankForm, fieldById, ID_RE } from '../js/co
 import * as A from '../js/core/answers.js';
 import { contractValues, contractSnapshot, contractHash, verifyContract, fillContract, trackTitles, numWord, writers } from '../js/core/contract.js';
 import { sanitizeContractStyle, CONTRACT_STYLE } from '../js/core/theme.js';
-import { restoreContract, widthOf, nearestWidth, TEXT_DEFAULTS } from '../js/core/schema.js';
+import { restoreContract, widthOf, nearestWidth, TEXT_DEFAULTS, TEXTS, translateForm } from '../js/core/schema.js';
+import { setLang } from '../js/core/i18n.js';
 
 const FAST = 1000;   // passaggi PBKDF2 ridotti nei test (in produzione 600.000)
 
@@ -208,7 +209,7 @@ test('IBAN, codice fiscale, partita IVA', () => {
 });
 
 test('risposte: controlli, completezza, differenze, maschere', () => {
-  const f = defaultForm();
+  const f = defaultForm('it');
   const [art, press, tracks, , contract] = f.sections;
   const tg = tracks.fields[0];
   const [tTitle, , tLink, tBpm, , tSplit] = tg.fields;
@@ -318,7 +319,7 @@ test('modulo: larghezze, immagini, separatori e testi della pagina', () => {
   assert.equal(nearestWidth(30), 33);
   assert.equal(nearestWidth(71), 67);
   const f = sanitizeForm({
-    texts: { next: 'Next', send: '', hacker: 'x' }, show: { progress: false, hello: 'no' },
+    texts: { next: 'Vai avanti', send: '', back: 'Back', hacker: 'x' }, show: { progress: false, hello: 'no' },
     sections: [{ fields: [
       { type: 'image', src: 'data:image/svg+xml;base64,PHN2Zz4=', radius: 999, w: 50 },
       { type: 'image', src: 'data:image/png;base64,iVBORw0KGgo=', align: 'z' },
@@ -336,8 +337,9 @@ test('modulo: larghezze, immagini, separatori e testi della pagina', () => {
   assert.equal(bio.rows, 30);
   assert.equal(bio.w, 67);
   assert.ok(bio.hideLabel);
-  assert.equal(f.texts.next, 'Next');
+  assert.equal(f.texts.next, 'Vai avanti');
   assert.equal(f.texts.send, TEXT_DEFAULTS.send);
+  assert.equal(f.texts.back, 'Indietro');   // un testo di partenza (anche se in inglese) segue la lingua del modulo
   assert.ok(!('hacker' in f.texts));
   assert.equal(f.show.progress, false);
   assert.equal(f.show.hello, true);
@@ -345,4 +347,38 @@ test('modulo: larghezze, immagini, separatori e testi della pagina', () => {
   assert.deepEqual(A.filledIds(f, { [img2.id]: 'x', [bio.id]: 'ciao' }), [bio.id]);
   assert.equal(A.fieldProblem(div, undefined), '');
   assert.deepEqual(Object.keys(A.cleanAnswers(f, { [img2.id]: 'x', [div.id]: 'y' })), [bio.id]);
+});
+
+test('lingua: il modulo nasce in inglese, si traduce e i messaggi seguono la lingua', () => {
+  const en = defaultForm();
+  assert.equal(en.lang, 'en');
+  assert.equal(en.title, 'Release delivery');
+  assert.equal(en.texts.next, TEXTS.en.next);
+  assert.equal(en.sections[4].fields[0].label, 'Full name');
+  // il vecchio modulo di partenza in italiano, mai ritoccato, passa all'inglese; un testo riscritto resta
+  const old = JSON.parse(JSON.stringify(defaultForm('it')));
+  delete old.lang;
+  old.sections[0].fields[3].label = 'La tua bio';
+  const mig = sanitizeForm(old);
+  assert.equal(mig.lang, 'en');
+  assert.equal(mig.title, 'Release delivery');
+  assert.equal(mig.sections[0].fields[0].label, 'Artist name');
+  assert.equal(mig.sections[0].fields[3].label, 'La tua bio');
+  assert.equal(mig.texts.send, 'Submit');
+  // un modulo scritto a mano senza lingua resta in italiano
+  assert.equal(sanitizeForm({ title: 'Il mio modulo' }).lang, 'it');
+  // da inglese a italiano e ritorno
+  const it = sanitizeForm(translateForm(en, 'en', 'it'));
+  assert.equal(it.title, 'Consegna release');
+  assert.equal(it.texts.back, 'Indietro');
+  assert.deepEqual(sanitizeForm(translateForm(it, 'it', 'en')).sections.map(x => x.title), en.sections.map(x => x.title));
+  // messaggi
+  const req = { type: 'short', required: true, maxLength: 10 };
+  setLang('en');
+  assert.equal(A.fieldProblem(req, ''), 'This field is required.');
+  assert.match(checkLink('ciao').error, /must start with https/);
+  assert.equal(C.passwordProblem('corta'), 'At least 10 characters.');
+  setLang('it');
+  assert.equal(A.fieldProblem(req, ''), 'Campo obbligatorio.');
+  assert.match(checkLink('ciao').error, /deve iniziare con https/);
 });

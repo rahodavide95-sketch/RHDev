@@ -58,8 +58,8 @@ async function send(to: string, subject: string, html: string, text: string, rep
   return !!res && res.ok;
 }
 
-function shell(title: string, inner: string, label: string): string {
-  return `<!doctype html><html lang="it"><body style="margin:0;background:#0b0b0f;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#f2f1f6">
+function shell(title: string, inner: string, label: string, lang = "it"): string {
+  return `<!doctype html><html lang="${lang === "en" ? "en" : "it"}"><body style="margin:0;background:#0b0b0f;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#f2f1f6">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0b0b0f;padding:28px 12px"><tr><td align="center">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#16161d;border-radius:20px;padding:28px">
     <tr><td style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#a78bfa;font-weight:700">${esc(label || "Label Form")}</td></tr>
@@ -130,9 +130,14 @@ async function copy(body: Record<string, unknown>): Promise<Response> {
     text += `${label}: ${value || "—"}\n`;
   }
   const rel = `${clip(data.release, 200)}${data.catalog ? ` (${clip(data.catalog, 60)})` : ""}`;
-  const title = `La tua copia — ${rel}`;
-  const inner = `<tr><td style="font-size:14px;color:rgba(242,241,246,.7);padding-top:10px;line-height:1.5">Ecco cosa hai inviato a ${esc(data.label)}. I dati riservati (IBAN, codice fiscale…) sono nascosti per sicurezza.</td></tr>${html}`;
-  const ok = await send(to, title, shell(title, inner, String(data.label ?? "")), `${title}\n${text}`, String(data.reply_to ?? ""));
+  // lingua del modulo (la pagina dell'artista la manda): inglese salvo il modulo sia in italiano
+  const en = body.lang !== "it";
+  const title = en ? `Your copy — ${rel}` : `La tua copia — ${rel}`;
+  const intro = en
+    ? `Here is what you sent to ${esc(data.label)}. Private details (IBAN, tax ID…) are hidden for safety.`
+    : `Ecco cosa hai inviato a ${esc(data.label)}. I dati riservati (IBAN, codice fiscale…) sono nascosti per sicurezza.`;
+  const inner = `<tr><td style="font-size:14px;color:rgba(242,241,246,.7);padding-top:10px;line-height:1.5">${intro}</td></tr>${html}`;
+  const ok = await send(to, title, shell(title, inner, String(data.label ?? ""), en ? "en" : "it"), `${title}\n${text}`, String(data.reply_to ?? ""));
   return ok ? Response.json({ ok: true }) : Response.json({ error: "send_failed" }, { status: 502 });
 }
 

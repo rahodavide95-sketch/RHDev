@@ -56,6 +56,18 @@ scritte (le icone sono il logo dell'etichetta preso da `etichetta/images/logo.pn
   - "più leggibile e ben comprensibile" → testo a 16px, etichette e grigi più chiari.
   - "Esempio EP · CAT001, se clicco non c'è un campo per modificarlo" → è un esempio: si riempie con la release
     vera. Ora il clic apre "Righe in alto" (mostra/nascondi e testo `{release} · {catalogo}`).
+  - "lascia stare il logo, ho visto che si può cambiare la posizione" → il logo del contratto resta com'è (D lo
+    sposta da Contratto › Formattazione). Non forzarne la posizione.
+  - "la lingua del form deve essere in inglese di default" → `form.lang` (predefinita `'en'`). Pagina
+    dell'artista, messaggi (`answers.js`, `links.js`, password), copia PDF ed email della copia in inglese;
+    `js/core/i18n.js` (`tr(it, en)`, `setLang`). L'area dell'etichetta resta in italiano (lingua 'it'; il
+    costruttore usa la lingua del modulo solo mentre è aperto, per l'anteprima). Modulo di partenza
+    "Release delivery"; `translateForm()` traduce solo i testi rimasti come all'inizio (scelta Lingua in Testi);
+    i moduli salvati senza lingua: quello di partenza mai ritoccato passa all'inglese, gli altri restano 'it'.
+  - "bug sui campi per la formattazione: a volte i tasti non funzionano, non mi fa scrivere" → gli editor non
+    stanno più dentro `<label>` (`field()` in `ui.js` usa `<div>` per i controlli composti: il clic finiva sul menu
+    "Paragrafo"), la selezione si ricorda in caratteri (`rich.js`), "+ Dato" non si ricarica mentre si apre,
+    pulsanti senza "salto" al passaggio, i pulsanti finti dell'anteprima spiegano cosa fare.
 
 ## Architettura (niente compilazione, moduli ES)
 

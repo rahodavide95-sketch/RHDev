@@ -1,3 +1,4 @@
+import { tr } from './i18n.js';
 /* Cifratura di Label Form. Tutto succede nel browser con Web Crypto: il server vede solo dati illeggibili.
 
    Chiave dell'etichetta (una sola, la tua)
@@ -257,12 +258,12 @@ export function passwordStrength(pw) {
   if (words.length >= 4) bits = Math.max(bits, words.length * 11);
   bits = Math.max(0, Math.round(bits));
   const score = bits < 36 ? 1 : bits < 50 ? 2 : bits < 64 ? 3 : 4;
-  return { score, bits, label: ['', 'Debole', 'Discreta', 'Buona', 'Ottima'][score] };
+  return { score, bits, label: (tr('', '') + ['', tr('Debole', 'Weak'), tr('Discreta', 'Fair'), tr('Buona', 'Good'), tr('Ottima', 'Excellent')][score]) };
 }
 export const MIN_PASSWORD = 10;
 export function passwordProblem(pw) {
   const s = String(pw || '');
-  if (s.length < MIN_PASSWORD) return `Almeno ${MIN_PASSWORD} caratteri.`;
-  if (passwordStrength(s).score < 2) return 'Troppo facile da indovinare: allungala o aggiungi parole.';
+  if (s.length < MIN_PASSWORD) return tr(`Almeno ${MIN_PASSWORD} caratteri.`, `At least ${MIN_PASSWORD} characters.`);
+  if (passwordStrength(s).score < 2) return tr('Troppo facile da indovinare: allungala o aggiungi parole.', 'Too easy to guess: make it longer or add words.');
   return '';
 }

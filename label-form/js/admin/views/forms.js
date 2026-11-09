@@ -15,8 +15,8 @@ function newFormModal(onCreated) {
     } catch (x) { toast(friendly(x), { type: 'error' }); }
   };
   m.body.append(h('div.pick-grid',
-    h('button.pick', { type: 'button', onclick: () => pick('release') }, h('div.pick-ic', icon('disc', 24)), h('b', 'Consegna release'), h('span.muted', 'Dati, bio, press kit, tracce con BPM, tonalità e split, artwork e contratto. Pronto da usare, modificabile.')),
-    h('button.pick', { type: 'button', onclick: () => pick('blank') }, h('div.pick-ic', icon('file', 24)), h('b', 'Modulo vuoto'), h('span.muted', 'Parti da zero e aggiungi le domande che vuoi.'))));
+    h('button.pick', { type: 'button', onclick: () => pick('release') }, h('div.pick-ic', icon('disc', 24)), h('b', 'Release delivery'), h('span.muted', 'Dati, bio, press kit, tracce con BPM, tonalità e split, artwork e contratto. In inglese (si può passare all\'italiano in Testi). Pronto da usare, modificabile.')),
+    h('button.pick', { type: 'button', onclick: () => pick('blank') }, h('div.pick-ic', icon('file', 24)), h('b', 'Modulo vuoto'), h('span.muted', 'Parti da zero e aggiungi le domande che vuoi (pagina dell\'artista in inglese).'))));
   m.foot.append(btn('Annulla', () => m.close(), { kind: 'ghost' }));
 }
 
@@ -28,7 +28,7 @@ export async function render(el) {
   const create = () => newFormModal(r => { toast('Modulo creato', { type: 'ok' }); go('#/modulo/' + r.id); });
   const add = btn('Nuovo modulo', create, { ic: 'plus' });
   const head = h('div.page-head', h('div', h('h1', 'Moduli'), h('p.muted', 'Cambia domande, testi, colori e contratto quando vuoi: gli artisti vedono sempre la versione aggiornata.')), add);
-  if (!forms.length) { swap(el, head, empty('layers', 'Nessun modulo', 'Crea il modulo "Consegna release" con un tocco.', btn('Nuovo modulo', create, { ic: 'plus' }))); return; }
+  if (!forms.length) { swap(el, head, empty('layers', 'Nessun modulo', 'Crea il modulo "Release delivery" con un tocco.', btn('Nuovo modulo', create, { ic: 'plus' }))); return; }
 
   const card = f => h('div.card.form-card' + (f.archived ? '.archived' : ''),
     h('a.form-main', { href: '#/modulo/' + f.id },

@@ -220,7 +220,7 @@ function showKeySetup() {
         const { record, privateKey, recoveryCode } = await C.createLabelKey(pw.value);
         A.settings = await A.api.saveSettings({ label_name: name.value.trim().slice(0, 120), label_key: record });
         await K.setUnlocked(privateKey, record, false);
-        if (!(await A.api.listForms()).length) await A.api.createForm('Consegna release', defaultForm());
+        if (!(await A.api.listForms()).length) { const f = defaultForm(); await A.api.createForm(f.title, f); }
         showRecovery(recoveryCode, () => startShell());
       } catch (x) { err.textContent = friendly(x); busy(b, false, 'Crea la chiave'); }
     } }, field('Etichetta', name), field('Password di cifratura', pw), strengthMeter(pw), field('Ripeti la password', pw2), err, b));

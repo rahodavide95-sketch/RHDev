@@ -9,8 +9,9 @@ import { applyTheme, formHeader, sectionBlock, textOf } from '../../ui/form-view
 import { contractDoc } from '../../ui/pdf.js';
 import {
   sanitizeForm, FIELD_TYPES, SUB_TYPES, SYSTEM_PLACEHOLDERS, blankField, newId, MUSIC_KEYS, isStatic,
-  WIDTHS, widthOf, nearestWidth, fieldById, restoreContract, TEXT_DEFAULTS, TEXT_LABELS, SHOW_DEFAULTS, SHOW_LABELS,
+  WIDTHS, widthOf, nearestWidth, fieldById, restoreContract, textDefaults, translateForm, TEXT_LABELS, SHOW_DEFAULTS, SHOW_LABELS,
 } from '../../core/schema.js';
+import { setLang, tr } from '../../core/i18n.js';
 import { FONTS, PRESETS, applyPreset, sanitizeTheme, themeWarnings, CONTRACT_STYLE, sanitizeContractStyle } from '../../core/theme.js';
 import { LINK_KINDS } from '../../core/links.js';
 import { contractSnapshot, placeholderLabel } from '../../core/contract.js';
@@ -36,6 +37,7 @@ export async function render(el, id) {
   const invites = await A.api.listInvites();
   const usedBy = invites.filter(i => i.form_id === id).length;
   const form = clone(sanitizeForm(row.schema));
+  setLang(form.lang);   // l'anteprima parla la lingua del modulo (il resto dell'area resta in italiano)
   let tab = 'domande', openField = null, saving = false;
   const pv = { hash: row.preview_hash || '', enc: row.preview_enc || '' };
   const previewAnswers = {};
@@ -77,6 +79,7 @@ export async function render(el, id) {
     Object.assign(form, JSON.parse(s));
     titleIn.value = form.title;
     if (openField && !fieldById(form, openField)) openField = null;
+    setLang(form.lang);
     dirty(); save(); drawTabs(); drawPanel(); drawPreview(); broadcast(); paintHist();
   };
   function undo() { commitSoon.flush(); if (pos > 0) { pos--; restore(hist[pos]); } else toast('Niente da annullare'); }
@@ -124,12 +127,12 @@ export async function render(el, id) {
     applyTheme(frame, clean.theme);
     clear(previewInner);
     const label = labelInfo();
-    const head = () => formHeader({ form: clean, label, release: { title: 'Esempio EP', catalog: 'CAT001' }, artist: 'Nome artista', design: true });
+    const head = () => formHeader({ form: clean, label, release: { title: tr('Esempio EP', 'Example EP'), catalog: 'CAT001' }, artist: tr('Nome artista', 'Artist name'), design: true });
     const ctx = { shareWith: clean.shareWith || A.settings.notify_email, onChange: () => {}, design: true, showRequired: clean.show.required };
     const nav = () => h('div.f-actions', h('button.f-btn.ghost', { type: 'button' }, icon('back', 18), textOf(clean, 'back')), h('button.f-btn', { type: 'button' }, textOf(clean, 'next'), icon('arrowR', 18)));
     const progress = (i, n, name) => clean.show.progress ? h('div.f-progress', h('div.f-progress-row', h('span', textOf(clean, 'step', { n: i, tot: n })), h('span', name)), h('div.f-bar', h('i', { style: { width: Math.round(i / n * 100) + '%' } }))) : null;
     if (tab === 'contratto') {
-      const snap = contractSnapshot({ form: clean, answers: previewAnswers, ctx: { label: label.name, signer: label.signer, release: 'Esempio EP', catalog: 'CAT001', artist: 'Nome artista', artistPct: 50 }, inviteId: 'anteprima',
+      const snap = contractSnapshot({ form: clean, answers: previewAnswers, ctx: { label: label.name, signer: label.signer, release: tr('Esempio EP', 'Example EP'), catalog: 'CAT001', artist: tr('Nome artista', 'Artist name'), artistPct: 50 }, inviteId: 'anteprima',
         labelSignature: clean.contract.labelSigns ? label.signature : '', signature: { name: '', place: '', date: todayYmd(), time: '', png: '' } });
       previewInner.append(h('div.f-wrap', clean.contract.enabled
         ? h('section.f-card', h('h2.f-stitle', textOf(clean, 'contractTitle')), h('p.f-note', textOf(clean, 'contractNote')), h('p.f-note.b-sample', icon('info', 14), ' Con dati d\'esempio: gli spazi vuoti si riempiono con i dati dell\'artista.'), contractDoc(snap, { label }))
@@ -178,7 +181,8 @@ export async function render(el, id) {
       });
       return;
     }
-    if (e.target.closest('.f-actions, .f-foot, .f-progress')) { tab = 'testi'; drawTabs(); drawPanel(); drawPreview(); return; }
+    if (e.target.closest('.f-actions .f-btn')) { toast('Qui i pulsanti sono solo da vedere. Per provarli usa "Link anteprima"; il testo lo cambi nella scheda Testi.'); return; }
+    if (e.target.closest('.f-foot, .f-progress')) { tab = 'testi'; drawTabs(); drawPanel(); drawPreview(); return; }
     if (e.target.closest('.f-titlecard')) { if (tab !== 'domande') { tab = 'domande'; drawTabs(); drawPanel(); drawPreview(); } panel.scrollTo({ top: 0, behavior: 'smooth' }); return; }
     const sec = e.target.closest('[data-section]');
     if (sec && tab === 'domande') { const c = panel.querySelector(`.b-sec[data-sid="${CSS.escape(sec.dataset.section)}"]`); if (c) c.scrollIntoView({ block: 'start', behavior: 'smooth' }); }
@@ -423,15 +427,16 @@ export async function render(el, id) {
 
   /* righe automatiche in alto: nome dell'etichetta, release, saluto */
   function topLines() {
-    form.texts = { ...TEXT_DEFAULTS, ...(form.texts || {}) };
+    const TD = textDefaults(form.lang);
+    form.texts = { ...TD, ...(form.texts || {}) };
     form.show = { ...SHOW_DEFAULTS, ...(form.show || {}) };
     const line = (showKey, textKey, label, hint) => h('div.top-line', { dataset: { line: showKey } },
       toggle(label, form.show[showKey] !== false, v => { form.show[showKey] = v; changed(true); }, hint),
-      textKey && form.show[showKey] !== false ? h('div.txt-row', input({ type: 'text', value: form.texts[textKey], maxlength: 300, placeholder: TEXT_DEFAULTS[textKey], dataset: { txt: textKey }, oninput: e => { form.texts[textKey] = e.target.value; changed(); } }),
-        form.texts[textKey] !== TEXT_DEFAULTS[textKey] ? iconBtn('reset', 'Rimetti il testo di partenza', () => { form.texts[textKey] = TEXT_DEFAULTS[textKey]; changed(true); }, 'tiny') : null) : null);
+      textKey && form.show[showKey] !== false ? h('div.txt-row', input({ type: 'text', value: form.texts[textKey], maxlength: 300, placeholder: TD[textKey], dataset: { txt: textKey }, oninput: e => { form.texts[textKey] = e.target.value; changed(); } }),
+        form.texts[textKey] !== TD[textKey] ? iconBtn('reset', 'Rimetti il testo di partenza', () => { form.texts[textKey] = TD[textKey]; changed(true); }, 'tiny') : null) : null);
     return h('div.top-lines',
       h('span.fld-l', 'Righe in alto (si riempiono da sole)'),
-      h('p.fld-h', 'Qui vedi "Esempio EP · CAT001" e "Nome artista": sono esempi. Per ogni artista si riempiono da soli con la release a cui lo inviti (titolo e numero di catalogo che scrivi in Release) e con il suo nome. Puoi nasconderle o cambiare come sono scritte: {release}, {catalogo}, {artista}.'),
+      h('p.fld-h', 'Qui vedi "' + tr('Esempio EP', 'Example EP') + ' · CAT001" e "' + tr('Nome artista', 'Artist name') + '": sono esempi. Per ogni artista si riempiono da soli con la release a cui lo inviti (titolo e numero di catalogo che scrivi in Release) e con il suo nome. Puoi nasconderle o cambiare come sono scritte: {release}, {catalogo}, {artista}.'),
       line('labelName', null, 'Nome dell\'etichetta', 'Quello di Impostazioni'),
       line('release', 'release', 'Titolo e catalogo della release', ''),
       line('hello', 'hello', 'Saluto all\'artista', ''));
@@ -629,16 +634,30 @@ export async function render(el, id) {
 
   /* testi */
   function textsPanel() {
-    form.texts = { ...TEXT_DEFAULTS, ...(form.texts || {}) };
+    const TD = textDefaults(form.lang);
+    form.texts = { ...TD, ...(form.texts || {}) };
     form.show = { ...SHOW_DEFAULTS, ...(form.show || {}) };
-    const tin = k => h('div.txt-row', input({ type: 'text', value: form.texts[k], maxlength: 300, placeholder: TEXT_DEFAULTS[k], oninput: e => { form.texts[k] = e.target.value; changed(); } }),
-      form.texts[k] !== TEXT_DEFAULTS[k] ? iconBtn('reset', 'Rimetti il testo di partenza', () => { form.texts[k] = TEXT_DEFAULTS[k]; changed(true); }, 'tiny') : null);
+    const tin = k => h('div.txt-row', input({ type: 'text', value: form.texts[k], maxlength: 300, placeholder: TD[k], oninput: e => { form.texts[k] = e.target.value; changed(); } }),
+      form.texts[k] !== TD[k] ? iconBtn('reset', 'Rimetti il testo di partenza', () => { form.texts[k] = TD[k]; changed(true); }, 'tiny') : null);
+    const switchLang = v => {
+      if (v === form.lang) return;
+      const next = translateForm(form, form.lang, v);
+      for (const k of Object.keys(form)) delete form[k];
+      Object.assign(form, next);
+      titleIn.value = form.title;
+      setLang(form.lang);
+      changed(true); drawPreview();
+      toast(v === 'en' ? 'Pagina dell\'artista in inglese' : 'Pagina dell\'artista in italiano');
+    };
     return h('div.b-stack',
+      h('div.card.b-sec', h('h3', 'Lingua'),
+        field('Lingua della pagina per l\'artista', selectEl([['en', 'English (predefinita)'], ['it', 'Italiano']], form.lang, switchLang),
+          'Cambia pulsanti, messaggi di errore, controlli dei link e copie. Le domande e i testi di partenza si traducono da soli; quelli che hai scritto tu restano come sono. Il contratto è sempre in inglese.')),
       h('div.card.b-sec', h('h3', 'Cosa si vede'),
         h('div.tgl-col', Object.entries(SHOW_LABELS).map(([k, l]) => toggle(l, form.show[k] !== false, v => { form.show[k] = v; changed(); })))),
       h('div.card.b-sec', h('h3', 'Testi e pulsanti'),
         h('p.fld-h', 'Cambia qualsiasi parola della pagina dell\'artista. {artista} = nome dell\'artista, {etichetta} = nome dell\'etichetta, {n} e {tot} = numero del passo.'),
-        Object.keys(TEXT_DEFAULTS).map(k => h('label.fld', h('span.fld-l', TEXT_LABELS[k]), tin(k)))),
+        Object.keys(TD).map(k => h('label.fld', h('span.fld-l', TEXT_LABELS[k]), tin(k)))),
       h('div.card.b-sec', h('h3', 'Messaggio dopo l\'invio'),
         richEditor({ value: form.done, onChange: d => { form.done = d; changed(); }, hint: 'Grazie! Abbiamo ricevuto tutto…' }).el,
         h('p.muted.small', 'Dopo l\'invio l\'artista può anche scaricare una copia in PDF o riceverla per email (se le email sono attive).')));
@@ -694,6 +713,7 @@ export async function render(el, id) {
   window.addEventListener('beforeunload', beforeUnload);
   return async () => {
     document.body.classList.remove('wide-view');
+    setLang('it');
     window.removeEventListener('beforeunload', beforeUnload);
     document.removeEventListener('keydown', onKey);
     if (status.classList.contains('busy')) await doSave();

@@ -6,6 +6,7 @@ import { renderRich } from './rich.js';
 import { formatValue, formatDate } from '../core/answers.js';
 import { safeImage, sanitizeContractStyle, contractVars } from '../core/theme.js';
 import { isStatic } from '../core/schema.js';
+import { tr } from '../core/i18n.js';
 
 let loading = null;
 function loadLib() {
@@ -15,7 +16,7 @@ function loadLib() {
       const s = document.createElement('script');
       s.src = new URL('../../vendor/html2pdf.bundle.min.js', import.meta.url).href;
       s.onload = () => resolve();
-      s.onerror = () => { loading = null; reject(new Error('Non riesco a caricare il generatore di PDF')); };
+      s.onerror = () => { loading = null; reject(new Error(tr('Non riesco a caricare il generatore di PDF', 'Could not load the PDF generator'))); };
       document.head.append(s);
     });
   }
@@ -75,12 +76,12 @@ export function contractDoc(snap, { label = {}, signedAt = '', hash = '' } = {})
 
   const cell = (role, png, who, meta) => h('div.cd-sgn', h('span.cd-sgn-role', role),
     safeImage(png)
-      ? [h('img.cd-sig-img', { src: safeImage(png), alt: 'Firma' }), h('div.cd-sig-meta', h('b', who || ''), meta ? [h('br'), meta] : null)]
+      ? [h('img.cd-sig-img', { src: safeImage(png), alt: tr('Firma', 'Signature') }), h('div.cd-sig-meta', h('b', who || ''), meta ? [h('br'), meta] : null)]
       : h('div.cd-sgn-blank', h('span', (v2 && snap.blank) || 'Date / Signature'), h('hr')));
   const artistMeta = [formatDate(s.date), s.time].filter(Boolean).join(' ') + (s.place ? ' · ' + s.place : '');
   const signs = () => h('div.cd-signs',
-    cell(v2 ? snap.labelRole : `Per l'etichetta — ${name}`, snap.labelSignature, (v2 && snap.labelSigner) || label.signer || '', s.png ? formatDate(s.date) : ''),
-    cell(v2 ? snap.artistRole : 'Per l\'artista', s.png, s.name, s.png ? artistMeta : ''));
+    cell(v2 ? snap.labelRole : tr(`Per l'etichetta — ${name}`, `For the Label — ${name}`), snap.labelSignature, (v2 && snap.labelSigner) || label.signer || '', s.png ? formatDate(s.date) : ''),
+    cell(v2 ? snap.artistRole : tr('Per l\'artista', 'For the Artist'), s.png, s.name, s.png ? artistMeta : ''));
   const closing = () => [
     v2 && snap.confirm ? h('p', snap.confirm) : null,
     v2 && snap.dateLabel ? h('p', h('b', snap.dateLabel), ' ', snap.dateText || '—') : null,
@@ -101,8 +102,8 @@ export function contractDoc(snap, { label = {}, signedAt = '', hash = '' } = {})
     append(page1, [snap.accept ? h('p', h('em', snap.accept)) : null, signs()]);
   }
   if (signedAt || hash) root.append(h('p.cd-foot',
-    signedAt ? `Firmato il ${fmtDateTime(signedAt)} (ora registrata dal server). ` : '',
-    hash ? `Impronta SHA-256: ${hash.slice(0, 16)}…${hash.slice(-8)}` : ''));
+    signedAt ? tr(`Firmato il ${fmtDateTime(signedAt)} (ora registrata dal server). `, `Signed on ${fmtDateTime(signedAt)} (time recorded by the server). `) : '',
+    hash ? tr('Impronta SHA-256: ', 'SHA-256 fingerprint: ') + `${hash.slice(0, 16)}…${hash.slice(-8)}` : ''));
   return root;
 }
 
@@ -115,19 +116,19 @@ export function copyDocument({ form, answers, label = {}, release = {}, artist =
       return h('tr', h('th', f.label), h('td', v || '—'));
     });
     if (!rows.length) continue;
-    secs.push(h('section.pdf-sec', h('h3', s.title || 'Dati'), h('table', h('tbody', rows))));
+    secs.push(h('section.pdf-sec', h('h3', s.title || tr('Dati', 'Details')), h('table', h('tbody', rows))));
   }
   const logo = safeImage(label.logo || '');
   return h('div.pdf-doc',
     h('div.pdf-top',
       h('div', h('div.pdf-label', label.name || ''), h('h1', form.title),
         h('div.pdf-sub', [release.title, release.catalog].filter(Boolean).join(' · ')),
-        h('div.pdf-sub', `${artist}${when ? ' · ' + fmtDateTime(when) : ''}${version ? ' · versione ' + version : ''}`)),
+        h('div.pdf-sub', `${artist}${when ? ' · ' + fmtDateTime(when) : ''}${version ? tr(' · versione ', ' · version ') + version : ''}`)),
       logo ? h('img.pdf-logo', { src: logo, alt: '', ref: el => logoTone(logo).then(t => { if (t !== 'none') el.dataset.bg = t; }) }) : null),
     secs,
     contract ? h('div.pdf-break') : null,
     contract ? contractDoc(contract.snap, { label, signedAt: contract.signedAt, hash: contract.hash }) : null,
-    h('p.pdf-foot', 'Copia generata nel browser. I dati viaggiano e restano cifrati: solo l\'etichetta e l\'artista (con la sua password) possono leggerli.'));
+    h('p.pdf-foot', tr('Copia generata nel browser. I dati viaggiano e restano cifrati: solo l\'etichetta e l\'artista (con la sua password) possono leggerli.', 'Copy generated in the browser. The data travels and stays encrypted: only the label and the artist (with their password) can read it.')));
 }
 
 export async function savePdf(docEl, filename) {

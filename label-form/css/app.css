@@ -80,7 +80,7 @@ h1 { font-weight: 700; } h2 { font-weight: 600; }
 .btn:active:not(:disabled) { transform: scale(.98); }
 .btn:disabled { opacity: .5; cursor: default; }
 .btn.ghost { background: var(--ghost); color: var(--text); border-color: var(--line); font-weight: 500; }
-.btn.ghost:hover:not(:disabled) { background: color-mix(in srgb, var(--ghost) 80%, var(--text) 8%); border-color: var(--hover-line); filter: none; transform: translateY(-1px); }
+.btn.ghost:hover:not(:disabled) { background: color-mix(in srgb, var(--ghost) 80%, var(--text) 8%); border-color: var(--hover-line); filter: none; }
 .btn.small { min-height: 34px; padding: 6px 12px; font-size: .86rem; border-radius: 10px; }
 .btn.block { width: 100%; }
 .btn.danger { background: var(--red); border-color: var(--red); color: #2a0710; }
@@ -230,7 +230,7 @@ h1 .chip { margin-left: 10px; font-size: .72rem; letter-spacing: 0; }
 
 /* release */
 .rel-card { display: grid; gap: 14px; text-decoration: none; color: inherit; transition: border-color .15s, transform .15s; }
-.rel-card:hover { border-color: var(--hover-line); transform: translateY(-2px); }
+.rel-card:hover { border-color: var(--hover-line); }
 .rel-top { display: flex; gap: 12px; align-items: flex-start; }
 .rel-ic { width: 42px; height: 42px; border-radius: 12px; background: var(--accent-soft); color: var(--accent-2); display: grid; place-items: center; flex: none; }
 .rel-t { flex: 1; min-width: 0; }

@@ -4,14 +4,15 @@
 import { h, icon, clear, debounce } from './dom.js';
 import { richBlock } from './rich.js';
 import { themeVars, sanitizeTheme, safeImage } from '../core/theme.js';
-import { checkLink, LINK_KINDS } from '../core/links.js';
+import { checkLink, LINK_KINDS, kindHint } from '../core/links.js';
 import { formatValue, fieldProblem, parseNumber, compactIban, formatIban, isFilled } from '../core/answers.js';
 import { isEmptyRich } from '../core/richtext.js';
-import { widthOf, fillText, TEXT_DEFAULTS, SHOW_DEFAULTS } from '../core/schema.js';
+import { widthOf, fillText, textDefaults, SHOW_DEFAULTS } from '../core/schema.js';
+import { tr } from '../core/i18n.js';
 import { logoTone } from './pdf.js';
 
 /** Testi e interruttori della pagina dell'artista (con i valori predefiniti se mancano). */
-export const textOf = (form, key, vars = {}) => fillText((form.texts && form.texts[key]) || TEXT_DEFAULTS[key] || '', vars);
+export const textOf = (form, key, vars = {}) => fillText((form.texts && form.texts[key]) || textDefaults(form.lang)[key] || '', vars);
 export const shown = (form, key) => form.show && typeof form.show[key] === 'boolean' ? form.show[key] : SHOW_DEFAULTS[key];
 const widthStyle = f => ({ '--fw': String(widthOf(f) / 100) });
 /** Maniglia per allargare/stringere un elemento nell'anteprima del costruttore. */
@@ -69,8 +70,8 @@ const fieldId = (path) => 'q-' + path.replace(/[^a-z0-9_-]/gi, '-');
 
 function linkHint(field, shareWith) {
   const kind = LINK_KINDS[field.linkKind] || LINK_KINDS.any;
-  const parts = [field.linkKind === 'any' ? '' : `Accettati: ${kind.hint}`];
-  if (shareWith && (field.linkKind === 'files' || field.linkKind === 'audio')) parts.push(`Condividi il file o la cartella con ${shareWith} (meglio di "chiunque abbia il link").`);
+  const parts = [field.linkKind === 'any' || !kind ? '' : tr('Accettati: ', 'Accepted: ') + kindHint(field.linkKind)];
+  if (shareWith && (field.linkKind === 'files' || field.linkKind === 'audio')) parts.push(tr(`Condividi il file o la cartella con ${shareWith} (meglio di "chiunque abbia il link").`, `Share the file or folder with ${shareWith} (better than "anyone with the link").`));
   return parts.filter(Boolean).join(' ');
 }
 
@@ -105,7 +106,7 @@ function control(field, value, path, ctx, set) {
         const r = checkLink(v, field.linkKind);
         if (!r.ok) { status.classList.add('bad'); status.append(icon('alert', 15), h('span', r.error)); return; }
         status.classList.add(r.warning ? 'warn' : 'ok');
-        status.append(icon(r.warning ? 'alert' : 'checkCircle', 15), h('span', r.warning || (r.provider ? `Link di ${r.provider}` : 'Link valido')));
+        status.append(icon(r.warning ? 'alert' : 'checkCircle', 15), h('span', r.warning || (r.provider ? tr(`Link di ${r.provider}`, `${r.provider} link`) : tr('Link valido', 'Valid link'))));
       };
       const later = debounce(check, 350);
       const inp = h('input.f-input', { ...common, type: 'url', inputmode: 'url', autocomplete: 'off', spellcheck: 'false', maxlength: 2000, value: value || '', placeholder: field.placeholder || 'https://',
@@ -116,7 +117,7 @@ function control(field, value, path, ctx, set) {
     }
     case 'choice': {
       const other = field.other && value && !field.options.includes(value);
-      const otherIn = h('input.f-input.f-other', { type: 'text', maxlength: 300, placeholder: 'Altro…', value: other ? value : '', oninput: e => { set(e.target.value); const r = box.querySelector('input[value="__other"]'); if (r) r.checked = true; } });
+      const otherIn = h('input.f-input.f-other', { type: 'text', maxlength: 300, placeholder: tr('Altro…', 'Other…'), value: other ? value : '', oninput: e => { set(e.target.value); const r = box.querySelector('input[value="__other"]'); if (r) r.checked = true; } });
       const box = h('div.f-options', { role: 'radiogroup', id },
         field.options.map(o => h('label.f-opt', h('input', { type: 'radio', name: id, value: o, checked: value === o, onchange: () => set(o) }), h('span', o))),
         field.other ? h('label.f-opt.f-opt-other', h('input', { type: 'radio', name: id, value: '__other', checked: !!other, onchange: () => { set(otherIn.value); otherIn.focus(); } }), otherIn) : null);
@@ -125,7 +126,7 @@ function control(field, value, path, ctx, set) {
     case 'checks': {
       const cur = new Set(Array.isArray(value) ? value : []);
       const others = [...cur].filter(x => !field.options.includes(x));
-      const otherIn = h('input.f-input.f-other', { type: 'text', maxlength: 300, placeholder: 'Altro…', value: others[0] || '', oninput: () => emit() });
+      const otherIn = h('input.f-input.f-other', { type: 'text', maxlength: 300, placeholder: tr('Altro…', 'Other…'), value: others[0] || '', oninput: () => emit() });
       const boxes = [];
       const emit = () => {
         const out = boxes.filter(b => b.checked).map(b => b.value);
@@ -134,11 +135,11 @@ function control(field, value, path, ctx, set) {
       };
       return h('div.f-options', { id },
         field.options.map(o => h('label.f-opt', h('input', { type: 'checkbox', value: o, checked: cur.has(o), ref: el => boxes.push(el), onchange: emit }), h('span', o))),
-        field.other ? h('label.f-opt.f-opt-other', h('span.f-other-l', 'Altro:'), otherIn) : null);
+        field.other ? h('label.f-opt.f-opt-other', h('span.f-other-l', tr('Altro:', 'Other:')), otherIn) : null);
     }
     case 'select':
       return h('div.f-selectwrap', h('select.f-input', { ...common, onchange: e => set(e.target.value) },
-        h('option', { value: '' }, field.placeholder || 'Scegli…'),
+        h('option', { value: '' }, field.placeholder || tr('Scegli…', 'Choose…')),
         field.options.map(o => h('option', { value: o, selected: value === o }, o))), icon('chevron', 16));
     case 'split': return splitControl(field, value, id, set);
     default: return h('input.f-input', { ...common, type: 'text', maxlength: field.maxLength || 300, value: value || '', oninput: e => set(e.target.value) });
@@ -155,18 +156,18 @@ function splitControl(field, value, id, set) {
     clear(wrap);
     rows.forEach((r, i) => {
       wrap.append(h('div.f-split-row',
-        h('input.f-input', { type: 'text', placeholder: 'Nome e cognome', maxlength: 120, value: r.name || '', 'aria-label': 'Nome', oninput: e => { r.name = e.target.value; emit(); } }),
-        h('div.f-selectwrap', h('select.f-input', { 'aria-label': 'Ruolo', onchange: e => { r.role = e.target.value; emit(); } },
-          h('option', { value: '' }, 'Ruolo'), field.roles.map(o => h('option', { value: o, selected: r.role === o }, o))), icon('chevron', 16)),
-        h('div.f-num.f-pct', h('input.f-input', { type: 'text', inputmode: 'decimal', maxlength: 6, value: r.pct ?? '', 'aria-label': 'Percentuale', oninput: e => { r.pct = e.target.value; emit(); } }), h('span.f-unit', '%')),
-        h('button.f-iconbtn', { type: 'button', title: 'Togli', 'aria-label': 'Togli questa persona', disabled: rows.length === 1, onclick: () => { rows.splice(i, 1); emit(); draw(); } }, icon('x', 16))));
+        h('input.f-input', { type: 'text', placeholder: tr('Nome e cognome', 'Full name'), maxlength: 120, value: r.name || '', 'aria-label': tr('Nome', 'Name'), oninput: e => { r.name = e.target.value; emit(); } }),
+        h('div.f-selectwrap', h('select.f-input', { 'aria-label': tr('Ruolo', 'Role'), onchange: e => { r.role = e.target.value; emit(); } },
+          h('option', { value: '' }, tr('Ruolo', 'Role')), field.roles.map(o => h('option', { value: o, selected: r.role === o }, o))), icon('chevron', 16)),
+        h('div.f-num.f-pct', h('input.f-input', { type: 'text', inputmode: 'decimal', maxlength: 6, value: r.pct ?? '', 'aria-label': tr('Percentuale', 'Percentage'), oninput: e => { r.pct = e.target.value; emit(); } }), h('span.f-unit', '%')),
+        h('button.f-iconbtn', { type: 'button', title: tr('Togli', 'Remove'), 'aria-label': tr('Togli questa persona', 'Remove this person'), disabled: rows.length === 1, onclick: () => { rows.splice(i, 1); emit(); draw(); } }, icon('x', 16))));
     });
-    wrap.append(h('div.f-split-foot', h('button.f-add', { type: 'button', onclick: () => { rows.push({ name: '', role: '', pct: '' }); emit(); draw(); wrap.querySelectorAll('.f-split-row input')[(rows.length - 1) * 2]?.focus(); } }, icon('plus', 16), 'Aggiungi persona'), total));
+    wrap.append(h('div.f-split-foot', h('button.f-add', { type: 'button', onclick: () => { rows.push({ name: '', role: '', pct: '' }); emit(); draw(); wrap.querySelectorAll('.f-split-row input')[(rows.length - 1) * 2]?.focus(); } }, icon('plus', 16), tr('Aggiungi persona', 'Add person')), total));
     paintTotal();
   };
   const paintTotal = () => {
     const tot = rows.reduce((a, r) => a + (parseNumber(r.pct) || 0), 0);
-    total.textContent = `Totale ${String(Math.round(tot * 100) / 100).replace('.', ',')}%`;
+    total.textContent = tr(`Totale ${String(Math.round(tot * 100) / 100).replace('.', ',')}%`, `Total ${Math.round(tot * 100) / 100}%`);
     total.classList.toggle('bad', field.total100 && Math.abs(tot - 100) > 0.01);
   };
   const emit = () => { set(rows.map(r => ({ name: r.name || '', role: r.role || '', pct: r.pct ?? '' }))); paintTotal(); };
@@ -204,8 +205,8 @@ export function fieldBlock(field, answers, ctx, path = field.id, setter = null) 
   const value = setter ? ctx.valueOf(path) : answers[field.id];
   const star = field.required && !ctx.readonly && ctx.showRequired !== false;
   const box = h('div.f-field' + (ctx.locked ? '.locked' : ''), { dataset: { path, fid: field.id }, style: widthStyle(field) },
-    h('label.f-q' + (field.hideLabel ? '.f-q-hidden' : ''), { for: fieldId(path) }, field.label, star ? h('span.f-req', { 'aria-label': 'obbligatorio' }, ' *') : null,
-      ctx.locked ? h('span.f-lock', icon('lock', 14), 'Firmato') : null),
+    h('label.f-q' + (field.hideLabel ? '.f-q-hidden' : ''), { for: fieldId(path) }, field.label, star ? h('span.f-req', { 'aria-label': tr('obbligatorio', 'required') }, ' *') : null,
+      ctx.locked ? h('span.f-lock', icon('lock', 14), tr('Firmato', 'Signed')) : null),
     !ctx.readonly && !isEmptyRich(field.help) ? richBlock(field.help, {}, 'f-help') : null,
     field.type === 'group' ? groupControl(field, answers, ctx, path) : control(field, value, path, ctx, set),
     field.type === 'link' && !ctx.readonly && !ctx.locked ? h('p.f-hint', linkHint(field, ctx.shareWith)) : null,
@@ -231,10 +232,10 @@ function groupControl(field, answers, ctx, path) {
       };
       const head = h('div.f-item-head', h('span.f-item-n', `${field.itemLabel} ${i + 1}`),
         ctx.readonly || ctx.locked ? null : h('span.f-item-tools',
-          h('button.f-iconbtn', { type: 'button', title: 'Sposta su', 'aria-label': 'Sposta su', disabled: i === 0, onclick: () => { items.splice(i - 1, 0, items.splice(i, 1)[0]); changed(); draw(); } }, icon('up', 16)),
-          h('button.f-iconbtn', { type: 'button', title: 'Sposta giù', 'aria-label': 'Sposta giù', disabled: i === items.length - 1, onclick: () => { items.splice(i + 1, 0, items.splice(i, 1)[0]); changed(); draw(); } }, icon('down', 16)),
-          h('button.f-iconbtn', { type: 'button', title: 'Togli', 'aria-label': `Togli ${field.itemLabel} ${i + 1}`, disabled: items.length <= field.min,
-            onclick: () => { const filled = field.fields.some(sf => isFilled(sf, item[sf.id])); if (filled && !confirm(`Togliere ${field.itemLabel.toLowerCase()} ${i + 1}?`)) return; items.splice(i, 1); changed(); draw(); } }, icon('trash', 16))));
+          h('button.f-iconbtn', { type: 'button', title: tr('Sposta su', 'Move up'), 'aria-label': tr('Sposta su', 'Move up'), disabled: i === 0, onclick: () => { items.splice(i - 1, 0, items.splice(i, 1)[0]); changed(); draw(); } }, icon('up', 16)),
+          h('button.f-iconbtn', { type: 'button', title: tr('Sposta giù', 'Move down'), 'aria-label': tr('Sposta giù', 'Move down'), disabled: i === items.length - 1, onclick: () => { items.splice(i + 1, 0, items.splice(i, 1)[0]); changed(); draw(); } }, icon('down', 16)),
+          h('button.f-iconbtn', { type: 'button', title: tr('Togli', 'Remove'), 'aria-label': tr(`Togli ${field.itemLabel} ${i + 1}`, `Remove ${field.itemLabel} ${i + 1}`), disabled: items.length <= field.min,
+            onclick: () => { const filled = field.fields.some(sf => isFilled(sf, item[sf.id])); if (filled && !confirm(tr(`Togliere ${field.itemLabel.toLowerCase()} ${i + 1}?`, `Remove ${field.itemLabel.toLowerCase()} ${i + 1}?`))) return; items.splice(i, 1); changed(); draw(); } }, icon('trash', 16))));
       const body = h('div.f-item-body');
       for (const sf of field.fields) {
         const p = `${path}.${i}.${sf.id}`;
@@ -247,7 +248,7 @@ function groupControl(field, answers, ctx, path) {
       list.append(h('div.f-item', head, body));
     });
     if (!ctx.readonly && !ctx.locked && items.length < field.max) {
-      list.append(h('button.f-add.f-add-item', { type: 'button', onclick: () => { items.push({}); changed(); draw(); const last = list.querySelectorAll('.f-item'); last[last.length - 1]?.querySelector('input, textarea, select')?.focus(); } }, icon('plus', 17), `Aggiungi ${field.itemLabel.toLowerCase()}`));
+      list.append(h('button.f-add.f-add-item', { type: 'button', onclick: () => { items.push({}); changed(); draw(); const last = list.querySelectorAll('.f-item'); last[last.length - 1]?.querySelector('input, textarea, select')?.focus(); } }, icon('plus', 17), tr(`Aggiungi ${field.itemLabel.toLowerCase()}`, `Add ${field.itemLabel.toLowerCase()}`)));
     }
   };
   draw();

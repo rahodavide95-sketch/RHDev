@@ -41,9 +41,11 @@ export const btn = (label, onclick, { ic, kind = '', type = 'button', title, dis
   h('button.btn' + (kind ? '.' + kind.split(' ').join('.') : ''), { type, onclick, title, disabled }, ic ? icon(ic, 18) : null, label ? h('span', label) : null);
 export const iconBtn = (ic, title, onclick, cls = '') => h('button.icon-btn' + (cls ? '.' + cls : ''), { type: 'button', title, 'aria-label': title, onclick }, icon(ic, 18));
 
-/** Riga di campo con etichetta. */
+/** Riga di campo con etichetta. Solo un campo semplice sta dentro <label>: un editor o un gruppo di
+    controlli dentro <label> riceverebbe i clic sul primo pulsante/menu (e non si potrebbe scrivere). */
 export function field(label, control, hint = '') {
-  return h('label.fld', h('span.fld-l', label), control, hint ? h('span.fld-h', hint) : null);
+  const simple = control instanceof HTMLElement && /^(INPUT|SELECT|TEXTAREA)$/.test(control.tagName);
+  return h((simple ? 'label' : 'div') + '.fld', h('span.fld-l', label), control, hint ? h('span.fld-h', hint) : null);
 }
 export function toggle(label, checked, onchange, hint = '') {
   return h('label.tgl', h('input', { type: 'checkbox', checked, onchange: e => onchange(e.target.checked) }), h('span.tgl-ui'), h('span.tgl-t', h('span', label), hint ? h('small', hint) : null));

@@ -2,6 +2,8 @@
    che non ci siano errori di battitura nel dominio e che non siano link "sbagliati"
    (la propria cartella personale invece del file condiviso, link che scadono, ecc.). */
 
+import { tr } from './i18n.js';
+
 export const PROVIDERS = [
   { id: 'gdrive', name: 'Google Drive', hosts: ['drive.google.com', 'docs.google.com'], kinds: ['files', 'audio'] },
   { id: 'dropbox', name: 'Dropbox', hosts: ['dropbox.com', 'db.tt', 'dl.dropboxusercontent.com'], kinds: ['files', 'audio'] },
@@ -32,12 +34,12 @@ export const PROVIDERS = [
 ];
 
 export const LINK_KINDS = {
-  any: { label: 'Qualsiasi sito', hint: 'Un indirizzo web qualsiasi.' },
-  files: { label: 'Cartella o file (Drive, Dropbox…)', hint: 'Google Drive, Dropbox, OneDrive, iCloud, WeTransfer…' },
-  audio: { label: 'Audio (Drive, Dropbox, SoundCloud privato…)', hint: 'Google Drive, Dropbox, SoundCloud (anche privato), DISCO…' },
-  social: { label: 'Profilo social', hint: 'Instagram, SoundCloud, Facebook, TikTok, RA, Linktree…' },
-  music: { label: 'Musica pubblicata', hint: 'Spotify, Bandcamp, Beatport, Apple Music, SoundCloud…' },
-  video: { label: 'Video', hint: 'YouTube, Vimeo, TikTok…' },
+  any: { label: 'Qualsiasi sito', hint: 'Un indirizzo web qualsiasi.', en: 'Any web address.' },
+  files: { label: 'Cartella o file (Drive, Dropbox…)', hint: 'Google Drive, Dropbox, OneDrive, iCloud, WeTransfer…', en: 'Google Drive, Dropbox, OneDrive, iCloud, WeTransfer…' },
+  audio: { label: 'Audio (Drive, Dropbox, SoundCloud privato…)', hint: 'Google Drive, Dropbox, SoundCloud (anche privato), DISCO…', en: 'Google Drive, Dropbox, SoundCloud (private too), DISCO…' },
+  social: { label: 'Profilo social', hint: 'Instagram, SoundCloud, Facebook, TikTok, RA, Linktree…', en: 'Instagram, SoundCloud, Facebook, TikTok, RA, Linktree…' },
+  music: { label: 'Musica pubblicata', hint: 'Spotify, Bandcamp, Beatport, Apple Music, SoundCloud…', en: 'Spotify, Bandcamp, Beatport, Apple Music, SoundCloud…' },
+  video: { label: 'Video', hint: 'YouTube, Vimeo, TikTok…', en: 'YouTube, Vimeo, TikTok…' },
 };
 
 const hostMatches = (host, h) => host === h || host.endsWith('.' + h);
@@ -79,67 +81,70 @@ export function typoSuggestion(host) {
  * Controlla un link. kind: 'any' | 'files' | 'audio' | 'social' | 'music' | 'video'
  * → { ok, url, provider, error, warning }
  */
+/** Elenco dei siti accettati, nella lingua attiva. */
+export const kindHint = kind => { const k = LINK_KINDS[kind]; return k ? tr(k.hint, k.en || k.hint) : ''; };
+
 export function checkLink(input, kind = 'any') {
   let s = String(input || '').trim();
   const res = { ok: false, url: '', provider: null, error: '', warning: '' };
-  if (!s) { res.error = 'Incolla un link.'; return res; }
-  if (s.length > 2000) { res.error = 'Il link è troppo lungo.'; return res; }
+  if (!s) { res.error = tr('Incolla un link.', 'Paste a link.'); return res; }
+  if (s.length > 2000) { res.error = tr('Il link è troppo lungo.', 'The link is too long.'); return res; }
   if (/\s/.test(s)) {
     const parts = s.split(/\s+/).filter(Boolean);
-    res.error = parts.length > 1 && parts.every(p => /^https?:\/\//i.test(p)) ? 'Hai incollato più link: in questo campo ne va uno solo.' : 'Il link non deve contenere spazi.';
+    res.error = parts.length > 1 && parts.every(p => /^https?:\/\//i.test(p)) ? tr('Hai incollato più link: in questo campo ne va uno solo.', 'You pasted more than one link: this field takes just one.') : tr('Il link non deve contenere spazi.', 'The link must not contain spaces.');
     return res;
   }
-  if (/^(javascript|data|vbscript|file|blob):/i.test(s)) { res.error = 'Questo non è un link web.'; return res; }
+  if (/^(javascript|data|vbscript|file|blob):/i.test(s)) { res.error = tr('Questo non è un link web.', 'This is not a web link.'); return res; }
   if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(s)) {
     if (/^[\w-]+(\.[\w-]+)+(\/|$|\?)/.test(s)) s = 'https://' + s;   // "drive.google.com/…" senza https
-    else { res.error = 'Non sembra un link: deve iniziare con https://'; return res; }
+    else { res.error = tr('Non sembra un link: deve iniziare con https://', 'This doesn\'t look like a link: it must start with https://'); return res; }
   }
   let url;
-  try { url = new URL(s); } catch { res.error = 'Il link non è valido: copialo di nuovo dall\'app.'; return res; }
+  try { url = new URL(s); } catch { res.error = tr('Il link non è valido: copialo di nuovo dall\'app.', 'The link is not valid: copy it again from the app.'); return res; }
   if (url.protocol === 'http:') url.protocol = 'https:';
-  if (url.protocol !== 'https:') { res.error = 'Il link deve iniziare con https://'; return res; }
-  if (url.username || url.password) { res.error = 'Il link non deve contenere nome utente o password.'; return res; }
+  if (url.protocol !== 'https:') { res.error = tr('Il link deve iniziare con https://', 'The link must start with https://'); return res; }
+  if (url.username || url.password) { res.error = tr('Il link non deve contenere nome utente o password.', 'The link must not contain a username or password.'); return res; }
   const host = url.hostname.toLowerCase().replace(/\.$/, '');
   if (!/^[a-z0-9.-]+\.[a-z]{2,}$/.test(host) || host.includes('..')) {
     const sug = typoSuggestion(host);
-    res.error = sug ? `Il dominio sembra sbagliato: forse intendevi ${sug}?` : 'Il dominio del link non è valido.';
+    res.error = sug ? tr(`Il dominio sembra sbagliato: forse intendevi ${sug}?`, `The domain looks wrong: did you mean ${sug}?`) : tr('Il dominio del link non è valido.', 'The link\'s domain is not valid.');
     return res;
   }
   const provider = providerOf(host);
   if (!provider) {
     const sug = typoSuggestion(host);
-    if (sug) { res.error = `"${host}" sembra scritto male: forse intendevi ${sug}?`; return res; }
+    if (sug) { res.error = tr(`"${host}" sembra scritto male: forse intendevi ${sug}?`, `"${host}" looks misspelled: did you mean ${sug}?`); return res; }
     if (kind !== 'any') {
-      res.error = `Questo campo accetta link di: ${LINK_KINDS[kind]?.hint || ''}`.trim();
+      res.error = (tr('Questo campo accetta link di: ', 'This field accepts links from: ') + kindHint(kind)).trim();
       return res;
     }
   } else if (kind !== 'any' && !provider.kinds.includes(kind)) {
-    res.error = `Un link di ${provider.name} non va bene qui. Accettati: ${LINK_KINDS[kind]?.hint || ''}`;
+    res.error = tr(`Un link di ${provider.name} non va bene qui. Accettati: `, `A ${provider.name} link doesn't fit here. Accepted: `) + kindHint(kind);
     return res;
   }
   const path = url.pathname.replace(/\/+$/, '');
   if (provider) {
     if (provider.id === 'gdrive') {
       if (host === 'drive.google.com' && (path === '' || /^\/drive(\/u\/\d+)?\/(my-drive|home|recent|shared-with-me|starred|computers|trash)$/.test(path) || path === '/drive')) {
-        res.error = 'Questo è il link alla tua pagina di Drive, non a un file o una cartella condivisa. Apri il file o la cartella, tocca "Condividi" e copia il link.';
+        res.error = tr('Questo è il link alla tua pagina di Drive, non a un file o una cartella condivisa. Apri il file o la cartella, tocca "Condividi" e copia il link.', 'This is the link to your Drive home, not to a shared file or folder. Open the file or folder, tap "Share" and copy the link.');
         return res;
       }
       if (!/\/(file\/d|drive\/(u\/\d+\/)?folders|open|uc|document\/d|spreadsheets\/d|presentation\/d|drive\/folders)/.test(path + '/') && !url.searchParams.get('id')) {
-        res.warning = 'Controlla che sia il link di condivisione del file o della cartella.';
+        res.warning = tr('Controlla che sia il link di condivisione del file o della cartella.', 'Check that this is the sharing link of the file or folder.');
       }
     } else if (provider.id === 'dropbox' && host.endsWith('dropbox.com')) {
       if (path === '' || /^\/(home|recents|photos|requests|deleted_files|account)/.test(path)) {
-        res.error = 'Questo è il link alla tua pagina di Dropbox. Apri il file o la cartella, tocca "Condividi" › "Copia link".';
+        res.error = tr('Questo è il link alla tua pagina di Dropbox. Apri il file o la cartella, tocca "Condividi" › "Copia link".', 'This is the link to your Dropbox home. Open the file or folder, tap "Share" › "Copy link".');
         return res;
       }
     } else if (provider.id === 'soundcloud' && /^\/(you|discover|stream|upload|feed)?$/.test(path)) {
-      res.error = 'Questo è il link alla home di SoundCloud: copia il link della traccia o del profilo.';
+      res.error = tr('Questo è il link alla home di SoundCloud: copia il link della traccia o del profilo.', 'This is the SoundCloud home page: copy the link of the track or profile.');
       return res;
     } else if (provider.id === 'instagram' && (path === '' || /^\/(accounts|explore|direct)/.test(path))) {
-      res.error = 'Copia il link del profilo (es. instagram.com/nomeartista).';
+      res.error = tr('Copia il link del profilo (es. instagram.com/nomeartista).', 'Copy your profile link (e.g. instagram.com/artistname).');
       return res;
     }
-    if (provider.expires) res.warning = `I link di ${provider.name} scadono dopo pochi giorni: se puoi usa Google Drive o Dropbox.`;
+    if (provider.expires) res.warning = tr(`I link di ${provider.name} scadono dopo pochi giorni: se puoi usa Google Drive o Dropbox.`, `${provider.name} links expire after a few days: if you can, use Google Drive or Dropbox.`);
   }
   // via i parametri di tracciamento più comuni
   // (mai quelli che servono ad aprire il file, come "rlkey" di Dropbox o "id" di Drive)

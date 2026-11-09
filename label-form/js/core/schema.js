@@ -2,7 +2,7 @@
    sanitizeForm() è la difesa: qualsiasi cosa arrivi (dal database, da un file, da un errore)
    esce come modulo valido, con id unici e limiti di lunghezza. */
 
-import { sanitizeRich, fromPlain, placeholdersIn } from './richtext.js';
+import { sanitizeRich, fromPlain, placeholdersIn, richToText } from './richtext.js';
 import { sanitizeTheme, DEFAULT_THEME, sanitizeContractStyle, CONTRACT_STYLE, safeImage } from './theme.js';
 import { LINK_KINDS } from './links.js';
 
@@ -46,6 +46,7 @@ export const SENSITIVE_TYPES = ['iban', 'taxid'];
 export const MUSIC_KEYS = ['Am (8A)', 'C (8B)', 'Em (9A)', 'G (9B)', 'Bm (10A)', 'D (10B)', 'F#m (11A)', 'A (11B)', 'C#m (12A)', 'E (12B)',
   'G#m (1A)', 'B (1B)', 'D#m (2A)', 'F# (2B)', 'A#m (3A)', 'C# (3B)', 'Fm (4A)', 'G# (4B)', 'Cm (5A)', 'D# (5B)', 'Gm (6A)', 'A# (6B)', 'Dm (7A)', 'F (7B)'];
 export const SPLIT_ROLES = ['Autore', 'Compositore', 'Produttore', 'Remixer', 'Featuring', 'Editore'];
+export const SPLIT_ROLES_EN = ['Author', 'Composer', 'Producer', 'Remixer', 'Featuring', 'Publisher'];
 
 /** Segnaposto del contratto che non sono campi del modulo. */
 export const SYSTEM_PLACEHOLDERS = {
@@ -62,19 +63,35 @@ export const SYSTEM_PLACEHOLDERS = {
   $date: 'Data della firma',
 };
 
-/* Testi della pagina dell'artista: tutti modificabili dal costruttore. */
-export const TEXT_DEFAULTS = {
-  release: '{release} · {catalogo}',
-  hello: 'Ciao {artista}!',
-  next: 'Avanti', back: 'Indietro', send: 'Invia', saveEdit: 'Salva le modifiche',
-  step: 'Passo {n} di {tot}',
-  reviewTitle: 'Controlla e invia',
-  contractTitle: 'Leggi il contratto',
-  contractNote: 'Dentro ci sono già i tuoi dati. Dopo la firma non si potrà più cambiare.',
-  signTitle: 'Firma', signBtn: 'Firmo e continuo',
-  doneTitle: 'Inviato!',
-  foot: 'I tuoi dati vengono cifrati in questo browser prima di partire: li può leggere solo {etichetta}.',
+/* Testi della pagina dell'artista: tutti modificabili dal costruttore, nella lingua del modulo. */
+export const TEXTS = {
+  it: {
+    release: '{release} · {catalogo}',
+    hello: 'Ciao {artista}!',
+    next: 'Avanti', back: 'Indietro', send: 'Invia', saveEdit: 'Salva le modifiche',
+    step: 'Passo {n} di {tot}',
+    reviewTitle: 'Controlla e invia',
+    contractTitle: 'Leggi il contratto',
+    contractNote: 'Dentro ci sono già i tuoi dati. Dopo la firma non si potrà più cambiare.',
+    signTitle: 'Firma', signBtn: 'Firmo e continuo',
+    doneTitle: 'Inviato!',
+    foot: 'I tuoi dati vengono cifrati in questo browser prima di partire: li può leggere solo {etichetta}.',
+  },
+  en: {
+    release: '{release} · {catalogo}',
+    hello: 'Hi {artista}!',
+    next: 'Next', back: 'Back', send: 'Submit', saveEdit: 'Save changes',
+    step: 'Step {n} of {tot}',
+    reviewTitle: 'Review and submit',
+    contractTitle: 'Read the contract',
+    contractNote: 'Your details are already in it. Once signed, it can no longer be changed.',
+    signTitle: 'Signature', signBtn: 'Sign and continue',
+    doneTitle: 'Sent!',
+    foot: 'Your data is encrypted in this browser before it is sent: only {etichetta} can read it.',
+  },
 };
+export const TEXT_DEFAULTS = TEXTS.it;
+export const textDefaults = lang => TEXTS[lang === 'it' ? 'it' : 'en'];
 export const TEXT_LABELS = {
   release: 'Riga della release (in alto)',
   hello: 'Saluto (sotto il titolo)', next: 'Pulsante "Avanti"', back: 'Pulsante "Indietro"', send: 'Pulsante di invio', saveEdit: 'Pulsante per salvare le modifiche',
@@ -86,7 +103,8 @@ export const SHOW_LABELS = {
   labelName: 'Nome dell\'etichetta in alto', release: 'Titolo della release in alto', hello: 'Saluto all\'artista', progress: 'Barra di avanzamento',
   required: 'Asterisco sulle domande obbligatorie', draft: 'Avviso della bozza salvata', foot: 'Nota in fondo alla pagina',
 };
-export const fillText = (t, vars) => String(t || '').replace(/\{(\w+)\}/g, (m, k) => vars[k] !== undefined ? String(vars[k]) : m);
+const ALIAS = { artist: 'artista', name: 'nome', label: 'etichetta', catalog: 'catalogo', total: 'tot' };
+export const fillText = (t, vars) => String(t || '').replace(/\{(\w+)\}/g, (m, k) => vars[k] !== undefined ? String(vars[k]) : vars[ALIAS[k]] !== undefined ? String(vars[ALIAS[k]]) : m);
 
 export const LIMITS = { sections: 30, fieldsPerSection: 80, fields: 300, options: 100, subFields: 20 };
 
@@ -244,7 +262,13 @@ export function restoreContract(contract, sections) {
 
 /** Modulo pulito e valido, qualunque cosa arrivi. */
 export function sanitizeForm(raw) {
-  const f = raw && typeof raw === 'object' ? raw : {};
+  let f = raw && typeof raw === 'object' ? raw : {};
+  // lingua della pagina dell'artista. I moduli salvati prima non l'avevano: quello di partenza mai
+  // ritoccato passa all'inglese (solo i testi di partenza si traducono), gli altri restano in italiano.
+  let lang = f.lang === 'it' || f.lang === 'en' ? f.lang : null;
+  if (!lang) {
+    if (String(f.title || '').trim() === DEF.title[0]) { f = translateForm(f, 'it', 'en'); lang = 'en'; } else lang = 'it';
+  }
   const ids = new Set(Object.keys(SYSTEM_PLACEHOLDERS));
   const sids = new Set();
   let total = 0;
@@ -270,7 +294,9 @@ export function sanitizeForm(raw) {
     sections,
     contract: cleanContract(f.contract, sections),
     done: sanitizeRich(f.done),
-    texts: Object.fromEntries(Object.entries(TEXT_DEFAULTS).map(([k, d]) => [k, str(f.texts && f.texts[k], 300).trim() || d])),
+    lang,
+    // un testo uguale a quello di partenza (in qualsiasi lingua) segue la lingua del modulo
+    texts: Object.fromEntries(Object.keys(TEXTS.it).map(k => { const v = str(f.texts && f.texts[k], 300).trim(); return [k, !v || v === TEXTS.it[k] || v === TEXTS.en[k] ? TEXTS[lang][k] : v]; })),
     show: Object.fromEntries(Object.entries(SHOW_DEFAULTS).map(([k, d]) => [k, bool(f.show && f.show[k], d)])),
     shareWith: typeof f.shareWith === 'string' && /^[^@\s<>"]{1,64}@[^@\s<>"]{1,190}\.[a-z]{2,}$/i.test(f.shareWith.trim()) ? f.shareWith.trim().toLowerCase() : '',
     theme: sanitizeTheme(f.theme || DEFAULT_THEME),
@@ -359,21 +385,71 @@ export function labelContract(fullNameId) {
   };
 }
 
-/** Il modulo di partenza: "Consegna release", con i campi concordati con l'etichetta. */
-export function defaultForm() {
+/* Testi del modulo di partenza in italiano e in inglese: servono a crearlo nella lingua giusta e a
+   tradurre quelli rimasti come all'inizio quando si cambia lingua (quelli riscritti non si toccano). */
+const DEF = {
+  title: ['Consegna release', 'Release delivery'],
+  intro: ['Ciao! Qui ci mandi tutto quello che serve per la release: dati, bio, press kit, tracce, artwork e contratto.\nPuoi lasciare il modulo e riprenderlo: la bozza resta su questo dispositivo (tranne i dati bancari e fiscali, per sicurezza).',
+    'Hi! Here you can send us everything we need for the release: details, bio, press kit, tracks, artwork and contract.\nYou can leave the form and come back later: the draft stays on this device (except bank and tax details, for safety).'],
+  sArtist: ['Artista', 'Artist'], artistName: ['Nome d\'arte', 'Artist name'], phone: ['Telefono', 'Phone'],
+  bioHelp: ['In inglese, 80–150 parole. Scrivi in terza persona.', 'In English, 80–150 words, written in the third person.'],
+  pressFolder: ['Cartella press (foto e logo)', 'Press folder (photos and logo)'],
+  pressHelp: ['Foto in alta risoluzione (almeno 3000 px) e logo in PNG trasparente, in una cartella condivisa.', 'High-resolution photos (at least 3000 px) and logo as a transparent PNG, in a shared folder.'],
+  sTracks: ['Tracce', 'Tracks'], track: ['Traccia', 'Track'], tTitle: ['Titolo', 'Title'], version: ['Versione / mix', 'Version / mix'],
+  wav: ['Link al WAV', 'WAV link'], wavHelp: ['WAV 24 bit, 44,1 kHz o superiore.', 'WAV 24-bit, 44.1 kHz or higher.'],
+  key: ['Tonalità', 'Key'], credits: ['Crediti e split', 'Credits and splits'],
+  artHelp: ['3000 × 3000 px, JPG o PNG. Se lo prepara l\'etichetta lascia vuoto.', '3000 × 3000 px, JPG or PNG. Leave it empty if the label is making it.'],
+  sContract: ['Dati per il contratto', 'Contract details'],
+  contractDesc: ['Questi dati finiscono nel contratto: dopo la firma non si possono più modificare.', 'These details go into the contract: once signed, they can no longer be changed.'],
+  fullName: ['Nome e cognome', 'Full name'], birth: ['Data di nascita', 'Date of birth'], tax: ['Codice fiscale / Tax ID', 'Tax ID / Codice fiscale'],
+  address: ['Indirizzo di residenza', 'Home address'], iban: ['IBAN per i pagamenti', 'IBAN for payments'], holder: ['Intestatario del conto', 'Account holder'],
+  done: ['Grazie! Abbiamo ricevuto tutto. Ti scriviamo noi se manca qualcosa.', 'Thank you! We received everything. We will get in touch if anything is missing.'],
+  blank: ['Nuovo modulo', 'New form'],
+};
+const DEF_PAIRS = Object.values(DEF);
+const tStr = (v, fi, ti) => { if (typeof v !== 'string') return v; const t = v.trim(); const p = DEF_PAIRS.find(x => x[fi] === t); return p ? p[ti] : v; };
+const tRich = (doc, fi, ti) => { const t = richToText(sanitizeRich(doc)).trim(); const p = t && DEF_PAIRS.find(x => x[fi] === t); return p ? fromPlain(p[ti]) : doc; };
+const tRoles = (r, fi, ti) => { const a = [SPLIT_ROLES, SPLIT_ROLES_EN]; return Array.isArray(r) && r.join('|') === a[fi].join('|') ? [...a[ti]] : r; };
+/** Traduce i testi rimasti come nel modulo di partenza (da 'it' a 'en' o viceversa). */
+export function translateForm(raw, from, to) {
+  const fi = from === 'en' ? 1 : 0, ti = to === 'en' ? 1 : 0;
+  if (fi === ti || !raw || typeof raw !== 'object') return raw;
+  const f = JSON.parse(JSON.stringify(raw));
+  const field = x => {
+    if (!x || typeof x !== 'object') return x;
+    x.label = tStr(x.label, fi, ti); x.placeholder = tStr(x.placeholder, fi, ti); x.itemLabel = tStr(x.itemLabel, fi, ti);
+    if (x.help) x.help = tRich(x.help, fi, ti);
+    if (x.roles) x.roles = tRoles(x.roles, fi, ti);
+    if (Array.isArray(x.fields)) x.fields = x.fields.map(field);
+    return x;
+  };
+  f.title = tStr(f.title, fi, ti);
+  if (f.intro) f.intro = tRich(f.intro, fi, ti);
+  if (f.done) f.done = tRich(f.done, fi, ti);
+  if (Array.isArray(f.sections)) for (const s of f.sections) { if (!s) continue; s.title = tStr(s.title, fi, ti); if (s.desc) s.desc = tRich(s.desc, fi, ti); if (Array.isArray(s.fields)) s.fields = s.fields.map(field); }
+  if (f.texts && typeof f.texts === 'object') for (const k of Object.keys(TEXTS.it)) if (f.texts[k] === TEXTS[from === 'en' ? 'en' : 'it'][k]) f.texts[k] = TEXTS[to === 'en' ? 'en' : 'it'][k];
+  f.lang = to;
+  return f;
+}
+
+/** Il modulo di partenza: "Consegna release" / "Release delivery", con i campi concordati con l'etichetta. */
+export function defaultForm(lang = 'en') {
+  const L = lang === 'it' ? 0 : 1;
+  const d = k => DEF[k][L];
   const id = p => newId(p);
   const fullName = id('f');
   const form = {
-    title: 'Consegna release',
-    intro: fromPlain('Ciao! Qui ci mandi tutto quello che serve per la release: dati, bio, press kit, tracce, artwork e contratto.\nPuoi lasciare il modulo e riprenderlo: la bozza resta su questo dispositivo (tranne i dati bancari e fiscali, per sicurezza).'),
+    lang: L ? 'en' : 'it',
+    title: d('title'),
+    intro: fromPlain(d('intro')),
     shareWith: '',
     sections: [
       {
-        id: id('s'), title: 'Artista', desc: [], contract: false, fields: [
-          { id: id('f'), type: 'short', label: 'Nome d\'arte', required: true, checklist: true },
+        id: id('s'), title: d('sArtist'), desc: [], contract: false, fields: [
+          { id: id('f'), type: 'short', label: d('artistName'), required: true, checklist: true },
           { id: id('f'), type: 'email', label: 'Email', required: true, checklist: false, half: true },
-          { id: id('f'), type: 'phone', label: 'Telefono', required: false, half: true },
-          { id: id('f'), type: 'long', label: 'Bio', required: true, checklist: true, help: fromPlain('In inglese, 80–150 parole. Scrivi in terza persona.'), maxLength: 4000 },
+          { id: id('f'), type: 'phone', label: d('phone'), required: false, half: true },
+          { id: id('f'), type: 'long', label: 'Bio', required: true, checklist: true, help: fromPlain(d('bioHelp')), maxLength: 4000 },
           { id: id('f'), type: 'link', label: 'Instagram', linkKind: 'social', half: true },
           { id: id('f'), type: 'link', label: 'SoundCloud', linkKind: 'social', half: true },
           { id: id('f'), type: 'link', label: 'Spotify', linkKind: 'music', half: true },
@@ -382,50 +458,49 @@ export function defaultForm() {
       },
       {
         id: id('s'), title: 'Press kit', desc: [], contract: false, fields: [
-          { id: id('f'), type: 'link', label: 'Cartella press (foto e logo)', linkKind: 'files', required: true, checklist: true,
-            help: fromPlain('Foto in alta risoluzione (almeno 3000 px) e logo in PNG trasparente, in una cartella condivisa.') },
+          { id: id('f'), type: 'link', label: d('pressFolder'), linkKind: 'files', required: true, checklist: true, help: fromPlain(d('pressHelp')) },
         ],
       },
       {
-        id: id('s'), title: 'Tracce', desc: [], contract: false, fields: [
+        id: id('s'), title: d('sTracks'), desc: [], contract: false, fields: [
           {
-            id: id('f'), type: 'group', label: 'Tracce', itemLabel: 'Traccia', required: true, checklist: true, min: 1, max: 20,
+            id: id('f'), type: 'group', label: d('sTracks'), itemLabel: d('track'), required: true, checklist: true, min: 1, max: 20,
             fields: [
-              { id: id('f'), type: 'short', label: 'Titolo', required: true, half: true },
-              { id: id('f'), type: 'short', label: 'Versione / mix', placeholder: 'Original Mix', half: true },
-              { id: id('f'), type: 'link', label: 'Link al WAV', linkKind: 'audio', required: true, help: fromPlain('WAV 24 bit, 44,1 kHz o superiore.') },
+              { id: id('f'), type: 'short', label: d('tTitle'), required: true, half: true },
+              { id: id('f'), type: 'short', label: d('version'), placeholder: 'Original Mix', half: true },
+              { id: id('f'), type: 'link', label: d('wav'), linkKind: 'audio', required: true, help: fromPlain(d('wavHelp')) },
               { id: id('f'), type: 'number', label: 'BPM', required: true, min: 60, max: 220, decimals: true, half: true },
-              { id: id('f'), type: 'select', label: 'Tonalità', options: MUSIC_KEYS, half: true },
-              { id: id('f'), type: 'split', label: 'Crediti e split', total100: true, required: true },
+              { id: id('f'), type: 'select', label: d('key'), options: MUSIC_KEYS, half: true },
+              { id: id('f'), type: 'split', label: d('credits'), total100: true, required: true, roles: L ? SPLIT_ROLES_EN : SPLIT_ROLES },
             ],
           },
         ],
       },
       {
         id: id('s'), title: 'Artwork', desc: [], contract: false, fields: [
-          { id: id('f'), type: 'link', label: 'Artwork', linkKind: 'files', required: false, checklist: true, help: fromPlain('3000 × 3000 px, JPG o PNG. Se lo prepara l\'etichetta lascia vuoto.') },
+          { id: id('f'), type: 'link', label: 'Artwork', linkKind: 'files', required: false, checklist: true, help: fromPlain(d('artHelp')) },
         ],
       },
       {
-        id: id('s'), title: 'Dati per il contratto', contract: true,
-        desc: fromPlain('Questi dati finiscono nel contratto: dopo la firma non si possono più modificare.'),
+        id: id('s'), title: d('sContract'), contract: true,
+        desc: fromPlain(d('contractDesc')),
         fields: [
-          { id: fullName, type: 'short', label: 'Nome e cognome', required: true, checklist: false },
-          { id: id('f'), type: 'date', label: 'Data di nascita', required: true, half: true, sensitive: true, checklist: false },
-          { id: id('f'), type: 'taxid', label: 'Codice fiscale / Tax ID', required: true, half: true, checklist: false },
-          { id: id('f'), type: 'short', label: 'Indirizzo di residenza', required: true, sensitive: true, checklist: false },
-          { id: id('f'), type: 'iban', label: 'IBAN per i pagamenti', required: false, half: true },
-          { id: id('f'), type: 'short', label: 'Intestatario del conto', required: false, half: true },
+          { id: fullName, type: 'short', label: d('fullName'), required: true, checklist: false },
+          { id: id('f'), type: 'date', label: d('birth'), required: true, half: true, sensitive: true, checklist: false },
+          { id: id('f'), type: 'taxid', label: d('tax'), required: true, half: true, checklist: false },
+          { id: id('f'), type: 'short', label: d('address'), required: true, sensitive: true, checklist: false },
+          { id: id('f'), type: 'iban', label: d('iban'), required: false, half: true },
+          { id: id('f'), type: 'short', label: d('holder'), required: false, half: true },
         ],
       },
     ],
     contract: { layout: 2, enabled: true, required: true, labelSigns: true, copyPage: true, ...labelContract(fullName), accept: CONTRACT_TEXT.accept, style: { ...CONTRACT_STYLE } },
-    done: fromPlain('Grazie! Abbiamo ricevuto tutto. Ti scriviamo noi se manca qualcosa.'),
+    done: fromPlain(d('done')),
     theme: DEFAULT_THEME,
   };
   return sanitizeForm(form);
 }
 
-export function blankForm() {
-  return sanitizeForm({ title: 'Nuovo modulo', sections: [{ id: newId('s'), title: '', fields: [blankField('short')] }], theme: DEFAULT_THEME });
+export function blankForm(lang = 'en') {
+  return sanitizeForm({ lang: lang === 'it' ? 'it' : 'en', title: DEF.blank[lang === 'it' ? 0 : 1], sections: [{ id: newId('s'), title: '', fields: [blankField('short')] }], theme: DEFAULT_THEME });
 }

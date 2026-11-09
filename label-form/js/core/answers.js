@@ -3,6 +3,7 @@
 
 import { checkLink } from './links.js';
 import { canonical } from './crypto.js';
+import { tr } from './i18n.js';
 
 /** Elementi senza risposta (testi, immagini, separatori): stessa lista di schema.js, senza importarla qui. */
 const STATIC = new Set(['info', 'image', 'divider']);
@@ -55,9 +56,9 @@ export function taxIdProblem(s) {
   const raw = String(s || '').trim();
   const v = raw.replace(/[\s.-]/g, '').toUpperCase();
   const iv = v.replace(/^IT(?=\d{11}$)/, '');
-  if (/^[A-Z]{6}[0-9LMNPQRSTUV]{2}/.test(v) && v.length === 16) return italianCfOk(v) ? '' : 'Il codice fiscale non è corretto: controlla le lettere e i numeri.';
-  if (/^\d{11}$/.test(iv)) return partitaIvaOk(iv) ? '' : 'La partita IVA non è corretta.';
-  if (!/^[A-Z0-9/]{4,30}$/.test(v)) return 'Scrivi il codice fiscale (o il codice equivalente del tuo paese).';
+  if (/^[A-Z]{6}[0-9LMNPQRSTUV]{2}/.test(v) && v.length === 16) return italianCfOk(v) ? '' : tr('Il codice fiscale non è corretto: controlla le lettere e i numeri.', 'The Italian tax code is not correct: check the letters and numbers.');
+  if (/^\d{11}$/.test(iv)) return partitaIvaOk(iv) ? '' : tr('La partita IVA non è corretta.', 'The VAT number is not correct.');
+  if (!/^[A-Z0-9/]{4,30}$/.test(v)) return tr('Scrivi il codice fiscale (o il codice equivalente del tuo paese).', 'Enter your tax ID (or your country\'s equivalent).');
   return '';
 }
 
@@ -90,48 +91,48 @@ const fmtNum = n => String(n).replace('.', ',');
 export function fieldProblem(field, v) {
   if (isStaticField(field)) return '';
   if (!isFilled(field, v)) {
-    if (field.type === 'group' && field.required) return Array.isArray(v) && v.length ? 'Completa i campi obbligatori qui sotto.' : `Aggiungi almeno ${Math.max(1, field.min || 1)} ${field.itemLabel.toLowerCase()}.`;
-    return field.required ? 'Campo obbligatorio.' : '';
+    if (field.type === 'group' && field.required) return Array.isArray(v) && v.length ? tr('Completa i campi obbligatori qui sotto.', 'Fill in the required fields below.') : tr(`Aggiungi almeno ${Math.max(1, field.min || 1)} ${field.itemLabel.toLowerCase()}.`, `Add at least ${Math.max(1, field.min || 1)} ${field.itemLabel.toLowerCase()}.`);
+    return field.required ? tr('Campo obbligatorio.', 'This field is required.') : '';
   }
   switch (field.type) {
     case 'short': case 'long':
-      return v.length > field.maxLength ? `Massimo ${field.maxLength} caratteri.` : '';
-    case 'email': return EMAIL_RE.test(v.trim()) ? '' : 'Indirizzo email non valido.';
-    case 'phone': return /^\+?[\d\s().-]{6,24}$/.test(v.trim()) && (v.match(/\d/g) || []).length >= 6 ? '' : 'Numero di telefono non valido.';
+      return v.length > field.maxLength ? tr(`Massimo ${field.maxLength} caratteri.`, `Maximum ${field.maxLength} characters.`) : '';
+    case 'email': return EMAIL_RE.test(v.trim()) ? '' : tr('Indirizzo email non valido.', 'Invalid email address.');
+    case 'phone': return /^\+?[\d\s().-]{6,24}$/.test(v.trim()) && (v.match(/\d/g) || []).length >= 6 ? '' : tr('Numero di telefono non valido.', 'Invalid phone number.');
     case 'number': {
       const n = parseNumber(v);
-      if (n === null || Number.isNaN(n)) return 'Scrivi un numero.';
-      if (!field.decimals && !Number.isInteger(n)) return 'Scrivi un numero intero.';
-      if (field.min !== null && n < field.min) return `Il minimo è ${fmtNum(field.min)}.`;
-      if (field.max !== null && n > field.max) return `Il massimo è ${fmtNum(field.max)}.`;
+      if (n === null || Number.isNaN(n)) return tr('Scrivi un numero.', 'Enter a number.');
+      if (!field.decimals && !Number.isInteger(n)) return tr('Scrivi un numero intero.', 'Enter a whole number.');
+      if (field.min !== null && n < field.min) return tr(`Il minimo è ${fmtNum(field.min)}.`, `The minimum is ${field.min}.`);
+      if (field.max !== null && n > field.max) return tr(`Il massimo è ${fmtNum(field.max)}.`, `The maximum is ${field.max}.`);
       return '';
     }
     case 'date': {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return 'Data non valida.';
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return tr('Data non valida.', 'Invalid date.');
       const d = new Date(v + 'T12:00:00');
-      return Number.isNaN(d.getTime()) || d.getFullYear() < 1900 || d.getFullYear() > 2200 ? 'Data non valida.' : '';
+      return Number.isNaN(d.getTime()) || d.getFullYear() < 1900 || d.getFullYear() > 2200 ? tr('Data non valida.', 'Invalid date.') : '';
     }
     case 'link': { const r = checkLink(v, field.linkKind); return r.ok ? '' : r.error; }
-    case 'choice': case 'select': return v.length > 300 ? 'Risposta troppo lunga.' : '';
-    case 'checks': return v.length > 100 ? 'Troppe scelte.' : '';
-    case 'iban': return ibanOk(v) ? '' : 'IBAN non valido: controlla di averlo copiato tutto.';
+    case 'choice': case 'select': return v.length > 300 ? tr('Risposta troppo lunga.', 'Answer too long.') : '';
+    case 'checks': return v.length > 100 ? tr('Troppe scelte.', 'Too many choices.') : '';
+    case 'iban': return ibanOk(v) ? '' : tr('IBAN non valido: controlla di averlo copiato tutto.', 'Invalid IBAN: check you copied all of it.');
     case 'taxid': return taxIdProblem(v);
     case 'split': {
       const rows = v.filter(r => r && (trimmed(r.name) || trimmed(String(r.pct ?? ''))));
       for (const r of rows) {
-        if (!trimmed(r.name)) return 'Scrivi il nome di ogni persona.';
+        if (!trimmed(r.name)) return tr('Scrivi il nome di ogni persona.', 'Enter the name of each person.');
         const p = parseNumber(r.pct);
-        if (p === null || Number.isNaN(p) || p < 0 || p > 100) return `Percentuale non valida per ${r.name.trim()}.`;
+        if (p === null || Number.isNaN(p) || p < 0 || p > 100) return tr(`Percentuale non valida per ${r.name.trim()}.`, `Invalid percentage for ${r.name.trim()}.`);
       }
       if (field.total100) {
         const tot = rows.reduce((a, r) => a + (parseNumber(r.pct) || 0), 0);
-        if (Math.abs(tot - 100) > 0.01) return `Le percentuali devono fare 100 (ora fanno ${fmtNum(Math.round(tot * 100) / 100)}).`;
+        if (Math.abs(tot - 100) > 0.01) return tr(`Le percentuali devono fare 100 (ora fanno ${fmtNum(Math.round(tot * 100) / 100)}).`, `Percentages must add up to 100 (now ${Math.round(tot * 100) / 100}).`);
       }
       return '';
     }
     case 'group': {
-      if (v.length < (field.min || 0)) return `Servono almeno ${field.min} ${field.itemLabel.toLowerCase()}.`;
-      if (v.length > field.max) return `Massimo ${field.max} ${field.itemLabel.toLowerCase()}.`;
+      if (v.length < (field.min || 0)) return tr(`Servono almeno ${field.min} ${field.itemLabel.toLowerCase()}.`, `At least ${field.min} ${field.itemLabel.toLowerCase()} needed.`);
+      if (v.length > field.max) return tr(`Massimo ${field.max} ${field.itemLabel.toLowerCase()}.`, `Maximum ${field.max} ${field.itemLabel.toLowerCase()}.`);
       return '';
     }
     default: return '';

@@ -2,8 +2,8 @@
    sanitizeForm() è la difesa: qualsiasi cosa arrivi (dal database, da un file, da un errore)
    esce come modulo valido, con id unici e limiti di lunghezza. */
 
-import { sanitizeRich, fromPlain } from './richtext.js';
-import { sanitizeTheme, DEFAULT_THEME } from './theme.js';
+import { sanitizeRich, fromPlain, placeholdersIn } from './richtext.js';
+import { sanitizeTheme, DEFAULT_THEME, sanitizeContractStyle, CONTRACT_STYLE, safeImage } from './theme.js';
 import { LINK_KINDS } from './links.js';
 
 export const ID_RE = /^[a-z][a-z0-9_]{1,39}$/;
@@ -28,7 +28,16 @@ export const FIELD_TYPES = {
   iban: { label: 'IBAN', icon: 'bank' },
   taxid: { label: 'Codice fiscale / Tax ID', icon: 'id' },
   info: { label: 'Testo o titolo (senza risposta)', icon: 'info' },
+  image: { label: 'Immagine', icon: 'image' },
+  divider: { label: 'Separatore o spazio', icon: 'divider' },
 };
+/** Elementi che si vedono ma non hanno una risposta. */
+export const STATIC_TYPES = ['info', 'image', 'divider'];
+export const isStatic = f => !!f && STATIC_TYPES.includes(f.type);
+/** Larghezze possibili di un campo, in percentuale della riga. */
+export const WIDTHS = [25, 33, 50, 67, 75, 100];
+export const widthOf = f => WIDTHS.includes(Number(f && f.w)) ? Number(f.w) : (f && f.half ? 50 : 100);
+export const nearestWidth = pct => WIDTHS.reduce((a, b) => Math.abs(b - pct) < Math.abs(a - pct) ? b : a, 100);
 /** Tipi che si possono mettere dentro un elenco ripetibile. */
 export const SUB_TYPES = ['short', 'long', 'email', 'phone', 'number', 'date', 'link', 'choice', 'checks', 'select', 'split', 'iban', 'taxid'];
 /** Tipi che di solito sono dati riservati (nascosti nelle email). */
@@ -46,15 +55,44 @@ export const SYSTEM_PLACEHOLDERS = {
   $artist: 'Nome dell\'artista (dall\'invito)',
   $artistPct: '% all\'artista',
   $labelPct: '% all\'etichetta',
+  $artistPctWords: '% all\'artista in lettere (fifty)',
+  $labelPctWords: '% all\'etichetta in lettere (fifty)',
   $tracks: 'Titoli delle tracce',
+  $writers: 'Autori (dai crediti)',
   $date: 'Data della firma',
 };
+
+/* Testi della pagina dell'artista: tutti modificabili dal costruttore. */
+export const TEXT_DEFAULTS = {
+  hello: 'Ciao {artista}!',
+  next: 'Avanti', back: 'Indietro', send: 'Invia', saveEdit: 'Salva le modifiche',
+  step: 'Passo {n} di {tot}',
+  reviewTitle: 'Controlla e invia',
+  contractTitle: 'Leggi il contratto',
+  contractNote: 'Dentro ci sono già i tuoi dati. Dopo la firma non si potrà più cambiare.',
+  signTitle: 'Firma', signBtn: 'Firmo e continuo',
+  doneTitle: 'Inviato!',
+  foot: 'I tuoi dati vengono cifrati in questo browser prima di partire: li può leggere solo {etichetta}.',
+};
+export const TEXT_LABELS = {
+  hello: 'Saluto (sotto il titolo)', next: 'Pulsante "Avanti"', back: 'Pulsante "Indietro"', send: 'Pulsante di invio', saveEdit: 'Pulsante per salvare le modifiche',
+  step: 'Avanzamento', reviewTitle: 'Titolo del riepilogo', contractTitle: 'Titolo prima del contratto', contractNote: 'Nota prima del contratto',
+  signTitle: 'Titolo della firma', signBtn: 'Pulsante della firma', doneTitle: 'Titolo dopo l\'invio', foot: 'Nota in fondo alla pagina',
+};
+export const SHOW_DEFAULTS = { hello: true, release: true, labelName: true, progress: true, foot: true, draft: true, required: true };
+export const SHOW_LABELS = {
+  labelName: 'Nome dell\'etichetta in alto', release: 'Titolo della release in alto', hello: 'Saluto all\'artista', progress: 'Barra di avanzamento',
+  required: 'Asterisco sulle domande obbligatorie', draft: 'Avviso della bozza salvata', foot: 'Nota in fondo alla pagina',
+};
+export const fillText = (t, vars) => String(t || '').replace(/\{(\w+)\}/g, (m, k) => vars[k] !== undefined ? String(vars[k]) : m);
 
 export const LIMITS = { sections: 30, fieldsPerSection: 80, fields: 300, options: 100, subFields: 20 };
 
 const str = (v, max, d = '') => typeof v === 'string' ? v.slice(0, max) : d;
 const bool = (v, d = false) => typeof v === 'boolean' ? v : d;
 const numOrNull = v => v === '' || v === null || v === undefined ? null : (Number.isFinite(Number(v)) ? Number(v) : null);
+const pick = (v, allowed, d) => allowed.includes(v) ? v : d;
+const intIn = (v, min, max, d) => { const n = Number(v); return v !== '' && v !== null && v !== undefined && Number.isFinite(n) ? Math.min(max, Math.max(min, Math.round(n))) : d; };
 
 function cleanOptions(list) {
   const seen = new Set();
@@ -77,18 +115,36 @@ function cleanField(f, ids, sub = false) {
   ids.add(id);
   const o = {
     id, type: f.type,
-    label: str(f.label, 300).trim() || (f.type === 'info' ? '' : FIELD_TYPES[f.type].label),
+    label: str(f.label, 300).trim() || (isStatic(f) ? '' : FIELD_TYPES[f.type].label),
     help: sanitizeRich(f.help),
+    w: widthOf(f),
   };
+  if (f.type === 'image') {
+    o.src = safeImage(f.src);
+    o.alt = str(f.alt, 200);
+    o.align = pick(f.align, ['l', 'c', 'r'], 'c');
+    o.radius = intIn(f.radius, 0, 60, 0);
+    o.maxH = intIn(f.maxH, 0, 1600, 0);
+    o.caption = str(f.caption, 300);
+    return o;
+  }
+  if (f.type === 'divider') {
+    o.style = pick(f.style, ['line', 'space', 'dots'], 'line');
+    o.size = intIn(f.size, 0, 200, 24);
+    return o;
+  }
   if (f.type === 'info') return o;
   o.required = bool(f.required);
   o.placeholder = str(f.placeholder, 200);
-  o.half = bool(f.half);
+  o.hideLabel = bool(f.hideLabel);
   o.sensitive = bool(f.sensitive, SENSITIVE_TYPES.includes(f.type));
   if (!sub) o.checklist = bool(f.checklist, o.required);
   switch (f.type) {
     case 'short': o.maxLength = Math.min(2000, Math.max(1, Math.round(Number(f.maxLength) || 300))); break;
-    case 'long': o.maxLength = Math.min(20000, Math.max(1, Math.round(Number(f.maxLength) || 5000))); break;
+    case 'long':
+      o.maxLength = Math.min(20000, Math.max(1, Math.round(Number(f.maxLength) || 5000)));
+      o.rows = intIn(f.rows, 2, 30, 4);
+      break;
     case 'number': {
       o.min = numOrNull(f.min); o.max = numOrNull(f.max);
       if (o.min !== null && o.max !== null && o.min > o.max) [o.min, o.max] = [o.max, o.min];
@@ -114,7 +170,7 @@ function cleanField(f, ids, sub = false) {
       o.fields = (Array.isArray(f.fields) ? f.fields : []).map(x => cleanField(x, ids, true)).filter(Boolean).slice(0, LIMITS.subFields);
       if (!o.fields.length) {
         const sid = newId('f'); ids.add(sid);
-        o.fields = [{ id: sid, type: 'short', label: 'Titolo', help: [], required: true, placeholder: '', half: false, sensitive: false, maxLength: 300 }];
+        o.fields = [{ id: sid, type: 'short', label: 'Titolo', help: [], w: 100, required: true, placeholder: '', hideLabel: false, sensitive: false, maxLength: 300 }];
       }
       if (o.required && o.min < 1) o.min = 1;
       break;
@@ -124,16 +180,64 @@ function cleanField(f, ids, sub = false) {
   return o;
 }
 
-function cleanContract(c) {
+export const CONTRACT_TEXT = {
+  title: 'AUTHORIZATION TO RELEASE AND COLLABORATION AGREEMENT',
+  copyTitle: 'LABEL COPY INFORMATION',
+  confirm: 'I confirm that I have read, understood, and accepted the terms of this Release Authorization.',
+  dateLabel: 'Date of this agreement:',
+  labelRole: 'For the Label — {label}',
+  artistRole: 'For the Artist — {name}',
+  blank: 'Date / Signature',
+  accept: 'I have read, understood and accepted the terms of this agreement.',
+};
+
+/** Il primo campo "nome e cognome" fra i dati del contratto (va nella pagina dei dati). */
+function fullNameGuess(sections) {
+  const fs = sections.filter(s => s.contract).flatMap(s => s.fields).filter(f => f.type === 'short');
+  return (fs.find(f => /nome e cognome|full ?name|nome completo/i.test(f.label)) || fs[0] || {}).id || '';
+}
+
+function cleanContract(c, sections) {
   c = c && typeof c === 'object' ? c : {};
-  return {
+  const T = CONTRACT_TEXT;
+  const out = {
+    layout: 2,
     enabled: bool(c.enabled),
     required: bool(c.required, true),
-    title: str(c.title, 300).trim() || 'Contratto',
-    body: sanitizeRich(c.body),
     labelSigns: bool(c.labelSigns, true),
-    accept: str(c.accept, 300).trim() || 'Ho letto il contratto e lo accetto.',
+    title: str(c.title, 300).trim() || T.title,
+    intro: sanitizeRich(c.intro),
+    body: sanitizeRich(c.body),
+    copyPage: bool(c.copyPage, true),
+    copyTitle: str(c.copyTitle, 300).trim() || T.copyTitle,
+    copy: sanitizeRich(c.copy),
+    confirm: typeof c.confirm === 'string' ? c.confirm.slice(0, 600).trim() : T.confirm,
+    dateLabel: typeof c.dateLabel === 'string' ? c.dateLabel.slice(0, 120).trim() : T.dateLabel,
+    labelRole: str(c.labelRole, 200).trim() || T.labelRole,
+    artistRole: str(c.artistRole, 200).trim() || T.artistRole,
+    blank: str(c.blank, 80).trim() || T.blank,
+    accept: str(c.accept, 300).trim() || T.accept,
+    style: sanitizeContractStyle(c.style),
   };
+  if (c.layout !== 2) {
+    // contratto salvato prima della nuova impaginazione: il testo predefinito diventa quello completo,
+    // un testo scritto dall'etichetta resta com'era (e riceve la pagina dei dati)
+    const fullId = placeholdersIn(out.body).filter(id => id[0] !== '$').pop() || fullNameGuess(sections);
+    const d = labelContract(fullId);
+    const wasDefault = !out.body.length || /Declaration of ownership of rights/.test(JSON.stringify(out.body));
+    if (wasDefault) { out.title = d.title; out.intro = d.intro; out.body = d.body; }
+    out.copy = d.copy;
+    if (!c.confirm) out.confirm = T.confirm;
+    if (!c.dateLabel) out.dateLabel = T.dateLabel;
+  }
+  return out;
+}
+
+/** Testo, impaginazione e formattazione originali del contratto (per "Ripristina"). */
+export function restoreContract(contract, sections) {
+  const d = labelContract(fullNameGuess(sections));
+  return { ...contract, ...d, layout: 2, copyPage: true, style: { ...CONTRACT_STYLE },
+    confirm: CONTRACT_TEXT.confirm, dateLabel: CONTRACT_TEXT.dateLabel, labelRole: CONTRACT_TEXT.labelRole, artistRole: CONTRACT_TEXT.artistRole, blank: CONTRACT_TEXT.blank };
 }
 
 /** Modulo pulito e valido, qualunque cosa arrivi. */
@@ -162,8 +266,10 @@ export function sanitizeForm(raw) {
     title: str(f.title, 200).trim() || 'Modulo senza titolo',
     intro: sanitizeRich(f.intro),
     sections,
-    contract: cleanContract(f.contract),
+    contract: cleanContract(f.contract, sections),
     done: sanitizeRich(f.done),
+    texts: Object.fromEntries(Object.entries(TEXT_DEFAULTS).map(([k, d]) => [k, str(f.texts && f.texts[k], 300).trim() || d])),
+    show: Object.fromEntries(Object.entries(SHOW_DEFAULTS).map(([k, d]) => [k, bool(f.show && f.show[k], d)])),
     shareWith: typeof f.shareWith === 'string' && /^[^@\s<>"]{1,64}@[^@\s<>"]{1,190}\.[a-z]{2,}$/i.test(f.shareWith.trim()) ? f.shareWith.trim().toLowerCase() : '',
     theme: sanitizeTheme(f.theme || DEFAULT_THEME),
   };
@@ -175,7 +281,7 @@ export function allFields(form) {
   for (const s of form.sections) for (const f of s.fields) out.push({ field: f, section: s });
   return out;
 }
-export const answerFields = form => allFields(form).filter(x => x.field.type !== 'info');
+export const answerFields = form => allFields(form).filter(x => !isStatic(x.field));
 export function fieldById(form, id) {
   for (const s of form.sections) {
     for (const f of s.fields) {
@@ -190,47 +296,65 @@ export const hasContract = form => !!form.contract.enabled;
 
 /** Nuovo campo vuoto di un tipo. */
 export function blankField(type) {
-  const base = { id: newId('f'), type, label: type === 'info' ? 'Titolo' : '', help: [], required: false };
+  const base = { id: newId('f'), type, label: type === 'info' ? 'Titolo' : '', help: [], required: false, w: 100 };
+  if (type === 'image') { base.label = ''; base.src = ''; base.align = 'c'; }
+  if (type === 'divider') { base.label = ''; base.style = 'line'; base.size = 24; }
   if (type === 'choice' || type === 'checks' || type === 'select') base.options = ['Opzione 1', 'Opzione 2'];
   if (type === 'group') { base.itemLabel = 'Elemento'; base.fields = [{ id: newId('f'), type: 'short', label: 'Titolo', required: true }]; base.min = 0; base.max = 20; }
   if (type === 'link') base.linkKind = 'files';
   return base;
 }
 
-/* ─── Contratto predefinito dell'etichetta, con i segnaposto ─── */
-const P = (...c) => ({ t: 'p', a: 'j', c });
+/* ─── Contratto dell'etichetta, con i segnaposto ───
+   Stesso testo e stessa impaginazione del contratto che l'etichetta usa già: pagina dell'accordo
+   (titolo, introduzione, 7 articoli) e pagina dei dati "Label copy information" con le firme. */
+const P = (...c) => ({ t: 'p', c });
+const H = x => ({ t: 'h2', c: [{ x }] });
 const T = x => ({ x });
 const B = x => ({ x, b: 1 });
 const F = f => ({ f });
-function defaultContract(fullNameId) {
-  return [
-    { t: 'p', a: 'c', c: [{ x: 'This document is intended to clearly and transparently define the terms of the collaboration between the Artist and the Label.', i: 1 }] },
-    { t: 'h2', c: [T('1. Declaration of ownership of rights')] },
-    P(T('The Artist declares that they are the sole owner, or that they have obtained full authorization from all entitled parties, of the '), B('copyright and related rights necessary for the exploitation and release'), T(' of the track(s) covered by this agreement: '), F('$tracks'), T('.')),
-    { t: 'h2', c: [T('2. Grant of rights')] },
-    P(T('The Artist grants '), { f: '$label', b: 1 }, T(', as an independent project, the '), B('exclusive right'), T(', free of charge, with '), B('worldwide validity'), T(' and '), B('no time limitation'), T(', to release, distribute, communicate to the public and promote the track(s), in any format and on any digital platform, including as part of compilations (VA), EPs, singles or similar releases.')),
-    P(T('This grant does '), B('not'), T(' constitute a transfer of authorship of the work, which shall remain with the Artist.')),
-    { t: 'h2', c: [T('3. Warranties and indemnification')] },
-    P(T('The Artist warrants that the track(s) is/are original and do not infringe the rights of third parties, including, by way of example, copyright, related rights or image rights.')),
-    P(T('The Artist agrees to indemnify and hold the Label harmless from any claim, demand or damage arising from any breach of the above warranties.')),
-    { t: 'h2', c: [T('4. Compensation and revenue split')] },
-    P(T('Any proceeds derived from the exploitation of the released track(s) (including, by way of example and not limitation, digital sales and streaming) shall be considered '), B('net revenues'), T(', meaning revenues net of distribution platform fees, taxes and any refunds.')),
-    P(T('Such net revenues shall first be applied to the '), B('recoupment of costs incurred by the Label'), T(', including, by way of example but not limited to: mastering, artwork, promotion, marketing and distribution.')),
-    P(T('Once such costs have been fully recouped, the subsequent net revenues shall be split as follows: '), F('$artistPct'), B('% to the Artist and '), F('$labelPct'), B('% to the Label'), T(', unless otherwise agreed in writing by the parties.')),
-    P(T('The methods and timing of accounting and payments shall depend on the distribution platform used. The Artist acknowledges that any compensation received may be subject to taxation and that the Label shall not be responsible for the Artist\'s personal tax obligations.')),
-    { t: 'h2', c: [T('5. Nature of the project')] },
-    P(T('The parties acknowledge that '), { f: '$label', b: 1 }, T(' operates as an independent project and is not structured as a company. This agreement constitutes a private authorization and an artistic collaboration.')),
-    { t: 'h2', c: [T('6. Final provisions')] },
-    P(T('This document constitutes the entire agreement between the parties with respect to the track(s) covered herein. Any amendments or additions must be agreed upon in writing.')),
-    P(T('The submission and signature of this document shall constitute full acceptance of the terms set forth above.')),
-    { t: 'h2', c: [T('7. Personal Data Processing')] },
-    P(T('Pursuant to article 13 of the Regulation (EU) 2016/679 (GDPR), the Artist acknowledges that their personal data will be processed by '), F('$label'), T(', acting as Data Controller, exclusively for purposes related to the negotiation, execution and performance of this contract, as well as to the publication, distribution, promotion and administrative management of any revenues that may derive from the exploitation of the recordings.')),
-    P(T('The processing of personal data is necessary for the performance of this contract (Art. 6(1)(b) GDPR). Personal data will be retained for the time strictly necessary and will not be disclosed to third parties except parties involved in digital distribution, promotion, rights management and technical/accounting/administrative services. The Artist may exercise their rights of access, rectification, erasure, restriction, portability and objection, and lodge a complaint with the competent Authority.')),
-    { t: 'h2', c: [T('Label copy information')] },
-    P(B('Release: '), F('$release'), T(' '), F('$catalog')),
-    P(B('Artist / project name: '), F('$artist')),
-    P(B('Full name: '), F(fullNameId)),
-  ];
+const FB = f => ({ f, b: 1 });
+export function labelContract(fullNameId) {
+  return {
+    title: CONTRACT_TEXT.title,
+    intro: [{ t: 'p', a: 'c', c: [{ x: 'This document is intended to clearly and transparently define the terms of the collaboration between the Artist and the Label.', i: 1 }] }],
+    body: [
+      H('1. Declaration of ownership of rights'),
+      P(T('The Artist declares that they are the sole owner, or that they have obtained full authorization from all entitled parties, of the '), B('copyright and related rights necessary for the exploitation and release'), T(' of the track(s) covered by this agreement.')),
+      H('2. Grant of rights'),
+      P(T('The Artist grants '), FB('$label'), T(', as an independent project, the '), B('exclusive right'), T(', free of charge, with '), B('worldwide validity'), T(' and '), B('no time limitation'), T(', to release, distribute, communicate to the public and promote the track(s), in any format and on any digital platform, including as part of compilations (VA), EPs, singles or similar releases.')),
+      P(T('This grant does '), B('not'), T(' constitute a transfer of authorship of the work, which shall remain with the Artist.')),
+      H('3. Warranties and indemnification'),
+      P(T('The Artist warrants that the track(s) is/are original and do not infringe the rights of third parties, including, by way of example, copyright, related rights or image rights.')),
+      P(T('The Artist agrees to indemnify and hold the Label harmless from any claim, demand or damage arising from any breach of the above warranties.')),
+      H('4. Compensation and revenue split'),
+      P(T('Any proceeds derived from the exploitation of the released track(s) (including, by way of example and not limitation, digital sales and streaming) shall be considered '), B('net revenues'), T(', meaning revenues net of distribution platform fees, taxes and any refunds.')),
+      P(T('Such net revenues shall first be applied to the '), B('recoupment of costs incurred by the Label'), T(', including, by way of example but not limited to: mastering, artwork, promotion, marketing and distribution.')),
+      P(T('Once such costs have been fully recouped, the subsequent net revenues shall be split as follows: '), FB('$artistPct'), B('% ('), FB('$artistPctWords'), B(' percent) to the Artist and '), FB('$labelPct'), B('% ('), FB('$labelPctWords'), B(' percent) to the Label'), T(', unless otherwise agreed in writing by the parties.')),
+      P(T('The methods and timing of accounting and payments shall depend on the distribution platform used. The Artist acknowledges that any compensation received may be subject to taxation and that the Label shall not be responsible for the Artist\'s personal tax obligations.')),
+      H('5. Nature of the project'),
+      P(T('The parties acknowledge that '), FB('$label'), T(' operates as an independent project and is not structured as a company. This agreement constitutes a private authorization and an artistic collaboration.')),
+      H('6. Final provisions'),
+      P(T('This document constitutes the entire agreement between the parties with respect to the track(s) covered herein. Any amendments or additions must be agreed upon in writing.')),
+      P(T('The submission and signature of this document shall constitute full acceptance of the terms set forth above.')),
+      H('7. Personal Data Processing'),
+      P(T('Pursuant to article 13 of the Regulation (EU) 2016/679 (GDPR), the Artist acknowledges that their personal data will be processed by '), F('$label'), T(', acting as Data Controller, exclusively for purposes related to the negotiation, execution and performance of this contract, as well as to the publication, distribution, promotion and administrative management of any revenues that may derive from the exploitation of the recordings.')),
+      P(T('The processing of personal data is necessary for the performance of this contract, in accordance with Article 6(1)(b) of the Regulation (EU) 2016/679 (GDPR). Personal data will be retained for the time strictly necessary for the management of the contractual relationship and for the protection of the rights relating to the recordings. Personal data will not be disclosed to third parties nor used for purposes other than those stated above, except for disclosure to parties involved in digital distribution, promotion, rights management, and technical, accounting and administrative services, who will act as data processors. Where necessary, personal data may be transferred to countries outside the European Union in compliance with applicable data protection laws.')),
+      P(T('The Artist may at any time exercise their rights of access, rectification, erasure, restriction of processing, data portability and objection to processing, as well as lodge a complaint with the competent Data Protection Authority.')),
+    ],
+    copyTitle: CONTRACT_TEXT.copyTitle,
+    copy: [
+      H('The Company:'), P(F('$label')),
+      H('Track(s) Information'),
+      P(B('Title(s):'), T(' '), F('$tracks')),
+      P(B('Artist Name(s):'), T(' '), F('$artist')),
+      P(B('Written by:'), T(' '), F('$writers')),
+      H('Artist Details'),
+      P(B('Full Name:'), T(' '), ...(fullNameId ? [F(fullNameId)] : [])),
+      P(B('Artist / Project Name:'), T(' '), F('$artist')),
+      H('Signature'),
+    ],
+  };
 }
 
 /** Il modulo di partenza: "Consegna release", con i campi concordati con l'etichetta. */
@@ -293,12 +417,7 @@ export function defaultForm() {
         ],
       },
     ],
-    contract: {
-      enabled: true, required: true, labelSigns: true,
-      title: 'Authorization to release and collaboration agreement',
-      body: defaultContract(fullName),
-      accept: 'I have read, understood and accepted the terms of this agreement.',
-    },
+    contract: { layout: 2, enabled: true, required: true, labelSigns: true, copyPage: true, ...labelContract(fullName), accept: CONTRACT_TEXT.accept, style: { ...CONTRACT_STYLE } },
     done: fromPlain('Grazie! Abbiamo ricevuto tutto. Ti scriviamo noi se manca qualcosa.'),
     theme: DEFAULT_THEME,
   };

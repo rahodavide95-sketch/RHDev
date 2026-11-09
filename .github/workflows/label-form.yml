@@ -274,6 +274,8 @@ jobs:
           ko() { echo "::error::$1"; fail=1; }
           r=$(curl -sS "${H[@]}" -X POST "$URL/rest/v1/rpc/labelform_open" -d "{\"p_token\":\"$FAKE\"}")
           echo "$r" | grep -q '"not_found"' && ok "link finto: non trovato" || ko "labelform_open con link finto: $r"
+          r=$(curl -sS "${H[@]}" -X POST "$URL/rest/v1/rpc/labelform_preview" -d "{\"p_token\":\"$FAKE\"}")
+          echo "$r" | grep -q '"not_found"' && ok "anteprima con link finto: non trovata" || ko "labelform_preview con link finto: $r"
           r=$(curl -sS "${H[@]}" -X POST "$URL/rest/v1/rpc/labelform_submit" -d "{\"p_token\":\"$FAKE\",\"p\":{}}")
           echo "$r" | grep -q '"not_found"' && ok "invio con link finto: rifiutato" || ko "labelform_submit con link finto: $r"
           for t in labelform_settings labelform_invites labelform_forms labelform_releases labelform_versions labelform_events labelform_owner; do

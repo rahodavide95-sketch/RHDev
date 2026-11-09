@@ -4,6 +4,10 @@
 import { checkLink } from './links.js';
 import { canonical } from './crypto.js';
 
+/** Elementi senza risposta (testi, immagini, separatori): stessa lista di schema.js, senza importarla qui. */
+const STATIC = new Set(['info', 'image', 'divider']);
+const isStaticField = f => !!f && STATIC.has(f.type);
+
 export const EMAIL_RE = /^[^@\s<>"]{1,64}@[^@\s<>"]{1,190}\.[a-z]{2,}$/i;
 
 /* ─── IBAN e codici fiscali ─── */
@@ -61,8 +65,8 @@ export function taxIdProblem(s) {
 const isStr = v => typeof v === 'string';
 const trimmed = v => isStr(v) ? v.trim() : '';
 export function isFilled(field, v) {
+  if (isStaticField(field)) return false;
   switch (field.type) {
-    case 'info': return false;
     case 'checks': return Array.isArray(v) && v.some(x => trimmed(x));
     case 'group': {
       if (!Array.isArray(v) || !v.length) return false;
@@ -84,7 +88,7 @@ const fmtNum = n => String(n).replace('.', ',');
 
 /** Errore di un campo (stringa vuota = va bene). */
 export function fieldProblem(field, v) {
-  if (field.type === 'info') return '';
+  if (isStaticField(field)) return '';
   if (!isFilled(field, v)) {
     if (field.type === 'group' && field.required) return Array.isArray(v) && v.length ? 'Completa i campi obbligatori qui sotto.' : `Aggiungi almeno ${Math.max(1, field.min || 1)} ${field.itemLabel.toLowerCase()}.`;
     return field.required ? 'Campo obbligatorio.' : '';
@@ -161,8 +165,8 @@ export function formProblems(form, answers, { skipContract = false } = {}) {
 /** Pulizia delle risposte prima di salvarle: solo i campi del modulo, tipi giusti, lunghezze massime. */
 function cleanValue(field, v) {
   const s = (x, max) => (isStr(x) ? x : x == null ? '' : String(x)).slice(0, max);
+  if (isStaticField(field)) return undefined;
   switch (field.type) {
-    case 'info': return undefined;
     case 'checks': return Array.isArray(v) ? v.filter(isStr).map(x => x.slice(0, 300)).slice(0, 100) : [];
     case 'split': return Array.isArray(v) ? v.slice(0, 30).map(r => ({ name: s(r && r.name, 120), role: s(r && r.role, 60), pct: s(r && r.pct, 12) })) : [];
     case 'group': return Array.isArray(v) ? v.slice(0, field.max).map(item => {
@@ -198,7 +202,7 @@ export function splitAnswers(form, answers) {
 /** Campi compilati (solo gli id, per la checklist dell'etichetta: nessun valore). */
 export function filledIds(form, answers) {
   const out = [];
-  for (const s of form.sections) for (const f of s.fields) if (f.type !== 'info' && isFilled(f, answers[f.id])) out.push(f.id);
+  for (const s of form.sections) for (const f of s.fields) if (!isStaticField(f) && isFilled(f, answers[f.id])) out.push(f.id);
   return out;
 }
 
@@ -206,7 +210,7 @@ export function filledIds(form, answers) {
 export function changedIds(form, before, after) {
   const out = [];
   for (const s of form.sections) for (const f of s.fields) {
-    if (f.type === 'info') continue;
+    if (isStaticField(f)) continue;
     const a = before ? before[f.id] : undefined, b = after ? after[f.id] : undefined;
     const ea = !isFilled(f, a), eb = !isFilled(f, b);
     if (ea && eb) continue;
@@ -254,7 +258,7 @@ export function summaryRows(form, answers, opts = {}) {
   const rows = [];
   for (const s of form.sections) {
     for (const f of s.fields) {
-      if (f.type === 'info') continue;
+      if (isStaticField(f)) continue;
       const value = formatValue(f, answers[f.id], opts);
       if (!value && opts.skipEmpty) continue;
       rows.push({ section: s.title, label: f.label, value });

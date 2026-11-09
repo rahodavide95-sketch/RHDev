@@ -610,7 +610,7 @@ export async function render(el, id) {
             colorField(() => st.text, v => setS('text', v), 'Testo'), colorField(() => st.heading, v => setS('heading', v), 'Titoli'),
             colorField(() => st.accent, v => setS('accent', v), 'Barretta'), colorField(() => st.lineColor, v => setS('lineColor', v), 'Linea')),
           h('div.row3',
-            field('Logo', selectEl([['r', 'A destra'], ['c', 'Al centro'], ['l', 'A sinistra']], st.logoPos, v => setS('logoPos', v))),
+            field('Logo', selectEl([['c', 'Al centro'], ['l', 'A sinistra'], ['r', 'A destra']], st.logoPos, v => setS('logoPos', v))),
             field('Sfondo del logo', selectEl([['auto', 'Automatico'], ['none', 'Nessuno'], ['dark', 'Scuro'], ['light', 'Chiaro']], st.logoBg, v => setS('logoBg', v)), 'Automatico: scuro se il logo è chiaro'),
             slider('Altezza del logo', 20, 160, st.logoH, 'px', v => setS('logoH', v))),
           slider('Margini del foglio', 12, 90, st.pad, 'px', v => setS('pad', v))),

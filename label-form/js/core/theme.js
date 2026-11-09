@@ -177,8 +177,8 @@ export const CONTRACT_STYLE = {
   font: 'dmsans', titleFont: 'dmsans', size: 13.12, line: 162, align: 'j',
   text: '#333333', heading: '#15131f', accent: '#7c3aed',
   titleUpper: true, titleAlign: 'c', titleBar: true, titleSize: 132,
-  headSize: 116, logoPos: 'r', logoH: 60, logoBg: 'auto', headLine: true, lineColor: '#d8d4e6',
-  pad: 52, signs: 'row', frame: false,
+  headSize: 116, logoPos: 'c', logoH: 60, logoBg: 'auto', headLine: true, lineColor: '#d8d4e6',
+  pad: 52, signs: 'row', frame: false, v: 2,
 };
 export function sanitizeContractStyle(s) {
   s = s && typeof s === 'object' ? s : {};
@@ -203,6 +203,7 @@ export function sanitizeContractStyle(s) {
     pad: num(s.pad, 12, 90, d.pad),
     signs: pick(s.signs, ['row', 'col'], d.signs),
     frame: s.frame === true,
+    v: 2,
   };
 }
 export function contractVars(style) {

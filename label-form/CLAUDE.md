@@ -53,6 +53,8 @@ scritte (le icone sono il logo dell'etichetta preso da `etichetta/images/logo.pn
     `theme.js`: campi, pulsanti, testi e link si correggono da soli quanto basta (testo ≥ 7:1, pulsanti ≥ 3:1).
   - "voglio decidere anche dove posizionare il logo" → `logoPlace` (nel riquadro / sopra il titolo /
     sull'immagine di testata) e `logoPos` (sinistra / centro / destra) in Aspetto › Logo.
+  - "nel contratto il logo deve stare centrale non a destra" → `CONTRACT_STYLE.logoPos = 'c'`; le formattazioni salvate
+    prima (senza `style.v = 2`) passano al centro, i contratti già firmati restano come sono stati firmati.
   - "più leggibile e ben comprensibile" → testo a 16px, etichette e grigi più chiari.
   - "Esempio EP · CAT001, se clicco non c'è un campo per modificarlo" → è un esempio: si riempie con la release
     vera. Ora il clic apre "Righe in alto" (mostra/nascondi e testo `{release} · {catalogo}`).

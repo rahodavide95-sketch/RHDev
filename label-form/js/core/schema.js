@@ -219,7 +219,8 @@ function cleanContract(c, sections) {
     artistRole: str(c.artistRole, 200).trim() || T.artistRole,
     blank: str(c.blank, 80).trim() || T.blank,
     accept: str(c.accept, 300).trim() || T.accept,
-    style: sanitizeContractStyle(c.style),
+    // formattazione salvata prima del 9/11/2026: il logo stava a destra, D lo vuole al centro
+    style: sanitizeContractStyle(c.style && c.style.v === 2 ? c.style : { ...(c.style || {}), logoPos: CONTRACT_STYLE.logoPos }),
   };
   if (c.layout !== 2) {
     // contratto salvato prima della nuova impaginazione: il testo predefinito diventa quello completo,

@@ -317,7 +317,7 @@ function syncGauge() {
   gItems = [].slice.call(pageEl.querySelectorAll('[data-g]'));
   gauge.className = 'gauge' + (st.page === 'artists' ? ' all' : '');
   hapAct = null;
-  gauge.innerHTML = gItems.map(function (e, i) { var l = esc(e.getAttribute('data-g')); return '<button data-gi="' + i + '" aria-label="' + l + '"><i></i><span>' + l + '</span></button>'; }).join('');
+  gauge.innerHTML = gItems.map(function (e, i) { var l = esc(e.getAttribute('data-g')); return '<button' + (e.classList.contains('layer') ? ' class="r"' : '') + ' data-gi="' + i + '" aria-label="' + l + '"><i></i><span>' + l + '</span></button>'; }).join('');
   measure();
 }
 gauge.addEventListener('click', function (e) {
@@ -351,6 +351,7 @@ function measure() {
   if (a !== accStr) { accStr = a; document.documentElement.style.setProperty('--acc', a); }
   [].forEach.call(gauge.children, function (b, i) { b.setAttribute('aria-current', i === act ? 'true' : 'false'); });
   site.classList.toggle('moved', window.scrollY > 8);
+  site.classList.toggle('in-rel', act >= 0 && !!gItems[act] && gItems[act].classList.contains('layer'));
   chapter(act);
   kick();
 }

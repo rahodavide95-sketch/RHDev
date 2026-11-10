@@ -122,7 +122,7 @@ const SITE = {
       link:    "https://www.submithub.com/link/somnia-i-va-subconscious-culture",
       // ARTISTI DELLA COMPILATION: scrivi qui i nomi, tra virgolette e separati da virgola
       // es. artists: [ "Raho", "Jacom", "Pøl" ],
-      artists: [ ],
+      artists: [ "Daryn Steytler", "Egotot", "FALN", "Jack Fresia", "Vita", "Jacom", "Kevin Ferhati", "Pøl", "Raho", "Rhythm Assembler", "Zimer" ],
     },
     {
       artist:  "Various Artists",
@@ -134,7 +134,7 @@ const SITE = {
       link:    "https://www.submithub.com/link/somnia-ii-va-subconscious-culture",
       // ARTISTI DELLA COMPILATION: scrivi qui i nomi, tra virgolette e separati da virgola
       // es. artists: [ "Raho", "Jacom", "Pøl" ],
-      artists: [ ],
+      artists: [ "Artificial DNA", "Bob Semp", "GCOD", "IVISION", "John Wick", "KaioBarssalos", "KLËRR", "Mode_1", "Nilya", "Raho" ],
     },
     {
       artist:  "Raho",
@@ -155,7 +155,7 @@ const SITE = {
       link:    "https://www.submithub.com/link/somnia-iii-va-subconscious-culture",
       // ARTISTI DELLA COMPILATION: scrivi qui i nomi, tra virgolette e separati da virgola
       // es. artists: [ "Raho", "Jacom", "Pøl" ],
-      artists: [ ],
+      artists: [ "Aldo", "Bimol", "BRNT", "Bürt", "Diana Franco", "LuizFribs", "MONOKRØM", "Raho", "Sid Porwal", "Tsott" ],
     },
   ],
 

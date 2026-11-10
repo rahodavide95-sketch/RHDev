@@ -117,8 +117,8 @@ P.home = function () {
   if (VIS.events && (S.events || []).length)   extras += '<div>' + sec('Events', 'All dates', 'events') + S.events.slice(0, 3).map(function (e) { return '<div class="mini"><b>' + esc(e.name) + '</b><span>' + esc(e.date || '') + '</span></div>'; }).join('') + '</div>';
   if (VIS.merch && (S.merch || []).length)     extras += '<div>' + sec('Store', 'Open store', 'store') + S.merch.slice(0, 3).map(function (e) { return '<div class="mini"><b>' + esc(e.name) + '</b><span>' + esc(e.price || '') + '</span></div>'; }).join('') + '</div>';
   return '<section class="hero stop" data-pal="mono" data-g="Surface"><div class="lockup"><img src="images/logo.png" alt="" width="200" height="200"><h1><span><b>SUBCONSCIOUS</b></span> <span>Culture</span></h1></div>' +
-    (LABEL.tagline ? '<p class="sh">' + esc(LABEL.tagline).replace(/\n/g, '<br>') + '</p>' : '') +
-    '<div class="hint"><i></i>Scroll to descend · depth is measured in days since release</div></section>' +
+    (LABEL.tagline ? '<p class="sh">' + LABEL.tagline.split('\n').map(function (l) { return '<span class="tl">' + esc(l) + '</span>'; }).join('') + '</p>' : '') +
+    '<div class="hint"><i></i><span class="hl"><span class="tl">Scroll to descend</span><span class="tl">Depth is measured in days since release</span></span></div></section>' +
     show.map(function (r) {
       var d = dz(r);
       return '<section class="layer stop" data-pal="' + r.i + '" data-g="' + (d < 0 ? '+' + (-d) : '−' + d) + ' d · ' + esc(r.t) + '">' +
@@ -420,6 +420,22 @@ function setMenu(open) {
   if (open) { menu.hidden = false; void menu.offsetWidth; menu.classList.add('open'); }
   else if (!menu.hidden) { menu.classList.remove('open'); menuT = setTimeout(function () { menu.hidden = true; }, reduce ? 0 : 500); }
 }
+/* Frasi sotto al titolo: ogni frase su una sola riga. Se non ci sta, il testo si
+   rimpicciolisce quanto basta; se diventerebbe troppo piccolo, va a capo bilanciato. */
+function fitLines(p, min) {
+  if (!p) return;
+  p.classList.remove('wrap'); p.style.fontSize = '';
+  var hero = p.closest('.hero'), cs = getComputedStyle(hero);
+  var avail = hero.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  var base = parseFloat(getComputedStyle(p).fontSize), widest = p.scrollWidth;
+  if (!widest || widest <= avail) return;
+  var size = Math.floor(base * avail / widest * 10) / 10;
+  if (size >= min) p.style.fontSize = size + 'px'; else p.classList.add('wrap');
+}
+function fitTag() {
+  fitLines(pageEl.querySelector('.hero .sh'), 11.5);
+  fitLines(pageEl.querySelector('.hero .hl'), 9.5);
+}
 function render(keep) {
   site.setAttribute('data-page', st.page);
   document.documentElement.classList.toggle('chapters', st.page === 'home');
@@ -433,6 +449,7 @@ function render(keep) {
   dimT = (st.page === 'home' || st.page === 'release') ? .66 : .4;
   hoverRel = null;
   if (!keep) window.scrollTo(0, 0);
+  if (st.page === 'home') fitTag();
   syncGauge();
 }
 function route() {
@@ -544,6 +561,8 @@ function frame() {
 function kick() { if (!raf) raf = requestAnimationFrame(frame); }
 window.addEventListener('scroll', measure, { passive: true });
 window.addEventListener('resize', measure);
+window.addEventListener('resize', fitTag);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitTag);
 document.addEventListener('visibilitychange', kick);
 
 /* ------------------------------------------------------------ avvio */

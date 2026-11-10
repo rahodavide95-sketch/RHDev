@@ -449,8 +449,8 @@ img { display: block; max-width: 100%; }
 
 /* ---------- Barra in fondo: tutti i collegamenti ---------- */
 .foot { display: grid; gap: 34px; margin-top: 120px; padding-block: 0 30px; }
-/* le due sezioni in fondo (logo, collegamenti e © / social e piattaforme): vetro satinato sopra il fluido */
-.foot-bar, .foot-bottom {
+/* un unico riquadro in fondo (logo, collegamenti, social e piattaforme, poi una linea e il ©): vetro satinato sopra il fluido */
+.foot-bar {
   background: rgba(10,12,18,.38);
   -webkit-backdrop-filter: blur(24px) saturate(140%); backdrop-filter: blur(24px) saturate(140%);
   border: 1px solid rgba(244,241,234,.14); border-radius: 0;
@@ -460,6 +460,7 @@ img { display: block; max-width: 100%; }
   display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 26px 48px;
   padding: clamp(28px, 4vw, 44px) clamp(20px, 4vw, 48px);
 }
+.foot-links { flex-basis: 100%; display: flex; flex-direction: column; align-items: center; gap: 18px; }
 .foot-copy { flex-basis: 100%; padding-top: 22px; border-top: 1px solid var(--line); text-align: center; font-size: 12px; letter-spacing: .08em; color: var(--dim); }
 .foot-brand { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; font-size: 15px; letter-spacing: .02em; text-decoration: none; }
 .foot-brand img { flex: none; width: 44px; height: 44px; }
@@ -482,7 +483,7 @@ img { display: block; max-width: 100%; }
   .foot { gap: 34px; margin-top: 90px; padding-block: 46px 28px; }
   /* telefono: barra in fondo tutta centrata */
   .foot-bar { flex-direction: column; align-items: center; text-align: center; }
-  .foot-copy { flex-basis: auto; width: 100%; }
+  .foot-copy, .foot-links { flex-basis: auto; width: 100%; }
   .foot-nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); justify-items: center; gap: 16px 30px; width: 100%; }
   .foot-bottom { flex-direction: column; justify-content: center; text-align: center; }
   .foot-social { justify-content: center; }

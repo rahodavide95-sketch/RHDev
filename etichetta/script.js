@@ -242,7 +242,7 @@ P.contact = function () {
   var ig = CONTACT.instagramUrl || LABEL.instagram;
   return '<div class="head"><div class="meta"><b class="nm">SUBCONSCIOUS Culture</b></div><h1 class="big">Contact</h1></div><div class="contact"><div>' +
     rows.map(function (m) { return '<div class="mail"><small>' + m[0] + '</small><a href="mailto:' + esc(m[1]) + '">' + esc(m[1]) + '</a></div>'; }).join('') +
-    (ig ? '<div class="mail"><small>Instagram</small><a href="' + esc(ig) + '" target="_blank" rel="noopener">' + esc(CONTACT.instagram || 'Instagram') + ' ↗</a></div>' : '') +
+    (ig ? '<div class="mail"><small>Instagram</small><a href="' + esc(ig) + '" target="_blank" rel="noopener">' + esc(CONTACT.instagram || 'Instagram') + '</a></div>' : '') +
     '</div></div>';
 };
 P.search = function () {
@@ -460,6 +460,6 @@ $('links').innerHTML = navHtml(false);
 menu.innerHTML = navHtml(true);
 $('footCopy').innerHTML = '© ' + (LABEL.foundedYear && +LABEL.foundedYear < now.getFullYear() ? LABEL.foundedYear + '–' : '') + now.getFullYear() + ' <span class="nm">SUBCONSCIOUS Culture</span>';
 $('footSocial').innerHTML = [['Instagram', LABEL.instagram], ['SoundCloud', LABEL.soundcloud], ['Bandcamp', LABEL.bandcamp], ['Resident Advisor', LABEL.ra]]
-  .filter(function (s) { return ok(s[1]); }).map(function (s) { return '<a href="' + esc(s[1]) + '" target="_blank" rel="noopener">' + s[0] + ' ↗</a>'; }).join('');
+  .filter(function (s) { return ok(s[1]); }).map(function (s) { return '<a href="' + esc(s[1]) + '" target="_blank" rel="noopener">' + s[0] + '</a>'; }).join('');
 route();
 })();

@@ -546,10 +546,10 @@ img[loading="lazy"]:not(.ld) { opacity: 0; }
 .site[data-page="home"]:not(.moved) .foot { opacity: 0; }
 /* Ogni capitolo affiora quando entra nello schermo */
 .rv > * {
-  opacity: 0; transform: translateY(18px); filter: blur(4px);
-  transition: opacity 1s ease, transform 1s cubic-bezier(.22,.61,.36,1), filter 1s ease, background .25s, color .25s, border-color .25s;
+  opacity: 0; transform: translateY(18px);
+  transition: opacity 1s ease, transform 1s cubic-bezier(.22,.61,.36,1), background .25s, color .25s, border-color .25s;
 }
-.rv.seen > * { opacity: 1; transform: none; filter: blur(0); }
+.rv.seen > * { opacity: 1; transform: none; }
 .rv.seen > :nth-child(2) { transition-delay: .1s; }
 .rv.seen > :nth-child(3) { transition-delay: .2s; }
 .rv.seen > :nth-child(n+4) { transition-delay: .3s; }
@@ -797,15 +797,32 @@ img[loading="lazy"]:not(.ld) { opacity: 0; }
   .foot { padding-top: 0; }
   .foot-nav { display: flex; width: auto; }
 }
-/* tablet in verticale: copertine a 3 per riga, artisti a 4; nella barra in fondo le voci occupano
-   tutta la riga e il © va sotto */
-@media (min-width: 700px) and (max-width: 980px) and (min-height: 600px) and (hover: none) and (pointer: coarse) {
-  :root { --cov: min(560px, 42vw, calc(100svh - var(--head-h) - 200px)); }
+/* tablet in verticale: lo schermo è alto e stretto, quindi niente due colonne: i dettagli (codice, titolo,
+   artista, tasti) stanno sopra, centrati, e la copertina grande sotto. Copertine a 3 per riga, artisti a 4;
+   nella barra in fondo le voci occupano tutta la riga e il © va sotto */
+@media (min-width: 700px) and (min-height: 600px) and (hover: none) and (pointer: coarse) and (orientation: portrait) {
+  :root { --disp: clamp(56px, 8.5vw, 88px); --cov: min(560px, calc(100vw - 128px), calc(100svh - var(--head-h) - 400px)); }
   .col { width: calc(100% - 128px); }
+  .layer, .rel { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  .layer > .meta, .rel > .meta, .rel > .vaa, .layer .cta { justify-content: center; }
+  .layer .side, .rel .art .btn { order: 1; align-self: center; margin-top: 30px; }
+  .layer .cvbig, .rel .art .cvbig { order: 2; align-self: center; margin-top: 40px; width: var(--cov); }
   .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .faces.all .face { width: calc((100% - 72px) / 4); }
   .foot-nav { grid-column: 1 / -1; justify-content: space-between; }
   .foot-copy { grid-column: 1 / -1; grid-row: 3; margin-top: 16px; padding: 0; border-top: 0; text-align: left; }
+}
+/* tablet in orizzontale: artisti in Home con più aria (foto un po' più piccole e più distanziate) */
+@media (min-width: 700px) and (min-height: 600px) and (hover: none) and (pointer: coarse) and (orientation: landscape) {
+  .bed .faces { gap: 16px; margin-top: 40px; width: min(88%, calc((100vh - var(--head-h) - 400px) * 2.5 + 24px)); width: min(88%, calc((100svh - var(--head-h) - 400px) * 2.5 + 24px)); }
+  .bed .face { width: calc((100% - 64px) / 5); }
+  .bed-more { margin-top: 40px; }
+}
+/* computer e tablet: About, FAQ, Contact e Credits centrati sullo schermo */
+@media (min-width: 981px) and (hover: hover) and (pointer: fine), (min-width: 700px) and (min-height: 600px) and (hover: none) and (pointer: coarse) {
+  .site[data-page="about"] .head, .site[data-page="faq"] .head, .site[data-page="contact"] .head, .site[data-page="credits"] .head { justify-items: center; text-align: center; }
+  .info, .faq, .credits, .contact { margin-inline: auto; }
+  .info .lead, .credits li, .contact .mail { text-align: center; }
 }
 
 /* ============================================================

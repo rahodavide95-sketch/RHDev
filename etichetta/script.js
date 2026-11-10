@@ -742,12 +742,23 @@ window.addEventListener('pointermove', function (e) { mt = [e.clientX / window.i
    differenza non si vede, ma la scheda grafica resta libera e lo scorrimento non ha scatti.
    Le sfumature di colore sono legate al tempo, non ai fotogrammi: durano uguale. */
 var lastDraw = 0, minGap = touchy ? 30 : 0;
+/* quanti pixel calcola il fondo: è sfumato, quindi a risoluzione ridotta è identico ma molto più leggero.
+   Se il dispositivo fatica (fotogrammi lenti) scende ancora da solo; quando torna fluido risale. */
+var fluidMax = touchy ? 130000 : 150000, fluidBudget = fluidMax, fluidEma = 0, fluidT = 0;
+function fluidAdapt(dt, now) {
+  var target = Math.max(16.7, minGap);
+  if (dt > 0 && dt < 250) fluidEma = fluidEma ? fluidEma * .92 + dt * .08 : dt;
+  if (now - fluidT < 1500 || !fluidEma) return;
+  fluidT = now;
+  if (fluidEma > target * 1.3 && fluidBudget > 60000) fluidBudget = Math.max(60000, Math.round(fluidBudget * .8));
+  else if (fluidEma < target * 1.08 && fluidBudget < fluidMax) fluidBudget = Math.min(fluidMax, Math.round(fluidBudget * 1.1));
+}
 function frame(now) {
   raf = 0;
   if (!G) return;
   now = now || performance.now();
   if (minGap && lastDraw && now - lastDraw < minGap) { if (!document.hidden) raf = requestAnimationFrame(frame); return; }
-  var steps = lastDraw ? Math.min(4, (now - lastDraw) / 16.67) : 1; lastDraw = now;
+  var steps = lastDraw ? Math.min(4, (now - lastDraw) / 16.67) : 1; if (lastDraw) fluidAdapt(now - lastDraw, now); lastDraw = now;
   var ease = function (f) { return reduce ? 1 : 1 - Math.pow(1 - f, steps); };
   var moving = Math.abs(dim - dimT) > .004, i, k;
   for (i = 0; i < 3; i++) {
@@ -758,7 +769,7 @@ function frame(now) {
   var em = 1 - Math.pow(1 - .06, steps);
   mouse = [mouse[0] + (mt[0] - mouse[0]) * em, mouse[1] + (mt[1] - mouse[1]) * em];
   /* il fluido è morbido: si disegna a bassa risoluzione, con un tetto di pixel per i telefoni */
-  var cw = canvas.clientWidth, ch = canvas.clientHeight, sc = Math.min(.55, Math.sqrt(320000 / Math.max(1, cw * ch)));
+  var cw = canvas.clientWidth, ch = canvas.clientHeight, sc = Math.min(.55, Math.sqrt(fluidBudget / Math.max(1, cw * ch)));
   var w = Math.max(2, Math.round(cw * sc)), h = Math.max(2, Math.round(ch * sc)), gl = G.gl;
   if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
   gl.viewport(0, 0, w, h);

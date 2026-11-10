@@ -143,8 +143,7 @@ P.home = function () {
       return '<section class="layer stop" data-pal="' + r.i + '" data-g="' + (d < 0 ? '+' + (-d) : '−' + d) + ' d · ' + esc(r.t) + '">' +
         '<div class="meta"><span>' + esc(r.c) + '</span><span>' + esc(r.d) + '</span><span>' + r.kind + '</span>' + (d < 0 ? '<span class="up">Upcoming</span>' : '') + '</div>' +
         '<h2 class="big"><a href="#/release/' + r.id + '">' + esc(r.t) + '</a></h2><div class="by">' + esc(r.a) + '</div>' +
-        '<div class="row"><a class="cvbig" href="#/release/' + r.id + '" aria-label="Open ' + esc(r.t) + '">' + cover(r) + '</a><div class="side"><span class="depth">' + depthText(r) +
-        '</span><div class="cta">' + listen(r, true) + '<a class="btn" href="#/release/' + r.id + '">Open release</a></div></div></div></section>';
+        '<div class="row"><a class="cvbig" href="#/release/' + r.id + '" aria-label="Open ' + esc(r.t) + '">' + cover(r) + '</a><div class="side"><div class="cta">' + listen(r, true) + '<a class="btn" href="#/release/' + r.id + '">Open release</a></div></div></div></section>';
     }).join('') +
     (L.length ? '<section class="deeper stop" data-pal="' + (L[5] || L[L.length - 1]).i + '" data-g="Discography"><h2 class="big">Discography</h2>' +
       '<p class="sub">' + plural(L.length, 'release') + '</p><a class="btn pri" href="#/releases">All Discography</a></section>' : '') +

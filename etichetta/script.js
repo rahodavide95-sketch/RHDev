@@ -129,8 +129,6 @@ P.home = function () {
     '<section class="bed stop" data-pal="bed" data-g="Seabed">' +
       (ART.length ? sec('The seabed · Artists', 'All ' + plural(ART.length, 'artist'), 'artists') + '<div class="faces">' + faces.map(function (a) { return '<a class="face" href="#/artist/' + a.id + '">' + img(a.photo) + esc(a.n) + '</a>'; }).join('') + '</div>' : '') +
       (extras ? '<div class="three">' + extras + '</div>' : '') +
-      (LABEL.description ? sec('About') + '<p class="about sh">' + esc(LABEL.description).replace(/\n/g, '<br>') + '</p>' : '') +
-      sec('Contact', 'Write to us', 'contact') + '<p class="big line-cta">Send us what you hear down there.</p>' +
     '</section>';
 };
 
@@ -239,10 +237,10 @@ P.store = function () {
     }).join('') + '</div>';
 };
 P.contact = function () {
-  var rows = [['Demos', CONTACT.demos], ['Bookings', CONTACT.bookings], ['General', CONTACT.email || LABEL.email]].filter(function (m) { return m[1]; });
+  /* Solo l'email principale dell'etichetta: gli altri indirizzi di content.js non sono mai stati pubblicati. */
+  var rows = [['Email', LABEL.email || CONTACT.email]].filter(function (m) { return m[1]; });
   var ig = CONTACT.instagramUrl || LABEL.instagram;
-  return '<div class="head"><div class="meta"><b>Contact</b>' + (CONTACT.address ? '<span>' + esc(CONTACT.address) + '</span>' : '') + '</div><h1 class="big">Write to us</h1></div><div class="contact"><div>' +
-    '<p class="sh">Demos, bookings, press and everything else: pick the right address and write to us.</p></div><div>' +
+  return '<div class="head"><div class="meta"><b>' + esc(LABEL.name || 'SUBCONSCIOUS Culture') + '</b></div><h1 class="big">Contact</h1></div><div class="contact"><div>' +
     rows.map(function (m) { return '<div class="mail"><small>' + m[0] + '</small><a href="mailto:' + esc(m[1]) + '">' + esc(m[1]) + '</a></div>'; }).join('') +
     (ig ? '<div class="mail"><small>Instagram</small><a href="' + esc(ig) + '" target="_blank" rel="noopener">' + esc(CONTACT.instagram || 'Instagram') + ' ↗</a></div>' : '') +
     '</div></div>';
@@ -460,7 +458,7 @@ document.addEventListener('visibilitychange', kick);
 /* ------------------------------------------------------------ avvio */
 $('links').innerHTML = navHtml(false);
 menu.innerHTML = navHtml(true);
-$('footCopy').textContent = '© ' + (LABEL.foundedYear && +LABEL.foundedYear < now.getFullYear() ? LABEL.foundedYear + '–' : '') + now.getFullYear() + ' SUBCONSCIOUS Culture' + (CONTACT.address ? ' · ' + CONTACT.address : '');
+$('footCopy').textContent = '© ' + (LABEL.foundedYear && +LABEL.foundedYear < now.getFullYear() ? LABEL.foundedYear + '–' : '') + now.getFullYear() + ' SUBCONSCIOUS Culture';
 $('footSocial').innerHTML = [['Instagram', LABEL.instagram], ['SoundCloud', LABEL.soundcloud], ['Bandcamp', LABEL.bandcamp], ['Resident Advisor', LABEL.ra]]
   .filter(function (s) { return ok(s[1]); }).map(function (s) { return '<a href="' + esc(s[1]) + '" target="_blank" rel="noopener">' + s[0] + ' ↗</a>'; }).join('');
 route();

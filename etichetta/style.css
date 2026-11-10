@@ -109,12 +109,14 @@ img { display: block; max-width: 100%; }
   .search {
     flex: 1 1 0; min-width: 0; max-width: 0; font-size: 16px; text-align: left;
     padding: 10px 0; opacity: 0; visibility: hidden; border-width: 0;
-    transition: max-width .55s cubic-bezier(.22,.61,.36,1), padding .55s ease, opacity .4s ease, visibility 0s linear .55s, background .25s, border-color .25s;
+    transition: max-width .55s cubic-bezier(.22,.61,.36,1), padding .55s ease, margin .55s ease, opacity .4s ease, visibility 0s linear .55s, background .25s, border-color .25s;
   }
   /* aprendo, il campo diventa subito attivo (così si può scrivere) e poi si allarga in dissolvenza */
   .top.searching .search { max-width: 100%; padding-inline: 12px; opacity: 1; visibility: visible; border-width: 1px; transition-delay: 0s; }
   /* barra della ricerca in proporzione con logo e icone */
-  .search { box-sizing: border-box; height: 34px; padding-block: 0; }
+  .search { box-sizing: border-box; height: 34px; padding-block: 0; margin-inline: 0; }
+  /* aperta, la barra si stacca dal logo e dalla lente */
+  .top.searching .search { margin-left: 16px; margin-right: 6px; }
   .top.searching .search, .top.searching .search:focus { background: rgba(244,241,234,.06); border-color: rgba(244,241,234,.2); }
 }
 @media (max-width: 480px) {

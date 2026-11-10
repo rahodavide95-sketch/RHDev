@@ -117,6 +117,9 @@ img { display: block; max-width: 100%; }
   .top.searching .search { max-width: 100%; padding-inline: 16px; opacity: 1; visibility: visible; border-width: 1px; transition-delay: 0s; }
   .wordmark { display: inline-block; max-width: 70vw; overflow: hidden; transition: opacity .35s ease, max-width .55s cubic-bezier(.22,.61,.36,1); }
   .top.searching .wordmark { opacity: 0; max-width: 0; }
+  /* sull'apertura della Home in alto resta solo il logo: il nome compare appena si scorre */
+  .site[data-page="home"]:not(.moved) .wordmark { opacity: 0; }
+  .wordmark { transition: opacity .6s ease, max-width .55s cubic-bezier(.22,.61,.36,1); }
 }
 @media (max-width: 480px) {
   .brand { gap: 8px; }
@@ -436,6 +439,10 @@ img { display: block; max-width: 100%; }
   text-decoration: none; color: var(--dim); transition: color .3s ease;
 }
 .foot-nav a:hover, .foot-nav a[aria-current="true"], .foot-social a:hover { color: var(--fg); }
+.foot-social { align-items: center; gap: 12px 26px; }
+.foot-social a { display: grid; place-items: center; width: 40px; height: 40px; margin: -10px; transition: color .3s ease, transform .3s ease; }
+.foot-social a:hover { transform: translateY(-2px); }
+.foot-social svg { width: 20px; height: 20px; }
 .foot-nav a[aria-current="true"] { text-decoration: underline; text-underline-offset: 7px; text-decoration-color: var(--acc); }
 .foot-bottom { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 14px 30px; padding-top: 22px; border-top: 1px solid var(--line); font-size: 12px; letter-spacing: .08em; color: var(--dim); }
 @media (max-width: 720px) {

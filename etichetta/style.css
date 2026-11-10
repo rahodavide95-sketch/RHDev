@@ -131,14 +131,15 @@ img { display: block; max-width: 100%; }
 .menu {
   position: fixed; inset: 0; z-index: 29;
   background: rgb(5,6,9);
-  display: flex; flex-direction: column; justify-content: center; gap: 6px;
+  display: flex; flex-direction: column; justify-content: center; justify-content: safe center; gap: 6px;
+  overflow-y: auto;
   padding-top: calc(var(--top-h) + env(safe-area-inset-top, 0px));
   padding-bottom: env(safe-area-inset-bottom, 0px);
   padding-left: var(--gl); padding-right: var(--gr);
 }
 .menu { opacity: 0; transition: opacity .5s ease; }
 .menu.open { opacity: 1; }
-.menu a { font-family: var(--f-serif); font-style: italic; font-size: clamp(40px, 11vw, 72px); line-height: 1.12; text-decoration: none;
+.menu a { font-family: var(--f-serif); font-style: italic; font-size: clamp(30px, min(11vw, 6.2svh), 72px); line-height: 1.12; text-decoration: none;
   opacity: 0; transform: translateY(16px); filter: blur(4px);
   transition: opacity .7s ease, transform .7s cubic-bezier(.22,.61,.36,1), filter .7s ease, color .3s ease; }
 .menu.open a { opacity: 1; transform: none; filter: blur(0); }
@@ -148,6 +149,8 @@ img { display: block; max-width: 100%; }
 .menu.open a:nth-child(5) { transition-delay: .32s; }
 .menu.open a:nth-child(n+6) { transition-delay: .4s; }
 .menu.open a:nth-child(n+7) { transition-delay: .48s; }
+.menu a.soon { color: rgba(244,241,234,.4); cursor: default; }
+.menu a.soon small { margin-left: 12px; font-family: var(--f-sans); font-style: normal; font-size: 11px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; vertical-align: super; color: var(--dim); }
 .menu a[aria-current="true"] { color: var(--acc); }
 
 /* ---------- Misuratore ---------- */

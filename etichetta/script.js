@@ -402,9 +402,16 @@ function chapter(act) {
 }
 var TITLES = { home: '', releases: 'Releases', artists: 'Artists', podcast: 'Podcast', events: 'Events', store: 'Store', contact: 'Contact', search: 'Search', about: 'About', faq: 'FAQ', credits: 'Credits' };
 function navLinks(L) { return L.map(function (p) { return '<a href="#/' + p[0] + '" data-p="' + p[0] + '">' + p[1] + '</a>'; }).join(''); }
+/* Sezioni non ancora attive: nel menu compaiono con "soon" e non si aprono.
+   Quando le attivi in content.js (sections) diventano voci normali. */
+var SOON = [['Events', VIS.events], ['Podcast', VIS.podcast], ['Merch', VIS.merch]].filter(function (s) { return !s[1]; });
 function navHtml(withHome) {
-  /* nel menu del telefono anche About · FAQ · Credits, come le altre voci */
-  return (withHome ? '<a href="#/" data-p="home">Surface</a>' : '') + navLinks(withHome ? PAGES.concat(INFO) : PAGES);
+  if (!withHome) return navLinks(PAGES);
+  /* menu del telefono: tutte le voci nello stesso formato, About · FAQ · Credits comprese */
+  var main = PAGES.filter(function (p) { return p[0] !== 'contact'; }), contact = PAGES.filter(function (p) { return p[0] === 'contact'; });
+  return '<a href="#/" data-p="home">Surface</a>' + navLinks(main) +
+    SOON.map(function (s) { return '<a class="soon" aria-disabled="true">' + s[0] + '<small>soon</small></a>'; }).join('') +
+    navLinks(contact.concat(INFO));
 }
 var menuT = 0;
 function setMenu(open) {
@@ -455,7 +462,7 @@ function setSearch(open) {
 }
 searchBtn.addEventListener('click', function () { setMenu(false); setSearch(!topEl.classList.contains('searching')); });
 $('q').addEventListener('blur', function () { if (!$('q').value) setTimeout(function () { if (document.activeElement !== $('q')) setSearch(false); }, 150); });
-menu.addEventListener('click', function (e) { if (e.target.closest('a')) setMenu(false); });
+menu.addEventListener('click', function (e) { if (e.target.closest('a[href]')) setMenu(false); });
 document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { setMenu(false); setSearch(false); } });
 
 site.addEventListener('click', function (e) {

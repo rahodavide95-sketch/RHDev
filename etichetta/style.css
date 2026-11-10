@@ -581,13 +581,6 @@ img[loading="lazy"]:not(.ld) { opacity: 0; }
      così Discography, Artists, pagina artista e barra in fondo sono centrati sullo schermo */
   html.ipad .col { padding-right: var(--pl); }
   html.ipad .hero { margin-right: calc(-1 * var(--pl, 0px)); }
-  /* iPad: titoli grandi in proporzione allo schermo (sul telefono crescono con la larghezza, qui sarebbero enormi
-     e le parole lunghe come "Discography" andrebbero a capo) */
-  html.ipad .layer h2, html.ipad .deeper h2, html.ipad .bed-title { font-size: clamp(50px, 8vw, 96px); }
-  html.ipad .head h1, html.ipad .rel h1 { font-size: clamp(50px, 8vw, 104px); }
-  /* iPad: il mosaico degli artisti tiene conto del titolo, così tutto sta nella schermata */
-  html.ipad .bed .faces { width: min(100%, 560px, calc(100vh - var(--head-h) - 260px - min(8vw, 96px)));
-                          width: min(100%, 560px, calc(100svh - var(--head-h) - 260px - min(8vw, 96px))); }
 }
 
 /* Telefoni stretti (320 px) e bassi: tutto più compatto, così ogni capitolo sta nello schermo */
@@ -664,10 +657,10 @@ img[loading="lazy"]:not(.ld) { opacity: 0; }
 }
 
 /* ============================================================
-   COMPUTER — solo schermi larghi con il mouse.
-   Telefono e tablet non leggono nulla di questo blocco.
+   COMPUTER e TABLET — schermi larghi con il mouse, e tablet (touch, almeno 700×600).
+   I telefoni (anche girati in orizzontale) non leggono nulla di questo blocco.
    ============================================================ */
-@media (min-width: 981px) and (hover: hover) and (pointer: fine) {
+@media (min-width: 981px) and (hover: hover) and (pointer: fine), (min-width: 700px) and (min-height: 600px) and (hover: none) and (pointer: coarse) {
   :root {
     --gl: 40px; --gr: 40px;
     --disp: clamp(64px, 6.2vw, 96px);                                  /* titoli grandi: tutti uguali */
@@ -773,12 +766,41 @@ img[loading="lazy"]:not(.ld) { opacity: 0; }
 @media (min-width: 1360px) and (hover: hover) and (pointer: fine) {
   .col { width: min(1200px, calc(100% - 360px)); }
 }
-/* computer con schermo non molto largo: accanto alla colonna non c'è posto per i nomi del misuratore */
-@media (min-width: 981px) and (max-width: 1359px) and (hover: hover) and (pointer: fine) {
+/* computer con schermo non molto largo, e tablet: accanto alla colonna non c'è posto per i nomi del misuratore */
+@media (min-width: 981px) and (max-width: 1359px) and (hover: hover) and (pointer: fine), (min-width: 700px) and (max-width: 1359px) and (min-height: 600px) and (hover: none) and (pointer: coarse) {
   .gauge button span { display: none; }
   /* barra in fondo: voci un po' più strette, così stanno su una riga */
   .foot-nav { gap: 10px 18px; }
   .foot-nav a { letter-spacing: .1em; }
+}
+
+/* ============================================================
+   TABLET — stesso disegno del computer, in proporzione
+   ============================================================ */
+@media (min-width: 700px) and (min-height: 600px) and (hover: none) and (pointer: coarse) {
+  :root {
+    --disp: clamp(56px, 7vw, 96px);
+    --cov: min(540px, 40vw, calc(100svh - var(--head-h) - 200px));
+  }
+  /* la barra di Safari cambia altezza: le misure seguono la parte sempre visibile dello schermo */
+  .col { width: min(1040px, calc(100% - 128px)); }
+  .layer, .rel { column-gap: clamp(36px, 5vw, 72px); }
+  .layer .side, .rel .art .btn { margin-top: 40px; }
+  .bed .faces { width: min(100%, calc((100vh - var(--head-h) - 345px) * 2.5 + 18px)); width: min(100%, calc((100svh - var(--head-h) - 345px) * 2.5 + 18px)); }
+  .lockup img { width: clamp(84px, min(15vw, 20svh), 204px); }
+  .hero h1 { font-size: clamp(34px, min(7.4vw, 11svh), 104px); }
+  /* tablet stretti (700–720 px): niente regole da telefono per le uscite e la barra in fondo */
+  .site[data-page="home"] .layer { padding-left: 0; }
+  .foot { padding-top: 0; }
+  .foot-nav { display: flex; width: auto; }
+}
+/* tablet in verticale: copertine a 3 per riga, artisti a 4; nella barra in fondo le voci occupano
+   tutta la riga e il © va sotto */
+@media (min-width: 700px) and (max-width: 980px) and (min-height: 600px) and (hover: none) and (pointer: coarse) {
+  .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .faces.all .face { width: calc((100% - 72px) / 4); }
+  .foot-nav { grid-column: 1 / -1; justify-content: space-between; }
+  .foot-copy { grid-column: 1 / -1; grid-row: 3; margin-top: 16px; padding: 0; border-top: 0; text-align: left; }
 }
 
 @media (prefers-reduced-motion: reduce) {

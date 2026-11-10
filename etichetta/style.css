@@ -293,7 +293,8 @@ img { display: block; max-width: 100%; }
   100% { transform: scaleY(0); transform-origin: bottom; }
 }
 .layer { min-height: 86vh; display: flex; flex-direction: column; justify-content: center; gap: 16px; padding-block: 44px; }
-.layer h2 { font-size: clamp(50px, 12vw, 176px); }
+/* titoli dei capitoli in Home (uscite, Discography, Artists): tutti della stessa grandezza */
+.layer h2, .deeper h2, .bed-title { font-size: clamp(50px, 12vw, 176px); }
 .layer h2 a { text-decoration: none; transition: opacity .25s; }
 .layer h2 a:hover { opacity: .78; }
 .row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 22px; margin-top: 18px; }
@@ -307,7 +308,6 @@ img { display: block; max-width: 100%; }
 .side { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
 .cta { display: flex; flex-wrap: wrap; gap: 10px; }
 .deeper { min-height: 60vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 18px; }
-.deeper h2 { font-size: clamp(40px, 7.5vw, 104px); }
 .bed { padding-block: 70px 30px; }
 .about { max-width: 62ch; font-size: 15px; line-height: 1.75; }
 .line-cta { font-size: clamp(30px, 4.6vw, 60px); max-width: 16ch; line-height: 1; }
@@ -417,10 +417,10 @@ img { display: block; max-width: 100%; }
    con in mezzo un mosaico 3×3 di foto quadrate tutte uguali; il nome sta sulla foto, in basso.
    Il mosaico è grande quanto lo schermo permette, così tutto sta in una schermata. */
 .bed { display: flex; flex-direction: column; align-items: center; text-align: center; }
-.bed-title { font-size: clamp(40px, 7.5vw, 104px); text-align: center; }
+.bed-title { text-align: center; }
 .bed .sub { margin-top: 14px; }
 .bed .faces { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 28px;
-  width: min(100%, 560px, calc(100vh - var(--head-h) - 250px)); width: min(100%, 560px, calc(100svh - var(--head-h) - 250px)); }
+  width: min(100%, 560px, calc(100vh - var(--head-h) - 266px)); width: min(100%, 560px, calc(100svh - var(--head-h) - 266px)); }
 .bed .face { position: relative; display: block; overflow: hidden; }
 .bed .face img { display: block; aspect-ratio: 1 / 1; }
 .bed .fname { position: absolute; left: 0; right: 0; bottom: 0; padding: 26px 6px 8px;
@@ -562,7 +562,7 @@ img[loading="lazy"]:not(.ld) { opacity: 0; }
 @media (max-width: 360px) {
   .cvbig { width: clamp(110px, min(76vw, calc(100vh - var(--head-h) - 430px)), 320px); }
   .cvbig { width: clamp(110px, min(76vw, calc(100svh - var(--head-h) - 430px)), 320px); }
-  .layer h2 { font-size: 44px; }
+  .layer h2, .deeper h2, .bed-title { font-size: 44px; }
   .layer { gap: 12px; }
 }
 @media (max-height: 600px) {

@@ -221,6 +221,8 @@ img { display: block; max-width: 100%; }
   text-wrap: balance; overflow-wrap: anywhere;
   text-shadow: 0 2px 34px rgba(0,0,0,.55);
 }
+/* "Upcoming" va sempre a capo, sulla seconda riga */
+.meta .br { flex-basis: 100%; height: 0; }
 .meta {
   display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center;
   font-size: 12px; font-weight: 500; letter-spacing: .16em; text-transform: uppercase;

@@ -178,7 +178,11 @@ img { display: block; max-width: 100%; }
   text-shadow: 0 2px 34px rgba(0,0,0,.55);
 }
 .hero h1 b { font-weight: 600; letter-spacing: .02em; }
-.hero h1 span { display: inline-block; }
+.hero h1 span { display: block; }
+/* Logo accanto al titolo; sui telefoni il titolo scende sotto al logo */
+.lockup { display: flex; flex-wrap: wrap; align-items: center; gap: clamp(16px, 2.6vw, 36px); }
+.lockup img { flex: none; width: clamp(84px, 15vw, 204px); height: auto; aspect-ratio: 1; filter: drop-shadow(0 2px 30px rgba(0,0,0,.5)); }
+.lockup h1 { min-width: 0; }
 .hero p { max-width: 46ch; font-size: 15px; }
 .hint { display: inline-flex; align-items: center; gap: 12px; font-size: 12px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
 .hint i { display: block; flex: none; width: 1px; height: 44px; background: linear-gradient(var(--fg), transparent); animation: drop 2.4s ease-in-out infinite; }

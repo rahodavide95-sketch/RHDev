@@ -113,7 +113,7 @@ P.home = function () {
   if (VIS.podcast && (S.podcast || []).length) extras += '<div>' + sec('Podcast', 'All episodes', 'podcast') + S.podcast.slice(0, 3).map(function (e) { return '<div class="mini"><b>' + esc(e.title) + '</b><span>' + esc(e.date || '') + '</span></div>'; }).join('') + '</div>';
   if (VIS.events && (S.events || []).length)   extras += '<div>' + sec('Events', 'All dates', 'events') + S.events.slice(0, 3).map(function (e) { return '<div class="mini"><b>' + esc(e.name) + '</b><span>' + esc(e.date || '') + '</span></div>'; }).join('') + '</div>';
   if (VIS.merch && (S.merch || []).length)     extras += '<div>' + sec('Store', 'Open store', 'store') + S.merch.slice(0, 3).map(function (e) { return '<div class="mini"><b>' + esc(e.name) + '</b><span>' + esc(e.price || '') + '</span></div>'; }).join('') + '</div>';
-  return '<section class="hero stop" data-pal="mono" data-g="Surface"><h1><span><b>SUBCONSCIOUS</b></span> <span>Culture</span></h1>' +
+  return '<section class="hero stop" data-pal="mono" data-g="Surface"><div class="lockup"><img src="images/logo.png" alt="" width="200" height="200"><h1><span><b>SUBCONSCIOUS</b></span> <span>Culture</span></h1></div>' +
     (LABEL.tagline ? '<p class="sh">' + esc(LABEL.tagline).replace(/\n/g, '<br>') + '</p>' : '') +
     '<div class="hint"><i></i>Scroll to descend · depth is measured in days since release</div></section>' +
     show.map(function (r) {

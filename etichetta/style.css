@@ -401,7 +401,7 @@ img { display: block; max-width: 100%; }
 .person:hover { color: var(--acc); }
 .person span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .av {
-  flex: none; width: 40px; height: 40px; border-radius: 0; object-fit: cover;
+  flex: none; width: 40px; height: 40px; border-radius: 50%; object-fit: cover;
   filter: grayscale(1) contrast(1.1); background: rgba(5,6,9,.6);
   display: grid; place-items: center;
   font-family: var(--f-serif); font-style: italic; font-size: 18px; color: var(--dim);

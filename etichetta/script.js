@@ -395,7 +395,7 @@ function syncGauge() {
   gItems = [].slice.call(pageEl.querySelectorAll('[data-g]'));
   gauge.className = 'gauge' + (st.page === 'artists' ? ' all' : '');
   hapAct = null;
-  gauge.innerHTML = gItems.map(function (e, i) { var l = esc(e.getAttribute('data-g')); return '<button' + (e.classList.contains('layer') ? ' class="r"' : '') + ' data-gi="' + i + '" aria-label="' + l + '"><i></i><span>' + l + '</span></button>'; }).join('');
+  gauge.innerHTML = gItems.map(function (e, i) { var l = esc(e.getAttribute('data-g')); if (desk) l = l.replace(/^[+−-]?\d+ d · /, ''); return '<button' + (e.classList.contains('layer') ? ' class="r"' : '') + ' data-gi="' + i + '" aria-label="' + l + '"><i></i><span>' + l + '</span></button>'; }).join('');
   measure();
 }
 gauge.addEventListener('click', function (e) {
@@ -462,6 +462,8 @@ var revealIO = ('IntersectionObserver' in window) && !reduce ? new IntersectionO
 
 /* ------------------------------------------------------------ vibrazione: un tocco leggerissimo a ogni capitolo della Home */
 var touchy = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+/* computer (schermo largo e mouse): le stesse condizioni delle regole "Computer" in style.css */
+var desk = window.matchMedia('(min-width: 981px) and (hover: hover) and (pointer: fine)').matches;
 
 /* ------------------------------------------------------------ capitoli alti quanto quello che si vede davvero
    Su iPhone (Safari recente) la pagina si vede anche sotto la barra degli indirizzi, oltre l'altezza "100lvh":

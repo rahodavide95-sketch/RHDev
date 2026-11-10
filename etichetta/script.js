@@ -403,8 +403,8 @@ function chapter(act) {
 var TITLES = { home: '', releases: 'Releases', artists: 'Artists', podcast: 'Podcast', events: 'Events', store: 'Store', contact: 'Contact', search: 'Search', about: 'About', faq: 'FAQ', credits: 'Credits' };
 function navLinks(L) { return L.map(function (p) { return '<a href="#/' + p[0] + '" data-p="' + p[0] + '">' + p[1] + '</a>'; }).join(''); }
 function navHtml(withHome) {
-  /* nel menu del telefono, sotto le voci principali, anche About · FAQ · Credits */
-  return (withHome ? '<a href="#/" data-p="home">Surface</a>' : '') + navLinks(PAGES) + (withHome ? '<div class="menu-sub">' + navLinks(INFO) + '</div>' : '');
+  /* nel menu del telefono anche About · FAQ · Credits, come le altre voci */
+  return (withHome ? '<a href="#/" data-p="home">Surface</a>' : '') + navLinks(withHome ? PAGES.concat(INFO) : PAGES);
 }
 var menuT = 0;
 function setMenu(open) {

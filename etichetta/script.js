@@ -427,6 +427,36 @@ var revealIO = ('IntersectionObserver' in window) && !reduce ? new IntersectionO
 
 /* ------------------------------------------------------------ vibrazione: un tocco leggerissimo a ogni capitolo della Home */
 var touchy = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+
+/* ------------------------------------------------------------ capitoli alti quanto quello che si vede davvero
+   Su iPhone (Safari recente) la pagina si vede anche sotto la barra degli indirizzi, oltre l'altezza "100lvh":
+   misuro quanto schermo si vede in più e allungo i capitoli di quel tanto (--tail), così il capitolo
+   successivo non si affaccia mai in fondo. Il valore cresce soltanto, per non far saltare la pagina. */
+var lvProbe = document.createElement('div');
+lvProbe.setAttribute('aria-hidden', 'true');
+lvProbe.style.cssText = 'position:fixed;top:0;left:-10px;width:1px;height:100vh;visibility:hidden;pointer-events:none';
+lvProbe.style.height = '100lvh';
+document.body.appendChild(lvProbe);
+var isIOS = /iP(hone|od|ad)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+var safariV = (navigator.userAgent.match(/Version\/(\d+)/) || [])[1];
+/* da Safari 26 la pagina si vede fino in fondo allo schermo, anche sotto la barra in vetro */
+var glassUI = isIOS && !(safariV && +safariV < 26);
+var tailMax = -1, tailW = 0;
+function fitTail() {
+  if (!touchy) return;
+  var w = window.innerWidth, h = window.innerHeight;
+  if (w !== tailW) { tailW = w; tailMax = -1; }                    /* rotazione: si riparte da capo */
+  var seen = Math.max(h, window.visualViewport ? window.visualViewport.height : 0);
+  if (glassUI && screen.width && screen.height) {
+    var sw = Math.min(screen.width, screen.height), sh = Math.max(screen.width, screen.height);
+    seen = Math.max(seen, w > h ? sw : sh);
+  }
+  var t = Math.max(0, Math.ceil(seen - lvProbe.getBoundingClientRect().height));
+  if (t > tailMax) { tailMax = t; document.documentElement.style.setProperty('--tail', t + 'px'); }
+}
+fitTail();
+window.addEventListener('resize', fitTail);
+if (window.visualViewport) window.visualViewport.addEventListener('resize', fitTail);
 var hapAct = null, hapT = 0;
 function buzz() {
   var t = Date.now();

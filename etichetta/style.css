@@ -552,14 +552,15 @@ img[loading="lazy"]:not(.ld) { opacity: 0; }
   html.chapters .stop { scroll-snap-align: start; scroll-snap-stop: always; }
   html.chapters .hero,
   html.chapters .layer,
-  html.chapters .deeper { min-height: calc(100vh - var(--head-h)); min-height: calc(100lvh - var(--head-h)); padding-block: 24px; }
+  html.chapters .deeper { min-height: calc(100vh - var(--head-h)); min-height: calc(100lvh - var(--head-h) + var(--tail, 0px)); padding-block: 24px; }
   /* lo spazio in più (barre del browser) va in fondo: il contenuto resta centrato nella parte sempre visibile */
   html.chapters .hero,
   html.chapters .layer,
-  html.chapters .deeper { padding-bottom: calc(24px + 100lvh - 100svh); }
+  html.chapters .deeper { padding-bottom: calc(24px + 100lvh - 100svh + var(--tail, 0px)); }
   /* ogni capitolo è alto almeno quanto lo schermo più grande possibile (barre del browser nascoste):
-     così il capitolo successivo non si affaccia mai in fondo, su qualsiasi telefono e browser */
-  html.chapters .bed { min-height: calc(100vh - var(--head-h)); min-height: calc(100lvh - var(--head-h)); justify-content: center; padding-block: 24px; padding-bottom: calc(24px + 100lvh - 100svh); }
+     così il capitolo successivo non si affaccia mai in fondo, su qualsiasi telefono e browser.
+     --tail (misurato dallo script) aggiunge la parte che iPhone mostra anche sotto la barra di Safari */
+  html.chapters .bed { min-height: calc(100vh - var(--head-h)); min-height: calc(100lvh - var(--head-h) + var(--tail, 0px)); justify-content: center; padding-block: 24px; padding-bottom: calc(24px + 100lvh - 100svh + var(--tail, 0px)); }
   html.chapters .foot { scroll-snap-align: end; }
 }
 

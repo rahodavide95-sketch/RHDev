@@ -570,6 +570,16 @@ img[loading="lazy"]:not(.ld) { opacity: 0; }
      --tail (misurato dallo script) aggiunge la parte che iPhone mostra anche sotto la barra di Safari */
   html.chapters .bed { min-height: calc(100vh - var(--head-h)); min-height: calc(100lvh - var(--head-h) + var(--tail, 0px)); justify-content: center; padding-block: 24px; padding-bottom: calc(24px + 100lvh - 100svh + var(--tail, 0px)); }
   html.chapters .foot { scroll-snap-align: end; }
+  /* iPad: la barra di Safari sta in alto e cambia altezza mentre si scorre (risalendo si riallarga).
+     Ogni capitolo è alto quanto la parte sempre visibile dello schermo: così non è mai più alto
+     della finestra e lo scorrimento a capitoli non si ferma a metà, con la barra aperta o chiusa */
+  html.ipad.chapters .hero,
+  html.ipad.chapters .layer,
+  html.ipad.chapters .deeper,
+  html.ipad.chapters .bed { min-height: calc(100vh - var(--head-h)); min-height: calc(100svh - var(--head-h)); padding-bottom: 24px; }
+  /* iPad: il titolo "Artists" è grande (cresce con la larghezza): il mosaico ne tiene conto, così sta nella schermata */
+  html.ipad .bed .faces { width: min(100%, 560px, calc(100vh - var(--head-h) - 260px - min(12vw, 176px)));
+                          width: min(100%, 560px, calc(100svh - var(--head-h) - 260px - min(12vw, 176px))); }
 }
 
 /* Telefoni stretti (320 px) e bassi: tutto più compatto, così ogni capitolo sta nello schermo */

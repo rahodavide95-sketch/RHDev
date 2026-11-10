@@ -131,7 +131,7 @@ img { display: block; max-width: 100%; }
 .menu {
   position: fixed; inset: 0; z-index: 29;
   background: rgb(5,6,9);
-  display: flex; flex-direction: column; justify-content: center; justify-content: safe center; gap: 6px;
+  display: flex; flex-direction: column; justify-content: center; justify-content: safe center; align-items: center; text-align: center; gap: 6px;
   overflow-y: auto;
   padding-top: calc(var(--top-h) + env(safe-area-inset-top, 0px));
   padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -150,7 +150,9 @@ img { display: block; max-width: 100%; }
 .menu.open a:nth-child(n+6) { transition-delay: .4s; }
 .menu.open a:nth-child(n+7) { transition-delay: .48s; }
 .menu a.soon { color: rgba(244,241,234,.4); cursor: default; }
-.menu a.soon small { margin-left: 12px; font-family: var(--f-sans); font-style: normal; font-size: 11px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; vertical-align: super; color: var(--dim); }
+/* "soon" allineato alla base della parola, che resta centrata (l'etichetta non occupa spazio) */
+.menu a.soon { display: inline-flex; align-items: baseline; }
+.menu a.soon small { width: 0; margin-left: 10px; margin-right: -10px; overflow: visible; white-space: nowrap; font-family: var(--f-sans); font-style: normal; font-size: 10px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--dim); }
 .menu a[aria-current="true"] { color: var(--acc); }
 
 /* ---------- Misuratore ---------- */
@@ -192,9 +194,19 @@ img { display: block; max-width: 100%; }
 @media (max-width: 720px)  { .site:not([data-page="home"]) .col { padding-left: 0; } }
 /* Telefono: più aria tra le lineette del misuratore e il testo delle uscite */
 @media (max-width: 720px) {
-  .site[data-page="home"] .col { --pl: 56px; }
+  /* Telefono: le lineette compaiono solo sulle uscite, una per uscita; solo le uscite
+     lasciano spazio a sinistra, il resto (artisti, barra in fondo) usa tutta la larghezza */
+  .site[data-page="home"] .col { --pl: 0px; }
+  .site[data-page="home"] .layer { padding-left: 56px; }
+  .site[data-page="home"] .gauge button:not(.r) { display: none; }
+  .site[data-page="home"]:not(.in-rel) .gauge { opacity: 0; visibility: hidden; }
   .gauge button i { width: 7px; }
   .gauge button[aria-current="true"] i { width: 16px; }
+  /* Artisti in fondo alla Home: centrati */
+  .bed .sec { flex-direction: column; align-items: center; text-align: center; gap: 8px; }
+  .bed .face { text-align: center; }
+  .bed .faces { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px 16px; }
+  .bed .face:last-child:nth-child(odd) { grid-column: 1 / -1; justify-self: center; width: calc(50% - 8px); }
 }
 
 /* Il nome dell'etichetta: sempre in grassetto, SUBCONSCIOUS maiuscolo e Culture normale */
@@ -428,8 +440,11 @@ img { display: block; max-width: 100%; }
 .foot-bottom { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 14px 30px; padding-top: 22px; border-top: 1px solid var(--line); font-size: 12px; letter-spacing: .08em; color: var(--dim); }
 @media (max-width: 720px) {
   .foot { gap: 34px; margin-top: 90px; padding-block: 46px 28px; }
-  .foot-bar { flex-direction: column; align-items: flex-start; }
-  .foot-nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 30px; width: 100%; }
+  /* telefono: barra in fondo tutta centrata */
+  .foot-bar { flex-direction: column; align-items: center; text-align: center; }
+  .foot-nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); justify-items: center; gap: 16px 30px; width: 100%; }
+  .foot-bottom { flex-direction: column; justify-content: center; text-align: center; }
+  .foot-social { justify-content: center; }
 }
 
 /* ---------- About · FAQ · Credits ---------- */

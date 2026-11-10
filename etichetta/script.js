@@ -296,8 +296,13 @@ P.about = function () {
   return '<div class="head"><h1 class="big">About</h1></div><div class="info">' +
     (LABEL.tagline ? '<p class="lead">' + esc(LABEL.tagline).replace(/\n/g, '<br>') + '</p>' : '') +
     /* ogni "a capo" del testo (\n in content.js) diventa un paragrafo, con una riga vuota tra uno e l'altro */
-    (LABEL.about ? '<div class="about-txt">' + String(LABEL.about).split(/\n+/).map(function (l) { return l.trim(); }).filter(Boolean)
-      .map(function (l) { return '<p>' + mailify(l) + '</p>'; }).join('') + '</div>' : '') + '</div>';
+    /* l'ultima riga è la firma: a destra, in corsivo, preceduta da un trattino */
+    (LABEL.about ? '<div class="about-txt">' + (function (L) {
+      return L.map(function (l, i) {
+        var sign = L.length > 1 && i === L.length - 1;
+        return sign ? '<p class="sign">— ' + mailify(l.replace(/^[-–—]\s*/, '')) + '</p>' : '<p>' + mailify(l) + '</p>';
+      }).join('');
+    })(String(LABEL.about).split(/\n+/).map(function (l) { return l.trim(); }).filter(Boolean)) + '</div>' : '') + '</div>';
 };
 P.faq = function () {
   return '<div class="head"><h1 class="big">FAQ</h1><p class="sub">' + plural(FAQ.length, 'question') + '</p></div><dl class="faq">' +

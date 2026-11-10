@@ -38,6 +38,16 @@ const SITE = {
   // Release singola/EP/album → catalog: "SSSCLTR001", "SSSCLTR002", ecc.
   // Various Artists (VA)    → catalog: "SSSCLTRS01",  "SSSCLTRS02",  ecc.
   // date: formato GG/MM/AAAA  es. "15/06/2026"
+  //
+  // FACOLTATIVI (aggiungili dentro il blocco di un'uscita, se vuoi):
+  //   tracks:  [ { title: "Titolo traccia", artist: "Nome artista", link: "https://..." }, ... ]
+  //            → nella pagina dell'uscita compare la tracklist; ogni traccia apre il suo link.
+  //   artists: [ "Nome Artista 1", "Nome Artista 2" ]
+  //            → collega l'uscita (es. una VA) alle pagine di quegli artisti.
+  //
+  // IMMAGINI LEGGERE: se accanto a una copertina esiste "thumbs/stesso-nome.jpg"
+  // (es. images/releases/thumbs/sc001.jpg, circa 800 px) il sito usa quella,
+  // altrimenti carica l'originale. Vale anche per le foto degli artisti.
   releases: [
     {
       artist:  "Raho",
@@ -46,7 +56,7 @@ const SITE = {
       catalog: "SSSCLTR001",
       format:  "Digital",
       cover:   "images/releases/sc001.jpg",
-      link:    "https://fanlink.tv/raho-solvane-ep-subconscious-culture",
+      link:    "https://www.submithub.com/link/raho-solvane-ep-subconscious-culture",
     },
     {
       artist:  "Raho",
@@ -55,7 +65,7 @@ const SITE = {
       catalog: "SSSCLTR002",
       format:  "Digital",
       cover:   "images/releases/sc002.jpg",
-      link:    "https://fanlink.tv/raho-somnara-ep-subconscious-culture",
+      link:    "https://www.submithub.com/link/raho-somnara-ep-subconscious-culture",
     },
     {
       artist:  "Raho",
@@ -64,7 +74,7 @@ const SITE = {
       catalog: "SSSCLTR003",
       format:  "Digital",
       cover:   "images/releases/sc003.jpg",
-      link:    "https://fanlink.tv/raho-lunthera-ep-subconscious-culture",
+      link:    "https://www.submithub.com/link/raho-lunthera-ep-subconscious-culture",
     },
     {
       artist:  "Raho",
@@ -73,7 +83,7 @@ const SITE = {
       catalog: "SSSCLTR004",
       format:  "Digital",
       cover:   "images/releases/sc004.jpg",
-      link:    "https://fanlink.tv/raho-aevum-ep-subconscious-culture",
+      link:    "https://www.submithub.com/link/raho-aevum-ep-subconscious-culture",
     },
     {
       artist:  "Various Artists",
@@ -82,7 +92,34 @@ const SITE = {
       catalog: "SSSCLTRS01",
       format:  "Digital",
       cover:   "images/releases/va01.jpg",
-      link:    "https://fanlink.tv/subconscious-culture-various-artists-somnia-i",
+      link:    "https://www.submithub.com/link/somnia-i-va-subconscious-culture",
+    },
+    {
+      artist:  "Various Artists",
+      title:   "Somnia II",
+      date:    "02/10/2026",
+      catalog: "SSSCLTRS02",
+      format:  "Digital",
+      cover:   "images/releases/va02.jpg",
+      link:    "https://www.submithub.com/link/somnia-ii-va-subconscious-culture",
+    },
+    {
+      artist:  "Raho",
+      title:   "Anomaly EP",
+      date:    "13/11/2026",
+      catalog: "SSSCLTR005",
+      format:  "Digital",
+      cover:   "images/releases/sc005.jpg",
+      link:    "https://www.submithub.com/link/raho-anomaly-ep-subconscious-culture",
+    },
+    {
+      artist:  "Various Artists",
+      title:   "Somnia III",
+      date:    "18/12/2026",
+      catalog: "SSSCLTRS03",
+      format:  "Digital",
+      cover:   "images/releases/va03.jpg",
+      link:    "https://www.submithub.com/link/somnia-iii-va-subconscious-culture",
     },
   ],
 
@@ -164,6 +201,78 @@ const SITE = {
     },
     {
       name:       "Zimer",
+      origin:     "Città, Paese",
+      bio:        "Breve descrizione dell'artista.",
+      photo:      "images/artists/zimer.jpg",
+      instagram:  "#",
+      soundcloud: "#",
+    },
+    {
+      name:       "Artificial DNA",
+      origin:     "Città, Paese",
+      bio:        "Breve descrizione dell'artista.",
+      photo:      "images/artists/zimer.jpg",
+      instagram:  "#",
+      soundcloud: "#",
+    },
+    {
+      name:       "Bob Semp",
+      origin:     "Città, Paese",
+      bio:        "Breve descrizione dell'artista.",
+      photo:      "images/artists/zimer.jpg",
+      instagram:  "#",
+      soundcloud: "#",
+    },
+    {
+      name:       "GCOD",
+      origin:     "Città, Paese",
+      bio:        "Breve descrizione dell'artista.",
+      photo:      "images/artists/zimer.jpg",
+      instagram:  "#",
+      soundcloud: "#",
+    },
+    {
+      name:       "IVISION",
+      origin:     "Città, Paese",
+      bio:        "Breve descrizione dell'artista.",
+      photo:      "images/artists/zimer.jpg",
+      instagram:  "#",
+      soundcloud: "#",
+    },
+    {
+      name:       "John Wick",
+      origin:     "Città, Paese",
+      bio:        "Breve descrizione dell'artista.",
+      photo:      "images/artists/zimer.jpg",
+      instagram:  "#",
+      soundcloud: "#",
+    },
+    {
+      name:       "KaioBarssalos",
+      origin:     "Città, Paese",
+      bio:        "Breve descrizione dell'artista.",
+      photo:      "images/artists/zimer.jpg",
+      instagram:  "#",
+      soundcloud: "#",
+    },
+    {
+      name:       "KLËRR",
+      origin:     "Città, Paese",
+      bio:        "Breve descrizione dell'artista.",
+      photo:      "images/artists/zimer.jpg",
+      instagram:  "#",
+      soundcloud: "#",
+    },
+    {
+      name:       "Mode_1",
+      origin:     "Città, Paese",
+      bio:        "Breve descrizione dell'artista.",
+      photo:      "images/artists/zimer.jpg",
+      instagram:  "#",
+      soundcloud: "#",
+    },
+    {
+      name:       "Nilya",
       origin:     "Città, Paese",
       bio:        "Breve descrizione dell'artista.",
       photo:      "images/artists/zimer.jpg",

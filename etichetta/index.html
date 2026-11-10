@@ -2,211 +2,60 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Subconscious Culture — Independent Record Label">
-  <title>Subconscious Culture</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="SUBCONSCIOUS Culture. Techno independent label founded and curated by Raho.">
+  <meta name="theme-color" content="#050609">
+  <meta property="og:title" content="SUBCONSCIOUS Culture">
+  <meta property="og:description" content="A new vision of underground culture, art and music.">
+  <meta property="og:type" content="website">
+  <title>SUBCONSCIOUS Culture</title>
+  <link rel="icon" type="image/png" href="images/logo-small.png">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..600;1,6..96,400..600&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=20261110c">
 </head>
 <body>
 
-  <!-- Page reveal cover (fades out after fonts load) -->
-  <div class="page-cover" id="pageCover"></div>
+  <div class="site" id="site" data-page="home">
+    <!-- Fluido vivo dietro tutto il sito: prende i colori delle copertine -->
+    <canvas id="gl" aria-hidden="true"></canvas>
 
-  <!-- Ambient animated background -->
-  <div class="bg-canvas" aria-hidden="true">
-    <div class="bg-blob bg-blob--1"></div>
-    <div class="bg-blob bg-blob--2"></div>
-    <div class="bg-blob bg-blob--3"></div>
+    <header class="top">
+      <div class="top-in">
+        <a class="brand" href="#/" aria-label="SUBCONSCIOUS Culture, home">
+          <img src="images/logo-small.png" alt="" width="32" height="32">
+          <span class="wordmark"><b>SUBCONSCIOUS</b> Culture</span>
+        </a>
+        <nav class="links" id="links" aria-label="Site"></nav>
+        <input class="search" id="q" type="search" placeholder="Search" aria-label="Search releases and artists" autocomplete="off">
+        <button class="menu-btn" id="menuBtn" aria-expanded="false" aria-controls="menu">Menu</button>
+      </div>
+    </header>
+
+    <nav class="menu" id="menu" aria-label="Menu" hidden></nav>
+
+    <!-- Misuratore di profondità: indice della pagina (uscite, anni, lettere) -->
+    <div class="gauge" id="gauge" aria-label="Depth"></div>
+
+    <main class="wrap">
+      <div class="col">
+        <div id="page"></div>
+        <footer class="foot">
+          <span id="footCopy"></span>
+          <nav id="footSocial" aria-label="Social"></nav>
+        </footer>
+      </div>
+    </main>
   </div>
 
-  <!-- ========== NAVBAR ========== -->
-  <nav class="navbar" id="navbar">
-    <div class="navbar-inner">
-      <a href="#home" class="navbar-brand">
-        <img src="images/logo.png" alt="Subconscious Culture" class="nav-logo" onerror="this.style.display='none'">
-        <span class="nav-name" id="nav-name">Subconscious Culture</span>
-      </a>
+  <noscript>
+    <p style="padding:24px;color:#f4f1ea;font-family:sans-serif">SUBCONSCIOUS Culture. Techno independent label founded and curated by Raho. Enable JavaScript to browse the catalogue.</p>
+  </noscript>
 
-      <ul class="nav-links" id="navLinks">
-        <li><a href="#releases" class="nav-link">Releases</a></li>
-        <li><a href="#artists"  class="nav-link">Artists</a></li>
-        <li><a href="#podcast"  class="nav-link">Podcast</a></li>
-        <li><a href="#events"   class="nav-link">Events</a></li>
-        <li><a href="#merch"    class="nav-link">Merch</a></li>
-        <li><a href="#contact"  class="nav-link">Contact</a></li>
-      </ul>
-
-      <button class="nav-toggle" id="navToggle" aria-label="Open menu">
-        <span></span><span></span><span></span>
-      </button>
-    </div>
-  </nav>
-
-  <!-- ========== HERO ========== -->
-  <section class="hero" id="home">
-    <div class="hero-content">
-      <div class="hero-logo-wrap">
-        <img src="images/logo.png" alt="Subconscious Culture" class="hero-logo" onerror="this.style.display='none'">
-      </div>
-      <h1 class="hero-title" id="hero-title">Subconscious Culture</h1>
-      <p  class="hero-tagline" id="hero-tagline">Independent Record Label</p>
-    </div>
-    <div class="hero-scroll">
-      <span class="hero-scroll-line"></span>
-    </div>
-  </section>
-
-  <!-- ========== MARQUEE ========== -->
-  <div class="marquee-wrap" aria-hidden="true">
-    <div class="marquee-track">
-      <span class="marquee-text">— SUBCONSCIOUS CULTURE — ELECTRONIC MUSIC — INDEPENDENT LABEL — MILANO — TECHNO — AMBIENT — EXPERIMENTAL — DANCEFLOOR — </span>
-      <span class="marquee-text">— SUBCONSCIOUS CULTURE — ELECTRONIC MUSIC — INDEPENDENT LABEL — MILANO — TECHNO — AMBIENT — EXPERIMENTAL — DANCEFLOOR — </span>
-    </div>
-  </div>
-
-  <!-- ========== RELEASES ========== -->
-  <section class="section section--alt" id="releases">
-    <div class="container">
-      <div class="section-head section-head--row" data-aos="fade-up">
-        <h2 class="section-title">Releases</h2>
-        <button class="btn-view-all" id="releasesViewAll">View All</button>
-      </div>
-      <div class="releases-grid" id="releases-grid"></div>
-    </div>
-  </section>
-
-  <!-- ========== ARTISTS ========== -->
-  <section class="section" id="artists">
-    <div class="container">
-      <div class="section-head section-head--row" data-aos="fade-up">
-        <h2 class="section-title">Artists</h2>
-        <button class="btn-view-all" id="artistsViewAll">View All</button>
-      </div>
-      <div class="artists-grid" id="artists-grid"></div>
-    </div>
-  </section>
-
-  <!-- ========== PODCAST ========== -->
-  <section class="section section--alt" id="podcast">
-    <div class="container">
-      <div class="section-head" data-aos="fade-up">
-        <h2 class="section-title">Podcast</h2>
-      </div>
-      <div class="podcast-list" id="podcast-list"></div>
-    </div>
-  </section>
-
-  <!-- ========== EVENTS ========== -->
-  <section class="section" id="events">
-    <div class="container">
-      <div class="section-head" data-aos="fade-up">
-        <h2 class="section-title">Events</h2>
-      </div>
-      <div class="events-list" id="events-list"></div>
-    </div>
-  </section>
-
-  <!-- ========== MERCH ========== -->
-  <section class="section section--alt" id="merch">
-    <div class="container">
-      <div class="section-head" data-aos="fade-up">
-        <h2 class="section-title">Merch</h2>
-      </div>
-      <div class="merch-grid" id="merch-grid"></div>
-    </div>
-  </section>
-
-  <!-- ========== CONTACT ========== -->
-  <section class="section" id="contact">
-    <div class="container">
-
-      <div class="section-head" data-aos="fade-up">
-        <h2 class="section-title">Contact</h2>
-      </div>
-
-      <!-- Form -->
-      <div class="contact-form-wrap" data-aos="fade-up" data-aos-delay="80">
-        <form class="contact-form" id="contactForm" novalidate>
-          <div class="form-row">
-            <div class="field">
-              <label for="f-name">Name</label>
-              <input type="text" id="f-name" name="name" placeholder="Your name" required>
-            </div>
-            <div class="field">
-              <label for="f-email">Email</label>
-              <input type="email" id="f-email" name="email" placeholder="Your email" required>
-            </div>
-          </div>
-          <div class="field">
-            <label for="f-subject">Subject</label>
-            <input type="text" id="f-subject" name="subject" placeholder="Booking · Demo · Press · Other">
-          </div>
-          <div class="field">
-            <label for="f-message">Message</label>
-            <textarea id="f-message" name="message" rows="4" placeholder="Your message…" required></textarea>
-          </div>
-          <div class="form-footer">
-            <button type="submit" class="btn-send">Send Message</button>
-          </div>
-        </form>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- ========== FOOTER ========== -->
-  <footer class="footer">
-    <div class="container footer-inner">
-      <img src="images/logo.png" alt="Subconscious Culture" class="footer-logo" onerror="this.style.display='none'">
-      <p class="footer-copy" id="footer-copy"></p>
-      <div class="footer-social" id="footer-social"></div>
-    </div>
-  </footer>
-
-  <!-- ========== RELEASES MODAL ========== -->
-  <div class="releases-modal" id="releasesModal" role="dialog" aria-modal="true" aria-label="All Releases">
-    <div class="releases-modal-inner">
-      <div class="releases-modal-head">
-        <h2 class="releases-modal-title">Discography</h2>
-        <input type="text" class="modal-search" id="releasesSearch" placeholder="Search…" autocomplete="off">
-        <div class="releases-filter-wrap">
-          <select class="releases-sort" id="releasesSort" aria-label="Sort releases">
-            <option value="newest">Newest First</option>
-            <option value="oldest">Oldest First</option>
-            <option value="artist">Artist A–Z</option>
-            <option value="name">Name A–Z</option>
-          </select>
-        </div>
-        <button class="releases-modal-close" id="releasesClose" aria-label="Close">✕</button>
-      </div>
-      <div class="releases-grid" id="releases-all-grid"></div>
-    </div>
-  </div>
-
-  <!-- ========== ARTISTS MODAL ========== -->
-  <div class="releases-modal" id="artistsModal" role="dialog" aria-modal="true" aria-label="All Artists">
-    <div class="releases-modal-inner">
-      <div class="releases-modal-head">
-        <h2 class="releases-modal-title">Artists</h2>
-        <input type="text" class="modal-search" id="artistsSearch" placeholder="Search…" autocomplete="off">
-        <div class="releases-filter-wrap">
-          <select class="releases-sort" id="artistsSort" aria-label="Sort artists">
-            <option value="az">A–Z</option>
-            <option value="za">Z–A</option>
-          </select>
-        </div>
-        <button class="releases-modal-close" id="artistsClose" aria-label="Close">✕</button>
-      </div>
-      <div class="artists-grid" id="artists-all-grid"></div>
-    </div>
-  </div>
-
-  <script src="content.js"></script>
-  <script src="script.js"></script>
+  <script src="content.js?v=20261110c"></script>
+  <script src="script.js?v=20261110c"></script>
 </body>
 </html>

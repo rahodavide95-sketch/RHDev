@@ -1,0 +1,138 @@
+# Label Form — come metterlo in funzione
+
+Tempo: circa 15 minuti la prima volta. Non serve saper programmare.
+
+## 0. Provalo subito (senza account)
+
+Apri **https://rahodavide95-sketch.github.io/RHDev/label-form/?demo=1**.
+
+Si apre la **modalità prova**: tutto resta solo nel tuo browser, nessun dato va su internet.
+Puoi creare la chiave, una release, aggiungere un artista, aprire il suo link (sullo stesso browser),
+compilare il modulo come se fossi l'artista e vedere cosa ricevi. Per uscire: "Esci dalla prova".
+
+## 1. Il database (si fa da solo)
+
+Label Form ha il **suo progetto Supabase**, chiamato `label-form`, separato da tutte le altre app:
+account, tabelle ed email sono solo suoi.
+
+Il workflow **"Label Form (database ed email)"** (GitHub › Actions):
+
+1. fa girare tutti i test (anche quelli di sicurezza del database);
+2. trova il progetto `label-form` oppure, la prima volta, lo crea da solo:
+   - con il tuo account Supabase (secret `SUPABASE_ACCESS_TOKEN`, c'è già);
+   - server nell'UE (Irlanda o Francoforte);
+   - **solo se il piano Supabase è gratuito**, così non spendi nulla;
+3. prepara tabelle, regole e le email di accesso in italiano a nome di Label Form;
+4. pubblica la funzione delle email e prova tutto dal vivo;
+5. ogni giorno tiene sveglio il progetto: i progetti gratuiti si addormentano dopo una settimana senza uso.
+
+### La chiave di accesso a Supabase (una volta sola)
+
+Il workflow lavora sul progetto `label-form` con una chiave di accesso a Supabase salvata su GitHub.
+1. Su **supabase.com** (con l'account dove c'è il progetto `label-form`) apri **Account** › **Access Tokens**
+   (https://supabase.com/dashboard/account/tokens) › **Generate new token**, nome `label-form-github`, e copia
+   la chiave (inizia con `sbp_`).
+2. Su GitHub apri il repository › **Settings** › **Secrets and variables** › **Actions** › **New repository secret**
+   (https://github.com/rahodavide95-sketch/RHDev/settings/secrets/actions/new).
+3. **Name:** `LABELFORM_SUPABASE_TOKEN` · **Secret:** incolla la chiave · **Add secret**.
+
+### Consigliato: blocca l'area dell'etichetta sulla tua email
+
+1. Su GitHub apri il repository › **Settings** › **Secrets and variables** › **Actions** › **New repository secret**.
+2. **Name:** `LABELFORM_OWNER_EMAIL`.
+3. **Secret:** l'email con cui sei iscritto a Supabase.
+4. Salva e rilancia il workflow (Actions › Label Form › Run workflow).
+
+Così solo quell'email può diventare "proprietario" dell'area. Senza il secret vale "il primo che
+entra" (con email confermata e verifica in due passaggi). In ogni caso, appena il proprietario è entrato
+le **iscrizioni si chiudono**: nessun altro può nemmeno creare un account.
+
+## 2. Primo accesso
+
+Apri **https://rahodavide95-sketch.github.io/RHDev/label-form/**.
+
+1. **Crea un account** con la mail e la password che vuoi (password di almeno 10 caratteri).
+   Non arriva nessuna email di conferma: entri subito.
+2. **Verifica in due passaggi**: è obbligatoria.
+   - Installa un'app di autenticazione: Google Authenticator, Microsoft Authenticator, 1Password, Authy o "Password" di iPhone.
+   - Inquadra il QR e scrivi il codice di 6 cifre.
+   - Da quel momento, per entrare servono password + codice.
+3. **Codice di attivazione** (solo la prima volta): scrivi il codice che ti è stato dato in privato.
+   Da quel momento il tuo account è l'unico proprietario e le iscrizioni si chiudono.
+4. **Chiave di cifratura**:
+   - Scegli una password di cifratura **diversa** da quella dell'account (meglio una frase lunga).
+   - Ti viene mostrato il **codice di recupero**: scaricalo o stampalo e tienilo al sicuro.
+   - Senza password e senza codice, i dati degli artisti non si aprono più. Non li può aprire nessuno, nemmeno noi: è questo che li rende sicuri.
+
+Al primo accesso trovi già il modulo **"Consegna release"** pronto da usare.
+
+## 3. Impostazioni (una volta sola)
+
+In **Impostazioni**:
+
+- **Nome dell'etichetta**, **logo** e **chi firma per l'etichetta**.
+- **Firma dell'etichetta**: la disegni una volta e va in tutti i contratti.
+- **Email per gli avvisi**: dove ricevere un avviso a ogni invio, modifica o firma (vedi punto 5).
+
+## 4. Usarlo
+
+1. **Release** › **Nuova release**: titolo, catalogo, data.
+2. **Aggiungi artista**: nome, % all'artista nel contratto, scadenza del link.
+3. Si apre il **link segreto**: lo mandi su WhatsApp, per email o lo copi.
+4. Nella release vedi per ogni artista:
+   - se ha aperto il link, inviato o modificato;
+   - la **checklist**, per esempio "manca artwork" o "Contratto firmato ✓".
+5. **Vedi invio**: i dati decifrati, il contratto firmato con la verifica d'integrità, lo storico
+   delle modifiche ("prima → dopo") e il PDF.
+6. Quando hai tutto: **chiudi la release** (il lucchetto). Gli artisti possono ancora rivedere,
+   ma non modificare.
+
+Per cambiare domande, testi, colori o contratto: **Moduli** › **Modifica**. Si salva da solo.
+
+## 5. Avvisi via email (facoltativo)
+
+Senza questo passo gli avvisi li vedi comunque nell'app (campanella "Avvisi").
+
+1. Crea un account gratuito su **resend.com**.
+2. In Resend apri **API Keys** › **Create API Key** e copia la chiave.
+3. Su GitHub aggiungi due secret, come al punto 1:
+   - `LABELFORM_RESEND_API_KEY` = la chiave copiata;
+   - `LABELFORM_MAIL_FROM` = per ora `Label Form <onboarding@resend.dev>`.
+4. In GitHub apri **Actions** › **Label Form (database ed email)** › **Run workflow**.
+5. In Label Form › Impostazioni › **Manda un'email di prova**.
+
+Finché non hai un dominio, Resend può scrivere **solo all'email del tuo account Resend**:
+- gli avvisi per te funzionano;
+- le copie via email agli artisti partiranno quando avrai il dominio (punto 6).
+
+Gli artisti possono comunque scaricare la loro copia in PDF.
+
+## 6. Quando compri il dominio
+
+Esempio con il dominio su Cloudflare e la pagina su `invio.subconsciousculture.com`.
+
+1. Cloudflare › **Workers & Pages** › **Create** › **Pages** › collega il repository GitHub:
+   - **Root directory:** `label-form`;
+   - **Build command:** vuoto;
+   - **Output:** `/`.
+2. Nel progetto Pages › **Custom domains** › aggiungi `invio.subconsciousculture.com`.
+   Il file `_headers` mette già le intestazioni di sicurezza.
+3. In Label Form › Impostazioni › **Indirizzo dei link**: scrivi `https://invio.subconsciousculture.com/invio.html`.
+   I link nuovi useranno quello. Quelli vecchi continuano a funzionare finché resta online anche GitHub Pages.
+4. Secret GitHub `LABELFORM_ALLOWED_ORIGINS` = `https://invio.subconsciousculture.com`, poi rilancia il workflow.
+5. Gli indirizzi di ritorno per le email di accesso li aggiunge il workflow (dal secret del punto 4).
+6. Email (Resend):
+   - **Domains** › **Add domain** e copia i record DNS che ti dà Resend in Cloudflare (SPF e DKIM);
+   - poi `LABELFORM_MAIL_FROM` = `SUBCONSCIOUS Culture <invio@subconsciousculture.com>` e rilancia il workflow.
+
+## Se qualcosa va storto
+
+| Problema | Cosa fare |
+|---|---|
+| Ho dimenticato la password di cifratura | Sblocca › "uso il codice di recupero" e scegli una password nuova. |
+| Ho perso password **e** codice di recupero | I dati già inviati non si possono più aprire (è la garanzia di sicurezza). Crea una nuova chiave dal pannello Supabase (progetto `label-form`: svuota `label_key` in `labelform_settings`) e chiedi agli artisti di reinviare. |
+| Ho dimenticato la password dell'account | Se la tua mail è quella dell'account Supabase usa "Password dimenticata". Altrimenti: supabase.com › progetto `label-form` › Authentication › Users › il tuo utente › cambia la password. I dati degli artisti non si perdono: sono chiusi con la chiave di cifratura, non con la password dell'account. |
+| Ho perso il telefono con il codice 2FA | supabase.com › progetto `label-form` › Authentication › Users › il tuo utente › elimina il fattore MFA, poi rientra e riattivalo. |
+| Un link è finito nelle mani sbagliate | Nella release › menu dell'artista › **Nuovo link** (il vecchio smette subito di funzionare). Chi ha il link non può leggere i dati già inviati. |
+| L'artista ha dimenticato la sua password | Non si recupera: i dati restano al sicuro da te. Puoi mandargli il PDF dell'invio. |
+| Il workflow è rosso | Apri il run su GitHub Actions: se è un test, il messaggio dice quale regola non è rispettata. Niente viene pubblicato finché i test non passano. |

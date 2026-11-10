@@ -1,0 +1,8 @@
+# Configurazione minima per la CLI di Supabase (pubblicazione della funzione delle email di Label Form).
+# La usa il workflow .github/workflows/label-form.yml.
+project_id = "label-form"
+
+# Pubblica: la chiamano anche gli artisti (senza account). Le azioni dell'etichetta controllano
+# da sole il suo accesso; le altre non leggono dati degli artisti.
+[functions.label-form-mail]
+verify_jwt = false

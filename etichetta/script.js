@@ -147,8 +147,8 @@ P.home = function () {
     (L.length ? '<section class="deeper stop" data-pal="' + (L[5] || L[L.length - 1]).i + '" data-g="Discography"><h2 class="big">Discography</h2>' +
       '<p class="sub">' + plural(L.length, 'release') + '</p><a class="btn pri" href="#/releases">View all</a></section>' : '') +
     '<section class="bed stop" data-pal="bed" data-g="Artists">' +
-      (ART.length ? '<h2 class="big bed-title">Artists</h2><div class="faces">' + faces.map(face).join('') + '</div>' +
-        '<div class="bed-more"><a class="btn" href="#/artists">All the artists</a></div>' : '') +
+      (ART.length ? '<h2 class="big bed-title">Artists</h2><p class="sub">' + plural(ART.length, 'artist') + '</p><div class="faces">' + faces.map(face).join('') + '</div>' +
+        '<div class="bed-more"><a class="btn pri" href="#/artists">View all</a></div>' : '') +
       (extras ? '<div class="three">' + extras + '</div>' : '') +
     '</section>';
 };

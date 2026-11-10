@@ -664,7 +664,7 @@ img[loading="lazy"]:not(.ld) { opacity: 0; }
   :root {
     --gl: 40px; --gr: 40px;
     --disp: clamp(64px, 6.2vw, 96px);                                  /* titoli grandi: tutti uguali */
-    --cov: min(540px, 32vw, calc(100vh - var(--head-h) - 220px));     /* copertina accanto al testo */
+    --cov: min(560px, 38vw, calc(100vh - var(--head-h) - 220px));     /* copertina accanto al testo */
   }
 
   /* testata: margini comodi, logo in proporzione */
@@ -688,8 +688,9 @@ img[loading="lazy"]:not(.ld) { opacity: 0; }
   .head { padding-block: 64px 40px; gap: 18px; }
 
   /* Home: ogni uscita occupa una schermata; testo a sinistra, copertina a destra con il tasto sotto */
+  /* testo e copertina vicini e centrati insieme: la colonna del testo è larga quanto serve (niente vuoto in mezzo) */
   .layer {
-    display: grid; grid-template-columns: minmax(0, 1fr) var(--cov); column-gap: 72px; row-gap: 0;
+    display: grid; grid-template-columns: minmax(0, max-content) var(--cov); justify-content: center; column-gap: clamp(48px, 4.5vw, 80px); row-gap: 0;
     grid-template-rows: 1fr auto auto auto auto 1fr;
     min-height: calc(100vh - var(--head-h)); padding-block: 40px;
   }
@@ -717,7 +718,7 @@ img[loading="lazy"]:not(.ld) { opacity: 0; }
 
   /* pagina dell'uscita: stesso schema della Home */
   .rel {
-    display: grid; grid-template-columns: minmax(0, 1fr) var(--cov); column-gap: 72px; row-gap: 0;
+    display: grid; grid-template-columns: minmax(0, max-content) var(--cov); justify-content: center; column-gap: clamp(48px, 4.5vw, 80px); row-gap: 0;
     grid-template-rows: 1fr auto auto auto auto auto 1fr;
     min-height: calc(100vh - var(--head-h)); padding-block: 40px;
   }
@@ -780,11 +781,13 @@ img[loading="lazy"]:not(.ld) { opacity: 0; }
 @media (min-width: 700px) and (min-height: 600px) and (hover: none) and (pointer: coarse) {
   :root {
     --disp: clamp(56px, 7vw, 96px);
-    --cov: min(540px, 40vw, calc(100svh - var(--head-h) - 200px));
+    --cov: min(560px, 46vw, calc(100svh - var(--head-h) - 200px));
   }
   /* la barra di Safari cambia altezza: le misure seguono la parte sempre visibile dello schermo */
   .col { width: min(1040px, calc(100% - 128px)); }
-  .layer, .rel { column-gap: clamp(36px, 5vw, 72px); }
+  /* testo e copertina vicini e centrati insieme: la colonna del testo è larga quanto serve,
+     non si allarga a riempire lo spazio (niente vuoto in mezzo) */
+  .layer, .rel { grid-template-columns: minmax(0, max-content) var(--cov); justify-content: center; column-gap: clamp(32px, 4.5vw, 56px); }
   .layer .side, .rel .art .btn { margin-top: 40px; }
   .bed .faces { width: min(100%, calc((100vh - var(--head-h) - 345px) * 2.5 + 18px)); width: min(100%, calc((100svh - var(--head-h) - 345px) * 2.5 + 18px)); }
   .lockup img { width: clamp(84px, min(15vw, 20svh), 204px); }
@@ -797,10 +800,81 @@ img[loading="lazy"]:not(.ld) { opacity: 0; }
 /* tablet in verticale: copertine a 3 per riga, artisti a 4; nella barra in fondo le voci occupano
    tutta la riga e il © va sotto */
 @media (min-width: 700px) and (max-width: 980px) and (min-height: 600px) and (hover: none) and (pointer: coarse) {
+  :root { --cov: min(560px, 42vw, calc(100svh - var(--head-h) - 200px)); }
+  .col { width: calc(100% - 128px); }
   .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .faces.all .face { width: calc((100% - 72px) / 4); }
   .foot-nav { grid-column: 1 / -1; justify-content: space-between; }
   .foot-copy { grid-column: 1 / -1; grid-row: 3; margin-top: 16px; padding: 0; border-top: 0; text-align: left; }
+}
+
+/* ============================================================
+   TELEFONO IN ORIZZONTALE — schermo largo ma basso (320–400 px):
+   apertura con il logo accanto al nome, uscite e artisti su due colonne,
+   misure prese dall'altezza dello schermo, così ogni capitolo sta in una schermata.
+   Il telefono in verticale non legge nulla di questo blocco.
+   ============================================================ */
+@media (hover: none) and (pointer: coarse) and (orientation: landscape) and (max-height: 599px) {
+  :root { --top-h: 52px; --lp-vis: calc(100svh - var(--head-h)); }
+  .brand img { width: 28px; height: 28px; }
+  .search-btn, .menu-btn { width: 36px; height: 36px; }
+  /* colonna: spazio a sinistra per le lineette del misuratore, uguale a destra */
+  .site[data-page] .col { --pl: 44px; padding-left: var(--pl); padding-right: var(--pl); }
+  .site[data-page] .layer { padding-left: 0; }
+  html.chapters .hero, html.chapters .layer, html.chapters .deeper, html.chapters .bed { padding-block: 14px; padding-bottom: calc(14px + 100lvh - 100svh + var(--tail, 0px)); }
+
+  /* apertura: logo accanto al nome, frasi e invito a scendere sotto */
+  .site[data-page] .hero { margin-left: calc(-1 * var(--pl)); margin-right: calc(-1 * var(--pl)); gap: 14px; }
+  .lockup { flex-direction: row; gap: 22px; }
+  .lockup img { width: min(96px, 26svh); }
+  .lockup h1 { text-align: left; }
+  .hero h1 { font-size: min(6vw, 13svh); line-height: .95; }
+  .hero .hint { margin-top: 6px; }
+  .hint i { height: 22px; }
+
+  /* uscite (Home e pagina dell'uscita): testo a sinistra, copertina a destra, vicini e centrati */
+  .layer, .rel {
+    display: grid; grid-template-columns: minmax(0, max-content) var(--lp-cov); justify-content: center; column-gap: 32px; row-gap: 0;
+    grid-template-rows: 1fr auto auto auto auto auto 1fr; --lp-cov: min(42vw, calc(var(--lp-vis) - 40px));
+  }
+  .rel { min-height: 0; padding-block: 18px; }
+  .layer > .meta, .rel > .meta { grid-column: 1; grid-row: 2; font-size: 11px; }
+  .layer > h2, .rel > h1 { grid-column: 1; grid-row: 3; margin: 10px 0 8px; font-size: min(6vw, 11svh); }
+  .layer > .by, .rel > .by { grid-column: 1; grid-row: 4; font-size: 13px; }
+  .rel > .vaa { grid-column: 1; grid-row: 5; margin-top: 12px; }
+  .layer > .row, .rel > .art { display: contents; }
+  .layer .cvbig, .rel .art .cvbig { grid-column: 2; grid-row: 1 / -1; align-self: center; width: var(--lp-cov); }
+  .layer .side { grid-column: 1; grid-row: 6; margin-top: 18px; }
+  .rel .art .btn { grid-column: 1; grid-row: 6; justify-self: start; margin-top: 18px; padding: 9px 16px; }
+  .layer .cta { gap: 8px; }
+  .layer .cta .btn { padding: 9px 14px; font-size: 11px; }
+
+  /* Discography in Home */
+  .deeper { gap: 14px; }
+  .deeper h2 { font-size: min(6vw, 13svh); }
+
+  /* Artists in Home: titolo e tasto a sinistra, mosaico 3×3 a destra, alto quanto lo schermo */
+  .bed { display: grid; grid-template-columns: max-content auto; grid-template-rows: 1fr auto auto auto 1fr; justify-content: center; align-items: center; column-gap: 40px; text-align: left; }
+  .bed-title { grid-column: 1; grid-row: 2; text-align: left; font-size: min(6vw, 13svh); }
+  .bed .sub { grid-column: 1; grid-row: 3; margin-top: 12px; }
+  .bed-more { grid-column: 1; grid-row: 4; justify-content: flex-start; margin-top: 20px; }
+  .bed .faces { grid-column: 2; grid-row: 1 / -1; margin: 0; gap: 6px; width: calc(var(--lp-vis) - 34px); }
+  .bed .fname { font-size: 7.5px; letter-spacing: .04em; padding: 16px 3px 5px; }
+}
+/* telefoni piccoli in orizzontale: tasti più compatti, così stanno su una riga */
+@media (hover: none) and (pointer: coarse) and (orientation: landscape) and (max-height: 599px) and (max-width: 700px) {
+  .site[data-page] .col { --pl: 36px; }
+  .layer, .rel { column-gap: 24px; }
+  .layer .cta .btn { padding: 8px 11px; font-size: 10px; letter-spacing: .1em; }
+  .layer .side { margin-top: 14px; }
+  .layer > h2 { margin: 8px 0 6px; }
+}
+/* telefoni in orizzontale molto bassi (320 px): un filo meno di margine */
+@media (hover: none) and (pointer: coarse) and (orientation: landscape) and (max-height: 340px) {
+  html.chapters .hero, html.chapters .layer, html.chapters .deeper, html.chapters .bed { padding-block: 9px; padding-bottom: calc(9px + 100lvh - 100svh + var(--tail, 0px)); }
+  .site[data-page] .hero { gap: 10px; }
+  .lockup img { width: min(90px, 24svh); }
+  .hint i { height: 16px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

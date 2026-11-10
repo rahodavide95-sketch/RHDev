@@ -577,9 +577,17 @@ img[loading="lazy"]:not(.ld) { opacity: 0; }
   html.ipad.chapters .layer,
   html.ipad.chapters .deeper,
   html.ipad.chapters .bed { min-height: calc(100vh - var(--head-h)); min-height: calc(100svh - var(--head-h)); padding-bottom: 24px; }
-  /* iPad: il titolo "Artists" è grande (cresce con la larghezza): il mosaico ne tiene conto, così sta nella schermata */
-  html.ipad .bed .faces { width: min(100%, 560px, calc(100vh - var(--head-h) - 260px - min(12vw, 176px)));
-                          width: min(100%, 560px, calc(100svh - var(--head-h) - 260px - min(12vw, 176px))); }
+  /* iPad: la colonna ha lo stesso margine a destra e a sinistra (a sinistra c'è il misuratore),
+     così Discography, Artists, pagina artista e barra in fondo sono centrati sullo schermo */
+  html.ipad .col { padding-right: var(--pl); }
+  html.ipad .hero { margin-right: calc(-1 * var(--pl, 0px)); }
+  /* iPad: titoli grandi in proporzione allo schermo (sul telefono crescono con la larghezza, qui sarebbero enormi
+     e le parole lunghe come "Discography" andrebbero a capo) */
+  html.ipad .layer h2, html.ipad .deeper h2, html.ipad .bed-title { font-size: clamp(50px, 8vw, 96px); }
+  html.ipad .head h1, html.ipad .rel h1 { font-size: clamp(50px, 8vw, 104px); }
+  /* iPad: il mosaico degli artisti tiene conto del titolo, così tutto sta nella schermata */
+  html.ipad .bed .faces { width: min(100%, 560px, calc(100vh - var(--head-h) - 260px - min(8vw, 96px)));
+                          width: min(100%, 560px, calc(100svh - var(--head-h) - 260px - min(8vw, 96px))); }
 }
 
 /* Telefoni stretti (320 px) e bassi: tutto più compatto, così ogni capitolo sta nello schermo */

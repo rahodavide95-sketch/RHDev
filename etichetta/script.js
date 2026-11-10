@@ -397,7 +397,7 @@ function syncGauge() {
   gItems = [].slice.call(pageEl.querySelectorAll('[data-g]'));
   gauge.className = 'gauge' + (st.page === 'artists' ? ' all' : '');
   hapAct = null;
-  gauge.innerHTML = gItems.map(function (e, i) { var l = esc(e.getAttribute('data-g')); if (desk) l = l.replace(/^[+−-]?\d+ d · /, ''); return '<button' + (e.classList.contains('layer') ? ' class="r"' : '') + ' data-gi="' + i + '" aria-label="' + l + '"><i></i><span>' + l + '</span></button>'; }).join('');
+  gauge.innerHTML = gItems.map(function (e, i) { var l = esc(e.getAttribute('data-g')); if (desk || isIPad) l = l.replace(/^[+−-]?\d+ d · /, ''); return '<button' + (e.classList.contains('layer') ? ' class="r"' : '') + ' data-gi="' + i + '" aria-label="' + l + '"><i></i><span>' + l + '</span></button>'; }).join('');
   measure();
 }
 gauge.addEventListener('click', function (e) {

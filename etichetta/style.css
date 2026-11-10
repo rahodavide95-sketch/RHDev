@@ -497,8 +497,6 @@ img[loading="lazy"]:not(.ld) { opacity: 0; }
 .rv.seen > :nth-child(2) { transition-delay: .1s; }
 .rv.seen > :nth-child(3) { transition-delay: .2s; }
 .rv.seen > :nth-child(n+4) { transition-delay: .3s; }
-/* Interruttore invisibile usato per il tocco leggero su iPhone */
-.haptic { position: fixed; left: 0; top: 0; width: 1px; height: 1px; overflow: hidden; opacity: 0; pointer-events: none; }
 
 /* Telefono e tablet: la Home a capitoli netti, uno per schermata */
 @media (hover: none) and (pointer: coarse) {

@@ -105,6 +105,7 @@ var INFO = [['about', 'About']].concat(FAQ.length ? [['faq', 'FAQ']] : [], [['cr
 
 /* ------------------------------------------------------------ pezzi ricorrenti */
 var st = { page: 'home', arg: null, q: '', type: 'all', year: 'all', sort: 'new', mode: 'grid', aq: '', gq: '', fopen: false, afopen: false, amode: 'letter', asort: 'az' };
+var footEl = document.querySelector('.foot');
 var site = $('site'), pageEl = $('page'), gauge = $('gauge'), canvas = $('gl'), menu = $('menu'), menuBtn = $('menuBtn');
 
 function cover(r) { return img(r.cover, '', r.i); }
@@ -129,7 +130,7 @@ var P = {};
 P.home = function () {
   var L = REL.slice().sort(desc), up = L.filter(function (r) { return dz(r) < 0; }), out = L.filter(function (r) { return dz(r) >= 0; });
   var show = L.slice(0, 5);                                     /* al massimo 5 uscite, poi il link alla discografia */
-  var faces = ART.filter(function (a) { return a.photo; }).slice(0, 9);   /* 3 righe da 3 */
+  var faces = ART.filter(function (a) { return a.photo; }).slice(0, desk ? 10 : 9);   /* telefono: 3 righe da 3 · computer: 2 righe da 5 */
   var extras = '';
   if (VIS.podcast && (S.podcast || []).length) extras += '<div>' + sec('Podcast', 'All episodes', 'podcast') + S.podcast.slice(0, 3).map(function (e) { return '<div class="mini"><b>' + esc(e.title) + '</b><span>' + esc(e.date || '') + '</span></div>'; }).join('') + '</div>';
   if (VIS.events && (S.events || []).length)   extras += '<div>' + sec('Events', 'All dates', 'events') + S.events.slice(0, 3).map(function (e) { return '<div class="mini"><b>' + esc(e.name) + '</b><span>' + esc(e.date || '') + '</span></div>'; }).join('') + '</div>';
@@ -141,8 +142,9 @@ P.home = function () {
       var d = dz(r);
       return '<section class="layer stop" data-pal="' + r.i + '" data-g="' + (d < 0 ? '+' + (-d) : '−' + d) + ' d · ' + esc(r.t) + '">' +
         '<div class="meta"><span>' + esc(r.c) + '</span><span>' + esc(r.d) + '</span><span>' + r.kind + '</span>' + (d < 0 ? '<i class="br"></i><span class="up">Upcoming</span>' : '') + '</div>' +
-        '<h2 class="big"><a href="#/release/' + r.id + '">' + esc(r.t) + '</a></h2><div class="by">' + esc(r.a) + '</div>' +
-        '<div class="row"><a class="cvbig" href="#/release/' + r.id + '" aria-label="Open ' + esc(r.t) + '">' + cover(r) + '</a>' + (r.l ? '<div class="side"><div class="cta">' + listen(r, true) + '</div></div>' : '') + '</div></section>';
+        /* il nome dell'artista porta alla sua pagina (le compilation restano "Various Artists") */
+        '<h2 class="big"><a href="#/release/' + r.id + '">' + esc(r.t) + '</a></h2><div class="by">' + (r.names.length || r.k === 'va' ? esc(r.a) : artLink(r.a)) + '</div>' +
+        '<div class="row"><a class="cvbig" href="#/release/' + r.id + '" aria-label="Open ' + esc(r.t) + '">' + cover(r) + '</a><div class="side"><div class="cta">' + listen(r, true) + '<a class="btn" href="#/release/' + r.id + '">Open release</a></div></div></div></section>';
     }).join('') +
     (L.length ? '<section class="deeper stop" data-pal="' + (L[5] || L[L.length - 1]).i + '" data-g="Discography"><h2 class="big">Discography</h2>' +
       '<p class="sub">' + plural(L.length, 'release') + '</p><a class="btn pri" href="#/releases">View all</a></section>' : '') +
@@ -400,7 +402,9 @@ function syncGauge() {
 }
 gauge.addEventListener('click', function (e) {
   var b = e.target.closest('[data-gi]');
-  if (b) gItems[+b.getAttribute('data-gi')].scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: st.page === 'home' ? 'center' : 'start' });
+  if (!b) return;
+  if (deskSnap()) { var t = gItems[+b.getAttribute('data-gi')], i = stops.indexOf(t); if (i >= 0) { snapTo(i); return; } }
+  gItems[+b.getAttribute('data-gi')].scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: st.page === 'home' ? 'center' : 'start' });
 });
 function measure() {
   var mid = window.innerHeight * .5, act = -1, base;
@@ -432,6 +436,11 @@ function measure() {
   if (a !== accStr) { accStr = a; document.documentElement.style.setProperty('--acc', a); }
   [].forEach.call(gauge.children, function (b, i) { var v = i === act ? 'true' : 'false'; if (b.getAttribute('aria-current') !== v) b.setAttribute('aria-current', v); });
   site.classList.toggle('moved', sy > 8);
+  /* computer: arrivati all'ultima sezione (in Home gli Artisti, altrove la barra in fondo) il misuratore sparisce */
+  if (desk) {
+    var ft = footEl ? footEl.getBoundingClientRect().top : 1e9;
+    site.classList.toggle('at-end', ft < window.innerHeight * .9 || (st.page === 'home' && gItems.length > 1 && act === gItems.length - 1));
+  }
   site.classList.toggle('in-rel', act >= 0 && !!gItems[act] && gItems[act].classList.contains('layer'));
   chapter(act);
   kick();
@@ -755,6 +764,76 @@ function frame(now) {
   if (!document.hidden && (!reduce || moving)) raf = requestAnimationFrame(frame);
 }
 function kick() { if (!raf) raf = requestAnimationFrame(frame); }
+/* ------------------------------------------------------------ computer: la Home a capitoli, stile Apple
+   Un gesto (rotellina, trackpad, frecce, Pagina giù, spazio) porta al capitolo successivo con un
+   movimento morbido; l'inerzia del trackpad non fa saltare più capitoli. Trascinando la barra di
+   scorrimento, quando ci si ferma la pagina si riallinea al capitolo più vicino. Telefono e tablet
+   usano lo scorrimento a capitoli del browser (style.css) e non passano mai di qui. */
+var snapAnim = 0, snapLock = false, lastWheelT = 0, lastWheelAbs = 0, wheelAcc = 0, snapIdleT = 0;
+function deskSnap() { return desk && st.page === 'home' && lockY === null && stops.length > 1; }
+function headH() { var t = document.querySelector('.top'); return t ? t.offsetHeight : 0; }
+function snapTargets() {
+  var hh = headH(), y = window.scrollY;
+  var T = stops.map(function (s) { return Math.round(s.getBoundingClientRect().top + y - hh); });
+  T.push(Math.max(0, document.documentElement.scrollHeight - window.innerHeight));   /* in fondo: la barra finale */
+  return T;
+}
+function snapNow() { var T = snapTargets(), y = window.scrollY, best = 0; T.forEach(function (t, i) { if (Math.abs(t - y) < Math.abs(T[best] - y)) best = i; }); return best; }
+function snapTo(i) {
+  var T = snapTargets(); i = Math.max(0, Math.min(T.length - 1, i));
+  var from = window.scrollY, to = T[i], dist = to - from;
+  cancelAnimationFrame(snapAnim);
+  if (Math.abs(dist) < 2) return;
+  var root = document.documentElement.style, dur = reduce ? 0 : Math.min(1100, 650 + Math.abs(dist) * .25), t0 = performance.now();
+  root.scrollBehavior = 'auto';
+  function ease(k) { return k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2; }        /* lenta, poi veloce, poi lenta */
+  (function stepAnim(now) {
+    var k = dur ? Math.min(1, (now - t0) / dur) : 1;
+    window.scrollTo(0, from + dist * ease(k));
+    if (k < 1) snapAnim = requestAnimationFrame(stepAnim); else { snapAnim = 0; root.scrollBehavior = ''; }
+  })(t0);
+}
+window.addEventListener('wheel', function (e) {
+  if (!deskSnap() || e.ctrlKey) return;
+  e.preventDefault();
+  var now = performance.now(), gap = now - lastWheelT, abs = Math.abs(e.deltaY);
+  lastWheelT = now;
+  /* dopo un passaggio si aspetta che il gesto finisca (l'inerzia del trackpad continua da sola);
+     un nuovo gesto si riconosce da una pausa o da una spinta più forte dell'inerzia che si spegne */
+  if (snapLock) {
+    var rising = abs > 12 && abs > lastWheelAbs * 1.6;                 /* una nuova spinta sul trackpad */
+    if (!snapAnim && (rising || (gap > 160 && abs >= 50) || gap > 600)) snapLock = false;   /* o un nuovo scatto di rotellina, o una pausa lunga */
+    else { lastWheelAbs = abs; return; }
+  }
+  lastWheelAbs = abs;
+  if (gap > 160) wheelAcc = 0;
+  wheelAcc += e.deltaY * (e.deltaMode === 1 ? 32 : e.deltaMode === 2 ? window.innerHeight : 1);
+  if (Math.abs(wheelAcc) < 18) return;
+  var dir = wheelAcc > 0 ? 1 : -1; wheelAcc = 0; snapLock = true;
+  snapTo(snapNow() + dir);
+}, { passive: false });
+window.addEventListener('keydown', function (e) {
+  if (!deskSnap() || e.altKey || e.ctrlKey || e.metaKey) return;
+  var t = e.target; if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+  var k = e.key, dir = 0;
+  if (k === 'ArrowDown' || k === 'PageDown' || (k === ' ' && !e.shiftKey)) dir = 1;
+  else if (k === 'ArrowUp' || k === 'PageUp' || (k === ' ' && e.shiftKey)) dir = -1;
+  else if (k === 'Home') { e.preventDefault(); snapTo(0); return; }
+  else if (k === 'End') { e.preventDefault(); snapTo(1e6); return; }
+  if (!dir) return;
+  e.preventDefault(); if (!snapAnim) snapTo(snapNow() + dir);
+});
+/* barra di scorrimento o altro: quando la pagina si ferma fuori posto, torna dolcemente al capitolo più vicino */
+window.addEventListener('scroll', function () {
+  if (!deskSnap() || snapAnim) return;
+  clearTimeout(snapIdleT);
+  snapIdleT = setTimeout(function () {
+    if (!deskSnap() || snapAnim || performance.now() - lastWheelT < 300) return;
+    var T = snapTargets(), i = snapNow();
+    if (Math.abs(T[i] - window.scrollY) > 2) snapTo(i);
+  }, 220);
+}, { passive: true });
+
 var measureQ = 0;
 function measureSoon() { if (!measureQ) measureQ = requestAnimationFrame(function () { measureQ = 0; measure(); }); }
 window.addEventListener('scroll', measureSoon, { passive: true });

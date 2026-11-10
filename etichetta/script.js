@@ -340,7 +340,7 @@ var TITLES = { home: '', releases: 'Releases', artists: 'Artists', podcast: 'Pod
 function navHtml(withHome) {
   return (withHome ? '<a href="#/" data-p="home">Surface</a>' : '') + PAGES.map(function (p) { return '<a href="#/' + p[0] + '" data-p="' + p[0] + '">' + p[1] + '</a>'; }).join('');
 }
-function setMenu(open) { menu.hidden = !open; menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false'); menuBtn.textContent = open ? 'Close' : 'Menu'; }
+function setMenu(open) { menu.hidden = !open; menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false'); menuBtn.setAttribute('aria-label', open ? 'Close menu' : 'Menu'); }
 function render(keep) {
   site.setAttribute('data-page', st.page);
   pageEl.innerHTML = P[st.page]();

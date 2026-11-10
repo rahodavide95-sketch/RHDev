@@ -71,7 +71,7 @@ img { display: block; max-width: 100%; }
 .wordmark { font-size: 15px; font-weight: 600; letter-spacing: .02em; }
 .wordmark b { font-weight: 600; letter-spacing: .06em; }
 .links { display: flex; gap: 2px; justify-self: end; }
-.links a, .menu-btn {
+.links a {
   padding: 8px 11px;
   font-size: 12px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase;
   text-decoration: none; color: var(--dim); white-space: nowrap;
@@ -81,19 +81,25 @@ img { display: block; max-width: 100%; }
 .search {
   width: 100%; min-width: 0;
   font-size: 13px; color: var(--fg); text-align: center;
-  background: rgba(5,6,9,.45); border: 1px solid var(--line); border-radius: 999px;
+  /* discreta a riposo: quasi trasparente, si accende solo quando la usi */
+  background: rgba(244,241,234,.04); border: 1px solid rgba(244,241,234,.07); border-radius: 999px;
   padding: 8px 16px;
+  transition: background .25s, border-color .25s;
 }
-.search:focus { text-align: left; border-color: rgba(244,241,234,.5); outline: none; }
-.search-btn { display: none; width: 38px; height: 38px; border: 1px solid var(--line); border-radius: 50%; place-items: center; }
-.search-btn[aria-expanded="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.search::placeholder { color: rgba(244,241,234,.34); }
+.search:hover { background: rgba(244,241,234,.07); }
+.search:focus { text-align: left; background: rgba(244,241,234,.1); border-color: rgba(244,241,234,.3); outline: none; }
+.search-btn, .menu-btn { display: none; width: 40px; height: 40px; place-items: center; border-radius: 50%; color: var(--fg); }
+.search-btn { color: var(--dim); }
+.search-btn[aria-expanded="true"] { color: var(--fg); background: rgba(244,241,234,.1); }
+.menu-btn .i-close, .menu-btn[aria-expanded="true"] .i-open { display: none; }
+.menu-btn[aria-expanded="true"] .i-close { display: block; }
 .search::placeholder, .in::placeholder { color: var(--mute); }
-.menu-btn { display: none; color: var(--fg); border: 1px solid var(--line); border-radius: 999px; padding: 7px 14px; }
 /* Telefono e tablet: una lente apre la ricerca a tutta larghezza sotto la testata */
 @media (max-width: 980px) {
   .top-in { display: flex; flex-wrap: wrap; column-gap: 10px; }
   .links { display: none; }
-  .menu-btn { display: block; }
+  .menu-btn { display: grid; margin-right: -8px; }
   .search-btn { display: grid; margin-left: auto; }
   .search { display: none; order: 5; flex: 1 1 100%; font-size: 16px; text-align: left; padding: 11px 18px; margin-bottom: 6px; }
   .top.searching .search { display: block; }
@@ -103,9 +109,8 @@ img { display: block; max-width: 100%; }
   .brand img { width: 28px; height: 28px; }
   .wordmark { font-size: 12.5px; }
   .wordmark b { letter-spacing: .03em; }
-  .top-in { column-gap: 8px; }
-  .search-btn { width: 36px; height: 36px; }
-  .menu-btn { padding: 7px 11px; letter-spacing: .1em; }
+  .top-in { column-gap: 2px; }
+  .search-btn, .menu-btn { width: 38px; height: 38px; }
 }
 @media (max-width: 370px) { .wordmark { display: none; } }
 

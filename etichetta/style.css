@@ -333,6 +333,8 @@ img { display: block; max-width: 100%; }
 .tag { position: absolute; left: 8px; top: 8px; padding: 2px 8px; background: var(--fg); color: var(--bg); font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; }
 .cat { font-size: 11px; letter-spacing: .04em; color: var(--dim); font-variant-numeric: tabular-nums; }
 .card b { font-family: var(--f-serif); font-weight: 500; font-size: 21px; line-height: 1.1; overflow-wrap: anywhere; }
+/* i titoli delle uscite sono in corsivo ovunque, come nella Home e nella pagina dell'uscita */
+.card:not(.prod) b { font-style: italic; font-weight: 400; font-size: 22px; }
 .card .a { font-size: 11px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); }
 
 .tools { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; margin-bottom: 10px; }
@@ -359,7 +361,7 @@ img { display: block; max-width: 100%; }
   width: 100%; text-decoration: none;
 }
 .lrow .cv { margin: 0; box-shadow: none; }
-.lrow b { font-family: var(--f-serif); font-weight: 500; font-size: 19px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lrow b { font-family: var(--f-serif); font-style: italic; font-weight: 400; font-size: 20px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lrow span { color: var(--dim); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .lrow:hover b { color: var(--acc); }
 @media (max-width: 860px) {

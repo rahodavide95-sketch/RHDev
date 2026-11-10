@@ -64,10 +64,21 @@ var ART = (S.artists || []).map(function (a, i) {
     ig: ok(a.instagram), sc: ok(a.soundcloud)
   };
 });
+/* Artisti citati nelle compilation o nelle tracklist ma non nella lista ARTISTI:
+   pagina creata da sola (senza foto), così ogni nome porta alla sua discografia */
+REL.forEach(function (r) {
+  r.names.concat(r.tracks.map(function (t) { return t && t.artist; })).forEach(function (n) {
+    n = String(n || '').trim();
+    if (!n || /^various/i.test(n) || ART.some(function (a) { return a.id === slug(n); })) return;
+    ART.push({ i: ART.length, id: slug(n), n: n, photo: '', bio: '', org: '', ig: '', sc: '' });
+  });
+});
 function dz(r) { return Math.round((TODAY - r.date) / 864e5); }
 function desc(a, b) { return b.date - a.date; }
 function relById(id) { for (var i = 0; i < REL.length; i++) if (REL[i].id === id) return REL[i]; return null; }
 function artById(id) { for (var i = 0; i < ART.length; i++) if (ART[i].id === id) return ART[i]; return null; }
+/* nome di un artista come link alla sua pagina (se esiste) */
+function artLink(n) { var a = artById(slug(n)); return a ? '<a href="#/artist/' + a.id + '">' + esc(n) + '</a>' : esc(n); }
 function relsOf(a) {
   var n = a.n.toLowerCase();
   return REL.filter(function (r) {
@@ -85,7 +96,7 @@ var FAQ = (S.faq || []).filter(function (f) { return f && f.q && f.a; });
 var INFO = [['about', 'About']].concat(FAQ.length ? [['faq', 'FAQ']] : [], [['credits', 'Credits']]);
 
 /* ------------------------------------------------------------ pezzi ricorrenti */
-var st = { page: 'home', arg: null, q: '', type: 'all', year: 'all', sort: 'new', mode: 'grid', aq: '', gq: '' };
+var st = { page: 'home', arg: null, q: '', type: 'all', year: 'all', sort: 'new', mode: 'grid', aq: '', gq: '', fopen: false, afopen: false, amode: 'letter', asort: 'az' };
 var site = $('site'), pageEl = $('page'), gauge = $('gauge'), canvas = $('gl'), menu = $('menu'), menuBtn = $('menuBtn');
 
 function cover(r) { return img(r.cover, '', r.i); }
@@ -129,8 +140,8 @@ P.home = function () {
     }).join('') +
     (rest > 0 ? '<section class="deeper stop" data-pal="' + out[6].i + '" data-g="Deeper · ' + plural(rest, 'release') + '"><div class="meta"><b>Deeper</b><span>down to −' + dz(out[out.length - 1]) +
       ' days</span></div><h2 class="big">' + plural(rest, 'more release') + ' below</h2><a class="btn pri" href="#/releases">Descend into the catalogue</a></section>' : '') +
-    '<section class="bed stop" data-pal="bed" data-g="Seabed">' +
-      (ART.length ? sec('The seabed · Artists', 'All ' + plural(ART.length, 'artist'), 'artists') + '<div class="faces">' + faces.map(function (a) { return '<a class="face" href="#/artist/' + a.id + '">' + img(a.photo) + esc(a.n) + '</a>'; }).join('') + '</div>' : '') +
+    '<section class="bed stop" data-pal="bed" data-g="Artists">' +
+      (ART.length ? sec('Artists', 'All ' + plural(ART.length, 'artist'), 'artists') + '<div class="faces">' + faces.map(face).join('') + '</div>' : '') +
       (extras ? '<div class="three">' + extras + '</div>' : '') +
     '</section>';
 };
@@ -157,18 +168,32 @@ function relResults() {
   flush();
   return h;
 }
+function chip(k, v, l) { return '<button class="chip" type="button" data-f="' + k + '" data-v="' + v + '" aria-pressed="' + (String(st[k]) === String(v)) + '">' + l + '</button>'; }
+/* barra: ricerca, tasto Filtri (apre il pannello) e vista, tutto sulla stessa riga */
+function toolbar(inputId, placeholder, label, value, panel, openKey, view) {
+  return '<div class="tools bar"><input class="in" id="' + inputId + '" type="search" placeholder="' + placeholder + '" aria-label="' + label + '" value="' + esc(value) + '" autocomplete="off">' +
+    '<button class="fbtn" type="button" data-tf="' + openKey + '" aria-controls="' + panel + '" aria-expanded="' + !!st[openKey] + '">Filters<span class="fn">' + (filterCount() || '') + '</span></button>' +
+    '<div class="view">' + view + '</div></div>';
+}
+function fpanel(id, openKey, groups) {
+  return '<div class="fpanel' + (st[openKey] ? ' open' : '') + '" id="' + id + '"><div class="fp-in">' +
+    groups.filter(Boolean).map(function (g) { return '<div class="fgroup"><small>' + g[0] + '</small><div>' + g[1] + '</div></div>'; }).join('') + '</div></div>';
+}
+function filterCount() {
+  return st.page === 'artists' ? +(st.asort !== 'az') : (st.type !== 'all') + (st.year !== 'all') + (st.sort !== 'new');
+}
 P.releases = function () {
   var years = [];
   REL.forEach(function (r) { var y = r.date.getFullYear(); if (years.indexOf(y) < 0) years.push(y); });
   years.sort().reverse();
   var hasVa = REL.some(function (r) { return r.k === 'va'; }), hasEp = REL.some(function (r) { return r.k === 'ep'; });
-  function chip(k, v, l) { return '<button class="chip" data-f="' + k + '" data-v="' + v + '" aria-pressed="' + (String(st[k]) === String(v)) + '">' + l + '</button>'; }
-  return '<div class="head"><div class="meta"><b>Catalogue</b><span>' + plural(REL.length, 'release') + '</span></div><h1 class="big">Releases</h1></div>' +
-    '<div class="tools"><input class="in" id="rq" type="search" placeholder="Title, artist or catalogue no." aria-label="Filter releases" value="' + esc(st.q) + '" autocomplete="off"></div>' +
-    '<div class="tools">' + (hasVa && hasEp ? '<div>' + chip('type', 'all', 'All') + chip('type', 'ep', 'EPs &amp; albums') + chip('type', 'va', 'Compilations') + '</div>' : '') +
-    (years.length > 1 ? '<div>' + chip('year', 'all', 'All years') + years.map(function (y) { return chip('year', y, y); }).join('') + '</div>' : '') +
-    '<div class="right"><select class="sel" id="sort" aria-label="Sort">' + [['new', 'Newest first'], ['old', 'Oldest first'], ['az', 'Title A–Z'], ['artist', 'Artist A–Z']].map(function (o) { return '<option value="' + o[0] + '"' + (st.sort === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') +
-    '</select>' + chip('mode', 'grid', 'Covers') + chip('mode', 'list', 'List') + '</div></div><div id="res">' + relResults() + '</div>';
+  return '<div class="head"><h1 class="big">Discography</h1></div>' +
+    toolbar('rq', 'Search', 'Search releases', st.q, 'fpanel', 'fopen', chip('mode', 'grid', 'Covers') + chip('mode', 'list', 'List')) +
+    fpanel('fpanel', 'fopen', [
+      hasVa && hasEp ? ['Type', chip('type', 'all', 'All') + chip('type', 'ep', 'EPs &amp; albums') + chip('type', 'va', 'Compilations')] : null,
+      years.length > 1 ? ['Year', chip('year', 'all', 'All years') + years.map(function (y) { return chip('year', y, y); }).join('')] : null,
+      ['Sort', chip('sort', 'new', 'Newest') + chip('sort', 'old', 'Oldest') + chip('sort', 'az', 'Title A–Z') + chip('sort', 'artist', 'Artist A–Z')]
+    ]) + '<div id="res">' + relResults() + '</div>';
 };
 
 P.release = function () {
@@ -176,22 +201,32 @@ P.release = function () {
   var tracks = r.tracks.filter(function (t) { return t && t.title; });
   return '<a class="back" href="#/releases">All releases</a><section class="rel">' +
     '<div class="meta"><span>' + esc(r.c) + '</span><span>' + esc(r.d) + '</span><span>' + r.kind + (r.fmt ? ' · ' + esc(r.fmt) : '') + '</span>' + (d < 0 ? '<span class="up">Upcoming</span>' : '') + '</div>' +
-    '<h1 class="big">' + esc(r.t) + '</h1><div class="by">' + esc(r.a) + '</div>' +
+    '<h1 class="big">' + esc(r.t) + '</h1><div class="by">' + (r.names.length || r.k === 'va' ? esc(r.a) : artLink(r.a)) + '</div>' +
+    (r.names.length ? '<div class="vaa">' + r.names.map(function (n) { return artLink(String(n)); }).join('') + '</div>' : '') +
     '<div class="row"><span class="cvbig">' + cover(r) + '</span><div class="side"><span class="depth">' + depthText(r) + '</span><div class="cta">' + listen(r, true) + '</div></div></div></section>' +
     (tracks.length ? sec('Tracks') + tracks.map(function (t, n) {
-      return '<div class="trk"><i>' + (n + 1) + '</i><div><b>' + esc(t.title) + '</b>' + (t.artist ? '<small>' + esc(t.artist) + '</small>' : '') + '</div>' + (ok(t.link) ? extLink(t.link, 'Listen') : '<span></span>') + '</div>';
+      return '<div class="trk"><i>' + (n + 1) + '</i><div><b>' + esc(t.title) + '</b>' + (t.artist ? '<small>' + artLink(t.artist) + '</small>' : '') + '</div>' + (ok(t.link) ? extLink(t.link, 'Listen') : '<span></span>') + '</div>';
     }).join('') : '') +
     '<div class="pn">' +
       (below ? '<a href="#/release/' + below.id + '" data-hov="' + below.i + '"><small>Keep descending · ' + esc(below.d) + '</small><b>' + esc(below.t) + '</b></a>'
              : '<a href="#/artists"><small>You reached the seabed</small><b>Meet the artists</b></a>') +
-      (above ? '<a href="#/release/' + above.id + '" data-hov="' + above.i + '"><small>↑ Back towards the surface · ' + esc(above.d) + '</small><b>' + esc(above.t) + '</b></a>' : '') +
+      (above ? '<a href="#/release/' + above.id + '" data-hov="' + above.i + '"><small>Back towards the surface · ' + esc(above.d) + '</small><b>' + esc(above.t) + '</b></a>' : '') +
     '</div>';
 };
 
+function face(a) {
+  return '<a class="face" href="#/artist/' + a.id + '">' + (a.photo ? img(a.photo) : '<span class="ph">' + esc(a.n.charAt(0)) + '</span>') + '<span class="fname">' + esc(a.n) + '</span></a>';
+}
 function artResults() {
   var q = st.aq.toLowerCase(), L = ART.filter(function (a) { return !q || a.n.toLowerCase().indexOf(q) >= 0; });
-  L.sort(function (x, y) { return x.n.localeCompare(y.n); });
+  var count = {}; L.forEach(function (a) { count[a.id] = relsOf(a).length; });
+  L.sort(st.asort === 'za' ? function (x, y) { return y.n.localeCompare(x.n); }
+    : st.asort === 'most' ? function (x, y) { return count[y.id] - count[x.id] || x.n.localeCompare(y.n); }
+    : function (x, y) { return x.n.localeCompare(y.n); });
   if (!L.length) return '<p class="empty">No artist matches that name.</p>';
+  /* tutti insieme: una griglia con foto e nome */
+  if (st.amode === 'all') return '<div class="faces all">' + L.map(face).join('') + '</div>';
+  /* per lettera */
   var groups = {}, keys = [];
   L.forEach(function (a) {
     var k = slug(a.n).charAt(0).toUpperCase();
@@ -199,17 +234,22 @@ function artResults() {
     if (!groups[k]) { groups[k] = []; keys.push(k); }
     groups[k].push(a);
   });
-  return '<div class="az" aria-label="Jump to letter">' + 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(function (c) { return '<button data-az="' + c + '"' + (groups[c] ? '' : ' disabled') + '>' + c + '</button>'; }).join('') + '</div>' +
+  keys.sort(); if (st.asort === 'za') keys.reverse();
+  return '<div class="az" aria-label="Jump to letter">' + 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(function (c) { return '<button type="button" data-az="' + c + '"' + (groups[c] ? '' : ' disabled') + '>' + c + '</button>'; }).join('') + '</div>' +
     keys.map(function (k) { return '<div class="lh" data-g="' + k + '" id="L-' + (k === '#' ? 'x' : k) + '">' + k + '</div><div class="people">' + groups[k].map(person).join('') + '</div>'; }).join('');
 }
 P.artists = function () {
-  return '<div class="head"><div class="meta"><b>The seabed</b><span>' + plural(ART.length, 'artist') + '</span></div><h1 class="big">Artists</h1></div>' +
-    '<div class="tools"><input class="in" id="aq" type="search" placeholder="Artist name" aria-label="Filter artists" value="' + esc(st.aq) + '" autocomplete="off"></div><div id="res">' + artResults() + '</div>';
+  return '<div class="head"><h1 class="big">Artists</h1><p class="sub">' + plural(ART.length, 'artist') + '</p></div>' +
+    toolbar('aq', 'Search', 'Search artists', st.aq, 'afpanel', 'afopen', chip('amode', 'letter', 'By letter') + chip('amode', 'all', 'All')) +
+    fpanel('afpanel', 'afopen', [['Sort', chip('asort', 'az', 'A–Z') + chip('asort', 'za', 'Z–A') + chip('asort', 'most', 'Most releases')]]) +
+    '<div id="res">' + artResults() + '</div>';
 };
+/* Pagina artista: foto, nome e link uno sotto l'altro, centrati */
 P.artist = function () {
   var a = artById(st.arg), rels = relsOf(a);
-  return '<a class="back" href="#/artists">All artists</a><div class="arthead">' + avatar(a) + '<div><div class="meta"><b>Artist</b>' + (a.org ? '<span>' + esc(a.org) + '</span>' : '') + '</div><h1 class="big">' + esc(a.n) + '</h1>' +
-    (a.ig || a.sc ? '<div class="cta">' + (a.ig ? extLink(a.ig, 'Instagram') : '') + (a.sc ? extLink(a.sc, 'SoundCloud') : '') + '</div>' : '') + '</div></div>' +
+  var links = [['Instagram', a.ig, 'instagram'], ['SoundCloud', a.sc, 'soundcloud']].filter(function (l) { return l[1]; });
+  return '<div class="arthead">' + avatar(a) + '<h1 class="aname">' + esc(a.n) + '</h1>' +
+    (links.length ? '<nav class="artlinks" aria-label="' + esc(a.n) + ' links">' + links.map(function (l) { return '<a href="' + esc(l[1]) + '" target="_blank" rel="noopener" aria-label="' + l[0] + '" title="' + l[0] + '">' + ICON[l[2]] + '</a>'; }).join('') + '</nav>' : '') + '</div>' +
     (a.bio ? '<p class="bio sh">' + esc(a.bio).replace(/\n/g, '<br>') + '</p>' : '') +
     (rels.length ? sec('Releases on <span class="nm">SUBCONSCIOUS Culture</span>') + '<div class="grid">' + rels.map(card).join('') + '</div>' : '');
 };
@@ -239,26 +279,24 @@ P.store = function () {
     }).join('') + '</div>';
 };
 P.contact = function () {
-  /* Solo l'email principale dell'etichetta: gli altri indirizzi di content.js non sono mai stati pubblicati. */
+  /* Solo l'email principale: Instagram e gli altri social stanno già nella barra in fondo */
   var rows = [['Email', LABEL.email || CONTACT.email]].filter(function (m) { return m[1]; });
-  var ig = CONTACT.instagramUrl || LABEL.instagram;
-  return '<div class="head"><div class="meta"><b class="nm">SUBCONSCIOUS Culture</b></div><h1 class="big">Contact</h1></div><div class="contact"><div>' +
+  return '<div class="head"><h1 class="big">Contact</h1></div><div class="contact"><div>' +
     rows.map(function (m) { return '<div class="mail"><small>' + m[0] + '</small><a href="mailto:' + esc(m[1]) + '">' + esc(m[1]) + '</a></div>'; }).join('') +
-    (ig ? '<div class="mail"><small>Instagram</small><a href="' + esc(ig) + '" target="_blank" rel="noopener">' + esc(CONTACT.instagram || 'Instagram') + '</a></div>' : '') +
     '</div></div>';
 };
 P.about = function () {
-  return '<div class="head"><div class="meta"><b class="nm">SUBCONSCIOUS Culture</b></div><h1 class="big">About</h1></div><div class="info">' +
+  return '<div class="head"><h1 class="big">About</h1></div><div class="info">' +
     (LABEL.tagline ? '<p class="lead">' + esc(LABEL.tagline).replace(/\n/g, '<br>') + '</p>' : '') +
     (LABEL.about ? '<p>' + mailify(LABEL.about) + '</p>' : '') + '</div>';
 };
 P.faq = function () {
-  return '<div class="head"><div class="meta"><b class="nm">SUBCONSCIOUS Culture</b><span>' + plural(FAQ.length, 'question') + '</span></div><h1 class="big">FAQ</h1></div><dl class="faq">' +
-    FAQ.map(function (f) { return '<div class="qa"><dt>' + esc(f.q) + '</dt><dd>' + mailify(f.a) + '</dd></div>'; }).join('') + '</dl>';
+  return '<div class="head"><h1 class="big">FAQ</h1><p class="sub">' + plural(FAQ.length, 'question') + '</p></div><dl class="faq">' +
+    FAQ.map(function (f, i) { return '<div class="qa"><dt><span class="qn">' + (i + 1) + '.</span>' + esc(f.q) + '</dt><dd>' + mailify(f.a) + '</dd></div>'; }).join('') + '</dl>';
 };
 P.credits = function () {
   var L = (S.credits || []).filter(Boolean).concat([plural(REL.length, 'release') + ' · ' + plural(ART.length, 'artist')]);
-  return '<div class="head"><div class="meta"><b class="nm">SUBCONSCIOUS Culture</b></div><h1 class="big">Credits</h1></div><ul class="credits">' +
+  return '<div class="head"><h1 class="big">Credits</h1></div><ul class="credits">' +
     L.map(function (c) { return '<li>' + mailify(c) + '</li>'; }).join('') + '</ul>';
 };
 P.search = function () {
@@ -425,7 +463,7 @@ function chapter(act) {
   if (st.page !== 'home' || hapAct === null) { hapAct = act; return; }
   if (act !== hapAct) { hapAct = act; if (Date.now() - touchBuzzT > 900) buzz(); }
 }
-var TITLES = { home: '', releases: 'Releases', artists: 'Artists', podcast: 'Podcast', events: 'Events', store: 'Store', contact: 'Contact', search: 'Search', about: 'About', faq: 'FAQ', credits: 'Credits' };
+var TITLES = { home: '', releases: 'Discography', artists: 'Artists', podcast: 'Podcast', events: 'Events', store: 'Store', contact: 'Contact', search: 'Search', about: 'About', faq: 'FAQ', credits: 'Credits' };
 function navLinks(L) { return L.map(function (p) { return '<a href="#/' + p[0] + '" data-p="' + p[0] + '">' + p[1] + '</a>'; }).join(''); }
 /* Sezioni non ancora attive: nel menu compaiono con "soon" e non si aprono.
    Quando le attivi in content.js (sections) diventano voci normali. */
@@ -434,7 +472,7 @@ function navHtml(withHome) {
   if (!withHome) return navLinks(PAGES);
   /* menu del telefono: tutte le voci nello stesso formato, About · FAQ · Credits comprese */
   var main = PAGES.filter(function (p) { return p[0] !== 'contact'; }), contact = PAGES.filter(function (p) { return p[0] === 'contact'; });
-  return '<a href="#/" data-p="home">Surface</a>' + navLinks(main) +
+  return navLinks(main) +
     SOON.map(function (s) { return '<a class="soon" aria-disabled="true">' + s[0] + '<small>soon</small></a>'; }).join('') +
     navLinks(contact.concat(INFO));
 }
@@ -509,9 +547,28 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { se
 
 site.addEventListener('click', function (e) {
   var t, T = e.target;
-  if ((t = T.closest('[data-f]'))) { st[t.getAttribute('data-f')] = t.getAttribute('data-v'); render(true); return; }
+  if ((t = T.closest('[data-tf]'))) {
+    var key = t.getAttribute('data-tf'), pn = $(t.getAttribute('aria-controls'));
+    st[key] = !st[key]; t.setAttribute('aria-expanded', String(st[key])); if (pn) pn.classList.toggle('open', st[key]);
+    return;
+  }
+  if ((t = T.closest('[data-f]'))) {
+    var k = t.getAttribute('data-f'), v = t.getAttribute('data-v');
+    st[k] = v;
+    [].forEach.call(pageEl.querySelectorAll('[data-f="' + k + '"]'), function (c) { c.setAttribute('aria-pressed', String(c.getAttribute('data-v') === v)); });
+    refreshResults();
+    return;
+  }
   if ((t = T.closest('[data-az]'))) { var h = $('L-' + t.getAttribute('data-az')); if (h) h.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }); }
 });
+function refreshResults() {
+  var res = $('res'); if (!res) { render(true); return; }
+  res.innerHTML = st.page === 'artists' ? artResults() : relResults();
+  [].forEach.call(res.querySelectorAll('img'), function (im) { if (im.complete && im.naturalWidth) im.classList.add('ld'); });
+  var fn = pageEl.querySelector('.fn'); if (fn) fn.textContent = filterCount() || '';
+  syncGauge();
+  if (!reduce && res.animate) res.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 450, easing: 'ease-out' });
+}
 site.addEventListener('input', function (e) {
   var id = e.target.id;
   if (id === 'rq') { st.q = e.target.value; $('res').innerHTML = relResults(); syncGauge(); }
@@ -593,7 +650,7 @@ document.addEventListener('visibilitychange', kick);
 /* ------------------------------------------------------------ avvio */
 $('links').innerHTML = navHtml(false);
 menu.innerHTML = navHtml(true);
-$('footCopy').innerHTML = '© ' + (LABEL.foundedYear && +LABEL.foundedYear < now.getFullYear() ? LABEL.foundedYear + '–' : '') + now.getFullYear() + ' <span class="nm">SUBCONSCIOUS Culture</span>';
+$('footCopy').innerHTML = '© ' + (LABEL.foundedYear && +LABEL.foundedYear < now.getFullYear() ? LABEL.foundedYear + '–' : '') + now.getFullYear() + ' SUBCONSCIOUS Culture';
 $('footNav').innerHTML = navLinks(PAGES.concat(INFO));
 /* Social: icone (il nome resta per chi usa lo screen reader) */
 var ICON = {
@@ -604,5 +661,6 @@ var ICON = {
 };
 $('footSocial').innerHTML = [['Instagram', LABEL.instagram, 'instagram'], ['SoundCloud', LABEL.soundcloud, 'soundcloud'], ['Bandcamp', LABEL.bandcamp, 'bandcamp'], ['Resident Advisor', LABEL.ra, 'ra']]
   .filter(function (s) { return ok(s[1]); }).map(function (s) { return '<a href="' + esc(s[1]) + '" target="_blank" rel="noopener" aria-label="' + s[0] + '" title="' + s[0] + '">' + ICON[s[2]] + '</a>'; }).join('');
+if (ok(LABEL.platforms)) $('footSocial').insertAdjacentHTML('beforeend', '<a class="plat" href="' + esc(LABEL.platforms) + '" target="_blank" rel="noopener">All our platforms</a>');
 route();
 })();

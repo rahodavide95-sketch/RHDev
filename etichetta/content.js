@@ -35,6 +35,8 @@ const SITE = {
     soundcloud: "https://soundcloud.com/subconscious_culture",
     bandcamp:   "https://subconsciousculture26.bandcamp.com",
     ra:         "",   // Resident Advisor URL
+    // Tutte le piattaforme (link in fondo al sito: "All our platforms")
+    platforms:  "https://linktr.ee/subconscious.culture",
   },
 
   // ---- FAQ (in fondo al sito) --------------------------------
@@ -44,7 +46,7 @@ const SITE = {
     { q: "Where can I listen to the releases?", a: "Every release has a Listen button: it opens the release on all the main streaming and download platforms." },
     { q: "How can I send a demo?",             a: "Write to subconscious.infoart@gmail.com with a link to your music." },
     { q: "Booking and press?",                 a: "Same address: subconscious.infoart@gmail.com." },
-    { q: "Are the releases on vinyl?",         a: "For now every release is digital." },
+    { q: "Are the releases on vinyl?",         a: "For now every release is digital. Vinyl is coming soon." },
   ],
 
   // ---- CREDITS (in fondo al sito) ----------------------------
@@ -52,7 +54,7 @@ const SITE = {
   credits: [
     "Founded and curated by Raho",
     "Established 2026",
-    "Type: Bodoni Moda and Montserrat",
+    "Developed by RHDev",
   ],
 
   // ---- RELEASES -----------------------------------------------
@@ -64,7 +66,11 @@ const SITE = {
   //   tracks:  [ { title: "Titolo traccia", artist: "Nome artista", link: "https://..." }, ... ]
   //            → nella pagina dell'uscita compare la tracklist; ogni traccia apre il suo link.
   //   artists: [ "Nome Artista 1", "Nome Artista 2" ]
-  //            → collega l'uscita (es. una VA) alle pagine di quegli artisti.
+  //            → gli artisti di una compilation (VA). Nelle VA la riga è già pronta:
+  //              basta scrivere i nomi. Nella pagina dell'uscita compaiono tutti, e
+  //              toccando un nome si apre la sua pagina con la discografia completa.
+  //              Se un nome non è nella lista ARTISTI qui sotto, la sua pagina
+  //              viene creata da sola (senza foto): scrivi il nome sempre uguale.
   //
   // IMMAGINI LEGGERE: se accanto a una copertina esiste "thumbs/stesso-nome.jpg"
   // (es. images/releases/thumbs/sc001.jpg, circa 800 px) il sito usa quella,
@@ -114,6 +120,9 @@ const SITE = {
       format:  "Digital",
       cover:   "images/releases/va01.jpg",
       link:    "https://www.submithub.com/link/somnia-i-va-subconscious-culture",
+      // ARTISTI DELLA COMPILATION: scrivi qui i nomi, tra virgolette e separati da virgola
+      // es. artists: [ "Raho", "Jacom", "Pøl" ],
+      artists: [ ],
     },
     {
       artist:  "Various Artists",
@@ -123,6 +132,9 @@ const SITE = {
       format:  "Digital",
       cover:   "images/releases/va02.jpg",
       link:    "https://www.submithub.com/link/somnia-ii-va-subconscious-culture",
+      // ARTISTI DELLA COMPILATION: scrivi qui i nomi, tra virgolette e separati da virgola
+      // es. artists: [ "Raho", "Jacom", "Pøl" ],
+      artists: [ ],
     },
     {
       artist:  "Raho",
@@ -141,6 +153,9 @@ const SITE = {
       format:  "Digital",
       cover:   "images/releases/va03.jpg",
       link:    "https://www.submithub.com/link/somnia-iii-va-subconscious-culture",
+      // ARTISTI DELLA COMPILATION: scrivi qui i nomi, tra virgolette e separati da virgola
+      // es. artists: [ "Raho", "Jacom", "Pøl" ],
+      artists: [ ],
     },
   ],
 
